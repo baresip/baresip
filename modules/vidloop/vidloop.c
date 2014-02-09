@@ -296,7 +296,11 @@ static int video_loop_alloc(struct video_loop **vlp, const struct vidsz *size)
 	if (err)
 		goto out;
 
-	err = vidisp_alloc(&vl->vidisp, NULL, NULL, NULL, NULL, vl);
+	info("vidloop: open video display (%s.%s)\n",
+	     vl->cfg.disp_mod, vl->cfg.disp_dev);
+
+	err = vidisp_alloc(&vl->vidisp, vl->cfg.disp_mod, NULL,
+			   vl->cfg.disp_dev, NULL, vl);
 	if (err) {
 		warning("vidloop: video display failed: %m\n", err);
 		goto out;
