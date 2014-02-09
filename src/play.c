@@ -11,7 +11,7 @@
 #include "core.h"
 
 
-enum {SILENCE_DUR = 2000, PTIME = 100};
+enum {SILENCE_DUR = 2000, PTIME = 40};
 
 /** Audio file player */
 struct play {
@@ -93,6 +93,10 @@ static bool write_handler(uint8_t *buf, size_t sz, void *arg)
 		goto silence;
 
 	if (mbuf_get_left(play->mb) < sz) {
+
+		memset(buf, 0, sz);
+		(void)mbuf_read_mem(play->mb, buf, mbuf_get_left(play->mb));
+
 		play->eof = true;
 	}
 	else {
@@ -143,6 +147,7 @@ static int aufile_load(struct mbuf *mb, const char *filename,
 	while (!err) {
 		uint8_t buf[4096];
 		size_t i, n;
+		int16_t *p = (void *)buf;
 
 		n = sizeof(buf);
 
@@ -153,7 +158,12 @@ static int aufile_load(struct mbuf *mb, const char *filename,
 		switch (prm.fmt) {
 
 		case AUFMT_S16LE:
-			err = mbuf_write_mem(mb, buf, n);
+			/* convert from Little-Endian to Native-Endian */
+			for (i=0; i<n/2; i++) {
+				int16_t s = sys_ltohs(*p++);
+				err |= mbuf_write_u16(mb, s);
+			}
+
 			break;
 
 		case AUFMT_PCMA:
