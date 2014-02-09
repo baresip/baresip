@@ -7,6 +7,121 @@ Copyright (c) 2010 - 2014 Creytiv.com
 Distributed under BSD license
 
 
+Features:
+
+* Call features:
+  - Unlimited number of SIP accounts
+  - Unlimited number of calls
+  - Unattended call transfer
+  - Auto answer
+  - Call hold and resume
+  - Microphone mute
+  - Call waiting
+  - Call recording
+  - Peer to peer calls
+  - Video calls
+  - Instant Messaging
+  - Custom ring tones
+  - Repeat last call (redial)
+  - Message Waiting Indication (MWI)
+  - Address book with presence
+
+* Signaling:
+  - SIP protocol support
+  - SIP outbound protocol for NAT-traversal
+  - SIP Re-invite
+  - SIP Routes
+  - SIP early media support
+  - DNS NAPTR/SRV support
+  - Multiple accounts support
+  - DTMF support (RTP, SIP INFO)
+
+* Security:
+  - Signalling encryption (TLS)
+  - Audio and video encryption (Secure RTP)
+  - DTLS-SRTP key exchange protocol
+  - ZRTP key exchange protocol
+  - SDES key exchange protocol
+
+* Audio:
+  - Low latency audio pipeline
+  - High definition audio codecs
+  - Audio device configuration
+  - Audio filter plugins
+  - Internal audio resampler for fixed sampling rates
+  - Linear 16 bit wave format support for ringtones
+  - Packet loss concealment (PLC)
+  - Configurable ringtone playback device
+  - Automatic gain control (AGC) and Noise reducation
+  - Acoustic echo control (AEC)
+
+* Audio-codecs:
+  - AMR narrowband, AMR wideband
+  - BroadVoice32 BV32
+  - CELT
+  - G.711
+  - G.722
+  - G.726
+  - GSM
+  - iLBC
+  - iSAC
+  - L16
+  - Opus
+  - Silk
+  - Speex
+
+* Audio-drivers:
+  - Advanced Linux Sound Architecture (ALSA) audio-driver
+  - Android OpenSLES audio-driver
+  - Gstreamer playbin input audio-driver
+  - MacOSX/iOS coreaudio/audiounit audio-driver
+  - Open Sound System (OSS) audio-driver
+  - Portaudio audio-driver
+  - Windows winwave audio-driver
+
+* Video:
+  - Support for H.264, H.263, VP8, MPEG-4 Video
+  - Configurable resolution/framerate/bitrate
+  - Configurable video input/output
+  - Support for asymmetric video
+
+* Video-codecs:
+  - H.264
+  - H.263
+  - VP8
+  - MPEG-4
+
+* Video-drivers:
+  - iOS avcapture video-source
+  - FFmpeg libavformat/avdevice input
+  - Cairo video-source test module
+  - Direct Show video-source
+  - MacOSX QTcapture/quicktime video-source
+  - RST media player
+  - Linux V4L/V4L2 video-source
+  - X11 grabber video-source
+  - DirectFB video-output
+  - OpenGL/OpenGLES video-output
+  - SDL/SDL2 video-output
+  - X11 video-output
+
+* NAT-traversal:
+  - STUN support
+  - TURN server support
+  - ICE and ICE-lite support
+  - NATPMP support
+
+* Networking:
+  - multihoming, IPv4/IPv6
+  - automatic network roaming
+
+* Management:
+  - Embedded web-server with HTTP interface
+  - Command-line console over UDP/TCP
+  - Command line interface (CLI)
+  - Simple configuration files
+
+
 Design goals:
 
 * Minimalistic and modular VoIP client
@@ -38,6 +153,7 @@ directfb      DirectFB video display module
 dshow         Windows DirectShow video source
 dtls_srtp     DTLS-SRTP end-to-end encryption
 evdev         Linux input driver
+fakevideo     Fake video input/output driver
 g711          G.711 audio codec
 g722          G.722 audio codec
 g7221         G.722.1 audio codec
