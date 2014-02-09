@@ -13,11 +13,6 @@
 #include "core.h"
 
 
-#define DEBUG_MODULE "video"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 /** Magic number */
 #define MAGIC 0x00070d10
 #include "magic.h"
@@ -261,10 +256,8 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 
 	/* Encode the whole picture frame */
 	err = vtx->vc->ench(vtx->enc, vtx->picup, frame, packet_handler, vtx);
-	if (err) {
-		DEBUG_WARNING("encode: %m\n", err);
+	if (err)
 		return;
-	}
 
 	vtx->ts_tx += (SRATE/vtx->vsrc_prm.fps);
 	vtx->picup = false;
@@ -302,7 +295,7 @@ static void vidsrc_error_handler(int err, void *arg)
 {
 	struct vtx *vtx = arg;
 
-	DEBUG_WARNING("Video-source error: %m\n", err);
+	warning("video: video-source error: %m\n", err);
 
 	vtx->vsrc = mem_deref(vtx->vsrc);
 }
@@ -373,7 +366,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 	/* No decoder set */
 	if (!vrx->dec) {
-		DEBUG_WARNING("No video decoder!\n");
+		warning("video: No video decoder!\n");
 		goto out;
 	}
 
@@ -382,10 +375,10 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	if (err) {
 
 		if (err != EPROTO) {
-			DEBUG_WARNING("%s decode error"
-				      " (seq=%u, %u bytes): %m\n",
-				      vrx->vc->name, hdr->seq,
-				      mbuf_get_left(mb), err);
+			warning("video: %s decode error"
+				" (seq=%u, %u bytes): %m\n",
+				vrx->vc->name, hdr->seq,
+				mbuf_get_left(mb), err);
 		}
 
 		/* send RTCP FIR to peer */
@@ -615,8 +608,8 @@ int video_alloc(struct video **vp, const struct config *cfg,
 		err |= vidfilt_enc_append(&v->vtx.filtl, &ctx, vf);
 		err |= vidfilt_dec_append(&v->vrx.filtl, &ctx, vf);
 		if (err) {
-			DEBUG_WARNING("video-filter '%s' failed (%m)\n",
-				      vf->name, err);
+			warning("video: video-filter '%s' failed (%m)\n",
+				vf->name, err);
 			break;
 		}
 	}
@@ -729,8 +722,8 @@ int video_start(struct video *v, const char *peer)
 
 	err = set_vidisp(&v->vrx);
 	if (err) {
-		DEBUG_WARNING("could not set vidisp '%s': %m\n",
-			      v->vrx.device, err);
+		warning("video: could not set vidisp '%s': %m\n",
+			v->vrx.device, err);
 	}
 
 	size.w = v->cfg.width;
@@ -738,9 +731,9 @@ int video_start(struct video *v, const char *peer)
 	err = set_encoder_format(&v->vtx, v->cfg.src_mod,
 				 v->vtx.device, &size);
 	if (err) {
-		DEBUG_WARNING("could not set encoder format to"
-			      " [%u x %u] %m\n",
-			      size.w, size.h, err);
+		warning("video: could not set encoder format to"
+			" [%u x %u] %m\n",
+			size.w, size.h, err);
 	}
 
 	tmr_start(&v->tmr, TMR_INTERVAL * 1000, tmr_handler, v);
@@ -874,7 +867,7 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 		vtx->enc = mem_deref(vtx->enc);
 		err = vc->encupdh(&vtx->enc, vc, &prm, params);
 		if (err) {
-			DEBUG_WARNING("encoder alloc: %m\n", err);
+			warning("video: encoder alloc: %m\n", err);
 			return err;
 		}
 
@@ -908,7 +901,7 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 
 		err = vc->decupdh(&vrx->dec, vc, fmtp);
 		if (err) {
-			DEBUG_WARNING("decoder alloc: %m\n", err);
+			warning("video: decoder alloc: %m\n", err);
 			return err;
 		}
 

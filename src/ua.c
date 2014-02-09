@@ -9,10 +9,6 @@
 #include "core.h"
 
 
-#define DEBUG_MODULE "ua"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
 /** Magic number */
 #define MAGIC 0x0a0a0a0a
 #include "magic.h"
@@ -186,7 +182,7 @@ int ua_register(struct ua *ua)
 		err = reg_register(reg, reg_uri, params,
 				   acc->regint, acc->outbound[i]);
 		if (err) {
-			DEBUG_WARNING("SIP register failed: %m\n", err);
+			warning("ua: SIP register failed: %m\n", err);
 			return err;
 		}
 	}
@@ -318,8 +314,8 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 			err = call_connect(call2, &pl);
 			if (err) {
-				DEBUG_WARNING("transfer: connect error: %m\n",
-					      err);
+				warning("ua: transfer: connect error: %m\n",
+					err);
 			}
 		}
 
@@ -339,7 +335,7 @@ static int ua_call_alloc(struct call **callp, struct ua *ua,
 	struct call_prm cprm;
 
 	if (*callp) {
-		DEBUG_WARNING("call_alloc: call is already allocated\n");
+		warning("ua: call_alloc: call is already allocated\n");
 		return EALREADY;
 	}
 
@@ -382,7 +378,7 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 			  mbuf_buf(desc),
 			  mbuf_get_left(desc));
 	if (err) {
-		DEBUG_WARNING("options: sip_treplyf: %m\n", err);
+		warning("ua: options: sip_treplyf: %m\n", err);
 	}
 
  out:
@@ -438,7 +434,7 @@ static void add_extension(struct ua *ua, const char *extension)
 	struct pl e;
 
 	if (ua->extensionc >= ARRAY_SIZE(ua->extensionv)) {
-		DEBUG_WARNING("maximum %u number of SIP extensions\n");
+		warning("ua: maximum %u number of SIP extensions\n");
 		return;
 	}
 
@@ -517,7 +513,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 		if (!str_isset(uag.cfg->uuid)) {
 
-			DEBUG_WARNING("outbound requires valid UUID!\n");
+			warning("ua: outbound requires valid UUID!\n");
 			err = ENOSYS;
 			goto out;
 		}
@@ -754,7 +750,7 @@ int ua_options_send(struct ua *ua, const char *uri,
 			   "Content-Length: 0\r\n"
 			   "\r\n");
 	if (err) {
-		DEBUG_WARNING("send options: (%m)\n", err);
+		warning("ua: send options: (%m)\n", err);
 	}
 
 	return err;
@@ -857,8 +853,8 @@ static int add_transp_af(const struct sa *laddr)
 		if (err) {
 			err = sa_set_str(&local, uag.cfg->local, 0);
 			if (err) {
-				DEBUG_WARNING("decode failed: %s\n",
-					      uag.cfg->local);
+				warning("ua: decode failed: '%s'\n",
+					uag.cfg->local);
 				return err;
 			}
 		}
@@ -882,7 +878,7 @@ static int add_transp_af(const struct sa *laddr)
 	if (uag.use_tcp)
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_TCP, &local);
 	if (err) {
-		DEBUG_WARNING("SIP Transport failed: %m\n", err);
+		warning("ua: SIP Transport failed: %m\n", err);
 		return err;
 	}
 
@@ -900,7 +896,7 @@ static int add_transp_af(const struct sa *laddr)
 			err = tls_alloc(&uag.tls, TLS_METHOD_SSLV23,
 					cert, NULL);
 			if (err) {
-				DEBUG_WARNING("tls_alloc() failed: %m\n", err);
+				warning("ua: tls_alloc() failed: %m\n", err);
 				return err;
 			}
 		}
@@ -910,7 +906,7 @@ static int add_transp_af(const struct sa *laddr)
 
 		err = sip_transp_add(uag.sip, SIP_TRANSP_TLS, &local, uag.tls);
 		if (err) {
-			DEBUG_WARNING("SIP/TLS transport failed: %m\n", err);
+			warning("ua: SIP/TLS transport failed: %m\n", err);
 			return err;
 		}
 	}
@@ -971,8 +967,8 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 	ua = uag_find(&msg->uri.user);
 	if (!ua) {
-		DEBUG_WARNING("%r: UA not found: %r\n",
-			      &msg->from.auri, &msg->uri.user);
+		warning("ua: %r: UA not found: %r\n",
+			&msg->from.auri, &msg->uri.user);
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
 		return;
 	}
@@ -1005,7 +1001,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 	err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, to_uri);
 	if (err) {
-		DEBUG_WARNING("call_alloc: %m\n", err);
+		warning("ua: call_alloc: %m\n", err);
 		goto error;
 	}
 
@@ -1078,7 +1074,7 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	/* Initialise Network */
 	err = net_init(&cfg->net, prefer_ipv6 ? AF_INET6 : AF_INET);
 	if (err) {
-		DEBUG_WARNING("network init failed: %m\n", err);
+		warning("ua: network init failed: %m\n", err);
 		return err;
 	}
 
@@ -1092,7 +1088,7 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	err = sip_alloc(&uag.sip, net_dnsc(), bsize, bsize, bsize,
 			software, exit_handler, NULL);
 	if (err) {
-		DEBUG_WARNING("sip stack failed: %m\n", err);
+		warning("ua: sip stack failed: %m\n", err);
 		goto out;
 	}
 
@@ -1121,7 +1117,7 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 
  out:
 	if (err) {
-		DEBUG_WARNING("init failed (%m)\n", err);
+		warning("ua: init failed (%m)\n", err);
 		ua_close();
 	}
 	return err;

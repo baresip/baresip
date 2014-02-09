@@ -12,18 +12,10 @@
 #include "core.h"
 
 
-#define DEBUG_MODULE "call"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
 /** Magic number */
 #define MAGIC 0xca11ca11
 #include "magic.h"
 
-
-#ifndef RELEASE
-#define CALL_DEBUG       1  /**< Enable call debugging */
-#endif
 
 #define FOREACH_STREAM						\
 	for (le = call->streaml.head; le; le = le->next)
@@ -127,7 +119,7 @@ static void call_stream_start(struct call *call, bool active)
 				err = audio_start(call->audio);
 			}
 			if (err) {
-				DEBUG_WARNING("audio stream: %m\n", err);
+				warning("call: audio stream error: %m\n", err);
 			}
 		}
 		else {
@@ -150,7 +142,7 @@ static void call_stream_start(struct call *call, bool active)
 			err = video_start(call->video, call->peer_uri);
 		}
 		if (err) {
-			DEBUG_WARNING("video stream: %m\n", err);
+			warning("call: video stream error: %m\n", err);
 		}
 	}
 	else if (call->video) {
@@ -160,7 +152,7 @@ static void call_stream_start(struct call *call, bool active)
 	if (call->bfcp) {
 		err = bfcp_start(call->bfcp);
 		if (err) {
-			DEBUG_WARNING("bfcp_start() error: %m\n", err);
+			warning("call: could not start BFCP: %m\n", err);
 		}
 	}
 #endif
@@ -235,13 +227,13 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 	MAGIC_CHECK(call);
 
 	if (err) {
-		DEBUG_WARNING("medianat '%s' failed: %m\n",
-			      call->acc->mnatid, err);
+		warning("call: medianat '%s' failed: %m\n",
+			call->acc->mnatid, err);
 		call_event_handler(call, CALL_EVENT_CLOSED, "%m", err);
 		return;
 	}
 	else if (scode) {
-		DEBUG_WARNING("medianat failed: %u %s\n", scode, reason);
+		warning("call: medianat failed: %u %s\n", scode, reason);
 		call_event_handler(call, CALL_EVENT_CLOSED, "%u %s",
 				   scode, reason);
 		return;
@@ -317,7 +309,7 @@ static int update_media(struct call *call)
 		err = video_encoder_set(call->video, sc->data,
 					sc->pt, sc->params);
 		if (err) {
-			DEBUG_WARNING("video stream: %m\n", err);
+			warning("call: video stream error: %m\n", err);
 		}
 	}
 	else if (call->video) {
@@ -388,7 +380,7 @@ static void audio_error_handler(int err, const char *str, void *arg)
 	MAGIC_CHECK(call);
 
 	if (err) {
-		DEBUG_WARNING("Audio error: %m (%s)\n", err, str);
+		warning("call: audio device error: %m (%s)\n", err, str);
 	}
 
 	call_stream_stop(call);
@@ -401,7 +393,7 @@ static void menc_error_handler(int err, void *arg)
 	struct call *call = arg;
 	MAGIC_CHECK(call);
 
-	DEBUG_WARNING("mediaenc error: %m\n", err);
+	warning("call: mediaenc '%s' error: %m\n", call->acc->mencid, err);
 
 	call_stream_stop(call);
 	call_event_handler(call, CALL_EVENT_CLOSED, "mediaenc failed");
@@ -484,7 +476,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 				       call->sdp, !got_offer,
 				       mnat_handler, call);
 		if (err) {
-			DEBUG_WARNING("mnat session: %m\n", err);
+			warning("call: medianat session: %m\n", err);
 			goto out;
 		}
 	}
@@ -497,7 +489,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 						!got_offer,
 						menc_error_handler, call);
 			if (err) {
-				DEBUG_WARNING("mediaenc session: %m\n", err);
+				warning("call: mediaenc session: %m\n", err);
 				goto out;
 			}
 		}
@@ -966,7 +958,7 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 
 	err = sdp_decode(call->sdp, msg->mb, false);
 	if (err) {
-		DEBUG_WARNING("answer: sdp_decode: %m\n", err);
+		warning("call: could not decode SDP answer: %m\n", err);
 		return err;
 	}
 
@@ -1108,7 +1100,7 @@ static void sipsess_refer_handler(struct sip *sip, const struct sip_msg *msg,
 	/* get the transfer target */
 	hdr = sip_msg_hdr(msg, SIP_HDR_REFER_TO);
 	if (!hdr) {
-		DEBUG_WARNING("bad REFER request from %r\n", &msg->from.auri);
+		warning("call: bad REFER request from %r\n", &msg->from.auri);
 		(void)sip_reply(sip, msg, 400, "Missing Refer-To header");
 		return;
 	}
@@ -1125,7 +1117,7 @@ static void sipsess_refer_handler(struct sip *sip, const struct sip_msg *msg,
 			      sipnot_close_handler, call,
 	                      "Allow: %s\r\n", uag_allowed_methods());
 	if (err) {
-		DEBUG_WARNING("refer: sipevent_accept failed: %m\n", err);
+		warning("call: refer: sipevent_accept failed: %m\n", err);
 		return;
 	}
 
@@ -1212,7 +1204,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			     sipsess_refer_handler, sipsess_close_handler,
 			     call, "Allow: %s\r\n", uag_allowed_methods());
 	if (err) {
-		DEBUG_WARNING("sipsess_accept: %m\n", err);
+		warning("call: sipsess_accept: %m\n", err);
 		return err;
 	}
 
@@ -1312,7 +1304,7 @@ static int send_invite(struct call *call)
 			      "Allow: %s\r\n%H", uag_allowed_methods(),
 			      ua_print_supported, call->ua);
 	if (err) {
-		DEBUG_WARNING("sipsess_connect: %m\n", err);
+		warning("call: sipsess_connect: %m\n", err);
 	}
 
 	mem_deref(desc);
@@ -1447,7 +1439,7 @@ static void sipsub_notify_handler(struct sip *sip, const struct sip_msg *msg,
 	sc = pl_u32(&scode);
 
 	if (sc >= 300) {
-		DEBUG_WARNING("call transfer failed: %u %r\n", sc, &reason);
+		warning("call: transfer failed: %u %r\n", sc, &reason);
 	}
 	else if (sc >= 200) {
 		call_event_handler(call, CALL_EVENT_CLOSED, "Call transfered");
@@ -1534,7 +1526,7 @@ int call_transfer(struct call *call, const char *uri)
 			      call,
 			      "Refer-To: %s\r\n", nuri);
 	if (err) {
-		DEBUG_WARNING("sipevent_drefer: %m\n", err);
+		warning("call: sipevent_drefer: %m\n", err);
 	}
 
 	mem_deref(nuri);
