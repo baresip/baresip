@@ -92,7 +92,7 @@ static int set_fragment(int fd, uint32_t sampc)
 static int oss_reset(int fd, uint32_t srate, uint8_t ch, int sampc,
 		     int nonblock)
 {
-	int format    = AFMT_S16_LE;
+	int format    = AFMT_S16_NE; /* native endian */
 	int speed     = srate;
 	int channels  = ch;
 	int blocksize = 0;
@@ -118,8 +118,8 @@ static int oss_reset(int fd, uint32_t srate, uint8_t ch, int sampc,
 
 	(void)ioctl(fd, SNDCTL_DSP_GETBLKSIZE, &blocksize);
 
-	info("oss: init: %u bit %d Hz %d ch, blocksize=%d\n",
-	     format, speed, channels, blocksize);
+	info("oss: init: %d Hz %d ch, blocksize=%d\n",
+	     speed, channels, blocksize);
 
 	return 0;
 }
