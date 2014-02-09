@@ -11,6 +11,9 @@
 
 BARESIP_FLAGS := MOD_AUTODETECT=1
 
+EXTRA_CFLAGS:="$(shell dpkg-buildflags --get CFLAGS)"
+EXTRA_LFLAGS:="$(shell dpkg-buildflags --get LDFLAGS)"
+
 
 configure: configure-stamp
 configure-stamp:
@@ -22,14 +25,16 @@ build: build-stamp
 
 build-stamp: configure-stamp 
 	dh_testdir
-	$(MAKE) RELEASE=1 $(BARESIP_FLAGS) DESTDIR=$(CURDIR)/debian/baresip
+	$(MAKE) RELEASE=1 $(BARESIP_FLAGS) DESTDIR=$(CURDIR)/debian/baresip \
+		EXTRA_CFLAGS=$(EXTRA_CFLAGS) \
+		EXTRA_LFLAGS=$(EXTRA_LFLAGS)
 	touch build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp configure-stamp
-	-$(MAKE) clean
+	$(MAKE) clean
 	dh_clean 
 
 install: build
@@ -74,6 +79,10 @@ binary-arch: build install
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
+
+build-arch: build
+
+build-indep: build
 
 binary: binary-indep binary-arch
 .PHONY: build clean binary-indep binary-arch binary install configure
