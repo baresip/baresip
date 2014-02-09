@@ -131,8 +131,7 @@ int alsa_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 		goto out;
 	}
 
-	err = alsa_reset(st->read, st->prm.srate, st->prm.ch, st->prm.fmt,
-			 num_frames);
+	err = alsa_reset(st->read, st->prm.srate, st->prm.ch, num_frames);
 	if (err) {
 		warning("alsa: could not reset source '%s' (%s)\n",
 			st->device, snd_strerror(err));

@@ -75,7 +75,7 @@ static void *write_thread(void *arg)
 			warning("alsa: write error: %s\n", snd_strerror(n));
 		}
 		else if (n != samples) {
-			warning("alsa: write: wrote %d of %d bytes\n",
+			warning("alsa: write: wrote %d of %d samples\n",
 				n, samples);
 		}
 	}
@@ -130,8 +130,7 @@ int alsa_play_alloc(struct auplay_st **stp, struct auplay *ap,
 		goto out;
 	}
 
-	err = alsa_reset(st->write, st->prm.srate, st->prm.ch, st->prm.fmt,
-			 num_frames);
+	err = alsa_reset(st->write, st->prm.srate, st->prm.ch, num_frames);
 	if (err) {
 		warning("alsa: could not reset player '%s' (%s)\n",
 			st->device, snd_strerror(err));

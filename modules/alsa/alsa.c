@@ -33,24 +33,12 @@ static struct ausrc *ausrc;
 static struct auplay *auplay;
 
 
-static inline snd_pcm_format_t audio_fmt(enum aufmt fmt)
-{
-	switch (fmt) {
-
-	default:
-	case AUFMT_S16LE: return SND_PCM_FORMAT_S16_LE;
-	case AUFMT_PCMU:  return SND_PCM_FORMAT_MU_LAW;
-	case AUFMT_PCMA:  return SND_PCM_FORMAT_A_LAW;
-	}
-}
-
-
-int alsa_reset(snd_pcm_t *pcm, uint32_t srate, uint32_t ch, enum aufmt fmt,
+int alsa_reset(snd_pcm_t *pcm, uint32_t srate, uint32_t ch,
 	       uint32_t num_frames)
 {
 	snd_pcm_hw_params_t *hw_params = NULL;
-	const snd_pcm_format_t pcmfmt = audio_fmt(fmt);
-	snd_pcm_uframes_t period = num_frames, bufsize = num_frames * 10;
+	const snd_pcm_format_t pcmfmt = SND_PCM_FORMAT_S16;
+	snd_pcm_uframes_t period = num_frames, bufsize = num_frames * 4;
 	int err;
 
 	err = snd_pcm_hw_params_malloc(&hw_params);
