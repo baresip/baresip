@@ -16,3 +16,7 @@
 *.exe
 *.out
 *.app
+baresip
+
+# Generated files
+src/static.c
