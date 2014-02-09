@@ -1,0 +1,12 @@
+/**
+ * @file bld.inf  Symbian build information
+ *
+ * Copyright (C) 2010 Creytiv.com
+ */
+
+PRJ_MMPFILES
+
+/* Application */
+baresip.mmp
+
+/* Modules */

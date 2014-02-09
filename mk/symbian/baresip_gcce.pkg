@@ -1,0 +1,24 @@
+; baresip_gcce.pkg
+;
+;Language - standard language definitions
+&EN
+
+; standard SIS file header
+#{"baresip"},(0x20011300),1,0,0
+
+;Localised Vendor name
+%{"Creytiv.com"}
+
+;Unique Vendor name
+:"Creytiv.com"
+
+;Supports Series 60 v 3.0
+[0x101F7961], 0, 0, 0, {"S60ProductID"}
+
+;Files to install
+"\epoc32\release\gcce\urel\baresip.exe" -"!:\sys\bin\baresip.exe"
+
+"\epoc32\data\z\private\10003a3f\import\apps\baresip_reg.rsc" -"!:\private\10003a3f\import\apps\baresip_reg.rsc"
+
+;required for application to be covered by backup/restore facility
+;"backup_registration.xml"						-"c:\private\A00001F4\backup_registration.xml"

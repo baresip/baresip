@@ -1,0 +1,34 @@
+Gstreamer notes
+---------------
+
+   The module 'gst' is using the Gstreamer framework to play external
+   media and provide this as an internal audio source.
+
+
+Debian NOTES
+
+   The http handler 'neonhttpsrc' is by default not part of Debian Etch.
+   You must download the gst-plugins-bad package manually and build it.
+
+
+Currently installed packages:
+
+$ dpkg --get-selections | grep gstrea
+gstreamer0.10-alsa                              install
+gstreamer0.10-doc                               install
+gstreamer0.10-ffmpeg                            install
+gstreamer0.10-plugins-bad                       install
+gstreamer0.10-plugins-base                      install
+gstreamer0.10-plugins-good                      install
+gstreamer0.10-plugins-ugly                      install
+gstreamer0.10-tools                             install
+gstreamer0.10-x                                 install
+libgstreamer-plugins-base0.10-0                 install
+libgstreamer-plugins-base0.10-dev               install
+libgstreamer0.10-0                              install
+libgstreamer0.10-dev                            install
+
+
+baresip configuration:
+
+  module			gst.so

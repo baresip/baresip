@@ -1,0 +1,544 @@
+2014-01-23 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.10
+
+	* baresip:
+	  - account: add account_set_display_name() -- thanks Dimitris
+	  - audio: use both srate/channels to check if resampler is needed
+	  - aufilt: change from frame_size to ptime
+	  - auplay: change from frame_size to ptime
+	  - ausrc: change from frame_size to ptime
+	  - config: add optional ausrc_channels and auplay_channels
+	  - config: create config dir with mode 0700 (suggested by Jann Horn)
+	  - play: update auplay usage with ptime
+
+	* alsa: update to new ausrc/auplay API with ptime
+		fix bug when snd_pcm_readi() returns -EPIPE (thanks Remik)
+		open device from main thread instead of alsa-thread (thanks EL)
+		(caused problems with Sennheiser Century SC 660 + USB adapter)
+	
+	* auloop: minor cleanups and improvements
+
+	* coreaudio: update to new ausrc/auplay API with ptime
+
+	* gst: update to new ausrc/auplay API with ptime
+
+	* l16: fix a bug with sample count
+
+	* opus: fix a memory corruption error in opus_decode_pkloss()
+
+	* oss: update to new ausrc/auplay API with ptime
+
+	* plc: update to new aufilt API with ptime
+
+	* portaudio: update to new ausrc/auplay API with ptime
+		     fix bugs when using channels=2 (stereo)
+		     configure device index using "device" parameter
+
+	* rst: update to new ausrc/auplay API with ptime
+
+	* speex_aec: update to new aufilt API with ptime
+
+	* speex_pp: update to new aufilt API with ptime
+
+	* winwave: update to new ausrc/auplay API with ptime
+
+	* zrtp:	update to use libzrtp from Travis Cross' github
+		use config dir to store ZRTP cache-file (thanks Juha Heinanen)
+	
+	
+2014-01-06 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.9
+
+	* new modules:
+	  - zrtp  Media Path Key Agreement for Unicast Secure RTP
+
+	* build:
+	  - added support for LLVM clang compiler
+
+	* baresip:
+	  - account: add account_laddr()
+	  - audio: upgrade to new librem auresamp API
+	  - config: use oss,/dev/dsp as default device for FreeBSD
+	  - log: added new logging framework
+	  - main: added new verbose debug argument (-v)
+	  - net: added sanity check for HAVE_INET6 build flag
+	  - play: added play_set_path() -- thanks to Dimitris P.
+	  - ua: added uag_find_param()
+	  - ua: fix param-bug in ua_connect() -- thanks to Juha Heinanen
+
+	* aubridge: upgrade to new librem auresamp API
+
+	* avcodec: use new av_frame_alloc() api
+
+	* celt: deprecate CELT-module, use OPUS instead
+
+	* opengles: fix warnings (thanks to Dimitris P.)
+
+	* opensles: fix bugs in player and recorder
+
+	* opus: encode/decode sdp parameters as of I-D
+
+	* speex_resamp: module removed, replaced by librem's resampler
+
+	* zrtp: new module for ZRTP media encryption (use ;mediaenc=zrtp)
+
+
+2013-12-06 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.8
+
+	* new modules:
+	  - dtls_srtp  DTLS-SRTP media encryption module (RFC 5763,5764)
+	  - aubridge   Audio Bridge to connect auplay->ausrc
+	  - vidbridge  Video Bridge module to connect vidisp->vidsrc
+
+	* baresip:
+	  - added RFC 5576  Source-Specific Media Attributes in SDP
+	  - audio: set SDP bandwidth only if "rtp_bandwidth" config set
+	  - play: do not store a copy of global config
+	  - stream: save RTCP statistics from Sender-reports
+	  - stream: add SDP ssrc attribute
+	  - stream: added metrics for packets/bytes transmit/receive
+	  - ua: added uag_current()/_set() to get/set current User-Agent
+	  - video: set maximum RTP packet-size to 1024 bytes
+
+	* config:
+	  - added "video_display  module,device" for Video Display
+	  - added "rtp_stats      {off,on}" for RTP Statistics after Call
+	  - default RTP bandwidth is now 0-0
+
+	* contact: dynamic command description for "Message" handling
+		   dial from current UA (thanks to Simon Liebold)
+
+	* isac: upgrade to draft-ietf-avt-rtp-isac-04
+
+	* srtp: added auto-negotiation of RTP-profile for incoming calls
+		(RTP/AVP, RTP/AVPF, RTP/SAVP, RTP/SAVPF)
+
+	* vidloop: fix memory leak
+
+
+2013-11-12 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.7
+
+	* new modules:
+	  - httpd   HTTP webserver UI module
+
+	* baresip:
+	  - added RFC 5506 Support for Reduced-Size RTCP
+	  - audio: minor cleanups
+	  - cmd: ignore RELEASE key in editor mode
+	  - conf: add conf_get_sa()
+	  - mnat: add address family (af) to session handler
+	  - realtime: fixes for iOS (thanks Dimitris)
+	  - ua: make ua_register() public
+	  - ua: add ua_calls() to get list of calls
+	  - ua: only create register client if regint > 0
+
+	* debian: update dependencies (thanks Juha Heinanen)
+
+	* rpm: added RPM package spec file
+
+	* alsa: open device from thread to avoid blocking re-main loop
+
+	* avcodec: build fixes for Debian Testing
+
+	* avformat: use sys_msleep()
+
+	* contact: improve matching logic (thanks EJC Lindner)
+
+	* dshow: initialize variables (found with cppcheck)
+
+	* evdev: fix formatted printing (found with cppcheck)
+
+	* ice: use address family (AF) from call
+
+	* ilbc: update to separate encoder/decoder states (thanks Dimitris)
+	
+	* snapshot: initialize variables (found with cppcheck)
+
+	* stun: use address family (AF) from call
+
+	* turn: use address family (AF) from call
+
+	* uuid: fix usage of strncat()
+
+
+2013-10-11 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.6
+
+	* new modules:
+	  - directfb   DirectFB video display module (thanks Andreas Shimokawa)
+	  - dshow      Windows DirectShow vidsrc (thanks Dusan Stevanovic)
+	  - wincons    Console input driver for Windows
+
+	* baresip:
+	  - audio: print audio-pipelines in console/debug
+	  - aufilt: split into separate encoder+decoder states
+	  - call: add local uri/name, dtmf-handler
+	  - call: fix decoding of DTMF/SIP-INFO for '*' and '#'
+	  - export CALL_EVENT_* in public API
+	  - fix various clang warnings
+	  - sipreq: use outbound proxy if specified (thanks EJC Lindner)
+	  - ua: add possibility to specify 'struct call' for hangup/answer
+	  - ua: move SIP extensions into a dynamic vector container
+	  - ua: move playing of tones from call.c to ua.c
+	  - vidfilt: split into separate encoder+decoder states
+	  - vidisp: remove input handler
+
+	* menu: improve call-transfer handling
+
+	* plc: update to separate encoder/decoder states
+
+	* selfview: update to separate encoder/decoder states
+
+	* snapshot: remove state which was not needed
+
+	* sndfile: update to separate encoder/decoder states
+                   print unique timestamp to saved files
+
+	* speex_aec: update to separate encoder/decoder states
+
+	* speex_pp: update to separate encoder/decoder states
+
+	* vidloop: update to separate encoder/decoder vidfilt states
+
+	* vumeter: update to separate encoder/decoder states
+
+	* wincons: new module for Console input on Win32
+
+
+2013-08-31 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.5
+
+	* new modules:
+	  - account      Account loader module
+	  - natpmp	 NAT-PMP client (RFC 6886)
+	  - sdl2         Video display using libSDL2
+	
+	* baresip:
+	  - account: added SIP account parser and container
+	  - config: split conf.c into conf.c and config.c
+	  - config: move enum audio_mode to struct config
+	  - config: move uuid to struct config
+	  - more usage of the #ifdef USE_VIDEO macro
+	  - message: add handling of SIP MESSAGE send/recv
+	  - mediaenc: added rtp_sock parameter to media-handler
+	  - ua: cleanup public struct ua API
+	  - vidisp api: remove unused 'parent' parameter
+	  - call: handle incoming DTMF in SIP INFO (application/dtmf-relay)
+	  - sdp: added sdp_decode_multipart()
+	  - net: fix bug on IP-refresh when 'net_interface' is used
+	  - video: minor cleanups
+		   handle incoming RTCP_RTPFB_GNACK
+	
+	* isac: fix encode_update() signature
+
+	* menu: move dialbuffer here from ua.c
+		added command 'g' to print current config
+
+	* mwi: multiple MWIs for multiple UAs
+
+	* presence: include supported methods in SIP messages
+
+	* srtp: improved interop and debugging
+		handle incoming RTP/RTCP-demultiplexing
+
+	* uuid: write loaded UUID directly to struct config
+
+	* vidloop: added video-filters
+
+
+2013-05-18 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.4
+
+	* new modules:
+	  - g726      G.726 audio codec
+	  - mwi       Message Waiting Indication
+	  - snapshot  Save video-stream as PNG images
+
+	* config:
+	  - added 'sip_certificate' to use a Certificate for SIP/TLS
+	  - added 'ausrc_srate' and 'auplay_srate' to force DSP samplerate
+
+	* baresip:
+	  - added a simple BFCP client
+	  - aufilt: improved API
+	  - mediaenc: improved API with session state
+	  - ua: added event handler framework
+	  - aucodec: improved API with separate encode/decode state
+	  - vidcodec: improved API with separate encode/decode state
+	  - sdp.c: added SDP helper functions
+	  - ua: move registration client to reg.c
+	  - audio: added internal resampler
+
+	* auloop: added config option 'auloop_codec' for setting codec
+
+	* ice: remove old 'ice_interface' config option
+
+	* menu: move handling of status-mode here
+
+	* selfview: added config option 'selfview_size'
+
+	* vp8: upgrade to draft-ietf-payload-vp8-08
+
+	* winwave: cleanup and minor fixes
+
+
+2013-01-01 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.3
+
+	* new modules:
+	  - selfview    Video selfview as video-filter module
+	  - vumeter	Audio-filter module to display recording/playback level
+
+	* config:
+	  - added 'net_interface" to bind to a specific network interface
+	  - added accounts 'regq' parameter for SIP Register client
+
+	* baresip:
+	  - added video-filter plugin API (vidfilt)
+	  - audio.c: cleanups, split into transmit/receive part
+	  - ua: added SIP Allow-header (thanks Juha Heinanen)
+	  - ua: added Register q-value (thanks Juha Heinanen)
+	  - ua: fix DTMF end event bug
+
+	* avcodec: fix x264 fps bug (thanks Trevor Jim)
+
+	* ice: only include ufrag/pwd in session SDP (thanks Juha Heinanen)
+
+	
+2012-09-09 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.2
+
+	* new modules:
+	  - auloop    Audio-loop test module
+	  - contact   Contacts module
+	  - isac      iSAC audio codec
+	  - menu      Interactive menu
+	  - opengles  OpenGLES video output
+	  - presence  Presence module
+	  - syslog    Syslog module
+	  - vidloop   Video-loop test module
+
+	* baresip:
+	  - added support for call transfer
+	  - added support for call waiting
+	  - added multiple calls per user-agent
+	  - added multiple registrations per user-agent
+	  - cmd: added new command interface
+	  - ua:  handle SIP Require header for incoming calls
+	  - ui:  cleanup, use dynamic interactive menu
+	
+	* config:
+	  - added 'audio_alert' for ringtones etc.
+	  - added 'outboundX=proxy' for multiple outbound proxies
+	  - added 'module_tmp' for temporary module loading
+	  - added 'module_app' for application modules
+	
+	* avcodec: upgrade to latest FFmpeg and fix pts bug
+
+	* natbd: register command 'z' for status
+
+	* srtp: fix memleak on close
+
+	* uuid: added UUID loader
+
+
+2012-04-21 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.1
+
+	* baresip: do not include rem.h from baresip.h
+		   rename struct conf to struct config
+		   vidsrc API: move size to alloc handler
+		   aucodec API: change fmtp type to 'const char *'
+				add SDP fmtp compare handler
+		   vidcodec API: added enqueue and packetizer handlers
+				 remove size from vidcodec_prm
+				 remove decoder parameters from alloc
+				 change fmtp type to 'const char *'
+				 add SDP fmtp compare handler
+		   remove aufile.c, use librem instead
+		   audio: fix Telev timestamp (thanks Paulo Vicentini)
+			  configurable order of playback/source start
+		   ua_find: match AOR for interop (thanks Tomasz Ostrowski)
+		   ua: more robust parsing for incoming MESSAGE
+		   ua: password prompt (thanks to Juha Heinanen)
+	
+	* build: detect amr, cairo, rst, silk modules
+
+	* config: split 'audio_dev' parameter into 'audio_player/audio_source'
+		  order of audio_player/audio_source decide opening order
+		  rename 'video_dev' parameter to 'video_source'
+		  added optional 'auth_user=NAME' account parameter
+		  (idea was suggested by Juha Heinanen)
+	
+	* alsa: play: no need to call snd_pcm_start(), explictly started when
+		writing data to the device. (thanks to Christof Meerwald)
+
+	* amr: 	more portable AMR codec
+	
+	* avcodec: automatic size from encoded frames
+		   detect packetization-mode from SDP format
+		   use enqueue handler
+	
+	* avformat: update to latest versions of ffmpeg
+	
+	* cairo: new experimental video source module
+
+	* cons: added support for TCP
+
+	* evdev: added KEY_KPx (thanks to ccwufu on OpenWRT forum)
+
+	* g7221: use bitrate from decoded SDP format
+		 added optional G722_PCM_SHIFT for 14-bit compat
+	
+	* rst: thread-based video source
+	
+	* silk: fix crash, init encoder, bitrate=64000 and complexity=2
+	        (reported by Juha Heinanen)
+	
+	* srtp: decode SDES lifetime and MKI
+
+	* v4l, v4l2: better module detection for FreeBSD 9
+		     do not include malloc.h
+		     (thanks to Matthias Apitz)
+
+	* vpx: auto init of encoder
+	
+	* winwave: fix memory leak (thanks to Tomasz Ostrowski)
+
+	* x11: add support for 16-bit graphics
+	
+
+2011-12-25 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.0
+
+	* updated doxygen comments (thanks to Olle E. Johansson)
+
+	* docs: added modules description
+
+	* baresip: add ua_set_aumode(), configurable audio-tx mode
+		   vidsrc API: added media_ctx shared with ausrc
+		   ausrc API: add media_ctx shared with vidsrc
+		   audio_encoder_set() - stop audio source first
+		   audio_decoder_set() - include SDP format parameters
+		   aufile: add PREFIX to share path (thanks to Juha Heinanen)
+		   natbd.c: move code to a new module 'natbd'
+		   get_login_name: check both LOGNAME and USER
+		   ua.c: unique contact-user with address of struct ua
+		   ua.c: find correct UA for incoming SIP Requests
+		   ua_connect: param is optional (thanks to Juha Heinanen)
+		   video: add video_set_source()
+	
+	* amr: minor improvements
+
+	* audiounit: new module for MacOSX/iOS audio driver
+
+	* avcapture: new module for iOS video source
+
+	* avcodec: fixes for newer versions of libavcodec
+
+	* gsm: handle packet-loss
+
+	* natbd: move to separate module from core
+	
+	* opengl: fix building on MacOSX 10.7
+		  (thanks to David Jedda and Atle Samuelsen)
+
+	* opus: upgrade to opus v0.9.8
+
+	* rst: use media_ctx for shared audio/video stream
+
+	* sndfile: fix stereo mode
+	
+
+2011-09-07 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.3.0
+
+	* baresip: use librem for media processing
+		   added support for video selfview
+		   aubuf, autone, vutil: moved to librem
+		   ua: improved API
+		   conf: use internal parser instead of fscanf()
+		   vidloop: cleanup, use librem for processing
+
+	* config: add video_selfview={pip,window} parameter	
+
+	* amr: new module for AMR and AMR-WB audio codecs (RFC 4867)
+
+	* avcodec, avformat: update to latest version of FFmpeg
+
+	* coreaudio: fix building on MacOSX 10.5 (thanks David Jedda)
+
+	* ice: fix building on MacOSX 10.5 (thanks David Jedda)
+
+	* opengl: remove deps to libswscale
+
+	* opensles: new module OpenSLES audio driver
+
+	* opus: new module for OPUS audio codec
+
+	* qtcapture: remove deps to libswscale
+
+	* rst: new module for mp3 audio streaming
+
+	* silk: new module for SILK audio codec
+
+	* v4l, v4l2: remove deps to libswscale
+
+	* x11: remove deps to libswscale, use librem vidconv instead
+
+	* x11grab: remove deps to libswscale
+
+
+2011-05-20 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.2.0
+
+	* baresip: Added support for SIP Outbound (RFC 5626)
+		   The SDP Content Attribute (RFC 4796)
+		   RTP/RTCP Multiplexing (RFC 5761)
+		   RTP Keepalive (draft-ietf-avt-app-rtp-keepalive-09)
+
+	* config: add 'outbound' to sipnat parameter (remove stun, turn)
+		  add rtpkeep={zero,stun,dyna,rtcp} parameter
+		  audio_codecs parameter can now specify samplerate
+		  add rtcp_mux for RTP/RTCP multiplexing on/off
+
+	* alsa: set buffersize and fix samplesize (thanks to Luigi Rizzo)
+
+	* avcodec: added support for MPEG4 video codec (RFC 3016)
+		   wait for keyframe before decoding
+
+	* celt: upgrade libcelt version and cleanups
+
+	* coreaudio: fix buffering in recorder
+
+	* ice: several improvements and fixes
+	       added new config options
+
+	* ilbc: handle asymmetric modes
+
+	* opengl: enable vertical sync
+
+	* sdl: upgrade to latest version of libSDL from mercurial
+
+	* vpx: added support for draft-westin-payload-vp8-02
+
+	* x11: handle remote display with optional shared memory
+
+	* x11grab: new video-source module (thanks to Luigi Rizzo)
+
+	* docs: updated doxygen comments

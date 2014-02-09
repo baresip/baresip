@@ -1,0 +1,16 @@
+/*
+ * baresip_reg.rss
+ */
+
+#include <appinfo.rh>
+
+UID2 KUidAppRegistrationResourceFile
+UID3 0x20011300
+
+RESOURCE APP_REGISTRATION_INFO
+  {
+  app_file="baresip";
+
+  embeddability=KAppNotEmbeddable;
+  newfile=KAppDoesNotSupportNewFile;
+  }

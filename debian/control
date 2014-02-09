@@ -1,0 +1,21 @@
+Source: baresip
+Section: comm
+Priority: optional
+Maintainer: Alfred E. Heggestad <aeh@db.org>
+Build-Depends: debhelper (>= 4.0.0), librem-dev (>= 0.4.5), libre-dev (>= 0.4.5), libasound2-dev, libavformat-dev, libavdevice-dev
+Standards-Version: 3.6.2
+Homepage: http://www.creytiv.com/baresip.html
+
+Package: baresip
+Architecture: any
+Depends: ${shlibs:Depends}, librem (>= 0.4.5), libre (>= 0.4.5)
+Description: Modular SIP User-Agent with audio and video support
+ .
+ Design goals:
+ .
+ - Minimalistic and modular VoIP client
+ - SIP, SDP, RTP/RTCP, STUN/TURN/ICE
+ - IPv4 and IPv6 support
+ - RFC compliant
+ - Robust, fast, low footprint
+ - Portable C89 and C99 source code
