@@ -245,7 +245,7 @@ endif
 ifneq ($(USE_FFMPEG),)
 USE_FFMPEG_AVFORMAT := 1
 CFLAGS    += -I/usr/include/ffmpeg
-CFLAGS    += -Wno-shadow -DUSE_FFMPEG
+CFLAGS    += -DUSE_FFMPEG
 MODULES   += avcodec
 ifneq ($(USE_FFMPEG_AVFORMAT),)
 MODULES   += avformat
