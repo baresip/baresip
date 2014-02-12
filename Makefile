@@ -119,7 +119,7 @@ MOD_LFLAGS += -L$(SYSROOT)/local/lib
 endif
 
 LIBS      += -lrem -lm
-
+LIBS      += -L$(SYSROOT)/lib
 
 -include $(APP_OBJS:.o=.d)
 
