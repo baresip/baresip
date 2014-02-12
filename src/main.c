@@ -21,8 +21,10 @@ static void signal_handler(int sig)
 {
 	static bool term = false;
 
-	if (term)
+	if (term) {
+		mod_close();
 		exit(0);
+	}
 
 	term = true;
 
