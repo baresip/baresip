@@ -20,3 +20,4 @@ baresip
 
 # Generated files
 src/static.c
+build*
