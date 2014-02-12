@@ -96,8 +96,6 @@ int alsa_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
-	if (prm->fmt != AUFMT_S16LE)
-		return EINVAL;
 
 	if (!str_isset(device))
 		device = alsa_dev;

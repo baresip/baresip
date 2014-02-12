@@ -227,8 +227,6 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if (!device)
 		device = oss_dev;
 
-	prm->fmt = AUFMT_S16LE;
-
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
 
 	st->mb = mbuf_alloc(2 * sampc);
@@ -284,8 +282,6 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 
 	if (!device)
 		device = oss_dev;
-
-	prm->fmt = AUFMT_S16LE;
 
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
 

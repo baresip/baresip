@@ -132,7 +132,7 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	st->arg = arg;
 
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
-	bytc  = sampc * bytesps(prm->fmt);
+	bytc  = sampc * 2;
 
 	st->mb = mbuf_alloc(bytc);
 	if (!st->mb) {
@@ -149,7 +149,7 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 		goto out;
 
 	fmt.mSampleRate       = (Float64)prm->srate;
-	fmt.mFormatID         = audio_fmt(prm->fmt);
+	fmt.mFormatID         = kAudioFormatLinearPCM;
 	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger |
 		                kAudioFormatFlagIsPacked;
 #ifdef __BIG_ENDIAN__
@@ -157,10 +157,10 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 #endif
 
 	fmt.mFramesPerPacket  = 1;
-	fmt.mBytesPerFrame    = prm->ch * bytesps(prm->fmt);
-	fmt.mBytesPerPacket   = prm->ch * bytesps(prm->fmt);
+	fmt.mBytesPerFrame    = prm->ch * 2;
+	fmt.mBytesPerPacket   = prm->ch * 2;
 	fmt.mChannelsPerFrame = prm->ch;
-	fmt.mBitsPerChannel   = 8*bytesps(prm->fmt);
+	fmt.mBitsPerChannel   = 16;
 
 	status = AudioQueueNewInput(&fmt, record_handler, st, NULL,
 				     kCFRunLoopCommonModes, 0, &st->queue);

@@ -95,8 +95,6 @@ int alsa_play_alloc(struct auplay_st **stp, struct auplay *ap,
 
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
-	if (prm->fmt != AUFMT_S16LE)
-		return EINVAL;
 
 	if (!str_isset(device))
 		device = alsa_dev;

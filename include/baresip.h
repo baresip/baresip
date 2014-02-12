@@ -256,7 +256,6 @@ struct ausrc_st;
 
 /** Audio Source parameters */
 struct ausrc_prm {
-	int        fmt;         /**< Audio format (enum aufmt) */
 	uint32_t   srate;       /**< Sampling rate in [Hz] */
 	uint8_t    ch;          /**< Number of channels    */
 	uint32_t   ptime;       /**< Wanted packet-time in [ms] */
@@ -288,7 +287,6 @@ struct auplay_st;
 
 /** Audio Player parameters */
 struct auplay_prm {
-	int        fmt;         /**< Audio format (enum aufmt) */
 	uint32_t   srate;       /**< Sampling rate in [Hz] */
 	uint8_t    ch;          /**< Number of channels    */
 	uint32_t   ptime;       /**< Wanted packet-time in [ms] */

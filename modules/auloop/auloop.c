@@ -223,7 +223,6 @@ static int auloop_reset(struct audio_loop *al)
 	if (err)
 		return err;
 
-	auplay_prm.fmt        = AUFMT_S16LE;
 	auplay_prm.srate      = al->srate;
 	auplay_prm.ch         = al->ch;
 	auplay_prm.ptime      = PTIME;
@@ -236,7 +235,6 @@ static int auloop_reset(struct audio_loop *al)
 		return err;
 	}
 
-	ausrc_prm.fmt        = AUFMT_S16LE;
 	ausrc_prm.srate      = al->srate;
 	ausrc_prm.ch         = al->ch;
 	ausrc_prm.ptime      = PTIME;

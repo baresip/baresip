@@ -194,8 +194,6 @@ static int alloc_handler(struct ausrc_st **stp, struct ausrc *as,
 	st->ptime = prm->ptime;
 	st->psize = sampc * 2;
 
-	prm->fmt = AUFMT_S16LE;
-
 	re_printf("rst: audio ptime=%u psize=%u aubuf=[%u:%u]\n",
 		  st->ptime, st->psize,
 		  prm->srate * prm->ch * 2,

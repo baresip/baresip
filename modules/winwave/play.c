@@ -201,8 +201,6 @@ int winwave_play_alloc(struct auplay_st **stp, struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 
-	prm->fmt = AUFMT_S16LE;
-
 	err = write_stream_open(st, prm);
 	if (err)
 		goto out;

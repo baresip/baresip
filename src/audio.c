@@ -927,7 +927,6 @@ static int start_player(struct aurx *rx, struct audio *a)
 
 		struct auplay_prm prm;
 
-		prm.fmt        = AUFMT_S16LE;
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
 		prm.ptime      = rx->ptime;
@@ -1004,7 +1003,6 @@ static int start_source(struct autx *tx, struct audio *a)
 
 		struct ausrc_prm prm;
 
-		prm.fmt        = AUFMT_S16LE;
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
 		prm.ptime      = tx->ptime;

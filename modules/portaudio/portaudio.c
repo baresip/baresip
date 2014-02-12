@@ -206,8 +206,6 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	else
 		dev_index = Pa_GetDefaultInputDevice();
 
-	prm->fmt = AUFMT_S16LE;
-
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
 		return ENOMEM;
@@ -250,8 +248,6 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 		dev_index = atoi(device);
 	else
 		dev_index = Pa_GetDefaultOutputDevice();
-
-	prm->fmt = AUFMT_S16LE;
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)

@@ -193,8 +193,6 @@ int winwave_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	st->rh  = rh;
 	st->arg = arg;
 
-	prm->fmt = AUFMT_S16LE;
-
 	err = read_stream_open(st, prm);
 
 	if (err)

@@ -237,7 +237,6 @@ int play_tone(struct play **playp, struct mbuf *tone, uint32_t srate,
 	if (err)
 		goto out;
 
-	wprm.fmt        = AUFMT_S16LE;
 	wprm.ch         = ch;
 	wprm.srate      = srate;
 	wprm.ptime      = PTIME;
