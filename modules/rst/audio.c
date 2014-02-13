@@ -28,6 +28,7 @@ struct ausrc_st {
 	bool run;
 	uint32_t psize;
 	uint32_t ptime;
+	size_t sampc;
 };
 
 
@@ -60,10 +61,10 @@ static void *play_thread(void *arg)
 {
 	uint64_t now, ts = tmr_jiffies();
 	struct ausrc_st *st = arg;
-	uint8_t *buf;
+	int16_t *sampv;
 
-	buf = mem_alloc(st->psize, NULL);
-	if (!buf)
+	sampv = mem_alloc(st->psize, NULL);
+	if (!sampv)
 		return NULL;
 
 	while (st->run) {
@@ -81,14 +82,14 @@ static void *play_thread(void *arg)
 		}
 #endif
 
-		aubuf_read(st->aubuf, buf, st->psize);
+		aubuf_read_samp(st->aubuf, sampv, st->sampc);
 
-		st->rh(buf, st->psize, st->arg);
+		st->rh(sampv, st->sampc, st->arg);
 
 		ts += st->ptime;
 	}
 
-	mem_deref(buf);
+	mem_deref(sampv);
 
 	return NULL;
 }
@@ -155,7 +156,6 @@ static int alloc_handler(struct ausrc_st **stp, struct ausrc *as,
 			 ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
-	unsigned sampc;
 	int err;
 
 	if (!stp || !as || !prm || !rh)
@@ -189,10 +189,10 @@ static int alloc_handler(struct ausrc_st **stp, struct ausrc *as,
 	mpg123_format(st->mp3, prm->srate, prm->ch, MPG123_ENC_SIGNED_16);
 	mpg123_volume(st->mp3, 0.3);
 
-	sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 
 	st->ptime = prm->ptime;
-	st->psize = sampc * 2;
+	st->psize = st->sampc * 2;
 
 	re_printf("rst: audio ptime=%u psize=%u aubuf=[%u:%u]\n",
 		  st->ptime, st->psize,

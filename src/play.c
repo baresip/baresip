@@ -83,9 +83,10 @@ static void tmr_polling(void *arg)
 /**
  * NOTE: DSP cannot be destroyed inside handler
  */
-static bool write_handler(uint8_t *buf, size_t sz, void *arg)
+static void write_handler(int16_t *sampv, size_t sampc, void *arg)
 {
 	struct play *play = arg;
+	size_t sz = sampc * 2;
 
 	lock_write_get(play->lock);
 
@@ -94,22 +95,21 @@ static bool write_handler(uint8_t *buf, size_t sz, void *arg)
 
 	if (mbuf_get_left(play->mb) < sz) {
 
-		memset(buf, 0, sz);
-		(void)mbuf_read_mem(play->mb, buf, mbuf_get_left(play->mb));
+		memset(sampv, 0, sz);
+		(void)mbuf_read_mem(play->mb, (void *)sampv,
+				    mbuf_get_left(play->mb));
 
 		play->eof = true;
 	}
 	else {
-		(void)mbuf_read_mem(play->mb, buf, sz);
+		(void)mbuf_read_mem(play->mb, (void *)sampv, sz);
 	}
 
  silence:
 	if (play->eof)
-		memset(buf, 0, sz);
+		memset(sampv, 0, sz);
 
 	lock_rel(play->lock);
-
-	return true;
 }
 
 

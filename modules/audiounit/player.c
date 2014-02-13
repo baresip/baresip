@@ -11,9 +11,6 @@
 #include "audiounit.h"
 
 
-static uint8_t silbuf[4096]; /* silence */
-
-
 struct auplay_st {
 	struct auplay *ap;      /* inheritance */
 	struct audiosess_st *sess;
@@ -72,13 +69,7 @@ static OSStatus output_callback(void *inRefCon,
 
 		AudioBuffer *ab = &ioData->mBuffers[i];
 
-		if (!wh(ab->mData, ab->mDataByteSize, arg)) {
-
-			if (ab->mDataByteSize < sizeof(silbuf))
-				ab->mData = silbuf;
-			else
-				memset(ab->mData, 0, ab->mDataByteSize);
-		}
+		wh(ab->mData, ab->mDataByteSize/2, arg);
 	}
 
 	return 0;

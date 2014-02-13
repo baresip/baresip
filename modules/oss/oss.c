@@ -34,8 +34,8 @@ struct auplay_st {
 	pthread_t thread;
 	bool run;
 	int fd;
-	uint8_t *buf;
-	uint32_t sz;
+	int16_t *sampv;
+	size_t sampc;
 	auplay_write_h *wh;
 	void *arg;
 };
@@ -139,7 +139,7 @@ static void auplay_destructor(void *arg)
 		(void)close(st->fd);
 	}
 
-	mem_deref(st->buf);
+	mem_deref(st->sampv);
 	mem_deref(st->ap);
 }
 
@@ -187,9 +187,9 @@ static void *play_thread(void *arg)
 
 	while (st->run) {
 
-		st->wh(st->buf, st->sz, st->arg);
+		st->wh(st->sampv, st->sampc, st->arg);
 
-		n = write(st->fd, st->buf, st->sz);
+		n = write(st->fd, st->sampv, st->sampc*2);
 		if (n < 0) {
 			warning("oss: write: %m\n", errno);
 			break;
@@ -266,7 +266,6 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 		      auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
-	unsigned sampc;
 	int err;
 
 	if (!stp || !ap || !prm || !wh)
@@ -283,11 +282,10 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 	if (!device)
 		device = oss_dev;
 
-	sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 
-	st->sz  = 2 * sampc;
-	st->buf = mem_alloc(st->sz, NULL);
-	if (!st->buf) {
+	st->sampv = mem_alloc(st->sampc * 2, NULL);
+	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;
 	}

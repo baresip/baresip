@@ -88,8 +88,7 @@ static void *device_thread(void *arg)
 			continue;
 
 		if (dev->auplay && dev->auplay->wh) {
-			dev->auplay->wh((void *)sampv_in, 2 * sampc_in,
-					dev->auplay->arg);
+			dev->auplay->wh(sampv_in, sampc_in, dev->auplay->arg);
 		}
 
 		err = auresamp(&rs,
@@ -100,7 +99,7 @@ static void *device_thread(void *arg)
 		}
 
 		if (dev->ausrc && dev->ausrc->rh) {
-			dev->ausrc->rh((void *)sampv_out, 2 * sampc_out,
+			dev->ausrc->rh(sampv_out, sampc_out,
 				       dev->ausrc->arg);
 		}
 

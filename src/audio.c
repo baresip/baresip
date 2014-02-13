@@ -349,8 +349,7 @@ static void poll_aubuf_tx(struct audio *a)
 	sampc = tx->psize / 2;
 
 	/* timed read from audio-buffer */
-	if (aubuf_get_samp(tx->aubuf, tx->ptime, tx->sampv, sampc))
-		return;
+	aubuf_read_samp(tx->aubuf, tx->sampv, sampc);
 
 	/* optional resampler */
 	if (tx->resamp.resample) {
@@ -422,16 +421,12 @@ static void check_telev(struct audio *a, struct autx *tx)
  * @param buf Buffer to fill with audio samples
  * @param sz  Number of bytes in buffer
  * @param arg Handler argument
- *
- * @return true for valid audio samples, false for silence
  */
-static bool auplay_write_handler(uint8_t *buf, size_t sz, void *arg)
+static void auplay_write_handler(int16_t *sampv, size_t sampc, void *arg)
 {
 	struct aurx *rx = arg;
 
-	aubuf_read(rx->aubuf, buf, sz);
-
-	return true;
+	aubuf_read_samp(rx->aubuf, sampv, sampc);
 }
 
 
@@ -446,18 +441,27 @@ static bool auplay_write_handler(uint8_t *buf, size_t sz, void *arg)
  * @param sz  Number of bytes in buffer
  * @param arg Handler argument
  */
-static void ausrc_read_handler(const uint8_t *buf, size_t sz, void *arg)
+static void ausrc_read_handler(const int16_t *sampv, size_t sampc, void *arg)
 {
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
 
 	if (tx->muted)
-		memset((void *)buf, 0, sz);
+		memset((void *)sampv, 0, sampc*2);
 
-	(void)aubuf_write(tx->aubuf, buf, sz);
+	(void)aubuf_write_samp(tx->aubuf, sampv, sampc);
 
-	if (a->cfg.txmode == AUDIO_MODE_POLL)
-		poll_aubuf_tx(a);
+	if (a->cfg.txmode == AUDIO_MODE_POLL) {
+		unsigned i;
+
+		for (i=0; i<16; i++) {
+
+			if (aubuf_cur_size(tx->aubuf) < tx->psize)
+				break;
+
+			poll_aubuf_tx(a);
+		}
+	}
 
 	/* Exact timing: send Telephony-Events from here */
 	check_telev(a, tx);

@@ -78,7 +78,7 @@ static OSStatus input_callback(void *inRefCon,
 	if (ret)
 		return ret;
 
-	rh(abl.mBuffers[0].mData, abl.mBuffers[0].mDataByteSize, arg);
+	rh(abl.mBuffers[0].mData, abl.mBuffers[0].mDataByteSize/2, arg);
 
 	return 0;
 }

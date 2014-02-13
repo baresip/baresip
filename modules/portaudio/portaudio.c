@@ -60,7 +60,7 @@ static int read_callback(const void *inputBuffer, void *outputBuffer,
 
 	sampc = frameCount * st->ch;
 
-	st->rh(inputBuffer, 2*sampc, st->arg);
+	st->rh(inputBuffer, sampc, st->arg);
 
 	return paContinue;
 }
@@ -83,7 +83,7 @@ static int write_callback(const void *inputBuffer, void *outputBuffer,
 
 	sampc = frameCount * st->ch;
 
-	st->wh(outputBuffer, 2*sampc, st->arg);
+	st->wh(outputBuffer, sampc, st->arg);
 
 	return paContinue;
 }

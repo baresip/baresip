@@ -72,10 +72,7 @@ static void play_handler(void *userData, AudioQueueRef outQ,
 	if (!wh)
 		return;
 
-	if (!wh(outQB->mAudioData, outQB->mAudioDataByteSize, arg)) {
-		/* Set the buffer to silence */
-		memset(outQB->mAudioData, 0, outQB->mAudioDataByteSize);
-	}
+	wh(outQB->mAudioData, outQB->mAudioDataByteSize/2, arg);
 
 	AudioQueueEnqueueBuffer(outQ, outQB, 0, NULL);
 }

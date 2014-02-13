@@ -20,7 +20,6 @@ struct ausrc_st {
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
 	pthread_mutex_t mutex;
-	struct mbuf *mb;
 	ausrc_read_h *rh;
 	void *arg;
 	unsigned int ptime;
@@ -49,7 +48,6 @@ static void ausrc_destructor(void *arg)
 		AudioQueueDispose(st->queue, true);
 	}
 
-	mem_deref(st->mb);
 	mem_deref(st->as);
 
 	pthread_mutex_destroy(&st->mutex);
@@ -63,10 +61,8 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 			   const AudioStreamPacketDescription *inPacketDesc)
 {
 	struct ausrc_st *st = userData;
-	struct mbuf *mb = st->mb;
 	unsigned int ptime;
 	ausrc_read_h *rh;
-	size_t sz, sp;
 	void *arg;
 	(void)inStartTime;
 	(void)inNumPackets;
@@ -81,18 +77,7 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	if (!rh)
 		return;
 
-	sz = inQB->mAudioDataByteSize;
-	sp = mbuf_get_space(mb);
-
-	if (sz >= sp) {
-		mbuf_write_mem(mb, inQB->mAudioData, sp);
-		rh(mb->buf, (uint32_t)mb->size, arg);
-		mb->pos = 0;
-		mbuf_write_mem(mb, (uint8_t *)inQB->mAudioData + sp, sz - sp);
-	}
-	else {
-		mbuf_write_mem(mb, inQB->mAudioData, sz);
-	}
+	rh(inQB->mAudioData, inQB->mAudioDataByteSize/2, arg);
 
 	AudioQueueEnqueueBuffer(inQ, inQB, 0, NULL);
 
@@ -133,12 +118,6 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	bytc  = sampc * 2;
-
-	st->mb = mbuf_alloc(bytc);
-	if (!st->mb) {
-		err = ENOMEM;
-		goto out;
-	}
 
 	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)

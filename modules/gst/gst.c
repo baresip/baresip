@@ -43,6 +43,7 @@ struct ausrc_st {
 	struct ausrc_prm prm;       /**< Read parameters         */
 	struct aubuf *aubuf;        /**< Packet buffer           */
 	uint32_t psize;             /**< Packet size in bytes    */
+	size_t sampc;
 
 	/* Gstreamer */
 	char *uri;
@@ -168,15 +169,15 @@ static void format_check(struct ausrc_st *st, GstStructure *s)
 
 static void play_packet(struct ausrc_st *st)
 {
-	uint8_t buf[st->psize];
+	int16_t buf[st->sampc];
 
 	/* timed read from audio-buffer */
-	if (aubuf_get(st->aubuf, st->prm.ptime, buf, sizeof(buf)))
+	if (aubuf_get_samp(st->aubuf, st->prm.ptime, buf, st->sampc))
 		return;
 
 	/* call read handler */
 	if (st->rh)
-		st->rh(buf, sizeof(buf), st->arg);
+		st->rh(buf, st->sampc, st->arg);
 }
 
 
@@ -360,7 +361,6 @@ static int gst_alloc(struct ausrc_st **stp, struct ausrc *as,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
-	unsigned sampc;
 	int err;
 
 	(void)ctx;
@@ -386,9 +386,8 @@ static int gst_alloc(struct ausrc_st **stp, struct ausrc *as,
 
 	st->prm   = *prm;
 
-	sampc = prm->srate * prm->ch * prm->ptime / 1000;
-
-	st->psize = 2 * sampc;
+	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	st->psize = 2 * st->sampc;
 
 	err = aubuf_alloc(&st->aubuf, st->psize, 0);
 	if (err)
