@@ -110,7 +110,7 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 		if (st->inuse < 3)
 			add_wave_in(st);
 
-		st->rh((uint8_t *)wh->lpData, wh->dwBytesRecorded, st->arg);
+		st->rh((void *)wh->lpData, wh->dwBytesRecorded/2, st->arg);
 
 		waveInUnprepareHeader(st->wavein, wh, sizeof(*wh));
 		st->inuse--;

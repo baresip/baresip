@@ -115,8 +115,8 @@ int alsa_play_alloc(struct auplay_st **stp, struct auplay *ap,
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	num_frames = st->prm.srate * st->prm.ptime / 1000;
 
-	st->sampv = mem_alloc(2 * st->sampc);
-	if (!st->mbw) {
+	st->sampv = mem_alloc(2 * st->sampc, NULL);
+	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;
 	}

@@ -75,7 +75,7 @@ static int dsp_write(struct auplay_st *st)
 	wh->lpData = (LPSTR)mb->buf;
 
 	if (st->wh) {
-		st->wh(mb->buf, mb->size, st->arg);
+		st->wh((void *)mb->buf, mb->size/2, st->arg);
 	}
 
 	wh->dwBufferLength = mb->size;
