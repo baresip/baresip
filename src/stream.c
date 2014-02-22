@@ -561,7 +561,8 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 			  s->pt_enc);
 
 	sdp_media_raddr_rtcp(s->sdp, &rrtcp);
-	err |= re_hprintf(pf, " remote: %J/%J\n",
+	err |= re_hprintf(pf, " local: %J, remote: %J/%J\n",
+			  sdp_media_laddr(s->sdp),
 			  sdp_media_raddr(s->sdp), &rrtcp);
 
 	err |= rtp_debug(pf, s->rtp);
