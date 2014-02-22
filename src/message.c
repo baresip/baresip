@@ -15,15 +15,12 @@ static void *recvarg;
 
 static void handle_message(struct ua *ua, const struct sip_msg *msg)
 {
-	static const char *ctype_text = "text/plain";
-	struct pl mtype;
+	static const char ctype_text[] = "text/plain";
+	struct pl ctype_pl = {ctype_text, sizeof(ctype_text)-1};
 	(void)ua;
 
-	if (re_regex(msg->ctype.p, msg->ctype.l, "[^;]+", &mtype))
-		mtype = msg->ctype;
-
-	if (0==pl_strcasecmp(&mtype, ctype_text) && recvh) {
-		recvh(&msg->from.auri, &msg->ctype, msg->mb, recvarg);
+	if (msg_ctype_cmp(&msg->ctyp, "text", "plain") && recvh) {
+		recvh(&msg->from.auri, &ctype_pl, msg->mb, recvarg);
 		(void)sip_reply(uag_sip(), msg, 200, "OK");
 	}
 	else {

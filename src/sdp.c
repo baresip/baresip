@@ -145,18 +145,18 @@ static void decode_part(const struct pl *part, struct mbuf *mb)
 /**
  * Decode a multipart/mixed message and find the part with application/sdp
  */
-int sdp_decode_multipart(const struct pl *ctype, struct mbuf *mb)
+int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb)
 {
 	struct pl bnd, s, e, p;
 	char expr[64];
 	int err;
 
-	if (!ctype || !mb)
+	if (!ctype_prm || !mb)
 		return EINVAL;
 
 	/* fetch the boundary tag, excluding quotes */
-	err = re_regex(ctype->p, ctype->l,
-		       "multipart/mixed;[ \t]*boundary=[~]+", NULL, &bnd);
+	err = re_regex(ctype_prm->p, ctype_prm->l,
+		       "boundary=[~]+", &bnd);
 	if (err)
 		return err;
 

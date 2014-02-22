@@ -954,7 +954,8 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 
 	MAGIC_CHECK(call);
 
-	(void)sdp_decode_multipart(&msg->ctype, msg->mb);
+	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
+		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
 
 	err = sdp_decode(call->sdp, msg->mb, false);
 	if (err) {
@@ -1030,7 +1031,7 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 {
 	struct call *call = arg;
 
-	if (!pl_strcasecmp(&msg->ctype, "application/dtmf-relay")) {
+	if (msg_ctype_cmp(&msg->ctyp, "application", "dtmf-relay")) {
 
 		struct pl body, sig, dur;
 		int err;
@@ -1063,8 +1064,8 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 		}
 	}
 #ifdef USE_VIDEO
-	else if (!pl_strcasecmp(&msg->ctype,
-				"application/media_control+xml")) {
+	else if (msg_ctype_cmp(&msg->ctyp,
+			       "application", "media_control+xml")) {
 		call_handle_info_req(call, msg);
 		(void)sip_reply(sip, msg, 200, "OK");
 	}
@@ -1227,8 +1228,8 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 
 	MAGIC_CHECK(call);
 
-	info("call: SIP Progress: %u %r (%r)\n",
-	     msg->scode, &msg->reason, &msg->ctype);
+	info("call: SIP Progress: %u %r (%r/%r)\n",
+	     msg->scode, &msg->reason, &msg->ctyp.type, &msg->ctyp.subtype);
 
 	if (msg->scode <= 100)
 		return;
@@ -1241,12 +1242,13 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	 * we must also handle changes to/from 180 and 183,
 	 * so we reset the media-stream/ringback each time.
 	 */
-	if (!pl_strcasecmp(&msg->ctype, "application/sdp")
+	if (msg_ctype_cmp(&msg->ctyp, "application", "sdp")
 	    && mbuf_get_left(msg->mb)
 	    && !sdp_decode(call->sdp, msg->mb, false)) {
 		media = true;
 	}
-	else if (!sdp_decode_multipart(&msg->ctype, msg->mb) &&
+	else if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed") &&
+		 !sdp_decode_multipart(&msg->ctyp.params, msg->mb) &&
 		 !sdp_decode(call->sdp, msg->mb, false)) {
 		media = true;
 	}

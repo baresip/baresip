@@ -254,7 +254,7 @@ int subscriber_init(void)
 		struct sip_addr *addr = contact_addr(c);
 		struct pl val;
 
-		if (0 == sip_param_decode(&addr->params, "presence", &val) &&
+		if (0 == msg_param_decode(&addr->params, "presence", &val) &&
 		    0 == pl_strcasecmp(&val, "p2p")) {
 
 			err |= presence_alloc(le->data);
