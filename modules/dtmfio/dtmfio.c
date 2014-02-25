@@ -103,7 +103,7 @@ static int module_init(void){
 	uag_event_register( ua_event_handler, NULL );
 	
 	if( mkfifo( DTMF_OUT, S_IWUSR | S_IRUSR ) ) {
-		error("Cration of the FIFO errored. This might cause issues.\n");
+		error("Creation of the FIFO errored. This might cause issues.\n");
 	}
 
 	fd = fopen( DTMF_OUT , "w+" );
