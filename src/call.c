@@ -1553,7 +1553,12 @@ void call_set_handlers(struct call *call, call_event_h *eh,
 	if (!call)
 		return;
 
-	call->eh    = eh;
-	call->dtmfh = dtmfh;
-	call->arg   = arg;
+	if (eh)
+		call->eh    = eh;
+
+	if (dtmfh)
+		call->dtmfh = dtmfh;
+
+	if (arg)
+		call->arg   = arg;
 }
