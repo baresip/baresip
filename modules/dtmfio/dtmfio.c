@@ -78,8 +78,8 @@ static int dtmf_handler(const struct call *call, int key, void *arg){
 static void ua_event_handler(struct ua *ua,
                              enum ua_event ev,
                              struct call *call,
-														 const char *prm,
-														 void *arg ) {
+                             const char *prm,
+                             void *arg ) {
 
 
 	if ( ev == UA_EVENT_CALL_ESTABLISHED ) {
