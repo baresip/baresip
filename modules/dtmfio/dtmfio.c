@@ -52,8 +52,6 @@
  * +   Clean up build output so there aren't errors regarding unused vars
  */
 
-
-
 #include <stdio.h>
 #include <re.h>
 #include <baresip.h>
@@ -65,27 +63,25 @@ static FILE *fd;
 static const char *DTMF_OUT = "/tmp/dtmf.out";
 
 
-
-static int dtmf_handler(const struct call *call, int key, void *arg){
-	if( key != 0 ) {
+static void dtmf_handler(struct call *call, char key, void *arg)
+{
+	if ( key != 0 ) {
 		fprintf(fd, "%c", key);
 		fflush(fd);
 	}
-	
-	return 0;
 }
 
+
 static void ua_event_handler(struct ua *ua,
-                             enum ua_event ev,
-                             struct call *call,
-                             const char *prm,
-                             void *arg ) {
-
-
+			     enum ua_event ev,
+			     struct call *call,
+			     const char *prm,
+			     void *arg )
+{
 	if ( ev == UA_EVENT_CALL_ESTABLISHED ) {
 		fprintf(fd, "E");
 		fflush(fd);
-		call_set_handlers( call, NULL, (call_dtmf_h*) dtmf_handler, NULL);
+		call_set_handlers( call, NULL, dtmf_handler, NULL);
 	}
 
 	if (ev == UA_EVENT_CALL_CLOSED ) {
@@ -97,27 +93,28 @@ static void ua_event_handler(struct ua *ua,
 }
 
 
-
-static int module_init(void){
-	
+static int module_init(void)
+{
 	uag_event_register( ua_event_handler, NULL );
-	
-	if( mkfifo( DTMF_OUT, S_IWUSR | S_IRUSR ) ) {
-		error("Creation of the FIFO errored. This might cause issues.\n");
+
+	if ( mkfifo( DTMF_OUT, S_IWUSR | S_IRUSR ) ) {
+		error("Creation of the FIFO errored."
+		      " This might cause issues.\n");
 	}
 
 	fd = fopen( DTMF_OUT , "w+" );
 
-	if( fd == 0 ){
-		error("Opening of the FIFO errored. This might cause issues.\n");
+	if ( fd == 0 ){
+		error("Opening of the FIFO errored."
+		      " This might cause issues.\n");
 	}
 
 	return 0;
 }
 
 
-static int module_close(void){
-	
+static int module_close(void)
+{
 	fclose(fd);
 
 	unlink(DTMF_OUT);
@@ -132,4 +129,3 @@ const struct mod_export DECL_EXPORTS(dtmfio) = {
 	module_init,
 	module_close
 };
-
