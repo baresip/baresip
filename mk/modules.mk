@@ -187,6 +187,7 @@ USE_QTCAPTURE := yes
 endif
 ifeq ($(OS),linux)
 USE_EVDEV := $(shell [ -f $(SYSROOT)/include/linux/input.h ] && echo "yes")
+MODULES   += dtmfio
 endif
 ifeq ($(OS),win32)
 USE_WINWAVE := yes
@@ -347,9 +348,3 @@ endif
 ifneq ($(USE_X11),)
 MODULES   += x11 x11grab
 endif
-
-ifeq ($(OS),linux)
-MODULES   += dtmfio
-endif
-
-
