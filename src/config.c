@@ -334,6 +334,8 @@ static const char *default_audio_device(void)
 	return "oss,/dev/dsp";
 #elif defined (WIN32)
 	return "winwave,nil";
+#elif defined (ANDROID)
+	return "opensles";
 #else
 	return "alsa,default";
 #endif
@@ -583,6 +585,8 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "mda" MOD_EXT "\n");
 #elif defined (DARWIN)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "coreaudio" MOD_EXT "\n");
+#elif defined (ANDROID)
+	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "opensles" MOD_EXT "\n");
 #else
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "oss" MOD_EXT "\n");
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "alsa" MOD_EXT "\n");

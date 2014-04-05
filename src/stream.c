@@ -76,11 +76,15 @@ static void print_rtp_stats(struct stream *s)
 {
 	info("\n%-9s       Transmit:     Receive:\n"
 	     "packets:        %7u      %7u\n"
-	     "avg. bitrate:   %7.1f      %7.1f  (kbit/s)\n",
+	     "avg. bitrate:   %7.1f      %7.1f  (kbit/s)\n"
+	     "errors:         %7d      %7d\n"
+	     ,
 	     sdp_media_name(s->sdp),
 	     s->metric_tx.n_packets, s->metric_rx.n_packets,
 	     1.0*metric_avg_bitrate(&s->metric_tx)/1000,
-	     1.0*metric_avg_bitrate(&s->metric_rx)/1000);
+	     1.0*metric_avg_bitrate(&s->metric_rx)/1000,
+	     s->metric_tx.n_err, s->metric_rx.n_err
+	     );
 
 	if (s->rtcp_stats.tx.sent || s->rtcp_stats.rx.sent) {
 

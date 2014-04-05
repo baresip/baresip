@@ -62,6 +62,7 @@ struct call {
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
 	time_t time_start;        /**< Time when call started               */
+	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
@@ -631,7 +632,10 @@ int call_hangup(struct call *call, uint16_t scode, const char *reason)
 		break;
 
 	default:
-		info("call: terminate call with %s\n", call->peer_uri);
+		info("call: terminate call '%s' with %s\n",
+		     sip_dialog_callid(sipsess_dialog(call->sess)),
+		     call->peer_uri);
+
 		call->sess = mem_deref(call->sess);
 		break;
 	}
@@ -694,7 +698,7 @@ int call_answer(struct call *call, uint16_t scode)
 		return err;
 
 	err = sipsess_answer(call->sess, scode, "Answering", desc,
-                             "Allow: %s\r\n", uag_allowed_methods());
+			     "Allow: %s\r\n", uag_allowed_methods());
 
 	mem_deref(desc);
 
@@ -1116,7 +1120,7 @@ static void sipsess_refer_handler(struct sip *sip, const struct sip_msg *msg,
 			      ua_cuser(call->ua), "message/sipfrag",
 			      auth_handler, call->acc, true,
 			      sipnot_close_handler, call,
-	                      "Allow: %s\r\n", uag_allowed_methods());
+			      "Allow: %s\r\n", uag_allowed_methods());
 	if (err) {
 		warning("call: refer: sipevent_accept failed: %m\n", err);
 		return;
@@ -1309,6 +1313,9 @@ static int send_invite(struct call *call)
 		warning("call: sipsess_connect: %m\n", err);
 	}
 
+	/* save call setup timer */
+	call->time_conn = time(NULL);
+
 	mem_deref(desc);
 
 	return err;
@@ -1328,6 +1335,22 @@ uint32_t call_duration(const struct call *call)
 		return 0;
 
 	return (uint32_t)(time(NULL) - call->time_start);
+}
+
+
+/**
+ * Get the current call setup time in seconds
+ *
+ * @param call  Call object
+ *
+ * @return Call setup in seconds
+ */
+uint32_t call_setup_duration(const struct call *call)
+{
+	if (!call || !call->time_conn || call->time_conn <= 0 )
+		return 0;
+
+	return (uint32_t)(call->time_start - call->time_conn);
 }
 
 
@@ -1555,7 +1578,12 @@ void call_set_handlers(struct call *call, call_event_h *eh,
 	if (!call)
 		return;
 
-	call->eh    = eh;
-	call->dtmfh = dtmfh;
-	call->arg   = arg;
+	if (eh)
+		call->eh    = eh;
+
+	if (dtmfh)
+		call->dtmfh = dtmfh;
+
+	if (arg)
+		call->arg   = arg;
 }

@@ -49,7 +49,7 @@ static int read_callback(const void *inputBuffer, void *outputBuffer,
 			 PaStreamCallbackFlags statusFlags, void *userData)
 {
 	struct ausrc_st *st = userData;
-	unsigned sampc;
+	size_t sampc;
 
 	(void)outputBuffer;
 	(void)timeInfo;
@@ -72,7 +72,7 @@ static int write_callback(const void *inputBuffer, void *outputBuffer,
 			  PaStreamCallbackFlags statusFlags, void *userData)
 {
 	struct auplay_st *st = userData;
-	unsigned sampc;
+	size_t sampc;
 
 	(void)inputBuffer;
 	(void)timeInfo;

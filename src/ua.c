@@ -474,15 +474,15 @@ int ua_alloc(struct ua **uap, const char *aor)
 	ua->af   = AF_INET;
 #endif
 
-	/* generate a unique contact-user, this is needed to route
-	   incoming requests when using multiple useragents */
-	err = re_sdprintf(&ua->cuser, "%p", ua);
-	if (err)
-		goto out;
-
 	/* Decode SIP address */
 
 	err = account_alloc(&ua->acc, aor);
+	if (err)
+		goto out;
+
+	/* generate a unique contact-user, this is needed to route
+	   incoming requests when using multiple useragents */
+	err = re_sdprintf(&ua->cuser, "%r-%p", &ua->acc->luri.user, ua);
 	if (err)
 		goto out;
 
