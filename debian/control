@@ -3,12 +3,12 @@ Section: comm
 Priority: optional
 Maintainer: Alfred E. Heggestad <aeh@db.org>
 Standards-Version: 3.9.5
-Build-Depends: debhelper (>= 9.20120311), librem-dev (>= 0.4.5), libre-dev (>= 0.4.5), libasound2-dev, libavformat-dev, libavdevice-dev
+Build-Depends: debhelper (>= 9.20120311), librem-dev (>= 0.4.5), libre-dev (>= 0.4.8), libasound2-dev, libavformat-dev, libavdevice-dev
 Homepage: http://www.creytiv.com/
 
 Package: baresip
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, librem (>= 0.4.5), libre (>= 0.4.5)
+Depends: ${shlibs:Depends}, ${misc:Depends}, librem (>= 0.4.5), libre (>= 0.4.8)
 Description: Modular SIP User-Agent with audio and video support
  Design goals:
  .
