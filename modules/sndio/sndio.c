@@ -16,8 +16,8 @@ struct ausrc_st {
 	struct ausrc *as;
 	struct sio_hdl *hdl;
 	pthread_t thread;
-	size_t nbytes;
-	void *buf;
+	int16_t *sampv;
+	size_t sampc;
 	int run;
 	ausrc_read_h *rh;
 	void *arg;
@@ -27,8 +27,8 @@ struct auplay_st {
 	struct auplay *ap;
 	struct sio_hdl *hdl;
 	pthread_t thread;
-	size_t nbytes;
-	void *buf;
+	int16_t *sampv;
+	size_t sampc;
 	int run;
 	auplay_write_h *wh;
 	void *arg;
@@ -49,7 +49,6 @@ static struct sio_par *sndio_initpar(void *arg)
 	sio_initpar(par);
 
 	/* sndio doesn't support a-low and u-low */
-	prm->fmt  = AUFMT_S16LE;
 	par->bits = 16;
 	par->bps  = SIO_BPS(par->bits);
 	par->sig  = 1;
@@ -73,8 +72,8 @@ static void *read_thread(void *arg)
 	}
 
 	while (st->run) {
-		sio_read(st->hdl, st->buf, st->nbytes);
-		st->rh(st->buf, st->nbytes, st->arg);
+		size_t n = sio_read(st->hdl, st->sampv, st->sampc*2);
+		st->rh(st->sampv, n/2, st->arg);
 	}
 
  out:
@@ -92,8 +91,8 @@ static void *write_thread(void *arg)
 	}
 
 	while (st->run) {
-		st->wh(st->buf, st->nbytes, st->arg);
-		sio_write(st->hdl, st->buf, st->nbytes);
+		st->wh(st->sampv, st->sampc, st->arg);
+		sio_write(st->hdl, st->sampv, st->sampc*2);
 	}
 
  out:
@@ -110,9 +109,10 @@ static void ausrc_destructor(void *arg)
 		(void)pthread_join(st->thread, NULL);
 	}
 
-	sio_close(st->hdl);
+	if (st->hdl)
+		sio_close(st->hdl);
 
-	mem_deref(st->buf);
+	mem_deref(st->sampv);
 	mem_deref(st->as);
 }
 
@@ -126,9 +126,10 @@ static void auplay_destructor(void *arg)
 		(void)pthread_join(st->thread, NULL);
 	}
 
-	sio_close(st->hdl);
+	if (st->hdl)
+		sio_close(st->hdl);
 
-	mem_deref(st->buf);
+	mem_deref(st->sampv);
 	mem_deref(st->ap);
 }
 
@@ -183,10 +184,10 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 		goto out;
 	}
 
-	st->nbytes = 2 * par->appbufsz;
-	st->buf = mem_alloc(st->nbytes, NULL);
-	if (!st->buf) {
-		free(par);
+	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
+
+	st->sampv = mem_alloc(2 * st->sampc, NULL);
+	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;
 	}
@@ -254,10 +255,10 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 		goto out;
 	}
 
-	st->nbytes = 2 * par->appbufsz;
-	st->buf = mem_alloc(st->nbytes, NULL);
-	if (!st->buf) {
-		free(par);
+	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
+
+	st->sampv = mem_alloc(2 * st->sampc, NULL);
+	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;
 	}
