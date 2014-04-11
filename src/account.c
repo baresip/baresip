@@ -43,7 +43,7 @@ static int param_dstr(char **dstr, const struct pl *params, const char *name)
 {
 	struct pl pl;
 
-	if (sip_param_decode(params, name, &pl))
+	if (msg_param_decode(params, name, &pl))
 		return 0;
 
 	return pl_strdup(dstr, &pl);
@@ -54,7 +54,7 @@ static int param_u32(uint32_t *v, const struct pl *params, const char *name)
 {
 	struct pl pl;
 
-	if (sip_param_decode(params, name, &pl))
+	if (msg_param_decode(params, name, &pl))
 		return 0;
 
 	*v = pl_u32(&pl);
@@ -74,7 +74,7 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 
 	memset(&uri, 0, sizeof(uri));
 
-	if (0 == sip_param_decode(&aor->params, "stunserver", &srv)) {
+	if (0 == msg_param_decode(&aor->params, "stunserver", &srv)) {
 
 		info("using stunserver: '%r'\n", &srv);
 
@@ -134,7 +134,7 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl amode;
 
-	if (0 == sip_param_decode(pl, "answermode", &amode)) {
+	if (0 == msg_param_decode(pl, "answermode", &amode)) {
 
 		if (0 == pl_strcasecmp(&amode, "manual")) {
 			prm->answermode = ANSWERMODE_MANUAL;
@@ -180,12 +180,12 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 
 	list_init(&acc->aucodecl);
 
-	if (0 == sip_param_exists(prm, "audio_codecs", &tmp)) {
+	if (0 == msg_param_exists(prm, "audio_codecs", &tmp)) {
 		struct pl acs;
 		char cname[64];
 		unsigned i = 0;
 
-		if (sip_param_decode(prm, "audio_codecs", &acs))
+		if (msg_param_decode(prm, "audio_codecs", &acs))
 			return 0;
 
 		while (0 == csl_parse(&acs, cname, sizeof(cname))) {
@@ -236,12 +236,12 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 
 	list_init(&acc->vidcodecl);
 
-	if (0 == sip_param_exists(prm, "video_codecs", &tmp)) {
+	if (0 == msg_param_exists(prm, "video_codecs", &tmp)) {
 		struct pl vcs;
 		char cname[64];
 		unsigned i = 0;
 
-		if (sip_param_decode(prm, "video_codecs", &vcs))
+		if (msg_param_decode(prm, "video_codecs", &vcs))
 			return 0;
 
 		while (0 == csl_parse(&vcs, cname, sizeof(cname))) {
@@ -298,7 +298,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	err |= param_dstr(&acc->sipnat, &aor->params, "sipnat");
 
-	if (0 == sip_param_decode(&aor->params, "auth_user", &auth_user))
+	if (0 == msg_param_decode(&aor->params, "auth_user", &auth_user))
 		err |= pl_strdup(&acc->auth_user, &auth_user);
 	else
 		err |= pl_strdup(&acc->auth_user, &aor->uri.user);
