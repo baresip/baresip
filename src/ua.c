@@ -1424,14 +1424,14 @@ struct ua *uag_find_param(const char *name, const char *value)
 
 		if (value) {
 
-			if (0 == sip_param_decode(&laddr->params, name, &val)
+			if (0 == msg_param_decode(&laddr->params, name, &val)
 			    &&
 			    0 == pl_strcasecmp(&val, value)) {
 				return ua;
 			}
 		}
 		else {
-			if (0 == sip_param_exists(&laddr->params, name, &val))
+			if (0 == msg_param_exists(&laddr->params, name, &val))
 				return ua;
 		}
 	}
