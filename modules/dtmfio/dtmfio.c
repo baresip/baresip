@@ -52,6 +52,7 @@
  * +   Clean up build output so there aren't errors regarding unused vars
  */
 
+#include <unistd.h>
 #include <stdio.h>
 #include <re.h>
 #include <baresip.h>
