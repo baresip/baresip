@@ -72,10 +72,7 @@ static void play_handler(void *userData, AudioQueueRef outQ,
 	if (!wh)
 		return;
 
-	if (!wh(outQB->mAudioData, outQB->mAudioDataByteSize, arg)) {
-		/* Set the buffer to silence */
-		memset(outQB->mAudioData, 0, outQB->mAudioDataByteSize);
-	}
+	wh(outQB->mAudioData, outQB->mAudioDataByteSize/2, arg);
 
 	AudioQueueEnqueueBuffer(outQ, outQB, 0, NULL);
 }
@@ -110,17 +107,17 @@ int coreaudio_player_alloc(struct auplay_st **stp, struct auplay *ap,
 		goto out;
 
 	fmt.mSampleRate       = (Float64)prm->srate;
-	fmt.mFormatID         = audio_fmt(prm->fmt);
+	fmt.mFormatID         = kAudioFormatLinearPCM;
 	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger |
 		                kAudioFormatFlagIsPacked;
 #ifdef __BIG_ENDIAN__
 	fmt.mFormatFlags     |= kAudioFormatFlagIsBigEndian;
 #endif
 	fmt.mFramesPerPacket  = 1;
-	fmt.mBytesPerFrame    = prm->ch * bytesps(prm->fmt);
-	fmt.mBytesPerPacket   = prm->ch * bytesps(prm->fmt);
+	fmt.mBytesPerFrame    = prm->ch * 2;
+	fmt.mBytesPerPacket   = prm->ch * 2;
 	fmt.mChannelsPerFrame = prm->ch;
-	fmt.mBitsPerChannel   = 8*bytesps(prm->fmt);
+	fmt.mBitsPerChannel   = 16;
 
 	status = AudioQueueNewOutput(&fmt, play_handler, st, NULL,
 				     kCFRunLoopCommonModes, 0, &st->queue);
@@ -131,7 +128,7 @@ int coreaudio_player_alloc(struct auplay_st **stp, struct auplay *ap,
 	}
 
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
-	bytc  = sampc * bytesps(prm->fmt);
+	bytc  = sampc * 2;
 
 	for (i=0; i<ARRAY_SIZE(st->buf); i++)  {
 

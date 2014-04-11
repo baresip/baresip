@@ -20,7 +20,6 @@ struct ausrc_st {
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
 	pthread_mutex_t mutex;
-	struct mbuf *mb;
 	ausrc_read_h *rh;
 	void *arg;
 	unsigned int ptime;
@@ -49,7 +48,6 @@ static void ausrc_destructor(void *arg)
 		AudioQueueDispose(st->queue, true);
 	}
 
-	mem_deref(st->mb);
 	mem_deref(st->as);
 
 	pthread_mutex_destroy(&st->mutex);
@@ -63,10 +61,8 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 			   const AudioStreamPacketDescription *inPacketDesc)
 {
 	struct ausrc_st *st = userData;
-	struct mbuf *mb = st->mb;
 	unsigned int ptime;
 	ausrc_read_h *rh;
-	size_t sz, sp;
 	void *arg;
 	(void)inStartTime;
 	(void)inNumPackets;
@@ -81,18 +77,7 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	if (!rh)
 		return;
 
-	sz = inQB->mAudioDataByteSize;
-	sp = mbuf_get_space(mb);
-
-	if (sz >= sp) {
-		mbuf_write_mem(mb, inQB->mAudioData, sp);
-		rh(mb->buf, (uint32_t)mb->size, arg);
-		mb->pos = 0;
-		mbuf_write_mem(mb, (uint8_t *)inQB->mAudioData + sp, sz - sp);
-	}
-	else {
-		mbuf_write_mem(mb, inQB->mAudioData, sz);
-	}
+	rh(inQB->mAudioData, inQB->mAudioDataByteSize/2, arg);
 
 	AudioQueueEnqueueBuffer(inQ, inQB, 0, NULL);
 
@@ -132,13 +117,7 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	st->arg = arg;
 
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
-	bytc  = sampc * bytesps(prm->fmt);
-
-	st->mb = mbuf_alloc(bytc);
-	if (!st->mb) {
-		err = ENOMEM;
-		goto out;
-	}
+	bytc  = sampc * 2;
 
 	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)
@@ -149,7 +128,7 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 		goto out;
 
 	fmt.mSampleRate       = (Float64)prm->srate;
-	fmt.mFormatID         = audio_fmt(prm->fmt);
+	fmt.mFormatID         = kAudioFormatLinearPCM;
 	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger |
 		                kAudioFormatFlagIsPacked;
 #ifdef __BIG_ENDIAN__
@@ -157,10 +136,10 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 #endif
 
 	fmt.mFramesPerPacket  = 1;
-	fmt.mBytesPerFrame    = prm->ch * bytesps(prm->fmt);
-	fmt.mBytesPerPacket   = prm->ch * bytesps(prm->fmt);
+	fmt.mBytesPerFrame    = prm->ch * 2;
+	fmt.mBytesPerPacket   = prm->ch * 2;
 	fmt.mChannelsPerFrame = prm->ch;
-	fmt.mBitsPerChannel   = 8*bytesps(prm->fmt);
+	fmt.mBitsPerChannel   = 16;
 
 	status = AudioQueueNewInput(&fmt, record_handler, st, NULL,
 				     kCFRunLoopCommonModes, 0, &st->queue);

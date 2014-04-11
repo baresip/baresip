@@ -14,32 +14,6 @@ static struct auplay *auplay;
 static struct ausrc *ausrc;
 
 
-int audio_fmt(enum aufmt fmt)
-{
-	switch (fmt) {
-
-	case AUFMT_S16LE: return kAudioFormatLinearPCM;
-	case AUFMT_PCMA:  return kAudioFormatALaw;
-	case AUFMT_PCMU:  return kAudioFormatULaw;
-	default:
-		warning("coreaudio: unknown format %d\n", fmt);
-		return -1;
-	}
-}
-
-
-int bytesps(enum aufmt fmt)
-{
-	switch (fmt) {
-
-	case AUFMT_S16LE: return 2;
-	case AUFMT_PCMA:  return 1;
-	case AUFMT_PCMU:  return 1;
-	default: return 0;
-	}
-}
-
-
 #if TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_2_0
 static void interruptionListener(void *data, UInt32 inInterruptionState)
 {

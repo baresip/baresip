@@ -21,7 +21,8 @@ struct ausrc_st {
 	pthread_t thread;
 	bool run;
 	snd_pcm_t *read;
-	struct mbuf *mbr;
+	int16_t *sampv;
+	size_t sampc;
 	ausrc_read_h *rh;
 	void *arg;
 	struct ausrc_prm prm;
@@ -42,7 +43,7 @@ static void ausrc_destructor(void *arg)
 	if (st->read)
 		snd_pcm_close(st->read);
 
-	mem_deref(st->mbr);
+	mem_deref(st->sampv);
 	mem_deref(st->as);
 	mem_deref(st->device);
 }
@@ -65,7 +66,7 @@ static void *read_thread(void *arg)
 	}
 
 	while (st->run) {
-		err = snd_pcm_readi(st->read, st->mbr->buf, num_frames);
+		err = snd_pcm_readi(st->read, st->sampv, num_frames);
 		if (err == -EPIPE) {
 			snd_pcm_prepare(st->read);
 			continue;
@@ -74,7 +75,7 @@ static void *read_thread(void *arg)
 			continue;
 		}
 
-		st->rh(st->mbr->buf, err * 2 * st->prm.ch, st->arg);
+		st->rh(st->sampv, err * st->prm.ch, st->arg);
 	}
 
  out:
@@ -88,15 +89,12 @@ int alsa_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 		   ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
-	uint32_t sampc;
 	int num_frames;
 	int err;
 	(void)ctx;
 	(void)errh;
 
 	if (!stp || !as || !prm || !rh)
-		return EINVAL;
-	if (prm->fmt != AUFMT_S16LE)
 		return EINVAL;
 
 	if (!str_isset(device))
@@ -115,11 +113,11 @@ int alsa_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	st->rh  = rh;
 	st->arg = arg;
 
-	sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	num_frames = st->prm.srate * st->prm.ptime / 1000;
 
-	st->mbr = mbuf_alloc(2 * sampc);
-	if (!st->mbr) {
+	st->sampv = mem_alloc(2 * st->sampc, NULL);
+	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;
 	}

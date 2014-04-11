@@ -21,7 +21,8 @@ struct auplay_st {
 	pthread_t thread;
 	bool run;
 	snd_pcm_t *write;
-	struct mbuf *mbw;
+	int16_t *sampv;
+	size_t sampc;
 	auplay_write_h *wh;
 	void *arg;
 	struct auplay_prm prm;
@@ -42,7 +43,7 @@ static void auplay_destructor(void *arg)
 	if (st->write)
 		snd_pcm_close(st->write);
 
-	mem_deref(st->mbw);
+	mem_deref(st->sampv);
 	mem_deref(st->ap);
 	mem_deref(st->device);
 }
@@ -59,13 +60,13 @@ static void *write_thread(void *arg)
 	while (st->run) {
 		const int samples = num_frames;
 
-		st->wh(st->mbw->buf, st->mbw->size, st->arg);
+		st->wh(st->sampv, st->sampc, st->arg);
 
-		n = snd_pcm_writei(st->write, st->mbw->buf, samples);
+		n = snd_pcm_writei(st->write, st->sampv, samples);
 		if (-EPIPE == n) {
 			snd_pcm_prepare(st->write);
 
-			n = snd_pcm_writei(st->write, st->mbw->buf, samples);
+			n = snd_pcm_writei(st->write, st->sampv, samples);
 			if (n != samples) {
 				warning("alsa: write error: %s\n",
 					snd_strerror(n));
@@ -89,13 +90,10 @@ int alsa_play_alloc(struct auplay_st **stp, struct auplay *ap,
 		    auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
-	uint32_t sampc;
 	int num_frames;
 	int err;
 
 	if (!stp || !ap || !prm || !wh)
-		return EINVAL;
-	if (prm->fmt != AUFMT_S16LE)
 		return EINVAL;
 
 	if (!str_isset(device))
@@ -114,11 +112,11 @@ int alsa_play_alloc(struct auplay_st **stp, struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 
-	sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	num_frames = st->prm.srate * st->prm.ptime / 1000;
 
-	st->mbw = mbuf_alloc(2 * sampc);
-	if (!st->mbw) {
+	st->sampv = mem_alloc(2 * st->sampc, NULL);
+	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;
 	}

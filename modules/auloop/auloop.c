@@ -112,21 +112,21 @@ static int codec_read(struct audio_loop *al, int16_t *sampv, size_t sampc)
 }
 
 
-static void read_handler(const uint8_t *buf, size_t sz, void *arg)
+static void read_handler(const int16_t *sampv, size_t sampc, void *arg)
 {
 	struct audio_loop *al = arg;
 	int err;
 
 	++al->n_read;
 
-	err = aubuf_write(al->ab, buf, sz);
+	err = aubuf_write_samp(al->ab, sampv, sampc);
 	if (err) {
 		warning("auloop: aubuf_write: %m\n", err);
 	}
 }
 
 
-static bool write_handler(uint8_t *buf, size_t sz, void *arg)
+static void write_handler(int16_t *sampv, size_t sampc, void *arg)
 {
 	struct audio_loop *al = arg;
 	int err;
@@ -135,17 +135,15 @@ static bool write_handler(uint8_t *buf, size_t sz, void *arg)
 
 	/* read from beginning */
 	if (al->ac) {
-		err = codec_read(al, (void *)buf, sz/2);
+		err = codec_read(al, sampv, sampc);
 		if (err) {
 			warning("auloop: codec_read error "
-				"on %u bytes (%m)\n", sz, err);
+				"on %zu samples (%m)\n", sampc, err);
 		}
 	}
 	else {
-		aubuf_read(al->ab, buf, sz);
+		aubuf_read_samp(al->ab, sampv, sampc);
 	}
-
-	return true;
 }
 
 
@@ -223,7 +221,6 @@ static int auloop_reset(struct audio_loop *al)
 	if (err)
 		return err;
 
-	auplay_prm.fmt        = AUFMT_S16LE;
 	auplay_prm.srate      = al->srate;
 	auplay_prm.ch         = al->ch;
 	auplay_prm.ptime      = PTIME;
@@ -236,7 +233,6 @@ static int auloop_reset(struct audio_loop *al)
 		return err;
 	}
 
-	ausrc_prm.fmt        = AUFMT_S16LE;
 	ausrc_prm.srate      = al->srate;
 	ausrc_prm.ch         = al->ch;
 	ausrc_prm.ptime      = PTIME;

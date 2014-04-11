@@ -8,8 +8,6 @@
 int  audio_session_enable(void);
 void audio_session_disable(void);
 
-int audio_fmt(enum aufmt fmt);
-int bytesps(enum aufmt fmt);
 
 int coreaudio_player_alloc(struct auplay_st **stp, struct auplay *ap,
 			   struct auplay_prm *prm, const char *device,

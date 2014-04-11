@@ -75,7 +75,7 @@ static int dsp_write(struct auplay_st *st)
 	wh->lpData = (LPSTR)mb->buf;
 
 	if (st->wh) {
-		st->wh(mb->buf, mb->size, st->arg);
+		st->wh((void *)mb->buf, mb->size/2, st->arg);
 	}
 
 	wh->dwBufferLength = mb->size;
@@ -200,8 +200,6 @@ int winwave_play_alloc(struct auplay_st **stp, struct auplay *ap,
 	st->ap  = mem_ref(ap);
 	st->wh  = wh;
 	st->arg = arg;
-
-	prm->fmt = AUFMT_S16LE;
 
 	err = write_stream_open(st, prm);
 	if (err)

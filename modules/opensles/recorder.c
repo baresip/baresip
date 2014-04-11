@@ -18,7 +18,9 @@
 
 struct ausrc_st {
 	struct ausrc *as;      /* inheritance */
-	int16_t buf[160];
+	int16_t *sampv;
+	size_t sampc;
+	uint32_t ptime;
 	pthread_t thread;
 	bool run;
 	ausrc_read_h *rh;
@@ -42,6 +44,7 @@ static void ausrc_destructor(void *arg)
 	if (st->recObject != NULL)
 		(*st->recObject)->Destroy(st->recObject);
 
+	mem_deref(st->sampv);
 	mem_deref(st->as);
 }
 
@@ -68,12 +71,13 @@ static void *record_thread(void *arg)
 #endif
 
 		r = (*st->recBufferQueue)->Enqueue(st->recBufferQueue,
-						   st->buf, sizeof(st->buf));
+						   st->sampv,
+						   st->sampc * 2);
 		if (r != SL_RESULT_SUCCESS) {
 			DEBUG_WARNING("Enqueue: r = %d\n", r);
 		}
 
-		ts += 20;
+		ts += st->ptime;
 	}
 
 	return NULL;
@@ -85,7 +89,7 @@ static void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 	struct ausrc_st *st = context;
 	(void)bq;
 
-	st->rh((void *)st->buf, sizeof(st->buf), st->arg);
+	st->rh(st->sampv, st->sampc, st->arg);
 }
 
 
@@ -192,6 +196,14 @@ int opensles_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	st->as  = mem_ref(as);
 	st->rh  = rh;
 	st->arg = arg;
+	st->ptime = prm->ptime;
+	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
+
+	st->sampv = mem_alloc(2 * st->sampc, NULL);
+	if (!st->sampv) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	err = createAudioRecorder(st, prm);
 	if (err) {

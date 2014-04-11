@@ -110,7 +110,7 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 		if (st->inuse < 3)
 			add_wave_in(st);
 
-		st->rh((uint8_t *)wh->lpData, wh->dwBytesRecorded, st->arg);
+		st->rh((void *)wh->lpData, wh->dwBytesRecorded/2, st->arg);
 
 		waveInUnprepareHeader(st->wavein, wh, sizeof(*wh));
 		st->inuse--;
@@ -192,8 +192,6 @@ int winwave_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	st->as  = mem_ref(as);
 	st->rh  = rh;
 	st->arg = arg;
-
-	prm->fmt = AUFMT_S16LE;
 
 	err = read_stream_open(st, prm);
 
