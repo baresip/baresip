@@ -14,11 +14,6 @@
 #include "print.h"
 
 
-#define DEBUG_MODULE "evdev"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 /* Note:
  *
  * KEY_NUMERIC_xyz added in linux kernel 2.6.28
@@ -186,28 +181,20 @@ static void evdev_fd_handler(int flags, void *arg)
 
 	/* This might happen if you unplug a USB device */
 	if (flags & FD_EXCEPT) {
-		DEBUG_WARNING("fd handler: FD_EXCEPT - device unplugged?\n");
+		warning("evdev: fd handler: FD_EXCEPT - device unplugged?\n");
 		evdev_close(st);
-		return;
-	}
-
-	if (FD_READ != flags) {
-		DEBUG_WARNING("fd_handler: unexpected flags 0x%02x\n", flags);
 		return;
 	}
 
 	n = read(st->fd, evv, sizeof(evv));
 
 	if (n < (int) sizeof(struct input_event)) {
-		DEBUG_WARNING("event: short read (%m)\n", errno);
+		warning("evdev: event: short read (%m)\n", errno);
 		return;
 	}
 
 	for (i = 0; i < (int) (n / sizeof(struct input_event)); i++) {
 		const struct input_event *ev = &evv[i];
-
-		DEBUG_INFO("Event: type %u, code %u, value %d\n",
-			   ev->type, ev->code, ev->value);
 
 		if (EV_KEY != ev->type)
 			continue;
@@ -220,8 +207,8 @@ static void evdev_fd_handler(int flags, void *arg)
 		if (1 == ev->value) {
 			const int ascii = code2ascii(modifier, ev->code);
 			if (-1 == ascii) {
-				DEBUG_WARNING("unhandled key code %u\n",
-					      ev->code);
+				warning("evdev: unhandled key code %u\n",
+					ev->code);
 			}
 			else
 				reportkey(st, ascii);
@@ -259,7 +246,7 @@ static int evdev_alloc(struct ui_st **stp, struct ui_prm *prm,
 	/* grab the event device to prevent it from propagating
 	   its events to the regular keyboard driver            */
 	if (-1 == ioctl(st->fd, EVIOCGRAB, (void *)1)) {
-		DEBUG_WARNING("ioctl EVIOCGRAB on %s (%m)\n", dev, errno);
+		warning("evdev: ioctl EVIOCGRAB on %s (%m)\n", dev, errno);
 	}
 #endif
 
@@ -296,7 +283,7 @@ static int buzz(const struct ui_st *st, int value)
 
 	n = write(st->fd, &ev, sizeof(ev));
 	if (n < 0) {
-		DEBUG_WARNING("output: write fd=%d (%m)\n", st->fd, errno);
+		warning("evdev: output: write fd=%d (%m)\n", st->fd, errno);
 	}
 
 	return errno;

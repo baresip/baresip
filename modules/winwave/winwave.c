@@ -11,11 +11,6 @@
 #include "winwave.h"
 
 
-#define DEBUG_MODULE "winwave"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 static struct ausrc *ausrc;
 static struct auplay *auplay;
 

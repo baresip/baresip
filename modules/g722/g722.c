@@ -12,11 +12,6 @@
 #include <spandsp.h>
 
 
-#define DEBUG_MODULE "g722"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 /*
   http://www.soft-switch.org/spandsp-modules.html
  */
@@ -76,7 +71,6 @@ static int encode_update(struct auenc_state **aesp,
 		return ENOMEM;
 
 	if (!g722_encode_init(&st->enc, G722_BITRATE_64k, 0)) {
-		DEBUG_WARNING("g722_encode_init failed\n");
 		err = EPROTO;
 		goto out;
 	}
@@ -109,7 +103,6 @@ static int decode_update(struct audec_state **adsp,
 		return ENOMEM;
 
 	if (!g722_decode_init(&st->dec, G722_BITRATE_64k, 0)) {
-		DEBUG_WARNING("g722_decode_init failed\n");
 		err = EPROTO;
 		goto out;
 	}
@@ -131,11 +124,9 @@ static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 
 	n = g722_encode(&st->enc, buf, sampv, (int)sampc);
 	if (n <= 0) {
-		DEBUG_WARNING("g722_encode: len=%d\n", n);
 		return EPROTO;
 	}
 	else if (n > (int)*len) {
-		DEBUG_WARNING("encode: wrote %d > %d buf\n", n, *len);
 		return EOVERFLOW;
 	}
 
@@ -154,10 +145,8 @@ static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
 		return EINVAL;
 
 	n = g722_decode(&st->dec, sampv, buf, (int)len);
-	if (n < 0) {
-		DEBUG_WARNING("g722_decode: n=%d\n", n);
+	if (n < 0)
 		return EPROTO;
-	}
 
 	*sampc = n;
 

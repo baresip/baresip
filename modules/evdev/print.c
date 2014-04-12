@@ -10,14 +10,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <linux/input.h>
-#include <re_types.h>
-#include <re_fmt.h>
+#include <re.h>
+#include <baresip.h>
 #include "print.h"
-
-
-#define DEBUG_MODULE "evdev"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
 
 
 #define test_bit(bit, array)    (array[bit/8] & (1<<(bit%8)))
@@ -36,7 +31,7 @@ void print_name(int fd)
 		perror("evdev ioctl");
 	}
 
-	DEBUG_NOTICE("evdev device name: %s\n", name);
+	info("evdev: device name: %s\n", name);
 }
 
 
@@ -52,7 +47,7 @@ void print_events(int fd)
 
 	memset(evtype_bitmask, 0, sizeof(evtype_bitmask));
 	if (ioctl(fd, EVIOCGBIT(0, EV_MAX), evtype_bitmask) < 0) {
-		DEBUG_WARNING("evdev ioctl EVIOCGBIT (%m)\n", errno);
+		warning("evdev: ioctl EVIOCGBIT (%m)\n", errno);
 		return;
 	}
 

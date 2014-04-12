@@ -10,11 +10,6 @@
 #include "opensles.h"
 
 
-#define DEBUG_MODULE "opensles/player"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 struct auplay_st {
 	struct auplay *ap;      /* inheritance */
 	int16_t *sampv;
@@ -99,7 +94,7 @@ static int createPlayer(struct auplay_st *st, struct auplay_prm *prm)
 					       &audioSrc, &audioSnk,
 					       ARRAY_SIZE(ids), ids, req);
 	if (SL_RESULT_SUCCESS != r) {
-		DEBUG_WARNING("CreateAudioPlayer error: r = %d\n", r);
+		warning("opensles: CreateAudioPlayer error: r = %d\n", r);
 		return ENODEV;
 	}
 

@@ -11,11 +11,6 @@
 #include "winwave.h"
 
 
-#define DEBUG_MODULE "winwave"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 #define READ_BUFFERS   4
 #define INC_RPOS(a) ((a) = (((a) + 1) % READ_BUFFERS))
 
@@ -68,8 +63,8 @@ static int add_wave_in(struct ausrc_st *st)
 	waveInPrepareHeader(st->wavein, wh, sizeof(*wh));
 	res = waveInAddBuffer(st->wavein, wh, sizeof(*wh));
 	if (res != MMSYSERR_NOERROR) {
-		DEBUG_WARNING("add_wave_in: waveInAddBuffer fail: %08x\n",
-			      res);
+		warning("winwave: add_wave_in: waveInAddBuffer fail: %08x\n",
+			res);
 		return ENOMEM;
 	}
 
@@ -156,7 +151,7 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm)
 			  (DWORD_PTR) st,
 			  CALLBACK_FUNCTION | WAVE_FORMAT_DIRECT);
 	if (res != MMSYSERR_NOERROR) {
-		DEBUG_WARNING("waveInOpen: failed %d\n", err);
+		warning("winwave: waveInOpen: failed %d\n", err);
 		return EINVAL;
 	}
 

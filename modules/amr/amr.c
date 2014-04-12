@@ -19,11 +19,6 @@
 #include <baresip.h>
 
 
-#define DEBUG_MODULE "amr"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 #ifdef VO_AMRWBENC_ENC_IF_H
 #define IF2E_IF_encode E_IF_encode
 #define IF2D_IF_decode D_IF_decode
@@ -215,10 +210,8 @@ static int encode_wb(struct auenc_state *st, uint8_t *buf, size_t *len,
 		return ENOMEM;
 
 	n = IF2E_IF_encode(st->enc, 8, sampv, buf, 0);
-	if (n <= 0) {
-		DEBUG_WARNING("encode error: %d\n", n);
+	if (n <= 0)
 		return EPROTO;
-	}
 
 	*len = n;
 

@@ -11,11 +11,6 @@
 #include <baresip.h>
 
 
-#define DEBUG_MODULE "quicktime"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 struct vidsrc_st {
 	struct vidsrc *vs;  /* inheritance */
 	pthread_t thread;

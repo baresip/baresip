@@ -11,11 +11,6 @@
 #include "opensles.h"
 
 
-#define DEBUG_MODULE "opensles/recorder"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 struct ausrc_st {
 	struct ausrc *as;      /* inheritance */
 	int16_t *sampv;
@@ -74,7 +69,7 @@ static void *record_thread(void *arg)
 						   st->sampv,
 						   st->sampc * 2);
 		if (r != SL_RESULT_SUCCESS) {
-			DEBUG_WARNING("Enqueue: r = %d\n", r);
+			warning("opensles: Enqueue: r = %d\n", r);
 		}
 
 		ts += st->ptime;
@@ -120,15 +115,13 @@ static int createAudioRecorder(struct ausrc_st *st, struct ausrc_prm *prm)
 						 &audioSrc,
 						 &audioSnk, 1, id, req);
 	if (SL_RESULT_SUCCESS != r) {
-		DEBUG_WARNING("CreateAudioRecorder failed: r = %d\n", r);
+		warning("opensles: CreateAudioRecorder failed: r = %d\n", r);
 		return ENODEV;
 	}
 
 	r = (*st->recObject)->Realize(st->recObject, SL_BOOLEAN_FALSE);
-	if (SL_RESULT_SUCCESS != r) {
-		DEBUG_WARNING("recorder: Realize r = %d\n", r);
+	if (SL_RESULT_SUCCESS != r)
 		return ENODEV;
-	}
 
 	r = (*st->recObject)->GetInterface(st->recObject, SL_IID_RECORD,
 					   &st->recRecord);
@@ -206,14 +199,12 @@ int opensles_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	}
 
 	err = createAudioRecorder(st, prm);
-	if (err) {
-		DEBUG_WARNING("failed to create recorder\n");
+	if (err)
 		goto out;
-	}
 
 	err = startRecording(st);
 	if (err) {
-		DEBUG_WARNING("failed to start recorder\n");
+		warning("opensles: failed to start recorder\n");
 		goto out;
 	}
 
