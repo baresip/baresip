@@ -75,5 +75,5 @@ uint32_t metric_avg_bitrate(const struct metric *metric)
 
 	diff = (int)(tmr_jiffies() - metric->ts_start);
 
-	return 1000 * 8 * metric->n_bytes / diff;
+	return 1000 * 8 * (metric->n_bytes / diff);
 }

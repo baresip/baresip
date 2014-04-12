@@ -72,7 +72,7 @@ static inline int lostcalc(struct stream *s, uint16_t seq)
 }
 
 
-static void print_rtp_stats(struct stream *s)
+static void print_rtp_stats(const struct stream *s)
 {
 	info("\n%-9s       Transmit:     Receive:\n"
 	     "packets:        %7u      %7u\n"
