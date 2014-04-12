@@ -12,11 +12,6 @@
 #include "dtls_srtp.h"
 
 
-#define DEBUG_MODULE "dtls_srtp"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 /* note: shadow struct in libre's tls module */
 struct tls {
 	SSL_CTX *ctx;
@@ -157,8 +152,8 @@ int dtls_alloc_selfsigned(struct tls **tlsp, const char *aor,
 	/* Generate self-signed certificate */
 	err = tls_gen_selfsigned_cert(tls, aor);
 	if (err) {
-		DEBUG_WARNING("failed to generate certificate (%s): %m\n",
-			      aor, err);
+		warning("dtls: failed to generate certificate (%s): %m\n",
+			aor, err);
 		goto out;
 	}
 
@@ -175,8 +170,8 @@ int dtls_alloc_selfsigned(struct tls **tlsp, const char *aor,
 	}
 
 	if (0 != SSL_CTX_set_tlsext_use_srtp(tls->ctx, srtp_profiles)) {
-		DEBUG_WARNING("could not enable SRTP for profiles '%s'\n",
-			      srtp_profiles);
+		warning("dtls: could not enable SRTP for profiles '%s'\n",
+			srtp_profiles);
 		err = ENOSYS;
 		goto out;
 	}

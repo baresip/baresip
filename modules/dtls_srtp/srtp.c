@@ -13,11 +13,6 @@
 #include "dtls_srtp.h"
 
 
-#define DEBUG_MODULE "dtls_srtp"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 struct srtp_stream {
 	srtp_policy_t policy;
 	srtp_t srtp;
@@ -118,10 +113,10 @@ static bool send_handler(int *err, struct sa *dst, struct mbuf *mb, void *arg)
 	}
 
 	if (err_status_ok != e) {
-		DEBUG_WARNING("send: failed to protect %s-packet"
-			      " with %d bytes (%H)\n",
-			      is_rtcp_packet(mb) ? "RTCP" : "RTP",
-			      len, errstatus_print, e);
+		warning("srtp: send: failed to protect %s-packet"
+			" with %d bytes (%H)\n",
+			is_rtcp_packet(mb) ? "RTCP" : "RTP",
+			len, errstatus_print, e);
 		*err = EPROTO;
 		return false;
 	}
@@ -152,10 +147,10 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	}
 
 	if (e != err_status_ok) {
-		DEBUG_WARNING("recv: failed to unprotect %s-packet"
-			      " with %d bytes (%H)\n",
-			      is_rtcp_packet(mb) ? "RTCP" : "RTP",
-			      len, errstatus_print, e);
+		warning("srtp: recv: failed to unprotect %s-packet"
+			" with %d bytes (%H)\n",
+			is_rtcp_packet(mb) ? "RTCP" : "RTP",
+			len, errstatus_print, e);
 		return true;   /* error - drop packet */
 	}
 
@@ -195,7 +190,7 @@ int srtp_stream_add(struct srtp_stream **sp, const char *profile,
 		crypto_policy_set_aes_cm_128_hmac_sha1_32(&s->policy.rtcp);
 	}
 	else {
-		DEBUG_WARNING("unsupported profile: %s\n", profile);
+		warning("srtp: unsupported profile: %s\n", profile);
 		err = ENOSYS;
 		goto out;
 	}
@@ -207,7 +202,7 @@ int srtp_stream_add(struct srtp_stream **sp, const char *profile,
 	e = srtp_create(&s->srtp, &s->policy);
 	if (err_status_ok != e) {
 		s->srtp = NULL;
-		DEBUG_WARNING("srtp_create() failed. e=%d\n", e);
+		warning("srtp: srtp_create() failed. e=%d\n", e);
 		err = ENOMEM;
 		goto out;
 	}

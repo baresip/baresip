@@ -12,11 +12,6 @@
 #include "sdes.h"
 
 
-#define DEBUG_MODULE "srtp"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 struct menc_st {
 	/* one SRTP session per media line */
 	uint8_t key_tx[32];  /* 32 for alignment, only 30 used */
@@ -137,7 +132,7 @@ static int start_srtp(struct menc_st *st, const char *suite)
 		crypto_policy_set_aes_cm_128_hmac_sha1_80(&policy);
 	}
 	else {
-		DEBUG_WARNING("unknown SRTP crypto suite (%s)\n", suite);
+		warning("srtp: unknown SRTP crypto suite (%s)\n", suite);
 		return ENOENT;
 	}
 
@@ -158,15 +153,15 @@ static int start_srtp(struct menc_st *st, const char *suite)
 	/* allocate and initialize the SRTP session */
 	e = srtp_create(&st->srtp_tx, &st->policy_tx);
 	if (e != err_status_ok) {
-		DEBUG_WARNING("srtp_create TX failed (%H)\n",
-			      errstatus_print, e);
+		warning("srtp: srtp_create TX failed (%H)\n",
+			errstatus_print, e);
 		return EPROTO;
 	}
 
 	e = srtp_create(&st->srtp_rx, &st->policy_rx);
 	if (err_status_ok != e) {
-		DEBUG_WARNING("srtp_create RX failed (%H)\n",
-			      errstatus_print, e);
+		warning("srtp: srtp_create RX failed (%H)\n",
+			errstatus_print, e);
 		return EPROTO;
 	}
 
@@ -184,8 +179,8 @@ static int setup_srtp(struct menc_st *st)
 	/* init SRTP */
 	e = crypto_get_random(st->key_tx, SRTP_MASTER_KEY_LEN);
 	if (err_status_ok != e) {
-		DEBUG_WARNING("crypto_get_random() failed (%H)\n",
-			      errstatus_print, e);
+		warning("srtp: crypto_get_random() failed (%H)\n",
+			errstatus_print, e);
 		return ENOSYS;
 	}
 
@@ -217,10 +212,10 @@ static bool send_handler(int *err, struct sa *dst, struct mbuf *mb, void *arg)
 	}
 
 	if (err_status_ok != e) {
-		DEBUG_WARNING("send: failed to protect %s-packet"
-			      " with %d bytes (%H)\n",
-			      is_rtcp_packet(mb) ? "RTCP" : "RTP",
-			      len, errstatus_print, e);
+		warning("srtp: send: failed to protect %s-packet"
+			" with %d bytes (%H)\n",
+			is_rtcp_packet(mb) ? "RTCP" : "RTP",
+			len, errstatus_print, e);
 		*err = EPROTO;
 		return false;
 	}
@@ -251,10 +246,10 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	}
 
 	if (e != err_status_ok) {
-		DEBUG_WARNING("recv: failed to unprotect %s-packet"
-			      " with %d bytes (%H)\n",
-			      is_rtcp_packet(mb) ? "RTCP" : "RTP",
-			      len, errstatus_print, e);
+		warning("srtp: recv: failed to unprotect %s-packet"
+			" with %d bytes (%H)\n",
+			is_rtcp_packet(mb) ? "RTCP" : "RTP",
+			len, errstatus_print, e);
 		return true;   /* error - drop packet */
 	}
 
@@ -294,7 +289,7 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 		return err;
 
 	if (SRTP_MASTER_KEY_LEN != olen) {
-		DEBUG_WARNING("srtp keylen is %u (should be 30)\n", olen);
+		warning("srtp: srtp keylen is %u (should be 30)\n", olen);
 	}
 
 	err = start_srtp(st, st->crypto_suite);
@@ -402,8 +397,8 @@ static int alloc(struct menc_media **stp, struct menc_sess *sess,
 		rattr = sdp_media_rattr_apply(st->sdpm, "crypto",
 					      sdp_attr_handler, st);
 		if (!rattr) {
-			DEBUG_WARNING("no valid a=crypto attribute from"
-				      " remote peer\n");
+			warning("srtp: no valid a=crypto attribute from"
+				" remote peer\n");
 		}
 	}
 
@@ -439,8 +434,8 @@ static int mod_srtp_init(void)
 
 	err = srtp_init();
 	if (err_status_ok != err) {
-		DEBUG_WARNING("srtp_init() failed (%H)\n",
-			      errstatus_print, err);
+		warning("srtp: srtp_init() failed (%H)\n",
+			errstatus_print, err);
 		return ENOSYS;
 	}
 

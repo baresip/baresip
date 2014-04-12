@@ -8,12 +8,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <re.h>
+#include <baresip.h>
 #include "dtls_srtp.h"
-
-
-#define DEBUG_MODULE "tls_udp"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
 
 
 /* note: shadow struct in dtls.c */
@@ -81,7 +77,7 @@ static int bio_write(BIO *b, const char *buf, int len)
 
 	err = udp_send_helper(tc->us, &tc->peer, mb, tc->uh);
 	if (err) {
-		DEBUG_WARNING("udp_send_helper: %m\n", err);
+		warning("dtls: udp_send_helper: %m\n", err);
 	}
 
 	mem_deref(mb);
@@ -179,8 +175,8 @@ static int get_srtp_key_info(const struct dtls_flow *tc, char *name, size_t sz,
 
 	keymatexportlen = (int)(kl + sl)*2;
 	if (keymatexportlen != 60) {
-		DEBUG_WARNING("expected 60 bits, but keying material is %d\n",
-			      keymatexportlen);
+		warning("dtls: expected 60 bits, but keying material is %d\n",
+			keymatexportlen);
 		return EINVAL;
 	}
 
@@ -257,7 +253,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 		err = get_srtp_key_info(flow, profile, sizeof(profile),
 					&client_key, &server_key);
 		if (err) {
-			DEBUG_WARNING("SRTP key info: %m\n", err);
+			warning("dtls: SRTP key info: %m\n", err);
 			return true;
 		}
 
@@ -340,8 +336,8 @@ int dtls_flow_start(struct dtls_flow *flow, const struct sa *peer, bool active)
 			ERR_clear_error();
 
 			if (ssl_err != SSL_ERROR_WANT_READ) {
-				DEBUG_WARNING("SSL_connect() failed"
-					      " (err=%d)\n", ssl_err);
+				warning("dtls: SSL_connect() failed"
+					" (err=%d)\n", ssl_err);
 			}
 		}
 

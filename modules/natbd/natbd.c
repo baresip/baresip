@@ -7,12 +7,9 @@
 #include <baresip.h>
 
 
-#define DEBUG_MODULE "natbd"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
-/*
+/**
+ * @defgroup natbd natbd
+ *
  * NAT Behavior Discovery Using STUN (RFC 5780)
  *
  * This module is only for diagnostics purposes and does not affect
@@ -129,7 +126,7 @@ static void nat_mapping_handler(int err, enum nat_type type, void *arg)
 		return;
 
 	if (err) {
-		DEBUG_WARNING("NAT mapping failed (%m)\n", err);
+		warning("natbd: NAT mapping failed (%m)\n", err);
 		goto out;
 	}
 
@@ -155,7 +152,7 @@ static void nat_filtering_handler(int err, enum nat_type type, void *arg)
 		return;
 
 	if (err) {
-		DEBUG_WARNING("NAT filtering failed (%m)\n", err);
+		warning("natbd: NAT filtering failed (%m)\n", err);
 		goto out;
 	}
 
@@ -182,7 +179,7 @@ static void nat_lifetime_handler(int err,
 	++natbd->n_nl;
 
 	if (err) {
-		DEBUG_WARNING("nat_lifetime_handler: (%m)\n", err);
+		warning("natbd: nat_lifetime_handler: (%m)\n", err);
 		return;
 	}
 
@@ -206,12 +203,12 @@ static void nat_genalg_handler(int err, uint16_t scode, const char *reason,
 		return;
 
 	if (err) {
-		DEBUG_WARNING("Generic ALG detection failed: %m\n", err);
+		warning("natbd: Generic ALG detection failed: %m\n", err);
 		goto out;
 	}
 	else if (scode) {
-		DEBUG_WARNING("Generic ALG detection failed: %u %s\n",
-			      scode, reason);
+		warning("natbd: Generic ALG detection failed: %u %s\n",
+			scode, reason);
 		goto out;
 	}
 
@@ -255,8 +252,8 @@ static int natbd_start(struct natbd *natbd)
 					     nat_hairpinning_handler, natbd);
 		err |= nat_hairpinning_start(natbd->nh);
 		if (err) {
-			DEBUG_WARNING("nat_hairpinning_start() failed (%m)\n",
-				      err);
+			warning("natbd: nat_hairpinning_start() failed (%m)\n",
+				err);
 		}
 	}
 
@@ -266,8 +263,8 @@ static int natbd_start(struct natbd *natbd)
 					 nat_mapping_handler, natbd);
 		err |= nat_mapping_start(natbd->nm);
 		if (err) {
-			DEBUG_WARNING("nat_mapping_start() failed (%m)\n",
-				      err);
+			warning("natbd: nat_mapping_start() failed (%m)\n",
+				err);
 		}
 	}
 
@@ -280,8 +277,8 @@ static int natbd_start(struct natbd *natbd)
 						   natbd);
 			err |= nat_filtering_start(natbd->nf);
 			if (err) {
-				DEBUG_WARNING("nat_filtering_start() (%m)\n",
-					      err);
+				warning("natbd: nat_filtering_start() (%m)\n",
+					err);
 			}
 		}
 	}
@@ -292,12 +289,12 @@ static int natbd_start(struct natbd *natbd)
 					nat_genalg_handler, natbd);
 
 		if (err) {
-			DEBUG_WARNING("natbd_init: %m\n", err);
+			warning("natbd: natbd_init: %m\n", err);
 		}
 		err |= nat_genalg_start(natbd->ga);
 		if (err) {
-			DEBUG_WARNING("nat_genalg_start() failed (%m)\n",
-				      err);
+			warning("natbd: nat_genalg_start() failed (%m)\n",
+				err);
 		}
 	}
 
@@ -322,8 +319,8 @@ static void dns_handler(int err, const struct sa *addr, void *arg)
 	struct natbd *natbd = arg;
 
 	if (err) {
-		DEBUG_WARNING("failed to resolve '%s' (%m)\n",
-			      natbd->host, err);
+		warning("natbd: failed to resolve '%s' (%m)\n",
+			natbd->host, err);
 		goto out;
 	}
 
@@ -341,8 +338,8 @@ static void dns_handler(int err, const struct sa *addr, void *arg)
 					  NULL, nat_lifetime_handler, natbd);
 		err |= nat_lifetime_start(natbd->nl);
 		if (err) {
-			DEBUG_WARNING("nat_lifetime_start() failed (%m)\n",
-				      err);
+			warning("natbd: nat_lifetime_start() failed (%m)\n",
+				err);
 		}
 	}
 
@@ -383,7 +380,7 @@ static void timeout_init(void *arg)
 
  out:
 	if (err) {
-		DEBUG_WARNING("timeout_init: %m\n", err);
+		warning("natbd: timeout_init: %m\n", err);
 	}
 }
 
@@ -416,8 +413,8 @@ static int natbd_alloc(struct natbd **natbdp, uint32_t interval,
 		natbd->port = pl_u32(&port);
 	}
 	else {
-		DEBUG_WARNING("failed to decode natbd_server (%s)\n",
-			      server);
+		warning("natbd: failed to decode natbd_server (%s)\n",
+			server);
 		err = EINVAL;
 		goto out;
 	}
@@ -470,7 +467,7 @@ static int module_init(void)
 	(void)conf_get_str(conf_cur(), "natbd_server", server, sizeof(server));
 
 	if (!server[0]) {
-		DEBUG_WARNING("missing config 'natbd_server'\n");
+		warning("natbd: missing config 'natbd_server'\n");
 		return EINVAL;
 	}
 
@@ -480,7 +477,7 @@ static int module_init(void)
 	err |= natbd_alloc(&natbdv[0], interval, IPPROTO_UDP, server);
 	err |= natbd_alloc(&natbdv[1], interval, IPPROTO_TCP, server);
 	if (err) {
-		DEBUG_WARNING("failed to allocate natbd state: %m\n", err);
+		warning("natbd: failed to allocate natbd state: %m\n", err);
 	}
 
 	return err;
