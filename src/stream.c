@@ -37,7 +37,7 @@ struct stream {
 	struct menc_media *mes;  /**< Media Encryption media state          */
 	struct metric metric_tx; /**< Metrics for transmit                  */
 	struct metric metric_rx; /**< Metrics for receiving                 */
-	char *cname;
+	char *cname;             /**< RTCP Canonical end-point identifier   */
 	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
 	int pt_enc;              /**< Payload type for encoding             */
