@@ -62,6 +62,7 @@ struct vidsrc_st {
 	unsigned int   n_buffers;
 };
 
+
 static struct vidsrc *vidsrc;
 
 
@@ -199,7 +200,6 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 	unsigned int min;
 	const char *pix;
 	int err;
-
 
 	if (-1 == xioctl(st->fd, VIDIOC_QUERYCAP, &cap)) {
 		if (EINVAL == errno) {
