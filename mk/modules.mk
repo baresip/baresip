@@ -154,8 +154,12 @@ USE_UUID  := $(shell [ -f $(SYSROOT)/include/uuid/uuid.h ] && echo "yes")
 USE_V4L  := $(shell [ -f $(SYSROOT)/include/libv4l1.h ] || \
 	[ -f $(SYSROOT)/local/include/libv4l1.h ] \
 	&& echo "yes")
-USE_V4L2  := $(shell [ -f $(SYSROOT)/include/libv4l2.h ] || \
+HAVE_LIBV4L2 := $(shell [ -f $(SYSROOT)/include/libv4l2.h ] || \
 	[ -f $(SYSROOT)/local/include/libv4l2.h ] \
+	&& echo "yes")
+USE_V4L2 := $(shell [ -f $(SYSROOT)/include/linux/videodev2.h ] || \
+	[ -f $(SYSROOT)/local/include/linux/videodev2.h ] || \
+	[ -f $(SYSROOT)/include/sys/videoio.h ] \
 	&& echo "yes")
 USE_X11 := $(shell [ -f $(SYSROOT)/include/X11/Xlib.h ] || \
 	[ -f $(SYSROOT)/local/include/X11/Xlib.h ] || \

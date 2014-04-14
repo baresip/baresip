@@ -14,13 +14,27 @@
 #include <fcntl.h>
 #include <unistd.h>
 #undef __STRICT_ANSI__ /* needed for RHEL4 kernel 2.6.9 */
-#include <linux/videodev2.h>
 #include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#if defined (OPENBSD)
+#include <sys/videoio.h>
+#else
+#include <linux/videodev2.h>
+#endif
+ 
+#ifdef HAVE_LIBV4L2
 #include <libv4l2.h>
-
+#else
+#define v4l2_open open
+#define v4l2_read read
+#define v4l2_ioctl ioctl
+#define v4l2_mmap mmap
+#define v4l2_munmap munmap
+#define v4l2_close close
+#endif
+ 
 
 enum io_method {
 	IO_METHOD_READ = 0,
@@ -39,6 +53,7 @@ struct vidsrc_st {
 	pthread_t thread;
 	bool run;
 	struct vidsz sz, app_sz;
+	u_int32_t pixfmt;
 	struct mbuf *mb;
 	vidsrc_frame_h *frameh;
 	void *arg;
@@ -51,16 +66,32 @@ struct vidsrc_st {
 static struct vidsrc *vidsrc;
 
 
+static enum vidfmt match_fmt(u_int32_t fmt)
+{
+	switch (fmt) {
+		case V4L2_PIX_FMT_YUV420: return VID_FMT_YUV420P;
+		case V4L2_PIX_FMT_YUYV:   return VID_FMT_YUYV422;
+		case V4L2_PIX_FMT_UYVY:   return VID_FMT_UYVY422;
+		case V4L2_PIX_FMT_RGB32:  return VID_FMT_RGB32;
+		case V4L2_PIX_FMT_RGB565: return VID_FMT_RGB565;
+		case V4L2_PIX_FMT_RGB555: return VID_FMT_RGB555;
+		default:                  return VID_FMT_N;
+	}
+}
+
+
 static void get_video_input(struct vidsrc_st *st)
 {
 	struct v4l2_input input;
 
 	memset(&input, 0, sizeof(input));
 
+#ifndef OPENBSD
 	if (-1 == v4l2_ioctl(st->fd, VIDIOC_G_INPUT, &input.index)) {
 		warning("v4l2: VIDIOC_G_INPUT: %m\n", errno);
 		return;
 	}
+#endif
 
 	if (-1 == v4l2_ioctl(st->fd, VIDIOC_ENUMINPUT, &input)) {
 		warning("v4l2: VIDIOC_ENUMINPUT: %m\n", errno);
@@ -165,6 +196,7 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 {
 	struct v4l2_capability cap;
 	struct v4l2_format fmt;
+	struct v4l2_fmtdesc fmts;
 	unsigned int min;
 	const char *pix;
 	int err;
@@ -203,6 +235,27 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 		break;
 	}
 
+	/* Negotiate video format */
+	memset(&fmts, 0, sizeof(fmts));
+
+	fmts.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	for (fmts.index=0; !v4l2_ioctl(st->fd, VIDIOC_ENUM_FMT, &fmts);
+			fmts.index++) {
+		if (match_fmt(fmts.pixelformat) != VID_FMT_N) {
+			st->pixfmt = fmts.pixelformat;
+#ifdef HAVE_LIBV4L2
+			/* Prefer native formats */
+			if (fmts.flags ^ V4L2_FMT_FLAG_EMULATED)
+#endif
+				break;
+		}
+	}
+
+	if (!st->pixfmt) {
+		warning("v4l2: format negotiation failed: %m\n", errno);
+		return errno;
+	}
+
 	/* Select video input, video standard and tune here. */
 
 	memset(&fmt, 0, sizeof(fmt));
@@ -210,7 +263,7 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 	fmt.type		= V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix.width       = st->app_sz.w;
 	fmt.fmt.pix.height      = st->app_sz.h;
-	fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+	fmt.fmt.pix.pixelformat = st->pixfmt;
 	fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
 	if (-1 == xioctl(st->fd, VIDIOC_S_FMT, &fmt)) {
@@ -257,8 +310,8 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 
 	pix = (char *)&fmt.fmt.pix.pixelformat;
 
-	if (V4L2_PIX_FMT_YUV420 != fmt.fmt.pix.pixelformat) {
-		warning("v4l2: %s: expected YUV420 got %c%c%c%c\n", dev_name,
+	if (st->pixfmt != fmt.fmt.pix.pixelformat) {
+		warning("v4l2: %s: unexpectedly got %c%c%c%c\n", dev_name,
 			pix[0], pix[1], pix[2], pix[3]);
 		return ENODEV;
 	}
@@ -357,7 +410,7 @@ static void call_frame_handler(struct vidsrc_st *st, uint8_t *buf)
 {
 	struct vidframe frame;
 
-	vidframe_init_buf(&frame, VID_FMT_YUV420P, &st->sz, buf);
+	vidframe_init_buf(&frame, match_fmt(st->pixfmt), &st->sz, buf);
 
 	st->frameh(&frame, st->arg);
 }
@@ -515,6 +568,8 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	st->app_sz = *size;
 	st->frameh = frameh;
 	st->arg    = arg;
+
+	st->pixfmt = 0;
 
 	err = vd_open(st, dev);
 	if (err)
