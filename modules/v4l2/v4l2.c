@@ -23,7 +23,7 @@
 #else
 #include <linux/videodev2.h>
 #endif
- 
+
 #ifdef HAVE_LIBV4L2
 #include <libv4l2.h>
 #else
@@ -34,7 +34,7 @@
 #define v4l2_munmap munmap
 #define v4l2_close close
 #endif
- 
+
 
 enum io_method {
 	IO_METHOD_READ = 0,
