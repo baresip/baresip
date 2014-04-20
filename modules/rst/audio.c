@@ -26,7 +26,6 @@ struct ausrc_st {
 	ausrc_error_h *errh;
 	void *arg;
 	bool run;
-	uint32_t psize;
 	uint32_t ptime;
 	size_t sampc;
 };
@@ -63,7 +62,7 @@ static void *play_thread(void *arg)
 	struct ausrc_st *st = arg;
 	int16_t *sampv;
 
-	sampv = mem_alloc(st->psize, NULL);
+	sampv = mem_alloc(st->sampc * 2, NULL);
 	if (!sampv)
 		return NULL;
 
@@ -192,10 +191,9 @@ static int alloc_handler(struct ausrc_st **stp, struct ausrc *as,
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 
 	st->ptime = prm->ptime;
-	st->psize = st->sampc * 2;
 
-	re_printf("rst: audio ptime=%u psize=%u aubuf=[%u:%u]\n",
-		  st->ptime, st->psize,
+	re_printf("rst: audio ptime=%u sampc=%zu aubuf=[%u:%u]\n",
+		  st->ptime, st->sampc,
 		  prm->srate * prm->ch * 2,
 		  prm->srate * prm->ch * 40);
 
