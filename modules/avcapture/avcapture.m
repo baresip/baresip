@@ -60,8 +60,8 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 		break;
 
 	default:
-		re_printf("avcapture: pixfmt %c%c%c%c\n",
-			  type>>24, type>>16, type>>8, type>>0);
+		warning("avcapture: unknown pixfmt %c%c%c%c\n",
+			type>>24, type>>16, type>>8, type>>0);
 		f->fmt = -1;
 		f->data[0] = NULL;
 		return;
