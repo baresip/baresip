@@ -147,8 +147,8 @@ static int get_device(struct vidsrc_st *st, const char *name)
 				!str_casecmp(dev_name, name);
 
 			if (found) {
-				re_printf("dshow: got device '%s' id=%d\n",
-					   name, id);
+				info("dshow: got device '%s' id=%d\n",
+				     name, id);
 				st->dev_moniker = mon;
 			}
 		}
