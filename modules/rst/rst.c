@@ -94,8 +94,7 @@ static void recv_handler(struct mbuf *mb, void *arg)
 			err = mbuf_write_mem(rst->mb, mbuf_buf(mb),
 					     mbuf_get_left(mb));
 			if (err) {
-				re_printf("rst: buffer write error: %m\n",
-					  err);
+				warning("rst: buffer write error: %m\n", err);
 				rst->tc = mem_deref(rst->tc);
 				tmr_start(&rst->tmr, RETRY_WAIT,
 					  reconnect, rst);
@@ -127,7 +126,7 @@ static void recv_handler(struct mbuf *mb, void *arg)
 			rst->metaint = pl_u32(&metaint);
 
 		if (rst->metaint == 0) {
-			re_printf("rst: icy meta interval not available\n");
+			info("rst: icy meta interval not available\n");
 			rst->tc = mem_deref(rst->tc);
 			tmr_start(&rst->tmr, RETRY_WAIT, reconnect, rst);
 			return;
@@ -137,8 +136,7 @@ static void recv_handler(struct mbuf *mb, void *arg)
 
 		rst->mb->pos += hdr.l;
 
-		re_printf("rst: name='%s' metaint=%zu\n",
-			  rst->name, rst->metaint);
+		info("rst: name='%s' metaint=%zu\n", rst->name, rst->metaint);
 
 		if (rst->mb->pos >= rst->mb->end)
 			return;
@@ -161,11 +159,11 @@ static void recv_handler(struct mbuf *mb, void *arg)
 
 			rst->bytec += n;
 #if 0
-			re_printf("rst: metadata %zu bytes\n", n);
+			info("rst: metadata %zu bytes\n", n);
 #endif
 			if (rst->bytec >= rst->metasz) {
 #if 0
-				re_printf("rst: metadata: [%s]\n", rst->meta);
+				info("rst: metadata: [%s]\n", rst->meta);
 #endif
 				rst->metasz = 0;
 				rst->bytec  = 0;
@@ -183,7 +181,7 @@ static void recv_handler(struct mbuf *mb, void *arg)
 			rst->bytec += n;
 			mb->pos    += n;
 #if 0
-			re_printf("rst: mp3data %zu bytes\n", n);
+			info("rst: mp3data %zu bytes\n", n);
 #endif
 		}
 		else {
@@ -193,7 +191,7 @@ static void recv_handler(struct mbuf *mb, void *arg)
 			rst->meta = mem_deref(rst->meta);
 			rst->meta = mem_zalloc(rst->metasz + 1, NULL);
 #if 0
-			re_printf("rst: metalength %zu bytes\n", rst->metasz);
+			info("rst: metalength %zu bytes\n", rst->metasz);
 #endif
 		}
 	}
@@ -206,7 +204,7 @@ static void estab_handler(void *arg)
 	struct mbuf *mb;
 	int err;
 
-	re_printf("rst: connection established\n");
+	info("rst: connection established\n");
 
 	mb = mbuf_alloc(512);
 	if (!mb) {
@@ -230,7 +228,7 @@ static void estab_handler(void *arg)
 
  out:
 	if (err) {
-		re_printf("rst: error sending HTTP request: %m\n", err);
+		warning("rst: error sending HTTP request: %m\n", err);
 	}
 
 	mem_deref(mb);
@@ -241,7 +239,7 @@ static void close_handler(int err, void *arg)
 {
 	struct rst *rst = arg;
 
-	re_printf("rst: tcp closed: %i\n", err);
+	info("rst: tcp closed: %m\n", err);
 
 	rst->tc = mem_deref(rst->tc);
 
@@ -263,7 +261,7 @@ static void dns_handler(int err, const struct dnshdr *hdr, struct list *ansl,
 
 	rr = dns_rrlist_find(ansl, rst->host, DNS_TYPE_A, DNS_CLASS_IN, true);
 	if (!rr) {
-		re_printf("rst: unable to resolve: %s\n", rst->host);
+		warning("rst: unable to resolve: %s\n", rst->host);
 		tmr_start(&rst->tmr, RETRY_WAIT, reconnect, rst);
 		return;
 	}
@@ -273,7 +271,7 @@ static void dns_handler(int err, const struct dnshdr *hdr, struct list *ansl,
 	err = tcp_connect(&rst->tc, &srv, estab_handler, recv_handler,
 			  close_handler, rst);
 	if (err) {
-		re_printf("rst: tcp connect error: %m\n", err);
+		warning("rst: tcp connect error: %m\n", err);
 		tmr_start(&rst->tmr, RETRY_WAIT, reconnect, rst);
 		return;
 	}
@@ -290,14 +288,14 @@ static int rst_connect(struct rst *rst)
 		err = tcp_connect(&rst->tc, &srv, estab_handler, recv_handler,
 				  close_handler, rst);
 		if (err) {
-			re_printf("rst: tcp connect error: %m\n", err);
+			warning("rst: tcp connect error: %m\n", err);
 		}
 	}
 	else {
 		err = dnsc_query(&rst->dnsq, net_dnsc(), rst->host, DNS_TYPE_A,
 				 DNS_CLASS_IN, true, dns_handler, rst);
 		if (err) {
-			re_printf("rst: dns query error: %m\n", err);
+			warning("rst: dns query error: %m\n", err);
 		}
 	}
 
@@ -316,7 +314,7 @@ int rst_alloc(struct rst **rstp, const char *dev)
 
 	if (re_regex(dev, strlen(dev), "http://[^:/]+[:]*[0-9]*[^]+",
 		     &host, NULL, &port, &path)) {
-		re_printf("rst: bad http url: %s\n", dev);
+		warning("rst: bad http url: %s\n", dev);
 		return EBADMSG;
 	}
 
