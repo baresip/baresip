@@ -1171,6 +1171,21 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 }
 
 
+static bool have_common_audio_codecs(const struct call *call)
+{
+	const struct sdp_format *sc;
+	struct aucodec *ac;
+
+	sc = sdp_media_rformat(stream_sdpmedia(audio_strm(call->audio)), NULL);
+	if (!sc)
+		return false;
+
+	ac = sc->data;
+
+	return ac != NULL;
+}
+
+
 int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		const struct sip_msg *msg)
 {
@@ -1199,6 +1214,21 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			return err;
 
 		call->got_offer = true;
+
+		/* Check if we have any common audio codecs, after
+		 * the SDP offer has been parsed
+		 */
+		if (!have_common_audio_codecs(call)) {
+			info("call: no common audio codecs - rejected\n");
+
+			sip_treply(NULL, uag_sip(), msg,
+				   488, "Not Acceptable Here");
+
+			call_event_handler(call, CALL_EVENT_CLOSED,
+					   "No audio codecs");
+
+			return 0;
+		}
 	}
 
 	err = sipsess_accept(&call->sess, sess_sock, msg, 180, "Ringing",
