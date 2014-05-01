@@ -227,6 +227,13 @@ static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 		break;
 
 	case ICE_MODE_LITE:
+		err = icem_lite_set_default_candidates(m->icem);
+		if (err) {
+			warning("ice: could not set"
+				" default candidates (%m)\n", err);
+			return err;
+		}
+
 		gather_handler(0, 0, NULL, m);
 		break;
 	}
