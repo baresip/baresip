@@ -73,6 +73,8 @@ struct call {
 	call_event_h *eh;         /**< Event handler                        */
 	call_dtmf_h *dtmfh;       /**< DTMF handler                         */
 	void *arg;                /**< Handler argument                     */
+
+	struct config_avt config_avt;
 };
 
 
@@ -440,6 +442,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	MAGIC_INIT(call);
 
+	call->config_avt = cfg->avt;
+
 	tmr_init(&call->tmr_inv);
 
 	call->acc    = mem_ref(acc);
@@ -618,6 +622,9 @@ int call_hangup(struct call *call, uint16_t scode, const char *reason)
 
 	if (!call)
 		return EINVAL;
+
+	if (call->config_avt.rtp_stats)
+		call_set_xrtpstat(call);
 
 	switch (call->state) {
 
@@ -1616,4 +1623,16 @@ void call_set_handlers(struct call *call, call_event_h *eh,
 
 	if (arg)
 		call->arg   = arg;
+}
+
+
+void call_set_xrtpstat(struct call *call)
+{
+	if (!call)
+		return;
+
+	sipsess_set_close_headers(call->sess,
+				  "X-RTP-Stat: %H\r\n",
+				  stream_rtpstat,
+				  audio_strm(call->audio));
 }

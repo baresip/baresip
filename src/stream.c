@@ -207,6 +207,10 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 
 	case RTCP_SR:
 		(void)rtcp_stats(s->rtp, msg->r.sr.ssrc, &s->rtcp_stats);
+
+		if (s->cfg.rtp_stats)
+			call_set_xrtpstat(s->call);
+
 		break;
 	}
 }
@@ -589,4 +593,64 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 	return re_hprintf(pf, " %s=%u/%u", sdp_media_name(s->sdp),
 			  s->metric_tx.cur_bitrate,
 			  s->metric_rx.cur_bitrate);
+}
+
+
+/*
+ * Reference:
+ *
+ * https://www.avm.de/de/Extern/files/x-rtp/xrtpv32.pdf
+ */
+int stream_rtpstat(struct re_printf *pf, const struct stream *s)
+{
+	const struct rtcp_stats *rtcp;
+	int err;
+
+	if (!s)
+		return 0;
+
+	rtcp = &s->rtcp_stats;
+
+	if (!rtcp->tx.sent) {
+		info("\n\nNo RTCP data available.\n");
+		return 0;
+	}
+
+	err = re_hprintf(pf,
+			 "EX=BareSip;"      /* Reporter Identifier       */
+			 "CS=%d;"           /* Call Setup in seconds     */
+			 "CD=%d;"           /* Call Duration in seconds  */
+			 "PR=%u;PS=%u;"     /* Packets RX, TX            */
+			 "PL=%d,%d;"        /* Packets Lost RX, TX       */
+			 "PD=%d,%d;"        /* Packets Discarded, RX, TX */
+			 "JI=%.1f,%.1f;"    /* Jitter RX, TX             */
+			 "IP=%J,%J"         /* Local, Remote IPs         */
+			 ,
+			 call_setup_duration(s->call),
+			 call_duration(s->call),
+
+			 s->metric_rx.n_packets,
+			 s->metric_tx.n_packets,
+
+			 rtcp->rx.lost, rtcp->tx.lost,
+
+			 s->metric_rx.n_err, s->metric_tx.n_err,
+
+			 // todo: timestamp units ?
+			 1.0 * rtcp->rx.jit/1000,
+			 1.0 * rtcp->tx.jit/1000,
+
+			 sdp_media_laddr(s->sdp),
+			 sdp_media_raddr(s->sdp)
+			 );
+#if 0
+	if (a->tx.ac) {
+		err |= re_hprintf(pf, ";EN=%s", a->tx.ac->name);
+	}
+	if (a->rx.ac) {
+		err |= re_hprintf(pf, ";DE=%s", a->rx.ac->name);
+	}
+#endif
+
+	return err;
 }

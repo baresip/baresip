@@ -168,6 +168,7 @@ int  call_reset_transp(struct call *call);
 int  call_notify_sipfrag(struct call *call, uint16_t scode,
 			 const char *reason, ...);
 int  call_af(const struct call *call);
+void call_set_xrtpstat(struct call *call);
 
 
 /*
@@ -320,6 +321,7 @@ void stream_reset(struct stream *s);
 void stream_set_bw(struct stream *s, uint32_t bps);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 int  stream_print(struct re_printf *pf, const struct stream *s);
+int  stream_rtpstat(struct re_printf *pf, const struct stream *s);
 
 
 /*
