@@ -207,7 +207,10 @@ static void destructor(void *arg)
 	struct dtls_flow *flow = arg;
 
 	if (flow->ssl) {
-		(void)SSL_shutdown(flow->ssl);
+		int r = SSL_shutdown(flow->ssl);
+		if (r <= 0)
+			ERR_clear_error();
+
 		SSL_free(flow->ssl);
 	}
 
@@ -222,7 +225,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 {
 	struct dtls_flow *flow = arg;
 	uint8_t b;
-	int r;
+	int r, n;
 
 	if (mbuf_get_left(mb) < 1)
 		return false;
@@ -240,7 +243,10 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	if (r <= 0)
 		return true;
 
-	SSL_read(flow->ssl, mbuf_buf(mb), (int)mbuf_get_space(mb));
+	n = SSL_read(flow->ssl, mbuf_buf(mb), (int)mbuf_get_space(mb));
+	if (n <= 0) {
+		ERR_clear_error();
+	}
 
 	if (!flow->up && SSL_state(flow->ssl) == SSL_ST_OK) {
 
@@ -289,8 +295,10 @@ int dtls_flow_alloc(struct dtls_flow **flowp, struct tls *tls,
 		goto out;
 
 	flow->ssl = SSL_new(tls->ctx);
-	if (!flow->ssl)
+	if (!flow->ssl) {
+		ERR_clear_error();
 		goto out;
+	}
 
 	flow->sbio_in = BIO_new(BIO_s_mem());
 	if (!flow->sbio_in)
