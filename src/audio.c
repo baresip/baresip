@@ -1403,7 +1403,8 @@ int stream_rtpstat(struct re_printf *pf, const struct stream *s)
         const struct rtcp_stats *rtcp;
 	const struct call *call = s->call;
         const struct audio *a = call_audio(call);
-
+	int srate_tx = 8000;
+	int srate_rx = 8000;
         int err;
 
         if (!s)
@@ -1416,17 +1417,22 @@ int stream_rtpstat(struct re_printf *pf, const struct stream *s)
                 return 1;
         }
 
+	if (a->tx.ac)
+		srate_tx = get_srate(a->tx.ac);
+	if (a->rx.ac)
+		srate_rx = get_srate(a->rx.ac);
+
         err = re_hprintf(pf,
-                         "EX=BareSip;"      /* Reporter Identifier       */
-                         "CS=%d;"           /* Call Setup in seconds     */
-                         "CD=%d;"           /* Call Duration in seconds  */
-                         "PR=%u;PS=%u;"     /* Packets RX, TX            */
-                         "PL=%d,%d;"        /* Packets Lost RX, TX       */
-                         "PD=%d,%d;"        /* Packets Discarded, RX, TX */
-                         "JI=%.1f,%.1f;"    /* Jitter RX, TX             */
-                         "IP=%J,%J"         /* Local, Remote IPs         */
+                         "EX=BareSip;"      /* Reporter Identifier               */
+                         "CS=%d;"           /* Call Setup in milliseconds        */
+                         "CD=%d;"           /* Call Duration in seconds          */
+                         "PR=%u;PS=%u;"     /* Packets RX, TX                    */
+                         "PL=%d,%d;"        /* Packets Lost RX, TX               */
+                         "PD=%d,%d;"        /* Packets Discarded, RX, TX         */
+                         "JI=%.1f,%.1f;"    /* Jitter RX, TX in timestamp units  */
+                         "IP=%J,%J"         /* Local, Remote IPs                 */
                          ,
-                         call_setup_duration(s->call),
+                         call_setup_duration(s->call) * 1000,
                          call_duration(s->call),
 
                          s->metric_rx.n_packets,
@@ -1436,20 +1442,20 @@ int stream_rtpstat(struct re_printf *pf, const struct stream *s)
 
                          s->metric_rx.n_err, s->metric_tx.n_err,
 
-                         // todo: timestamp units ?
-                         1.0 * rtcp->rx.jit/1000,
-                         1.0 * rtcp->tx.jit/1000,
-
+                         // todo: timestamp units (ie: 8 ts units = 1 ms @ 8KHZ)
+                         1.0 * rtcp->rx.jit/1000 * (srate_rx/1000),
+                         1.0 * rtcp->tx.jit/1000 * (srate_rx/1000),
 
                          sdp_media_laddr(s->sdp),
                          sdp_media_raddr(s->sdp)
+
                          );
 
 		        if (a->tx.ac) {
-	        	        err |= re_hprintf(pf, ";EN=%s", a->tx.ac->name);
+	        	        err |= re_hprintf(pf, ";EN=%s/%d", a->tx.ac->name, srate_tx );
 	        	}
 	        	if (a->rx.ac) {
-	        	        err |= re_hprintf(pf, ";DE=%s", a->rx.ac->name);
+	        	        err |= re_hprintf(pf, ";DE=%s/%d", a->rx.ac->name, srate_rx );
 	        	}
 
         return err;
