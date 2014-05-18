@@ -613,7 +613,7 @@ int stream_rtpstat(struct re_printf *pf, const struct stream *s)
 
 	if (!rtcp->tx.sent) {
 		info("\n\nNo RTCP data available.\n");
-		return 0;
+		return 1;
 	}
 
 	err = re_hprintf(pf,
