@@ -1407,8 +1407,7 @@ int stream_rtpstat(struct re_printf *pf, const struct stream *s)
         int err;
 
         if (!s)
-                return 0;
-
+                return 1;
 
         rtcp = &s->rtcp_stats;
 
@@ -1445,14 +1444,13 @@ int stream_rtpstat(struct re_printf *pf, const struct stream *s)
                          sdp_media_laddr(s->sdp),
                          sdp_media_raddr(s->sdp)
                          );
-//#if 0
-        if (a->tx.ac) {
-                err |= re_hprintf(pf, ";EN=%s", a->tx.ac->name);
-        }
-        if (a->rx.ac) {
-                err |= re_hprintf(pf, ";DE=%s", a->rx.ac->name);
-        }
-//#endif
+
+		        if (a->tx.ac) {
+	        	        err |= re_hprintf(pf, ";EN=%s", a->tx.ac->name);
+	        	}
+	        	if (a->rx.ac) {
+	        	        err |= re_hprintf(pf, ";DE=%s", a->rx.ac->name);
+	        	}
 
         return err;
 }
