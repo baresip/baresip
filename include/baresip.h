@@ -813,6 +813,7 @@ int vidfilt_dec_append(struct list *filtl, void **ctx,
 struct audio;
 
 void audio_mute(struct audio *a, bool muted);
+bool audio_ismuted(const struct audio *a);
 void audio_set_devicename(struct audio *a, const char *src, const char *play);
 void audio_encoder_cycle(struct audio *audio);
 int  audio_debug(struct re_printf *pf, const struct audio *a);

@@ -292,7 +292,6 @@ const struct sdp_format *sdp_media_format_cycle(struct sdp_media *m);
  * Stream
  */
 
-struct stream;
 struct rtp_header;
 
 enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
@@ -300,6 +299,34 @@ enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 typedef void (stream_rtp_h)(const struct rtp_header *hdr, struct mbuf *mb,
 			    void *arg);
 typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
+
+/** Defines a generic media stream */
+struct stream {
+	struct le le;            /**< Linked list element                   */
+	struct config_avt cfg;   /**< Stream configuration                  */
+	struct call *call;       /**< Ref. to call object                   */
+	struct sdp_media *sdp;   /**< SDP Media line                        */
+	struct rtp_sock *rtp;    /**< RTP Socket                            */
+	struct rtpkeep *rtpkeep; /**< RTP Keepalive                         */
+	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
+	struct jbuf *jbuf;       /**< Jitter Buffer for incoming RTP        */
+	struct mnat_media *mns;  /**< Media NAT traversal state             */
+	const struct menc *menc; /**< Media encryption module               */
+	struct menc_sess *mencs; /**< Media encryption session state        */
+	struct menc_media *mes;  /**< Media Encryption media state          */
+	struct metric metric_tx; /**< Metrics for transmit                  */
+	struct metric metric_rx; /**< Metrics for receiving                 */
+	char *cname;             /**< RTCP Canonical end-point identifier   */
+	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
+	uint32_t pseq;           /**< Sequence number for incoming RTP      */
+	int pt_enc;              /**< Payload type for encoding             */
+	bool rtcp;               /**< Enable RTCP                           */
+	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
+	bool jbuf_started;       /**< True if jitter-buffer was started     */
+	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
+	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
+	void *arg;               /**< Handler argument                      */
+};
 
 int  stream_alloc(struct stream **sp, const struct config_avt *cfg,
 		  struct call *call, struct sdp_session *sdp_sess,

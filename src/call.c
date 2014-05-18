@@ -663,6 +663,8 @@ int call_progress(struct call *call)
 	if (!call)
 		return EINVAL;
 
+	tmr_cancel(&call->tmr_inv);
+
 	err = call_sdp_get(call, &desc, false);
 	if (err)
 		return err;
