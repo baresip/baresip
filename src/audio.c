@@ -302,6 +302,7 @@ static int add_audio_codec(struct audio *a, struct sdp_media *m,
 static void encode_rtp_send(struct audio *a, struct autx *tx,
 			    int16_t *sampv, size_t sampc)
 {
+	unsigned frame_size;  /* number of samples per channel */
 	size_t len;
 	int err;
 
@@ -328,7 +329,12 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 			goto out;
 	}
 
-	tx->ts += (uint32_t)(tx->is_g722 ? sampc/2 : sampc);
+	/* The RTP clock rate used for generating the RTP timestamp is
+	 * independent of the number of channels and the encoding
+	 */
+	frame_size = (tx->is_g722 ? sampc/2 : sampc) / tx->ac->ch;
+
+	tx->ts += frame_size;
 
  out:
 	tx->marker = false;
@@ -700,7 +706,7 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 	auresamp_init(&tx->resamp);
 	str_ncpy(tx->device, a->cfg.src_dev, sizeof(tx->device));
 	tx->ptime  = ptime;
-	tx->ts     = 160;
+	tx->ts     = rand_u16();
 	tx->marker = true;
 
 	auresamp_init(&rx->resamp);
@@ -1272,7 +1278,7 @@ int audio_send_digit(struct audio *a, char key)
 
 
 /**
- * Mute the audio stream
+ * Mute the audio stream source (i.e. Microphone)
  *
  * @param a      Audio stream
  * @param muted  True to mute, false to un-mute
@@ -1283,6 +1289,22 @@ void audio_mute(struct audio *a, bool muted)
 		return;
 
 	a->tx.muted = muted;
+}
+
+
+/**
+ * Get the mute state of an audio source
+ *
+ * @param a      Audio stream
+ *
+ * @return True if muted, otherwise false
+ */
+bool audio_ismuted(const struct audio *a)
+{
+	if (!a)
+		return false;
+
+	return a->tx.muted;
 }
 
 

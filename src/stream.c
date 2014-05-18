@@ -74,6 +74,11 @@ static inline int lostcalc(struct stream *s, uint16_t seq)
 
 static void print_rtp_stats(const struct stream *s)
 {
+	bool started = s->metric_tx.n_packets>0 || s->metric_rx.n_packets>0;
+
+	if (!started)
+		return;
+
 	info("\n%-9s       Transmit:     Receive:\n"
 	     "packets:        %7u      %7u\n"
 	     "avg. bitrate:   %7.1f      %7.1f  (kbit/s)\n"
