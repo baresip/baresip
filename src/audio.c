@@ -1278,7 +1278,7 @@ int audio_send_digit(struct audio *a, char key)
 
 
 /**
- * Mute the audio stream
+ * Mute the audio stream source (i.e. Microphone)
  *
  * @param a      Audio stream
  * @param muted  True to mute, false to un-mute
@@ -1289,6 +1289,22 @@ void audio_mute(struct audio *a, bool muted)
 		return;
 
 	a->tx.muted = muted;
+}
+
+
+/**
+ * Get the mute state of an audio source
+ *
+ * @param a      Audio stream
+ *
+ * @return True if muted, otherwise false
+ */
+bool audio_ismuted(const struct audio *a)
+{
+	if (!a)
+		return false;
+
+	return a->tx.muted;
 }
 
 

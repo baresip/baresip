@@ -340,12 +340,12 @@ static int call_reinvite(struct re_printf *pf, void *unused)
 
 static int call_mute(struct re_printf *pf, void *unused)
 {
-	static bool muted = false;
+	struct audio *audio = call_audio(ua_call(uag_cur()));
+	bool muted = !audio_ismuted(audio);
 	(void)unused;
 
-	muted = !muted;
 	(void)re_hprintf(pf, "\ncall %smuted\n", muted ? "" : "un-");
-	audio_mute(call_audio(ua_call(uag_cur())), muted);
+	audio_mute(audio, muted);
 
 	return 0;
 }
