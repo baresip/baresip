@@ -124,6 +124,7 @@ int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
 struct stream *audio_strm(const struct audio *a);
 int  audio_send_digit(struct audio *a, char key);
 void audio_sdp_attr_decode(struct audio *a);
+int  audio_print_rtpstat(struct re_printf *pf, const struct audio *au);
 
 
 /*
@@ -348,7 +349,6 @@ void stream_reset(struct stream *s);
 void stream_set_bw(struct stream *s, uint32_t bps);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 int  stream_print(struct re_printf *pf, const struct stream *s);
-int  stream_rtpstat(struct re_printf *pf, const struct stream *s);
 
 
 /*

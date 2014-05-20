@@ -1635,6 +1635,5 @@ void call_set_xrtpstat(struct call *call)
 
 	sipsess_set_close_headers(call->sess,
 				  "X-RTP-Stat: %H\r\n",
-				  stream_rtpstat,
-				  audio_strm(call->audio));
+				  audio_print_rtpstat, call->audio);
 }

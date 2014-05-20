@@ -1398,66 +1398,62 @@ void audio_set_devicename(struct audio *a, const char *src, const char *play)
  *
  * https://www.avm.de/de/Extern/files/x-rtp/xrtpv32.pdf
  */
-int stream_rtpstat(struct re_printf *pf, const struct stream *s)
+int audio_print_rtpstat(struct re_printf *pf, const struct audio *a)
 {
-        const struct rtcp_stats *rtcp;
-	const struct call *call = s->call;
-        const struct audio *a = call_audio(call);
+	const struct stream *s;
+	const struct rtcp_stats *rtcp;
 	int srate_tx = 8000;
 	int srate_rx = 8000;
-        int err;
+	int err;
 
-        if (!s)
-                return 1;
+	if (!a)
+		return 1;
 
-        rtcp = &s->rtcp_stats;
+	s = a->strm;
+	rtcp = &s->rtcp_stats;
 
-        if (!rtcp->tx.sent) {
-                info("\n\nNo RTCP data available.\n");
-                return 1;
-        }
+	if (!rtcp->tx.sent)
+		return 1;
 
 	if (a->tx.ac)
 		srate_tx = get_srate(a->tx.ac);
 	if (a->rx.ac)
 		srate_rx = get_srate(a->rx.ac);
 
-        err = re_hprintf(pf,
-                         "EX=BareSip;"      /* Reporter Identifier               */
-                         "CS=%d;"           /* Call Setup in milliseconds        */
-                         "CD=%d;"           /* Call Duration in seconds          */
-                         "PR=%u;PS=%u;"     /* Packets RX, TX                    */
-                         "PL=%d,%d;"        /* Packets Lost RX, TX               */
-                         "PD=%d,%d;"        /* Packets Discarded, RX, TX         */
-                         "JI=%.1f,%.1f;"    /* Jitter RX, TX in timestamp units  */
-                         "IP=%J,%J"         /* Local, Remote IPs                 */
-                         ,
-                         call_setup_duration(s->call) * 1000,
-                         call_duration(s->call),
+	err = re_hprintf(pf,
+			 "EX=BareSip;"   /* Reporter Identifier	             */
+			 "CS=%d;"        /* Call Setup in milliseconds       */
+			 "CD=%d;"        /* Call Duration in seconds	     */
+			 "PR=%u;PS=%u;"  /* Packets RX, TX                   */
+			 "PL=%d,%d;"     /* Packets Lost RX, TX              */
+			 "PD=%d,%d;"     /* Packets Discarded, RX, TX        */
+			 "JI=%.1f,%.1f;" /* Jitter RX, TX in timestamp units */
+			 "IP=%J,%J"      /* Local, Remote IPs                */
+			 ,
+			 call_setup_duration(s->call) * 1000,
+			 call_duration(s->call),
 
-                         s->metric_rx.n_packets,
-                         s->metric_tx.n_packets,
+			 s->metric_rx.n_packets,
+			 s->metric_tx.n_packets,
 
-                         rtcp->rx.lost, rtcp->tx.lost,
+			 rtcp->rx.lost, rtcp->tx.lost,
 
-                         s->metric_rx.n_err, s->metric_tx.n_err,
+			 s->metric_rx.n_err, s->metric_tx.n_err,
 
-                         // timestamp units (ie: 8 ts units = 1 ms @ 8KHZ)
-                         1.0 * rtcp->rx.jit/1000 * (srate_rx/1000),
-                         1.0 * rtcp->tx.jit/1000 * (srate_rx/1000),
+			 /* timestamp units (ie: 8 ts units = 1 ms @ 8KHZ) */
+			 1.0 * rtcp->rx.jit/1000 * (srate_rx/1000),
+			 1.0 * rtcp->tx.jit/1000 * (srate_tx/1000),
 
-                         sdp_media_laddr(s->sdp),
-                         sdp_media_raddr(s->sdp)
+			 sdp_media_laddr(s->sdp),
+			 sdp_media_raddr(s->sdp)
+			 );
 
-                         );
+	if (a->tx.ac) {
+		err |= re_hprintf(pf, ";EN=%s/%d", a->tx.ac->name, srate_tx );
+	}
+	if (a->rx.ac) {
+		err |= re_hprintf(pf, ";DE=%s/%d", a->rx.ac->name, srate_rx );
+	}
 
-		        if (a->tx.ac) {
-	        	        err |= re_hprintf(pf, ";EN=%s/%d", a->tx.ac->name, srate_tx );
-	        	}
-	        	if (a->rx.ac) {
-	        	        err |= re_hprintf(pf, ";DE=%s/%d", a->rx.ac->name, srate_rx );
-	        	}
-
-        return err;
+	return err;
 }
-
