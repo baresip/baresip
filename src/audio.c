@@ -1442,7 +1442,7 @@ int stream_rtpstat(struct re_printf *pf, const struct stream *s)
 
                          s->metric_rx.n_err, s->metric_tx.n_err,
 
-                         // todo: timestamp units (ie: 8 ts units = 1 ms @ 8KHZ)
+                         // timestamp units (ie: 8 ts units = 1 ms @ 8KHZ)
                          1.0 * rtcp->rx.jit/1000 * (srate_rx/1000),
                          1.0 * rtcp->tx.jit/1000 * (srate_rx/1000),
 
