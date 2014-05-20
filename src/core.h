@@ -124,6 +124,7 @@ int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
 struct stream *audio_strm(const struct audio *a);
 int  audio_send_digit(struct audio *a, char key);
 void audio_sdp_attr_decode(struct audio *a);
+int  audio_print_rtpstat(struct re_printf *pf, const struct audio *au);
 
 
 /*
@@ -168,6 +169,7 @@ int  call_reset_transp(struct call *call);
 int  call_notify_sipfrag(struct call *call, uint16_t scode,
 			 const char *reason, ...);
 int  call_af(const struct call *call);
+void call_set_xrtpstat(struct call *call);
 
 
 /*
