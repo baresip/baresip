@@ -172,6 +172,10 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 
 	case RTCP_SR:
 		(void)rtcp_stats(s->rtp, msg->r.sr.ssrc, &s->rtcp_stats);
+
+		if (s->cfg.rtp_stats)
+			call_set_xrtpstat(s->call);
+
 		break;
 	}
 }
@@ -553,3 +557,5 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 			  s->metric_tx.cur_bitrate,
 			  s->metric_rx.cur_bitrate);
 }
+
+
