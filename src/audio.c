@@ -302,7 +302,7 @@ static int add_audio_codec(struct audio *a, struct sdp_media *m,
 static void encode_rtp_send(struct audio *a, struct autx *tx,
 			    int16_t *sampv, size_t sampc)
 {
-	unsigned frame_size;  /* number of samples per channel */
+	size_t frame_size;  /* number of samples per channel */
 	size_t len;
 	int err;
 
