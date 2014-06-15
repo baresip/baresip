@@ -165,7 +165,6 @@ ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec
 isac          iSAC audio codec
 l16           L16 audio codec
-mda           Symbian Mediaserver audio driver (now deprecated)
 menu          Interactive menu
 mwi           Message Waiting Indication
 natbd         NAT Behavior Discovery Module
@@ -289,7 +288,6 @@ Supported platforms:
 * FreeBSD
 * OpenBSD
 * NetBSD
-* Symbian OS
 * Solaris
 * Windows
 * Apple Mac OS X and iOS
@@ -302,7 +300,6 @@ Supported compilers:
 * gcce
 * llvm clang
 * ms vc2003 compiler
-* codewarrior
 
 
 External dependencies:
