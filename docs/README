@@ -165,6 +165,7 @@ ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec
 isac          iSAC audio codec
 l16           L16 audio codec
+libsrtp       Secure RTP encryption using libsrtp
 menu          Interactive menu
 mwi           Message Waiting Indication
 natbd         NAT Behavior Discovery Module
@@ -190,7 +191,7 @@ sndio         Audio driver for OpenBSD
 speex         Speex audio codec
 speex_aec     Acoustic Echo Cancellation (AEC) using libspeexdsp
 speex_pp      Audio pre-processor using libspeexdsp
-srtp          Secure RTP encryption
+srtp          Secure RTP encryption (SDES) using libre SRTP-stack
 stdio         Standard input/output UI driver
 stun          Session Traversal Utilities for NAT (STUN) module
 syslog        Syslog module
