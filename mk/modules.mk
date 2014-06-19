@@ -256,6 +256,9 @@ endif
 ifneq ($(USE_COREAUDIO),)
 MODULES   += coreaudio
 endif
+ifneq ($(USE_DTLS_SRTP),)
+MODULES   += dtls_srtp
+endif
 ifneq ($(USE_QUICKTIME),)
 MODULES   += quicktime
 endif
@@ -343,9 +346,6 @@ MODULES   += speex_pp
 endif
 ifneq ($(USE_LIBSRTP),)
 MODULES   += libsrtp
-ifneq ($(USE_DTLS_SRTP),)
-MODULES   += dtls_srtp
-endif
 endif
 ifneq ($(USE_STDIO),)
 MODULES   += stdio

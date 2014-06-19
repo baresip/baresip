@@ -6,6 +6,6 @@
 
 MOD		:= dtls_srtp
 $(MOD)_SRCS	+= dtls_srtp.c srtp.c dtls.c
-$(MOD)_LFLAGS	+= -lsrtp
+$(MOD)_LFLAGS	+=
 
 include mk/mod.mk

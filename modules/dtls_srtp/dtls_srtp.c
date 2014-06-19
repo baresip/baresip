@@ -4,10 +4,6 @@
  * Copyright (C) 2010 Creytiv.com
  */
 
-#if defined (__GNUC__) && !defined (asm)
-#define asm __asm__  /* workaround */
-#endif
-#include <srtp/srtp.h>
 #include <re.h>
 #include <baresip.h>
 #include <string.h>
@@ -224,6 +220,8 @@ static void dtls_close_handler(int err, void *arg)
 
 	info("dtls_srtp: dtls-connection closed (%m)\n", err);
 
+	comp->tls_conn = mem_deref(comp->tls_conn);
+
 	if (!comp->negotiated) {
 
 		if (comp->ds->sess->errorh)
@@ -237,6 +235,8 @@ static void dtls_conn_handler(const struct sa *peer, void *arg)
 	struct comp *comp = arg;
 	int err;
 	(void)peer;
+
+	info("dtls_srtp: incoming DTLS connect from %J\n", peer);
 
 	err = dtls_accept(&comp->tls_conn, tls, comp->dtls_sock,
 			  dtls_estab_handler, NULL, dtls_close_handler, comp);
@@ -423,15 +423,7 @@ static struct menc dtls_srtp2 = {
 
 static int module_init(void)
 {
-	err_status_t ret;
 	int err;
-
-	crypto_kernel_shutdown();
-	ret = srtp_init();
-	if (err_status_ok != ret) {
-		warning("dtls_srtp: srtp_init() failed: ret=%d\n", ret);
-		return ENOSYS;
-	}
 
 	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, NULL, NULL);
 	if (err) {
@@ -472,7 +464,6 @@ static int module_close(void)
 	menc_unregister(&dtls_srtpf);
 	menc_unregister(&dtls_srtp2);
 	tls = mem_deref(tls);
-	crypto_kernel_shutdown();
 
 	return 0;
 }
