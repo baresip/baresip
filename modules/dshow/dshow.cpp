@@ -15,11 +15,6 @@
 #include <qedit.h>
 
 
-#define DEBUG_MODULE "dshow"
-#define DEBUG_LEVEL 6
-#include <re_dbg.h>
-
-
 const CLSID CLSID_SampleGrabber = { 0xc1f400a0, 0x3f08, 0x11d3,
   { 0x9f, 0x0b, 0x00, 0x60, 0x08, 0x03, 0x9e, 0x37 }
 };
@@ -309,7 +304,7 @@ static int config_pin(struct vidsrc_st *st, IPin *pin)
 	rh = vih->bmiHeader.biHeight;
 
 	if (w != rw || h != rh) {
-		DEBUG_WARNING("config_pin: picture size missmatch: "
+		warning("dshow: config_pin: picture size missmatch: "
 			      "wanted %d x %d, got %d x %d\n",
 			      w, h, rw, rh);
 	}
@@ -402,7 +397,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	hr = CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC,
                               IID_IGraphBuilder, (void **) &st->graph);
 	if (FAILED(hr)) {
-		DEBUG_WARNING("alloc: IID_IGraphBuilder failed: %ld\n", hr);
+		warning("dshow: alloc: IID_IGraphBuilder failed: %ld\n", hr);
 		err = ENODEV;
 		goto out;
 	}
@@ -411,14 +406,14 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 			      CLSCTX_INPROC, IID_ICaptureGraphBuilder2,
 			      (void **) &st->capture);
 	if (FAILED(hr)) {
-		DEBUG_WARNING("alloc: IID_ICaptureGraphBuilder2: %ld\n", hr);
+		warning("dshow: alloc: IID_ICaptureGraphBuilder2: %ld\n", hr);
 		err = ENODEV;
 		goto out;
 	}
 
 	hr = st->capture->SetFiltergraph(st->graph);
 	if (FAILED(hr)) {
-		DEBUG_WARNING("alloc: SetFiltergraph failed: %ld\n", hr);
+		warning("dshow: alloc: SetFiltergraph failed: %ld\n", hr);
 		err = ENODEV;
 		goto out;
 	}
@@ -426,14 +421,14 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	hr = st->dev_moniker->BindToObject(NULL, NULL, IID_IBaseFilter,
 				    (void **) &st->dev_filter);
 	if (FAILED(hr)) {
-		DEBUG_WARNING("alloc: bind to base filter failed: %ld\n", hr);
+		warning("dshow: alloc: bind to base filter failed: %ld\n", hr);
 		err = ENODEV;
 		goto out;
 	}
 
 	hr = st->graph->AddFilter(st->dev_filter, L"Video Capture");
 	if (FAILED(hr)) {
-		DEBUG_WARNING("alloc: VideoCapture failed: %ld\n", hr);
+		warning("dshow: alloc: VideoCapture failed: %ld\n", hr);
 		err = ENODEV;
 		goto out;
 	}
@@ -455,7 +450,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 				       st->dev_filter,
 				       NULL, st->grabber_filter);
 	if (FAILED(hr)) {
-		DEBUG_WARNING("alloc: RenderStream failed\n");
+		warning("dshow: alloc: RenderStream failed\n");
 		err = ENODEV;
 		goto out;
 	}
@@ -463,14 +458,14 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	hr = st->graph->QueryInterface(IID_IMediaControl,
 				       (void **) &st->mc);
 	if (FAILED(hr)) {
-		DEBUG_WARNING("alloc: IMediaControl failed\n");
+		warning("dshow: alloc: IMediaControl failed\n");
 		err = ENODEV;
 		goto out;
 	}
 
 	hr = st->mc->Run();
 	if (FAILED(hr)) {
-		DEBUG_WARNING("alloc: Run failed\n");
+		warning("dshow: alloc: Run failed\n");
 		err = ENODEV;
 		goto out;
 	}
