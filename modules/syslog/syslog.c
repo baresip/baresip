@@ -9,6 +9,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup syslog syslog
+ *
+ * This module implements a logging handler for output to syslog
+ */
+
+
 #define DEBUG_MODULE ""
 #define DEBUG_LEVEL 0
 #include <re_dbg.h>

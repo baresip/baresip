@@ -1,5 +1,5 @@
 /**
- * @file sdes.h  SDP Security Descriptions for Media Streams (RFC 4568) API
+ * @file libsrtp/sdes.h  SDP Security Descriptions (RFC 4568) API
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -15,8 +15,8 @@ struct crypto {
 	struct pl sess_prms; /* optional */
 };
 
-extern const char sdp_attr_crypto[];
 
-int sdes_encode_crypto(struct sdp_media *m, uint32_t tag, const char *suite,
-		       const char *key, size_t key_len);
-int sdes_decode_crypto(struct crypto *c, const char *val);
+int libsrtp_sdes_encode_crypto(struct sdp_media *m, uint32_t tag,
+			       const char *suite,
+			       const char *key, size_t key_len);
+int libsrtp_sdes_decode_crypto(struct crypto *c, const char *val);

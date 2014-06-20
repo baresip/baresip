@@ -34,7 +34,12 @@
 /*************************************************************************/
 
 
-/*
+/**
+ * @defgroup dtmfio dtmfio
+ *
+ * DTMF input/output module
+ *
+ *
  * # DTMFIO Module
  *
  * ## Description

@@ -11,6 +11,14 @@
 #include "winwave.h"
 
 
+/**
+ * @defgroup winwave winwave
+ *
+ * Windows audio driver module
+ *
+ */
+
+
 static struct ausrc *ausrc;
 static struct auplay *auplay;
 

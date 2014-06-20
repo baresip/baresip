@@ -272,7 +272,7 @@ static int sdp_enc(struct menc_st *st, struct sdp_media *m,
 	if (err)
 		return err;
 
-	return sdes_encode_crypto(m, tag, suite, key, olen);
+	return libsrtp_sdes_encode_crypto(m, tag, suite, key, olen);
 }
 
 
@@ -309,7 +309,7 @@ static bool sdp_attr_handler(const char *name, const char *value, void *arg)
 	struct crypto c;
 	(void)name;
 
-	if (sdes_decode_crypto(&c, value))
+	if (libsrtp_sdes_decode_crypto(&c, value))
 		return false;
 
 	if (0 != pl_strcmp(&c.key_method, "inline"))
