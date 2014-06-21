@@ -1,3 +1,79 @@
+2014-06-21 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.11
+
+	* GIT commit 7a465f2eb92f4e32740093e5ad4970d528908c51
+
+	* baresip:
+	  - audio: added audio_ismuted() to get audio mute status
+	  - audio: fix timestamp generation for stereo-streams
+	  - audio: send outgoing audio-packets as soon as possible
+	  - audio: upgrade to sample-based ausrc/auplay API
+	  - auplay: change API to use samples instead of 8-bit buffer
+	  - auplay: remove option to specify sample format (always S16LE)
+	  - ausrc: change API to use samples instead of 8-bit buffer
+	  - ausrc: remove option to specify sample format (always S16LE)
+	  - call: added support for X-RTP-Stat header (thanks Lorenzo Mangani)
+	  - call: check for common audio-codecs (thanks Juha Heinanen)
+	  - logging: use info() instead of DEBUG_INFO();
+	  - logging: use warning() instead of DEBUG_WARNING()
+	  - play: convert WAV-file from little-endian to native-endian
+	  - removed support for Symbian OS
+
+	* debian: upgrade debian files
+
+	* avcapture: also build for MacOSX
+
+	* alsa: fix sample-endianess with SND_PCM_FORMAT_S16
+		upgrade to sample-based ausrc/auplay API
+
+	* audiounit: upgrade to sample-based ausrc/auplay API
+
+	* auloop: upgrade to sample-based ausrc/auplay API
+
+	* coreaudio: upgrade to sample-based ausrc/auplay API
+
+	* dtls_srtp: use DTLS code from libre (needs libre v0.4.9 or later)
+		     use SRTP code from libre (needs libre v0.4.9 or later)
+
+	* dtmfio: new module to send DTMF-events via FIFO file
+		  (contributed by Aaron Herting)
+
+	* fakevideo: new module for fake video input/output driver
+
+	* gst: upgrade to sample-based ausrc/auplay API
+
+	* ice: set default candidates for ICE-lite
+
+	* libsrtp: module 'srtp.so' renamed to 'libsrtp.so'
+
+	* mda: Symbian MDA audio driver was deleted
+
+	* menu: fix issue with audio-mute on multiple calls
+
+	* opensles: upgrade to sample-based ausrc/auplay API
+
+	* oss: upgrade to sample-based ausrc/auplay API
+
+	* portaudio: upgrade to sample-based ausrc/auplay API
+
+	* rst: upgrade to sample-based ausrc/auplay API
+
+	* selftest: new module for testing the baresip core api
+
+	* sndio: new module for OpenBSD audio driver
+                 (It was contributed by Dmitrij D. Czarkoff, thank you!)
+
+	* srtp: module is now using SRTP-stack from libre (v0.4.9 or later)
+
+	* syslog: use logging framework to get messages
+
+	* v4l2: add format negotiation and OpenBSD support
+                (contributed by Dmitrij D. Czarkoff)
+
+	* winwave: upgrade to sample-based ausrc/auplay API
+
+
 2014-01-23 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.10
