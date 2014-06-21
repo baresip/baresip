@@ -13,7 +13,7 @@ extern "C" {
 
 
 /** Defines the Baresip version string */
-#define BARESIP_VERSION "0.4.10"
+#define BARESIP_VERSION "0.4.11"
 
 
 /* forward declarations */
