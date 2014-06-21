@@ -117,6 +117,7 @@ int srtp_stream_add(struct srtp_stream **sp, enum srtp_suite suite,
 {
 	struct srtp_stream *s;
 	int err = 0;
+	(void)tx;
 
 	if (!sp || !key)
 		return EINVAL;
