@@ -360,11 +360,10 @@ struct list *aufilt_list(void);
  */
 
 enum log_level {
-	DEBUG = 0,
-	INFO,
-	WARN,
-#undef ERROR
-	ERROR,
+	LEVEL_DEBUG = 0,
+	LEVEL_INFO,
+	LEVEL_WARN,
+	LEVEL_ERROR,
 };
 
 typedef void (log_h)(uint32_t level, const char *msg);

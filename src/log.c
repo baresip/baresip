@@ -59,7 +59,7 @@ void vlog(enum log_level level, const char *fmt, va_list ap)
 
 	if (lg.stder) {
 
-		bool color = level == WARN || level == ERROR;
+		bool color = level == LEVEL_WARN || level == LEVEL_ERROR;
 
 		if (color)
 			(void)re_fprintf(stderr, "\x1b[31m"); /* Red */
@@ -87,7 +87,7 @@ void loglv(enum log_level level, const char *fmt, ...)
 {
 	va_list ap;
 
-	if ((DEBUG == level) && !lg.debug)
+	if ((LEVEL_DEBUG == level) && !lg.debug)
 		return;
 
 	va_start(ap, fmt);
@@ -104,7 +104,7 @@ void debug(const char *fmt, ...)
 		return;
 
 	va_start(ap, fmt);
-	vlog(DEBUG, fmt, ap);
+	vlog(LEVEL_DEBUG, fmt, ap);
 	va_end(ap);
 }
 
@@ -114,7 +114,7 @@ void info(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vlog(INFO, fmt, ap);
+	vlog(LEVEL_INFO, fmt, ap);
 	va_end(ap);
 }
 
@@ -124,7 +124,7 @@ void warning(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vlog(WARN, fmt, ap);
+	vlog(LEVEL_WARN, fmt, ap);
 	va_end(ap);
 }
 
@@ -134,6 +134,6 @@ void error(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	vlog(ERROR, fmt, ap);
+	vlog(LEVEL_ERROR, fmt, ap);
 	va_end(ap);
 }
