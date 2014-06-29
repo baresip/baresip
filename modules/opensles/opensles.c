@@ -20,10 +20,14 @@ static struct ausrc *ausrc;
 
 static int module_init(void)
 {
+	SLEngineOption engineOption[] = {
+		{ (SLuint32) SL_ENGINEOPTION_THREADSAFE,
+		  (SLuint32) SL_BOOLEAN_TRUE },
+	};
 	SLresult r;
 	int err;
 
-	r = slCreateEngine(&engineObject, 0, NULL, 0, NULL, NULL);
+	r = slCreateEngine(&engineObject, 1, engineOption, 0, NULL, NULL);
 	if (SL_RESULT_SUCCESS != r)
 		return ENODEV;
 

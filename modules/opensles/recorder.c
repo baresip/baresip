@@ -5,19 +5,22 @@
  */
 #include <re.h>
 #include <baresip.h>
-#include <pthread.h>
+#include <string.h>
 #include <SLES/OpenSLES.h>
 #include "SLES/OpenSLES_Android.h"
 #include "opensles.h"
 
 
+#define N_REC_QUEUE_BUFFERS 2
+#define PTIME 10
+
+
 struct ausrc_st {
 	struct ausrc *as;      /* inheritance */
-	int16_t *sampv;
-	size_t sampc;
-	uint32_t ptime;
-	pthread_t thread;
-	bool run;
+
+	int16_t *sampv[N_REC_QUEUE_BUFFERS];
+	size_t   sampc;
+	uint8_t  bufferId;
 	ausrc_read_h *rh;
 	void *arg;
 
@@ -31,60 +34,39 @@ static void ausrc_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	if (st->run) {
-		st->run = false;
-		pthread_join(st->thread, NULL);
+	if (st->recObject != NULL) {
+		SLuint32 state;
+
+		if (SL_OBJECT_STATE_UNREALIZED !=
+		    (*st->recObject)->GetState(st->recObject,&state)) {
+			(*st->recObject)->Destroy(st->recObject);
+		}
 	}
 
-	if (st->recObject != NULL)
-		(*st->recObject)->Destroy(st->recObject);
+	st->bufferId = 0;
+	for (int i=0; i<N_REC_QUEUE_BUFFERS; i++) {
+		mem_deref(st->sampv[i]);
+	}
 
-	mem_deref(st->sampv);
 	mem_deref(st->as);
-}
-
-
-static void *record_thread(void *arg)
-{
-	uint64_t now, ts = tmr_jiffies();
-	struct ausrc_st *st = arg;
-	SLresult r;
-
-	while (st->run) {
-
-		(void)sys_usleep(4000);
-
-		now = tmr_jiffies();
-
-		if (ts > now)
-			continue;
-#if 1
-		if (now > ts + 100) {
-			debug("opensles: cpu lagging behind (%u ms)\n",
-			      now - ts);
-		}
-#endif
-
-		r = (*st->recBufferQueue)->Enqueue(st->recBufferQueue,
-						   st->sampv,
-						   st->sampc * 2);
-		if (r != SL_RESULT_SUCCESS) {
-			warning("opensles: Enqueue: r = %d\n", r);
-		}
-
-		ts += st->ptime;
-	}
-
-	return NULL;
 }
 
 
 static void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct ausrc_st *st = context;
+
 	(void)bq;
 
-	st->rh(st->sampv, st->sampc, st->arg);
+	st->rh(st->sampv[st->bufferId], st->sampc, st->arg);
+
+	st->bufferId = ( st->bufferId + 1 ) % N_REC_QUEUE_BUFFERS;
+
+	memset(st->sampv[st->bufferId], 0, st->sampc * 2);
+
+	(*st->recBufferQueue)->Enqueue(st->recBufferQueue,
+				       st->sampv[st->bufferId],
+				       st->sampc * 2);
 }
 
 
@@ -152,12 +134,12 @@ static int startRecording(struct ausrc_st *st)
 					 SL_RECORDSTATE_STOPPED);
 	(*st->recBufferQueue)->Clear(st->recBufferQueue);
 
-#if 0
+	st->bufferId = 0;
 	r = (*st->recBufferQueue)->Enqueue(st->recBufferQueue,
-					   st->buf, sizeof(st->buf));
+					   st->sampv[st->bufferId],
+					   st->sampc * 2);
 	if (SL_RESULT_SUCCESS != r)
 		return ENODEV;
-#endif
 
 	r = (*st->recRecord)->SetRecordState(st->recRecord,
 					     SL_RECORDSTATE_RECORDING);
@@ -189,13 +171,15 @@ int opensles_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	st->as  = mem_ref(as);
 	st->rh  = rh;
 	st->arg = arg;
-	st->ptime = prm->ptime;
-	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 
-	st->sampv = mem_alloc(2 * st->sampc, NULL);
-	if (!st->sampv) {
-		err = ENOMEM;
-		goto out;
+	st->sampc = prm->srate * prm->ch * PTIME / 1000;
+	st->bufferId   = 0;
+	for (int i=0; i<N_REC_QUEUE_BUFFERS; i++) {
+		st->sampv[i] = mem_zalloc(2 * st->sampc, NULL);
+		if (!st->sampv[i]) {
+			err = ENOMEM;
+			goto out;
+		}
 	}
 
 	err = createAudioRecorder(st, prm);
@@ -205,14 +189,6 @@ int opensles_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	err = startRecording(st);
 	if (err) {
 		warning("opensles: failed to start recorder\n");
-		goto out;
-	}
-
-	st->run = true;
-
-	err = pthread_create(&st->thread, NULL, record_thread, st);
-	if (err) {
-		st->run = false;
 		goto out;
 	}
 
