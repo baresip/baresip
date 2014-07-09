@@ -23,6 +23,7 @@
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
 #   USE_L16           L16 audio codec
+#   USE_LIBSRTP       Secure RTP module using libsrtp
 #   USE_MPG123        Use mpg123
 #   USE_OPUS          Opus audio codec
 #   USE_OSS           OSS audio driver
@@ -34,7 +35,7 @@
 #   USE_SPEEX         Speex audio codec
 #   USE_SPEEX_AEC     Speex Acoustic Echo Canceller
 #   USE_SPEEX_PP      Speex preprocessor
-#   USE_SRTP          Secure RTP module
+#   USE_SRTP          Secure RTP module using libre
 #   USE_STDIO         stdio input driver
 #   USE_SYSLOG        Syslog module
 #   USE_UUID          UUID module
@@ -147,7 +148,7 @@ USE_SPEEX_PP := $(shell [ -f $(SYSROOT)/include/speex_preprocess.h ] || \
 	[ -f $(SYSROOT)/local/include/speex/speex_preprocess.h ] || \
 	[ -f $(SYSROOT_ALT)/include/speex/speex_preprocess.h ] || \
 	[ -f $(SYSROOT)/include/speex/speex_preprocess.h ] && echo "yes")
-USE_SRTP := $(shell [ -f $(SYSROOT)/include/srtp/srtp.h ] || \
+USE_LIBSRTP := $(shell [ -f $(SYSROOT)/include/srtp/srtp.h ] || \
 	[ -f $(SYSROOT_ALT)/include/srtp/srtp.h ] || \
 	[ -f $(SYSROOT)/local/include/srtp/srtp.h ] && echo "yes")
 USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
@@ -219,6 +220,7 @@ MODULES   += $(EXTRA_MODULES)
 MODULES   += stun turn ice natbd auloop presence
 MODULES   += menu contact vumeter mwi account natpmp httpd
 MODULES   += selftest
+MODULES   += srtp
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge
 endif
@@ -253,6 +255,9 @@ MODULES   += cons
 endif
 ifneq ($(USE_COREAUDIO),)
 MODULES   += coreaudio
+endif
+ifneq ($(USE_DTLS_SRTP),)
+MODULES   += dtls_srtp
 endif
 ifneq ($(USE_QUICKTIME),)
 MODULES   += quicktime
@@ -339,11 +344,8 @@ endif
 ifneq ($(USE_SPEEX_PP),)
 MODULES   += speex_pp
 endif
-ifneq ($(USE_SRTP),)
-MODULES   += srtp
-ifneq ($(USE_DTLS_SRTP),)
-MODULES   += dtls_srtp
-endif
+ifneq ($(USE_LIBSRTP),)
+MODULES   += libsrtp
 endif
 ifneq ($(USE_STDIO),)
 MODULES   += stdio

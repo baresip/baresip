@@ -13,7 +13,7 @@ extern "C" {
 
 
 /** Defines the Baresip version string */
-#define BARESIP_VERSION "0.4.10"
+#define BARESIP_VERSION "0.4.11"
 
 
 /* forward declarations */
@@ -360,11 +360,10 @@ struct list *aufilt_list(void);
  */
 
 enum log_level {
-	DEBUG = 0,
-	INFO,
-	WARN,
-#undef ERROR
-	ERROR,
+	LEVEL_DEBUG = 0,
+	LEVEL_INFO,
+	LEVEL_WARN,
+	LEVEL_ERROR,
 };
 
 typedef void (log_h)(uint32_t level, const char *msg);
@@ -498,6 +497,7 @@ int  ua_print_calls(struct re_printf *pf, const struct ua *ua);
 int  ua_print_status(struct re_printf *pf, const struct ua *ua);
 int  ua_print_supported(struct re_printf *pf, const struct ua *ua);
 int  ua_register(struct ua *ua);
+void ua_unregister(struct ua *ua);
 bool ua_isregistered(const struct ua *ua);
 const char     *ua_aor(const struct ua *ua);
 const char     *ua_cuser(const struct ua *ua);

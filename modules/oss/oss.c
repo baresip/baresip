@@ -20,6 +20,18 @@
 #endif
 
 
+/**
+ * @defgroup oss oss
+ *
+ * Open Sound System (OSS) audio driver module
+ *
+ *
+ * References:
+ *
+ *    http://www.4front-tech.com/linux.html
+ */
+
+
 struct ausrc_st {
 	struct ausrc *as;      /* inheritance */
 	int fd;

@@ -17,7 +17,7 @@
 /**
  * @defgroup celt celt
  *
- * CELT audio codec
+ * CELT audio codec (deprecated, replaced by opus)
  *
  * @deprecated Replaced by the @ref opus module
  *

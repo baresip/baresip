@@ -10,12 +10,17 @@
 #include "opensles.h"
 
 
+#define N_PLAY_QUEUE_BUFFERS 2
+#define PTIME 10
+
+
 struct auplay_st {
 	struct auplay *ap;      /* inheritance */
-	int16_t *sampv;
-	size_t sampc;
 	auplay_write_h *wh;
 	void *arg;
+	int16_t *sampv[N_PLAY_QUEUE_BUFFERS];
+	size_t   sampc;
+	uint8_t  bufferId;
 
 	SLObjectItf outputMixObject;
 	SLObjectItf bqPlayerObject;
@@ -34,7 +39,11 @@ static void auplay_destructor(void *arg)
 	if (st->outputMixObject != NULL)
 		(*st->outputMixObject)->Destroy(st->outputMixObject);
 
-	mem_deref(st->sampv);
+	st->bufferId = 0;
+	for (int i=0; i<N_PLAY_QUEUE_BUFFERS; i++) {
+		mem_deref(st->sampv[i]);
+	}
+
 	mem_deref(st->ap);
 }
 
@@ -43,9 +52,12 @@ static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct auplay_st *st = context;
 
-	st->wh(st->sampv, st->sampc, st->arg);
+	st->wh(st->sampv[st->bufferId], st->sampc, st->arg);
 
-	(*st->BufferQueue)->Enqueue(bq, st->sampv, st->sampc * 2);
+	(*st->BufferQueue)->Enqueue(bq /*st->BufferQueue*/,
+				    st->sampv[st->bufferId], st->sampc * 2);
+
+	st->bufferId = ( st->bufferId + 1 ) % N_PLAY_QUEUE_BUFFERS;
 }
 
 
@@ -148,12 +160,15 @@ int opensles_player_alloc(struct auplay_st **stp, struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 
-	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	st->sampc = prm->srate * prm->ch * PTIME / 1000;
 
-	st->sampv = mem_alloc(2 * st->sampc, NULL);
-	if (!st->sampv) {
-		err = ENOMEM;
-		goto out;
+	st->bufferId   = 0;
+	for (int i=0; i<N_PLAY_QUEUE_BUFFERS; i++) {
+		st->sampv[i] = mem_zalloc(2 * st->sampc, NULL);
+		if (!st->sampv[i]) {
+			err = ENOMEM;
+			goto out;
+		}
 	}
 
 	err = createOutput(st);

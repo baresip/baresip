@@ -13,7 +13,7 @@
 USE_VIDEO := 1
 
 PROJECT	  := baresip
-VERSION   := 0.4.10
+VERSION   := 0.4.11
 
 ifndef LIBRE_MK
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \
@@ -239,3 +239,7 @@ src/static.c: $(BUILD) Makefile $(APP_MK) $(MOD_MK)
 	done
 	@echo "  NULL"  >> $@
 	@echo "};"  >> $@
+
+git_release:
+	git archive --format=tar --prefix=$(PROJECT)-$(VERSION)/ v$(VERSION) \
+		| gzip > $(PROJECT)-$(VERSION).tar.gz

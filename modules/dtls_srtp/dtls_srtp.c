@@ -4,10 +4,6 @@
  * Copyright (C) 2010 Creytiv.com
  */
 
-#if defined (__GNUC__) && !defined (asm)
-#define asm __asm__  /* workaround */
-#endif
-#include <srtp/srtp.h>
 #include <re.h>
 #include <baresip.h>
 #include <string.h>
@@ -41,7 +37,7 @@ struct menc_sess {
 
 /* media */
 struct dtls_srtp {
-	struct sock sockv[2];
+	struct comp compv[2];
 	const struct menc_sess *sess;
 	struct sdp_media *sdpm;
 	struct tmr tmr;
@@ -72,13 +68,14 @@ static void destructor(void *arg)
 	tmr_cancel(&st->tmr);
 
 	for (i=0; i<2; i++) {
-		struct sock *s = &st->sockv[i];
+		struct comp *c = &st->compv[i];
 
-		mem_deref(s->uh_srtp);
-		mem_deref(s->dtls);
-		mem_deref(s->app_sock);  /* must be freed last */
-		mem_deref(s->tx);
-		mem_deref(s->rx);
+		mem_deref(c->uh_srtp);
+		mem_deref(c->tls_conn);
+		mem_deref(c->dtls_sock);
+		mem_deref(c->app_sock);  /* must be freed last */
+		mem_deref(c->tx);
+		mem_deref(c->rx);
 	}
 
 	mem_deref(st->sdpm);
@@ -87,72 +84,49 @@ static void destructor(void *arg)
 
 static bool verify_fingerprint(const struct sdp_session *sess,
 			       const struct sdp_media *media,
-			       struct dtls_flow *tc)
+			       struct tls_conn *tc)
 {
 	struct pl hash;
-	char hashstr[32];
-	uint8_t md_sdp[64];
+	uint8_t md_sdp[32], md_dtls[32];
 	size_t sz_sdp = sizeof(md_sdp);
-	struct tls_fingerprint tls_fp;
+	size_t sz_dtls;
+	enum tls_fingerprint type;
+	int err;
 
 	if (sdp_fingerprint_decode(sdp_rattr(sess, media, "fingerprint"),
 				   &hash, md_sdp, &sz_sdp))
 		return false;
 
-	pl_strcpy(&hash, hashstr, sizeof(hashstr));
-
-	if (dtls_get_remote_fingerprint(tc, hashstr, &tls_fp)) {
-		warning("dtls_srtp: could not get DTLS fingerprint\n");
+	if (0 == pl_strcasecmp(&hash, "sha-1")) {
+		type = TLS_FINGERPRINT_SHA1;
+		sz_dtls = 20;
+	}
+	else if (0 == pl_strcasecmp(&hash, "sha-256")) {
+		type = TLS_FINGERPRINT_SHA256;
+		sz_dtls = 32;
+	}
+	else {
+		warning("dtls_srtp: unknown fingerprint '%r'\n", &hash);
 		return false;
 	}
 
-	if (sz_sdp != tls_fp.len || 0 != memcmp(md_sdp, tls_fp.md, sz_sdp)) {
-		warning("dtls_srtp: %s fingerprint mismatch\n", hashstr);
-		info("DTLS: %w\n", tls_fp.md, (size_t)tls_fp.len);
+	err = tls_peer_fingerprint(tc, type, md_dtls, sizeof(md_dtls));
+	if (err) {
+		warning("dtls_srtp: could not get DTLS fingerprint (%m)\n",
+			err);
+		return false;
+	}
+
+	if (sz_sdp != sz_dtls || 0 != memcmp(md_sdp, md_dtls, sz_sdp)) {
+		warning("dtls_srtp: %r fingerprint mismatch\n", &hash);
 		info("SDP:  %w\n", md_sdp, sz_sdp);
+		info("DTLS: %w\n", md_dtls, sz_dtls);
 		return false;
 	}
 
-	info("dtls_srtp: verified %s fingerprint OK\n", hashstr);
+	info("dtls_srtp: verified %r fingerprint OK\n", &hash);
 
 	return true;
-}
-
-
-static void dtls_established_handler(int err, struct dtls_flow *flow,
-				     const char *profile,
-				     const struct key *client_key,
-				     const struct key *server_key,
-				     void *arg)
-{
-	struct sock *sock = arg;
-	const struct dtls_srtp *ds = sock->ds;
-
-	if (!verify_fingerprint(ds->sess->sdp, ds->sdpm, flow)) {
-		warning("dtls_srtp: could not verify remote fingerprint\n");
-		if (ds->sess->errorh)
-			ds->sess->errorh(EPIPE, ds->sess->arg);
-		return;
-	}
-
-	sock->negotiated = true;
-
-	info("dtls_srtp: ---> DTLS-SRTP complete (%s/%s) Profile=%s\n",
-	     sdp_media_name(ds->sdpm),
-	     sock->is_rtp ? "RTP" : "RTCP", profile);
-
-	err |= srtp_stream_add(&sock->tx, profile,
-			       ds->active ? client_key : server_key,
-			       true);
-
-	err |= srtp_stream_add(&sock->rx, profile,
-			       ds->active ? server_key : client_key,
-			       false);
-
-	err |= srtp_install(sock);
-	if (err) {
-		warning("dtls_srtp: srtp_install: %m\n", err);
-	}
 }
 
 
@@ -170,10 +144,10 @@ static int session_alloc(struct menc_sess **sessp,
 	if (!sess)
 		return ENOMEM;
 
-	sess->sdp    = mem_ref(sdp);
+	sess->sdp     = mem_ref(sdp);
 	sess->offerer = offerer;
-	sess->errorh = errorh;
-	sess->arg    = arg;
+	sess->errorh  = errorh;
+	sess->arg     = arg;
 
 	/* RFC 4145 */
 	err = sdp_session_set_lattr(sdp, true, "setup",
@@ -197,27 +171,117 @@ static int session_alloc(struct menc_sess **sessp,
 }
 
 
-static int media_start_sock(struct sock *sock, struct sdp_media *sdpm)
+static void dtls_estab_handler(void *arg)
+{
+	struct comp *comp = arg;
+	const struct dtls_srtp *ds = comp->ds;
+	enum srtp_suite suite;
+	uint8_t cli_key[30], srv_key[30];
+	int err;
+
+	if (!verify_fingerprint(ds->sess->sdp, ds->sdpm, comp->tls_conn)) {
+		warning("dtls_srtp: could not verify remote fingerprint\n");
+		if (ds->sess->errorh)
+			ds->sess->errorh(EPIPE, ds->sess->arg);
+		return;
+	}
+
+	err = tls_srtp_keyinfo(comp->tls_conn, &suite,
+			       cli_key, sizeof(cli_key),
+			       srv_key, sizeof(srv_key));
+	if (err) {
+		warning("dtls_srtp: could not get SRTP keyinfo (%m)\n", err);
+		return;
+	}
+
+	comp->negotiated = true;
+
+	info("dtls_srtp: ---> DTLS-SRTP complete (%s/%s) Profile=%s\n",
+	     sdp_media_name(ds->sdpm),
+	     comp->is_rtp ? "RTP" : "RTCP", srtp_suite_name(suite));
+
+	err |= srtp_stream_add(&comp->tx, suite,
+			       ds->active ? cli_key : srv_key, 30, true);
+	err |= srtp_stream_add(&comp->rx, suite,
+			       ds->active ? srv_key : cli_key, 30, false);
+
+	err |= srtp_install(comp);
+	if (err) {
+		warning("dtls_srtp: srtp_install: %m\n", err);
+	}
+
+	/* todo: notify application that crypto is up and running */
+}
+
+
+static void dtls_close_handler(int err, void *arg)
+{
+	struct comp *comp = arg;
+
+	info("dtls_srtp: dtls-connection closed (%m)\n", err);
+
+	comp->tls_conn = mem_deref(comp->tls_conn);
+
+	if (!comp->negotiated) {
+
+		if (comp->ds->sess->errorh)
+			comp->ds->sess->errorh(err, comp->ds->sess->arg);
+	}
+}
+
+
+static void dtls_conn_handler(const struct sa *peer, void *arg)
+{
+	struct comp *comp = arg;
+	int err;
+	(void)peer;
+
+	info("dtls_srtp: incoming DTLS connect from %J\n", peer);
+
+	err = dtls_accept(&comp->tls_conn, tls, comp->dtls_sock,
+			  dtls_estab_handler, NULL, dtls_close_handler, comp);
+	if (err) {
+		warning("dtls_srtp: dtls_accept failed (%m)\n", err);
+		return;
+	}
+}
+
+
+static int component_start(struct comp *comp, struct sdp_media *sdpm)
 {
 	struct sa raddr;
 	int err = 0;
 
-	if (!sock->app_sock || sock->negotiated || sock->dtls)
+	if (!comp->app_sock || comp->negotiated || comp->dtls_sock)
 		return 0;
 
-	if (sock->is_rtp)
+	if (comp->is_rtp)
 		raddr = *sdp_media_raddr(sdpm);
 	else
 		sdp_media_raddr_rtcp(sdpm, &raddr);
 
+	err = dtls_listen(&comp->dtls_sock, NULL,
+			  comp->app_sock, 2, LAYER_DTLS,
+			  dtls_conn_handler, comp);
+	if (err) {
+		warning("dtls_srtp: dtls_listen failed (%m)\n", err);
+		return err;
+	}
+
 	if (sa_isset(&raddr, SA_ALL)) {
 
-		err = dtls_flow_alloc(&sock->dtls, tls, sock->app_sock,
-				      dtls_established_handler, sock);
-		if (err)
-			return err;
+		if (comp->ds->active && !comp->tls_conn) {
 
-		err = dtls_flow_start(sock->dtls, &raddr, sock->ds->active);
+			err = dtls_connect(&comp->tls_conn, tls,
+					   comp->dtls_sock, &raddr,
+					   dtls_estab_handler, NULL,
+					   dtls_close_handler, comp);
+			if (err) {
+				warning("dtls_srtp: dtls_connect()"
+					" failed (%m)\n", err);
+				return err;
+			}
+		}
 	}
 
 	return err;
@@ -231,16 +295,16 @@ static int media_start(struct dtls_srtp *st, struct sdp_media *sdpm)
 	if (st->started)
 		return 0;
 
-	debug("dtls_srtp: media_start: '%s' mux=%d, active=%d\n",
-	      sdp_media_name(sdpm), st->mux, st->active);
+	info("dtls_srtp: media=%s -- start DTLS %s\n",
+	     sdp_media_name(sdpm), st->active ? "client" : "server");
 
 	if (!sdp_media_has_media(sdpm))
 		return 0;
 
-	err = media_start_sock(&st->sockv[0], sdpm);
+	err = component_start(&st->compv[0], sdpm);
 
 	if (!st->mux)
-		err |= media_start_sock(&st->sockv[1], sdpm);
+		err |= component_start(&st->compv[1], sdpm);
 
 	if (err)
 		return err;
@@ -283,14 +347,14 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 
 	st->sess = sess;
 	st->sdpm = mem_ref(sdpm);
-	st->sockv[0].app_sock = mem_ref(rtpsock);
-	st->sockv[1].app_sock = mem_ref(rtcpsock);
+	st->compv[0].app_sock = mem_ref(rtpsock);
+	st->compv[1].app_sock = mem_ref(rtcpsock);
 
 	for (i=0; i<2; i++)
-		st->sockv[i].ds = st;
+		st->compv[i].ds = st;
 
-	st->sockv[0].is_rtp = true;
-	st->sockv[1].is_rtp = false;
+	st->compv[0].is_rtp = true;
+	st->compv[1].is_rtp = false;
 
 	if (err) {
 		mem_deref(st);
@@ -300,7 +364,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 		*mp = (struct menc_media *)st;
 
  setup:
-	st->mux = (rtpsock == rtcpsock);
+	st->mux = (rtpsock == rtcpsock) || (rtcpsock == NULL);
 
 	setup = sdp_rattr(st->sess->sdp, st->sdpm, "setup");
 	if (setup) {
@@ -359,19 +423,30 @@ static struct menc dtls_srtp2 = {
 
 static int module_init(void)
 {
-	err_status_t ret;
 	int err;
 
-	crypto_kernel_shutdown();
-	ret = srtp_init();
-	if (err_status_ok != ret) {
-		warning("dtls_srtp: srtp_init() failed: ret=%d\n", ret);
-		return ENOSYS;
+	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, NULL, NULL);
+	if (err) {
+		warning("dtls_srtp: failed to create DTLS context (%m)\n",
+			err);
+		return err;
 	}
 
-	err = dtls_alloc_selfsigned(&tls, "dtls@baresip", srtp_profiles);
-	if (err)
+	err = tls_set_selfsigned(tls, "dtls@baresip");
+	if (err) {
+		warning("dtls_srtp: failed to self-sign certificate (%m)\n",
+			err);
 		return err;
+	}
+
+	tls_set_verify_client(tls);
+
+	err = tls_set_srtp(tls, srtp_profiles);
+	if (err) {
+		warning("dtls_srtp: failed to enable SRTP profile (%m)\n",
+			err);
+		return err;
+	}
 
 	menc_register(&dtls_srtpf);
 	menc_register(&dtls_srtp);
@@ -389,7 +464,6 @@ static int module_close(void)
 	menc_unregister(&dtls_srtpf);
 	menc_unregister(&dtls_srtp2);
 	tls = mem_deref(tls);
-	crypto_kernel_shutdown();
 
 	return 0;
 }

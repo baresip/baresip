@@ -12,11 +12,6 @@
 #include "opengles.h"
 
 
-#define DEBUG_MODULE "opengles"
-#define DEBUG_LEVEL 5
-#include <re_dbg.h>
-
-
 static struct vidisp *vid;
 
 
@@ -255,7 +250,7 @@ static int opengles_display(struct vidisp_st *st, const char *title,
 
 	if (!st->vf) {
 		if (frame->size.w & 3) {
-			DEBUG_WARNING("width must be multiple of 4\n");
+			warning("opengles: width must be multiple of 4\n");
 			return EINVAL;
 		}
 

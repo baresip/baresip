@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "6de:f:hv");
+		const int c = getopt(argc, argv, "6de:f:p:hv");
 		if (0 > c)
 			break;
 
@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
 					 "\t-d               Daemon\n"
 					 "\t-e <commands>    Exec commands\n"
 					 "\t-f <path>        Config path\n"
+					 "\t-p <path>        Audio files\n"
 					 "\t-h -?            Help\n"
 					 "\t-v               Verbose debug\n"
 					 );
@@ -87,6 +88,10 @@ int main(int argc, char *argv[])
 
 		case 'f':
 			conf_path_set(optarg);
+			break;
+
+		case 'p':
+			play_set_path(optarg);
 			break;
 
 		case 'v':

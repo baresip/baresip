@@ -11,9 +11,19 @@
 #include <baresip.h>
 
 
-/*
- * portaudio v19 is required
+/**
+ * @defgroup portaudio portaudio
+ *
+ * Portaudio audio driver
+ *
+ * (portaudio v19 is required)
+ *
+ *
+ * References:
+ *
+ *    http://www.portaudio.com/
  */
+
 
 struct ausrc_st {
 	struct ausrc *as;      /* inheritance */

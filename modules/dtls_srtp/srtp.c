@@ -4,19 +4,13 @@
  * Copyright (C) 2010 Creytiv.com
  */
 
-#if defined (__GNUC__) && !defined (asm)
-#define asm __asm__  /* workaround */
-#endif
-#include <srtp/srtp.h>
 #include <re.h>
 #include <baresip.h>
 #include "dtls_srtp.h"
 
 
 struct srtp_stream {
-	srtp_policy_t policy;
-	srtp_t srtp;
-	uint8_t key[SRTP_MAX_KEY_LEN];
+	struct srtp *srtp;
 };
 
 
@@ -58,152 +52,83 @@ static inline bool is_rtcp_packet(const struct mbuf *mb)
 }
 
 
-static int errstatus_print(struct re_printf *pf, err_status_t e)
-{
-	const char *s;
-
-	switch (e) {
-
-	case err_status_ok:          s = "ok";          break;
-	case err_status_fail:        s = "fail";        break;
-	case err_status_auth_fail:   s = "auth_fail";   break;
-	case err_status_cipher_fail: s = "cipher_fail"; break;
-	case err_status_replay_fail: s = "replay_fail"; break;
-
-	default:
-		return re_hprintf(pf, "err=%d", e);
-	}
-
-	return re_hprintf(pf, "%s", s);
-}
-
-
 static void destructor(void *arg)
 {
 	struct srtp_stream *s = arg;
 
-	if (s->srtp)
-		srtp_dealloc(s->srtp);
+	mem_deref(s->srtp);
 }
 
 
 static bool send_handler(int *err, struct sa *dst, struct mbuf *mb, void *arg)
 {
-	struct sock *sock = arg;
-	err_status_t e;
-	int len;
+	struct comp *comp = arg;
 	(void)dst;
 
 	if (!is_rtp_or_rtcp(mb))
 		return false;
 
-	len = (int)mbuf_get_left(mb);
-
-	if (mbuf_get_space(mb) < ((size_t)len + SRTP_MAX_TRAILER_LEN)) {
-		*err = mbuf_resize(mb, mb->pos + len + SRTP_MAX_TRAILER_LEN);
-		if (*err)
-			return true;
-	}
-
 	if (is_rtcp_packet(mb)) {
-		e = srtp_protect_rtcp(sock->tx->srtp, mbuf_buf(mb), &len);
+		*err = srtcp_encrypt(comp->tx->srtp, mb);
+		if (*err) {
+			warning("srtp: srtcp_encrypt failed (%m)\n", *err);
+		}
 	}
 	else {
-		e = srtp_protect(sock->tx->srtp, mbuf_buf(mb), &len);
+		*err = srtp_encrypt(comp->tx->srtp, mb);
+		if (*err) {
+			warning("srtp: srtp_encrypt failed (%m)\n", *err);
+		}
 	}
 
-	if (err_status_ok != e) {
-		warning("srtp: send: failed to protect %s-packet"
-			" with %d bytes (%H)\n",
-			is_rtcp_packet(mb) ? "RTCP" : "RTP",
-			len, errstatus_print, e);
-		*err = EPROTO;
-		return false;
-	}
 
-	mbuf_set_end(mb, mb->pos + len);
-
-	return false;  /* continue processing */
+	return *err ? true : false;  /* continue processing */
 }
 
 
 static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 {
-	struct sock *sock = arg;
-	err_status_t e;
-	int len;
+	struct comp *comp = arg;
+	int err;
 	(void)src;
 
 	if (!is_rtp_or_rtcp(mb))
 		return false;
 
-	len = (int)mbuf_get_left(mb);
-
 	if (is_rtcp_packet(mb)) {
-		e = srtp_unprotect_rtcp(sock->rx->srtp, mbuf_buf(mb), &len);
+		err = srtcp_decrypt(comp->rx->srtp, mb);
 	}
 	else {
-		e = srtp_unprotect(sock->rx->srtp, mbuf_buf(mb), &len);
+		err = srtp_decrypt(comp->rx->srtp, mb);
 	}
 
-	if (e != err_status_ok) {
-		warning("srtp: recv: failed to unprotect %s-packet"
-			" with %d bytes (%H)\n",
-			is_rtcp_packet(mb) ? "RTCP" : "RTP",
-			len, errstatus_print, e);
+	if (err) {
+		warning("srtp: recv: failed to decrypt %s-packet (%m)\n",
+			is_rtcp_packet(mb) ? "RTCP" : "RTP", err);
 		return true;   /* error - drop packet */
 	}
-
-	mbuf_set_end(mb, mb->pos + len);
 
 	return false;  /* continue processing */
 }
 
 
-int srtp_stream_add(struct srtp_stream **sp, const char *profile,
-		    const struct key *key, bool tx)
+int srtp_stream_add(struct srtp_stream **sp, enum srtp_suite suite,
+		    const uint8_t *key, size_t key_size, bool tx)
 {
 	struct srtp_stream *s;
-	err_status_t e;
 	int err = 0;
+	(void)tx;
 
-	if (!sp || !key || key->key_len > SRTP_MAX_KEY_LEN)
+	if (!sp || !key)
 		return EINVAL;
 
 	s = mem_zalloc(sizeof(*s), destructor);
 	if (!s)
 		return ENOMEM;
 
-	memcpy(s->key, key->key, key->key_len);
-	append_salt_to_key(s->key, (unsigned int)key->key_len,
-			   (unsigned char *)key->salt,
-			   (unsigned int)key->salt_len);
-
-	/* note: policy and key must be on the heap */
-
-	if (0 == str_casecmp(profile, "SRTP_AES128_CM_SHA1_80")) {
-		crypto_policy_set_aes_cm_128_hmac_sha1_80(&s->policy.rtp);
-		crypto_policy_set_aes_cm_128_hmac_sha1_80(&s->policy.rtcp);
-	}
-	else if (0 == str_casecmp(profile, "SRTP_AES128_CM_SHA1_32")) {
-		crypto_policy_set_aes_cm_128_hmac_sha1_32(&s->policy.rtp);
-		crypto_policy_set_aes_cm_128_hmac_sha1_32(&s->policy.rtcp);
-	}
-	else {
-		warning("srtp: unsupported profile: %s\n", profile);
-		err = ENOSYS;
-		goto out;
-	}
-
-	s->policy.ssrc.type = tx ? ssrc_any_outbound : ssrc_any_inbound;
-	s->policy.key       = s->key;
-	s->policy.next      = NULL;
-
-	e = srtp_create(&s->srtp, &s->policy);
-	if (err_status_ok != e) {
-		s->srtp = NULL;
-		warning("srtp: srtp_create() failed. e=%d\n", e);
-		err = ENOMEM;
+	err = srtp_alloc(&s->srtp, suite, key, key_size, 0);
+	if (err) {
+		warning("srtp: srtp_alloc() failed (%m)\n", err);
 		goto out;
 	}
 
@@ -217,11 +142,9 @@ int srtp_stream_add(struct srtp_stream **sp, const char *profile,
 }
 
 
-int srtp_install(struct sock *sock)
+int srtp_install(struct comp *comp)
 {
-	return udp_register_helper(&sock->uh_srtp, sock->app_sock,
+	return udp_register_helper(&comp->uh_srtp, comp->app_sock,
 				   LAYER_SRTP,
-				   send_handler,
-				   recv_handler,
-				   sock);
+				   send_handler, recv_handler, comp);
 }

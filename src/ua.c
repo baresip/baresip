@@ -191,6 +191,28 @@ int ua_register(struct ua *ua)
 }
 
 
+/**
+ * Unregister all Register clients of a User-Agent
+ *
+ * @param ua User-Agent
+ */
+void ua_unregister(struct ua *ua)
+{
+	struct le *le;
+
+	if (!ua)
+		return;
+
+	ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
+
+	for (le = ua->regl.head; le; le = le->next) {
+		struct reg *reg = le->data;
+
+		reg_unregister(reg);
+	}
+}
+
+
 bool ua_isregistered(const struct ua *ua)
 {
 	struct le *le;

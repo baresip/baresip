@@ -165,7 +165,7 @@ ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec
 isac          iSAC audio codec
 l16           L16 audio codec
-mda           Symbian Mediaserver audio driver (now deprecated)
+libsrtp       Secure RTP encryption using libsrtp
 menu          Interactive menu
 mwi           Message Waiting Indication
 natbd         NAT Behavior Discovery Module
@@ -191,7 +191,7 @@ sndio         Audio driver for OpenBSD
 speex         Speex audio codec
 speex_aec     Acoustic Echo Cancellation (AEC) using libspeexdsp
 speex_pp      Audio pre-processor using libspeexdsp
-srtp          Secure RTP encryption
+srtp          Secure RTP encryption (SDES) using libre SRTP-stack
 stdio         Standard input/output UI driver
 stun          Session Traversal Utilities for NAT (STUN) module
 syslog        Syslog module
@@ -289,7 +289,6 @@ Supported platforms:
 * FreeBSD
 * OpenBSD
 * NetBSD
-* Symbian OS
 * Solaris
 * Windows
 * Apple Mac OS X and iOS
@@ -302,13 +301,12 @@ Supported compilers:
 * gcce
 * llvm clang
 * ms vc2003 compiler
-* codewarrior
 
 
 External dependencies:
 
-libre
-librem
+libre v0.4.9 or later
+librem v0.4.6 or later
 
 
 Feedback:

@@ -5,7 +5,7 @@
 #
 
 MOD		:= dtls_srtp
-$(MOD)_SRCS	+= dtls_srtp.c dtls.c srtp.c tls_udp.c
-$(MOD)_LFLAGS	+= -lsrtp
+$(MOD)_SRCS	+= dtls_srtp.c srtp.c dtls.c
+$(MOD)_LFLAGS	+=
 
 include mk/mod.mk

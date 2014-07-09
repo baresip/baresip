@@ -12,6 +12,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup sndio sndio
+ *
+ * This module implements audio driver for OpenBSD sndio
+ */
+
+
 struct ausrc_st {
 	struct ausrc *as;
 	struct sio_hdl *hdl;
