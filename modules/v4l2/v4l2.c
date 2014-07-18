@@ -674,7 +674,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 
 static int v4l_init(void)
 {
-	return vidsrc_register(&vidsrc, "v4l2", alloc, v4l_update);
+	return vidsrc_register(&vidsrc, "v4l2", alloc, v4l2_update);
 }
 
 
