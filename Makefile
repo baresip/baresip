@@ -237,10 +237,6 @@ clean:
 ccheck:
 	@ccheck.pl > /dev/null
 
-git_release:
-	git archive --format=tar --prefix=$(PROJECT)-$(VERSION)/ v$(VERSION) \
-	| gzip > $(PROJECT)-$(VERSION).tar.gz
-
 version:
 	@perl -pi -e 's/BARESIP_VERSION.*/BARESIP_VERSION \"$(VERSION)"/' \
 		include/baresip.h
@@ -265,3 +261,7 @@ src/static.c: $(BUILD) Makefile $(APP_MK) $(MOD_MK)
 	done
 	@echo "  NULL"  >> $@
 	@echo "};"  >> $@
+
+git_release:
+	git archive --format=tar --prefix=$(PROJECT)-$(VERSION)/ v$(VERSION) \
+	| gzip > $(PROJECT)-$(VERSION).tar.gz
