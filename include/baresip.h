@@ -599,8 +599,9 @@ struct vidsrc_st;
 
 /** Video Source parameters */
 struct vidsrc_prm {
-	int orient;       /**< Wanted picture orientation (enum vidorient) */
-	int fps;          /**< Wanted framerate                            */
+	int orient;		/**< Wanted picture orientation (enum vidorient)	*/
+	int fps;		/**< Wanted framerate					*/
+	struct vidsz *size;	/**< Wanted resolution					*/
 };
 
 typedef void (vidsrc_frame_h)(struct vidframe *frame, void *arg);
