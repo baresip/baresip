@@ -113,7 +113,7 @@ OBJS      := $(patsubst %.c,$(BUILD)/src/%.o,$(filter %.c,$(SRCS)))
 OBJS      += $(patsubst %.m,$(BUILD)/src/%.o,$(filter %.m,$(SRCS)))
 OBJS      += $(patsubst %.S,$(BUILD)/src/%.o,$(filter %.S,$(SRCS)))
 
-APP_OBJS  := $(OBJS) $(patsubst %.c,$(BUILD)/src/%.o, $(APP_SRCS)) $(MOD_OBJS)
+APP_OBJS  := $(OBJS) $(patsubst %.c,$(BUILD)/src/%.o,$(APP_SRCS)) $(MOD_OBJS)
 
 TST_OBJS  := $(patsubst %.c,$(BUILD)/tests/%.o,$(filter %.c,$(TST_SRCS)))
 TST_OBJS  += $(OBJS) $(patsubst %.c,$(BUILD)/tests/%.o, $(APP_SRCS)) $(MOD_OBJS)
@@ -232,6 +232,10 @@ clean:
 	`find . -name "*.[od]"` \
 	`find . -name "*~"` \
 	`find . -name "\.\#*"`
+
+git_release:
+	git archive --format=tar --prefix=$(PROJECT)-$(VERSION)/ v$(VERSION) \
+	| gzip > $(PROJECT)-$(VERSION).tar.gz
 
 .PHONY: ccheck
 ccheck:
