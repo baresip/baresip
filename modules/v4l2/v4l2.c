@@ -606,6 +606,15 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	if (!stp || !size || !frameh)
 		return EINVAL;
 
+	if (vst) {
+		error("v4l2 busy - try to close device.\n");
+		vst = mem_deref(vst);
+		if (!vst)
+			error("v4l2: device closed.\n");
+		else
+			error("v4l2: can't close device.\n");
+	}
+
 	if (!str_isset(dev))
 		dev = "/dev/video0";
 
