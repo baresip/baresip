@@ -233,13 +233,13 @@ clean:
 	`find . -name "*~"` \
 	`find . -name "\.\#*"`
 
-git_release:
-	git archive --format=tar --prefix=$(PROJECT)-$(VERSION)/ v$(VERSION) \
-	| gzip > $(PROJECT)-$(VERSION).tar.gz
-
 .PHONY: ccheck
 ccheck:
 	@ccheck.pl > /dev/null
+
+git_release:
+	git archive --format=tar --prefix=$(PROJECT)-$(VERSION)/ v$(VERSION) \
+	| gzip > $(PROJECT)-$(VERSION).tar.gz
 
 version:
 	@perl -pi -e 's/BARESIP_VERSION.*/BARESIP_VERSION \"$(VERSION)"/' \
