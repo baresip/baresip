@@ -264,4 +264,4 @@ src/static.c: $(BUILD) Makefile $(APP_MK) $(MOD_MK)
 
 git_release:
 	git archive --format=tar --prefix=$(PROJECT)-$(VERSION)/ v$(VERSION) \
-	| gzip > $(PROJECT)-$(VERSION).tar.gz
+		| gzip > $(PROJECT)-$(VERSION).tar.gz
