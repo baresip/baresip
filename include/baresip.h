@@ -601,6 +601,7 @@ struct vidsrc_st;
 struct vidsrc_prm {
 	int orient;       /**< Wanted picture orientation (enum vidorient) */
 	int fps;          /**< Wanted framerate                            */
+	struct vidsz *size;	/**< Wanted resolution					*/
 };
 
 typedef void (vidsrc_frame_h)(struct vidframe *frame, void *arg);

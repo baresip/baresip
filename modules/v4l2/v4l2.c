@@ -35,7 +35,6 @@
 #define v4l2_close close
 #endif
 
-
 enum io_method {
 	IO_METHOD_READ = 0,
 	IO_METHOD_MMAP
@@ -65,6 +64,7 @@ struct vidsrc_st {
 
 static struct vidsrc *vidsrc;
 
+static struct vidsrc_st *vst = NULL;
 
 static enum vidfmt match_fmt(u_int32_t fmt)
 {
@@ -191,7 +191,6 @@ static int init_mmap(struct vidsrc_st *st, const char *dev_name)
 	return 0;
 }
 
-
 static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 {
 	struct v4l2_capability cap;
@@ -260,7 +259,7 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 
 	memset(&fmt, 0, sizeof(fmt));
 
-	fmt.type		= V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	fmt.type		= V4L2_CAP_VIDEO_CAPTURE;
 	fmt.fmt.pix.width       = st->app_sz.w;
 	fmt.fmt.pix.height      = st->app_sz.h;
 	fmt.fmt.pix.pixelformat = st->pixfmt;
@@ -311,7 +310,10 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 	pix = (char *)&fmt.fmt.pix.pixelformat;
 
 	if (st->pixfmt != fmt.fmt.pix.pixelformat) {
-		warning("v4l2: %s: unexpectedly got %c%c%c%c\n", dev_name,
+		warning("v4l2: %s: unexpectedly got format %c%c%c%c", dev_name,
+			pix[0], pix[1], pix[2], pix[3]);
+		pix = (char *)&st->pixfmt;
+		warning(" expected format %c%c%c%c\n",
 			pix[0], pix[1], pix[2], pix[3]);
 		return ENODEV;
 	}
@@ -322,7 +324,6 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 
 	return 0;
 }
-
 
 static void stop_capturing(struct vidsrc_st *st)
 {
@@ -488,6 +489,7 @@ static int read_frame(struct vidsrc_st *st)
 
 static int vd_open(struct vidsrc_st *st, const char *device)
 {
+
 	/* NOTE: with kernel 2.6.26 it takes ~2 seconds to open
 	 *       the video device.
 	 */
@@ -498,6 +500,13 @@ static int vd_open(struct vidsrc_st *st, const char *device)
 	}
 
 	return 0;
+}
+
+static void vd_close(struct vidsrc_st *st)
+{
+    if (st->fd >= 0)
+	v4l2_close(st->fd);
+    st->fd = -1;
 }
 
 
@@ -513,8 +522,8 @@ static void destructor(void *arg)
 	stop_capturing(st);
 	uninit_device(st);
 
-	if (st->fd >= 0)
-		v4l2_close(st->fd);
+	vd_close(st);
+	vst = NULL;
 
 	mem_deref(st->mb);
 	mem_deref(st->vs);
@@ -534,6 +543,50 @@ static void *read_thread(void *arg)
 	}
 
 	return NULL;
+}
+
+static void v4l2_update(struct vidsrc_st *st, struct vidsrc_prm *prm, const char *dev)
+{
+    int err = 0;
+
+    if (st->run) {
+        st->run = false;
+    }
+
+    stop_capturing(st);
+    vd_close(st);
+
+    if (prm->size) {
+        if (prm->size->w && prm->size->h) {
+            st->app_sz.w = prm->size->w;
+            st->app_sz.h = prm->size->h;
+        }
+    }
+
+    err = vd_open(st, dev);
+    if (!err) {
+        err = v4l2_init_device(st, dev);
+        if (!err) {
+            get_video_input(st);
+            if (st->mb) {
+                mem_deref(st->mb);
+            }
+            st->mb = mbuf_alloc(st->app_sz.w * st->app_sz.h * 3 / 2);
+            if (st->mb) {
+                err = start_capturing(st, st->fd);
+                if (!err) {
+                    st->run = true;
+                    info("v4l2: parameters changed to : %ux%u\n", st->app_sz.w, st->app_sz.h);
+                }
+            }
+        }
+    }
+
+    if (err) {
+        error("v4l2: update error %m\n",err);
+    }
+
+    return;
 }
 
 
@@ -570,6 +623,8 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	st->arg    = arg;
 
 	st->pixfmt = 0;
+
+	vst = st;
 
 	err = vd_open(st, dev);
 	if (err)
@@ -611,7 +666,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 
 static int v4l_init(void)
 {
-	return vidsrc_register(&vidsrc, "v4l2", alloc, NULL);
+	return vidsrc_register(&vidsrc, "v4l2", alloc, v4l2_update);
 }
 
 
