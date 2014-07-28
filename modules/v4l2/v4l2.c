@@ -504,9 +504,9 @@ static int vd_open(struct vidsrc_st *st, const char *device)
 
 static void vd_close(struct vidsrc_st *st)
 {
-    if (st->fd >= 0)
-	v4l2_close(st->fd);
-    st->fd = -1;
+	if (st->fd >= 0)
+		v4l2_close(st->fd);
+	st->fd = -1;
 }
 
 
@@ -547,48 +547,49 @@ static void *read_thread(void *arg)
 
 static void v4l2_update(struct vidsrc_st *st, struct vidsrc_prm *prm, const char *dev)
 {
-    int err = 0;
+	int err = 0;
 
-    if (st->run) {
-        st->run = false;
-    }
+	if (st->run) {
+		st->run = false;
+		pthread_join(st->thread, NULL);
+	}
 
-    stop_capturing(st);
-    vd_close(st);
+	stop_capturing(st);
+	vd_close(st);
 
-    if (prm->size) {
-        if (prm->size->w && prm->size->h) {
-            st->app_sz.w = prm->size->w;
-            st->app_sz.h = prm->size->h;
-        }
-    }
+	if (prm->size) {
+		if (prm->size->w && prm->size->h) {
+			st->app_sz.w = prm->size->w;
+			st->app_sz.h = prm->size->h;
+		}
+	}
 
-    err = vd_open(st, dev);
-    if (!err) {
-        err = v4l2_init_device(st, dev);
-        if (!err) {
-            get_video_input(st);
-            if (st->mb) {
-                mem_deref(st->mb);
-            }
-            st->mb = mbuf_alloc(st->app_sz.w * st->app_sz.h * 3 / 2);
-            if (st->mb) {
-                err = start_capturing(st, st->fd);
-                if (!err) {
-                    st->run = true;
-                    info("v4l2: parameters changed to : %ux%u\n", st->app_sz.w, st->app_sz.h);
-                }
-            }
-        }
-    }
+	err = vd_open(st, dev);
+	if (!err) {
+		err = v4l2_init_device(st, dev);
+		if (!err) {
+			get_video_input(st);
+			if (st->mb) {
+				mem_deref(st->mb);
+			}
+			st->mb = mbuf_alloc(st->app_sz.w * st->app_sz.h * 3 / 2);
+			if (st->mb) {
+				err = start_capturing(st, st->fd);
+				if (!err) {
+					st->run = true;
+					err = pthread_create(&st->thread, NULL, read_thread, st);
+					info("v4l2: parameters changed to : %ux%u\n", st->app_sz.w, st->app_sz.h);
+				}
+			}
+		}
+		}
 
-    if (err) {
-        error("v4l2: update error %m\n",err);
-    }
+	if (err) {
+		error("v4l2: update error %m\n",err);
+	}
 
-    return;
+	return;
 }
-
 
 static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
