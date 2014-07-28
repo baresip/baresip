@@ -259,7 +259,7 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 
 	memset(&fmt, 0, sizeof(fmt));
 
-	fmt.type		= V4L2_CAP_VIDEO_CAPTURE;
+	fmt.type		= V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix.width       = st->app_sz.w;
 	fmt.fmt.pix.height      = st->app_sz.h;
 	fmt.fmt.pix.pixelformat = st->pixfmt;
@@ -450,11 +450,11 @@ static int read_frame(struct vidsrc_st *st)
 	case IO_METHOD_MMAP:
 		memset(&buf, 0, sizeof(buf));
 
-	    	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	    	buf.memory = V4L2_MEMORY_MMAP;
+		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		buf.memory = V4L2_MEMORY_MMAP;
 
 		if (-1 == xioctl (st->fd, VIDIOC_DQBUF, &buf)) {
-	    		switch (errno) {
+			switch (errno) {
 
 			case EAGAIN:
 		    		return 0;
