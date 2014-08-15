@@ -271,9 +271,9 @@ static bool aucodec_equal(const struct aucodec *a, const struct aucodec *b)
 static int add_audio_codec(struct audio *a, struct sdp_media *m,
 			   struct aucodec *ac)
 {
-	if (!in_range(&a->cfg.srate, ac->srate)) {
+	if (!in_range(&a->cfg.srate, get_srate(ac))) {
 		debug("audio: skip %uHz codec (audio range %uHz - %uHz)\n",
-		      ac->srate, a->cfg.srate.min, a->cfg.srate.max);
+		      get_srate(ac), a->cfg.srate.min, a->cfg.srate.max);
 		return 0;
 	}
 
