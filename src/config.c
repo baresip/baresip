@@ -496,8 +496,9 @@ static const char *detect_module_path(bool *valid)
 	};
 	const char *current = pathv[0];
 	uint32_t nmax = 0;
+	size_t i;
 
-	for (size_t i=0; i<ARRAY_SIZE(pathv); i++) {
+	for (i=0; i<ARRAY_SIZE(pathv); i++) {
 
 		uint32_t n = count_modules(pathv[i]);
 
