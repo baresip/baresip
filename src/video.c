@@ -216,6 +216,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 {
 	struct le *le;
 	int err = 0;
+	bool l_picup;
 
 	if (!vtx->enc)
 		return;
@@ -255,12 +256,15 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 		return;
 
 	/* Encode the whole picture frame */
+	l_picup = vtx->picup;
 	err = vtx->vc->ench(vtx->enc, vtx->picup, frame, packet_handler, vtx);
+	if (l_picup)
+		vtx->picup = false;
+
 	if (err)
 		return;
 
 	vtx->ts_tx += (SRATE/vtx->vsrc_prm.fps);
-	vtx->picup = false;
 }
 
 

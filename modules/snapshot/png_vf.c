@@ -6,7 +6,6 @@
  */
 #define _BSD_SOURCE 1
 #include <string.h>
-#include <time.h>
 #include <png.h>
 #include <re.h>
 #include <rem.h>
@@ -14,8 +13,6 @@
 #include "png_vf.h"
 
 
-static char *png_filename(const struct tm *tmx, const char *name,
-			  char *buf, unsigned int length);
 static void png_save_free(png_structp png_ptr, png_byte **png_row_pointers,
 			  int png_height);
 
@@ -42,7 +39,8 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 	tnow = time(NULL);
 	tmx = localtime(&tnow);
 
-	if (vf->fmt != VID_FMT_RGB32) {
+	if (vf->fmt != VID_FMT_RGB32) 
+	{
 
 		err = vidframe_alloc(&f2, VID_FMT_RGB32, &vf->size);
 		if (err)
@@ -51,6 +49,8 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 		vidconv(f2, vf, NULL);
 		vf = f2;
 	}
+	else
+		f2 = vf;
 
 	/* Initialize the write struct. */
 	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
@@ -97,7 +97,7 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 						bytes_per_pixel);
 	}
 
-	p = vf->data[0];
+	p = f2->data[0];
 	for (y = 0; y < height; ++y) {
 
 		row = png_row_pointers[y];
@@ -117,8 +117,8 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 	}
 
 	/* Write the image data. */
-	fp = fopen(png_filename(tmx, path,
-				filename_buf, sizeof(filename_buf)), "wb");
+	fp = fopen(path, "wb");
+	
 	if (fp == NULL) {
 		err = errno;
 		goto out;
@@ -132,7 +132,7 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 
  out:
 	/* Finish writing. */
-	mem_deref(f2);
+	if (f2 != vf)	mem_deref(f2);
 	png_save_free(png_ptr, png_row_pointers, height);
 	png_destroy_write_struct(&png_ptr, &info_ptr);
 	if (fp)
@@ -157,32 +157,3 @@ static void png_save_free(png_structp png_ptr, png_byte **png_row_pointers,
 	png_free(png_ptr, png_row_pointers);
 }
 
-
-static char *png_filename(const struct tm *tmx, const char *name,
-			  char *buf, unsigned int length)
-{
-	/*
-	 * -2013-03-03-15-22-56.png - 24 chars
-	 */
-	if (strlen(name) + 24 >= length) {
-		buf[0] = '\0';
-		return buf;
-	}
-
-	sprintf(buf, (tmx->tm_mon < 9 ? "%s-%d-0%d" : "%s-%d-%d"), name,
-		1900 + tmx->tm_year, tmx->tm_mon + 1);
-
-	sprintf(buf + strlen(buf), (tmx->tm_mday < 10 ? "-0%d" : "-%d"),
-		tmx->tm_mday);
-
-	sprintf(buf + strlen(buf), (tmx->tm_hour < 10 ? "-0%d" : "-%d"),
-		tmx->tm_hour);
-
-	sprintf(buf + strlen(buf), (tmx->tm_min < 10 ? "-0%d" : "-%d"),
-		tmx->tm_min);
-
-	sprintf(buf + strlen(buf), (tmx->tm_sec < 10 ? "-0%d.png" : "-%d.png"),
-		tmx->tm_sec);
-
-	return buf;
-}
