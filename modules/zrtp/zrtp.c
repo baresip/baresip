@@ -21,6 +21,10 @@
  *
  *     This module is using ZRTP implementation in Freeswitch
  *     https://github.com/traviscross/libzrtp
+ *
+ * Thanks:
+ *
+ *   Ingo Feinerer
  */
 
 
@@ -249,6 +253,8 @@ static int module_init(void)
 {
 	zrtp_status_t s;
 	char config_path[256] = "";
+	char zrtp_zid_path[256] = "";
+	FILE *f;
 	int err;
 
 	zrtp_config_defaults(&zrtp_config);
@@ -263,7 +269,37 @@ static int module_init(void)
 			"%s/zrtp_cache.dat", config_path) < 0)
 	        return ENOMEM;
 
-	rand_bytes(zrtp_config.zid, sizeof(zrtp_config.zid));
+	if (re_snprintf(zrtp_zid_path,
+			sizeof(zrtp_zid_path),
+			"%s/zrtp_zid", config_path) < 0)
+	        return ENOMEM;
+	if ((f = fopen(zrtp_zid_path, "rb")) != NULL) {
+		if (fread(zrtp_config.zid, sizeof(zrtp_config.zid),
+			  1, f) != 1) {
+			if (feof(f) || ferror(f)) {
+				warning("zrtp: invalid zrtp_zid file\n");
+			}
+		}
+	}
+	else if ((f = fopen(zrtp_zid_path, "wb")) != NULL) {
+		rand_bytes(zrtp_config.zid, sizeof(zrtp_config.zid));
+		if (fwrite(zrtp_config.zid, sizeof(zrtp_config.zid),
+			   1, f) != 1) {
+			warning("zrtp: zrtp_zid file write failed\n");
+		}
+		info("zrtp: generated new persistent ZID (%s)\n",
+		     zrtp_zid_path);
+	}
+	else {
+		err = errno;
+		warning("zrtp: fopen() %s (%m)\n", zrtp_zid_path, err);
+	}
+	if (f)
+		(void) fclose(f);
+
+	str_ncpy(zrtp_config.client_id, "baresip/zrtp",
+		 sizeof(zrtp_config.client_id));
+	zrtp_config.lic_mode = ZRTP_LICENSE_MODE_UNLIMITED;
 
 	zrtp_config.cb.misc_cb.on_send_packet = zrtp_send_rtp_callback;
 
