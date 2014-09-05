@@ -214,9 +214,9 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 }
 
 
-static int zrtp_send_rtp_callback(const zrtp_stream_t *stream,
-				  char *rtp_packet,
-				  unsigned int rtp_packet_length)
+static int on_send_packet(const zrtp_stream_t *stream,
+			  char *rtp_packet,
+			  unsigned int rtp_packet_length)
 {
 	struct menc_media *st = zrtp_stream_get_userdata(stream);
 	struct mbuf *mb;
@@ -232,7 +232,7 @@ static int zrtp_send_rtp_callback(const zrtp_stream_t *stream,
 	(void)mbuf_write_mem(mb, (void *)rtp_packet, rtp_packet_length);
 	mb->pos = 0;
 
-	err = udp_send(st->rtpsock, &st->raddr, mb);
+	err = udp_send_helper(st->rtpsock, &st->raddr, mb, st->uh);
 	if (err) {
 		warning("zrtp: udp_send %u bytes (%m)\n",
 			rtp_packet_length, err);
@@ -301,7 +301,7 @@ static int module_init(void)
 		 sizeof(zrtp_config.client_id));
 	zrtp_config.lic_mode = ZRTP_LICENSE_MODE_UNLIMITED;
 
-	zrtp_config.cb.misc_cb.on_send_packet = zrtp_send_rtp_callback;
+	zrtp_config.cb.misc_cb.on_send_packet = on_send_packet;
 
 	s = zrtp_init(&zrtp_config, &zrtp_global);
 	if (zrtp_status_ok != s) {
