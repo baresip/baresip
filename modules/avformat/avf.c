@@ -290,9 +290,9 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 		if (ctx->codec_type != AVMEDIA_TYPE_VIDEO)
 			continue;
 
-		debug("avformat: stream %u:  %u x %u  codec=%s"
+		debug("avformat: stream %u:  %u x %u "
 		      "  time_base=%d/%d\n",
-		      i, ctx->width, ctx->height, ctx->codec_name,
+		      i, ctx->width, ctx->height,
 		      ctx->time_base.num, ctx->time_base.den);
 
 		st->sz.w   = ctx->width;
