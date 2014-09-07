@@ -36,11 +36,6 @@
 #endif
 
 
-enum io_method {
-	IO_METHOD_READ = 0,
-	IO_METHOD_MMAP
-};
-
 struct buffer {
 	void  *start;
 	size_t length;
@@ -52,14 +47,12 @@ struct vidsrc_st {
 	int fd;
 	pthread_t thread;
 	bool run;
-	struct vidsz sz, app_sz;
+	struct vidsz sz;
 	u_int32_t pixfmt;
-	struct mbuf *mb;
-	vidsrc_frame_h *frameh;
-	void *arg;
-	enum io_method io;
 	struct buffer *buffers;
 	unsigned int   n_buffers;
+	vidsrc_frame_h *frameh;
+	void *arg;
 };
 
 
@@ -69,18 +62,19 @@ static struct vidsrc *vidsrc;
 static enum vidfmt match_fmt(u_int32_t fmt)
 {
 	switch (fmt) {
-		case V4L2_PIX_FMT_YUV420: return VID_FMT_YUV420P;
-		case V4L2_PIX_FMT_YUYV:   return VID_FMT_YUYV422;
-		case V4L2_PIX_FMT_UYVY:   return VID_FMT_UYVY422;
-		case V4L2_PIX_FMT_RGB32:  return VID_FMT_RGB32;
-		case V4L2_PIX_FMT_RGB565: return VID_FMT_RGB565;
-		case V4L2_PIX_FMT_RGB555: return VID_FMT_RGB555;
-		default:                  return VID_FMT_N;
+
+	case V4L2_PIX_FMT_YUV420: return VID_FMT_YUV420P;
+	case V4L2_PIX_FMT_YUYV:   return VID_FMT_YUYV422;
+	case V4L2_PIX_FMT_UYVY:   return VID_FMT_UYVY422;
+	case V4L2_PIX_FMT_RGB32:  return VID_FMT_RGB32;
+	case V4L2_PIX_FMT_RGB565: return VID_FMT_RGB565;
+	case V4L2_PIX_FMT_RGB555: return VID_FMT_RGB555;
+	default:                  return VID_FMT_N;
 	}
 }
 
 
-static void get_video_input(struct vidsrc_st *st)
+static void print_video_input(struct vidsrc_st *st)
 {
 	struct v4l2_input input;
 
@@ -98,7 +92,7 @@ static void get_video_input(struct vidsrc_st *st)
 		return;
 	}
 
-	info("v4l2: Current input: %s\n", input.name);
+	info("v4l2: Current input: \"%s\"\n", input.name);
 }
 
 
@@ -112,21 +106,6 @@ static int xioctl(int fd, unsigned long int request, void *arg)
 	while (-1 == r && EINTR == errno);
 
 	return r;
-}
-
-
-static int init_read(struct vidsrc_st *st, unsigned int buffer_size)
-{
-	st->buffers = calloc(1, sizeof (*st->buffers));
-	if (!st->buffers)
-		return ENOMEM;
-
-	st->buffers[0].length = buffer_size;
-	st->buffers[0].start = malloc(buffer_size);
-	if (!st->buffers[0].start)
-		return ENOMEM;
-
-	return 0;
 }
 
 
@@ -156,7 +135,7 @@ static int init_mmap(struct vidsrc_st *st, const char *dev_name)
 		return ENOMEM;
 	}
 
-	st->buffers = calloc(req.count, sizeof(*st->buffers));
+	st->buffers = mem_zalloc(req.count * sizeof(*st->buffers), NULL);
 	if (!st->buffers)
 		return ENOMEM;
 
@@ -192,7 +171,8 @@ static int init_mmap(struct vidsrc_st *st, const char *dev_name)
 }
 
 
-static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
+static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name,
+			    int width, int height)
 {
 	struct v4l2_capability cap;
 	struct v4l2_format fmt;
@@ -217,22 +197,10 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 		return ENODEV;
 	}
 
-	switch (st->io) {
-
-	case IO_METHOD_READ:
-		if (!(cap.capabilities & V4L2_CAP_READWRITE)) {
-			warning("%s does not support read i/o\n", dev_name);
-			return ENOSYS;
-		}
-		break;
-
-	case IO_METHOD_MMAP:
-		if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
-			warning("v4l2: %s does not support streaming i/o\n",
-				dev_name);
-			return ENOSYS;
-		}
-		break;
+	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
+		warning("v4l2: %s does not support streaming i/o\n",
+			dev_name);
+		return ENOSYS;
 	}
 
 	/* Negotiate video format */
@@ -261,8 +229,8 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 	memset(&fmt, 0, sizeof(fmt));
 
 	fmt.type		= V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	fmt.fmt.pix.width       = st->app_sz.w;
-	fmt.fmt.pix.height      = st->app_sz.h;
+	fmt.fmt.pix.width       = width;
+	fmt.fmt.pix.height      = height;
 	fmt.fmt.pix.pixelformat = st->pixfmt;
 	fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
@@ -284,27 +252,7 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name)
 	st->sz.w = fmt.fmt.pix.width;
 	st->sz.h = fmt.fmt.pix.height;
 
-	if (!vidsz_cmp(&st->sz, &st->app_sz)) {
-		info("v4l2: scaling %u x %u  --->  %u x %u\n",
-		     st->sz.w, st->sz.h, st->app_sz.w, st->app_sz.h);
-	}
-
-	switch (st->io) {
-
-	case IO_METHOD_READ:
-		err = init_read(st, fmt.fmt.pix.sizeimage);
-		break;
-
-	case IO_METHOD_MMAP:
-		err = init_mmap(st, dev_name);
-		break;
-
-	default:
-		warning("v4l2: unknown io: %d\n", st->io);
-		err = EINVAL;
-		break;
-	}
-
+	err = init_mmap(st, dev_name);
 	if (err)
 		return err;
 
@@ -331,19 +279,9 @@ static void stop_capturing(struct vidsrc_st *st)
 	if (st->fd < 0)
 		return;
 
-	switch (st->io) {
+	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-	case IO_METHOD_READ:
-		/* Nothing to do. */
-		break;
-
-	case IO_METHOD_MMAP:
-		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-		if (-1 == xioctl(st->fd, VIDIOC_STREAMOFF, &type))
-			warning("v4l2: VIDIOC_STREAMOFF\n");
-		break;
-	}
+	xioctl(st->fd, VIDIOC_STREAMOFF, &type);
 }
 
 
@@ -351,56 +289,37 @@ static void uninit_device(struct vidsrc_st *st)
 {
 	unsigned int i;
 
-	switch (st->io) {
-
-	case IO_METHOD_READ:
-		if (st->buffers)
-			free(st->buffers[0].start);
-		break;
-
-	case IO_METHOD_MMAP:
-		for (i=0; i<st->n_buffers; ++i)
-			v4l2_munmap(st->buffers[i].start,
-				    st->buffers[i].length);
-		break;
+	for (i=0; i<st->n_buffers; ++i) {
+		v4l2_munmap(st->buffers[i].start, st->buffers[i].length);
 	}
 
-	free(st->buffers);
+	st->buffers = mem_deref(st->buffers);
+	st->n_buffers = 0;
 }
 
 
-static int start_capturing(struct vidsrc_st *st, int fd)
+static int start_capturing(struct vidsrc_st *st)
 {
 	unsigned int i;
 	enum v4l2_buf_type type;
 
-	switch (st->io) {
+	for (i = 0; i < st->n_buffers; ++i) {
+		struct v4l2_buffer buf;
 
-	case IO_METHOD_READ:
-		/* Nothing to do. */
-		break;
+		memset(&buf, 0, sizeof(buf));
 
-	case IO_METHOD_MMAP:
-		for (i = 0; i < st->n_buffers; ++i) {
-	    		struct v4l2_buffer buf;
+		buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		buf.memory = V4L2_MEMORY_MMAP;
+		buf.index  = i;
 
-			memset(&buf, 0, sizeof(buf));
-
-			buf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-			buf.memory = V4L2_MEMORY_MMAP;
-			buf.index  = i;
-
-			if (-1 == xioctl (fd, VIDIOC_QBUF, &buf))
-		    		return errno;
-		}
-
-		type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-		if (-1 == xioctl (fd, VIDIOC_STREAMON, &type))
+		if (-1 == xioctl (st->fd, VIDIOC_QBUF, &buf))
 			return errno;
-
-		break;
 	}
+
+	type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+	if (-1 == xioctl (st->fd, VIDIOC_STREAMON, &type))
+		return errno;
 
 	return 0;
 }
@@ -419,67 +338,38 @@ static void call_frame_handler(struct vidsrc_st *st, uint8_t *buf)
 static int read_frame(struct vidsrc_st *st)
 {
 	struct v4l2_buffer buf;
-	ssize_t n;
 
-	switch (st->io) {
+	memset(&buf, 0, sizeof(buf));
 
-	case IO_METHOD_READ:
-		n = v4l2_read(st->fd, st->mb->buf, st->mb->size);
-		if (-1 == n) {
-	    		switch (errno) {
+	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.memory = V4L2_MEMORY_MMAP;
 
-	    		case EAGAIN:
-		    		return 0;
+	if (-1 == xioctl (st->fd, VIDIOC_DQBUF, &buf)) {
+		switch (errno) {
 
-			case EIO:
-				/* Could ignore EIO, see spec. */
+		case EAGAIN:
+			return 0;
 
-				/* fall through */
+		case EIO:
+			/* Could ignore EIO, see spec. */
 
-			default:
-				warning("v4l2: read error: %m\n", errno);
-				BREAKPOINT;
-				return errno;
-			}
-		}
+			/* fall through */
 
-		call_frame_handler(st, st->mb->buf);
-		break;
-
-	case IO_METHOD_MMAP:
-		memset(&buf, 0, sizeof(buf));
-
-	    	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	    	buf.memory = V4L2_MEMORY_MMAP;
-
-		if (-1 == xioctl (st->fd, VIDIOC_DQBUF, &buf)) {
-	    		switch (errno) {
-
-			case EAGAIN:
-		    		return 0;
-
-			case EIO:
-				/* Could ignore EIO, see spec. */
-
-				/* fall through */
-
-			default:
-				warning("v4l2: VIDIOC_DQBUF: %m\n", errno);
-				return errno;
-			}
-		}
-
-		if (buf.index >= st->n_buffers) {
-			warning("v4l2: index >= n_buffers\n");
-		}
-
-		call_frame_handler(st, st->buffers[buf.index].start);
-
-		if (-1 == xioctl (st->fd, VIDIOC_QBUF, &buf)) {
-			warning("v4l2: VIDIOC_QBUF\n");
+		default:
+			warning("v4l2: VIDIOC_DQBUF: %m\n", errno);
 			return errno;
 		}
-		break;
+	}
+
+	if (buf.index >= st->n_buffers) {
+		warning("v4l2: index >= n_buffers\n");
+	}
+
+	call_frame_handler(st, st->buffers[buf.index].start);
+
+	if (-1 == xioctl (st->fd, VIDIOC_QBUF, &buf)) {
+		warning("v4l2: VIDIOC_QBUF\n");
+		return errno;
 	}
 
 	return 0;
@@ -488,9 +378,6 @@ static int read_frame(struct vidsrc_st *st)
 
 static int vd_open(struct vidsrc_st *st, const char *device)
 {
-	/* NOTE: with kernel 2.6.26 it takes ~2 seconds to open
-	 *       the video device.
-	 */
 	st->fd = v4l2_open(device, O_RDWR);
 	if (st->fd < 0) {
 		warning("v4l2: open %s: %m\n", device, errno);
@@ -516,7 +403,6 @@ static void destructor(void *arg)
 	if (st->fd >= 0)
 		v4l2_close(st->fd);
 
-	mem_deref(st->mb);
 	mem_deref(st->vs);
 }
 
@@ -563,32 +449,22 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 
 	st->vs = mem_ref(vs);
 	st->fd = -1;
-	st->io = IO_METHOD_MMAP;
-
-	st->app_sz = *size;
+	st->sz = *size;
 	st->frameh = frameh;
 	st->arg    = arg;
-
 	st->pixfmt = 0;
 
 	err = vd_open(st, dev);
 	if (err)
 		goto out;
 
-	/* Try Video4Linux 2 first .. */
-	err = v4l2_init_device(st, dev);
+	err = v4l2_init_device(st, dev, size->w, size->h);
 	if (err)
 		goto out;
 
-	get_video_input(st);
+	print_video_input(st);
 
-	st->mb = mbuf_alloc(st->app_sz.w * st->app_sz.h * 3 / 2);
-	if (!st->mb) {
-		err = ENOMEM;
-		goto out;
-	}
-
-	err = start_capturing(st, st->fd);
+	err = start_capturing(st);
 	if (err)
 		goto out;
 
