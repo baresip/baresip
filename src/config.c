@@ -328,14 +328,16 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 static const char *default_audio_device(void)
 {
-#ifdef DARWIN
+#if defined (ANDROID)
+	return "opensles";
+#elif defined (DARWIN)
 	return "coreaudio,nil";
 #elif defined (FREEBSD)
 	return "oss,/dev/dsp";
+#elif defined (OPENBSD)
+	return "sndio,default";
 #elif defined (WIN32)
 	return "winwave,nil";
-#elif defined (ANDROID)
-	return "opensles";
 #else
 	return "alsa,default";
 #endif
@@ -391,7 +393,10 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 
 	err |= re_hprintf(pf,
 			  "\n# Core\n"
-			  "poll_method\t\t%s\t\t# poll, select, epoll ..\n"
+			  "poll_method\t\t%s\t\t# poll, select"
+#ifdef HAVE_EPOLL
+				", epoll ..\n"
+#endif
 			  "\n# Input\n"
 			  "input_device\t\t/dev/event0\n"
 			  "input_port\t\t5555\n"
@@ -586,16 +591,19 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "plc" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Audio driver Modules\n");
-#if defined (WIN32)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "winwave" MOD_EXT "\n");
-#elif defined (__SYMBIAN32__)
+#if defined (__SYMBIAN32__)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "mda" MOD_EXT "\n");
-#elif defined (DARWIN)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "coreaudio" MOD_EXT "\n");
 #elif defined (ANDROID)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "opensles" MOD_EXT "\n");
-#else
+#elif defined (DARWIN)
+	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "coreaudio" MOD_EXT "\n");
+#elif defined (FREEBSD)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "oss" MOD_EXT "\n");
+#elif defined (OPENBSD)
+	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "sndio" MOD_EXT "\n");
+#elif defined (WIN32)
+	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "winwave" MOD_EXT "\n");
+#else
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "alsa" MOD_EXT "\n");
 #endif
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "portaudio" MOD_EXT "\n");
