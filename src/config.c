@@ -3,8 +3,10 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/stat.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -13,6 +15,9 @@
 
 #undef MOD_PRE
 #define MOD_PRE ""  /**< Module prefix */
+
+#define ADD_MODULE(x,y) if (find_module(modpath, MOD_PRE y MOD_EXT)) \
+		(void)re_fprintf(f, x MOD_PRE y MOD_EXT "\n")
 
 
 /** Core Run-time Configuration - populated from config file */
@@ -489,6 +494,22 @@ static uint32_t count_modules(const char *path)
 }
 
 
+int find_module(const char *modpath, const char *name)
+{
+	struct stat sb;
+	int ret;
+	char *fullpath;
+
+	(void)asprintf(&fullpath, "%s/%s", modpath, name);
+
+	ret = stat(fullpath, &sb);
+
+	free(fullpath);
+
+	return !ret;
+}
+
+
 static const char *detect_module_path(bool *valid)
 {
 	static const char * const pathv[] = {
@@ -561,132 +582,115 @@ int config_write_template(const char *file, const struct config *cfg)
 			 modpath_valid ? "" : "#", modpath);
 
 	(void)re_fprintf(f, "\n# UI Modules\n");
-#if defined (WIN32)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "wincons" MOD_EXT "\n");
-#else
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "stdio" MOD_EXT "\n");
-#endif
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "cons" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "evdev" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "httpd" MOD_EXT "\n");
+	ADD_MODULE("module\t\t\t", "wincons");
+	ADD_MODULE("module\t\t\t", "stdio");
+	ADD_MODULE("#module\t\t\t", "cons");
+	ADD_MODULE("#module\t\t\t", "evdev");
+	ADD_MODULE("#module\t\t\t", "httpd");
 
 	(void)re_fprintf(f, "\n# Audio codec Modules (in order)\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "opus" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "silk" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "amr" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "g7221" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "g722" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "g726" MOD_EXT "\n");
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "g711" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "gsm" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "l16" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "speex" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "bv32" MOD_EXT "\n");
+	ADD_MODULE("#module\t\t\t", "opus");
+	ADD_MODULE("#module\t\t\t", "silk");
+	ADD_MODULE("#module\t\t\t", "amr");
+	ADD_MODULE("#module\t\t\t", "g7221");
+	ADD_MODULE("#module\t\t\t", "g722");
+	ADD_MODULE("#module\t\t\t", "g726");
+	ADD_MODULE("module\t\t\t", "g711");
+	ADD_MODULE("#module\t\t\t", "gsm");
+	ADD_MODULE("#module\t\t\t", "l16");
+	ADD_MODULE("#module\t\t\t", "speex");
+	ADD_MODULE("#module\t\t\t", "celt");
+	ADD_MODULE("#module\t\t\t", "bv32");
+	ADD_MODULE("#module\t\t\t", "ilbc");
+	ADD_MODULE("#module\t\t\t", "isac");
 
 	(void)re_fprintf(f, "\n# Audio filter Modules (in encoding order)\n");
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "vumeter" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "sndfile" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "speex_aec" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "speex_pp" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "plc" MOD_EXT "\n");
+	ADD_MODULE("module\t\t\t", "vumeter");
+	ADD_MODULE("#module\t\t\t", "sndfile");
+	ADD_MODULE("#module\t\t\t", "speex_aec");
+	ADD_MODULE("#module\t\t\t", "speex_pp");
+	ADD_MODULE("#module\t\t\t", "plc");
 
 	(void)re_fprintf(f, "\n# Audio driver Modules\n");
-#if defined (__SYMBIAN32__)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "mda" MOD_EXT "\n");
-#elif defined (ANDROID)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "opensles" MOD_EXT "\n");
-#elif defined (DARWIN)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "coreaudio" MOD_EXT "\n");
-#elif defined (FREEBSD)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "oss" MOD_EXT "\n");
-#elif defined (OPENBSD)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "sndio" MOD_EXT "\n");
-#elif defined (WIN32)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "winwave" MOD_EXT "\n");
-#else
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "alsa" MOD_EXT "\n");
-#endif
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "portaudio" MOD_EXT "\n");
-
-#ifdef USE_VIDEO
+	ADD_MODULE("module\t\t\t", "alsa");
+	ADD_MODULE("module\t\t\t", "audiounit");
+	ADD_MODULE("module\t\t\t", "coreaudio");
+	ADD_MODULE("module\t\t\t", "mda");
+	ADD_MODULE("module\t\t\t", "opensles");
+	ADD_MODULE("module\t\t\t", "oss");
+	ADD_MODULE("module\t\t\t", "sndio");
+	ADD_MODULE("module\t\t\t", "winwave");
+	ADD_MODULE("module\t\t\t", "aubridge");
+	ADD_MODULE("#module\t\t\t", "portaudio");
 
 	(void)re_fprintf(f, "\n# Video codec Modules (in order)\n");
-#ifdef USE_FFMPEG
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "avcodec" MOD_EXT "\n");
-#else
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "avcodec" MOD_EXT "\n");
-#endif
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "vpx" MOD_EXT "\n");
+	ADD_MODULE("module\t\t\t", "avcodec");
+	ADD_MODULE("module\t\t\t", "vpx");
 
 	(void)re_fprintf(f, "\n# Video filter Modules (in encoding order)\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "selfview" MOD_EXT "\n");
+	ADD_MODULE("#module\t\t\t", "selfview");
+	ADD_MODULE("#module\t\t\t", "snapshot");
 
 	(void)re_fprintf(f, "\n# Video source modules\n");
-#if defined (DARWIN)
-
-#ifdef QTCAPTURE_RUNLOOP
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "qtcapture" MOD_EXT "\n");
-#else
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "avcapture" MOD_EXT "\n");
-#endif
-
-#else
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "v4l" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "v4l2" MOD_EXT "\n");
-#endif
-#ifdef USE_FFMPEG
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "avformat" MOD_EXT "\n");
-#endif
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "x11grab" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "cairo" MOD_EXT "\n");
+	ADD_MODULE("module\t\t\t", "avcapture");
+	ADD_MODULE("module\t\t\t", "qtcapture");
+	ADD_MODULE("module\t\t\t", "v4l");
+	ADD_MODULE("module\t\t\t", "v4l2");
+	ADD_MODULE("#module\t\t\t", "avformat");
+	ADD_MODULE("#module\t\t\t", "cairo");
+	ADD_MODULE("#module\t\t\t", "dshow");
+	ADD_MODULE("#module\t\t\t", "quicktime");
+	ADD_MODULE("#module\t\t\t", "vidbridge");
+	ADD_MODULE("#module\t\t\t", "x11grab");
+	ADD_MODULE("#module\t\t\t", "fakevideo");
 
 	(void)re_fprintf(f, "\n# Video display modules\n");
-#ifdef DARWIN
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "opengl" MOD_EXT "\n");
-#endif
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "x11" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "sdl2" MOD_EXT "\n");
+	ADD_MODULE("#module\t\t\t", "directfb");
+	ADD_MODULE("module\t\t\t", "opengl");
+	ADD_MODULE("module\t\t\t", "opengles");
+	ADD_MODULE("module\t\t\t", "x11");
+	ADD_MODULE("#module\t\t\t", "sdl");
+	ADD_MODULE("#module\t\t\t", "sdl2");
 
-#endif /* USE_VIDEO */
-
-	(void)re_fprintf(f,
-			"\n# Audio/Video source modules\n"
-			"#module\t\t\t" MOD_PRE "rst" MOD_EXT "\n"
-			"#module\t\t\t" MOD_PRE "gst" MOD_EXT "\n");
+	(void)re_fprintf(f, "\n# Audio/Video source modules\n");
+	ADD_MODULE("#module\t\t\t", "rst");
+	ADD_MODULE("#module\t\t\t", "gst");
 
 	(void)re_fprintf(f, "\n# Media NAT modules\n");
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "stun" MOD_EXT "\n");
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "turn" MOD_EXT "\n");
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "ice" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "natpmp" MOD_EXT "\n");
+	ADD_MODULE("module\t\t\t", "stun");
+	ADD_MODULE("module\t\t\t", "turn");
+	ADD_MODULE("module\t\t\t", "ice");
+	ADD_MODULE("#module\t\t\t", "natpmp");
 
 	(void)re_fprintf(f, "\n# Media encryption modules\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "srtp" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "dtls_srtp" MOD_EXT "\n");
+	ADD_MODULE("module\t\t\t", "srtp");
+	ADD_MODULE("#module\t\t\t", "libsrtp");
+	ADD_MODULE("#module\t\t\t", "dtls_srtp");
+	ADD_MODULE("module\t\t\t", "zrtp");
 	(void)re_fprintf(f, "\n");
 
 	(void)re_fprintf(f, "\n#------------------------------------"
 			 "------------------------------------------\n");
 	(void)re_fprintf(f, "# Temporary Modules (loaded then unloaded)\n");
 	(void)re_fprintf(f, "\n");
-	(void)re_fprintf(f, "#module_tmp\t\t" MOD_PRE "uuid" MOD_EXT "\n");
-	(void)re_fprintf(f, "module_tmp\t\t" MOD_PRE "account" MOD_EXT "\n");
+	ADD_MODULE("#module_tmp\t\t", "uuid");
+	ADD_MODULE("module_tmp\t\t", "account");
 	(void)re_fprintf(f, "\n");
 
 	(void)re_fprintf(f, "\n#------------------------------------"
 			 "------------------------------------------\n");
 	(void)re_fprintf(f, "# Application Modules\n");
 	(void)re_fprintf(f, "\n");
-	(void)re_fprintf(f, "module_app\t\t" MOD_PRE "auloop"MOD_EXT"\n");
-	(void)re_fprintf(f, "module_app\t\t"  MOD_PRE "contact"MOD_EXT"\n");
-	(void)re_fprintf(f, "module_app\t\t"  MOD_PRE "menu"MOD_EXT"\n");
-	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "mwi"MOD_EXT"\n");
-	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "natbd"MOD_EXT"\n");
-	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "presence"MOD_EXT"\n");
-	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "syslog"MOD_EXT"\n");
-#ifdef USE_VIDEO
-	(void)re_fprintf(f, "module_app\t\t" MOD_PRE "vidloop"MOD_EXT"\n");
-#endif
+	ADD_MODULE("module_app\t\t", "auloop");
+	ADD_MODULE("module_app\t\t", "contact");
+	ADD_MODULE("module_app\t\t", "dtmfio");
+	ADD_MODULE("module_app\t\t", "menu");
+	ADD_MODULE("#module_app\t\t", "mwi");
+	ADD_MODULE("#module_app\t\t", "natbd");
+	ADD_MODULE("#module_app\t\t", "presence");
+	ADD_MODULE("#module_app\t\t", "syslog");
+	ADD_MODULE("#module_app\t\t", "selftest");
+	ADD_MODULE("module_app\t\t", "vidloop");
 	(void)re_fprintf(f, "\n");
 
 	(void)re_fprintf(f, "\n#------------------------------------"
