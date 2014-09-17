@@ -244,8 +244,69 @@ static int on_send_packet(const zrtp_stream_t *stream,
 }
 
 
+static void on_zrtp_secure(zrtp_stream_t *stream)
+{
+	const struct menc_media *st = zrtp_stream_get_userdata(stream);
+	const struct menc_sess *sess = st->sess;
+	zrtp_session_info_t sess_info;
+
+	zrtp_session_get(sess->zrtp_session, &sess_info);
+	if (!sess_info.sas_is_verified && sess_info.sas_is_ready) {
+		info("zrtp: verify SAS <%s> <%s> for remote peer %w\n",
+		     sess_info.sas1.buffer,
+		     sess_info.sas2.buffer,
+		     sess_info.peer_zid.buffer,
+		     (size_t)sess_info.peer_zid.length);
+	}
+}
+
+
 static struct menc menc_zrtp = {
 	LE_INIT, "zrtp", "RTP/AVP", session_alloc, media_alloc
+};
+
+
+static int verify_sas(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+
+	if (str_isset(carg->prm)) {
+		char *s2h;
+		char rzid[ZRTP_STRING16] = "";
+		zrtp_status_t s;
+		zrtp_string16_t remote_zid;
+
+		if (str_len(carg->prm) != 24) {
+			warning("zrtp: invalid remote ZID (%s)\n", carg->prm);
+			return EINVAL;
+		}
+
+		s2h = str2hex(carg->prm, (int) str_len(carg->prm),
+			      rzid, sizeof(rzid));
+		if (str_len(rzid) != sizeof(zrtp_zid_t)) {
+			warning("zrtp: str2hex failed (%s)\n", s2h);
+			return EINVAL;
+		}
+		zrtp_zstrcpyc(ZSTR_GV(remote_zid), rzid);
+
+		s = zrtp_cache_set_verified(zrtp_global->cache,
+					    ZSTR_GV(remote_zid),
+					    true);
+		if (s == zrtp_status_ok)
+			info("zrtp: SAS for peer %s verified\n", carg->prm);
+		else {
+			warning("zrtp: zrtp_cache_set_verified"
+				" failed (status = %d)\n", s);
+			return EINVAL;
+		}
+	}
+
+	return 0;
+}
+
+
+static const struct cmd cmdv[] = {
+	{'Z', CMD_PRM, "Verify ZRTP SAS", verify_sas },
 };
 
 
@@ -267,12 +328,12 @@ static int module_init(void)
 	if (re_snprintf(zrtp_config.cache_file_cfg.cache_path,
 			sizeof(zrtp_config.cache_file_cfg.cache_path),
 			"%s/zrtp_cache.dat", config_path) < 0)
-	        return ENOMEM;
+		return ENOMEM;
 
 	if (re_snprintf(zrtp_zid_path,
 			sizeof(zrtp_zid_path),
 			"%s/zrtp_zid", config_path) < 0)
-	        return ENOMEM;
+		return ENOMEM;
 	if ((f = fopen(zrtp_zid_path, "rb")) != NULL) {
 		if (fread(zrtp_config.zid, sizeof(zrtp_config.zid),
 			  1, f) != 1) {
@@ -302,6 +363,7 @@ static int module_init(void)
 	zrtp_config.lic_mode = ZRTP_LICENSE_MODE_UNLIMITED;
 
 	zrtp_config.cb.misc_cb.on_send_packet = on_send_packet;
+	zrtp_config.cb.event_cb.on_zrtp_secure = on_zrtp_secure;
 
 	s = zrtp_init(&zrtp_config, &zrtp_global);
 	if (zrtp_status_ok != s) {
@@ -311,12 +373,13 @@ static int module_init(void)
 
 	menc_register(&menc_zrtp);
 
-	return 0;
+	return cmd_register(cmdv, ARRAY_SIZE(cmdv));
 }
 
 
 static int module_close(void)
 {
+	cmd_unregister(cmdv);
 	menc_unregister(&menc_zrtp);
 
 	if (zrtp_global) {
