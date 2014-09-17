@@ -319,6 +319,7 @@ static int module_init(void)
 	int err;
 
 	zrtp_config_defaults(&zrtp_config);
+	zrtp_config.cache_type = ZRTP_CACHE_FILE;
 
 	err = conf_path_get(config_path, sizeof(config_path));
 	if (err) {
