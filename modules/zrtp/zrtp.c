@@ -252,7 +252,8 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 
 	zrtp_session_get(sess->zrtp_session, &sess_info);
 	if (!sess_info.sas_is_verified && sess_info.sas_is_ready) {
-		info("zrtp: verify SAS <%s> <%s> for remote peer %w\n",
+		info("zrtp: verify SAS <%s> <%s> for remote peer %w"
+		     " (press 'Z' <ZID> to verify)\n",
 		     sess_info.sas1.buffer,
 		     sess_info.sas2.buffer,
 		     sess_info.peer_zid.buffer,
@@ -269,6 +270,7 @@ static struct menc menc_zrtp = {
 static int verify_sas(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	(void)pf;
 
 	if (str_isset(carg->prm)) {
 		char *s2h;
