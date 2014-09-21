@@ -226,6 +226,7 @@ struct metric {
 	uint32_t n_bytes_last;
 };
 
+void     metric_init(struct metric *metric);
 void     metric_reset(struct metric *metric);
 void     metric_add_packet(struct metric *metric, size_t packetsize);
 uint32_t metric_avg_bitrate(const struct metric *metric);
