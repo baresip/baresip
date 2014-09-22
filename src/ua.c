@@ -1484,7 +1484,7 @@ const char *ua_cuser(const struct ua *ua)
  */
 struct account *ua_account(const struct ua *ua)
 {
-        return ua->acc;
+	return ua ? ua->acc : NULL;
 }
 
 

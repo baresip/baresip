@@ -92,7 +92,7 @@ static int mwi_subscribe(struct ua *ua)
 				 "Accept:"
 				 " application/simple-message-summary\r\n");
 	if (err) {
-	        warning("mwi: subscribe ERROR: %m\n", err);
+		warning("mwi: subscribe ERROR: %m\n", err);
 	}
 
 	if (err)
@@ -115,8 +115,8 @@ static void ua_event_handler(struct ua *ua,
 		return;
 
 	if (ev == UA_EVENT_REGISTER_OK) {
- 	        uag_event_unregister(ua_event_handler);
-	        mwi_subscribe(ua);
+		uag_event_unregister(ua_event_handler);
+		mwi_subscribe(ua);
 	}
 }
 
@@ -131,9 +131,9 @@ static void tmr_handler(void *arg)
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
 		if (account_regint(acc) > 0)
-		        uag_event_register(ua_event_handler, ua);
+			uag_event_register(ua_event_handler, ua);
 		else
-		        mwi_subscribe(ua);
+			mwi_subscribe(ua);
 	}
 }
 
