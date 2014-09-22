@@ -1475,6 +1475,19 @@ const char *ua_cuser(const struct ua *ua)
 }
 
 
+/**
+ * Get Account of a User-Agent
+ *
+ * @param ua User-Agent
+ *
+ * @return Pointer to UA's account
+ */
+struct account *ua_account(const struct ua *ua)
+{
+        return ua->acc;
+}
+
+
 struct list *uag_list(void)
 {
 	return &uag.ual;

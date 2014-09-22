@@ -504,6 +504,12 @@ struct sip_addr *account_laddr(const struct account *acc)
 }
 
 
+uint32_t account_regint(const struct account *acc)
+{
+	return acc ? acc->regint : 0;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
