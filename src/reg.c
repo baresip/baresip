@@ -138,6 +138,18 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 
 		reg->scode = msg->scode;
 
+		hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+		if (hdr) {
+			struct sip_addr addr;
+			struct pl pval;
+
+			if (0 == sip_addr_decode(&addr, &hdr->val) &&
+			    0 == msg_param_decode(&addr.params, "pub-gruu",
+						  &pval)) {
+				ua_pub_gruu_set(reg->ua, &pval);
+			}
+		}
+
 		ua_event(reg->ua, UA_EVENT_REGISTER_OK, NULL, "%u %r",
 			 msg->scode, &msg->reason);
 	}
@@ -191,7 +203,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	reg->sipreg = mem_deref(reg->sipreg);
 	err = sipreg_register(&reg->sipreg, uag_sip(), reg_uri,
 			      ua_aor(reg->ua), ua_aor(reg->ua),
-			      regint, ua_cuser(reg->ua),
+			      regint, ua_local_cuser(reg->ua),
 			      routev[0] ? routev : NULL,
 			      routev[0] ? 1 : 0,
 			      reg->id,
