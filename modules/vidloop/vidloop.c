@@ -5,11 +5,13 @@
  */
 #define _BSD_SOURCE 1
 #include <string.h>
-#include <time.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
 
+#include <sys/time.h>
+#include <pthread.h>
+#include <unistd.h>
 
 /** Video Statistics */
 struct vstat {
@@ -39,6 +41,8 @@ struct video_loop {
 
 static struct video_loop *gvl;
 
+static pthread_mutex_t	vloop_lock;
+static pthread_cond_t	vloop_wait;
 
 static int display(struct video_loop *vl, struct vidframe *frame)
 {
@@ -112,9 +116,9 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 
 	++vl->stat.frames;
 
-	if (frame->fmt != VID_FMT_YUV420P) {
+	if (frame->fmt != VID_FMT_INTERNAL) {
 
-		if (vidframe_alloc(&f2, VID_FMT_YUV420P, &frame->size))
+		if (vidframe_alloc(&f2, VID_FMT_INTERNAL, &frame->size))
 			return;
 
 		vidconv(f2, frame, 0);
@@ -141,12 +145,33 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 	}
 
 	mem_deref(f2);
+
+	// frame cycle end signal
+	pthread_mutex_lock(&vloop_lock);
+	pthread_cond_signal(&vloop_wait);
+	pthread_mutex_unlock(&vloop_lock);
+
 }
 
 
 static void vidloop_destructor(void *arg)
 {
 	struct video_loop *vl = arg;
+	struct timespec	ts;
+	struct timeval	tp;
+	int 		ret;
+
+	/* wait for frame cycle ends */
+	pthread_mutex_lock(&vloop_lock);
+	gettimeofday(&tp, NULL);
+	ts.tv_sec  = tp.tv_sec;
+	ts.tv_nsec = tp.tv_usec * 1000;
+	ts.tv_sec += 2;
+	ret = pthread_cond_timedwait(&vloop_wait, &vloop_lock, &ts);
+
+	if (ETIMEDOUT == ret) {
+		warning("vidloop: waiting for frame cycle end timeout\n");
+	}
 
 	tmr_cancel(&vl->tmr_bw);
 	mem_deref(vl->vsrc);
@@ -353,6 +378,11 @@ static int vidloop_start(struct re_printf *pf, void *arg)
 		}
 	}
 
+	if (!err) {
+		pthread_mutex_init(&vloop_lock, NULL);
+		pthread_cond_init(&vloop_wait, NULL);
+	}
+
 	return err;
 }
 
@@ -361,9 +391,11 @@ static int vidloop_stop(struct re_printf *pf, void *arg)
 {
 	(void)arg;
 
-	if (gvl)
-		(void)re_hprintf(pf, "Disable video-loop\n");
-	gvl = mem_deref(gvl);
+	if (gvl) {
+		(void) re_hprintf(pf, "Disable video-loop\n");
+		gvl = mem_deref(gvl);
+	}
+
 	return 0;
 }
 
