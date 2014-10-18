@@ -14,22 +14,26 @@
 #include "print.h"
 
 
-/* Note:
+/**
+ * @defgroup evdev evdev
  *
- * KEY_NUMERIC_xyz added in linux kernel 2.6.28
+ * User-Interface (UI) module using the Linux input subsystem.
+ *
+ * The following options can be configured:
+ *
+ \verbatim
+  evdev_device     /dev/input/event0         # Name of the input device to use
+ \endverbatim
  */
 
 
 struct ui_st {
-	struct ui *ui; /* base class */
 	int fd;
-	ui_input_h *h;
-	void *arg;
 };
 
 
-static struct ui *evdev;
-static char evdev_device[64] = "/dev/event0";
+static struct ui_st *evdev;
+static char evdev_device[64] = "/dev/input/event0";
 
 
 static void evdev_close(struct ui_st *st)
@@ -48,7 +52,6 @@ static void evdev_destructor(void *arg)
 	struct ui_st *st = arg;
 
 	evdev_close(st);
-	mem_deref(st->ui);
 }
 
 
@@ -160,14 +163,10 @@ static int stderr_handler(const char *p, size_t sz, void *arg)
 
 static void reportkey(struct ui_st *st, int ascii)
 {
-	struct re_printf pf;
+	static struct re_printf pf_stderr = {stderr_handler, NULL};
+	(void)st;
 
-	pf.vph = stderr_handler;
-
-	if (!st->h)
-		return;
-
-	st->h(ascii, &pf, st->arg);
+	ui_input_key(ascii, &pf_stderr);
 }
 
 
@@ -221,10 +220,8 @@ static void evdev_fd_handler(int flags, void *arg)
 }
 
 
-static int evdev_alloc(struct ui_st **stp, struct ui_prm *prm,
-		       ui_input_h *uih, void *arg)
+static int evdev_alloc(struct ui_st **stp, const char *dev)
 {
-	const char *dev = str_isset(prm->device) ? prm->device : evdev_device;
 	struct ui_st *st;
 	int err = 0;
 
@@ -235,10 +232,10 @@ static int evdev_alloc(struct ui_st **stp, struct ui_prm *prm,
 	if (!st)
 		return ENOMEM;
 
-	st->ui = mem_ref(evdev);
 	st->fd = open(dev, O_RDWR);
 	if (st->fd < 0) {
 		err = errno;
+		warning("evdev: failed to open device '%s' (%m)\n", dev, err);
 		goto out;
 	}
 
@@ -258,9 +255,6 @@ static int evdev_alloc(struct ui_st **stp, struct ui_prm *prm,
 	err = fd_listen(st->fd, FD_READ, evdev_fd_handler, st);
 	if (err)
 		goto out;
-
-	st->h   = uih;
-	st->arg = arg;
 
  out:
 	if (err)
@@ -290,11 +284,12 @@ static int buzz(const struct ui_st *st, int value)
 }
 
 
-static int evdev_output(struct ui_st *st, const char *str)
+static int evdev_output(const char *str)
 {
+	struct ui_st *st = evdev;
 	int err = 0;
 
-	if (!str)
+	if (!st || !str)
 		return EINVAL;
 
 	while (*str) {
@@ -314,14 +309,32 @@ static int evdev_output(struct ui_st *st, const char *str)
 }
 
 
+static struct ui ui_evdev = {
+	.name = "evdev",
+	.outputh = evdev_output
+};
+
+
 static int module_init(void)
 {
-	return ui_register(&evdev, "evdev", evdev_alloc, evdev_output);
+	int err;
+
+	conf_get_str(conf_cur(), "evdev_device",
+		     evdev_device, sizeof(evdev_device));
+
+	err = evdev_alloc(&evdev, evdev_device);
+	if (err)
+		return err;
+
+	ui_unregister(&ui_evdev);
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
+	ui_unregister(&ui_evdev);
 	evdev = mem_deref(evdev);
 	return 0;
 }

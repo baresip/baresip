@@ -18,11 +18,6 @@
 /** Core Run-time Configuration - populated from config file */
 /** @todo: move config parsing/decoding to a module */
 static struct config core_config = {
-	/* Input */
-	{
-		"/dev/event0",
-		5555
-	},
 
 	/** SIP User-Agent */
 	{
@@ -139,11 +134,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		}
 	}
 
-	/* Input */
-	(void)conf_get_str(conf, "input_device", cfg->input.device,
-			   sizeof(cfg->input.device));
-	(void)conf_get_u32(conf, "input_port", &cfg->input.port);
-
 	/* SIP */
 	(void)conf_get_u32(conf, "sip_trans_bsize", &cfg->sip.trans_bsize);
 	(void)conf_get_str(conf, "sip_listen", cfg->sip.local,
@@ -240,10 +230,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 	err = re_hprintf(pf,
 			 "\n"
-			 "# Input\n"
-			 "input_device\t\t%s\n"
-			 "input_port\t\t%u\n"
-			 "\n"
 			 "# SIP\n"
 			 "sip_trans_bsize\t\t%u\n"
 			 "sip_listen\t\t%s\n"
@@ -287,8 +273,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 #endif
 			 ,
-
-			 cfg->input.device, cfg->input.port,
 
 			 cfg->sip.trans_bsize, cfg->sip.local, cfg->sip.cert,
 
@@ -397,9 +381,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 #ifdef HAVE_EPOLL
 				", epoll ..\n"
 #endif
-			  "\n# Input\n"
-			  "input_device\t\t/dev/event0\n"
-			  "input_port\t\t5555\n"
 			  "\n# SIP\n"
 			  "sip_trans_bsize\t\t128\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
@@ -693,6 +674,12 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "------------------------------------------\n");
 	(void)re_fprintf(f, "# Module parameters\n");
 	(void)re_fprintf(f, "\n");
+
+	(void)re_fprintf(f, "\n");
+	(void)re_fprintf(f, "cons_listen\t\t0.0.0.0:5555\n");
+
+	(void)re_fprintf(f, "\n");
+	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
 
 	(void)re_fprintf(f, "\n# Speex codec parameters\n");
 	(void)re_fprintf(f, "speex_quality\t\t7 # 0-10\n");

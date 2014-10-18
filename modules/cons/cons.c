@@ -7,20 +7,40 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup cons cons
+ *
+ * Console User-Interface (UI) using UDP/TCP sockets
+ *
+ *
+ * This module implements a simple console for connecting to Baresip via
+ * UDP or TCP-based sockets. You can use programs like telnet or netcat to
+ * connect to the command-line interface.
+ *
+ * Example, with the cons-module listening on default port 5555:
+ *
+ \verbatim
+  $ netcat -u 127.0.0.1 5555
+ \endverbatim
+ *
+ * The following options can be configured:
+ *
+ \verbatim
+  cons_listen     0.0.0.0:5555         # IP-address and port to listen on
+ \endverbatim
+ */
+
+
 enum {CONS_PORT = 5555};
 
 struct ui_st {
-	struct ui *ui; /* base class */
 	struct udp_sock *us;
 	struct tcp_sock *ts;
 	struct tcp_conn *tc;
-	ui_input_h *h;
-	void *arg;
 };
 
 
-static struct ui *cons;
-static struct ui_st *cons_cur = NULL;  /* allow only one instance */
+static struct ui_st *cons = NULL;  /* allow only one instance */
 
 
 static int print_handler(const char *p, size_t size, void *arg)
@@ -38,8 +58,14 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 	pf.vph = print_handler;
 	pf.arg = mbr;
 
-	while (mbuf_get_left(mb))
-		st->h(mbuf_read_u8(mb), &pf, st->arg);
+	while (mbuf_get_left(mb)) {
+		char ch = mbuf_read_u8(mb);
+
+		if (ch == '\r')
+			ch = '\n';
+
+		ui_input_key(ch, &pf);
+	}
 
 	mbr->pos = 0;
 	(void)udp_send(st->us, src, mbr);
@@ -55,10 +81,6 @@ static void cons_destructor(void *arg)
 	mem_deref(st->us);
 	mem_deref(st->tc);
 	mem_deref(st->ts);
-
-	mem_deref(st->ui);
-
-	cons_cur = NULL;
 }
 
 
@@ -84,9 +106,12 @@ static void tcp_recv_handler(struct mbuf *mb, void *arg)
 
 	while (mbuf_get_left(mb) > 0) {
 
-		const char key = mbuf_read_u8(mb);
+		char ch = mbuf_read_u8(mb);
 
-		st->h(key, &pf, st->arg);
+		if (ch == '\r')
+			ch = '\n';
+
+		ui_input_key(ch, &pf);
 	}
 }
 
@@ -114,64 +139,71 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 }
 
 
-static int cons_alloc(struct ui_st **stp, struct ui_prm *prm,
-		      ui_input_h *h, void *arg)
+static int cons_alloc(struct ui_st **stp, const struct sa *laddr)
 {
-	struct sa local;
 	struct ui_st *st;
 	int err;
 
 	if (!stp)
 		return EINVAL;
 
-	if (cons_cur) {
-		*stp = mem_ref(cons_cur);
-		return 0;
-	}
-
 	st = mem_zalloc(sizeof(*st), cons_destructor);
 	if (!st)
 		return ENOMEM;
 
-	st->ui  = mem_ref(cons);
-	st->h   = h;
-	st->arg = arg;
-
-	err = sa_set_str(&local, "0.0.0.0", prm->port ? prm->port : CONS_PORT);
-	if (err)
-		goto out;
-	err = udp_listen(&st->us, &local, udp_recv, st);
+	err = udp_listen(&st->us, laddr, udp_recv, st);
 	if (err) {
-		warning("cons: failed to listen on UDP port %d (%m)\n",
-			sa_port(&local), err);
+		warning("cons: failed to listen on UDP %J (%m)\n",
+			laddr, err);
 		goto out;
 	}
 
-	err = tcp_listen(&st->ts, &local, tcp_conn_handler, st);
+	err = tcp_listen(&st->ts, laddr, tcp_conn_handler, st);
 	if (err) {
-		warning("cons: failed to listen on TCP port %d (%m)\n",
-			sa_port(&local), err);
+		warning("cons: failed to listen on TCP %J (%m)\n",
+			laddr, err);
 		goto out;
 	}
+
+	debug("cons: UI console listening on %J\n", laddr);
 
  out:
 	if (err)
 		mem_deref(st);
 	else
-		*stp = cons_cur = st;
+		*stp = st;
 
 	return err;
 }
 
 
+static struct ui ui_cons = {
+	.name = "cons",
+};
+
+
 static int cons_init(void)
 {
-	return ui_register(&cons, "cons", cons_alloc, NULL);
+	struct sa laddr;
+	int err;
+
+	if (conf_get_sa(conf_cur(), "cons_listen", &laddr)) {
+		sa_set_str(&laddr, "0.0.0.0", CONS_PORT);
+	}
+
+	err = cons_alloc(&cons, &laddr);
+	if (err)
+		return err;
+
+	ui_register(&ui_cons);
+
+	return 0;
 }
 
 
 static int cons_close(void)
 {
+	ui_unregister(&ui_cons);
 	cons = mem_deref(cons);
 	return 0;
 }

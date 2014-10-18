@@ -11,24 +11,30 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup stdio stdio
+ *
+ * User-Interface (UI) module for standard input/output
+ *
+ * This module sets up the terminal in raw mode, and reads characters from the
+ * input to the UI subsystem. The module is indented for Unix-based systems.
+ */
+
+
 /** Local constants */
 enum {
 	RELEASE_VAL = 250  /**< Key release value in [ms] */
 };
 
 struct ui_st {
-	struct ui *ui; /* base class */
 	struct tmr tmr;
 	struct termios term;
 	bool term_set;
-	ui_input_h *h;
-	void *arg;
 };
 
 
 /* We only allow one instance */
-static struct ui_st *_ui;
-static struct ui *stdio;
+static struct ui_st *ui_state;
 
 
 static void ui_destructor(void *arg)
@@ -41,9 +47,6 @@ static void ui_destructor(void *arg)
 		tcsetattr(STDIN_FILENO, TCSANOW, &st->term);
 
 	tmr_cancel(&st->tmr);
-	mem_deref(st->ui);
-
-	_ui = NULL;
 }
 
 
@@ -57,12 +60,10 @@ static int print_handler(const char *p, size_t size, void *arg)
 
 static void report_key(struct ui_st *ui, char key)
 {
-	struct re_printf pf;
+	static struct re_printf pf_stderr = {print_handler, NULL};
+	(void)ui;
 
-	pf.vph = print_handler;
-
-	if (ui->h)
-		ui->h(key, &pf, ui->arg);
+	ui_input_key(key, &pf_stderr);
 }
 
 
@@ -115,27 +116,18 @@ static int term_setup(struct ui_st *st)
 }
 
 
-static int ui_alloc(struct ui_st **stp, struct ui_prm *prm,
-		    ui_input_h *ih, void *arg)
+static int ui_alloc(struct ui_st **stp)
 {
 	struct ui_st *st;
 	int err;
 
-	(void)prm;
-
 	if (!stp)
 		return EINVAL;
-
-	if (_ui) {
-		*stp = mem_ref(_ui);
-		return 0;
-	}
 
 	st = mem_zalloc(sizeof(*st), ui_destructor);
 	if (!st)
 		return ENOMEM;
 
-	st->ui = mem_ref(stdio);
 	tmr_init(&st->tmr);
 
 	err = fd_listen(STDIN_FILENO, FD_READ, ui_fd_handler, st);
@@ -148,28 +140,40 @@ static int ui_alloc(struct ui_st **stp, struct ui_prm *prm,
 		err = 0;
 	}
 
-	st->h   = ih;
-	st->arg = arg;
-
  out:
 	if (err)
 		mem_deref(st);
 	else
-		*stp = _ui = st;
+		*stp = st;
 
 	return err;
 }
 
 
+static struct ui ui_stdio = {
+	.name = "stdio"
+};
+
+
 static int module_init(void)
 {
-	return ui_register(&stdio, "stdio", ui_alloc, NULL);
+	int err;
+
+	err = ui_alloc(&ui_state);
+	if (err)
+		return err;
+
+	ui_register(&ui_stdio);
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
-	stdio = mem_deref(stdio);
+	ui_unregister(&ui_stdio);
+	ui_state = mem_deref(ui_state);
+
 	return 0;
 }
 

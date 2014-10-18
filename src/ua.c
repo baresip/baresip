@@ -1089,7 +1089,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 
 	uag.cfg = &cfg->sip;
 	bsize = cfg->sip.trans_bsize;
-	ui_init(&cfg->input);
 
 	play_init();
 
@@ -1154,6 +1153,7 @@ void ua_close(void)
 	cmd_unregister(cmdv);
 	net_close();
 	play_close();
+	ui_reset();
 
 	uag.evsock   = mem_deref(uag.evsock);
 	uag.sock     = mem_deref(uag.sock);

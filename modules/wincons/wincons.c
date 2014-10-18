@@ -9,35 +9,44 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup wincons wincons
+ *
+ * User-Interface (UI) module for Windows Console
+ */
+
+
 /** Local constants */
 enum {
 	RELEASE_VAL = 250  /**< Key release value in [ms] */
 };
 
 struct ui_st {
-	struct ui *ui; /* base class */
 	struct tmr tmr;
 	struct mqueue *mq;
 	HANDLE hThread;
 	bool run;
-	ui_input_h *h;
-	void *arg;
+	HANDLE hstdin;
+	DWORD  mode;
 };
 
 
-static struct ui *wincons;
+static struct ui_st *wincons;
 
 
 static void destructor(void *arg)
 {
 	struct ui_st *st = arg;
 
+	/* Restore the console to its previous state */
+	if (st->mode)
+		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), st->mode);
+
 	st->run = false;
 	CloseHandle(st->hThread);
 
 	tmr_cancel(&st->tmr);
 	mem_deref(st->mq);
-	mem_deref(st->ui);
 }
 
 
@@ -51,12 +60,10 @@ static int print_handler(const char *p, size_t size, void *arg)
 
 static void report_key(struct ui_st *ui, char key)
 {
-	struct re_printf pf;
+	static struct re_printf pf_stderr = {print_handler, NULL};
+	(void)ui;
 
-	pf.vph = print_handler;
-
-	if (ui->h)
-		ui->h(key, &pf, ui->arg);
+	ui_input_key(key, &pf_stderr);
 }
 
 
@@ -73,19 +80,15 @@ static DWORD WINAPI input_thread(LPVOID arg)
 {
 	struct ui_st *st = arg;
 
-	HANDLE hstdin = GetStdHandle( STD_INPUT_HANDLE );
-	DWORD  mode;
-
 	/* Switch to raw mode */
-	GetConsoleMode(hstdin, &mode);
-	SetConsoleMode(hstdin, 0);
+	SetConsoleMode(st->hstdin, 0);
 
 	while (st->run) {
 
 		char buf[4];
 		DWORD i, count = 0;
 
-		ReadConsole(hstdin, buf, sizeof(buf), &count, NULL);
+		ReadConsole(st->hstdin, buf, sizeof(buf), &count, NULL);
 
 		for (i=0; i<count; i++) {
 			int ch = buf[i];
@@ -102,9 +105,6 @@ static DWORD WINAPI input_thread(LPVOID arg)
 		}
 	}
 
-	/* Restore the console to its previous state */
-	SetConsoleMode(hstdin, mode);
-
 	return 0;
 }
 
@@ -119,13 +119,11 @@ static void mqueue_handler(int id, void *data, void *arg)
 }
 
 
-static int ui_alloc(struct ui_st **stp, struct ui_prm *prm,
-		    ui_input_h *ih, void *arg)
+static int ui_alloc(struct ui_st **stp)
 {
 	struct ui_st *st;
 	DWORD threadID;
 	int err = 0;
-	(void)prm;
 
 	if (!stp)
 		return EINVAL;
@@ -134,15 +132,16 @@ static int ui_alloc(struct ui_st **stp, struct ui_prm *prm,
 	if (!st)
 		return ENOMEM;
 
-	st->ui  = mem_ref(wincons);
-	st->h   = ih;
-	st->arg = arg;
-
 	tmr_init(&st->tmr);
 
 	err = mqueue_alloc(&st->mq, mqueue_handler, st);
 	if (err)
 		goto out;
+
+	st->hstdin = GetStdHandle(STD_INPUT_HANDLE);
+
+	/* save the current console mode */
+	GetConsoleMode(st->hstdin, &st->mode);
 
 	st->run = true;
 	st->hThread = CreateThread(NULL, 0, input_thread, st, 0, &threadID);
@@ -162,14 +161,28 @@ static int ui_alloc(struct ui_st **stp, struct ui_prm *prm,
 }
 
 
+static struct ui ui_wincons = {
+	.name = "wincons"
+};
+
+
 static int module_init(void)
 {
-	return ui_register(&wincons, "wincons", ui_alloc, NULL);
+	int err;
+
+	err = ui_alloc(&wincons);
+	if (err)
+		return err;
+
+	ui_register(&ui_wincons);
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
+	ui_unregister(&ui_wincons);
 	wincons = mem_deref(wincons);
 	return 0;
 }
