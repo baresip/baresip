@@ -241,6 +241,7 @@ IETF RFC/I-Ds:
 * RFC 5576  Source-Specific Media Attributes in SDP
 * RFC 5577  RTP Payload Format for ITU-T Recommendation G.722.1
 * RFC 5626  Managing Client-Initiated Connections in SIP
+* RFC 5627  Obtaining and Using GRUUs in SIP
 * RFC 5761  Multiplexing RTP Data and Control Packets on a Single Port
 * RFC 5763  Framework for Establishing a SRTP Security Context Using DTLS
 * RFC 5764  DTLS Extension to Establish Keys for SRTP
@@ -305,7 +306,7 @@ Supported compilers:
 
 External dependencies:
 
-libre v0.4.9 or later
+libre v0.4.10 or later
 librem v0.4.6 or later
 
 
