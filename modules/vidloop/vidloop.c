@@ -241,9 +241,9 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 	struct vidsrc_prm prm;
 	int err;
 
-	info("vidloop: %s,%s: open video source: %u x %u\n",
+	info("vidloop: %s,%s: open video source: %u x %u at %u fps\n",
 	     vl->cfg.src_mod, vl->cfg.src_dev,
-	     sz->w, sz->h);
+	     sz->w, sz->h, vl->cfg.fps);
 
 	prm.orient = VIDORIENT_PORTRAIT;
 	prm.fps    = vl->cfg.fps;
@@ -253,7 +253,8 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 			   NULL, vl->cfg.src_dev, vidsrc_frame_handler,
 			   NULL, vl);
 	if (err) {
-		warning("x11: vidsrc %s failed: %m\n", vl->cfg.src_dev, err);
+		warning("vidloop: vidsrc '%s' failed: %m\n",
+			vl->cfg.src_dev, err);
 	}
 
 	return err;

@@ -8,34 +8,13 @@
 #include "core.h"
 
 
-/** User Interface */
-struct ui {
-	struct le le;
-	const char *name;
-	struct ui_st *st;      /* only one instance */
-	ui_output_h *outputh;
-	struct cmd_ctx *ctx;
-};
-
 static struct list uil;  /**< List of UIs (struct ui) */
-static struct config_input input_cfg;
+static struct cmd_ctx *uictx;
 
 
-static void ui_handler(char key, struct re_printf *pf, void *arg)
+static void ui_handler(char key, struct re_printf *pf)
 {
-	struct ui *ui = arg;
-
-	(void)cmd_process(ui ? &ui->ctx : NULL, key, pf);
-}
-
-
-static void destructor(void *arg)
-{
-	struct ui *ui = arg;
-
-	list_unlink(&ui->le);
-	mem_deref(ui->st);
-	mem_deref(ui->ctx);
+	(void)cmd_process(&uictx, key, pf);
 }
 
 
@@ -53,50 +32,30 @@ static int stdout_handler(const char *p, size_t size, void *arg)
 /**
  * Register a new User-Interface (UI) module
  *
- * @param uip    Pointer to allocated UI module
- * @param name   Name of the UI module
- * @param alloch UI allocation handler
- * @param outh   UI output handler
- *
- * @return 0 if success, otherwise errorcode
+ * @param ui The User-Interface (UI) module to register
  */
-int ui_register(struct ui **uip, const char *name,
-		ui_alloc_h *alloch, ui_output_h *outh)
+void ui_register(struct ui *ui)
 {
-	struct ui *ui;
-	int err = 0;
-
-	if (!uip)
-		return EINVAL;
-
-	ui = mem_zalloc(sizeof(*ui), destructor);
 	if (!ui)
-		return ENOMEM;
+		return;
 
 	list_append(&uil, &ui->le, ui);
 
-	ui->name    = name;
-	ui->outputh = outh;
+	debug("ui: %s\n", ui->name);
+}
 
-	if (alloch) {
-		struct ui_prm prm;
 
-		prm.device = input_cfg.device;
-		prm.port   = input_cfg.port;
+/**
+ * Un-register a User-Interface (UI) module
+ *
+ * @param ui The User-Interface (UI) module to un-register
+ */
+void ui_unregister(struct ui *ui)
+{
+	if (!ui)
+		return;
 
-		err = alloch(&ui->st, &prm, ui_handler, ui);
-		if (err) {
-			warning("ui: register: module '%s' failed (%m)\n",
-				ui->name, err);
-		}
-	}
-
-	if (err)
-		mem_deref(ui);
-	else
-		*uip = ui;
-
-	return err;
+	list_unlink(&ui->le);
 }
 
 
@@ -107,12 +66,21 @@ int ui_register(struct ui **uip, const char *name,
  */
 void ui_input(char key)
 {
-	struct re_printf pf;
+	static struct re_printf pf_stdout = {stdout_handler, NULL};
 
-	pf.vph = stdout_handler;
-	pf.arg = NULL;
+	ui_handler(key, &pf_stdout);
+}
 
-	ui_handler(key, &pf, list_ledata(uil.head));
+
+/**
+ * Send an input key to the UI subsystem, with a print function for response
+ *
+ * @param key Input character
+ * @param pf  Print function for the response
+ */
+void ui_input_key(char key, struct re_printf *pf)
+{
+	ui_handler(key, pf);
 }
 
 
@@ -171,15 +139,15 @@ void ui_output(const char *str)
 		const struct ui *ui = le->data;
 
 		if (ui->outputh)
-			ui->outputh(ui->st, str);
+			ui->outputh(str);
 	}
 }
 
 
-void ui_init(const struct config_input *cfg)
+/**
+ * Reset the state of the UI subsystem, free resources
+ */
+void ui_reset(void)
 {
-	if (!cfg)
-		return;
-
-	input_cfg = *cfg;
+	uictx = mem_deref(uictx);
 }

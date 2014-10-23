@@ -310,6 +310,9 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 
 	s->pt_enc = -1;
 
+	metric_init(&s->metric_tx);
+	metric_init(&s->metric_rx);
+
 	list_append(call_streaml(call), &s->le, s);
 
  out:

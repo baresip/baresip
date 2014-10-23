@@ -21,6 +21,10 @@
  *
  *     This module is using ZRTP implementation in Freeswitch
  *     https://github.com/traviscross/libzrtp
+ *
+ * Thanks:
+ *
+ *   Ingo Feinerer
  */
 
 
@@ -210,9 +214,9 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 }
 
 
-static int zrtp_send_rtp_callback(const zrtp_stream_t *stream,
-				  char *rtp_packet,
-				  unsigned int rtp_packet_length)
+static int on_send_packet(const zrtp_stream_t *stream,
+			  char *rtp_packet,
+			  unsigned int rtp_packet_length)
 {
 	struct menc_media *st = zrtp_stream_get_userdata(stream);
 	struct mbuf *mb;
@@ -228,7 +232,7 @@ static int zrtp_send_rtp_callback(const zrtp_stream_t *stream,
 	(void)mbuf_write_mem(mb, (void *)rtp_packet, rtp_packet_length);
 	mb->pos = 0;
 
-	err = udp_send(st->rtpsock, &st->raddr, mb);
+	err = udp_send_helper(st->rtpsock, &st->raddr, mb, st->uh);
 	if (err) {
 		warning("zrtp: udp_send %u bytes (%m)\n",
 			rtp_packet_length, err);
@@ -240,8 +244,71 @@ static int zrtp_send_rtp_callback(const zrtp_stream_t *stream,
 }
 
 
+static void on_zrtp_secure(zrtp_stream_t *stream)
+{
+	const struct menc_media *st = zrtp_stream_get_userdata(stream);
+	const struct menc_sess *sess = st->sess;
+	zrtp_session_info_t sess_info;
+
+	zrtp_session_get(sess->zrtp_session, &sess_info);
+	if (!sess_info.sas_is_verified && sess_info.sas_is_ready) {
+		info("zrtp: verify SAS <%s> <%s> for remote peer %w"
+		     " (press 'Z' <ZID> to verify)\n",
+		     sess_info.sas1.buffer,
+		     sess_info.sas2.buffer,
+		     sess_info.peer_zid.buffer,
+		     (size_t)sess_info.peer_zid.length);
+	}
+}
+
+
 static struct menc menc_zrtp = {
 	LE_INIT, "zrtp", "RTP/AVP", session_alloc, media_alloc
+};
+
+
+static int verify_sas(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	(void)pf;
+
+	if (str_isset(carg->prm)) {
+		char *s2h;
+		char rzid[ZRTP_STRING16] = "";
+		zrtp_status_t s;
+		zrtp_string16_t remote_zid;
+
+		if (str_len(carg->prm) != 24) {
+			warning("zrtp: invalid remote ZID (%s)\n", carg->prm);
+			return EINVAL;
+		}
+
+		s2h = str2hex(carg->prm, (int) str_len(carg->prm),
+			      rzid, sizeof(rzid));
+		if (str_len(rzid) != sizeof(zrtp_zid_t)) {
+			warning("zrtp: str2hex failed (%s)\n", s2h);
+			return EINVAL;
+		}
+		zrtp_zstrcpyc(ZSTR_GV(remote_zid), rzid);
+
+		s = zrtp_cache_set_verified(zrtp_global->cache,
+					    ZSTR_GV(remote_zid),
+					    true);
+		if (s == zrtp_status_ok)
+			info("zrtp: SAS for peer %s verified\n", carg->prm);
+		else {
+			warning("zrtp: zrtp_cache_set_verified"
+				" failed (status = %d)\n", s);
+			return EINVAL;
+		}
+	}
+
+	return 0;
+}
+
+
+static const struct cmd cmdv[] = {
+	{'Z', CMD_PRM, "Verify ZRTP SAS", verify_sas },
 };
 
 
@@ -249,9 +316,12 @@ static int module_init(void)
 {
 	zrtp_status_t s;
 	char config_path[256] = "";
+	char zrtp_zid_path[256] = "";
+	FILE *f;
 	int err;
 
 	zrtp_config_defaults(&zrtp_config);
+	zrtp_config.cache_type = ZRTP_CACHE_FILE;
 
 	err = conf_path_get(config_path, sizeof(config_path));
 	if (err) {
@@ -261,11 +331,42 @@ static int module_init(void)
 	if (re_snprintf(zrtp_config.cache_file_cfg.cache_path,
 			sizeof(zrtp_config.cache_file_cfg.cache_path),
 			"%s/zrtp_cache.dat", config_path) < 0)
-	        return ENOMEM;
+		return ENOMEM;
 
-	rand_bytes(zrtp_config.zid, sizeof(zrtp_config.zid));
+	if (re_snprintf(zrtp_zid_path,
+			sizeof(zrtp_zid_path),
+			"%s/zrtp_zid", config_path) < 0)
+		return ENOMEM;
+	if ((f = fopen(zrtp_zid_path, "rb")) != NULL) {
+		if (fread(zrtp_config.zid, sizeof(zrtp_config.zid),
+			  1, f) != 1) {
+			if (feof(f) || ferror(f)) {
+				warning("zrtp: invalid zrtp_zid file\n");
+			}
+		}
+	}
+	else if ((f = fopen(zrtp_zid_path, "wb")) != NULL) {
+		rand_bytes(zrtp_config.zid, sizeof(zrtp_config.zid));
+		if (fwrite(zrtp_config.zid, sizeof(zrtp_config.zid),
+			   1, f) != 1) {
+			warning("zrtp: zrtp_zid file write failed\n");
+		}
+		info("zrtp: generated new persistent ZID (%s)\n",
+		     zrtp_zid_path);
+	}
+	else {
+		err = errno;
+		warning("zrtp: fopen() %s (%m)\n", zrtp_zid_path, err);
+	}
+	if (f)
+		(void) fclose(f);
 
-	zrtp_config.cb.misc_cb.on_send_packet = zrtp_send_rtp_callback;
+	str_ncpy(zrtp_config.client_id, "baresip/zrtp",
+		 sizeof(zrtp_config.client_id));
+	zrtp_config.lic_mode = ZRTP_LICENSE_MODE_UNLIMITED;
+
+	zrtp_config.cb.misc_cb.on_send_packet = on_send_packet;
+	zrtp_config.cb.event_cb.on_zrtp_secure = on_zrtp_secure;
 
 	s = zrtp_init(&zrtp_config, &zrtp_global);
 	if (zrtp_status_ok != s) {
@@ -275,12 +376,13 @@ static int module_init(void)
 
 	menc_register(&menc_zrtp);
 
-	return 0;
+	return cmd_register(cmdv, ARRAY_SIZE(cmdv));
 }
 
 
 static int module_close(void)
 {
+	cmd_unregister(cmdv);
 	menc_unregister(&menc_zrtp);
 
 	if (zrtp_global) {

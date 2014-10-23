@@ -36,7 +36,7 @@ struct videnc_state {
 	struct mbuf *mb_frag;
 	struct videnc_param encprm;
 	struct vidsz encsize;
-	enum CodecID codec_id;
+	enum AVCodecID codec_id;
 
 	union {
 		struct {
@@ -174,7 +174,7 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->time_base.den = prm->fps;
 
 	/* params to avoid ffmpeg/x264 default preset error */
-	if (st->codec_id == CODEC_ID_H264) {
+	if (st->codec_id == AV_CODEC_ID_H264) {
 		st->ctx->me_method = ME_UMH;
 		st->ctx->me_range = 16;
 		st->ctx->qmin = 10;
@@ -256,9 +256,9 @@ static void param_handler(const struct pl *name, const struct pl *val,
 {
 	struct videnc_state *st = arg;
 
-	if (st->codec_id == CODEC_ID_H263)
+	if (st->codec_id == AV_CODEC_ID_H263)
 		(void)decode_sdpparam_h263(st, name, val);
-	else if (st->codec_id == CODEC_ID_H264)
+	else if (st->codec_id == AV_CODEC_ID_H264)
 		(void)decode_sdpparam_h264(st, name, val);
 }
 
@@ -426,7 +426,7 @@ int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	st->encprm = *prm;
 
 	st->codec_id = avcodec_resolve_codecid(vc->name);
-	if (st->codec_id == CODEC_ID_NONE) {
+	if (st->codec_id == AV_CODEC_ID_NONE) {
 		err = EINVAL;
 		goto out;
 	}
@@ -440,7 +440,7 @@ int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 
 	st->sz_max = st->mb->size;
 
-	if (st->codec_id == CODEC_ID_H264) {
+	if (st->codec_id == AV_CODEC_ID_H264) {
 #ifndef USE_X264
 		err = init_encoder(st);
 #endif
@@ -625,15 +625,15 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
 
 	switch (st->codec_id) {
 
-	case CODEC_ID_H263:
+	case AV_CODEC_ID_H263:
 		err = h263_packetize(st, st->mb, pkth, arg);
 		break;
 
-	case CODEC_ID_H264:
+	case AV_CODEC_ID_H264:
 		err = h264_packetize(st->mb, st->encprm.pktsize, pkth, arg);
 		break;
 
-	case CODEC_ID_MPEG4:
+	case AV_CODEC_ID_MPEG4:
 		err = general_packetize(st->mb, st->encprm.pktsize, pkth, arg);
 		break;
 

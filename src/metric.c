@@ -17,6 +17,9 @@ static void tmr_handler(void *arg)
 
 	tmr_start(&metric->tmr, TMR_INTERVAL * 1000, tmr_handler, metric);
 
+	if (!metric->started)
+		return;
+
  	if (now <= metric->ts_last)
 		return;
 
@@ -38,9 +41,17 @@ static void metric_start(struct metric *metric)
 		return;
 
 	metric->ts_start = tmr_jiffies();
-	tmr_start(&metric->tmr, 1, tmr_handler, metric);
 
 	metric->started = true;
+}
+
+
+void metric_init(struct metric *metric)
+{
+	if (!metric)
+		return;
+
+	tmr_start(&metric->tmr, 100, tmr_handler, metric);
 }
 
 

@@ -92,13 +92,32 @@ static int mwi_subscribe(struct ua *ua)
 				 "Accept:"
 				 " application/simple-message-summary\r\n");
 	if (err) {
-	        warning("mwi: subscribe ERROR: %m\n", err);
+		warning("mwi: subscribe ERROR: %m\n", err);
 	}
 
 	if (err)
 		mem_deref(mwi);
 
 	return err;
+}
+
+
+static void ua_event_handler(struct ua *ua,
+			     enum ua_event ev,
+			     struct call *call,
+			     const char *prm,
+			     void *arg )
+{
+	(void)call;
+	(void)prm;
+
+	if (ua != (struct ua *)arg)
+		return;
+
+	if (ev == UA_EVENT_REGISTER_OK) {
+		uag_event_unregister(ua_event_handler);
+		mwi_subscribe(ua);
+	}
 }
 
 
@@ -110,7 +129,11 @@ static void tmr_handler(void *arg)
 
 	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
-		mwi_subscribe(ua);
+		struct account *acc = ua_account(ua);
+		if (account_regint(acc) > 0)
+			uag_event_register(ua_event_handler, ua);
+		else
+			mwi_subscribe(ua);
 	}
 }
 
@@ -118,7 +141,7 @@ static void tmr_handler(void *arg)
 static int module_init(void)
 {
 	list_init(&mwil);
-	tmr_start(&tmr, 10, tmr_handler, 0);
+	tmr_start(&tmr, 1, tmr_handler, 0);
 
 	return 0;
 }

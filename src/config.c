@@ -18,11 +18,6 @@
 /** Core Run-time Configuration - populated from config file */
 /** @todo: move config parsing/decoding to a module */
 static struct config core_config = {
-	/* Input */
-	{
-		"/dev/event0",
-		5555
-	},
 
 	/** SIP User-Agent */
 	{
@@ -139,11 +134,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		}
 	}
 
-	/* Input */
-	(void)conf_get_str(conf, "input_device", cfg->input.device,
-			   sizeof(cfg->input.device));
-	(void)conf_get_u32(conf, "input_port", &cfg->input.port);
-
 	/* SIP */
 	(void)conf_get_u32(conf, "sip_trans_bsize", &cfg->sip.trans_bsize);
 	(void)conf_get_str(conf, "sip_listen", cfg->sip.local,
@@ -240,10 +230,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 	err = re_hprintf(pf,
 			 "\n"
-			 "# Input\n"
-			 "input_device\t\t%s\n"
-			 "input_port\t\t%u\n"
-			 "\n"
 			 "# SIP\n"
 			 "sip_trans_bsize\t\t%u\n"
 			 "sip_listen\t\t%s\n"
@@ -288,8 +274,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 #endif
 			 ,
 
-			 cfg->input.device, cfg->input.port,
-
 			 cfg->sip.trans_bsize, cfg->sip.local, cfg->sip.cert,
 
 			 cfg->audio.play_mod,  cfg->audio.play_dev,
@@ -328,14 +312,16 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 static const char *default_audio_device(void)
 {
-#ifdef DARWIN
+#if defined (ANDROID)
+	return "opensles";
+#elif defined (DARWIN)
 	return "coreaudio,nil";
 #elif defined (FREEBSD)
 	return "oss,/dev/dsp";
+#elif defined (OPENBSD)
+	return "sndio,default";
 #elif defined (WIN32)
 	return "winwave,nil";
-#elif defined (ANDROID)
-	return "opensles";
 #else
 	return "alsa,default";
 #endif
@@ -391,10 +377,10 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 
 	err |= re_hprintf(pf,
 			  "\n# Core\n"
-			  "poll_method\t\t%s\t\t# poll, select, epoll ..\n"
-			  "\n# Input\n"
-			  "input_device\t\t/dev/event0\n"
-			  "input_port\t\t5555\n"
+			  "poll_method\t\t%s\t\t# poll, select"
+#ifdef HAVE_EPOLL
+				", epoll ..\n"
+#endif
 			  "\n# SIP\n"
 			  "sip_trans_bsize\t\t128\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
@@ -496,8 +482,9 @@ static const char *detect_module_path(bool *valid)
 	};
 	const char *current = pathv[0];
 	uint32_t nmax = 0;
+	size_t i;
 
-	for (size_t i=0; i<ARRAY_SIZE(pathv); i++) {
+	for (i=0; i<ARRAY_SIZE(pathv); i++) {
 
 		uint32_t n = count_modules(pathv[i]);
 
@@ -585,16 +572,19 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "plc" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Audio driver Modules\n");
-#if defined (WIN32)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "winwave" MOD_EXT "\n");
-#elif defined (__SYMBIAN32__)
+#if defined (__SYMBIAN32__)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "mda" MOD_EXT "\n");
-#elif defined (DARWIN)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "coreaudio" MOD_EXT "\n");
 #elif defined (ANDROID)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "opensles" MOD_EXT "\n");
-#else
+#elif defined (DARWIN)
+	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "coreaudio" MOD_EXT "\n");
+#elif defined (FREEBSD)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "oss" MOD_EXT "\n");
+#elif defined (OPENBSD)
+	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "sndio" MOD_EXT "\n");
+#elif defined (WIN32)
+	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "winwave" MOD_EXT "\n");
+#else
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "alsa" MOD_EXT "\n");
 #endif
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "portaudio" MOD_EXT "\n");
@@ -684,6 +674,12 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "------------------------------------------\n");
 	(void)re_fprintf(f, "# Module parameters\n");
 	(void)re_fprintf(f, "\n");
+
+	(void)re_fprintf(f, "\n");
+	(void)re_fprintf(f, "cons_listen\t\t0.0.0.0:5555\n");
+
+	(void)re_fprintf(f, "\n");
+	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
 
 	(void)re_fprintf(f, "\n# Speex codec parameters\n");
 	(void)re_fprintf(f, "speex_quality\t\t7 # 0-10\n");

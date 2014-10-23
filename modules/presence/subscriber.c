@@ -78,17 +78,29 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 {
 	enum presence_status status = PRESENCE_CLOSED;
 	struct presence *pres = arg;
-	const struct sip_hdr *hdr;
+	const struct sip_hdr *type_hdr, *length_hdr;
 	struct pl pl;
 
 	pres->failc = 0;
 
-	hdr = sip_msg_hdr(msg, SIP_HDR_CONTENT_TYPE);
-	if (!hdr || 0 != pl_strcasecmp(&hdr->val, "application/pidf+xml")) {
+	type_hdr = sip_msg_hdr(msg, SIP_HDR_CONTENT_TYPE);
 
-		if (hdr)
+	if (!type_hdr) {
+
+		length_hdr = sip_msg_hdr(msg, SIP_HDR_CONTENT_LENGTH);
+		if (0 == pl_strcmp(&length_hdr->val, "0")) {
+
+			status = PRESENCE_UNKNOWN;
+			goto done;
+		}
+	}
+
+	if (!type_hdr ||
+	    0 != pl_strcasecmp(&type_hdr->val, "application/pidf+xml")) {
+
+		if (type_hdr)
 			warning("presence: unsupported content-type: '%r'\n",
-				&hdr->val);
+				&type_hdr->val);
 
 		sip_treplyf(NULL, NULL, sip, msg, false,
 			    415, "Unsupported Media Type",
@@ -124,6 +136,7 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 		status = PRESENCE_BUSY;
 	}
 
+done:
 	(void)sip_treply(NULL, sip, msg, 200, "OK");
 
 	contact_set_presence(pres->contact, status);

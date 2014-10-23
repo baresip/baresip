@@ -5,8 +5,14 @@
  */
 
 
-#if LIBAVCODEC_VERSION_INT >= ((54<<16)+(25<<8)+0)
-#define CodecID AVCodecID
+#if LIBAVCODEC_VERSION_INT < ((54<<16)+(25<<8)+0)
+#define AVCodecID CodecID
+
+#define AV_CODEC_ID_NONE  CODEC_ID_NONE
+#define AV_CODEC_ID_H263  CODEC_ID_H263
+#define AV_CODEC_ID_H264  CODEC_ID_H264
+#define AV_CODEC_ID_MPEG4 CODEC_ID_MPEG4
+
 #endif
 
 

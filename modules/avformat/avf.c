@@ -36,6 +36,12 @@
 #endif
 
 
+#if LIBAVCODEC_VERSION_INT < ((54<<16)+(25<<8)+0)
+#define AVCodecID CodecID
+#define AV_CODEC_ID_NONE  CODEC_ID_NONE
+#endif
+
+
 struct vidsrc_st {
 	struct vidsrc *vs;  /* inheritance */
 	pthread_t thread;
@@ -284,9 +290,9 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 		if (ctx->codec_type != AVMEDIA_TYPE_VIDEO)
 			continue;
 
-		debug("avformat: stream %u:  %u x %u  codec=%s"
+		debug("avformat: stream %u:  %u x %u "
 		      "  time_base=%d/%d\n",
-		      i, ctx->width, ctx->height, ctx->codec_name,
+		      i, ctx->width, ctx->height,
 		      ctx->time_base.num, ctx->time_base.den);
 
 		st->sz.w   = ctx->width;
@@ -294,7 +300,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 		st->ctx    = ctx;
 		st->sindex = strm->index;
 
-		if (ctx->codec_id != CODEC_ID_NONE) {
+		if (ctx->codec_id != AV_CODEC_ID_NONE) {
 
 			st->codec = avcodec_find_decoder(ctx->codec_id);
 			if (!st->codec) {

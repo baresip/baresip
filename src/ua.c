@@ -31,6 +31,7 @@ struct ua {
 	struct pl extensionv[8];     /**< Vector of SIP extensions           */
 	size_t    extensionc;        /**< Number of SIP extensions           */
 	char *cuser;                 /**< SIP Contact username               */
+	char *pub_gruu;              /**< SIP Public GRUU                    */
 	int af;                      /**< Preferred Address Family           */
 };
 
@@ -374,6 +375,7 @@ static int ua_call_alloc(struct call **callp, struct ua *ua,
 
 static void handle_options(struct ua *ua, const struct sip_msg *msg)
 {
+	struct sip_contact contact;
 	struct call *call = NULL;
 	struct mbuf *desc = NULL;
 	int err;
@@ -388,17 +390,20 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 	if (err)
 		goto out;
 
+	sip_contact_set(&contact, ua_cuser(ua), &msg->dst, msg->tp);
+
 	err = sip_treplyf(NULL, NULL, uag.sip,
 			  msg, true, 200, "OK",
-			  "Contact: <sip:%s@%J%s>\r\n"
+			  "%H"
 			  "Content-Type: application/sdp\r\n"
 			  "Content-Length: %zu\r\n"
 			  "\r\n"
 			  "%b",
-			  ua->cuser, &msg->dst, sip_transp_param(msg->tp),
+			  sip_contact_print, &contact,
 			  mbuf_get_left(desc),
 			  mbuf_buf(desc),
 			  mbuf_get_left(desc));
+
 	if (err) {
 		warning("ua: options: sip_treplyf: %m\n", err);
 	}
@@ -426,6 +431,7 @@ static void ua_destructor(void *arg)
 	list_flush(&ua->regl);
 	mem_deref(ua->play);
 	mem_deref(ua->cuser);
+	mem_deref(ua->pub_gruu);
 	mem_deref(ua->acc);
 }
 
@@ -526,6 +532,9 @@ int ua_alloc(struct ua **uap, const char *aor)
 	}
 
 	/* Register clients */
+	if (str_isset(uag.cfg->uuid))
+	        add_extension(ua, "gruu");
+
 	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
 
 		size_t i;
@@ -849,6 +858,7 @@ int ua_debug(struct re_printf *pf, const struct ua *ua)
 
 	err  = re_hprintf(pf, "--- %s ---\n", ua->acc->aor);
 	err |= re_hprintf(pf, " cuser:     %s\n", ua->cuser);
+	err |= re_hprintf(pf, " pub-gruu:  %s\n", ua->pub_gruu);
 	err |= re_hprintf(pf, " af:        %s\n", net_af2name(ua->af));
 	err |= re_hprintf(pf, " %H", ua_print_supported, ua);
 
@@ -1089,7 +1099,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 
 	uag.cfg = &cfg->sip;
 	bsize = cfg->sip.trans_bsize;
-	ui_init(&cfg->input);
 
 	play_init();
 
@@ -1154,6 +1163,7 @@ void ua_close(void)
 	cmd_unregister(cmdv);
 	net_close();
 	play_close();
+	ui_reset();
 
 	uag.evsock   = mem_deref(uag.evsock);
 	uag.sock     = mem_deref(uag.sock);
@@ -1463,7 +1473,10 @@ struct ua *uag_find_param(const char *name, const char *value)
 
 
 /**
- * Get the contact user of a User-Agent (UA)
+ * Get the contact user/uri of a User-Agent (UA)
+ *
+ * If the Public GRUU is set, it will be returned.
+ * Otherwise the local contact-user (cuser) will be returned.
  *
  * @param ua User-Agent
  *
@@ -1471,7 +1484,48 @@ struct ua *uag_find_param(const char *name, const char *value)
  */
 const char *ua_cuser(const struct ua *ua)
 {
+	if (!ua)
+		return NULL;
+
+	if (str_isset(ua->pub_gruu))
+		return ua->pub_gruu;
+
+	return ua->cuser;
+}
+
+
+const char *ua_local_cuser(const struct ua *ua)
+{
 	return ua ? ua->cuser : NULL;
+}
+
+
+/**
+ * Get Account of a User-Agent
+ *
+ * @param ua User-Agent
+ *
+ * @return Pointer to UA's account
+ */
+struct account *ua_account(const struct ua *ua)
+{
+	return ua ? ua->acc : NULL;
+}
+
+
+/**
+ * Set Public GRUU of a User-Agent (UA)
+ *
+ * @param ua   User-Agent
+ * @param pval Public GRUU
+ */
+void ua_pub_gruu_set(struct ua *ua, const struct pl *pval)
+{
+	if (!ua)
+		return;
+
+	ua->pub_gruu = mem_deref(ua->pub_gruu);
+	(void)pl_strdup(&ua->pub_gruu, pval);
 }
 
 

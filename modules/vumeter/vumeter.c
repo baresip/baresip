@@ -13,12 +13,14 @@ struct vumeter_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 	struct tmr tmr;
 	int16_t avg_rec;
+	volatile bool started;
 };
 
 struct vumeter_dec {
 	struct aufilt_dec_st af;  /* inheritance */
 	struct tmr tmr;
 	int16_t avg_play;
+	volatile bool started;
 };
 
 
@@ -86,7 +88,9 @@ static void enc_tmr_handler(void *arg)
 	struct vumeter_enc *st = arg;
 
 	tmr_start(&st->tmr, 100, enc_tmr_handler, st);
-	print_vumeter(60, 31, st->avg_rec);
+
+	if (st->started)
+		print_vumeter(60, 31, st->avg_rec);
 }
 
 
@@ -95,7 +99,9 @@ static void dec_tmr_handler(void *arg)
 	struct vumeter_dec *st = arg;
 
 	tmr_start(&st->tmr, 100, dec_tmr_handler, st);
-	print_vumeter(80, 32, st->avg_play);
+
+	if (st->started)
+		print_vumeter(80, 32, st->avg_play);
 }
 
 
@@ -115,6 +121,8 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	st = mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
 		return ENOMEM;
+
+	tmr_start(&st->tmr, 100, enc_tmr_handler, st);
 
 	*stp = (struct aufilt_enc_st *)st;
 
@@ -139,6 +147,8 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
+	tmr_start(&st->tmr, 100, dec_tmr_handler, st);
+
 	*stp = (struct aufilt_dec_st *)st;
 
 	return 0;
@@ -150,9 +160,7 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 	struct vumeter_enc *vu = (struct vumeter_enc *)st;
 
 	vu->avg_rec = calc_avg_s16(sampv, *sampc);
-
-	if (!tmr_isrunning(&vu->tmr))
-		tmr_start(&vu->tmr, 1, enc_tmr_handler, vu);
+	vu->started = true;
 
 	return 0;
 }
@@ -163,9 +171,7 @@ static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
 	struct vumeter_dec *vu = (struct vumeter_dec *)st;
 
 	vu->avg_play = calc_avg_s16(sampv, *sampc);
-
-	if (!tmr_isrunning(&vu->tmr))
-		tmr_start(&vu->tmr, 1, dec_tmr_handler, vu);
+	vu->started = true;
 
 	return 0;
 }

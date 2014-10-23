@@ -37,7 +37,7 @@ struct ausrc_st {
 	void *arg;                  /**< Handler argument        */
 	struct ausrc_prm prm;       /**< Read parameters         */
 	struct aubuf *aubuf;        /**< Packet buffer           */
-	uint32_t psize;             /**< Packet size in bytes    */
+	size_t psize;               /**< Packet size in bytes    */
 	size_t sampc;
 
 	/* Gstreamer */

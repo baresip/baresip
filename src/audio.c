@@ -334,7 +334,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	 */
 	frame_size = (tx->is_g722 ? sampc/2 : sampc) / tx->ac->ch;
 
-	tx->ts += frame_size;
+	tx->ts += (uint32_t)frame_size;
 
  out:
 	tx->marker = false;

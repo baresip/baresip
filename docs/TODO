@@ -3,8 +3,6 @@ TODO:
 -------------------------------------------------------------------------------
 Version v0.x.y:
 
-  ua: add support for SIP GRUU
-
   conf: move generation of config template to a module ('config.so')
 
   improve first-time user experience, add a new module that will
