@@ -128,7 +128,7 @@ const char *contact_presence_str(enum presence_status status)
 	switch (status) {
 
 	default:
-	case PRESENCE_UNKNOWN: return "\x1b[32m\x1b[;m";
+	case PRESENCE_UNKNOWN: return "\x1b[32mUnknown\x1b[;m";
 	case PRESENCE_OPEN:    return "\x1b[32mOnline\x1b[;m";
 	case PRESENCE_CLOSED:  return "\x1b[31mOffline\x1b[;m";
 	case PRESENCE_BUSY:    return "\x1b[31mBusy\x1b[;m";

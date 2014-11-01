@@ -5,7 +5,7 @@
 #
 
 MOD		:= presence
-$(MOD)_SRCS	+= presence.c subscriber.c notifier.c
+$(MOD)_SRCS	+= presence.c subscriber.c notifier.c publisher.c
 $(MOD)_LFLAGS	+=
 
 include mk/mod.mk

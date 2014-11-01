@@ -58,6 +58,7 @@ struct account {
 	char *outbound[2];           /**< Optional SIP outbound proxies      */
 	uint32_t ptime;              /**< Configured packet time in [ms]     */
 	uint32_t regint;             /**< Registration interval in [seconds] */
+	uint32_t pubint;             /**< Publication interval in [seconds]  */
 	char *regq;                  /**< Registration Q-value               */
 	char *rtpkeep;               /**< RTP Keepalive mechanism            */
 	char *sipnat;                /**< SIP Nat mechanism                  */

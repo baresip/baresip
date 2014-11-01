@@ -394,16 +394,19 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 
 	err = sip_treplyf(NULL, NULL, uag.sip,
 			  msg, true, 200, "OK",
+			  "Allow: %s\r\n"
+			  "%H"
 			  "%H"
 			  "Content-Type: application/sdp\r\n"
 			  "Content-Length: %zu\r\n"
 			  "\r\n"
 			  "%b",
+			  uag_allowed_methods(),
+			  ua_print_supported, ua,
 			  sip_contact_print, &contact,
 			  mbuf_get_left(desc),
 			  mbuf_buf(desc),
 			  mbuf_get_left(desc));
-
 	if (err) {
 		warning("ua: options: sip_treplyf: %m\n", err);
 	}
@@ -586,6 +589,47 @@ int ua_alloc(struct ua **uap, const char *aor)
 }
 
 
+static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
+{
+	size_t len;
+	int err = 0;
+
+	len = str_len(uri);
+
+	/* Append sip: scheme if missing */
+	if (0 != re_regex(uri, len, "sip:"))
+		err |= mbuf_printf(buf, "sip:");
+
+	err |= mbuf_write_str(buf, uri);
+
+	/* Append domain if missing */
+	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL)) {
+#if HAVE_INET6
+		if (AF_INET6 == ua->acc->luri.af)
+			err |= mbuf_printf(buf, "@[%r]",
+					   &ua->acc->luri.host);
+		else
+#endif
+			err |= mbuf_printf(buf, "@%r",
+					   &ua->acc->luri.host);
+
+		/* Also append port if specified and not 5060 */
+		switch (ua->acc->luri.port) {
+
+		case 0:
+		case SIP_PORT:
+			break;
+
+		default:
+			err |= mbuf_printf(buf, ":%u", ua->acc->luri.port);
+			break;
+		}
+	}
+
+	return err;
+}
+
+
 /**
  * Connect an outgoing call to a given SIP uri
  *
@@ -605,13 +649,10 @@ int ua_connect(struct ua *ua, struct call **callp,
 	struct call *call = NULL;
 	struct mbuf *dialbuf;
 	struct pl pl;
-	size_t len;
 	int err = 0;
 
 	if (!ua || !str_isset(uri))
 		return EINVAL;
-
-	len = str_len(uri);
 
 	dialbuf = mbuf_alloc(64);
 	if (!dialbuf)
@@ -620,35 +661,7 @@ int ua_connect(struct ua *ua, struct call **callp,
 	if (params)
 		err |= mbuf_printf(dialbuf, "<");
 
-	/* Append sip: scheme if missing */
-	if (0 != re_regex(uri, len, "sip:"))
-		err |= mbuf_printf(dialbuf, "sip:");
-
-	err |= mbuf_write_str(dialbuf, uri);
-
-	/* Append domain if missing */
-	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL)) {
-#if HAVE_INET6
-		if (AF_INET6 == ua->acc->luri.af)
-			err |= mbuf_printf(dialbuf, "@[%r]",
-					   &ua->acc->luri.host);
-		else
-#endif
-			err |= mbuf_printf(dialbuf, "@%r",
-					   &ua->acc->luri.host);
-
-		/* Also append port if specified and not 5060 */
-		switch (ua->acc->luri.port) {
-
-		case 0:
-		case SIP_PORT:
-			break;
-
-		default:
-			err |= mbuf_printf(dialbuf, ":%u", ua->acc->luri.port);
-			break;
-		}
-	}
+	err |= uri_complete(ua, dialbuf, uri);
 
 	if (params) {
 		err |= mbuf_printf(dialbuf, ";%s", params);
@@ -771,18 +784,31 @@ int ua_print_status(struct re_printf *pf, const struct ua *ua)
 int ua_options_send(struct ua *ua, const char *uri,
 		    options_resp_h *resph, void *arg)
 {
-	int err;
+	struct mbuf *dialbuf;
+	int err = 0;
 
-	if (!ua)
+	(void)arg;
+
+	if (!ua || !str_isset(uri))
 		return EINVAL;
 
-	err = sip_req_send(ua, "OPTIONS", uri, resph, arg,
+	dialbuf = mbuf_alloc(64);
+	if (!dialbuf)
+		return ENOMEM;
+
+	err |= uri_complete(ua, dialbuf, uri);
+
+	dialbuf->buf[dialbuf->end] = '\0';
+
+	err = sip_req_send(ua, "OPTIONS", (char *)dialbuf->buf, resph, NULL,
 			   "Accept: application/sdp\r\n"
 			   "Content-Length: 0\r\n"
 			   "\r\n");
 	if (err) {
 		warning("ua: send options: (%m)\n", err);
 	}
+
+	mem_deref(dialbuf);
 
 	return err;
 }
@@ -1542,7 +1568,8 @@ struct list *uag_list(void)
  */
 const char *uag_allowed_methods(void)
 {
-	return "INVITE,ACK,BYE,CANCEL,OPTIONS,REFER,NOTIFY,SUBSCRIBE,INFO";
+	return "INVITE,ACK,BYE,CANCEL,OPTIONS,REFER,"
+		"NOTIFY,SUBSCRIBE,INFO,MESSAGE";
 }
 
 

@@ -213,6 +213,70 @@ static int dial_handler(struct re_printf *pf, void *arg)
 }
 
 
+static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
+{
+	(void)arg;
+
+	if (err) {
+		warning("options reply error: %m\n", err);
+		return;
+	}
+
+	if (msg->scode < 200)
+		return;
+
+	if (msg->scode < 300) {
+
+		mbuf_set_pos(msg->mb, 0);
+		info("----- OPTIONS of %r -----\n%b",
+		     &(msg->to.auri), mbuf_buf(msg->mb),
+		     mbuf_get_left(msg->mb));
+		return;
+	}
+
+	info("%r: OPTIONS failed: %u %r\n", &(msg->to.auri),
+	     msg->scode, &msg->reason);
+}
+
+
+static int options_command(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	int err = 0;
+
+	(void)pf;
+
+	if (str_isset(carg->prm)) {
+
+		mbuf_rewind(dialbuf);
+		(void)mbuf_write_str(dialbuf, carg->prm);
+
+		err = ua_options_send(uag_cur(), carg->prm,
+				      options_resp_handler, NULL);
+	}
+	else if (dialbuf->end > 0) {
+
+		char *uri;
+
+		dialbuf->pos = 0;
+		err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+		if (err)
+			return err;
+
+		err = ua_options_send(uag_cur(), uri,
+				      options_resp_handler, NULL);
+
+		mem_deref(uri);
+	}
+
+	if (err) {
+		warning("menu: ua_options failed: %m\n", err);
+	}
+
+	return err;
+}
+
+
 static int cmd_answer(struct re_printf *pf, void *unused)
 {
 	(void)pf;
@@ -290,6 +354,7 @@ static const struct cmd cmdv[] = {
 	{'l',       0, "List active calls",        cmd_print_calls      },
 	{'m',       0, "Module debug",             mod_debug            },
 	{'n',       0, "Network debug",            net_debug            },
+	{'o', CMD_PRM, "Options",                  options_command      },
 	{'r',       0, "Registration info",        ua_print_reg_status  },
 	{'s',       0, "System info",              print_system_info    },
 	{'t',       0, "Timer debug",              tmr_status           },

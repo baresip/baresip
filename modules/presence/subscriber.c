@@ -111,9 +111,7 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 	}
 
 	if (!re_regex((const char *)mbuf_buf(msg->mb), mbuf_get_left(msg->mb),
-		      "<status>[^<]*<basic>[^<]*</basic>[^<]*</status>",
-		      NULL, &pl, NULL)) {
-
+		      "<basic>[^<]+</basic>", &pl)) {
 		if (!pl_strcasecmp(&pl, "open"))
 			status = PRESENCE_OPEN;
 	}

@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 
+enum presence_status my_status;
 
 int  subscriber_init(void);
 void subscriber_close(void);
@@ -11,3 +12,9 @@ void subscriber_close(void);
 
 int  notifier_init(void);
 void notifier_close(void);
+void notifier_update_status(void);
+
+
+int  publisher_init(void);
+void publisher_close(void);
+void publisher_update_status(void);

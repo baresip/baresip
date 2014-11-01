@@ -73,7 +73,8 @@ static void resp_handler(int err, const struct sip_msg *msg, void *arg)
 	}
 
  out:
-	sr->resph(err, msg, sr->arg);
+	if (sr->resph)
+		sr->resph(err, msg, sr->arg);
 
 	/* destroy now */
 	mem_deref(sr);
@@ -104,7 +105,7 @@ int sip_req_send(struct ua *ua, const char *method, const char *uri,
 	struct sip_req *sr;
 	int err;
 
-	if (!ua || !method || !uri || !resph || !fmt)
+	if (!ua || !method || !uri || !fmt)
 		return EINVAL;
 
 	routev[0] = ua_outbound(ua);
