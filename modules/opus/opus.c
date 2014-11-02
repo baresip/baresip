@@ -41,6 +41,17 @@ static struct aucodec opus = {
 
 static int module_init(void)
 {
+	struct conf *conf = conf_cur();
+	uint32_t value;
+	static char fmtp[128];
+
+	if (0 == conf_get_u32(conf, "opus_bitrate", &value)) {
+		(void)re_snprintf(fmtp, sizeof(fmtp),
+				"stereo=1;sprop-stereo=1;maxaveragebitrate=%d",
+				value);
+		opus.fmtp = fmtp;
+	}
+
 	aucodec_register(&opus);
 
 	return 0;
