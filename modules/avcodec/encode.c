@@ -554,7 +554,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
 {
 	int i, err, ret;
 
-	if (!st || !frame || !pkth)
+	if (!st || !frame || !pkth || frame->fmt != VID_FMT_YUV420P)
 		return EINVAL;
 
 	if (!st->ctx || !vidsz_cmp(&st->encsize, &frame->size)) {
