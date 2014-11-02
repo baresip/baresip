@@ -346,6 +346,7 @@ static int cmd_config_print(struct re_printf *pf, void *unused)
 static const struct cmd cmdv[] = {
 	{'M',       0, "Main loop debug",          re_debug             },
 	{'\n',      0, "Accept incoming call",     cmd_answer           },
+	{'D',       0, "Accept incoming call",     cmd_answer           },
 	{'b',       0, "Hangup call",              cmd_hangup           },
 	{'c',       0, "Call status",              ua_print_call_status },
 	{'d', CMD_PRM, "Dial",                     dial_handler         },
