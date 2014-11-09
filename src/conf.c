@@ -223,7 +223,8 @@ int conf_get_csv(const struct conf *conf, const char *name,
 	if (err)
 		return err;
 
-	err = re_regex(r.p, r.l, "[^,]+,[^]*", &pl1, &pl2);
+	/* note: second value may be quoted */
+	err = re_regex(r.p, r.l, "[^,]+,[~]*", &pl1, &pl2);
 	if (err)
 		return err;
 
