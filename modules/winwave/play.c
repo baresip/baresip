@@ -128,8 +128,31 @@ static void CALLBACK waveOutCallback(HWAVEOUT hwo,
 }
 
 
+static unsigned int find_dev(const char *name)
+{
+	WAVEOUTCAPS wic;
+	unsigned int i, nInDevices = waveOutGetNumDevs();
+
+	if (!str_isset(name))
+		return WAVE_MAPPER;
+
+	for (i=0; i<nInDevices; i++) {
+		if (waveOutGetDevCaps(i, &wic,
+				      sizeof(WAVEOUTCAPS))==MMSYSERR_NOERROR) {
+
+			if (0 == str_cmp(name, wic.szPname)) {
+				return i;
+			}
+		}
+	}
+
+	return WAVE_MAPPER;
+}
+
+
 static int write_stream_open(struct auplay_st *st,
-			     const struct auplay_prm *prm)
+			     const struct auplay_prm *prm,
+			     unsigned int dev)
 {
 	WAVEFORMATEX wfmt;
 	MMRESULT res;
@@ -156,7 +179,7 @@ static int write_stream_open(struct auplay_st *st,
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
 
-	res = waveOutOpen(&st->waveout, WAVE_MAPPER, &wfmt,
+	res = waveOutOpen(&st->waveout, dev, &wfmt,
 			  (DWORD_PTR) waveOutCallback,
 			  (DWORD_PTR) st,
 			  CALLBACK_FUNCTION | WAVE_FORMAT_DIRECT);
@@ -175,7 +198,6 @@ int winwave_play_alloc(struct auplay_st **stp, struct auplay *ap,
 {
 	struct auplay_st *st;
 	int i, err;
-	(void)device;
 
 	if (!stp || !ap || !prm)
 		return EINVAL;
@@ -188,7 +210,7 @@ int winwave_play_alloc(struct auplay_st **stp, struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 
-	err = write_stream_open(st, prm);
+	err = write_stream_open(st, prm, find_dev(device));
 	if (err)
 		goto out;
 

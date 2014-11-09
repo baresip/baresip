@@ -117,7 +117,30 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 }
 
 
-static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm)
+static unsigned int find_dev(const char *name)
+{
+	WAVEINCAPS wic;
+	unsigned int i, nInDevices = waveInGetNumDevs();
+
+	if (!str_isset(name))
+		return WAVE_MAPPER;
+
+	for (i=0; i<nInDevices; i++) {
+		if (waveInGetDevCaps(i, &wic,
+				     sizeof(WAVEINCAPS))==MMSYSERR_NOERROR) {
+
+			if (0 == str_casecmp(name, wic.szPname)) {
+				return i;
+			}
+		}
+	}
+
+	return WAVE_MAPPER;
+}
+
+
+static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
+			    unsigned int dev)
 {
 	WAVEFORMATEX wfmt;
 	MMRESULT res;
@@ -146,7 +169,7 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm)
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
 
-	res = waveInOpen(&st->wavein, WAVE_MAPPER, &wfmt,
+	res = waveInOpen(&st->wavein, dev, &wfmt,
 			  (DWORD_PTR) waveInCallback,
 			  (DWORD_PTR) st,
 			  CALLBACK_FUNCTION | WAVE_FORMAT_DIRECT);
@@ -174,7 +197,6 @@ int winwave_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	int err;
 
 	(void)ctx;
-	(void)device;
 	(void)errh;
 
 	if (!stp || !as || !prm)
@@ -188,7 +210,7 @@ int winwave_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	st->rh  = rh;
 	st->arg = arg;
 
-	err = read_stream_open(st, prm);
+	err = read_stream_open(st, prm, find_dev(device));
 
 	if (err)
 		mem_deref(st);
