@@ -164,15 +164,6 @@ static int write_stream_open(struct auplay_st *st,
 		warning("winwave: waveOutOpen: failed %d\n", res);
 		return EINVAL;
 	}
-	waveOutClose(st->waveout);
-	res = waveOutOpen(&st->waveout, WAVE_MAPPER, &wfmt,
-			  (DWORD_PTR) waveOutCallback,
-			  (DWORD_PTR) st,
-			  CALLBACK_FUNCTION | WAVE_FORMAT_DIRECT);
-	if (res != MMSYSERR_NOERROR) {
-		warning("winwave: waveOutOpen: failed %d\n", res);
-		return EINVAL;
-	}
 
 	return 0;
 }
