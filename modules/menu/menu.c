@@ -552,6 +552,9 @@ static void tmrstat_handler(void *arg)
 
 	tmr_start(&tmr_stat, 100, tmrstat_handler, 0);
 
+	if (ui_isediting())
+		return;
+
 	if (STATMODE_OFF != statmode) {
 		(void)re_fprintf(stderr, "%H\r", call_status, call);
 	}

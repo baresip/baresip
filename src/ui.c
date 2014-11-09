@@ -151,3 +151,9 @@ void ui_reset(void)
 {
 	uictx = mem_deref(uictx);
 }
+
+
+bool ui_isediting(void)
+{
+	return uictx != NULL;
+}
