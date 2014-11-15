@@ -102,7 +102,7 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 		break;
 
 	case WIM_DATA:
-		if (st->inuse < 3)
+		if (st->inuse < (READ_BUFFERS-1))
 			add_wave_in(st);
 
 		st->rh((void *)wh->lpData, wh->dwBytesRecorded/2, st->arg);
