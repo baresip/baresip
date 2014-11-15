@@ -6,8 +6,5 @@
 
 MOD		:= uuid
 $(MOD)_SRCS	+= uuid.c
-ifneq ($(OS),darwin)
-$(MOD)_LFLAGS	+= -luuid
-endif
 
 include mk/mod.mk

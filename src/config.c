@@ -650,7 +650,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "------------------------------------------\n");
 	(void)re_fprintf(f, "# Temporary Modules (loaded then unloaded)\n");
 	(void)re_fprintf(f, "\n");
-	(void)re_fprintf(f, "#module_tmp\t\t" MOD_PRE "uuid" MOD_EXT "\n");
+	(void)re_fprintf(f, "module_tmp\t\t" MOD_PRE "uuid" MOD_EXT "\n");
 	(void)re_fprintf(f, "module_tmp\t\t" MOD_PRE "account" MOD_EXT "\n");
 	(void)re_fprintf(f, "\n");
 

@@ -38,7 +38,6 @@
 #   USE_SRTP          Secure RTP module using libre
 #   USE_STDIO         stdio input driver
 #   USE_SYSLOG        Syslog module
-#   USE_UUID          UUID module
 #   USE_V4L           Video4Linux module
 #   USE_V4L2          Video4Linux2 module
 #   USE_WINWAVE       Windows audio driver
@@ -154,7 +153,6 @@ USE_LIBSRTP := $(shell [ -f $(SYSROOT)/include/srtp/srtp.h ] || \
 USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
 	[ -f $(SYSROOT_ALT)/include/syslog.h ] || \
 	[ -f $(SYSROOT)/local/include/syslog.h ] && echo "yes")
-USE_UUID  := $(shell [ -f $(SYSROOT)/include/uuid/uuid.h ] && echo "yes")
 USE_V4L  := $(shell [ -f $(SYSROOT)/include/libv4l1.h ] || \
 	[ -f $(SYSROOT)/local/include/libv4l1.h ] \
 	&& echo "yes")
@@ -221,6 +219,8 @@ MODULES   += stun turn ice natbd auloop presence
 MODULES   += menu contact vumeter mwi account natpmp httpd
 MODULES   += selftest
 MODULES   += srtp
+MODULES   += uuid
+
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge
 endif
@@ -352,9 +352,6 @@ MODULES   += stdio
 endif
 ifneq ($(USE_SYSLOG),)
 MODULES   += syslog
-endif
-ifneq ($(USE_UUID),)
-MODULES   += uuid
 endif
 ifneq ($(USE_V4L),)
 MODULES   += v4l

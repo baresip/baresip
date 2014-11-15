@@ -5,15 +5,27 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#include <uuid/uuid.h>
+#include <stdio.h>
 #include <re.h>
 #include <baresip.h>
 
 
+enum { UUID_LEN = 36 };
+
+
+static int generate_random_uuid(FILE *f)
+{
+	if (re_fprintf(f, "%08x-%04x-%04x-%04x-%08x%04x",
+		       rand_u32(), rand_u16(), rand_u16(), rand_u16(),
+		       rand_u32(), rand_u16()) != UUID_LEN)
+		return ENOMEM;
+
+	return 0;
+}
+
+
 static int uuid_init(const char *file)
 {
-	char uuid[37];
-	uuid_t uu;
 	FILE *f = NULL;
 	int err = 0;
 
@@ -30,13 +42,13 @@ static int uuid_init(const char *file)
 		goto out;
 	}
 
-	uuid_generate(uu);
+	err = generate_random_uuid(f);
+	if (err) {
+		warning("uuid: generate random UUID failed (%m)\n", err);
+		goto out;
+	}
 
-	uuid_unparse(uu, uuid);
-
-	re_fprintf(f, "%s", uuid);
-
-	info("uuid: generated new UUID (%s)\n", uuid);
+	info("uuid: generated new UUID in %s\n", file);
 
  out:
 	if (f)
