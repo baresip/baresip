@@ -120,9 +120,10 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	va_end(ap);
 
 	/* send event to all clients */
-	for (le = uag.ehl.head; le; le = le->next) {
-
+	le = uag.ehl.head;
+	while (le) {
 		struct ua_eh *eh = le->data;
+		le = le->next;
 
 		eh->h(ua, ev, call, buf, eh->arg);
 	}
