@@ -190,7 +190,7 @@ void notifier_update_status(struct ua *ua)
 	for (le = notifierl.head; le; le = le->next) {
 
 		struct notifier *not = le->data;
-		
+
 		if (not->ua == ua)
 			(void)notify(not, ua_presence_status(not->ua));
 	}

@@ -278,6 +278,6 @@ void publisher_close(void)
 		pub->expires = 0;
 		publish(pub);
 	}
-	
+
 	list_flush(&publ);
 }
