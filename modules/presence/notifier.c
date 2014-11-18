@@ -183,15 +183,16 @@ static int notifier_add(struct sipevent_sock *sock, const struct sip_msg *msg,
 }
 
 
-void notifier_update_status(void)
+void notifier_update_status(struct ua *ua)
 {
 	struct le *le;
 
 	for (le = notifierl.head; le; le = le->next) {
 
 		struct notifier *not = le->data;
-
-		(void)notify(not, ua_presence_status(not->ua));
+		
+		if (not->ua == ua)
+			(void)notify(not, ua_presence_status(not->ua));
 	}
 }
 

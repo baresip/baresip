@@ -207,7 +207,7 @@ static void destructor(void *arg)
 }
 
 
-void publisher_update_status(void)
+void publisher_update_status(struct ua *ua)
 {
 	struct le *le;
 
@@ -215,8 +215,10 @@ void publisher_update_status(void)
 
 		struct publisher *pub = le->data;
 
-		pub->refresh = 0;
-		publish(pub);
+		if (pub->ua == ua) {
+			pub->refresh = 0;
+			publish(pub);
+		}
 	}
 }
 
@@ -251,8 +253,10 @@ int publisher_init(void)
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
 
-		if (account_pubint(acc) > 0)
-			err |= publisher_alloc(ua);
+		if (account_pubint(acc) == 0)
+			continue;
+
+		err |= publisher_alloc(ua);
 	}
 
 	if (err)
@@ -270,9 +274,10 @@ void publisher_close(void)
 
 		struct publisher *pub = le->data;
 
+		ua_presence_status_set(pub->ua, PRESENCE_CLOSED);
 		pub->expires = 0;
 		publish(pub);
 	}
-
+	
 	list_flush(&publ);
 }

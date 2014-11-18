@@ -21,8 +21,8 @@ static int status_update(struct ua *current_ua,
 
 	ua_presence_status_set(current_ua, new_status);
 	
-	publisher_update_status();
-	notifier_update_status();
+	publisher_update_status(current_ua);
+	notifier_update_status(current_ua);
 
 	return 0;
 }
