@@ -33,6 +33,7 @@ struct ua {
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
 	int af;                      /**< Preferred Address Family           */
+	enum presence_status my_status; /**< Presence Status                 */
 };
 
 struct ua_eh {
@@ -824,6 +825,35 @@ int ua_options_send(struct ua *ua, const char *uri,
 const char *ua_aor(const struct ua *ua)
 {
 	return ua ? ua->acc->aor : NULL;
+}
+
+
+/**
+ * Get presence status of a User-Agent
+ *
+ * @param ua User-Agent object
+ *
+ * @return presence status
+ */
+enum presence_status ua_presence_status(const struct ua *ua)
+{
+	return ua ? ua->my_status : PRESENCE_UNKNOWN;
+}
+
+
+/**
+ * Set presence status of a User-Agent
+ *
+ * @param ua User-Agent object
+ *
+ * @param presence status
+ */
+void ua_presence_status_set(struct ua *ua, const enum presence_status status)
+{
+	if (!ua)
+		return;
+
+	ua->my_status = status;
 }
 
 

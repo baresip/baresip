@@ -177,7 +177,7 @@ static int notifier_add(struct sipevent_sock *sock, const struct sip_msg *msg,
 	if (err)
 		return err;
 
-	(void)notify(not, my_status);
+	(void)notify(not, ua_presence_status(ua));
 
 	return 0;
 }
@@ -191,7 +191,7 @@ void notifier_update_status(void)
 
 		struct notifier *not = le->data;
 
-		(void)notify(not, my_status);
+		(void)notify(not, ua_presence_status(not->ua));
 	}
 }
 

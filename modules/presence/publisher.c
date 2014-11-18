@@ -113,7 +113,8 @@ static int publish(struct publisher *pub)
 	"    <contact>%s</contact>\r\n"
 	"  </tuple>\r\n"
 	"</presence>\r\n"
-			  ,aor, presence_status_str(my_status), aor);
+		  ,aor,
+		  presence_status_str(ua_presence_status(pub->ua)), aor);
 	else
 		err = mbuf_printf(mb, "");
 	if (err)

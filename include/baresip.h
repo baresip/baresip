@@ -505,6 +505,8 @@ const char     *ua_outbound(const struct ua *ua);
 struct call    *ua_call(const struct ua *ua);
 struct account *ua_prm(const struct ua *ua);
 struct list    *ua_calls(const struct ua *ua);
+enum presence_status ua_presence_status(const struct ua *ua);
+void ua_presence_status_set(struct ua *ua, const enum presence_status status);
 
 
 /* One instance */

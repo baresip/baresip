@@ -7,7 +7,25 @@
 #include <baresip.h>
 #include "presence.h"
 
-enum presence_status my_status = PRESENCE_OPEN;
+
+static int status_update(struct ua *current_ua,
+			 const enum presence_status new_status)
+{
+	if (ua_presence_status(current_ua) == new_status)
+		return 0;
+
+	info("presence: update status of '%s' from '%s' to '%s'\n",
+	     ua_aor(current_ua),
+	     contact_presence_str(ua_presence_status(current_ua)),
+	     contact_presence_str(new_status));
+
+	ua_presence_status_set(current_ua, new_status);
+	
+	publisher_update_status();
+	notifier_update_status();
+
+	return 0;
+}
 
 
 static int cmd_online(struct re_printf *pf, void *arg)
@@ -15,19 +33,7 @@ static int cmd_online(struct re_printf *pf, void *arg)
 	(void)pf;
 	(void)arg;
 
-	if (my_status == PRESENCE_OPEN)
-		return 0;
-
-	info("presence: update my status from '%s' to '%s'\n",
-	     contact_presence_str(my_status),
-	     contact_presence_str(PRESENCE_OPEN));
-
-	my_status = PRESENCE_OPEN;
-
-	publisher_update_status();
-	notifier_update_status();
-
-	return 0;
+	return status_update(uag_current(), PRESENCE_OPEN);
 }
 
 
@@ -36,19 +42,7 @@ static int cmd_offline(struct re_printf *pf, void *arg)
 	(void)pf;
 	(void)arg;
 
-	if (my_status == PRESENCE_CLOSED)
-		return 0;
-
-	info("presence: update my status from '%s' to '%s'\n",
-	     contact_presence_str(my_status),
-	     contact_presence_str(PRESENCE_CLOSED));
-
-	my_status = PRESENCE_CLOSED;
-
-	publisher_update_status();
-	notifier_update_status();
-
-	return 0;
+	return status_update(uag_current(), PRESENCE_CLOSED);
 }
 
 
