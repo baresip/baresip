@@ -82,7 +82,7 @@ static const char *presence_status_str(enum presence_status st)
 
 	case PRESENCE_OPEN:   return "open";
 	case PRESENCE_CLOSED: return "closed";
-	case PRESENCE_UNKNOWN: return "unkown";
+	case PRESENCE_UNKNOWN: return "unknown";
 	default: return "?";
 	}
 }
