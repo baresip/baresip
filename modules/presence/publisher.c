@@ -189,10 +189,11 @@ static void tmr_handler(void *arg)
 {
 	struct publisher *pub = arg;
 
-	if (publish(pub)) {
+	if (publish(pub))
 		tmr_start(&pub->tmr, wait_fail(++pub->failc) * 1000,
 			  tmr_handler, pub);
-	}
+	else
+		pub->failc = 0;
 }
 
 
@@ -235,7 +236,7 @@ static int publisher_alloc(struct ua *ua)
 	pub->expires = account_pubint(ua_account(ua));
 
 	tmr_init(&pub->tmr);
-	tmr_start(&pub->tmr, 100, tmr_handler, pub);
+	tmr_start(&pub->tmr, 10, tmr_handler, pub);
 
 	list_append(&publ, &pub->le, pub);
 
@@ -243,10 +244,34 @@ static int publisher_alloc(struct ua *ua)
 }
 
 
+static void pub_ua_event_handler(struct ua *ua,
+				 enum ua_event ev,
+				 struct call *call,
+				 const char *prm,
+				 void *arg )
+{
+   (void)call;
+   (void)prm;
+   (void)arg;
+
+   if (account_pubint(ua_account(ua)) == 0)
+	   return;
+
+   if (ev == UA_EVENT_REGISTER_OK) {
+	   if (ua_presence_status(ua) == PRESENCE_UNKNOWN) {
+		   ua_presence_status_set(ua, PRESENCE_OPEN);
+		   publisher_update_status(ua);
+	   }
+   }
+}
+
+
 int publisher_init(void)
 {
 	struct le *le;
 	int err = 0;
+
+	uag_event_register(pub_ua_event_handler, NULL);
 
 	for (le = list_head(uag_list()); le; le = le->next) {
 
@@ -269,6 +294,8 @@ int publisher_init(void)
 void publisher_close(void)
 {
 	struct le *le;
+
+	uag_event_unregister(pub_ua_event_handler);
 
 	for (le = list_head(&publ); le; le = le->next) {
 
