@@ -250,19 +250,19 @@ static void pub_ua_event_handler(struct ua *ua,
 				 const char *prm,
 				 void *arg )
 {
-   (void)call;
-   (void)prm;
-   (void)arg;
+	(void)call;
+	(void)prm;
+	(void)arg;
 
-   if (account_pubint(ua_account(ua)) == 0)
-	   return;
+	if (account_pubint(ua_account(ua)) == 0)
+		return;
 
-   if (ev == UA_EVENT_REGISTER_OK) {
-	   if (ua_presence_status(ua) == PRESENCE_UNKNOWN) {
-		   ua_presence_status_set(ua, PRESENCE_OPEN);
-		   publisher_update_status(ua);
-	   }
-   }
+	if (ev == UA_EVENT_REGISTER_OK) {
+		if (ua_presence_status(ua) == PRESENCE_UNKNOWN) {
+			ua_presence_status_set(ua, PRESENCE_OPEN);
+			publisher_update_status(ua);
+		}
+	}
 }
 
 
