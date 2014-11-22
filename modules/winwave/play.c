@@ -20,7 +20,7 @@ struct auplay_st {
 	struct dspbuf bufs[WRITE_BUFFERS];
 	int pos;
 	HWAVEOUT waveout;
-	bool rdy;
+	volatile bool rdy;
 	size_t inuse;
 	auplay_write_h *wh;
 	void *arg;
@@ -41,13 +41,15 @@ static void auplay_destructor(void *arg)
 	while (st->inuse > 0)
 		Sleep(50);
 
-	waveOutClose(st->waveout);
+	waveOutReset(st->waveout);
 
 	for (i = 0; i < WRITE_BUFFERS; i++) {
 		waveOutUnprepareHeader(st->waveout, &st->bufs[i].wh,
 				       sizeof(WAVEHDR));
 		mem_deref(st->bufs[i].mb);
 	}
+
+	waveOutClose(st->waveout);
 
 	mem_deref(st->ap);
 }

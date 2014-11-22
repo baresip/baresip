@@ -20,7 +20,7 @@ struct ausrc_st {
 	struct dspbuf bufs[READ_BUFFERS];
 	int pos;
 	HWAVEIN wavein;
-	bool rdy;
+	volatile bool rdy;
 	size_t inuse;
 	ausrc_read_h *rh;
 	void *arg;
@@ -36,13 +36,14 @@ static void ausrc_destructor(void *arg)
 
 	waveInStop(st->wavein);
 	waveInReset(st->wavein);
-	waveInClose(st->wavein);
 
 	for (i = 0; i < READ_BUFFERS; i++) {
 		waveInUnprepareHeader(st->wavein, &st->bufs[i].wh,
 				      sizeof(WAVEHDR));
 		mem_deref(st->bufs[i].mb);
 	}
+
+	waveInClose(st->wavein);
 
 	mem_deref(st->as);
 }
