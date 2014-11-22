@@ -345,7 +345,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		}
 
 		if (err) {
-			(void)call_notify_sipfrag(call, 500, "%m", err);
+			(void)call_notify_sipfrag(call, 500, "Call Error");
 			mem_deref(call2);
 		}
 		break;
@@ -1049,7 +1049,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	const struct sip_hdr *hdr;
 	struct ua *ua;
 	struct call *call = NULL;
-	char str[256], to_uri[256];
+	char to_uri[256];
 	int err;
 
 	(void)arg;
@@ -1102,8 +1102,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
  error:
 	mem_deref(call);
-	(void)re_snprintf(str, sizeof(str), "Error (%m)", err);
-	(void)sip_treply(NULL, uag.sip, msg, 500, str);
+	(void)sip_treply(NULL, uag.sip, msg, 500, "Call Error");
 }
 
 
