@@ -1,5 +1,5 @@
 /**
- * @file avcodec/decode.c  Video codecs using FFmpeg libavcodec -- decoder
+ * @file avcodec/decode.c  Video codecs using libavcodec -- decoder
  *
  * Copyright (C) 2010 - 2013 Creytiv.com
  */

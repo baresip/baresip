@@ -11,6 +11,9 @@
 #include <baresip.h>
 
 
+/* this module is deprecated, in favour of qtcapture or avcapture */
+
+
 struct vidsrc_st {
 	struct vidsrc *vs;  /* inheritance */
 	pthread_t thread;

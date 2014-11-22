@@ -1,5 +1,5 @@
 /**
- * @file avcodec.h  Video codecs using FFmpeg libavcodec -- internal API
+ * @file avcodec.h  Video codecs using libavcodec -- internal API
  *
  * Copyright (C) 2010 Creytiv.com
  */

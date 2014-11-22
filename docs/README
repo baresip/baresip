@@ -93,7 +93,7 @@ Features:
 
 * Video-drivers:
   - iOS avcapture video-source
-  - FFmpeg libavformat/avdevice input
+  - FFmpeg/libav libavformat/avdevice input
   - Cairo video-source test module
   - Direct Show video-source
   - MacOSX QTcapture/quicktime video-source
@@ -141,8 +141,8 @@ aubridge      Audio bridge module
 audiounit     AudioUnit audio driver for MacOSX/iOS
 auloop        Audio-loop test module
 avcapture     Video source using iOS AVFoundation video capture
-avcodec       Video codec using FFmpeg
-avformat      Video source using FFmpeg libavformat
+avcodec       Video codec using FFmpeg/libav libavcodec
+avformat      Video source using FFmpeg/libav libavformat
 bv32          BroadVoice32 audio codec
 cairo         Cairo video source
 celt          CELT audio codec (obsolete, use opus instead)
@@ -179,7 +179,7 @@ plc           Packet Loss Concealment (PLC) using spandsp
 portaudio     Portaudio driver
 presence      Presence module
 qtcapture     Apple QTCapture video source driver
-quicktime     Apple Quicktime video source driver
+quicktime     Apple Quicktime video source driver (deprecated)
 rst           Radio streamer using mpg123
 sdl           Simple DirectMedia Layer (SDL) video output driver
 sdl2          Simple DirectMedia Layer v2 (SDL2) video output driver

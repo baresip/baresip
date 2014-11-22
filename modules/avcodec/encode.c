@@ -1,5 +1,5 @@
 /**
- * @file avcodec/encode.c  Video codecs using FFmpeg libavcodec -- encoder
+ * @file avcodec/encode.c  Video codecs using libavcodec -- encoder
  *
  * Copyright (C) 2010 - 2013 Creytiv.com
  */
@@ -173,7 +173,7 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
 
-	/* params to avoid ffmpeg/x264 default preset error */
+	/* params to avoid libavcodec/x264 default preset error */
 	if (st->codec_id == AV_CODEC_ID_H264) {
 		st->ctx->me_method = ME_UMH;
 		st->ctx->me_range = 16;

@@ -1,5 +1,5 @@
 /**
- * @file avf.c  FFmpeg avformat video-source
+ * @file avf.c  libavformat video-source
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -29,9 +29,9 @@
 
 /* backward compat */
 #if LIBAVCODEC_VERSION_MAJOR>52 || LIBAVCODEC_VERSION_INT>=((52<<16)+(64<<8))
-#define FFMPEG_HAVE_AVMEDIA_TYPES 1
+#define LIBAVCODEC_HAVE_AVMEDIA_TYPES 1
 #endif
-#ifndef FFMPEG_HAVE_AVMEDIA_TYPES
+#ifndef LIBAVCODEC_HAVE_AVMEDIA_TYPES
 #define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
 #endif
 

@@ -1,5 +1,5 @@
 /**
- * @file avcodec.c  Video codecs using FFmpeg libavcodec
+ * @file avcodec.c  Video codecs using libavcodec
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -136,7 +136,7 @@ static int module_init(void)
 #ifdef USE_X264
 	debug("avcodec: x264 build %d\n", X264_BUILD);
 #else
-	debug("avcodec: using FFmpeg H.264 encoder\n");
+	debug("avcodec: using libavcodec H.264 encoder\n");
 #endif
 
 #if LIBAVCODEC_VERSION_INT < ((53<<16)+(10<<8)+0)

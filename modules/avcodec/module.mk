@@ -11,7 +11,7 @@ USE_X264 := $(shell [ -f $(SYSROOT)/include/x264.h ] || \
 MOD		:= avcodec
 $(MOD)_SRCS	+= avcodec.c h263.c h264.c encode.c decode.c
 $(MOD)_LFLAGS	+= -lavcodec -lavutil
-CFLAGS          += -I/usr/include/ffmpeg
+CFLAGS          += -DUSE_AVCODEC
 ifneq ($(USE_X264),)
 CFLAGS          += -DUSE_X264
 $(MOD)_LFLAGS	+= -lx264

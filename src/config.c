@@ -592,7 +592,7 @@ int config_write_template(const char *file, const struct config *cfg)
 #ifdef USE_VIDEO
 
 	(void)re_fprintf(f, "\n# Video codec Modules (in order)\n");
-#ifdef USE_FFMPEG
+#ifdef USE_AVCODEC
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "avcodec" MOD_EXT "\n");
 #else
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "avcodec" MOD_EXT "\n");
@@ -615,7 +615,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "v4l" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "v4l2" MOD_EXT "\n");
 #endif
-#ifdef USE_FFMPEG
+#ifdef USE_AVFORMAT
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "avformat" MOD_EXT "\n");
 #endif
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "x11grab" MOD_EXT "\n");
