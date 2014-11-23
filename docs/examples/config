@@ -1,0 +1,165 @@
+#
+# baresip configuration -- example for linux
+#
+
+#------------------------------------------------------------------------------
+
+# Core
+poll_method		epoll		# poll, select, epoll ..
+
+# SIP
+sip_trans_bsize		128
+#sip_listen		0.0.0.0:5060
+#sip_certificate	cert.pem
+
+# Audio
+audio_player		alsa,default
+audio_source		alsa,default
+audio_alert		alsa,default
+audio_srate		8000-48000
+audio_channels		1-2
+#ausrc_srate		48000
+#auplay_srate		48000
+#ausrc_channels		0
+#auplay_channels		0
+
+# Video
+#video_source		v4l2,/dev/video0
+#video_display		x11,nil
+video_size		352x288
+video_bitrate		512000
+video_fps		25
+
+# AVT - Audio/Video Transport
+rtp_tos			184
+#rtp_ports		10000-20000
+#rtp_bandwidth		512-1024 # [kbit/s]
+rtcp_enable		yes
+rtcp_mux		no
+jitter_buffer_delay	5-10		# frames
+rtp_stats		no
+
+# Network
+#dns_server		10.0.0.1:53
+#net_interface		wlan1
+
+# BFCP
+#bfcp_proto		udp
+
+#------------------------------------------------------------------------------
+# Modules
+
+#module_path		/usr/local/lib/baresip/modules
+
+# UI Modules
+module			stdio.so
+#module			cons.so
+#module			evdev.so
+#module			httpd.so
+
+# Audio codec Modules (in order)
+module			opus.so
+#module			silk.so
+#module			amr.so
+#module			g7221.so
+#module			g722.so
+#module			g726.so
+module			g711.so
+#module			gsm.so
+#module			l16.so
+#module			speex.so
+#module			bv32.so
+
+# Audio filter Modules (in encoding order)
+#module			vumeter.so
+#module			sndfile.so
+#module			speex_aec.so
+#module			speex_pp.so
+#module			plc.so
+
+# Audio driver Modules
+module			alsa.so
+#module			portaudio.so
+
+# Video codec Modules (in order)
+module			avcodec.so
+module			vpx.so
+
+# Video filter Modules (in encoding order)
+#module			selfview.so
+
+# Video source modules
+#module			v4l.so
+module			v4l2.so
+#module			avformat.so
+#module			x11grab.so
+#module			cairo.so
+
+# Video display modules
+module			x11.so
+#module			sdl2.so
+
+# Audio/Video source modules
+#module			rst.so
+#module			gst.so
+
+# Media NAT modules
+module			stun.so
+module			turn.so
+module			ice.so
+#module			natpmp.so
+
+# Media encryption modules
+#module			srtp.so
+module			dtls_srtp.so
+
+
+#------------------------------------------------------------------------------
+# Temporary Modules (loaded then unloaded)
+
+module_tmp		uuid.so
+module_tmp		account.so
+
+
+#------------------------------------------------------------------------------
+# Application Modules
+
+module_app		auloop.so
+module_app		contact.so
+module_app		menu.so
+#module_app		mwi.so
+#module_app		natbd.so
+#module_app		presence.so
+#module_app		syslog.so
+module_app		vidloop.so
+
+
+#------------------------------------------------------------------------------
+# Module parameters
+
+
+cons_listen		0.0.0.0:5555
+
+evdev_device		/dev/input/event0
+
+# Speex codec parameters
+speex_quality		7 # 0-10
+speex_complexity	7 # 0-10
+speex_enhancement	0 # 0-1
+speex_vbr		0 # Variable Bit Rate 0-1
+speex_vad		0 # Voice Activity Detection 0-1
+speex_agc_level		8000
+
+# NAT Behavior Discovery
+natbd_server		creytiv.com
+natbd_interval		600		# in seconds
+
+# Selfview
+video_selfview		window # {window,pip}
+#selfview_size		64x64
+
+# ICE
+ice_turn		no
+ice_debug		no
+ice_nomination		regular	# {regular,aggressive}
+ice_mode		full	# {full,lite}
