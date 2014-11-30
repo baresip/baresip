@@ -37,6 +37,7 @@ struct ui_st {
 	struct udp_sock *us;
 	struct tcp_sock *ts;
 	struct tcp_conn *tc;
+	struct sa udp_peer;
 };
 
 
@@ -55,6 +56,8 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 	struct mbuf *mbr = mbuf_alloc(64);
 	struct re_printf pf;
 
+	st->udp_peer = *src;
+
 	pf.vph = print_handler;
 	pf.arg = mbr;
 
@@ -67,8 +70,10 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		ui_input_key(ch, &pf);
 	}
 
-	mbr->pos = 0;
-	(void)udp_send(st->us, src, mbr);
+	if (mbr->end > 0) {
+		mbr->pos = 0;
+		(void)udp_send(st->us, src, mbr);
+	}
 
 	mem_deref(mbr);
 }
@@ -177,8 +182,39 @@ static int cons_alloc(struct ui_st **stp, const struct sa *laddr)
 }
 
 
+static int output_handler(const char *str)
+{
+	struct mbuf *mb;
+	int err = 0;
+
+	if (!str)
+		return EINVAL;
+
+	mb = mbuf_alloc(256);
+	if (!mb)
+		return ENOMEM;
+
+	mbuf_write_str(mb, str);
+
+	if (sa_isset(&cons->udp_peer, SA_ALL)) {
+		mb->pos = 0;
+		err |= udp_send(cons->us, &cons->udp_peer, mb);
+	}
+
+	if (cons->tc) {
+		mb->pos = 0;
+		err |= tcp_send(cons->tc, mb);
+	}
+
+	mem_deref(mb);
+
+	return err;
+}
+
+
 static struct ui ui_cons = {
 	.name = "cons",
+	.outputh = output_handler
 };
 
 
