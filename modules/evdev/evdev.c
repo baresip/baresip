@@ -326,7 +326,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	ui_unregister(&ui_evdev);
+	ui_register(&ui_evdev);
 
 	return 0;
 }
