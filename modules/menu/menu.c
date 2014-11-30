@@ -47,10 +47,10 @@ static void check_registrations(void)
 	n = list_count(uag_list());
 
 	/* We are ready */
-	(void)re_printf("\x1b[32mAll %u useragent%s registered successfully!"
-			" (%u ms)\x1b[;m\n",
-			n, n==1 ? "" : "s",
-			(uint32_t)(tmr_jiffies() - start_ticks));
+	ui_output("\x1b[32mAll %u useragent%s registered successfully!"
+		  " (%u ms)\x1b[;m\n",
+		  n, n==1 ? "" : "s",
+		  (uint32_t)(tmr_jiffies() - start_ticks));
 
 	ual_ready = true;
 }

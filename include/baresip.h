@@ -551,7 +551,7 @@ void ui_input(char key);
 void ui_input_key(char key, struct re_printf *pf);
 void ui_input_str(const char *str);
 int  ui_input_pl(struct re_printf *pf, const struct pl *pl);
-void ui_output(const char *str);
+void ui_output(const char *fmt, ...);
 bool ui_isediting(void);
 
 

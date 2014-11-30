@@ -94,7 +94,7 @@ static OSErr frame_handler(SGChannel c, Ptr p, long len, long *offset,
 
 		result = SGGetChannelSampleDescription(c,(Handle)imageDesc);
 		if (result != noErr) {
-			re_printf("GetChanSampDesc: %d\n", result);
+			warning("quicktime: GetChanSampDesc: %d\n", result);
 			DisposeHandle((Handle)imageDesc);
 			return noErr;
 		}
@@ -191,9 +191,6 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	(void)fmt;
 	(void)dev;
 	(void)errorh;
-
-	re_printf("quicktime alloc: %u x %u fps=%d\n",
-		  prm->size.w, prm->size.h, prm->fps);
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)

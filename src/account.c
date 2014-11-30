@@ -323,6 +323,7 @@ static int encode_uri_user(struct re_printf *pf, const struct uri *uri)
 }
 
 
+/* TODO: move interactive code away from CORE, to a module */
 static int password_prompt(struct account *acc)
 {
 	char pwd[64];

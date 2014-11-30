@@ -129,17 +129,27 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 /**
  * Send output to all modules registered in the UI subsystem
  *
- * @param str Output string
+ * @param fmt Formatted output string
  */
-void ui_output(const char *str)
+void ui_output(const char *fmt, ...)
 {
+	char buf[512];
 	struct le *le;
+	va_list ap;
+	int n;
+
+	va_start(ap, fmt);
+	n = re_vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+
+	if (n < 0)
+		return;
 
 	for (le = uil.head; le; le = le->next) {
 		const struct ui *ui = le->data;
 
 		if (ui->outputh)
-			ui->outputh(str);
+			ui->outputh(buf);
 	}
 }
 
