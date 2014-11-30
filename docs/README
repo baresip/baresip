@@ -58,7 +58,6 @@ Features:
 * Audio-codecs:
   - AMR narrowband, AMR wideband
   - BroadVoice32 BV32
-  - CELT
   - G.711
   - G.722
   - G.726
@@ -145,7 +144,6 @@ avcodec       Video codec using FFmpeg/libav libavcodec
 avformat      Video source using FFmpeg/libav libavformat
 bv32          BroadVoice32 audio codec
 cairo         Cairo video source
-celt          CELT audio codec (obsolete, use opus instead)
 cons          UDP/TCP console UI driver
 contact       Contacts module
 coreaudio     Apple Coreaudio driver
