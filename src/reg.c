@@ -99,6 +99,21 @@ static int sip_auth_handler(char **username, char **password,
 }
 
 
+static bool contact_handler(const struct sip_hdr *hdr,
+			    const struct sip_msg *msg, void *arg)
+{
+	struct reg *reg = arg;
+	struct sip_addr addr;
+	(void)msg;
+
+	if (sip_addr_decode(&addr, &hdr->val))
+		return false;
+
+	/* match our contact */
+	return 0 == pl_strcasecmp(&addr.uri.user, ua_local_cuser(reg->ua));
+}
+
+
 static void register_handler(int err, const struct sip_msg *msg, void *arg)
 {
 	struct reg *reg = arg;
@@ -138,7 +153,8 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 
 		reg->scode = msg->scode;
 
-		hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+		hdr = sip_msg_hdr_apply(msg, true, SIP_HDR_CONTACT,
+					contact_handler, reg);
 		if (hdr) {
 			struct sip_addr addr;
 			struct pl pval;
