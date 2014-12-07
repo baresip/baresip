@@ -48,7 +48,7 @@ static struct config core_config = {
 		"", "",
 		"", "",
 		352, 288,
-		512000,
+		500000,
 		25,
 	},
 #endif
@@ -193,8 +193,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_range(conf, "rtp_ports", &cfg->avt.rtp_ports);
 	if (0 == conf_get_range(conf, "rtp_bandwidth",
 				&cfg->avt.rtp_bw)) {
-		cfg->avt.rtp_bw.min *= 1024;
-		cfg->avt.rtp_bw.max *= 1024;
+		cfg->avt.rtp_bw.min *= 1000;
+		cfg->avt.rtp_bw.max *= 1000;
 	}
 	(void)conf_get_bool(conf, "rtcp_enable", &cfg->avt.rtcp_enable);
 	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);

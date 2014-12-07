@@ -523,7 +523,7 @@ void stream_set_bw(struct stream *s, uint32_t bps)
 	if (!s)
 		return;
 
-	sdp_media_set_lbandwidth(s->sdp, SDP_BANDWIDTH_AS, bps / 1024);
+	sdp_media_set_lbandwidth(s->sdp, SDP_BANDWIDTH_AS, bps / 1000);
 }
 
 
