@@ -207,7 +207,7 @@ MODULES   += $(EXTRA_MODULES)
 MODULES   += stun turn ice natbd auloop presence
 MODULES   += menu contact vumeter mwi account natpmp httpd
 MODULES   += selftest
-MODULES   += srtp
+#MODULES   += srtp
 MODULES   += uuid
 
 ifneq ($(HAVE_PTHREAD),)
@@ -252,7 +252,7 @@ ifneq ($(USE_COREAUDIO),)
 MODULES   += coreaudio
 endif
 ifneq ($(USE_DTLS_SRTP),)
-MODULES   += dtls_srtp
+#MODULES   += dtls_srtp
 endif
 ifneq ($(USE_QTCAPTURE),)
 MODULES   += qtcapture
@@ -328,7 +328,7 @@ ifneq ($(USE_SPEEX_PP),)
 MODULES   += speex_pp
 endif
 ifneq ($(USE_LIBSRTP),)
-MODULES   += libsrtp
+#MODULES   += libsrtp
 endif
 ifneq ($(USE_STDIO),)
 MODULES   += stdio
