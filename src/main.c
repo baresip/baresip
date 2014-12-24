@@ -36,7 +36,7 @@ static void signal_handler(int sig)
 
 int main(int argc, char *argv[])
 {
-	bool prefer_ipv6 = false, run_daemon = false;
+	bool prefer_ipv6 = false, run_daemon = false, test = false;
 	const char *exec = NULL;
 	int err;
 
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "6de:f:p:hv");
+		const int c = getopt(argc, argv, "6de:f:p:hvt");
 		if (0 > c)
 			break;
 
@@ -68,6 +68,7 @@ int main(int argc, char *argv[])
 					 "\t-f <path>        Config path\n"
 					 "\t-p <path>        Audio files\n"
 					 "\t-h -?            Help\n"
+					 "\t-t               Test and exit\n"
 					 "\t-v               Verbose debug\n"
 					 );
 			return -2;
@@ -92,6 +93,10 @@ int main(int argc, char *argv[])
 
 		case 'p':
 			play_set_path(optarg);
+			break;
+
+		case 't':
+			test = true;
 			break;
 
 		case 'v':
@@ -121,6 +126,9 @@ int main(int argc, char *argv[])
 	err = ua_init("baresip v" BARESIP_VERSION " (" ARCH "/" OS ")",
 		      true, true, true, prefer_ipv6);
 	if (err)
+		goto out;
+
+	if (test)
 		goto out;
 
 	/* Load modules */
