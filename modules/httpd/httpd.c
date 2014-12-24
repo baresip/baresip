@@ -10,7 +10,6 @@
 
 struct ui_st {
 	struct ui *ui; /* base class */
-	ui_input_h *h;
 	struct http_sock *httpsock;
 	void *arg;
 };
@@ -66,16 +65,15 @@ static int html_input_str(struct re_printf *pf, char *str)
 
 	return re_hprintf(pf,
 		"%H"
-			"<body>\n"
-			"<pre>\n"
-			"%H"
-			"</pre>\n"
-			"</body>\n"
-			"</html>\n",
+		"<body>\n"
+		"<pre>\n"
+		"%H"
+		"</pre>\n"
+		"</body>\n"
+		"</html>\n",
 		html_print_head, NULL,
 		ui_input_pl, &params);
 }
-
 
 int httpd_parse_command(struct http_conn *conn, const struct http_msg *msg)
 {
@@ -154,13 +152,10 @@ static void ui_destructor(void *arg)
 	_ui = NULL;
 }
 
-static int ui_alloc(struct ui_st **stp, struct ui_prm *prm,
-	ui_input_h *ih, void *arg)
+static int ui_alloc(struct ui_st **stp)
 {
 	struct ui_st *st;
 	int err;
-
-	(void)prm;
 
 	if (!stp)
 		return EINVAL;
@@ -182,9 +177,6 @@ static int ui_alloc(struct ui_st **stp, struct ui_prm *prm,
 		err = 0;
 	}
 
-	st->h   = ih;
-	st->arg = arg;
-
 	if (err)
 		mem_deref(st);
 	else
@@ -193,11 +185,30 @@ static int ui_alloc(struct ui_st **stp, struct ui_prm *prm,
 	return err;
 }
 
+static int output_handler(const char *str)
+{
+    (void)str;
+    return 0;
+}
+
+static struct ui ui_httpd = {
+	.name = "httpd",
+	.outputh = output_handler
+};
+
 
 static int module_init(void)
 {
+	int err;
 
-	return ui_register(&httpd, "httpd", ui_alloc, NULL);
+	err = ui_alloc(&_ui);
+	if (err)
+		return err;
+
+	ui_register(&ui_httpd);
+
+	return
+		err;
 }
 
 
