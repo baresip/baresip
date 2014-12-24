@@ -1,3 +1,80 @@
+2014-12-24 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.12
+
+	* GIT commit 67993e35d980375458348b264c4a35a944bb5180
+	* NOTE: Requires libre v0.4.11 or later
+
+	* baresip:
+	  - account: add regint and pubint
+	  - audio: fix checking of sample-rate range
+	  - config: remove the "input" block
+	  - config: added support for quoted device parameters
+	  - config: fix conversion of bandwidth to kbit/s
+	  - config: generate more relevant config for FreeBSD and OpenBSD
+		    (thanks Dmitrij D. Czarkoff)
+	  - reg: add support for extracting GRUU parameter
+	  - main: add -p option to set path to audio files
+	  - sipreq: make response-handler optional
+	  - ua: add support for GRUU (RFC 5627)
+	    (many thanks to Juha Heinanen for starting this work and
+	     helping out with the testing)
+	  - ua: moved presence-status to each struct ua instance
+	  - ua: add presence status to each User-Agent instance
+	  - ua: use public-GRUU if set, otherwise local cuser
+	  - ui: make UI single instance
+	  - video: add VIDENC_INTERNAL_FMT (suggested by Victor Sergienko)
+
+	* docs: added sample configuration files
+
+	* account: added pubint for Publishing Interval
+
+	* avcodec: upgrade to recent ffmpeg/libav APIs
+		   either FFmpeg or libav can be used
+
+	* celt: deleted module (replaced by opus)
+
+	* cons: update usage of struct ui, added output handler
+		added config: cons_listen    0.0.0.0:5555
+
+	* evdev: update usage of struct ui, added output handler
+		 added config: evdev_device    /dev/input/event0
+
+	* httpd: added ui output handler
+
+	* menu: added command 'o' for sending OPTION request
+		(thanks to Juha Heinanen)
+
+		added command 'D' for accepting incoming calls
+
+	* mwi: subscribe to MWI after Registration succeeded
+	       (thanks to Juha Heinanen)
+
+	* opensles: add double-buffering and some tuning
+		    (thanks to Francesco Bradascio)
+
+	* opus: added config "opus_bitrate" (thanks to Sebastian Reimers)
+
+	* presence: added support for PUBLISH (thanks to Juha Heinanen)
+		    interop fixes and tuning
+
+	* stdio: update usage of struct ui, added output handler
+
+	* uuid: use internal version of generating UUID
+
+	* v4l2: use memory mapped mode only
+
+	* vumeter: dont call tmr_start from non-RE thread
+
+	* wincons: update usage of struct ui, added output handler
+
+	* winwave: fix bug when closing player device
+		   (thanks to Tomasz Ostrowski)
+		   add support for mapping device name to index
+
+	* zrtp: add support for verify SAS (thanks to Ingo Feinerer)
+
+
 2014-06-21 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.11
