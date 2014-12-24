@@ -26,6 +26,7 @@ struct vidframe;
 struct vidrect;
 struct vidsz;
 
+#define VID_FMT_INTERNAL VID_FMT_YUV420P
 
 /*
  * Account
