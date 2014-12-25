@@ -3,7 +3,7 @@ Section: comm
 Priority: optional
 Maintainer: Alfred E. Heggestad <aeh@db.org>
 Standards-Version: 3.9.5
-Build-Depends: debhelper (>= 9.20120311), librem-dev (>= 0.4.5), libre-dev (>= 0.4.11), libasound2-dev, libavformat-dev, libavdevice-dev
+Build-Depends: debhelper (>= 9.20120311), librem-dev (>= 0.4.5), libre-dev (>= 0.4.11), libasound2-dev, libavformat-dev, libavdevice-dev, libswscale-dev
 Homepage: http://www.creytiv.com/
 
 Package: baresip
