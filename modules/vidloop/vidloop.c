@@ -23,7 +23,8 @@ struct vstat {
 
 /** Video loop */
 struct video_loop {
-	const struct vidcodec *vc;
+	const struct vidcodec *vc_enc;
+	const struct vidcodec *vc_dec;
 	struct config_video cfg;
 	struct videnc_state *enc;
 	struct viddec_state *dec;
@@ -86,8 +87,8 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 
 	/* decode */
 	frame.data[0] = NULL;
-	if (vl->dec) {
-		err = vl->vc->dech(vl->dec, &frame, marker, vl->seq++, mb);
+	if (vl->vc_dec && vl->dec) {
+		err = vl->vc_dec->dech(vl->dec, &frame, marker, vl->seq++, mb);
 		if (err) {
 			warning("vidloop: codec decode: %m\n", err);
 			goto out;
@@ -131,8 +132,8 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 			err |= st->vf->ench(st, frame);
 	}
 
-	if (vl->enc) {
-		(void)vl->vc->ench(vl->enc, false, frame,
+	if (vl->vc_enc && vl->enc) {
+		(void)vl->vc_enc->ench(vl->enc, false, frame,
 				   packet_handler, vl);
 	}
 	else {
@@ -150,9 +151,9 @@ static void vidloop_destructor(void *arg)
 
 	tmr_cancel(&vl->tmr_bw);
 	mem_deref(vl->vsrc);
-	mem_deref(vl->vidisp);
 	mem_deref(vl->enc);
 	mem_deref(vl->dec);
+	mem_deref(vl->vidisp);
 	list_flush(&vl->filtencl);
 	list_flush(&vl->filtdecl);
 }
@@ -161,6 +162,7 @@ static void vidloop_destructor(void *arg)
 static int enable_codec(struct video_loop *vl)
 {
 	struct videnc_param prm;
+	const char *name = NULL;
 	int err;
 
 	prm.fps     = vl->cfg.fps;
@@ -169,18 +171,31 @@ static int enable_codec(struct video_loop *vl)
 	prm.max_fs  = -1;
 
 	/* Use the first video codec */
-	vl->vc = vidcodec_find(NULL, NULL);
-	if (!vl->vc)
-		return ENOENT;
 
-	err = vl->vc->encupdh(&vl->enc, vl->vc, &prm, NULL);
+	vl->vc_enc = vidcodec_find_encoder(name);
+	if (!vl->vc_enc) {
+		warning("vidloop: could not find encoder (%s)\n", name);
+		return ENOENT;
+	}
+
+	info("vidloop: enabled encoder %s\n", vl->vc_enc->name);
+
+	vl->vc_dec = vidcodec_find_decoder(name);
+	if (!vl->vc_dec) {
+		warning("vidloop: could not find decoder (%s)\n", name);
+		return ENOENT;
+	}
+
+	info("vidloop: enabled decoder %s\n", vl->vc_dec->name);
+
+	err = vl->vc_enc->encupdh(&vl->enc, vl->vc_enc, &prm, NULL);
 	if (err) {
 		warning("vidloop: update encoder failed: %m\n", err);
 		return err;
 	}
 
-	if (vl->vc->decupdh) {
-		err = vl->vc->decupdh(&vl->dec, vl->vc, NULL);
+	if (vl->vc_dec->decupdh) {
+		err = vl->vc_dec->decupdh(&vl->dec, vl->vc_dec, NULL);
 		if (err) {
 			warning("vidloop: update decoder failed: %m\n", err);
 			return err;
@@ -195,13 +210,18 @@ static void disable_codec(struct video_loop *vl)
 {
 	vl->enc = mem_deref(vl->enc);
 	vl->dec = mem_deref(vl->dec);
-	vl->vc = NULL;
+	vl->vc_enc = NULL;
+	vl->vc_dec = NULL;
 }
 
 
 static void print_status(struct video_loop *vl)
 {
-	(void)re_fprintf(stderr, "\rstatus: EFPS=%.1f      %u kbit/s       \r",
+	(void)re_fprintf(stderr,
+			 "\rstatus:"
+			 " [%s] [%s] EFPS=%.1f      %u kbit/s       \r",
+			 vl->vc_enc ? vl->vc_enc->name : "",
+			 vl->vc_dec ? vl->vc_dec->name : "",
 			 vl->stat.efps, vl->stat.bitrate);
 }
 
@@ -334,14 +354,14 @@ static int vidloop_start(struct re_printf *pf, void *arg)
 	size.h = cfg->video.height;
 
 	if (gvl) {
-		if (gvl->vc)
+		if (gvl->vc_enc)
 			disable_codec(gvl);
 		else
 			(void)enable_codec(gvl);
 
 		(void)re_hprintf(pf, "%sabled codec: %s\n",
-				 gvl->vc ? "En" : "Dis",
-				 gvl->vc ? gvl->vc->name : "");
+				 gvl->vc_enc ? "En" : "Dis",
+				 gvl->vc_enc ? gvl->vc_enc->name : "");
 	}
 	else {
 		(void)re_hprintf(pf, "Enable video-loop on %s,%s: %u x %u\n",

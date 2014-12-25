@@ -71,6 +71,58 @@ const struct vidcodec *vidcodec_find(const char *name, const char *variant)
 
 
 /**
+ * Find a Video Encoder by name
+ *
+ * @param name    Name of the Video Encoder to find
+ *
+ * @return Matching Video Encoder if found, otherwise NULL
+ */
+const struct vidcodec *vidcodec_find_encoder(const char *name)
+{
+	struct le *le;
+
+	for (le=vidcodecl.head; le; le=le->next) {
+
+		struct vidcodec *vc = le->data;
+
+		if (name && 0 != str_casecmp(name, vc->name))
+			continue;
+
+		if (vc->ench)
+			return vc;
+	}
+
+	return NULL;
+}
+
+
+/**
+ * Find a Video Decoder by name
+ *
+ * @param name    Name of the Video Decoder to find
+ *
+ * @return Matching Video Decoder if found, otherwise NULL
+ */
+const struct vidcodec *vidcodec_find_decoder(const char *name)
+{
+	struct le *le;
+
+	for (le=vidcodecl.head; le; le=le->next) {
+
+		struct vidcodec *vc = le->data;
+
+		if (name && 0 != str_casecmp(name, vc->name))
+			continue;
+
+		if (vc->dech)
+			return vc;
+	}
+
+	return NULL;
+}
+
+
+/**
  * Get the list of Video Codecs
  *
  * @return List of Video Codecs

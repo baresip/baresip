@@ -758,6 +758,8 @@ struct vidcodec {
 void vidcodec_register(struct vidcodec *vc);
 void vidcodec_unregister(struct vidcodec *vc);
 const struct vidcodec *vidcodec_find(const char *name, const char *variant);
+const struct vidcodec *vidcodec_find_encoder(const char *name);
+const struct vidcodec *vidcodec_find_decoder(const char *name);
 struct list *vidcodec_list(void);
 
 

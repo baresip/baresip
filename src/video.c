@@ -895,6 +895,18 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 	if (!v)
 		return EINVAL;
 
+	/* handle vidcodecs without a decoder */
+	if (!vc->decupdh) {
+		info("video: vidcodec '%s' has no decoder\n", vc->name);
+
+		vc = (struct vidcodec *)vidcodec_find_decoder(vc->name);
+		if (!vc) {
+			warning("video: could not find decoder (%s)\n",
+				vc->name);
+			return ENOENT;
+		}
+	}
+
 	vrx = &v->vrx;
 
 	vrx->pt_rx = pt_rx;
