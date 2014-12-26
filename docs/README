@@ -158,6 +158,8 @@ g7221         G.722.1 audio codec
 g726          G.726 audio codec
 gsm           GSM audio codec
 gst           Gstreamer audio source
+gst_video     Gstreamer video codec
+h265          H.265 video codec
 httpd         HTTP webserver UI-module
 ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec
@@ -249,6 +251,7 @@ IETF RFC/I-Ds:
 * RFC 6886  NAT Port Mapping Protocol (NAT-PMP)
 
 * draft-ietf-avt-rtp-isac-04
+* draft-ietf-payload-rtp-h265-07
 * draft-ietf-payload-vp8-08
 * draft-spittka-payload-rtp-opus-00
 
