@@ -51,6 +51,27 @@ static int html_print_cmd(struct re_printf *pf, const struct http_msg *req)
 }
 
 
+static int html_print_raw(struct re_printf *pf, const struct http_msg *req)
+{
+	struct pl params;
+
+	if (!pf || !req)
+		return EINVAL;
+
+	if (pl_isset(&req->prm)) {
+		params.p = req->prm.p + 1;
+		params.l = req->prm.l - 1;
+	}
+	else {
+		params.p = "h";
+		params.l = 1;
+	}
+
+	return re_hprintf(pf,
+			  "%H",
+			  ui_input_pl, &params);
+}
+
 static void http_req_handler(struct http_conn *conn,
 			     const struct http_msg *msg, void *arg)
 {
@@ -61,6 +82,12 @@ static void http_req_handler(struct http_conn *conn,
 		http_creply(conn, 200, "OK",
 			    "text/html;charset=UTF-8",
 			    "%H", html_print_cmd, msg);
+	}
+	else if (0 == pl_strcasecmp(&msg->path, "/raw/")) {
+
+		http_creply(conn, 200, "OK",
+			    "text/plain;charset=UTF-8",
+			    "%H", html_print_raw, msg);
 	}
 	else {
 		http_ereply(conn, 404, "Not Found");
