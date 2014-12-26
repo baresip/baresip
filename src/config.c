@@ -679,6 +679,9 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "cons_listen\t\t0.0.0.0:5555\n");
 
 	(void)re_fprintf(f, "\n");
+	(void)re_fprintf(f, "http_listen\t\t0.0.0.0:8000\n");
+
+	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
 
 	(void)re_fprintf(f, "\n# Speex codec parameters\n");
