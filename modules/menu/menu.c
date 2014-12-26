@@ -312,8 +312,8 @@ static int create_ua(struct re_printf *pf, void *arg)
 
 	 if (str_isset(carg->prm)) {
 
-                mbuf_rewind(dialbuf);
-                (void)mbuf_write_str(dialbuf, carg->prm);
+		mbuf_rewind(dialbuf);
+		(void)mbuf_write_str(dialbuf, carg->prm);
 
 		(void)re_hprintf(pf, "Creating UA for %s ...\n", carg->prm);
 		err = ua_alloc(NULL, carg->prm);
@@ -330,7 +330,7 @@ static int create_ua(struct re_printf *pf, void *arg)
 			return err;
 
 		(void)re_hprintf(pf, "Creating UA for %s ...\n", uri);
-                err |=  ua_alloc(NULL, uri);
+		err |=  ua_alloc(NULL, uri);
 
 		mem_deref(uri);
 	}
@@ -347,8 +347,7 @@ static int create_ua(struct re_printf *pf, void *arg)
 
 	if (err) {
 		(void)re_hprintf(pf, "menu: create_ua failed: %m\n", err);
-	} 
-
+	}
 
 
 	return err;
