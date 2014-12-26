@@ -128,10 +128,9 @@ static int account_read_file(void)
 	info("Populated %u account%s\n", n, 1==n ? "" : "s");
 
 	if (list_isempty(uag_list())) {
-		warning("account: No SIP accounts found\n"
+		info("account: No SIP accounts found\n"
 			" -- check your config "
 			"or add an account using 'R' command\n");
-		return ENOENT;
 	}
 
 	return 0;
