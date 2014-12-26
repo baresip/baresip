@@ -65,7 +65,7 @@ static int account_write_template(const char *file)
 			 "[2001:df8:0:16:216:6fff:fe91:614c]:5070"
 			 ";transport=tcp>\n"
 			 "#\n"
-			 "<sip:%s:%s@%s>\n", login, pass, domain);
+			 "#<sip:%s:%s@%s>\n", login, pass, domain);
 
 	if (f)
 		(void)fclose(f);
@@ -128,8 +128,9 @@ static int account_read_file(void)
 	info("Populated %u account%s\n", n, 1==n ? "" : "s");
 
 	if (list_isempty(uag_list())) {
-		warning("account: No SIP accounts found"
-			" -- check your config\n");
+		warning("account: No SIP accounts found\n"
+			" -- check your config "
+			"or add an account using 'R' command\n");
 		return ENOENT;
 	}
 
