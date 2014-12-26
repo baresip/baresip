@@ -1,0 +1,75 @@
+notes:
+-----
+
+
+x265 [info]: HEVC encoder version 1.4-253-g920d714
+x265 [info]: build info [Linux][GCC 4.9.1][64 bit] 8bpp
+x265 [info]: using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX
+x265 [info]: Main profile, Level-2 (Main tier)
+x265 [info]: WPP streams / frame threads / pool  : 8 / 2 / 4
+x265 [info]: CTU size / RQT depth inter / intra  : 32 / 1 / 1
+x265 [info]: ME / range / subpel / merge         : dia / 25 / 0 / 2
+x265 [info]: Keyframe min / max / scenecut       : 25 / 250 / 0
+x265 [info]: Lookahead / bframes / badapt        : 10 / 4 / 0
+x265 [info]: b-pyramid / weightp / weightb / refs: 1 / 0 / 0 / 1
+x265 [info]: Rate Control / AQ-Strength / CUTree : CRF-28.0 / 0.0 / 0
+x265 [info]: VBV/HRD buffer / max-rate / init    : 40960 / 512 / 0.900
+x265 [info]: tools: rd=2 early-skip fast-intra tmvp 
+
+
+x265 [info]: frame I:      1, Avg QP:25.40  kb/s: 639.60  
+x265 [info]: frame P:      3, Avg QP:30.29  kb/s: 256.93  
+x265 [info]: frame B:     12, Avg QP:32.92  kb/s: 58.68   
+x265 [info]: global :     16, Avg QP:31.96  kb/s: 132.16  
+x265 [info]: consecutive B-frames: 20.0% 0.0% 0.0% 0.0% 80.0% 
+
+
+
+
+h265: decode:       type=32  VPS_NUT
+h265: decode:       type=33  SPS_NUT
+h265: decode:       type=34  PPS_NUT
+h265: decode:       type=39  PREFIX_SEI_NUT
+h265: decode:       type=39  PREFIX_SEI_NUT
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+h265: decode:       type=49  H265_NAL_FU
+
+
+
+
+Test-call between 2 peers (A) and (B):
+
+
+(A):
+
+video           Transmit:     Receive:
+packets:            435         2001
+avg. bitrate:      56.0        416.0  (kbit/s)
+errors:               0            0
+pkt.report:         417         1939
+lost:                 0            0
+jitter:            23.3          0.4  (ms)
+
+
+(B):
+
+video           Transmit:     Receive:
+packets:           2012          435
+avg. bitrate:     416.0         56.0  (kbit/s)
+errors:               0            0
+pkt.report:        1939          417
+lost:                 0            0
+jitter:             0.4         23.3  (ms)
+
+
+
+[END]
