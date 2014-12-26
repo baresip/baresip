@@ -302,6 +302,59 @@ static int cmd_hangup(struct re_printf *pf, void *unused)
 }
 
 
+static int create_ua(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct le *le;
+	int err = 0;
+
+	(void)pf;
+
+	 if (str_isset(carg->prm)) {
+
+                mbuf_rewind(dialbuf);
+                (void)mbuf_write_str(dialbuf, carg->prm);
+
+		(void)re_hprintf(pf, "Creating UA for %s ...\n", carg->prm);
+		err = ua_alloc(NULL, carg->prm);
+
+
+	}
+	else if (dialbuf->end > 0) {
+
+		char *uri;
+
+		dialbuf->pos = 0;
+		err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+		if (err)
+			return err;
+
+		(void)re_hprintf(pf, "Creating UA for %s ...\n", uri);
+                err |=  ua_alloc(NULL, uri);
+
+		mem_deref(uri);
+	}
+
+	for (le = list_head(uag_list()); le && !err; le = le->next) {
+		const struct ua *ua = le->data;
+
+		err  = re_hprintf(pf, "%s ", ua == uag_cur() ? ">" : " ");
+		err |= ua_print_status(pf, ua);
+	}
+
+	err |= re_hprintf(pf, "\n");
+
+
+	if (err) {
+		(void)re_hprintf(pf, "menu: create_ua failed: %m\n", err);
+	} 
+
+
+
+	return err;
+}
+
+
 static int cmd_ua_next(struct re_printf *pf, void *unused)
 {
 	(void)pf;
@@ -364,7 +417,7 @@ static const struct cmd cmdv[] = {
 	{0x1b,      0, "Hangup call",              cmd_hangup           },
 	{' ',       0, "Toggle UAs",               cmd_ua_next          },
 	{'g',       0, "Print configuration",      cmd_config_print     },
-
+	{'R', CMD_PRM, "Create User-Agent",        create_ua            },
 	{'#', CMD_PRM, NULL,   dial_handler },
 	{'*', CMD_PRM, NULL,   dial_handler },
 	{'0', CMD_PRM, NULL,   dial_handler },
