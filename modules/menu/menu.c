@@ -416,6 +416,7 @@ static const struct cmd cmdv[] = {
 	{'y',       0, "Memory status",            mem_status           },
 	{0x1b,      0, "Hangup call",              cmd_hangup           },
 	{' ',       0, "Toggle UAs",               cmd_ua_next          },
+	{'T',       0, "Toggle UAs",               cmd_ua_next          },
 	{'g',       0, "Print configuration",      cmd_config_print     },
 	{'R', CMD_PRM, "Create User-Agent",        create_ua            },
 	{'#', CMD_PRM, NULL,   dial_handler },
