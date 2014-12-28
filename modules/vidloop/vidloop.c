@@ -356,8 +356,13 @@ static int vidloop_start(struct re_printf *pf, void *arg)
 	if (gvl) {
 		if (gvl->vc_enc)
 			disable_codec(gvl);
-		else
-			(void)enable_codec(gvl);
+		else {
+			err = enable_codec(gvl);
+			if (err) {
+				gvl = mem_deref(gvl);
+				return err;
+			}
+		}
 
 		(void)re_hprintf(pf, "%sabled codec: %s\n",
 				 gvl->vc_enc ? "En" : "Dis",
