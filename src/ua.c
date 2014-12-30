@@ -1325,6 +1325,10 @@ int ua_print_calls(struct re_printf *pf, const struct ua *ua)
 {
 	struct le *le;
 	int err = 0;
+	if (!ua) {
+		err |= re_hprintf(pf, "\n--- No active calls ---\n");
+		return err;
+	}
 
 	err |= re_hprintf(pf, "\n--- List of active calls (%u): ---\n",
 			  list_count(&ua->calls));
