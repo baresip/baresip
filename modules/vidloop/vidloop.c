@@ -11,6 +11,12 @@
 #include <baresip.h>
 
 
+/** Internal pixel-format */
+#ifndef VIDLOOP_INTERNAL_FMT
+#define VIDLOOP_INTERNAL_FMT (VID_FMT_YUV420P)
+#endif
+
+
 /** Video Statistics */
 struct vstat {
 	uint64_t tsamp;
@@ -35,6 +41,7 @@ struct video_loop {
 	struct vstat stat;
 	struct tmr tmr_bw;
 	uint16_t seq;
+	bool need_conv;
 };
 
 
@@ -113,9 +120,17 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 
 	++vl->stat.frames;
 
-	if (frame->fmt != VID_FMT_YUV420P) {
+	if (frame->fmt != VIDLOOP_INTERNAL_FMT) {
 
-		if (vidframe_alloc(&f2, VID_FMT_YUV420P, &frame->size))
+		if (!vl->need_conv) {
+			info("vidloop: NOTE: pixel-format conversion"
+			     " needed: %s  -->  %s\n",
+			     vidfmt_name(frame->fmt),
+			     vidfmt_name(VIDLOOP_INTERNAL_FMT));
+			vl->need_conv = true;
+		}
+
+		if (vidframe_alloc(&f2, VIDLOOP_INTERNAL_FMT, &frame->size))
 			return;
 
 		vidconv(f2, frame, 0);
@@ -166,7 +181,7 @@ static int enable_codec(struct video_loop *vl)
 	int err;
 
 	prm.fps     = vl->cfg.fps;
-	prm.pktsize = 1024;
+	prm.pktsize = 1480;
 	prm.bitrate = vl->cfg.bitrate;
 	prm.max_fs  = -1;
 
@@ -178,7 +193,8 @@ static int enable_codec(struct video_loop *vl)
 		return ENOENT;
 	}
 
-	info("vidloop: enabled encoder %s\n", vl->vc_enc->name);
+	info("vidloop: enabled encoder %s (%u fps, %u bit/s)\n",
+	     vl->vc_enc->name, prm.fps, prm.bitrate);
 
 	vl->vc_dec = vidcodec_find_decoder(name);
 	if (!vl->vc_dec) {
