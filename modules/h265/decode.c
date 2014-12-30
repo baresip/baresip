@@ -7,6 +7,7 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#include <libavutil/pixdesc.h>
 #include <libavcodec/avcodec.h>
 #include "h265.h"
 
@@ -149,6 +150,7 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 	int err, ret, got_picture, i;
 	struct h265_nal hdr;
 	AVPacket avpkt;
+	enum vidfmt fmt;
 
 	if (!vds || !frame || !mb)
 		return EINVAL;
@@ -267,8 +269,22 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 		goto out;
 	}
 
-	if (vds->pict->format != PIX_FMT_YUV420P) {
-		warning("h265: bad pixel format (%i)\n", vds->pict->format);
+	switch (vds->pict->format) {
+
+	case PIX_FMT_YUV420P:
+		fmt = VID_FMT_YUV420P;
+		break;
+
+#if 0
+	case PIX_FMT_YUV444P:
+		fmt = VID_FMT_YUV444;
+		break;
+#endif
+
+	default:
+		warning("h265: decode: bad pixel format (%i) (%s)\n",
+			vds->pict->format,
+			av_get_pix_fmt_name(vds->pict->format));
 		goto out;
 	}
 
@@ -279,7 +295,7 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	frame->size.w = vds->ctx->width;
 	frame->size.h = vds->ctx->height;
-	frame->fmt    = VID_FMT_YUV420P;
+	frame->fmt    = fmt;
 
  out:
 	mbuf_rewind(vds->mb);

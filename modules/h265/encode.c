@@ -181,12 +181,33 @@ int h265_encode(struct videnc_state *st, bool update,
 	x265_picture *pic_in = NULL, pic_out;
 	x265_nal *nalv;
 	uint32_t i, nalc = 0;
+	int colorspace;
 	int n, err = 0;
 
-	if (!st || !frame || !pkth || frame->fmt != VID_FMT_YUV420P)
+	if (!st || !frame || !pkth)
 		return EINVAL;
 
+	switch (frame->fmt) {
+
+	case VID_FMT_YUV420P:
+		colorspace = X265_CSP_I420;
+		break;
+
+#if 0
+	case VID_FMT_YUV444:
+		colorspace = X265_CSP_I444;
+		break;
+#endif
+
+	default:
+		warning("h265: encode: pixel format not supported (%s)\n",
+			vidfmt_name(frame->fmt));
+		return EINVAL;
+	}
+
 	if (!st->x265 || !vidsz_cmp(&st->size, &frame->size)) {
+
+		st->param->internalCsp = colorspace;
 
 		err = open_encoder(st, &frame->size);
 		if (err)
@@ -209,7 +230,7 @@ int h265_encode(struct videnc_state *st, bool update,
 
 	pic_in->sliceType  = update ? X265_TYPE_IDR : X265_TYPE_AUTO;
 	pic_in->pts        = ++st->pts;      /* XXX: add PTS to API */
-	pic_in->colorSpace = X265_CSP_I420;
+	pic_in->colorSpace = colorspace;
 
 	for (i=0; i<3; i++) {
 		pic_in->planes[i] = frame->data[i];
