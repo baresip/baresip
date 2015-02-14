@@ -266,6 +266,16 @@ static void call_event_handler(struct call *call, enum call_event ev,
 	switch (ev) {
 
 	case CALL_EVENT_INCOMING:
+
+		if (contact_block_access(peeruri)) {
+
+			info("ua: blocked access: \"%s\"\n", peeruri);
+
+			ua_event(ua, UA_EVENT_CALL_CLOSED, call, str);
+			mem_deref(call);
+			break;
+		}
+
 		switch (ua->acc->answermode) {
 
 		case ANSWERMODE_EARLY:
@@ -1157,6 +1167,10 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 
 	play_init();
 
+	err = contact_init();
+	if (err)
+		return err;
+
 	/* Initialise Network */
 	err = net_init(&cfg->net, prefer_ipv6 ? AF_INET6 : AF_INET);
 	if (err) {
@@ -1219,6 +1233,7 @@ void ua_close(void)
 	net_close();
 	play_close();
 	ui_reset();
+	contact_close();
 
 	uag.evsock   = mem_deref(uag.evsock);
 	uag.sock     = mem_deref(uag.sock);

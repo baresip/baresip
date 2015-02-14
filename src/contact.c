@@ -7,20 +7,30 @@
 #include <baresip.h>
 
 
+enum access {
+	ACCESS_UNKNOWN = 0,
+	ACCESS_BLOCK,
+	ACCESS_ALLOW
+};
+
 struct contact {
 	struct le le;
+	struct le he;          /* hash-element with key 'auri' */
 	struct sip_addr addr;
 	char *buf;
 	enum presence_status status;
+	enum access access;
 };
 
 static struct list cl;
+static struct hash *cht;
 
 
 static void destructor(void *arg)
 {
 	struct contact *c = arg;
 
+	hash_unlink(&c->he);
 	list_unlink(&c->le);
 	mem_deref(c->buf);
 }
@@ -40,6 +50,9 @@ int contact_add(struct contact **contactp, const struct pl *addr)
 	struct pl pl;
 	int err;
 
+	if (!cht)
+		return EINVAL;
+
 	c = mem_zalloc(sizeof(*c), destructor);
 	if (!c)
 		return ENOMEM;
@@ -56,9 +69,28 @@ int contact_add(struct contact **contactp, const struct pl *addr)
 		goto out;
 	}
 
+	if (0 == msg_param_decode(&c->addr.params, "access", &pl)) {
+
+		if (0 == pl_strcasecmp(&pl, "block")) {
+			c->access = ACCESS_BLOCK;
+		}
+		else if (0 == pl_strcasecmp(&pl, "allow")) {
+			c->access = ACCESS_ALLOW;
+		}
+		else {
+			warning("contact: unknown 'access=%r' for '%r'\n",
+				&pl, addr);
+			err = EINVAL;
+			goto out;
+		}
+	}
+	else
+		c->access = ACCESS_UNKNOWN;
+
 	c->status = PRESENCE_UNKNOWN;
 
 	list_append(&cl, &c->le, c);
+	hash_append(cht, hash_joaat_pl(&c->addr.auri), &c->he, c);
 
  out:
 	if (err)
@@ -158,4 +190,79 @@ int contacts_print(struct re_printf *pf, void *unused)
 	err |= re_hprintf(pf, "\n");
 
 	return err;
+}
+
+
+/**
+ * Initialise the contacts sub-system
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int contact_init(void)
+{
+	int err = 0;
+
+	if (!cht)
+		err = hash_alloc(&cht, 32);
+
+	return err;
+}
+
+
+/**
+ * Close the contacts sub-system
+ */
+void contact_close(void)
+{
+	hash_clear(cht);
+	cht = mem_deref(cht);
+	list_flush(&cl);
+}
+
+
+static bool find_handler(struct le *le, void *arg)
+{
+	struct contact *c = le->data;
+
+	return 0 == pl_strcmp(&c->addr.auri, arg);
+}
+
+
+/**
+ * Lookup a SIP uri in all registered contacts
+ *
+ * @param uri SIP uri to lookup
+ *
+ * @return Matching contact if found, otherwise NULL
+ */
+struct contact *contact_find(const char *uri)
+{
+	return list_ledata(hash_lookup(cht, hash_joaat_str(uri),
+				       find_handler, (void *)uri));
+}
+
+
+/**
+ * Check the access parameter of a SIP uri
+ *
+ * - Matching uri has first presedence
+ * - Global <sip:*@*> uri has second presedence
+ *
+ * @param uri SIP uri to check for access
+ *
+ * @return True if blocked, false if allowed
+ */
+bool contact_block_access(const char *uri)
+{
+	struct contact *c;
+
+	c = contact_find(uri);
+	if (c && c->access != ACCESS_UNKNOWN)
+		return c->access == ACCESS_BLOCK;
+
+	c = contact_find("sip:*@*");
+	if (c && c->access != ACCESS_UNKNOWN)
+		return c->access == ACCESS_BLOCK;
+
+	return false;
 }
