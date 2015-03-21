@@ -29,6 +29,7 @@ struct vidisp_st {
 	bool xshmat;
 	bool internal;
 	enum vidfmt pixfmt;
+	Atom XwinDeleted;
 };
 
 
@@ -52,6 +53,37 @@ static int error_handler(Display *d, XErrorEvent *e)
 }
 
 
+static void close_window(struct vidisp_st *st)
+{
+	if (st->gc && st->disp) {
+		XFreeGC(st->disp, st->gc);
+		st->gc = NULL;
+	}
+
+	if (st->xshmat && st->disp) {
+		XShmDetach(st->disp, &st->shm);
+	}
+
+	if (st->shm.shmaddr != (char *)-1) {
+		shmdt(st->shm.shmaddr);
+		st->shm.shmaddr = (char *)-1;
+	}
+
+	if (st->shm.shmid >= 0)
+		shmctl(st->shm.shmid, IPC_RMID, NULL);
+
+	if (st->disp) {
+		if (st->internal && st->win) {
+			XDestroyWindow(st->disp, st->win);
+			st->win = 0;
+		}
+
+		XCloseDisplay(st->disp);
+		st->disp = NULL;
+	}
+}
+
+
 static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
@@ -61,24 +93,7 @@ static void destructor(void *arg)
 		XDestroyImage(st->image);
 	}
 
-	if (st->gc)
-		XFreeGC(st->disp, st->gc);
-
-	if (st->xshmat)
-		XShmDetach(st->disp, &st->shm);
-
-	if (st->shm.shmaddr != (char *)-1)
-		shmdt(st->shm.shmaddr);
-
-	if (st->shm.shmid >= 0)
-		shmctl(st->shm.shmid, IPC_RMID, NULL);
-
-	if (st->disp) {
-		if (st->internal && st->win)
-			XDestroyWindow(st->disp, st->win);
-
-		XCloseDisplay(st->disp);
-	}
+	close_window(st);
 
 	mem_deref(st->vd);
 }
@@ -95,6 +110,12 @@ static int create_window(struct vidisp_st *st, const struct vidsz *sz)
 
 	XClearWindow(st->disp, st->win);
 	XMapRaised(st->disp, st->win);
+
+	/*
+	 * setup to catch window deletion
+	 */
+	st->XwinDeleted = XInternAtom(st->disp, "WM_DELETE_WINDOW", True);
+	XSetWMProtocols(st->disp, st->win, &st->XwinDeleted, 1);
 
 	return 0;
 }
@@ -260,6 +281,33 @@ static int display(struct vidisp_st *st, const char *title,
 {
 	struct vidframe frame_rgb;
 	int err = 0;
+
+	if (!st->disp)
+		return ENODEV;
+
+	/*
+	 * check for window delete - without blocking
+	 */
+	while (XPending(st->disp)) {
+
+		XEvent e;
+
+		XNextEvent(st->disp, &e);
+
+		if (e.type == ClientMessage) {
+			if ((Atom) e.xclient.data.l[0] == st->XwinDeleted) {
+
+				info("x11: window deleted\n");
+
+				/*
+				 * we have to bail as all of the display
+				 * pointers are bad.
+				 */
+				close_window(st);
+				return ENODEV;
+			}
+		}
+	}
 
 	if (!vidsz_cmp(&st->size, &frame->size)) {
 		char capt[256];
