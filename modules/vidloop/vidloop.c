@@ -42,6 +42,7 @@ struct video_loop {
 	struct tmr tmr_bw;
 	uint16_t seq;
 	bool need_conv;
+	int err;
 };
 
 
@@ -65,8 +66,17 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 			err |= st->vf->dech(st, frame);
 	}
 
+	if (err) {
+		warning("vidloop: error in video-filters (%m)\n", err);
+	}
+
 	/* display frame */
-	(void)vidisp_display(vl->vidisp, "Video Loop", frame);
+	err = vidisp_display(vl->vidisp, "Video Loop", frame);
+	if (err == ENODEV) {
+		info("vidloop: video-display was closed\n");
+		vl->vidisp = mem_deref(vl->vidisp);
+		vl->err = err;
+	}
 
 	return err;
 }
@@ -265,7 +275,13 @@ static void timeout_bw(void *arg)
 {
 	struct video_loop *vl = arg;
 
-	tmr_start(&vl->tmr_bw, 5000, timeout_bw, vl);
+	if (vl->err) {
+		info("error in video-loop -- closing (%m)\n", vl->err);
+		gvl = mem_deref(gvl);
+		return;
+	}
+
+	tmr_start(&vl->tmr_bw, 2000, timeout_bw, vl);
 
 	calc_bitrate(vl);
 	print_status(vl);
