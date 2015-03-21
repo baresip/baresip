@@ -391,6 +391,18 @@ static void audio_error_handler(int err, const char *str, void *arg)
 }
 
 
+static void video_error_handler(int err, const char *str, void *arg)
+{
+	struct call *call = arg;
+	MAGIC_CHECK(call);
+
+	warning("call: video device error: %m (%s)\n", err, str);
+
+	call_stream_stop(call);
+	call_event_handler(call, CALL_EVENT_CLOSED, str);
+}
+
+
 static void menc_error_handler(int err, void *arg)
 {
 	struct call *call = arg;
@@ -523,7 +535,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 				  acc->mnat, call->mnats,
 				  acc->menc, call->mencs,
 				  "main",
-				  account_vidcodecl(call->acc));
+				  account_vidcodecl(call->acc),
+				  video_error_handler, call);
 		if (err)
 			goto out;
  	}

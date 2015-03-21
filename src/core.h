@@ -403,11 +403,14 @@ struct vidsrc *vidsrc_get(struct vidsrc_st *st);
 
 struct video;
 
+typedef void (video_err_h)(int err, const char *str, void *arg);
+
 int  video_alloc(struct video **vp, const struct config *cfg,
 		 struct call *call, struct sdp_session *sdp_sess, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
-		 const char *content, const struct list *vidcodecl);
+		 const char *content, const struct list *vidcodecl,
+		 video_err_h *errh, void *arg);
 int  video_start(struct video *v, const char *peer);
 void video_stop(struct video *v);
 int  video_encoder_set(struct video *v, struct vidcodec *vc,

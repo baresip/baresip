@@ -149,6 +149,8 @@ struct video {
 	struct tmr tmr;         /**< Timer for frame-rate estimation      */
 	char *peer;             /**< Peer URI                             */
 	bool nack_pli;          /**< Send NACK/PLI to peer                */
+	video_err_h *errh;
+	void *arg;
 };
 
 
@@ -558,6 +560,18 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	}
 
 	err = vidisp_display(vrx->vidisp, v->peer, &frame);
+	if (err == ENODEV) {
+		warning("video: video-display was closed\n");
+		vrx->vidisp = mem_deref(vrx->vidisp);
+
+		lock_rel(vrx->lock);
+
+		if (v->errh) {
+			v->errh(err, "display closed", v->arg);
+		}
+
+		return err;
+	}
 
 	++vrx->frames;
 
@@ -696,7 +710,8 @@ int video_alloc(struct video **vp, const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
-		const char *content, const struct list *vidcodecl)
+		const char *content, const struct list *vidcodecl,
+		video_err_h *errh, void *arg)
 {
 	struct video *v;
 	struct le *le;
@@ -740,6 +755,9 @@ int video_alloc(struct video **vp, const struct config *cfg,
 
 	if (err)
 		goto out;
+
+	v->errh = errh;
+	v->arg = arg;
 
 	err  = vtx_alloc(&v->vtx, v);
 	err |= vrx_alloc(&v->vrx, v);
