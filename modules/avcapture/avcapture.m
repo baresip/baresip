@@ -9,7 +9,7 @@
 #include <AVFoundation/AVFoundation.h>
 
 
-static struct vidsrc *vidsrcv[4];
+static struct vidsrc *vidsrc;
 
 
 @interface avcap : NSObject < AVCaptureVideoDataOutputSampleBufferDelegate >
@@ -354,7 +354,6 @@ static int module_init(void)
 	AVCaptureDevice *dev = nil;
 	NSAutoreleasePool *pool;
 	Class cls = NSClassFromString(@"AVCaptureDevice");
-	size_t i = 0;
 	int err = 0;
 	if (!cls)
 		return ENOSYS;
@@ -366,13 +365,10 @@ static int module_init(void)
 
 		const char *name = [[dev localizedName] UTF8String];
 
-		if (i >= ARRAY_SIZE(vidsrcv))
-			break;
-
-		err = vidsrc_register(&vidsrcv[i++], name, alloc, update);
-		if (err)
-			break;
+		debug("avcapture: found video device '%s'\n", name);
 	}
+
+	err = vidsrc_register(&vidsrc, "avcapture", alloc, update);
 
 	[pool drain];
 
@@ -382,10 +378,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	size_t i;
-
-	for (i=0; i<ARRAY_SIZE(vidsrcv); i++)
-		vidsrcv[i] = mem_deref(vidsrcv[i]);
+	vidsrc = mem_deref(vidsrc);
 
 	return 0;
 }
