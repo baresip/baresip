@@ -18,7 +18,7 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#if defined (OPENBSD)
+#if defined (OPENBSD) || defined (NETBSD)
 #include <sys/videoio.h>
 #else
 #include <linux/videodev2.h>
