@@ -685,8 +685,8 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
 
 	(void)re_fprintf(f, "\n# Speex codec parameters\n");
-	(void)re_fprintf(f, "speex_quality\t\t6 # 1-6 or any\n");
-	(void)re_fprintf(f, "speex_complexity\t6 # 1-6 or any\n");
+	(void)re_fprintf(f, "speex_quality\t\t7 # 0-10\n");
+	(void)re_fprintf(f, "speex_complexity\t7 # 0-10\n");
 	(void)re_fprintf(f, "speex_enhancement\t0 # 0-1\n");
 	(void)re_fprintf(f, "speex_vbr\t\t0 # Variable Bit Rate 0-1\n");
 	(void)re_fprintf(f, "speex_vad\t\t0 # Voice Activity Detection 0-1\n");

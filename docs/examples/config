@@ -143,8 +143,8 @@ cons_listen		0.0.0.0:5555
 evdev_device		/dev/input/event0
 
 # Speex codec parameters
-speex_quality		6 # 1-6 or any
-speex_complexity	6 # 1-6 or any
+speex_quality		7 # 0-10
+speex_complexity	7 # 0-10
 speex_enhancement	0 # 0-1
 speex_vbr		0 # Variable Bit Rate 0-1
 speex_vad		0 # Voice Activity Detection 0-1
