@@ -688,6 +688,8 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "speex_quality\t\t6 # 1-6 or any\n");
 	(void)re_fprintf(f, "speex_complexity\t6 # 1-6 or any\n");
 	(void)re_fprintf(f, "speex_enhancement\t0 # 0-1\n");
+	(void)re_fprintf(f, "speex_mode_nb\t\t3 # 0-6\n");
+	(void)re_fprintf(f, "speex_mode_wb\t\t6 # 0-6\n");
 	(void)re_fprintf(f, "speex_vbr\t\t0 # Variable Bit Rate 0-1\n");
 	(void)re_fprintf(f, "speex_vad\t\t0 # Voice Activity Detection 0-1\n");
 	(void)re_fprintf(f, "speex_agc_level\t\t8000\n");
