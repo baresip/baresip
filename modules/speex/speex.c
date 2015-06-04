@@ -442,9 +442,9 @@ static void config_parse(struct conf *conf)
 	if (0 == conf_get_u32(conf, "speex_enhancement", &v))
 		sconf.enhancement = v;
 	if (0 == conf_get_u32(conf, "speex_mode_nb", &v))
-		sconf.vbr = v;
+		sconf.mode_nb = v;
 	if (0 == conf_get_u32(conf, "speex_mode_wb", &v))
-		sconf.vbr = v;
+		sconf.mode_wb = v;
 	if (0 == conf_get_u32(conf, "speex_vbr", &v))
 		sconf.vbr = v;
 	if (0 == conf_get_u32(conf, "speex_vad", &v))
