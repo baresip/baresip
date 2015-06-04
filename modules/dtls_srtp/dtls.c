@@ -23,7 +23,7 @@ int dtls_print_sha1_fingerprint(struct re_printf *pf, const struct tls *tls)
 		return err;
 
 	for (i=0; i<sizeof(md); i++) {
-		err |= re_hprintf(pf, "%s%02x", i==0 ? "" : ":", md[i]);
+		err |= re_hprintf(pf, "%s%02X", i==0 ? "" : ":", md[i]);
 	}
 
 	return err;
@@ -44,7 +44,7 @@ int dtls_print_sha256_fingerprint(struct re_printf *pf, const struct tls *tls)
 		return err;
 
 	for (i=0; i<sizeof(md); i++) {
-		err |= re_hprintf(pf, "%s%02x", i==0 ? "" : ":", md[i]);
+		err |= re_hprintf(pf, "%s%02X", i==0 ? "" : ":", md[i]);
 	}
 
 	return err;
