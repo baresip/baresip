@@ -211,7 +211,7 @@ MODULES   += srtp
 MODULES   += uuid
 
 ifneq ($(HAVE_PTHREAD),)
-MODULES   += aubridge
+MODULES   += aubridge aufile
 endif
 ifneq ($(USE_VIDEO),)
 MODULES   += vidloop selfview vidbridge
