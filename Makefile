@@ -63,6 +63,7 @@ endif
 ifneq ($(USE_VIDEO),)
 CFLAGS    += -DUSE_VIDEO=1
 endif
+
 ifneq ($(STATIC),)
 CFLAGS    += -DSTATIC=1
 CXXFLAGS  += -DSTATIC=1
@@ -75,17 +76,22 @@ PREFIX  := /usr/local
 else
 PREFIX  := /usr
 endif
+
 BINDIR	:= $(PREFIX)/bin
 INCDIR  := $(PREFIX)/include
 BIN	:= $(PROJECT)$(BIN_SUFFIX)
+BINCHECK := $(PROJECT).check
 SHARED  := lib$(PROJECT)$(LIB_SUFFIX)
 STATICLIB  := libbaresip.a
+
 ifeq ($(STATIC),)
 MOD_BINS:= $(patsubst %,%$(MOD_SUFFIX),$(MODULES))
 endif
 APP_MK	:= src/srcs.mk
+TST_MK	:= tests/tests.mk
 MOD_MK	:= $(patsubst %,modules/%/module.mk,$(MODULES))
 MOD_BLD	:= $(patsubst %,$(BUILD)/modules/%,$(MODULES))
+TST_BLD	:= $(BUILD)/tests/
 LIBDIR     := $(PREFIX)/lib
 MOD_PATH   := $(LIBDIR)/$(PROJECT)/modules
 SHARE_PATH := $(PREFIX)/share/$(PROJECT)
@@ -94,17 +100,23 @@ CFLAGS     += -DPREFIX=\"$(PREFIX)\"
 
 all: sanity $(MOD_BINS) $(BIN)
 
+check: sanity $(MOD_BINS) $(BINCHECK)
+
 .PHONY: modules
 modules:	$(MOD_BINS)
 
 include $(APP_MK)
 include $(MOD_MK)
+include $(TST_MK)
 
 OBJS      := $(patsubst %.c,$(BUILD)/src/%.o,$(filter %.c,$(SRCS)))
 OBJS      += $(patsubst %.m,$(BUILD)/src/%.o,$(filter %.m,$(SRCS)))
 OBJS      += $(patsubst %.S,$(BUILD)/src/%.o,$(filter %.S,$(SRCS)))
 
 APP_OBJS  := $(OBJS) $(patsubst %.c,$(BUILD)/src/%.o,$(APP_SRCS)) $(MOD_OBJS)
+
+TST_OBJS  := $(patsubst %.c,$(BUILD)/tests/%.o,$(filter %.c,$(TST_SRCS)))
+TST_OBJS  += $(OBJS) $(patsubst %.c,$(BUILD)/tests/%.o, $(APP_SRCS)) $(MOD_OBJS)
 
 ifneq ($(LIBREM_PATH),)
 LIBS	+= -L$(LIBREM_PATH)
@@ -122,6 +134,7 @@ LIBS      += -lrem -lm
 LIBS      += -L$(SYSROOT)/lib
 
 -include $(APP_OBJS:.o=.d)
+-include $(TST_OBJS:.o=.d)
 
 sanity:
 ifeq ($(LIBRE_MK),)
@@ -161,6 +174,14 @@ else
 	@$(LD) $(LFLAGS) $(APP_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
 endif
 
+$(BINCHECK):	$(TST_OBJS)
+	@echo "  LD      $@"
+ifneq ($(GPROF),)
+	@$(LD) $(LFLAGS) $(APP_LFLAGS) $^ ../re/libre.a $(LIBS) -o $@
+else
+	@$(LD) $(LFLAGS) $(APP_LFLAGS) $^ -L$(LIBRE_SO) -lre -lcheck $(LIBS) -o $@
+endif
+
 $(BUILD)/%.o: %.c $(BUILD) Makefile $(APP_MK)
 	@echo "  CC      $@"
 	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
@@ -174,7 +195,7 @@ $(BUILD)/%.o: %.S $(BUILD) Makefile $(APP_MK)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD): Makefile
-	@mkdir -p $(BUILD)/src $(MOD_BLD)
+	@mkdir -p $(BUILD)/src $(BUILD)/tests $(MOD_BLD)
 	@touch $@
 
 install: $(BIN) $(MOD_BINS)
@@ -202,6 +223,7 @@ install-static: $(STATICLIB)
 uninstall:
 	@rm -f $(DESTDIR)$(PREFIX)/bin/$(BIN)
 	@rm -rf $(DESTDIR)$(MOD_PATH)
+	@rm -rf $(DESTDIR)$(SHARE_PATH)
 
 .PHONY: clean
 clean:
