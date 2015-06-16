@@ -29,7 +29,8 @@
  * </pre>
  */
 struct ausrc_st {
-	struct ausrc *as;           /**< Inheritance             */
+	const struct ausrc *as;     /**< Inheritance             */
+
 	pthread_t tid;              /**< Thread ID               */
 	bool run;                   /**< Running flag            */
 	ausrc_read_h *rh;           /**< Read handler            */
@@ -342,12 +343,10 @@ static void gst_destructor(void *arg)
 
 	mem_deref(st->uri);
 	mem_deref(st->aubuf);
-
-	mem_deref(st->as);
 }
 
 
-static int gst_alloc(struct ausrc_st **stp, struct ausrc *as,
+static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct media_ctx **ctx,
 		     struct ausrc_prm *prm, const char *device,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -367,7 +366,7 @@ static int gst_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = mem_ref(as);
+	st->as   = as;
 	st->rh   = rh;
 	st->errh = errh;
 	st->arg  = arg;

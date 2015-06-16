@@ -33,7 +33,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;      /* inheritance */
 	int fd;
 	int16_t *sampv;
 	size_t sampc;
@@ -43,7 +43,7 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	struct auplay *ap;      /* inheritance */
+	const struct auplay *ap;      /* inheritance */
 	pthread_t thread;
 	bool run;
 	int fd;
@@ -153,7 +153,6 @@ static void auplay_destructor(void *arg)
 	}
 
 	mem_deref(st->sampv);
-	mem_deref(st->ap);
 }
 
 
@@ -167,7 +166,6 @@ static void ausrc_destructor(void *arg)
 	}
 
 	mem_deref(st->sampv);
-	mem_deref(st->as);
 }
 
 
@@ -205,7 +203,7 @@ static void *play_thread(void *arg)
 }
 
 
-static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
+static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct media_ctx **ctx,
 		     struct ausrc_prm *prm, const char *device,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -253,7 +251,7 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if (err)
 		goto out;
 
-	st->as = mem_ref(as);
+	st->as = as;
 
  out:
 	if (err)
@@ -265,7 +263,7 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 }
 
 
-static int play_alloc(struct auplay_st **stp, struct auplay *ap,
+static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		      struct auplay_prm *prm, const char *device,
 		      auplay_write_h *wh, void *arg)
 {
@@ -304,7 +302,7 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 	if (err)
 		goto out;
 
-	st->ap = mem_ref(ap);
+	st->ap = ap;
 
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, play_thread, st);

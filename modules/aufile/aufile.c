@@ -19,7 +19,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;  /* base class */
+	const struct ausrc *as;  /* base class */
 	struct tmr tmr;
 	struct aufile *aufile;
 	struct aubuf *aubuf;
@@ -49,7 +49,6 @@ static void destructor(void *arg)
 
 	mem_deref(st->aufile);
 	mem_deref(st->aubuf);
-	mem_deref(st->as);
 }
 
 
@@ -139,7 +138,7 @@ static int read_file(struct ausrc_st *st)
 }
 
 
-static int alloc_handler(struct ausrc_st **stp, struct ausrc *as,
+static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 			 struct media_ctx **ctx,
 			 struct ausrc_prm *prm, const char *dev,
 			 ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -158,7 +157,7 @@ static int alloc_handler(struct ausrc_st **stp, struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = mem_ref(as);
+	st->as   = as;
 	st->rh   = rh;
 	st->errh = errh;
 	st->arg  = arg;

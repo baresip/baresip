@@ -15,11 +15,10 @@ static void ausrc_destructor(void *arg)
 	device_stop(st->dev);
 
 	mem_deref(st->dev);
-	mem_deref(st->as);
 }
 
 
-int src_alloc(struct ausrc_st **stp, struct ausrc *as,
+int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	      struct media_ctx **ctx,
 	      struct ausrc_prm *prm, const char *device,
 	      ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -36,7 +35,7 @@ int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = mem_ref(as);
+	st->as   = as;
 	st->prm  = *prm;
 	st->rh   = rh;
 	st->arg  = arg;
