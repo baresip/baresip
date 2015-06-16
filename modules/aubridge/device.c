@@ -91,16 +91,26 @@ static void *device_thread(void *arg)
 			dev->auplay->wh(sampv_in, sampc_in, dev->auplay->arg);
 		}
 
-		err = auresamp(&rs,
-			       sampv_out, &sampc_out,
-			       sampv_in, sampc_in);
-		if (err) {
-			warning("aubridge: auresamp error: %m\n", err);
-		}
+		if (rs.resample) {
+			err = auresamp(&rs,
+				       sampv_out, &sampc_out,
+				       sampv_in, sampc_in);
+			if (err) {
+				warning("aubridge: auresamp error"
+					" sampc_out=%zu, sampc_in=%zu (%m)\n",
+					sampc_out, sampc_in, err);
+			}
 
-		if (dev->ausrc && dev->ausrc->rh) {
-			dev->ausrc->rh(sampv_out, sampc_out,
-				       dev->ausrc->arg);
+			if (dev->ausrc && dev->ausrc->rh) {
+				dev->ausrc->rh(sampv_out, sampc_out,
+					       dev->ausrc->arg);
+			}
+		}
+		else {
+			if (dev->ausrc && dev->ausrc->rh) {
+				dev->ausrc->rh(sampv_in, sampc_in,
+					       dev->ausrc->arg);
+			}
 		}
 
 		ts += PTIME;
@@ -140,7 +150,7 @@ int device_connect(struct device **devp, const char *device,
 
 		*devp = dev;
 
-		debug("aubridge: created device '%s'\n", device);
+		info("aubridge: created device '%s'\n", device);
 	}
 
 	if (auplay)

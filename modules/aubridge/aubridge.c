@@ -1,11 +1,29 @@
 /**
  * @file aubridge.c Audio bridge
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <re.h>
 #include <baresip.h>
 #include "aubridge.h"
+
+
+/**
+ * @defgroup aubridge aubridge
+ *
+ * Audio bridge module
+ *
+ * This module can be used to connect two audio devices together,
+ * so that all output to AUPLAY device is bridged as the input to
+ * a AUSRC device.
+ *
+ * Sample config:
+ *
+ \verbatim
+  audio_player            aubridge,pseudo0
+  audio_source            aubridge,pseudo0
+ \endverbatim
+ */
 
 
 static struct ausrc *ausrc;
