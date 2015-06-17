@@ -16,7 +16,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;      /* inheritance */
 	struct dspbuf bufs[READ_BUFFERS];
 	int pos;
 	HWAVEIN wavein;
@@ -44,8 +44,6 @@ static void ausrc_destructor(void *arg)
 	}
 
 	waveInClose(st->wavein);
-
-	mem_deref(st->as);
 }
 
 
@@ -189,7 +187,7 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 }
 
 
-int winwave_src_alloc(struct ausrc_st **stp, struct ausrc *as,
+int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		      struct media_ctx **ctx,
 		      struct ausrc_prm *prm, const char *device,
 		      ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -207,7 +205,7 @@ int winwave_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = mem_ref(as);
+	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 
