@@ -10,6 +10,13 @@
 #include "audiounit.h"
 
 
+/**
+ * @defgroup audiounit audiounit
+ *
+ * Audio driver module for OSX/iOS AudioUnit
+ */
+
+
 AudioComponent output_comp = NULL;
 
 static struct auplay *auplay;

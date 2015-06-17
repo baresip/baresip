@@ -12,7 +12,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;      /* inheritance */
 	struct audiosess_st *sess;
 	AudioUnit au;
 	pthread_mutex_t mutex;
@@ -35,7 +35,6 @@ static void ausrc_destructor(void *arg)
 	AudioComponentInstanceDispose(st->au);
 
 	mem_deref(st->sess);
-	mem_deref(st->as);
 
 	pthread_mutex_destroy(&st->mutex);
 }
@@ -95,7 +94,7 @@ static void interrupt_handler(bool interrupted, void *arg)
 }
 
 
-int audiounit_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
+int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			     struct media_ctx **ctx,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -116,7 +115,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = mem_ref(as);
+	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 	st->ch  = prm->ch;
