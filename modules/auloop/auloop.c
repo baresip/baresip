@@ -1,12 +1,29 @@
 /**
  * @file auloop.c  Audio loop
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <string.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+
+
+/**
+ * @defgroup auloop auloop
+ *
+ * Application module for testing audio drivers
+ *
+ * The audio loop will connect the AUSRC device to the AUPLAY device
+ * so that a local loopback audio can be heard. Different audio parameters
+ * can be tested, such as sampling rate and number of channels.
+ *
+ * The following commands are available:
+ \verbatim
+ a       Start audio-loop
+ A       Stop audio-loop
+ \endverbatim
+ */
 
 
 /* Configurable items */

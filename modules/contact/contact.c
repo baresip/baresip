@@ -1,15 +1,17 @@
 /**
  * @file modules/contact/contact.c  Contacts module
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
 
 
-/*
- * Contact module
+/**
+ * @defgroup contact contact
+ *
+ * Contact module reading contacts from a file
  *
  * - read contact entries from ~/.baresip/contacts
  * - populate local database of contacts

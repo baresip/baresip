@@ -9,6 +9,13 @@
 #include <AVFoundation/AVFoundation.h>
 
 
+/**
+ * @defgroup avcapture avcapture
+ *
+ * Video source using OSX/iOS AVFoundation
+ */
+
+
 static struct vidsrc *vidsrc;
 
 
