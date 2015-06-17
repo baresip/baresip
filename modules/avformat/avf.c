@@ -1,7 +1,7 @@
 /**
  * @file avf.c  libavformat video-source
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #define _BSD_SOURCE 1
 #include <unistd.h>
@@ -15,6 +15,19 @@
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
+
+
+/**
+ * @defgroup avformat avformat
+ *
+ * Video source using FFmpeg/libav libavformat
+ *
+ *
+ * Example config:
+ \verbatim
+  video_source            avformat,/tmp/testfile.mp4
+ \endverbatim
+ */
 
 
 /* extra const-correctness added in 0.9.0 */
@@ -89,22 +102,24 @@ static void destructor(void *arg)
 }
 
 
-static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
+static void handle_packet(struct vidsrc_st *st, const AVPacket *pkt)
 {
 	AVPicture pict;
+	AVFrame *frame = NULL;
 	struct vidframe vf;
 	struct vidsz sz;
 	unsigned i;
 
 	if (st->codec) {
-		AVFrame frame;
 		int got_pict, ret;
 
+		frame = av_frame_alloc();
+
 #if LIBAVCODEC_VERSION_INT <= ((52<<16)+(23<<8)+0)
-		ret = avcodec_decode_video(st->ctx, &frame, &got_pict,
+		ret = avcodec_decode_video(st->ctx, frame, &got_pict,
 					   pkt->data, pkt->size);
 #else
-		ret = avcodec_decode_video2(st->ctx, &frame,
+		ret = avcodec_decode_video2(st->ctx, frame,
 					    &got_pict, pkt);
 #endif
 		if (ret < 0 || !got_pict)
@@ -146,7 +161,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 			return;
 
 		ret = sws_scale(st->sws,
-				SRCSLICE_CAST frame.data, frame.linesize,
+				SRCSLICE_CAST frame->data, frame->linesize,
 				0, st->sz.h, pict.data, pict.linesize);
 		if (ret <= 0)
 			goto end;
@@ -168,6 +183,8 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
  end:
 	if (st->codec)
 		avpicture_free(&pict);
+	if (frame)
+		av_frame_free(&frame);
 }
 
 
