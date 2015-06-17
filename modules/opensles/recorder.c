@@ -16,7 +16,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;      /* inheritance */
 
 	int16_t *sampv[N_REC_QUEUE_BUFFERS];
 	size_t   sampc;
@@ -47,8 +47,6 @@ static void ausrc_destructor(void *arg)
 	for (int i=0; i<N_REC_QUEUE_BUFFERS; i++) {
 		mem_deref(st->sampv[i]);
 	}
-
-	mem_deref(st->as);
 }
 
 
@@ -150,7 +148,7 @@ static int startRecording(struct ausrc_st *st)
 }
 
 
-int opensles_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
+int opensles_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			    struct media_ctx **ctx,
 			    struct ausrc_prm *prm, const char *device,
 			    ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -168,7 +166,7 @@ int opensles_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = mem_ref(as);
+	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 
