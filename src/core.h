@@ -91,7 +91,7 @@ struct auplay {
  */
 
 struct ausrc_st {
-	struct ausrc *as;
+	const struct ausrc *as;
 };
 
 struct ausrc {

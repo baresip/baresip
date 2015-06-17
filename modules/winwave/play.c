@@ -16,7 +16,7 @@
 
 
 struct auplay_st {
-	struct auplay *ap;      /* inheritance */
+	const struct auplay *ap;      /* inheritance */
 	struct dspbuf bufs[WRITE_BUFFERS];
 	int pos;
 	HWAVEOUT waveout;
@@ -50,8 +50,6 @@ static void auplay_destructor(void *arg)
 	}
 
 	waveOutClose(st->waveout);
-
-	mem_deref(st->ap);
 }
 
 
@@ -194,7 +192,7 @@ static int write_stream_open(struct auplay_st *st,
 }
 
 
-int winwave_play_alloc(struct auplay_st **stp, struct auplay *ap,
+int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		       struct auplay_prm *prm, const char *device,
 		       auplay_write_h *wh, void *arg)
 {
@@ -208,7 +206,7 @@ int winwave_play_alloc(struct auplay_st **stp, struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = mem_ref(ap);
+	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 

@@ -266,7 +266,7 @@ struct ausrc_prm {
 typedef void (ausrc_read_h)(const int16_t *sampv, size_t sampc, void *arg);
 typedef void (ausrc_error_h)(int err, const char *str, void *arg);
 
-typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, struct ausrc *ausrc,
+typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, const struct ausrc *ausrc,
 			     struct media_ctx **ctx,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
@@ -296,7 +296,7 @@ struct auplay_prm {
 
 typedef void (auplay_write_h)(int16_t *sampv, size_t sampc, void *arg);
 
-typedef int  (auplay_alloc_h)(struct auplay_st **stp, struct auplay *ap,
+typedef int  (auplay_alloc_h)(struct auplay_st **stp, const struct auplay *ap,
 			      struct auplay_prm *prm, const char *device,
 			      auplay_write_h *wh, void *arg);
 

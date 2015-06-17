@@ -8,7 +8,7 @@
 struct device;
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;      /* inheritance */
 	struct device *dev;
 	struct ausrc_prm prm;
 	ausrc_read_h *rh;
@@ -16,7 +16,7 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	struct auplay *ap;      /* inheritance */
+	const struct auplay *ap;      /* inheritance */
 	struct device *dev;
 	struct auplay_prm prm;
 	auplay_write_h *wh;
@@ -27,10 +27,10 @@ struct auplay_st {
 extern struct hash *ht_device;
 
 
-int play_alloc(struct auplay_st **stp, struct auplay *ap,
+int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	       struct auplay_prm *prm, const char *device,
 	       auplay_write_h *wh, void *arg);
-int src_alloc(struct ausrc_st **stp, struct ausrc *as,
+int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	      struct media_ctx **ctx,
 	      struct ausrc_prm *prm, const char *device,
 	      ausrc_read_h *rh, ausrc_error_h *errh, void *arg);

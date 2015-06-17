@@ -20,7 +20,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;
+	const struct ausrc *as;  /* pointer to base-class */
 	struct sio_hdl *hdl;
 	pthread_t thread;
 	int16_t *sampv;
@@ -31,7 +31,7 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	struct auplay *ap;
+	const struct auplay *ap;  /* pointer to base-class */
 	struct sio_hdl *hdl;
 	pthread_t thread;
 	int16_t *sampv;
@@ -45,12 +45,11 @@ static struct ausrc *ausrc;
 static struct auplay *auplay;
 
 
-static struct sio_par *sndio_initpar(void *arg)
+static struct sio_par *sndio_initpar(uint32_t srate, uint8_t ch)
 {
 	struct sio_par *par;
-	struct auplay_prm *prm = arg;
 
-	if ((par = malloc(sizeof(struct sio_par))) == NULL)
+	if ((par = mem_zalloc(sizeof(*par), NULL)) == NULL)
 		return NULL;
 
 	sio_initpar(par);
@@ -59,11 +58,11 @@ static struct sio_par *sndio_initpar(void *arg)
 	par->bits = 16;
 	par->bps  = SIO_BPS(par->bits);
 	par->sig  = 1;
-	par->le   = 1;
+	par->le   = SIO_LE_NATIVE;
 
-	par->rchan = prm->ch;
-	par->pchan = prm->ch;
-	par->rate = prm->srate;
+	par->rchan = ch;
+	par->pchan = ch;
+	par->rate = srate;
 
 	return par;
 }
@@ -120,7 +119,6 @@ static void ausrc_destructor(void *arg)
 		sio_close(st->hdl);
 
 	mem_deref(st->sampv);
-	mem_deref(st->as);
 }
 
 
@@ -137,11 +135,10 @@ static void auplay_destructor(void *arg)
 		sio_close(st->hdl);
 
 	mem_deref(st->sampv);
-	mem_deref(st->ap);
 }
 
 
-static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
+static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct media_ctx **ctx,
 		     struct ausrc_prm *prm, const char *device,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -162,7 +159,7 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if ((st = mem_zalloc(sizeof(*st), ausrc_destructor)) == NULL)
 		return ENOMEM;
 
-	st->as  = mem_ref(as);
+	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 	st->hdl = sio_open(name, SIO_REC, 0);
@@ -173,20 +170,18 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 		goto out;
 	}
 
-	par = sndio_initpar(prm);
+	par = sndio_initpar(prm->srate, prm->ch);
 	if (!par) {
 		err = ENOMEM;
 		goto out;
 	}
 
 	if (!sio_setpar(st->hdl, par)) {
-		free(par);
 		err = EINVAL;
 		goto out;
 	}
 
 	if (!sio_getpar(st->hdl, par)) {
-		free(par);
 		err = EINVAL;
 		goto out;
 	}
@@ -199,14 +194,13 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 		goto out;
 	}
 
-	free(par);
-
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, read_thread, st);
 	if (err)
 		st->run = false;
 
  out:
+	mem_deref(par);
 	if (err)
 		mem_deref(st);
 	else
@@ -216,7 +210,7 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 }
 
 
-static int play_alloc(struct auplay_st **stp, struct auplay *ap,
+static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		      struct auplay_prm *prm, const char *device,
 		      auplay_write_h *wh, void *arg)
 {
@@ -233,7 +227,7 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 	if ((st = mem_zalloc(sizeof(*st), auplay_destructor)) == NULL)
 		return ENOMEM;
 
-	st->ap  = mem_ref(ap);
+	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 	st->hdl = sio_open(name, SIO_PLAY, 0);
@@ -244,20 +238,18 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 		goto out;
 	}
 
-	par = sndio_initpar(prm);
+	par = sndio_initpar(prm->srate, prm->ch);
 	if (!par) {
 		err = ENOMEM;
 		goto out;
 	}
 
 	if (!sio_setpar(st->hdl, par)) {
-		free(par);
 		err = EINVAL;
 		goto out;
 	}
 
 	if (!sio_getpar(st->hdl, par)) {
-		free(par);
 		err = EINVAL;
 		goto out;
 	}
@@ -270,14 +262,13 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 		goto out;
 	}
 
-	free(par);
-
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, write_thread, st);
 	if (err)
 		st->run = false;
 
  out:
+	mem_deref(par);
 	if (err)
 		mem_deref(st);
 	else

@@ -12,7 +12,7 @@
 
 
 struct auplay_st {
-	struct auplay *ap;      /* inheritance */
+	const struct auplay *ap;      /* inheritance */
 	struct audiosess_st *sess;
 	AudioUnit au;
 	pthread_mutex_t mutex;
@@ -34,7 +34,6 @@ static void auplay_destructor(void *arg)
 	AudioComponentInstanceDispose(st->au);
 
 	mem_deref(st->sess);
-	mem_deref(st->ap);
 
 	pthread_mutex_destroy(&st->mutex);
 }
@@ -87,7 +86,7 @@ static void interrupt_handler(bool interrupted, void *arg)
 }
 
 
-int audiounit_player_alloc(struct auplay_st **stp, struct auplay *ap,
+int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			   struct auplay_prm *prm, const char *device,
 			   auplay_write_h *wh, void *arg)
 {
@@ -105,7 +104,7 @@ int audiounit_player_alloc(struct auplay_st **stp, struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = mem_ref(ap);
+	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 

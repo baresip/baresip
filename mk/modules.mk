@@ -198,6 +198,9 @@ ifeq ($(OS),win32)
 USE_WINWAVE := yes
 MODULES   += wincons
 endif
+ifeq ($(OS),openbsd)
+MODULES   += sndio
+endif
 
 endif
 

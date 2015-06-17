@@ -17,7 +17,7 @@
 
 
 struct auplay_st {
-	struct auplay *ap;      /* inheritance */
+	const struct auplay *ap;  /* pointer to base-class (inheritance) */
 	pthread_t thread;
 	bool run;
 	snd_pcm_t *write;
@@ -44,7 +44,6 @@ static void auplay_destructor(void *arg)
 		snd_pcm_close(st->write);
 
 	mem_deref(st->sampv);
-	mem_deref(st->ap);
 	mem_deref(st->device);
 }
 
@@ -85,7 +84,7 @@ static void *write_thread(void *arg)
 }
 
 
-int alsa_play_alloc(struct auplay_st **stp, struct auplay *ap,
+int alsa_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		    struct auplay_prm *prm, const char *device,
 		    auplay_write_h *wh, void *arg)
 {
@@ -108,7 +107,7 @@ int alsa_play_alloc(struct auplay_st **stp, struct auplay *ap,
 		goto out;
 
 	st->prm = *prm;
-	st->ap  = mem_ref(ap);
+	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 

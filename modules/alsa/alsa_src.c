@@ -17,7 +17,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;  /* pointer to base-class (inheritance) */
 	pthread_t thread;
 	bool run;
 	snd_pcm_t *read;
@@ -44,7 +44,6 @@ static void ausrc_destructor(void *arg)
 		snd_pcm_close(st->read);
 
 	mem_deref(st->sampv);
-	mem_deref(st->as);
 	mem_deref(st->device);
 }
 
@@ -83,7 +82,7 @@ static void *read_thread(void *arg)
 }
 
 
-int alsa_src_alloc(struct ausrc_st **stp, struct ausrc *as,
+int alsa_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		   struct media_ctx **ctx,
 		   struct ausrc_prm *prm, const char *device,
 		   ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -109,7 +108,7 @@ int alsa_src_alloc(struct ausrc_st **stp, struct ausrc *as,
 		goto out;
 
 	st->prm = *prm;
-	st->as  = mem_ref(as);
+	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 
