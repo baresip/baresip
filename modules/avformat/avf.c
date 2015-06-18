@@ -102,7 +102,7 @@ static void destructor(void *arg)
 }
 
 
-static void handle_packet(struct vidsrc_st *st, const AVPacket *pkt)
+static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 {
 	AVPicture pict;
 	AVFrame *frame = NULL;
