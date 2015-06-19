@@ -11,6 +11,13 @@
 #include <spandsp.h>
 
 
+/**
+ * @defgroup g726 g726
+ *
+ * The G.726 audio codec
+ */
+
+
 enum { MAX_PACKET = 100 };
 
 
