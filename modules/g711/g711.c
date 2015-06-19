@@ -1,12 +1,19 @@
 /**
  * @file g711.c G.711 Audio Codec
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+
+
+/**
+ * @defgroup g711 g711
+ *
+ * The G.711 audio codec
+ */
 
 
 static int pcmu_encode(struct auenc_state *aes, uint8_t *buf,
