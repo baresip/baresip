@@ -12,11 +12,12 @@
 #include <spandsp.h>
 
 
-/*
-  http://www.soft-switch.org/spandsp-modules.html
- */
-
-/* From RFC 3551:
+/**
+ * @defgroup g722 g722
+ *
+ * The G.722 audio codec
+ *
+ * ## From RFC 3551:
 
  4.5.2 G722
 
@@ -32,7 +33,13 @@
    that value was erroneously assigned in RFC 1890 and must remain
    unchanged for backward compatibility.  The octet rate or sample-pair
    rate is 8,000 Hz.
+
+   ##   Reference:
+
+  http://www.soft-switch.org/spandsp-modules.html
+
  */
+
 
 enum {
 	G722_SAMPLE_RATE = 16000,
