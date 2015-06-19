@@ -70,7 +70,8 @@ int h265_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 	if (vds)
 		return 0;
 
-	codec = avcodec_find_decoder(AV_CODEC_ID_H265);
+	/* HEVC = H.265 */
+	codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
 	if (!codec) {
 		warning("h265: could not find H265 decoder\n");
 		return ENOSYS;
