@@ -1,7 +1,7 @@
 /**
  * @file gst.c  Gstreamer playbin pipeline
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +13,21 @@
 #include <rem.h>
 #include <baresip.h>
 #include "gst.h"
+
+
+/**
+ * @defgroup gst gst
+ *
+ * Audio source module using gstreamer as input
+ *
+ * The module 'gst' is using the Gstreamer framework to play external
+ * media and provide this as an internal audio source.
+ *
+ * Example config:
+ \verbatim
+  audio_source        gst,http://relay.slayradio.org:8000/
+ \endverbatim
+ */
 
 
 /**
