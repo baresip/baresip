@@ -10,7 +10,11 @@
 #include <iLBC_encode.h>
 
 
-/*
+/**
+ * @defgroup ilbc ilbc
+ *
+ * iLBC audio codec
+ *
  * This module implements the iLBC audio codec as defined in:
  *
  *     RFC 3951  Internet Low Bit Rate Codec (iLBC)

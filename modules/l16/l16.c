@@ -1,10 +1,17 @@
 /**
  * @file l16.c  16-bit linear codec
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <re.h>
 #include <baresip.h>
+
+
+/**
+ * @defgroup l16 l16
+ *
+ * Linear 16-bit audio codec
+ */
 
 
 enum {NR_CODECS = 8};
