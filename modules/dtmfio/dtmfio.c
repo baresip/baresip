@@ -126,6 +126,8 @@ static int module_init(void)
 
 static int module_close(void)
 {
+	uag_event_unregister(ua_event_handler);
+
 	fclose(fd);
 
 	unlink(DTMF_OUT);
