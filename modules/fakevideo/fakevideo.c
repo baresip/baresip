@@ -11,6 +11,22 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup fakevideo fakevideo
+ *
+ * Fake video source and display module
+ *
+ * This module can be used to generate fake video input frames, and to
+ * send output video frames to a fake non-existant display.
+ *
+ * Example config:
+ \verbatim
+  video_source    fakevideo,nil
+  video_display   fakevideo,nil
+ \endverbatim
+ */
+
+
 struct vidsrc_st {
 	struct vidsrc *vs;  /* inheritance */
 	struct vidframe *frame;
