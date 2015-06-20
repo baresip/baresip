@@ -1,5 +1,5 @@
 /**
- * @file avf.c  libavformat video-source
+ * @file avformat.c  libavformat video-source
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
