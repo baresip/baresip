@@ -1,5 +1,5 @@
 /**
- * @file g7221/sdp.c H.264 SDP Functions
+ * @file g7221/sdp.c G.722.1 SDP Functions
  *
  * Copyright (C) 2010 Creytiv.com
  */
