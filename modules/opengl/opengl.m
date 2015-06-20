@@ -1,7 +1,7 @@
 /**
  * @file opengl.m Video driver for OpenGL on MacOSX
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <Cocoa/Cocoa.h>
 #include <OpenGL/gl.h>
@@ -9,6 +9,13 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+
+
+/**
+ * @defgroup opengl opengl
+ *
+ * Video display module for OpenGL on MacOSX
+ */
 
 
 struct vidisp_st {

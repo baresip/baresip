@@ -8,6 +8,16 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup menu menu
+ *
+ * Interactive menu
+ *
+ * This module must be loaded if you want to use the interactive menu
+ * to control the Baresip application.
+ */
+
+
 /** Defines the status modes */
 enum statmode {
 	STATMODE_CALL = 0,

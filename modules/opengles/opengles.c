@@ -1,7 +1,7 @@
 /**
  * @file opengles.c Video driver for OpenGLES
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 
 #include <re.h>
@@ -10,6 +10,13 @@
 #include <OpenGLES/ES1/gl.h>
 #include <OpenGLES/ES1/glext.h>
 #include "opengles.h"
+
+
+/**
+ * @defgroup opengles opengles
+ *
+ * Video display module for OpenGLES on Android
+ */
 
 
 static struct vidisp *vid;

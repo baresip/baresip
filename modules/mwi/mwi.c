@@ -1,11 +1,19 @@
 /**
  * @file mwi.c Message Waiting Indication (RFC 3842)
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
+
+
+/**
+ * @defgroup mwi mwi
+ *
+ * Message Waiting Indication
+ *
+ */
 
 
 struct mwi {
