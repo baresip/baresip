@@ -375,6 +375,15 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 	st->compv[0].is_rtp = true;
 	st->compv[1].is_rtp = false;
 
+	err = sdp_media_set_alt_protos(st->sdpm, 4,
+				       "RTP/SAVP",
+				       "RTP/SAVPF",
+				       "UDP/TLS/RTP/SAVP",
+				       "UDP/TLS/RTP/SAVPF");
+	if (err)
+		goto out;
+
+ out:
 	if (err) {
 		mem_deref(st);
 		return err;
