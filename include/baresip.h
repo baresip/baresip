@@ -645,7 +645,7 @@ struct vidisp_prm {
 typedef void (vidisp_resize_h)(const struct vidsz *size, void *arg);
 
 typedef int  (vidisp_alloc_h)(struct vidisp_st **vp,
-			      struct vidisp *vd, struct vidisp_prm *prm,
+			      const struct vidisp *vd, struct vidisp_prm *prm,
 			      const char *dev,
 			      vidisp_resize_h *resizeh, void *arg);
 typedef int  (vidisp_update_h)(struct vidisp_st *st, bool fullscreen,

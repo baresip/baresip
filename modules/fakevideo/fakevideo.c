@@ -38,7 +38,7 @@ struct vidsrc_st {
 };
 
 struct vidisp_st {
-	struct vidisp *vd;  /* inheritance */
+	const struct vidisp *vd;  /* inheritance */
 };
 
 
@@ -83,8 +83,7 @@ static void src_destructor(void *arg)
 static void disp_destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
-
-	mem_deref(st->vd);
+	(void)st;
 }
 
 
@@ -135,7 +134,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 }
 
 
-static int disp_alloc(struct vidisp_st **stp, struct vidisp *vd,
+static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		      struct vidisp_prm *prm, const char *dev,
 		      vidisp_resize_h *resizeh, void *arg)
 {
@@ -152,7 +151,7 @@ static int disp_alloc(struct vidisp_st **stp, struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = mem_ref(vd);
+	st->vd = vd;
 
 	*stp = st;
 

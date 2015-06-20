@@ -204,11 +204,10 @@ static void destructor(void *arg)
 	context_destroy(st);
 
 	mem_deref(st->vf);
-	mem_deref(st->vd);
 }
 
 
-static int opengles_alloc(struct vidisp_st **stp, struct vidisp *vd,
+static int opengles_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 			  struct vidisp_prm *prm, const char *dev,
 			  vidisp_resize_h *resizeh,
 			  void *arg)
@@ -225,7 +224,7 @@ static int opengles_alloc(struct vidisp_st **stp, struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = mem_ref(vd);
+	st->vd = vd;
 
 	err = context_init(st);
 	if (err)

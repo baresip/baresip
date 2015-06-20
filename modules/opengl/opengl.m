@@ -12,7 +12,7 @@
 
 
 struct vidisp_st {
-	struct vidisp *vd;              /**< Inheritance (1st)     */
+	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	struct vidsz size;              /**< Current size          */
 	NSOpenGLContext *ctx;
 	NSWindow *win;
@@ -68,8 +68,6 @@ static void destructor(void *arg)
 	mem_deref(st->prog);
 
 	[pool release];
-
-	mem_deref(st->vd);
 }
 
 
@@ -170,7 +168,7 @@ static int setup_shader(struct vidisp_st *st, int width, int height)
 }
 
 
-static int alloc(struct vidisp_st **stp, struct vidisp *vd,
+static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg)
 {
@@ -198,7 +196,7 @@ static int alloc(struct vidisp_st **stp, struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = mem_ref(vd);
+	st->vd = vd;
 
 	fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
 	if (!fmt) {

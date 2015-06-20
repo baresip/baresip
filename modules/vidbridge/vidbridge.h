@@ -17,7 +17,7 @@ struct vidsrc_st {
 
 
 struct vidisp_st {
-	struct vidisp *vd;  /* inheritance (1st) */
+	const struct vidisp *vd;  /* inheritance (1st) */
 
 	struct le le;
 	struct vidsrc_st *vidsrc;
@@ -29,7 +29,7 @@ extern struct hash *ht_src;
 extern struct hash *ht_disp;
 
 
-int vidbridge_disp_alloc(struct vidisp_st **stp, struct vidisp *vd,
+int vidbridge_disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 			 struct vidisp_prm *prm, const char *dev,
 			 vidisp_resize_h *resizeh, void *arg);
 int vidbridge_disp_display(struct vidisp_st *st, const char *title,
