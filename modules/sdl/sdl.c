@@ -173,6 +173,7 @@ static void sdl_close(void)
 static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
+	(void)st;
 
 	sdl_close();
 }
