@@ -63,7 +63,7 @@ static struct vidfilt snapshot = {
 
 
 static const struct cmd cmdv[] = {
-	{'o', 0, "Take video snapshot", do_snapshot },
+	{'O', 0, "Take video snapshot", do_snapshot },
 };
 
 
