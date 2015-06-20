@@ -190,7 +190,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 		av_frame_free(&frame);
 #else
-		avcodec_free_frame(&frame);
+		av_free(frame);
 #endif
 	}
 }
