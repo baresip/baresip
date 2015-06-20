@@ -1,3 +1,69 @@
+2015-06-20 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.13
+
+	* GIT commit 2e3e825ef5532dfde5a8b52de9ebaac51aa20a9c
+	* NOTE: Requires libre v0.4.12 or later
+
+	* new modules:
+	  - aufile      Audio module for using a WAV-file as audio input
+	  - b2bua       Back-to-Back User-Agent (B2BUA) module
+	  - codec2      CODEC2 audio codec
+	  - gst_video   Gstreamer video codec
+	  - h265        H.265 (HEVC) video codec
+
+	* baresip-core:
+	  - contact: add support for access-control (thanks Doug Blewett)
+	  - ausrc: change base-class to a const pointer
+	  - auplay: change base-class to a const pointer
+	  - vidsrc: change base-class to a const pointer
+	  - vidisp: change base-class to a const pointer
+	  - video: smooth sending of video packets
+
+
+	* Modules:
+
+	* amr: added support for octet-align mode (thanks to Stefan Sayer)
+
+	* aubridge: copy audio-samples if resampler not needed
+
+	* aufile: new module for using a WAV-file as audio source
+
+	* avcapture: only register 1 video source
+
+	* avformat: fix segfault on recent versions of libav
+
+	* b2bua: new experimental module
+
+	* codec2: new module for CODEC2 audio codec
+
+	* dtls_srtp: uppercase fingerprint, interop (thanks Juha Heinanen)
+		     alternative SDP protocols for interop
+
+	* dtmfio: unregister event handler on close (thanks Hellmuth Michaelis)
+
+	* gst_video: new module using Gstreamer as a video codec
+		     (Thanks to Victor Sergienko and Fadeev Alexander)
+
+	* h265: new module for H.265 video codec
+
+	* httpd: added raw mode (thanks Lorenzo Mangani)
+
+	* menu: create user-agent with a command 'R' (thanks Lorenzo Mangani)
+
+	* opus: add configuration of "opus_bitrate"
+		(thanks to Juha Heinanen)
+
+	* speex: add configuration of "speex_mode_nb" and "speex_mode_wb"
+		 (thanks to Dmitrij D. Czarkoff and Juha Heinanen)
+
+	* vidloop: add VIDLOOP_INTERNAL_FMT and split encoder/decoder
+
+	* x11: catch Window delete (thanks to Doug Blewett)
+
+	* zrtp: initialize remote_zid (thanks to Ingo Feinerer)
+
+
 2014-12-24 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.12

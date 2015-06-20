@@ -58,6 +58,7 @@ Features:
 * Audio-codecs:
   - AMR narrowband, AMR wideband
   - BroadVoice32 BV32
+  - Codec2
   - G.711
   - G.722
   - G.726
@@ -85,6 +86,7 @@ Features:
   - Support for asymmetric video
 
 * Video-codecs:
+  - H.265
   - H.264
   - H.263
   - VP8
@@ -138,12 +140,15 @@ alsa          ALSA audio driver
 amr           Adaptive Multi-Rate (AMR) audio codec
 aubridge      Audio bridge module
 audiounit     AudioUnit audio driver for MacOSX/iOS
+aufile        Audio module for using a WAV-file as audio input
 auloop        Audio-loop test module
 avcapture     Video source using iOS AVFoundation video capture
 avcodec       Video codec using FFmpeg/libav libavcodec
 avformat      Video source using FFmpeg/libav libavformat
+b2bua         Back-to-Back User-Agent (B2BUA) module
 bv32          BroadVoice32 audio codec
 cairo         Cairo video source
+codec2        Codec2 low bit rate speech codec
 cons          UDP/TCP console UI driver
 contact       Contacts module
 coreaudio     Apple Coreaudio driver
