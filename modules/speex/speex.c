@@ -11,6 +11,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup speex speex
+ *
+ * The Speex audio codec
+ */
+
+
 enum {
 	MIN_FRAME_SIZE = 43,
 	SPEEX_PTIME    = 20,

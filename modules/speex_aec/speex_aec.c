@@ -11,6 +11,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup speex_aec speex_aec
+ *
+ * Acoustic Echo Cancellation (AEC) from libspeexdsp
+ */
+
+
 struct speex_st {
 	int16_t *out;
 	SpeexEchoState *state;

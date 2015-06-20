@@ -11,6 +11,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup speex_pp speex_pp
+ *
+ * Audio pre-processor from libspeexdsp
+ */
+
+
 struct preproc {
 	struct aufilt_enc_st af;    /* base class */
 	SpeexPreprocessState *state;

@@ -9,6 +9,24 @@
 #include "vidbridge.h"
 
 
+/**
+ * @defgroup vidbridge vidbridge
+ *
+ * Video bridge module
+ *
+ * This module can be used to connect two video devices together,
+ * so that all output to VIDISP device is bridged as the input to
+ * a VIDSRC device.
+ *
+ * Sample config:
+ *
+ \verbatim
+  video_display           vidbridge,pseudo0
+  video_source            vidbridge,pseudo0
+ \endverbatim
+ */
+
+
 static struct vidisp *vidisp;
 static struct vidsrc *vidsrc;
 
