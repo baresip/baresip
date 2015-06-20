@@ -25,7 +25,7 @@
  */
 
 struct vidsrc_st {
-	struct vidsrc *vs;  /* inheritance */
+	const struct vidsrc *vs;  /* inheritance */
 
 	struct vidsrc_prm prm;
 	struct vidsz size;
@@ -55,8 +55,6 @@ static void destructor(void *arg)
 		cairo_destroy(st->cr);
 	if (st->surface)
 		cairo_surface_destroy(st->surface);
-
-	mem_deref(st->vs);
 }
 
 
@@ -154,7 +152,7 @@ static void *read_thread(void *arg)
 }
 
 
-static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt,
 		 const char *dev, vidsrc_frame_h *frameh,
@@ -175,7 +173,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = mem_ref(vs);
+	st->vs     = vs;
 	st->frameh = frameh;
 	st->arg    = arg;
 	st->prm    = *prm;

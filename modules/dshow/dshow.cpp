@@ -23,7 +23,7 @@ const CLSID CLSID_SampleGrabber = { 0xc1f400a0, 0x3f08, 0x11d3,
 class Grabber;
 
 struct vidsrc_st {
-	struct vidsrc *vs;  /* inheritance */
+	const struct vidsrc *vs;  /* inheritance */
 
 	ICaptureGraphBuilder2 *capture;
 	IBaseFilter *grabber_filter;
@@ -351,12 +351,10 @@ static void destructor(void *arg)
 		st->graph->Release();
 
 	delete st->grab;
-
-	mem_deref(st->vs);
 }
 
 
-static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size,
 		 const char *fmt, const char *dev,
@@ -382,7 +380,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	if (err)
 		goto out;
 
-	st->vs = (struct vidsrc *)mem_ref(vs);
+	st->vs = vs;
 
 	st->size   = *size;
 	st->frameh = frameh;

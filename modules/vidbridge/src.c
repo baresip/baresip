@@ -18,11 +18,10 @@ static void destructor(void *arg)
 
 	list_unlink(&st->le);
 	mem_deref(st->device);
-	mem_deref(st->vs);
 }
 
 
-int vidbridge_src_alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+int vidbridge_src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			struct media_ctx **ctx, struct vidsrc_prm *prm,
 			const struct vidsz *size, const char *fmt,
 			const char *dev, vidsrc_frame_h *frameh,
@@ -42,7 +41,7 @@ int vidbridge_src_alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = mem_ref(vs);
+	st->vs     = vs;
 	st->frameh = frameh;
 	st->arg    = arg;
 

@@ -6,7 +6,7 @@
 
 
 struct vidsrc_st {
-	struct vidsrc *vs;  /* inheritance (1st) */
+	const struct vidsrc *vs;  /* inheritance (1st) */
 
 	struct le le;
 	struct vidisp_st *vidisp;
@@ -37,7 +37,7 @@ int vidbridge_disp_display(struct vidisp_st *st, const char *title,
 struct vidisp_st *vidbridge_disp_find(const char *device);
 
 
-int vidbridge_src_alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+int vidbridge_src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			struct media_ctx **ctx, struct vidsrc_prm *prm,
 			const struct vidsz *size, const char *fmt,
 			const char *dev, vidsrc_frame_h *frameh,
