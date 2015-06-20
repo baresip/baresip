@@ -28,7 +28,7 @@
 
 
 struct vidsrc_st {
-	struct vidsrc *vs;  /* inheritance */
+	const struct vidsrc *vs;  /* inheritance */
 	struct vidframe *frame;
 	pthread_t thread;
 	bool run;
@@ -77,7 +77,6 @@ static void src_destructor(void *arg)
 	}
 
 	mem_deref(st->frame);
-	mem_deref(st->vs);
 }
 
 
@@ -89,7 +88,7 @@ static void disp_destructor(void *arg)
 }
 
 
-static int src_alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		     struct media_ctx **ctx, struct vidsrc_prm *prm,
 		     const struct vidsz *size, const char *fmt,
 		     const char *dev, vidsrc_frame_h *frameh,
@@ -110,7 +109,7 @@ static int src_alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = mem_ref(vs);
+	st->vs     = vs;
 	st->fps    = prm->fps;
 	st->frameh = frameh;
 	st->arg    = arg;

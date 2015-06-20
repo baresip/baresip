@@ -610,7 +610,7 @@ struct vidsrc_prm {
 typedef void (vidsrc_frame_h)(struct vidframe *frame, void *arg);
 typedef void (vidsrc_error_h)(int err, void *arg);
 
-typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, struct vidsrc *vs,
+typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, const struct vidsrc *vs,
 			      struct media_ctx **ctx, struct vidsrc_prm *prm,
 			      const struct vidsz *size,
 			      const char *fmt, const char *dev,
