@@ -201,6 +201,9 @@ endif
 ifeq ($(OS),openbsd)
 MODULES   += sndio
 endif
+ifeq ($(OS),freebsd)
+MODULES   += dtmfio
+endif
 
 endif
 
