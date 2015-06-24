@@ -371,6 +371,8 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 
 	if (!le_cur)
 		le_cur = list_head(uag_list());
+	if (!le_cur)
+		return 0;
 
 	le_cur = le_cur->next ? le_cur->next : list_head(uag_list());
 
