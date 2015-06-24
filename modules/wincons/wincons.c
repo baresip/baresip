@@ -161,8 +161,15 @@ static int ui_alloc(struct ui_st **stp)
 }
 
 
+static int output_handler(const char *str)
+{
+	return print_handler(str, str_len(str), NULL);
+}
+
+
 static struct ui ui_wincons = {
-	.name = "wincons"
+	.name = "wincons",
+	.outputh = output_handler
 };
 
 
