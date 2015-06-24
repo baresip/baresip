@@ -58,6 +58,12 @@ ifeq ($(OS),win32)
 STATIC    := yes
 endif
 
+ifeq ($(OS),freebsd)
+ifneq ($(SYSROOT),)
+CFLAGS += -I$(SYSROOT)/local/include
+endif
+endif
+
 
 # Optional dependencies
 ifneq ($(USE_VIDEO),)
