@@ -7,6 +7,7 @@
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
+#include <ctype.h>
 
 
 /** Magic number */
@@ -606,6 +607,9 @@ static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 	size_t len;
 	int err = 0;
 
+	/* Skip initial whitespace */
+	while (isspace(*uri)) uri++;
+	
 	len = str_len(uri);
 
 	/* Append sip: scheme if missing */
