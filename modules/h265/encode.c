@@ -20,6 +20,8 @@ struct videnc_state {
 	unsigned fps;
 	unsigned bitrate;
 	unsigned pktsize;
+	videnc_packet_h *pkth;
+	void *arg;
 };
 
 
@@ -73,13 +75,14 @@ static int set_params(struct videnc_state *st, unsigned fps, unsigned bitrate)
 
 
 int h265_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
-		       struct videnc_param *prm, const char *fmtp)
+		       struct videnc_param *prm, const char *fmtp,
+		       videnc_packet_h *pkth, void *arg)
 {
 	struct videnc_state *ves;
 	int err = 0;
 	(void)fmtp;
 
-	if (!vesp || !vc || !prm || prm->pktsize < 3)
+	if (!vesp || !vc || !prm || prm->pktsize < 3 || !pkth)
 		return EINVAL;
 
 	ves = *vesp;
@@ -105,6 +108,8 @@ int h265_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	ves->bitrate = prm->bitrate;
 	ves->pktsize = prm->pktsize;
 	ves->fps     = prm->fps;
+	ves->pkth    = pkth;
+	ves->arg     = arg;
 
 	err = set_params(ves, prm->fps, prm->bitrate);
 	if (err)
@@ -175,8 +180,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 
 int h265_encode(struct videnc_state *st, bool update,
-		const struct vidframe *frame,
-		videnc_packet_h *pkth, void *arg)
+		const struct vidframe *frame)
 {
 	x265_picture *pic_in = NULL, pic_out;
 	x265_nal *nalv;
@@ -184,7 +188,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	int colorspace;
 	int n, err = 0;
 
-	if (!st || !frame || !pkth)
+	if (!st || !frame)
 		return EINVAL;
 
 	switch (frame->fmt) {
@@ -261,7 +265,8 @@ int h265_encode(struct videnc_state *st, bool update,
 
 		marker = (i+1)==nalc;  /* last NAL */
 
-		err = packetize(marker, p, len, st->pktsize, pkth, arg);
+		err = packetize(marker, p, len, st->pktsize,
+				st->pkth, st->arg);
 		if (err)
 			goto out;
 	}

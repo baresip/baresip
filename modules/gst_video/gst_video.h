@@ -11,10 +11,10 @@ struct videnc_state;
 
 int gst_video_encode_update(struct videnc_state **vesp,
 			    const struct vidcodec *vc,
-			    struct videnc_param *prm, const char *fmtp);
+			    struct videnc_param *prm, const char *fmtp,
+			    videnc_packet_h *pkth, void *arg);
 int gst_video_encode(struct videnc_state *st, bool update,
-		     const struct vidframe *frame,
-		     videnc_packet_h *pkth, void *arg);
+		     const struct vidframe *frame);
 
 
 /* SDP */

@@ -735,10 +735,10 @@ typedef int (videnc_packet_h)(bool marker, const uint8_t *hdr, size_t hdr_len,
 
 typedef int (videnc_update_h)(struct videnc_state **vesp,
 			      const struct vidcodec *vc,
-			      struct videnc_param *prm, const char *fmtp);
-typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
-			      const struct vidframe *frame,
+			      struct videnc_param *prm, const char *fmtp,
 			      videnc_packet_h *pkth, void *arg);
+typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
+			      const struct vidframe *frame);
 
 typedef int (viddec_update_h)(struct viddec_state **vdsp,
 			      const struct vidcodec *vc, const char *fmtp);

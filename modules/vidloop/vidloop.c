@@ -158,8 +158,7 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 	}
 
 	if (vl->vc_enc && vl->enc) {
-		(void)vl->vc_enc->ench(vl->enc, false, frame,
-				   packet_handler, vl);
+		(void)vl->vc_enc->ench(vl->enc, false, frame);
 	}
 	else {
 		vl->stat.bytes += vidframe_size(frame->fmt, &frame->size);
@@ -214,7 +213,8 @@ static int enable_codec(struct video_loop *vl)
 
 	info("vidloop: enabled decoder %s\n", vl->vc_dec->name);
 
-	err = vl->vc_enc->encupdh(&vl->enc, vl->vc_enc, &prm, NULL);
+	err = vl->vc_enc->encupdh(&vl->enc, vl->vc_enc, &prm, NULL,
+				  packet_handler, vl);
 	if (err) {
 		warning("vidloop: update encoder failed: %m\n", err);
 		return err;

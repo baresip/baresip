@@ -27,6 +27,8 @@ struct videnc_state {
 	unsigned pktsize;
 	bool ctxup;
 	uint16_t picid;
+	videnc_packet_h *pkth;
+	void *arg;
 };
 
 
@@ -40,7 +42,8 @@ static void destructor(void *arg)
 
 
 int vp8_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
-		      struct videnc_param *prm, const char *fmtp)
+		      struct videnc_param *prm, const char *fmtp,
+		      videnc_packet_h *pkth, void *arg)
 {
 	const struct vp8_vidcodec *vp8 = (struct vp8_vidcodec *)vc;
 	struct videnc_state *ves;
@@ -74,6 +77,8 @@ int vp8_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	ves->bitrate = prm->bitrate;
 	ves->pktsize = prm->pktsize;
 	ves->fps     = prm->fps;
+	ves->pkth    = pkth;
+	ves->arg     = arg;
 
 	max_fs = vp8_max_fs(fmtp);
 	if (max_fs > 0)
@@ -173,8 +178,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 
 int vp8_encode(struct videnc_state *ves, bool update,
-		const struct vidframe *frame,
-		videnc_packet_h *pkth, void *arg)
+		const struct vidframe *frame)
 {
 	vpx_enc_frame_flags_t flags = 0;
 	vpx_codec_iter_t iter = NULL;
@@ -182,7 +186,7 @@ int vp8_encode(struct videnc_state *ves, bool update,
 	vpx_image_t img;
 	int err, i;
 
-	if (!ves || !frame || !pkth || frame->fmt != VID_FMT_YUV420P)
+	if (!ves || !frame || frame->fmt != VID_FMT_YUV420P)
 		return EINVAL;
 
 	if (!ves->ctxup || !vidsz_cmp(&ves->size, &frame->size)) {
@@ -244,7 +248,7 @@ int vp8_encode(struct videnc_state *ves, bool update,
 				pkt->data.frame.buf,
 				pkt->data.frame.sz,
 				ves->pktsize, !keyframe, partid, ves->picid,
-				pkth, arg);
+				ves->pkth, ves->arg);
 		if (err)
 			return err;
 	}

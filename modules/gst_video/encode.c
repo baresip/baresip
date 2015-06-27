@@ -430,7 +430,8 @@ static void param_handler(const struct pl *name, const struct pl *val,
 
 int gst_video_encode_update(struct videnc_state **vesp,
 			    const struct vidcodec *vc,
-			    struct videnc_param *prm, const char *fmtp)
+			    struct videnc_param *prm, const char *fmtp,
+			    videnc_packet_h *pkth, void *arg)
 {
 	struct videnc_state *ves;
 	int err = 0;
@@ -467,6 +468,8 @@ int gst_video_encode_update(struct videnc_state **vesp,
 	ves->bitrate = prm->bitrate;
 	ves->pktsize = prm->pktsize;
 	ves->fps     = prm->fps;
+	ves->pkth    = pkth;
+	ves->pkth_arg = arg;
 
 	info("gst_video: video encoder %s: %d fps, %d bit/s, pktsize=%u\n",
 	      vc->name, prm->fps, prm->bitrate, prm->pktsize);
@@ -476,15 +479,14 @@ int gst_video_encode_update(struct videnc_state **vesp,
 
 
 int gst_video_encode(struct videnc_state *st, bool update,
-		     const struct vidframe *frame,
-		     videnc_packet_h *pkth, void *arg)
+		     const struct vidframe *frame)
 {
 	uint8_t *data;
 	size_t size;
 	int height;
 	int err;
 
-	if (!st || !frame || !pkth || frame->fmt != VID_FMT_YUV420P)
+	if (!st || !frame || frame->fmt != VID_FMT_YUV420P)
 		return EINVAL;
 
 	if (!st->gst_inited || !vidsz_cmp(&st->size, &frame->size)) {
@@ -496,9 +498,6 @@ int gst_video_encode(struct videnc_state *st, bool update,
 			warning("gst_video codec: gst_video_alloc failed\n");
 			return err;
 		}
-
-		st->pkth = pkth;
-		st->pkth_arg = arg;
 
 		/* To detect if requested size was changed. */
 		st->size = frame->size;
