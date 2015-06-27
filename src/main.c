@@ -34,6 +34,26 @@ static void signal_handler(int sig)
 }
 
 
+static void usage(void)
+{
+	(void)re_fprintf(stderr,
+			 "Usage: baresip [options]\n"
+			 "options:\n"
+#if HAVE_INET6
+			 "\t-6               Prefer IPv6\n"
+#endif
+			 "\t-d               Daemon\n"
+			 "\t-e <commands>    Exec commands\n"
+			 "\t-f <path>        Config path\n"
+			 "\t-m <module>      Pre-load module\n"
+			 "\t-p <path>        Audio files\n"
+			 "\t-h -?            Help\n"
+			 "\t-t               Test and exit\n"
+			 "\t-v               Verbose debug\n"
+			 );
+}
+
+
 int main(int argc, char *argv[])
 {
 	bool prefer_ipv6 = false, run_daemon = false, test = false;
@@ -47,9 +67,13 @@ int main(int argc, char *argv[])
 
 	(void)sys_coredump_set(true);
 
+	err = libre_init();
+	if (err)
+		goto out;
+
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "6de:f:p:hvt");
+		const int c = getopt(argc, argv, "6de:f:p:hvtm:");
 		if (0 > c)
 			break;
 
@@ -57,20 +81,7 @@ int main(int argc, char *argv[])
 
 		case '?':
 		case 'h':
-			(void)re_fprintf(stderr,
-					 "Usage: baresip [options]\n"
-					 "options:\n"
-#if HAVE_INET6
-					 "\t-6               Prefer IPv6\n"
-#endif
-					 "\t-d               Daemon\n"
-					 "\t-e <commands>    Exec commands\n"
-					 "\t-f <path>        Config path\n"
-					 "\t-p <path>        Audio files\n"
-					 "\t-h -?            Help\n"
-					 "\t-t               Test and exit\n"
-					 "\t-v               Verbose debug\n"
-					 );
+			usage();
 			return -2;
 
 #if HAVE_INET6
@@ -89,6 +100,15 @@ int main(int argc, char *argv[])
 
 		case 'f':
 			conf_path_set(optarg);
+			break;
+
+		case 'm':
+			err = module_preload(optarg);
+			if (err) {
+				re_fprintf(stderr,
+					   "could not pre-load module"
+					   " '%s' (%m)\n", optarg, err);
+			}
 			break;
 
 		case 'p':
@@ -111,10 +131,6 @@ int main(int argc, char *argv[])
 	(void)argc;
 	(void)argv;
 #endif
-
-	err = libre_init();
-	if (err)
-		goto out;
 
 	err = conf_configure();
 	if (err) {

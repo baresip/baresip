@@ -900,6 +900,9 @@ const char *sdp_rattr(const struct sdp_session *s, const struct sdp_media *m,
 #endif
 
 
+int module_preload(const char *module);
+
+
 #ifdef __cplusplus
 }
 #endif

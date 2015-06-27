@@ -154,3 +154,17 @@ void module_app_unload(void)
 {
 	list_flush(&modappl);
 }
+
+
+int module_preload(const char *module)
+{
+	struct pl path, name;
+
+	if (!module)
+		return EINVAL;
+
+	pl_set_str(&path, ".");
+	pl_set_str(&name, module);
+
+	return load_module(NULL, &path, &name);
+}
