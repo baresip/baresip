@@ -379,8 +379,12 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n# Core\n"
 			  "poll_method\t\t%s\t\t# poll, select"
 #ifdef HAVE_EPOLL
-				", epoll ..\n"
+				", epoll .."
 #endif
+#ifdef HAVE_KQUEUE
+				", kqueue .."
+#endif
+				"\n"
 			  "\n# SIP\n"
 			  "sip_trans_bsize\t\t128\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
