@@ -1517,6 +1517,8 @@ static void sipsub_notify_handler(struct sip *sip, const struct sip_msg *msg,
 
 	if (sc >= 300) {
 		warning("call: transfer failed: %u %r\n", sc, &reason);
+		call_event_handler(call, CALL_EVENT_TRANSFER_FAILED,
+				   "%u %r", sc, &reason);
 	}
 	else if (sc >= 200) {
 		call_event_handler(call, CALL_EVENT_CLOSED, "Call transfered");
@@ -1540,6 +1542,8 @@ static void sipsub_close_handler(int err, const struct sip_msg *msg,
 	else if (msg && msg->scode >= 300) {
 		info("call: transfer failed: %u %r\n",
 		     msg->scode, &msg->reason);
+		call_event_handler(call, CALL_EVENT_TRANSFER_FAILED,
+				   "%u %r", msg->scode, &msg->reason);
 	}
 }
 
