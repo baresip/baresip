@@ -43,6 +43,7 @@
 #   USE_V4L2          Video4Linux2 module
 #   USE_WINWAVE       Windows audio driver
 #   USE_X11           X11 video output
+#   USE_GTK           GTK+ user interface
 #
 
 
@@ -171,6 +172,9 @@ USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
 	&& echo "yes")
+USE_GTK := $(shell [ -f $(SYSROOT)/include/gtk-2.0/gtk/gtk.h ] || \
+	[ -f $(SYSROOT)/local/include/gtk-2.0/gtk/gtk.h ] || \
+	[ -f $(SYSROOT_ALT)/include/gtk-2.0/gtk/gtk.h ] && echo "yes")
 endif
 
 # Platform specific modules
@@ -356,4 +360,7 @@ MODULES   += winwave
 endif
 ifneq ($(USE_X11),)
 MODULES   += x11 x11grab
+endif
+ifneq ($(USE_GTK),)
+MODULES   += gtk
 endif

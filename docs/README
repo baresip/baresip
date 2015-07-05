@@ -164,6 +164,7 @@ g726          G.726 audio codec
 gsm           GSM audio codec
 gst           Gstreamer audio source
 gst_video     Gstreamer video codec
+gtk           GTK+ 2.0 UI
 h265          H.265 video codec
 httpd         HTTP webserver UI-module
 ice           ICE protocol for NAT Traversal
