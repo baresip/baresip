@@ -47,6 +47,7 @@ struct gtk_mod {
 struct gtk_mod mod_obj;
 
 enum gtk_mod_events {
+	MQ_POPUP,
 	MQ_CONNECT,
 	MQ_QUIT,
 	MQ_ANSWER,
@@ -452,26 +453,32 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 }
 
 
-static gboolean status_icon_on_button_press(GtkStatusIcon *status_icon,
-		GdkEventButton *event,
-		struct gtk_mod *mod)
+static void popup_menu(struct gtk_mod *mod, GtkMenuPositionFunc position,
+		gpointer position_arg, guint button, guint32 activate_time)
 {
 	if (!mod->contacts_inited) {
 		init_contacts_menu(mod);
 		mod->contacts_inited = TRUE;
 	}
 
-	/* If the current UA was changed through another UI, update it here */
+	/* Update things that may have been changed through another UI */
 	update_current_accounts_menu_item(mod);
-
 	update_ua_presence(mod);
 
 	gtk_widget_show_all(mod->app_menu);
 
 	gtk_menu_popup(GTK_MENU(mod->app_menu), NULL, NULL,
-			gtk_status_icon_position_menu, status_icon,
-			event->button, event->time);
+			position, position_arg,
+			button, activate_time);
+}
 
+
+static gboolean status_icon_on_button_press(GtkStatusIcon *status_icon,
+		GdkEventButton *event,
+		struct gtk_mod *mod)
+{
+	popup_menu(mod, gtk_status_icon_position_menu, status_icon,
+			event->button, event->time);
 	return TRUE;
 }
 
@@ -512,6 +519,12 @@ static void mqueue_handler(int id, void *data, void *arg)
 	(void)mod;
 
 	switch ((enum gtk_mod_events)id) {
+
+	case MQ_POPUP:
+		gdk_threads_enter();
+		popup_menu(mod, NULL, NULL, 0, GPOINTER_TO_UINT(data));
+		gdk_threads_leave();
+		break;
 
 	case MQ_CONNECT:
 		uri = data;
@@ -811,6 +824,22 @@ static struct aufilt vumeter = {
 };
 
 
+static int cmd_popup_menu(struct re_printf *pf, void *unused)
+{
+	(void)pf;
+	(void)unused;
+
+	mqueue_push(mod_obj.mq, MQ_POPUP, GUINT_TO_POINTER(GDK_CURRENT_TIME));
+
+	return 0;
+}
+
+
+static const struct cmd cmdv[] = {
+	{'G',        0, "Pop up GTK+ menu",         cmd_popup_menu       },
+};
+
+
 static int module_init(void)
 {
 	int err = 0;
@@ -825,12 +854,17 @@ static int module_init(void)
 
 	aufilt_register(&vumeter);
 	err = message_init(message_handler, &mod_obj);
+	if (err)
+		return err;
+
+	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
 
 	return err;
 }
 
 static int module_close(void)
 {
+	cmd_unregister(cmdv);
 	if (mod_obj.run) {
 		gdk_threads_enter();
 		gtk_main_quit();
