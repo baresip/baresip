@@ -25,7 +25,8 @@ static void set_status(struct transfer_dialog *td, const char *status)
 		gtk_widget_show(td->spinner);
 		gtk_spinner_start(GTK_SPINNER(td->spinner));
 		gtk_label_set_text(td->status_label, NULL);
-	} else {
+	}
+	else {
 		gtk_widget_hide(td->spinner);
 		gtk_spinner_stop(GTK_SPINNER(td->spinner));
 		gtk_label_set_text(td->status_label, status);
@@ -42,7 +43,8 @@ static void on_dialog_response(GtkDialog *dialog, gint response_id,
 		uri = (char *)uri_combo_box_get_text(win->uri_combobox);
 		set_status(win, status_progress);
 		call_window_transfer(win->call_win, uri);
-	} else {
+	}
+	else {
 		set_status(win, NULL);
 		gtk_widget_hide(GTK_WIDGET(dialog));
 	}
@@ -90,9 +92,10 @@ struct transfer_dialog *transfer_dialog_alloc(struct call_window *call_win)
 	uri_combobox = uri_combo_box_new();
 	gtk_box_pack_start(GTK_BOX(content), uri_combobox, FALSE, FALSE, 5);
 
-	g_signal_connect(dialog, "response", G_CALLBACK(on_dialog_response), win);
+	g_signal_connect(dialog, "response",
+			 G_CALLBACK(on_dialog_response), win);
 	g_signal_connect(dialog, "delete-event",
-			G_CALLBACK(gtk_widget_hide_on_delete), win);
+			 G_CALLBACK(gtk_widget_hide_on_delete), win);
 
 	/* Spinner and status */
 	hbox = gtk_hbox_new(FALSE, 0);

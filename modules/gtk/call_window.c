@@ -12,7 +12,10 @@
 struct call_window {
 	struct gtk_mod *mod;
 	struct call *call;
-	struct mqueue *mq; /* for communicating from gtk thread to main thread */
+
+	/** for communicating from gtk thread to main thread */
+	struct mqueue *mq;
+
 	struct {
 		struct vumeter_dec *dec;
 		struct vumeter_enc *enc;
@@ -449,7 +452,8 @@ void call_window_closed(struct call_window *win, const char *reason)
 	if (reason && reason[0]) {
 		re_snprintf(buf, sizeof buf, "closed: %s", reason);
 		status = buf;
-	} else {
+	}
+	else {
 		status = "closed";
 	}
 	call_window_set_status(win, status);
