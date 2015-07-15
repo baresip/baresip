@@ -62,11 +62,12 @@
     <Link>
       <AdditionalOptions>winmm.lib wsock32.lib ..\..\..\re\Win32\Debug\re-win32.lib ..\..\..\rem\Win32\Debug\rem-win32.lib %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(OutDir)baresip-win32.exe</OutputFile>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\ffmpeg-win32-dev\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)baresip-win32.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>avcodec.lib;avutil.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -84,15 +85,21 @@
     <Link>
       <AdditionalOptions>winmm.lib wsock32.lib ..\..\..\re\Win32\Release\re.lib ..\..\..\rem\Win32\Release\rem.lib %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(OutDir)baresip-win32.exe</OutputFile>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\..\..\ffmpeg-win32-dev\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>avcodec.lib;avutil.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\modules\avcodec\avcodec.c" />
+    <ClCompile Include="..\..\modules\avcodec\decode.c" />
+    <ClCompile Include="..\..\modules\avcodec\encode.c" />
+    <ClCompile Include="..\..\modules\avcodec\h263.c" />
+    <ClCompile Include="..\..\modules\avcodec\h264.c" />
     <ClCompile Include="..\..\modules\cons\cons.c" />
     <ClCompile Include="..\..\modules\dshow\dshow.cpp">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
@@ -140,6 +147,10 @@
     <ClCompile Include="..\..\modules\winwave\winwave.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\modules\avcodec\avcodec.h" />
+    <ClInclude Include="..\..\modules\avcodec\h26x.h" />
+    <ClInclude Include="include\inttypes.h" />
+    <ClInclude Include="include\stdint.h" />
     <ClInclude Include="qedit.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
