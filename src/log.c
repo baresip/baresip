@@ -13,9 +13,15 @@ static struct {
 	bool debug;
 	bool stder;
 } lg = {
+#ifdef _MSC_VER
+	LIST_INIT,
+	false,
+	true
+#else
 	.logl  = LIST_INIT,
 	.debug = false,
 	.stder = true
+#endif
 };
 
 

@@ -8,6 +8,7 @@
 #include <re.h>
 #include <baresip.h>
 
+#pragma comment(lib, "ws2_32.lib")
 
 /**
  * @defgroup wincons wincons
@@ -168,8 +169,14 @@ static int output_handler(const char *str)
 
 
 static struct ui ui_wincons = {
+#ifdef _MSC_VER
+	{ NULL },
+	"wincons",
+	output_handler
+#else
 	.name = "wincons",
 	.outputh = output_handler
+#endif
 };
 
 

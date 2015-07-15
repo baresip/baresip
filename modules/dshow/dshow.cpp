@@ -9,11 +9,19 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <comutil.h>
 #include <commctrl.h>
 #include <dshow.h>
-#include <qedit.h>
 
+// a piece from Google WebM's qedit.h: https://code.google.com/p/webm/source/browse/qedit.h?repo=udpsample
+static
+const
+IID IID_ISampleGrabber = { 0x6B652FFF, 0x11FE, 0x4fce, { 0x92, 0xAD, 0x02, 0x66, 0xB5, 0xD7, 0xC7, 0x8F } };
+
+static
+const
+IID IID_ISampleGrabberCB = { 0x0579154A, 0x2B53, 0x4994, { 0xB0, 0xD0, 0xE7, 0x73, 0x14, 0x8E, 0xFF, 0x85 } };
+
+#include "qedit.h"
 
 const CLSID CLSID_SampleGrabber = { 0xc1f400a0, 0x3f08, 0x11d3,
   { 0x9f, 0x0b, 0x00, 0x60, 0x08, 0x03, 0x9e, 0x37 }

@@ -213,8 +213,14 @@ static int output_handler(const char *str)
 
 
 static struct ui ui_cons = {
+#ifdef _MSC_VER
+	{ NULL, NULL, NULL, NULL },
+	"cons",
+	output_handler
+#else
 	.name = "cons",
 	.outputh = output_handler
+#endif
 };
 
 
