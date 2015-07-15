@@ -175,6 +175,10 @@ USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 USE_GTK := $(shell [ -f $(SYSROOT)/include/gtk-2.0/gtk/gtk.h ] || \
 	[ -f $(SYSROOT)/local/include/gtk-2.0/gtk/gtk.h ] || \
 	[ -f $(SYSROOT_ALT)/include/gtk-2.0/gtk/gtk.h ] && echo "yes")
+else
+# Windows.
+# Accounts for mingw with Windows SDK (formely known as Platform SDK) mounted at /winsdk
+USE_DSHOW := $(shell [ -f /winsdk/Include/um/dshow.h ] && echo "yes")
 endif
 
 # Platform specific modules
@@ -363,4 +367,15 @@ MODULES   += x11 x11grab
 endif
 ifneq ($(USE_GTK),)
 MODULES   += gtk
+endif
+
+ifneq ($(USE_DSHOW),)
+# /mingw/include is excluded from search, as it is a default directory, and
+# is always searched last: https://gcc.gnu.org/onlinedocs/cpp/Search-Path.html
+# So we have to use -idirafter in order to pick up winnt.h from mingw and not Windows SDK.
+WIN_INCLUDES	:=	-I/mingw/include -idirafter /winsdk/Include/um -idirafter /winsdk/Include/shared
+CFLAGS	+=	$(WIN_INCLUDES) -mwindows
+CXXFLAGS	+=	$(WIN_INCLUDES) -mwindows
+MOD_LFLAGS	+=	--subsystem,windows -mwindows -L/winsdk/lib -ld3d10 -static-libgcc
+MODULES   += dshow
 endif
