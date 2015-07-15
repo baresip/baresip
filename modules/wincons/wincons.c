@@ -170,7 +170,7 @@ static int output_handler(const char *str)
 
 static struct ui ui_wincons = {
 #ifdef _MSC_VER
-	{ NULL },
+	{ NULL, NULL, NULL },
 	"wincons",
 	output_handler
 #else

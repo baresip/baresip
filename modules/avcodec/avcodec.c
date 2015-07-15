@@ -98,7 +98,7 @@ static int mpg4_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 
 static struct vidcodec h264 = {
 #ifdef _MSC_VER
-	NULL,
+	{ NULL, NULL, NULL },
 	NULL,
 	"H264",
 	"packetization-mode=0",
@@ -131,7 +131,7 @@ static struct vidcodec h264 = {
 
 static struct vidcodec h263 = {
 #ifdef _MSC_VER
-	NULL,
+	{ NULL, NULL, NULL },
 	"34",
 	"H263",
 	NULL,
@@ -155,7 +155,7 @@ static struct vidcodec h263 = {
 
 static struct vidcodec mpg4 = {
 #ifdef _MSC_VER
-	NULL,
+	{ NULL, NULL, NULL },
 	NULL,
 	"MP4V-ES",
 	NULL,
