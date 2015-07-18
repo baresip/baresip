@@ -594,7 +594,7 @@ static void *gtk_thread(void *arg)
 	struct gtk_mod *mod = arg;
 	GtkMenuShell *app_menu;
 	GtkWidget *item;
-	GError *error = NULL;
+	GError *err = NULL;
 
 	gdk_threads_init();
 	gtk_init(0, NULL);
@@ -603,12 +603,12 @@ static void *gtk_thread(void *arg)
 	mod->app = g_application_new ("com.creytiv.baresip",
 			G_APPLICATION_FLAGS_NONE);
 
-	g_application_register (G_APPLICATION (mod->app), NULL, &error);
-	if (error != NULL) {
+	g_application_register (G_APPLICATION (mod->app), NULL, &err);
+	if (err != NULL) {
 		warning ("Unable to register GApplication: %s",
-				error->message);
-		g_error_free (error);
-		error = NULL;
+				err->message);
+		g_error_free (err);
+		err = NULL;
 	}
 
 	mod->status_icon = gtk_status_icon_new_from_icon_name("call-start");
