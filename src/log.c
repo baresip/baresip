@@ -13,9 +13,9 @@ static struct {
 	bool debug;
 	bool stder;
 } lg = {
-	.logl  = LIST_INIT,
-	.debug = false,
-	.stder = true
+	LIST_INIT,
+	false,
+	true
 };
 
 

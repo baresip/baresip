@@ -97,37 +97,49 @@ static int mpg4_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 
 
 static struct vidcodec h264 = {
-	.name      = "H264",
-	.variant   = "packetization-mode=0",
-	.encupdh   = encode_update,
+	LE_INIT,
+	NULL,
+	"H264",
+	"packetization-mode=0",
+	NULL,
+	encode_update,
 #ifdef USE_X264
-	.ench      = encode_x264,
+	encode_x264,
 #else
-	.ench      = encode,
+	encode,
 #endif
-	.decupdh   = decode_update,
-	.dech      = decode_h264,
-	.fmtp_ench = h264_fmtp_enc,
-	.fmtp_cmph = h264_fmtp_cmp,
+	decode_update,
+	decode_h264,
+	h264_fmtp_enc,
+	h264_fmtp_cmp,
 };
 
 static struct vidcodec h263 = {
-	.pt        = "34",
-	.name      = "H263",
-	.encupdh   = encode_update,
-	.ench      = encode,
-	.decupdh   = decode_update,
-	.dech      = decode_h263,
-	.fmtp_ench = h263_fmtp_enc,
+	LE_INIT,
+	"34",
+	"H263",
+	NULL,
+	NULL,
+	encode_update,
+	encode,
+	decode_update,
+	decode_h263,
+	h263_fmtp_enc,
+	NULL,
 };
 
 static struct vidcodec mpg4 = {
-	.name      = "MP4V-ES",
-	.encupdh   = encode_update,
-	.ench      = encode,
-	.decupdh   = decode_update,
-	.dech      = decode_mpeg4,
-	.fmtp_ench = mpg4_fmtp_enc,
+	LE_INIT,
+	NULL,
+	"MP4V-ES",
+	NULL,
+	NULL,
+	encode_update,
+	encode,
+	decode_update,
+	decode_mpeg4,
+	mpg4_fmtp_enc,
+	NULL,
 };
 
 

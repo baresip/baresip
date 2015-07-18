@@ -34,7 +34,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="winmm.lib wsock32.lib ..\..\..\re\Win32\Debug\re.lib ..\..\..\rem\Win32\Debug\rem.lib"
+				AdditionalOptions="winmm.lib wsock32.lib ..\..\..\re\Win32\Debug\re-win32.lib ..\..\..\rem\Win32\Debug\rem-win32.lib"
 				OutputFile="$(OutDir)/baresip-win32.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
