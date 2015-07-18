@@ -277,7 +277,7 @@ static void notify_incoming_call(struct gtk_mod *mod,
 
 	notification = g_notification_new("Incoming call");
 
-#if GLIB_CHECK_VERSION(2,4,2)
+#ifdef G_NOTIFICATION_PRIORITY_URGENT
 	g_notification_set_priority(notification,
 			G_NOTIFICATION_PRIORITY_URGENT);
 #else
