@@ -1,0 +1,178 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>baresip-win32</ProjectName>
+    <ProjectGuid>{4B89C2D8-FB32-4D7C-9019-752A5664781C}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\Win32\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">c:\tmp\baresip-win32\Debug\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\Win32\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">c:\tmp\baresip-win32\release\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\ffmpeg-win32-dev\include;..\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;USE_VIDEO;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4142;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>winmm.lib wsock32.lib ..\..\..\re\Win32\Debug\re-win32.lib ..\..\..\rem\Win32\Debug\rem-win32.lib %(AdditionalOptions)</AdditionalOptions>
+      <OutputFile>$(OutDir)baresip-win32.exe</OutputFile>
+      <AdditionalLibraryDirectories>..\..\..\ffmpeg-win32-dev\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)baresip-win32.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>avcodec.lib;avutil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\ffmpeg-win32-dev\include;..\..\..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;USE_VIDEO;_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4142;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <ObjectFileName>$(IntDir)/%(RelativeDir)/</ObjectFileName>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>winmm.lib wsock32.lib ..\..\..\re\Win32\Release\re.lib ..\..\..\rem\Win32\Release\rem.lib %(AdditionalOptions)</AdditionalOptions>
+      <OutputFile>$(OutDir)baresip-win32.exe</OutputFile>
+      <AdditionalLibraryDirectories>..\..\..\ffmpeg-win32-dev\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>avcodec.lib;avutil.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\modules\account\account.c" />
+    <ClCompile Include="..\..\modules\auloop\auloop.c" />
+    <ClCompile Include="..\..\modules\avcodec\avcodec.c" />
+    <ClCompile Include="..\..\modules\avcodec\decode.c" />
+    <ClCompile Include="..\..\modules\avcodec\encode.c" />
+    <ClCompile Include="..\..\modules\avcodec\h263.c" />
+    <ClCompile Include="..\..\modules\avcodec\h264.c" />
+    <ClCompile Include="..\..\modules\cons\cons.c" />
+    <ClCompile Include="..\..\modules\contact\contact.c" />
+    <ClCompile Include="..\..\modules\dshow\dshow.cpp">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ice\ice.c" />
+    <ClCompile Include="..\..\modules\menu\menu.c" />
+    <ClCompile Include="..\..\modules\stun\stun.c" />
+    <ClCompile Include="..\..\modules\turn\turn.c" />
+    <ClCompile Include="..\..\modules\uuid\uuid.c" />
+    <ClCompile Include="..\..\modules\vidloop\vidloop.c" />
+    <ClCompile Include="..\..\modules\vumeter\vumeter.c" />
+    <ClCompile Include="..\..\modules\wincons\wincons.c" />
+    <ClCompile Include="..\..\modules\winwave\play.c" />
+    <ClCompile Include="..\..\modules\winwave\src.c" />
+    <ClCompile Include="..\..\src\account.c" />
+    <ClCompile Include="..\..\src\aucodec.c" />
+    <ClCompile Include="..\..\src\audio.c" />
+    <ClCompile Include="..\..\src\aufilt.c" />
+    <ClCompile Include="..\..\src\auplay.c" />
+    <ClCompile Include="..\..\src\ausrc.c" />
+    <ClCompile Include="..\..\src\bfcp.c" />
+    <ClCompile Include="..\..\src\call.c" />
+    <ClCompile Include="..\..\src\cmd.c" />
+    <ClCompile Include="..\..\src\conf.c" />
+    <ClCompile Include="..\..\src\config.c" />
+    <ClCompile Include="..\..\src\contact.c" />
+    <ClCompile Include="..\..\src\log.c" />
+    <ClCompile Include="..\..\src\main.c" />
+    <ClCompile Include="..\..\src\mctrl.c" />
+    <ClCompile Include="..\..\src\menc.c" />
+    <ClCompile Include="..\..\src\message.c" />
+    <ClCompile Include="..\..\src\metric.c" />
+    <ClCompile Include="..\..\src\mnat.c" />
+    <ClCompile Include="..\..\src\module.c" />
+    <ClCompile Include="..\..\src\net.c" />
+    <ClCompile Include="..\..\src\play.c" />
+    <ClCompile Include="..\..\src\reg.c" />
+    <ClCompile Include="..\..\src\rtpkeep.c" />
+    <ClCompile Include="static.c" />
+    <ClCompile Include="..\..\src\sdp.c" />
+    <ClCompile Include="..\..\src\stream.c" />
+    <ClCompile Include="..\..\src\sipreq.c" />
+    <ClCompile Include="..\..\src\ua.c" />
+    <ClCompile Include="..\..\src\ui.c" />
+    <ClCompile Include="..\..\src\vidcodec.c" />
+    <ClCompile Include="..\..\src\vidfilt.c" />
+    <ClCompile Include="..\..\src\video.c" />
+    <ClCompile Include="..\..\src\vidisp.c" />
+    <ClCompile Include="..\..\src\vidsrc.c" />
+    <ClCompile Include="..\..\modules\g711\g711.c" />
+    <ClCompile Include="..\..\modules\winwave\winwave.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\modules\avcodec\avcodec.h" />
+    <ClInclude Include="..\..\modules\avcodec\h26x.h" />
+    <ClInclude Include="include\inttypes.h" />
+    <ClInclude Include="include\stdint.h" />
+    <ClInclude Include="qedit.h" />
+    <ClInclude Include="stdafx.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\rem\mk\win32\rem.vcxproj">
+      <Project>{3e767371-a72b-4f5c-a695-8f844b0889c5}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\re\mk\win32\re.vcxproj">
+      <Project>{40b28df6-4b4a-411a-9eb7-8d80c2a29b9d}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
