@@ -276,8 +276,14 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	id[sizeof id - 1] = '\0';
 
 	notification = g_notification_new("Incoming call");
+
+#if GLIB_CHECK_VERSION(2,4,2)
 	g_notification_set_priority(notification,
 			G_NOTIFICATION_PRIORITY_URGENT);
+#else
+	g_notification_set_urgent(notification, TRUE);
+#endif
+
 	target = g_variant_new_int64(GPOINTER_TO_INT(call));
 	g_notification_set_body(notification, call_peeruri(call));
 	g_notification_add_button_with_target_value(notification,
