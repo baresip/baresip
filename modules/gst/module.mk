@@ -7,6 +7,6 @@
 MOD		:= gst
 $(MOD)_SRCS	+= gst.c dump.c
 $(MOD)_LFLAGS	+= `pkg-config --libs gstreamer-0.10`
-CFLAGS		+= `pkg-config --cflags gstreamer-0.10`
+$(MOD)_CFLAGS	+= `pkg-config --cflags gstreamer-0.10`
 
 include mk/mod.mk
