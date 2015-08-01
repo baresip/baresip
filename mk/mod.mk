@@ -19,6 +19,12 @@ $(MOD)_OBJS     += $(patsubst %.S,$(BUILD)/modules/$(MOD)/%.o,\
 $(MOD)_NAME := $(MOD)
 
 
+#
+# function to extract the name of the module from the file/dir path
+#
+modulename = $(lastword $(subst /, ,$(dir $1)))
+
+
 ifeq ($(STATIC),)
 
 #
@@ -34,19 +40,21 @@ $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.c $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CC [M]  $@"
 	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+	@$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.m $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  OC [M]  $@"
 	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) $(OBJCFLAGS) -c $< -o $@ $(DFLAGS)
+	@$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) $(OBJCFLAGS) \
+		-c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.cpp $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CXX [M] $@"
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CXXFLAGS) -c $< -o $@ $(DFLAGS)
+	@$(CXX) $(CXXFLAGS) $($(call modulename,$@)_CXXFLAGS) \
+		-c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.S $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
@@ -68,21 +76,23 @@ $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.c $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CC [m]  $@"
 	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) -DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
+	@$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) \
+		-DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.m $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  OC [m]  $@"
 	@mkdir -p $(dir $@)
-	@$(CC) $(CFLAGS) $(OBJCFLAGS) -DMOD_NAME=\"$(MOD)\" -c $< -o $@ \
-		$(DFLAGS)
+	@$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) $(OBJCFLAGS) \
+		-DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
 
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.cpp $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CXX [m] $@"
 	@mkdir -p $(dir $@)
-	@$(CXX) $(CXXFLAGS) -DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
+	@$(CXX) $(CXXFLAGS) $($(call modulename,$@)_CXXFLAGS) \
+		-DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.S $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
