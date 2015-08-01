@@ -1,5 +1,5 @@
 /**
- * @file gst_video.c  Video codecs using Gstreamer 1.0
+ * @file gst_video1/gst_video.c  Video codecs using Gstreamer 1.0
  *
  * Copyright (C) 2010 Creytiv.com
  * Copyright (C) 2014 Fadeev Alexander
@@ -13,7 +13,7 @@
 
 
 /**
- * @defgroup gst_video gst_video
+ * @defgroup gst_video1 gst_video1
  *
  * This module implements video codecs using Gstreamer 1.0
  *

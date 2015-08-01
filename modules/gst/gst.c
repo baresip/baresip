@@ -1,5 +1,5 @@
 /**
- * @file gst.c  Gstreamer playbin pipeline
+ * @file gst/gst.c  Gstreamer playbin pipeline
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */

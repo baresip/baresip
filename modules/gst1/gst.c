@@ -1,5 +1,5 @@
 /**
- * @file gst.c  Gstreamer playbin pipeline
+ * @file gst1/gst.c  Gstreamer 1.0 playbin pipeline
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
@@ -16,11 +16,11 @@
 
 
 /**
- * @defgroup gst gst
+ * @defgroup gst1 gst1
  *
- * Audio source module using gstreamer as input
+ * Audio source module using gstreamer 1.0 as input
  *
- * The module 'gst' is using the Gstreamer framework to play external
+ * The module 'gst1' is using the Gstreamer framework to play external
  * media and provide this as an internal audio source.
  *
  * Example config:
@@ -261,9 +261,6 @@ static void set_caps(struct ausrc_st *st)
 				   "width",    G_TYPE_INT,    16,
 				   "signed",   G_TYPE_BOOLEAN,true,
 				   NULL);
-#if 1
-	gst1_dump_caps(caps);
-#endif
 
 	g_object_set(G_OBJECT(st->capsfilt), "caps", caps, NULL);
 }

@@ -1,5 +1,5 @@
 /**
- * @file gst_video.h  Gstreamer video pipeline -- internal API
+ * @file gst_video1/gst_video.h  Gstreamer video pipeline -- internal API
  *
  * Copyright (C) 2010 - 2014 Creytiv.com
  * Copyright (C) 2014 Fadeev Alexander
