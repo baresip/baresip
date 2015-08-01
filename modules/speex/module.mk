@@ -7,6 +7,6 @@
 MOD		:= speex
 $(MOD)_SRCS	+= speex.c
 $(MOD)_LFLAGS	+= -lspeex
-CFLAGS		+= -Wno-strict-prototypes
+$(MOD)_CFLAGS	+= -Wno-strict-prototypes
 
 include mk/mod.mk
