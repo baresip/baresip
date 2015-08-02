@@ -1030,7 +1030,8 @@ static int start_source(struct autx *tx, struct audio *a)
 				  &prm, tx->device,
 				  ausrc_read_handler, ausrc_error_handler, a);
 		if (err) {
-			warning("audio: start_source failed: %m\n", err);
+			warning("audio: start_source failed (%s.%s): %m\n",
+				a->cfg.src_mod, tx->device, err);
 			return err;
 		}
 
