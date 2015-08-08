@@ -1,5 +1,5 @@
 /**
- * @file gst.h  Gstreamer playbin pipeline -- internal interface
+ * @file gst/gst.h  Gstreamer playbin pipeline -- internal interface
  *
  * Copyright (C) 2010 Creytiv.com
  */

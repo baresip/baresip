@@ -220,7 +220,7 @@ static void update_current_accounts_menu_item(struct gtk_mod *mod)
 
 static void update_ua_presence(struct gtk_mod *mod)
 {
-	GtkCheckMenuItem *item;
+	GtkCheckMenuItem *item = 0;
 	enum presence_status cur_status;
 	void *status;
 	GtkMenuShell *status_menu = GTK_MENU_SHELL(mod->status_menu);

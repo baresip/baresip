@@ -17,10 +17,11 @@ Version v0.x.y:
   avcodec-audio.so -- create a new audio-codec module that will use
   audio codecs from FFmpeg libavcodec, as a supplement to existing codecs.
 
+  move common H.264 code to either baresip-core or librem
+
 -------------------------------------------------------------------------------
 BUGS:
 
-  S605th: no DNS-server IP
   sdl: crashes in virtualbox/linux
 
 -------------------------------------------------------------------------------

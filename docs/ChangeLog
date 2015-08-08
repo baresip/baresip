@@ -1,3 +1,56 @@
+2015-08-08 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.14
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT commit ebac23b0692de71ee4c3a436f0372013150c937f
+	* GIT tag: v0.4.14
+	* NOTE: Requires libre v0.4.13 or later
+
+	* new modules:
+	  - gtk		GTK+ 2.0 UI (thanks Charles E. Lehner)
+	  - gst1	Gstreamer 1.0 audio module
+	  - gst_video1	Gstreamer 1.0 video module (thanks Thomas Strobel)
+	  - daala	Experimental video-codec using Daala
+
+	* baresip-core:
+	  - baresip: added -m argument to pre-load modules
+	  - config: add kqueue to sample config (thanks Dmitrij D. Czarkoff)
+	  - log: make code C89 compliant (thanks Victor Sergienko)
+	  - module: added module_preload()
+	  - ua: add CALL_EVENT_TRANSFER_FAILED
+	  - ua: skip initial white space from uri (thanks Juha Heinanen)
+	  - ua: ua_prev_call()
+	  - videnc: move videnc_packet_h to update-handler
+
+	* build:
+	  - added optional $(MOD)_CFLAGS for local module CFLAGS
+	  - added project file for Visual C++ Express 2010
+	  - freebsd: add include path to $(SYSROOT)/local/include
+	    (thanks Hellmuth Michaelis)
+
+	* Modules:
+
+	* avcodec: make code C89 compliant (thanks Victor Sergienko)
+
+	* cons: make code C89 compliant (thanks Victor Sergienko)
+
+	* daala: new module
+
+	* dshow: updates for VC2010 (thanks Victor Sergienko)
+
+	* gst1: new module
+
+	* gst_video1: new module
+
+	* gtk: new module
+
+	* menu: fix crash when 0 UAs (thanks Hans Petter Selasky)
+		added command 'H' to hold previous call (thanks xanm)
+
+	* wincons: make code C89 compliant (thanks ggcoding)
+
+
 2015-06-20 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.13
