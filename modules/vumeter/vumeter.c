@@ -157,7 +157,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 {
-	struct vumeter_enc *vu = (struct vumeter_enc *)st;
+	struct vumeter_enc *vu = (void *)st;
 
 	vu->avg_rec = calc_avg_s16(sampv, *sampc);
 	vu->started = true;
@@ -168,7 +168,7 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 
 static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
 {
-	struct vumeter_dec *vu = (struct vumeter_dec *)st;
+	struct vumeter_dec *vu = (void *)st;
 
 	vu->avg_play = calc_avg_s16(sampv, *sampc);
 	vu->started = true;
