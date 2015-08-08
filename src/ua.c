@@ -750,7 +750,7 @@ void ua_hangup(struct ua *ua, struct call *call,
  * Answer an incoming call
  *
  * @param ua   User-Agent
- * @param call Call to hangup, or NULL for current call
+ * @param call Call to answer, or NULL for current call
  *
  * @return 0 if success, otherwise errorcode
  */

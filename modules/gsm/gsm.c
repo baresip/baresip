@@ -11,7 +11,7 @@
 /**
  * @defgroup gsm gsm
  *
- * The G.726 audio codec
+ * The GSM audio codec
  */
 
 
