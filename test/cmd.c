@@ -1,11 +1,11 @@
 /**
- * @file selftest/cmd.c  Baresip selftest -- cmd
+ * @file test/cmd.c  Baresip selftest -- cmd
  *
  * Copyright (C) 2010 Creytiv.com
  */
 #include <re.h>
 #include <baresip.h>
-#include "selftest.h"
+#include "test.h"
 
 
 static bool cmd_called;

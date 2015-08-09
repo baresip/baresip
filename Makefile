@@ -84,12 +84,14 @@ endif
 BINDIR	:= $(PREFIX)/bin
 INCDIR  := $(PREFIX)/include
 BIN	:= $(PROJECT)$(BIN_SUFFIX)
+TEST_BIN	:= selftest$(BIN_SUFFIX)
 SHARED  := lib$(PROJECT)$(LIB_SUFFIX)
 STATICLIB  := libbaresip.a
 ifeq ($(STATIC),)
 MOD_BINS:= $(patsubst %,%$(MOD_SUFFIX),$(MODULES))
 endif
 APP_MK	:= src/srcs.mk
+TEST_MK	:= test/srcs.mk
 MOD_MK	:= $(patsubst %,modules/%/module.mk,$(MODULES))
 MOD_BLD	:= $(patsubst %,$(BUILD)/modules/%,$(MODULES))
 LIBDIR     := $(PREFIX)/lib
@@ -104,6 +106,7 @@ all: sanity $(MOD_BINS) $(BIN)
 modules:	$(MOD_BINS)
 
 include $(APP_MK)
+include $(TEST_MK)
 include $(MOD_MK)
 
 OBJS      := $(patsubst %.c,$(BUILD)/src/%.o,$(filter %.c,$(SRCS)))
@@ -111,6 +114,10 @@ OBJS      += $(patsubst %.m,$(BUILD)/src/%.o,$(filter %.m,$(SRCS)))
 OBJS      += $(patsubst %.S,$(BUILD)/src/%.o,$(filter %.S,$(SRCS)))
 
 APP_OBJS  := $(OBJS) $(patsubst %.c,$(BUILD)/src/%.o,$(APP_SRCS)) $(MOD_OBJS)
+
+LIB_OBJS  := $(OBJS) $(MOD_OBJS)
+
+TEST_OBJS := $(patsubst %.c,$(BUILD)/test/%.o,$(filter %.c,$(TEST_SRCS)))
 
 ifneq ($(LIBREM_PATH),)
 LIBS	+= -L$(LIBREM_PATH)
@@ -129,6 +136,9 @@ LIBS      += -L$(SYSROOT)/lib
 
 -include $(APP_OBJS:.o=.d)
 
+-include $(TEST_OBJS:.o=.d)
+
+
 sanity:
 ifeq ($(LIBRE_MK),)
 	@echo "ERROR: Missing common makefile for libre. Check LIBRE_MK"
@@ -146,11 +156,11 @@ endif
 Makefile:	mk/*.mk $(MOD_MK) $(LIBRE_MK)
 
 
-$(SHARED): $(APP_OBJS)
+$(SHARED): $(LIB_OBJS)
 	@echo "  LD      $@"
 	@$(LD) $(LFLAGS) $(SH_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
 
-$(STATICLIB): $(APP_OBJS)
+$(STATICLIB): $(LIB_OBJS)
 	@echo "  AR      $@"
 	@rm -f $@; $(AR) $(AFLAGS) $@ $^
 ifneq ($(RANLIB),)
@@ -167,6 +177,16 @@ else
 	@$(LD) $(LFLAGS) $(APP_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
 endif
 
+
+.PHONY: test
+test:	$(TEST_BIN)
+
+$(TEST_BIN):	$(STATICLIB) $(TEST_OBJS)
+	@echo "  LD      $@"
+	@$(LD) $(LFLAGS) $(TEST_OBJS) \
+		-L$(LIBRE_SO) -L. \
+		-l$(PROJECT) -lre $(LIBS) -o $@
+
 $(BUILD)/%.o: %.c $(BUILD) Makefile $(APP_MK)
 	@echo "  CC      $@"
 	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
@@ -180,7 +200,7 @@ $(BUILD)/%.o: %.S $(BUILD) Makefile $(APP_MK)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD): Makefile
-	@mkdir -p $(BUILD)/src $(MOD_BLD)
+	@mkdir -p $(BUILD)/src $(MOD_BLD) $(BUILD)/test
 	@touch $@
 
 install: $(BIN) $(MOD_BINS)
@@ -208,10 +228,12 @@ install-static: $(STATICLIB)
 uninstall:
 	@rm -f $(DESTDIR)$(PREFIX)/bin/$(BIN)
 	@rm -rf $(DESTDIR)$(MOD_PATH)
+	@rm -f $(DESTDIR)$(PREFIX)/lib/$(SHARED)
+	@rm -f $(DESTDIR)$(PREFIX)/lib/$(STATICLIB)
 
 .PHONY: clean
 clean:
-	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD)
+	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD) $(TEST_BIN)
 	@rm -f *stamp \
 	`find . -name "*.[od]"` \
 	`find . -name "*~"` \

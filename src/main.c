@@ -1,7 +1,7 @@
 /**
- * @file main.c  Main application code
+ * @file src/main.c  Main application code
  *
- * Copyright (C) 2010 - 2011 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #ifdef SOLARIS
 #define __EXTENSIONS__ 1

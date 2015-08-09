@@ -1,12 +1,12 @@
 /**
- * @file selftest/ua.c  Baresip selftest -- User-Agent (UA)
+ * @file test/ua.c  Baresip selftest -- User-Agent (UA)
  *
  * Copyright (C) 2010 Creytiv.com
  */
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
-#include "selftest.h"
+#include "test.h"
 
 
 struct test {
@@ -59,8 +59,10 @@ int test_ua_register(void)
 	memset(&t, 0, sizeof t);
 
 	err = sip_server_create(&t.srv);
-	if (err)
+	if (err) {
+		warning("failed to create sip server (%d/%m)\n", err, err);
 		goto out;
+	}
 
 	re_snprintf(aor, sizeof(aor), "sip:x:x@%J", &t.srv->laddr);
 

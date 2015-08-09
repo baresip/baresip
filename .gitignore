@@ -17,6 +17,7 @@
 *.out
 *.app
 baresip
+selftest
 
 # Generated files
 src/static.c

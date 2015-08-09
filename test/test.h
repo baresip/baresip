@@ -1,5 +1,5 @@
 /**
- * @file selftest.h  Selftest for Baresip core -- internal API
+ * @file test.h  Selftest for Baresip core -- internal API
  *
  * Copyright (C) 2010 Creytiv.com
  */
