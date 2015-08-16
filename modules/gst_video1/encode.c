@@ -118,7 +118,7 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 	GstBuffer *buffer;
 	GstMapInfo info;
 	guint8 *data;
-	guint size;
+	gsize size;
 
 	/* Retrieve the sample */
 	sample = gst_app_sink_pull_sample(sink);
@@ -444,18 +444,13 @@ int gst_video1_encoder_set(struct videnc_state **stp,
 				" with invalid pipeline\n");
 			return EINVAL;
 		}
-	}
 
-	if (!prm && (st->encoder.bitrate != prm->bitrate ||
+		if ((st->encoder.bitrate != prm->bitrate ||
 	             st->encoder.pktsize != prm->pktsize ||
 	             st->encoder.fps     != prm->fps)) {
 
-		/* store new parameters */
-		st->encoder.bitrate = prm->bitrate;
-		st->encoder.pktsize = prm->pktsize;
-		st->encoder.fps     = prm->fps;
-
-		pipeline_close(st);
+			pipeline_close(st);
+		}
 	}
 
 	st->encoder.bitrate = prm->bitrate;
