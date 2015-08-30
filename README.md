@@ -6,7 +6,7 @@ Baresip is a modular SIP User-Agent with audio and video support
 License: BSD
 
 
-see docs/README for more details
+see [README](docs/README) for more details
 
 
 # Resources
