@@ -28,6 +28,10 @@
  */
 
 
+enum {
+	PRESZ = 36  /* Preamble size for TURN/STUN header */
+};
+
 struct menc_sess {
 	zrtp_session_t *zrtp_session;
 };
@@ -225,12 +229,13 @@ static int on_send_packet(const zrtp_stream_t *stream,
 	if (!sa_isset(&st->raddr, SA_ALL))
 		return zrtp_status_ok;
 
-	mb = mbuf_alloc(rtp_packet_length);
+	mb = mbuf_alloc(PRESZ + rtp_packet_length);
 	if (!mb)
 		return zrtp_status_alloc_fail;
 
+	mb->pos = PRESZ;
 	(void)mbuf_write_mem(mb, (void *)rtp_packet, rtp_packet_length);
-	mb->pos = 0;
+	mb->pos = PRESZ;
 
 	err = udp_send_helper(st->rtpsock, &st->raddr, mb, st->uh);
 	if (err) {
