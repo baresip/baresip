@@ -132,7 +132,6 @@ struct aurx {
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for receiving       */
 	int pt;                       /**< Payload type for incoming RTP   */
-	int pt_tel;                   /**< Event payload type - receive    */
 };
 
 
@@ -594,9 +593,15 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 		goto out;
 
 	/* Telephone event? */
-	if (hdr->pt == rx->pt_tel) {
-		handle_telev(a, mb);
-		return;
+	if (hdr->pt != rx->pt) {
+		const struct sdp_format *fmt;
+
+		fmt = sdp_media_lformat(stream_sdpmedia(a->strm), hdr->pt);
+
+		if (fmt && !str_casecmp(fmt->name, "telephone-event")) {
+			handle_telev(a, mb);
+			return;
+		}
 	}
 
 	/* Comfort Noise (CN) as of RFC 3389 */
@@ -630,8 +635,6 @@ static int add_telev_codec(struct audio *a)
 			     NULL, NULL, false, "0-15");
 	if (err)
 		return err;
-
-	a->rx.pt_tel = sf->pt;
 
 	return err;
 }
@@ -1367,10 +1370,10 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  aubuf_debug, tx->aubuf,
 			  tx->ptime);
 
-	err |= re_hprintf(pf, " rx:   %H %H ptime=%ums pt=%d pt_tel=%d\n",
+	err |= re_hprintf(pf, " rx:   %H %H ptime=%ums pt=%d\n",
 			  aucodec_print, rx->ac,
 			  aubuf_debug, rx->aubuf,
-			  rx->ptime, rx->pt, rx->pt_tel);
+			  rx->ptime, rx->pt);
 
 	err |= re_hprintf(pf,
 			  " %H"
