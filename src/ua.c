@@ -1105,7 +1105,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	if (list_count(&ua->calls) + 1 > MAX_CALLS) {
 		info("ua: rejected call from %r (maximum %d calls)\n",
 		     &msg->from.auri, MAX_CALLS);
-		(void)sip_treply(NULL, uag.sip, msg, 486, "Busy Here");
+		(void)sip_treply(NULL, uag.sip, msg, 486, "Max Calls");
 		return;
 	}
 
