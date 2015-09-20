@@ -364,9 +364,11 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	gtk_menu_shell_append(GTK_MENU_SHELL(call_menu), menu_item);
 }
 
-static void denotify_incoming_call(struct gtk_mod *mod,
-		struct call *call)
+
+static void denotify_incoming_call(struct gtk_mod *mod, struct call *call)
 {
+	GSList *item, *next;
+
 #if GLIB_CHECK_VERSION(2,40,0)
 	char id[64];
 
@@ -376,14 +378,15 @@ static void denotify_incoming_call(struct gtk_mod *mod,
 #endif
 
 	/* Remove call submenu */
-	GSList *item, *next;
 	for (item = mod->incoming_call_menus; item; item = next) {
-		next = item->next;
 		GtkWidget *menu_item = item->data;
+		next = item->next;
+
 		if (call == g_object_get_data(G_OBJECT(menu_item), "call")) {
 			gtk_widget_destroy(menu_item);
 			mod->incoming_call_menus =
-				g_slist_delete_link(mod->incoming_call_menus, item);
+				g_slist_delete_link(mod->incoming_call_menus,
+						    item);
 		}
 	}
 }
@@ -520,6 +523,7 @@ static void ua_event_handler(struct ua *ua,
 	gdk_threads_leave();
 }
 
+
 #ifdef USE_NOTIFICATIONS
 static void message_handler(const struct pl *peer, const struct pl *ctype,
 			    struct mbuf *body, void *arg)
@@ -527,6 +531,13 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 	struct gtk_mod *mod = arg;
 	char title[128];
 	char msg[512];
+
+#if GLIB_CHECK_VERSION(2,40,0)
+	GNotification *notification;
+#elif defined(USE_LIBNOTIFY)
+	NotifyNotification *notification;
+#endif
+
 	(void)ctype;
 
 
@@ -539,7 +550,7 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 			mbuf_buf(body), mbuf_get_left(body));
 
 #if GLIB_CHECK_VERSION(2,40,0)
-	GNotification *notification = g_notification_new(title);
+	notification = g_notification_new(title);
 	g_notification_set_body(notification, msg);
 	g_application_send_notification(mod->app, NULL, notification);
 	g_object_unref(notification);
@@ -549,8 +560,7 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 
 	if (!notify_is_initted())
 		return;
-	NotifyNotification* notification = notify_notification_new(title, msg,
-			"baresip");
+	notification = notify_notification_new(title, msg, "baresip");
 	notify_notification_show(notification, NULL);
 	g_object_unref(notification);
 #endif
