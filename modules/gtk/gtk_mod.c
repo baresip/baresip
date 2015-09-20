@@ -987,6 +987,15 @@ static int module_close(void)
 	aufilt_unregister(&vumeter);
 	message_close();
 
+#ifdef USE_LIBNOTIFY
+	if (notify_is_initted())
+		notify_uninit();
+#endif
+
+	g_slist_free(mod_obj.accounts_menu_group);
+	g_slist_free(mod_obj.call_windows);
+	g_slist_free(mod_obj.incoming_call_menus);
+
 	return 0;
 }
 
