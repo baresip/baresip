@@ -225,6 +225,10 @@ ifeq ($(OS),freebsd)
 MODULES   += dtmfio
 endif
 
+ifneq ($(USE_GTK),)
+USE_LIBNOTIFY := $(shell pkg-config 'libnotify glib-2.0 < 2.40' && echo "yes")
+endif
+
 endif
 
 # ------------------------------------------------------------------------- #
