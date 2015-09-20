@@ -36,6 +36,7 @@ static void ausrc_destructor(void *arg)
 
 	/* Wait for termination of other thread */
 	if (st->run) {
+		debug("alsa: stopping recording thread (%s)\n", st->device);
 		st->run = false;
 		(void)pthread_join(st->thread, NULL);
 	}
@@ -141,6 +142,8 @@ int alsa_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		st->run = false;
 		goto out;
 	}
+
+	debug("alsa: recording started (%s)\n", st->device);
 
  out:
 	if (err)

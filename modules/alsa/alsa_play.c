@@ -36,6 +36,7 @@ static void auplay_destructor(void *arg)
 
 	/* Wait for termination of other thread */
 	if (st->run) {
+		debug("alsa: stopping playback thread (%s)\n", st->device);
 		st->run = false;
 		(void)pthread_join(st->thread, NULL);
 	}
@@ -140,6 +141,8 @@ int alsa_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		st->run = false;
 		goto out;
 	}
+
+	debug("alsa: playback started (%s)\n", st->device);
 
  out:
 	if (err)
