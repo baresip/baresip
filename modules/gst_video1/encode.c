@@ -91,8 +91,6 @@ static void appsrc_enough_data_cb(GstAppSrc *src, gpointer user_data)
 	struct videnc_state *st = user_data;
 	(void)src;
 
-	re_printf("    ~~~~ enough data\n");
-
 	pthread_mutex_lock(&st->streamer.wait.mutex);
 	if (st->streamer.wait.flag == 0)
 		st->streamer.wait.flag = 1;
@@ -146,8 +144,6 @@ static void appsink_end_of_stream_cb(GstAppSink *src, gpointer user_data)
 	struct videnc_state *st = user_data;
 	(void)src;
 
-	re_printf("    ~~~~ end-of-stream\n");
-
 	pthread_mutex_lock(&st->streamer.eos.mutex);
 	if (st->streamer.eos.flag == 0) {
 		st->streamer.eos.flag = 1;
@@ -159,8 +155,6 @@ static void appsink_end_of_stream_cb(GstAppSink *src, gpointer user_data)
 
 static void appsink_destroy_notify_cb(struct videnc_state *st)
 {
-	re_printf("    ~~~~ sink destroy notify\n");
-
 	pthread_mutex_lock(&st->streamer.eos.mutex);
 	st->streamer.eos.flag = -1;
 	pthread_cond_signal(&st->streamer.eos.cond);
@@ -226,8 +220,6 @@ static int pipeline_init(struct videnc_state *st, const struct vidsz *size)
 	if (!st || !size)
 		return EINVAL;
 
-	re_printf("    ~~~~ pipeline_init (%d x %d)\n", size->w, size->h);
-
 	snprintf(pipeline, sizeof(pipeline),
 	 "appsrc name=source is-live=TRUE block=TRUE "
 	 "do-timestamp=TRUE max-bytes=1000000 ! "
@@ -237,13 +229,6 @@ static int pipeline_init(struct videnc_state *st, const struct vidsz *size)
 	 "appsink name=sink emit-signals=TRUE drop=TRUE",
 	 size->w, size->h,
 	 st->encoder.fps, st->encoder.bitrate / 1000 /* kbit/s */);
-
-	re_printf(
-		  "------------------------------------------------\n"
-		  "%s\n"
-		  "------------------------------------------------\n"
-		  ,
-		  pipeline);
 
 	/* Initialize pipeline. */
 	st->streamer.pipeline = gst_parse_launch(pipeline, &gerror);
@@ -285,8 +270,6 @@ static int pipeline_init(struct videnc_state *st, const struct vidsz *size)
 	pthread_mutex_unlock(&st->streamer.eos.mutex);
 
 	/* Start pipeline */
-	re_printf("    ~~~~ pipeline_init -- starting pipeline\n");
-
 	ret = gst_element_set_state(st->streamer.pipeline, GST_STATE_PLAYING);
 	if (GST_STATE_CHANGE_FAILURE == ret) {
 		g_warning("set state returned GST_STATE_CHANGE_FAILURE\n");
@@ -298,9 +281,6 @@ static int pipeline_init(struct videnc_state *st, const struct vidsz *size)
 
 	/* Mark pipeline as working */
 	st->streamer.valid = true;
-
-	re_printf("    ~~~~ pipeline_init OK (source=%p, sink=%p)\n",
-		  source, sink);
 
  out:
 	return err;
