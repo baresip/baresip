@@ -50,6 +50,7 @@ struct gtk_mod {
 	GSList *accounts_menu_group;
 	struct dial_dialog *dial_dialog;
 	GSList *call_windows;
+	GSList *incoming_call_menus;
 };
 
 struct gtk_mod mod_obj;
@@ -65,6 +66,7 @@ enum gtk_mod_events {
 
 static void answer_activated(GSimpleAction *, GVariant *, gpointer);
 static void reject_activated(GSimpleAction *, GVariant *, gpointer);
+static void denotify_incoming_call(struct gtk_mod *, struct call *);
 
 static GActionEntry app_entries[] = {
 	{"answer", answer_activated, "x", NULL, NULL, {0} },
@@ -174,6 +176,24 @@ static void menu_on_presence_set(GtkMenuItem *item, struct gtk_mod *mod)
 }
 
 
+static void menu_on_incoming_call_answer(GtkMenuItem *menuItem,
+		struct gtk_mod *mod)
+{
+	struct call *call = g_object_get_data(G_OBJECT(menuItem), "call");
+	denotify_incoming_call(mod, call);
+	mqueue_push(mod->mq, MQ_ANSWER, call);
+}
+
+
+static void menu_on_incoming_call_reject(GtkMenuItem *menuItem,
+		struct gtk_mod *mod)
+{
+	struct call *call = g_object_get_data(G_OBJECT(menuItem), "call");
+	denotify_incoming_call(mod, call);
+	mqueue_push(mod->mq, MQ_HANGUP, call);
+}
+
+
 static GtkMenuItem *accounts_menu_add_item(struct gtk_mod *mod,
 		struct ua *ua)
 {
@@ -273,12 +293,13 @@ static void accounts_menu_set_status(struct gtk_mod *mod,
 }
 
 
-#ifdef USE_NOTIFICATIONS
 static void notify_incoming_call(struct gtk_mod *mod,
 		struct call *call)
 {
 	static const char *title = "Incoming call";
 	const char *msg = call_peeruri(call);
+	GtkWidget *call_menu;
+	GtkWidget *menu_item;
 
 #if GLIB_CHECK_VERSION(2,40,0)
 	char id[64];
@@ -302,29 +323,69 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	g_notification_add_button_with_target_value(notification,
 			"Reject", "app.reject", target);
 	g_application_send_notification(mod->app, id, notification);
+	g_object_unref(notification);
 
 #elif defined(USE_LIBNOTIFY)
+	/* If glib does not have GNotification, use libnotify instead. */
 	if (!notify_is_initted())
 		return;
 	NotifyNotification* notification = notify_notification_new(title,
-			msg, "midori");
+			msg, "baresip");
 	notify_notification_set_urgency(notification, NOTIFY_URGENCY_CRITICAL);
 	notify_notification_show(notification, NULL);
-
-#endif
 	g_object_unref(notification);
-}
+
 #endif
 
+	/* Add incoming call to the app menu */
+	call_menu = gtk_menu_new();
+	menu_item = gtk_menu_item_new_with_mnemonic("_Incoming call");
+	g_object_set_data(G_OBJECT(menu_item), "call", call);
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(menu_item),
+			call_menu);
+	gtk_menu_shell_prepend(GTK_MENU_SHELL(mod->app_menu), menu_item);
+	mod->incoming_call_menus = g_slist_append(mod->incoming_call_menus,
+			menu_item);
+
+	menu_item = gtk_menu_item_new_with_label(call_peeruri(call));
+	gtk_widget_set_sensitive(menu_item, FALSE);
+	gtk_menu_shell_append(GTK_MENU_SHELL(call_menu), menu_item);
+
+	menu_item = gtk_menu_item_new_with_mnemonic("_Accept");
+	g_object_set_data(G_OBJECT(menu_item), "call", call);
+	g_signal_connect(G_OBJECT(menu_item), "activate",
+			G_CALLBACK(menu_on_incoming_call_answer), mod);
+	gtk_menu_shell_append(GTK_MENU_SHELL(call_menu), menu_item);
+
+	menu_item = gtk_menu_item_new_with_mnemonic("_Reject");
+	g_object_set_data(G_OBJECT(menu_item), "call", call);
+	g_signal_connect(G_OBJECT(menu_item), "activate",
+			G_CALLBACK(menu_on_incoming_call_reject), mod);
+	gtk_menu_shell_append(GTK_MENU_SHELL(call_menu), menu_item);
+}
 
 static void denotify_incoming_call(struct gtk_mod *mod,
 		struct call *call)
 {
+#if GLIB_CHECK_VERSION(2,40,0)
 	char id[64];
 
 	re_snprintf(id, sizeof id, "incoming-call-%p", call);
 	id[sizeof id - 1] = '\0';
 	g_application_withdraw_notification(mod->app, id);
+#endif
+
+	/* Remove call submenu */
+	GSList *item, *next;
+	for (item = mod->incoming_call_menus; item; item = next) {
+		next = item->next;
+		GtkWidget *menu_item = item->data;
+		if (call == g_object_get_data(G_OBJECT(menu_item), "call")) {
+			gtk_widget_destroy(menu_item);
+			mod->incoming_call_menus =
+				g_slist_delete_link(mod->incoming_call_menus, item);
+		}
+	}
 }
 
 
@@ -481,6 +542,7 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 	GNotification *notification = g_notification_new(title);
 	g_notification_set_body(notification, msg);
 	g_application_send_notification(mod->app, NULL, notification);
+	g_object_unref(notification);
 
 #elif defined(USE_LIBNOTIFY)
 	(void)mod;
@@ -490,9 +552,8 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 	NotifyNotification* notification = notify_notification_new(title, msg,
 			"baresip");
 	notify_notification_show(notification, NULL);
-
-#endif
 	g_object_unref(notification);
+#endif
 }
 #endif
 
@@ -664,6 +725,7 @@ static void *gtk_thread(void *arg)
 	mod->contacts_inited = false;
 	mod->dial_dialog = NULL;
 	mod->call_windows = NULL;
+	mod->incoming_call_menus = NULL;
 
 	/* App menu */
 	mod->app_menu = gtk_menu_new();
