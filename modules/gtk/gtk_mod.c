@@ -176,6 +176,7 @@ static void menu_on_presence_set(GtkMenuItem *item, struct gtk_mod *mod)
 }
 
 
+#ifdef USE_NOTIFICATIONS
 static void menu_on_incoming_call_answer(GtkMenuItem *menuItem,
 		struct gtk_mod *mod)
 {
@@ -192,6 +193,7 @@ static void menu_on_incoming_call_reject(GtkMenuItem *menuItem,
 	denotify_incoming_call(mod, call);
 	mqueue_push(mod->mq, MQ_HANGUP, call);
 }
+#endif
 
 
 static GtkMenuItem *accounts_menu_add_item(struct gtk_mod *mod,
@@ -293,6 +295,7 @@ static void accounts_menu_set_status(struct gtk_mod *mod,
 }
 
 
+#ifdef USE_NOTIFICATIONS
 static void notify_incoming_call(struct gtk_mod *mod,
 		struct call *call)
 {
@@ -334,7 +337,9 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	notify_notification_set_urgency(notification, NOTIFY_URGENCY_CRITICAL);
 	notify_notification_show(notification, NULL);
 	g_object_unref(notification);
-
+#else
+	(void)msg;
+	(void)title;
 #endif
 
 	/* Add incoming call to the app menu */
@@ -363,6 +368,7 @@ static void notify_incoming_call(struct gtk_mod *mod,
 			G_CALLBACK(menu_on_incoming_call_reject), mod);
 	gtk_menu_shell_append(GTK_MENU_SHELL(call_menu), menu_item);
 }
+#endif
 
 
 static void denotify_incoming_call(struct gtk_mod *mod, struct call *call)
