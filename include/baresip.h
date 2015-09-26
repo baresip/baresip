@@ -893,6 +893,14 @@ const char *sdp_rattr(const struct sdp_session *s, const struct sdp_media *m,
 
 
 /*
+ * SIP Request
+ */
+
+int sip_req_send(struct ua *ua, const char *method, const char *uri,
+		 sip_resp_h *resph, void *arg, const char *fmt, ...);
+
+
+/*
  * Modules
  */
 

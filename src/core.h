@@ -276,14 +276,6 @@ void rtpkeep_refresh(struct rtpkeep *rk, uint32_t ts);
 
 
 /*
- * SIP Request
- */
-
-int sip_req_send(struct ua *ua, const char *method, const char *uri,
-		 sip_resp_h *resph, void *arg, const char *fmt, ...);
-
-
-/*
  * SDP
  */
 
