@@ -1,3 +1,31 @@
+2015-09-26 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.15
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT commit 86262a6fc17e19e2be82eb8a2a05ec0f884d3d38
+	* GIT tag: v0.4.15
+	* NOTE: Requires libre v0.4.13 or later
+
+	* added selftest binary
+
+	* baresip-core:
+	  - audio: fix televent when pt != 101 (reported by AndyJRobinson)
+	  - magic: use __func__ for C99 or later
+	  - sip: make sip_req_send() public
+	  - ua: add UA_EVENT_CALL_DTMF_START/END, thanks Gary Metalle
+
+	* Modules:
+
+	* alsa: added extra logging
+
+	* gtk: add support for libnotify (thanks Charles Lehner)
+
+	* video: fix potential null deref (thanks Tomasz Ostrowski)
+
+	* zrtp: added 36-bytes preamble for TURN-header
+
+
 2015-08-08 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.14
