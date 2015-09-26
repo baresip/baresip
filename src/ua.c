@@ -368,11 +368,32 @@ static void call_event_handler(struct call *call, enum call_event ev,
 }
 
 
+static void call_dtmf_handler(struct call *call, char key, void *arg)
+{
+	struct ua *ua = arg;
+	char key_str[2];
+
+	MAGIC_CHECK(ua);
+
+	if (key != '\0') {
+
+		key_str[0] = key;
+		key_str[1] = '\0';
+
+		ua_event(ua, UA_EVENT_CALL_DTMF_START, call, key_str);
+	}
+	else {
+		ua_event(ua, UA_EVENT_CALL_DTMF_END, call, NULL);
+	}
+}
+
+
 static int ua_call_alloc(struct call **callp, struct ua *ua,
 			 enum vidmode vidmode, const struct sip_msg *msg,
 			 struct call *xcall, const char *local_uri)
 {
 	struct call_prm cprm;
+	int err;
 
 	if (*callp) {
 		warning("ua: call_alloc: call is already allocated\n");
@@ -382,11 +403,17 @@ static int ua_call_alloc(struct call **callp, struct ua *ua,
 	cprm.vidmode = vidmode;
 	cprm.af      = ua->af;
 
-	return call_alloc(callp, conf_config(), &ua->calls,
-			  ua->acc->dispname,
-			  local_uri ? local_uri : ua->acc->aor,
-			  ua->acc, ua, &cprm,
-			  msg, xcall, call_event_handler, ua);
+	err = call_alloc(callp, conf_config(), &ua->calls,
+			 ua->acc->dispname,
+			 local_uri ? local_uri : ua->acc->aor,
+			 ua->acc, ua, &cprm,
+			 msg, xcall, call_event_handler, ua);
+	if (err)
+		return err;
+
+	call_set_handlers(*callp, NULL, call_dtmf_handler, ua);
+
+	return 0;
 }
 
 
@@ -1455,6 +1482,8 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_ESTABLISHED:     return "CALL_ESTABLISHED";
 	case UA_EVENT_CALL_CLOSED:          return "CALL_CLOSED";
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
+	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
+	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
 	default: return "?";
 	}
 }
