@@ -93,7 +93,7 @@ int daala_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 int daala_decode(struct viddec_state *vds, struct vidframe *frame,
 		 bool marker, uint16_t seq, struct mbuf *mb)
 {
-	ogg_packet op;
+	daala_packet dp;
 	bool ishdr;
 	int i, r, err = 0;
 	(void)seq;
@@ -117,16 +117,16 @@ int daala_decode(struct viddec_state *vds, struct vidframe *frame,
 		  mbuf_get_left(mb));
 #endif
 
-	memset(&op, 0, sizeof(op));
+	memset(&dp, 0, sizeof(dp));
 
-	op.packet = mbuf_buf(mb);
-	op.bytes = mbuf_get_left(mb);
-	op.b_o_s = marker;
+	dp.packet = mbuf_buf(mb);
+	dp.bytes = mbuf_get_left(mb);
+	dp.b_o_s = marker;
 
 	if (daala_packet_isheader(mbuf_buf(mb), mbuf_get_left(mb))) {
 
 		r = daala_decode_header_in(&vds->di, &vds->dc, &vds->ds,
-					   &op);
+					   &dp);
 		if (r < 0) {
 			warning("daala: decoder: decode_header_in failed"
 				" (ret = %d)\n",
@@ -155,7 +155,7 @@ int daala_decode(struct viddec_state *vds, struct vidframe *frame,
 			return EPROTO;
 		}
 
-		r = daala_decode_packet_in(vds->dec, &img, &op);
+		r = daala_decode_packet_in(vds->dec, &img, &dp);
 		if (r < 0) {
 			warning("daala: decode: packet_in error (%d)\n", r);
 			return EPROTO;

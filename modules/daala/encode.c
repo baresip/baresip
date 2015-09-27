@@ -121,7 +121,7 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 {
 	daala_info di;
 	daala_comment dc;
-	ogg_packet op;
+	daala_packet dp;
 	int err = 0;
 	int complexity = 0;
 	int video_q = 10;
@@ -171,7 +171,7 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	for (;;) {
 		int r;
 
-		r = daala_encode_flush_header(ves->enc, &dc, &op);
+		r = daala_encode_flush_header(ves->enc, &dc, &dp);
 		if (r < 0) {
 			warning("daala: flush_header returned %d\n", r);
 			break;
@@ -180,19 +180,19 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 			break;
 
 		debug("daala: header: %lld bytes header=%d key=%d\n",
-			  op.bytes,
-			  daala_packet_isheader(op.packet, op.bytes),
-			  daala_packet_iskeyframe(op.packet, op.bytes));
+			  dp.bytes,
+			  daala_packet_isheader(dp.packet, dp.bytes),
+			  daala_packet_iskeyframe(dp.packet, dp.bytes));
 
 #if 0
 		re_printf("bos=%lld, eos=%lld, granule=%lld, packetno=%lld\n",
-			  op.b_o_s,
-			  op.e_o_s,
-			  op.granulepos,
-			  op.packetno);
+			  dp.b_o_s,
+			  dp.e_o_s,
+			  dp.granulepos,
+			  dp.packetno);
 #endif
 
-		err = send_packet(ves, op.b_o_s, op.packet, op.bytes);
+		err = send_packet(ves, dp.b_o_s, dp.packet, dp.bytes);
 		if (err)
 			break;
 	}
@@ -256,9 +256,9 @@ int daala_encode(struct videnc_state *ves, bool update,
 	}
 
 	for (;;) {
-		ogg_packet op;
+		daala_packet dp;
 
-		r = daala_encode_packet_out(ves->enc, 0, &op);
+		r = daala_encode_packet_out(ves->enc, 0, &dp);
 		if (r < 0) {
 			warning("daala: encoder: packet_out ret=%d\n", r);
 			break;
@@ -267,7 +267,7 @@ int daala_encode(struct videnc_state *ves, bool update,
 			break;
 		}
 
-		err = send_packet(ves, op.b_o_s, op.packet, op.bytes);
+		err = send_packet(ves, dp.b_o_s, dp.packet, dp.bytes);
 		if (err)
 			break;
 	}
