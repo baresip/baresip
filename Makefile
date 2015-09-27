@@ -180,6 +180,7 @@ endif
 
 .PHONY: test
 test:	$(TEST_BIN)
+	./$(TEST_BIN)
 
 $(TEST_BIN):	$(STATICLIB) $(TEST_OBJS)
 	@echo "  LD      $@"
