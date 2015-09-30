@@ -130,69 +130,86 @@ enum audio_mode {
 	AUDIO_MODE_TMR               /**< Use timer                     */
 };
 
+
+/** SIP User-Agent */
+struct config_sip {
+	uint32_t trans_bsize;   /**< SIP Transaction bucket size    */
+	char uuid[64];          /**< Universally Unique Identifier  */
+	char local[64];         /**< Local SIP Address              */
+	char cert[256];         /**< SIP Certificate                */
+};
+
+/** Audio */
+struct config_audio {
+	char src_mod[16];       /**< Audio source module            */
+	char src_dev[128];      /**< Audio source device            */
+	char play_mod[16];      /**< Audio playback module          */
+	char play_dev[128];     /**< Audio playback device          */
+	char alert_mod[16];     /**< Audio alert module             */
+	char alert_dev[128];    /**< Audio alert device             */
+	struct range srate;     /**< Audio sampling rate in [Hz]    */
+	struct range channels;  /**< Nr. of audio channels (1=mono) */
+	uint32_t srate_play;    /**< Opt. sampling rate for player  */
+	uint32_t srate_src;     /**< Opt. sampling rate for source  */
+	uint32_t channels_play; /**< Opt. channels for player       */
+	uint32_t channels_src;  /**< Opt. channels for source       */
+	bool src_first;         /**< Audio source opened first      */
+	enum audio_mode txmode; /**< Audio transmit mode            */
+};
+
+#ifdef USE_VIDEO
+/** Video */
+struct config_video {
+	char src_mod[16];       /**< Video source module            */
+	char src_dev[128];      /**< Video source device            */
+	char disp_mod[16];      /**< Video display module           */
+	char disp_dev[128];     /**< Video display device           */
+	unsigned width, height; /**< Video resolution               */
+	uint32_t bitrate;       /**< Encoder bitrate in [bit/s]     */
+	uint32_t fps;           /**< Video framerate                */
+};
+#endif
+
+/** Audio/Video Transport */
+struct config_avt {
+	uint8_t rtp_tos;        /**< Type-of-Service for outg. RTP  */
+	struct range rtp_ports; /**< RTP port range                 */
+	struct range rtp_bw;    /**< RTP Bandwidth range [bit/s]    */
+	bool rtcp_enable;       /**< RTCP is enabled                */
+	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
+	struct range jbuf_del;  /**< Delay, number of frames        */
+	bool rtp_stats;         /**< Enable RTP statistics          */
+};
+
+/* Network */
+struct config_net {
+	char ifname[16];        /**< Bind to interface (optional)   */
+};
+
+#ifdef USE_VIDEO
+/* BFCP */
+struct config_bfcp {
+	char proto[16];         /**< BFCP Transport (optional)      */
+};
+#endif
+
+
 /** Core configuration */
 struct config {
 
-	/** SIP User-Agent */
-	struct config_sip {
-		uint32_t trans_bsize;   /**< SIP Transaction bucket size    */
-		char uuid[64];          /**< Universally Unique Identifier  */
-		char local[64];         /**< Local SIP Address              */
-		char cert[256];         /**< SIP Certificate                */
-	} sip;
+	struct config_sip sip;
 
-	/** Audio */
-	struct config_audio {
-		char src_mod[16];       /**< Audio source module            */
-		char src_dev[128];      /**< Audio source device            */
-		char play_mod[16];      /**< Audio playback module          */
-		char play_dev[128];     /**< Audio playback device          */
-		char alert_mod[16];     /**< Audio alert module             */
-		char alert_dev[128];    /**< Audio alert device             */
-		struct range srate;     /**< Audio sampling rate in [Hz]    */
-		struct range channels;  /**< Nr. of audio channels (1=mono) */
-		uint32_t srate_play;    /**< Opt. sampling rate for player  */
-		uint32_t srate_src;     /**< Opt. sampling rate for source  */
-		uint32_t channels_play; /**< Opt. channels for player       */
-		uint32_t channels_src;  /**< Opt. channels for source       */
-		bool src_first;         /**< Audio source opened first      */
-		enum audio_mode txmode; /**< Audio transmit mode            */
-	} audio;
+	struct config_audio audio;
 
 #ifdef USE_VIDEO
-	/** Video */
-	struct config_video {
-		char src_mod[16];       /**< Video source module            */
-		char src_dev[128];      /**< Video source device            */
-		char disp_mod[16];      /**< Video display module           */
-		char disp_dev[128];     /**< Video display device           */
-		unsigned width, height; /**< Video resolution               */
-		uint32_t bitrate;       /**< Encoder bitrate in [bit/s]     */
-		uint32_t fps;           /**< Video framerate                */
-	} video;
+	struct config_video video;
 #endif
+	struct config_avt avt;
 
-	/** Audio/Video Transport */
-	struct config_avt {
-		uint8_t rtp_tos;        /**< Type-of-Service for outg. RTP  */
-		struct range rtp_ports; /**< RTP port range                 */
-		struct range rtp_bw;    /**< RTP Bandwidth range [bit/s]    */
-		bool rtcp_enable;       /**< RTCP is enabled                */
-		bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
-		struct range jbuf_del;  /**< Delay, number of frames        */
-		bool rtp_stats;         /**< Enable RTP statistics          */
-	} avt;
-
-	/* Network */
-	struct config_net {
-		char ifname[16];        /**< Bind to interface (optional)   */
-	} net;
+	struct config_net net;
 
 #ifdef USE_VIDEO
-	/* BFCP */
-	struct config_bfcp {
-		char proto[16];         /**< BFCP Transport (optional)      */
-	} bfcp;
+	struct config_bfcp bfcp;
 #endif
 };
 
