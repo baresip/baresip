@@ -118,6 +118,7 @@ APP_OBJS  := $(OBJS) $(patsubst %.c,$(BUILD)/src/%.o,$(APP_SRCS)) $(MOD_OBJS)
 LIB_OBJS  := $(OBJS) $(MOD_OBJS)
 
 TEST_OBJS := $(patsubst %.c,$(BUILD)/test/%.o,$(filter %.c,$(TEST_SRCS)))
+TEST_OBJS += $(patsubst %.cpp,$(BUILD)/test/%.o,$(filter %.cpp,$(TEST_SRCS)))
 
 ifneq ($(LIBREM_PATH),)
 LIBS	+= -L$(LIBREM_PATH)
@@ -191,6 +192,10 @@ $(TEST_BIN):	$(STATICLIB) $(TEST_OBJS)
 $(BUILD)/%.o: %.c $(BUILD) Makefile $(APP_MK)
 	@echo "  CC      $@"
 	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+
+$(BUILD)/%.o: %.cpp $(BUILD) Makefile $(APP_MK)
+	@echo "  CXX     $@"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/%.o: %.m $(BUILD) Makefile $(APP_MK)
 	@echo "  OC      $@"

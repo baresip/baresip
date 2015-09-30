@@ -10,4 +10,6 @@ TEST_SRCS	+= ua.c
 TEST_SRCS	+= sip_server.c
 TEST_SRCS	+= test.c
 
+TEST_SRCS	+= cplusplus.c
+
 TEST_SRCS	+= main.c

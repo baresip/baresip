@@ -28,6 +28,10 @@ static int run_tests(void)
 	if (err)
 		return err;
 
+	err = test_cplusplus();
+	if (err)
+		return err;
+
 	return 0;
 }
 

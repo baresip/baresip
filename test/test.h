@@ -56,3 +56,14 @@ int test_cmd(void);
 int test_ua_alloc(void);
 int test_uag_find_param(void);
 int test_ua_register(void);
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int test_cplusplus(void);
+
+#ifdef __cplusplus
+}
+#endif
