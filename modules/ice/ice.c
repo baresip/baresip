@@ -250,6 +250,9 @@ static void dns_handler(int err, const struct sa *srv, void *arg)
 	if (err)
 		goto out;
 
+	debug("ice: resolved %s-server to address %J\n",
+	      ice.turn ? "TURN" : "STUN", srv);
+
 	sess->srv = *srv;
 
 	for (le=sess->medial.head; le; le=le->next) {
@@ -280,6 +283,10 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 
 	if (!sessp || !dnsc || !srv || !user || !pass || !ss || !estabh)
 		return EINVAL;
+
+	info("ice: new session with %s-server at %s (username=%s)\n",
+	     ice.turn ? "TURN" : "STUN",
+	     srv, user);
 
 	sess = mem_zalloc(sizeof(*sess), session_destructor);
 	if (!sess)
