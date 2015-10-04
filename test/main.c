@@ -45,7 +45,7 @@ int main(void)
 	if (err)
 		return err;
 
-	re_printf("running test..\n");
+	re_printf("running test version %s\n", BARESIP_VERSION);
 
 	/* note: run SIP-traffic on localhost */
 	config = conf_config();

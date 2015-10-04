@@ -4,12 +4,24 @@
 # Copyright (C) 2010 Creytiv.com
 #
 
+
+#
+# Test-cases:
+#
 TEST_SRCS	+= cmd.c
 TEST_SRCS	+= ua.c
-
-TEST_SRCS	+= sip_server.c
-TEST_SRCS	+= test.c
-
 TEST_SRCS	+= cplusplus.c
+
+
+#
+# Mocks
+#
+TEST_SRCS	+= mock/sipsrv.c
+ifneq ($(USE_TLS),)
+TEST_SRCS	+= mock/cert.c
+endif
+
+
+TEST_SRCS	+= test.c
 
 TEST_SRCS	+= main.c

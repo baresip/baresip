@@ -50,7 +50,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
-int test_ua_register(void)
+static int reg(enum sip_transp tp)
 {
 	struct test t;
 	char aor[256];
@@ -58,17 +58,17 @@ int test_ua_register(void)
 
 	memset(&t, 0, sizeof t);
 
-	err = sip_server_create(&t.srv);
+	err = sip_server_alloc(&t.srv);
 	if (err) {
 		warning("failed to create sip server (%d/%m)\n", err, err);
 		goto out;
 	}
 
-	re_snprintf(aor, sizeof(aor), "sip:x:x@%J", &t.srv->laddr);
+	err = sip_server_uri(t.srv, aor, sizeof(aor), tp);
+	TEST_ERR(err);
 
 	err = ua_alloc(&t.ua, aor);
-	if (err)
-		goto out;
+	TEST_ERR(err);
 
 	err = uag_event_register(ua_event_handler, &t);
 	if (err)
@@ -82,7 +82,8 @@ int test_ua_register(void)
 	if (t.err)
 		err = t.err;
 
-	ASSERT_TRUE(t.srv->got_register_req);
+	ASSERT_TRUE(t.srv->n_register_req > 0);
+	ASSERT_EQ(tp, t.srv->tp_last);
 	ASSERT_TRUE(t.got_register_ok);
 
  out:
@@ -92,6 +93,20 @@ int test_ua_register(void)
 	uag_event_unregister(ua_event_handler);
 	mem_deref(t.srv);
 	mem_deref(t.ua);
+
+	return err;
+}
+
+
+int test_ua_register(void)
+{
+	int err = 0;
+
+	err = reg(SIP_TRANSP_UDP);
+#if 0
+	err |= reg(SIP_TRANSP_TCP);
+	err |= reg(SIP_TRANSP_TLS);
+#endif
 
 	return err;
 }

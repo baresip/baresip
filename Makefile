@@ -49,6 +49,9 @@ CXXFLAGS  += -I$(LIBREM_PATH)/include
 CXXFLAGS  += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
 CXXFLAGS  += $(EXTRA_CXXFLAGS)
 
+# XXX: common for C/C++
+CPPFLAGS += -DHAVE_INTTYPES_H
+
 ifneq ($(LIBREM_PATH),)
 SPLINT_OPTIONS += -I$(LIBREM_PATH)/include
 CLANG_OPTIONS  += -I$(LIBREM_PATH)/include
@@ -195,7 +198,7 @@ $(BUILD)/%.o: %.c $(BUILD) Makefile $(APP_MK)
 
 $(BUILD)/%.o: %.cpp $(BUILD) Makefile $(APP_MK)
 	@echo "  CXX     $@"
-	@$(CXX) $(CXXFLAGS) -c $< -o $@ $(DFLAGS)
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/%.o: %.m $(BUILD) Makefile $(APP_MK)
 	@echo "  OC      $@"
@@ -206,7 +209,7 @@ $(BUILD)/%.o: %.S $(BUILD) Makefile $(APP_MK)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD): Makefile
-	@mkdir -p $(BUILD)/src $(MOD_BLD) $(BUILD)/test
+	@mkdir -p $(BUILD)/src $(MOD_BLD) $(BUILD)/test/mock
 	@touch $@
 
 install: $(BIN) $(MOD_BINS)

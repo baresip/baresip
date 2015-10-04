@@ -33,21 +33,43 @@
 		goto out;						\
 	}
 
+#define TEST_ERR(err)							\
+	if ((err)) {							\
+		(void)re_fprintf(stderr, "\n");				\
+		warning("TEST_ERR: %s:%u:"			\
+			      " (%m)\n",				\
+			      __FILE__, __LINE__,			\
+			      (err));					\
+		goto out;						\
+	}
+
 
 /* helpers */
 
 int re_main_timeout(uint32_t timeout);
 
-struct sip_server {
-	struct sa laddr;
-	struct udp_sock *us;
-	struct sip *sip;
 
-	bool got_register_req;
+#ifdef USE_TLS
+extern const char test_certificate[];
+#endif
+
+
+/*
+ * SIP Server
+ */
+
+struct sip_server {
+	struct sip *sip;
+	struct sip_lsnr *lsnr;
 	bool terminate;
+
+	unsigned n_register_req;
+	enum sip_transp tp_last;
 };
 
-int sip_server_create(struct sip_server **srvp);
+int sip_server_alloc(struct sip_server **srvp);
+int sip_server_uri(struct sip_server *srv, char *uri, size_t sz,
+		   enum sip_transp tp);
 
 
 /* test cases */
