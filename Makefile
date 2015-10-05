@@ -172,6 +172,19 @@ ifneq ($(RANLIB),)
 	@$(RANLIB) $@
 endif
 
+libbaresip.pc:
+	@echo 'prefix='$(PREFIX) > libbaresip.pc
+	@echo 'exec_prefix=$${prefix}' >> libbaresip.pc
+	@echo 'libdir=$${prefix}/lib' >> libbaresip.pc
+	@echo 'includedir=$${prefix}/include' >> libbaresip.pc
+	@echo '' >> libbaresip.pc
+	@echo 'Name: libbaresip' >> libbaresip.pc
+	@echo 'Description: Baresip is a modular SIP User-Agent with audio and video support' >> libbaresip.pc
+	@echo 'Version: '$(VERSION) >> libbaresip.pc
+	@echo 'URL: http://www.creytiv.com/baresip.html' >> libbaresip.pc
+	@echo 'Libs: -L$${libdir} -lbaresip' >> libbaresip.pc
+	@echo 'Cflags: -I$${includedir}' >> libbaresip.pc
+
 # GPROF requires static linking
 $(BIN):	$(APP_OBJS)
 	@echo "  LD      $@"
@@ -222,11 +235,12 @@ install: $(BIN) $(MOD_BINS)
 
 install-dev: install-shared install-static
 
-install-shared: $(SHARED)
+install-shared: $(SHARED) libbaresip.pc
 	@mkdir -p $(DESTDIR)$(INCDIR)
 	$(INSTALL) -Cm 0644 include/baresip.h $(DESTDIR)$(INCDIR)
-	@mkdir -p $(DESTDIR)$(LIBDIR)
+	@mkdir -p $(DESTDIR)$(LIBDIR) $(DESTDIR)$(LIBDIR)/pkgconfig
 	$(INSTALL) -m 0644 $(SHARED) $(DESTDIR)$(LIBDIR)
+	$(INSTALL) -m 0644 libbaresip.pc $(DESTDIR)$(LIBDIR)/pkgconfig
 
 install-static: $(STATICLIB)
 	@mkdir -p $(DESTDIR)$(INCDIR)
@@ -239,10 +253,11 @@ uninstall:
 	@rm -rf $(DESTDIR)$(MOD_PATH)
 	@rm -f $(DESTDIR)$(PREFIX)/lib/$(SHARED)
 	@rm -f $(DESTDIR)$(PREFIX)/lib/$(STATICLIB)
+	@rm -f $(DESTDIR)$(PREFIX)/lib/pkgconfig/libbaresip.pc
 
 .PHONY: clean
 clean:
-	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD) $(TEST_BIN)
+	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD) $(TEST_BIN) $(STATICLIB) libbaresip.pc
 	@rm -f *stamp \
 	`find . -name "*.[od]"` \
 	`find . -name "*~"` \
