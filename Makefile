@@ -14,6 +14,7 @@ USE_VIDEO := 1
 
 PROJECT	  := baresip
 VERSION   := 0.4.15
+DESCR     := "Baresip is a modular SIP User-Agent with audio and video support"
 
 ifndef LIBRE_MK
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \
@@ -179,7 +180,7 @@ libbaresip.pc:
 	@echo 'includedir=$${prefix}/include' >> libbaresip.pc
 	@echo '' >> libbaresip.pc
 	@echo 'Name: libbaresip' >> libbaresip.pc
-	@echo 'Description: Baresip is a modular SIP User-Agent with audio and video support' >> libbaresip.pc
+	@echo 'Description: $(DESCR)' >> libbaresip.pc
 	@echo 'Version: '$(VERSION) >> libbaresip.pc
 	@echo 'URL: http://www.creytiv.com/baresip.html' >> libbaresip.pc
 	@echo 'Libs: -L$${libdir} -lbaresip' >> libbaresip.pc
@@ -257,7 +258,8 @@ uninstall:
 
 .PHONY: clean
 clean:
-	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD) $(TEST_BIN) $(STATICLIB) libbaresip.pc
+	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD) $(TEST_BIN) \
+		$(STATICLIB) libbaresip.pc
 	@rm -f *stamp \
 	`find . -name "*.[od]"` \
 	`find . -name "*~"` \
