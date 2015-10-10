@@ -8,29 +8,43 @@
 #include "test.h"
 
 
-static int run_tests(void)
+typedef int (test_exec_h)(void);
+
+struct test {
+	test_exec_h *exec;
+	const char *name;
+};
+
+#define TEST(a) {a, #a}
+
+static const struct test tests[] = {
+	TEST(test_cmd),
+	TEST(test_ua_alloc),
+	TEST(test_uag_find_param),
+	TEST(test_ua_register),
+	TEST(test_cplusplus),
+};
+
+
+static int run_tests(bool verbose)
 {
+	size_t i;
 	int err;
 
-	err = test_cmd();
-	if (err)
-		return err;
+	for (i=0; i<ARRAY_SIZE(tests); i++) {
 
-	err = test_ua_alloc();
-	if (err)
-		return err;
+		if (verbose) {
+			re_printf("test %u -- %s\n",
+				  i, tests[i].name);
+		}
 
-	err = test_uag_find_param();
-	if (err)
-		return err;
-
-	err = test_ua_register();
-	if (err)
-		return err;
-
-	err = test_cplusplus();
-	if (err)
-		return err;
+		err = tests[i].exec();
+		if (err) {
+			warning("%s: test failed (%m)\n",
+				tests[i].name, err);
+			return err;
+		}
+	}
 
 	return 0;
 }
@@ -60,7 +74,7 @@ int main(void)
 	if (err)
 		goto out;
 
-	err = run_tests();
+	err = run_tests(false);
 	if (err)
 		goto out;
 
@@ -71,7 +85,8 @@ int main(void)
 		goto out;
 #endif
 
-	re_printf("\x1b[32mOK. selftest passed successfully\x1b[;m\n");
+	re_printf("\x1b[32mOK. %zu tests passed successfully\x1b[;m\n",
+		  ARRAY_SIZE(tests));
 
  out:
 	if (err) {

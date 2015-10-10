@@ -13,7 +13,7 @@ struct test {
 	struct sip_server *srv;
 	struct ua *ua;
 	int err;
-	bool got_register_ok;
+	unsigned got_register_ok;
 };
 
 
@@ -32,7 +32,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	if (ev == UA_EVENT_REGISTER_OK) {
 
-		t->got_register_ok = true;
+		++t->got_register_ok;
 
 		/* verify register success */
 		ASSERT_TRUE(ua_isregistered(t->ua));
@@ -84,7 +84,7 @@ static int reg(enum sip_transp tp)
 
 	ASSERT_TRUE(t.srv->n_register_req > 0);
 	ASSERT_EQ(tp, t.srv->tp_last);
-	ASSERT_TRUE(t.got_register_ok);
+	ASSERT_TRUE(t.got_register_ok > 0);
 
  out:
 	if (err) {
