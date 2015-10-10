@@ -67,7 +67,7 @@ static void *play_thread(void *arg)
 
 	while (st->run) {
 
-		(void)usleep(4000);
+		sys_msleep(4);
 
 		now = tmr_jiffies();
 
