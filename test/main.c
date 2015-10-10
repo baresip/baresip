@@ -70,7 +70,7 @@ int main(void)
 	str_ncpy(config->sip.local, "127.0.0.1:0", sizeof(config->sip.local));
 
 	/* XXX: needed for ua tests */
-	err = ua_init("test", true, true, false, false);
+	err = ua_init("test", true, true, true, false);
 	if (err)
 		goto out;
 
@@ -79,10 +79,7 @@ int main(void)
 		goto out;
 
 #if 1
-	ua_stop_all(false);
-	err = re_main_timeout(5);
-	if (err)
-		goto out;
+	ua_stop_all(true);
 #endif
 
 	re_printf("\x1b[32mOK. %zu tests passed successfully\x1b[;m\n",

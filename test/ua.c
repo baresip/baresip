@@ -102,9 +102,9 @@ int test_ua_register(void)
 {
 	int err = 0;
 
-	err = reg(SIP_TRANSP_UDP);
-#if 0
+	err |= reg(SIP_TRANSP_UDP);
 	err |= reg(SIP_TRANSP_TCP);
+#ifdef USE_TLS
 	err |= reg(SIP_TRANSP_TLS);
 #endif
 

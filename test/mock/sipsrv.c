@@ -137,7 +137,8 @@ int sip_server_uri(struct sip_server *srv, char *uri, size_t sz,
 	if (err)
 		return err;
 
-	if (re_snprintf(uri, sz, "sip:x:x@%J%s",
+	/* NOTE: angel brackets needed to parse ;transport parameter */
+	if (re_snprintf(uri, sz, "<sip:x:x@%J%s>",
 			&laddr, sip_transp_param(tp)) < 0)
 		return ENOMEM;
 
