@@ -292,7 +292,7 @@ static int cmd_answer(struct re_printf *pf, void *unused)
 	(void)pf;
 	(void)unused;
 
-	ua_answer(uag_cur(), NULL);
+	ua_hold_answer(uag_cur(), NULL);
 
 	return 0;
 }

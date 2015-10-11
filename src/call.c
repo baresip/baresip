@@ -65,6 +65,7 @@ struct call {
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
+	bool on_hold;             /**< True if call is on hold              */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -779,7 +780,12 @@ int call_hold(struct call *call, bool hold)
 	if (!call || !call->sess)
 		return EINVAL;
 
+	if (hold == call->on_hold)
+		return 0;
+
 	info("call: %s %s\n", hold ? "hold" : "resume", call->peer_uri);
+
+	call->on_hold = hold;
 
 	FOREACH_STREAM
 		stream_hold(le->data, hold);
@@ -909,8 +915,10 @@ int call_info(struct re_printf *pf, const struct call *call)
 	if (!call)
 		return 0;
 
-	return re_hprintf(pf, "%H  %8s  %s", print_duration, call,
-			  state_name(call->state), call->peer_uri);
+	return re_hprintf(pf, "%H  %9s  %s  %s", print_duration, call,
+			  state_name(call->state),
+			  call->on_hold ? "(on hold)" : "         ",
+			  call->peer_uri);
 }
 
 
@@ -1653,4 +1661,10 @@ void call_set_xrtpstat(struct call *call)
 	sipsess_set_close_headers(call->sess,
 				  "X-RTP-Stat: %H\r\n",
 				  audio_print_rtpstat, call->audio);
+}
+
+
+bool call_is_onhold(const struct call *call)
+{
+	return call ? call->on_hold : false;
 }

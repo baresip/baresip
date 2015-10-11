@@ -249,6 +249,38 @@ static const char *translate_errorcode(uint16_t scode)
 }
 
 
+static struct call *ua_find_call_onhold(const struct ua *ua)
+{
+	struct le *le;
+
+	if (!ua)
+		return NULL;
+
+	for (le = ua->calls.tail; le; le = le->prev) {
+
+		struct call *call = le->data;
+
+		if (call_is_onhold(call))
+			return call;
+	}
+
+	return NULL;
+}
+
+
+static void resume_call(struct ua *ua)
+{
+	struct call *call;
+
+	call = ua_find_call_onhold(ua);
+	if (call) {
+		ua_printf(ua, "resuming previous call with '%s'\n",
+			  call_peeruri(call));
+		call_hold(call, false);
+	}
+}
+
+
 static void call_event_handler(struct call *call, enum call_event ev,
 			       const char *str, void *arg)
 {
@@ -328,6 +360,8 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		}
 		ua_event(ua, UA_EVENT_CALL_CLOSED, call, str);
 		mem_deref(call);
+
+		resume_call(ua);
 		break;
 
 	case CALL_EVENT_TRANSFER:
@@ -770,6 +804,8 @@ void ua_hangup(struct ua *ua, struct call *call,
 	(void)call_hangup(call, scode, reason);
 
 	mem_deref(call);
+
+	resume_call(ua);
 }
 
 
@@ -792,11 +828,46 @@ int ua_answer(struct ua *ua, struct call *call)
 			return ENOENT;
 	}
 
-	/* todo: put previous call on-hold (if configured) */
-
 	ua->play = mem_deref(ua->play);
 
 	return call_answer(call, 200);
+}
+
+
+/**
+ * Put the current call on hold and answer the incoming call
+ *
+ * @param ua   User-Agent
+ * @param call Call to answer, or NULL for current call
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_hold_answer(struct ua *ua, struct call *call)
+{
+	struct call *pcall;
+	int err;
+
+	if (!ua)
+		return EINVAL;
+
+	if (!call) {
+		call = ua_call(ua);
+		if (!call)
+			return ENOENT;
+	}
+
+	/* put previous call on-hold */
+	pcall = ua_prev_call(ua);
+	if (pcall) {
+		ua_printf(ua, "putting call with '%s' on hold\n",
+		     call_peeruri(pcall));
+
+		err = call_hold(pcall, true);
+		if (err)
+			return err;
+	}
+
+	return ua_answer(ua, call);
 }
 
 
