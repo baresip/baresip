@@ -75,6 +75,7 @@ enum {
  */
 struct autx {
 	struct ausrc_st *ausrc;       /**< Audio Source                    */
+	struct ausrc_prm ausrc_prm;
 	const struct aucodec *ac;     /**< Current audio encoder           */
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
@@ -122,6 +123,7 @@ struct autx {
  */
 struct aurx {
 	struct auplay_st *auplay;     /**< Audio Player                    */
+	struct auplay_prm auplay_prm;
 	const struct aucodec *ac;     /**< Current audio decoder           */
 	struct audec_state *dec;      /**< Audio decoder state (optional)  */
 	struct aubuf *aubuf;          /**< Incoming audio buffer           */
@@ -962,6 +964,8 @@ static int start_player(struct aurx *rx, struct audio *a)
 				a->cfg.play_mod, rx->device, err);
 			return err;
 		}
+
+		rx->auplay_prm = prm;
 	}
 
 	return 0;
@@ -1061,6 +1065,8 @@ static int start_source(struct autx *tx, struct audio *a)
 		default:
 			break;
 		}
+
+		tx->ausrc_prm = prm;
 	}
 
 	return 0;
@@ -1394,6 +1400,56 @@ void audio_set_devicename(struct audio *a, const char *src, const char *play)
 
 	str_ncpy(a->tx.device, src, sizeof(a->tx.device));
 	str_ncpy(a->rx.device, play, sizeof(a->rx.device));
+}
+
+
+int audio_set_source(struct audio *au, const char *mod, const char *device)
+{
+	struct autx *tx;
+	int err;
+
+	if (!au)
+		return EINVAL;
+
+	tx = &au->tx;
+
+	/* stop the audio device first */
+	tx->ausrc = mem_deref(tx->ausrc);
+
+	err = ausrc_alloc(&tx->ausrc, NULL, mod, &tx->ausrc_prm, device,
+			  ausrc_read_handler, ausrc_error_handler, au);
+	if (err) {
+		warning("audio: set_source failed (%s.%s): %m\n",
+			mod, device, err);
+		return err;
+	}
+
+	return 0;
+}
+
+
+int audio_set_player(struct audio *au, const char *mod, const char *device)
+{
+	struct aurx *rx;
+	int err;
+
+	if (!au)
+		return EINVAL;
+
+	rx = &au->rx;
+
+	/* stop the audio device first */
+	rx->auplay = mem_deref(rx->auplay);
+
+	err = auplay_alloc(&rx->auplay, mod, &rx->auplay_prm, device,
+			   auplay_write_handler, rx);
+	if (err) {
+		warning("audio: set_player failed (%s.%s): %m\n",
+			mod, device, err);
+		return err;
+	}
+
+	return 0;
 }
 
 
