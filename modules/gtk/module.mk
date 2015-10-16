@@ -8,13 +8,13 @@
 MOD		:= gtk
 $(MOD)_SRCS	+= gtk_mod.c call_window.c dial_dialog.c transfer_dialog.c \
 	uri_entry.c
-$(MOD)_LFLAGS      += `pkg-config --libs gtk+-2.0 $($(MOD)_EXTRA)`
-$(MOD)_CFLAGS      += `pkg-config --cflags gtk+-2.0 $($(MOD)_EXTRA)`
+$(MOD)_LFLAGS	+= $(shell pkg-config --libs gtk+-2.0 $($(MOD)_EXTRA))
+$(MOD)_CFLAGS	+= $(shell pkg-config --cflags gtk+-2.0 $($(MOD)_EXTRA))
 $(MOD)_CFLAGS	+= -Wno-strict-prototypes
 
 ifneq ($(USE_LIBNOTIFY),)
-$(MOD)_EXTRA = libnotify
-$(MOD)_CFLAGS += -DUSE_LIBNOTIFY=1
+$(MOD)_EXTRA	 = libnotify
+$(MOD)_CFLAGS	+= -DUSE_LIBNOTIFY=1
 endif
 
 include mk/mod.mk
