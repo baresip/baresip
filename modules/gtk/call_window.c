@@ -251,8 +251,10 @@ static void mqueue_handler(int id, void *data, void *arg)
 		break;
 
 	case MQ_CLOSE:
-		ua_hangup(uag_current(), win->call, 0, NULL);
-		win->closed = true;
+		if (!win->closed) {
+			ua_hangup(uag_current(), win->call, 0, NULL);
+			win->closed = true;
+		}
 		mem_deref(win);
 		break;
 
@@ -458,6 +460,7 @@ void call_window_closed(struct call_window *win, const char *reason)
 	}
 	call_window_set_status(win, status);
 	win->transfer_dialog = mem_deref(win->transfer_dialog);
+	win->closed = true;
 }
 
 void call_window_ringing(struct call_window *win)
