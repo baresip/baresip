@@ -8,6 +8,6 @@
 MOD                := directfb
 $(MOD)_SRCS        += directfb.c
 $(MOD)_LFLAGS      += $(shell pkg-config --libs directfb)
-CFLAGS             += $(shell pkg-config --cflags directfb)
+$(MOD)_CFLAGS      += $(shell pkg-config --cflags directfb)
 
 include mk/mod.mk

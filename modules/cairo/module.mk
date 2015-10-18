@@ -7,6 +7,6 @@
 MOD		:= cairo
 $(MOD)_SRCS	+= cairo.c
 $(MOD)_LFLAGS	+= -lcairo
-CFLAGS		+= -I$(SYSROOT)/include/cairo
+$(MOD)_CFLAGS	+= -I$(SYSROOT)/include/cairo
 
 include mk/mod.mk
