@@ -102,7 +102,8 @@ USE_GSM := $(shell [ -f $(SYSROOT)/include/gsm.h ] || \
 	[ -f $(SYSROOT)/local/include/gsm/gsm.h ] && echo "yes")
 USE_GST := $(shell pkg-config --exists gstreamer-0.10 && echo "yes")
 USE_GST1 := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
-USE_GST_VIDEO := $(shell pkg-config --exists gstreamer-0.10 gstreamer-app-0.10 \
+USE_GST_VIDEO := \
+	$(shell pkg-config --exists gstreamer-0.10 gstreamer-app-0.10 \
 		&& echo "yes")
 USE_GST_VIDEO1 := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
 		&& echo "yes")
