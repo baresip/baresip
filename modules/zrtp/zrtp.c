@@ -278,7 +278,6 @@ static int verify_sas(struct re_printf *pf, void *arg)
 	(void)pf;
 
 	if (str_isset(carg->prm)) {
-		char *s2h;
 		char rzid[ZRTP_STRING16] = "";
 		zrtp_status_t s;
 		zrtp_string16_t remote_zid = ZSTR_INIT_EMPTY(remote_zid);
@@ -288,12 +287,8 @@ static int verify_sas(struct re_printf *pf, void *arg)
 			return EINVAL;
 		}
 
-		s2h = str2hex(carg->prm, (int) str_len(carg->prm),
-			      rzid, sizeof(rzid));
-		if (str_len(rzid) != sizeof(zrtp_zid_t)) {
-			warning("zrtp: str2hex failed (%s)\n", s2h);
-			return EINVAL;
-		}
+		(void) str2hex(carg->prm, (int) str_len(carg->prm),
+			       rzid, sizeof(rzid));
 		zrtp_zstrncpyc(ZSTR_GV(remote_zid), (const char*)rzid,
 			       sizeof(zrtp_zid_t));
 
