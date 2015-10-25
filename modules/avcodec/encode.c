@@ -177,7 +177,6 @@ static int open_encoder(struct videnc_state *st,
 
 	/* params to avoid libavcodec/x264 default preset error */
 	if (st->codec_id == AV_CODEC_ID_H264) {
-		st->ctx->me_method = ME_UMH;
 		st->ctx->me_range = 16;
 		st->ctx->qmin = 10;
 		st->ctx->qmax = 51;
