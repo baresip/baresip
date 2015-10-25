@@ -392,6 +392,7 @@ static void audio_error_handler(int err, const char *str, void *arg)
 }
 
 
+#ifdef USE_VIDEO
 static void video_error_handler(int err, const char *str, void *arg)
 {
 	struct call *call = arg;
@@ -402,6 +403,7 @@ static void video_error_handler(int err, const char *str, void *arg)
 	call_stream_stop(call);
 	call_event_handler(call, CALL_EVENT_CLOSED, str);
 }
+#endif
 
 
 static void menc_error_handler(int err, void *arg)
