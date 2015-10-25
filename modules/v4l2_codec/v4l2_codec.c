@@ -78,6 +78,7 @@ static int print_caps(int fd)
 {
 	struct v4l2_capability caps;
 	struct v4l2_fmtdesc fmtdesc;
+	struct v4l2_format fmt;
 	bool support_h264 = false;
 	char fourcc[5] = {0};
 	char c;
@@ -85,6 +86,7 @@ static int print_caps(int fd)
 
 	memset(&caps, 0, sizeof(caps));
 	memset(&fmtdesc, 0, sizeof(fmtdesc));
+	memset(&fmt, 0, sizeof(fmt));
 
 	if (-1 == xioctl(fd, VIDIOC_QUERYCAP, &caps)) {
 		err = errno;
@@ -134,7 +136,6 @@ static int print_caps(int fd)
 		return ENODEV;
 	}
 
-	struct v4l2_format fmt = {0};
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix.width = v4l2.width;
 	fmt.fmt.pix.height = v4l2.height;
@@ -165,9 +166,11 @@ static int print_caps(int fd)
 static int init_mmap(struct videnc_state *st, int fd)
 {
 	struct v4l2_requestbuffers req;
+	struct v4l2_buffer buf;
 	int err;
 
 	memset(&req, 0, sizeof(req));
+	memset(&buf, 0, sizeof(buf));
 
 	req.count = 1;
 	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -179,7 +182,6 @@ static int init_mmap(struct videnc_state *st, int fd)
 		return err;
 	}
 
-	struct v4l2_buffer buf = {0};
 	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	buf.memory = V4L2_MEMORY_MMAP;
 	buf.index = 0;
@@ -275,9 +277,11 @@ static void enc_destructor(void *arg)
 static void read_handler(int flags, void *arg)
 {
 	struct videnc_state *st = arg;
-	struct v4l2_buffer buf = {0};
+	struct v4l2_buffer buf;
 	int err;
 	(void)flags;
+
+	memset(&buf, 0, sizeof(buf));
 
 	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	buf.memory = V4L2_MEMORY_MMAP;
@@ -296,7 +300,7 @@ static void read_handler(int flags, void *arg)
 
 	{
 		struct mbuf mb = {0,0,0,0};
-		struct h264_hdr hdr = {0};
+		struct h264_hdr hdr;
 
 		mb.buf = st->buffer;
 		mb.pos = 4;
@@ -307,11 +311,12 @@ static void read_handler(int flags, void *arg)
 		if (err) {
 			warning("could not decode H.264 header\n");
 		}
-
-		if (h264_is_keyframe(hdr.type))
-			++st->stats.n_key;
-		else
-			++st->stats.n_delta;
+		else {
+			if (h264_is_keyframe(hdr.type))
+				++st->stats.n_key;
+			else
+				++st->stats.n_delta;
+		}
 	}
 
 	err = h264_packetize(st->buffer, buf.bytesused,
