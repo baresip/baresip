@@ -207,7 +207,9 @@ static int init_mmap(struct videnc_state *st, int fd)
 
 static int query_buffer(int fd)
 {
-	struct v4l2_buffer buf = {0};
+	struct v4l2_buffer buf;
+
+	memset(&buf, 0, sizeof(buf));
 
 	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	buf.memory = V4L2_MEMORY_MMAP;
@@ -222,8 +224,10 @@ static int query_buffer(int fd)
 
 static int start_streaming(int fd)
 {
-	struct v4l2_buffer buf = {0};
+	struct v4l2_buffer buf;
 	int err;
+
+	memset(&buf, 0, sizeof(buf));
 
 	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	buf.memory = V4L2_MEMORY_MMAP;
