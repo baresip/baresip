@@ -1,0 +1,37 @@
+README
+------
+
+This module is using V4L2 (Video for Linux 2) as a codec module
+for devices that supports compressed formats such as H.264
+The module implements both the vidsrc API and the vidcodec API.
+
+
+- encoder/decoder:   Encoder only
+- codec formats:     H.264
+- keyframe refresh:  Not supported
+
+
+
+
+EXAMPLE CONFIG
+--------------
+
+# Video
+video_source            v4l2_codec,/dev/video0
+video_size              640x480
+
+
+# Video codec Modules (in order)
+module                  v4l2_codec.so
+
+
+
+
+SUPPORTED DEVICES
+-----------------
+
+This webcam supports H.264 hardware acceleration:
+
+HD Pro Webcam C920 (usb-0000:00:1a.0-1.5):
+	/dev/video0
+

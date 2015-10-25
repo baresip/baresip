@@ -992,6 +992,11 @@ int h264_nal_send(bool first, bool last,
 		  bool marker, uint32_t ihdr, const uint8_t *buf,
 		  size_t size, size_t maxsz,
 		  videnc_packet_h *pkth, void *arg);
+static inline bool h264_is_keyframe(int type)
+{
+	return type == H264_NAL_SPS;
+}
+
 
 /*
  * Modules
