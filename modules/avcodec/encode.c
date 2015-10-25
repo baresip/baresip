@@ -632,7 +632,8 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 		break;
 
 	case AV_CODEC_ID_H264:
-		err = h264_packetize(st->mb, st->encprm.pktsize,
+		err = h264_packetize(st->mb->buf, st->mb->end,
+				     st->encprm.pktsize,
 				     st->pkth, st->arg);
 		break;
 

@@ -14,6 +14,9 @@
 #include "avcodec.h"
 
 
+const uint8_t h264_level_idc = 0x0c;
+
+
 int avcodec_resolve_codecid(const char *s)
 {
 	if (0 == str_casecmp(s, "H263"))
