@@ -64,6 +64,7 @@ struct call {
 	time_t time_start;        /**< Time when call started               */
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
+	bool outgoing;
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold              */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
@@ -584,6 +585,8 @@ int call_connect(struct call *call, const struct pl *paddr)
 
 	info("call: connecting to '%r'..\n", paddr);
 
+	call->outgoing = true;
+
 	/* if the peer-address is a full SIP address then we need
 	 * to parse it and extract the SIP uri part.
 	 */
@@ -845,6 +848,8 @@ int call_debug(struct re_printf *pf, const struct call *call)
 			  call->local_name, call->local_uri,
 			  call->peer_name, call->peer_uri,
 			  net_af2name(call->af));
+	err |= re_hprintf(pf, " direction: %s\n",
+			  call->outgoing ? "Outgoing" : "Incoming");
 
 	/* SDP debug */
 	err |= sdp_session_debug(pf, call->sdp);
@@ -1226,6 +1231,8 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 	if (!call || !msg)
 		return EINVAL;
+
+	call->outgoing = false;
 
 	got_offer = (mbuf_get_left(msg->mb) > 0);
 
@@ -1669,4 +1676,10 @@ void call_set_xrtpstat(struct call *call)
 bool call_is_onhold(const struct call *call)
 {
 	return call ? call->on_hold : false;
+}
+
+
+bool call_is_outgoing(const struct call *call)
+{
+	return call ? call->outgoing : false;
 }

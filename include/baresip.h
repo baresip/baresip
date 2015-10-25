@@ -85,6 +85,7 @@ struct audio *call_audio(const struct call *call);
 struct video *call_video(const struct call *call);
 struct list  *call_streaml(const struct call *call);
 struct ua    *call_get_ua(const struct call *call);
+bool          call_is_outgoing(const struct call *call);
 
 
 /*
