@@ -77,13 +77,14 @@ static int xioctl(int fd, unsigned long int request, void *arg)
 static int print_caps(int fd)
 {
 	struct v4l2_capability caps;
-	struct v4l2_fmtdesc fmtdesc = {0};
+	struct v4l2_fmtdesc fmtdesc;
 	bool support_h264 = false;
 	char fourcc[5] = {0};
-	char c, e;
+	char c;
 	int err;
 
 	memset(&caps, 0, sizeof(caps));
+	memset(&fmtdesc, 0, sizeof(fmtdesc));
 
 	if (-1 == xioctl(fd, VIDIOC_QUERYCAP, &caps)) {
 		err = errno;
@@ -118,11 +119,10 @@ static int print_caps(int fd)
 		    support_h264 = true;
 
 		c = fmtdesc.flags & V4L2_FMT_FLAG_COMPRESSED ? 'C' : ' ';
-		e = fmtdesc.flags & V4L2_FMT_FLAG_EMULATED   ? 'E' : ' ';
 
-		info("  %c  %s: %c%c  '%s'\n",
+		info("  %c  %s: %c  '%s'\n",
 		       selected ? '>' : ' ',
-		       fourcc, c, e, fmtdesc.description);
+		       fourcc, c, fmtdesc.description);
 
 		fmtdesc.index++;
 	}
@@ -164,8 +164,10 @@ static int print_caps(int fd)
 
 static int init_mmap(struct videnc_state *st, int fd)
 {
-	struct v4l2_requestbuffers req = {0};
+	struct v4l2_requestbuffers req;
 	int err;
+
+	memset(&req, 0, sizeof(req));
 
 	req.count = 1;
 	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -275,6 +277,7 @@ static void read_handler(int flags, void *arg)
 	struct videnc_state *st = arg;
 	struct v4l2_buffer buf = {0};
 	int err;
+	(void)flags;
 
 	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	buf.memory = V4L2_MEMORY_MMAP;
@@ -327,6 +330,7 @@ static int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 {
 	struct videnc_state *st;
 	int err = 0;
+	(void)fmtp;
 
 	if (!vesp || !vc || !prm || !pkth)
 		return EINVAL;
@@ -386,6 +390,9 @@ static int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 static int encode_packet(struct videnc_state *st, bool update,
 			 const struct vidframe *frame)
 {
+	(void)st;
+	(void)update;
+	(void)frame;
 	return 0;
 }
 
@@ -454,6 +461,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)prm;
 	(void)fmt;
 	(void)errorh;
+	(void)arg;
 
 	if (!stp || !size || !frameh)
 		return EINVAL;
