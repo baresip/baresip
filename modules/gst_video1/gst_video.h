@@ -22,11 +22,3 @@ uint32_t gst_video1_h264_packetization_mode(const char *fmtp);
 int      gst_video1_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 			    bool offer, void *arg);
 bool     gst_video1_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data);
-
-
-/* H.264 */
-extern const uint8_t gst_video_h264_level_idc;
-
-int gst_video_h264_packetize(const uint8_t *buf, size_t len,
-			     size_t pktsize,
-			     videnc_packet_h *pkth, void *arg);

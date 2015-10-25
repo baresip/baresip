@@ -128,8 +128,8 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 		data = info.data;
 		size = info.size;
 
-		gst_video_h264_packetize(data, size, st->encoder.pktsize,
-					 st->pkth, st->arg);
+		h264_packetize(data, size, st->encoder.pktsize,
+			       st->pkth, st->arg);
 
 		gst_buffer_unmap(buffer, &info);
 		gst_sample_unref(sample);
