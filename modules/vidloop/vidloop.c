@@ -112,7 +112,10 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 		}
 	}
 
-	display(vl, &frame);
+	if (vidframe_isvalid(&frame)) {
+
+		display(vl, &frame);
+	}
 
  out:
 	mem_deref(mb);
