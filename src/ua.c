@@ -34,6 +34,7 @@ struct ua {
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
 	int af;                      /**< Preferred Address Family           */
+	int af_media;
 	enum presence_status my_status; /**< Presence Status                 */
 };
 
@@ -428,6 +429,7 @@ static int ua_call_alloc(struct call **callp, struct ua *ua,
 			 struct call *xcall, const char *local_uri)
 {
 	struct call_prm cprm;
+	int af = AF_UNSPEC;
 	int err;
 
 	if (*callp) {
@@ -435,8 +437,18 @@ static int ua_call_alloc(struct call **callp, struct ua *ua,
 		return EALREADY;
 	}
 
+	/* 1. if AF_MEDIA is set, we prefer it
+	 * 2. otherwise fall back to SIP AF
+	 */
+	if (ua->af_media) {
+		af = ua->af_media;
+	}
+	else if (ua->af) {
+		af = ua->af;
+	}
+
 	cprm.vidmode = vidmode;
-	cprm.af      = ua->af;
+	cprm.af      = af;
 
 	err = call_alloc(callp, conf_config(), &ua->calls,
 			 ua->acc->dispname,
@@ -1841,4 +1853,13 @@ struct ua *uag_current(void)
 		return NULL;
 
 	return uag.ua_cur;
+}
+
+
+void ua_set_media_af(struct ua *ua, int af_media)
+{
+	if (!ua)
+		return;
+
+	ua->af_media = af_media;
 }

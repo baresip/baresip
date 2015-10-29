@@ -1217,7 +1217,7 @@ static bool have_common_audio_codecs(const struct call *call)
 	if (!sc)
 		return false;
 
-	ac = sc->data;
+	ac = sc->data;  /* note: this will exclude telephone-event */
 
 	return ac != NULL;
 }
@@ -1247,12 +1247,38 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	}
 
 	if (got_offer) {
+		struct sdp_media *m;
+		const struct sa *raddr;
 
 		err = sdp_decode(call->sdp, msg->mb, true);
 		if (err)
 			return err;
 
 		call->got_offer = true;
+
+		/*
+		 * Each media description in the SDP answer MUST
+		 * use the same network type as the corresponding
+		 * media description in the offer.
+		 *
+		 * See RFC 6157
+		 */
+		m = stream_sdpmedia(audio_strm(call->audio));
+		raddr = sdp_media_raddr(m);
+
+		if (sa_af(raddr) != call->af) {
+			info("call: incompatible address-family"
+			     " (local=%s, remote=%s)\n",
+			     net_af2name(call->af),
+			     net_af2name(sa_af(raddr)));
+
+			sip_treply(NULL, uag_sip(), msg,
+				   488, "Not Acceptable Here");
+
+			call_event_handler(call, CALL_EVENT_CLOSED,
+					   "Wrong address family");
+			return 0;
+		}
 
 		/* Check if we have any common audio codecs, after
 		 * the SDP offer has been parsed

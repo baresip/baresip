@@ -25,6 +25,7 @@ static const struct test tests[] = {
 	TEST(test_cplusplus),
 	TEST(test_call_answer),
 	TEST(test_call_reject),
+	TEST(test_call_af_mismatch),
 };
 
 

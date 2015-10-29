@@ -81,6 +81,7 @@ int test_ua_register(void);
 
 int test_call_answer(void);
 int test_call_reject(void);
+int test_call_af_mismatch(void);
 
 
 #ifdef __cplusplus
