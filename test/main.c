@@ -23,6 +23,8 @@ static const struct test tests[] = {
 	TEST(test_uag_find_param),
 	TEST(test_ua_register),
 	TEST(test_cplusplus),
+	TEST(test_call_answer),
+	TEST(test_call_reject),
 };
 
 

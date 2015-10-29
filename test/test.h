@@ -79,6 +79,9 @@ int test_ua_alloc(void);
 int test_uag_find_param(void);
 int test_ua_register(void);
 
+int test_call_answer(void);
+int test_call_reject(void);
+
 
 #ifdef __cplusplus
 extern "C" {
