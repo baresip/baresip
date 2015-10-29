@@ -1798,6 +1798,8 @@ int uag_event_register(ua_event_h *h, void *arg)
 	if (!h)
 		return EINVAL;
 
+	uag_event_unregister(h);
+
 	eh = mem_zalloc(sizeof(*eh), eh_destructor);
 	if (!eh)
 		return ENOMEM;
