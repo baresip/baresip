@@ -207,7 +207,8 @@ void ua_unregister(struct ua *ua)
 	if (!ua)
 		return;
 
-	ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
+	if (!list_isempty(&ua->regl))
+		ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
 
 	for (le = ua->regl.head; le; le = le->next) {
 		struct reg *reg = le->data;
@@ -506,7 +507,8 @@ static void ua_destructor(void *arg)
 
 	list_unlink(&ua->le);
 
-	ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
+	if (!list_isempty(&ua->regl))
+		ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
 
 	list_flush(&ua->calls);
 	list_flush(&ua->regl);
