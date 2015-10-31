@@ -57,6 +57,7 @@ static struct {
 	bool use_tcp;                  /**< Use TCP transport               */
 	bool use_tls;                  /**< Use TLS transport               */
 	bool prefer_ipv6;              /**< Force IPv6 transport            */
+	sip_msg_h *subh;
 #ifdef USE_TLS
 	struct tls *tls;               /**< TLS Context                     */
 #endif
@@ -1286,6 +1287,26 @@ static const struct cmd cmdv[] = {
 };
 
 
+static bool sub_handler(const struct sip_msg *msg, void *arg)
+{
+	struct ua *ua;
+
+	(void)arg;
+
+	ua = uag_find(&msg->uri.user);
+	if (!ua) {
+		warning("subscribe: no UA found for %r\n", &msg->uri.user);
+		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
+		return true;
+	}
+
+	if (uag.subh)
+		uag.subh(msg, ua);
+
+	return true;
+}
+
+
 /**
  * Initialise the User-Agents
  *
@@ -1347,7 +1368,8 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	if (err)
 		goto out;
 
-	err = sipevent_listen(&uag.evsock, uag.sip, bsize, bsize, NULL, NULL);
+	err = sipevent_listen(&uag.evsock, uag.sip, bsize, bsize,
+			      sub_handler, NULL);
 	if (err)
 		goto out;
 
@@ -1838,6 +1860,12 @@ void uag_event_unregister(ua_event_h *h)
 			break;
 		}
 	}
+}
+
+
+void uag_set_sub_handler(sip_msg_h *subh)
+{
+	uag.subh = subh;
 }
 
 
