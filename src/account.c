@@ -572,6 +572,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	}
 	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);
 	err |= re_hprintf(pf, " regint:       %u\n", acc->regint);
+	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
 	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
 	err |= re_hprintf(pf, " rtpkeep:      %s\n", acc->rtpkeep);
 	err |= re_hprintf(pf, " sipnat:       %s\n", acc->sipnat);
