@@ -11,5 +11,8 @@ install:
     - tar -xzf rem-0.4.6.tar.gz
     - cd rem-0.4.6 && make && sudo make install && cd ..
     - sudo ldconfig
+    - wget "https://github.com/alfredh/pytools/raw/master/ccheck.py"
 
-script: make test
+script: 
+    - make test
+    - python2 ccheck.py
