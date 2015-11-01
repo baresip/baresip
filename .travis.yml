@@ -11,4 +11,4 @@ install:
     - tar -xzf rem-0.4.6.tar.gz
     - cd rem-0.4.6 && make && sudo make install && cd ..
 
-script: make
+script: make test
