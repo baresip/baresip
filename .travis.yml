@@ -10,5 +10,6 @@ install:
     - wget "http://www.creytiv.com/pub/rem-0.4.6.tar.gz"
     - tar -xzf rem-0.4.6.tar.gz
     - cd rem-0.4.6 && make && sudo make install && cd ..
+    - sudo ldconfig
 
 script: make test
