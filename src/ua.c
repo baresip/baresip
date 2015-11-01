@@ -92,6 +92,9 @@ static void exit_handler(void *arg)
 {
 	(void)arg;
 
+	debug("ua: sip-stack exit\n");
+	module_app_unload();
+
 	re_cancel();
 }
 
@@ -1067,6 +1070,7 @@ int ua_debug(struct re_printf *pf, const struct ua *ua)
 		return 0;
 
 	err  = re_hprintf(pf, "--- %s ---\n", ua->acc->aor);
+	err |= re_hprintf(pf, " nrefs:     %u\n", mem_nrefs(ua));
 	err |= re_hprintf(pf, " cuser:     %s\n", ua->cuser);
 	err |= re_hprintf(pf, " pub-gruu:  %s\n", ua->pub_gruu);
 	err |= re_hprintf(pf, " af:        %s\n", net_af2name(ua->af));
