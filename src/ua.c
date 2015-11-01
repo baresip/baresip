@@ -74,6 +74,7 @@ static struct {
 	true,
 	true,
 	false,
+	NULL,
 #ifdef USE_TLS
 	NULL,
 #endif
