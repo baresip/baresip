@@ -85,6 +85,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	struct fixture *f = arg;
 	struct agent *ag;
 	int err = 0;
+	(void)prm;
 
 	ASSERT_TRUE(ua != NULL);
 	ASSERT_TRUE(call != NULL);
