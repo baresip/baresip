@@ -197,7 +197,8 @@ $(BIN):	$(APP_OBJS)
 ifneq ($(GPROF),)
 	$(HIDE)$(LD) $(LFLAGS) $(APP_LFLAGS) $^ ../re/libre.a $(LIBS) -o $@
 else
-	$(HIDE)$(LD) $(LFLAGS) $(APP_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
+	$(HIDE)$(LD) $(LFLAGS) $(APP_LFLAGS) $^ \
+		-L$(LIBRE_SO) -lre $(LIBS) -o $@
 endif
 
 

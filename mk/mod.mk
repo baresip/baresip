@@ -33,14 +33,16 @@ ifeq ($(STATIC),)
 
 $(MOD)$(MOD_SUFFIX): $($(MOD)_OBJS)
 	@echo "  LD [M]  $@"
-	$(HIDE)$(LD) $(LFLAGS) $(SH_LFLAGS) $(MOD_LFLAGS) $($(basename $@)_OBJS) \
+	$(HIDE)$(LD) $(LFLAGS) $(SH_LFLAGS) $(MOD_LFLAGS) \
+		$($(basename $@)_OBJS) \
 		$($(basename $@)_LFLAGS) -L$(LIBRE_SO) -lre -o $@
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.c $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CC [M]  $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) \
+		-c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.m $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
