@@ -16,6 +16,11 @@ PROJECT	  := baresip
 VERSION   := 0.4.15
 DESCR     := "Baresip is a modular SIP User-Agent with audio and video support"
 
+# Verbose and silent build modes
+ifeq ($(V),)
+HIDE=@
+endif
+
 ifndef LIBRE_MK
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \
 	echo "../re/mk/re.mk")
@@ -163,14 +168,14 @@ Makefile:	mk/*.mk $(MOD_MK) $(LIBRE_MK)
 
 $(SHARED): $(LIB_OBJS)
 	@echo "  LD      $@"
-	@$(LD) $(LFLAGS) $(SH_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
+	$(HIDE)$(LD) $(LFLAGS) $(SH_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
 
 $(STATICLIB): $(LIB_OBJS)
 	@echo "  AR      $@"
 	@rm -f $@; $(AR) $(AFLAGS) $@ $^
 ifneq ($(RANLIB),)
 	@echo "  RANLIB  $@"
-	@$(RANLIB) $@
+	$(HIDE)$(RANLIB) $@
 endif
 
 libbaresip.pc:
@@ -190,9 +195,9 @@ libbaresip.pc:
 $(BIN):	$(APP_OBJS)
 	@echo "  LD      $@"
 ifneq ($(GPROF),)
-	@$(LD) $(LFLAGS) $(APP_LFLAGS) $^ ../re/libre.a $(LIBS) -o $@
+	$(HIDE)$(LD) $(LFLAGS) $(APP_LFLAGS) $^ ../re/libre.a $(LIBS) -o $@
 else
-	@$(LD) $(LFLAGS) $(APP_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
+	$(HIDE)$(LD) $(LFLAGS) $(APP_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
 endif
 
 
@@ -202,25 +207,25 @@ test:	$(TEST_BIN)
 
 $(TEST_BIN):	$(STATICLIB) $(TEST_OBJS)
 	@echo "  LD      $@"
-	@$(CXX) $(LFLAGS) $(TEST_OBJS) \
+	$(HIDE)$(CXX) $(LFLAGS) $(TEST_OBJS) \
 		-L$(LIBRE_SO) -L. \
 		-l$(PROJECT) -lre $(LIBS) -o $@
 
 $(BUILD)/%.o: %.c $(BUILD) Makefile $(APP_MK)
 	@echo "  CC      $@"
-	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/%.o: %.cpp $(BUILD) Makefile $(APP_MK)
 	@echo "  CXX     $@"
-	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/%.o: %.m $(BUILD) Makefile $(APP_MK)
 	@echo "  OC      $@"
-	@$(CC) $(CFLAGS) $(OBJCFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CFLAGS) $(OBJCFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/%.o: %.S $(BUILD) Makefile $(APP_MK)
 	@echo "  AS      $@"
-	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD): Makefile
 	@mkdir -p $(BUILD)/src $(MOD_BLD) $(BUILD)/test/mock
