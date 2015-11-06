@@ -740,6 +740,8 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 static void *tx_thread(void *arg)
 {
 	struct audio *a = arg;
+	struct autx *tx = &a->tx;
+	unsigned i;
 
 	/* Enable Real-time mode for this thread, if available */
 	if (a->cfg.txmode == AUDIO_MODE_THREAD_REALTIME)
@@ -747,7 +749,13 @@ static void *tx_thread(void *arg)
 
 	while (a->tx.u.thr.run) {
 
-		poll_aubuf_tx(a);
+		for (i=0; i<16; i++) {
+
+			if (aubuf_cur_size(tx->aubuf) < tx->psize)
+				break;
+
+			poll_aubuf_tx(a);
+		}
 
 		sys_msleep(5);
 	}
@@ -760,10 +768,18 @@ static void *tx_thread(void *arg)
 static void timeout_tx(void *arg)
 {
 	struct audio *a = arg;
+	struct autx *tx = &a->tx;
+	unsigned i;
 
 	tmr_start(&a->tx.u.tmr, 5, timeout_tx, a);
 
-	poll_aubuf_tx(a);
+	for (i=0; i<16; i++) {
+
+		if (aubuf_cur_size(tx->aubuf) < tx->psize)
+			break;
+
+		poll_aubuf_tx(a);
+	}
 }
 
 
