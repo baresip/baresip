@@ -24,6 +24,8 @@ struct presence {
 	enum presence_status status;
 	unsigned failc;
 	struct contact *contact;
+	struct ua *ua;
+	bool shutdown;
 };
 
 static struct list presencel;
@@ -80,6 +82,9 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 	struct presence *pres = arg;
 	const struct sip_hdr *type_hdr, *length_hdr;
 	struct pl pl;
+
+	if (pres->shutdown)
+		goto done;
 
 	pres->failc = 0;
 
@@ -138,6 +143,9 @@ done:
 	(void)sip_treply(NULL, sip, msg, 200, "OK");
 
 	contact_set_presence(pres->contact, status);
+
+	if (pres->shutdown)
+		pres = mem_deref(pres);
 }
 
 
@@ -177,10 +185,20 @@ static void destructor(void *arg)
 {
 	struct presence *pres = arg;
 
+	debug("presence: subscriber destroyed\n");
+
 	list_unlink(&pres->le);
 	tmr_cancel(&pres->tmr);
 	mem_deref(pres->contact);
 	mem_deref(pres->sub);
+	mem_deref(pres->ua);
+}
+
+
+static void deref_handler(void *arg)
+{
+	struct mwi *mwi = arg;
+	mem_deref(mwi);
 }
 
 
@@ -204,6 +222,9 @@ static int subscribe(struct presence *pres)
 		warning("presence: no UA found\n");
 		return ENOENT;
 	}
+
+	mem_deref(pres->ua);
+	pres->ua = mem_ref(ua);
 
 	pl_strcpy(&contact_addr(pres->contact)->auri, uri, sizeof(uri));
 
@@ -281,4 +302,30 @@ int subscriber_init(void)
 void subscriber_close(void)
 {
 	list_flush(&presencel);
+}
+
+
+void subscriber_close_all(void)
+{
+	struct le *le;
+
+	info("presence: subscriber: closing %u subs\n",
+	     list_count(&presencel));
+
+	le = presencel.head;
+	while (le) {
+
+		struct presence *pres = le->data;
+		le = le->next;
+
+		debug("presence: shutdown: sub=%p\n", pres->sub);
+
+		pres->shutdown = true;
+		if (pres->sub) {
+			pres->sub = mem_deref(pres->sub);
+			tmr_start(&pres->tmr, 500, deref_handler, pres);
+		}
+		else
+			mem_deref(pres);
+	}
 }

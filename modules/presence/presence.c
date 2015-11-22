@@ -52,6 +52,21 @@ static const struct cmd cmdv[] = {
 };
 
 
+static void event_handler(struct ua *ua, enum ua_event ev,
+			  struct call *call, const char *prm, void *arg)
+{
+	debug("presence: ua=%p got event %d (%s)\n", ua, ev,
+	      uag_event_str(ev));
+
+	if (ev == UA_EVENT_SHUTDOWN) {
+
+		publisher_close();
+		notifier_close();
+		subscriber_close_all();
+	}
+}
+
+
 static int module_init(void)
 {
 	int err;
@@ -68,12 +83,22 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	return cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	if (err)
+		return err;
+
+	err = uag_event_register(event_handler, NULL);
+	if (err)
+		return err;
+
+	return err;
 }
 
 
 static int module_close(void)
 {
+	uag_event_unregister(event_handler);
+
 	cmd_unregister(cmdv);
 
 	publisher_close();

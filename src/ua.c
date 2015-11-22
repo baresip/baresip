@@ -533,6 +533,10 @@ static void ua_destructor(void *arg)
 	mem_deref(ua->cuser);
 	mem_deref(ua->pub_gruu);
 	mem_deref(ua->acc);
+
+	if (list_isempty(&uag.ual)) {
+		sip_close(uag.sip, false);
+	}
 }
 
 
@@ -1425,7 +1429,37 @@ void ua_close(void)
  */
 void ua_stop_all(bool forced)
 {
-	module_app_unload();
+	struct le *le;
+	bool ext_ref = false;
+
+	info("ua: stop all (forced=%d)\n", forced);
+
+	/* check if someone else has grabbed a ref to ua */
+	le = uag.ual.head;
+	while (le) {
+
+		struct ua *ua = le->data;
+		le = le->next;
+
+		if (mem_nrefs(ua) > 1) {
+
+			list_unlink(&ua->le);
+			list_flush(&ua->calls);
+			mem_deref(ua);
+
+			ext_ref = true;
+		}
+
+		ua_event(ua, UA_EVENT_SHUTDOWN, NULL, NULL);
+	}
+
+	if (ext_ref) {
+		info("ua: ext_ref -> cannot unload mods\n");
+		return;
+	}
+	else {
+		module_app_unload();
+	}
 
 	if (!list_isempty(&uag.ual)) {
 		const uint32_t n = list_count(&uag.ual);
@@ -1596,6 +1630,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
 	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
+	case UA_EVENT_SHUTDOWN:             return "SHUTDOWN";
 	default: return "?";
 	}
 }

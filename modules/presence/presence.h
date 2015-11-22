@@ -6,6 +6,7 @@
 
 int  subscriber_init(void);
 void subscriber_close(void);
+void subscriber_close_all(void);
 
 
 int  notifier_init(void);

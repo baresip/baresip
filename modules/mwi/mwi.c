@@ -20,6 +20,8 @@ struct mwi {
 	struct le le;
 	struct sipsub *sub;
 	struct ua *ua;
+	struct tmr tmr;
+	bool shutdown;
 };
 
 static struct tmr tmr;
@@ -30,8 +32,17 @@ static void destructor(void *arg)
 {
 	struct mwi *mwi = arg;
 
+	tmr_cancel(&mwi->tmr);
 	list_unlink(&mwi->le);
 	mem_deref(mwi->sub);
+	mem_deref(mwi->ua);
+}
+
+
+static void deref_handler(void *arg)
+{
+	struct mwi *mwi = arg;
+	mem_deref(mwi);
 }
 
 
@@ -54,6 +65,9 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 	}
 
 	(void)sip_treply(NULL, sip, msg, 200, "OK");
+
+	if (mwi->shutdown)
+		mem_deref(mwi);
 }
 
 
@@ -85,7 +99,7 @@ static int mwi_subscribe(struct ua *ua)
 		return ENOMEM;
 
 	list_append(&mwil, &mwi->le, mwi);
-	mwi->ua = ua;
+	mwi->ua = mem_ref(ua);
 
 	routev[0] = ua_outbound(ua);
 
@@ -110,6 +124,22 @@ static int mwi_subscribe(struct ua *ua)
 }
 
 
+static struct mwi *mwi_find(const struct ua *ua)
+{
+	struct le *le;
+
+	for (le = mwil.head; le; le = le->next) {
+
+		struct mwi *mwi = le->data;
+
+		if (mwi->ua == ua)
+			return mwi;
+	}
+
+	return NULL;
+}
+
+
 static void ua_event_handler(struct ua *ua,
 			     enum ua_event ev,
 			     struct call *call,
@@ -119,12 +149,33 @@ static void ua_event_handler(struct ua *ua,
 	(void)call;
 	(void)prm;
 
-	if (ua != (struct ua *)arg)
-		return;
+	info("mwi: got event %d (%s)\n", ev, uag_event_str(ev));
 
 	if (ev == UA_EVENT_REGISTER_OK) {
-		uag_event_unregister(ua_event_handler);
-		mwi_subscribe(ua);
+
+		if (!mwi_find(ua))
+			mwi_subscribe(ua);
+	}
+	else if (ev == UA_EVENT_SHUTDOWN) {
+
+		struct le *le;
+
+		info("mwi: shutdown\n");
+
+		le = list_head(&mwil);
+		while (le) {
+			struct mwi *mwi = le->data;
+			le = le->next;
+
+			mwi->shutdown = true;
+
+			if (mwi->sub) {
+				mwi->sub = mem_deref(mwi->sub);
+				tmr_start(&mwi->tmr, 500, deref_handler, mwi);
+			}
+			else
+				mem_deref(mwi);
+		}
 	}
 }
 
@@ -138,10 +189,10 @@ static void tmr_handler(void *arg)
 	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
-		if (account_regint(acc) > 0)
-			uag_event_register(ua_event_handler, ua);
-		else
+
+		if (account_regint(acc) == 0) {
 			mwi_subscribe(ua);
+		}
 	}
 }
 
@@ -151,12 +202,13 @@ static int module_init(void)
 	list_init(&mwil);
 	tmr_start(&tmr, 1, tmr_handler, 0);
 
-	return 0;
+	return uag_event_register(ua_event_handler, NULL);
 }
 
 
 static int module_close(void)
 {
+	uag_event_unregister(ua_event_handler);
 	tmr_cancel(&tmr);
 	list_flush(&mwil);
 
