@@ -92,6 +92,8 @@ static void exit_handler(void *arg)
 {
 	(void)arg;
 
+	ua_event(NULL, UA_EVENT_EXIT, NULL, NULL);
+
 	debug("ua: sip-stack exit\n");
 	module_app_unload();
 
@@ -118,9 +120,6 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	struct le *le;
 	char buf[256];
 	va_list ap;
-
-	if (!ua)
-		return;
 
 	va_start(ap, fmt);
 	(void)re_vsnprintf(buf, sizeof(buf), fmt, ap);
@@ -1622,6 +1621,8 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_REGISTER_OK:          return "REGISTER_OK";
 	case UA_EVENT_REGISTER_FAIL:        return "REGISTER_FAIL";
 	case UA_EVENT_UNREGISTERING:        return "UNREGISTERING";
+	case UA_EVENT_SHUTDOWN:             return "SHUTDOWN";
+	case UA_EVENT_EXIT:                 return "EXIT";
 	case UA_EVENT_CALL_INCOMING:        return "CALL_INCOMING";
 	case UA_EVENT_CALL_RINGING:         return "CALL_RINGING";
 	case UA_EVENT_CALL_PROGRESS:        return "CALL_PROGRESS";
@@ -1630,7 +1631,6 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
 	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
-	case UA_EVENT_SHUTDOWN:             return "SHUTDOWN";
 	default: return "?";
 	}
 }
