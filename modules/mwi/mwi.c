@@ -148,6 +148,7 @@ static void ua_event_handler(struct ua *ua,
 {
 	(void)call;
 	(void)prm;
+	(void)arg;
 
 	info("mwi: got event %d (%s)\n", ev, uag_event_str(ev));
 

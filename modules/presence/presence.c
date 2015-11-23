@@ -55,6 +55,10 @@ static const struct cmd cmdv[] = {
 static void event_handler(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg)
 {
+	(void)call;
+	(void)prm;
+	(void)arg;
+
 	debug("presence: ua=%p got event %d (%s)\n", ua, ev,
 	      uag_event_str(ev));
 
