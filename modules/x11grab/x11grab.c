@@ -16,7 +16,12 @@
 #include <baresip.h>
 
 
-/*
+/**
+ * @defgroup x11grab x11grab
+ *
+ * X11 window-grabbing video-source module
+ *
+ *
  * XXX: add option to select a specific X window and x,y offset
  */
 

@@ -17,6 +17,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup x11 x11
+ *
+ * X11 video-display module
+ */
+
+
 struct vidisp_st {
 	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	struct vidsz size;              /**< Current size          */
