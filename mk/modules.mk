@@ -24,6 +24,7 @@
 #   USE_GST1          Gstreamer 1.0 audio module
 #   USE_GST_VIDEO     Gstreamer 0.10 video module
 #   USE_GST_VIDEO1    Gstreamer 1.0 video module
+#   USE_GTK           GTK+ user interface
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
 #   USE_L16           L16 audio codec
@@ -46,7 +47,6 @@
 #   USE_V4L2          Video4Linux2 module
 #   USE_WINWAVE       Windows audio driver
 #   USE_X11           X11 video output
-#   USE_GTK           GTK+ user interface
 #
 
 
@@ -178,6 +178,9 @@ USE_V4L2 := $(shell [ -f $(SYSROOT)/include/linux/videodev2.h ] || \
 USE_X11 := $(shell [ -f $(SYSROOT)/include/X11/Xlib.h ] || \
 	[ -f $(SYSROOT)/local/include/X11/Xlib.h ] || \
 	[ -f $(SYSROOT_ALT)/include/X11/Xlib.h ] && echo "yes")
+USE_ZRTP := $(shell [ -f $(SYSROOT)/include/libzrtp/zrtp.h ] || \
+	[ -f $(SYSROOT)/local/include/libzrtp/zrtp.h ] || \
+	[ -f $(SYSROOT_ALT)/include/libzrtp/zrtp.h ] && echo "yes")
 USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
@@ -387,6 +390,9 @@ MODULES   += winwave
 endif
 ifneq ($(USE_X11),)
 MODULES   += x11 x11grab
+endif
+ifneq ($(USE_ZRTP),)
+MODULES   += zrtp
 endif
 ifneq ($(USE_GTK),)
 MODULES   += gtk
