@@ -377,6 +377,12 @@ static int module_init(void)
 
 	menc_register(&menc_zrtp);
 
+	debug("zrtp:  cache_file:  %s\n",
+	      zrtp_config.cache_file_cfg.cache_path);
+	debug("       zid_file:    %s\n", zrtp_zid_path);
+	debug("       zid:         %w\n",
+	      zrtp_config.zid, sizeof(zrtp_config.zid));
+
 	return cmd_register(cmdv, ARRAY_SIZE(cmdv));
 }
 
