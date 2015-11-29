@@ -11,6 +11,26 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup vidloop vidloop
+ *
+ * A video-loop module for testing
+ *
+ * Simple test module that loops back the video frames from a
+ * video-source to a video-display, optionally via a video codec.
+ *
+ * Example usage without codec:
+ \verbatim
+  baresip -ev
+ \endverbatim
+ *
+ * Example usage with codec:
+ \verbatim
+  baresip -evv
+ \endverbatim
+ */
+
+
 /** Internal pixel-format */
 #ifndef VIDLOOP_INTERNAL_FMT
 #define VIDLOOP_INTERNAL_FMT (VID_FMT_YUV420P)

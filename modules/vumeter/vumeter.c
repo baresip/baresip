@@ -9,6 +9,17 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup vumeter vumeter
+ *
+ * Simple ASCII VU-meter for the audio-signal.
+ *
+ * The Volume unit (VU) meter module takes the audio-signal as input
+ * and prints a simple ASCII-art bar for the recording and playback levels.
+ * It is using the aufilt API to get the audio samples.
+ */
+
+
 struct vumeter_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 	struct tmr tmr;

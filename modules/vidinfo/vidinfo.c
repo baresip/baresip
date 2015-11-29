@@ -9,6 +9,16 @@
 #include "vidinfo.h"
 
 
+/**
+ * @defgroup vidinfo vidinfo
+ *
+ * Display video-info overlay on the encode/decode streams
+ *
+ * Displays info like framerate and packet timing, this is mainly
+ * for development and debugging.
+ */
+
+
 struct vidinfo_enc {
 	struct vidfilt_enc_st vf;  /* base member (inheritance) */
 
