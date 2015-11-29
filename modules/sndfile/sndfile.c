@@ -9,6 +9,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup sndfile sndfile
+ *
+ * Audio filter that writes audio samples to WAV-file
+ */
+
+
 struct sndfile_enc {
 	struct aufilt_enc_st af;  /* base class */
 	SNDFILE *enc;

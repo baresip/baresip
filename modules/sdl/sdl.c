@@ -11,6 +11,13 @@
 #include "sdl.h"
 
 
+/**
+ * @defgroup sdl sdl
+ *
+ * Video display using Simple DirectMedia Layer (SDL)
+ */
+
+
 /** Local constants */
 enum {
 	KEY_RELEASE_VAL = 250  /**< Key release value in [ms] */

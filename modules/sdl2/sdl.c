@@ -10,6 +10,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup sdl2 sdl2
+ *
+ * Video display using Simple DirectMedia Layer version 2 (SDL2)
+ */
+
+
 struct vidisp_st {
 	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	SDL_Window *window;             /**< SDL Window            */
