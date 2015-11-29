@@ -416,7 +416,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 		acc->mnat = mnat_find(acc->mnatid);
 		if (!acc->mnat) {
-			warning("account: medianat not found: %s\n",
+			warning("account: medianat not found: `%s'\n",
 				acc->mnatid);
 		}
 	}
@@ -424,7 +424,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	if (acc->mencid) {
 		acc->menc = menc_find(acc->mencid);
 		if (!acc->menc) {
-			warning("account: mediaenc not found: %s\n",
+			warning("account: mediaenc not found: `%s'\n",
 				acc->mencid);
 		}
 	}
