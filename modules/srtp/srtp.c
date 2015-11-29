@@ -8,6 +8,23 @@
 #include "sdes.h"
 
 
+/**
+ * @defgroup srtp srtp
+ *
+ * Secure Real-time Transport Protocol module
+ *
+ * This module implements media encryption using SRTP and SDES.
+ *
+ * SRTP can be enabled in ~/.baresip/accounts:
+ *
+ \verbatim
+  <sip:user@domain.com>;mediaenc=srtp
+  <sip:user@domain.com>;mediaenc=srtp-mand
+ \endverbatim
+ *
+ */
+
+
 #define SRTP_MASTER_KEY_LEN  30
 
 
