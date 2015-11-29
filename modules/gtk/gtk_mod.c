@@ -53,7 +53,7 @@ struct gtk_mod {
 	GSList *incoming_call_menus;
 };
 
-struct gtk_mod mod_obj;
+static struct gtk_mod mod_obj;
 
 enum gtk_mod_events {
 	MQ_POPUP,
@@ -107,6 +107,7 @@ static void menu_on_about(GtkMenuItem *menuItem, gpointer arg)
 			NULL);
 }
 
+
 static void menu_on_quit(GtkMenuItem *menuItem, gpointer arg)
 {
 	struct gtk_mod *mod = arg;
@@ -119,6 +120,7 @@ static void menu_on_quit(GtkMenuItem *menuItem, gpointer arg)
 	info("quit from gtk\n");
 }
 
+
 static void menu_on_dial(GtkMenuItem *menuItem, gpointer arg)
 {
 	struct gtk_mod *mod = arg;
@@ -128,6 +130,7 @@ static void menu_on_dial(GtkMenuItem *menuItem, gpointer arg)
 	dial_dialog_show(mod->dial_dialog);
 }
 
+
 static void menu_on_dial_contact(GtkMenuItem *menuItem, gpointer arg)
 {
 	struct gtk_mod *mod = arg;
@@ -135,6 +138,7 @@ static void menu_on_dial_contact(GtkMenuItem *menuItem, gpointer arg)
 	/* Queue dial from the main thread */
 	mqueue_push(mod->mq, MQ_CONNECT, (char *)uri);
 }
+
 
 static void init_contacts_menu(struct gtk_mod *mod)
 {
@@ -221,6 +225,7 @@ static GtkMenuItem *accounts_menu_add_item(struct gtk_mod *mod,
 
 	return GTK_MENU_ITEM(item);
 }
+
 
 static GtkMenuItem *accounts_menu_get_item(struct gtk_mod *mod,
 		struct ua *ua)
@@ -411,6 +416,7 @@ static void answer_activated(GSimpleAction *action, GVariant *parameter,
 	}
 }
 
+
 static void reject_activated(GSimpleAction *action, GVariant *parameter,
 		gpointer arg)
 {
@@ -423,6 +429,7 @@ static void reject_activated(GSimpleAction *action, GVariant *parameter,
 		mqueue_push(mod->mq, MQ_HANGUP, call);
 	}
 }
+
 
 static struct call_window *new_call_window(struct gtk_mod *mod,
 		struct call *call)
@@ -461,8 +468,11 @@ static struct call_window *get_create_call_window(struct gtk_mod *mod,
 
 void gtk_mod_call_window_closed(struct gtk_mod *mod, struct call_window *win)
 {
+	if (!mod)
+		return;
 	mod->call_windows = g_slist_remove(mod->call_windows, win);
 }
+
 
 static void ua_event_handler(struct ua *ua,
 		enum ua_event ev,
@@ -606,8 +616,11 @@ static gboolean status_icon_on_button_press(GtkStatusIcon *status_icon,
 
 void gtk_mod_connect(struct gtk_mod *mod, const char *uri)
 {
+	if (!mod)
+		return;
 	mqueue_push(mod->mq, MQ_CONNECT, (char *)uri);
 }
+
 
 static void warning_dialog(const char *title, const char *fmt, ...)
 {
@@ -703,6 +716,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 		break;
 	}
 }
+
 
 static void *gtk_thread(void *arg)
 {
@@ -973,10 +987,6 @@ static int module_init(void)
 	err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
 	if (err)
 		return err;
-	err = pthread_create(&mod_obj.thread, NULL, gtk_thread,
-			     &mod_obj);
-	if (err)
-		return err;
 
 	aufilt_register(&vumeter);
 #ifdef USE_NOTIFICATIONS
@@ -986,9 +996,18 @@ static int module_init(void)
 #endif
 
 	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	if (err)
+		return err;
+
+	/* start the thread last */
+	err = pthread_create(&mod_obj.thread, NULL, gtk_thread,
+			     &mod_obj);
+	if (err)
+		return err;
 
 	return err;
 }
+
 
 static int module_close(void)
 {
@@ -1011,6 +1030,8 @@ static int module_close(void)
 	g_slist_free(mod_obj.accounts_menu_group);
 	g_slist_free(mod_obj.call_windows);
 	g_slist_free(mod_obj.incoming_call_menus);
+
+	uag_event_unregister(ua_event_handler);
 
 	return 0;
 }
