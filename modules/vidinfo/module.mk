@@ -6,6 +6,7 @@
 
 MOD		:= vidinfo
 $(MOD)_SRCS	+= vidinfo.c panel.c
-$(MOD)_LFLAGS	+= -lcairo
+$(MOD)_LFLAGS	+= $(shell pkg-config --libs cairo)
+$(MOD)_CFLAGS	+= $(shell pkg-config --cflags cairo)
 
 include mk/mod.mk
