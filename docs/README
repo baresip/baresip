@@ -207,7 +207,9 @@ turn          Obtaining Relay Addresses from STUN (TURN) module
 uuid          UUID generator and loader
 v4l           Video4Linux video source
 v4l2          Video4Linux2 video source
+v4l2_codec    Video4Linux2 video codec module (H264 hardware encoding)
 vidbridge     Video bridge module
+vidinfo       Video info overlay module
 vidloop       Video-loop test module
 vpx           VP8/VPX video codec
 vumeter       Display audio levels in console
@@ -260,7 +262,7 @@ IETF RFC/I-Ds:
 
 * draft-ietf-avt-rtp-isac-04
 * draft-ietf-payload-rtp-h265-07
-* draft-ietf-payload-vp8-08
+* draft-ietf-payload-vp8-17
 * draft-spittka-payload-rtp-opus-00
 
 
