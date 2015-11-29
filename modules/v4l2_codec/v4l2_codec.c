@@ -21,7 +21,17 @@
 #endif
 
 
-/* TODO:
+/**
+ * @defgroup v4l2_codec v4l2_codec
+ *
+ * V4L2 (Video for Linux 2) video-codec and source hybrid module
+ *
+ * This module is using V4L2 (Video for Linux 2) as a codec module
+ * for devices that supports compressed formats such as H.264.
+ * The module implements both the vidsrc API and the vidcodec API.
+ *
+ *
+ * TODO:
  *
  * - timestamp syncronization
  * - how to configure the wanted bitrate and framerate

@@ -10,6 +10,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup uuid uuid
+ *
+ * UUID generator and loader
+ */
+
+
 enum { UUID_LEN = 36 };
 
 

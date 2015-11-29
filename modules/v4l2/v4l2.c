@@ -36,6 +36,13 @@
 #endif
 
 
+/**
+ * @defgroup v4l2 v4l2
+ *
+ * V4L2 (Video for Linux 2) video-source module
+ */
+
+
 struct buffer {
 	void  *start;
 	size_t length;

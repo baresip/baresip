@@ -19,6 +19,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup v4l v4l
+ *
+ * Video4Linux video-source module
+ */
+
+
 struct vidsrc_st {
 	const struct vidsrc *vs;  /* inheritance */
 
