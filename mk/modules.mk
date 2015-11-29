@@ -272,6 +272,7 @@ MODULES   += bv32
 endif
 ifneq ($(USE_CAIRO),)
 MODULES   += cairo
+MODULES   += vidinfo
 ifneq ($(USE_MPG123),)
 MODULES   += rst
 endif
