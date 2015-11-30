@@ -45,10 +45,11 @@ static void usage(void)
 			 "\t-d               Daemon\n"
 			 "\t-e <commands>    Exec commands\n"
 			 "\t-f <path>        Config path\n"
-			 "\t-m <module>      Pre-load module\n"
+			 "\t-m <module>      Pre-load modules (repeat)\n"
 			 "\t-p <path>        Audio files\n"
 			 "\t-h -?            Help\n"
 			 "\t-t               Test and exit\n"
+			 "\t-u <parameters>  Extra UA parameters\n"
 			 "\t-v               Verbose debug\n"
 			 );
 }
@@ -57,7 +58,10 @@ static void usage(void)
 int main(int argc, char *argv[])
 {
 	bool prefer_ipv6 = false, run_daemon = false, test = false;
+	const char *ua_eprm = NULL;
 	const char *exec = NULL;
+	const char *modv[16];
+	size_t modc = 0;
 	int err;
 
 	(void)re_fprintf(stderr, "baresip v%s"
@@ -73,7 +77,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "6de:f:p:hvtm:");
+		const int c = getopt(argc, argv, "6de:f:p:hu:vtm:");
 		if (0 > c)
 			break;
 
@@ -103,12 +107,13 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'm':
-			err = module_preload(optarg);
-			if (err) {
-				re_fprintf(stderr,
-					   "could not pre-load module"
-					   " '%s' (%m)\n", optarg, err);
+			if (modc >= ARRAY_SIZE(modv)) {
+				warning("max %zu modules\n",
+					ARRAY_SIZE(modv));
+				err = EINVAL;
+				goto out;
 			}
+			modv[modc++] = optarg;
 			break;
 
 		case 'p':
@@ -117,6 +122,10 @@ int main(int argc, char *argv[])
 
 		case 't':
 			test = true;
+			break;
+
+		case 'u':
+			ua_eprm = optarg;
 			break;
 
 		case 'v':
@@ -132,6 +141,23 @@ int main(int argc, char *argv[])
 	(void)argv;
 #endif
 
+	/* NOTE: must be done after all arguments are processed */
+	if (modc) {
+		size_t i;
+
+		info("pre-loading modules: %zu\n", modc);
+
+		for (i=0; i<modc; i++) {
+
+			err = module_preload(modv[i]);
+			if (err) {
+				re_fprintf(stderr,
+					   "could not pre-load module"
+					   " '%s' (%m)\n", modv[i], err);
+			}
+		}
+	}
+
 	err = conf_configure();
 	if (err) {
 		warning("main: configure failed: %m\n", err);
@@ -143,6 +169,12 @@ int main(int argc, char *argv[])
 		      true, true, true, prefer_ipv6);
 	if (err)
 		goto out;
+
+	if (ua_eprm) {
+		err = uag_set_extra_params(ua_eprm);
+		if (err)
+			goto out;
+	}
 
 	if (test)
 		goto out;

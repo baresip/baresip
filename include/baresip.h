@@ -551,6 +551,7 @@ int  uag_event_register(ua_event_h *eh, void *arg);
 void uag_event_unregister(ua_event_h *eh);
 void uag_set_sub_handler(sip_msg_h *subh);
 int  ua_print_sip_status(struct re_printf *pf, void *unused);
+int  uag_set_extra_params(char *eprm);
 struct ua   *uag_find(const struct pl *cuser);
 struct ua   *uag_find_aor(const char *aor);
 struct ua   *uag_find_param(const char *name, const char *val);
