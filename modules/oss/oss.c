@@ -182,9 +182,6 @@ static void *record_thread(void *arg)
 	while (st->run) {
 
 		n = read(st->fd, st->sampv, st->sampc*2);
-
-		re_printf("  ~~ oss read: n=%d\n", n);
-
 		if (n <= 0)
 			continue;
 
