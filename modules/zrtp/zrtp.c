@@ -167,6 +167,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 	struct menc_media *st;
 	zrtp_status_t s;
 	int err = 0;
+	(void)rtcpsock;
 
 	if (!stp || !sess || proto != IPPROTO_UDP)
 		return EINVAL;
