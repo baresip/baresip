@@ -1944,7 +1944,7 @@ void ua_set_media_af(struct ua *ua, int af_media)
 }
 
 
-int uag_set_extra_params(char *eprm)
+int uag_set_extra_params(const char *eprm)
 {
 	uag.eprm = mem_deref(uag.eprm);
 
