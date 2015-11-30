@@ -45,7 +45,14 @@ static void dump_stats(const struct videnc_state *ves)
 static int send_packet(struct videnc_state *ves, bool marker,
 		       const uint8_t *pld, size_t pld_len)
 {
+	daala_packet dp;
 	int err;
+
+	memset(&dp, 0, sizeof(dp));
+
+	dp.packet = (uint8_t *)pld;
+	dp.bytes = pld_len;
+	dp.b_o_s = marker;
 
 	err = ves->pkth(marker, NULL, 0, pld, pld_len, ves->arg);
 	if (err)
@@ -54,9 +61,9 @@ static int send_packet(struct videnc_state *ves, bool marker,
 	++ves->stats.n_packet;
 	++ves->stats.valid;
 
-	if (daala_packet_isheader(pld, pld_len))
+	if (daala_packet_isheader(&dp))
 		++ves->stats.n_header;
-	else if (daala_packet_iskeyframe(pld, pld_len) > 0)
+	else if (daala_packet_iskeyframe(&dp) > 0)
 		++ves->stats.n_keyframe;
 
 	return 0;
@@ -181,8 +188,8 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 
 		debug("daala: header: %lld bytes header=%d key=%d\n",
 			  dp.bytes,
-			  daala_packet_isheader(dp.packet, dp.bytes),
-			  daala_packet_iskeyframe(dp.packet, dp.bytes));
+			  daala_packet_isheader(&dp),
+			  daala_packet_iskeyframe(&dp));
 
 #if 0
 		re_printf("bos=%lld, eos=%lld, granule=%lld, packetno=%lld\n",
