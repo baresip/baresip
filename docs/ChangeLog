@@ -1,3 +1,65 @@
+2015-12-01 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.16
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT commit bed2241da3261e472f09b21958f0cc1324a94f27
+	* GIT tag: v0.4.16
+	* NOTE: Requires libre v0.4.14 or later
+
+	* new modules:
+	  - v4l2_codec  Video4Linux2 video codec (H264 hardware encoding)
+	  - vidinfo     Video info overlay module
+
+	* baresip-core:
+	  - audio: add audio_set_source() and audio_set_player()
+	  - audio: flush tx-buffer for all modes (thanks Thibault Gueslin)
+	  - call: add call_is_outgoing()
+	  - call: check address-family of incoming SDP offer (thanks Olle)
+	  - h264: move H.264 packetization code to core
+	  - main: add -u option to append extra global UA parameters
+	  - main: pre-load modules after all arguments are parsed
+	  - ua: add events UA_EVENT_SHUTDOWN,UA_EXIT
+	  - ua: add ua_hold_answer()
+	  - ua: add ua_set_media_af()
+	  - ua: delay mod-unloading if mods has a ref to struct ua
+
+	* build:
+	  - add verbose build with V=1 (thanks Dmitrij D. Czarkoff)
+	  - add pkg-config file (thanks William King)
+	  - add travis.yml file for Github build-system
+
+	* Modules:
+
+	* alsa: fix memory leaks
+
+	* avcodec: move common H.264 packetization code to core
+
+	* cairo: use pkg-config in makefile
+
+	* daala: update to latest libdaala (thanks Dmitrij D. Czarkoff)
+
+	* gst_video: use H.264 packetization API from core
+
+	* gst_video1: use H.264 packetization API from core
+
+	* gtk: fix segmentation fault on window close
+
+	* mwi: add 500ms delay after closing subscription
+
+	* oss: use pthread for ausrc instead of fd_listen (fixes FreeBSD)
+
+	* presence: use sipevent_sock instance from UA core
+		    add 500ms delay after closing subscription
+
+	* v4l2_codec: new module
+
+	* vidinfo: new module
+
+	* zrtp: fix ZRTP over TURN by moving helper to layer 10
+		fix ZID verification (thanks Ingo Feinerer)
+
+
 2015-09-26 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.15
