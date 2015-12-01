@@ -166,6 +166,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 {
 	struct menc_media *st;
 	zrtp_status_t s;
+	int layer = 10; /* above zero */
 	int err = 0;
 	(void)rtcpsock;
 
@@ -183,7 +184,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 	st->sess = sess;
 	st->rtpsock = mem_ref(rtpsock);
 
-	err = udp_register_helper(&st->uh, rtpsock, 0,
+	err = udp_register_helper(&st->uh, rtpsock, layer,
 				  udp_helper_send, udp_helper_recv, st);
 	if (err)
 		goto out;
