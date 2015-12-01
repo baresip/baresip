@@ -11,6 +11,12 @@
 
 int test_cplusplus(void)
 {
+	const char *version = sys_libre_version_get();
+	int err = 0;
+
+	ASSERT_TRUE(str_isset(version));
 	re_printf("c++ ok\n");
-	return 0;
+
+out:
+	return err;
 }
