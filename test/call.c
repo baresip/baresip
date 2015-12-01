@@ -87,8 +87,11 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	int err = 0;
 	(void)prm;
 
-	ASSERT_TRUE(ua != NULL);
-	ASSERT_TRUE(call != NULL);
+#if 0
+	re_printf("[ %s ] event: %s (%s)\n",
+		  ua_aor(ua), uag_event_str(ev), prm);
+#endif
+
 	ASSERT_TRUE(f != NULL);
 	ASSERT_EQ(MAGIC, f->magic);
 
@@ -97,14 +100,9 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	else if (ua == f->b.ua)
 		ag = &f->b;
 	else {
-		warning("ua not found\n");
+		warning("ua %p not found\n", ua);
 		return;
 	}
-
-#if 0
-	re_printf("[ %s ] event: %s (%s)\n",
-		  ua_aor(ua), uag_event_str(ev), prm);
-#endif
 
 	switch (ev) {
 
