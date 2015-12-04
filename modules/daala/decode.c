@@ -104,26 +104,21 @@ int daala_decode(struct viddec_state *vds, struct vidframe *frame,
 	++vds->stats.n_packet;
 	++vds->stats.valid;
 
-	ishdr = daala_packet_isheader(mbuf_buf(mb), mbuf_get_left(mb));
-
-	if (ishdr)
-		++vds->stats.n_header;
-	else if (daala_packet_iskeyframe(mbuf_buf(mb), mbuf_get_left(mb)) > 0)
-		++vds->stats.n_keyframe;
-
-#if 0
-	re_printf("decode: [%s] %zu bytes\n",
-		  ishdr ? "HEADER" : "DATA",
-		  mbuf_get_left(mb));
-#endif
-
 	memset(&dp, 0, sizeof(dp));
 
 	dp.packet = mbuf_buf(mb);
 	dp.bytes = mbuf_get_left(mb);
 	dp.b_o_s = marker;
 
-	if (daala_packet_isheader(mbuf_buf(mb), mbuf_get_left(mb))) {
+	ishdr = daala_packet_isheader(&dp);
+
+	if (ishdr)
+		++vds->stats.n_header;
+	else if (daala_packet_iskeyframe(&dp) > 0)
+		++vds->stats.n_keyframe;
+
+
+	if (daala_packet_isheader(&dp)) {
 
 		r = daala_decode_header_in(&vds->di, &vds->dc, &vds->ds,
 					   &dp);
@@ -137,7 +132,7 @@ int daala_decode(struct viddec_state *vds, struct vidframe *frame,
 			vds->got_headers = true;
 			info("daala: all headers received\n");
 
-			vds->dec = daala_decode_alloc(&vds->di, vds->ds);
+			vds->dec = daala_decode_create(&vds->di, vds->ds);
 			if (!vds->dec) {
 				warning("daala: decoder: alloc failed\n");
 				return ENOMEM;

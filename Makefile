@@ -13,7 +13,7 @@
 USE_VIDEO := 1
 
 PROJECT	  := baresip
-VERSION   := 0.4.15
+VERSION   := 0.4.16
 DESCR     := "Baresip is a modular SIP User-Agent with audio and video support"
 
 # Verbose and silent build modes
@@ -144,6 +144,11 @@ endif
 LIBS      += -lrem -lm
 LIBS      += -L$(SYSROOT)/lib
 
+ifeq ($(OS),win32)
+TEST_LIBS += -static-libgcc
+endif
+
+
 -include $(APP_OBJS:.o=.d)
 
 -include $(TEST_OBJS:.o=.d)
@@ -210,7 +215,7 @@ $(TEST_BIN):	$(STATICLIB) $(TEST_OBJS)
 	@echo "  LD      $@"
 	$(HIDE)$(CXX) $(LFLAGS) $(TEST_OBJS) \
 		-L$(LIBRE_SO) -L. \
-		-l$(PROJECT) -lre $(LIBS) -o $@
+		-l$(PROJECT) -lre $(LIBS) $(TEST_LIBS) -o $@
 
 $(BUILD)/%.o: %.c $(BUILD) Makefile $(APP_MK)
 	@echo "  CC      $@"

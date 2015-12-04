@@ -140,6 +140,10 @@ static int alsa_close(void)
 	ausrc  = mem_deref(ausrc);
 	auplay = mem_deref(auplay);
 
+	/* releases all resources of the global configuration tree,
+	   and sets snd_config to NULL. */
+	snd_config_update_free_global();
+
 	return 0;
 }
 

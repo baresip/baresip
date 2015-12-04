@@ -34,6 +34,8 @@
 
 struct ausrc_st {
 	const struct ausrc *as;      /* inheritance */
+	pthread_t thread;
+	bool run;
 	int fd;
 	int16_t *sampv;
 	size_t sampc;
@@ -148,7 +150,6 @@ static void auplay_destructor(void *arg)
 	}
 
 	if (-1 != st->fd) {
-		fd_close(st->fd);
 		(void)close(st->fd);
 	}
 
@@ -160,8 +161,12 @@ static void ausrc_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
+	if (st->run) {
+		st->run = false;
+		pthread_join(st->thread, NULL);
+	}
+
 	if (-1 != st->fd) {
-		fd_close(st->fd);
 		(void)close(st->fd);
 	}
 
@@ -169,17 +174,21 @@ static void ausrc_destructor(void *arg)
 }
 
 
-static void read_handler(int flags, void *arg)
+static void *record_thread(void *arg)
 {
 	struct ausrc_st *st = arg;
 	int n;
-	(void)flags;
 
-	n = read(st->fd, st->sampv, st->sampc*2);
-	if (n <= 0)
-		return;
+	while (st->run) {
 
-	st->rh(st->sampv, n/2, st->arg);
+		n = read(st->fd, st->sampv, st->sampc*2);
+		if (n <= 0)
+			continue;
+
+		st->rh(st->sampv, n/2, st->arg);
+	}
+
+	return NULL;
 }
 
 
@@ -243,15 +252,18 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	err = fd_listen(st->fd, FD_READ, read_handler, st);
-	if (err)
-		goto out;
-
-	err = oss_reset(st->fd, prm->srate, prm->ch, st->sampc, 1);
+	err = oss_reset(st->fd, prm->srate, prm->ch, st->sampc, 0);
 	if (err)
 		goto out;
 
 	st->as = as;
+
+	st->run = true;
+	err = pthread_create(&st->thread, NULL, record_thread, st);
+	if (err) {
+		st->run = false;
+		goto out;
+	}
 
  out:
 	if (err)

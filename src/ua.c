@@ -58,6 +58,7 @@ static struct {
 	bool use_tls;                  /**< Use TLS transport               */
 	bool prefer_ipv6;              /**< Force IPv6 transport            */
 	sip_msg_h *subh;
+	char *eprm;                    /**< Extra UA parameters             */
 #ifdef USE_TLS
 	struct tls *tls;               /**< TLS Context                     */
 #endif
@@ -74,6 +75,7 @@ static struct {
 	true,
 	true,
 	false,
+	NULL,
 	NULL,
 #ifdef USE_TLS
 	NULL,
@@ -586,6 +588,7 @@ static void add_extension(struct ua *ua, const char *extension)
 int ua_alloc(struct ua **uap, const char *aor)
 {
 	struct ua *ua;
+	char *buf = NULL;
 	int err;
 
 	if (!aor)
@@ -606,6 +609,12 @@ int ua_alloc(struct ua **uap, const char *aor)
 #endif
 
 	/* Decode SIP address */
+	if (uag.eprm) {
+		err = re_sdprintf(&buf, "%s;%s", aor, uag.eprm);
+		if (err)
+			goto out;
+		aor = buf;
+	}
 
 	err = account_alloc(&ua->acc, aor);
 	if (err)
@@ -677,6 +686,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 		uag_current_set(ua);
 
  out:
+	mem_deref(buf);
 	if (err)
 		mem_deref(ua);
 	else if (uap) {
@@ -1411,6 +1421,7 @@ void ua_close(void)
 	uag.sock     = mem_deref(uag.sock);
 	uag.lsnr     = mem_deref(uag.lsnr);
 	uag.sip      = mem_deref(uag.sip);
+	uag.eprm     = mem_deref(uag.eprm);
 
 #ifdef USE_TLS
 	uag.tls = mem_deref(uag.tls);
@@ -1930,4 +1941,15 @@ void ua_set_media_af(struct ua *ua, int af_media)
 		return;
 
 	ua->af_media = af_media;
+}
+
+
+int uag_set_extra_params(const char *eprm)
+{
+	uag.eprm = mem_deref(uag.eprm);
+
+	if (eprm)
+		return str_dup(&uag.eprm, eprm);
+
+	return 0;
 }
