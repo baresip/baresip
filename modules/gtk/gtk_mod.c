@@ -308,6 +308,9 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	const char *msg = call_peeruri(call);
 	GtkWidget *call_menu;
 	GtkWidget *menu_item;
+#if defined(USE_LIBNOTIFY)
+	NotifyNotification *notification;
+#endif
 
 #if GLIB_CHECK_VERSION(2,40,0)
 	char id[64];
@@ -337,8 +340,7 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	/* If glib does not have GNotification, use libnotify instead. */
 	if (!notify_is_initted())
 		return;
-	NotifyNotification* notification = notify_notification_new(title,
-			msg, "baresip");
+	notification = notify_notification_new(title, msg, "baresip");
 	notify_notification_set_urgency(notification, NOTIFY_URGENCY_CRITICAL);
 	notify_notification_show(notification, NULL);
 	g_object_unref(notification);
