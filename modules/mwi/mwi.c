@@ -150,8 +150,6 @@ static void ua_event_handler(struct ua *ua,
 	(void)prm;
 	(void)arg;
 
-	info("mwi: got event %d (%s)\n", ev, uag_event_str(ev));
-
 	if (ev == UA_EVENT_REGISTER_OK) {
 
 		if (!mwi_find(ua))
