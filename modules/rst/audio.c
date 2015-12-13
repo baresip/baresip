@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2011 Creytiv.com
  */
-
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <pthread.h>
 #include <fcntl.h>

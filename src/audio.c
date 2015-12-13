@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  * \ref GenericAudioStream
  */
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <string.h>
 #include <stdlib.h>
