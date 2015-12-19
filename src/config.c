@@ -592,6 +592,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "alsa" MOD_EXT "\n");
 #endif
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "portaudio" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "aubridge" MOD_EXT "\n");
 
 #ifdef USE_VIDEO
 
