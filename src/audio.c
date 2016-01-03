@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  * \ref GenericAudioStream
  */
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <string.h>
 #include <stdlib.h>
@@ -1350,7 +1351,7 @@ void audio_sdp_attr_decode(struct audio *a)
 
 		if (ptime_tx && ptime_tx != a->tx.ptime) {
 
-			info("audio: peer changed ptime_tx %u -> %u\n",
+			info("audio: peer changed ptime_tx %ums -> %ums\n",
 			     a->tx.ptime, ptime_tx);
 
 			tx->ptime = ptime_tx;

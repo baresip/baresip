@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <fcntl.h>
 #ifdef HAVE_UNISTD_H
@@ -31,7 +32,7 @@
 #endif
 
 
-#if defined (WIN32) || defined (__SYMBIAN32__)
+#if defined (WIN32)
 #define DIR_SEP "\\"
 #else
 #define DIR_SEP "/"
@@ -292,7 +293,7 @@ int conf_configure(void)
 	char path[256], file[256];
 	int err;
 
-#if defined (WIN32) || defined (__SYMBIAN32__)
+#if defined (WIN32)
 	dbg_init(DBG_INFO, DBG_NONE);
 #endif
 

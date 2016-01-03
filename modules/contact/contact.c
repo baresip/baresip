@@ -159,7 +159,7 @@ static int write_template(const char *file)
 			 "\"%s\" <sip:%s@%s>;presence=p2p\n"
 			 "\n"
 			 "# Access rules\n"
-			 "\"Catch All\" <sip:*@*>;access=block\n"
+			 "#\"Catch All\" <sip:*@*>;access=block\n"
 			 "\"Good Friend\" <sip:good@friend.com>;access=allow\n"
 			 "\n"
 			 ,

@@ -158,9 +158,6 @@ static void format_check(struct ausrc_st *st, GstStructure *s)
 	gst_structure_get_int(s, "width", &width);
 	gst_structure_get_boolean(s, "signed", &sign);
 
-	re_printf("    format: rate=%d, channels=%d, width=%d, sign=%d\n",
-		  rate, channels, width, sign);
-
 	if ((int)st->prm.srate != rate) {
 		warning("gst: expected %u Hz (got %u Hz)\n", st->prm.srate,
 			rate);
@@ -236,11 +233,7 @@ static void handoff_handler(GstFakeSink *fakesink, GstBuffer *buffer,
 {
 	struct ausrc_st *st = user_data;
 	GstCaps *caps;
-
-	re_printf("  handoff handler\n");
-
 	(void)fakesink;
-	(void)pad;
 
 	caps = gst_pad_get_current_caps(pad);
 

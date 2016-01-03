@@ -155,6 +155,7 @@ coreaudio     Apple Coreaudio driver
 directfb      DirectFB video display module
 dshow         Windows DirectShow video source
 dtls_srtp     DTLS-SRTP end-to-end encryption
+echo          Echo server module
 evdev         Linux input driver
 fakevideo     Fake video input/output driver
 g711          G.711 audio codec

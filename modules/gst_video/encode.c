@@ -4,7 +4,7 @@
  * Copyright (C) 2010 - 2013 Creytiv.com
  * Copyright (C) 2014 Fadeev Alexander
  */
-
+#define _DEFAULT_SOURCE 1
 #define __USE_POSIX199309
 #define _BSD_SOURCE 1
 #include <stdlib.h>
