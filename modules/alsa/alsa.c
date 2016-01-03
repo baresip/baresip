@@ -28,18 +28,22 @@
 
 
 char alsa_dev[64] = "default";
+enum aufmt alsa_sample_format = AUFMT_S16LE;
 
 static struct ausrc *ausrc;
 static struct auplay *auplay;
 
 
 int alsa_reset(snd_pcm_t *pcm, uint32_t srate, uint32_t ch,
-	       uint32_t num_frames)
+	       uint32_t num_frames,
+	       snd_pcm_format_t pcmfmt)
 {
 	snd_pcm_hw_params_t *hw_params = NULL;
-	const snd_pcm_format_t pcmfmt = SND_PCM_FORMAT_S16;
 	snd_pcm_uframes_t period = num_frames, bufsize = num_frames * 4;
 	int err;
+
+	debug("alsa: reset: srate=%u, ch=%u, num_frames=%u, pcmfmt=%s\n",
+	      srate, ch, num_frames, snd_pcm_format_name(pcmfmt));
 
 	err = snd_pcm_hw_params_malloc(&hw_params);
 	if (err < 0) {
@@ -124,9 +128,42 @@ int alsa_reset(snd_pcm_t *pcm, uint32_t srate, uint32_t ch,
 }
 
 
+snd_pcm_format_t aufmt_to_alsaformat(enum aufmt fmt)
+{
+	switch (fmt) {
+
+	case AUFMT_S16LE:    return SND_PCM_FORMAT_S16;
+	case AUFMT_FLOAT:    return SND_PCM_FORMAT_FLOAT;
+	case AUFMT_S24_3LE:  return SND_PCM_FORMAT_S24_3LE;
+	default:             return SND_PCM_FORMAT_UNKNOWN;
+	}
+}
+
+
 static int alsa_init(void)
 {
+	struct pl val;
 	int err;
+
+	if (0 == conf_get(conf_cur(), "alsa_sample_format", &val)) {
+
+		if (0 == pl_strcasecmp(&val, "s16")) {
+			alsa_sample_format = AUFMT_S16LE;
+		}
+		else if (0 == pl_strcasecmp(&val, "float")) {
+			alsa_sample_format = AUFMT_FLOAT;
+		}
+		else if (0 == pl_strcasecmp(&val, "s24_3le")) {
+			alsa_sample_format = AUFMT_S24_3LE;
+		}
+		else {
+			warning("alsa: unknown sample format '%r'\n", &val);
+			return EINVAL;
+		}
+
+		info("alsa: configured sample format `%s'\n",
+		     aufmt_name(alsa_sample_format));
+	}
 
 	err  = ausrc_register(&ausrc, "alsa", alsa_src_alloc);
 	err |= auplay_register(&auplay, "alsa", alsa_play_alloc);
