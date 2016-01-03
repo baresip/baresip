@@ -323,37 +323,6 @@ static int encode_uri_user(struct re_printf *pf, const struct uri *uri)
 }
 
 
-/* TODO: move interactive code away from CORE, to a module */
-static int password_prompt(struct account *acc)
-{
-	char pwd[64];
-	char *nl;
-	int err;
-
-	(void)re_printf("Please enter password for %r@%r: ",
-			&acc->luri.user, &acc->luri.host);
-
-	/* note: blocking UI call */
-	fgets(pwd, sizeof(pwd), stdin);
-	pwd[sizeof(pwd) - 1] = '\0';
-
-	nl = strchr(pwd, '\n');
-	if (nl == NULL) {
-		(void)re_printf("Invalid password (0 - 63 characters"
-				" followed by newline)\n");
-		return EINVAL;
-	}
-
-	*nl = '\0';
-
-	err = str_dup(&acc->auth_pass, pwd);
-	if (err)
-		return err;
-
-	return 0;
-}
-
-
 int account_alloc(struct account **accp, const char *sipaddr)
 {
 	struct account *acc;
@@ -399,7 +368,11 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 	/* optional password prompt */
 	if (!pl_isset(&acc->laddr.uri.password)) {
-		err = password_prompt(acc);
+		(void)re_printf("Please enter password for %r@%r: ",
+				&acc->luri.user, &acc->luri.host);
+
+		/* TODO: move interactive code away from CORE, to a module */
+		err = ui_password_prompt(&acc->auth_pass);
 		if (err)
 			goto out;
 	}
