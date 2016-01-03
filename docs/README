@@ -74,6 +74,7 @@ Features:
   - Advanced Linux Sound Architecture (ALSA) audio-driver
   - Android OpenSLES audio-driver
   - Gstreamer playbin input audio-driver
+  - JACK Audio Connection Kit audio-driver
   - MacOSX/iOS coreaudio/audiounit audio-driver
   - Open Sound System (OSS) audio-driver
   - Portaudio audio-driver
@@ -173,6 +174,7 @@ httpd         HTTP webserver UI-module
 ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec
 isac          iSAC audio codec
+jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
 libsrtp       Secure RTP encryption using libsrtp
 menu          Interactive menu
