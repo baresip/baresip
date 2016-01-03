@@ -105,6 +105,7 @@ int  conf_get_vidsz(const struct conf *conf, const char *name,
 		    struct vidsz *sz);
 int  conf_get_sa(const struct conf *conf, const char *name, struct sa *sa);
 bool conf_fileexist(const char *path);
+void conf_close(void);
 struct conf *conf_cur(void);
 
 

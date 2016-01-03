@@ -141,6 +141,12 @@ int main(int argc, char *argv[])
 	(void)argv;
 #endif
 
+	err = conf_configure();
+	if (err) {
+		warning("main: configure failed: %m\n", err);
+		goto out;
+	}
+
 	/* NOTE: must be done after all arguments are processed */
 	if (modc) {
 		size_t i;
@@ -156,12 +162,6 @@ int main(int argc, char *argv[])
 					   " '%s' (%m)\n", modv[i], err);
 			}
 		}
-	}
-
-	err = conf_configure();
-	if (err) {
-		warning("main: configure failed: %m\n", err);
-		goto out;
 	}
 
 	/* Initialise User Agents */
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 		ua_stop_all(true);
 
 	ua_close();
-	mod_close();
+	conf_close();
 
 	libre_close();
 

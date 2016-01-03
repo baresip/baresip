@@ -3,8 +3,8 @@ TODO:
 -------------------------------------------------------------------------------
 Version v0.x.y:
 
-  config-object is not available during pre-loading of modules
-  keep config-object around, add support for appending config
+  config: add support for pre-pending or appending config items
+          from command-line options
 
   conf: move generation of config template to a module ('config.so') ?
 
