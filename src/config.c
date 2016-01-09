@@ -315,7 +315,15 @@ static const char *default_audio_device(void)
 #if defined (ANDROID)
 	return "opensles";
 #elif defined (DARWIN)
-	return "coreaudio,nil";
+	uint32_t major;
+
+	/*
+	 * Darwin version 15 == 10.11.x El Capitan
+	 */
+	if (0 == sys_rel_get(NULL, &major, NULL, NULL) && major >= 15)
+		return "audiounit,nil";
+	else
+		return "coreaudio,nil";
 #elif defined (FREEBSD)
 	return "oss,/dev/dsp";
 #elif defined (OPENBSD)
@@ -580,6 +588,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "opensles" MOD_EXT "\n");
 #elif defined (DARWIN)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "coreaudio" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "audiounit" MOD_EXT "\n");
 #elif defined (FREEBSD)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "oss" MOD_EXT "\n");
 #elif defined (OPENBSD)
