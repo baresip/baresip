@@ -31,13 +31,6 @@ enum {
  */
 
 
-/** Defines the answermodes */
-enum answermode {
-	ANSWERMODE_MANUAL = 0,
-	ANSWERMODE_EARLY,
-	ANSWERMODE_AUTO
-};
-
 struct account {
 	char *buf;                   /**< Buffer for the SIP address         */
 	struct sip_addr laddr;       /**< Decoded SIP address                */

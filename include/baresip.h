@@ -31,6 +31,13 @@ struct vidsz;
  * Account
  */
 
+/** Defines the answermodes */
+enum answermode {
+	ANSWERMODE_MANUAL = 0,
+	ANSWERMODE_EARLY,
+	ANSWERMODE_AUTO
+};
+
 struct account;
 
 int account_alloc(struct account **accp, const char *sipaddr);
@@ -43,6 +50,7 @@ struct list *account_vidcodecl(const struct account *acc);
 struct sip_addr *account_laddr(const struct account *acc);
 uint32_t account_regint(const struct account *acc);
 uint32_t account_pubint(const struct account *acc);
+enum answermode account_answermode(const struct account *acc);
 
 
 /*

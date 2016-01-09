@@ -33,9 +33,25 @@ static enum statmode statmode;        /**< Status mode                    */
 static struct mbuf *dialbuf;          /**< Buffer for dialled number      */
 static struct le *le_cur;             /**< Current User-Agent (struct ua) */
 
+static struct {
+	struct play *play;
+} menu;
+
 
 static void menu_set_incall(bool incall);
 static void update_callstatus(void);
+
+
+static const char *translate_errorcode(uint16_t scode)
+{
+	switch (scode) {
+
+	case 404: return "notfound.wav";
+	case 486: return "busy.wav";
+	case 487: return NULL; /* ignore */
+	default:  return "error.wav";
+	}
+}
 
 
 static void check_registrations(void)
@@ -292,6 +308,9 @@ static int cmd_answer(struct re_printf *pf, void *unused)
 	(void)pf;
 	(void)unused;
 
+	/* Stop any ongoing ring-tones */
+	menu.play = mem_deref(menu.play);
+
 	ua_hold_answer(uag_cur(), NULL);
 
 	return 0;
@@ -302,6 +321,9 @@ static int cmd_hangup(struct re_printf *pf, void *unused)
 {
 	(void)pf;
 	(void)unused;
+
+	/* Stop any ongoing ring-tones */
+	menu.play = mem_deref(menu.play);
 
 	ua_hangup(uag_cur(), NULL, 0, NULL);
 
@@ -677,11 +699,53 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		info("%s: Incoming call from: %s %s -"
 		     " (press ENTER to accept)\n",
 		     ua_aor(ua), call_peername(call), call_peeruri(call));
+
+		/* stop any ringtones */
+		menu.play = mem_deref(menu.play);
+
+		/* Only play the ringtones if answermode is "Manual".
+		 * If the answermode is "auto" then be silent.
+		 */
+		if (ANSWERMODE_MANUAL == account_answermode(ua_account(ua))) {
+
+			if (list_count(ua_calls(ua)) > 1) {
+				(void)play_file(&menu.play,
+						"callwaiting.wav", 3);
+			}
+			else {
+				/* Alert user */
+				(void)play_file(&menu.play, "ring.wav", -1);
+			}
+
+		}
 		alert_start(0);
 		break;
 
+	case UA_EVENT_CALL_RINGING:
+		/* stop any ringtones */
+		menu.play = mem_deref(menu.play);
+
+		(void)play_file(&menu.play, "ringback.wav", -1);
+		break;
+
 	case UA_EVENT_CALL_ESTABLISHED:
+		/* stop any ringtones */
+		menu.play = mem_deref(menu.play);
+
+		alert_stop();
+		break;
+
 	case UA_EVENT_CALL_CLOSED:
+		/* stop any ringtones */
+		menu.play = mem_deref(menu.play);
+
+		if (call_scode(call)) {
+			const char *tone;
+			tone = translate_errorcode(call_scode(call));
+			if (tone)
+				(void)play_file(&menu.play, tone, 1);
+		}
+
 		alert_stop();
 		break;
 
@@ -748,6 +812,8 @@ static int module_close(void)
 	dialbuf = mem_deref(dialbuf);
 
 	le_cur = NULL;
+
+	menu.play = mem_deref(menu.play);
 
 	return 0;
 }

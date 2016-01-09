@@ -16,8 +16,6 @@ Version v0.x.y:
   vumeter code is common for vumeter-module and gtk-module.
   move to a common place ?
 
-  move playing of ringtones from ua.c to menu.so ?
-
   move password-prompt from ua (core) to module ?
 
   add a FPS (framerate) throttler for fast vidsrc modules

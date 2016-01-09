@@ -493,6 +493,12 @@ uint32_t account_pubint(const struct account *acc)
 }
 
 
+enum answermode account_answermode(const struct account *acc)
+{
+	return acc ? acc->answermode : ANSWERMODE_MANUAL;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
