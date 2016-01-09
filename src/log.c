@@ -11,10 +11,12 @@
 static struct {
 	struct list logl;
 	bool debug;
+	bool info;
 	bool stder;
 } lg = {
 	LIST_INIT,
 	false,
+	true,
 	true
 };
 
@@ -40,6 +42,12 @@ void log_unregister_handler(struct log *log)
 void log_enable_debug(bool enable)
 {
 	lg.debug = enable;
+}
+
+
+void log_enable_info(bool enable)
+{
+	lg.info = enable;
 }
 
 
@@ -90,6 +98,9 @@ void loglv(enum log_level level, const char *fmt, ...)
 	if ((LEVEL_DEBUG == level) && !lg.debug)
 		return;
 
+	if ((LEVEL_INFO == level) && !lg.info)
+		return;
+
 	va_start(ap, fmt);
 	vlog(level, fmt, ap);
 	va_end(ap);
@@ -112,6 +123,9 @@ void debug(const char *fmt, ...)
 void info(const char *fmt, ...)
 {
 	va_list ap;
+
+	if (!lg.info)
+		return;
 
 	va_start(ap, fmt);
 	vlog(LEVEL_INFO, fmt, ap);

@@ -134,7 +134,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		++ag->n_established;
 
 		if (ag->peer->n_established) {
-			re_printf("@@@ test complete\n");
 			re_cancel();
 		}
 		break;
@@ -146,7 +145,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		ag->close_scode = call_scode(call);
 
 		if (ag->peer->n_closed) {
-			re_printf("@@@ test complete\n");
 			re_cancel();
 		}
 		break;

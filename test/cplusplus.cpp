@@ -15,7 +15,7 @@ int test_cplusplus(void)
 	int err = 0;
 
 	ASSERT_TRUE(str_isset(version));
-	re_printf("c++ ok\n");
+	info("c++ ok\n");
 
 out:
 	return err;

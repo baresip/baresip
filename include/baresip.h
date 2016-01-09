@@ -405,6 +405,7 @@ struct log {
 void log_register_handler(struct log *log);
 void log_unregister_handler(struct log *log);
 void log_enable_debug(bool enable);
+void log_enable_info(bool enable);
 void log_enable_stderr(bool enable);
 void vlog(enum log_level level, const char *fmt, va_list ap);
 void loglv(enum log_level level, const char *fmt, ...);

@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <getopt.h>
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
@@ -29,17 +30,14 @@ static const struct test tests[] = {
 };
 
 
-static int run_tests(bool verbose)
+static int run_tests(void)
 {
 	size_t i;
 	int err;
 
 	for (i=0; i<ARRAY_SIZE(tests); i++) {
 
-		if (verbose) {
-			re_printf("test %u -- %s\n",
-				  i, tests[i].name);
-		}
+		re_printf("[ RUN      ] %s\n", tests[i].name);
 
 		err = tests[i].exec();
 		if (err) {
@@ -47,13 +45,25 @@ static int run_tests(bool verbose)
 				tests[i].name, err);
 			return err;
 		}
+
+		re_printf("[       OK ]\n");
 	}
 
 	return 0;
 }
 
 
-int main(void)
+static void usage(void)
+{
+	(void)re_fprintf(stderr,
+			 "Usage: selftest [options]\n"
+			 "options:\n"
+			 "\t-v               Verbose output (INFO level)\n"
+			 );
+}
+
+
+int main(int argc, char *argv[])
 {
 	struct config *config;
 	int err;
@@ -62,7 +72,31 @@ int main(void)
 	if (err)
 		return err;
 
-	re_printf("running test version %s\n", BARESIP_VERSION);
+	log_enable_info(false);
+
+	for (;;) {
+		const int c = getopt(argc, argv, "v");
+		if (0 > c)
+			break;
+
+		switch (c) {
+
+		case '?':
+		case 'h':
+			usage();
+			return -2;
+
+		case 'v':
+			log_enable_info(true);
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	re_printf("running baresip selftest version %s with %zu tests\n",
+		  BARESIP_VERSION, ARRAY_SIZE(tests));
 
 	/* note: run SIP-traffic on localhost */
 	config = conf_config();
@@ -77,7 +111,7 @@ int main(void)
 	if (err)
 		goto out;
 
-	err = run_tests(false);
+	err = run_tests();
 	if (err)
 		goto out;
 
