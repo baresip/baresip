@@ -268,7 +268,9 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		st->run = false;
 
  out:
-	mem_deref(par);
+	if (par)
+		mem_deref(par);
+
 	if (err)
 		mem_deref(st);
 	else
