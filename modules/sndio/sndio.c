@@ -47,7 +47,7 @@ static struct auplay *auplay;
 
 static struct sio_par *sndio_initpar(uint32_t srate, uint8_t ch)
 {
-	struct sio_par *par;
+	struct sio_par *par = NULL;
 
 	if ((par = mem_zalloc(sizeof(*par), NULL)) == NULL)
 		return NULL;
