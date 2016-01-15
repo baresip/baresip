@@ -104,6 +104,13 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	AURenderCallbackStruct cb;
 	struct ausrc_st *st;
 	UInt32 enable = 1;
+	UInt32 ausize;
+	ausize = sizeof(AudioDeviceID);
+	AudioDeviceID inputDevice;
+	AudioObjectPropertyAddress auAddress = {
+		kAudioHardwarePropertyDefaultInputDevice,
+		kAudioObjectPropertyScopeGlobal,
+		kAudioObjectPropertyElementMaster };
 	OSStatus ret = 0;
 	int err;
 
@@ -135,6 +142,31 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
 				   kAudioUnitScope_Input, inputBus,
 				   &enable, sizeof(enable));
+	if (ret)
+		goto out;
+
+	enable = 0;
+	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
+				   kAudioUnitScope_Output, 0,
+				   &enable, sizeof(enable));
+	if (ret)
+		goto out;
+
+	ret = AudioObjectGetPropertyData(kAudioObjectSystemObject,
+			&auAddress,
+			0,
+			NULL,
+			&ausize,
+			&inputDevice);
+	if (ret)
+		goto out;
+
+	ret = AudioUnitSetProperty(st->au,
+			kAudioOutputUnitProperty_CurrentDevice,
+			kAudioUnitScope_Global,
+			0,
+			&inputDevice,
+			sizeof(inputDevice));
 	if (ret)
 		goto out;
 
