@@ -74,8 +74,10 @@ static OSStatus input_callback(void *inRefCon,
 			      inBusNumber,
 			      inNumberFrames,
 			      &abl);
-	if (ret)
+	if (ret) {
+		debug("audiounit: record: AudioUnitRender error (%d)\n", ret);
 		return ret;
+	}
 
 	rh(abl.mBuffers[0].mData, abl.mBuffers[0].mDataByteSize/2, arg);
 
@@ -111,6 +113,8 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		kAudioHardwarePropertyDefaultInputDevice,
 		kAudioObjectPropertyScopeGlobal,
 		kAudioObjectPropertyElementMaster };
+	Float64 hw_srate = 0.0;
+	UInt32 hw_size = sizeof(hw_srate);
 	OSStatus ret = 0;
 	int err;
 
@@ -208,6 +212,18 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	ret = AudioOutputUnitStart(st->au);
 	if (ret)
 		goto out;
+
+	ret = AudioUnitGetProperty(st->au,
+				   kAudioUnitProperty_SampleRate,
+				   kAudioUnitScope_Input,
+				   0,
+				   &hw_srate,
+				   &hw_size);
+	if (ret)
+		goto out;
+
+	debug("audiounit: record hardware sample rate is now at %f Hz\n",
+	      hw_srate);
 
  out:
 	if (ret) {

@@ -96,6 +96,8 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	struct auplay_st *st;
 	UInt32 enable = 1;
 	OSStatus ret = 0;
+	Float64 hw_srate = 0.0;
+	UInt32 hw_size = sizeof(hw_srate);
 	int err;
 
 	(void)device;
@@ -123,8 +125,10 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
 				   kAudioUnitScope_Output, outputBus,
 				   &enable, sizeof(enable));
-	if (ret)
+	if (ret) {
+		warning("audiounit: EnableIO failed (%d)\n", ret);
 		goto out;
+	}
 
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
@@ -162,6 +166,18 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	ret = AudioOutputUnitStart(st->au);
 	if (ret)
 		goto out;
+
+	ret = AudioUnitGetProperty(st->au,
+				   kAudioUnitProperty_SampleRate,
+				   kAudioUnitScope_Output,
+				   0,
+				   &hw_srate,
+				   &hw_size);
+	if (ret)
+		goto out;
+
+	debug("audiounit: player hardware sample rate is now at %f Hz\n",
+	      hw_srate);
 
  out:
 	if (ret) {
