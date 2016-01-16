@@ -726,6 +726,7 @@ static void *gtk_thread(void *arg)
 	GtkMenuShell *app_menu;
 	GtkWidget *item;
 	GError *err = NULL;
+	struct le *le;
 
 	gdk_threads_init();
 	gtk_init(0, NULL);
@@ -772,7 +773,7 @@ static void *gtk_thread(void *arg)
 			mod->accounts_menu);
 
 	/* Add accounts to submenu */
-	for (struct le *le = list_head(uag_list()); le; le = le->next) {
+	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
 		accounts_menu_add_item(mod, ua);
 	}

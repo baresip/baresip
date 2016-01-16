@@ -150,9 +150,15 @@ int daala_decode(struct viddec_state *vds, struct vidframe *frame,
 			return EPROTO;
 		}
 
-		r = daala_decode_packet_in(vds->dec, &img, &dp);
+		r = daala_decode_packet_in(vds->dec, &dp);
 		if (r < 0) {
 			warning("daala: decode: packet_in error (%d)\n", r);
+			return EPROTO;
+		}
+
+		r = daala_decode_img_out(vds->dec, &img);
+		if (r != 1) {
+			warning("daala: decode: img_out error (%d)\n", r);
 			return EPROTO;
 		}
 

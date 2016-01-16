@@ -47,7 +47,7 @@ static struct auplay *auplay;
 
 static struct sio_par *sndio_initpar(uint32_t srate, uint8_t ch)
 {
-	struct sio_par *par;
+	struct sio_par *par = NULL;
 
 	if ((par = mem_zalloc(sizeof(*par), NULL)) == NULL)
 		return NULL;
@@ -144,7 +144,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
-	struct sio_par *par;
+	struct sio_par *par = NULL;
 	int err;
 	const char *name;
 
@@ -215,7 +215,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		      auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
-	struct sio_par *par;
+	struct sio_par *par = NULL;
 	int err;
 	const char *name;
 

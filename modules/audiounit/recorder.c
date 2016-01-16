@@ -74,8 +74,10 @@ static OSStatus input_callback(void *inRefCon,
 			      inBusNumber,
 			      inNumberFrames,
 			      &abl);
-	if (ret)
+	if (ret) {
+		debug("audiounit: record: AudioUnitRender error (%d)\n", ret);
 		return ret;
+	}
 
 	rh(abl.mBuffers[0].mData, abl.mBuffers[0].mDataByteSize/2, arg);
 
@@ -104,6 +106,15 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	AURenderCallbackStruct cb;
 	struct ausrc_st *st;
 	UInt32 enable = 1;
+	UInt32 ausize;
+	ausize = sizeof(AudioDeviceID);
+	AudioDeviceID inputDevice;
+	AudioObjectPropertyAddress auAddress = {
+		kAudioHardwarePropertyDefaultInputDevice,
+		kAudioObjectPropertyScopeGlobal,
+		kAudioObjectPropertyElementMaster };
+	Float64 hw_srate = 0.0;
+	UInt32 hw_size = sizeof(hw_srate);
 	OSStatus ret = 0;
 	int err;
 
@@ -135,6 +146,31 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
 				   kAudioUnitScope_Input, inputBus,
 				   &enable, sizeof(enable));
+	if (ret)
+		goto out;
+
+	enable = 0;
+	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
+				   kAudioUnitScope_Output, 0,
+				   &enable, sizeof(enable));
+	if (ret)
+		goto out;
+
+	ret = AudioObjectGetPropertyData(kAudioObjectSystemObject,
+			&auAddress,
+			0,
+			NULL,
+			&ausize,
+			&inputDevice);
+	if (ret)
+		goto out;
+
+	ret = AudioUnitSetProperty(st->au,
+			kAudioOutputUnitProperty_CurrentDevice,
+			kAudioUnitScope_Global,
+			0,
+			&inputDevice,
+			sizeof(inputDevice));
 	if (ret)
 		goto out;
 
@@ -176,6 +212,18 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	ret = AudioOutputUnitStart(st->au);
 	if (ret)
 		goto out;
+
+	ret = AudioUnitGetProperty(st->au,
+				   kAudioUnitProperty_SampleRate,
+				   kAudioUnitScope_Input,
+				   0,
+				   &hw_srate,
+				   &hw_size);
+	if (ret)
+		goto out;
+
+	debug("audiounit: record hardware sample rate is now at %f Hz\n",
+	      hw_srate);
 
  out:
 	if (ret) {
