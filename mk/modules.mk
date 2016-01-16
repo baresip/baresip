@@ -7,6 +7,7 @@
 #
 #   USE_ALSA          ALSA audio driver
 #   USE_AMR           Adaptive Multi-Rate (AMR) audio codec
+#   USE_AUDIOUNIT     AudioUnit audio driver for OSX/iOS
 #   USE_AVCAPTURE     AVFoundation video capture for OSX/iOS
 #   USE_AVCODEC       avcodec video codec module
 #   USE_AVFORMAT      avformat video source module
@@ -204,6 +205,10 @@ USE_AVFOUNDATION := \
 	$(shell [ -d /System/Library/Frameworks/AVFoundation.framework ] \
 		&& echo "yes")
 
+USE_AUDIOUNIT := \
+	$(shell [ -d /System/Library/Frameworks/AudioUnit.framework ] \
+		&& echo "yes")
+
 ifneq ($(USE_AVFOUNDATION),)
 USE_AVCAPTURE := yes
 else
@@ -257,6 +262,9 @@ MODULES   += alsa
 endif
 ifneq ($(USE_AMR),)
 MODULES   += amr
+endif
+ifneq ($(USE_AUDIOUNIT),)
+MODULES   += audiounit
 endif
 ifneq ($(USE_AVCAPTURE),)
 MODULES   += avcapture
