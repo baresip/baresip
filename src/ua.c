@@ -909,7 +909,9 @@ int ua_options_send(struct ua *ua, const char *uri,
 	if (!dialbuf)
 		return ENOMEM;
 
-	err |= uri_complete(ua, dialbuf, uri);
+	err = uri_complete(ua, dialbuf, uri);
+	if (err)
+		goto out;
 
 	dialbuf->buf[dialbuf->end] = '\0';
 
@@ -921,6 +923,7 @@ int ua_options_send(struct ua *ua, const char *uri,
 		warning("ua: send options: (%m)\n", err);
 	}
 
+ out:
 	mem_deref(dialbuf);
 
 	return err;
