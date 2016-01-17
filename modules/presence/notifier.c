@@ -89,7 +89,7 @@ static void sipnot_close_handler(int err, const struct sip_msg *msg,
 		     msg->scode, &msg->reason);
 	}
 
-	not = mem_deref(not);
+	mem_deref(not);
 }
 
 

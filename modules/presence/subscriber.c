@@ -145,7 +145,7 @@ done:
 	contact_set_presence(pres->contact, status);
 
 	if (pres->shutdown)
-		pres = mem_deref(pres);
+		mem_deref(pres);
 }
 
 
