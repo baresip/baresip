@@ -40,6 +40,7 @@ static struct {
 
 static void menu_set_incall(bool incall);
 static void update_callstatus(void);
+static void alert_stop(void);
 
 
 static const char *translate_errorcode(uint16_t scode)
@@ -324,6 +325,7 @@ static int cmd_hangup(struct re_printf *pf, void *unused)
 
 	/* Stop any ongoing ring-tones */
 	menu.play = mem_deref(menu.play);
+	alert_stop();
 
 	ua_hangup(uag_cur(), NULL, 0, NULL);
 
