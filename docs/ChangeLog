@@ -1,3 +1,52 @@
+2016-01-17 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.17
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.4.17
+	* NOTE: Requires libre v0.4.14 or later
+	        Requires librem v0.4.7 or later
+
+	* new modules:
+	  - echo        Echo server module
+	  - jack        JACK Audio Connection Kit audio-driver
+
+	* baresip-core:
+	  - config: keep config object in memory
+	  - ua: moved playing of ringtones out of core, to "menu" module
+		(let's keep the core nice and slim..)
+	  - ui: added ui_password_prompt()
+
+	* selftest:
+	  - silence debug/info log by default, only print warnings
+	    (use -v to see verbose logging)
+
+	* Modules:
+
+	* alsa: added config option to specify the sample format
+		"alsa_sample_format    {s16,float,s24_3le}"
+		thanks to Ola Palm for valuable feedback
+
+	* audiounit: fix recording on OSX (thanks Sebastian Reimers)
+		     print hardware samplerate in debug mode
+
+	* auloop: add support for 44100 Hz samplerate
+
+	* daala: update to latest libdaala API (thanks Dmitrij D. Czarkoff)
+
+	* echo: new module which implements a simple Echo-server, to
+		be used in combination with the aubridge.so module.
+		contributed by Sebastian Reimers
+
+	* gtk: fixes to support C89 compiler (thanks Dmitrij D. Czarkoff)
+
+	* jack: new module which implements audio-driver for JACK
+
+	* menu: playing of ringtones moved here, from ua.c
+
+	* sndio: fix crash when device open fails (thanks Dmitrij D. Czarkoff)
+
+
 2015-12-01 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.16
