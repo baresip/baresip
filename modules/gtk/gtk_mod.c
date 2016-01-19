@@ -180,7 +180,6 @@ static void menu_on_presence_set(GtkMenuItem *item, struct gtk_mod *mod)
 }
 
 
-#ifdef USE_NOTIFICATIONS
 static void menu_on_incoming_call_answer(GtkMenuItem *menuItem,
 		struct gtk_mod *mod)
 {
@@ -197,7 +196,6 @@ static void menu_on_incoming_call_reject(GtkMenuItem *menuItem,
 	denotify_incoming_call(mod, call);
 	mqueue_push(mod->mq, MQ_HANGUP, call);
 }
-#endif
 
 
 static GtkMenuItem *accounts_menu_add_item(struct gtk_mod *mod,
@@ -310,9 +308,15 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	GtkWidget *menu_item;
 #if defined(USE_LIBNOTIFY)
 	NotifyNotification *notification;
-#endif
 
-#if GLIB_CHECK_VERSION(2,40,0)
+	if (!notify_is_initted())
+		return;
+	notification = notify_notification_new(title, msg, "baresip");
+	notify_notification_set_urgency(notification, NOTIFY_URGENCY_CRITICAL);
+	notify_notification_show(notification, NULL);
+	g_object_unref(notification);
+
+#elif GLIB_CHECK_VERSION(2,40,0)
 	char id[64];
 	GVariant *target;
 	GNotification *notification = g_notification_new(title);
@@ -336,14 +340,6 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	g_application_send_notification(mod->app, id, notification);
 	g_object_unref(notification);
 
-#elif defined(USE_LIBNOTIFY)
-	/* If glib does not have GNotification, use libnotify instead. */
-	if (!notify_is_initted())
-		return;
-	notification = notify_notification_new(title, msg, "baresip");
-	notify_notification_set_urgency(notification, NOTIFY_URGENCY_CRITICAL);
-	notify_notification_show(notification, NULL);
-	g_object_unref(notification);
 #else
 	(void)msg;
 	(void)title;
@@ -496,11 +492,9 @@ static void ua_event_handler(struct ua *ua,
 		accounts_menu_set_status(mod, ua, ev);
 		break;
 
-#ifdef USE_NOTIFICATIONS
 	case UA_EVENT_CALL_INCOMING:
 		notify_incoming_call(mod, call);
 		break;
-#endif
 
 	case UA_EVENT_CALL_CLOSED:
 		win = get_call_window(mod, call);
