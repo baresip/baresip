@@ -4,8 +4,10 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <time.h>
+#include <string.h>
 #include <re.h>
 #include <baresip.h>
+#include <stdlib.h>
 
 
 /**
@@ -544,6 +546,48 @@ static int hold_prev_call(struct re_printf *pf, void *unused)
 	return call_hold(ua_prev_call(uag_cur()), true);
 }
 
+static int switch_audio_dev(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	static bool switch_aud_inprogress;
+	char *driver = NULL;
+	char *device = NULL;
+	int err = 0;
+	struct pl pl_driver, pl_device;
+	struct audio * a;
+
+	if (!switch_aud_inprogress && !carg->complete)
+		re_hprintf(pf, "\rPlease enter driver an device\n");
+
+	switch_aud_inprogress = true;
+
+	if (carg->complete) {
+		switch_aud_inprogress = false;
+
+		re_regex( carg->prm, str_len(carg->prm), "[^,]+,[~]*", &pl_driver, &pl_device);
+		driver = malloc( (pl_driver.l+1) * sizeof(char));
+		device = malloc( (pl_device.l+1) * sizeof(char));
+		(void)pl_strcpy( &pl_driver, driver, pl_driver.l+1);
+		if (pl_isset(&pl_device))
+			(void)pl_strcpy( &pl_device, device, pl_device.l+1);
+		else{
+			re_hprintf(pf, "\rFormat should be: driver,device\n");
+			free( driver);
+			free( device);
+			return 0;
+		}
+
+		a = call_audio(ua_call(uag_cur()));
+		err = audio_set_player( a, driver, device);
+		if( !err)
+			err = audio_set_source( a, driver, device);
+
+		free( driver);
+		free( device);
+		if( err) return err;
+	}
+	return 0;
+}
 
 #ifdef USE_VIDEO
 static int call_videoenc_cycle(struct re_printf *pf, void *unused)
@@ -602,6 +646,7 @@ static const struct cmd callcmdv[] = {
 	{'r', CMD_IPRM,"Transfer call",       call_xfer             },
 	{'x',       0, "Call hold",           call_holdresume       },
 	{'H',       0, "Hold previous call",  hold_prev_call        },
+	{'A', CMD_IPRM,"Switch audio device", switch_audio_dev      },
 
 #ifdef USE_VIDEO
 	{'E',       0, "Cycle video encoder", call_videoenc_cycle   },
