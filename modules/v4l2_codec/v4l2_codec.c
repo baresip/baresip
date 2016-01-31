@@ -41,33 +41,29 @@
 
 struct vidsrc_st {
 	const struct vidsrc *vs;  /* inheritance */
-	/* empty */
-};
 
-struct videnc_state {
-	struct videnc_param encprm;
 	uint8_t *buffer;
 	size_t buffer_len;
 	int fd;
-	videnc_packet_h *pkth;
-	void *arg;
 	struct {
 		unsigned n_key;
 		unsigned n_delta;
 	} stats;
 };
 
+struct videnc_state {
+	struct le le;
+	struct videnc_param encprm;
+	videnc_packet_h *pkth;
+	void *arg;
+};
+
 
 /* TODO: global data, move to per vidsrc instance */
 static struct {
-	char device[256];
-	unsigned width;
-	unsigned height;
-} v4l2 = {
-	"/dev/video0",
-	320,
-	240
-};
+	/* List of encoder-states (struct videnc_state) */
+	struct list encoderl;
+} v4l2;
 
 
 static struct vidsrc *vidsrc;
@@ -84,7 +80,7 @@ static int xioctl(int fd, unsigned long int request, void *arg)
 }
 
 
-static int print_caps(int fd)
+static int print_caps(int fd, unsigned width, unsigned height)
 {
 	struct v4l2_capability caps;
 	struct v4l2_fmtdesc fmtdesc;
@@ -147,8 +143,8 @@ static int print_caps(int fd)
 	}
 
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	fmt.fmt.pix.width = v4l2.width;
-	fmt.fmt.pix.height = v4l2.height;
+	fmt.fmt.pix.width = width;
+	fmt.fmt.pix.height = height;
 	fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_H264;
 	fmt.fmt.pix.field = V4L2_FIELD_NONE;
 
@@ -173,7 +169,7 @@ static int print_caps(int fd)
 }
 
 
-static int init_mmap(struct videnc_state *st, int fd)
+static int init_mmap(struct vidsrc_st *st, int fd)
 {
 	struct v4l2_requestbuffers req;
 	struct v4l2_buffer buf;
@@ -270,27 +266,30 @@ static void enc_destructor(void *arg)
 {
 	struct videnc_state *st = arg;
 
-	if (st->fd >=0 ) {
-		info("v4l2_codec: encoder stats"
-		     " (keyframes:%u, deltaframes:%u)\n",
-		     st->stats.n_key, st->stats.n_delta);
-	}
+	list_unlink(&st->le);
+}
 
-	stop_capturing(st->fd);
 
-	if (st->buffer)
-		munmap(st->buffer, st->buffer_len);
+static void encoders_read(const uint8_t *buf, size_t sz)
+{
+	struct le *le;
+	int err;
 
-	if (st->fd >= 0) {
-		fd_close(st->fd);
-		close(st->fd);
+	for (le = v4l2.encoderl.head; le; le = le->next) {
+		struct videnc_state *st = le->data;
+
+		err = h264_packetize(buf, sz,
+				     st->encprm.pktsize, st->pkth, st->arg);
+		if (err) {
+			warning("h264_packetize error (%m)\n", err);
+		}
 	}
 }
 
 
 static void read_handler(int flags, void *arg)
 {
-	struct videnc_state *st = arg;
+	struct vidsrc_st *st = arg;
 	struct v4l2_buffer buf;
 	int err;
 	(void)flags;
@@ -333,13 +332,50 @@ static void read_handler(int flags, void *arg)
 		}
 	}
 
-	err = h264_packetize(st->buffer, buf.bytesused,
-			     st->encprm.pktsize, st->pkth, st->arg);
-	if (err) {
-		warning("h264_packetize error (%m)\n", err);
-	}
+	/* pass the frame to the encoders */
+	encoders_read(st->buffer, buf.bytesused);
 
 	query_buffer(st->fd);
+}
+
+
+static int open_encoder(struct vidsrc_st *st, const char *device,
+			unsigned width, unsigned height)
+{
+	int err;
+
+	debug("v4l2_codec: opening video-encoder device (device=%s)\n",
+	      device);
+
+	st->fd = open(device, O_RDWR);
+	if (st->fd == -1) {
+		err = errno;
+		warning("Opening video device (%m)\n", err);
+		goto out;
+	}
+
+	err = print_caps(st->fd, width, height);
+	if (err)
+		goto out;
+
+	err = init_mmap(st, st->fd);
+	if (err)
+		goto out;
+
+	err = query_buffer(st->fd);
+	if (err)
+		goto out;
+
+	err = start_streaming(st->fd);
+	if (err)
+		goto out;
+
+	err = fd_listen(st->fd, FD_READ, read_handler, st);
+	if (err)
+		goto out;
+
+out:
+	return err;
 }
 
 
@@ -365,37 +401,11 @@ static int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	st->pkth = pkth;
 	st->arg = arg;
 
-	st->fd = open(v4l2.device, O_RDWR);
-	if (st->fd == -1) {
-		err = errno;
-		warning("Opening video device (%m)\n", err);
-		goto out;
-	}
-
-	err = print_caps(st->fd);
-	if (err)
-		goto out;
-
-	err = init_mmap(st, st->fd);
-	if (err)
-		goto out;
-
-	err = query_buffer(st->fd);
-	if (err)
-		goto out;
-
-	err = start_streaming(st->fd);
-	if (err)
-		goto out;
-
-	err = fd_listen(st->fd, FD_READ, read_handler, st);
-	if (err)
-		goto out;
+	list_append(&v4l2.encoderl, &st->le, st);
 
 	info("v4l2_codec: video encoder %s: %d fps, %d bit/s, pktsize=%u\n",
 	      vc->name, prm->fps, prm->bitrate, prm->pktsize);
 
- out:
 	if (err)
 		mem_deref(st);
 	else
@@ -463,7 +473,22 @@ static bool h264_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data)
 static void src_destructor(void *arg)
 {
 	struct vidsrc_st *st = arg;
-	(void)st;
+
+	if (st->fd >=0 ) {
+		info("v4l2_codec: encoder stats"
+		     " (keyframes:%u, deltaframes:%u)\n",
+		     st->stats.n_key, st->stats.n_delta);
+	}
+
+	stop_capturing(st->fd);
+
+	if (st->buffer)
+		munmap(st->buffer, st->buffer_len);
+
+	if (st->fd >= 0) {
+		fd_close(st->fd);
+		close(st->fd);
+	}
 }
 
 
@@ -485,18 +510,22 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!stp || !size || !frameh)
 		return EINVAL;
 
+	if (str_isset(dev))
+		dev = "/dev/video0";
+
+	debug("v4l2_codec: video-source alloc (device=%s)\n", dev);
+
 	st = mem_zalloc(sizeof(*st), src_destructor);
 	if (!st)
 		return ENOMEM;
 
 	st->vs = vs;
 
-	/* NOTE: copy instance data into global space */
-	if (str_isset(dev))
-		str_ncpy(v4l2.device, dev, sizeof(v4l2.device));
-	v4l2.width = size->w;
-	v4l2.height = size->h;
+	err = open_encoder(st, dev, size->w, size->h);
+	if (err)
+		goto out;
 
+out:
 	if (err)
 		mem_deref(st);
 	else
