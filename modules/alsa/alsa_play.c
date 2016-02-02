@@ -80,7 +80,7 @@ static void *write_thread(void *arg)
 		if (-EPIPE == n) {
 			snd_pcm_prepare(st->write);
 
-			n = snd_pcm_writei(st->write, st->xsampv, samples);
+			n = snd_pcm_writei(st->write, sampv, samples);
 			if (n != samples) {
 				warning("alsa: write error: %s\n",
 					snd_strerror(n));
