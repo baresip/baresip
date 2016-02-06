@@ -35,6 +35,7 @@ static struct le *le_cur;             /**< Current User-Agent (struct ua) */
 
 static struct {
 	struct play *play;
+	bool bell;
 } menu;
 
 
@@ -90,13 +91,7 @@ static void check_registrations(void)
  */
 static struct ua *uag_cur(void)
 {
-	if (list_isempty(uag_list()))
-		return NULL;
-
-	if (!le_cur)
-		le_cur = list_head(uag_list());
-
-	return list_ledata(le_cur);
+	return uag_current();
 }
 
 
@@ -306,15 +301,18 @@ static int options_command(struct re_printf *pf, void *arg)
 
 static int cmd_answer(struct re_printf *pf, void *unused)
 {
-	(void)pf;
+	struct ua *ua = uag_cur();
+	int err;
 	(void)unused;
+
+	err = re_hprintf(pf, "%s: Answering incoming call\n", ua_aor(ua));
 
 	/* Stop any ongoing ring-tones */
 	menu.play = mem_deref(menu.play);
 
-	ua_hold_answer(uag_cur(), NULL);
+	ua_hold_answer(ua, NULL);
 
-	return 0;
+	return err;
 }
 
 
@@ -673,6 +671,9 @@ static void alert_start(void *arg)
 {
 	(void)arg;
 
+	if (!menu.bell)
+		return;
+
 	ui_output("\033[10;1000]\033[11;1000]\a");
 
 	tmr_start(&tmr_alert, 1000, alert_start, NULL);
@@ -681,6 +682,9 @@ static void alert_start(void *arg)
 
 static void alert_stop(void)
 {
+	if (!menu.bell)
+		return;
+
 	if (tmr_isrunning(&tmr_alert))
 		ui_output("\r");
 
@@ -698,6 +702,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	switch (ev) {
 
 	case UA_EVENT_CALL_INCOMING:
+
+		/* set the current User-Agent to the one with the call */
+		uag_current_set(ua);
+
 		info("%s: Incoming call from: %s %s -"
 		     " (press ENTER to accept)\n",
 		     ua_aor(ua), call_peername(call), call_peeruri(call));
@@ -719,8 +727,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				(void)play_file(&menu.play, "ring.wav", -1);
 			}
 
+			if (menu.bell)
+				alert_start(0);
 		}
-		alert_start(0);
 		break;
 
 	case UA_EVENT_CALL_RINGING:
@@ -783,6 +792,8 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 static int module_init(void)
 {
 	int err;
+
+	conf_get_bool(conf_cur(), "menu_bell", &menu.bell);
 
 	dialbuf = mbuf_alloc(64);
 	if (!dialbuf)
