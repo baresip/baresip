@@ -237,8 +237,11 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 	s->rtcp  = s->cfg.rtcp_enable;
 
 	err = stream_sock_alloc(s, call_af(call));
-	if (err)
+	if (err) {
+		warning("stream: failed to create socket for media '%s'"
+			" (%m)\n", name, err);
 		goto out;
+	}
 
 	err = str_dup(&s->cname, cname);
 	if (err)
