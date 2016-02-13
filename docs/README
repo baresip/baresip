@@ -262,11 +262,11 @@ IETF RFC/I-Ds:
 * RFC 6263  App. Mechanism for Keeping Alive NAT Associated with RTP / RTCP
 * RFC 6716  Definition of the Opus Audio Codec
 * RFC 6886  NAT Port Mapping Protocol (NAT-PMP)
+* RFC 7587  RTP Payload Format for the Opus Speech and Audio Codec
 
 * draft-ietf-avt-rtp-isac-04
 * draft-ietf-payload-rtp-h265-07
 * draft-ietf-payload-vp8-17
-* draft-spittka-payload-rtp-opus-00
 
 
 Architecture:
