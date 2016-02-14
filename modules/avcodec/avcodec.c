@@ -1,7 +1,7 @@
 /**
  * @file avcodec.c  Video codecs using libavcodec
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2016 Creytiv.com
  */
 #include <re.h>
 #include <rem.h>
@@ -12,6 +12,33 @@
 #endif
 #include "h26x.h"
 #include "avcodec.h"
+
+
+/**
+ * @defgroup avcodec avcodec
+ *
+ * Video codecs using libavcodec
+ *
+ * This module implements H.263, H.264 and MPEG4 video codecs
+ * using libavcodec from FFmpeg or libav projects, and libx264.
+ *
+ * Build options:
+ *
+ \verbatim
+      $ make USE_X264=1    ; enable direct usage of libx264
+      $ make USE_X264=     ; use H.264 encoder from libavcodec
+ \endverbatim
+ *
+ *
+ * References:
+ *
+ *     http://ffmpeg.org
+ *
+ *     https://libav.org
+ *
+ *     RTP Payload Format for H.264 Video
+ *     https://tools.ietf.org/html/rfc6184
+ */
 
 
 const uint8_t h264_level_idc = 0x0c;
