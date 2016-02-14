@@ -17,6 +17,12 @@ enum behaviour {
 	BEHAVIOUR_REJECT
 };
 
+enum action {
+	ACTION_RECANCEL = 0,
+	ACTION_HANGUP_A,
+	ACTION_HANGUP_B
+};
+
 struct agent {
 	struct agent *peer;
 	struct ua *ua;
@@ -33,6 +39,7 @@ struct fixture {
 	struct agent a, b;
 	struct sa laddr_sip;
 	enum behaviour behaviour;
+	enum action estab_action;
 	char buri[256];
 	int err;
 };
@@ -100,7 +107,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	else if (ua == f->b.ua)
 		ag = &f->b;
 	else {
-		warning("ua %p not found\n", ua);
 		return;
 	}
 
@@ -133,8 +139,25 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_ESTABLISHED:
 		++ag->n_established;
 
+		/* are both agents established? */
 		if (ag->peer->n_established) {
-			re_cancel();
+
+			switch (f->estab_action) {
+
+			case ACTION_RECANCEL:
+				re_cancel();
+				break;
+
+			case ACTION_HANGUP_A:
+				f->a.failed = true;
+				ua_hangup(f->a.ua, NULL, 0, 0);
+				break;
+
+			case ACTION_HANGUP_B:
+				f->b.failed = true;
+				ua_hangup(f->b.ua, NULL, 0, 0);
+				break;
+			}
 		}
 		break;
 
@@ -260,6 +283,74 @@ int test_call_af_mismatch(void)
 	ASSERT_EQ(0, fix.b.n_incoming);
 	ASSERT_EQ(0, fix.b.n_established);
 	ASSERT_EQ(1, fix.b.n_closed);
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_answer_hangup_a(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_HANGUP_A;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(1, fix.b.n_closed);
+	ASSERT_EQ(0, fix.b.close_scode);
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_answer_hangup_b(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_HANGUP_B;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+	ASSERT_EQ(0, fix.b.close_scode);
 
  out:
 	fixture_close(f);

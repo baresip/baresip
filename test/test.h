@@ -82,6 +82,8 @@ int test_ua_register(void);
 int test_call_answer(void);
 int test_call_reject(void);
 int test_call_af_mismatch(void);
+int test_call_answer_hangup_a(void);
+int test_call_answer_hangup_b(void);
 
 
 #ifdef __cplusplus

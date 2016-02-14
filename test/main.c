@@ -19,14 +19,16 @@ struct test {
 #define TEST(a) {a, #a}
 
 static const struct test tests[] = {
-	TEST(test_cmd),
-	TEST(test_ua_alloc),
-	TEST(test_uag_find_param),
-	TEST(test_ua_register),
-	TEST(test_cplusplus),
-	TEST(test_call_answer),
-	TEST(test_call_reject),
 	TEST(test_call_af_mismatch),
+	TEST(test_call_answer),
+	TEST(test_call_answer_hangup_a),
+	TEST(test_call_answer_hangup_b),
+	TEST(test_call_reject),
+	TEST(test_cmd),
+	TEST(test_cplusplus),
+	TEST(test_ua_alloc),
+	TEST(test_ua_register),
+	TEST(test_uag_find_param),
 };
 
 
