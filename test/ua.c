@@ -75,7 +75,7 @@ static int reg(enum sip_transp tp)
 		goto out;
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5);
+	err = re_main_timeout(5000);
 	if (err)
 		goto out;
 

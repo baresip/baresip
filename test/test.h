@@ -46,7 +46,7 @@
 
 /* helpers */
 
-int re_main_timeout(uint32_t timeout);
+int re_main_timeout(uint32_t timeout_ms);
 
 
 #ifdef USE_TLS

@@ -181,7 +181,7 @@ int test_call_answer(void)
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5);
+	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -215,7 +215,7 @@ int test_call_reject(void)
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5);
+	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -248,7 +248,7 @@ int test_call_af_mismatch(void)
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5);
+	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
