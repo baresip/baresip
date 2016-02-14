@@ -53,11 +53,31 @@ static int run_tests(void)
 }
 
 
+static void test_listcases(void)
+{
+	size_t i, n;
+
+	n = ARRAY_SIZE(tests);
+
+	(void)re_printf("\n%zu test cases:\n", n);
+
+	for (i=0; i<(n+1)/2; i++) {
+
+		(void)re_printf("    %-32s    %s\n",
+				tests[i].name,
+				(i+(n+1)/2) < n ? tests[i+(n+1)/2].name : "");
+	}
+
+	(void)re_printf("\n");
+}
+
+
 static void usage(void)
 {
 	(void)re_fprintf(stderr,
 			 "Usage: selftest [options]\n"
 			 "options:\n"
+			 "\t-l               List all testcases and exit\n"
 			 "\t-v               Verbose output (INFO level)\n"
 			 );
 }
@@ -75,7 +95,7 @@ int main(int argc, char *argv[])
 	log_enable_info(false);
 
 	for (;;) {
-		const int c = getopt(argc, argv, "v");
+		const int c = getopt(argc, argv, "hlv");
 		if (0 > c)
 			break;
 
@@ -85,6 +105,10 @@ int main(int argc, char *argv[])
 		case 'h':
 			usage();
 			return -2;
+
+		case 'l':
+			test_listcases();
+			return 0;
 
 		case 'v':
 			log_enable_info(true);
