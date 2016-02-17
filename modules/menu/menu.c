@@ -539,11 +539,12 @@ static int call_holdresume(struct re_printf *pf, void *arg)
 }
 
 
-static int hold_prev_call(struct re_printf *pf, void *unused)
+static int hold_prev_call(struct re_printf *pf, void *arg)
 {
+	const struct cmd_arg *carg = arg;
 	(void)pf;
-	(void)unused;
-	return call_hold(ua_prev_call(uag_cur()), true);
+
+	return call_hold(ua_prev_call(uag_cur()), 'H' == carg->key);
 }
 
 static int switch_audio_dev(struct re_printf *pf, void *arg)
@@ -646,6 +647,7 @@ static const struct cmd callcmdv[] = {
 	{'r', CMD_IPRM,"Transfer call",       call_xfer             },
 	{'x',       0, "Call hold",           call_holdresume       },
 	{'H',       0, "Hold previous call",  hold_prev_call        },
+	{'L',       0, "Resume previous call",hold_prev_call        },
 	{'A', CMD_IPRM,"Switch audio device", switch_audio_dev      },
 
 #ifdef USE_VIDEO
