@@ -556,6 +556,7 @@ static int switch_audio_dev(struct re_printf *pf, void *arg)
 	int err = 0;
 	struct pl pl_driver, pl_device;
 	struct audio * a;
+	struct le *le;
 
 	if (!switch_aud_inprogress && !carg->complete)
 		re_hprintf(pf, "\rPlease enter driver an device\n");
@@ -565,7 +566,8 @@ static int switch_audio_dev(struct re_printf *pf, void *arg)
 	if (carg->complete) {
 		switch_aud_inprogress = false;
 
-		re_regex( carg->prm, str_len(carg->prm), "[^,]+,[~]*", &pl_driver, &pl_device);
+		re_regex( carg->prm, str_len(carg->prm), "[^,]+,[~]*",
+				&pl_driver, &pl_device);
 		driver = malloc( (pl_driver.l+1) * sizeof(char));
 		device = malloc( (pl_device.l+1) * sizeof(char));
 		(void)pl_strcpy( &pl_driver, driver, pl_driver.l+1);
@@ -578,14 +580,23 @@ static int switch_audio_dev(struct re_printf *pf, void *arg)
 			return 0;
 		}
 
-		a = call_audio(ua_call(uag_cur()));
-		err = audio_set_player( a, driver, device);
-		if( !err)
-			err = audio_set_source( a, driver, device);
+		for (le = list_tail(ua_calls( uag_cur())); le; le = le->prev) {
+
+			struct call *call = le->data;
+
+			a = call_audio(call);
+			err = audio_set_player( a, driver, device);
+			if (!err)
+				err = audio_set_source( a, driver, device);
+			else
+				 break;
+
+			if (err) break;
+		}
 
 		free( driver);
 		free( device);
-		if( err) return err;
+		if (err) return err;
 	}
 	return 0;
 }
