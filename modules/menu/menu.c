@@ -557,6 +557,7 @@ static int switch_audio_dev(struct re_printf *pf, void *arg)
 	struct pl pl_driver, pl_device;
 	struct audio * a;
 	struct le *le;
+	struct config *cfg;
 
 	if (!switch_aud_inprogress && !carg->complete)
 		re_hprintf(pf, "\rPlease enter driver an device\n");
@@ -593,6 +594,20 @@ static int switch_audio_dev(struct re_printf *pf, void *arg)
 
 			if (err) break;
 		}
+
+		cfg = conf_config();
+
+		(void)pl_strcpy( &pl_driver, cfg->audio.play_mod, pl_driver.l+1);
+		if (pl_isset(&pl_device))
+			(void)pl_strcpy( &pl_device, cfg->audio.play_dev, pl_device.l+1);
+
+		(void)pl_strcpy( &pl_driver, cfg->audio.src_mod, pl_driver.l+1);
+		if (pl_isset(&pl_device))
+			(void)pl_strcpy( &pl_device, cfg->audio.src_dev, pl_device.l+1);
+
+		(void)pl_strcpy( &pl_driver, cfg->audio.alert_mod, pl_driver.l+1);
+		if (pl_isset(&pl_device))
+			(void)pl_strcpy( &pl_device, cfg->audio.alert_dev, pl_device.l+1);
 
 		free( driver);
 		free( device);
