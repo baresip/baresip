@@ -4,8 +4,10 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <time.h>
+#include <string.h>
 #include <re.h>
 #include <baresip.h>
+#include <stdlib.h>
 
 
 /**
@@ -535,13 +537,82 @@ static int call_holdresume(struct re_printf *pf, void *arg)
 }
 
 
-static int hold_prev_call(struct re_printf *pf, void *unused)
+static int hold_prev_call(struct re_printf *pf, void *arg)
 {
+	const struct cmd_arg *carg = arg;
 	(void)pf;
-	(void)unused;
-	return call_hold(ua_prev_call(uag_cur()), true);
+
+	return call_hold(ua_prev_call(uag_cur()), 'H' == carg->key);
 }
 
+static int switch_audio_dev(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	static bool switch_aud_inprogress;
+	char *driver = NULL;
+	char *device = NULL;
+	int err = 0;
+	struct pl pl_driver, pl_device;
+	struct audio * a;
+	struct le *le;
+	struct config *cfg;
+
+	if (!switch_aud_inprogress && !carg->complete)
+		re_hprintf(pf, "\rPlease enter driver an device\n");
+
+	switch_aud_inprogress = true;
+
+	if (carg->complete) {
+		switch_aud_inprogress = false;
+
+		re_regex( carg->prm, str_len(carg->prm), "[^,]+,[~]*",
+				&pl_driver, &pl_device);
+		driver = malloc( (pl_driver.l+1) * sizeof(char));
+		device = malloc( (pl_device.l+1) * sizeof(char));
+		(void)pl_strcpy( &pl_driver, driver, pl_driver.l+1);
+		if (pl_isset(&pl_device))
+			(void)pl_strcpy( &pl_device, device, pl_device.l+1);
+		else{
+			re_hprintf(pf, "\rFormat should be: driver,device\n");
+			free( driver);
+			free( device);
+			return 0;
+		}
+
+		for (le = list_tail(ua_calls( uag_cur())); le; le = le->prev) {
+
+			struct call *call = le->data;
+
+			a = call_audio(call);
+			err = audio_set_player( a, driver, device);
+			if (!err)
+				err = audio_set_source( a, driver, device);
+			else
+				 break;
+
+			if (err) break;
+		}
+
+		cfg = conf_config();
+
+		(void)pl_strcpy( &pl_driver, cfg->audio.play_mod, pl_driver.l+1);
+		if (pl_isset(&pl_device))
+			(void)pl_strcpy( &pl_device, cfg->audio.play_dev, pl_device.l+1);
+
+		(void)pl_strcpy( &pl_driver, cfg->audio.src_mod, pl_driver.l+1);
+		if (pl_isset(&pl_device))
+			(void)pl_strcpy( &pl_device, cfg->audio.src_dev, pl_device.l+1);
+
+		(void)pl_strcpy( &pl_driver, cfg->audio.alert_mod, pl_driver.l+1);
+		if (pl_isset(&pl_device))
+			(void)pl_strcpy( &pl_device, cfg->audio.alert_dev, pl_device.l+1);
+
+		free( driver);
+		free( device);
+		if (err) return err;
+	}
+	return 0;
+}
 
 #ifdef USE_VIDEO
 static int call_videoenc_cycle(struct re_printf *pf, void *unused)
@@ -600,6 +671,8 @@ static const struct cmd callcmdv[] = {
 	{'r', CMD_IPRM,"Transfer call",       call_xfer             },
 	{'x',       0, "Call hold",           call_holdresume       },
 	{'H',       0, "Hold previous call",  hold_prev_call        },
+	{'L',       0, "Resume previous call",hold_prev_call        },
+	{'A', CMD_IPRM,"Switch audio device", switch_audio_dev      },
 
 #ifdef USE_VIDEO
 	{'E',       0, "Cycle video encoder", call_videoenc_cycle   },
