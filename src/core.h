@@ -164,7 +164,6 @@ int  call_notify_sipfrag(struct call *call, uint16_t scode,
 			 const char *reason, ...);
 int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
-bool call_is_onhold(const struct call *call);
 
 
 /*
