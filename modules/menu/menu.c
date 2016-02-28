@@ -535,11 +535,100 @@ static int call_holdresume(struct re_printf *pf, void *arg)
 }
 
 
-static int hold_prev_call(struct re_printf *pf, void *unused)
+static int hold_prev_call(struct re_printf *pf, void *arg)
 {
+	const struct cmd_arg *carg = arg;
 	(void)pf;
-	(void)unused;
-	return call_hold(ua_prev_call(uag_cur()), true);
+
+	return call_hold(ua_prev_call(uag_cur()), 'H' == carg->key);
+}
+
+
+static int switch_audio_dev(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl pl_driver, pl_device;
+	struct config_audio *aucfg;
+	struct config *cfg;
+	struct audio *a;
+	struct le *le;
+	char driver[16], device[128] = "";
+	int err = 0;
+
+	static bool switch_aud_inprogress;
+
+	if (!switch_aud_inprogress && !carg->complete) {
+		re_hprintf(pf,
+			   "\rPlease enter audio device (driver,device)\n");
+	}
+
+	switch_aud_inprogress = true;
+
+	if (carg->complete) {
+
+		switch_aud_inprogress = false;
+
+		if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
+			     &pl_driver, &pl_device)) {
+
+			return re_hprintf(pf, "\rFormat should be:"
+					  " driver,device\n");
+		}
+
+		pl_strcpy(&pl_driver, driver, sizeof(driver));
+		pl_strcpy(&pl_device, device, sizeof(device));
+
+		if (!ausrc_find(driver)) {
+			re_hprintf(pf, "no such audio-source: %s\n", driver);
+			return 0;
+		}
+		if (!auplay_find(driver)) {
+			re_hprintf(pf, "no such audio-player: %s\n", driver);
+			return 0;
+		}
+
+		re_hprintf(pf, "switch audio device: %s,%s\n",
+			   driver, device);
+
+		for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
+
+			struct call *call = le->data;
+
+			a = call_audio(call);
+
+			err = audio_set_player(a, driver, device);
+			if (err) {
+				re_hprintf(pf, "failed to set audio-player"
+					   " (%m)\n", err);
+				break;
+			}
+
+			err = audio_set_source(a, driver, device);
+			if (err) {
+				re_hprintf(pf, "failed to set audio-source"
+					   " (%m)\n", err);
+				break;
+			}
+		}
+
+		cfg = conf_config();
+		if (!cfg) {
+			return re_hprintf(pf, "no config object\n");
+		}
+
+		aucfg = &cfg->audio;
+
+		str_ncpy(aucfg->play_mod, driver, sizeof(aucfg->play_mod));
+		str_ncpy(aucfg->play_dev, device, sizeof(aucfg->play_dev));
+
+		str_ncpy(aucfg->src_mod, driver, sizeof(aucfg->src_mod));
+		str_ncpy(aucfg->src_dev, device, sizeof(aucfg->src_dev));
+
+		str_ncpy(aucfg->alert_mod, driver, sizeof(aucfg->alert_mod));
+		str_ncpy(aucfg->alert_dev, device, sizeof(aucfg->alert_dev));
+	}
+
+	return 0;
 }
 
 
@@ -600,6 +689,8 @@ static const struct cmd callcmdv[] = {
 	{'r', CMD_IPRM,"Transfer call",       call_xfer             },
 	{'x',       0, "Call hold",           call_holdresume       },
 	{'H',       0, "Hold previous call",  hold_prev_call        },
+	{'L',       0, "Resume previous call",hold_prev_call        },
+	{'A', CMD_IPRM,"Switch audio device", switch_audio_dev      },
 
 #ifdef USE_VIDEO
 	{'E',       0, "Cycle video encoder", call_videoenc_cycle   },
