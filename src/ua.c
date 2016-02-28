@@ -799,6 +799,8 @@ void ua_hangup(struct ua *ua, struct call *call,
 
 	(void)call_hangup(call, scode, reason);
 
+	ua_event(ua, UA_EVENT_CALL_CLOSED, call, reason);
+
 	mem_deref(call);
 
 	resume_call(ua);

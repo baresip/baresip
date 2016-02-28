@@ -311,7 +311,7 @@ int test_call_answer_hangup_a(void)
 	TEST_ERR(fix.err);
 
 	ASSERT_EQ(1, fix.a.n_established);
-	ASSERT_EQ(0, fix.a.n_closed);
+	ASSERT_EQ(1, fix.a.n_closed);
 	ASSERT_EQ(0, fix.a.close_scode);
 
 	ASSERT_EQ(1, fix.b.n_established);
@@ -349,7 +349,7 @@ int test_call_answer_hangup_b(void)
 	ASSERT_EQ(0, fix.a.close_scode);
 
 	ASSERT_EQ(1, fix.b.n_established);
-	ASSERT_EQ(0, fix.b.n_closed);
+	ASSERT_EQ(1, fix.b.n_closed);
 	ASSERT_EQ(0, fix.b.close_scode);
 
  out:
