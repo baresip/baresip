@@ -15,6 +15,11 @@
 #include "avcodec.h"
 
 
+#if LIBAVUTIL_VERSION_MAJOR < 52
+#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
+#endif
+
+
 enum {
 	DEFAULT_GOP_SIZE =   10,
 };
@@ -171,7 +176,7 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->width     = size->w;
 	st->ctx->height    = size->h;
 	st->ctx->gop_size  = DEFAULT_GOP_SIZE;
-	st->ctx->pix_fmt   = PIX_FMT_YUV420P;
+	st->ctx->pix_fmt   = AV_PIX_FMT_YUV420P;
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
 
