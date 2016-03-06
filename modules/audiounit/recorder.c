@@ -5,6 +5,7 @@
  */
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
+#include <TargetConditionals.h>
 #include <pthread.h>
 #include <re.h>
 #include <baresip.h>
@@ -106,6 +107,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	AURenderCallbackStruct cb;
 	struct ausrc_st *st;
 	UInt32 enable = 1;
+#if ! TARGET_OS_IPHONE
 	UInt32 ausize;
 	ausize = sizeof(AudioDeviceID);
 	AudioDeviceID inputDevice;
@@ -113,6 +115,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		kAudioHardwarePropertyDefaultInputDevice,
 		kAudioObjectPropertyScopeGlobal,
 		kAudioObjectPropertyElementMaster };
+#endif
 	Float64 hw_srate = 0.0;
 	UInt32 hw_size = sizeof(hw_srate);
 	OSStatus ret = 0;
@@ -149,6 +152,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (ret)
 		goto out;
 
+#if ! TARGET_OS_IPHONE
 	enable = 0;
 	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
 				   kAudioUnitScope_Output, 0,
@@ -173,6 +177,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			sizeof(inputDevice));
 	if (ret)
 		goto out;
+#endif
 
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
