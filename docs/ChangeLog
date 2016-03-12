@@ -1,3 +1,39 @@
+2016-03-12 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.18
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.4.18
+	* NOTE: Requires libre v0.4.14 or later
+	        Requires librem v0.4.7 or later
+
+	* baresip-core:
+	  - call: fix SIP INFO with dtmf-relay (thanks Gary Metalle)
+	  - ua: add event UA_EVENT_CALL_CLOSED for ua_hangup()
+
+	* selftest:
+	  - add tests for answer a call and hangup
+
+	* Modules:
+
+	* alsa: fix potential crash (thanks Gary Metalle)
+
+	* audiounit: fix compilation for iOS (issue #91)
+
+	* avcodec: fix compilation for FFmpeg 3.0
+
+	* avformat: fix compilation for FFmpeg 3.0
+
+	* gtk: always handle incoming calls (thanks Charles Lehner)
+
+	* h265: fix compilation for FFmpeg 3.0
+
+	* menu: add config 'menu_bell  off/on' to enable Bell alert
+		add command 'A' for switch audio device (thanks AlexMarlo)
+
+	* v4l2_codec: add list of encoders (fixes #99)
+
+
 2016-01-17 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.17
