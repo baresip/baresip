@@ -440,6 +440,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtcp_mux\t\tno\n"
 			  "jitter_buffer_delay\t%u-%u\t\t# frames\n"
 			  "rtp_stats\t\tno\n"
+			  "rtcpxr_stats\t\tno\n"
+			  "rtcpxr_collector\t\tsip:rtcpxr@127.0.0.1:5088\t\t# rtcp-xr collector\n"
 			  "\n# Network\n"
 			  "#dns_server\t\t10.0.0.1:53\n"
 			  "#net_interface\t\t%H\n",
