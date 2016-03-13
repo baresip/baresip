@@ -1,5 +1,5 @@
 /**
- * @file dump.c  Gstreamer playbin pipeline - dump utilities
+ * @file gst/dump.c  Gstreamer playbin pipeline - dump utilities
  *
  * Copyright (C) 2010 Creytiv.com
  */

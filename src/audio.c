@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  * \ref GenericAudioStream
  */
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <string.h>
 #include <stdlib.h>
@@ -75,6 +76,7 @@ enum {
  */
 struct autx {
 	struct ausrc_st *ausrc;       /**< Audio Source                    */
+	struct ausrc_prm ausrc_prm;
 	const struct aucodec *ac;     /**< Current audio encoder           */
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
@@ -122,6 +124,7 @@ struct autx {
  */
 struct aurx {
 	struct auplay_st *auplay;     /**< Audio Player                    */
+	struct auplay_prm auplay_prm;
 	const struct aucodec *ac;     /**< Current audio decoder           */
 	struct audec_state *dec;      /**< Audio decoder state (optional)  */
 	struct aubuf *aubuf;          /**< Incoming audio buffer           */
@@ -132,7 +135,6 @@ struct aurx {
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for receiving       */
 	int pt;                       /**< Payload type for incoming RTP   */
-	int pt_tel;                   /**< Event payload type - receive    */
 };
 
 
@@ -594,9 +596,15 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 		goto out;
 
 	/* Telephone event? */
-	if (hdr->pt == rx->pt_tel) {
-		handle_telev(a, mb);
-		return;
+	if (hdr->pt != rx->pt) {
+		const struct sdp_format *fmt;
+
+		fmt = sdp_media_lformat(stream_sdpmedia(a->strm), hdr->pt);
+
+		if (fmt && !str_casecmp(fmt->name, "telephone-event")) {
+			handle_telev(a, mb);
+			return;
+		}
 	}
 
 	/* Comfort Noise (CN) as of RFC 3389 */
@@ -630,8 +638,6 @@ static int add_telev_codec(struct audio *a)
 			     NULL, NULL, false, "0-15");
 	if (err)
 		return err;
-
-	a->rx.pt_tel = sf->pt;
 
 	return err;
 }
@@ -735,6 +741,8 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 static void *tx_thread(void *arg)
 {
 	struct audio *a = arg;
+	struct autx *tx = &a->tx;
+	unsigned i;
 
 	/* Enable Real-time mode for this thread, if available */
 	if (a->cfg.txmode == AUDIO_MODE_THREAD_REALTIME)
@@ -742,7 +750,13 @@ static void *tx_thread(void *arg)
 
 	while (a->tx.u.thr.run) {
 
-		poll_aubuf_tx(a);
+		for (i=0; i<16; i++) {
+
+			if (aubuf_cur_size(tx->aubuf) < tx->psize)
+				break;
+
+			poll_aubuf_tx(a);
+		}
 
 		sys_msleep(5);
 	}
@@ -755,10 +769,18 @@ static void *tx_thread(void *arg)
 static void timeout_tx(void *arg)
 {
 	struct audio *a = arg;
+	struct autx *tx = &a->tx;
+	unsigned i;
 
 	tmr_start(&a->tx.u.tmr, 5, timeout_tx, a);
 
-	poll_aubuf_tx(a);
+	for (i=0; i<16; i++) {
+
+		if (aubuf_cur_size(tx->aubuf) < tx->psize)
+			break;
+
+		poll_aubuf_tx(a);
+	}
 }
 
 
@@ -959,6 +981,8 @@ static int start_player(struct aurx *rx, struct audio *a)
 				a->cfg.play_mod, rx->device, err);
 			return err;
 		}
+
+		rx->auplay_prm = prm;
 	}
 
 	return 0;
@@ -1030,7 +1054,8 @@ static int start_source(struct autx *tx, struct audio *a)
 				  &prm, tx->device,
 				  ausrc_read_handler, ausrc_error_handler, a);
 		if (err) {
-			warning("audio: start_source failed: %m\n", err);
+			warning("audio: start_source failed (%s.%s): %m\n",
+				a->cfg.src_mod, tx->device, err);
 			return err;
 		}
 
@@ -1057,6 +1082,8 @@ static int start_source(struct autx *tx, struct audio *a)
 		default:
 			break;
 		}
+
+		tx->ausrc_prm = prm;
 	}
 
 	return 0;
@@ -1324,7 +1351,7 @@ void audio_sdp_attr_decode(struct audio *a)
 
 		if (ptime_tx && ptime_tx != a->tx.ptime) {
 
-			info("audio: peer changed ptime_tx %u -> %u\n",
+			info("audio: peer changed ptime_tx %ums -> %ums\n",
 			     a->tx.ptime, ptime_tx);
 
 			tx->ptime = ptime_tx;
@@ -1366,10 +1393,10 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  aubuf_debug, tx->aubuf,
 			  tx->ptime);
 
-	err |= re_hprintf(pf, " rx:   %H %H ptime=%ums pt=%d pt_tel=%d\n",
+	err |= re_hprintf(pf, " rx:   %H %H ptime=%ums pt=%d\n",
 			  aucodec_print, rx->ac,
 			  aubuf_debug, rx->aubuf,
-			  rx->ptime, rx->pt, rx->pt_tel);
+			  rx->ptime, rx->pt);
 
 	err |= re_hprintf(pf,
 			  " %H"
@@ -1390,6 +1417,56 @@ void audio_set_devicename(struct audio *a, const char *src, const char *play)
 
 	str_ncpy(a->tx.device, src, sizeof(a->tx.device));
 	str_ncpy(a->rx.device, play, sizeof(a->rx.device));
+}
+
+
+int audio_set_source(struct audio *au, const char *mod, const char *device)
+{
+	struct autx *tx;
+	int err;
+
+	if (!au)
+		return EINVAL;
+
+	tx = &au->tx;
+
+	/* stop the audio device first */
+	tx->ausrc = mem_deref(tx->ausrc);
+
+	err = ausrc_alloc(&tx->ausrc, NULL, mod, &tx->ausrc_prm, device,
+			  ausrc_read_handler, ausrc_error_handler, au);
+	if (err) {
+		warning("audio: set_source failed (%s.%s): %m\n",
+			mod, device, err);
+		return err;
+	}
+
+	return 0;
+}
+
+
+int audio_set_player(struct audio *au, const char *mod, const char *device)
+{
+	struct aurx *rx;
+	int err;
+
+	if (!au)
+		return EINVAL;
+
+	rx = &au->rx;
+
+	/* stop the audio device first */
+	rx->auplay = mem_deref(rx->auplay);
+
+	err = auplay_alloc(&rx->auplay, mod, &rx->auplay_prm, device,
+			   auplay_write_handler, rx);
+	if (err) {
+		warning("audio: set_player failed (%s.%s): %m\n",
+			mod, device, err);
+		return err;
+	}
+
+	return 0;
 }
 
 

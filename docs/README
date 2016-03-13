@@ -2,7 +2,7 @@ README
 ------
 
 Baresip is a portable and modular SIP User-Agent with audio and video support
-Copyright (c) 2010 - 2015 Creytiv.com
+Copyright (c) 2010 - 2016 Creytiv.com
 
 Distributed under BSD license
 
@@ -58,6 +58,7 @@ Features:
 * Audio-codecs:
   - AMR narrowband, AMR wideband
   - BroadVoice32 BV32
+  - Codec2
   - G.711
   - G.722
   - G.726
@@ -73,6 +74,7 @@ Features:
   - Advanced Linux Sound Architecture (ALSA) audio-driver
   - Android OpenSLES audio-driver
   - Gstreamer playbin input audio-driver
+  - JACK Audio Connection Kit audio-driver
   - MacOSX/iOS coreaudio/audiounit audio-driver
   - Open Sound System (OSS) audio-driver
   - Portaudio audio-driver
@@ -85,6 +87,7 @@ Features:
   - Support for asymmetric video
 
 * Video-codecs:
+  - H.265
   - H.264
   - H.263
   - VP8
@@ -138,18 +141,22 @@ alsa          ALSA audio driver
 amr           Adaptive Multi-Rate (AMR) audio codec
 aubridge      Audio bridge module
 audiounit     AudioUnit audio driver for MacOSX/iOS
+aufile        Audio module for using a WAV-file as audio input
 auloop        Audio-loop test module
 avcapture     Video source using iOS AVFoundation video capture
 avcodec       Video codec using FFmpeg/libav libavcodec
 avformat      Video source using FFmpeg/libav libavformat
+b2bua         Back-to-Back User-Agent (B2BUA) module
 bv32          BroadVoice32 audio codec
 cairo         Cairo video source
+codec2        Codec2 low bit rate speech codec
 cons          UDP/TCP console UI driver
 contact       Contacts module
 coreaudio     Apple Coreaudio driver
 directfb      DirectFB video display module
 dshow         Windows DirectShow video source
 dtls_srtp     DTLS-SRTP end-to-end encryption
+echo          Echo server module
 evdev         Linux input driver
 fakevideo     Fake video input/output driver
 g711          G.711 audio codec
@@ -158,12 +165,16 @@ g7221         G.722.1 audio codec
 g726          G.726 audio codec
 gsm           GSM audio codec
 gst           Gstreamer audio source
+gst1          Gstreamer 1.0 audio source
 gst_video     Gstreamer video codec
+gst_video1    Gstreamer 1.0 video codec
+gtk           GTK+ 2.0 UI
 h265          H.265 video codec
 httpd         HTTP webserver UI-module
 ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec
 isac          iSAC audio codec
+jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
 libsrtp       Secure RTP encryption using libsrtp
 menu          Interactive menu
@@ -199,7 +210,9 @@ turn          Obtaining Relay Addresses from STUN (TURN) module
 uuid          UUID generator and loader
 v4l           Video4Linux video source
 v4l2          Video4Linux2 video source
+v4l2_codec    Video4Linux2 video codec module (H264 hardware encoding)
 vidbridge     Video bridge module
+vidinfo       Video info overlay module
 vidloop       Video-loop test module
 vpx           VP8/VPX video codec
 vumeter       Display audio levels in console
@@ -249,11 +262,11 @@ IETF RFC/I-Ds:
 * RFC 6263  App. Mechanism for Keeping Alive NAT Associated with RTP / RTCP
 * RFC 6716  Definition of the Opus Audio Codec
 * RFC 6886  NAT Port Mapping Protocol (NAT-PMP)
+* RFC 7587  RTP Payload Format for the Opus Speech and Audio Codec
 
 * draft-ietf-avt-rtp-isac-04
 * draft-ietf-payload-rtp-h265-07
-* draft-ietf-payload-vp8-08
-* draft-spittka-payload-rtp-opus-00
+* draft-ietf-payload-vp8-17
 
 
 Architecture:
@@ -307,8 +320,8 @@ Supported compilers:
 
 External dependencies:
 
-libre v0.4.11 or later
-librem v0.4.6 or later
+libre v0.4.14 or later
+librem v0.4.7 or later
 
 
 Feedback:

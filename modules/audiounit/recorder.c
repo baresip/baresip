@@ -5,6 +5,7 @@
  */
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
+#include <TargetConditionals.h>
 #include <pthread.h>
 #include <re.h>
 #include <baresip.h>
@@ -12,7 +13,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;      /* inheritance */
 	struct audiosess_st *sess;
 	AudioUnit au;
 	pthread_mutex_t mutex;
@@ -35,7 +36,6 @@ static void ausrc_destructor(void *arg)
 	AudioComponentInstanceDispose(st->au);
 
 	mem_deref(st->sess);
-	mem_deref(st->as);
 
 	pthread_mutex_destroy(&st->mutex);
 }
@@ -75,8 +75,10 @@ static OSStatus input_callback(void *inRefCon,
 			      inBusNumber,
 			      inNumberFrames,
 			      &abl);
-	if (ret)
+	if (ret) {
+		debug("audiounit: record: AudioUnitRender error (%d)\n", ret);
 		return ret;
+	}
 
 	rh(abl.mBuffers[0].mData, abl.mBuffers[0].mDataByteSize/2, arg);
 
@@ -95,7 +97,7 @@ static void interrupt_handler(bool interrupted, void *arg)
 }
 
 
-int audiounit_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
+int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			     struct media_ctx **ctx,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -105,6 +107,17 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	AURenderCallbackStruct cb;
 	struct ausrc_st *st;
 	UInt32 enable = 1;
+#if ! TARGET_OS_IPHONE
+	UInt32 ausize;
+	ausize = sizeof(AudioDeviceID);
+	AudioDeviceID inputDevice;
+	AudioObjectPropertyAddress auAddress = {
+		kAudioHardwarePropertyDefaultInputDevice,
+		kAudioObjectPropertyScopeGlobal,
+		kAudioObjectPropertyElementMaster };
+#endif
+	Float64 hw_srate = 0.0;
+	UInt32 hw_size = sizeof(hw_srate);
 	OSStatus ret = 0;
 	int err;
 
@@ -116,7 +129,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = mem_ref(as);
+	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 	st->ch  = prm->ch;
@@ -138,6 +151,33 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 				   &enable, sizeof(enable));
 	if (ret)
 		goto out;
+
+#if ! TARGET_OS_IPHONE
+	enable = 0;
+	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
+				   kAudioUnitScope_Output, 0,
+				   &enable, sizeof(enable));
+	if (ret)
+		goto out;
+
+	ret = AudioObjectGetPropertyData(kAudioObjectSystemObject,
+			&auAddress,
+			0,
+			NULL,
+			&ausize,
+			&inputDevice);
+	if (ret)
+		goto out;
+
+	ret = AudioUnitSetProperty(st->au,
+			kAudioOutputUnitProperty_CurrentDevice,
+			kAudioUnitScope_Global,
+			0,
+			&inputDevice,
+			sizeof(inputDevice));
+	if (ret)
+		goto out;
+#endif
 
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
@@ -177,6 +217,18 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 	ret = AudioOutputUnitStart(st->au);
 	if (ret)
 		goto out;
+
+	ret = AudioUnitGetProperty(st->au,
+				   kAudioUnitProperty_SampleRate,
+				   kAudioUnitScope_Input,
+				   0,
+				   &hw_srate,
+				   &hw_size);
+	if (ret)
+		goto out;
+
+	debug("audiounit: record hardware sample rate is now at %f Hz\n",
+	      hw_srate);
 
  out:
 	if (ret) {

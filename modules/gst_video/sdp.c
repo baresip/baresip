@@ -9,6 +9,9 @@
 #include "gst_video.h"
 
 
+static const uint8_t h264_level_idc = 0x0c;
+
+
 uint32_t gst_video_h264_packetization_mode(const char *fmtp)
 {
 	struct pl pl, mode;

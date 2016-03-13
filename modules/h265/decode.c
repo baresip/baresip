@@ -12,6 +12,11 @@
 #include "h265.h"
 
 
+#if LIBAVUTIL_VERSION_MAJOR < 52
+#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
+#endif
+
+
 enum {
 	FU_HDR_SIZE = 1
 };
@@ -70,7 +75,8 @@ int h265_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 	if (vds)
 		return 0;
 
-	codec = avcodec_find_decoder(AV_CODEC_ID_H265);
+	/* HEVC = H.265 */
+	codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
 	if (!codec) {
 		warning("h265: could not find H265 decoder\n");
 		return ENOSYS;
@@ -271,12 +277,12 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	switch (vds->pict->format) {
 
-	case PIX_FMT_YUV420P:
+	case AV_PIX_FMT_YUV420P:
 		fmt = VID_FMT_YUV420P;
 		break;
 
 #if 0
-	case PIX_FMT_YUV444P:
+	case AV_PIX_FMT_YUV444P:
 		fmt = VID_FMT_YUV444;
 		break;
 #endif

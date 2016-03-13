@@ -1,7 +1,7 @@
 /**
  * @file opengl.m Video driver for OpenGL on MacOSX
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <Cocoa/Cocoa.h>
 #include <OpenGL/gl.h>
@@ -11,8 +11,15 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup opengl opengl
+ *
+ * Video display module for OpenGL on MacOSX
+ */
+
+
 struct vidisp_st {
-	struct vidisp *vd;              /**< Inheritance (1st)     */
+	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	struct vidsz size;              /**< Current size          */
 	NSOpenGLContext *ctx;
 	NSWindow *win;
@@ -68,8 +75,6 @@ static void destructor(void *arg)
 	mem_deref(st->prog);
 
 	[pool release];
-
-	mem_deref(st->vd);
 }
 
 
@@ -170,7 +175,7 @@ static int setup_shader(struct vidisp_st *st, int width, int height)
 }
 
 
-static int alloc(struct vidisp_st **stp, struct vidisp *vd,
+static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg)
 {
@@ -198,7 +203,7 @@ static int alloc(struct vidisp_st **stp, struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = mem_ref(vd);
+	st->vd = vd;
 
 	fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
 	if (!fmt) {

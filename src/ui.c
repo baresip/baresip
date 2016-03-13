@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <string.h>
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
@@ -166,4 +167,34 @@ void ui_reset(void)
 bool ui_isediting(void)
 {
 	return uictx != NULL;
+}
+
+
+int ui_password_prompt(char **passwordp)
+{
+	char pwd[64];
+	char *nl;
+	int err;
+
+	if (!passwordp)
+		return EINVAL;
+
+	/* note: blocking UI call */
+	fgets(pwd, sizeof(pwd), stdin);
+	pwd[sizeof(pwd) - 1] = '\0';
+
+	nl = strchr(pwd, '\n');
+	if (nl == NULL) {
+		(void)re_printf("Invalid password (0 - 63 characters"
+				" followed by newline)\n");
+		return EINVAL;
+	}
+
+	*nl = '\0';
+
+	err = str_dup(passwordp, pwd);
+	if (err)
+		return err;
+
+	return 0;
 }

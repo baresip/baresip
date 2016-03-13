@@ -10,9 +10,26 @@
 #include "dtls_srtp.h"
 
 
-/*
- *            STACK Diagram:
+/**
+ * @defgroup dtls_srtp dtls_srtp
  *
+ * DTLS-SRTP media encryption module
+ *
+ * This module implements end-to-end media encryption using DTLS-SRTP
+ * which is now mandatory for WebRTC endpoints.
+ *
+ * DTLS-SRTP can be enabled in ~/.baresip/accounts:
+ *
+ \verbatim
+  <sip:user@domain.com>;mediaenc=dtls_srtp
+  <sip:user@domain.com>;mediaenc=dtls_srtpf
+  <sip:user@domain.com>;mediaenc=srtp-mandf
+ \endverbatim
+ *
+ *
+ * Internally the protocol stack diagram looks something like this:
+ *
+ \verbatim
  *                    application
  *                        |
  *                        |
@@ -24,7 +41,8 @@
  *              ( TURN/ICE )
  *                   |
  *                   |
- *                 socket
+ *                [socket]
+ \endverbatim
  *
  */
 
@@ -93,7 +111,8 @@ static bool verify_fingerprint(const struct sdp_session *sess,
 	enum tls_fingerprint type;
 	int err;
 
-	if (sdp_fingerprint_decode(sdp_rattr(sess, media, "fingerprint"),
+	if (sdp_fingerprint_decode(sdp_media_session_rattr(media, sess,
+							   "fingerprint"),
 				   &hash, md_sdp, &sz_sdp))
 		return false;
 
@@ -156,8 +175,8 @@ static int session_alloc(struct menc_sess **sessp,
 		goto out;
 
 	/* RFC 4572 */
-	err = sdp_session_set_lattr(sdp, true, "fingerprint", "SHA-1 %H",
-				    dtls_print_sha1_fingerprint, tls);
+	err = sdp_session_set_lattr(sdp, true, "fingerprint", "SHA-256 %H",
+				    dtls_print_sha256_fingerprint, tls);
 	if (err)
 		goto out;
 
@@ -356,6 +375,15 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 	st->compv[0].is_rtp = true;
 	st->compv[1].is_rtp = false;
 
+	err = sdp_media_set_alt_protos(st->sdpm, 4,
+				       "RTP/SAVP",
+				       "RTP/SAVPF",
+				       "UDP/TLS/RTP/SAVP",
+				       "UDP/TLS/RTP/SAVPF");
+	if (err)
+		goto out;
+
+ out:
 	if (err) {
 		mem_deref(st);
 		return err;
@@ -366,7 +394,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
  setup:
 	st->mux = (rtpsock == rtcpsock) || (rtcpsock == NULL);
 
-	setup = sdp_rattr(st->sess->sdp, st->sdpm, "setup");
+	setup = sdp_media_session_rattr(st->sdpm, st->sess->sdp, "setup");
 	if (setup) {
 		st->active = !(0 == str_casecmp(setup, "active"));
 
@@ -375,7 +403,8 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 	}
 
 	/* SDP offer/answer on fingerprint attribute */
-	fingerprint = sdp_rattr(st->sess->sdp, st->sdpm, "fingerprint");
+	fingerprint = sdp_media_session_rattr(st->sdpm, st->sess->sdp,
+					      "fingerprint");
 	if (fingerprint) {
 
 		struct pl hash;

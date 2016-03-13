@@ -1,12 +1,14 @@
 baresip
 =======
 
+[![Build Status](https://travis-ci.org/alfredh/baresip.svg?branch=master)](https://travis-ci.org/alfredh/baresip)
+
 Baresip is a modular SIP User-Agent with audio and video support
 
 License: BSD
 
 
-see docs/README for more details
+see [README](docs/README) for more details
 
 
 # Resources

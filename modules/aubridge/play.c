@@ -15,11 +15,10 @@ static void auplay_destructor(void *arg)
 	device_stop(st->dev);
 
 	mem_deref(st->dev);
-	mem_deref(st->ap);
 }
 
 
-int play_alloc(struct auplay_st **stp, struct auplay *ap,
+int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	       struct auplay_prm *prm, const char *device,
 	       auplay_write_h *wh, void *arg)
 {
@@ -33,7 +32,7 @@ int play_alloc(struct auplay_st **stp, struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = mem_ref(ap);
+	st->ap  = ap;
 	st->prm = *prm;
 	st->wh  = wh;
 	st->arg = arg;

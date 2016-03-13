@@ -15,7 +15,7 @@
 
 
 struct auplay_st {
-	struct auplay *ap;      /* inheritance */
+	const struct auplay *ap;      /* inheritance */
 	auplay_write_h *wh;
 	void *arg;
 	int16_t *sampv[N_PLAY_QUEUE_BUFFERS];
@@ -43,8 +43,6 @@ static void auplay_destructor(void *arg)
 	for (int i=0; i<N_PLAY_QUEUE_BUFFERS; i++) {
 		mem_deref(st->sampv[i]);
 	}
-
-	mem_deref(st->ap);
 }
 
 
@@ -141,7 +139,7 @@ static int createPlayer(struct auplay_st *st, struct auplay_prm *prm)
 }
 
 
-int opensles_player_alloc(struct auplay_st **stp, struct auplay *ap,
+int opensles_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			  struct auplay_prm *prm, const char *device,
 			  auplay_write_h *wh, void *arg)
 {
@@ -156,7 +154,7 @@ int opensles_player_alloc(struct auplay_st **stp, struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = mem_ref(ap);
+	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 

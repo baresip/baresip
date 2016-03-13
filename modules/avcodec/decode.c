@@ -219,9 +219,9 @@ int h264_decode(struct viddec_state *st, struct mbuf *src)
 		err = h264_hdr_encode(&h264_hdr, st->mb);
 	}
 	else if (H264_NAL_FU_A == h264_hdr.type) {
-		struct fu fu;
+		struct h264_fu fu;
 
-		err = fu_hdr_decode(&fu, src);
+		err = h264_fu_hdr_decode(&fu, src);
 		if (err)
 			return err;
 		h264_hdr.type = fu.type;

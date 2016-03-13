@@ -10,6 +10,13 @@
 #include "coreaudio.h"
 
 
+/**
+ * @defgroup coreaudio coreaudio
+ *
+ * Audio driver module for OSX CoreAudio
+ */
+
+
 static struct auplay *auplay;
 static struct ausrc *ausrc;
 

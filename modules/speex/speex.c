@@ -11,6 +11,13 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup speex speex
+ *
+ * The Speex audio codec
+ */
+
+
 enum {
 	MIN_FRAME_SIZE = 43,
 	SPEEX_PTIME    = 20,
@@ -37,7 +44,8 @@ struct audec_state {
 };
 
 
-static char speex_fmtp[128];
+static char speex_fmtp_nb[128];
+static char speex_fmtp_wb[128];
 
 
 /** Speex configuration */
@@ -45,12 +53,16 @@ static struct {
 	int quality;
 	int complexity;
 	int enhancement;
+	int mode_nb;
+	int mode_wb;
 	int vbr;
 	int vad;
 } sconf = {
 	3,  /* 0-10   */
 	2,  /* 0-10   */
 	0,  /* 0 or 1 */
+	3,  /* 1-6    */
+	6,  /* 1-6    */
 	0,  /* 0 or 1 */
 	0   /* 0 or 1 */
 };
@@ -119,8 +131,7 @@ static int decode_param(struct auenc_state *st, const struct pl *name,
 	/* mode: List supported Speex decoding modes.  The valid modes are
 	   different for narrowband and wideband, and are defined as follows:
 
-	   {1,2,3,4,5,6,7,8,any} for narrowband
-	   {0,1,2,3,4,5,6,7,8,9,10,any} for wideband and ultra-wideband
+	   {1,2,3,4,5,6,any}
 	 */
 	if (0 == pl_strcasecmp(name, "mode")) {
 		struct pl v;
@@ -437,6 +448,10 @@ static void config_parse(struct conf *conf)
 		sconf.complexity = v;
 	if (0 == conf_get_u32(conf, "speex_enhancement", &v))
 		sconf.enhancement = v;
+	if (0 == conf_get_u32(conf, "speex_mode_nb", &v))
+		sconf.mode_nb = v;
+	if (0 == conf_get_u32(conf, "speex_mode_wb", &v))
+		sconf.mode_wb = v;
 	if (0 == conf_get_u32(conf, "speex_vbr", &v))
 		sconf.vbr = v;
 	if (0 == conf_get_u32(conf, "speex_vad", &v))
@@ -447,19 +462,19 @@ static void config_parse(struct conf *conf)
 static struct aucodec speexv[] = {
 
 	/* Stereo Speex */
-	{LE_INIT, 0, "speex", 32000, 2, speex_fmtp,
+	{LE_INIT, 0, "speex", 32000, 2, speex_fmtp_wb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
-	{LE_INIT, 0, "speex", 16000, 2, speex_fmtp,
+	{LE_INIT, 0, "speex", 16000, 2, speex_fmtp_wb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
-	{LE_INIT, 0, "speex",  8000, 2, speex_fmtp,
+	{LE_INIT, 0, "speex",  8000, 2, speex_fmtp_nb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
 
 	/* Standard Speex */
-	{LE_INIT, 0, "speex", 32000, 1, speex_fmtp,
+	{LE_INIT, 0, "speex", 32000, 1, speex_fmtp_wb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
-	{LE_INIT, 0, "speex", 16000, 1, speex_fmtp,
+	{LE_INIT, 0, "speex", 16000, 1, speex_fmtp_wb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
-	{LE_INIT, 0, "speex",  8000, 1, speex_fmtp,
+	{LE_INIT, 0, "speex",  8000, 1, speex_fmtp_nb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
 };
 
@@ -470,8 +485,12 @@ static int speex_init(void)
 
 	config_parse(conf_cur());
 
-	(void)re_snprintf(speex_fmtp, sizeof(speex_fmtp),
-			  "mode=\"7\";vbr=%s;cng=on",
+	(void)re_snprintf(speex_fmtp_nb, sizeof(speex_fmtp_nb),
+			  "mode=\"%d\";vbr=%s;cng=on", sconf.mode_nb,
+			  sconf.vad ? "vad" : (sconf.vbr ? "on" : "off"));
+
+	(void)re_snprintf(speex_fmtp_wb, sizeof(speex_fmtp_wb),
+			  "mode=\"%d\";vbr=%s;cng=on", sconf.mode_wb,
 			  sconf.vad ? "vad" : (sconf.vbr ? "on" : "off"));
 
 	for (i=0; i<ARRAY_SIZE(speexv); i++)

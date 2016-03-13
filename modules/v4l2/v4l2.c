@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <unistd.h>
 #include <stdlib.h>
@@ -36,13 +37,20 @@
 #endif
 
 
+/**
+ * @defgroup v4l2 v4l2
+ *
+ * V4L2 (Video for Linux 2) video-source module
+ */
+
+
 struct buffer {
 	void  *start;
 	size_t length;
 };
 
 struct vidsrc_st {
-	struct vidsrc *vs;  /* inheritance */
+	const struct vidsrc *vs;  /* inheritance */
 
 	int fd;
 	pthread_t thread;
@@ -402,8 +410,6 @@ static void destructor(void *arg)
 
 	if (st->fd >= 0)
 		v4l2_close(st->fd);
-
-	mem_deref(st->vs);
 }
 
 
@@ -423,7 +429,7 @@ static void *read_thread(void *arg)
 }
 
 
-static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt,
 		 const char *dev, vidsrc_frame_h *frameh,
@@ -447,7 +453,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs = mem_ref(vs);
+	st->vs = vs;
 	st->fd = -1;
 	st->sz = *size;
 	st->frameh = frameh;

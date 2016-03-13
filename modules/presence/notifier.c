@@ -17,13 +17,11 @@
 
 struct notifier {
 	struct le le;
-	struct sipevent_sock *sock;
 	struct sipnot *not;
 	struct ua *ua;
 };
 
 static struct list notifierl;
-static struct sipevent_sock *evsock;
 
 
 static const char *presence_status_str(enum presence_status st)
@@ -91,7 +89,7 @@ static void sipnot_close_handler(int err, const struct sip_msg *msg,
 		     msg->scode, &msg->reason);
 	}
 
-	not = mem_deref(not);
+	mem_deref(not);
 }
 
 
@@ -101,7 +99,6 @@ static void destructor(void *arg)
 
 	list_unlink(&not->le);
 	mem_deref(not->not);
-	mem_deref(not->sock);
 	mem_deref(not->ua);
 }
 
@@ -113,24 +110,24 @@ static int auth_handler(char **username, char **password,
 }
 
 
-static int notifier_alloc(struct notifier **notp, struct sipevent_sock *sock,
+static int notifier_alloc(struct notifier **notp,
 			  const struct sip_msg *msg,
 			  const struct sipevent_event *se, struct ua *ua)
 {
 	struct notifier *not;
 	int err;
 
-	if (!sock || !msg || !se)
+	if (!msg || !se)
 		return EINVAL;
 
 	not = mem_zalloc(sizeof(*not), destructor);
 	if (!not)
 		return ENOMEM;
 
-	not->sock = mem_ref(sock);
 	not->ua   = mem_ref(ua);
 
-	err = sipevent_accept(&not->not, sock, msg, NULL, se, 200, "OK",
+	err = sipevent_accept(&not->not, uag_sipevent_sock(),
+			      msg, NULL, se, 200, "OK",
 			      600, 600, 600,
 			      ua_cuser(not->ua), "application/pidf+xml",
 			      auth_handler, ua_prm(not->ua), true,
@@ -152,8 +149,7 @@ static int notifier_alloc(struct notifier **notp, struct sipevent_sock *sock,
 }
 
 
-static int notifier_add(struct sipevent_sock *sock, const struct sip_msg *msg,
-			struct ua *ua)
+static int notifier_add(const struct sip_msg *msg, struct ua *ua)
 {
 	const struct sip_hdr *hdr;
 	struct sipevent_event se;
@@ -173,7 +169,7 @@ static int notifier_add(struct sipevent_sock *sock, const struct sip_msg *msg,
 		return EPROTO;
 	}
 
-	err = notifier_alloc(&not, sock, msg, &se, ua);
+	err = notifier_alloc(&not, msg, &se, ua);
 	if (err)
 		return err;
 
@@ -199,18 +195,9 @@ void notifier_update_status(struct ua *ua)
 
 static bool sub_handler(const struct sip_msg *msg, void *arg)
 {
-	struct ua *ua;
+	struct ua *ua = arg;
 
-	(void)arg;
-
-	ua = uag_find(&msg->uri.user);
-	if (!ua) {
-		warning("presence: no UA found for %r\n", &msg->uri.user);
-		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
-		return true;
-	}
-
-	if (notifier_add(evsock, msg, ua))
+	if (notifier_add(msg, ua))
 		(void)sip_treply(NULL, uag_sip(), msg, 400, "Bad Presence");
 
 	return true;
@@ -219,16 +206,14 @@ static bool sub_handler(const struct sip_msg *msg, void *arg)
 
 int notifier_init(void)
 {
-	int err;
+	uag_set_sub_handler(sub_handler);
 
-	err = sipevent_listen(&evsock, uag_sip(), 32, 32, sub_handler, NULL);
-
-	return err;
+	return 0;
 }
 
 
 void notifier_close(void)
 {
 	list_flush(&notifierl);
-	evsock = mem_deref(evsock);
+	uag_set_sub_handler(NULL);
 }

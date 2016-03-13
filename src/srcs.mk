@@ -35,6 +35,7 @@ SRCS	+= ui.c
 
 ifneq ($(USE_VIDEO),)
 SRCS	+= bfcp.c
+SRCS	+= h264.c
 SRCS	+= mctrl.c
 SRCS	+= video.c
 SRCS	+= vidcodec.c

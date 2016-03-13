@@ -1,0 +1,18 @@
+language: c
+
+before_install:
+    - sudo apt-get update -qq
+
+install:
+    - wget "http://www.creytiv.com/pub/re-0.4.14.tar.gz"
+    - tar -xzf re-0.4.14.tar.gz
+    - cd re-0.4.14 && make && sudo make install && cd ..
+    - wget "http://www.creytiv.com/pub/rem-0.4.6.tar.gz"
+    - tar -xzf rem-0.4.6.tar.gz
+    - cd rem-0.4.6 && make && sudo make install && cd ..
+    - sudo ldconfig
+    - wget "https://github.com/alfredh/pytools/raw/master/ccheck.py"
+
+script: 
+    - make test
+    - python2 ccheck.py

@@ -8,7 +8,11 @@
 #include "isac.h"
 
 
-/*
+/**
+ * @defgroup isac isac
+ *
+ * iSAC audio codec
+ *
  * draft-ietf-avt-rtp-isac-04
  */
 

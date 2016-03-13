@@ -1,19 +1,19 @@
 /**
- * @file selftest/ua.c  Baresip selftest -- User-Agent (UA)
+ * @file test/ua.c  Baresip selftest -- User-Agent (UA)
  *
  * Copyright (C) 2010 Creytiv.com
  */
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
-#include "selftest.h"
+#include "test.h"
 
 
 struct test {
 	struct sip_server *srv;
 	struct ua *ua;
 	int err;
-	bool got_register_ok;
+	unsigned got_register_ok;
 };
 
 
@@ -32,7 +32,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	if (ev == UA_EVENT_REGISTER_OK) {
 
-		t->got_register_ok = true;
+		++t->got_register_ok;
 
 		/* verify register success */
 		ASSERT_TRUE(ua_isregistered(t->ua));
@@ -50,7 +50,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
-int test_ua_register(void)
+static int reg(enum sip_transp tp)
 {
 	struct test t;
 	char aor[256];
@@ -58,30 +58,33 @@ int test_ua_register(void)
 
 	memset(&t, 0, sizeof t);
 
-	err = sip_server_create(&t.srv);
-	if (err)
+	err = sip_server_alloc(&t.srv);
+	if (err) {
+		warning("failed to create sip server (%d/%m)\n", err, err);
 		goto out;
+	}
 
-	re_snprintf(aor, sizeof(aor), "sip:x:x@%J", &t.srv->laddr);
+	err = sip_server_uri(t.srv, aor, sizeof(aor), tp);
+	TEST_ERR(err);
 
 	err = ua_alloc(&t.ua, aor);
-	if (err)
-		goto out;
+	TEST_ERR(err);
 
 	err = uag_event_register(ua_event_handler, &t);
 	if (err)
 		goto out;
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5);
+	err = re_main_timeout(5000);
 	if (err)
 		goto out;
 
 	if (t.err)
 		err = t.err;
 
-	ASSERT_TRUE(t.srv->got_register_req);
-	ASSERT_TRUE(t.got_register_ok);
+	ASSERT_TRUE(t.srv->n_register_req > 0);
+	ASSERT_EQ(tp, t.srv->tp_last);
+	ASSERT_TRUE(t.got_register_ok > 0);
 
  out:
 	if (err) {
@@ -90,6 +93,20 @@ int test_ua_register(void)
 	uag_event_unregister(ua_event_handler);
 	mem_deref(t.srv);
 	mem_deref(t.ua);
+
+	return err;
+}
+
+
+int test_ua_register(void)
+{
+	int err = 0;
+
+	err |= reg(SIP_TRANSP_UDP);
+	err |= reg(SIP_TRANSP_TCP);
+#ifdef USE_TLS
+	err |= reg(SIP_TRANSP_TLS);
+#endif
 
 	return err;
 }

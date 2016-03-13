@@ -16,7 +16,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;      /* inheritance */
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
 	pthread_mutex_t mutex;
@@ -47,8 +47,6 @@ static void ausrc_destructor(void *arg)
 
 		AudioQueueDispose(st->queue, true);
 	}
-
-	mem_deref(st->as);
 
 	pthread_mutex_destroy(&st->mutex);
 }
@@ -89,7 +87,7 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 }
 
 
-int coreaudio_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
+int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			     struct media_ctx **ctx,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -112,7 +110,7 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, struct ausrc *as,
 		return ENOMEM;
 
 	st->ptime = prm->ptime;
-	st->as  = mem_ref(as);
+	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 

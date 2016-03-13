@@ -9,7 +9,7 @@ USE_X264 := $(shell [ -f $(SYSROOT)/include/x264.h ] || \
 	[ -f $(SYSROOT_ALT)/include/x264.h ] && echo "yes")
 
 MOD		:= avcodec
-$(MOD)_SRCS	+= avcodec.c h263.c h264.c encode.c decode.c
+$(MOD)_SRCS	+= avcodec.c h263.c encode.c decode.c
 $(MOD)_LFLAGS	+= -lavcodec -lavutil
 CFLAGS          += -DUSE_AVCODEC
 ifneq ($(USE_X264),)

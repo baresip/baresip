@@ -1,16 +1,37 @@
 /**
  * @file account/account.c  Load SIP accounts from file
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <re.h>
 #include <baresip.h>
+
+
+/**
+ * @defgroup account account
+ *
+ * Load SIP accounts from a file
+ *
+ * This module is loading SIP accounts from file ~/.baresip/accounts.
+ * If the file exist and is readable, all SIP accounts will be populated
+ * from this file. If the file does not exist, a template file will be
+ * created.
+ *
+ * Examples:
+ \verbatim
+  "User 1 with password prompt" <sip:user@domain.com>
+  "User 2 with stored password" <sip:user:pass@domain.com>
+  "User 2 with ICE" <sip:user@1.2.3.4;transport=tcp>;medianat=ice
+  "User 3 with IPv6" <sip:user@[2001:df8:0:16:216:6fff:fe91:614c]:5070>
+ \endverbatim
+ */
 
 
 static int account_write_template(const char *file)
 {
 	FILE *f = NULL;
 	const char *login, *pass, *domain;
+	int r, err = 0;
 
 	info("account: creating accounts template %s\n", file);
 
@@ -28,7 +49,7 @@ static int account_write_template(const char *file)
 	if (!domain)
 		domain = "domain";
 
-	(void)re_fprintf(f,
+	r = re_fprintf(f,
 			 "#\n"
 			 "# SIP accounts - one account per line\n"
 			 "#\n"
@@ -66,11 +87,13 @@ static int account_write_template(const char *file)
 			 ";transport=tcp>\n"
 			 "#\n"
 			 "#<sip:%s:%s@%s>\n", login, pass, domain);
+	if (r < 0)
+		err = ENOMEM;
 
 	if (f)
 		(void)fclose(f);
 
-	return 0;
+	return err;
 }
 
 

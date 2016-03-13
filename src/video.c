@@ -411,7 +411,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 		return;
 
 	/* Encode the whole picture frame */
-	err = vtx->vc->ench(vtx->enc, vtx->picup, frame, packet_handler, vtx);
+	err = vtx->vc->ench(vtx->enc, vtx->picup, frame);
 	if (err)
 		return;
 
@@ -1038,7 +1038,8 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 		     vc->name, vc->variant, prm.bitrate, prm.fps);
 
 		vtx->enc = mem_deref(vtx->enc);
-		err = vc->encupdh(&vtx->enc, vc, &prm, params);
+		err = vc->encupdh(&vtx->enc, vc, &prm, params,
+				  packet_handler, vtx);
 		if (err) {
 			warning("video: encoder alloc: %m\n", err);
 			return err;
@@ -1064,14 +1065,18 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 
 	/* handle vidcodecs without a decoder */
 	if (!vc->decupdh) {
+		struct vidcodec *vcd;
+
 		info("video: vidcodec '%s' has no decoder\n", vc->name);
 
-		vc = (struct vidcodec *)vidcodec_find_decoder(vc->name);
-		if (!vc) {
+		vcd = (struct vidcodec *)vidcodec_find_decoder(vc->name);
+		if (!vcd) {
 			warning("video: could not find decoder (%s)\n",
 				vc->name);
 			return ENOENT;
 		}
+
+		vc = vcd;
 	}
 
 	vrx = &v->vrx;

@@ -13,7 +13,7 @@ extern "C" {
 
 
 /** Defines the Baresip version string */
-#define BARESIP_VERSION "0.4.12"
+#define BARESIP_VERSION "0.4.17"
 
 
 /* forward declarations */
@@ -31,6 +31,13 @@ struct vidsz;
  * Account
  */
 
+/** Defines the answermodes */
+enum answermode {
+	ANSWERMODE_MANUAL = 0,
+	ANSWERMODE_EARLY,
+	ANSWERMODE_AUTO
+};
+
 struct account;
 
 int account_alloc(struct account **accp, const char *sipaddr);
@@ -43,6 +50,7 @@ struct list *account_vidcodecl(const struct account *acc);
 struct sip_addr *account_laddr(const struct account *acc);
 uint32_t account_regint(const struct account *acc);
 uint32_t account_pubint(const struct account *acc);
+enum answermode account_answermode(const struct account *acc);
 
 
 /*
@@ -56,6 +64,7 @@ enum call_event {
 	CALL_EVENT_ESTABLISHED,
 	CALL_EVENT_CLOSED,
 	CALL_EVENT_TRANSFER,
+	CALL_EVENT_TRANSFER_FAILED,
 };
 
 struct call;
@@ -84,6 +93,8 @@ struct audio *call_audio(const struct call *call);
 struct video *call_video(const struct call *call);
 struct list  *call_streaml(const struct call *call);
 struct ua    *call_get_ua(const struct call *call);
+bool          call_is_onhold(const struct call *call);
+bool          call_is_outgoing(const struct call *call);
 
 
 /*
@@ -103,6 +114,7 @@ int  conf_get_vidsz(const struct conf *conf, const char *name,
 		    struct vidsz *sz);
 int  conf_get_sa(const struct conf *conf, const char *name, struct sa *sa);
 bool conf_fileexist(const char *path);
+void conf_close(void);
 struct conf *conf_cur(void);
 
 
@@ -129,71 +141,88 @@ enum audio_mode {
 	AUDIO_MODE_TMR               /**< Use timer                     */
 };
 
+
+/** SIP User-Agent */
+struct config_sip {
+	uint32_t trans_bsize;   /**< SIP Transaction bucket size    */
+	char uuid[64];          /**< Universally Unique Identifier  */
+	char local[64];         /**< Local SIP Address              */
+	char cert[256];         /**< SIP Certificate                */
+};
+
+/** Audio */
+struct config_audio {
+	char src_mod[16];       /**< Audio source module            */
+	char src_dev[128];      /**< Audio source device            */
+	char play_mod[16];      /**< Audio playback module          */
+	char play_dev[128];     /**< Audio playback device          */
+	char alert_mod[16];     /**< Audio alert module             */
+	char alert_dev[128];    /**< Audio alert device             */
+	struct range srate;     /**< Audio sampling rate in [Hz]    */
+	struct range channels;  /**< Nr. of audio channels (1=mono) */
+	uint32_t srate_play;    /**< Opt. sampling rate for player  */
+	uint32_t srate_src;     /**< Opt. sampling rate for source  */
+	uint32_t channels_play; /**< Opt. channels for player       */
+	uint32_t channels_src;  /**< Opt. channels for source       */
+	bool src_first;         /**< Audio source opened first      */
+	enum audio_mode txmode; /**< Audio transmit mode            */
+};
+
+#ifdef USE_VIDEO
+/** Video */
+struct config_video {
+	char src_mod[16];       /**< Video source module            */
+	char src_dev[128];      /**< Video source device            */
+	char disp_mod[16];      /**< Video display module           */
+	char disp_dev[128];     /**< Video display device           */
+	unsigned width, height; /**< Video resolution               */
+	uint32_t bitrate;       /**< Encoder bitrate in [bit/s]     */
+	uint32_t fps;           /**< Video framerate                */
+};
+#endif
+
+/** Audio/Video Transport */
+struct config_avt {
+	uint8_t rtp_tos;        /**< Type-of-Service for outg. RTP  */
+	struct range rtp_ports; /**< RTP port range                 */
+	struct range rtp_bw;    /**< RTP Bandwidth range [bit/s]    */
+	bool rtcp_enable;       /**< RTCP is enabled                */
+	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
+	struct range jbuf_del;  /**< Delay, number of frames        */
+	bool rtp_stats;         /**< Enable RTP statistics          */
+	bool rtcpxr_stats;      /**< Enable RTCP-XR statistics      */
+	char rtcpxr_collector[128]; /**< RTCP-XR Publish collector  */
+};
+
+/* Network */
+struct config_net {
+	char ifname[16];        /**< Bind to interface (optional)   */
+};
+
+#ifdef USE_VIDEO
+/* BFCP */
+struct config_bfcp {
+	char proto[16];         /**< BFCP Transport (optional)      */
+};
+#endif
+
+
 /** Core configuration */
 struct config {
 
-	/** SIP User-Agent */
-	struct config_sip {
-		uint32_t trans_bsize;   /**< SIP Transaction bucket size    */
-		char uuid[64];          /**< Universally Unique Identifier  */
-		char local[64];         /**< Local SIP Address              */
-		char cert[256];         /**< SIP Certificate                */
-	} sip;
+	struct config_sip sip;
 
-	/** Audio */
-	struct config_audio {
-		char src_mod[16];       /**< Audio source module            */
-		char src_dev[128];      /**< Audio source device            */
-		char play_mod[16];      /**< Audio playback module          */
-		char play_dev[128];     /**< Audio playback device          */
-		char alert_mod[16];     /**< Audio alert module             */
-		char alert_dev[128];    /**< Audio alert device             */
-		struct range srate;     /**< Audio sampling rate in [Hz]    */
-		struct range channels;  /**< Nr. of audio channels (1=mono) */
-		uint32_t srate_play;    /**< Opt. sampling rate for player  */
-		uint32_t srate_src;     /**< Opt. sampling rate for source  */
-		uint32_t channels_play; /**< Opt. channels for player       */
-		uint32_t channels_src;  /**< Opt. channels for source       */
-		bool src_first;         /**< Audio source opened first      */
-		enum audio_mode txmode; /**< Audio transmit mode            */
-	} audio;
+	struct config_audio audio;
 
 #ifdef USE_VIDEO
-	/** Video */
-	struct config_video {
-		char src_mod[16];       /**< Video source module            */
-		char src_dev[128];      /**< Video source device            */
-		char disp_mod[16];      /**< Video display module           */
-		char disp_dev[128];     /**< Video display device           */
-		unsigned width, height; /**< Video resolution               */
-		uint32_t bitrate;       /**< Encoder bitrate in [bit/s]     */
-		uint32_t fps;           /**< Video framerate                */
-	} video;
+	struct config_video video;
 #endif
+	struct config_avt avt;
 
-	/** Audio/Video Transport */
-	struct config_avt {
-		uint8_t rtp_tos;        	/**< Type-of-Service for outg. RTP  */
-		struct range rtp_ports; 	/**< RTP port range                 */
-		struct range rtp_bw;    	/**< RTP Bandwidth range [bit/s]    */
-		bool rtcp_enable;       	/**< RTCP is enabled                */
-		bool rtcp_mux;          	/**< RTP/RTCP multiplexing          */
-		struct range jbuf_del;  	/**< Delay, number of frames        */
-		bool rtp_stats;         	/**< Enable RTP statistics          */
-		bool rtcpxr_stats;         	/**< Enable RTCP-XR statistics      */
-		char rtcpxr_collector[128];	/**< RTCP-XR Publish collector      */
-	} avt;
-
-	/* Network */
-	struct config_net {
-		char ifname[16];        /**< Bind to interface (optional)   */
-	} net;
+	struct config_net net;
 
 #ifdef USE_VIDEO
-	/* BFCP */
-	struct config_bfcp {
-		char proto[16];         /**< BFCP Transport (optional)      */
-	} bfcp;
+	struct config_bfcp bfcp;
 #endif
 };
 
@@ -282,7 +311,7 @@ struct ausrc_prm {
 typedef void (ausrc_read_h)(const int16_t *sampv, size_t sampc, void *arg);
 typedef void (ausrc_error_h)(int err, const char *str, void *arg);
 
-typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, struct ausrc *ausrc,
+typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, const struct ausrc *ausrc,
 			     struct media_ctx **ctx,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
@@ -312,7 +341,7 @@ struct auplay_prm {
 
 typedef void (auplay_write_h)(int16_t *sampv, size_t sampc, void *arg);
 
-typedef int  (auplay_alloc_h)(struct auplay_st **stp, struct auplay *ap,
+typedef int  (auplay_alloc_h)(struct auplay_st **stp, const struct auplay *ap,
 			      struct auplay_prm *prm, const char *device,
 			      auplay_write_h *wh, void *arg);
 
@@ -393,6 +422,7 @@ struct log {
 void log_register_handler(struct log *log);
 void log_unregister_handler(struct log *log);
 void log_enable_debug(bool enable);
+void log_enable_info(bool enable);
 void log_enable_stderr(bool enable);
 void vlog(enum log_level level, const char *fmt, va_list ap);
 void loglv(enum log_level level, const char *fmt, ...);
@@ -478,11 +508,17 @@ enum ua_event {
 	UA_EVENT_REGISTER_OK,
 	UA_EVENT_REGISTER_FAIL,
 	UA_EVENT_UNREGISTERING,
+	UA_EVENT_SHUTDOWN,
+	UA_EVENT_EXIT,
+
 	UA_EVENT_CALL_INCOMING,
 	UA_EVENT_CALL_RINGING,
 	UA_EVENT_CALL_PROGRESS,
 	UA_EVENT_CALL_ESTABLISHED,
 	UA_EVENT_CALL_CLOSED,
+	UA_EVENT_CALL_TRANSFER_FAILED,
+	UA_EVENT_CALL_DTMF_START,
+	UA_EVENT_CALL_DTMF_END,
 
 	UA_EVENT_MAX,
 };
@@ -506,6 +542,7 @@ int  ua_connect(struct ua *ua, struct call **callp,
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason);
 int  ua_answer(struct ua *ua, struct call *call);
+int  ua_hold_answer(struct ua *ua, struct call *call);
 int  ua_options_send(struct ua *ua, const char *uri,
 		     options_resp_h *resph, void *arg);
 int  ua_sipfd(const struct ua *ua);
@@ -523,10 +560,12 @@ const char     *ua_local_cuser(const struct ua *ua);
 struct account *ua_account(const struct ua *ua);
 const char     *ua_outbound(const struct ua *ua);
 struct call    *ua_call(const struct ua *ua);
+struct call    *ua_prev_call(const struct ua *ua);
 struct account *ua_prm(const struct ua *ua);
 struct list    *ua_calls(const struct ua *ua);
 enum presence_status ua_presence_status(const struct ua *ua);
 void ua_presence_status_set(struct ua *ua, const enum presence_status status);
+void ua_set_media_af(struct ua *ua, int af_media);
 
 
 /* One instance */
@@ -537,7 +576,9 @@ void ua_stop_all(bool forced);
 int  uag_reset_transp(bool reg, bool reinvite);
 int  uag_event_register(ua_event_h *eh, void *arg);
 void uag_event_unregister(ua_event_h *eh);
+void uag_set_sub_handler(sip_msg_h *subh);
 int  ua_print_sip_status(struct re_printf *pf, void *unused);
+int  uag_set_extra_params(const char *eprm);
 struct ua   *uag_find(const struct pl *cuser);
 struct ua   *uag_find_aor(const char *aor);
 struct ua   *uag_find_param(const char *name, const char *val);
@@ -573,6 +614,7 @@ void ui_input_str(const char *str);
 int  ui_input_pl(struct re_printf *pf, const struct pl *pl);
 void ui_output(const char *fmt, ...);
 bool ui_isediting(void);
+int  ui_password_prompt(char **passwordp);
 
 
 /*
@@ -626,7 +668,7 @@ struct vidsrc_prm {
 typedef void (vidsrc_frame_h)(struct vidframe *frame, void *arg);
 typedef void (vidsrc_error_h)(int err, void *arg);
 
-typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, struct vidsrc *vs,
+typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, const struct vidsrc *vs,
 			      struct media_ctx **ctx, struct vidsrc_prm *prm,
 			      const struct vidsz *size,
 			      const char *fmt, const char *dev,
@@ -661,7 +703,7 @@ struct vidisp_prm {
 typedef void (vidisp_resize_h)(const struct vidsz *size, void *arg);
 
 typedef int  (vidisp_alloc_h)(struct vidisp_st **vp,
-			      struct vidisp *vd, struct vidisp_prm *prm,
+			      const struct vidisp *vd, struct vidisp_prm *prm,
 			      const char *dev,
 			      vidisp_resize_h *resizeh, void *arg);
 typedef int  (vidisp_update_h)(struct vidisp_st *st, bool fullscreen,
@@ -751,10 +793,10 @@ typedef int (videnc_packet_h)(bool marker, const uint8_t *hdr, size_t hdr_len,
 
 typedef int (videnc_update_h)(struct videnc_state **vesp,
 			      const struct vidcodec *vc,
-			      struct videnc_param *prm, const char *fmtp);
-typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
-			      const struct vidframe *frame,
+			      struct videnc_param *prm, const char *fmtp,
 			      videnc_packet_h *pkth, void *arg);
+typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
+			      const struct vidframe *frame);
 
 typedef int (viddec_update_h)(struct viddec_state **vdsp,
 			      const struct vidcodec *vc, const char *fmtp);
@@ -837,6 +879,8 @@ struct audio;
 void audio_mute(struct audio *a, bool muted);
 bool audio_ismuted(const struct audio *a);
 void audio_set_devicename(struct audio *a, const char *src, const char *play);
+int  audio_set_source(struct audio *au, const char *mod, const char *device);
+int  audio_set_player(struct audio *au, const char *mod, const char *device);
 void audio_encoder_cycle(struct audio *audio);
 int  audio_debug(struct re_printf *pf, const struct audio *a);
 
@@ -906,6 +950,90 @@ const char *sdp_rattr(const struct sdp_session *s, const struct sdp_media *m,
 
 
 /*
+ * SIP Request
+ */
+
+int sip_req_send(struct ua *ua, const char *method, const char *uri,
+		 sip_resp_h *resph, void *arg, const char *fmt, ...);
+
+
+/*
+ * H.264
+ */
+
+/** NAL unit types (RFC 3984, Table 1) */
+enum {
+	H264_NAL_UNKNOWN      = 0,
+	/* 1-23   NAL unit  Single NAL unit packet per H.264 */
+	H264_NAL_SLICE        = 1,
+	H264_NAL_DPA          = 2,
+	H264_NAL_DPB          = 3,
+	H264_NAL_DPC          = 4,
+	H264_NAL_IDR_SLICE    = 5,
+	H264_NAL_SEI          = 6,
+	H264_NAL_SPS          = 7,
+	H264_NAL_PPS          = 8,
+	H264_NAL_AUD          = 9,
+	H264_NAL_END_SEQUENCE = 10,
+	H264_NAL_END_STREAM   = 11,
+	H264_NAL_FILLER_DATA  = 12,
+	H264_NAL_SPS_EXT      = 13,
+	H264_NAL_AUX_SLICE    = 19,
+
+	H264_NAL_STAP_A       = 24,  /**< Single-time aggregation packet */
+	H264_NAL_STAP_B       = 25,  /**< Single-time aggregation packet */
+	H264_NAL_MTAP16       = 26,  /**< Multi-time aggregation packet  */
+	H264_NAL_MTAP24       = 27,  /**< Multi-time aggregation packet  */
+	H264_NAL_FU_A         = 28,  /**< Fragmentation unit             */
+	H264_NAL_FU_B         = 29,  /**< Fragmentation unit             */
+};
+
+/**
+ * H.264 Header defined in RFC 3984
+ *
+ * <pre>
+      +---------------+
+      |0|1|2|3|4|5|6|7|
+      +-+-+-+-+-+-+-+-+
+      |F|NRI|  Type   |
+      +---------------+
+ * </pre>
+ */
+struct h264_hdr {
+	unsigned f:1;      /**< 1 bit  - Forbidden zero bit (must be 0) */
+	unsigned nri:2;    /**< 2 bits - nal_ref_idc                    */
+	unsigned type:5;   /**< 5 bits - nal_unit_type                  */
+};
+
+int h264_hdr_encode(const struct h264_hdr *hdr, struct mbuf *mb);
+int h264_hdr_decode(struct h264_hdr *hdr, struct mbuf *mb);
+
+/** Fragmentation Unit header */
+struct h264_fu {
+	unsigned s:1;      /**< Start bit                               */
+	unsigned e:1;      /**< End bit                                 */
+	unsigned r:1;      /**< The Reserved bit MUST be equal to 0     */
+	unsigned type:5;   /**< The NAL unit payload type               */
+};
+
+int h264_fu_hdr_encode(const struct h264_fu *fu, struct mbuf *mb);
+int h264_fu_hdr_decode(struct h264_fu *fu, struct mbuf *mb);
+
+const uint8_t *h264_find_startcode(const uint8_t *p, const uint8_t *end);
+
+int h264_packetize(const uint8_t *buf, size_t len, size_t pktsize,
+		   videnc_packet_h *pkth, void *arg);
+int h264_nal_send(bool first, bool last,
+		  bool marker, uint32_t ihdr, const uint8_t *buf,
+		  size_t size, size_t maxsz,
+		  videnc_packet_h *pkth, void *arg);
+static inline bool h264_is_keyframe(int type)
+{
+	return type == H264_NAL_SPS;
+}
+
+
+/*
  * Modules
  */
 
@@ -914,6 +1042,9 @@ const char *sdp_rattr(const struct sdp_session *s, const struct sdp_media *m,
 #else
 #define DECL_EXPORTS(name) exports
 #endif
+
+
+int module_preload(const char *module);
 
 
 #ifdef __cplusplus

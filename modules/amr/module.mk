@@ -5,7 +5,7 @@
 #
 
 MOD		:= amr
-$(MOD)_SRCS	+= amr.c
+$(MOD)_SRCS	+= amr.c sdp.c
 
 
 ifneq ($(shell [ -d $(SYSROOT)/include/opencore-amrnb ] && echo 1 ),)

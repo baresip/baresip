@@ -1,7 +1,7 @@
 /**
  * @file opengles.c Video driver for OpenGLES
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 
 #include <re.h>
@@ -10,6 +10,13 @@
 #include <OpenGLES/ES1/gl.h>
 #include <OpenGLES/ES1/glext.h>
 #include "opengles.h"
+
+
+/**
+ * @defgroup opengles opengles
+ *
+ * Video display module for OpenGLES on Android
+ */
 
 
 static struct vidisp *vid;
@@ -204,11 +211,10 @@ static void destructor(void *arg)
 	context_destroy(st);
 
 	mem_deref(st->vf);
-	mem_deref(st->vd);
 }
 
 
-static int opengles_alloc(struct vidisp_st **stp, struct vidisp *vd,
+static int opengles_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 			  struct vidisp_prm *prm, const char *dev,
 			  vidisp_resize_h *resizeh,
 			  void *arg)
@@ -225,7 +231,7 @@ static int opengles_alloc(struct vidisp_st **stp, struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = mem_ref(vd);
+	st->vd = vd;
 
 	err = context_init(st);
 	if (err)

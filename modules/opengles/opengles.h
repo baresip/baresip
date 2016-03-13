@@ -6,7 +6,7 @@
 
 
 struct vidisp_st {
-	struct vidisp *vd;
+	const struct vidisp *vd;  /* pointer to base-class (inheritance) */
 	struct vidframe *vf;
 
 	/* GLES: */

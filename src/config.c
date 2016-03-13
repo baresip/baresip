@@ -389,8 +389,12 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n# Core\n"
 			  "poll_method\t\t%s\t\t# poll, select"
 #ifdef HAVE_EPOLL
-				", epoll ..\n"
+				", epoll .."
 #endif
+#ifdef HAVE_KQUEUE
+				", kqueue .."
+#endif
+				"\n"
 			  "\n# SIP\n"
 			  "sip_trans_bsize\t\t128\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
@@ -582,12 +586,11 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "plc" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Audio driver Modules\n");
-#if defined (__SYMBIAN32__)
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "mda" MOD_EXT "\n");
-#elif defined (ANDROID)
+#if defined (ANDROID)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "opensles" MOD_EXT "\n");
 #elif defined (DARWIN)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "coreaudio" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "audiounit" MOD_EXT "\n");
 #elif defined (FREEBSD)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "oss" MOD_EXT "\n");
 #elif defined (OPENBSD)
@@ -598,6 +601,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "alsa" MOD_EXT "\n");
 #endif
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "portaudio" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "aubridge" MOD_EXT "\n");
 
 #ifdef USE_VIDEO
 
@@ -698,9 +702,14 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "speex_quality\t\t7 # 0-10\n");
 	(void)re_fprintf(f, "speex_complexity\t7 # 0-10\n");
 	(void)re_fprintf(f, "speex_enhancement\t0 # 0-1\n");
+	(void)re_fprintf(f, "speex_mode_nb\t\t3 # 1-6\n");
+	(void)re_fprintf(f, "speex_mode_wb\t\t6 # 1-6\n");
 	(void)re_fprintf(f, "speex_vbr\t\t0 # Variable Bit Rate 0-1\n");
 	(void)re_fprintf(f, "speex_vad\t\t0 # Voice Activity Detection 0-1\n");
 	(void)re_fprintf(f, "speex_agc_level\t\t8000\n");
+
+	(void)re_fprintf(f, "\n# Opus codec parameters\n");
+	(void)re_fprintf(f, "opus_bitrate\t\t28000 # 6000-510000\n");
 
 	(void)re_fprintf(f, "\n# NAT Behavior Discovery\n");
 	(void)re_fprintf(f, "natbd_server\t\tcreytiv.com\n");

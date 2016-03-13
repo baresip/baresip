@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <unistd.h>
 #ifndef SOLARIS
@@ -16,13 +17,18 @@
 #include <baresip.h>
 
 
-/*
+/**
+ * @defgroup x11grab x11grab
+ *
+ * X11 window-grabbing video-source module
+ *
+ *
  * XXX: add option to select a specific X window and x,y offset
  */
 
 
 struct vidsrc_st {
-	struct vidsrc *vs;  /* inheritance */
+	const struct vidsrc *vs;  /* inheritance */
 	Display *disp;
 	XImage *image;
 	pthread_t thread;
@@ -144,12 +150,10 @@ static void destructor(void *arg)
 
 	if (st->disp)
 		XCloseDisplay(st->disp);
-
-	mem_deref(st->vs);
 }
 
 
-static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt,
 		 const char *dev, vidsrc_frame_h *frameh,
@@ -170,7 +174,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = mem_ref(vs);
+	st->vs     = vs;
 	st->size   = *size;
 	st->fps    = prm->fps;
 	st->frameh = frameh;

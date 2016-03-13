@@ -7,6 +7,5 @@
 MOD		:= h265
 $(MOD)_SRCS	+= h265.c encode.c decode.c fmt.c
 $(MOD)_LFLAGS	+= -lavcodec -lavutil -lx265
-CFLAGS          +=
 
 include mk/mod.mk

@@ -8,6 +8,14 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup plc plc
+ *
+ * Packet Loss Concealment (PLC) audio-filter using spandsp
+ *
+ */
+
+
 struct plc_st {
 	struct aufilt_dec_st af; /* base class */
 	plc_state_t plc;

@@ -1,21 +1,12 @@
 /**
- * @file avcodec/h264.c  H.264 video codec (RFC 3984)
+ * @file src/h264.c  H.264 video codec packetization (RFC 3984)
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <string.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <libavcodec/avcodec.h>
-#ifdef USE_X264
-#include <x264.h>
-#endif
-#include "h26x.h"
-#include "avcodec.h"
-
-
-const uint8_t h264_level_idc = 0x0c;
 
 
 int h264_hdr_encode(const struct h264_hdr *hdr, struct mbuf *mb)
@@ -45,14 +36,14 @@ int h264_hdr_decode(struct h264_hdr *hdr, struct mbuf *mb)
 }
 
 
-int fu_hdr_encode(const struct fu *fu, struct mbuf *mb)
+int h264_fu_hdr_encode(const struct h264_fu *fu, struct mbuf *mb)
 {
 	uint8_t v = fu->s<<7 | fu->s<<6 | fu->r<<5 | fu->type;
 	return mbuf_write_u8(mb, v);
 }
 
 
-int fu_hdr_decode(struct fu *fu, struct mbuf *mb)
+int h264_fu_hdr_decode(struct h264_fu *fu, struct mbuf *mb)
 {
 	uint8_t v;
 
@@ -159,15 +150,15 @@ int h264_nal_send(bool first, bool last,
 }
 
 
-int h264_packetize(struct mbuf *mb, size_t pktsize,
+int h264_packetize(const uint8_t *buf, size_t len, size_t pktsize,
 		   videnc_packet_h *pkth, void *arg)
 {
-	const uint8_t *start = mb->buf;
-	const uint8_t *end   = start + mb->end;
+	const uint8_t *start = buf;
+	const uint8_t *end   = buf + len;
 	const uint8_t *r;
 	int err = 0;
 
-	r = h264_find_startcode(mb->buf, end);
+	r = h264_find_startcode(start, end);
 
 	while (r < end) {
 		const uint8_t *r1;

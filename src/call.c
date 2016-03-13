@@ -1,11 +1,12 @@
 /**
- * @file call.c  Call Control
+ * @file src/call.c  Call Control
  *
  * Copyright (C) 2010 Creytiv.com
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 #include <re.h>
 #include <baresip.h>
@@ -64,7 +65,9 @@ struct call {
 	time_t time_start;        /**< Time when call started               */
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
+	bool outgoing;
 	bool got_offer;           /**< Got SDP Offer from Peer              */
+	bool on_hold;             /**< True if call is on hold              */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -391,6 +394,7 @@ static void audio_error_handler(int err, const char *str, void *arg)
 }
 
 
+#ifdef USE_VIDEO
 static void video_error_handler(int err, const char *str, void *arg)
 {
 	struct call *call = arg;
@@ -401,6 +405,7 @@ static void video_error_handler(int err, const char *str, void *arg)
 	call_stream_stop(call);
 	call_event_handler(call, CALL_EVENT_CLOSED, str);
 }
+#endif
 
 
 static void menc_error_handler(int err, void *arg)
@@ -581,6 +586,8 @@ int call_connect(struct call *call, const struct pl *paddr)
 
 	info("call: connecting to '%r'..\n", paddr);
 
+	call->outgoing = true;
+
 	/* if the peer-address is a full SIP address then we need
 	 * to parse it and extract the SIP uri part.
 	 */
@@ -716,6 +723,8 @@ int call_answer(struct call *call, uint16_t scode)
 		return EINVAL;
 
 	if (STATE_INCOMING != call->state) {
+		info("call: answer: call is not in incoming state (%s)\n",
+		     state_name(call->state));
 		return 0;
 	}
 
@@ -792,7 +801,12 @@ int call_hold(struct call *call, bool hold)
 	if (!call || !call->sess)
 		return EINVAL;
 
+	if (hold == call->on_hold)
+		return 0;
+
 	info("call: %s %s\n", hold ? "hold" : "resume", call->peer_uri);
+
+	call->on_hold = hold;
 
 	FOREACH_STREAM
 		stream_hold(le->data, hold);
@@ -850,6 +864,8 @@ int call_debug(struct re_printf *pf, const struct call *call)
 			  call->local_name, call->local_uri,
 			  call->peer_name, call->peer_uri,
 			  net_af2name(call->af));
+	err |= re_hprintf(pf, " direction: %s\n",
+			  call->outgoing ? "Outgoing" : "Incoming");
 
 	/* SDP debug */
 	err |= sdp_session_debug(pf, call->sdp);
@@ -922,8 +938,10 @@ int call_info(struct re_printf *pf, const struct call *call)
 	if (!call)
 		return 0;
 
-	return re_hprintf(pf, "%H  %8s  %s", print_duration, call,
-			  state_name(call->state), call->peer_uri);
+	return re_hprintf(pf, "%H  %9s  %s  %s", print_duration, call,
+			  state_name(call->state),
+			  call->on_hold ? "(on hold)" : "         ",
+			  call->peer_uri);
 }
 
 
@@ -1023,14 +1041,15 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 
 	set_state(call, STATE_ESTABLISHED);
 
-	call_event_handler(call, CALL_EVENT_ESTABLISHED, call->peer_uri);
-
 	call_stream_start(call, true);
 
 	/* the transferor will hangup this call */
 	if (call->not) {
 		(void)call_notify_sipfrag(call, 200, "OK");
 	}
+
+	/* must be done last, the handler might deref this call */
+	call_event_handler(call, CALL_EVENT_ESTABLISHED, call->peer_uri);
 }
 
 
@@ -1077,19 +1096,15 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 
 		pl_set_mbuf(&body, msg->mb);
 
-		err  = re_regex(body.p, body.l, "Signal=[0-9]+", &sig);
+		err  = re_regex(body.p, body.l, "Signal=[0-9*#a-d]+", &sig);
 		err |= re_regex(body.p, body.l, "Duration=[0-9]+", &dur);
 
-		if (err) {
+		if (err || !pl_isset(&sig) || sig.l == 0) {
 			(void)sip_reply(sip, msg, 400, "Bad Request");
 		}
 		else {
-			char s = pl_u32(&sig);
+			char s = toupper(sig.p[0]);
 			uint32_t duration = pl_u32(&dur);
-
-			if (s == 10) s = '*';
-			else if (s == 11) s = '#';
-			else s += '0';
 
 			info("received DTMF: '%c' (duration=%r)\n", s, &dur);
 
@@ -1215,7 +1230,7 @@ static bool have_common_audio_codecs(const struct call *call)
 	if (!sc)
 		return false;
 
-	ac = sc->data;
+	ac = sc->data;  /* note: this will exclude telephone-event */
 
 	return ac != NULL;
 }
@@ -1230,6 +1245,8 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	if (!call || !msg)
 		return EINVAL;
 
+	call->outgoing = false;
+
 	got_offer = (mbuf_get_left(msg->mb) > 0);
 
 	err = pl_strdup(&call->peer_uri, &msg->from.auri);
@@ -1243,12 +1260,38 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	}
 
 	if (got_offer) {
+		struct sdp_media *m;
+		const struct sa *raddr;
 
 		err = sdp_decode(call->sdp, msg->mb, true);
 		if (err)
 			return err;
 
 		call->got_offer = true;
+
+		/*
+		 * Each media description in the SDP answer MUST
+		 * use the same network type as the corresponding
+		 * media description in the offer.
+		 *
+		 * See RFC 6157
+		 */
+		m = stream_sdpmedia(audio_strm(call->audio));
+		raddr = sdp_media_raddr(m);
+
+		if (sa_af(raddr) != call->af) {
+			info("call: incompatible address-family"
+			     " (local=%s, remote=%s)\n",
+			     net_af2name(call->af),
+			     net_af2name(sa_af(raddr)));
+
+			sip_treply(NULL, uag_sip(), msg,
+				   488, "Not Acceptable Here");
+
+			call_event_handler(call, CALL_EVENT_CLOSED,
+					   "Wrong address family");
+			return 0;
+		}
 
 		/* Check if we have any common audio codecs, after
 		 * the SDP offer has been parsed
@@ -1530,6 +1573,8 @@ static void sipsub_notify_handler(struct sip *sip, const struct sip_msg *msg,
 
 	if (sc >= 300) {
 		warning("call: transfer failed: %u %r\n", sc, &reason);
+		call_event_handler(call, CALL_EVENT_TRANSFER_FAILED,
+				   "%u %r", sc, &reason);
 	}
 	else if (sc >= 200) {
 		call_event_handler(call, CALL_EVENT_CLOSED, "Call transfered");
@@ -1553,6 +1598,8 @@ static void sipsub_close_handler(int err, const struct sip_msg *msg,
 	else if (msg && msg->scode >= 300) {
 		info("call: transfer failed: %u %r\n",
 		     msg->scode, &msg->reason);
+		call_event_handler(call, CALL_EVENT_TRANSFER_FAILED,
+				   "%u %r", msg->scode, &msg->reason);
 	}
 }
 
@@ -1676,4 +1723,15 @@ void call_send_rtcpxr(struct call *call)
 	rtcpxr_send(call->ua,call->config_avt.rtcpxr_collector,audio_print_rtcpxr(msg,sizeof(msg),call->audio,
 						sip_dialog_callid(sipsess_dialog(call->sess)) ) );
 
+}
+
+bool call_is_onhold(const struct call *call)
+{
+	return call ? call->on_hold : false;
+}
+
+
+bool call_is_outgoing(const struct call *call)
+{
+	return call ? call->outgoing : false;
 }

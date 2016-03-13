@@ -3,12 +3,33 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <string.h>
 #include <time.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+
+
+/**
+ * @defgroup vidloop vidloop
+ *
+ * A video-loop module for testing
+ *
+ * Simple test module that loops back the video frames from a
+ * video-source to a video-display, optionally via a video codec.
+ *
+ * Example usage without codec:
+ \verbatim
+  baresip -ev
+ \endverbatim
+ *
+ * Example usage with codec:
+ \verbatim
+  baresip -evv
+ \endverbatim
+ */
 
 
 /** Internal pixel-format */
@@ -112,7 +133,10 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 		}
 	}
 
-	display(vl, &frame);
+	if (vidframe_isvalid(&frame)) {
+
+		display(vl, &frame);
+	}
 
  out:
 	mem_deref(mb);
@@ -158,8 +182,7 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 	}
 
 	if (vl->vc_enc && vl->enc) {
-		(void)vl->vc_enc->ench(vl->enc, false, frame,
-				   packet_handler, vl);
+		(void)vl->vc_enc->ench(vl->enc, false, frame);
 	}
 	else {
 		vl->stat.bytes += vidframe_size(frame->fmt, &frame->size);
@@ -214,7 +237,8 @@ static int enable_codec(struct video_loop *vl)
 
 	info("vidloop: enabled decoder %s\n", vl->vc_dec->name);
 
-	err = vl->vc_enc->encupdh(&vl->enc, vl->vc_enc, &prm, NULL);
+	err = vl->vc_enc->encupdh(&vl->enc, vl->vc_enc, &prm, NULL,
+				  packet_handler, vl);
 	if (err) {
 		warning("vidloop: update encoder failed: %m\n", err);
 		return err;

@@ -33,7 +33,9 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;      /* inheritance */
+	pthread_t thread;
+	bool run;
 	int fd;
 	int16_t *sampv;
 	size_t sampc;
@@ -43,7 +45,7 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	struct auplay *ap;      /* inheritance */
+	const struct auplay *ap;      /* inheritance */
 	pthread_t thread;
 	bool run;
 	int fd;
@@ -148,12 +150,10 @@ static void auplay_destructor(void *arg)
 	}
 
 	if (-1 != st->fd) {
-		fd_close(st->fd);
 		(void)close(st->fd);
 	}
 
 	mem_deref(st->sampv);
-	mem_deref(st->ap);
 }
 
 
@@ -161,27 +161,34 @@ static void ausrc_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
+	if (st->run) {
+		st->run = false;
+		pthread_join(st->thread, NULL);
+	}
+
 	if (-1 != st->fd) {
-		fd_close(st->fd);
 		(void)close(st->fd);
 	}
 
 	mem_deref(st->sampv);
-	mem_deref(st->as);
 }
 
 
-static void read_handler(int flags, void *arg)
+static void *record_thread(void *arg)
 {
 	struct ausrc_st *st = arg;
 	int n;
-	(void)flags;
 
-	n = read(st->fd, st->sampv, st->sampc*2);
-	if (n <= 0)
-		return;
+	while (st->run) {
 
-	st->rh(st->sampv, n/2, st->arg);
+		n = read(st->fd, st->sampv, st->sampc*2);
+		if (n <= 0)
+			continue;
+
+		st->rh(st->sampv, n/2, st->arg);
+	}
+
+	return NULL;
 }
 
 
@@ -205,7 +212,7 @@ static void *play_thread(void *arg)
 }
 
 
-static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
+static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct media_ctx **ctx,
 		     struct ausrc_prm *prm, const char *device,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -245,15 +252,18 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 		goto out;
 	}
 
-	err = fd_listen(st->fd, FD_READ, read_handler, st);
+	err = oss_reset(st->fd, prm->srate, prm->ch, st->sampc, 0);
 	if (err)
 		goto out;
 
-	err = oss_reset(st->fd, prm->srate, prm->ch, st->sampc, 1);
-	if (err)
-		goto out;
+	st->as = as;
 
-	st->as = mem_ref(as);
+	st->run = true;
+	err = pthread_create(&st->thread, NULL, record_thread, st);
+	if (err) {
+		st->run = false;
+		goto out;
+	}
 
  out:
 	if (err)
@@ -265,7 +275,7 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 }
 
 
-static int play_alloc(struct auplay_st **stp, struct auplay *ap,
+static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		      struct auplay_prm *prm, const char *device,
 		      auplay_write_h *wh, void *arg)
 {
@@ -304,7 +314,7 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 	if (err)
 		goto out;
 
-	st->ap = mem_ref(ap);
+	st->ap = ap;
 
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, play_thread, st);

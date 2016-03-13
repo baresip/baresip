@@ -1,5 +1,5 @@
 /**
- * @file gst_video.c  Video codecs using Gstreamer
+ * @file gst_video/gst_video.c  Video codecs using Gstreamer
  *
  * Copyright (C) 2010 Creytiv.com
  * Copyright (C) 2014 Fadeev Alexander

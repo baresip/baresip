@@ -15,12 +15,12 @@
  *
  * The OPUS audio codec
  *
- * Latest supported version: libopus 1.0.0
+ * Supported version: libopus 1.0.0 or later
  *
  * References:
  *
- *    draft-ietf-codec-opus-10
- *    draft-spittka-payload-rtp-opus-00
+ *    RFC 6716  Definition of the Opus Audio Codec
+ *    RFC 7587  RTP Payload Format for the Opus Speech and Audio Codec
  *
  *    http://opus-codec.org/downloads/
  */

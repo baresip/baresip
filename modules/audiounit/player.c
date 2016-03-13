@@ -12,7 +12,7 @@
 
 
 struct auplay_st {
-	struct auplay *ap;      /* inheritance */
+	const struct auplay *ap;      /* inheritance */
 	struct audiosess_st *sess;
 	AudioUnit au;
 	pthread_mutex_t mutex;
@@ -34,7 +34,6 @@ static void auplay_destructor(void *arg)
 	AudioComponentInstanceDispose(st->au);
 
 	mem_deref(st->sess);
-	mem_deref(st->ap);
 
 	pthread_mutex_destroy(&st->mutex);
 }
@@ -87,7 +86,7 @@ static void interrupt_handler(bool interrupted, void *arg)
 }
 
 
-int audiounit_player_alloc(struct auplay_st **stp, struct auplay *ap,
+int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			   struct auplay_prm *prm, const char *device,
 			   auplay_write_h *wh, void *arg)
 {
@@ -97,6 +96,8 @@ int audiounit_player_alloc(struct auplay_st **stp, struct auplay *ap,
 	struct auplay_st *st;
 	UInt32 enable = 1;
 	OSStatus ret = 0;
+	Float64 hw_srate = 0.0;
+	UInt32 hw_size = sizeof(hw_srate);
 	int err;
 
 	(void)device;
@@ -105,7 +106,7 @@ int audiounit_player_alloc(struct auplay_st **stp, struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = mem_ref(ap);
+	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 
@@ -124,8 +125,10 @@ int audiounit_player_alloc(struct auplay_st **stp, struct auplay *ap,
 	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
 				   kAudioUnitScope_Output, outputBus,
 				   &enable, sizeof(enable));
-	if (ret)
+	if (ret) {
+		warning("audiounit: EnableIO failed (%d)\n", ret);
 		goto out;
+	}
 
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
@@ -163,6 +166,18 @@ int audiounit_player_alloc(struct auplay_st **stp, struct auplay *ap,
 	ret = AudioOutputUnitStart(st->au);
 	if (ret)
 		goto out;
+
+	ret = AudioUnitGetProperty(st->au,
+				   kAudioUnitProperty_SampleRate,
+				   kAudioUnitScope_Output,
+				   0,
+				   &hw_srate,
+				   &hw_size);
+	if (ret)
+		goto out;
+
+	debug("audiounit: player hardware sample rate is now at %f Hz\n",
+	      hw_srate);
 
  out:
 	if (ret) {

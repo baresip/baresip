@@ -1,5 +1,5 @@
 /**
- * @file g7221.c G.722.1 Video Codec
+ * @file g7221.c G.722.1 Audio Codec
  *
  * Copyright (C) 2010 Creytiv.com
  */

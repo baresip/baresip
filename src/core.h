@@ -31,13 +31,6 @@ enum {
  */
 
 
-/** Defines the answermodes */
-enum answermode {
-	ANSWERMODE_MANUAL = 0,
-	ANSWERMODE_EARLY,
-	ANSWERMODE_AUTO
-};
-
 struct account {
 	char *buf;                   /**< Buffer for the SIP address         */
 	struct sip_addr laddr;       /**< Decoded SIP address                */
@@ -91,7 +84,7 @@ struct auplay {
  */
 
 struct ausrc_st {
-	struct ausrc *as;
+	const struct ausrc *as;
 };
 
 struct ausrc {
@@ -275,14 +268,6 @@ struct rtpkeep;
 int  rtpkeep_alloc(struct rtpkeep **rkp, const char *method, int proto,
 		   struct rtp_sock *rtp, struct sdp_media *sdp);
 void rtpkeep_refresh(struct rtpkeep *rk, uint32_t ts);
-
-
-/*
- * SIP Request
- */
-
-int sip_req_send(struct ua *ua, const char *method, const char *uri,
-		 sip_resp_h *resph, void *arg, const char *fmt, ...);
 
 
 /*

@@ -9,6 +9,19 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup selfview selfview
+ *
+ * Show a selfview of the captured video stream
+ *
+ * Example config:
+ \verbatim
+  video_selfview          pip # {window,pip}
+  selfview_size           64x64
+ \endverbatim
+ */
+
+
 /* shared state */
 struct selfview {
 	struct lock *lock;          /**< Protect frame         */
@@ -235,10 +248,9 @@ static struct vidfilt selfview_pip = {
 
 static int module_init(void)
 {
-	struct pl pl;
+	struct pl pl = PL("pip");
 
-	if (conf_get(conf_cur(), "video_selfview", &pl))
-		return 0;
+	(void)conf_get(conf_cur(), "video_selfview", &pl);
 
 	if (0 == pl_strcasecmp(&pl, "window"))
 		vidfilt_register(&selfview_win);

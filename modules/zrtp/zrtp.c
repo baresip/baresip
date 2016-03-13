@@ -28,6 +28,10 @@
  */
 
 
+enum {
+	PRESZ = 36  /* Preamble size for TURN/STUN header */
+};
+
 struct menc_sess {
 	zrtp_session_t *zrtp_session;
 };
@@ -162,7 +166,9 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 {
 	struct menc_media *st;
 	zrtp_status_t s;
+	int layer = 10; /* above zero */
 	int err = 0;
+	(void)rtcpsock;
 
 	if (!stp || !sess || proto != IPPROTO_UDP)
 		return EINVAL;
@@ -178,7 +184,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 	st->sess = sess;
 	st->rtpsock = mem_ref(rtpsock);
 
-	err = udp_register_helper(&st->uh, rtpsock, 0,
+	err = udp_register_helper(&st->uh, rtpsock, layer,
 				  udp_helper_send, udp_helper_recv, st);
 	if (err)
 		goto out;
@@ -225,12 +231,13 @@ static int on_send_packet(const zrtp_stream_t *stream,
 	if (!sa_isset(&st->raddr, SA_ALL))
 		return zrtp_status_ok;
 
-	mb = mbuf_alloc(rtp_packet_length);
+	mb = mbuf_alloc(PRESZ + rtp_packet_length);
 	if (!mb)
 		return zrtp_status_alloc_fail;
 
+	mb->pos = PRESZ;
 	(void)mbuf_write_mem(mb, (void *)rtp_packet, rtp_packet_length);
-	mb->pos = 0;
+	mb->pos = PRESZ;
 
 	err = udp_send_helper(st->rtpsock, &st->raddr, mb, st->uh);
 	if (err) {
@@ -273,7 +280,6 @@ static int verify_sas(struct re_printf *pf, void *arg)
 	(void)pf;
 
 	if (str_isset(carg->prm)) {
-		char *s2h;
 		char rzid[ZRTP_STRING16] = "";
 		zrtp_status_t s;
 		zrtp_string16_t remote_zid = ZSTR_INIT_EMPTY(remote_zid);
@@ -283,12 +289,8 @@ static int verify_sas(struct re_printf *pf, void *arg)
 			return EINVAL;
 		}
 
-		s2h = str2hex(carg->prm, (int) str_len(carg->prm),
-			      rzid, sizeof(rzid));
-		if (str_len(rzid) != sizeof(zrtp_zid_t)) {
-			warning("zrtp: str2hex failed (%s)\n", s2h);
-			return EINVAL;
-		}
+		(void) str2hex(carg->prm, (int) str_len(carg->prm),
+			       rzid, sizeof(rzid));
 		zrtp_zstrncpyc(ZSTR_GV(remote_zid), (const char*)rzid,
 			       sizeof(zrtp_zid_t));
 
@@ -376,6 +378,12 @@ static int module_init(void)
 	}
 
 	menc_register(&menc_zrtp);
+
+	debug("zrtp:  cache_file:  %s\n",
+	      zrtp_config.cache_file_cfg.cache_path);
+	debug("       zid_file:    %s\n", zrtp_zid_path);
+	debug("       zid:         %w\n",
+	      zrtp_config.zid, sizeof(zrtp_config.zid));
 
 	return cmd_register(cmdv, ARRAY_SIZE(cmdv));
 }

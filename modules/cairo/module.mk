@@ -6,7 +6,7 @@
 
 MOD		:= cairo
 $(MOD)_SRCS	+= cairo.c
-$(MOD)_LFLAGS	+= -lcairo
-CFLAGS		+= -I$(SYSROOT)/include/cairo
+$(MOD)_LFLAGS	+= $(shell pkg-config --libs cairo)
+$(MOD)_CFLAGS	+= $(shell pkg-config --cflags cairo)
 
 include mk/mod.mk

@@ -70,8 +70,10 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		       struct auenc_param *param, const char *fmtp)
 {
 	struct auenc_state *aes;
-	struct opus_param prm;
+	struct opus_param prm, conf_prm;
 	opus_int32 fch, vbr;
+	const struct aucodec *auc = aucodec_find("opus", 48000, 2);
+
 	(void)param;
 
 	if (!aesp || !ac || !ac->ch)
@@ -113,6 +115,14 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	prm.dtx        = 0;
 
 	opus_decode_fmtp(&prm, fmtp);
+
+	conf_prm.bitrate = OPUS_AUTO;
+	opus_decode_fmtp(&conf_prm, auc->fmtp);
+
+	if ((prm.bitrate == OPUS_AUTO) ||
+	    ((conf_prm.bitrate != OPUS_AUTO) &&
+	     (conf_prm.bitrate < prm.bitrate)))
+		prm.bitrate = conf_prm.bitrate;
 
 	fch = prm.stereo ? OPUS_AUTO : 1;
 	vbr = prm.cbr ? 0 : 1;

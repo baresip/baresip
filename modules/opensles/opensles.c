@@ -1,13 +1,20 @@
 /**
  * @file opensles.c  OpenSLES audio driver
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <re.h>
 #include <baresip.h>
 #include <SLES/OpenSLES.h>
 #include "SLES/OpenSLES_Android.h"
 #include "opensles.h"
+
+
+/**
+ * @defgroup opensles opensles
+ *
+ * Audio driver module for Android OpenSLES
+ */
 
 
 SLObjectItf engineObject = NULL;

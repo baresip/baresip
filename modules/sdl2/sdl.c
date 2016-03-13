@@ -10,8 +10,15 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup sdl2 sdl2
+ *
+ * Video display using Simple DirectMedia Layer version 2 (SDL2)
+ */
+
+
 struct vidisp_st {
-	struct vidisp *vd;              /**< Inheritance (1st)     */
+	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	SDL_Window *window;             /**< SDL Window            */
 	SDL_Renderer *renderer;         /**< SDL Renderer          */
 	SDL_Texture *texture;           /**< Texture for pixels    */
@@ -47,12 +54,10 @@ static void destructor(void *arg)
 	struct vidisp_st *st = arg;
 
 	sdl_reset(st);
-
-	mem_deref(st->vd);
 }
 
 
-static int alloc(struct vidisp_st **stp, struct vidisp *vd,
+static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg)
 {
@@ -69,7 +74,7 @@ static int alloc(struct vidisp_st **stp, struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = mem_ref(vd);
+	st->vd = vd;
 
 	if (err)
 		mem_deref(st);

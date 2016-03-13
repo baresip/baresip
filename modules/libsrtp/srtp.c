@@ -7,6 +7,7 @@
 #define asm __asm__  /* workaround */
 #endif
 #include <srtp/srtp.h>
+#include <srtp/crypto_kernel.h>
 #include <re.h>
 #include <baresip.h>
 #include "sdes.h"

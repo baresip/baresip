@@ -213,8 +213,9 @@ static int output_handler(const char *str)
 
 
 static struct ui ui_cons = {
-	.name = "cons",
-	.outputh = output_handler
+	LE_INIT,
+	"cons",
+	output_handler
 };
 
 

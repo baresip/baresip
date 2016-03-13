@@ -1,14 +1,18 @@
 /**
  * @file silk.c  Skype SILK audio codec
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <re.h>
 #include <baresip.h>
 #include <silk/SKP_Silk_SDK_API.h>
 
 
-/*
+/**
+ * @defgroup silk silk
+ *
+ * The Skype SILK audio codec
+ *
  * References:  https://developer.skype.com/silk
  */
 

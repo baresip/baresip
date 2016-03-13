@@ -11,13 +11,20 @@
 #include "sdl.h"
 
 
+/**
+ * @defgroup sdl sdl
+ *
+ * Video display using Simple DirectMedia Layer (SDL)
+ */
+
+
 /** Local constants */
 enum {
 	KEY_RELEASE_VAL = 250  /**< Key release value in [ms] */
 };
 
 struct vidisp_st {
-	struct vidisp *vd;  /* inheritance */
+	const struct vidisp *vd;  /* inheritance */
 };
 
 /** Global SDL data */
@@ -173,13 +180,13 @@ static void sdl_close(void)
 static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
+	(void)st;
 
-	mem_deref(st->vd);
 	sdl_close();
 }
 
 
-static int alloc(struct vidisp_st **stp, struct vidisp *vd,
+static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg)
 {
@@ -197,7 +204,7 @@ static int alloc(struct vidisp_st **stp, struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = mem_ref(vd);
+	st->vd = vd;
 
 	sdl.resizeh = resizeh;
 	sdl.arg     = arg;

@@ -9,6 +9,13 @@
 #include <AVFoundation/AVFoundation.h>
 
 
+/**
+ * @defgroup avcapture avcapture
+ *
+ * Video source using OSX/iOS AVFoundation
+ */
+
+
 static struct vidsrc *vidsrc;
 
 
@@ -24,7 +31,7 @@ static struct vidsrc *vidsrc;
 
 
 struct vidsrc_st {
-	struct vidsrc *vs;
+	const struct vidsrc *vs;
 	avcap *cap;
 	vidsrc_frame_h *frameh;
 	void *arg;
@@ -282,12 +289,10 @@ static void destructor(void *arg)
 	        waitUntilDone:YES];
 
 	[st->cap release];
-
-	mem_deref(st->vs);
 }
 
 
-static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt,
 		 const char *dev, vidsrc_frame_h *frameh,
@@ -312,7 +317,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 
 	pool = [NSAutoreleasePool new];
 
-	st->vs     = mem_ref(vs);
+	st->vs     = vs;
 	st->frameh = frameh;
 	st->arg    = arg;
 

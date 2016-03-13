@@ -10,6 +10,20 @@
 #include "png_vf.h"
 
 
+/**
+ * @defgroup snapshot snapshot
+ *
+ * Take snapshot of the video stream and save it as PNG-files
+ *
+ *
+ * Commands:
+ *
+ \verbatim
+ O       Take video snapshot
+ \endverbatim
+ */
+
+
 static bool flag_enc, flag_dec;
 
 
@@ -63,7 +77,7 @@ static struct vidfilt snapshot = {
 
 
 static const struct cmd cmdv[] = {
-	{'o', 0, "Take video snapshot", do_snapshot },
+	{'O', 0, "Take video snapshot", do_snapshot },
 };
 
 

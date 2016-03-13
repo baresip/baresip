@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <unistd.h>
 #include <pthread.h>
@@ -11,8 +12,24 @@
 #include <baresip.h>
 
 
+/**
+ * @defgroup fakevideo fakevideo
+ *
+ * Fake video source and display module
+ *
+ * This module can be used to generate fake video input frames, and to
+ * send output video frames to a fake non-existant display.
+ *
+ * Example config:
+ \verbatim
+  video_source    fakevideo,nil
+  video_display   fakevideo,nil
+ \endverbatim
+ */
+
+
 struct vidsrc_st {
-	struct vidsrc *vs;  /* inheritance */
+	const struct vidsrc *vs;  /* inheritance */
 	struct vidframe *frame;
 	pthread_t thread;
 	bool run;
@@ -22,7 +39,7 @@ struct vidsrc_st {
 };
 
 struct vidisp_st {
-	struct vidisp *vd;  /* inheritance */
+	const struct vidisp *vd;  /* inheritance */
 };
 
 
@@ -61,19 +78,17 @@ static void src_destructor(void *arg)
 	}
 
 	mem_deref(st->frame);
-	mem_deref(st->vs);
 }
 
 
 static void disp_destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
-
-	mem_deref(st->vd);
+	(void)st;
 }
 
 
-static int src_alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		     struct media_ctx **ctx, struct vidsrc_prm *prm,
 		     const struct vidsz *size, const char *fmt,
 		     const char *dev, vidsrc_frame_h *frameh,
@@ -94,7 +109,7 @@ static int src_alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = mem_ref(vs);
+	st->vs     = vs;
 	st->fps    = prm->fps;
 	st->frameh = frameh;
 	st->arg    = arg;
@@ -120,7 +135,7 @@ static int src_alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 }
 
 
-static int disp_alloc(struct vidisp_st **stp, struct vidisp *vd,
+static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		      struct vidisp_prm *prm, const char *dev,
 		      vidisp_resize_h *resizeh, void *arg)
 {
@@ -137,7 +152,7 @@ static int disp_alloc(struct vidisp_st **stp, struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = mem_ref(vd);
+	st->vd = vd;
 
 	*stp = st;
 

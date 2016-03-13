@@ -323,37 +323,6 @@ static int encode_uri_user(struct re_printf *pf, const struct uri *uri)
 }
 
 
-/* TODO: move interactive code away from CORE, to a module */
-static int password_prompt(struct account *acc)
-{
-	char pwd[64];
-	char *nl;
-	int err;
-
-	(void)re_printf("Please enter password for %r@%r: ",
-			&acc->luri.user, &acc->luri.host);
-
-	/* note: blocking UI call */
-	fgets(pwd, sizeof(pwd), stdin);
-	pwd[sizeof(pwd) - 1] = '\0';
-
-	nl = strchr(pwd, '\n');
-	if (nl == NULL) {
-		(void)re_printf("Invalid password (0 - 63 characters"
-				" followed by newline)\n");
-		return EINVAL;
-	}
-
-	*nl = '\0';
-
-	err = str_dup(&acc->auth_pass, pwd);
-	if (err)
-		return err;
-
-	return 0;
-}
-
-
 int account_alloc(struct account **accp, const char *sipaddr)
 {
 	struct account *acc;
@@ -399,7 +368,11 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 	/* optional password prompt */
 	if (!pl_isset(&acc->laddr.uri.password)) {
-		err = password_prompt(acc);
+		(void)re_printf("Please enter password for %r@%r: ",
+				&acc->luri.user, &acc->luri.host);
+
+		/* TODO: move interactive code away from CORE, to a module */
+		err = ui_password_prompt(&acc->auth_pass);
 		if (err)
 			goto out;
 	}
@@ -416,7 +389,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 		acc->mnat = mnat_find(acc->mnatid);
 		if (!acc->mnat) {
-			warning("account: medianat not found: %s\n",
+			warning("account: medianat not found: `%s'\n",
 				acc->mnatid);
 		}
 	}
@@ -424,7 +397,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	if (acc->mencid) {
 		acc->menc = menc_find(acc->mencid);
 		if (!acc->menc) {
-			warning("account: mediaenc not found: %s\n",
+			warning("account: mediaenc not found: `%s'\n",
 				acc->mencid);
 		}
 	}
@@ -520,6 +493,12 @@ uint32_t account_pubint(const struct account *acc)
 }
 
 
+enum answermode account_answermode(const struct account *acc)
+{
+	return acc ? acc->answermode : ANSWERMODE_MANUAL;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
@@ -572,6 +551,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	}
 	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);
 	err |= re_hprintf(pf, " regint:       %u\n", acc->regint);
+	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
 	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
 	err |= re_hprintf(pf, " rtpkeep:      %s\n", acc->rtpkeep);
 	err |= re_hprintf(pf, " sipnat:       %s\n", acc->sipnat);

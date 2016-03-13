@@ -7,6 +7,7 @@
 #
 #   USE_ALSA          ALSA audio driver
 #   USE_AMR           Adaptive Multi-Rate (AMR) audio codec
+#   USE_AUDIOUNIT     AudioUnit audio driver for OSX/iOS
 #   USE_AVCAPTURE     AVFoundation video capture for OSX/iOS
 #   USE_AVCODEC       avcodec video codec module
 #   USE_AVFORMAT      avformat video source module
@@ -20,7 +21,11 @@
 #   USE_G722_1        G.722.1 audio codec
 #   USE_G726          G.726 audio codec
 #   USE_GSM           GSM audio codec
-#   USE_GST           Gstreamer audio module
+#   USE_GST           Gstreamer 0.10 audio module
+#   USE_GST1          Gstreamer 1.0 audio module
+#   USE_GST_VIDEO     Gstreamer 0.10 video module
+#   USE_GST_VIDEO1    Gstreamer 1.0 video module
+#   USE_GTK           GTK+ user interface
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
 #   USE_L16           L16 audio codec
@@ -65,9 +70,11 @@ USE_AMR   := $(shell [ -d $(SYSROOT)/include/opencore-amrnb ] || \
 	[ -d $(SYSROOT)/include/amrnb ] && echo "yes")
 USE_AVCODEC := $(shell [ -f $(SYSROOT)/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT)/local/include/libavcodec/avcodec.h ] || \
+	[ -f $(SYSROOT)/include/$(MACHINE)/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavcodec/avcodec.h ] && echo "yes")
 USE_AVFORMAT := $(shell [ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/local/include/libavformat/avformat.h ] || \
+	[ -f $(SYSROOT)/include/$(MACHINE)/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ] && echo "yes")
 USE_BV32  := $(shell [ -f $(SYSROOT)/include/bv32/bv32.h ] || \
 	[ -f $(SYSROOT)/local/include/bv32/bv32.h ] && echo "yes")
@@ -94,8 +101,13 @@ USE_GSM := $(shell [ -f $(SYSROOT)/include/gsm.h ] || \
 	[ -f $(SYSROOT)/include/gsm/gsm.h ] || \
 	[ -f $(SYSROOT)/local/include/gsm.h ] || \
 	[ -f $(SYSROOT)/local/include/gsm/gsm.h ] && echo "yes")
-USE_GST := $(shell [ -f $(SYSROOT)/include/gstreamer-0.10/gst/gst.h ] || \
-	[ -f $(SYSROOT_ALT)/include/gstreamer-0.10/gst/gst.h ] && echo "yes")
+USE_GST := $(shell pkg-config --exists gstreamer-0.10 && echo "yes")
+USE_GST1 := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
+USE_GST_VIDEO := \
+	$(shell pkg-config --exists gstreamer-0.10 gstreamer-app-0.10 \
+		&& echo "yes")
+USE_GST_VIDEO1 := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
+		&& echo "yes")
 USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT)/local/include/iLBC_define.h ] && echo "yes")
 USE_ISAC := $(shell [ -f $(SYSROOT)/include/isac.h ] || \
@@ -167,10 +179,21 @@ USE_V4L2 := $(shell [ -f $(SYSROOT)/include/linux/videodev2.h ] || \
 USE_X11 := $(shell [ -f $(SYSROOT)/include/X11/Xlib.h ] || \
 	[ -f $(SYSROOT)/local/include/X11/Xlib.h ] || \
 	[ -f $(SYSROOT_ALT)/include/X11/Xlib.h ] && echo "yes")
+USE_ZRTP := $(shell [ -f $(SYSROOT)/include/libzrtp/zrtp.h ] || \
+	[ -f $(SYSROOT)/local/include/libzrtp/zrtp.h ] || \
+	[ -f $(SYSROOT_ALT)/include/libzrtp/zrtp.h ] && echo "yes")
 USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
 	&& echo "yes")
+USE_GTK := $(shell [ -f $(SYSROOT)/include/gtk-2.0/gtk/gtk.h ] || \
+	[ -f $(SYSROOT)/local/include/gtk-2.0/gtk/gtk.h ] || \
+	[ -f $(SYSROOT_ALT)/include/gtk-2.0/gtk/gtk.h ] && echo "yes")
+else
+# Windows.
+# Accounts for mingw with Windows SDK (formerly known as Platform SDK)
+# mounted at /winsdk
+USE_DSHOW := $(shell [ -f /winsdk/Include/um/dshow.h ] && echo "yes")
 endif
 
 # Platform specific modules
@@ -180,6 +203,10 @@ USE_OPENGL    := yes
 
 USE_AVFOUNDATION := \
 	$(shell [ -d /System/Library/Frameworks/AVFoundation.framework ] \
+		&& echo "yes")
+
+USE_AUDIOUNIT := \
+	$(shell [ -d /System/Library/Frameworks/AudioUnit.framework ] \
 		&& echo "yes")
 
 ifneq ($(USE_AVFOUNDATION),)
@@ -198,6 +225,16 @@ ifeq ($(OS),win32)
 USE_WINWAVE := yes
 MODULES   += wincons
 endif
+ifeq ($(OS),openbsd)
+MODULES   += sndio
+endif
+ifeq ($(OS),freebsd)
+MODULES   += dtmfio
+endif
+
+ifneq ($(USE_GTK),)
+USE_LIBNOTIFY := $(shell pkg-config 'libnotify glib-2.0 < 2.40' && echo "yes")
+endif
 
 endif
 
@@ -206,12 +243,11 @@ endif
 MODULES   += $(EXTRA_MODULES)
 MODULES   += stun turn ice natbd auloop presence
 MODULES   += menu contact vumeter mwi account natpmp httpd
-MODULES   += selftest
 MODULES   += srtp
 MODULES   += uuid
 
 ifneq ($(HAVE_PTHREAD),)
-MODULES   += aubridge
+MODULES   += aubridge aufile
 endif
 ifneq ($(USE_VIDEO),)
 MODULES   += vidloop selfview vidbridge
@@ -227,6 +263,9 @@ endif
 ifneq ($(USE_AMR),)
 MODULES   += amr
 endif
+ifneq ($(USE_AUDIOUNIT),)
+MODULES   += audiounit
+endif
 ifneq ($(USE_AVCAPTURE),)
 MODULES   += avcapture
 endif
@@ -241,6 +280,7 @@ MODULES   += bv32
 endif
 ifneq ($(USE_CAIRO),)
 MODULES   += cairo
+MODULES   += vidinfo
 ifneq ($(USE_MPG123),)
 MODULES   += rst
 endif
@@ -278,6 +318,15 @@ MODULES   += gsm
 endif
 ifneq ($(USE_GST),)
 MODULES   += gst
+endif
+ifneq ($(USE_GST1),)
+MODULES   += gst1
+endif
+ifneq ($(USE_GST_VIDEO),)
+MODULES   += gst_video
+endif
+ifneq ($(USE_GST_VIDEO1),)
+MODULES   += gst_video1
 endif
 ifneq ($(USE_ILBC),)
 MODULES   += ilbc
@@ -350,4 +399,14 @@ MODULES   += winwave
 endif
 ifneq ($(USE_X11),)
 MODULES   += x11 x11grab
+endif
+ifneq ($(USE_ZRTP),)
+MODULES   += zrtp
+endif
+ifneq ($(USE_GTK),)
+MODULES   += gtk
+endif
+
+ifneq ($(USE_DSHOW),)
+MODULES   += dshow
 endif

@@ -1,10 +1,25 @@
 /**
  * @file httpd.c Webserver UI module
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <re.h>
 #include <baresip.h>
+
+
+/**
+ * @defgroup httpd httpd
+ *
+ * HTTP Server module for the User-Interface
+ *
+ * Open your favourite web browser and point it to http://127.0.0.1:8000/
+ *
+ * Example URLs:
+ \verbatim
+  http://127.0.0.1:8000?h                  -- Print the Help menu
+  http://127.0.0.1:8000?d1234@target.com   -- Make an outgoing call
+ \endverbatim
+ */
 
 
 static struct http_sock *httpsock;

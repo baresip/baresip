@@ -1,7 +1,7 @@
 /**
- * @file main.c  Main application code
+ * @file src/main.c  Main application code
  *
- * Copyright (C) 2010 - 2011 Creytiv.com
+ * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #ifdef SOLARIS
 #define __EXTENSIONS__ 1
@@ -34,22 +34,50 @@ static void signal_handler(int sig)
 }
 
 
+static void usage(void)
+{
+	(void)re_fprintf(stderr,
+			 "Usage: baresip [options]\n"
+			 "options:\n"
+#if HAVE_INET6
+			 "\t-6               Prefer IPv6\n"
+#endif
+			 "\t-d               Daemon\n"
+			 "\t-e <commands>    Exec commands\n"
+			 "\t-f <path>        Config path\n"
+			 "\t-m <module>      Pre-load modules (repeat)\n"
+			 "\t-p <path>        Audio files\n"
+			 "\t-h -?            Help\n"
+			 "\t-t               Test and exit\n"
+			 "\t-u <parameters>  Extra UA parameters\n"
+			 "\t-v               Verbose debug\n"
+			 );
+}
+
+
 int main(int argc, char *argv[])
 {
 	bool prefer_ipv6 = false, run_daemon = false, test = false;
+	const char *ua_eprm = NULL;
 	const char *exec = NULL;
+	const char *modv[16];
+	size_t modc = 0;
 	int err;
 
 	(void)re_fprintf(stderr, "baresip v%s"
-			 " Copyright (C) 2010 - 2015"
+			 " Copyright (C) 2010 - 2016"
 			 " Alfred E. Heggestad et al.\n",
 			 BARESIP_VERSION);
 
 	(void)sys_coredump_set(true);
 
+	err = libre_init();
+	if (err)
+		goto out;
+
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "6de:f:p:hvt");
+		const int c = getopt(argc, argv, "6de:f:p:hu:vtm:");
 		if (0 > c)
 			break;
 
@@ -57,20 +85,7 @@ int main(int argc, char *argv[])
 
 		case '?':
 		case 'h':
-			(void)re_fprintf(stderr,
-					 "Usage: baresip [options]\n"
-					 "options:\n"
-#if HAVE_INET6
-					 "\t-6               Prefer IPv6\n"
-#endif
-					 "\t-d               Daemon\n"
-					 "\t-e <commands>    Exec commands\n"
-					 "\t-f <path>        Config path\n"
-					 "\t-p <path>        Audio files\n"
-					 "\t-h -?            Help\n"
-					 "\t-t               Test and exit\n"
-					 "\t-v               Verbose debug\n"
-					 );
+			usage();
 			return -2;
 
 #if HAVE_INET6
@@ -91,12 +106,26 @@ int main(int argc, char *argv[])
 			conf_path_set(optarg);
 			break;
 
+		case 'm':
+			if (modc >= ARRAY_SIZE(modv)) {
+				warning("max %zu modules\n",
+					ARRAY_SIZE(modv));
+				err = EINVAL;
+				goto out;
+			}
+			modv[modc++] = optarg;
+			break;
+
 		case 'p':
 			play_set_path(optarg);
 			break;
 
 		case 't':
 			test = true;
+			break;
+
+		case 'u':
+			ua_eprm = optarg;
 			break;
 
 		case 'v':
@@ -112,14 +141,27 @@ int main(int argc, char *argv[])
 	(void)argv;
 #endif
 
-	err = libre_init();
-	if (err)
-		goto out;
-
 	err = conf_configure();
 	if (err) {
 		warning("main: configure failed: %m\n", err);
 		goto out;
+	}
+
+	/* NOTE: must be done after all arguments are processed */
+	if (modc) {
+		size_t i;
+
+		info("pre-loading modules: %zu\n", modc);
+
+		for (i=0; i<modc; i++) {
+
+			err = module_preload(modv[i]);
+			if (err) {
+				re_fprintf(stderr,
+					   "could not pre-load module"
+					   " '%s' (%m)\n", modv[i], err);
+			}
+		}
 	}
 
 	/* Initialise User Agents */
@@ -127,6 +169,12 @@ int main(int argc, char *argv[])
 		      true, true, true, prefer_ipv6);
 	if (err)
 		goto out;
+
+	if (ua_eprm) {
+		err = uag_set_extra_params(ua_eprm);
+		if (err)
+			goto out;
+	}
 
 	if (test)
 		goto out;
@@ -157,7 +205,7 @@ int main(int argc, char *argv[])
 		ua_stop_all(true);
 
 	ua_close();
-	mod_close();
+	conf_close();
 
 	libre_close();
 

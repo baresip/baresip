@@ -9,11 +9,39 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <comutil.h>
 #include <commctrl.h>
 #include <dshow.h>
-#include <qedit.h>
 
+
+/**
+ * @defgroup dshow dshow
+ *
+ * Windows DirectShow video-source
+ *
+ *
+ * References:
+ *
+ *    http://www.alsa-project.org/main/index.php/Main_Page
+ */
+
+
+/* a piece from Google WebM's qedit.h:
+ *
+ *   https://code.google.com/p/webm/source/browse/qedit.h?repo=udpsample
+ */
+static const
+IID IID_ISampleGrabber = {
+	0x6b652fff, 0x11fe, 0x4fce,
+	{ 0x92, 0xad, 0x02, 0x66, 0xb5, 0xd7, 0xc7, 0x8f }
+};
+
+static const
+IID IID_ISampleGrabberCB = {
+	0x0579154a, 0x2b53, 0x4994,
+	{ 0xb0, 0xd0, 0xe7, 0x73, 0x14, 0x8e, 0xff, 0x85 }
+};
+
+#include "qedit.h"
 
 const CLSID CLSID_SampleGrabber = { 0xc1f400a0, 0x3f08, 0x11d3,
   { 0x9f, 0x0b, 0x00, 0x60, 0x08, 0x03, 0x9e, 0x37 }
@@ -23,7 +51,7 @@ const CLSID CLSID_SampleGrabber = { 0xc1f400a0, 0x3f08, 0x11d3,
 class Grabber;
 
 struct vidsrc_st {
-	struct vidsrc *vs;  /* inheritance */
+	const struct vidsrc *vs;  /* inheritance */
 
 	ICaptureGraphBuilder2 *capture;
 	IBaseFilter *grabber_filter;
@@ -351,12 +379,10 @@ static void destructor(void *arg)
 		st->graph->Release();
 
 	delete st->grab;
-
-	mem_deref(st->vs);
 }
 
 
-static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
+static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size,
 		 const char *fmt, const char *dev,
@@ -382,7 +408,7 @@ static int alloc(struct vidsrc_st **stp, struct vidsrc *vs,
 	if (err)
 		goto out;
 
-	st->vs = (struct vidsrc *)mem_ref(vs);
+	st->vs = vs;
 
 	st->size   = *size;
 	st->frameh = frameh;

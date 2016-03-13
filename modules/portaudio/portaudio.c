@@ -26,7 +26,7 @@
 
 
 struct ausrc_st {
-	struct ausrc *as;      /* inheritance */
+	const struct ausrc *as;      /* inheritance */
 	PaStream *stream_rd;
 	ausrc_read_h *rh;
 	void *arg;
@@ -35,7 +35,7 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	struct auplay *ap;      /* inheritance */
+	const struct auplay *ap;      /* inheritance */
 	PaStream *stream_wr;
 	auplay_write_h *wh;
 	void *arg;
@@ -175,8 +175,6 @@ static void ausrc_destructor(void *arg)
 		Pa_AbortStream(st->stream_rd);
 		Pa_CloseStream(st->stream_rd);
 	}
-
-	mem_deref(st->as);
 }
 
 
@@ -190,12 +188,10 @@ static void auplay_destructor(void *arg)
 		Pa_AbortStream(st->stream_wr);
 		Pa_CloseStream(st->stream_wr);
 	}
-
-	mem_deref(st->ap);
 }
 
 
-static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
+static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct media_ctx **ctx,
 		     struct ausrc_prm *prm, const char *device,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -220,7 +216,7 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = mem_ref(as);
+	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 	st->ch  = prm->ch;
@@ -241,7 +237,7 @@ static int src_alloc(struct ausrc_st **stp, struct ausrc *as,
 }
 
 
-static int play_alloc(struct auplay_st **stp, struct auplay *ap,
+static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		      struct auplay_prm *prm, const char *device,
 		      auplay_write_h *wh, void *arg)
 {
@@ -263,7 +259,7 @@ static int play_alloc(struct auplay_st **stp, struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = mem_ref(ap);
+	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 	st->ch  = prm->ch;

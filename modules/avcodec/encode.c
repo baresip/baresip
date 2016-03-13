@@ -15,6 +15,11 @@
 #include "avcodec.h"
 
 
+#if LIBAVUTIL_VERSION_MAJOR < 52
+#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
+#endif
+
+
 enum {
 	DEFAULT_GOP_SIZE =   10,
 };
@@ -37,6 +42,8 @@ struct videnc_state {
 	struct videnc_param encprm;
 	struct vidsz encsize;
 	enum AVCodecID codec_id;
+	videnc_packet_h *pkth;
+	void *arg;
 
 	union {
 		struct {
@@ -169,13 +176,12 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->width     = size->w;
 	st->ctx->height    = size->h;
 	st->ctx->gop_size  = DEFAULT_GOP_SIZE;
-	st->ctx->pix_fmt   = PIX_FMT_YUV420P;
+	st->ctx->pix_fmt   = AV_PIX_FMT_YUV420P;
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
 
 	/* params to avoid libavcodec/x264 default preset error */
 	if (st->codec_id == AV_CODEC_ID_H264) {
-		st->ctx->me_method = ME_UMH;
 		st->ctx->me_range = 16;
 		st->ctx->qmin = 10;
 		st->ctx->qmax = 51;
@@ -408,12 +414,13 @@ static int open_encoder_x264(struct videnc_state *st, struct videnc_param *prm,
 
 
 int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
-		  struct videnc_param *prm, const char *fmtp)
+		  struct videnc_param *prm, const char *fmtp,
+		  videnc_packet_h *pkth, void *arg)
 {
 	struct videnc_state *st;
 	int err = 0;
 
-	if (!vesp || !vc || !prm)
+	if (!vesp || !vc || !prm || !pkth)
 		return EINVAL;
 
 	if (*vesp)
@@ -424,6 +431,8 @@ int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		return ENOMEM;
 
 	st->encprm = *prm;
+	st->pkth = pkth;
+	st->arg = arg;
 
 	st->codec_id = avcodec_resolve_codecid(vc->name);
 	if (st->codec_id == AV_CODEC_ID_NONE) {
@@ -475,8 +484,7 @@ int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 
 #ifdef USE_X264
 int encode_x264(struct videnc_state *st, bool update,
-		const struct vidframe *frame,
-		videnc_packet_h *pkth, void *arg)
+		const struct vidframe *frame)
 {
 	x264_picture_t pic_in, pic_out;
 	x264_nal_t *nal;
@@ -541,7 +549,7 @@ int encode_x264(struct videnc_state *st, bool update,
 		err = h264_nal_send(true, true, (i+1)==i_nal, hdr,
 				    nal[i].p_payload + offset,
 				    nal[i].i_payload - offset,
-				    st->encprm.pktsize, pkth, arg);
+				    st->encprm.pktsize, st->pkth, st->arg);
 	}
 
 	return err;
@@ -549,12 +557,11 @@ int encode_x264(struct videnc_state *st, bool update,
 #endif
 
 
-int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
-	   videnc_packet_h *pkth, void *arg)
+int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 {
 	int i, err, ret;
 
-	if (!st || !frame || !pkth || frame->fmt != VID_FMT_YUV420P)
+	if (!st || !frame || frame->fmt != VID_FMT_YUV420P)
 		return EINVAL;
 
 	if (!st->ctx || !vidsz_cmp(&st->encsize, &frame->size)) {
@@ -626,15 +633,18 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
 	switch (st->codec_id) {
 
 	case AV_CODEC_ID_H263:
-		err = h263_packetize(st, st->mb, pkth, arg);
+		err = h263_packetize(st, st->mb, st->pkth, st->arg);
 		break;
 
 	case AV_CODEC_ID_H264:
-		err = h264_packetize(st->mb, st->encprm.pktsize, pkth, arg);
+		err = h264_packetize(st->mb->buf, st->mb->end,
+				     st->encprm.pktsize,
+				     st->pkth, st->arg);
 		break;
 
 	case AV_CODEC_ID_MPEG4:
-		err = general_packetize(st->mb, st->encprm.pktsize, pkth, arg);
+		err = general_packetize(st->mb, st->encprm.pktsize,
+					st->pkth, st->arg);
 		break;
 
 	default:

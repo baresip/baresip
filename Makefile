@@ -13,7 +13,13 @@
 USE_VIDEO := 1
 
 PROJECT	  := baresip
-VERSION   := 0.4.12
+VERSION   := 0.4.17
+DESCR     := "Baresip is a modular SIP User-Agent with audio and video support"
+
+# Verbose and silent build modes
+ifeq ($(V),)
+HIDE=@
+endif
 
 ifndef LIBRE_MK
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \
@@ -49,6 +55,9 @@ CXXFLAGS  += -I$(LIBREM_PATH)/include
 CXXFLAGS  += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
 CXXFLAGS  += $(EXTRA_CXXFLAGS)
 
+# XXX: common for C/C++
+CPPFLAGS += -DHAVE_INTTYPES_H
+
 ifneq ($(LIBREM_PATH),)
 SPLINT_OPTIONS += -I$(LIBREM_PATH)/include
 CLANG_OPTIONS  += -I$(LIBREM_PATH)/include
@@ -56,6 +65,12 @@ endif
 
 ifeq ($(OS),win32)
 STATIC    := yes
+endif
+
+ifeq ($(OS),freebsd)
+ifneq ($(SYSROOT),)
+CFLAGS += -I$(SYSROOT)/local/include
+endif
 endif
 
 
@@ -78,12 +93,14 @@ endif
 BINDIR	:= $(PREFIX)/bin
 INCDIR  := $(PREFIX)/include
 BIN	:= $(PROJECT)$(BIN_SUFFIX)
+TEST_BIN	:= selftest$(BIN_SUFFIX)
 SHARED  := lib$(PROJECT)$(LIB_SUFFIX)
 STATICLIB  := libbaresip.a
 ifeq ($(STATIC),)
 MOD_BINS:= $(patsubst %,%$(MOD_SUFFIX),$(MODULES))
 endif
 APP_MK	:= src/srcs.mk
+TEST_MK	:= test/srcs.mk
 MOD_MK	:= $(patsubst %,modules/%/module.mk,$(MODULES))
 MOD_BLD	:= $(patsubst %,$(BUILD)/modules/%,$(MODULES))
 LIBDIR     := $(PREFIX)/lib
@@ -98,6 +115,7 @@ all: sanity $(MOD_BINS) $(BIN)
 modules:	$(MOD_BINS)
 
 include $(APP_MK)
+include $(TEST_MK)
 include $(MOD_MK)
 
 OBJS      := $(patsubst %.c,$(BUILD)/src/%.o,$(filter %.c,$(SRCS)))
@@ -105,6 +123,11 @@ OBJS      += $(patsubst %.m,$(BUILD)/src/%.o,$(filter %.m,$(SRCS)))
 OBJS      += $(patsubst %.S,$(BUILD)/src/%.o,$(filter %.S,$(SRCS)))
 
 APP_OBJS  := $(OBJS) $(patsubst %.c,$(BUILD)/src/%.o,$(APP_SRCS)) $(MOD_OBJS)
+
+LIB_OBJS  := $(OBJS) $(MOD_OBJS)
+
+TEST_OBJS := $(patsubst %.c,$(BUILD)/test/%.o,$(filter %.c,$(TEST_SRCS)))
+TEST_OBJS += $(patsubst %.cpp,$(BUILD)/test/%.o,$(filter %.cpp,$(TEST_SRCS)))
 
 ifneq ($(LIBREM_PATH),)
 LIBS	+= -L$(LIBREM_PATH)
@@ -121,7 +144,15 @@ endif
 LIBS      += -lrem -lm
 LIBS      += -L$(SYSROOT)/lib
 
+ifeq ($(OS),win32)
+TEST_LIBS += -static-libgcc
+endif
+
+
 -include $(APP_OBJS:.o=.d)
+
+-include $(TEST_OBJS:.o=.d)
+
 
 sanity:
 ifeq ($(LIBRE_MK),)
@@ -140,41 +171,70 @@ endif
 Makefile:	mk/*.mk $(MOD_MK) $(LIBRE_MK)
 
 
-$(SHARED): $(APP_OBJS)
+$(SHARED): $(LIB_OBJS)
 	@echo "  LD      $@"
-	@$(LD) $(LFLAGS) $(SH_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
+	$(HIDE)$(LD) $(LFLAGS) $(SH_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
 
-$(STATICLIB): $(APP_OBJS)
+$(STATICLIB): $(LIB_OBJS)
 	@echo "  AR      $@"
 	@rm -f $@; $(AR) $(AFLAGS) $@ $^
 ifneq ($(RANLIB),)
 	@echo "  RANLIB  $@"
-	@$(RANLIB) $@
+	$(HIDE)$(RANLIB) $@
 endif
+
+libbaresip.pc:
+	@echo 'prefix='$(PREFIX) > libbaresip.pc
+	@echo 'exec_prefix=$${prefix}' >> libbaresip.pc
+	@echo 'libdir=$${prefix}/lib' >> libbaresip.pc
+	@echo 'includedir=$${prefix}/include' >> libbaresip.pc
+	@echo '' >> libbaresip.pc
+	@echo 'Name: libbaresip' >> libbaresip.pc
+	@echo 'Description: $(DESCR)' >> libbaresip.pc
+	@echo 'Version: '$(VERSION) >> libbaresip.pc
+	@echo 'URL: http://www.creytiv.com/baresip.html' >> libbaresip.pc
+	@echo 'Libs: -L$${libdir} -lbaresip' >> libbaresip.pc
+	@echo 'Cflags: -I$${includedir}' >> libbaresip.pc
 
 # GPROF requires static linking
 $(BIN):	$(APP_OBJS)
 	@echo "  LD      $@"
 ifneq ($(GPROF),)
-	@$(LD) $(LFLAGS) $(APP_LFLAGS) $^ ../re/libre.a $(LIBS) -o $@
+	$(HIDE)$(LD) $(LFLAGS) $(APP_LFLAGS) $^ ../re/libre.a $(LIBS) -o $@
 else
-	@$(LD) $(LFLAGS) $(APP_LFLAGS) $^ -L$(LIBRE_SO) -lre $(LIBS) -o $@
+	$(HIDE)$(LD) $(LFLAGS) $(APP_LFLAGS) $^ \
+		-L$(LIBRE_SO) -lre $(LIBS) -o $@
 endif
+
+
+.PHONY: test
+test:	$(TEST_BIN)
+	./$(TEST_BIN)
+
+$(TEST_BIN):	$(STATICLIB) $(TEST_OBJS)
+	@echo "  LD      $@"
+	$(HIDE)$(CXX) $(LFLAGS) $(TEST_OBJS) \
+		-L$(LIBRE_SO) -L. \
+		-l$(PROJECT) -lre $(LIBS) $(TEST_LIBS) -o $@
 
 $(BUILD)/%.o: %.c $(BUILD) Makefile $(APP_MK)
 	@echo "  CC      $@"
-	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+
+$(BUILD)/%.o: %.cpp $(BUILD) Makefile $(APP_MK)
+	@echo "  CXX     $@"
+	$(HIDE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/%.o: %.m $(BUILD) Makefile $(APP_MK)
 	@echo "  OC      $@"
-	@$(CC) $(CFLAGS) $(OBJCFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CFLAGS) $(OBJCFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/%.o: %.S $(BUILD) Makefile $(APP_MK)
 	@echo "  AS      $@"
-	@$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD): Makefile
-	@mkdir -p $(BUILD)/src $(MOD_BLD)
+	@mkdir -p $(BUILD)/src $(MOD_BLD) $(BUILD)/test/mock
 	@touch $@
 
 install: $(BIN) $(MOD_BINS)
@@ -187,11 +247,12 @@ install: $(BIN) $(MOD_BINS)
 
 install-dev: install-shared install-static
 
-install-shared: $(SHARED)
+install-shared: $(SHARED) libbaresip.pc
 	@mkdir -p $(DESTDIR)$(INCDIR)
 	$(INSTALL) -Cm 0644 include/baresip.h $(DESTDIR)$(INCDIR)
-	@mkdir -p $(DESTDIR)$(LIBDIR)
+	@mkdir -p $(DESTDIR)$(LIBDIR) $(DESTDIR)$(LIBDIR)/pkgconfig
 	$(INSTALL) -m 0644 $(SHARED) $(DESTDIR)$(LIBDIR)
+	$(INSTALL) -m 0644 libbaresip.pc $(DESTDIR)$(LIBDIR)/pkgconfig
 
 install-static: $(STATICLIB)
 	@mkdir -p $(DESTDIR)$(INCDIR)
@@ -202,10 +263,14 @@ install-static: $(STATICLIB)
 uninstall:
 	@rm -f $(DESTDIR)$(PREFIX)/bin/$(BIN)
 	@rm -rf $(DESTDIR)$(MOD_PATH)
+	@rm -f $(DESTDIR)$(PREFIX)/lib/$(SHARED)
+	@rm -f $(DESTDIR)$(PREFIX)/lib/$(STATICLIB)
+	@rm -f $(DESTDIR)$(PREFIX)/lib/pkgconfig/libbaresip.pc
 
 .PHONY: clean
 clean:
-	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD)
+	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD) $(TEST_BIN) \
+		$(STATICLIB) libbaresip.pc
 	@rm -f *stamp \
 	`find . -name "*.[od]"` \
 	`find . -name "*~"` \

@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <fcntl.h>
 #ifdef HAVE_UNISTD_H
@@ -31,7 +32,7 @@
 #endif
 
 
-#if defined (WIN32) || defined (__SYMBIAN32__)
+#if defined (WIN32)
 #define DIR_SEP "\\"
 #else
 #define DIR_SEP "/"
@@ -292,7 +293,7 @@ int conf_configure(void)
 	char path[256], file[256];
 	int err;
 
-#if defined (WIN32) || defined (__SYMBIAN32__)
+#if defined (WIN32)
 	dbg_init(DBG_INFO, DBG_NONE);
 #endif
 
@@ -314,6 +315,7 @@ int conf_configure(void)
 			goto out;
 	}
 
+	conf_obj = mem_deref(conf_obj);
 	err = conf_alloc(&conf_obj, file);
 	if (err)
 		goto out;
@@ -323,7 +325,6 @@ int conf_configure(void)
 		goto out;
 
  out:
-	conf_obj = mem_deref(conf_obj);
 	return err;
 }
 
@@ -332,22 +333,12 @@ int conf_configure(void)
  * Load all modules from config file
  *
  * @return 0 if success, otherwise errorcode
+ *
+ * @note conf_configure must be called first
  */
 int conf_modules(void)
 {
-	char path[256], file[256];
 	int err;
-
-	err = conf_path_get(path, sizeof(path));
-	if (err)
-		return err;
-
-	if (re_snprintf(file, sizeof(file), "%s/config", path) < 0)
-		return ENOMEM;
-
-	err = conf_alloc(&conf_obj, file);
-	if (err)
-		goto out;
 
 	err = module_init(conf_obj);
 	if (err) {
@@ -363,7 +354,6 @@ int conf_modules(void)
 #endif
 
  out:
-	conf_obj = mem_deref(conf_obj);
 	return err;
 }
 
@@ -377,5 +367,15 @@ int conf_modules(void)
  */
 struct conf *conf_cur(void)
 {
+	if (!conf_obj) {
+		warning("conf: no config object\n");
+	}
 	return conf_obj;
+}
+
+
+void conf_close(void)
+{
+	mod_close();
+	conf_obj = mem_deref(conf_obj);
 }

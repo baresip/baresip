@@ -16,12 +16,19 @@
 #include "vp8.h"
 
 
-/*
- * Experimental support for WebM VP8 video codec:
+/**
+ * @defgroup vpx vpx
+ *
+ * The VP8 video codec
+ *
+ * This module implements the VP8 video codec that is compatible
+ * with the WebRTC standard.
+ *
+ * References:
  *
  *     http://www.webmproject.org/
  *
- *     http://tools.ietf.org/html/draft-ietf-payload-vp8-08
+ *     http://tools.ietf.org/html/draft-ietf-payload-vp8-17
  */
 
 

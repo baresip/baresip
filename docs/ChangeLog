@@ -1,3 +1,261 @@
+2016-01-17 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.17
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.4.17
+	* NOTE: Requires libre v0.4.14 or later
+	        Requires librem v0.4.7 or later
+
+	* new modules:
+	  - echo        Echo server module
+	  - jack        JACK Audio Connection Kit audio-driver
+
+	* baresip-core:
+	  - config: keep config object in memory
+	  - ua: moved playing of ringtones out of core, to "menu" module
+		(let's keep the core nice and slim..)
+	  - ui: added ui_password_prompt()
+
+	* selftest:
+	  - silence debug/info log by default, only print warnings
+	    (use -v to see verbose logging)
+
+	* Modules:
+
+	* alsa: added config option to specify the sample format
+		"alsa_sample_format    {s16,float,s24_3le}"
+		thanks to Ola Palm for valuable feedback
+
+	* audiounit: fix recording on OSX (thanks Sebastian Reimers)
+		     print hardware samplerate in debug mode
+
+	* auloop: add support for 44100 Hz samplerate
+
+	* daala: update to latest libdaala API (thanks Dmitrij D. Czarkoff)
+
+	* echo: new module which implements a simple Echo-server, to
+		be used in combination with the aubridge.so module.
+		contributed by Sebastian Reimers
+
+	* gtk: fixes to support C89 compiler (thanks Dmitrij D. Czarkoff)
+
+	* jack: new module which implements audio-driver for JACK
+
+	* menu: playing of ringtones moved here, from ua.c
+
+	* sndio: fix crash when device open fails (thanks Dmitrij D. Czarkoff)
+
+
+2015-12-01 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.16
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT commit bed2241da3261e472f09b21958f0cc1324a94f27
+	* GIT tag: v0.4.16
+	* NOTE: Requires libre v0.4.14 or later
+
+	* new modules:
+	  - v4l2_codec  Video4Linux2 video codec (H264 hardware encoding)
+	  - vidinfo     Video info overlay module
+
+	* baresip-core:
+	  - audio: add audio_set_source() and audio_set_player()
+	  - audio: flush tx-buffer for all modes (thanks Thibault Gueslin)
+	  - call: add call_is_outgoing()
+	  - call: check address-family of incoming SDP offer (thanks Olle)
+	  - h264: move H.264 packetization code to core
+	  - main: add -u option to append extra global UA parameters
+	  - main: pre-load modules after all arguments are parsed
+	  - ua: add events UA_EVENT_SHUTDOWN,UA_EXIT
+	  - ua: add ua_hold_answer()
+	  - ua: add ua_set_media_af()
+	  - ua: delay mod-unloading if mods has a ref to struct ua
+
+	* build:
+	  - add verbose build with V=1 (thanks Dmitrij D. Czarkoff)
+	  - add pkg-config file (thanks William King)
+	  - add travis.yml file for Github build-system
+
+	* Modules:
+
+	* alsa: fix memory leaks
+
+	* avcodec: move common H.264 packetization code to core
+
+	* cairo: use pkg-config in makefile
+
+	* daala: update to latest libdaala (thanks Dmitrij D. Czarkoff)
+
+	* gst_video: use H.264 packetization API from core
+
+	* gst_video1: use H.264 packetization API from core
+
+	* gtk: fix segmentation fault on window close
+
+	* mwi: add 500ms delay after closing subscription
+
+	* oss: use pthread for ausrc instead of fd_listen (fixes FreeBSD)
+
+	* presence: use sipevent_sock instance from UA core
+		    add 500ms delay after closing subscription
+
+	* v4l2_codec: new module
+
+	* vidinfo: new module
+
+	* zrtp: fix ZRTP over TURN by moving helper to layer 10
+		fix ZID verification (thanks Ingo Feinerer)
+
+
+2015-09-26 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.15
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT commit 86262a6fc17e19e2be82eb8a2a05ec0f884d3d38
+	* GIT tag: v0.4.15
+	* NOTE: Requires libre v0.4.13 or later
+
+	* added selftest binary
+
+	* baresip-core:
+	  - audio: fix televent when pt != 101 (reported by AndyJRobinson)
+	  - magic: use __func__ for C99 or later
+	  - sip: make sip_req_send() public
+	  - ua: add UA_EVENT_CALL_DTMF_START/END, thanks Gary Metalle
+
+	* Modules:
+
+	* alsa: added extra logging
+
+	* gtk: add support for libnotify (thanks Charles Lehner)
+
+	* video: fix potential null deref (thanks Tomasz Ostrowski)
+
+	* zrtp: added 36-bytes preamble for TURN-header
+
+
+2015-08-08 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.14
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT commit ebac23b0692de71ee4c3a436f0372013150c937f
+	* GIT tag: v0.4.14
+	* NOTE: Requires libre v0.4.13 or later
+
+	* new modules:
+	  - gtk		GTK+ 2.0 UI (thanks Charles E. Lehner)
+	  - gst1	Gstreamer 1.0 audio module
+	  - gst_video1	Gstreamer 1.0 video module (thanks Thomas Strobel)
+	  - daala	Experimental video-codec using Daala
+
+	* baresip-core:
+	  - baresip: added -m argument to pre-load modules
+	  - config: add kqueue to sample config (thanks Dmitrij D. Czarkoff)
+	  - log: make code C89 compliant (thanks Victor Sergienko)
+	  - module: added module_preload()
+	  - ua: add CALL_EVENT_TRANSFER_FAILED
+	  - ua: skip initial white space from uri (thanks Juha Heinanen)
+	  - ua: ua_prev_call()
+	  - videnc: move videnc_packet_h to update-handler
+
+	* build:
+	  - added optional $(MOD)_CFLAGS for local module CFLAGS
+	  - added project file for Visual C++ Express 2010
+	  - freebsd: add include path to $(SYSROOT)/local/include
+	    (thanks Hellmuth Michaelis)
+
+	* Modules:
+
+	* avcodec: make code C89 compliant (thanks Victor Sergienko)
+
+	* cons: make code C89 compliant (thanks Victor Sergienko)
+
+	* daala: new module
+
+	* dshow: updates for VC2010 (thanks Victor Sergienko)
+
+	* gst1: new module
+
+	* gst_video1: new module
+
+	* gtk: new module
+
+	* menu: fix crash when 0 UAs (thanks Hans Petter Selasky)
+		added command 'H' to hold previous call (thanks xanm)
+
+	* wincons: make code C89 compliant (thanks ggcoding)
+
+
+2015-06-20 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.13
+
+	* GIT commit 2e3e825ef5532dfde5a8b52de9ebaac51aa20a9c
+	* NOTE: Requires libre v0.4.12 or later
+
+	* new modules:
+	  - aufile      Audio module for using a WAV-file as audio input
+	  - b2bua       Back-to-Back User-Agent (B2BUA) module
+	  - codec2      CODEC2 audio codec
+	  - gst_video   Gstreamer video codec
+	  - h265        H.265 (HEVC) video codec
+
+	* baresip-core:
+	  - contact: add support for access-control (thanks Doug Blewett)
+	  - ausrc: change base-class to a const pointer
+	  - auplay: change base-class to a const pointer
+	  - vidsrc: change base-class to a const pointer
+	  - vidisp: change base-class to a const pointer
+	  - video: smooth sending of video packets
+
+
+	* Modules:
+
+	* amr: added support for octet-align mode (thanks to Stefan Sayer)
+
+	* aubridge: copy audio-samples if resampler not needed
+
+	* aufile: new module for using a WAV-file as audio source
+
+	* avcapture: only register 1 video source
+
+	* avformat: fix segfault on recent versions of libav
+
+	* b2bua: new experimental module
+
+	* codec2: new module for CODEC2 audio codec
+
+	* dtls_srtp: uppercase fingerprint, interop (thanks Juha Heinanen)
+		     alternative SDP protocols for interop
+
+	* dtmfio: unregister event handler on close (thanks Hellmuth Michaelis)
+
+	* gst_video: new module using Gstreamer as a video codec
+		     (Thanks to Victor Sergienko and Fadeev Alexander)
+
+	* h265: new module for H.265 video codec
+
+	* httpd: added raw mode (thanks Lorenzo Mangani)
+
+	* menu: create user-agent with a command 'R' (thanks Lorenzo Mangani)
+
+	* opus: add configuration of "opus_bitrate"
+		(thanks to Juha Heinanen)
+
+	* speex: add configuration of "speex_mode_nb" and "speex_mode_wb"
+		 (thanks to Dmitrij D. Czarkoff and Juha Heinanen)
+
+	* vidloop: add VIDLOOP_INTERNAL_FMT and split encoder/decoder
+
+	* x11: catch Window delete (thanks to Doug Blewett)
+
+	* zrtp: initialize remote_zid (thanks to Ingo Feinerer)
+
+
 2014-12-24 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.12
