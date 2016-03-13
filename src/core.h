@@ -127,6 +127,8 @@ int  audio_send_digit(struct audio *a, char key);
 void audio_sdp_attr_decode(struct audio *a);
 int  audio_print_rtpstat(struct re_printf *pf, const struct audio *au);
 
+char * audio_print_rtcpxr(char * msg, int msg_len, const struct audio *au, const char *cid);
+double audio_print_mos(double rtt, double jitter,u_int32_t num_packets_lost, double *r_factor);
 
 /*
  * BFCP
@@ -171,7 +173,7 @@ int  call_notify_sipfrag(struct call *call, uint16_t scode,
 			 const char *reason, ...);
 int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
-
+void call_send_rtcpxr(struct call *call);
 
 /*
  * Conf

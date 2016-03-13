@@ -173,13 +173,15 @@ struct config {
 
 	/** Audio/Video Transport */
 	struct config_avt {
-		uint8_t rtp_tos;        /**< Type-of-Service for outg. RTP  */
-		struct range rtp_ports; /**< RTP port range                 */
-		struct range rtp_bw;    /**< RTP Bandwidth range [bit/s]    */
-		bool rtcp_enable;       /**< RTCP is enabled                */
-		bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
-		struct range jbuf_del;  /**< Delay, number of frames        */
-		bool rtp_stats;         /**< Enable RTP statistics          */
+		uint8_t rtp_tos;        	/**< Type-of-Service for outg. RTP  */
+		struct range rtp_ports; 	/**< RTP port range                 */
+		struct range rtp_bw;    	/**< RTP Bandwidth range [bit/s]    */
+		bool rtcp_enable;       	/**< RTCP is enabled                */
+		bool rtcp_mux;          	/**< RTP/RTCP multiplexing          */
+		struct range jbuf_del;  	/**< Delay, number of frames        */
+		bool rtp_stats;         	/**< Enable RTP statistics          */
+		bool rtcpxr_stats;         	/**< Enable RTCP-XR statistics      */
+		char rtcpxr_collector[128];	/**< RTCP-XR Publish collector      */
 	} avt;
 
 	/* Network */
@@ -247,6 +249,20 @@ typedef void (message_recv_h)(const struct pl *peer, const struct pl *ctype,
 int  message_init(message_recv_h *recvh, void *arg);
 void message_close(void);
 int  message_send(struct ua *ua, const char *peer, const char *msg);
+
+
+
+/*
+ * PUBLISH RTCP-XR
+ */
+
+typedef void (rtcpxr_recv_h)(const struct pl *peer, const struct pl *ctype,
+			      struct mbuf *body, void *arg);
+int  rtcpxr_init(rtcpxr_recv_h *recvh, void *arg);
+void rtcpxr_close(void);
+int  rtcpxr_send(struct ua *ua, const char *peer, const char *msg, ...);
+void  rtcpxr_test(void);
+
 
 
 /*

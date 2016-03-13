@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+
 #include <string.h>
 #include <dirent.h>
 #include <re.h>
@@ -61,7 +62,9 @@ static struct config core_config = {
 		true,
 		false,
 		{5, 10},
-		false
+		false,
+		false,
+		""
 	},
 
 	/* Network */
@@ -200,7 +203,12 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);
 	(void)conf_get_range(conf, "jitter_buffer_delay",
 			     &cfg->avt.jbuf_del);
+
+	/* QoS Settings */
 	(void)conf_get_bool(conf, "rtp_stats", &cfg->avt.rtp_stats);
+	(void)conf_get_bool(conf, "rtcpxr_stats", &cfg->avt.rtcpxr_stats);
+	(void)conf_get_str(conf, "rtcpxr_collector",
+			   cfg->avt.rtcpxr_collector, sizeof(cfg->avt.rtcpxr_collector));
 
 	if (err) {
 		warning("config: configure parse error (%m)\n", err);
@@ -298,6 +306,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtcp_mux ? "yes" : "no",
 			 range_print, &cfg->avt.jbuf_del,
 			 cfg->avt.rtp_stats ? "yes" : "no",
+			 cfg->avt.rtcpxr_stats ? "yes" : "no",
+			 cfg->avt.rtcpxr_collector,
 
 			 cfg->net.ifname
 

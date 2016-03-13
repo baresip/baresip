@@ -632,12 +632,21 @@ int call_modify(struct call *call)
 int call_hangup(struct call *call, uint16_t scode, const char *reason)
 {
 	int err = 0;
+	char msg[512];
+
+	memset(msg,0,512);
 
 	if (!call)
 		return EINVAL;
 
-	if (call->config_avt.rtp_stats)
+	if (call->config_avt.rtp_stats) {
 		call_set_xrtpstat(call);
+
+		if (call->config_avt.rtcpxr_stats) {
+
+			call_send_rtcpxr(call);
+
+	}
 
 	switch (call->state) {
 
@@ -658,6 +667,10 @@ int call_hangup(struct call *call, uint16_t scode, const char *reason)
 
 		call->sess = mem_deref(call->sess);
 		break;
+	}
+
+
+
 	}
 
 	set_state(call, STATE_TERMINATED);
@@ -1649,4 +1662,18 @@ void call_set_xrtpstat(struct call *call)
 	sipsess_set_close_headers(call->sess,
 				  "X-RTP-Stat: %H\r\n",
 				  audio_print_rtpstat, call->audio);
+}
+
+void call_send_rtcpxr(struct call *call)
+{
+	char msg[512];
+	memset(msg,0,512);
+
+	// info("call: Generating RTCP-XR Statistics for '%s'\n",
+	//     sip_dialog_callid(sipsess_dialog(call->sess)));
+
+	// rtcpxr_send(call->ua,"sip:test@127.0.0.1:9999", audio_print_rtcpxr(msg,sizeof(msg),call->audio) );
+	rtcpxr_send(call->ua,call->config_avt.rtcpxr_collector,audio_print_rtcpxr(msg,sizeof(msg),call->audio,
+						sip_dialog_callid(sipsess_dialog(call->sess)) ) );
+
 }
