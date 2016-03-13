@@ -81,7 +81,7 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 	enum presence_status status = PRESENCE_CLOSED;
 	struct presence *pres = arg;
 	const struct sip_hdr *type_hdr, *length_hdr;
-	struct pl pl;
+	struct pl pl, ws1 = PL_INIT, ws2 = PL_INIT;
 
 	if (pres->shutdown)
 		goto done;
@@ -116,25 +116,25 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 	}
 
 	if (!re_regex((const char *)mbuf_buf(msg->mb), mbuf_get_left(msg->mb),
-		      "<basic>[^<]+</basic>", &pl)) {
+		      "<basic[ \t]*>[^<]+</basic[ \t]*>", &ws1, &pl, &ws2)) {
 		if (!pl_strcasecmp(&pl, "open"))
 			status = PRESENCE_OPEN;
 	}
 
 	if (!re_regex((const char *)mbuf_buf(msg->mb), mbuf_get_left(msg->mb),
-		      "<rpid:away/>")) {
+		      "<rpid:away[ \t]*/>")) {
 
 		status = PRESENCE_CLOSED;
 	}
 	else if (!re_regex((const char *)mbuf_buf(msg->mb),
 			   mbuf_get_left(msg->mb),
-			   "<rpid:busy/>")) {
+			   "<rpid:busy[ \t]*/>")) {
 
 		status = PRESENCE_BUSY;
 	}
 	else if (!re_regex((const char *)mbuf_buf(msg->mb),
 			   mbuf_get_left(msg->mb),
-			   "<rpid:on-the-phone/>")) {
+			   "<rpid:on-the-phone[ \t]*/>")) {
 
 		status = PRESENCE_BUSY;
 	}
