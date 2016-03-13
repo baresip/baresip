@@ -1719,7 +1719,6 @@ void call_send_rtcpxr(struct call *call)
 	// info("call: Generating RTCP-XR Statistics for '%s'\n",
 	//     sip_dialog_callid(sipsess_dialog(call->sess)));
 
-	// rtcpxr_send(call->ua,"sip:test@127.0.0.1:9999", audio_print_rtcpxr(msg,sizeof(msg),call->audio) );
 	rtcpxr_send(call->ua,call->config_avt.rtcpxr_collector,audio_print_rtcpxr(msg,sizeof(msg),call->audio,
 						sip_dialog_callid(sipsess_dialog(call->sess)) ) );
 
