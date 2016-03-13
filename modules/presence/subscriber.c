@@ -116,25 +116,25 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 	}
 
 	if (!re_regex((const char *)mbuf_buf(msg->mb), mbuf_get_left(msg->mb),
-		      "<basic>[^<]+</basic>", &pl)) {
-		if (!pl_strcasecmp(&pl, "open"))
-			status = PRESENCE_OPEN;
+		      "<basic[ \t]*>[^<]+</basic[ \t]*>", NULL, &pl, NULL)) {
+	    if (!pl_strcasecmp(&pl, "open"))
+		status = PRESENCE_OPEN;
 	}
 
 	if (!re_regex((const char *)mbuf_buf(msg->mb), mbuf_get_left(msg->mb),
-		      "<rpid:away/>")) {
+		      "<rpid:away[ \t]*/>", NULL)) {
 
 		status = PRESENCE_CLOSED;
 	}
 	else if (!re_regex((const char *)mbuf_buf(msg->mb),
 			   mbuf_get_left(msg->mb),
-			   "<rpid:busy/>")) {
+			   "<rpid:busy[ \t]*/>", NULL)) {
 
 		status = PRESENCE_BUSY;
 	}
 	else if (!re_regex((const char *)mbuf_buf(msg->mb),
 			   mbuf_get_left(msg->mb),
-			   "<rpid:on-the-phone/>")) {
+			   "<rpid:on-the-phone[ \t]*/>", NULL)) {
 
 		status = PRESENCE_BUSY;
 	}

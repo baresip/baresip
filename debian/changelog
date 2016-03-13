@@ -1,3 +1,9 @@
+baresip (0.4.18) unstable; urgency=medium
+
+  * version 0.4.18
+
+ -- Alfred E. Heggestad <aeh@db.org>  Sat, 12 Mar 2016 18:00:00 +0100
+
 baresip (0.4.17) unstable; urgency=low
 
   * version 0.4.17
