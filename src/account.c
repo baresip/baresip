@@ -342,11 +342,6 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 	pl_set_str(&pl, acc->buf);
 
-        if(strncmp(acc->buf, "sip:", strlen("sip:")) != 0) {
-                warning("account: invalid SIP address '%r'\n",&pl);
-                goto out;
-        }
-
 	err = sip_addr_decode(&acc->laddr, &pl);
 	if (err) {
 		warning("account: error parsing SIP address: '%r'\n", &pl);
