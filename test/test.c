@@ -1,3 +1,4 @@
+#include <math.h>
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
@@ -34,4 +35,10 @@ int re_main_timeout(uint32_t timeout_ms)
 
 	tmr_cancel(&tmr);
 	return err;
+}
+
+
+bool test_cmp_double(double a, double b, double precision)
+{
+	return fabs(a - b) < precision;
 }

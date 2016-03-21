@@ -1031,6 +1031,14 @@ static inline bool h264_is_keyframe(int type)
 int module_preload(const char *module);
 
 
+/*
+ * MOS (Mean Opinion Score)
+ */
+
+double mos_calculate(double *r_factor, double rtt,
+		     double jitter, u_int32_t num_packets_lost);
+
+
 #ifdef __cplusplus
 }
 #endif

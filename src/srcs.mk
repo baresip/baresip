@@ -21,6 +21,7 @@ SRCS	+= message.c
 SRCS	+= metric.c
 SRCS	+= mnat.c
 SRCS	+= module.c
+SRCS	+= mos.c
 SRCS	+= net.c
 SRCS	+= play.c
 SRCS	+= realtime.c

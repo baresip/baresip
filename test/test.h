@@ -23,6 +23,16 @@
 		goto out;					\
 	}
 
+#define ASSERT_DOUBLE_EQ(expected, actual, prec)			\
+	if (!test_cmp_double((expected), (actual), (prec))) {		\
+		warning("selftest: ASSERT_DOUBLE_EQ: %s:%u:"		\
+			" expected=%f, actual=%f\n",			\
+			__FILE__, __LINE__,				\
+			(double)(expected), (double)(actual));		\
+		err = EINVAL;						\
+		goto out;						\
+	}
+
 #define ASSERT_STREQ(expected, actual)					\
 	if (0 != str_cmp((expected), (actual))) {			\
 		warning("selftest: ASSERT_STREQ: %s:%u:"		\
@@ -47,6 +57,7 @@
 /* helpers */
 
 int re_main_timeout(uint32_t timeout_ms);
+bool test_cmp_double(double a, double b, double precision);
 
 
 #ifdef USE_TLS
@@ -78,6 +89,7 @@ int test_cmd(void);
 int test_ua_alloc(void);
 int test_uag_find_param(void);
 int test_ua_register(void);
+int test_mos(void);
 
 int test_call_answer(void);
 int test_call_reject(void);
