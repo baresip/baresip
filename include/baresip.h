@@ -1036,7 +1036,7 @@ int module_preload(const char *module);
  */
 
 double mos_calculate(double *r_factor, double rtt,
-		     double jitter, u_int32_t num_packets_lost);
+		     double jitter, uint32_t num_packets_lost);
 
 
 #ifdef __cplusplus
