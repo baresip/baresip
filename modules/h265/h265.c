@@ -22,7 +22,7 @@
  *
  * References:
  *
- *    draft-ietf-payload-rtp-h265-07
+ *    https://tools.ietf.org/html/rfc7798
  *    http://x265.org/
  *    https://www.ffmpeg.org/
  */

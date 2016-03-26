@@ -28,7 +28,7 @@
  *
  *     http://www.webmproject.org/
  *
- *     http://tools.ietf.org/html/draft-ietf-payload-vp8-17
+ *     https://tools.ietf.org/html/rfc7741
  */
 
 

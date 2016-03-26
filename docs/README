@@ -81,7 +81,7 @@ Features:
   - Windows winwave audio-driver
 
 * Video:
-  - Support for H.264, H.263, VP8, MPEG-4 Video
+  - Support for H.265, H.264, H.263, VP8, MPEG-4 Video
   - Configurable resolution/framerate/bitrate
   - Configurable video input/output
   - Support for asymmetric video
@@ -263,10 +263,10 @@ IETF RFC/I-Ds:
 * RFC 6716  Definition of the Opus Audio Codec
 * RFC 6886  NAT Port Mapping Protocol (NAT-PMP)
 * RFC 7587  RTP Payload Format for the Opus Speech and Audio Codec
+* RFC 7741  RTP Payload Format for VP8 Video
+* RFC 7798  RTP Payload Format for High Efficiency Video Coding (HEVC)
 
 * draft-ietf-avt-rtp-isac-04
-* draft-ietf-payload-rtp-h265-07
-* draft-ietf-payload-vp8-17
 
 
 Architecture:
