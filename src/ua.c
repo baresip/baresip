@@ -163,7 +163,7 @@ int ua_register(struct ua *ua)
 	if (re_snprintf(reg_uri, sizeof(reg_uri), "%H", uri_encode, &uri) < 0)
 		return ENOMEM;
 
-	if (str_isset(uag.cfg->uuid)) {
+	if (uag.cfg && str_isset(uag.cfg->uuid)) {
 		if (re_snprintf(params, sizeof(params),
 				";+sip.instance=\"<urn:uuid:%s>\"",
 				uag.cfg->uuid) < 0)
@@ -610,7 +610,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	}
 
 	/* Register clients */
-	if (str_isset(uag.cfg->uuid))
+	if (uag.cfg && str_isset(uag.cfg->uuid))
 	        add_extension(ua, "gruu");
 
 	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {

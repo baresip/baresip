@@ -18,6 +18,7 @@ TEST_SRCS	+= mos.c
 #
 # Mocks
 #
+TEST_SRCS	+= mock/dnssrv.c
 TEST_SRCS	+= mock/sipsrv.c
 ifneq ($(USE_TLS),)
 TEST_SRCS	+= mock/cert.c

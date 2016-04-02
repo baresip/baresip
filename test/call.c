@@ -48,6 +48,9 @@ struct fixture {
 #define fixture_init(f)							\
 	memset(f, 0, sizeof(*f));					\
 									\
+	err = ua_init("test", true, true, true, false);			\
+	TEST_ERR(err);							\
+									\
 	f->magic = MAGIC;						\
 	aucodec_register(&dummy_pcma);					\
 									\
@@ -75,7 +78,10 @@ struct fixture {
 						\
 	aucodec_unregister(&dummy_pcma);	\
 						\
-	uag_event_unregister(event_handler)
+	uag_event_unregister(event_handler);	\
+						\
+	ua_stop_all(true);			\
+	ua_close();
 
 
 static struct aucodec dummy_pcma = {

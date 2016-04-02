@@ -29,6 +29,7 @@ static const struct test tests[] = {
 	TEST(test_mos),
 	TEST(test_ua_alloc),
 	TEST(test_ua_register),
+	TEST(test_ua_register_dns),
 	TEST(test_uag_find_param),
 };
 
@@ -172,10 +173,12 @@ int main(int argc, char *argv[])
 	}
 	str_ncpy(config->sip.local, "127.0.0.1:0", sizeof(config->sip.local));
 
+#if 0
 	/* XXX: needed for ua tests */
 	err = ua_init("test", true, true, true, false);
 	if (err)
 		goto out;
+#endif
 
 	if (argc >= (optind + 1)) {
 
