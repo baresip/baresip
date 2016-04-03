@@ -66,24 +66,6 @@ extern const char test_certificate[];
 
 
 /*
- * SIP Server
- */
-
-struct sip_server {
-	struct sip *sip;
-	struct sip_lsnr *lsnr;
-	bool terminate;
-
-	unsigned n_register_req;
-	enum sip_transp tp_last;
-};
-
-int sip_server_alloc(struct sip_server **srvp);
-int sip_server_uri(struct sip_server *srv, char *uri, size_t sz,
-		   enum sip_transp tp);
-
-
-/*
  * Mock DNS-Server
  */
 
@@ -109,6 +91,7 @@ int test_ua_alloc(void);
 int test_uag_find_param(void);
 int test_ua_register(void);
 int test_ua_register_dns(void);
+int test_ua_register_auth(void);
 int test_mos(void);
 
 int test_call_answer(void);

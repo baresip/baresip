@@ -7,6 +7,7 @@
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
+#include "sip/sipsrv.h"
 
 
 struct test {
@@ -46,6 +47,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	if (ev == UA_EVENT_REGISTER_OK) {
 
+		re_printf("event: Register OK!\n");
+
 		++t->got_register_ok;
 
 		/* verify register success */
@@ -56,6 +59,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			t->srvv[i]->terminate = true;
 
 		t->ua = mem_deref(t->ua);
+	}
+	else if (ev == UA_EVENT_REGISTER_FAIL) {
+
+		err = EAUTH;
+		re_cancel();
 	}
 
  out:
@@ -243,6 +251,10 @@ static int reg_dns(enum sip_transp tp)
 			goto out;
 		}
 
+		err = domain_add(t.srvv[0], domain);
+		if (err)
+			goto out;
+
 		err = sip_transp_laddr(t.srvv[i]->sip, &sip_addr, tp, NULL);
 		TEST_ERR(err);
 
@@ -328,5 +340,85 @@ int test_ua_register_dns(void)
 #endif
 
  out:
+	return err;
+}
+
+
+#define USER   "alfredh"
+#define PASS   "password"
+#define DOMAIN "localhost"
+
+int test_ua_register_auth(void)
+{
+	struct sa laddr;
+	enum sip_transp tp = SIP_TRANSP_UDP;
+	struct test t;
+	char aor[256];
+	int err;
+
+	memset(&t, 0, sizeof t);
+
+	err = sip_server_alloc(&t.srvv[0]);
+	if (err) {
+		warning("failed to create sip server (%d/%m)\n", err, err);
+		goto out;
+	}
+
+	err = domain_add(t.srvv[0], DOMAIN);
+	TEST_ERR(err);
+
+	err = user_add(domain_lookup(t.srvv[0], DOMAIN)->ht_usr,
+		       "alfredh", "password", DOMAIN);
+	TEST_ERR(err);
+
+	t.srvv[0]->auth_enabled = true;
+
+	err = sip_transp_laddr(t.srvv[0]->sip, &laddr, tp, NULL);
+	if (err)
+		return err;
+
+	/* NOTE: angel brackets needed to parse ;transport parameter */
+	if (re_snprintf(aor, sizeof(aor),
+			"<sip:%s:%s@%s>;outbound=\"sip:%J\"",
+			USER,
+			PASS,
+			DOMAIN,
+			&laddr) < 0)
+		return ENOMEM;
+
+	err = ua_init("test", true, true, true, false);
+	TEST_ERR(err);
+
+	err = ua_alloc(&t.ua, aor);
+	TEST_ERR(err);
+
+	err = uag_event_register(ua_event_handler, &t);
+	if (err)
+		goto out;
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	if (err)
+		goto out;
+
+	if (t.err) {
+		err = t.err;
+		goto out;
+	}
+
+	ASSERT_TRUE(t.srvv[0]->n_register_req > 0);
+	ASSERT_EQ(tp, t.srvv[0]->tp_last);
+	ASSERT_TRUE(t.got_register_ok > 0);
+
+ out:
+	if (err) {
+		warning("selftest: ua_register test failed (%m)\n", err);
+	}
+	uag_event_unregister(ua_event_handler);
+	test_reset(&t);
+
+	ua_stop_all(true);
+	ua_close();
+
 	return err;
 }

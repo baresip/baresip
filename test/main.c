@@ -30,6 +30,7 @@ static const struct test tests[] = {
 	TEST(test_ua_alloc),
 	TEST(test_ua_register),
 	TEST(test_ua_register_dns),
+	TEST(test_ua_register_auth),
 	TEST(test_uag_find_param),
 };
 
