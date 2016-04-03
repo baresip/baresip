@@ -8,6 +8,9 @@
 #include "core.h"
 
 
+#define MAX_NS 8
+
+
 static struct {
 	struct config_net cfg;
 	struct sa laddr;
@@ -18,7 +21,7 @@ static struct {
 #endif
 	struct tmr tmr;
 	struct dnsc *dnsc;
-	struct sa nsv[4];    /**< Configured name servers           */
+	struct sa nsv[MAX_NS];/**< Configured name servers           */
 	uint32_t nsn;        /**< Number of configured name servers */
 	uint32_t interval;
 	int af;              /**< Preferred address family          */
@@ -28,23 +31,63 @@ static struct {
 } net;
 
 
+static int net_dns_srv_get(struct sa *srvv, uint32_t *n, bool *from_sys)
+{
+	struct sa nsv[MAX_NS];
+	uint32_t i, nsn = ARRAY_SIZE(nsv);
+	int err;
+
+	err = dns_srv_get(net.domain, sizeof(net.domain), nsv, &nsn);
+	if (err) {
+		nsn = 0;
+	}
+
+	if (net.nsn) {
+
+		if (net.nsn > *n)
+			return E2BIG;
+
+		/* Use any configured nameservers */
+		for (i=0; i<net.nsn; i++) {
+			srvv[i] = net.nsv[i];
+		}
+
+		*n = net.nsn;
+
+		if (from_sys)
+			*from_sys = false;
+	}
+	else {
+		if (nsn > *n)
+			return E2BIG;
+
+		for (i=0; i<nsn; i++)
+			srvv[i] = nsv[i];
+
+		*n = nsn;
+
+		if (from_sys)
+			*from_sys = true;
+	}
+
+	return 0;
+}
+
+
 /**
  * Check for DNS Server updates
  */
 static void dns_refresh(void)
 {
-	struct sa nsv[8];
-	uint32_t i, nsn;
+	struct sa nsv[MAX_NS];
+	uint32_t nsn;
 	int err;
 
 	nsn = ARRAY_SIZE(nsv);
 
-	err = dns_srv_get(NULL, 0, nsv, &nsn);
+	err = net_dns_srv_get(nsv, &nsn, NULL);
 	if (err)
 		return;
-
-	for (i=0; i<net.nsn; i++)
-		sa_cpy(&nsv[nsn++], &net.nsv[i]);
 
 	(void)dnsc_srv_set(net.dnsc, nsv, nsn);
 }
@@ -124,20 +167,13 @@ bool net_check(void)
 
 static int dns_init(void)
 {
-	struct sa nsv[8];
-	uint32_t i, nsn;
+	struct sa nsv[MAX_NS];
+	uint32_t nsn = ARRAY_SIZE(nsv);
 	int err;
 
-	nsn = ARRAY_SIZE(nsv);
-
-	err = dns_srv_get(net.domain, sizeof(net.domain), nsv, &nsn);
-	if (err) {
-		nsn = 0;
-	}
-
-	/* Add any configured nameservers */
-	for (i=0; i<net.nsn && nsn < ARRAY_SIZE(nsv); i++)
-		sa_cpy(&nsv[nsn++], &net.nsv[i]);
+	err = net_dns_srv_get(nsv, &nsn, NULL);
+	if (err)
+		return err;
 
 	return dnsc_alloc(&net.dnsc, NULL, nsv, nsn);
 }
@@ -164,6 +200,7 @@ static bool check_ipv6(void)
  */
 int net_init(const struct config_net *cfg, int af)
 {
+	char buf4[128] = "", buf6[128] = "";
 	int err;
 
 	if (!cfg)
@@ -255,19 +292,18 @@ int net_init(const struct config_net *cfg, int af)
 #endif
 	}
 
-	(void)re_fprintf(stderr, "Local network address:");
-
 	if (sa_isset(&net.laddr, SA_ADDR)) {
-		(void)re_fprintf(stderr, " IPv4=%s:%j",
-				 net.ifname, &net.laddr);
+		re_snprintf(buf4, sizeof(buf4), " IPv4=%s:%j",
+			    net.ifname, &net.laddr);
 	}
 #ifdef HAVE_INET6
 	if (sa_isset(&net.laddr6, SA_ADDR)) {
-		(void)re_fprintf(stderr, " IPv6=%s:%j",
-				 net.ifname6, &net.laddr6);
+		re_snprintf(buf6, sizeof(buf6), " IPv6=%s:%j",
+			    net.ifname6, &net.laddr6);
 	}
 #endif
-	(void)re_fprintf(stderr, "\n");
+	info("Local network address: %s %s\n",
+	     buf4, buf6);
 
 	return err;
 }
@@ -293,6 +329,7 @@ void net_close(void)
 {
 	net.dnsc = mem_deref(net.dnsc);
 	tmr_cancel(&net.tmr);
+	net.nsn = 0;
 }
 
 
@@ -336,23 +373,21 @@ void net_change(uint32_t interval, net_change_h *ch, void *arg)
 
 static int dns_debug(struct re_printf *pf, void *unused)
 {
-	struct sa nsv[4];
-	uint32_t i, nsn;
+	struct sa nsv[MAX_NS];
+	uint32_t i, nsn = ARRAY_SIZE(nsv);
+	bool from_sys = false;
 	int err;
 
 	(void)unused;
 
-	nsn = ARRAY_SIZE(nsv);
-
-	err = dns_srv_get(NULL, 0, nsv, &nsn);
+	err = net_dns_srv_get(nsv, &nsn, &from_sys);
 	if (err)
 		nsn = 0;
 
-	err = re_hprintf(pf, " DNS Servers: (%u)\n", nsn);
+	err = re_hprintf(pf, " DNS Servers from %s: (%u)\n",
+			 from_sys ? "System" : "Config", nsn);
 	for (i=0; i<nsn; i++)
 		err |= re_hprintf(pf, "   %u: %J\n", i, &nsv[i]);
-	for (i=0; i<net.nsn; i++)
-		err |= re_hprintf(pf, "   %u: %J\n", nsn+i, &net.nsv[i]);
 
 	return err;
 }

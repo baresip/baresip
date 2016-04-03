@@ -234,7 +234,7 @@ $(BUILD)/%.o: %.S $(BUILD) Makefile $(APP_MK)
 	$(HIDE)$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD): Makefile
-	@mkdir -p $(BUILD)/src $(MOD_BLD) $(BUILD)/test/mock
+	@mkdir -p $(BUILD)/src $(MOD_BLD) $(BUILD)/test/mock $(BUILD)/test/sip
 	@touch $@
 
 install: $(BIN) $(MOD_BINS)

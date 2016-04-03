@@ -18,7 +18,15 @@ TEST_SRCS	+= mos.c
 #
 # Mocks
 #
-TEST_SRCS	+= mock/sipsrv.c
+TEST_SRCS	+= mock/dnssrv.c
+
+TEST_SRCS	+= sip/aor.c
+TEST_SRCS	+= sip/auth.c
+TEST_SRCS	+= sip/domain.c
+TEST_SRCS	+= sip/location.c
+TEST_SRCS	+= sip/sipsrv.c
+TEST_SRCS	+= sip/user.c
+
 ifneq ($(USE_TLS),)
 TEST_SRCS	+= mock/cert.c
 endif
