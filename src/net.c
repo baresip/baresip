@@ -375,7 +375,7 @@ static int dns_debug(struct re_printf *pf, void *unused)
 {
 	struct sa nsv[MAX_NS];
 	uint32_t i, nsn = ARRAY_SIZE(nsv);
-	bool from_sys;
+	bool from_sys = false;
 	int err;
 
 	(void)unused;
