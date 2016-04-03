@@ -348,10 +348,9 @@ int test_ua_register_dns(void)
 #define PASS   "password"
 #define DOMAIN "localhost"
 
-int test_ua_register_auth(void)
+static int reg_auth(enum sip_transp tp)
 {
 	struct sa laddr;
-	enum sip_transp tp = SIP_TRANSP_UDP;
 	struct test t;
 	char aor[256];
 	int err;
@@ -379,15 +378,13 @@ int test_ua_register_auth(void)
 
 	/* NOTE: angel brackets needed to parse ;transport parameter */
 	if (re_snprintf(aor, sizeof(aor),
-			"<sip:%s:%s@%s>;outbound=\"sip:%J\"",
+			"<sip:%s:%s@%s>;outbound=\"sip:%J;transport=%s\"",
 			USER,
 			PASS,
 			DOMAIN,
-			&laddr) < 0)
+			&laddr,
+			sip_transp_name(tp)) < 0)
 		return ENOMEM;
-
-	err = ua_init("test", true, true, true, false);
-	TEST_ERR(err);
 
 	err = ua_alloc(&t.ua, aor);
 	TEST_ERR(err);
@@ -417,6 +414,28 @@ int test_ua_register_auth(void)
 	uag_event_unregister(ua_event_handler);
 	test_reset(&t);
 
+
+	return err;
+}
+
+
+int test_ua_register_auth(void)
+{
+	int err;
+
+	err = ua_init("test", true, true, true, false);
+	TEST_ERR(err);
+
+	err |= reg_auth(SIP_TRANSP_UDP);
+	TEST_ERR(err);
+	err |= reg_auth(SIP_TRANSP_TCP);
+	TEST_ERR(err);
+#ifdef USE_TLS
+	err |= reg_auth(SIP_TRANSP_TLS);
+	TEST_ERR(err);
+#endif
+
+ out:
 	ua_stop_all(true);
 	ua_close();
 

@@ -1,5 +1,5 @@
 /**
- * @file mock/sipsrv.c Mock SIP server
+ * @file sip/sipsrv.c Mock SIP server
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
