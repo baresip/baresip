@@ -451,7 +451,7 @@ static int reg_auth_dns(enum sip_transp tp)
 	unsigned server_count = 2;
 	char aor[256];
 	char srv[256];
-	size_t i;
+	unsigned i;
 	int err;
 
 	memset(&t, 0, sizeof t);
