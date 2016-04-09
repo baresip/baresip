@@ -92,6 +92,7 @@ int test_uag_find_param(void);
 int test_ua_register(void);
 int test_ua_register_dns(void);
 int test_ua_register_auth(void);
+int test_ua_register_auth_dns(void);
 int test_mos(void);
 
 int test_call_answer(void);

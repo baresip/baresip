@@ -17,6 +17,7 @@ struct sip_server {
 	struct sip_lsnr *lsnr;
 	bool auth_enabled;
 	bool terminate;
+	unsigned instance;
 
 	unsigned n_register_req;
 	enum sip_transp tp_last;

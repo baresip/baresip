@@ -189,7 +189,8 @@ static bool sip_msg_handler(const struct sip_msg *msg, void *arg)
 	int err = 0;
 
 #if 0
-	DEBUG_NOTICE("recv %r via %s\n", &msg->met, sip_transp_name(msg->tp));
+	DEBUG_NOTICE("[%u] recv %r via %s\n", srv->instance,
+		     &msg->met, sip_transp_name(msg->tp));
 #endif
 
 	srv->tp_last = msg->tp;

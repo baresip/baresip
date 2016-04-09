@@ -47,7 +47,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	if (ev == UA_EVENT_REGISTER_OK) {
 
-		re_printf("event: Register OK!\n");
+		info("event: Register OK!\n");
 
 		++t->got_register_ok;
 
@@ -200,9 +200,6 @@ int test_uag_find_param(void)
 }
 
 
-#define SERVER_COUNT 1
-
-
 static const char *_sip_transp_srvid(enum sip_transp tp)
 {
 	switch (tp) {
@@ -220,6 +217,7 @@ static int reg_dns(enum sip_transp tp)
 	struct dns_server *dnssrv = NULL;
 	struct test t;
 	const char *domain = "test.invalid";
+	unsigned server_count = 1;
 	char aor[256];
 	char srv[256];
 	size_t i;
@@ -240,7 +238,7 @@ static int reg_dns(enum sip_transp tp)
 	err = net_dnssrv_add(&dnssrv->addr);
 	TEST_ERR(err);
 
-	for (i=0; i<SERVER_COUNT; i++) {
+	for (i=0; i<server_count; i++) {
 		struct sa sip_addr;
 		char arec[256];
 
@@ -273,7 +271,7 @@ static int reg_dns(enum sip_transp tp)
 		err = dns_server_add_a(dnssrv, arec, sa_in(&sip_addr));
 		TEST_ERR(err);
 	}
-	t.srvc = SERVER_COUNT;
+	t.srvc = server_count;
 
 	/* NOTE: angel brackets needed to parse ;transport parameter */
 	if (re_snprintf(aor, sizeof(aor), "<sip:x:x@%s;transport=%s>",
@@ -439,5 +437,153 @@ int test_ua_register_auth(void)
 	ua_stop_all(true);
 	ua_close();
 
+	return err;
+}
+
+
+static int reg_auth_dns(enum sip_transp tp)
+{
+	struct dns_server *dnssrv = NULL;
+	struct test t;
+	const char *username = "alfredh";
+	const char *password = "password";
+	const char *domain = "test.invalid";
+	unsigned server_count = 2;
+	char aor[256];
+	char srv[256];
+	size_t i;
+	int err;
+
+	memset(&t, 0, sizeof t);
+
+	/*
+	 * Setup server-side mocks:
+	 */
+
+	err = dns_server_alloc(&dnssrv, true);
+	TEST_ERR(err);
+
+	info("| DNS-server on %J\n", &dnssrv->addr);
+
+	/* NOTE: must be done before ua_init() */
+	err = net_dnssrv_add(&dnssrv->addr);
+	TEST_ERR(err);
+
+	for (i=0; i<server_count; i++) {
+		struct sa sip_addr;
+		char arec[256];
+
+		err = sip_server_alloc(&t.srvv[i]);
+		if (err) {
+			warning("failed to create sip server (%d/%m)\n",
+				err, err);
+			goto out;
+		}
+
+		t.srvv[i]->instance = i;
+
+#if 1
+		/* Comment this out to have different random secrets
+		 * on each SIP-Server instance */
+		t.srvv[i]->secret = 42;
+#endif
+
+		err = domain_add(t.srvv[i], domain);
+		if (err)
+			goto out;
+
+		err = user_add(domain_lookup(t.srvv[i], domain)->ht_usr,
+			       username, password, domain);
+		TEST_ERR(err);
+
+		t.srvv[i]->auth_enabled = true;
+
+		err = sip_transp_laddr(t.srvv[i]->sip, &sip_addr, tp, NULL);
+		TEST_ERR(err);
+
+		info("| SIP-server on %J\n", &sip_addr);
+
+		re_snprintf(arec, sizeof(arec),
+			    "alpha%u.%s", i+1, domain);
+
+		re_snprintf(srv, sizeof(srv),
+			    "%s.%s", _sip_transp_srvid(tp), domain);
+		err = dns_server_add_srv(dnssrv, srv,
+					 20, 0, sa_port(&sip_addr),
+					 arec);
+		TEST_ERR(err);
+
+		err = dns_server_add_a(dnssrv, arec, sa_in(&sip_addr));
+		TEST_ERR(err);
+	}
+	t.srvc = server_count;
+
+	/* NOTE: angel brackets needed to parse ;transport parameter */
+	if (re_snprintf(aor, sizeof(aor), "<sip:%s:%s@%s;transport=%s>",
+			username, password, domain, sip_transp_name(tp)) < 0)
+		return ENOMEM;
+
+	/*
+	 * Start SIP client:
+	 */
+
+	err = ua_init("test", true, true, true, false);
+	TEST_ERR(err);
+
+	err = ua_alloc(&t.ua, aor);
+	TEST_ERR(err);
+
+	err = uag_event_register(ua_event_handler, &t);
+	if (err)
+		goto out;
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	if (err)
+		goto out;
+
+	if (t.err) {
+		err = t.err;
+		goto out;
+	}
+
+	/* verify that all SIP requests was sent to the first
+	 * SIP-server.
+	 */
+	ASSERT_TRUE(t.srvv[0]->n_register_req > 0);
+	ASSERT_EQ(tp, t.srvv[0]->tp_last);
+	ASSERT_TRUE(t.got_register_ok > 0);
+
+ out:
+	if (err) {
+		warning("selftest: ua_register test failed (%m)\n", err);
+	}
+	uag_event_unregister(ua_event_handler);
+
+	test_reset(&t);
+
+	ua_stop_all(true);
+	ua_close();
+
+	mem_deref(dnssrv);
+
+	return err;
+}
+
+
+int test_ua_register_auth_dns(void)
+{
+	int err = 0;
+
+	err |= reg_auth_dns(SIP_TRANSP_UDP);
+	TEST_ERR(err);
+	err |= reg_auth_dns(SIP_TRANSP_TCP);
+	TEST_ERR(err);
+#ifdef USE_TLS
+	err |= reg_auth_dns(SIP_TRANSP_TLS);
+	TEST_ERR(err);
+#endif
+
+ out:
 	return err;
 }
