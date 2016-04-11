@@ -16,6 +16,15 @@
 #include <rem.h>
 #include <baresip.h>
 
+/*
+ * DO_REDIRECT has this program handle all of the window manager operations
+ *  and displays a borderless window.  That window does not take keyboard
+ *  focus - which means the keyboard input to baresip continues.  Clicking
+ *  on the window allows one to drag the window around.
+ * Blewett
+ */
+#define DO_REDIRECT 1
+
 
 /**
  * @defgroup x11 x11
@@ -37,6 +46,8 @@ struct vidisp_st {
 	bool internal;
 	enum vidfmt pixfmt;
 	Atom XwinDeleted;
+	int button_is_down;
+	Time last_time;
 };
 
 
@@ -106,6 +117,9 @@ static void destructor(void *arg)
 
 static int create_window(struct vidisp_st *st, const struct vidsz *sz)
 {
+#ifdef DO_REDIRECT
+	XSetWindowAttributes attr;
+#endif
 	st->win = XCreateSimpleWindow(st->disp, DefaultRootWindow(st->disp),
 				      0, 0, sz->w, sz->h, 1, 0, 0);
 	if (!st->win) {
@@ -113,6 +127,20 @@ static int create_window(struct vidisp_st *st, const struct vidsz *sz)
 		return ENOMEM;
 	}
 
+#ifdef DO_REDIRECT
+	/*
+	 * set override rediect to avoid the "kill window" button
+	 *  we need to set masks to allow for mouse tracking, etc.
+	 *  to control the window - making us the window manager
+	 */
+	attr.override_redirect = true;
+	attr.event_mask = SubstructureRedirectMask |
+	    ButtonPressMask | ButtonReleaseMask |
+	    PointerMotionMask | Button1MotionMask;
+
+	XChangeWindowAttributes(st->disp, st->win,
+				CWOverrideRedirect | CWEventMask , &attr);
+#endif
 	XClearWindow(st->disp, st->win);
 	XMapRaised(st->disp, st->win);
 
@@ -292,6 +320,8 @@ static int display(struct vidisp_st *st, const char *title,
 
 	/*
 	 * check for window delete - without blocking
+	 *  the switch handles both the override redirect window
+	 *  and the "standard" window manager managed window.
 	 */
 	while (XPending(st->disp)) {
 
@@ -299,7 +329,9 @@ static int display(struct vidisp_st *st, const char *title,
 
 		XNextEvent(st->disp, &e);
 
-		if (e.type == ClientMessage) {
+		switch (e.type) {
+
+		case ClientMessage:
 			if ((Atom) e.xclient.data.l[0] == st->XwinDeleted) {
 
 				info("x11: window deleted\n");
@@ -311,6 +343,30 @@ static int display(struct vidisp_st *st, const char *title,
 				close_window(st);
 				return ENODEV;
 			}
+			break;
+
+		case ButtonPress:
+			st->button_is_down = 1;
+			break;
+
+		case ButtonRelease:
+			st->button_is_down = 0;
+			break;
+
+		case MotionNotify:
+			if (st->button_is_down == 0)
+				break;
+			if ((e.xmotion.time - st->last_time) < 32)
+				break;
+
+			XMoveWindow(st->disp, st->win,
+				    e.xmotion.x_root - 16,
+				    e.xmotion.y_root - 16);
+			st->last_time = e.xmotion.time;
+			break;
+
+		default:
+			break;
 		}
 	}
 
