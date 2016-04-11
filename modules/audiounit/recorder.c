@@ -108,8 +108,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	struct ausrc_st *st;
 	UInt32 enable = 1;
 #if ! TARGET_OS_IPHONE
-	UInt32 ausize;
-	ausize = sizeof(AudioDeviceID);
+	UInt32 ausize = sizeof(AudioDeviceID);
 	AudioDeviceID inputDevice;
 	AudioObjectPropertyAddress auAddress = {
 		kAudioHardwarePropertyDefaultInputDevice,
