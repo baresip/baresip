@@ -245,7 +245,7 @@ static void draw_graph(struct panel *panel, struct vidframe *frame)
 
 		ratio = (double)value / (double)avg;
 
-		pixels = (double)panel->size.h * ratio * 0.5f;
+		pixels = (unsigned)((double)panel->size.h * ratio * 0.5f);
 
 		pixels = min(pixels, panel->size.h);
 
