@@ -8,6 +8,7 @@
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
+#include <libavutil/pixdesc.h>
 #include "h26x.h"
 #include "avcodec.h"
 
@@ -167,13 +168,28 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 	mbuf_skip_to_end(src);
 
 	if (got_picture) {
+
+		switch (st->pict->format) {
+
+		case AV_PIX_FMT_YUV420P:
+			frame->fmt = VID_FMT_YUV420P;
+			break;
+
+		default:
+			warning("avcodec: decode: bad pixel format"
+				" (%i) (%s)\n",
+				st->pict->format,
+				av_get_pix_fmt_name(st->pict->format));
+			goto out;
+		}
+
+
 		for (i=0; i<4; i++) {
 			frame->data[i]     = st->pict->data[i];
 			frame->linesize[i] = st->pict->linesize[i];
 		}
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
-		frame->fmt    = VID_FMT_YUV420P;
 	}
 
  out:
