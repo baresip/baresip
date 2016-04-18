@@ -79,6 +79,8 @@ static int uuid_load(const char *file, char *uuid, size_t sz)
 
 	(void)fclose(f);
 
+	debug("uuid: loaded UUID %s from file %s\n", uuid, file);
+
 	return err;
 }
 
