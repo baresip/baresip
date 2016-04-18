@@ -17,6 +17,7 @@
 
 #if LIBAVUTIL_VERSION_MAJOR < 52
 #define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
+#define AV_PIX_FMT_NV12    PIX_FMT_NV12
 #endif
 
 
@@ -143,7 +144,7 @@ static int init_encoder(struct videnc_state *st)
 static int open_encoder(struct videnc_state *st,
 			const struct videnc_param *prm,
 			const struct vidsz *size,
-			enum AVPixelFormat pix_fmt)
+			int pix_fmt)
 {
 	int err = 0;
 
@@ -587,7 +588,7 @@ int encode_x264(struct videnc_state *st, bool update,
 int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 {
 	int i, err, ret;
-	enum AVPixelFormat pix_fmt;
+	int pix_fmt;
 
 	if (!st || !frame)
 		return EINVAL;

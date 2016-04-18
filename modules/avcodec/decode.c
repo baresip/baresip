@@ -13,6 +13,12 @@
 #include "avcodec.h"
 
 
+#if LIBAVUTIL_VERSION_MAJOR < 52
+#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
+#define AV_PIX_FMT_NV12    PIX_FMT_NV12
+#endif
+
+
 struct viddec_state {
 	AVCodec *codec;
 	AVCodecContext *ctx;
