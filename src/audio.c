@@ -53,7 +53,7 @@
  */
 
 enum {
-	AUDIO_SAMPSZ    = 1920,
+	AUDIO_SAMPSZ    = 2304,
 };
 
 
@@ -92,6 +92,7 @@ struct autx {
 	size_t psize;                 /**< Packet size for sending         */
 	bool marker;                  /**< Marker bit for outgoing RTP     */
 	bool is_g722;                 /**< Set if encoder is G.722 codec   */
+	bool is_mpa;                  /**< Set if encoder is MPA codec     */
 	bool muted;                   /**< Audio source is muted           */
 	int cur_key;                  /**< Currently transmitted event     */
 
@@ -240,14 +241,25 @@ static inline uint32_t calc_nsamp(uint32_t srate, uint8_t channels,
 
 
 /**
- * Get the DSP samplerate for an audio-codec (exception for G.722)
+ * Get the DSP samplerate for an audio-codec (exception for G.722 and MPA)
  */
 static inline uint32_t get_srate(const struct aucodec *ac)
 {
 	if (!ac)
 		return 0;
 
-	return !str_casecmp(ac->name, "G722") ? 16000 : ac->srate;
+	return !str_casecmp(ac->name, "G722") ? 16000 : !str_casecmp(ac->name, "MPA") ? 48000 : ac->srate;
+}
+
+/**
+ * Get the DSP samplerate for an audio-codec (exception for G.722)
+ */
+static inline uint32_t get_ch(const struct aucodec *ac)
+{
+	if (!ac)
+		return 0;
+
+	return !str_casecmp(ac->name, "MPA") ? 2 : ac->ch;
 }
 
 
@@ -257,7 +269,7 @@ static inline uint32_t get_framesize(const struct aucodec *ac,
 	if (!ac)
 		return 0;
 
-	return calc_nsamp(get_srate(ac), ac->ch, ptime);
+	return calc_nsamp(get_srate(ac), get_ch(ac), ptime);
 }
 
 
@@ -279,9 +291,9 @@ static int add_audio_codec(struct audio *a, struct sdp_media *m,
 		return 0;
 	}
 
-	if (!in_range(&a->cfg.channels, ac->ch)) {
+	if (!in_range(&a->cfg.channels, get_ch(ac))) {
 		debug("audio: skip codec with %uch (audio range %uch-%uch)\n",
-		      ac->ch, a->cfg.channels.min, a->cfg.channels.max);
+		      get_ch(ac), a->cfg.channels.min, a->cfg.channels.max);
 		return 0;
 	}
 
@@ -334,7 +346,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	/* The RTP clock rate used for generating the RTP timestamp is
 	 * independent of the number of channels and the encoding
 	 */
-	frame_size = (tx->is_g722 ? sampc/2 : sampc) / tx->ac->ch;
+	frame_size = (tx->is_g722 ? sampc/2 : tx->is_mpa ? sampc*90/48 : sampc) / get_ch(tx->ac);
 
 	tx->ts += (uint32_t)frame_size;
 
@@ -793,7 +805,7 @@ static void aufilt_param_set(struct aufilt_prm *prm,
 	}
 
 	prm->srate      = get_srate(ac);
-	prm->ch         = ac->ch;
+	prm->ch         = get_ch(ac);
 	prm->ptime      = ptime;
 }
 
@@ -922,7 +934,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 	if (!ac)
 		return 0;
 
-	channels_dsp = ac->ch;
+	channels_dsp = get_ch(ac);
 
 	if (a->cfg.srate_play && a->cfg.srate_play != srate_dsp) {
 		resamp = true;
@@ -938,14 +950,14 @@ static int start_player(struct aurx *rx, struct audio *a)
 
 		info("audio: enable auplay resampler:"
 		     " %uHz/%uch --> %uHz/%uch\n",
-		     get_srate(ac), ac->ch, srate_dsp, channels_dsp);
+		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
 
 		rx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * 2, NULL);
 		if (!rx->sampv_rs)
 			return ENOMEM;
 
 		err = auresamp_setup(&rx->resamp,
-				     get_srate(ac), ac->ch,
+				     get_srate(ac), get_ch(ac),
 				     srate_dsp, channels_dsp);
 		if (err) {
 			warning("audio: could not setup auplay resampler"
@@ -1000,7 +1012,7 @@ static int start_source(struct autx *tx, struct audio *a)
 	if (!ac)
 		return 0;
 
-	channels_dsp = ac->ch;
+	channels_dsp = get_ch(ac);
 
 	if (a->cfg.srate_src && a->cfg.srate_src != srate_dsp) {
 		resamp = true;
@@ -1016,7 +1028,7 @@ static int start_source(struct autx *tx, struct audio *a)
 
 		info("audio: enable ausrc resampler:"
 		     " %uHz/%uch <-- %uHz/%uch\n",
-		     get_srate(ac), ac->ch, srate_dsp, channels_dsp);
+		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
 
 		tx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * 2, NULL);
 		if (!tx->sampv_rs)
@@ -1024,7 +1036,7 @@ static int start_source(struct autx *tx, struct audio *a)
 
 		err = auresamp_setup(&tx->resamp,
 				     srate_dsp, channels_dsp,
-				     get_srate(ac), ac->ch);
+				     get_srate(ac), get_ch(ac));
 		if (err) {
 			warning("audio: could not setup ausrc resampler"
 				" (%m)\n", err);
@@ -1169,7 +1181,7 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 
 	if (ac != tx->ac) {
 		info("audio: Set audio encoder: %s %uHz %dch\n",
-		     ac->name, get_srate(ac), ac->ch);
+		     ac->name, get_srate(ac), get_ch(ac));
 
 		/* Audio source must be stopped first */
 		if (reset) {
@@ -1177,6 +1189,7 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		}
 
 		tx->is_g722 = (0 == str_casecmp(ac->name, "G722"));
+		tx->is_mpa  = (0 == str_casecmp(ac->name, "MPA"));
 		tx->enc = mem_deref(tx->enc);
 		tx->ac = ac;
 	}
@@ -1221,7 +1234,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	if (ac != rx->ac) {
 
 		info("audio: Set audio decoder: %s %uHz %dch\n",
-		     ac->name, get_srate(ac), ac->ch);
+		     ac->name, get_srate(ac), get_ch(ac));
 
 		rx->pt = pt_rx;
 		rx->ac = ac;
@@ -1370,7 +1383,7 @@ static int aucodec_print(struct re_printf *pf, const struct aucodec *ac)
 	if (!ac)
 		return 0;
 
-	return re_hprintf(pf, "%s %uHz/%dch", ac->name, get_srate(ac), ac->ch);
+	return re_hprintf(pf, "%s %uHz/%dch", ac->name, get_srate(ac), get_ch(ac));
 }
 
 

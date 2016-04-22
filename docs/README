@@ -69,6 +69,7 @@ Features:
   - Opus
   - Silk
   - Speex
+  - MPA
 
 * Audio-drivers:
   - Advanced Linux Sound Architecture (ALSA) audio-driver
