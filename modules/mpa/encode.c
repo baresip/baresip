@@ -25,6 +25,9 @@ static void destructor(void *arg)
 
 	if (aes->enc)
 		twolame_close(&aes->enc);
+
+	warning("mpa: encoder destroyed\n");
+
 }
 
 int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
@@ -42,7 +45,11 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 
 	aes = *aesp;
 	
-	if (!aes) {
+	if (aes) {
+		mem_deref(aes);
+//		twolame_close(&aes->enc);
+	}
+		
 		aes = mem_zalloc(sizeof(*aes), destructor);
 		aes->enc = twolame_init();
 		if (!aes->enc) {
@@ -52,7 +59,8 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		}
 		aes->channels = auc->ch;
 		*aesp = aes;
-	}
+
+		warning("mpa: encoder created %s\n",fmtp);
 
 	prm.samplerate = 32000;
 	prm.bitrate    = 128000;
@@ -76,13 +84,14 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		return EINVAL;
 	}
 
-	twolame_print_config(aes->enc);
-
 	mpares = twolame_init_params(aes->enc);
 	if(mpares!=0) {
 		warning("mpa: encoder init params failed\n");
 		return EINVAL;
 	}
+
+	twolame_print_config(aes->enc);
+
 
 	if(prm.samplerate != 48000) {
 		aes->resampler = speex_resampler_init(2, 48000, prm.samplerate, 3, &mpares);
@@ -110,14 +119,15 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 
 	if(aes->resampler)  {
 		in_len = sampc/2;
+		ds_len = 1920;
 		n=speex_resampler_process_interleaved_int(aes->resampler, sampv, &in_len, ds, &ds_len);
 		if (n!=RESAMPLER_ERR_SUCCESS || in_len != sampc/2) {
-			warning("mpa: downsample error: %s\n", strerror(n));
+			warning("mpa: downsample error: %s %d %d\n", strerror(n), in_len, sampc/2);
 			return EPROTO;
 		}
-		n = twolame_encode_buffer_interleaved(aes->enc, ds, ds_len/2,
+		n = twolame_encode_buffer_interleaved(aes->enc, ds, ds_len,
 			buf+4, (*len)-4);
-		warning("mpa encode %d %d %d %d %d\n",ds_len,sampc,aes->channels,*len,n);
+//		warning("mpa encode %d %d %d %d %d\n",ds_len,sampc,aes->channels,*len,n);
 	}
 	else
 		n = twolame_encode_buffer_interleaved(aes->enc, sampv, (int)(sampc/2),

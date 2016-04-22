@@ -53,7 +53,7 @@
  */
 
 enum {
-	AUDIO_SAMPSZ    = 2304,
+	AUDIO_SAMPSZ    = 6*1152,
 };
 
 
