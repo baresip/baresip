@@ -32,7 +32,7 @@ void mpa_decode_fmtp(struct mpa_param *prm, const char *fmtp)
 	pl_set_str(&pl, fmtp);
 
 	if (fmt_param_get(&pl, "bitrate", &val))
-		assign_if(&prm->bitrate, &val, 32000, 512000);
+		assign_if(&prm->bitrate, &val, 8000, 384000);
 
 	if (fmt_param_get(&pl, "samplerate", &val))
 		assign_if(&prm->samplerate, &val, 16000, 48000);

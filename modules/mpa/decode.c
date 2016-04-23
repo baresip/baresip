@@ -11,10 +11,12 @@
 #include <string.h>
 #include "mpa.h"
 
+#undef DEBUG
 
 struct audec_state {
 	mpg123_handle *dec;
 	SpeexResamplerState *resampler;
+	int channels;
 };
 
 
@@ -24,8 +26,9 @@ static void destructor(void *arg)
 
 	mpg123_close(ads->dec);
 	mpg123_delete(ads->dec);
-
-	warning("mpa: decoder destroyed\n");
+#ifdef DEBUG
+	debug("mpa: decoder destroyed\n");
+#endif
 }
 
 
@@ -40,7 +43,9 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 	ads = *adsp;
 
-	warning("mpa: decoder created %s\n",fmtp);
+#ifdef DEBUG
+	debug("mpa: decoder created %s\n",fmtp);
+#endif
 
 	if (ads)
 		mem_deref(ads);
@@ -48,15 +53,21 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 	ads = mem_zalloc(sizeof(*ads), destructor);
 	if (!ads)
 		return ENOMEM;
+	ads->channels = 0;
+	ads->resampler = NULL;
 
 	ads->dec = mpg123_new(NULL,&mpaerr);
 	if (!ads->dec) {
-		warning("mpa: decoder create: %s\n", mpg123_plain_strerror(mpaerr));
+		error("mpa: decoder create: %s\n", mpg123_plain_strerror(mpaerr));
 		err = ENOMEM;
 		goto out;
 	}
 
+#ifdef DEBUG
 	mpaerr = mpg123_param(ads->dec, MPG123_VERBOSE, 4, 4.);
+#else
+	mpaerr = mpg123_param(ads->dec, MPG123_VERBOSE, 0, 0.);
+#endif
 	if(mpaerr != MPG123_OK) {
 		error("MPA libmpg123 param error %s", mpg123_plain_strerror(mpaerr));
 		err = EINVAL;
@@ -92,7 +103,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		    const uint8_t *buf, size_t len)
 {
-	int mpaerr, channels, encoding;
+	int mpaerr, channels, encoding, i;
 	long samplerate,res;
 	size_t n;
 	uint32_t header;
@@ -111,10 +122,6 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		return EPROTO;
 	}
 
-
-
-
-
 	if(ads->resampler)  {
 		in_len = *sampc;
 		ds_len = 2304*2;
@@ -122,32 +129,37 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		ds_len = n / 4;		/* ds_len counts samples per channel */
 		res=speex_resampler_process_interleaved_int(ads->resampler, ds, &ds_len, sampv, &in_len);
 		if (res!=RESAMPLER_ERR_SUCCESS) {
-			warning("mpa: upsample error: %s %d %d\n", strerror(res), in_len, *sampc/2);
+			error("mpa: upsample error: %s %d %d\n", strerror(res), in_len, *sampc/2);
 			return EPROTO;
 		}
-		warning("mpa decode %d %d %d %d\n",ds_len,*sampc,in_len,n);
+#ifdef DEBUG
+		debug("mpa decode %d %d %d %d\n",ds_len,*sampc,in_len,n);
+#endif
 		*sampc = in_len * 2;
 	}
 	else {
 		mpaerr = mpg123_decode(ads->dec, buf+4, len-4, (unsigned char*)sampv, *sampc*2, &n);
-		warning("mpa decode %d %d\n",*sampc,n);
+#ifdef DEBUG
+		debug("mpa decode %d %d\n",*sampc,n);
+#endif
 		*sampc = n / 2;
+	}
+	if(ads->channels==1) {
+		for(i=*sampc-1;i>=0;i--)
+			sampv[i+i+1]=sampv[i+i]=sampv[i];
+		*sampc *= 2;
 	}
 
 	if(mpaerr == MPG123_NEW_FORMAT) {
 		mpg123_getformat(ads->dec, &samplerate, &channels, &encoding);
 		info("MPA libmpg123 format change %d %d %04X\n",samplerate,channels,encoding);
 
-		if(channels == 1) {
-				warning("mpa: resampler channel 1\n");
-				ads->resampler = NULL;
-				return EINVAL;
-		}
+		ads->channels = channels;
 			
 		if(samplerate != 48000) {
-			ads->resampler = speex_resampler_init(2, samplerate, 48000, 3, &mpaerr);
+			ads->resampler = speex_resampler_init(channels, samplerate, 48000, 3, &mpaerr);
 			if(mpaerr!=RESAMPLER_ERR_SUCCESS || ads->resampler==NULL) {
-				warning("mpa: upsampler init failed %d\n",mpaerr);
+				error("mpa: upsampler init failed %d\n",mpaerr);
 				return EINVAL;
 			}
 		}
@@ -162,24 +174,9 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		return EPROTO;
 	}
 
-//	warning("mpa decode %d %d %d\n",*sampc,len,n);
-
+#ifdef DEBUG
+	debug("mpa decode %d %d %d\n",*sampc,len,n);
+#endif
 	return 0;
 }
-
-int mpa_decode_pkloss(struct audec_state *ads, int16_t *sampv, size_t *sampc)
-{
-	if (!ads || !sampv || !sampc)
-		return EINVAL;
-
-	warning("mpa packet loss %d\n",*sampc);
-//	n = opus_decode(ads->dec, NULL, 0, sampv, (int)(*sampc/ads->ch), 0);
-//	if (n < 0)
-//		return EPROTO;
-
-//	*sampc = n * ads->ch;
-
-	return 0;
-}
-
 

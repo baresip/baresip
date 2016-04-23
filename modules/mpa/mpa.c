@@ -88,7 +88,6 @@ static struct aucodec mpa = {
 	.ench      = mpa_encode_frm,
 	.decupdh   = mpa_decode_update,
 	.dech      = mpa_decode_frm,
-	.plch      = mpa_decode_pkloss,
 };
 
 
@@ -105,8 +104,13 @@ static int module_init(void)
 	strcpy(mode,mpa.fmtp);
 
 	if (0 == conf_get_u32(conf, "mpa_bitrate", &value)) {
+		if(value<8000 || value>384000) {
+			error("MPA bitrate between 8000 and 384000 are allowed.");
+			return -1;
+		}
+
 		(void)re_snprintf(fmtp+strlen(fmtp), sizeof(fmtp)-strlen(fmtp),
-				";bitrate=%d",
+				"; bitrate=%d",
 				value);
 	}
 	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
@@ -115,7 +119,7 @@ static int module_init(void)
 			return -1;
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp), sizeof(fmtp)-strlen(fmtp),
-				";layer=%d",
+				"; layer=%d",
 				value);
 	}
 	if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
@@ -132,7 +136,7 @@ static int module_init(void)
 			return -1;
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp), sizeof(fmtp)-strlen(fmtp),
-				";samplerate=%d",
+				"; samplerate=%d",
 				value);
 	}
 	if (0 == conf_get_str(conf, "mpa_mode", mode, sizeof(mode))) {
@@ -149,12 +153,12 @@ static int module_init(void)
 		
 
 		(void)re_snprintf(fmtp+strlen(fmtp), sizeof(fmtp)-strlen(fmtp),
-				";mode=%s",
+				"; mode=%s",
 				mode);
 	}
 
-	if(fmtp[0]==';')
-		mpa.fmtp = fmtp+1;
+	if(fmtp[0]==';' && fmtp[1]==' ')
+		mpa.fmtp = fmtp+2;
 	else
 		mpa.fmtp = fmtp;
 
@@ -187,3 +191,4 @@ EXPORT_SYM const struct mod_export DECL_EXPORTS(mpa) = {
 	module_init,
 	module_close,
 };
+
