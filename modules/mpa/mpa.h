@@ -4,12 +4,17 @@
  * Copyright (C) 2016 Symonics GmbH
  */
 
+#define MPA_FRAMESIZE 1152
+#define BARESIP_FRAMESIZE (48000/50*2)
+
+#undef DEBUG
 
 struct mpa_param {
 	unsigned samplerate;
 	unsigned bitrate;
 	unsigned layer;
-	enum { AUTO=0, STEREO, JOINT_STEREO, SINGLE_CHANNEL, DUAL_CHANNEL } mode;
+	enum { AUTO=0, STEREO, JOINT_STEREO, SINGLE_CHANNEL, DUAL_CHANNEL }
+		mode;
 };
 
 
@@ -25,8 +30,6 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 		       const char *fmtp);
 int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		    const uint8_t *buf, size_t len);
-int mpa_decode_pkloss(struct audec_state *st, int16_t *sampv, size_t *sampc);
-
 
 /* SDP */
 void mpa_decode_fmtp(struct mpa_param *prm, const char *fmtp);

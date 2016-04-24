@@ -10,7 +10,7 @@
 #include "mpa.h"
 
 
-static void assign_if(uint32_t *v, const struct pl *pl,
+static void assign_if (uint32_t *v, const struct pl *pl,
 		      uint32_t min, uint32_t max)
 {
 	const uint32_t val = pl_u32(pl);
@@ -32,23 +32,24 @@ void mpa_decode_fmtp(struct mpa_param *prm, const char *fmtp)
 	pl_set_str(&pl, fmtp);
 
 	if (fmt_param_get(&pl, "bitrate", &val))
-		assign_if(&prm->bitrate, &val, 8000, 384000);
+		assign_if (&prm->bitrate, &val, 8000, 384000);
 
 	if (fmt_param_get(&pl, "samplerate", &val))
-		assign_if(&prm->samplerate, &val, 16000, 48000);
+		assign_if (&prm->samplerate, &val, 16000, 48000);
 
 	if (fmt_param_get(&pl, "layer", &val))
-		assign_if(&prm->layer, &val, 1, 3);
+		assign_if (&prm->layer, &val, 1, 3);
 
 	if (fmt_param_get(&pl, "mode", &val)) {
 
-		if(!strncmp("stereo",pl.p,pl.l))
+		if (!strncmp("stereo",pl.p,pl.l))
 			prm->mode = STEREO;
-		else if(!strncmp("joint_stereo",pl.p,pl.l))
+		else if (!strncmp("joint_stereo",pl.p,pl.l))
 			prm->mode = JOINT_STEREO;
-		else if(!strncmp("single_channel",pl.p,pl.l))
+		else if (!strncmp("single_channel",pl.p,pl.l))
 			prm->mode = SINGLE_CHANNEL;
-		else if(!strncmp("dual_channel",pl.p,pl.l))
+		else if (!strncmp("dual_channel",pl.p,pl.l))
 			prm->mode = DUAL_CHANNEL;
-	}	
+	}
 }
+
