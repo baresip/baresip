@@ -30,6 +30,7 @@
 #   USE_ISAC          iSAC audio codec
 #   USE_L16           L16 audio codec
 #   USE_LIBSRTP       Secure RTP module using libsrtp
+#   USE_MPA           MPA audo codec
 #   USE_MPG123        Use mpg123
 #   USE_OPUS          Opus audio codec
 #   USE_OSS           OSS audio driver
@@ -146,6 +147,13 @@ HAVE_SPEEXDSP := $(shell \
 ifeq ($(HAVE_SPEEXDSP),)
 HAVE_SPEEXDSP := \
 	$(shell find $(SYSROOT)/lib -name libspeexdsp$(LIB_SUFFIX) 2>/dev/null)
+endif
+ifneq ($(USE_MPG123),)
+ifneq ($(HAVE_SPEEXDSP),)
+USE_MPA  := $(shell [ -f $(SYSROOT)/include/twolame.h ] || \
+	[ -f $(SYSROOT)/local/include/twolame.h ] || \
+	[ -f $(SYSROOT_ALT)/include/twolame.h ] && echo "yes")
+endif
 endif
 USE_SPEEX := $(shell [ -f $(SYSROOT)/include/speex.h ] || \
 	[ -f $(SYSROOT)/include/speex/speex.h ] || \
@@ -345,6 +353,9 @@ MODULES   += opengles
 endif
 ifneq ($(USE_OPUS),)
 MODULES   += opus
+endif
+ifneq ($(USE_MPA),)
+MODULES   += mpa
 endif
 ifneq ($(USE_OSS),)
 MODULES   += oss
