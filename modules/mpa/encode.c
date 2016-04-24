@@ -132,7 +132,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		return EINVAL;
 
 	if (aes->resampler)  {
-		in_len = sampc/2;
+		in_len = (uint32_t)sampc/2;
 		intermediate_len = sizeof(aes->intermediate_buffer)
 			/ sizeof(aes->intermediate_buffer[0]);
 		n=speex_resampler_process_interleaved_int(aes->resampler,
@@ -145,7 +145,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		}
 		n = twolame_encode_buffer_interleaved(aes->enc,
 			aes->intermediate_buffer, intermediate_len,
-			buf+4, (*len)-4);
+			buf+4, (int)(*len)-4);
 #ifdef DEBUG
 		debug("mpa encode %d %d %d %d %d\n",intermediate_len,sampc,
 			aes->channels,*len,n);
@@ -153,7 +153,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 	}
 	else
 		n = twolame_encode_buffer_interleaved(aes->enc, sampv,
-			(int)(sampc/2), buf+4, (*len)-4);
+				      (int)(sampc/2), buf+4, (int)(*len)-4);
 
 	if (n < 0) {
 		error("mpa: encode error: %s\n", strerror((int)n));
@@ -161,7 +161,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 	}
 
 	if (n > 0) {
-		*(uint32_t*)buf = 0;
+		*(uint32_t*)(void *)buf = 0;
 		*len = n+4;
 	}
 	else

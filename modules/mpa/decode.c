@@ -113,13 +113,15 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 	size_t n;
 	spx_uint32_t intermediate_len;
 	spx_uint32_t out_len;
+	uint32_t header;
 
 	if (!ads || !sampv || !sampc || !buf || len<=4)
 		return EINVAL;
 
-	if(*(uint32_t*)buf != 0) {
+	header = *(uint32_t*)(void *)buf;
+	if (header != 0) {
 		error("MPA header is not zero %08X, not supported yet\n",
-			*(uint32_t*)buf);
+		      header);
 		return EPROTO;
 	}
 
@@ -128,9 +130,9 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 				(unsigned char*)ads->intermediate_buffer,
 				sizeof(ads->intermediate_buffer), &n);
 				/* n counts bytes */
-		intermediate_len = n / 2 / ads->channels;
+		intermediate_len = (uint32_t)(n / 2 / ads->channels);
 			/* intermediate_len counts samples per channel */
-		out_len = *sampc;
+		out_len = (uint32_t)*sampc;
 		result=speex_resampler_process_interleaved_int(
 			ads->resampler, ads->intermediate_buffer,
 			&intermediate_len, sampv, &out_len);
@@ -159,7 +161,7 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		*sampc=0;
 	}
 	if (ads->channels==1) {
-		for (i=*sampc-1;i>=0;i--)
+		for (i=(int)(*sampc-1); i>=0; i--)
 			sampv[i+i+1]=sampv[i+i]=sampv[i];
 		*sampc *= 2;
 	}
@@ -173,7 +175,7 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		ads->start = 0;
 		if (samplerate != 48000) {
 			ads->resampler = speex_resampler_init(channels,
-				samplerate, 48000, 3, &result);
+				      (uint32_t)samplerate, 48000, 3, &result);
 			if (result!=RESAMPLER_ERR_SUCCESS
 				|| ads->resampler==NULL) {
 				error("mpa: upsampler failed %d\n",result);
