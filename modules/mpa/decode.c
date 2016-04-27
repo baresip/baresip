@@ -37,6 +37,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 {
 	struct audec_state *ads;
 	int result, err=0;
+	(void)fmtp;
 
 	if (!adsp || !ac || !ac->ch)
 		return EINVAL;
