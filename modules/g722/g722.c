@@ -162,7 +162,7 @@ static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
 
 
 static struct aucodec g722 = {
-	LE_INIT, "9", "G722", 8000, 1, NULL,
+	LE_INIT, "9", "G722", 16000, 8000, 1, NULL,
 	encode_update, encode,
 	decode_update, decode, NULL,
 	NULL, NULL

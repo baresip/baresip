@@ -88,6 +88,7 @@ static struct aucodec dummy_pcma = {
 	.pt = "8",
 	.name = "PCMA",
 	.srate = 8000,
+	.crate = 8000,
 	.ch = 1,
 };
 

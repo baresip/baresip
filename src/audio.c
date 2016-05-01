@@ -91,8 +91,6 @@ struct autx {
 	uint32_t ts_tel;              /**< Timestamp for Telephony Events  */
 	size_t psize;                 /**< Packet size for sending         */
 	bool marker;                  /**< Marker bit for outgoing RTP     */
-	bool is_g722;                 /**< Set if encoder is G.722 codec   */
-	bool is_mpa;                  /**< Set if encoder is MPA codec     */
 	bool muted;                   /**< Audio source is muted           */
 	int cur_key;                  /**< Currently transmitted event     */
 
@@ -248,17 +246,12 @@ static inline uint32_t get_srate(const struct aucodec *ac)
 	if (!ac)
 		return 0;
 
-	if (!str_casecmp(ac->name, "G722"))
-		return 16000;
-	else if (!str_casecmp(ac->name, "MPA"))
-		return 48000;
-	else
-		return ac->srate;
+	return ac->srate;
 }
 
 
 /**
- * Get the DSP samplerate for an audio-codec (exception for MPA)
+ * Get the DSP channels for an audio-codec (exception for MPA)
  */
 static inline uint32_t get_ch(const struct aucodec *ac)
 {
@@ -303,7 +296,12 @@ static int add_audio_codec(struct audio *a, struct sdp_media *m,
 		return 0;
 	}
 
-	return sdp_format_add(NULL, m, false, ac->pt, ac->name, ac->srate,
+	if (ac->crate < 8000) {
+		warning("audio: illegal clock rate %u\n", ac->crate);
+		return EINVAL;
+	}
+
+	return sdp_format_add(NULL, m, false, ac->pt, ac->name, ac->crate,
 			      ac->ch, ac->fmtp_ench, ac->fmtp_cmph, ac, false,
 			      "%s", ac->fmtp);
 }
@@ -323,6 +321,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 			    int16_t *sampv, size_t sampc)
 {
 	size_t frame_size;  /* number of samples per channel */
+	size_t sampc_rtp;
 	size_t len;
 	int err;
 
@@ -349,11 +348,13 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 			goto out;
 	}
 
+	/* Convert from audio samplerate to RTP clockrate */
+	sampc_rtp = sampc * tx->ac->crate / tx->ac->srate;
+
 	/* The RTP clock rate used for generating the RTP timestamp is
 	 * independent of the number of channels and the encoding
 	 */
-	frame_size = (tx->is_g722 ? sampc/2 :
-		      tx->is_mpa ? sampc*90/48 : sampc) / get_ch(tx->ac);
+	frame_size = sampc_rtp / get_ch(tx->ac);
 
 	tx->ts += (uint32_t)frame_size;
 
@@ -1195,8 +1196,6 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 			tx->ausrc = mem_deref(tx->ausrc);
 		}
 
-		tx->is_g722 = (0 == str_casecmp(ac->name, "G722"));
-		tx->is_mpa  = (0 == str_casecmp(ac->name, "MPA"));
 		tx->enc = mem_deref(tx->enc);
 		tx->ac = ac;
 	}
@@ -1213,7 +1212,7 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		}
 	}
 
-	stream_set_srate(a->strm, get_srate(ac), get_srate(ac));
+	stream_set_srate(a->strm, ac->crate, ac->crate);
 	stream_update_encoder(a->strm, pt_tx);
 
 	if (!tx->ausrc) {
@@ -1256,7 +1255,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		}
 	}
 
-	stream_set_srate(a->strm, get_srate(ac), get_srate(ac));
+	stream_set_srate(a->strm, ac->crate, ac->crate);
 
 	if (reset) {
 

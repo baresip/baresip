@@ -737,7 +737,8 @@ struct aucodec {
 	struct le le;
 	const char *pt;
 	const char *name;
-	uint32_t srate;
+	uint32_t srate;             /* Audio samplerate */
+	uint32_t crate;             /* RTP Clock rate   */
 	uint8_t ch;
 	const char *fmtp;
 	auenc_update_h *encupdh;
