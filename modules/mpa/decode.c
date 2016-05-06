@@ -108,7 +108,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		    const uint8_t *buf, size_t len)
 {
-	int result, channels, encoding, i;
+	int result, channels, encoding, i, result2;
 	long samplerate;
 	size_t n;
 	spx_uint32_t intermediate_len;
@@ -131,10 +131,10 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		intermediate_len = n / 2 / ads->channels;
 			/* intermediate_len counts samples per channel */
 		out_len = *sampc;
-		result=speex_resampler_process_interleaved_int(
+		result2=speex_resampler_process_interleaved_int(
 			ads->resampler, ads->intermediate_buffer,
 			&intermediate_len, sampv, &out_len);
-		if (result!=RESAMPLER_ERR_SUCCESS) {
+		if (result2!=RESAMPLER_ERR_SUCCESS) {
 			error("mpa: upsample error: %s %d %d\n",
 				strerror(result), out_len, *sampc/2);
 			return EPROTO;

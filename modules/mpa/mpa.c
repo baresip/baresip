@@ -79,8 +79,7 @@
 
 
 static struct aucodec mpa = {
-	.pt       = NULL,	/* for the time being, to cope
-with AVT AC1 interop problems, we do not use "14" here */
+	.pt       = "14",
 	.name      = "MPA",
 	.srate     = 90000,
 	.ch       = 1,
