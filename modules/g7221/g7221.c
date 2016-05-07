@@ -13,6 +13,7 @@ static struct g7221_aucodec g7221 = {
 	.ac = {
 		.name      = "G7221",
 		.srate     = 16000,
+		.crate     = 16000,
 		.ch        = 1,
 		.encupdh   = g7221_encode_update,
 		.ench      = g7221_encode,

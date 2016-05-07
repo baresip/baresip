@@ -29,6 +29,7 @@
 static struct aucodec opus = {
 	.name      = "opus",
 	.srate     = 48000,
+	.crate     = 48000,
 	.ch        = 2,
 	.fmtp      = "stereo=1;sprop-stereo=1",
 	.encupdh   = opus_encode_update,
