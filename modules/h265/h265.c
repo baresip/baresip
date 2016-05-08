@@ -54,8 +54,6 @@ static int module_close(void)
 {
 	vidcodec_unregister(&h265);
 
-	x265_cleanup();
-
 	return 0;
 }
 
