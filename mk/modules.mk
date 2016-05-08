@@ -26,6 +26,7 @@
 #   USE_GST_VIDEO     Gstreamer 0.10 video module
 #   USE_GST_VIDEO1    Gstreamer 1.0 video module
 #   USE_GTK           GTK+ user interface
+#   USE_H265          H.265 video codec
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
 #   USE_L16           L16 audio codec
@@ -109,6 +110,11 @@ USE_GST_VIDEO := \
 		&& echo "yes")
 USE_GST_VIDEO1 := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
 		&& echo "yes")
+ifneq ($(USE_AVCODEC),)
+USE_H265  := $(shell [ -f $(SYSROOT)/include/x265.h ] || \
+	[ -f $(SYSROOT)/local/include/x265.h ] || \
+	[ -f $(SYSROOT_ALT)/include/x265.h ] && echo "yes")
+endif
 USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT)/local/include/iLBC_define.h ] && echo "yes")
 USE_ISAC := $(shell [ -f $(SYSROOT)/include/isac.h ] || \
@@ -335,6 +341,9 @@ MODULES   += gst_video
 endif
 ifneq ($(USE_GST_VIDEO1),)
 MODULES   += gst_video1
+endif
+ifneq ($(USE_H265),)
+MODULES   += h265
 endif
 ifneq ($(USE_ILBC),)
 MODULES   += ilbc
