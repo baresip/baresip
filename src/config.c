@@ -701,10 +701,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n# Opus codec parameters\n");
 	(void)re_fprintf(f, "opus_bitrate\t\t28000 # 6000-510000\n");
 
-	(void)re_fprintf(f, "\n# NAT Behavior Discovery\n");
-	(void)re_fprintf(f, "natbd_server\t\tcreytiv.com\n");
-	(void)re_fprintf(f, "natbd_interval\t\t600\t\t# in seconds\n");
-
 	(void)re_fprintf(f,
 			"\n# Selfview\n"
 			"video_selfview\t\twindow # {window,pip}\n"
