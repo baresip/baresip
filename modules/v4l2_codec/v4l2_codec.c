@@ -116,7 +116,7 @@ static int print_caps(int fd, unsigned width, unsigned height)
 
 	fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-	info("  FMT : CE Desc\n--------------------\n");
+	info("  Formats:\n");
 
 	while (0 == xioctl(fd, VIDIOC_ENUM_FMT, &fmtdesc)) {
 		bool selected = fmtdesc.pixelformat == V4L2_PIX_FMT_H264;
@@ -307,8 +307,9 @@ static void read_handler(int flags, void *arg)
 	}
 
 #if 0
-	debug("image captured at %ld, %ld\n",
-	       buf.timestamp.tv_sec, buf.timestamp.tv_usec);
+	debug("image captured at %ld, %ld (%zu bytes)\n",
+	      buf.timestamp.tv_sec, buf.timestamp.tv_usec,
+	      (size_t)buf.bytesused);
 #endif
 
 	{
