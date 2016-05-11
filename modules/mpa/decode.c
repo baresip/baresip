@@ -24,6 +24,9 @@ static void destructor(void *arg)
 {
 	struct audec_state *ads = arg;
 
+	if(ads->resampler)
+		speex_resampler_destroy(ads->resampler);
+
 	mpg123_close(ads->dec);
 	mpg123_delete(ads->dec);
 #ifdef DEBUG
@@ -71,7 +74,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 	result = mpg123_param(ads->dec, MPG123_VERBOSE, 0, 0.);
 #endif
 	if (result != MPG123_OK) {
-		error("MPA libmpg123 param error %s",
+		error("MPA libmpg123 param error %s\n",
 			mpg123_plain_strerror(result));
 		err = EINVAL;
 		goto out;
@@ -80,7 +83,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 	result = mpg123_format_all(ads->dec);
 	if (result != MPG123_OK) {
-		error("MPA libmpg123 format error %s",
+		error("MPA libmpg123 format error %s\n",
 			mpg123_plain_strerror(result));
 		err = EINVAL;
 		goto out;
@@ -88,7 +91,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 	result = mpg123_open_feed(ads->dec);
 	if (result != MPG123_OK) {
-		error("MPA libmpg123 open feed error %s",
+		error("MPA libmpg123 open feed error %s\n",
 			mpg123_plain_strerror(result));
 		err = EINVAL;
 		goto out;
@@ -108,11 +111,15 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		    const uint8_t *buf, size_t len)
 {
-	int result, channels, encoding, i, result2;
+	int result, channels, encoding, i;
 	long samplerate;
 	size_t n;
 	spx_uint32_t intermediate_len;
 	spx_uint32_t out_len;
+
+#ifdef DEBUG
+		info("mpa decode start %d %ld\n",len, *sampc);
+#endif
 
 	if (!ads || !sampv || !sampc || !buf || len<=4)
 		return EINVAL;
@@ -123,46 +130,16 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		return EPROTO;
 	}
 
-	if (ads->resampler)  {
+		n = 0;
 		result = mpg123_decode(ads->dec, buf+4, len-4,
 				(unsigned char*)ads->intermediate_buffer,
 				sizeof(ads->intermediate_buffer), &n);
 				/* n counts bytes */
-		intermediate_len = n / 2 / ads->channels;
-			/* intermediate_len counts samples per channel */
-		out_len = *sampc;
-		result2=speex_resampler_process_interleaved_int(
-			ads->resampler, ads->intermediate_buffer,
-			&intermediate_len, sampv, &out_len);
-		if (result2!=RESAMPLER_ERR_SUCCESS) {
-			error("mpa: upsample error: %s %d %d\n",
-				strerror(result), out_len, *sampc/2);
-			return EPROTO;
-		}
-#ifdef DEBUG
-		info("mpa decode %d %d %d %d\n",intermediate_len,*sampc,
-			out_len,n);
-#endif
-		*sampc = out_len * ads->channels;
-	}
-	else {
-		result = mpg123_decode(ads->dec, buf+4, len-4,
-				(unsigned char*)sampv, *sampc*2, &n);
-#ifdef DEBUG
-		info("mpa decode %d %d\n",*sampc,n);
-#endif
-		*sampc = n / 2;
-	}
 
-	if (ads->start<100) {	/* mpg123 needs some to sync */
-		ads->start++;
-		*sampc=0;
-	}
-	if (ads->channels==1) {
-		for (i=*sampc-1;i>=0;i--)
-			sampv[i+i+1]=sampv[i+i]=sampv[i];
-		*sampc *= 2;
-	}
+#ifdef DEBUG
+		info("mpa decoded %d %d %d %d\n",result, len-4, n, ads->channels);
+#endif
+
 
 	if (result == MPG123_NEW_FORMAT) {
 		mpg123_getformat(ads->dec, &samplerate, &channels, &encoding);
@@ -171,6 +148,8 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 
 		ads->channels = channels;
 		ads->start = 0;
+		if(ads->resampler)
+			speex_resampler_destroy(ads->resampler);
 		if (samplerate != 48000) {
 			ads->resampler = speex_resampler_init(channels,
 				samplerate, 48000, 3, &result);
@@ -183,17 +162,53 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		else
 			ads->resampler = NULL;
 	}
-	else if (result == MPG123_NEED_MORE)
-		return 0;
+	else if (result == MPG123_NEED_MORE) ;
+//		return 0;
 	else if (result != MPG123_OK) {
-		error("MPA libmpg123 feed error %d %s", result,
+		error("MPA libmpg123 feed error %d %s\n", result,
 			mpg123_plain_strerror(result));
 		return EPROTO;
 	}
 
+	if (ads->resampler)  {
+		intermediate_len = n / 2 / ads->channels;
+			/* intermediate_len counts samples per channel */
+		out_len = *sampc / 2;
+	
+		result=speex_resampler_process_interleaved_int(
+			ads->resampler, ads->intermediate_buffer,
+			&intermediate_len, sampv, &out_len);
+		if (result!=RESAMPLER_ERR_SUCCESS) {
+			error("mpa: upsample error: %s %d %d\n",
+				strerror(result), out_len, *sampc/2);
+			return EPROTO;
+		}
+		if (ads->channels==1) {
+			for (i=out_len-1;i>=0;i--)
+				sampv[i+i+1]=sampv[i+i]=sampv[i];
+			*sampc = out_len * 2;
+		}
+		else
+			*sampc = out_len * ads->channels;
+	}
+	else {
+		n /= 2;
+		if(ads->channels!=1) {
+			for(i=0;(unsigned)i<n;i++)
+				sampv[i]=ads->intermediate_buffer[i];
+			*sampc = n;
+		}
+		else {
+			for(i=0;(unsigned)i<n;i++)
+				sampv[i*2]=sampv[i*2+1]=ads->intermediate_buffer[i];
+			*sampc = n * 2;
+	}
+
 #ifdef DEBUG
-	debug("mpa decode %d %d %d\n",*sampc,len,n);
+	info("mpa decode done %d\n",*sampc);
 #endif
+	}
+
 	return 0;
 }
 

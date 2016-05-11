@@ -82,7 +82,7 @@ static struct aucodec mpa = {
 	.pt       = "14",
 	.name      = "MPA",
 	.srate     = 90000,
-	.ch       = 1,
+	.ch       = 2,
 	.fmtp      = "",
 	.encupdh   = mpa_encode_update,
 	.ench      = mpa_encode_frm,
@@ -106,7 +106,7 @@ static int module_init(void)
 	if (0 == conf_get_u32(conf, "mpa_bitrate", &value)) {
 		if (value<8000 || value>384000) {
 			error("MPA bitrate between 8000 and "
-				"384000 are allowed.");
+				"384000 are allowed.\n");
 			return -1;
 		}
 
@@ -134,7 +134,7 @@ static int module_init(void)
 			break;
 		default:
 			error("MPA samplerates of 16, 22.05, 24, 32, "
-				"44.1, and 48 kHz are allowed.");
+				"44.1, and 48 kHz are allowed.\n");
 			return -1;
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp),
@@ -153,7 +153,7 @@ static int module_init(void)
 			&& strcmp(mode,"single_channel")
 			&& strcmp(mode,"dual_channel")) {
 			error("MPA mode: Permissible values are stereo, "
-			    "joint_stereo, single_channel, dual_channel");
+			    "joint_stereo, single_channel, dual_channel.\n");
 			return -1;
 		}
 
@@ -170,7 +170,7 @@ static int module_init(void)
 	/* init decoder library */
 	res = mpg123_init();
 	if (res != MPG123_OK) {
-		error("MPA libmpg123 init error %s",
+		error("MPA libmpg123 init error %s\n",
 			mpg123_plain_strerror(res));
 		return -1;
 	}

@@ -23,6 +23,9 @@ static void destructor(void *arg)
 {
 	struct auenc_state *aes = arg;
 
+	if(aes->resampler)
+		speex_resampler_destroy(aes->resampler);
+
 	if (aes->enc)
 		twolame_close(&aes->enc);
 #ifdef DEBUG
@@ -51,7 +54,7 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	aes = mem_zalloc(sizeof(*aes), destructor);
 	aes->enc = twolame_init();
 	if (!aes->enc) {
-		error("mpa: encoder create failed");
+		error("mpa: encoder create failed\n");
 		mem_deref(aes);
 		return ENOMEM;
 	}
@@ -96,9 +99,9 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		err=EINVAL;
 		goto out;
 	}
-
+#ifdef DEBUG
 	twolame_print_config(aes->enc);
-
+#endif
 	if (prm.samplerate != 48000) {
 		aes->resampler = speex_resampler_init(2, 48000,
 			prm.samplerate, 3, &result);
