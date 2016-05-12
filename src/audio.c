@@ -278,7 +278,7 @@ static bool aucodec_equal(const struct aucodec *a, const struct aucodec *b)
 	if (!a || !b)
 		return false;
 
-	return get_srate(a) == get_srate(b) && a->ch == b->ch;
+	return get_srate(a) == get_srate(b) && get_ch(a) == get_ch(b);
 }
 
 
@@ -337,8 +337,8 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	tx->mb->end = STREAM_PRESZ + len;
 
 	if (mbuf_get_left(tx->mb)) {
-
-		err = stream_send(a->strm, tx->marker, -1, tx->ts, tx->mb);
+		if(len)
+			err = stream_send(a->strm, tx->marker, -1, tx->ts, tx->mb);
 		if (err)
 			goto out;
 	}

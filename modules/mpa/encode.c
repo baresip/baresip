@@ -23,13 +23,15 @@ static void destructor(void *arg)
 {
 	struct auenc_state *aes = arg;
 
-	if(aes->resampler)
+	if(aes->resampler) {
 		speex_resampler_destroy(aes->resampler);
+		aes->resampler = NULL;
+	}
 
 	if (aes->enc)
 		twolame_close(&aes->enc);
 #ifdef DEBUG
-	debug("mpa: encoder destroyed\n");
+	info("mpa encode destroyed\n");
 #endif
 }
 
@@ -47,7 +49,6 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 
 	aes = *aesp;
 	if (aes) {
-		info("ever?");
 		mem_deref(aes);
 	}
 
@@ -60,7 +61,7 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	}
 	aes->channels = ac->ch;
 #ifdef DEBUG
-	debug("mpa: encoder created %s\n",fmtp);
+	info("mpa: encoder created %s\n",fmtp);
 #endif
 
 	prm.samplerate = 32000;
@@ -150,7 +151,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 			aes->intermediate_buffer, intermediate_len,
 			buf+4, (*len)-4);
 #ifdef DEBUG
-		debug("mpa encode %d %d %d %d %d\n",intermediate_len,sampc,
+		info("mpa encode %d %d %d %d %d\n",intermediate_len,sampc,
 			aes->channels,*len,n);
 #endif
 	}
@@ -171,7 +172,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		*len = 0;
 
 #ifdef DEBUG
-	debug("mpa encode %d %d %d %d\n",sampc,aes->channels,*len,n);
+	info("mpa encode %d %d %d %d\n",sampc,aes->channels,*len,n);
 #endif
 	return 0;
 }
