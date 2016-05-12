@@ -200,7 +200,9 @@ USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
 	&& echo "yes")
-USE_GTK := $(shell pkg-config 'glib-2.0 >= 2.32' && echo "yes")
+USE_GTK := $(shell [ -f $(SYSROOT)/include/gtk-2.0/gtk/gtk.h ] || \
+	[ -f $(SYSROOT)/local/include/gtk-2.0/gtk/gtk.h ] || \
+	[ -f $(SYSROOT_ALT)/include/gtk-2.0/gtk/gtk.h ] && echo "yes")
 else
 # Windows.
 # Accounts for mingw with Windows SDK (formerly known as Platform SDK)
