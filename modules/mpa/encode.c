@@ -31,7 +31,7 @@ static void destructor(void *arg)
 	if (aes->enc)
 		twolame_close(&aes->enc);
 #ifdef DEBUG
-	info("mpa encode destroyed\n");
+	debug("MPA enc destroyed\n");
 #endif
 }
 
@@ -55,13 +55,13 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	aes = mem_zalloc(sizeof(*aes), destructor);
 	aes->enc = twolame_init();
 	if (!aes->enc) {
-		error("mpa: encoder create failed\n");
+		error("MPA enc create failed\n");
 		mem_deref(aes);
 		return ENOMEM;
 	}
 	aes->channels = ac->ch;
 #ifdef DEBUG
-	info("mpa: encoder created %s\n",fmtp);
+	debug("MPA enc created %s\n",fmtp);
 #endif
 
 	prm.samplerate = 32000;
@@ -89,14 +89,14 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	result |= twolame_set_out_samplerate(aes->enc, prm.samplerate);
 	result |= twolame_set_num_channels(aes->enc, 2);
 	if (result!=0) {
-		error("mpa: encoder set failed\n");
+		error("MPA enc set failed\n");
 		err=EINVAL;
 		goto out;
 	}
 
 	result = twolame_init_params(aes->enc);
 	if (result!=0) {
-		error("mpa: encoder init params failed\n");
+		error("MPA enc init params failed\n");
 		err=EINVAL;
 		goto out;
 	}
@@ -107,7 +107,7 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		aes->resampler = speex_resampler_init(2, 48000,
 			prm.samplerate, 3, &result);
 		if (result!=RESAMPLER_ERR_SUCCESS) {
-			error("mpa: resampler init failed %d\n",result);
+			error("MPA enc resampler init failed %d\n",result);
 			err=EINVAL;
 			goto out;
 		}
@@ -143,7 +143,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 			sampv, &in_len, aes->intermediate_buffer,
 			&intermediate_len);
 		if (n!=RESAMPLER_ERR_SUCCESS || in_len != sampc/2) {
-			warning("mpa: downsample error: %s %d %d\n",
+			error("MPA enc downsample error: %s %d %d\n",
 				strerror(n), in_len, sampc/2);
 			return EPROTO;
 		}
@@ -151,7 +151,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 			aes->intermediate_buffer, intermediate_len,
 			buf+4, (*len)-4);
 #ifdef DEBUG
-		info("mpa encode %d %d %d %d %d\n",intermediate_len,sampc,
+		debug("MPA enc %d %d %d %d %d\n",intermediate_len,sampc,
 			aes->channels,*len,n);
 #endif
 	}
@@ -160,7 +160,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 			(int)(sampc/2), buf+4, (*len)-4);
 
 	if (n < 0) {
-		error("mpa: encode error: %s\n", strerror((int)n));
+		error("MPA enc error %s\n", strerror((int)n));
 		return EPROTO;
 	}
 
@@ -172,7 +172,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		*len = 0;
 
 #ifdef DEBUG
-	info("mpa encode %d %d %d %d\n",sampc,aes->channels,*len,n);
+	debug("MPA enc done %d %d %d %d\n",sampc,aes->channels,*len,n);
 #endif
 	return 0;
 }
