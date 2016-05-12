@@ -23,7 +23,7 @@ static void destructor(void *arg)
 {
 	struct auenc_state *aes = arg;
 
-	if(aes->resampler) {
+	if (aes->resampler) {
 		speex_resampler_destroy(aes->resampler);
 		aes->resampler = NULL;
 	}

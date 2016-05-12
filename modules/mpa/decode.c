@@ -24,7 +24,7 @@ static void destructor(void *arg)
 {
 	struct audec_state *ads = arg;
 
-	if(ads->resampler)
+	if (ads->resampler)
 		speex_resampler_destroy(ads->resampler);
 
 	mpg123_close(ads->dec);
@@ -73,7 +73,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 #else
 	result = mpg123_param(ads->dec, MPG123_VERBOSE, 0, 0.);
 #endif
-	if ( result != MPG123_OK) {
+	if (result != MPG123_OK) {
 		error("MPA dec param error %s\n",
 			mpg123_plain_strerror(result));
 		err = EINVAL;
@@ -82,7 +82,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 
 	result = mpg123_format_all(ads->dec);
-	if ( result != MPG123_OK) {
+	if (result != MPG123_OK) {
 		error("MPA dec format error %s\n",
 			mpg123_plain_strerror(result));
 		err = EINVAL;
@@ -90,7 +90,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 	}
 
 	result = mpg123_open_feed(ads->dec);
-	if ( result != MPG123_OK) {
+	if (result != MPG123_OK) {
 		error("MPA dec open feed error %s\n",
 			mpg123_plain_strerror(result));
 		err = EINVAL;
@@ -124,7 +124,7 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 	if (!ads || !sampv || !sampc || !buf || len<=4)
 		return EINVAL;
 
-	if(*(uint32_t*)buf != 0) {
+	if (*(uint32_t*)buf != 0) {
 		error("MPA dec header is not zero %08X, not supported yet\n",
 			*(uint32_t*)buf);
 		return EPROTO;
@@ -148,7 +148,7 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 
 		ads->channels = channels;
 		ads->start = 0;
-		if(ads->resampler)
+		if (ads->resampler)
 			speex_resampler_destroy(ads->resampler);
 		if (samplerate != 48000) {
 			ads->resampler = speex_resampler_init(channels,
