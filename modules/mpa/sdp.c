@@ -42,13 +42,13 @@ void mpa_decode_fmtp(struct mpa_param *prm, const char *fmtp)
 
 	if (fmt_param_get(&pl, "mode", &val)) {
 
-		if (!strncmp("stereo",pl.p,pl.l))
+		if (!strncmp("stereo",val.p,val.l))
 			prm->mode = STEREO;
-		else if (!strncmp("joint_stereo",pl.p,pl.l))
+		else if (!strncmp("joint_stereo",val.p,val.l))
 			prm->mode = JOINT_STEREO;
-		else if (!strncmp("single_channel",pl.p,pl.l))
+		else if (!strncmp("single_channel",val.p,val.l))
 			prm->mode = SINGLE_CHANNEL;
-		else if (!strncmp("dual_channel",pl.p,pl.l))
+		else if (!strncmp("dual_channel",val.p,val.l))
 			prm->mode = DUAL_CHANNEL;
 	}
 }
