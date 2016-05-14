@@ -277,7 +277,7 @@ static bool aucodec_equal(const struct aucodec *a, const struct aucodec *b)
 	if (!a || !b)
 		return false;
 
-	return get_srate(a) == get_srate(b) && a->ch == b->ch;
+	return get_srate(a) == get_srate(b) && get_ch(a) == get_ch(b);
 }
 
 
@@ -332,7 +332,12 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	len = mbuf_get_space(tx->mb);
 
 	err = tx->ac->ench(tx->enc, mbuf_buf(tx->mb), &len, sampv, sampc);
-	if (err) {
+	if ((err & 0xffff0000) == 0x00010000) {
+		/* MPA needs some special treatment here */
+		tx->ts = err & 0xffff;
+		err = 0;
+	}
+	else if (err) {
 		warning("audio: %s encode error: %d samples (%m)\n",
 			tx->ac->name, sampc, err);
 		goto out;
@@ -342,10 +347,12 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	tx->mb->end = STREAM_PRESZ + len;
 
 	if (mbuf_get_left(tx->mb)) {
-
-		err = stream_send(a->strm, tx->marker, -1, tx->ts, tx->mb);
-		if (err)
-			goto out;
+		if (len) {
+			err = stream_send(a->strm, tx->marker, -1,
+					tx->ts, tx->mb);
+			if (err)
+				goto out;
+		}
 	}
 
 	/* Convert from audio samplerate to RTP clockrate */
@@ -353,6 +360,8 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 	/* The RTP clock rate used for generating the RTP timestamp is
 	 * independent of the number of channels and the encoding
+	 * However, MPA support variable packet durations. Thus, MPA
+	 * should update the ts according to its current internal state.
 	 */
 	frame_size = sampc_rtp / get_ch(tx->ac);
 
