@@ -162,8 +162,8 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		else
 			ads->resampler = NULL;
 	}
-	else if (result == MPG123_NEED_MORE) 
-		;			/* workaround: do nothing */ 
+	else if (result == MPG123_NEED_MORE)
+		;			/* workaround: do nothing */
 	else if (result != MPG123_OK) {
 		error("MPA dec feed error %d %s\n", result,
 			mpg123_plain_strerror(result));
@@ -174,7 +174,7 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		intermediate_len = n / 2 / ads->channels;
 			/* intermediate_len counts samples per channel */
 		out_len = *sampc / 2;
-	
+
 		result=speex_resampler_process_interleaved_int(
 			ads->resampler, ads->intermediate_buffer,
 			&intermediate_len, sampv, &out_len);
@@ -193,14 +193,15 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 	}
 	else {
 		n /= 2;
-		if(ads->channels!=1) {
-			for(i=0;(unsigned)i<n;i++)
+		if (ads->channels!=1) {
+			for (i=0;(unsigned)i<n;i++)
 				sampv[i]=ads->intermediate_buffer[i];
 			*sampc = n;
 		}
 		else {
-			for(i=0;(unsigned)i<n;i++)
-				sampv[i*2]=sampv[i*2+1]=ads->intermediate_buffer[i];
+			for (i=0;(unsigned)i<n;i++)
+				sampv[i*2]=sampv[i*2+1]=
+					ads->intermediate_buffer[i];
 			*sampc = n * 2;
 	}
 

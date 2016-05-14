@@ -67,7 +67,7 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	prm.samplerate = 32000;
 	prm.bitrate    = 128000;
 	prm.layer      = 2;
-	prm.mode       = SINGLE_CHANNEL; 
+	prm.mode       = SINGLE_CHANNEL;
 	mpa_decode_fmtp(&prm, fmtp);
 
 	result = 0;

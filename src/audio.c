@@ -248,7 +248,8 @@ static inline uint32_t get_srate(const struct aucodec *ac)
 	if (!ac)
 		return 0;
 
-	return !str_casecmp(ac->name, "G722") ? 16000 : !str_casecmp(ac->name, "MPA") ? 48000 : ac->srate;
+	return !str_casecmp(ac->name, "G722") ? 16000 :
+		!str_casecmp(ac->name, "MPA") ? 48000 : ac->srate;
 }
 
 /**
@@ -337,8 +338,9 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	tx->mb->end = STREAM_PRESZ + len;
 
 	if (mbuf_get_left(tx->mb)) {
-		if(len)
-			err = stream_send(a->strm, tx->marker, -1, tx->ts, tx->mb);
+		if (len)
+			err = stream_send(a->strm, tx->marker, -1,
+					tx->ts, tx->mb);
 		if (err)
 			goto out;
 	}
@@ -346,7 +348,8 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	/* The RTP clock rate used for generating the RTP timestamp is
 	 * independent of the number of channels and the encoding
 	 */
-	frame_size = (tx->is_g722 ? sampc/2 : tx->is_mpa ? sampc*90/48 : sampc) / get_ch(tx->ac);
+	frame_size = (tx->is_g722 ? sampc/2: tx->is_mpa ? sampc*90/48 : sampc)
+			/ get_ch(tx->ac);
 
 	tx->ts += (uint32_t)frame_size;
 
@@ -1383,7 +1386,8 @@ static int aucodec_print(struct re_printf *pf, const struct aucodec *ac)
 	if (!ac)
 		return 0;
 
-	return re_hprintf(pf, "%s %uHz/%dch", ac->name, get_srate(ac), get_ch(ac));
+	return re_hprintf(pf, "%s %uHz/%dch", ac->name, get_srate(ac),
+			get_ch(ac));
 }
 
 
