@@ -151,7 +151,8 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 			speex_resampler_destroy(ads->resampler);
 		if (samplerate != MPA_IORATE) {
 			ads->resampler = speex_resampler_init(channels,
-				      (uint32_t)samplerate, MPA_IORATE, 3, &result);
+				      (uint32_t)samplerate, MPA_IORATE,
+				      3, &result);
 			if (result!=RESAMPLER_ERR_SUCCESS
 				|| ads->resampler==NULL) {
 				error("MPA dec upsampler failed %d\n",result);
