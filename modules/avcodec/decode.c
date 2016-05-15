@@ -178,6 +178,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		switch (st->pict->format) {
 
 		case AV_PIX_FMT_YUV420P:
+		case AV_PIX_FMT_YUVJ420P:
 			frame->fmt = VID_FMT_YUV420P;
 			break;
 
