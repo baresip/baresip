@@ -171,9 +171,9 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 	}
 
 	if (ads->resampler)  {
-		intermediate_len = n / 2 / ads->channels;
+		intermediate_len = (uint32_t)(n / 2 / ads->channels);
 			/* intermediate_len counts samples per channel */
-		out_len = *sampc / 2;
+		out_len = (uint32_t)(*sampc / 2);
 
 		result=speex_resampler_process_interleaved_int(
 			ads->resampler, ads->intermediate_buffer,
