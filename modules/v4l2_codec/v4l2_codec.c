@@ -119,12 +119,16 @@ static int print_caps(int fd, unsigned width, unsigned height)
 	info("  Formats:\n");
 
 	while (0 == xioctl(fd, VIDIOC_ENUM_FMT, &fmtdesc)) {
-		bool selected = fmtdesc.pixelformat == V4L2_PIX_FMT_H264;
+		bool selected = false;
 
 		strncpy(fourcc, (char *)&fmtdesc.pixelformat, 4);
 
-		if (fmtdesc.pixelformat == V4L2_PIX_FMT_H264)
-		    support_h264 = true;
+#ifdef V4L2_PIX_FMT_H264
+		if (fmtdesc.pixelformat == V4L2_PIX_FMT_H264) {
+			support_h264 = true;
+			selected = true;
+		}
+#endif
 
 		c = fmtdesc.flags & V4L2_FMT_FLAG_COMPRESSED ? 'C' : ' ';
 
@@ -145,7 +149,9 @@ static int print_caps(int fd, unsigned width, unsigned height)
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix.width = width;
 	fmt.fmt.pix.height = height;
+#ifdef V4L2_PIX_FMT_H264
 	fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_H264;
+#endif
 	fmt.fmt.pix.field = V4L2_FIELD_NONE;
 
 	if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt)) {
