@@ -7,14 +7,18 @@
 #include <rem.h>
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/avutil.h>
 #include <libavutil/mem.h>
+#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 #include <libavutil/pixdesc.h>
+#endif
 #include "h26x.h"
 #include "avcodec.h"
 
 
 #if LIBAVUTIL_VERSION_MAJOR < 52
 #define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
+#define AV_PIX_FMT_YUVJ420P PIX_FMT_YUVJ420P
 #define AV_PIX_FMT_NV12    PIX_FMT_NV12
 #endif
 
@@ -175,6 +179,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 	if (got_picture) {
 
+#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 		switch (st->pict->format) {
 
 		case AV_PIX_FMT_YUV420P:
@@ -189,7 +194,9 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 				av_get_pix_fmt_name(st->pict->format));
 			goto out;
 		}
-
+#else
+		frame->fmt = VID_FMT_YUV420P;
+#endif
 
 		for (i=0; i<4; i++) {
 			frame->data[i]     = st->pict->data[i];

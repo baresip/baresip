@@ -202,9 +202,11 @@ static int open_encoder(struct videnc_state *st,
 	}
 #endif
 
+#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 	st->pict->format = pix_fmt;
 	st->pict->width = size->w;
 	st->pict->height = size->h;
+#endif
 
  out:
 	if (err) {
