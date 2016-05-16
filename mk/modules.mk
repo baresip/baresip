@@ -409,7 +409,7 @@ ifneq ($(USE_V4L),)
 MODULES   += v4l
 endif
 ifneq ($(USE_V4L2),)
-MODULES   += v4l2
+MODULES   += v4l2 v4l2_codec
 endif
 ifneq ($(USE_VPX),)
 MODULES   += vpx
