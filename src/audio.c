@@ -53,7 +53,7 @@
  */
 
 enum {
-	AUDIO_SAMPSZ    = 6*1152,
+	AUDIO_SAMPSZ    = 3*1920  /* Max samples, 48000Hz 2ch at 60ms */
 };
 
 
@@ -564,6 +564,8 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 				   mbuf_buf(mb), mbuf_get_left(mb));
 	}
 	else if (rx->ac->plch) {
+		sampc = rx->ac->srate * rx->ac->ch * rx->ptime / 1000;
+
 		err = rx->ac->plch(rx->dec, rx->sampv, &sampc);
 	}
 	else {
