@@ -125,9 +125,9 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 	if (!ads || !sampv || !sampc || !buf || len<=4)
 		return EINVAL;
 
-	if (*(uint32_t*)buf != 0) {
+	if (*(uint32_t*)(void *)buf != 0) {
 		error("MPA dec header is not zero %08X, not supported yet\n",
-			*(uint32_t*)buf);
+			*(uint32_t*)(void *)buf);
 		return EPROTO;
 	}
 
