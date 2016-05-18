@@ -7,7 +7,7 @@
 MOD		:= zrtp
 $(MOD)_SRCS	+= zrtp.c
 $(MOD)_LFLAGS	+= -lzrtp -lbn
-$(MOD)_CFLAGS   += -I/usr/local/include/libzrtp
+$(MOD)_CFLAGS   += -isystem /usr/local/include/libzrtp
 $(MOD)_CFLAGS   += -Wno-strict-prototypes
 
 include mk/mod.mk
