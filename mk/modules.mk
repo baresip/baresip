@@ -110,6 +110,8 @@ USE_GST_VIDEO := \
 		&& echo "yes")
 USE_GST_VIDEO1 := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
 		&& echo "yes")
+USE_GTK := $(shell pkg-config 'gtk+-2.0 >= 2.22' && \
+		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
 ifneq ($(USE_AVCODEC),)
 USE_H265  := $(shell [ -f $(SYSROOT)/include/x265.h ] || \
 	[ -f $(SYSROOT)/local/include/x265.h ] || \
@@ -200,9 +202,6 @@ USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
 	&& echo "yes")
-USE_GTK := $(shell [ -f $(SYSROOT)/include/gtk-2.0/gtk/gtk.h ] || \
-	[ -f $(SYSROOT)/local/include/gtk-2.0/gtk/gtk.h ] || \
-	[ -f $(SYSROOT_ALT)/include/gtk-2.0/gtk/gtk.h ] && echo "yes")
 else
 # Windows.
 # Accounts for mingw with Windows SDK (formerly known as Platform SDK)
@@ -342,6 +341,9 @@ endif
 ifneq ($(USE_GST_VIDEO1),)
 MODULES   += gst_video1
 endif
+ifneq ($(USE_GTK),)
+MODULES   += gtk
+endif
 ifneq ($(USE_H265),)
 MODULES   += h265
 endif
@@ -423,10 +425,6 @@ endif
 ifneq ($(USE_ZRTP),)
 MODULES   += zrtp
 endif
-ifneq ($(USE_GTK),)
-MODULES   += gtk
-endif
-
 ifneq ($(USE_DSHOW),)
 MODULES   += dshow
 endif
