@@ -20,6 +20,9 @@
  * - Define and implement fragmentation of large packets
  * - Define an IETF RTP Payload type
  *
+ * External libraries:
+ *
+ *   daala version 0.0-1564-g79787c7 (or later)
  *
  * References:
  *

@@ -143,7 +143,7 @@ int daala_decode(struct viddec_state *vds, struct vidframe *frame,
 		}
 	}
 	else {
-		od_img img;
+		daala_image img;
 
 		if (!vds->got_headers) {
 			warning("daala: decode: still waiting for headers\n");
