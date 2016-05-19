@@ -159,8 +159,8 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 #endif
 	}
 	else {
-		n = twolame_encode_buffer_interleaved(aes->enc, 
-			sampv, (int)(sampc/2), 
+		n = twolame_encode_buffer_interleaved(aes->enc,
+			sampv, (int)(sampc/2),
 			buf+4, (int)(*len)-4);
 #ifdef DEBUG
 		debug("MPA enc %d %d %d %d\n",sampc,
@@ -180,7 +180,8 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		*len = 0;
 
 #ifdef DEBUG
-	debug("MPA enc done %d %d %d %d %p\n",sampc,aes->channels,*len,n,aes->enc);
+	debug("MPA enc done %d %d %d %d %p\n",sampc,aes->channels,
+		*len,n,aes->enc);
 #endif
 	aes->timestamp += ((MPA_FRAMESIZE*MPA_RTPRATE)<<4) / aes->samplerate;
 
