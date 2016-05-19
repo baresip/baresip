@@ -15,7 +15,7 @@ struct auenc_state {
 	twolame_options *enc;
 	int channels, samplerate;
 	SpeexResamplerState *resampler;
-	int16_t intermediate_buffer[BARESIP_FRAMESIZE];
+	int16_t intermediate_buffer[MPA_FRAMESIZE*6];
 	uint32_t timestamp;
 };
 
@@ -154,14 +154,19 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 			aes->intermediate_buffer, intermediate_len,
 			buf+4, (int)(*len)-4);
 #ifdef DEBUG
-		debug("MPA enc %d %d %d %d %d\n",intermediate_len,sampc,
+		debug("MPA enc %d %d %d %d %d %p\n",intermediate_len,sampc,
+			aes->channels,*len,n,aes->enc);
+#endif
+	}
+	else {
+		n = twolame_encode_buffer_interleaved(aes->enc, 
+			sampv, (int)(sampc/2), 
+			buf+4, (int)(*len)-4);
+#ifdef DEBUG
+		debug("MPA enc %d %d %d %d\n",sampc,
 			aes->channels,*len,n);
 #endif
 	}
-	else
-		n = twolame_encode_buffer_interleaved(aes->enc, sampv,
-				      (int)(sampc/2), buf+4, (int)(*len)-4);
-
 	if (n < 0) {
 		error("MPA enc error %s\n", strerror((int)n));
 		return EPROTO;
@@ -175,7 +180,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		*len = 0;
 
 #ifdef DEBUG
-	debug("MPA enc done %d %d %d %d\n",sampc,aes->channels,*len,n);
+	debug("MPA enc done %d %d %d %d %p\n",sampc,aes->channels,*len,n,aes->enc);
 #endif
 	aes->timestamp += ((MPA_FRAMESIZE*MPA_RTPRATE)<<4) / aes->samplerate;
 
