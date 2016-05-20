@@ -179,6 +179,9 @@ static int module_init(void)
 
 	aucodec_register(&mpa);
 
+#ifdef DEBUG
+	info("MPA init with %s\n",mpa.fmtp);
+#endif
 	return 0;
 }
 
