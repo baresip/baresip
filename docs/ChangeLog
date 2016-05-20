@@ -1,3 +1,56 @@
+2016-05-20 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.19
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.4.19
+	* NOTE: Requires libre v0.4.14 or later
+	        Requires librem v0.4.7 or later
+
+	* new modules:
+	  - mpa        MPA Speech and Audio Codec (thanks Christian Hoene)
+
+	* baresip-core:
+	  - audio: remove is_g722 exception
+		   use aucodec's rtp clockrate for calculating RTP timestamp
+		   plc: make sure sampc is exactly one ptime frame
+	  - aucodec: split srate into DSP srate and RTP clockrate
+		     (these are different for e.g. G.722 and MDA)
+	  - mos: add mos_calculate() (thanks Lorenzo Mangani)
+	  - net: use configured dns servers only, if specified
+	  - ua: fix potential NULL-pointer crash for uag.cfg
+
+	* selftest:
+	  - add test for SIP registration with DNS
+	  - add test for SIP registration with authentication
+	  - add test for MOS calculations
+	  - added a mock DNS Server
+	  - added a mock SIP Server
+
+	* Modules:
+
+	* aucodec: add support for NV12 and YUVJ420P pixel formats
+
+	* daala: update to libdaala version 0.0-1564-g79787c7
+
+	* gtk: fix autodetection of libgtk+ 2.0 (thanks Charles Lehner)
+
+	* h265: remove call to x265_cleanup, caused crash on OpenBSD
+
+	* mpa: new module that implements MPA Speech and Audio Codec
+	       (this module was contributed by Christian Hoene)
+
+	* opus: added new configuration parameters:
+		opus_cbr        {yes,no}   # Constant Bitrate (inverse of VBR)
+		opus_inbandfec  {yes,no}   # Enable inband FEC
+		opus_dtx        {yes,no}   # Enable DTX
+
+	* presence: improved interoperability, allow white space before
+		    xml element closing tags (thanks Juha Heinanen)
+
+	* x11: added borderless window (thanks Doug Blewett)
+
+
 2016-03-12 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.18
