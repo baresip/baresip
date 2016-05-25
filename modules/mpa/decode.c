@@ -55,7 +55,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 		ads = mem_zalloc(sizeof(*ads), destructor);
 		if (!ads)
 			return ENOMEM;
-	} 
+	}
 	else {
 		memset(ads,0,sizeof(*ads));
 	}
