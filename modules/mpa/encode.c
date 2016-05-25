@@ -49,11 +49,15 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		return EINVAL;
 
 	aes = *aesp;
-	if (aes) {
-		mem_deref(aes);
-	}
+	if (!aes) {
+		aes = mem_zalloc(sizeof(*aes), destructor);
+		if (!aes)
+			return ENOMEM;
 
-	aes = mem_zalloc(sizeof(*aes), destructor);
+	}
+	else
+		memset(aes,0,sizeof(*aes));
+
 	aes->enc = twolame_init();
 	if (!aes->enc) {
 		error("MPA enc create failed\n");
