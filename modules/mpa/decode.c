@@ -51,12 +51,14 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 	debug("MPA dec created %s\n",fmtp);
 #endif
 
-	if (ads)
-		mem_deref(ads);
-
-	ads = mem_zalloc(sizeof(*ads), destructor);
-	if (!ads)
-		return ENOMEM;
+	if (!ads) {
+		ads = mem_zalloc(sizeof(*ads), destructor);
+		if (!ads)
+			return ENOMEM;
+	} 
+	else {
+		memset(ads,0,sizeof(*ads));
+	}
 	ads->channels = 0;
 	ads->resampler = NULL;
 	ads->start = 0;
