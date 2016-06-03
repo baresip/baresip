@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
+#include <limits.h>
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
@@ -174,7 +175,7 @@ static int write_template(const char *file)
 
 static int module_init(void)
 {
-	char path[256] = "", file[256] = "";
+	char path[PATH_MAX] = "", file[PATH_MAX] = "";
 	int err;
 
 	err = conf_path_get(path, sizeof(path));

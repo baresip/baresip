@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <re.h>
@@ -29,7 +30,7 @@ struct play {
 #ifndef PREFIX
 #define PREFIX "/usr"
 #endif
-static char play_path[256] = PREFIX "/share/baresip";
+static char play_path[PATH_MAX] = PREFIX "/share/baresip";
 static struct list playl;
 
 

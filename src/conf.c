@@ -5,6 +5,7 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
+#include <limits.h>
 #include <fcntl.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -154,7 +155,7 @@ void conf_path_set(const char *path)
  */
 int conf_path_get(char *path, size_t sz)
 {
-	char buf[256];
+	char buf[PATH_MAX];
 	int err;
 
 	/* Use explicit conf path */
@@ -290,7 +291,7 @@ int conf_get_sa(const struct conf *conf, const char *name, struct sa *sa)
  */
 int conf_configure(void)
 {
-	char path[256], file[256];
+	char path[PATH_MAX], file[PATH_MAX];
 	int err;
 
 #if defined (WIN32)
