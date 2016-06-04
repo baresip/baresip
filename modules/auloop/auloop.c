@@ -121,9 +121,14 @@ static int codec_read(struct audio_loop *al, int16_t *sampv, size_t sampc)
 	if (err)
 		goto out;
 
-	err = al->ac->dech(al->dec, sampv, &sampc, x, xlen);
-	if (err)
-		goto out;
+	if (al->ac->dech) {
+		err = al->ac->dech(al->dec, sampv, &sampc, x, xlen);
+		if (err)
+			goto out;
+	}
+	else {
+		info("auloop: no decode handler\n");
+	}
 
  out:
 
