@@ -72,6 +72,7 @@ static struct video_loop *gvl;
 
 static int display(struct video_loop *vl, struct vidframe *frame)
 {
+	struct vidframe *frame_filt = NULL;
 	struct le *le;
 	int err = 0;
 
@@ -82,6 +83,21 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 	for (le = vl->filtdecl.head; le; le = le->next) {
 
 		struct vidfilt_dec_st *st = le->data;
+
+		/* Some video decoders keeps the displayed video frame
+		 * in memory and we should not write to that frame.
+		 */
+		if (!frame_filt) {
+
+			err = vidframe_alloc(&frame_filt, frame->fmt,
+					     &frame->size);
+			if (err)
+				return err;
+
+			vidframe_copy(frame_filt, frame);
+
+			frame = frame_filt;
+		}
 
 		if (st->vf->dech)
 			err |= st->vf->dech(st, frame);
@@ -98,6 +114,8 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 		vl->vidisp = mem_deref(vl->vidisp);
 		vl->err = err;
 	}
+
+	mem_deref(frame_filt);
 
 	return err;
 }
