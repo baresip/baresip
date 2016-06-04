@@ -414,7 +414,7 @@ ifneq ($(USE_V4L2),)
 MODULES   += v4l2 v4l2_codec
 endif
 ifneq ($(USE_VPX),)
-MODULES   += vpx
+MODULES   += vp8
 endif
 ifneq ($(USE_WINWAVE),)
 MODULES   += winwave

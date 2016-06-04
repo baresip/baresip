@@ -1,5 +1,5 @@
 /**
- * @file vpx/sdp.c VP8 SDP Functions
+ * @file vp8/sdp.c VP8 SDP Functions
  *
  * Copyright (C) 2010 Creytiv.com
  */

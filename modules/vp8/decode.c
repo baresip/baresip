@@ -1,5 +1,5 @@
 /**
- * @file vpx/decode.c VP8 Decode
+ * @file vp8/decode.c VP8 Decode
  *
  * Copyright (C) 2010 Creytiv.com
  */
