@@ -33,25 +33,23 @@ struct videnc_state {
 	unsigned n_frames;
 	unsigned n_key_frames;
 	size_t n_bytes;
-
-	uint64_t ts_start;
 };
 
 
 static void destructor(void *arg)
 {
 	struct videnc_state *ves = arg;
-	uint64_t now = tmr_jiffies();
 
-	re_printf("vp9: encoder: total frames %u,  total bytes %zu\n",
-		  ves->n_frames, ves->n_bytes);
-	re_printf("              key frames %u\n", ves->n_key_frames);
+	if (ves->ctxup) {
 
-	re_printf("              average frame rate:            %.1f fps\n",
-		  ves->n_frames / (.001 * (now - ves->ts_start)));
+		debug("vp9: encoder stats:"
+		      " frames=%u, key_frames=%u, bytes=%zu\n",
+		      ves->n_frames,
+		      ves->n_key_frames,
+		      ves->n_bytes);
 
-	if (ves->ctxup)
 		vpx_codec_destroy(&ves->ctx);
+	}
 }
 
 
@@ -131,9 +129,6 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	cfg.kf_mode           = VPX_KF_AUTO;
 	cfg.g_bit_depth       = 8;
 	cfg.g_input_bit_depth = 8;
-
-	re_printf("vp9: encoder: rc_target_bitrate %d\n",
-		  cfg.rc_target_bitrate);
 
 	if (ves->ctxup) {
 		debug("vp9: re-opening encoder\n");
@@ -245,8 +240,6 @@ int vp9_encode(struct videnc_state *ves, bool update,
 			return err;
 
 		ves->size = frame->size;
-
-		ves->ts_start = tmr_jiffies();
 	}
 
 	++ves->n_frames;

@@ -48,11 +48,12 @@ static void destructor(void *arg)
 {
 	struct viddec_state *vds = arg;
 
-	re_printf("vp9: decoder: total frames %u, total bytes %zu\n",
-		  vds->n_frames, vds->n_bytes);
+	if (vds->ctxup) {
+		debug("vp9: decoder stats: frames=%u, bytes=%zu\n",
+		      vds->n_frames, vds->n_bytes);
 
-	if (vds->ctxup)
 		vpx_codec_destroy(&vds->ctx);
+	}
 
 	mem_deref(vds->mb);
 }
@@ -187,12 +188,9 @@ int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 	if (err)
 		return err;
 
-#if 1
-	debug("vp9: [%c] header: i=%u start=%u end=%u "
-	      "picid=%u \n",
-	      marker ? 'M' : ' ',
-	      hdr.i, hdr.b, hdr.e,
-	      hdr.picid);
+#if 0
+	debug("vp9: [%c] header: i=%u start=%u end=%u picid=%u \n",
+	      marker ? 'M' : ' ', hdr.i, hdr.b, hdr.e, hdr.picid);
 #endif
 
 	if (hdr.b) {
