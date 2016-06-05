@@ -150,6 +150,9 @@ int opensles_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
 
+	debug("opensles: opening player %uHz, %uchannels\n",
+			prm->srate, prm->ch);
+
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
 		return ENOMEM;

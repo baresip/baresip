@@ -162,6 +162,9 @@ int opensles_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
 
+	debug("opensles: opening recorder %uHz, %uchannels\n",
+			prm->srate, prm->ch);
+
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
 		return ENOMEM;
