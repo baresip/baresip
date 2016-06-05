@@ -512,7 +512,8 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 			       struct mbuf *mb)
 {
 	struct video *v = vrx->video;
-	struct vidframe frame;
+	struct vidframe *frame_filt = NULL;
+	struct vidframe frame_store, *frame = &frame_store;
 	struct le *le;
 	int err = 0;
 
@@ -527,8 +528,8 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		goto out;
 	}
 
-	frame.data[0] = NULL;
-	err = vrx->vc->dech(vrx->dec, &frame, hdr->m, hdr->seq, mb);
+	frame->data[0] = NULL;
+	err = vrx->vc->dech(vrx->dec, frame, hdr->m, hdr->seq, mb);
 	if (err) {
 
 		if (err != EPROTO) {
@@ -547,8 +548,19 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	}
 
 	/* Got a full picture-frame? */
-	if (!vidframe_isvalid(&frame))
+	if (!vidframe_isvalid(frame))
 		goto out;
+
+	if (!list_isempty(&vrx->filtl)) {
+
+		err = vidframe_alloc(&frame_filt, frame->fmt, &frame->size);
+		if (err)
+			goto out;
+
+		vidframe_copy(frame_filt, frame);
+
+		frame = frame_filt;
+	}
 
 	/* Process video frame through all Video Filters */
 	for (le = vrx->filtl.head; le; le = le->next) {
@@ -556,10 +568,11 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		struct vidfilt_dec_st *st = le->data;
 
 		if (st->vf && st->vf->dech)
-			err |= st->vf->dech(st, &frame);
+			err |= st->vf->dech(st, frame);
 	}
 
-	err = vidisp_display(vrx->vidisp, v->peer, &frame);
+	err = vidisp_display(vrx->vidisp, v->peer, frame);
+	frame_filt = mem_deref(frame_filt);
 	if (err == ENODEV) {
 		warning("video: video-display was closed\n");
 		vrx->vidisp = mem_deref(vrx->vidisp);
