@@ -164,9 +164,14 @@ int conf_path_get(char *path, size_t sz)
 		return 0;
 	}
 
+#ifdef __ANDROID__
+	str_ncpy(buf, "/data/local/tmp", sizeof(buf));
+	(void)err;
+#else
 	err = fs_gethome(buf, sizeof(buf));
 	if (err)
 		return err;
+#endif
 
 	if (re_snprintf(path, sz, "%s" DIR_SEP ".baresip", buf) < 0)
 		return ENOMEM;
