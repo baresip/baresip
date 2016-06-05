@@ -327,7 +327,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 static const char *default_audio_device(void)
 {
 #if defined (ANDROID)
-	return "opensles";
+	return "opensles,nil";
 #elif defined (DARWIN)
 	return "coreaudio,nil";
 #elif defined (FREEBSD)
