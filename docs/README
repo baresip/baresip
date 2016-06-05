@@ -82,7 +82,7 @@ Features:
   - Windows winwave audio-driver
 
 * Video:
-  - Support for H.265, H.264, H.263, VP8, MPEG-4 Video
+  - Support for H.265, H.264, H.263, VP8, VP9, MPEG-4 Video
   - Configurable resolution/framerate/bitrate
   - Configurable video input/output
   - Support for asymmetric video
@@ -92,6 +92,7 @@ Features:
   - H.264
   - H.263
   - VP8
+  - VP9
   - MPEG-4
 
 * Video-drivers:
@@ -217,6 +218,7 @@ vidbridge     Video bridge module
 vidinfo       Video info overlay module
 vidloop       Video-loop test module
 vp8           VP8 video codec
+vp9           VP9 video codec
 vumeter       Display audio levels in console
 wincons       Console input driver for Windows
 winwave       Audio driver for Windows
