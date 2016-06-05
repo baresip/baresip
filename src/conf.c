@@ -164,8 +164,8 @@ int conf_path_get(char *path, size_t sz)
 		return 0;
 	}
 
-#ifdef __ANDROID__
-	str_ncpy(buf, "/data/local/tmp", sizeof(buf));
+#ifdef CONFIG_PATH
+	str_ncpy(buf, CONFIG_PATH, sizeof(buf));
 	(void)err;
 #else
 	err = fs_gethome(buf, sizeof(buf));
