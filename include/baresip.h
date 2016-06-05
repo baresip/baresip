@@ -150,6 +150,11 @@ struct config_sip {
 	char cert[256];         /**< SIP Certificate                */
 };
 
+/** Call config */
+struct config_call {
+	uint32_t local_timeout; /**< Incoming call timeout [sec] 0=off */
+};
+
 /** Audio */
 struct config_audio {
 	char src_mod[16];       /**< Audio source module            */
@@ -209,6 +214,8 @@ struct config_bfcp {
 struct config {
 
 	struct config_sip sip;
+
+	struct config_call call;
 
 	struct config_audio audio;
 

@@ -24,7 +24,6 @@
 /** Call constants */
 enum {
 	PTIME           = 20,    /**< Packet time for audio               */
-	LOCAL_TIMEOUT   = 120,   /**< Incoming call timeout in [seconds]  */
 };
 
 
@@ -78,6 +77,7 @@ struct call {
 	void *arg;                /**< Handler argument                     */
 
 	struct config_avt config_avt;
+	struct config_call config_call;
 };
 
 
@@ -219,7 +219,7 @@ static void invite_timeout(void *arg)
 	struct call *call = arg;
 
 	info("%s: Local timeout after %u seconds\n",
-	     call->peer_uri, LOCAL_TIMEOUT);
+	     call->peer_uri, call->config_call.local_timeout);
 
 	call_event_handler(call, CALL_EVENT_CLOSED, "Local timeout");
 }
@@ -460,6 +460,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	MAGIC_INIT(call);
 
 	call->config_avt = cfg->avt;
+	call->config_call = cfg->call;
 
 	tmr_init(&call->tmr_inv);
 
@@ -1311,7 +1312,10 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	set_state(call, STATE_INCOMING);
 
 	/* New call */
-	tmr_start(&call->tmr_inv, LOCAL_TIMEOUT*1000, invite_timeout, call);
+	if (call->config_call.local_timeout) {
+		tmr_start(&call->tmr_inv, call->config_call.local_timeout*1000,
+			  invite_timeout, call);
+	}
 
 	if (!call->acc->mnat)
 		call_event_handler(call, CALL_EVENT_INCOMING, call->peer_uri);
