@@ -111,6 +111,13 @@ static const struct test *find_test(const char *name)
 }
 
 
+static void ua_exit_handler(void *arg)
+{
+	debug("ua exited -- stopping main runloop\n");
+	re_cancel();
+}
+
+
 static void usage(void)
 {
 	(void)re_fprintf(stderr,
@@ -175,12 +182,7 @@ int main(int argc, char *argv[])
 	}
 	str_ncpy(config->sip.local, "127.0.0.1:0", sizeof(config->sip.local));
 
-#if 0
-	/* XXX: needed for ua tests */
-	err = ua_init("test", true, true, true, false);
-	if (err)
-		goto out;
-#endif
+	uag_set_exit_handler(ua_exit_handler, NULL);
 
 	if (argc >= (optind + 1)) {
 

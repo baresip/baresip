@@ -216,7 +216,7 @@ static bool sip_msg_handler(const struct sip_msg *msg, void *arg)
 
  out:
 	if (srv->terminate)
-		re_cancel();
+		re_cancel();  /* XXX: avoid this */
 
 	return true;
 }

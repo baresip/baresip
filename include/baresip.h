@@ -518,6 +518,8 @@ typedef void (ua_event_h)(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg);
 typedef void (options_resp_h)(int err, const struct sip_msg *msg, void *arg);
 
+typedef void (ua_exit_h)(void *arg);
+
 /* Multiple instances */
 int  ua_alloc(struct ua **uap, const char *aor);
 int  ua_connect(struct ua *ua, struct call **callp,
@@ -557,6 +559,7 @@ int  ua_init(const char *software, bool udp, bool tcp, bool tls,
 	     bool prefer_ipv6);
 void ua_close(void);
 void ua_stop_all(bool forced);
+void uag_set_exit_handler(ua_exit_h *exith, void *arg);
 int  uag_reset_transp(bool reg, bool reinvite);
 int  uag_event_register(ua_event_h *eh, void *arg);
 void uag_event_unregister(ua_event_h *eh);

@@ -57,6 +57,8 @@ static struct {
 	bool use_tls;                  /**< Use TLS transport               */
 	bool prefer_ipv6;              /**< Force IPv6 transport            */
 	sip_msg_h *subh;
+	ua_exit_h *exith;              /**< UA Exit handler                 */
+	void *arg;                     /**< UA Exit handler argument        */
 	char *eprm;                    /**< Extra UA parameters             */
 #ifdef USE_TLS
 	struct tls *tls;               /**< TLS Context                     */
@@ -74,6 +76,8 @@ static struct {
 	true,
 	true,
 	false,
+	NULL,
+	NULL,
 	NULL,
 	NULL,
 #ifdef USE_TLS
@@ -98,7 +102,8 @@ static void exit_handler(void *arg)
 	debug("ua: sip-stack exit\n");
 	module_app_unload();
 
-	re_cancel();
+	if (uag.exith)
+		uag.exith(uag.arg);
 }
 
 
@@ -1450,6 +1455,20 @@ void ua_stop_all(bool forced)
 		list_flush(&uag.ual);
 
 	sip_close(uag.sip, forced);
+}
+
+
+/**
+ * Set the global UA exit handler. The exit handler will be called
+ * asyncronously when the SIP stack has exited.
+ *
+ * @param exith Exit handler
+ * @param arg   Handler argument
+ */
+void uag_set_exit_handler(ua_exit_h *exith, void *arg)
+{
+	uag.exith = exith;
+	uag.arg = arg;
 }
 
 

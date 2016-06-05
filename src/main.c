@@ -34,6 +34,15 @@ static void signal_handler(int sig)
 }
 
 
+static void ua_exit_handler(void *arg)
+{
+	debug("ua exited -- stopping main runloop\n");
+
+	/* The main run-loop can be stopped now */
+	re_cancel();
+}
+
+
 static void usage(void)
 {
 	(void)re_fprintf(stderr,
@@ -169,6 +178,8 @@ int main(int argc, char *argv[])
 		      true, true, true, prefer_ipv6);
 	if (err)
 		goto out;
+
+	uag_set_exit_handler(ua_exit_handler, NULL);
 
 	if (ua_eprm) {
 		err = uag_set_extra_params(ua_eprm);
