@@ -113,6 +113,8 @@ static const struct test *find_test(const char *name)
 
 static void ua_exit_handler(void *arg)
 {
+	(void)arg;
+
 	debug("ua exited -- stopping main runloop\n");
 	re_cancel();
 }

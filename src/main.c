@@ -36,6 +36,7 @@ static void signal_handler(int sig)
 
 static void ua_exit_handler(void *arg)
 {
+	(void)arg;
 	debug("ua exited -- stopping main runloop\n");
 
 	/* The main run-loop can be stopped now */
