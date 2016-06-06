@@ -431,6 +431,7 @@ static int cmd_config_print(struct re_printf *pf, void *unused)
 
 static int cmd_net_debug(struct re_printf *pf, void *unused)
 {
+	(void)unused;
 	return net_debug(pf, baresip_network());
 }
 
