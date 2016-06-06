@@ -127,8 +127,6 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	cfg.g_lag_in_frames   = 0;
 	cfg.rc_end_usage      = VPX_VBR;
 	cfg.kf_mode           = VPX_KF_AUTO;
-	cfg.g_bit_depth       = 8;
-	cfg.g_input_bit_depth = 8;
 
 	if (ves->ctxup) {
 		debug("vp9: re-opening encoder\n");
@@ -149,10 +147,12 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	if (res) {
 		warning("vp9: codec ctrl: %s\n", vpx_codec_err_to_string(res));
 	}
+#ifdef VP9E_SET_NOISE_SENSITIVITY
 	res = vpx_codec_control(&ves->ctx, VP9E_SET_NOISE_SENSITIVITY, 0);
 	if (res) {
 		warning("vp9: codec ctrl: %s\n", vpx_codec_err_to_string(res));
 	}
+#endif
 
 	info("vp9: encoder opened, picture size %u x %u\n", size->w, size->h);
 
