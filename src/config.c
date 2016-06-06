@@ -15,6 +15,10 @@
 #define MOD_PRE ""  /**< Module prefix */
 
 
+#undef SA_INIT
+#define SA_INIT { { {0} }, 0}
+
+
 /** Core Run-time Configuration - populated from config file */
 /** @todo: move config parsing/decoding to a module */
 static struct config core_config = {
@@ -71,7 +75,9 @@ static struct config core_config = {
 
 	/* Network */
 	{
-		""
+		"",
+		{ SA_INIT },
+		0
 	},
 
 #ifdef USE_VIDEO
