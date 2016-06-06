@@ -18,6 +18,9 @@
  * This module implements the VP9 video codec that is compatible
  * with the WebRTC standard.
  *
+ * Libvpx version 1.3.0 or later is required.
+ *
+ *
  * References:
  *
  *     http://www.webmproject.org/

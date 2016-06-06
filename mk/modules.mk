@@ -414,7 +414,8 @@ ifneq ($(USE_V4L2),)
 MODULES   += v4l2 v4l2_codec
 endif
 ifneq ($(USE_VPX),)
-MODULES   += vp8 vp9
+MODULES   += vp8
+MODULES   += $(shell pkg-config 'vpx >= 1.3.0' && echo "vp9")
 endif
 ifneq ($(USE_WINWAVE),)
 MODULES   += winwave
