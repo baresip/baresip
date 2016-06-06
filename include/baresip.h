@@ -16,6 +16,11 @@ extern "C" {
 #define BARESIP_VERSION "0.4.19"
 
 
+#ifndef NET_MAX_NS
+#define NET_MAX_NS (4)
+#endif
+
+
 /* forward declarations */
 struct sa;
 struct sdp_media;
@@ -200,7 +205,9 @@ struct config_avt {
 /* Network */
 struct config_net {
 	char ifname[16];        /**< Bind to interface (optional)   */
-	struct sa nsv[4];       /**< DNS nameservers                */
+	struct {
+		char addr[64];
+	} nsv[NET_MAX_NS];      /**< Configured DNS nameservers     */
 	size_t nsc;             /**< Number of DNS nameservers      */
 };
 

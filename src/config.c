@@ -76,7 +76,7 @@ static struct config core_config = {
 	/* Network */
 	{
 		"",
-		{ SA_INIT },
+		{ {""} },
 		0
 	},
 
@@ -101,25 +101,27 @@ static int range_print(struct re_printf *pf, const struct range *rng)
 static int dns_server_handler(const struct pl *pl, void *arg)
 {
 	struct config_net *cfg = arg;
-	struct sa sa;
+	const size_t max_count = ARRAY_SIZE(cfg->nsv);
 	int err;
 
-	err = sa_decode(&sa, pl->p, pl->l);
-	if (err) {
-		warning("config: dns_server: could not decode `%r'\n", pl);
-		return err;
-	}
-
-	if (cfg->nsc >= ARRAY_SIZE(cfg->nsv)) {
+	if (cfg->nsc >= max_count) {
 		warning("config: too many DNS nameservers (max %zu)\n",
-			ARRAY_SIZE(cfg->nsv));
+			max_count);
 		return EOVERFLOW;
 	}
 
 	/* Append dns_server to the network config */
-	cfg->nsv[cfg->nsc++] = sa;
+	err = pl_strcpy(pl, cfg->nsv[cfg->nsc].addr,
+			sizeof(cfg->nsv[0].addr));
+	if (err) {
+		warning("config: dns_server: could not copy string (%r)\n",
+			pl);
+		return err;
+	}
 
-	return err;
+	++cfg->nsc;
+
+	return 0;
 }
 
 

@@ -8,9 +8,6 @@
 #include "core.h"
 
 
-#define MAX_NS 8
-
-
 struct network {
 	struct config_net cfg;
 	struct sa laddr;
@@ -21,7 +18,7 @@ struct network {
 #endif
 	struct tmr tmr;
 	struct dnsc *dnsc;
-	struct sa nsv[MAX_NS];/**< Configured name servers           */
+	struct sa nsv[NET_MAX_NS];/**< Configured name servers      */
 	uint32_t nsn;        /**< Number of configured name servers */
 	uint32_t interval;
 	int af;              /**< Preferred address family          */
@@ -48,7 +45,7 @@ static int net_dnssrv_add(struct network *net, const struct sa *sa)
 static int net_dns_srv_get(const struct network *net,
 			   struct sa *srvv, uint32_t *n, bool *from_sys)
 {
-	struct sa nsv[MAX_NS];
+	struct sa nsv[NET_MAX_NS];
 	uint32_t i, nsn = ARRAY_SIZE(nsv);
 	int err;
 
@@ -94,7 +91,7 @@ static int net_dns_srv_get(const struct network *net,
  */
 static void dns_refresh(struct network *net)
 {
-	struct sa nsv[MAX_NS];
+	struct sa nsv[NET_MAX_NS];
 	uint32_t nsn;
 	int err;
 
@@ -184,7 +181,7 @@ bool net_check(struct network *net)
 
 static int dns_init(struct network *net)
 {
-	struct sa nsv[MAX_NS];
+	struct sa nsv[NET_MAX_NS];
 	uint32_t nsn = ARRAY_SIZE(nsv);
 	int err;
 
@@ -228,7 +225,7 @@ static void net_destructor(void *data)
 int net_alloc(struct network **netp, const struct config_net *cfg, int af)
 {
 	struct network *net;
-	struct sa nsv[MAX_NS];
+	struct sa nsv[NET_MAX_NS];
 	uint32_t nsn = ARRAY_SIZE(nsv);
 	char buf4[128] = "", buf6[128] = "";
 	int err;
@@ -269,7 +266,18 @@ int net_alloc(struct network **netp, const struct config_net *cfg, int af)
 
 		for (i=0; i<cfg->nsc; i++) {
 
-			err = net_dnssrv_add(net, &cfg->nsv[i]);
+			const char *ns = cfg->nsv[i].addr;
+			struct sa sa;
+
+			err = sa_decode(&sa, ns, str_len(ns));
+			if (err) {
+				warning("net: dns_server:"
+					" could not decode `%s' (%m)\n",
+					ns, err);
+				goto out;
+			}
+
+			err = net_dnssrv_add(net, &sa);
 			if (err) {
 				warning("net: failed to add nameserver: %m\n",
 					err);
@@ -429,7 +437,7 @@ void net_force_change(struct network *net)
 
 static int dns_debug(struct re_printf *pf, const struct network *net)
 {
-	struct sa nsv[MAX_NS];
+	struct sa nsv[NET_MAX_NS];
 	uint32_t i, nsn = ARRAY_SIZE(nsv);
 	bool from_sys = false;
 	int err;
