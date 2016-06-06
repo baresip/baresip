@@ -235,13 +235,6 @@ void module_app_unload(void);
 
 
 /*
- * Network
- */
-
-int net_reset(void);
-
-
-/*
  * Register client
  */
 

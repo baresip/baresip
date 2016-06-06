@@ -1147,18 +1147,18 @@ static int add_transp_af(const struct sa *laddr)
 }
 
 
-static int ua_add_transp(void)
+static int ua_add_transp(struct network *net)
 {
 	int err = 0;
 
 	if (!uag.prefer_ipv6) {
-		if (sa_isset(net_laddr_af(AF_INET), SA_ADDR))
-			err |= add_transp_af(net_laddr_af(AF_INET));
+		if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
+			err |= add_transp_af(net_laddr_af(net, AF_INET));
 	}
 
 #if HAVE_INET6
-	if (sa_isset(net_laddr_af(AF_INET6), SA_ADDR))
-		err |= add_transp_af(net_laddr_af(AF_INET6));
+	if (sa_isset(net_laddr_af(net, AF_INET6), SA_ADDR))
+		err |= add_transp_af(net_laddr_af(net, AF_INET6));
 #endif
 
 	return err;
@@ -1252,7 +1252,8 @@ static void net_change_handler(void *arg)
 {
 	(void)arg;
 
-	info("IP-address changed: %j\n", net_laddr_af(AF_INET));
+	info("IP-address changed: %j\n",
+	     net_laddr_af(baresip_network(), AF_INET));
 
 	(void)uag_reset_transp(true, true);
 }
@@ -1312,8 +1313,14 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	    bool prefer_ipv6)
 {
 	struct config *cfg = conf_config();
+	struct network *net = baresip_network();
 	uint32_t bsize;
 	int err;
+
+	if (!net) {
+		warning("ua: no network\n");
+		return EINVAL;
+	}
 
 	uag.cfg = &cfg->sip;
 	bsize = cfg->sip.trans_bsize;
@@ -1324,13 +1331,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	if (err)
 		return err;
 
-	/* Initialise Network */
-	err = net_init(&cfg->net, prefer_ipv6 ? AF_INET6 : AF_INET);
-	if (err) {
-		warning("ua: network init failed: %m\n", err);
-		return err;
-	}
-
 	uag.use_udp = udp;
 	uag.use_tcp = tcp;
 	uag.use_tls = tls;
@@ -1338,14 +1338,14 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 
 	list_init(&uag.ual);
 
-	err = sip_alloc(&uag.sip, net_dnsc(), bsize, bsize, bsize,
+	err = sip_alloc(&uag.sip, net_dnsc(net), bsize, bsize, bsize,
 			software, exit_handler, NULL);
 	if (err) {
 		warning("ua: sip stack failed: %m\n", err);
 		goto out;
 	}
 
-	err = ua_add_transp();
+	err = ua_add_transp(net);
 	if (err)
 		goto out;
 
@@ -1367,7 +1367,7 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	if (err)
 		goto out;
 
-	net_change(60, net_change_handler, NULL);
+	net_change(net, 60, net_change_handler, NULL);
 
  out:
 	if (err) {
@@ -1384,7 +1384,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 void ua_close(void)
 {
 	cmd_unregister(cmdv);
-	net_close();
 	play_close();
 	ui_reset();
 	contact_close();
@@ -1482,14 +1481,15 @@ void uag_set_exit_handler(ua_exit_h *exith, void *arg)
  */
 int uag_reset_transp(bool reg, bool reinvite)
 {
+	struct network *net = baresip_network();
 	struct le *le;
 	int err;
 
 	/* Update SIP transports */
 	sip_transp_flush(uag.sip);
 
-	(void)net_check();
-	err = ua_add_transp();
+	(void)net_check(net);
+	err = ua_add_transp(net);
 	if (err)
 		return err;
 

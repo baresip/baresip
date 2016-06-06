@@ -478,7 +478,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		goto out;
 
 	/* Init SDP info */
-	err = sdp_session_alloc(&call->sdp, net_laddr_af(call->af));
+	err = sdp_session_alloc(&call->sdp,
+				net_laddr_af(baresip_network(), call->af));
 	if (err)
 		goto out;
 
@@ -493,7 +494,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	/* Initialise media NAT handling */
 	if (acc->mnat) {
-		err = acc->mnat->sessh(&call->mnats, net_dnsc(), call->af,
+		err = acc->mnat->sessh(&call->mnats,
+				       net_dnsc(baresip_network()), call->af,
 				       acc->stun_host, acc->stun_port,
 				       acc->stun_user, acc->stun_pass,
 				       call->sdp, !got_offer,
@@ -1502,7 +1504,8 @@ int call_reset_transp(struct call *call)
 	if (!call)
 		return EINVAL;
 
-	sdp_session_set_laddr(call->sdp, net_laddr_af(call->af));
+	sdp_session_set_laddr(call->sdp,
+			      net_laddr_af(baresip_network(), call->af));
 
 	return call_modify(call);
 }

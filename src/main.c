@@ -157,6 +157,16 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
+	/*
+	 * Initialise the top-level baresip struct, must be
+	 * done AFTER configuration is complete.
+	 */
+	err = baresip_init(conf_config(), prefer_ipv6);
+	if (err) {
+		warning("main: baresip init failed (%m)\n", err);
+		goto out;
+	}
+
 	/* NOTE: must be done after all arguments are processed */
 	if (modc) {
 		size_t i;
@@ -218,6 +228,8 @@ int main(int argc, char *argv[])
 
 	ua_close();
 	conf_close();
+
+	baresip_close();
 
 	libre_close();
 

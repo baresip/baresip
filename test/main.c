@@ -27,6 +27,7 @@ static const struct test tests[] = {
 	TEST(test_cmd),
 	TEST(test_cplusplus),
 	TEST(test_mos),
+	TEST(test_network),
 	TEST(test_ua_alloc),
 	TEST(test_ua_register),
 	TEST(test_ua_register_dns),
@@ -182,6 +183,11 @@ int main(int argc, char *argv[])
 		err = ENOENT;
 		goto out;
 	}
+
+	err = baresip_init(config, false);
+	if (err)
+		goto out;
+
 	str_ncpy(config->sip.local, "127.0.0.1:0", sizeof(config->sip.local));
 
 	uag_set_exit_handler(ua_exit_handler, NULL);
@@ -227,6 +233,8 @@ int main(int argc, char *argv[])
 	}
 	ua_stop_all(true);
 	ua_close();
+
+	baresip_close();
 
 	libre_close();
 

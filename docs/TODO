@@ -20,6 +20,8 @@ Version v0.x.y:
 
   add a FPS (framerate) throttler for fast vidsrc modules
 
+  long term goal: a fully re-entrant libbaresip with no static data
+
 
 -------------------------------------------------------------------------------
 BUGS:

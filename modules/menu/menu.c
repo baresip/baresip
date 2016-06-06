@@ -429,6 +429,12 @@ static int cmd_config_print(struct re_printf *pf, void *unused)
 }
 
 
+static int cmd_net_debug(struct re_printf *pf, void *unused)
+{
+	return net_debug(pf, baresip_network());
+}
+
+
 static const struct cmd cmdv[] = {
 	{'M',       0, "Main loop debug",          re_debug             },
 	{'\n',      0, "Accept incoming call",     cmd_answer           },
@@ -440,7 +446,7 @@ static const struct cmd cmdv[] = {
 	{'i',       0, "SIP debug",                ua_print_sip_status  },
 	{'l',       0, "List active calls",        cmd_print_calls      },
 	{'m',       0, "Module debug",             mod_debug            },
-	{'n',       0, "Network debug",            net_debug            },
+	{'n',       0, "Network debug",            cmd_net_debug        },
 	{'o', CMD_PRM, "Options",                  options_command      },
 	{'r',       0, "Registration info",        ua_print_reg_status  },
 	{'s',       0, "System info",              print_system_info    },

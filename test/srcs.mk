@@ -13,6 +13,7 @@ TEST_SRCS	+= ua.c
 TEST_SRCS	+= cplusplus.c
 TEST_SRCS	+= call.c
 TEST_SRCS	+= mos.c
+TEST_SRCS	+= net.c
 
 
 #

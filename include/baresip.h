@@ -200,6 +200,8 @@ struct config_avt {
 /* Network */
 struct config_net {
 	char ifname[16];        /**< Bind to interface (optional)   */
+	struct sa nsv[4];       /**< DNS nameservers                */
+	size_t nsc;             /**< Number of DNS nameservers      */
 };
 
 #ifdef USE_VIDEO
@@ -459,18 +461,21 @@ const struct menc *menc_find(const char *id);
  * Net - Networking
  */
 
+struct network;
+
 typedef void (net_change_h)(void *arg);
 
-int  net_init(const struct config_net *cfg, int af);
-void net_close(void);
-int  net_dnssrv_add(const struct sa *sa);
-void net_change(uint32_t interval, net_change_h *ch, void *arg);
-bool net_check(void);
-int  net_af(void);
-int  net_debug(struct re_printf *pf, void *unused);
-const struct sa *net_laddr_af(int af);
-const char      *net_domain(void);
-struct dnsc     *net_dnsc(void);
+int  net_alloc(struct network **netp, const struct config_net *cfg, int af);
+int  net_use_nameserver(struct network *net, const struct sa *ns);
+void net_change(struct network *net, uint32_t interval,
+		net_change_h *ch, void *arg);
+void net_force_change(struct network *net);
+bool net_check(struct network *net);
+int  net_af(const struct network *net);
+int  net_debug(struct re_printf *pf, const struct network *net);
+const struct sa *net_laddr_af(const struct network *net, int af);
+const char      *net_domain(const struct network *net);
+struct dnsc     *net_dnsc(const struct network *net);
 
 
 /*
@@ -1048,6 +1053,15 @@ int module_preload(const char *module);
 
 double mos_calculate(double *r_factor, double rtt,
 		     double jitter, uint32_t num_packets_lost);
+
+
+/*
+ * Baresip instance
+ */
+
+int  baresip_init(struct config *cfg, bool prefer_ipv6);
+void baresip_close(void);
+struct network *baresip_network(void);
 
 
 #ifdef __cplusplus

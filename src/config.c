@@ -94,10 +94,9 @@ static int range_print(struct re_printf *pf, const struct range *rng)
 
 static int dns_server_handler(const struct pl *pl, void *arg)
 {
+	struct config_net *cfg = arg;
 	struct sa sa;
 	int err;
-
-	(void)arg;
 
 	err = sa_decode(&sa, pl->p, pl->l);
 	if (err) {
@@ -105,10 +104,14 @@ static int dns_server_handler(const struct pl *pl, void *arg)
 		return err;
 	}
 
-	err = net_dnssrv_add(&sa);
-	if (err) {
-		warning("config: failed to add nameserver %r: %m\n", pl, err);
+	if (cfg->nsc >= ARRAY_SIZE(cfg->nsv)) {
+		warning("config: too many DNS nameservers (max %zu)\n",
+			ARRAY_SIZE(cfg->nsv));
+		return EOVERFLOW;
 	}
+
+	/* Append dns_server to the network config */
+	cfg->nsv[cfg->nsc++] = sa;
 
 	return err;
 }
@@ -216,7 +219,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	}
 
 	/* Network */
-	(void)conf_apply(conf, "dns_server", dns_server_handler, NULL);
+	(void)conf_apply(conf, "dns_server", dns_server_handler, &cfg->net);
 	(void)conf_get_str(conf, "net_interface",
 			   cfg->net.ifname, sizeof(cfg->net.ifname));
 

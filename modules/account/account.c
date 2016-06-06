@@ -45,7 +45,7 @@ static int account_write_template(const char *file)
 		pass = "pass";
 	}
 
-	domain = net_domain();
+	domain = net_domain(baresip_network());
 	if (!domain)
 		domain = "domain";
 

@@ -139,7 +139,7 @@ static int write_template(const char *file)
 	user = sys_username();
 	if (!user)
 		user = "user";
-	domain = net_domain();
+	domain = net_domain(baresip_network());
 	if (!domain)
 		domain = "domain";
 

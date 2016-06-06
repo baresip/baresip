@@ -217,6 +217,7 @@ static int reg_dns(enum sip_transp tp)
 	struct dns_server *dnssrv = NULL;
 	struct test t;
 	const char *domain = "test.invalid";
+	struct network *net = baresip_network();
 	unsigned server_count = 1;
 	char aor[256];
 	char srv[256];
@@ -235,7 +236,7 @@ static int reg_dns(enum sip_transp tp)
 	info("| DNS-server on %J\n", &dnssrv->addr);
 
 	/* NOTE: must be done before ua_init() */
-	err = net_dnssrv_add(&dnssrv->addr);
+	err = net_use_nameserver(net, &dnssrv->addr);
 	TEST_ERR(err);
 
 	for (i=0; i<server_count; i++) {
@@ -443,6 +444,7 @@ int test_ua_register_auth(void)
 
 static int reg_auth_dns(enum sip_transp tp)
 {
+	struct network *net = baresip_network();
 	struct dns_server *dnssrv = NULL;
 	struct test t;
 	const char *username = "alfredh";
@@ -466,7 +468,7 @@ static int reg_auth_dns(enum sip_transp tp)
 	info("| DNS-server on %J\n", &dnssrv->addr);
 
 	/* NOTE: must be done before ua_init() */
-	err = net_dnssrv_add(&dnssrv->addr);
+	err = net_use_nameserver(net, &dnssrv->addr);
 	TEST_ERR(err);
 
 	for (i=0; i<server_count; i++) {
