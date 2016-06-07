@@ -38,6 +38,7 @@ static struct config core_config = {
 
 	/** Audio */
 	{
+		"",
 		"","",
 		"","",
 		"","",
@@ -162,6 +163,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   &cfg->call.local_timeout);
 
 	/* Audio */
+	(void)conf_get_str(conf, "audio_path", cfg->audio.audio_path,
+			   sizeof(cfg->audio.audio_path));
 	(void)conf_get_csv(conf, "audio_player",
 			   cfg->audio.play_mod,
 			   sizeof(cfg->audio.play_mod),
@@ -259,6 +262,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "call_local_timeout\t%u\n"
 			 "\n"
 			 "# Audio\n"
+			 "audio_path\t\t%s\n"
 			 "audio_player\t\t%s,%s\n"
 			 "audio_source\t\t%s,%s\n"
 			 "audio_alert\t\t%s,%s\n"
@@ -301,6 +305,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 			 cfg->call.local_timeout,
 
+			 cfg->audio.audio_path,
 			 cfg->audio.play_mod,  cfg->audio.play_dev,
 			 cfg->audio.src_mod,   cfg->audio.src_dev,
 			 cfg->audio.alert_mod, cfg->audio.alert_dev,
@@ -419,6 +424,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "call_local_timeout\t%u\n"
 			  "\n"
 			  "# Audio\n"
+			  "#audio_path\t\t/usr/share/baresip\n"
 			  "audio_player\t\t%s\n"
 			  "audio_source\t\t%s\n"
 			  "audio_alert\t\t%s\n"

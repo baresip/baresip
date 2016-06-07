@@ -162,6 +162,7 @@ struct config_call {
 
 /** Audio */
 struct config_audio {
+	char audio_path[256];   /**< Audio file directory           */
 	char src_mod[16];       /**< Audio source module            */
 	char src_dev[128];      /**< Audio source device            */
 	char play_mod[16];      /**< Audio playback module          */

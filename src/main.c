@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
 	bool prefer_ipv6 = false, run_daemon = false, test = false;
 	const char *ua_eprm = NULL;
 	const char *exec = NULL;
+	const char *audio_path = NULL;
 	const char *modv[16];
 	size_t modc = 0;
 	int err;
@@ -127,7 +128,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'p':
-			play_set_path(optarg);
+			audio_path = optarg;
 			break;
 
 		case 't':
@@ -156,6 +157,12 @@ int main(int argc, char *argv[])
 		warning("main: configure failed: %m\n", err);
 		goto out;
 	}
+
+	/* Set audio path preferring the one given in -p argument (if any) */
+	if (audio_path)
+	    play_set_path(audio_path);
+	else if (str_isset(conf_config()->audio.audio_path))
+	    play_set_path(conf_config()->audio.audio_path);
 
 	/*
 	 * Initialise the top-level baresip struct, must be
