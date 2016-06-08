@@ -420,8 +420,8 @@ struct log {
 	log_h *h;
 };
 
-void log_register_handler(struct log *log);
-void log_unregister_handler(struct log *log);
+void log_register_handler(struct log *logh);
+void log_unregister_handler(struct log *logh);
 void log_enable_debug(bool enable);
 void log_enable_info(bool enable);
 void log_enable_stderr(bool enable);
