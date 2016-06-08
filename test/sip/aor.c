@@ -64,7 +64,7 @@ int aor_create(struct sip_server *srv, struct aor **aorp,
 int aor_find(struct sip_server *srv, struct aor **aorp, const struct uri *uri)
 {
 	struct list *lst;
-	struct aor *aor;
+	struct aor *aor = NULL;
 	struct le *le;
 	char *curi;
 	int err;
