@@ -197,8 +197,8 @@ static void destructor(void *arg)
 
 static void deref_handler(void *arg)
 {
-	struct mwi *mwi = arg;
-	mem_deref(mwi);
+	struct presence *pres = arg;
+	mem_deref(pres);
 }
 
 
