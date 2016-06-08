@@ -85,23 +85,30 @@ static DWORD WINAPI input_thread(LPVOID arg)
 
 	while (st->run) {
 
-		char buf[4];
+		INPUT_RECORD buf[4];
 		DWORD i, count = 0;
 
-		ReadConsole(st->hstdin, buf, sizeof(buf), &count, NULL);
+		ReadConsoleInput(st->hstdin, buf, ARRAY_SIZE(buf), &count);
 
 		for (i=0; i<count; i++) {
-			int ch = buf[i];
 
-			if (ch == '\r')
-				ch = '\n';
+			if (buf[i].EventType != KEY_EVENT)
+				continue;
 
-			/*
-			 * The keys are read from a thread so we have
-			 * to send them to the RE main event loop via
-			 * a message queue
-			 */
-			mqueue_push(st->mq, ch, 0);
+			if (buf[i].Event.KeyEvent.bKeyDown) {
+
+				int ch = buf[i].Event.KeyEvent.uChar.AsciiChar;
+
+				if (ch == '\r')
+					ch = '\n';
+
+				/*
+				 * The keys are read from a thread so we have
+				 * to send them to the RE main event loop via
+				 * a message queue
+				 */
+				mqueue_push(st->mq, ch, 0);
+			}
 		}
 	}
 
