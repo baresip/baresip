@@ -6,8 +6,6 @@ Version v0.x.y:
   config: add support for pre-pending or appending config items
           from command-line options
 
-  conf: move generation of config template to a module ('config.so') ?
-
   improve first-time user experience, add a new module that will
   prompt the user for a SIP uri and (optionally) a password.
 
@@ -22,6 +20,7 @@ Version v0.x.y:
 
   long term goal: a fully re-entrant libbaresip with no static data
 
+  vidsrc: add timestamp to api
 
 -------------------------------------------------------------------------------
 BUGS:

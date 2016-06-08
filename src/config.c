@@ -20,7 +20,6 @@
 
 
 /** Core Run-time Configuration - populated from config file */
-/** @todo: move config parsing/decoding to a module */
 static struct config core_config = {
 
 	/** SIP User-Agent */
