@@ -100,7 +100,6 @@ static void exit_handler(void *arg)
 	ua_event(NULL, UA_EVENT_EXIT, NULL, NULL);
 
 	debug("ua: sip-stack exit\n");
-	module_app_unload();
 
 	if (uag.exith)
 		uag.exith(uag.arg);
@@ -1400,6 +1399,9 @@ void ua_close(void)
 
 	list_flush(&uag.ual);
 	list_flush(&uag.ehl);
+
+	/* note: must be done before mod_close() */
+	module_app_unload();
 }
 
 
