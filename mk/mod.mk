@@ -41,28 +41,29 @@ $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.c $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CC [M]  $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) \
+	$(HIDE)$(CC) $(CPPFLAGS) $(CFLAGS) $($(call modulename,$@)_CFLAGS) \
 		-c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.m $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  OC [M]  $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) $(OBJCFLAGS) \
-		-c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CPPFLAGS) $(CFLAGS) $($(call modulename,$@)_CFLAGS) \
+		$(OBJCFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.cpp $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CXX [M] $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CXX) $(CXXFLAGS) $($(call modulename,$@)_CXXFLAGS) \
+	$(HIDE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $($(call modulename,$@)_CXXFLAGS) \
 		-c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.S $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  AS [M]  $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CC) $(CFLAGS) -DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CPPFLAGS) $(CFLAGS) -DMOD_NAME=\"$(MOD)\" -c $< -o $@ \
+		$(DFLAGS)
 
 else
 
@@ -78,28 +79,29 @@ $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.c $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CC [m]  $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) \
+	$(HIDE)$(CC) $(CPPFLAGS) $(CFLAGS) $($(call modulename,$@)_CFLAGS) \
 		-DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.m $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  OC [m]  $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CC) $(CFLAGS) $($(call modulename,$@)_CFLAGS) $(OBJCFLAGS) \
-		-DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CPPFLAGS) $(CFLAGS) $($(call modulename,$@)_CFLAGS) \
+		$(OBJCFLAGS) -DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
 
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.cpp $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CXX [m] $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CXX) $(CXXFLAGS) $($(call modulename,$@)_CXXFLAGS) \
+	$(HIDE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $($(call modulename,$@)_CXXFLAGS) \
 		-DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.S $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  AS [m]  $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CC) $(CFLAGS) -DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CPPFLAGS) $(CFLAGS) -DMOD_NAME=\"$(MOD)\" -c $< -o $@ \
+		$(DFLAGS)
 
 endif

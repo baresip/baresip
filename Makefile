@@ -221,7 +221,7 @@ $(TEST_BIN):	$(STATICLIB) $(TEST_OBJS)
 
 $(BUILD)/%.o: %.c $(BUILD) Makefile $(APP_MK)
 	@echo "  CC      $@"
-	$(HIDE)$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/%.o: %.cpp $(BUILD) Makefile $(APP_MK)
 	@echo "  CXX     $@"
@@ -229,11 +229,11 @@ $(BUILD)/%.o: %.cpp $(BUILD) Makefile $(APP_MK)
 
 $(BUILD)/%.o: %.m $(BUILD) Makefile $(APP_MK)
 	@echo "  OC      $@"
-	$(HIDE)$(CC) $(CFLAGS) $(OBJCFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CPPFLAGS) $(CFLAGS) $(OBJCFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/%.o: %.S $(BUILD) Makefile $(APP_MK)
 	@echo "  AS      $@"
-	$(HIDE)$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+	$(HIDE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@ $(DFLAGS)
 
 $(BUILD): Makefile
 	@mkdir -p $(BUILD)/src $(MOD_BLD) $(BUILD)/test/mock $(BUILD)/test/sip
