@@ -45,7 +45,6 @@ ifndef LIBREM_PATH
 LIBREM_PATH	:= $(shell [ -d ../rem ] && echo "../rem")
 endif
 
-
 CFLAGS    += -I. -Iinclude -I$(LIBRE_INC) -I$(SYSROOT)/include
 CFLAGS    += -I$(LIBREM_PATH)/include
 CFLAGS    += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
@@ -54,6 +53,9 @@ CXXFLAGS  += -I. -Iinclude -I$(LIBRE_INC)
 CXXFLAGS  += -I$(LIBREM_PATH)/include
 CXXFLAGS  += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
 CXXFLAGS  += $(EXTRA_CXXFLAGS)
+
+# XXX: GNU libc
+CPPFLAGS += -D_XOPEN_SOURCE=500
 
 # XXX: common for C/C++
 CPPFLAGS += -DHAVE_INTTYPES_H
