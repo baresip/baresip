@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <limits.h>
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
@@ -54,7 +55,7 @@ static const struct mod_export *find_module(const struct pl *pl)
 static int load_module(struct mod **modp, const struct pl *modpath,
 		       const struct pl *name)
 {
-	char file[256];
+	char file[_POSIX_PATH_MAX];
 	struct mod *m = NULL;
 	int err = 0;
 

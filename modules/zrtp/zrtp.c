@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <limits.h>
 #include <re.h>
 #include <baresip.h>
 #include <zrtp.h>
@@ -318,8 +319,8 @@ static const struct cmd cmdv[] = {
 static int module_init(void)
 {
 	zrtp_status_t s;
-	char config_path[256] = "";
-	char zrtp_zid_path[256] = "";
+	char config_path[_POSIX_PATH_MAX] = "";
+	char zrtp_zid_path[_POSIX_PATH_MAX] = "";
 	FILE *f;
 	int err;
 

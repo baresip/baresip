@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
+#include <limits.h>
 #include <re.h>
 #include <baresip.h>
 
@@ -121,7 +122,7 @@ static int line_handler(const struct pl *addr)
  */
 static int account_read_file(void)
 {
-	char path[256] = "", file[256] = "";
+	char path[_POSIX_PATH_MAX] = "", file[_POSIX_PATH_MAX] = "";
 	uint32_t n;
 	int err;
 
