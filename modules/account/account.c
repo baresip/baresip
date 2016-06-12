@@ -122,7 +122,7 @@ static int line_handler(const struct pl *addr)
  */
 static int account_read_file(void)
 {
-	char path[PATH_MAX] = "", file[PATH_MAX] = "";
+	char path[_POSIX_PATH_MAX] = "", file[_POSIX_PATH_MAX] = "";
 	uint32_t n;
 	int err;
 

@@ -89,7 +89,7 @@ static int uuid_load(const char *file, char *uuid, size_t sz)
 static int module_init(void)
 {
 	struct config *cfg = conf_config();
-	char path[PATH_MAX];
+	char path[_POSIX_PATH_MAX];
 	int err = 0;
 
 	err = conf_path_get(path, sizeof(path));

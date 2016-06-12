@@ -30,7 +30,7 @@ struct play {
 #ifndef PREFIX
 #define PREFIX "/usr"
 #endif
-static char play_path[PATH_MAX] = PREFIX "/share/baresip";
+static char play_path[_POSIX_PATH_MAX] = PREFIX "/share/baresip";
 static struct list playl;
 
 

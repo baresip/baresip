@@ -175,7 +175,7 @@ static int write_template(const char *file)
 
 static int module_init(void)
 {
-	char path[PATH_MAX] = "", file[PATH_MAX] = "";
+	char path[_POSIX_PATH_MAX] = "", file[_POSIX_PATH_MAX] = "";
 	int err;
 
 	err = conf_path_get(path, sizeof(path));

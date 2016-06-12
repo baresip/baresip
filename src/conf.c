@@ -155,7 +155,7 @@ void conf_path_set(const char *path)
  */
 int conf_path_get(char *path, size_t sz)
 {
-	char buf[PATH_MAX];
+	char buf[_POSIX_PATH_MAX];
 	int err;
 
 	/* Use explicit conf path */
@@ -291,7 +291,7 @@ int conf_get_sa(const struct conf *conf, const char *name, struct sa *sa)
  */
 int conf_configure(void)
 {
-	char path[PATH_MAX], file[PATH_MAX];
+	char path[_POSIX_PATH_MAX], file[_POSIX_PATH_MAX];
 	int err;
 
 #if defined (WIN32)

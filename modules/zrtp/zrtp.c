@@ -319,8 +319,8 @@ static const struct cmd cmdv[] = {
 static int module_init(void)
 {
 	zrtp_status_t s;
-	char config_path[PATH_MAX] = "";
-	char zrtp_zid_path[PATH_MAX] = "";
+	char config_path[_POSIX_PATH_MAX] = "";
+	char zrtp_zid_path[_POSIX_PATH_MAX] = "";
 	FILE *f;
 	int err;
 
