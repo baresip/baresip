@@ -14,5 +14,5 @@ install:
     - wget "https://github.com/alfredh/pytools/raw/master/ccheck.py"
 
 script: 
-    - make test
+    - make V=1 test
     - python2 ccheck.py
