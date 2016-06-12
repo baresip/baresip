@@ -47,14 +47,14 @@ static void *read_thread(void *arg)
 {
 	struct ausrc_st *st = arg;
 	const size_t num_bytes = st->sampc * 2;
-	int ret, error = 0;
+	int ret, pa_error = 0;
 
 	while (st->run) {
 
-		ret = pa_simple_read(st->s, st->sampv, num_bytes, &error);
+		ret = pa_simple_read(st->s, st->sampv, num_bytes, &pa_error);
 		if (ret < 0) {
 			warning("pulse: pa_simple_write error (%s)\n",
-				pa_strerror(error));
+				pa_strerror(pa_error));
 			continue;
 		}
 
