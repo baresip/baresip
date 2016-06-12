@@ -55,6 +55,9 @@ CXXFLAGS  += -I$(LIBREM_PATH)/include
 CXXFLAGS  += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
 CXXFLAGS  += $(EXTRA_CXXFLAGS)
 
+# XXX: GNU libc
+CPPFLAGS += -D_XOPEN_SOURCE=500
+
 # XXX: common for C/C++
 CPPFLAGS += -DHAVE_INTTYPES_H
 
