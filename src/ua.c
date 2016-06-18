@@ -448,6 +448,9 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 	struct mbuf *desc = NULL;
 	int err;
 
+	debug("ua: incoming OPTIONS message from %r (%J)\n",
+	      &msg->from.auri, &msg->src);
+
 	err = ua_call_alloc(&call, ua, VIDMODE_ON, NULL, NULL, NULL);
 	if (err) {
 		(void)sip_treply(NULL, uag.sip, msg, 500, "Call Error");

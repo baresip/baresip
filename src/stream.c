@@ -195,8 +195,12 @@ static int stream_sock_alloc(struct stream *s, int af)
 	err = rtp_listen(&s->rtp, IPPROTO_UDP, &laddr,
 			 s->cfg.rtp_ports.min, s->cfg.rtp_ports.max,
 			 s->rtcp, rtp_recv, rtcp_handler, s);
-	if (err)
+	if (err) {
+		warning("stream: rtp_listen failed: af=%s ports=%u-%u"
+			" (%m)\n", net_af2name(af),
+			s->cfg.rtp_ports.min, s->cfg.rtp_ports.max, err);
 		return err;
+	}
 
 	tos = s->cfg.rtp_tos;
 	(void)udp_setsockopt(rtp_sock(s->rtp), IPPROTO_IP, IP_TOS,
