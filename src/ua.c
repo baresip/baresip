@@ -909,8 +909,6 @@ int ua_options_send(struct ua *ua, const char *uri,
 	struct mbuf *dialbuf;
 	int err = 0;
 
-	(void)arg;
-
 	if (!ua || !str_isset(uri))
 		return EINVAL;
 
@@ -924,7 +922,7 @@ int ua_options_send(struct ua *ua, const char *uri,
 
 	dialbuf->buf[dialbuf->end] = '\0';
 
-	err = sip_req_send(ua, "OPTIONS", (char *)dialbuf->buf, resph, NULL,
+	err = sip_req_send(ua, "OPTIONS", (char *)dialbuf->buf, resph, arg,
 			   "Accept: application/sdp\r\n"
 			   "Content-Length: 0\r\n"
 			   "\r\n");

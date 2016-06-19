@@ -10,13 +10,25 @@
 #include "sip/sipsrv.h"
 
 
+#define MAGIC 0x9044bbfc
+
+
 struct test {
 	struct sip_server *srvv[16];
 	size_t srvc;
 	struct ua *ua;
 	int err;
 	unsigned got_register_ok;
+	unsigned n_resp;
+	uint32_t magic;
 };
+
+
+static void test_init(struct test *t)
+{
+	memset(t, 0, sizeof(*t));
+	t->magic = MAGIC;
+}
 
 
 static void test_reset(struct test *t)
@@ -28,6 +40,13 @@ static void test_reset(struct test *t)
 	mem_deref(t->ua);
 
 	memset(t, 0, sizeof(*t));
+}
+
+
+static void test_abort(struct test *t, int err)
+{
+	t->err = err;
+	re_cancel();
 }
 
 
@@ -587,5 +606,102 @@ int test_ua_register_auth_dns(void)
 #endif
 
  out:
+	return err;
+}
+
+
+static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
+{
+	struct test *t = arg;
+	const struct sip_hdr *hdr;
+	struct pl content;
+	uint32_t clen;
+
+	ASSERT_EQ(MAGIC, t->magic);
+
+	if (err) {
+		test_abort(t, err);
+		return;
+	}
+	if (msg->scode != 200) {
+		test_abort(t, EPROTO);
+		return;
+	}
+
+	++t->n_resp;
+
+	/* Verify SIP headers */
+
+	ASSERT_TRUE(sip_msg_hdr_has_value(msg, SIP_HDR_ALLOW, "INVITE"));
+	ASSERT_TRUE(sip_msg_hdr_has_value(msg, SIP_HDR_ALLOW, "ACK"));
+	ASSERT_TRUE(sip_msg_hdr_has_value(msg, SIP_HDR_ALLOW, "BYE"));
+	ASSERT_TRUE(sip_msg_hdr_has_value(msg, SIP_HDR_ALLOW, "CANCEL"));
+
+	hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+	ASSERT_TRUE(hdr != NULL);
+	ASSERT_TRUE(hdr->val.l != 0);
+
+	ASSERT_EQ(0, pl_strcasecmp(&msg->ctyp.type, "application"));
+	ASSERT_EQ(0, pl_strcasecmp(&msg->ctyp.subtype, "sdp"));
+
+	clen = pl_u32(&msg->clen);
+	ASSERT_TRUE(clen > 0);
+
+	/* Verify the SDP content */
+
+	pl_set_mbuf(&content, msg->mb);
+
+	ASSERT_EQ(0, re_regex(content.p, content.l, "v=0"));
+	ASSERT_EQ(0, re_regex(content.p, content.l, "a=tool:baresip"));
+	ASSERT_EQ(0, re_regex(content.p, content.l, "m=audio"));
+
+ out:
+	if (err)
+		t->err = err;
+	re_cancel();
+}
+
+
+int test_ua_options(void)
+{
+	struct test t;
+	struct sa laddr;
+	char uri[256];
+	int n, err = 0;
+
+	test_init(&t);
+
+	err = ua_init("test", true, false, false, false);
+	TEST_ERR(err);
+
+	err = sip_transp_laddr(uag_sip(), &laddr, SIP_TRANSP_UDP, NULL);
+	TEST_ERR(err);
+
+	err = ua_alloc(&t.ua, "Foo <sip:user:pass@127.0.0.1>;regint=0");
+	TEST_ERR(err);
+
+	n = re_snprintf(uri, sizeof(uri),
+			"sip:user@127.0.0.1:%u", sa_port(&laddr));
+	ASSERT_TRUE(n > 0);
+
+	err = ua_options_send(t.ua, uri, options_resp_handler, &t);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	if (err)
+		goto out;
+
+	TEST_ERR(t.err);
+
+	/* verify after test is complete */
+	ASSERT_EQ(1, t.n_resp);
+
+ out:
+	test_reset(&t);
+
+	ua_stop_all(true);
+	ua_close();
+
 	return err;
 }

@@ -29,6 +29,7 @@ static const struct test tests[] = {
 	TEST(test_mos),
 	TEST(test_network),
 	TEST(test_ua_alloc),
+	TEST(test_ua_options),
 	TEST(test_ua_register),
 	TEST(test_ua_register_dns),
 	TEST(test_ua_register_auth),
@@ -136,6 +137,7 @@ int main(int argc, char *argv[])
 {
 	struct config *config;
 	size_t i, ntests;
+	bool verbose = false;
 	int err;
 
 	err = libre_init();
@@ -161,7 +163,11 @@ int main(int argc, char *argv[])
 			return 0;
 
 		case 'v':
-			log_enable_info(true);
+			if (verbose)
+				log_enable_debug(true);
+			else
+				log_enable_info(true);
+			verbose = true;
 			break;
 
 		default:

@@ -93,6 +93,7 @@ int test_ua_register(void);
 int test_ua_register_dns(void);
 int test_ua_register_auth(void);
 int test_ua_register_auth_dns(void);
+int test_ua_options(void);
 int test_mos(void);
 int test_network(void);
 
