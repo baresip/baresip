@@ -473,6 +473,7 @@ static int reg_auth_dns(enum sip_transp tp)
 	char aor[256];
 	char srv[256];
 	unsigned i;
+	unsigned total_req = 0;
 	int err;
 
 	memset(&t, 0, sizeof t);
@@ -568,11 +569,18 @@ static int reg_auth_dns(enum sip_transp tp)
 		goto out;
 	}
 
-	/* verify that all SIP requests was sent to the first
-	 * SIP-server.
+	/* verify that all SIP requests was sent to the
+	 * SIP-servers.
 	 */
-	ASSERT_TRUE(t.srvv[0]->n_register_req > 0);
-	ASSERT_EQ(tp, t.srvv[0]->tp_last);
+	for (i=0; i<server_count; i++) {
+
+		total_req += t.srvv[i]->n_register_req;
+
+		if (t.srvv[i]->n_register_req) {
+			ASSERT_EQ(tp, t.srvv[i]->tp_last);
+		}
+	}
+	ASSERT_TRUE(total_req >= 2);
 	ASSERT_TRUE(t.got_register_ok > 0);
 
  out:
