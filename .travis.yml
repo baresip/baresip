@@ -4,9 +4,9 @@ before_install:
     - sudo apt-get update -qq
 
 install:
-    - wget "http://www.creytiv.com/pub/re-0.4.16.tar.gz"
-    - tar -xzf re-0.4.16.tar.gz
-    - cd re-0.4.16 && make && sudo make install && cd ..
+    - wget "http://www.creytiv.com/pub/re-0.4.17.tar.gz"
+    - tar -xzf re-0.4.17.tar.gz
+    - cd re-0.4.17 && make && sudo make install && cd ..
     - wget "http://www.creytiv.com/pub/rem-0.4.7.tar.gz"
     - tar -xzf rem-0.4.7.tar.gz
     - cd rem-0.4.7 && make && sudo make install && cd ..
