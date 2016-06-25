@@ -212,10 +212,26 @@ static int output_handler(const char *str)
 }
 
 
+/*
+ * Relay log-messages to all active UDP/TCP connections
+ */
+static void log_handler(uint32_t level, const char *msg)
+{
+	(void)level;
+
+	output_handler(msg);
+}
+
+
 static struct ui ui_cons = {
 	LE_INIT,
 	"cons",
 	output_handler
+};
+
+
+static struct log lg = {
+	.h = log_handler,
 };
 
 
@@ -234,12 +250,16 @@ static int cons_init(void)
 
 	ui_register(&ui_cons);
 
+	log_register_handler(&lg);
+
 	return 0;
 }
 
 
 static int cons_close(void)
 {
+	log_unregister_handler(&lg);
+
 	ui_unregister(&ui_cons);
 	cons = mem_deref(cons);
 	return 0;
