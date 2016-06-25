@@ -65,7 +65,7 @@ static void destructor(void *arg)
 		[st->ctx release];
 	}
 
-	[st->win release];
+	[st->win close];
 
 	if (st->PHandle) {
 		glUseProgramObjectARB(0);
