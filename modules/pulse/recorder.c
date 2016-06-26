@@ -110,7 +110,7 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	attr.tlength   = (uint32_t)-1;
 	attr.prebuf    = (uint32_t)-1;
 	attr.minreq    = (uint32_t)-1;
-	attr.fragsize  = pa_usec_to_bytes(prm->ptime * 1000, &ss);
+	attr.fragsize  = (uint32_t)pa_usec_to_bytes(prm->ptime * 1000, &ss);
 
 	st->s = pa_simple_new(NULL,
 			      "Baresip",

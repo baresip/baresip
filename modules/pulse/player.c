@@ -100,7 +100,7 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	ss.rate     = prm->srate;
 
 	attr.maxlength = (uint32_t)-1;
-	attr.tlength   = pa_usec_to_bytes(prm->ptime * 1000, &ss);
+	attr.tlength   = (uint32_t)pa_usec_to_bytes(prm->ptime * 1000, &ss);
 	attr.prebuf    = (uint32_t)-1;
 	attr.minreq    = (uint32_t)-1;
 	attr.fragsize  = (uint32_t)-1;
