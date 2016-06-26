@@ -191,6 +191,7 @@ opus          OPUS Interactive audio codec
 oss           Open Sound System (OSS) audio driver
 plc           Packet Loss Concealment (PLC) using spandsp
 portaudio     Portaudio driver
+pulse         Pulseaudio driver
 presence      Presence module
 qtcapture     Apple QTCapture video source driver
 quicktime     Apple Quicktime video source driver (deprecated)
