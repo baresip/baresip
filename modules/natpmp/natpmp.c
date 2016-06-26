@@ -29,11 +29,11 @@ struct mnat_sess {
 struct mnat_media {
 	struct comp {
 		struct natpmp_req *natpmp;
-		uint16_t int_port;
-		unsigned id;
-		struct mnat_media *media;
+		struct mnat_media *media;   /* pointer to parent */
 		struct tmr tmr;
+		uint16_t int_port;
 		uint32_t lifetime;
+		unsigned id;
 		bool granted;
 	} compv[2];
 	unsigned compc;
@@ -240,8 +240,8 @@ static int comp_alloc(struct comp *comp, void *sock)
 
 	comp->int_port = sa_port(&laddr);
 
-	info("natpmp: comp %u local UDP port is %u\n",
-	     comp->id, comp->int_port);
+	info("natpmp: `%s' stream comp %u local UDP port is %u\n",
+	     sdp_media_name(comp->media->sdpm), comp->id, comp->int_port);
 
 	err = natpmp_mapping_request(&comp->natpmp, &natpmp_srv,
 				     comp->int_port, 0, comp->lifetime,
