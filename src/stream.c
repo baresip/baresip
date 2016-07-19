@@ -18,11 +18,13 @@ enum {
 
 static void stream_close(struct stream *strm, int err)
 {
-	strm->terminated = true;
+	stream_error_h *errorh = strm->errorh;
 
-	if (strm->errorh) {
-		strm->errorh(strm, err, strm->errorh_arg);
-		strm->errorh = NULL;
+	strm->terminated = true;
+	strm->errorh = NULL;
+
+	if (errorh) {
+		errorh(strm, err, strm->errorh_arg);
 	}
 }
 
