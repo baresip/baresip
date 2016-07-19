@@ -263,12 +263,30 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 	avpkt.data = vds->mb->buf;
 	avpkt.size = (int)vds->mb->end;
 
+#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+
+	ret = avcodec_send_packet(vds->ctx, &avpkt);
+	if (ret < 0) {
+		err = EBADMSG;
+		goto out;
+	}
+
+	ret = avcodec_receive_frame(vds->ctx, vds->pict);
+	if (ret < 0) {
+		err = EBADMSG;
+		goto out;
+	}
+
+	got_picture = true;
+
+#else
 	ret = avcodec_decode_video2(vds->ctx, vds->pict, &got_picture, &avpkt);
 	if (ret < 0) {
 		debug("h265: decode error\n");
 		err = EPROTO;
 		goto out;
 	}
+#endif
 
 	if (!got_picture) {
 		/* debug("h265: no picture\n"); */

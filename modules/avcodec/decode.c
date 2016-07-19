@@ -153,7 +153,32 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		goto out;
 	}
 
-#if LIBAVCODEC_VERSION_INT <= ((52<<16)+(23<<8)+0)
+#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+
+	do {
+		AVPacket avpkt;
+
+		av_init_packet(&avpkt);
+		avpkt.data = st->mb->buf;
+		avpkt.size = (int)mbuf_get_left(st->mb);
+
+		ret = avcodec_send_packet(st->ctx, &avpkt);
+		if (ret < 0) {
+			err = EBADMSG;
+			goto out;
+		}
+
+		ret = avcodec_receive_frame(st->ctx, st->pict);
+		if (ret < 0) {
+			err = EBADMSG;
+			goto out;
+		}
+
+		got_picture = true;
+
+	} while (0);
+
+#elif LIBAVCODEC_VERSION_INT <= ((52<<16)+(23<<8)+0)
 	ret = avcodec_decode_video(st->ctx, st->pict, &got_picture,
 				   st->mb->buf,
 				   (int)mbuf_get_left(st->mb));

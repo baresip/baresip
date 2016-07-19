@@ -106,7 +106,19 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		frame = avcodec_alloc_frame();
 #endif
 
-#if LIBAVCODEC_VERSION_INT <= ((52<<16)+(23<<8)+0)
+#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+
+		ret = avcodec_send_packet(st->ctx, pkt);
+		if (ret < 0)
+			goto out;
+
+		ret = avcodec_receive_frame(st->ctx, frame);
+		if (ret < 0)
+			goto out;
+
+		got_pict = true;
+
+#elif LIBAVCODEC_VERSION_INT <= ((52<<16)+(23<<8)+0)
 		ret = avcodec_decode_video(st->ctx, frame, &got_pict,
 					   pkt->data, pkt->size);
 #else
@@ -140,6 +152,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 
 	st->frameh(&vf, st->arg);
 
+ out:
 	if (frame) {
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 		av_frame_free(&frame);
