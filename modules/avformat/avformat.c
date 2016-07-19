@@ -187,7 +187,11 @@ static void *read_thread(void *data)
 		sys_msleep(1000/st->fps);
 
 	out:
+#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(12<<8)+100)
+		av_packet_unref(&pkt);
+#else
 		av_free_packet(&pkt);
+#endif
 	}
 
 	return NULL;
