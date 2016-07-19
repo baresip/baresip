@@ -20,7 +20,8 @@ enum behaviour {
 enum action {
 	ACTION_RECANCEL = 0,
 	ACTION_HANGUP_A,
-	ACTION_HANGUP_B
+	ACTION_HANGUP_B,
+	ACTION_NOTHING
 };
 
 struct agent {
@@ -163,6 +164,10 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			case ACTION_HANGUP_B:
 				f->b.failed = true;
 				ua_hangup(f->b.ua, NULL, 0, 0);
+				break;
+
+			case ACTION_NOTHING:
+				/* Do nothing, wait */
 				break;
 			}
 		}
@@ -354,6 +359,47 @@ int test_call_answer_hangup_b(void)
 	ASSERT_EQ(1, fix.a.n_established);
 	ASSERT_EQ(1, fix.a.n_closed);
 	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(1, fix.b.n_closed);
+	ASSERT_EQ(0, fix.b.close_scode);
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_rtp_timeout(void)
+{
+#define RTP_TIMEOUT_MS 1
+	struct fixture fix, *f = &fix;
+	struct call *call;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	call = ua_call(f->a.ua);
+	ASSERT_TRUE(call != NULL);
+
+	call_enable_rtp_timeout(call, RTP_TIMEOUT_MS);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+	ASSERT_EQ(701, fix.a.close_scode);  /* verify timeout */
 
 	ASSERT_EQ(1, fix.b.n_established);
 	ASSERT_EQ(1, fix.b.n_closed);

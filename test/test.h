@@ -102,6 +102,7 @@ int test_call_reject(void);
 int test_call_af_mismatch(void);
 int test_call_answer_hangup_a(void);
 int test_call_answer_hangup_b(void);
+int test_call_rtp_timeout(void);
 
 
 #ifdef __cplusplus

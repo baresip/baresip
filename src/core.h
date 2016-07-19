@@ -281,6 +281,9 @@ typedef void (stream_rtp_h)(const struct rtp_header *hdr, struct mbuf *mb,
 			    void *arg);
 typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
+typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
+
+
 /** Defines a generic media stream */
 struct stream {
 	struct le le;            /**< Linked list element                   */
@@ -307,6 +310,13 @@ struct stream {
 	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
 	void *arg;               /**< Handler argument                      */
+
+	stream_error_h *errorh;
+	void *errorh_arg;
+	struct tmr tmr_rtp;
+	uint64_t ts_last;
+	bool terminated;
+	uint32_t rtp_timeout_ms;  /* [ms] */
 };
 
 int  stream_alloc(struct stream **sp, const struct config_avt *cfg,
@@ -327,8 +337,11 @@ void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
 void stream_send_fir(struct stream *s, bool pli);
 void stream_reset(struct stream *s);
 void stream_set_bw(struct stream *s, uint32_t bps);
+void stream_set_error_handler(struct stream *strm,
+			      stream_error_h *errorh, void *arg);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 int  stream_print(struct re_printf *pf, const struct stream *s);
+void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 
 
 /*

@@ -36,12 +36,24 @@ static struct le *le_cur;             /**< Current User-Agent (struct ua) */
 static struct {
 	struct play *play;
 	bool bell;
+
+	struct tmr tmr_redial;
+	uint32_t redial_delay;        /* Redial delay in [seconds] */
+	uint32_t redial_attempts;     /* Number of re-dial attempts */
+	uint32_t current_attempts;
 } menu;
 
 
 static void menu_set_incall(bool incall);
 static void update_callstatus(void);
 static void alert_stop(void);
+
+
+static void redial_reset(void)
+{
+	tmr_cancel(&menu.tmr_redial);
+	menu.current_attempts = 0;
+}
 
 
 static const char *translate_errorcode(uint16_t scode)
@@ -790,6 +802,42 @@ static void alert_stop(void)
 }
 
 
+static void redial_handler(void *arg)
+{
+	char *uri = NULL;
+	int err;
+	(void)arg;
+
+	info("now: redialing now. current_attempts=%u, max_attempts=%u\n",
+	     menu.current_attempts,
+	     menu.redial_attempts);
+
+	if (menu.current_attempts > menu.redial_attempts) {
+
+		info("menu: redial: too many attemptes -- giving up\n");
+		return;
+	}
+
+	if (dialbuf->end == 0) {
+		warning("menu: redial: dialbuf is empty\n");
+		return;
+	}
+
+	dialbuf->pos = 0;
+	err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+	if (err)
+		return;
+
+	err = ua_connect(uag_cur(), NULL, NULL, uri, NULL, VIDMODE_ON);
+	if (err) {
+		warning("menu: redial: ua_connect failed (%m)\n", err);
+	}
+
+	mem_deref(uri);
+
+}
+
+
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
@@ -842,6 +890,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		menu.play = mem_deref(menu.play);
 
 		alert_stop();
+
+		/* We must stop the re-dialing if the call was
+		   established */
+		redial_reset();
 		break;
 
 	case UA_EVENT_CALL_CLOSED:
@@ -856,6 +908,35 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		}
 
 		alert_stop();
+
+		/* Activate the re-dialing if:
+		 *
+		 * - redial_attempts must be enabled in config
+		 * - the closed call must be of outgoing direction
+		 * - the closed call must fail with special code 701
+		 */
+		if (menu.redial_attempts) {
+
+			if (menu.current_attempts
+			    ||
+			    (call_is_outgoing(call) &&
+			     call_scode(call) == 701)) {
+
+				info("menu: call closed"
+				     " -- redialing in %u seconds\n",
+				     menu.redial_delay);
+
+				++menu.current_attempts;
+
+				tmr_start(&menu.tmr_redial,
+					  menu.redial_delay*1000,
+					  redial_handler, NULL);
+			}
+			else {
+				info("menu: call closed -- not redialing\n");
+			}
+		}
+
 		break;
 
 	case UA_EVENT_REGISTER_OK:
@@ -889,9 +970,30 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 
 static int module_init(void)
 {
+	struct pl val;
 	int err;
 
+	/*
+	 * Read the config values
+	 */
 	conf_get_bool(conf_cur(), "menu_bell", &menu.bell);
+
+	if (0 == conf_get(conf_cur(), "redial_attempts", &val) &&
+	    0 == pl_strcasecmp(&val, "inf")) {
+		menu.redial_attempts = (uint32_t)-1;
+	}
+	else {
+		conf_get_u32(conf_cur(), "redial_attempts",
+			     &menu.redial_attempts);
+	}
+	conf_get_u32(conf_cur(), "redial_delay", &menu.redial_delay);
+
+	if (menu.redial_attempts) {
+		info("menu: redial enabled with %u attempts and"
+		     " %u seconds delay\n",
+		     menu.redial_attempts,
+		     menu.redial_delay);
+	}
 
 	dialbuf = mbuf_alloc(64);
 	if (!dialbuf)
@@ -913,6 +1015,9 @@ static int module_init(void)
 
 static int module_close(void)
 {
+	debug("menu: close (redial current_attempts=%d)\n",
+	      menu.current_attempts);
+
 	message_close();
 	uag_event_unregister(ua_event_handler);
 	cmd_unregister(cmdv);
@@ -925,6 +1030,8 @@ static int module_close(void)
 	le_cur = NULL;
 
 	menu.play = mem_deref(menu.play);
+
+	tmr_cancel(&menu.tmr_redial);
 
 	return 0;
 }

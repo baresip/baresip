@@ -12,7 +12,61 @@
 
 enum {
 	RTP_RECV_SIZE = 8192,
+	RTP_CHECK_INTERVAL = 1000  /* how often to check for RTP [ms] */
 };
+
+
+static void stream_close(struct stream *strm, int err)
+{
+	strm->terminated = true;
+
+	if (strm->errorh) {
+		strm->errorh(strm, err, strm->errorh_arg);
+		strm->errorh = NULL;
+	}
+}
+
+
+/* TODO: should we check RTP per stream, or should we have the
+ *       check in struct call instead?
+ */
+static void check_rtp_handler(void *arg)
+{
+	struct stream *strm = arg;
+	const uint64_t now = tmr_jiffies();
+	int diff_ms;
+
+	tmr_start(&strm->tmr_rtp, RTP_CHECK_INTERVAL,
+		  check_rtp_handler, strm);
+
+	/* If no RTP was received at all, check later */
+	if (!strm->ts_last)
+		return;
+
+	/* We are in sendrecv mode, check when the last RTP packet
+	 * was received.
+	 */
+	if (sdp_media_dir(strm->sdp) == SDP_SENDRECV) {
+
+		diff_ms = (int)(now - strm->ts_last);
+
+		debug("stream: last \"%s\" RTP packet: %d milliseconds\n",
+		      sdp_media_name(strm->sdp), diff_ms);
+
+		if (diff_ms > (int)strm->rtp_timeout_ms) {
+
+			info("stream: no %s RTP packets received for"
+			     " %d milliseconds\n",
+			     sdp_media_name(strm->sdp), diff_ms);
+
+			stream_close(strm, ETIMEDOUT);
+		}
+	}
+	else {
+		re_printf("check_rtp: not checking (dir=%s)\n",
+			  sdp_dir_name(sdp_media_dir(strm->sdp)));
+	}
+}
 
 
 static inline int lostcalc(struct stream *s, uint16_t seq)
@@ -79,6 +133,7 @@ static void stream_destructor(void *arg)
 	metric_reset(&s->metric_tx);
 	metric_reset(&s->metric_rx);
 
+	tmr_cancel(&s->tmr_rtp);
 	list_unlink(&s->le);
 	mem_deref(s->rtpkeep);
 	mem_deref(s->sdp);
@@ -97,6 +152,8 @@ static void rtp_recv(const struct sa *src, const struct rtp_header *hdr,
 	struct stream *s = arg;
 	bool flush = false;
 	int err;
+
+	s->ts_last = tmr_jiffies();
 
 	if (!mbuf_get_left(mb))
 		return;
@@ -446,6 +503,9 @@ void stream_update(struct stream *s)
 
 void stream_update_encoder(struct stream *s, int pt_enc)
 {
+	if (!s)
+		return;
+
 	if (pt_enc >= 0)
 		s->pt_enc = pt_enc;
 }
@@ -534,6 +594,37 @@ void stream_set_bw(struct stream *s, uint32_t bps)
 }
 
 
+void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
+{
+	if (!strm)
+		return;
+
+	strm->rtp_timeout_ms = timeout_ms;
+
+	tmr_cancel(&strm->tmr_rtp);
+
+	if (timeout_ms) {
+
+		info("stream: Enable RTP timeout (%u milliseconds)\n",
+		     timeout_ms);
+
+		strm->ts_last = tmr_jiffies();
+		tmr_start(&strm->tmr_rtp, 10, check_rtp_handler, strm);
+	}
+}
+
+
+void stream_set_error_handler(struct stream *strm,
+			      stream_error_h *errorh, void *arg)
+{
+	if (!strm)
+		return;
+
+	strm->errorh     = errorh;
+	strm->errorh_arg = arg;
+}
+
+
 int stream_debug(struct re_printf *pf, const struct stream *s)
 {
 	struct sa rrtcp;
@@ -567,5 +658,3 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 			  s->metric_tx.cur_bitrate,
 			  s->metric_rx.cur_bitrate);
 }
-
-

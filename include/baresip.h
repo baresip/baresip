@@ -100,6 +100,7 @@ struct list  *call_streaml(const struct call *call);
 struct ua    *call_get_ua(const struct call *call);
 bool          call_is_onhold(const struct call *call);
 bool          call_is_outgoing(const struct call *call);
+void          call_enable_rtp_timeout(struct call *call, uint32_t timeout_ms);
 
 
 /*
@@ -201,6 +202,7 @@ struct config_avt {
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
 	struct range jbuf_del;  /**< Delay, number of frames        */
 	bool rtp_stats;         /**< Enable RTP statistics          */
+	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 };
 
 /* Network */

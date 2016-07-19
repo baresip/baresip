@@ -78,6 +78,8 @@ struct call {
 
 	struct config_avt config_avt;
 	struct config_call config_call;
+
+	uint32_t rtp_timeout_ms;  /**< RTP Timeout in [ms]                  */
 };
 
 
@@ -420,6 +422,22 @@ static void menc_error_handler(int err, void *arg)
 }
 
 
+static void stream_error_handler(struct stream *strm, int err, void *arg)
+{
+	struct call *call = arg;
+	MAGIC_CHECK(call);
+
+	info("call: error in \"%s\" rtp stream (%m)\n",
+		sdp_media_name(stream_sdpmedia(strm)), err);
+
+	call->scode = 701;
+	set_state(call, STATE_TERMINATED);
+
+	call_stream_stop(call);
+	call_event_handler(call, CALL_EVENT_CLOSED, "rtp stream error");
+}
+
+
 /**
  * Allocate a new Call state object
  *
@@ -445,6 +463,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	       call_event_h *eh, void *arg)
 {
 	struct call *call;
+	struct le *le;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
 	bool use_video = true, got_offer = false;
 	int label = 0;
@@ -565,6 +584,15 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	/* inherit certain properties from original call */
 	if (xcall) {
 		call->not = mem_ref(xcall->not);
+	}
+
+	FOREACH_STREAM {
+		struct stream *strm = le->data;
+		stream_set_error_handler(strm, stream_error_handler, call);
+	}
+
+	if (cfg->avt.rtp_timeout) {
+		call_enable_rtp_timeout(call, cfg->avt.rtp_timeout*1000);
 	}
 
 	list_append(lst, &call->le, call);
@@ -1032,6 +1060,16 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	set_state(call, STATE_ESTABLISHED);
 
 	call_stream_start(call, true);
+
+	if (call->rtp_timeout_ms) {
+
+		struct le *le;
+
+		FOREACH_STREAM {
+			struct stream *strm = le->data;
+			stream_enable_rtp_timeout(strm, call->rtp_timeout_ms);
+		}
+	}
 
 	/* the transferor will hangup this call */
 	if (call->not) {
@@ -1715,4 +1753,13 @@ bool call_is_onhold(const struct call *call)
 bool call_is_outgoing(const struct call *call)
 {
 	return call ? call->outgoing : false;
+}
+
+
+void call_enable_rtp_timeout(struct call *call, uint32_t timeout_ms)
+{
+	if (!call)
+		return;
+
+	call->rtp_timeout_ms = timeout_ms;
 }
