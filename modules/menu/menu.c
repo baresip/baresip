@@ -37,10 +37,10 @@ static struct {
 	struct play *play;
 	bool bell;
 
-	struct tmr tmr_redial;
-	uint32_t redial_delay;        /* Redial delay in [seconds] */
-	uint32_t redial_attempts;     /* Number of re-dial attempts */
-	uint32_t current_attempts;
+	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
+	uint32_t redial_delay;        /**< Redial delay in [seconds]      */
+	uint32_t redial_attempts;     /**< Number of re-dial attempts     */
+	uint32_t current_attempts;    /**< Current number of re-dials     */
 } menu;
 
 

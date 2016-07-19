@@ -310,13 +310,12 @@ struct stream {
 	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
 	void *arg;               /**< Handler argument                      */
-
-	stream_error_h *errorh;
-	void *errorh_arg;
-	struct tmr tmr_rtp;
-	uint64_t ts_last;
-	bool terminated;
-	uint32_t rtp_timeout_ms;  /* [ms] */
+	stream_error_h *errorh;  /**< Stream error handler                  */
+	void *errorh_arg;        /**< Error handler argument                */
+	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
+	uint64_t ts_last;        /**< Timestamp of last received RTP pkt    */
+	bool terminated;         /**< Stream is terminated flag             */
+	uint32_t rtp_timeout_ms; /**< RTP Timeout value in [ms]             */
 };
 
 int  stream_alloc(struct stream **sp, const struct config_avt *cfg,
