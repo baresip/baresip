@@ -15,7 +15,6 @@
 #include <libavformat/avformat.h>
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
-#include <libswscale/swscale.h>
 
 
 /**
@@ -29,16 +28,6 @@
   video_source            avformat,/tmp/testfile.mp4
  \endverbatim
  */
-
-
-/* extra const-correctness added in 0.9.0 */
-/* note: macports has LIBSWSCALE_VERSION_MAJOR == 1 */
-/* #if LIBSWSCALE_VERSION_INT >= ((0<<16) + (9<<8) + (0)) */
-#if LIBSWSCALE_VERSION_MAJOR >= 2 || LIBSWSCALE_VERSION_MINOR >= 9
-#define SRCSLICE_CAST (const uint8_t **)
-#else
-#define SRCSLICE_CAST (uint8_t **)
-#endif
 
 
 /* backward compat */
@@ -68,8 +57,6 @@ struct vidsrc_st {
 	AVFormatContext *ic;
 	AVCodec *codec;
 	AVCodecContext *ctx;
-	struct SwsContext *sws;
-	struct vidsz app_sz;
 	struct vidsz sz;
 	vidsrc_frame_h *frameh;
 	void *arg;
@@ -90,9 +77,6 @@ static void destructor(void *arg)
 		pthread_join(st->thread, NULL);
 	}
 
-	if (st->sws)
-		sws_freeContext(st->sws);
-
 	if (st->ctx && st->ctx->codec)
 		avcodec_close(st->ctx);
 
@@ -108,7 +92,6 @@ static void destructor(void *arg)
 
 static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 {
-	AVPicture pict;
 	AVFrame *frame = NULL;
 	struct vidframe vf;
 	struct vidsz sz;
@@ -138,59 +121,24 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 
 		/* check if size changed */
 		if (!vidsz_cmp(&sz, &st->sz)) {
-			info("size changed: %d x %d  ---> %d x %d\n",
+			info("avformat: size changed: %d x %d  ---> %d x %d\n",
 			     st->sz.w, st->sz.h, sz.w, sz.h);
 			st->sz = sz;
-
-			if (st->sws) {
-				sws_freeContext(st->sws);
-				st->sws = NULL;
-			}
 		}
-
-		if (!st->sws) {
-			info("scaling: %d x %d  --->  %d x %d\n",
-			     st->sz.w, st->sz.h,
-			     st->app_sz.w, st->app_sz.h);
-
-			st->sws = sws_getContext(st->sz.w, st->sz.h,
-						 st->ctx->pix_fmt,
-						 st->app_sz.w, st->app_sz.h,
-						 AV_PIX_FMT_YUV420P,
-						 SWS_BICUBIC,
-						 NULL, NULL, NULL);
-			if (!st->sws)
-				return;
-		}
-
-		ret = avpicture_alloc(&pict, AV_PIX_FMT_YUV420P,
-				      st->app_sz.w, st->app_sz.h);
-		if (ret < 0)
-			return;
-
-		ret = sws_scale(st->sws,
-				SRCSLICE_CAST frame->data, frame->linesize,
-				0, st->sz.h, pict.data, pict.linesize);
-		if (ret <= 0)
-			goto end;
 	}
 	else {
-		avpicture_fill(&pict, pkt->data, AV_PIX_FMT_YUV420P,
-			       st->sz.w, st->sz.h);
+		/* No-codec option is not supported */
+		return;
 	}
 
-	vf.size = st->app_sz;
+	vf.size = sz;
 	vf.fmt  = VID_FMT_YUV420P;
 	for (i=0; i<4; i++) {
-		vf.data[i]     = pict.data[i];
-		vf.linesize[i] = pict.linesize[i];
+		vf.data[i]     = frame->data[i];
+		vf.linesize[i] = frame->linesize[i];
 	}
 
 	st->frameh(&vf, st->arg);
-
- end:
-	if (st->codec)
-		avpicture_free(&pict);
 
 	if (frame) {
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
@@ -258,7 +206,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		return ENOMEM;
 
 	st->vs     = vs;
-	st->app_sz = *size;
+	st->sz     = *size;
 	st->frameh = frameh;
 	st->arg    = arg;
 
