@@ -126,7 +126,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 					    &got_pict, pkt);
 #endif
 		if (ret < 0 || !got_pict)
-			return;
+			goto out;
 
 		sz.w = st->ctx->width;
 		sz.h = st->ctx->height;
