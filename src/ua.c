@@ -153,7 +153,7 @@ int ua_register(struct ua *ua)
 	struct account *acc;
 	struct le *le;
 	struct uri uri;
-	char reg_uri[64];
+	char *reg_uri = NULL;
 	char params[256] = "";
 	unsigned i;
 	int err;
@@ -164,28 +164,36 @@ int ua_register(struct ua *ua)
 	acc = ua->acc;
 	uri = ua->acc->luri;
 	uri.user = uri.password = pl_null;
-	if (re_snprintf(reg_uri, sizeof(reg_uri), "%H", uri_encode, &uri) < 0)
-		return ENOMEM;
+
+	err = re_sdprintf(&reg_uri, "%H", uri_encode, &uri);
+	if (err)
+		goto out;
 
 	if (uag.cfg && str_isset(uag.cfg->uuid)) {
 		if (re_snprintf(params, sizeof(params),
 				";+sip.instance=\"<urn:uuid:%s>\"",
-				uag.cfg->uuid) < 0)
-			return ENOMEM;
+				uag.cfg->uuid) < 0) {
+			err = ENOMEM;
+			goto out;
+		}
 	}
 
 	if (acc->regq) {
 		if (re_snprintf(&params[strlen(params)],
 				sizeof(params) - strlen(params),
-				";q=%s", acc->regq) < 0)
-			return ENOMEM;
+				";q=%s", acc->regq) < 0) {
+			err = ENOMEM;
+			goto out;
+		}
 	}
 
 	if (acc->mnat && acc->mnat->ftag) {
 		if (re_snprintf(&params[strlen(params)],
 				sizeof(params) - strlen(params),
-				";%s", acc->mnat->ftag) < 0)
-			return ENOMEM;
+				";%s", acc->mnat->ftag) < 0) {
+			err = ENOMEM;
+			goto out;
+		}
 	}
 
 	ua_event(ua, UA_EVENT_REGISTERING, NULL, NULL);
@@ -197,11 +205,14 @@ int ua_register(struct ua *ua)
 				   acc->regint, acc->outbound[i]);
 		if (err) {
 			warning("ua: SIP register failed: %m\n", err);
-			return err;
+			goto out;
 		}
 	}
 
-	return 0;
+ out:
+	mem_deref(reg_uri);
+
+	return err;
 }
 
 
