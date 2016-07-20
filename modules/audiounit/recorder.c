@@ -181,7 +181,9 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
 #if TARGET_OS_IPHONE
-	fmt.mFormatFlags      = kAudioFormatFlagsCanonical;
+	fmt.mFormatFlags      = kAudioFormatFlagIsSignedInteger
+		| kAudioFormatFlagsNativeEndian
+		| kAudioFormatFlagIsPacked;
 #else
 	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger
 		| kLinearPCMFormatFlagIsPacked;

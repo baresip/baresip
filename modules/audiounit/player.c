@@ -133,7 +133,9 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
 #if TARGET_OS_IPHONE
-	fmt.mFormatFlags      = kAudioFormatFlagsCanonical;
+	fmt.mFormatFlags      = kAudioFormatFlagIsSignedInteger
+		| kAudioFormatFlagsNativeEndian
+		| kAudioFormatFlagIsPacked;
 #else
 	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger
 		| kLinearPCMFormatFlagIsPacked;
