@@ -165,7 +165,7 @@ static int editor_input(struct mbuf *mb, char key,
 
 
 static int cmd_report(const struct cmd *cmd, struct re_printf *pf,
-		      struct mbuf *mb, bool compl)
+		      struct mbuf *mb, bool compl, void *data)
 {
 	struct cmd_arg arg;
 	int err;
@@ -177,6 +177,7 @@ static int cmd_report(const struct cmd *cmd, struct re_printf *pf,
 
 	arg.key      = cmd->key;
 	arg.complete = compl;
+	arg.data     = data;
 
 	err = cmd->h(pf, &arg);
 
@@ -187,7 +188,7 @@ static int cmd_report(const struct cmd *cmd, struct re_printf *pf,
 
 
 static int cmd_process_edit(struct cmd_ctx **ctxp, char key,
-			    struct re_printf *pf)
+			    struct re_printf *pf, void *data)
 {
 	struct cmd_ctx *ctx;
 	bool compl = (key == '\n'), del = false;
@@ -203,7 +204,7 @@ static int cmd_process_edit(struct cmd_ctx **ctxp, char key,
 		return err;
 
 	if (compl || ctx->cmd->flags & CMD_PROG)
-		err = cmd_report(ctx->cmd, pf, ctx->mb, compl);
+		err = cmd_report(ctx->cmd, pf, ctx->mb, compl, data);
 
 	if (del)
 		*ctxp = mem_deref(*ctxp);
@@ -261,10 +262,12 @@ void cmd_unregister(const struct cmd *cmdv)
  * @param ctxp Pointer to context for editor (optional)
  * @param key  Input character
  * @param pf   Print function
+ * @param data Application data
  *
  * @return 0 if success, otherwise errorcode
  */
-int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf)
+int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
+		void *data)
 {
 	const struct cmd *cmd;
 
@@ -274,7 +277,7 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf)
 		if (key == REL)
 			return 0;
 
-		return cmd_process_edit(ctxp, key, pf);
+		return cmd_process_edit(ctxp, key, pf, data);
 	}
 
 	cmd = cmd_find_by_key(key);
@@ -292,12 +295,13 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf)
 
 			return cmd_process_edit(ctxp,
 						isdigit(key) ? key : 0,
-						pf);
+						pf, data);
 		}
 
 		arg.key      = key;
 		arg.prm      = NULL;
 		arg.complete = true;
+		arg.data     = data;
 
 		return cmd->h(pf, &arg);
 	}

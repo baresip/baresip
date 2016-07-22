@@ -3,27 +3,28 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <string.h>
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
 
 
-static bool cmd_called;
-
+struct test {
+	unsigned cmd_called;
+};
 
 static int cmd_test(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
+	struct test *test = carg->data;
 	int err = 0;
 	(void)pf;
-
-	ASSERT_EQ(false, cmd_called);
 
 	ASSERT_EQ('@', carg->key);
 	ASSERT_TRUE(NULL == carg->prm);
 	ASSERT_EQ(true, carg->complete);
 
-	cmd_called = true;
+	++test->cmd_called;
 
  out:
 	return err;
@@ -50,22 +51,23 @@ static struct re_printf pf_null = {vprintf_null, 0};
 int test_cmd(void)
 {
 	struct cmd_ctx *ctx = 0;
+	struct test test;
 	int err = 0;
 
-	cmd_called = false;
+	memset(&test, 0, sizeof(test));
 
 	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
 	ASSERT_EQ(0, err);
 
 	/* issue a different command */
-	err = cmd_process(&ctx, 'h', &pf_null);
+	err = cmd_process(&ctx, 'h', &pf_null, &test);
 	ASSERT_EQ(0, err);
-	ASSERT_EQ(false, cmd_called);
+	ASSERT_EQ(0, test.cmd_called);
 
 	/* issue our command, expect handler to be called */
-	err = cmd_process(&ctx, '@', &pf_null);
+	err = cmd_process(&ctx, '@', &pf_null, &test);
 	ASSERT_EQ(0, err);
-	ASSERT_EQ(true, cmd_called);
+	ASSERT_EQ(1, test.cmd_called);
 
 	cmd_unregister(cmdv);
 

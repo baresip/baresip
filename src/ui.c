@@ -15,7 +15,7 @@ static struct cmd_ctx *uictx;
 
 static void ui_handler(char key, struct re_printf *pf)
 {
-	(void)cmd_process(&uictx, key, pf);
+	(void)cmd_process(&uictx, key, pf, NULL);
 }
 
 
@@ -117,11 +117,11 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 		return EINVAL;
 
 	for (i=0; i<pl->l; i++) {
-		err |= cmd_process(&ctx, pl->p[i], pf);
+		err |= cmd_process(&ctx, pl->p[i], pf, NULL);
 	}
 
 	if (pl->l > 1 && ctx)
-		err |= cmd_process(&ctx, '\n', pf);
+		err |= cmd_process(&ctx, '\n', pf, NULL);
 
 	return err;
 }

@@ -643,6 +643,7 @@ struct cmd_arg {
 	char key;         /**< Which key was pressed  */
 	char *prm;        /**< Optional parameter     */
 	bool complete;    /**< True if complete       */
+	void *data;       /**< Application data       */
 };
 
 /** Defines a command */
@@ -657,7 +658,8 @@ struct cmd_ctx;
 
 int  cmd_register(const struct cmd *cmdv, size_t cmdc);
 void cmd_unregister(const struct cmd *cmdv);
-int  cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf);
+int  cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
+		 void *data);
 int  cmd_print(struct re_printf *pf, void *unused);
 
 
