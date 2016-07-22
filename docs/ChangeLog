@@ -1,3 +1,72 @@
+2016-07-22 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.20
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.4.20
+	* NOTE: Requires libre v0.4.17 or later
+	        Requires librem v0.4.7 or later
+
+	* new modules:
+	  - pulse      Pulseaudio driver
+	  - vp9        VP9 video codec
+
+	* config:
+	  - audio_path          Path to audio files
+	  - call_local_timeout  Timeout for incoming calls
+	  - redial_attempts     Number of redial attempts
+	  - redial_delay        Redial delay in seconds
+
+	* baresip-core:
+	  - baresip: added a global baresip instance (WIP)
+	  - call: add RTP timeout (thanks to Sveriges Radio)
+	  - config: added call_local_timeout for incoming call timeout
+	  - config: added compile-time configureable CONFIG_PATH
+	  - config: added 'audio_path' config variable (thanks Juha Heinanen)
+	  - net: made it re-entrant with struct network
+	  - ua: added uag_set_exit_handler
+	  - ua: fix bug with reg_uri limited to 64-chars
+	  - video: vidfilters should not modify decoded image
+
+	* selftest:
+	  - add test for network
+	  - add test for sending SIP OPTIONS
+	  - add test for RTP timeout
+
+	* Modules:
+
+	* avcodec: fix usage of deprecated API
+
+	* avformat: remove support for scaling
+		    fix usage of deprecated API
+
+	* cons: relay log-messages to active UDP/TCP connections
+		https://github.com/alfredh/baresip/issues/144
+
+	* h265: fix usage of deprecated API
+
+	* menu: added support for re-dial on failure
+		(thanks to Sveriges Radio)
+
+	* mpa: Bug with reinit of codec structs (thanks Christian Hoene)
+
+	* natpmp: added support for RTCP
+
+	* presence: use correct struct in deref handler
+
+	* pulse: new module for Pulseaudio driver
+		 (thanks to Matthias Apitz for testing)
+
+	* vidloop: vidfilters should not modify decoded image
+
+	* vp8: module renamed from vpx.so to vp8.so
+
+	* vp9: new module implementing VP9 video codec
+
+	* wincons: use ReadConsoleInput, thanks to GGGO (fixes #139)
+		   https://github.com/alfredh/baresip/issues/139
+
+
 2016-05-20 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.19
