@@ -80,6 +80,7 @@ struct call {
 	struct config_call config_call;
 
 	uint32_t rtp_timeout_ms;  /**< RTP Timeout in [ms]                  */
+	uint32_t linenum;         /**< Line number from 1 to N              */
 };
 
 
@@ -465,6 +466,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	struct call *call;
 	struct le *le;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
+	uint32_t wanted_linenum = 1;
 	bool use_video = true, got_offer = false;
 	int label = 0;
 	int err = 0;
@@ -595,7 +597,27 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		call_enable_rtp_timeout(call, cfg->avt.rtp_timeout*1000);
 	}
 
-	list_append(lst, &call->le, call);
+	for (le = lst->head; le; le = le->next) {
+
+		const struct call *call0 = le->data;
+
+		if (call0->linenum == wanted_linenum) {
+			/* that linenum was busy, increment */
+			++wanted_linenum;
+			continue;
+		}
+		else if (call0->linenum > wanted_linenum) {
+			/* wanted linenum is free */
+			list_insert_before(lst, le, &call->le, call);
+			call->linenum = wanted_linenum;
+			break;
+		}
+	}
+
+	if (!call->le.list) {
+		list_append(lst, &call->le, call);
+		call->linenum = list_count(lst);
+	}
 
  out:
 	if (err)
@@ -956,7 +978,8 @@ int call_info(struct re_printf *pf, const struct call *call)
 	if (!call)
 		return 0;
 
-	return re_hprintf(pf, "%H  %9s  %s  %s", print_duration, call,
+	return re_hprintf(pf, "[line %u]  %H  %9s  %s  %s", call->linenum,
+			  print_duration, call,
 			  state_name(call->state),
 			  call->on_hold ? "(on hold)" : "         ",
 			  call->peer_uri);
@@ -1762,4 +1785,17 @@ void call_enable_rtp_timeout(struct call *call, uint32_t timeout_ms)
 		return;
 
 	call->rtp_timeout_ms = timeout_ms;
+}
+
+
+/**
+ * Get the line number for this call
+ *
+ * @param call Call object
+ *
+ * @return Line number from 1 to N
+ */
+uint32_t call_linenum(const struct call *call)
+{
+	return call ? call->linenum : 0;
 }

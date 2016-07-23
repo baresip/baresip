@@ -43,6 +43,8 @@ struct fixture {
 	enum action estab_action;
 	char buri[256];
 	int err;
+	unsigned exp_estab;
+	unsigned exp_closed;
 };
 
 
@@ -53,6 +55,8 @@ struct fixture {
 	TEST_ERR(err);							\
 									\
 	f->magic = MAGIC;						\
+	f->exp_estab = 1;						\
+	f->exp_closed = 1;						\
 	aucodec_register(&dummy_pcma);					\
 									\
 	err = ua_alloc(&f->a.ua, "A <sip:a:xxx@127.0.0.1>;regint=0");	\
@@ -148,7 +152,8 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		++ag->n_established;
 
 		/* are both agents established? */
-		if (ag->peer->n_established) {
+		if (ag->n_established >= f->exp_estab &&
+		    ag->peer->n_established >= f->exp_estab) {
 
 			switch (f->estab_action) {
 
@@ -174,12 +179,16 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_CLOSED:
-		ag->failed = true;
 		++ag->n_closed;
 
 		ag->close_scode = call_scode(call);
 
-		if (ag->peer->n_closed) {
+		if (ag->close_scode)
+			ag->failed = true;
+
+		if (ag->n_closed >= f->exp_closed &&
+		    ag->peer->n_closed >= f->exp_closed) {
+
 			re_cancel();
 		}
 		break;
@@ -404,6 +413,117 @@ int test_call_rtp_timeout(void)
 	ASSERT_EQ(1, fix.b.n_established);
 	ASSERT_EQ(1, fix.b.n_closed);
 	ASSERT_EQ(0, fix.b.close_scode);
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+/* veriy that line-numbers are in sequence */
+static bool linenum_are_sequential(const struct ua *ua)
+{
+	uint32_t linenum = 0;
+	struct le *le;
+
+	for (le = list_head(ua_calls(ua)) ; le ; le = le->next) {
+		struct call *call = le->data;
+
+		if (call_linenum(call) <= linenum)
+			return false;
+
+		linenum = call_linenum(call);
+	}
+
+	return true;
+}
+
+
+int test_call_multiple(void)
+{
+	struct fixture fix, *f = &fix;
+	struct le *le;
+	unsigned i;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->exp_estab = 4;
+
+	/*
+	 * Step 1 -- make 4 calls from A to B
+	 */
+	for (i=0; i<4; i++) {
+		err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+		TEST_ERR(err);
+	}
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(4, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+
+	ASSERT_EQ(4, fix.b.n_incoming);
+	ASSERT_EQ(4, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+
+	ASSERT_EQ(4, list_count(ua_calls(f->a.ua)));
+	ASSERT_EQ(4, list_count(ua_calls(f->b.ua)));
+	ASSERT_TRUE(linenum_are_sequential(f->a.ua));
+	ASSERT_TRUE(linenum_are_sequential(f->b.ua));
+
+
+	/*
+	 * Step 2 -- hangup calls with even line-number
+	 */
+
+	f->exp_closed = 2;
+
+	le = list_head(ua_calls(f->a.ua));
+	while (le) {
+		struct call *call = le->data;
+		le = le->next;
+
+		if (!(call_linenum(call) % 2)) {
+			ua_hangup(f->a.ua, call, 0, 0);
+		}
+	}
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(2, list_count(ua_calls(f->a.ua)));
+	ASSERT_EQ(2, list_count(ua_calls(f->b.ua)));
+	ASSERT_TRUE(linenum_are_sequential(f->a.ua));
+	ASSERT_TRUE(linenum_are_sequential(f->b.ua));
+
+
+	/*
+	 * Step 3 -- make 2 calls from A to B
+	 */
+
+	f->a.n_established = 0;
+	f->b.n_established = 0;
+	f->exp_estab = 2;
+	for (i=0; i<2; i++) {
+		err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+		TEST_ERR(err);
+	}
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(4, list_count(ua_calls(f->a.ua)));
+	ASSERT_EQ(4, list_count(ua_calls(f->b.ua)));
+	ASSERT_TRUE(linenum_are_sequential(f->a.ua));
+	ASSERT_TRUE(linenum_are_sequential(f->b.ua));
 
  out:
 	fixture_close(f);
