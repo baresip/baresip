@@ -32,7 +32,8 @@ static struct config core_config = {
 
 	/** Call config */
 	{
-		120
+		120,
+		4
 	},
 
 	/** Audio */
@@ -161,6 +162,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
 			   &cfg->call.local_timeout);
+	(void)conf_get_u32(conf, "call_max_calls",
+			   &cfg->call.max_calls);
 
 	/* Audio */
 	(void)conf_get_str(conf, "audio_path", cfg->audio.audio_path,
@@ -261,6 +264,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
+			 "call_max_calls\t%u\n"
 			 "\n"
 			 "# Audio\n"
 			 "audio_path\t\t%s\n"
@@ -306,6 +310,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->sip.trans_bsize, cfg->sip.local, cfg->sip.cert,
 
 			 cfg->call.local_timeout,
+			 cfg->call.max_calls,
 
 			 cfg->audio.audio_path,
 			 cfg->audio.play_mod,  cfg->audio.play_dev,
@@ -425,6 +430,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
+			  "call_max_calls\t%u\n"
 			  "\n"
 			  "# Audio\n"
 			  "#audio_path\t\t/usr/share/baresip\n"
@@ -440,6 +446,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  ,
 			  poll_method_name(poll_method_best()),
 			  cfg->call.local_timeout,
+			  cfg->call.max_calls,
 			  default_audio_device(),
 			  default_audio_device(),
 			  default_audio_device(),

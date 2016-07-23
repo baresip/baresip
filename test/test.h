@@ -104,6 +104,7 @@ int test_call_answer_hangup_a(void);
 int test_call_answer_hangup_b(void);
 int test_call_rtp_timeout(void);
 int test_call_multiple(void);
+int test_call_max(void);
 
 
 #ifdef __cplusplus

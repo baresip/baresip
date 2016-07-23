@@ -15,11 +15,6 @@
 #include "magic.h"
 
 
-enum {
-	MAX_CALLS       =    4
-};
-
-
 /** Defines a SIP User Agent object */
 struct ua {
 	MAGIC_DECL                   /**< Magic number for struct ua         */
@@ -1199,6 +1194,7 @@ static bool require_handler(const struct sip_hdr *hdr,
 /* Handle incoming calls */
 static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 {
+	struct config *config = conf_config();
 	const struct sip_hdr *hdr;
 	struct ua *ua;
 	struct call *call = NULL;
@@ -1216,9 +1212,11 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	/* handle multiple calls */
-	if (list_count(&ua->calls) + 1 > MAX_CALLS) {
+	if (config->call.max_calls &&
+	    list_count(&ua->calls) + 1 > config->call.max_calls) {
+
 		info("ua: rejected call from %r (maximum %d calls)\n",
-		     &msg->from.auri, MAX_CALLS);
+		     &msg->from.auri, config->call.max_calls);
 		(void)sip_treply(NULL, uag.sip, msg, 486, "Max Calls");
 		return;
 	}

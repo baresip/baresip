@@ -198,6 +198,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	}
 
 	if (ag->failed && ag->peer->failed) {
+		info("test: re_cancel on call failed\n");
 		re_cancel();
 		return;
 	}
@@ -524,6 +525,46 @@ int test_call_multiple(void)
 	ASSERT_EQ(4, list_count(ua_calls(f->b.ua)));
 	ASSERT_TRUE(linenum_are_sequential(f->a.ua));
 	ASSERT_TRUE(linenum_are_sequential(f->b.ua));
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_max(void)
+{
+	struct fixture fix, *f = &fix;
+	unsigned i;
+	int err = 0;
+
+	/* Set the max-calls limit */
+	conf_config()->call.max_calls = 1;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	/* Make 2 calls, one should work and one should fail */
+	for (i=0; i<2; i++) {
+		err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+		TEST_ERR(err);
+	}
+
+	f->b.failed = true; /* tiny hack to stop the runloop */
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+	ASSERT_EQ(486, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
 	fixture_close(f);

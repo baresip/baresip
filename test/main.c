@@ -26,6 +26,7 @@ static const struct test tests[] = {
 	TEST(test_call_reject),
 	TEST(test_call_rtp_timeout),
 	TEST(test_call_multiple),
+	TEST(test_call_max),
 	TEST(test_cmd),
 	TEST(test_cplusplus),
 	TEST(test_mos),
