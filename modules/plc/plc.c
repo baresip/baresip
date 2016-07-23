@@ -3,6 +3,9 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+
+#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
+
 #include <spandsp.h>
 #include <re.h>
 #include <baresip.h>

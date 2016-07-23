@@ -6,6 +6,9 @@
 
 #include <re.h>
 #include <baresip.h>
+
+#define G722_1_EXPOSE_INTERNAL_STRUCTURES
+
 #include <g722_1.h>
 #include "g7221.h"
 
