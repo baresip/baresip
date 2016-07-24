@@ -110,13 +110,13 @@ uint32_t      call_linenum(const struct call *call);
 
 
 /** Defines the configuration line handler */
-typedef int (confline_h)(const struct pl *addr);
+typedef int (confline_h)(const struct pl *addr, void *arg);
 
 int  conf_configure(void);
 int  conf_modules(void);
 void conf_path_set(const char *path);
 int  conf_path_get(char *path, size_t sz);
-int  conf_parse(const char *filename, confline_h *ch);
+int  conf_parse(const char *filename, confline_h *ch, void *arg);
 int  conf_get_vidsz(const struct conf *conf, const char *name,
 		    struct vidsz *sz);
 int  conf_get_sa(const struct conf *conf, const char *name, struct sa *sa);

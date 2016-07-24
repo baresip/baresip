@@ -22,9 +22,10 @@ static const char *chat_peer;         /**< Selected chat peer             */
 static char cmd_desc[128] = "Send MESSAGE to peer";
 
 
-static int confline_handler(const struct pl *addr)
+static int confline_handler(const struct pl *addr, void *arg)
 {
-	return contact_add(baresip_contacts(), NULL, addr);
+	struct contacts *contacts = arg;
+	return contact_add(contacts, NULL, addr);
 }
 
 
@@ -182,6 +183,7 @@ static int write_template(const char *file)
 
 static int module_init(void)
 {
+	struct contacts *contacts = baresip_contacts();
 	char path[256] = "", file[256] = "";
 	int err;
 
@@ -201,7 +203,7 @@ static int module_init(void)
 			return err;
 	}
 
-	err = conf_parse(file, confline_handler);
+	err = conf_parse(file, confline_handler, contacts);
 	if (err)
 		return err;
 
@@ -210,7 +212,7 @@ static int module_init(void)
 		return err;
 
 	info("Populated %u contacts\n",
-	     list_count(contact_list(baresip_contacts())));
+	     list_count(contact_list(contacts)));
 
 	return err;
 }

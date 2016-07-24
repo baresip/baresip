@@ -104,9 +104,10 @@ static int account_write_template(const char *file)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int line_handler(const struct pl *addr)
+static int line_handler(const struct pl *addr, void *arg)
 {
 	char buf[512];
+	(void)arg;
 
 	(void)pl_strcpy(addr, buf, sizeof(buf));
 
@@ -143,7 +144,7 @@ static int account_read_file(void)
 			return err;
 	}
 
-	err = conf_parse(file, line_handler);
+	err = conf_parse(file, line_handler, NULL);
 	if (err)
 		return err;
 

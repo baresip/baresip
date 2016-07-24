@@ -78,10 +78,11 @@ static void print_populated(const char *what, uint32_t n)
  *
  * @param filename Config file
  * @param ch       Line handler
+ * @param arg      Handler argument
  *
  * @return 0 if success, otherwise errorcode
  */
-int conf_parse(const char *filename, confline_h *ch)
+int conf_parse(const char *filename, confline_h *ch, void *arg)
 {
 	struct pl pl, val;
 	struct mbuf *mb;
@@ -122,7 +123,7 @@ int conf_parse(const char *filename, confline_h *ch)
 		if (!val.l || val.p[0] == '#')
 			continue;
 
-		err = ch(&val);
+		err = ch(&val, arg);
 	}
 
  out:
