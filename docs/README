@@ -189,6 +189,7 @@ opengles      OpenGLES video output
 opensles      OpenSLES audio driver
 opus          OPUS Interactive audio codec
 oss           Open Sound System (OSS) audio driver
+pcp           Port Control Protocol (PCP) module
 plc           Packet Loss Concealment (PLC) using spandsp
 portaudio     Portaudio driver
 pulse         Pulseaudio driver
