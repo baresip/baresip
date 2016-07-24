@@ -9,6 +9,7 @@
 # Test-cases:
 #
 TEST_SRCS	+= cmd.c
+TEST_SRCS	+= contact.c
 TEST_SRCS	+= ua.c
 TEST_SRCS	+= cplusplus.c
 TEST_SRCS	+= call.c

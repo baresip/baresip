@@ -302,7 +302,8 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 	case CALL_EVENT_INCOMING:
 
-		if (contact_block_access(peeruri)) {
+		if (contact_block_access(baresip_contacts(),
+					 peeruri)) {
 
 			info("ua: blocked access: \"%s\"\n", peeruri);
 
@@ -1336,10 +1337,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 
 	play_init();
 
-	err = contact_init();
-	if (err)
-		return err;
-
 	uag.use_udp = udp;
 	uag.use_tcp = tcp;
 	uag.use_tls = tls;
@@ -1395,7 +1392,6 @@ void ua_close(void)
 	cmd_unregister(cmdv);
 	play_close();
 	ui_reset();
-	contact_close();
 
 	uag.evsock   = mem_deref(uag.evsock);
 	uag.sock     = mem_deref(uag.sock);

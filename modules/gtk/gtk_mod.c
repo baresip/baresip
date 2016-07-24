@@ -142,12 +142,13 @@ static void menu_on_dial_contact(GtkMenuItem *menuItem, gpointer arg)
 
 static void init_contacts_menu(struct gtk_mod *mod)
 {
+	struct contacts *contacts = baresip_contacts();
 	struct le *le;
 	GtkWidget *item;
 	GtkMenuShell *contacts_menu = GTK_MENU_SHELL(mod->contacts_menu);
 
 	/* Add contacts to submenu */
-	for (le = list_head(contact_list()); le; le = le->next) {
+	for (le = list_head(contact_list(contacts)); le; le = le->next) {
 		struct contact *c = le->data;
 		item = gtk_menu_item_new_with_label(contact_str(c));
 		gtk_menu_shell_append(contacts_menu, item);

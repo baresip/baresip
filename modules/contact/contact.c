@@ -24,13 +24,14 @@ static char cmd_desc[128] = "Send MESSAGE to peer";
 
 static int confline_handler(const struct pl *addr)
 {
-	return contact_add(NULL, addr);
+	return contact_add(baresip_contacts(), NULL, addr);
 }
 
 
 static int cmd_contact(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct contacts *contacts = baresip_contacts();
 	struct contact *cnt = NULL;
 	struct pl dname, user, pl;
 	struct le *le;
@@ -42,7 +43,7 @@ static int cmd_contact(struct re_printf *pf, void *arg)
 
 	err |= re_hprintf(pf, "\n");
 
-	for (le = list_head(contact_list()); le; le = le->next) {
+	for (le = list_head(contact_list(contacts)); le; le = le->next) {
 
 		struct contact *c = le->data;
 
@@ -101,6 +102,13 @@ static int cmd_contact(struct re_printf *pf, void *arg)
 }
 
 
+static int print_contacts(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	return contacts_print(pf, baresip_contacts());
+}
+
+
 static int cmd_message(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -120,7 +128,7 @@ static int cmd_message(struct re_printf *pf, void *arg)
 static const struct cmd cmdv[] = {
 	{'/', CMD_IPRM, "Dial from contacts",       cmd_contact          },
 	{'=', CMD_IPRM, "Select chat peer",         cmd_contact          },
-	{'C',        0, "List contacts",            contacts_print       },
+	{'C',        0, "List contacts",            print_contacts       },
 	{'-',  CMD_PRM, cmd_desc,                   cmd_message          },
 };
 
@@ -201,7 +209,8 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	info("Populated %u contacts\n", list_count(contact_list()));
+	info("Populated %u contacts\n",
+	     list_count(contact_list(baresip_contacts())));
 
 	return err;
 }
@@ -210,7 +219,7 @@ static int module_init(void)
 static int module_close(void)
 {
 	cmd_unregister(cmdv);
-	list_flush(contact_list());
+	list_flush(contact_list(baresip_contacts()));
 
 	return 0;
 }

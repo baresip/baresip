@@ -87,6 +87,7 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
 /* test cases */
 
 int test_cmd(void);
+int test_contact(void);
 int test_ua_alloc(void);
 int test_uag_find_param(void);
 int test_ua_register(void);

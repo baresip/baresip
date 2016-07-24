@@ -262,17 +262,24 @@ enum presence_status {
 	PRESENCE_BUSY
 };
 
+struct contacts {
+	struct list cl;
+	struct hash *cht;
+};
+
 struct contact;
 
-int  contact_init(void);
-void contact_close(void);
-int  contact_add(struct contact **contactp, const struct pl *addr);
-int  contacts_print(struct re_printf *pf, void *unused);
+int  contact_init(struct contacts *contacts);
+void contact_close(struct contacts *contacts);
+int  contact_add(struct contacts *contacts,
+		 struct contact **contactp, const struct pl *addr);
+int  contacts_print(struct re_printf *pf, const struct contacts *contacts);
 void contact_set_presence(struct contact *c, enum presence_status status);
-bool contact_block_access(const char *uri);
-struct contact  *contact_find(const char *uri);
+bool contact_block_access(const struct contacts *contacts, const char *uri);
+struct contact  *contact_find(const struct contacts *contacts,
+			      const char *uri);
 struct sip_addr *contact_addr(const struct contact *c);
-struct list     *contact_list(void);
+struct list     *contact_list(const struct contacts *contacts);
 const char      *contact_str(const struct contact *c);
 const char      *contact_presence_str(enum presence_status status);
 
@@ -1076,6 +1083,7 @@ double mos_calculate(double *r_factor, double rtt,
 int  baresip_init(struct config *cfg, bool prefer_ipv6);
 void baresip_close(void);
 struct network *baresip_network(void);
+struct contacts *baresip_contacts(void);
 
 
 #ifdef __cplusplus

@@ -28,6 +28,7 @@ static const struct test tests[] = {
 	TEST(test_call_multiple),
 	TEST(test_call_max),
 	TEST(test_cmd),
+	TEST(test_contact),
 	TEST(test_cplusplus),
 	TEST(test_mos),
 	TEST(test_network),
