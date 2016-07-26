@@ -136,6 +136,11 @@ int bfcp_start(struct bfcp *bfcp);
  * Call Control
  */
 
+enum {
+	CALL_LINENUM_MIN  =   1,
+	CALL_LINENUM_MAX  = 256
+};
+
 struct call;
 
 /** Call parameters */

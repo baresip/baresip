@@ -439,6 +439,22 @@ static void stream_error_handler(struct stream *strm, int err, void *arg)
 }
 
 
+static int assign_linenum(uint32_t *linenum, const struct list *lst)
+{
+	uint32_t num;
+
+	for (num=CALL_LINENUM_MIN; num<CALL_LINENUM_MAX; num++) {
+
+		if (!call_find_linenum(lst, num)) {
+			*linenum = num;
+			return 0;
+		}
+	}
+
+	return ENOENT;
+}
+
+
 /**
  * Allocate a new Call state object
  *
@@ -466,7 +482,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	struct call *call;
 	struct le *le;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
-	uint32_t wanted_linenum = 1;
 	bool use_video = true, got_offer = false;
 	int label = 0;
 	int err = 0;
@@ -597,27 +612,16 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		call_enable_rtp_timeout(call, cfg->avt.rtp_timeout*1000);
 	}
 
-	for (le = lst->head; le; le = le->next) {
-
-		const struct call *call0 = le->data;
-
-		if (call0->linenum == wanted_linenum) {
-			/* that linenum was busy, increment */
-			++wanted_linenum;
-			continue;
-		}
-		else if (call0->linenum > wanted_linenum) {
-			/* wanted linenum is free */
-			list_insert_before(lst, le, &call->le, call);
-			call->linenum = wanted_linenum;
-			break;
-		}
+	err = assign_linenum(&call->linenum, lst);
+	if (err) {
+		warning("call: could not assign linenumber\n");
+		goto out;
 	}
 
-	if (!call->le.list) {
-		list_append(lst, &call->le, call);
-		call->linenum = list_count(lst);
-	}
+	/* NOTE: The new call must always be added to the tail of list,
+	 *       which indicates the current call.
+	 */
+	list_append(lst, &call->le, call);
 
  out:
 	if (err)
@@ -1798,4 +1802,29 @@ void call_enable_rtp_timeout(struct call *call, uint32_t timeout_ms)
 uint32_t call_linenum(const struct call *call)
 {
 	return call ? call->linenum : 0;
+}
+
+
+struct call *call_find_linenum(const struct list *calls, uint32_t linenum)
+{
+	struct le *le;
+
+	for (le = list_head(calls); le; le = le->next) {
+		struct call *call = le->data;
+
+		if (linenum == call->linenum)
+			return call;
+	}
+
+	return NULL;
+}
+
+
+void call_set_current(struct list *calls, struct call *call)
+{
+	if (!calls || !call)
+		return;
+
+	list_unlink(&call->le);
+	list_append(calls, &call->le, call);
 }

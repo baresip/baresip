@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <stdlib.h>
 #include <time.h>
 #include <re.h>
 #include <baresip.h>
@@ -699,6 +700,27 @@ static int toggle_statmode(struct re_printf *pf, void *arg)
 }
 
 
+static int set_current_call(struct re_printf *pf, void *arg)
+{
+	struct cmd_arg *carg = arg;
+	struct call *call;
+	uint32_t linenum = atoi(carg->prm);
+	int err;
+
+	call = call_find_linenum(ua_calls(uag_cur()), linenum);
+	if (call) {
+		err = re_hprintf(pf, "setting current call: line %u\n",
+				 linenum);
+		call_set_current(ua_calls(uag_cur()), call);
+	}
+	else {
+		err = re_hprintf(pf, "call not found\n");
+	}
+
+	return err;
+}
+
+
 static const struct cmd callcmdv[] = {
 	{'I',       0, "Send re-INVITE",      call_reinvite         },
 	{'X',       0, "Call resume",         call_holdresume       },
@@ -731,6 +753,7 @@ static const struct cmd callcmdv[] = {
 	{0x00,      0, NULL,                  digit_handler         },
 
 	{'S',       0, "Statusmode toggle",   toggle_statmode       },
+	{'@', CMD_PRM, "Set current call <line>", set_current_call  },
 };
 
 

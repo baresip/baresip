@@ -102,6 +102,8 @@ bool          call_is_onhold(const struct call *call);
 bool          call_is_outgoing(const struct call *call);
 void          call_enable_rtp_timeout(struct call *call, uint32_t timeout_ms);
 uint32_t      call_linenum(const struct call *call);
+struct call  *call_find_linenum(const struct list *calls, uint32_t linenum);
+void call_set_current(struct list *calls, struct call *call);
 
 
 /*

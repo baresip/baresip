@@ -1545,21 +1545,35 @@ int ua_print_sip_status(struct re_printf *pf, void *unused)
  */
 int ua_print_calls(struct re_printf *pf, const struct ua *ua)
 {
-	struct le *le;
+	uint32_t n, count=0;
+	uint32_t linenum;
 	int err = 0;
+
 	if (!ua) {
 		err |= re_hprintf(pf, "\n--- No active calls ---\n");
 		return err;
 	}
 
+	n = list_count(&ua->calls);
+
 	err |= re_hprintf(pf, "\n--- List of active calls (%u): ---\n",
-			  list_count(&ua->calls));
+			  n);
 
-	for (le = ua->calls.head; le; le = le->next) {
+	for (linenum=CALL_LINENUM_MIN; linenum<CALL_LINENUM_MAX; linenum++) {
 
-		const struct call *call = le->data;
+		const struct call *call;
 
-		err |= re_hprintf(pf, "  %H\n", call_info, call);
+		call = call_find_linenum(&ua->calls, linenum);
+		if (call) {
+			++count;
+
+			err |= re_hprintf(pf, "  %c %H\n",
+					  call == ua_call(ua) ? '>' : ' ',
+					  call_info, call);
+		}
+
+		if (count >= n)
+			break;
 	}
 
 	err |= re_hprintf(pf, "\n");

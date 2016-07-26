@@ -523,8 +523,6 @@ int test_call_multiple(void)
 
 	ASSERT_EQ(4, list_count(ua_calls(f->a.ua)));
 	ASSERT_EQ(4, list_count(ua_calls(f->b.ua)));
-	ASSERT_TRUE(linenum_are_sequential(f->a.ua));
-	ASSERT_TRUE(linenum_are_sequential(f->b.ua));
 
  out:
 	fixture_close(f);
