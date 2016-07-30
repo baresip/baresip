@@ -260,6 +260,7 @@ MODULES   += stun turn ice natbd auloop presence
 MODULES   += menu contact vumeter mwi account natpmp httpd
 MODULES   += srtp
 MODULES   += uuid
+MODULES   += debug_cmd
 
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge aufile

@@ -27,7 +27,6 @@ enum statmode {
 
 
 static uint64_t start_ticks;          /**< Ticks when app started         */
-static time_t start_time;             /**< Start time of application      */
 static struct tmr tmr_alert;          /**< Incoming call alert timer      */
 static struct tmr tmr_stat;           /**< Call status timer              */
 static enum statmode statmode;        /**< Status mode                    */
@@ -122,34 +121,6 @@ static bool have_active_calls(void)
 	}
 
 	return false;
-}
-
-
-static int print_system_info(struct re_printf *pf, void *arg)
-{
-	uint32_t uptime;
-	int err = 0;
-
-	(void)arg;
-
-	uptime = (uint32_t)((long long)(tmr_jiffies() - start_ticks)/1000);
-
-	err |= re_hprintf(pf, "\n--- System info: ---\n");
-
-	err |= re_hprintf(pf, " Machine:  %s/%s\n", sys_arch_get(),
-			  sys_os_get());
-	err |= re_hprintf(pf, " Version:  %s (libre v%s)\n",
-			  BARESIP_VERSION, sys_libre_version_get());
-	err |= re_hprintf(pf, " Build:    %H\n", sys_build_get, NULL);
-	err |= re_hprintf(pf, " Kernel:   %H\n", sys_kernel_get, NULL);
-	err |= re_hprintf(pf, " Uptime:   %H\n", fmt_human_time, &uptime);
-	err |= re_hprintf(pf, " Started:  %s", ctime(&start_time));
-
-#ifdef __VERSION__
-	err |= re_hprintf(pf, " Compiler: %s\n", __VERSION__);
-#endif
-
-	return err;
 }
 
 
@@ -442,15 +413,7 @@ static int cmd_config_print(struct re_printf *pf, void *unused)
 }
 
 
-static int cmd_net_debug(struct re_printf *pf, void *unused)
-{
-	(void)unused;
-	return net_debug(pf, baresip_network());
-}
-
-
 static const struct cmd cmdv[] = {
-	{'M',       0, "Main loop debug",          re_debug             },
 	{'\n',      0, "Accept incoming call",     cmd_answer           },
 	{'D',       0, "Accept incoming call",     cmd_answer           },
 	{'b',       0, "Hangup call",              cmd_hangup           },
@@ -459,14 +422,9 @@ static const struct cmd cmdv[] = {
 	{'h',       0, "Help menu",                cmd_print            },
 	{'i',       0, "SIP debug",                ua_print_sip_status  },
 	{'l',       0, "List active calls",        cmd_print_calls      },
-	{'m',       0, "Module debug",             mod_debug            },
-	{'n',       0, "Network debug",            cmd_net_debug        },
 	{'o', CMD_PRM, "Options",                  options_command      },
 	{'r',       0, "Registration info",        ua_print_reg_status  },
-	{'s',       0, "System info",              print_system_info    },
-	{'t',       0, "Timer debug",              tmr_status           },
 	{'u',       0, "UA debug",                 cmd_ua_debug         },
-	{'y',       0, "Memory status",            mem_status           },
 	{0x1b,      0, "Hangup call",              cmd_hangup           },
 	{' ',       0, "Toggle UAs",               cmd_ua_next          },
 	{'T',       0, "Toggle UAs",               cmd_ua_next          },
@@ -1023,7 +981,6 @@ static int module_init(void)
 		return ENOMEM;
 
 	start_ticks = tmr_jiffies();
-	(void)time(&start_time);
 	tmr_init(&tmr_alert);
 	statmode = STATMODE_CALL;
 

@@ -155,6 +155,7 @@ codec2        Codec2 low bit rate speech codec
 cons          UDP/TCP console UI driver
 contact       Contacts module
 coreaudio     Apple Coreaudio driver
+debug_cmd     Debug commands
 directfb      DirectFB video display module
 dshow         Windows DirectShow video source
 dtls_srtp     DTLS-SRTP end-to-end encryption

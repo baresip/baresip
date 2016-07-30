@@ -1,0 +1,87 @@
+/**
+ * @file debug_cmd.c  Debug commands
+ *
+ * Copyright (C) 2010 - 2016 Creytiv.com
+ */
+#include <stdlib.h>
+#include <time.h>
+#include <re.h>
+#include <baresip.h>
+
+
+static uint64_t start_ticks;          /**< Ticks when app started         */
+static time_t start_time;             /**< Start time of application      */
+
+
+static int cmd_net_debug(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	return net_debug(pf, baresip_network());
+}
+
+
+static int print_system_info(struct re_printf *pf, void *arg)
+{
+	uint32_t uptime;
+	int err = 0;
+
+	(void)arg;
+
+	uptime = (uint32_t)((long long)(tmr_jiffies() - start_ticks)/1000);
+
+	err |= re_hprintf(pf, "\n--- System info: ---\n");
+
+	err |= re_hprintf(pf, " Machine:  %s/%s\n", sys_arch_get(),
+			  sys_os_get());
+	err |= re_hprintf(pf, " Version:  %s (libre v%s)\n",
+			  BARESIP_VERSION, sys_libre_version_get());
+	err |= re_hprintf(pf, " Build:    %H\n", sys_build_get, NULL);
+	err |= re_hprintf(pf, " Kernel:   %H\n", sys_kernel_get, NULL);
+	err |= re_hprintf(pf, " Uptime:   %H\n", fmt_human_time, &uptime);
+	err |= re_hprintf(pf, " Started:  %s", ctime(&start_time));
+
+#ifdef __VERSION__
+	err |= re_hprintf(pf, " Compiler: %s\n", __VERSION__);
+#endif
+
+	return err;
+}
+
+
+static const struct cmd debugcmdv[] = {
+	{'M',       0, "Main loop debug",          re_debug             },
+	{'m',       0, "Module debug",             mod_debug            },
+	{'n',       0, "Network debug",            cmd_net_debug        },
+	{'s',       0, "System info",              print_system_info    },
+	{'t',       0, "Timer debug",              tmr_status           },
+	{'y',       0, "Memory status",            mem_status           },
+};
+
+
+static int module_init(void)
+{
+	int err;
+
+	start_ticks = tmr_jiffies();
+	(void)time(&start_time);
+
+	err = cmd_register(debugcmdv, ARRAY_SIZE(debugcmdv));
+
+	return err;
+}
+
+
+static int module_close(void)
+{
+	cmd_unregister(debugcmdv);
+
+	return 0;
+}
+
+
+const struct mod_export DECL_EXPORTS(debug_cmd) = {
+	"debug_cmd",
+	"application",
+	module_init,
+	module_close
+};
