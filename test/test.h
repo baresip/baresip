@@ -83,6 +83,14 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
 		       uint16_t pri, uint16_t weight, uint16_t port,
 		       const char *target);
 
+/*
+ * Mock Audio-source
+ */
+
+struct ausrc;
+
+int mock_ausrc_register(struct ausrc **ausrcp);
+
 
 /* test cases */
 
@@ -106,6 +114,7 @@ int test_call_answer_hangup_b(void);
 int test_call_rtp_timeout(void);
 int test_call_multiple(void);
 int test_call_max(void);
+int test_call_dtmf(void);
 
 
 #ifdef __cplusplus

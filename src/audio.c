@@ -325,7 +325,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	size_t len;
 	int err;
 
-	if (!tx->ac)
+	if (!tx->ac || !tx->ac->ench)
 		return;
 
 	tx->mb->pos = tx->mb->end = STREAM_PRESZ;

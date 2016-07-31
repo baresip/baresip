@@ -25,6 +25,7 @@ enum action {
 };
 
 struct agent {
+	struct fixture *fix;    /* pointer to parent */
 	struct agent *peer;
 	struct ua *ua;
 	uint16_t close_scode;
@@ -33,6 +34,7 @@ struct agent {
 	unsigned n_incoming;
 	unsigned n_established;
 	unsigned n_closed;
+	unsigned n_dtmf_recv;
 };
 
 struct fixture {
@@ -48,8 +50,11 @@ struct fixture {
 };
 
 
-#define fixture_init(f)							\
+#define fixture_init_prm(f, prm)					\
 	memset(f, 0, sizeof(*f));					\
+									\
+	f->a.fix = f;							\
+	f->b.fix = f;							\
 									\
 	err = ua_init("test", true, true, true, false);			\
 	TEST_ERR(err);							\
@@ -59,9 +64,11 @@ struct fixture {
 	f->exp_closed = 1;						\
 	aucodec_register(&dummy_pcma);					\
 									\
-	err = ua_alloc(&f->a.ua, "A <sip:a:xxx@127.0.0.1>;regint=0");	\
+	err = ua_alloc(&f->a.ua,					\
+		       "A <sip:a:xxx@127.0.0.1>;regint=0" prm);		\
 	TEST_ERR(err);							\
-	err = ua_alloc(&f->b.ua, "B <sip:b:xxx@127.0.0.1>;regint=0");	\
+	err = ua_alloc(&f->b.ua,					\
+		       "B <sip:b:xxx@127.0.0.1>;regint=0" prm);		\
 	TEST_ERR(err);							\
 									\
 	f->a.peer = &f->b;						\
@@ -77,6 +84,10 @@ struct fixture {
 	re_snprintf(f->buri, sizeof(f->buri), "sip:b@%J", &f->laddr_sip);
 
 
+#define fixture_init(f)				\
+	fixture_init_prm((f), "");
+
+
 #define fixture_close(f)			\
 	mem_deref(f->b.ua);			\
 	mem_deref(f->a.ua);			\
@@ -87,6 +98,12 @@ struct fixture {
 						\
 	ua_stop_all(true);			\
 	ua_close();
+
+#define fixture_abort(f, error)			\
+	do {					\
+		(f)->err = (error);		\
+		re_cancel();			\
+	} while (0)
 
 
 static struct aucodec dummy_pcma = {
@@ -566,6 +583,82 @@ int test_call_max(void)
 
  out:
 	fixture_close(f);
+
+	return err;
+}
+
+
+static const char dtmf_digits[] = "123";
+
+
+static void dtmf_handler(struct call *call, char key, void *arg)
+{
+	struct agent *ag = arg;
+	int err = 0;
+
+	/* ignore key-release */
+	if (key == 0)
+		return;
+
+	ASSERT_EQ(dtmf_digits[ag->n_dtmf_recv], key);
+	++ag->n_dtmf_recv;
+
+	if (ag->n_dtmf_recv >= str_len(dtmf_digits)) {
+		re_cancel();
+	}
+
+ out:
+	if (err) {
+		fixture_abort(ag->fix, err);
+	}
+}
+
+
+int test_call_dtmf(void)
+{
+	struct fixture fix, *f = &fix;
+	struct ausrc *ausrc = NULL;
+	size_t i, n = str_len(dtmf_digits);
+	int err = 0;
+
+	/* Use a low packet time, so the test completes quickly */
+	fixture_init_prm(f, ";ptime=1");
+
+	/* audio-source is needed for dtmf/telev to work */
+	err = mock_ausrc_register(&ausrc);
+	TEST_ERR(err);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	call_set_handlers(ua_call(f->a.ua), NULL, dtmf_handler, &f->a);
+	call_set_handlers(ua_call(f->b.ua), NULL, dtmf_handler, &f->b);
+
+	/* send some DTMF digits from A to B .. */
+	for (i=0; i<n; i++) {
+		err  = call_send_digit(ua_call(f->a.ua), dtmf_digits[i]);
+		TEST_ERR(err);
+	}
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_dtmf_recv);
+	ASSERT_EQ(n, fix.b.n_dtmf_recv);
+
+ out:
+	fixture_close(f);
+	mem_deref(ausrc);
 
 	return err;
 }
