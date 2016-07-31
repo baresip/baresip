@@ -595,6 +595,7 @@ static void dtmf_handler(struct call *call, char key, void *arg)
 {
 	struct agent *ag = arg;
 	int err = 0;
+	(void)call;
 
 	/* ignore key-release */
 	if (key == 0)

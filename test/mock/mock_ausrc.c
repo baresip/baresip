@@ -48,6 +48,7 @@ static int mock_ausrc_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	struct ausrc_st *st;
 	int err = 0;
 	(void)ctx;
+	(void)device;
 	(void)errh;
 
 	if (!stp || !as || !prm)
