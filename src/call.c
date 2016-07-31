@@ -994,7 +994,7 @@ int call_info(struct re_printf *pf, const struct call *call)
  * Send a DTMF digit to the peer
  *
  * @param call  Call object
- * @param key   DTMF digit to send (0x00 for key release)
+ * @param key   DTMF digit to send (KEYCODE_REL for key release)
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -1135,7 +1135,7 @@ static void dtmfend_handler(void *arg)
 	struct call *call = arg;
 
 	if (call->dtmfh)
-		call->dtmfh(call, 0x00, call->arg);
+		call->dtmfh(call, KEYCODE_REL, call->arg);
 }
 
 

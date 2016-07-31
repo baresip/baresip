@@ -11,7 +11,6 @@
 
 
 enum {
-	REL = 0x00,
 	ESC = 0x1b,
 	DEL = 0x7f,
 };
@@ -140,7 +139,7 @@ static int editor_input(struct mbuf *mb, char key,
 		*del = true;
 		return re_hprintf(pf, "\nCancel\n");
 
-	case REL:
+	case KEYCODE_REL:
 		break;
 
 	case '\n':
@@ -274,7 +273,7 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
 	/* are we in edit-mode? */
 	if (ctxp && *ctxp) {
 
-		if (key == REL)
+		if (key == KEYCODE_REL)
 			return 0;
 
 		return cmd_process_edit(ctxp, key, pf, data);
@@ -306,7 +305,7 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
 		return cmd->h(pf, &arg);
 	}
 
-	if (key == REL)
+	if (key == KEYCODE_REL)
 		return 0;
 
 	return cmd_print(pf, NULL);

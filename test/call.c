@@ -598,7 +598,7 @@ static void dtmf_handler(struct call *call, char key, void *arg)
 	(void)call;
 
 	/* ignore key-release */
-	if (key == 0)
+	if (key == KEYCODE_REL)
 		return;
 
 	ASSERT_EQ(dtmf_digits[ag->n_dtmf_recv], key);
