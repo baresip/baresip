@@ -708,7 +708,7 @@ static const struct cmd callcmdv[] = {
 	{'7',       0, NULL,                  digit_handler         },
 	{'8',       0, NULL,                  digit_handler         },
 	{'9',       0, NULL,                  digit_handler         },
-	{0x00,      0, NULL,                  digit_handler         },
+	{KEYCODE_REL,0,NULL,                  digit_handler         },
 
 	{'S',       0, "Statusmode toggle",   toggle_statmode       },
 	{'@', CMD_PRM, "Set current call <line>", set_current_call  },

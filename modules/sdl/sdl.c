@@ -80,7 +80,7 @@ static void timeout(void *arg)
 	tmr_start(&sdl.tmr, 1, event_handler, NULL);
 
 	/* Emulate key-release */
-	ui_input(0x00);
+	ui_input(KEYCODE_REL);
 }
 
 

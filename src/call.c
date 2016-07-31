@@ -379,7 +379,7 @@ static void audio_event_handler(int key, bool end, void *arg)
 	info("received event: '%c' (end=%d)\n", key, end);
 
 	if (call->dtmfh)
-		call->dtmfh(call, end ? 0x00 : key, call->arg);
+		call->dtmfh(call, end ? KEYCODE_REL : key, call->arg);
 }
 
 

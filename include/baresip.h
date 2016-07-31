@@ -641,6 +641,10 @@ int  ui_password_prompt(char **passwordp);
  * Command interface
  */
 
+/* special keys */
+#define KEYCODE_REL (0x00)    /* Key was released */
+
+
 /** Command flags */
 enum {
 	CMD_PRM  = (1<<0),              /**< Command with parameter */

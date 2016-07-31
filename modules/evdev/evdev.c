@@ -214,7 +214,7 @@ static void evdev_fd_handler(int flags, void *arg)
 			modifier = 0;
 		}
 		else if (0 == ev->value) {
-			reportkey(st, 0x00);
+			reportkey(st, KEYCODE_REL);
 		}
 	}
 }

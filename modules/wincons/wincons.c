@@ -72,7 +72,7 @@ static void timeout(void *arg)
 	struct ui_st *st = arg;
 
 	/* Emulate key-release */
-	report_key(st, 0x00);
+	report_key(st, KEYCODE_REL);
 }
 
 
