@@ -48,12 +48,29 @@ static int print_system_info(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_config_print(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	return config_print(pf, conf_config());
+}
+
+
+static int cmd_ua_debug(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	return ua_debug(pf, uag_current());
+}
+
+
 static const struct cmd debugcmdv[] = {
 	{'M',       0, "Main loop debug",          re_debug             },
+	{'g',       0, "Print configuration",      cmd_config_print     },
+	{'i',       0, "SIP debug",                ua_print_sip_status  },
 	{'m',       0, "Module debug",             mod_debug            },
 	{'n',       0, "Network debug",            cmd_net_debug        },
 	{'s',       0, "System info",              print_system_info    },
 	{'t',       0, "Timer debug",              tmr_status           },
+	{'u',       0, "UA debug",                 cmd_ua_debug         },
 	{'y',       0, "Memory status",            mem_status           },
 };
 

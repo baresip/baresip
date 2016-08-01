@@ -392,24 +392,10 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 }
 
 
-static int cmd_ua_debug(struct re_printf *pf, void *unused)
-{
-	(void)unused;
-	return ua_debug(pf, uag_cur());
-}
-
-
 static int cmd_print_calls(struct re_printf *pf, void *unused)
 {
 	(void)unused;
 	return ua_print_calls(pf, uag_cur());
-}
-
-
-static int cmd_config_print(struct re_printf *pf, void *unused)
-{
-	(void)unused;
-	return config_print(pf, conf_config());
 }
 
 
@@ -420,15 +406,12 @@ static const struct cmd cmdv[] = {
 	{'c',       0, "Call status",              ua_print_call_status },
 	{'d', CMD_PRM, "Dial",                     dial_handler         },
 	{'h',       0, "Help menu",                cmd_print            },
-	{'i',       0, "SIP debug",                ua_print_sip_status  },
 	{'l',       0, "List active calls",        cmd_print_calls      },
 	{'o', CMD_PRM, "Options",                  options_command      },
 	{'r',       0, "Registration info",        ua_print_reg_status  },
-	{'u',       0, "UA debug",                 cmd_ua_debug         },
 	{0x1b,      0, "Hangup call",              cmd_hangup           },
 	{' ',       0, "Toggle UAs",               cmd_ua_next          },
 	{'T',       0, "Toggle UAs",               cmd_ua_next          },
-	{'g',       0, "Print configuration",      cmd_config_print     },
 	{'R', CMD_PRM, "Create User-Agent",        create_ua            },
 	{'#', CMD_PRM, NULL,   dial_handler },
 	{'*', CMD_PRM, NULL,   dial_handler },
