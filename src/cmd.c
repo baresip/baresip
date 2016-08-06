@@ -286,15 +286,17 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
 		/* check for parameters */
 		if (cmd->flags & CMD_PRM) {
 
+			int err = 0;
+
 			if (ctxp) {
-				int err = ctx_alloc(ctxp, cmd);
+				err = ctx_alloc(ctxp, cmd);
 				if (err)
 					return err;
 			}
 
-			return cmd_process_edit(ctxp,
-						isdigit(key) ? key : 0,
-						pf, data);
+			key = isdigit(key) ? key : KEYCODE_REL;
+
+			return cmd_process_edit(ctxp, key, pf, data);
 		}
 
 		arg.key      = key;

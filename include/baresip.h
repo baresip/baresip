@@ -642,7 +642,8 @@ int  ui_password_prompt(char **passwordp);
  */
 
 /* special keys */
-#define KEYCODE_REL (0x00)    /* Key was released */
+#define KEYCODE_NONE (0x00)
+#define KEYCODE_REL (-1)    /* Key was released */
 
 
 /** Command flags */
