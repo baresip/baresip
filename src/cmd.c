@@ -134,8 +134,8 @@ static const char *cmd_name(char *buf, size_t sz, const struct cmd *cmd)
 }
 
 
-static size_t print_match(const struct cmd **cmdp, struct re_printf *pf,
-			  const char *str, size_t len)
+static size_t get_match(const struct cmd **cmdp,
+			const char *str, size_t len)
 {
 	struct le *le;
 	size_t nmatch = 0;
@@ -214,7 +214,7 @@ static int editor_input(struct mbuf *mb, char key,
 			if (err)
 				return err;
 
-			n = print_match(&cmd, pf, (char *)mb->buf, mb->end);
+			n = get_match(&cmd, (char *)mb->buf, mb->end);
 			if (n == 1 && cmd) {
 
 				re_printf("replace: %b -> %s\n",
