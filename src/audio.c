@@ -1321,7 +1321,7 @@ int audio_send_digit(struct audio *a, char key)
 		info("audio: send DTMF digit: '%c'\n", key);
 		err = telev_send(a->telev, telev_digit2code(key), false);
 	}
-	else if (a->tx.cur_key) {
+	else if (a->tx.cur_key != KEYCODE_REL) {
 		/* Key release */
 		info("audio: send DTMF digit end: '%c'\n", a->tx.cur_key);
 		err = telev_send(a->telev,

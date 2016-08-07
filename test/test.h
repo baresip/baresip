@@ -95,6 +95,7 @@ int mock_ausrc_register(struct ausrc **ausrcp);
 /* test cases */
 
 int test_cmd(void);
+int test_cmd_long(void);
 int test_contact(void);
 int test_ua_alloc(void);
 int test_uag_find_param(void);

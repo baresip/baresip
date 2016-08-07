@@ -47,8 +47,8 @@ static int cmd_offline(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{'[', 0, "Set presence online",   cmd_online  },
-	{']', 0, "Set presence offline",  cmd_offline },
+	{"presence_online",  '[', 0, "Set presence online",   cmd_online  },
+	{"presence_offline", ']', 0, "Set presence offline",  cmd_offline },
 };
 
 

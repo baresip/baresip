@@ -974,7 +974,7 @@ static int cmd_popup_menu(struct re_printf *pf, void *unused)
 
 
 static const struct cmd cmdv[] = {
-	{'G',        0, "Pop up GTK+ menu",         cmd_popup_menu       },
+	{"gtk", 'G',   0, "Pop up GTK+ menu",         cmd_popup_menu       },
 };
 
 

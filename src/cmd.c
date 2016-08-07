@@ -11,8 +11,8 @@
 
 
 enum {
-	ESC = 0x1b,
-	DEL = 0x7f,
+	KEYCODE_DEL = 0x7f,
+	LONG_PREFIX = '/'
 };
 
 
@@ -25,10 +25,16 @@ struct cmds {
 struct cmd_ctx {
 	struct mbuf *mb;
 	const struct cmd *cmd;
+	bool is_long;
 };
 
 
 static struct list cmdl;           /**< List of command blocks (struct cmds) */
+
+
+static int cmd_print_all(struct re_printf *pf,
+			 bool print_long, bool print_short,
+			 const char *match, size_t match_len);
 
 
 static void destructor(void *arg)
@@ -115,7 +121,7 @@ static const char *cmd_name(char *buf, size_t sz, const struct cmd *cmd)
 
 	case ' ':   return "SPACE";
 	case '\n':  return "ENTER";
-	case ESC:   return "ESC";
+	case KEYCODE_ESC:   return "ESC";
 	}
 
 	buf[0] = cmd->key;
@@ -128,14 +134,45 @@ static const char *cmd_name(char *buf, size_t sz, const struct cmd *cmd)
 }
 
 
+static size_t print_match(const struct cmd **cmdp, struct re_printf *pf,
+			  const char *str, size_t len)
+{
+	struct le *le;
+	size_t nmatch = 0;
+
+	for (le = cmdl.head; le; le = le->next) {
+
+		struct cmds *cmds = le->data;
+		size_t i;
+
+		for (i=0; i<cmds->cmdc; i++) {
+
+			const struct cmd *cmd = &cmds->cmdv[i];
+
+			if (!str_isset(cmd->name))
+				continue;
+
+			if (str_len(cmd->name) >= len &&
+			    0 == memcmp(cmd->name, str, len)) {
+
+				++nmatch;
+				*cmdp = cmd;
+			}
+		}
+	}
+
+	return nmatch;
+}
+
+
 static int editor_input(struct mbuf *mb, char key,
-			struct re_printf *pf, bool *del)
+			struct re_printf *pf, bool *del, bool is_long)
 {
 	int err = 0;
 
 	switch (key) {
 
-	case ESC:
+	case KEYCODE_ESC:
 		*del = true;
 		return re_hprintf(pf, "\nCancel\n");
 
@@ -147,9 +184,52 @@ static int editor_input(struct mbuf *mb, char key,
 		return re_hprintf(pf, "\n");
 
 	case '\b':
-	case DEL:
-		if (mb->pos > 0)
+	case KEYCODE_DEL:
+		if (mb->pos > 0) {
+			err |= re_hprintf(pf, "\b ");
 			mb->pos = mb->end = (mb->pos - 1);
+		}
+		break;
+
+	case '\t':
+		if (is_long) {
+			const struct cmd *cmd = NULL;
+			size_t n;
+
+			err = re_hprintf(pf,
+					 "TAB completion for \"%b\":\n",
+					 mb->buf, mb->end);
+			if (err)
+				return err;
+
+			/* Find all long commands that matches the N
+			 * first characters of the input string.
+			 *
+			 * If the number of matches is exactly one,
+			 * we can regard it as TAB completion.
+			 */
+
+			err = cmd_print_all(pf, true, false,
+					    (char *)mb->buf, mb->end);
+			if (err)
+				return err;
+
+			n = print_match(&cmd, pf, (char *)mb->buf, mb->end);
+			if (n == 1 && cmd) {
+
+				re_printf("replace: %b -> %s\n",
+					  mb->buf, mb->end, cmd->name);
+
+				mb->pos = 0;
+				mbuf_write_str(mb, cmd->name);
+			}
+			else if (n == 0) {
+				err = re_hprintf(pf, "(none)\n");
+			}
+		}
+		else {
+			err = mbuf_write_u8(mb, key);
+		}
 		break;
 
 	default:
@@ -157,7 +237,12 @@ static int editor_input(struct mbuf *mb, char key,
 		break;
 	}
 
-	err |= re_hprintf(pf, "\r> %32b", mb->buf, mb->end);
+	if (is_long) {
+		err |= re_hprintf(pf, "\r/%b",
+				  mb->buf, mb->end);
+	}
+	else
+		err |= re_hprintf(pf, "\r> %32b", mb->buf, mb->end);
 
 	return err;
 }
@@ -168,6 +253,8 @@ static int cmd_report(const struct cmd *cmd, struct re_printf *pf,
 {
 	struct cmd_arg arg;
 	int err;
+
+	memset(&arg, 0, sizeof(arg));
 
 	mb->pos = 0;
 	err = mbuf_strdup(mb, &arg.prm, mb->end);
@@ -186,6 +273,54 @@ static int cmd_report(const struct cmd *cmd, struct re_printf *pf,
 }
 
 
+int cmd_process_long(const char *str, size_t len,
+		     struct re_printf *pf_resp, void *data)
+{
+	struct cmd_arg arg;
+	const struct cmd *cmd_long;
+	char *name = NULL, *prm = NULL;
+	struct pl pl_name, pl_prm;
+	int err;
+
+	if (!str || !len)
+		return EINVAL;
+
+	memset(&arg, 0, sizeof(arg));
+
+	err = re_regex(str, len, "[^ ]+[ ]*[~]*", &pl_name, NULL, &pl_prm);
+	if (err) {
+		return err;
+	}
+
+	err = pl_strdup(&name, &pl_name);
+	if (pl_isset(&pl_prm))
+		err |= pl_strdup(&prm, &pl_prm);
+	if (err)
+		goto out;
+
+	cmd_long = cmd_find_long(name);
+	if (cmd_long) {
+
+		arg.key      = LONG_PREFIX;
+		arg.prm      = prm;
+		arg.complete = true;
+		arg.data     = data;
+
+		if (cmd_long->h)
+			err = cmd_long->h(pf_resp, &arg);
+	}
+	else {
+		err = re_hprintf(pf_resp, "command not found (%s)\n", name);
+	}
+
+ out:
+	mem_deref(name);
+	mem_deref(prm);
+
+	return err;
+}
+
+
 static int cmd_process_edit(struct cmd_ctx **ctxp, char key,
 			    struct re_printf *pf, void *data)
 {
@@ -198,12 +333,24 @@ static int cmd_process_edit(struct cmd_ctx **ctxp, char key,
 
 	ctx = *ctxp;
 
-	err = editor_input(ctx->mb, key, pf, &del);
+	err = editor_input(ctx->mb, key, pf, &del, ctx->is_long);
 	if (err)
 		return err;
 
-	if (compl || ctx->cmd->flags & CMD_PROG)
-		err = cmd_report(ctx->cmd, pf, ctx->mb, compl, data);
+	if (ctx->is_long) {
+
+		if (compl) {
+
+			err = cmd_process_long((char *)ctx->mb->buf,
+					       ctx->mb->end,
+					       pf, data);
+		}
+	}
+	else {
+		if (compl ||
+		    (ctx->cmd && ctx->cmd->flags & CMD_PROG))
+			err = cmd_report(ctx->cmd, pf, ctx->mb, compl, data);
+	}
 
 	if (del)
 		*ctxp = mem_deref(*ctxp);
@@ -223,6 +370,7 @@ static int cmd_process_edit(struct cmd_ctx **ctxp, char key,
 int cmd_register(const struct cmd *cmdv, size_t cmdc)
 {
 	struct cmds *cmds;
+	size_t i;
 
 	if (!cmdv || !cmdc)
 		return EINVAL;
@@ -230,6 +378,23 @@ int cmd_register(const struct cmd *cmdv, size_t cmdc)
 	cmds = cmds_find(cmdv);
 	if (cmds)
 		return EALREADY;
+
+	/* verify that command is not registered */
+	for (i=0; i<cmdc; i++) {
+		const struct cmd *cmd = &cmdv[i];
+
+		if (cmd->key == LONG_PREFIX) {
+			warning("cmd: cannot register command with"
+				" short key '%c'\n", cmd->key);
+			return EINVAL;
+		}
+
+		if (str_isset(cmd->name) && cmd_find_long(cmd->name)) {
+			warning("cmd: long command '%s' already registered\n",
+				cmd->name);
+			return EINVAL;
+		}
+	}
 
 	cmds = mem_zalloc(sizeof(*cmds), destructor);
 	if (!cmds)
@@ -252,6 +417,31 @@ int cmd_register(const struct cmd *cmdv, size_t cmdc)
 void cmd_unregister(const struct cmd *cmdv)
 {
 	mem_deref(cmds_find(cmdv));
+}
+
+
+const struct cmd *cmd_find_long(const char *name)
+{
+	struct le *le;
+
+	if (!name)
+		return NULL;
+
+	for (le = cmdl.tail; le; le = le->prev) {
+
+		struct cmds *cmds = le->data;
+		size_t i;
+
+		for (i=0; i<cmds->cmdc; i++) {
+
+			const struct cmd *cmd = &cmds->cmdv[i];
+
+			if (0 == str_casecmp(name, cmd->name) && cmd->h)
+				return cmd;
+		}
+	}
+
+	return NULL;
 }
 
 
@@ -306,11 +496,150 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
 
 		return cmd->h(pf, &arg);
 	}
+	else if (key == LONG_PREFIX) {
+
+		int err;
+
+		err = re_hprintf(pf, "\n/");
+		if (err)
+			return err;
+
+		if (!ctxp) {
+			warning("cmd: ctxp is required\n");
+			return EINVAL;
+		}
+
+		err = ctx_alloc(ctxp, cmd);
+		if (err)
+			return err;
+
+		(*ctxp)->is_long = true;
+
+		return 0;
+	}
+	else if (key == '\t') {
+		return cmd_print_all(pf, false, true, NULL, 0);
+	}
 
 	if (key == KEYCODE_REL)
 		return 0;
 
 	return cmd_print(pf, NULL);
+}
+
+
+struct cmd_sort {
+	struct le le;
+	const struct cmd *cmd;
+};
+
+
+static bool sort_handler(struct le *le1, struct le *le2, void *arg)
+{
+	struct cmd_sort *cs1 = le1->data;
+	struct cmd_sort *cs2 = le2->data;
+	const struct cmd *cmd1 = cs1->cmd;
+	const struct cmd *cmd2 = cs2->cmd;
+	bool print_long  = *(bool *)arg;
+
+	if (print_long) {
+		return str_casecmp(cs2->cmd->name ? cs2->cmd->name : "",
+				   cs1->cmd->name ? cs1->cmd->name : "") >= 0;
+	}
+	else {
+		return tolower(cmd2->key) >= tolower(cmd1->key);
+	}
+}
+
+
+static int cmd_print_all(struct re_printf *pf,
+			 bool print_long, bool print_short,
+			 const char *match, size_t match_len)
+{
+	struct list sortedl = LIST_INIT;
+	struct le *le;
+	size_t width_long = 1;
+	size_t width_short = 5;
+	char fmt[64];
+	char buf[16];
+	int err = 0;
+
+	for (le = cmdl.head; le; le = le->next) {
+
+		struct cmds *cmds = le->data;
+		size_t i;
+
+		for (i=0; i<cmds->cmdc; i++) {
+
+			const struct cmd *cmd = &cmds->cmdv[i];
+			struct cmd_sort *cs;
+
+			if (match && match_len) {
+
+				if (str_len(cmd->name) >= match_len &&
+				    0 == memcmp(cmd->name, match, match_len)) {
+					/* Match */
+				}
+				else {
+					continue;
+				}
+			}
+
+			if (!str_isset(cmd->desc))
+				continue;
+
+			if (print_short && !print_long) {
+
+				if (cmd->key == KEYCODE_NONE)
+					continue;
+			}
+
+			cs = mem_zalloc(sizeof(*cs), NULL);
+			if (!cs) {
+				err = ENOMEM;
+				goto out;
+			}
+			cs->cmd = cmd;
+
+			list_append(&sortedl, &cs->le, cs);
+
+			width_long = max(width_long, 1+str_len(cmd->name)+2);
+		}
+	}
+
+	list_sort(&sortedl, sort_handler, &print_long);
+
+	if (re_snprintf(fmt, sizeof(fmt),
+			"  %%-%zus    %%-%zus    %%s\n",
+			width_long, width_short) < 0) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	for (le = sortedl.head; le; le = le->next) {
+		struct cmd_sort *cs = le->data;
+		const struct cmd *cmd = cs->cmd;
+		char namep[64] = "";
+
+		if (print_long && str_isset(cmd->name)) {
+			re_snprintf(namep, sizeof(namep), "%c%s%s",
+				    LONG_PREFIX, cmd->name,
+				    (cmd->flags & CMD_PRM) ? " .." : "");
+		}
+
+		err |= re_hprintf(pf, fmt,
+				  namep,
+				  print_short
+				    ? cmd_name(buf, sizeof(buf), cmd)
+				    : "",
+				  cmd->desc);
+	}
+
+	err |= re_hprintf(pf, "\n");
+
+ out:
+	list_flush(&sortedl);
+	return err;
 }
 
 
@@ -324,32 +653,15 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
  */
 int cmd_print(struct re_printf *pf, void *unused)
 {
-	size_t width = 5;
-	char fmt[32], buf[8];
 	int err = 0;
-	int key;
 
 	(void)unused;
 
 	if (!pf)
 		return EINVAL;
 
-	(void)re_snprintf(fmt, sizeof(fmt), " %%-%zus   %%s\n", width);
-
 	err |= re_hprintf(pf, "--- Help ---\n");
-
-	/* print in alphabetical order */
-	for (key = 1; key <= 0x80; key++) {
-
-		const struct cmd *cmd = cmd_find_by_key(key);
-		if (!cmd || !str_isset(cmd->desc))
-			continue;
-
-		err |= re_hprintf(pf, fmt, cmd_name(buf, sizeof(buf), cmd),
-				  cmd->desc);
-
-	}
-
+	err |= cmd_print_all(pf, true, true, NULL, 0);
 	err |= re_hprintf(pf, "\n");
 
 	return err;

@@ -400,31 +400,34 @@ static int cmd_print_calls(struct re_printf *pf, void *unused)
 
 
 static const struct cmd cmdv[] = {
-	{'\n',      0, "Accept incoming call",     cmd_answer           },
-	{'D',       0, "Accept incoming call",     cmd_answer           },
-	{'b',       0, "Hangup call",              cmd_hangup           },
-	{'c',       0, "Call status",              ua_print_call_status },
-	{'d', CMD_PRM, "Dial",                     dial_handler         },
-	{'h',       0, "Help menu",                cmd_print            },
-	{'l',       0, "List active calls",        cmd_print_calls      },
-	{'o', CMD_PRM, "Options",                  options_command      },
-	{'r',       0, "Registration info",        ua_print_reg_status  },
-	{0x1b,      0, "Hangup call",              cmd_hangup           },
-	{' ',       0, "Toggle UAs",               cmd_ua_next          },
-	{'T',       0, "Toggle UAs",               cmd_ua_next          },
-	{'R', CMD_PRM, "Create User-Agent",        create_ua            },
-	{'#', CMD_PRM, NULL,   dial_handler },
-	{'*', CMD_PRM, NULL,   dial_handler },
-	{'0', CMD_PRM, NULL,   dial_handler },
-	{'1', CMD_PRM, NULL,   dial_handler },
-	{'2', CMD_PRM, NULL,   dial_handler },
-	{'3', CMD_PRM, NULL,   dial_handler },
-	{'4', CMD_PRM, NULL,   dial_handler },
-	{'5', CMD_PRM, NULL,   dial_handler },
-	{'6', CMD_PRM, NULL,   dial_handler },
-	{'7', CMD_PRM, NULL,   dial_handler },
-	{'8', CMD_PRM, NULL,   dial_handler },
-	{'9', CMD_PRM, NULL,   dial_handler },
+
+{NULL,        '\n',       0, "Accept incoming call",    cmd_answer           },
+{"accept",    'D',        0, "Accept incoming call",    cmd_answer           },
+{"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
+{"callstat",  'c',        0, "Call status",             ua_print_call_status },
+{"dial",      'd',  CMD_PRM, "Dial",                    dial_handler         },
+{"help",      'h',        0, "Help menu",               cmd_print            },
+{"listcalls", 'l',        0, "List active calls",       cmd_print_calls      },
+{"options",   'o',  CMD_PRM, "Options",                 options_command      },
+{"reginfo",   'r',        0, "Registration info",       ua_print_reg_status  },
+{NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
+{NULL,        ' ',        0, "Toggle UAs",              cmd_ua_next          },
+{NULL,        'T',        0, "Toggle UAs",              cmd_ua_next          },
+{NULL,        'R',  CMD_PRM, "Create User-Agent",       create_ua            },
+
+/* Numeric keypad inputs: */
+{NULL, '#', CMD_PRM, NULL,   dial_handler },
+{NULL, '*', CMD_PRM, NULL,   dial_handler },
+{NULL, '0', CMD_PRM, NULL,   dial_handler },
+{NULL, '1', CMD_PRM, NULL,   dial_handler },
+{NULL, '2', CMD_PRM, NULL,   dial_handler },
+{NULL, '3', CMD_PRM, NULL,   dial_handler },
+{NULL, '4', CMD_PRM, NULL,   dial_handler },
+{NULL, '5', CMD_PRM, NULL,   dial_handler },
+{NULL, '6', CMD_PRM, NULL,   dial_handler },
+{NULL, '7', CMD_PRM, NULL,   dial_handler },
+{NULL, '8', CMD_PRM, NULL,   dial_handler },
+{NULL, '9', CMD_PRM, NULL,   dial_handler },
 };
 
 
@@ -487,12 +490,21 @@ static int call_xfer(struct re_printf *pf, void *arg)
 }
 
 
-static int call_holdresume(struct re_printf *pf, void *arg)
+static int cmd_call_hold(struct re_printf *pf, void *arg)
 {
-	const struct cmd_arg *carg = arg;
 	(void)pf;
+	(void)arg;
 
-	return call_hold(ua_call(uag_cur()), 'x' == carg->key);
+	return call_hold(ua_call(uag_cur()), true);
+}
+
+
+static int cmd_call_resume(struct re_printf *pf, void *arg)
+{
+	(void)pf;
+	(void)arg;
+
+	return call_hold(ua_call(uag_cur()), false);
 }
 
 
@@ -663,38 +675,39 @@ static int set_current_call(struct re_printf *pf, void *arg)
 
 
 static const struct cmd callcmdv[] = {
-	{'I',       0, "Send re-INVITE",      call_reinvite         },
-	{'X',       0, "Call resume",         call_holdresume       },
-	{'a',       0, "Audio stream",        call_audio_debug      },
-	{'e',       0, "Cycle audio encoder", call_audioenc_cycle   },
-	{'m',       0, "Call mute/un-mute",   call_mute             },
-	{'r', CMD_IPRM,"Transfer call",       call_xfer             },
-	{'x',       0, "Call hold",           call_holdresume       },
-	{'H',       0, "Hold previous call",  hold_prev_call        },
-	{'L',       0, "Resume previous call",hold_prev_call        },
-	{'A', CMD_IPRM,"Switch audio device", switch_audio_dev      },
+{"",          'I',        0, "Send re-INVITE",      call_reinvite         },
+{"resume",    'X',        0, "Call resume",         cmd_call_resume       },
+{"",          'a',        0, "Audio stream",        call_audio_debug      },
+{"",          'e',        0, "Cycle audio encoder", call_audioenc_cycle   },
+{"mute",      'm',        0, "Call mute/un-mute",   call_mute             },
+{"transfer",  'r', CMD_IPRM, "Transfer call",       call_xfer             },
+{"hold",      'x',        0, "Call hold",           cmd_call_hold         },
+{"",          'H',        0, "Hold previous call",  hold_prev_call        },
+{"",          'L',        0, "Resume previous call",hold_prev_call        },
+{"",          'A', CMD_IPRM, "Switch audio device", switch_audio_dev      },
 
 #ifdef USE_VIDEO
-	{'E',       0, "Cycle video encoder", call_videoenc_cycle   },
-	{'v',       0, "Video stream",        call_video_debug      },
+{"", 'E',       0, "Cycle video encoder", call_videoenc_cycle   },
+{"", 'v',       0, "Video stream",        call_video_debug      },
 #endif
 
-	{'#',       0, NULL,                  digit_handler         },
-	{'*',       0, NULL,                  digit_handler         },
-	{'0',       0, NULL,                  digit_handler         },
-	{'1',       0, NULL,                  digit_handler         },
-	{'2',       0, NULL,                  digit_handler         },
-	{'3',       0, NULL,                  digit_handler         },
-	{'4',       0, NULL,                  digit_handler         },
-	{'5',       0, NULL,                  digit_handler         },
-	{'6',       0, NULL,                  digit_handler         },
-	{'7',       0, NULL,                  digit_handler         },
-	{'8',       0, NULL,                  digit_handler         },
-	{'9',       0, NULL,                  digit_handler         },
-	{KEYCODE_REL,0,NULL,                  digit_handler         },
+/* Numeric keypad for DTMF events: */
+{NULL, '#',         0, NULL,                  digit_handler         },
+{NULL, '*',         0, NULL,                  digit_handler         },
+{NULL, '0',         0, NULL,                  digit_handler         },
+{NULL, '1',         0, NULL,                  digit_handler         },
+{NULL, '2',         0, NULL,                  digit_handler         },
+{NULL, '3',         0, NULL,                  digit_handler         },
+{NULL, '4',         0, NULL,                  digit_handler         },
+{NULL, '5',         0, NULL,                  digit_handler         },
+{NULL, '6',         0, NULL,                  digit_handler         },
+{NULL, '7',         0, NULL,                  digit_handler         },
+{NULL, '8',         0, NULL,                  digit_handler         },
+{NULL, '9',         0, NULL,                  digit_handler         },
+{NULL, KEYCODE_REL, 0, NULL,                  digit_handler         },
 
-	{'S',       0, "Statusmode toggle",   toggle_statmode       },
-	{'@', CMD_PRM, "Set current call <line>", set_current_call  },
+{NULL, 'S',        0, "Statusmode toggle",       toggle_statmode    },
+{NULL, '@',  CMD_PRM, "Set current call <line>", set_current_call   },
 };
 
 

@@ -32,7 +32,7 @@ static int cmd_test(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{'@',       0, "Test command",  cmd_test},
+	{NULL, '@', 0, "Test command",  cmd_test},
 };
 
 
@@ -73,6 +73,74 @@ int test_cmd(void)
 
 	/* verify that context was not created */
 	ASSERT_TRUE(NULL == ctx);
+
+ out:
+	return err;
+}
+
+
+static int long_handler(struct re_printf *pf, void *arg)
+{
+	struct cmd_arg *carg = arg;
+	struct test *test = carg->data;
+	int err = 0;
+	(void)pf;
+
+	ASSERT_STREQ("123", carg->prm);
+
+	++test->cmd_called;
+
+ out:
+	return err;
+}
+
+
+static const struct cmd longcmdv[] = {
+	{ "test", 0, 0, "Test Command", long_handler},
+};
+
+
+int test_cmd_long(void)
+{
+	struct test test;
+	const struct cmd *cmd;
+	static const char *input_str = "/test 123\n";
+	struct cmd_ctx *ctx = NULL;
+	size_t i;
+	int err;
+
+	memset(&test, 0, sizeof(test));
+
+	/* Verify that the command does not exist */
+	cmd = cmd_find_long("test");
+	ASSERT_TRUE(cmd == NULL);
+
+	/* Register and verify command */
+	err = cmd_register(longcmdv, ARRAY_SIZE(longcmdv));
+	ASSERT_EQ(0, err);
+
+	cmd = cmd_find_long("test");
+	ASSERT_TRUE(cmd != NULL);
+
+	/* Feed it some input data .. */
+
+	for (i=0; i<strlen(input_str); i++) {
+
+		err = cmd_process(&ctx, input_str[i], &pf_null, &test);
+		ASSERT_EQ(0, err);
+	}
+
+	err = cmd_process_long("test 123", 8, &pf_null, &test);
+	ASSERT_EQ(0, err);
+
+	ASSERT_EQ(2, test.cmd_called);
+
+	/* Cleanup .. */
+
+	cmd_unregister(longcmdv);
+
+	cmd = cmd_find_long("test");
+	ASSERT_TRUE(cmd == NULL);
 
  out:
 	return err;

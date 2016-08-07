@@ -77,7 +77,7 @@ static int cmd_contact(struct re_printf *pf, void *arg)
 
 		switch (carg->key) {
 
-		case '/':
+		case '|':
 			err = ua_connect(uag_current(), NULL, NULL,
 					 contact_str(cnt), NULL, VIDMODE_ON);
 			if (err) {
@@ -127,10 +127,10 @@ static int cmd_message(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{'/', CMD_IPRM, "Dial from contacts",       cmd_contact          },
-	{'=', CMD_IPRM, "Select chat peer",         cmd_contact          },
-	{'C',        0, "List contacts",            print_contacts       },
-	{'-',  CMD_PRM, cmd_desc,                   cmd_message          },
+{"dialcontact", '|',  CMD_IPRM, "Dial from contacts",     cmd_contact        },
+{"chatpeer",    '=',  CMD_IPRM, "Select chat peer",       cmd_contact        },
+{"contacts",    'C',         0, "List contacts",          print_contacts     },
+{"message",     '-',   CMD_PRM, cmd_desc,                 cmd_message        },
 };
 
 

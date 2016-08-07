@@ -1284,7 +1284,7 @@ static int cmd_quit(struct re_printf *pf, void *unused)
 
 
 static const struct cmd cmdv[] = {
-	{'q',       0, "Quit",                     cmd_quit             },
+	{"quit", 'q', 0, "Quit",                     cmd_quit             },
 };
 
 

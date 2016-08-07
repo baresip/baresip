@@ -451,7 +451,7 @@ static int status(struct re_printf *pf, void *unused)
 
 
 static const struct cmd cmdv[] = {
-	{'z', 0, "NAT status", status}
+	{"natbd", 'z', 0, "NAT status", status}
 };
 
 
