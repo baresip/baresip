@@ -461,7 +461,7 @@ static int module_init(void)
 	uint32_t interval = 3600;
 	int err;
 
-	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	if (err)
 		return err;
 
@@ -493,7 +493,7 @@ static int module_close(void)
 	for (i=0; i<ARRAY_SIZE(natbdv); i++)
 		natbdv[i] = mem_deref(natbdv[i]);
 
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 
 	return 0;
 }

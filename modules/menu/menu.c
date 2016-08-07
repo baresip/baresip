@@ -392,6 +392,13 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 }
 
 
+static int print_commands(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	return cmd_print(pf, baresip_commands());
+}
+
+
 static int cmd_print_calls(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -406,7 +413,7 @@ static const struct cmd cmdv[] = {
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"callstat",  'c',        0, "Call status",             ua_print_call_status },
 {"dial",      'd',  CMD_PRM, "Dial",                    dial_handler         },
-{"help",      'h',        0, "Help menu",               cmd_print            },
+{"help",      'h',        0, "Help menu",               print_commands       },
 {"listcalls", 'l',        0, "List active calls",       cmd_print_calls      },
 {"options",   'o',  CMD_PRM, "Options",                 options_command      },
 {"reginfo",   'r',        0, "Registration info",       ua_print_reg_status  },
@@ -713,12 +720,14 @@ static const struct cmd callcmdv[] = {
 
 static void menu_set_incall(bool incall)
 {
+	struct commands *commands = baresip_commands();
+
 	/* Dynamic menus */
 	if (incall) {
-		(void)cmd_register(callcmdv, ARRAY_SIZE(callcmdv));
+		(void)cmd_register(commands, callcmdv, ARRAY_SIZE(callcmdv));
 	}
 	else {
-		cmd_unregister(callcmdv);
+		cmd_unregister(commands, callcmdv);
 	}
 }
 
@@ -980,7 +989,7 @@ static int module_init(void)
 	tmr_init(&tmr_alert);
 	statmode = STATMODE_CALL;
 
-	err  = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	err  = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	err |= uag_event_register(ua_event_handler, NULL);
 
 	err |= message_init(message_handler, NULL);
@@ -996,7 +1005,7 @@ static int module_close(void)
 
 	message_close();
 	uag_event_unregister(ua_event_handler);
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 
 	menu_set_incall(false);
 	tmr_cancel(&tmr_alert);

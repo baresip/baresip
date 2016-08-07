@@ -385,13 +385,13 @@ static int module_init(void)
 	debug("       zid:         %w\n",
 	      zrtp_config.zid, sizeof(zrtp_config.zid));
 
-	return cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 }
 
 
 static int module_close(void)
 {
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 	menc_unregister(&menc_zrtp);
 
 	if (zrtp_global) {

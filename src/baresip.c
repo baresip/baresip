@@ -15,7 +15,7 @@
 static struct baresip {
 	struct network *net;
 	struct contacts contacts;
-
+	struct commands commands;
 } baresip;
 
 
@@ -40,12 +40,17 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 	if (err)
 		return err;
 
+	err = cmd_init(&baresip.commands);
+	if (err)
+		return err;
+
 	return 0;
 }
 
 
 void baresip_close(void)
 {
+	cmd_close(&baresip.commands);
 	contact_close(&baresip.contacts);
 
 	baresip.net = mem_deref(baresip.net);
@@ -61,4 +66,10 @@ struct network *baresip_network(void)
 struct contacts *baresip_contacts(void)
 {
 	return &baresip.contacts;
+}
+
+
+struct commands *baresip_commands(void)
+{
+	return &baresip.commands;
 }

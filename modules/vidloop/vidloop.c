@@ -476,14 +476,14 @@ static const struct cmd cmdv[] = {
 
 static int module_init(void)
 {
-	return cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 }
 
 
 static int module_close(void)
 {
 	vidloop_stop(NULL, NULL);
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 	return 0;
 }
 

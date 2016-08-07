@@ -207,7 +207,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	if (err)
 		return err;
 
@@ -220,7 +220,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 	list_flush(contact_list(baresip_contacts()));
 
 	return 0;

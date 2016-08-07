@@ -993,7 +993,7 @@ static int module_init(void)
 		return err;
 #endif
 
-	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	if (err)
 		return err;
 
@@ -1009,7 +1009,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 	if (mod_obj.run) {
 		gdk_threads_enter();
 		gtk_main_quit();

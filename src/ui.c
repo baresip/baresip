@@ -15,7 +15,7 @@ static struct cmd_ctx *uictx;
 
 static void ui_handler(char key, struct re_printf *pf)
 {
-	(void)cmd_process(&uictx, key, pf, NULL);
+	(void)cmd_process(baresip_commands(), &uictx, key, pf, NULL);
 }
 
 
@@ -110,6 +110,7 @@ void ui_input_str(const char *str)
 int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 {
 	struct cmd_ctx *ctx = NULL;
+	struct commands *commands = baresip_commands();
 	size_t i;
 	int err = 0;
 
@@ -117,11 +118,11 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 		return EINVAL;
 
 	for (i=0; i<pl->l; i++) {
-		err |= cmd_process(&ctx, pl->p[i], pf, NULL);
+		err |= cmd_process(commands, &ctx, pl->p[i], pf, NULL);
 	}
 
 	if (pl->l > 1 && ctx)
-		err |= cmd_process(&ctx, '\n', pf, NULL);
+		err |= cmd_process(commands, &ctx, '\n', pf, NULL);
 
 	return err;
 }

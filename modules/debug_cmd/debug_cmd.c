@@ -82,7 +82,8 @@ static int module_init(void)
 	start_ticks = tmr_jiffies();
 	(void)time(&start_time);
 
-	err = cmd_register(debugcmdv, ARRAY_SIZE(debugcmdv));
+	err = cmd_register(baresip_commands(),
+			   debugcmdv, ARRAY_SIZE(debugcmdv));
 
 	return err;
 }
@@ -90,7 +91,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	cmd_unregister(debugcmdv);
+	cmd_unregister(baresip_commands(), debugcmdv);
 
 	return 0;
 }

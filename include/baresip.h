@@ -674,14 +674,23 @@ struct cmd {
 
 struct cmd_ctx;
 
-int  cmd_register(const struct cmd *cmdv, size_t cmdc);
-void cmd_unregister(const struct cmd *cmdv);
-int  cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
-		 void *data);
-int  cmd_process_long(const char *str, size_t len,
+struct commands {
+	struct list cmdl;        /**< List of command blocks (struct cmds) */
+};
+
+
+int  cmd_init(struct commands *commands);
+void cmd_close(struct commands *commands);
+int  cmd_register(struct commands *commands,
+		  const struct cmd *cmdv, size_t cmdc);
+void cmd_unregister(struct commands *commands, const struct cmd *cmdv);
+int  cmd_process(struct commands *commands, struct cmd_ctx **ctxp, char key,
+		 struct re_printf *pf, void *data);
+int  cmd_process_long(struct commands *commands, const char *str, size_t len,
 		      struct re_printf *pf_resp, void *data);
-int  cmd_print(struct re_printf *pf, void *unused);
-const struct cmd *cmd_find_long(const char *name);
+int cmd_print(struct re_printf *pf, const struct commands *commands);
+const struct cmd *cmd_find_long(const struct commands *commands,
+				const char *name);
 
 
 /*
@@ -1096,6 +1105,7 @@ int  baresip_init(struct config *cfg, bool prefer_ipv6);
 void baresip_close(void);
 struct network *baresip_network(void);
 struct contacts *baresip_contacts(void);
+struct commands *baresip_commands(void);
 
 
 #ifdef __cplusplus

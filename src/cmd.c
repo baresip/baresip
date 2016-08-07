@@ -1,7 +1,7 @@
 /**
  * @file src/cmd.c  Command Interface
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 - 2016 Creytiv.com
  */
 #include <ctype.h>
 #include <string.h>
@@ -29,10 +29,8 @@ struct cmd_ctx {
 };
 
 
-static struct list cmdl;           /**< List of command blocks (struct cmds) */
-
-
 static int cmd_print_all(struct re_printf *pf,
+			 const struct commands *commands,
 			 bool print_long, bool print_short,
 			 const char *match, size_t match_len);
 
@@ -75,14 +73,15 @@ static int ctx_alloc(struct cmd_ctx **ctxp, const struct cmd *cmd)
 }
 
 
-static struct cmds *cmds_find(const struct cmd *cmdv)
+static struct cmds *cmds_find(const struct commands *commands,
+			      const struct cmd *cmdv)
 {
 	struct le *le;
 
-	if (!cmdv)
+	if (!commands || !cmdv)
 		return NULL;
 
-	for (le = cmdl.head; le; le = le->next) {
+	for (le = commands->cmdl.head; le; le = le->next) {
 		struct cmds *cmds = le->data;
 
 		if (cmds->cmdv == cmdv)
@@ -93,11 +92,15 @@ static struct cmds *cmds_find(const struct cmd *cmdv)
 }
 
 
-static const struct cmd *cmd_find_by_key(char key)
+static const struct cmd *cmd_find_by_key(const struct commands *commands,
+					 char key)
 {
 	struct le *le;
 
-	for (le = cmdl.tail; le; le = le->prev) {
+	if (!commands)
+		return NULL;
+
+	for (le = commands->cmdl.tail; le; le = le->prev) {
 
 		struct cmds *cmds = le->data;
 		size_t i;
@@ -134,13 +137,17 @@ static const char *cmd_name(char *buf, size_t sz, const struct cmd *cmd)
 }
 
 
-static size_t get_match(const struct cmd **cmdp,
+static size_t get_match(const struct commands *commands,
+			const struct cmd **cmdp,
 			const char *str, size_t len)
 {
 	struct le *le;
 	size_t nmatch = 0;
 
-	for (le = cmdl.head; le; le = le->next) {
+	if (!commands)
+		return 0;
+
+	for (le = commands->cmdl.head; le; le = le->next) {
 
 		struct cmds *cmds = le->data;
 		size_t i;
@@ -165,7 +172,7 @@ static size_t get_match(const struct cmd **cmdp,
 }
 
 
-static int editor_input(struct mbuf *mb, char key,
+static int editor_input(struct commands *commands, struct mbuf *mb, char key,
 			struct re_printf *pf, bool *del, bool is_long)
 {
 	int err = 0;
@@ -209,12 +216,13 @@ static int editor_input(struct mbuf *mb, char key,
 			 * we can regard it as TAB completion.
 			 */
 
-			err = cmd_print_all(pf, true, false,
+			err = cmd_print_all(pf, commands, true, false,
 					    (char *)mb->buf, mb->end);
 			if (err)
 				return err;
 
-			n = get_match(&cmd, (char *)mb->buf, mb->end);
+			n = get_match(commands, &cmd,
+				      (char *)mb->buf, mb->end);
 			if (n == 1 && cmd) {
 
 				re_printf("replace: %b -> %s\n",
@@ -273,7 +281,7 @@ static int cmd_report(const struct cmd *cmd, struct re_printf *pf,
 }
 
 
-int cmd_process_long(const char *str, size_t len,
+int cmd_process_long(struct commands *commands, const char *str, size_t len,
 		     struct re_printf *pf_resp, void *data)
 {
 	struct cmd_arg arg;
@@ -298,7 +306,7 @@ int cmd_process_long(const char *str, size_t len,
 	if (err)
 		goto out;
 
-	cmd_long = cmd_find_long(name);
+	cmd_long = cmd_find_long(commands, name);
 	if (cmd_long) {
 
 		arg.key      = LONG_PREFIX;
@@ -321,7 +329,8 @@ int cmd_process_long(const char *str, size_t len,
 }
 
 
-static int cmd_process_edit(struct cmd_ctx **ctxp, char key,
+static int cmd_process_edit(struct commands *commands,
+			    struct cmd_ctx **ctxp, char key,
 			    struct re_printf *pf, void *data)
 {
 	struct cmd_ctx *ctx;
@@ -333,7 +342,7 @@ static int cmd_process_edit(struct cmd_ctx **ctxp, char key,
 
 	ctx = *ctxp;
 
-	err = editor_input(ctx->mb, key, pf, &del, ctx->is_long);
+	err = editor_input(commands, ctx->mb, key, pf, &del, ctx->is_long);
 	if (err)
 		return err;
 
@@ -341,7 +350,8 @@ static int cmd_process_edit(struct cmd_ctx **ctxp, char key,
 
 		if (compl) {
 
-			err = cmd_process_long((char *)ctx->mb->buf,
+			err = cmd_process_long(commands,
+					       (char *)ctx->mb->buf,
 					       ctx->mb->end,
 					       pf, data);
 		}
@@ -362,20 +372,22 @@ static int cmd_process_edit(struct cmd_ctx **ctxp, char key,
 /**
  * Register commands
  *
- * @param cmdv Array of commands
- * @param cmdc Number of commands
+ * @param commands Commands container
+ * @param cmdv     Array of commands
+ * @param cmdc     Number of commands
  *
  * @return 0 if success, otherwise errorcode
  */
-int cmd_register(const struct cmd *cmdv, size_t cmdc)
+int cmd_register(struct commands *commands,
+		 const struct cmd *cmdv, size_t cmdc)
 {
 	struct cmds *cmds;
 	size_t i;
 
-	if (!cmdv || !cmdc)
+	if (!commands || !cmdv || !cmdc)
 		return EINVAL;
 
-	cmds = cmds_find(cmdv);
+	cmds = cmds_find(commands, cmdv);
 	if (cmds)
 		return EALREADY;
 
@@ -389,7 +401,8 @@ int cmd_register(const struct cmd *cmdv, size_t cmdc)
 			return EINVAL;
 		}
 
-		if (str_isset(cmd->name) && cmd_find_long(cmd->name)) {
+		if (str_isset(cmd->name) &&
+		    cmd_find_long(commands, cmd->name)) {
 			warning("cmd: long command '%s' already registered\n",
 				cmd->name);
 			return EINVAL;
@@ -403,7 +416,7 @@ int cmd_register(const struct cmd *cmdv, size_t cmdc)
 	cmds->cmdv = cmdv;
 	cmds->cmdc = cmdc;
 
-	list_append(&cmdl, &cmds->le, cmds);
+	list_append(&commands->cmdl, &cmds->le, cmds);
 
 	return 0;
 }
@@ -412,22 +425,24 @@ int cmd_register(const struct cmd *cmdv, size_t cmdc)
 /**
  * Unregister commands
  *
- * @param cmdv Array of commands
+ * @param commands Commands container
+ * @param cmdv     Array of commands
  */
-void cmd_unregister(const struct cmd *cmdv)
+void cmd_unregister(struct commands *commands, const struct cmd *cmdv)
 {
-	mem_deref(cmds_find(cmdv));
+	mem_deref(cmds_find(commands, cmdv));
 }
 
 
-const struct cmd *cmd_find_long(const char *name)
+const struct cmd *cmd_find_long(const struct commands *commands,
+				const char *name)
 {
 	struct le *le;
 
-	if (!name)
+	if (!commands || !name)
 		return NULL;
 
-	for (le = cmdl.tail; le; le = le->prev) {
+	for (le = commands->cmdl.tail; le; le = le->prev) {
 
 		struct cmds *cmds = le->data;
 		size_t i;
@@ -448,17 +463,21 @@ const struct cmd *cmd_find_long(const char *name)
 /**
  * Process input characters to the command system
  *
- * @param ctxp Pointer to context for editor (optional)
- * @param key  Input character
- * @param pf   Print function
- * @param data Application data
+ * @param commands Commands container
+ * @param ctxp     Pointer to context for editor (optional)
+ * @param key      Input character
+ * @param pf       Print function
+ * @param data     Application data
  *
  * @return 0 if success, otherwise errorcode
  */
-int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
-		void *data)
+int cmd_process(struct commands *commands, struct cmd_ctx **ctxp, char key,
+		struct re_printf *pf, void *data)
 {
 	const struct cmd *cmd;
+
+	if (!commands)
+		return EINVAL;
 
 	/* are we in edit-mode? */
 	if (ctxp && *ctxp) {
@@ -466,10 +485,10 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
 		if (key == KEYCODE_REL)
 			return 0;
 
-		return cmd_process_edit(ctxp, key, pf, data);
+		return cmd_process_edit(commands, ctxp, key, pf, data);
 	}
 
-	cmd = cmd_find_by_key(key);
+	cmd = cmd_find_by_key(commands, key);
 	if (cmd) {
 		struct cmd_arg arg;
 
@@ -486,7 +505,7 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
 
 			key = isdigit(key) ? key : KEYCODE_REL;
 
-			return cmd_process_edit(ctxp, key, pf, data);
+			return cmd_process_edit(commands, ctxp, key, pf, data);
 		}
 
 		arg.key      = key;
@@ -518,13 +537,13 @@ int cmd_process(struct cmd_ctx **ctxp, char key, struct re_printf *pf,
 		return 0;
 	}
 	else if (key == '\t') {
-		return cmd_print_all(pf, false, true, NULL, 0);
+		return cmd_print_all(pf, commands, false, true, NULL, 0);
 	}
 
 	if (key == KEYCODE_REL)
 		return 0;
 
-	return cmd_print(pf, NULL);
+	return cmd_print(pf, commands);
 }
 
 
@@ -553,6 +572,7 @@ static bool sort_handler(struct le *le1, struct le *le2, void *arg)
 
 
 static int cmd_print_all(struct re_printf *pf,
+			 const struct commands *commands,
 			 bool print_long, bool print_short,
 			 const char *match, size_t match_len)
 {
@@ -564,7 +584,10 @@ static int cmd_print_all(struct re_printf *pf,
 	char buf[16];
 	int err = 0;
 
-	for (le = cmdl.head; le; le = le->next) {
+	if (!commands)
+		return EINVAL;
+
+	for (le = commands->cmdl.head; le; le = le->next) {
 
 		struct cmds *cmds = le->data;
 		size_t i;
@@ -646,23 +669,41 @@ static int cmd_print_all(struct re_printf *pf,
 /**
  * Print a list of available commands
  *
- * @param pf     Print function
- * @param unused Unused variable
+ * @param pf       Print function
+ * @param commands Commands container
  *
  * @return 0 if success, otherwise errorcode
  */
-int cmd_print(struct re_printf *pf, void *unused)
+int cmd_print(struct re_printf *pf, const struct commands *commands)
 {
 	int err = 0;
-
-	(void)unused;
 
 	if (!pf)
 		return EINVAL;
 
 	err |= re_hprintf(pf, "--- Help ---\n");
-	err |= cmd_print_all(pf, true, true, NULL, 0);
+	err |= cmd_print_all(pf, commands, true, true, NULL, 0);
 	err |= re_hprintf(pf, "\n");
 
 	return err;
+}
+
+
+int cmd_init(struct commands *commands)
+{
+	if (!commands)
+		return EINVAL;
+
+	list_init(&commands->cmdl);
+
+	return 0;
+}
+
+
+void cmd_close(struct commands *commands)
+{
+	if (!commands)
+		return;
+
+	list_flush(&commands->cmdl);
 }
