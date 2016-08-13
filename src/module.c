@@ -20,6 +20,9 @@ static struct list modappl;
 static void modapp_destructor(void *arg)
 {
 	struct modapp *modapp = arg;
+	const struct mod_export *me = mod_export(modapp->mod);
+	if (me)
+		debug("module: unloading app %s\n", me->name);
 	list_unlink(&modapp->le);
 	mem_deref(modapp->mod);
 }
@@ -107,6 +110,8 @@ static int module_tmp_handler(const struct pl *val, void *arg)
 static int module_app_handler(const struct pl *val, void *arg)
 {
 	struct modapp *modapp;
+
+	debug("module: loading app %r\n", val);
 
 	modapp = mem_zalloc(sizeof(*modapp), modapp_destructor);
 	if (!modapp)
