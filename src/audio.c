@@ -1318,10 +1318,17 @@ int audio_send_digit(struct audio *a, char key)
 		return EINVAL;
 
 	if (key != KEYCODE_REL) {
+		int event = telev_digit2code(key);
 		info("audio: send DTMF digit: '%c'\n", key);
-		err = telev_send(a->telev, telev_digit2code(key), false);
+
+		if (event == -1) {
+			warning("audio: invalid DTMF digit (0x%02x)\n", key);
+			return EINVAL;
+		}
+
+		err = telev_send(a->telev, event, false);
 	}
-	else if (a->tx.cur_key != KEYCODE_REL) {
+	else if (a->tx.cur_key && a->tx.cur_key != KEYCODE_REL) {
 		/* Key release */
 		info("audio: send DTMF digit end: '%c'\n", a->tx.cur_key);
 		err = telev_send(a->telev,
