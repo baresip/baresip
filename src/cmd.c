@@ -479,6 +479,11 @@ int cmd_process(struct commands *commands, struct cmd_ctx **ctxp, char key,
 	if (!commands)
 		return EINVAL;
 
+	if (key == KEYCODE_NONE) {
+		warning("cmd: process: illegal keycode NONE\n");
+		return EINVAL;
+	}
+
 	/* are we in edit-mode? */
 	if (ctxp && *ctxp) {
 

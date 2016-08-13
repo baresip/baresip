@@ -107,7 +107,8 @@ static DWORD WINAPI input_thread(LPVOID arg)
 				 * to send them to the RE main event loop via
 				 * a message queue
 				 */
-				mqueue_push(st->mq, ch, 0);
+				if (ch)
+					mqueue_push(st->mq, ch, NULL);
 			}
 		}
 	}
