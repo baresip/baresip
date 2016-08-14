@@ -17,6 +17,7 @@
  */
 
 
+/** Constants */
 enum {
 	SHUTDOWN_DELAY = 500  /**< Delay before un-registering [ms] */
 };
