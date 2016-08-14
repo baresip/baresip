@@ -145,6 +145,7 @@ struct call;
 
 /** Call parameters */
 struct call_prm {
+	struct sa laddr;
 	enum vidmode vidmode;
 	int af;
 };
@@ -154,6 +155,7 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		const char *local_name, const char *local_uri,
 		struct account *acc, struct ua *ua, const struct call_prm *prm,
 		const struct sip_msg *msg, struct call *xcall,
+		struct dnsc *dnsc,
 		call_event_h *eh, void *arg);
 int  call_connect(struct call *call, const struct pl *paddr);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
@@ -164,7 +166,7 @@ int  call_answer(struct call *call, uint16_t scode);
 int  call_sdp_get(const struct call *call, struct mbuf **descp, bool offer);
 int  call_jbuf_stat(struct re_printf *pf, const struct call *call);
 int  call_info(struct re_printf *pf, const struct call *call);
-int  call_reset_transp(struct call *call);
+int  call_reset_transp(struct call *call, const struct sa *laddr);
 int  call_notify_sipfrag(struct call *call, uint16_t scode,
 			 const char *reason, ...);
 int  call_af(const struct call *call);

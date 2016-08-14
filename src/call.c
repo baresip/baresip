@@ -468,6 +468,7 @@ static int assign_linenum(uint32_t *linenum, const struct list *lst)
  * @param prm         Call parameters
  * @param msg         SIP message for incoming calls
  * @param xcall       Optional call to inherit properties from
+ * @param dnsc        DNS Client
  * @param eh          Call event handler
  * @param arg         Handler argument
  *
@@ -477,6 +478,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	       const char *local_name, const char *local_uri,
 	       struct account *acc, struct ua *ua, const struct call_prm *prm,
 	       const struct sip_msg *msg, struct call *xcall,
+	       struct dnsc *dnsc,
 	       call_event_h *eh, void *arg)
 {
 	struct call *call;
@@ -486,8 +488,11 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	int label = 0;
 	int err = 0;
 
-	if (!cfg || !local_uri || !acc || !ua)
+	if (!cfg || !local_uri || !acc || !ua || !prm)
 		return EINVAL;
+
+	debug("call: alloc with params laddr=%j, af=%s\n",
+	      &prm->laddr, net_af2name(prm->af));
 
 	call = mem_zalloc(sizeof(*call), call_destructor);
 	if (!call)
@@ -514,8 +519,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		goto out;
 
 	/* Init SDP info */
-	err = sdp_session_alloc(&call->sdp,
-				net_laddr_af(baresip_network(), call->af));
+	err = sdp_session_alloc(&call->sdp, &prm->laddr);
 	if (err)
 		goto out;
 
@@ -531,7 +535,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	/* Initialise media NAT handling */
 	if (acc->mnat) {
 		err = acc->mnat->sessh(&call->mnats,
-				       net_dnsc(baresip_network()), call->af,
+				       dnsc, call->af,
 				       acc->stun_host, acc->stun_port,
 				       acc->stun_user, acc->stun_pass,
 				       call->sdp, !got_offer,
@@ -1564,13 +1568,12 @@ struct list *call_streaml(const struct call *call)
 }
 
 
-int call_reset_transp(struct call *call)
+int call_reset_transp(struct call *call, const struct sa *laddr)
 {
 	if (!call)
 		return EINVAL;
 
-	sdp_session_set_laddr(call->sdp,
-			      net_laddr_af(baresip_network(), call->af));
+	sdp_session_set_laddr(call->sdp, laddr);
 
 	return call_modify(call);
 }

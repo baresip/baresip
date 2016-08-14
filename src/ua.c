@@ -412,6 +412,7 @@ static int ua_call_alloc(struct call **callp, struct ua *ua,
 			 enum vidmode vidmode, const struct sip_msg *msg,
 			 struct call *xcall, const char *local_uri)
 {
+	const struct network *net = baresip_network();
 	struct call_prm cprm;
 	int af = AF_UNSPEC;
 	int err;
@@ -431,6 +432,9 @@ static int ua_call_alloc(struct call **callp, struct ua *ua,
 		af = ua->af;
 	}
 
+	memset(&cprm, 0, sizeof(cprm));
+
+	sa_cpy(&cprm.laddr, net_laddr_af(net, af));
 	cprm.vidmode = vidmode;
 	cprm.af      = af;
 
@@ -438,7 +442,9 @@ static int ua_call_alloc(struct call **callp, struct ua *ua,
 			 ua->acc->dispname,
 			 local_uri ? local_uri : ua->acc->aor,
 			 ua->acc, ua, &cprm,
-			 msg, xcall, call_event_handler, ua);
+			 msg, xcall,
+			 net_dnsc(net),
+			 call_event_handler, ua);
 	if (err)
 		return err;
 
@@ -1515,8 +1521,11 @@ int uag_reset_transp(bool reg, bool reinvite)
 
 			for (lec = ua->calls.head; lec; lec = lec->next) {
 				struct call *call = lec->data;
+				const struct sa *laddr;
 
-				err |= call_reset_transp(call);
+				laddr = net_laddr_af(net, call_af(call));
+
+				err |= call_reset_transp(call, laddr);
 			}
 		}
 	}
