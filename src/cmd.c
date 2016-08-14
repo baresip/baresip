@@ -183,6 +183,7 @@ static int editor_input(struct commands *commands, struct mbuf *mb, char key,
 		*del = true;
 		return re_hprintf(pf, "\nCancel\n");
 
+	case KEYCODE_NONE:
 	case KEYCODE_REL:
 		break;
 
