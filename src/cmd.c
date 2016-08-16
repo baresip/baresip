@@ -632,7 +632,7 @@ static int cmd_print_all(struct re_printf *pf,
 
 			list_append(&sortedl, &cs->le, cs);
 
-			width_long = max(width_long, 1+str_len(cmd->name)+2);
+			width_long = max(width_long, 1+str_len(cmd->name)+3);
 		}
 	}
 
