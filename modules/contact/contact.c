@@ -115,11 +115,14 @@ static int cmd_message(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	int err;
 
-	(void)pf;
+	if (!str_isset(chat_peer)) {
+		return re_hprintf(pf, "contact: chat peer is not set\n");
+	}
 
 	err = message_send(uag_current(), chat_peer, carg->prm);
 	if (err) {
-		(void)re_hprintf(pf, "chat: ua_im_send() failed (%m)\n", err);
+		(void)re_hprintf(pf, "contact: message_send() failed (%m)\n",
+				 err);
 	}
 
 	return err;
