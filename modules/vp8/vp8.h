@@ -21,7 +21,7 @@ int vp8_encode(struct videnc_state *ves, bool update,
 int vp8_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		      const char *fmtp);
 int vp8_decode(struct viddec_state *vds, struct vidframe *frame,
-	       bool marker, uint16_t seq, struct mbuf *mb);
+	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb);
 
 
 /* SDP */

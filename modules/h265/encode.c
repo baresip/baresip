@@ -253,7 +253,7 @@ int h265_encode(struct videnc_state *st, bool update,
 		size_t len = nal->sizeBytes;
 		bool marker;
 
-#if 1
+#if 0
 		debug("h265: encode: %s type=%2d  %s\n",
 			  h265_is_keyframe(nal->type) ? "<KEY>" : "     ",
 			  nal->type, h265_nalunit_name(nal->type));

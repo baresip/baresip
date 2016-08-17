@@ -45,6 +45,7 @@ struct vstat {
 	size_t bytes;
 	uint32_t bitrate;
 	double efps;
+	size_t n_intra;
 };
 
 
@@ -127,6 +128,7 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 	struct video_loop *vl = arg;
 	struct vidframe frame;
 	struct mbuf *mb;
+	bool intra;
 	int err = 0;
 
 	mb = mbuf_alloc(hdr_len + pld_len);
@@ -144,11 +146,15 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 	/* decode */
 	frame.data[0] = NULL;
 	if (vl->vc_dec && vl->dec) {
-		err = vl->vc_dec->dech(vl->dec, &frame, marker, vl->seq++, mb);
+		err = vl->vc_dec->dech(vl->dec, &frame, &intra,
+				       marker, vl->seq++, mb);
 		if (err) {
 			warning("vidloop: codec decode: %m\n", err);
 			goto out;
 		}
+
+		if (intra)
+			++vl->stat.n_intra;
 	}
 
 	if (vidframe_isvalid(&frame)) {
@@ -287,9 +293,11 @@ static void print_status(struct video_loop *vl)
 {
 	(void)re_fprintf(stderr,
 			 "\rstatus:"
-			 " [%s] [%s] EFPS=%.1f      %u kbit/s       \r",
+			 " [%s] [%s]  intra=%zu "
+			 " EFPS=%.1f      %u kbit/s       \r",
 			 vl->vc_enc ? vl->vc_enc->name : "",
 			 vl->vc_dec ? vl->vc_dec->name : "",
+			 vl->stat.n_intra,
 			 vl->stat.efps, vl->stat.bitrate);
 }
 

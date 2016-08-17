@@ -515,6 +515,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	struct vidframe *frame_filt = NULL;
 	struct vidframe frame_store, *frame = &frame_store;
 	struct le *le;
+	bool intra;
 	int err = 0;
 
 	if (!hdr || !mbuf_get_left(mb))
@@ -529,7 +530,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	}
 
 	frame->data[0] = NULL;
-	err = vrx->vc->dech(vrx->dec, frame, hdr->m, hdr->seq, mb);
+	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb);
 	if (err) {
 
 		if (err != EPROTO) {
@@ -546,6 +547,8 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 		goto out;
 	}
+
+	/* XXX stop pending FIR if intra=true */
 
 	/* Got a full picture-frame? */
 	if (!vidframe_isvalid(frame))

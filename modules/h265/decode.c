@@ -150,7 +150,7 @@ static inline void fragment_rewind(struct viddec_state *vds)
 
 
 int h265_decode(struct viddec_state *vds, struct vidframe *frame,
-		bool marker, uint16_t seq, struct mbuf *mb)
+		bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
 {
 	static const uint8_t nal_seq[3] = {0, 0, 1};
 	int err, ret, got_picture, i;
@@ -158,8 +158,10 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 	AVPacket avpkt;
 	enum vidfmt fmt;
 
-	if (!vds || !frame || !mb)
+	if (!vds || !frame || !intra || !mb)
 		return EINVAL;
+
+	*intra = false;
 
 	err = h265_nal_decode(&hdr, mbuf_buf(mb));
 	if (err)
@@ -167,13 +169,12 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	mbuf_advance(mb, H265_HDR_SIZE);
 
-#if 1
+#if 0
 	debug("h265: decode: %s type=%2d  %s\n",
 		  h265_is_keyframe(hdr.nal_unit_type) ? "<KEY>" : "     ",
 		  hdr.nal_unit_type,
 		  h265_nalunit_name(hdr.nal_unit_type));
 #endif
-
 
 	if (vds->frag && hdr.nal_unit_type != H265_NAL_FU) {
 		debug("h265: lost fragments; discarding previous NAL\n");
@@ -183,6 +184,9 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	/* handle NAL types */
 	if (0 <= hdr.nal_unit_type && hdr.nal_unit_type <= 40) {
+
+		if (h265_is_keyframe(hdr.nal_unit_type))
+			*intra = true;
 
 		mb->pos -= H265_HDR_SIZE;
 
@@ -200,6 +204,9 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 			return err;
 
 		if (fu.s) {
+			if (h265_is_keyframe(fu.type))
+				*intra = true;
+
 			if (vds->frag) {
 				debug("h265: lost fragments; ignoring NAL\n");
 				fragment_rewind(vds);

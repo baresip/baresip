@@ -91,7 +91,7 @@ int daala_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 
 
 int daala_decode(struct viddec_state *vds, struct vidframe *frame,
-		 bool marker, uint16_t seq, struct mbuf *mb)
+		 bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
 {
 	daala_packet dp;
 	bool ishdr;
@@ -100,6 +100,8 @@ int daala_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	if (!vds || !frame || !mb)
 		return EINVAL;
+
+	*intra = false;
 
 	++vds->stats.n_packet;
 	++vds->stats.valid;
@@ -114,9 +116,10 @@ int daala_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	if (ishdr)
 		++vds->stats.n_header;
-	else if (daala_packet_iskeyframe(&dp) > 0)
+	else if (daala_packet_iskeyframe(&dp) > 0) {
 		++vds->stats.n_keyframe;
-
+		*intra = true;
+	}
 
 	if (daala_packet_isheader(&dp)) {
 

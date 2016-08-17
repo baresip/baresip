@@ -164,6 +164,24 @@ static inline int hdr_decode(struct hdr *hdr, struct mbuf *mb)
 }
 
 
+static inline bool is_keyframe(const struct mbuf *mb)
+{
+	vpx_codec_stream_info_t si;
+	vpx_codec_err_t ret;
+
+	memset(&si, 0, sizeof(si));
+	si.sz = sizeof(si);
+
+	ret = vpx_codec_peek_stream_info(&vpx_codec_vp9_dx_algo,
+					 mbuf_buf(mb),
+					 (unsigned int)mbuf_get_left(mb), &si);
+	if (ret != VPX_CODEC_OK)
+		return false;
+
+	return si.is_kf;
+}
+
+
 static inline int16_t seq_diff(uint16_t x, uint16_t y)
 {
 	return (int16_t)(y - x);
@@ -171,7 +189,7 @@ static inline int16_t seq_diff(uint16_t x, uint16_t y)
 
 
 int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
-	       bool marker, uint16_t seq, struct mbuf *mb)
+	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
 {
 	vpx_codec_iter_t iter = NULL;
 	vpx_codec_err_t res;
@@ -179,8 +197,10 @@ int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 	struct hdr hdr;
 	int err, i;
 
-	if (!vds || !frame || !mb)
+	if (!vds || !frame || !intra || !mb)
 		return EINVAL;
+
+	*intra = false;
 
 	vds->n_bytes += mbuf_get_left(mb);
 
@@ -194,6 +214,9 @@ int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 #endif
 
 	if (hdr.b) {
+
+		if (is_keyframe(mb))
+			*intra = true;
 
 		mbuf_rewind(vds->mb);
 		vds->started = true;
