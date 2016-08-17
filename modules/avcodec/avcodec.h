@@ -49,8 +49,6 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 		bool eof, uint16_t seq, struct mbuf *src);
 int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 		 bool eof, uint16_t seq, struct mbuf *src);
-int decode_h263_test(struct viddec_state *st, struct vidframe *frame,
-		     bool marker, uint16_t seq, struct mbuf *src);
 
 
 int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
