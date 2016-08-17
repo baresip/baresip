@@ -35,6 +35,7 @@ enum {
 	BURST_MAX       = 8192,                /**< in bytes            */
 	RTP_PRESZ       = 4 + RTP_HEADER_SIZE, /**< TURN and RTP header */
 	RTP_TRAILSZ     = 12 + 4,              /**< SRTP/SRTCP trailer  */
+	PICUP_INTERVAL  = 500,
 };
 
 
@@ -130,12 +131,15 @@ struct vrx {
 	struct vidisp_st *vidisp;          /**< Video display             */
 	struct lock *lock;                 /**< Lock for decoder          */
 	struct list filtl;                 /**< Filters in decoding order */
+	struct tmr tmr_picup;              /**< Picture update timer      */
 	enum vidorient orient;             /**< Display orientation       */
 	char device[64];
 	bool fullscreen;                   /**< Fullscreen flag           */
 	int pt_rx;                         /**< Incoming RTP payload type */
 	int frames;                        /**< Number of frames received */
 	int efps;                          /**< Estimated frame-rate      */
+	unsigned n_intra;                  /**< Intra-frames decoded      */
+	unsigned n_picup;                  /**< Picture updates sent      */
 };
 
 
@@ -162,6 +166,9 @@ struct vidqent {
 	uint32_t ts;
 	struct mbuf *mb;
 };
+
+
+static void request_picture_update(struct vrx *vrx);
 
 
 static void vidqent_destructor(void *arg)
@@ -299,6 +306,7 @@ static void video_destructor(void *arg)
 	mem_deref(vtx->lock);
 
 	/* receive */
+	tmr_cancel(&vrx->tmr_picup);
 	lock_write_get(vrx->lock);
 	mem_deref(vrx->dec);
 	mem_deref(vrx->vidisp);
@@ -497,6 +505,32 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 }
 
 
+static void picup_tmr_handler(void *arg)
+{
+	struct vrx *vrx = arg;
+
+	request_picture_update(vrx);
+}
+
+
+static void request_picture_update(struct vrx *vrx)
+{
+	struct video *v = vrx->video;
+
+	if (tmr_isrunning(&vrx->tmr_picup))
+		return;
+
+	tmr_start(&vrx->tmr_picup, PICUP_INTERVAL, picup_tmr_handler, vrx);
+
+	/* send RTCP FIR to peer */
+	stream_send_fir(v->strm, v->nack_pli);
+
+	/* XXX: if RTCP is not enabled, send XML in SIP INFO ? */
+
+	++vrx->n_picup;
+}
+
+
 /**
  * Decode incoming RTP packets using the Video decoder
  *
@@ -540,15 +574,15 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 				mbuf_get_left(mb), err);
 		}
 
-		/* send RTCP FIR to peer */
-		stream_send_fir(v->strm, v->nack_pli);
-
-		/* XXX: if RTCP is not enabled, send XML in SIP INFO ? */
+		request_picture_update(vrx);
 
 		goto out;
 	}
 
-	/* XXX stop pending FIR if intra=true */
+	if (intra) {
+		tmr_cancel(&vrx->tmr_picup);
+		++vrx->n_intra;
+	}
 
 	/* Got a full picture-frame? */
 	if (!vidframe_isvalid(frame))
@@ -1221,6 +1255,8 @@ int video_debug(struct re_printf *pf, const struct video *v)
 			  vtx->vsrc_size.h, vtx->vsrc_prm.fps);
 	err |= re_hprintf(pf, "     skipc=%u\n", vtx->skipc);
 	err |= re_hprintf(pf, " rx: pt=%d\n", vrx->pt_rx);
+	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
+			  vrx->n_intra, vrx->n_picup);
 
 	if (!list_isempty(vidfilt_list())) {
 		err |= vtx_print_pipeline(pf, vtx);
