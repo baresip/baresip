@@ -239,7 +239,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 }
 
 
-int h264_decode(struct viddec_state *st, struct mbuf *src)
+static int h264_decode(struct viddec_state *st, struct mbuf *src)
 {
 	struct h264_hdr h264_hdr;
 	const uint8_t nal_seq[3] = {0, 0, 1};

@@ -53,7 +53,6 @@ int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 
 int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
 			 const struct pl *val);
-int h264_decode(struct viddec_state *st, struct mbuf *src);
 
 
 int avcodec_resolve_codecid(const char *s);
