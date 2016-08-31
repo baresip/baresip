@@ -35,25 +35,50 @@
  */
 
 
+static char fmtp[256] = "stereo=1;sprop-stereo=1";
+
+
+static int opus_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
+			 bool offer, void *arg)
+{
+	(void)arg;
+	(void)offer;
+
+	if (!mb || !fmt)
+		return 0;
+
+	return mbuf_printf(mb, "a=fmtp:%s %s\r\n",
+			   fmt->id, fmtp);
+}
+
+
 static struct aucodec opus = {
 	.name      = "opus",
 	.srate     = 48000,
 	.crate     = 48000,
 	.ch        = 2,
-	.fmtp      = "stereo=1;sprop-stereo=1",
+	.fmtp      = NULL,
 	.encupdh   = opus_encode_update,
 	.ench      = opus_encode_frm,
 	.decupdh   = opus_decode_update,
 	.dech      = opus_decode_frm,
 	.plch      = opus_decode_pkloss,
+	.fmtp_ench = opus_fmtp_enc,
 };
+
+
+void opus_mirror(const char *x)
+{
+	info("opus: mirror parameters: \"%s\"\n", x);
+
+	str_ncpy(fmtp, x, sizeof(fmtp));
+}
 
 
 static int module_init(void)
 {
 	struct conf *conf = conf_cur();
 	uint32_t value;
-	static char fmtp[256] = "stereo=1;sprop-stereo=1";
 	char *p = fmtp + str_len(fmtp);
 	bool b;
 	int n = 0;
@@ -97,8 +122,6 @@ static int module_init(void)
 
 		p += n;
 	}
-
-	opus.fmtp = fmtp;
 
 	debug("opus: fmtp=\"%s\"\n", fmtp);
 
