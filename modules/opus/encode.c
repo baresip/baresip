@@ -81,7 +81,7 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 
 	/* Save the incoming OPUS parameters from SDP offer */
 	if (str_isset(fmtp)) {
-		opus_mirror(fmtp);
+		opus_mirror_params(fmtp);
 	}
 
 	aes = *aesp;

@@ -35,6 +35,7 @@
  */
 
 
+static bool opus_mirror;
 static char fmtp[256] = "stereo=1;sprop-stereo=1";
 
 
@@ -67,8 +68,11 @@ static struct aucodec opus = {
 };
 
 
-void opus_mirror(const char *x)
+void opus_mirror_params(const char *x)
 {
+	if (!opus_mirror)
+		return;
+
 	info("opus: mirror parameters: \"%s\"\n", x);
 
 	str_ncpy(fmtp, x, sizeof(fmtp));
@@ -122,6 +126,8 @@ static int module_init(void)
 
 		p += n;
 	}
+
+	(void)conf_get_bool(conf, "opus_mirror", &opus_mirror);
 
 	debug("opus: fmtp=\"%s\"\n", fmtp);
 

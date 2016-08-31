@@ -34,4 +34,4 @@ int opus_decode_pkloss(struct audec_state *st, int16_t *sampv, size_t *sampc);
 void opus_decode_fmtp(struct opus_param *prm, const char *fmtp);
 
 
-void opus_mirror(const char *fmtp);
+void opus_mirror_params(const char *fmtp);
