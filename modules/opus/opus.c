@@ -37,19 +37,24 @@
 
 static bool opus_mirror;
 static char fmtp[256] = "stereo=1;sprop-stereo=1";
+static char fmtp_mirror[256];
 
 
 static int opus_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 			 bool offer, void *arg)
 {
+	bool mirror;
+
 	(void)arg;
 	(void)offer;
 
 	if (!mb || !fmt)
 		return 0;
 
+	mirror = !offer && str_isset(fmtp_mirror);
+
 	return mbuf_printf(mb, "a=fmtp:%s %s\r\n",
-			   fmt->id, fmtp);
+			   fmt->id, mirror ? fmtp_mirror : fmtp);
 }
 
 
@@ -75,7 +80,7 @@ void opus_mirror_params(const char *x)
 
 	info("opus: mirror parameters: \"%s\"\n", x);
 
-	str_ncpy(fmtp, x, sizeof(fmtp));
+	str_ncpy(fmtp_mirror, x, sizeof(fmtp_mirror));
 }
 
 
