@@ -1028,6 +1028,12 @@ struct ua *call_get_ua(const struct call *call)
 }
 
 
+struct account *call_account(const struct call *call)
+{
+	return call ? call->acc : NULL;
+}
+
+
 static int auth_handler(char **username, char **password,
 			const char *realm, void *arg)
 {

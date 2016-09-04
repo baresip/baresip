@@ -171,6 +171,7 @@ int  call_notify_sipfrag(struct call *call, uint16_t scode,
 			 const char *reason, ...);
 int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
+struct account *call_account(const struct call *call);
 
 
 /*

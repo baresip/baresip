@@ -109,7 +109,7 @@ static int mwi_subscribe(struct ua *ua)
 				 NULL, ua_aor(ua), "message-summary", NULL,
 	                         600, ua_cuser(ua),
 				 routev, routev[0] ? 1 : 0,
-	                         auth_handler, ua_prm(ua), true, NULL,
+	                         auth_handler, ua_account(ua), true, NULL,
 				 notify_handler, close_handler, mwi,
 				 "Accept:"
 				 " application/simple-message-summary\r\n");

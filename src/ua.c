@@ -1871,12 +1871,6 @@ int ua_print_supported(struct re_printf *pf, const struct ua *ua)
 }
 
 
-struct account *ua_prm(const struct ua *ua)
-{
-	return ua ? ua->acc : NULL;
-}
-
-
 struct list *ua_calls(const struct ua *ua)
 {
 	return ua ? (struct list *)&ua->calls : NULL;

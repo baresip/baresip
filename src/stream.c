@@ -404,7 +404,7 @@ static void stream_start_keepalive(struct stream *s)
 	if (!s)
 		return;
 
-	rtpkeep = ua_prm(call_get_ua(s->call))->rtpkeep;
+	rtpkeep = call_account(s->call)->rtpkeep;
 
 	s->rtpkeep = mem_deref(s->rtpkeep);
 
