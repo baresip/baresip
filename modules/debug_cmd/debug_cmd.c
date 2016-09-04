@@ -62,6 +62,27 @@ static int cmd_ua_debug(struct re_printf *pf, void *unused)
 }
 
 
+static int cmd_play_file(struct re_printf *pf, void *arg)
+{
+	struct cmd_arg *carg = arg;
+	const char *filename = carg->prm;
+	int err;
+
+	err = re_hprintf(pf, "playing audio file \"%s\" ..\n", filename);
+	if (err)
+		return err;
+
+	err = play_file(NULL, baresip_player(), filename, 0);
+	if (err) {
+		warning("debug_cmd: play_file(%s) failed (%m)\n",
+			filename, err);
+		return err;
+	}
+
+	return err;
+}
+
+
 static const struct cmd debugcmdv[] = {
 {"main",     0,       0, "Main loop debug",          re_debug             },
 {"config",  'g',      0, "Print configuration",      cmd_config_print     },
@@ -72,6 +93,7 @@ static const struct cmd debugcmdv[] = {
 {"timers",   0,       0, "Timer debug",              tmr_status           },
 {"uastat",  'u',      0, "UA debug",                 cmd_ua_debug         },
 {"memstat", 'y',      0, "Memory status",            mem_status           },
+{"play",    0,  CMD_PRM, "Play audio file",          cmd_play_file        },
 };
 
 

@@ -504,13 +504,15 @@ struct dnsc     *net_dnsc(const struct network *net);
  */
 
 struct play;
+struct player;
 
-int  play_file(struct play **playp, const char *filename, int repeat);
-int  play_tone(struct play **playp, struct mbuf *tone,
+int  play_file(struct play **playp, struct player *player,
+	       const char *filename, int repeat);
+int  play_tone(struct play **playp, struct player *player,
+	       struct mbuf *tone,
 	       uint32_t srate, uint8_t ch, int repeat);
-void play_init(void);
-void play_close(void);
-void play_set_path(const char *path);
+int  play_init(struct player **playerp);
+void play_set_path(struct player *player, const char *path);
 
 
 /*
@@ -1107,6 +1109,7 @@ void baresip_close(void);
 struct network *baresip_network(void);
 struct contacts *baresip_contacts(void);
 struct commands *baresip_commands(void);
+struct player *baresip_player(void);
 
 
 #ifdef __cplusplus

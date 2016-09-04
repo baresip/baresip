@@ -29,8 +29,13 @@ struct play {
 #ifndef PREFIX
 #define PREFIX "/usr"
 #endif
-static char play_path[256] = PREFIX "/share/baresip";
-static struct list playl;
+static const char default_play_path[256] = PREFIX "/share/baresip";
+
+
+struct player {
+	struct list playl;
+	char play_path[256];
+};
 
 
 static void tmr_polling(void *arg);
@@ -39,6 +44,7 @@ static void tmr_polling(void *arg);
 static void tmr_stop(void *arg)
 {
 	struct play *play = arg;
+	debug("play: player complete.\n");
 	mem_deref(play);
 }
 
@@ -203,6 +209,7 @@ static int aufile_load(struct mbuf *mb, const char *filename,
  * Play a tone from a PCM buffer
  *
  * @param playp    Pointer to allocated player object
+ * @param player   Audio-file player
  * @param tone     PCM buffer to play
  * @param srate    Sampling rate
  * @param ch       Number of channels
@@ -210,7 +217,8 @@ static int aufile_load(struct mbuf *mb, const char *filename,
  *
  * @return 0 if success, otherwise errorcode
  */
-int play_tone(struct play **playp, struct mbuf *tone, uint32_t srate,
+int play_tone(struct play **playp, struct player *player,
+	      struct mbuf *tone, uint32_t srate,
 	      uint8_t ch, int repeat)
 {
 	struct auplay_prm wprm;
@@ -218,6 +226,8 @@ int play_tone(struct play **playp, struct mbuf *tone, uint32_t srate,
 	struct config *cfg;
 	int err;
 
+	if (!player)
+		return EINVAL;
 	if (playp && *playp)
 		return EALREADY;
 
@@ -246,7 +256,7 @@ int play_tone(struct play **playp, struct mbuf *tone, uint32_t srate,
 	if (err)
 		goto out;
 
-	list_append(&playl, &play->le, play);
+	list_append(&player->playl, &play->le, play);
 	tmr_start(&play->tmr, 1000, tmr_polling, play);
 
  out:
@@ -266,12 +276,14 @@ int play_tone(struct play **playp, struct mbuf *tone, uint32_t srate,
  * Play an audio file in WAV format
  *
  * @param playp    Pointer to allocated player object
+ * @param player   Audio-file player
  * @param filename Name of WAV file to play
  * @param repeat   Number of times to repeat
  *
  * @return 0 if success, otherwise errorcode
  */
-int play_file(struct play **playp, const char *filename, int repeat)
+int play_file(struct play **playp, struct player *player,
+	      const char *filename, int repeat)
 {
 	struct mbuf *mb;
 	char path[512];
@@ -279,11 +291,13 @@ int play_file(struct play **playp, const char *filename, int repeat)
 	uint8_t ch = 0;
 	int err;
 
+	if (!player)
+		return EINVAL;
 	if (playp && *playp)
 		return EALREADY;
 
 	if (re_snprintf(path, sizeof(path), "%s/%s",
-			play_path, filename) < 0)
+			player->play_path, filename) < 0)
 		return ENOMEM;
 
 	mb = mbuf_alloc(1024);
@@ -296,7 +310,7 @@ int play_file(struct play **playp, const char *filename, int repeat)
 		goto out;
 	}
 
-	err = play_tone(playp, mb, srate, ch, repeat);
+	err = play_tone(playp, player, mb, srate, ch, repeat);
 
  out:
 	mem_deref(mb);
@@ -305,22 +319,40 @@ int play_file(struct play **playp, const char *filename, int repeat)
 }
 
 
-void play_init(void)
+static void player_destructor(void *data)
 {
-	list_init(&playl);
+	struct player *player = data;
+
+	list_flush(&player->playl);
 }
 
 
-/**
- * Close all active audio players
- */
-void play_close(void)
+int play_init(struct player **playerp)
 {
-	list_flush(&playl);
+	struct player *player;
+
+	if (!playerp)
+		return EINVAL;
+
+	player = mem_zalloc(sizeof(*player), player_destructor);
+	if (!player)
+		return ENOMEM;
+
+	list_init(&player->playl);
+
+	str_ncpy(player->play_path, default_play_path,
+		 sizeof(player->play_path));
+
+	*playerp = player;
+
+	return 0;
 }
 
 
-void play_set_path(const char *path)
+void play_set_path(struct player *player, const char *path)
 {
-	str_ncpy(play_path, path, sizeof(play_path));
+	if (!player)
+		return;
+
+	str_ncpy(player->play_path, path, sizeof(player->play_path));
 }

@@ -1341,8 +1341,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	uag.cfg = &cfg->sip;
 	bsize = cfg->sip.trans_bsize;
 
-	play_init();
-
 	uag.use_udp = udp;
 	uag.use_tcp = tcp;
 	uag.use_tls = tls;
@@ -1396,7 +1394,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 void ua_close(void)
 {
 	cmd_unregister(baresip_commands(), cmdv);
-	play_close();
 	ui_reset();
 
 	uag.evsock   = mem_deref(uag.evsock);

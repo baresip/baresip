@@ -16,6 +16,7 @@ static struct baresip {
 	struct network *net;
 	struct contacts contacts;
 	struct commands commands;
+	struct player *player;
 } baresip;
 
 
@@ -44,12 +45,17 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 	if (err)
 		return err;
 
+	err = play_init(&baresip.player);
+	if (err)
+		return err;
+
 	return 0;
 }
 
 
 void baresip_close(void)
 {
+	baresip.player = mem_deref(baresip.player);
 	cmd_close(&baresip.commands);
 	contact_close(&baresip.contacts);
 
@@ -72,4 +78,10 @@ struct contacts *baresip_contacts(void)
 struct commands *baresip_commands(void)
 {
 	return &baresip.commands;
+}
+
+
+struct player *baresip_player(void)
+{
+	return baresip.player;
 }
