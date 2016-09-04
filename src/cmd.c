@@ -658,7 +658,7 @@ static int cmd_print_all(struct re_printf *pf,
 
 		err |= re_hprintf(pf, fmt,
 				  namep,
-				  print_short
+				  (print_short && cmd->key)
 				    ? cmd_name(buf, sizeof(buf), cmd)
 				    : "",
 				  cmd->desc);
