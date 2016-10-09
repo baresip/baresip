@@ -100,7 +100,6 @@ static int create_window(struct vidisp_st *st)
 	}
 
 	[st->win setLevel:NSFloatingWindowLevel];
-	[st->win useOptimizedDrawing:YES];
 
 	return 0;
 }
