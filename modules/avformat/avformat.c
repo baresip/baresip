@@ -346,6 +346,7 @@ static int module_init(void)
 	/* register all codecs, demux and protocols */
 	avcodec_register_all();
 	avdevice_register_all();
+	avformat_network_init();
 	av_register_all();
 
 	return vidsrc_register(&mod_avf, "avformat", alloc, NULL);
