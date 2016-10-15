@@ -55,6 +55,7 @@ struct video_loop {
 	const struct vidcodec *vc_dec;
 	struct config_video cfg;
 	struct videnc_state *enc;
+	struct videnc_param *prm;
 	struct viddec_state *dec;
 	struct vidisp_st *vidisp;
 	struct vidsrc_st *vsrc;
@@ -240,6 +241,7 @@ static int enable_codec(struct video_loop *vl)
 	prm.fps     = vl->cfg.fps;
 	prm.pktsize = 1480;
 	prm.bitrate = vl->cfg.bitrate;
+	prm.tryhwaccel = vl->cfg.tryhwaccel;
 	prm.max_fs  = -1;
 
 	/* Use the first video codec */

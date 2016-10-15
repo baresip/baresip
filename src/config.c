@@ -209,6 +209,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	}
 	(void)conf_get_u32(conf, "video_bitrate", &cfg->video.bitrate);
 	(void)conf_get_u32(conf, "video_fps", &cfg->video.fps);
+	(void)conf_get_bool(conf, "video_tryhwaccel", &cfg->video.tryhwaccel);
 #else
 	(void)size;
 #endif
@@ -285,6 +286,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "video_size\t\t\"%ux%u\"\n"
 			 "video_bitrate\t\t%u\n"
 			 "video_fps\t\t%u\n"
+			 "video_tryhwaccel\t\t%u\n"
 			 "\n"
 #endif
 			 "# AVT\n"
@@ -326,6 +328,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->video.disp_mod, cfg->video.disp_dev,
 			 cfg->video.width, cfg->video.height,
 			 cfg->video.bitrate, cfg->video.fps,
+			 cfg->video.tryhwaccel,
 #endif
 
 			 cfg->avt.rtp_tos,
@@ -461,10 +464,12 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "video_size\t\t%dx%d\n"
 			  "video_bitrate\t\t%u\n"
 			  "video_fps\t\t%u\n",
+			  "video_tryhwaccel\t\t%u\n",
 			  default_video_device(),
 			  default_video_display(),
 			  cfg->video.width, cfg->video.height,
-			  cfg->video.bitrate, cfg->video.fps);
+			  cfg->video.bitrate, cfg->video.fps,
+			  cfg->video.tryhwaccel);
 #endif
 
 	err |= re_hprintf(pf,

@@ -194,6 +194,7 @@ struct config_video {
 	unsigned width, height; /**< Video resolution               */
 	uint32_t bitrate;       /**< Encoder bitrate in [bit/s]     */
 	uint32_t fps;           /**< Video framerate                */
+	bool tryhwaccel;       /**< Video framerate                */
 };
 #endif
 
@@ -825,6 +826,7 @@ struct videnc_param {
 	unsigned pktsize;  /**< RTP packetsize in [bytes]  */
 	unsigned fps;      /**< Video framerate            */
 	uint32_t max_fs;
+	bool tryhwaccel;
 };
 
 struct videnc_state;
