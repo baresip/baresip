@@ -139,8 +139,8 @@ static int init_encoder(struct videnc_state *st)
 	debug("avcodec: tryhwaccel: %d\n", st->encprm.tryhwaccel);
 
 	if (st->encprm.tryhwaccel) {
-		if (st->codec_id == AV_CODEC_ID_H264 &&
-			(st->codec = avcodec_find_encoder_by_name("nvenc_h264"))) {
+		if (st->codec_id == AV_CODEC_ID_H264 &&	(st->codec =
+			avcodec_find_encoder_by_name("nvenc_h264"))) {
 			info("avcodec: nvenc_h264 encoder activated\n");
 		}
 		else {
@@ -218,23 +218,23 @@ static int open_encoder(struct videnc_state *st,
 				"preset", "llhp", 0);
 
 			if (err < 0) {
-				debug("avcodec: nvenc_h264 setting preset \
-					\"llhp\" failed; error: %u\n", err);
+				debug("avcodec: nvenc_h264 setting preset "
+					"\"llhp\" failed; error: %u\n", err);
 			}
 			else {
-				debug("avcodec: nvenc_h264 preset \
-					\"llhp\" selected\n");
+				debug("avcodec: nvenc_h264 preset "
+					"\"llhp\" selected\n");
 			}
 			err = av_opt_set_int(st->ctx->priv_data,
 				"2pass", 1, 0);
 
 			if (err < 0) {
-				debug("avcodec: nvenc_h264 option \
-					\"2pass\" failed; error: %u\n", err);
+				debug("avcodec: nvenc_h264 option "
+					"\"2pass\" failed; error: %u\n", err);
 			}
 			else {
-				debug("avcodec: nvenc_h264 option \
-					\"2pass\" selected\n");
+				debug("avcodec: nvenc_h264 option "
+					"\"2pass\" selected\n");
 			}
 		}
 #endif
