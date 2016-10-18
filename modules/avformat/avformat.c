@@ -346,6 +346,11 @@ static int module_init(void)
 	/* register all codecs, demux and protocols */
 	avcodec_register_all();
 	avdevice_register_all();
+
+#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
+	avformat_network_init();
+#endif
+
 	av_register_all();
 
 	return vidsrc_register(&mod_avf, "avformat", alloc, NULL);
@@ -355,6 +360,11 @@ static int module_init(void)
 static int module_close(void)
 {
 	mod_avf = mem_deref(mod_avf);
+
+#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
+	avformat_network_deinit();
+#endif
+
 	return 0;
 }
 
