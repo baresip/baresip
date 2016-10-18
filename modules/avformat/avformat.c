@@ -348,7 +348,7 @@ static int module_init(void)
 	avdevice_register_all();
 
 #if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
-    avformat_network_init();
+	avformat_network_init();
 #endif
 
 	av_register_all();
@@ -362,7 +362,7 @@ static int module_close(void)
 	mod_avf = mem_deref(mod_avf);
 
 #if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
-    avformat_network_deinit();
+	avformat_network_deinit();
 #endif
 
 	return 0;
