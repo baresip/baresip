@@ -84,11 +84,14 @@ static int createPlayer(struct auplay_st *st, struct auplay_prm *prm)
 	SLDataLocator_AndroidSimpleBufferQueue loc_bufq = {
 		SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2
 	};
+	uint32_t ch_mask = prm->ch == 2
+		? SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT
+		: SL_SPEAKER_FRONT_CENTER;
 	SLDataFormat_PCM format_pcm = {SL_DATAFORMAT_PCM, prm->ch,
 				       prm->srate * 1000,
 				       SL_PCMSAMPLEFORMAT_FIXED_16,
 				       SL_PCMSAMPLEFORMAT_FIXED_16,
-				       SL_SPEAKER_FRONT_CENTER,
+				       ch_mask,
 				       SL_BYTEORDER_LITTLEENDIAN};
 	SLDataSource audioSrc = {&loc_bufq, &format_pcm};
 	SLDataLocator_OutputMix loc_outmix = {
