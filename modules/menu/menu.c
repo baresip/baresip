@@ -408,8 +408,7 @@ static int cmd_print_calls(struct re_printf *pf, void *unused)
 
 static const struct cmd cmdv[] = {
 
-{NULL,        '\n',       0, "Accept incoming call",    cmd_answer           },
-{"accept",    'D',        0, "Accept incoming call",    cmd_answer           },
+{"accept",    'a',        0, "Accept incoming call",    cmd_answer           },
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"callstat",  'c',        0, "Call status",             ua_print_call_status },
 {"dial",      'd',  CMD_PRM, "Dial",                    dial_handler         },
@@ -841,7 +840,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		uag_current_set(ua);
 
 		info("%s: Incoming call from: %s %s -"
-		     " (press ENTER to accept)\n",
+		     " (press 'a' to accept)\n",
 		     ua_aor(ua), call_peername(call), call_peeruri(call));
 
 		/* stop any ringtones */

@@ -361,8 +361,8 @@ static int auloop_stop(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{"auloop",      'a', 0, "Start audio-loop", auloop_start },
-	{"auloop_stop", 'A', 0, "Stop audio-loop",  auloop_stop  },
+	{"auloop",      0, 0, "Start audio-loop", auloop_start },
+	{"auloop_stop", 0, 0, "Stop audio-loop",  auloop_stop  },
 };
 
 
