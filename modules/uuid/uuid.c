@@ -3,6 +3,9 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#define _XOPEN_SOURCE
+#define _DARWIN_C_SOURCE
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -88,7 +91,7 @@ static int uuid_load(const char *file, char *uuid, size_t sz)
 static int module_init(void)
 {
 	struct config *cfg = conf_config();
-	char path[256];
+	char path[PATH_MAX];
 	int err = 0;
 
 	err = conf_path_get(path, sizeof(path));
