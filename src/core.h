@@ -5,6 +5,10 @@
  */
 
 
+/* max bytes in pathname */
+#define FS_PATH_MAX 256
+
+
 /**
  * RFC 3551:
  *

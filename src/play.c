@@ -29,12 +29,12 @@ struct play {
 #ifndef PREFIX
 #define PREFIX "/usr"
 #endif
-static const char default_play_path[256] = PREFIX "/share/baresip";
+static const char default_play_path[FS_PATH_MAX] = PREFIX "/share/baresip";
 
 
 struct player {
 	struct list playl;
-	char play_path[256];
+	char play_path[FS_PATH_MAX];
 };
 
 
