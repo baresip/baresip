@@ -169,10 +169,13 @@ static void *read_thread(void *data)
 
 	while (st->run) {
 		AVPacket pkt;
+		int ret;
 
 		av_init_packet(&pkt);
 
-		if (av_read_frame(st->ic, &pkt) < 0) {
+		ret = av_read_frame(st->ic, &pkt);
+		if (ret < 0) {
+			debug("avformat: rewind stream (ret=%d)\n", ret);
 			sys_msleep(1000);
 			av_seek_frame(st->ic, -1, 0, 0);
 			continue;
