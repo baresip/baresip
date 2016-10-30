@@ -286,7 +286,7 @@ int play_file(struct play **playp, struct player *player,
 	      const char *filename, int repeat)
 {
 	struct mbuf *mb;
-	char path[512];
+	char path[FS_PATH_MAX];
 	uint32_t srate = 0;
 	uint8_t ch = 0;
 	int err;
