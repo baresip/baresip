@@ -18,6 +18,13 @@
  */
 
 
+#if (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200)
+#define NSTitledWindowMask         NSWindowStyleMaskTitled
+#define NSClosableWindowMask       NSWindowStyleMaskClosable
+#define NSMiniaturizableWindowMask NSWindowStyleMaskMiniaturizable
+#endif
+
+
 struct vidisp_st {
 	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	struct vidsz size;              /**< Current size          */
@@ -100,7 +107,6 @@ static int create_window(struct vidisp_st *st)
 	}
 
 	[st->win setLevel:NSFloatingWindowLevel];
-	[st->win useOptimizedDrawing:YES];
 
 	return 0;
 }

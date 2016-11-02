@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
+#define _DEFAULT_SOURCE 1
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>

@@ -408,8 +408,7 @@ static int cmd_print_calls(struct re_printf *pf, void *unused)
 
 static const struct cmd cmdv[] = {
 
-{NULL,        '\n',       0, "Accept incoming call",    cmd_answer           },
-{"accept",    'D',        0, "Accept incoming call",    cmd_answer           },
+{"accept",    'a',        0, "Accept incoming call",    cmd_answer           },
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"callstat",  'c',        0, "Call status",             ua_print_call_status },
 {"dial",      'd',  CMD_PRM, "Dial",                    dial_handler         },
@@ -827,6 +826,8 @@ static void redial_handler(void *arg)
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
+	struct player *player = baresip_player();
+
 	(void)call;
 	(void)prm;
 	(void)arg;
@@ -839,7 +840,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		uag_current_set(ua);
 
 		info("%s: Incoming call from: %s %s -"
-		     " (press ENTER to accept)\n",
+		     " (press 'a' to accept)\n",
 		     ua_aor(ua), call_peername(call), call_peeruri(call));
 
 		/* stop any ringtones */
@@ -851,12 +852,13 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (ANSWERMODE_MANUAL == account_answermode(ua_account(ua))) {
 
 			if (list_count(ua_calls(ua)) > 1) {
-				(void)play_file(&menu.play,
+				(void)play_file(&menu.play, player,
 						"callwaiting.wav", 3);
 			}
 			else {
 				/* Alert user */
-				(void)play_file(&menu.play, "ring.wav", -1);
+				(void)play_file(&menu.play, player,
+						"ring.wav", -1);
 			}
 
 			if (menu.bell)
@@ -868,7 +870,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		/* stop any ringtones */
 		menu.play = mem_deref(menu.play);
 
-		(void)play_file(&menu.play, "ringback.wav", -1);
+		(void)play_file(&menu.play, player, "ringback.wav", -1);
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
@@ -889,8 +891,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (call_scode(call)) {
 			const char *tone;
 			tone = translate_errorcode(call_scode(call));
-			if (tone)
-				(void)play_file(&menu.play, tone, 1);
+			if (tone) {
+				(void)play_file(&menu.play, player,
+						tone, 1);
+			}
 		}
 
 		alert_stop();
@@ -950,7 +954,7 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 	(void)re_fprintf(stderr, "\r%r: \"%b\"\n", peer,
 			 mbuf_buf(body), mbuf_get_left(body));
 
-	(void)play_file(NULL, "message.wav", 0);
+	(void)play_file(NULL, baresip_player(), "message.wav", 0);
 }
 
 

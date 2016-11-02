@@ -169,10 +169,13 @@ static void *read_thread(void *data)
 
 	while (st->run) {
 		AVPacket pkt;
+		int ret;
 
 		av_init_packet(&pkt);
 
-		if (av_read_frame(st->ic, &pkt) < 0) {
+		ret = av_read_frame(st->ic, &pkt);
+		if (ret < 0) {
+			debug("avformat: rewind stream (ret=%d)\n", ret);
 			sys_msleep(1000);
 			av_seek_frame(st->ic, -1, 0, 0);
 			continue;
@@ -346,6 +349,11 @@ static int module_init(void)
 	/* register all codecs, demux and protocols */
 	avcodec_register_all();
 	avdevice_register_all();
+
+#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
+	avformat_network_init();
+#endif
+
 	av_register_all();
 
 	return vidsrc_register(&mod_avf, "avformat", alloc, NULL);
@@ -355,6 +363,11 @@ static int module_init(void)
 static int module_close(void)
 {
 	mod_avf = mem_deref(mod_avf);
+
+#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
+	avformat_network_deinit();
+#endif
+
 	return 0;
 }
 

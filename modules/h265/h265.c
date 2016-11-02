@@ -30,6 +30,7 @@
 
 static struct vidcodec h265 = {
 	.name      = "H265",
+	.fmtp      = "profile-id=1",
 	.encupdh   = h265_encode_update,
 	.ench      = h265_encode,
 	.decupdh   = h265_decode_update,

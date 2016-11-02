@@ -158,12 +158,6 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
-	/* Set audio path preferring the one given in -p argument (if any) */
-	if (audio_path)
-	    play_set_path(audio_path);
-	else if (str_isset(conf_config()->audio.audio_path))
-	    play_set_path(conf_config()->audio.audio_path);
-
 	/*
 	 * Initialise the top-level baresip struct, must be
 	 * done AFTER configuration is complete.
@@ -172,6 +166,14 @@ int main(int argc, char *argv[])
 	if (err) {
 		warning("main: baresip init failed (%m)\n", err);
 		goto out;
+	}
+
+	/* Set audio path preferring the one given in -p argument (if any) */
+	if (audio_path)
+		play_set_path(baresip_player(), audio_path);
+	else if (str_isset(conf_config()->audio.audio_path)) {
+		play_set_path(baresip_player(),
+			      conf_config()->audio.audio_path);
 	}
 
 	/* NOTE: must be done after all arguments are processed */

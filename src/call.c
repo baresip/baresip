@@ -122,13 +122,24 @@ static void call_stream_start(struct call *call, bool active)
 		if (ac) {
 			err  = audio_encoder_set(call->audio, sc->data,
 						 sc->pt, sc->params);
+			if (err) {
+				warning("call: start:"
+					" audio_encoder_set error: %m\n", err);
+			}
 			err |= audio_decoder_set(call->audio, sc->data,
 						 sc->pt, sc->params);
+			if (err) {
+				warning("call: start:"
+					" audio_decoder_set error: %m\n", err);
+			}
+
 			if (!err) {
 				err = audio_start(call->audio);
-			}
-			if (err) {
-				warning("call: audio stream error: %m\n", err);
+				if (err) {
+					warning("call: start:"
+						" audio_start error: %m\n",
+						err);
+				}
 			}
 		}
 		else {
@@ -1014,6 +1025,12 @@ int call_send_digit(struct call *call, char key)
 struct ua *call_get_ua(const struct call *call)
 {
 	return call ? call->ua : NULL;
+}
+
+
+struct account *call_account(const struct call *call)
+{
+	return call ? call->acc : NULL;
 }
 
 

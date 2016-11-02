@@ -186,7 +186,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	st->sampc = par->bufsz / 2;
 
 	st->sampv = mem_alloc(2 * st->sampc, NULL);
 	if (!st->sampv) {

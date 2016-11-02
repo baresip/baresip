@@ -13,7 +13,7 @@ extern "C" {
 
 
 /** Defines the Baresip version string */
-#define BARESIP_VERSION "0.4.20"
+#define BARESIP_VERSION "0.5.0"
 
 
 #ifndef NET_MAX_NS
@@ -504,13 +504,15 @@ struct dnsc     *net_dnsc(const struct network *net);
  */
 
 struct play;
+struct player;
 
-int  play_file(struct play **playp, const char *filename, int repeat);
-int  play_tone(struct play **playp, struct mbuf *tone,
+int  play_file(struct play **playp, struct player *player,
+	       const char *filename, int repeat);
+int  play_tone(struct play **playp, struct player *player,
+	       struct mbuf *tone,
 	       uint32_t srate, uint8_t ch, int repeat);
-void play_init(void);
-void play_close(void);
-void play_set_path(const char *path);
+int  play_init(struct player **playerp);
+void play_set_path(struct player *player, const char *path);
 
 
 /*
@@ -580,7 +582,6 @@ struct account *ua_account(const struct ua *ua);
 const char     *ua_outbound(const struct ua *ua);
 struct call    *ua_call(const struct ua *ua);
 struct call    *ua_prev_call(const struct ua *ua);
-struct account *ua_prm(const struct ua *ua);
 struct list    *ua_calls(const struct ua *ua);
 enum presence_status ua_presence_status(const struct ua *ua);
 void ua_presence_status_set(struct ua *ua, const enum presence_status status);
@@ -1107,6 +1108,7 @@ void baresip_close(void);
 struct network *baresip_network(void);
 struct contacts *baresip_contacts(void);
 struct commands *baresip_commands(void);
+struct player *baresip_player(void);
 
 
 #ifdef __cplusplus

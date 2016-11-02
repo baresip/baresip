@@ -35,6 +35,7 @@ enum h265_naltype {
 	H265_NAL_SUFFIX_SEI_NUT  = 40,
 
 	/* draft-ietf-payload-rtp-h265 */
+	H265_NAL_AP              = 48,    /* Aggregation Packets */
 	H265_NAL_FU              = 49,
 };
 

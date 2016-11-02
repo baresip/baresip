@@ -152,6 +152,7 @@ const char *h265_nalunit_name(enum h265_naltype type)
 	case H265_NAL_SUFFIX_SEI_NUT:  return "SUFFIX_SEI_NUT";
 
 	/* draft-ietf-payload-rtp-h265 */
+	case H265_NAL_AP:              return "H265_NAL_AP";
 	case H265_NAL_FU:              return "H265_NAL_FU";
 	}
 

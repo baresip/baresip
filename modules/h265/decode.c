@@ -246,8 +246,11 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 		vds->frag_seq = seq;
 	}
 	else {
-		warning("h265: unknown NAL type %u\n", hdr.nal_unit_type);
-		return ENOSYS;
+		warning("h265: unknown NAL type %u (%s) [%zu bytes]\n",
+			hdr.nal_unit_type,
+			h265_nalunit_name(hdr.nal_unit_type),
+			mbuf_get_left(mb));
+		return EPROTO;
 	}
 
 	if (!marker) {
