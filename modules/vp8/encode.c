@@ -102,7 +102,9 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	cfg.g_h = size->h;
 	cfg.g_timebase.num    = 1;
 	cfg.g_timebase.den    = ves->fps;
+#ifdef VPX_ERROR_RESILIENT_DEFAULT
 	cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT;
+#endif
 	cfg.g_pass            = VPX_RC_ONE_PASS;
 	cfg.g_lag_in_frames   = 0;
 	cfg.rc_end_usage      = VPX_VBR;
