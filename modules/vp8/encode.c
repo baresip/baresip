@@ -92,6 +92,7 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 {
 	vpx_codec_enc_cfg_t cfg;
 	vpx_codec_err_t res;
+	vpx_codec_flags_t flags = 0;
 
 	res = vpx_codec_enc_config_default(&vpx_codec_vp8_cx_algo, &cfg, 0);
 	if (res)
@@ -117,8 +118,12 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 		ves->ctxup = false;
 	}
 
+#ifdef VPX_CODEC_USE_OUTPUT_PARTITION
+	flags |= VPX_CODEC_USE_OUTPUT_PARTITION;
+#endif
+
 	res = vpx_codec_enc_init(&ves->ctx, &vpx_codec_vp8_cx_algo, &cfg,
-				 VPX_CODEC_USE_OUTPUT_PARTITION);
+				 flags);
 	if (res) {
 		warning("vp8: enc init: %s\n", vpx_codec_err_to_string(res));
 		return EPROTO;
@@ -240,11 +245,13 @@ int vp8_encode(struct videnc_state *ves, bool update,
 		if (pkt->data.frame.flags & VPX_FRAME_IS_KEY)
 			keyframe = true;
 
+#ifdef VPX_FRAME_IS_FRAGMENT
 		if (pkt->data.frame.flags & VPX_FRAME_IS_FRAGMENT)
 			marker = false;
 
 		if (pkt->data.frame.partition_id >= 0)
 			partid = pkt->data.frame.partition_id;
+#endif
 
 		err = packetize(marker,
 				pkt->data.frame.buf,
