@@ -35,25 +35,59 @@
  */
 
 
+static bool opus_mirror;
+static char fmtp[256] = "stereo=1;sprop-stereo=1";
+static char fmtp_mirror[256];
+
+
+static int opus_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
+			 bool offer, void *arg)
+{
+	bool mirror;
+
+	(void)arg;
+	(void)offer;
+
+	if (!mb || !fmt)
+		return 0;
+
+	mirror = !offer && str_isset(fmtp_mirror);
+
+	return mbuf_printf(mb, "a=fmtp:%s %s\r\n",
+			   fmt->id, mirror ? fmtp_mirror : fmtp);
+}
+
+
 static struct aucodec opus = {
 	.name      = "opus",
 	.srate     = 48000,
 	.crate     = 48000,
 	.ch        = 2,
-	.fmtp      = "stereo=1;sprop-stereo=1",
+	.fmtp      = NULL,
 	.encupdh   = opus_encode_update,
 	.ench      = opus_encode_frm,
 	.decupdh   = opus_decode_update,
 	.dech      = opus_decode_frm,
 	.plch      = opus_decode_pkloss,
+	.fmtp_ench = opus_fmtp_enc,
 };
+
+
+void opus_mirror_params(const char *x)
+{
+	if (!opus_mirror)
+		return;
+
+	info("opus: mirror parameters: \"%s\"\n", x);
+
+	str_ncpy(fmtp_mirror, x, sizeof(fmtp_mirror));
+}
 
 
 static int module_init(void)
 {
 	struct conf *conf = conf_cur();
 	uint32_t value;
-	static char fmtp[256] = "stereo=1;sprop-stereo=1";
 	char *p = fmtp + str_len(fmtp);
 	bool b;
 	int n = 0;
@@ -98,7 +132,7 @@ static int module_init(void)
 		p += n;
 	}
 
-	opus.fmtp = fmtp;
+	(void)conf_get_bool(conf, "opus_mirror", &opus_mirror);
 
 	debug("opus: fmtp=\"%s\"\n", fmtp);
 
