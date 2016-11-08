@@ -3,6 +3,9 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#define _XOPEN_SOURCE
+#define _DARWIN_C_SOURCE
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <re.h>
@@ -29,12 +32,12 @@ struct play {
 #ifndef PREFIX
 #define PREFIX "/usr"
 #endif
-static const char default_play_path[FS_PATH_MAX] = PREFIX "/share/baresip";
+static const char default_play_path[PATH_MAX] = PREFIX "/share/baresip";
 
 
 struct player {
 	struct list playl;
-	char play_path[FS_PATH_MAX];
+	char play_path[PATH_MAX];
 };
 
 
@@ -286,7 +289,7 @@ int play_file(struct play **playp, struct player *player,
 	      const char *filename, int repeat)
 {
 	struct mbuf *mb;
-	char path[FS_PATH_MAX];
+	char path[PATH_MAX];
 	uint32_t srate = 0;
 	uint8_t ch = 0;
 	int err;

@@ -3,12 +3,14 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
-#define _DEFAULT_SOURCE 1
-#define _BSD_SOURCE 1
+#define _XOPEN_SOURCE
+#define _DARWIN_C_SOURCE
+#define _BSD_SOURCE
 #include <fcntl.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <limits.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #ifdef HAVE_IO_H
@@ -155,7 +157,7 @@ void conf_path_set(const char *path)
  */
 int conf_path_get(char *path, size_t sz)
 {
-	char buf[FS_PATH_MAX];
+	char buf[PATH_MAX];
 	int err;
 
 	/* Use explicit conf path */
@@ -296,7 +298,7 @@ int conf_get_sa(const struct conf *conf, const char *name, struct sa *sa)
  */
 int conf_configure(void)
 {
-	char path[FS_PATH_MAX], file[FS_PATH_MAX];
+	char path[PATH_MAX], file[PATH_MAX];
 	int err;
 
 #if defined (WIN32)

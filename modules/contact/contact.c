@@ -3,6 +3,9 @@
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
+#define _XOPEN_SOURCE
+#define _DARWIN_C_SOURCE
+#include <limits.h>
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
@@ -187,7 +190,7 @@ static int write_template(const char *file)
 static int module_init(void)
 {
 	struct contacts *contacts = baresip_contacts();
-	char path[256] = "", file[256] = "";
+	char path[PATH_MAX] = "", file[PATH_MAX] = "";
 	int err;
 
 	err = conf_path_get(path, sizeof(path));
