@@ -42,6 +42,7 @@
 
 
 const uint8_t h264_level_idc = 0x0c;
+AVCodec *avcodec_h264enc;             /* optinal; specified H.264 encoder */
 
 
 int avcodec_resolve_codecid(const char *s)
@@ -175,6 +176,8 @@ static struct vidcodec mpg4 = {
 
 static int module_init(void)
 {
+	char h264enc[64];
+
 #ifdef USE_X264
 	debug("avcodec: x264 build %d\n", X264_BUILD);
 #else
@@ -195,6 +198,19 @@ static int module_init(void)
 
 	if (avcodec_find_decoder(AV_CODEC_ID_MPEG4))
 		vidcodec_register(&mpg4);
+
+	if (0 == conf_get_str(conf_cur(), "avcodec_h264enc",
+			      h264enc, sizeof(h264enc))) {
+
+		info("avcodec: using h264 encoder by name (%s)\n", h264enc);
+
+		avcodec_h264enc = avcodec_find_encoder_by_name(h264enc);
+		if (!avcodec_h264enc) {
+			warning("avcodec: h264 encoder not found (%s)\n",
+				h264enc);
+			return ENOENT;
+		}
+	}
 
 	return 0;
 }
