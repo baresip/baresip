@@ -43,6 +43,7 @@ static void destructor(void *arg)
 		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), st->mode);
 
 	st->run = false;
+	WaitForSingleObject(st->hThread, 5000);
 	CloseHandle(st->hThread);
 
 	tmr_cancel(&st->tmr);
@@ -101,6 +102,10 @@ static DWORD WINAPI input_thread(LPVOID arg)
 
 				if (ch == '\r')
 					ch = '\n';
+
+				/* Special handling of 'q' (quit) */
+				if (ch == 'q')
+					st->run = false;
 
 				/*
 				 * The keys are read from a thread so we have
