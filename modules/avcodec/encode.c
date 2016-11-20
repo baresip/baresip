@@ -8,7 +8,11 @@
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
+#if LIBAVUTIL_VERSION_INT >= ((50<<16)+(29<<8)+0)
 #include <libavutil/opt.h>
+#else
+#include <libavcodec/opt.h>
+#endif
 #ifdef USE_X264
 #include <x264.h>
 #endif
@@ -84,7 +88,9 @@ static void destructor(void *arg)
 	if (st->ctx) {
 		if (st->ctx->codec)
 			avcodec_close(st->ctx);
+#if LIBAVUTIL_VERSION_INT >= ((51<<16)+(8<<8)+0)
 		av_opt_free(st->ctx);
+#endif
 		av_free(st->ctx);
 	}
 
@@ -170,7 +176,9 @@ static int open_encoder(struct videnc_state *st,
 	if (st->ctx) {
 		if (st->ctx->codec)
 			avcodec_close(st->ctx);
+#if LIBAVUTIL_VERSION_INT >= ((51<<16)+(8<<8)+0)
 		av_opt_free(st->ctx);
+#endif
 		av_free(st->ctx);
 	}
 
@@ -263,7 +271,9 @@ static int open_encoder(struct videnc_state *st,
 		if (st->ctx) {
 			if (st->ctx->codec)
 				avcodec_close(st->ctx);
+#if LIBAVUTIL_VERSION_INT >= ((51<<16)+(8<<8)+0)
 			av_opt_free(st->ctx);
+#endif
 			av_free(st->ctx);
 			st->ctx = NULL;
 		}
