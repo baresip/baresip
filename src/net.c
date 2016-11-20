@@ -139,6 +139,9 @@ bool net_check(struct network *net)
 #endif
 	bool change = false;
 
+	if (!net)
+		return false;
+
 	if (str_isset(net->cfg.ifname)) {
 
 		(void)net_if_getaddr(net->cfg.ifname, AF_INET, &net->laddr);
