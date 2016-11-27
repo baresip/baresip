@@ -259,6 +259,8 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 		return;
 	}
 
+	info("call: media-nat `%s' established\n", call->acc->mnatid);
+
 	/* Re-INVITE */
 	if (!call->mnat_wait) {
 		info("call: medianat established -- sending Re-INVITE\n");
