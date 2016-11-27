@@ -433,7 +433,11 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "call_max_calls\t%u\n"
 			  "\n"
 			  "# Audio\n"
+#if defined (PREFIX)
+			  "#audio_path\t\t" PREFIX "/share/baresip\n"
+#else
 			  "#audio_path\t\t/usr/share/baresip\n"
+#endif
 			  "audio_player\t\t%s\n"
 			  "audio_source\t\t%s\n"
 			  "audio_alert\t\t%s\n"
