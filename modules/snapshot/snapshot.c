@@ -19,7 +19,7 @@
  * Commands:
  *
  \verbatim
- O       Take video snapshot
+ snapshot       Take video snapshot
  \endverbatim
  */
 
@@ -77,7 +77,7 @@ static struct vidfilt snapshot = {
 
 
 static const struct cmd cmdv[] = {
-	{"snapshot", 'O', 0, "Take video snapshot", do_snapshot },
+	{"snapshot", 0, 0, "Take video snapshot", do_snapshot },
 };
 
 
