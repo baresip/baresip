@@ -221,11 +221,7 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name,
 			fmts.index++) {
 		if (match_fmt(fmts.pixelformat) != VID_FMT_N) {
 			st->pixfmt = fmts.pixelformat;
-#ifdef HAVE_LIBV4L2
-			/* Prefer native formats */
-			if (fmts.flags ^ V4L2_FMT_FLAG_EMULATED)
-#endif
-				break;
+			break;
 		}
 	}
 
