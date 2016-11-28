@@ -85,13 +85,13 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 
 static const struct cmd debugcmdv[] = {
 {"main",     0,       0, "Main loop debug",          re_debug             },
-{"config",  'g',      0, "Print configuration",      cmd_config_print     },
+{"config",  'g',       0, "Print configuration",      cmd_config_print     },
 {"sipstat", 'i',      0, "SIP debug",                ua_print_sip_status  },
-{"modules", 'm',      0, "Module debug",             mod_debug            },
+{"modules",  0,       0, "Module debug",             mod_debug            },
 {"netstat", 'n',      0, "Network debug",            cmd_net_debug        },
 {"sysinfo", 's',      0, "System info",              print_system_info    },
 {"timers",   0,       0, "Timer debug",              tmr_status           },
-{"uastat",  'u',      0, "UA debug",                 cmd_ua_debug         },
+{"uastat",  'u',       0, "UA debug",                 cmd_ua_debug         },
 {"memstat", 'y',      0, "Memory status",            mem_status           },
 {"play",    0,  CMD_PRM, "Play audio file",          cmd_play_file        },
 };

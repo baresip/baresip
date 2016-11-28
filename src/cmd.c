@@ -73,8 +73,8 @@ static int ctx_alloc(struct cmd_ctx **ctxp, const struct cmd *cmd)
 }
 
 
-static struct cmds *cmds_find(const struct commands *commands,
-			      const struct cmd *cmdv)
+struct cmds *cmds_find(const struct commands *commands,
+		       const struct cmd *cmdv)
 {
 	struct le *le;
 
@@ -395,6 +395,17 @@ int cmd_register(struct commands *commands,
 	/* verify that command is not registered */
 	for (i=0; i<cmdc; i++) {
 		const struct cmd *cmd = &cmdv[i];
+
+		if (cmd->key) {
+			const struct cmd *x = cmd_find_by_key(commands,
+							      cmd->key);
+			if (x) {
+				warning("short command '%c' already"
+					" registered as \"%s\"\n",
+					x->key, x->desc);
+				return EALREADY;
+			}
+		}
 
 		if (cmd->key == LONG_PREFIX) {
 			warning("cmd: cannot register command with"

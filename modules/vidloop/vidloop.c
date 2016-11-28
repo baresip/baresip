@@ -477,8 +477,8 @@ static int vidloop_stop(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{"vidloop",      'v',  0, "Start video-loop", vidloop_start },
-	{"vidloop_stop", 'V',  0, "Stop video-loop",  vidloop_stop  },
+	{"vidloop",      0,  0, "Start video-loop", vidloop_start },
+	{"vidloop_stop", 0,  0, "Stop video-loop",  vidloop_stop  },
 };
 
 

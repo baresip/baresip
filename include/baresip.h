@@ -692,6 +692,8 @@ int  cmd_process_long(struct commands *commands, const char *str, size_t len,
 int cmd_print(struct re_printf *pf, const struct commands *commands);
 const struct cmd *cmd_find_long(const struct commands *commands,
 				const char *name);
+struct cmds *cmds_find(const struct commands *commands,
+		       const struct cmd *cmdv);
 
 
 /*

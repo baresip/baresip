@@ -77,6 +77,8 @@ static enum vidfmt match_fmt(u_int32_t fmt)
 	case V4L2_PIX_FMT_RGB32:  return VID_FMT_RGB32;
 	case V4L2_PIX_FMT_RGB565: return VID_FMT_RGB565;
 	case V4L2_PIX_FMT_RGB555: return VID_FMT_RGB555;
+	case V4L2_PIX_FMT_NV12:   return VID_FMT_NV12;
+	case V4L2_PIX_FMT_NV21:   return VID_FMT_NV21;
 	default:                  return VID_FMT_N;
 	}
 }
@@ -219,11 +221,7 @@ static int v4l2_init_device(struct vidsrc_st *st, const char *dev_name,
 			fmts.index++) {
 		if (match_fmt(fmts.pixelformat) != VID_FMT_N) {
 			st->pixfmt = fmts.pixelformat;
-#ifdef HAVE_LIBV4L2
-			/* Prefer native formats */
-			if (fmts.flags ^ V4L2_FMT_FLAG_EMULATED)
-#endif
-				break;
+			break;
 		}
 	}
 

@@ -44,7 +44,7 @@ static struct {
 } menu;
 
 
-static void menu_set_incall(bool incall);
+static int  menu_set_incall(bool incall);
 static void update_callstatus(void);
 static void alert_stop(void);
 
@@ -421,6 +421,9 @@ static const struct cmd cmdv[] = {
 {NULL,        'T',        0, "Toggle UAs",              cmd_ua_next          },
 {NULL,        'R',  CMD_PRM, "Create User-Agent",       create_ua            },
 
+};
+
+static const struct cmd dialcmdv[] = {
 /* Numeric keypad inputs: */
 {NULL, '#', CMD_PRM, NULL,   dial_handler },
 {NULL, '*', CMD_PRM, NULL,   dial_handler },
@@ -683,18 +686,18 @@ static int set_current_call(struct re_printf *pf, void *arg)
 static const struct cmd callcmdv[] = {
 {"",          'I',        0, "Send re-INVITE",      call_reinvite         },
 {"resume",    'X',        0, "Call resume",         cmd_call_resume       },
-{"",          'a',        0, "Audio stream",        call_audio_debug      },
-{"",          'e',        0, "Cycle audio encoder", call_audioenc_cycle   },
+{"audio_debug",'A',       0, "Audio stream",        call_audio_debug      },
+{"audio_cycle",'e',       0, "Cycle audio encoder", call_audioenc_cycle   },
 {"mute",      'm',        0, "Call mute/un-mute",   call_mute             },
-{"transfer",  'r', CMD_IPRM, "Transfer call",       call_xfer             },
+{"transfer",  't', CMD_IPRM, "Transfer call",       call_xfer             },
 {"hold",      'x',        0, "Call hold",           cmd_call_hold         },
 {"",          'H',        0, "Hold previous call",  hold_prev_call        },
 {"",          'L',        0, "Resume previous call",hold_prev_call        },
-{"",          'A', CMD_IPRM, "Switch audio device", switch_audio_dev      },
+{"audev",     0,   CMD_IPRM, "Switch audio device", switch_audio_dev      },
 
 #ifdef USE_VIDEO
-{"", 'E',       0, "Cycle video encoder", call_videoenc_cycle   },
-{"", 'v',       0, "Video stream",        call_video_debug      },
+{"video_cycle", 'E',      0, "Cycle video encoder", call_videoenc_cycle   },
+{"video_debug", 'V',      0, "Video stream",        call_video_debug      },
 #endif
 
 /* Numeric keypad for DTMF events: */
@@ -717,17 +720,33 @@ static const struct cmd callcmdv[] = {
 };
 
 
-static void menu_set_incall(bool incall)
+static int menu_set_incall(bool incall)
 {
 	struct commands *commands = baresip_commands();
+	int err = 0;
 
 	/* Dynamic menus */
 	if (incall) {
-		(void)cmd_register(commands, callcmdv, ARRAY_SIZE(callcmdv));
+		cmd_unregister(commands, dialcmdv);
+
+		if (!cmds_find(commands, callcmdv)) {
+			err = cmd_register(commands,
+					   callcmdv, ARRAY_SIZE(callcmdv));
+		}
 	}
 	else {
 		cmd_unregister(commands, callcmdv);
+
+		if (!cmds_find(commands, dialcmdv)) {
+			err = cmd_register(baresip_commands(), dialcmdv,
+					   ARRAY_SIZE(dialcmdv));
+		}
 	}
+	if (err) {
+		warning("menu: set_incall: cmd_register failed (%m)\n", err);
+	}
+
+	return err;
 }
 
 
@@ -994,6 +1013,11 @@ static int module_init(void)
 	statmode = STATMODE_CALL;
 
 	err  = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err |= cmd_register(baresip_commands(), dialcmdv,
+			    ARRAY_SIZE(dialcmdv));
+	if (err)
+		return err;
+
 	err |= uag_event_register(ua_event_handler, NULL);
 
 	err |= message_init(message_handler, NULL);
@@ -1010,8 +1034,9 @@ static int module_close(void)
 	message_close();
 	uag_event_unregister(ua_event_handler);
 	cmd_unregister(baresip_commands(), cmdv);
+	cmd_unregister(baresip_commands(), dialcmdv);
+	cmd_unregister(baresip_commands(), callcmdv);
 
-	menu_set_incall(false);
 	tmr_cancel(&tmr_alert);
 	tmr_cancel(&tmr_stat);
 	dialbuf = mem_deref(dialbuf);

@@ -63,6 +63,9 @@ int test_cmd(void)
 	err = cmd_register(&commands, cmdv, ARRAY_SIZE(cmdv));
 	ASSERT_EQ(0, err);
 
+	/* it is not possible to register same block twice */
+	ASSERT_EQ(EALREADY, cmd_register(&commands, cmdv, ARRAY_SIZE(cmdv)));
+
 	/* issue a different command */
 	err = cmd_process(&commands, &ctx, 'h', &pf_null, &test);
 	ASSERT_EQ(0, err);

@@ -211,6 +211,7 @@ speex_pp      Audio pre-processor using libspeexdsp
 srtp          Secure RTP encryption (SDES) using libre SRTP-stack
 stdio         Standard input/output UI driver
 stun          Session Traversal Utilities for NAT (STUN) module
+swscale       Video scaling using libswscale
 syslog        Syslog module
 turn          Obtaining Relay Addresses from STUN (TURN) module
 uuid          UUID generator and loader

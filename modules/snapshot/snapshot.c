@@ -19,7 +19,7 @@
  * Commands:
  *
  \verbatim
- O       Take video snapshot
+ snapshot       Take video snapshot
  \endverbatim
  */
 
@@ -77,21 +77,21 @@ static struct vidfilt snapshot = {
 
 
 static const struct cmd cmdv[] = {
-	{'O', 0, "Take video snapshot", do_snapshot },
+	{"snapshot", 0, 0, "Take video snapshot", do_snapshot },
 };
 
 
 static int module_init(void)
 {
 	vidfilt_register(&snapshot);
-	return cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 }
 
 
 static int module_close(void)
 {
 	vidfilt_unregister(&snapshot);
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 	return 0;
 }
 
