@@ -141,16 +141,16 @@ installed before building:
 
 ### Build with debug enabled
 
-```$ make
+```
+$ make
 $ sudo make install
-$ sudo ldconfig```
+```
 
 ### Build with release
 
 ```
 $ make RELEASE=1
 $ sudo make RELEASE=1 install
-$ sudo ldconfig
 ```
 
 ### Build with clang compiler
@@ -158,8 +158,17 @@ $ sudo ldconfig
 ```
 $ make CC=clang
 $ sudo make CC=clang install
-$ sudo ldconfig
 ```
+
+Modules will be built if external dependencies are installed.
+After building you can start baresip like this:
+
+```
+$ baresip
+```
+
+The config files in $HOME/.baresip are automatically generated
+the first time you run baresip.
 
 
 ## Documentation
