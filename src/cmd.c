@@ -536,7 +536,7 @@ int cmd_process(struct commands *commands, struct cmd_ctx **ctxp, char key,
 
 		int err;
 
-		err = re_hprintf(pf, "\n/");
+		err = re_hprintf(pf, "%c", LONG_PREFIX);
 		if (err)
 			return err;
 
