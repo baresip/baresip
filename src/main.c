@@ -53,7 +53,7 @@ static void usage(void)
 			 "\t-6               Prefer IPv6\n"
 #endif
 			 "\t-d               Daemon\n"
-			 "\t-e <commands>    Exec commands\n"
+			 "\t-e <commands>    Execute commands (repeat)\n"
 			 "\t-f <path>        Config path\n"
 			 "\t-m <module>      Pre-load modules (repeat)\n"
 			 "\t-p <path>        Audio files\n"
@@ -69,10 +69,12 @@ int main(int argc, char *argv[])
 {
 	bool prefer_ipv6 = false, run_daemon = false, test = false;
 	const char *ua_eprm = NULL;
-	const char *exec = NULL;
+	const char *execmdv[16];
 	const char *audio_path = NULL;
 	const char *modv[16];
+	size_t execmdc = 0;
 	size_t modc = 0;
+	size_t i;
 	int err;
 
 	(void)re_fprintf(stderr, "baresip v%s"
@@ -110,7 +112,13 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'e':
-			exec = optarg;
+			if (execmdc >= ARRAY_SIZE(execmdv)) {
+				warning("max %zu commands\n",
+					ARRAY_SIZE(execmdv));
+				err = EINVAL;
+				goto out;
+			}
+			execmdv[execmdc++] = optarg;
 			break;
 
 		case 'f':
@@ -178,7 +186,6 @@ int main(int argc, char *argv[])
 
 	/* NOTE: must be done after all arguments are processed */
 	if (modc) {
-		size_t i;
 
 		info("pre-loading modules: %zu\n", modc);
 
@@ -225,8 +232,10 @@ int main(int argc, char *argv[])
 
 	info("baresip is ready.\n");
 
-	if (exec)
-		ui_input_str(exec);
+	/* Execute any commands from input arguments */
+	for (i=0; i<execmdc; i++) {
+		ui_input_str(execmdv[i]);
+	}
 
 	/* Main loop */
 	err = re_main(signal_handler);
