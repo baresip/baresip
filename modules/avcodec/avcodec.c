@@ -29,6 +29,11 @@
       $ make USE_X264=     ; use H.264 encoder from libavcodec
  \endverbatim
  *
+ * Config options:
+ *
+ \verbatim
+      avcodec_h264enc  <NAME>  ; e.g. nvenc_h264, h264_videotoolbox
+ \endverbatim
  *
  * References:
  *
