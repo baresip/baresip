@@ -8,6 +8,7 @@
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
+#include <libavutil/opt.h>
 #ifdef USE_X264
 #include <x264.h>
 #endif
@@ -83,6 +84,7 @@ static void destructor(void *arg)
 	if (st->ctx) {
 		if (st->ctx->codec)
 			avcodec_close(st->ctx);
+		av_opt_free(st->ctx);
 		av_free(st->ctx);
 	}
 
@@ -133,7 +135,24 @@ static int decode_sdpparam_h263(struct videnc_state *st, const struct pl *name,
 
 static int init_encoder(struct videnc_state *st)
 {
-	st->codec = avcodec_find_encoder(st->codec_id);
+#ifndef USE_X264
+	debug("avcodec: tryhwaccel: %d\n", st->encprm.tryhwaccel);
+
+	if (st->encprm.tryhwaccel) {
+		if (st->codec_id == AV_CODEC_ID_H264 &&	(st->codec =
+			avcodec_find_encoder_by_name("nvenc_h264"))) {
+			info("avcodec: nvenc_h264 encoder activated\n");
+		}
+		else {
+			warning("avcodec: nvenc_h264_encoder not available, \
+				using software encoder\n");
+		}
+	}
+
+	if (!st->codec)
+#endif
+		st->codec = avcodec_find_encoder(st->codec_id);
+
 	if (!st->codec)
 		return ENOENT;
 
@@ -151,6 +170,7 @@ static int open_encoder(struct videnc_state *st,
 	if (st->ctx) {
 		if (st->ctx->codec)
 			avcodec_close(st->ctx);
+		av_opt_free(st->ctx);
 		av_free(st->ctx);
 	}
 
@@ -174,6 +194,8 @@ static int open_encoder(struct videnc_state *st,
 		goto out;
 	}
 
+	av_opt_set_defaults(st->ctx);
+
 	st->ctx->bit_rate  = prm->bitrate;
 	st->ctx->width     = size->w;
 	st->ctx->height    = size->h;
@@ -188,6 +210,34 @@ static int open_encoder(struct videnc_state *st,
 		st->ctx->qmin = 10;
 		st->ctx->qmax = 51;
 		st->ctx->max_qdiff = 4;
+
+#ifndef USE_X264
+		if (st->codec == avcodec_find_encoder_by_name("nvenc_h264")) {
+
+			err = av_opt_set(st->ctx->priv_data,
+				"preset", "llhp", 0);
+
+			if (err < 0) {
+				debug("avcodec: nvenc_h264 setting preset "
+					"\"llhp\" failed; error: %u\n", err);
+			}
+			else {
+				debug("avcodec: nvenc_h264 preset "
+					"\"llhp\" selected\n");
+			}
+			err = av_opt_set_int(st->ctx->priv_data,
+				"2pass", 1, 0);
+
+			if (err < 0) {
+				debug("avcodec: nvenc_h264 option "
+					"\"2pass\" failed; error: %u\n", err);
+			}
+			else {
+				debug("avcodec: nvenc_h264 option "
+					"\"2pass\" selected\n");
+			}
+		}
+#endif
 	}
 
 #if LIBAVCODEC_VERSION_INT >= ((53<<16)+(8<<8)+0)
@@ -213,6 +263,7 @@ static int open_encoder(struct videnc_state *st,
 		if (st->ctx) {
 			if (st->ctx->codec)
 				avcodec_close(st->ctx);
+			av_opt_free(st->ctx);
 			av_free(st->ctx);
 			st->ctx = NULL;
 		}

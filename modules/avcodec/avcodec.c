@@ -29,6 +29,12 @@
       $ make USE_X264=     ; use H.264 encoder from libavcodec
  \endverbatim
  *
+ * Configure options for libavcodec (nvenc):
+ *
+ \verbatim
+      video_tryhwaccel    bool
+ \endverbatim
+ *
  *
  * References:
  *
