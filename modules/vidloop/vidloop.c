@@ -280,15 +280,6 @@ static int enable_codec(struct video_loop *vl)
 }
 
 
-static void disable_codec(struct video_loop *vl)
-{
-	vl->enc = mem_deref(vl->enc);
-	vl->dec = mem_deref(vl->dec);
-	vl->vc_enc = NULL;
-	vl->vc_dec = NULL;
-}
-
-
 static void print_status(struct video_loop *vl)
 {
 	(void)re_fprintf(stderr,
@@ -436,21 +427,34 @@ static int vidloop_start(struct re_printf *pf, void *arg)
 	size.h = cfg->video.height;
 
 	if (gvl) {
-		if (gvl->vc_enc)
-			disable_codec(gvl);
-		else {
-			err = enable_codec(gvl);
-			if (err) {
-				gvl = mem_deref(gvl);
-				return err;
-			}
-		}
-
-		(void)re_hprintf(pf, "%sabled codec: %s\n",
-				 gvl->vc_enc ? "En" : "Dis",
-				 gvl->vc_enc ? gvl->vc_enc->name : "");
+		return re_hprintf(pf, "video-loop already running.\n");
 	}
-	else {
+
+	(void)re_hprintf(pf, "Enable video-loop on %s,%s: %u x %u\n",
+			 cfg->video.src_mod, cfg->video.src_dev,
+			 size.w, size.h);
+
+	err = video_loop_alloc(&gvl, &size);
+	if (err) {
+		warning("vidloop: alloc: %m\n", err);
+	}
+
+	return err;
+}
+
+
+static int vidloop_codec_start(struct re_printf *pf, void *arg)
+{
+	struct vidsz size;
+	struct config *cfg = conf_config();
+	int err = 0;
+
+	(void)arg;
+
+	size.w = cfg->video.width;
+	size.h = cfg->video.height;
+
+	if (!gvl) {
 		(void)re_hprintf(pf, "Enable video-loop on %s,%s: %u x %u\n",
 				 cfg->video.src_mod, cfg->video.src_dev,
 				 size.w, size.h);
@@ -460,6 +464,16 @@ static int vidloop_start(struct re_printf *pf, void *arg)
 			warning("vidloop: alloc: %m\n", err);
 		}
 	}
+
+	err = enable_codec(gvl);
+	if (err) {
+		gvl = mem_deref(gvl);
+		return err;
+	}
+
+	(void)re_hprintf(pf, "%sabled codec: %s\n",
+			 gvl->vc_enc ? "En" : "Dis",
+			 gvl->vc_enc ? gvl->vc_enc->name : "");
 
 	return err;
 }
@@ -477,8 +491,9 @@ static int vidloop_stop(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{"vidloop",      0,  0, "Start video-loop", vidloop_start },
-	{"vidloop_stop", 0,  0, "Stop video-loop",  vidloop_stop  },
+	{"vidloop",      0, 0, "Start video-loop",       vidloop_start      },
+	{"vidloop_codec",0, 0, "Start codec video-loop", vidloop_codec_start},
+	{"vidloop_stop", 0, 0, "Stop video-loop",        vidloop_stop       },
 };
 
 
