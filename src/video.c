@@ -943,10 +943,15 @@ int video_start(struct video *v, const char *peer)
 
 	stream_set_srate(v->strm, SRATE, SRATE);
 
-	err = set_vidisp(&v->vrx);
-	if (err) {
-		warning("video: could not set vidisp '%s': %m\n",
-			v->vrx.device, err);
+	if (vidisp_find(NULL)) {
+		err = set_vidisp(&v->vrx);
+		if (err) {
+			warning("video: could not set vidisp '%s': %m\n",
+				v->vrx.device, err);
+		}
+	}
+	else {
+		info("video: no video display\n");
 	}
 
 	size.w = v->cfg.width;
@@ -1074,6 +1079,11 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 		return EINVAL;
 
 	vtx = &v->vtx;
+
+	if (!vc->encupdh) {
+		info("video: vidcodec '%s' has no encoder\n", vc->name);
+		return ENOENT;
+	}
 
 	if (vc != vtx->vc) {
 

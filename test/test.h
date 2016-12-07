@@ -92,6 +92,32 @@ struct ausrc;
 int mock_ausrc_register(struct ausrc **ausrcp);
 
 
+/*
+ * Mock Video-source
+ */
+
+struct vidsrc;
+
+int mock_vidsrc_register(struct vidsrc **vidsrcp);
+
+
+/*
+ * Mock Video-codec
+ */
+
+void mock_vidcodec_register(void);
+void mock_vidcodec_unregister(void);
+
+
+/*
+ * Mock Video-display
+ */
+
+struct vidisp;
+
+int mock_vidisp_register(struct vidisp **vidispp);
+
+
 /* test cases */
 
 int test_cmd(void);
@@ -116,6 +142,7 @@ int test_call_rtp_timeout(void);
 int test_call_multiple(void);
 int test_call_max(void);
 int test_call_dtmf(void);
+int test_call_video(void);
 
 
 #ifdef __cplusplus

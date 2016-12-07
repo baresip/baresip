@@ -589,6 +589,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		&& (list_head(account_vidcodecl(call->acc)) != NULL)
 		&& (NULL != vidsrc_find(NULL) || NULL != vidisp_find(NULL));
 
+	debug("call: use_video=%d\n", use_video);
+
 	/* Video stream */
 	if (use_video) {
  		err = video_alloc(&call->video, cfg,

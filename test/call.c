@@ -123,8 +123,8 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	int err = 0;
 	(void)prm;
 
-#if 0
-	re_printf("[ %s ] event: %s (%s)\n",
+#if 1
+	info("test: [ %s ] event: %s (%s)\n",
 		  ua_aor(ua), uag_event_str(ev), prm);
 #endif
 
@@ -660,6 +660,53 @@ int test_call_dtmf(void)
  out:
 	fixture_close(f);
 	mem_deref(ausrc);
+
+	return err;
+}
+
+
+int test_call_video(void)
+{
+	struct fixture fix, *f = &fix;
+	struct vidsrc *vidsrc = NULL;
+	struct vidisp *vidisp = NULL;
+	int err = 0;
+
+	conf_config()->video.fps = 100;
+
+	fixture_init(f);
+
+	/* to enable video, we need one vidsrc and vidcodec */
+	mock_vidcodec_register();
+	err = mock_vidsrc_register(&vidsrc);
+	TEST_ERR(err);
+	err = mock_vidisp_register(&vidisp);
+	TEST_ERR(err);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_ON);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify that video was enabled for this call */
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(1, fix.b.n_established);
+
+	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
+	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
+
+ out:
+	fixture_close(f);
+	mem_deref(vidisp);
+	mem_deref(vidsrc);
+	mock_vidcodec_unregister();
 
 	return err;
 }
