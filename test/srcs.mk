@@ -34,10 +34,11 @@ TEST_SRCS	+= mock/cert.c
 endif
 
 TEST_SRCS	+= mock/mock_ausrc.c
+ifneq ($(USE_VIDEO),)
 TEST_SRCS	+= mock/mock_vidsrc.c
 TEST_SRCS	+= mock/mock_vidcodec.c
 TEST_SRCS	+= mock/mock_vidisp.c
-
+endif
 
 TEST_SRCS	+= test.c
 

@@ -665,6 +665,7 @@ int test_call_dtmf(void)
 }
 
 
+#ifdef USE_VIDEO
 int test_call_video(void)
 {
 	struct fixture fix, *f = &fix;
@@ -710,3 +711,4 @@ int test_call_video(void)
 
 	return err;
 }
+#endif

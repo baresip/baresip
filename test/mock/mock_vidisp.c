@@ -55,6 +55,7 @@ static int mock_display(struct vidisp_st *st, const char *title,
 			const struct vidframe *frame)
 {
 	unsigned width, height;
+	(void)title;
 
 	if (!st || !frame)
 		return EINVAL;

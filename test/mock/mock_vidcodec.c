@@ -57,6 +57,7 @@ static int mock_encode_update(struct videnc_state **vesp,
 			      videnc_packet_h *pkth, void *arg)
 {
 	struct videnc_state *ves;
+	(void)fmtp;
 
 	if (!vesp || !vc || !prm || prm->pktsize < (HDR_SIZE + 1))
 		return EINVAL;
@@ -85,6 +86,7 @@ static int mock_encode(struct videnc_state *ves, bool update,
 	struct mbuf *hdr;
 	uint8_t payload[2] = {0,0};
 	int err;
+	(void)update;
 
 	if (!ves || !frame)
 		return EINVAL;
@@ -144,6 +146,8 @@ static int mock_decode(struct viddec_state *vds, struct vidframe *frame,
 	struct vidsz size;
 	struct hdr hdr;
 	int err, i;
+	(void)marker;
+	(void)seq;
 
 	if (!vds || !frame || !intra || !mb)
 		return EINVAL;

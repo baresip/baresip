@@ -28,7 +28,9 @@ static const struct test tests[] = {
 	TEST(test_call_multiple),
 	TEST(test_call_max),
 	TEST(test_call_dtmf),
+#ifdef USE_VIDEO
 	TEST(test_call_video),
+#endif
 	TEST(test_cmd),
 	TEST(test_cmd_long),
 	TEST(test_contact),
