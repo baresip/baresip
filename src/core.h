@@ -424,6 +424,7 @@ int  video_alloc(struct video **vp, const struct config *cfg,
 		 video_err_h *errh, void *arg);
 int  video_start(struct video *v, const char *peer);
 void video_stop(struct video *v);
+bool video_is_started(const struct video *v);
 int  video_encoder_set(struct video *v, struct vidcodec *vc,
 		       int pt_tx, const char *params);
 int  video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,

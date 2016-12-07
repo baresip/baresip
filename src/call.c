@@ -158,7 +158,7 @@ static void call_stream_start(struct call *call, bool active)
 					 sc->params);
 		err |= video_decoder_set(call->video, sc->data, sc->pt,
 					 sc->rparams);
-		if (!err) {
+		if (!err && !video_is_started(call->video)) {
 			err = video_start(call->video, call->peer_uri);
 		}
 		if (err) {
@@ -332,10 +332,20 @@ static int update_media(struct call *call)
 					sc->pt, sc->params);
 		if (err) {
 			warning("call: video stream error: %m\n", err);
+			return err;
+		}
+
+		if (!video_is_started(call->video)) {
+			err = video_start(call->video, call->peer_uri);
+			if (err) {
+				warning("call: update: failed to"
+					" start video (%m)\n", err);
+			}
 		}
 	}
 	else if (call->video) {
 		info("video stream is disabled..\n");
+		video_stop(call->video);
 	}
 #endif
 

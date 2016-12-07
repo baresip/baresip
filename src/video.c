@@ -151,6 +151,7 @@ struct video {
 	struct vtx vtx;         /**< Transmit/encoder direction           */
 	struct vrx vrx;         /**< Receive/decoder direction            */
 	struct tmr tmr;         /**< Timer for frame-rate estimation      */
+	bool started;           /**< True if video is started             */
 	char *peer;             /**< Peer URI                             */
 	bool nack_pli;          /**< Send NACK/PLI to peer                */
 	video_err_h *errh;
@@ -972,6 +973,8 @@ int video_start(struct video *v, const char *peer)
 		     vrx_print_pipeline, &v->vrx);
 	}
 
+	v->started = true;
+
 	return 0;
 }
 
@@ -981,7 +984,14 @@ void video_stop(struct video *v)
 	if (!v)
 		return;
 
+	v->started = false;
 	v->vtx.vsrc = mem_deref(v->vtx.vsrc);
+}
+
+
+bool video_is_started(const struct video *v)
+{
+	return v ? v->started : false;
 }
 
 
@@ -1260,6 +1270,7 @@ int video_debug(struct re_printf *pf, const struct video *v)
 	vrx = &v->vrx;
 
 	err = re_hprintf(pf, "\n--- Video stream ---\n");
+	err |= re_hprintf(pf, " started: %s\n", v->started ? "yes" : "no");
 	err |= re_hprintf(pf, " tx: %u x %u, fps=%d\n",
 			  vtx->vsrc_size.w,
 			  vtx->vsrc_size.h, vtx->vsrc_prm.fps);
