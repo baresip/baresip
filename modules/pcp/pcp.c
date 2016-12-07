@@ -150,12 +150,11 @@ static void pcp_resp_handler(int err, struct pcp_msg *msg, void *arg)
 
 	map = pcp_msg_payload(msg);
 
-	info("pcp: %s: mapping granted for %s:"
-	     " internal_port=%u, external_addr=%J (lifetime %u seconds)\n",
+	info("pcp: %s: mapping for %s:"
+	     " internal_port=%u, external_addr=%J\n",
 	     sdp_media_name(m->sdpm),
 	     comp->id==1 ? "RTP" : "RTCP",
-	     map->int_port, &map->ext_addr,
-	     msg->hdr.lifetime);
+	     map->int_port, &map->ext_addr);
 
 	/* Update SDP media with external IP-address mapping */
 	if (comp->id == 1)
