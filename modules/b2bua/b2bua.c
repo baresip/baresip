@@ -187,7 +187,7 @@ static int b2bua_status(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{'b',       0, "b2bua status", b2bua_status },
+	{"b2bua", 0,       0, "b2bua status", b2bua_status },
 };
 
 
@@ -207,7 +207,7 @@ static int module_init(void)
 		return ENOENT;
 	}
 
-	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	if (err)
 		return err;
 
@@ -232,7 +232,7 @@ static int module_close(void)
 	}
 
 	uag_event_unregister(ua_event_handler);
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 
 	return 0;
 }
