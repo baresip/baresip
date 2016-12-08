@@ -222,6 +222,7 @@ static int open_encoder(struct videnc_state *st,
 #ifndef USE_X264
 		if (st->codec == avcodec_find_encoder_by_name("nvenc_h264")) {
 
+#if LIBAVUTIL_VERSION_INT >= ((51<<16)+(21<<8)+0)
 			err = av_opt_set(st->ctx->priv_data,
 				"preset", "llhp", 0);
 
@@ -244,6 +245,7 @@ static int open_encoder(struct videnc_state *st,
 				debug("avcodec: nvenc_h264 option "
 					"\"2pass\" selected\n");
 			}
+#endif
 		}
 #endif
 	}
