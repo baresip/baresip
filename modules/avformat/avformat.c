@@ -286,7 +286,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		const struct AVStream *strm = st->ic->streams[i];
 		AVCodecContext *ctx;
 
-#if LIBAVFORMAT_VERSION_INT >= ((52<<16) + (110<<8) + 0)
+#if LIBAVFORMAT_VERSION_INT >= ((57<<16) + (33<<8) + 100)
 
 		ctx = avcodec_alloc_context3(NULL);
 		if (!ctx) {
