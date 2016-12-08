@@ -284,7 +284,26 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 	for (i=0; i<st->ic->nb_streams; i++) {
 		const struct AVStream *strm = st->ic->streams[i];
-		AVCodecContext *ctx = strm->codec;
+		AVCodecContext *ctx;
+
+#if LIBAVFORMAT_VERSION_INT >= ((52<<16) + (110<<8) + 0)
+
+		ctx = avcodec_alloc_context3(NULL);
+		if (!ctx) {
+			err = ENOMEM;
+			goto out;
+		}
+
+		ret = avcodec_parameters_to_context(ctx, strm->codecpar);
+		if (ret < 0) {
+			warning("avformat: avcodec_parameters_to_context\n");
+			err = EPROTO;
+			goto out;
+		}
+
+#else
+		ctx = strm->codec;
+#endif
 
 		if (ctx->codec_type != AVMEDIA_TYPE_VIDEO)
 			continue;
