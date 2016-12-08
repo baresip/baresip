@@ -989,8 +989,10 @@ static int module_init(void)
 	aufilt_register(&vumeter);
 #ifdef USE_NOTIFICATIONS
 	err = message_init(message_handler, &mod_obj);
-	if (err)
+	if (err) {
+		warning("gtk: message_init failed (%m)\n", err);
 		return err;
+	}
 #endif
 
 	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
@@ -1015,8 +1017,9 @@ static int module_close(void)
 		gtk_main_quit();
 		gdk_threads_leave();
 	}
-	pthread_join(mod_obj.thread, NULL);
-	mem_deref(mod_obj.mq);
+	if (mod_obj.thread)
+		pthread_join(mod_obj.thread, NULL);
+	mod_obj.mq = mem_deref(mod_obj.mq);
 	aufilt_unregister(&vumeter);
 	message_close();
 
