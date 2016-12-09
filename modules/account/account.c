@@ -154,7 +154,7 @@ static int account_read_file(void)
 	if (list_isempty(uag_list())) {
 		info("account: No SIP accounts found\n"
 			" -- check your config "
-			"or add an account using 'R' command\n");
+			"or add an account using 'uanew' command\n");
 	}
 
 	return 0;

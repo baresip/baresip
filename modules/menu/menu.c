@@ -417,9 +417,8 @@ static const struct cmd cmdv[] = {
 {"options",   'o',  CMD_PRM, "Options",                 options_command      },
 {"reginfo",   'r',        0, "Registration info",       ua_print_reg_status  },
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
-{NULL,        ' ',        0, "Toggle UAs",              cmd_ua_next          },
-{NULL,        'T',        0, "Toggle UAs",              cmd_ua_next          },
-{NULL,        'R',  CMD_PRM, "Create User-Agent",       create_ua            },
+{"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
+{"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
 
 };
 
@@ -684,7 +683,7 @@ static int set_current_call(struct re_printf *pf, void *arg)
 
 
 static const struct cmd callcmdv[] = {
-{"",          'I',        0, "Send re-INVITE",      call_reinvite         },
+{"reinvite",  'I',        0, "Send re-INVITE",      call_reinvite         },
 {"resume",    'X',        0, "Call resume",         cmd_call_resume       },
 {"audio_debug",'A',       0, "Audio stream",        call_audio_debug      },
 {"audio_cycle",'e',       0, "Cycle audio encoder", call_audioenc_cycle   },
@@ -715,8 +714,8 @@ static const struct cmd callcmdv[] = {
 {NULL, '9',         0, NULL,                  digit_handler         },
 {NULL, KEYCODE_REL, 0, NULL,                  digit_handler         },
 
-{NULL, 'S',        0, "Statusmode toggle",       toggle_statmode    },
-{NULL, '@',  CMD_PRM, "Set current call <line>", set_current_call   },
+{NULL,  'S',        0, "Statusmode toggle",       toggle_statmode   },
+{"line",'@',  CMD_PRM, "Set current call <line>", set_current_call  },
 };
 
 

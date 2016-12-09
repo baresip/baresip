@@ -311,7 +311,7 @@ static int verify_sas(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{"zrtp", 'Z', CMD_PRM, "Verify ZRTP SAS", verify_sas },
+	{"zrtp", 0, CMD_PRM, "Verify ZRTP SAS", verify_sas },
 };
 
 
