@@ -1016,25 +1016,14 @@ const char *ua_outbound(const struct ua *ua)
  * Current call strategy:
  *
  * We can only have 1 current call. The current call is the one that was
- * added last (end of the list), which is not on-hold
+ * added last (end of the list).
  */
 struct call *ua_call(const struct ua *ua)
 {
-	struct le *le;
-
 	if (!ua)
 		return NULL;
 
-	for (le = ua->calls.tail; le; le = le->prev) {
-
-		struct call *call = le->data;
-
-		/* todo: check if call is on-hold */
-
-		return call;
-	}
-
-	return NULL;
+	return list_ledata(list_tail(&ua->calls));
 }
 
 
