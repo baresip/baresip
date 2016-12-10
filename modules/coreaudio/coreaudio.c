@@ -26,7 +26,7 @@ static void interruptionListener(void *data, UInt32 inInterruptionState)
 {
 	(void)data;
 
-	/* TODO: implement this properly */
+	/* XXX: implement this properly */
 
 	if (inInterruptionState == kAudioSessionBeginInterruption) {
 		debug("coreaudio: player interrupt: Begin\n");
