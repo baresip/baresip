@@ -20,8 +20,8 @@
  *
  * The following commands are available:
  \verbatim
- a       Start audio-loop
- A       Stop audio-loop
+ /auloop         Start audio-loop
+ /auloop_stop    Stop audio-loop
  \endverbatim
  */
 
