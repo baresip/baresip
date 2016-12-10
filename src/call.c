@@ -64,7 +64,7 @@ struct call {
 	time_t time_start;        /**< Time when call started               */
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
-	bool outgoing;
+	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold              */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
@@ -76,8 +76,8 @@ struct call {
 	call_dtmf_h *dtmfh;       /**< DTMF handler                         */
 	void *arg;                /**< Handler argument                     */
 
-	struct config_avt config_avt;
-	struct config_call config_call;
+	struct config_avt config_avt;    /**< AVT config                    */
+	struct config_call config_call;  /**< Call config                   */
 
 	uint32_t rtp_timeout_ms;  /**< RTP Timeout in [ms]                  */
 	uint32_t linenum;         /**< Line number from 1 to N              */

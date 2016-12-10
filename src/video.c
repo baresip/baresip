@@ -92,12 +92,12 @@ struct vtx {
 	struct lock *lock;                 /**< Lock for encoder          */
 	struct vidframe *frame;            /**< Source frame              */
 	struct vidframe *mute_frame;       /**< Frame with muted video    */
-	struct lock *lock_tx;              /**< Protect the sendq */
+	struct lock *lock_tx;              /**< Protect the sendq         */
 	struct list sendq;                 /**< Tx-Queue (struct vidqent) */
 	struct tmr tmr_rtp;                /**< Timer for sending RTP     */
-	unsigned skipc;                    /**< Number of frames skipped */
+	unsigned skipc;                    /**< Number of frames skipped  */
 	struct list filtl;                 /**< Filters in encoding order */
-	char device[64];
+	char device[64];                   /**< Source device name        */
 	int muted_frames;                  /**< # of muted frames sent    */
 	uint32_t ts_tx;                    /**< Outgoing RTP timestamp    */
 	bool picup;                        /**< Send picture update       */
@@ -133,7 +133,7 @@ struct vrx {
 	struct list filtl;                 /**< Filters in decoding order */
 	struct tmr tmr_picup;              /**< Picture update timer      */
 	enum vidorient orient;             /**< Display orientation       */
-	char device[64];
+	char device[64];                   /**< Display device name       */
 	bool fullscreen;                   /**< Fullscreen flag           */
 	int pt_rx;                         /**< Incoming RTP payload type */
 	int frames;                        /**< Number of frames received */
@@ -154,8 +154,8 @@ struct video {
 	bool started;           /**< True if video is started             */
 	char *peer;             /**< Peer URI                             */
 	bool nack_pli;          /**< Send NACK/PLI to peer                */
-	video_err_h *errh;
-	void *arg;
+	video_err_h *errh;      /**< Error handler                        */
+	void *arg;              /**< Error handler argument               */
 };
 
 

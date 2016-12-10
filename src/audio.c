@@ -76,7 +76,7 @@ enum {
  */
 struct autx {
 	struct ausrc_st *ausrc;       /**< Audio Source                    */
-	struct ausrc_prm ausrc_prm;
+	struct ausrc_prm ausrc_prm;   /**< Audio Source parameters         */
 	const struct aucodec *ac;     /**< Current audio encoder           */
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
@@ -123,7 +123,7 @@ struct autx {
  */
 struct aurx {
 	struct auplay_st *auplay;     /**< Audio Player                    */
-	struct auplay_prm auplay_prm;
+	struct auplay_prm auplay_prm; /**< Audio Player parameters         */
 	const struct aucodec *ac;     /**< Current audio decoder           */
 	struct audec_state *dec;      /**< Audio decoder state (optional)  */
 	struct aubuf *aubuf;          /**< Incoming audio buffer           */
