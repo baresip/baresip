@@ -226,9 +226,6 @@ static int editor_input(struct commands *commands, struct mbuf *mb, char key,
 				      (char *)mb->buf, mb->end);
 			if (n == 1 && cmd) {
 
-				re_printf("replace: %b -> %s\n",
-					  mb->buf, mb->end, cmd->name);
-
 				mb->pos = 0;
 				mbuf_write_str(mb, cmd->name);
 			}
