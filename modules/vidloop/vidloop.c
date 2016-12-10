@@ -22,12 +22,12 @@
  *
  * Example usage without codec:
  \verbatim
-  baresip -ev
+  baresip -e/vidloop
  \endverbatim
  *
  * Example usage with codec:
  \verbatim
-  baresip -evv
+  baresip -e"/vidloop h264"
  \endverbatim
  */
 
@@ -231,10 +231,9 @@ static void vidloop_destructor(void *arg)
 }
 
 
-static int enable_codec(struct video_loop *vl)
+static int enable_codec(struct video_loop *vl, const char *name)
 {
 	struct videnc_param prm;
-	const char *name = NULL;
 	int err;
 
 	prm.fps     = vl->cfg.fps;
@@ -417,11 +416,11 @@ static int video_loop_alloc(struct video_loop **vlp, const struct vidsz *size)
  */
 static int vidloop_start(struct re_printf *pf, void *arg)
 {
+	const struct cmd_arg *carg = arg;
 	struct vidsz size;
 	struct config *cfg = conf_config();
+	const char *codec_name = carg->prm;
 	int err = 0;
-
-	(void)arg;
 
 	size.w = cfg->video.width;
 	size.h = cfg->video.height;
@@ -437,43 +436,21 @@ static int vidloop_start(struct re_printf *pf, void *arg)
 	err = video_loop_alloc(&gvl, &size);
 	if (err) {
 		warning("vidloop: alloc: %m\n", err);
-	}
-
-	return err;
-}
-
-
-static int vidloop_codec_start(struct re_printf *pf, void *arg)
-{
-	struct vidsz size;
-	struct config *cfg = conf_config();
-	int err = 0;
-
-	(void)arg;
-
-	size.w = cfg->video.width;
-	size.h = cfg->video.height;
-
-	if (!gvl) {
-		(void)re_hprintf(pf, "Enable video-loop on %s,%s: %u x %u\n",
-				 cfg->video.src_mod, cfg->video.src_dev,
-				 size.w, size.h);
-
-		err = video_loop_alloc(&gvl, &size);
-		if (err) {
-			warning("vidloop: alloc: %m\n", err);
-		}
-	}
-
-	err = enable_codec(gvl);
-	if (err) {
-		gvl = mem_deref(gvl);
 		return err;
 	}
 
-	(void)re_hprintf(pf, "%sabled codec: %s\n",
-			 gvl->vc_enc ? "En" : "Dis",
-			 gvl->vc_enc ? gvl->vc_enc->name : "");
+	if (str_isset(codec_name)) {
+
+		err = enable_codec(gvl, codec_name);
+		if (err) {
+			gvl = mem_deref(gvl);
+			return err;
+		}
+
+		(void)re_hprintf(pf, "%sabled codec: %s\n",
+				 gvl->vc_enc ? "En" : "Dis",
+				 gvl->vc_enc ? gvl->vc_enc->name : "");
+	}
 
 	return err;
 }
@@ -491,9 +468,8 @@ static int vidloop_stop(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{"vidloop",      0, 0, "Start video-loop",       vidloop_start      },
-	{"vidloop_codec",0, 0, "Start codec video-loop", vidloop_codec_start},
-	{"vidloop_stop", 0, 0, "Stop video-loop",        vidloop_stop       },
+	{"vidloop",     0, CMD_PRM, "Start video-loop <codec>", vidloop_start},
+	{"vidloop_stop",0, 0,       "Stop video-loop",          vidloop_stop },
 };
 
 
@@ -505,7 +481,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	vidloop_stop(NULL, NULL);
+	gvl = mem_deref(gvl);
 	cmd_unregister(baresip_commands(), cmdv);
 	return 0;
 }
