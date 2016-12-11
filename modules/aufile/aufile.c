@@ -110,6 +110,8 @@ static int read_file(struct ausrc_st *st)
 	int err;
 
 	for (;;) {
+		uint16_t *sampv;
+		size_t i;
 
 		mb = mbuf_alloc(4096);
 		if (!mb)
@@ -124,6 +126,12 @@ static int read_file(struct ausrc_st *st)
 		if (mb->end == 0) {
 			info("aufile: end of file\n");
 			break;
+		}
+
+		/* convert from Little-Endian to Native-Endian */
+		sampv = (void *)mb->buf;
+		for (i=0; i<mb->end/2; i++) {
+			sampv[i] = sys_ltohs(sampv[i]);
 		}
 
 		aubuf_append(st->aubuf, mb);
