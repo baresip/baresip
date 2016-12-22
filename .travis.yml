@@ -9,7 +9,7 @@ compiler:
     - gcc
 
 env:
-    - LIBRE=re-0.4.17 LIBREM=rem-0.4.7
+    - LIBRE=re-0.5.0 LIBREM=rem-0.5.0
 
 sudo: require
 
