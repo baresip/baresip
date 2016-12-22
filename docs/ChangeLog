@@ -1,3 +1,108 @@
+2016-12-23 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.0
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.0
+	* NOTE: Requires libre v0.5.0 or later
+	        Requires librem v0.5.0 or later
+
+	* new modules:
+	  - av1		Experimental AV1 video codec
+	  - debug_cmd	Debug commands for advanced users
+	  - pcp		Port Control Protocol (PCP) for NAT traversal
+	  - swscale	Video scaling using FFmpeg's libswscale
+
+	* config:
+	  - call_max_calls	Maximum number of calls per account
+
+	* baresip-core:
+	  - call: add multiple lines
+	  - call: start video on reinvite (thanks Gary Metalle)
+	  - cmd: add support for long commands
+	  - cmd: make it re-entrant
+	  - config: add some modules to template (thanks Dmitrij D. Czarkoff)
+	  - contact: make it re-entrant
+	  - play: make it re-entrant
+	  - vidcodec: add a intraframe-flag to api
+	  - video: resend FIR until Intra frame received
+
+	* selftest:
+	  - add test for DTMF in call
+	  - add test for contacts
+	  - add test for long commands
+	  - add test for maximum calls
+	  - add test for multiple calls
+	  - add test for video call
+	  - add audio-source mock
+	  - add video-codec mock
+	  - add video-display mock
+	  - add video-source mock
+
+	* Modules:
+
+	* aufile: convert samples from little-endian to host-endian
+
+	* auloop: use long commands /auloop and /auloop_stop
+
+	* av1: new module for Experimental AV1 video codec
+
+	* avcodec: add config option 'avcodec_h264enc' to set encoder name
+		   (thanks to @hargut)
+
+	* avformat: fix init and warnings (thanks Maciej Koman)
+
+	* b2bua: use long command /b2bua
+
+	* contact: use long commands
+
+	* debug_cmd: new module for advanced debug commands
+
+	* g7221: expose spandsp api (thanks to Steve Underwood)
+
+	* gtk: use long command /gtk
+
+	* h265: add 'profile-id=1' to SDP
+
+	* menu: add long commands
+		add command 'line' or '@' to set current call
+
+	* opengl: fix deprecated warnings on OSX 10.12
+
+	* opensles: add support for stereo
+		    (thanks to Juha Heinanen and Vijay Pratap Singh)
+
+	* opus: add support for SDP parameter mirroring
+		(thanks to Sveriges Radio)
+
+	* pcp: new module for Port Control Protocol (PCP) NAT traversal
+	       requires librew (https://github.com/alfredh/rew)
+
+	* plc: expose spandsp api (thanks to Steve Underwood)
+
+	* presence: add long commands /presence_{on,off}line
+
+	* snapshot: use long commands (thanks Dmitrij D. Czarkoff)
+
+	* sndio: use driver-suggested buffer size (thanks Dmitrij D. Czarkoff)
+
+	* swscale: new module for video filter using libswscale
+
+	* v4l2: pick up VID_FMT_NV12 and VID_FMT_NV21 formats as well (#176)
+		don't check for native/emulated format (#179)
+		(thanks Dmitrij D. Czarkoff)
+
+	* vidloop: use long commands
+
+	* vp8: add 'intra' parameter to decoder api
+	       fix building with old versions of libvpx
+
+	* wincons: graceful closing of thread (fixes #151)
+		   (thanks to @GGGO)
+
+	* zrtp: use long command
+
+
 2016-07-22 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.20
