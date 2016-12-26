@@ -689,7 +689,8 @@ static int module_init(void)
 	}
 #endif
 
-	return mnat_register(&mnat, "ice", "+sip.ice",
+	return mnat_register(&mnat, baresip_mnatl(),
+			     "ice", "+sip.ice",
 			     session_alloc, media_alloc, update);
 }
 

@@ -387,7 +387,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		if (err)
 			goto out;
 
-		acc->mnat = mnat_find(acc->mnatid);
+		acc->mnat = mnat_find(baresip_mnatl(), acc->mnatid);
 		if (!acc->mnat) {
 			warning("account: medianat not found: `%s'\n",
 				acc->mnatid);

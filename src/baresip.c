@@ -17,6 +17,7 @@ static struct baresip {
 	struct contacts contacts;
 	struct commands commands;
 	struct player *player;
+	struct list mnatl;
 } baresip;
 
 
@@ -28,6 +29,8 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 		return EINVAL;
 
 	baresip.net = mem_deref(baresip.net);
+
+	list_init(&baresip.mnatl);
 
 	/* Initialise Network */
 	err = net_alloc(&baresip.net, &cfg->net,
@@ -84,4 +87,10 @@ struct commands *baresip_commands(void)
 struct player *baresip_player(void)
 {
 	return baresip.player;
+}
+
+
+struct list *baresip_mnatl(void)
+{
+	return &baresip.mnatl;
 }

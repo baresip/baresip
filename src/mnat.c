@@ -9,9 +9,6 @@
 #include "core.h"
 
 
-static struct list mnatl = LIST_INIT;
-
-
 static void destructor(void *arg)
 {
 	struct mnat *mnat = arg;
@@ -24,6 +21,7 @@ static void destructor(void *arg)
  * Register a Media NAT traversal module
  *
  * @param mnatp    Pointer to allocated Media NAT traversal module
+ * @param mnatl    List of Media-NAT modules
  * @param id       Media NAT Identifier
  * @param ftag     SIP Feature tag (optional)
  * @param sessh    Session allocation handler
@@ -32,7 +30,8 @@ static void destructor(void *arg)
  *
  * @return 0 if success, otherwise errorcode
  */
-int mnat_register(struct mnat **mnatp, const char *id, const char *ftag,
+int mnat_register(struct mnat **mnatp, struct list *mnatl,
+		  const char *id, const char *ftag,
 		  mnat_sess_h *sessh, mnat_media_h *mediah,
 		  mnat_update_h *updateh)
 {
@@ -45,7 +44,7 @@ int mnat_register(struct mnat **mnatp, const char *id, const char *ftag,
 	if (!mnat)
 		return ENOMEM;
 
-	list_append(&mnatl, &mnat->le, mnat);
+	list_append(mnatl, &mnat->le, mnat);
 
 	mnat->id      = id;
 	mnat->ftag    = ftag;
@@ -64,16 +63,20 @@ int mnat_register(struct mnat **mnatp, const char *id, const char *ftag,
 /**
  * Find a Media NAT module by name
  *
- * @param id Name of the Media NAT module to find
+ * @param mnatl List of Media-NAT modules
+ * @param id    Name of the Media NAT module to find
  *
  * @return Matching Media NAT module if found, otherwise NULL
  */
-const struct mnat *mnat_find(const char *id)
+const struct mnat *mnat_find(const struct list *mnatl, const char *id)
 {
 	struct mnat *mnat;
 	struct le *le;
 
-	for (le=mnatl.head; le; le=le->next) {
+	if (!mnatl)
+		return NULL;
+
+	for (le=mnatl->head; le; le=le->next) {
 
 		mnat = le->data;
 

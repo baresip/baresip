@@ -346,7 +346,7 @@ static int module_init(void)
 	}
 #endif
 
-	return mnat_register(&mnat, "pcp", NULL,
+	return mnat_register(&mnat, baresip_mnatl(), "pcp", NULL,
 			     session_alloc, media_alloc, NULL);
 }
 

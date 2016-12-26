@@ -971,7 +971,8 @@ typedef int (mnat_media_h)(struct mnat_media **mp, struct mnat_sess *sess,
 
 typedef int (mnat_update_h)(struct mnat_sess *sess);
 
-int mnat_register(struct mnat **mnatp, const char *id, const char *ftag,
+int mnat_register(struct mnat **mnatp, struct list *mnatl,
+		  const char *id, const char *ftag,
 		  mnat_sess_h *sessh, mnat_media_h *mediah,
 		  mnat_update_h *updateh);
 
@@ -1111,6 +1112,7 @@ struct network *baresip_network(void);
 struct contacts *baresip_contacts(void);
 struct commands *baresip_commands(void);
 struct player *baresip_player(void);
+struct list   *baresip_mnatl(void);
 
 
 #ifdef __cplusplus

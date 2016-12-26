@@ -217,7 +217,7 @@ struct mnat {
 	mnat_update_h *updateh;
 };
 
-const struct mnat *mnat_find(const char *id);
+const struct mnat *mnat_find(const struct list *mnatl, const char *id);
 
 
 /*

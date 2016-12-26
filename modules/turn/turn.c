@@ -279,7 +279,8 @@ static int update(struct mnat_sess *sess)
 
 static int module_init(void)
 {
-	return mnat_register(&mnat, "turn", NULL, session_alloc, media_alloc,
+	return mnat_register(&mnat, baresip_mnatl(),
+			     "turn", NULL, session_alloc, media_alloc,
 			     update);
 }
 

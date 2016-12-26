@@ -365,7 +365,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	return mnat_register(&mnat, "natpmp", NULL,
+	return mnat_register(&mnat, baresip_mnatl(), "natpmp", NULL,
 			     session_alloc, media_alloc, NULL);
 }
 
