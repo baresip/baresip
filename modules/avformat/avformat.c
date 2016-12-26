@@ -218,7 +218,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)mctx;
 	(void)errorh;
 
-	if (!stp || !size || !frameh)
+	if (!stp || !vs || !prm || !size || !frameh)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), destructor);
@@ -229,13 +229,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->sz     = *size;
 	st->frameh = frameh;
 	st->arg    = arg;
-
-	if (prm) {
-		st->fps = prm->fps;
-	}
-	else {
-		st->fps = 25;
-	}
+	st->fps    = prm->fps;
 
 	/*
 	 * avformat_open_input() was added in lavf 53.2.0 according to
@@ -311,7 +305,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		debug("avformat: stream %u:  %u x %u "
 		      "  time_base=%d/%d\n",
 		      i, ctx->width, ctx->height,
-		      ctx->time_base.num, ctx->time_base.den);
+		      strm->time_base.num, strm->time_base.den);
 
 		st->sz.w   = ctx->width;
 		st->sz.h   = ctx->height;
