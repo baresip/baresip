@@ -58,11 +58,11 @@ struct vidsrc_st {
 	AVFormatContext *ic;
 	AVCodec *codec;
 	AVCodecContext *ctx;
+	AVRational time_base;
 	struct vidsz sz;
 	vidsrc_frame_h *frameh;
 	void *arg;
 	int sindex;
-	int fps;
 };
 
 
@@ -97,6 +97,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	struct vidframe vf;
 	struct vidsz sz;
 	unsigned i;
+	double dur;
 
 	if (st->codec) {
 		int got_pict, ret;
@@ -166,6 +167,10 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 
 	st->frameh(&vf, st->arg);
 
+	/* simulate framerate (NOTE: not accurate) */
+	dur = 1.0 * av_frame_get_pkt_duration(frame) * av_q2d(st->time_base);
+	sys_msleep(1000.0 * dur);
+
  out:
 	if (frame) {
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
@@ -199,9 +204,6 @@ static void *read_thread(void *data)
 			goto out;
 
 		handle_packet(st, &pkt);
-
-		/* simulate framerate */
-		sys_msleep(1000/st->fps);
 
 	out:
 #if LIBAVCODEC_VERSION_INT >= ((57<<16)+(12<<8)+100)
@@ -243,7 +245,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->sz     = *size;
 	st->frameh = frameh;
 	st->arg    = arg;
-	st->fps    = prm->fps;
 
 	/*
 	 * avformat_open_input() was added in lavf 53.2.0 according to
@@ -258,7 +259,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	/* Params */
 	memset(&prms, 0, sizeof(prms));
 
-	prms.time_base          = (AVRational){1, st->fps};
+	prms.time_base          = (AVRational){1, prm->fps};
 	prms.channels           = 1;
 	prms.width              = size->w;
 	prms.height             = size->h;
@@ -325,6 +326,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		st->sz.h   = ctx->height;
 		st->ctx    = ctx;
 		st->sindex = strm->index;
+		st->time_base = strm->time_base;
 
 		if (ctx->codec_id != AV_CODEC_ID_NONE) {
 
