@@ -382,6 +382,5 @@ struct conf *conf_cur(void)
 
 void conf_close(void)
 {
-	mod_close();
 	conf_obj = mem_deref(conf_obj);
 }

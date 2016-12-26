@@ -249,6 +249,12 @@ int main(int argc, char *argv[])
 
 	baresip_close();
 
+	/* NOTE: modules must be unloaded after all application
+	 *       activity has stopped.
+	 */
+	debug("main: unloading modules..\n");
+	mod_close();
+
 	libre_close();
 
 	/* Check for memory leaks */
