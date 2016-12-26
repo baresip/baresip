@@ -15,6 +15,7 @@
 #include <libavformat/avformat.h>
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/pixdesc.h>
 
 
 /**
@@ -143,8 +144,21 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		return;
 	}
 
+	switch (frame->format) {
+
+	case AV_PIX_FMT_YUV420P:
+		vf.fmt = VID_FMT_YUV420P;
+		break;
+
+	default:
+		warning("avformat: decode: bad pixel format"
+			" (%i) (%s)\n",
+			frame->format,
+			av_get_pix_fmt_name(frame->format));
+		goto out;
+	}
+
 	vf.size = sz;
-	vf.fmt  = VID_FMT_YUV420P;
 	for (i=0; i<4; i++) {
 		vf.data[i]     = frame->data[i];
 		vf.linesize[i] = frame->linesize[i];
