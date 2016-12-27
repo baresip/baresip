@@ -148,7 +148,8 @@ USE_SILK := $(shell [ -f $(SYSROOT)/include/silk/SKP_Silk_SDK_API.h ] || \
 	[ -f $(SYSROOT_ALT)/include/silk/SKP_Silk_SDK_API.h ] || \
 	[ -f $(SYSROOT)/local/include/silk/SKP_Silk_SDK_API.h ] && echo "yes")
 USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
-	[ -f $(SYSROOT_ALT)/include/sndfile.h ] && echo "yes")
+	[ -f $(SYSROOT_ALT)/include/sndfile.h ] || \
+	[ -f $(SYSROOT_ALT)/usr/local/include/sndfile.h ] && echo "yes")
 USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
 HAVE_SPEEXDSP := $(shell \
 	[ -f $(SYSROOT)/local/lib/libspeexdsp$(LIB_SUFFIX) ] || \
