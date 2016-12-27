@@ -15,7 +15,9 @@
 #include <libavformat/avformat.h>
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
+#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 #include <libavutil/pixdesc.h>
+#endif
 
 
 /**
@@ -145,6 +147,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		return;
 	}
 
+#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 	switch (frame->format) {
 
 	case AV_PIX_FMT_YUV420P:
@@ -158,6 +161,9 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 			av_get_pix_fmt_name(frame->format));
 		goto out;
 	}
+#else
+	vf.fmt = VID_FMT_YUV420P;
+#endif
 
 	vf.size = sz;
 	for (i=0; i<4; i++) {
