@@ -377,7 +377,7 @@ static int module_init(void)
 		return ENOSYS;
 	}
 
-	menc_register(&menc_zrtp);
+	menc_register(baresip_mencl(), &menc_zrtp);
 
 	debug("zrtp:  cache_file:  %s\n",
 	      zrtp_config.cache_file_cfg.cache_path);

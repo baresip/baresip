@@ -452,6 +452,7 @@ static struct menc dtls_srtp2 = {
 
 static int module_init(void)
 {
+	struct list *mencl = baresip_mencl();
 	int err;
 
 	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, NULL, NULL);
@@ -477,9 +478,9 @@ static int module_init(void)
 		return err;
 	}
 
-	menc_register(&dtls_srtpf);
-	menc_register(&dtls_srtp);
-	menc_register(&dtls_srtp2);
+	menc_register(mencl, &dtls_srtpf);
+	menc_register(mencl, &dtls_srtp);
+	menc_register(mencl, &dtls_srtp2);
 
 	debug("DTLS-SRTP ready with profiles %s\n", srtp_profiles);
 

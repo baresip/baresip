@@ -385,9 +385,11 @@ static struct menc menc_srtp_mandf = {
 
 static int mod_srtp_init(void)
 {
-	menc_register(&menc_srtp_opt);
-	menc_register(&menc_srtp_mand);
-	menc_register(&menc_srtp_mandf);
+	struct list *mencl = baresip_mencl();
+
+	menc_register(mencl, &menc_srtp_opt);
+	menc_register(mencl, &menc_srtp_mand);
+	menc_register(mencl, &menc_srtp_mandf);
 
 	return 0;
 }

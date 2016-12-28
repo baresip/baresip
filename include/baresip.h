@@ -473,9 +473,9 @@ struct menc {
 	menc_media_h *mediah;
 };
 
-void menc_register(struct menc *menc);
+void menc_register(struct list *mencl, struct menc *menc);
 void menc_unregister(struct menc *menc);
-const struct menc *menc_find(const char *id);
+const struct menc *menc_find(const struct list *mencl, const char *id);
 
 
 /*
@@ -1113,6 +1113,7 @@ struct contacts *baresip_contacts(void);
 struct commands *baresip_commands(void);
 struct player *baresip_player(void);
 struct list   *baresip_mnatl(void);
+struct list   *baresip_mencl(void);
 
 
 #ifdef __cplusplus

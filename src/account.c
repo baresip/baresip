@@ -395,7 +395,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	}
 
 	if (acc->mencid) {
-		acc->menc = menc_find(acc->mencid);
+		acc->menc = menc_find(baresip_mencl(), acc->mencid);
 		if (!acc->menc) {
 			warning("account: mediaenc not found: `%s'\n",
 				acc->mencid);

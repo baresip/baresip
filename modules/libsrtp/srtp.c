@@ -431,6 +431,7 @@ static struct menc menc_srtp_mandf = {
 
 static int mod_srtp_init(void)
 {
+	struct list *mencl = baresip_mencl();
 	err_status_t err;
 
 	err = srtp_init();
@@ -440,9 +441,9 @@ static int mod_srtp_init(void)
 		return ENOSYS;
 	}
 
-	menc_register(&menc_srtp_opt);
-	menc_register(&menc_srtp_mand);
-	menc_register(&menc_srtp_mandf);
+	menc_register(mencl, &menc_srtp_opt);
+	menc_register(mencl, &menc_srtp_mand);
+	menc_register(mencl, &menc_srtp_mandf);
 
 	return 0;
 }
