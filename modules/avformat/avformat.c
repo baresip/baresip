@@ -65,6 +65,7 @@ struct vidsrc_st {
 	vidsrc_frame_h *frameh;
 	void *arg;
 	int sindex;
+	int fps;
 };
 
 
@@ -173,8 +174,12 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 
 	st->frameh(&vf, st->arg);
 
+#if LIBAVUTIL_VERSION_INT > ((49<<16)+(15<<8)+100)
 	/* simulate framerate (NOTE: not accurate) */
 	dur = 1.0 * av_frame_get_pkt_duration(frame) * av_q2d(st->time_base);
+#else
+	dur = 1.0 / st->fps;
+#endif
 	sys_msleep(1000.0 * dur);
 
  out:
@@ -251,6 +256,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->sz     = *size;
 	st->frameh = frameh;
 	st->arg    = arg;
+	st->fps    = prm->fps;
 
 	/*
 	 * avformat_open_input() was added in lavf 53.2.0 according to
