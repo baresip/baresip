@@ -33,6 +33,7 @@
  *
  \verbatim
       avcodec_h264enc  <NAME>  ; e.g. nvenc_h264, h264_videotoolbox
+      avcodec_h264dec  <NAME>  ; e.g. nvenc_h264, h264_videotoolbox
  \endverbatim
  *
  * References:
@@ -48,6 +49,7 @@
 
 const uint8_t h264_level_idc = 0x0c;
 AVCodec *avcodec_h264enc;             /* optinal; specified H.264 encoder */
+AVCodec *avcodec_h264dec;             /* optinal; specified H.264 decoder */
 
 
 int avcodec_resolve_codecid(const char *s)
@@ -182,6 +184,7 @@ static struct vidcodec mpg4 = {
 static int module_init(void)
 {
 	char h264enc[64];
+	char h264dec[64];
 
 #ifdef USE_X264
 	debug("avcodec: x264 build %d\n", X264_BUILD);
@@ -195,8 +198,23 @@ static int module_init(void)
 
 	avcodec_register_all();
 
-	if (avcodec_find_decoder(AV_CODEC_ID_H264))
+	if (0 == conf_get_str(conf_cur(), "avcodec_h264dec",
+			      h264dec, sizeof(h264dec))) {
+
+		info("avcodec: using h264 decoder by name (%s)\n", h264dec);
+
+		avcodec_h264dec = avcodec_find_decoder_by_name(h264dec);
+		if (!avcodec_h264dec) {
+			warning("avcodec: h264 decoder not found (%s)\n",
+				h264dec);
+			return ENOENT;
+		}
 		vidcodec_register(&h264);
+	}
+	else {
+		if (avcodec_find_decoder(AV_CODEC_ID_H264))
+			vidcodec_register(&h264);
+	}
 
 	if (avcodec_find_decoder(AV_CODEC_ID_H263))
 		vidcodec_register(&h263);
