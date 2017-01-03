@@ -32,8 +32,8 @@
  * Config options:
  *
  \verbatim
-      avcodec_h264enc  <NAME>  ; e.g. nvenc_h264, h264_videotoolbox
-      avcodec_h264dec  <NAME>  ; e.g. nvenc_h264, h264_videotoolbox
+      avcodec_h264enc  <NAME>  ; e.g. h264_nvenc, h264_videotoolbox
+      avcodec_h264dec  <NAME>  ; e.g. h264_cuvid, h264_vda, h264_qsv
  \endverbatim
  *
  * References:
