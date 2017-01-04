@@ -174,7 +174,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 
 	st->frameh(&vf, st->arg);
 
-#if LIBAVUTIL_VERSION_INT > ((49<<16)+(15<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= ((54<<16)+(24<<8)+100)
 	/* simulate framerate (NOTE: not accurate) */
 	dur = 1.0 * av_frame_get_pkt_duration(frame) * av_q2d(st->time_base);
 #else
