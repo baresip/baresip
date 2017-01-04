@@ -57,9 +57,18 @@ static int init_decoder(struct viddec_state *st, const char *name)
 	if (codec_id == AV_CODEC_ID_NONE)
 		return EINVAL;
 
-	st->codec = avcodec_find_decoder(codec_id);
-	if (!st->codec)
-		return ENOENT;
+	/*
+	* Special handling of H.264 decoder
+	*/
+	if (codec_id == AV_CODEC_ID_H264 && avcodec_h264dec) {
+		st->codec = avcodec_h264dec;
+		info("avcodec: h264 decoder activated\n");
+	}
+	else {
+		st->codec = avcodec_find_decoder(codec_id);
+		if (!st->codec)
+			return ENOENT;
+	}
 
 #if LIBAVCODEC_VERSION_INT >= ((52<<16)+(92<<8)+0)
 	st->ctx = avcodec_alloc_context3(st->codec);
@@ -210,6 +219,10 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		case AV_PIX_FMT_YUV420P:
 		case AV_PIX_FMT_YUVJ420P:
 			frame->fmt = VID_FMT_YUV420P;
+			break;
+
+		case AV_PIX_FMT_NV12:
+			frame->fmt = VID_FMT_NV12;
 			break;
 
 		default:
