@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 	int err;
 
 	(void)re_fprintf(stderr, "baresip v%s"
-			 " Copyright (C) 2010 - 2016"
+			 " Copyright (C) 2010 - 2017"
 			 " Alfred E. Heggestad et al.\n",
 			 BARESIP_VERSION);
 
