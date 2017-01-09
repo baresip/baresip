@@ -169,3 +169,6 @@ ice_turn		no
 ice_debug		no
 ice_nomination		regular	# {regular,aggressive}
 ice_mode		full	# {full,lite}
+
+# sndfile #
+snd_path 		/tmp/
