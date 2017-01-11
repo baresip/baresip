@@ -73,16 +73,19 @@ static void dec_destructor(void *arg)
 static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 {
 	char filename[128];
+	char filepath[256];
 	SF_INFO sfinfo;
 	time_t tnow = time(0);
 	struct tm *tm = localtime(&tnow);
 	SNDFILE *sf;
 
-
-
 	(void)re_snprintf(filename, sizeof(filename),
-			  "dump-%H-%s.wav",
+			  "/dump-%H-%s.wav",
 			  timestamp_print, tm, enc ? "enc" : "dec");
+
+	strcpy(filepath, file_path.p);
+	strcat(filepath, filename);
+	strcpy(filename, filepath);
 
 	sfinfo.samplerate = prm->srate;
 	sfinfo.channels   = prm->ch;
