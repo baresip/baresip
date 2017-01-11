@@ -36,6 +36,7 @@ struct picsz {
 	uint8_t mpi;        /**< Minimum Picture Interval (1-32) */
 };
 
+static struct vidsz sz_dst = {0, 0};
 
 struct videnc_state {
 	AVCodec *codec;
@@ -162,6 +163,10 @@ static int init_encoder(struct videnc_state *st)
 	if (!st->codec)
 		return ENOENT;
 
+	/* TODO: Only set sz_dst when swscale is active.
+	   Is there a way to check if swscale is loaded? */
+	(void)conf_get_vidsz(conf_cur(), "video_size", &sz_dst);
+
 	return 0;
 }
 
@@ -205,8 +210,16 @@ static int open_encoder(struct videnc_state *st,
 	av_opt_set_defaults(st->ctx);
 
 	st->ctx->bit_rate  = prm->bitrate;
-	st->ctx->width     = size->w;
-	st->ctx->height    = size->h;
+
+	if (sz_dst.w <= 0) {;
+		sz_dst.w = size->w;
+	}
+	if (sz_dst.h <= 0) {
+		sz_dst.h = size->h;
+	}
+
+	st->ctx->width     = sz_dst.w;
+	st->ctx->height    = sz_dst.h;
 	st->ctx->gop_size  = DEFAULT_GOP_SIZE;
 	st->ctx->pix_fmt   = pix_fmt;
 	st->ctx->time_base.num = 1;

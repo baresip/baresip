@@ -9,13 +9,14 @@
 #include <libswscale/swscale.h>
 
 
+static struct vidsz sz_dst = {0, 0};
+
 struct swscale_enc {
 	struct vidfilt_enc_st vf;   /**< Inheritance           */
 
 	struct SwsContext *sws;
 	struct vidframe *frame;
 };
-
 
 static enum vidfmt swscale_format = VID_FMT_YUV420P;  /* XXX: configurable */
 
@@ -75,8 +76,9 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
 	const uint8_t *srcSlice[4];
 	uint8_t *dst[4];
 	int srcStride[4], dstStride[4];
-	int width, height, i, h;
+	int i, h;
 	int err = 0;
+	struct vidsz sz_src;
 
 	if (!st)
 		return EINVAL;
@@ -84,8 +86,15 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
 	if (!frame)
 		return 0;
 
-	width = frame->size.w;
-	height = frame->size.h;
+	sz_src.w = frame->size.w;
+	sz_src.h = frame->size.h;
+
+	if (sz_dst.w <= 0) {
+		sz_dst.w = sz_src.w;
+	}
+	if (sz_dst.h <= 0) {
+		sz_dst.h = sz_src.h;
+	}
 
 	avpixfmt = vidfmt_to_avpixfmt(frame->fmt);
 	if (avpixfmt == AV_PIX_FMT_NONE) {
@@ -106,8 +115,8 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
 		struct SwsContext *sws;
 		int flags = 0;
 
-		sws = sws_getContext(width, height, avpixfmt,
-				     width, height, avpixfmt_dst,
+		sws = sws_getContext(sz_src.w, sz_src.h, avpixfmt,
+				     sz_dst.w, sz_dst.h, avpixfmt_dst,
 				     flags, NULL, NULL, NULL);
 		if (!sws) {
 			warning("swscale: sws_getContext error\n");
@@ -139,7 +148,7 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
 	}
 
 	h = sws_scale(enc->sws, srcSlice, srcStride,
-		      0, height, dst, dstStride);
+		      0, sz_src.h, dst, dstStride);
 	if (h <= 0) {
 		warning("swscale: sws_scale error (%d)\n", h);
 		return EPROTO;
@@ -164,6 +173,7 @@ static struct vidfilt vf_swscale = {
 
 static int module_init(void)
 {
+	(void)conf_get_vidsz(conf_cur(), "video_size", &sz_dst);
 	vidfilt_register(&vf_swscale);
 	return 0;
 }
