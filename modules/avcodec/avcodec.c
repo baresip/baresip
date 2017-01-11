@@ -48,8 +48,8 @@
 
 
 const uint8_t h264_level_idc = 0x0c;
-AVCodec *avcodec_h264enc;             /* optinal; specified H.264 encoder */
-AVCodec *avcodec_h264dec;             /* optinal; specified H.264 decoder */
+AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
+AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
 
 
 int avcodec_resolve_codecid(const char *s)
