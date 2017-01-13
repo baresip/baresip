@@ -30,6 +30,25 @@ struct vidisp_st {
 static struct vidisp *vid;
 
 
+static enum vidfmt match_fmt(u_int32_t fmt)
+{
+	switch (fmt) {
+	case VID_FMT_YUV420P:	return SDL_PIXELFORMAT_IYUV;
+	case VID_FMT_YUYV422:	return SDL_PIXELFORMAT_YUY2;
+	case VID_FMT_UYVY422:	return SDL_PIXELFORMAT_UYVY;
+	case VID_FMT_RGB32:	return SDL_PIXELFORMAT_RGBA8888;
+	case VID_FMT_ARGB:	return SDL_PIXELFORMAT_ARGB8888;
+	case VID_FMT_RGB565:	return SDL_PIXELFORMAT_RGB565;
+	case VID_FMT_RGB555:	return SDL_PIXELFORMAT_RGB555;
+	case VID_FMT_NV12:	return SDL_PIXELFORMAT_NV12;
+	case VID_FMT_NV21:	return SDL_PIXELFORMAT_NV21;
+	case VID_FMT_YUV444P:
+	case VID_FMT_N:
+	default:		return SDL_PIXELFORMAT_UNKNOWN;
+	}
+}
+
+
 static void sdl_reset(struct vidisp_st *st)
 {
 	if (st->texture) {
@@ -154,7 +173,7 @@ static int display(struct vidisp_st *st, const char *title,
 	if (!st->texture) {
 
 		st->texture = SDL_CreateTexture(st->renderer,
-						SDL_PIXELFORMAT_IYUV,
+						match_fmt(frame->fmt),
 						SDL_TEXTUREACCESS_STREAMING,
 						frame->size.w, frame->size.h);
 		if (!st->texture) {
