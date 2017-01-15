@@ -23,11 +23,36 @@ struct vidisp_st {
 	SDL_Renderer *renderer;         /**< SDL Renderer          */
 	SDL_Texture *texture;           /**< Texture for pixels    */
 	struct vidsz size;              /**< Current size          */
+	enum vidfmt fmt;                /**< Current pixel format  */
 	bool fullscreen;                /**< Fullscreen flag       */
 };
 
 
 static struct vidisp *vid;
+
+
+static uint32_t match_fmt(enum vidfmt fmt)
+{
+	switch (fmt) {
+
+	case VID_FMT_YUV420P:	return SDL_PIXELFORMAT_IYUV;
+	case VID_FMT_NV12:	return SDL_PIXELFORMAT_NV12;
+	case VID_FMT_RGB32:     return SDL_PIXELFORMAT_BGRA32;
+	default:		return SDL_PIXELFORMAT_UNKNOWN;
+	}
+}
+
+
+static uint32_t chroma_step(enum vidfmt fmt)
+{
+	switch (fmt) {
+
+	case VID_FMT_YUV420P:	return 2;
+	case VID_FMT_NV12:	return 1;
+	case VID_FMT_RGB32:     return 0;
+	default:		return 0;
+	}
+}
 
 
 static void sdl_reset(struct vidisp_st *st)
@@ -92,17 +117,27 @@ static int display(struct vidisp_st *st, const char *title,
 		   const struct vidframe *frame)
 {
 	void *pixels;
-	uint8_t *p;
-	int pitch, ret;
+	uint8_t *d;
+	int dpitch, ret;
 	unsigned i, h;
+	uint32_t format;
 
 	if (!st || !frame)
 		return EINVAL;
 
-	if (!vidsz_cmp(&st->size, &frame->size)) {
+	format = match_fmt(frame->fmt);
+	if (format == SDL_PIXELFORMAT_UNKNOWN) {
+		warning("sdl2: pixel format not supported (%s)\n",
+			vidfmt_name(frame->fmt));
+		return ENOTSUP;
+	}
+
+	if (!vidsz_cmp(&st->size, &frame->size) || frame->fmt != st->fmt) {
 		if (st->size.w && st->size.h) {
-			info("sdl: reset size: %u x %u ---> %u x %u\n",
-			     st->size.w, st->size.h,
+			info("sdl: reset size:"
+			     " %s %u x %u ---> %s %u x %u\n",
+			     vidfmt_name(st->fmt), st->size.w, st->size.h,
+			     vidfmt_name(frame->fmt),
 			     frame->size.w, frame->size.h);
 		}
 		sdl_reset(st);
@@ -136,6 +171,7 @@ static int display(struct vidisp_st *st, const char *title,
 		}
 
 		st->size = frame->size;
+		st->fmt = frame->fmt;
 
 		SDL_RaiseWindow(st->window);
 		SDL_SetWindowBordered(st->window, true);
@@ -160,7 +196,7 @@ static int display(struct vidisp_st *st, const char *title,
 	if (!st->texture) {
 
 		st->texture = SDL_CreateTexture(st->renderer,
-						SDL_PIXELFORMAT_IYUV,
+						format,
 						SDL_TEXTUREACCESS_STREAMING,
 						frame->size.w, frame->size.h);
 		if (!st->texture) {
@@ -170,25 +206,33 @@ static int display(struct vidisp_st *st, const char *title,
 		}
 	}
 
-	ret = SDL_LockTexture(st->texture, NULL, &pixels, &pitch);
+	ret = SDL_LockTexture(st->texture, NULL, &pixels, &dpitch);
 	if (ret != 0) {
 		warning("sdl: unable to lock texture (ret=%d)\n", ret);
 		return ENODEV;
 	}
 
-	p = pixels;
+	d = pixels;
 	for (i=0; i<3; i++) {
 
-		const uint8_t *s   = frame->data[i];
-		const unsigned stp = frame->linesize[0] / frame->linesize[i];
-		const unsigned sz  = frame->size.w / stp;
+		const uint8_t *s = frame->data[i];
+		unsigned sz, dsz, hstep, wstep;
 
-		for (h = 0; h < frame->size.h; h += stp) {
+		if (!frame->data[i] || !frame->linesize[i])
+			break;
 
-			memcpy(p, s, sz);
+		hstep = i==0 ? 1 : 2;
+		wstep = i==0 ? 1 : chroma_step(frame->fmt);
+
+		dsz = dpitch / wstep;
+		sz  = min(frame->linesize[i], dsz);
+
+		for (h = 0; h < frame->size.h; h += hstep) {
+
+			memcpy(d, s, sz);
 
 			s += frame->linesize[i];
-			p += (pitch / stp);
+			d += dsz;
 		}
 	}
 
