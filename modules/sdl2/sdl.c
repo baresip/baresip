@@ -70,6 +70,9 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 	(void)resizeh;
 	(void)arg;
 
+	if (!stp || !vd)
+		return EINVAL;
+
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
 		return ENOMEM;
@@ -92,6 +95,9 @@ static int display(struct vidisp_st *st, const char *title,
 	uint8_t *p;
 	int pitch, ret;
 	unsigned i, h;
+
+	if (!st || !frame)
+		return EINVAL;
 
 	if (!vidsz_cmp(&st->size, &frame->size)) {
 		if (st->size.w && st->size.h) {
