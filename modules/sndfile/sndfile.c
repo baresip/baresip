@@ -80,10 +80,11 @@ static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 	SNDFILE *sf;
 
 	(void)re_snprintf(filename, sizeof(filename),
-			  "/dump-%H-%s.wav",
+			  "dump-%H-%s.wav",
 			  timestamp_print, tm, enc ? "enc" : "dec");
 
 	strcpy(filepath, file_path.p);
+	strcat(filepath, '/');
 	strcat(filepath, filename);
 	strcpy(filename, filepath);
 
