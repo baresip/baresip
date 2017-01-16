@@ -36,7 +36,9 @@ static uint32_t match_fmt(enum vidfmt fmt)
 	switch (fmt) {
 
 	case VID_FMT_YUV420P:	return SDL_PIXELFORMAT_IYUV;
+#if SDL_VERSION_ATLEAST(2, 0, 4)
 	case VID_FMT_NV12:	return SDL_PIXELFORMAT_NV12;
+#endif
 	case VID_FMT_RGB32:     return SDL_PIXELFORMAT_ARGB8888;
 	default:		return SDL_PIXELFORMAT_UNKNOWN;
 	}
