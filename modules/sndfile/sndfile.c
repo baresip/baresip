@@ -83,7 +83,8 @@ static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 			  "dump-%H-%s.wav",
 			  timestamp_print, tm, enc ? "enc" : "dec");
 
-	strcpy(filepath, file_path.p);
+  pl_strcpy(&file_path, filepath, 256);
+	strcat(filepath, "/");
 	strcat(filepath, filename);
 	strcpy(filename, filepath);
 
