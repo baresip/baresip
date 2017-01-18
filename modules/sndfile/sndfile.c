@@ -17,7 +17,6 @@
  * Example Configuration:
  \verbatim
   snd_path 					/tmp/
-	snd_file_prefix		dump
  \endverbatim
  */
 
@@ -32,9 +31,7 @@ struct sndfile_dec {
 	SNDFILE *dec;
 };
 
-static struct pl file_path = {
-	PL("./")
-};
+static char file_path[256] = ".";
 
 
 static int timestamp_print(struct re_printf *pf, const struct tm *tm)
@@ -80,13 +77,9 @@ static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 	SNDFILE *sf;
 
 	(void)re_snprintf(filename, sizeof(filename),
-			  "dump-%H-%s.wav",
+			  "%s/dump-%H-%s.wav",
+				file_path,
 			  timestamp_print, tm, enc ? "enc" : "dec");
-
-  pl_strcpy(&file_path, filepath, 256);
-	strcat(filepath, "/");
-	strcat(filepath, filename);
-	strcpy(filename, filepath);
 
 	sfinfo.samplerate = prm->srate;
 	sfinfo.channels   = prm->ch;
@@ -185,9 +178,9 @@ static int module_init(void)
 {
 	aufilt_register(&sndfile);
 
-	if (conf_get(conf_cur(), "snd_path", &file_path)) {
-		pl_set_str(&file_path, "./");
-	}
+	// TODO: conf_get_str and variable instead of struct
+
+	conf_get_str(conf_cur(), "snd_path", &file_path, 256);
 
 	info("sndfile: saving files in %s\n", file_path);
 
