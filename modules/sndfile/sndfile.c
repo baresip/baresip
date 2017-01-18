@@ -178,8 +178,6 @@ static int module_init(void)
 {
 	aufilt_register(&sndfile);
 
-	// TODO: conf_get_str and variable instead of struct
-
 	conf_get_str(conf_cur(), "snd_path", &file_path, 256);
 
 	info("sndfile: saving files in %s\n", file_path);
