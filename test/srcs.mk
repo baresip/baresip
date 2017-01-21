@@ -8,6 +8,7 @@
 #
 # Test-cases:
 #
+TEST_SRCS	+= account.c
 TEST_SRCS	+= cmd.c
 TEST_SRCS	+= contact.c
 TEST_SRCS	+= ua.c

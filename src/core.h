@@ -61,7 +61,7 @@ struct account {
 	char *mencid;                /**< Media encryption type              */
 	const struct mnat *mnat;     /**< MNAT module                        */
 	const struct menc *menc;     /**< MENC module                        */
-	char *outbound[2];           /**< Optional SIP outbound proxies      */
+	char *outboundv[2];          /**< Optional SIP outbound proxies      */
 	uint32_t ptime;              /**< Configured packet time in [ms]     */
 	uint32_t regint;             /**< Registration interval in [seconds] */
 	uint32_t pubint;             /**< Publication interval in [seconds]  */

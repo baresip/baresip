@@ -53,6 +53,27 @@
 		goto out;						\
 	}
 
+#define TEST_STRCMP(expected, expn, actual, actn)			\
+	if (expn != actn ||						\
+	    0 != memcmp((expected), (actual), (expn))) {		\
+		(void)re_fprintf(stderr, "\n");				\
+		DEBUG_WARNING("TEST_STRCMP: %s:%u:"			\
+			      " failed\n",				\
+			      __FILE__, __LINE__);			\
+		(void)re_fprintf(stderr,				\
+				 "expected string: (%zu bytes)\n"	\
+				 "\"%b\"\n",				\
+				 (size_t)(expn),			\
+				 (expected), (size_t)(expn));		\
+		(void)re_fprintf(stderr,				\
+				 "actual string: (%zu bytes)\n"		\
+				 "\"%b\"\n",				\
+				 (size_t)(actn),			\
+				 (actual), (size_t)(actn));		\
+		err = EINVAL;						\
+		goto out;						\
+	}
+
 
 /* helpers */
 
@@ -120,6 +141,7 @@ int mock_vidisp_register(struct vidisp **vidispp);
 
 /* test cases */
 
+int test_account(void);
 int test_cmd(void);
 int test_cmd_long(void);
 int test_contact(void);

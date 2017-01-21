@@ -55,7 +55,10 @@ struct list *account_vidcodecl(const struct account *acc);
 struct sip_addr *account_laddr(const struct account *acc);
 uint32_t account_regint(const struct account *acc);
 uint32_t account_pubint(const struct account *acc);
+uint32_t account_ptime(const struct account *acc);
 enum answermode account_answermode(const struct account *acc);
+const char *account_auth_user(const struct account *acc);
+const char *account_outbound(const struct account *acc, unsigned ix);
 
 
 /*

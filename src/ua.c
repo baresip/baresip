@@ -197,7 +197,7 @@ int ua_register(struct ua *ua)
 		struct reg *reg = le->data;
 
 		err = reg_register(reg, reg_uri, params,
-				   acc->regint, acc->outbound[i]);
+				   acc->regint, acc->outboundv[i]);
 		if (err) {
 			warning("ua: SIP register failed: %m\n", err);
 			goto out;
@@ -647,9 +647,9 @@ int ua_alloc(struct ua **uap, const char *aor)
 			goto out;
 		}
 
-		for (i=0; i<ARRAY_SIZE(ua->acc->outbound); i++) {
+		for (i=0; i<ARRAY_SIZE(ua->acc->outboundv); i++) {
 
-			if (ua->acc->outbound[i] && ua->acc->regint) {
+			if (ua->acc->outboundv[i] && ua->acc->regint) {
 				err = reg_add(&ua->regl, ua, (int)i+1);
 				if (err)
 					break;
@@ -1001,7 +1001,7 @@ void ua_presence_status_set(struct ua *ua, const enum presence_status status)
 const char *ua_outbound(const struct ua *ua)
 {
 	/* NOTE: we pick the first outbound server, should be rotated? */
-	return ua ? ua->acc->outbound[0] : NULL;
+	return ua ? ua->acc->outboundv[0] : NULL;
 }
 
 

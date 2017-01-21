@@ -23,8 +23,8 @@ static void destructor(void *arg)
 	list_clear(&acc->vidcodecl);
 	mem_deref(acc->auth_user);
 	mem_deref(acc->auth_pass);
-	for (i=0; i<ARRAY_SIZE(acc->outbound); i++)
-		mem_deref(acc->outbound[i]);
+	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++)
+		mem_deref(acc->outboundv[i]);
 	mem_deref(acc->regq);
 	mem_deref(acc->rtpkeep);
 	mem_deref(acc->sipnat);
@@ -284,19 +284,20 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	err |= param_dstr(&acc->regq, &aor->params, "regq");
 
-	for (i=0; i<ARRAY_SIZE(acc->outbound); i++) {
+	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
 
 		char expr[16] = "outbound";
 
 		expr[8] = i + 1 + 0x30;
 		expr[9] = '\0';
 
-		err |= param_dstr(&acc->outbound[i], &aor->params, expr);
+		err |= param_dstr(&acc->outboundv[i], &aor->params, expr);
 	}
 
 	/* backwards compat */
-	if (!acc->outbound[0]) {
-		err |= param_dstr(&acc->outbound[0], &aor->params, "outbound");
+	if (!acc->outboundv[0]) {
+		err |= param_dstr(&acc->outboundv[0], &aor->params,
+				  "outbound");
 	}
 
 	err |= param_dstr(&acc->sipnat, &aor->params, "sipnat");
@@ -499,6 +500,49 @@ enum answermode account_answermode(const struct account *acc)
 }
 
 
+/**
+ * Get the authentication username of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Authentication username
+ */
+const char *account_auth_user(const struct account *acc)
+{
+	return acc ? acc->auth_user : NULL;
+}
+
+
+/**
+ * Get the outbound SIP server of an account
+ *
+ * @param acc User-Agent account
+ * @param ix  Index starting at zero
+ *
+ * @return Outbound SIP proxy, NULL if not configured
+ */
+const char *account_outbound(const struct account *acc, unsigned ix)
+{
+	if (!acc || ix >= ARRAY_SIZE(acc->outboundv))
+		return NULL;
+
+	return acc->outboundv[ix];
+}
+
+
+/**
+ * Get the audio packet-time (ptime) of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Packet-time (ptime)
+ */
+uint32_t account_ptime(const struct account *acc)
+{
+	return acc ? acc->ptime : 0;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
@@ -543,10 +587,10 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  acc->mencid ? acc->mencid : "none");
 	err |= re_hprintf(pf, " medianat:     %s\n",
 			  acc->mnatid ? acc->mnatid : "none");
-	for (i=0; i<ARRAY_SIZE(acc->outbound); i++) {
-		if (acc->outbound[i]) {
+	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
+		if (acc->outboundv[i]) {
 			err |= re_hprintf(pf, " outbound%d:    %s\n",
-					  i+1, acc->outbound[i]);
+					  i+1, acc->outboundv[i]);
 		}
 	}
 	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);
