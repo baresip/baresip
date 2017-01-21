@@ -14,6 +14,7 @@ struct swscale_enc {
 
 	struct SwsContext *sws;
 	struct vidframe *frame;
+	struct vidsz dst_size;
 };
 
 
@@ -47,7 +48,13 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 			 const struct vidfilt *vf)
 {
 	struct swscale_enc *st;
+	struct config *config = conf_config();
 	int err = 0;
+
+	if (!config) {
+		warning("swscale: no config\n");
+		return EINVAL;
+	}
 
 	if (!stp || !ctx || !vf)
 		return EINVAL;
@@ -58,6 +65,9 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 	st = mem_zalloc(sizeof(*st), encode_destructor);
 	if (!st)
 		return ENOMEM;
+
+	st->dst_size.w = config->video.width;
+	st->dst_size.h = config->video.height;
 
 	if (err)
 		mem_deref(st);
@@ -107,7 +117,8 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
 		int flags = 0;
 
 		sws = sws_getContext(width, height, avpixfmt,
-				     width, height, avpixfmt_dst,
+				     enc->dst_size.w, enc->dst_size.h,
+				     avpixfmt_dst,
 				     flags, NULL, NULL, NULL);
 		if (!sws) {
 			warning("swscale: sws_getContext error\n");
@@ -116,15 +127,17 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
 
 		enc->sws = sws;
 
-		info("swscale: created SwsContext: `%s' --> `%s'\n",
-		     vidfmt_name(frame->fmt),
-		     vidfmt_name(swscale_format));
+		info("swscale: created SwsContext:"
+		     " `%s' %d x %d --> `%s' %u x %u\n",
+		     vidfmt_name(frame->fmt), width, height,
+		     vidfmt_name(swscale_format),
+		     enc->dst_size.w, enc->dst_size.h);
 	}
 
 	if (!enc->frame) {
 
 		err = vidframe_alloc(&enc->frame, swscale_format,
-				     &frame->size);
+				     &enc->dst_size);
 		if (err) {
 			warning("swscale: vidframe_alloc error (%m)\n", err);
 			return err;
