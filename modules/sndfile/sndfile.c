@@ -13,6 +13,11 @@
  * @defgroup sndfile sndfile
  *
  * Audio filter that writes audio samples to WAV-file
+ *
+ * Example Configuration:
+ \verbatim
+  snd_path 					/tmp/
+ \endverbatim
  */
 
 
@@ -25,6 +30,8 @@ struct sndfile_dec {
 	struct aufilt_dec_st af;  /* base class */
 	SNDFILE *dec;
 };
+
+static char file_path[256] = ".";
 
 
 static int timestamp_print(struct re_printf *pf, const struct tm *tm)
@@ -63,13 +70,15 @@ static void dec_destructor(void *arg)
 static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 {
 	char filename[128];
+	char filepath[256];
 	SF_INFO sfinfo;
 	time_t tnow = time(0);
 	struct tm *tm = localtime(&tnow);
 	SNDFILE *sf;
 
 	(void)re_snprintf(filename, sizeof(filename),
-			  "dump-%H-%s.wav",
+			  "%s/dump-%H-%s.wav",
+				file_path,
 			  timestamp_print, tm, enc ? "enc" : "dec");
 
 	sfinfo.samplerate = prm->srate;
@@ -168,6 +177,11 @@ static struct aufilt sndfile = {
 static int module_init(void)
 {
 	aufilt_register(&sndfile);
+
+	conf_get_str(conf_cur(), "snd_path", &file_path, 256);
+
+	info("sndfile: saving files in %s\n", file_path);
+
 	return 0;
 }
 
