@@ -63,9 +63,18 @@ static int param_u32(uint32_t *v, const struct pl *params, const char *name)
 }
 
 
+/*
+ * Decode STUN parameters, inspired by RFC 7064
+ *
+ * See RFC 3986:
+ *
+ *     Use of the format "user:password" in the userinfo field is
+ *     deprecated.
+ *
+ */
 static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 {
-	struct pl srv;
+	struct pl srv, tmp;
 	struct uri uri;
 	int err;
 
@@ -91,12 +100,17 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 	}
 
 	err = 0;
-	if (pl_isset(&uri.user))
+
+	if (0 == msg_param_exists(&aor->params, "stunuser", &tmp))
+		err |= param_dstr(&acc->stun_user, &aor->params, "stunuser");
+	else if (pl_isset(&uri.user))
 		err |= pl_strdup(&acc->stun_user, &uri.user);
 	else
 		err |= pl_strdup(&acc->stun_user, &aor->uri.user);
 
-	if (pl_isset(&uri.password))
+	if (0 == msg_param_exists(&aor->params, "stunpass", &tmp))
+		err |= param_dstr(&acc->stun_pass, &aor->params, "stunpass");
+	else if (pl_isset(&uri.password))
 		err |= pl_strdup(&acc->stun_pass, &uri.password);
 	else
 		err |= pl_strdup(&acc->stun_pass, &aor->uri.password);

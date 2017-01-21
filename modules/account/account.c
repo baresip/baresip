@@ -75,6 +75,8 @@ static int account_write_template(const char *file)
 			 "#    ;regq=0.5\n"
 			 "#    ;rtpkeep={zero,stun,dyna,rtcp}\n"
 			 "#    ;sipnat={outbound}\n"
+			 "#    ;stunuser=STUN/TURN/ICE-username\n"
+			 "#    ;stunpass=STUN/TURN/ICE-password\n"
 			 "#    ;stunserver=stun:[user:pass]@host[:port]\n"
 			 "#    ;video_codecs=h264,h263,...\n"
 			 "#\n"

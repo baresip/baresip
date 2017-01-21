@@ -23,7 +23,9 @@ static const char str[] =
 	";regint=600"
 	";pubint=700"
 	";sipnat=outbound"
-	";stunserver=\"stun:stun_user:stun_pass@stunserver.org\""
+	";stunuser=bob@bob.com"
+	";stunpass=taj:aa"
+	";stunserver=\"stun:stunserver.org\""
 	;
 
 
@@ -57,8 +59,8 @@ int test_account(void)
 	ASSERT_EQ(10, account_ptime(acc));
 	ASSERT_EQ(600, account_regint(acc));
 	ASSERT_EQ(700, account_pubint(acc));
-	ASSERT_STREQ("stun_user", account_stun_user(acc));
-	ASSERT_STREQ("stun_pass", account_stun_pass(acc));
+	ASSERT_STREQ("bob@bob.com", account_stun_user(acc));
+	ASSERT_STREQ("taj:aa", account_stun_pass(acc));
 	ASSERT_STREQ("stunserver.org", account_stun_host(acc));
 
  out:
