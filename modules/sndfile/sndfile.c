@@ -70,7 +70,6 @@ static void dec_destructor(void *arg)
 static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 {
 	char filename[128];
-	char filepath[256];
 	SF_INFO sfinfo;
 	time_t tnow = time(0);
 	struct tm *tm = localtime(&tnow);
@@ -178,7 +177,7 @@ static int module_init(void)
 {
 	aufilt_register(&sndfile);
 
-	conf_get_str(conf_cur(), "snd_path", &file_path, 256);
+	conf_get_str(conf_cur(), "snd_path", file_path, sizeof(file_path));
 
 	info("sndfile: saving files in %s\n", file_path);
 
