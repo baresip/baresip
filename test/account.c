@@ -57,6 +57,9 @@ int test_account(void)
 	ASSERT_EQ(10, account_ptime(acc));
 	ASSERT_EQ(600, account_regint(acc));
 	ASSERT_EQ(700, account_pubint(acc));
+	ASSERT_STREQ("stun_user", account_stun_user(acc));
+	ASSERT_STREQ("stun_pass", account_stun_pass(acc));
+	ASSERT_STREQ("stunserver.org", account_stun_host(acc));
 
  out:
 	mem_deref(acc);

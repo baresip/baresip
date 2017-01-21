@@ -383,11 +383,11 @@ int account_alloc(struct account **accp, const char *sipaddr)
 			goto out;
 	}
 
-	if (acc->mnatid) {
-		err = stunsrv_decode(acc, &acc->laddr);
-		if (err)
-			goto out;
+	err = stunsrv_decode(acc, &acc->laddr);
+	if (err)
+		goto out;
 
+	if (acc->mnatid) {
 		acc->mnat = mnat_find(baresip_mnatl(), acc->mnatid);
 		if (!acc->mnat) {
 			warning("account: medianat not found: `%s'\n",
@@ -540,6 +540,45 @@ const char *account_outbound(const struct account *acc, unsigned ix)
 uint32_t account_ptime(const struct account *acc)
 {
 	return acc ? acc->ptime : 0;
+}
+
+
+/**
+ * Get the STUN username of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN username
+ */
+const char *account_stun_user(const struct account *acc)
+{
+	return acc ? acc->stun_user : NULL;
+}
+
+
+/**
+ * Get the STUN password of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN password
+ */
+const char *account_stun_pass(const struct account *acc)
+{
+	return acc ? acc->stun_pass : NULL;
+}
+
+
+/**
+ * Get the STUN hostname of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN hostname
+ */
+const char *account_stun_host(const struct account *acc)
+{
+	return acc ? acc->stun_host : NULL;
 }
 
 

@@ -59,6 +59,9 @@ uint32_t account_ptime(const struct account *acc);
 enum answermode account_answermode(const struct account *acc);
 const char *account_auth_user(const struct account *acc);
 const char *account_outbound(const struct account *acc, unsigned ix);
+const char *account_stun_user(const struct account *acc);
+const char *account_stun_pass(const struct account *acc);
+const char *account_stun_host(const struct account *acc);
 
 
 /*
