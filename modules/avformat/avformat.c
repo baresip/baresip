@@ -100,7 +100,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	struct vidframe vf;
 	struct vidsz sz;
 	unsigned i;
-	double dur;
 
 	if (st->codec) {
 		int got_pict, ret;
@@ -174,14 +173,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 
 	st->frameh(&vf, st->arg);
 
-#if LIBAVCODEC_VERSION_INT >= ((54<<16)+(24<<8)+100)
-	/* simulate framerate (NOTE: not accurate) */
-	dur = 1.0 * av_frame_get_pkt_duration(frame) * av_q2d(st->time_base);
-#else
-	dur = 1.0 / st->fps;
-#endif
-	sys_msleep(1000.0 * dur);
-
  out:
 	if (frame) {
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
@@ -197,7 +188,15 @@ static void *read_thread(void *data)
 {
 	struct vidsrc_st *st = data;
 
+	uint64_t now, ts = tmr_jiffies();
+
 	while (st->run) {
+		sys_msleep(4);
+		now = tmr_jiffies();
+
+                if (ts > now)
+                        continue;
+
 		AVPacket pkt;
 		int ret;
 
@@ -215,6 +214,8 @@ static void *read_thread(void *data)
 			goto out;
 
 		handle_packet(st, &pkt);
+
+		ts += (uint64_t) 1000 * pkt.duration * av_q2d(st->time_base);
 
 	out:
 #if LIBAVCODEC_VERSION_INT >= ((57<<16)+(12<<8)+100)
@@ -241,6 +242,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	bool found_stream = false;
 	uint32_t i;
 	int ret, err = 0;
+	int input_fps = 0;
 
 	(void)mctx;
 	(void)errorh;
@@ -339,6 +341,15 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		st->ctx    = ctx;
 		st->sindex = strm->index;
 		st->time_base = strm->time_base;
+
+		input_fps = (int) 1 * av_q2d(strm->avg_frame_rate);
+		if (st->fps != input_fps) {
+			info("avformat: updating %i fps from config to native input material fps %i\n", st->fps, input_fps);
+			st->fps = input_fps; 
+#if LIBAVFORMAT_VERSION_INT < ((52<<16) + (110<<8) + 0)
+			prms.time_base = (AVRational){1, st->fps};
+#endif
+		}
 
 		if (ctx->codec_id != AV_CODEC_ID_NONE) {
 
