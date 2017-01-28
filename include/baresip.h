@@ -680,14 +680,10 @@ struct cmd {
 };
 
 struct cmd_ctx;
-
-struct commands {
-	struct list cmdl;        /**< List of command blocks (struct cmds) */
-};
+struct commands;
 
 
-int  cmd_init(struct commands *commands);
-void cmd_close(struct commands *commands);
+int  cmd_init(struct commands **commandsp);
 int  cmd_register(struct commands *commands,
 		  const struct cmd *cmdv, size_t cmdc);
 void cmd_unregister(struct commands *commands, const struct cmd *cmdv);

@@ -28,6 +28,10 @@ struct cmd_ctx {
 	bool is_long;
 };
 
+struct commands {
+	struct list cmdl;        /**< List of command blocks (struct cmds) */
+};
+
 
 static int cmd_print_all(struct re_printf *pf,
 			 const struct commands *commands,
@@ -48,6 +52,14 @@ static void ctx_destructor(void *arg)
 	struct cmd_ctx *ctx = arg;
 
 	mem_deref(ctx->mb);
+}
+
+
+static void commands_destructor(void *data)
+{
+	struct commands *commands = data;
+
+	list_flush(&commands->cmdl);
 }
 
 
@@ -703,21 +715,20 @@ int cmd_print(struct re_printf *pf, const struct commands *commands)
 }
 
 
-int cmd_init(struct commands *commands)
+int cmd_init(struct commands **commandsp)
 {
-	if (!commands)
+	struct commands *commands;
+
+	if (!commandsp)
 		return EINVAL;
+
+	commands = mem_zalloc(sizeof(*commands), commands_destructor);
+	if (!commands)
+		return ENOMEM;
 
 	list_init(&commands->cmdl);
 
+	*commandsp = commands;
+
 	return 0;
-}
-
-
-void cmd_close(struct commands *commands)
-{
-	if (!commands)
-		return;
-
-	list_flush(&commands->cmdl);
 }
