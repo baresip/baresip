@@ -149,9 +149,9 @@ static const char *cmd_name(char *buf, size_t sz, const struct cmd *cmd)
 }
 
 
-static size_t get_match(const struct commands *commands,
-			const struct cmd **cmdp,
-			const char *str, size_t len)
+static size_t get_match_long(const struct commands *commands,
+			     const struct cmd **cmdp,
+			     const char *str, size_t len)
 {
 	struct le *le;
 	size_t nmatch = 0;
@@ -234,8 +234,8 @@ static int editor_input(struct commands *commands, struct mbuf *mb, char key,
 			if (err)
 				return err;
 
-			n = get_match(commands, &cmd,
-				      (char *)mb->buf, mb->end);
+			n = get_match_long(commands, &cmd,
+					   (char *)mb->buf, mb->end);
 			if (n == 1 && cmd) {
 
 				mb->pos = 0;
