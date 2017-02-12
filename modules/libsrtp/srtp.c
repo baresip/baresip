@@ -13,6 +13,11 @@
 #include "sdes.h"
 
 
+/*
+ * NOTE: this module is deprecated, please use the 'srtp' module instead.
+ */
+
+
 struct menc_st {
 	/* one SRTP session per media line */
 	uint8_t key_tx[32];  /* 32 for alignment, only 30 used */

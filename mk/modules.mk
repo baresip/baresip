@@ -30,7 +30,6 @@
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
 #   USE_L16           L16 audio codec
-#   USE_LIBSRTP       Secure RTP module using libsrtp
 #   USE_MPA           MPA audo codec
 #   USE_MPG123        Use mpg123
 #   USE_OPUS          Opus audio codec
@@ -179,9 +178,6 @@ USE_SPEEX_PP := $(shell [ -f $(SYSROOT)/include/speex_preprocess.h ] || \
 	[ -f $(SYSROOT)/local/include/speex/speex_preprocess.h ] || \
 	[ -f $(SYSROOT_ALT)/include/speex/speex_preprocess.h ] || \
 	[ -f $(SYSROOT)/include/speex/speex_preprocess.h ] && echo "yes")
-USE_LIBSRTP := $(shell [ -f $(SYSROOT)/include/srtp/srtp.h ] || \
-	[ -f $(SYSROOT_ALT)/include/srtp/srtp.h ] || \
-	[ -f $(SYSROOT)/local/include/srtp/srtp.h ] && echo "yes")
 USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
 	[ -f $(SYSROOT_ALT)/include/syslog.h ] || \
 	[ -f $(SYSROOT)/local/include/syslog.h ] && echo "yes")
@@ -404,9 +400,6 @@ MODULES   += speex_aec
 endif
 ifneq ($(USE_SPEEX_PP),)
 MODULES   += speex_pp
-endif
-ifneq ($(USE_LIBSRTP),)
-MODULES   += libsrtp
 endif
 ifneq ($(USE_STDIO),)
 MODULES   += stdio
