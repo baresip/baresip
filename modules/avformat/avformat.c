@@ -194,8 +194,8 @@ static void *read_thread(void *data)
 		sys_msleep(4);
 		now = tmr_jiffies();
 
-                if (ts > now)
-                        continue;
+		if (ts > now)
+			continue;
 
 		AVPacket pkt;
 		int ret;
@@ -344,8 +344,9 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 		input_fps = (int) 1 * av_q2d(strm->avg_frame_rate);
 		if (st->fps != input_fps) {
-			info("avformat: updating %i fps from config to native input material fps %i\n", st->fps, input_fps);
-			st->fps = input_fps; 
+			info("avformat: updating %i fps from config to native "
+				"input material fps %i\n", st->fps, input_fps);
+			st->fps = input_fps;
 #if LIBAVFORMAT_VERSION_INT < ((52<<16) + (110<<8) + 0)
 			prms.time_base = (AVRational){1, st->fps};
 #endif
