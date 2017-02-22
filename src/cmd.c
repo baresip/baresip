@@ -305,7 +305,8 @@ int cmd_process_long(struct commands *commands, const char *str, size_t len,
 
 	memset(&arg, 0, sizeof(arg));
 
-	err = re_regex(str, len, "[^ ]+[ ]*[~]*", &pl_name, NULL, &pl_prm);
+	err = re_regex(str, len, "[^( |%20)]+[( |%20)]*[~]*",
+				&pl_name, NULL, &pl_prm);
 	if (err) {
 		return err;
 	}
