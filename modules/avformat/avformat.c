@@ -191,14 +191,14 @@ static void *read_thread(void *data)
 	uint64_t now, ts = tmr_jiffies();
 
 	while (st->run) {
+		AVPacket pkt;
+		int ret;
+
 		sys_msleep(4);
 		now = tmr_jiffies();
 
 		if (ts > now)
 			continue;
-
-		AVPacket pkt;
-		int ret;
 
 		av_init_packet(&pkt);
 
