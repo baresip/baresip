@@ -57,9 +57,9 @@
 	if (expn != actn ||						\
 	    0 != memcmp((expected), (actual), (expn))) {		\
 		(void)re_fprintf(stderr, "\n");				\
-		DEBUG_WARNING("TEST_STRCMP: %s:%u:"			\
-			      " failed\n",				\
-			      __FILE__, __LINE__);			\
+		warning("TEST_STRCMP: %s:%u:"				\
+			" failed\n",					\
+			__FILE__, __LINE__);				\
 		(void)re_fprintf(stderr,				\
 				 "expected string: (%zu bytes)\n"	\
 				 "\"%b\"\n",				\
@@ -152,6 +152,7 @@ int test_ua_register_dns(void);
 int test_ua_register_auth(void);
 int test_ua_register_auth_dns(void);
 int test_ua_options(void);
+int test_message(void);
 int test_mos(void);
 int test_network(void);
 

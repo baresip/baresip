@@ -17,6 +17,7 @@ static struct baresip {
 	struct contacts contacts;
 	struct commands *commands;
 	struct player *player;
+	struct message *message;
 	struct list mnatl;
 	struct list mencl;
 } baresip;
@@ -54,12 +55,19 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 	if (err)
 		return err;
 
+	err = message_init(&baresip.message);
+	if (err) {
+		warning("baresip: message init failed: %m\n", err);
+		return err;
+	}
+
 	return 0;
 }
 
 
 void baresip_close(void)
 {
+	baresip.message = mem_deref(baresip.message);
 	baresip.player = mem_deref(baresip.player);
 	baresip.commands = mem_deref(baresip.commands);
 	contact_close(&baresip.contacts);
@@ -101,4 +109,10 @@ struct list *baresip_mnatl(void)
 struct list *baresip_mencl(void)
 {
 	return &baresip.mencl;
+}
+
+
+struct message *baresip_message(void)
+{
+	return baresip.message;
 }

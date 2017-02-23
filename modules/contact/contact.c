@@ -110,6 +110,22 @@ static int print_contacts(struct re_printf *pf, void *unused)
 }
 
 
+static void send_resp_handler(int err, const struct sip_msg *msg, void *arg)
+{
+	(void)arg;
+
+	if (err) {
+		(void)re_fprintf(stderr, " \x1b[31m%m\x1b[;m\n", err);
+		return;
+	}
+
+	if (msg->scode >= 300) {
+		(void)re_fprintf(stderr, " \x1b[31m%u %r\x1b[;m\n",
+				 msg->scode, &msg->reason);
+	}
+}
+
+
 static int cmd_message(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -119,7 +135,8 @@ static int cmd_message(struct re_printf *pf, void *arg)
 		return re_hprintf(pf, "contact: chat peer is not set\n");
 	}
 
-	err = message_send(uag_current(), chat_peer, carg->prm);
+	err = message_send(uag_current(), chat_peer, carg->prm,
+			   send_resp_handler, NULL);
 	if (err) {
 		(void)re_hprintf(pf, "contact: message_send() failed (%m)\n",
 				 err);
