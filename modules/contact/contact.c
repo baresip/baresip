@@ -110,12 +110,9 @@ static int print_contacts(struct re_printf *pf, void *unused)
 }
 
 
-#if 1
 static void send_resp_handler(int err, const struct sip_msg *msg, void *arg)
 {
-	struct ua *ua = arg;
-
-	(void)ua;
+	(void)arg;
 
 	if (err) {
 		(void)re_fprintf(stderr, " \x1b[31m%m\x1b[;m\n", err);
@@ -127,7 +124,6 @@ static void send_resp_handler(int err, const struct sip_msg *msg, void *arg)
 				 msg->scode, &msg->reason);
 	}
 }
-#endif
 
 
 static int cmd_message(struct re_printf *pf, void *arg)
