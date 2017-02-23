@@ -309,9 +309,14 @@ struct media_ctx {
 typedef void (message_recv_h)(const struct pl *peer, const struct pl *ctype,
 			      struct mbuf *body, void *arg);
 
-int  message_init(message_recv_h *recvh, void *arg);
-void message_close(void);
-int  message_send(struct ua *ua, const char *peer, const char *msg);
+struct message;
+struct message_lsnr;
+
+int  message_init(struct message **messagep);
+int  message_listen(struct message_lsnr **lsnrp, struct message *message,
+		    message_recv_h *h, void *arg);
+int  message_send(struct ua *ua, const char *peer, const char *msg,
+		  sip_resp_h *resph, void *arg);
 
 
 /*
@@ -1114,6 +1119,7 @@ struct network *baresip_network(void);
 struct contacts *baresip_contacts(void);
 struct commands *baresip_commands(void);
 struct player *baresip_player(void);
+struct message *baresip_message(void);
 struct list   *baresip_mnatl(void);
 struct list   *baresip_mencl(void);
 

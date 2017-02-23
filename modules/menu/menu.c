@@ -35,6 +35,7 @@ static struct le *le_cur;             /**< Current User-Agent (struct ua) */
 
 static struct {
 	struct play *play;
+	struct message_lsnr *message;
 	bool bell;
 
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
@@ -1077,9 +1078,14 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err |= uag_event_register(ua_event_handler, NULL);
+	err = uag_event_register(ua_event_handler, NULL);
+	if (err)
+		return err;
 
-	err |= message_init(message_handler, NULL);
+	err = message_listen(&menu.message, baresip_message(),
+			     message_handler, NULL);
+	if (err)
+		return err;
 
 	return err;
 }
@@ -1090,7 +1096,7 @@ static int module_close(void)
 	debug("menu: close (redial current_attempts=%d)\n",
 	      menu.current_attempts);
 
-	message_close();
+	menu.message = mem_deref(menu.message);
 	uag_event_unregister(ua_event_handler);
 	cmd_unregister(baresip_commands(), cmdv);
 	cmd_unregister(baresip_commands(), dialcmdv);
