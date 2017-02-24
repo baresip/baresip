@@ -168,7 +168,7 @@ static int endpoint_alloc(struct endpoint **epp, struct test *test,
 static int test_message_transp(enum sip_transp transp)
 {
 	struct test test;
-	struct endpoint *a, *b;
+	struct endpoint *a = NULL, *b = NULL;
 	bool enable_udp, enable_tcp;
 	int err = 0;
 
