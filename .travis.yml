@@ -26,5 +26,5 @@ install:
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo ldconfig; fi
 
 script: 
-    - make V=1 CCACHE= info test
+    - make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
     - python2 ccheck.py
