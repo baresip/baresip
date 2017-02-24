@@ -119,7 +119,7 @@ static void endpoint_destructor(void *data)
 static int endpoint_alloc(struct endpoint **epp, struct test *test,
 			  const char *name, enum sip_transp transp)
 {
-	struct endpoint *ep;
+	struct endpoint *ep = NULL;
 	struct sa laddr;
 	char aor[256];
 	int err = 0;
