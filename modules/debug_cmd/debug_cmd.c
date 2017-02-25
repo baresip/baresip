@@ -5,6 +5,9 @@
  */
 #include <stdlib.h>
 #include <time.h>
+#ifdef USE_OPENSSL
+#include <openssl/crypto.h>
+#endif
 #include <re.h>
 #include <baresip.h>
 
@@ -49,6 +52,11 @@ static int print_system_info(struct re_printf *pf, void *arg)
 
 #ifdef __VERSION__
 	err |= re_hprintf(pf, " Compiler: %s\n", __VERSION__);
+#endif
+
+#ifdef USE_OPENSSL
+	err |= re_hprintf(pf, " OpenSSL:  %s\n",
+			  SSLeay_version(SSLEAY_VERSION));
 #endif
 
 	return err;
