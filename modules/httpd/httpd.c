@@ -92,6 +92,11 @@ static void http_req_handler(struct http_conn *conn,
 {
 	(void)arg;
 
+	char *buf;
+	re_sdprintf(&buf, "%H", uri_header_unescape, &msg->prm);
+	pl_set_str(&msg->prm, buf);
+
+
 	if (0 == pl_strcasecmp(&msg->path, "/")) {
 
 		http_creply(conn, 200, "OK",
@@ -107,6 +112,7 @@ static void http_req_handler(struct http_conn *conn,
 	else {
 		http_ereply(conn, 404, "Not Found");
 	}
+	mem_deref(buf);
 }
 
 
