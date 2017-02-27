@@ -90,10 +90,10 @@ static int html_print_raw(struct re_printf *pf, const struct pl *prm)
 static void http_req_handler(struct http_conn *conn,
 			     const struct http_msg *msg, void *arg)
 {
-	(void)arg;
 	int err;
 	char *buf;
 	struct pl nprm;
+	(void)arg;
 
 	err = re_sdprintf(&buf, "%H", uri_header_unescape, &msg->prm);
 	if (err)
