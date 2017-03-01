@@ -518,7 +518,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!stp || !size || !frameh)
 		return EINVAL;
 
-	if (str_isset(dev))
+	if (!str_isset(dev))
 		dev = "/dev/video0";
 
 	debug("v4l2_codec: video-source alloc (device=%s)\n", dev);
