@@ -1,5 +1,5 @@
 /**
- * @file message.c  SIP MESSAGE -- RFC 3428
+ * @file src/message.c  SIP MESSAGE -- RFC 3428
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -153,6 +153,8 @@ int message_listen(struct message_lsnr **lsnrp, struct message *message,
  * @param ua    User-Agent object
  * @param peer  Peer SIP Address
  * @param msg   Message to send
+ * @param resph Response handler
+ * @param arg   Handler argument
  *
  * @return 0 if success, otherwise errorcode
  */
