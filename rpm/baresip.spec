@@ -1,5 +1,5 @@
 %define name     baresip
-%define ver      0.5.0
+%define ver      0.5.1
 %define rel      1
 
 Summary: Modular SIP useragent
