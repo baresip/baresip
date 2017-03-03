@@ -1,3 +1,64 @@
+2017-03-04 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.1
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.1
+	* NOTE: Requires libre v0.5.0 or later
+	        Requires librem v0.5.0 or later
+
+	* new modules:
+
+	* config:
+	  - stunuser		STUN username for STUN/TURN/ICE
+	  - stunpass		STUN password for STUN/TURN/ICE
+	  - snd_path		Path to sndfile audio dump files
+
+	* baresip-core:
+	  - account: add more accessor functions
+	  - account: add 'stunuser' and 'stunpass'
+	  - commands: make the struct commands opaque
+	  - message: make the API re-entrant, multiple listeners
+	  - menc: make the API re-entrant
+	  - mnat: make the API re-entrant
+
+	* selftest:
+	  - add tests for account
+	  - add tests for message
+
+	* Modules:
+
+	* amr: use MOD-CFLAGS instead of global CFLAGS
+
+	* avcodec: added optional config 'avcodec_h264dec' to specify hardware
+		   accellerated FFmpeg decoder (thanks Harald Gutmann)
+
+	* avformat: remove blocking sleep, use packet timestamp to
+		    pace video stream (thanks Harald Gutmann)
+
+	* debug_cmd: add OpenSSL version to systems info
+
+	* gtk: fix build where USE_NOTIFICATIONS is not defined
+	       get rid of system header warnings by using -isystem
+
+	* httpd: add support for un-escaping of URL parameters
+		 (thanks to elektm93)
+
+	* menu: add new command 'ausrc' to switch audio source
+		add new command 'auplay' to switch audio player
+
+	* sdl2: add more pixelformats (ref #202)
+		(thanks Harald Gutmann)
+
+	* sndfile: add config to specify path for dump files (thanks Elektm93)
+		   add test for sndfile on *BSD. (#194) (thanks jungle-boogie)
+
+	* swscale: get dst-size from config (ref #203)
+
+	* v4l2_codec: Video device selection bug (#218)
+		      (thanks Richard Perez)
+
+
 2016-12-23 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.0
