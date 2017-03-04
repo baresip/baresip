@@ -352,7 +352,7 @@ int conf_modules(void)
 		goto out;
 	}
 
-	print_populated("audio codec",  list_count(aucodec_list()));
+	print_populated("audio codec",  list_count(baresip_aucodecl()));
 	print_populated("audio filter", list_count(aufilt_list()));
 #ifdef USE_VIDEO
 	print_populated("video codec",  list_count(vidcodec_list()));

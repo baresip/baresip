@@ -184,7 +184,7 @@ static void start_codec(struct audio_loop *al, const char *name)
 	struct auenc_param prm = {PTIME};
 	int err;
 
-	al->ac = aucodec_find(name,
+	al->ac = aucodec_find(baresip_aucodecl(), name,
 			      configv[al->index].srate,
 			      configv[al->index].ch);
 	if (!al->ac) {

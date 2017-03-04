@@ -337,7 +337,7 @@ static int module_init(void)
 	(void)re_snprintf(ilbc_fmtp, sizeof(ilbc_fmtp),
 			  "mode=%d", DEFAULT_MODE);
 
-	aucodec_register(&ilbc);
+	aucodec_register(baresip_aucodecl(), &ilbc);
 	return 0;
 }
 

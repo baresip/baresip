@@ -180,7 +180,7 @@ static struct aucodec codec2 = {
 
 static int module_init(void)
 {
-	aucodec_register(&codec2);
+	aucodec_register(baresip_aucodecl(), &codec2);
 
 	return 0;
 }

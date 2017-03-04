@@ -187,6 +187,7 @@ static int csl_parse(struct pl *pl, char *str, size_t sz)
 
 static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 {
+	struct list *aucodecl = baresip_aucodecl();
 	struct pl tmp;
 
 	if (!acc || !prm)
@@ -220,7 +221,8 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 					ch = pl_u32(&pl_ch);
 			}
 
-			ac = (struct aucodec *)aucodec_find(cname, srate, ch);
+			ac = (struct aucodec *)aucodec_find(aucodecl,
+							    cname, srate, ch);
 			if (!ac) {
 				warning("account: audio codec not found:"
 					" %s/%u/%d\n",
@@ -477,7 +479,7 @@ int account_auth(const struct account *acc, char **username, char **password,
 struct list *account_aucodecl(const struct account *acc)
 {
 	return (acc && !list_isempty(&acc->aucodecl))
-		? (struct list *)&acc->aucodecl : aucodec_list();
+		? (struct list *)&acc->aucodecl : baresip_aucodecl();
 }
 
 

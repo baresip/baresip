@@ -180,10 +180,11 @@ static struct g726_aucodec g726[4] = {
 
 static int module_init(void)
 {
+	struct list *aucodecl = baresip_aucodecl();
 	size_t i;
 
 	for (i=0; i<ARRAY_SIZE(g726); i++)
-		aucodec_register((struct aucodec *)&g726[i]);
+		aucodec_register(aucodecl, (struct aucodec *)&g726[i]);
 
 	return 0;
 }

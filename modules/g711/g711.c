@@ -109,8 +109,8 @@ static struct aucodec pcma = {
 
 static int module_init(void)
 {
-	aucodec_register(&pcmu);
-	aucodec_register(&pcma);
+	aucodec_register(baresip_aucodecl(), &pcmu);
+	aucodec_register(baresip_aucodecl(), &pcma);
 
 	return 0;
 }

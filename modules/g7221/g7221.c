@@ -28,7 +28,7 @@ static struct g7221_aucodec g7221 = {
 
 static int module_init(void)
 {
-	aucodec_register((struct aucodec *)&g7221);
+	aucodec_register(baresip_aucodecl(), (struct aucodec *)&g7221);
 
 	return 0;
 }

@@ -160,7 +160,7 @@ static struct aucodec bv32 = {
 
 static int module_init(void)
 {
-	aucodec_register(&bv32);
+	aucodec_register(baresip_aucodecl(), &bv32);
 	return 0;
 }
 
