@@ -1537,6 +1537,11 @@ int ua_print_sip_status(struct re_printf *pf, void *unused)
 
 /**
  * Print all calls for a given User-Agent
+ *
+ * @param pf     Print handler for debug output
+ * @param ua     User-Agent
+ *
+ * @return 0 if success, otherwise errorcode
  */
 int ua_print_calls(struct re_printf *pf, const struct ua *ua)
 {

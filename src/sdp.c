@@ -144,6 +144,11 @@ static void decode_part(const struct pl *part, struct mbuf *mb)
 
 /**
  * Decode a multipart/mixed message and find the part with application/sdp
+ *
+ * @param ctype_prm  Content type parameter
+ * @param mb         Mbuffer containing the SDP
+ *
+ * @return 0 if success, otherwise errorcode
  */
 int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb)
 {

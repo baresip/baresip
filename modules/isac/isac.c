@@ -218,7 +218,6 @@ static int module_close(void)
 }
 
 
-/** Module exports */
 EXPORT_SYM const struct mod_export DECL_EXPORTS(isac) = {
 	"isac",
 	"codec",
