@@ -72,7 +72,7 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	struct auenc_state *aes;
 	struct opus_param prm, conf_prm;
 	opus_int32 fch, vbr;
-	const struct aucodec *auc = aucodec_find("opus", 48000, 2);
+	const struct aucodec *auc = ac;
 
 	(void)param;
 

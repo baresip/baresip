@@ -237,7 +237,7 @@ static int module_init(void)
 {
 	debug("silk: SILK %s\n", SKP_Silk_SDK_get_version());
 
-	aucodec_register(&silk[0]);
+	aucodec_register(baresip_aucodecl(), &silk[0]);
 
 	return 0;
 }

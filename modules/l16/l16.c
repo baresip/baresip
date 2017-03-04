@@ -75,10 +75,11 @@ static struct aucodec l16v[NR_CODECS] = {
 
 static int module_init(void)
 {
+	struct list *aucodecl = baresip_aucodecl();
 	size_t i;
 
 	for (i=0; i<NR_CODECS; i++)
-		aucodec_register(&l16v[i]);
+		aucodec_register(aucodecl, &l16v[i]);
 
 	return 0;
 }

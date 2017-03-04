@@ -158,7 +158,7 @@ static int module_init(void)
 {
 	debug("gsm: GSM v%u.%u.%u\n", GSM_MAJOR, GSM_MINOR, GSM_PATCHLEVEL);
 
-	aucodec_register(&ac_gsm);
+	aucodec_register(baresip_aucodecl(), &ac_gsm);
 	return 0;
 }
 

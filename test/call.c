@@ -62,7 +62,7 @@ struct fixture {
 	f->magic = MAGIC;						\
 	f->exp_estab = 1;						\
 	f->exp_closed = 1;						\
-	aucodec_register(&dummy_pcma);					\
+	aucodec_register(baresip_aucodecl(), &dummy_pcma);		\
 									\
 	err = ua_alloc(&f->a.ua,					\
 		       "A <sip:a:xxx@127.0.0.1>;regint=0" prm);		\

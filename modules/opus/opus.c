@@ -136,7 +136,7 @@ static int module_init(void)
 
 	debug("opus: fmtp=\"%s\"\n", fmtp);
 
-	aucodec_register(&opus);
+	aucodec_register(baresip_aucodecl(), &opus);
 
 	return 0;
 }

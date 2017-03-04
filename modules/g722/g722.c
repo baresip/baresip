@@ -171,7 +171,7 @@ static struct aucodec g722 = {
 
 static int module_init(void)
 {
-	aucodec_register(&g722);
+	aucodec_register(baresip_aucodecl(), &g722);
 	return 0;
 }
 

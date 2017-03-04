@@ -313,10 +313,10 @@ static int module_init(void)
 	int err = 0;
 
 #ifdef AMR_WB
-	aucodec_register(&amr_wb);
+	aucodec_register(baresip_aucodecl(), &amr_wb);
 #endif
 #ifdef AMR_NB
-	aucodec_register(&amr_nb);
+	aucodec_register(baresip_aucodecl(), &amr_nb);
 #endif
 
 	return err;

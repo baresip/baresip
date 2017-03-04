@@ -20,6 +20,7 @@ static struct baresip {
 	struct message *message;
 	struct list mnatl;
 	struct list mencl;
+	struct list aucodecl;
 } baresip;
 
 
@@ -34,6 +35,7 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 
 	list_init(&baresip.mnatl);
 	list_init(&baresip.mencl);
+	list_init(&baresip.aucodecl);
 
 	/* Initialise Network */
 	err = net_alloc(&baresip.net, &cfg->net,
@@ -115,4 +117,15 @@ struct list *baresip_mencl(void)
 struct message *baresip_message(void)
 {
 	return baresip.message;
+}
+
+
+/**
+ * Get the list of Audio Codecs
+ *
+ * @return List of audio-codecs
+ */
+struct list *baresip_aucodecl(void)
+{
+	return &baresip.aucodecl;
 }

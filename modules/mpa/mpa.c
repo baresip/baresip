@@ -177,7 +177,7 @@ static int module_init(void)
 		return -1;
 	}
 
-	aucodec_register(&mpa);
+	aucodec_register(baresip_aucodecl(), &mpa);
 
 #ifdef DEBUG
 	info("MPA init with %s\n",mpa.fmtp);

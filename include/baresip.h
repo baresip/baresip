@@ -817,11 +817,11 @@ struct aucodec {
 	sdp_fmtp_cmp_h *fmtp_cmph;
 };
 
-void aucodec_register(struct aucodec *ac);
+void aucodec_register(struct list *aucodecl, struct aucodec *ac);
 void aucodec_unregister(struct aucodec *ac);
-const struct aucodec *aucodec_find(const char *name, uint32_t srate,
+const struct aucodec *aucodec_find(const struct list *aucodecl,
+				   const char *name, uint32_t srate,
 				   uint8_t ch);
-struct list *aucodec_list(void);
 
 
 /*
@@ -1122,6 +1122,7 @@ struct player *baresip_player(void);
 struct message *baresip_message(void);
 struct list   *baresip_mnatl(void);
 struct list   *baresip_mencl(void);
+struct list   *baresip_aucodecl(void);
 
 
 #ifdef __cplusplus
