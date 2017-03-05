@@ -35,3 +35,7 @@ This webcam supports H.264 hardware acceleration:
 HD Pro Webcam C920 (usb-0000:00:1a.0-1.5):
 	/dev/video0
 
+ELP-USB100W04H-L36 ARC International - (Product ID : 05a3:9420)
+	This device provide 2 /dev/video sub-devices. 
+	The first is a YUV and MJPEG device (/dev/video0), the second is for the H264 stream (/dev/video1).
+	You must use the second the second (/dev/video1).
