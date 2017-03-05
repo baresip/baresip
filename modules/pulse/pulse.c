@@ -29,7 +29,8 @@ static int module_init(void)
 	int err;
 
 	err  = auplay_register(&auplay, "pulse", pulse_player_alloc);
-	err |= ausrc_register(&ausrc, baresip_ausrcl(), "pulse", pulse_recorder_alloc);
+	err |= ausrc_register(&ausrc, baresip_ausrcl(),
+			      "pulse", pulse_recorder_alloc);
 
 	return err;
 }
