@@ -341,10 +341,11 @@ typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, const struct ausrc *ausrc,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
 
-int ausrc_register(struct ausrc **asp, const char *name,
+int ausrc_register(struct ausrc **asp, struct list *ausrcl, const char *name,
 		   ausrc_alloc_h *alloch);
-const struct ausrc *ausrc_find(const char *name);
-int ausrc_alloc(struct ausrc_st **stp, struct media_ctx **ctx,
+const struct ausrc *ausrc_find(const struct list *ausrcl, const char *name);
+int ausrc_alloc(struct ausrc_st **stp, struct list *ausrcl,
+		struct media_ctx **ctx,
 		const char *name,
 		struct ausrc_prm *prm, const char *device,
 		ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
@@ -1123,6 +1124,7 @@ struct message *baresip_message(void);
 struct list   *baresip_mnatl(void);
 struct list   *baresip_mencl(void);
 struct list   *baresip_aucodecl(void);
+struct list   *baresip_ausrcl(void);
 
 
 #ifdef __cplusplus

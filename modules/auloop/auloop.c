@@ -260,7 +260,8 @@ static int auloop_reset(struct audio_loop *al)
 	ausrc_prm.srate      = al->srate;
 	ausrc_prm.ch         = al->ch;
 	ausrc_prm.ptime      = PTIME;
-	err = ausrc_alloc(&al->ausrc, NULL, cfg->audio.src_mod,
+	err = ausrc_alloc(&al->ausrc, baresip_ausrcl(),
+			  NULL, cfg->audio.src_mod,
 			  &ausrc_prm, cfg->audio.src_dev,
 			  read_handler, error_handler, al);
 	if (err) {

@@ -245,7 +245,7 @@ int rst_audio_init(void)
 		return ENODEV;
 	}
 
-	return ausrc_register(&ausrc, "rst", alloc_handler);
+	return ausrc_register(&ausrc, baresip_ausrcl(), "rst", alloc_handler);
 }
 
 

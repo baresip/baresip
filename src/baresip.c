@@ -21,6 +21,7 @@ static struct baresip {
 	struct list mnatl;
 	struct list mencl;
 	struct list aucodecl;
+	struct list ausrcl;
 } baresip;
 
 
@@ -36,6 +37,7 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 	list_init(&baresip.mnatl);
 	list_init(&baresip.mencl);
 	list_init(&baresip.aucodecl);
+	list_init(&baresip.ausrcl);
 
 	/* Initialise Network */
 	err = net_alloc(&baresip.net, &cfg->net,
@@ -128,4 +130,10 @@ struct message *baresip_message(void)
 struct list *baresip_aucodecl(void)
 {
 	return &baresip.aucodecl;
+}
+
+
+struct list *baresip_ausrcl(void)
+{
+	return &baresip.ausrcl;
 }

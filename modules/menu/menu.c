@@ -638,7 +638,7 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 		pl_strcpy(&pl_driver, driver, sizeof(driver));
 		pl_strcpy(&pl_device, device, sizeof(device));
 
-		if (!ausrc_find(driver)) {
+		if (!ausrc_find(baresip_ausrcl(), driver)) {
 			re_hprintf(pf, "no such audio-source: %s\n", driver);
 			return 0;
 		}

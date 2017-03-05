@@ -72,7 +72,8 @@ static int module_init(void)
 	}
 
 	err  = auplay_register(&auplay, "audiounit", audiounit_player_alloc);
-	err |= ausrc_register(&ausrc, "audiounit", audiounit_recorder_alloc);
+	err |= ausrc_register(&ausrc, baresip_ausrcl(),
+			      "audiounit", audiounit_recorder_alloc);
 
 	return 0;
 }
