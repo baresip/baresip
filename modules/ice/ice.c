@@ -523,6 +523,12 @@ static int ice_start(struct mnat_sess *sess)
 				err = icem_conncheck_start(m->icem);
 				if (err)
 					return err;
+
+				/* set the pair states
+				   -- first media stream only */
+				if (sess->medial.head == le) {
+					ice_candpair_set_states(m->icem);
+				}
 			}
 		}
 		else {
@@ -557,7 +563,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->compv[0].sock = mem_ref(sock1);
 	m->compv[1].sock = mem_ref(sock2);
 
-	err = icem_alloc(&m->icem, NULL, ice.mode, sess->offerer,
+	err = icem_alloc(&m->icem, ice.mode, sess->offerer,
 			 proto, 0,
 			 sess->tiebrk, sess->lufrag, sess->lpwd,
 			 gather_handler, conncheck_handler, m);
