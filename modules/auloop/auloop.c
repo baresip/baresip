@@ -248,7 +248,8 @@ static int auloop_reset(struct audio_loop *al)
 	auplay_prm.srate      = al->srate;
 	auplay_prm.ch         = al->ch;
 	auplay_prm.ptime      = PTIME;
-	err = auplay_alloc(&al->auplay, cfg->audio.play_mod, &auplay_prm,
+	err = auplay_alloc(&al->auplay, baresip_auplayl(),
+			   cfg->audio.play_mod, &auplay_prm,
 			   cfg->audio.play_dev, write_handler, al);
 	if (err) {
 		warning("auloop: auplay %s,%s failed: %m\n",

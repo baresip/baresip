@@ -9,9 +9,6 @@
 #include "core.h"
 
 
-static struct list auplayl = LIST_INIT;
-
-
 static void destructor(void *arg)
 {
 	struct auplay *ap = arg;
@@ -24,13 +21,14 @@ static void destructor(void *arg)
  * Register an Audio Player
  *
  * @param app     Pointer to allocated Audio Player object
+ * @param auplayl List of Audio Players
  * @param name    Audio Player name
  * @param alloch  Allocation handler
  *
  * @return 0 if success, otherwise errorcode
  */
-int auplay_register(struct auplay **app, const char *name,
-		    auplay_alloc_h *alloch)
+int auplay_register(struct auplay **app, struct list *auplayl,
+		    const char *name, auplay_alloc_h *alloch)
 {
 	struct auplay *ap;
 
@@ -41,7 +39,7 @@ int auplay_register(struct auplay **app, const char *name,
 	if (!ap)
 		return ENOMEM;
 
-	list_append(&auplayl, &ap->le, ap);
+	list_append(auplayl, &ap->le, ap);
 
 	ap->name   = name;
 	ap->alloch = alloch;
@@ -57,15 +55,16 @@ int auplay_register(struct auplay **app, const char *name,
 /**
  * Find an Audio Player by name
  *
- * @param name Name of the Audio Player to find
+ * @param auplayl List of Audio Players
+ * @param name    Name of the Audio Player to find
  *
  * @return Matching Audio Player if found, otherwise NULL
  */
-const struct auplay *auplay_find(const char *name)
+const struct auplay *auplay_find(const struct list *auplayl, const char *name)
 {
 	struct le *le;
 
-	for (le=auplayl.head; le; le=le->next) {
+	for (le=list_head(auplayl); le; le=le->next) {
 
 		struct auplay *ap = le->data;
 
@@ -82,22 +81,24 @@ const struct auplay *auplay_find(const char *name)
 /**
  * Allocate an Audio Player state
  *
- * @param stp    Pointer to allocated Audio Player state
- * @param name   Name of Audio Player
- * @param prm    Audio Player parameters
- * @param device Name of Audio Player device (driver specific)
- * @param wh     Write handler
- * @param arg    Handler argument
+ * @param stp     Pointer to allocated Audio Player state
+ * @param auplayl List of Audio Players
+ * @param name    Name of Audio Player
+ * @param prm     Audio Player parameters
+ * @param device  Name of Audio Player device (driver specific)
+ * @param wh      Write handler
+ * @param arg     Handler argument
  *
  * @return 0 if success, otherwise errorcode
  */
-int auplay_alloc(struct auplay_st **stp, const char *name,
+int auplay_alloc(struct auplay_st **stp, struct list *auplayl,
+		 const char *name,
 		 struct auplay_prm *prm, const char *device,
 		 auplay_write_h *wh, void *arg)
 {
 	struct auplay *ap;
 
-	ap = (struct auplay *)auplay_find(name);
+	ap = (struct auplay *)auplay_find(auplayl, name);
 	if (!ap)
 		return ENOENT;
 

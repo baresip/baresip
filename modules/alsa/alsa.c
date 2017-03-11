@@ -168,7 +168,8 @@ static int alsa_init(void)
 
 	err  = ausrc_register(&ausrc, baresip_ausrcl(),
 			      "alsa", alsa_src_alloc);
-	err |= auplay_register(&auplay, "alsa", alsa_play_alloc);
+	err |= auplay_register(&auplay, baresip_auplayl(),
+			       "alsa", alsa_play_alloc);
 
 	return err;
 }

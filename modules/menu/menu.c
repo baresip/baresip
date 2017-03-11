@@ -564,7 +564,7 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 		pl_strcpy(&pl_driver, driver, sizeof(driver));
 		pl_strcpy(&pl_device, device, sizeof(device));
 
-		if (!auplay_find(driver)) {
+		if (!auplay_find(baresip_auplayl(), driver)) {
 			re_hprintf(pf, "no such audio-player: %s\n", driver);
 			return 0;
 		}

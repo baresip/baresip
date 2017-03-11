@@ -371,10 +371,11 @@ typedef int  (auplay_alloc_h)(struct auplay_st **stp, const struct auplay *ap,
 			      struct auplay_prm *prm, const char *device,
 			      auplay_write_h *wh, void *arg);
 
-int auplay_register(struct auplay **pp, const char *name,
-		    auplay_alloc_h *alloch);
-const struct auplay *auplay_find(const char *name);
-int auplay_alloc(struct auplay_st **stp, const char *name,
+int auplay_register(struct auplay **pp, struct list *auplayl,
+		    const char *name, auplay_alloc_h *alloch);
+const struct auplay *auplay_find(const struct list *auplayl, const char *name);
+int auplay_alloc(struct auplay_st **stp, struct list *auplayl,
+		 const char *name,
 		 struct auplay_prm *prm, const char *device,
 		 auplay_write_h *wh, void *arg);
 
@@ -1125,6 +1126,7 @@ struct list   *baresip_mnatl(void);
 struct list   *baresip_mencl(void);
 struct list   *baresip_aucodecl(void);
 struct list   *baresip_ausrcl(void);
+struct list   *baresip_auplayl(void);
 
 
 #ifdef __cplusplus

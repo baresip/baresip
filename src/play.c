@@ -251,7 +251,8 @@ int play_tone(struct play **playp, struct player *player,
 	wprm.srate      = srate;
 	wprm.ptime      = PTIME;
 
-	err = auplay_alloc(&play->auplay, cfg->audio.alert_mod, &wprm,
+	err = auplay_alloc(&play->auplay, baresip_auplayl(),
+			   cfg->audio.alert_mod, &wprm,
 			   cfg->audio.alert_dev, write_handler, play);
 	if (err)
 		goto out;
