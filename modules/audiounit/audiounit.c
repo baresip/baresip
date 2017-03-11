@@ -71,7 +71,8 @@ static int module_init(void)
 		return ENOENT;
 	}
 
-	err  = auplay_register(&auplay, "audiounit", audiounit_player_alloc);
+	err  = auplay_register(&auplay, baresip_auplayl(),
+			       "audiounit", audiounit_player_alloc);
 	err |= ausrc_register(&ausrc, baresip_ausrcl(),
 			      "audiounit", audiounit_recorder_alloc);
 

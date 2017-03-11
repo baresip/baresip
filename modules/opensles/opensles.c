@@ -47,8 +47,10 @@ static int module_init(void)
 	if (SL_RESULT_SUCCESS != r)
 		return ENODEV;
 
-	err  = auplay_register(&auplay, "opensles", opensles_player_alloc);
-	err |= ausrc_register(&ausrc, "opensles", opensles_recorder_alloc);
+	err  = auplay_register(&auplay, baresip_auplayl(),
+			       "opensles", opensles_player_alloc);
+	err |= ausrc_register(&ausrc, baresip_ausrcl(),
+			      "opensles", opensles_recorder_alloc);
 
 	return err;
 }
