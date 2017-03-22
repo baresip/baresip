@@ -305,10 +305,12 @@ static int pa_init(void)
 	}
 
 	if (paNoDevice != Pa_GetDefaultInputDevice())
-		err |= ausrc_register(&ausrc, "portaudio", src_alloc);
+		err |= ausrc_register(&ausrc, baresip_ausrcl(),
+				      "portaudio", src_alloc);
 
 	if (paNoDevice != Pa_GetDefaultOutputDevice())
-		err |= auplay_register(&auplay, "portaudio", play_alloc);
+		err |= auplay_register(&auplay, baresip_auplayl(),
+				       "portaudio", play_alloc);
 
 	return err;
 }

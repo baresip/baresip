@@ -85,5 +85,6 @@ static int mock_ausrc_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 int mock_ausrc_register(struct ausrc **ausrcp)
 {
-	return ausrc_register(ausrcp, "mock-ausrc", mock_ausrc_alloc);
+	return ausrc_register(ausrcp, baresip_ausrcl(),
+			      "mock-ausrc", mock_ausrc_alloc);
 }

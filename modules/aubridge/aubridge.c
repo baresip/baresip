@@ -40,8 +40,9 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err  = ausrc_register(&ausrc, "aubridge", src_alloc);
-	err |= auplay_register(&auplay, "aubridge", play_alloc);
+	err  = ausrc_register(&ausrc, baresip_ausrcl(), "aubridge", src_alloc);
+	err |= auplay_register(&auplay, baresip_auplayl(),
+			       "aubridge", play_alloc);
 
 	return err;
 }

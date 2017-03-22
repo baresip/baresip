@@ -85,8 +85,10 @@ static int module_init(void)
 {
 	int err;
 
-	err  = auplay_register(&auplay, "coreaudio", coreaudio_player_alloc);
-	err |= ausrc_register(&ausrc, "coreaudio", coreaudio_recorder_alloc);
+	err  = auplay_register(&auplay, baresip_auplayl(),
+			       "coreaudio", coreaudio_player_alloc);
+	err |= ausrc_register(&ausrc, baresip_ausrcl(),
+			      "coreaudio", coreaudio_recorder_alloc);
 
 	return err;
 }

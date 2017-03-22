@@ -282,8 +282,9 @@ static int sndio_init(void)
 {
 	int err = 0;
 
-	err |= ausrc_register(&ausrc, "sndio", src_alloc);
-	err |= auplay_register(&auplay, "sndio", play_alloc);
+	err |= ausrc_register(&ausrc, baresip_ausrcl(), "sndio", src_alloc);
+	err |= auplay_register(&auplay, baresip_auplayl(),
+			       "sndio", play_alloc);
 
 	return err;
 }
