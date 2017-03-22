@@ -195,7 +195,7 @@ static struct aufilt vumeter = {
 
 static int module_init(void)
 {
-	aufilt_register(&vumeter);
+	aufilt_register(baresip_aufiltl(), &vumeter);
 	return 0;
 }
 

@@ -423,9 +423,8 @@ struct aufilt {
 	aufilt_decode_h *dech;
 };
 
-void aufilt_register(struct aufilt *af);
+void aufilt_register(struct list *aufiltl, struct aufilt *af);
 void aufilt_unregister(struct aufilt *af);
-struct list *aufilt_list(void);
 
 
 /*
@@ -1127,6 +1126,7 @@ struct list   *baresip_mencl(void);
 struct list   *baresip_aucodecl(void);
 struct list   *baresip_ausrcl(void);
 struct list   *baresip_auplayl(void);
+struct list   *baresip_aufiltl(void);
 
 
 #ifdef __cplusplus

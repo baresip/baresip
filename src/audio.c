@@ -907,7 +907,7 @@ static int aufilt_setup(struct audio *a)
 	aufilt_param_set(&decprm, rx->ac, rx->ptime);
 
 	/* Audio filters */
-	for (le = list_head(aufilt_list()); le; le = le->next) {
+	for (le = list_head(baresip_aufiltl()); le; le = le->next) {
 		struct aufilt *af = le->data;
 		struct aufilt_enc_st *encst = NULL;
 		struct aufilt_dec_st *decst = NULL;
@@ -1138,7 +1138,7 @@ int audio_start(struct audio *a)
 		return EINVAL;
 
 	/* Audio filter */
-	if (!list_isempty(aufilt_list())) {
+	if (!list_isempty(baresip_aufiltl())) {
 		err = aufilt_setup(a);
 		if (err)
 			return err;

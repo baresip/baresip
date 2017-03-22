@@ -100,7 +100,7 @@ static struct aufilt plc = {
 
 static int module_init(void)
 {
-	aufilt_register(&plc);
+	aufilt_register(baresip_aufiltl(), &plc);
 	return 0;
 }
 

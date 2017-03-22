@@ -175,7 +175,7 @@ static struct aufilt sndfile = {
 
 static int module_init(void)
 {
-	aufilt_register(&sndfile);
+	aufilt_register(baresip_aufiltl(), &sndfile);
 
 	conf_get_str(conf_cur(), "snd_path", file_path, sizeof(file_path));
 

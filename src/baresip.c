@@ -23,6 +23,7 @@ static struct baresip {
 	struct list aucodecl;
 	struct list ausrcl;
 	struct list auplayl;
+	struct list aufiltl;
 } baresip;
 
 
@@ -144,4 +145,10 @@ struct list *baresip_ausrcl(void)
 struct list *baresip_auplayl(void)
 {
 	return &baresip.auplayl;
+}
+
+
+struct list *baresip_aufiltl(void)
+{
+	return &baresip.aufiltl;
 }

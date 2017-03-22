@@ -8,15 +8,12 @@
 #include "core.h"
 
 
-static struct list afl;
-
-
-void aufilt_register(struct aufilt *af)
+void aufilt_register(struct list *aufiltl, struct aufilt *af)
 {
-	if (!af)
+	if (!aufiltl || !af)
 		return;
 
-	list_append(&afl, &af->le, af);
+	list_append(aufiltl, &af->le, af);
 
 	info("aufilt: %s\n", af->name);
 }
@@ -28,10 +25,4 @@ void aufilt_unregister(struct aufilt *af)
 		return;
 
 	list_unlink(&af->le);
-}
-
-
-struct list *aufilt_list(void)
-{
-	return &afl;
 }
