@@ -197,11 +197,9 @@ int h265_encode(struct videnc_state *st, bool update,
 		colorspace = X265_CSP_I420;
 		break;
 
-#if 0
-	case VID_FMT_YUV444:
+	case VID_FMT_YUV444P:
 		colorspace = X265_CSP_I444;
 		break;
-#endif
 
 	default:
 		warning("h265: encode: pixel format not supported (%s)\n",
