@@ -955,14 +955,19 @@ int video_start(struct video *v, const char *peer)
 		info("video: no video display\n");
 	}
 
-	size.w = v->cfg.width;
-	size.h = v->cfg.height;
-	err = set_encoder_format(&v->vtx, v->cfg.src_mod,
-				 v->vtx.device, &size);
-	if (err) {
-		warning("video: could not set encoder format to"
-			" [%u x %u] %m\n",
-			size.w, size.h, err);
+	if (vidsrc_find(NULL)) {
+		size.w = v->cfg.width;
+		size.h = v->cfg.height;
+		err = set_encoder_format(&v->vtx, v->cfg.src_mod,
+					 v->vtx.device, &size);
+		if (err) {
+			warning("video: could not set encoder format to"
+				" [%u x %u] %m\n",
+				size.w, size.h, err);
+		}
+	}
+	else {
+		info("video: no video source\n");
 	}
 
 	tmr_start(&v->tmr, TMR_INTERVAL * 1000, tmr_handler, v);
