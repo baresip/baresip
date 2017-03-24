@@ -153,6 +153,11 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 		const size_t flen = maxlen - sizeof(fu_hdr);
 
 		err = h265_nal_decode(&nal, buf);
+		if (err) {
+			warning("h265: encode: could not decode"
+				" NAL of %zu bytes (%m)\n", len, err);
+			return err;
+		}
 
 		h265_nal_encode(fu_hdr, H265_NAL_FU,
 				nal.nuh_temporal_id_plus1);
@@ -207,7 +212,11 @@ int h265_encode(struct videnc_state *st, bool update,
 		return EINVAL;
 	}
 
-	if (!st->x265 || !vidsz_cmp(&st->size, &frame->size)) {
+	if (!st->x265 || !vidsz_cmp(&st->size, &frame->size) ||
+	    st->param->internalCsp != colorspace) {
+
+		debug("h265: encoder: reset %u x %u (%s)\n",
+		      frame->size.w, frame->size.h, vidfmt_name(frame->fmt));
 
 		st->param->internalCsp = colorspace;
 
