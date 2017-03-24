@@ -141,7 +141,8 @@ static void overlay(struct vidframe *dst, unsigned yoffs, struct vidframe *src)
 
 		for (x=0; x<src->size.w; x++) {
 
-			if (psrc[x] > 127)
+			/* copy the luma component if visible */
+			if (psrc[x] > 16)
 				pdst[x] = psrc[x];
 		}
 
@@ -182,7 +183,7 @@ static int draw_text(struct panel *panel, struct vidframe *frame)
 	cairo_set_line_width (cr, 0.6);
 	cairo_stroke (cr);
 
-	vidframe_init_buf(&f, VID_FMT_ARGB, &panel->size_text,
+	vidframe_init_buf(&f, VID_FMT_RGB32, &panel->size_text,
 			  cairo_image_surface_get_data(panel->surface));
 
 	err = vidframe_alloc(&f2, frame->fmt, &panel->size_text);
