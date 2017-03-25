@@ -1071,8 +1071,11 @@ static int sipsess_offer_handler(struct mbuf **descp,
 
 		/* Decode SDP Offer */
 		err = sdp_decode(call->sdp, msg->mb, true);
-		if (err)
+		if (err) {
+			warning("call: reinvite: could not decode SDP offer:"
+				" %m\n", err);
 			return err;
+		}
 
 		err = update_media(call);
 		if (err)
