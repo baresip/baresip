@@ -292,6 +292,8 @@ static int update_media(struct call *call)
 	struct le *le;
 	int err = 0;
 
+	debug("call: update media\n");
+
 	/* media attributes */
 	audio_sdp_attr_decode(call->audio);
 

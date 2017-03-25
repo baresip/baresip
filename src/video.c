@@ -989,6 +989,8 @@ void video_stop(struct video *v)
 	if (!v)
 		return;
 
+	debug("video: stopping video source ..\n");
+
 	v->started = false;
 	v->vtx.vsrc = mem_deref(v->vtx.vsrc);
 }
