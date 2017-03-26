@@ -130,7 +130,10 @@ static int module_close(void)
 {
 	uag_event_unregister(ua_event_handler);
 
-	fclose(fd);
+	if (fd) {
+		fclose(fd);
+		fd = NULL;
+	}
 
 	unlink(DTMF_OUT);
 
