@@ -201,6 +201,10 @@ USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
 	&& echo "yes")
+USE_OMX := $(shell [ -f /opt/vc/include/bcm_host.h ] || \
+	[ -f $(SYSROOT)/include/bcm_host.h ] || \
+	[ -f $(SYSROOT_ALT)/include/bcm_host.h ] \
+	&& echo "yes")
 else
 # Windows.
 # Accounts for mingw with Windows SDK (formerly known as Platform SDK)
@@ -412,6 +416,9 @@ MODULES   += v4l
 endif
 ifneq ($(USE_V4L2),)
 MODULES   += v4l2 v4l2_codec
+endif
+ifneq ($(USE_OMX),)
+MODULES   += omx
 endif
 ifneq ($(USE_VPX),)
 MODULES   += vp8

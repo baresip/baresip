@@ -1,0 +1,17 @@
+README
+------
+
+This module implements support for the VideoCore4 of
+the Raspberry Pi A/B/2/3.
+Currently it only does video playback.
+
+EXAMPLE CONFIG
+--------------
+
+# Video
+video_display            omx,nil
+
+# Video codec Modules (in order)
+module                  omx.so
+
+
