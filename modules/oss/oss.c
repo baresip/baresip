@@ -18,6 +18,9 @@
 #else
 #include <sys/soundcard.h>
 #endif
+#ifdef SOLARIS
+#include <sys/filio.h>
+#endif
 
 
 /**
