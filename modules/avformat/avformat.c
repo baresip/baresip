@@ -151,6 +151,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	switch (frame->format) {
 
 	case AV_PIX_FMT_YUV420P:
+	case AV_PIX_FMT_YUVJ420P:
 		vf.fmt = VID_FMT_YUV420P;
 		break;
 
