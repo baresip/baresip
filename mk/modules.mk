@@ -32,6 +32,9 @@
 #   USE_L16           L16 audio codec
 #   USE_MPA           MPA audo codec
 #   USE_MPG123        Use mpg123
+#   USE_OMX_RPI       RaspberryPi VideoCore display driver
+#   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
+#   USE_OPUS          Opus audio codec
 #   USE_OPUS          Opus audio codec
 #   USE_OSS           OSS audio driver
 #   USE_PLC           Packet Loss Concealment
@@ -201,10 +204,13 @@ USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
 	&& echo "yes")
-USE_OMX := $(shell [ -f /opt/vc/include/bcm_host.h ] || \
-	[ -f $(SYSROOT)/include/bcm_host.h ] || \
-	[ -f $(SYSROOT_ALT)/include/bcm_host.h ] || \
-	[ -f $(SYSROOT)/include/OMX_Video.h ] \
+USE_OMX_RPI := $(shell [ -f /opt/vc/include/bcm_host.h ] || \
+	[ -f $(SYSROOT)/include/bcm_host.h ] \
+	|| [ -f $(SYSROOT_ALT)/include/bcm_host.h ] \
+	&& echo "yes")
+USE_OMX_BELLAGIO := $(shell [ -f /usr/include/OMX_Core.h ] \
+	|| [ -f $(SYSROOT)/include/OMX_Core.h ] \
+	|| [ -f $(SYSROOT_ALT)/include/OMX_Core.h ] \
 	&& echo "yes")
 else
 # Windows.
@@ -418,7 +424,10 @@ endif
 ifneq ($(USE_V4L2),)
 MODULES   += v4l2 v4l2_codec
 endif
-ifneq ($(USE_OMX),)
+ifneq ($(USE_OMX_RPI),)
+MODULES   += omx
+endif
+ifneq ($(USE_OMX_BELLAGIO),)
 MODULES   += omx
 endif
 ifneq ($(USE_VPX),)

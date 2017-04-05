@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 
 /* Avoids a VideoCore header warning about clock_gettime() */
 #include <time.h>
@@ -138,7 +137,7 @@ static void block_until_state_changed(OMX_HANDLETYPE hComponent,
 	while (i++ == 0 || eState != wanted_eState) {
 		OMX_GetState(hComponent, &eState);
 		if (eState != wanted_eState) {
-			usleep(10000);
+			sys_usleep(10000);
 		}
 	}
 }
@@ -201,7 +200,7 @@ static void block_until_port_changed(OMX_HANDLETYPE hComponent,
 				" failed with Result=%d\n", r);
 		}
 		if (portdef.bEnabled != bEnabled) {
-			usleep(10000);
+			sys_usleep(10000);
 		}
 	}
 }
@@ -216,7 +215,6 @@ int omx_display_enable(struct omx_state* st,
 #endif
 	OMX_ERRORTYPE err = OMX_ERROR_NONE;
 
-	pthread_mutex_lock(&st->omx_mutex);
 	info("omx_update_size %d %d\n", width, height);
 
 	#ifdef RASPBERRY_PI
@@ -273,7 +271,7 @@ int omx_display_enable(struct omx_state* st,
 
 	OMX_SendCommand(st->video_render, OMX_CommandStateSet,
 		OMX_StateIdle, NULL);
-	usleep(50000);
+	sys_usleep(50000);
 
 	if (!st->buffers) {
 		st->buffers =
@@ -299,7 +297,6 @@ int omx_display_enable(struct omx_state* st,
 	block_until_state_changed(st->video_render, OMX_StateExecuting);
 
 exit:
-	pthread_mutex_unlock(&st->omx_mutex);
 	return err;
 }
 
@@ -307,8 +304,6 @@ exit:
 int omx_display_input_buffer(struct omx_state* st,
 	void** pbuf, uint32_t* plen)
 {
-	pthread_mutex_lock(&st->omx_mutex);
-
 	if (!st->buffers) return EINVAL;
 
 	*pbuf = st->buffers[0]->pBuffer;
@@ -317,20 +312,15 @@ int omx_display_input_buffer(struct omx_state* st,
 	st->buffers[0]->nFilledLen = *plen;
 	st->buffers[0]->nOffset = 0;
 
-	pthread_mutex_unlock(&st->omx_mutex);
-
 	return 0;
 }
 
 int omx_display_flush_buffer(struct omx_state* st)
 {
-	pthread_mutex_lock(&st->omx_mutex);
 	if (OMX_EmptyThisBuffer(st->video_render, st->buffers[0])
 		!= OMX_ErrorNone) {
 		error("OMX_EmptyThisBuffer error");
 	}
-
-	pthread_mutex_unlock(&st->omx_mutex);
 
 	return 0;
 }
