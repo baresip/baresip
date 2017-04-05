@@ -5,11 +5,26 @@
  * Copyright (C) 2016 - 2017 Jonathan Sieber
  */
 
+#ifdef RASPBERRY_PI
 #include <IL/OMX_Core.h>
 #include <IL/OMX_Video.h>
 #include <IL/OMX_Broadcom.h>
-#include <pthread.h>
+#else
+#include <OMX_Core.h>
+#include <OMX_Component.h>
+#include <OMX_Video.h>
 
+#define OMX_VERSION 0x01010101
+#define OMX_ERROR_NONE 0
+#endif
+
+#include <pthread.h>
+#include <stdint.h>
+#include <string.h>
+
+/* Needed for usleep to appear */
+#define _BSD_SOURCE
+#include <unistd.h>
 
 struct omx_state {
 	pthread_mutex_t omx_mutex;

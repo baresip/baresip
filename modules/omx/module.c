@@ -66,15 +66,13 @@ int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp* vd,
 int omx_vidisp_display(struct vidisp_st *st, const char *title,
 		   const struct vidframe *frame)
 {
-	int i;
+	int err = 0;
 	void* buf;
 	uint32_t len;
-	uint32_t offset = 0;
 
-	size_t plane_bytes;
-	void* dest;
+	struct vidframe omx_frame;
 
-	int err = 0;
+	(void)title;
 
 	if (frame->fmt != VID_FMT_YUV420P) {
 		return EINVAL;
@@ -93,33 +91,23 @@ int omx_vidisp_display(struct vidisp_st *st, const char *title,
 			return err;
 		}
 		st->size = frame->size;
-		memcpy(&st->size, &frame->size, sizeof(struct vidsz));
 	}
 
 	/* Get Buffer Pointer */
 	omx_display_input_buffer(st->omx, &buf, &len);
 
-	for (i = 0; i < 3; i++) {
-		plane_bytes = frame->linesize[i] *
-			frame->size.h / (i > 0 ? 2 : 1);
-		dest = buf + offset;
+	vidframe_init_buf(&omx_frame, VID_FMT_YUV420P, &frame->size,
+			  buf);
 
-		if (offset + plane_bytes > len) {
-			warn("Too large frame for OMX Buffer size. Expected"
-				" %d, got %d\n", len, offset + plane_bytes);
-			return ENOMEM;
-		}
+	vidconv(&omx_frame, frame, 0);
 
-		memcpy(dest, frame->data[i], plane_bytes);
-		offset += plane_bytes;
-	}
 	omx_display_flush_buffer(st->omx);
 	return 0;
 }
 
 static int module_init(void)
 {
-	if (!omx_init(&omx)) {
+	if (omx_init(&omx) != 0) {
 		error("Could not initialize OpenMAX");
 		return ENODEV;
 	}

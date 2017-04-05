@@ -203,7 +203,8 @@ USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	&& echo "yes")
 USE_OMX := $(shell [ -f /opt/vc/include/bcm_host.h ] || \
 	[ -f $(SYSROOT)/include/bcm_host.h ] || \
-	[ -f $(SYSROOT_ALT)/include/bcm_host.h ] \
+	[ -f $(SYSROOT_ALT)/include/bcm_host.h ] || \
+	[ -f $(SYSROOT)/include/OMX_Video.h ] \
 	&& echo "yes")
 else
 # Windows.

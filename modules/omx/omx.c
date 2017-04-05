@@ -27,11 +27,27 @@
  *  * Proper sync OMX events across threads, instead of busy waiting
  */
 
+#ifdef RASPBERRY_PI
 static const int VIDEO_RENDER_PORT = 90;
+#else
+static const int VIDEO_RENDER_PORT = 0;
+#endif
 
-static int EventHandler(OMX_HANDLETYPE hComponent, void* pAppData,
+/*
+static void setHeader(OMX_PTR header, OMX_U32 size) {
+  OMX_VERSIONTYPE* ver = (OMX_VERSIONTYPE*)(header + sizeof(OMX_U32));
+  *((OMX_U32*)header) = size;
+
+  ver->s.nVersionMajor = VERSIONMAJOR;
+  ver->s.nVersionMinor = VERSIONMINOR;
+  ver->s.nRevision = VERSIONREVISION;
+  ver->s.nStep = VERSIONSTEP;
+}
+* */
+
+static OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData,
 	OMX_EVENTTYPE eEvent, OMX_U32 nData1, OMX_U32 nData2,
-	void* pEventData)
+	OMX_PTR pEventData)
 {
 	(void) hComponent;
 	switch (eEvent) {
@@ -55,8 +71,9 @@ static int EventHandler(OMX_HANDLETYPE hComponent, void* pAppData,
 	return 0;
 }
 
-static int EmptyBufferDone(OMX_HANDLETYPE hComponent, void* pAppData,
-	OMX_BUFFERHEADERTYPE* pBuffer)
+static OMX_ERRORTYPE EmptyBufferDone(
+	OMX_HANDLETYPE hComponent,
+	OMX_PTR pAppData, OMX_BUFFERHEADERTYPE* pBuffer)
 {
 	(void) hComponent;
 	(void) pAppData;
@@ -78,33 +95,37 @@ static OMX_ERRORTYPE FillBufferDone(OMX_HANDLETYPE hComponent,
 }
 
 static struct OMX_CALLBACKTYPE callbacks = {
-	&EventHandler,
-	&EmptyBufferDone,
+	EventHandler,
+	EmptyBufferDone,
 	&FillBufferDone
 };
 
 int omx_init(struct omx_state* st)
 {
 	OMX_ERRORTYPE err;
-
+#ifdef RASPBERRY_PI
 	bcm_host_init();
+#endif
 
 	st->buffers = NULL;
 
-   	pthread_mutex_init(&st->omx_mutex, 0);
-
 	err = OMX_Init();
+#ifdef RASPBERRY_PI
 	err |= OMX_GetHandle(&st->video_render,
 		"OMX.broadcom.video_render", 0, &callbacks);
+#else
+	err |= OMX_GetHandle(&st->video_render,
+		"OMX.st.video.xvideosink", 0, &callbacks);
+#endif
 
-	if (err != OMX_ERROR_NONE) {
+	if (!st->video_render || err != OMX_ERROR_NONE) {
 		error("Failed to create OMX video_render component");
+		return ENOENT;
 	}
 	else {
 		info("created video_render component");
+		return 0;
 	}
-
-	return err;
 }
 
 
@@ -138,6 +159,9 @@ void omx_deinit(struct omx_state* st)
 
 void omx_display_disable(struct omx_state* st)
 {
+	(void)st;
+
+	#ifdef RASPBERRY_PI
 	OMX_ERRORTYPE err;
 	OMX_CONFIG_DISPLAYREGIONTYPE config;
 	memset(&config, 0, sizeof(OMX_CONFIG_DISPLAYREGIONTYPE));
@@ -151,8 +175,10 @@ void omx_display_disable(struct omx_state* st)
 		OMX_IndexConfigDisplayRegion, &config);
 
 	if (err != OMX_ERROR_NONE) {
-		warn("omx_display_disable command failed");
+		warning("omx_display_disable command failed");
 	}
+
+	#endif
 }
 
 static void block_until_port_changed(OMX_HANDLETYPE hComponent,
@@ -169,7 +195,7 @@ static void block_until_port_changed(OMX_HANDLETYPE hComponent,
 
 	while (i++ == 0 || portdef.bEnabled != bEnabled) {
 		r = OMX_GetParameter(hComponent,
-			OMX_IndexParamPortDefinition, &portdef));
+			OMX_IndexParamPortDefinition, &portdef);
 		if (r != OMX_ErrorNone) {
 			error("block_until_port_changed: OMX_GetParameter "
 				" failed with Result=%d\n", r);
@@ -185,12 +211,15 @@ int omx_display_enable(struct omx_state* st,
 {
 	unsigned int i;
 	OMX_PARAM_PORTDEFINITIONTYPE portdef;
+#ifdef RASPBERRY_PI
 	OMX_CONFIG_DISPLAYREGIONTYPE config;
+#endif
 	OMX_ERRORTYPE err = OMX_ERROR_NONE;
 
 	pthread_mutex_lock(&st->omx_mutex);
 	info("omx_update_size %d %d\n", width, height);
 
+	#ifdef RASPBERRY_PI
 	memset(&config, 0, sizeof(OMX_CONFIG_DISPLAYREGIONTYPE));
 	config.nSize = sizeof(OMX_CONFIG_DISPLAYREGIONTYPE);
 	config.nVersion.nVersion = OMX_VERSION;
@@ -200,6 +229,8 @@ int omx_display_enable(struct omx_state* st,
 
 	err |= OMX_SetParameter(st->video_render,
 		OMX_IndexConfigDisplayRegion, &config);
+
+	#endif
 
 	memset(&portdef, 0, sizeof(OMX_PARAM_PORTDEFINITIONTYPE));
 	portdef.nSize = sizeof(OMX_PARAM_PORTDEFINITIONTYPE);
@@ -215,6 +246,13 @@ int omx_display_enable(struct omx_state* st,
 	portdef.format.video.nStride = stride;
 	portdef.format.video.nSliceHeight = height;
 	portdef.bEnabled = 1;
+
+	if (err != OMX_ERROR_NONE) {
+		error("omx_display_enable: failed to set up video port");
+		err = ENOMEM;
+		goto exit;
+	}
+
 
 	err |= OMX_SetParameter(st->video_render,
 		OMX_IndexParamPortDefinition, &portdef);
@@ -271,11 +309,12 @@ int omx_display_input_buffer(struct omx_state* st,
 {
 	pthread_mutex_lock(&st->omx_mutex);
 
-	assert(st->buffers);
+	if (!st->buffers) return EINVAL;
+
 	*pbuf = st->buffers[0]->pBuffer;
 	*plen = st->buffers[0]->nAllocLen;
 
-	st->buffers[0]->nFilledLen = *pl
+	st->buffers[0]->nFilledLen = *plen;
 	st->buffers[0]->nOffset = 0;
 
 	pthread_mutex_unlock(&st->omx_mutex);
