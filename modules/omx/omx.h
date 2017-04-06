@@ -27,14 +27,10 @@
 #include <unistd.h>
 
 struct omx_state {
-	pthread_mutex_t omx_mutex;
-
 	OMX_HANDLETYPE video_render;
 	OMX_BUFFERHEADERTYPE** buffers;
 	int num_buffers;
 	int current_buffer;
-
-	int width, height;
 };
 
 int omx_init(struct omx_state* st);
