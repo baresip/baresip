@@ -255,6 +255,7 @@ mpa           MPA Speech and Audio Codec
 mwi           Message Waiting Indication
 natbd         NAT Behavior Discovery Module
 natpmp        NAT Port Mapping Protocol (NAT-PMP) module
+omx           OpenMAX IL video display module
 opengl        OpenGL video output
 opengles      OpenGLES video output
 opensles      OpenSLES audio driver
