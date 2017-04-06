@@ -44,35 +44,42 @@ static void setHeader(OMX_PTR header, OMX_U32 size) {
 }
 * */
 
+
 static OMX_ERRORTYPE EventHandler(OMX_HANDLETYPE hComponent, OMX_PTR pAppData,
 	OMX_EVENTTYPE eEvent, OMX_U32 nData1, OMX_U32 nData2,
 	OMX_PTR pEventData)
 {
 	(void) hComponent;
+
 	switch (eEvent) {
-		case OMX_EventCmdComplete:
-			debug("omx.EventHandler: Previous command completed\n"
-				"d1=%x\td2=%x\teventData=%p\tappdata=%p\n",
-				nData1, nData2, pEventData, pAppData);
-			/* TODO: Put these event into a multithreaded queue,
-			 * properly wait for them in the issuing code */
-			break;
-		case OMX_EventError:
-			warning("omx.EventHandler: Error event type "
-				"data1=%x\tdata2=%x\n", nData1, nData2);
-			break;
-		default:
-			warning("omx.EventHandler: Unknown event type %d\t"
-				"data1=%x data2=%x\n", eEvent, nData1, nData2);
-			return -1;
-			break;
+
+	case OMX_EventCmdComplete:
+		debug("omx.EventHandler: Previous command completed\n"
+		      "d1=%x\td2=%x\teventData=%p\tappdata=%p\n",
+		      nData1, nData2, pEventData, pAppData);
+		/* TODO: Put these event into a multithreaded queue,
+		 * properly wait for them in the issuing code */
+		break;
+
+	case OMX_EventError:
+		warning("omx.EventHandler: Error event type "
+			"data1=%x\tdata2=%x\n", nData1, nData2);
+		break;
+
+	default:
+		warning("omx.EventHandler: Unknown event type %d\t"
+			"data1=%x data2=%x\n", eEvent, nData1, nData2);
+		return -1;
+		break;
 	}
+
 	return 0;
 }
 
-static OMX_ERRORTYPE EmptyBufferDone(
-	OMX_HANDLETYPE hComponent,
-	OMX_PTR pAppData, OMX_BUFFERHEADERTYPE* pBuffer)
+
+static OMX_ERRORTYPE EmptyBufferDone(OMX_HANDLETYPE hComponent,
+				     OMX_PTR pAppData,
+				     OMX_BUFFERHEADERTYPE* pBuffer)
 {
 	(void) hComponent;
 	(void) pAppData;
@@ -82,6 +89,7 @@ static OMX_ERRORTYPE EmptyBufferDone(
 	 * and panic if an unexpected event arrives */
 	return 0;
 }
+
 
 static OMX_ERRORTYPE FillBufferDone(OMX_HANDLETYPE hComponent,
 	OMX_PTR pAppData, OMX_BUFFERHEADERTYPE* pBuffer)
@@ -93,11 +101,13 @@ static OMX_ERRORTYPE FillBufferDone(OMX_HANDLETYPE hComponent,
 	return 0;
 }
 
+
 static struct OMX_CALLBACKTYPE callbacks = {
 	EventHandler,
 	EmptyBufferDone,
 	&FillBufferDone
 };
+
 
 int omx_init(struct omx_state* st)
 {
@@ -156,6 +166,7 @@ void omx_deinit(struct omx_state* st)
 	OMX_Deinit();
 }
 
+
 void omx_display_disable(struct omx_state* st)
 {
 	(void)st;
@@ -179,6 +190,7 @@ void omx_display_disable(struct omx_state* st)
 
 	#endif
 }
+
 
 static void block_until_port_changed(OMX_HANDLETYPE hComponent,
 	OMX_U32 nPortIndex, OMX_BOOL bEnabled) {
@@ -204,6 +216,7 @@ static void block_until_port_changed(OMX_HANDLETYPE hComponent,
 		}
 	}
 }
+
 
 int omx_display_enable(struct omx_state* st,
 	int width, int height, int stride)
@@ -250,7 +263,6 @@ int omx_display_enable(struct omx_state* st,
 		err = ENOMEM;
 		goto exit;
 	}
-
 
 	err |= OMX_SetParameter(st->video_render,
 		OMX_IndexParamPortDefinition, &portdef);
@@ -314,6 +326,7 @@ int omx_display_input_buffer(struct omx_state* st,
 
 	return 0;
 }
+
 
 int omx_display_flush_buffer(struct omx_state* st)
 {

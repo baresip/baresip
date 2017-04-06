@@ -30,15 +30,17 @@ static struct vidisp* vid;
 
 static struct omx_state omx;
 
+
 static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
 	omx_display_disable(st->omx);
 }
 
+
 int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp* vd,
-	struct vidisp_prm *prm,	const char *dev, vidisp_resize_h *resizeh,
-	void *arg)
+		     struct vidisp_prm *prm, const char *dev,
+		     vidisp_resize_h *resizeh, void *arg)
 {
 	struct vidisp_st *st;
 
@@ -105,6 +107,7 @@ int omx_vidisp_display(struct vidisp_st *st, const char *title,
 	return 0;
 }
 
+
 static int module_init(void)
 {
 	if (omx_init(&omx) != 0) {
@@ -115,6 +118,7 @@ static int module_init(void)
 	return vidisp_register(&vid, "omx",
 		omx_vidisp_alloc, NULL, omx_vidisp_display, NULL);
 }
+
 
 static int module_close(void)
 {
