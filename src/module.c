@@ -1,5 +1,5 @@
 /**
- * @file module.c Module loading
+ * @file src/module.c Module loading
  *
  * Copyright (C) 2010 Creytiv.com
  */
