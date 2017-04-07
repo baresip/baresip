@@ -35,7 +35,6 @@
 #   USE_OMX_RPI       RaspberryPi VideoCore display driver
 #   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
 #   USE_OPUS          Opus audio codec
-#   USE_OPUS          Opus audio codec
 #   USE_OSS           OSS audio driver
 #   USE_PLC           Packet Loss Concealment
 #   USE_PORTAUDIO     Portaudio audio driver
