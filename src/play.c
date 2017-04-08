@@ -86,7 +86,7 @@ static void write_handler(int16_t *sampv, size_t sampc, void *arg)
 		left = mbuf_get_left(play->mb);
 		count = (left > sz - pos) ? sz - pos : left;
 
-		(void)mbuf_read_mem(play->mb, (void *)(sampv + pos), count);
+		(void)mbuf_read_mem(play->mb, (uint8_t *)sampv + pos, count);
 
 		pos += count;
 
@@ -105,7 +105,7 @@ static void write_handler(int16_t *sampv, size_t sampc, void *arg)
 
  silence:
 	if (play->eof)
-		memset(sampv + pos, 0, sz - pos);
+		memset((uint8_t *)sampv + pos, 0, sz - pos);
 
 	lock_rel(play->lock);
 }
