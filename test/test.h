@@ -53,6 +53,20 @@
 		goto out;						\
 	}
 
+#define TEST_MEMCMP(expected, expn, actual, actn)			\
+	if (expn != actn ||						\
+	    0 != memcmp((expected), (actual), (expn))) {		\
+		(void)re_fprintf(stderr, "\n");				\
+		warning("TEST_MEMCMP: %s:%u:"				\
+			" %s(): failed\n",				\
+			__FILE__, __LINE__, __func__);			\
+		test_hexdump_dual(stderr,				\
+				  expected, expn,			\
+				  actual, actn);			\
+		err = EINVAL;						\
+		goto out;						\
+	}
+
 #define TEST_STRCMP(expected, expn, actual, actn)			\
 	if (expn != actn ||						\
 	    0 != memcmp((expected), (actual), (expn))) {		\
@@ -79,6 +93,9 @@
 
 int re_main_timeout(uint32_t timeout_ms);
 bool test_cmp_double(double a, double b, double precision);
+void test_hexdump_dual(FILE *f,
+		       const void *ep, size_t elen,
+		       const void *ap, size_t alen);
 
 
 #ifdef USE_TLS
@@ -111,6 +128,18 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
 struct ausrc;
 
 int mock_ausrc_register(struct ausrc **ausrcp);
+
+
+/*
+ * Mock Audio-player
+ */
+
+struct auplay;
+
+typedef void (mock_sample_h)(const int16_t *sampv, size_t sampc, void *arg);
+
+int mock_auplay_register(struct auplay **auplayp,
+			 mock_sample_h *sampleh, void *arg);
 
 
 /*
@@ -155,6 +184,7 @@ int test_ua_options(void);
 int test_message(void);
 int test_mos(void);
 int test_network(void);
+int test_play(void);
 
 int test_call_answer(void);
 int test_call_reject(void);
