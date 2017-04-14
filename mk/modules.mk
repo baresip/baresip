@@ -1,7 +1,7 @@
 #
 # modules.mk
 #
-# Copyright (C) 2010 - 2016 Creytiv.com
+# Copyright (C) 2010 - 2017 Creytiv.com
 #
 # External libraries:
 #
@@ -29,6 +29,7 @@
 #   USE_H265          H.265 video codec
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
+#   USE_JACK          JACK Audio Connection Kit audio driver
 #   USE_L16           L16 audio codec
 #   USE_MPA           MPA audo codec
 #   USE_MPG123        Use mpg123
@@ -123,6 +124,8 @@ USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT)/local/include/iLBC_define.h ] && echo "yes")
 USE_ISAC := $(shell [ -f $(SYSROOT)/include/isac.h ] || \
 	[ -f $(SYSROOT)/local/include/isac.h ] && echo "yes")
+USE_JACK := $(shell [ -f $(SYSROOT)/include/jack/jack.h ] || \
+	[ -f $(SYSROOT)/local/include/jack/jack.h ] && echo "yes")
 USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
 	[ -f $(SYSROOT)/local/include/mpg123.h ] || \
 	[ -f $(SYSROOT_ALT)/include/mpg123.h ] && echo "yes")
@@ -362,6 +365,9 @@ MODULES   += ilbc
 endif
 ifneq ($(USE_ISAC),)
 MODULES   += isac
+endif
+ifneq ($(USE_JACK),)
+MODULES   += jack
 endif
 ifneq ($(USE_L16),)
 MODULES   += l16
