@@ -127,7 +127,7 @@ int omx_init(struct omx_state* st)
 		"OMX.st.video.xvideosink", 0, &callbacks);
 #endif
 
-	if (!st->video_render || err != OMX_ERROR_NONE) {
+	if (!st->video_render || err != 0) {
 		error("Failed to create OMX video_render component");
 		return ENOENT;
 	}
@@ -184,7 +184,7 @@ void omx_display_disable(struct omx_state* st)
 	err = OMX_SetParameter(st->video_render,
 		OMX_IndexConfigDisplayRegion, &config);
 
-	if (err != OMX_ERROR_NONE) {
+	if (err != 0) {
 		warning("omx_display_disable command failed");
 	}
 
@@ -226,7 +226,7 @@ int omx_display_enable(struct omx_state* st,
 #ifdef RASPBERRY_PI
 	OMX_CONFIG_DISPLAYREGIONTYPE config;
 #endif
-	OMX_ERRORTYPE err = OMX_ERROR_NONE;
+	OMX_ERRORTYPE err = 0;
 
 	info("omx_update_size %d %d\n", width, height);
 
@@ -258,7 +258,7 @@ int omx_display_enable(struct omx_state* st,
 	portdef.format.video.nSliceHeight = height;
 	portdef.bEnabled = 1;
 
-	if (err != OMX_ERROR_NONE) {
+	if (err != 0) {
 		error("omx_display_enable: failed to set up video port");
 		err = ENOMEM;
 		goto exit;
@@ -271,7 +271,7 @@ int omx_display_enable(struct omx_state* st,
 	err |= OMX_GetParameter(st->video_render,
 		OMX_IndexParamPortDefinition, &portdef);
 
-	if (err != OMX_ERROR_NONE || !portdef.bEnabled) {
+	if (err != 0 || !portdef.bEnabled) {
 		error("omx_display_enable: failed to set up video port");
 		err = ENOMEM;
 		goto exit;
