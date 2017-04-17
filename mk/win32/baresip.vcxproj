@@ -63,7 +63,7 @@
       <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename).obj</ObjectFileName>
     </ClCompile>
     <Link>
-      <AdditionalOptions>winmm.lib wsock32.lib ..\..\..\re\$(Platform)\$(Configuration)\bin\re-win32.lib ..\..\..\rem\$(Platform)\$(Configuration)\bin\rem-win32.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>winmm.lib ..\..\..\re\$(Platform)\$(Configuration)\bin\re-win32.lib ..\..\..\rem\$(Platform)\$(Configuration)\bin\rem-win32.lib %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(OutDir)baresip-win32.exe</OutputFile>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
