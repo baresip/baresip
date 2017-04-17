@@ -353,7 +353,15 @@ static const char *default_audio_device(void)
 #if defined (ANDROID)
 	return "opensles,nil";
 #elif defined (DARWIN)
-	return "coreaudio,nil";
+	uint32_t major;
+
+	/*
+	 * Darwin version 15 == 10.11.x El Capitan
+	 */
+	if (0 == sys_rel_get(NULL, &major, NULL, NULL) && major >= 15)
+		return "audiounit,nil";
+	else
+		return "coreaudio,nil";
 #elif defined (FREEBSD)
 	return "oss,/dev/dsp";
 #elif defined (OPENBSD)
