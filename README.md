@@ -390,7 +390,7 @@ zrtp          ZRTP media encryption module
 * NetBSD
 * OpenBSD
 * Solaris
-* Windows
+* Windows (mingw and VS2015)
 
 
 ### Supported versions of C Standard library
