@@ -87,7 +87,7 @@ int omx_vidisp_display(struct vidisp_st *st, const char *title,
 			frame->linesize[0], frame->linesize[1],
 			frame->linesize[2]);
 		err = omx_display_enable(st->omx,
-			frame->size.w, frame->size.h, frame->linesize[0]);
+			frame->size.w, frame->size.h, frame->size.w);
 		if (err) {
 			error("omx_display_enable failed");
 			return err;

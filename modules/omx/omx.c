@@ -127,12 +127,12 @@ int omx_init(struct omx_state* st)
 		"OMX.st.video.xvideosink", 0, &callbacks);
 #endif
 
-	if (!st->video_render || err != OMX_ERROR_NONE) {
-		error("Failed to create OMX video_render component");
+	if (!st->video_render || err != 0) {
+		error("Failed to create OMX video_render component\n");
 		return ENOENT;
 	}
 	else {
-		info("created video_render component");
+		info("created video_render component\n");
 		return 0;
 	}
 }
@@ -184,7 +184,7 @@ void omx_display_disable(struct omx_state* st)
 	err = OMX_SetParameter(st->video_render,
 		OMX_IndexConfigDisplayRegion, &config);
 
-	if (err != OMX_ERROR_NONE) {
+	if (err != 0) {
 		warning("omx_display_disable command failed");
 	}
 
@@ -226,7 +226,7 @@ int omx_display_enable(struct omx_state* st,
 #ifdef RASPBERRY_PI
 	OMX_CONFIG_DISPLAYREGIONTYPE config;
 #endif
-	OMX_ERRORTYPE err = OMX_ERROR_NONE;
+	OMX_ERRORTYPE err = 0;
 
 	info("omx_update_size %d %d\n", width, height);
 
@@ -251,6 +251,17 @@ int omx_display_enable(struct omx_state* st,
 	/* specify buffer requirements */
 	err |= OMX_GetParameter(st->video_render,
 		OMX_IndexParamPortDefinition, &portdef);
+	if (err != 0) {
+		error("omx_display_enable: couldn't retrieve port def\n");
+		err = ENOMEM;
+		goto exit;
+	}
+
+	info("omx port definition: h=%d w=%d s=%d sh=%d\n",
+		portdef.format.video.nFrameWidth,
+		portdef.format.video.nFrameHeight,
+		portdef.format.video.nStride,
+		portdef.format.video.nSliceHeight);
 
 	portdef.format.video.nFrameWidth = width;
 	portdef.format.video.nFrameHeight = height;
@@ -258,21 +269,19 @@ int omx_display_enable(struct omx_state* st,
 	portdef.format.video.nSliceHeight = height;
 	portdef.bEnabled = 1;
 
-	if (err != OMX_ERROR_NONE) {
-		error("omx_display_enable: failed to set up video port");
-		err = ENOMEM;
-		goto exit;
-	}
-
 	err |= OMX_SetParameter(st->video_render,
 		OMX_IndexParamPortDefinition, &portdef);
+
+	if (err) {
+		error("omx_display_enable: could not set port definition\n");
+	}
 	block_until_port_changed(st->video_render, VIDEO_RENDER_PORT, true);
 
 	err |= OMX_GetParameter(st->video_render,
 		OMX_IndexParamPortDefinition, &portdef);
 
-	if (err != OMX_ERROR_NONE || !portdef.bEnabled) {
-		error("omx_display_enable: failed to set up video port");
+	if (err != 0 || !portdef.bEnabled) {
+		error("omx_display_enable: failed to set up video port\n");
 		err = ENOMEM;
 		goto exit;
 	}
