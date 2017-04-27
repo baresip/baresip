@@ -178,6 +178,7 @@ int mock_vidisp_register(struct vidisp **vidispp);
 /* test cases */
 
 int test_account(void);
+int test_aulevel(void);
 int test_cmd(void);
 int test_cmd_long(void);
 int test_contact(void);

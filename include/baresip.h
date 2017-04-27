@@ -65,6 +65,18 @@ const char *account_stun_host(const struct account *acc);
 
 
 /*
+ * Audio-level
+ */
+
+
+#define AULEVEL_MIN  (-96.0)
+#define AULEVEL_MAX    (0.0)
+
+
+double aulevel_calc_dbov(const int16_t *sampv, size_t sampc);
+
+
+/*
  * Call
  */
 

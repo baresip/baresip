@@ -9,6 +9,7 @@
 # Test-cases:
 #
 TEST_SRCS	+= account.c
+TEST_SRCS	+= aulevel.c
 TEST_SRCS	+= call.c
 TEST_SRCS	+= cmd.c
 TEST_SRCS	+= contact.c
