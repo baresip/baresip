@@ -991,7 +991,8 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	aufilt_register(&vumeter);
+	aufilt_register(baresip_aufiltl(), &vumeter);
+
 #ifdef USE_NOTIFICATIONS
 	err = message_listen(&mod_obj.message, baresip_message(),
 			     message_handler, &mod_obj);

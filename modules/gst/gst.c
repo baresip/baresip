@@ -432,7 +432,7 @@ static int mod_gst_init(void)
 
 	g_free(s);
 
-	return ausrc_register(&ausrc, "gst", gst_alloc);
+	return ausrc_register(&ausrc, baresip_ausrcl(), "gst", gst_alloc);
 }
 
 

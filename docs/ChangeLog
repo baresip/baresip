@@ -1,3 +1,40 @@
+2017-04-07 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.2
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.2
+	* NOTE: Requires libre v0.5.0 or later
+	        Requires librem v0.5.0 or later
+
+	* new modules:
+	  - omx    OpenMAX IL video display module (thanks Jonathan Sieber)
+
+	* config:
+	  - (no changes)
+
+	* baresip-core:
+	  - aucodec: make the API re-entrant
+	  - aufilt: make the API re-entrant
+	  - auplay: make the API re-entrant
+	  - ausrc: make the API re-entrant
+	  - video: using a video-source is now optional
+
+	* Modules:
+
+	* avformat: add pixelformat AV_PIX_FMT_YUVJ420P (Thanks Gary Metalle)
+
+	* cairo: print picture info, use grey background
+
+	* dtmfio: check fd before calling fclose (thanks Richard Perez)
+
+	* h265: enable YUV444P pixelformat
+
+	* oss: fix build for Solaris 11
+
+	* speex: mark the module as deprecated, see speex.org
+
+
 2017-03-04 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.1

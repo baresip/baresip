@@ -18,6 +18,9 @@
 #else
 #include <sys/soundcard.h>
 #endif
+#ifdef SOLARIS
+#include <sys/filio.h>
+#endif
 
 
 /**
@@ -337,8 +340,8 @@ static int module_init(void)
 {
 	int err;
 
-	err  = ausrc_register(&ausrc, "oss", src_alloc);
-	err |= auplay_register(&auplay, "oss", play_alloc);
+	err  = ausrc_register(&ausrc, baresip_ausrcl(), "oss", src_alloc);
+	err |= auplay_register(&auplay, baresip_auplayl(), "oss", play_alloc);
 
 	return err;
 }

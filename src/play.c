@@ -11,7 +11,7 @@
 #include "core.h"
 
 
-enum {SILENCE_DUR = 2000, PTIME = 40};
+enum {PTIME = 40};
 
 /** Audio file player */
 struct play {
@@ -49,21 +49,6 @@ static void tmr_stop(void *arg)
 }
 
 
-static void tmr_repeat(void *arg)
-{
-	struct play *play = arg;
-
-	lock_write_get(play->lock);
-
-	play->mb->pos = 0;
-	play->eof = false;
-
-	tmr_start(&play->tmr, 1000, tmr_polling, arg);
-
-	lock_rel(play->lock);
-}
-
-
 static void tmr_polling(void *arg)
 {
 	struct play *play = arg;
@@ -73,13 +58,8 @@ static void tmr_polling(void *arg)
 	tmr_start(&play->tmr, 1000, tmr_polling, arg);
 
 	if (play->eof) {
-		if (play->repeat > 0)
-			play->repeat--;
-
 		if (play->repeat == 0)
 			tmr_start(&play->tmr, 1, tmr_stop, arg);
-		else
-			tmr_start(&play->tmr, SILENCE_DUR, tmr_repeat, arg);
 	}
 
 	lock_rel(play->lock);
@@ -93,27 +73,39 @@ static void write_handler(int16_t *sampv, size_t sampc, void *arg)
 {
 	struct play *play = arg;
 	size_t sz = sampc * 2;
+	size_t pos = 0;
+	size_t left;
+	size_t count;
 
 	lock_write_get(play->lock);
 
 	if (play->eof)
 		goto silence;
 
-	if (mbuf_get_left(play->mb) < sz) {
+	while (pos < sz) {
+		left = mbuf_get_left(play->mb);
+		count = (left > sz - pos) ? sz - pos : left;
 
-		memset(sampv, 0, sz);
-		(void)mbuf_read_mem(play->mb, (void *)sampv,
-				    mbuf_get_left(play->mb));
+		(void)mbuf_read_mem(play->mb, (uint8_t *)sampv + pos, count);
 
-		play->eof = true;
-	}
-	else {
-		(void)mbuf_read_mem(play->mb, (void *)sampv, sz);
+		pos += count;
+
+		if (pos < sz) {
+			if (play->repeat > 0)
+				play->repeat--;
+
+			if (play->repeat == 0) {
+				play->eof = true;
+				goto silence;
+			}
+
+			play->mb->pos = 0;
+		}
 	}
 
  silence:
 	if (play->eof)
-		memset(sampv, 0, sz);
+		memset((uint8_t *)sampv + pos, 0, sz - pos);
 
 	lock_rel(play->lock);
 }
@@ -251,7 +243,8 @@ int play_tone(struct play **playp, struct player *player,
 	wprm.srate      = srate;
 	wprm.ptime      = PTIME;
 
-	err = auplay_alloc(&play->auplay, cfg->audio.alert_mod, &wprm,
+	err = auplay_alloc(&play->auplay, baresip_auplayl(),
+			   cfg->audio.alert_mod, &wprm,
 			   cfg->audio.alert_dev, write_handler, play);
 	if (err)
 		goto out;

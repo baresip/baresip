@@ -15,6 +15,8 @@
  * @defgroup speex speex
  *
  * The Speex audio codec
+ *
+ * NOTE: The Speex codec has been obsoleted by Opus.
  */
 
 

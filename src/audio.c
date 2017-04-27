@@ -907,7 +907,7 @@ static int aufilt_setup(struct audio *a)
 	aufilt_param_set(&decprm, rx->ac, rx->ptime);
 
 	/* Audio filters */
-	for (le = list_head(aufilt_list()); le; le = le->next) {
+	for (le = list_head(baresip_aufiltl()); le; le = le->next) {
 		struct aufilt *af = le->data;
 		struct aufilt_enc_st *encst = NULL;
 		struct aufilt_dec_st *decst = NULL;
@@ -986,7 +986,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 	}
 
 	/* Start Audio Player */
-	if (!rx->auplay && auplay_find(NULL)) {
+	if (!rx->auplay && auplay_find(baresip_auplayl(), NULL)) {
 
 		struct auplay_prm prm;
 
@@ -1004,7 +1004,8 @@ static int start_player(struct aurx *rx, struct audio *a)
 				return err;
 		}
 
-		err = auplay_alloc(&rx->auplay, a->cfg.play_mod,
+		err = auplay_alloc(&rx->auplay, baresip_auplayl(),
+				   a->cfg.play_mod,
 				   &prm, rx->device,
 				   auplay_write_handler, rx);
 		if (err) {
@@ -1064,7 +1065,7 @@ static int start_source(struct autx *tx, struct audio *a)
 	}
 
 	/* Start Audio Source */
-	if (!tx->ausrc && ausrc_find(NULL)) {
+	if (!tx->ausrc && ausrc_find(baresip_ausrcl(), NULL)) {
 
 		struct ausrc_prm prm;
 
@@ -1081,7 +1082,8 @@ static int start_source(struct autx *tx, struct audio *a)
 				return err;
 		}
 
-		err = ausrc_alloc(&tx->ausrc, NULL, a->cfg.src_mod,
+		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
+				  NULL, a->cfg.src_mod,
 				  &prm, tx->device,
 				  ausrc_read_handler, ausrc_error_handler, a);
 		if (err) {
@@ -1136,7 +1138,7 @@ int audio_start(struct audio *a)
 		return EINVAL;
 
 	/* Audio filter */
-	if (!list_isempty(aufilt_list())) {
+	if (!list_isempty(baresip_aufiltl())) {
 		err = aufilt_setup(a);
 		if (err)
 			return err;
@@ -1471,7 +1473,8 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 	/* stop the audio device first */
 	tx->ausrc = mem_deref(tx->ausrc);
 
-	err = ausrc_alloc(&tx->ausrc, NULL, mod, &tx->ausrc_prm, device,
+	err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
+			  NULL, mod, &tx->ausrc_prm, device,
 			  ausrc_read_handler, ausrc_error_handler, au);
 	if (err) {
 		warning("audio: set_source failed (%s.%s): %m\n",
@@ -1496,7 +1499,8 @@ int audio_set_player(struct audio *au, const char *mod, const char *device)
 	/* stop the audio device first */
 	rx->auplay = mem_deref(rx->auplay);
 
-	err = auplay_alloc(&rx->auplay, mod, &rx->auplay_prm, device,
+	err = auplay_alloc(&rx->auplay, baresip_auplayl(),
+			   mod, &rx->auplay_prm, device,
 			   auplay_write_handler, rx);
 	if (err) {
 		warning("audio: set_player failed (%s.%s): %m\n",

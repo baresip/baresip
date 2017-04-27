@@ -7,7 +7,6 @@ extern const struct mod_export exports_wincons;
 extern const struct mod_export exports_g711;
 extern const struct mod_export exports_winwave;
 extern const struct mod_export exports_dshow;
-extern const struct mod_export exports_avcodec;
 extern const struct mod_export exports_account;
 extern const struct mod_export exports_contact;
 extern const struct mod_export exports_menu;
@@ -22,7 +21,6 @@ extern const struct mod_export exports_vumeter;
 
 const struct mod_export *mod_table[] = {
 	&exports_wincons,
-	&exports_avcodec,
 	&exports_g711,
 	&exports_winwave,
 	&exports_dshow,

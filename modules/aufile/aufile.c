@@ -238,7 +238,8 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 static int module_init(void)
 {
-	return ausrc_register(&ausrc, "aufile", alloc_handler);
+	return ausrc_register(&ausrc, baresip_ausrcl(),
+			      "aufile", alloc_handler);
 }
 
 

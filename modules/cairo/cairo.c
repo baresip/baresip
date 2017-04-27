@@ -19,11 +19,21 @@
 #endif
 
 
-/*
+/**
+ * @defgroup cairo cairo
+ *
+ * Cairo video-source module is a video generator for testing
+ * and demo purposes.
+ *
  * Note: This module is very experimental!
  *
  * Use Cairo library to draw graphics into a frame buffer
  */
+
+
+enum {
+	FONT_SIZE = 18
+};
 
 struct vidsrc_st {
 	const struct vidsrc *vs;  /* inheritance */
@@ -59,24 +69,16 @@ static void destructor(void *arg)
 }
 
 
-static void draw_gradient(cairo_t *cr, double step, int width, int height)
+static void draw_background(cairo_t *cr, double color_step,
+			    int width, int height)
 {
 	cairo_pattern_t *pat;
-	double r, g, b;
-	double x, y, tx, ty;
-	char buf[128];
-	double fontsize = 20.0;
+	double grey, r, g, b;
 
-	r = 0.1 + fabs(sin(5 * step));
-	g = 0.0;
-	b = 0.1 + fabs(sin(3 * step));
-
-	x = width * (sin(10 * step) + 1)/2;
-	y = height * (1 - fabs(sin(30 * step)));
-
-	tx = width/2 * (sin(5 * step) + 1)/2;
-	ty = fontsize + (height - fontsize) * (1 - fabs(sin(20 * step)));
-
+	grey = 0.1 + fabs(sin(3 * color_step));
+	r = grey;
+	g = grey;
+	b = grey;
 
 	pat = cairo_pattern_create_linear (0.0, 0.0,  0.0, height);
 	cairo_pattern_add_color_stop_rgba (pat, 1, r, g, b, 1);
@@ -85,38 +87,62 @@ static void draw_gradient(cairo_t *cr, double step, int width, int height)
 	cairo_set_source (cr, pat);
 	cairo_fill (cr);
 	cairo_pattern_destroy (pat);
+}
+
+
+static void draw_ball(cairo_t *cr, double pos_step, int width, int height,
+		      double r, double g, double b)
+{
+	cairo_pattern_t *pat;
+	double x, y;
+
+	x = width * (sin(10 * pos_step) + 1)/2;
+	y = height * (1 - fabs(sin(30 * pos_step)));
 
 	pat = cairo_pattern_create_radial (x-128, y-128, 25.6,
 					   x+128, y+128, 128.0);
-	cairo_pattern_add_color_stop_rgba (pat, 0, 0, 1, 0, 1);
 	cairo_pattern_add_color_stop_rgba (pat, 1, 0, 0, 0, 1);
+	cairo_pattern_add_color_stop_rgba (pat, 0, r, g, b, 1);
 	cairo_set_source (cr, pat);
 	cairo_arc (cr, x, y, 76.8, 0, 2 * M_PI);
 	cairo_fill (cr);
 	cairo_pattern_destroy (pat);
+}
 
-	/* Draw text */
-	cairo_select_font_face (cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
-				CAIRO_FONT_WEIGHT_NORMAL);
-	cairo_set_font_size (cr, fontsize);
 
-	re_snprintf(buf, sizeof(buf), "%H", fmt_gmtime, NULL);
+static void draw_text(struct vidsrc_st *st, int x, int y,
+		      const char *fmt, ...)
+{
+	char buf[4096] = "";
+	va_list ap;
 
-	cairo_move_to (cr, tx, ty);
-	cairo_text_path (cr, buf);
-	cairo_set_source_rgb (cr, 1, 1, 1);
-	cairo_fill_preserve (cr);
-	cairo_set_source_rgb (cr, 0, 0, 0);
-	cairo_set_line_width (cr, 0.1);
-	cairo_stroke (cr);
+	va_start(ap, fmt);
+	(void)re_vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+
+	cairo_set_source_rgb(st->cr, 1.0, 1.0, 1.0);  /* white */
+
+	cairo_set_font_size(st->cr, FONT_SIZE);
+	cairo_move_to(st->cr, x, y);
+	cairo_show_text(st->cr, buf);
 }
 
 
 static void process(struct vidsrc_st *st)
 {
 	struct vidframe f;
+	unsigned xoffs = 2, yoffs = 24;
 
-	draw_gradient(st->cr, st->step, st->size.w, st->size.h);
+	draw_background(st->cr, st->step, st->size.w, st->size.h);
+
+	draw_ball(st->cr, st->step, st->size.w, st->size.h,
+		  0.0, 1.0, 0.0);
+
+	draw_text(st, xoffs, yoffs + FONT_SIZE, "%H", fmt_gmtime, NULL);
+
+	draw_text(st, xoffs, yoffs + FONT_SIZE*2, "%u x %u @ %d fps",
+		  st->size.w, st->size.h, st->prm.fps);
+
 	st->step += 0.02 / st->prm.fps;
 
 	vidframe_init_buf(&f, VID_FMT_RGB32, &st->size,
@@ -182,7 +208,20 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 	st->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 						 size->w, size->h);
+	if (!st->surface) {
+		err = ENOMEM;
+		goto out;
+	}
+
 	st->cr = cairo_create(st->surface);
+	if (!st->cr) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	cairo_select_font_face(st->cr, "Sans",
+				CAIRO_FONT_SLANT_NORMAL,
+				CAIRO_FONT_WEIGHT_BOLD);
 
 	info("cairo: surface with format %d (%d x %d) stride=%d\n",
 	     cairo_image_surface_get_format(st->surface),

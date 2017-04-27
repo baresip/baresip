@@ -3,6 +3,9 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#ifdef SOLARIS
+#define __EXTENSIONS__ 1
+#endif
 #include <getopt.h>
 #include <re.h>
 #include <baresip.h>
@@ -39,6 +42,7 @@ static const struct test tests[] = {
 	TEST(test_message),
 	TEST(test_mos),
 	TEST(test_network),
+	TEST(test_play),
 	TEST(test_ua_alloc),
 	TEST(test_ua_options),
 	TEST(test_ua_register),

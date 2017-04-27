@@ -166,8 +166,10 @@ static int alsa_init(void)
 		     aufmt_name(alsa_sample_format));
 	}
 
-	err  = ausrc_register(&ausrc, "alsa", alsa_src_alloc);
-	err |= auplay_register(&auplay, "alsa", alsa_play_alloc);
+	err  = ausrc_register(&ausrc, baresip_ausrcl(),
+			      "alsa", alsa_src_alloc);
+	err |= auplay_register(&auplay, baresip_auplayl(),
+			       "alsa", alsa_play_alloc);
 
 	return err;
 }

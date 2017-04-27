@@ -1,7 +1,7 @@
 #
 # modules.mk
 #
-# Copyright (C) 2010 - 2016 Creytiv.com
+# Copyright (C) 2010 - 2017 Creytiv.com
 #
 # External libraries:
 #
@@ -29,9 +29,12 @@
 #   USE_H265          H.265 video codec
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
+#   USE_JACK          JACK Audio Connection Kit audio driver
 #   USE_L16           L16 audio codec
 #   USE_MPA           MPA audo codec
 #   USE_MPG123        Use mpg123
+#   USE_OMX_RPI       RaspberryPi VideoCore display driver
+#   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
 #   USE_OPUS          Opus audio codec
 #   USE_OSS           OSS audio driver
 #   USE_PLC           Packet Loss Concealment
@@ -121,6 +124,8 @@ USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT)/local/include/iLBC_define.h ] && echo "yes")
 USE_ISAC := $(shell [ -f $(SYSROOT)/include/isac.h ] || \
 	[ -f $(SYSROOT)/local/include/isac.h ] && echo "yes")
+USE_JACK := $(shell [ -f $(SYSROOT)/include/jack/jack.h ] || \
+	[ -f $(SYSROOT)/local/include/jack/jack.h ] && echo "yes")
 USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
 	[ -f $(SYSROOT)/local/include/mpg123.h ] || \
 	[ -f $(SYSROOT_ALT)/include/mpg123.h ] && echo "yes")
@@ -200,6 +205,14 @@ USE_ZRTP := $(shell [ -f $(SYSROOT)/include/libzrtp/zrtp.h ] || \
 USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
+	&& echo "yes")
+USE_OMX_RPI := $(shell [ -f /opt/vc/include/bcm_host.h ] || \
+	[ -f $(SYSROOT)/include/bcm_host.h ] \
+	|| [ -f $(SYSROOT_ALT)/include/bcm_host.h ] \
+	&& echo "yes")
+USE_OMX_BELLAGIO := $(shell [ -f /usr/include/OMX_Core.h ] \
+	|| [ -f $(SYSROOT)/include/OMX_Core.h ] \
+	|| [ -f $(SYSROOT_ALT)/include/OMX_Core.h ] \
 	&& echo "yes")
 else
 # Windows.
@@ -353,6 +366,9 @@ endif
 ifneq ($(USE_ISAC),)
 MODULES   += isac
 endif
+ifneq ($(USE_JACK),)
+MODULES   += jack
+endif
 ifneq ($(USE_L16),)
 MODULES   += l16
 endif
@@ -412,6 +428,12 @@ MODULES   += v4l
 endif
 ifneq ($(USE_V4L2),)
 MODULES   += v4l2 v4l2_codec
+endif
+ifneq ($(USE_OMX_RPI),)
+MODULES   += omx
+endif
+ifneq ($(USE_OMX_BELLAGIO),)
+MODULES   += omx
 endif
 ifneq ($(USE_VPX),)
 MODULES   += vp8

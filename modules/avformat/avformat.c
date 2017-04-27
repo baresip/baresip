@@ -50,6 +50,7 @@
 
 #if LIBAVUTIL_VERSION_MAJOR < 52
 #define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
+#define AV_PIX_FMT_YUVJ420P PIX_FMT_YUVJ420P
 #endif
 
 
@@ -151,6 +152,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	switch (frame->format) {
 
 	case AV_PIX_FMT_YUV420P:
+	case AV_PIX_FMT_YUVJ420P:
 		vf.fmt = VID_FMT_YUV420P;
 		break;
 
@@ -308,6 +310,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	for (i=0; i<st->ic->nb_streams; i++) {
 		const struct AVStream *strm = st->ic->streams[i];
 		AVCodecContext *ctx;
+		double dfps;
 
 #if LIBAVFORMAT_VERSION_INT >= ((57<<16) + (33<<8) + 100)
 
@@ -342,7 +345,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		st->sindex = strm->index;
 		st->time_base = strm->time_base;
 
-		input_fps = (int) 1 * av_q2d(strm->avg_frame_rate);
+		dfps = av_q2d(strm->avg_frame_rate);
+		input_fps = (int)dfps;
 		if (st->fps != input_fps) {
 			info("avformat: updating %i fps from config to native "
 				"input material fps %i\n", st->fps, input_fps);

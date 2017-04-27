@@ -358,7 +358,7 @@ static int alloc(struct menc_media **stp, struct menc_sess *sess,
 	}
 
 	if (!rattr)
-		err = sdp_enc(st, sdpm, 0, st->crypto_suite);
+		err = sdp_enc(st, sdpm, 1, st->crypto_suite);
 
  out:
 	if (err)

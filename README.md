@@ -255,6 +255,7 @@ mpa           MPA Speech and Audio Codec
 mwi           Message Waiting Indication
 natbd         NAT Behavior Discovery Module
 natpmp        NAT Port Mapping Protocol (NAT-PMP) module
+omx           OpenMAX IL video display module
 opengl        OpenGL video output
 opengles      OpenGLES video output
 opensles      OpenSLES audio driver
@@ -389,7 +390,7 @@ zrtp          ZRTP media encryption module
 * NetBSD
 * OpenBSD
 * Solaris
-* Windows
+* Windows (mingw and VS2015)
 
 
 ### Supported versions of C Standard library
