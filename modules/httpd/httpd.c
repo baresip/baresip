@@ -91,7 +91,7 @@ static void http_req_handler(struct http_conn *conn,
 			     const struct http_msg *msg, void *arg)
 {
 	int err;
-	char *buf;
+	char *buf = NULL;
 	struct pl nprm;
 	(void)arg;
 
@@ -120,10 +120,9 @@ static void http_req_handler(struct http_conn *conn,
 
 	return;
 
-	error:
-		mem_deref(buf);
-		http_ereply(conn, 404, "Not Found");
-
+ error:
+	mem_deref(buf);
+	http_ereply(conn, 404, "Not Found");
 }
 
 
