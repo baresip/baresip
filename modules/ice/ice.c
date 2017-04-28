@@ -34,7 +34,10 @@ struct mnat_sess {
 	struct sa srv;
 	struct stun_dns *dnsq;
 	struct sdp_session *sdp;
-	struct ice *ice;
+	char lufrag[8];
+	char lpwd[32];
+	uint64_t tiebrk;
+	bool offerer;
 	char *user;
 	char *pass;
 	int mediac;
@@ -121,7 +124,6 @@ static void session_destructor(void *arg)
 	mem_deref(sess->dnsq);
 	mem_deref(sess->user);
 	mem_deref(sess->pass);
-	mem_deref(sess->ice);
 	mem_deref(sess->sdp);
 }
 
@@ -301,12 +303,10 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 	if (err)
 		goto out;
 
-	err = ice_alloc(&sess->ice, ice.mode, offerer);
-	if (err)
-		goto out;
-
-	ice_conf(sess->ice)->nom   = ice.nom;
-	ice_conf(sess->ice)->debug = ice.debug;
+	rand_str(sess->lufrag, sizeof(sess->lufrag));
+	rand_str(sess->lpwd,   sizeof(sess->lpwd));
+	sess->tiebrk = rand_u64();
+	sess->offerer = offerer;
 
 	if (ICE_MODE_LITE == ice.mode) {
 		err |= sdp_session_set_lattr(ss, true,
@@ -314,9 +314,9 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 	}
 
 	err |= sdp_session_set_lattr(ss, true,
-				     ice_attr_ufrag, ice_ufrag(sess->ice));
+				     ice_attr_ufrag, sess->lufrag);
 	err |= sdp_session_set_lattr(ss, true,
-				     ice_attr_pwd, ice_pwd(sess->ice));
+				     ice_attr_pwd, sess->lpwd);
 	if (err)
 		goto out;
 
@@ -491,13 +491,14 @@ static int ice_start(struct mnat_sess *sess)
 	struct le *le;
 	int err = 0;
 
-	ice_printf(NULL, "ICE Start: %H", ice_debug, sess->ice);
-
 	/* Update SDP media */
 	if (sess->started) {
 
 		LIST_FOREACH(&sess->medial, le) {
 			struct mnat_media *m = le->data;
+
+			ice_printf(NULL, "ICE Start: %H",
+				   icem_debug, m->icem);
 
 			icem_update(m->icem);
 
@@ -522,6 +523,12 @@ static int ice_start(struct mnat_sess *sess)
 				err = icem_conncheck_start(m->icem);
 				if (err)
 					return err;
+
+				/* set the pair states
+				   -- first media stream only */
+				if (sess->medial.head == le) {
+					ice_candpair_set_states(m->icem);
+				}
 			}
 		}
 		else {
@@ -556,10 +563,15 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->compv[0].sock = mem_ref(sock1);
 	m->compv[1].sock = mem_ref(sock2);
 
-	err = icem_alloc(&m->icem, sess->ice, proto, 0,
+	err = icem_alloc(&m->icem, ice.mode, sess->offerer,
+			 proto, 0,
+			 sess->tiebrk, sess->lufrag, sess->lpwd,
 			 gather_handler, conncheck_handler, m);
 	if (err)
 		goto out;
+
+	icem_conf(m->icem)->nom   = ice.nom;
+	icem_conf(m->icem)->debug = ice.debug;
 
 	icem_set_name(m->icem, sdp_media_name(sdpm));
 
@@ -586,7 +598,15 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 static bool sdp_attr_handler(const char *name, const char *value, void *arg)
 {
 	struct mnat_sess *sess = arg;
-	return 0 != ice_sdp_decode(sess->ice, name, value);
+	struct le *le;
+
+	for (le = sess->medial.head; le; le = le->next) {
+		struct mnat_media *m = le->data;
+
+		(void)ice_sdp_decode(m->icem, name, value);
+	}
+
+	return false;
 }
 
 
