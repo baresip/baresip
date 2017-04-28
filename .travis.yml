@@ -9,7 +9,7 @@ compiler:
     - gcc
 
 env:
-    - LIBRE=re-0.5.0 LIBREM=rem-0.5.0
+    - LIBRE=re LIBREM=rem
 
 sudo: require
 
@@ -19,8 +19,8 @@ addons:
             libssl-dev
 
 install:
-    - curl "http://www.creytiv.com/pub/${LIBRE}.tar.gz" | tar xzf -
-    - curl "http://www.creytiv.com/pub/${LIBREM}.tar.gz" | tar xzf -
+    - git clone https://github.com/creytiv/re.git
+    - git clone https://github.com/creytiv/rem.git
     - curl -OL 'https://github.com/alfredh/pytools/raw/master/ccheck.py'
     - for p in ${LIBRE} ${LIBREM}; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo ldconfig; fi
