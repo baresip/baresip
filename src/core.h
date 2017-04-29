@@ -120,7 +120,7 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
-		uint32_t ptime, const struct list *aucodecl,
+		uint32_t ptime, const struct list *aucodecl, bool offerer,
 		audio_event_h *eventh, audio_err_h *errh, void *arg);
 int  audio_start(struct audio *a);
 void audio_stop(struct audio *a);

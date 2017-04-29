@@ -589,7 +589,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	err = audio_alloc(&call->audio, cfg, call,
 			  call->sdp, ++label,
 			  acc->mnat, call->mnats, acc->menc, call->mencs,
-			  acc->ptime, account_aucodecl(call->acc),
+			  acc->ptime, account_aucodecl(call->acc), !got_offer,
 			  audio_event_handler, audio_error_handler, call);
 	if (err)
 		goto out;

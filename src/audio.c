@@ -678,7 +678,7 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
-		uint32_t ptime, const struct list *aucodecl,
+		uint32_t ptime, const struct list *aucodecl, bool offerer,
 		audio_event_h *eventh, audio_err_h *errh, void *arg)
 {
 	struct audio *a;
@@ -686,6 +686,7 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 	struct aurx *rx;
 	struct le *le;
 	int err;
+	(void)offerer;
 
 	if (!ap || !cfg)
 		return EINVAL;
