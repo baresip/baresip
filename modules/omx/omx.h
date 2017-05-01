@@ -14,6 +14,7 @@
 #include <OMX_Component.h>
 #include <OMX_Video.h>
 
+#undef OMX_VERSION
 #define OMX_VERSION 0x01010101
 #define OMX_ERROR_NONE 0
 #endif
