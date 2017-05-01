@@ -49,6 +49,9 @@ static int mock_l16_decode(struct audec_state *st,
 	if (!buf || !len || !sampv)
 		return EINVAL;
 
+	if (len < 2)
+		return EINVAL;
+
 	if (*sampc < len/2)
 		return ENOMEM;
 
@@ -61,7 +64,7 @@ static int mock_l16_decode(struct audec_state *st,
 		return EPROTO;
 	}
 
-	len /= 2;
+	len = len/2 - 2;
 	while (len--)
 		*sampv++ = ntohs(*p++);
 
