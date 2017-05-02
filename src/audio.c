@@ -732,7 +732,7 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 		goto out;
 	}
 
-	err = telev_alloc(&a->telev, ptime, TELEV_SRATE);
+	err = telev_alloc(&a->telev, ptime);
 	if (err)
 		goto out;
 
