@@ -1485,6 +1485,9 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 		call_event_handler(call, CALL_EVENT_PROGRESS, call->peer_uri);
 	else
 		call_event_handler(call, CALL_EVENT_RINGING, call->peer_uri);
+
+	if (media)
+		update_media(call);
 }
 
 
