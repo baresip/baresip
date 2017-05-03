@@ -1843,7 +1843,7 @@ struct list *uag_list(void)
 const char *uag_allowed_methods(void)
 {
 	return "INVITE,ACK,BYE,CANCEL,OPTIONS,REFER,"
-		"NOTIFY,SUBSCRIBE,INFO,MESSAGE";
+		"NOTIFY,SUBSCRIBE,INFO,MESSAGE,UPDATE";
 }
 
 
