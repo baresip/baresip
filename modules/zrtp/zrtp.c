@@ -260,7 +260,7 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 	zrtp_session_get(sess->zrtp_session, &sess_info);
 	if (!sess_info.sas_is_verified && sess_info.sas_is_ready) {
 		info("zrtp: verify SAS <%s> <%s> for remote peer %w"
-		     " (press 'Z' <ZID> to verify)\n",
+		     " (type /zrtp <ZID> to verify)\n",
 		     sess_info.sas1.buffer,
 		     sess_info.sas2.buffer,
 		     sess_info.peer_zid.buffer,
@@ -311,7 +311,7 @@ static int verify_sas(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{"zrtp", 0, CMD_PRM, "Verify ZRTP SAS", verify_sas },
+	{"zrtp", 0, CMD_PRM, "Verify ZRTP SAS <remote ZID>", verify_sas },
 };
 
 
