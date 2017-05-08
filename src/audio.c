@@ -733,7 +733,7 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 		goto out;
 	}
 
-	err = telev_alloc(&a->telev, TELEV_PTIME);
+	err = telev_alloc(&a->telev, ptime);
 	if (err)
 		goto out;
 
@@ -1228,6 +1228,8 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 
 	stream_set_srate(a->strm, ac->crate, ac->crate);
 	stream_update_encoder(a->strm, pt_tx);
+
+	telev_set_srate(a->telev, ac->crate);
 
 	if (!tx->ausrc) {
 		err |= audio_start(a);
