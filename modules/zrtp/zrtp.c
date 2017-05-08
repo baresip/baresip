@@ -20,7 +20,7 @@
  *     Briefly tested with Twinkle 1.4.2 and Jitsi 2.2.4603.9615
  *
  *     This module is using ZRTP implementation in Freeswitch
- *     https://github.com/traviscross/libzrtp
+ *     https://github.com/juha-h/libzrtp
  *
  * Thanks:
  *
@@ -47,6 +47,7 @@ struct menc_media {
 
 static zrtp_global_t *zrtp_global;
 static zrtp_config_t zrtp_config;
+static zrtp_zid_t zid;
 
 
 static void session_destructor(void *arg)
@@ -141,7 +142,7 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 	if (!st)
 		return ENOMEM;
 
-	s = zrtp_session_init(zrtp_global, NULL,
+	s = zrtp_session_init(zrtp_global, NULL, zid,
 			      ZRTP_SIGNALING_ROLE_UNKNOWN, &st->zrtp_session);
 	if (s != zrtp_status_ok) {
 		warning("zrtp: zrtp_session_init failed (status = %d)\n", s);
@@ -282,7 +283,11 @@ static int verify_sas(struct re_printf *pf, void *arg)
 	if (str_isset(carg->prm)) {
 		char rzid[ZRTP_STRING16] = "";
 		zrtp_status_t s;
+		zrtp_string16_t local_zid = ZSTR_INIT_EMPTY(local_zid);
 		zrtp_string16_t remote_zid = ZSTR_INIT_EMPTY(remote_zid);
+
+		zrtp_zstrncpyc(ZSTR_GV(local_zid), (const char*)zid,
+			       sizeof(zrtp_zid_t));
 
 		if (str_len(carg->prm) != 24) {
 			warning("zrtp: invalid remote ZID (%s)\n", carg->prm);
@@ -294,9 +299,8 @@ static int verify_sas(struct re_printf *pf, void *arg)
 		zrtp_zstrncpyc(ZSTR_GV(remote_zid), (const char*)rzid,
 			       sizeof(zrtp_zid_t));
 
-		s = zrtp_cache_set_verified(zrtp_global->cache,
-					    ZSTR_GV(remote_zid),
-					    true);
+		s = zrtp_verified_set(zrtp_global, &local_zid, &remote_zid,
+				      true);
 		if (s == zrtp_status_ok)
 			info("zrtp: SAS for peer %s verified\n", carg->prm);
 		else {
@@ -321,37 +325,43 @@ static int module_init(void)
 	char config_path[256] = "";
 	char zrtp_zid_path[256] = "";
 	FILE *f;
-	int err;
+	int err, count;
 
 	zrtp_config_defaults(&zrtp_config);
-	zrtp_config.cache_type = ZRTP_CACHE_FILE;
+
+	str_ncpy(zrtp_config.client_id, "baresip/zrtp",
+		 sizeof(zrtp_config.client_id));
+
+	zrtp_config.lic_mode = ZRTP_LICENSE_MODE_UNLIMITED;
+
+	zrtp_config.cb.misc_cb.on_send_packet = on_send_packet;
+	zrtp_config.cb.event_cb.on_zrtp_secure = on_zrtp_secure;
 
 	err = conf_path_get(config_path, sizeof(config_path));
 	if (err) {
 		warning("zrtp: could not get config path: %m\n", err);
 		return err;
 	}
-	if (re_snprintf(zrtp_config.cache_file_cfg.cache_path,
-			sizeof(zrtp_config.cache_file_cfg.cache_path),
-			"%s/zrtp_cache.dat", config_path) < 0)
-		return ENOMEM;
+	count = re_snprintf(zrtp_config.def_cache_path.buffer,
+			    zrtp_config.def_cache_path.max_length,
+			    "%s/zrtp_cache.dat", config_path);
+	if (count < 0) return ENOMEM;
+	zrtp_config.def_cache_path.length = count;
 
 	if (re_snprintf(zrtp_zid_path,
 			sizeof(zrtp_zid_path),
 			"%s/zrtp_zid", config_path) < 0)
 		return ENOMEM;
 	if ((f = fopen(zrtp_zid_path, "rb")) != NULL) {
-		if (fread(zrtp_config.zid, sizeof(zrtp_config.zid),
-			  1, f) != 1) {
+		if (fread(zid, sizeof(zid), 1, f) != 1) {
 			if (feof(f) || ferror(f)) {
 				warning("zrtp: invalid zrtp_zid file\n");
 			}
 		}
 	}
 	else if ((f = fopen(zrtp_zid_path, "wb")) != NULL) {
-		rand_bytes(zrtp_config.zid, sizeof(zrtp_config.zid));
-		if (fwrite(zrtp_config.zid, sizeof(zrtp_config.zid),
-			   1, f) != 1) {
+		rand_bytes(zid, sizeof(zid));
+		if (fwrite(zid, sizeof(zid), 1, f) != 1) {
 			warning("zrtp: zrtp_zid file write failed\n");
 		}
 		info("zrtp: generated new persistent ZID (%s)\n",
@@ -364,13 +374,6 @@ static int module_init(void)
 	if (f)
 		(void) fclose(f);
 
-	str_ncpy(zrtp_config.client_id, "baresip/zrtp",
-		 sizeof(zrtp_config.client_id));
-	zrtp_config.lic_mode = ZRTP_LICENSE_MODE_UNLIMITED;
-
-	zrtp_config.cb.misc_cb.on_send_packet = on_send_packet;
-	zrtp_config.cb.event_cb.on_zrtp_secure = on_zrtp_secure;
-
 	s = zrtp_init(&zrtp_config, &zrtp_global);
 	if (zrtp_status_ok != s) {
 		warning("zrtp: zrtp_init() failed (status = %d)\n", s);
@@ -379,11 +382,12 @@ static int module_init(void)
 
 	menc_register(baresip_mencl(), &menc_zrtp);
 
-	debug("zrtp:  cache_file:  %s\n",
-	      zrtp_config.cache_file_cfg.cache_path);
+	debug("zrtp:  cache_file:  %.*s\n",
+	      zrtp_config.def_cache_path.length,
+	      zrtp_config.def_cache_path.buffer );
 	debug("       zid_file:    %s\n", zrtp_zid_path);
 	debug("       zid:         %w\n",
-	      zrtp_config.zid, sizeof(zrtp_config.zid));
+	      zid, sizeof(zid));
 
 	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 }
