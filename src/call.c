@@ -1067,7 +1067,12 @@ static int sipsess_offer_handler(struct mbuf **descp,
 
 	MAGIC_CHECK(call);
 
-	info("call: got re-INVITE%s\n", got_offer ? " (SDP Offer)" : "");
+	if (!pl_strcmp(&msg->met, "INVITE")) {
+		info("call: got re-INVITE%s\n",
+		     got_offer ? " (SDP Offer)" : "");
+	} else {
+		info("call: got UPDATE%s\n", got_offer ? " (SDP Offer)" : "");
+	}
 
 	if (got_offer) {
 
