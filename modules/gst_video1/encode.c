@@ -225,6 +225,7 @@ static int pipeline_init(struct videnc_state *st, const struct vidsz *size)
 	 "do-timestamp=TRUE max-bytes=1000000 ! "
 	 "videoparse width=%d height=%d format=i420 framerate=%d/1 ! "
 	 "x264enc byte-stream=TRUE rc-lookahead=0 "
+	 "tune=zerolatency speed-preset=ultrafast "
 	 "sync-lookahead=0 bitrate=%d ! "
 	 "appsink name=sink emit-signals=TRUE drop=TRUE",
 	 size->w, size->h,
