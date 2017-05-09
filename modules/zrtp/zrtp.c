@@ -304,7 +304,7 @@ static int verify_sas(struct re_printf *pf, void *arg)
 		if (s == zrtp_status_ok)
 			info("zrtp: SAS for peer %s verified\n", carg->prm);
 		else {
-			warning("zrtp: zrtp_cache_set_verified"
+			warning("zrtp: zrtp_verified_set"
 				" failed (status = %d)\n", s);
 			return EINVAL;
 		}
