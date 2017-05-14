@@ -1,3 +1,47 @@
+2017-05-14 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.3
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.3
+	* NOTE: Requires libre v0.5.3 or later
+	        Requires librem v0.5.0 or later
+
+	* config:
+	  - (no changes)
+
+	* build:
+	  - detect jack module (thanks Tony Langley)
+	  - Updated MSVS projects to vs2015 (thanks Mikhail Barg)
+
+	* baresip-core:
+	  - aulevel: add aulevel_calc_dbov()
+	  - audio: Set correct clock rate for telephone events
+		   (thanks Jan Hoffmann)
+	  - play: Add gapless repeat for tone playback (thanks Jan Hoffmann)
+
+	* selftest:
+	  - add tests for aulevel
+	  - add tests for audio player
+	  - add mock aucodec/auplay
+
+	* Modules:
+
+	* gst_video1: Tune x264enc for low latency (thanks Jonathan Sieber)
+
+	* httpd: fix a crash
+
+	* ice: update to latest libre ICE-api
+
+	* omx: Fixed some problems on OMX/RaspberryPi (thanks Jonathan Sieber)
+
+	* srtp: fix SRTP for early-media (thanks Jan Hoffmann)
+
+	* vumeter: use aulevel_calc_dbov to calculate signal energy
+
+	* zrtp: update to latest libzrtp from freeswitch (thanks Juha Heinanen)
+
+
 2017-04-07 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.2
