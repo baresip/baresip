@@ -261,9 +261,11 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 	zrtp_session_get(sess->zrtp_session, &sess_info);
 	if (!sess_info.sas_is_verified && sess_info.sas_is_ready) {
 		info("zrtp: verify SAS <%s> <%s> for remote peer %w"
-		     " (type /zrtp <ZID> to verify)\n",
+		     " (type /zrtp %w to verify)\n",
 		     sess_info.sas1.buffer,
 		     sess_info.sas2.buffer,
+		     sess_info.peer_zid.buffer,
+		     (size_t)sess_info.peer_zid.length,
 		     sess_info.peer_zid.buffer,
 		     (size_t)sess_info.peer_zid.length);
 	}
@@ -314,6 +316,18 @@ static int verify_sas(struct re_printf *pf, void *arg)
 }
 
 
+static void zrtp_log(int level, char *data, int len, int offset)
+{
+	if (level == 1) {
+		error("%b\n", data, len);
+	} else if (level == 2) {
+		info("%b\n", data, len);
+	} else {
+		debug("%b\n", data, len);
+	}
+}
+
+
 static const struct cmd cmdv[] = {
 	{"zrtp", 0, CMD_PRM, "Verify ZRTP SAS <remote ZID>", verify_sas },
 };
@@ -325,7 +339,9 @@ static int module_init(void)
 	char config_path[256] = "";
 	char zrtp_zid_path[256] = "";
 	FILE *f;
-	int err, count;
+	int err;
+	
+	zrtp_log_set_log_engine(zrtp_log);
 
 	zrtp_config_defaults(&zrtp_config);
 
@@ -342,11 +358,14 @@ static int module_init(void)
 		warning("zrtp: could not get config path: %m\n", err);
 		return err;
 	}
-	count = re_snprintf(zrtp_config.def_cache_path.buffer,
+	zrtp_config.def_cache_path.length =
+		re_snprintf(zrtp_config.def_cache_path.buffer,
 			    zrtp_config.def_cache_path.max_length,
 			    "%s/zrtp_cache.dat", config_path);
-	if (count < 0) return ENOMEM;
-	zrtp_config.def_cache_path.length = count;
+	if (zrtp_config.def_cache_path.length < 0) {
+		warning("zrtp: could not write cache path\n");
+		return ENOMEM;
+	}
 
 	if (re_snprintf(zrtp_zid_path,
 			sizeof(zrtp_zid_path),
@@ -382,9 +401,7 @@ static int module_init(void)
 
 	menc_register(baresip_mencl(), &menc_zrtp);
 
-	debug("zrtp:  cache_file:  %.*s\n",
-	      zrtp_config.def_cache_path.length,
-	      zrtp_config.def_cache_path.buffer );
+	debug("zrtp:  cache_file:  %s\n", zrtp_config.def_cache_path.buffer);
 	debug("       zid_file:    %s\n", zrtp_zid_path);
 	debug("       zid:         %w\n",
 	      zid, sizeof(zid));
