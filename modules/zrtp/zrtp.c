@@ -320,9 +320,11 @@ static void zrtp_log(int level, char *data, int len, int offset)
 {
 	if (level == 1) {
 		error("%b\n", data, len);
-	} else if (level == 2) {
+	}
+	else if (level == 2) {
 		info("%b\n", data, len);
-	} else {
+	}
+	else {
 		debug("%b\n", data, len);
 	}
 }
@@ -340,7 +342,7 @@ static int module_init(void)
 	char zrtp_zid_path[256] = "";
 	FILE *f;
 	int err;
-	
+
 	zrtp_log_set_log_engine(zrtp_log);
 
 	zrtp_config_defaults(&zrtp_config);
