@@ -45,7 +45,7 @@ static int module_init(void)
 
 	avcodec_register_all();
 
-	vidcodec_register(&h265);
+	vidcodec_register(baresip_vidcodecl(), &h265);
 
 	return 0;
 }

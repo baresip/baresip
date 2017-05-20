@@ -233,6 +233,7 @@ static void vidloop_destructor(void *arg)
 
 static int enable_codec(struct video_loop *vl, const char *name)
 {
+	struct list *vidcodecl = baresip_vidcodecl();
 	struct videnc_param prm;
 	int err;
 
@@ -243,7 +244,7 @@ static int enable_codec(struct video_loop *vl, const char *name)
 
 	/* Use the first video codec */
 
-	vl->vc_enc = vidcodec_find_encoder(name);
+	vl->vc_enc = vidcodec_find_encoder(vidcodecl, name);
 	if (!vl->vc_enc) {
 		warning("vidloop: could not find encoder (%s)\n", name);
 		return ENOENT;
@@ -252,7 +253,7 @@ static int enable_codec(struct video_loop *vl, const char *name)
 	info("vidloop: enabled encoder %s (%u fps, %u bit/s)\n",
 	     vl->vc_enc->name, prm.fps, prm.bitrate);
 
-	vl->vc_dec = vidcodec_find_decoder(name);
+	vl->vc_dec = vidcodec_find_decoder(vidcodecl, name);
 	if (!vl->vc_dec) {
 		warning("vidloop: could not find decoder (%s)\n", name);
 		return ENOENT;

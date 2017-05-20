@@ -194,7 +194,7 @@ static struct vidcodec vc_dummy = {
 
 void mock_vidcodec_register(void)
 {
-	vidcodec_register(&vc_dummy);
+	vidcodec_register(baresip_vidcodecl(), &vc_dummy);
 }
 
 

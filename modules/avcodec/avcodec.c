@@ -183,6 +183,7 @@ static struct vidcodec mpg4 = {
 
 static int module_init(void)
 {
+	struct list *vidcodecl = baresip_vidcodecl();
 	char h264enc[64];
 	char h264dec[64];
 
@@ -209,18 +210,18 @@ static int module_init(void)
 				h264dec);
 			return ENOENT;
 		}
-		vidcodec_register(&h264);
+		vidcodec_register(vidcodecl, &h264);
 	}
 	else {
 		if (avcodec_find_decoder(AV_CODEC_ID_H264))
-			vidcodec_register(&h264);
+			vidcodec_register(vidcodecl, &h264);
 	}
 
 	if (avcodec_find_decoder(AV_CODEC_ID_H263))
-		vidcodec_register(&h263);
+		vidcodec_register(vidcodecl, &h263);
 
 	if (avcodec_find_decoder(AV_CODEC_ID_MPEG4))
-		vidcodec_register(&mpg4);
+		vidcodec_register(vidcodecl, &mpg4);
 
 	if (0 == conf_get_str(conf_cur(), "avcodec_h264enc",
 			      h264enc, sizeof(h264enc))) {

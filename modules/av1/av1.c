@@ -29,7 +29,7 @@ static struct vidcodec av1 = {
 
 static int module_init(void)
 {
-	vidcodec_register(&av1);
+	vidcodec_register(baresip_vidcodecl(), &av1);
 
 	return 0;
 }

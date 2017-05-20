@@ -41,7 +41,7 @@ static int module_init(void)
 {
 	info("daala: using version '%s'\n", daala_version_string());
 
-	vidcodec_register(&daala);
+	vidcodec_register(baresip_vidcodecl(), &daala);
 
 	return 0;
 }

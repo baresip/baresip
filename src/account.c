@@ -245,6 +245,7 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 #ifdef USE_VIDEO
 static int video_codecs_decode(struct account *acc, const struct pl *prm)
 {
+	struct list *vidcodecl = baresip_vidcodecl();
 	struct pl tmp;
 
 	if (!acc || !prm)
@@ -263,7 +264,8 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 		while (0 == csl_parse(&vcs, cname, sizeof(cname))) {
 			struct vidcodec *vc;
 
-			vc = (struct vidcodec *)vidcodec_find(cname, NULL);
+			vc = (struct vidcodec *)vidcodec_find(vidcodecl,
+							      cname, NULL);
 			if (!vc) {
 				warning("account: video codec not found: %s\n",
 					cname);
@@ -487,7 +489,7 @@ struct list *account_aucodecl(const struct account *acc)
 struct list *account_vidcodecl(const struct account *acc)
 {
 	return (acc && !list_isempty(&acc->vidcodecl))
-		? (struct list *)&acc->vidcodecl : vidcodec_list();
+		? (struct list *)&acc->vidcodecl : baresip_vidcodecl();
 }
 #endif
 

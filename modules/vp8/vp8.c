@@ -40,7 +40,7 @@ static struct vp8_vidcodec vp8 = {
 
 static int module_init(void)
 {
-	vidcodec_register((struct vidcodec *)&vp8);
+	vidcodec_register(baresip_vidcodecl(), (struct vidcodec *)&vp8);
 
 	return 0;
 }

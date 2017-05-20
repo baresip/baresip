@@ -44,7 +44,7 @@ static struct vp9_vidcodec vp9 = {
 
 static int module_init(void)
 {
-	vidcodec_register((struct vidcodec *)&vp9);
+	vidcodec_register(baresip_vidcodecl(), (struct vidcodec *)&vp9);
 	return 0;
 }
 

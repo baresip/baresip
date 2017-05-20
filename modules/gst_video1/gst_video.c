@@ -40,7 +40,7 @@ static int module_init(void)
 {
 	gst_init(NULL, NULL);
 
-	vidcodec_register(&h264);
+	vidcodec_register(baresip_vidcodecl(), &h264);
 
 	info("gst_video: using gstreamer (%s)\n", gst_version_string());
 

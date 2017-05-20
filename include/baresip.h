@@ -883,12 +883,14 @@ struct vidcodec {
 	sdp_fmtp_cmp_h *fmtp_cmph;
 };
 
-void vidcodec_register(struct vidcodec *vc);
+void vidcodec_register(struct list *vidcodecl, struct vidcodec *vc);
 void vidcodec_unregister(struct vidcodec *vc);
-const struct vidcodec *vidcodec_find(const char *name, const char *variant);
-const struct vidcodec *vidcodec_find_encoder(const char *name);
-const struct vidcodec *vidcodec_find_decoder(const char *name);
-struct list *vidcodec_list(void);
+const struct vidcodec *vidcodec_find(const struct list *vidcodecl,
+				     const char *name, const char *variant);
+const struct vidcodec *vidcodec_find_encoder(const struct list *vidcodecl,
+					     const char *name);
+const struct vidcodec *vidcodec_find_decoder(const struct list *vidcodecl,
+					     const char *name);
 
 
 /*
@@ -1139,6 +1141,7 @@ struct list   *baresip_aucodecl(void);
 struct list   *baresip_ausrcl(void);
 struct list   *baresip_auplayl(void);
 struct list   *baresip_aufiltl(void);
+struct list   *baresip_vidcodecl(void);
 
 
 #ifdef __cplusplus
