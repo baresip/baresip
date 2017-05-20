@@ -318,6 +318,8 @@ static int verify_sas(struct re_printf *pf, void *arg)
 
 static void zrtp_log(int level, char *data, int len, int offset)
 {
+	(void)offset;
+
 	if (level == 1) {
 		error("%b\n", data, len);
 	}
@@ -341,7 +343,7 @@ static int module_init(void)
 	char config_path[256] = "";
 	char zrtp_zid_path[256] = "";
 	FILE *f;
-	int err;
+	int ret, err;
 
 	zrtp_log_set_log_engine(zrtp_log);
 
@@ -360,14 +362,14 @@ static int module_init(void)
 		warning("zrtp: could not get config path: %m\n", err);
 		return err;
 	}
-	zrtp_config.def_cache_path.length =
-		re_snprintf(zrtp_config.def_cache_path.buffer,
-			    zrtp_config.def_cache_path.max_length,
-			    "%s/zrtp_cache.dat", config_path);
-	if (zrtp_config.def_cache_path.length < 0) {
+	ret = re_snprintf(zrtp_config.def_cache_path.buffer,
+			  zrtp_config.def_cache_path.max_length,
+			  "%s/zrtp_cache.dat", config_path);
+	if (ret < 0) {
 		warning("zrtp: could not write cache path\n");
 		return ENOMEM;
 	}
+	zrtp_config.def_cache_path.length = ret;
 
 	if (re_snprintf(zrtp_zid_path,
 			sizeof(zrtp_zid_path),
