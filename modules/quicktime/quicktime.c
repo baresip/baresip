@@ -303,7 +303,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int qt_init(void)
 {
-	return vidsrc_register(&vidsrc, "quicktime", alloc, NULL);
+	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			       "quicktime", alloc, NULL);
 }
 
 

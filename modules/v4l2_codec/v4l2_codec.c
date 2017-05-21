@@ -563,7 +563,8 @@ static int module_init(void)
 	info("v4l2_codec inited\n");
 
 	vidcodec_register(baresip_vidcodecl(), &h264);
-	return vidsrc_register(&vidsrc, "v4l2_codec", src_alloc, NULL);
+	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			       "v4l2_codec", src_alloc, NULL);
 }
 
 
