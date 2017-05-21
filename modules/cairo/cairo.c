@@ -250,7 +250,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int module_init(void)
 {
-	return vidsrc_register(&vidsrc, "cairo", alloc, NULL);
+	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			       "cairo", alloc, NULL);
 }
 
 

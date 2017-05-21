@@ -86,6 +86,6 @@ static int mock_vidsrc_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 int mock_vidsrc_register(struct vidsrc **vidsrcp)
 {
-	return vidsrc_register(vidsrcp, "mock-vidsrc",
+	return vidsrc_register(vidsrcp, baresip_vidsrcl(), "mock-vidsrc",
 			       mock_vidsrc_alloc, NULL);
 }

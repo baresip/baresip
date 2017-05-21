@@ -413,7 +413,8 @@ static int module_init(void)
 
 	av_register_all();
 
-	return vidsrc_register(&mod_avf, "avformat", alloc, NULL);
+	return vidsrc_register(&mod_avf, baresip_vidsrcl(),
+			       "avformat", alloc, NULL);
 }
 
 

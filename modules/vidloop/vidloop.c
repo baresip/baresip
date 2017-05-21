@@ -342,7 +342,8 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 	prm.fps    = vl->cfg.fps;
 
 	vl->vsrc = mem_deref(vl->vsrc);
-	err = vidsrc_alloc(&vl->vsrc, vl->cfg.src_mod, NULL, &prm, sz,
+	err = vidsrc_alloc(&vl->vsrc, baresip_vidsrcl(),
+			   vl->cfg.src_mod, NULL, &prm, sz,
 			   NULL, vl->cfg.src_dev, vidsrc_frame_handler,
 			   NULL, vl);
 	if (err) {

@@ -742,11 +742,11 @@ typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, const struct vidsrc *vs,
 typedef void (vidsrc_update_h)(struct vidsrc_st *st, struct vidsrc_prm *prm,
 			       const char *dev);
 
-int vidsrc_register(struct vidsrc **vp, const char *name,
+int vidsrc_register(struct vidsrc **vp, struct list *vidsrcl, const char *name,
 		    vidsrc_alloc_h *alloch, vidsrc_update_h *updateh);
-const struct vidsrc *vidsrc_find(const char *name);
-struct list *vidsrc_list(void);
-int vidsrc_alloc(struct vidsrc_st **stp, const char *name,
+const struct vidsrc *vidsrc_find(const struct list *vidsrcl, const char *name);
+int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
+		 const char *name,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt, const char *dev,
 		 vidsrc_frame_h *frameh, vidsrc_error_h *errorh, void *arg);
@@ -1142,6 +1142,7 @@ struct list   *baresip_ausrcl(void);
 struct list   *baresip_auplayl(void);
 struct list   *baresip_aufiltl(void);
 struct list   *baresip_vidcodecl(void);
+struct list   *baresip_vidsrcl(void);
 
 
 #ifdef __cplusplus

@@ -269,7 +269,8 @@ static int alloc_handler(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 int rst_video_init(void)
 {
-	return vidsrc_register(&vidsrc, "rst", alloc_handler, NULL);
+	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			       "rst", alloc_handler, NULL);
 }
 
 
