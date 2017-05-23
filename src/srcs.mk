@@ -28,6 +28,7 @@ SRCS	+= net.c
 SRCS	+= play.c
 SRCS	+= realtime.c
 SRCS	+= reg.c
+SRCS	+= rtpext.c
 SRCS	+= rtpkeep.c
 SRCS	+= sdp.c
 SRCS	+= sipreq.c
