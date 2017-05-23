@@ -880,7 +880,8 @@ static int set_vidisp(struct vrx *vrx)
 static int set_encoder_format(struct vtx *vtx, const char *src,
 			      const char *dev, struct vidsz *size)
 {
-	struct vidsrc *vs = (struct vidsrc *)vidsrc_find(src);
+	struct vidsrc *vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
+							 src);
 	int err;
 
 	if (!vs)
@@ -955,7 +956,7 @@ int video_start(struct video *v, const char *peer)
 		info("video: no video display\n");
 	}
 
-	if (vidsrc_find(NULL)) {
+	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
 		size.w = v->cfg.width;
 		size.h = v->cfg.height;
 		err = set_encoder_format(&v->vtx, v->cfg.src_mod,
@@ -1310,7 +1311,8 @@ int video_print(struct re_printf *pf, const struct video *v)
 
 int video_set_source(struct video *v, const char *name, const char *dev)
 {
-	struct vidsrc *vs = (struct vidsrc *)vidsrc_find(name);
+	struct vidsrc *vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
+							 name);
 	struct vtx *vtx;
 
 	if (!v)

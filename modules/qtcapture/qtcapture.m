@@ -381,7 +381,8 @@ static void device_info(void)
 static int module_init(void)
 {
 	device_info();
-	return vidsrc_register(&vidsrc, "qtcapture", alloc, NULL);
+	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			       "qtcapture", alloc, NULL);
 }
 
 

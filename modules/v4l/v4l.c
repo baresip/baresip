@@ -245,7 +245,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int v4l_init(void)
 {
-	return vidsrc_register(&vidsrc, "v4l", alloc, NULL);
+	return vidsrc_register(&vidsrc, baresip_vidsrcl(), "v4l", alloc, NULL);
 }
 
 

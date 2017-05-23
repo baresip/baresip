@@ -48,7 +48,8 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err = vidsrc_register(&vidsrc, "vidbridge", vidbridge_src_alloc, NULL);
+	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			      "vidbridge", vidbridge_src_alloc, NULL);
 	if (err)
 		return err;
 

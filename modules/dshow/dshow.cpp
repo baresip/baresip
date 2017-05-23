@@ -514,7 +514,8 @@ static int module_init(void)
 	if (CoInitialize(NULL) != S_OK)
 		return ENODATA;
 
-	return vidsrc_register(&vsrc, "dshow", alloc, NULL);
+	return vidsrc_register(&vsrc, baresip_vidsrcl(),
+			       "dshow", alloc, NULL);
 }
 
 
