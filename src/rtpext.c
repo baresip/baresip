@@ -35,7 +35,6 @@ int rtpext_hdr_encode(struct mbuf *mb, size_t num_bytes)
 	err |= mbuf_write_u16(mb, htons(num_bytes / 4));
 
 	return err;
-
 }
 
 
