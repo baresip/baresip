@@ -867,7 +867,8 @@ static int set_vidisp(struct vrx *vrx)
 	vrx->vidisp = mem_deref(vrx->vidisp);
 	vrx->vidisp_prm.view = NULL;
 
-	vd = (struct vidisp *)vidisp_find(vrx->video->cfg.disp_mod);
+	vd = (struct vidisp *)vidisp_find(baresip_vidispl(),
+					  vrx->video->cfg.disp_mod);
 	if (!vd)
 		return ENOENT;
 
@@ -945,7 +946,7 @@ int video_start(struct video *v, const char *peer)
 
 	stream_set_srate(v->strm, SRATE, SRATE);
 
-	if (vidisp_find(NULL)) {
+	if (vidisp_find(baresip_vidispl(), NULL)) {
 		err = set_vidisp(&v->vrx);
 		if (err) {
 			warning("video: could not set vidisp '%s': %m\n",

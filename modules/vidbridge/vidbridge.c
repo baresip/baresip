@@ -43,7 +43,8 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err = vidisp_register(&vidisp, "vidbridge", vidbridge_disp_alloc,
+	err = vidisp_register(&vidisp, baresip_vidispl(),
+			      "vidbridge", vidbridge_disp_alloc,
 			      NULL, vidbridge_disp_display, 0);
 	if (err)
 		return err;

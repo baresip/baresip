@@ -431,7 +431,8 @@ static void hide(struct vidisp_st *st)
 
 static int module_init(void)
 {
-	return vidisp_register(&vid, "x11", alloc, NULL, display, hide);
+	return vidisp_register(&vid, baresip_vidispl(),
+			       "x11", alloc, NULL, display, hide);
 }
 
 

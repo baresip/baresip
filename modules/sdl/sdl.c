@@ -306,7 +306,8 @@ static int display(struct vidisp_st *st, const char *title,
 
 static int module_init(void)
 {
-	return vidisp_register(&vid, "sdl", alloc, NULL, display, NULL);
+	return vidisp_register(&vid, baresip_vidispl(),
+			       "sdl", alloc, NULL, display, NULL);
 }
 
 
