@@ -160,7 +160,8 @@ static int module_init(void)
 		return (int) ret;
 	}
 
-	err = vidisp_register(&vid, "directfb", alloc, NULL, display, hide);
+	err = vidisp_register(&vid, baresip_vidispl(),
+			      "directfb", alloc, NULL, display, hide);
 	if (err)
 		return err;
 

@@ -115,7 +115,7 @@ static int module_init(void)
 		return ENODEV;
 	}
 
-	return vidisp_register(&vid, "omx",
+	return vidisp_register(&vid, baresip_vidispl(), "omx",
 		omx_vidisp_alloc, NULL, omx_vidisp_display, NULL);
 }
 
