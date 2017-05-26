@@ -374,7 +374,7 @@ static int video_loop_alloc(struct video_loop **vlp, const struct vidsz *size)
 	tmr_init(&vl->tmr_bw);
 
 	/* Video filters */
-	for (le = list_head(vidfilt_list()); le; le = le->next) {
+	for (le = list_head(baresip_vidfiltl()); le; le = le->next) {
 		struct vidfilt *vf = le->data;
 		void *ctx = NULL;
 

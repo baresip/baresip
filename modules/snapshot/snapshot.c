@@ -83,7 +83,7 @@ static const struct cmd cmdv[] = {
 
 static int module_init(void)
 {
-	vidfilt_register(&snapshot);
+	vidfilt_register(baresip_vidfiltl(), &snapshot);
 	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 }
 

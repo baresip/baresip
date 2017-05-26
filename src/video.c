@@ -825,7 +825,7 @@ int video_alloc(struct video **vp, const struct config *cfg,
 	}
 
 	/* Video filters */
-	for (le = list_head(vidfilt_list()); le; le = le->next) {
+	for (le = list_head(baresip_vidfiltl()); le; le = le->next) {
 		struct vidfilt *vf = le->data;
 		void *ctx = NULL;
 
@@ -1290,7 +1290,7 @@ int video_debug(struct re_printf *pf, const struct video *v)
 	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
 			  vrx->n_intra, vrx->n_picup);
 
-	if (!list_isempty(vidfilt_list())) {
+	if (!list_isempty(baresip_vidfiltl())) {
 		err |= vtx_print_pipeline(pf, vtx);
 		err |= vrx_print_pipeline(pf, vrx);
 	}

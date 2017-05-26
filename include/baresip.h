@@ -930,9 +930,8 @@ struct vidfilt {
 	vidfilt_decode_h *dech;
 };
 
-void vidfilt_register(struct vidfilt *vf);
+void vidfilt_register(struct list *vidfiltl, struct vidfilt *vf);
 void vidfilt_unregister(struct vidfilt *vf);
-struct list *vidfilt_list(void);
 int vidfilt_enc_append(struct list *filtl, void **ctx,
 		       const struct vidfilt *vf);
 int vidfilt_dec_append(struct list *filtl, void **ctx,
@@ -1145,6 +1144,7 @@ struct list   *baresip_aufiltl(void);
 struct list   *baresip_vidcodecl(void);
 struct list   *baresip_vidsrcl(void);
 struct list   *baresip_vidispl(void);
+struct list   *baresip_vidfiltl(void);
 
 
 #ifdef __cplusplus

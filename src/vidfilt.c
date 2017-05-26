@@ -8,20 +8,18 @@
 #include "core.h"
 
 
-static struct list vfl;
-
-
 /**
  * Register a new Video Filter
  *
- * @param vf Video Filter to register
+ * @param vidfiltl List of Video-Filters
+ * @param vf       Video Filter to register
  */
-void vidfilt_register(struct vidfilt *vf)
+void vidfilt_register(struct list *vidfiltl, struct vidfilt *vf)
 {
 	if (!vf)
 		return;
 
-	list_append(&vfl, &vf->le, vf);
+	list_append(vidfiltl, &vf->le, vf);
 
 	info("vidfilt: %s\n", vf->name);
 }
@@ -38,17 +36,6 @@ void vidfilt_unregister(struct vidfilt *vf)
 		return;
 
 	list_unlink(&vf->le);
-}
-
-
-/**
- * Get the list of registered Video Filters
- *
- * @return List of Video Filters
- */
-struct list *vidfilt_list(void)
-{
-	return &vfl;
 }
 
 

@@ -177,7 +177,7 @@ static struct vidfilt vf_swscale = {
 
 static int module_init(void)
 {
-	vidfilt_register(&vf_swscale);
+	vidfilt_register(baresip_vidfiltl(), &vf_swscale);
 	return 0;
 }
 
