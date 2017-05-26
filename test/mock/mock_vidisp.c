@@ -92,6 +92,6 @@ static int mock_display(struct vidisp_st *st, const char *title,
 
 int mock_vidisp_register(struct vidisp **vidispp)
 {
-	return vidisp_register(vidispp, "mock-vidisp",
+	return vidisp_register(vidispp, baresip_vidispl(), "mock-vidisp",
 			       mock_disp_alloc, NULL, mock_display, NULL);
 }

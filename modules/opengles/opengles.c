@@ -275,7 +275,8 @@ static int opengles_display(struct vidisp_st *st, const char *title,
 
 static int module_init(void)
 {
-	return vidisp_register(&vid, "opengles", opengles_alloc, NULL,
+	return vidisp_register(&vid, baresip_vidispl(),
+			       "opengles", opengles_alloc, NULL,
 			       opengles_display, NULL);
 }
 

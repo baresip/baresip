@@ -269,7 +269,8 @@ static int module_init(void)
 		return ENODEV;
 	}
 
-	err = vidisp_register(&vid, "sdl2", alloc, NULL, display, hide);
+	err = vidisp_register(&vid, baresip_vidispl(),
+			      "sdl2", alloc, NULL, display, hide);
 	if (err)
 		return err;
 

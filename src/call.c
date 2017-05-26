@@ -600,7 +600,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	use_video = (vidmode != VIDMODE_OFF)
 		&& (list_head(account_vidcodecl(call->acc)) != NULL)
 		&& (NULL != vidsrc_find(baresip_vidsrcl(), NULL)
-		    || NULL != vidisp_find(NULL));
+		    || NULL != vidisp_find(baresip_vidispl(), NULL));
 
 	debug("call: use_video=%d\n", use_video);
 

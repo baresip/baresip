@@ -162,7 +162,8 @@ static int encode_win(struct vidfilt_enc_st *st, struct vidframe *frame)
 
 	if (!enc->disp) {
 
-		err = vidisp_alloc(&enc->disp, NULL, NULL, NULL, NULL, NULL);
+		err = vidisp_alloc(&enc->disp, baresip_vidispl(),
+				   NULL, NULL, NULL, NULL, NULL);
 		if (err)
 			return err;
 	}

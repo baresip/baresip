@@ -776,15 +776,16 @@ typedef int  (vidisp_disp_h)(struct vidisp_st *st, const char *title,
 			     const struct vidframe *frame);
 typedef void (vidisp_hide_h)(struct vidisp_st *st);
 
-int vidisp_register(struct vidisp **vp, const char *name,
+int vidisp_register(struct vidisp **vp, struct list *vidispl, const char *name,
 		    vidisp_alloc_h *alloch, vidisp_update_h *updateh,
 		    vidisp_disp_h *disph, vidisp_hide_h *hideh);
-int vidisp_alloc(struct vidisp_st **stp, const char *name,
+int vidisp_alloc(struct vidisp_st **stp, struct list *vidispl,
+		 const char *name,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg);
 int vidisp_display(struct vidisp_st *st, const char *title,
 		   const struct vidframe *frame);
-const struct vidisp *vidisp_find(const char *name);
+const struct vidisp *vidisp_find(const struct list *vidispl, const char *name);
 
 
 /*
@@ -1143,6 +1144,7 @@ struct list   *baresip_auplayl(void);
 struct list   *baresip_aufiltl(void);
 struct list   *baresip_vidcodecl(void);
 struct list   *baresip_vidsrcl(void);
+struct list   *baresip_vidispl(void);
 
 
 #ifdef __cplusplus

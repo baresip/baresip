@@ -509,7 +509,8 @@ static int module_init(void)
 	if (!app)
 		return ENOSYS;
 
-	err = vidisp_register(&vid, "opengl", alloc, NULL, display, hide);
+	err = vidisp_register(&vid, baresip_vidispl(),
+			      "opengl", alloc, NULL, display, hide);
 	if (err)
 		return err;
 
