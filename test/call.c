@@ -711,6 +711,8 @@ static void mock_sample_handler(const int16_t *sampv, size_t sampc, void *arg)
 {
 	struct fixture *fix = arg;
 	bool got_aulevel;
+	(void)sampv;
+	(void)sampc;
 
 	got_aulevel =
 		0 == audio_level_get(call_audio(ua_call(fix->a.ua)), NULL) &&

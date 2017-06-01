@@ -1465,6 +1465,7 @@ static bool extmap_handler(const char *name, const char *value, void *arg)
 	struct audio *au = arg;
 	struct sdp_extmap extmap;
 	int err;
+	(void)name;
 
 	err = sdp_extmap_decode(&extmap, value);
 	if (err) {
