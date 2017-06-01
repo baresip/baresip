@@ -659,6 +659,8 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 {
 	struct video *v = arg;
 	int err;
+	(void)extv;
+	(void)extc;
 
 	if (!mb)
 		goto out;
