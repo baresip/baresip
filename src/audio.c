@@ -134,6 +134,8 @@ struct aurx {
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for receiving       */
 	int pt;                       /**< Payload type for incoming RTP   */
+	double level_last;
+	bool level_set;
 };
 
 
@@ -146,10 +148,16 @@ struct audio {
 	struct telev *telev;          /**< Telephony events                */
 	struct config_audio cfg;      /**< Audio configuration             */
 	bool started;                 /**< Stream is started flag          */
+	bool level_enabled;           /**< Audio level RTP ext. enabled    */
+	unsigned extmap_aulevel;      /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_err_h *errh;            /**< Audio error handler             */
 	void *arg;                    /**< Handler argument                */
 };
+
+
+/* RFC 6464 */
+static const char *uri_aulevel = "urn:ietf:params:rtp-hdrext:ssrc-audio-level";
 
 
 static void stop_tx(struct autx *tx, struct audio *a)
@@ -307,6 +315,29 @@ static int add_audio_codec(struct audio *a, struct sdp_media *m,
 }
 
 
+static int append_rtpext(struct audio *au, struct mbuf *mb,
+			 int16_t *sampv, size_t sampc)
+{
+	uint8_t data[1];
+	double level;
+	int err;
+
+	/* audio level must be calculated from the audio samples that
+	 * are actually sent on the network. */
+	level = aulevel_calc_dbov(sampv, sampc);
+
+	data[0] = (int)-level & 0x7f;
+
+	err = rtpext_encode(mb, au->extmap_aulevel, 1, data);
+	if (err) {
+		warning("audio: rtpext_encode failed (%m)\n", err);
+		return err;
+	}
+
+	return err;
+}
+
+
 /**
  * Encoder audio and send via stream
  *
@@ -323,12 +354,36 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	size_t frame_size;  /* number of samples per channel */
 	size_t sampc_rtp;
 	size_t len;
+	size_t ext_len = 0;
 	int err;
 
 	if (!tx->ac || !tx->ac->ench)
 		return;
 
 	tx->mb->pos = tx->mb->end = STREAM_PRESZ;
+
+	if (a->level_enabled) {
+
+		/* skip the extension header */
+		tx->mb->pos += RTPEXT_HDR_SIZE;
+
+		err = append_rtpext(a, tx->mb, sampv, sampc);
+		if (err)
+			return;
+
+		ext_len = tx->mb->pos - STREAM_PRESZ;
+
+		/* write the Extension header at the beginning */
+		tx->mb->pos = STREAM_PRESZ;
+
+		err = rtpext_hdr_encode(tx->mb, ext_len - RTPEXT_HDR_SIZE);
+		if (err)
+			return;
+
+		tx->mb->pos = STREAM_PRESZ + ext_len;
+		tx->mb->end = STREAM_PRESZ + ext_len;
+	}
+
 	len = mbuf_get_space(tx->mb);
 
 	err = tx->ac->ench(tx->enc, mbuf_buf(tx->mb), &len, sampv, sampc);
@@ -344,11 +399,12 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	}
 
 	tx->mb->pos = STREAM_PRESZ;
-	tx->mb->end = STREAM_PRESZ + len;
+	tx->mb->end = STREAM_PRESZ + ext_len + len;
 
 	if (mbuf_get_left(tx->mb)) {
+
 		if (len) {
-			err = stream_send(a->strm, tx->marker, -1,
+			err = stream_send(a->strm, ext_len!=0, tx->marker, -1,
 					tx->ts, tx->mb);
 			if (err)
 				goto out;
@@ -438,7 +494,7 @@ static void check_telev(struct audio *a, struct autx *tx)
 		return;
 
 	tx->mb->pos = STREAM_PRESZ;
-	err = stream_send(a->strm, marker, fmt->pt, tx->ts_tel, tx->mb);
+	err = stream_send(a->strm, false, marker, fmt->pt, tx->ts_tel, tx->mb);
 	if (err) {
 		warning("audio: telev: stream_send %m\n", err);
 	}
@@ -617,10 +673,12 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
+				struct rtpext *extv, size_t extc,
 				struct mbuf *mb, void *arg)
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
+	size_t i;
 	int err;
 
 	if (!mb)
@@ -649,6 +707,19 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 		err = pt_handler(a, rx->pt, hdr->pt);
 		if (err)
 			return;
+	}
+
+	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
+	for (i=0; i<extc; i++) {
+
+		if (extv[i].id == a->extmap_aulevel) {
+
+			a->rx.level_last = -(double)(extv[i].data[0] & 0x7f);
+			a->rx.level_set = true;
+		}
+		else {
+			warning("audio: hdrext ignored (id=%u)\n", extv[i].id);
+		}
 	}
 
  out:
@@ -717,6 +788,18 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 				  "ptime", "%u", ptime);
 	if (err)
 		goto out;
+
+	if (cfg->audio.level && offerer) {
+
+		a->extmap_aulevel = 1;
+
+		err |= sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
+					   "extmap",
+					   "%u %s",
+					   a->extmap_aulevel, uri_aulevel);
+		if (err)
+			goto out;
+	}
 
 	/* Audio codecs */
 	for (le = list_head(aucodecl); le; le = le->next) {
@@ -1377,6 +1460,46 @@ bool audio_ismuted(const struct audio *a)
 }
 
 
+static bool extmap_handler(const char *name, const char *value, void *arg)
+{
+	struct audio *au = arg;
+	struct sdp_extmap extmap;
+	int err;
+
+	err = sdp_extmap_decode(&extmap, value);
+	if (err) {
+		warning("audio: sdp_extmap_decode error (%m)\n", err);
+		return false;
+	}
+
+	if (0 == pl_strcasecmp(&extmap.name, uri_aulevel)) {
+
+		if (extmap.id < RTPEXT_ID_MIN || extmap.id > RTPEXT_ID_MAX) {
+			warning("audio: id out of range (%u)\n", extmap.id);
+			return false;
+		}
+
+		au->extmap_aulevel = extmap.id;
+
+		err = sdp_media_set_lattr(stream_sdpmedia(au->strm),
+					  true,
+					  "extmap",
+					  "%u %s",
+					  au->extmap_aulevel,
+					  uri_aulevel);
+		if (err)
+			return false;
+
+		au->level_enabled = true;
+		info("audio: client-to-mixer audio levels enabled\n");
+
+		return true;
+	}
+
+	return false;
+}
+
+
 void audio_sdp_attr_decode(struct audio *a)
 {
 	const char *attr;
@@ -1404,6 +1527,39 @@ void audio_sdp_attr_decode(struct audio *a)
 			}
 		}
 	}
+
+	if (a->cfg.level) {
+		/* Client-to-Mixer Audio Level Indication */
+		sdp_media_rattr_apply(stream_sdpmedia(a->strm),
+				      "extmap",
+				      extmap_handler, a);
+	}
+}
+
+
+/**
+ * Get the last value of the audio level from incoming RTP packets
+ *
+ * @param au     Audio object
+ * @param levelp Pointer to where to write audio level value
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int audio_level_get(const struct audio *au, double *levelp)
+{
+	if (!au)
+		return EINVAL;
+
+	if (!au->level_enabled)
+		return ENOTSUP;
+
+	if (!au->rx.level_set)
+		return ENOENT;
+
+	if (levelp)
+		*levelp = au->rx.level_last;
+
+	return 0;
 }
 
 
@@ -1440,6 +1596,10 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  aucodec_print, rx->ac,
 			  aubuf_debug, rx->aubuf,
 			  rx->ptime, rx->pt);
+	if (rx->level_set) {
+		err |= re_hprintf(pf, "       level %.3f dBov\n",
+				  rx->level_last);
+	}
 
 	err |= re_hprintf(pf,
 			  " %H"

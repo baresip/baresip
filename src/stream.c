@@ -148,6 +148,60 @@ static void stream_destructor(void *arg)
 }
 
 
+static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
+		       struct mbuf *mb)
+{
+	struct rtpext extv[8];
+	size_t extc = 0;
+
+	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
+	if (hdr->ext && hdr->x.len && mb) {
+
+		const size_t pos = mb->pos;
+		const size_t end = mb->end;
+		const size_t ext_stop = mb->pos;
+		size_t ext_len;
+		size_t i;
+		int err;
+
+		if (hdr->x.type != RTPEXT_TYPE_MAGIC) {
+			info("stream: unknown ext type ignored (0x%04x)\n",
+			     hdr->x.type);
+			goto handler;
+		}
+
+		ext_len = hdr->x.len*sizeof(uint32_t);
+		if (mb->pos < ext_len) {
+			warning("stream: corrupt mbuf,"
+				" not enough space for rtpext\n");
+			return;
+		}
+
+		mb->pos = mb->pos - ext_len;
+		mb->end = ext_stop;
+
+		for (i=0; i<ARRAY_SIZE(extv) && mbuf_get_left(mb); i++) {
+
+			err = rtpext_decode(&extv[i], mb);
+			if (err) {
+				warning("stream: rtpext_decode failed (%m)\n",
+					err);
+				return;
+			}
+		}
+
+		extc = i;
+
+		mb->pos = pos;
+		mb->end = end;
+	}
+
+ handler:
+	s->rtph(hdr, extv, extc, mb, s->arg);
+
+}
+
+
 static void rtp_recv(const struct sa *src, const struct rtp_header *hdr,
 		     struct mbuf *mb, void *arg)
 {
@@ -204,17 +258,17 @@ static void rtp_recv(const struct sa *src, const struct rtp_header *hdr,
 		s->jbuf_started = true;
 
 		if (lostcalc(s, hdr2.seq) > 0)
-			s->rtph(hdr, NULL, s->arg);
+			handle_rtp(s, hdr, NULL);
 
-		s->rtph(&hdr2, mb2, s->arg);
+		handle_rtp(s, &hdr2, mb2);
 
 		mem_deref(mb2);
 	}
 	else {
 		if (lostcalc(s, hdr->seq) > 0)
-			s->rtph(hdr, NULL, s->arg);
+			handle_rtp(s, hdr, NULL);
 
-		s->rtph(hdr, mb, s->arg);
+		handle_rtp(s, hdr, mb);
 	}
 }
 
@@ -419,7 +473,7 @@ static void stream_start_keepalive(struct stream *s)
 }
 
 
-int stream_send(struct stream *s, bool marker, int pt, uint32_t ts,
+int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		struct mbuf *mb)
 {
 	int err = 0;
@@ -438,7 +492,7 @@ int stream_send(struct stream *s, bool marker, int pt, uint32_t ts,
 		pt = s->pt_enc;
 
 	if (pt >= 0) {
-		err = rtp_send(s->rtp, sdp_media_raddr(s->sdp), false,
+		err = rtp_send(s->rtp, sdp_media_raddr(s->sdp), ext,
 			       marker, pt, ts, mb);
 		if (err)
 			s->metric_tx.n_err++;

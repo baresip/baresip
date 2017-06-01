@@ -328,8 +328,9 @@ struct rtp_header;
 
 enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 
-typedef void (stream_rtp_h)(const struct rtp_header *hdr, struct mbuf *mb,
-			    void *arg);
+typedef void (stream_rtp_h)(const struct rtp_header *hdr,
+			    struct rtpext *extv, size_t extc,
+			    struct mbuf *mb, void *arg);
 typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
@@ -377,7 +378,7 @@ int  stream_alloc(struct stream **sp, const struct config_avt *cfg,
 		  const char *cname,
 		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, void *arg);
 struct sdp_media *stream_sdpmedia(const struct stream *s);
-int  stream_send(struct stream *s, bool marker, int pt, uint32_t ts,
+int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
 void stream_update(struct stream *s);
 void stream_update_encoder(struct stream *s, int pt_enc);

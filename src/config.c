@@ -50,6 +50,7 @@ static struct config core_config = {
 		0,
 		false,
 		AUDIO_MODE_POLL,
+		false,
 	},
 
 #ifdef USE_VIDEO
@@ -195,6 +196,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	    0 == conf_get(conf, "audio_player", &ap))
 		cfg->audio.src_first = as.p < ap.p;
 
+	(void)conf_get_bool(conf, "audio_level", &cfg->audio.level);
+
 #ifdef USE_VIDEO
 	/* Video */
 	(void)conf_get_csv(conf, "video_source",
@@ -277,6 +280,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "ausrc_srate\t\t%u\n"
 			 "auplay_channels\t\t%u\n"
 			 "ausrc_channels\t\t%u\n"
+			 "audio_level\t\t%s\n"
 			 "\n"
 #ifdef USE_VIDEO
 			 "# Video\n"
@@ -320,6 +324,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 range_print, &cfg->audio.channels,
 			 cfg->audio.srate_play, cfg->audio.srate_src,
 			 cfg->audio.channels_play, cfg->audio.channels_src,
+			 cfg->audio.level ? "yes" : "no",
 
 #ifdef USE_VIDEO
 			 cfg->video.src_mod, cfg->video.src_dev,
@@ -447,6 +452,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#auplay_srate\t\t48000\n"
 			  "#ausrc_channels\t\t0\n"
 			  "#auplay_channels\t\t0\n"
+			  "audio_level\t\tno\n"
 			  ,
 			  poll_method_name(poll_method_best()),
 			  cfg->call.local_timeout,

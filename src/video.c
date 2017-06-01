@@ -255,7 +255,7 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 
 		sent += mbuf_get_left(qent->mb);
 
-		stream_send(vtx->video->strm, qent->marker, qent->pt,
+		stream_send(vtx->video->strm, false, qent->marker, qent->pt,
 			    qent->ts, qent->mb);
 
 		le = le->next;
@@ -654,6 +654,7 @@ static int pt_handler(struct video *v, uint8_t pt_old, uint8_t pt_new)
 
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
+				struct rtpext *extv, size_t extc,
 				struct mbuf *mb, void *arg)
 {
 	struct video *v = arg;
