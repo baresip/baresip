@@ -204,6 +204,7 @@ int test_call_multiple(void);
 int test_call_max(void);
 int test_call_dtmf(void);
 int test_call_video(void);
+int test_call_aulevel(void);
 
 
 #ifdef __cplusplus

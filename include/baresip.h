@@ -200,6 +200,7 @@ struct config_audio {
 	uint32_t channels_src;  /**< Opt. channels for source       */
 	bool src_first;         /**< Audio source opened first      */
 	enum audio_mode txmode; /**< Audio transmit mode            */
+	bool level;             /**< Enable audio level indication  */
 };
 
 #ifdef USE_VIDEO
@@ -950,6 +951,7 @@ void audio_set_devicename(struct audio *a, const char *src, const char *play);
 int  audio_set_source(struct audio *au, const char *mod, const char *device);
 int  audio_set_player(struct audio *au, const char *mod, const char *device);
 void audio_encoder_cycle(struct audio *audio);
+int  audio_level_get(const struct audio *au, double *level);
 int  audio_debug(struct re_printf *pf, const struct audio *a);
 
 
