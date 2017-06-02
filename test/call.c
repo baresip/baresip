@@ -81,9 +81,7 @@ struct fixture {
 			       SIP_TRANSP_UDP, NULL);			\
 	TEST_ERR(err);							\
 									\
-	re_snprintf(f->buri, sizeof(f->buri), "sip:b@%J", &f->laddr_sip);\
-									\
-	conf_config()->audio.level = false;
+	re_snprintf(f->buri, sizeof(f->buri), "sip:b@%J", &f->laddr_sip);
 
 
 #define fixture_init(f)				\
@@ -752,9 +750,6 @@ int test_call_aulevel(void)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	ASSERT_EQ(1, fix.a.n_established);
-	ASSERT_EQ(1, fix.b.n_established);
-
 	/* verify audio silence */
 	err = audio_level_get(call_audio(ua_call(f->a.ua)), &lvl);
 	TEST_ERR(err);
@@ -764,6 +759,8 @@ int test_call_aulevel(void)
 	ASSERT_EQ(-96, lvl);
 
  out:
+	conf_config()->audio.level = false;
+
 	fixture_close(f);
 	mem_deref(auplay);
 	mem_deref(ausrc);

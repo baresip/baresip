@@ -172,8 +172,9 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 
 		ext_len = hdr->x.len*sizeof(uint32_t);
 		if (mb->pos < ext_len) {
-			warning("stream: corrupt mbuf,"
-				" not enough space for rtpext\n");
+			warning("stream: corrupt rtp packet,"
+				" not enough space for rtpext of %zu bytes\n",
+				ext_len);
 			return;
 		}
 

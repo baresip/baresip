@@ -718,7 +718,8 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 			a->rx.level_set = true;
 		}
 		else {
-			warning("audio: hdrext ignored (id=%u)\n", extv[i].id);
+			info("audio: rtp header ext ignored (id=%u)\n",
+			     extv[i].id);
 		}
 	}
 
@@ -793,10 +794,10 @@ int audio_alloc(struct audio **ap, const struct config *cfg,
 
 		a->extmap_aulevel = 1;
 
-		err |= sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
-					   "extmap",
-					   "%u %s",
-					   a->extmap_aulevel, uri_aulevel);
+		err = sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
+					  "extmap",
+					  "%u %s",
+					  a->extmap_aulevel, uri_aulevel);
 		if (err)
 			goto out;
 	}
@@ -1476,14 +1477,14 @@ static bool extmap_handler(const char *name, const char *value, void *arg)
 	if (0 == pl_strcasecmp(&extmap.name, uri_aulevel)) {
 
 		if (extmap.id < RTPEXT_ID_MIN || extmap.id > RTPEXT_ID_MAX) {
-			warning("audio: id out of range (%u)\n", extmap.id);
+			warning("audio: extmap id out of range (%u)\n",
+				extmap.id);
 			return false;
 		}
 
 		au->extmap_aulevel = extmap.id;
 
-		err = sdp_media_set_lattr(stream_sdpmedia(au->strm),
-					  true,
+		err = sdp_media_set_lattr(stream_sdpmedia(au->strm), true,
 					  "extmap",
 					  "%u %s",
 					  au->extmap_aulevel,
@@ -1493,8 +1494,6 @@ static bool extmap_handler(const char *name, const char *value, void *arg)
 
 		au->level_enabled = true;
 		info("audio: client-to-mixer audio levels enabled\n");
-
-		return true;
 	}
 
 	return false;
@@ -1529,8 +1528,8 @@ void audio_sdp_attr_decode(struct audio *a)
 		}
 	}
 
+	/* Client-to-Mixer Audio Level Indication */
 	if (a->cfg.level) {
-		/* Client-to-Mixer Audio Level Indication */
 		sdp_media_rattr_apply(stream_sdpmedia(a->strm),
 				      "extmap",
 				      extmap_handler, a);
