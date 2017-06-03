@@ -14,6 +14,7 @@
 
 enum behaviour {
 	BEHAVIOUR_ANSWER = 0,
+	BEHAVIOUR_PROGRESS,
 	BEHAVIOUR_REJECT
 };
 
@@ -32,6 +33,7 @@ struct agent {
 	bool failed;
 
 	unsigned n_incoming;
+	unsigned n_progress;
 	unsigned n_established;
 	unsigned n_closed;
 	unsigned n_dtmf_recv;
@@ -145,6 +147,14 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			}
 			break;
 
+		case BEHAVIOUR_PROGRESS:
+			err = ua_progress(ua, call);
+			if (err) {
+				warning("ua_progress failed (%m)\n", err);
+				goto out;
+			}
+			break;
+
 		case BEHAVIOUR_REJECT:
 			ua_hangup(ua, call, 0, 0);
 			call = NULL;
@@ -154,6 +164,12 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		default:
 			break;
 		}
+		break;
+
+	case UA_EVENT_CALL_PROGRESS:
+		++ag->n_progress;
+
+		re_cancel();
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
@@ -764,6 +780,42 @@ int test_call_aulevel(void)
 	fixture_close(f);
 	mem_deref(auplay);
 	mem_deref(ausrc);
+
+	return err;
+}
+
+
+int test_call_progress(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_PROGRESS;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_progress);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_progress);
+	ASSERT_EQ(0, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+
+ out:
+	fixture_close(f);
 
 	return err;
 }

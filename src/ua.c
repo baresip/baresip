@@ -850,6 +850,21 @@ int ua_answer(struct ua *ua, struct call *call)
 }
 
 
+int ua_progress(struct ua *ua, struct call *call)
+{
+	if (!ua)
+		return EINVAL;
+
+	if (!call) {
+		call = ua_call(ua);
+		if (!call)
+			return ENOENT;
+	}
+
+	return call_progress(call);
+}
+
+
 /**
  * Put the current call on hold and answer the incoming call
  *
