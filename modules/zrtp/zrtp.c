@@ -50,6 +50,19 @@ static zrtp_config_t zrtp_config;
 static zrtp_zid_t zid;
 
 
+static inline bool is_rtp_or_rtcp(const struct mbuf *mb)
+{
+	uint8_t b;
+
+	if (mbuf_get_left(mb) < 1)
+		return false;
+
+	b = mbuf_buf(mb)[0];
+
+	return 127 < b && b < 192;
+}
+
+
 static void session_destructor(void *arg)
 {
 	struct menc_sess *st = arg;
@@ -81,9 +94,19 @@ static bool udp_helper_send(int *err, struct sa *dst,
 
 	length = (unsigned int)mbuf_get_left(mb);
 
+	/* only RTP packets should be processed */
+	if (!is_rtp_or_rtcp(mb))
+		return false;
+
 	s = zrtp_process_rtp(st->zrtp_stream, (char *)mbuf_buf(mb), &length);
 	if (s != zrtp_status_ok) {
-		warning("zrtp: zrtp_process_rtp failed (status = %d)\n", s);
+
+		if (s == zrtp_status_drop)
+			return true;
+
+		warning("zrtp: send: zrtp_process_rtp failed"
+			" (status = %d '%s')\n",
+			s, zrtp_log_status2str(s));
 		return false;
 	}
 
@@ -115,7 +138,8 @@ static bool udp_helper_recv(struct sa *src, struct mbuf *mb, void *arg)
 		if (s == zrtp_status_drop)
 			return true;
 
-		warning("zrtp: zrtp_process_srtp: %d\n", s);
+		warning("zrtp: recv: zrtp_process_srtp: %d '%s'\n",
+			s, zrtp_log_status2str(s));
 		return false;
 	}
 
