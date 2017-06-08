@@ -459,20 +459,33 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 	struct sip_contact contact;
 	struct call *call = NULL;
 	struct mbuf *desc = NULL;
+	const struct sip_hdr *hdr;
+	bool accept_sdp = true;
 	int err;
 
 	debug("ua: incoming OPTIONS message from %r (%J)\n",
 	      &msg->from.auri, &msg->src);
 
-	err = ua_call_alloc(&call, ua, VIDMODE_ON, NULL, NULL, NULL);
-	if (err) {
-		(void)sip_treply(NULL, uag.sip, msg, 500, "Call Error");
-		return;
+	/* application/sdp is the default if the
+	   Accept header field is not present */
+	hdr = sip_msg_hdr(msg, SIP_HDR_ACCEPT);
+	if (hdr) {
+		accept_sdp = 0==pl_strcasecmp(&hdr->val, "application/sdp");
 	}
 
-	err = call_sdp_get(call, &desc, true);
-	if (err)
-		goto out;
+	if (accept_sdp) {
+
+		err = ua_call_alloc(&call, ua, VIDMODE_ON, NULL, NULL, NULL);
+		if (err) {
+			(void)sip_treply(NULL, uag.sip, msg,
+					 500, "Call Error");
+			return;
+		}
+
+		err = call_sdp_get(call, &desc, true);
+		if (err)
+			goto out;
+	}
 
 	sip_contact_set(&contact, ua_cuser(ua), &msg->dst, msg->tp);
 
@@ -481,16 +494,17 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 			  "Allow: %s\r\n"
 			  "%H"
 			  "%H"
-			  "Content-Type: application/sdp\r\n"
+			  "%s"
 			  "Content-Length: %zu\r\n"
 			  "\r\n"
 			  "%b",
 			  uag_allowed_methods(),
 			  ua_print_supported, ua,
 			  sip_contact_print, &contact,
-			  mbuf_get_left(desc),
-			  mbuf_buf(desc),
-			  mbuf_get_left(desc));
+			  desc ? "Content-Type: application/sdp\r\n" : "",
+			  desc ? mbuf_get_left(desc) : (size_t)0,
+			  desc ? mbuf_buf(desc) : NULL,
+			  desc ? mbuf_get_left(desc) : (size_t)0);
 	if (err) {
 		warning("ua: options: sip_treplyf: %m\n", err);
 	}
