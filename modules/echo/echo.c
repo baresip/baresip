@@ -35,9 +35,10 @@ static void destructor(void *arg)
 
 
 static void call_event_handler(struct call *call, enum call_event ev,
-		const char *str, void *arg)
+			       const char *str, void *arg)
 {
 	struct session *sess = arg;
+	(void)call;
 
 	switch (ev) {
 
