@@ -33,7 +33,7 @@ static void modapp_destructor(void *arg)
 /* Declared in static.c */
 extern const struct mod_export *mod_table[];
 
-static const struct mod_export *find_module(const struct pl *pl)
+static const struct mod_export *lookup_static_module(const struct pl *pl)
 {
 	struct pl name;
 	uint32_t i;
@@ -58,6 +58,7 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 		       const struct pl *name)
 {
 	char file[FS_PATH_MAX];
+	char namestr[256];
 	struct mod *m = NULL;
 	int err = 0;
 
@@ -66,9 +67,18 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 
 #ifdef STATIC
 	/* Try static first */
-	err = mod_add(&m, find_module(name));
+	pl_strcpy(name, namestr, sizeof(namestr));
+
+	if (mod_find(namestr)) {
+		info("static module already loaded: %r\n", name);
+		return EALREADY;
+	}
+
+	err = mod_add(&m, lookup_static_module(name));
 	if (!err)
 		goto out;
+#else
+	(void)namestr;
 #endif
 
 	/* Then dynamic */
