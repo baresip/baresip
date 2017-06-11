@@ -39,6 +39,10 @@ enum {
 };
 
 
+/* forward declarations */
+struct stream_param;
+
+
 /*
  * Account
  */
@@ -116,7 +120,8 @@ struct audio;
 typedef void (audio_event_h)(int key, bool end, void *arg);
 typedef void (audio_err_h)(int err, const char *str, void *arg);
 
-int audio_alloc(struct audio **ap, const struct config *cfg,
+int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
+		const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
@@ -161,6 +166,7 @@ struct call_prm {
 	struct sa laddr;
 	enum vidmode vidmode;
 	int af;
+	bool use_rtp;
 };
 
 int  call_alloc(struct call **callp, const struct config *cfg,
@@ -335,6 +341,10 @@ typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
+/** Common parameters for media stream */
+struct stream_param {
+	bool use_rtp;
+};
 
 /** Defines a generic media stream */
 struct stream {
@@ -370,7 +380,8 @@ struct stream {
 	uint32_t rtp_timeout_ms; /**< RTP Timeout value in [ms]             */
 };
 
-int  stream_alloc(struct stream **sp, const struct config_avt *cfg,
+int  stream_alloc(struct stream **sp, const struct stream_param *prm,
+		  const struct config_avt *cfg,
 		  struct call *call, struct sdp_session *sdp_sess,
 		  const char *name, int label,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
@@ -447,7 +458,8 @@ struct video;
 
 typedef void (video_err_h)(int err, const char *str, void *arg);
 
-int  video_alloc(struct video **vp, const struct config *cfg,
+int  video_alloc(struct video **vp, const struct stream_param *stream_prm,
+		 const struct config *cfg,
 		 struct call *call, struct sdp_session *sdp_sess, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,

@@ -82,9 +82,10 @@ static struct {
 
 
 /* prototypes */
-static int  ua_call_alloc(struct call **callp, struct ua *ua,
-			  enum vidmode vidmode, const struct sip_msg *msg,
-			  struct call *xcall, const char *local_uri);
+static int ua_call_alloc(struct call **callp, struct ua *ua,
+			 enum vidmode vidmode, const struct sip_msg *msg,
+			 struct call *xcall, const char *local_uri,
+			 bool use_rtp);
 
 
 /* This function is called when all SIP transactions are done */
@@ -362,7 +363,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		ua_printf(ua, "transferring call to %s\n", str);
 
 		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
-				    call_localuri(call));
+				    call_localuri(call), true);
 		if (!err) {
 			struct pl pl;
 
@@ -410,7 +411,8 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 
 static int ua_call_alloc(struct call **callp, struct ua *ua,
 			 enum vidmode vidmode, const struct sip_msg *msg,
-			 struct call *xcall, const char *local_uri)
+			 struct call *xcall, const char *local_uri,
+			 bool use_rtp)
 {
 	const struct network *net = baresip_network();
 	struct call_prm cprm;
@@ -437,6 +439,7 @@ static int ua_call_alloc(struct call **callp, struct ua *ua,
 	sa_cpy(&cprm.laddr, net_laddr_af(net, af));
 	cprm.vidmode = vidmode;
 	cprm.af      = af;
+	cprm.use_rtp = use_rtp;
 
 	err = call_alloc(callp, conf_config(), &ua->calls,
 			 ua->acc->dispname,
@@ -475,7 +478,8 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 
 	if (accept_sdp) {
 
-		err = ua_call_alloc(&call, ua, VIDMODE_ON, NULL, NULL, NULL);
+		err = ua_call_alloc(&call, ua, VIDMODE_ON, NULL, NULL, NULL,
+				    false);
 		if (err) {
 			(void)sip_treply(NULL, uag.sip, msg,
 					 500, "Call Error");
@@ -790,7 +794,7 @@ int ua_connect(struct ua *ua, struct call **callp,
 	if (err)
 		goto out;
 
-	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri);
+	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)
 		goto out;
 
@@ -1264,7 +1268,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 	(void)pl_strcpy(&msg->to.auri, to_uri, sizeof(to_uri));
 
-	err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, to_uri);
+	err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, to_uri, true);
 	if (err) {
 		warning("ua: call_alloc: %m\n", err);
 		goto error;

@@ -760,7 +760,8 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 }
 
 
-int video_alloc(struct video **vp, const struct config *cfg,
+int video_alloc(struct video **vp, const struct stream_param *stream_prm,
+		const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
@@ -783,7 +784,8 @@ int video_alloc(struct video **vp, const struct config *cfg,
 	v->cfg = cfg->video;
 	tmr_init(&v->tmr);
 
-	err = stream_alloc(&v->strm, &cfg->avt, call, sdp_sess, "video", label,
+	err = stream_alloc(&v->strm, stream_prm,
+			   &cfg->avt, call, sdp_sess, "video", label,
 			   mnat, mnat_sess, menc, menc_sess,
 			   call_localuri(call),
 			   stream_recv_handler, rtcp_handler, v);

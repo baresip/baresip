@@ -508,6 +508,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 {
 	struct call *call;
 	struct le *le;
+	struct stream_param stream_prm;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
 	bool use_video = true, got_offer = false;
 	int label = 0;
@@ -516,8 +517,11 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (!cfg || !local_uri || !acc || !ua || !prm)
 		return EINVAL;
 
-	debug("call: alloc with params laddr=%j, af=%s\n",
-	      &prm->laddr, net_af2name(prm->af));
+	debug("call: alloc with params laddr=%j, af=%s, use_rtp=%d\n",
+	      &prm->laddr, net_af2name(prm->af), prm->use_rtp);
+
+	memset(&stream_prm, 0, sizeof(stream_prm));
+	stream_prm.use_rtp = prm->use_rtp;
 
 	call = mem_zalloc(sizeof(*call), call_destructor);
 	if (!call)
@@ -586,7 +590,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	}
 
 	/* Audio stream */
-	err = audio_alloc(&call->audio, cfg, call,
+	err = audio_alloc(&call->audio, &stream_prm, cfg, call,
 			  call->sdp, ++label,
 			  acc->mnat, call->mnats, acc->menc, call->mencs,
 			  acc->ptime, account_aucodecl(call->acc), !got_offer,
@@ -606,7 +610,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	/* Video stream */
 	if (use_video) {
- 		err = video_alloc(&call->video, cfg,
+		err = video_alloc(&call->video, &stream_prm, cfg,
 				  call, call->sdp, ++label,
 				  acc->mnat, call->mnats,
 				  acc->menc, call->mencs,
