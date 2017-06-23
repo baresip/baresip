@@ -1,3 +1,44 @@
+2017-06-24 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.4
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.4
+	* NOTE: Requires libre v0.5.4 or later
+	        Requires librem v0.5.0 or later
+
+	* config:
+	  - audio_level  yes|no    Enable audio level RTP extension
+
+	* baresip-core:
+	  - add support for Client-to-Mixer Audio Level Indication (RFC 6464)
+	  - add support for RTP Header Extensions (RFC 5285)
+	  - module: dont load same static module twice
+	  - ua: add ua_progress()
+	  - ua: check for Accept header in incoming OPTIONS request
+	  - use a dummy RTP port for incoming OPTIONS (ref #265)
+	  - vidcodec: make the API re-entrant
+	  - vidfilt: make the API re-entrant
+	  - vidisp: make the API re-entrant
+	  - vidsrc: make the API re-entrant
+
+	* selftest:
+	  - add test for audio level indication in call
+	  - add test for call progress
+
+	* Modules:
+
+	* (all video modules updated with API-changes)
+
+	* zrtp: check for RTP packet in send handler (ref #262)
+		(thanks to MobiSciLab for reporting the bug)
+
+		- registered zrtp_log function with zrtp engine
+		- improved info message on how to verify remote peer
+		- improved setting and printing of zrtp cache file
+		(thanks Juha Heinanen)
+
+
 2017-05-14 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.3
