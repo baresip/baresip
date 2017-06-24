@@ -279,6 +279,8 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 	struct stream *s = arg;
 	(void)src;
 
+	s->ts_last = tmr_jiffies();
+
 	if (s->rtcph)
 		s->rtcph(msg, s->arg);
 
