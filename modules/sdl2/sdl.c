@@ -76,6 +76,32 @@ static void sdl_reset(struct vidisp_st *st)
 }
 
 
+static void handle_events(struct vidisp_st *st)
+{
+	SDL_Event event;
+
+	while (SDL_PollEvent(&event)) {
+
+		if (event.type == SDL_KEYDOWN) {
+
+			switch (event.key.keysym.sym) {
+
+			case SDLK_f:
+				/* press key 'f' to toggle fullscreen */
+				st->fullscreen = !st->fullscreen;
+				info("sdl: %sable fullscreen mode\n",
+				     st->fullscreen ? "en" : "dis");
+				sdl_reset(st);
+				break;
+
+			default:
+				break;
+			}
+		}
+	}
+}
+
+
 static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
@@ -245,6 +271,8 @@ static int display(struct vidisp_st *st, const char *title,
 
 	/* Update the screen! */
 	SDL_RenderPresent(st->renderer);
+
+	handle_events(st);
 
 	return 0;
 }
