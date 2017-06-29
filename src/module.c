@@ -120,6 +120,7 @@ static int module_tmp_handler(const struct pl *val, void *arg)
 static int module_app_handler(const struct pl *val, void *arg)
 {
 	struct modapp *modapp;
+	const struct mod_export *me;
 
 	debug("module: loading app %r\n", val);
 
@@ -130,6 +131,12 @@ static int module_app_handler(const struct pl *val, void *arg)
 	if (load_module(&modapp->mod, arg, val)) {
 		mem_deref(modapp);
 		return 0;
+	}
+
+	me = mod_export(modapp->mod);
+	if (0 != str_casecmp(me->type, "application")) {
+		warning("module_app %r should be type application (%s)\n",
+			val, me->type);
 	}
 
 	list_prepend(&modappl, &modapp->le, modapp);
