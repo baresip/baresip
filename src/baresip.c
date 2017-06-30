@@ -31,6 +31,25 @@ static struct baresip {
 } baresip;
 
 
+static int cmd_quit(struct re_printf *pf, void *unused)
+{
+	int err;
+
+	(void)unused;
+
+	err = re_hprintf(pf, "Quit\n");
+
+	ua_stop_all(false);
+
+	return err;
+}
+
+
+static const struct cmd corecmdv[] = {
+	{"quit", 'q', 0, "Quit",                     cmd_quit             },
+};
+
+
 int baresip_init(struct config *cfg, bool prefer_ipv6)
 {
 	int err;
@@ -76,12 +95,18 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 		return err;
 	}
 
+	err = cmd_register(baresip.commands, corecmdv, ARRAY_SIZE(corecmdv));
+	if (err)
+		return err;
+
 	return 0;
 }
 
 
 void baresip_close(void)
 {
+	cmd_unregister(baresip.commands, corecmdv);
+
 	baresip.message = mem_deref(baresip.message);
 	baresip.player = mem_deref(baresip.player);
 	baresip.commands = mem_deref(baresip.commands);

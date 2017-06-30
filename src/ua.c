@@ -1297,25 +1297,6 @@ static void net_change_handler(void *arg)
 }
 
 
-static int cmd_quit(struct re_printf *pf, void *unused)
-{
-	int err;
-
-	(void)unused;
-
-	err = re_hprintf(pf, "Quit\n");
-
-	ua_stop_all(false);
-
-	return err;
-}
-
-
-static const struct cmd cmdv[] = {
-	{"quit", 'q', 0, "Quit",                     cmd_quit             },
-};
-
-
 static bool sub_handler(const struct sip_msg *msg, void *arg)
 {
 	struct ua *ua;
@@ -1395,10 +1376,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	if (err)
 		goto out;
 
-	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
-	if (err)
-		goto out;
-
 	net_change(net, 60, net_change_handler, NULL);
 
  out:
@@ -1415,7 +1392,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
  */
 void ua_close(void)
 {
-	cmd_unregister(baresip_commands(), cmdv);
 	ui_reset();
 
 	uag.evsock   = mem_deref(uag.evsock);
