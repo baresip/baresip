@@ -8,26 +8,6 @@
 #include "core.h"
 
 
-struct modapp {
-	struct mod *mod;
-	struct le le;
-};
-
-
-static struct list modappl;
-
-
-static void modapp_destructor(void *arg)
-{
-	struct modapp *modapp = arg;
-	const struct mod_export *me = mod_export(modapp->mod);
-	if (me)
-		debug("module: unloading app %s\n", me->name);
-	list_unlink(&modapp->le);
-	mem_deref(modapp->mod);
-}
-
-
 #ifdef STATIC
 
 /* Declared in static.c */
@@ -119,27 +99,20 @@ static int module_tmp_handler(const struct pl *val, void *arg)
 
 static int module_app_handler(const struct pl *val, void *arg)
 {
-	struct modapp *modapp;
+	struct mod *mod = NULL;
 	const struct mod_export *me;
 
 	debug("module: loading app %r\n", val);
 
-	modapp = mem_zalloc(sizeof(*modapp), modapp_destructor);
-	if (!modapp)
-		return ENOMEM;
-
-	if (load_module(&modapp->mod, arg, val)) {
-		mem_deref(modapp);
+	if (load_module(&mod, arg, val)) {
 		return 0;
 	}
 
-	me = mod_export(modapp->mod);
+	me = mod_export(mod);
 	if (0 != str_casecmp(me->type, "application")) {
 		warning("module_app %r should be type application (%s)\n",
 			val, me->type);
 	}
-
-	list_prepend(&modappl, &modapp->le, modapp);
 
 	return 0;
 }
@@ -174,7 +147,20 @@ int module_init(const struct conf *conf)
 
 void module_app_unload(void)
 {
-	list_flush(&modappl);
+	struct le *le = list_tail(mod_list());
+
+	/* unload in reverse order */
+	while (le) {
+		struct mod *mod = le->data;
+		const struct mod_export *me = mod_export(mod);
+
+		le = le->prev;
+
+		if (me && 0 == str_casecmp(me->type, "application")) {
+			debug("module: unloading app %s\n", me->name);
+			mem_deref(mod);
+		}
+	}
 }
 
 
