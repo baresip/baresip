@@ -63,6 +63,7 @@ static int insmod_handler(struct re_printf *pf, void *arg)
 static int rmmod_handler(struct re_printf *pf, void *arg)
 {
        const struct cmd_arg *carg = arg;
+       (void)pf;
 
        module_unload(carg->prm);
 
