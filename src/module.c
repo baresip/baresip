@@ -8,6 +8,48 @@
 #include "core.h"
 
 
+/*
+ * Append module extension, if not exist
+ *
+ * input:    foobar
+ * output:   foobar.so
+ *
+ */
+static void append_extension(char *buf, size_t sz, const char *name)
+{
+	if (0 == re_regex(name, str_len(name), "[^.]+"MOD_EXT, NULL)) {
+
+		str_ncpy(buf, name, sz);
+	}
+	else {
+		re_snprintf(buf, sz, "%s"MOD_EXT, name);
+	}
+}
+
+
+#if 0
+/*
+ * Remove module extension, if exist
+ *
+ * input:    foobar.so
+ * output:   foobar
+ */
+static void extension_strip(char *buf, size_t sz, const char *name)
+{
+	struct pl pl;
+
+	if (0 == re_regex(name, str_len(name), "[^.]+"MOD_EXT, &pl)) {
+
+		pl_strcpy(&pl, buf, sz);
+	}
+	else {
+		str_ncpy(buf, name, sz);
+	}
+
+}
+#endif
+
+
 #ifdef STATIC
 
 /* Declared in static.c */
@@ -175,4 +217,63 @@ int module_preload(const char *module)
 	pl_set_str(&name, module);
 
 	return load_module(NULL, &path, &name);
+}
+
+
+/**
+ * Load a module by name or by filename
+ *
+ * input: module name incl/excl extension, excluding module path
+ *
+ * example:    "foo"
+ * example:    "foo.so"
+ */
+int module_load(const char *name)
+{
+	char filename[256];
+	struct pl path, pl_name;
+	int err;
+
+	if (!str_isset(name))
+		return EINVAL;
+
+	append_extension(filename, sizeof(filename), name);
+
+	pl_set_str(&pl_name, filename);
+
+	if (conf_get(conf_cur(), "module_path", &path))
+		pl_set_str(&path, ".");
+
+	err = load_module(NULL, &path, &pl_name);
+
+	return err;
+}
+
+
+/**
+ * Unload a module by name or by filename
+ *
+ * input: module name incl/excl extension, excluding module path
+ *
+ * example:   "foo"
+ * example:   "foo.so"
+ */
+void module_unload(const char *name)
+{
+	char filename[256];
+	struct mod *mod;
+
+	if (!str_isset(name))
+		return;
+
+	append_extension(filename, sizeof(filename), name);
+
+	mod = mod_find(filename);
+	if (mod) {
+		info("unloading module: %s\n", filename);
+		mem_deref(mod);
+		return;
+	}
+
+	info("ERROR: Module %s is not currently loaded\n", name);
 }
