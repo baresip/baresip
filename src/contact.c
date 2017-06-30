@@ -159,6 +159,13 @@ void contact_set_presence(struct contact *c, enum presence_status status)
 	c->status = status;
 }
 
+enum presence_status contact_presence(const struct contact *c)
+{
+	if (!c)
+		return PRESENCE_UNKNOWN;
+
+	return c->status;
+}
 
 const char *contact_presence_str(enum presence_status status)
 {
