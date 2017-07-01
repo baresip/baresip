@@ -103,6 +103,26 @@ int contact_add(struct contacts *contacts,
 
 
 /**
+ * Remove a contact
+ *
+ * @param contacts Contacts container
+ * @param contactp Pointer to the contact to be removed
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+void contact_remove(struct contacts *contacts, struct contact *contact)
+{
+	if (!contacts || !contact)
+		return;
+
+	hash_unlink(&contact->he);
+	list_unlink(&contact->le);
+
+	mem_deref(contact);
+}
+
+
+/**
  * Get the SIP address of a contact
  *
  * @param c Contact

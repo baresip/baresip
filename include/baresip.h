@@ -294,6 +294,7 @@ int  contact_init(struct contacts *contacts);
 void contact_close(struct contacts *contacts);
 int  contact_add(struct contacts *contacts,
 		 struct contact **contactp, const struct pl *addr);
+void contact_remove(struct contacts *contacts, struct contact *c);
 int  contacts_print(struct re_printf *pf, const struct contacts *contacts);
 enum presence_status contact_presence(const struct contact *c);
 void contact_set_presence(struct contact *c, enum presence_status status);
