@@ -283,18 +283,26 @@ enum presence_status {
 	PRESENCE_BUSY
 };
 
+
+struct contact;
+typedef void (contact_update_h)(struct contact *c, bool remove, void *arg);
+
 struct contacts {
 	struct list cl;
 	struct hash *cht;
+
+	contact_update_h *handler;
+	void* handler_arg;
 };
 
-struct contact;
 
 int  contact_init(struct contacts *contacts);
 void contact_close(struct contacts *contacts);
 int  contact_add(struct contacts *contacts,
 		 struct contact **contactp, const struct pl *addr);
 void contact_remove(struct contacts *contacts, struct contact *c);
+void contact_set_update_handler(struct contacts *contacs,
+				contact_update_h *updateh, void *arg);
 int  contacts_print(struct re_printf *pf, const struct contacts *contacts);
 enum presence_status contact_presence(const struct contact *c);
 void contact_set_presence(struct contact *c, enum presence_status status);
