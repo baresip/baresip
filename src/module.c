@@ -27,29 +27,6 @@ static void append_extension(char *buf, size_t sz, const char *name)
 }
 
 
-#if 0
-/*
- * Remove module extension, if exist
- *
- * input:    foobar.so
- * output:   foobar
- */
-static void extension_strip(char *buf, size_t sz, const char *name)
-{
-	struct pl pl;
-
-	if (0 == re_regex(name, str_len(name), "[^.]+"MOD_EXT, &pl)) {
-
-		pl_strcpy(&pl, buf, sz);
-	}
-	else {
-		str_ncpy(buf, name, sz);
-	}
-
-}
-#endif
-
-
 #ifdef STATIC
 
 /* Declared in static.c */
@@ -223,7 +200,9 @@ int module_preload(const char *module)
 /**
  * Load a module by name or by filename
  *
- * input: module name incl/excl extension, excluding module path
+ * @param name Module name incl/excl extension, excluding module path
+ *
+ * @return 0 if success, otherwise errorcode
  *
  * example:    "foo"
  * example:    "foo.so"
@@ -253,7 +232,7 @@ int module_load(const char *name)
 /**
  * Unload a module by name or by filename
  *
- * input: module name incl/excl extension, excluding module path
+ * @param name module name incl/excl extension, excluding module path
  *
  * example:   "foo"
  * example:   "foo.so"
