@@ -92,6 +92,9 @@ int contact_add(struct contacts *contacts,
 	list_append(&contacts->cl, &c->le, c);
 	hash_append(contacts->cht, hash_joaat_pl(&c->addr.auri), &c->he, c);
 
+	if (contacts->handler)
+		contacts->handler(c, false, contacts->handler_arg);
+
  out:
 	if (err)
 		mem_deref(c);
@@ -99,6 +102,38 @@ int contact_add(struct contacts *contacts,
 		*contactp = c;
 
 	return err;
+}
+
+
+/**
+ * Remove a contact
+ *
+ * @param contacts Contacts container
+ * @param contactp Pointer to the contact to be removed
+ */
+void contact_remove(struct contacts *contacts, struct contact *contact)
+{
+	if (!contacts || !contact)
+		return;
+
+	if (contacts->handler)
+		contacts->handler(contact, true, contacts->handler_arg);
+
+	hash_unlink(&contact->he);
+	list_unlink(&contact->le);
+
+	mem_deref(contact);
+}
+
+void contact_set_update_handler(struct contacts *contacts,
+				contact_update_h *updateh, void *arg)
+{
+	if (!contacts) {
+		return;
+	}
+
+	contacts->handler = updateh;
+	contacts->handler_arg = arg;
 }
 
 
@@ -159,6 +194,13 @@ void contact_set_presence(struct contact *c, enum presence_status status)
 	c->status = status;
 }
 
+enum presence_status contact_presence(const struct contact *c)
+{
+	if (!c)
+		return PRESENCE_UNKNOWN;
+
+	return c->status;
+}
 
 const char *contact_presence_str(enum presence_status status)
 {
