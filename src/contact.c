@@ -109,7 +109,7 @@ int contact_add(struct contacts *contacts,
  * Remove a contact
  *
  * @param contacts Contacts container
- * @param contactp Pointer to the contact to be removed
+ * @param contact  Contact to be removed
  */
 void contact_remove(struct contacts *contacts, struct contact *contact)
 {
@@ -124,6 +124,7 @@ void contact_remove(struct contacts *contacts, struct contact *contact)
 
 	mem_deref(contact);
 }
+
 
 void contact_set_update_handler(struct contacts *contacts,
 				contact_update_h *updateh, void *arg)
