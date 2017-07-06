@@ -45,8 +45,36 @@ static int cmd_quit(struct re_printf *pf, void *unused)
 }
 
 
+static int insmod_handler(struct re_printf *pf, void *arg)
+{
+       const struct cmd_arg *carg = arg;
+       int err;
+
+       err = module_load(carg->prm);
+       if (err) {
+               return re_hprintf(pf, "insmod: ERROR: could not load module"
+                                 " '%s': %m\n", carg->prm, err);
+       }
+
+       return re_hprintf(pf, "loaded module %s\n", carg->prm);
+}
+
+
+static int rmmod_handler(struct re_printf *pf, void *arg)
+{
+       const struct cmd_arg *carg = arg;
+       (void)pf;
+
+       module_unload(carg->prm);
+
+       return 0;
+}
+
+
 static const struct cmd corecmdv[] = {
 	{"quit", 'q', 0, "Quit",                     cmd_quit             },
+	{"insmod", 0, CMD_PRM, "Load module",        insmod_handler       },
+	{"rmmod",  0, CMD_PRM, "Unload module",      rmmod_handler        },
 };
 
 
