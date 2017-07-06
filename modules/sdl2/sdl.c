@@ -25,10 +25,15 @@ struct vidisp_st {
 	struct vidsz size;              /**< Current size          */
 	enum vidfmt fmt;                /**< Current pixel format  */
 	bool fullscreen;                /**< Fullscreen flag       */
+	struct tmr tmr;
+	Uint32 flags;
 };
 
 
 static struct vidisp *vid;
+
+
+static void event_handler(void *arg);
 
 
 static uint32_t match_fmt(enum vidfmt fmt)
@@ -76,10 +81,14 @@ static void sdl_reset(struct vidisp_st *st)
 }
 
 
-static void handle_events(struct vidisp_st *st)
+static void event_handler(void *arg)
 {
+	struct vidisp_st *st = arg;
 	SDL_Event event;
 
+	tmr_start(&st->tmr, 100, event_handler, st);
+
+	/* NOTE: events must be checked from main thread */
 	while (SDL_PollEvent(&event)) {
 
 		if (event.type == SDL_KEYDOWN) {
@@ -91,7 +100,13 @@ static void handle_events(struct vidisp_st *st)
 				st->fullscreen = !st->fullscreen;
 				info("sdl: %sable fullscreen mode\n",
 				     st->fullscreen ? "en" : "dis");
-				sdl_reset(st);
+
+				if (st->fullscreen)
+					st->flags |= SDL_WINDOW_FULLSCREEN;
+				else
+					st->flags &= ~SDL_WINDOW_FULLSCREEN;
+
+				SDL_SetWindowFullscreen(st->window, st->flags);
 				break;
 
 			default:
@@ -106,6 +121,7 @@ static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
 
+	tmr_cancel(&st->tmr);
 	sdl_reset(st);
 }
 
@@ -131,6 +147,8 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		return ENOMEM;
 
 	st->vd = vd;
+
+	tmr_start(&st->tmr, 100, event_handler, st);
 
 	if (err)
 		mem_deref(st);
@@ -172,11 +190,12 @@ static int display(struct vidisp_st *st, const char *title,
 	}
 
 	if (!st->window) {
-		Uint32 flags = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
 		char capt[256];
 
+		st->flags = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
+
 		if (st->fullscreen)
-			flags |= SDL_WINDOW_FULLSCREEN;
+			st->flags |= SDL_WINDOW_FULLSCREEN;
 
 		if (title) {
 			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
@@ -191,7 +210,7 @@ static int display(struct vidisp_st *st, const char *title,
 					      SDL_WINDOWPOS_CENTERED,
 					      SDL_WINDOWPOS_CENTERED,
 					      frame->size.w, frame->size.h,
-					      flags);
+					      st->flags);
 		if (!st->window) {
 			warning("sdl: unable to create sdl window: %s\n",
 				SDL_GetError());
@@ -271,8 +290,6 @@ static int display(struct vidisp_st *st, const char *title,
 
 	/* Update the screen! */
 	SDL_RenderPresent(st->renderer);
-
-	handle_events(st);
 
 	return 0;
 }
