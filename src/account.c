@@ -396,7 +396,9 @@ int account_alloc(struct account **accp, const char *sipaddr)
 			goto out;
 	}
 	else {
-		err = pl_strdup(&acc->auth_pass, &acc->laddr.uri.password);
+		err = re_sdprintf(&acc->auth_pass, "%H",
+				  uri_password_unescape,
+				  &acc->laddr.uri.password);
 		if (err)
 			goto out;
 	}

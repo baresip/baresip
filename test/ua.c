@@ -363,7 +363,7 @@ int test_ua_register_dns(void)
 
 
 #define USER   "alfredh"
-#define PASS   "password"
+#define PASS   "pass%40word"  /* NOTE: url-encoded */
 #define DOMAIN "localhost"
 
 static int reg_auth(enum sip_transp tp)
@@ -385,7 +385,7 @@ static int reg_auth(enum sip_transp tp)
 	TEST_ERR(err);
 
 	err = user_add(domain_lookup(t.srvv[0], DOMAIN)->ht_usr,
-		       "alfredh", "password", DOMAIN);
+		       "alfredh", "pass@word", DOMAIN);
 	TEST_ERR(err);
 
 	t.srvv[0]->auth_enabled = true;
