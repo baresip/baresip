@@ -134,7 +134,6 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 	int err = 0;
 
 	/* Not used by SDL */
-	(void)prm;
 	(void)dev;
 	(void)resizeh;
 	(void)arg;
@@ -147,6 +146,7 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		return ENOMEM;
 
 	st->vd = vd;
+	st->fullscreen = prm ? prm->fullscreen : false;
 
 	tmr_start(&st->tmr, 100, event_handler, st);
 

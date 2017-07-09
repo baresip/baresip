@@ -61,6 +61,7 @@ static struct config core_config = {
 		352, 288,
 		500000,
 		25,
+		true,
 	},
 #endif
 
