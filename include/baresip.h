@@ -285,7 +285,7 @@ enum presence_status {
 
 
 struct contact;
-typedef void (contact_update_h)(struct contact *c, bool remove, void *arg);
+typedef void (contact_update_h)(struct contact *c, bool removed, void *arg);
 
 struct contacts {
 	struct list cl;
