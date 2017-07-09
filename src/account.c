@@ -386,16 +386,8 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		goto out;
 
 	/* optional password prompt */
-	if (!pl_isset(&acc->laddr.uri.password)) {
-		(void)re_printf("Please enter password for %r@%r: ",
-				&acc->luri.user, &acc->luri.host);
+	if (pl_isset(&acc->laddr.uri.password)) {
 
-		/* TODO: move interactive code away from CORE, to a module */
-		err = ui_password_prompt(&acc->auth_pass);
-		if (err)
-			goto out;
-	}
-	else {
 		err = re_sdprintf(&acc->auth_pass, "%H",
 				  uri_password_unescape,
 				  &acc->laddr.uri.password);
@@ -430,6 +422,20 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		*accp = acc;
 
 	return err;
+}
+
+
+int account_set_auth_pass(struct account *acc, const char *pass)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->auth_pass = mem_deref(acc->auth_pass);
+
+	if (pass)
+		return str_dup(&acc->auth_pass, pass);
+
+	return 0;
 }
 
 
@@ -536,6 +542,19 @@ const char *account_aor(const struct account *acc)
 const char *account_auth_user(const struct account *acc)
 {
 	return acc ? acc->auth_user : NULL;
+}
+
+
+/**
+ * Get the SIP authentication password of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Authentication password
+ */
+const char *account_auth_pass(const struct account *acc)
+{
+	return acc ? acc->auth_pass : NULL;
 }
 
 

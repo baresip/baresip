@@ -109,11 +109,41 @@ static int account_write_template(const char *file)
 static int line_handler(const struct pl *addr, void *arg)
 {
 	char buf[512];
+	struct ua *ua;
+	struct account *acc;
+	int err;
 	(void)arg;
 
 	(void)pl_strcpy(addr, buf, sizeof(buf));
 
-	return ua_alloc(NULL, buf);
+	err = ua_alloc(&ua, buf);
+	if (err)
+		return err;
+
+	acc = ua_account(ua);
+	if (!acc) {
+		warning("account: no account for this ua\n");
+		return ENOENT;
+	}
+
+	/* optional password prompt */
+	if (!str_isset(account_auth_pass(acc))) {
+		char *pass = NULL;
+
+		(void)re_printf("Please enter password for %s: ",
+				account_aor(acc));
+
+		err = ui_password_prompt(&pass);
+		if (err)
+			goto out;
+
+		err = account_set_auth_pass(acc, pass);
+
+		mem_deref(pass);
+	}
+
+ out:
+	return err;
 }
 
 
