@@ -102,9 +102,11 @@ static void event_handler(void *arg)
 				     st->fullscreen ? "en" : "dis");
 
 				if (st->fullscreen)
-					st->flags |= SDL_WINDOW_FULLSCREEN;
+					st->flags |=
+						SDL_WINDOW_FULLSCREEN_DESKTOP;
 				else
-					st->flags &= ~SDL_WINDOW_FULLSCREEN;
+					st->flags &=
+						~SDL_WINDOW_FULLSCREEN_DESKTOP;
 
 				SDL_SetWindowFullscreen(st->window, st->flags);
 				break;
@@ -195,7 +197,7 @@ static int display(struct vidisp_st *st, const char *title,
 		st->flags = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
 
 		if (st->fullscreen)
-			st->flags |= SDL_WINDOW_FULLSCREEN;
+			st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
 		if (title) {
 			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
