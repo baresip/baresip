@@ -67,10 +67,10 @@ struct fixture {
 	mock_aucodec_register();					\
 									\
 	err = ua_alloc(&f->a.ua,					\
-		       "A <sip:a:xxx@127.0.0.1>;regint=0" prm);		\
+		       "A <sip:a@127.0.0.1>;regint=0" prm);		\
 	TEST_ERR(err);							\
 	err = ua_alloc(&f->b.ua,					\
-		       "B <sip:b:xxx@127.0.0.1>;regint=0" prm);		\
+		       "B <sip:b@127.0.0.1>;regint=0" prm);		\
 	TEST_ERR(err);							\
 									\
 	f->a.peer = &f->b;						\
