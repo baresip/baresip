@@ -992,7 +992,7 @@ int ua_options_send(struct ua *ua, const char *uri,
  */
 const char *ua_aor(const struct ua *ua)
 {
-	return ua ? ua->acc->aor : NULL;
+	return ua ? account_aor(ua->acc) : NULL;
 }
 
 

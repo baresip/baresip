@@ -520,6 +520,12 @@ enum answermode account_answermode(const struct account *acc)
 }
 
 
+const char *account_aor(const struct account *acc)
+{
+	return acc ? acc->aor : NULL;
+}
+
+
 /**
  * Get the authentication username of an account
  *
