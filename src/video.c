@@ -134,7 +134,6 @@ struct vrx {
 	struct tmr tmr_picup;              /**< Picture update timer      */
 	enum vidorient orient;             /**< Display orientation       */
 	char device[64];                   /**< Display device name       */
-	bool fullscreen;                   /**< Fullscreen flag           */
 	int pt_rx;                         /**< Incoming RTP payload type */
 	int frames;                        /**< Number of frames received */
 	int efps;                          /**< Estimated frame-rate      */
@@ -1039,7 +1038,7 @@ static int vidisp_update(struct vrx *vrx)
 	int err = 0;
 
 	if (vd->updateh) {
-		err = vd->updateh(vrx->vidisp, vrx->fullscreen,
+		err = vd->updateh(vrx->vidisp, vrx->vidisp_prm.fullscreen,
 				  vrx->orient, NULL);
 	}
 
@@ -1060,7 +1059,7 @@ int video_set_fullscreen(struct video *v, bool fs)
 	if (!v)
 		return EINVAL;
 
-	v->vrx.fullscreen = fs;
+	v->vrx.vidisp_prm.fullscreen = fs;
 
 	return vidisp_update(&v->vrx);
 }
