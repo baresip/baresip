@@ -871,6 +871,7 @@ static int set_vidisp(struct vrx *vrx)
 
 	vrx->vidisp = mem_deref(vrx->vidisp);
 	vrx->vidisp_prm.view = NULL;
+	vrx->vidisp_prm.fullscreen = vrx->video->cfg.fullscreen;
 
 	vd = (struct vidisp *)vidisp_find(baresip_vidispl(),
 					  vrx->video->cfg.disp_mod);
