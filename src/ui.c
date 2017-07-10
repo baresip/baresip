@@ -13,12 +13,6 @@ static struct list uil;  /**< List of UIs (struct ui) */
 static struct cmd_ctx *uictx;
 
 
-static void ui_handler(char key, struct re_printf *pf)
-{
-	(void)cmd_process(baresip_commands(), &uictx, key, pf, NULL);
-}
-
-
 static int stdout_handler(const char *p, size_t size, void *arg)
 {
 	(void)arg;
@@ -68,7 +62,7 @@ void ui_unregister(struct ui *ui)
  */
 void ui_input_key(char key, struct re_printf *pf)
 {
-	ui_handler(key, pf);
+	(void)cmd_process(baresip_commands(), &uictx, key, pf, NULL);
 }
 
 
