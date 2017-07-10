@@ -61,19 +61,6 @@ void ui_unregister(struct ui *ui)
 
 
 /**
- * Send input to the UI subsystem
- *
- * @param key Input character
- */
-void ui_input(char key)
-{
-	static struct re_printf pf_stdout = {stdout_handler, NULL};
-
-	ui_handler(key, &pf_stdout);
-}
-
-
-/**
  * Send an input key to the UI subsystem, with a print function for response
  *
  * @param key Input character

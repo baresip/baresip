@@ -80,7 +80,7 @@ static void timeout(void *arg)
 	tmr_start(&sdl.tmr, 1, event_handler, NULL);
 
 	/* Emulate key-release */
-	ui_input(KEYCODE_REL);
+	ui_input_key(KEYCODE_REL, NULL);
 }
 
 
@@ -124,7 +124,7 @@ static void event_handler(void *arg)
 				if (isprint(ch)) {
 					tmr_start(&sdl.tmr, KEY_RELEASE_VAL,
 						  timeout, NULL);
-					ui_input(ch);
+					ui_input_key(ch, NULL);
 				}
 				break;
 			}
@@ -136,7 +136,7 @@ static void event_handler(void *arg)
 			break;
 
 		case SDL_QUIT:
-			ui_input('q');
+			ui_input_key('q', NULL);
 			break;
 
 		default:
