@@ -155,7 +155,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	ui_register(&ui_http);
+	ui_register(baresip_uis(), &ui_http);
 
 	info("httpd: listening on %J\n", &laddr);
 

@@ -90,7 +90,8 @@ static void check_registrations(void)
 	n = list_count(uag_list());
 
 	/* We are ready */
-	ui_output("\x1b[32mAll %u useragent%s registered successfully!"
+	ui_output(baresip_uis(),
+		  "\x1b[32mAll %u useragent%s registered successfully!"
 		  " (%u ms)\x1b[;m\n",
 		  n, n==1 ? "" : "s",
 		  (uint32_t)(tmr_jiffies() - start_ticks));
@@ -822,7 +823,7 @@ static void tmrstat_handler(void *arg)
 
 	tmr_start(&tmr_stat, 100, tmrstat_handler, 0);
 
-	if (ui_isediting())
+	if (ui_isediting(baresip_uis()))
 		return;
 
 	if (STATMODE_OFF != statmode) {
@@ -848,7 +849,7 @@ static void alert_start(void *arg)
 	if (!menu.bell)
 		return;
 
-	ui_output("\033[10;1000]\033[11;1000]\a");
+	ui_output(baresip_uis(), "\033[10;1000]\033[11;1000]\a");
 
 	tmr_start(&tmr_alert, 1000, alert_start, NULL);
 }
@@ -860,7 +861,7 @@ static void alert_stop(void)
 		return;
 
 	if (tmr_isrunning(&tmr_alert))
-		ui_output("\r");
+		ui_output(baresip_uis(), "\r");
 
 	tmr_cancel(&tmr_alert);
 }

@@ -67,7 +67,7 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		if (ch == '\r')
 			ch = '\n';
 
-		ui_input_key(ch, &pf);
+		ui_input_key(baresip_uis(), ch, &pf);
 	}
 
 	if (mbr->end > 0) {
@@ -116,7 +116,7 @@ static void tcp_recv_handler(struct mbuf *mb, void *arg)
 		if (ch == '\r')
 			ch = '\n';
 
-		ui_input_key(ch, &pf);
+		ui_input_key(baresip_uis(), ch, &pf);
 	}
 }
 
@@ -248,7 +248,7 @@ static int cons_init(void)
 	if (err)
 		return err;
 
-	ui_register(&ui_cons);
+	ui_register(baresip_uis(), &ui_cons);
 
 	log_register_handler(&lg);
 

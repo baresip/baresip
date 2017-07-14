@@ -63,7 +63,7 @@ static void report_key(struct ui_st *ui, char key)
 	static struct re_printf pf_stderr = {print_handler, NULL};
 	(void)ui;
 
-	ui_input_key(key, &pf_stderr);
+	ui_input_key(baresip_uis(), key, &pf_stderr);
 }
 
 
@@ -170,7 +170,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	ui_register(&ui_stdio);
+	ui_register(baresip_uis(), &ui_stdio);
 
 	return 0;
 }

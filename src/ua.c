@@ -1392,8 +1392,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
  */
 void ua_close(void)
 {
-	ui_reset();
-
 	uag.evsock   = mem_deref(uag.evsock);
 	uag.sock     = mem_deref(uag.sock);
 	uag.lsnr     = mem_deref(uag.lsnr);

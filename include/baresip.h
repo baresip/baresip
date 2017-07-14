@@ -656,6 +656,11 @@ struct sipevent_sock *uag_sipevent_sock(void);
  * User Interface
  */
 
+struct ui_sub {
+	struct list uil;  /**< List of UIs (struct ui) */
+	struct cmd_ctx *uictx;
+};
+
 typedef int  (ui_output_h)(const char *str);
 
 /** Defines a User-Interface module */
@@ -665,15 +670,15 @@ struct ui {
 	ui_output_h *outputh;  /**< Handler for output strings (optional) */
 };
 
-void ui_register(struct ui *ui);
+void ui_register(struct ui_sub *uis, struct ui *ui);
 void ui_unregister(struct ui *ui);
 
-void ui_reset(void);
-void ui_input_key(char key, struct re_printf *pf);
+void ui_reset(struct ui_sub *uis);
+void ui_input_key(struct ui_sub *uis, char key, struct re_printf *pf);
 void ui_input_str(const char *str);
 int  ui_input_pl(struct re_printf *pf, const struct pl *pl);
-void ui_output(const char *fmt, ...);
-bool ui_isediting(void);
+void ui_output(struct ui_sub *uis, const char *fmt, ...);
+bool ui_isediting(const struct ui_sub *uis);
 int  ui_password_prompt(char **passwordp);
 
 
@@ -1164,6 +1169,7 @@ struct list   *baresip_vidcodecl(void);
 struct list   *baresip_vidsrcl(void);
 struct list   *baresip_vidispl(void);
 struct list   *baresip_vidfiltl(void);
+struct ui_sub *baresip_uis(void);
 
 
 #ifdef __cplusplus

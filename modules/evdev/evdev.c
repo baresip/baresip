@@ -166,7 +166,7 @@ static void reportkey(struct ui_st *st, int ascii)
 	static struct re_printf pf_stderr = {stderr_handler, NULL};
 	(void)st;
 
-	ui_input_key(ascii, &pf_stderr);
+	ui_input_key(baresip_uis(), ascii, &pf_stderr);
 }
 
 
@@ -326,7 +326,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	ui_register(&ui_evdev);
+	ui_register(baresip_uis(), &ui_evdev);
 
 	return 0;
 }

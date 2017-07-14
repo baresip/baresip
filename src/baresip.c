@@ -28,6 +28,7 @@ static struct baresip {
 	struct list vidsrcl;
 	struct list vidispl;
 	struct list vidfiltl;
+	struct ui_sub uis;
 } baresip;
 
 
@@ -141,6 +142,8 @@ void baresip_close(void)
 	contact_close(&baresip.contacts);
 
 	baresip.net = mem_deref(baresip.net);
+
+	ui_reset(&baresip.uis);
 }
 
 
@@ -236,4 +239,10 @@ struct list *baresip_vidispl(void)
 struct list *baresip_vidfiltl(void)
 {
 	return &baresip.vidfiltl;
+}
+
+
+struct ui_sub *baresip_uis(void)
+{
+	return &baresip.uis;
 }
