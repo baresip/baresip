@@ -394,6 +394,11 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		if (err)
 			goto out;
 	}
+	else if (0 == msg_param_decode(&acc->laddr.params, "auth_pass", &pl)) {
+		err = pl_strdup(&acc->auth_pass, &pl);
+		if (err)
+			goto out;
+	}
 
 	err = stunsrv_decode(acc, &acc->laddr);
 	if (err)
