@@ -410,7 +410,6 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 		}
 
 		vidconv(vtx->frame, frame, 0);
-
 		frame = vtx->frame;
 	}
 

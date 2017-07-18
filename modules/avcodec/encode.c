@@ -342,6 +342,7 @@ static void param_handler(const struct pl *name, const struct pl *val,
 
 
 static int general_packetize(struct mbuf *mb, size_t pktsize,
+			     double pkt_timestamp,
 			     videnc_packet_h *pkth, void *arg)
 {
 	int err = 0;
@@ -355,7 +356,8 @@ static int general_packetize(struct mbuf *mb, size_t pktsize,
 
 		sz = last ? left : pktsize;
 
-		err = pkth(last, NULL, 0, mbuf_buf(mb), sz, .0, arg);
+		err = pkth(last, NULL, 0, mbuf_buf(mb), sz,
+			   pkt_timestamp, arg);
 
 		mbuf_advance(mb, sz);
 	}
@@ -564,7 +566,7 @@ int encode_x264(struct videnc_state *st, bool update,
 	int i_nal;
 	int i, err, ret;
 	int csp, pln;
-	double timestamp = .0;
+	double timestamp;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -660,7 +662,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 {
 	int i, err, ret;
 	int pix_fmt;
-	double pkt_timestamp = .0;
+	double pkt_timestamp;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -694,9 +696,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 		st->pict->data[i]     = frame->data[i];
 		st->pict->linesize[i] = frame->linesize[i];
 	}
-
 	st->pict->pts = st->pts++;
-
 	if (update) {
 		debug("avcodec: encoder picture update\n");
 		st->pict->key_frame = 1;
@@ -792,6 +792,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 
 	case AV_CODEC_ID_MPEG4:
 		err = general_packetize(st->mb, st->encprm.pktsize,
+					pkt_timestamp,
 					st->pkth, st->arg);
 		break;
 

@@ -337,7 +337,6 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 }
 
 
-#if 1
 int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 		 bool *intra, bool eof, uint16_t seq, struct mbuf *src)
 {
@@ -428,4 +427,3 @@ int decode_h263(struct viddec_state *st, struct vidframe *frame,
 
 	return ffdecode(st, frame, marker, src);
 }
-#endif
