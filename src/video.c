@@ -583,8 +583,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		vrx->timestamp_max = pkt_timestamp;
 
 	frame->data[0] = NULL;
-	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb,
-			    pkt_timestamp);
+	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb);
 	if (err) {
 
 		if (err != EPROTO) {

@@ -150,15 +150,13 @@ static inline void fragment_rewind(struct viddec_state *vds)
 
 
 int h265_decode(struct viddec_state *vds, struct vidframe *frame,
-		bool *intra, bool marker, uint16_t seq, struct mbuf *mb,
-		double pkt_timestamp)
+		bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
 {
 	static const uint8_t nal_seq[3] = {0, 0, 1};
 	int err, ret, got_picture, i;
 	struct h265_nal hdr;
 	AVPacket avpkt;
 	enum vidfmt fmt;
-	int64_t pts;
 
 	if (!vds || !frame || !intra || !mb)
 		return EINVAL;
@@ -274,14 +272,6 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 	av_init_packet(&avpkt);
 	avpkt.data = vds->mb->buf;
 	avpkt.size = (int)vds->mb->end;
-
-	if (vds->ctx->time_base.num && vds->ctx->time_base.den)
-		pts = pkt_timestamp / av_q2d(vds->ctx->time_base);
-	else
-		pts = AV_NOPTS_VALUE;
-
-	avpkt.pts = pts;
-	avpkt.dts = pts;
 
 #if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
 

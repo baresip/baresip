@@ -152,7 +152,7 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 	frame.data[0] = NULL;
 	if (vl->vc_dec && vl->dec) {
 		err = vl->vc_dec->dech(vl->dec, &frame, &intra,
-				       marker, vl->seq++, mb, pkt_timestamp);
+				       marker, vl->seq++, mb);
 		if (err) {
 			warning("vidloop: codec decode: %m\n", err);
 			goto out;
@@ -293,8 +293,10 @@ static void print_status(struct video_loop *vl)
 {
 	(void)re_fprintf(stderr,
 			 "\rstatus:"
+			 " ts=%f"
 			 " [%s] [%s]  intra=%zu "
 			 " EFPS=%.1f      %u kbit/s       \r",
+			 vl->timestamp_max,
 			 vl->vc_enc ? vl->vc_enc->name : "",
 			 vl->vc_dec ? vl->vc_dec->name : "",
 			 vl->stat.n_intra,
