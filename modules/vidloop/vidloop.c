@@ -65,6 +65,7 @@ struct video_loop {
 	uint16_t seq;
 	bool need_conv;
 	int err;
+	double timestamp_max;
 };
 
 
@@ -144,6 +145,9 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 
 	vl->stat.bytes += mbuf_get_left(mb);
 
+	if (pkt_timestamp > vl->timestamp_max)
+		vl->timestamp_max = pkt_timestamp;
+
 	/* decode */
 	frame.data[0] = NULL;
 	if (vl->vc_dec && vl->dec) {
@@ -221,6 +225,10 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 static void vidloop_destructor(void *arg)
 {
 	struct video_loop *vl = arg;
+
+	re_printf("** videoloop summary: \n");
+	re_printf("max timestamp:    %f\n", vl->timestamp_max);
+	re_printf("\n");
 
 	tmr_cancel(&vl->tmr_bw);
 	mem_deref(vl->vsrc);

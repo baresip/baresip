@@ -192,7 +192,8 @@ static inline int16_t seq_diff(uint16_t x, uint16_t y)
 
 
 int vp8_decode(struct viddec_state *vds, struct vidframe *frame,
-	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
+	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb,
+	       double pkt_timestamp)
 {
 	vpx_codec_iter_t iter = NULL;
 	vpx_codec_err_t res;
@@ -253,6 +254,8 @@ int vp8_decode(struct viddec_state *vds, struct vidframe *frame,
 
 		return 0;
 	}
+
+	/* TODO: how to pass timestamp into VPX? */
 
 	res = vpx_codec_decode(&vds->ctx, vds->mb->buf,
 			       (unsigned int)vds->mb->end, NULL, 1);

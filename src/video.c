@@ -103,6 +103,7 @@ struct vtx {
 	bool muted;                        /**< Muted flag                */
 	int frames;                        /**< Number of frames sent     */
 	int efps;                          /**< Estimated frame-rate      */
+	double timestamp_max;
 };
 
 
@@ -138,6 +139,7 @@ struct vrx {
 	int efps;                          /**< Estimated frame-rate      */
 	unsigned n_intra;                  /**< Intra-frames decoded      */
 	unsigned n_picup;                  /**< Picture updates sent      */
+	double timestamp_max;
 };
 
 
@@ -344,6 +346,9 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 	struct vidqent *qent;
 	uint32_t rtp_ts;
 	int err;
+
+	if (pkt_timestamp > vtx->timestamp_max)
+		vtx->timestamp_max = pkt_timestamp;
 
 	/* Convert from seconds to RTP clockrate */
 	rtp_ts = pkt_timestamp * (double)SRATE;
@@ -570,6 +575,10 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	double pkt_timestamp;
 
 	pkt_timestamp = (double)hdr->ts / (double)SRATE;
+
+	if (pkt_timestamp > vrx->timestamp_max)
+		vrx->timestamp_max = pkt_timestamp;
+
 
 	frame->data[0] = NULL;
 	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb,
@@ -1296,13 +1305,17 @@ int video_debug(struct re_printf *pf, const struct video *v)
 
 	err = re_hprintf(pf, "\n--- Video stream ---\n");
 	err |= re_hprintf(pf, " started: %s\n", v->started ? "yes" : "no");
+
 	err |= re_hprintf(pf, " tx: %u x %u, fps=%d\n",
 			  vtx->vsrc_size.w,
 			  vtx->vsrc_size.h, vtx->vsrc_prm.fps);
 	err |= re_hprintf(pf, "     skipc=%u\n", vtx->skipc);
+	err |= re_hprintf(pf, "     max timestamp = %f\n", vtx->timestamp_max);
+
 	err |= re_hprintf(pf, " rx: pt=%d\n", vrx->pt_rx);
 	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
 			  vrx->n_intra, vrx->n_picup);
+	err |= re_hprintf(pf, "     max timestamp = %f\n", vrx->timestamp_max);
 
 	if (!list_isempty(baresip_vidfiltl())) {
 		err |= vtx_print_pipeline(pf, vtx);
