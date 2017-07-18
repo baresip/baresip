@@ -29,7 +29,7 @@ enum {
 struct fu {
 	unsigned s:1;
 	unsigned e:1;
-	unsigned type:5;
+	unsigned type:6;
 };
 
 struct viddec_state {
