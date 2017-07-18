@@ -99,6 +99,7 @@ struct vtx {
 	struct list filtl;                 /**< Filters in encoding order */
 	char device[64];                   /**< Source device name        */
 	int muted_frames;                  /**< # of muted frames sent    */
+	uint32_t ts_offset;
 	bool picup;                        /**< Send picture update       */
 	bool muted;                        /**< Muted flag                */
 	int frames;                        /**< Number of frames sent     */
@@ -351,7 +352,7 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 		vtx->timestamp_max = pkt_timestamp;
 
 	/* Convert from seconds to RTP clockrate */
-	rtp_ts = pkt_timestamp * (double)SRATE;
+	rtp_ts = vtx->ts_offset + pkt_timestamp * (double)SRATE;
 
 	err = vidqent_alloc(&qent, marker, strm->pt_enc, rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
@@ -487,6 +488,9 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 
 	vtx->video = video;
 
+	/* The initial value of the timestamp SHOULD be random */
+	vtx->ts_offset = rand_u16();
+
 	str_ncpy(vtx->device, video->cfg.src_dev, sizeof(vtx->device));
 
 	tmr_start(&vtx->tmr_rtp, 1, rtp_tmr_handler, vtx);
@@ -557,6 +561,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	struct vidframe *frame_filt = NULL;
 	struct vidframe frame_store, *frame = &frame_store;
 	struct le *le;
+	double pkt_timestamp;
 	bool intra;
 	int err = 0;
 
@@ -572,13 +577,10 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	}
 
 	/* convert from RTP clockrate to seconds */
-	double pkt_timestamp;
-
 	pkt_timestamp = (double)hdr->ts / (double)SRATE;
 
 	if (pkt_timestamp > vrx->timestamp_max)
 		vrx->timestamp_max = pkt_timestamp;
-
 
 	frame->data[0] = NULL;
 	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb,

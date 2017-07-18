@@ -222,18 +222,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 	if (got_picture) {
 
-		int64_t pts;
-		double timestamp;
-
-		/* TODO: skip this part ? */
-		pts = av_frame_get_best_effort_timestamp(st->pict);
-		if (pts == AV_NOPTS_VALUE) {
-			warning("decode: no pict pts (pkt timestamp %f)\n",
-				pkt_timestamp);
-		}
-
-		timestamp = (double)pts * av_q2d(st->ctx->time_base);
-
 #if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 		switch (st->pict->format) {
 
@@ -263,8 +251,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		}
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
-
-		/* TODO: pass frame timestamp back to application */
 	}
 
  out:
