@@ -99,7 +99,6 @@ struct vtx {
 	struct list filtl;                 /**< Filters in encoding order */
 	char device[64];                   /**< Source device name        */
 	int muted_frames;                  /**< # of muted frames sent    */
-	uint32_t ts_tx;                    /**< Outgoing RTP timestamp    */
 	bool picup;                        /**< Send picture update       */
 	bool muted;                        /**< Muted flag                */
 	int frames;                        /**< Number of frames sent     */
@@ -337,14 +336,19 @@ static int get_fps(const struct video *v)
 
 
 static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
-			  const uint8_t *pld, size_t pld_len, void *arg)
+			  const uint8_t *pld, size_t pld_len,
+			  double pkt_timestamp, void *arg)
 {
 	struct vtx *vtx = arg;
 	struct stream *strm = vtx->video->strm;
 	struct vidqent *qent;
+	uint32_t rtp_ts;
 	int err;
 
-	err = vidqent_alloc(&qent, marker, strm->pt_enc, vtx->ts_tx,
+	/* Convert from seconds to RTP clockrate */
+	rtp_ts = pkt_timestamp * (double)SRATE;
+
+	err = vidqent_alloc(&qent, marker, strm->pt_enc, rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
 	if (err)
 		return err;
@@ -400,6 +404,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 		}
 
 		vidconv(vtx->frame, frame, 0);
+
 		frame = vtx->frame;
 	}
 
@@ -423,7 +428,6 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 	if (err)
 		return;
 
-	vtx->ts_tx += (SRATE/vtx->vsrc_prm.fps);
 	vtx->picup = false;
 }
 
@@ -477,7 +481,6 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 	tmr_init(&vtx->tmr_rtp);
 
 	vtx->video = video;
-	vtx->ts_tx = 160;
 
 	str_ncpy(vtx->device, video->cfg.src_dev, sizeof(vtx->device));
 
@@ -563,8 +566,14 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		goto out;
 	}
 
+	/* convert from RTP clockrate to seconds */
+	double pkt_timestamp;
+
+	pkt_timestamp = (double)hdr->ts / (double)SRATE;
+
 	frame->data[0] = NULL;
-	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb);
+	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb,
+			    pkt_timestamp);
 	if (err) {
 
 		if (err != EPROTO) {

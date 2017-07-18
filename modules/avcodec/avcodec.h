@@ -46,11 +46,14 @@ struct viddec_state;
 int decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		  const char *fmtp);
 int decode_h263(struct viddec_state *st, struct vidframe *frame,
-		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
+		bool *intra, bool eof, uint16_t seq, struct mbuf *src,
+		double pkt_timestamp);
 int decode_h264(struct viddec_state *st, struct vidframe *frame,
-		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
+		bool *intra, bool eof, uint16_t seq, struct mbuf *src,
+		double pkt_timestamp);
 int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
-		 bool *intra, bool eof, uint16_t seq, struct mbuf *src);
+		 bool *intra, bool eof, uint16_t seq, struct mbuf *src,
+		 double pkt_timestamp);
 
 
 int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,

@@ -277,7 +277,7 @@ static void enc_destructor(void *arg)
 }
 
 
-static void encoders_read(const uint8_t *buf, size_t sz)
+static void encoders_read(const uint8_t *buf, size_t sz, double timestamp)
 {
 	struct le *le;
 	int err;
@@ -286,7 +286,8 @@ static void encoders_read(const uint8_t *buf, size_t sz)
 		struct videnc_state *st = le->data;
 
 		err = h264_packetize(buf, sz,
-				     st->encprm.pktsize, st->pkth, st->arg);
+				     st->encprm.pktsize, timestamp,
+				     st->pkth, st->arg);
 		if (err) {
 			warning("h264_packetize error (%m)\n", err);
 		}
@@ -298,6 +299,7 @@ static void read_handler(int flags, void *arg)
 {
 	struct vidsrc_st *st = arg;
 	struct v4l2_buffer buf;
+	double timestamp;
 	int err;
 	(void)flags;
 
@@ -340,8 +342,10 @@ static void read_handler(int flags, void *arg)
 		}
 	}
 
+	timestamp = buf.timestamp.tv_sec + buf.timestamp.tv_usec*.000001;
+
 	/* pass the frame to the encoders */
-	encoders_read(st->buffer, buf.bytesused);
+	encoders_read(st->buffer, buf.bytesused, timestamp);
 
 	query_buffer(st->fd);
 }

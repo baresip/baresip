@@ -143,7 +143,7 @@ int decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
  * TODO: check input/output size
  */
 static int ffdecode(struct viddec_state *st, struct vidframe *frame,
-		    bool eof, struct mbuf *src)
+		    bool eof, struct mbuf *src, double pkt_timestamp)
 {
 	int i, got_picture, ret, err;
 
@@ -166,10 +166,19 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 	do {
 		AVPacket avpkt;
+		int64_t pts;
 
 		av_init_packet(&avpkt);
 		avpkt.data = st->mb->buf;
 		avpkt.size = (int)mbuf_get_left(st->mb);
+
+		if (st->ctx->time_base.num && st->ctx->time_base.den)
+			pts = pkt_timestamp / av_q2d(st->ctx->time_base);
+		else
+			pts = AV_NOPTS_VALUE;
+
+		avpkt.pts = pts;
+		avpkt.dts = pts;
 
 		ret = avcodec_send_packet(st->ctx, &avpkt);
 		if (ret < 0) {
@@ -213,6 +222,16 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 	if (got_picture) {
 
+		int64_t pts;
+		double timestamp;
+
+		pts = av_frame_get_best_effort_timestamp(st->pict);
+		if (pts == AV_NOPTS_VALUE) {
+			warning("decode: no pts\n");
+		}
+
+		timestamp = (double)pts * av_q2d(st->ctx->time_base);
+
 #if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 		switch (st->pict->format) {
 
@@ -242,6 +261,8 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		}
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
+
+		/* TODO: pass frame timestamp back to application */
 	}
 
  out:
@@ -320,7 +341,8 @@ static int h264_decode(struct viddec_state *st, bool *intra, struct mbuf *src)
 
 
 int decode_h264(struct viddec_state *st, struct vidframe *frame,
-		bool *intra, bool eof, uint16_t seq, struct mbuf *src)
+		bool *intra, bool eof, uint16_t seq, struct mbuf *src,
+		double pkt_timestamp)
 {
 	int err;
 
@@ -333,12 +355,14 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 	if (err)
 		return err;
 
-	return ffdecode(st, frame, eof, src);
+	return ffdecode(st, frame, eof, src, pkt_timestamp);
 }
 
 
+#if 1
 int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
-		 bool *intra, bool eof, uint16_t seq, struct mbuf *src)
+		 bool *intra, bool eof, uint16_t seq, struct mbuf *src,
+		 double pkt_timestamp)
 {
 	if (!src)
 		return 0;
@@ -350,12 +374,13 @@ int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 	/* let the decoder handle this */
 	st->got_keyframe = true;
 
-	return ffdecode(st, frame, eof, src);
+	return ffdecode(st, frame, eof, src, pkt_timestamp);
 }
 
 
 int decode_h263(struct viddec_state *st, struct vidframe *frame,
-		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
+		bool *intra, bool marker, uint16_t seq, struct mbuf *src,
+		double pkt_timestamp)
 {
 	struct h263_hdr hdr;
 	int err;
@@ -425,5 +450,6 @@ int decode_h263(struct viddec_state *st, struct vidframe *frame,
 		st->mb->buf[st->mb->end - 1] |= sbyte;
 	}
 
-	return ffdecode(st, frame, marker, src);
+	return ffdecode(st, frame, marker, src, pkt_timestamp);
 }
+#endif

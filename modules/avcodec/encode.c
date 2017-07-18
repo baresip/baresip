@@ -355,7 +355,7 @@ static int general_packetize(struct mbuf *mb, size_t pktsize,
 
 		sz = last ? left : pktsize;
 
-		err = pkth(last, NULL, 0, mbuf_buf(mb), sz, arg);
+		err = pkth(last, NULL, 0, mbuf_buf(mb), sz, .0, arg);
 
 		mbuf_advance(mb, sz);
 	}
@@ -365,6 +365,7 @@ static int general_packetize(struct mbuf *mb, size_t pktsize,
 
 
 static int h263_packetize(struct videnc_state *st, struct mbuf *mb,
+			  double pkt_timestamp,
 			  videnc_packet_h *pkth, void *arg)
 {
 	struct h263_strm h263_strm;
@@ -400,7 +401,7 @@ static int h263_packetize(struct videnc_state *st, struct mbuf *mb,
 		st->mb_frag->pos = 0;
 
 		err = pkth(last, NULL, 0, mbuf_buf(st->mb_frag),
-			   mbuf_get_left(st->mb_frag), arg);
+			   mbuf_get_left(st->mb_frag), pkt_timestamp, arg);
 
 		mbuf_advance(mb, sz);
 	}
@@ -563,6 +564,7 @@ int encode_x264(struct videnc_state *st, bool update,
 	int i_nal;
 	int i, err, ret;
 	int csp, pln;
+	double timestamp = .0;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -619,6 +621,8 @@ int encode_x264(struct videnc_state *st, bool update,
 	if (i_nal == 0)
 		return 0;
 
+	timestamp = (double)pic_out.i_pts / (double)st->encprm.fps;
+
 	err = 0;
 	for (i=0; i<i_nal && !err; i++) {
 		const uint8_t hdr = nal[i].i_ref_idc<<5 | nal[i].i_type<<0;
@@ -643,7 +647,8 @@ int encode_x264(struct videnc_state *st, bool update,
 		err = h264_nal_send(true, true, (i+1)==i_nal, hdr,
 				    nal[i].p_payload + offset,
 				    nal[i].i_payload - offset,
-				    st->encprm.pktsize, st->pkth, st->arg);
+				    st->encprm.pktsize, timestamp,
+				    st->pkth, st->arg);
 	}
 
 	return err;
@@ -655,6 +660,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 {
 	int i, err, ret;
 	int pix_fmt;
+	double pkt_timestamp = .0;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -688,7 +694,9 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 		st->pict->data[i]     = frame->data[i];
 		st->pict->linesize[i] = frame->linesize[i];
 	}
+
 	st->pict->pts = st->pts++;
+
 	if (update) {
 		debug("avcodec: encoder picture update\n");
 		st->pict->key_frame = 1;
@@ -722,6 +730,8 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 			av_packet_free(&pkt);
 			return 0;
 		}
+
+		pkt_timestamp = (double)pkt->dts * av_q2d(st->ctx->time_base);
 
 		err = mbuf_write_mem(st->mb, pkt->data, pkt->size);
 		st->mb->pos = 0;
@@ -770,12 +780,13 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 	switch (st->codec_id) {
 
 	case AV_CODEC_ID_H263:
-		err = h263_packetize(st, st->mb, st->pkth, st->arg);
+		err = h263_packetize(st, st->mb, pkt_timestamp,
+				     st->pkth, st->arg);
 		break;
 
 	case AV_CODEC_ID_H264:
 		err = h264_packetize(st->mb->buf, st->mb->end,
-				     st->encprm.pktsize,
+				     st->encprm.pktsize, pkt_timestamp,
 				     st->pkth, st->arg);
 		break;
 

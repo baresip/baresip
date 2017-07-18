@@ -876,7 +876,8 @@ struct viddec_state;
 struct vidcodec;
 
 typedef int (videnc_packet_h)(bool marker, const uint8_t *hdr, size_t hdr_len,
-			      const uint8_t *pld, size_t pld_len, void *arg);
+			      const uint8_t *pld, size_t pld_len,
+			      double pkt_timestamp, void *arg);
 
 typedef int (videnc_update_h)(struct videnc_state **vesp,
 			      const struct vidcodec *vc,
@@ -889,7 +890,7 @@ typedef int (viddec_update_h)(struct viddec_state **vdsp,
 			      const struct vidcodec *vc, const char *fmtp);
 typedef int (viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
                               bool *intra, bool marker, uint16_t seq,
-                              struct mbuf *mb);
+                              struct mbuf *mb, double pkt_timestamp);
 
 struct vidcodec {
 	struct le le;
@@ -1113,10 +1114,12 @@ int h264_fu_hdr_decode(struct h264_fu *fu, struct mbuf *mb);
 const uint8_t *h264_find_startcode(const uint8_t *p, const uint8_t *end);
 
 int h264_packetize(const uint8_t *buf, size_t len, size_t pktsize,
+		   double timestamp,
 		   videnc_packet_h *pkth, void *arg);
 int h264_nal_send(bool first, bool last,
 		  bool marker, uint32_t ihdr, const uint8_t *buf,
 		  size_t size, size_t maxsz,
+		  double timestamp,
 		  videnc_packet_h *pkth, void *arg);
 static inline bool h264_is_keyframe(int type)
 {

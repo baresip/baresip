@@ -123,7 +123,8 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 
 
 static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
-			  const uint8_t *pld, size_t pld_len, void *arg)
+			  const uint8_t *pld, size_t pld_len,
+			  double pkt_timestamp, void *arg)
 {
 	struct video_loop *vl = arg;
 	struct vidframe frame;
@@ -147,7 +148,7 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 	frame.data[0] = NULL;
 	if (vl->vc_dec && vl->dec) {
 		err = vl->vc_dec->dech(vl->dec, &frame, &intra,
-				       marker, vl->seq++, mb);
+				       marker, vl->seq++, mb, pkt_timestamp);
 		if (err) {
 			warning("vidloop: codec decode: %m\n", err);
 			goto out;
