@@ -387,10 +387,6 @@ static int video_loop_alloc(struct video_loop **vlp, const struct vidsz *size)
 		}
 	}
 
-	err = vsrc_reopen(vl, size);
-	if (err)
-		goto out;
-
 	info("vidloop: open video display (%s.%s)\n",
 	     vl->cfg.disp_mod, vl->cfg.disp_dev);
 
@@ -453,6 +449,13 @@ static int vidloop_start(struct re_printf *pf, void *arg)
 		(void)re_hprintf(pf, "%sabled codec: %s\n",
 				 gvl->vc_enc ? "En" : "Dis",
 				 gvl->vc_enc ? gvl->vc_enc->name : "");
+	}
+
+	/* Start video source, after codecs are created */
+	err = vsrc_reopen(gvl, &size);
+	if (err) {
+		gvl = mem_deref(gvl);
+		return err;
 	}
 
 	return err;
