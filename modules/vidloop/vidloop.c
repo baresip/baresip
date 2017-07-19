@@ -355,7 +355,7 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 }
 
 
-static int video_loop_alloc(struct video_loop **vlp, const struct vidsz *size)
+static int video_loop_alloc(struct video_loop **vlp)
 {
 	struct video_loop *vl;
 	struct config *cfg;
@@ -432,7 +432,7 @@ static int vidloop_start(struct re_printf *pf, void *arg)
 			 cfg->video.src_mod, cfg->video.src_dev,
 			 size.w, size.h);
 
-	err = video_loop_alloc(&gvl, &size);
+	err = video_loop_alloc(&gvl);
 	if (err) {
 		warning("vidloop: alloc: %m\n", err);
 		return err;
