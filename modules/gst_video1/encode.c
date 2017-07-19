@@ -122,13 +122,27 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 	sample = gst_app_sink_pull_sample(sink);
 
 	if (sample) {
+		GstClockTime ts;
+		double timestamp;
+
 		buffer = gst_sample_get_buffer(sample);
 		gst_buffer_map( buffer, &info, (GstMapFlags)(GST_MAP_READ) );
 
 		data = info.data;
 		size = info.size;
 
-		h264_packetize(data, size, st->encoder.pktsize,
+		ts = GST_BUFFER_DTS_OR_PTS(buffer);
+
+		if (ts == GST_CLOCK_TIME_NONE) {
+			warning("gst_video: timestamp is unknown\n");
+			timestamp = .0;
+		}
+		else {
+			/* convert from nanoseconds to seconds */
+			timestamp = (double)ts * 0.000000001;
+		}
+
+		h264_packetize(data, size, st->encoder.pktsize, timestamp,
 			       st->pkth, st->arg);
 
 		gst_buffer_unmap(buffer, &info);
@@ -223,7 +237,7 @@ static int pipeline_init(struct videnc_state *st, const struct vidsz *size)
 	snprintf(pipeline, sizeof(pipeline),
 	 "appsrc name=source is-live=TRUE block=TRUE "
 	 "do-timestamp=TRUE max-bytes=1000000 ! "
-	 "videoparse width=%d height=%d format=i420 framerate=%d/1 ! "
+	 "rawvideoparse width=%d height=%d format=i420 framerate=%d/1 ! "
 	 "x264enc byte-stream=TRUE rc-lookahead=0 "
 	 "tune=zerolatency speed-preset=ultrafast "
 	 "sync-lookahead=0 bitrate=%d ! "
