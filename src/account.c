@@ -112,8 +112,8 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 		err |= param_dstr(&acc->stun_pass, &aor->params, "stunpass");
 	else if (pl_isset(&uri.password))
 		err |= pl_strdup(&acc->stun_pass, &uri.password);
-	else
-		err |= pl_strdup(&acc->stun_pass, &aor->uri.password);
+	else if (acc->auth_pass)
+		err |= str_dup(&acc->stun_pass, acc->auth_pass);
 
 	if (pl_isset(&uri.host))
 		err |= pl_strdup(&acc->stun_host, &uri.host);
