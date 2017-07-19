@@ -65,6 +65,7 @@ struct video_loop {
 	uint16_t seq;
 	bool need_conv;
 	int err;
+	bool first_set;
 	double timestamp_first;
 	double timestamp_max;
 };
@@ -126,13 +127,23 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 
 static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 			  const uint8_t *pld, size_t pld_len,
-			  double pkt_timestamp, void *arg)
+			  uint32_t rtp_ts, void *arg)
 {
 	struct video_loop *vl = arg;
 	struct vidframe frame;
 	struct mbuf *mb;
 	bool intra;
+	double pkt_timestamp = video_calc_seconds(rtp_ts);
 	int err = 0;
+
+#if 0
+	re_printf("- packet:  [%s] rtp_ts=%u\n",
+		  marker ? "M" : " ", rtp_ts);
+
+	if (rtp_ts == 0) {
+		warning("vidloop: RTP timestamp not set\n");
+	}
+#endif
 
 	mb = mbuf_alloc(hdr_len + pld_len);
 	if (!mb)
@@ -146,8 +157,10 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 
 	vl->stat.bytes += mbuf_get_left(mb);
 
-	if (vl->timestamp_first == 0.0)
+	if (!vl->first_set) {
 		vl->timestamp_first = pkt_timestamp;
+		vl->first_set = true;
+	}
 	if (pkt_timestamp > vl->timestamp_max)
 		vl->timestamp_max = pkt_timestamp;
 
@@ -339,7 +352,7 @@ static void timeout_bw(void *arg)
 		return;
 	}
 
-	tmr_start(&vl->tmr_bw, 2000, timeout_bw, vl);
+	tmr_start(&vl->tmr_bw, 500, timeout_bw, vl);
 
 	calc_bitrate(vl);
 	print_status(vl);

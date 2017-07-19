@@ -140,13 +140,13 @@ static int open_encoder(struct videnc_state *st, const struct vidsz *size)
 
 
 static inline int packetize(bool marker, const uint8_t *buf, size_t len,
-			    size_t maxlen, double timestamp,
+			    size_t maxlen, uint32_t rtp_ts,
 			    videnc_packet_h *pkth, void *arg)
 {
 	int err = 0;
 
 	if (len <= maxlen) {
-		err = pkth(marker, NULL, 0, buf, len, timestamp, arg);
+		err = pkth(marker, NULL, 0, buf, len, rtp_ts, arg);
 	}
 	else {
 		struct h265_nal nal;
@@ -170,7 +170,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 		while (len > flen) {
 			err |= pkth(false, fu_hdr, 3, buf, flen,
-				    timestamp, arg);
+				    rtp_ts, arg);
 
 			buf += flen;
 			len -= flen;
@@ -180,7 +180,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 		fu_hdr[2] |= 1<<6;  /* set END bit */
 
 		err |= pkth(marker, fu_hdr, 3, buf, len,
-			    timestamp, arg);
+			    rtp_ts, arg);
 	}
 
 	return err;
@@ -195,7 +195,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	uint32_t i, nalc = 0;
 	int colorspace;
 	int n, err = 0;
-	double timestamp;
+	uint32_t ts;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -257,7 +257,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	if (n <= 0)
 		goto out;
 
-	timestamp = (double)pic_out.pts / (double)st->fps;
+	ts = video_calc_rtp_timestamp(pic_out.pts, st->fps);
 
 	for (i=0; i<nalc; i++) {
 
@@ -279,7 +279,7 @@ int h265_encode(struct videnc_state *st, bool update,
 		marker = (i+1)==nalc;  /* last NAL */
 
 		err = packetize(marker, p, len, st->pktsize,
-				timestamp, st->pkth, st->arg);
+				ts, st->pkth, st->arg);
 		if (err)
 			goto out;
 	}

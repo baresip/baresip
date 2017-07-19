@@ -157,7 +157,7 @@ static inline void hdr_encode(uint8_t hdr[HDR_SIZE], bool noref, bool start,
 
 static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 			    size_t maxlen, bool noref, uint8_t partid,
-			    uint16_t picid, double timestamp,
+			    uint16_t picid, uint32_t rtp_ts,
 			    videnc_packet_h *pkth, void *arg)
 {
 	uint8_t hdr[HDR_SIZE];
@@ -171,7 +171,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 		hdr_encode(hdr, noref, start, partid, picid);
 
 		err |= pkth(false, hdr, sizeof(hdr), buf, maxlen,
-			    timestamp, arg);
+			    rtp_ts, arg);
 
 		buf  += maxlen;
 		len  -= maxlen;
@@ -180,7 +180,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 	hdr_encode(hdr, noref, start, partid, picid);
 
-	err |= pkth(marker, hdr, sizeof(hdr), buf, len, timestamp, arg);
+	err |= pkth(marker, hdr, sizeof(hdr), buf, len, rtp_ts, arg);
 
 	return err;
 }
@@ -236,7 +236,7 @@ int vp8_encode(struct videnc_state *ves, bool update,
 		bool keyframe = false, marker = true;
 		const vpx_codec_cx_pkt_t *pkt;
 		uint8_t partid = 0;
-		double timestamp;
+		uint32_t ts;
 
 		pkt = vpx_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)
@@ -256,13 +256,13 @@ int vp8_encode(struct videnc_state *ves, bool update,
 			partid = pkt->data.frame.partition_id;
 #endif
 
-		timestamp = (double)pkt->data.frame.pts / (double)ves->fps;
+		ts = video_calc_rtp_timestamp(pkt->data.frame.pts, ves->fps);
 
 		err = packetize(marker,
 				pkt->data.frame.buf,
 				pkt->data.frame.sz,
 				ves->pktsize, !keyframe, partid, ves->picid,
-				timestamp,
+				ts,
 				ves->pkth, ves->arg);
 		if (err)
 			return err;

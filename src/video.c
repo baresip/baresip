@@ -25,7 +25,6 @@
 
 
 enum {
-	SRATE = 90000,
 	MAX_MUTED_FRAMES = 3,
 };
 
@@ -340,19 +339,20 @@ static int get_fps(const struct video *v)
 
 static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 			  const uint8_t *pld, size_t pld_len,
-			  double pkt_timestamp, void *arg)
+			  uint32_t ts, void *arg)
 {
 	struct vtx *vtx = arg;
 	struct stream *strm = vtx->video->strm;
 	struct vidqent *qent;
 	uint32_t rtp_ts;
+	double pkt_timestamp = video_calc_seconds(ts);
 	int err;
 
 	if (pkt_timestamp > vtx->timestamp_max)
 		vtx->timestamp_max = pkt_timestamp;
 
 	/* Convert from seconds to RTP clockrate */
-	rtp_ts = vtx->ts_offset + pkt_timestamp * (double)SRATE;
+	rtp_ts = vtx->ts_offset + ts;
 
 	err = vidqent_alloc(&qent, marker, strm->pt_enc, rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
@@ -576,7 +576,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	}
 
 	/* convert from RTP clockrate to seconds */
-	pkt_timestamp = (double)hdr->ts / (double)SRATE;
+	pkt_timestamp = video_calc_seconds(hdr->ts);
 
 	if (pkt_timestamp > vrx->timestamp_max)
 		vrx->timestamp_max = pkt_timestamp;
@@ -967,7 +967,7 @@ int video_start(struct video *v, const char *peer)
 			return err;
 	}
 
-	stream_set_srate(v->strm, SRATE, SRATE);
+	stream_set_srate(v->strm, VIDEO_SRATE, VIDEO_SRATE);
 
 	if (vidisp_find(baresip_vidispl(), NULL)) {
 		err = set_vidisp(&v->vrx);
