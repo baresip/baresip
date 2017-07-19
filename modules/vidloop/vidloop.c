@@ -312,10 +312,10 @@ static void print_status(struct video_loop *vl)
 {
 	(void)re_fprintf(stderr,
 			 "\rstatus:"
-			 " ts=%f"
+			 " ts=%.3fsec"
 			 " [%s] [%s]  intra=%zu "
 			 " EFPS=%.1f      %u kbit/s       \r",
-			 vl->timestamp_max,
+			 vl->timestamp_max - vl->timestamp_first,
 			 vl->vc_enc ? vl->vc_enc->name : "",
 			 vl->vc_dec ? vl->vc_dec->name : "",
 			 vl->stat.n_intra,

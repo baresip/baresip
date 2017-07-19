@@ -123,7 +123,7 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 
 	if (sample) {
 		GstClockTime ts;
-		double timestamp;
+		uint64_t rtp_ts;
 
 		buffer = gst_sample_get_buffer(sample);
 		gst_buffer_map( buffer, &info, (GstMapFlags)(GST_MAP_READ) );
@@ -135,14 +135,14 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 
 		if (ts == GST_CLOCK_TIME_NONE) {
 			warning("gst_video: timestamp is unknown\n");
-			timestamp = .0;
+			rtp_ts = 0;
 		}
 		else {
 			/* convert from nanoseconds to seconds */
-			timestamp = (double)ts * 0.000000001;
+			rtp_ts = ((uint64_t)VIDEO_SRATE * ts) / 1000000000UL;
 		}
 
-		h264_packetize(data, size, st->encoder.pktsize, timestamp,
+		h264_packetize(data, size, st->encoder.pktsize, rtp_ts,
 			       st->pkth, st->arg);
 
 		gst_buffer_unmap(buffer, &info);
