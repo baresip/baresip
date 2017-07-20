@@ -66,9 +66,10 @@ struct video_loop {
 	uint16_t seq;
 	bool need_conv;
 	int err;
+
 	bool first_set;
-	double timestamp_first;
-	double timestamp_max;
+	uint32_t ts_first;
+	uint32_t ts_max;
 };
 
 
@@ -134,7 +135,6 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 	struct vidframe frame;
 	struct mbuf *mb;
 	bool intra;
-	double pkt_timestamp = video_calc_seconds(rtp_ts);
 	int err = 0;
 
 #if 0
@@ -159,11 +159,11 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 	vl->stat.bytes += mbuf_get_left(mb);
 
 	if (!vl->first_set) {
-		vl->timestamp_first = pkt_timestamp;
+		vl->ts_first = rtp_ts;
 		vl->first_set = true;
 	}
-	if (pkt_timestamp > vl->timestamp_max)
-		vl->timestamp_max = pkt_timestamp;
+	if (rtp_ts > vl->ts_max)
+		vl->ts_max = rtp_ts;
 
 	/* decode */
 	frame.data[0] = NULL;
@@ -244,10 +244,10 @@ static void vidloop_destructor(void *arg)
 	struct video_loop *vl = arg;
 
 	re_printf("** videoloop summary: \n");
-	re_printf("first timestamp:    %f sec\n", vl->timestamp_first);
-	re_printf("max timestamp:      %f sec\n", vl->timestamp_max);
+	re_printf("first timestamp:    %u\n", vl->ts_first);
+	re_printf("max timestamp:      %u\n", vl->ts_max);
 	re_printf("duration:           %f sec\n",
-		  vl->timestamp_max - vl->timestamp_first);
+		  video_calc_seconds(vl->ts_max - vl->ts_first));
 	re_printf("\n");
 
 	tmr_cancel(&vl->tmr_bw);
@@ -317,7 +317,7 @@ static void print_status(struct video_loop *vl)
 			 " ts=%.3fsec"
 			 " [%s] [%s]  intra=%zu "
 			 " EFPS=%.1f      %u kbit/s       \r",
-			 vl->timestamp_max - vl->timestamp_first,
+			 video_calc_seconds(vl->ts_max - vl->ts_first),
 			 vl->vc_enc ? vl->vc_enc->name : "",
 			 vl->vc_dec ? vl->vc_dec->name : "",
 			 vl->stat.n_intra,
