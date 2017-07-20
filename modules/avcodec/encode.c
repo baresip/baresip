@@ -415,11 +415,10 @@ static int open_encoder_x264(struct videnc_state *st, struct videnc_param *prm,
 {
 	x264_param_t xprm;
 
-	x264_param_default(&xprm);
+	if (x264_param_default_preset(&xprm, "ultrafast", "zerolatency"))
+		return ENOSYS;
 
-#if X264_BUILD >= 87
 	x264_param_apply_profile(&xprm, "baseline");
-#endif
 
 	xprm.i_level_idc = h264_level_idc;
 	xprm.i_width = size->w;
