@@ -176,8 +176,8 @@ static int send_packet(struct videnc_state *ves, bool marker,
 {
 	ves->n_bytes += (hdr_len + pld_len);
 
-	return ves->pkth(marker, hdr, hdr_len, pld, pld_len,
-			 rtp_ts, ves->arg);
+	return ves->pkth(marker, rtp_ts, hdr, hdr_len, pld, pld_len,
+			 ves->arg);
 }
 
 

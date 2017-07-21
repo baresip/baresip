@@ -339,9 +339,10 @@ static int get_fps(const struct video *v)
 }
 
 
-static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
+static int packet_handler(bool marker, uint32_t ts,
+			  const uint8_t *hdr, size_t hdr_len,
 			  const uint8_t *pld, size_t pld_len,
-			  uint32_t ts, void *arg)
+			  void *arg)
 {
 	struct vtx *vtx = arg;
 	struct stream *strm = vtx->video->strm;
@@ -349,14 +350,13 @@ static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
 	uint32_t rtp_ts;
 	int err;
 
+	/* NOTE: does not handle timestamp wrap around */
 	if (ts < vtx->ts_min)
 		vtx->ts_min = ts;
 	if (ts > vtx->ts_max)
 		vtx->ts_max = ts;
 
-	/* todo: check if RTP timestamp wraps */
-
-	/* Convert from seconds to RTP clockrate */
+	/* add random timestamp offset */
 	rtp_ts = vtx->ts_offset + ts;
 
 	err = vidqent_alloc(&qent, marker, strm->pt_enc, rtp_ts,

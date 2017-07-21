@@ -146,7 +146,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 	int err = 0;
 
 	if (len <= maxlen) {
-		err = pkth(marker, NULL, 0, buf, len, rtp_ts, arg);
+		err = pkth(marker, rtp_ts, NULL, 0, buf, len, arg);
 	}
 	else {
 		struct h265_nal nal;
@@ -169,8 +169,8 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 		len-=2;
 
 		while (len > flen) {
-			err |= pkth(false, fu_hdr, 3, buf, flen,
-				    rtp_ts, arg);
+			err |= pkth(false, rtp_ts, fu_hdr, 3, buf, flen,
+				    arg);
 
 			buf += flen;
 			len -= flen;
@@ -179,8 +179,8 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 		fu_hdr[2] |= 1<<6;  /* set END bit */
 
-		err |= pkth(marker, fu_hdr, 3, buf, len,
-			    rtp_ts, arg);
+		err |= pkth(marker, rtp_ts, fu_hdr, 3, buf, len,
+			    arg);
 	}
 
 	return err;

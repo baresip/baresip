@@ -127,9 +127,10 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 }
 
 
-static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
+static int packet_handler(bool marker, uint32_t rtp_ts,
+			  const uint8_t *hdr, size_t hdr_len,
 			  const uint8_t *pld, size_t pld_len,
-			  uint32_t rtp_ts, void *arg)
+			  void *arg)
 {
 	struct video_loop *vl = arg;
 	struct vidframe frame;

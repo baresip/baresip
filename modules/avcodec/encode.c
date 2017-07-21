@@ -356,8 +356,8 @@ static int general_packetize(struct mbuf *mb, size_t pktsize,
 
 		sz = last ? left : pktsize;
 
-		err = pkth(last, NULL, 0, mbuf_buf(mb), sz,
-			   rtp_ts, arg);
+		err = pkth(last, rtp_ts, NULL, 0, mbuf_buf(mb), sz,
+			   arg);
 
 		mbuf_advance(mb, sz);
 	}
@@ -402,8 +402,8 @@ static int h263_packetize(struct videnc_state *st, struct mbuf *mb,
 
 		st->mb_frag->pos = 0;
 
-		err = pkth(last, NULL, 0, mbuf_buf(st->mb_frag),
-			   mbuf_get_left(st->mb_frag), rtp_ts, arg);
+		err = pkth(last, rtp_ts, NULL, 0, mbuf_buf(st->mb_frag),
+			   mbuf_get_left(st->mb_frag), arg);
 
 		mbuf_advance(mb, sz);
 	}

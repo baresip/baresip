@@ -107,7 +107,7 @@ static int rtp_send_data(const uint8_t *hdr, size_t hdr_sz,
 			 uint32_t rtp_ts,
 			 videnc_packet_h *pkth, void *arg)
 {
-	return pkth(eof, hdr, hdr_sz, buf, sz, rtp_ts, arg);
+	return pkth(eof, rtp_ts, hdr, hdr_sz, buf, sz, arg);
 }
 
 

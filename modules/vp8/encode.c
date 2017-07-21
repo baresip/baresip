@@ -170,8 +170,8 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 		hdr_encode(hdr, noref, start, partid, picid);
 
-		err |= pkth(false, hdr, sizeof(hdr), buf, maxlen,
-			    rtp_ts, arg);
+		err |= pkth(false, rtp_ts, hdr, sizeof(hdr), buf, maxlen,
+			    arg);
 
 		buf  += maxlen;
 		len  -= maxlen;
@@ -180,7 +180,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 	hdr_encode(hdr, noref, start, partid, picid);
 
-	err |= pkth(marker, hdr, sizeof(hdr), buf, len, rtp_ts, arg);
+	err |= pkth(marker, rtp_ts, hdr, sizeof(hdr), buf, len, arg);
 
 	return err;
 }

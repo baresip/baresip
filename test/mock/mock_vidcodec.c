@@ -105,8 +105,8 @@ static int mock_encode(struct videnc_state *ves, bool update,
 
 	rtp_ts = video_calc_rtp_timestamp(++ves->pts, ves->fps);
 
-	err = ves->pkth(true, hdr->buf, hdr->end,
-			payload, sizeof(payload), rtp_ts, ves->arg);
+	err = ves->pkth(true, rtp_ts, hdr->buf, hdr->end,
+			payload, sizeof(payload), ves->arg);
 	if (err)
 		goto out;
 

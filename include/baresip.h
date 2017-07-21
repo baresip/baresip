@@ -875,9 +875,10 @@ struct videnc_state;
 struct viddec_state;
 struct vidcodec;
 
-typedef int (videnc_packet_h)(bool marker, const uint8_t *hdr, size_t hdr_len,
+typedef int (videnc_packet_h)(bool marker, uint32_t rtp_ts,
+			      const uint8_t *hdr, size_t hdr_len,
 			      const uint8_t *pld, size_t pld_len,
-			      uint32_t rtp_ts, void *arg);
+			      void *arg);
 
 typedef int (videnc_update_h)(struct videnc_state **vesp,
 			      const struct vidcodec *vc,
