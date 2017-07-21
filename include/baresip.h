@@ -1114,13 +1114,11 @@ int h264_fu_hdr_decode(struct h264_fu *fu, struct mbuf *mb);
 
 const uint8_t *h264_find_startcode(const uint8_t *p, const uint8_t *end);
 
-int h264_packetize(const uint8_t *buf, size_t len, size_t pktsize,
-		   uint32_t rtp_ts,
-		   videnc_packet_h *pkth, void *arg);
+int h264_packetize(uint32_t rtp_ts, const uint8_t *buf, size_t len,
+		   size_t pktsize, videnc_packet_h *pkth, void *arg);
 int h264_nal_send(bool first, bool last,
-		  bool marker, uint32_t ihdr, const uint8_t *buf,
-		  size_t size, size_t maxsz,
-		  uint32_t rtp_ts,
+		  bool marker, uint32_t ihdr, uint32_t rtp_ts,
+		  const uint8_t *buf, size_t size, size_t maxsz,
 		  videnc_packet_h *pkth, void *arg);
 static inline bool h264_is_keyframe(int type)
 {

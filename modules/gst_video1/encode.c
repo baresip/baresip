@@ -142,7 +142,7 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 			rtp_ts = ((uint64_t)VIDEO_SRATE * ts) / 1000000000UL;
 		}
 
-		h264_packetize(data, size, st->encoder.pktsize, rtp_ts,
+		h264_packetize(rtp_ts, data, size, st->encoder.pktsize,
 			       st->pkth, st->arg);
 
 		gst_buffer_unmap(buffer, &info);

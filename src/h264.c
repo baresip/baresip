@@ -103,8 +103,8 @@ const uint8_t *h264_find_startcode(const uint8_t *p, const uint8_t *end)
 
 
 static int rtp_send_data(const uint8_t *hdr, size_t hdr_sz,
-			 const uint8_t *buf, size_t sz, bool eof,
-			 uint32_t rtp_ts,
+			 const uint8_t *buf, size_t sz,
+			 bool eof, uint32_t rtp_ts,
 			 videnc_packet_h *pkth, void *arg)
 {
 	return pkth(eof, rtp_ts, hdr, hdr_sz, buf, sz, arg);
@@ -112,9 +112,8 @@ static int rtp_send_data(const uint8_t *hdr, size_t hdr_sz,
 
 
 int h264_nal_send(bool first, bool last,
-		  bool marker, uint32_t ihdr, const uint8_t *buf,
-		  size_t size, size_t maxsz,
-		  uint32_t rtp_ts,
+		  bool marker, uint32_t ihdr, uint32_t rtp_ts,
+		  const uint8_t *buf, size_t size, size_t maxsz,
 		  videnc_packet_h *pkth, void *arg)
 {
 	uint8_t hdr = (uint8_t)ihdr;
@@ -154,9 +153,8 @@ int h264_nal_send(bool first, bool last,
 }
 
 
-int h264_packetize(const uint8_t *buf, size_t len, size_t pktsize,
-		   uint32_t rtp_ts,
-		   videnc_packet_h *pkth, void *arg)
+int h264_packetize(uint32_t rtp_ts, const uint8_t *buf, size_t len,
+		   size_t pktsize, videnc_packet_h *pkth, void *arg)
 {
 	const uint8_t *start = buf;
 	const uint8_t *end   = buf + len;
@@ -175,8 +173,7 @@ int h264_packetize(const uint8_t *buf, size_t len, size_t pktsize,
 		r1 = h264_find_startcode(r, end);
 
 		err |= h264_nal_send(true, true, (r1 >= end), r[0],
-				     r+1, r1-r-1, pktsize,
-				     rtp_ts,
+				     rtp_ts, r+1, r1-r-1, pktsize,
 				     pkth, arg);
 		r = r1;
 	}

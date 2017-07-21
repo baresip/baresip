@@ -285,8 +285,8 @@ static void encoders_read(const uint8_t *buf, size_t sz, uint32_t rtp_ts)
 	for (le = v4l2.encoderl.head; le; le = le->next) {
 		struct videnc_state *st = le->data;
 
-		err = h264_packetize(buf, sz,
-				     st->encprm.pktsize, rtp_ts,
+		err = h264_packetize(rtp_ts, buf, sz,
+				     st->encprm.pktsize,
 				     st->pkth, st->arg);
 		if (err) {
 			warning("h264_packetize error (%m)\n", err);

@@ -341,8 +341,7 @@ static void param_handler(const struct pl *name, const struct pl *val,
 }
 
 
-static int general_packetize(struct mbuf *mb, size_t pktsize,
-			     uint32_t rtp_ts,
+static int general_packetize(uint32_t rtp_ts, struct mbuf *mb, size_t pktsize,
 			     videnc_packet_h *pkth, void *arg)
 {
 	int err = 0;
@@ -366,8 +365,8 @@ static int general_packetize(struct mbuf *mb, size_t pktsize,
 }
 
 
-static int h263_packetize(struct videnc_state *st, struct mbuf *mb,
-			  uint32_t rtp_ts,
+static int h263_packetize(struct videnc_state *st,
+			  uint32_t rtp_ts, struct mbuf *mb,
 			  videnc_packet_h *pkth, void *arg)
 {
 	struct h263_strm h263_strm;
@@ -645,10 +644,10 @@ int encode_x264(struct videnc_state *st, bool update,
 		if (nal[i].i_type == H264_NAL_SEI)
 			continue;
 
-		err = h264_nal_send(true, true, (i+1)==i_nal, hdr,
+		err = h264_nal_send(true, true, (i+1)==i_nal, hdr, ts,
 				    nal[i].p_payload + offset,
 				    nal[i].i_payload - offset,
-				    st->encprm.pktsize, ts,
+				    st->encprm.pktsize,
 				    st->pkth, st->arg);
 	}
 
@@ -759,6 +758,8 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 
 		mbuf_set_end(st->mb, avpkt.size);
 
+		ts = video_calc_rtp_timestamp(pkt->dts, st->encprm.fps);
+
 	} while (0);
 #else
 	ret = avcodec_encode_video(st->ctx, st->mb->buf,
@@ -779,19 +780,18 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 	switch (st->codec_id) {
 
 	case AV_CODEC_ID_H263:
-		err = h263_packetize(st, st->mb, ts,
+		err = h263_packetize(st, ts, st->mb,
 				     st->pkth, st->arg);
 		break;
 
 	case AV_CODEC_ID_H264:
-		err = h264_packetize(st->mb->buf, st->mb->end,
-				     st->encprm.pktsize, ts,
+		err = h264_packetize(ts, st->mb->buf, st->mb->end,
+				     st->encprm.pktsize,
 				     st->pkth, st->arg);
 		break;
 
 	case AV_CODEC_ID_MPEG4:
-		err = general_packetize(st->mb, st->encprm.pktsize,
-					ts,
+		err = general_packetize(ts, st->mb, st->encprm.pktsize,
 					st->pkth, st->arg);
 		break;
 
