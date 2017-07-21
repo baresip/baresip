@@ -3,6 +3,10 @@
  *
  * Copyright (C) 2010 - 2016 Creytiv.com
  */
+
+/* Note: Macro needed for setenv() declaration to appear */
+#define _DEFAULT_SOURCE
+#include <stdlib.h>
 #include <pulse/pulseaudio.h>
 #include <pulse/simple.h>
 #include <pthread.h>
@@ -10,7 +14,6 @@
 #include <rem.h>
 #include <baresip.h>
 #include "pulse.h"
-
 
 struct auplay_st {
 	const struct auplay *ap;      /* inheritance */
@@ -104,6 +107,12 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	attr.prebuf    = (uint32_t)-1;
 	attr.minreq    = (uint32_t)-1;
 	attr.fragsize  = (uint32_t)-1;
+
+	/* HACK: Enable PulseAudio's Echo Cancellation through env
+	 * Explanation: To set this properly through PA's API would
+	 * mean changing all the modules code from the simple to the
+	 * full (called "asynchronous") API */
+	setenv("PULSE_PROP", "filter.want=echo-cancel", 0);
 
 	st->s = pa_simple_new(NULL,
 			      "Baresip",
