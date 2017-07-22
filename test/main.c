@@ -53,6 +53,7 @@ static const struct test tests[] = {
 	TEST(test_ua_register_auth),
 	TEST(test_ua_register_auth_dns),
 	TEST(test_uag_find_param),
+	TEST(test_video),
 };
 
 

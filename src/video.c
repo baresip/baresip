@@ -1351,3 +1351,27 @@ void video_set_devicename(struct video *v, const char *src, const char *disp)
 	str_ncpy(v->vtx.device, src, sizeof(v->vtx.device));
 	str_ncpy(v->vrx.device, disp, sizeof(v->vrx.device));
 }
+
+
+/**
+ * Calculate the RTP timestamp from Presentation Time Stamp (PTS)
+ * or Decoding Time Stamp (DTS) and framerate.
+ *
+ * @note The calculated RTP Timestamp may wrap around.
+ *
+ * @param pts Presentation Time Stamp (PTS)
+ * @param fps Framerate in [frames per second]
+ *
+ * @return RTP Timestamp
+ */
+uint32_t video_calc_rtp_timestamp(int64_t pts, unsigned fps)
+{
+       uint64_t rtp_ts;
+
+       if (!fps)
+	       return 0;
+
+       rtp_ts = ((uint64_t)SRATE * pts) / fps;
+
+       return (uint32_t)rtp_ts;
+}
