@@ -132,6 +132,7 @@ struct vrx {
 	struct lock *lock;                 /**< Lock for decoder          */
 	struct list filtl;                 /**< Filters in decoding order */
 	struct tmr tmr_picup;              /**< Picture update timer      */
+	struct vidsz size;                 /**< Incoming video resolution */
 	enum vidorient orient;             /**< Display orientation       */
 	char device[64];                   /**< Display device name       */
 	int pt_rx;                         /**< Incoming RTP payload type */
@@ -587,6 +588,8 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	/* Got a full picture-frame? */
 	if (!vidframe_isvalid(frame))
 		goto out;
+
+	vrx->size = frame->size;
 
 	if (!list_isempty(&vrx->filtl)) {
 
@@ -1287,11 +1290,14 @@ int video_debug(struct re_printf *pf, const struct video *v)
 
 	err = re_hprintf(pf, "\n--- Video stream ---\n");
 	err |= re_hprintf(pf, " started: %s\n", v->started ? "yes" : "no");
+
 	err |= re_hprintf(pf, " tx: %u x %u, fps=%d\n",
 			  vtx->vsrc_size.w,
 			  vtx->vsrc_size.h, vtx->vsrc_prm.fps);
 	err |= re_hprintf(pf, "     skipc=%u\n", vtx->skipc);
-	err |= re_hprintf(pf, " rx: pt=%d\n", vrx->pt_rx);
+
+	err |= re_hprintf(pf, " rx: %u x %u\n", vrx->size.w, vrx->size.h);
+	err |= re_hprintf(pf, "     pt=%d\n", vrx->pt_rx);
 	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
 			  vrx->n_intra, vrx->n_picup);
 
