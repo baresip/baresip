@@ -37,6 +37,7 @@ static const struct test tests[] = {
 	TEST(test_call_progress),
 #ifdef USE_VIDEO
 	TEST(test_call_video),
+	TEST(test_video),
 #endif
 	TEST(test_cmd),
 	TEST(test_cmd_long),
@@ -53,7 +54,6 @@ static const struct test tests[] = {
 	TEST(test_ua_register_auth),
 	TEST(test_ua_register_auth_dns),
 	TEST(test_uag_find_param),
-	TEST(test_video),
 };
 
 

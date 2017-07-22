@@ -19,7 +19,9 @@ TEST_SRCS	+= mos.c
 TEST_SRCS	+= net.c
 TEST_SRCS	+= play.c
 TEST_SRCS	+= ua.c
+ifneq ($(USE_VIDEO),)
 TEST_SRCS	+= video.c
+endif
 
 
 #
