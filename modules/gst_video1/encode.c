@@ -123,7 +123,7 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 
 	if (sample) {
 		GstClockTime ts;
-		uint64_t rtp_ts;
+		uint32_t rtp_ts;
 
 		buffer = gst_sample_get_buffer(sample);
 		gst_buffer_map( buffer, &info, (GstMapFlags)(GST_MAP_READ) );
@@ -138,8 +138,8 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 			rtp_ts = 0;
 		}
 		else {
-			/* convert from nanoseconds to seconds */
-			rtp_ts = ((uint64_t)VIDEO_SRATE * ts) / 1000000000UL;
+			/* convert from nanoseconds to RTP clock */
+			rtp_ts = (uint32_t)((90000ULL * ts) / 1000000000UL);
 		}
 
 		h264_packetize(rtp_ts, data, size, st->encoder.pktsize,
