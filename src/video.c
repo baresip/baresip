@@ -25,6 +25,7 @@
 
 
 enum {
+	SRATE = 90000,
 	MAX_MUTED_FRAMES = 3,
 };
 
@@ -133,6 +134,7 @@ struct vrx {
 	struct lock *lock;                 /**< Lock for decoder          */
 	struct list filtl;                 /**< Filters in decoding order */
 	struct tmr tmr_picup;              /**< Picture update timer      */
+	struct vidsz size;                 /**< Incoming video resolution */
 	enum vidorient orient;             /**< Display orientation       */
 	char device[64];                   /**< Display device name       */
 	int pt_rx;                         /**< Incoming RTP payload type */
@@ -615,6 +617,8 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	if (!vidframe_isvalid(frame))
 		goto out;
 
+	vrx->size = frame->size;
+
 	if (!list_isempty(&vrx->filtl)) {
 
 		err = vidframe_alloc(&frame_filt, frame->fmt, &frame->size);
@@ -976,7 +980,7 @@ int video_start(struct video *v, const char *peer)
 			return err;
 	}
 
-	stream_set_srate(v->strm, VIDEO_SRATE, VIDEO_SRATE);
+	stream_set_srate(v->strm, SRATE, SRATE);
 
 	if (vidisp_find(baresip_vidispl(), NULL)) {
 		err = set_vidisp(&v->vrx);
@@ -1322,7 +1326,9 @@ int video_debug(struct re_printf *pf, const struct video *v)
 	err |= re_hprintf(pf, "     time = %.3f sec\n",
 			  video_calc_seconds(vtx->ts_max - vtx->ts_min));
 
-	err |= re_hprintf(pf, " rx: pt=%d\n", vrx->pt_rx);
+	err |= re_hprintf(pf, " rx: %u x %u\n", vrx->size.w, vrx->size.h);
+	err |= re_hprintf(pf, "     pt=%d\n", vrx->pt_rx);
+
 	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
 			  vrx->n_intra, vrx->n_picup);
 	err |= re_hprintf(pf, "     time = %.3f sec\n",
@@ -1378,3 +1384,40 @@ void video_set_devicename(struct video *v, const char *src, const char *disp)
 	str_ncpy(v->vtx.device, src, sizeof(v->vtx.device));
 	str_ncpy(v->vrx.device, disp, sizeof(v->vrx.device));
 }
+
+
+/**
+ * Calculate the RTP timestamp from Presentation Time Stamp (PTS)
+ * or Decoding Time Stamp (DTS) and framerate.
+ *
+ * @note The calculated RTP Timestamp may wrap around.
+ *
+ * @param pts Presentation Time Stamp (PTS)
+ * @param fps Framerate in [frames per second]
+ *
+ * @return RTP Timestamp
+ */
+uint32_t video_calc_rtp_timestamp(int64_t pts, unsigned fps)
+{
+       uint64_t rtp_ts;
+
+       if (!fps)
+	       return 0;
+
+       rtp_ts = ((uint64_t)SRATE * pts) / fps;
+
+       return (uint32_t)rtp_ts;
+}
+
+
+double video_calc_seconds(uint32_t rtp_ts)
+{
+	double timestamp;
+
+	/* convert from RTP clockrate to seconds */
+	timestamp = (double)rtp_ts / (double)SRATE;
+
+	return timestamp;
+}
+
+

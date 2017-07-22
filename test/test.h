@@ -207,6 +207,8 @@ int test_call_video(void);
 int test_call_aulevel(void);
 int test_call_progress(void);
 
+int test_video(void);
+
 
 #ifdef __cplusplus
 extern "C" {

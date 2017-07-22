@@ -19,6 +19,7 @@ TEST_SRCS	+= mos.c
 TEST_SRCS	+= net.c
 TEST_SRCS	+= play.c
 TEST_SRCS	+= ua.c
+TEST_SRCS	+= video.c
 
 
 #

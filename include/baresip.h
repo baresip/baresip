@@ -992,6 +992,8 @@ int   video_set_source(struct video *v, const char *name, const char *dev);
 void  video_set_devicename(struct video *v, const char *src, const char *disp);
 void  video_encoder_cycle(struct video *video);
 int   video_debug(struct re_printf *pf, const struct video *v);
+uint32_t video_calc_rtp_timestamp(int64_t pts, unsigned fps);
+double video_calc_seconds(uint32_t rtp_ts);
 
 
 /*
@@ -1172,32 +1174,6 @@ struct list   *baresip_vidsrcl(void);
 struct list   *baresip_vidispl(void);
 struct list   *baresip_vidfiltl(void);
 struct ui_sub *baresip_uis(void);
-
-
-enum {
-	VIDEO_SRATE = 90000
-};
-
-
-static inline uint32_t video_calc_rtp_timestamp(int64_t pts, unsigned fps)
-{
-	uint32_t rtp_ts;
-
-	rtp_ts = (uint32_t)((VIDEO_SRATE * pts) / fps);
-
-	return rtp_ts;
-}
-
-
-static inline double video_calc_seconds(uint32_t rtp_ts)
-{
-	double timestamp;
-
-	/* convert from RTP clockrate to seconds */
-	timestamp = (double)rtp_ts / (double)VIDEO_SRATE;
-
-	return timestamp;
-}
 
 
 #ifdef __cplusplus
