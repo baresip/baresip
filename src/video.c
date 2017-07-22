@@ -99,7 +99,7 @@ struct vtx {
 	struct list filtl;                 /**< Filters in encoding order */
 	char device[64];                   /**< Source device name        */
 	int muted_frames;                  /**< # of muted frames sent    */
-	uint32_t ts_offset;
+	uint32_t ts_offset;                /**< Random timestamp offset   */
 	bool picup;                        /**< Send picture update       */
 	bool muted;                        /**< Muted flag                */
 	int frames;                        /**< Number of frames sent     */
@@ -1419,5 +1419,3 @@ double video_calc_seconds(uint32_t rtp_ts)
 
 	return timestamp;
 }
-
-

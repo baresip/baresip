@@ -138,15 +138,6 @@ static int packet_handler(bool marker, uint32_t rtp_ts,
 	bool intra;
 	int err = 0;
 
-#if 0
-	re_printf("- packet:  [%s] rtp_ts=%u\n",
-		  marker ? "M" : " ", rtp_ts);
-
-	if (rtp_ts == 0) {
-		warning("vidloop: RTP timestamp not set\n");
-	}
-#endif
-
 	mb = mbuf_alloc(hdr_len + pld_len);
 	if (!mb)
 		return ENOMEM;

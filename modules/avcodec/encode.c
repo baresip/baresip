@@ -775,7 +775,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 	}
 
 	mbuf_set_end(st->mb, ret);
-	
+
 	ts = video_calc_rtp_timestamp(st->pict->pts, st->encprm.fps);
 #endif
 

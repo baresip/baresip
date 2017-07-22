@@ -277,7 +277,7 @@ static void enc_destructor(void *arg)
 }
 
 
-static void encoders_read(const uint8_t *buf, size_t sz, uint32_t rtp_ts)
+static void encoders_read(uint32_t rtp_ts, const uint8_t *buf, size_t sz)
 {
 	struct le *le;
 	int err;
@@ -344,10 +344,10 @@ static void read_handler(int flags, void *arg)
 	}
 
 	ts = buf.timestamp;
-	rtp_ts = VIDEO_SRATE * (ts.tv_sec + ts.tv_usec/1000000);
+	rtp_ts = (90000ULL * (1000000*ts.tv_sec + ts.tv_usec)) / 1000000;
 
 	/* pass the frame to the encoders */
-	encoders_read(st->buffer, buf.bytesused, rtp_ts);
+	encoders_read(rtp_ts, st->buffer, buf.bytesused);
 
 	query_buffer(st->fd);
 }
