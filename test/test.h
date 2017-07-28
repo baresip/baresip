@@ -207,7 +207,9 @@ int test_call_video(void);
 int test_call_aulevel(void);
 int test_call_progress(void);
 
+#ifdef USE_VIDEO
 int test_video(void);
+#endif
 
 
 #ifdef __cplusplus

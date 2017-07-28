@@ -299,10 +299,15 @@ static void read_handler(int flags, void *arg)
 {
 	struct vidsrc_st *st = arg;
 	struct v4l2_buffer buf;
+	bool keyframe = false;
 	struct timeval ts;
 	uint32_t rtp_ts;
 	int err;
-	(void)flags;
+
+	if (flags & FD_EXCEPT) {
+		warning("v4l2_codec: device error\n");
+		return;
+	}
 
 	memset(&buf, 0, sizeof(buf));
 
@@ -316,11 +321,6 @@ static void read_handler(int flags, void *arg)
 		return;
 	}
 
-#if 0
-	debug("image captured at %ld, %ld (%zu bytes)\n",
-	      buf.timestamp.tv_sec, buf.timestamp.tv_usec,
-	      (size_t)buf.bytesused);
-#endif
 
 	{
 		struct mbuf mb = {0,0,0,0};
@@ -336,8 +336,10 @@ static void read_handler(int flags, void *arg)
 			warning("could not decode H.264 header\n");
 		}
 		else {
-			if (h264_is_keyframe(hdr.type))
+			keyframe = h264_is_keyframe(hdr.type);
+			if (keyframe) {
 				++st->stats.n_key;
+			}
 			else
 				++st->stats.n_delta;
 		}
@@ -346,10 +348,20 @@ static void read_handler(int flags, void *arg)
 	ts = buf.timestamp;
 	rtp_ts = (90000ULL * (1000000*ts.tv_sec + ts.tv_usec)) / 1000000;
 
+#if 0
+	debug("v4l2_codec: %s frame captured at %ldsec, %ldusec (%zu bytes)\n",
+	      keyframe ? "KEY" : "   ",
+	      buf.timestamp.tv_sec, buf.timestamp.tv_usec,
+	      (size_t)buf.bytesused);
+#endif
+
 	/* pass the frame to the encoders */
 	encoders_read(rtp_ts, st->buffer, buf.bytesused);
 
-	query_buffer(st->fd);
+	err = query_buffer(st->fd);
+	if (err) {
+		warning("v4l2_codec: query_buffer failed (%m)\n", err);
+	}
 }
 
 
