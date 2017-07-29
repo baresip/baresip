@@ -336,15 +336,13 @@ static int module_init(void)
 
 	info("pcp: using PCP server at %J\n", &pcp_srv);
 
-#if 1
-	/* todo: if multiple applications are listening on port 5350
+	/* NOTE: if multiple applications are listening on port 5350
 	   then this will not work */
 	err = pcp_listen(&lsnr, &pcp_srv, pcp_msg_handler, 0);
 	if (err) {
 		info("pcp: could not enable listener: %m\n", err);
 		err = 0;
 	}
-#endif
 
 	return mnat_register(&mnat, baresip_mnatl(), "pcp", NULL,
 			     session_alloc, media_alloc, NULL);

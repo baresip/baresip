@@ -139,9 +139,6 @@ int decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 }
 
 
-/*
- * TODO: check input/output size
- */
 static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		    bool eof, struct mbuf *src)
 {

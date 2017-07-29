@@ -29,9 +29,6 @@ static void stream_close(struct stream *strm, int err)
 }
 
 
-/* TODO: should we check RTP per stream, or should we have the
- *       check in struct call instead?
- */
 static void check_rtp_handler(void *arg)
 {
 	struct stream *strm = arg;

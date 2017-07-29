@@ -130,7 +130,7 @@ static int output_handler(const char *str)
 {
 	(void)str;
 
-	/* TODO: print 'str' to all active HTTP connections */
+	/* XXX: print 'str' to all active HTTP connections */
 
 	return 0;
 }
