@@ -62,14 +62,9 @@ struct video_loop {
 	struct list filtdecl;
 	struct vstat stat;
 	struct tmr tmr_bw;
-	struct tmr tmr_stat;
 	uint16_t seq;
 	bool need_conv;
 	int err;
-
-	bool first_set;
-	uint32_t ts_first;
-	uint32_t ts_max;
 };
 
 
@@ -150,13 +145,6 @@ static int packet_handler(bool marker, uint32_t rtp_ts,
 
 	vl->stat.bytes += mbuf_get_left(mb);
 
-	if (!vl->first_set) {
-		vl->ts_first = rtp_ts;
-		vl->first_set = true;
-	}
-	if (rtp_ts > vl->ts_max)
-		vl->ts_max = rtp_ts;
-
 	/* decode */
 	frame.data[0] = NULL;
 	if (vl->vc_dec && vl->dec) {
@@ -235,15 +223,7 @@ static void vidloop_destructor(void *arg)
 {
 	struct video_loop *vl = arg;
 
-	re_printf("** videoloop summary: \n");
-	re_printf("first timestamp:    %u\n", vl->ts_first);
-	re_printf("max timestamp:      %u\n", vl->ts_max);
-	re_printf("duration:           %f sec\n",
-		  video_calc_seconds(vl->ts_max - vl->ts_first));
-	re_printf("\n");
-
 	tmr_cancel(&vl->tmr_bw);
-	tmr_cancel(&vl->tmr_stat);
 	mem_deref(vl->vsrc);
 	mem_deref(vl->enc);
 	mem_deref(vl->dec);
@@ -306,10 +286,8 @@ static void print_status(struct video_loop *vl)
 {
 	(void)re_fprintf(stderr,
 			 "\rstatus:"
-			 " ts=%.3fsec"
 			 " [%s] [%s]  intra=%zu "
 			 " EFPS=%.1f      %u kbit/s       \r",
-			 video_calc_seconds(vl->ts_max - vl->ts_first),
 			 vl->vc_enc ? vl->vc_enc->name : "",
 			 vl->vc_dec ? vl->vc_dec->name : "",
 			 vl->stat.n_intra,
@@ -349,15 +327,6 @@ static void timeout_bw(void *arg)
 	tmr_start(&vl->tmr_bw, 2000, timeout_bw, vl);
 
 	calc_bitrate(vl);
-}
-
-
-static void timeout_stat(void *arg)
-{
-	struct video_loop *vl = arg;
-
-	tmr_start(&vl->tmr_stat, 100, timeout_stat, vl);
-
 	print_status(vl);
 }
 
@@ -405,7 +374,6 @@ static int video_loop_alloc(struct video_loop **vlp)
 
 	vl->cfg = cfg->video;
 	tmr_init(&vl->tmr_bw);
-	tmr_init(&vl->tmr_stat);
 
 	/* Video filters */
 	for (le = list_head(baresip_vidfiltl()); le; le = le->next) {
@@ -433,7 +401,6 @@ static int video_loop_alloc(struct video_loop **vlp)
 	}
 
 	tmr_start(&vl->tmr_bw, 1000, timeout_bw, vl);
-	tmr_start(&vl->tmr_stat, 1000, timeout_stat, vl);
 
  out:
 	if (err)

@@ -237,7 +237,7 @@ static int pipeline_init(struct videnc_state *st, const struct vidsz *size)
 	snprintf(pipeline, sizeof(pipeline),
 	 "appsrc name=source is-live=TRUE block=TRUE "
 	 "do-timestamp=TRUE max-bytes=1000000 ! "
-	 "rawvideoparse width=%d height=%d format=i420 framerate=%d/1 ! "
+	 "videoparse width=%d height=%d format=i420 framerate=%d/1 ! "
 	 "x264enc byte-stream=TRUE rc-lookahead=0 "
 	 "tune=zerolatency speed-preset=ultrafast "
 	 "sync-lookahead=0 bitrate=%d ! "

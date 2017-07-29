@@ -782,8 +782,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 	switch (st->codec_id) {
 
 	case AV_CODEC_ID_H263:
-		err = h263_packetize(st, ts, st->mb,
-				     st->pkth, st->arg);
+		err = h263_packetize(st, ts, st->mb, st->pkth, st->arg);
 		break;
 
 	case AV_CODEC_ID_H264:
