@@ -122,13 +122,27 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 	sample = gst_app_sink_pull_sample(sink);
 
 	if (sample) {
+		GstClockTime ts;
+		uint32_t rtp_ts;
+
 		buffer = gst_sample_get_buffer(sample);
 		gst_buffer_map( buffer, &info, (GstMapFlags)(GST_MAP_READ) );
 
 		data = info.data;
 		size = info.size;
 
-		h264_packetize(data, size, st->encoder.pktsize,
+		ts = GST_BUFFER_DTS_OR_PTS(buffer);
+
+		if (ts == GST_CLOCK_TIME_NONE) {
+			warning("gst_video: timestamp is unknown\n");
+			rtp_ts = 0;
+		}
+		else {
+			/* convert from nanoseconds to RTP clock */
+			rtp_ts = (uint32_t)((90000ULL * ts) / 1000000000UL);
+		}
+
+		h264_packetize(rtp_ts, data, size, st->encoder.pktsize,
 			       st->pkth, st->arg);
 
 		gst_buffer_unmap(buffer, &info);

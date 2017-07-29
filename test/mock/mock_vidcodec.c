@@ -21,6 +21,8 @@ struct hdr {
 };
 
 struct videnc_state {
+	int64_t pts;
+	unsigned fps;
 	videnc_packet_h *pkth;
 	void *arg;
 };
@@ -73,6 +75,7 @@ static int mock_encode_update(struct videnc_state **vesp,
 		*vesp = ves;
 	}
 
+	ves->fps     = prm->fps;
 	ves->pkth    = pkth;
 	ves->arg     = arg;
 
@@ -85,6 +88,7 @@ static int mock_encode(struct videnc_state *ves, bool update,
 {
 	struct mbuf *hdr;
 	uint8_t payload[2] = {0,0};
+	uint32_t rtp_ts;
 	int err;
 	(void)update;
 
@@ -99,7 +103,9 @@ static int mock_encode(struct videnc_state *ves, bool update,
 	if (err)
 		goto out;
 
-	err = ves->pkth(true, hdr->buf, hdr->end,
+	rtp_ts = video_calc_rtp_timestamp(++ves->pts, ves->fps);
+
+	err = ves->pkth(true, rtp_ts, hdr->buf, hdr->end,
 			payload, sizeof(payload), ves->arg);
 	if (err)
 		goto out;

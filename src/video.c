@@ -99,11 +99,13 @@ struct vtx {
 	struct list filtl;                 /**< Filters in encoding order */
 	char device[64];                   /**< Source device name        */
 	int muted_frames;                  /**< # of muted frames sent    */
-	uint32_t ts_tx;                    /**< Outgoing RTP timestamp    */
+	uint32_t ts_offset;                /**< Random timestamp offset   */
 	bool picup;                        /**< Send picture update       */
 	bool muted;                        /**< Muted flag                */
 	int frames;                        /**< Number of frames sent     */
 	int efps;                          /**< Estimated frame-rate      */
+	uint32_t ts_min;
+	uint32_t ts_max;
 };
 
 
@@ -140,6 +142,8 @@ struct vrx {
 	int efps;                          /**< Estimated frame-rate      */
 	unsigned n_intra;                  /**< Intra-frames decoded      */
 	unsigned n_picup;                  /**< Picture updates sent      */
+	uint32_t ts_min;
+	uint32_t ts_max;
 };
 
 
@@ -337,15 +341,27 @@ static int get_fps(const struct video *v)
 }
 
 
-static int packet_handler(bool marker, const uint8_t *hdr, size_t hdr_len,
-			  const uint8_t *pld, size_t pld_len, void *arg)
+static int packet_handler(bool marker, uint32_t ts,
+			  const uint8_t *hdr, size_t hdr_len,
+			  const uint8_t *pld, size_t pld_len,
+			  void *arg)
 {
 	struct vtx *vtx = arg;
 	struct stream *strm = vtx->video->strm;
 	struct vidqent *qent;
+	uint32_t rtp_ts;
 	int err;
 
-	err = vidqent_alloc(&qent, marker, strm->pt_enc, vtx->ts_tx,
+	/* NOTE: does not handle timestamp wrap around */
+	if (ts < vtx->ts_min)
+		vtx->ts_min = ts;
+	if (ts > vtx->ts_max)
+		vtx->ts_max = ts;
+
+	/* add random timestamp offset */
+	rtp_ts = vtx->ts_offset + ts;
+
+	err = vidqent_alloc(&qent, marker, strm->pt_enc, rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
 	if (err)
 		return err;
@@ -424,7 +440,6 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 	if (err)
 		return;
 
-	vtx->ts_tx += (SRATE/vtx->vsrc_prm.fps);
 	vtx->picup = false;
 }
 
@@ -478,11 +493,15 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 	tmr_init(&vtx->tmr_rtp);
 
 	vtx->video = video;
-	vtx->ts_tx = 160;
+
+	/* The initial value of the timestamp SHOULD be random */
+	vtx->ts_offset = rand_u16();
 
 	str_ncpy(vtx->device, video->cfg.src_dev, sizeof(vtx->device));
 
 	tmr_start(&vtx->tmr_rtp, 1, rtp_tmr_handler, vtx);
+
+	vtx->ts_min = ~0;
 
 	return err;
 }
@@ -501,6 +520,8 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 	vrx->orient = VIDORIENT_PORTRAIT;
 
 	str_ncpy(vrx->device, video->cfg.disp_dev, sizeof(vrx->device));
+
+	vrx->ts_min = ~0;
 
 	return err;
 }
@@ -563,6 +584,13 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		warning("video: No video decoder!\n");
 		goto out;
 	}
+
+	/* todo: check if RTP timestamp wraps */
+
+	if (hdr->ts < vrx->ts_min)
+		vrx->ts_min = hdr->ts;
+	if (hdr->ts > vrx->ts_max)
+		vrx->ts_max = hdr->ts;
 
 	frame->data[0] = NULL;
 	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb);
@@ -1295,11 +1323,16 @@ int video_debug(struct re_printf *pf, const struct video *v)
 			  vtx->vsrc_size.w,
 			  vtx->vsrc_size.h, vtx->vsrc_prm.fps);
 	err |= re_hprintf(pf, "     skipc=%u\n", vtx->skipc);
+	err |= re_hprintf(pf, "     time = %.3f sec\n",
+			  video_calc_seconds(vtx->ts_max - vtx->ts_min));
 
 	err |= re_hprintf(pf, " rx: %u x %u\n", vrx->size.w, vrx->size.h);
 	err |= re_hprintf(pf, "     pt=%d\n", vrx->pt_rx);
+
 	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
 			  vrx->n_intra, vrx->n_picup);
+	err |= re_hprintf(pf, "     time = %.3f sec\n",
+			  video_calc_seconds(vrx->ts_max - vrx->ts_min));
 
 	if (!list_isempty(baresip_vidfiltl())) {
 		err |= vtx_print_pipeline(pf, vtx);
@@ -1374,4 +1407,15 @@ uint32_t video_calc_rtp_timestamp(int64_t pts, unsigned fps)
        rtp_ts = ((uint64_t)SRATE * pts) / fps;
 
        return (uint32_t)rtp_ts;
+}
+
+
+double video_calc_seconds(uint32_t rtp_ts)
+{
+	double timestamp;
+
+	/* convert from RTP clockrate to seconds */
+	timestamp = (double)rtp_ts / (double)SRATE;
+
+	return timestamp;
 }

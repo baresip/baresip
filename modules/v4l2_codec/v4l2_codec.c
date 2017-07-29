@@ -277,7 +277,7 @@ static void enc_destructor(void *arg)
 }
 
 
-static void encoders_read(const uint8_t *buf, size_t sz)
+static void encoders_read(uint32_t rtp_ts, const uint8_t *buf, size_t sz)
 {
 	struct le *le;
 	int err;
@@ -285,8 +285,9 @@ static void encoders_read(const uint8_t *buf, size_t sz)
 	for (le = v4l2.encoderl.head; le; le = le->next) {
 		struct videnc_state *st = le->data;
 
-		err = h264_packetize(buf, sz,
-				     st->encprm.pktsize, st->pkth, st->arg);
+		err = h264_packetize(rtp_ts, buf, sz,
+				     st->encprm.pktsize,
+				     st->pkth, st->arg);
 		if (err) {
 			warning("h264_packetize error (%m)\n", err);
 		}
@@ -299,6 +300,8 @@ static void read_handler(int flags, void *arg)
 	struct vidsrc_st *st = arg;
 	struct v4l2_buffer buf;
 	bool keyframe = false;
+	struct timeval ts;
+	uint32_t rtp_ts;
 	int err;
 
 	if (flags & FD_EXCEPT) {
@@ -342,6 +345,9 @@ static void read_handler(int flags, void *arg)
 		}
 	}
 
+	ts = buf.timestamp;
+	rtp_ts = (90000ULL * (1000000*ts.tv_sec + ts.tv_usec)) / 1000000;
+
 #if 0
 	debug("v4l2_codec: %s frame captured at %ldsec, %ldusec (%zu bytes)\n",
 	      keyframe ? "KEY" : "   ",
@@ -350,7 +356,7 @@ static void read_handler(int flags, void *arg)
 #endif
 
 	/* pass the frame to the encoders */
-	encoders_read(st->buffer, buf.bytesused);
+	encoders_read(rtp_ts, st->buffer, buf.bytesused);
 
 	err = query_buffer(st->fd);
 	if (err) {
