@@ -132,6 +132,7 @@ static int packet_handler(bool marker, uint32_t rtp_ts,
 	struct mbuf *mb;
 	bool intra;
 	int err = 0;
+	(void)rtp_ts;
 
 	mb = mbuf_alloc(hdr_len + pld_len);
 	if (!mb)
