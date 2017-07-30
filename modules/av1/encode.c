@@ -137,7 +137,8 @@ static inline void hdr_encode(uint8_t hdr[HDR_SIZE], bool noref, bool start,
 }
 
 
-static inline int packetize(bool marker, const uint8_t *buf, size_t len,
+static inline int packetize(bool marker, uint32_t rtp_ts,
+			    const uint8_t *buf, size_t len,
 			    size_t maxlen, bool noref, uint8_t partid,
 			    uint16_t picid, videnc_packet_h *pkth, void *arg)
 {
@@ -151,7 +152,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 		hdr_encode(hdr, noref, start, partid, picid);
 
-		err |= pkth(false, hdr, sizeof(hdr), buf, maxlen, arg);
+		err |= pkth(false, rtp_ts, hdr, sizeof(hdr), buf, maxlen, arg);
 
 		buf  += maxlen;
 		len  -= maxlen;
@@ -160,7 +161,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 	hdr_encode(hdr, noref, start, partid, picid);
 
-	err |= pkth(marker, hdr, sizeof(hdr), buf, len, arg);
+	err |= pkth(marker, rtp_ts, hdr, sizeof(hdr), buf, len, arg);
 
 	return err;
 }
@@ -221,6 +222,7 @@ int av1_encode(struct videnc_state *ves, bool update,
 		bool keyframe = false, marker = true;
 		const aom_codec_cx_pkt_t *pkt;
 		uint8_t partid = 0;
+		uint32_t ts;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)
@@ -238,7 +240,9 @@ int av1_encode(struct videnc_state *ves, bool update,
 		if (pkt->data.frame.partition_id >= 0)
 			partid = pkt->data.frame.partition_id;
 
-		err = packetize(marker,
+		ts = video_calc_rtp_timestamp(pkt->data.frame.pts, ves->fps);
+
+		err = packetize(marker, ts,
 				pkt->data.frame.buf,
 				pkt->data.frame.sz,
 				ves->pktsize, !keyframe, partid, ves->picid,
