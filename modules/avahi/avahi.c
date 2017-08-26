@@ -58,7 +58,7 @@ static void group_callback(AvahiEntryGroup* group,
 			break;
 		case AVAHI_ENTRY_GROUP_FAILURE:
 		case AVAHI_ENTRY_GROUP_COLLISION:
-			error("avahi: Service Registration failed\n");
+			warning("avahi: Service Registration failed\n");
 			/* TODO: Think of smart way to handle collision? */
 		case AVAHI_ENTRY_GROUP_UNCOMMITED:
 		case AVAHI_ENTRY_GROUP_REGISTERING:
@@ -122,7 +122,7 @@ static void create_services(AvahiClient* client) {
 	err |= avahi_entry_group_commit(avahi->group);
 
 	if (err) {
-		error("avahi: Error in registering service");
+		warning("avahi: Error in registering service");
 	}
 }
 
@@ -136,7 +136,7 @@ static void client_callback(AvahiClient *c, AvahiClientState state,
 			info("avahi: Avahi Daemon running\n", state);
 			break;
 		default:
-			error("avahi: unknown client_callback: %d\n", state);
+			warning("avahi: unknown client_callback: %d\n", state);
 	}
 }
 
@@ -155,7 +155,7 @@ static void add_contact(const char* uri,
 	/* Parse SIPURI to get username and stuff... */
 	pl_set_str(&addr, uri);
 	if (sip_addr_decode(&sipaddr, &addr)) {
-		error("avahi: could not decode sipuri %s\n", uri);
+		warning("avahi: could not decode sipuri %s\n", uri);
 		return;
 	}
 
@@ -190,7 +190,7 @@ static void remove_contact_by_dname(const char* dname)
 		}
 	}
 
-	error("avahi: Could not remove contact %s\n", dname);
+	warning("avahi: Could not remove contact %s\n", dname);
 }
 
 static void resolve_callback(
@@ -217,8 +217,8 @@ static void resolve_callback(
 		}
 	}
 	else {
-		error("avahi: Resolver Error %d with %s\n",
-			avahi_client_errno(avahi->client), name);
+		warning("avahi: Resolver Error on %s: %s\n", name,
+			avahi_strerror(avahi_client_errno(avahi->client)));
 	}
 }
 
@@ -247,7 +247,7 @@ static void browse_callback(
 					name, type, domain,
 					proto, 0, resolve_callback,
 					avahi->client))) {
-				error("avahi: Error resolving %s\n", name);
+				warning("avahi: Error resolving %s\n", name);
 			}
 		break;
 
@@ -261,7 +261,7 @@ static void browse_callback(
 				"CACHE_EXHAUSTED" : "ALL_FOR_NOW");
 			break;
 		default:
-			error("avahi: browse_callback %d %s\n", event, name);
+			warning("avahi: browse_callback %d %s\n", event, name);
 	}
 }
 
@@ -290,7 +290,6 @@ static void destructor(void* arg)
 	if (a->client) {
 		avahi_client_free(avahi->client);
 	}
-	/**/
 }
 
 static int module_init(void)
@@ -305,7 +304,7 @@ static int module_init(void)
 
 	/* Check wether creating the client object succeeded */
 	if (!avahi->client) {
-		error("Failed to create client: %s\n", avahi_strerror(err));
+		warning("Failed to create client: %s\n", avahi_strerror(err));
 		return err;
 	}
 
