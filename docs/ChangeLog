@@ -1,3 +1,87 @@
+2017-09-07 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.5
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.5
+	* NOTE: Requires libre v0.5.5 or later
+	        Requires librem v0.5.0 or later
+
+	* new commands:
+	  - insmod module.so -- Load a module
+	  - rmmod  module.so -- Unload a module
+
+	* config:
+	  - fullscreen  yes|no    Enable fullscreen display
+
+	* baresip-core:
+	  - account: optional param 'auth_pass' for password
+		     add account_set_auth_pass()
+		     add account_aor()
+		     add account_auth_pass()
+	  - contact: add update handler (thanks Jonathan Sieber)
+	  - h264: add rtp_ts RTP Timestamp
+	  - module: add module_load/unload
+		    remove list of application modules
+	  - stream: reset timer on incoming RTCP packets (fixes #271)
+	  - ui: make the API re-entrant
+	  - video: add RTP timestamp to videnc packet handler
+		   add video_calc_rtp_timestamp()
+		   add video_calc_seconds()
+	  - video: use RTP timestamp from video encoder
+
+	* selftest:
+	  - add test for video timestamps
+
+	* Modules:
+
+	* account: move password prompt here
+
+	* av1: use encoder PTS to calculate RTP timestamp
+
+	* avcodec: use encoder PTS to calculate RTP timestamp
+		   use level_idc=0x1f for x264
+
+	* cons: updated UI api
+
+	* evdev: updated UI api
+
+	* gst_video: use encoder PTS to calculate RTP timestamp
+
+	* gst_video1: use encoder PTS to calculate RTP timestamp
+
+	* h265: use encoder PTS to calculate RTP timestamp
+		fix FU decoder bug
+
+	* httpd: updated UI api
+
+	* ice: move gathering from lib to app
+	       (requires libre v0.5.5 or later)
+
+	* menu: updated UI api
+
+	* mwi: updated UI api
+
+	* presence: Handle contacts added at run-time
+		    (thanks Jonathan Sieber)
+
+	* sdl: updated UI api
+
+	* sdl2: add support for fullscreen video
+
+	* stdio: updated UI api
+
+	* v4l: add support for more pixel-formats
+
+	* v4l2_codec: use encoder PTS to calculate RTP timestamp
+
+	* vp8: use encoder PTS to calculate RTP timestamp
+
+	* vp9: use encoder PTS to calculate RTP timestamp
+
+	* wincons: updated UI api
+
+
 2017-06-24 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.4
