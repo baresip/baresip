@@ -16,6 +16,8 @@
  * the main SIP client. It uses the NATBD api in libre to detect the
  * NAT Behaviour, by sending STUN packets to a STUN server. Both
  * protocols UDP and TCP are supported.
+ *
+ * The STUN server used must be compliant with RFC 5780
  */
 
 
