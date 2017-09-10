@@ -61,7 +61,7 @@ static bool handle_register(struct sip_server *srv, const struct sip_msg *msg)
 		}
 
 		sip_reply(sip, msg, 500, strerror(err));
-		error("domain find error: %s\n", strerror(err));
+		warning("domain find error: %s\n", strerror(err));
 		return true;
 	}
 
@@ -98,7 +98,7 @@ static bool handle_register(struct sip_server *srv, const struct sip_msg *msg)
 
 	default:
 		sip_reply(sip, msg, 500, strerror(err));
-		error("domain error: %s\n", strerror(err));
+		warning("domain error: %s\n", strerror(err));
 		return true;
 	}
 
@@ -107,14 +107,14 @@ static bool handle_register(struct sip_server *srv, const struct sip_msg *msg)
 	if (err) {
 		if (err != ENOENT) {
 			sip_reply(sip, msg, 500, strerror(err));
-			error("aor find error: %s\n", strerror(err));
+			warning("aor find error: %s\n", strerror(err));
 			return true;
 		}
 
 		err = aor_create(srv, &aor, &msg->to.uri);
 		if (err) {
 			sip_reply(sip, msg, 500, strerror(err));
-			error("aor create error: %s\n", strerror(err));
+			warning("aor create error: %s\n", strerror(err));
 			return true;
 		}
 	}
@@ -159,7 +159,7 @@ static bool handle_register(struct sip_server *srv, const struct sip_msg *msg)
 		if (err) {
 			sip_reply(sip, msg, 500, strerror(err));
 			if (err != EPROTO)
-				error("location update error: %s\n",
+				warning("location update error: %s\n",
 				      strerror(err));
 			goto fail;
 		}

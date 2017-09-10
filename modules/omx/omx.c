@@ -128,7 +128,7 @@ int omx_init(struct omx_state* st)
 #endif
 
 	if (!st->video_render || err != 0) {
-		error("Failed to create OMX video_render component\n");
+		warning("Failed to create OMX video_render component\n");
 		return ENOENT;
 	}
 	else {
@@ -208,7 +208,7 @@ static void block_until_port_changed(OMX_HANDLETYPE hComponent,
 		r = OMX_GetParameter(hComponent,
 			OMX_IndexParamPortDefinition, &portdef);
 		if (r != OMX_ErrorNone) {
-			error("block_until_port_changed: OMX_GetParameter "
+			warning("block_until_port_changed: OMX_GetParameter "
 				" failed with Result=%d\n", r);
 		}
 		if (portdef.bEnabled != bEnabled) {
@@ -252,7 +252,7 @@ int omx_display_enable(struct omx_state* st,
 	err |= OMX_GetParameter(st->video_render,
 		OMX_IndexParamPortDefinition, &portdef);
 	if (err != 0) {
-		error("omx_display_enable: couldn't retrieve port def\n");
+		warning("omx_display_enable: couldn't retrieve port def\n");
 		err = ENOMEM;
 		goto exit;
 	}
@@ -273,7 +273,7 @@ int omx_display_enable(struct omx_state* st,
 		OMX_IndexParamPortDefinition, &portdef);
 
 	if (err) {
-		error("omx_display_enable: could not set port definition\n");
+		warning("omx_display_enable: could not set port definition\n");
 	}
 	block_until_port_changed(st->video_render, VIDEO_RENDER_PORT, true);
 
@@ -281,7 +281,7 @@ int omx_display_enable(struct omx_state* st,
 		OMX_IndexParamPortDefinition, &portdef);
 
 	if (err != 0 || !portdef.bEnabled) {
-		error("omx_display_enable: failed to set up video port\n");
+		warning("omx_display_enable: failed to set up video port\n");
 		err = ENOMEM;
 		goto exit;
 	}
@@ -305,7 +305,8 @@ int omx_display_enable(struct omx_state* st,
 				&st->buffers[i], VIDEO_RENDER_PORT,
 				st, portdef.nBufferSize);
 			if (err) {
-				error("OMX_AllocateBuffer failed: %d\n", err);
+				warning("OMX_AllocateBuffer failed: %d\n",
+					err);
 				err = ENOMEM;
 				goto exit;
 			}
@@ -341,7 +342,7 @@ int omx_display_flush_buffer(struct omx_state* st)
 {
 	if (OMX_EmptyThisBuffer(st->video_render, st->buffers[0])
 		!= OMX_ErrorNone) {
-		error("OMX_EmptyThisBuffer error");
+		warning("OMX_EmptyThisBuffer error");
 	}
 
 	return 0;

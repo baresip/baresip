@@ -89,7 +89,7 @@ int omx_vidisp_display(struct vidisp_st *st, const char *title,
 		err = omx_display_enable(st->omx,
 			frame->size.w, frame->size.h, frame->size.w);
 		if (err) {
-			error("omx_display_enable failed");
+			warning("omx_display_enable failed");
 			return err;
 		}
 		st->size = frame->size;
@@ -111,7 +111,7 @@ int omx_vidisp_display(struct vidisp_st *st, const char *title,
 static int module_init(void)
 {
 	if (omx_init(&omx) != 0) {
-		error("Could not initialize OpenMAX");
+		warning("Could not initialize OpenMAX");
 		return ENODEV;
 	}
 
