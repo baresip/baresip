@@ -5,7 +5,6 @@
  */
 
 #include <re.h>
-#include <rem.h>
 #include <baresip.h>
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES 1
 #include <spandsp.h>
