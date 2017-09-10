@@ -280,6 +280,7 @@ static int presence_alloc(struct contact *contact)
 	return 0;
 }
 
+
 static void contact_handler(struct contact *contact,
 				bool removed, void *arg)
 {
@@ -293,7 +294,7 @@ static void contact_handler(struct contact *contact,
 				0 == pl_strcasecmp(&val, "p2p")) {
 		if (!removed) {
 			if (presence_alloc(contact) != 0) {
-				error("presence: presence_alloc failed\n");
+				warning("presence: presence_alloc failed\n");
 				return;
 			}
 		}
@@ -311,7 +312,7 @@ static void contact_handler(struct contact *contact,
 				mem_deref(pres);
 			}
 			else {
-				error("presence: No contact to remove\n");
+				warning("presence: No contact to remove\n");
 			}
 		}
 	}

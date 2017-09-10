@@ -107,7 +107,7 @@ static int module_init(void)
 
 	if (0 == conf_get_u32(conf, "mpa_bitrate", &value)) {
 		if (value<8000 || value>384000) {
-			error("MPA bitrate between 8000 and "
+			warning("MPA bitrate between 8000 and "
 				"384000 are allowed.\n");
 			return -1;
 		}
@@ -118,7 +118,7 @@ static int module_init(void)
 	}
 	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
 		if (value<1 || value>4) {
-			error("MPA layer 1, 2 or 3 are allowed.");
+			warning("MPA layer 1, 2 or 3 are allowed.");
 			return -1;
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp),
@@ -135,7 +135,7 @@ static int module_init(void)
 		case 24000:
 			break;
 		default:
-			error("MPA samplerates of 16, 22.05, 24, 32, "
+			warning("MPA samplerates of 16, 22.05, 24, 32, "
 				"44.1, and 48 kHz are allowed.\n");
 			return -1;
 		}
@@ -154,7 +154,7 @@ static int module_init(void)
 			&& strcmp(mode,"joint_stereo")
 			&& strcmp(mode,"single_channel")
 			&& strcmp(mode,"dual_channel")) {
-			error("MPA mode: Permissible values are stereo, "
+			warning("MPA mode: Permissible values are stereo, "
 			    "joint_stereo, single_channel, dual_channel.\n");
 			return -1;
 		}
@@ -172,7 +172,7 @@ static int module_init(void)
 	/* init decoder library */
 	res = mpg123_init();
 	if (res != MPG123_OK) {
-		error("MPA libmpg123 init error %s\n",
+		warning("MPA libmpg123 init error %s\n",
 			mpg123_plain_strerror(res));
 		return -1;
 	}

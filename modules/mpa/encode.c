@@ -11,6 +11,7 @@
 #include <speex/speex_resampler.h>
 #include "mpa.h"
 
+
 struct auenc_state {
 	twolame_options *enc;
 	int channels, samplerate;
@@ -36,6 +37,7 @@ static void destructor(void *arg)
 #endif
 }
 
+
 int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		       struct auenc_param *param, const char *fmtp)
 {
@@ -60,7 +62,7 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 
 	aes->enc = twolame_init();
 	if (!aes->enc) {
-		error("MPA enc create failed\n");
+		warning("MPA enc create failed\n");
 		mem_deref(aes);
 		return ENOMEM;
 	}
@@ -96,14 +98,14 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	result |= twolame_set_out_samplerate(aes->enc, prm.samplerate);
 	result |= twolame_set_num_channels(aes->enc, 2);
 	if (result!=0) {
-		error("MPA enc set failed\n");
+		warning("MPA enc set failed\n");
 		err=EINVAL;
 		goto out;
 	}
 
 	result = twolame_init_params(aes->enc);
 	if (result!=0) {
-		error("MPA enc init params failed\n");
+		warning("MPA enc init params failed\n");
 		err=EINVAL;
 		goto out;
 	}
@@ -114,7 +116,7 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		aes->resampler = speex_resampler_init(2, MPA_IORATE,
 			prm.samplerate, 3, &result);
 		if (result!=RESAMPLER_ERR_SUCCESS) {
-			error("MPA enc resampler init failed %d\n",result);
+			warning("MPA enc resampler init failed %d\n",result);
 			err=EINVAL;
 			goto out;
 		}
@@ -150,7 +152,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 			sampv, &in_len, aes->intermediate_buffer,
 			&intermediate_len);
 		if (n!=RESAMPLER_ERR_SUCCESS || in_len != sampc/2) {
-			error("MPA enc downsample error: %s %d %d\n",
+			warning("MPA enc downsample error: %s %d %d\n",
 				strerror(n), in_len, sampc/2);
 			return EPROTO;
 		}
@@ -172,7 +174,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 #endif
 	}
 	if (n < 0) {
-		error("MPA enc error %s\n", strerror((int)n));
+		warning("MPA enc error %s\n", strerror((int)n));
 		return EPROTO;
 	}
 

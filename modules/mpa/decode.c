@@ -65,7 +65,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 	ads->dec = mpg123_new(NULL,&result);
 	if (!ads->dec) {
-		error("MPA dec create: %s\n",
+		warning("MPA dec create: %s\n",
 			mpg123_plain_strerror(result));
 		err = ENOMEM;
 		goto out;
@@ -77,7 +77,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 	result = mpg123_param(ads->dec, MPG123_VERBOSE, 0, 0.);
 #endif
 	if (result != MPG123_OK) {
-		error("MPA dec param error %s\n",
+		warning("MPA dec param error %s\n",
 			mpg123_plain_strerror(result));
 		err = EINVAL;
 		goto out;
@@ -86,7 +86,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 	result = mpg123_format_all(ads->dec);
 	if (result != MPG123_OK) {
-		error("MPA dec format error %s\n",
+		warning("MPA dec format error %s\n",
 			mpg123_plain_strerror(result));
 		err = EINVAL;
 		goto out;
@@ -94,12 +94,11 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 	result = mpg123_open_feed(ads->dec);
 	if (result != MPG123_OK) {
-		error("MPA dec open feed error %s\n",
+		warning("MPA dec open feed error %s\n",
 			mpg123_plain_strerror(result));
 		err = EINVAL;
 		goto out;
 	}
-
 
  out:
 	if (err)
@@ -128,7 +127,7 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		return EINVAL;
 
 	if (*(uint32_t*)(void *)buf != 0) {
-		error("MPA dec header is not zero %08X, not supported yet\n",
+		warning("MPA dec header is not zero %08X, not supported yet\n",
 			*(uint32_t*)(void *)buf);
 		return EPROTO;
 	}
@@ -157,7 +156,8 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 				      3, &result);
 			if (result!=RESAMPLER_ERR_SUCCESS
 				|| ads->resampler==NULL) {
-				error("MPA dec upsampler failed %d\n",result);
+				warning("MPA dec upsampler failed %d\n",
+					result);
 				return EINVAL;
 			}
 		}
@@ -167,7 +167,7 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 	else if (result == MPG123_NEED_MORE)
 		;			/* workaround: do nothing */
 	else if (result != MPG123_OK) {
-		error("MPA dec feed error %d %s\n", result,
+		warning("MPA dec feed error %d %s\n", result,
 			mpg123_plain_strerror(result));
 		return EPROTO;
 	}
@@ -181,7 +181,7 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 			ads->resampler, ads->intermediate_buffer,
 			&intermediate_len, sampv, &out_len);
 		if (result!=RESAMPLER_ERR_SUCCESS) {
-			error("MPA dec upsample error: %s %d %d\n",
+			warning("MPA dec upsample error: %s %d %d\n",
 				strerror(result), out_len, *sampc/2);
 			return EPROTO;
 		}

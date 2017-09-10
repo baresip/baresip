@@ -108,7 +108,7 @@ static int module_init(void)
 {
 	if ( mkfifo( DTMF_OUT, S_IWUSR | S_IRUSR ) ) {
 		int err = errno;
-		error("Creation of the FIFO errored."
+		warning("Creation of the FIFO errored."
 		      " This might cause issues. (%m)\n", err);
 		return err;
 	}
@@ -116,7 +116,7 @@ static int module_init(void)
 	fd = fopen( DTMF_OUT , "w+" );
 
 	if ( fd == 0 ){
-		error("Opening of the FIFO errored."
+		warning("Opening of the FIFO errored."
 		      " This might cause issues.\n");
 	}
 
