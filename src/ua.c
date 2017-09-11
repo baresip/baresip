@@ -1663,34 +1663,6 @@ const char *uag_event_str(enum ua_event ev)
 
 
 /**
- * Get the current SIP socket file descriptor for a User-Agent
- *
- * @param ua User-Agent
- *
- * @return File descriptor, or -1 if not available
- */
-int ua_sipfd(const struct ua *ua)
-{
-	struct le *le;
-
-	if (!ua)
-		return -1;
-
-	for (le = ua->regl.head; le; le = le->next) {
-
-		struct reg *reg = le->data;
-		int fd;
-
-		fd = reg_sipfd(reg);
-		if (fd != -1)
-			return fd;
-	}
-
-	return -1;
-}
-
-
-/**
  * Find the correct UA from the contact user
  *
  * @param cuser Contact username

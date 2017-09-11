@@ -174,7 +174,6 @@ int test_ua_alloc(void)
 		return err;
 
 	/* verify this UA-instance */
-	ASSERT_EQ(-1, ua_sipfd(ua));
 	ASSERT_TRUE(!ua_isregistered(ua));
 	ASSERT_STREQ("sip:user@127.0.0.1", ua_aor(ua));
 	ASSERT_TRUE(NULL == ua_call(ua));

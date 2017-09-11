@@ -18,7 +18,6 @@ struct reg {
 	/* status: */
 	uint16_t scode;              /**< Registration status code           */
 	char *srv;                   /**< SIP Server id                      */
-	int sipfd;                   /**< Cached file-descr. for SIP conn    */
 	int af;                      /**< Cached address family for SIP conn */
 };
 
@@ -30,26 +29,6 @@ static void destructor(void *arg)
 	list_unlink(&reg->le);
 	mem_deref(reg->sipreg);
 	mem_deref(reg->srv);
-}
-
-
-static int sipmsg_fd(const struct sip_msg *msg)
-{
-	if (!msg)
-		return -1;
-
-	switch (msg->tp) {
-
-	case SIP_TRANSP_UDP:
-		return udp_sock_fd(msg->sock, AF_UNSPEC);
-
-	case SIP_TRANSP_TCP:
-	case SIP_TRANSP_TLS:
-		return tcp_conn_fd(sip_msg_tcpconn(msg));
-
-	default:
-		return -1;
-	}
 }
 
 
@@ -139,7 +118,6 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 		uint32_t n_bindings;
 
 		n_bindings = sip_msg_hdr_count(msg, SIP_HDR_CONTACT);
-		reg->sipfd = sipmsg_fd(msg);
 		reg->af    = sipmsg_af(msg);
 
 		if (msg->scode != reg->scode) {
@@ -175,7 +153,6 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 			msg->scode, &msg->reason, reg->srv);
 
 		reg->scode = msg->scode;
-		reg->sipfd = -1;
 
 		ua_event(reg->ua, UA_EVENT_REGISTER_FAIL, NULL, "%u %r",
 			 msg->scode, &msg->reason);
@@ -196,7 +173,6 @@ int reg_add(struct list *lst, struct ua *ua, int regid)
 
 	reg->ua    = ua;
 	reg->id    = regid;
-	reg->sipfd = -1;
 
 	list_append(lst, &reg->le, reg);
 
@@ -240,7 +216,6 @@ void reg_unregister(struct reg *reg)
 		return;
 
 	reg->scode = 0;
-	reg->sipfd = -1;
 	reg->af    = 0;
 
 	reg->sipreg = mem_deref(reg->sipreg);
@@ -253,12 +228,6 @@ bool reg_isok(const struct reg *reg)
 		return false;
 
 	return 200 <= reg->scode && reg->scode <= 299;
-}
-
-
-int reg_sipfd(const struct reg *reg)
-{
-	return reg ? reg->sipfd : -1;
 }
 
 
@@ -282,7 +251,6 @@ int reg_debug(struct re_printf *pf, const struct reg *reg)
 	err |= re_hprintf(pf, " scode:  %u (%s)\n",
 			  reg->scode, print_scode(reg->scode));
 	err |= re_hprintf(pf, " srv:    %s\n", reg->srv);
-	err |= re_hprintf(pf, " sipfd:  %d\n", reg->sipfd);
 
 	return err;
 }
