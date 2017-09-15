@@ -65,6 +65,7 @@ struct mnat_media {
 	struct sdp_media *sdpm;
 	struct icem *icem;
 	bool complete;
+	bool terminated;
 	int nstun;                   /**< Number of pending STUN candidates  */
 };
 
@@ -122,10 +123,14 @@ static void stun_resp_handler(int err, uint16_t scode, const char *reason,
 	struct stun_attr *attr;
 	struct ice_cand *lcand;
 
+	if (m->terminated)
+		return;
+
 	--m->nstun;
 
 	if (err || scode > 0) {
-		warning("STUN Request failed: %m\n", err);
+		warning("ice: comp %u: STUN Request failed: %m\n",
+			comp->id, err);
 		goto out;
 	}
 
@@ -363,6 +368,8 @@ static void media_destructor(void *arg)
 {
 	struct mnat_media *m = arg;
 	unsigned i;
+
+	m->terminated = true;
 
 	list_unlink(&m->le);
 	mem_deref(m->sdpm);
@@ -647,6 +654,7 @@ static void gather_handler(int err, uint16_t scode, const char *reason,
 			   void *arg)
 {
 	struct mnat_media *m = arg;
+	mnat_estab_h *estabh = m->sess->estabh;
 
 	if (err || scode) {
 		warning("ice: gather error: %m (%u %s)\n",
@@ -667,7 +675,11 @@ static void gather_handler(int err, uint16_t scode, const char *reason,
 			return;
 	}
 
-	m->sess->estabh(err, scode, reason, m->sess->arg);
+	if (err || scode)
+		m->sess->estabh = NULL;
+
+	if (estabh)
+		estabh(err, scode, reason, m->sess->arg);
 }
 
 
