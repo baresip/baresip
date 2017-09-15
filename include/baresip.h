@@ -482,7 +482,7 @@ void loglv(enum log_level level, const char *fmt, ...);
 void debug(const char *fmt, ...);
 void info(const char *fmt, ...);
 void warning(const char *fmt, ...);
-void error(const char *fmt, ...);
+void error_msg(const char *fmt, ...);
 
 
 /*

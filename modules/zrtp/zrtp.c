@@ -345,7 +345,7 @@ static void zrtp_log(int level, char *data, int len, int offset)
 	(void)offset;
 
 	if (level == 1) {
-		error("%b\n", data, len);
+		warning("%b\n", data, len);
 	}
 	else if (level == 2) {
 		info("%b\n", data, len);

@@ -143,7 +143,7 @@ void warning(const char *fmt, ...)
 }
 
 
-void error(const char *fmt, ...)
+void error_msg(const char *fmt, ...)
 {
 	va_list ap;
 
