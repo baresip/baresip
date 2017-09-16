@@ -792,6 +792,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		       struct sdp_media *sdpm)
 {
 	struct mnat_media *m;
+	enum ice_role role;
 	unsigned i;
 	int err = 0;
 
@@ -808,7 +809,12 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->compv[0].sock = mem_ref(sock1);
 	m->compv[1].sock = mem_ref(sock2);
 
-	err = icem_alloc(&m->icem, ice.mode, sess->offerer,
+	if (sess->offerer)
+		role = ICE_ROLE_CONTROLLING;
+	else
+		role = ICE_ROLE_CONTROLLED;
+
+	err = icem_alloc(&m->icem, ice.mode, role,
 			 proto, ICE_LAYER,
 			 sess->tiebrk, sess->lufrag, sess->lpwd,
 			 conncheck_handler, m);
