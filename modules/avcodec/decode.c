@@ -175,7 +175,10 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		}
 
 		ret = avcodec_receive_frame(st->ctx, st->pict);
-		if (ret < 0) {
+		if (ret == AVERROR(EAGAIN)) {
+			goto out;
+		}
+		else if (ret < 0) {
 			err = EBADMSG;
 			goto out;
 		}
