@@ -53,43 +53,29 @@ static void group_callback(AvahiEntryGroup* group,
 	AvahiEntryGroupState state, void* userdata)
 {
 	switch (state) {
-		case AVAHI_ENTRY_GROUP_ESTABLISHED:
-			info ("avahi: Service Registration completed\n");
-			break;
-		case AVAHI_ENTRY_GROUP_FAILURE:
-		case AVAHI_ENTRY_GROUP_COLLISION:
-			warning("avahi: Service Registration failed\n");
-			/* TODO: Think of smart way to handle collision? */
-		case AVAHI_ENTRY_GROUP_UNCOMMITED:
-		case AVAHI_ENTRY_GROUP_REGISTERING:
-			/* Do nothing */
-			break;
+	case AVAHI_ENTRY_GROUP_ESTABLISHED:
+		info ("avahi: Service Registration completed\n");
+		break;
+	case AVAHI_ENTRY_GROUP_FAILURE:
+	case AVAHI_ENTRY_GROUP_COLLISION:
+		warning("avahi: Service Registration failed\n");
+		/* TODO: Think of smart way to handle collision? */
+		break;
+	case AVAHI_ENTRY_GROUP_UNCOMMITED:
+	case AVAHI_ENTRY_GROUP_REGISTERING:
+		/* Do nothing */
+		break;
 	}
 }
 
-/*
-static void get_fqdn(char* hostname, size_t len) {
-	struct addrinfo* addrinfo;
-	struct addrinfo hints;
-
-	memset(&hints, 0, sizeof hints);
-	hints.ai_flags = AI_CANONNAME;
-
-	gethostname(hostname, 128);
-	getaddrinfo(hostname, NULL, &hints, &addrinfo);
-
-	strncpy(hostname, addrinfo->ai_canonname, len);
-	freeaddrinfo(addrinfo);
-}
-*/
-
-
-static void create_services(AvahiClient* client) {
+static void create_services(AvahiClient* client)
+{
 	int err;
 	char buf[128] = "";
 	char hostname[128] = "";
 
 	int if_idx = AVAHI_IF_UNSPEC;
+	int af = AVAHI_PROTO_INET;
 
 	/* Build announced sipuri as username@hostname */
 	strncpy(hostname, avahi_client_get_host_name_fqdn(client),
@@ -99,7 +85,12 @@ static void create_services(AvahiClient* client) {
 				hostname);
 
 	info("avahi: Creating local UA %s\n", buf);
-	ua_alloc(&avahi->local_ua, buf);
+	err = ua_alloc(&avahi->local_ua, buf);
+
+	if (err) {
+		warning("avahi: Could not create UA %s: %m", buf, err);
+		return;
+	}
 
 	re_snprintf(buf, sizeof(buf), "sip:%s@%s",
 				sys_username(),
@@ -108,14 +99,18 @@ static void create_services(AvahiClient* client) {
 	debug("avahi: Announcing URI: %s\n", buf);
 
 	/* Get interface number of baresip interface */
-	if (conf_config()->net.ifname) {
+	if (str_isset(conf_config()->net.ifname)) {
 		if_idx = if_nametoindex(conf_config()->net.ifname);
+	}
+
+	if (net_af(baresip_network()) == AF_INET6) {
+		af = AVAHI_PROTO_INET6;
 	}
 
 	/* TODO: Query enabled transports and register these */
 	avahi->group = avahi_entry_group_new(client, group_callback, NULL);
 	err = avahi_entry_group_add_service(avahi->group,
-		if_idx, AVAHI_PROTO_INET6, 0,
+		if_idx, af, 0,
 		buf, "_sipuri._udp",
 		NULL, NULL,
 		5060, NULL);
@@ -127,16 +122,14 @@ static void create_services(AvahiClient* client) {
 }
 
 static void client_callback(AvahiClient *c, AvahiClientState state,
-	AVAHI_GCC_UNUSED void * userdata) {
-
-	assert(c);
-
+	AVAHI_GCC_UNUSED void * userdata)
+{
 	switch (state) {
-		case AVAHI_CLIENT_S_RUNNING:
-			info("avahi: Avahi Daemon running\n", state);
-			break;
-		default:
-			warning("avahi: unknown client_callback: %d\n", state);
+	case AVAHI_CLIENT_S_RUNNING:
+		info("avahi: Avahi Daemon running\n", state);
+		break;
+	default:
+		warning("avahi: unknown client_callback: %d\n", state);
 	}
 }
 
@@ -148,9 +141,16 @@ static void add_contact(const char* uri,
 	struct contact *c;
 	struct sa sa;
 	struct sip_addr sipaddr;
+	const char* fmt_str;
 
-	/* TODO: Handle IPv4 mode */
-	sa_set_in6(&sa, address->data.ipv6.address, port);
+	if (address->proto == AVAHI_PROTO_INET6) {
+		sa_set_in6(&sa, address->data.ipv6.address, port);
+		fmt_str = "\"%r@%r\" <sip:%r@[%j]>;presence=p2p";
+	}
+	else {
+		sa_set_in(&sa, htonl(address->data.ipv4.address), port);
+		fmt_str = "\"%r@%r\" <sip:%r@%j>;presence=p2p";
+	}
 
 	/* Parse SIPURI to get username and stuff... */
 	pl_set_str(&addr, uri);
@@ -160,7 +160,7 @@ static void add_contact(const char* uri,
 	}
 
 	re_snprintf(buf, sizeof(buf),
-		"\"%r@%r\" <sip:%r@[%j]>;presence=p2p",
+		fmt_str,
 		&sipaddr.uri.user, &sipaddr.uri.host,
 		&sipaddr.uri.user, &sa);
 	pl_set_str(&addr, buf);
@@ -211,6 +211,10 @@ static void resolve_callback(
 	info("avahi: resolve %s %s %s %s\n", name, type, domain, hostname);
 
 	if (event == AVAHI_RESOLVER_FOUND) {
+		if (protocol != address->proto) {
+			warning("avahi: Resolved address type ambiguous\n");
+		}
+
 		/* TODO: Process TXT field */
 		if (!(flags & AVAHI_LOOKUP_RESULT_OUR_OWN)) {
 			add_contact(name, address, port);
@@ -232,36 +236,39 @@ static void browse_callback(
 	const char *type,
 	const char *domain,
 	AVAHI_GCC_UNUSED AvahiLookupResultFlags flags,
-	void* userdata) {
+	void* userdata)
+{
 
-	int proto = AVAHI_PROTO_UNSPEC;
+	int proto = AVAHI_PROTO_INET;
 
 	switch (event) {
-		case AVAHI_BROWSER_NEW:
-			debug("avahi: browse_callback if=%d proto=%d %s\n",
-				interface, protocol, name);
-			/* TODO: Handle both IPv4 and IPv6 */
+	case AVAHI_BROWSER_NEW:
+		debug("avahi: browse_callback if=%d proto=%d %s\n",
+			interface, protocol, name);
+		if (net_af(baresip_network()) == AF_INET6) {
 			proto = AVAHI_PROTO_INET6;
-			if (!(avahi_service_resolver_new(avahi->client,
-					interface, protocol,
-					name, type, domain,
-					proto, 0, resolve_callback,
-					avahi->client))) {
-				warning("avahi: Error resolving %s\n", name);
-			}
-		break;
+		}
 
-		case AVAHI_BROWSER_REMOVE:
-			remove_contact_by_dname(name);
-			break;
-		case AVAHI_BROWSER_ALL_FOR_NOW:
-		case AVAHI_BROWSER_CACHE_EXHAUSTED:
-			info("avahi: (Browser) %s\n",
-				event == AVAHI_BROWSER_CACHE_EXHAUSTED ?
-				"CACHE_EXHAUSTED" : "ALL_FOR_NOW");
-			break;
-		default:
-			warning("avahi: browse_callback %d %s\n", event, name);
+		if (!(avahi_service_resolver_new(avahi->client,
+				interface, protocol,
+				name, type, domain,
+				proto, 0, resolve_callback,
+				avahi->client))) {
+			warning("avahi: Error resolving %s\n", name);
+		}
+	break;
+
+	case AVAHI_BROWSER_REMOVE:
+		remove_contact_by_dname(name);
+		break;
+	case AVAHI_BROWSER_ALL_FOR_NOW:
+	case AVAHI_BROWSER_CACHE_EXHAUSTED:
+		debug("avahi: (Browser) %s\n",
+			event == AVAHI_BROWSER_CACHE_EXHAUSTED ?
+			"CACHE_EXHAUSTED" : "ALL_FOR_NOW");
+		break;
+	default:
+		warning("avahi: browse_callback %d %s\n", event, name);
 	}
 }
 
@@ -294,8 +301,8 @@ static void destructor(void* arg)
 
 static int module_init(void)
 {
-	avahi = mem_zalloc(sizeof(struct avahi_st), destructor);
 	int err;
+	avahi = mem_zalloc(sizeof(struct avahi_st), destructor);
 
 	avahi->poll = avahi_simple_poll_new();
 	avahi->client = avahi_client_new(
