@@ -19,7 +19,6 @@
 
 #include <re.h>
 #include <baresip.h>
-#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -77,6 +76,8 @@ static void create_services(AvahiClient* client)
 	int if_idx = AVAHI_IF_UNSPEC;
 	int af = AVAHI_PROTO_INET;
 
+	struct sa laddr;
+
 	/* Build announced sipuri as username@hostname */
 	strncpy(hostname, avahi_client_get_host_name_fqdn(client),
 		sizeof (hostname));
@@ -88,7 +89,7 @@ static void create_services(AvahiClient* client)
 	err = ua_alloc(&avahi->local_ua, buf);
 
 	if (err) {
-		warning("avahi: Could not create UA %s: %m", buf, err);
+		warning("avahi: Could not create UA %s: %m\n", buf, err);
 		return;
 	}
 
@@ -107,13 +108,18 @@ static void create_services(AvahiClient* client)
 		af = AVAHI_PROTO_INET6;
 	}
 
+	err |= sip_transp_laddr(uag_sip(), &laddr, SIP_TRANSP_UDP, 0);
+	if (err) {
+		warning("avahi: Can not find local SIP address\n");
+	}
+
 	/* TODO: Query enabled transports and register these */
 	avahi->group = avahi_entry_group_new(client, group_callback, NULL);
 	err = avahi_entry_group_add_service(avahi->group,
 		if_idx, af, 0,
 		buf, "_sipuri._udp",
 		NULL, NULL,
-		5060, NULL);
+		ntohs(laddr.u.in.sin_port), NULL);
 	err |= avahi_entry_group_commit(avahi->group);
 
 	if (err) {
@@ -130,27 +136,19 @@ static void client_callback(AvahiClient *c, AvahiClientState state,
 		break;
 	default:
 		warning("avahi: unknown client_callback: %d\n", state);
+		break;
 	}
 }
 
 static void add_contact(const char* uri,
 	const AvahiAddress *address, uint16_t port)
 {
+	int err;
 	struct pl addr;
 	char buf[128];
 	struct contact *c;
 	struct sa sa;
 	struct sip_addr sipaddr;
-	const char* fmt_str;
-
-	if (address->proto == AVAHI_PROTO_INET6) {
-		sa_set_in6(&sa, address->data.ipv6.address, port);
-		fmt_str = "\"%r@%r\" <sip:%r@[%j]>;presence=p2p";
-	}
-	else {
-		sa_set_in(&sa, htonl(address->data.ipv4.address), port);
-		fmt_str = "\"%r@%r\" <sip:%r@%j>;presence=p2p";
-	}
 
 	/* Parse SIPURI to get username and stuff... */
 	pl_set_str(&addr, uri);
@@ -159,13 +157,23 @@ static void add_contact(const char* uri,
 		return;
 	}
 
+	if (address->proto == AVAHI_PROTO_INET6) {;
+		sa_set_in6(&sa, address->data.ipv6.address, port);
+	}
+	else {
+		sa_set_in(&sa, htonl(address->data.ipv4.address), port);
+	}
+
 	re_snprintf(buf, sizeof(buf),
-		fmt_str,
+		"\"%r@%r\" <sip:%r@%J>;presence=p2p",
 		&sipaddr.uri.user, &sipaddr.uri.host,
 		&sipaddr.uri.user, &sa);
 	pl_set_str(&addr, buf);
 
-	contact_add(baresip_contacts(), &c, &addr);
+	err = contact_add(baresip_contacts(), &c, &addr);
+	if (err) {
+		warning("Could not add contact %s: %m\n", buf, err);
+	}
 }
 
 static void remove_contact_by_dname(const char* dname)
@@ -269,6 +277,7 @@ static void browse_callback(
 		break;
 	default:
 		warning("avahi: browse_callback %d %s\n", event, name);
+		break;
 	}
 }
 
@@ -280,9 +289,11 @@ static void avahi_update(void* arg)
 
 static void destructor(void* arg)
 {
-	struct avahi_st* a = (struct avahi_st*) arg;
+	struct avahi_st* a = arg;
 
 	tmr_cancel(&a->poll_timer);
+
+	mem_deref(a->local_ua);
 
 	/* Calling these destructor commands would be correct, but they
 	 * spew out a lot of ugly D-Bus warning */
@@ -303,6 +314,9 @@ static int module_init(void)
 {
 	int err;
 	avahi = mem_zalloc(sizeof(struct avahi_st), destructor);
+	if (!avahi) {
+		return ENOMEM;
+	}
 
 	avahi->poll = avahi_simple_poll_new();
 	avahi->client = avahi_client_new(
