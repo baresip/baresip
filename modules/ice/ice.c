@@ -823,6 +823,9 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 
 	icem_conf(m->icem)->nom   = ice.nom;
 	icem_conf(m->icem)->debug = ice.debug;
+	icem_conf(m->icem)->rc    = 4;
+
+	icem_set_conf(m->icem, icem_conf(m->icem));
 
 	icem_set_name(m->icem, sdp_media_name(sdpm));
 
@@ -949,6 +952,7 @@ static int module_init(void)
 			ice.nom = ICE_NOMINATION_AGGRESSIVE;
 		else {
 			warning("ice: unknown nomination: %r\n", &pl);
+			return EINVAL;
 		}
 	}
 	if (!conf_get(conf_cur(), "ice_mode", &pl)) {
@@ -958,6 +962,7 @@ static int module_init(void)
 			ice.mode = ICE_MODE_LITE;
 		else {
 			warning("ice: unknown mode: %r\n", &pl);
+			return EINVAL;
 		}
 	}
 #endif
