@@ -191,6 +191,8 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	struct auplay_st *st;
 	int err = 0;
 
+	(void)device;
+
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
 
