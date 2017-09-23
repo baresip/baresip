@@ -48,6 +48,7 @@ struct avahi_st {
 
 static struct avahi_st* avahi = NULL;
 
+
 static void group_callback(AvahiEntryGroup* group,
 	AvahiEntryGroupState state, void* userdata)
 {
@@ -67,7 +68,8 @@ static void group_callback(AvahiEntryGroup* group,
 	}
 }
 
-static void create_services(AvahiClient* client)
+
+static void create_services(AvahiClient *client)
 {
 	int err;
 	char buf[128] = "";
@@ -127,6 +129,7 @@ static void create_services(AvahiClient* client)
 	}
 }
 
+
 static void client_callback(AvahiClient *c, AvahiClientState state,
 	AVAHI_GCC_UNUSED void * userdata)
 {
@@ -139,6 +142,7 @@ static void client_callback(AvahiClient *c, AvahiClientState state,
 		break;
 	}
 }
+
 
 static void add_contact(const char* uri,
 	const AvahiAddress *address, uint16_t port)
@@ -176,6 +180,7 @@ static void add_contact(const char* uri,
 	}
 }
 
+
 static void remove_contact_by_dname(const char* dname)
 {
 	const struct list *lst;
@@ -200,6 +205,7 @@ static void remove_contact_by_dname(const char* dname)
 
 	warning("avahi: Could not remove contact %s\n", dname);
 }
+
 
 static void resolve_callback(
 	AvahiServiceResolver *r,
@@ -281,11 +287,13 @@ static void browse_callback(
 	}
 }
 
+
 static void avahi_update(void* arg)
 {
 	avahi_simple_poll_iterate(avahi->poll, 0);
 	tmr_start(&avahi->poll_timer, 250, avahi_update, 0);
 }
+
 
 static void destructor(void* arg)
 {
@@ -309,6 +317,7 @@ static void destructor(void* arg)
 		avahi_client_free(avahi->client);
 	}
 }
+
 
 static int module_init(void)
 {
@@ -344,6 +353,7 @@ static int module_init(void)
 	return 0;
 }
 
+
 static int module_close(void)
 {
 	debug("avahi: module_close\n");
@@ -352,6 +362,7 @@ static int module_close(void)
 
 	return 0;
 }
+
 
 const struct mod_export DECL_EXPORTS(avahi) = {
 	"avahi",
