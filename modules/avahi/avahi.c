@@ -52,7 +52,11 @@ static struct avahi_st* avahi = NULL;
 static void group_callback(AvahiEntryGroup* group,
 	AvahiEntryGroupState state, void* userdata)
 {
+	(void)group;
+	(void)userdata;
+
 	switch (state) {
+
 	case AVAHI_ENTRY_GROUP_ESTABLISHED:
 		info ("avahi: Service Registration completed\n");
 		break;
@@ -131,9 +135,12 @@ static void create_services(AvahiClient *client)
 
 
 static void client_callback(AvahiClient *c, AvahiClientState state,
-	AVAHI_GCC_UNUSED void * userdata)
+			    AVAHI_GCC_UNUSED void * userdata)
 {
+	(void)c;
+
 	switch (state) {
+
 	case AVAHI_CLIENT_S_RUNNING:
 		info("avahi: Avahi Daemon running\n", state);
 		break;
@@ -222,6 +229,11 @@ static void resolve_callback(
 	AvahiLookupResultFlags flags,
 	void *userdata)
 {
+	(void)r;
+	(void)interface;
+	(void)txt;
+	(void)userdata;
+
 	info("avahi: resolve %s %s %s %s\n", name, type, domain, hostname);
 
 	if (event == AVAHI_RESOLVER_FOUND) {
@@ -252,6 +264,8 @@ static void browse_callback(
 	AVAHI_GCC_UNUSED AvahiLookupResultFlags flags,
 	void* userdata)
 {
+	(void)b;
+	(void)userdata;
 
 	int proto = AVAHI_PROTO_INET;
 
@@ -290,6 +304,8 @@ static void browse_callback(
 
 static void avahi_update(void* arg)
 {
+	(void)arg;
+
 	avahi_simple_poll_iterate(avahi->poll, 0);
 	tmr_start(&avahi->poll_timer, 250, avahi_update, 0);
 }
