@@ -200,8 +200,8 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 }
 
 
-static void rtp_recv(const struct sa *src, const struct rtp_header *hdr,
-		     struct mbuf *mb, void *arg)
+static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
+			struct mbuf *mb, void *arg)
 {
 	struct stream *s = arg;
 	bool flush = false;
@@ -307,7 +307,7 @@ static int stream_sock_alloc(struct stream *s, int af)
 
 	err = rtp_listen(&s->rtp, IPPROTO_UDP, &laddr,
 			 s->cfg.rtp_ports.min, s->cfg.rtp_ports.max,
-			 s->rtcp, rtp_recv, rtcp_handler, s);
+			 s->rtcp, rtp_handler, rtcp_handler, s);
 	if (err) {
 		warning("stream: rtp_listen failed: af=%s ports=%u-%u"
 			" (%m)\n", net_af2name(af),
