@@ -292,6 +292,10 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 		     (size_t)sess_info.peer_zid.length,
 		     sess_info.peer_zid.buffer,
 		     (size_t)sess_info.peer_zid.length);
+	} else if (sess_info.sas_is_verified) {
+		info("zrtp: secure session with verified remote peer %w\n",
+		     sess_info.peer_zid.buffer,
+		     (size_t)sess_info.peer_zid.length);
 	}
 }
 
