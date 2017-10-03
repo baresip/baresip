@@ -19,6 +19,11 @@
 #define SA_INIT { { {0} }, 0}
 
 
+#ifndef PREFIX
+#define PREFIX "/usr"
+#endif
+
+
 /** Core Run-time Configuration - populated from config file */
 static struct config core_config = {
 
@@ -38,7 +43,7 @@ static struct config core_config = {
 
 	/** Audio */
 	{
-		"",
+		PREFIX "/share/baresip",
 		"","",
 		"","",
 		"","",

@@ -42,6 +42,10 @@ struct vidsrc_st {
 	struct vidsz size;
 	cairo_surface_t *surface;
 	cairo_t *cr;
+	cairo_surface_t *surface_logo;
+	cairo_t *cr_logo;
+	double logo_width;
+	double logo_height;
 	double step;
 	bool run;
 	pthread_t thread;
@@ -66,6 +70,11 @@ static void destructor(void *arg)
 		cairo_destroy(st->cr);
 	if (st->surface)
 		cairo_surface_destroy(st->surface);
+
+	if (st->cr_logo)
+		cairo_destroy(st->cr_logo);
+	if (st->surface_logo)
+		cairo_surface_destroy(st->surface_logo);
 }
 
 
@@ -90,26 +99,6 @@ static void draw_background(cairo_t *cr, double color_step,
 }
 
 
-static void draw_ball(cairo_t *cr, double pos_step, int width, int height,
-		      double r, double g, double b)
-{
-	cairo_pattern_t *pat;
-	double x, y;
-
-	x = width * (sin(10 * pos_step) + 1)/2;
-	y = height * (1 - fabs(sin(30 * pos_step)));
-
-	pat = cairo_pattern_create_radial (x-128, y-128, 25.6,
-					   x+128, y+128, 128.0);
-	cairo_pattern_add_color_stop_rgba (pat, 1, 0, 0, 0, 1);
-	cairo_pattern_add_color_stop_rgba (pat, 0, r, g, b, 1);
-	cairo_set_source (cr, pat);
-	cairo_arc (cr, x, y, 76.8, 0, 2 * M_PI);
-	cairo_fill (cr);
-	cairo_pattern_destroy (pat);
-}
-
-
 static void draw_text(struct vidsrc_st *st, int x, int y,
 		      const char *fmt, ...)
 {
@@ -128,6 +117,18 @@ static void draw_text(struct vidsrc_st *st, int x, int y,
 }
 
 
+static void draw_logo(struct vidsrc_st *st)
+{
+	double x, y;
+
+	x = (st->size.w - st->logo_width) * (sin(10 * st->step) + 1)/2;
+	y = (st->size.h - st->logo_height)* (1 - fabs(sin(30 * st->step)));
+
+	cairo_set_source_surface(st->cr, st->surface_logo, x, y);
+	cairo_paint(st->cr);
+}
+
+
 static void process(struct vidsrc_st *st)
 {
 	struct vidframe f;
@@ -135,13 +136,12 @@ static void process(struct vidsrc_st *st)
 
 	draw_background(st->cr, st->step, st->size.w, st->size.h);
 
-	draw_ball(st->cr, st->step, st->size.w, st->size.h,
-		  0.0, 1.0, 0.0);
-
 	draw_text(st, xoffs, yoffs + FONT_SIZE, "%H", fmt_gmtime, NULL);
 
 	draw_text(st, xoffs, yoffs + FONT_SIZE*2, "%u x %u @ %d fps",
 		  st->size.w, st->size.h, st->prm.fps);
+
+	draw_logo(st);
 
 	st->step += 0.02 / st->prm.fps;
 
@@ -179,13 +179,77 @@ static void *read_thread(void *arg)
 }
 
 
+static int load_logo(struct vidsrc_st *st, const char *filename)
+{
+	cairo_surface_t *logo;
+	double lw;
+	double scale;
+	int err = 0;
+
+	logo = cairo_image_surface_create_from_png(filename);
+	if (!logo) {
+		warning("cairo: failed to load PNG logo\n");
+		err = ENOENT;
+		goto out;
+	}
+
+	if (!cairo_image_surface_get_width(logo) ||
+	    !cairo_image_surface_get_height(logo)) {
+		warning("cairo: invalid logo (%s)\n", filename);
+		err = ENOENT;
+		goto out;
+	}
+
+	st->logo_width = st->size.w / 2;
+	lw = cairo_image_surface_get_width(logo);
+	scale = (double)st->logo_width / (double)lw;
+
+	st->logo_height = cairo_image_surface_get_height(logo) * scale;
+
+	/* create a scaled-down logo with same aspect ratio */
+
+	st->surface_logo = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+						      st->logo_width,
+						      st->logo_height);
+	if (!st->surface_logo) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	st->cr_logo = cairo_create(st->surface_logo);
+	if (!st->cr_logo) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	cairo_scale(st->cr_logo, scale, scale);
+
+	cairo_set_source_surface(st->cr_logo, logo, 0, 0);
+	cairo_paint(st->cr_logo);
+
+	info("cairo: scaling logo '%s' from %d x %d to %f x %f\n",
+	     filename,
+	     cairo_image_surface_get_width(logo),
+	     cairo_image_surface_get_height(logo),
+	     st->logo_width,
+	     st->logo_height);
+
+ out:
+	if (logo)
+		cairo_surface_destroy(logo);
+	return err;
+}
+
+
 static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt,
 		 const char *dev, vidsrc_frame_h *frameh,
 		 vidsrc_error_h *errorh, void *arg)
 {
+	struct config *cfg;
 	struct vidsrc_st *st;
+	char logo[256];
 	int err = 0;
 
 	(void)ctx;
@@ -194,6 +258,10 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)errorh;
 
 	if (!stp || !prm || !size || !frameh)
+		return EINVAL;
+
+	cfg = conf_config();
+	if (!cfg)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), destructor);
@@ -230,6 +298,13 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	     cairo_image_surface_get_stride(st->surface));
 
 	st->step = rand_u16() / 1000.0;
+
+	re_snprintf(logo, sizeof(logo), "%s/logo.png", cfg->audio.audio_path);
+
+	err = load_logo(st, logo);
+	if (err) {
+		goto out;
+	}
 
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, read_thread, st);

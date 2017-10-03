@@ -230,7 +230,10 @@ int main(int argc, char *argv[])
 		log_enable_stderr(false);
 	}
 
-	info("baresip is ready.\n");
+	info("\x1b[34;1m" "bare"
+	     "\x1b[31;1m" "sip"
+	     "\x1b[;m"
+	     " is ready.\n");
 
 	/* Execute any commands from input arguments */
 	for (i=0; i<execmdc; i++) {
