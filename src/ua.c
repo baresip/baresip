@@ -1333,6 +1333,7 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 {
 	struct config *cfg = conf_config();
 	struct network *net = baresip_network();
+	struct sip_conf sipconf;
 	uint32_t bsize;
 	int err;
 
@@ -1357,6 +1358,18 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 		warning("ua: sip stack failed: %m\n", err);
 		goto out;
 	}
+
+	/* configure SIP timers */
+
+	sipconf = *sip_conf(uag.sip);
+
+	if (cfg->sip.timer_t1)
+		sipconf.timer_t1 = cfg->sip.timer_t1;
+
+	sip_conf_set(uag.sip, &sipconf);
+
+	debug("ua: using SIP timers T1=%u (milliseconds)\n",
+	      sip_conf(uag.sip)->timer_t1);
 
 	err = ua_add_transp(net);
 	if (err)
