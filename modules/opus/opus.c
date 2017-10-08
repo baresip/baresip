@@ -63,13 +63,12 @@ static struct aucodec opus = {
 	.srate     = 48000,
 	.crate     = 48000,
 	.ch        = 2,
-	.fmtp      = NULL,
+	.fmtp      = fmtp,
 	.encupdh   = opus_encode_update,
 	.ench      = opus_encode_frm,
 	.decupdh   = opus_decode_update,
 	.dech      = opus_decode_frm,
 	.plch      = opus_decode_pkloss,
-	.fmtp_ench = opus_fmtp_enc,
 };
 
 
@@ -133,6 +132,11 @@ static int module_init(void)
 	}
 
 	(void)conf_get_bool(conf, "opus_mirror", &opus_mirror);
+
+	if (opus_mirror) {
+		opus.fmtp = NULL;
+		opus.fmtp_ench = opus_fmtp_enc;
+	}
 
 	debug("opus: fmtp=\"%s\"\n", fmtp);
 
