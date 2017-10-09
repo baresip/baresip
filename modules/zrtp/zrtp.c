@@ -26,6 +26,13 @@
  * Thanks:
  *
  *   Ingo Feinerer
+ *
+ * Configuration options:
+ *
+ \verbatim
+  zrtp_hash       {yes,no}   # Enable SDP zrtp-hash (recommended)
+ \endverbatim
+ *
  */
 
 
@@ -35,10 +42,14 @@ enum {
 
 struct menc_sess {
 	zrtp_session_t *zrtp_session;
+	menc_error_h *errorh;
+	void *arg;
+	struct tmr abort_timer;
+	int err;
 };
 
 struct menc_media {
-	const struct menc_sess *sess;
+	struct menc_sess *sess;
 	struct udp_helper *uh_rtp;
 	struct udp_helper *uh_rtcp;
 	struct sa raddr;
@@ -51,6 +62,10 @@ struct menc_media {
 static zrtp_global_t *zrtp_global;
 static zrtp_config_t zrtp_config;
 static zrtp_zid_t zid;
+
+
+/* RFC 6189, section 8.1. */
+static bool use_sig_hash = true;
 
 
 enum pkt_type {
@@ -93,6 +108,8 @@ static void session_destructor(void *arg)
 {
 	struct menc_sess *st = arg;
 
+	tmr_cancel(&st->abort_timer);
+
 	if (st->zrtp_session)
 		zrtp_session_down(st->zrtp_session);
 }
@@ -112,6 +129,32 @@ static void media_destructor(void *arg)
 }
 
 
+static void abort_timer_h(void *arg)
+{
+	struct menc_sess *sess = arg;
+
+	if (sess->errorh) {
+		sess->errorh(sess->err, sess->arg);
+		sess->errorh = NULL;
+	}
+}
+
+
+static void abort_call(struct menc_sess *sess)
+{
+	if (!sess->err) {
+		sess->err = EPIPE;
+		tmr_start(&sess->abort_timer, 0, abort_timer_h, sess);
+	}
+}
+
+
+static bool drop_packets(const struct menc_media *st)
+{
+	return (st)? st->sess->err != 0 : true;
+}
+
+
 static bool udp_helper_send(int *err, struct sa *dst,
 			    struct mbuf *mb, void *arg)
 {
@@ -120,6 +163,9 @@ static bool udp_helper_send(int *err, struct sa *dst,
 	zrtp_status_t s;
 	const char *proto_name = "rtp";
 	enum pkt_type ptype = get_packet_type(mb);
+
+	if (drop_packets(st))
+		return true;
 
 	length = (unsigned int)mbuf_get_left(mb);
 
@@ -168,6 +214,9 @@ static bool udp_helper_recv(struct sa *src, struct mbuf *mb, void *arg)
 	const char *proto_name = "srtp";
 	enum pkt_type ptype = get_packet_type(mb);
 
+	if (drop_packets(st))
+		return true;
+
 	length = (unsigned int)mbuf_get_left(mb);
 
 	if (ptype == PKT_TYPE_RTCP) {
@@ -198,6 +247,63 @@ static bool udp_helper_recv(struct sa *src, struct mbuf *mb, void *arg)
 }
 
 
+static int sig_hash_encode(struct zrtp_stream_t *stream,
+                         struct sdp_media *m)
+{
+	char buf[ZRTP_SIGN_ZRTP_HASH_LENGTH + 1];
+	zrtp_status_t s;
+	int err = 0;
+
+	s = zrtp_signaling_hash_get(stream, buf, sizeof(buf));
+	if (s != zrtp_status_ok) {
+		warning("zrtp: zrtp_signaling_hash_get: status = %d\n", s);
+		return EINVAL;
+	}
+
+	err = sdp_media_set_lattr(m, true, "zrtp-hash", "%s %s",
+	                          ZRTP_PROTOCOL_VERSION, buf);
+	if (err) {
+		warning("zrtp: sdp_media_set_lattr: %d\n", err);
+	}
+
+	return err;
+}
+
+
+static void sig_hash_decode(struct zrtp_stream_t *stream,
+                           const struct sdp_media *m)
+{
+	const char *attr_val;
+	struct pl major, minor, hash;
+	uint32_t version;
+	int err;
+	zrtp_status_t s;
+
+	attr_val = sdp_media_rattr(m, "zrtp-hash");
+	if (!attr_val)
+		return;
+
+	err = re_regex(attr_val, strlen(attr_val),
+	               "[0-9]+.[0-9]2 [0-9a-f]+",
+	               &major, &minor, &hash);
+	if (err || hash.l < ZRTP_SIGN_ZRTP_HASH_LENGTH) {
+		warning("zrtp: malformed zrtp-hash attribute, ignoring...\n");
+		return;
+	}
+
+	version = pl_u32(&major) * 100 + pl_u32(&minor);
+	/* more version checks? */
+	if (version < 110) {
+		warning("zrtp: zrtp-hash: version (%d) is too low, "
+		        "ignoring...", version);
+	}
+
+	s = zrtp_signaling_hash_set(stream, hash.p, (uint32_t)hash.l);
+	if (s != zrtp_status_ok)
+		warning("zrtp: zrtp_signaling_hash_set: status = %d\n", s);
+}
+
+
 static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 			 bool offerer, menc_error_h *errorh, void *arg)
 {
@@ -205,8 +311,6 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 	zrtp_status_t s;
 	int err = 0;
 	(void)offerer;
-	(void)errorh;
-	(void)arg;
 
 	if (!sessp || !sdp)
 		return EINVAL;
@@ -214,6 +318,11 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 	st = mem_zalloc(sizeof(*st), session_destructor);
 	if (!st)
 		return ENOMEM;
+
+	st->errorh = errorh;
+	st->arg = arg;
+	st->err = 0;
+	tmr_init(&st->abort_timer);
 
 	s = zrtp_session_init(zrtp_global, NULL, zid,
 			      ZRTP_SIGNALING_ROLE_UNKNOWN, &st->zrtp_session);
@@ -277,6 +386,12 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 
 	zrtp_stream_set_userdata(st->zrtp_stream, st);
 
+	if (use_sig_hash) {
+		err = sig_hash_encode(st->zrtp_stream, sdpm);
+		if (err)
+			goto out;
+	}
+
  out:
 	if (err) {
 		mem_deref(st);
@@ -288,6 +403,9 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
  start:
 	if (sa_isset(sdp_media_raddr(sdpm), SA_ALL)) {
 		st->raddr = *sdp_media_raddr(sdpm);
+
+		if (use_sig_hash)
+			sig_hash_decode(st->zrtp_stream, sdpm);
 
 		s = zrtp_stream_start(st->zrtp_stream, rtp_sess_ssrc(rtp));
 		if (s != zrtp_status_ok) {
@@ -306,6 +424,9 @@ static int on_send_packet(const zrtp_stream_t *stream,
 	struct menc_media *st = zrtp_stream_get_userdata(stream);
 	struct mbuf *mb;
 	int err;
+
+	if (drop_packets(st))
+		return zrtp_status_ok;
 
 	if (!sa_isset(&st->raddr, SA_ALL))
 		return zrtp_status_ok;
@@ -351,6 +472,23 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 		info("zrtp: secure session with verified remote peer %w\n",
 		     sess_info.peer_zid.buffer,
 		     (size_t)sess_info.peer_zid.length);
+	}
+}
+
+
+static void on_zrtp_security_event(zrtp_stream_t *stream,
+                                   zrtp_security_event_t event)
+{
+	if (event == ZRTP_EVENT_WRONG_SIGNALING_HASH) {
+		const struct menc_media *st = zrtp_stream_get_userdata(stream);
+
+		warning("zrtp: Attack detected!!! Signaling hash from the "
+		        "zrtp-hash SDP attribute doesn't match the hash of "
+		        "the Hello message. Aborting the call.\n");
+
+		/* As this was called from zrtp_process_xxx(), we need
+		   a safe shutdown. */
+		abort_call(st->sess);
 	}
 }
 
@@ -428,6 +566,8 @@ static int module_init(void)
 	FILE *f;
 	int ret, err;
 
+	(void)conf_get_bool(conf_cur(), "zrtp_hash", &use_sig_hash);
+
 	zrtp_log_set_log_engine(zrtp_log);
 
 	zrtp_config_defaults(&zrtp_config);
@@ -439,6 +579,8 @@ static int module_init(void)
 
 	zrtp_config.cb.misc_cb.on_send_packet = on_send_packet;
 	zrtp_config.cb.event_cb.on_zrtp_secure = on_zrtp_secure;
+	zrtp_config.cb.event_cb.on_zrtp_security_event =
+	        on_zrtp_security_event;
 
 	err = conf_path_get(config_path, sizeof(config_path));
 	if (err) {
