@@ -79,11 +79,9 @@ static int createAudioRecorder(struct ausrc_st *st, struct ausrc_prm *prm)
 	SLDataLocator_AndroidSimpleBufferQueue loc_bq = {
 		SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2
 	};
-	int speakers;
-	if (prm->ch > 1)
-		speakers = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT;
-	else
-		speakers = SL_SPEAKER_FRONT_CENTER;
+	int speakers = prm->ch > 1
+		? SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT
+		: SL_SPEAKER_FRONT_CENTER;
 	SLDataFormat_PCM format_pcm = {SL_DATAFORMAT_PCM, prm->ch,
 				       prm->srate * 1000,
 				       SL_PCMSAMPLEFORMAT_FIXED_16,
