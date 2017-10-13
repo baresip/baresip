@@ -19,7 +19,7 @@ addons:
             libssl-dev
 
 install:
-    - git clone https://github.com/creytiv/re.git
+    - git clone -b sr https://github.com/creytiv/re.git
     - git clone https://github.com/creytiv/rem.git
     - curl -OL 'https://github.com/alfredh/pytools/raw/master/ccheck.py'
     - for p in ${LIBRE} ${LIBREM}; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
