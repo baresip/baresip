@@ -1,3 +1,36 @@
+2017-10-14 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.6
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.6
+	* NOTE: Requires libre v0.5.5 or later
+	        Requires librem v0.5.0 or later
+
+	* New Baresip logo (thanks Ernst and community)
+
+	* baresip-core:
+	  - log: rename error to error_msg due to GNU extension clash
+	  - ua: remove ua_sipfd()
+
+	* Modules:
+
+	* avahi: Avahi Zeroconf Module (thanks Jonathan Sieber)
+
+	* avcodec: handle fragment packet loss
+
+	* cairo: draw a dancing logo
+
+	* ice: set ICE role correctly
+	       set retransmit count (RC) to 4
+
+	* opensles: fix recorder speaker setup (thanks Juha Heinanen)
+
+	* opus: fix encoder bitrate, ref #305
+
+	* zrtp: encrypt/decrypt RTCP packets (thanks @glenvt18)
+
+
 2017-09-07 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.5
