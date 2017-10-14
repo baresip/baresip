@@ -264,10 +264,9 @@ static void browse_callback(
 	AVAHI_GCC_UNUSED AvahiLookupResultFlags flags,
 	void* userdata)
 {
+	int proto = AVAHI_PROTO_INET;
 	(void)b;
 	(void)userdata;
-
-	int proto = AVAHI_PROTO_INET;
 
 	switch (event) {
 	case AVAHI_BROWSER_NEW:
