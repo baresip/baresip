@@ -410,6 +410,32 @@ static int cmd_print_calls(struct re_printf *pf, void *unused)
 }
 
 
+static const char about_fmt[] =
+	".------------------------------------------------------------.\n"
+	"|                      "
+	"\x1b[34;1m" "bare"
+	"\x1b[31;1m" "sip"
+	"\x1b[;m"
+	" %-10s                    |\n"
+	"|                                                            |\n"
+	"| Baresip is a portable and modular SIP User-Agent           |\n"
+	"| with audio and video support                               |\n"
+	"|                                                            |\n"
+	"| License:   BSD                                             |\n"
+	"| Homepage:  https://github.com/alfredh/baresip              |\n"
+	"|                                                            |\n"
+	"'------------------------------------------------------------'\n"
+	;
+
+
+static int about_box(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+
+	return re_hprintf(pf, about_fmt, BARESIP_VERSION);
+}
+
+
 static const struct cmd cmdv[] = {
 
 {"accept",    'a',        0, "Accept incoming call",    cmd_answer           },
@@ -425,6 +451,7 @@ static const struct cmd cmdv[] = {
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
 {"ausrc",     0,   CMD_IPRM, "Switch audio source",     switch_audio_source  },
 {"auplay",    0,   CMD_IPRM, "Switch audio player",     switch_audio_player  },
+{"about",     0,          0, "About box",               about_box            },
 
 };
 
