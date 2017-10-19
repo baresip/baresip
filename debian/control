@@ -18,3 +18,17 @@ Description: Modular SIP User-Agent with audio and video support
   RFC compliant
   Robust, fast, low footprint
   Portable C89 and C99 source code
+
+Package: libbaresip
+Architecture: any
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}, librem (>= 0.5.0), libre (>= 0.5.4)
+Description: Baresip library
+
+Package: libbaresip-dev
+Architecture: any
+Section: libdevel
+Depends: libbaresip (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Description: Baresip library development files
+ See https://github.com/alfredh/baresip/wiki/Using-baresip-as-a-library
+ for an example.
