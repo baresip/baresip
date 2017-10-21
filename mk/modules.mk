@@ -452,6 +452,9 @@ endif
 ifneq ($(USE_ZRTP),)
 MODULES   += zrtp
 endif
+ifneq ($(USE_GZRTP),)
+MODULES   += gzrtp
+endif
 ifneq ($(USE_DSHOW),)
 MODULES   += dshow
 endif
