@@ -369,7 +369,7 @@ int conf_modules(void)
  *
  * @return Config object
  *
- * @note It is only available during init
+ * @note It is only available after init and before conf_close()
  */
 struct conf *conf_cur(void)
 {
