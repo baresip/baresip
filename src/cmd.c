@@ -85,6 +85,14 @@ static int ctx_alloc(struct cmd_ctx **ctxp, const struct cmd *cmd)
 }
 
 
+/**
+ * Find a command block
+ *
+ * @param commands Commands container
+ * @param cmdv     Command vector
+ *
+ * @return Command block if found, otherwise NULL
+ */
 struct cmds *cmds_find(const struct commands *commands,
 		       const struct cmd *cmdv)
 {
@@ -291,6 +299,17 @@ static int cmd_report(const struct cmd *cmd, struct re_printf *pf,
 }
 
 
+/**
+ * Process long commands
+ *
+ * @param commands Commands container
+ * @param str      Input string
+ * @param len      Length of input string
+ * @param pf_resp  Print function for response
+ * @param data     Application data
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int cmd_process_long(struct commands *commands, const char *str, size_t len,
 		     struct re_printf *pf_resp, void *data)
 {
@@ -455,6 +474,14 @@ void cmd_unregister(struct commands *commands, const struct cmd *cmdv)
 }
 
 
+/**
+ * Find a long command
+ *
+ * @param commands Commands container
+ * @param name     Name of command, excluding prefix
+ *
+ * @return Command if found, NULL if not found
+ */
 const struct cmd *cmd_find_long(const struct commands *commands,
 				const char *name)
 {
@@ -715,6 +742,13 @@ int cmd_print(struct re_printf *pf, const struct commands *commands)
 }
 
 
+/**
+ * Initialize the commands subsystem.
+ *
+ * @param commandsp  Pointer to allocated commands
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int cmd_init(struct commands **commandsp)
 {
 	struct commands *commands;
