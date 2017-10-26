@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <SLES/OpenSLES.h>
 #include "SLES/OpenSLES_Android.h"
@@ -152,6 +153,12 @@ int opensles_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("opensles: player: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	debug("opensles: opening player %uHz, %uchannels\n",
 			prm->srate, prm->ch);

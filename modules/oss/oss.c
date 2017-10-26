@@ -226,7 +226,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	(void)ctx;
 	(void)errh;
 
-	if (!stp || !as || !prm || !rh)
+	if (!stp || !as || !prm || prm->fmt != AUFMT_S16LE || !rh)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
@@ -285,7 +285,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	struct auplay_st *st;
 	int err;
 
-	if (!stp || !ap || !prm || !wh)
+	if (!stp || !ap || !prm || prm->fmt != AUFMT_S16LE || !wh)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);

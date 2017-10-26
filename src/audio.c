@@ -93,6 +93,8 @@ struct autx {
 	bool marker;                  /**< Marker bit for outgoing RTP     */
 	bool muted;                   /**< Audio source is muted           */
 	int cur_key;                  /**< Currently transmitted event     */
+	enum aufmt src_fmt;
+	bool need_conv;
 
 	union {
 		struct tmr tmr;       /**< Timer for sending RTP packets   */
@@ -136,6 +138,8 @@ struct aurx {
 	int pt;                       /**< Payload type for incoming RTP   */
 	double level_last;
 	bool level_set;
+	enum aufmt play_fmt;
+	bool need_conv;
 };
 
 
@@ -442,7 +446,35 @@ static void poll_aubuf_tx(struct audio *a)
 	sampc = tx->psize / 2;
 
 	/* timed read from audio-buffer */
-	aubuf_read_samp(tx->aubuf, tx->sampv, sampc);
+
+	if (tx->src_fmt == AUFMT_S16LE) {
+
+		aubuf_read(tx->aubuf, (uint8_t *)tx->sampv,
+			   sampc * aufmt_sample_size(tx->src_fmt));
+	}
+	else {
+		/* Convert from ausrc format to 16-bit format */
+
+		void *tmp_sampv;
+		size_t num_bytes = sampc * aufmt_sample_size(tx->src_fmt);
+
+		if (!tx->need_conv) {
+			info("audio: NOTE: source sample conversion"
+			     " needed: %s  -->  %s\n",
+			     aufmt_name(tx->src_fmt), aufmt_name(AUFMT_S16LE));
+			tx->need_conv = true;
+		}
+
+		tmp_sampv = mem_zalloc(num_bytes, NULL);
+		if (!tmp_sampv)
+			return;
+
+		aubuf_read(tx->aubuf, tmp_sampv, num_bytes);
+
+		auconv_to_s16(sampv, tx->src_fmt, tmp_sampv, sampc);
+
+		mem_deref(tmp_sampv);
+	}
 
 	/* optional resampler */
 	if (tx->resamp.resample) {
@@ -511,15 +543,18 @@ static void check_telev(struct audio *a, struct autx *tx)
  *
  * @note This function may be called from any thread
  *
+ * @note The sample format is set in rx->play_fmt
+ *
  * @param buf Buffer to fill with audio samples
  * @param sz  Number of bytes in buffer
  * @param arg Handler argument
  */
-static void auplay_write_handler(int16_t *sampv, size_t sampc, void *arg)
+static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 {
 	struct aurx *rx = arg;
+	size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
 
-	aubuf_read_samp(rx->aubuf, sampv, sampc);
+	aubuf_read(rx->aubuf, sampv, num_bytes);
 }
 
 
@@ -534,15 +569,16 @@ static void auplay_write_handler(int16_t *sampv, size_t sampc, void *arg)
  * @param sz  Number of bytes in buffer
  * @param arg Handler argument
  */
-static void ausrc_read_handler(const int16_t *sampv, size_t sampc, void *arg)
+static void ausrc_read_handler(const void *sampv, size_t sampc, void *arg)
 {
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
+	size_t num_bytes = sampc * aufmt_sample_size(tx->src_fmt);
 
 	if (tx->muted)
-		memset((void *)sampv, 0, sampc*2);
+		memset((void *)sampv, 0, num_bytes);
 
-	(void)aubuf_write_samp(tx->aubuf, sampv, sampc);
+	(void)aubuf_write(tx->aubuf, sampv, num_bytes);
 
 	if (a->cfg.txmode == AUDIO_MODE_POLL) {
 		unsigned i;
@@ -662,9 +698,39 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 		sampc = sampc_rs;
 	}
 
-	err = aubuf_write_samp(rx->aubuf, sampv, sampc);
-	if (err)
-		goto out;
+	if (rx->play_fmt == AUFMT_S16LE) {
+		err = aubuf_write_samp(rx->aubuf, sampv, sampc);
+		if (err)
+			goto out;
+	}
+	else {
+
+		/* Convert from 16-bit to auplay format */
+
+		void *tmp_sampv;
+		size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
+
+		if (!rx->need_conv) {
+			info("audio: NOTE: playback sample conversion"
+			     " needed: %s  -->  %s\n",
+			     aufmt_name(AUFMT_S16LE),
+			     aufmt_name(rx->play_fmt));
+			rx->need_conv = true;
+		}
+
+		tmp_sampv = mem_zalloc(num_bytes, NULL);
+		if (!tmp_sampv)
+			return ENOMEM;
+
+		auconv_from_s16(rx->play_fmt, tmp_sampv, sampv, sampc);
+
+		err = aubuf_write(rx->aubuf, tmp_sampv, num_bytes);
+
+		mem_deref(tmp_sampv);
+
+		if (err)
+			goto out;
+	}
 
  out:
 	return err;
@@ -801,6 +867,9 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	tx = &a->tx;
 	rx = &a->rx;
 
+	tx->src_fmt = cfg->audio.src_fmt;
+	rx->play_fmt = cfg->audio.play_fmt;
+
 	err = stream_alloc(&a->strm, stream_prm, &cfg->avt, call, sdp_sess,
 			   "audio", label,
 			   mnat, mnat_sess, menc, menc_sess,
@@ -845,8 +914,8 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	}
 
 	tx->mb = mbuf_alloc(STREAM_PRESZ + 4096);
-	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * 2, NULL);
-	rx->sampv = mem_zalloc(AUDIO_SAMPSZ * 2, NULL);
+	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t), NULL);
+	rx->sampv = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t), NULL);
 	if (!tx->mb || !tx->sampv || !rx->sampv) {
 		err = ENOMEM;
 		goto out;
@@ -1113,11 +1182,13 @@ static int start_player(struct aurx *rx, struct audio *a)
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
 		prm.ptime      = rx->ptime;
+		prm.fmt        = rx->play_fmt;
 
 		if (!rx->aubuf) {
 			size_t psize;
+			size_t sz = aufmt_sample_size(rx->play_fmt);
 
-			psize = 2 * calc_nsamp(prm.srate, prm.ch, prm.ptime);
+			psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 
 			err = aubuf_alloc(&rx->aubuf, psize * 1, psize * 8);
 			if (err)
@@ -1135,6 +1206,9 @@ static int start_player(struct aurx *rx, struct audio *a)
 		}
 
 		rx->auplay_prm = prm;
+
+		info("audio: player started with sample format %s\n",
+		     aufmt_name(rx->play_fmt));
 	}
 
 	return 0;
@@ -1192,6 +1266,7 @@ static int start_source(struct autx *tx, struct audio *a)
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
 		prm.ptime      = tx->ptime;
+		prm.fmt        = tx->src_fmt;
 
 		tx->psize = 2 * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 
@@ -1237,6 +1312,9 @@ static int start_source(struct autx *tx, struct audio *a)
 		}
 
 		tx->ausrc_prm = prm;
+
+		info("audio: source started with sample format %s\n",
+		     aufmt_name(tx->src_fmt));
 	}
 
 	return 0;
@@ -1627,7 +1705,9 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  aubuf_debug, tx->aubuf,
 			  tx->ptime);
 
-	err |= re_hprintf(pf, " rx:   %H %H ptime=%ums pt=%d\n",
+	err |= re_hprintf(pf,
+			  " rx:   %H %H\n"
+			  "       ptime=%ums pt=%d\n",
 			  aucodec_print, rx->ac,
 			  aubuf_debug, rx->aubuf,
 			  rx->ptime, rx->pt);

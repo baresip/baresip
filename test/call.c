@@ -5,6 +5,7 @@
  */
 #include <string.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include "test.h"
 
@@ -721,7 +722,7 @@ int test_call_video(void)
 #endif
 
 
-static void mock_sample_handler(const int16_t *sampv, size_t sampc, void *arg)
+static void mock_sample_handler(const void *sampv, size_t sampc, void *arg)
 {
 	struct fixture *fix = arg;
 	bool got_aulevel;
@@ -816,6 +817,71 @@ int test_call_progress(void)
 
  out:
 	fixture_close(f);
+
+	return err;
+}
+
+
+static void float_sample_handler(const void *sampv, size_t sampc, void *arg)
+{
+	struct fixture *fix = arg;
+	(void)sampv;
+	(void)sampc;
+
+	if (sampc && fix->a.n_established && fix->b.n_established)
+		re_cancel();
+}
+
+
+int test_call_format_float(void)
+{
+	struct fixture fix, *f = &fix;
+	struct ausrc *ausrc = NULL;
+	struct auplay *auplay = NULL;
+	int err = 0;
+
+	fixture_init(f);
+
+	conf_config()->audio.src_fmt = AUFMT_FLOAT;
+	conf_config()->audio.play_fmt = AUFMT_FLOAT;
+
+	err = mock_ausrc_register(&ausrc);
+	TEST_ERR(err);
+	err = mock_auplay_register(&auplay, float_sample_handler, f);
+	TEST_ERR(err);
+
+	f->estab_action = ACTION_NOTHING;
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+
+ out:
+	conf_config()->audio.src_fmt = AUFMT_S16LE;
+	conf_config()->audio.play_fmt = AUFMT_S16LE;
+
+	fixture_close(f);
+	mem_deref(auplay);
+	mem_deref(ausrc);
+
+	if (fix.err)
+		return fix.err;
 
 	return err;
 }

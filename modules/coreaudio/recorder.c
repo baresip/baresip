@@ -102,7 +102,7 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	(void)device;
 	(void)errh;
 
-	if (!stp || !as || !prm)
+	if (!stp || !as || !prm || prm->fmt != AUFMT_S16LE)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);

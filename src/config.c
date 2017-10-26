@@ -56,6 +56,8 @@ static struct config core_config = {
 		false,
 		AUDIO_MODE_POLL,
 		false,
+		AUFMT_S16LE,
+		AUFMT_S16LE,
 	},
 
 #ifdef USE_VIDEO
@@ -139,11 +141,22 @@ static int dns_server_handler(const struct pl *pl, void *arg)
 }
 
 
+static enum aufmt resolve_aufmt(const struct pl *fmt)
+{
+	if (0 == pl_strcasecmp(fmt, "s16"))     return AUFMT_S16LE;
+	if (0 == pl_strcasecmp(fmt, "float"))   return AUFMT_FLOAT;
+	if (0 == pl_strcasecmp(fmt, "s24_3le")) return AUFMT_S24_3LE;
+
+	return (enum aufmt)-1;
+}
+
+
 int config_parse_conf(struct config *cfg, const struct conf *conf)
 {
 	struct pl pollm, as, ap;
 	enum poll_method method;
 	struct vidsz size = {0, 0};
+	struct pl fmt;
 	uint32_t v;
 	int err = 0;
 
@@ -208,6 +221,32 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		cfg->audio.src_first = as.p < ap.p;
 
 	(void)conf_get_bool(conf, "audio_level", &cfg->audio.level);
+
+	if (0 == conf_get(conf, "ausrc_format", &fmt)) {
+
+		cfg->audio.src_fmt = resolve_aufmt(&fmt);
+		if (cfg->audio.src_fmt == -1) {
+			warning("ausrc_format: sample format not supported"
+				" (%r)\n", &fmt);
+			return EINVAL;
+		}
+
+		info("ausrc: using audio sample format `%s'\n",
+		     aufmt_name(cfg->audio.src_fmt));
+	}
+
+	if (0 == conf_get(conf, "auplay_format", &fmt)) {
+
+		cfg->audio.play_fmt = resolve_aufmt(&fmt);
+		if (cfg->audio.play_fmt == -1) {
+			warning("auplay_format: audio format not supported"
+				" (%r)\n", &fmt);
+			return EINVAL;
+		}
+
+		info("auplay: using audio sample format `%s'\n",
+		     aufmt_name(cfg->audio.play_fmt));
+	}
 
 #ifdef USE_VIDEO
 	/* Video */

@@ -22,14 +22,12 @@ struct auplay_st {
 	pthread_t thread;
 	bool run;
 	snd_pcm_t *write;
-	int16_t *sampv;
-	void *xsampv;
+	void *sampv;
 	size_t sampc;
 	auplay_write_h *wh;
 	void *arg;
 	struct auplay_prm prm;
 	char *device;
-	enum aufmt aufmt;
 };
 
 
@@ -48,7 +46,6 @@ static void auplay_destructor(void *arg)
 		snd_pcm_close(st->write);
 
 	mem_deref(st->sampv);
-	mem_deref(st->xsampv);
 	mem_deref(st->device);
 }
 
@@ -67,14 +64,7 @@ static void *write_thread(void *arg)
 
 		st->wh(st->sampv, st->sampc, st->arg);
 
-		if (st->aufmt == AUFMT_S16LE) {
-			sampv = st->sampv;
-		}
-		else {
-			sampv = st->xsampv;
-			auconv_from_s16(st->aufmt, st->xsampv,
-					st->sampv, st->sampc);
-		}
+		sampv = st->sampv;
 
 		n = snd_pcm_writei(st->write, sampv, samples);
 
@@ -127,24 +117,14 @@ int alsa_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
-	st->aufmt = alsa_sample_format;
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	num_frames = st->prm.srate * st->prm.ptime / 1000;
 
-	st->sampv = mem_alloc(2 * st->sampc, NULL);
+	st->sampv = mem_alloc(aufmt_sample_size(prm->fmt) * st->sampc, NULL);
 	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;
-	}
-
-	if (st->aufmt != AUFMT_S16LE) {
-		size_t sz = aufmt_sample_size(st->aufmt) * st->sampc;
-		st->xsampv = mem_alloc(sz, NULL);
-		if (!st->xsampv) {
-			err = ENOMEM;
-			goto out;
-		}
 	}
 
 	err = snd_pcm_open(&st->write, st->device, SND_PCM_STREAM_PLAYBACK, 0);
@@ -154,10 +134,10 @@ int alsa_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
-	pcmfmt = aufmt_to_alsaformat(st->aufmt);
+	pcmfmt = aufmt_to_alsaformat(prm->fmt);
 	if (pcmfmt == SND_PCM_FORMAT_UNKNOWN) {
 		warning("alsa: unknown sample format '%s'\n",
-			aufmt_name(st->aufmt));
+			aufmt_name(prm->fmt));
 		err = EINVAL;
 		goto out;
 	}

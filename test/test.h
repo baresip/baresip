@@ -143,7 +143,7 @@ int mock_ausrc_register(struct ausrc **ausrcp);
 
 struct auplay;
 
-typedef void (mock_sample_h)(const int16_t *sampv, size_t sampc, void *arg);
+typedef void (mock_sample_h)(const void *sampv, size_t sampc, void *arg);
 
 int mock_auplay_register(struct auplay **auplayp,
 			 mock_sample_h *sampleh, void *arg);
@@ -206,6 +206,7 @@ int test_call_dtmf(void);
 int test_call_video(void);
 int test_call_aulevel(void);
 int test_call_progress(void);
+int test_call_format_float(void);
 
 #ifdef USE_VIDEO
 int test_video(void);

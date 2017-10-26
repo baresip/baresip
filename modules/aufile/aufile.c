@@ -159,6 +159,12 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("aufile: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	info("aufile: loading input file '%s'\n", dev);
 
 	st = mem_zalloc(sizeof(*st), destructor);
