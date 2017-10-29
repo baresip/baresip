@@ -746,6 +746,33 @@ static int add_telev_codec(struct audio *a)
 }
 
 
+/*
+ * EBU ACIP (Audio Contribution over IP) Profile
+ */
+static int set_ebuacip_params(struct audio *au, uint32_t ptime)
+{
+	struct sdp_media *sdp = stream_sdpmedia(au->strm);
+	int jb_id;
+	int jbvalue;
+	int err = 0;
+
+	jb_id = 0;
+	jbvalue = (au->strm->cfg.jbuf_del.max) * ptime;
+
+	/* set ebuacip version */
+	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "version %i", 0);
+
+	/* set jb option, only one in our case */
+	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "jb %i", jb_id);
+
+	/* define jb value in option */
+	err |= sdp_media_set_lattr(sdp, false, "ebuacip",
+				   "jbdef %i fixed %d", jb_id, jbvalue);
+
+	return err;
+}
+
+
 int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
@@ -799,6 +826,13 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 					  "extmap",
 					  "%u %s",
 					  a->extmap_aulevel, uri_aulevel);
+		if (err)
+			goto out;
+	}
+
+	if (cfg->sdp.ebuacip) {
+
+		err = set_ebuacip_params(a, ptime);
 		if (err)
 			goto out;
 	}

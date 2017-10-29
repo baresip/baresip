@@ -95,6 +95,11 @@ static struct config core_config = {
 		""
 	},
 #endif
+
+	/* SDP */
+	{
+		false
+	},
 };
 
 
@@ -253,6 +258,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_str(conf, "bfcp_proto", cfg->bfcp.proto,
 			   sizeof(cfg->bfcp.proto));
 #endif
+
+	/* SDP */
+	(void)conf_get_bool(conf, "sdp_ebuacip", &cfg->sdp.ebuacip);
 
 	return err;
 }

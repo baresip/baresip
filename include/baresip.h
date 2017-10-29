@@ -248,6 +248,11 @@ struct config_bfcp {
 };
 #endif
 
+/** SDP */
+struct config_sdp {
+	bool ebuacip;           /**< Enable EBU-ACIP parameters     */
+};
+
 
 /** Core configuration */
 struct config {
@@ -268,6 +273,8 @@ struct config {
 #ifdef USE_VIDEO
 	struct config_bfcp bfcp;
 #endif
+
+	struct config_sdp sdp;
 };
 
 int config_parse_conf(struct config *cfg, const struct conf *conf);
