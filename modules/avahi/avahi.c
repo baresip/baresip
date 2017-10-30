@@ -250,6 +250,8 @@ static void resolve_callback(
 		warning("avahi: Resolver Error on %s: %s\n", name,
 			avahi_strerror(avahi_client_errno(avahi->client)));
 	}
+
+	avahi_service_resolver_free(r);
 }
 
 
