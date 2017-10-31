@@ -41,7 +41,7 @@ class Stream;
 class SRTPStat {
 public:
 	SRTPStat(const Stream *st, bool srtcp, uint64_t threshold);
-	void update(int32_t ret_code, bool quiet = false);
+	void update(int ret_code, bool quiet = false);
 	void reset();
 	uint64_t ok() { return m_ok; }
 private:
@@ -54,8 +54,7 @@ private:
 
 
 class Session;
-class CryptoContext;
-class CryptoContextCtrl;
+class Srtp;
 
 class Stream : public ZrtpCallback {
 public:
@@ -105,8 +104,7 @@ private:
 	struct udp_helper *m_uh_rtp;
 	struct udp_helper *m_uh_rtcp;
 	StreamMediaType m_media_type;
-	CryptoContext *m_send_cc, *m_recv_cc;
-	CryptoContextCtrl *m_send_cc_ctrl, *m_recv_cc_ctrl;
+	Srtp *m_send_srtp, *m_recv_srtp;
 	SRTPStat m_srtp_stat, m_srtcp_stat;
 	std::string m_sas, m_ciphers;
 

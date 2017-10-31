@@ -22,7 +22,7 @@ ZRTP_PATH ?= ../ZRTPCPP
 ZRTP_LIB := $(shell find $(ZRTP_PATH) -name libzrtpcppcore.a)
 
 MOD		:= gzrtp
-$(MOD)_SRCS	+= gzrtp.cpp session.cpp stream.cpp messages.cpp
+$(MOD)_SRCS	+= gzrtp.cpp session.cpp stream.cpp messages.cpp srtp.cpp
 $(MOD)_LFLAGS	+= $(ZRTP_LIB) -lstdc++
 $(MOD)_CXXFLAGS   += \
 	-I$(ZRTP_PATH) \
@@ -30,5 +30,9 @@ $(MOD)_CXXFLAGS   += \
 	-I$(ZRTP_PATH)/srtp
 
 $(MOD)_CXXFLAGS   += -O2 -Wall -fPIC
+
+# Uncomment this if you want to use libre SRTP facilities instead of the ones
+# provided by ZRTPCPP. In this case only standard ciphers (AES) are supported.
+#$(MOD)_CXXFLAGS   += -DGZRTP_USE_RE_SRTP=1
 
 include mk/mod.mk
