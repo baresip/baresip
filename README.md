@@ -246,6 +246,7 @@ gst1          Gstreamer 1.0 audio source
 gst_video     Gstreamer video codec
 gst_video1    Gstreamer 1.0 video codec
 gtk           GTK+ 2.0 UI
+gzrtp         ZRTP module using GNU ZRTP C++ library
 h265          H.265 video codec
 httpd         HTTP webserver UI-module
 ice           ICE protocol for NAT Traversal
