@@ -11,12 +11,10 @@
 
 #include <libzrtpcpp/ZRtp.h>
 #include <libzrtpcpp/ZrtpStateClass.h>
-#include <srtp/CryptoContext.h>
-#include <srtp/CryptoContextCtrl.h>
-#include <srtp/SrtpHandler.h>
 
 #include "session.h"
 #include "stream.h"
+#include "srtp.h"
 
 
 // A burst of SRTP/SRTCP errors enough to display a warning
@@ -67,7 +65,28 @@ static enum pkt_type get_packet_type(const struct mbuf *mb)
 
 ZRTPConfig::ZRTPConfig(const struct conf *conf, const char *conf_dir)
 {
+#ifdef GZRTP_USE_RE_SRTP
+	// Standard ciphers only
+	zrtp.clear();
+
+	zrtp.addAlgo(HashAlgorithm, zrtpHashes.getByName(s256));
+
+	zrtp.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes3));
+	zrtp.addAlgo(CipherAlgorithm, zrtpSymCiphers.getByName(aes1));
+
+	zrtp.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(ec25));
+	zrtp.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(dh3k));
+	zrtp.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(ec38));
+	zrtp.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(dh2k));
+	zrtp.addAlgo(PubKeyAlgorithm, zrtpPubKeys.getByName(mult));
+
+	zrtp.addAlgo(SasType, zrtpSasTypes.getByName(b32));
+
+	zrtp.addAlgo(AuthLength, zrtpAuthLengths.getByName(hs32));
+	zrtp.addAlgo(AuthLength, zrtpAuthLengths.getByName(hs80));
+#else
 	zrtp.setStandardConfig();
+#endif
 
 	str_ncpy(client_id, "baresip/gzrtp", sizeof(client_id));
 
@@ -87,37 +106,37 @@ SRTPStat::SRTPStat(const Stream *st, bool srtcp, uint64_t threshold)
 }
 
 
-void SRTPStat::update(int32_t ret_code, bool quiet)
+void SRTPStat::update(int ret_code, bool quiet)
 {
 	const char *err_msg;
 	uint64_t *burst;
 
-	// SrtpHandler::unprotect/unprotectCtrl return codes
+	// Srtp::unprotect/unprotect_ctrl return codes
 	switch (ret_code) {
-	case 1:
+	case 0:
 		++m_ok;
 		m_decode_burst = 0;
 		m_auth_burst = 0;
 		m_replay_burst = 0;
 		return;
-	case 0:
+	case EBADMSG:
 		++m_decode;
 		burst = &m_decode_burst;
 		err_msg = "packet decode error";
 		break;
-	case -1:
+	case EAUTH:
 		++m_auth;
 		burst = &m_auth_burst;
 		err_msg = "authentication failed";
 		break;
-	case -2:
+	case EALREADY:
 		++m_replay;
 		burst = &m_replay_burst;
 		err_msg = "replay check failed";
 		break;
 	default:
-		warning("zrtp: Unknown return code from unprotect: %d\n",
-		        ret_code);
+		warning("zrtp: %s unprotect failed: %m\n",
+		        (m_control)? "SRTCP" : "SRTP", ret_code);
 		return;
 	}
 
@@ -156,10 +175,8 @@ Stream::Stream(int& err, const ZRTPConfig& config, Session *session,
 	, m_uh_rtp(NULL)
 	, m_uh_rtcp(NULL)
 	, m_media_type(media_type)
-	, m_send_cc(NULL)
-	, m_recv_cc(NULL)
-	, m_send_cc_ctrl(NULL)
-	, m_recv_cc_ctrl(NULL)
+	, m_send_srtp(NULL)
+	, m_recv_srtp(NULL)
 	, m_srtp_stat(this, false, SRTP_ERR_BURST_THRESHOLD)
 	, m_srtcp_stat(this, true, SRTP_ERR_BURST_THRESHOLD)
 {
@@ -275,7 +292,7 @@ void Stream::stop()
 	// thus make sure we have a second retained shared secret available.
 	// Refer to RFC 6189bis, chapter 4.6.1 50 packets are about 1 second
 	// of audio data
-	if (!m_zrtp->isMultiStream() && m_recv_cc && m_srtp_stat.ok() < 20) {
+	if (!m_zrtp->isMultiStream() && m_recv_srtp && m_srtp_stat.ok() < 20) {
 
 		debug("zrtp: Stream <%s>: received too few valid SRTP "
 		      "packets (%u), storing RS2\n",
@@ -288,17 +305,11 @@ void Stream::stop()
 
 	m_zrtp->stopZrtp();
 
-	delete m_send_cc;
-	m_send_cc = NULL;
+	delete m_send_srtp;
+	m_send_srtp = NULL;
 
-	delete m_recv_cc;
-	m_recv_cc = NULL;
-
-	delete m_send_cc_ctrl;
-	m_send_cc_ctrl = NULL;
-
-	delete m_recv_cc_ctrl;
-	m_recv_cc_ctrl = NULL;
+	delete m_recv_srtp;
+	m_recv_srtp = NULL;
 
 	debug("zrtp: Stream <%s> stopped\n", media_name());
 }
@@ -341,58 +352,29 @@ bool Stream::udp_helper_send(int *err, struct sa *src, struct mbuf *mb)
 
 	enum pkt_type ptype = get_packet_type(mb);
 	size_t len = mbuf_get_left(mb);
-	size_t newlen = 0;
-	bool rc = false;
+	int rerr = 0;
 
-	if (ptype == PKT_TYPE_RTCP && m_send_cc_ctrl && len > 8) {
+	if (ptype == PKT_TYPE_RTCP && m_send_srtp && len > 8) {
 
-		int32_t extra = (mbuf_get_space(mb) > len)?
-		                 mbuf_get_space(mb) - len : 0;
-
-		if (m_send_cc_ctrl->getTagLength() + 4 +
-		    m_send_cc_ctrl->getMkiLength() > extra) {
-			warning("zrtp: Stream <%s>: No space left for SRTCP "
-			        "packet\n", media_name());
-			*err = ENOMEM;
-			return true;
-		}
-
-		rc = SrtpHandler::protectCtrl(m_send_cc_ctrl, mbuf_buf(mb),
-		                              len, &newlen);
+		rerr = m_send_srtp->protect_ctrl(mb);
 	}
-	else if (ptype == PKT_TYPE_RTP && m_send_cc && len > RTP_HEADER_SIZE) {
+	else if (ptype == PKT_TYPE_RTP && m_send_srtp &&
+	         len > RTP_HEADER_SIZE) {
 
-		int32_t extra = (mbuf_get_space(mb) > len)?
-		                 mbuf_get_space(mb) - len : 0;
-
-		if (m_send_cc->getTagLength() +
-		    m_send_cc->getMkiLength() > extra) {
-			warning("zrtp: Stream <%s>: No space left for SRTP "
-			        "packet\n", media_name());
-			*err = ENOMEM;
-			return true;
-		}
-
-		rc = SrtpHandler::protect(m_send_cc, mbuf_buf(mb),
-		                          len, &newlen);
+		rerr = m_send_srtp->protect(mb);
 	}
 	else
 		return false;
 
-	if (!rc) {
-		warning("zrtp: protect/protectCtrl failed, len: %u\n", len);
+	if (rerr) {
+		warning("zrtp: protect/protect_ctrl failed (len=%u): %m\n",
+		        len, rerr);
+
+		if (rerr == ENOMEM)
+			*err = rerr;
 		// drop
 		return true;
 	}
-
-	if (newlen > mbuf_get_space(mb)) {
-		// this should never happen
-		error_msg("zrtp: udp_helper_send: length > space (%u > %u)\n",
-		         newlen, mbuf_get_space(mb));
-		abort();
-	}
-
-	mb->end = mb->pos + newlen;
 
 	return false;
 }
@@ -415,38 +397,26 @@ bool Stream::udp_helper_recv(struct sa *src, struct mbuf *mb)
 		return false;
 
 	enum pkt_type ptype = get_packet_type(mb);
-	size_t len = mbuf_get_left(mb);
-	size_t newlen = 0;
-	uint32_t rc;
+	int err = 0;
 
-	if (ptype == PKT_TYPE_RTCP && m_recv_cc_ctrl) {
+	if (ptype == PKT_TYPE_RTCP && m_recv_srtp) {
 
-		rc = SrtpHandler::unprotectCtrl(m_recv_cc_ctrl, mbuf_buf(mb),
-		                                len, &newlen);
+		err = m_recv_srtp->unprotect_ctrl(mb);
 
-		m_srtcp_stat.update(rc);
-
-		if (rc != 1)
-			// drop
-			return true;
+		m_srtcp_stat.update(err);
 	}
-	else if (ptype == PKT_TYPE_RTP && m_recv_cc) {
+	else if (ptype == PKT_TYPE_RTP && m_recv_srtp) {
 
-		rc = SrtpHandler::unprotect(m_recv_cc, mbuf_buf(mb),
-		                            len, &newlen, NULL);
+		err = m_recv_srtp->unprotect(mb);
 
-		m_srtp_stat.update(rc);
+		m_srtp_stat.update(err);
 
-		if (rc == 1) {
+		if (!err) {
 			// Got a good SRTP, check state and if in WaitConfAck
 			// (an Initiator state) then simulate a conf2Ack,
 			// refer to RFC 6189, chapter 4.6, last paragraph
 			if (m_zrtp->inState(WaitConfAck))
 				m_zrtp->conf2AckSecure();
-		}
-		else {
-			// drop
-			return true;
 		}
 	}
 	else if (ptype == PKT_TYPE_ZRTP) {
@@ -455,7 +425,9 @@ bool Stream::udp_helper_recv(struct sa *src, struct mbuf *mb)
 	else
 		return false;
 
-	mb->end = mb->pos + newlen;
+	if (err)
+		// drop
+		return true;
 
 	return false;
 }
@@ -607,124 +579,27 @@ void Stream::sendInfo(GnuZrtpCodes::MessageSeverity severity, int32_t subCode)
 
 bool Stream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 {
-	CryptoContext *cc = NULL;
-	CryptoContextCtrl *cc_ctrl = NULL;
-	int cipher;
-	int authn;
-	int auth_key_len;
-	const uint8_t *key, *salt;
-	uint32_t key_len, salt_len;
+	Srtp *s;
+	int err = 0;
 
 	debug("zrtp: Stream <%s>: secrets are ready for %s\n",
 	      media_name(),
 	      (part == ForSender)? "sender" : "receiver");
 
-	switch (secrets->authAlgorithm) {
-	case Sha1:
-		authn = SrtpAuthenticationSha1Hmac;
-		auth_key_len = 20;
-		break;
-	case Skein:
-		authn = SrtpAuthenticationSkeinHmac;
-		auth_key_len = 32;
-		break;
-	default:
+	s = new Srtp(err, secrets, part);
+	if (!s || err) {
+		warning("zrtp: Stream <%s>: Srtp creation failed: %m\n",
+		        media_name(), err);
+		delete s;
 		return false;
 	}
 
-	switch (secrets->symEncAlgorithm) {
-	case Aes:
-		cipher = SrtpEncryptionAESCM;
-		break;
-	case TwoFish:
-		cipher = SrtpEncryptionTWOCM;
-		break;
-	default:
+	if (part == ForSender)
+		m_send_srtp = s;
+	else if (part == ForReceiver)
+		m_recv_srtp = s;
+	else
 		return false;
-	}
-
-	if (part == ForSender) {
-		// To encrypt packets: intiator uses initiator keys,
-		// responder uses responder keys
-		if (secrets->role == Initiator) {
-			key = secrets->keyInitiator;
-			key_len = secrets->initKeyLen / 8;
-			salt = secrets->saltInitiator;
-			salt_len = secrets->initSaltLen / 8;
-		}
-		else {
-			key = secrets->keyResponder;
-			key_len = secrets->respKeyLen / 8;
-			salt = secrets->saltResponder;
-			salt_len = secrets->respSaltLen / 8;
-		}
-	}
-	else if (part == ForReceiver) {
-		// To decrypt packets: intiator uses responder keys,
-		// responder initiator keys
-		if (secrets->role == Initiator) {
-			key = secrets->keyResponder;
-			key_len = secrets->respKeyLen / 8;
-			salt = secrets->saltResponder;
-			salt_len = secrets->respSaltLen / 8;
-		}
-		else {
-			key = secrets->keyInitiator;
-			key_len = secrets->initKeyLen / 8;
-			salt = secrets->saltInitiator;
-			salt_len = secrets->initSaltLen / 8;
-		}
-	}
-	else {
-		return false;
-	}
-
-	cc = new CryptoContext(
-	        0,                             // SSRC (used for lookup)
-	        0,                             // Roll-Over-Counter (ROC)
-	        0L,                            // keyderivation << 48,
-	        cipher,                        // encryption algo
-	        authn,                         // authtentication algo
-	        (uint8_t *)key,                // Master Key
-	        key_len,                       // Master Key length
-	        (uint8_t *)salt,               // Master Salt
-	        salt_len,                      // Master Salt length
-	        key_len,                       // encryption keyl
-	        auth_key_len,                  // authentication key len
-	        salt_len,                      // session salt len
-	        secrets->srtpAuthTagLen / 8);  // authentication tag lenA
-
-	cc_ctrl = new CryptoContextCtrl(
-	        0,                             // SSRC (used for lookup)
-	        cipher,                        // encryption algo
-	        authn,                         // authtentication algo
-	        (uint8_t *)key,                // Master Key
-	        key_len,                       // Master Key length
-	        (uint8_t *)salt,               // Master Salt
-	        salt_len,                      // Master Salt length
-	        key_len,                       // encryption keyl
-	        auth_key_len,                  // authentication key len
-	        salt_len,                      // session salt len
-	        secrets->srtpAuthTagLen / 8);  // authentication tag lenA
-
-	if (!cc || !cc_ctrl) {
-		delete cc;
-		delete cc_ctrl;
-
-		return false;
-	}
-
-	cc->deriveSrtpKeys(0L);
-	cc_ctrl->deriveSrtcpKeys();
-
-	if (part == ForSender) {
-		m_send_cc = cc;
-		m_send_cc_ctrl = cc_ctrl;
-	}
-	else {
-		m_recv_cc = cc;
-		m_recv_cc_ctrl = cc_ctrl;
-	}
 
 	return true;
 }
@@ -737,17 +612,13 @@ void Stream::srtpSecretsOff(EnableSecurity part)
 	      (part == ForSender)? "sender" : "receiver");
 
 	if (part == ForSender) {
-		delete m_send_cc;
-		delete m_send_cc_ctrl;
-		m_send_cc = NULL;
-		m_send_cc_ctrl = NULL;
+		delete m_send_srtp;
+		m_send_srtp = NULL;
 	}
 
 	if (part == ForReceiver) {
-		delete m_recv_cc;
-		delete m_recv_cc_ctrl;
-		m_recv_cc = NULL;
-		m_recv_cc_ctrl = NULL;
+		delete m_recv_srtp;
+		m_recv_srtp = NULL;
 	}
 }
 
