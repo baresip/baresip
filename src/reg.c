@@ -193,7 +193,8 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	routev[0] = outbound;
 
 	reg->sipreg = mem_deref(reg->sipreg);
-	err = sipreg_register(&reg->sipreg, uag_sip(), reg_uri,
+	err = sipreg_register_dname(&reg->sipreg, uag_sip(), reg_uri,
+			      ua_account(reg->ua)->dispname,
 			      ua_aor(reg->ua), ua_aor(reg->ua),
 			      regint, ua_local_cuser(reg->ua),
 			      routev[0] ? routev : NULL,
