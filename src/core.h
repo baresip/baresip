@@ -475,3 +475,69 @@ struct stream *video_strm(const struct video *v);
 void video_update_picture(struct video *v);
 void video_sdp_attr_decode(struct video *v);
 int  video_print(struct re_printf *pf, const struct video *v);
+
+
+/*
+ * Timestamp helpers
+ */
+
+
+/**
+ * This struct is used to keep track of timestamps for
+ * incoming RTP packets.
+ */
+struct timestamp_recv {
+	uint32_t first;
+	uint32_t last;
+	bool is_set;
+	unsigned num_wraps;
+};
+
+
+static inline uint64_t calc_extended_timestamp(uint32_t num_wraps, uint32_t ts)
+{
+	uint64_t ext_ts;
+
+	ext_ts  = (uint64_t)num_wraps * 0x100000000ULL;
+	ext_ts += (uint64_t)ts;
+
+	return ext_ts;
+}
+
+
+static inline uint64_t timestamp_duration(const struct timestamp_recv *ts)
+{
+	uint64_t last_ext;
+
+	if (!ts || !ts->is_set)
+		return 0;
+
+	last_ext = calc_extended_timestamp(ts->num_wraps, ts->last);
+
+	return last_ext - ts->first;
+}
+
+
+/*
+ *  -1  backwards wrap-around
+ *   0  no wrap-around
+ *   1  forward wrap-around
+ */
+static inline int timestamp_wrap(uint32_t ts_new, uint32_t ts_old)
+{
+	int32_t delta;
+
+	if (ts_new < ts_old) {
+
+		delta = (int32_t)ts_new - (int32_t)ts_old;
+
+		if (delta > 0)
+			return 1;
+	}
+	else if ((int32_t)(ts_old - ts_new) > 0) {
+
+		return -1;
+	}
+
+	return 0;
+}

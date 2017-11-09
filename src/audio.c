@@ -87,7 +87,8 @@ struct autx {
 	int16_t *sampv;               /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for sending         */
-	uint32_t ts;                  /**< Timestamp for outgoing RTP      */
+	uint64_t ts_ext;              /**< Ext. Timestamp for outgoing RTP */
+	uint32_t ts_base;
 	uint32_t ts_tel;              /**< Timestamp for Telephony Events  */
 	size_t psize;                 /**< Packet size for sending         */
 	bool marker;                  /**< Marker bit for outgoing RTP     */
@@ -140,6 +141,8 @@ struct aurx {
 	bool level_set;
 	enum aufmt play_fmt;
 	bool need_conv;
+	struct timestamp_recv ts_recv;
+	uint64_t n_discard;
 };
 
 
@@ -162,6 +165,43 @@ struct audio {
 
 /* RFC 6464 */
 static const char *uri_aulevel = "urn:ietf:params:rtp-hdrext:ssrc-audio-level";
+
+
+static double audio_calc_seconds(uint64_t rtp_ts, uint32_t clock_rate)
+{
+	double timestamp;
+
+	/* convert from RTP clockrate to seconds */
+	timestamp = (double)rtp_ts / (double)clock_rate;
+
+	return timestamp;
+}
+
+
+static double autx_calc_seconds(const struct autx *autx)
+{
+	uint64_t dur;
+
+	if (!autx->ac)
+		return .0;
+
+	dur = autx->ts_ext - autx->ts_base;
+
+	return audio_calc_seconds(dur, autx->ac->crate);
+}
+
+
+static double aurx_calc_seconds(const struct aurx *aurx)
+{
+	uint64_t dur;
+
+	if (!aurx->ac)
+		return .0;
+
+	dur = timestamp_duration(&aurx->ts_recv);
+
+	return audio_calc_seconds(dur, aurx->ac->crate);
+}
 
 
 static void stop_tx(struct autx *tx, struct audio *a)
@@ -393,7 +433,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	err = tx->ac->ench(tx->enc, mbuf_buf(tx->mb), &len, sampv, sampc);
 	if ((err & 0xffff0000) == 0x00010000) {
 		/* MPA needs some special treatment here */
-		tx->ts = err & 0xffff;
+		tx->ts_ext = err & 0xffff;
 		err = 0;
 	}
 	else if (err) {
@@ -407,9 +447,11 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 	if (mbuf_get_left(tx->mb)) {
 
+		uint32_t rtp_ts = tx->ts_ext & 0xffffffff;
+
 		if (len) {
 			err = stream_send(a->strm, ext_len!=0, tx->marker, -1,
-					tx->ts, tx->mb);
+					  rtp_ts, tx->mb);
 			if (err)
 				goto out;
 		}
@@ -425,7 +467,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	 */
 	frame_size = sampc_rtp / get_ch(tx->ac);
 
-	tx->ts += (uint32_t)frame_size;
+	tx->ts_ext += (uint32_t)frame_size;
 
  out:
 	tx->marker = false;
@@ -519,7 +561,7 @@ static void check_telev(struct audio *a, struct autx *tx)
 		return;
 
 	if (marker)
-		tx->ts_tel = tx->ts;
+		tx->ts_tel = (uint32_t)tx->ts_ext;
 
 	fmt = sdp_media_rformat(stream_sdpmedia(audio_strm(a)), telev_rtpfmt);
 	if (!fmt)
@@ -744,7 +786,9 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
+	bool discard = false;
 	size_t i;
+	int wrap;
 	int err;
 
 	if (!mb)
@@ -787,6 +831,71 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 			info("audio: rtp header ext ignored (id=%u)\n",
 			     extv[i].id);
 		}
+	}
+
+	/* Save timestamp for incoming RTP packets */
+
+	if (rx->ts_recv.is_set) {
+
+		uint64_t ext_last, ext_now;
+
+		ext_last = calc_extended_timestamp(rx->ts_recv.num_wraps,
+						   rx->ts_recv.last);
+
+		ext_now = calc_extended_timestamp(rx->ts_recv.num_wraps,
+						  hdr->ts);
+
+		if (ext_now <= ext_last) {
+			uint64_t delta;
+
+			delta = ext_last - ext_now;
+
+			warning("audio: [time=%.3f]"
+				" discard old frame (%.3f seconds old)\n",
+				aurx_calc_seconds(rx),
+				audio_calc_seconds(delta, rx->ac->crate));
+
+			discard = true;
+		}
+	}
+	else {
+		rx->ts_recv.first = hdr->ts;
+		rx->ts_recv.last = hdr->ts;
+		rx->ts_recv.is_set = true;
+	}
+
+	wrap = timestamp_wrap(hdr->ts, rx->ts_recv.last);
+
+	switch (wrap) {
+
+	case -1:
+		warning("audio: rtp timestamp wraps backwards"
+			" (delta = %d) -- discard\n",
+			(int32_t)(rx->ts_recv.last - hdr->ts));
+		discard = true;
+		break;
+
+	case 0:
+		break;
+
+	case 1:
+		++rx->ts_recv.num_wraps;
+		break;
+
+	default:
+		break;
+	}
+
+	rx->ts_recv.last = hdr->ts;
+
+#if 0
+	re_printf("[time=%.3f]    wrap=%d  discard=%d\n",
+		  aurx_calc_seconds(rx), wrap, discard);
+#endif
+
+	if (discard) {
+		++a->rx.n_discard;
+		return;
 	}
 
  out:
@@ -932,7 +1041,7 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	auresamp_init(&tx->resamp);
 	str_ncpy(tx->device, a->cfg.src_dev, sizeof(tx->device));
 	tx->ptime  = ptime;
-	tx->ts     = rand_u16();
+	tx->ts_ext = tx->ts_base = rand_u16();
 	tx->marker = true;
 
 	auresamp_init(&rx->resamp);
@@ -1704,6 +1813,8 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  aucodec_print, tx->ac,
 			  aubuf_debug, tx->aubuf,
 			  tx->ptime);
+	err |= re_hprintf(pf, "       time = %.3f sec\n",
+			  autx_calc_seconds(tx));
 
 	err |= re_hprintf(pf,
 			  " rx:   %H %H\n"
@@ -1711,9 +1822,18 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  aucodec_print, rx->ac,
 			  aubuf_debug, rx->aubuf,
 			  rx->ptime, rx->pt);
+	err |= re_hprintf(pf, "       n_discard:%llu\n",
+			  rx->n_discard);
 	if (rx->level_set) {
 		err |= re_hprintf(pf, "       level %.3f dBov\n",
 				  rx->level_last);
+	}
+	if (rx->ts_recv.is_set) {
+		err |= re_hprintf(pf, "       time = %.3f sec\n",
+				  aurx_calc_seconds(rx));
+	}
+	else {
+		err |= re_hprintf(pf, "     time = (not started)\n");
 	}
 
 	err |= re_hprintf(pf,
