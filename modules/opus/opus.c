@@ -88,14 +88,15 @@ static int module_init(void)
 	struct conf *conf = conf_cur();
 	uint32_t value;
 	char *p = fmtp + str_len(fmtp);
-	bool b, stereo = true;
+	bool b, stereo = true, sprop_stereo = true;
 	int n = 0;
 
 	conf_get_bool(conf, "opus_stereo", &stereo);
+	conf_get_bool(conf, "opus_sprop_stereo", &sprop_stereo);
 
 	/* always set stereo parameter first */
 	n = re_snprintf(p, sizeof(fmtp) - str_len(p),
-			"stereo=%d;sprop-stereo=%d", stereo, stereo);
+			"stereo=%d;sprop-stereo=%d", stereo, sprop_stereo);
 	if (n <= 0)
 		return ENOMEM;
 
