@@ -204,6 +204,8 @@ struct config_audio {
 	bool src_first;         /**< Audio source opened first      */
 	enum audio_mode txmode; /**< Audio transmit mode            */
 	bool level;             /**< Enable audio level indication  */
+	int src_fmt;            /**< Audio source sample format     */
+	int play_fmt;           /**< Audio playback sample format   */
 };
 
 #ifdef USE_VIDEO
@@ -365,9 +367,10 @@ struct ausrc_prm {
 	uint32_t   srate;       /**< Sampling rate in [Hz] */
 	uint8_t    ch;          /**< Number of channels    */
 	uint32_t   ptime;       /**< Wanted packet-time in [ms] */
+	int        fmt;         /**< Sample format (enum aufmt) */
 };
 
-typedef void (ausrc_read_h)(const int16_t *sampv, size_t sampc, void *arg);
+typedef void (ausrc_read_h)(const void *sampv, size_t sampc, void *arg);
 typedef void (ausrc_error_h)(int err, const char *str, void *arg);
 
 typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, const struct ausrc *ausrc,
@@ -397,9 +400,10 @@ struct auplay_prm {
 	uint32_t   srate;       /**< Sampling rate in [Hz] */
 	uint8_t    ch;          /**< Number of channels    */
 	uint32_t   ptime;       /**< Wanted packet-time in [ms] */
+	int        fmt;         /**< Sample format (enum aufmt) */
 };
 
-typedef void (auplay_write_h)(int16_t *sampv, size_t sampc, void *arg);
+typedef void (auplay_write_h)(void *sampv, size_t sampc, void *arg);
 
 typedef int  (auplay_alloc_h)(struct auplay_st **stp, const struct auplay *ap,
 			      struct auplay_prm *prm, const char *device,

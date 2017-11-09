@@ -28,6 +28,7 @@ struct ausrc_st {
 	bool run;
 	uint32_t ptime;
 	size_t sampc;
+	size_t sampsz;
 };
 
 
@@ -59,9 +60,10 @@ static void *play_thread(void *arg)
 {
 	uint64_t now, ts = tmr_jiffies();
 	struct ausrc_st *st = arg;
-	int16_t *sampv;
+	void *sampv;
+	size_t num_bytes = st->sampc * st->sampsz;
 
-	sampv = mem_alloc(st->sampc * 2, NULL);
+	sampv = mem_alloc(num_bytes, NULL);
 	if (!sampv)
 		return NULL;
 
@@ -80,7 +82,7 @@ static void *play_thread(void *arg)
 		}
 #endif
 
-		aubuf_read_samp(st->aubuf, sampv, st->sampc);
+		aubuf_read(st->aubuf, sampv, num_bytes);
 
 		st->rh(sampv, st->sampc, st->arg);
 
@@ -148,6 +150,18 @@ void rst_audio_feed(struct ausrc_st *st, const uint8_t *buf, size_t sz)
 }
 
 
+static int aufmt_to_encoding(enum aufmt fmt)
+{
+	switch (fmt) {
+
+	case AUFMT_S16LE:   return MPG123_ENC_SIGNED_16;
+	case AUFMT_FLOAT:   return MPG123_ENC_FLOAT_32;
+	case AUFMT_S24_3LE: return MPG123_ENC_SIGNED_24;  /* NOTE: endian */
+	default: return 0;
+	}
+}
+
+
 static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 			 struct media_ctx **ctx,
 			 struct ausrc_prm *prm, const char *dev,
@@ -184,10 +198,12 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	/* Set wanted output format */
 	mpg123_format_none(st->mp3);
-	mpg123_format(st->mp3, prm->srate, prm->ch, MPG123_ENC_SIGNED_16);
+	mpg123_format(st->mp3, prm->srate, prm->ch,
+		      aufmt_to_encoding(prm->fmt));
 	mpg123_volume(st->mp3, 0.3);
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	st->sampsz = aufmt_sample_size(prm->fmt);
 
 	st->ptime = prm->ptime;
 
@@ -198,8 +214,8 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	/* 1 - 20 seconds of audio */
 	err = aubuf_alloc(&st->aubuf,
-			  prm->srate * prm->ch * 2,
-			  prm->srate * prm->ch * 40);
+			  prm->srate * prm->ch * st->sampsz,
+			  prm->srate * prm->ch * st->sampsz * 20);
 	if (err)
 		goto out;
 

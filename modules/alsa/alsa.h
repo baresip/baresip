@@ -6,7 +6,7 @@
 
 
 extern char alsa_dev[64];
-extern enum aufmt alsa_sample_format;
+
 
 int alsa_reset(snd_pcm_t *pcm, uint32_t srate, uint32_t ch,
 	       uint32_t num_frames, snd_pcm_format_t pcmfmt);

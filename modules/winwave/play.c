@@ -202,6 +202,12 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!stp || !ap || !prm)
 		return EINVAL;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("winwave: playback: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
 		return ENOMEM;

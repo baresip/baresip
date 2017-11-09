@@ -39,7 +39,7 @@ static struct mbuf *generate_tone(void)
 }
 
 
-static void sample_handler(const int16_t *sampv, size_t sampc, void *arg)
+static void sample_handler(const void *sampv, size_t sampc, void *arg)
 {
 	struct test *test = arg;
 	size_t bytec = sampc * 2;

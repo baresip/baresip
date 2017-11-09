@@ -22,14 +22,12 @@ struct ausrc_st {
 	pthread_t thread;
 	bool run;
 	snd_pcm_t *read;
-	int16_t *sampv;
-	void *xsampv;
+	void *sampv;
 	size_t sampc;
 	ausrc_read_h *rh;
 	void *arg;
 	struct ausrc_prm prm;
 	char *device;
-	enum aufmt aufmt;
 };
 
 
@@ -48,7 +46,6 @@ static void ausrc_destructor(void *arg)
 		snd_pcm_close(st->read);
 
 	mem_deref(st->sampv);
-	mem_deref(st->xsampv);
 	mem_deref(st->device);
 }
 
@@ -73,10 +70,7 @@ static void *read_thread(void *arg)
 		size_t sampc;
 		void *sampv;
 
-		if (st->aufmt == AUFMT_S16LE)
-			sampv = st->sampv;
-		else
-			sampv = st->xsampv;
+		sampv = st->sampv;
 
 		err = snd_pcm_readi(st->read, sampv, num_frames);
 		if (err == -EPIPE) {
@@ -88,11 +82,6 @@ static void *read_thread(void *arg)
 		}
 
 		sampc = err * st->prm.ch;
-
-		if (st->aufmt != AUFMT_S16LE) {
-			auconv_to_s16(st->sampv, st->aufmt,
-				      st->xsampv, sampc);
-		}
 
 		st->rh(st->sampv, sampc, st->arg);
 	}
@@ -132,24 +121,14 @@ int alsa_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
-	st->aufmt = alsa_sample_format;
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	num_frames = st->prm.srate * st->prm.ptime / 1000;
 
-	st->sampv = mem_alloc(2 * st->sampc, NULL);
+	st->sampv = mem_alloc(aufmt_sample_size(prm->fmt) * st->sampc, NULL);
 	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;
-	}
-
-	if (st->aufmt != AUFMT_S16LE) {
-		size_t sz = aufmt_sample_size(st->aufmt) * st->sampc;
-		st->xsampv = mem_alloc(sz, NULL);
-		if (!st->xsampv) {
-			err = ENOMEM;
-			goto out;
-		}
 	}
 
 	err = snd_pcm_open(&st->read, st->device, SND_PCM_STREAM_CAPTURE, 0);
@@ -159,10 +138,10 @@ int alsa_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	pcmfmt = aufmt_to_alsaformat(st->aufmt);
+	pcmfmt = aufmt_to_alsaformat(prm->fmt);
 	if (pcmfmt == SND_PCM_FORMAT_UNKNOWN) {
 		warning("alsa: unknown sample format '%s'\n",
-			aufmt_name(st->aufmt));
+			aufmt_name(prm->fmt));
 		err = EINVAL;
 		goto out;
 	}
@@ -182,7 +161,8 @@ int alsa_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	debug("alsa: recording started (%s)\n", st->device);
+	debug("alsa: recording started (%s) format=%s\n",
+	      st->device, aufmt_name(prm->fmt));
 
  out:
 	if (err)

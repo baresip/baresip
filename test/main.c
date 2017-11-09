@@ -35,6 +35,7 @@ static const struct test tests[] = {
 	TEST(test_call_dtmf),
 	TEST(test_call_aulevel),
 	TEST(test_call_progress),
+	TEST(test_call_format_float),
 #ifdef USE_VIDEO
 	TEST(test_call_video),
 	TEST(test_video),

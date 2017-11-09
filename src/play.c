@@ -69,7 +69,7 @@ static void tmr_polling(void *arg)
 /**
  * NOTE: DSP cannot be destroyed inside handler
  */
-static void write_handler(int16_t *sampv, size_t sampc, void *arg)
+static void write_handler(void *sampv, size_t sampc, void *arg)
 {
 	struct play *play = arg;
 	size_t sz = sampc * 2;
@@ -242,6 +242,7 @@ int play_tone(struct play **playp, struct player *player,
 	wprm.ch         = ch;
 	wprm.srate      = srate;
 	wprm.ptime      = PTIME;
+	wprm.fmt        = AUFMT_S16LE;
 
 	err = auplay_alloc(&play->auplay, baresip_auplayl(),
 			   cfg->audio.alert_mod, &wprm,

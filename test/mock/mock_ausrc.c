@@ -4,6 +4,7 @@
  * Copyright (C) 2010 - 2016 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include "../test.h"
 
@@ -13,7 +14,7 @@ struct ausrc_st {
 
 	struct tmr tmr;
 	struct ausrc_prm prm;
-	int16_t *sampv;
+	void *sampv;
 	size_t sampc;
 	ausrc_read_h *rh;
 	void *arg;
@@ -65,7 +66,7 @@ static int mock_ausrc_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 
-	st->sampv = mem_zalloc(2 * st->sampc, NULL);
+	st->sampv = mem_zalloc(aufmt_sample_size(prm->fmt) * st->sampc, NULL);
 	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;

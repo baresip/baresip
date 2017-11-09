@@ -383,6 +383,12 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!prm)
 		return EINVAL;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("gst: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), gst_destructor);
 	if (!st)
 		return ENOMEM;

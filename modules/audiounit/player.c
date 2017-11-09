@@ -7,6 +7,7 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include <pthread.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include "audiounit.h"
 
@@ -18,6 +19,7 @@ struct auplay_st {
 	pthread_mutex_t mutex;
 	auplay_write_h *wh;
 	void *arg;
+	uint32_t sampsz;
 };
 
 
@@ -68,7 +70,7 @@ static OSStatus output_callback(void *inRefCon,
 
 		AudioBuffer *ab = &ioData->mBuffers[i];
 
-		wh(ab->mData, ab->mDataByteSize/2, arg);
+		wh(ab->mData, ab->mDataByteSize/st->sampsz, arg);
 	}
 
 	return 0;
@@ -83,6 +85,17 @@ static void interrupt_handler(bool interrupted, void *arg)
 		AudioOutputUnitStop(st->au);
 	else
 		AudioOutputUnitStart(st->au);
+}
+
+
+static uint32_t aufmt_to_formatflags(enum aufmt fmt)
+{
+	switch (fmt) {
+
+	case AUFMT_S16LE:  return kLinearPCMFormatFlagIsSignedInteger;
+	case AUFMT_FLOAT:  return kLinearPCMFormatFlagIsFloat;
+	default: return 0;
+	}
 }
 
 
@@ -130,21 +143,23 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
+	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
+
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
 #if TARGET_OS_IPHONE
-	fmt.mFormatFlags      = kAudioFormatFlagIsSignedInteger
+	fmt.mFormatFlags      = aufmt_to_formatflags(prm->fmt)
 		| kAudioFormatFlagsNativeEndian
 		| kAudioFormatFlagIsPacked;
 #else
-	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger
-		| kLinearPCMFormatFlagIsPacked;
+	fmt.mFormatFlags      = aufmt_to_formatflags(prm->fmt)
+		| kAudioFormatFlagIsPacked;
 #endif
-	fmt.mBitsPerChannel   = 16;
+	fmt.mBitsPerChannel   = 8 * st->sampsz;
 	fmt.mChannelsPerFrame = prm->ch;
-	fmt.mBytesPerFrame    = 2 * prm->ch;
+	fmt.mBytesPerFrame    = st->sampsz * prm->ch;
 	fmt.mFramesPerPacket  = 1;
-	fmt.mBytesPerPacket   = 2 * prm->ch;
+	fmt.mBytesPerPacket   = st->sampsz * prm->ch;
 
 	ret = AudioUnitInitialize(st->au);
 	if (ret)

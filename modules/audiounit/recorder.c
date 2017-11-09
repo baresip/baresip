@@ -8,6 +8,7 @@
 #include <TargetConditionals.h>
 #include <pthread.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include "audiounit.h"
 
@@ -20,6 +21,7 @@ struct ausrc_st {
 	int ch;
 	ausrc_read_h *rh;
 	void *arg;
+	uint32_t sampsz;
 };
 
 
@@ -67,7 +69,7 @@ static OSStatus input_callback(void *inRefCon,
 	abl.mNumberBuffers = 1;
 	abl.mBuffers[0].mNumberChannels = st->ch;
 	abl.mBuffers[0].mData = NULL;
-	abl.mBuffers[0].mDataByteSize = inNumberFrames * 2;
+	abl.mBuffers[0].mDataByteSize = inNumberFrames * st->sampsz;
 
 	ret = AudioUnitRender(st->au,
 			      ioActionFlags,
@@ -80,7 +82,8 @@ static OSStatus input_callback(void *inRefCon,
 		return ret;
 	}
 
-	rh(abl.mBuffers[0].mData, abl.mBuffers[0].mDataByteSize/2, arg);
+	rh(abl.mBuffers[0].mData,
+	   abl.mBuffers[0].mDataByteSize/st->sampsz, arg);
 
 	return 0;
 }
@@ -94,6 +97,17 @@ static void interrupt_handler(bool interrupted, void *arg)
 		AudioOutputUnitStop(st->au);
 	else
 		AudioOutputUnitStart(st->au);
+}
+
+
+static uint32_t aufmt_to_formatflags(enum aufmt fmt)
+{
+	switch (fmt) {
+
+	case AUFMT_S16LE:  return kLinearPCMFormatFlagIsSignedInteger;
+	case AUFMT_FLOAT:  return kLinearPCMFormatFlagIsFloat;
+	default: return 0;
+	}
 }
 
 
@@ -178,21 +192,23 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 #endif
 
+	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
+
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
 #if TARGET_OS_IPHONE
-	fmt.mFormatFlags      = kAudioFormatFlagIsSignedInteger
+	fmt.mFormatFlags      = aufmt_to_formatflags(prm->fmt)
 		| kAudioFormatFlagsNativeEndian
 		| kAudioFormatFlagIsPacked;
 #else
-	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger
+	fmt.mFormatFlags      = aufmt_to_formatflags(prm->fmt)
 		| kLinearPCMFormatFlagIsPacked;
 #endif
-	fmt.mBitsPerChannel   = 16;
+	fmt.mBitsPerChannel   = 8 * st->sampsz;
 	fmt.mChannelsPerFrame = prm->ch;
-	fmt.mBytesPerFrame    = 2 * prm->ch;
+	fmt.mBytesPerFrame    = st->sampsz * prm->ch;
 	fmt.mFramesPerPacket  = 1;
-	fmt.mBytesPerPacket   = 2 * prm->ch;
+	fmt.mBytesPerPacket   = st->sampsz * prm->ch;
 	fmt.mReserved         = 0;
 
 	ret = AudioUnitSetProperty(st->au, kAudioUnitProperty_StreamFormat,

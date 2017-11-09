@@ -196,6 +196,12 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (prm->ch > ARRAY_SIZE(st->portv))
 		return EINVAL;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("jack: source: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
 		return ENOMEM;

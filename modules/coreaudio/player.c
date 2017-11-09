@@ -88,6 +88,9 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	(void)device;
 
+	if (!stp || !ap || !prm || prm->fmt != AUFMT_S16LE)
+		return EINVAL;
+
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
 		return ENOMEM;

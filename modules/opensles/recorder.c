@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <string.h>
 #include <SLES/OpenSLES.h>
@@ -164,6 +165,12 @@ int opensles_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("opensles: record: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	debug("opensles: opening recorder %uHz, %uchannels\n",
 			prm->srate, prm->ch);
