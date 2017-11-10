@@ -58,6 +58,8 @@ static struct config core_config = {
 		false,
 		AUFMT_S16LE,
 		AUFMT_S16LE,
+		AUFMT_S16LE,
+		AUFMT_S16LE,
 	},
 
 #ifdef USE_VIDEO
@@ -148,6 +150,30 @@ static enum aufmt resolve_aufmt(const struct pl *fmt)
 	if (0 == pl_strcasecmp(fmt, "s24_3le")) return AUFMT_S24_3LE;
 
 	return (enum aufmt)-1;
+}
+
+
+static int conf_get_aufmt(const struct conf *conf, const char *name,
+			  int *fmtp)
+{
+	struct pl pl;
+	int fmt;
+	int err;
+
+	err = conf_get(conf, name, &pl);
+	if (err)
+		return err;
+
+	fmt = resolve_aufmt(&pl);
+	if (fmt == -1) {
+		warning("config: %s: sample format not supported"
+			" (%r)\n", name, &pl);
+		return EINVAL;
+	}
+
+	*fmtp = fmt;
+
+	return 0;
 }
 
 
@@ -248,6 +274,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		info("auplay: using audio sample format `%s'\n",
 		     aufmt_name(cfg->audio.play_fmt));
 	}
+
+	conf_get_aufmt(conf, "auenc_format", &cfg->audio.enc_fmt);
+	conf_get_aufmt(conf, "audec_format", &cfg->audio.dec_fmt);
 
 #ifdef USE_VIDEO
 	/* Video */

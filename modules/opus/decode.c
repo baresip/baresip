@@ -5,6 +5,7 @@
  */
 
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <opus/opus.h>
 #include "opus.h"
@@ -72,6 +73,30 @@ int opus_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 		return EINVAL;
 
 	n = opus_decode(ads->dec, buf, (opus_int32)len,
+			sampv, (int)(*sampc/ads->ch), 0);
+	if (n < 0) {
+		warning("opus: decode error: %s\n", opus_strerror(n));
+		return EPROTO;
+	}
+
+	*sampc = n * ads->ch;
+
+	return 0;
+}
+
+
+int opus_decode_format_frm(struct audec_state *ads,
+			   int fmt, void *sampv, size_t *sampc,
+			   const uint8_t *buf, size_t len)
+{
+	int n;
+
+	if (!ads || !sampv || !sampc || !buf)
+		return EINVAL;
+	if (fmt != AUFMT_FLOAT)
+		return ENOTSUP;
+
+	n = opus_decode_float(ads->dec, buf, (opus_int32)len,
 			sampv, (int)(*sampc/ads->ch), 0);
 	if (n < 0) {
 		warning("opus: decode error: %s\n", opus_strerror(n));

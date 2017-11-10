@@ -206,6 +206,8 @@ struct config_audio {
 	bool level;             /**< Enable audio level indication  */
 	int src_fmt;            /**< Audio source sample format     */
 	int play_fmt;           /**< Audio playback sample format   */
+	int enc_fmt;            /**< Audio encoder sample format    */
+	int dec_fmt;            /**< Audio decoder sample format    */
 };
 
 #ifdef USE_VIDEO
@@ -837,11 +839,17 @@ typedef int (auenc_update_h)(struct auenc_state **aesp,
 			     struct auenc_param *prm, const char *fmtp);
 typedef int (auenc_encode_h)(struct auenc_state *aes, uint8_t *buf,
 			     size_t *len, const int16_t *sampv, size_t sampc);
+typedef int (auenc_encode_fmt_h)(struct auenc_state *aes,
+				 uint8_t *buf, size_t *len,
+				 int fmt, const void *sampv, size_t sampc);
 
 typedef int (audec_update_h)(struct audec_state **adsp,
 			     const struct aucodec *ac, const char *fmtp);
 typedef int (audec_decode_h)(struct audec_state *ads, int16_t *sampv,
 			     size_t *sampc, const uint8_t *buf, size_t len);
+typedef int (audec_decode_fmt_h)(struct audec_state *ads,
+				 int fmt, void *sampv, size_t *sampc,
+				 const uint8_t *buf, size_t len);
 typedef int (audec_plc_h)(struct audec_state *ads,
 			  int16_t *sampv, size_t *sampc);
 
@@ -860,6 +868,9 @@ struct aucodec {
 	audec_plc_h    *plch;
 	sdp_fmtp_enc_h *fmtp_ench;
 	sdp_fmtp_cmp_h *fmtp_cmph;
+
+	auenc_encode_fmt_h *encfmth;
+	audec_decode_fmt_h *decfmth;
 };
 
 void aucodec_register(struct list *aucodecl, struct aucodec *ac);

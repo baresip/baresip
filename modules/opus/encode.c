@@ -5,6 +5,7 @@
  */
 
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <opus/opus.h>
 #include "opus.h"
@@ -175,6 +176,30 @@ int opus_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		return EINVAL;
 
 	n = opus_encode(aes->enc, sampv, (int)(sampc/aes->ch),
+			buf, (opus_int32)(*len));
+	if (n < 0) {
+		warning("opus: encode error: %s\n", opus_strerror((int)n));
+		return EPROTO;
+	}
+
+	*len = n;
+
+	return 0;
+}
+
+
+int opus_encode_format_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
+			   int fmt, const void *sampv, size_t sampc)
+{
+	opus_int32 n;
+
+	if (!aes || !buf || !len || !sampv)
+		return EINVAL;
+
+	if (fmt != AUFMT_FLOAT)
+		return ENOTSUP;
+
+	n = opus_encode_float(aes->enc, sampv, (int)(sampc/aes->ch),
 			buf, (opus_int32)(*len));
 	if (n < 0) {
 		warning("opus: encode error: %s\n", opus_strerror((int)n));
