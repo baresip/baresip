@@ -1380,7 +1380,7 @@ static int start_source(struct autx *tx, struct audio *a)
 		tx->psize = 2 * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 
 		if (!tx->aubuf) {
-			err = aubuf_alloc(&tx->aubuf, tx->psize * 2,
+			err = aubuf_alloc(&tx->aubuf, tx->psize,
 					  tx->psize * 30);
 			if (err)
 				return err;
