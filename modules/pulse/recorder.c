@@ -21,6 +21,7 @@ struct ausrc_st {
 	void *sampv;
 	size_t sampc;
 	size_t sampsz;
+	uint32_t ptime;
 	ausrc_read_h *rh;
 	void *arg;
 };
@@ -49,6 +50,16 @@ static void *read_thread(void *arg)
 	struct ausrc_st *st = arg;
 	const size_t num_bytes = st->sampc * st->sampsz;
 	int ret, pa_error = 0;
+	uint64_t now, last_read, diff;
+	unsigned dropped = 0;
+	bool init = true;
+
+	if (pa_simple_flush(st->s, &pa_error)) {
+		warning("pulse: pa_simple_flush error (%s)\n",
+		        pa_strerror(pa_error));
+	}
+
+	last_read = tmr_jiffies();
 
 	while (st->run) {
 
@@ -57,6 +68,27 @@ static void *read_thread(void *arg)
 			warning("pulse: pa_simple_write error (%s)\n",
 				pa_strerror(pa_error));
 			continue;
+		}
+
+		/* Some devices might send a burst of samples right after the
+		   initialization - filter them out */
+		if (init) {
+			now = tmr_jiffies();
+			diff = (now > last_read)? now - last_read : 0;
+
+			if (diff < st->ptime / 2) {
+				last_read = now;
+				++dropped;
+				continue;
+			}
+			else {
+				init = false;
+
+				if (dropped)
+					debug("pulse: dropped %u frames of "
+					      "garbage at the beginning of "
+					      "the recording\n", dropped);
+			}
 		}
 
 		st->rh(st->sampv, st->sampc, st->arg);
@@ -108,6 +140,7 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	st->sampsz = aufmt_sample_size(prm->fmt);
+	st->ptime = prm->ptime;
 
 	st->sampv = mem_alloc(st->sampsz * st->sampc, NULL);
 	if (!st->sampv) {
