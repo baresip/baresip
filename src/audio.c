@@ -840,6 +840,16 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 }
 
 
+#define SYNC_INTERVAL  (10.0)  /* Sync interval in [sec] */
+#define MAX_SKEW       (0.200) /* Drop packets older than this [sec] */
+
+
+static inline int32_t ts_diff(uint32_t x, uint32_t y)
+{
+	return (int32_t)(y - x);
+}
+
+
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
@@ -850,6 +860,9 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	bool discard = false;
 	size_t i;
 	int wrap;
+	double wall_clock=0;
+	double dur=0;
+	double skew=0;
 	int err;
 
 	if (!mb)
@@ -947,11 +960,46 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 		break;
 	}
 
+	/* Save the last RTP timestamp */
 	rx->ts_recv.last = hdr->ts;
 
+	/*
+	 * Check for obsolete (old) packets
+	 */
+
+	if (hdr->m)
+		rx->ts_recv.is_synced = false;
+
+	if (rx->ts_recv.is_synced) {
+		uint64_t now = tmr_jiffies();
+		int32_t ts_delta;
+
+		ts_delta = ts_diff(rx->ts_recv.ts_rtp_sync, hdr->ts);
+
+		wall_clock = (double)(now - rx->ts_recv.ts_clk_sync) / 1000.0;
+		dur = audio_calc_seconds(ts_delta, rx->ac->crate);
+		skew = wall_clock - dur;
+
+		/* positive skew:  the packet arrived too late
+		 * negative skew:  the packet arrived too early
+		 */
+		if (skew > MAX_SKEW) {
+			warning("audio: packet arrived too late"
+				" (skew %.3f > %.3f sec)\n",
+				skew, (double)MAX_SKEW);
+			discard = true;
+		}
+		else if (wall_clock > SYNC_INTERVAL) {
+			rx->ts_recv.is_synced = false;
+		}
+	}
+
 #if 0
-	re_printf("[time=%.3f]    wrap=%d  discard=%d\n",
-		  aurx_calc_seconds(rx), wrap, discard);
+	re_printf("[%s] [wallclock=%.3f]    [rtp_time=%.3f]    skew=%.3f"
+		  "    wrap=%d  discard=%d (n_discard=%u)\n",
+		  hdr->m ? "M" : " ",
+		  wall_clock, dur, skew,
+		  wrap, discard, a->rx.n_discard);
 #endif
 
 	if (discard) {
@@ -961,6 +1009,16 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
  out:
 	(void)aurx_stream_decode(&a->rx, mb);
+
+	/* Sync on valid packets */
+	if (!rx->ts_recv.is_synced) {
+
+		rx->ts_recv.ts_rtp_sync = hdr->ts;
+		rx->ts_recv.ts_clk_sync = tmr_jiffies();
+		rx->ts_recv.is_synced = true;
+
+		info("audio: *** synced timestamps ***\n");
+	}
 }
 
 

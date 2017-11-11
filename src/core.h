@@ -491,6 +491,10 @@ struct timestamp_recv {
 	uint32_t last;
 	bool is_set;
 	unsigned num_wraps;
+
+	bool is_synced;
+	uint32_t ts_rtp_sync;    /* RTP timestamp when synced */
+	uint64_t ts_clk_sync;    /* Time when we synced [ms] */
 };
 
 
