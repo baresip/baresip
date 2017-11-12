@@ -105,6 +105,7 @@ private:
 	struct udp_helper *m_uh_rtcp;
 	StreamMediaType m_media_type;
 	Srtp *m_send_srtp, *m_recv_srtp;
+	pthread_mutex_t m_send_mutex;
 	SRTPStat m_srtp_stat, m_srtcp_stat;
 	std::string m_sas, m_ciphers;
 
