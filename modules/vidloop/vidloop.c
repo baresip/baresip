@@ -285,7 +285,7 @@ static int enable_codec(struct video_loop *vl, const char *name)
 
 static void print_status(struct video_loop *vl)
 {
-	(void)re_fprintf(stderr,
+	(void)re_fprintf(stdout,
 			 "\rstatus:"
 			 " [%s] [%s]  intra=%zu "
 			 " EFPS=%.1f      %u kbit/s       \r",
@@ -293,6 +293,7 @@ static void print_status(struct video_loop *vl)
 			 vl->vc_dec ? vl->vc_dec->name : "",
 			 vl->stat.n_intra,
 			 vl->stat.efps, vl->stat.bitrate);
+	fflush(stdout);
 }
 
 

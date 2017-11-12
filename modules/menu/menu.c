@@ -376,6 +376,8 @@ static int create_ua(struct re_printf *pf, void *arg)
 
 static int cmd_ua_next(struct re_printf *pf, void *unused)
 {
+	int err;
+
 	(void)pf;
 	(void)unused;
 
@@ -386,13 +388,13 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 
 	le_cur = le_cur->next ? le_cur->next : list_head(uag_list());
 
-	(void)re_fprintf(stderr, "ua: %s\n", ua_aor(list_ledata(le_cur)));
+	err = re_hprintf(pf, "ua: %s\n", ua_aor(list_ledata(le_cur)));
 
 	uag_current_set(list_ledata(le_cur));
 
 	update_callstatus();
 
-	return 0;
+	return err;
 }
 
 

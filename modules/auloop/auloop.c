@@ -91,13 +91,15 @@ static void print_stats(struct audio_loop *al)
 	if (al->n_write)
 		rw_ratio = 1.0 * al->n_read / al->n_write;
 
-	(void)re_fprintf(stderr, "\r%uHz %dch %s "
+	(void)re_fprintf(stdout, "\r%uHz %dch %s "
 			 " n_read=%u n_write=%u rw_ratio=%.2f",
 			 al->srate, al->ch, aufmt_name(al->fmt),
 			 al->n_read, al->n_write, rw_ratio);
 
 	if (str_isset(aucodec))
-		(void)re_fprintf(stderr, " codec='%s'", aucodec);
+		(void)re_fprintf(stdout, " codec='%s'", aucodec);
+
+	fflush(stdout);
 }
 
 
