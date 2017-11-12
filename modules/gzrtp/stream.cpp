@@ -190,6 +190,7 @@ Stream::Stream(int& err, const ZRTPConfig& config, Session *session,
 	err  = pthread_mutexattr_init(&attr);
 	err |= pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
 	err |= pthread_mutex_init(&m_zrtp_mutex, &attr);
+	err |= pthread_mutex_init(&m_send_mutex, &attr);
 	if (err)
 		return;
 
@@ -244,6 +245,7 @@ Stream::~Stream()
 	mem_deref(m_rtcpsock);
 
 	pthread_mutex_destroy(&m_zrtp_mutex);
+	pthread_mutex_destroy(&m_send_mutex);
 
 	tmr_cancel(&m_zrtp_timer);
 }
@@ -305,8 +307,10 @@ void Stream::stop()
 
 	m_zrtp->stopZrtp();
 
+	pthread_mutex_lock(&m_send_mutex);
 	delete m_send_srtp;
 	m_send_srtp = NULL;
+	pthread_mutex_unlock(&m_send_mutex);
 
 	delete m_recv_srtp;
 	m_recv_srtp = NULL;
@@ -347,12 +351,12 @@ bool Stream::udp_helper_send_cb(int *err, struct sa *src, struct mbuf *mb,
 
 bool Stream::udp_helper_send(int *err, struct sa *src, struct mbuf *mb)
 {
-	if (!started())
-		return false;
-
+	bool ret = false;
 	enum pkt_type ptype = get_packet_type(mb);
 	size_t len = mbuf_get_left(mb);
 	int rerr = 0;
+
+	pthread_mutex_lock(&m_send_mutex);
 
 	if (ptype == PKT_TYPE_RTCP && m_send_srtp && len > 8) {
 
@@ -364,7 +368,7 @@ bool Stream::udp_helper_send(int *err, struct sa *src, struct mbuf *mb)
 		rerr = m_send_srtp->protect(mb);
 	}
 	else
-		return false;
+		goto out;
 
 	if (rerr) {
 		warning("zrtp: protect/protect_ctrl failed (len=%u): %m\n",
@@ -373,10 +377,13 @@ bool Stream::udp_helper_send(int *err, struct sa *src, struct mbuf *mb)
 		if (rerr == ENOMEM)
 			*err = rerr;
 		// drop
-		return true;
+		ret = true;
 	}
 
-	return false;
+ out:
+	pthread_mutex_unlock(&m_send_mutex);
+
+	return ret;
 }
 
 
@@ -594,8 +601,11 @@ bool Stream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 		return false;
 	}
 
-	if (part == ForSender)
+	if (part == ForSender) {
+		pthread_mutex_lock(&m_send_mutex);
 		m_send_srtp = s;
+		pthread_mutex_unlock(&m_send_mutex);
+	}
 	else if (part == ForReceiver)
 		m_recv_srtp = s;
 	else
@@ -612,8 +622,10 @@ void Stream::srtpSecretsOff(EnableSecurity part)
 	      (part == ForSender)? "sender" : "receiver");
 
 	if (part == ForSender) {
+		pthread_mutex_lock(&m_send_mutex);
 		delete m_send_srtp;
 		m_send_srtp = NULL;
+		pthread_mutex_unlock(&m_send_mutex);
 	}
 
 	if (part == ForReceiver) {
