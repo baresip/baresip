@@ -616,7 +616,7 @@ int encode_x264(struct videnc_state *st, bool update,
 
 	ret = x264_encoder_encode(st->x264, &nal, &i_nal, &pic_in, &pic_out);
 	if (ret < 0) {
-		fprintf(stderr, "x264 [error]: x264_encoder_encode failed\n");
+		warning("avcodec: x264 [error]: x264_encoder_encode failed\n");
 	}
 	if (i_nal == 0)
 		return 0;

@@ -1,3 +1,8 @@
+/**
+ * @file h265/fmt.c H.265 Video Codec -- protocol format
+ *
+ * Copyright (C) 2010 Creytiv.com
+ */
 
 #include <string.h>
 #include <re.h>
@@ -58,11 +63,11 @@ int h265_nal_decode(struct h265_nal *nal, const uint8_t *p)
 	nal->nuh_temporal_id_plus1 = p[1] & 0x07;
 
 	if (forbidden_zero_bit) {
-		re_fprintf(stderr, "?!?!?!?! FORBIDDEN !!! ?!?!?!*\n");
+		warning("h265: nal_decode: FORBIDDEN bit set\n");
 		return EBADMSG;
 	}
 	if (nuh_layer_id != 0) {
-		re_fprintf(stderr, "h265_nal_decode: LayerId MUST be zero\n");
+		warning("h265: nal_decode: LayerId MUST be zero\n");
 		return EBADMSG;
 	}
 
