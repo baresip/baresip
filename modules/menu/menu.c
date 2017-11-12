@@ -1060,8 +1060,8 @@ static void message_handler(const struct pl *peer, const struct pl *ctype,
 	(void)ctype;
 	(void)arg;
 
-	(void)re_fprintf(stderr, "\r%r: \"%b\"\n", peer,
-			 mbuf_buf(body), mbuf_get_left(body));
+	ui_output(baresip_uis(), "\r%r: \"%b\"\n",
+		  peer, mbuf_buf(body), mbuf_get_left(body));
 
 	(void)play_file(NULL, baresip_player(), "message.wav", 0);
 }
