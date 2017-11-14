@@ -70,12 +70,12 @@ void vlog(enum log_level level, const char *fmt, va_list ap)
 		bool color = level == LEVEL_WARN || level == LEVEL_ERROR;
 
 		if (color)
-			(void)re_fprintf(stderr, "\x1b[31m"); /* Red */
+			(void)re_fprintf(stdout, "\x1b[31m"); /* Red */
 
-		(void)re_fprintf(stderr, "%s", buf);
+		(void)re_fprintf(stdout, "%s", buf);
 
 		if (color)
-			(void)re_fprintf(stderr, "\x1b[;m");
+			(void)re_fprintf(stdout, "\x1b[;m");
 	}
 
 	le = lg.logl.head;
