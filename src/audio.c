@@ -213,7 +213,6 @@ static void stop_tx(struct autx *tx, struct audio *a)
 
 #ifdef HAVE_PTHREAD
 	case AUDIO_MODE_THREAD:
-	case AUDIO_MODE_THREAD_REALTIME:
 		if (tx->u.thr.run) {
 			tx->u.thr.run = false;
 			pthread_join(tx->u.thr.tid, NULL);
@@ -1073,10 +1072,6 @@ static void *tx_thread(void *arg)
 	struct autx *tx = &a->tx;
 	unsigned i;
 
-	/* Enable Real-time mode for this thread, if available */
-	if (a->cfg.txmode == AUDIO_MODE_THREAD_REALTIME)
-		(void)realtime_enable(true, 1);
-
 	while (a->tx.u.thr.run) {
 
 		for (i=0; i<16; i++) {
@@ -1399,7 +1394,6 @@ static int start_source(struct autx *tx, struct audio *a)
 		switch (a->cfg.txmode) {
 #ifdef HAVE_PTHREAD
 		case AUDIO_MODE_THREAD:
-		case AUDIO_MODE_THREAD_REALTIME:
 			if (!tx->u.thr.run) {
 				tx->u.thr.run = true;
 				err = pthread_create(&tx->u.thr.tid, NULL,

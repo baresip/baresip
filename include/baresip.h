@@ -167,7 +167,6 @@ static inline bool in_range(const struct range *rng, uint32_t val)
 enum audio_mode {
 	AUDIO_MODE_POLL = 0,         /**< Polling mode                  */
 	AUDIO_MODE_THREAD,           /**< Use dedicated thread          */
-	AUDIO_MODE_THREAD_REALTIME,  /**< Use dedicated realtime-thread */
 	AUDIO_MODE_TMR               /**< Use timer                     */
 };
 
