@@ -147,6 +147,9 @@ static enum aufmt resolve_aufmt(const struct pl *fmt)
 	if (0 == pl_strcasecmp(fmt, "float"))   return AUFMT_FLOAT;
 	if (0 == pl_strcasecmp(fmt, "s24_3le")) return AUFMT_S24_3LE;
 
+	/* XXX remove this after librem is fixed */
+	if (0 == pl_strcasecmp(fmt, "s16le"))   return AUFMT_S16LE;
+
 	return (enum aufmt)-1;
 }
 
@@ -507,6 +510,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#ausrc_channels\t\t0\n"
 			  "#auplay_channels\t\t0\n"
 			  "audio_level\t\tno\n"
+			  "ausrc_format\t\ts16\t\t# s16, float, ..\n"
+			  "auplay_format\t\ts16\t\t# s16, float, ..\n"
 			  ,
 			  poll_method_name(poll_method_best()),
 			  cfg->call.local_timeout,
@@ -515,7 +520,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  default_audio_device(),
 			  default_audio_device(),
 			  cfg->audio.srate.min, cfg->audio.srate.max,
-			  cfg->audio.channels.min, cfg->audio.channels.max);
+			  cfg->audio.channels.min, cfg->audio.channels.max
+			  );
 
 #ifdef USE_VIDEO
 	err |= re_hprintf(pf,
@@ -525,7 +531,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "video_size\t\t%dx%d\n"
 			  "video_bitrate\t\t%u\n"
 			  "video_fps\t\t%u\n"
-			  "video_fullscreen\t\tyes\n",
+			  "video_fullscreen\tyes\n",
 			  default_video_device(),
 			  default_video_display(),
 			  cfg->video.width, cfg->video.height,
