@@ -922,26 +922,53 @@ static int add_telev_codec(struct audio *a)
 
 /*
  * EBU ACIP (Audio Contribution over IP) Profile
+ *
+ * Ref: https://tech.ebu.ch/docs/tech/tech3368.pdf
  */
 static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 {
 	struct sdp_media *sdp = stream_sdpmedia(au->strm);
-	int jb_id;
-	int jbvalue;
+	const struct config_avt *avt = &au->strm->cfg;
+	char str[64];
+	int jbvalue = 0;
+	int jb_id = 0;
 	int err = 0;
 
-	jb_id = 0;
-	jbvalue = (au->strm->cfg.jbuf_del.max) * ptime;
-
-	/* set ebuacip version */
+	/* set ebuacip version fixed value 0 for now. */
 	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "version %i", 0);
 
 	/* set jb option, only one in our case */
 	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "jb %i", jb_id);
 
 	/* define jb value in option */
-	err |= sdp_media_set_lattr(sdp, false, "ebuacip",
-				   "jbdef %i fixed %d", jb_id, jbvalue);
+	if (0 == conf_get_str(conf_cur(), "ebuacip_jb_type",str,sizeof(str))) {
+
+		if (0 == str_cmp(str, "auto")) {
+
+			err |= sdp_media_set_lattr(sdp, false,
+						   "ebuacip",
+						   "jbdef %i auto %d-%d",
+						   jb_id,
+						   avt->jbuf_del.min * ptime,
+						   avt->jbuf_del.max * ptime);
+		}
+		else if (0 == str_cmp(str, "fixed")) {
+
+			/* define jb value in option */
+			jbvalue = avt->jbuf_del.max * ptime;
+
+			err |= sdp_media_set_lattr(sdp, false,
+						   "ebuacip",
+						   "jbdef %i fixed %d",
+						   jb_id, jbvalue);
+		}
+	}
+
+	/* set QOS recomendation use tos / 4 to set DSCP value */
+	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "qosrec %u",
+				   avt->rtp_tos / 4);
+
+	/* EBU ACIP FEC:: NOT SET IN BARESIP */
 
 	return err;
 }
