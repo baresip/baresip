@@ -809,7 +809,6 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 	else {
 
 		/* Convert from 16-bit to auplay format */
-
 		void *tmp_sampv;
 		size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
 
@@ -839,10 +838,8 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 	return err;
 }
 
-
-#define SYNC_INTERVAL  (10.0)  /* Sync interval in [sec] */
-// No longer needed Ola Palm 
-//#define MAX_SKEW       (0.200) /* Drop packets older than this [sec] */
+/* Sync interval in [sec], this value perhaps should be set in config file. */
+#define SYNC_INTERVAL  (10.0)
 
 
 static inline int32_t ts_diff(uint32_t x, uint32_t y)
