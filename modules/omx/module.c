@@ -10,8 +10,8 @@
 
 #include <stdlib.h>
 
-#include <re/re.h>
-#include <rem/rem.h>
+#include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp* vd,

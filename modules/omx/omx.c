@@ -7,8 +7,8 @@
 
 #include "omx.h"
 
-#include <re/re.h>
-#include <rem/rem.h>
+#include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 #include <stdio.h>
