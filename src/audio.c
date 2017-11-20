@@ -809,7 +809,6 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 	else {
 
 		/* Convert from 16-bit to auplay format */
-
 		void *tmp_sampv;
 		size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
 
@@ -839,9 +838,8 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 	return err;
 }
 
-
-#define SYNC_INTERVAL  (10.0)  /* Sync interval in [sec] */
-#define MAX_SKEW       (0.200) /* Drop packets older than this [sec] */
+/* Sync interval in [sec], this value perhaps should be set in config file. */
+#define SYNC_INTERVAL  (10.0)
 
 
 static inline int32_t ts_diff(uint32_t x, uint32_t y)
@@ -857,12 +855,14 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
+	const struct config_avt *avt = &a->strm->cfg;
 	bool discard = false;
 	size_t i;
 	int wrap;
 	double wall_clock=0;
 	double dur=0;
 	double skew=0;
+	double max_skew=0;
 	int err;
 
 	if (!mb)
@@ -982,11 +982,17 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
 		/* positive skew:  the packet arrived too late
 		 * negative skew:  the packet arrived too early
+		 * Max skew is calulated from rx ptime * Jb_max / 1000
+		*/
+		/* this might be better if calculated once when stream is
+		 * set up and we know the RX ptime, --> store in struct Audio
 		 */
-		if (skew > MAX_SKEW) {
+		max_skew = avt->jbuf_del.max * rx->ptime / 1000.0;
+
+		if (skew > max_skew) {
 			warning("audio: packet arrived too late"
 				" (skew %.3f > %.3f sec)\n",
-				skew, (double)MAX_SKEW);
+				skew, (double)max_skew);
 			discard = true;
 		}
 		else if (wall_clock > SYNC_INTERVAL) {
