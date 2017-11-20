@@ -984,8 +984,9 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 		 * negative skew:  the packet arrived too early
 		 * Max skew is calulated from rx ptime * Jb_max / 1000
 		*/
-		/*  this might be better if calculated once when  it
-		is set up and we know the RX ptime, --> store in struct Audio */
+		/* this might be better if calculated once when stream is
+		 * set up and we know the RX ptime, --> store in struct Audio
+		 */
 		max_skew = avt->jbuf_del.max * rx->ptime / 1000.0;
 
 		if (skew > max_skew) {
