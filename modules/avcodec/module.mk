@@ -16,5 +16,6 @@ ifneq ($(USE_X264),)
 CFLAGS          += -DUSE_X264
 $(MOD)_LFLAGS	+= -lx264
 endif
+$(MOD)_CFLAGS	+= -isystem /usr/local/include
 
 include mk/mod.mk

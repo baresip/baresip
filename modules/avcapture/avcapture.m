@@ -373,7 +373,8 @@ static int module_init(void)
 		debug("avcapture: found video device '%s'\n", name);
 	}
 
-	err = vidsrc_register(&vidsrc, "avcapture", alloc, update);
+	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			      "avcapture", alloc, update);
 
 	[pool drain];
 

@@ -70,7 +70,7 @@ static int send_keepalive(struct rtpkeep *rk)
 		mb->pos = mb->end = RTP_HEADER_SIZE;
 
 		err = rtp_send(rk->rtp, sdp_media_raddr(rk->sdp), false,
-			       pt, rk->ts, mb);
+			       false, pt, rk->ts, mb);
 
 		mem_deref(mb);
 	}

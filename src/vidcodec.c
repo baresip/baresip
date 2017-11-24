@@ -8,20 +8,18 @@
 #include <baresip.h>
 
 
-static struct list vidcodecl;
-
-
 /**
  * Register a Video Codec
  *
- * @param vc Video Codec
+ * @param vidcodecl List of video-codecs
+ * @param vc        Video Codec
  */
-void vidcodec_register(struct vidcodec *vc)
+void vidcodec_register(struct list *vidcodecl, struct vidcodec *vc)
 {
-	if (!vc)
+	if (!vidcodecl || !vc)
 		return;
 
-	list_append(&vidcodecl, &vc->le, vc);
+	list_append(vidcodecl, &vc->le, vc);
 
 	info("vidcodec: %s\n", vc->name);
 }
@@ -44,16 +42,18 @@ void vidcodec_unregister(struct vidcodec *vc)
 /**
  * Find a Video Codec by name
  *
- * @param name    Name of the Video Codec to find
- * @param variant Codec Variant
+ * @param vidcodecl List of video-codecs
+ * @param name      Name of the Video Codec to find
+ * @param variant   Codec Variant
  *
  * @return Matching Video Codec if found, otherwise NULL
  */
-const struct vidcodec *vidcodec_find(const char *name, const char *variant)
+const struct vidcodec *vidcodec_find(const struct list *vidcodecl,
+				     const char *name, const char *variant)
 {
 	struct le *le;
 
-	for (le=vidcodecl.head; le; le=le->next) {
+	for (le=list_head(vidcodecl); le; le=le->next) {
 
 		struct vidcodec *vc = le->data;
 
@@ -73,15 +73,17 @@ const struct vidcodec *vidcodec_find(const char *name, const char *variant)
 /**
  * Find a Video Encoder by name
  *
- * @param name    Name of the Video Encoder to find
+ * @param vidcodecl List of video-codecs
+ * @param name      Name of the Video Encoder to find
  *
  * @return Matching Video Encoder if found, otherwise NULL
  */
-const struct vidcodec *vidcodec_find_encoder(const char *name)
+const struct vidcodec *vidcodec_find_encoder(const struct list *vidcodecl,
+					     const char *name)
 {
 	struct le *le;
 
-	for (le=vidcodecl.head; le; le=le->next) {
+	for (le=list_head(vidcodecl); le; le=le->next) {
 
 		struct vidcodec *vc = le->data;
 
@@ -99,15 +101,17 @@ const struct vidcodec *vidcodec_find_encoder(const char *name)
 /**
  * Find a Video Decoder by name
  *
- * @param name    Name of the Video Decoder to find
+ * @param vidcodecl List of video-codecs
+ * @param name      Name of the Video Decoder to find
  *
  * @return Matching Video Decoder if found, otherwise NULL
  */
-const struct vidcodec *vidcodec_find_decoder(const char *name)
+const struct vidcodec *vidcodec_find_decoder(const struct list *vidcodecl,
+					     const char *name)
 {
 	struct le *le;
 
-	for (le=vidcodecl.head; le; le=le->next) {
+	for (le=list_head(vidcodecl); le; le=le->next) {
 
 		struct vidcodec *vc = le->data;
 
@@ -119,15 +123,4 @@ const struct vidcodec *vidcodec_find_decoder(const char *name)
 	}
 
 	return NULL;
-}
-
-
-/**
- * Get the list of Video Codecs
- *
- * @return List of Video Codecs
- */
-struct list *vidcodec_list(void)
-{
-	return &vidcodecl;
 }

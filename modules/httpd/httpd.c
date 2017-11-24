@@ -37,16 +37,16 @@ static int html_print_head(struct re_printf *pf, void *unused)
 }
 
 
-static int html_print_cmd(struct re_printf *pf, const struct http_msg *req)
+static int html_print_cmd(struct re_printf *pf, const struct pl *prm)
 {
 	struct pl params;
 
-	if (!pf || !req)
+	if (!pf || !prm)
 		return EINVAL;
 
-	if (pl_isset(&req->prm)) {
-		params.p = req->prm.p + 1;
-		params.l = req->prm.l - 1;
+	if (pl_isset(prm)) {
+		params.p = prm->p + 1;
+		params.l = prm->l - 1;
 	}
 	else {
 		params.p = "h";
@@ -66,16 +66,16 @@ static int html_print_cmd(struct re_printf *pf, const struct http_msg *req)
 }
 
 
-static int html_print_raw(struct re_printf *pf, const struct http_msg *req)
+static int html_print_raw(struct re_printf *pf, const struct pl *prm)
 {
 	struct pl params;
 
-	if (!pf || !req)
+	if (!pf || !prm)
 		return EINVAL;
 
-	if (pl_isset(&req->prm)) {
-		params.p = req->prm.p + 1;
-		params.l = req->prm.l - 1;
+	if (pl_isset(prm)) {
+		params.p = prm->p + 1;
+		params.l = prm->l - 1;
 	}
 	else {
 		params.p = "h";
@@ -90,23 +90,39 @@ static int html_print_raw(struct re_printf *pf, const struct http_msg *req)
 static void http_req_handler(struct http_conn *conn,
 			     const struct http_msg *msg, void *arg)
 {
+	int err;
+	char *buf = NULL;
+	struct pl nprm;
 	(void)arg;
+
+	err = re_sdprintf(&buf, "%H", uri_header_unescape, &msg->prm);
+	if (err)
+		goto error;
+
+	pl_set_str(&nprm, buf);
 
 	if (0 == pl_strcasecmp(&msg->path, "/")) {
 
 		http_creply(conn, 200, "OK",
 			    "text/html;charset=UTF-8",
-			    "%H", html_print_cmd, msg);
+			    "%H", html_print_cmd, &nprm);
 	}
 	else if (0 == pl_strcasecmp(&msg->path, "/raw/")) {
 
 		http_creply(conn, 200, "OK",
 			    "text/plain;charset=UTF-8",
-			    "%H", html_print_raw, msg);
+			    "%H", html_print_raw, &nprm);
 	}
 	else {
-		http_ereply(conn, 404, "Not Found");
+		goto error;
 	}
+	mem_deref(buf);
+
+	return;
+
+ error:
+	mem_deref(buf);
+	http_ereply(conn, 404, "Not Found");
 }
 
 
@@ -114,7 +130,7 @@ static int output_handler(const char *str)
 {
 	(void)str;
 
-	/* TODO: print 'str' to all active HTTP connections */
+	/* XXX: print 'str' to all active HTTP connections */
 
 	return 0;
 }
@@ -139,7 +155,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	ui_register(&ui_http);
+	ui_register(baresip_uis(), &ui_http);
 
 	info("httpd: listening on %J\n", &laddr);
 

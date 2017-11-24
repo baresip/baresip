@@ -18,6 +18,7 @@
  */
 GtkWidget *uri_combo_box_new(void)
 {
+	struct contacts *contacts = baresip_contacts();
 	struct le *le;
 	GtkEntry *uri_entry;
 	GtkWidget *uri_combobox;
@@ -26,7 +27,7 @@ GtkWidget *uri_combo_box_new(void)
 	uri_entry = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(uri_combobox)));
 	gtk_entry_set_activates_default(uri_entry, TRUE);
 
-	for (le = list_head(contact_list()); le; le = le->next) {
+	for (le = list_head(contact_list(contacts)); le; le = le->next) {
 		struct contact *c = le->data;
 		gtk_combo_box_text_append_text(
 				GTK_COMBO_BOX_TEXT(uri_combobox),

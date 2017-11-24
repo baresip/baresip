@@ -1,3 +1,530 @@
+2017-10-14 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.6
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.6
+	* NOTE: Requires libre v0.5.5 or later
+	        Requires librem v0.5.0 or later
+
+	* New Baresip logo (thanks Ernst and community)
+
+	* baresip-core:
+	  - log: rename error to error_msg due to GNU extension clash
+	  - ua: remove ua_sipfd()
+
+	* Modules:
+
+	* avahi: Avahi Zeroconf Module (thanks Jonathan Sieber)
+
+	* avcodec: handle fragment packet loss
+
+	* cairo: draw a dancing logo
+
+	* ice: set ICE role correctly
+	       set retransmit count (RC) to 4
+
+	* opensles: fix recorder speaker setup (thanks Juha Heinanen)
+
+	* opus: fix encoder bitrate, ref #305
+
+	* zrtp: encrypt/decrypt RTCP packets (thanks @glenvt18)
+
+
+2017-09-07 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.5
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.5
+	* NOTE: Requires libre v0.5.5 or later
+	        Requires librem v0.5.0 or later
+
+	* new commands:
+	  - insmod module.so -- Load a module
+	  - rmmod  module.so -- Unload a module
+
+	* config:
+	  - fullscreen  yes|no    Enable fullscreen display
+
+	* baresip-core:
+	  - account: optional param 'auth_pass' for password
+		     add account_set_auth_pass()
+		     add account_aor()
+		     add account_auth_pass()
+	  - contact: add update handler (thanks Jonathan Sieber)
+	  - h264: add rtp_ts RTP Timestamp
+	  - module: add module_load/unload
+		    remove list of application modules
+	  - stream: reset timer on incoming RTCP packets (fixes #271)
+	  - ui: make the API re-entrant
+	  - video: add RTP timestamp to videnc packet handler
+		   add video_calc_rtp_timestamp()
+		   add video_calc_seconds()
+	  - video: use RTP timestamp from video encoder
+
+	* selftest:
+	  - add test for video timestamps
+
+	* Modules:
+
+	* account: move password prompt here
+
+	* av1: use encoder PTS to calculate RTP timestamp
+
+	* avcodec: use encoder PTS to calculate RTP timestamp
+		   use level_idc=0x1f for x264
+
+	* cons: updated UI api
+
+	* evdev: updated UI api
+
+	* gst_video: use encoder PTS to calculate RTP timestamp
+
+	* gst_video1: use encoder PTS to calculate RTP timestamp
+
+	* h265: use encoder PTS to calculate RTP timestamp
+		fix FU decoder bug
+
+	* httpd: updated UI api
+
+	* ice: move gathering from lib to app
+	       (requires libre v0.5.5 or later)
+
+	* menu: updated UI api
+
+	* mwi: updated UI api
+
+	* presence: Handle contacts added at run-time
+		    (thanks Jonathan Sieber)
+
+	* sdl: updated UI api
+
+	* sdl2: add support for fullscreen video
+
+	* stdio: updated UI api
+
+	* v4l: add support for more pixel-formats
+
+	* v4l2_codec: use encoder PTS to calculate RTP timestamp
+
+	* vp8: use encoder PTS to calculate RTP timestamp
+
+	* vp9: use encoder PTS to calculate RTP timestamp
+
+	* wincons: updated UI api
+
+
+2017-06-24 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.4
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.4
+	* NOTE: Requires libre v0.5.4 or later
+	        Requires librem v0.5.0 or later
+
+	* config:
+	  - audio_level  yes|no    Enable audio level RTP extension
+
+	* baresip-core:
+	  - add support for Client-to-Mixer Audio Level Indication (RFC 6464)
+	  - add support for RTP Header Extensions (RFC 5285)
+	  - module: dont load same static module twice
+	  - ua: add ua_progress()
+	  - ua: check for Accept header in incoming OPTIONS request
+	  - use a dummy RTP port for incoming OPTIONS (ref #265)
+	  - vidcodec: make the API re-entrant
+	  - vidfilt: make the API re-entrant
+	  - vidisp: make the API re-entrant
+	  - vidsrc: make the API re-entrant
+
+	* selftest:
+	  - add test for audio level indication in call
+	  - add test for call progress
+
+	* Modules:
+
+	* (all video modules updated with API-changes)
+
+	* zrtp: check for RTP packet in send handler (ref #262)
+		(thanks to MobiSciLab for reporting the bug)
+
+		- registered zrtp_log function with zrtp engine
+		- improved info message on how to verify remote peer
+		- improved setting and printing of zrtp cache file
+		(thanks Juha Heinanen)
+
+
+2017-05-14 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.3
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.3
+	* NOTE: Requires libre v0.5.3 or later
+	        Requires librem v0.5.0 or later
+
+	* config:
+	  - (no changes)
+
+	* build:
+	  - detect jack module (thanks Tony Langley)
+	  - Updated MSVS projects to vs2015 (thanks Mikhail Barg)
+
+	* baresip-core:
+	  - aulevel: add aulevel_calc_dbov()
+	  - audio: Set correct clock rate for telephone events
+		   (thanks Jan Hoffmann)
+	  - play: Add gapless repeat for tone playback (thanks Jan Hoffmann)
+
+	* selftest:
+	  - add tests for aulevel
+	  - add tests for audio player
+	  - add mock aucodec/auplay
+
+	* Modules:
+
+	* gst_video1: Tune x264enc for low latency (thanks Jonathan Sieber)
+
+	* httpd: fix a crash
+
+	* ice: update to latest libre ICE-api
+
+	* omx: Fixed some problems on OMX/RaspberryPi (thanks Jonathan Sieber)
+
+	* srtp: fix SRTP for early-media (thanks Jan Hoffmann)
+
+	* vumeter: use aulevel_calc_dbov to calculate signal energy
+
+	* zrtp: update to latest libzrtp from freeswitch (thanks Juha Heinanen)
+
+
+2017-04-07 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.2
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.2
+	* NOTE: Requires libre v0.5.0 or later
+	        Requires librem v0.5.0 or later
+
+	* new modules:
+	  - omx    OpenMAX IL video display module (thanks Jonathan Sieber)
+
+	* config:
+	  - (no changes)
+
+	* baresip-core:
+	  - aucodec: make the API re-entrant
+	  - aufilt: make the API re-entrant
+	  - auplay: make the API re-entrant
+	  - ausrc: make the API re-entrant
+	  - video: using a video-source is now optional
+
+	* Modules:
+
+	* avformat: add pixelformat AV_PIX_FMT_YUVJ420P (Thanks Gary Metalle)
+
+	* cairo: print picture info, use grey background
+
+	* dtmfio: check fd before calling fclose (thanks Richard Perez)
+
+	* h265: enable YUV444P pixelformat
+
+	* oss: fix build for Solaris 11
+
+	* speex: mark the module as deprecated, see speex.org
+
+
+2017-03-04 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.1
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.1
+	* NOTE: Requires libre v0.5.0 or later
+	        Requires librem v0.5.0 or later
+
+	* new modules:
+
+	* config:
+	  - stunuser		STUN username for STUN/TURN/ICE
+	  - stunpass		STUN password for STUN/TURN/ICE
+	  - snd_path		Path to sndfile audio dump files
+
+	* baresip-core:
+	  - account: add more accessor functions
+	  - account: add 'stunuser' and 'stunpass'
+	  - commands: make the struct commands opaque
+	  - message: make the API re-entrant, multiple listeners
+	  - menc: make the API re-entrant
+	  - mnat: make the API re-entrant
+
+	* selftest:
+	  - add tests for account
+	  - add tests for message
+
+	* Modules:
+
+	* amr: use MOD-CFLAGS instead of global CFLAGS
+
+	* avcodec: added optional config 'avcodec_h264dec' to specify hardware
+		   accellerated FFmpeg decoder (thanks Harald Gutmann)
+
+	* avformat: remove blocking sleep, use packet timestamp to
+		    pace video stream (thanks Harald Gutmann)
+
+	* debug_cmd: add OpenSSL version to systems info
+
+	* gtk: fix build where USE_NOTIFICATIONS is not defined
+	       get rid of system header warnings by using -isystem
+
+	* httpd: add support for un-escaping of URL parameters
+		 (thanks to elektm93)
+
+	* menu: add new command 'ausrc' to switch audio source
+		add new command 'auplay' to switch audio player
+
+	* sdl2: add more pixelformats (ref #202)
+		(thanks Harald Gutmann)
+
+	* sndfile: add config to specify path for dump files (thanks Elektm93)
+		   add test for sndfile on *BSD. (#194) (thanks jungle-boogie)
+
+	* swscale: get dst-size from config (ref #203)
+
+	* v4l2_codec: Video device selection bug (#218)
+		      (thanks Richard Perez)
+
+
+2016-12-23 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.0
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.0
+	* NOTE: Requires libre v0.5.0 or later
+	        Requires librem v0.5.0 or later
+
+	* new modules:
+	  - av1		Experimental AV1 video codec
+	  - debug_cmd	Debug commands for advanced users
+	  - pcp		Port Control Protocol (PCP) for NAT traversal
+	  - swscale	Video scaling using FFmpeg's libswscale
+
+	* config:
+	  - call_max_calls	Maximum number of calls per account
+
+	* baresip-core:
+	  - call: add multiple lines
+	  - call: start video on reinvite (thanks Gary Metalle)
+	  - cmd: add support for long commands
+	  - cmd: make it re-entrant
+	  - config: add some modules to template (thanks Dmitrij D. Czarkoff)
+	  - contact: make it re-entrant
+	  - play: make it re-entrant
+	  - vidcodec: add a intraframe-flag to api
+	  - video: resend FIR until Intra frame received
+
+	* selftest:
+	  - add test for DTMF in call
+	  - add test for contacts
+	  - add test for long commands
+	  - add test for maximum calls
+	  - add test for multiple calls
+	  - add test for video call
+	  - add audio-source mock
+	  - add video-codec mock
+	  - add video-display mock
+	  - add video-source mock
+
+	* Modules:
+
+	* aufile: convert samples from little-endian to host-endian
+
+	* auloop: use long commands /auloop and /auloop_stop
+
+	* av1: new module for Experimental AV1 video codec
+
+	* avcodec: add config option 'avcodec_h264enc' to set encoder name
+		   (thanks to @hargut)
+
+	* avformat: fix init and warnings (thanks Maciej Koman)
+
+	* b2bua: use long command /b2bua
+
+	* contact: use long commands
+
+	* debug_cmd: new module for advanced debug commands
+
+	* g7221: expose spandsp api (thanks to Steve Underwood)
+
+	* gtk: use long command /gtk
+
+	* h265: add 'profile-id=1' to SDP
+
+	* menu: add long commands
+		add command 'line' or '@' to set current call
+
+	* opengl: fix deprecated warnings on OSX 10.12
+
+	* opensles: add support for stereo
+		    (thanks to Juha Heinanen and Vijay Pratap Singh)
+
+	* opus: add support for SDP parameter mirroring
+		(thanks to Sveriges Radio)
+
+	* pcp: new module for Port Control Protocol (PCP) NAT traversal
+	       requires librew (https://github.com/alfredh/rew)
+
+	* plc: expose spandsp api (thanks to Steve Underwood)
+
+	* presence: add long commands /presence_{on,off}line
+
+	* snapshot: use long commands (thanks Dmitrij D. Czarkoff)
+
+	* sndio: use driver-suggested buffer size (thanks Dmitrij D. Czarkoff)
+
+	* swscale: new module for video filter using libswscale
+
+	* v4l2: pick up VID_FMT_NV12 and VID_FMT_NV21 formats as well (#176)
+		don't check for native/emulated format (#179)
+		(thanks Dmitrij D. Czarkoff)
+
+	* vidloop: use long commands
+
+	* vp8: add 'intra' parameter to decoder api
+	       fix building with old versions of libvpx
+
+	* wincons: graceful closing of thread (fixes #151)
+		   (thanks to @GGGO)
+
+	* zrtp: use long command
+
+
+2016-07-22 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.20
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.4.20
+	* NOTE: Requires libre v0.4.17 or later
+	        Requires librem v0.4.7 or later
+
+	* new modules:
+	  - pulse      Pulseaudio driver
+	  - vp9        VP9 video codec
+
+	* config:
+	  - audio_path          Path to audio files
+	  - call_local_timeout  Timeout for incoming calls
+	  - redial_attempts     Number of redial attempts
+	  - redial_delay        Redial delay in seconds
+
+	* baresip-core:
+	  - baresip: added a global baresip instance (WIP)
+	  - call: add RTP timeout (thanks to Sveriges Radio)
+	  - config: added call_local_timeout for incoming call timeout
+	  - config: added compile-time configureable CONFIG_PATH
+	  - config: added 'audio_path' config variable (thanks Juha Heinanen)
+	  - net: made it re-entrant with struct network
+	  - ua: added uag_set_exit_handler
+	  - ua: fix bug with reg_uri limited to 64-chars
+	  - video: vidfilters should not modify decoded image
+
+	* selftest:
+	  - add test for network
+	  - add test for sending SIP OPTIONS
+	  - add test for RTP timeout
+
+	* Modules:
+
+	* avcodec: fix usage of deprecated API
+
+	* avformat: remove support for scaling
+		    fix usage of deprecated API
+
+	* cons: relay log-messages to active UDP/TCP connections
+		https://github.com/alfredh/baresip/issues/144
+
+	* h265: fix usage of deprecated API
+
+	* menu: added support for re-dial on failure
+		(thanks to Sveriges Radio)
+
+	* mpa: Bug with reinit of codec structs (thanks Christian Hoene)
+
+	* natpmp: added support for RTCP
+
+	* presence: use correct struct in deref handler
+
+	* pulse: new module for Pulseaudio driver
+		 (thanks to Matthias Apitz for testing)
+
+	* vidloop: vidfilters should not modify decoded image
+
+	* vp8: module renamed from vpx.so to vp8.so
+
+	* vp9: new module implementing VP9 video codec
+
+	* wincons: use ReadConsoleInput, thanks to GGGO (fixes #139)
+		   https://github.com/alfredh/baresip/issues/139
+
+
+2016-05-20 Alfred E. Heggestad <aeh@db.org>
+
+	* Version 0.4.19
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.4.19
+	* NOTE: Requires libre v0.4.14 or later
+	        Requires librem v0.4.7 or later
+
+	* new modules:
+	  - mpa        MPA Speech and Audio Codec (thanks Christian Hoene)
+
+	* baresip-core:
+	  - audio: remove is_g722 exception
+		   use aucodec's rtp clockrate for calculating RTP timestamp
+		   plc: make sure sampc is exactly one ptime frame
+	  - aucodec: split srate into DSP srate and RTP clockrate
+		     (these are different for e.g. G.722 and MDA)
+	  - mos: add mos_calculate() (thanks Lorenzo Mangani)
+	  - net: use configured dns servers only, if specified
+	  - ua: fix potential NULL-pointer crash for uag.cfg
+
+	* selftest:
+	  - add test for SIP registration with DNS
+	  - add test for SIP registration with authentication
+	  - add test for MOS calculations
+	  - added a mock DNS Server
+	  - added a mock SIP Server
+
+	* Modules:
+
+	* aucodec: add support for NV12 and YUVJ420P pixel formats
+
+	* daala: update to libdaala version 0.0-1564-g79787c7
+
+	* gtk: fix autodetection of libgtk+ 2.0 (thanks Charles Lehner)
+
+	* h265: remove call to x265_cleanup, caused crash on OpenBSD
+
+	* mpa: new module that implements MPA Speech and Audio Codec
+	       (this module was contributed by Christian Hoene)
+
+	* opus: added new configuration parameters:
+		opus_cbr        {yes,no}   # Constant Bitrate (inverse of VBR)
+		opus_inbandfec  {yes,no}   # Enable inband FEC
+		opus_dtx        {yes,no}   # Enable DTX
+
+	* presence: improved interoperability, allow white space before
+		    xml element closing tags (thanks Juha Heinanen)
+
+	* x11: added borderless window (thanks Doug Blewett)
+
+
 2016-03-12 Alfred E. Heggestad <aeh@db.org>
 
 	* Version 0.4.18

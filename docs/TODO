@@ -1,29 +1,11 @@
 TODO:
 
 -------------------------------------------------------------------------------
-Version v0.x.y:
 
-  config: add support for pre-pending or appending config items
-          from command-line options
+Please see:
 
-  conf: move generation of config template to a module ('config.so') ?
+  https://github.com/alfredh/baresip/issues
 
-  improve first-time user experience, add a new module that will
-  prompt the user for a SIP uri and (optionally) a password.
-
-  improve gui and multi-UA and multi-call interaction
-
-  vumeter code is common for vumeter-module and gtk-module.
-  move to a common place ?
-
-  move password-prompt from ua (core) to module ?
-
-  add a FPS (framerate) throttler for fast vidsrc modules
-
-
--------------------------------------------------------------------------------
-BUGS:
-
-  sdl: crashes in virtualbox/linux
+  https://github.com/alfredh/baresip/wiki/Roadmap
 
 -------------------------------------------------------------------------------

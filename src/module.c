@@ -1,5 +1,5 @@
 /**
- * @file module.c Module loading
+ * @file src/module.c Module loading
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -8,20 +8,22 @@
 #include "core.h"
 
 
-struct modapp {
-	struct mod *mod;
-	struct le le;
-};
-
-
-static struct list modappl;
-
-
-static void modapp_destructor(void *arg)
+/*
+ * Append module extension, if not exist
+ *
+ * input:    foobar
+ * output:   foobar.so
+ *
+ */
+static void append_extension(char *buf, size_t sz, const char *name)
 {
-	struct modapp *modapp = arg;
-	list_unlink(&modapp->le);
-	mem_deref(modapp->mod);
+	if (0 == re_regex(name, str_len(name), "[^.]+"MOD_EXT, NULL)) {
+
+		str_ncpy(buf, name, sz);
+	}
+	else {
+		re_snprintf(buf, sz, "%s"MOD_EXT, name);
+	}
 }
 
 
@@ -30,7 +32,7 @@ static void modapp_destructor(void *arg)
 /* Declared in static.c */
 extern const struct mod_export *mod_table[];
 
-static const struct mod_export *find_module(const struct pl *pl)
+static const struct mod_export *lookup_static_module(const struct pl *pl)
 {
 	struct pl name;
 	uint32_t i;
@@ -54,7 +56,8 @@ static const struct mod_export *find_module(const struct pl *pl)
 static int load_module(struct mod **modp, const struct pl *modpath,
 		       const struct pl *name)
 {
-	char file[256];
+	char file[FS_PATH_MAX];
+	char namestr[256];
 	struct mod *m = NULL;
 	int err = 0;
 
@@ -63,9 +66,18 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 
 #ifdef STATIC
 	/* Try static first */
-	err = mod_add(&m, find_module(name));
+	pl_strcpy(name, namestr, sizeof(namestr));
+
+	if (mod_find(namestr)) {
+		info("static module already loaded: %r\n", name);
+		return EALREADY;
+	}
+
+	err = mod_add(&m, lookup_static_module(name));
 	if (!err)
 		goto out;
+#else
+	(void)namestr;
 #endif
 
 	/* Then dynamic */
@@ -106,18 +118,20 @@ static int module_tmp_handler(const struct pl *val, void *arg)
 
 static int module_app_handler(const struct pl *val, void *arg)
 {
-	struct modapp *modapp;
+	struct mod *mod = NULL;
+	const struct mod_export *me;
 
-	modapp = mem_zalloc(sizeof(*modapp), modapp_destructor);
-	if (!modapp)
-		return ENOMEM;
+	debug("module: loading app %r\n", val);
 
-	if (load_module(&modapp->mod, arg, val)) {
-		mem_deref(modapp);
+	if (load_module(&mod, arg, val)) {
 		return 0;
 	}
 
-	list_prepend(&modappl, &modapp->le, modapp);
+	me = mod_export(mod);
+	if (0 != str_casecmp(me->type, "application")) {
+		warning("module_app %r should be type application (%s)\n",
+			val, me->type);
+	}
 
 	return 0;
 }
@@ -152,7 +166,20 @@ int module_init(const struct conf *conf)
 
 void module_app_unload(void)
 {
-	list_flush(&modappl);
+	struct le *le = list_tail(mod_list());
+
+	/* unload in reverse order */
+	while (le) {
+		struct mod *mod = le->data;
+		const struct mod_export *me = mod_export(mod);
+
+		le = le->prev;
+
+		if (me && 0 == str_casecmp(me->type, "application")) {
+			debug("module: unloading app %s\n", me->name);
+			mem_deref(mod);
+		}
+	}
 }
 
 
@@ -167,4 +194,65 @@ int module_preload(const char *module)
 	pl_set_str(&name, module);
 
 	return load_module(NULL, &path, &name);
+}
+
+
+/**
+ * Load a module by name or by filename
+ *
+ * @param name Module name incl/excl extension, excluding module path
+ *
+ * @return 0 if success, otherwise errorcode
+ *
+ * example:    "foo"
+ * example:    "foo.so"
+ */
+int module_load(const char *name)
+{
+	char filename[256];
+	struct pl path, pl_name;
+	int err;
+
+	if (!str_isset(name))
+		return EINVAL;
+
+	append_extension(filename, sizeof(filename), name);
+
+	pl_set_str(&pl_name, filename);
+
+	if (conf_get(conf_cur(), "module_path", &path))
+		pl_set_str(&path, ".");
+
+	err = load_module(NULL, &path, &pl_name);
+
+	return err;
+}
+
+
+/**
+ * Unload a module by name or by filename
+ *
+ * @param name module name incl/excl extension, excluding module path
+ *
+ * example:   "foo"
+ * example:   "foo.so"
+ */
+void module_unload(const char *name)
+{
+	char filename[256];
+	struct mod *mod;
+
+	if (!str_isset(name))
+		return;
+
+	append_extension(filename, sizeof(filename), name);
+
+	mod = mod_find(filename);
+	if (mod) {
+		info("unloading module: %s\n", filename);
+		mem_deref(mod);
+		return;
+	}
+
+	info("ERROR: Module %s is not currently loaded\n", name);
 }

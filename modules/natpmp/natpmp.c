@@ -27,14 +27,20 @@ struct mnat_sess {
 };
 
 struct mnat_media {
+	struct comp {
+		struct natpmp_req *natpmp;
+		struct mnat_media *media;   /* pointer to parent */
+		struct tmr tmr;
+		uint16_t int_port;
+		uint32_t lifetime;
+		unsigned id;
+		bool granted;
+	} compv[2];
+	unsigned compc;
+
 	struct le le;
 	struct mnat_sess *sess;
 	struct sdp_media *sdpm;
-	struct natpmp_req *natpmp;
-	struct tmr tmr;
-	uint16_t int_port;
-	uint32_t lifetime;
-	bool granted;
 };
 
 
@@ -58,19 +64,56 @@ static void session_destructor(void *arg)
 static void media_destructor(void *arg)
 {
 	struct mnat_media *m = arg;
-
-	/* Destroy the mapping */
-	if (m->granted) {
-		(void)natpmp_mapping_request(NULL, &natpmp_srv,
-					     m->int_port, 0, 0, NULL, NULL);
-	}
+	unsigned i;
 
 	list_unlink(&m->le);
-	tmr_cancel(&m->tmr);
+
+	for (i=0; i<m->compc; i++) {
+		struct comp *comp = &m->compv[i];
+
+		/* Destroy the mapping */
+		if (comp->granted) {
+			(void)natpmp_mapping_request(NULL, &natpmp_srv,
+						     comp->int_port, 0, 0,
+						     NULL, NULL);
+		}
+
+		tmr_cancel(&comp->tmr);
+		mem_deref(comp->natpmp);
+	}
+
 	mem_deref(m->sdpm);
-	mem_deref(m->natpmp);
 }
 
+
+static void complete(struct mnat_sess *sess, int err)
+{
+	mnat_estab_h *estabh = sess->estabh;
+
+	if (sess->estabh) {
+
+		sess->estabh = NULL;
+
+		estabh(err, 0, "done", sess->arg);
+	}
+}
+
+
+static bool all_components_granted(const struct mnat_media *m)
+{
+	unsigned i;
+
+	if (!m || !m->compc)
+		return false;
+
+	for (i=0; i<m->compc; i++) {
+		const struct comp *comp = &m->compv[i];
+		if (!comp->granted)
+			return false;
+	}
+
+	return true;
+}
 
 static void is_complete(struct mnat_sess *sess)
 {
@@ -80,37 +123,35 @@ static void is_complete(struct mnat_sess *sess)
 
 		struct mnat_media *m = le->data;
 
-		if (!m->granted)
+		if (!all_components_granted(m))
 			return;
 	}
 
-	if (sess->estabh) {
-		sess->estabh(0, 0, "done", sess->arg);
-
-		sess->estabh = NULL;
-	}
+	complete(sess, 0);
 }
 
 
 static void refresh_timeout(void *arg)
 {
-	struct mnat_media *m = arg;
+	struct comp *comp = arg;
 
-	m->natpmp = mem_deref(m->natpmp);
-	(void)natpmp_mapping_request(&m->natpmp, &natpmp_srv,
-				     m->int_port, 0, m->lifetime,
-				     natpmp_resp_handler, m);
+	comp->natpmp = mem_deref(comp->natpmp);
+	(void)natpmp_mapping_request(&comp->natpmp, &natpmp_srv,
+				     comp->int_port, 0, comp->lifetime,
+				     natpmp_resp_handler, comp);
 }
 
 
 static void natpmp_resp_handler(int err, const struct natpmp_resp *resp,
 				void *arg)
 {
-	struct mnat_media *m = arg;
+	struct comp *comp = arg;
+	struct mnat_media *m = comp->media;
 	struct sa map_addr;
 
 	if (err) {
 		warning("natpmp: response error: %m\n", err);
+		complete(m->sess, err);
 		return;
 	}
 
@@ -119,30 +160,36 @@ static void natpmp_resp_handler(int err, const struct natpmp_resp *resp,
 	if (resp->result != NATPMP_SUCCESS) {
 		warning("natpmp: request failed with result code: %d\n",
 			resp->result);
+		complete(m->sess, EPROTO);
 		return;
 	}
 
-	if (resp->u.map.int_port != m->int_port) {
+	if (resp->u.map.int_port != comp->int_port) {
 		info("natpmp: ignoring response for internal_port=%u\n",
 		     resp->u.map.int_port);
 		return;
 	}
 
-	info("natpmp: mapping granted:"
+	info("natpmp: mapping granted for comp %u:"
 	     " internal_port=%u, external_port=%u, lifetime=%u\n",
+	     comp->id,
 	     resp->u.map.int_port, resp->u.map.ext_port,
 	     resp->u.map.lifetime);
 
 	map_addr = natpmp_extaddr;
 	sa_set_port(&map_addr, resp->u.map.ext_port);
-	m->lifetime = resp->u.map.lifetime;
+	comp->lifetime = resp->u.map.lifetime;
 
 	/* Update SDP media with external IP-address mapping */
-	sdp_media_set_laddr(m->sdpm, &map_addr);
+	if (comp->id == 1)
+		sdp_media_set_laddr(m->sdpm, &map_addr);
+	else
+		sdp_media_set_laddr_rtcp(m->sdpm, &map_addr);
 
-	m->granted = true;
+	comp->granted = true;
 
-	tmr_start(&m->tmr, m->lifetime * 1000 * 3/4, refresh_timeout, m);
+	tmr_start(&comp->tmr, comp->lifetime * 1000 * 3/4,
+		  refresh_timeout, comp);
 
 	is_complete(m->sess);
 }
@@ -182,40 +229,67 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 }
 
 
+static int comp_alloc(struct comp *comp, void *sock)
+{
+	struct sa laddr;
+	int err;
+
+	err = udp_local_get(sock, &laddr);
+	if (err)
+		goto out;
+
+	comp->int_port = sa_port(&laddr);
+
+	info("natpmp: `%s' stream comp %u local UDP port is %u\n",
+	     sdp_media_name(comp->media->sdpm), comp->id, comp->int_port);
+
+	err = natpmp_mapping_request(&comp->natpmp, &natpmp_srv,
+				     comp->int_port, 0, comp->lifetime,
+				     natpmp_resp_handler, comp);
+	if (err)
+		goto out;
+
+ out:
+	return err;
+}
+
+
 static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		       int proto, void *sock1, void *sock2,
 		       struct sdp_media *sdpm)
 {
 	struct mnat_media *m;
-	struct sa laddr;
+	unsigned i;
 	int err = 0;
 	(void)sock2;
 
 	if (!mp || !sess || !sdpm || proto != IPPROTO_UDP)
+		return EINVAL;
+	if (!sock1)
 		return EINVAL;
 
 	m = mem_zalloc(sizeof(*m), media_destructor);
 	if (!m)
 		return ENOMEM;
 
+	m->compc = sock2 ? 2 : 1;
+
 	list_append(&sess->medial, &m->le, m);
 	m->sess = sess;
 	m->sdpm = mem_ref(sdpm);
-	m->lifetime = LIFETIME;
 
-	err = udp_local_get(sock1, &laddr);
-	if (err)
-		goto out;
+	for (i=0; i<m->compc; i++) {
 
-	m->int_port = sa_port(&laddr);
+		struct comp *comp = &m->compv[i];
 
-	info("natpmp: local UDP port is %u\n", m->int_port);
+		comp->id = i+1;
+		comp->media = m;
+		comp->lifetime = LIFETIME;
 
-	err = natpmp_mapping_request(&m->natpmp, &natpmp_srv,
-				     m->int_port, 0, m->lifetime,
-				     natpmp_resp_handler, m);
-	if (err)
-		goto out;
+		err = comp_alloc(comp, i==0 ? sock1 : sock2);
+		if (err)
+			goto out;
+	}
 
  out:
 	if (err)
@@ -291,7 +365,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	return mnat_register(&mnat, "natpmp", NULL,
+	return mnat_register(&mnat, baresip_mnatl(), "natpmp", NULL,
 			     session_alloc, media_alloc, NULL);
 }
 

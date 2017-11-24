@@ -308,7 +308,8 @@ static int rst_connect(struct rst *rst)
 		}
 	}
 	else {
-		err = dnsc_query(&rst->dnsq, net_dnsc(), rst->host, DNS_TYPE_A,
+		err = dnsc_query(&rst->dnsq, net_dnsc(baresip_network()),
+				 rst->host, DNS_TYPE_A,
 				 DNS_CLASS_IN, true, dns_handler, rst);
 		if (err) {
 			warning("rst: dns query error: %m\n", err);

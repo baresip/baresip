@@ -327,7 +327,7 @@ static int pkloss(struct audec_state *st, int16_t *sampv, size_t *sampc)
 
 
 static struct aucodec ilbc = {
-	LE_INIT, 0, "iLBC", 8000, 1, ilbc_fmtp,
+	LE_INIT, 0, "iLBC", 8000, 8000, 1, ilbc_fmtp,
 	encode_update, encode, decode_update, decode, pkloss, 0, 0
 };
 
@@ -337,7 +337,7 @@ static int module_init(void)
 	(void)re_snprintf(ilbc_fmtp, sizeof(ilbc_fmtp),
 			  "mode=%d", DEFAULT_MODE);
 
-	aucodec_register(&ilbc);
+	aucodec_register(baresip_aucodecl(), &ilbc);
 	return 0;
 }
 
@@ -349,7 +349,6 @@ static int module_close(void)
 }
 
 
-/** Module exports */
 EXPORT_SYM const struct mod_export DECL_EXPORTS(ilbc) = {
 	"ilbc",
 	"codec",

@@ -12,7 +12,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include "gst.h"
 
 
 /**
@@ -384,6 +383,12 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!prm)
 		return EINVAL;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("gst: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), gst_destructor);
 	if (!st)
 		return ENOMEM;
@@ -439,7 +444,7 @@ static int mod_gst_init(void)
 
 	g_free(s);
 
-	return ausrc_register(&ausrc, "gst", gst_alloc);
+	return ausrc_register(&ausrc, baresip_ausrcl(), "gst", gst_alloc);
 }
 
 

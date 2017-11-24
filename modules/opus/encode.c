@@ -72,12 +72,19 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	struct auenc_state *aes;
 	struct opus_param prm, conf_prm;
 	opus_int32 fch, vbr;
-	const struct aucodec *auc = aucodec_find("opus", 48000, 2);
+	const struct aucodec *auc = ac;
 
 	(void)param;
 
 	if (!aesp || !ac || !ac->ch)
 		return EINVAL;
+
+	debug("opus: encoder fmtp (%s)\n", fmtp);
+
+	/* Save the incoming OPUS parameters from SDP offer */
+	if (str_isset(fmtp)) {
+		opus_mirror_params(fmtp);
+	}
 
 	aes = *aesp;
 

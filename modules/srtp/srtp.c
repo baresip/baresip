@@ -34,6 +34,7 @@ struct menc_st {
 	uint8_t key_rx[32];
 	struct srtp *srtp_tx, *srtp_rx;
 	bool use_srtp;
+	bool got_sdp;
 	char *crypto_suite;
 
 	void *rtpsock;
@@ -194,6 +195,9 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	int err = 0;
 	(void)src;
 
+	if (!st->got_sdp)
+		return true;  /* drop the packet */
+
 	if (!st->use_srtp || !is_rtp_or_rtcp(mb))
 		return false;
 
@@ -347,6 +351,9 @@ static int alloc(struct menc_media **stp, struct menc_sess *sess,
 
 	/* SDP handling */
 
+	if (sdp_media_rport(sdpm))
+		st->got_sdp = true;
+
 	if (sdp_media_rattr(st->sdpm, "crypto")) {
 
 		rattr = sdp_media_rattr_apply(st->sdpm, "crypto",
@@ -358,7 +365,7 @@ static int alloc(struct menc_media **stp, struct menc_sess *sess,
 	}
 
 	if (!rattr)
-		err = sdp_enc(st, sdpm, 0, st->crypto_suite);
+		err = sdp_enc(st, sdpm, 1, st->crypto_suite);
 
  out:
 	if (err)
@@ -385,9 +392,11 @@ static struct menc menc_srtp_mandf = {
 
 static int mod_srtp_init(void)
 {
-	menc_register(&menc_srtp_opt);
-	menc_register(&menc_srtp_mand);
-	menc_register(&menc_srtp_mandf);
+	struct list *mencl = baresip_mencl();
+
+	menc_register(mencl, &menc_srtp_opt);
+	menc_register(mencl, &menc_srtp_mand);
+	menc_register(mencl, &menc_srtp_mandf);
 
 	return 0;
 }

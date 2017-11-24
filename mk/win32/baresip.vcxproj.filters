@@ -1,0 +1,366 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{2334866b-8357-4e18-8898-48db4dfe2a15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{5c30c989-28e5-402f-aaa0-860eafa95cc5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\video">
+      <UniqueIdentifier>{f5f435ce-121f-4b09-b66f-89e75e8abb40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\static">
+      <UniqueIdentifier>{7f749aed-9d81-46c6-bdde-690ddc51a0a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules">
+      <UniqueIdentifier>{6c97676c-7c18-404f-85a1-2fded4f104e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\account">
+      <UniqueIdentifier>{f528695e-cf16-4c35-89ed-adcc330b63bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\amr">
+      <UniqueIdentifier>{b8e32268-7d2c-46ae-b6a1-d7b02bbd4026}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\auloop">
+      <UniqueIdentifier>{0e11ace7-27c2-4ad3-8b5e-b3bf772f0b4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\b2bua">
+      <UniqueIdentifier>{f44d6650-15a0-4fb3-8fe3-d91f522be831}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\cons">
+      <UniqueIdentifier>{6606d763-a0be-4bcc-a689-a9e5e38df7f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\contact">
+      <UniqueIdentifier>{785597c1-f018-4f86-ae98-4855e6130bf7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\debug_cmd">
+      <UniqueIdentifier>{b139606b-86de-4c90-af91-f44b04bd1330}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\dshow">
+      <UniqueIdentifier>{4c01b3b6-a748-4cf1-af45-a8d5b7735267}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\echo">
+      <UniqueIdentifier>{3c2cd0c3-9de0-42ca-8f3a-6d7d929ce501}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\g711">
+      <UniqueIdentifier>{e679754c-643a-4284-9ed6-bf6fdc73e152}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\httpd">
+      <UniqueIdentifier>{8ca10960-9be4-4d19-9e32-2ae5bc415c0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\ice">
+      <UniqueIdentifier>{1def0f02-ca40-49ee-b5e1-95aac5d2dda3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\l16">
+      <UniqueIdentifier>{5446737f-2a0f-4b4f-a86e-55d9c20118e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\menu">
+      <UniqueIdentifier>{ebbcb368-d1fa-4899-80cf-e43ff4fde9b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\mwi">
+      <UniqueIdentifier>{a7b0f22a-b82a-4594-a367-d8b8a9882f0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\natbd">
+      <UniqueIdentifier>{7ceb961c-1033-4259-8f3e-ffa2d28a0f12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\natpmp">
+      <UniqueIdentifier>{c093ccc3-d662-46e0-83df-2eb34e7e7d21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\presence">
+      <UniqueIdentifier>{c82f29fb-bb8d-45c7-ad53-d25e997c1453}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\selfview">
+      <UniqueIdentifier>{ed5cc330-666d-4f9a-81a2-db7873b7abaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\srtp">
+      <UniqueIdentifier>{31ac6861-a9e9-467a-82ae-53d1d929e696}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\stun">
+      <UniqueIdentifier>{6e5dac26-781e-4683-958f-2e18fdc0b42e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\turn">
+      <UniqueIdentifier>{5a3c72cb-a1a5-4c46-b0b5-761d3677e56a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\uuid">
+      <UniqueIdentifier>{a4d5f1d9-5629-479e-86d4-4e7b6d58a38a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\vidbridge">
+      <UniqueIdentifier>{044bc40b-b2a8-4450-b76a-d959559df6b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\vidloop">
+      <UniqueIdentifier>{71dc9cb5-19b1-4f74-bc23-02ca6b5a10b3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\vumeter">
+      <UniqueIdentifier>{bc7810ea-bc52-4bee-a15c-aed12cf2a777}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\wincons">
+      <UniqueIdentifier>{8e7e8b8a-dbe7-4b58-80f3-e632b40d0e4e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="modules\winwave">
+      <UniqueIdentifier>{e3bd480b-289e-4754-b1a2-55ea85a7ef45}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\baresip.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\core.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\magic.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\amr\amr.h">
+      <Filter>modules\amr</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\natpmp\libnatpmp.h">
+      <Filter>modules\natpmp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\presence\presence.h">
+      <Filter>modules\presence</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\srtp\sdes.h">
+      <Filter>modules\srtp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\vidbridge\vidbridge.h">
+      <Filter>modules\vidbridge</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\modules\winwave\winwave.h">
+      <Filter>modules\winwave</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\account.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\aucodec.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\aufilt.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\auplay.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ausrc.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\baresip.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\call.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\cmd.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\conf.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\config.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\contact.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\log.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\main.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\menc.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\message.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\metric.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mnat.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\module.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mos.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\net.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\play.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\realtime.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\reg.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtpkeep.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sdp.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipreq.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stream.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ua.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ui.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bfcp.c">
+      <Filter>src\video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\h264.c">
+      <Filter>src\video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mctrl.c">
+      <Filter>src\video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vidcodec.c">
+      <Filter>src\video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\video.c">
+      <Filter>src\video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vidfilt.c">
+      <Filter>src\video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vidisp.c">
+      <Filter>src\video</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vidsrc.c">
+      <Filter>src\video</Filter>
+    </ClCompile>
+    <ClCompile Include="static.c">
+      <Filter>src\static</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\account\account.c">
+      <Filter>modules\account</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\amr\amr.c">
+      <Filter>modules\amr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\amr\sdp.c">
+      <Filter>modules\amr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\auloop\auloop.c">
+      <Filter>modules\auloop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\b2bua\b2bua.c">
+      <Filter>modules\b2bua</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\cons\cons.c">
+      <Filter>modules\cons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\contact\contact.c">
+      <Filter>modules\contact</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\debug_cmd\debug_cmd.c">
+      <Filter>modules\debug_cmd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\dshow\dshow.cpp">
+      <Filter>modules\dshow</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\echo\echo.c">
+      <Filter>modules\echo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\g711\g711.c">
+      <Filter>modules\g711</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\httpd\httpd.c">
+      <Filter>modules\httpd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\ice\ice.c">
+      <Filter>modules\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\l16\l16.c">
+      <Filter>modules\l16</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\menu\menu.c">
+      <Filter>modules\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\mwi\mwi.c">
+      <Filter>modules\mwi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\natbd\natbd.c">
+      <Filter>modules\natbd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\natpmp\libnatpmp.c">
+      <Filter>modules\natpmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\natpmp\natpmp.c">
+      <Filter>modules\natpmp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\presence\notifier.c">
+      <Filter>modules\presence</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\presence\presence.c">
+      <Filter>modules\presence</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\presence\publisher.c">
+      <Filter>modules\presence</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\presence\subscriber.c">
+      <Filter>modules\presence</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\selfview\selfview.c">
+      <Filter>modules\selfview</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\srtp\sdes.c">
+      <Filter>modules\srtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\srtp\srtp.c">
+      <Filter>modules\srtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\stun\stun.c">
+      <Filter>modules\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\turn\turn.c">
+      <Filter>modules\turn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\uuid\uuid.c">
+      <Filter>modules\uuid</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\vidbridge\disp.c">
+      <Filter>modules\vidbridge</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\vidbridge\src.c">
+      <Filter>modules\vidbridge</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\vidbridge\vidbridge.c">
+      <Filter>modules\vidbridge</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\vidloop\vidloop.c">
+      <Filter>modules\vidloop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\vumeter\vumeter.c">
+      <Filter>modules\vumeter</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\wincons\wincons.c">
+      <Filter>modules\wincons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\winwave\play.c">
+      <Filter>modules\winwave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\winwave\src.c">
+      <Filter>modules\winwave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\winwave\winwave.c">
+      <Filter>modules\winwave</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

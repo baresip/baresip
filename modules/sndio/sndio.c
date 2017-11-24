@@ -154,6 +154,12 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm)
 		return EINVAL;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("sndio: source: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	name = (str_isset(device)) ? device : SIO_DEVANY;
 
 	if ((st = mem_zalloc(sizeof(*st), ausrc_destructor)) == NULL)
@@ -186,7 +192,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	st->sampc = par->bufsz / 2;
 
 	st->sampv = mem_alloc(2 * st->sampc, NULL);
 	if (!st->sampv) {
@@ -221,6 +227,12 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	if (!stp || !ap || !prm)
 		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("sndio: playback: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	name = (str_isset(device)) ? device : SIO_DEVANY;
 
@@ -282,8 +294,9 @@ static int sndio_init(void)
 {
 	int err = 0;
 
-	err |= ausrc_register(&ausrc, "sndio", src_alloc);
-	err |= auplay_register(&auplay, "sndio", play_alloc);
+	err |= ausrc_register(&ausrc, baresip_ausrcl(), "sndio", src_alloc);
+	err |= auplay_register(&auplay, baresip_auplayl(),
+			       "sndio", play_alloc);
 
 	return err;
 }

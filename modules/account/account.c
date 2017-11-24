@@ -45,7 +45,7 @@ static int account_write_template(const char *file)
 		pass = "pass";
 	}
 
-	domain = net_domain();
+	domain = net_domain(baresip_network());
 	if (!domain)
 		domain = "domain";
 
@@ -75,6 +75,8 @@ static int account_write_template(const char *file)
 			 "#    ;regq=0.5\n"
 			 "#    ;rtpkeep={zero,stun,dyna,rtcp}\n"
 			 "#    ;sipnat={outbound}\n"
+			 "#    ;stunuser=STUN/TURN/ICE-username\n"
+			 "#    ;stunpass=STUN/TURN/ICE-password\n"
 			 "#    ;stunserver=stun:[user:pass]@host[:port]\n"
 			 "#    ;video_codecs=h264,h263,...\n"
 			 "#\n"
@@ -104,13 +106,44 @@ static int account_write_template(const char *file)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int line_handler(const struct pl *addr)
+static int line_handler(const struct pl *addr, void *arg)
 {
 	char buf[512];
+	struct ua *ua;
+	struct account *acc;
+	int err;
+	(void)arg;
 
 	(void)pl_strcpy(addr, buf, sizeof(buf));
 
-	return ua_alloc(NULL, buf);
+	err = ua_alloc(&ua, buf);
+	if (err)
+		return err;
+
+	acc = ua_account(ua);
+	if (!acc) {
+		warning("account: no account for this ua\n");
+		return ENOENT;
+	}
+
+	/* optional password prompt */
+	if (!str_isset(account_auth_pass(acc))) {
+		char *pass = NULL;
+
+		(void)re_printf("Please enter password for %s: ",
+				account_aor(acc));
+
+		err = ui_password_prompt(&pass);
+		if (err)
+			goto out;
+
+		err = account_set_auth_pass(acc, pass);
+
+		mem_deref(pass);
+	}
+
+ out:
+	return err;
 }
 
 
@@ -143,7 +176,7 @@ static int account_read_file(void)
 			return err;
 	}
 
-	err = conf_parse(file, line_handler);
+	err = conf_parse(file, line_handler, NULL);
 	if (err)
 		return err;
 
@@ -153,7 +186,7 @@ static int account_read_file(void)
 	if (list_isempty(uag_list())) {
 		info("account: No SIP accounts found\n"
 			" -- check your config "
-			"or add an account using 'R' command\n");
+			"or add an account using 'uanew' command\n");
 	}
 
 	return 0;

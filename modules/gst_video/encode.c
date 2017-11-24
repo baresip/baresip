@@ -168,10 +168,17 @@ static void internal_appsink_new_buffer(GstElement *sink,
 	g_signal_emit_by_name(sink, "pull-buffer", &buffer);
 
 	if (buffer) {
+		GstClockTime ts;
+		uint32_t rtp_ts;
+
 		guint8 *data = GST_BUFFER_DATA(buffer);
 		guint size = GST_BUFFER_SIZE(buffer);
 
-		h264_packetize(data, size, st->pktsize,
+		ts = GST_BUFFER_TIMESTAMP(buffer);
+
+		rtp_ts = (uint32_t)((90000ULL*ts) / 1000000000UL );
+
+		h264_packetize(rtp_ts, data, size, st->pktsize,
 			       st->pkth, st->pkth_arg);
 
 		gst_buffer_unref(buffer);

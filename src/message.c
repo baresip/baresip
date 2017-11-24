@@ -1,5 +1,5 @@
 /**
- * @file message.c  SIP MESSAGE -- RFC 3428
+ * @file src/message.c  SIP MESSAGE -- RFC 3428
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -8,19 +8,47 @@
 #include "core.h"
 
 
-static struct sip_lsnr *lsnr;
-static message_recv_h *recvh;
-static void *recvarg;
+struct message {
+	struct list lsnrl;
+	struct sip_lsnr *sip_lsnr;
+};
+
+struct message_lsnr {
+	struct le le;
+	message_recv_h *recvh;
+	void *arg;
+};
 
 
-static void handle_message(struct ua *ua, const struct sip_msg *msg)
+static void destructor(void *data)
+{
+	struct message *message = data;
+
+	list_flush(&message->lsnrl);
+	mem_deref(message->sip_lsnr);
+}
+
+
+static void listener_destructor(void *data)
+{
+	struct message_lsnr *lsnr = data;
+
+	list_unlink(&lsnr->le);
+}
+
+
+static void handle_message(struct message_lsnr *lsnr, struct ua *ua,
+			   const struct sip_msg *msg)
 {
 	static const char ctype_text[] = "text/plain";
 	struct pl ctype_pl = {ctype_text, sizeof(ctype_text)-1};
 	(void)ua;
 
-	if (msg_ctype_cmp(&msg->ctyp, "text", "plain") && recvh) {
-		recvh(&msg->from.auri, &ctype_pl, msg->mb, recvarg);
+	if (msg_ctype_cmp(&msg->ctyp, "text", "plain") && lsnr->recvh) {
+
+		lsnr->recvh(&msg->from.auri, &ctype_pl,
+			       msg->mb, lsnr->arg);
+
 		(void)sip_reply(uag_sip(), msg, 200, "OK");
 	}
 	else {
@@ -35,9 +63,10 @@ static void handle_message(struct ua *ua, const struct sip_msg *msg)
 
 static bool request_handler(const struct sip_msg *msg, void *arg)
 {
+	struct message *message = arg;
 	struct ua *ua;
-
-	(void)arg;
+	struct le *le = message->lsnrl.head;
+	bool hdld = false;
 
 	if (pl_strcmp(&msg->met, "MESSAGE"))
 		return false;
@@ -48,48 +77,73 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 		return true;
 	}
 
-	handle_message(ua, msg);
+	while (le) {
+		struct message_lsnr *lsnr = le->data;
 
-	return true;
+		le = le->next;
+
+		handle_message(lsnr, ua, msg);
+
+		hdld = true;
+	}
+
+	return hdld;
 }
 
 
-static void resp_handler(int err, const struct sip_msg *msg, void *arg)
+int message_init(struct message **messagep)
 {
-	struct ua *ua = arg;
+	struct message *message;
+	int err = 0;
 
-	(void)ua;
+	if (!messagep)
+		return EINVAL;
 
-	if (err) {
-		(void)re_fprintf(stderr, " \x1b[31m%m\x1b[;m\n", err);
-		return;
-	}
+	message = mem_zalloc(sizeof(*message), destructor);
+	if (!message)
+		return ENOMEM;
 
-	if (msg->scode >= 300) {
-		(void)re_fprintf(stderr, " \x1b[31m%u %r\x1b[;m\n",
-				 msg->scode, &msg->reason);
-	}
-}
+	/* note: cannot create sip listener here, there is not UAs yet */
 
-
-int message_init(message_recv_h *h, void *arg)
-{
-	int err;
-
-	err = sip_listen(&lsnr, uag_sip(), true, request_handler, NULL);
 	if (err)
-		return err;
+		mem_deref(message);
+	else
+		*messagep = message;
 
-	recvh   = h;
-	recvarg = arg;
-
-	return 0;
+	return err;
 }
 
 
-void message_close(void)
+int message_listen(struct message_lsnr **lsnrp, struct message *message,
+		   message_recv_h *recvh, void *arg)
 {
-	lsnr = mem_deref(lsnr);
+	struct message_lsnr *lsnr;
+	int err = 0;
+
+	if (!message || !recvh)
+		return EINVAL;
+
+	/* create the SIP listener if it does not exist */
+	if (!message->sip_lsnr) {
+
+		err = sip_listen(&message->sip_lsnr, uag_sip(), true,
+				 request_handler, message);
+		if (err)
+			goto out;
+	}
+
+	lsnr = mem_zalloc(sizeof(*lsnr), listener_destructor);
+
+	lsnr->recvh = recvh;
+	lsnr->arg = arg;
+
+	list_append(&message->lsnrl, &lsnr->le, lsnr);
+
+	if (lsnrp)
+		*lsnrp = lsnr;
+
+ out:
+	return err;
 }
 
 
@@ -99,10 +153,13 @@ void message_close(void)
  * @param ua    User-Agent object
  * @param peer  Peer SIP Address
  * @param msg   Message to send
+ * @param resph Response handler
+ * @param arg   Handler argument
  *
  * @return 0 if success, otherwise errorcode
  */
-int message_send(struct ua *ua, const char *peer, const char *msg)
+int message_send(struct ua *ua, const char *peer, const char *msg,
+		 sip_resp_h *resph, void *arg)
 {
 	struct sip_addr addr;
 	struct pl pl;
@@ -122,7 +179,7 @@ int message_send(struct ua *ua, const char *peer, const char *msg)
 	if (err)
 		return err;
 
-	err = sip_req_send(ua, "MESSAGE", uri, resp_handler, ua,
+	err = sip_req_send(ua, "MESSAGE", uri, resph, arg,
 			   "Accept: text/plain\r\n"
 			   "Content-Type: text/plain\r\n"
 			   "Content-Length: %zu\r\n"

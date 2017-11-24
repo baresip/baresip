@@ -230,7 +230,8 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 
 static int module_init(void)
 {
-	return mnat_register(&mnat, "stun", NULL, session_alloc, media_alloc,
+	return mnat_register(&mnat, baresip_mnatl(),
+			     "stun", NULL, session_alloc, media_alloc,
 			     NULL);
 }
 

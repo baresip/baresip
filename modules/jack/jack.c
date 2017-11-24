@@ -17,8 +17,10 @@ static int module_init(void)
 {
 	int err = 0;
 
-	err |= auplay_register(&auplay, "jack", jack_play_alloc);
-	err |= ausrc_register(&ausrc, "jack", jack_src_alloc);
+	err |= auplay_register(&auplay, baresip_auplayl(),
+			       "jack", jack_play_alloc);
+	err |= ausrc_register(&ausrc, baresip_ausrcl(),
+			      "jack", jack_src_alloc);
 
 	return err;
 }

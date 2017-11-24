@@ -18,6 +18,9 @@
 #else
 #include <sys/soundcard.h>
 #endif
+#ifdef SOLARIS
+#include <sys/filio.h>
+#endif
 
 
 /**
@@ -223,7 +226,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	(void)ctx;
 	(void)errh;
 
-	if (!stp || !as || !prm || !rh)
+	if (!stp || !as || !prm || prm->fmt != AUFMT_S16LE || !rh)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
@@ -282,7 +285,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	struct auplay_st *st;
 	int err;
 
-	if (!stp || !ap || !prm || !wh)
+	if (!stp || !ap || !prm || prm->fmt != AUFMT_S16LE || !wh)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
@@ -337,8 +340,8 @@ static int module_init(void)
 {
 	int err;
 
-	err  = ausrc_register(&ausrc, "oss", src_alloc);
-	err |= auplay_register(&auplay, "oss", play_alloc);
+	err  = ausrc_register(&ausrc, baresip_ausrcl(), "oss", src_alloc);
+	err |= auplay_register(&auplay, baresip_auplayl(), "oss", play_alloc);
 
 	return err;
 }

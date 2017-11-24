@@ -191,6 +191,8 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	struct auplay_st *st;
 	int err = 0;
 
+	(void)device;
+
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
 
@@ -198,6 +200,12 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	if (prm->ch > ARRAY_SIZE(st->portv))
 		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("jack: playback: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)

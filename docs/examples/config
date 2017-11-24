@@ -169,3 +169,9 @@ ice_turn		no
 ice_debug		no
 ice_nomination		regular	# {regular,aggressive}
 ice_mode		full	# {full,lite}
+
+# ZRTP
+#zrtp_hash		no  # Disable SDP zrtp-hash (not recommended)
+
+# sndfile #
+snd_path 		/tmp/

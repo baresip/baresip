@@ -35,6 +35,7 @@ struct vidsrc_st {
 	bool run;
 	struct vidsz size;
 	struct mbuf *mb;
+	enum vidfmt fmt;
 	vidsrc_frame_h *frameh;
 	void *arg;
 };
@@ -71,11 +72,22 @@ static int v4l_check_palette(struct vidsrc_st *st)
 		return errno;
 	}
 
-	if (VIDEO_PALETTE_RGB24 != pic.palette) {
-		warning("v4l: unsupported palette %d (only RGB24 supp.)\n",
-			pic.palette);
+	switch (pic.palette) {
+
+	case VIDEO_PALETTE_RGB24:
+		st->fmt = VID_FMT_RGB32;
+		break;
+
+	case VIDEO_PALETTE_YUYV:
+		st->fmt = VID_FMT_YUYV422;
+		break;
+
+	default:
+		warning("v4l: unsupported palette %d\n", pic.palette);
 		return ENODEV;
 	}
+
+	info("v4l: pixel format is %s\n", vidfmt_name(st->fmt));
 
 	return 0;
 }
@@ -109,7 +121,7 @@ static void call_frame_handler(struct vidsrc_st *st, uint8_t *buf)
 {
 	struct vidframe frame;
 
-	vidframe_init_buf(&frame, VID_FMT_RGB32, &st->size, buf);
+	vidframe_init_buf(&frame, st->fmt, &st->size, buf);
 
 	st->frameh(&frame, st->arg);
 }
@@ -167,12 +179,6 @@ static void destructor(void *arg)
 }
 
 
-static uint32_t rgb24_size(const struct vidsz *sz)
-{
-	return sz ? (sz->w * sz->h * 24/8) : 0;
-}
-
-
 static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt,
@@ -219,8 +225,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (err)
 		goto out;
 
-	/* note: assumes RGB24 */
-	st->mb = mbuf_alloc(rgb24_size(&st->size));
+	/* allocate buffer for the picture */
+	st->mb = mbuf_alloc(vidframe_size(st->fmt, &st->size));
 	if (!st->mb) {
 		err = ENOMEM;
 		goto out;
@@ -245,7 +251,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int v4l_init(void)
 {
-	return vidsrc_register(&vidsrc, "v4l", alloc, NULL);
+	return vidsrc_register(&vidsrc, baresip_vidsrcl(), "v4l", alloc, NULL);
 }
 
 

@@ -80,7 +80,7 @@ static void timeout(void *arg)
 	tmr_start(&sdl.tmr, 1, event_handler, NULL);
 
 	/* Emulate key-release */
-	ui_input(0x00);
+	ui_input_key(baresip_uis(), KEYCODE_REL, NULL);
 }
 
 
@@ -124,7 +124,7 @@ static void event_handler(void *arg)
 				if (isprint(ch)) {
 					tmr_start(&sdl.tmr, KEY_RELEASE_VAL,
 						  timeout, NULL);
-					ui_input(ch);
+					ui_input_key(baresip_uis(), ch, NULL);
 				}
 				break;
 			}
@@ -136,7 +136,7 @@ static void event_handler(void *arg)
 			break;
 
 		case SDL_QUIT:
-			ui_input('q');
+			ui_input_key(baresip_uis(), 'q', NULL);
 			break;
 
 		default:
@@ -306,7 +306,8 @@ static int display(struct vidisp_st *st, const char *title,
 
 static int module_init(void)
 {
-	return vidisp_register(&vid, "sdl", alloc, NULL, display, NULL);
+	return vidisp_register(&vid, baresip_vidispl(),
+			       "sdl", alloc, NULL, display, NULL);
 }
 
 

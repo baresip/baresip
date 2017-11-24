@@ -17,6 +17,12 @@
  */
 
 
+/** Constants */
+enum {
+	SHUTDOWN_DELAY = 500  /**< Delay before un-registering [ms] */
+};
+
+
 struct presence {
 	struct le le;
 	struct sipsub *sub;
@@ -197,8 +203,8 @@ static void destructor(void *arg)
 
 static void deref_handler(void *arg)
 {
-	struct mwi *mwi = arg;
-	mem_deref(mwi);
+	struct presence *pres = arg;
+	mem_deref(pres);
 }
 
 
@@ -233,7 +239,7 @@ static int subscribe(struct presence *pres)
 	err = sipevent_subscribe(&pres->sub, uag_sipevent_sock(), uri, NULL,
 				 ua_aor(ua), "presence", NULL, 600,
 				 ua_cuser(ua), routev, routev[0] ? 1 : 0,
-				 auth_handler, ua_prm(ua), true, NULL,
+				 auth_handler, ua_account(ua), true, NULL,
 				 notify_handler, close_handler, pres,
 				 "%H", ua_print_supported, ua);
 	if (err) {
@@ -275,12 +281,51 @@ static int presence_alloc(struct contact *contact)
 }
 
 
+static void contact_handler(struct contact *contact,
+				bool removed, void *arg)
+{
+	struct le *le;
+	struct pl val;
+	struct presence *pres = NULL;
+	struct sip_addr *addr = contact_addr(contact);
+	(void)arg;
+
+	if (0 == msg_param_decode(&addr->params, "presence", &val) &&
+				0 == pl_strcasecmp(&val, "p2p")) {
+		if (!removed) {
+			if (presence_alloc(contact) != 0) {
+				warning("presence: presence_alloc failed\n");
+				return;
+			}
+		}
+		else {
+			/* Find matching presence element for contact */
+			for (le = list_head(&presencel); le; le = le->next) {
+				pres = (struct presence*)le->data;
+				if (pres->contact == contact) {
+					break;
+				}
+				pres = NULL;
+			}
+
+			if (pres) {
+				mem_deref(pres);
+			}
+			else {
+				warning("presence: No contact to remove\n");
+			}
+		}
+	}
+}
+
+
 int subscriber_init(void)
 {
+	struct contacts *contacts = baresip_contacts();
 	struct le *le;
 	int err = 0;
 
-	for (le = list_head(contact_list()); le; le = le->next) {
+	for (le = list_head(contact_list(contacts)); le; le = le->next) {
 
 		struct contact *c = le->data;
 		struct sip_addr *addr = contact_addr(c);
@@ -295,12 +340,15 @@ int subscriber_init(void)
 
 	info("Subscribing to %u contacts\n", list_count(&presencel));
 
+	contact_set_update_handler(contacts, contact_handler, NULL);
+
 	return err;
 }
 
 
 void subscriber_close(void)
 {
+	contact_set_update_handler(baresip_contacts(), NULL, NULL);
 	list_flush(&presencel);
 }
 
@@ -311,6 +359,8 @@ void subscriber_close_all(void)
 
 	info("presence: subscriber: closing %u subs\n",
 	     list_count(&presencel));
+
+	contact_set_update_handler(baresip_contacts(), NULL, NULL);
 
 	le = presencel.head;
 	while (le) {
@@ -323,7 +373,8 @@ void subscriber_close_all(void)
 		pres->shutdown = true;
 		if (pres->sub) {
 			pres->sub = mem_deref(pres->sub);
-			tmr_start(&pres->tmr, 500, deref_handler, pres);
+			tmr_start(&pres->tmr, SHUTDOWN_DELAY,
+				  deref_handler, pres);
 		}
 		else
 			mem_deref(pres);

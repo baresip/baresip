@@ -34,6 +34,16 @@ static void signal_handler(int sig)
 }
 
 
+static void ua_exit_handler(void *arg)
+{
+	(void)arg;
+	debug("ua exited -- stopping main runloop\n");
+
+	/* The main run-loop can be stopped now */
+	re_cancel();
+}
+
+
 static void usage(void)
 {
 	(void)re_fprintf(stderr,
@@ -43,7 +53,7 @@ static void usage(void)
 			 "\t-6               Prefer IPv6\n"
 #endif
 			 "\t-d               Daemon\n"
-			 "\t-e <commands>    Exec commands\n"
+			 "\t-e <commands>    Execute commands (repeat)\n"
 			 "\t-f <path>        Config path\n"
 			 "\t-m <module>      Pre-load modules (repeat)\n"
 			 "\t-p <path>        Audio files\n"
@@ -59,13 +69,16 @@ int main(int argc, char *argv[])
 {
 	bool prefer_ipv6 = false, run_daemon = false, test = false;
 	const char *ua_eprm = NULL;
-	const char *exec = NULL;
+	const char *execmdv[16];
+	const char *audio_path = NULL;
 	const char *modv[16];
+	size_t execmdc = 0;
 	size_t modc = 0;
+	size_t i;
 	int err;
 
-	(void)re_fprintf(stderr, "baresip v%s"
-			 " Copyright (C) 2010 - 2016"
+	(void)re_fprintf(stdout, "baresip v%s"
+			 " Copyright (C) 2010 - 2017"
 			 " Alfred E. Heggestad et al.\n",
 			 BARESIP_VERSION);
 
@@ -99,7 +112,13 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'e':
-			exec = optarg;
+			if (execmdc >= ARRAY_SIZE(execmdv)) {
+				warning("max %zu commands\n",
+					ARRAY_SIZE(execmdv));
+				err = EINVAL;
+				goto out;
+			}
+			execmdv[execmdc++] = optarg;
 			break;
 
 		case 'f':
@@ -117,7 +136,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'p':
-			play_set_path(optarg);
+			audio_path = optarg;
 			break;
 
 		case 't':
@@ -147,9 +166,26 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
+	/*
+	 * Initialise the top-level baresip struct, must be
+	 * done AFTER configuration is complete.
+	 */
+	err = baresip_init(conf_config(), prefer_ipv6);
+	if (err) {
+		warning("main: baresip init failed (%m)\n", err);
+		goto out;
+	}
+
+	/* Set audio path preferring the one given in -p argument (if any) */
+	if (audio_path)
+		play_set_path(baresip_player(), audio_path);
+	else if (str_isset(conf_config()->audio.audio_path)) {
+		play_set_path(baresip_player(),
+			      conf_config()->audio.audio_path);
+	}
+
 	/* NOTE: must be done after all arguments are processed */
 	if (modc) {
-		size_t i;
 
 		info("pre-loading modules: %zu\n", modc);
 
@@ -169,6 +205,8 @@ int main(int argc, char *argv[])
 		      true, true, true, prefer_ipv6);
 	if (err)
 		goto out;
+
+	uag_set_exit_handler(ua_exit_handler, NULL);
 
 	if (ua_eprm) {
 		err = uag_set_extra_params(ua_eprm);
@@ -194,8 +232,10 @@ int main(int argc, char *argv[])
 
 	info("baresip is ready.\n");
 
-	if (exec)
-		ui_input_str(exec);
+	/* Execute any commands from input arguments */
+	for (i=0; i<execmdc; i++) {
+		ui_input_str(execmdv[i]);
+	}
 
 	/* Main loop */
 	err = re_main(signal_handler);
@@ -206,6 +246,14 @@ int main(int argc, char *argv[])
 
 	ua_close();
 	conf_close();
+
+	baresip_close();
+
+	/* NOTE: modules must be unloaded after all application
+	 *       activity has stopped.
+	 */
+	debug("main: unloading modules..\n");
+	mod_close();
 
 	libre_close();
 

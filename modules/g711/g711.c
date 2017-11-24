@@ -97,20 +97,20 @@ static int pcma_decode(struct audec_state *ads, int16_t *sampv,
 
 
 static struct aucodec pcmu = {
-	LE_INIT, "0", "PCMU", 8000, 1, NULL,
+	LE_INIT, "0", "PCMU", 8000, 8000, 1, NULL,
 	NULL, pcmu_encode, NULL, pcmu_decode, NULL, NULL, NULL
 };
 
 static struct aucodec pcma = {
-	LE_INIT, "8", "PCMA", 8000, 1, NULL,
+	LE_INIT, "8", "PCMA", 8000, 8000, 1, NULL,
 	NULL, pcma_encode, NULL, pcma_decode, NULL, NULL, NULL
 };
 
 
 static int module_init(void)
 {
-	aucodec_register(&pcmu);
-	aucodec_register(&pcma);
+	aucodec_register(baresip_aucodecl(), &pcmu);
+	aucodec_register(baresip_aucodecl(), &pcma);
 
 	return 0;
 }

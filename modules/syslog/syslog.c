@@ -70,7 +70,7 @@ static int module_close(void)
 
 const struct mod_export DECL_EXPORTS(syslog) = {
 	"syslog",
-	"syslog",
+	"application",
 	module_init,
 	module_close
 };

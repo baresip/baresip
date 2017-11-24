@@ -12,7 +12,60 @@
 
 enum {
 	RTP_RECV_SIZE = 8192,
+	RTP_CHECK_INTERVAL = 1000  /* how often to check for RTP [ms] */
 };
+
+
+static void stream_close(struct stream *strm, int err)
+{
+	stream_error_h *errorh = strm->errorh;
+
+	strm->terminated = true;
+	strm->errorh = NULL;
+
+	if (errorh) {
+		errorh(strm, err, strm->errorh_arg);
+	}
+}
+
+
+static void check_rtp_handler(void *arg)
+{
+	struct stream *strm = arg;
+	const uint64_t now = tmr_jiffies();
+	int diff_ms;
+
+	tmr_start(&strm->tmr_rtp, RTP_CHECK_INTERVAL,
+		  check_rtp_handler, strm);
+
+	/* If no RTP was received at all, check later */
+	if (!strm->ts_last)
+		return;
+
+	/* We are in sendrecv mode, check when the last RTP packet
+	 * was received.
+	 */
+	if (sdp_media_dir(strm->sdp) == SDP_SENDRECV) {
+
+		diff_ms = (int)(now - strm->ts_last);
+
+		debug("stream: last \"%s\" RTP packet: %d milliseconds\n",
+		      sdp_media_name(strm->sdp), diff_ms);
+
+		if (diff_ms > (int)strm->rtp_timeout_ms) {
+
+			info("stream: no %s RTP packets received for"
+			     " %d milliseconds\n",
+			     sdp_media_name(strm->sdp), diff_ms);
+
+			stream_close(strm, ETIMEDOUT);
+		}
+	}
+	else {
+		re_printf("check_rtp: not checking (dir=%s)\n",
+			  sdp_dir_name(sdp_media_dir(strm->sdp)));
+	}
+}
 
 
 static inline int lostcalc(struct stream *s, uint16_t seq)
@@ -79,6 +132,7 @@ static void stream_destructor(void *arg)
 	metric_reset(&s->metric_tx);
 	metric_reset(&s->metric_rx);
 
+	tmr_cancel(&s->tmr_rtp);
 	list_unlink(&s->le);
 	mem_deref(s->rtpkeep);
 	mem_deref(s->sdp);
@@ -91,12 +145,69 @@ static void stream_destructor(void *arg)
 }
 
 
-static void rtp_recv(const struct sa *src, const struct rtp_header *hdr,
-		     struct mbuf *mb, void *arg)
+static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
+		       struct mbuf *mb)
+{
+	struct rtpext extv[8];
+	size_t extc = 0;
+
+	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
+	if (hdr->ext && hdr->x.len && mb) {
+
+		const size_t pos = mb->pos;
+		const size_t end = mb->end;
+		const size_t ext_stop = mb->pos;
+		size_t ext_len;
+		size_t i;
+		int err;
+
+		if (hdr->x.type != RTPEXT_TYPE_MAGIC) {
+			info("stream: unknown ext type ignored (0x%04x)\n",
+			     hdr->x.type);
+			goto handler;
+		}
+
+		ext_len = hdr->x.len*sizeof(uint32_t);
+		if (mb->pos < ext_len) {
+			warning("stream: corrupt rtp packet,"
+				" not enough space for rtpext of %zu bytes\n",
+				ext_len);
+			return;
+		}
+
+		mb->pos = mb->pos - ext_len;
+		mb->end = ext_stop;
+
+		for (i=0; i<ARRAY_SIZE(extv) && mbuf_get_left(mb); i++) {
+
+			err = rtpext_decode(&extv[i], mb);
+			if (err) {
+				warning("stream: rtpext_decode failed (%m)\n",
+					err);
+				return;
+			}
+		}
+
+		extc = i;
+
+		mb->pos = pos;
+		mb->end = end;
+	}
+
+ handler:
+	s->rtph(hdr, extv, extc, mb, s->arg);
+
+}
+
+
+static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
+			struct mbuf *mb, void *arg)
 {
 	struct stream *s = arg;
 	bool flush = false;
 	int err;
+
+	s->ts_last = tmr_jiffies();
 
 	if (!mbuf_get_left(mb))
 		return;
@@ -145,17 +256,17 @@ static void rtp_recv(const struct sa *src, const struct rtp_header *hdr,
 		s->jbuf_started = true;
 
 		if (lostcalc(s, hdr2.seq) > 0)
-			s->rtph(hdr, NULL, s->arg);
+			handle_rtp(s, hdr, NULL);
 
-		s->rtph(&hdr2, mb2, s->arg);
+		handle_rtp(s, &hdr2, mb2);
 
 		mem_deref(mb2);
 	}
 	else {
 		if (lostcalc(s, hdr->seq) > 0)
-			s->rtph(hdr, NULL, s->arg);
+			handle_rtp(s, hdr, NULL);
 
-		s->rtph(hdr, mb, s->arg);
+		handle_rtp(s, hdr, mb);
 	}
 }
 
@@ -164,6 +275,8 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 {
 	struct stream *s = arg;
 	(void)src;
+
+	s->ts_last = tmr_jiffies();
 
 	if (s->rtcph)
 		s->rtcph(msg, s->arg);
@@ -197,9 +310,13 @@ static int stream_sock_alloc(struct stream *s, int af)
 
 	err = rtp_listen(&s->rtp, IPPROTO_UDP, &laddr,
 			 s->cfg.rtp_ports.min, s->cfg.rtp_ports.max,
-			 s->rtcp, rtp_recv, rtcp_handler, s);
-	if (err)
+			 s->rtcp, rtp_handler, rtcp_handler, s);
+	if (err) {
+		warning("stream: rtp_listen failed: af=%s ports=%u-%u"
+			" (%m)\n", net_af2name(af),
+			s->cfg.rtp_ports.min, s->cfg.rtp_ports.max, err);
 		return err;
+	}
 
 	tos = s->cfg.rtp_tos;
 	(void)udp_setsockopt(rtp_sock(s->rtp), IPPROTO_IP, IP_TOS,
@@ -213,7 +330,8 @@ static int stream_sock_alloc(struct stream *s, int af)
 }
 
 
-int stream_alloc(struct stream **sp, const struct config_avt *cfg,
+int stream_alloc(struct stream **sp, const struct stream_param *prm,
+		 const struct config_avt *cfg,
 		 struct call *call, struct sdp_session *sdp_sess,
 		 const char *name, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
@@ -224,7 +342,7 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 	struct stream *s;
 	int err;
 
-	if (!sp || !cfg || !call || !rtph)
+	if (!sp || !prm || !cfg || !call || !rtph)
 		return EINVAL;
 
 	s = mem_zalloc(sizeof(*s), stream_destructor);
@@ -239,11 +357,13 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 	s->pseq  = -1;
 	s->rtcp  = s->cfg.rtcp_enable;
 
-	err = stream_sock_alloc(s, call_af(call));
-	if (err) {
-		warning("stream: failed to create socket for media '%s'"
-			" (%m)\n", name, err);
-		goto out;
+	if (prm->use_rtp) {
+		err = stream_sock_alloc(s, call_af(call));
+		if (err) {
+			warning("stream: failed to create socket"
+				" for media '%s' (%m)\n", name, err);
+			goto out;
+		}
 	}
 
 	err = str_dup(&s->cname, cname);
@@ -260,7 +380,7 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 	}
 
 	err = sdp_media_add(&s->sdp, sdp_sess, name,
-			    sa_port(rtp_local(s->rtp)),
+			    s->rtp ? sa_port(rtp_local(s->rtp)) : 9,
 			    (menc && menc->sdp_proto) ? menc->sdp_proto :
 			    sdp_proto_rtpavp);
 	if (err)
@@ -289,7 +409,7 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 	if (err)
 		goto out;
 
-	if (mnat) {
+	if (mnat && s->rtp) {
 		err = mnat->mediah(&s->mns, mnat_sess, IPPROTO_UDP,
 				   rtp_sock(s->rtp),
 				   s->rtcp ? rtcp_sock(s->rtp) : NULL,
@@ -298,7 +418,7 @@ int stream_alloc(struct stream **sp, const struct config_avt *cfg,
 			goto out;
 	}
 
-	if (menc) {
+	if (menc && s->rtp) {
 		s->menc  = menc;
 		s->mencs = mem_ref(menc_sess);
 		err = menc->mediah(&s->mes, menc_sess,
@@ -344,7 +464,7 @@ static void stream_start_keepalive(struct stream *s)
 	if (!s)
 		return;
 
-	rtpkeep = ua_prm(call_get_ua(s->call))->rtpkeep;
+	rtpkeep = call_account(s->call)->rtpkeep;
 
 	s->rtpkeep = mem_deref(s->rtpkeep);
 
@@ -359,7 +479,7 @@ static void stream_start_keepalive(struct stream *s)
 }
 
 
-int stream_send(struct stream *s, bool marker, int pt, uint32_t ts,
+int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		struct mbuf *mb)
 {
 	int err = 0;
@@ -378,7 +498,7 @@ int stream_send(struct stream *s, bool marker, int pt, uint32_t ts,
 		pt = s->pt_enc;
 
 	if (pt >= 0) {
-		err = rtp_send(s->rtp, sdp_media_raddr(s->sdp),
+		err = rtp_send(s->rtp, sdp_media_raddr(s->sdp), ext,
 			       marker, pt, ts, mb);
 		if (err)
 			s->metric_tx.n_err++;
@@ -445,6 +565,9 @@ void stream_update(struct stream *s)
 
 void stream_update_encoder(struct stream *s, int pt_enc)
 {
+	if (!s)
+		return;
+
 	if (pt_enc >= 0)
 		s->pt_enc = pt_enc;
 }
@@ -533,6 +656,37 @@ void stream_set_bw(struct stream *s, uint32_t bps)
 }
 
 
+void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
+{
+	if (!strm)
+		return;
+
+	strm->rtp_timeout_ms = timeout_ms;
+
+	tmr_cancel(&strm->tmr_rtp);
+
+	if (timeout_ms) {
+
+		info("stream: Enable RTP timeout (%u milliseconds)\n",
+		     timeout_ms);
+
+		strm->ts_last = tmr_jiffies();
+		tmr_start(&strm->tmr_rtp, 10, check_rtp_handler, strm);
+	}
+}
+
+
+void stream_set_error_handler(struct stream *strm,
+			      stream_error_h *errorh, void *arg)
+{
+	if (!strm)
+		return;
+
+	strm->errorh     = errorh;
+	strm->errorh_arg = arg;
+}
+
+
 int stream_debug(struct re_printf *pf, const struct stream *s)
 {
 	struct sa rrtcp;
@@ -566,5 +720,3 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 			  s->metric_tx.cur_bitrate,
 			  s->metric_rx.cur_bitrate);
 }
-
-

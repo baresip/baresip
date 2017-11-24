@@ -9,16 +9,6 @@
 #include "core.h"
 
 
-static struct list uil;  /**< List of UIs (struct ui) */
-static struct cmd_ctx *uictx;
-
-
-static void ui_handler(char key, struct re_printf *pf)
-{
-	(void)cmd_process(&uictx, key, pf);
-}
-
-
 static int stdout_handler(const char *p, size_t size, void *arg)
 {
 	(void)arg;
@@ -33,14 +23,15 @@ static int stdout_handler(const char *p, size_t size, void *arg)
 /**
  * Register a new User-Interface (UI) module
  *
- * @param ui The User-Interface (UI) module to register
+ * @param uis UI Subsystem
+ * @param ui  The User-Interface (UI) module to register
  */
-void ui_register(struct ui *ui)
+void ui_register(struct ui_sub *uis, struct ui *ui)
 {
-	if (!ui)
+	if (!uis || !ui)
 		return;
 
-	list_append(&uil, &ui->le, ui);
+	list_append(&uis->uil, &ui->le, ui);
 
 	debug("ui: %s\n", ui->name);
 }
@@ -61,27 +52,18 @@ void ui_unregister(struct ui *ui)
 
 
 /**
- * Send input to the UI subsystem
- *
- * @param key Input character
- */
-void ui_input(char key)
-{
-	static struct re_printf pf_stdout = {stdout_handler, NULL};
-
-	ui_handler(key, &pf_stdout);
-}
-
-
-/**
  * Send an input key to the UI subsystem, with a print function for response
  *
+ * @param uis UI Subsystem
  * @param key Input character
  * @param pf  Print function for the response
  */
-void ui_input_key(char key, struct re_printf *pf)
+void ui_input_key(struct ui_sub *uis, char key, struct re_printf *pf)
 {
-	ui_handler(key, pf);
+	if (!uis)
+		return;
+
+	(void)cmd_process(baresip_commands(), &uis->uictx, key, pf, NULL);
 }
 
 
@@ -110,6 +92,7 @@ void ui_input_str(const char *str)
 int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 {
 	struct cmd_ctx *ctx = NULL;
+	struct commands *commands = baresip_commands();
 	size_t i;
 	int err = 0;
 
@@ -117,11 +100,11 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 		return EINVAL;
 
 	for (i=0; i<pl->l; i++) {
-		err |= cmd_process(&ctx, pl->p[i], pf);
+		err |= cmd_process(commands, &ctx, pl->p[i], pf, NULL);
 	}
 
 	if (pl->l > 1 && ctx)
-		err |= cmd_process(&ctx, '\n', pf);
+		err |= cmd_process(commands, &ctx, '\n', pf, NULL);
 
 	return err;
 }
@@ -130,14 +113,18 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 /**
  * Send output to all modules registered in the UI subsystem
  *
+ * @param uis UI Subsystem
  * @param fmt Formatted output string
  */
-void ui_output(const char *fmt, ...)
+void ui_output(struct ui_sub *uis, const char *fmt, ...)
 {
 	char buf[512];
 	struct le *le;
 	va_list ap;
 	int n;
+
+	if (!uis)
+		return;
 
 	va_start(ap, fmt);
 	n = re_vsnprintf(buf, sizeof(buf), fmt, ap);
@@ -146,7 +133,7 @@ void ui_output(const char *fmt, ...)
 	if (n < 0)
 		return;
 
-	for (le = uil.head; le; le = le->next) {
+	for (le = uis->uil.head; le; le = le->next) {
 		const struct ui *ui = le->data;
 
 		if (ui->outputh)
@@ -157,16 +144,24 @@ void ui_output(const char *fmt, ...)
 
 /**
  * Reset the state of the UI subsystem, free resources
+ *
+ * @param uis  UI Subsystem
  */
-void ui_reset(void)
+void ui_reset(struct ui_sub *uis)
 {
-	uictx = mem_deref(uictx);
+	if (!uis)
+		return;
+
+	uis->uictx = mem_deref(uis->uictx);
 }
 
 
-bool ui_isediting(void)
+bool ui_isediting(const struct ui_sub *uis)
 {
-	return uictx != NULL;
+	if (!uis)
+		return false;
+
+	return uis->uictx != NULL;
 }
 
 

@@ -162,7 +162,7 @@ static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
 
 
 static struct aucodec g722 = {
-	LE_INIT, "9", "G722", 8000, 1, NULL,
+	LE_INIT, "9", "G722", 16000, 8000, 1, NULL,
 	encode_update, encode,
 	decode_update, decode, NULL,
 	NULL, NULL
@@ -171,7 +171,7 @@ static struct aucodec g722 = {
 
 static int module_init(void)
 {
-	aucodec_register(&g722);
+	aucodec_register(baresip_aucodecl(), &g722);
 	return 0;
 }
 
@@ -183,7 +183,6 @@ static int module_close(void)
 }
 
 
-/** Module exports */
 EXPORT_SYM const struct mod_export DECL_EXPORTS(g722) = {
 	"g722",
 	"codec",

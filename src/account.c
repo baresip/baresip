@@ -23,8 +23,8 @@ static void destructor(void *arg)
 	list_clear(&acc->vidcodecl);
 	mem_deref(acc->auth_user);
 	mem_deref(acc->auth_pass);
-	for (i=0; i<ARRAY_SIZE(acc->outbound); i++)
-		mem_deref(acc->outbound[i]);
+	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++)
+		mem_deref(acc->outboundv[i]);
 	mem_deref(acc->regq);
 	mem_deref(acc->rtpkeep);
 	mem_deref(acc->sipnat);
@@ -63,9 +63,18 @@ static int param_u32(uint32_t *v, const struct pl *params, const char *name)
 }
 
 
+/*
+ * Decode STUN parameters, inspired by RFC 7064
+ *
+ * See RFC 3986:
+ *
+ *     Use of the format "user:password" in the userinfo field is
+ *     deprecated.
+ *
+ */
 static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 {
-	struct pl srv;
+	struct pl srv, tmp;
 	struct uri uri;
 	int err;
 
@@ -91,15 +100,20 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 	}
 
 	err = 0;
-	if (pl_isset(&uri.user))
+
+	if (0 == msg_param_exists(&aor->params, "stunuser", &tmp))
+		err |= param_dstr(&acc->stun_user, &aor->params, "stunuser");
+	else if (pl_isset(&uri.user))
 		err |= pl_strdup(&acc->stun_user, &uri.user);
 	else
 		err |= pl_strdup(&acc->stun_user, &aor->uri.user);
 
-	if (pl_isset(&uri.password))
+	if (0 == msg_param_exists(&aor->params, "stunpass", &tmp))
+		err |= param_dstr(&acc->stun_pass, &aor->params, "stunpass");
+	else if (pl_isset(&uri.password))
 		err |= pl_strdup(&acc->stun_pass, &uri.password);
-	else
-		err |= pl_strdup(&acc->stun_pass, &aor->uri.password);
+	else if (acc->auth_pass)
+		err |= str_dup(&acc->stun_pass, acc->auth_pass);
 
 	if (pl_isset(&uri.host))
 		err |= pl_strdup(&acc->stun_host, &uri.host);
@@ -173,6 +187,7 @@ static int csl_parse(struct pl *pl, char *str, size_t sz)
 
 static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 {
+	struct list *aucodecl = baresip_aucodecl();
 	struct pl tmp;
 
 	if (!acc || !prm)
@@ -206,7 +221,8 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 					ch = pl_u32(&pl_ch);
 			}
 
-			ac = (struct aucodec *)aucodec_find(cname, srate, ch);
+			ac = (struct aucodec *)aucodec_find(aucodecl,
+							    cname, srate, ch);
 			if (!ac) {
 				warning("account: audio codec not found:"
 					" %s/%u/%d\n",
@@ -229,6 +245,7 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 #ifdef USE_VIDEO
 static int video_codecs_decode(struct account *acc, const struct pl *prm)
 {
+	struct list *vidcodecl = baresip_vidcodecl();
 	struct pl tmp;
 
 	if (!acc || !prm)
@@ -247,7 +264,8 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 		while (0 == csl_parse(&vcs, cname, sizeof(cname))) {
 			struct vidcodec *vc;
 
-			vc = (struct vidcodec *)vidcodec_find(cname, NULL);
+			vc = (struct vidcodec *)vidcodec_find(vidcodecl,
+							      cname, NULL);
 			if (!vc) {
 				warning("account: video codec not found: %s\n",
 					cname);
@@ -284,19 +302,20 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	err |= param_dstr(&acc->regq, &aor->params, "regq");
 
-	for (i=0; i<ARRAY_SIZE(acc->outbound); i++) {
+	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
 
 		char expr[16] = "outbound";
 
 		expr[8] = i + 1 + 0x30;
 		expr[9] = '\0';
 
-		err |= param_dstr(&acc->outbound[i], &aor->params, expr);
+		err |= param_dstr(&acc->outboundv[i], &aor->params, expr);
 	}
 
 	/* backwards compat */
-	if (!acc->outbound[0]) {
-		err |= param_dstr(&acc->outbound[0], &aor->params, "outbound");
+	if (!acc->outboundv[0]) {
+		err |= param_dstr(&acc->outboundv[0], &aor->params,
+				  "outbound");
 	}
 
 	err |= param_dstr(&acc->sipnat, &aor->params, "sipnat");
@@ -368,27 +387,26 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		goto out;
 
 	/* optional password prompt */
-	if (!pl_isset(&acc->laddr.uri.password)) {
-		(void)re_printf("Please enter password for %r@%r: ",
-				&acc->luri.user, &acc->luri.host);
+	if (pl_isset(&acc->laddr.uri.password)) {
 
-		/* TODO: move interactive code away from CORE, to a module */
-		err = ui_password_prompt(&acc->auth_pass);
+		err = re_sdprintf(&acc->auth_pass, "%H",
+				  uri_password_unescape,
+				  &acc->laddr.uri.password);
 		if (err)
 			goto out;
 	}
-	else {
-		err = pl_strdup(&acc->auth_pass, &acc->laddr.uri.password);
+	else if (0 == msg_param_decode(&acc->laddr.params, "auth_pass", &pl)) {
+		err = pl_strdup(&acc->auth_pass, &pl);
 		if (err)
 			goto out;
 	}
+
+	err = stunsrv_decode(acc, &acc->laddr);
+	if (err)
+		goto out;
 
 	if (acc->mnatid) {
-		err = stunsrv_decode(acc, &acc->laddr);
-		if (err)
-			goto out;
-
-		acc->mnat = mnat_find(acc->mnatid);
+		acc->mnat = mnat_find(baresip_mnatl(), acc->mnatid);
 		if (!acc->mnat) {
 			warning("account: medianat not found: `%s'\n",
 				acc->mnatid);
@@ -396,7 +414,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	}
 
 	if (acc->mencid) {
-		acc->menc = menc_find(acc->mencid);
+		acc->menc = menc_find(baresip_mencl(), acc->mencid);
 		if (!acc->menc) {
 			warning("account: mediaenc not found: `%s'\n",
 				acc->mencid);
@@ -410,6 +428,20 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		*accp = acc;
 
 	return err;
+}
+
+
+int account_set_auth_pass(struct account *acc, const char *pass)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->auth_pass = mem_deref(acc->auth_pass);
+
+	if (pass)
+		return str_dup(&acc->auth_pass, pass);
+
+	return 0;
 }
 
 
@@ -463,7 +495,7 @@ int account_auth(const struct account *acc, char **username, char **password,
 struct list *account_aucodecl(const struct account *acc)
 {
 	return (acc && !list_isempty(&acc->aucodecl))
-		? (struct list *)&acc->aucodecl : aucodec_list();
+		? (struct list *)&acc->aucodecl : baresip_aucodecl();
 }
 
 
@@ -471,7 +503,7 @@ struct list *account_aucodecl(const struct account *acc)
 struct list *account_vidcodecl(const struct account *acc)
 {
 	return (acc && !list_isempty(&acc->vidcodecl))
-		? (struct list *)&acc->vidcodecl : vidcodec_list();
+		? (struct list *)&acc->vidcodecl : baresip_vidcodecl();
 }
 #endif
 
@@ -497,6 +529,107 @@ uint32_t account_pubint(const struct account *acc)
 enum answermode account_answermode(const struct account *acc)
 {
 	return acc ? acc->answermode : ANSWERMODE_MANUAL;
+}
+
+
+const char *account_aor(const struct account *acc)
+{
+	return acc ? acc->aor : NULL;
+}
+
+
+/**
+ * Get the authentication username of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Authentication username
+ */
+const char *account_auth_user(const struct account *acc)
+{
+	return acc ? acc->auth_user : NULL;
+}
+
+
+/**
+ * Get the SIP authentication password of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Authentication password
+ */
+const char *account_auth_pass(const struct account *acc)
+{
+	return acc ? acc->auth_pass : NULL;
+}
+
+
+/**
+ * Get the outbound SIP server of an account
+ *
+ * @param acc User-Agent account
+ * @param ix  Index starting at zero
+ *
+ * @return Outbound SIP proxy, NULL if not configured
+ */
+const char *account_outbound(const struct account *acc, unsigned ix)
+{
+	if (!acc || ix >= ARRAY_SIZE(acc->outboundv))
+		return NULL;
+
+	return acc->outboundv[ix];
+}
+
+
+/**
+ * Get the audio packet-time (ptime) of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Packet-time (ptime)
+ */
+uint32_t account_ptime(const struct account *acc)
+{
+	return acc ? acc->ptime : 0;
+}
+
+
+/**
+ * Get the STUN username of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN username
+ */
+const char *account_stun_user(const struct account *acc)
+{
+	return acc ? acc->stun_user : NULL;
+}
+
+
+/**
+ * Get the STUN password of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN password
+ */
+const char *account_stun_pass(const struct account *acc)
+{
+	return acc ? acc->stun_pass : NULL;
+}
+
+
+/**
+ * Get the STUN hostname of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN hostname
+ */
+const char *account_stun_host(const struct account *acc)
+{
+	return acc ? acc->stun_host : NULL;
 }
 
 
@@ -544,10 +677,10 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  acc->mencid ? acc->mencid : "none");
 	err |= re_hprintf(pf, " medianat:     %s\n",
 			  acc->mnatid ? acc->mnatid : "none");
-	for (i=0; i<ARRAY_SIZE(acc->outbound); i++) {
-		if (acc->outbound[i]) {
+	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
+		if (acc->outboundv[i]) {
 			err |= re_hprintf(pf, " outbound%d:    %s\n",
-					  i+1, acc->outbound[i]);
+					  i+1, acc->outboundv[i]);
 		}
 	}
 	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);

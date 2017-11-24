@@ -11,7 +11,7 @@
 #include "core.h"
 
 
-enum {SILENCE_DUR = 2000, PTIME = 40};
+enum {PTIME = 40};
 
 /** Audio file player */
 struct play {
@@ -29,8 +29,13 @@ struct play {
 #ifndef PREFIX
 #define PREFIX "/usr"
 #endif
-static char play_path[256] = PREFIX "/share/baresip";
-static struct list playl;
+static const char default_play_path[FS_PATH_MAX] = PREFIX "/share/baresip";
+
+
+struct player {
+	struct list playl;
+	char play_path[FS_PATH_MAX];
+};
 
 
 static void tmr_polling(void *arg);
@@ -39,22 +44,8 @@ static void tmr_polling(void *arg);
 static void tmr_stop(void *arg)
 {
 	struct play *play = arg;
+	debug("play: player complete.\n");
 	mem_deref(play);
-}
-
-
-static void tmr_repeat(void *arg)
-{
-	struct play *play = arg;
-
-	lock_write_get(play->lock);
-
-	play->mb->pos = 0;
-	play->eof = false;
-
-	tmr_start(&play->tmr, 1000, tmr_polling, arg);
-
-	lock_rel(play->lock);
 }
 
 
@@ -67,13 +58,8 @@ static void tmr_polling(void *arg)
 	tmr_start(&play->tmr, 1000, tmr_polling, arg);
 
 	if (play->eof) {
-		if (play->repeat > 0)
-			play->repeat--;
-
 		if (play->repeat == 0)
 			tmr_start(&play->tmr, 1, tmr_stop, arg);
-		else
-			tmr_start(&play->tmr, SILENCE_DUR, tmr_repeat, arg);
 	}
 
 	lock_rel(play->lock);
@@ -83,31 +69,43 @@ static void tmr_polling(void *arg)
 /**
  * NOTE: DSP cannot be destroyed inside handler
  */
-static void write_handler(int16_t *sampv, size_t sampc, void *arg)
+static void write_handler(void *sampv, size_t sampc, void *arg)
 {
 	struct play *play = arg;
 	size_t sz = sampc * 2;
+	size_t pos = 0;
+	size_t left;
+	size_t count;
 
 	lock_write_get(play->lock);
 
 	if (play->eof)
 		goto silence;
 
-	if (mbuf_get_left(play->mb) < sz) {
+	while (pos < sz) {
+		left = mbuf_get_left(play->mb);
+		count = (left > sz - pos) ? sz - pos : left;
 
-		memset(sampv, 0, sz);
-		(void)mbuf_read_mem(play->mb, (void *)sampv,
-				    mbuf_get_left(play->mb));
+		(void)mbuf_read_mem(play->mb, (uint8_t *)sampv + pos, count);
 
-		play->eof = true;
-	}
-	else {
-		(void)mbuf_read_mem(play->mb, (void *)sampv, sz);
+		pos += count;
+
+		if (pos < sz) {
+			if (play->repeat > 0)
+				play->repeat--;
+
+			if (play->repeat == 0) {
+				play->eof = true;
+				goto silence;
+			}
+
+			play->mb->pos = 0;
+		}
 	}
 
  silence:
 	if (play->eof)
-		memset(sampv, 0, sz);
+		memset((uint8_t *)sampv + pos, 0, sz - pos);
 
 	lock_rel(play->lock);
 }
@@ -203,6 +201,7 @@ static int aufile_load(struct mbuf *mb, const char *filename,
  * Play a tone from a PCM buffer
  *
  * @param playp    Pointer to allocated player object
+ * @param player   Audio-file player
  * @param tone     PCM buffer to play
  * @param srate    Sampling rate
  * @param ch       Number of channels
@@ -210,7 +209,8 @@ static int aufile_load(struct mbuf *mb, const char *filename,
  *
  * @return 0 if success, otherwise errorcode
  */
-int play_tone(struct play **playp, struct mbuf *tone, uint32_t srate,
+int play_tone(struct play **playp, struct player *player,
+	      struct mbuf *tone, uint32_t srate,
 	      uint8_t ch, int repeat)
 {
 	struct auplay_prm wprm;
@@ -218,6 +218,8 @@ int play_tone(struct play **playp, struct mbuf *tone, uint32_t srate,
 	struct config *cfg;
 	int err;
 
+	if (!player)
+		return EINVAL;
 	if (playp && *playp)
 		return EALREADY;
 
@@ -240,13 +242,15 @@ int play_tone(struct play **playp, struct mbuf *tone, uint32_t srate,
 	wprm.ch         = ch;
 	wprm.srate      = srate;
 	wprm.ptime      = PTIME;
+	wprm.fmt        = AUFMT_S16LE;
 
-	err = auplay_alloc(&play->auplay, cfg->audio.alert_mod, &wprm,
+	err = auplay_alloc(&play->auplay, baresip_auplayl(),
+			   cfg->audio.alert_mod, &wprm,
 			   cfg->audio.alert_dev, write_handler, play);
 	if (err)
 		goto out;
 
-	list_append(&playl, &play->le, play);
+	list_append(&player->playl, &play->le, play);
 	tmr_start(&play->tmr, 1000, tmr_polling, play);
 
  out:
@@ -266,24 +270,28 @@ int play_tone(struct play **playp, struct mbuf *tone, uint32_t srate,
  * Play an audio file in WAV format
  *
  * @param playp    Pointer to allocated player object
+ * @param player   Audio-file player
  * @param filename Name of WAV file to play
  * @param repeat   Number of times to repeat
  *
  * @return 0 if success, otherwise errorcode
  */
-int play_file(struct play **playp, const char *filename, int repeat)
+int play_file(struct play **playp, struct player *player,
+	      const char *filename, int repeat)
 {
 	struct mbuf *mb;
-	char path[512];
+	char path[FS_PATH_MAX];
 	uint32_t srate = 0;
 	uint8_t ch = 0;
 	int err;
 
+	if (!player)
+		return EINVAL;
 	if (playp && *playp)
 		return EALREADY;
 
 	if (re_snprintf(path, sizeof(path), "%s/%s",
-			play_path, filename) < 0)
+			player->play_path, filename) < 0)
 		return ENOMEM;
 
 	mb = mbuf_alloc(1024);
@@ -296,7 +304,7 @@ int play_file(struct play **playp, const char *filename, int repeat)
 		goto out;
 	}
 
-	err = play_tone(playp, mb, srate, ch, repeat);
+	err = play_tone(playp, player, mb, srate, ch, repeat);
 
  out:
 	mem_deref(mb);
@@ -305,22 +313,40 @@ int play_file(struct play **playp, const char *filename, int repeat)
 }
 
 
-void play_init(void)
+static void player_destructor(void *data)
 {
-	list_init(&playl);
+	struct player *player = data;
+
+	list_flush(&player->playl);
 }
 
 
-/**
- * Close all active audio players
- */
-void play_close(void)
+int play_init(struct player **playerp)
 {
-	list_flush(&playl);
+	struct player *player;
+
+	if (!playerp)
+		return EINVAL;
+
+	player = mem_zalloc(sizeof(*player), player_destructor);
+	if (!player)
+		return ENOMEM;
+
+	list_init(&player->playl);
+
+	str_ncpy(player->play_path, default_play_path,
+		 sizeof(player->play_path));
+
+	*playerp = player;
+
+	return 0;
 }
 
 
-void play_set_path(const char *path)
+void play_set_path(struct player *player, const char *path)
 {
-	str_ncpy(play_path, path, sizeof(play_path));
+	if (!player)
+		return;
+
+	str_ncpy(player->play_path, path, sizeof(player->play_path));
 }

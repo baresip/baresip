@@ -60,8 +60,10 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 	struct mwi *mwi = arg;
 
 	if (mbuf_get_left(msg->mb)) {
-		ui_output("----- MWI for %s -----\n", ua_aor(mwi->ua));
-		ui_output("%b\n", mbuf_buf(msg->mb), mbuf_get_left(msg->mb));
+		struct ui_sub *uis = baresip_uis();
+		ui_output(uis, "----- MWI for %s -----\n", ua_aor(mwi->ua));
+		ui_output(uis, "%b\n", mbuf_buf(msg->mb),
+			  mbuf_get_left(msg->mb));
 	}
 
 	(void)sip_treply(NULL, sip, msg, 200, "OK");
@@ -109,7 +111,7 @@ static int mwi_subscribe(struct ua *ua)
 				 NULL, ua_aor(ua), "message-summary", NULL,
 	                         600, ua_cuser(ua),
 				 routev, routev[0] ? 1 : 0,
-	                         auth_handler, ua_prm(ua), true, NULL,
+	                         auth_handler, ua_account(ua), true, NULL,
 				 notify_handler, close_handler, mwi,
 				 "Accept:"
 				 " application/simple-message-summary\r\n");

@@ -141,7 +141,7 @@ static struct aufilt preproc = {
 static int module_init(void)
 {
 	config_parse(conf_cur());
-	aufilt_register(&preproc);
+	aufilt_register(baresip_aufiltl(), &preproc);
 	return 0;
 }
 

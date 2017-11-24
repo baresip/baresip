@@ -206,7 +206,7 @@ static int module_init(void)
 {
 	/* Note: Hack to check libspeex version */
 #ifdef SPEEX_SET_VBR_MAX_BITRATE
-	aufilt_register(&speex_aec);
+	aufilt_register(baresip_aufiltl(), &speex_aec);
 	return 0;
 #else
 	return ENOSYS;

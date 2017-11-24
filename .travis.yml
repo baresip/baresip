@@ -1,18 +1,30 @@
 language: c
 
-before_install:
-    - sudo apt-get update -qq
+os:
+    - linux
+    - osx
+
+compiler:
+    - clang
+    - gcc
+
+env:
+    - LIBRE=re LIBREM=rem
+
+sudo: require
+
+addons:
+    apt:
+        packages:
+            libssl-dev
 
 install:
-    - wget "http://www.creytiv.com/pub/re-0.4.14.tar.gz"
-    - tar -xzf re-0.4.14.tar.gz
-    - cd re-0.4.14 && make && sudo make install && cd ..
-    - wget "http://www.creytiv.com/pub/rem-0.4.6.tar.gz"
-    - tar -xzf rem-0.4.6.tar.gz
-    - cd rem-0.4.6 && make && sudo make install && cd ..
-    - sudo ldconfig
-    - wget "https://github.com/alfredh/pytools/raw/master/ccheck.py"
+    - git clone https://github.com/creytiv/re.git
+    - git clone https://github.com/creytiv/rem.git
+    - curl -OL 'https://github.com/alfredh/pytools/raw/master/ccheck.py'
+    - for p in ${LIBRE} ${LIBREM}; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
+    - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo ldconfig; fi
 
 script: 
-    - make test
+    - make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
     - python2 ccheck.py

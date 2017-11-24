@@ -16,8 +16,16 @@
 #define MOD_PRE ""  /**< Module prefix */
 
 
+#undef SA_INIT
+#define SA_INIT { { {0} }, 0}
+
+
+#ifndef PREFIX
+#define PREFIX "/usr"
+#endif
+
+
 /** Core Run-time Configuration - populated from config file */
-/** @todo: move config parsing/decoding to a module */
 static struct config core_config = {
 
 	/** SIP User-Agent */
@@ -28,8 +36,15 @@ static struct config core_config = {
 		""
 	},
 
+	/** Call config */
+	{
+		120,
+		4
+	},
+
 	/** Audio */
 	{
+		PREFIX "/share/baresip",
 		"","",
 		"","",
 		"","",
@@ -41,6 +56,9 @@ static struct config core_config = {
 		0,
 		false,
 		AUDIO_MODE_POLL,
+		false,
+		AUFMT_S16LE,
+		AUFMT_S16LE,
 	},
 
 #ifdef USE_VIDEO
@@ -51,6 +69,7 @@ static struct config core_config = {
 		352, 288,
 		500000,
 		25,
+		true,
 	},
 #endif
 
@@ -64,12 +83,15 @@ static struct config core_config = {
 		{5, 10},
 		false,
 		false,
-		""
+		"",
+		0
 	},
 
 	/* Network */
 	{
-		""
+		"",
+		{ {""} },
+		0
 	},
 
 #ifdef USE_VIDEO
@@ -78,6 +100,11 @@ static struct config core_config = {
 		""
 	},
 #endif
+
+	/* SDP */
+	{
+		false
+	},
 };
 
 
@@ -92,23 +119,41 @@ static int range_print(struct re_printf *pf, const struct range *rng)
 
 static int dns_server_handler(const struct pl *pl, void *arg)
 {
-	struct sa sa;
+	struct config_net *cfg = arg;
+	const size_t max_count = ARRAY_SIZE(cfg->nsv);
 	int err;
 
-	(void)arg;
+	if (cfg->nsc >= max_count) {
+		warning("config: too many DNS nameservers (max %zu)\n",
+			max_count);
+		return EOVERFLOW;
+	}
 
-	err = sa_decode(&sa, pl->p, pl->l);
+	/* Append dns_server to the network config */
+	err = pl_strcpy(pl, cfg->nsv[cfg->nsc].addr,
+			sizeof(cfg->nsv[0].addr));
 	if (err) {
-		warning("config: dns_server: could not decode `%r'\n", pl);
+		warning("config: dns_server: could not copy string (%r)\n",
+			pl);
 		return err;
 	}
 
-	err = net_dnssrv_add(&sa);
-	if (err) {
-		warning("config: failed to add nameserver %r: %m\n", pl, err);
-	}
+	++cfg->nsc;
 
-	return err;
+	return 0;
+}
+
+
+static enum aufmt resolve_aufmt(const struct pl *fmt)
+{
+	if (0 == pl_strcasecmp(fmt, "s16"))     return AUFMT_S16LE;
+	if (0 == pl_strcasecmp(fmt, "float"))   return AUFMT_FLOAT;
+	if (0 == pl_strcasecmp(fmt, "s24_3le")) return AUFMT_S24_3LE;
+
+	/* XXX remove this after librem is fixed */
+	if (0 == pl_strcasecmp(fmt, "s16le"))   return AUFMT_S16LE;
+
+	return (enum aufmt)-1;
 }
 
 
@@ -117,6 +162,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	struct pl pollm, as, ap;
 	enum poll_method method;
 	struct vidsz size = {0, 0};
+	struct pl fmt;
 	uint32_t v;
 	int err = 0;
 
@@ -144,7 +190,15 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_str(conf, "sip_certificate", cfg->sip.cert,
 			   sizeof(cfg->sip.cert));
 
+	/* Call */
+	(void)conf_get_u32(conf, "call_local_timeout",
+			   &cfg->call.local_timeout);
+	(void)conf_get_u32(conf, "call_max_calls",
+			   &cfg->call.max_calls);
+
 	/* Audio */
+	(void)conf_get_str(conf, "audio_path", cfg->audio.audio_path,
+			   sizeof(cfg->audio.audio_path));
 	(void)conf_get_csv(conf, "audio_player",
 			   cfg->audio.play_mod,
 			   sizeof(cfg->audio.play_mod),
@@ -172,6 +226,34 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	    0 == conf_get(conf, "audio_player", &ap))
 		cfg->audio.src_first = as.p < ap.p;
 
+	(void)conf_get_bool(conf, "audio_level", &cfg->audio.level);
+
+	if (0 == conf_get(conf, "ausrc_format", &fmt)) {
+
+		cfg->audio.src_fmt = resolve_aufmt(&fmt);
+		if (cfg->audio.src_fmt == -1) {
+			warning("ausrc_format: sample format not supported"
+				" (%r)\n", &fmt);
+			return EINVAL;
+		}
+
+		info("ausrc: using audio sample format `%s'\n",
+		     aufmt_name(cfg->audio.src_fmt));
+	}
+
+	if (0 == conf_get(conf, "auplay_format", &fmt)) {
+
+		cfg->audio.play_fmt = resolve_aufmt(&fmt);
+		if (cfg->audio.play_fmt == -1) {
+			warning("auplay_format: audio format not supported"
+				" (%r)\n", &fmt);
+			return EINVAL;
+		}
+
+		info("auplay: using audio sample format `%s'\n",
+		     aufmt_name(cfg->audio.play_fmt));
+	}
+
 #ifdef USE_VIDEO
 	/* Video */
 	(void)conf_get_csv(conf, "video_source",
@@ -186,6 +268,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	}
 	(void)conf_get_u32(conf, "video_bitrate", &cfg->video.bitrate);
 	(void)conf_get_u32(conf, "video_fps", &cfg->video.fps);
+	(void)conf_get_bool(conf, "video_fullscreen", &cfg->video.fullscreen);
 #else
 	(void)size;
 #endif
@@ -209,13 +292,14 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_bool(conf, "rtcpxr_stats", &cfg->avt.rtcpxr_stats);
 	(void)conf_get_str(conf, "rtcpxr_collector",
 			   cfg->avt.rtcpxr_collector, sizeof(cfg->avt.rtcpxr_collector));
+	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
 
 	if (err) {
 		warning("config: configure parse error (%m)\n", err);
 	}
 
 	/* Network */
-	(void)conf_apply(conf, "dns_server", dns_server_handler, NULL);
+	(void)conf_apply(conf, "dns_server", dns_server_handler, &cfg->net);
 	(void)conf_get_str(conf, "net_interface",
 			   cfg->net.ifname, sizeof(cfg->net.ifname));
 
@@ -224,6 +308,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_str(conf, "bfcp_proto", cfg->bfcp.proto,
 			   sizeof(cfg->bfcp.proto));
 #endif
+
+	/* SDP */
+	(void)conf_get_bool(conf, "sdp_ebuacip", &cfg->sdp.ebuacip);
 
 	return err;
 }
@@ -243,7 +330,12 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_listen\t\t%s\n"
 			 "sip_certificate\t%s\n"
 			 "\n"
+			 "# Call\n"
+			 "call_local_timeout\t%u\n"
+			 "call_max_calls\t%u\n"
+			 "\n"
 			 "# Audio\n"
+			 "audio_path\t\t%s\n"
 			 "audio_player\t\t%s,%s\n"
 			 "audio_source\t\t%s,%s\n"
 			 "audio_alert\t\t%s,%s\n"
@@ -253,6 +345,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "ausrc_srate\t\t%u\n"
 			 "auplay_channels\t\t%u\n"
 			 "ausrc_channels\t\t%u\n"
+			 "audio_level\t\t%s\n"
 			 "\n"
 #ifdef USE_VIDEO
 			 "# Video\n"
@@ -271,6 +364,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtcp_mux\t\t%s\n"
 			 "jitter_buffer_delay\t%H\n"
 			 "rtp_stats\t\t%s\n"
+			 "rtp_timeout\t\t%u # in seconds\n"
 			 "\n"
 			 "# Network\n"
 			 "net_interface\t\t%s\n"
@@ -284,6 +378,10 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 			 cfg->sip.trans_bsize, cfg->sip.local, cfg->sip.cert,
 
+			 cfg->call.local_timeout,
+			 cfg->call.max_calls,
+
+			 cfg->audio.audio_path,
 			 cfg->audio.play_mod,  cfg->audio.play_dev,
 			 cfg->audio.src_mod,   cfg->audio.src_dev,
 			 cfg->audio.alert_mod, cfg->audio.alert_dev,
@@ -291,6 +389,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 range_print, &cfg->audio.channels,
 			 cfg->audio.srate_play, cfg->audio.srate_src,
 			 cfg->audio.channels_play, cfg->audio.channels_src,
+			 cfg->audio.level ? "yes" : "no",
 
 #ifdef USE_VIDEO
 			 cfg->video.src_mod, cfg->video.src_dev,
@@ -308,7 +407,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtcpxr_stats ? "yes" : "no",
 			 cfg->avt.rtcpxr_collector,
-
+			 cfg->avt.rtp_timeout,
 			 cfg->net.ifname
 
 #ifdef USE_VIDEO
@@ -323,7 +422,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 static const char *default_audio_device(void)
 {
 #if defined (ANDROID)
-	return "opensles";
+	return "opensles,nil";
 #elif defined (DARWIN)
 	return "coreaudio,nil";
 #elif defined (FREEBSD)
@@ -399,7 +498,17 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "sip_trans_bsize\t\t128\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
-			  "\n# Audio\n"
+			  "\n"
+			  "# Call\n"
+			  "call_local_timeout\t%u\n"
+			  "call_max_calls\t%u\n"
+			  "\n"
+			  "# Audio\n"
+#if defined (PREFIX)
+			  "#audio_path\t\t" PREFIX "/share/baresip\n"
+#else
+			  "#audio_path\t\t/usr/share/baresip\n"
+#endif
 			  "audio_player\t\t%s\n"
 			  "audio_source\t\t%s\n"
 			  "audio_alert\t\t%s\n"
@@ -409,13 +518,19 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#auplay_srate\t\t48000\n"
 			  "#ausrc_channels\t\t0\n"
 			  "#auplay_channels\t\t0\n"
+			  "audio_level\t\tno\n"
+			  "ausrc_format\t\ts16\t\t# s16, float, ..\n"
+			  "auplay_format\t\ts16\t\t# s16, float, ..\n"
 			  ,
 			  poll_method_name(poll_method_best()),
+			  cfg->call.local_timeout,
+			  cfg->call.max_calls,
 			  default_audio_device(),
 			  default_audio_device(),
 			  default_audio_device(),
 			  cfg->audio.srate.min, cfg->audio.srate.max,
-			  cfg->audio.channels.min, cfg->audio.channels.max);
+			  cfg->audio.channels.min, cfg->audio.channels.max
+			  );
 
 #ifdef USE_VIDEO
 	err |= re_hprintf(pf,
@@ -424,7 +539,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#video_display\t\t%s\n"
 			  "video_size\t\t%dx%d\n"
 			  "video_bitrate\t\t%u\n"
-			  "video_fps\t\t%u\n",
+			  "video_fps\t\t%u\n"
+			  "video_fullscreen\tyes\n",
 			  default_video_device(),
 			  default_video_display(),
 			  cfg->video.width, cfg->video.height,
@@ -442,6 +558,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtp_stats\t\tno\n"
 			  "rtcpxr_stats\t\tno\n"
 			  "rtcpxr_collector\t\tsip:rtcpxr@127.0.0.1:5088\t\t# rtcp-xr collector\n"
+			  "#rtp_timeout\t\t60\n"
 			  "\n# Network\n"
 			  "#dns_server\t\t10.0.0.1:53\n"
 			  "#net_interface\t\t%H\n",
@@ -579,6 +696,10 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "l16" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "speex" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "bv32" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "mpa" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "codec2" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "ilbc" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "isac" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Audio filter Modules (in encoding order)\n");
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "vumeter" MOD_EXT "\n");
@@ -601,9 +722,12 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "winwave" MOD_EXT "\n");
 #else
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "alsa" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "pulse" MOD_EXT "\n");
 #endif
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "jack" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "portaudio" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "aubridge" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "aufile" MOD_EXT "\n");
 
 #ifdef USE_VIDEO
 
@@ -613,10 +737,15 @@ int config_write_template(const char *file, const struct config *cfg)
 #else
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "avcodec" MOD_EXT "\n");
 #endif
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "vpx" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "vp8" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "vp9" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "h265" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Video filter Modules (in encoding order)\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "selfview" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "snapshot" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "swscale" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "vidinfo" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Video source modules\n");
 #if defined (DARWIN)
@@ -627,29 +756,38 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "avcapture" MOD_EXT "\n");
 #endif
 
+#elif defined (WIN32)
+	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "dshow" MOD_EXT "\n");
+
 #else
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "v4l" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "v4l2" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "v4l2_codec" MOD_EXT "\n");
 #endif
 #ifdef USE_AVFORMAT
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "avformat" MOD_EXT "\n");
 #endif
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "x11grab" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "cairo" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "vidbridge" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Video display modules\n");
 #ifdef DARWIN
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "opengl" MOD_EXT "\n");
 #endif
+#ifdef LINUX
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "directfb" MOD_EXT "\n");
+#endif
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "x11" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "sdl2" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "fakevideo" MOD_EXT "\n");
 
 #endif /* USE_VIDEO */
 
-	(void)re_fprintf(f,
-			"\n# Audio/Video source modules\n"
-			"#module\t\t\t" MOD_PRE "rst" MOD_EXT "\n"
-			"#module\t\t\t" MOD_PRE "gst" MOD_EXT "\n");
+	(void)re_fprintf(f, "\n# Audio/Video source modules\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "rst" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "gst1" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "gst_video1" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Media NAT modules\n");
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "stun" MOD_EXT "\n");
@@ -660,6 +798,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n# Media encryption modules\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "srtp" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "dtls_srtp" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "zrtp" MOD_EXT "\n");
 	(void)re_fprintf(f, "\n");
 
 	(void)re_fprintf(f, "\n#------------------------------------"
@@ -676,6 +815,12 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "module_app\t\t" MOD_PRE "auloop"MOD_EXT"\n");
 	(void)re_fprintf(f, "module_app\t\t"  MOD_PRE "contact"MOD_EXT"\n");
+	(void)re_fprintf(f, "module_app\t\t"  MOD_PRE "debug_cmd"MOD_EXT"\n");
+#ifdef LINUX
+	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "dtmfio"MOD_EXT"\n");
+#endif
+	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "echo"MOD_EXT"\n");
+	(void)re_fprintf(f, "#module_app\t\t\t" MOD_PRE "gtk" MOD_EXT "\n");
 	(void)re_fprintf(f, "module_app\t\t"  MOD_PRE "menu"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "mwi"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "natbd"MOD_EXT"\n");
@@ -713,10 +858,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n# Opus codec parameters\n");
 	(void)re_fprintf(f, "opus_bitrate\t\t28000 # 6000-510000\n");
 
-	(void)re_fprintf(f, "\n# NAT Behavior Discovery\n");
-	(void)re_fprintf(f, "natbd_server\t\tcreytiv.com\n");
-	(void)re_fprintf(f, "natbd_interval\t\t600\t\t# in seconds\n");
-
 	(void)re_fprintf(f,
 			"\n# Selfview\n"
 			"video_selfview\t\twindow # {window,pip}\n"
@@ -728,6 +869,16 @@ int config_write_template(const char *file, const struct config *cfg)
 			"ice_debug\t\tno\n"
 			"ice_nomination\t\tregular\t# {regular,aggressive}\n"
 			"ice_mode\t\tfull\t# {full,lite}\n");
+
+	(void)re_fprintf(f,
+			"\n# ZRTP\n"
+			"#zrtp_hash\t\tno  # Disable SDP zrtp-hash "
+			"(not recommended)\n");
+
+	(void)re_fprintf(f,
+			"\n# Menu\n"
+			"#redial_attempts\t\t3 # Num or <inf>\n"
+			"#redial_delay\t\t5 # Delay in seconds\n");
 
 	if (f)
 		(void)fclose(f);

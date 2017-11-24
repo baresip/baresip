@@ -62,23 +62,24 @@ static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
 
 /* See RFC 3551 */
 static struct aucodec l16v[NR_CODECS] = {
-	{LE_INIT, "10", "L16", 44100, 2, 0, 0, encode, 0, decode, 0, 0, 0},
-	{LE_INIT,    0, "L16", 32000, 2, 0, 0, encode, 0, decode, 0, 0, 0},
-	{LE_INIT,    0, "L16", 16000, 2, 0, 0, encode, 0, decode, 0, 0, 0},
-	{LE_INIT,    0, "L16",  8000, 2, 0, 0, encode, 0, decode, 0, 0, 0},
-	{LE_INIT, "11", "L16", 44100, 1, 0, 0, encode, 0, decode, 0, 0, 0},
-	{LE_INIT,    0, "L16", 32000, 1, 0, 0, encode, 0, decode, 0, 0, 0},
-	{LE_INIT,    0, "L16", 16000, 1, 0, 0, encode, 0, decode, 0, 0, 0},
-	{LE_INIT,    0, "L16",  8000, 1, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT, "10", "L16", 44100, 44100, 2, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16", 32000, 32000, 2, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16", 16000, 16000, 2, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16",  8000,  8000, 2, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT, "11", "L16", 44100, 44100, 1, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16", 32000, 32000, 1, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16", 16000, 16000, 1, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16",  8000,  8000, 1, 0, 0, encode, 0, decode, 0, 0, 0},
 };
 
 
 static int module_init(void)
 {
+	struct list *aucodecl = baresip_aucodecl();
 	size_t i;
 
 	for (i=0; i<NR_CODECS; i++)
-		aucodec_register(&l16v[i]);
+		aucodec_register(aucodecl, &l16v[i]);
 
 	return 0;
 }

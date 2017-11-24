@@ -23,14 +23,14 @@
 struct vumeter_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 	struct tmr tmr;
-	int16_t avg_rec;
+	double avg_rec;
 	volatile bool started;
 };
 
 struct vumeter_dec {
 	struct aufilt_dec_st af;  /* inheritance */
 	struct tmr tmr;
-	int16_t avg_play;
+	double avg_play;
 	volatile bool started;
 };
 
@@ -53,27 +53,15 @@ static void dec_destructor(void *arg)
 }
 
 
-static int16_t calc_avg_s16(const int16_t *sampv, size_t sampc)
-{
-	int32_t v = 0;
-	size_t i;
-
-	if (!sampv || !sampc)
-		return 0;
-
-	for (i=0; i<sampc; i++)
-		v += abs(sampv[i]);
-
-	return v/sampc;
-}
-
-
-static int audio_print_vu(struct re_printf *pf, int16_t *avg)
+static int audio_print_vu(struct re_printf *pf, double *level)
 {
 	char buf[16];
 	size_t res;
+	double x;
 
-	res = min(2 * sizeof(buf) * (*avg)/0x8000,
+	x = (*level + -AULEVEL_MIN) / -AULEVEL_MIN;
+
+	res = min(sizeof(buf) * x,
 		  sizeof(buf)-1);
 
 	memset(buf, '=', res);
@@ -83,7 +71,7 @@ static int audio_print_vu(struct re_printf *pf, int16_t *avg)
 }
 
 
-static void print_vumeter(int pos, int color, int value)
+static void print_vumeter(int pos, int color, double value)
 {
 	/* move cursor to a fixed position */
 	re_fprintf(stderr, "\x1b[%dG", pos);
@@ -170,7 +158,7 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 {
 	struct vumeter_enc *vu = (void *)st;
 
-	vu->avg_rec = calc_avg_s16(sampv, *sampc);
+	vu->avg_rec = aulevel_calc_dbov(sampv, *sampc);
 	vu->started = true;
 
 	return 0;
@@ -181,7 +169,7 @@ static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
 {
 	struct vumeter_dec *vu = (void *)st;
 
-	vu->avg_play = calc_avg_s16(sampv, *sampc);
+	vu->avg_play = aulevel_calc_dbov(sampv, *sampc);
 	vu->started = true;
 
 	return 0;
@@ -195,7 +183,7 @@ static struct aufilt vumeter = {
 
 static int module_init(void)
 {
-	aufilt_register(&vumeter);
+	aufilt_register(baresip_aufiltl(), &vumeter);
 	return 0;
 }
 

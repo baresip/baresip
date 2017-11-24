@@ -149,7 +149,7 @@ static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
 
 
 static struct aucodec ac_gsm = {
-	LE_INIT, "3", "GSM", 8000, 1, NULL,
+	LE_INIT, "3", "GSM", 8000, 8000, 1, NULL,
 	encode_update, encode, decode_update, decode, NULL, NULL, NULL
 };
 
@@ -158,7 +158,7 @@ static int module_init(void)
 {
 	debug("gsm: GSM v%u.%u.%u\n", GSM_MAJOR, GSM_MINOR, GSM_PATCHLEVEL);
 
-	aucodec_register(&ac_gsm);
+	aucodec_register(baresip_aucodecl(), &ac_gsm);
 	return 0;
 }
 

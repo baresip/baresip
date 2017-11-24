@@ -15,15 +15,16 @@
  *
  * Very experimental video-codec using Daala
  *
- * TODO:
  *
- * - Define and implement fragmentation of large packets
- * - Define an IETF RTP Payload type
+ * External libraries:
  *
+ *   daala version 0.0-1564-g79787c7 (or later)
  *
  * References:
  *
  *    https://wiki.xiph.org/Daala
+ *
+ * NOTE! Now deprecated in favour of AV1 video codec
  */
 
 
@@ -40,7 +41,7 @@ static int module_init(void)
 {
 	info("daala: using version '%s'\n", daala_version_string());
 
-	vidcodec_register(&daala);
+	vidcodec_register(baresip_vidcodecl(), &daala);
 
 	return 0;
 }

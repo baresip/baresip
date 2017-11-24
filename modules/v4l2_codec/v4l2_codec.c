@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
+#define _DEFAULT_SOURCE 1
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -116,15 +117,19 @@ static int print_caps(int fd, unsigned width, unsigned height)
 
 	fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-	info("  FMT : CE Desc\n--------------------\n");
+	info("  Formats:\n");
 
 	while (0 == xioctl(fd, VIDIOC_ENUM_FMT, &fmtdesc)) {
-		bool selected = fmtdesc.pixelformat == V4L2_PIX_FMT_H264;
+		bool selected = false;
 
 		strncpy(fourcc, (char *)&fmtdesc.pixelformat, 4);
 
-		if (fmtdesc.pixelformat == V4L2_PIX_FMT_H264)
-		    support_h264 = true;
+#ifdef V4L2_PIX_FMT_H264
+		if (fmtdesc.pixelformat == V4L2_PIX_FMT_H264) {
+			support_h264 = true;
+			selected = true;
+		}
+#endif
 
 		c = fmtdesc.flags & V4L2_FMT_FLAG_COMPRESSED ? 'C' : ' ';
 
@@ -145,7 +150,9 @@ static int print_caps(int fd, unsigned width, unsigned height)
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	fmt.fmt.pix.width = width;
 	fmt.fmt.pix.height = height;
+#ifdef V4L2_PIX_FMT_H264
 	fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_H264;
+#endif
 	fmt.fmt.pix.field = V4L2_FIELD_NONE;
 
 	if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt)) {
@@ -270,7 +277,7 @@ static void enc_destructor(void *arg)
 }
 
 
-static void encoders_read(const uint8_t *buf, size_t sz)
+static void encoders_read(uint32_t rtp_ts, const uint8_t *buf, size_t sz)
 {
 	struct le *le;
 	int err;
@@ -278,8 +285,9 @@ static void encoders_read(const uint8_t *buf, size_t sz)
 	for (le = v4l2.encoderl.head; le; le = le->next) {
 		struct videnc_state *st = le->data;
 
-		err = h264_packetize(buf, sz,
-				     st->encprm.pktsize, st->pkth, st->arg);
+		err = h264_packetize(rtp_ts, buf, sz,
+				     st->encprm.pktsize,
+				     st->pkth, st->arg);
 		if (err) {
 			warning("h264_packetize error (%m)\n", err);
 		}
@@ -291,8 +299,15 @@ static void read_handler(int flags, void *arg)
 {
 	struct vidsrc_st *st = arg;
 	struct v4l2_buffer buf;
+	bool keyframe = false;
+	struct timeval ts;
+	uint32_t rtp_ts;
 	int err;
-	(void)flags;
+
+	if (flags & FD_EXCEPT) {
+		warning("v4l2_codec: device error\n");
+		return;
+	}
 
 	memset(&buf, 0, sizeof(buf));
 
@@ -306,10 +321,6 @@ static void read_handler(int flags, void *arg)
 		return;
 	}
 
-#if 0
-	debug("image captured at %ld, %ld\n",
-	       buf.timestamp.tv_sec, buf.timestamp.tv_usec);
-#endif
 
 	{
 		struct mbuf mb = {0,0,0,0};
@@ -325,17 +336,32 @@ static void read_handler(int flags, void *arg)
 			warning("could not decode H.264 header\n");
 		}
 		else {
-			if (h264_is_keyframe(hdr.type))
+			keyframe = h264_is_keyframe(hdr.type);
+			if (keyframe) {
 				++st->stats.n_key;
+			}
 			else
 				++st->stats.n_delta;
 		}
 	}
 
-	/* pass the frame to the encoders */
-	encoders_read(st->buffer, buf.bytesused);
+	ts = buf.timestamp;
+	rtp_ts = (90000ULL * (1000000*ts.tv_sec + ts.tv_usec)) / 1000000;
 
-	query_buffer(st->fd);
+#if 0
+	debug("v4l2_codec: %s frame captured at %ldsec, %ldusec (%zu bytes)\n",
+	      keyframe ? "KEY" : "   ",
+	      buf.timestamp.tv_sec, buf.timestamp.tv_usec,
+	      (size_t)buf.bytesused);
+#endif
+
+	/* pass the frame to the encoders */
+	encoders_read(rtp_ts, st->buffer, buf.bytesused);
+
+	err = query_buffer(st->fd);
+	if (err) {
+		warning("v4l2_codec: query_buffer failed (%m)\n", err);
+	}
 }
 
 
@@ -510,7 +536,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!stp || !size || !frameh)
 		return EINVAL;
 
-	if (str_isset(dev))
+	if (!str_isset(dev))
 		dev = "/dev/video0";
 
 	debug("v4l2_codec: video-source alloc (device=%s)\n", dev);
@@ -554,8 +580,9 @@ static int module_init(void)
 {
 	info("v4l2_codec inited\n");
 
-	vidcodec_register(&h264);
-	return vidsrc_register(&vidsrc, "v4l2_codec", src_alloc, NULL);
+	vidcodec_register(baresip_vidcodecl(), &h264);
+	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			       "v4l2_codec", src_alloc, NULL);
 }
 
 

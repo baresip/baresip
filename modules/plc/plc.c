@@ -3,6 +3,9 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+
+#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
+
 #include <spandsp.h>
 #include <re.h>
 #include <baresip.h>
@@ -97,7 +100,7 @@ static struct aufilt plc = {
 
 static int module_init(void)
 {
-	aufilt_register(&plc);
+	aufilt_register(baresip_aufiltl(), &plc);
 	return 0;
 }
 

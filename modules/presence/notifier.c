@@ -130,7 +130,7 @@ static int notifier_alloc(struct notifier **notp,
 			      msg, NULL, se, 200, "OK",
 			      600, 600, 600,
 			      ua_cuser(not->ua), "application/pidf+xml",
-			      auth_handler, ua_prm(not->ua), true,
+			      auth_handler, ua_account(not->ua), true,
 			      sipnot_close_handler, not, NULL);
 	if (err) {
 		warning("presence: sipevent_accept failed: %m\n", err);

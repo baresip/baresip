@@ -12,6 +12,8 @@
 #include <commctrl.h>
 #include <dshow.h>
 
+#pragma comment(lib, "strmiids.lib")
+
 
 /**
  * @defgroup dshow dshow
@@ -43,10 +45,11 @@ IID IID_ISampleGrabberCB = {
 
 #include "qedit.h"
 
+/*
 const CLSID CLSID_SampleGrabber = { 0xc1f400a0, 0x3f08, 0x11d3,
   { 0x9f, 0x0b, 0x00, 0x60, 0x08, 0x03, 0x9e, 0x37 }
 };
-
+*/
 
 class Grabber;
 
@@ -511,7 +514,8 @@ static int module_init(void)
 	if (CoInitialize(NULL) != S_OK)
 		return ENODATA;
 
-	return vidsrc_register(&vsrc, "dshow", alloc, NULL);
+	return vidsrc_register(&vsrc, baresip_vidsrcl(),
+			       "dshow", alloc, NULL);
 }
 
 

@@ -155,7 +155,7 @@ static struct vidfilt vidinfo = {
 
 static int module_init(void)
 {
-	vidfilt_register(&vidinfo);
+	vidfilt_register(baresip_vidfiltl(), &vidinfo);
 
 	return 0;
 }

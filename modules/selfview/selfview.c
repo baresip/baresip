@@ -162,7 +162,8 @@ static int encode_win(struct vidfilt_enc_st *st, struct vidframe *frame)
 
 	if (!enc->disp) {
 
-		err = vidisp_alloc(&enc->disp, NULL, NULL, NULL, NULL, NULL);
+		err = vidisp_alloc(&enc->disp, baresip_vidispl(),
+				   NULL, NULL, NULL, NULL, NULL);
 		if (err)
 			return err;
 	}
@@ -253,9 +254,9 @@ static int module_init(void)
 	(void)conf_get(conf_cur(), "video_selfview", &pl);
 
 	if (0 == pl_strcasecmp(&pl, "window"))
-		vidfilt_register(&selfview_win);
+		vidfilt_register(baresip_vidfiltl(), &selfview_win);
 	else if (0 == pl_strcasecmp(&pl, "pip"))
-		vidfilt_register(&selfview_pip);
+		vidfilt_register(baresip_vidfiltl(), &selfview_pip);
 
 	(void)conf_get_vidsz(conf_cur(), "selfview_size", &selfview_size);
 

@@ -18,6 +18,13 @@
  */
 
 
+#if (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200)
+#define NSTitledWindowMask         NSWindowStyleMaskTitled
+#define NSClosableWindowMask       NSWindowStyleMaskClosable
+#define NSMiniaturizableWindowMask NSWindowStyleMaskMiniaturizable
+#endif
+
+
 struct vidisp_st {
 	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	struct vidsz size;              /**< Current size          */
@@ -65,7 +72,7 @@ static void destructor(void *arg)
 		[st->ctx release];
 	}
 
-	[st->win release];
+	[st->win close];
 
 	if (st->PHandle) {
 		glUseProgramObjectARB(0);
@@ -100,7 +107,6 @@ static int create_window(struct vidisp_st *st)
 	}
 
 	[st->win setLevel:NSFloatingWindowLevel];
-	[st->win useOptimizedDrawing:YES];
 
 	return 0;
 }
@@ -503,7 +509,8 @@ static int module_init(void)
 	if (!app)
 		return ENOSYS;
 
-	err = vidisp_register(&vid, "opengl", alloc, NULL, display, hide);
+	err = vidisp_register(&vid, baresip_vidispl(),
+			      "opengl", alloc, NULL, display, hide);
 	if (err)
 		return err;
 

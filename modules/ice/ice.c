@@ -29,12 +29,20 @@
  */
 
 
+enum {
+	ICE_LAYER = 0
+};
+
+
 struct mnat_sess {
 	struct list medial;
 	struct sa srv;
 	struct stun_dns *dnsq;
 	struct sdp_session *sdp;
-	struct ice *ice;
+	char lufrag[8];
+	char lpwd[32];
+	uint64_t tiebrk;
+	bool offerer;
 	char *user;
 	char *pass;
 	int mediac;
@@ -46,7 +54,10 @@ struct mnat_sess {
 
 struct mnat_media {
 	struct comp {
+		struct mnat_media *m;         /* pointer to parent */
+		struct stun_ctrans *ct_gath;
 		struct sa laddr;
+		unsigned id;
 		void *sock;
 	} compv[2];
 	struct le le;
@@ -54,6 +65,8 @@ struct mnat_media {
 	struct sdp_media *sdpm;
 	struct icem *icem;
 	bool complete;
+	bool terminated;
+	int nstun;                   /**< Number of pending STUN candidates  */
 };
 
 
@@ -73,6 +86,232 @@ static struct {
 
 static void gather_handler(int err, uint16_t scode, const char *reason,
 			   void *arg);
+
+
+static void call_gather_handler(int err, struct mnat_media *m, uint16_t scode,
+				const char *reason)
+{
+
+	/* No more pending requests? */
+	if (m->nstun != 0)
+		return;
+
+	debug("ice: all components gathered.\n");
+
+	if (err)
+		goto out;
+
+	/* Eliminate redundant local candidates */
+	icem_cand_redund_elim(m->icem);
+
+	err = icem_comps_set_default_cand(m->icem);
+	if (err) {
+		warning("ice: set default cands failed (%m)\n", err);
+		goto out;
+	}
+
+ out:
+	gather_handler(err, scode, reason, m);
+}
+
+
+static void stun_resp_handler(int err, uint16_t scode, const char *reason,
+			      const struct stun_msg *msg, void *arg)
+{
+	struct comp *comp = arg;
+	struct mnat_media *m = comp->m;
+	struct stun_attr *attr;
+	struct ice_cand *lcand;
+
+	if (m->terminated)
+		return;
+
+	--m->nstun;
+
+	if (err || scode > 0) {
+		warning("ice: comp %u: STUN Request failed: %m\n",
+			comp->id, err);
+		goto out;
+	}
+
+	debug("ice: srflx gathering for comp %u complete.\n", comp->id);
+
+	/* base candidate */
+	lcand = icem_cand_find(icem_lcandl(m->icem), comp->id, NULL);
+	if (!lcand)
+		goto out;
+
+	attr = stun_msg_attr(msg, STUN_ATTR_XOR_MAPPED_ADDR);
+	if (!attr)
+		attr = stun_msg_attr(msg, STUN_ATTR_MAPPED_ADDR);
+	if (!attr) {
+		warning("ice: no Mapped Address in Response\n");
+		err = EPROTO;
+		goto out;
+	}
+
+	err = icem_lcand_add(m->icem, icem_lcand_base(lcand),
+			     ICE_CAND_TYPE_SRFLX,
+			     &attr->v.sa);
+
+ out:
+	call_gather_handler(err, m, scode, reason);
+}
+
+
+/** Gather Server Reflexive address */
+static int send_binding_request(struct mnat_media *m, struct comp *comp)
+{
+	int err;
+
+	if (comp->ct_gath)
+		return EALREADY;
+
+	debug("ice: gathering srflx for comp %u ..\n", comp->id);
+
+	err = stun_request(&comp->ct_gath, icem_stun(m->icem), IPPROTO_UDP,
+			   comp->sock, &m->sess->srv, 0,
+			   STUN_METHOD_BINDING,
+			   NULL, false, 0,
+			   stun_resp_handler, comp, 1,
+			   STUN_ATTR_SOFTWARE, stun_software);
+	if (err)
+		return err;
+
+	++m->nstun;
+
+	return 0;
+}
+
+
+static void turnc_handler(int err, uint16_t scode, const char *reason,
+			  const struct sa *relay, const struct sa *mapped,
+			  const struct stun_msg *msg, void *arg)
+{
+	struct comp *comp = arg;
+	struct mnat_media *m = comp->m;
+	struct ice_cand *lcand;
+	(void)msg;
+
+	--m->nstun;
+
+	/* TURN failed, so we destroy the client */
+	if (err || scode) {
+		icem_set_turn_client(m->icem, comp->id, NULL);
+	}
+
+	if (err) {
+		warning("{%u} TURN Client error: %m\n",
+			      comp->id, err);
+		goto out;
+	}
+
+	if (scode) {
+		warning("{%u} TURN Client error: %u %s\n",
+			      comp->id, scode, reason);
+		err = send_binding_request(m, comp);
+		if (err)
+			goto out;
+		return;
+	}
+
+	debug("ice: relay gathered for comp %u (%u %s)\n",
+	      comp->id, scode, reason);
+
+	lcand = icem_cand_find(icem_lcandl(m->icem), comp->id, NULL);
+	if (!lcand)
+		goto out;
+
+	if (!sa_cmp(relay, icem_lcand_addr(icem_lcand_base(lcand)), SA_ALL)) {
+		err = icem_lcand_add(m->icem, icem_lcand_base(lcand),
+				     ICE_CAND_TYPE_RELAY, relay);
+	}
+
+	if (mapped) {
+		err |= icem_lcand_add(m->icem, icem_lcand_base(lcand),
+				      ICE_CAND_TYPE_SRFLX, mapped);
+	}
+	else {
+		err |= send_binding_request(m, comp);
+	}
+
+ out:
+	call_gather_handler(err, m, scode, reason);
+}
+
+
+static int cand_gather_relayed(struct mnat_media *m, struct comp *comp,
+			       const char *username, const char *password)
+{
+	struct turnc *turnc = NULL;
+	const int layer = ICE_LAYER - 10; /* below ICE stack */
+	int err;
+
+	err = turnc_alloc(&turnc, stun_conf(icem_stun(m->icem)),
+			  IPPROTO_UDP, comp->sock, layer, &m->sess->srv,
+			  username, password,
+			  60, turnc_handler, comp);
+	if (err)
+		return err;
+
+	err = icem_set_turn_client(m->icem, comp->id, turnc);
+	if (err)
+		goto out;
+
+	++m->nstun;
+
+ out:
+	mem_deref(turnc);
+
+	return err;
+}
+
+
+static int start_gathering(struct mnat_media *m,
+			   const char *username, const char *password)
+{
+	unsigned i;
+	int err = 0;
+
+	if (ice.mode != ICE_MODE_FULL)
+		return EINVAL;
+
+	/* for each component */
+	for (i=0; i<2; i++) {
+		struct comp *comp = &m->compv[i];
+
+		if (!comp->sock)
+			continue;
+
+		if (username && password) {
+			err |= cand_gather_relayed(m, comp,
+						   username, password);
+		}
+		else
+			err |= send_binding_request(m, comp);
+	}
+
+	return err;
+}
+
+
+static int icem_gather_srflx(struct mnat_media *m)
+{
+	if (!m)
+		return EINVAL;
+
+	return start_gathering(m, NULL, NULL);
+}
+
+
+static int icem_gather_relay(struct mnat_media *m,
+		      const char *username, const char *password)
+{
+	if (!m || !username || !password)
+		return EINVAL;
+
+	return start_gathering(m, username, password);
+}
 
 
 static bool is_cellular(const struct sa *laddr)
@@ -121,7 +360,6 @@ static void session_destructor(void *arg)
 	mem_deref(sess->dnsq);
 	mem_deref(sess->user);
 	mem_deref(sess->pass);
-	mem_deref(sess->ice);
 	mem_deref(sess->sdp);
 }
 
@@ -131,11 +369,15 @@ static void media_destructor(void *arg)
 	struct mnat_media *m = arg;
 	unsigned i;
 
+	m->terminated = true;
+
 	list_unlink(&m->le);
 	mem_deref(m->sdpm);
 	mem_deref(m->icem);
-	for (i=0; i<2; i++)
+	for (i=0; i<2; i++) {
+		mem_deref(m->compv[i].ct_gath);
 		mem_deref(m->compv[i].sock);
+	}
 }
 
 
@@ -218,11 +460,11 @@ static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 	default:
 	case ICE_MODE_FULL:
 		if (ice.turn) {
-			err = icem_gather_relay(m->icem, &sess->srv,
+			err = icem_gather_relay(m,
 						sess->user, sess->pass);
 		}
 		else {
-			err = icem_gather_srflx(m->icem, &sess->srv);
+			err = icem_gather_srflx(m);
 		}
 		break;
 
@@ -301,12 +543,10 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 	if (err)
 		goto out;
 
-	err = ice_alloc(&sess->ice, ice.mode, offerer);
-	if (err)
-		goto out;
-
-	ice_conf(sess->ice)->nom   = ice.nom;
-	ice_conf(sess->ice)->debug = ice.debug;
+	rand_str(sess->lufrag, sizeof(sess->lufrag));
+	rand_str(sess->lpwd,   sizeof(sess->lpwd));
+	sess->tiebrk = rand_u64();
+	sess->offerer = offerer;
 
 	if (ICE_MODE_LITE == ice.mode) {
 		err |= sdp_session_set_lattr(ss, true,
@@ -314,9 +554,9 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 	}
 
 	err |= sdp_session_set_lattr(ss, true,
-				     ice_attr_ufrag, ice_ufrag(sess->ice));
+				     ice_attr_ufrag, sess->lufrag);
 	err |= sdp_session_set_lattr(ss, true,
-				     ice_attr_pwd, ice_pwd(sess->ice));
+				     ice_attr_pwd, sess->lpwd);
 	if (err)
 		goto out;
 
@@ -414,6 +654,7 @@ static void gather_handler(int err, uint16_t scode, const char *reason,
 			   void *arg)
 {
 	struct mnat_media *m = arg;
+	mnat_estab_h *estabh = m->sess->estabh;
 
 	if (err || scode) {
 		warning("ice: gather error: %m (%u %s)\n",
@@ -434,7 +675,11 @@ static void gather_handler(int err, uint16_t scode, const char *reason,
 			return;
 	}
 
-	m->sess->estabh(err, scode, reason, m->sess->arg);
+	if (err || scode)
+		m->sess->estabh = NULL;
+
+	if (estabh)
+		estabh(err, scode, reason, m->sess->arg);
 }
 
 
@@ -491,13 +736,14 @@ static int ice_start(struct mnat_sess *sess)
 	struct le *le;
 	int err = 0;
 
-	ice_printf(NULL, "ICE Start: %H", ice_debug, sess->ice);
-
 	/* Update SDP media */
 	if (sess->started) {
 
 		LIST_FOREACH(&sess->medial, le) {
 			struct mnat_media *m = le->data;
+
+			ice_printf(NULL, "ICE Start: %H",
+				   icem_debug, m->icem);
 
 			icem_update(m->icem);
 
@@ -522,6 +768,12 @@ static int ice_start(struct mnat_sess *sess)
 				err = icem_conncheck_start(m->icem);
 				if (err)
 					return err;
+
+				/* set the pair states
+				   -- first media stream only */
+				if (sess->medial.head == le) {
+					ice_candpair_set_states(m->icem);
+				}
 			}
 		}
 		else {
@@ -540,6 +792,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		       struct sdp_media *sdpm)
 {
 	struct mnat_media *m;
+	enum ice_role role;
 	unsigned i;
 	int err = 0;
 
@@ -556,14 +809,29 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->compv[0].sock = mem_ref(sock1);
 	m->compv[1].sock = mem_ref(sock2);
 
-	err = icem_alloc(&m->icem, sess->ice, proto, 0,
-			 gather_handler, conncheck_handler, m);
+	if (sess->offerer)
+		role = ICE_ROLE_CONTROLLING;
+	else
+		role = ICE_ROLE_CONTROLLED;
+
+	err = icem_alloc(&m->icem, ice.mode, role,
+			 proto, ICE_LAYER,
+			 sess->tiebrk, sess->lufrag, sess->lpwd,
+			 conncheck_handler, m);
 	if (err)
 		goto out;
+
+	icem_conf(m->icem)->nom   = ice.nom;
+	icem_conf(m->icem)->debug = ice.debug;
+	icem_conf(m->icem)->rc    = 4;
+
+	icem_set_conf(m->icem, icem_conf(m->icem));
 
 	icem_set_name(m->icem, sdp_media_name(sdpm));
 
 	for (i=0; i<2; i++) {
+		m->compv[i].m = m;
+		m->compv[i].id = i+1;
 		if (m->compv[i].sock)
 			err |= icem_comp_add(m->icem, i+1, m->compv[i].sock);
 	}
@@ -586,7 +854,15 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 static bool sdp_attr_handler(const char *name, const char *value, void *arg)
 {
 	struct mnat_sess *sess = arg;
-	return 0 != ice_sdp_decode(sess->ice, name, value);
+	struct le *le;
+
+	for (le = sess->medial.head; le; le = le->next) {
+		struct mnat_media *m = le->data;
+
+		(void)ice_sdp_decode(m->icem, name, value);
+	}
+
+	return false;
 }
 
 
@@ -676,6 +952,7 @@ static int module_init(void)
 			ice.nom = ICE_NOMINATION_AGGRESSIVE;
 		else {
 			warning("ice: unknown nomination: %r\n", &pl);
+			return EINVAL;
 		}
 	}
 	if (!conf_get(conf_cur(), "ice_mode", &pl)) {
@@ -685,11 +962,13 @@ static int module_init(void)
 			ice.mode = ICE_MODE_LITE;
 		else {
 			warning("ice: unknown mode: %r\n", &pl);
+			return EINVAL;
 		}
 	}
 #endif
 
-	return mnat_register(&mnat, "ice", "+sip.ice",
+	return mnat_register(&mnat, baresip_mnatl(),
+			     "ice", "+sip.ice",
 			     session_alloc, media_alloc, update);
 }
 

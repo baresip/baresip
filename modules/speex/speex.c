@@ -15,6 +15,8 @@
  * @defgroup speex speex
  *
  * The Speex audio codec
+ *
+ * NOTE: The Speex codec has been obsoleted by Opus.
  */
 
 
@@ -462,19 +464,19 @@ static void config_parse(struct conf *conf)
 static struct aucodec speexv[] = {
 
 	/* Stereo Speex */
-	{LE_INIT, 0, "speex", 32000, 2, speex_fmtp_wb,
+	{LE_INIT, 0, "speex", 32000, 32000, 2, speex_fmtp_wb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
-	{LE_INIT, 0, "speex", 16000, 2, speex_fmtp_wb,
+	{LE_INIT, 0, "speex", 16000, 16000, 2, speex_fmtp_wb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
-	{LE_INIT, 0, "speex",  8000, 2, speex_fmtp_nb,
+	{LE_INIT, 0, "speex",  8000,  8000, 2, speex_fmtp_nb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
 
 	/* Standard Speex */
-	{LE_INIT, 0, "speex", 32000, 1, speex_fmtp_wb,
+	{LE_INIT, 0, "speex", 32000, 32000, 1, speex_fmtp_wb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
-	{LE_INIT, 0, "speex", 16000, 1, speex_fmtp_wb,
+	{LE_INIT, 0, "speex", 16000, 16000, 1, speex_fmtp_wb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
-	{LE_INIT, 0, "speex",  8000, 1, speex_fmtp_nb,
+	{LE_INIT, 0, "speex",  8000,  8000, 1, speex_fmtp_nb,
 	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
 };
 
@@ -494,7 +496,7 @@ static int speex_init(void)
 			  sconf.vad ? "vad" : (sconf.vbr ? "on" : "off"));
 
 	for (i=0; i<ARRAY_SIZE(speexv); i++)
-		aucodec_register(&speexv[i]);
+		aucodec_register(baresip_aucodecl(), &speexv[i]);
 
 	return 0;
 }

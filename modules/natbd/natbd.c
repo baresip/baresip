@@ -16,6 +16,8 @@
  * the main SIP client. It uses the NATBD api in libre to detect the
  * NAT Behaviour, by sending STUN packets to a STUN server. Both
  * protocols UDP and TCP are supported.
+ *
+ * The STUN server used must be compliant with RFC 5780
  */
 
 
@@ -244,6 +246,7 @@ static void destructor(void *arg)
 
 static int natbd_start(struct natbd *natbd)
 {
+	struct network *net = baresip_network();
 	int err = 0;
 
 	if (!natbd->nh) {
@@ -258,7 +261,8 @@ static int natbd_start(struct natbd *natbd)
 	}
 
 	if (!natbd->nm) {
-		err |= nat_mapping_alloc(&natbd->nm, net_laddr_af(net_af()),
+		err |= nat_mapping_alloc(&natbd->nm,
+					 net_laddr_af(net, net_af(net)),
 					 &natbd->stun_srv, natbd->proto, NULL,
 					 nat_mapping_handler, natbd);
 		err |= nat_mapping_start(natbd->nm);
@@ -370,9 +374,9 @@ static void timeout_init(void *arg)
 		goto out;
 	}
 
-	err = stun_server_discover(&natbd->dns, net_dnsc(),
+	err = stun_server_discover(&natbd->dns, net_dnsc(baresip_network()),
 				   stun_usage_binding,
-				   proto_str, net_af(),
+				   proto_str, net_af(baresip_network()),
 				   natbd->host, natbd->port,
 				   dns_handler, natbd);
 	if (err)
@@ -449,7 +453,7 @@ static int status(struct re_printf *pf, void *unused)
 
 
 static const struct cmd cmdv[] = {
-	{'z', 0, "NAT status", status}
+	{"natbd", 'z', 0, "NAT status", status}
 };
 
 
@@ -459,7 +463,7 @@ static int module_init(void)
 	uint32_t interval = 3600;
 	int err;
 
-	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	if (err)
 		return err;
 
@@ -491,7 +495,7 @@ static int module_close(void)
 	for (i=0; i<ARRAY_SIZE(natbdv); i++)
 		natbdv[i] = mem_deref(natbdv[i]);
 
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 
 	return 0;
 }

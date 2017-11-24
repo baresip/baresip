@@ -174,8 +174,10 @@ static int display(struct vidisp_st *st, const char *title,
 static int module_init(void)
 {
 	int err = 0;
-	err |= vidsrc_register(&vidsrc, "fakevideo", src_alloc, NULL);
-	err |= vidisp_register(&vidisp, "fakevideo", disp_alloc, NULL,
+	err |= vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			       "fakevideo", src_alloc, NULL);
+	err |= vidisp_register(&vidisp, baresip_vidispl(),
+			       "fakevideo", disp_alloc, NULL,
 			       display, NULL);
 	return err;
 }

@@ -7,6 +7,6 @@
 MOD		:= gsm
 $(MOD)_SRCS	+= gsm.c
 $(MOD)_LFLAGS	+= -L$(SYSROOT)/lib -lgsm
-CFLAGS		+= -I$(SYSROOT)/include/gsm -I$(SYSROOT)/local/include
+$(MOD)_CFLAGS	+= -I$(SYSROOT)/include/gsm -I$(SYSROOT)/local/include
 
 include mk/mod.mk

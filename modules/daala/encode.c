@@ -130,10 +130,12 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	daala_comment dc;
 	daala_packet dp;
 	int err = 0;
-	int complexity = 0;
-	int video_q = 10;
+	int complexity = 7;
+	int video_q = 30;
+	int bitrate = ves->bitrate;
 
-	info("daala: open encoder (%d x %d)\n", size->w, size->h);
+	info("daala: open encoder (%d x %d, %d bps)\n",
+	     size->w, size->h, bitrate);
 
 	if (ves->enc) {
 		debug("daala: re-opening encoder\n");
@@ -175,6 +177,9 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	daala_encode_ctl(ves->enc, OD_SET_COMPLEXITY,
 			 &complexity, sizeof(complexity));
 
+	daala_encode_ctl(ves->enc, OD_SET_BITRATE,
+			 &bitrate, sizeof(bitrate));
+
 	for (;;) {
 		int r;
 
@@ -215,7 +220,8 @@ int daala_encode(struct videnc_state *ves, bool update,
 		 const struct vidframe *frame)
 {
 	int r, err = 0;
-	od_img img;
+	daala_image img;
+	unsigned i;
 	(void)update;  /* XXX: how to force a KEY-frame? */
 
 	if (!ves || !frame || frame->fmt != VID_FMT_YUV420P)
@@ -249,6 +255,9 @@ int daala_encode(struct videnc_state *ves, bool update,
 	img.planes[2].ydec = 1;
 	img.planes[2].xstride = 1;
 	img.planes[2].ystride = frame->linesize[2];
+
+	for (i=0; i<3; i++)
+		img.planes[i].bitdepth = 8;
 
 	img.nplanes = 3;
 

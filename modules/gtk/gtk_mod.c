@@ -40,6 +40,7 @@ struct gtk_mod {
 	bool run;
 	bool contacts_inited;
 	bool accounts_inited;
+	struct message_lsnr *message;
 	struct mqueue *mq;
 	GApplication *app;
 	GtkStatusIcon *status_icon;
@@ -142,12 +143,13 @@ static void menu_on_dial_contact(GtkMenuItem *menuItem, gpointer arg)
 
 static void init_contacts_menu(struct gtk_mod *mod)
 {
+	struct contacts *contacts = baresip_contacts();
 	struct le *le;
 	GtkWidget *item;
 	GtkMenuShell *contacts_menu = GTK_MENU_SHELL(mod->contacts_menu);
 
 	/* Add contacts to submenu */
-	for (le = list_head(contact_list()); le; le = le->next) {
+	for (le = list_head(contact_list(contacts)); le; le = le->next) {
 		struct contact *c = le->data;
 		item = gtk_menu_item_new_with_label(contact_str(c));
 		gtk_menu_shell_append(contacts_menu, item);
@@ -180,6 +182,7 @@ static void menu_on_presence_set(GtkMenuItem *item, struct gtk_mod *mod)
 }
 
 
+#ifdef USE_NOTIFICATIONS
 static void menu_on_incoming_call_answer(GtkMenuItem *menuItem,
 		struct gtk_mod *mod)
 {
@@ -196,6 +199,7 @@ static void menu_on_incoming_call_reject(GtkMenuItem *menuItem,
 	denotify_incoming_call(mod, call);
 	mqueue_push(mod->mq, MQ_HANGUP, call);
 }
+#endif
 
 
 static GtkMenuItem *accounts_menu_add_item(struct gtk_mod *mod,
@@ -492,9 +496,11 @@ static void ua_event_handler(struct ua *ua,
 		accounts_menu_set_status(mod, ua, ev);
 		break;
 
+#ifdef USE_NOTIFICATIONS
 	case UA_EVENT_CALL_INCOMING:
 		notify_incoming_call(mod, call);
 		break;
+#endif
 
 	case UA_EVENT_CALL_CLOSED:
 		win = get_call_window(mod, call);
@@ -973,7 +979,7 @@ static int cmd_popup_menu(struct re_printf *pf, void *unused)
 
 
 static const struct cmd cmdv[] = {
-	{'G',        0, "Pop up GTK+ menu",         cmd_popup_menu       },
+	{"gtk", 'G',   0, "Pop up GTK+ menu",         cmd_popup_menu       },
 };
 
 
@@ -985,14 +991,18 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	aufilt_register(&vumeter);
+	aufilt_register(baresip_aufiltl(), &vumeter);
+
 #ifdef USE_NOTIFICATIONS
-	err = message_init(message_handler, &mod_obj);
-	if (err)
+	err = message_listen(&mod_obj.message, baresip_message(),
+			     message_handler, &mod_obj);
+	if (err) {
+		warning("gtk: message_init failed (%m)\n", err);
 		return err;
+	}
 #endif
 
-	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	if (err)
 		return err;
 
@@ -1008,16 +1018,17 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	cmd_unregister(cmdv);
+	cmd_unregister(baresip_commands(), cmdv);
 	if (mod_obj.run) {
 		gdk_threads_enter();
 		gtk_main_quit();
 		gdk_threads_leave();
 	}
-	pthread_join(mod_obj.thread, NULL);
-	mem_deref(mod_obj.mq);
+	if (mod_obj.thread)
+		pthread_join(mod_obj.thread, NULL);
+	mod_obj.mq = mem_deref(mod_obj.mq);
 	aufilt_unregister(&vumeter);
-	message_close();
+	mod_obj.message = mem_deref(mod_obj.message);
 
 #ifdef USE_LIBNOTIFY
 	if (notify_is_initted())

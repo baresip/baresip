@@ -99,6 +99,17 @@ static int write_callback(const void *inputBuffer, void *outputBuffer,
 }
 
 
+static PaSampleFormat aufmt_to_pasampleformat(enum aufmt fmt)
+{
+	switch (fmt) {
+
+	case AUFMT_S16LE: return paInt16;
+	case AUFMT_FLOAT: return paFloat32;
+	default: return 0;
+	}
+}
+
+
 static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 			    uint32_t dev)
 {
@@ -109,7 +120,7 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 	memset(&prm_in, 0, sizeof(prm_in));
 	prm_in.device           = dev;
 	prm_in.channelCount     = prm->ch;
-	prm_in.sampleFormat     = paInt16;
+	prm_in.sampleFormat     = aufmt_to_pasampleformat(prm->fmt);
 	prm_in.suggestedLatency = 0.100;
 
 	st->stream_rd = NULL;
@@ -142,7 +153,7 @@ static int write_stream_open(struct auplay_st *st,
 	memset(&prm_out, 0, sizeof(prm_out));
 	prm_out.device           = dev;
 	prm_out.channelCount     = prm->ch;
-	prm_out.sampleFormat     = paInt16;
+	prm_out.sampleFormat     = aufmt_to_pasampleformat(prm->fmt);
 	prm_out.suggestedLatency = 0.100;
 
 	st->stream_wr = NULL;
@@ -305,10 +316,12 @@ static int pa_init(void)
 	}
 
 	if (paNoDevice != Pa_GetDefaultInputDevice())
-		err |= ausrc_register(&ausrc, "portaudio", src_alloc);
+		err |= ausrc_register(&ausrc, baresip_ausrcl(),
+				      "portaudio", src_alloc);
 
 	if (paNoDevice != Pa_GetDefaultOutputDevice())
-		err |= auplay_register(&auplay, "portaudio", play_alloc);
+		err |= auplay_register(&auplay, baresip_auplayl(),
+				       "portaudio", play_alloc);
 
 	return err;
 }

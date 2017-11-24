@@ -67,7 +67,7 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		if (ch == '\r')
 			ch = '\n';
 
-		ui_input_key(ch, &pf);
+		ui_input_key(baresip_uis(), ch, &pf);
 	}
 
 	if (mbr->end > 0) {
@@ -116,7 +116,7 @@ static void tcp_recv_handler(struct mbuf *mb, void *arg)
 		if (ch == '\r')
 			ch = '\n';
 
-		ui_input_key(ch, &pf);
+		ui_input_key(baresip_uis(), ch, &pf);
 	}
 }
 
@@ -212,10 +212,26 @@ static int output_handler(const char *str)
 }
 
 
+/*
+ * Relay log-messages to all active UDP/TCP connections
+ */
+static void log_handler(uint32_t level, const char *msg)
+{
+	(void)level;
+
+	output_handler(msg);
+}
+
+
 static struct ui ui_cons = {
 	LE_INIT,
 	"cons",
 	output_handler
+};
+
+
+static struct log lg = {
+	.h = log_handler,
 };
 
 
@@ -232,7 +248,9 @@ static int cons_init(void)
 	if (err)
 		return err;
 
-	ui_register(&ui_cons);
+	ui_register(baresip_uis(), &ui_cons);
+
+	log_register_handler(&lg);
 
 	return 0;
 }
@@ -240,6 +258,8 @@ static int cons_init(void)
 
 static int cons_close(void)
 {
+	log_unregister_handler(&lg);
+
 	ui_unregister(&ui_cons);
 	cons = mem_deref(cons);
 	return 0;

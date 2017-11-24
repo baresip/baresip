@@ -2,5 +2,4 @@ TODO:
 
 done - get encoder working
 done - get decoder working
-     - add timestamp to vidsrc API
-     - add timestamp to vidcodec API
+done - add timestamp to vidcodec API

@@ -22,7 +22,7 @@
  *
  * References:
  *
- *    draft-ietf-payload-rtp-h265-07
+ *    https://tools.ietf.org/html/rfc7798
  *    http://x265.org/
  *    https://www.ffmpeg.org/
  */
@@ -30,6 +30,7 @@
 
 static struct vidcodec h265 = {
 	.name      = "H265",
+	.fmtp      = "profile-id=1",
 	.encupdh   = h265_encode_update,
 	.ench      = h265_encode,
 	.decupdh   = h265_decode_update,
@@ -44,7 +45,7 @@ static int module_init(void)
 
 	avcodec_register_all();
 
-	vidcodec_register(&h265);
+	vidcodec_register(baresip_vidcodecl(), &h265);
 
 	return 0;
 }
@@ -53,8 +54,6 @@ static int module_init(void)
 static int module_close(void)
 {
 	vidcodec_unregister(&h265);
-
-	x265_cleanup();
 
 	return 0;
 }

@@ -22,15 +22,17 @@ static const char *chat_peer;         /**< Selected chat peer             */
 static char cmd_desc[128] = "Send MESSAGE to peer";
 
 
-static int confline_handler(const struct pl *addr)
+static int confline_handler(const struct pl *addr, void *arg)
 {
-	return contact_add(NULL, addr);
+	struct contacts *contacts = arg;
+	return contact_add(contacts, NULL, addr);
 }
 
 
 static int cmd_contact(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct contacts *contacts = baresip_contacts();
 	struct contact *cnt = NULL;
 	struct pl dname, user, pl;
 	struct le *le;
@@ -42,7 +44,7 @@ static int cmd_contact(struct re_printf *pf, void *arg)
 
 	err |= re_hprintf(pf, "\n");
 
-	for (le = list_head(contact_list()); le; le = le->next) {
+	for (le = list_head(contact_list(contacts)); le; le = le->next) {
 
 		struct contact *c = le->data;
 
@@ -75,7 +77,7 @@ static int cmd_contact(struct re_printf *pf, void *arg)
 
 		switch (carg->key) {
 
-		case '/':
+		case '|':
 			err = ua_connect(uag_current(), NULL, NULL,
 					 contact_str(cnt), NULL, VIDMODE_ON);
 			if (err) {
@@ -101,16 +103,43 @@ static int cmd_contact(struct re_printf *pf, void *arg)
 }
 
 
+static int print_contacts(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	return contacts_print(pf, baresip_contacts());
+}
+
+
+static void send_resp_handler(int err, const struct sip_msg *msg, void *arg)
+{
+	(void)arg;
+
+	if (err) {
+		(void)re_fprintf(stderr, " \x1b[31m%m\x1b[;m\n", err);
+		return;
+	}
+
+	if (msg->scode >= 300) {
+		(void)re_fprintf(stderr, " \x1b[31m%u %r\x1b[;m\n",
+				 msg->scode, &msg->reason);
+	}
+}
+
+
 static int cmd_message(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	int err;
 
-	(void)pf;
+	if (!str_isset(chat_peer)) {
+		return re_hprintf(pf, "contact: chat peer is not set\n");
+	}
 
-	err = message_send(uag_current(), chat_peer, carg->prm);
+	err = message_send(uag_current(), chat_peer, carg->prm,
+			   send_resp_handler, NULL);
 	if (err) {
-		(void)re_hprintf(pf, "chat: ua_im_send() failed (%m)\n", err);
+		(void)re_hprintf(pf, "contact: message_send() failed (%m)\n",
+				 err);
 	}
 
 	return err;
@@ -118,10 +147,10 @@ static int cmd_message(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{'/', CMD_IPRM, "Dial from contacts",       cmd_contact          },
-	{'=', CMD_IPRM, "Select chat peer",         cmd_contact          },
-	{'C',        0, "List contacts",            contacts_print       },
-	{'-',  CMD_PRM, cmd_desc,                   cmd_message          },
+{"dialcontact", '|',  CMD_IPRM, "Dial from contacts",     cmd_contact        },
+{"chatpeer",    '=',  CMD_IPRM, "Select chat peer",       cmd_contact        },
+{"contacts",    'C',         0, "List contacts",          print_contacts     },
+{"message",     '-',   CMD_PRM, cmd_desc,                 cmd_message        },
 };
 
 
@@ -139,7 +168,7 @@ static int write_template(const char *file)
 	user = sys_username();
 	if (!user)
 		user = "user";
-	domain = net_domain();
+	domain = net_domain(baresip_network());
 	if (!domain)
 		domain = "domain";
 
@@ -174,6 +203,7 @@ static int write_template(const char *file)
 
 static int module_init(void)
 {
+	struct contacts *contacts = baresip_contacts();
 	char path[256] = "", file[256] = "";
 	int err;
 
@@ -193,15 +223,16 @@ static int module_init(void)
 			return err;
 	}
 
-	err = conf_parse(file, confline_handler);
+	err = conf_parse(file, confline_handler, contacts);
 	if (err)
 		return err;
 
-	err = cmd_register(cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	if (err)
 		return err;
 
-	info("Populated %u contacts\n", list_count(contact_list()));
+	info("Populated %u contacts\n",
+	     list_count(contact_list(contacts)));
 
 	return err;
 }
@@ -209,8 +240,8 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	cmd_unregister(cmdv);
-	list_flush(contact_list());
+	cmd_unregister(baresip_commands(), cmdv);
+	list_flush(contact_list(baresip_contacts()));
 
 	return 0;
 }

@@ -78,10 +78,11 @@ static void print_populated(const char *what, uint32_t n)
  *
  * @param filename Config file
  * @param ch       Line handler
+ * @param arg      Handler argument
  *
  * @return 0 if success, otherwise errorcode
  */
-int conf_parse(const char *filename, confline_h *ch)
+int conf_parse(const char *filename, confline_h *ch, void *arg)
 {
 	struct pl pl, val;
 	struct mbuf *mb;
@@ -122,7 +123,7 @@ int conf_parse(const char *filename, confline_h *ch)
 		if (!val.l || val.p[0] == '#')
 			continue;
 
-		err = ch(&val);
+		err = ch(&val, arg);
 	}
 
  out:
@@ -154,7 +155,7 @@ void conf_path_set(const char *path)
  */
 int conf_path_get(char *path, size_t sz)
 {
-	char buf[256];
+	char buf[FS_PATH_MAX];
 	int err;
 
 	/* Use explicit conf path */
@@ -164,9 +165,14 @@ int conf_path_get(char *path, size_t sz)
 		return 0;
 	}
 
+#ifdef CONFIG_PATH
+	str_ncpy(buf, CONFIG_PATH, sizeof(buf));
+	(void)err;
+#else
 	err = fs_gethome(buf, sizeof(buf));
 	if (err)
 		return err;
+#endif
 
 	if (re_snprintf(path, sz, "%s" DIR_SEP ".baresip", buf) < 0)
 		return ENOMEM;
@@ -290,7 +296,7 @@ int conf_get_sa(const struct conf *conf, const char *name, struct sa *sa)
  */
 int conf_configure(void)
 {
-	char path[256], file[256];
+	char path[FS_PATH_MAX], file[FS_PATH_MAX];
 	int err;
 
 #if defined (WIN32)
@@ -346,11 +352,11 @@ int conf_modules(void)
 		goto out;
 	}
 
-	print_populated("audio codec",  list_count(aucodec_list()));
-	print_populated("audio filter", list_count(aufilt_list()));
+	print_populated("audio codec",  list_count(baresip_aucodecl()));
+	print_populated("audio filter", list_count(baresip_aufiltl()));
 #ifdef USE_VIDEO
-	print_populated("video codec",  list_count(vidcodec_list()));
-	print_populated("video filter", list_count(vidfilt_list()));
+	print_populated("video codec",  list_count(baresip_vidcodecl()));
+	print_populated("video filter", list_count(baresip_vidfiltl()));
 #endif
 
  out:
@@ -363,7 +369,7 @@ int conf_modules(void)
  *
  * @return Config object
  *
- * @note It is only available during init
+ * @note It is only available after init and before conf_close()
  */
 struct conf *conf_cur(void)
 {
@@ -376,6 +382,5 @@ struct conf *conf_cur(void)
 
 void conf_close(void)
 {
-	mod_close();
 	conf_obj = mem_deref(conf_obj);
 }

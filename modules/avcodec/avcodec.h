@@ -17,6 +17,8 @@
 
 
 extern const uint8_t h264_level_idc;
+extern AVCodec *avcodec_h264enc;
+extern AVCodec *avcodec_h264dec;
 
 
 /*
@@ -44,18 +46,15 @@ struct viddec_state;
 int decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		  const char *fmtp);
 int decode_h263(struct viddec_state *st, struct vidframe *frame,
-		bool eof, uint16_t seq, struct mbuf *src);
+		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
 int decode_h264(struct viddec_state *st, struct vidframe *frame,
-		bool eof, uint16_t seq, struct mbuf *src);
+		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
 int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
-		 bool eof, uint16_t seq, struct mbuf *src);
-int decode_h263_test(struct viddec_state *st, struct vidframe *frame,
-		     bool marker, uint16_t seq, struct mbuf *src);
+		 bool *intra, bool eof, uint16_t seq, struct mbuf *src);
 
 
 int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
 			 const struct pl *val);
-int h264_decode(struct viddec_state *st, struct mbuf *src);
 
 
 int avcodec_resolve_codecid(const char *s);

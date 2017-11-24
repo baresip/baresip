@@ -203,7 +203,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int x11grab_init(void)
 {
-	return vidsrc_register(&vidsrc, "x11grab", alloc, NULL);
+	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			       "x11grab", alloc, NULL);
 }
 
 

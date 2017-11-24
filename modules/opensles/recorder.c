@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <string.h>
 #include <SLES/OpenSLES.h>
@@ -79,11 +80,14 @@ static int createAudioRecorder(struct ausrc_st *st, struct ausrc_prm *prm)
 	SLDataLocator_AndroidSimpleBufferQueue loc_bq = {
 		SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2
 	};
+	int speakers = prm->ch > 1
+		? SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT
+		: SL_SPEAKER_FRONT_CENTER;
 	SLDataFormat_PCM format_pcm = {SL_DATAFORMAT_PCM, prm->ch,
 				       prm->srate * 1000,
 				       SL_PCMSAMPLEFORMAT_FIXED_16,
 				       SL_PCMSAMPLEFORMAT_FIXED_16,
-				       SL_SPEAKER_FRONT_CENTER,
+				       speakers,
 				       SL_BYTEORDER_LITTLEENDIAN};
 	SLDataSink audioSnk = {&loc_bq, &format_pcm};
 	const SLInterfaceID id[1] = {SL_IID_ANDROIDSIMPLEBUFFERQUEUE};
@@ -161,6 +165,15 @@ int opensles_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("opensles: record: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
+	debug("opensles: opening recorder %uHz, %uchannels\n",
+			prm->srate, prm->ch);
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)

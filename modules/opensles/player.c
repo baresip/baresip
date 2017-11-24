@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <SLES/OpenSLES.h>
 #include "SLES/OpenSLES_Android.h"
@@ -84,11 +85,14 @@ static int createPlayer(struct auplay_st *st, struct auplay_prm *prm)
 	SLDataLocator_AndroidSimpleBufferQueue loc_bufq = {
 		SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2
 	};
+	uint32_t ch_mask = prm->ch == 2
+		? SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT
+		: SL_SPEAKER_FRONT_CENTER;
 	SLDataFormat_PCM format_pcm = {SL_DATAFORMAT_PCM, prm->ch,
 				       prm->srate * 1000,
 				       SL_PCMSAMPLEFORMAT_FIXED_16,
 				       SL_PCMSAMPLEFORMAT_FIXED_16,
-				       SL_SPEAKER_FRONT_CENTER,
+				       ch_mask,
 				       SL_BYTEORDER_LITTLEENDIAN};
 	SLDataSource audioSrc = {&loc_bufq, &format_pcm};
 	SLDataLocator_OutputMix loc_outmix = {
@@ -149,6 +153,15 @@ int opensles_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("opensles: player: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
+	debug("opensles: opening player %uHz, %uchannels\n",
+			prm->srate, prm->ch);
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)

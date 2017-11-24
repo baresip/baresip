@@ -376,6 +376,8 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	if (!prm)
 		return EINVAL;
+	if (prm->fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	st = mem_zalloc(sizeof(*st), gst_destructor);
 	if (!st)
@@ -432,7 +434,7 @@ static int mod_gst_init(void)
 
 	g_free(s);
 
-	return ausrc_register(&ausrc, "gst", gst_alloc);
+	return ausrc_register(&ausrc, baresip_ausrcl(), "gst", gst_alloc);
 }
 
 

@@ -110,6 +110,8 @@ static int read_file(struct ausrc_st *st)
 	int err;
 
 	for (;;) {
+		uint16_t *sampv;
+		size_t i;
 
 		mb = mbuf_alloc(4096);
 		if (!mb)
@@ -124,6 +126,12 @@ static int read_file(struct ausrc_st *st)
 		if (mb->end == 0) {
 			info("aufile: end of file\n");
 			break;
+		}
+
+		/* convert from Little-Endian to Native-Endian */
+		sampv = (void *)mb->buf;
+		for (i=0; i<mb->end/2; i++) {
+			sampv[i] = sys_ltohs(sampv[i]);
 		}
 
 		aubuf_append(st->aubuf, mb);
@@ -150,6 +158,12 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("aufile: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	info("aufile: loading input file '%s'\n", dev);
 
@@ -230,7 +244,8 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 static int module_init(void)
 {
-	return ausrc_register(&ausrc, "aufile", alloc_handler);
+	return ausrc_register(&ausrc, baresip_ausrcl(),
+			      "aufile", alloc_handler);
 }
 
 

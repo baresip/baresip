@@ -34,8 +34,10 @@ static int ww_init(void)
 	info("winwave: output devices: %d, input devices: %d\n",
 	     play_dev_count, src_dev_count);
 
-	err  = ausrc_register(&ausrc, "winwave", winwave_src_alloc);
-	err |= auplay_register(&auplay, "winwave", winwave_play_alloc);
+	err  = ausrc_register(&ausrc, baresip_ausrcl(),
+			      "winwave", winwave_src_alloc);
+	err |= auplay_register(&auplay, baresip_auplayl(),
+			       "winwave", winwave_play_alloc);
 
 	return err;
 }

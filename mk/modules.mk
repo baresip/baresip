@@ -1,7 +1,7 @@
 #
 # modules.mk
 #
-# Copyright (C) 2010 Creytiv.com
+# Copyright (C) 2010 - 2017 Creytiv.com
 #
 # External libraries:
 #
@@ -26,15 +26,20 @@
 #   USE_GST_VIDEO     Gstreamer 0.10 video module
 #   USE_GST_VIDEO1    Gstreamer 1.0 video module
 #   USE_GTK           GTK+ user interface
+#   USE_H265          H.265 video codec
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
+#   USE_JACK          JACK Audio Connection Kit audio driver
 #   USE_L16           L16 audio codec
-#   USE_LIBSRTP       Secure RTP module using libsrtp
+#   USE_MPA           MPA audo codec
 #   USE_MPG123        Use mpg123
+#   USE_OMX_RPI       RaspberryPi VideoCore display driver
+#   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
 #   USE_OPUS          Opus audio codec
 #   USE_OSS           OSS audio driver
 #   USE_PLC           Packet Loss Concealment
 #   USE_PORTAUDIO     Portaudio audio driver
+#   USE_PULSE         Pulseaudio audio driver
 #   USE_SDL           libSDL video output
 #   USE_SILK          SILK (Skype) audio codec
 #   USE_SNDFILE       sndfile wav dumper
@@ -76,6 +81,7 @@ USE_AVFORMAT := $(shell [ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/local/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ] && echo "yes")
+USE_AVAHI := $(shell pkg-config --exists avahi-client && echo "yes")
 USE_BV32  := $(shell [ -f $(SYSROOT)/include/bv32/bv32.h ] || \
 	[ -f $(SYSROOT)/local/include/bv32/bv32.h ] && echo "yes")
 USE_CAIRO  := $(shell [ -f $(SYSROOT)/include/cairo/cairo.h ] || \
@@ -108,10 +114,19 @@ USE_GST_VIDEO := \
 		&& echo "yes")
 USE_GST_VIDEO1 := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
 		&& echo "yes")
+USE_GTK := $(shell pkg-config 'gtk+-2.0 >= 2.22' && \
+		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
+ifneq ($(USE_AVCODEC),)
+USE_H265  := $(shell [ -f $(SYSROOT)/include/x265.h ] || \
+	[ -f $(SYSROOT)/local/include/x265.h ] || \
+	[ -f $(SYSROOT_ALT)/include/x265.h ] && echo "yes")
+endif
 USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT)/local/include/iLBC_define.h ] && echo "yes")
 USE_ISAC := $(shell [ -f $(SYSROOT)/include/isac.h ] || \
 	[ -f $(SYSROOT)/local/include/isac.h ] && echo "yes")
+USE_JACK := $(shell [ -f $(SYSROOT)/include/jack/jack.h ] || \
+	[ -f $(SYSROOT)/local/include/jack/jack.h ] && echo "yes")
 USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
 	[ -f $(SYSROOT)/local/include/mpg123.h ] || \
 	[ -f $(SYSROOT_ALT)/include/mpg123.h ] && echo "yes")
@@ -127,6 +142,7 @@ USE_PLC := $(shell [ -f $(SYSROOT)/include/spandsp/plc.h ] || \
 USE_PORTAUDIO := $(shell [ -f $(SYSROOT)/local/include/portaudio.h ] || \
 		[ -f $(SYSROOT)/include/portaudio.h ] || \
 		[ -f $(SYSROOT_ALT)/include/portaudio.h ] && echo "yes")
+USE_PULSE := $(shell pkg-config --exists libpulse && echo "yes")
 USE_SDL  := $(shell [ -f $(SYSROOT)/include/SDL/SDL.h ] || \
 	[ -f $(SYSROOT)/local/include/SDL/SDL.h ] || \
 	[ -f $(SYSROOT_ALT)/include/SDL/SDl.h ] && echo "yes")
@@ -137,7 +153,8 @@ USE_SILK := $(shell [ -f $(SYSROOT)/include/silk/SKP_Silk_SDK_API.h ] || \
 	[ -f $(SYSROOT_ALT)/include/silk/SKP_Silk_SDK_API.h ] || \
 	[ -f $(SYSROOT)/local/include/silk/SKP_Silk_SDK_API.h ] && echo "yes")
 USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
-	[ -f $(SYSROOT_ALT)/include/sndfile.h ] && echo "yes")
+	[ -f $(SYSROOT_ALT)/include/sndfile.h ] || \
+	[ -f $(SYSROOT_ALT)/usr/local/include/sndfile.h ] && echo "yes")
 USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
 HAVE_SPEEXDSP := $(shell \
 	[ -f $(SYSROOT)/local/lib/libspeexdsp$(LIB_SUFFIX) ] || \
@@ -146,6 +163,13 @@ HAVE_SPEEXDSP := $(shell \
 ifeq ($(HAVE_SPEEXDSP),)
 HAVE_SPEEXDSP := \
 	$(shell find $(SYSROOT)/lib -name libspeexdsp$(LIB_SUFFIX) 2>/dev/null)
+endif
+ifneq ($(USE_MPG123),)
+ifneq ($(HAVE_SPEEXDSP),)
+USE_MPA  := $(shell [ -f $(SYSROOT)/include/twolame.h ] || \
+	[ -f $(SYSROOT)/local/include/twolame.h ] || \
+	[ -f $(SYSROOT_ALT)/include/twolame.h ] && echo "yes")
+endif
 endif
 USE_SPEEX := $(shell [ -f $(SYSROOT)/include/speex.h ] || \
 	[ -f $(SYSROOT)/include/speex/speex.h ] || \
@@ -160,9 +184,6 @@ USE_SPEEX_PP := $(shell [ -f $(SYSROOT)/include/speex_preprocess.h ] || \
 	[ -f $(SYSROOT)/local/include/speex/speex_preprocess.h ] || \
 	[ -f $(SYSROOT_ALT)/include/speex/speex_preprocess.h ] || \
 	[ -f $(SYSROOT)/include/speex/speex_preprocess.h ] && echo "yes")
-USE_LIBSRTP := $(shell [ -f $(SYSROOT)/include/srtp/srtp.h ] || \
-	[ -f $(SYSROOT_ALT)/include/srtp/srtp.h ] || \
-	[ -f $(SYSROOT)/local/include/srtp/srtp.h ] && echo "yes")
 USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
 	[ -f $(SYSROOT_ALT)/include/syslog.h ] || \
 	[ -f $(SYSROOT)/local/include/syslog.h ] && echo "yes")
@@ -186,9 +207,14 @@ USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
 	&& echo "yes")
-USE_GTK := $(shell [ -f $(SYSROOT)/include/gtk-2.0/gtk/gtk.h ] || \
-	[ -f $(SYSROOT)/local/include/gtk-2.0/gtk/gtk.h ] || \
-	[ -f $(SYSROOT_ALT)/include/gtk-2.0/gtk/gtk.h ] && echo "yes")
+USE_OMX_RPI := $(shell [ -f /opt/vc/include/bcm_host.h ] || \
+	[ -f $(SYSROOT)/include/bcm_host.h ] \
+	|| [ -f $(SYSROOT_ALT)/include/bcm_host.h ] \
+	&& echo "yes")
+USE_OMX_BELLAGIO := $(shell [ -f /usr/include/OMX_Core.h ] \
+	|| [ -f $(SYSROOT)/include/OMX_Core.h ] \
+	|| [ -f $(SYSROOT_ALT)/include/OMX_Core.h ] \
+	&& echo "yes")
 else
 # Windows.
 # Accounts for mingw with Windows SDK (formerly known as Platform SDK)
@@ -245,6 +271,7 @@ MODULES   += stun turn ice natbd auloop presence
 MODULES   += menu contact vumeter mwi account natpmp httpd
 MODULES   += srtp
 MODULES   += uuid
+MODULES   += debug_cmd
 
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge aufile
@@ -273,6 +300,9 @@ ifneq ($(USE_AVCODEC),)
 MODULES   += avcodec
 ifneq ($(USE_AVFORMAT),)
 MODULES   += avformat
+endif
+ifneq ($(USE_AVAHI),)
+MODULES   += avahi
 endif
 endif
 ifneq ($(USE_BV32),)
@@ -328,11 +358,20 @@ endif
 ifneq ($(USE_GST_VIDEO1),)
 MODULES   += gst_video1
 endif
+ifneq ($(USE_GTK),)
+MODULES   += gtk
+endif
+ifneq ($(USE_H265),)
+MODULES   += h265
+endif
 ifneq ($(USE_ILBC),)
 MODULES   += ilbc
 endif
 ifneq ($(USE_ISAC),)
 MODULES   += isac
+endif
+ifneq ($(USE_JACK),)
+MODULES   += jack
 endif
 ifneq ($(USE_L16),)
 MODULES   += l16
@@ -346,6 +385,9 @@ endif
 ifneq ($(USE_OPUS),)
 MODULES   += opus
 endif
+ifneq ($(USE_MPA),)
+MODULES   += mpa
+endif
 ifneq ($(USE_OSS),)
 MODULES   += oss
 endif
@@ -354,6 +396,9 @@ MODULES   += plc
 endif
 ifneq ($(USE_PORTAUDIO),)
 MODULES   += portaudio
+endif
+ifneq ($(USE_PULSE),)
+MODULES   += pulse
 endif
 ifneq ($(USE_SDL),)
 MODULES   += sdl
@@ -376,9 +421,6 @@ endif
 ifneq ($(USE_SPEEX_PP),)
 MODULES   += speex_pp
 endif
-ifneq ($(USE_LIBSRTP),)
-MODULES   += libsrtp
-endif
 ifneq ($(USE_STDIO),)
 MODULES   += stdio
 endif
@@ -389,10 +431,17 @@ ifneq ($(USE_V4L),)
 MODULES   += v4l
 endif
 ifneq ($(USE_V4L2),)
-MODULES   += v4l2
+MODULES   += v4l2 v4l2_codec
+endif
+ifneq ($(USE_OMX_RPI),)
+MODULES   += omx
+endif
+ifneq ($(USE_OMX_BELLAGIO),)
+MODULES   += omx
 endif
 ifneq ($(USE_VPX),)
-MODULES   += vpx
+MODULES   += vp8
+MODULES   += $(shell pkg-config 'vpx >= 1.3.0' && echo "vp9")
 endif
 ifneq ($(USE_WINWAVE),)
 MODULES   += winwave
@@ -403,10 +452,9 @@ endif
 ifneq ($(USE_ZRTP),)
 MODULES   += zrtp
 endif
-ifneq ($(USE_GTK),)
-MODULES   += gtk
+ifneq ($(USE_GZRTP),)
+MODULES   += gzrtp
 endif
-
 ifneq ($(USE_DSHOW),)
 MODULES   += dshow
 endif
