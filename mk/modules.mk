@@ -269,6 +269,7 @@ endif
 MODULES   += $(EXTRA_MODULES)
 MODULES   += stun turn ice natbd auloop presence
 MODULES   += menu contact vumeter mwi account natpmp httpd
+MODULES   += mqtt
 MODULES   += srtp
 MODULES   += uuid
 MODULES   += debug_cmd
