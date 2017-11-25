@@ -276,7 +276,7 @@ MODULES   += srtp
 MODULES   += uuid
 MODULES   += debug_cmd
 
-ifneq ($(HAVE_LIBMQTT,)
+ifneq ($(HAVE_LIBMQTT),)
 MODULES   += mqtt
 endif
 
