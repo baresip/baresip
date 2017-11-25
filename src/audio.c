@@ -2003,7 +2003,8 @@ int audio_print_rtpstat(struct re_printf *pf, const struct audio *a)
  * Reference:  RFC 6035
  *
  */
-char * audio_print_rtcpxr(char * msg, int msg_len, const struct audio *a, const char * cid)
+char * audio_print_rtcpxr(char * msg, int msg_len,
+       const struct audio *a, const char * cid)
 {
 	const struct stream *s;
 	const struct rtcp_stats *rtcp;
@@ -2011,7 +2012,7 @@ char * audio_print_rtcpxr(char * msg, int msg_len, const struct audio *a, const 
 	int srate_rx = 8000;
 	char buffer[512];
 	double mos, rfactor, jitter, rtt,ploss,pdrop;
-	// int plost;
+	/* int plost; */
 
 	if (!a) {
 		info("audio: RTCP Error: No audio object!\n");
@@ -2030,45 +2031,61 @@ char * audio_print_rtcpxr(char * msg, int msg_len, const struct audio *a, const 
 		srate_rx = get_srate(a->rx.ac);
 
  	/* timestamp units (ie: 8 ts units = 1 ms @ 8KHZ) */
-	jitter = (float)(1.0 * rtcp->rx.jit/10000 * (srate_rx/1000)) + (float)(1.0 * rtcp->tx.jit/10000 * (srate_tx/1000));
-	rtt = (float)(2.0 * rtcp->rx.jit/100000 * (srate_rx/1000)) + (float)(2.0 * rtcp->tx.jit/100000 * (srate_tx/1000));
-	pdrop = (float)(s->metric_rx.n_err * 100 / s->metric_rx.n_packets) + (float)(s->metric_tx.n_err * 100 / s->metric_tx.n_packets);
-	ploss = (float)(rtcp->rx.lost * 100 / s->metric_rx.n_packets) + (float)(rtcp->tx.lost * 100 / s->metric_tx.n_packets);
-	// plost = (rtcp->tx.lost + rtcp->rx.lost);
+	jitter =(float)(1.0 * rtcp->rx.jit/10000 * (srate_rx/1000)) +
+		(float)(1.0 * rtcp->tx.jit/10000 * (srate_tx/1000));
+	rtt =   (float)(2.0 * rtcp->rx.jit/100000 * (srate_rx/1000)) +
+		(float)(2.0 * rtcp->tx.jit/100000 * (srate_tx/1000));
+	pdrop = (float)(s->metric_rx.n_err * 100 / s->metric_rx.n_packets) +
+		(float)(s->metric_tx.n_err * 100 / s->metric_tx.n_packets);
+	ploss = (float)(rtcp->rx.lost * 100 / s->metric_rx.n_packets) +
+		(float)(rtcp->tx.lost * 100 / s->metric_tx.n_packets);
+	/* plost = (rtcp->tx.lost + rtcp->rx.lost); */
 
 	/* Bi-Directional Pseudo MOS */
 	mos = audio_print_mos(rtt,jitter,ploss+pdrop,&rfactor);
 
 	if (re_snprintf(buffer, sizeof(buffer),
-			 "VQIntervalReport : CallTerm\r\n"	/*   VQ Header CallTerm		    */
-			 "LocalID:BareSip\r\n"   		/*   Reporter Identifier            */
-			 "CallID:%s\r\n"       			/* Call-ID of original session      */
-			 "LocalAddr:%J\r\n" 			/* Local IP  */
-			 "RemoteAddr:%J\r\n" 			/* Remote IP */
-			 "LocalMetrics:\r\n"			/*   VQ Header LocalMetrics 	    */
-			 "QualityEst:RCQ=%.1f MOSCQ=%.1f\r\n"	/* RFACTOR, MOS 		    */
-			 "PacketLoss:NLR=%.1f JDR=%.1f\r\n"	/* Packet Loss percentage	    */
-			 "Delay:IAJ=%.1f\r\n" 			/* Jitter RX, TX in timestamp units */
-			 "RemoteMetrics:\r\n"			/*   VQ Header RemoteMetrics 	    */
-			 "PacketLoss:NLR=%.1f JDR=%.1f\r\n"	/* Packet Loss percentage	    */
-			 "Delay:IAJ=%.1f\r\n" 			/* Jitter RX, TX in timestamp units */
-			 ,
+		 "VQIntervalReport : CallTerm\r\n"
+		 /*   VQ Header CallTerm 	     */
+		 "LocalID:BareSip\r\n"
+		 /*   Reporter Identifier            */
+		 "CallID:%s\r\n"
+		 /* Call-ID of original session      */
+		 "LocalAddr:%J\r\n"
+		 /* Local IP  */
+		 "RemoteAddr:%J\r\n"
+		 /* Remote IP */
+		 "LocalMetrics:\r\n"
+		 /*   VQ Header LocalMetrics 	     */
+		 "QualityEst:RCQ=%.1f MOSCQ=%.1f\r\n"
+		 /* RFACTOR, MOS 		     */
+		 "PacketLoss:NLR=%.1f JDR=%.1f\r\n"
+		 /* Packet Loss percentage	     */
+		 "Delay:IAJ=%.1f\r\n"
+		 /* Jitter RX, TX in timestamp units */
+		 "RemoteMetrics:\r\n"
+		 /*   VQ Header RemoteMetrics 	     */
+		 "PacketLoss:NLR=%.1f JDR=%.1f\r\n"
+		 /* Packet Loss percentage	     */
+		 "Delay:IAJ=%.1f\r\n"
+		 /* Jitter RX, TX in timestamp units */
+		 ,
 
-			 cid,
-			 sdp_media_laddr(s->sdp),
-			 sdp_media_raddr(s->sdp),
+		 cid,
+		 sdp_media_laddr(s->sdp),
+		 sdp_media_raddr(s->sdp),
+		 rfactor,
+		 mos,
 
-			 rfactor,mos,
+		 (float)(rtcp->rx.lost * 100 / s->metric_rx.n_packets),
+		 (float)(s->metric_rx.n_err * 100 / s->metric_rx.n_packets),
+		 (float)(1.0 * rtcp->rx.jit/10000 * (srate_rx/1000)),
 
-			 (float)(rtcp->rx.lost * 100 / s->metric_rx.n_packets),
-			 (float)(s->metric_rx.n_err * 100 / s->metric_rx.n_packets),
-			 (float)(1.0 * rtcp->rx.jit/10000 * (srate_rx/1000)),
+		 (float)(rtcp->tx.lost * 100 / s->metric_tx.n_packets),
+		 (float)(s->metric_tx.n_err * 100 / s->metric_tx.n_packets),
+		 (float)(1.0 * rtcp->tx.jit/10000 * (srate_tx/1000))
 
-			 (float)(rtcp->tx.lost * 100 / s->metric_tx.n_packets),
-			 (float)(s->metric_tx.n_err * 100 / s->metric_tx.n_packets),
-			 (float)(1.0 * rtcp->tx.jit/10000 * (srate_tx/1000))
-
-			 ) < 0) {
+		 ) < 0) {
 
 		return "";
 
@@ -2081,23 +2098,25 @@ char * audio_print_rtcpxr(char * msg, int msg_len, const struct audio *a, const 
 
 
 /* MOS */
-double audio_print_mos(double rtt, double jitter,u_int32_t num_packets_lost, double *r_factor) 
+double audio_print_mos(double rtt, double jitter,
+		       u_int32_t num_packets_lost, double *r_factor)
 {
   double effective_latency = rtt + (jitter * 2) + 10;
   double mos_val;
-  if(effective_latency < 160) {
-    *r_factor = 93.2 - (effective_latency / 40);
-  } else {
-    *r_factor = 93.2 - (effective_latency - 120) / 10;
-  }
+  if (effective_latency < 160) {
+	*r_factor = 93.2 - (effective_latency / 40); }
+  else {
+	*r_factor = 93.2 - (effective_latency - 120) / 10; }
   *r_factor = *r_factor - (num_packets_lost * 2.5);
-  if(*r_factor > 100) *r_factor = 100;
-  else if(*r_factor < 0) *r_factor = 0;
+  if (*r_factor > 100) *r_factor = 100;
+  else if (*r_factor < 0) *r_factor = 0;
   mos_val = 1 + (0.035) * (*r_factor) +
-    (0.000007) * (*r_factor) * ((*r_factor) - 60)
-    * (100 - (*r_factor));
-  if(mos_val > 5) mos_val = 5;
-  // info("[RTT: %.2f][Jitter: %.2f][# Packet Lost: %u][R-Factor: %.2f][MOS: %.2f] \n", rtt, jitter, num_packets_lost, *r_factor, mos_val);
+	(0.000007) * (*r_factor) * ((*r_factor) - 60)
+	* (100 - (*r_factor));
+  if (mos_val > 5) mos_val = 5;
+/* info("[RTT: %.2f][Jitter: %.2f][# Packet Lost: %u][R-Factor: %.2f]"
+	"[MOS: %.2f] \n", rtt, jitter, num_packets_lost,
+	 *r_factor, mos_val); */
   return(mos_val);
 }
 

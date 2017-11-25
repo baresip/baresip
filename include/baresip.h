@@ -356,7 +356,6 @@ int  message_send(struct ua *ua, const char *peer, const char *msg,
 		  sip_resp_h *resph, void *arg);
 
 
-
 /*
  * PUBLISH RTCP-XR
  */
@@ -367,7 +366,6 @@ int  rtcpxr_init(rtcpxr_recv_h *recvh, void *arg);
 void rtcpxr_close(void);
 int  rtcpxr_send(struct ua *ua, const char *peer, const char *msg, ...);
 void  rtcpxr_test(void);
-
 
 
 /*

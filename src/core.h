@@ -138,8 +138,10 @@ int  audio_send_digit(struct audio *a, char key);
 void audio_sdp_attr_decode(struct audio *a);
 int  audio_print_rtpstat(struct re_printf *pf, const struct audio *au);
 
-char * audio_print_rtcpxr(char * msg, int msg_len, const struct audio *au, const char *cid);
-double audio_print_mos(double rtt, double jitter,u_int32_t num_packets_lost, double *r_factor);
+char * audio_print_rtcpxr(char * msg, int msg_len,
+		const struct audio *au, const char *cid);
+double audio_print_mos(double rtt, double jitter,u_int32_t num_packets_lost,
+		double *r_factor);
 
 /*
  * BFCP
