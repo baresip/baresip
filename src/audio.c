@@ -98,7 +98,6 @@ struct autx {
 	bool need_conv;
 
 	union {
-		struct tmr tmr;       /**< Timer for sending RTP packets   */
 #ifdef HAVE_PTHREAD
 		struct {
 			pthread_t tid;/**< Audio transmit thread           */
@@ -219,10 +218,6 @@ static void stop_tx(struct autx *tx, struct audio *a)
 		}
 		break;
 #endif
-	case AUDIO_MODE_TMR:
-		tmr_cancel(&tx->u.tmr);
-		break;
-
 	default:
 		break;
 	}
@@ -1079,9 +1074,6 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	a->errh    = errh;
 	a->arg     = arg;
 
-	if (a->cfg.txmode == AUDIO_MODE_TMR)
-		tmr_init(&tx->u.tmr);
-
  out:
 	if (err)
 		mem_deref(a);
@@ -1115,24 +1107,6 @@ static void *tx_thread(void *arg)
 	return NULL;
 }
 #endif
-
-
-static void timeout_tx(void *arg)
-{
-	struct audio *a = arg;
-	struct autx *tx = &a->tx;
-	unsigned i;
-
-	tmr_start(&a->tx.u.tmr, 5, timeout_tx, a);
-
-	for (i=0; i<16; i++) {
-
-		if (aubuf_cur_size(tx->aubuf) < tx->psize)
-			break;
-
-		poll_aubuf_tx(a);
-	}
-}
 
 
 static void aufilt_param_set(struct aufilt_prm *prm,
@@ -1432,10 +1406,6 @@ static int start_source(struct autx *tx, struct audio *a)
 			}
 			break;
 #endif
-
-		case AUDIO_MODE_TMR:
-			tmr_start(&tx->u.tmr, 1, timeout_tx, a);
-			break;
 
 		default:
 			break;
