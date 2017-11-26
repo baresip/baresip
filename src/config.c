@@ -159,7 +159,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	struct pl pollm, as, ap;
 	enum poll_method method;
 	struct vidsz size = {0, 0};
-	struct pl fmt;
+	struct pl fmt, txmode;
 	uint32_t v;
 	int err = 0;
 
@@ -222,6 +222,17 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	if (0 == conf_get(conf, "audio_source", &as) &&
 	    0 == conf_get(conf, "audio_player", &ap))
 		cfg->audio.src_first = as.p < ap.p;
+
+	if (0 == conf_get(conf, "audio_txmode", &txmode)) {
+
+		if (0 == pl_strcasecmp(&txmode, "poll"))
+			cfg->audio.txmode = AUDIO_MODE_POLL;
+		else if (0 == pl_strcasecmp(&txmode, "thread"))
+			cfg->audio.txmode = AUDIO_MODE_THREAD;
+		else {
+			warning("unsupported audio txmode (%r)\n", &txmode);
+		}
+	}
 
 	(void)conf_get_bool(conf, "audio_level", &cfg->audio.level);
 
@@ -509,6 +520,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#auplay_srate\t\t48000\n"
 			  "#ausrc_channels\t\t0\n"
 			  "#auplay_channels\t\t0\n"
+			  "#audio_txmode\t\tpoll\t\t# poll, thread\n"
 			  "audio_level\t\tno\n"
 			  "ausrc_format\t\ts16\t\t# s16, float, ..\n"
 			  "auplay_format\t\ts16\t\t# s16, float, ..\n"
