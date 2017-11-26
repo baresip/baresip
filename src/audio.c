@@ -98,14 +98,14 @@ struct autx {
 	enum aufmt src_fmt;
 	bool need_conv;
 
-	union {
 #ifdef HAVE_PTHREAD
+	union {
 		struct {
 			pthread_t tid;/**< Audio transmit thread           */
 			bool run;     /**< Audio transmit thread running   */
 		} thr;
-#endif
 	} u;
+#endif
 };
 
 
