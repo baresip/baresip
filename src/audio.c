@@ -80,6 +80,7 @@ struct autx {
 	const struct aucodec *ac;     /**< Current audio encoder           */
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
+	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
@@ -1375,9 +1376,11 @@ static int start_source(struct autx *tx, struct audio *a)
 
 		tx->psize = 2 * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 
+		tx->aubuf_maxsz = tx->psize * 30;
+
 		if (!tx->aubuf) {
 			err = aubuf_alloc(&tx->aubuf, tx->psize,
-					  tx->psize * 30);
+					  tx->aubuf_maxsz);
 			if (err)
 				return err;
 		}
