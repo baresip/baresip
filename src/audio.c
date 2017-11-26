@@ -1803,19 +1803,21 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 
 	err  = re_hprintf(pf, "\n--- Audio stream ---\n");
 
-	err |= re_hprintf(pf, " tx:   %H %H ptime=%ums\n",
+	err |= re_hprintf(pf, " tx:   %H ptime=%ums\n",
 			  aucodec_print, tx->ac,
-			  aubuf_debug, tx->aubuf,
 			  tx->ptime);
+	err |= re_hprintf(pf, "       aubuf: %H\n",
+			  aubuf_debug, tx->aubuf);
 	err |= re_hprintf(pf, "       time = %.3f sec\n",
 			  autx_calc_seconds(tx));
 
 	err |= re_hprintf(pf,
-			  " rx:   %H %H\n"
+			  " rx:   %H\n"
 			  "       ptime=%ums pt=%d\n",
 			  aucodec_print, rx->ac,
-			  aubuf_debug, rx->aubuf,
 			  rx->ptime, rx->pt);
+	err |= re_hprintf(pf, "       aubuf: %H\n",
+			  aubuf_debug, rx->aubuf);
 	err |= re_hprintf(pf, "       n_discard:%llu\n",
 			  rx->n_discard);
 	if (rx->level_set) {
