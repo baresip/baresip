@@ -81,6 +81,7 @@ struct autx {
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
+	volatile bool aubuf_started;
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
@@ -645,6 +646,8 @@ static void ausrc_read_handler(const void *sampv, size_t sampc, void *arg)
 
 	(void)aubuf_write(tx->aubuf, sampv, num_bytes);
 
+	tx->aubuf_started = true;
+
 	if (a->cfg.txmode == AUDIO_MODE_POLL) {
 		unsigned i;
 
@@ -1118,19 +1121,41 @@ static void *tx_thread(void *arg)
 {
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
-	unsigned i;
+	uint64_t ts = 0;
 
 	while (a->tx.u.thr.run) {
 
-		for (i=0; i<16; i++) {
+		uint64_t now;
 
-			if (aubuf_cur_size(tx->aubuf) < tx->psize)
-				break;
+		sys_msleep(4);
+
+		if (!tx->aubuf_started)
+			continue;
+
+		if (!a->tx.u.thr.run)
+			break;
+
+		now = tmr_jiffies();
+		if (!ts)
+			ts = now;
+
+		if (ts > now)
+			continue;
+
+		/* Now is the time to send */
+
+		if (aubuf_cur_size(tx->aubuf) >= tx->psize) {
 
 			poll_aubuf_tx(a);
 		}
+		else {
+			++tx->stats.aubuf_underrun;
 
-		sys_msleep(5);
+			debug("audio: thread: tx aubuf underrun"
+			      " (total %llu)\n", tx->stats.aubuf_underrun);
+		}
+
+		ts += tx->ptime;
 	}
 
 	return NULL;
