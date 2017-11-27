@@ -477,23 +477,28 @@ static void poll_aubuf_tx(struct audio *a)
 	struct autx *tx = &a->tx;
 	int16_t *sampv = tx->sampv;
 	size_t sampc;
+	size_t sz;
+	size_t num_bytes;
 	struct le *le;
 	int err = 0;
 
-	sampc = tx->psize / 2;
+	sz = aufmt_sample_size(tx->src_fmt);
+	if (!sz)
+		return;
+
+	num_bytes = tx->psize;
+	sampc = tx->psize / sz;
 
 	/* timed read from audio-buffer */
 
 	if (tx->src_fmt == AUFMT_S16LE) {
 
-		aubuf_read(tx->aubuf, (uint8_t *)tx->sampv,
-			   sampc * aufmt_sample_size(tx->src_fmt));
+		aubuf_read(tx->aubuf, (uint8_t *)tx->sampv, num_bytes);
 	}
 	else {
 		/* Convert from ausrc format to 16-bit format */
 
 		void *tmp_sampv;
-		size_t num_bytes = sampc * aufmt_sample_size(tx->src_fmt);
 
 		if (!tx->need_conv) {
 			info("audio: NOTE: source sample conversion"
@@ -1368,13 +1373,16 @@ static int start_source(struct autx *tx, struct audio *a)
 	if (!tx->ausrc && ausrc_find(baresip_ausrcl(), NULL)) {
 
 		struct ausrc_prm prm;
+		size_t sz;
 
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
 		prm.ptime      = tx->ptime;
 		prm.fmt        = tx->src_fmt;
 
-		tx->psize = 2 * calc_nsamp(prm.srate, prm.ch, prm.ptime);
+		sz = aufmt_sample_size(tx->src_fmt);
+
+		tx->psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 
 		tx->aubuf_maxsz = tx->psize * 30;
 
