@@ -98,6 +98,11 @@ struct autx {
 	enum aufmt src_fmt;
 	bool need_conv;
 
+	struct {
+		uint64_t aubuf_overrun;
+		uint64_t aubuf_underrun;
+	} stats;
+
 #ifdef HAVE_PTHREAD
 	union {
 		struct {
@@ -282,6 +287,16 @@ static inline uint32_t calc_nsamp(uint32_t srate, uint8_t channels,
 				  uint16_t ptime)
 {
 	return srate * channels * ptime / 1000;
+}
+
+
+static inline double calc_ptime(size_t nsamp, uint32_t srate, uint8_t channels)
+{
+	double ptime;
+
+	ptime = 1000.0 * (double)nsamp / (double)(srate * channels);
+
+	return ptime;
 }
 
 
@@ -619,6 +634,14 @@ static void ausrc_read_handler(const void *sampv, size_t sampc, void *arg)
 
 	if (tx->muted)
 		memset((void *)sampv, 0, num_bytes);
+
+	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
+
+		++tx->stats.aubuf_overrun;
+
+		debug("audio: tx aubuf overrun (total %llu)\n",
+		      tx->stats.aubuf_overrun);
+	}
 
 	(void)aubuf_write(tx->aubuf, sampv, num_bytes);
 
@@ -1801,6 +1824,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 {
 	const struct autx *tx;
 	const struct aurx *rx;
+	size_t sz;
 	int err;
 
 	if (!a)
@@ -1809,13 +1833,25 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 	tx = &a->tx;
 	rx = &a->rx;
 
+	sz = aufmt_sample_size(tx->src_fmt);
+
 	err  = re_hprintf(pf, "\n--- Audio stream ---\n");
 
 	err |= re_hprintf(pf, " tx:   %H ptime=%ums\n",
 			  aucodec_print, tx->ac,
 			  tx->ptime);
-	err |= re_hprintf(pf, "       aubuf: %H\n",
-			  aubuf_debug, tx->aubuf);
+	err |= re_hprintf(pf, "       aubuf: %H"
+			  " (cur %.2fms, max %.2fms, or %llu, ur %llu)\n",
+			  aubuf_debug, tx->aubuf,
+			  calc_ptime(aubuf_cur_size(tx->aubuf)/sz,
+				     tx->ausrc_prm.srate,
+				     tx->ausrc_prm.ch),
+			  calc_ptime(tx->aubuf_maxsz/sz,
+				     tx->ausrc_prm.srate,
+				     tx->ausrc_prm.ch),
+			  tx->stats.aubuf_overrun,
+			  tx->stats.aubuf_underrun);
+
 	err |= re_hprintf(pf, "       time = %.3f sec\n",
 			  autx_calc_seconds(tx));
 
