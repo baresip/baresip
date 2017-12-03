@@ -132,7 +132,3 @@ int rtcpxr_send(struct ua *ua, const char *peer, const char *msg, ...)
 
 	return err;
 }
-
-void rtcpxr_test(void){
-		re_fprintf(stderr, "RTCP-XR Test Function Call \n");
-}
