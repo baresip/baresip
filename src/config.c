@@ -149,6 +149,9 @@ static enum aufmt resolve_aufmt(const struct pl *fmt)
 	if (0 == pl_strcasecmp(fmt, "float"))   return AUFMT_FLOAT;
 	if (0 == pl_strcasecmp(fmt, "s24_3le")) return AUFMT_S24_3LE;
 
+	/* XXX remove this after librem is fixed */
+	if (0 == pl_strcasecmp(fmt, "s16le"))   return AUFMT_S16LE;
+
 	return (enum aufmt)-1;
 }
 
@@ -182,7 +185,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	struct pl pollm, as, ap;
 	enum poll_method method;
 	struct vidsz size = {0, 0};
-	struct pl fmt;
+	struct pl fmt, txmode;
 	uint32_t v;
 	int err = 0;
 
@@ -246,6 +249,17 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	if (0 == conf_get(conf, "audio_source", &as) &&
 	    0 == conf_get(conf, "audio_player", &ap))
 		cfg->audio.src_first = as.p < ap.p;
+
+	if (0 == conf_get(conf, "audio_txmode", &txmode)) {
+
+		if (0 == pl_strcasecmp(&txmode, "poll"))
+			cfg->audio.txmode = AUDIO_MODE_POLL;
+		else if (0 == pl_strcasecmp(&txmode, "thread"))
+			cfg->audio.txmode = AUDIO_MODE_THREAD;
+		else {
+			warning("unsupported audio txmode (%r)\n", &txmode);
+		}
+	}
 
 	(void)conf_get_bool(conf, "audio_level", &cfg->audio.level);
 
@@ -536,7 +550,10 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#auplay_srate\t\t48000\n"
 			  "#ausrc_channels\t\t0\n"
 			  "#auplay_channels\t\t0\n"
+			  "#audio_txmode\t\tpoll\t\t# poll, thread\n"
 			  "audio_level\t\tno\n"
+			  "ausrc_format\t\ts16\t\t# s16, float, ..\n"
+			  "auplay_format\t\ts16\t\t# s16, float, ..\n"
 			  ,
 			  poll_method_name(poll_method_best()),
 			  cfg->call.local_timeout,
@@ -545,7 +562,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  default_audio_device(),
 			  default_audio_device(),
 			  cfg->audio.srate.min, cfg->audio.srate.max,
-			  cfg->audio.channels.min, cfg->audio.channels.max);
+			  cfg->audio.channels.min, cfg->audio.channels.max
+			  );
 
 #ifdef USE_VIDEO
 	err |= re_hprintf(pf,
@@ -555,7 +573,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "video_size\t\t%dx%d\n"
 			  "video_bitrate\t\t%u\n"
 			  "video_fps\t\t%u\n"
-			  "video_fullscreen\t\tyes\n",
+			  "video_fullscreen\tyes\n",
 			  default_video_device(),
 			  default_video_display(),
 			  cfg->video.width, cfg->video.height,
