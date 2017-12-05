@@ -275,6 +275,7 @@ MODULES   += menu contact vumeter mwi account natpmp httpd
 MODULES   += srtp
 MODULES   += uuid
 MODULES   += debug_cmd
+MODULES   += ctrl_tcp
 
 ifneq ($(HAVE_LIBMQTT),)
 MODULES   += mqtt
