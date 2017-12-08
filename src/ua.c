@@ -837,7 +837,8 @@ void ua_hangup(struct ua *ua, struct call *call,
 
 	(void)call_hangup(call, scode, reason);
 
-	ua_event(ua, UA_EVENT_CALL_CLOSED, call, reason);
+	ua_event(ua, UA_EVENT_CALL_CLOSED, call,
+	         reason ? reason : "Connection reset by user");
 
 	mem_deref(call);
 
