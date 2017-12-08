@@ -289,6 +289,9 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 		if (s->cfg.rtp_stats)
 			call_set_xrtpstat(s->call);
 
+ 		if (s->cfg.rtcpxr_stats)
+                        call_send_rtcpxr(s->call);
+
 		break;
 	}
 }

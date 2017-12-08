@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+
 #include <string.h>
 #include <dirent.h>
 #include <re.h>
@@ -81,6 +82,8 @@ static struct config core_config = {
 		false,
 		{5, 10},
 		false,
+		false,
+		"",
 		0
 	},
 
@@ -294,7 +297,12 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);
 	(void)conf_get_range(conf, "jitter_buffer_delay",
 			     &cfg->avt.jbuf_del);
+
+	/* QoS Settings */
 	(void)conf_get_bool(conf, "rtp_stats", &cfg->avt.rtp_stats);
+	(void)conf_get_bool(conf, "rtcpxr_stats", &cfg->avt.rtcpxr_stats);
+	(void)conf_get_str(conf, "rtcpxr_collector",
+	      cfg->avt.rtcpxr_collector, sizeof(cfg->avt.rtcpxr_collector));
 	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
 
 	if (err) {
@@ -408,8 +416,9 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtcp_mux ? "yes" : "no",
 			 range_print, &cfg->avt.jbuf_del,
 			 cfg->avt.rtp_stats ? "yes" : "no",
+			 cfg->avt.rtcpxr_stats ? "yes" : "no",
+			 cfg->avt.rtcpxr_collector,
 			 cfg->avt.rtp_timeout,
-
 			 cfg->net.ifname
 
 #ifdef USE_VIDEO
@@ -559,6 +568,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtcp_mux\t\tno\n"
 			  "jitter_buffer_delay\t%u-%u\t\t# frames\n"
 			  "rtp_stats\t\tno\n"
+			  "rtcpxr_stats\t\tno\n"
+			  "rtcpxr_collector\t\tsip:rtcpxr@127.0.0.1:5088\n"
 			  "#rtp_timeout\t\t60\n"
 			  "\n# Network\n"
 			  "#dns_server\t\t10.0.0.1:53\n"

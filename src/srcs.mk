@@ -20,6 +20,7 @@ SRCS	+= contact.c
 SRCS	+= log.c
 SRCS	+= menc.c
 SRCS	+= message.c
+SRCS	+= rtcpxr.c
 SRCS	+= metric.c
 SRCS	+= mnat.c
 SRCS	+= module.c

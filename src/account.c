@@ -360,6 +360,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		goto out;
 
 	pl_set_str(&pl, acc->buf);
+
 	err = sip_addr_decode(&acc->laddr, &pl);
 	if (err) {
 		warning("account: error parsing SIP address: '%r'\n", &pl);

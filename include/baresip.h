@@ -229,6 +229,8 @@ struct config_avt {
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
 	struct range jbuf_del;  /**< Delay, number of frames        */
 	bool rtp_stats;         /**< Enable RTP statistics          */
+	bool rtcpxr_stats;      /**< Enable RTCP-XR statistics      */
+	char rtcpxr_collector[128]; /**< RTCP-XR Publish collector  */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 };
 
@@ -351,6 +353,18 @@ int  message_listen(struct message_lsnr **lsnrp, struct message *message,
 		    message_recv_h *h, void *arg);
 int  message_send(struct ua *ua, const char *peer, const char *msg,
 		  sip_resp_h *resph, void *arg);
+
+
+/*
+ * PUBLISH RTCP-XR
+ */
+
+typedef void (rtcpxr_recv_h)(const struct pl *peer, const struct pl *ctype,
+			      struct mbuf *body, void *arg);
+int  rtcpxr_init(rtcpxr_recv_h *recvh, void *arg);
+void rtcpxr_close(void);
+int  rtcpxr_send(struct ua *ua, const char *peer, const char *msg, ...);
+void  rtcpxr_test(void);
 
 
 /*
