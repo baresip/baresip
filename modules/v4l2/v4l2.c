@@ -84,7 +84,7 @@ static enum vidfmt match_fmt(u_int32_t fmt)
 }
 
 
-static void print_video_input(struct vidsrc_st *st)
+static void print_video_input(const struct vidsrc_st *st)
 {
 	struct v4l2_input input;
 
@@ -397,6 +397,8 @@ static int vd_open(struct vidsrc_st *st, const char *device)
 static void destructor(void *arg)
 {
 	struct vidsrc_st *st = arg;
+
+	debug("v4l2: stopping video source..\n");
 
 	if (st->run) {
 		st->run = false;
