@@ -289,6 +289,8 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 		if (s->cfg.rtp_stats)
 			call_set_xrtpstat(s->call);
 
+		ua_event(call_get_ua(s->call), UA_EVENT_CALL_RTCP, s->call,
+			 "%s", sdp_media_name(stream_sdpmedia(s)));
 		break;
 	}
 }
@@ -716,4 +718,10 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 	return re_hprintf(pf, " %s=%u/%u", sdp_media_name(s->sdp),
 			  s->metric_tx.cur_bitrate,
 			  s->metric_rx.cur_bitrate);
+}
+
+
+const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
+{
+	return strm ? &strm->rtcp_stats : NULL;
 }
