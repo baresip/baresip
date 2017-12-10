@@ -429,7 +429,7 @@ static int open_encoder_x264(struct videnc_state *st, struct videnc_param *prm,
 	xprm.i_fps_num = prm->fps;
 	xprm.i_fps_den = 1;
 	xprm.rc.i_bitrate = prm->bitrate / 1000; /* kbit/s */
-	xprm.rc.i_rc_method = X264_RC_CQP;
+	xprm.rc.i_rc_method = X264_RC_ABR;
 	xprm.i_log_level = X264_LOG_WARNING;
 
 	/* ultrafast preset */
