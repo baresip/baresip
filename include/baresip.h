@@ -26,6 +26,7 @@ struct sa;
 struct sdp_media;
 struct sdp_session;
 struct sip_msg;
+struct stream;
 struct ua;
 struct vidframe;
 struct vidrect;
@@ -589,6 +590,7 @@ enum ua_event {
 	UA_EVENT_CALL_TRANSFER_FAILED,
 	UA_EVENT_CALL_DTMF_START,
 	UA_EVENT_CALL_DTMF_END,
+	UA_EVENT_CALL_RTCP,
 
 	UA_EVENT_MAX,
 };
@@ -995,6 +997,7 @@ int  audio_set_player(struct audio *au, const char *mod, const char *device);
 void audio_encoder_cycle(struct audio *audio);
 int  audio_level_get(const struct audio *au, double *level);
 int  audio_debug(struct re_printf *pf, const struct audio *a);
+struct stream *audio_strm(const struct audio *a);
 
 
 /*
@@ -1014,6 +1017,14 @@ void  video_encoder_cycle(struct video *video);
 int   video_debug(struct re_printf *pf, const struct video *v);
 uint32_t video_calc_rtp_timestamp(int64_t pts, unsigned fps);
 double video_calc_seconds(uint32_t rtp_ts);
+struct stream *video_strm(const struct video *v);
+
+
+/*
+ * Generic stream
+ */
+
+const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
 
 
 /*
