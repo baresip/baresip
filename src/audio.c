@@ -80,6 +80,7 @@ struct autx {
 	const struct aucodec *ac;     /**< Current audio encoder           */
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
+	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
@@ -98,15 +99,19 @@ struct autx {
 	enum aufmt enc_fmt;
 	bool need_conv;
 
-	union {
-		struct tmr tmr;       /**< Timer for sending RTP packets   */
+	struct {
+		uint64_t aubuf_overrun;
+		uint64_t aubuf_underrun;
+	} stats;
+
 #ifdef HAVE_PTHREAD
+	union {
 		struct {
 			pthread_t tid;/**< Audio transmit thread           */
 			bool run;     /**< Audio transmit thread running   */
 		} thr;
-#endif
 	} u;
+#endif
 };
 
 
@@ -221,10 +226,6 @@ static void stop_tx(struct autx *tx, struct audio *a)
 		}
 		break;
 #endif
-	case AUDIO_MODE_TMR:
-		tmr_cancel(&tx->u.tmr);
-		break;
-
 	default:
 		break;
 	}
@@ -288,6 +289,16 @@ static inline uint32_t calc_nsamp(uint32_t srate, uint8_t channels,
 				  uint16_t ptime)
 {
 	return srate * channels * ptime / 1000;
+}
+
+
+static inline double calc_ptime(size_t nsamp, uint32_t srate, uint8_t channels)
+{
+	double ptime;
+
+	ptime = 1000.0 * (double)nsamp / (double)(srate * channels);
+
+	return ptime;
 }
 
 
@@ -496,23 +507,28 @@ static void poll_aubuf_tx(struct audio *a)
 	struct autx *tx = &a->tx;
 	int16_t *sampv = tx->sampv;
 	size_t sampc;
+	size_t sz;
+	size_t num_bytes;
 	struct le *le;
 	int err = 0;
 
-	sampc = tx->psize / 2;
+	sz = aufmt_sample_size(tx->src_fmt);
+	if (!sz)
+		return;
+
+	num_bytes = tx->psize;
+	sampc = tx->psize / sz;
 
 	/* timed read from audio-buffer */
 
 	if (tx->src_fmt == tx->enc_fmt) {
 
-		aubuf_read(tx->aubuf, (uint8_t *)tx->sampv,
-			   sampc * aufmt_sample_size(tx->src_fmt));
+		aubuf_read(tx->aubuf, (uint8_t *)tx->sampv, num_bytes);
 	}
 	else {
 		/* Convert from ausrc format to 16-bit format */
 
 		void *tmp_sampv;
-		size_t num_bytes = sampc * aufmt_sample_size(tx->src_fmt);
 
 		if (!tx->need_conv) {
 			info("audio: NOTE: source sample conversion"
@@ -648,6 +664,14 @@ static void ausrc_read_handler(const void *sampv, size_t sampc, void *arg)
 
 	if (tx->muted)
 		memset((void *)sampv, 0, num_bytes);
+
+	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
+
+		++tx->stats.aubuf_overrun;
+
+		debug("audio: tx aubuf overrun (total %llu)\n",
+		      tx->stats.aubuf_overrun);
+	}
 
 	(void)aubuf_write(tx->aubuf, sampv, num_bytes);
 
@@ -1211,9 +1235,6 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	a->errh    = errh;
 	a->arg     = arg;
 
-	if (a->cfg.txmode == AUDIO_MODE_TMR)
-		tmr_init(&tx->u.tmr);
-
  out:
 	if (err)
 		mem_deref(a);
@@ -1247,24 +1268,6 @@ static void *tx_thread(void *arg)
 	return NULL;
 }
 #endif
-
-
-static void timeout_tx(void *arg)
-{
-	struct audio *a = arg;
-	struct autx *tx = &a->tx;
-	unsigned i;
-
-	tmr_start(&a->tx.u.tmr, 5, timeout_tx, a);
-
-	for (i=0; i<16; i++) {
-
-		if (aubuf_cur_size(tx->aubuf) < tx->psize)
-			break;
-
-		poll_aubuf_tx(a);
-	}
-}
 
 
 static void aufilt_param_set(struct aufilt_prm *prm,
@@ -1525,17 +1528,22 @@ static int start_source(struct autx *tx, struct audio *a)
 	if (!tx->ausrc && ausrc_find(baresip_ausrcl(), NULL)) {
 
 		struct ausrc_prm prm;
+		size_t sz;
 
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
 		prm.ptime      = tx->ptime;
 		prm.fmt        = tx->src_fmt;
 
-		tx->psize = 2 * calc_nsamp(prm.srate, prm.ch, prm.ptime);
+		sz = aufmt_sample_size(tx->src_fmt);
+
+		tx->psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
+
+		tx->aubuf_maxsz = tx->psize * 30;
 
 		if (!tx->aubuf) {
 			err = aubuf_alloc(&tx->aubuf, tx->psize,
-					  tx->psize * 30);
+					  tx->aubuf_maxsz);
 			if (err)
 				return err;
 		}
@@ -1564,10 +1572,6 @@ static int start_source(struct autx *tx, struct audio *a)
 			}
 			break;
 #endif
-
-		case AUDIO_MODE_TMR:
-			tmr_start(&tx->u.tmr, 1, timeout_tx, a);
-			break;
 
 		default:
 			break;
@@ -1952,6 +1956,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 {
 	const struct autx *tx;
 	const struct aurx *rx;
+	size_t sz;
 	int err;
 
 	if (!a)
@@ -1960,34 +1965,35 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 	tx = &a->tx;
 	rx = &a->rx;
 
+	sz = aufmt_sample_size(tx->src_fmt);
+
 	err  = re_hprintf(pf, "\n--- Audio stream ---\n");
 
-	err |= re_hprintf(pf,
-			  " tx:   %H %H ptime=%ums\n"
-			  "       enc=%s\n"
-			  "       src=%s\n"
-			  ,
+	err |= re_hprintf(pf, " tx:   %H ptime=%ums\n",
 			  aucodec_print, tx->ac,
+			  tx->ptime);
+	err |= re_hprintf(pf, "       aubuf: %H"
+			  " (cur %.2fms, max %.2fms, or %llu, ur %llu)\n",
 			  aubuf_debug, tx->aubuf,
-			  tx->ptime,
-			  aufmt_name(tx->enc_fmt),
-			  aufmt_name(tx->src_fmt)
-			  );
+			  calc_ptime(aubuf_cur_size(tx->aubuf)/sz,
+				     tx->ausrc_prm.srate,
+				     tx->ausrc_prm.ch),
+			  calc_ptime(tx->aubuf_maxsz/sz,
+				     tx->ausrc_prm.srate,
+				     tx->ausrc_prm.ch),
+			  tx->stats.aubuf_overrun,
+			  tx->stats.aubuf_underrun);
+
 	err |= re_hprintf(pf, "       time = %.3f sec\n",
 			  autx_calc_seconds(tx));
 
 	err |= re_hprintf(pf,
-			  " rx:   %H %H\n"
-			  "       ptime=%ums pt=%d\n"
-			  "       dec =%s\n"
-			  "       play=%s\n"
-			  ,
+			  " rx:   %H\n"
+			  "       ptime=%ums pt=%d\n",
 			  aucodec_print, rx->ac,
-			  aubuf_debug, rx->aubuf,
-			  rx->ptime, rx->pt,
-			  aufmt_name(rx->dec_fmt),
-			  aufmt_name(rx->play_fmt)
-			  );
+			  rx->ptime, rx->pt);
+	err |= re_hprintf(pf, "       aubuf: %H\n",
+			  aubuf_debug, rx->aubuf);
 	err |= re_hprintf(pf, "       n_discard:%llu\n",
 			  rx->n_discard);
 	if (rx->level_set) {

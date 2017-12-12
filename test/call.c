@@ -833,7 +833,7 @@ static void float_sample_handler(const void *sampv, size_t sampc, void *arg)
 }
 
 
-int test_call_format_float(void)
+static int test_media_base(enum audio_mode txmode)
 {
 	struct fixture fix, *f = &fix;
 	struct ausrc *ausrc = NULL;
@@ -841,6 +841,8 @@ int test_call_format_float(void)
 	int err = 0;
 
 	fixture_init(f);
+
+	conf_config()->audio.txmode = txmode;
 
 	conf_config()->audio.src_fmt = AUFMT_FLOAT;
 	conf_config()->audio.play_fmt = AUFMT_FLOAT;
@@ -883,5 +885,22 @@ int test_call_format_float(void)
 	if (fix.err)
 		return fix.err;
 
+	return err;
+}
+
+
+int test_call_format_float(void)
+{
+	int err;
+
+	err = test_media_base(AUDIO_MODE_POLL);
+	ASSERT_EQ(0, err);
+
+	err = test_media_base(AUDIO_MODE_THREAD);
+	ASSERT_EQ(0, err);
+
+	conf_config()->audio.txmode = AUDIO_MODE_POLL;
+
+ out:
 	return err;
 }
