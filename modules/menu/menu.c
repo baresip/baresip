@@ -37,7 +37,7 @@ static struct {
 	struct play *play;
 	struct message_lsnr *message;
 	bool bell;
-
+	bool ringback_disabled;	      /**< no ringback on sip 180 respons */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
 	uint32_t redial_delay;        /**< Redial delay in [seconds]      */
 	uint32_t redial_attempts;     /**< Number of re-dial attempts     */
@@ -941,6 +941,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	(void)prm;
 	(void)arg;
 
+	conf_get_bool(conf_cur(), "ringback_disabled", &menu.ringback_disabled);
+
 	switch (ev) {
 
 	case UA_EVENT_CALL_INCOMING:
@@ -979,7 +981,15 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		/* stop any ringtones */
 		menu.play = mem_deref(menu.play);
 
-		(void)play_file(&menu.play, player, "ringback.wav", -1);
+		if(menu.ringback_disabled)
+		{
+			info("\nRingback disabled\n");
+		}
+		else
+		{
+			(void)play_file(&menu.play, player,
+					"ringback.wav",-1);
+		}
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
