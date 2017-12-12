@@ -941,8 +941,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	(void)prm;
 	(void)arg;
 
-	conf_get_bool(conf_cur(), "ringback_disabled", &menu.ringback_disabled);
-
 	switch (ev) {
 
 	case UA_EVENT_CALL_INCOMING:
@@ -1086,6 +1084,7 @@ static int module_init(void)
 	 * Read the config values
 	 */
 	conf_get_bool(conf_cur(), "menu_bell", &menu.bell);
+	conf_get_bool(conf_cur(), "ringback_disabled", &menu.ringback_disabled);
 
 	if (0 == conf_get(conf_cur(), "redial_attempts", &val) &&
 	    0 == pl_strcasecmp(&val, "inf")) {
