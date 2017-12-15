@@ -6,6 +6,8 @@
 #include <re.h>
 #include <baresip.h>
 
+#include "netstring.h"
+
 
 /**
  * @defgroup ctrl_tcp ctrl_tcp
@@ -87,20 +89,10 @@ enum {CTRL_PORT = 4444};
 struct ctrl_st {
 	struct tcp_sock *ts;
 	struct tcp_conn *tc;
+	struct netstring *ns;
 };
 
-
 static struct ctrl_st *ctrl = NULL;  /* allow only one instance */
-
-
-static void ctrl_destructor(void *arg)
-{
-	struct ctrl_st *st = arg;
-
-	mem_deref(st->tc);
-	mem_deref(st->ts);
-}
-
 
 static int print_handler(const char *p, size_t size, void *arg)
 {
@@ -121,13 +113,17 @@ static int encode_response(struct mbuf *resp, const char *token)
 	if (err)
 		return err;
 
-	resp->pos = 0;
-	err = mbuf_strdup(resp, &buf, resp->end);
+	resp->pos = NETSRING_HEADER_SIZE;
+	err = mbuf_strdup(resp, &buf, resp->end - NETSRING_HEADER_SIZE);
 	if (err)
+	{
+		mem_deref(od);
 		return err;
+	}
 
 	mbuf_reset(resp);
 	mbuf_init(resp);
+	resp->pos = NETSRING_HEADER_SIZE;
 
 	err |= odict_entry_add(od, "type", ODICT_STRING, "response");
 	err |= odict_entry_add(od, "response", ODICT_STRING, buf);
@@ -150,10 +146,10 @@ static int encode_response(struct mbuf *resp, const char *token)
 }
 
 
-static void tcp_recv_handler(struct mbuf *mb, void *arg)
+static bool command_handler(struct mbuf *mb, void *arg)
 {
 	struct ctrl_st *st = arg;
-	struct mbuf *resp = mbuf_alloc(1024);
+	struct mbuf *resp = mbuf_alloc(2048);
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL;
 	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
@@ -185,6 +181,8 @@ static void tcp_recv_handler(struct mbuf *mb, void *arg)
 		    oe_prm ? " " : "",
 		    oe_prm ? oe_prm->u.str : "");
 
+	resp->pos = NETSRING_HEADER_SIZE;
+
 	/* Relay message to long commands */
 	err = cmd_process_long(baresip_commands(),
 			       buf,
@@ -196,11 +194,11 @@ static void tcp_recv_handler(struct mbuf *mb, void *arg)
 
 	err = encode_response(resp, oe_tok ? oe_tok->u.str : NULL);
 	if (err) {
-		warning("ctrl_tcp: failed encode response (%m)\n", err);
+		warning("ctrl_tcp: failed to encode response (%m)\n", err);
 		goto out;
 	}
 
-	resp->pos = 0;
+	resp->pos = NETSRING_HEADER_SIZE;
 	err = tcp_send(st->tc, resp);
 	if (err) {
 		warning("ctrl_tcp: failed to send the message (%m)\n", err);
@@ -209,6 +207,8 @@ static void tcp_recv_handler(struct mbuf *mb, void *arg)
  out:
 	mem_deref(resp);
 	mem_deref(od);
+
+	return true;  /* always handled */
 }
 
 
@@ -230,8 +230,9 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 
 	/* only one connection allowed */
 	st->tc = mem_deref(st->tc);
-	(void)tcp_accept(&st->tc, st->ts, NULL, tcp_recv_handler,
-			 tcp_close_handler, st);
+
+	(void)tcp_accept(&st->tc, st->ts, NULL, NULL, tcp_close_handler, st);
+	(void)netstring_insert(&st->ns, st->tc, 0, command_handler, st);
 }
 
 
@@ -246,6 +247,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	struct re_printf pf = {print_handler, buf};
 	struct odict *od = NULL;
 	int err;
+
+	buf->pos = NETSRING_HEADER_SIZE;
 
 	err = odict_alloc(&od, 8);
 	if (err)
@@ -262,9 +265,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	}
 
 	if (st->tc) {
-		buf->pos = 0;
+		buf->pos = NETSRING_HEADER_SIZE;
 		err = tcp_send(st->tc, buf);
-
 		if (err) {
 			warning("ctrl_tcp: failed to send the message (%m)\n", err);
 		}
@@ -273,6 +275,16 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
  out:
 	mem_deref(buf);
 	mem_deref(od);
+}
+
+
+static void ctrl_destructor(void *arg)
+{
+	struct ctrl_st *st = arg;
+
+	mem_deref(st->tc);
+	mem_deref(st->ts);
+	mem_deref(st->ns);
 }
 
 
