@@ -252,6 +252,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!stp || !vs || !prm || !size || !frameh)
 		return EINVAL;
 
+	debug("avformat: alloc dev='%s'\n", dev);
+
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
 		return ENOMEM;
@@ -270,6 +272,12 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 #if LIBAVFORMAT_VERSION_INT >= ((52<<16) + (110<<8) + 0)
 	(void)fmt;
 	ret = avformat_open_input(&st->ic, dev, NULL, NULL);
+	if (ret < 0) {
+		warning("avformat: avformat_open_input(%s) failed (ret=%d)\n",
+			dev, ret);
+		err = ENOENT;
+		goto out;
+	}
 #else
 
 	/* Params */
@@ -284,12 +292,14 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 	ret = av_open_input_file(&st->ic, dev, av_find_input_format(fmt),
 				 0, &prms);
-#endif
-
 	if (ret < 0) {
+		warning("avformat: av_open_input_file(%s) failed (ret=%d)\n",
+			dev, ret);
 		err = ENOENT;
 		goto out;
 	}
+#endif
+
 
 #if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (4<<8) + 0)
 	ret = avformat_find_stream_info(st->ic, NULL);
