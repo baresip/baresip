@@ -1172,6 +1172,14 @@ double mos_calculate(double *r_factor, double rtt,
 
 
 /*
+ * Generic event
+ */
+
+int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
+		      struct call *call, const char *prm);
+
+
+/*
  * Baresip instance
  */
 

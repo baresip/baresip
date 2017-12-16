@@ -16,50 +16,6 @@
  */
 
 
-static int add_rtcp_stats(struct odict *od_parent, const struct rtcp_stats *rs)
-{
-	struct odict *od = NULL, *tx = NULL, *rx = NULL;
-	int err = 0;
-
-	if (!od_parent || !rs)
-		return EINVAL;
-
-	err  = odict_alloc(&od, 8);
-	err |= odict_alloc(&tx, 8);
-	err |= odict_alloc(&rx, 8);
-	if (err)
-		goto out;
-
-	err  = odict_entry_add(tx, "sent", ODICT_INT, (int64_t)rs->tx.sent);
-	err |= odict_entry_add(tx, "lost", ODICT_INT, (int64_t)rs->tx.lost);
-	err |= odict_entry_add(tx, "jit", ODICT_INT, (int64_t)rs->tx.jit);
-	if (err)
-		goto out;
-
-	err  = odict_entry_add(rx, "sent", ODICT_INT, (int64_t)rs->rx.sent);
-	err |= odict_entry_add(rx, "lost", ODICT_INT, (int64_t)rs->rx.lost);
-	err |= odict_entry_add(rx, "jit", ODICT_INT, (int64_t)rs->rx.jit);
-	if (err)
-		goto out;
-
-	err  = odict_entry_add(od, "tx", ODICT_OBJECT, tx);
-	err |= odict_entry_add(od, "rx", ODICT_OBJECT, rx);
-	err |= odict_entry_add(od, "rtt", ODICT_INT, (int64_t)rs->rtt);
-	if (err)
-		goto out;
-
-	/* add object to the parent */
-	err = odict_entry_add(od_parent, "rtcp_stats", ODICT_OBJECT, od);
-	if (err)
-		goto out;
-
- out:
-	mem_deref(od);
-
-	return err;
-}
-
-
 /*
  * Relay UA events as publish messages to the Broker
  *
@@ -69,7 +25,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
 	struct mqtt *mqtt = arg;
-	const char *event_str = uag_event_str(ev);
 	struct odict *od = NULL;
 	int err;
 
@@ -77,42 +32,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	if (err)
 		return;
 
-	err |= odict_entry_add(od, "type", ODICT_STRING, event_str);
-	err |= odict_entry_add(od, "accountaor", ODICT_STRING, ua_aor(ua));
+	err = event_encode_dict(od, ua, ev, call, prm);
 	if (err)
 		goto out;
-
-	if (call) {
-
-		const char *dir;
-
-		dir = call_is_outgoing(call) ? "outgoing" : "incoming";
-
-		err |= odict_entry_add(od, "direction", ODICT_STRING, dir);
-		err |= odict_entry_add(od, "peeruri",
-				       ODICT_STRING, call_peeruri(call));
-		if (err)
-			goto out;
-	}
-
-	if (str_isset(prm)) {
-		err = odict_entry_add(od, "param", ODICT_STRING, prm);
-		if (err)
-			goto out;
-	}
-
-	if (ev == UA_EVENT_CALL_RTCP) {
-		struct stream *strm = NULL;
-
-		if (0 == str_casecmp(prm, "audio"))
-			strm = audio_strm(call_audio(call));
-		else if (0 == str_casecmp(prm, "video"))
-			strm = video_strm(call_video(call));
-
-		err = add_rtcp_stats(od, stream_rtcp_stats(strm));
-		if (err)
-			goto out;
-	}
 
 	err = mqtt_publish_message(mqtt, "/baresip/event", "%H",
 				   json_encode_odict, od);
