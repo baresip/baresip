@@ -17,6 +17,7 @@ SRCS	+= cmd.c
 SRCS	+= conf.c
 SRCS	+= config.c
 SRCS	+= contact.c
+SRCS	+= event.c
 SRCS	+= log.c
 SRCS	+= menc.c
 SRCS	+= message.c
