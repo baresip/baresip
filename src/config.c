@@ -178,6 +178,14 @@ static int conf_get_aufmt(const struct conf *conf, const char *name,
 }
 
 
+/**
+ * Parse the core configuration file and update baresip core config
+ *
+ * @param cfg  Baresip core config to update
+ * @param conf Configuration file to parse
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int config_parse_conf(struct config *cfg, const struct conf *conf)
 {
 	struct pl pollm, as, ap;
@@ -320,6 +328,14 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 }
 
 
+/**
+ * Print the baresip core config
+ *
+ * @param pf  Print function
+ * @param cfg Baresip core config
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int config_print(struct re_printf *pf, const struct config *cfg)
 {
 	int err;
@@ -638,6 +654,14 @@ static const char *detect_module_path(bool *valid)
 }
 
 
+/**
+ * Write the baresip core config template to a file
+ *
+ * @param file Filename of output file
+ * @param cfg  Baresip core config
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int config_write_template(const char *file, const struct config *cfg)
 {
 	FILE *f = NULL;
@@ -890,6 +914,11 @@ int config_write_template(const char *file, const struct config *cfg)
 }
 
 
+/**
+ * Get the baresip core config
+ *
+ * @return Core config
+ */
 struct config *conf_config(void)
 {
 	return &core_config;
