@@ -97,7 +97,7 @@ struct vtx {
 	struct tmr tmr_rtp;                /**< Timer for sending RTP     */
 	unsigned skipc;                    /**< Number of frames skipped  */
 	struct list filtl;                 /**< Filters in encoding order */
-	char device[64];                   /**< Source device name        */
+	char device[128];                  /**< Source device name        */
 	int muted_frames;                  /**< # of muted frames sent    */
 	uint32_t ts_offset;                /**< Random timestamp offset   */
 	bool picup;                        /**< Send picture update       */
@@ -136,7 +136,7 @@ struct vrx {
 	struct tmr tmr_picup;              /**< Picture update timer      */
 	struct vidsz size;                 /**< Incoming video resolution */
 	enum vidorient orient;             /**< Display orientation       */
-	char device[64];                   /**< Display device name       */
+	char device[128];                  /**< Display device name       */
 	int pt_rx;                         /**< Incoming RTP payload type */
 	int frames;                        /**< Number of frames received */
 	int efps;                          /**< Estimated frame-rate      */
