@@ -98,6 +98,27 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 }
 
 
+static int reload_config(struct re_printf *pf, void *arg)
+{
+	int err;
+	(void)arg;
+
+	err = re_hprintf(pf, "reloading config file ..\n");
+	if (err)
+		return err;
+
+	err = conf_configure();
+	if (err) {
+		(void)re_hprintf(pf, "reload_config failed: %m\n", err);
+		return err;
+	}
+
+	(void)re_hprintf(pf, "done\n");
+
+	return 0;
+}
+
+
 static const struct cmd debugcmdv[] = {
 {"main",     0,       0, "Main loop debug",          re_debug             },
 {"config",   0,       0, "Print configuration",      cmd_config_print     },
@@ -109,6 +130,7 @@ static const struct cmd debugcmdv[] = {
 {"uastat",  'u',      0, "UA debug",                 cmd_ua_debug         },
 {"memstat", 'y',      0, "Memory status",            mem_status           },
 {"play",     0, CMD_PRM, "Play audio file",          cmd_play_file        },
+{"conf_reload",0,     0, "Reload config file",       reload_config        },
 };
 
 
