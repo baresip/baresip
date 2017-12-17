@@ -52,6 +52,12 @@ static void check_rtp_handler(void *arg)
 		debug("stream: last \"%s\" RTP packet: %d milliseconds\n",
 		      sdp_media_name(strm->sdp), diff_ms);
 
+		/* check for large jumps in time */
+		if (diff_ms > (3600 * 1000)) {
+			strm->ts_last = 0;
+			return;
+		}
+
 		if (diff_ms > (int)strm->rtp_timeout_ms) {
 
 			info("stream: no %s RTP packets received for"
