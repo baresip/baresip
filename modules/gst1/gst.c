@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
-#define __USE_POSIX199309
+#define _DEFAULT_SOURCE 1
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
