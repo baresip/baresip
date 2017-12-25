@@ -1,3 +1,96 @@
+2017-12-25 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.7
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.7
+	* NOTE: Requires libre v0.5.5 or later
+	        Requires librem v0.5.0 or later
+
+	* Credits: Thanks to Swedish Radio who sponsored many new
+		   features in this release.
+
+	* new commands:
+	  -  'conf_reload' -- Reload config file
+
+	* new modules:
+	  - gzrtp         ZRTP module using GNU ZRTP C++ library
+			  (thanks glenvt18)
+
+	  - mqtt          MQTT (Message Queue Telemetry Transport) module
+			  (sponsored by Swedish Radio)
+
+	* config:
+	  - audio_txmode  poll|thread        Set audio transmit mode
+	  - auplay_format s16|float|s24_3le  Set playback sample format
+	  - ausrc_format  s16|float|s24_3le  Set source sample format
+	  - sdp_ebuacip   yes|no             Enable EBU-ACIP parameters
+	  - zrtp_hash	  yes|no	     Enable/disable ZRTP hash
+
+	* baresip-core:
+	  - audio: add sample format conversion
+	  - audio: add sample format for source/playback
+	  - audio: check timestamps on incoming RTP packets
+	  - audio: pace outgoing packets in txmode=thread
+	  - audio: remove txmode with realtime thread
+	  - audio: remove txmode with timer
+	  - audio: set EBUACIP parameters in SDP
+	  - auplay: add sample format to auplay_prm
+	  - auplay: change write handler to any sample format
+	  - ausrc: add sample format to ausrc_prm
+	  - ausrc: change read handler to any sample format
+	  - event.c: new file for generic event handling
+	  - event: add event_encode_dict to encode event to a dictionary
+	  - event: added UA_EVENT_CALL_RTCP for received RTCP
+	  - log: print to stdout (ref #320)
+
+	* selftest:
+	  - add test for different audio tx-modes
+	  - add test for float audio sample format
+
+	* Modules:
+
+	* alsa: add support for multiple sample formats
+
+	* audiounit: add support for FLOAT sample format
+
+	* auloop: add support for multiple sample formats
+
+	* avahi: Bugfix: Destroy resolver after callback (#318)
+		 (thanks Jonathan Sieber)
+
+	* avcodec: change x264 rate control mode to ABR (#334)
+		 (thanks Jonathan Sieber)
+
+	* debug_cmd: add command 'conf_reload' to reload config file
+
+	* gzrtp: ZRTP module using GNU ZRTP C++ library
+		 (thanks glenvt18)
+
+	* menu: add config 'ringback_disabled' to disable playing
+	        of ringback tone.
+
+	* mqtt: MQTT (Message Queue Telemetry Transport) module
+		new module using libmosquitto as the backend.
+
+	* opus: fix encoder bitrate, ref #305
+		add opus_stereo config parameter (thanks Ola Palm)
+		add config param opus_sprop_stereo (thanks Ola Palm)
+
+	* portaudio: add support for FLOAT sample format
+
+	* pulse: add support for FLOAT sample format
+		 remove garbage at the beginning of a recording (#323)
+
+	* quicktime: module was removed
+
+	* rst: add support for multiple sample formats
+
+	* zrtp: add signaling hash support (#311)
+
+
+
+
 2017-10-14 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.6
