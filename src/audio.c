@@ -81,7 +81,7 @@ struct autx {
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
-	volatile bool aubuf_started;
+	volatile bool aubuf_started;  /**< Aubuf was started flag          */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
@@ -90,14 +90,14 @@ struct autx {
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for sending         */
 	uint64_t ts_ext;              /**< Ext. Timestamp for outgoing RTP */
-	uint32_t ts_base;
+	uint32_t ts_base;             /**< First timestamp sent            */
 	uint32_t ts_tel;              /**< Timestamp for Telephony Events  */
 	size_t psize;                 /**< Packet size for sending         */
 	bool marker;                  /**< Marker bit for outgoing RTP     */
 	bool muted;                   /**< Audio source is muted           */
 	int cur_key;                  /**< Currently transmitted event     */
-	enum aufmt src_fmt;
-	bool need_conv;
+	enum aufmt src_fmt;           /**< Sample format for audio source  */
+	bool need_conv;               /**< Sample format conversion needed */
 
 	struct {
 		uint64_t aubuf_overrun;
@@ -137,7 +137,7 @@ struct aurx {
 	struct audec_state *dec;      /**< Audio decoder state (optional)  */
 	struct aubuf *aubuf;          /**< Incoming audio buffer           */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
-	volatile bool aubuf_started;
+	volatile bool aubuf_started;  /**< Aubuf was started flag          */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in decoding order */
 	char device[64];              /**< Audio player device name        */
@@ -147,9 +147,9 @@ struct aurx {
 	int pt;                       /**< Payload type for incoming RTP   */
 	double level_last;
 	bool level_set;
-	enum aufmt play_fmt;
-	bool need_conv;
-	struct timestamp_recv ts_recv;
+	enum aufmt play_fmt;          /**< Sample format for audio playback*/
+	bool need_conv;               /**< Sample format conversion needed */
+	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
 	uint64_t n_discard;
 
 	struct {
@@ -309,7 +309,7 @@ static inline double calc_ptime(size_t nsamp, uint32_t srate, uint8_t channels)
 
 
 /**
- * Get the DSP samplerate for an audio-codec (exception for G.722 and MPA)
+ * Get the DSP samplerate for an audio-codec
  */
 static inline uint32_t get_srate(const struct aucodec *ac)
 {
