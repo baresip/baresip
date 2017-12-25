@@ -130,6 +130,7 @@ Distributed under BSD license
   - Command-line console over UDP/TCP
   - Command line interface (CLI)
   - Simple configuration files
+  - MQTT (Message Queue Telemetry Transport) module
 
 
 ## Building
