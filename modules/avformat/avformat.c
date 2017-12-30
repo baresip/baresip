@@ -314,7 +314,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	}
 
 #if 0
-	dump_format(st->ic, 0, dev, 0);
+	av_dump_format(st->ic, 0, dev, 0);
 #endif
 
 	for (i=0; i<st->ic->nb_streams; i++) {
