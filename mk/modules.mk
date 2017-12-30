@@ -308,9 +308,9 @@ MODULES   += avcodec
 ifneq ($(USE_AVFORMAT),)
 MODULES   += avformat
 endif
+endif
 ifneq ($(USE_AVAHI),)
 MODULES   += avahi
-endif
 endif
 ifneq ($(USE_BV32),)
 MODULES   += bv32
