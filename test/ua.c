@@ -293,7 +293,7 @@ static int reg_dns(enum sip_transp tp)
 	t.srvc = server_count;
 
 	/* NOTE: angel brackets needed to parse ;transport parameter */
-	if (re_snprintf(aor, sizeof(aor), "<sip:x:x@%s;transport=%s>",
+	if (re_snprintf(aor, sizeof(aor), "<sip:x@%s;transport=%s>",
 			domain, sip_transp_name(tp)) < 0)
 		return ENOMEM;
 
@@ -362,7 +362,7 @@ int test_ua_register_dns(void)
 
 
 #define USER   "alfredh"
-#define PASS   "pass%40word"  /* NOTE: url-encoded */
+#define PASS   "pass@word"
 #define DOMAIN "localhost"
 
 static int reg_auth(enum sip_transp tp)
@@ -384,7 +384,7 @@ static int reg_auth(enum sip_transp tp)
 	TEST_ERR(err);
 
 	err = user_add(domain_lookup(t.srvv[0], DOMAIN)->ht_usr,
-		       "alfredh", "pass@word", DOMAIN);
+		       USER, PASS, DOMAIN);
 	TEST_ERR(err);
 
 	t.srvv[0]->auth_enabled = true;
@@ -395,10 +395,12 @@ static int reg_auth(enum sip_transp tp)
 
 	/* NOTE: angel brackets needed to parse ;transport parameter */
 	if (re_snprintf(aor, sizeof(aor),
-			"<sip:%s:%s@%s>;outbound=\"sip:%J;transport=%s\"",
+			"<sip:%s@%s>"
+			";auth_pass=%s"
+			";outbound=\"sip:%J;transport=%s\"",
 			USER,
-			PASS,
 			DOMAIN,
+			PASS,
 			&laddr,
 			sip_transp_name(tp)) < 0)
 		return ENOMEM;
@@ -540,8 +542,10 @@ static int reg_auth_dns(enum sip_transp tp)
 	t.srvc = server_count;
 
 	/* NOTE: angel brackets needed to parse ;transport parameter */
-	if (re_snprintf(aor, sizeof(aor), "<sip:%s:%s@%s;transport=%s>",
-			username, password, domain, sip_transp_name(tp)) < 0)
+	if (re_snprintf(aor, sizeof(aor),
+			"<sip:%s@%s;transport=%s>;auth_pass=%s",
+			username, domain, sip_transp_name(tp),
+			password) < 0)
 		return ENOMEM;
 
 	/*

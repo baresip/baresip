@@ -15,9 +15,10 @@
 
 
 static const char str[] =
-	"\"Mr User\" <sip:user:pass@domain.com>"
+	"\"Mr User\" <sip:user@domain.com>"
 	";answermode=auto"
 	";auth_user=xuser"
+	";auth_pass=pass"
 	";outbound=\"sip:edge.domain.com\""
 	";ptime=10"
 	";regint=600"
@@ -45,7 +46,7 @@ int test_account(void)
 	TEST_STRCMP("Mr User", 7, addr->dname.p,        addr->dname.l);
 	TEST_STRCMP("sip",     3, addr->uri.scheme.p,   addr->uri.scheme.l);
 	TEST_STRCMP("user",    4, addr->uri.user.p,     addr->uri.user.l);
-	TEST_STRCMP("pass",    4, addr->uri.password.p, addr->uri.password.l);
+	TEST_STRCMP("",        0, addr->uri.password.p, addr->uri.password.l);
 	TEST_STRCMP("domain.com", 10, addr->uri.host.p, addr->uri.host.l);
 	ASSERT_EQ(0, addr->uri.params.l);
 	ASSERT_TRUE(addr->params.l > 0);
@@ -53,6 +54,7 @@ int test_account(void)
 	/* verify all decoded parameters */
 	ASSERT_TRUE(ANSWERMODE_AUTO == account_answermode(acc));
 	ASSERT_STREQ("xuser", account_auth_user(acc));
+	ASSERT_STREQ("pass", account_auth_pass(acc));
 	ASSERT_STREQ("sip:edge.domain.com", account_outbound(acc, 0));
 	ASSERT_TRUE(NULL == account_outbound(acc, 1));
 	ASSERT_TRUE(NULL == account_outbound(acc, 333));
