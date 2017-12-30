@@ -35,7 +35,8 @@ enum {
 
 /** Media constants */
 enum {
-	AUDIO_BANDWIDTH = 128000 /**< Bandwidth for audio in bits/s       */
+	AUDIO_BANDWIDTH = 128000,  /**< Bandwidth for audio in bits/s      */
+	VIDEO_SRATE     =  90000,  /**< Sampling rate for video            */
 };
 
 
