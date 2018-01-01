@@ -1303,6 +1303,43 @@ void video_sdp_attr_decode(struct video *v)
 }
 
 
+static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
+{
+	int err = 0;
+
+	err |= re_hprintf(pf, " tx: encode: %s %s\n",
+			  vtx->vc ? vtx->vc->name : "none",
+			  vtx->frame ? vidfmt_name(vtx->frame->fmt) : "?");
+	err |= re_hprintf(pf, "     source: %s %u x %u, fps=%d\n",
+			  vtx->vsrc ? vidsrc_get(vtx->vsrc)->name : "none",
+			  vtx->vsrc_size.w,
+			  vtx->vsrc_size.h, vtx->vsrc_prm.fps);
+	err |= re_hprintf(pf, "     skipc=%u\n", vtx->skipc);
+	err |= re_hprintf(pf, "     time = %.3f sec\n",
+			  video_calc_seconds(vtx->ts_max - vtx->ts_min));
+
+	return err;
+}
+
+
+static int vrx_debug(struct re_printf *pf, const struct vrx *vrx)
+{
+	int err = 0;
+
+	err |= re_hprintf(pf, " rx: decode: %s\n",
+			  vrx->vc ? vrx->vc->name : "none");
+	err |= re_hprintf(pf, "     vidisp: %s %u x %u\n",
+			  vrx->vidisp ? vidisp_get(vrx->vidisp)->name : "none",
+			  vrx->size.w, vrx->size.h);
+	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
+			  vrx->n_intra, vrx->n_picup);
+	err |= re_hprintf(pf, "     time = %.3f sec\n",
+			  video_calc_seconds(vrx->ts_max - vrx->ts_min));
+
+	return err;
+}
+
+
 int video_debug(struct re_printf *pf, const struct video *v)
 {
 	const struct vtx *vtx;
@@ -1318,20 +1355,10 @@ int video_debug(struct re_printf *pf, const struct video *v)
 	err = re_hprintf(pf, "\n--- Video stream ---\n");
 	err |= re_hprintf(pf, " started: %s\n", v->started ? "yes" : "no");
 
-	err |= re_hprintf(pf, " tx: %u x %u, fps=%d\n",
-			  vtx->vsrc_size.w,
-			  vtx->vsrc_size.h, vtx->vsrc_prm.fps);
-	err |= re_hprintf(pf, "     skipc=%u\n", vtx->skipc);
-	err |= re_hprintf(pf, "     time = %.3f sec\n",
-			  video_calc_seconds(vtx->ts_max - vtx->ts_min));
-
-	err |= re_hprintf(pf, " rx: %u x %u\n", vrx->size.w, vrx->size.h);
-	err |= re_hprintf(pf, "     pt=%d\n", vrx->pt_rx);
-
-	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
-			  vrx->n_intra, vrx->n_picup);
-	err |= re_hprintf(pf, "     time = %.3f sec\n",
-			  video_calc_seconds(vrx->ts_max - vrx->ts_min));
+	err |= vtx_debug(pf, vtx);
+	err |= vrx_debug(pf, vrx);
+	if (err)
+		return err;
 
 	if (!list_isempty(baresip_vidfiltl())) {
 		err |= vtx_print_pipeline(pf, vtx);
