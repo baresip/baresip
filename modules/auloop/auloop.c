@@ -186,7 +186,7 @@ static void error_handler(int err, const char *str, void *arg)
 
 static void start_codec(struct audio_loop *al, const char *name)
 {
-	struct auenc_param prm = {PTIME};
+	struct auenc_param prm = {PTIME, 0};
 	int err;
 
 	al->ac = aucodec_find(baresip_aucodecl(), name,
