@@ -826,6 +826,7 @@ const struct vidisp *vidisp_find(const struct list *vidispl, const char *name);
 /** Audio Codec parameters */
 struct auenc_param {
 	uint32_t ptime;  /**< Packet time in [ms]   */
+	uint32_t bitrate;/**< Wanted bitrate in [bit/s] */
 };
 
 struct auenc_state;
@@ -986,6 +987,7 @@ void audio_encoder_cycle(struct audio *audio);
 int  audio_level_get(const struct audio *au, double *level);
 int  audio_debug(struct re_printf *pf, const struct audio *a);
 struct stream *audio_strm(const struct audio *a);
+int audio_set_bitrate(struct audio *au, uint32_t bitrate);
 
 
 /*

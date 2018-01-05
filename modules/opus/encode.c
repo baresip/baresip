@@ -134,6 +134,10 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	fch = prm.stereo ? OPUS_AUTO : 1;
 	vbr = prm.cbr ? 0 : 1;
 
+	/* override local bitrate */
+	if (param && param->bitrate)
+		prm.bitrate = param->bitrate;
+
 	(void)opus_encoder_ctl(aes->enc,
 			       OPUS_SET_MAX_BANDWIDTH(srate2bw(prm.srate)));
 	(void)opus_encoder_ctl(aes->enc, OPUS_SET_BITRATE(prm.bitrate));

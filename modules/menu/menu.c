@@ -774,6 +774,27 @@ static int set_current_call(struct re_printf *pf, void *arg)
 }
 
 
+static int set_audio_bitrate(struct re_printf *pf, void *arg)
+{
+	struct cmd_arg *carg = arg;
+	struct call *call;
+	uint32_t bitrate = atoi(carg->prm);
+	int err;
+
+	call = ua_call(uag_cur());
+	if (call) {
+		err = re_hprintf(pf, "setting audio bitrate: %u bps\n",
+				 bitrate);
+		audio_set_bitrate(call_audio(call), bitrate);
+	}
+	else {
+		err = re_hprintf(pf, "call not found\n");
+	}
+
+	return err;
+}
+
+
 static const struct cmd callcmdv[] = {
 {"reinvite",  'I',        0, "Send re-INVITE",      call_reinvite         },
 {"resume",    'X',        0, "Call resume",         cmd_call_resume       },
@@ -784,6 +805,7 @@ static const struct cmd callcmdv[] = {
 {"hold",      'x',        0, "Call hold",           cmd_call_hold         },
 {"",          'H',        0, "Hold previous call",  hold_prev_call        },
 {"",          'L',        0, "Resume previous call",hold_prev_call        },
+{"aubitrate",   0,  CMD_PRM, "Set audio bitrate",   set_audio_bitrate     },
 
 #ifdef USE_VIDEO
 {"video_cycle", 'E',      0, "Cycle video encoder", call_videoenc_cycle   },

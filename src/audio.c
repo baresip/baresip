@@ -1602,6 +1602,7 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		struct auenc_param prm;
 
 		prm.ptime = tx->ptime;
+		prm.bitrate = 0;        /* auto */
 
 		err = ac->encupdh(&tx->enc, ac, &prm, params);
 		if (err) {
@@ -2078,4 +2079,45 @@ int audio_print_rtpstat(struct re_printf *pf, const struct audio *a)
 	}
 
 	return err;
+}
+
+
+int audio_set_bitrate(struct audio *au, uint32_t bitrate)
+{
+	struct autx *tx;
+	const struct aucodec *ac;
+	int err;
+
+	if (!au)
+		return EINVAL;
+
+	tx = &au->tx;
+
+	ac = tx->ac;
+
+	info("audio: set bitrate for encoder '%s' to %u bits/s\n",
+	     ac ? ac->name : "?",
+	     bitrate);
+
+	if (ac) {
+
+		if (ac->encupdh) {
+			struct auenc_param prm;
+
+			prm.ptime = tx->ptime;
+			prm.bitrate = bitrate;
+
+			err = ac->encupdh(&tx->enc, ac, &prm, NULL);
+			if (err) {
+				warning("audio: encupdh error: %m\n", err);
+				return err;
+			}
+		}
+
+	}
+	else {
+		info("audio: set_bitrate: no audio encoder\n");
+	}
+
+	return 0;
 }
