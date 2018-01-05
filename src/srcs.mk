@@ -34,6 +34,7 @@ SRCS	+= rtpkeep.c
 SRCS	+= sdp.c
 SRCS	+= sipreq.c
 SRCS	+= stream.c
+SRCS	+= timer.c
 SRCS	+= ua.c
 SRCS	+= ui.c
 

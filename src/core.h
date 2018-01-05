@@ -540,3 +540,10 @@ static inline int timestamp_wrap(uint32_t ts_new, uint32_t ts_old)
 
 	return 0;
 }
+
+
+/*
+ * Timer
+ */
+
+uint64_t tmr_jiffies_usec(void);
