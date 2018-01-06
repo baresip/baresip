@@ -39,11 +39,12 @@ static int account_write_template(const char *file)
 	if (!f)
 		return errno;
 
-	login = pass = sys_username();
+	login = sys_username();
 	if (!login) {
 		login = "user";
-		pass = "pass";
 	}
+
+	pass = "PASSWORD";
 
 	domain = net_domain(baresip_network());
 	if (!domain)
@@ -53,7 +54,7 @@ static int account_write_template(const char *file)
 			 "#\n"
 			 "# SIP accounts - one account per line\n"
 			 "#\n"
-			 "# Displayname <sip:user:password@domain"
+			 "# Displayname <sip:user@domain"
 			 ";uri-params>;addr-params\n"
 			 "#\n"
 			 "#  uri-params:\n"
@@ -63,6 +64,7 @@ static int account_write_template(const char *file)
 			 "#    ;answermode={manual,early,auto}\n"
 			 "#    ;audio_codecs=speex/16000,pcma,...\n"
 			 "#    ;auth_user=username\n"
+			 "#    ;auth_pass=password\n"
 			 "#    ;mediaenc={srtp,srtp-mand,srtp-mandf"
 			 ",dtls_srtp,zrtp}\n"
 			 "#    ;medianat={stun,turn,ice}\n"
@@ -88,7 +90,7 @@ static int account_write_template(const char *file)
 			 "[2001:df8:0:16:216:6fff:fe91:614c]:5070"
 			 ";transport=tcp>\n"
 			 "#\n"
-			 "#<sip:%s:%s@%s>\n", login, pass, domain);
+		       "#<sip:%s@%s>;auth_pass=%s\n", login, domain, pass);
 	if (r < 0)
 		err = ENOMEM;
 
