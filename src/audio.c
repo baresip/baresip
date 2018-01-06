@@ -1959,9 +1959,10 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 
 	err  = re_hprintf(pf, "\n--- Audio stream ---\n");
 
-	err |= re_hprintf(pf, " tx:   %H ptime=%ums\n",
+	err |= re_hprintf(pf, " tx:   encode: %H ptime=%ums %s\n",
 			  aucodec_print, tx->ac,
-			  tx->ptime);
+			  tx->ptime,
+			  aufmt_name(tx->enc_fmt));
 	err |= re_hprintf(pf, "       aubuf: %H"
 			  " (cur %.2fms, max %.2fms, or %llu, ur %llu)\n",
 			  aubuf_debug, tx->aubuf,
@@ -1973,14 +1974,15 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 				     tx->ausrc_prm.ch),
 			  tx->stats.aubuf_overrun,
 			  tx->stats.aubuf_underrun);
-
+	err |= re_hprintf(pf, "       source: %s\n",
+			  aufmt_name(tx->src_fmt));
 	err |= re_hprintf(pf, "       time = %.3f sec\n",
 			  autx_calc_seconds(tx));
 
 	err |= re_hprintf(pf,
-			  " rx:   %H\n"
+			  " rx:   decode: %H %s\n"
 			  "       ptime=%ums pt=%d\n",
-			  aucodec_print, rx->ac,
+			  aucodec_print, rx->ac, aufmt_name(rx->dec_fmt),
 			  rx->ptime, rx->pt);
 	err |= re_hprintf(pf, "       aubuf: %H"
 			  " (cur %.2fms, max %.2fms, or %llu, ur %llu)\n",
@@ -1994,7 +1996,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  rx->stats.aubuf_overrun,
 			  rx->stats.aubuf_underrun
 			  );
-
+	err |= re_hprintf(pf, "       player: %s\n", aufmt_name(rx->play_fmt));
 	err |= re_hprintf(pf, "       n_discard:%llu\n",
 			  rx->n_discard);
 	if (rx->level_set) {
