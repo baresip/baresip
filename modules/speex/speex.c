@@ -465,19 +465,19 @@ static struct aucodec speexv[] = {
 
 	/* Stereo Speex */
 	{LE_INIT, 0, "speex", 32000, 32000, 2, speex_fmtp_wb,
-	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
+	 encode_update, encode, decode_update, decode, pkloss, 0, 0, 0, 0},
 	{LE_INIT, 0, "speex", 16000, 16000, 2, speex_fmtp_wb,
-	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
+	 encode_update, encode, decode_update, decode, pkloss, 0, 0, 0, 0},
 	{LE_INIT, 0, "speex",  8000,  8000, 2, speex_fmtp_nb,
-	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
+	 encode_update, encode, decode_update, decode, pkloss, 0, 0, 0, 0},
 
 	/* Standard Speex */
 	{LE_INIT, 0, "speex", 32000, 32000, 1, speex_fmtp_wb,
-	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
+	 encode_update, encode, decode_update, decode, pkloss, 0, 0, 0, 0},
 	{LE_INIT, 0, "speex", 16000, 16000, 1, speex_fmtp_wb,
-	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
+	 encode_update, encode, decode_update, decode, pkloss, 0, 0, 0, 0},
 	{LE_INIT, 0, "speex",  8000,  8000, 1, speex_fmtp_nb,
-	 encode_update, encode, decode_update, decode, pkloss, 0, 0},
+	 encode_update, encode, decode_update, decode, pkloss, 0, 0, 0, 0},
 };
 
 
