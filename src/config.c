@@ -58,6 +58,8 @@ static struct config core_config = {
 		false,
 		AUFMT_S16LE,
 		AUFMT_S16LE,
+		AUFMT_S16LE,
+		AUFMT_S16LE,
 	},
 
 #ifdef USE_VIDEO
@@ -270,6 +272,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	conf_get_aufmt(conf, "ausrc_format", &cfg->audio.src_fmt);
 	conf_get_aufmt(conf, "auplay_format", &cfg->audio.play_fmt);
+	conf_get_aufmt(conf, "auenc_format", &cfg->audio.enc_fmt);
+	conf_get_aufmt(conf, "audec_format", &cfg->audio.dec_fmt);
 
 #ifdef USE_VIDEO
 	/* Video */
@@ -541,6 +545,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "audio_level\t\tno\n"
 			  "ausrc_format\t\ts16\t\t# s16, float, ..\n"
 			  "auplay_format\t\ts16\t\t# s16, float, ..\n"
+			  "auenc_format\t\ts16\t\t# s16, float, ..\n"
+			  "audec_format\t\ts16\t\t# s16, float, ..\n"
 			  ,
 			  poll_method_name(poll_method_best()),
 			  cfg->call.local_timeout,

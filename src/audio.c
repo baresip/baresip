@@ -86,7 +86,7 @@ struct autx {
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
 	char device[64];              /**< Audio source device name        */
-	int16_t *sampv;               /**< Sample buffer                   */
+	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for sending         */
 	uint64_t ts_ext;              /**< Ext. Timestamp for outgoing RTP */
@@ -97,6 +97,7 @@ struct autx {
 	bool muted;                   /**< Audio source is muted           */
 	int cur_key;                  /**< Currently transmitted event     */
 	enum aufmt src_fmt;           /**< Sample format for audio source  */
+	enum aufmt enc_fmt;
 	bool need_conv;               /**< Sample format conversion needed */
 
 	struct {
@@ -141,13 +142,14 @@ struct aurx {
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in decoding order */
 	char device[64];              /**< Audio player device name        */
-	int16_t *sampv;               /**< Sample buffer                   */
+	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for receiving       */
 	int pt;                       /**< Payload type for incoming RTP   */
 	double level_last;
 	bool level_set;
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
+	enum aufmt dec_fmt;
 	bool need_conv;               /**< Sample format conversion needed */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
 	uint64_t n_discard;
@@ -448,7 +450,20 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 	len = mbuf_get_space(tx->mb);
 
-	err = tx->ac->ench(tx->enc, mbuf_buf(tx->mb), &len, sampv, sampc);
+	if (tx->enc_fmt == AUFMT_S16LE) {
+		err = tx->ac->ench(tx->enc, mbuf_buf(tx->mb), &len,
+				   sampv, sampc);
+	}
+	else if (tx->ac->encfmth) {
+		err = tx->ac->encfmth(tx->enc, mbuf_buf(tx->mb), &len,
+				      tx->enc_fmt, sampv, sampc);
+	}
+	else {
+		warning("audio: sample format not supported by encoder (%s)\n",
+			aufmt_name(tx->enc_fmt));
+		return;
+	}
+
 	if ((err & 0xffff0000) == 0x00010000) {
 		/* MPA needs some special treatment here */
 		tx->ts_ext = err & 0xffff;
@@ -514,7 +529,7 @@ static void poll_aubuf_tx(struct audio *a)
 
 	/* timed read from audio-buffer */
 
-	if (tx->src_fmt == AUFMT_S16LE) {
+	if (tx->src_fmt == tx->enc_fmt) {
 
 		aubuf_read(tx->aubuf, (uint8_t *)tx->sampv, num_bytes);
 	}
@@ -545,6 +560,13 @@ static void poll_aubuf_tx(struct audio *a)
 	if (tx->resamp.resample) {
 		size_t sampc_rs = AUDIO_SAMPSZ;
 
+		if (tx->enc_fmt != AUFMT_S16LE) {
+			warning("audio: skipping resampler due to"
+				" incompatible format (%s)\n",
+				aufmt_name(tx->enc_fmt));
+			return;
+		}
+
 		err = auresamp(&tx->resamp,
 			       tx->sampv_rs, &sampc_rs,
 			       tx->sampv, sampc);
@@ -555,15 +577,23 @@ static void poll_aubuf_tx(struct audio *a)
 		sampc = sampc_rs;
 	}
 
-	/* Process exactly one audio-frame in list order */
-	for (le = tx->filtl.head; le; le = le->next) {
-		struct aufilt_enc_st *st = le->data;
+	if (tx->enc_fmt == AUFMT_S16LE) {
 
-		if (st->af && st->af->ench)
-			err |= st->af->ench(st, sampv, &sampc);
+		/* Process exactly one audio-frame in list order */
+		for (le = tx->filtl.head; le; le = le->next) {
+			struct aufilt_enc_st *st = le->data;
+
+			if (st->af && st->af->ench)
+				err |= st->af->ench(st, sampv, &sampc);
+		}
+		if (err) {
+			warning("audio: aufilter encode: %m\n", err);
+		}
 	}
-	if (err) {
-		warning("audio: aufilter encode: %m\n", err);
+	else if (!list_isempty(&tx->filtl)) {
+		warning("audio: skipping audio-filters due to"
+			" incompatible format (%s)\n",
+			aufmt_name(tx->enc_fmt));
 	}
 
 	/* Encode and send */
@@ -726,7 +756,7 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 {
 	size_t sampc = AUDIO_SAMPSZ;
-	int16_t *sampv;
+	void *sampv;
 	struct le *le;
 	int err = 0;
 
@@ -735,10 +765,25 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 		return 0;
 
 	if (mbuf_get_left(mb)) {
-		err = rx->ac->dech(rx->dec, rx->sampv, &sampc,
-				   mbuf_buf(mb), mbuf_get_left(mb));
+
+		if (rx->dec_fmt == AUFMT_S16LE) {
+			err = rx->ac->dech(rx->dec, rx->sampv, &sampc,
+					   mbuf_buf(mb), mbuf_get_left(mb));
+
+		}
+		else if (rx->ac->decfmth) {
+			err = rx->ac->decfmth(rx->dec,
+					      rx->dec_fmt, rx->sampv, &sampc,
+					      mbuf_buf(mb), mbuf_get_left(mb));
+		}
+		else {
+			warning("audio: sample format not supported"
+				" by decoder (%s)\n",
+				aufmt_name(rx->dec_fmt));
+			return ENOTSUP;
+		}
 	}
-	else if (rx->ac->plch) {
+	else if (rx->ac->plch && rx->dec_fmt == AUFMT_S16LE) {
 		sampc = rx->ac->srate * rx->ac->ch * rx->ptime / 1000;
 
 		err = rx->ac->plch(rx->dec, rx->sampv, &sampc);
@@ -754,12 +799,19 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 		goto out;
 	}
 
-	/* Process exactly one audio-frame in reverse list order */
-	for (le = rx->filtl.tail; le; le = le->prev) {
-		struct aufilt_dec_st *st = le->data;
+	if (rx->dec_fmt == AUFMT_S16LE) {
+		/* Process exactly one audio-frame in reverse list order */
+		for (le = rx->filtl.tail; le; le = le->prev) {
+			struct aufilt_dec_st *st = le->data;
 
-		if (st->af && st->af->dech)
-			err |= st->af->dech(st, rx->sampv, &sampc);
+			if (st->af && st->af->dech)
+				err |= st->af->dech(st, rx->sampv, &sampc);
+		}
+	}
+	else if (!list_isempty(&rx->filtl)) {
+		warning("audio: skipping audio-filters due to"
+			" incompatible format (%s)\n",
+			aufmt_name(rx->dec_fmt));
 	}
 
 	if (!rx->aubuf)
@@ -770,6 +822,13 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 	/* optional resampler */
 	if (rx->resamp.resample) {
 		size_t sampc_rs = AUDIO_SAMPSZ;
+
+		if (rx->dec_fmt != AUFMT_S16LE) {
+			warning("audio: skipping resampler due to"
+				" incompatible format (%s)\n",
+				aufmt_name(rx->dec_fmt));
+			return ENOTSUP;
+		}
 
 		err = auresamp(&rx->resamp,
 			       rx->sampv_rs, &sampc_rs,
@@ -789,15 +848,17 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 		      rx->stats.aubuf_overrun);
 	}
 
-	if (rx->play_fmt == AUFMT_S16LE) {
-		err = aubuf_write_samp(rx->aubuf, sampv, sampc);
+	if (rx->play_fmt == rx->dec_fmt) {
+
+		size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
+
+		err = aubuf_write(rx->aubuf, sampv, num_bytes);
 		if (err)
 			goto out;
 	}
 	else {
 
 		/* Convert from 16-bit to auplay format */
-
 		void *tmp_sampv;
 		size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
 
@@ -1057,6 +1118,9 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	tx->src_fmt = cfg->audio.src_fmt;
 	rx->play_fmt = cfg->audio.play_fmt;
 
+	tx->enc_fmt = cfg->audio.enc_fmt;
+	rx->dec_fmt = cfg->audio.dec_fmt;
+
 	err = stream_alloc(&a->strm, stream_prm, &cfg->avt, call, sdp_sess,
 			   "audio", label,
 			   mnat, mnat_sess, menc, menc_sess,
@@ -1101,8 +1165,11 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	}
 
 	tx->mb = mbuf_alloc(STREAM_PRESZ + 4096);
-	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t), NULL);
-	rx->sampv = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t), NULL);
+	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * aufmt_sample_size(tx->enc_fmt),
+			       NULL);
+
+	rx->sampv = mem_zalloc(AUDIO_SAMPSZ * aufmt_sample_size(rx->dec_fmt),
+			       NULL);
 	if (!tx->mb || !tx->sampv || !rx->sampv) {
 		err = ENOMEM;
 		goto out;

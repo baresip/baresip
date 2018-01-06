@@ -69,6 +69,8 @@ static struct aucodec opus = {
 	.decupdh   = opus_decode_update,
 	.dech      = opus_decode_frm,
 	.plch      = opus_decode_pkloss,
+	.encfmth   = opus_encode_format_frm,
+	.decfmth   = opus_decode_format_frm,
 };
 
 
