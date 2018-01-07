@@ -5,6 +5,8 @@
  * Copyright (C) 2016 - 2017 Jonathan Sieber
  */
 
+#define _POSIX_C_SOURCE 199309L
+
 #include "omx.h"
 
 #include <re.h>
@@ -18,6 +20,11 @@
 /* Avoids a VideoCore header warning about clock_gettime() */
 #include <time.h>
 #include <sys/time.h>
+
+#ifdef RASPBERRY_PI
+#include <bcm_host.h>
+#endif
+
 
 /**
  * @defgroup omx omx
