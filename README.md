@@ -6,7 +6,7 @@ baresip README
 
 
 Baresip is a portable and modular SIP User-Agent with audio and video support.
-Copyright (c) 2010 - 2017 Creytiv.com
+Copyright (c) 2010 - 2018 Creytiv.com
 Distributed under BSD license
 
 
