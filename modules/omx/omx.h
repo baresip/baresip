@@ -41,6 +41,6 @@ int omx_display_input_buffer(struct omx_state* st,
 	void** pbuf, uint32_t* plen);
 int omx_display_flush_buffer(struct omx_state* st);
 
-int omx_display_enable(struct omx_state* st,
+int omx_display_enable(struct omx_state *st,
 	int width, int height, int stride);
-void omx_display_disable(struct omx_state* st);
+void omx_display_disable(struct omx_state *st);
