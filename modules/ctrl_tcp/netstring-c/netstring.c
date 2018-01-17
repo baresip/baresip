@@ -32,7 +32,7 @@
  */
 int netstring_read(char *buffer, size_t buffer_length,
 		   char **netstring_start, size_t *netstring_length) {
-  int i;
+  size_t i;
   size_t len = 0;
 
   /* Write default values for outputs */
@@ -71,11 +71,20 @@ int netstring_read(char *buffer, size_t buffer_length,
   return 0;
 }
 
+/* Return the number of digits represented in the given number.
+ * We are assuming that the input is not bigger than NETSTRING_MAX_SIZE */
+size_t netstring_num_len(size_t num) {
+	char num_str[10];
+
+	sprintf(num_str, "%zu", num);
+	return strlen(num_str);
+}
+
 /* Return the length, in ASCII characters, of a netstring containing
    `data_length` bytes. */
 size_t netstring_buffer_size(size_t data_length) {
   if (data_length == 0) return 3;
-  return (size_t)ceil(log10((double)data_length + 1)) + data_length + 2;
+  return netstring_num_len(data_length) + data_length + 2;
 }
 
 /* Allocate and create a netstring containing the first `len` bytes of
@@ -91,7 +100,7 @@ size_t netstring_encode_new(char **netstring, char *data, size_t len) {
     ns[1] = ':';
     ns[2] = ',';
   } else {
-    num_len = (size_t)ceil(log10((double)len + 1));
+    num_len = netstring_num_len(len);
     ns = malloc(num_len + len + 2);
     sprintf(ns, "%lu:", (unsigned long)len);
     memcpy(ns + num_len + 1, data, len);

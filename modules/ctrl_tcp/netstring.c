@@ -1,5 +1,6 @@
 
 #include <math.h>
+#include <string.h>
 
 #include <re_types.h>
 #include <re_fmt.h>
@@ -57,7 +58,7 @@ static bool netstring_send_handler(int *err, struct mbuf *mb, void *arg)
 {
 	struct netstring *netstring = arg;
 	size_t num_len;
-	char num_str[9];
+	char num_str[10];
 
 	if (mb->pos < NETSTRING_HEADER_SIZE) {
 		DEBUG_WARNING("send: not enough space for netstring header\n");
@@ -65,7 +66,13 @@ static bool netstring_send_handler(int *err, struct mbuf *mb, void *arg)
 		return true;
 	}
 
-	// Build the netstring.
+	if (mbuf_get_left(mb) > NETSTRING_MAX_SIZE) {
+		DEBUG_WARNING("send: buffer exceeds max size\n");
+		*err = EMSGSIZE;
+		return true;
+	}
+
+	/* Build the netstring. */
 	if (mbuf_get_left(mb) == 0) {
 		mb->buf[0] = '0';
 		mb->buf[1] = ':';
@@ -76,8 +83,8 @@ static bool netstring_send_handler(int *err, struct mbuf *mb, void *arg)
 		return false;
 	}
 
-	num_len = (size_t)ceil(log10((double)mb->end + 1));
-	sprintf(num_str, "%zu:", mb->end - NETSTRING_HEADER_SIZE);
+	sprintf(num_str, "%zu", mbuf_get_left(mb));
+	num_len = strlen(num_str);
 
 	mb->pos = NETSTRING_HEADER_SIZE - (num_len + 1);
 	mbuf_write_mem(mb, (uint8_t*) num_str, num_len);
