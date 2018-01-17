@@ -113,6 +113,7 @@ void call_set_handlers(struct call *call, call_event_h *eh,
 uint16_t      call_scode(const struct call *call);
 uint32_t      call_duration(const struct call *call);
 uint32_t      call_setup_duration(const struct call *call);
+const char   *call_id(const struct call *call);
 const char   *call_peeruri(const struct call *call);
 const char   *call_peername(const struct call *call);
 const char   *call_localuri(const struct call *call);

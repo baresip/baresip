@@ -176,6 +176,8 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_ESTABLISHED:
 		++ag->n_established;
 
+		ASSERT_TRUE(str_isset(call_id(call)));
+
 		/* are both agents established? */
 		if (ag->n_established >= f->exp_estab &&
 		    ag->peer->n_established >= f->exp_estab) {

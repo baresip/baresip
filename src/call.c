@@ -901,6 +901,12 @@ int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 }
 
 
+const char *call_id(const struct call *call)
+{
+	return call ? sip_dialog_callid(sipsess_dialog(call->sess)) : NULL;
+}
+
+
 const char *call_peeruri(const struct call *call)
 {
 	return call ? call->peer_uri : NULL;
