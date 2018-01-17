@@ -6,7 +6,15 @@
 
 #define _BSD_SOURCE 1
 #define _DEFAULT_SOURCE 1
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef WIN32
+#include <windows.h>
+#else
 #include <time.h>
+#endif
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
@@ -28,7 +36,7 @@ uint64_t tmr_jiffies_usec(void)
 	li.LowPart = ft.dwLowDateTime;
 	li.HighPart = ft.dwHighDateTime;
 	jfs = li.QuadPart/10;
-#else
+#elif defined(HAVE_CLOCK_GETTIME)
 	struct timespec now;
 	clockid_t clock_id;
 
@@ -46,6 +54,16 @@ uint64_t tmr_jiffies_usec(void)
 	jfs  = (long)now.tv_sec * (uint64_t)1000000;
 	jfs += now.tv_nsec / (uint64_t)1000;
 
+#else
+	struct timeval now;
+
+	if (0 != gettimeofday(&now, NULL)) {
+		warning("timer: gettimeofday() failed (%m)\n", errno);
+		return 0;
+	}
+
+	jfs  = (long)now.tv_sec * (uint64_t)1000000;
+	jfs += now.tv_usec;
 #endif
 
 	return jfs;
