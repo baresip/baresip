@@ -79,6 +79,8 @@ static int add_rtcp_stats(struct odict *od_parent, const struct rtcp_stats *rs)
 
  out:
 	mem_deref(od);
+	mem_deref(tx);
+	mem_deref(rx);
 
 	return err;
 }
