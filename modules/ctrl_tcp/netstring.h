@@ -1,6 +1,6 @@
 
 
-enum {NETSRING_HEADER_SIZE = 10};
+enum {NETSTRING_HEADER_SIZE = 10};
 
 struct netstring;
 

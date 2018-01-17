@@ -59,7 +59,7 @@ static bool netstring_send_handler(int *err, struct mbuf *mb, void *arg)
 	size_t num_len;
 	char num_str[9];
 
-	if (mb->pos < NETSRING_HEADER_SIZE) {
+	if (mb->pos < NETSTRING_HEADER_SIZE) {
 		DEBUG_WARNING("send: not enough space for netstring header\n");
 		*err = ENOMEM;
 		return true;
@@ -77,11 +77,11 @@ static bool netstring_send_handler(int *err, struct mbuf *mb, void *arg)
 	}
 
 	num_len = (size_t)ceil(log10((double)mb->end + 1));
-	sprintf(num_str, "%zu:", mb->end - NETSRING_HEADER_SIZE);
+	sprintf(num_str, "%zu:", mb->end - NETSTRING_HEADER_SIZE);
 
-	mb->pos = NETSRING_HEADER_SIZE - (num_len + 1);
+	mb->pos = NETSTRING_HEADER_SIZE - (num_len + 1);
 	mbuf_write_mem(mb, (uint8_t*) num_str, num_len);
-	mb->pos = NETSRING_HEADER_SIZE - (num_len + 1);
+	mb->pos = NETSTRING_HEADER_SIZE - (num_len + 1);
 	mb->buf[mb->pos + num_len] = ':';
 	mb->buf[mb->end] = ',';
 

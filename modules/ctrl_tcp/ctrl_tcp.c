@@ -113,8 +113,8 @@ static int encode_response(struct mbuf *resp, const char *token)
 	if (err)
 		return err;
 
-	resp->pos = NETSRING_HEADER_SIZE;
-	err = mbuf_strdup(resp, &buf, resp->end - NETSRING_HEADER_SIZE);
+	resp->pos = NETSTRING_HEADER_SIZE;
+	err = mbuf_strdup(resp, &buf, resp->end - NETSTRING_HEADER_SIZE);
 	if (err)
 	{
 		mem_deref(od);
@@ -123,7 +123,7 @@ static int encode_response(struct mbuf *resp, const char *token)
 
 	mbuf_reset(resp);
 	mbuf_init(resp);
-	resp->pos = NETSRING_HEADER_SIZE;
+	resp->pos = NETSTRING_HEADER_SIZE;
 
 	err |= odict_entry_add(od, "type", ODICT_STRING, "response");
 	err |= odict_entry_add(od, "response", ODICT_STRING, buf);
@@ -181,7 +181,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 		    oe_prm ? " " : "",
 		    oe_prm ? oe_prm->u.str : "");
 
-	resp->pos = NETSRING_HEADER_SIZE;
+	resp->pos = NETSTRING_HEADER_SIZE;
 
 	/* Relay message to long commands */
 	err = cmd_process_long(baresip_commands(),
@@ -198,7 +198,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 		goto out;
 	}
 
-	resp->pos = NETSRING_HEADER_SIZE;
+	resp->pos = NETSTRING_HEADER_SIZE;
 	err = tcp_send(st->tc, resp);
 	if (err) {
 		warning("ctrl_tcp: failed to send the message (%m)\n", err);
@@ -248,7 +248,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	struct odict *od = NULL;
 	int err;
 
-	buf->pos = NETSRING_HEADER_SIZE;
+	buf->pos = NETSTRING_HEADER_SIZE;
 
 	err = odict_alloc(&od, 8);
 	if (err)
@@ -265,7 +265,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	}
 
 	if (st->tc) {
-		buf->pos = NETSRING_HEADER_SIZE;
+		buf->pos = NETSTRING_HEADER_SIZE;
 		err = tcp_send(st->tc, buf);
 		if (err) {
 			warning("ctrl_tcp: failed to send the message (%m)\n", err);
