@@ -181,6 +181,7 @@ int test_account(void);
 int test_aulevel(void);
 int test_cmd(void);
 int test_cmd_long(void);
+int test_event(void);
 int test_contact(void);
 int test_ua_alloc(void);
 int test_uag_find_param(void);

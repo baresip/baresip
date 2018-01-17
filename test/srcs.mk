@@ -14,6 +14,7 @@ TEST_SRCS	+= call.c
 TEST_SRCS	+= cmd.c
 TEST_SRCS	+= contact.c
 TEST_SRCS	+= cplusplus.c
+TEST_SRCS	+= event.c
 TEST_SRCS	+= message.c
 TEST_SRCS	+= mos.c
 TEST_SRCS	+= net.c
