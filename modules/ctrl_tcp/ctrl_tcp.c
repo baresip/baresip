@@ -136,7 +136,8 @@ static int encode_response(struct mbuf *resp, const char *token)
 
 	err = json_encode_odict(&pf, od);
 	if (err)
-		warning("ctrl_tcp: failed to encode response json (%m)\n", err);
+		warning("ctrl_tcp: failed to encode response JSON (%m)\n",
+			err);
 
  out:
 	mem_deref(buf);
@@ -158,8 +159,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 
 	err = json_decode_odict(&od, 32, (const char*)mb->buf, mb->end, 16);
 	if (err) {
-		warning("ctrl_tcp: failed to decode JSON with %zu bytes (%m)\n",
-			mb->end, err);
+		warning("ctrl_tcp: failed to decode JSON (%m)\n", err);
 		goto out;
 	}
 
@@ -269,7 +269,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		buf->pos = NETSTRING_HEADER_SIZE;
 		err = tcp_send(st->tc, buf);
 		if (err) {
-			warning("ctrl_tcp: failed to send the message (%m)\n", err);
+			warning("ctrl_tcp: failed to send the message (%m)\n",
+				err);
 		}
 	}
 

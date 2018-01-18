@@ -138,16 +138,19 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 		if (mbuf_get_left(netstring->mb) < (3))
 			break;
 
-		err = netstring_read((char*)netstring->mb->buf, netstring->mb->end,
+		err = netstring_read((char*)netstring->mb->buf,
+				                 netstring->mb->end,
 				                 (char**)&mb.buf, &len);
 		if (err) {
 
 			if (err == NETSTRING_ERROR_TOO_SHORT) {
-				DEBUG_INFO("receive: %s\n", ns_error_string(err));
+				DEBUG_INFO("receive: %s\n",
+					ns_error_string(err));
 			}
 
 			else {
-				DEBUG_WARNING("receive: %s\n", ns_error_string(err));
+				DEBUG_WARNING("receive: %s\n",
+					ns_error_string(err));
 				netstring->mb = mem_deref(netstring->mb);
 			}
 
@@ -230,5 +233,6 @@ int netstring_debug(struct re_printf *pf, const struct netstring *netstring)
 	if (!netstring)
 		return 0;
 
-	return re_hprintf(pf, "tx=%llu, rx=%llu", netstring->n_tx, netstring->n_rx);
+	return re_hprintf(pf, "tx=%llu, rx=%llu",
+			              netstring->n_tx, netstring->n_rx);
 }
