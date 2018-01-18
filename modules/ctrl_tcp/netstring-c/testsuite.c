@@ -27,7 +27,8 @@ void test_netstring_read(void) {
 
   /* ex1: hello world */
   retval = netstring_read(ex1, strlen(ex1), &netstring, &netstring_len);
-  assert(netstring_len == 12); assert(strncmp(netstring, "hello world!", 12) == 0);
+  assert(netstring_len == 12);
+  assert(strncmp(netstring, "hello world!", 12) == 0);
   assert(retval == 0);
 
 
@@ -37,10 +38,12 @@ void test_netstring_read(void) {
   assert(netstring_len == 3); assert(strncmp(netstring, "foo", 3) == 0);
   assert(retval == 0);
 
-  retval = netstring_read(netstring+netstring_len+1, 9, &netstring, &netstring_len);
+  retval = netstring_read(netstring+netstring_len+1, 9,
+                          &netstring, &netstring_len);
   assert(netstring_len == 0); assert(retval == 0);
 
-  retval = netstring_read(netstring+netstring_len+1, 6, &netstring, &netstring_len);
+  retval = netstring_read(netstring+netstring_len+1, 6,
+                          &netstring, &netstring_len);
   assert(netstring_len == 3); assert(strncmp(netstring, "bar", 3) == 0);
   assert(retval == 0);
 
@@ -94,7 +97,8 @@ void test_netstring_encode_new(void) {
   char *ns; size_t bytes;
 
   bytes = netstring_encode_new(&ns, "foo", 3);
-  assert(ns != NULL); assert(strncmp(ns, "3:foo,", 6) == 0); assert(bytes == 6);
+  assert(ns != NULL); assert(strncmp(ns, "3:foo,", 6) == 0);
+  assert(bytes == 6);
   free(ns);
 
   bytes = netstring_encode_new(&ns, NULL, 0);
@@ -104,7 +108,7 @@ void test_netstring_encode_new(void) {
   bytes = netstring_encode_new(&ns, "hello world!", 12); assert(bytes == 16);
   assert(ns != NULL); assert(strncmp(ns, "12:hello world!,", 16) == 0);
   free(ns);
-}  
+}
 
 int main(void) {
   printf("Running test suite...\n");
