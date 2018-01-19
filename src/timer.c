@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #endif
 #ifdef WIN32
+#include <winsock2.h>
 #include <windows.h>
 #else
 #include <time.h>
