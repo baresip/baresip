@@ -37,7 +37,7 @@
  * Response message parameters:
  *
  * - response : true. Identifies the message type.
- * - error:   : true/false. Indicates whether the command errored.
+ * - ok:      : true/false. Indicates whether the command execution succeeded.
  * - data     : Baresip response to the related command execution.
  * - token    : Present if it was included in the related command request.
  *
@@ -46,8 +46,8 @@
  \verbatim
  {
   "response" : true,
-  "error"    : false,
-  "response" : "",
+  "ok"       : true,
+  "data"     : "",
   "token"    : "qwerasdf"
  }
  \endverbatim
@@ -134,7 +134,7 @@ static int encode_response(int cmd_error, struct mbuf *resp, const char *token)
 	}
 
 	err |= odict_entry_add(od, "response", ODICT_BOOL, true);
-	err |= odict_entry_add(od, "error", ODICT_BOOL, (bool)cmd_error);
+	err |= odict_entry_add(od, "ok", ODICT_BOOL, (bool)!cmd_error);
 
 	if (cmd_error && str_len(buf) == 0)
 		err |= odict_entry_add(od, "data", ODICT_STRING,
