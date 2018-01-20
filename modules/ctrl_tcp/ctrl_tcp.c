@@ -36,15 +36,17 @@
  *
  * Response message parameters:
  *
- * - type     : "response". Identifies the message type.
- * - response : Baresip response to the related command execution.
+ * - response : true. Identifies the message type.
+ * - error:   : true/false. Indicates whether the command errored.
+ * - data     : Baresip response to the related command execution.
  * - token    : Present if it was included in the related command request.
  *
  * Response message example:
  *
  \verbatim
  {
-  "type"     : "response",
+  "response" : true,
+  "error"    : false,
   "response" : "",
   "token"    : "qwerasdf"
  }
@@ -53,9 +55,9 @@
  *
  * Event message parameters:
  *
- * - type      : "event". Identifies the message type.
+ * - event     : true. Identifies the message type.
  * - class     : Event class.
- * - event     : Event ID.
+ * - type      : Event ID.
  * - param     : Specific event information.
  *
  * Apart from the above, events may contain aditional parameters.
@@ -64,9 +66,9 @@
  *
  \verbatim
  {
-  "type"       : "event",
+  "event"      : "true",
   "class"      : "call",
-  "event"      : "CALL_CLOSED",
+  "type"       : "CALL_CLOSED",
   "param"      : "Connection reset by peer",
   "account"    : "sip:alice@atlanta.com",
   "direction"  : "incoming",
@@ -102,7 +104,7 @@ static int print_handler(const char *p, size_t size, void *arg)
 }
 
 
-static int encode_response(struct mbuf *resp, const char *token)
+static int encode_response(bool error, struct mbuf *resp, const char *token)
 {
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL;
@@ -125,8 +127,9 @@ static int encode_response(struct mbuf *resp, const char *token)
 	mbuf_init(resp);
 	resp->pos = NETSTRING_HEADER_SIZE;
 
-	err |= odict_entry_add(od, "type", ODICT_STRING, "response");
-	err |= odict_entry_add(od, "response", ODICT_STRING, buf);
+	err |= odict_entry_add(od, "response", ODICT_BOOL, true);
+	err |= odict_entry_add(od, "error", ODICT_BOOL, error);
+	err |= odict_entry_add(od, "data", ODICT_STRING, buf);
 
 	if (token)
 		err |= odict_entry_add(od, "token", ODICT_STRING, token);
@@ -192,7 +195,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 		warning("ctrl_tcp: error processing command (%m)\n", err);
 	}
 
-	err = encode_response(resp, oe_tok ? oe_tok->u.str : NULL);
+	err = encode_response((bool)err, resp, oe_tok ? oe_tok->u.str : NULL);
 	if (err) {
 		warning("ctrl_tcp: failed to encode response (%m)\n", err);
 		goto out;
@@ -255,6 +258,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	if (err)
 		return;
 
+	err = odict_entry_add(od, "event", ODICT_BOOL, true);
 	err = event_encode_dict(od, ua, ev, call, prm);
 	if (err)
 		goto out;
