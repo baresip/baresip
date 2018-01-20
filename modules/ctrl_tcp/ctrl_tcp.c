@@ -112,10 +112,6 @@ static int encode_response(int cmd_error, struct mbuf *resp, const char *token)
 	char m[256];
 	int err;
 
-	err = odict_alloc(&od, 8);
-	if (err)
-		return err;
-
 	/* Empty response. */
 	if (resp->pos == NETSTRING_HEADER_SIZE)
 	{
@@ -127,11 +123,12 @@ static int encode_response(int cmd_error, struct mbuf *resp, const char *token)
 		resp->pos = NETSTRING_HEADER_SIZE;
 		err = mbuf_strdup(resp, &buf, resp->end - NETSTRING_HEADER_SIZE);
 		if (err)
-		{
-			mem_deref(od);
 			return err;
-		}
 	}
+
+	err = odict_alloc(&od, 8);
+	if (err)
+		return err;
 
 	err |= odict_entry_add(od, "response", ODICT_BOOL, true);
 	err |= odict_entry_add(od, "ok", ODICT_BOOL, (bool)!cmd_error);
@@ -274,7 +271,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		return;
 
 	err = odict_entry_add(od, "event", ODICT_BOOL, true);
-	err = event_encode_dict(od, ua, ev, call, prm);
+	err |= event_encode_dict(od, ua, ev, call, prm);
 	if (err)
 		goto out;
 
