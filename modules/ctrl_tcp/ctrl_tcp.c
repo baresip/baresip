@@ -104,38 +104,53 @@ static int print_handler(const char *p, size_t size, void *arg)
 }
 
 
-static int encode_response(bool error, struct mbuf *resp, const char *token)
+static int encode_response(int cmd_error, struct mbuf *resp, const char *token)
 {
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL;
 	char *buf = NULL;
+	char m[256];
 	int err;
 
 	err = odict_alloc(&od, 8);
 	if (err)
 		return err;
 
-	resp->pos = NETSTRING_HEADER_SIZE;
-	err = mbuf_strdup(resp, &buf, resp->end - NETSTRING_HEADER_SIZE);
-	if (err)
+	/* Empty response. */
+	if (resp->pos == NETSTRING_HEADER_SIZE)
 	{
-		mem_deref(od);
-		return err;
+		buf = mem_alloc(1, NULL);
+		buf[0] = '\0';
+	}
+	else
+	{
+		resp->pos = NETSTRING_HEADER_SIZE;
+		err = mbuf_strdup(resp, &buf, resp->end - NETSTRING_HEADER_SIZE);
+		if (err)
+		{
+			mem_deref(od);
+			return err;
+		}
 	}
 
-	mbuf_reset(resp);
-	mbuf_init(resp);
-	resp->pos = NETSTRING_HEADER_SIZE;
-
 	err |= odict_entry_add(od, "response", ODICT_BOOL, true);
-	err |= odict_entry_add(od, "error", ODICT_BOOL, error);
-	err |= odict_entry_add(od, "data", ODICT_STRING, buf);
+	err |= odict_entry_add(od, "error", ODICT_BOOL, (bool)cmd_error);
+
+	if (cmd_error && str_len(buf) == 0)
+		err |= odict_entry_add(od, "data", ODICT_STRING,
+			str_error(cmd_error, m, sizeof(m)));
+	else
+		err |= odict_entry_add(od, "data", ODICT_STRING, buf);
 
 	if (token)
 		err |= odict_entry_add(od, "token", ODICT_STRING, token);
 
 	if (err)
 		goto out;
+
+	mbuf_reset(resp);
+	mbuf_init(resp);
+	resp->pos = NETSTRING_HEADER_SIZE;
 
 	err = json_encode_odict(&pf, od);
 	if (err)
@@ -195,7 +210,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 		warning("ctrl_tcp: error processing command (%m)\n", err);
 	}
 
-	err = encode_response((bool)err, resp, oe_tok ? oe_tok->u.str : NULL);
+	err = encode_response(err, resp, oe_tok ? oe_tok->u.str : NULL);
 	if (err) {
 		warning("ctrl_tcp: failed to encode response (%m)\n", err);
 		goto out;
