@@ -130,10 +130,8 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 	/* extract all NETSTRING-frames in the TCP-stream */
 	for (;;) {
 
-		size_t start, len, end;
+		size_t len, end;
 		struct mbuf mb;
-
-		start = netstring->mb->pos;
 
 		if (mbuf_get_left(netstring->mb) < (3))
 			break;
