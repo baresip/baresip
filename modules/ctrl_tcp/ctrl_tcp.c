@@ -121,7 +121,8 @@ static int encode_response(int cmd_error, struct mbuf *resp, const char *token)
 	else
 	{
 		resp->pos = NETSTRING_HEADER_SIZE;
-		err = mbuf_strdup(resp, &buf, resp->end - NETSTRING_HEADER_SIZE);
+		err = mbuf_strdup(resp, &buf,
+			resp->end - NETSTRING_HEADER_SIZE);
 		if (err)
 			return err;
 	}
