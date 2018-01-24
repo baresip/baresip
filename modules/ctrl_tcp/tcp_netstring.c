@@ -30,27 +30,6 @@ struct netstring {
 };
 
 
-static const char* ns_error_string(int err)
-{
-	switch (err) {
-		case NETSTRING_ERROR_TOO_LONG:
-			return "NETSTRING_ERROR_TOO_LONG";
-		case NETSTRING_ERROR_NO_COLON:
-			return "NETSTRING_ERROR_NO_COLON";
-		case NETSTRING_ERROR_TOO_SHORT:
-			return "NETSTRING_ERROR_TOO_SHORT";
-		case NETSTRING_ERROR_NO_COMMA:
-			return "NETSTRING_ERROR_NO_COMMA";
-		case NETSTRING_ERROR_LEADING_ZERO:
-			return "NETSTRING_ERROR_LEADING_ZERO";
-		case NETSTRING_ERROR_NO_LENGTH:
-			return "NETSTRING_ERROR_NO_LENGTH";
-		default:
-			return "NETSTRING_ERROR_UNKNOWN";
-	}
-}
-
-
 /* responsible for adding the netstring header
    - assumes that the sent MBUF contains a complete packet
  */
@@ -143,12 +122,12 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 
 			if (err == NETSTRING_ERROR_TOO_SHORT) {
 				DEBUG_INFO("receive: %s\n",
-					ns_error_string(err));
+					netstring_error_str(err));
 			}
 
 			else {
 				DEBUG_WARNING("receive: %s\n",
-					ns_error_string(err));
+					netstring_error_str(err));
 				netstring->mb = mem_deref(netstring->mb);
 			}
 

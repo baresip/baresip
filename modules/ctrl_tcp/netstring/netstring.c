@@ -7,6 +7,28 @@
 #include <math.h>
 #include "netstring.h"
 
+
+const char* netstring_error_str(netstring_error err)
+{
+	switch (err) {
+		case NETSTRING_ERROR_TOO_LONG:
+			return "NETSTRING_ERROR_TOO_LONG";
+		case NETSTRING_ERROR_NO_COLON:
+			return "NETSTRING_ERROR_NO_COLON";
+		case NETSTRING_ERROR_TOO_SHORT:
+			return "NETSTRING_ERROR_TOO_SHORT";
+		case NETSTRING_ERROR_NO_COMMA:
+			return "NETSTRING_ERROR_NO_COMMA";
+		case NETSTRING_ERROR_LEADING_ZERO:
+			return "NETSTRING_ERROR_LEADING_ZERO";
+		case NETSTRING_ERROR_NO_LENGTH:
+			return "NETSTRING_ERROR_NO_LENGTH";
+		default:
+			return "NETSTRING_ERROR_UNKNOWN";
+	}
+}
+
+
 /**
  * Reads a netstring from a `buffer` of length `buffer_length`. Writes
  * to `netstring_start` a pointer to the beginning of the string in
