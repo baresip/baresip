@@ -10,7 +10,7 @@
 #include <re_net.h>
 
 #include "netstring.h"
-#include "netstring-c/netstring.h"
+#include "netstring/netstring.h"
 
 
 #define DEBUG_MODULE "netstring"
