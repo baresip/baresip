@@ -1,14 +1,11 @@
 CFLAGS = -O2 -Wall
-LDFLAGS= -lm 
+LDFLAGS= -lm
 
-.PHONY: test clean
+.PHONY: clean
 
 all: testsuite
 
 testsuite: testsuite.c netstring.o
-
-test: testsuite
-	./testsuite
 
 clean:
 	rm -f *.o testsuite
