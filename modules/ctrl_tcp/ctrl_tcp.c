@@ -6,7 +6,7 @@
 #include <re.h>
 #include <baresip.h>
 
-#include "netstring.h"
+#include "tcp_netstring.h"
 
 
 /**

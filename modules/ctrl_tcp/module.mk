@@ -5,6 +5,6 @@
 #
 
 MOD		:= ctrl_tcp
-$(MOD)_SRCS	+= ctrl_tcp.c netstring.c ./netstring/netstring.c
+$(MOD)_SRCS	+= ctrl_tcp.c tcp_netstring.c ./netstring/netstring.c
 
 include mk/mod.mk

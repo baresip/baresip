@@ -9,11 +9,11 @@
 #include <re_tcp.h>
 #include <re_net.h>
 
-#include "netstring.h"
+#include "tcp_netstring.h"
 #include "netstring/netstring.h"
 
 
-#define DEBUG_MODULE "netstring"
+#define DEBUG_MODULE "tcp_netstring"
 #define DEBUG_LEVEL 5
 #include <re_dbg.h>
 
