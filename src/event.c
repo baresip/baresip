@@ -116,6 +116,7 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		err |= odict_entry_add(od, "direction", ODICT_STRING, dir);
 		err |= odict_entry_add(od, "peeruri",
 				       ODICT_STRING, call_peeruri(call));
+		err |= odict_entry_add(od, "id", ODICT_STRING, call_id(call));
 		if (err)
 			goto out;
 	}
