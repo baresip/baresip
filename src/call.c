@@ -1299,6 +1299,8 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 	if (err) {
 		info("%s: session closed: %m\n", call->peer_uri, err);
 
+		(void)re_snprintf(reason, sizeof(reason), "%m", err);
+
 		if (call->not) {
 			(void)call_notify_sipfrag(call, 500, "%m", err);
 		}
