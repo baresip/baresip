@@ -1,4 +1,8 @@
-
+/**
+ * @file tcp_netstring.h  TCP netstring framing
+ *
+ * Copyright (C) 2018 46 Labs LLC
+ */
 
 enum {NETSTRING_HEADER_SIZE = 10};
 

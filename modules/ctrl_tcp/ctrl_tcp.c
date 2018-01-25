@@ -1,8 +1,9 @@
 /**
  * @file ctrl_tcp.c  TCP control interface using JSON payload
  *
- * Copyright (C) 2017 José Luis Millán <jmillan@aliax.net>
+ * Copyright (C) 2018 46 Labs LLC
  */
+
 #include <re.h>
 #include <baresip.h>
 

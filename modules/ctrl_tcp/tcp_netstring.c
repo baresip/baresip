@@ -1,3 +1,8 @@
+/**
+ * @file tcp_netstring.c  TCP netstring framing
+ *
+ * Copyright (C) 2018 46 Labs LLC
+ */
 
 #include <math.h>
 #include <string.h>

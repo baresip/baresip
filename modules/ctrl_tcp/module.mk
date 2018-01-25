@@ -1,7 +1,7 @@
 #
 # module.mk
 #
-# Copyright (C) 2017 José Luis Millán <jmillan@aliax.net>
+# Copyright (C) 2018 46 Labs LLC
 #
 
 MOD		:= ctrl_tcp
