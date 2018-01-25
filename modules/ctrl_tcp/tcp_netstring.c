@@ -84,6 +84,7 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 {
 	struct netstring *netstring = arg;
 	int err = 0;
+	size_t pos = 0;
 	(void)estab;
 
 	/* handle re-assembly */
@@ -95,7 +96,7 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 		}
 	}
 
-	size_t pos = netstring->mb->pos;
+	pos = netstring->mb->pos;
 
 	netstring->mb->pos = netstring->mb->end;
 
