@@ -59,6 +59,7 @@ struct call {
 	char *local_name;         /**< Local display name                   */
 	char *peer_uri;           /**< Peer SIP Address                     */
 	char *peer_name;          /**< Peer display name                    */
+	char *id;                 /**< Cached session call-id               */
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
 	time_t time_start;        /**< Time when call started               */
@@ -378,6 +379,7 @@ static void call_destructor(void *arg)
 	tmr_cancel(&call->tmr_dtmf);
 
 	mem_deref(call->sess);
+	mem_deref(call->id);
 	mem_deref(call->local_uri);
 	mem_deref(call->local_name);
 	mem_deref(call->peer_uri);
@@ -903,7 +905,7 @@ int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 
 const char *call_id(const struct call *call)
 {
-	return call ? sip_dialog_callid(sipsess_dialog(call->sess)) : NULL;
+	return call ? call->id : NULL;
 }
 
 
@@ -946,10 +948,10 @@ int call_debug(struct re_printf *pf, const struct call *call)
 	err |= re_hprintf(pf,
 			  " local_uri: %s <%s>\n"
 			  " peer_uri:  %s <%s>\n"
-			  " af=%s\n",
+			  " af=%s id=%s\n",
 			  call->local_name, call->local_uri,
 			  call->peer_name, call->peer_uri,
-			  net_af2name(call->af));
+			  net_af2name(call->af), call->id);
 	err |= re_hprintf(pf, " direction: %s\n",
 			  call->outgoing ? "Outgoing" : "Incoming");
 
@@ -1429,6 +1431,11 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		return err;
 	}
 
+	err = str_dup(&call->id,
+		      sip_dialog_callid(sipsess_dialog(call->sess)));
+	if (err)
+		return err;
+
 	set_state(call, STATE_INCOMING);
 
 	/* New call */
@@ -1533,7 +1540,11 @@ static int send_invite(struct call *call)
 			      ua_print_supported, call->ua);
 	if (err) {
 		warning("call: sipsess_connect: %m\n", err);
+		return err;
 	}
+
+	err = str_dup(&call->id,
+		      sip_dialog_callid(sipsess_dialog(call->sess)));
 
 	/* save call setup timer */
 	call->time_conn = time(NULL);
