@@ -40,19 +40,19 @@
 #
 # Use SIP Outbound over TCP, with ICE for Media NAT Traversal, and DTLS-SRTP for encryption
 #
-<sip:user:pass@example.com>;sipnat=outbound;outbound="sip:example.com;transport=tcp";medianat=ice;mediaenc=dtls_srtp
+<sip:user@example.com>;sipnat=outbound;outbound="sip:example.com;transport=tcp";medianat=ice;mediaenc=dtls_srtp;auth_pass=pass
 
 
 #
 # Use ICE for Media NAT Traversal, using a specific STUN-server
 #
-<sip:user:pass@example.com>;medianat=ice;stunserver="stun:username:password@stunserver.org"
+<sip:user@example.com>;medianat=ice;stunserver="stun:username:password@stunserver.org";auth_pass=pass
 
 
 #
 # Force audio-codec 'opus' and video-codec 'vp8'
 #
-<sip:user:pass@example.com>;audio_codecs=opus/48000/2;video_codecs=vp8
+<sip:user@example.com>;audio_codecs=opus/48000/2;video_codecs=vp8;auth_pass=pass
 
 
 # ... more examples can be added here ...

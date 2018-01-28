@@ -20,7 +20,7 @@
  * Examples:
  \verbatim
   "User 1 with password prompt" <sip:user@domain.com>
-  "User 2 with stored password" <sip:user:pass@domain.com>
+  "User 2 with stored password" <sip:user@domain.com>;auth_pass=pass
   "User 2 with ICE" <sip:user@1.2.3.4;transport=tcp>;medianat=ice
   "User 3 with IPv6" <sip:user@[2001:df8:0:16:216:6fff:fe91:614c]:5070>
  \endverbatim
@@ -84,11 +84,13 @@ static int account_write_template(const char *file)
 			 "#\n"
 			 "# Examples:\n"
 			 "#\n"
-			 "#  <sip:user:secret@domain.com;transport=tcp>\n"
-			 "#  <sip:user:secret@1.2.3.4;transport=tcp>\n"
-			 "#  <sip:user:secret@"
+			 "#  <sip:user@domain.com;transport=tcp>"
+		         ";auth_pass=secret\n"
+			 "#  <sip:user@1.2.3.4;transport=tcp>"
+		         ";auth_pass=secret\n"
+			 "#  <sip:user@"
 			 "[2001:df8:0:16:216:6fff:fe91:614c]:5070"
-			 ";transport=tcp>\n"
+			 ";transport=tcp>;auth_pass=secret\n"
 			 "#\n"
 		       "#<sip:%s@%s>;auth_pass=%s\n", login, domain, pass);
 	if (r < 0)
