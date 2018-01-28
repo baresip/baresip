@@ -5,6 +5,7 @@
  */
 
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <mpg123.h>
 #include <speex/speex_resampler.h>
@@ -110,7 +111,8 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 }
 
 
-int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
+int mpa_decode_frm(struct audec_state *ads,
+		   int fmt, void *sampv_void, size_t *sampc,
 		    const uint8_t *buf, size_t len)
 {
 	int result, channels, encoding, i;
@@ -118,6 +120,7 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 	size_t n;
 	spx_uint32_t intermediate_len;
 	spx_uint32_t out_len;
+	int16_t *sampv = sampv_void;
 
 #ifdef DEBUG
 	debug("MPA dec start %d %ld\n",len, *sampc);
@@ -131,6 +134,9 @@ int mpa_decode_frm(struct audec_state *ads, int16_t *sampv, size_t *sampc,
 			*(uint32_t*)(void *)buf);
 		return EPROTO;
 	}
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	n = 0;
 	result = mpg123_decode(ads->dec, buf+4, len-4,
