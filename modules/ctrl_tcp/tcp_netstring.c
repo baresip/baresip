@@ -42,7 +42,7 @@ static bool netstring_send_handler(int *err, struct mbuf *mb, void *arg)
 {
 	struct netstring *netstring = arg;
 	size_t num_len;
-	char num_str[10];
+	char num_str[32];
 
 	if (mb->pos < NETSTRING_HEADER_SIZE) {
 		DEBUG_WARNING("send: not enough space for netstring header\n");
@@ -67,7 +67,7 @@ static bool netstring_send_handler(int *err, struct mbuf *mb, void *arg)
 		return false;
 	}
 
-	sprintf(num_str, "%zu", mbuf_get_left(mb));
+	re_snprintf(num_str, sizeof(num_str), "%zu", mbuf_get_left(mb));
 	num_len = strlen(num_str);
 
 	mb->pos = NETSTRING_HEADER_SIZE - (num_len + 1);
