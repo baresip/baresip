@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+#include <re.h>
 #include "netstring.h"
 
 
@@ -114,9 +115,9 @@ int netstring_read(char *buffer, size_t buffer_length,
  */
 size_t netstring_num_len(size_t num)
 {
-	char num_str[10];
+	char num_str[32];
 
-	sprintf(num_str, "%zu", num);
+	re_snprintf(num_str, sizeof(num_str), "%zu", num);
 
 	return strlen(num_str);
 }
