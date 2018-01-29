@@ -369,7 +369,7 @@ static int ctrl_close(void)
 }
 
 
-const struct mod_export DECL_EXPORTS(ctrl) = {
+const struct mod_export DECL_EXPORTS(ctrl_tcp) = {
 	"ctrl_tcp",
 	"application",
 	ctrl_init,
