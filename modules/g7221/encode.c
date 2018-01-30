@@ -50,7 +50,7 @@ int g7221_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 
 
 int g7221_encode(struct auenc_state *aes, uint8_t *buf, size_t *len,
-		 const int16_t *sampv, size_t sampc)
+		 int fmt, const void *sampv, size_t sampc)
 {
 	size_t framec;
 
