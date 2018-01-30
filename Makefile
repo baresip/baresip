@@ -66,9 +66,12 @@ ifeq ($(OS),win32)
 STATIC    := yes
 endif
 
-ifeq ($(OS),freebsd)
 ifneq ($(SYSROOT),)
+ifeq ($(OS),freebsd)
 CFLAGS += -I$(SYSROOT)/local/include
+endif
+ifeq ($(OS),openbsd)
+CFLAGS += -isystem $(SYSROOT)/local/include
 endif
 endif
 
