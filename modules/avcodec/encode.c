@@ -513,7 +513,7 @@ int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		goto out;
 	}
 
-	st->mb  = mbuf_alloc(FF_MIN_BUFFER_SIZE * 20);
+	st->mb  = mbuf_alloc(AV_INPUT_BUFFER_MIN_SIZE * 20);
 	st->mb_frag = mbuf_alloc(1024);
 	if (!st->mb || !st->mb_frag) {
 		err = ENOMEM;
