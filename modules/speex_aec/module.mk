@@ -6,10 +6,6 @@
 
 MOD		:= speex_aec
 $(MOD)_SRCS	+= speex_aec.c
-ifneq ($(HAVE_SPEEXDSP),)
 $(MOD)_LFLAGS	+= "-lspeexdsp"
-else
-$(MOD)_LFLAGS	+= "-lspeex"
-endif
 
 include mk/mod.mk
