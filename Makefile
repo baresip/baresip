@@ -109,6 +109,8 @@ LIBDIR     := $(PREFIX)/lib
 MOD_PATH   := $(LIBDIR)/$(PROJECT)/modules
 SHARE_PATH := $(PREFIX)/share/$(PROJECT)
 CFLAGS     += -DPREFIX=\"$(PREFIX)\"
+CFLAGS    += -DMOD_PATH=\"$(MOD_PATH)\"
+CFLAGS    += -DSHARE_PATH=\"$(SHARE_PATH)\"
 
 
 all: sanity $(MOD_BINS) $(BIN)
