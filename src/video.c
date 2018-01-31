@@ -134,6 +134,7 @@ struct vrx {
 	struct list filtl;                 /**< Filters in decoding order */
 	struct tmr tmr_picup;              /**< Picture update timer      */
 	struct vidsz size;                 /**< Incoming video resolution */
+	enum vidfmt fmt;                   /**< Incoming pixel format     */
 	enum vidorient orient;             /**< Display orientation       */
 	char device[128];                  /**< Display device name       */
 	int pt_rx;                         /**< Incoming RTP payload type */
@@ -521,6 +522,7 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 	str_ncpy(vrx->device, video->cfg.disp_dev, sizeof(vrx->device));
 
 	vrx->ts_min = ~0;
+	vrx->fmt = (enum vidfmt)-1;
 
 	return err;
 }
@@ -617,6 +619,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		goto out;
 
 	vrx->size = frame->size;
+	vrx->fmt  = frame->fmt;
 
 	if (!list_isempty(&vrx->filtl)) {
 
@@ -1326,8 +1329,9 @@ static int vrx_debug(struct re_printf *pf, const struct vrx *vrx)
 {
 	int err = 0;
 
-	err |= re_hprintf(pf, " rx: decode: %s\n",
-			  vrx->vc ? vrx->vc->name : "none");
+	err |= re_hprintf(pf, " rx: decode: %s %s\n",
+			  vrx->vc ? vrx->vc->name : "none",
+			  vidfmt_name(vrx->fmt));
 	err |= re_hprintf(pf, "     vidisp: %s %u x %u\n",
 			  vrx->vidisp ? vidisp_get(vrx->vidisp)->name : "none",
 			  vrx->size.w, vrx->size.h);
