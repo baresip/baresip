@@ -110,8 +110,8 @@ static void print_rtp_stats(const struct stream *s)
 	     ,
 	     sdp_media_name(s->sdp),
 	     s->metric_tx.n_packets, s->metric_rx.n_packets,
-	     1.0*metric_avg_bitrate(&s->metric_tx)/1000,
-	     1.0*metric_avg_bitrate(&s->metric_rx)/1000,
+	     1.0*metric_avg_bitrate(&s->metric_tx)/1000.0,
+	     1.0*metric_avg_bitrate(&s->metric_rx)/1000.0,
 	     s->metric_tx.n_err, s->metric_rx.n_err
 	     );
 

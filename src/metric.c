@@ -77,7 +77,7 @@ void metric_add_packet(struct metric *metric, size_t packetsize)
 }
 
 
-uint32_t metric_avg_bitrate(const struct metric *metric)
+double metric_avg_bitrate(const struct metric *metric)
 {
 	int diff;
 
@@ -86,5 +86,5 @@ uint32_t metric_avg_bitrate(const struct metric *metric)
 
 	diff = (int)(tmr_jiffies() - metric->ts_start);
 
-	return 1000 * 8 * (metric->n_bytes / diff);
+	return 1000.0 * 8 * (double)metric->n_bytes / (double)diff;
 }
