@@ -522,7 +522,8 @@ static void poll_aubuf_tx(struct audio *a)
 
 		aubuf_read(tx->aubuf, (uint8_t *)tx->sampv, num_bytes);
 	}
-	else {
+	else if (tx->enc_fmt == AUFMT_S16LE) {
+
 		/* Convert from ausrc format to 16-bit format */
 
 		void *tmp_sampv;
@@ -543,6 +544,11 @@ static void poll_aubuf_tx(struct audio *a)
 		auconv_to_s16(sampv, tx->src_fmt, tmp_sampv, sampc);
 
 		mem_deref(tmp_sampv);
+	}
+	else {
+		warning("audio: tx: invalid sample formats (%s -> %s)\n",
+			aufmt_name(tx->src_fmt),
+			aufmt_name(tx->enc_fmt));
 	}
 
 	/* optional resampler */
@@ -833,7 +839,7 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 		if (err)
 			goto out;
 	}
-	else {
+	else if (rx->dec_fmt == AUFMT_S16LE) {
 
 		/* Convert from 16-bit to auplay format */
 		void *tmp_sampv;
@@ -859,6 +865,11 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 
 		if (err)
 			goto out;
+	}
+	else {
+		warning("audio: decode: invalid sample formats (%s -> %s)\n",
+			aufmt_name(rx->dec_fmt),
+			aufmt_name(rx->play_fmt));
 	}
 
 	rx->aubuf_started = true;
