@@ -171,11 +171,6 @@ USE_MPA  := $(shell [ -f $(SYSROOT)/include/twolame.h ] || \
 	[ -f $(SYSROOT_ALT)/include/twolame.h ] && echo "yes")
 endif
 endif
-USE_SPEEX := $(shell [ -f $(SYSROOT)/include/speex.h ] || \
-	[ -f $(SYSROOT)/include/speex/speex.h ] || \
-	[ -f $(SYSROOT)/local/include/speex.h ] || \
-	[ -f $(SYSROOT)/local/include/speex/speex.h ] || \
-	[ -f $(SYSROOT_ALT)/include/speex/speex.h ] && echo "yes")
 USE_SPEEX_AEC := $(shell [ -f $(SYSROOT)/include/speex/speex_echo.h ] || \
 	[ -f $(SYSROOT)/local/include/speex/speex_echo.h ] || \
 	[ -f $(SYSROOT_ALT)/include/speex/speex_echo.h ] && echo "yes")

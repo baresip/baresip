@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <re.h>
+#include <rem_au.h>
 #include <baresip.h>
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES 1
 #include <spandsp.h>
@@ -125,9 +126,12 @@ static int decode_update(struct audec_state **adsp,
 
 
 static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
-		  const int16_t *sampv, size_t sampc)
+		  int fmt, const void *sampv, size_t sampc)
 {
 	int n;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	n = g722_encode(&st->enc, buf, sampv, (int)sampc);
 	if (n <= 0) {
@@ -143,13 +147,16 @@ static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 }
 
 
-static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
+static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 		  const uint8_t *buf, size_t len)
 {
 	int n;
 
 	if (!st || !sampv || !buf)
 		return EINVAL;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	n = g722_decode(&st->dec, sampv, buf, (int)len);
 	if (n < 0)

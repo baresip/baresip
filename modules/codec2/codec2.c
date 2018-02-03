@@ -123,7 +123,7 @@ static int decode_update(struct audec_state **adsp,
 
 
 static int encode(struct auenc_state *aes, uint8_t *buf,
-		  size_t *len, const int16_t *sampv, size_t sampc)
+		  size_t *len, int fmt, const void *sampv, size_t sampc)
 {
 	if (!buf || !len || !sampv)
 		return EINVAL;
@@ -133,6 +133,9 @@ static int encode(struct auenc_state *aes, uint8_t *buf,
 	if (sampc != (size_t)codec2_samples_per_frame(aes->c2))
 		return EPROTO;
 
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	codec2_encode(aes->c2, buf, (short *)sampv);
 
 	*len = codec2_bits_per_frame(aes->c2)/8;
@@ -141,7 +144,7 @@ static int encode(struct auenc_state *aes, uint8_t *buf,
 }
 
 
-static int decode(struct audec_state *ads, int16_t *sampv,
+static int decode(struct audec_state *ads, int fmt, void *sampv,
 		  size_t *sampc, const uint8_t *buf, size_t len)
 {
 	if (!sampv || !sampc || !buf)
@@ -151,6 +154,9 @@ static int decode(struct audec_state *ads, int16_t *sampv,
 		return ENOMEM;
 	if (len < (size_t)codec2_bits_per_frame(ads->c2)/8)
 		return EPROTO;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	codec2_decode(ads->c2, sampv, buf);
 

@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <bv32/bv32.h>
 #include <bv32/bitpack.h>
@@ -100,17 +101,21 @@ static int decode_update(struct audec_state **adsp,
 
 
 static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
-		  const int16_t *sampv, size_t sampc)
+		  int fmt, const void *sampv, size_t sampc)
 {
 	size_t i, nframe;
+	short *p = (short *)sampv;
 
 	nframe = sampc / NSAMP;
 
 	if (*len < nframe * CODED_OCTETS)
 		return ENOMEM;
 
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	for (i=0; i<nframe; i++) {
-		BV32_Encode(&st->bsc, &st->cs, (short *)&sampv[i*NSAMP]);
+		BV32_Encode(&st->bsc, &st->cs, &p[i*NSAMP]);
 		BV32_BitPack((void *)&buf[i*CODED_OCTETS], &st->bsc);
 	}
 
@@ -120,19 +125,23 @@ static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 }
 
 
-static int decode(struct audec_state *st, int16_t *sampv,
+static int decode(struct audec_state *st, int fmt, void *sampv,
 		  size_t *sampc, const uint8_t *buf, size_t len)
 {
 	size_t i, nframe;
+	short *p = sampv;
 
 	nframe = len / CODED_OCTETS;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	if (*sampc < NSAMP*nframe)
 		return ENOMEM;
 
 	for (i=0; i<nframe; i++) {
 		BV32_BitUnPack((void *)&buf[i*CODED_OCTETS], &st->bsd);
-		BV32_Decode(&st->bsd, &st->ds, (short *)&sampv[i*NSAMP]);
+		BV32_Decode(&st->bsd, &st->ds, &p[i*NSAMP]);
 	}
 
 	*sampc = NSAMP * nframe;
@@ -141,8 +150,11 @@ static int decode(struct audec_state *st, int16_t *sampv,
 }
 
 
-static int plc(struct audec_state *st, int16_t *sampv, size_t *sampc)
+static int plc(struct audec_state *st, int fmt, void *sampv, size_t *sampc)
 {
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	BV32_PLC(&st->ds, sampv);
 	*sampc = NSAMP;
 

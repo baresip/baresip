@@ -5,6 +5,7 @@
  */
 
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <twolame.h>
 #include <string.h>
@@ -136,13 +137,16 @@ out:
 
 
 int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
-		    const int16_t *sampv, size_t sampc)
+		   int fmt, const void *sampv, size_t sampc)
 {
 	int n;
 	spx_uint32_t intermediate_len,in_len;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	if (aes->resampler)  {
 		in_len = (uint32_t)sampc/2;

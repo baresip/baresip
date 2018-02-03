@@ -16,6 +16,7 @@
 #include <dec_if.h>
 #endif
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include "amr.h"
 
@@ -205,7 +206,7 @@ static int decode_update(struct audec_state **adsp,
 
 #ifdef AMR_WB
 static int encode_wb(struct auenc_state *st, uint8_t *buf, size_t *len,
-		     const int16_t *sampv, size_t sampc)
+		     int fmt, const void *sampv, size_t sampc)
 {
 	int n;
 
@@ -214,6 +215,9 @@ static int encode_wb(struct auenc_state *st, uint8_t *buf, size_t *len,
 
 	if (*len < NB_SERIAL_MAX)
 		return ENOMEM;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	/* CMR value 15 indicates that no mode request is present */
 	buf[0] = 15 << 4;
@@ -228,13 +232,17 @@ static int encode_wb(struct auenc_state *st, uint8_t *buf, size_t *len,
 }
 
 
-static int decode_wb(struct audec_state *st, int16_t *sampv, size_t *sampc,
+static int decode_wb(struct audec_state *st,
+		     int fmt, void *sampv, size_t *sampc,
 		     const uint8_t *buf, size_t len)
 {
 	if (*sampc < L_FRAME16k)
 		return ENOMEM;
 	if (len > NB_SERIAL_MAX)
 		return EINVAL;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	IF2D_IF_decode(st->dec, &buf[1], sampv, 0);
 
@@ -247,7 +255,7 @@ static int decode_wb(struct audec_state *st, int16_t *sampv, size_t *sampc,
 
 #ifdef AMR_NB
 static int encode_nb(struct auenc_state *st, uint8_t *buf,
-		     size_t *len, const int16_t *sampv, size_t sampc)
+		     size_t *len, int fmt, const void *sampv, size_t sampc)
 {
 	int r;
 
@@ -255,6 +263,9 @@ static int encode_nb(struct auenc_state *st, uint8_t *buf,
 		return EINVAL;
 	if (*len < NB_SERIAL_MAX)
 		return ENOMEM;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	/* CMR value 15 indicates that no mode request is present */
 	buf[0] = 15 << 4;
@@ -269,7 +280,7 @@ static int encode_nb(struct auenc_state *st, uint8_t *buf,
 }
 
 
-static int decode_nb(struct audec_state *st, int16_t *sampv,
+static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 		     size_t *sampc, const uint8_t *buf, size_t len)
 {
 	if (!st || !sampv || !sampc || !buf)
@@ -280,6 +291,9 @@ static int decode_nb(struct audec_state *st, int16_t *sampv,
 
 	if (*sampc < L_FRAME16k)
 		return ENOMEM;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	Decoder_Interface_Decode(st->dec, &buf[1], sampv, 0);
 

@@ -5,6 +5,7 @@
  */
 #include <gsm.h> /* please report if you have problems finding this file */
 #include <re.h>
+#include <rem_au.h>
 #include <baresip.h>
 
 
@@ -113,12 +114,15 @@ static int decode_update(struct audec_state **adsp,
 
 
 static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
-		  const int16_t *sampv, size_t sampc)
+		  int fmt, const void *sampv, size_t sampc)
 {
 	if (sampc != FRAME_SIZE)
 		return EPROTO;
 	if (*len < sizeof(gsm_frame))
 		return ENOMEM;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	gsm_encode(st->enc, (gsm_signal *)sampv, buf);
 
@@ -128,7 +132,7 @@ static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 }
 
 
-static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
+static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 		  const uint8_t *buf, size_t len)
 {
 	int ret;
@@ -137,6 +141,9 @@ static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
 		return ENOMEM;
 	if (len < sizeof(gsm_frame))
 		return EBADMSG;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	ret = gsm_decode(st->dec, (gsm_byte *)buf, (gsm_signal *)sampv);
 	if (ret)

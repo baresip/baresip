@@ -120,12 +120,14 @@ static int codec_read(struct audio_loop *al, int16_t *sampv, size_t sampc)
 
 	aubuf_read_samp(al->ab, al->sampv, al->sampc);
 
-	err = al->ac->ench(al->enc, x, &xlen, al->sampv, al->sampc);
+	err = al->ac->ench(al->enc, x, &xlen,
+			   AUFMT_S16LE, al->sampv, al->sampc);
 	if (err)
 		goto out;
 
 	if (al->ac->dech) {
-		err = al->ac->dech(al->dec, sampv, &sampc, x, xlen);
+		err = al->ac->dech(al->dec, AUFMT_S16LE, sampv, &sampc,
+				   x, xlen);
 		if (err)
 			goto out;
 	}

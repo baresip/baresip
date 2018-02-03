@@ -4,6 +4,7 @@
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 
@@ -18,9 +19,10 @@ enum {NR_CODECS = 8};
 
 
 static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
-		  const int16_t *sampv, size_t sampc)
+		  int fmt, const void *sampv, size_t sampc)
 {
 	int16_t *p = (void *)buf;
+	const int16_t *sampv16 = sampv;
 	(void)st;
 
 	if (!buf || !len || !sampv)
@@ -29,19 +31,23 @@ static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 	if (*len < sampc*2)
 		return ENOMEM;
 
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	*len = sampc*2;
 
 	while (sampc--)
-		*p++ = htons(*sampv++);
+		*p++ = htons(*sampv16++);
 
 	return 0;
 }
 
 
-static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
+static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 		  const uint8_t *buf, size_t len)
 {
 	int16_t *p = (void *)buf;
+	int16_t *sampv16 = sampv;
 	(void)st;
 
 	if (!buf || !len || !sampv)
@@ -50,11 +56,14 @@ static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
 	if (*sampc < len/2)
 		return ENOMEM;
 
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	*sampc = len/2;
 
 	len /= 2;
 	while (len--)
-		*sampv++ = ntohs(*p++);
+		*sampv16++ = ntohs(*p++);
 
 	return 0;
 }
@@ -62,14 +71,14 @@ static int decode(struct audec_state *st, int16_t *sampv, size_t *sampc,
 
 /* See RFC 3551 */
 static struct aucodec l16v[NR_CODECS] = {
-{LE_INIT, "10", "L16", 44100, 44100, 2, 0, 0, encode, 0, decode, 0, 0, 0,0,0},
-{LE_INIT,    0, "L16", 32000, 32000, 2, 0, 0, encode, 0, decode, 0, 0, 0,0,0},
-{LE_INIT,    0, "L16", 16000, 16000, 2, 0, 0, encode, 0, decode, 0, 0, 0,0,0},
-{LE_INIT,    0, "L16",  8000,  8000, 2, 0, 0, encode, 0, decode, 0, 0, 0,0,0},
-{LE_INIT, "11", "L16", 44100, 44100, 1, 0, 0, encode, 0, decode, 0, 0, 0,0,0},
-{LE_INIT,    0, "L16", 32000, 32000, 1, 0, 0, encode, 0, decode, 0, 0, 0,0,0},
-{LE_INIT,    0, "L16", 16000, 16000, 1, 0, 0, encode, 0, decode, 0, 0, 0,0,0},
-{LE_INIT,    0, "L16",  8000,  8000, 1, 0, 0, encode, 0, decode, 0, 0, 0,0,0},
+{LE_INIT, "10", "L16", 44100, 44100, 2, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16", 32000, 32000, 2, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16", 16000, 16000, 2, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16",  8000,  8000, 2, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT, "11", "L16", 44100, 44100, 1, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16", 32000, 32000, 1, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16", 16000, 16000, 1, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16",  8000,  8000, 1, 0, 0, encode, 0, decode, 0, 0, 0},
 };
 
 

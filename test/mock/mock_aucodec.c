@@ -16,9 +16,10 @@
 
 
 static int mock_l16_encode(struct auenc_state *st, uint8_t *buf, size_t *len,
-			   const int16_t *sampv, size_t sampc)
+			   int fmt, const void *sampv_void, size_t sampc)
 {
 	int16_t *p = (void *)buf;
+	const int16_t *sampv = sampv_void;
 	(void)st;
 
 	if (!buf || !len || !sampv)
@@ -26,6 +27,9 @@ static int mock_l16_encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 
 	if (*len < sampc*2)
 		return ENOMEM;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	*len = 2 + sampc*2;
 
@@ -39,10 +43,11 @@ static int mock_l16_encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 
 
 static int mock_l16_decode(struct audec_state *st,
-			   int16_t *sampv, size_t *sampc,
+			   int fmt, void *sampv_void, size_t *sampc,
 			   const uint8_t *buf, size_t len)
 {
 	int16_t *p = (void *)buf;
+	int16_t *sampv = sampv_void;
 	uint16_t hdr;
 	(void)st;
 
@@ -54,6 +59,9 @@ static int mock_l16_decode(struct audec_state *st,
 
 	if (*sampc < len/2)
 		return ENOMEM;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	*sampc = (len - 2)/2;
 

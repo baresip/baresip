@@ -13,13 +13,14 @@ struct g7221_aucodec {
 int g7221_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 			struct auenc_param *prm, const char *fmtp);
 int g7221_encode(struct auenc_state *aes, uint8_t *buf, size_t *len,
-		 const int16_t *sampv, size_t sampc);
+		 int fmt, const void *sampv, size_t sampc);
 
 
 /* Decode */
 int g7221_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 			const char *fmtp);
-int g7221_decode(struct audec_state *ads, int16_t *sampv, size_t *sampc,
+int g7221_decode(struct audec_state *ads,
+		 int fmt, void *sampv, size_t *sampc,
 		 const uint8_t *buf, size_t len);
 
 
