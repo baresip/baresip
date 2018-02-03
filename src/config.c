@@ -43,7 +43,7 @@ static struct config core_config = {
 
 	/** Audio */
 	{
-		PREFIX "/share/baresip",
+		SHARE_PATH,
 		"","",
 		"","",
 		"","",
@@ -527,7 +527,9 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "call_max_calls\t%u\n"
 			  "\n"
 			  "# Audio\n"
-#if defined (PREFIX)
+#if defined (SHARE_PATH)
+			  "#audio_path\t\t" SHARE_PATH "\n"
+#elif defined (PREFIX)
 			  "#audio_path\t\t" PREFIX "/share/baresip\n"
 #else
 			  "#audio_path\t\t/usr/share/baresip\n"
@@ -630,7 +632,9 @@ static uint32_t count_modules(const char *path)
 static const char *detect_module_path(bool *valid)
 {
 	static const char * const pathv[] = {
-#if defined (PREFIX)
+#if defined (MOD_PATH)
+		MOD_PATH,
+#elif defined (PREFIX)
 		"" PREFIX "/lib/baresip/modules",
 #else
 		"/usr/local/lib/baresip/modules",
