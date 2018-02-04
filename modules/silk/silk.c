@@ -4,6 +4,7 @@
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <silk/SKP_Silk_SDK_API.h>
 
@@ -155,13 +156,15 @@ static int decode_update(struct audec_state **adsp,
 
 
 static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
-		  const int16_t *sampv, size_t sampc)
+		  int fmt, const void *sampv, size_t sampc)
 {
 	int ret;
 	int16_t nBytesOut;
 
 	if (*len < MAX_BYTES_PER_FRAME)
 		return ENOMEM;
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	nBytesOut = *len;
 	ret = SKP_Silk_SDK_Encode(st->enc,
@@ -180,11 +183,14 @@ static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 }
 
 
-static int decode(struct audec_state *st, int16_t *sampv,
+static int decode(struct audec_state *st, int fmt, void *sampv,
 		  size_t *sampc, const uint8_t *buf, size_t len)
 {
 	int16_t nsamp = *sampc;
 	int ret;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	ret = SKP_Silk_SDK_Decode(st->dec,
 				  &st->decControl,
@@ -203,10 +209,13 @@ static int decode(struct audec_state *st, int16_t *sampv,
 }
 
 
-static int plc(struct audec_state *st, int16_t *sampv, size_t *sampc)
+static int plc(struct audec_state *st, int fmt, void *sampv, size_t *sampc)
 {
 	int16_t nsamp = *sampc;
 	int ret;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	ret = SKP_Silk_SDK_Decode(st->dec,
 				  &st->decControl,
