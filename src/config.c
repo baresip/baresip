@@ -863,6 +863,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "presence"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "syslog"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "mqtt" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "ctrl_tcp" MOD_EXT "\n");
 #ifdef USE_VIDEO
 	(void)re_fprintf(f, "module_app\t\t" MOD_PRE "vidloop"MOD_EXT"\n");
 #endif
@@ -878,6 +879,9 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "http_listen\t\t0.0.0.0:8000\n");
+
+	(void)re_fprintf(f, "\n");
+	(void)re_fprintf(f, "ctrl_tcp_listen\t\t0.0.0.0:4444\n");
 
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
