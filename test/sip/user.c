@@ -7,6 +7,13 @@
 #include "sipsrv.h"
 
 
+struct user {
+	struct le he;
+	uint8_t ha1[MD5_SIZE];
+	char *name;
+};
+
+
 static void destructor(void *arg)
 {
 	struct user *usr = arg;
@@ -70,4 +77,10 @@ struct user *user_find(struct hash *ht, const struct pl *name)
 	}
 
 	return NULL;
+}
+
+
+const uint8_t *user_ha1(const struct user *usr)
+{
+	return usr ? usr->ha1 : NULL;
 }

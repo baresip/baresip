@@ -111,12 +111,9 @@ void location_rollback(struct list *locl);
  * User
  */
 
-struct user {
-	struct le he;
-	uint8_t ha1[MD5_SIZE];
-	char *name;
-};
+struct user;
 
 int user_add(struct hash *ht, const char *username, const char *password,
 	     const char *realm);
 struct user *user_find(struct hash *ht, const struct pl *name);
+const uint8_t *user_ha1(const struct user *usr);

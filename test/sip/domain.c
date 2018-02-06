@@ -163,7 +163,8 @@ int domain_auth(struct sip_server *srv,
 			break;
 		}
 
-		err = httpauth_digest_response_auth(&resp, &msg->met,usr->ha1);
+		err = httpauth_digest_response_auth(&resp, &msg->met,
+						    user_ha1(usr));
 		if (err)
 			return err;
 
