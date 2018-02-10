@@ -398,7 +398,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 	lock_write_get(vtx->lock);
 
 	/* Convert image */
-	if (frame->fmt != vtx->video->cfg.enc_fmt) {
+	if (frame->fmt != (enum vidfmt)vtx->video->cfg.enc_fmt) {
 
 		vtx->vsrc_size = frame->size;
 
