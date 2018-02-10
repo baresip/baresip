@@ -175,7 +175,7 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 
 	++vl->stat.frames;
 
-	if (frame->fmt != vl->cfg.enc_fmt) {
+	if (frame->fmt != (enum vidfmt)vl->cfg.enc_fmt) {
 
 		if (!vl->need_conv) {
 			info("vidloop: NOTE: pixel-format conversion"
