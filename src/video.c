@@ -18,12 +18,6 @@
 #include "magic.h"
 
 
-/** Internal video-encoder format */
-#ifndef VIDENC_INTERNAL_FMT
-#define VIDENC_INTERNAL_FMT (VID_FMT_YUV420P)
-#endif
-
-
 enum {
 	MAX_MUTED_FRAMES = 3,
 };
@@ -404,13 +398,14 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 	lock_write_get(vtx->lock);
 
 	/* Convert image */
-	if (frame->fmt != VIDENC_INTERNAL_FMT) {
+	if (frame->fmt != vtx->video->cfg.enc_fmt) {
 
 		vtx->vsrc_size = frame->size;
 
 		if (!vtx->frame) {
 
-			err = vidframe_alloc(&vtx->frame, VIDENC_INTERNAL_FMT,
+			err = vidframe_alloc(&vtx->frame,
+					     vtx->video->cfg.enc_fmt,
 					     &vtx->vsrc_size);
 			if (err)
 				goto unlock;
@@ -941,7 +936,7 @@ static int set_encoder_format(struct vtx *vtx, const char *src,
 	}
 
 	vtx->mute_frame = mem_deref(vtx->mute_frame);
-	err = vidframe_alloc(&vtx->mute_frame, VIDENC_INTERNAL_FMT, size);
+	err = vidframe_alloc(&vtx->mute_frame, vtx->video->cfg.enc_fmt, size);
 	if (err)
 		return err;
 

@@ -32,12 +32,6 @@
  */
 
 
-/** Internal pixel-format */
-#ifndef VIDLOOP_INTERNAL_FMT
-#define VIDLOOP_INTERNAL_FMT (VID_FMT_YUV420P)
-#endif
-
-
 /** Video Statistics */
 struct vstat {
 	uint64_t tsamp;
@@ -181,17 +175,17 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 
 	++vl->stat.frames;
 
-	if (frame->fmt != VIDLOOP_INTERNAL_FMT) {
+	if (frame->fmt != vl->cfg.enc_fmt) {
 
 		if (!vl->need_conv) {
 			info("vidloop: NOTE: pixel-format conversion"
 			     " needed: %s  -->  %s\n",
 			     vidfmt_name(frame->fmt),
-			     vidfmt_name(VIDLOOP_INTERNAL_FMT));
+			     vidfmt_name(vl->cfg.enc_fmt));
 			vl->need_conv = true;
 		}
 
-		if (vidframe_alloc(&f2, VIDLOOP_INTERNAL_FMT, &frame->size))
+		if (vidframe_alloc(&f2, vl->cfg.enc_fmt, &frame->size))
 			return;
 
 		vidconv(f2, frame, 0);
@@ -209,7 +203,10 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 	}
 
 	if (vl->vc_enc && vl->enc) {
-		(void)vl->vc_enc->ench(vl->enc, false, frame);
+		err = vl->vc_enc->ench(vl->enc, false, frame);
+		if (err) {
+			warning("vidloop: encoder error (%m)\n", err);
+		}
 	}
 	else {
 		vl->stat.bytes += vidframe_size(frame->fmt, &frame->size);
@@ -287,10 +284,11 @@ static void print_status(struct video_loop *vl)
 {
 	(void)re_fprintf(stdout,
 			 "\rstatus:"
-			 " [%s] [%s]  intra=%zu "
+			 " [%s] [%s]  fmt=%s  intra=%zu "
 			 " EFPS=%.1f      %u kbit/s       \r",
 			 vl->vc_enc ? vl->vc_enc->name : "",
 			 vl->vc_dec ? vl->vc_dec->name : "",
+			 vidfmt_name(vl->cfg.enc_fmt),
 			 vl->stat.n_intra,
 			 vl->stat.efps, vl->stat.bitrate);
 	fflush(stdout);

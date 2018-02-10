@@ -71,6 +71,7 @@ static struct config core_config = {
 		500000,
 		25,
 		true,
+		VID_FMT_YUV420P,
 	},
 #endif
 
@@ -177,6 +178,34 @@ static int conf_get_aufmt(const struct conf *conf, const char *name,
 	*fmtp = fmt;
 
 	return 0;
+}
+
+
+static int conf_get_vidfmt(const struct conf *conf, const char *name,
+			   int *fmtp)
+{
+	struct pl pl;
+	int fmt;
+	int err;
+
+	err = conf_get(conf, name, &pl);
+	if (err)
+		return err;
+
+	for (fmt=0; fmt<VID_FMT_N; fmt++) {
+
+		const char *str = vidfmt_name(fmt);
+
+		if (0 == pl_strcasecmp(&pl, str)) {
+
+			*fmtp = fmt;
+			return 0;
+		}
+	}
+
+	warning("config: %s: pixel format not supported (%r)\n", name, &pl);
+
+	return ENOENT;
 }
 
 
@@ -290,6 +319,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_u32(conf, "video_bitrate", &cfg->video.bitrate);
 	(void)conf_get_u32(conf, "video_fps", &cfg->video.fps);
 	(void)conf_get_bool(conf, "video_fullscreen", &cfg->video.fullscreen);
+
+	conf_get_vidfmt(conf, "videnc_format", &cfg->video.enc_fmt);
 #else
 	(void)size;
 #endif

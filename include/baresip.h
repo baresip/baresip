@@ -221,6 +221,7 @@ struct config_video {
 	uint32_t bitrate;       /**< Encoder bitrate in [bit/s]     */
 	uint32_t fps;           /**< Video framerate                */
 	bool fullscreen;        /**< Enable fullscreen display      */
+	int enc_fmt;            /**< Encoder pixelfmt (enum vidfmt) */
 };
 #endif
 
