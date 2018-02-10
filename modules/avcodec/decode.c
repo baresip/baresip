@@ -247,6 +247,10 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 			frame->fmt = VID_FMT_NV12;
 			break;
 
+		case AV_PIX_FMT_YUV444P:
+			frame->fmt = VID_FMT_YUV444P;
+			break;
+
 		default:
 			warning("avcodec: decode: bad pixel format"
 				" (%i) (%s)\n",

@@ -586,6 +586,11 @@ int encode_x264(struct videnc_state *st, bool update,
 		pln = 2;
 		break;
 
+	case VID_FMT_YUV444P:
+		csp = X264_CSP_I444;
+		pln = 3;
+		break;
+
 	default:
 		warning("avcodec: pixel format not supported (%s)\n",
 			vidfmt_name(frame->fmt));
@@ -678,6 +683,10 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 
 	case VID_FMT_NV12:
 		pix_fmt = AV_PIX_FMT_NV12;
+		break;
+
+	case VID_FMT_YUV444P:
+		pix_fmt = AV_PIX_FMT_YUV444P;
 		break;
 
 	default:
