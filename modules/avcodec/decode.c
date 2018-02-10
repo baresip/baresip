@@ -192,7 +192,9 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 
 		ret = avcodec_send_packet(st->ctx, &avpkt);
 		if (ret < 0) {
-			warning("avcodec_send_packet error ret=%d\n", ret);
+			warning("avcodec: avcodec_send_packet error,"
+				" packet=%zu bytes, ret=%d (%s)\n",
+				st->mb->end, ret, av_err2str(ret));
 			err = EBADMSG;
 			goto out;
 		}
