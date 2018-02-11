@@ -230,6 +230,7 @@ codec2        Codec2 low bit rate speech codec
 cons          UDP/TCP console UI driver
 contact       Contacts module
 coreaudio     Apple Coreaudio driver
+ctrl_tcp      TCP control interface using JSON payload
 debug_cmd     Debug commands
 directfb      DirectFB video display module
 dshow         Windows DirectShow video source
