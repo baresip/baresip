@@ -6,7 +6,7 @@ This module implements an MQTT (Message Queue Telemetry Transport) client
 for publishing and subscribing to topics.
 
 
-The module is using libmosquitto
+The module is using libmosquitto. All messages are encoded in JSON format.
 
 
 Starting the MQTT broker:
@@ -19,7 +19,7 @@ $ /usr/local/sbin/mosquitto -v
 Subscribing to all topics:
 
 ```
-$ mosquitto_sub -t /baresip/+
+$ mosquitto_sub -v -t /baresip/#
 ```
 
 
@@ -43,17 +43,16 @@ $ mosquitto_pub -t /baresip/xxx -m foo=42
 ## Examples
 
 ```
-/baresip/event sip:aeh@iptel.org,REGISTERING
-/baresip/event sip:aeh@iptel.org,REGISTER_OK
-/baresip/event sip:aeh@iptel.org,SHUTDOWN
+/baresip/event {"type":"REGISTERING","class":"register","accountaor":"sip:aeh@iptel.org"}
+/baresip/event {"type":"REGISTER_OK","class":"register","accountaor":"sip:aeh@iptel.org","param":"200 OK"}
+/baresip/event {"type":"SHUTDOWN","class":"application","accountaor":"sip:aeh@iptel.org"}
 ```
 
 ```
 mosquitto_pub -t /baresip/command -m "/dial music"
 
-/baresip/command /dial music
-/baresip/command_resp (null)
-/baresip/event sip:aeh@iptel.org,CALL_ESTABLISHED
-/baresip/event sip:aeh@iptel.org,CALL_CLOSED
+/baresip/command {"command":"dial","params":"music","token":"123"}
+/baresip/command_resp/123 (null)
+/baresip/event {"type":"CALL_ESTABLISHED","class":"call","accountaor":"sip:aeh@iptel.org","direction":"outgoing","peeruri":"sip:music@iptel.org","id":"4d758140c42c5d55","param":"sip:music@iptel.org"}
+/baresip/event {"type":"CALL_CLOSED","class":"call","accountaor":"sip:aeh@iptel.org","direction":"outgoing","peeruri":"sip:music@iptel.org","id":"4d758140c42c5d55","param":"Connection reset by user"}
 ```
-
