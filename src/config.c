@@ -181,6 +181,7 @@ static int conf_get_aufmt(const struct conf *conf, const char *name,
 }
 
 
+#ifdef USE_VIDEO
 static int conf_get_vidfmt(const struct conf *conf, const char *name,
 			   int *fmtp)
 {
@@ -207,6 +208,7 @@ static int conf_get_vidfmt(const struct conf *conf, const char *name,
 
 	return ENOENT;
 }
+#endif
 
 
 /**
