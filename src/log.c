@@ -12,7 +12,7 @@ static struct {
 	struct list logl;
 	bool debug;
 	bool info;
-	bool stder;
+	bool enable_stdout;
 } lg = {
 	LIST_INIT,
 	false,
@@ -71,9 +71,14 @@ void log_enable_info(bool enable)
 }
 
 
-void log_enable_stderr(bool enable)
+/**
+ * Enable logging to standard-out
+ *
+ * @param enable True to enable, false to disable
+ */
+void log_enable_stdout(bool enable)
 {
-	lg.stder = enable;
+	lg.enable_stdout = enable;
 }
 
 
@@ -92,7 +97,7 @@ void vlog(enum log_level level, const char *fmt, va_list ap)
 	if (re_vsnprintf(buf, sizeof(buf), fmt, ap) < 0)
 		return;
 
-	if (lg.stder) {
+	if (lg.enable_stdout) {
 
 		bool color = level == LEVEL_WARN || level == LEVEL_ERROR;
 

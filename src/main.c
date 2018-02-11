@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 		if (err)
 			goto out;
 
-		log_enable_stderr(false);
+		log_enable_stdout(false);
 	}
 
 	info("baresip is ready.\n");
