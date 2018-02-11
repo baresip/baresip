@@ -601,11 +601,14 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "video_size\t\t%dx%d\n"
 			  "video_bitrate\t\t%u\n"
 			  "video_fps\t\t%u\n"
-			  "video_fullscreen\tyes\n",
+			  "video_fullscreen\tyes\n"
+			  "videnc_format\t\t%s\n"
+			  ,
 			  default_video_device(),
 			  default_video_display(),
 			  cfg->video.width, cfg->video.height,
-			  cfg->video.bitrate, cfg->video.fps);
+			  cfg->video.bitrate, cfg->video.fps,
+			  vidfmt_name(cfg->video.enc_fmt));
 #endif
 
 	err |= re_hprintf(pf,
