@@ -1,3 +1,107 @@
+2018-02-11 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.8
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.8
+	* NOTE: Requires libre v0.5.7 or later
+	        Requires librem v0.5.2 or later
+
+	* new commands:
+
+	  - /aubitrate 64000   -- Set audio bitrate
+
+	* new modules:
+
+	  - ctrl_tcp      TCP control interface using JSON payload
+			  (thanks José Luis Millán)
+
+	* config:
+
+	  auenc_format            s16             # s16, float, ..
+	  audec_format            s16             # s16, float, ..
+
+	  videnc_format           yuv420p         # yuv420p, yuv444p, ..
+
+	* baresip-core:
+	  - account: password in SIP uri is now deprecated
+	  - aucodec: add encoder/decoder audio sample format (#352)
+	  - aucodec: add bitrate to encoder param
+	  - audio: add function to set encoder bitrate
+	  - audio: sample format for audio encoder/decoder
+	  - call: add call_id accessor
+	  - call: fix memory leak in case sipsess_connect() fails
+	  - config: add configurable video pixel format
+	  - config:  set exact installation pathes at build time (#354)
+		     (thanks Guillaume Rousse)
+	  - event: fix memory leak
+	  - event: add call-id to JSON dict
+	  - log: rename log_enable_stderr to log_enable_stdout
+	  - metric: fix calculation of average bitrate
+	  - reg: add display-name to SIP register
+	  - stream: print a message when incoming RTP stream is established
+	  - timer: add tmr_jiffies_usec
+	  - video: save and show pixel format of incoming video
+	  - vidutil: new file for video utility functions
+
+	* selftest:
+	  - event: add testcase for events
+	  - sip: make 'struct user' opaque
+	  - ua: update password using ;auth_pass=XXX parameter
+
+	* Modules:
+
+	* account: update template with auth_pass parameter
+
+	* amr: update aucodec API with audio sample format
+
+	* avcodec: Return EPROTO when encountering missing fragments in
+		   H264 stream, to trigger intra-frame request (#339)
+		   (thanks Jonathan Sieber)
+		   use AV_INPUT_BUFFER_MIN_SIZE (ref #351)
+		   add support for YUV444P pixel format
+
+	* avformat: use av_dump_format()
+
+	* bv32: update aucodec API with audio sample format
+
+	* codec2: update aucodec API with audio sample format
+
+	* ctrl_tcp: new module for TCP control interface using JSON payload
+		   (thanks José Luis Millán)
+
+	* g711: update aucodec API with audio sample format
+
+	* g722: update aucodec API with audio sample format
+
+	* g7221: update aucodec API with audio sample format
+
+	* g726: update aucodec API with audio sample format
+
+	* gsm: update aucodec API with audio sample format
+
+	* gst1: define _POSIX_C_SOURCE to make nanosleep visible
+
+	* l16: update aucodec API with audio sample format
+
+	* mpa: update aucodec API with audio sample format
+
+	* mqtt: update README with correct JSON syntax (ref #356)
+
+	* omx: fix compilation for Raspbian
+
+	* opus: update aucodec API with audio sample format
+		add support for FLOAT sample format
+
+	* silk: update aucodec API with audio sample format
+
+	* speex: deprecate, disable as autodetected module
+
+	* speex_aec: always link to libspeexdsp
+
+	* speex_pp: always link to libspeexdsp
+
+
 2017-12-25 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.7
