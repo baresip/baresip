@@ -1540,7 +1540,7 @@ static int send_invite(struct call *call)
 			      ua_print_supported, call->ua);
 	if (err) {
 		warning("call: sipsess_connect: %m\n", err);
-		return err;
+		goto out;
 	}
 
 	err = str_dup(&call->id,
@@ -1549,6 +1549,7 @@ static int send_invite(struct call *call)
 	/* save call setup timer */
 	call->time_conn = time(NULL);
 
+ out:
 	mem_deref(desc);
 
 	return err;
