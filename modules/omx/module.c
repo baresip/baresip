@@ -38,7 +38,7 @@ static void destructor(void *arg)
 }
 
 
-int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp* vd,
+int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp *vd,
 		     struct vidisp_prm *prm, const char *dev,
 		     vidisp_resize_h *resizeh, void *arg)
 {

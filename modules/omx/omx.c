@@ -116,9 +116,10 @@ static struct OMX_CALLBACKTYPE callbacks = {
 };
 
 
-int omx_init(struct omx_state* st)
+int omx_init(struct omx_state *st)
 {
 	OMX_ERRORTYPE err;
+
 #ifdef RASPBERRY_PI
 	bcm_host_init();
 #endif
@@ -135,11 +136,11 @@ int omx_init(struct omx_state* st)
 #endif
 
 	if (!st->video_render || err != 0) {
-		warning("Failed to create OMX video_render component\n");
+		warning("omx: Failed to create OMX video_render component\n");
 		return ENOENT;
 	}
 	else {
-		info("created video_render component\n");
+		info("omx: created video_render component\n");
 		return 0;
 	}
 }
