@@ -99,6 +99,11 @@ struct vtx {
 	int efps;                          /**< Estimated frame-rate      */
 	uint32_t ts_min;
 	uint32_t ts_max;
+
+	/** Statistics */
+	struct {
+		uint64_t src_frames;       /**< Total frames from vidsrc  */
+	} stats;
 };
 
 
@@ -138,6 +143,11 @@ struct vrx {
 	unsigned n_picup;                  /**< Picture updates sent      */
 	uint32_t ts_min;
 	uint32_t ts_max;
+
+	/** Statistics */
+	struct {
+		uint64_t disp_frames;      /** Total frames displayed     */
+	} stats;
 };
 
 
@@ -453,6 +463,8 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 
 	++vtx->frames;
 
+	++vtx->stats.src_frames;
+
 	/* Is the video muted? If so insert video mute image */
 	if (vtx->muted)
 		frame = vtx->mute_frame;
@@ -635,6 +647,8 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		if (st->vf && st->vf->dech)
 			err |= st->vf->dech(st, frame);
 	}
+
+	++vrx->stats.disp_frames;
 
 	err = vidisp_display(vrx->vidisp, v->peer, frame);
 	frame_filt = mem_deref(frame_filt);
@@ -1308,10 +1322,12 @@ static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
 	err |= re_hprintf(pf, " tx: encode: %s %s\n",
 			  vtx->vc ? vtx->vc->name : "none",
 			  vtx->frame ? vidfmt_name(vtx->frame->fmt) : "?");
-	err |= re_hprintf(pf, "     source: %s %u x %u, fps=%d\n",
+	err |= re_hprintf(pf, "     source: %s %u x %u, fps=%d"
+			  " frames=%llu\n",
 			  vtx->vsrc ? vidsrc_get(vtx->vsrc)->name : "none",
 			  vtx->vsrc_size.w,
-			  vtx->vsrc_size.h, vtx->vsrc_prm.fps);
+			  vtx->vsrc_size.h, vtx->vsrc_prm.fps,
+			  vtx->stats.src_frames);
 	err |= re_hprintf(pf, "     skipc=%u\n", vtx->skipc);
 	err |= re_hprintf(pf, "     time = %.3f sec\n",
 			  video_calc_seconds(vtx->ts_max - vtx->ts_min));
@@ -1327,9 +1343,10 @@ static int vrx_debug(struct re_printf *pf, const struct vrx *vrx)
 	err |= re_hprintf(pf, " rx: decode: %s %s\n",
 			  vrx->vc ? vrx->vc->name : "none",
 			  vidfmt_name(vrx->fmt));
-	err |= re_hprintf(pf, "     vidisp: %s %u x %u\n",
+	err |= re_hprintf(pf, "     vidisp: %s %u x %u frames=%llu\n",
 			  vrx->vidisp ? vidisp_get(vrx->vidisp)->name : "none",
-			  vrx->size.w, vrx->size.h);
+			  vrx->size.w, vrx->size.h,
+			  vrx->stats.disp_frames);
 	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
 			  vrx->n_intra, vrx->n_picup);
 	err |= re_hprintf(pf, "     time = %.3f sec\n",
