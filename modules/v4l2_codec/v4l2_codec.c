@@ -349,7 +349,8 @@ static void read_handler(int flags, void *arg)
 	rtp_ts = (90000ULL * (1000000*ts.tv_sec + ts.tv_usec)) / 1000000;
 
 #if 0
-	debug("v4l2_codec: %s frame captured at %ldsec, %ldusec (%zu bytes) rtp_ts=%u\n",
+	debug("v4l2_codec: %s frame captured at %ldsec, %ldusec"
+	      " (%zu bytes) rtp_ts=%u\n",
 	      keyframe ? "KEY" : "   ",
 	      buf.timestamp.tv_sec, buf.timestamp.tv_usec,
 	      (size_t)buf.bytesused, rtp_ts);
