@@ -335,8 +335,8 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 
 		if (fu.s) {
 			if (st->frag) {
-				debug("avcodec: lost fragments;"
-				      " ignoring NAL\n");
+				debug("avcodec: start: lost fragments;"
+				      " ignoring previous NAL\n");
 				fragment_rewind(st);
 				++st->stats.n_lost;
 			}
@@ -355,7 +355,8 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 		}
 		else {
 			if (!st->frag) {
-				debug("avcodec: ignoring fragment\n");
+				debug("avcodec: ignoring fragment"
+				      " (nal=%u)\n", fu.type);
 				++st->stats.n_lost;
 				return 0;
 			}
