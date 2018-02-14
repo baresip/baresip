@@ -339,7 +339,6 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 				      " ignoring NAL\n");
 				fragment_rewind(st);
 				++st->stats.n_lost;
-				return EPROTO;
 			}
 
 			st->frag_start = st->mb->pos;
@@ -358,7 +357,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 			if (!st->frag) {
 				debug("avcodec: ignoring fragment\n");
 				++st->stats.n_lost;
-				return EPROTO;
+				return 0;
 			}
 
 			if (seq_diff(st->frag_seq, seq) != 1) {
@@ -366,7 +365,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 				fragment_rewind(st);
 				st->frag = false;
 				++st->stats.n_lost;
-				return EPROTO;
+				return 0;
 			}
 		}
 
