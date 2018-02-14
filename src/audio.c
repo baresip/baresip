@@ -648,8 +648,10 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 
 		++rx->stats.aubuf_underrun;
 
+#if 0
 		debug("audio: rx aubuf underrun (total %llu)\n",
 		      rx->stats.aubuf_underrun);
+#endif
 	}
 
 	aubuf_read(rx->aubuf, sampv, num_bytes);
