@@ -1130,12 +1130,13 @@ static int module_init(void)
 
 	start_ticks = tmr_jiffies();
 	tmr_init(&tmr_alert);
-        if (0 == conf_get(conf_cur(), "statmode_default", &val) &&
-            0 == pl_strcasecmp(&val, "off")) {
+	if (0 == conf_get(conf_cur(), "statmode_default", &val) &&
+	    0 == pl_strcasecmp(&val, "off")) {
 		statmode = STATMODE_OFF;
-        } else {
+	}
+	else {
 		statmode = STATMODE_CALL;
-        }
+	}
 
 	err  = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	err |= cmd_register(baresip_commands(), dialcmdv,
