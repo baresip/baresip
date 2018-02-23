@@ -116,7 +116,7 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 }
 
 
-static int packet_handler(bool marker, uint32_t rtp_ts,
+static int packet_handler(bool marker, uint64_t rtp_ts,
 			  const uint8_t *hdr, size_t hdr_len,
 			  const uint8_t *pld, size_t pld_len,
 			  void *arg)

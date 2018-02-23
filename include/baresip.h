@@ -892,7 +892,7 @@ struct videnc_state;
 struct viddec_state;
 struct vidcodec;
 
-typedef int (videnc_packet_h)(bool marker, uint32_t rtp_ts,
+typedef int (videnc_packet_h)(bool marker, uint64_t rtp_ts,
 			      const uint8_t *hdr, size_t hdr_len,
 			      const uint8_t *pld, size_t pld_len,
 			      void *arg);
@@ -1012,7 +1012,7 @@ void  video_set_devicename(struct video *v, const char *src, const char *disp);
 void  video_encoder_cycle(struct video *video);
 int   video_debug(struct re_printf *pf, const struct video *v);
 uint32_t video_calc_rtp_timestamp(int64_t pts, unsigned fps);
-double video_calc_seconds(uint32_t rtp_ts);
+double video_calc_seconds(uint64_t rtp_ts);
 struct stream *video_strm(const struct video *v);
 
 

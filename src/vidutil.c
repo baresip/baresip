@@ -41,7 +41,7 @@ uint32_t video_calc_rtp_timestamp(int64_t pts, unsigned fps)
  *
  * @return Timestamp in seconds
  */
-double video_calc_seconds(uint32_t rtp_ts)
+double video_calc_seconds(uint64_t rtp_ts)
 {
 	double timestamp;
 

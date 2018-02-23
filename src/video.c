@@ -97,8 +97,8 @@ struct vtx {
 	bool muted;                        /**< Muted flag                */
 	int frames;                        /**< Number of frames sent     */
 	int efps;                          /**< Estimated frame-rate      */
-	uint32_t ts_min;
-	uint32_t ts_max;
+	uint64_t ts_base;                  /**< First RTP timestamp sent  */
+	uint64_t ts_last;                  /**< Last RTP timestamp sent   */
 
 	/** Statistics */
 	struct {
@@ -345,7 +345,7 @@ static int get_fps(const struct video *v)
 }
 
 
-static int packet_handler(bool marker, uint32_t ts,
+static int packet_handler(bool marker, uint64_t ts,
 			  const uint8_t *hdr, size_t hdr_len,
 			  const uint8_t *pld, size_t pld_len,
 			  void *arg)
@@ -356,14 +356,12 @@ static int packet_handler(bool marker, uint32_t ts,
 	uint32_t rtp_ts;
 	int err;
 
-	/* NOTE: does not handle timestamp wrap around */
-	if (ts < vtx->ts_min)
-		vtx->ts_min = ts;
-	if (ts > vtx->ts_max)
-		vtx->ts_max = ts;
+	if (!vtx->ts_base)
+		vtx->ts_base = ts;
+	vtx->ts_last = ts;
 
 	/* add random timestamp offset */
-	rtp_ts = vtx->ts_offset + ts;
+	rtp_ts = vtx->ts_offset + ts & 0xffffffff;
 
 	err = vidqent_alloc(&qent, marker, strm->pt_enc, rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
@@ -507,8 +505,6 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 	str_ncpy(vtx->device, video->cfg.src_dev, sizeof(vtx->device));
 
 	tmr_start(&vtx->tmr_rtp, 1, rtp_tmr_handler, vtx);
-
-	vtx->ts_min = ~0;
 
 	return err;
 }
@@ -1328,9 +1324,16 @@ static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
 			  vtx->vsrc_size.w,
 			  vtx->vsrc_size.h, vtx->vsrc_prm.fps,
 			  vtx->stats.src_frames);
-	err |= re_hprintf(pf, "     skipc=%u\n", vtx->skipc);
-	err |= re_hprintf(pf, "     time = %.3f sec\n",
-			  video_calc_seconds(vtx->ts_max - vtx->ts_min));
+	err |= re_hprintf(pf, "     skipc=%u sendq=%u\n",
+			  vtx->skipc, list_count(&vtx->sendq));
+
+	if (vtx->ts_base) {
+		err |= re_hprintf(pf, "     time = %.3f sec\n",
+			  video_calc_seconds(vtx->ts_last - vtx->ts_base));
+	}
+	else {
+		err |= re_hprintf(pf, "     time = (not started)\n");
+	}
 
 	return err;
 }
