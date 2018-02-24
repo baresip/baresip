@@ -88,7 +88,7 @@ static int mock_encode(struct videnc_state *ves, bool update,
 {
 	struct mbuf *hdr;
 	uint8_t payload[2] = {0,0};
-	uint32_t rtp_ts;
+	uint64_t rtp_ts;
 	int err;
 	(void)update;
 

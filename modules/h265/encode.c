@@ -140,7 +140,7 @@ static int open_encoder(struct videnc_state *st, const struct vidsz *size)
 
 
 static inline int packetize(bool marker, const uint8_t *buf, size_t len,
-			    size_t maxlen, uint32_t rtp_ts,
+			    size_t maxlen, uint64_t rtp_ts,
 			    videnc_packet_h *pkth, void *arg)
 {
 	int err = 0;
@@ -195,7 +195,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	uint32_t i, nalc = 0;
 	int colorspace;
 	int n, err = 0;
-	uint32_t ts;
+	uint64_t ts;
 
 	if (!st || !frame)
 		return EINVAL;

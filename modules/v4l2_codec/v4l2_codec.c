@@ -277,7 +277,7 @@ static void enc_destructor(void *arg)
 }
 
 
-static void encoders_read(uint32_t rtp_ts, const uint8_t *buf, size_t sz)
+static void encoders_read(uint64_t rtp_ts, const uint8_t *buf, size_t sz)
 {
 	struct le *le;
 	int err;
@@ -301,7 +301,7 @@ static void read_handler(int flags, void *arg)
 	struct v4l2_buffer buf;
 	bool keyframe = false;
 	struct timeval ts;
-	uint32_t rtp_ts;
+	uint64_t rtp_ts;
 	int err;
 
 	if (flags & FD_EXCEPT) {
@@ -350,7 +350,7 @@ static void read_handler(int flags, void *arg)
 
 #if 0
 	debug("v4l2_codec: %s frame captured at %ldsec, %ldusec"
-	      " (%zu bytes) rtp_ts=%u\n",
+	      " (%zu bytes) rtp_ts=%llu\n",
 	      keyframe ? "KEY" : "   ",
 	      buf.timestamp.tv_sec, buf.timestamp.tv_usec,
 	      (size_t)buf.bytesused, rtp_ts);

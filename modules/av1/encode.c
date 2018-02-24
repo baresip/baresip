@@ -137,7 +137,7 @@ static inline void hdr_encode(uint8_t hdr[HDR_SIZE], bool noref, bool start,
 }
 
 
-static inline int packetize(bool marker, uint32_t rtp_ts,
+static inline int packetize(bool marker, uint64_t rtp_ts,
 			    const uint8_t *buf, size_t len,
 			    size_t maxlen, bool noref, uint8_t partid,
 			    uint16_t picid, videnc_packet_h *pkth, void *arg)
@@ -222,7 +222,7 @@ int av1_encode(struct videnc_state *ves, bool update,
 		bool keyframe = false, marker = true;
 		const aom_codec_cx_pkt_t *pkt;
 		uint8_t partid = 0;
-		uint32_t ts;
+		uint64_t ts;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)

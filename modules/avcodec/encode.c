@@ -346,7 +346,7 @@ static void param_handler(const struct pl *name, const struct pl *val,
 }
 
 
-static int general_packetize(uint32_t rtp_ts, struct mbuf *mb, size_t pktsize,
+static int general_packetize(uint64_t rtp_ts, struct mbuf *mb, size_t pktsize,
 			     videnc_packet_h *pkth, void *arg)
 {
 	int err = 0;
@@ -371,7 +371,7 @@ static int general_packetize(uint32_t rtp_ts, struct mbuf *mb, size_t pktsize,
 
 
 static int h263_packetize(struct videnc_state *st,
-			  uint32_t rtp_ts, struct mbuf *mb,
+			  uint64_t rtp_ts, struct mbuf *mb,
 			  videnc_packet_h *pkth, void *arg)
 {
 	struct h263_strm h263_strm;
@@ -569,7 +569,7 @@ int encode_x264(struct videnc_state *st, bool update,
 	int i_nal;
 	int i, err, ret;
 	int csp, pln;
-	uint32_t ts;
+	uint64_t ts;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -670,7 +670,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 {
 	int i, err, ret;
 	int pix_fmt;
-	uint32_t ts;
+	uint64_t ts;
 
 	if (!st || !frame)
 		return EINVAL;

@@ -172,7 +172,7 @@ static inline void hdr_encode(uint8_t hdr[HDR_SIZE], bool start, bool end,
 static int send_packet(struct videnc_state *ves, bool marker,
 		       const uint8_t *hdr, size_t hdr_len,
 		       const uint8_t *pld, size_t pld_len,
-		       uint32_t rtp_ts)
+		       uint64_t rtp_ts)
 {
 	ves->n_bytes += (hdr_len + pld_len);
 
@@ -184,7 +184,7 @@ static int send_packet(struct videnc_state *ves, bool marker,
 static inline int packetize(struct videnc_state *ves,
 			    bool marker, const uint8_t *buf, size_t len,
 			    size_t maxlen, uint16_t picid,
-			    uint32_t rtp_ts)
+			    uint64_t rtp_ts)
 {
 	uint8_t hdr[HDR_SIZE];
 	bool start = true;
@@ -280,7 +280,7 @@ int vp9_encode(struct videnc_state *ves, bool update,
 	for (;;) {
 		bool marker = true;
 		const vpx_codec_cx_pkt_t *pkt;
-		uint32_t ts;
+		uint64_t ts;
 
 		pkt = vpx_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)

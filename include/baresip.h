@@ -1011,7 +1011,7 @@ int   video_set_source(struct video *v, const char *name, const char *dev);
 void  video_set_devicename(struct video *v, const char *src, const char *disp);
 void  video_encoder_cycle(struct video *video);
 int   video_debug(struct re_printf *pf, const struct video *v);
-uint32_t video_calc_rtp_timestamp(int64_t pts, unsigned fps);
+uint64_t video_calc_rtp_timestamp(int64_t pts, unsigned fps);
 double video_calc_seconds(uint64_t rtp_ts);
 struct stream *video_strm(const struct video *v);
 
@@ -1143,10 +1143,10 @@ int h264_fu_hdr_decode(struct h264_fu *fu, struct mbuf *mb);
 
 const uint8_t *h264_find_startcode(const uint8_t *p, const uint8_t *end);
 
-int h264_packetize(uint32_t rtp_ts, const uint8_t *buf, size_t len,
+int h264_packetize(uint64_t rtp_ts, const uint8_t *buf, size_t len,
 		   size_t pktsize, videnc_packet_h *pkth, void *arg);
 int h264_nal_send(bool first, bool last,
-		  bool marker, uint32_t ihdr, uint32_t rtp_ts,
+		  bool marker, uint32_t ihdr, uint64_t rtp_ts,
 		  const uint8_t *buf, size_t size, size_t maxsz,
 		  videnc_packet_h *pkth, void *arg);
 static inline bool h264_is_keyframe(int type)
