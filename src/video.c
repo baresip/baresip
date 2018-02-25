@@ -329,16 +329,14 @@ static void video_destructor(void *arg)
 }
 
 
-static int get_fps(const struct video *v)
+static double get_fps(const struct video *v)
 {
 	const char *attr;
 
 	/* RFC4566 */
 	attr = sdp_media_rattr(stream_sdpmedia(v->strm), "framerate");
 	if (attr) {
-		/* NOTE: fractional values are ignored */
-		const double fps = atof(attr);
-		return (int)fps;
+		return atof(attr);
 	}
 	else
 		return v->cfg.fps;
@@ -834,7 +832,7 @@ int video_alloc(struct video **vp, const struct stream_param *stream_prm,
 	}
 
 	err |= sdp_media_set_lattr(stream_sdpmedia(v->strm), true,
-				   "framerate", "%d", v->cfg.fps);
+				   "framerate", "%.2f", v->cfg.fps);
 
 	/* RFC 4585 */
 	err |= sdp_media_set_lattr(stream_sdpmedia(v->strm), true,
@@ -1156,7 +1154,7 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 		prm.fps     = get_fps(v);
 		prm.max_fs  = -1;
 
-		info("Set video encoder: %s %s (%u bit/s, %u fps)\n",
+		info("Set video encoder: %s %s (%u bit/s, %.2f fps)\n",
 		     vc->name, vc->variant, prm.bitrate, prm.fps);
 
 		vtx->enc = mem_deref(vtx->enc);
@@ -1318,7 +1316,7 @@ static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
 	err |= re_hprintf(pf, " tx: encode: %s %s\n",
 			  vtx->vc ? vtx->vc->name : "none",
 			  vtx->frame ? vidfmt_name(vtx->frame->fmt) : "?");
-	err |= re_hprintf(pf, "     source: %s %u x %u, fps=%d"
+	err |= re_hprintf(pf, "     source: %s %u x %u, fps=%.2f"
 			  " frames=%llu\n",
 			  vtx->vsrc ? vidsrc_get(vtx->vsrc)->name : "none",
 			  vtx->vsrc_size.w,

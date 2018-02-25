@@ -219,7 +219,7 @@ struct config_video {
 	char disp_dev[128];     /**< Video display device           */
 	unsigned width, height; /**< Video resolution               */
 	uint32_t bitrate;       /**< Encoder bitrate in [bit/s]     */
-	uint32_t fps;           /**< Video framerate                */
+	double fps;             /**< Video framerate                */
 	bool fullscreen;        /**< Enable fullscreen display      */
 	int enc_fmt;            /**< Encoder pixelfmt (enum vidfmt) */
 };
@@ -760,7 +760,7 @@ struct vidsrc_st;
 /** Video Source parameters */
 struct vidsrc_prm {
 	int orient;       /**< Wanted picture orientation (enum vidorient) */
-	int fps;          /**< Wanted framerate                            */
+	double fps;       /**< Wanted framerate                            */
 };
 
 typedef void (vidsrc_frame_h)(struct vidframe *frame, void *arg);
@@ -884,7 +884,7 @@ const struct aucodec *aucodec_find(const struct list *aucodecl,
 struct videnc_param {
 	unsigned bitrate;  /**< Encoder bitrate in [bit/s] */
 	unsigned pktsize;  /**< RTP packetsize in [bytes]  */
-	unsigned fps;      /**< Video framerate            */
+	double fps;        /**< Video framerate            */
 	uint32_t max_fs;
 };
 
@@ -1011,7 +1011,7 @@ int   video_set_source(struct video *v, const char *name, const char *dev);
 void  video_set_devicename(struct video *v, const char *src, const char *disp);
 void  video_encoder_cycle(struct video *video);
 int   video_debug(struct re_printf *pf, const struct video *v);
-uint64_t video_calc_rtp_timestamp(int64_t pts, unsigned fps);
+uint64_t video_calc_rtp_timestamp(int64_t pts, double fps);
 double video_calc_seconds(uint64_t rtp_ts);
 struct stream *video_strm(const struct video *v);
 

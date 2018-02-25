@@ -21,7 +21,7 @@
  *
  * @return Extended RTP Timestamp
  */
-uint64_t video_calc_rtp_timestamp(int64_t pts, unsigned fps)
+uint64_t video_calc_rtp_timestamp(int64_t pts, double fps)
 {
 	uint64_t rtp_ts;
 

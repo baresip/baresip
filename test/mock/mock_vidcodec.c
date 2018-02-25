@@ -22,7 +22,7 @@ struct hdr {
 
 struct videnc_state {
 	int64_t pts;
-	unsigned fps;
+	double fps;
 	videnc_packet_h *pkth;
 	void *arg;
 };

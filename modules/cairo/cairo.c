@@ -138,7 +138,7 @@ static void process(struct vidsrc_st *st)
 
 	draw_text(st, xoffs, yoffs + FONT_SIZE, "%H", fmt_gmtime, NULL);
 
-	draw_text(st, xoffs, yoffs + FONT_SIZE*2, "%u x %u @ %d fps",
+	draw_text(st, xoffs, yoffs + FONT_SIZE*2, "%u x %u @ %.2f fps",
 		  st->size.w, st->size.h, st->prm.fps);
 
 	draw_logo(st);

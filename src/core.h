@@ -201,6 +201,7 @@ int conf_get_range(const struct conf *conf, const char *name,
 		   struct range *rng);
 int conf_get_csv(const struct conf *conf, const char *name,
 		 char *str1, size_t sz1, char *str2, size_t sz2);
+int conf_get_float(const struct conf *conf, const char *name, double *val);
 
 
 /*

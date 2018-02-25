@@ -289,6 +289,24 @@ int conf_get_sa(const struct conf *conf, const char *name, struct sa *sa)
 }
 
 
+int conf_get_float(const struct conf *conf, const char *name, double *val)
+{
+	struct pl opt;
+	int err;
+
+	if (!conf || !name || !val)
+		return EINVAL;
+
+	err = conf_get(conf, name, &opt);
+	if (err)
+		return err;
+
+	*val = pl_float(&opt);
+
+	return 0;
+}
+
+
 /**
  * Configure the system with default settings
  *
