@@ -23,7 +23,7 @@ struct videnc_state {
 	aom_codec_ctx_t ctx;
 	struct vidsz size;
 	aom_codec_pts_t pts;
-	unsigned fps;
+	double fps;
 	unsigned bitrate;
 	unsigned pktsize;
 	bool ctxup;
