@@ -547,7 +547,7 @@ int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		fmt_param_apply(&sdp_fmtp, param_handler, st);
 	}
 
-	debug("avcodec: video encoder %s: %d fps, %d bit/s, pktsize=%u\n",
+	debug("avcodec: video encoder %s: %.2f fps, %d bit/s, pktsize=%u\n",
 	      vc->name, prm->fps, prm->bitrate, prm->pktsize);
 
  out:
