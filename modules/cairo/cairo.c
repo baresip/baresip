@@ -227,7 +227,7 @@ static int load_logo(struct vidsrc_st *st, const char *filename)
 	cairo_set_source_surface(st->cr_logo, logo, 0, 0);
 	cairo_paint(st->cr_logo);
 
-	info("cairo: scaling logo '%s' from %d x %d to %f x %f\n",
+	info("cairo: scaling logo '%s' from %d x %d to %.1f x %.1f\n",
 	     filename,
 	     cairo_image_surface_get_width(logo),
 	     cairo_image_surface_get_height(logo),
