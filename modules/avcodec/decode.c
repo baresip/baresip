@@ -37,6 +37,7 @@ struct viddec_state {
 	size_t frag_start;
 	bool frag;
 	uint16_t frag_seq;
+	double fps;
 
 	struct {
 		unsigned n_key;
@@ -237,6 +238,8 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 
 	if (got_picture) {
 
+		double fps;
+
 #if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 		switch (st->pict->format) {
 
@@ -270,6 +273,14 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		}
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
+
+		/* get the framerate of the decoded bitstream */
+		fps = av_q2d(st->ctx->framerate);
+		if (st->fps != fps) {
+			st->fps = fps;
+			debug("avcodec: current decoder framerate"
+			      " is %.2f fps\n", fps);
+		}
 	}
 
  out:
