@@ -258,7 +258,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	}
 
 	res = aom_codec_decode(&vds->ctx, vds->mb->buf,
-			       (unsigned int)vds->mb->end, NULL, 1);
+			       (unsigned int)vds->mb->end, NULL);
 	if (res) {
 		debug("av1: decode error: %s\n", aom_codec_err_to_string(res));
 		err = EPROTO;

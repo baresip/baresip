@@ -210,7 +210,7 @@ int av1_encode(struct videnc_state *ves, bool update,
 	}
 
 	res = aom_codec_encode(&ves->ctx, img, ves->pts++, 1,
-			       flags, AOM_DL_REALTIME);
+			       flags);
 	if (res) {
 		warning("av1: enc error: %s\n", aom_codec_err_to_string(res));
 		return ENOMEM;
