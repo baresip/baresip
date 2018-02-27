@@ -66,7 +66,6 @@ struct vidsrc_st {
 	vidsrc_frame_h *frameh;
 	void *arg;
 	int sindex;
-	int fps;
 };
 
 
@@ -244,7 +243,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	bool found_stream = false;
 	uint32_t i;
 	int ret, err = 0;
-	int input_fps = 0;
+	double input_fps = 0;
 
 	(void)mctx;
 	(void)errorh;
@@ -262,7 +261,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->sz     = *size;
 	st->frameh = frameh;
 	st->arg    = arg;
-	st->fps    = prm->fps;
 
 	/*
 	 * avformat_open_input() was added in lavf 53.2.0 according to
@@ -283,7 +281,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	/* Params */
 	memset(&prms, 0, sizeof(prms));
 
-	prms.time_base          = (AVRational){1, prm->fps};
+	prms.time_base          = av_d2q(prm->fps, INT_MAX);
 	prms.channels           = 1;
 	prms.width              = size->w;
 	prms.height             = size->h;
@@ -320,7 +318,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	for (i=0; i<st->ic->nb_streams; i++) {
 		const struct AVStream *strm = st->ic->streams[i];
 		AVCodecContext *ctx;
-		double dfps;
 
 #if LIBAVFORMAT_VERSION_INT >= ((57<<16) + (33<<8) + 100)
 
@@ -355,14 +352,17 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		st->sindex = strm->index;
 		st->time_base = strm->time_base;
 
-		dfps = av_q2d(strm->avg_frame_rate);
-		input_fps = (int)dfps;
-		if (st->fps != input_fps) {
-			info("avformat: updating %i fps from config to native "
-				"input material fps %i\n", st->fps, input_fps);
-			st->fps = input_fps;
+		input_fps = av_q2d(strm->avg_frame_rate);
+		if (prm->fps != input_fps) {
+			info("avformat: updating %.2f fps from config"
+			     " to native "
+			     "input material fps %.2f\n",
+			     prm->fps, input_fps);
+
+			prm->fps = input_fps;
+
 #if LIBAVFORMAT_VERSION_INT < ((52<<16) + (110<<8) + 0)
-			prms.time_base = (AVRational){1, st->fps};
+			prms.time_base = av_d2q(input_fps, INT_MAX);
 #endif
 		}
 
