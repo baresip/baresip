@@ -1002,6 +1002,9 @@ int call_status(struct re_printf *pf, const struct call *call)
 		err |= video_print(pf, call->video);
 #endif
 
+	/* remove old junk */
+	err |= re_hprintf(pf, "    ");
+
 	return err;
 }
 

@@ -96,7 +96,7 @@ struct vtx {
 	bool picup;                        /**< Send picture update       */
 	bool muted;                        /**< Muted flag                */
 	int frames;                        /**< Number of frames sent     */
-	int efps;                          /**< Estimated frame-rate      */
+	double efps;                       /**< Estimated frame-rate      */
 	uint64_t ts_base;                  /**< First RTP timestamp sent  */
 	uint64_t ts_last;                  /**< Last RTP timestamp sent   */
 
@@ -138,7 +138,7 @@ struct vrx {
 	char device[128];                  /**< Display device name       */
 	int pt_rx;                         /**< Incoming RTP payload type */
 	int frames;                        /**< Number of frames received */
-	int efps;                          /**< Estimated frame-rate      */
+	double efps;                       /**< Estimated frame-rate      */
 	unsigned n_intra;                  /**< Intra-frames decoded      */
 	unsigned n_picup;                  /**< Picture updates sent      */
 	uint32_t ts_min;
@@ -962,8 +962,8 @@ static void tmr_handler(void *arg)
 	tmr_start(&v->tmr, TMR_INTERVAL * 1000, tmr_handler, v);
 
 	/* Estimate framerates */
-	v->vtx.efps = v->vtx.frames / TMR_INTERVAL;
-	v->vrx.efps = v->vrx.frames / TMR_INTERVAL;
+	v->vtx.efps = (double)v->vtx.frames / (double)TMR_INTERVAL;
+	v->vrx.efps = (double)v->vrx.frames / (double)TMR_INTERVAL;
 
 	v->vtx.frames = 0;
 	v->vrx.frames = 0;
@@ -1393,7 +1393,7 @@ int video_print(struct re_printf *pf, const struct video *v)
 	if (!v)
 		return 0;
 
-	return re_hprintf(pf, " efps=%d/%d", v->vtx.efps, v->vrx.efps);
+	return re_hprintf(pf, " efps=%.1f/%.1f", v->vtx.efps, v->vrx.efps);
 }
 
 
