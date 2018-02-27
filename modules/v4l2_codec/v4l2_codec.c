@@ -430,7 +430,7 @@ static int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 
 	list_append(&v4l2.encoderl, &st->le, st);
 
-	info("v4l2_codec: video encoder %s: %d fps, %d bit/s, pktsize=%u\n",
+	info("v4l2_codec: video encoder %s: %.2f fps, %d bit/s, pktsize=%u\n",
 	      vc->name, prm->fps, prm->bitrate, prm->pktsize);
 
 	if (err)
