@@ -4,6 +4,7 @@
  * Copyright (C) 2018 46 Labs LLC
  */
 
+#include <string.h>
 #include <re.h>
 #include <baresip.h>
 
@@ -83,11 +84,15 @@
  *
  \verbatim
   ctrl_tcp_listen     0.0.0.0:4444         # IP-address and port to listen on
+  ctrl_tcp_event      0.0.0.0:4445         # IP-address and port to send events
  \endverbatim
  */
 
 
-enum {CTRL_PORT = 4444};
+enum {
+	CTRL_PORT = 4444,
+	EVNT_PORT = 4445,
+};
 
 struct ctrl_st {
 	struct tcp_sock *ts;
@@ -95,7 +100,8 @@ struct ctrl_st {
 	struct netstring *ns;
 };
 
-static struct ctrl_st *ctrl = NULL;  /* allow only one instance */
+static struct ctrl_st *ctrl = NULL;  /* allow only one control instance */
+static struct ctrl_st *evnt = NULL;  /* allow only one event instance */
 
 static int print_handler(const char *p, size_t size, void *arg)
 {
@@ -195,11 +201,21 @@ static bool command_handler(struct mbuf *mb, void *arg)
 
 	resp->pos = NETSTRING_HEADER_SIZE;
 
-	/* Relay message to long commands */
-	err = cmd_process_long(baresip_commands(),
-			       buf,
-			       str_len(buf),
-			       &pf, NULL);
+	if (strlen(cmd) == 1) {
+		/* Relay message to key commands */
+		err = cmd_process(baresip_commands(),
+					   NULL,
+					   buf[0],
+					   &pf, NULL);
+	}
+	else {
+		/* Relay message to long commands */
+		err = cmd_process_long(baresip_commands(),
+					   buf,
+					   str_len(buf),
+					   &pf, NULL);
+	}
+
 	if (err) {
 		warning("ctrl_tcp: error processing command (%m)\n", err);
 	}
@@ -248,12 +264,8 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 	(void)netstring_insert(&st->ns, st->tc, 0, command_handler, st);
 }
 
-
-/*
- * Relay UA events
- */
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-			     struct call *call, const char *prm, void *arg)
+static void sendEvent(struct ua *ua, enum ua_event ev,
+	     struct call *call, const char *prm, void *arg)
 {
 	struct ctrl_st *st = arg;
 	struct mbuf *buf = mbuf_alloc(1024);
@@ -291,6 +303,39 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
  out:
 	mem_deref(buf);
 	mem_deref(od);
+}
+
+static void dtmf_handler(struct call *call, char key, void *arg)
+{
+	enum ua_event ev;
+	char keyStr[4];
+
+	(void)arg;
+
+	if ( key != 0 ) {
+		if (key == KEYCODE_REL) {
+			ev = UA_EVENT_CALL_DTMF_END;
+			sendEvent(NULL, ev, call, NULL, evnt);
+		}
+		else {
+			ev = UA_EVENT_CALL_DTMF_START;
+			re_snprintf(keyStr, sizeof(keyStr), "%c", key);
+			sendEvent(NULL, ev, call, keyStr, evnt);
+		}
+	}
+}
+
+/*
+ * Relay UA events
+ */
+static void ua_event_handler(struct ua *ua, enum ua_event ev,
+			     struct call *call, const char *prm, void *arg)
+{
+	if ( ev == UA_EVENT_CALL_ESTABLISHED ) {
+		call_set_handlers( call, NULL, dtmf_handler, NULL);
+	}
+
+	sendEvent(ua, ev, call, prm, arg);
 }
 
 
@@ -379,10 +424,10 @@ static int ctrl_alloc(struct ctrl_st **stp, const struct sa *laddr)
 	return err;
 }
 
-
 static int ctrl_init(void)
 {
 	struct sa laddr;
+	struct sa evntAddr;
 	int err;
 
 	if (conf_get_sa(conf_cur(), "ctrl_tcp_listen", &laddr)) {
@@ -393,7 +438,15 @@ static int ctrl_init(void)
 	if (err)
 		return err;
 
-	err = uag_event_register(ua_event_handler, ctrl);
+	if (conf_get_sa(conf_cur(), "ctrl_tcp_event", &evntAddr)) {
+		sa_set_str(&evntAddr, "0.0.0.0", EVNT_PORT);
+	}
+
+	err = ctrl_alloc(&evnt, &evntAddr);
+	if (err)
+		return err;
+
+	err = uag_event_register(ua_event_handler, evnt);
 	if (err)
 		return err;
 
@@ -410,6 +463,7 @@ static int ctrl_close(void)
 	uag_event_unregister(ua_event_handler);
 	message_unlisten(baresip_message(), message_handler);
 	ctrl = mem_deref(ctrl);
+	evnt = mem_deref(evnt);
 
 	return 0;
 }

@@ -1259,6 +1259,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "ctrl_tcp_listen\t\t0.0.0.0:4444 # ctrl_tcp - "
 				"TCP interface JSON\n");
+	(void)re_fprintf(f, "ctrl_tcp_event\t\t0.0.0.0:4445\n");
 
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
