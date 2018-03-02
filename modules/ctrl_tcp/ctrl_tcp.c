@@ -71,7 +71,7 @@
   "class"      : "call",
   "type"       : "CALL_CLOSED",
   "param"      : "Connection reset by peer",
-  "account"    : "sip:alice@atlanta.com",
+  "accountaor" : "sip:alice@atlanta.com",
   "direction"  : "incoming",
   "peer"       : "sip:bob@biloxy.com",
   "id"         : "73a12546589651f8"
