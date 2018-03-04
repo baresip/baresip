@@ -302,10 +302,11 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 		return err;
 
 #if 0
-	re_printf("avcodec: decode: %s %s type=%2d  \n",
+	re_printf("avcodec: decode: %s %s type=%2d %s  \n",
 		  marker ? "[M]" : "   ",
 		  h264_is_keyframe(h264_hdr.type) ? "<KEY>" : "     ",
-		  h264_hdr.type);
+		  h264_hdr.type,
+		  h264_nalunit_name(h264_hdr.type));
 #endif
 
 	if (h264_hdr.f) {
