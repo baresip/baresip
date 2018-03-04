@@ -180,3 +180,26 @@ int h264_packetize(uint64_t rtp_ts, const uint8_t *buf, size_t len,
 
 	return err;
 }
+
+
+const char *h264_nalunit_name(int type)
+{
+	switch (type) {
+
+	case H264_NAL_SLICE:       return "SLICE";
+	case H264_NAL_DPA:         return "DPA";
+	case H264_NAL_DPB:         return "DPB";
+	case H264_NAL_DPC:         return "DPC";
+	case H264_NAL_IDR_SLICE:   return "IDR_SLICE";
+	case H264_NAL_SEI:         return "SEI";
+	case H264_NAL_SPS:         return "SPS";
+	case H264_NAL_PPS:         return "PPS";
+	case H264_NAL_AUD:         return "AUD";
+	case H264_NAL_FILLER_DATA: return "FILLER";
+
+	case H264_NAL_FU_A:        return "FU-A";
+	case H264_NAL_FU_B:        return "FU-B";
+	}
+
+	return "???";
+}
