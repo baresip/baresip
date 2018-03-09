@@ -250,7 +250,7 @@ static int enable_codec(struct video_loop *vl, const char *name)
 		return ENOENT;
 	}
 
-	info("vidloop: enabled encoder %s (%u fps, %u bit/s)\n",
+	info("vidloop: enabled encoder %s (%.2f fps, %u bit/s)\n",
 	     vl->vc_enc->name, prm.fps, prm.bitrate);
 
 	vl->vc_dec = vidcodec_find_decoder(vidcodecl, name);
@@ -336,7 +336,7 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 	struct vidsrc_prm prm;
 	int err;
 
-	info("vidloop: %s,%s: open video source: %u x %u at %u fps\n",
+	info("vidloop: %s,%s: open video source: %u x %u at %.2f fps\n",
 	     vl->cfg.src_mod, vl->cfg.src_dev,
 	     sz->w, sz->h, vl->cfg.fps);
 
