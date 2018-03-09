@@ -17,7 +17,7 @@ struct videnc_state {
 	x265_param *param;
 	x265_encoder *x265;
 	int64_t pts;
-	unsigned fps;
+	double fps;
 	unsigned bitrate;
 	unsigned pktsize;
 	videnc_packet_h *pkth;
@@ -36,7 +36,7 @@ static void destructor(void *arg)
 }
 
 
-static int set_params(struct videnc_state *st, unsigned fps, unsigned bitrate)
+static int set_params(struct videnc_state *st, double fps, unsigned bitrate)
 {
 	st->param = x265_param_alloc();
 	if (!st->param) {
