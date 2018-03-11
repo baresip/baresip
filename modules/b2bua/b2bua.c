@@ -211,9 +211,12 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err = uag_event_register(ua_event_handler, 0);
+	err = uag_event_register(ua_event_handler, NULL);
 	if (err)
 		return err;
+
+	/* The inbound UA will handle all non-matching requests */
+	ua_set_catchall(ua_in, true);
 
 	debug("b2bua: module loaded\n");
 

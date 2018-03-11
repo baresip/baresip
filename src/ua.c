@@ -30,6 +30,7 @@ struct ua {
 	int af;                      /**< Preferred Address Family           */
 	int af_media;                /**< Preferred Address Family for media */
 	enum presence_status my_status; /**< Presence Status                 */
+	bool catchall;               /**< Catch all inbound requests         */
 };
 
 struct ua_eh {
@@ -1659,6 +1660,14 @@ struct ua *uag_find(const struct pl *cuser)
 			return ua;
 	}
 
+	/* Last resort, try any catchall UAs */
+	for (le = uag.ual.head; le; le = le->next) {
+		struct ua *ua = le->data;
+
+		if (ua->catchall)
+			return ua;
+	}
+
 	return NULL;
 }
 
@@ -1893,6 +1902,22 @@ void ua_set_media_af(struct ua *ua, int af_media)
 		return;
 
 	ua->af_media = af_media;
+}
+
+
+/**
+ * Enable handling of all inbound requests, even if
+ * the request uri is not matching.
+ *
+ * @param ua     User-Agent
+ * @param enable True to enable, false to disable
+ */
+void ua_set_catchall(struct ua *ua, bool enabled)
+{
+	if (!ua)
+		return;
+
+	ua->catchall = enabled;
 }
 
 

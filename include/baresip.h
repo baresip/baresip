@@ -640,6 +640,7 @@ struct list    *ua_calls(const struct ua *ua);
 enum presence_status ua_presence_status(const struct ua *ua);
 void ua_presence_status_set(struct ua *ua, const enum presence_status status);
 void ua_set_media_af(struct ua *ua, int af_media);
+void ua_set_catchall(struct ua *ua, bool enabled);
 
 
 /* One instance */
