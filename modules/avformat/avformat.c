@@ -100,6 +100,8 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	struct vidframe vf;
 	struct vidsz sz;
 	unsigned i;
+	int64_t pts;
+	uint64_t timestamp;
 
 	if (st->codec) {
 		int got_pict, ret;
@@ -147,6 +149,12 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		return;
 	}
 
+	pts = av_frame_get_best_effort_timestamp(frame);
+	const AVRational time_base = st->time_base;
+
+	/* convert timestamp */
+	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
+
 #if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 	switch (frame->format) {
 
@@ -172,7 +180,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		vf.linesize[i] = frame->linesize[i];
 	}
 
-	st->frameh(&vf, st->arg);
+	st->frameh(&vf, timestamp, st->arg);
 
  out:
 	if (frame) {

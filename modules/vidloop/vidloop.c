@@ -73,6 +73,10 @@ struct video_loop {
 		uint64_t enc_packets;
 		uint64_t disp_frames;
 	} stats;
+
+	bool timestamp_set;
+	uint64_t timestamp_base;  /* lowest timestamp */
+	uint64_t timestamp_last;  /* most recent timestamp */
 };
 
 
@@ -189,7 +193,21 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 }
 
 
-static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
+static double stream_duration(const struct video_loop *vl)
+{
+	uint64_t dur;
+
+	if (vl->timestamp_set)
+		dur = vl->timestamp_last - vl->timestamp_base;
+	else
+		dur = 0;
+
+	return video_timestamp_to_seconds(dur);
+}
+
+
+static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
+				 void *arg)
 {
 	struct video_loop *vl = arg;
 	struct vidframe *f2 = NULL;
@@ -206,6 +224,20 @@ static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
 	vl->src_size = frame->size;
 	vl->src_fmt = frame->fmt;
 	++vl->stats.src_frames;
+
+	/* Timestamp logic */
+	if (vl->timestamp_set) {
+		if (timestamp <= vl->timestamp_base) {
+			info("vidloop: timestamp wrapped -- reset base\n");
+			vl->timestamp_base = timestamp;
+		}
+		vl->timestamp_last = timestamp;
+	}
+	else {
+		vl->timestamp_base = timestamp;
+		vl->timestamp_last = timestamp;
+		vl->timestamp_set = true;
+	}
 
 	++vl->stat.frames;
 
@@ -259,8 +291,9 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 	double real_dur = .0;
 	int err = 0;
 
-	if (vl->ts_start)
-		real_dur = 0.000001 * (double)(vl->ts_last - vl->ts_start);
+	if (vl->ts_start) {
+		real_dur = stream_duration(vl);
+	}
 
 	err |= re_hprintf(pf, "~~~~~ Videoloop summary: ~~~~~\n");
 
@@ -279,6 +312,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 				  "  pixformat   %s\n"
 				  "  frames      %llu\n"
 				  "  framerate   %.2f fps  (avg %.2f fps)\n"
+				  "  duration    %.3f sec\n"
 				  "\n"
 				  ,
 				  vs->name,
@@ -286,7 +320,8 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 				  vl->src_size.w, vl->src_size.h,
 				  vidfmt_name(vl->src_fmt),
 				  vl->stats.src_frames,
-				  vl->srcprm.fps, avg_fps);
+				  vl->srcprm.fps, avg_fps,
+				  real_dur);
 	}
 
 	/* Video conversion */
@@ -438,8 +473,9 @@ static void print_status(struct video_loop *vl)
 {
 	(void)re_fprintf(stdout,
 			 "\rstatus:"
-			 " [%s] [%s]  fmt=%s  intra=%zu "
+			 " %.3f sec [%s] [%s]  fmt=%s  intra=%zu "
 			 " EFPS=%.1f      %u kbit/s       \r",
+			 stream_duration(vl),
 			 vl->vc_enc ? vl->vc_enc->name : "",
 			 vl->vc_dec ? vl->vc_dec->name : "",
 			 vidfmt_name(vl->cfg.enc_fmt),
@@ -478,7 +514,7 @@ static void timeout_bw(void *arg)
 		return;
 	}
 
-	tmr_start(&vl->tmr_bw, 2000, timeout_bw, vl);
+	tmr_start(&vl->tmr_bw, 500, timeout_bw, vl);
 
 	calc_bitrate(vl);
 	print_status(vl);

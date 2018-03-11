@@ -60,12 +60,16 @@ static void *read_thread(void *arg)
 
 	while (st->run) {
 
+		uint64_t timestamp;
+
 		if (tmr_jiffies() < ts) {
 			sys_msleep(4);
 			continue;
 		}
 
-		st->frameh(st->frame, st->arg);
+		timestamp = ts * VIDEO_TIMEBASE  / 1000;
+
+		st->frameh(st->frame, timestamp, st->arg);
 
 		ts += (1000/st->fps);
 	}

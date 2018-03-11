@@ -14,6 +14,7 @@ struct vidsrc_st {
 
 	struct vidframe *frame;
 	struct tmr tmr;
+	uint64_t timestamp;
 	double fps;
 	vidsrc_frame_h *frameh;
 	void *arg;
@@ -27,7 +28,9 @@ static void tmr_handler(void *arg)
 	tmr_start(&st->tmr, 1000/st->fps, tmr_handler, st);
 
 	if (st->frameh)
-		st->frameh(st->frame, st->arg);
+		st->frameh(st->frame, st->timestamp, st->arg);
+
+	st->timestamp += VIDEO_TIMEBASE / st->fps;
 }
 
 

@@ -117,13 +117,14 @@ static int v4l_get_win(int fd, int width, int height)
 }
 
 
-static void call_frame_handler(struct vidsrc_st *st, uint8_t *buf)
+static void call_frame_handler(struct vidsrc_st *st, uint8_t *buf,
+			       uint64_t timestamp)
 {
 	struct vidframe frame;
 
 	vidframe_init_buf(&frame, st->fmt, &st->size, buf);
 
-	st->frameh(&frame, st->arg);
+	st->frameh(&frame, timestamp, st->arg);
 }
 
 
@@ -133,6 +134,7 @@ static void *read_thread(void *arg)
 
 	while (st->run) {
 		ssize_t n;
+		uint64_t timestamp;
 
 		n = read(st->fd, st->mb->buf, st->mb->size);
 		if ((ssize_t)st->mb->size != n) {
@@ -141,7 +143,10 @@ static void *read_thread(void *arg)
 			continue;
 		}
 
-		call_frame_handler(st, st->mb->buf);
+		/* XXX: review this */
+		timestamp = tmr_jiffies() * 1000;
+
+		call_frame_handler(st, st->mb->buf, timestamp);
 	}
 
 	return NULL;

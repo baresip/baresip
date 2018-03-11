@@ -453,9 +453,12 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
  *
  * @note This function has REAL-TIME properties
  */
-static void vidsrc_frame_handler(struct vidframe *frame, void *arg)
+static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
+				 void *arg)
 {
 	struct vtx *vtx = arg;
+
+	/* XXX: save timestamp(s) and pass to encoder */
 
 	++vtx->frames;
 
