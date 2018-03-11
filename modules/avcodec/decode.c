@@ -267,6 +267,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
 
+#if LIBAVCODEC_VERSION_INT >= ((55<<16)+(57<<8)+100)
 		/* get the framerate of the decoded bitstream */
 		fps = av_q2d(st->ctx->framerate);
 		if (st->fps != fps) {
@@ -274,6 +275,9 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 			debug("avcodec: current decoder framerate"
 			      " is %.2f fps\n", fps);
 		}
+#else
+		(void)fps;
+#endif
 	}
 
  out:
