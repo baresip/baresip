@@ -73,7 +73,7 @@
   "param"      : "Connection reset by peer",
   "accountaor" : "sip:alice@atlanta.com",
   "direction"  : "incoming",
-  "peer"       : "sip:bob@biloxy.com",
+  "peeruri"    : "sip:bob@biloxy.com",
   "id"         : "73a12546589651f8"
  }
  \endverbatim
