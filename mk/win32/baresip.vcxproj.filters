@@ -362,5 +362,10 @@
     <ClCompile Include="..\..\modules\winwave\winwave.c">
       <Filter>modules\winwave</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\rtpext.c" />
+    <ClCompile Include="..\..\src\timestamp.c" />
+    <ClCompile Include="..\..\src\aulevel.c" />
+    <ClCompile Include="..\..\src\vidutil.c" />
+    <ClCompile Include="..\..\src\event.c" />
   </ItemGroup>
 </Project>
