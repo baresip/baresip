@@ -202,6 +202,8 @@ int ua_register(struct ua *ua)
 				   acc->regint, acc->outboundv[i]);
 		if (err) {
 			warning("ua: SIP register failed: %m\n", err);
+
+			ua_event(ua, UA_EVENT_REGISTER_FAIL, NULL, "%m", err);
 			goto out;
 		}
 	}
