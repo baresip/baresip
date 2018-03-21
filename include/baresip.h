@@ -1190,6 +1190,13 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 
 
 /*
+ * Timer
+ */
+
+uint64_t tmr_jiffies_usec(void);
+
+
+/*
  * Baresip instance
  */
 
