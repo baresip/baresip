@@ -20,12 +20,6 @@
 #include "avcodec.h"
 
 
-#if LIBAVUTIL_VERSION_MAJOR < 52
-#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
-#define AV_PIX_FMT_NV12    PIX_FMT_NV12
-#endif
-
-
 #ifndef AV_INPUT_BUFFER_MIN_SIZE
 #define AV_INPUT_BUFFER_MIN_SIZE FF_MIN_BUFFER_SIZE
 #endif

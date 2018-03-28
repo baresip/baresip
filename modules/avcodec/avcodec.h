@@ -16,6 +16,14 @@
 #endif
 
 
+#if LIBAVUTIL_VERSION_MAJOR < 52
+#define AV_PIX_FMT_YUV420P   PIX_FMT_YUV420P
+#define AV_PIX_FMT_YUVJ420P  PIX_FMT_YUVJ420P
+#define AV_PIX_FMT_NV12      PIX_FMT_NV12
+#define AV_PIX_FMT_YUV444P   PIX_FMT_YUV444P
+#endif
+
+
 extern const uint8_t h264_level_idc;
 extern AVCodec *avcodec_h264enc;
 extern AVCodec *avcodec_h264dec;
