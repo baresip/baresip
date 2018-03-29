@@ -849,7 +849,7 @@ static int test_media_base(enum audio_mode txmode)
 	struct auplay *auplay = NULL;
 	int err = 0;
 
-	fixture_init(f);
+	fixture_init_prm(f, ";ptime=1");
 
 	conf_config()->audio.txmode = txmode;
 
@@ -870,7 +870,7 @@ static int test_media_base(enum audio_mode txmode)
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5000);
+	err = re_main_timeout(15000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
