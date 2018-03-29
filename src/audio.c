@@ -1537,6 +1537,10 @@ static int start_source(struct autx *tx, struct audio *a)
 		}
 
 		switch (a->cfg.txmode) {
+
+		case AUDIO_MODE_POLL:
+			break;
+
 #ifdef HAVE_PTHREAD
 		case AUDIO_MODE_THREAD:
 			if (!tx->u.thr.run) {
@@ -1552,7 +1556,9 @@ static int start_source(struct autx *tx, struct audio *a)
 #endif
 
 		default:
-			break;
+			warning("audio: tx mode not supported (%d)\n",
+				a->cfg.txmode);
+			return ENOTSUP;
 		}
 
 		tx->ausrc_prm = prm;
