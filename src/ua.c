@@ -1911,8 +1911,8 @@ void ua_set_media_af(struct ua *ua, int af_media)
  * Enable handling of all inbound requests, even if
  * the request uri is not matching.
  *
- * @param ua     User-Agent
- * @param enable True to enable, false to disable
+ * @param ua      User-Agent
+ * @param enabled True to enable, false to disable
  */
 void ua_set_catchall(struct ua *ua, bool enabled)
 {

@@ -97,7 +97,7 @@ struct autx {
 	bool muted;                   /**< Audio source is muted           */
 	int cur_key;                  /**< Currently transmitted event     */
 	enum aufmt src_fmt;           /**< Sample format for audio source  */
-	enum aufmt enc_fmt;
+	enum aufmt enc_fmt;           /**< Sample format for encoder       */
 	bool need_conv;               /**< Sample format conversion needed */
 
 	struct {
@@ -149,7 +149,7 @@ struct aurx {
 	double level_last;
 	bool level_set;
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
-	enum aufmt dec_fmt;
+	enum aufmt dec_fmt;           /**< Sample format for decoder       */
 	bool need_conv;               /**< Sample format conversion needed */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
 
