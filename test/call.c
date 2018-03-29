@@ -830,8 +830,15 @@ static void float_sample_handler(const void *sampv, size_t sampc, void *arg)
 	(void)sampv;
 	(void)sampc;
 
-	if (sampc && fix->a.n_established && fix->b.n_established)
+	/* Wait until the call is established and the incoming
+	 * audio samples are successfully decoded.
+	 */
+	if (sampc && fix->a.n_established && fix->b.n_established &&
+	    audio_rxaubuf_started(call_audio(ua_call(fix->a.ua))) &&
+	    audio_rxaubuf_started(call_audio(ua_call(fix->b.ua)))
+	    ) {
 		re_cancel();
+	}
 }
 
 
@@ -904,5 +911,57 @@ int test_call_format_float(void)
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
 
  out:
+	return err;
+}
+
+
+int test_call_mediaenc(void)
+{
+	struct fixture fix, *f = &fix;
+	struct ausrc *ausrc = NULL;
+	struct auplay *auplay = NULL;
+	int err = 0;
+
+	mock_menc_register();
+
+	/* Enable a dummy media encryption protocol */
+	fixture_init_prm(f, ";mediaenc=xrtp;ptime=1");
+
+	err = mock_ausrc_register(&ausrc);
+	TEST_ERR(err);
+	err = mock_auplay_register(&auplay, float_sample_handler, f);
+	TEST_ERR(err);
+
+	f->estab_action = ACTION_NOTHING;
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+
+	/* XXX: verify that the call was encrypted */
+
+ out:
+	fixture_close(f);
+	mem_deref(auplay);
+	mem_deref(ausrc);
+
+	mock_menc_unregister();
+
+	if (fix.err)
+		return fix.err;
+
 	return err;
 }

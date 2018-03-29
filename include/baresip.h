@@ -995,6 +995,7 @@ int  audio_level_get(const struct audio *au, double *level);
 int  audio_debug(struct re_printf *pf, const struct audio *a);
 struct stream *audio_strm(const struct audio *a);
 int audio_set_bitrate(struct audio *au, uint32_t bitrate);
+bool audio_rxaubuf_started(struct audio *au);
 
 
 /*

@@ -44,6 +44,7 @@ endif
 TEST_SRCS	+= mock/mock_aucodec.c
 TEST_SRCS	+= mock/mock_auplay.c
 TEST_SRCS	+= mock/mock_ausrc.c
+TEST_SRCS	+= mock/mock_menc.c
 ifneq ($(USE_VIDEO),)
 TEST_SRCS	+= mock/mock_vidsrc.c
 TEST_SRCS	+= mock/mock_vidcodec.c

@@ -150,6 +150,14 @@ int mock_auplay_register(struct auplay **auplayp,
 
 
 /*
+ * Mock Media encryption
+ */
+
+void mock_menc_register(void);
+void mock_menc_unregister(void);
+
+
+/*
  * Mock Video-source
  */
 
@@ -208,6 +216,7 @@ int test_call_video(void);
 int test_call_aulevel(void);
 int test_call_progress(void);
 int test_call_format_float(void);
+int test_call_mediaenc(void);
 
 #ifdef USE_VIDEO
 int test_video(void);

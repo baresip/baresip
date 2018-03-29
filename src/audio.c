@@ -2180,3 +2180,16 @@ int audio_set_bitrate(struct audio *au, uint32_t bitrate)
 
 	return 0;
 }
+
+
+bool audio_rxaubuf_started(struct audio *au)
+{
+	struct aurx *rx;
+
+	if (!au)
+		return false;
+
+	rx = &au->rx;
+
+	return rx->aubuf_started;
+}
