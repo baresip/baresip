@@ -152,11 +152,11 @@ struct aurx {
 	enum aufmt dec_fmt;
 	bool need_conv;               /**< Sample format conversion needed */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
-	uint64_t n_discard;
 
 	struct {
 		uint64_t aubuf_overrun;
 		uint64_t aubuf_underrun;
+		uint64_t n_discard;
 	} stats;
 };
 
@@ -996,7 +996,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 #endif
 
 	if (discard) {
-		++a->rx.n_discard;
+		++rx->stats.n_discard;
 		return;
 	}
 
@@ -1988,7 +1988,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  );
 	err |= re_hprintf(pf, "       player: %s\n", aufmt_name(rx->play_fmt));
 	err |= re_hprintf(pf, "       n_discard:%llu\n",
-			  rx->n_discard);
+			  rx->stats.n_discard);
 	if (rx->level_set) {
 		err |= re_hprintf(pf, "       level %.3f dBov\n",
 				  rx->level_last);
