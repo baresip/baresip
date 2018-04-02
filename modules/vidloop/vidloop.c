@@ -266,6 +266,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 
 	/* Source */
 	if (vl->vsrc) {
+		struct vidsrc *vs = vidsrc_get(vl->vsrc);
 		double avg_fps = .0;
 
 		if (vl->stats.src_frames >= 2)
@@ -273,12 +274,14 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 
 		err |= re_hprintf(pf,
 				  "* Source\n"
+				  "  module      %s\n"
 				  "  resolution  %u x %u (actual %u x %u)\n"
 				  "  pixformat   %s\n"
 				  "  frames      %llu\n"
 				  "  framerate   %.2f fps  (avg %.2f fps)\n"
 				  "\n"
 				  ,
+				  vs->name,
 				  cfg->width, cfg->height,
 				  vl->src_size.w, vl->src_size.h,
 				  vidfmt_name(vl->src_fmt),
@@ -345,13 +348,17 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 
 	/* Display */
 	if (vl->vidisp) {
+		struct vidisp *vd = vidisp_get(vl->vidisp);
+
 		err |= re_hprintf(pf,
 				  "* Display\n"
+				  "  module      %s\n"
 				  "  resolution  %u x %u\n"
 				  "  fullscreen  %s\n"
 				  "  frames      %llu\n"
 				  "\n"
 				  ,
+				  vd->name,
 				  vl->disp_size.w, vl->disp_size.h,
 				  cfg->fullscreen ? "Yes" : "No",
 				  vl->stats.disp_frames);
