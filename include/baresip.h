@@ -777,6 +777,13 @@ typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, const struct vidsrc *vs,
 typedef void (vidsrc_update_h)(struct vidsrc_st *st, struct vidsrc_prm *prm,
 			       const char *dev);
 
+struct vidsrc {
+	struct le         le;
+	const char       *name;
+	vidsrc_alloc_h   *alloch;
+	vidsrc_update_h  *updateh;
+};
+
 int vidsrc_register(struct vidsrc **vp, struct list *vidsrcl, const char *name,
 		    vidsrc_alloc_h *alloch, vidsrc_update_h *updateh);
 const struct vidsrc *vidsrc_find(const struct list *vidsrcl, const char *name);
@@ -785,6 +792,7 @@ int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt, const char *dev,
 		 vidsrc_frame_h *frameh, vidsrc_error_h *errorh, void *arg);
+struct vidsrc *vidsrc_get(struct vidsrc_st *st);
 
 
 /*
@@ -812,6 +820,15 @@ typedef int  (vidisp_disp_h)(struct vidisp_st *st, const char *title,
 			     const struct vidframe *frame);
 typedef void (vidisp_hide_h)(struct vidisp_st *st);
 
+struct vidisp {
+	struct le        le;
+	const char      *name;
+	vidisp_alloc_h  *alloch;
+	vidisp_update_h *updateh;
+	vidisp_disp_h   *disph;
+	vidisp_hide_h   *hideh;
+};
+
 int vidisp_register(struct vidisp **vp, struct list *vidispl, const char *name,
 		    vidisp_alloc_h *alloch, vidisp_update_h *updateh,
 		    vidisp_disp_h *disph, vidisp_hide_h *hideh);
@@ -822,6 +839,7 @@ int vidisp_alloc(struct vidisp_st **stp, struct list *vidispl,
 int vidisp_display(struct vidisp_st *st, const char *title,
 		   const struct vidframe *frame);
 const struct vidisp *vidisp_find(const struct list *vidispl, const char *name);
+struct vidisp *vidisp_get(struct vidisp_st *st);
 
 
 /*

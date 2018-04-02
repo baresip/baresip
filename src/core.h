@@ -422,36 +422,6 @@ const char  *uag_allowed_methods(void);
 
 
 /*
- * Video Display
- */
-
-struct vidisp {
-	struct le        le;
-	const char      *name;
-	vidisp_alloc_h  *alloch;
-	vidisp_update_h *updateh;
-	vidisp_disp_h   *disph;
-	vidisp_hide_h   *hideh;
-};
-
-struct vidisp *vidisp_get(struct vidisp_st *st);
-
-
-/*
- * Video Source
- */
-
-struct vidsrc {
-	struct le         le;
-	const char       *name;
-	vidsrc_alloc_h   *alloch;
-	vidsrc_update_h  *updateh;
-};
-
-struct vidsrc *vidsrc_get(struct vidsrc_st *st);
-
-
-/*
  * Video Stream
  */
 
