@@ -95,6 +95,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		     vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;
+	unsigned x;
 	int err;
 
 	(void)ctx;
@@ -117,6 +118,21 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	err = vidframe_alloc(&st->frame, VID_FMT_YUV420P, size);
 	if (err)
 		goto out;
+
+	/* Pattern of three vertical bars in RGB */
+	for (x=0; x<size->w; x++) {
+
+		uint8_t r=0, g=0, b=0;
+
+		if (x < size->w/3)
+			r = 255;
+		else if (x < size->w*2/3)
+			g = 255;
+		else
+			b = 255;
+
+		vidframe_draw_vline(st->frame, x, 0, size->h, r, g, b);
+	}
 
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, read_thread, st);
