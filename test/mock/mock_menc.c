@@ -46,6 +46,7 @@ static bool send_handler(int *err, struct sa *dst, struct mbuf *mb, void *arg)
 {
 	struct menc_media *mm = arg;
 	(void)mm;
+	(void)err;
 	(void)dst;
 
 	mock_crypt(mb);
