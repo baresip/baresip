@@ -31,8 +31,13 @@
 struct vidsrc_st {
 	const struct vidsrc *vs;  /* inheritance */
 	struct vidframe *frame;
+#ifdef HAVE_PTHREAD
 	pthread_t thread;
 	bool run;
+#else
+	struct tmr tmr;
+	uint64_t ts;
+#endif
 	int fps;
 	vidsrc_frame_h *frameh;
 	void *arg;
@@ -47,6 +52,7 @@ static struct vidsrc *vidsrc;
 static struct vidisp *vidisp;
 
 
+#ifdef HAVE_PTHREAD
 static void *read_thread(void *arg)
 {
 	struct vidsrc_st *st = arg;
@@ -66,16 +72,38 @@ static void *read_thread(void *arg)
 
 	return NULL;
 }
+#else
+static void tmr_handler(void *arg)
+{
+	struct vidsrc_st *st = arg;
+	const uint64_t now = tmr_jiffies();
+
+	tmr_start(&st->tmr, 4, tmr_handler, st);
+
+	if (!st->ts)
+		st->ts = now;
+
+	if (now >= st->ts) {
+		st->frameh(st->frame, st->arg);
+
+		st->ts += (1000/st->fps);
+	}
+}
+#endif
 
 
 static void src_destructor(void *arg)
 {
 	struct vidsrc_st *st = arg;
 
+#ifdef HAVE_PTHREAD
 	if (st->run) {
 		st->run = false;
 		pthread_join(st->thread, NULL);
 	}
+#else
+	tmr_cancel(&st->tmr);
+#endif
 
 	mem_deref(st->frame);
 }
@@ -134,12 +162,16 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		vidframe_draw_vline(st->frame, x, 0, size->h, r, g, b);
 	}
 
+#ifdef HAVE_PTHREAD
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, read_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;
 	}
+#else
+	tmr_start(&st->tmr, 1, tmr_handler, st);
+#endif
 
  out:
 	if (err)

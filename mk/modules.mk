@@ -281,9 +281,7 @@ MODULES   += aubridge aufile
 endif
 ifneq ($(USE_VIDEO),)
 MODULES   += vidloop selfview vidbridge
-ifneq ($(HAVE_PTHREAD),)
 MODULES   += fakevideo
-endif
 endif
 
 
