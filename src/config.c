@@ -508,6 +508,8 @@ static const char *default_video_device(void)
 	return "avcapture,nil";
 #endif
 
+#elif defined (WIN32)
+	return "dshow,nil";
 #else
 	return "v4l2,/dev/video0";
 #endif
@@ -518,6 +520,8 @@ static const char *default_video_display(void)
 {
 #ifdef DARWIN
 	return "opengl,nil";
+#elif defined (WIN32)
+	return "sdl2,nil";
 #else
 	return "x11,nil";
 #endif
