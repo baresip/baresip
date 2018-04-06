@@ -389,7 +389,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
-			 "call_max_calls\t%u\n"
+			 "call_max_calls\t\t%u\n"
 			 "\n"
 			 "# Audio\n"
 			 "audio_path\t\t%s\n"
@@ -411,6 +411,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "video_size\t\t\"%ux%u\"\n"
 			 "video_bitrate\t\t%u\n"
 			 "video_fps\t\t%.2f\n"
+			 "video_fullscreen\t%s\n"
+			 "videnc_format\t\t%s\n"
 			 "\n"
 #endif
 			 "# AVT\n"
@@ -453,6 +455,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->video.disp_mod, cfg->video.disp_dev,
 			 cfg->video.width, cfg->video.height,
 			 cfg->video.bitrate, cfg->video.fps,
+			 cfg->video.fullscreen ? "yes" : "no",
+			 vidfmt_name(cfg->video.enc_fmt),
 #endif
 
 			 cfg->avt.rtp_tos,
@@ -557,7 +561,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
-			  "call_max_calls\t%u\n"
+			  "call_max_calls\t\t%u\n"
 			  "\n"
 			  "# Audio\n"
 #if defined (SHARE_PATH)
