@@ -106,6 +106,28 @@ static void print_video_input(const struct vidsrc_st *st)
 }
 
 
+static void print_framerate(const struct vidsrc_st *st)
+{
+	struct v4l2_streamparm streamparm;
+	struct v4l2_fract tpf;
+	double fps;
+
+	memset(&streamparm, 0, sizeof(streamparm));
+
+	streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+	if (v4l2_ioctl(st->fd, VIDIOC_G_PARM, &streamparm) != 0) {
+		warning("v4l2: VIDIOC_G_PARM error (%m)\n", errno);
+		return;
+	}
+
+	tpf = streamparm.parm.capture.timeperframe;
+	fps = (double)tpf.denominator / (double)tpf.numerator;
+
+	info("v4l2: current framerate is %.2f fps\n", fps);
+}
+
+
 static int xioctl(int fd, unsigned long int request, void *arg)
 {
 	int r;
@@ -469,6 +491,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		goto out;
 
 	print_video_input(st);
+
+	print_framerate(st);
 
 	err = start_capturing(st);
 	if (err)
