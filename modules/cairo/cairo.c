@@ -129,7 +129,7 @@ static void draw_logo(struct vidsrc_st *st)
 }
 
 
-static void process(struct vidsrc_st *st)
+static void process(struct vidsrc_st *st, uint64_t timestamp)
 {
 	struct vidframe f;
 	unsigned xoffs = 2, yoffs = 24;
@@ -141,6 +141,9 @@ static void process(struct vidsrc_st *st)
 	draw_text(st, xoffs, yoffs + FONT_SIZE*2, "%u x %u @ %.2f fps",
 		  st->size.w, st->size.h, st->prm.fps);
 
+	draw_text(st, xoffs, yoffs + FONT_SIZE*3, "Time: %.3f sec",
+		  timestamp / (double)VIDEO_TIMEBASE);
+
 	draw_logo(st);
 
 	st->step += 0.02 / st->prm.fps;
@@ -148,29 +151,33 @@ static void process(struct vidsrc_st *st)
 	vidframe_init_buf(&f, VID_FMT_RGB32, &st->size,
 			  cairo_image_surface_get_data(st->surface));
 
-	st->frameh(&f, st->arg);
+	st->frameh(&f, timestamp, st->arg);
 }
 
 
 static void *read_thread(void *arg)
 {
 	struct vidsrc_st *st = arg;
-	uint64_t ts = 0;
+	uint64_t ts = 0, ts_start;
 
 	while (st->run) {
 
 		uint64_t now;
+		uint64_t timestamp;
 
 		sys_msleep(2);
 
 		now = tmr_jiffies();
-		if (!ts)
-			ts = now;
+		if (!ts) {
+			ts = ts_start = now;
+		}
 
 		if (ts > now)
 			continue;
 
-		process(st);
+		timestamp = (ts - ts_start) * VIDEO_TIMEBASE / 1000;
+
+		process(st, timestamp);
 
 		ts += 1000/st->prm.fps;
 	}

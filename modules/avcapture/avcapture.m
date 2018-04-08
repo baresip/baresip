@@ -234,7 +234,9 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
        fromConnection:(AVCaptureConnection *)conn
 {
 	const CVImageBufferRef b = CMSampleBufferGetImageBuffer(sampleBuffer);
+	CMTime ts = CMSampleBufferGetOutputPresentationTimeStamp(sampleBuffer);
 	struct vidframe vf;
+	uint64_t timestamp;
 
 	(void)captureOutput;
 	(void)conn;
@@ -246,8 +248,10 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 	vidframe_set_pixbuf(&vf, b);
 
+	timestamp = CMTimeGetSeconds(ts) * VIDEO_TIMEBASE;
+
 	if (vidframe_isvalid(&vf))
-		vsrc->frameh(&vf, vsrc->arg);
+		vsrc->frameh(&vf, timestamp, vsrc->arg);
 
 	CVPixelBufferUnlockBaseAddress(b, 0);
 }

@@ -21,6 +21,12 @@ extern "C" {
 #endif
 
 
+/*
+ * Clock-rate for video timestamp
+ */
+#define VIDEO_TIMEBASE 1000000U
+
+
 /* forward declarations */
 struct sa;
 struct sdp_media;
@@ -764,7 +770,8 @@ struct vidsrc_prm {
 	double fps;       /**< Wanted framerate                            */
 };
 
-typedef void (vidsrc_frame_h)(struct vidframe *frame, void *arg);
+typedef void (vidsrc_frame_h)(struct vidframe *frame, uint64_t timestamp,
+			      void *arg);
 typedef void (vidsrc_error_h)(int err, void *arg);
 
 typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, const struct vidsrc *vs,
@@ -1034,6 +1041,7 @@ int   video_debug(struct re_printf *pf, const struct video *v);
 uint64_t video_calc_rtp_timestamp(int64_t pts, double fps);
 double video_calc_seconds(uint64_t rtp_ts);
 struct stream *video_strm(const struct video *v);
+double video_timestamp_to_seconds(uint64_t timestamp);
 
 
 /*

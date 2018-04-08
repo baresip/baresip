@@ -30,11 +30,10 @@ int vidbridge_src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	struct vidsrc_st *st;
 	int err;
 	(void)ctx;
-	(void)prm;
 	(void)fmt;
 	(void)errorh;
 
-	if (!stp || !size || !frameh)
+	if (!stp || !prm || !size || !frameh)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), destructor);
@@ -44,6 +43,7 @@ int vidbridge_src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->vs     = vs;
 	st->frameh = frameh;
 	st->arg    = arg;
+	st->fps    = prm->fps;
 
 	err = str_dup(&st->device, dev);
 	if (err)
@@ -82,12 +82,15 @@ struct vidsrc_st *vidbridge_src_find(const char *device)
 }
 
 
-void vidbridge_src_input(const struct vidsrc_st *st,
+void vidbridge_src_input(struct vidsrc_st *st,
 			 const struct vidframe *frame)
 {
 	if (!st || !frame)
 		return;
 
+	/* XXX: Read from vidisp input */
+	st->timestamp += VIDEO_TIMEBASE / st->fps;
+
 	if (st->frameh)
-		st->frameh((struct vidframe *)frame, st->arg);
+		st->frameh((struct vidframe *)frame, st->timestamp, st->arg);
 }

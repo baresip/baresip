@@ -10,6 +10,8 @@ struct vidsrc_st {
 
 	struct le le;
 	struct vidisp_st *vidisp;
+	uint64_t timestamp;
+	double fps;
 	char *device;
 	vidsrc_frame_h *frameh;
 	void *arg;
@@ -43,5 +45,5 @@ int vidbridge_src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			const char *dev, vidsrc_frame_h *frameh,
 			vidsrc_error_h *errorh, void *arg);
 struct vidsrc_st *vidbridge_src_find(const char *device);
-void vidbridge_src_input(const struct vidsrc_st *st,
+void vidbridge_src_input(struct vidsrc_st *st,
 			 const struct vidframe *frame);
