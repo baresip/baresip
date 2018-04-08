@@ -99,12 +99,13 @@ public:
 	STDMETHOD(BufferCB) (double sample_time, BYTE *buf, long buf_len)
 	{
 		struct vidframe vidframe;
+		uint64_t timestamp = sample_time * VIDEO_TIMEBASE;
 
 		/* XXX: should be VID_FMT_BGR24 */
 		vidframe_init_buf(&vidframe, VID_FMT_RGB32, &src->size, buf);
 
 		if (src->frameh)
-			src->frameh(&vidframe, src->arg);
+			src->frameh(&vidframe, timestamp, src->arg);
 
 		return S_OK;
 	}
