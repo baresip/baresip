@@ -36,9 +36,9 @@ struct vidsrc_st {
 	bool run;
 #else
 	struct tmr tmr;
-	uint64_t ts;
 #endif
-	int fps;
+	uint64_t ts;
+	double fps;
 	vidsrc_frame_h *frameh;
 	void *arg;
 };
@@ -52,26 +52,29 @@ static struct vidsrc *vidsrc;
 static struct vidisp *vidisp;
 
 
+static void process_frame(struct vidsrc_st *st)
+{
+	st->ts += (VIDEO_TIMEBASE / st->fps);
+
+	st->frameh(st->frame, st->ts, st->arg);
+}
+
+
 #ifdef HAVE_PTHREAD
 static void *read_thread(void *arg)
 {
 	struct vidsrc_st *st = arg;
-	uint64_t ts = tmr_jiffies();
+
+	st->ts = tmr_jiffies_usec();
 
 	while (st->run) {
 
-		uint64_t timestamp;
-
-		if (tmr_jiffies() < ts) {
+		if (tmr_jiffies_usec() < st->ts) {
 			sys_msleep(4);
 			continue;
 		}
 
-		timestamp = ts * VIDEO_TIMEBASE  / 1000;
-
-		st->frameh(st->frame, timestamp, st->arg);
-
-		ts += (1000/st->fps);
+		process_frame(st);
 	}
 
 	return NULL;
@@ -80,7 +83,7 @@ static void *read_thread(void *arg)
 static void tmr_handler(void *arg)
 {
 	struct vidsrc_st *st = arg;
-	const uint64_t now = tmr_jiffies();
+	const uint64_t now = tmr_jiffies_usec();
 
 	tmr_start(&st->tmr, 4, tmr_handler, st);
 
@@ -88,9 +91,7 @@ static void tmr_handler(void *arg)
 		st->ts = now;
 
 	if (now >= st->ts) {
-		st->frameh(st->frame, st->arg);
-
-		st->ts += (1000/st->fps);
+		process_frame(st);
 	}
 }
 #endif
