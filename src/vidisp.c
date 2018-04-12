@@ -126,6 +126,13 @@ int vidisp_display(struct vidisp_st *st, const char *title,
 }
 
 
+/**
+ * Get the video display module from a video display state
+ *
+ * @param st Video display state
+ *
+ * @return Video display module
+ */
 struct vidisp *vidisp_get(struct vidisp_st *st)
 {
 	return st ? st->vd : NULL;

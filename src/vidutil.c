@@ -52,6 +52,13 @@ double video_calc_seconds(uint64_t rtp_ts)
 }
 
 
+/**
+ * Convert a video timestamp to seconds
+ *
+ * @param timestamp Timestamp in VIDEO_TIMEBASE units
+ *
+ * @return Timestamp in seconds
+ */
 double video_timestamp_to_seconds(uint64_t timestamp)
 {
 	return (double)timestamp / (double)VIDEO_TIMEBASE;

@@ -119,6 +119,13 @@ int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
 }
 
 
+/**
+ * Get the video source module from a video source state
+ *
+ * @param st Video source state
+ *
+ * @return Video source module
+ */
 struct vidsrc *vidsrc_get(struct vidsrc_st *st)
 {
 	return st ? st->vs : NULL;

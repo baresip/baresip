@@ -770,6 +770,13 @@ struct vidsrc_prm {
 	double fps;       /**< Wanted framerate                            */
 };
 
+/**
+ * Provides video frames to the core
+ *
+ * @param frame     Video frame
+ * @param timestamp Frame timestamp in VIDEO_TIMEBASE units
+ * @param arg       Handler argument
+ */
 typedef void (vidsrc_frame_h)(struct vidframe *frame, uint64_t timestamp,
 			      void *arg);
 typedef void (vidsrc_error_h)(int err, void *arg);
@@ -784,6 +791,7 @@ typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, const struct vidsrc *vs,
 typedef void (vidsrc_update_h)(struct vidsrc_st *st, struct vidsrc_prm *prm,
 			       const char *dev);
 
+/** Defines a video source */
 struct vidsrc {
 	struct le         le;
 	const char       *name;
@@ -827,6 +835,7 @@ typedef int  (vidisp_disp_h)(struct vidisp_st *st, const char *title,
 			     const struct vidframe *frame);
 typedef void (vidisp_hide_h)(struct vidisp_st *st);
 
+/** Defines a Video display */
 struct vidisp {
 	struct le        le;
 	const char      *name;
@@ -910,7 +919,7 @@ const struct aucodec *aucodec_find(const struct list *aucodecl,
 struct videnc_param {
 	unsigned bitrate;  /**< Encoder bitrate in [bit/s] */
 	unsigned pktsize;  /**< RTP packetsize in [bytes]  */
-	double fps;        /**< Video framerate            */
+	double fps;        /**< Video framerate (max)      */
 	uint32_t max_fs;
 };
 

@@ -182,6 +182,13 @@ int h264_packetize(uint64_t rtp_ts, const uint8_t *buf, size_t len,
 }
 
 
+/**
+ * Get the name of an H.264 nal unit
+ *
+ * @param type NAL unit type
+ *
+ * @return A string containing the NAL unit name
+ */
 const char *h264_nalunit_name(int type)
 {
 	switch (type) {
