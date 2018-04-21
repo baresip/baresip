@@ -1,3 +1,77 @@
+2018-04-21 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.9
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.9
+	* NOTE: Requires libre v0.5.7 or later
+	        Requires librem v0.5.2 or later
+
+	* build:
+	  - Updated MSVS project to VS15 and added several files
+	    to project settings (thanks Encamy)
+
+	* config:
+
+	  video_fps            29.97         # float
+
+	* baresip-core:
+	  - conf: add conf_get_float
+	  - timer: add tmr_jiffies_usec
+	  - timestamp: new file for timestamp helpers
+	  - ua: add catchall flag to struct ua
+	  - ua: add ua_set_catchall
+	  - ua: uag_find: return match if catchall flag is set
+	  - vidcodec: change rtp_ts from 32-bit to 64-bit
+	  - videnc: change framerate to double float
+	  - video: change framerate to double float
+	  - vidsrc: add frame timestamp
+	  - vidsrc: change framerate to double float
+
+	* selftest:
+	  - mediaenc: add testcase for media encryption
+
+	* Modules:
+
+	* avcapture: add support for video frame timestamp
+
+	* avcodec: fix compiling with old ffmpeg versions
+		   print framerate of decoded bitstream
+
+	* avformat: add support for video frame timestamp
+
+	* b2bua: add handling of all inbound SIP requests
+
+	* cairo: add support for video frame timestamp
+
+	* ctrl_tcp: Fix #369. documentation typo (#372)
+		    Fix #370. wrong assignent (#371)
+		    (thanks José Luis Millán)
+
+	* dshow: add support for video frame timestamp
+
+	* fakevideo: add support for video frame timestamp
+		     add support for timer polling (no pthreads)
+
+	* menu: added "statmode_default" config variable (#359)
+		(thanks Juha Heinanen)
+
+	* rst: add support for video frame timestamp
+
+	* swscale: add YUV444P pixel format
+
+	* v4l: add support for video frame timestamp
+
+	* v4l2: add support for video frame timestamp
+		show actual framerate
+
+	* vidbridge: add support for video frame timestamp
+
+	* vidloop: add videoloop summary
+
+	* x11grab: add support for video frame timestamp
+
+
 2018-02-11 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.8
