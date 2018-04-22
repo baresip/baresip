@@ -459,6 +459,7 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 	struct vtx *vtx = arg;
 
 	/* XXX: save timestamp(s) and pass to encoder */
+	(void)timestamp;
 
 	++vtx->frames;
 
