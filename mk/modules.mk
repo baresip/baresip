@@ -271,6 +271,7 @@ MODULES   += srtp
 MODULES   += uuid
 MODULES   += debug_cmd
 MODULES   += ctrl_tcp
+MODULES   += b2bua
 
 ifneq ($(HAVE_LIBMQTT),)
 MODULES   += mqtt
