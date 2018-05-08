@@ -456,7 +456,8 @@ static void menc_status_handler(const char *status, const char *prm, void *arg)
 	MAGIC_CHECK(call);
 
 	if (strlen(prm) > 0)
-		call_event_handler(call, CALL_EVENT_MENC, "%s,%s", status, prm);
+		call_event_handler(call, CALL_EVENT_MENC, "%s,%s", status,
+				   prm);
 	else
 		call_event_handler(call, CALL_EVENT_MENC, "%s", status);
 }
