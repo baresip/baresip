@@ -388,6 +388,10 @@ static void call_event_handler(struct call *call, enum call_event ev,
 	case CALL_EVENT_TRANSFER_FAILED:
 		ua_event(ua, UA_EVENT_CALL_TRANSFER_FAILED, call, str);
 		break;
+
+	case CALL_EVENT_MENC:
+		ua_event(ua, UA_EVENT_CALL_MENC, call, str);
+		break;
 	}
 }
 

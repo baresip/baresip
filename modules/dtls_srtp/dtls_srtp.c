@@ -49,6 +49,7 @@
 struct menc_sess {
 	struct sdp_session *sdp;
 	bool offerer;
+	menc_status_h *statush;
 	menc_error_h *errorh;
 	void *arg;
 };
@@ -151,7 +152,8 @@ static bool verify_fingerprint(const struct sdp_session *sess,
 
 static int session_alloc(struct menc_sess **sessp,
 			 struct sdp_session *sdp, bool offerer,
-			 menc_error_h *errorh, void *arg)
+			 menc_status_h *statush, menc_error_h *errorh,
+			 void *arg)
 {
 	struct menc_sess *sess;
 	int err;
