@@ -167,6 +167,7 @@ static int session_alloc(struct menc_sess **sessp,
 
 	sess->sdp     = mem_ref(sdp);
 	sess->offerer = offerer;
+	sess->statush  = statush;
 	sess->errorh  = errorh;
 	sess->arg     = arg;
 
