@@ -647,6 +647,12 @@ static const char *answermode_str(enum answermode mode)
 }
 
 
+const char *account_mediaenc(const struct account *acc)
+{
+	return acc ? acc->mencid : NULL;
+}
+
+
 int account_debug(struct re_printf *pf, const struct account *acc)
 {
 	struct le *le;
