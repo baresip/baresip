@@ -929,6 +929,8 @@ int test_call_mediaenc(void)
 	/* Enable a dummy media encryption protocol */
 	fixture_init_prm(f, ";mediaenc=xrtp;ptime=1");
 
+	ASSERT_STREQ("xrtp", account_mediaenc(ua_account(f->a.ua)));
+
 	err = mock_ausrc_register(&ausrc);
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, float_sample_handler, f);
