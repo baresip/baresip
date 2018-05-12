@@ -21,7 +21,6 @@ enum {
 struct videnc_state {
 	vpx_codec_ctx_t ctx;
 	struct vidsz size;
-	vpx_codec_pts_t pts;
 	unsigned fps;
 	unsigned bitrate;
 	unsigned pktsize;
@@ -214,7 +213,7 @@ static inline int packetize(struct videnc_state *ves,
 
 
 int vp9_encode(struct videnc_state *ves, bool update,
-		const struct vidframe *frame)
+	       const struct vidframe *frame, uint64_t timestamp)
 {
 	vpx_enc_frame_flags_t flags = 0;
 	vpx_codec_iter_t iter = NULL;
@@ -267,7 +266,7 @@ int vp9_encode(struct videnc_state *ves, bool update,
 		img->planes[i] = frame->data[i];
 	}
 
-	res = vpx_codec_encode(&ves->ctx, img, ves->pts++, 1,
+	res = vpx_codec_encode(&ves->ctx, img, timestamp, 1,
 			       flags, VPX_DL_REALTIME);
 	if (res) {
 		warning("vp9: enc error: %s\n", vpx_codec_err_to_string(res));
@@ -297,7 +296,7 @@ int vp9_encode(struct videnc_state *ves, bool update,
 		if (pkt->data.frame.flags & VPX_FRAME_IS_FRAGMENT)
 			marker = false;
 
-		ts = video_calc_rtp_timestamp(pkt->data.frame.pts, ves->fps);
+		ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
 		err = packetize(ves,
 				marker,

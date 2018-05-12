@@ -329,6 +329,14 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 	frame->size.h = vds->ctx->height;
 	frame->fmt    = fmt;
 
+#if 1
+	/* get the framerate of the decoded bitstream */
+	double fps;
+	fps = av_q2d(vds->ctx->framerate);
+	re_printf("h265: current decoder framerate"
+	      " is %.2f fps\n", fps);
+#endif
+
  out:
 	mbuf_rewind(vds->mb);
 	vds->frag = false;

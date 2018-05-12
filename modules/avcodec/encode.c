@@ -42,7 +42,6 @@ struct videnc_state {
 	AVFrame *pict;
 	struct mbuf *mb;
 	size_t sz_max; /* todo: figure out proper buffer size */
-	int64_t pts;
 	struct mbuf *mb_frag;
 	struct videnc_param encprm;
 	struct vidsz encsize;
@@ -556,13 +555,14 @@ int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 
 #ifdef USE_X264
 int encode_x264(struct videnc_state *st, bool update,
-		const struct vidframe *frame)
+		const struct vidframe *frame, uint64_t timestamp)
 {
 	x264_picture_t pic_in, pic_out;
 	x264_nal_t *nal;
 	int i_nal;
 	int i, err, ret;
 	int csp, pln;
+	int64_t input_pts;
 	uint64_t ts;
 
 	if (!st || !frame)
@@ -607,9 +607,17 @@ int encode_x264(struct videnc_state *st, bool update,
 
 	x264_picture_init(&pic_in);
 
+	/*
+	 * We use the video source timestamp as PTS.
+	 * Since the PTS is in time_base units (derived from FPS) and
+	 * the input and output has the same units, this should work
+	 * fine, as long as the real FPS is less than the MAX FPS.
+	 */
+	input_pts = timestamp;
+
 	pic_in.i_type = update ? X264_TYPE_IDR : X264_TYPE_AUTO;
 	pic_in.i_qpplus1 = 0;
-	pic_in.i_pts = ++st->pts;
+	pic_in.i_pts = input_pts;
 
 	pic_in.img.i_csp = csp;
 	pic_in.img.i_plane = pln;
@@ -625,7 +633,7 @@ int encode_x264(struct videnc_state *st, bool update,
 	if (i_nal == 0)
 		return 0;
 
-	ts = video_calc_rtp_timestamp(pic_out.i_pts, st->encprm.fps);
+	ts = video_calc_rtp_timestamp_fix(pic_out.i_pts);
 
 	err = 0;
 	for (i=0; i<i_nal && !err; i++) {
@@ -660,10 +668,12 @@ int encode_x264(struct videnc_state *st, bool update,
 #endif
 
 
-int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
+int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
+	   uint64_t timestamp)
 {
 	int i, err, ret;
 	int pix_fmt;
+	int64_t pts;
 	uint64_t ts;
 
 	if (!st || !frame)
@@ -702,7 +712,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 		st->pict->data[i]     = frame->data[i];
 		st->pict->linesize[i] = frame->linesize[i];
 	}
-	st->pict->pts = st->pts++;
+	st->pict->pts = timestamp;
 	if (update) {
 		debug("avcodec: encoder picture update\n");
 		st->pict->key_frame = 1;
@@ -737,7 +747,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 			return 0;
 		}
 
-		ts = video_calc_rtp_timestamp(pkt->dts, st->encprm.fps);
+		pts = pkt->dts;
 
 		err = mbuf_write_mem(st->mb, pkt->data, pkt->size);
 		st->mb->pos = 0;
@@ -766,7 +776,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 
 		mbuf_set_end(st->mb, avpkt.size);
 
-		ts = video_calc_rtp_timestamp(avpkt.dts, st->encprm.fps);
+		pts = avpkt.dts;
 
 	} while (0);
 #else
@@ -784,8 +794,10 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 
 	mbuf_set_end(st->mb, ret);
 
-	ts = video_calc_rtp_timestamp(st->pict->pts, st->encprm.fps);
+	pts = st->pict->pts;
 #endif
+
+	ts = video_calc_rtp_timestamp_fix(pts);
 
 	switch (st->codec_id) {
 

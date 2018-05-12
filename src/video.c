@@ -383,7 +383,8 @@ static int packet_handler(bool marker, uint64_t ts,
  * @param vtx   Video transmit object
  * @param frame Video frame to send
  */
-static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
+static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
+			    uint64_t timestamp)
 {
 	struct le *le;
 	int err = 0;
@@ -437,7 +438,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame)
 		return;
 
 	/* Encode the whole picture frame */
-	err = vtx->vc->ench(vtx->enc, vtx->picup, frame);
+	err = vtx->vc->ench(vtx->enc, vtx->picup, frame, timestamp);
 	if (err)
 		return;
 
@@ -473,7 +474,7 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 		return;
 
 	/* Encode and send */
-	encode_rtp_send(vtx, frame);
+	encode_rtp_send(vtx, frame, timestamp);
 	vtx->muted_frames++;
 }
 

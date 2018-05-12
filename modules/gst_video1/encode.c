@@ -471,7 +471,8 @@ int gst_video1_encoder_set(struct videnc_state **stp,
 /*
  * couple gstreamer tightly by lock-stepping
  */
-static int pipeline_push(struct videnc_state *st, const struct vidframe *frame)
+static int pipeline_push(struct videnc_state *st, const struct vidframe *frame,
+			 uint64_t timestamp)
 {
 	GstBuffer *buffer;
 	uint8_t *data;
@@ -531,6 +532,9 @@ static int pipeline_push(struct videnc_state *st, const struct vidframe *frame)
 				 gst_memory_new_wrapped (0, data, size, 0,
 							 size, data, g_free));
 
+	/* convert timestamp to nanoseconds */
+	buffer->pts = timestamp * 1000000000ULL / VIDEO_TIMEBASE;
+
 	/*
 	 * Push data and EOS into gstreamer.
 	 */
@@ -577,7 +581,7 @@ static int pipeline_push(struct videnc_state *st, const struct vidframe *frame)
 
 
 int gst_video1_encode(struct videnc_state *st, bool update,
-		     const struct vidframe *frame)
+		      const struct vidframe *frame, uint64_t timestamp)
 {
 	int err;
 
@@ -607,7 +611,7 @@ int gst_video1_encode(struct videnc_state *st, bool update,
 	 * Push frame into pipeline.
 	 * Function call will return once frame has been processed completely.
 	 */
-	err = pipeline_push(st, frame);
+	err = pipeline_push(st, frame, timestamp);
 
 	return err;
 }
