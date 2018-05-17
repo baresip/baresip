@@ -637,7 +637,6 @@ int  ua_register(struct ua *ua);
 void ua_unregister(struct ua *ua);
 bool ua_isregistered(const struct ua *ua);
 void ua_pub_gruu_set(struct ua *ua, const struct pl *pval);
-const char     *ua_display_name(const struct ua *ua);
 const char     *ua_aor(const struct ua *ua);
 const char     *ua_cuser(const struct ua *ua);
 const char     *ua_local_cuser(const struct ua *ua);

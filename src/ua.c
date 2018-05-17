@@ -988,19 +988,6 @@ int ua_options_send(struct ua *ua, const char *uri,
 
 
 /**
- * Get the Display Name User-Agent
- *
- * @param ua User-Agent object
- *
- * @return Display Name
- */
-const char *ua_display_name(const struct ua *ua)
-{
-	return ua ? account_display_name(ua->acc) : NULL;
-}
-
-
-/**
  * Get the AOR of a User-Agent
  *
  * @param ua User-Agent object
