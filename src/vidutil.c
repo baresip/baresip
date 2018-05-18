@@ -63,3 +63,20 @@ double video_timestamp_to_seconds(uint64_t timestamp)
 {
 	return (double)timestamp / (double)VIDEO_TIMEBASE;
 }
+
+
+/**
+ * Calculate the RTP timestamp from a timestamp in VIDEO_TIMEBASE units
+ *
+ * @param timestamp Timestamp in VIDEO_TIMEBASE units
+ *
+ * @return Extended RTP Timestamp
+ */
+uint64_t video_calc_rtp_timestamp_fix(uint64_t timestamp)
+{
+	uint64_t rtp_ts;
+
+	rtp_ts = timestamp * VIDEO_SRATE / VIDEO_TIMEBASE;
+
+	return rtp_ts;
+}

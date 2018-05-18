@@ -938,8 +938,10 @@ typedef int (videnc_update_h)(struct videnc_state **vesp,
 			      const struct vidcodec *vc,
 			      struct videnc_param *prm, const char *fmtp,
 			      videnc_packet_h *pkth, void *arg);
+
 typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
-			      const struct vidframe *frame);
+			      const struct vidframe *frame,
+			      uint64_t timestamp);
 
 typedef int (viddec_update_h)(struct viddec_state **vdsp,
 			      const struct vidcodec *vc, const char *fmtp);
@@ -1050,6 +1052,7 @@ void  video_set_devicename(struct video *v, const char *src, const char *disp);
 void  video_encoder_cycle(struct video *video);
 int   video_debug(struct re_printf *pf, const struct video *v);
 uint64_t video_calc_rtp_timestamp(int64_t pts, double fps);
+uint64_t video_calc_rtp_timestamp_fix(uint64_t timestamp);
 double video_calc_seconds(uint64_t rtp_ts);
 struct stream *video_strm(const struct video *v);
 double video_timestamp_to_seconds(uint64_t timestamp);

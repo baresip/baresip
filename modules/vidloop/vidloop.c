@@ -150,7 +150,6 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 	struct mbuf *mb;
 	bool intra;
 	int err = 0;
-	(void)rtp_ts;
 
 	++vl->stats.enc_packets;
 	vl->stats.enc_bytes += (hdr_len + pld_len);
@@ -269,7 +268,8 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 	}
 
 	if (vl->vc_enc && vl->enc) {
-		err = vl->vc_enc->ench(vl->enc, false, frame);
+
+		err = vl->vc_enc->ench(vl->enc, false, frame, timestamp);
 		if (err) {
 			warning("vidloop: encoder error (%m)\n", err);
 			goto out;

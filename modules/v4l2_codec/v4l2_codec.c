@@ -444,11 +444,12 @@ static int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 
 /* note: dummy function, the input is unused */
 static int encode_packet(struct videnc_state *st, bool update,
-			 const struct vidframe *frame)
+			 const struct vidframe *frame, uint64_t timestamp)
 {
 	(void)st;
 	(void)update;
 	(void)frame;
+	(void)timestamp;
 
 	/*
 	 * XXX: add support for KEY frame requests
