@@ -43,6 +43,13 @@ struct vstat {
 };
 
 
+struct timestamp_state {
+	uint64_t base;  /* lowest timestamp */
+	uint64_t last;  /* most recent timestamp */
+	bool is_set;
+};
+
+
 /** Video loop */
 struct video_loop {
 	const struct vidcodec *vc_enc;
@@ -74,13 +81,46 @@ struct video_loop {
 		uint64_t disp_frames;
 	} stats;
 
-	bool timestamp_set;
-	uint64_t timestamp_base;  /* lowest timestamp */
-	uint64_t timestamp_last;  /* most recent timestamp */
+	struct timestamp_state ts_src;
+	struct timestamp_state ts_rtp;
 };
 
 
 static struct video_loop *gvl;
+
+
+static void timestamp_state_update(struct timestamp_state *st,
+				   uint64_t ts)
+{
+	if (st->is_set) {
+		if (ts < st->base) {
+			warning("vidloop: timestamp wrapped -- reset base"
+				" (base=%llu, current=%llu)\n",
+				st->base, ts);
+			st->base = ts;
+		}
+	}
+	else {
+		st->base = ts;
+		st->is_set = true;
+	}
+
+	st->last = ts;
+}
+
+
+static double timestamp_state_duration(const struct timestamp_state *ts,
+				       uint32_t clock)
+{
+	uint64_t dur;
+
+	if (ts->is_set)
+		dur = ts->last - ts->base;
+	else
+		dur = 0;
+
+	return (double)dur / (double)clock;
+}
 
 
 static int display(struct video_loop *vl, struct vidframe *frame)
@@ -154,6 +194,8 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 	++vl->stats.enc_packets;
 	vl->stats.enc_bytes += (hdr_len + pld_len);
 
+	timestamp_state_update(&vl->ts_rtp, rtp_ts);
+
 	mb = mbuf_alloc(hdr_len + pld_len);
 	if (!mb)
 		return ENOMEM;
@@ -192,19 +234,6 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 }
 
 
-static double stream_duration(const struct video_loop *vl)
-{
-	uint64_t dur;
-
-	if (vl->timestamp_set)
-		dur = vl->timestamp_last - vl->timestamp_base;
-	else
-		dur = 0;
-
-	return video_timestamp_to_seconds(dur);
-}
-
-
 static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 				 void *arg)
 {
@@ -224,19 +253,7 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 	vl->src_fmt = frame->fmt;
 	++vl->stats.src_frames;
 
-	/* Timestamp logic */
-	if (vl->timestamp_set) {
-		if (timestamp <= vl->timestamp_base) {
-			info("vidloop: timestamp wrapped -- reset base\n");
-			vl->timestamp_base = timestamp;
-		}
-		vl->timestamp_last = timestamp;
-	}
-	else {
-		vl->timestamp_base = timestamp;
-		vl->timestamp_last = timestamp;
-		vl->timestamp_set = true;
-	}
+	timestamp_state_update(&vl->ts_src, timestamp);
 
 	++vl->stat.frames;
 
@@ -292,7 +309,8 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 	int err = 0;
 
 	if (vl->ts_start) {
-		real_dur = stream_duration(vl);
+		real_dur = timestamp_state_duration(&vl->ts_src,
+						    VIDEO_TIMEBASE);
 	}
 
 	err |= re_hprintf(pf, "~~~~~ Videoloop summary: ~~~~~\n");
@@ -353,20 +371,24 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 	if (vl->vc_enc) {
 		double avg_bitrate;
 		double avg_pktrate;
+		double dur;
 
 		avg_bitrate = 8.0 * (double)vl->stats.enc_bytes / real_dur;
 		avg_pktrate = (double)vl->stats.enc_packets / real_dur;
+		dur = timestamp_state_duration(&vl->ts_rtp, 90000);
 
 		err |= re_hprintf(pf,
 				  "* Encoder\n"
 				  "  module      %s\n"
 				  "  bitrate     %u bit/s (avg %.1f bit/s)\n"
 				  "  packets     %llu     (avg %.1f pkt/s)\n"
+				  "  duration    %.3f sec\n"
 				  "\n"
 				  ,
 				  vl->vc_enc->name,
 				  cfg->bitrate, avg_bitrate,
-				  vl->stats.enc_packets, avg_pktrate);
+				  vl->stats.enc_packets, avg_pktrate,
+				  dur);
 	}
 
 	/* Decoder */
@@ -475,7 +497,9 @@ static void print_status(struct video_loop *vl)
 			 "\rstatus:"
 			 " %.3f sec [%s] [%s]  fmt=%s  intra=%zu "
 			 " EFPS=%.1f      %u kbit/s       \r",
-			 stream_duration(vl),
+			 timestamp_state_duration(&vl->ts_src,
+						  VIDEO_TIMEBASE),
+
 			 vl->vc_enc ? vl->vc_enc->name : "",
 			 vl->vc_dec ? vl->vc_dec->name : "",
 			 vidfmt_name(vl->cfg.enc_fmt),
