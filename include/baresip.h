@@ -1051,7 +1051,7 @@ void  video_set_devicename(struct video *v, const char *src, const char *disp);
 void  video_encoder_cycle(struct video *video);
 int   video_debug(struct re_printf *pf, const struct video *v);
 uint64_t video_calc_rtp_timestamp(int64_t pts, double fps);
-uint64_t video_calc_rtp_timestamp_fix(int64_t pts);
+uint64_t video_calc_rtp_timestamp_fix(uint64_t timestamp);
 double video_calc_seconds(uint64_t rtp_ts);
 struct stream *video_strm(const struct video *v);
 double video_timestamp_to_seconds(uint64_t timestamp);
