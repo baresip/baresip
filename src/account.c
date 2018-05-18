@@ -534,6 +534,12 @@ enum answermode account_answermode(const struct account *acc)
 }
 
 
+const char *account_display_name(const struct account *acc)
+{
+	return acc ? acc->dispname : NULL;
+}
+
+
 const char *account_aor(const struct account *acc)
 {
 	return acc ? acc->aor : NULL;

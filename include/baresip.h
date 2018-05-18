@@ -65,6 +65,7 @@ uint32_t account_regint(const struct account *acc);
 uint32_t account_pubint(const struct account *acc);
 uint32_t account_ptime(const struct account *acc);
 enum answermode account_answermode(const struct account *acc);
+const char *account_display_name(const struct account *acc);
 const char *account_aor(const struct account *acc);
 const char *account_auth_user(const struct account *acc);
 const char *account_auth_pass(const struct account *acc);
