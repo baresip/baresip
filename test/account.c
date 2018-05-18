@@ -52,6 +52,7 @@ int test_account(void)
 	ASSERT_TRUE(addr->params.l > 0);
 
 	/* verify all decoded parameters */
+	ASSERT_STREQ("Mr User", account_display_name(acc));
 	ASSERT_TRUE(ANSWERMODE_AUTO == account_answermode(acc));
 	ASSERT_STREQ("xuser", account_auth_user(acc));
 	ASSERT_STREQ("pass", account_auth_pass(acc));
