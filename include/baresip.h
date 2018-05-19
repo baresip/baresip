@@ -247,7 +247,7 @@ struct config_avt {
 
 /* Network */
 struct config_net {
-	char ifname[16];        /**< Bind to interface (optional)   */
+	char ifname[64];        /**< Bind to interface (optional)   */
 	struct {
 		char addr[64];
 	} nsv[NET_MAX_NS];      /**< Configured DNS nameservers     */

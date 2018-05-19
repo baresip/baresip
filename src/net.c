@@ -11,10 +11,10 @@
 struct network {
 	struct config_net cfg;
 	struct sa laddr;
-	char ifname[16];
+	char ifname[64];
 #ifdef HAVE_INET6
 	struct sa laddr6;
-	char ifname6[16];
+	char ifname6[64];
 #endif
 	struct tmr tmr;
 	struct dnsc *dnsc;
