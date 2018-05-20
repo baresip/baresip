@@ -447,7 +447,6 @@ int account_set_auth_user(struct account *acc, const char *user)
 }
 
 
-
 int account_set_auth_pass(struct account *acc, const char *pass)
 {
 	if (!acc)
