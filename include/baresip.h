@@ -54,6 +54,7 @@ struct account;
 
 int account_alloc(struct account **accp, const char *sipaddr);
 int account_debug(struct re_printf *pf, const struct account *acc);
+int account_set_auth_user(struct account *acc, const char *user);
 int account_set_auth_pass(struct account *acc, const char *pass);
 int account_set_display_name(struct account *acc, const char *dname);
 int account_auth(const struct account *acc, char **username, char **password,

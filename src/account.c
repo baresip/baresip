@@ -433,6 +433,20 @@ int account_alloc(struct account **accp, const char *sipaddr)
 }
 
 
+int account_set_auth_user(struct account *acc, const char *user)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->auth_user = mem_deref(acc->auth_user);
+
+	if (user)
+		return str_dup(&acc->auth_user, user);
+
+	return 0;
+}
+
+
 int account_set_auth_pass(struct account *acc, const char *pass)
 {
 	if (!acc)
