@@ -461,6 +461,20 @@ int account_set_auth_pass(struct account *acc, const char *pass)
 }
 
 
+int account_set_outbound(struct account *acc, const char *ob, unsigned ix)
+{
+	if (!acc || ix >= ARRAY_SIZE(acc->outboundv))
+		return EINVAL;
+
+	acc->outboundv[ix] = mem_deref(acc->outboundv[ix]);
+
+	if (ob)
+		return str_dup(&(acc->outboundv[ix]), ob);
+
+	return 0;
+}
+
+
 /**
  * Sets the displayed name. Pass null in dname to disable display name
  *
