@@ -55,7 +55,8 @@ $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.cpp $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CXX [M] $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CXX) $(CXXFLAGS) $($(call modulename,$@)_CXXFLAGS) \
+	$(HIDE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) \
+		$($(call modulename,$@)_CXXFLAGS) \
 		-c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.S $(BUILD) Makefile mk/mod.mk \
@@ -93,7 +94,8 @@ $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.cpp $(BUILD) Makefile mk/mod.mk \
 				modules/$(MOD)/module.mk mk/modules.mk
 	@echo "  CXX [m] $@"
 	@mkdir -p $(dir $@)
-	$(HIDE)$(CXX) $(CXXFLAGS) $($(call modulename,$@)_CXXFLAGS) \
+	$(HIDE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) \
+		$($(call modulename,$@)_CXXFLAGS) \
 		-DMOD_NAME=\"$(MOD)\" -c $< -o $@ $(DFLAGS)
 
 $(BUILD)/modules/$(MOD)/%.o: modules/$(MOD)/%.S $(BUILD) Makefile mk/mod.mk \
