@@ -32,6 +32,7 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_DTMF_START:
 	case UA_EVENT_CALL_DTMF_END:
 	case UA_EVENT_CALL_RTCP:
+	case UA_EVENT_CALL_MENC:
 		return "call";
 
 	default:
@@ -174,6 +175,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
 	case UA_EVENT_CALL_RTCP:            return "CALL_RTCP";
+	case UA_EVENT_CALL_MENC:            return "CALL_MENC";
 	default: return "?";
 	}
 }

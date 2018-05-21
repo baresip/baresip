@@ -42,6 +42,7 @@ enum {
 
 struct menc_sess {
 	zrtp_session_t *zrtp_session;
+	menc_status_h *statush;
 	menc_error_h *errorh;
 	void *arg;
 	struct tmr abort_timer;
@@ -305,7 +306,8 @@ static void sig_hash_decode(struct zrtp_stream_t *stream,
 
 
 static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
-			 bool offerer, menc_error_h *errorh, void *arg)
+			 bool offerer, menc_status_h *statush,
+			 menc_error_h *errorh, void *arg)
 {
 	struct menc_sess *st;
 	zrtp_status_t s;
@@ -319,6 +321,7 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 	if (!st)
 		return ENOMEM;
 
+	st->statush = statush;
 	st->errorh = errorh;
 	st->arg = arg;
 	st->err = 0;

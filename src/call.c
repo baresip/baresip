@@ -450,6 +450,19 @@ static void menc_error_handler(int err, void *arg)
 }
 
 
+static void menc_status_handler(const char *status, const char *prm, void *arg)
+{
+	struct call *call = arg;
+	MAGIC_CHECK(call);
+
+	if (strlen(prm) > 0)
+		call_event_handler(call, CALL_EVENT_MENC, "%s,%s", status,
+				   prm);
+	else
+		call_event_handler(call, CALL_EVENT_MENC, "%s", status);
+}
+
+
 static void stream_error_handler(struct stream *strm, int err, void *arg)
 {
 	struct call *call = arg;
@@ -582,8 +595,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (acc->menc) {
 		if (acc->menc->sessh) {
 			err = acc->menc->sessh(&call->mencs, call->sdp,
-						!got_offer,
-						menc_error_handler, call);
+					       !got_offer, menc_status_handler,
+					       menc_error_handler, call);
 			if (err) {
 				warning("call: mediaenc session: %m\n", err);
 				goto out;

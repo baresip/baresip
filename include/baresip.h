@@ -102,6 +102,7 @@ enum call_event {
 	CALL_EVENT_CLOSED,
 	CALL_EVENT_TRANSFER,
 	CALL_EVENT_TRANSFER_FAILED,
+	CALL_EVENT_MENC,
 };
 
 struct call;
@@ -520,8 +521,11 @@ struct menc_media;
 
 typedef void (menc_error_h)(int err, void *arg);
 
+typedef void (menc_status_h)(const char *status, const char *prm, void *arg);
+
 typedef int  (menc_sess_h)(struct menc_sess **sessp, struct sdp_session *sdp,
-			   bool offerer, menc_error_h *errorh, void *arg);
+			   bool offerer, menc_status_h *statush,
+			   menc_error_h *errorh, void *arg);
 
 typedef int  (menc_media_h)(struct menc_media **mp, struct menc_sess *sess,
 			    struct rtp_sock *rtp, int proto,
@@ -602,6 +606,7 @@ enum ua_event {
 	UA_EVENT_CALL_DTMF_START,
 	UA_EVENT_CALL_DTMF_END,
 	UA_EVENT_CALL_RTCP,
+	UA_EVENT_CALL_MENC,
 
 	UA_EVENT_MAX,
 };
