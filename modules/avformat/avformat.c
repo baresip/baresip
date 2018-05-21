@@ -149,7 +149,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		return;
 	}
 
-	pts = av_frame_get_best_effort_timestamp(frame);
+	pts = frame->pts;
 	const AVRational time_base = st->time_base;
 
 	/* convert timestamp */
