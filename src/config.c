@@ -774,7 +774,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "g711" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "gsm" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "l16" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "speex" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "bv32" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "mpa" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "codec2" MOD_EXT "\n");
@@ -930,16 +929,6 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
-
-	(void)re_fprintf(f, "\n# Speex codec parameters\n");
-	(void)re_fprintf(f, "speex_quality\t\t7 # 0-10\n");
-	(void)re_fprintf(f, "speex_complexity\t7 # 0-10\n");
-	(void)re_fprintf(f, "speex_enhancement\t0 # 0-1\n");
-	(void)re_fprintf(f, "speex_mode_nb\t\t3 # 1-6\n");
-	(void)re_fprintf(f, "speex_mode_wb\t\t6 # 1-6\n");
-	(void)re_fprintf(f, "speex_vbr\t\t0 # Variable Bit Rate 0-1\n");
-	(void)re_fprintf(f, "speex_vad\t\t0 # Voice Activity Detection 0-1\n");
-	(void)re_fprintf(f, "speex_agc_level\t\t8000\n");
 
 	(void)re_fprintf(f, "\n# Opus codec parameters\n");
 	(void)re_fprintf(f, "opus_bitrate\t\t28000 # 6000-510000\n");
