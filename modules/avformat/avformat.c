@@ -102,6 +102,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	unsigned i;
 	int64_t pts;
 	uint64_t timestamp;
+	const AVRational time_base = st->time_base;
 
 	if (st->codec) {
 		int got_pict, ret;
@@ -150,7 +151,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	}
 
 	pts = frame->pts;
-	const AVRational time_base = st->time_base;
 
 	/* convert timestamp */
 	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
