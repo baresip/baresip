@@ -42,6 +42,7 @@ enum {
 
 struct menc_sess {
 	zrtp_session_t *zrtp_session;
+	menc_event_h *eventh;
 	menc_error_h *errorh;
 	void *arg;
 	struct tmr abort_timer;
@@ -305,7 +306,8 @@ static void sig_hash_decode(struct zrtp_stream_t *stream,
 
 
 static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
-			 bool offerer, menc_error_h *errorh, void *arg)
+			 bool offerer, menc_event_h *eventh,
+			 menc_error_h *errorh, void *arg)
 {
 	struct menc_sess *st;
 	zrtp_status_t s;
@@ -319,6 +321,7 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 	if (!st)
 		return ENOMEM;
 
+	st->eventh = eventh;
 	st->errorh = errorh;
 	st->arg = arg;
 	st->err = 0;
@@ -456,22 +459,43 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 	const struct menc_media *st = zrtp_stream_get_userdata(stream);
 	const struct menc_sess *sess = st->sess;
 	zrtp_session_info_t sess_info;
+	char buf[128] = "";
 
 	zrtp_session_get(sess->zrtp_session, &sess_info);
 	if (!sess_info.sas_is_verified && sess_info.sas_is_ready) {
 		info("zrtp: verify SAS <%s> <%s> for remote peer %w"
-		     " (type /zrtp %w to verify)\n",
+		     " (type /zrtp_verify %w to verify)\n",
 		     sess_info.sas1.buffer,
 		     sess_info.sas2.buffer,
 		     sess_info.peer_zid.buffer,
 		     (size_t)sess_info.peer_zid.length,
 		     sess_info.peer_zid.buffer,
 		     (size_t)sess_info.peer_zid.length);
+		if (sess->eventh) {
+			if (re_snprintf(buf, sizeof(buf), "%s,%w",
+					sess_info.sas1.buffer,
+					sess_info.sas2.buffer,
+					sess_info.peer_zid.buffer,
+					(size_t)sess_info.peer_zid.length))
+				(sess->eventh)(MENC_EVENT_VERIFY_REQUEST,
+					       buf, sess->arg);
+		} else {
+			warning("zrtp: failed to print verify arguments\n");
+		}
 	}
 	else if (sess_info.sas_is_verified) {
 		info("zrtp: secure session with verified remote peer %w\n",
 		     sess_info.peer_zid.buffer,
 		     (size_t)sess_info.peer_zid.length);
+		if (sess->eventh) {
+			if (re_snprintf(buf, sizeof(buf), "%w",
+					sess_info.peer_zid.buffer,
+					(size_t)sess_info.peer_zid.length))
+				(sess->eventh)(MENC_EVENT_PEER_VERIFIED,
+					       buf, sess->arg);
+		} else {
+			warning("zrtp: failed to print verified argument\n");
+		}
 	}
 }
 
@@ -479,6 +503,8 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 static void on_zrtp_security_event(zrtp_stream_t *stream,
                                    zrtp_security_event_t event)
 {
+	debug("zrtp: got security_event '%u'\n", event);
+
 	if (event == ZRTP_EVENT_WRONG_SIGNALING_HASH) {
 		const struct menc_media *st = zrtp_stream_get_userdata(stream);
 
@@ -498,7 +524,7 @@ static struct menc menc_zrtp = {
 };
 
 
-static int verify_sas(struct re_printf *pf, void *arg)
+static int cmd_sas(int verify, struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	(void)pf;
@@ -523,10 +549,15 @@ static int verify_sas(struct re_printf *pf, void *arg)
 			       sizeof(zrtp_zid_t));
 
 		s = zrtp_verified_set(zrtp_global, &local_zid, &remote_zid,
-				      true);
-		if (s == zrtp_status_ok)
-			info("zrtp: SAS for peer %s verified\n", carg->prm);
-		else {
+				      verify);
+		if (s == zrtp_status_ok) {
+			if (verify)
+				info("zrtp: SAS for peer %s verified\n",
+				     carg->prm);
+			else
+				info("zrtp: SAS for peer %s unverified\n",
+				     carg->prm);
+		} else {
 			warning("zrtp: zrtp_verified_set"
 				" failed (status = %d)\n", s);
 			return EINVAL;
@@ -534,6 +565,18 @@ static int verify_sas(struct re_printf *pf, void *arg)
 	}
 
 	return 0;
+}
+
+
+static int verify_sas(struct re_printf *pf, void *arg)
+{
+	return cmd_sas(true, pf, arg);
+}
+
+
+static int unverify_sas(struct re_printf *pf, void *arg)
+{
+	return cmd_sas(false, pf, arg);
 }
 
 
@@ -554,7 +597,10 @@ static void zrtp_log(int level, char *data, int len, int offset)
 
 
 static const struct cmd cmdv[] = {
-	{"zrtp", 0, CMD_PRM, "Verify ZRTP SAS <remote ZID>", verify_sas },
+	{"zrtp_verify", 0, CMD_PRM, "Verify ZRTP SAS <remote ZID>",
+		verify_sas },
+	{"zrtp_unverify", 0, CMD_PRM, "Unverify ZRTP SAS <remote ZID>",
+		unverify_sas },
 };
 
 
