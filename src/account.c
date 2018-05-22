@@ -486,6 +486,26 @@ int account_set_regint(struct account *acc, uint32_t regint)
 }
 
 
+int account_set_mediaenc(struct account *acc, const char *mencid)
+{
+	if (!acc)
+		return EINVAL;
+
+	if (!menc_find(baresip_mencl(), mencid)) {
+		warning("account: mediaenc not found: `%s'\n",
+			mencid);
+		return EINVAL;
+	}
+
+	acc->mencid = mem_deref(acc->mencid);
+
+	if (mencid)
+		return str_dup(&acc->mencid, mencid);
+
+	return 0;
+}
+
+
 /**
  * Sets the displayed name. Pass null in dname to disable display name
  *
