@@ -475,6 +475,17 @@ int account_set_outbound(struct account *acc, const char *ob, unsigned ix)
 }
 
 
+int account_set_regint(struct account *acc, uint32_t regint)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->regint = regint;
+
+	return 0;
+}
+
+
 /**
  * Sets the displayed name. Pass null in dname to disable display name
  *
