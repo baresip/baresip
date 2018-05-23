@@ -322,8 +322,6 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	if (0 == msg_param_decode(&aor->params, "auth_user", &auth_user))
 		err |= pl_strdup(&acc->auth_user, &auth_user);
-	else
-		err |= pl_strdup(&acc->auth_user, &aor->uri.user);
 
 	if (pl_isset(&aor->dname))
 		err |= pl_strdup(&acc->dispname, &aor->dname);
