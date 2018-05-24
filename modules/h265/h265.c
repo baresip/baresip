@@ -43,7 +43,9 @@ static int module_init(void)
 	info("h265: using x265 %s %s\n",
 	     x265_version_str, x265_build_info_str);
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
 	avcodec_register_all();
+#endif
 
 	vidcodec_register(baresip_vidcodecl(), &h265);
 
