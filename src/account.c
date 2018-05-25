@@ -507,6 +507,34 @@ int account_set_mediaenc(struct account *acc, const char *mencid)
 
 
 /**
+ * Sets audio codecs
+ *
+ * @param acc      User-Agent account
+ * @param codecs   Comma separed list of audio codecs (NULL to disable)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_audio_codecs(struct account *acc, const char *codecs)
+{
+	char buf[256];
+	struct pl pl;
+
+	if (!acc)
+		return EINVAL;
+
+	list_clear(&acc->aucodecl);
+
+	if (codecs) {
+		re_snprintf(buf, sizeof buf, ";audio_codecs=%s", codecs);
+		pl_set_str(&pl, buf);
+		return audio_codecs_decode(acc, &pl);
+	}
+
+	return 0;
+}
+
+
+/**
  * Sets the displayed name. Pass null in dname to disable display name
  *
  * @param acc      User-Agent account
