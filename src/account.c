@@ -322,8 +322,6 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	if (0 == msg_param_decode(&aor->params, "auth_user", &auth_user))
 		err |= pl_strdup(&acc->auth_user, &auth_user);
-	else
-		err |= pl_strdup(&acc->auth_user, &aor->uri.user);
 
 	if (pl_isset(&aor->dname))
 		err |= pl_strdup(&acc->dispname, &aor->dname);
@@ -569,15 +567,21 @@ int account_set_display_name(struct account *acc, const char *dname)
 int account_auth(const struct account *acc, char **username, char **password,
 		 const char *realm)
 {
+	int err = 0;
+
 	if (!acc)
 		return EINVAL;
 
 	(void)realm;
 
-	*username = mem_ref(acc->auth_user);
+	if (acc->auth_user)
+		*username = mem_ref(acc->auth_user);
+	else
+		err = pl_strdup(username, &(acc->luri.user));
+
 	*password = mem_ref(acc->auth_pass);
 
-	return 0;
+	return err;
 }
 
 
