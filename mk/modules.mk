@@ -43,7 +43,6 @@
 #   USE_SDL           libSDL video output
 #   USE_SILK          SILK (Skype) audio codec
 #   USE_SNDFILE       sndfile wav dumper
-#   USE_SPEEX         Speex audio codec
 #   USE_SPEEX_AEC     Speex Acoustic Echo Canceller
 #   USE_SPEEX_PP      Speex preprocessor
 #   USE_SRTP          Secure RTP module using libre
@@ -413,9 +412,6 @@ MODULES   += silk
 endif
 ifneq ($(USE_SNDFILE),)
 MODULES   += sndfile
-endif
-ifneq ($(USE_SPEEX),)
-MODULES   += speex
 endif
 ifneq ($(USE_SPEEX_AEC),)
 MODULES   += speex_aec

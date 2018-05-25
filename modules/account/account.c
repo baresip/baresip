@@ -62,7 +62,7 @@ static int account_write_template(const char *file)
 			 "#\n"
 			 "#  addr-params:\n"
 			 "#    ;answermode={manual,early,auto}\n"
-			 "#    ;audio_codecs=speex/16000,pcma,...\n"
+			 "#    ;audio_codecs=opus/48000/2,pcma,...\n"
 			 "#    ;auth_user=username\n"
 			 "#    ;auth_pass=password\n"
 			 "#    ;mediaenc={srtp,srtp-mand,srtp-mandf"

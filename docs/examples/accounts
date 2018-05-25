@@ -8,7 +8,7 @@
 #
 #  addr-params:
 #    ;answermode={manual,early,auto}
-#    ;audio_codecs=speex/16000,pcma,...
+#    ;audio_codecs=opus/48000/2,pcma,...
 #    ;auth_user=username
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}

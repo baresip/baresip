@@ -67,7 +67,6 @@ module			opus.so
 module			g711.so
 #module			gsm.so
 #module			l16.so
-#module			speex.so
 #module			bv32.so
 
 # Audio filter Modules (in encoding order)
@@ -142,16 +141,6 @@ module_app		vidloop.so
 cons_listen		0.0.0.0:5555
 
 evdev_device		/dev/input/event0
-
-# Speex codec parameters
-speex_quality		7 # 0-10
-speex_complexity	7 # 0-10
-speex_enhancement	0 # 0-1
-speex_mode_nb		3 # 1-6
-speex_mode_wb		6 # 1-6
-speex_vbr		0 # Variable Bit Rate 0-1
-speex_vad		0 # Voice Activity Detection 0-1
-speex_agc_level		8000
 
 # Opus codec parameters
 opus_bitrate		28000 # 6000-510000

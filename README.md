@@ -75,7 +75,6 @@ Distributed under BSD license
   - MPA
   - Opus
   - Silk
-  - Speex
 
 * Audio-drivers:
   - Advanced Linux Sound Architecture (ALSA) audio-driver
@@ -283,7 +282,7 @@ silk          SILK audio codec
 snapshot      Save video-stream as PNG images
 sndfile       Audio dumper using libsndfile
 sndio         Audio driver for OpenBSD
-speex         Speex audio codec
+speex         Speex audio codec (deprecated)
 speex_aec     Acoustic Echo Cancellation (AEC) using libspeexdsp
 speex_pp      Audio pre-processor using libspeexdsp
 srtp          Secure RTP encryption (SDES) using libre SRTP-stack
