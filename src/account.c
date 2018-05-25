@@ -546,11 +546,12 @@ int account_auth(const struct account *acc, char **username, char **password,
 
 	(void)realm;
 
-	if (acc->auth_user) {
+	if (acc->auth_user)
 		*username = mem_ref(acc->auth_user);
-	} else {
+	else
 		err = pl_strdup(username, &(acc->luri.user));
-	}
+
+	*password = mem_ref(acc->auth_pass);
 
 	return err;
 }
