@@ -231,8 +231,6 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 			}
 
 			/* NOTE: static list with references to aucodec */
-                        acc->acv[i].prev = acc->acv[i].next = NULL;
-                        acc->acv[i].list = NULL;
 			list_append(&acc->aucodecl, &acc->acv[i++], ac);
 
 			if (i >= ARRAY_SIZE(acc->acv))
@@ -521,15 +519,18 @@ int account_set_audio_codecs(struct account *acc, const char *codecs)
 	char buf[256];
 	struct pl pl;
 
-	if (!codecs) {
-		list_clear(&acc->aucodecl);
-		return 0;
+	if (!acc)
+		return EINVAL;
+
+	list_clear(&acc->aucodecl);
+
+	if (codecs) {
+		re_snprintf(buf, sizeof buf, ";audio_codecs=%s", codecs);
+		pl_set_str(&pl, buf);
+		return audio_codecs_decode(acc, &pl);
 	}
 
-	re_snprintf(buf, sizeof buf, ";audio_codecs=%s", codecs);
-	pl_set_str(&pl, buf);
-
-	return audio_codecs_decode(acc, &pl);
+	return 0;
 }
 
 
