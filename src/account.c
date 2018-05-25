@@ -539,15 +539,20 @@ int account_set_display_name(struct account *acc, const char *dname)
 int account_auth(const struct account *acc, char **username, char **password,
 		 const char *realm)
 {
+	int err = 0;
+
 	if (!acc)
 		return EINVAL;
 
 	(void)realm;
 
-	*username = mem_ref(acc->auth_user);
-	*password = mem_ref(acc->auth_pass);
+	if (acc->auth_user) {
+		*username = mem_ref(acc->auth_user);
+	} else {
+		err = pl_strdup(username, &(acc->luri.user));
+	}
 
-	return 0;
+	return err;
 }
 
 
