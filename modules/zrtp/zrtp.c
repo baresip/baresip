@@ -464,7 +464,7 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 	zrtp_session_get(sess->zrtp_session, &sess_info);
 	if (!sess_info.sas_is_verified && sess_info.sas_is_ready) {
 		info("zrtp: verify SAS <%s> <%s> for remote peer %w"
-		     " (type /zrtp_verify %w to verify)\n",
+		     " (type /zrtp %w to verify)\n",
 		     sess_info.sas1.buffer,
 		     sess_info.sas2.buffer,
 		     sess_info.peer_zid.buffer,
@@ -472,7 +472,7 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 		     sess_info.peer_zid.buffer,
 		     (size_t)sess_info.peer_zid.length);
 		if (sess->eventh) {
-			if (re_snprintf(buf, sizeof(buf), "%s,%w",
+			if (re_snprintf(buf, sizeof(buf), "%s,%s,%w",
 					sess_info.sas1.buffer,
 					sess_info.sas2.buffer,
 					sess_info.peer_zid.buffer,
@@ -524,7 +524,7 @@ static struct menc menc_zrtp = {
 };
 
 
-static int cmd_sas(int verify, struct re_printf *pf, void *arg)
+static int verify_sas(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	(void)pf;
@@ -549,15 +549,10 @@ static int cmd_sas(int verify, struct re_printf *pf, void *arg)
 			       sizeof(zrtp_zid_t));
 
 		s = zrtp_verified_set(zrtp_global, &local_zid, &remote_zid,
-				      verify);
-		if (s == zrtp_status_ok) {
-			if (verify)
-				info("zrtp: SAS for peer %s verified\n",
-				     carg->prm);
-			else
-				info("zrtp: SAS for peer %s unverified\n",
-				     carg->prm);
-		} else {
+				      true);
+		if (s == zrtp_status_ok)
+			info("zrtp: SAS for peer %s verified\n", carg->prm);
+		else {
 			warning("zrtp: zrtp_verified_set"
 				" failed (status = %d)\n", s);
 			return EINVAL;
@@ -565,18 +560,6 @@ static int cmd_sas(int verify, struct re_printf *pf, void *arg)
 	}
 
 	return 0;
-}
-
-
-static int verify_sas(struct re_printf *pf, void *arg)
-{
-	return cmd_sas(true, pf, arg);
-}
-
-
-static int unverify_sas(struct re_printf *pf, void *arg)
-{
-	return cmd_sas(false, pf, arg);
 }
 
 
@@ -597,10 +580,7 @@ static void zrtp_log(int level, char *data, int len, int offset)
 
 
 static const struct cmd cmdv[] = {
-	{"zrtp_verify", 0, CMD_PRM, "Verify ZRTP SAS <remote ZID>",
-		verify_sas },
-	{"zrtp_unverify", 0, CMD_PRM, "Unverify ZRTP SAS <remote ZID>",
-		unverify_sas },
+	{"zrtp", 0, CMD_PRM, "Verify ZRTP SAS <remote ZID>", verify_sas },
 };
 
 
