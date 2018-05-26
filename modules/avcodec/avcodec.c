@@ -197,7 +197,9 @@ static int module_init(void)
 	avcodec_init();
 #endif
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
 	avcodec_register_all();
+#endif
 
 	if (0 == conf_get_str(conf_cur(), "avcodec_h264dec",
 			      h264dec, sizeof(h264dec))) {

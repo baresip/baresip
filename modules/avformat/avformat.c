@@ -422,14 +422,18 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 static int module_init(void)
 {
 	/* register all codecs, demux and protocols */
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
 	avcodec_register_all();
+#endif
 	avdevice_register_all();
 
 #if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
 	avformat_network_init();
 #endif
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
 	av_register_all();
+#endif
 
 	return vidsrc_register(&mod_avf, baresip_vidsrcl(),
 			       "avformat", alloc, NULL);
