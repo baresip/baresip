@@ -42,6 +42,7 @@ enum {
 
 struct menc_sess {
 	zrtp_session_t *zrtp_session;
+	menc_event_h *eventh;
 	menc_error_h *errorh;
 	void *arg;
 	struct tmr abort_timer;
@@ -305,7 +306,8 @@ static void sig_hash_decode(struct zrtp_stream_t *stream,
 
 
 static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
-			 bool offerer, menc_error_h *errorh, void *arg)
+			 bool offerer, menc_event_h *eventh,
+			 menc_error_h *errorh, void *arg)
 {
 	struct menc_sess *st;
 	zrtp_status_t s;
@@ -319,6 +321,7 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 	if (!st)
 		return ENOMEM;
 
+	st->eventh = eventh;
 	st->errorh = errorh;
 	st->arg = arg;
 	st->err = 0;
@@ -456,6 +459,7 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 	const struct menc_media *st = zrtp_stream_get_userdata(stream);
 	const struct menc_sess *sess = st->sess;
 	zrtp_session_info_t sess_info;
+	char buf[128] = "";
 
 	zrtp_session_get(sess->zrtp_session, &sess_info);
 	if (!sess_info.sas_is_verified && sess_info.sas_is_ready) {
@@ -467,11 +471,33 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 		     (size_t)sess_info.peer_zid.length,
 		     sess_info.peer_zid.buffer,
 		     (size_t)sess_info.peer_zid.length);
+		if (sess->eventh) {
+			if (re_snprintf(buf, sizeof(buf), "%s,%s,%w",
+					sess_info.sas1.buffer,
+					sess_info.sas2.buffer,
+					sess_info.peer_zid.buffer,
+					(size_t)sess_info.peer_zid.length))
+				(sess->eventh)(MENC_EVENT_VERIFY_REQUEST,
+					       buf, sess->arg);
+		}
+		else {
+			warning("zrtp: failed to print verify arguments\n");
+		}
 	}
 	else if (sess_info.sas_is_verified) {
 		info("zrtp: secure session with verified remote peer %w\n",
 		     sess_info.peer_zid.buffer,
 		     (size_t)sess_info.peer_zid.length);
+		if (sess->eventh) {
+			if (re_snprintf(buf, sizeof(buf), "%w",
+					sess_info.peer_zid.buffer,
+					(size_t)sess_info.peer_zid.length))
+				(sess->eventh)(MENC_EVENT_PEER_VERIFIED,
+					       buf, sess->arg);
+		}
+		else {
+			warning("zrtp: failed to print verified argument\n");
+		}
 	}
 }
 
@@ -479,6 +505,8 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 static void on_zrtp_security_event(zrtp_stream_t *stream,
                                    zrtp_security_event_t event)
 {
+	debug("zrtp: got security_event '%u'\n", event);
+
 	if (event == ZRTP_EVENT_WRONG_SIGNALING_HASH) {
 		const struct menc_media *st = zrtp_stream_get_userdata(stream);
 
