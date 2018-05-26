@@ -1090,7 +1090,6 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	struct aurx *rx;
 	struct le *le;
 	int err;
-	(void)offerer;
 
 	if (!ap || !cfg)
 		return EINVAL;
