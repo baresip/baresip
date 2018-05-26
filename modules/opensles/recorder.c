@@ -38,8 +38,9 @@ static void ausrc_destructor(void *arg)
 	if (st->recObject != NULL) {
 		SLuint32 state;
 
-		if (SL_OBJECT_STATE_UNREALIZED !=
-		    (*st->recObject)->GetState(st->recObject,&state)) {
+		if (SL_RESULT_SUCCESS ==
+		    (*st->recObject)->GetState(st->recObject, &state) &&
+		    SL_OBJECT_STATE_UNREALIZED != state) {
 			(*st->recObject)->Destroy(st->recObject);
 		}
 	}
