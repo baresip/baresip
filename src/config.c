@@ -900,7 +900,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "dtmfio"MOD_EXT"\n");
 #endif
 	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "echo"MOD_EXT"\n");
-	(void)re_fprintf(f, "#module_app\t\t\t" MOD_PRE "gtk" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "gtk" MOD_EXT "\n");
 	(void)re_fprintf(f, "module_app\t\t"  MOD_PRE "menu"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "mwi"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "natbd"MOD_EXT"\n");
@@ -952,8 +952,11 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			"\n# Menu\n"
-			"#redial_attempts\t\t3 # Num or <inf>\n"
-			"#redial_delay\t\t5 # Delay in seconds\n");
+			"#menu_bell\t\tyes\n"
+			"#redial_attempts\t3 # Num or <inf>\n"
+			"#redial_delay\t\t5 # Delay in seconds\n"
+			"#ringback_disabled\tyes\n"
+			"#statmode_default\toff\n");
 
 	if (f)
 		(void)fclose(f);
