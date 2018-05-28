@@ -391,7 +391,7 @@ zrtp          ZRTP media encryption module
 
 ## Supported platforms:
 
-* Android
+* Android (5.0 or later)
 * Apple Mac OS X and iOS
 * FreeBSD
 * Linux
