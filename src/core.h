@@ -379,6 +379,7 @@ struct stream {
 	bool terminated;         /**< Stream is terminated flag             */
 	uint32_t rtp_timeout_ms; /**< RTP Timeout value in [ms]             */
 	bool rtp_estab;          /**< True if RTP stream is established     */
+	bool hold;               /**< Stream is on-hold (local)             */
 };
 
 int  stream_alloc(struct stream **sp, const struct stream_param *prm,

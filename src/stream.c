@@ -614,6 +614,7 @@ void stream_hold(struct stream *s, bool hold)
 	if (!s)
 		return;
 
+	s->hold = hold;
 	sdp_media_set_ldir(s->sdp, hold ? SDP_SENDONLY : SDP_SENDRECV);
 }
 
