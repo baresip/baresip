@@ -67,7 +67,7 @@ struct call {
 	time_t time_stop;         /**< Time when call stopped               */
 	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
-	bool on_hold;             /**< True if call is on hold              */
+	bool on_hold;             /**< True if call is on hold (local)      */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -1856,6 +1856,13 @@ void call_set_xrtpstat(struct call *call)
 }
 
 
+/**
+ * Check if a call is locally on hold
+ *
+ * @param call Call object
+ *
+ * @return True if on hold (local), otherwise false
+ */
 bool call_is_onhold(const struct call *call)
 {
 	return call ? call->on_hold : false;
