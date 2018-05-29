@@ -501,7 +501,9 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 
 	if (!sa_isset(sdp_media_raddr(s->sdp), SA_ALL))
 		return 0;
-	if (sdp_media_dir(s->sdp) != SDP_SENDRECV)
+	if (!(sdp_media_rdir(s->sdp) & SDP_SENDRECV))
+		return 0;
+	if (s->hold)
 		return 0;
 
 	metric_add_packet(&s->metric_tx, mbuf_get_left(mb));
