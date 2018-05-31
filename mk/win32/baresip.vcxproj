@@ -175,6 +175,7 @@
     <ClCompile Include="..\..\src\conf.c" />
     <ClCompile Include="..\..\src\config.c" />
     <ClCompile Include="..\..\src\contact.c" />
+    <ClCompile Include="..\..\src\custom_hdrs.c" />
     <ClCompile Include="..\..\src\h264.c" />
     <ClCompile Include="..\..\src\log.c" />
     <ClCompile Include="..\..\src\main.c" />

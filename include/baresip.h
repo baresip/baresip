@@ -150,9 +150,25 @@ void call_set_current(struct list *calls, struct call *call);
 
 
 /*
+* Custom headers
+*/
+struct custom_hdrs;
+const struct custom_hdrs *call_get_custom_hdrs(const struct call *call);
+typedef int (custom_hdrs_h)(const struct pl *name, const struct pl *val,
+                            void *arg);     //returns error code if any
+int custom_hdrs_alloc(struct custom_hdrs **hdrs);
+int custom_hdrs_add(struct custom_hdrs *hdrs, const char *name,
+					const char *val);
+int custom_hdrs_add_pl(struct custom_hdrs *hdrs, const struct pl *name,
+					   const struct pl *val);
+int custom_hdrs_add_int(struct custom_hdrs *hdrs, const char *name, int val);
+int custom_hdrs_apply(const struct custom_hdrs *hdrs,
+					  custom_hdrs_h *h, void *arg);
+
+
+/*
  * Conf (utils)
  */
-
 
 /** Defines the configuration line handler */
 typedef int (confline_h)(const struct pl *addr, void *arg);
@@ -168,7 +184,6 @@ int  conf_get_sa(const struct conf *conf, const char *name, struct sa *sa);
 bool conf_fileexist(const char *path);
 void conf_close(void);
 struct conf *conf_cur(void);
-
 
 /*
  * Config (core configuration)
@@ -637,7 +652,8 @@ typedef void (ua_exit_h)(void *arg);
 int  ua_alloc(struct ua **uap, const char *aor);
 int  ua_connect(struct ua *ua, struct call **callp,
 		const char *from_uri, const char *uri,
-		const char *params, enum vidmode vmode);
+		const char *params, enum vidmode vmode,
+		struct custom_hdrs *custom_hdrs);
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason);
 int  ua_answer(struct ua *ua, struct call *call);
@@ -665,6 +681,7 @@ enum presence_status ua_presence_status(const struct ua *ua);
 void ua_presence_status_set(struct ua *ua, const enum presence_status status);
 void ua_set_media_af(struct ua *ua, int af_media);
 void ua_set_catchall(struct ua *ua, bool enabled);
+int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name);
 
 
 /* One instance */

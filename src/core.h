@@ -176,6 +176,7 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		const struct sip_msg *msg, struct call *xcall,
 		struct dnsc *dnsc,
 		call_event_h *eh, void *arg);
+void call_set_custom_hdrs(struct call *call, struct custom_hdrs *hdrs);
 int  call_connect(struct call *call, const struct pl *paddr);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
@@ -191,6 +192,12 @@ int  call_notify_sipfrag(struct call *call, uint16_t scode,
 int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
 struct account *call_account(const struct call *call);
+
+/*
+* Custom headers
+*/
+int custom_hdrs_print(struct re_printf *pf,
+                      const struct custom_hdrs *custom_hdrs);
 
 
 /*

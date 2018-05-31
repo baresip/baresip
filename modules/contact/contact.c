@@ -79,7 +79,8 @@ static int cmd_contact(struct re_printf *pf, void *arg)
 
 		case '|':
 			err = ua_connect(uag_current(), NULL, NULL,
-					 contact_str(cnt), NULL, VIDMODE_ON);
+			                 contact_str(cnt), NULL,
+			                 VIDMODE_ON, NULL);
 			if (err) {
 				warning("contact: ua_connect failed: %m\n",
 					err);

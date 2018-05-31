@@ -38,6 +38,7 @@ SRCS	+= timer.c
 SRCS	+= timestamp.c
 SRCS	+= ua.c
 SRCS	+= ui.c
+SRCS	+= custom_hdrs.c
 
 ifneq ($(USE_VIDEO),)
 SRCS	+= bfcp.c
