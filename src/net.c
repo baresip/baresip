@@ -301,9 +301,31 @@ int net_alloc(struct network **netp, const struct config_net *cfg, int af)
 
 	if (str_isset(cfg->ifname)) {
 
-		bool got_it = false;
+		info("Binding to interface or IP address '%s'\n", cfg->ifname);
 
-		info("Binding to interface '%s'\n", cfg->ifname);
+		struct sa temp_sa;
+
+		err = sa_set_str(&temp_sa, cfg->ifname, 0);
+
+		if (err == 0) {
+			if (sa_af(&temp_sa) == AF_INET) {
+				err = sa_set_str(&net->laddr, cfg->ifname, 0);
+			}
+#ifdef HAVE_INET6
+			else if (sa_af(&temp_sa) == AF_INET6) {
+				err = sa_set_str(&net->laddr6, cfg->ifname, 0);
+			}
+#endif
+			else {
+				err = 1;
+			}
+
+			if (err == 0) {
+				goto print_network_data;
+			}
+		}
+
+		bool got_it = false;
 
 		str_ncpy(net->ifname, cfg->ifname, sizeof(net->ifname));
 
@@ -351,6 +373,8 @@ int net_alloc(struct network **netp, const struct config_net *cfg, int af)
 					 sizeof(net->ifname6));
 #endif
 	}
+
+print_network_data:
 
 	if (sa_isset(&net->laddr, SA_ADDR)) {
 		re_snprintf(buf4, sizeof(buf4), " IPv4=%s:%j",
