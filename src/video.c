@@ -832,6 +832,9 @@ int video_alloc(struct video **vp, const struct stream_param *stream_prm,
 	if (err)
 		goto out;
 
+	if (vidisp_find(baresip_vidispl(), NULL) == NULL)
+		sdp_media_set_ldir(v->strm->sdp, SDP_SENDONLY);
+
 	if (cfg->avt.rtp_bw.max >= AUDIO_BANDWIDTH) {
 		stream_set_bw(v->strm, cfg->avt.rtp_bw.max - AUDIO_BANDWIDTH);
 	}
