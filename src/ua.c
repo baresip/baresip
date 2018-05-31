@@ -595,6 +595,24 @@ static void add_extension(struct ua *ua, const char *extension)
 }
 
 
+static void remove_extension(struct ua *ua, const char *extension)
+{
+	struct pl e;
+	size_t i;
+
+	pl_set_str(&e, extension);
+
+	for (i = 0; i < ua->extensionc; i++) {
+		if (0 == pl_cmp(&(ua->extensionv[i]), &e)) break;
+	}
+
+	if (i >= ua->extensionc) return;
+
+	ua->extensionv[i] = ua->extensionv[ua->extensionc - 1];
+	ua->extensionc--;
+}
+
+
 /**
  * Allocate a SIP User-Agent
  *
@@ -796,8 +814,11 @@ int ua_update(struct ua *ua)
 			}
 		}
 	}
-	else
+	else {
+		remove_extension(ua, "path");
+		remove_extension(ua, "outbound");
 		err = reg_add(&ua->regl, ua, 0);
+	}
 
 	if (err)
 		goto out;
