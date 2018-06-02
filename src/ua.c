@@ -578,7 +578,8 @@ static void add_extension(struct ua *ua, const char *extension)
 	struct pl e;
 
 	if (ua->extensionc >= ARRAY_SIZE(ua->extensionv)) {
-		warning("ua: maximum %u number of SIP extensions\n");
+		warning("ua: maximum %zu number of SIP extensions\n",
+			ARRAY_SIZE(ua->extensionv));
 		return;
 	}
 
