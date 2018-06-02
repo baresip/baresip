@@ -340,6 +340,14 @@ static int encode_uri_user(struct re_printf *pf, const struct uri *uri)
 }
 
 
+/**
+ * Create a SIP account from a sip address string
+ *
+ * @param accp     Pointer to allocated SIP account object
+ * @param sipaddr  SIP address with parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int account_alloc(struct account **accp, const char *sipaddr)
 {
 	struct account *acc;
@@ -431,6 +439,14 @@ int account_alloc(struct account **accp, const char *sipaddr)
 }
 
 
+/**
+ * Set the authentication user for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param user  Authentication username (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int account_set_auth_user(struct account *acc, const char *user)
 {
 	if (!acc)
@@ -445,6 +461,14 @@ int account_set_auth_user(struct account *acc, const char *user)
 }
 
 
+/**
+ * Set the authentication password for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param pass  Authentication password (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int account_set_auth_pass(struct account *acc, const char *pass)
 {
 	if (!acc)
@@ -459,6 +483,15 @@ int account_set_auth_pass(struct account *acc, const char *pass)
 }
 
 
+/**
+ * Set an outbound proxy for a SIP account
+ *
+ * @param acc  User-Agent account
+ * @param ob   Outbound proxy
+ * @param ix   Index of outbound proxy
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int account_set_outbound(struct account *acc, const char *ob, unsigned ix)
 {
 	if (!acc || ix >= ARRAY_SIZE(acc->outboundv))
@@ -473,6 +506,14 @@ int account_set_outbound(struct account *acc, const char *ob, unsigned ix)
 }
 
 
+/**
+ * Set the SIP nat protocol for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param sipnat  SIP nat protocol
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int account_set_sipnat(struct account *acc, const char *sipnat)
 {
 	if (!acc)
@@ -487,6 +528,14 @@ int account_set_sipnat(struct account *acc, const char *sipnat)
 }
 
 
+/**
+ * Set the SIP registration interval for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param regint  Registration interval in [seconds]
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int account_set_regint(struct account *acc, uint32_t regint)
 {
 	if (!acc)
@@ -498,6 +547,14 @@ int account_set_regint(struct account *acc, uint32_t regint)
 }
 
 
+/**
+ * Set the media encryption for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param mencid  Media encryption id
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int account_set_mediaenc(struct account *acc, const char *mencid)
 {
 	if (!acc)
