@@ -473,6 +473,20 @@ int account_set_outbound(struct account *acc, const char *ob, unsigned ix)
 }
 
 
+int account_set_sipnat(struct account *acc, const char *sipnat)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->sipnat = mem_deref(acc->sipnat);
+
+	if (sipnat)
+		return str_dup(&acc->sipnat, sipnat);
+
+	return 0;
+}
+
+
 int account_set_regint(struct account *acc, uint32_t regint)
 {
 	if (!acc)
@@ -677,6 +691,19 @@ const char *account_outbound(const struct account *acc, unsigned ix)
 		return NULL;
 
 	return acc->outboundv[ix];
+}
+
+
+/**
+ * Get sipnat protocol of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return sipnat protocol or NULL if not set
+ */
+const char *account_sipnat(const struct account *acc)
+{
+	return acc ? acc->sipnat : NULL;
 }
 
 
