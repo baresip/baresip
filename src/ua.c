@@ -722,6 +722,19 @@ int ua_alloc(struct ua **uap, const char *aor)
 }
 
 
+int ua_update_account(struct ua *ua)
+{
+	if (!ua)
+		return EINVAL;
+
+	/* clear extensions and reg clients */
+	ua->extensionc = 0;
+	list_flush(&ua->regl);
+
+	return create_register_clients(ua);
+}
+
+
 static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 {
 	size_t len;
