@@ -589,6 +589,46 @@ static void add_extension(struct ua *ua, const char *extension)
 }
 
 
+static int create_register_clients(struct ua *ua)
+{
+	int err = 0;
+
+	/* Register clients */
+	if (uag.cfg && str_isset(uag.cfg->uuid))
+	        add_extension(ua, "gruu");
+
+	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
+
+		size_t i;
+
+		add_extension(ua, "path");
+		add_extension(ua, "outbound");
+
+		if (!str_isset(uag.cfg->uuid)) {
+
+			warning("ua: outbound requires valid UUID!\n");
+			err = ENOSYS;
+			goto out;
+		}
+
+		for (i=0; i<ARRAY_SIZE(ua->acc->outboundv); i++) {
+
+			if (ua->acc->outboundv[i] && ua->acc->regint) {
+				err = reg_add(&ua->regl, ua, (int)i+1);
+				if (err)
+					break;
+			}
+		}
+	}
+	else if (ua->acc->regint) {
+		err = reg_add(&ua->regl, ua, 0);
+	}
+
+ out:
+	return err;
+}
+
+
 /**
  * Allocate a SIP User-Agent
  *
@@ -655,36 +695,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 			  ua->acc->menc->id);
 	}
 
-	/* Register clients */
-	if (uag.cfg && str_isset(uag.cfg->uuid))
-	        add_extension(ua, "gruu");
-
-	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
-
-		size_t i;
-
-		add_extension(ua, "path");
-		add_extension(ua, "outbound");
-
-		if (!str_isset(uag.cfg->uuid)) {
-
-			warning("ua: outbound requires valid UUID!\n");
-			err = ENOSYS;
-			goto out;
-		}
-
-		for (i=0; i<ARRAY_SIZE(ua->acc->outboundv); i++) {
-
-			if (ua->acc->outboundv[i] && ua->acc->regint) {
-				err = reg_add(&ua->regl, ua, (int)i+1);
-				if (err)
-					break;
-			}
-		}
-	}
-	else if (ua->acc->regint) {
-		err = reg_add(&ua->regl, ua, 0);
-	}
+	err = create_register_clients(ua);
 	if (err)
 		goto out;
 
