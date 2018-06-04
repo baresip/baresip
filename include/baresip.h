@@ -637,6 +637,7 @@ typedef void (ua_exit_h)(void *arg);
 
 /* Multiple instances */
 int  ua_alloc(struct ua **uap, const char *aor);
+int  ua_update(struct ua *ua);
 int  ua_connect(struct ua *ua, struct call **callp,
 		const char *from_uri, const char *uri,
 		const char *params, enum vidmode vmode);

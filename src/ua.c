@@ -576,6 +576,15 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 static void add_extension(struct ua *ua, const char *extension)
 {
 	struct pl e;
+	size_t i;
+
+	pl_set_str(&e, extension);
+
+	for (i = 0; i < ua->extensionc; i++) {
+		if (0 == pl_cmp(&(ua->extensionv[i]), &e)) break;
+	}
+
+	if (i < ua->extensionc) return;
 
 	if (ua->extensionc >= ARRAY_SIZE(ua->extensionv)) {
 		warning("ua: maximum %zu number of SIP extensions\n",
@@ -583,9 +592,25 @@ static void add_extension(struct ua *ua, const char *extension)
 		return;
 	}
 
+	ua->extensionv[ua->extensionc++] = e;
+}
+
+
+static void remove_extension(struct ua *ua, const char *extension)
+{
+	struct pl e;
+	size_t i;
+
 	pl_set_str(&e, extension);
 
-	ua->extensionv[ua->extensionc++] = e;
+	for (i = 0; i < ua->extensionc; i++) {
+		if (0 == pl_cmp(&(ua->extensionv[i]), &e)) break;
+	}
+
+	if (i >= ua->extensionc) return;
+
+	ua->extensionv[i] = ua->extensionv[ua->extensionc - 1];
+	ua->extensionc--;
 }
 
 
@@ -763,6 +788,58 @@ static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 		}
 	}
 
+	return err;
+}
+
+
+/**
+ * Update SIP User-Agent in case some account attributes have changed
+ *
+ * @param ua   Pointer to User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_update(struct ua *ua)
+{
+	int err = 0;
+	size_t i;
+
+	list_flush(&ua->regl);
+
+	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
+
+		add_extension(ua, "path");
+		add_extension(ua, "outbound");
+
+		if (!str_isset(uag.cfg->uuid)) {
+
+			warning("ua: outbound requires valid UUID!\n");
+			err = ENOSYS;
+			goto out;
+		}
+
+		for (i = 0; i < ARRAY_SIZE(ua->acc->outboundv); i++) {
+			if (ua->acc->outboundv[i] && ua->acc->regint) {
+				err = reg_add(&ua->regl, ua, (int)i + 1);
+				if (err)
+					break;
+			}
+		}
+	}
+	else {
+		remove_extension(ua, "path");
+		remove_extension(ua, "outbound");
+		err = reg_add(&ua->regl, ua, 0);
+	}
+
+	if (err)
+		goto out;
+
+	if (ua->acc->regint) {
+		err = ua_register(ua);
+	}
+
+out:
 	return err;
 }
 
