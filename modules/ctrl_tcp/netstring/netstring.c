@@ -1,4 +1,9 @@
-/* Streaming API for netstrings. */
+/**
+ * @file netstring.c  Streaming API for netstrings
+ *
+ * This file is public domain,
+ * adapted from https://github.com/PeterScott/netstring-c/"
+ */
 
 #include <stdio.h>
 #include <string.h>

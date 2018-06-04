@@ -1,3 +1,10 @@
+/**
+ * @file netstring.h  Streaming API for netstrings.
+ *
+ * This file is public domain,
+ * adapted from https://github.com/PeterScott/netstring-c/"
+ */
+
 #ifndef __NETSTRING_STREAM_H
 #define __NETSTRING_STREAM_H
 
