@@ -14,7 +14,7 @@ int gst_video_encode_update(struct videnc_state **vesp,
 			    struct videnc_param *prm, const char *fmtp,
 			    videnc_packet_h *pkth, void *arg);
 int gst_video_encode(struct videnc_state *st, bool update,
-		     const struct vidframe *frame);
+		     const struct vidframe *frame, uint64_t timestamp);
 
 
 /* SDP */
