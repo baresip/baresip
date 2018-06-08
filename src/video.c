@@ -415,7 +415,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 					     vtx->video->cfg.enc_fmt,
 					     &vtx->vsrc_size);
 			if (err)
-				goto unlock;
+				goto out;
 		}
 
 		vidconv(vtx->frame, frame, 0);
@@ -431,18 +431,18 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 			err |= st->vf->ench(st, frame);
 	}
 
- unlock:
-	lock_rel(vtx->lock_enc);
-
 	if (err)
-		return;
+		goto out;
 
 	/* Encode the whole picture frame */
 	err = vtx->vc->ench(vtx->enc, vtx->picup, frame, timestamp);
 	if (err)
-		return;
+		goto out;
 
 	vtx->picup = false;
+
+ out:
+	lock_rel(vtx->lock_enc);
 }
 
 
@@ -1153,6 +1153,8 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 		return ENOENT;
 	}
 
+	lock_write_get(vtx->lock_enc);
+
 	if (vc != vtx->vc) {
 
 		struct videnc_param prm;
@@ -1170,13 +1172,16 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 				  packet_handler, vtx);
 		if (err) {
 			warning("video: encoder alloc: %m\n", err);
-			return err;
+			goto out;
 		}
 
 		vtx->vc = vc;
 	}
 
 	stream_update_encoder(v->strm, pt_tx);
+
+ out:
+	lock_rel(vtx->lock_enc);
 
 	return err;
 }
