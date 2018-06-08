@@ -86,23 +86,23 @@ public:
 
 	STDMETHOD(BufferCB) (double sample_time, BYTE *buf, long buf_len)
 	{
-	int i, j = 0;
-	int buf_len_RGB32 = src->size.h*src->size.w;
-	uint32_t tmp_pix_RGB32;
-	uint32_t *buf_RGB32 ;
+		int i, j = 0;
+		int buf_len_RGB32 = src->size.h*src->size.w;
+		uint32_t tmp_pix_RGB32;
+		uint32_t *buf_RGB32;
 		struct vidframe vidframe;
 		uint64_t timestamp = sample_time * VIDEO_TIMEBASE;
 
 		vidframe_init_buf(&vidframe, VID_FMT_RGB32, &src->size, buf);
 
 		//By default in Dshow RGB32 image orientation is bottom-up
-	buf_RGB32 = (uint32_t *)buf;
-	for (int i = buf_len_RGB32-1 ; i > buf_len_RGB32/2; i-=1) {
-		tmp_pix_RGB32 = buf_RGB32[j];
-		buf_RGB32[j] = buf_RGB32[i];
-		buf_RGB32[i] = tmp_pix_RGB32;
-		++j;
-	}
+		buf_RGB32 = (uint32_t *)buf;
+		for (int i = buf_len_RGB32-1 ; i > buf_len_RGB32/2; i-=1) {
+			tmp_pix_RGB32 = buf_RGB32[j];
+			buf_RGB32[j] = buf_RGB32[i];
+			buf_RGB32[i] = tmp_pix_RGB32;
+			++j;
+		}
 
 		if (src->frameh)
 			src->frameh(&vidframe, timestamp, src->arg);
