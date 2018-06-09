@@ -414,8 +414,6 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 
 struct ua;
 
-void         ua_event(struct ua *ua, enum ua_event ev, struct call *call,
-		      const char *fmt, ...);
 void         ua_printf(const struct ua *ua, const char *fmt, ...);
 
 struct tls  *uag_tls(void);
