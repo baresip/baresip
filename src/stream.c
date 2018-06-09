@@ -743,3 +743,16 @@ const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
 {
 	return strm ? &strm->rtcp_stats : NULL;
 }
+
+
+/**
+ * Get the call object from the stream
+ *
+ * @param strm Stream object
+ *
+ * @return Call object
+ */
+struct call *stream_call(const struct stream *strm)
+{
+	return strm ? strm->call : NULL;
+}

@@ -1082,6 +1082,7 @@ double video_timestamp_to_seconds(uint64_t timestamp);
  */
 
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
+struct call *stream_call(const struct stream *strm);
 
 
 /*
