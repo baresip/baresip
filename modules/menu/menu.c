@@ -963,6 +963,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	(void)prm;
 	(void)arg;
 
+#if 0
+	debug("menu: [ ua=%s call=%s ] event: %s (%s)\n",
+	      ua_aor(ua), call_id(call), uag_event_str(ev), prm);
+#endif
+
 	switch (ev) {
 
 	case UA_EVENT_CALL_INCOMING:
