@@ -35,12 +35,14 @@ static void destructor(void *arg)
 
 
 static int update(struct aufilt_dec_st **stp, void **ctx,
-		  const struct aufilt *af, struct aufilt_prm *prm)
+		  const struct aufilt *af, struct aufilt_prm *prm,
+		  const struct audio *au)
 {
 	struct plc_st *st;
 	int err = 0;
 	(void)ctx;
 	(void)af;
+	(void)au;
 
 	if (!stp || !prm)
 		return EINVAL;

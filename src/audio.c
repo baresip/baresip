@@ -1343,7 +1343,7 @@ static int aufilt_setup(struct audio *a)
 		void *ctx = NULL;
 
 		if (af->encupdh) {
-			err |= af->encupdh(&encst, &ctx, af, &encprm);
+			err |= af->encupdh(&encst, &ctx, af, &encprm, a);
 			if (err)
 				break;
 
@@ -1352,7 +1352,7 @@ static int aufilt_setup(struct audio *a)
 		}
 
 		if (af->decupdh) {
-			err |= af->decupdh(&decst, &ctx, af, &decprm);
+			err |= af->decupdh(&decst, &ctx, af, &decprm, a);
 			if (err)
 				break;
 

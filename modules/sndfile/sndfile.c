@@ -99,12 +99,14 @@ static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 
 
 static int encode_update(struct aufilt_enc_st **stp, void **ctx,
-			 const struct aufilt *af, struct aufilt_prm *prm)
+			 const struct aufilt *af, struct aufilt_prm *prm,
+			 const struct audio *au)
 {
 	struct sndfile_enc *st;
 	int err = 0;
 	(void)ctx;
 	(void)af;
+	(void)au;
 
 	st = mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
@@ -124,12 +126,14 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 
 static int decode_update(struct aufilt_dec_st **stp, void **ctx,
-			 const struct aufilt *af, struct aufilt_prm *prm)
+			 const struct aufilt *af, struct aufilt_prm *prm,
+			 const struct audio *au)
 {
 	struct sndfile_dec *st;
 	int err = 0;
 	(void)ctx;
 	(void)af;
+	(void)au;
 
 	st = mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
