@@ -115,6 +115,8 @@ static void call_stream_start(struct call *call, bool active)
 	const struct sdp_format *sc;
 	int err;
 
+	debug("call: stream start (active=%d)\n", active);
+
 	/* Audio Stream */
 	sc = sdp_media_rformat(stream_sdpmedia(audio_strm(call->audio)), NULL);
 	if (sc) {
@@ -736,6 +738,8 @@ int call_modify(struct call *call)
 	if (!call)
 		return EINVAL;
 
+	debug("call: modify\n");
+
 	err = call_sdp_get(call, &desc, true);
 	if (!err)
 		err = sipsess_modify(call->sess, desc);
@@ -1126,6 +1130,8 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	int err;
 
 	MAGIC_CHECK(call);
+
+	debug("call: got SDP answer (%zu bytes)\n", mbuf_get_left(msg->mb));
 
 	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
 		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);

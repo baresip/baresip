@@ -1584,6 +1584,8 @@ int audio_start(struct audio *a)
 	if (!a)
 		return EINVAL;
 
+	debug("audio: start\n");
+
 	/* Audio filter */
 	if (!list_isempty(baresip_aufiltl())) {
 		err = aufilt_setup(a);
