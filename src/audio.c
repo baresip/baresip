@@ -2041,13 +2041,16 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 	/* stop the audio device first */
 	tx->ausrc = mem_deref(tx->ausrc);
 
-	err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
-			  NULL, mod, &tx->ausrc_prm, device,
-			  ausrc_read_handler, ausrc_error_handler, au);
-	if (err) {
-		warning("audio: set_source failed (%s.%s): %m\n",
-			mod, device, err);
-		return err;
+	if (str_isset(mod)) {
+
+		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
+				  NULL, mod, &tx->ausrc_prm, device,
+				  ausrc_read_handler, ausrc_error_handler, au);
+		if (err) {
+			warning("audio: set_source failed (%s.%s): %m\n",
+				mod, device, err);
+			return err;
+		}
 	}
 
 	return 0;
