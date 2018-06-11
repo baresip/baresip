@@ -86,7 +86,9 @@ static void event_handler(void *arg)
 	struct vidisp_st *st = arg;
 	SDL_Event event;
 
+#ifndef WIN32
 	tmr_start(&st->tmr, 100, event_handler, st);
+#endif
 
 	/* NOTE: events must be checked from main thread */
 	while (SDL_PollEvent(&event)) {
@@ -149,9 +151,9 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 	st->vd = vd;
 	st->fullscreen = prm ? prm->fullscreen : false;
-
+#ifndef WIN32
 	tmr_start(&st->tmr, 100, event_handler, st);
-
+#endif
 	if (err)
 		mem_deref(st);
 	else
@@ -169,6 +171,10 @@ static int display(struct vidisp_st *st, const char *title,
 	int dpitch, ret;
 	unsigned i, h;
 	uint32_t format;
+
+#ifdef WIN32
+	event_handler(st);
+#endif
 
 	if (!st || !frame)
 		return EINVAL;
@@ -329,7 +335,11 @@ static int module_close(void)
 {
 	vid = mem_deref(vid);
 
+#ifdef WIN32
+	SDL_Quit();
+#else
 	SDL_VideoQuit();
+#endif
 
 	return 0;
 }
