@@ -1343,7 +1343,7 @@ static int aufilt_setup(struct audio *a)
 		void *ctx = NULL;
 
 		if (af->encupdh) {
-			err |= af->encupdh(&encst, &ctx, af, &encprm);
+			err |= af->encupdh(&encst, &ctx, af, &encprm, a);
 			if (err)
 				break;
 
@@ -1352,7 +1352,7 @@ static int aufilt_setup(struct audio *a)
 		}
 
 		if (af->decupdh) {
-			err |= af->decupdh(&decst, &ctx, af, &decprm);
+			err |= af->decupdh(&decst, &ctx, af, &decprm, a);
 			if (err)
 				break;
 
@@ -1583,6 +1583,8 @@ int audio_start(struct audio *a)
 
 	if (!a)
 		return EINVAL;
+
+	debug("audio: start\n");
 
 	/* Audio filter */
 	if (!list_isempty(baresip_aufiltl())) {
@@ -2041,13 +2043,16 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 	/* stop the audio device first */
 	tx->ausrc = mem_deref(tx->ausrc);
 
-	err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
-			  NULL, mod, &tx->ausrc_prm, device,
-			  ausrc_read_handler, ausrc_error_handler, au);
-	if (err) {
-		warning("audio: set_source failed (%s.%s): %m\n",
-			mod, device, err);
-		return err;
+	if (str_isset(mod)) {
+
+		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
+				  NULL, mod, &tx->ausrc_prm, device,
+				  ausrc_read_handler, ausrc_error_handler, au);
+		if (err) {
+			warning("audio: set_source failed (%s.%s): %m\n",
+				mod, device, err);
+			return err;
+		}
 	}
 
 	return 0;

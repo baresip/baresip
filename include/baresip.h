@@ -468,12 +468,14 @@ struct aufilt_prm {
 };
 
 typedef int (aufilt_encupd_h)(struct aufilt_enc_st **stp, void **ctx,
-			      const struct aufilt *af, struct aufilt_prm *prm);
+			      const struct aufilt *af, struct aufilt_prm *prm,
+			      const struct audio *au);
 typedef int (aufilt_encode_h)(struct aufilt_enc_st *st,
 			      int16_t *sampv, size_t *sampc);
 
 typedef int (aufilt_decupd_h)(struct aufilt_dec_st **stp, void **ctx,
-			      const struct aufilt *af, struct aufilt_prm *prm);
+			      const struct aufilt *af, struct aufilt_prm *prm,
+			      const struct audio *au);
 typedef int (aufilt_decode_h)(struct aufilt_dec_st *st,
 			      int16_t *sampv, size_t *sampc);
 
@@ -668,6 +670,8 @@ enum presence_status ua_presence_status(const struct ua *ua);
 void ua_presence_status_set(struct ua *ua, const enum presence_status status);
 void ua_set_media_af(struct ua *ua, int af_media);
 void ua_set_catchall(struct ua *ua, bool enabled);
+void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
+	      const char *fmt, ...);
 
 
 /* One instance */
@@ -1082,6 +1086,7 @@ double video_timestamp_to_seconds(uint64_t timestamp);
  */
 
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
+struct call *stream_call(const struct stream *strm);
 
 
 /*

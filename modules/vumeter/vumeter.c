@@ -105,7 +105,8 @@ static void dec_tmr_handler(void *arg)
 
 
 static int encode_update(struct aufilt_enc_st **stp, void **ctx,
-			 const struct aufilt *af, struct aufilt_prm *prm)
+			 const struct aufilt *af, struct aufilt_prm *prm,
+			 const struct audio *au)
 {
 	struct vumeter_enc *st;
 	(void)ctx;
@@ -130,7 +131,8 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 
 static int decode_update(struct aufilt_dec_st **stp, void **ctx,
-			 const struct aufilt *af, struct aufilt_prm *prm)
+			 const struct aufilt *af, struct aufilt_prm *prm,
+			 const struct audio *au)
 {
 	struct vumeter_dec *st;
 	(void)ctx;

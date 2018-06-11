@@ -885,11 +885,13 @@ static int16_t calc_avg_s16(const int16_t *sampv, size_t sampc)
 
 
 static int vu_encode_update(struct aufilt_enc_st **stp, void **ctx,
-			 const struct aufilt *af, struct aufilt_prm *prm)
+			    const struct aufilt *af, struct aufilt_prm *prm,
+			    const struct audio *au)
 {
 	struct vumeter_enc *st;
 	(void)ctx;
 	(void)prm;
+	(void)au;
 
 	if (!stp || !af)
 		return EINVAL;
@@ -912,11 +914,13 @@ static int vu_encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 
 static int vu_decode_update(struct aufilt_dec_st **stp, void **ctx,
-			 const struct aufilt *af, struct aufilt_prm *prm)
+			    const struct aufilt *af, struct aufilt_prm *prm,
+			    const struct audio *au)
 {
 	struct vumeter_dec *st;
 	(void)ctx;
 	(void)prm;
+	(void)au;
 
 	if (!stp || !af)
 		return EINVAL;
