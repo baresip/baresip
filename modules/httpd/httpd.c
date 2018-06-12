@@ -103,7 +103,7 @@ static void http_req_handler(struct http_conn *conn,
 
 	if (0 == pl_strcasecmp(&msg->path, "/")) {
 
-	if( nprm.p[1] == '/'){ // this applies on long commands only
+	if ( nprm.p[1] == '/') { /* this applies on long commands only */
 		buf[1] = '@';
 	}
 		http_creply(conn, 200, "OK",
