@@ -100,7 +100,17 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 		return EINVAL;
 
 	for (i=0; i<pl->l; i++) {
-		err |= cmd_process(commands, &ctx, pl->p[i], pf, NULL);
+		if(pl->p[0] == '@'){ // httpd user interface + long command
+			if( i == 0){
+				err |= cmd_process(commands, &ctx, '@', pf, NULL);
+			}
+			else{
+				cmd_fill_ctx(&ctx, pl->p[i]);
+			}
+		}
+		else{
+			err |= cmd_process(commands, &ctx, pl->p[i], pf, NULL);
+		}
 	}
 
 	if (pl->l > 1 && ctx)
