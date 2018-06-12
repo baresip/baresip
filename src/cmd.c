@@ -574,8 +574,8 @@ int cmd_process(struct commands *commands, struct cmd_ctx **ctxp, char key,
 
 		return cmd->h(pf, &arg);
 	}
-	else if (key == LONG_PREFIX || key == '@') { /* '@' => long httpd 
-							       command */
+	/* key == '@' <=> long httpd command */
+	else if (key == LONG_PREFIX || key == '@') {
 
 		int err;
 

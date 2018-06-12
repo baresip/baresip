@@ -100,11 +100,11 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 		return EINVAL;
 
 	for (i=0; i<pl->l; i++) {
-		if (pl->p[0] == '@') { /* httpd user interface 
-					  + long command */
+		/* httpd user interface + long command */
+		if (pl->p[0] == '@') {
 			if (i == 0) {
 				err |= cmd_process(commands, &ctx, '@', pf,
-						   NULL);
+							NULL);
 			}
 			else {
 				cmd_fill_ctx(&ctx, pl->p[i]);
