@@ -232,7 +232,8 @@ static void dtls_estab_handler(void *arg)
 		warning("dtls_srtp: srtp_install: %m\n", err);
 	}
 
-	/* todo: notify application that crypto is up and running */
+	if (ds->sess->eventh)
+		(ds->sess->eventh)(MENC_EVENT_SECURE, "", ds->sess->arg);
 }
 
 
