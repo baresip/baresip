@@ -329,7 +329,7 @@ static int module_close(void)
 {
 	vid = mem_deref(vid);
 
-	SDL_VideoQuit();
+	SDL_Quit();
 
 	return 0;
 }
