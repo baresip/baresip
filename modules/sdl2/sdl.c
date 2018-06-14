@@ -335,11 +335,7 @@ static int module_close(void)
 {
 	vid = mem_deref(vid);
 
-#ifdef WIN32
 	SDL_Quit();
-#else
-	SDL_VideoQuit();
-#endif
 
 	return 0;
 }

@@ -557,19 +557,26 @@ int account_set_regint(struct account *acc, uint32_t regint)
  */
 int account_set_mediaenc(struct account *acc, const char *mencid)
 {
+	const struct menc *menc;
 	if (!acc)
 		return EINVAL;
 
-	if (mencid && !menc_find(baresip_mencl(), mencid)) {
-		warning("account: mediaenc not found: `%s'\n",
-			mencid);
-		return EINVAL;
+	if (mencid) {
+		menc = menc_find(baresip_mencl(), mencid);
+		if (!menc) {
+			warning("account: mediaenc not found: `%s'\n",
+				mencid);
+			return EINVAL;
+		}
 	}
 
 	acc->mencid = mem_deref(acc->mencid);
+	acc->menc = NULL;
 
-	if (mencid)
+	if (mencid) {
+		acc->menc = menc;
 		return str_dup(&acc->mencid, mencid);
+	}
 
 	return 0;
 }
