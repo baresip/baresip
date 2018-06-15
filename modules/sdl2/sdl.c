@@ -28,8 +28,8 @@ struct vidisp_st {
 	bool fullscreen;                /**< Fullscreen flag       */
 	struct tmr tmr;
 	Uint32 flags;
-	char *title ;
-	struct vidframe *frame ;
+	char *title;
+	struct vidframe *frame;
 	pthread_mutex_t frame_mutex;
 };
 
@@ -194,7 +194,8 @@ static int display(struct vidisp_st *st)
 		return ENOTSUP;
 	}
 
-	if (!vidsz_cmp(&st->size, &st->frame->size) || st->frame->fmt != st->fmt) {
+	if (!vidsz_cmp(&st->size, &st->frame->size) 
+		|| st->frame->fmt != st->fmt) {
 		if (st->size.w && st->size.h) {
 			info("sdl: reset size:"
 			     " %s %u x %u ---> %s %u x %u\n",
@@ -215,7 +216,8 @@ static int display(struct vidisp_st *st)
 
 		if (st->title) {
 			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
-				    st->title, st->frame->size.w, st->frame->size.h);
+					st->title, st->frame->size.w, 
+					st->frame->size.h);
 		}
 		else {
 			re_snprintf(capt, sizeof(capt), "%u x %u",
@@ -223,10 +225,11 @@ static int display(struct vidisp_st *st)
 		}
 
 		st->window = SDL_CreateWindow(capt,
-					      SDL_WINDOWPOS_CENTERED,
-					      SDL_WINDOWPOS_CENTERED,
-					      st->frame->size.w, st->frame->size.h,
-					      st->flags);
+						SDL_WINDOWPOS_CENTERED,
+						SDL_WINDOWPOS_CENTERED,
+						st->frame->size.w, 
+						st->frame->size.h,
+						st->flags);
 		if (!st->window) {
 			warning("sdl: unable to create sdl window: %s\n",
 				SDL_GetError());
@@ -261,7 +264,8 @@ static int display(struct vidisp_st *st)
 		st->texture = SDL_CreateTexture(st->renderer,
 						format,
 						SDL_TEXTUREACCESS_STREAMING,
-						st->frame->size.w, st->frame->size.h);
+						st->frame->size.w,
+						st->frame->size.h);
 		if (!st->texture) {
 			warning("sdl: unable to create texture: %s\n",
 				SDL_GetError());
@@ -318,7 +322,9 @@ static int push_frame(struct vidisp_st *st, const char *title,
 	SDL_Event sdlevent;
 
 	pthread_mutex_lock(&st->frame_mutex);
-	if (!st->frame) {//The first frame has been pushed
+
+	/* Allocate st->frame and st->title from first frame info */
+	if (!st->frame) {
 
 		err = vidframe_alloc(&st->frame, frame->fmt,
 					 &frame->size);
