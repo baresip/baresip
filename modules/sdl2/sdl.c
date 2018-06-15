@@ -194,7 +194,7 @@ static int display(struct vidisp_st *st)
 		return ENOTSUP;
 	}
 
-	if (!vidsz_cmp(&st->size, &st->frame->size) 
+	if (!vidsz_cmp(&st->size, &st->frame->size)
 		|| st->frame->fmt != st->fmt) {
 		if (st->size.w && st->size.h) {
 			info("sdl: reset size:"
@@ -216,7 +216,7 @@ static int display(struct vidisp_st *st)
 
 		if (st->title) {
 			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
-					st->title, st->frame->size.w, 
+					st->title, st->frame->size.w,
 					st->frame->size.h);
 		}
 		else {
@@ -227,7 +227,7 @@ static int display(struct vidisp_st *st)
 		st->window = SDL_CreateWindow(capt,
 						SDL_WINDOWPOS_CENTERED,
 						SDL_WINDOWPOS_CENTERED,
-						st->frame->size.w, 
+						st->frame->size.w,
 						st->frame->size.h,
 						st->flags);
 		if (!st->window) {
