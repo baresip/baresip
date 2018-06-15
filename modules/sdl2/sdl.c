@@ -5,6 +5,7 @@
  */
 
 #include <SDL2/SDL.h>
+#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -27,6 +28,9 @@ struct vidisp_st {
 	bool fullscreen;                /**< Fullscreen flag       */
 	struct tmr tmr;
 	Uint32 flags;
+	char *title ;
+	struct vidframe *frame ;
+	pthread_mutex_t frame_mutex;
 };
 
 
@@ -35,6 +39,7 @@ static struct vidisp *vid;
 
 static void event_handler(void *arg);
 
+static int display(struct vidisp_st *st);
 
 static uint32_t match_fmt(enum vidfmt fmt)
 {
@@ -86,6 +91,8 @@ static void event_handler(void *arg)
 	struct vidisp_st *st = arg;
 	SDL_Event event;
 
+	tmr_start(&st->tmr, 5, event_handler, st);
+
 	/* NOTE: events must be checked from main thread */
 	while (SDL_PollEvent(&event)) {
 
@@ -109,6 +116,13 @@ static void event_handler(void *arg)
 				SDL_SetWindowFullscreen(st->window, st->flags);
 				break;
 
+			case SDLK_F5:/*
+				/* A new frame is ready to be displayed */
+				pthread_mutex_lock(&st->frame_mutex);
+				display(st);
+				pthread_mutex_unlock(&st->frame_mutex);
+				break;
+
 			default:
 				break;
 			}
@@ -121,6 +135,8 @@ static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
 
+	mem_deref(st->frame);
+	mem_deref(st->title);
 	tmr_cancel(&st->tmr);
 	sdl_reset(st);
 }
@@ -148,6 +164,9 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 	st->vd = vd;
 	st->fullscreen = prm ? prm->fullscreen : false;
 
+	pthread_mutex_init(&st->frame_mutex, NULL);
+	tmr_start(&st->tmr, 100, event_handler, st);
+
 	if (err)
 		mem_deref(st);
 	else
@@ -157,8 +176,7 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 }
 
 
-static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+static int display(struct vidisp_st *st)
 {
 	void *pixels;
 	uint8_t *d;
@@ -166,25 +184,23 @@ static int display(struct vidisp_st *st, const char *title,
 	unsigned i, h;
 	uint32_t format;
 
-	event_handler(st);
-
-	if (!st || !frame)
+	if (!st || !st->frame)
 		return EINVAL;
 
-	format = match_fmt(frame->fmt);
+	format = match_fmt(st->frame->fmt);
 	if (format == SDL_PIXELFORMAT_UNKNOWN) {
 		warning("sdl2: pixel format not supported (%s)\n",
-			vidfmt_name(frame->fmt));
+			vidfmt_name(st->frame->fmt));
 		return ENOTSUP;
 	}
 
-	if (!vidsz_cmp(&st->size, &frame->size) || frame->fmt != st->fmt) {
+	if (!vidsz_cmp(&st->size, &st->frame->size) || st->frame->fmt != st->fmt) {
 		if (st->size.w && st->size.h) {
 			info("sdl: reset size:"
 			     " %s %u x %u ---> %s %u x %u\n",
 			     vidfmt_name(st->fmt), st->size.w, st->size.h,
-			     vidfmt_name(frame->fmt),
-			     frame->size.w, frame->size.h);
+			     vidfmt_name(st->frame->fmt),
+			     st->frame->size.w, st->frame->size.h);
 		}
 		sdl_reset(st);
 	}
@@ -197,19 +213,19 @@ static int display(struct vidisp_st *st, const char *title,
 		if (st->fullscreen)
 			st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
-		if (title) {
+		if (st->title) {
 			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
-				    title, frame->size.w, frame->size.h);
+				    st->title, st->frame->size.w, st->frame->size.h);
 		}
 		else {
 			re_snprintf(capt, sizeof(capt), "%u x %u",
-				    frame->size.w, frame->size.h);
+				    st->frame->size.w, st->frame->size.h);
 		}
 
 		st->window = SDL_CreateWindow(capt,
 					      SDL_WINDOWPOS_CENTERED,
 					      SDL_WINDOWPOS_CENTERED,
-					      frame->size.w, frame->size.h,
+					      st->frame->size.w, st->frame->size.h,
 					      st->flags);
 		if (!st->window) {
 			warning("sdl: unable to create sdl window: %s\n",
@@ -217,8 +233,8 @@ static int display(struct vidisp_st *st, const char *title,
 			return ENODEV;
 		}
 
-		st->size = frame->size;
-		st->fmt = frame->fmt;
+		st->size = st->frame->size;
+		st->fmt = st->frame->fmt;
 
 		SDL_RaiseWindow(st->window);
 		SDL_SetWindowBordered(st->window, true);
@@ -245,7 +261,7 @@ static int display(struct vidisp_st *st, const char *title,
 		st->texture = SDL_CreateTexture(st->renderer,
 						format,
 						SDL_TEXTUREACCESS_STREAMING,
-						frame->size.w, frame->size.h);
+						st->frame->size.w, st->frame->size.h);
 		if (!st->texture) {
 			warning("sdl: unable to create texture: %s\n",
 				SDL_GetError());
@@ -262,23 +278,23 @@ static int display(struct vidisp_st *st, const char *title,
 	d = pixels;
 	for (i=0; i<3; i++) {
 
-		const uint8_t *s = frame->data[i];
+		const uint8_t *s = st->frame->data[i];
 		unsigned sz, dsz, hstep, wstep;
 
-		if (!frame->data[i] || !frame->linesize[i])
+		if (!st->frame->data[i] || !st->frame->linesize[i])
 			break;
 
 		hstep = i==0 ? 1 : 2;
-		wstep = i==0 ? 1 : chroma_step(frame->fmt);
+		wstep = i==0 ? 1 : chroma_step(st->frame->fmt);
 
 		dsz = dpitch / wstep;
-		sz  = min(frame->linesize[i], dsz);
+		sz  = min(st->frame->linesize[i], dsz);
 
-		for (h = 0; h < frame->size.h; h += hstep) {
+		for (h = 0; h < st->frame->size.h; h += hstep) {
 
 			memcpy(d, s, sz);
 
-			s += frame->linesize[i];
+			s += st->frame->linesize[i];
 			d += dsz;
 		}
 	}
@@ -292,6 +308,36 @@ static int display(struct vidisp_st *st, const char *title,
 	SDL_RenderPresent(st->renderer);
 
 	return 0;
+}
+
+
+static int push_frame(struct vidisp_st *st, const char *title,
+			const struct vidframe *frame)
+{
+	int err;
+	SDL_Event sdlevent;
+
+	pthread_mutex_lock(&st->frame_mutex);
+	if (!st->frame) {//The first frame has been pushed
+
+		err = vidframe_alloc(&st->frame, frame->fmt,
+					 &frame->size);
+		if (err)
+			return err;
+
+		str_dup(&st->title, title);
+	}
+	vidframe_copy(st->frame, frame);
+	pthread_mutex_unlock(&st->frame_mutex);
+
+	/* Push a specific SDLevent
+		=> trigger frame display from pool events loop */
+	sdlevent.type = SDL_KEYDOWN;
+	sdlevent.key.keysym.sym = SDLK_F5;
+	SDL_PushEvent(&sdlevent);
+
+	return 0;
+
 }
 
 
@@ -315,7 +361,7 @@ static int module_init(void)
 	}
 
 	err = vidisp_register(&vid, baresip_vidispl(),
-			      "sdl2", alloc, NULL, display, hide);
+			      "sdl2", alloc, NULL, push_frame, hide);
 	if (err)
 		return err;
 
@@ -327,7 +373,7 @@ static int module_close(void)
 {
 	vid = mem_deref(vid);
 
-	SDL_Quit();
+	SDL_VideoQuit();
 
 	return 0;
 }
