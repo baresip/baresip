@@ -264,7 +264,7 @@ static int editor_input(struct commands *commands, struct mbuf *mb, char key,
 	}
 
 	if (is_long) {
-		err |= re_hprintf(pf, "\r/%b",
+		err |= re_hprintf(pf, "\r%c%b", LONG_PREFIX,
 				  mb->buf, mb->end);
 	}
 	else
