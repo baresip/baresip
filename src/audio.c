@@ -1978,7 +1978,9 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 				     tx->ausrc_prm.ch),
 			  tx->stats.aubuf_overrun,
 			  tx->stats.aubuf_underrun);
-	err |= re_hprintf(pf, "       source: %s\n",
+	err |= re_hprintf(pf, "       source: %s,%s %s\n",
+			  tx->ausrc ? tx->ausrc->as->name : "none",
+			  tx->device,
 			  aufmt_name(tx->src_fmt));
 	err |= re_hprintf(pf, "       time = %.3f sec\n",
 			  autx_calc_seconds(tx));
@@ -2000,7 +2002,10 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  rx->stats.aubuf_overrun,
 			  rx->stats.aubuf_underrun
 			  );
-	err |= re_hprintf(pf, "       player: %s\n", aufmt_name(rx->play_fmt));
+	err |= re_hprintf(pf, "       player: %s,%s %s\n",
+			  rx->auplay ? rx->auplay->ap->name : "none",
+			  rx->device,
+			  aufmt_name(rx->play_fmt));
 	err |= re_hprintf(pf, "       n_discard:%llu\n",
 			  rx->stats.n_discard);
 	if (rx->level_set) {
