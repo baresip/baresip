@@ -1758,9 +1758,16 @@ void audio_encoder_cycle(struct audio *audio)
 }
 
 
-struct stream *audio_strm(const struct audio *a)
+/**
+ * Get the RTP Stream object from an Audio object
+ *
+ * @param au  Audio object
+ *
+ * @return RTP Stream object
+ */
+struct stream *audio_strm(const struct audio *au)
 {
-	return a ? a->strm : NULL;
+	return au ? au->strm : NULL;
 }
 
 
@@ -1971,7 +1978,9 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 				     tx->ausrc_prm.ch),
 			  tx->stats.aubuf_overrun,
 			  tx->stats.aubuf_underrun);
-	err |= re_hprintf(pf, "       source: %s\n",
+	err |= re_hprintf(pf, "       source: %s,%s %s\n",
+			  tx->ausrc ? tx->ausrc->as->name : "none",
+			  tx->device,
 			  aufmt_name(tx->src_fmt));
 	err |= re_hprintf(pf, "       time = %.3f sec\n",
 			  autx_calc_seconds(tx));
@@ -1993,7 +2002,10 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  rx->stats.aubuf_overrun,
 			  rx->stats.aubuf_underrun
 			  );
-	err |= re_hprintf(pf, "       player: %s\n", aufmt_name(rx->play_fmt));
+	err |= re_hprintf(pf, "       player: %s,%s %s\n",
+			  rx->auplay ? rx->auplay->ap->name : "none",
+			  rx->device,
+			  aufmt_name(rx->play_fmt));
 	err |= re_hprintf(pf, "       n_discard:%llu\n",
 			  rx->stats.n_discard);
 	if (rx->level_set) {
@@ -2151,6 +2163,14 @@ int audio_print_rtpstat(struct re_printf *pf, const struct audio *a)
 }
 
 
+/**
+ * Set the bitrate for the audio encoder
+ *
+ * @param au      Audio object
+ * @param bitrate Encoder bitrate in [bits/s]
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_set_bitrate(struct audio *au, uint32_t bitrate)
 {
 	struct autx *tx;
@@ -2192,9 +2212,16 @@ int audio_set_bitrate(struct audio *au, uint32_t bitrate)
 }
 
 
-bool audio_rxaubuf_started(struct audio *au)
+/**
+ * Check if audio receiving has started
+ *
+ * @param au      Audio object
+ *
+ * @return True if started, otherwise false
+ */
+bool audio_rxaubuf_started(const struct audio *au)
 {
-	struct aurx *rx;
+	const struct aurx *rx;
 
 	if (!au)
 		return false;

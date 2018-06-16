@@ -1265,6 +1265,10 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 	(void)arg;
 
+	debug("ua: sipsess connect via %s %J --> %J\n",
+	      sip_transp_name(msg->tp),
+	      &msg->src, &msg->dst);
+
 	ua = uag_find(&msg->uri.user);
 	if (!ua) {
 		warning("ua: %r: UA not found: %r\n",

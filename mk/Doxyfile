@@ -87,7 +87,7 @@ FILE_PATTERNS          = *.cpp *.c \
                          *.m \
                          *.dox
 RECURSIVE              = YES
-EXCLUDE                =
+EXCLUDE                = modules/ctrl_tcp/netstring
 
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = */.svn/*
