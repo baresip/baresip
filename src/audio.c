@@ -146,8 +146,8 @@ struct aurx {
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for receiving       */
 	int pt;                       /**< Payload type for incoming RTP   */
-	double level_last;
-	bool level_set;
+	double level_last;            /**< Last audio level value [dBov]   */
+	bool level_set;               /**< True if level_last is set       */
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
 	bool need_conv;               /**< Sample format conversion needed */
