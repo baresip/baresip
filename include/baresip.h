@@ -725,6 +725,7 @@ void ui_reset(struct ui_sub *uis);
 void ui_input_key(struct ui_sub *uis, char key, struct re_printf *pf);
 void ui_input_str(const char *str);
 int  ui_input_pl(struct re_printf *pf, const struct pl *pl);
+int  ui_input_long_command(struct re_printf *pf, const struct pl *pl);
 void ui_output(struct ui_sub *uis, const char *fmt, ...);
 bool ui_isediting(const struct ui_sub *uis);
 int  ui_password_prompt(char **passwordp);
