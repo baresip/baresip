@@ -479,9 +479,9 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 					(size_t)sess_info.peer_zid.length))
 				(sess->eventh)(MENC_EVENT_VERIFY_REQUEST,
 					       buf, sess->arg);
-		}
-		else {
-			warning("zrtp: failed to print verify arguments\n");
+			else
+				warning("zrtp: failed to print verify "
+					" arguments\n");
 		}
 	}
 	else if (sess_info.sas_is_verified) {
@@ -494,9 +494,9 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 					(size_t)sess_info.peer_zid.length))
 				(sess->eventh)(MENC_EVENT_PEER_VERIFIED,
 					       buf, sess->arg);
-		}
-		else {
-			warning("zrtp: failed to print verified argument\n");
+			else
+				warning("zrtp: failed to print verified "
+					" argument\n");
 		}
 	}
 }
