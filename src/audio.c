@@ -2084,13 +2084,16 @@ int audio_set_player(struct audio *au, const char *mod, const char *device)
 	/* stop the audio device first */
 	rx->auplay = mem_deref(rx->auplay);
 
-	err = auplay_alloc(&rx->auplay, baresip_auplayl(),
-			   mod, &rx->auplay_prm, device,
-			   auplay_write_handler, rx);
-	if (err) {
-		warning("audio: set_player failed (%s.%s): %m\n",
-			mod, device, err);
-		return err;
+	if (str_isset(mod)) {
+
+		err = auplay_alloc(&rx->auplay, baresip_auplayl(),
+				   mod, &rx->auplay_prm, device,
+				   auplay_write_handler, rx);
+		if (err) {
+			warning("audio: set_player failed (%s.%s): %m\n",
+				mod, device, err);
+			return err;
+		}
 	}
 
 	return 0;
