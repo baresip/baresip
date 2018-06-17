@@ -171,6 +171,7 @@ struct audio {
 	struct config_audio cfg;      /**< Audio configuration             */
 	bool started;                 /**< Stream is started flag          */
 	bool level_enabled;           /**< Audio level RTP ext. enabled    */
+	bool hold;
 	unsigned extmap_aulevel;      /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_err_h *errh;            /**< Audio error handler             */
@@ -1502,7 +1503,7 @@ static int start_source(struct autx *tx, struct audio *a)
 	}
 
 	/* Start Audio Source */
-	if (!tx->ausrc && ausrc_find(baresip_ausrcl(), NULL)) {
+	if (!tx->ausrc && ausrc_find(baresip_ausrcl(), NULL) && !a->hold) {
 
 		struct ausrc_prm prm;
 		size_t sz;
@@ -2260,4 +2261,13 @@ bool audio_rxaubuf_started(const struct audio *au)
 	rx = &au->rx;
 
 	return rx->aubuf_started;
+}
+
+
+void audio_set_hold(struct audio *au, bool hold)
+{
+	if (!au)
+		return;
+
+	au->hold = hold;
 }
