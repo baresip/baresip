@@ -199,6 +199,7 @@ static void dtls_estab_handler(void *arg)
 	const struct dtls_srtp *ds = comp->ds;
 	enum srtp_suite suite;
 	uint8_t cli_key[30], srv_key[30];
+	char buf[32] = "";
 	int err;
 
 	if (!verify_fingerprint(ds->sess->sdp, ds->sdpm, comp->tls_conn)) {
@@ -232,7 +233,16 @@ static void dtls_estab_handler(void *arg)
 		warning("dtls_srtp: srtp_install: %m\n", err);
 	}
 
-	/* todo: notify application that crypto is up and running */
+	if (ds->sess->eventh) {
+		if (re_snprintf(buf, sizeof(buf), "%s,%s",
+				sdp_media_name(ds->sdpm),
+				comp->is_rtp ? "RTP" : "RTCP"))
+			(ds->sess->eventh)(MENC_EVENT_SECURE, buf,
+					   ds->sess->arg);
+		else
+			warning("dtls_srtp: failed to print secure"
+				" event arguments\n");
+	}
 }
 
 
