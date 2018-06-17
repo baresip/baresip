@@ -2032,6 +2032,14 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 }
 
 
+/**
+ * Set the audio source and player device name. This function does not
+ * change the state of the audio source/player.
+ *
+ * @param a     Audio object
+ * @param src   Audio source device name
+ * @param play  Audio player device name
+ */
 void audio_set_devicename(struct audio *a, const char *src, const char *play)
 {
 	if (!a)
@@ -2042,6 +2050,16 @@ void audio_set_devicename(struct audio *a, const char *src, const char *play)
 }
 
 
+/**
+ * Set the audio source state to a new audio source module and device.
+ * The current audio source will be stopped.
+ *
+ * @param au     Audio object
+ * @param mod    Audio source module (NULL to stop)
+ * @param device Audio source device name
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_set_source(struct audio *au, const char *mod, const char *device)
 {
 	struct autx *tx;
@@ -2071,6 +2089,16 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 }
 
 
+/**
+ * Set the audio player state to a new audio player module and device.
+ * The current audio player will be stopped.
+ *
+ * @param au     Audio object
+ * @param mod    Audio player module (NULL to stop)
+ * @param device Audio player device name
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_set_player(struct audio *au, const char *mod, const char *device)
 {
 	struct aurx *rx;
