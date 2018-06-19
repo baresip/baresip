@@ -441,14 +441,10 @@ static int open_encoder_x264(struct videnc_state *st, struct videnc_param *prm,
 	xprm.analyse.b_transform_8x8 = 0;
 	xprm.analyse.i_me_method = X264_ME_DIA;
 	xprm.analyse.i_subpel_refine = 0;
-#if X264_BUILD >= 59
 	xprm.rc.i_aq_mode = 0;
-#endif
 	xprm.analyse.b_mixed_references = 0;
 	xprm.analyse.i_trellis = 0;
-#if X264_BUILD >= 63
 	xprm.i_bframe_adaptive = X264_B_ADAPT_NONE;
-#endif
 #if X264_BUILD >= 70
 	xprm.rc.b_mb_tree = 0;
 #endif
