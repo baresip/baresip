@@ -445,24 +445,18 @@ static int open_encoder_x264(struct videnc_state *st, struct videnc_param *prm,
 	xprm.analyse.b_mixed_references = 0;
 	xprm.analyse.i_trellis = 0;
 	xprm.i_bframe_adaptive = X264_B_ADAPT_NONE;
-#if X264_BUILD >= 70
 	xprm.rc.b_mb_tree = 0;
-#endif
 
 	/* slice-based threading (--tune=zerolatency) */
-#if X264_BUILD >= 80
 	xprm.rc.i_lookahead = 0;
 	xprm.i_sync_lookahead = 0;
 	xprm.i_bframe = 0;
-#endif
 
 	/* put SPS/PPS before each keyframe */
 	xprm.b_repeat_headers = 1;
 
-#if X264_BUILD >= 82
 	/* needed for x264_encoder_intra_refresh() */
 	xprm.b_intra_refresh = 1;
-#endif
 
 	if (st->x264)
 		x264_encoder_close(st->x264);
@@ -595,9 +589,7 @@ int encode_x264(struct videnc_state *st, bool update,
 	}
 
 	if (update) {
-#if X264_BUILD >= 95
 		x264_encoder_intra_refresh(st->x264);
-#endif
 		debug("avcodec: x264 picture update\n");
 	}
 
