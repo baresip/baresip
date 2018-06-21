@@ -49,8 +49,10 @@ static int  menu_set_incall(bool incall);
 static void update_callstatus(void);
 static void alert_stop(void);
 static int switch_audio_source(struct re_printf *pf, void *arg);
-static int switch_video_source(struct re_printf *pf, void *arg);
 static int switch_audio_player(struct re_printf *pf, void *arg);
+#ifdef USE_VIDEO
+static int switch_video_source(struct re_printf *pf, void *arg);
+#endif
 
 
 static void redial_reset(void)
@@ -453,9 +455,11 @@ static const struct cmd cmdv[] = {
 {"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
 {"ausrc",     0,   CMD_IPRM, "Switch audio source",     switch_audio_source  },
-{"vidsrc",    0,   CMD_IPRM, "Switch video source",     switch_video_source  },
 {"auplay",    0,   CMD_IPRM, "Switch audio player",     switch_audio_player  },
 {"about",     0,          0, "About box",               about_box            },
+#ifdef USE_VIDEO
+{"vidsrc",    0,   CMD_IPRM, "Switch video source",     switch_video_source  },
+#endif
 
 };
 
@@ -706,6 +710,7 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	return 0;
 }
 
+#ifdef USE_VIDEO
 static int switch_video_source(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -775,7 +780,7 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 
 	return 0;
 }
-
+#endif
 
 
 #ifdef USE_VIDEO
