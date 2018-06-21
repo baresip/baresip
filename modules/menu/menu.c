@@ -50,6 +50,9 @@ static void update_callstatus(void);
 static void alert_stop(void);
 static int switch_audio_source(struct re_printf *pf, void *arg);
 static int switch_audio_player(struct re_printf *pf, void *arg);
+#ifdef USE_VIDEO
+static int switch_video_source(struct re_printf *pf, void *arg);
+#endif
 
 
 static void redial_reset(void)
@@ -454,6 +457,9 @@ static const struct cmd cmdv[] = {
 {"ausrc",     0,   CMD_IPRM, "Switch audio source",     switch_audio_source  },
 {"auplay",    0,   CMD_IPRM, "Switch audio player",     switch_audio_player  },
 {"about",     0,          0, "About box",               about_box            },
+#ifdef USE_VIDEO
+{"vidsrc",    0,   CMD_IPRM, "Switch video source",     switch_video_source  },
+#endif
 
 };
 
@@ -703,6 +709,78 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 
 	return 0;
 }
+
+#ifdef USE_VIDEO
+static int switch_video_source(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl pl_driver, pl_device;
+	struct config_video *vidcfg;
+	struct config *cfg;
+	struct video *v;
+	struct le *le;
+	char driver[16], device[128] = "";
+	int err = 0;
+
+	static bool switch_vid_inprogress;
+
+	if (!switch_vid_inprogress && !carg->complete) {
+		re_hprintf(pf,
+			   "\rPlease enter video device (driver,device)\n");
+	}
+
+	switch_vid_inprogress = true;
+
+	if (carg->complete) {
+
+		switch_vid_inprogress = false;
+
+		if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
+			     &pl_driver, &pl_device)) {
+
+			return re_hprintf(pf, "\rFormat should be:"
+					  " driver,device\n");
+		}
+
+		pl_strcpy(&pl_driver, driver, sizeof(driver));
+		pl_strcpy(&pl_device, device, sizeof(device));
+
+		if (!vidsrc_find(baresip_vidsrcl(), driver)) {
+			re_hprintf(pf, "no such video-source: %s\n", driver);
+			return 0;
+		}
+
+		re_hprintf(pf, "switch video device: %s,%s\n",
+			   driver, device);
+
+		cfg = conf_config();
+		if (!cfg) {
+			return re_hprintf(pf, "no config object\n");
+		}
+
+		vidcfg = &cfg->video;
+
+		str_ncpy(vidcfg->src_mod, driver, sizeof(vidcfg->src_mod));
+		str_ncpy(vidcfg->src_dev, device, sizeof(vidcfg->src_dev));
+
+		for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
+
+			struct call *call = le->data;
+
+			v = call_video(call);
+
+			err = video_set_source(v, driver, device);
+			if (err) {
+				re_hprintf(pf, "failed to set video-source"
+					   " (%m)\n", err);
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+#endif
 
 
 #ifdef USE_VIDEO
