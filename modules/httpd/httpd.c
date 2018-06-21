@@ -25,6 +25,18 @@
 static struct http_sock *httpsock;
 
 
+static int handle_input(struct re_printf *pf, const struct pl *pl)
+{
+	if (!pl)
+		return 0;
+
+	if (pl->l > 1 && pl->p[0] == '/')
+		return ui_input_long_command(pf, pl);
+	else
+		return ui_input_pl(pf, pl);
+}
+
+
 static int html_print_head(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -62,7 +74,7 @@ static int html_print_cmd(struct re_printf *pf, const struct pl *prm)
 			  "</body>\n"
 			  "</html>\n",
 			  html_print_head, NULL,
-			  ui_input_pl, &params);
+			  handle_input, &params);
 }
 
 
@@ -84,7 +96,7 @@ static int html_print_raw(struct re_printf *pf, const struct pl *prm)
 
 	return re_hprintf(pf,
 			  "%H",
-			  ui_input_pl, &params);
+			  handle_input, &params);
 }
 
 static void http_req_handler(struct http_conn *conn,
