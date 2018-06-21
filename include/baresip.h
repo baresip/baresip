@@ -774,6 +774,7 @@ int  cmd_init(struct commands **commandsp);
 int  cmd_register(struct commands *commands,
 		  const struct cmd *cmdv, size_t cmdc);
 void cmd_unregister(struct commands *commands, const struct cmd *cmdv);
+int  cmd_fill_ctx(struct cmd_ctx **ctxp, char key);
 int  cmd_process(struct commands *commands, struct cmd_ctx **ctxp, char key,
 		 struct re_printf *pf, void *data);
 int  cmd_process_long(struct commands *commands, const char *str, size_t len,

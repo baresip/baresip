@@ -357,6 +357,12 @@ int cmd_process_long(struct commands *commands, const char *str, size_t len,
 	return err;
 }
 
+int cmd_fill_ctx(struct cmd_ctx **ctxp, char key){
+	struct cmd_ctx *ctx;
+	ctx = *ctxp;
+
+	return mbuf_write_u8(ctx->mb, key);
+}
 
 static int cmd_process_edit(struct commands *commands,
 			    struct cmd_ctx **ctxp, char key,
@@ -568,11 +574,18 @@ int cmd_process(struct commands *commands, struct cmd_ctx **ctxp, char key,
 
 		return cmd->h(pf, &arg);
 	}
-	else if (key == LONG_PREFIX) {
+	/* key == '@' <=> long httpd command */
+	else if (key == LONG_PREFIX || key == '@') {
 
 		int err;
 
-		err = re_hprintf(pf, "%c", LONG_PREFIX);
+		if (key == '@') {
+			err = 0;
+		}
+		else {
+			err = re_hprintf(pf, "%c", LONG_PREFIX);
+		}
+
 		if (err)
 			return err;
 
