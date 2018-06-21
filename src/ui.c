@@ -119,6 +119,37 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 
 
 /**
+ * Send a long command with arguments to the UI subsystem.
+ * The slash prefix is optional.
+ *
+ * @param pf  Print function for the response
+ * @param pl  Long command with or without '/' prefix
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ui_input_long_command(struct re_printf *pf, const struct pl *pl)
+{
+	size_t offset;
+	int err;
+
+	if (!pl)
+		return EINVAL;
+
+	/* strip the prefix, if present */
+	if (pl->l > 1 && pl->p[0] == '/')
+		offset = 1;
+	else
+		offset = 0;
+
+	err = cmd_process_long(baresip_commands(),
+			       pl->p + offset,
+			       pl->l - offset, pf, NULL);
+
+	return err;
+}
+
+
+/**
  * Send output to all modules registered in the UI subsystem
  *
  * @param uis UI Subsystem

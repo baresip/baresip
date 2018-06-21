@@ -305,13 +305,13 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 {
 	const struct config_video *cfg = &vl->cfg;
-	double real_dur = .0;
+	double src_dur, real_dur = .0;
 	int err = 0;
 
-	if (vl->ts_start) {
-		real_dur = timestamp_state_duration(&vl->ts_src,
-						    VIDEO_TIMEBASE);
-	}
+	src_dur = timestamp_state_duration(&vl->ts_src, VIDEO_TIMEBASE);
+
+	if (vl->ts_start)
+		real_dur = (vl->ts_last - vl->ts_start) * .000001;
 
 	err |= re_hprintf(pf, "~~~~~ Videoloop summary: ~~~~~\n");
 
@@ -321,7 +321,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 		double avg_fps = .0;
 
 		if (vl->stats.src_frames >= 2)
-			avg_fps = (vl->stats.src_frames-1) / real_dur;
+			avg_fps = (vl->stats.src_frames-1) / src_dur;
 
 		err |= re_hprintf(pf,
 				  "* Source\n"
@@ -330,7 +330,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 				  "  pixformat   %s\n"
 				  "  frames      %llu\n"
 				  "  framerate   %.2f fps  (avg %.2f fps)\n"
-				  "  duration    %.3f sec\n"
+				  "  duration    %.3f sec  (real %.3f sec)\n"
 				  "\n"
 				  ,
 				  vs->name,
@@ -339,7 +339,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 				  vidfmt_name(vl->src_fmt),
 				  vl->stats.src_frames,
 				  vl->srcprm.fps, avg_fps,
-				  real_dur);
+				  src_dur, real_dur);
 	}
 
 	/* Video conversion */
@@ -373,8 +373,8 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 		double avg_pktrate;
 		double dur;
 
-		avg_bitrate = 8.0 * (double)vl->stats.enc_bytes / real_dur;
-		avg_pktrate = (double)vl->stats.enc_packets / real_dur;
+		avg_bitrate = 8.0 * (double)vl->stats.enc_bytes / src_dur;
+		avg_pktrate = (double)vl->stats.enc_packets / src_dur;
 		dur = timestamp_state_duration(&vl->ts_rtp, 90000);
 
 		err |= re_hprintf(pf,

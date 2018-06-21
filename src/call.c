@@ -1192,13 +1192,13 @@ static void call_handle_info_req(struct call *call, const struct sip_msg *req)
 	bool pfu;
 	int err;
 
-	(void)call;
-
 	pl_set_mbuf(&body, req->mb);
 
 	err = mctrl_handle_media_control(&body, &pfu);
 	if (err)
 		return;
+
+	debug("call: receive media control: fast_update=%d\n", pfu);
 
 	if (pfu) {
 		video_update_picture(call->video);

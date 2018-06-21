@@ -119,6 +119,7 @@ Distributed under BSD license
   - TURN server support
   - ICE and ICE-lite support
   - NATPMP support
+  - PCP (Port Control Protocol) support
 
 * Networking:
   - multihoming, IPv4/IPv6

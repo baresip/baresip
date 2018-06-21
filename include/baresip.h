@@ -725,6 +725,7 @@ void ui_reset(struct ui_sub *uis);
 void ui_input_key(struct ui_sub *uis, char key, struct re_printf *pf);
 void ui_input_str(const char *str);
 int  ui_input_pl(struct re_printf *pf, const struct pl *pl);
+int  ui_input_long_command(struct re_printf *pf, const struct pl *pl);
 void ui_output(struct ui_sub *uis, const char *fmt, ...);
 bool ui_isediting(const struct ui_sub *uis);
 int  ui_password_prompt(char **passwordp);
@@ -1059,6 +1060,8 @@ int  audio_debug(struct re_printf *pf, const struct audio *a);
 struct stream *audio_strm(const struct audio *au);
 int  audio_set_bitrate(struct audio *au, uint32_t bitrate);
 bool audio_rxaubuf_started(const struct audio *au);
+void audio_stop(struct audio *a);
+void audio_set_hold(struct audio *au, bool hold);
 
 
 /*

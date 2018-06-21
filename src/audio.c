@@ -146,8 +146,8 @@ struct aurx {
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for receiving       */
 	int pt;                       /**< Payload type for incoming RTP   */
-	double level_last;
-	bool level_set;
+	double level_last;            /**< Last audio level value [dBov]   */
+	bool level_set;               /**< True if level_last is set       */
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
 	bool need_conv;               /**< Sample format conversion needed */
@@ -171,6 +171,7 @@ struct audio {
 	struct config_audio cfg;      /**< Audio configuration             */
 	bool started;                 /**< Stream is started flag          */
 	bool level_enabled;           /**< Audio level RTP ext. enabled    */
+	bool hold;
 	unsigned extmap_aulevel;      /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_err_h *errh;            /**< Audio error handler             */
@@ -1502,7 +1503,7 @@ static int start_source(struct autx *tx, struct audio *a)
 	}
 
 	/* Start Audio Source */
-	if (!tx->ausrc && ausrc_find(baresip_ausrcl(), NULL)) {
+	if (!tx->ausrc && ausrc_find(baresip_ausrcl(), NULL) && !a->hold) {
 
 		struct ausrc_prm prm;
 		size_t sz;
@@ -2032,6 +2033,14 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 }
 
 
+/**
+ * Set the audio source and player device name. This function does not
+ * change the state of the audio source/player.
+ *
+ * @param a     Audio object
+ * @param src   Audio source device name
+ * @param play  Audio player device name
+ */
 void audio_set_devicename(struct audio *a, const char *src, const char *play)
 {
 	if (!a)
@@ -2042,6 +2051,16 @@ void audio_set_devicename(struct audio *a, const char *src, const char *play)
 }
 
 
+/**
+ * Set the audio source state to a new audio source module and device.
+ * The current audio source will be stopped.
+ *
+ * @param au     Audio object
+ * @param mod    Audio source module (NULL to stop)
+ * @param device Audio source device name
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_set_source(struct audio *au, const char *mod, const char *device)
 {
 	struct autx *tx;
@@ -2071,6 +2090,16 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 }
 
 
+/**
+ * Set the audio player state to a new audio player module and device.
+ * The current audio player will be stopped.
+ *
+ * @param au     Audio object
+ * @param mod    Audio player module (NULL to stop)
+ * @param device Audio player device name
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_set_player(struct audio *au, const char *mod, const char *device)
 {
 	struct aurx *rx;
@@ -2084,13 +2113,16 @@ int audio_set_player(struct audio *au, const char *mod, const char *device)
 	/* stop the audio device first */
 	rx->auplay = mem_deref(rx->auplay);
 
-	err = auplay_alloc(&rx->auplay, baresip_auplayl(),
-			   mod, &rx->auplay_prm, device,
-			   auplay_write_handler, rx);
-	if (err) {
-		warning("audio: set_player failed (%s.%s): %m\n",
-			mod, device, err);
-		return err;
+	if (str_isset(mod)) {
+
+		err = auplay_alloc(&rx->auplay, baresip_auplayl(),
+				   mod, &rx->auplay_prm, device,
+				   auplay_write_handler, rx);
+		if (err) {
+			warning("audio: set_player failed (%s.%s): %m\n",
+				mod, device, err);
+			return err;
+		}
 	}
 
 	return 0;
@@ -2229,4 +2261,13 @@ bool audio_rxaubuf_started(const struct audio *au)
 	rx = &au->rx;
 
 	return rx->aubuf_started;
+}
+
+
+void audio_set_hold(struct audio *au, bool hold)
+{
+	if (!au)
+		return;
+
+	au->hold = hold;
 }
