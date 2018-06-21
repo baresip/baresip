@@ -229,6 +229,7 @@ static int display(struct vidisp_st *st, const char *title,
 
 	if (!st->renderer) {
 
+		SDL_RendererInfo rend_info;
 		Uint32 flags = 0;
 
 		flags |= SDL_RENDERER_ACCELERATED;
@@ -239,6 +240,10 @@ static int display(struct vidisp_st *st, const char *title,
 			warning("sdl: unable to create renderer: %s\n",
 				SDL_GetError());
 			return ENOMEM;
+		}
+
+		if (!SDL_GetRendererInfo(st->renderer, &rend_info)) {
+			info("sdl: created renderer '%s'\n", rend_info.name);
 		}
 	}
 
