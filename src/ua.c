@@ -756,9 +756,9 @@ static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 	err |= mbuf_write_str(buf, uri);
 
 	/* Append domain if missing and uri is not IP address */
-    uri_is_ip = inet_pton(AF_INET, uri, &(sa.sin_addr));	// check if uri is valid IPv4 address
+    uri_is_ip = inet_pton(AF_INET, uri, &(sa.sin_addr));	/* check if uri is valid IPv4 address */
 #if HAVE_INET6
-	uri_is_ip |= inet_pton(AF_INET6, uri, &(sa.sin_addr));  // check if uri is valid IPv6 address
+	uri_is_ip |= inet_pton(AF_INET6, uri, &(sa.sin_addr));  /* check if uri is valid IPv6 address */
 #endif
     if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) && 1 != uri_is_ip) {
 #if HAVE_INET6
