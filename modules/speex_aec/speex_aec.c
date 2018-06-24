@@ -52,7 +52,6 @@ static void dec_destructor(void *arg)
 }
 
 
-#ifdef SPEEX_SET_VBR_MAX_BITRATE
 static void speex_aec_destructor(void *arg)
 {
 	struct speex_st *st = arg;
@@ -198,7 +197,6 @@ static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
 
 	return 0;
 }
-#endif
 
 
 static struct aufilt speex_aec = {
@@ -208,13 +206,8 @@ static struct aufilt speex_aec = {
 
 static int module_init(void)
 {
-	/* Note: Hack to check libspeex version */
-#ifdef SPEEX_SET_VBR_MAX_BITRATE
 	aufilt_register(baresip_aufiltl(), &speex_aec);
 	return 0;
-#else
-	return ENOSYS;
-#endif
 }
 
 
