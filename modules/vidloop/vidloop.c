@@ -248,7 +248,7 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 		vl->frame = &frame;
 		pthread_mutex_unlock(&vl->frame_mutex);
 		/* NOTE: usually (e.g. SDL2),
-				 video frame must be rendered from main thread */
+			 video frame must be rendered from main thread */
 		tmr_start(&vl->tmr_display, 0, display_handler, vl);
 	}
 
