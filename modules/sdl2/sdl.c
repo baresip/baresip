@@ -25,8 +25,12 @@ struct vidisp_st {
 	struct vidsz size;              /**< Current size          */
 	enum vidfmt fmt;                /**< Current pixel format  */
 	bool fullscreen;                /**< Fullscreen flag       */
-	struct tmr tmr;
+	struct tmr tmr_event;
+	struct tmr tmr_display;
 	Uint32 flags;
+	char *title;
+	struct vidframe *frame;
+	SDL_mutex *frame_mutex;
 };
 
 
@@ -35,6 +39,10 @@ static struct vidisp *vid;
 
 static void event_handler(void *arg);
 
+static void display_handler(void *arg);
+
+static int display(struct vidisp_st *st, const char *title,
+		   const struct vidframe *frame);
 
 static uint32_t match_fmt(enum vidfmt fmt)
 {
@@ -86,9 +94,7 @@ static void event_handler(void *arg)
 	struct vidisp_st *st = arg;
 	SDL_Event event;
 
-#ifndef WIN32
-	tmr_start(&st->tmr, 100, event_handler, st);
-#endif
+	tmr_start(&st->tmr_event, 100, event_handler, st);
 
 	/* NOTE: events must be checked from main thread */
 	while (SDL_PollEvent(&event)) {
@@ -121,11 +127,29 @@ static void event_handler(void *arg)
 }
 
 
+static void display_handler(void *arg)
+{
+	struct vidisp_st *st = arg;
+	int err;
+
+	SDL_LockMutex(st->frame_mutex);
+	err = display(st, st->title, st->frame);
+	if(err) {
+		warning("sdl: frame rendering failed \n");
+	}
+	SDL_UnlockMutex(st->frame_mutex);
+}
+
+
 static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
 
-	tmr_cancel(&st->tmr);
+	mem_deref(st->frame);
+	mem_deref(st->title);
+	tmr_cancel(&st->tmr_event);
+	tmr_cancel(&st->tmr_display);
+	SDL_DestroyMutex(st->frame_mutex);
 	sdl_reset(st);
 }
 
@@ -151,9 +175,10 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 	st->vd = vd;
 	st->fullscreen = prm ? prm->fullscreen : false;
-#ifndef WIN32
-	tmr_start(&st->tmr, 100, event_handler, st);
-#endif
+
+	st->frame_mutex = SDL_CreateMutex();
+	tmr_start(&st->tmr_event, 100, event_handler, st);
+
 	if (err)
 		mem_deref(st);
 	else
@@ -171,10 +196,6 @@ static int display(struct vidisp_st *st, const char *title,
 	int dpitch, ret;
 	unsigned i, h;
 	uint32_t format;
-
-#ifdef WIN32
-	event_handler(st);
-#endif
 
 	if (!st || !frame)
 		return EINVAL;
@@ -295,6 +316,7 @@ static int display(struct vidisp_st *st, const char *title,
 			d += dsz;
 		}
 	}
+	SDL_UnlockMutex(st->frame_mutex);
 
 	SDL_UnlockTexture(st->texture);
 
@@ -305,6 +327,39 @@ static int display(struct vidisp_st *st, const char *title,
 	SDL_RenderPresent(st->renderer);
 
 	return 0;
+}
+
+
+static int push_frame(struct vidisp_st *st, const char *title,
+			const struct vidframe *frame)
+{
+	int err;
+
+	SDL_LockMutex(st->frame_mutex);
+
+	/* Allocate st->frame and st->title from first frame info */
+	if (!st->frame) {
+
+		err = vidframe_alloc(&st->frame, frame->fmt,
+					 &frame->size);
+		if (err)
+			return err;
+
+		err = str_dup(&st->title, title);
+
+		if (err)
+			return err;
+
+	}
+	vidframe_copy(st->frame, frame);
+
+	SDL_UnlockMutex(st->frame_mutex);
+
+	/* A timer is set to render the frame ASAP */
+	tmr_start(&st->tmr_display, 0, display_handler, st);
+
+	return 0;
+
 }
 
 
@@ -328,7 +383,7 @@ static int module_init(void)
 	}
 
 	err = vidisp_register(&vid, baresip_vidispl(),
-			      "sdl2", alloc, NULL, display, hide);
+			      "sdl2", alloc, NULL, push_frame, hide);
 	if (err)
 		return err;
 
