@@ -8,7 +8,6 @@
 #include <baresip.h>
 #include "core.h"
 #include <ctype.h>
-#include <arpa/inet.h>
 
 
 /** Magic number */
@@ -740,8 +739,8 @@ static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 {
 	size_t len;
 	int err = 0;
-	int uri_is_ip = 0;
-	struct sockaddr_in sa;
+	bool uri_is_ip;
+	struct sa sa_addr;
 
 	/* Skip initial whitespace */
 	while (isspace(*uri))
@@ -756,12 +755,10 @@ static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 	err |= mbuf_write_str(buf, uri);
 
 	/* Append domain if missing and uri is not IP address */
-	/* check if uri is valid IPv4 address */
-	uri_is_ip = inet_pton(AF_INET, uri, &(sa.sin_addr));
-#if HAVE_INET6
-	/* check if uri is valid IPv6 address */
-	uri_is_ip |= inet_pton(AF_INET6, uri, &(sa.sin_addr));
-#endif
+
+	/* check if uri is valid IP address */
+	uri_is_ip = (0 == sa_set_str(&sa_addr, uri, 0));
+
 	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
 		1 != uri_is_ip) {
 #if HAVE_INET6
