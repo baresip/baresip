@@ -739,6 +739,8 @@ static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 {
 	size_t len;
 	int err = 0;
+	bool uri_is_ip;
+	struct sa sa_addr;
 
 	/* Skip initial whitespace */
 	while (isspace(*uri))
@@ -752,8 +754,13 @@ static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 
 	err |= mbuf_write_str(buf, uri);
 
-	/* Append domain if missing */
-	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL)) {
+	/* Append domain if missing and uri is not IP address */
+
+	/* check if uri is valid IP address */
+	uri_is_ip = (0 == sa_set_str(&sa_addr, uri, 0));
+
+	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
+		1 != uri_is_ip) {
 #if HAVE_INET6
 		if (AF_INET6 == ua->acc->luri.af)
 			err |= mbuf_printf(buf, "@[%r]",
