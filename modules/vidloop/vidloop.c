@@ -5,6 +5,7 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
+#include <pthread.h>
 #include <string.h>
 #include <time.h>
 #include <re.h>
@@ -64,9 +65,12 @@ struct video_loop {
 	struct list filtdecl;
 	struct vstat stat;
 	struct tmr tmr_bw;
+	struct tmr tmr_display;
 	struct vidsz src_size;
 	struct vidsz disp_size;
 	enum vidfmt src_fmt;
+	struct vidframe *frame;
+	pthread_mutex_t frame_mutex;
 	uint64_t ts_start;      /* usec */
 	uint64_t ts_last;       /* usec */
 	uint16_t seq;
@@ -180,6 +184,22 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 }
 
 
+static void display_handler(void *arg)
+{
+	struct video_loop *vl = arg;
+	int err;
+
+	pthread_mutex_lock(&vl->frame_mutex);
+	err = display(vl, vl->frame);
+	pthread_mutex_unlock(&vl->frame_mutex);
+
+	if (err) {
+		warning("vidloop: frame display failed %m\n", err);
+	}
+
+}
+
+
 static int packet_handler(bool marker, uint64_t rtp_ts,
 			  const uint8_t *hdr, size_t hdr_len,
 			  const uint8_t *pld, size_t pld_len,
@@ -224,7 +244,12 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 
 	if (vidframe_isvalid(&frame)) {
 
-		display(vl, &frame);
+		pthread_mutex_lock(&vl->frame_mutex);
+		vl->frame = &frame;
+		pthread_mutex_unlock(&vl->frame_mutex);
+		/* NOTE: usually (e.g. SDL2),
+				 video frame must be rendered from main thread */
+		tmr_start(&vl->tmr_display, 0, display_handler, vl);
 	}
 
  out:
@@ -439,6 +464,7 @@ static void vidloop_destructor(void *arg)
 	mem_deref(vl->vidisp);
 	list_flush(&vl->filtencl);
 	list_flush(&vl->filtdecl);
+	pthread_mutex_destroy(&vl->frame_mutex);
 }
 
 
@@ -587,6 +613,8 @@ static int video_loop_alloc(struct video_loop **vlp)
 
 	vl->cfg = cfg->video;
 	tmr_init(&vl->tmr_bw);
+
+	pthread_mutex_init(&vl->frame_mutex, NULL);
 
 	/* Video filters */
 	for (le = list_head(baresip_vidfiltl()); le; le = le->next) {
