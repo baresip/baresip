@@ -204,7 +204,7 @@ struct config_sip {
 
 /** Call config */
 struct config_call {
-	uint32_t local_timeout; /**< Incoming call timeout [sec] 0=off */
+	uint32_t local_timeout; /**< Incoming call timeout [sec] 0=off    */
 	uint32_t max_calls;     /**< Maximum number of calls, 0=unlimited */
 };
 
@@ -389,8 +389,8 @@ struct ausrc_st;
 
 /** Audio Source parameters */
 struct ausrc_prm {
-	uint32_t   srate;       /**< Sampling rate in [Hz] */
-	uint8_t    ch;          /**< Number of channels    */
+	uint32_t   srate;       /**< Sampling rate in [Hz]      */
+	uint8_t    ch;          /**< Number of channels         */
 	uint32_t   ptime;       /**< Wanted packet-time in [ms] */
 	int        fmt;         /**< Sample format (enum aufmt) */
 };
@@ -422,8 +422,8 @@ struct auplay_st;
 
 /** Audio Player parameters */
 struct auplay_prm {
-	uint32_t   srate;       /**< Sampling rate in [Hz] */
-	uint8_t    ch;          /**< Number of channels    */
+	uint32_t   srate;       /**< Sampling rate in [Hz]      */
+	uint8_t    ch;          /**< Number of channels         */
 	uint32_t   ptime;       /**< Wanted packet-time in [ms] */
 	int        fmt;         /**< Sample format (enum aufmt) */
 };
@@ -705,8 +705,8 @@ struct sipevent_sock *uag_sipevent_sock(void);
  */
 
 struct ui_sub {
-	struct list uil;  /**< List of UIs (struct ui) */
-	struct cmd_ctx *uictx;
+	struct list uil;        /**< List of UIs (struct ui) */
+	struct cmd_ctx *uictx;  /**< Command context         */
 };
 
 typedef int  (ui_output_h)(const char *str);
@@ -736,9 +736,9 @@ int  ui_password_prompt(char **passwordp);
  */
 
 /* special keys */
-#define KEYCODE_NONE   (0x00)
+#define KEYCODE_NONE   (0x00)    /* No key           */
 #define KEYCODE_REL    (0x04)    /* Key was released */
-#define KEYCODE_ESC    (0x1b)
+#define KEYCODE_ESC    (0x1b)    /* Escape key       */
 
 
 /** Command flags */
@@ -892,8 +892,8 @@ struct vidisp *vidisp_get(struct vidisp_st *st);
 
 /** Audio Codec parameters */
 struct auenc_param {
-	uint32_t ptime;  /**< Packet time in [ms]   */
-	uint32_t bitrate;/**< Wanted bitrate in [bit/s] */
+	uint32_t ptime;    /**< Packet time in [ms]       */
+	uint32_t bitrate;  /**< Wanted bitrate in [bit/s] */
 };
 
 struct auenc_state;
