@@ -5,7 +5,6 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#include <speex/speex.h>
 #include <speex/speex_echo.h>
 #include <re.h>
 #include <baresip.h>
