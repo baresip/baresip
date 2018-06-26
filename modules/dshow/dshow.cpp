@@ -27,17 +27,72 @@
  */
 
 
-/* a piece from Google WebM's qedit.h:
- *
- *   https://code.google.com/p/webm/source/browse/qedit.h?repo=udpsample
- */
+#ifndef __ISampleGrabberCB_INTERFACE_DEFINED__
+#define __ISampleGrabberCB_INTERFACE_DEFINED__
 
+/* interface ISampleGrabberCB */
+/* [unique][helpstring][local][uuid][object] */
 
-#include "qedit.h"
+EXTERN_C const IID IID_ISampleGrabberCB;
 
-const CLSID CLSID_SampleGrabber = { 0xc1f400a0, 0x3f08, 0x11d3,
-  { 0x9f, 0x0b, 0x00, 0x60, 0x08, 0x03, 0x9e, 0x37 }
+MIDL_INTERFACE("0579154A-2B53-4994-B0D0-E773148EFF85")
+ISampleGrabberCB : public IUnknown
+{
+public:
+	virtual HRESULT STDMETHODCALLTYPE SampleCB(
+		double SampleTime,
+		IMediaSample *pSample) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE BufferCB(
+		double SampleTime,
+		BYTE *pBuffer,
+		long BufferLen) = 0;
 };
+
+#endif 	/* __ISampleGrabberCB_INTERFACE_DEFINED__ */
+
+
+#ifndef __ISampleGrabber_INTERFACE_DEFINED__
+#define __ISampleGrabber_INTERFACE_DEFINED__
+
+/* interface ISampleGrabber */
+/* [unique][helpstring][local][uuid][object] */
+
+EXTERN_C const IID IID_ISampleGrabber;
+
+MIDL_INTERFACE("6B652FFF-11FE-4fce-92AD-0266B5D7C78F")
+ISampleGrabber : public IUnknown
+{
+public:
+	virtual HRESULT STDMETHODCALLTYPE SetOneShot(
+		BOOL OneShot) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE SetMediaType(
+		const AM_MEDIA_TYPE *pType) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE GetConnectedMediaType(
+		AM_MEDIA_TYPE *pType) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE SetBufferSamples(
+		BOOL BufferThem) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE GetCurrentBuffer(
+		/* [out][in] */ long *pBufferSize,
+		/* [out] */ long *pBuffer) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE GetCurrentSample(
+		/* [retval][out] */ IMediaSample **ppSample) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE SetCallback(
+		ISampleGrabberCB *pCallback,
+		long WhichMethodToCallback) = 0;
+};
+
+DEFINE_GUID(CLSID_SampleGrabber, 0xc1f400a0, 0x3f08, 0x11d3,
+	0x9f, 0x0b, 0x00, 0x60, 0x08, 0x03, 0x9e, 0x37);
+
+#endif 	/* __ISampleGrabber_INTERFACE_DEFINED__ */
+
 
 class Grabber;
 
@@ -67,7 +122,7 @@ public:
 	STDMETHOD(QueryInterface)(REFIID InterfaceIdentifier,
 				  VOID** ppvObject) throw()
 	{
-		if (InterfaceIdentifier == __uuidof(ISampleGrabberCB)) {
+		if (InterfaceIdentifier == IID_ISampleGrabberCB) {
 			*ppvObject = (ISampleGrabberCB**) this;
 			return S_OK;
 		}
