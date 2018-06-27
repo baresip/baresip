@@ -54,6 +54,7 @@ static int account_write_template(const char *file)
 					   "early-audio,early-video}\n"
 			 "#    ;answerdelay=0\n"
 			 "#    ;audio_codecs=opus/48000/2,pcma,...\n"
+			 "#    ;audio_codecs=speex/16000,pcma,...\n"
 			 "#    ;audio_source=alsa,default\n"
 			 "#    ;audio_player=alsa,default\n"
 			 "#    ;sip_autoanswer={yes, no}\n"
