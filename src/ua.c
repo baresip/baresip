@@ -18,7 +18,6 @@
 /** Defines a SIP User Agent object */
 struct ua {
 	MAGIC_DECL                   /**< Magic number for struct ua         */
-	struct ua **uap;             /**< Pointer to application's ua        */
 	struct le le;                /**< Linked list element                */
 	struct account *acc;         /**< Account Parameters                 */
 	struct list regl;            /**< List of Register clients           */
@@ -530,11 +529,6 @@ static void ua_destructor(void *arg)
 {
 	struct ua *ua = arg;
 
-	if (ua->uap) {
-		*ua->uap = NULL;
-		ua->uap = NULL;
-	}
-
 	list_unlink(&ua->le);
 
 	if (!list_isempty(&ua->regl))
@@ -712,11 +706,8 @@ int ua_alloc(struct ua **uap, const char *aor)
 	mem_deref(buf);
 	if (err)
 		mem_deref(ua);
-	else if (uap) {
+	else if (uap)
 		*uap = ua;
-
-		ua->uap = uap;
-	}
 
 	return err;
 }
