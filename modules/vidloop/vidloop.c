@@ -5,6 +5,7 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
+#include <pthread.h>
 #include <string.h>
 #include <time.h>
 #include <re.h>
@@ -64,9 +65,12 @@ struct video_loop {
 	struct list filtdecl;
 	struct vstat stat;
 	struct tmr tmr_bw;
+	struct tmr tmr_display;
 	struct vidsz src_size;
 	struct vidsz disp_size;
 	enum vidfmt src_fmt;
+	struct vidframe *frame;
+	pthread_mutex_t frame_mutex;
 	uint64_t ts_start;      /* usec */
 	uint64_t ts_last;       /* usec */
 	uint16_t seq;
@@ -123,6 +127,27 @@ static double timestamp_state_duration(const struct timestamp_state *ts,
 }
 
 
+static void display_handler(void *arg)
+{
+	struct video_loop *vl = arg;
+	int err;
+
+	pthread_mutex_lock(&vl->frame_mutex);
+
+	/* display frame */
+	err = vidisp_display(vl->vidisp, "Video Loop", vl->frame);
+
+	if (err == ENODEV) {
+		info("vidloop: video-display was closed\n");
+		vl->vidisp = mem_deref(vl->vidisp);
+		vl->err = err;
+	}
+
+	pthread_mutex_unlock(&vl->frame_mutex);
+
+}
+
+
 static int display(struct video_loop *vl, struct vidframe *frame)
 {
 	struct vidframe *frame_filt = NULL;
@@ -164,16 +189,18 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 	vl->disp_size = frame->size;
 	++vl->stats.disp_frames;
 
-	/* display frame */
-	err = vidisp_display(vl->vidisp, "Video Loop", frame);
-	if (err == ENODEV) {
-		info("vidloop: video-display was closed\n");
-		vl->vidisp = mem_deref(vl->vidisp);
-		vl->err = err;
-		goto out;
-	}
+	pthread_mutex_lock(&vl->frame_mutex);
 
- out:
+	if (!vl->frame) {
+		vidframe_alloc(&vl->frame, frame->fmt, &frame->size);
+	}
+	vidframe_copy(vl->frame, frame);
+
+	pthread_mutex_unlock(&vl->frame_mutex);
+	/* NOTE: usually (e.g. SDL2),
+	 		 video frame must be rendered from main thread */
+	tmr_start(&vl->tmr_display, 10, display_handler, vl);
+
 	mem_deref(frame_filt);
 
 	return err;
@@ -436,9 +463,16 @@ static void vidloop_destructor(void *arg)
 	mem_deref(vl->vsrc);
 	mem_deref(vl->enc);
 	mem_deref(vl->dec);
+
+	pthread_mutex_lock(&vl->frame_mutex);
 	mem_deref(vl->vidisp);
+	mem_deref(vl->frame);
+	tmr_cancel(&vl->tmr_display);
+	pthread_mutex_unlock(&vl->frame_mutex);
+
 	list_flush(&vl->filtencl);
 	list_flush(&vl->filtdecl);
+	pthread_mutex_destroy(&vl->frame_mutex);
 }
 
 
@@ -587,6 +621,9 @@ static int video_loop_alloc(struct video_loop **vlp)
 
 	vl->cfg = cfg->video;
 	tmr_init(&vl->tmr_bw);
+	tmr_init(&vl->tmr_display);
+	pthread_mutex_init(&vl->frame_mutex, NULL);
+	vl->frame = NULL;
 
 	/* Video filters */
 	for (le = list_head(baresip_vidfiltl()); le; le = le->next) {
