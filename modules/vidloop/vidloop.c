@@ -140,7 +140,6 @@ static void display_handler(void *arg)
 	if (err == ENODEV) {
 		info("vidloop: video-display was closed\n");
 		vl->vidisp = mem_deref(vl->vidisp);
-		vl->err = err;
 	}
 
 	pthread_mutex_unlock(&vl->frame_mutex);
