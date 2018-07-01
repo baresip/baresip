@@ -557,7 +557,7 @@ int account_set_regint(struct account *acc, uint32_t regint)
  */
 int account_set_mediaenc(struct account *acc, const char *mencid)
 {
-	const struct menc *menc;
+	const struct menc *menc = NULL;
 	if (!acc)
 		return EINVAL;
 
