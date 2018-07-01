@@ -171,7 +171,7 @@ struct audio {
 	struct config_audio cfg;      /**< Audio configuration             */
 	bool started;                 /**< Stream is started flag          */
 	bool level_enabled;           /**< Audio level RTP ext. enabled    */
-	bool hold;
+	bool hold;                    /**< Local hold flag                 */
 	unsigned extmap_aulevel;      /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_err_h *errh;            /**< Audio error handler             */
@@ -2264,6 +2264,12 @@ bool audio_rxaubuf_started(const struct audio *au)
 }
 
 
+/**
+ * Set the audio stream on hold
+ *
+ * @param au    Audio object
+ * @param hold  True to hold, false to resume
+ */
 void audio_set_hold(struct audio *au, bool hold)
 {
 	if (!au)

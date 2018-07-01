@@ -891,6 +891,13 @@ static const char *answermode_str(enum answermode mode)
 }
 
 
+/**
+ * Get the media encryption of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Media encryption id or NULL if not set
+ */
 const char *account_mediaenc(const struct account *acc)
 {
 	return acc ? acc->mencid : NULL;
