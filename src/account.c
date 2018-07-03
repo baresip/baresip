@@ -126,7 +126,7 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 }
 
 
-/** Decode media parameters */
+/* Decode media parameters */
 static int media_decode(struct account *acc, const struct pl *prm)
 {
 	int err = 0;

@@ -380,8 +380,9 @@ static int packet_handler(bool marker, uint64_t ts,
  *
  * @note This function has REAL-TIME properties
  *
- * @param vtx   Video transmit object
- * @param frame Video frame to send
+ * @param vtx        Video transmit object
+ * @param frame      Video frame to send
+ * @param timestamp  Frame timestamp in VIDEO_TIMEBASE units
  */
 static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 			    uint64_t timestamp)
@@ -449,8 +450,9 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 /**
  * Read frames from video source
  *
- * @param frame Video frame
- * @param arg   Handler argument
+ * @param frame      Video frame
+ * @param timestamp  Frame timestamp in VIDEO_TIMEBASE units
+ * @param arg        Handler argument
  *
  * @note This function has REAL-TIME properties
  */

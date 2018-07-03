@@ -311,7 +311,7 @@ static inline double calc_ptime(size_t nsamp, uint32_t srate, uint8_t channels)
 }
 
 
-/**
+/*
  * Get the DSP samplerate for an audio-codec
  */
 static inline uint32_t get_srate(const struct aucodec *ac)
@@ -323,7 +323,7 @@ static inline uint32_t get_srate(const struct aucodec *ac)
 }
 
 
-/**
+/*
  * Get the DSP channels for an audio-codec (exception for MPA)
  */
 static inline uint32_t get_ch(const struct aucodec *ac)
@@ -636,9 +636,9 @@ static void check_telev(struct audio *a, struct autx *tx)
  *
  * @note The sample format is set in rx->play_fmt
  *
- * @param buf Buffer to fill with audio samples
- * @param sz  Number of bytes in buffer
- * @param arg Handler argument
+ * @param sampv  Buffer to fill with audio samples
+ * @param sampc  Number of samples in buffer
+ * @param arg    Handler argument
  */
 static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 {
@@ -666,9 +666,9 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
  *
  * @note This function may be called from any thread
  *
- * @param buf Buffer with audio samples
- * @param sz  Number of bytes in buffer
- * @param arg Handler argument
+ * @param sampv  Buffer with audio samples
+ * @param sampc  Number of samples in buffer
+ * @param arg    Handler argument
  */
 static void ausrc_read_handler(const void *sampv, size_t sampc, void *arg)
 {

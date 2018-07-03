@@ -107,6 +107,7 @@ static int account_write_template(const char *file)
  * Add a User-Agent (UA)
  *
  * @param addr SIP Address string
+ * @param arg  Handler argument (unused)
  *
  * @return 0 if success, otherwise errorcode
  */

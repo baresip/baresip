@@ -307,7 +307,7 @@ static int audio_loop_alloc(struct audio_loop **alp,
 }
 
 
-/**
+/*
  * Start the audio loop (for testing)
  */
 static int auloop_start(struct re_printf *pf, void *arg)

@@ -242,7 +242,7 @@ static void invite_timeout(void *arg)
 }
 
 
-/** Called when all media streams are established */
+/* Called when all media streams are established */
 static void mnat_handler(int err, uint16_t scode, const char *reason,
 			 void *arg)
 {

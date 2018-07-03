@@ -86,7 +86,7 @@ static int net_dns_srv_get(const struct network *net,
 }
 
 
-/**
+/*
  * Check for DNS Server updates
  */
 static void dns_refresh(struct network *net)
@@ -105,7 +105,7 @@ static void dns_refresh(struct network *net)
 }
 
 
-/**
+/*
  * Detect changes in IP address(es)
  */
 static void ipchange_handler(void *arg)

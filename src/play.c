@@ -66,7 +66,7 @@ static void tmr_polling(void *arg)
 }
 
 
-/**
+/*
  * NOTE: DSP cannot be destroyed inside handler
  */
 static void write_handler(void *sampv, size_t sampc, void *arg)
