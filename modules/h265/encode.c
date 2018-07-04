@@ -243,7 +243,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	x265_picture_init(st->param, pic_in);
 
 	pic_in->sliceType  = update ? X265_TYPE_IDR : X265_TYPE_AUTO;
-	pic_in->pts        = timestamp;      /* XXX: add PTS to API */
+	pic_in->pts        = timestamp;
 	pic_in->colorSpace = colorspace;
 
 	for (i=0; i<3; i++) {
