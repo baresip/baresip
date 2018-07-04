@@ -1,3 +1,75 @@
+2018-07-04 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.10
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.10
+	* NOTE: Requires libre v0.5.7 or later
+	        Requires librem v0.5.3 or later
+
+	* build:
+	  - Updated MSVS project (thanks Encamy)
+
+	* baresip-core:
+	  - account: add more accessor functions (thanks Juha Heinanen)
+	  - audio: add audio_set_hold
+	  - aufilt: add struct audio parameter
+	  - mediaenc: add menc_event handler (thanks Juha Heinanen)
+	  - net: add support for IP-address in 'net_interface' (thanks @Encamy)
+	  - stream: add stream_call
+	  - stream: check SDP_SENDONLY flag
+	  - stream: correct flags in stream_send (thanks Andreas Hansson)
+	  - stream: set RTP socket buffersize to 65536 (ref #415)
+	  - ua: add events for VU level (thanks Ola Palm)
+	  - ua: add ua_update_account
+	  - ua: don't append domain if uri is IP address (thanks Ali Shirvani)
+	  - ui: add ui_input_long_command
+	  - videnc:  add timestamp parameter
+	  - video: add video_calc_rtp_timestamp_fix
+	  - video: lock when setting encoder (ref #418) (#441)
+
+	* Modules:
+
+	* aufile: add slow cpu detection
+
+	* auloop: add samplerate and channels argument to command
+
+	* av1: add timestamp parameter to encode function
+
+	* avcodec: add timestamp parameter to encode function
+		   set baseline profile on ffmpeg H.264 encoder
+		   remove checks for old versions of libx264
+
+	* dshow: fix build for VC and mingw (thanks @Encamy)
+		 add picture vertical flipping (thanks Nicolas Tizon)
+
+	* dtls_srtp: add usage of medienc event handler
+
+	* gst_video: add timestamp parameter to encode function
+
+	* gst_video1: add timestamp parameter to encode function
+
+	* h265: add timestamp parameter to encode function
+
+	* httpd: no echoing of long commands
+
+	* menu: add video switch command /vidsrc  (thanks Ali Shirvani)
+
+	* opensles: check state before calling Destroy
+
+	* sdl2: print renderer info
+
+	* vidloop: refactoring of timestamp routines
+
+	* vp8: add timestamp parameter to encode function
+
+	* vp9: add timestamp parameter to encode function
+
+	* vumeter: add periodic events (thanks Ola Palm)
+
+	* zrtp: add usage of medienc event handler (thanks Juha Heinanen)
+
+
 2018-04-21 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.9
