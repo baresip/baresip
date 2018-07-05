@@ -21,6 +21,7 @@ struct menu{
 	struct call *curcall;         /**< Call-id of current call        */
 	bool ringback_disabled;       /**< no ringback on sip 180 respons */
 	bool ringback;                /**< Ringback played currently      */
+	char *ringbackf;              /**< Forced ringback file           */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
 	struct tmr tmr_invite;        /**< Timer for follow up invite     */
 	uint32_t redial_delay;        /**< Redial delay in [seconds]      */

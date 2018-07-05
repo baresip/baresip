@@ -372,6 +372,9 @@ static void play_ringback(const struct call *call)
 	if (menu.ringback_disabled) {
 		info("menu: ringback disabled\n");
 	}
+	else if (menu.ringbackf) {
+		menu_play(call, NULL, menu.ringbackf, -1, DEVICE_PLAYER);
+	}
 	else {
 		menu_play(call, "ringback_aufile", "ringback.wav", -1,
 			  DEVICE_PLAYER);
@@ -1198,7 +1201,7 @@ static int module_close(void)
 	      menu.current_attempts);
 
 	message_unlisten(baresip_message(), message_handler);
-
+	menu.ringbackf = mem_deref(menu.ringbackf);
 	uag_event_unregister(ua_event_handler);
 	static_menu_unregister();
 	dial_menu_unregister();

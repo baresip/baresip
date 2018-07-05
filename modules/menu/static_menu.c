@@ -1472,6 +1472,22 @@ static int cmd_tls_subject(struct re_printf *pf, void *unused)
 }
 #endif
 
+
+static int cmd_set_ringback(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct menu *menu = menu_get();
+	int err = 0;
+
+	menu->ringbackf = mem_deref(menu->ringbackf);
+	err = str_dup(&menu->ringbackf, carg->prm);
+	if (err)
+		re_hprintf(pf, "Could not set ringback tone (%m)\n", err);
+
+	return err;
+}
+
+
 /*Static call menu*/
 static const struct cmd cmdv[] = {
 
@@ -1515,6 +1531,8 @@ static const struct cmd cmdv[] = {
 {"tlsissuer", 0,          0, "TLS certificate issuer",  cmd_tls_issuer       },
 {"tlssubject",0,          0, "TLS certificate subject", cmd_tls_subject      },
 #endif
+{"set_ringback",0,  CMD_PRM, "Overwrite ringback tone temporarily. ",
+                                                        cmd_set_ringback     },
 
 };
 
