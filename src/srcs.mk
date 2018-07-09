@@ -17,6 +17,7 @@ SRCS	+= cmd.c
 SRCS	+= conf.c
 SRCS	+= config.c
 SRCS	+= contact.c
+SRCS	+= custom_hdrs.c
 SRCS	+= event.c
 SRCS	+= log.c
 SRCS	+= menc.c
@@ -38,7 +39,6 @@ SRCS	+= timer.c
 SRCS	+= timestamp.c
 SRCS	+= ua.c
 SRCS	+= ui.c
-SRCS	+= custom_hdrs.c
 
 ifneq ($(USE_VIDEO),)
 SRCS	+= bfcp.c

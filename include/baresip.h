@@ -156,13 +156,11 @@ void call_set_current(struct list *calls, struct call *call);
 */
 const struct list *call_get_custom_hdrs(const struct call *call);
 typedef int (custom_hdrs_h)(const struct pl *name, const struct pl *val,
-	void *arg);     //returns error code if any
+	void *arg);     /* returns error code if any */
+
 int custom_hdrs_alloc(struct list **hdrs);
 int custom_hdrs_add(struct list *hdrs, const char *name,
-	const char *val);
-int custom_hdrs_add_pl(struct list *hdrs, const struct pl *name,
-	const struct pl *val);
-int custom_hdrs_add_int(struct list *hdrs, const char *name, int val);
+	const char *fmt, ...);
 int custom_hdrs_apply(const struct list *hdrs,
 	custom_hdrs_h *h, void *arg);
 
@@ -659,8 +657,7 @@ typedef void (ua_exit_h)(void *arg);
 int  ua_alloc(struct ua **uap, const char *aor);
 int  ua_connect(struct ua *ua, struct call **callp,
 		const char *from_uri, const char *uri,
-		const char *params, enum vidmode vmode,
-		struct list *custom_hdrs);
+		const char *params, enum vidmode vmode);
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason);
 int  ua_answer(struct ua *ua, struct call *call);
@@ -692,6 +689,7 @@ void ua_set_catchall(struct ua *ua, bool enabled);
 void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...);
 int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name);
+void ua_set_custom_hdrs(struct list *custom_hdrs);
 
 
 /* One instance */

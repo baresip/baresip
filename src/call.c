@@ -692,6 +692,9 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 void call_set_custom_hdrs(struct call *call, struct list *hdrs)
 {
+	if (!call)
+		return;
+
 	mem_deref(call->custom_hdrs);
 	call->custom_hdrs = hdrs;
 	mem_ref(hdrs);
@@ -700,6 +703,9 @@ void call_set_custom_hdrs(struct call *call, struct list *hdrs)
 
 const struct list *call_get_custom_hdrs(const struct call *call)
 {
+	if (!call)
+		return NULL;
+
 	return call->custom_hdrs;
 }
 

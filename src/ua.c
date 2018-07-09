@@ -87,6 +87,7 @@ static struct {
 #endif
 };
 
+static struct list *custom_hdrs;
 
 /* prototypes */
 static int ua_call_alloc(struct call **callp, struct ua *ua,
@@ -797,14 +798,12 @@ static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
  * @param uri       SIP uri to connect to
  * @param params    Optional URI parameters
  * @param vmode     Video mode
- * @param custom_hdrs Optional custom SIP headers for INVITE
  *
  * @return 0 if success, otherwise errorcode
  */
 int ua_connect(struct ua *ua, struct call **callp,
 	       const char *from_uri, const char *uri,
-	       const char *params, enum vidmode vmode,
-		   struct list *custom_hdrs)
+	       const char *params, enum vidmode vmode)
 {
 	struct call *call = NULL;
 	struct mbuf *dialbuf;
@@ -843,7 +842,8 @@ int ua_connect(struct ua *ua, struct call **callp,
 	pl.p = (char *)dialbuf->buf;
 	pl.l = dialbuf->end;
 
-	call_set_custom_hdrs(call, custom_hdrs);
+	if (custom_hdrs)
+		call_set_custom_hdrs(call, custom_hdrs);
 
 	err = call_connect(call, &pl);
 
@@ -852,9 +852,10 @@ int ua_connect(struct ua *ua, struct call **callp,
 	else if (callp)
 		*callp = call;
 
+	ua_set_custom_hdrs(NULL);
+
  out:
 	mem_deref(dialbuf);
-
 	return err;
 }
 
@@ -1323,8 +1324,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		goto error;
 	}
 
-	if (ua->hdr_filter)
-	{
+	if (ua->hdr_filter) {
 		struct list *hdrs;
 		struct le *le;
 
@@ -1340,12 +1340,13 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 			le = le->next;
 		    hdr_local = sip_msg_xhdr_apply(msg, true, filter->hdr_name,
 				NULL, NULL);
-			if (hdr_local) {
-				custom_hdrs_add_pl(hdrs, &hdr_local->name,
-					&hdr_local->val);
 
+		    if (hdr_local) {
+		        char name[256];
+		        pl_strcpy(&hdr_local->name, name, sizeof(name));
+		        if (custom_hdrs_add(hdrs, name, "%r", &hdr_local->val))
+					goto error;
 			}
-
 		}
 
 		call_set_custom_hdrs(call, hdrs);
@@ -1365,9 +1366,9 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 
 static void ua_xhdr_filter_destructor(void *arg)
- {
-struct ua_xhdr_filter *filter = arg;
-mem_deref(filter->hdr_name);
+{
+	struct ua_xhdr_filter *filter = arg;
+	mem_deref(filter->hdr_name);
 }
 
 
@@ -1381,26 +1382,23 @@ int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name)
 	if (!ua->hdr_filter) {
 		ua->hdr_filter = mem_zalloc(sizeof(*ua->hdr_filter),
 			(mem_destroy_h *)list_flush);
+
 		if (!ua->hdr_filter) {
 			return ENOMEM;
-
 		}
 		list_init(ua->hdr_filter);
-
 	}
 
-	char *buf = mem_alloc(sizeof(char) * (strlen(hdr_name) + 1), NULL);
-	if (!buf) {
+	char *buf;
+	if (str_dup(&buf, hdr_name))
 		return ENOMEM;
-
-	}
-	strcpy(buf, hdr_name);
 
 	filter = mem_zalloc(sizeof(*filter), ua_xhdr_filter_destructor);
 	if (!filter) {
 		mem_deref(buf);
 		return ENOMEM;
 	}
+
 	filter->hdr_name = buf;
 
 	list_append(ua->hdr_filter, &filter->le, filter);
@@ -2049,4 +2047,10 @@ int uag_set_extra_params(const char *eprm)
 		return str_dup(&uag.eprm, eprm);
 
 	return 0;
+}
+
+
+void ua_set_custom_hdrs(struct list *custom_headers)
+{
+	custom_hdrs = custom_headers;
 }

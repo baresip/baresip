@@ -202,7 +202,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		(void)mbuf_write_str(dialbuf, carg->prm);
 
 		err = ua_connect(uag_cur(), NULL, NULL,
-				 carg->prm, NULL, VIDMODE_ON, NULL);
+				 carg->prm, NULL, VIDMODE_ON);
 	}
 	else if (dialbuf->end > 0) {
 
@@ -213,8 +213,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		if (err)
 			return err;
 
-		err = ua_connect(uag_cur(), NULL, NULL, uri,
-						 NULL, VIDMODE_ON, NULL);
+		err = ua_connect(uag_cur(), NULL, NULL, uri, NULL, VIDMODE_ON);
 
 		mem_deref(uri);
 	}
@@ -1023,7 +1022,7 @@ static void redial_handler(void *arg)
 	if (err)
 		return;
 
-	err = ua_connect(uag_cur(), NULL, NULL, uri, NULL, VIDMODE_ON, NULL);
+	err = ua_connect(uag_cur(), NULL, NULL, uri, NULL, VIDMODE_ON);
 	if (err) {
 		warning("menu: redial: ua_connect failed (%m)\n", err);
 	}
