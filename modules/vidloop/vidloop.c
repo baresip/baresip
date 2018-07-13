@@ -71,6 +71,7 @@ struct video_loop {
 	enum vidfmt src_fmt;
 	struct vidframe *frame;
 	pthread_mutex_t frame_mutex;
+	bool new_frame;
 	uint64_t ts_start;      /* usec */
 	uint64_t ts_last;       /* usec */
 	uint16_t seq;
@@ -132,16 +133,23 @@ static void display_handler(void *arg)
 	struct video_loop *vl = arg;
 	int err;
 
+	tmr_start(&vl->tmr_display, 10, display_handler, vl);
+
 	pthread_mutex_lock(&vl->frame_mutex);
+
+	if (!vl->new_frame) {
+		pthread_mutex_unlock(&vl->frame_mutex);
+		return;
+	}
 
 	/* display frame */
 	err = vidisp_display(vl->vidisp, "Video Loop", vl->frame);
+	vl->new_frame = false;
 
 	if (err == ENODEV) {
 		info("vidloop: video-display was closed\n");
 		vl->vidisp = mem_deref(vl->vidisp);
 	}
-
 	pthread_mutex_unlock(&vl->frame_mutex);
 
 }
@@ -190,15 +198,17 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 
 	pthread_mutex_lock(&vl->frame_mutex);
 
+	if (vl->frame && ! vidsz_cmp(&vl->frame->size, &frame->size)) {
+		mem_deref(vl->frame);
+	}
+
 	if (!vl->frame) {
 		vidframe_alloc(&vl->frame, frame->fmt, &frame->size);
 	}
 	vidframe_copy(vl->frame, frame);
+	vl->new_frame = true;
 
 	pthread_mutex_unlock(&vl->frame_mutex);
-	/* NOTE: usually (e.g. SDL2),
-	 		 video frame must be rendered from main thread */
-	tmr_start(&vl->tmr_display, 10, display_handler, vl);
 
 	mem_deref(frame_filt);
 
@@ -622,6 +632,7 @@ static int video_loop_alloc(struct video_loop **vlp)
 	tmr_init(&vl->tmr_bw);
 	tmr_init(&vl->tmr_display);
 	pthread_mutex_init(&vl->frame_mutex, NULL);
+	vl->new_frame = false;
 	vl->frame = NULL;
 
 	/* Video filters */
@@ -650,6 +661,10 @@ static int video_loop_alloc(struct video_loop **vlp)
 	}
 
 	tmr_start(&vl->tmr_bw, 1000, timeout_bw, vl);
+
+	/* NOTE: usually (e.g. SDL2),
+			 video frame must be rendered from main thread */
+	tmr_start(&vl->tmr_display, 10, display_handler, vl);
 
  out:
 	if (err)
