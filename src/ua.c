@@ -31,7 +31,8 @@ struct ua {
 	int af_media;                /**< Preferred Address Family for media */
 	enum presence_status my_status; /**< Presence Status                 */
 	bool catchall;               /**< Catch all inbound requests         */
-	struct list *hdr_filter;     /**< List of custom headers             */
+	struct list *hdr_filter;     /**< Filter for incoming headers        */
+	struct list *custom_hdrs;    /**< List of outgoing headers           */
 };
 
 struct ua_eh {
@@ -87,7 +88,6 @@ static struct {
 #endif
 };
 
-static struct list *custom_hdrs;
 
 /* prototypes */
 static int ua_call_alloc(struct call **callp, struct ua *ua,
@@ -842,8 +842,8 @@ int ua_connect(struct ua *ua, struct call **callp,
 	pl.p = (char *)dialbuf->buf;
 	pl.l = dialbuf->end;
 
-	if (custom_hdrs)
-		call_set_custom_hdrs(call, custom_hdrs);
+	if (ua->custom_hdrs)
+		call_set_custom_hdrs(call, ua->custom_hdrs);
 
 	err = call_connect(call, &pl);
 
@@ -852,10 +852,11 @@ int ua_connect(struct ua *ua, struct call **callp,
 	else if (callp)
 		*callp = call;
 
-	ua_set_custom_hdrs(NULL);
+	ua_set_custom_hdrs(ua, NULL);
 
  out:
 	mem_deref(dialbuf);
+
 	return err;
 }
 
@@ -2050,7 +2051,7 @@ int uag_set_extra_params(const char *eprm)
 }
 
 
-void ua_set_custom_hdrs(struct list *custom_headers)
+void ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 {
-	custom_hdrs = custom_headers;
+	ua->custom_hdrs = custom_headers;
 }

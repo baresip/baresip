@@ -197,7 +197,7 @@ void call_set_custom_hdrs(struct call *call, struct list *hdrs);
 * Custom headers
 */
 int custom_hdrs_print(struct re_printf *pf,
-			          const struct list *custom_hdrs);
+		       const struct list *custom_hdrs);
 
 /*
  * Conf

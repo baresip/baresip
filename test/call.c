@@ -982,9 +982,13 @@ int test_call_mediaenc(void)
 }
 
 
-int test_call_custom_headers(void) {
+int test_call_custom_headers(void)
+{
 	struct fixture fix, *f = &fix;
 	int err = 0;
+	int some_id = 7;
+	struct list *custom_hdrs;
+	bool headers_matched = true;
 
 	fixture_init(f);
 
@@ -995,13 +999,11 @@ int test_call_custom_headers(void) {
 
 	/* Make a call from A to B
 	 * with some custom headers in INVITE message */
-	int some_id = 7;
-	struct list *custom_hdrs;
 
 	err = custom_hdrs_alloc(&custom_hdrs);
 	err = custom_hdrs_add(custom_hdrs, "X-CALL_ID", "%d", some_id);
 	err = custom_hdrs_add(custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
-	ua_set_custom_hdrs(custom_hdrs);
+	ua_set_custom_hdrs(f->a.ua, custom_hdrs);
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
 
 	mem_deref(custom_hdrs);
@@ -1010,7 +1012,6 @@ int test_call_custom_headers(void) {
 	/* run main-loop with timeout, wait for events */
 	err = re_main_timeout(5000);
 
-	bool headers_matched = true;
 	if (hdrs != NULL) {
 		struct le *le;
 		for (le = list_head(hdrs); le; le = le->next) {
