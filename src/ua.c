@@ -31,7 +31,7 @@ struct ua {
 	int af_media;                /**< Preferred Address Family for media */
 	enum presence_status my_status; /**< Presence Status                 */
 	bool catchall;               /**< Catch all inbound requests         */
-	struct list *hdr_filter;     /**< Filter for incoming headers        */
+	struct list hdr_filter;     /**< Filter for incoming headers        */
 	struct list *custom_hdrs;    /**< List of outgoing headers           */
 };
 
@@ -557,7 +557,10 @@ static void ua_destructor(void *arg)
 		sip_close(uag.sip, false);
 	}
 
-	mem_deref(ua->hdr_filter);
+	if (ua->custom_hdrs)
+		mem_deref(ua->custom_hdrs);
+
+	list_flush(&ua->hdr_filter);
 }
 
 
@@ -851,8 +854,6 @@ int ua_connect(struct ua *ua, struct call **callp,
 		mem_deref(call);
 	else if (callp)
 		*callp = call;
-
-	ua_set_custom_hdrs(ua, NULL);
 
  out:
 	mem_deref(dialbuf);
@@ -1325,7 +1326,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		goto error;
 	}
 
-	if (ua->hdr_filter) {
+	if (!list_isempty(&ua->hdr_filter)) {
 		struct list *hdrs;
 		struct le *le;
 
@@ -1333,14 +1334,13 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		if (err)
 			goto error;
 
-		le = list_head(ua->hdr_filter);
+		le = list_head(&ua->hdr_filter);
 		while (le) {
 			const struct sip_hdr *hdr_local;
 			const struct ua_xhdr_filter *filter = le->data;
 
 			le = le->next;
-		    hdr_local = sip_msg_xhdr_apply(msg, true, filter->hdr_name,
-				NULL, NULL);
+			hdr_local = sip_msg_xhdr(msg, filter->hdr_name);
 
 		    if (hdr_local) {
 		        char name[256];
@@ -1380,29 +1380,19 @@ int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name)
 	if (!ua)
 		return EINVAL;
 
-	if (!ua->hdr_filter) {
-		ua->hdr_filter = mem_zalloc(sizeof(*ua->hdr_filter),
-			(mem_destroy_h *)list_flush);
-
-		if (!ua->hdr_filter) {
-			return ENOMEM;
-		}
-		list_init(ua->hdr_filter);
-	}
-
-	char *buf;
-	if (str_dup(&buf, hdr_name))
-		return ENOMEM;
-
 	filter = mem_zalloc(sizeof(*filter), ua_xhdr_filter_destructor);
 	if (!filter) {
-		mem_deref(buf);
 		return ENOMEM;
 	}
 
-	filter->hdr_name = buf;
+	if (str_dup(&filter->hdr_name, hdr_name))
+	{
+		mem_deref(filter);
+		return ENOMEM;
+	}
 
-	list_append(ua->hdr_filter, &filter->le, filter);
+	list_append(&ua->hdr_filter, &filter->le, filter);
+
 	return 0;
 }
 
@@ -2053,5 +2043,7 @@ int uag_set_extra_params(const char *eprm)
 
 void ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 {
+	mem_deref(ua->custom_hdrs);
 	ua->custom_hdrs = custom_headers;
+	mem_ref(ua->custom_hdrs);
 }

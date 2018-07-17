@@ -54,7 +54,10 @@ int custom_hdrs_add(struct list *hdrs, const char *name,
 		goto error;
 
 	pl_set_str(&temp_pl, name);
-	pl_dup(&hdr->name, &temp_pl);
+	err = pl_dup(&hdr->name, &temp_pl);
+	if (err)
+		goto error;
+
 	pl_set_str(&hdr->val, value);
 
 	hdr->id = SIP_HDR_NONE;
@@ -79,9 +82,8 @@ int custom_hdrs_apply(const struct list *hdrs,
 	for (le = list_head(hdrs); le; le = le->next) {
 		struct sip_hdr * hdr = le->data;
 		err = h(&hdr->name, &hdr->val, arg);
-		if (err) {
+		if (err)
 			return err;
-		}
 	}
 
 	return 0;

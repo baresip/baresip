@@ -1007,6 +1007,7 @@ int test_call_custom_headers(void)
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
 
 	mem_deref(custom_hdrs);
+	custom_hdrs = NULL;
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
