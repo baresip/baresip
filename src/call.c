@@ -82,7 +82,7 @@ struct call {
 
 	uint32_t rtp_timeout_ms;  /**< RTP Timeout in [ms]                  */
 	uint32_t linenum;         /**< Line number from 1 to N              */
-	struct list *custom_hdrs; /**< List of custom headers if any */
+	struct list custom_hdrs;  /**< List of custom headers if any */
 };
 
 
@@ -398,7 +398,8 @@ static void call_destructor(void *arg)
 	mem_deref(call->sub);
 	mem_deref(call->not);
 	mem_deref(call->acc);
-	mem_deref(call->custom_hdrs);
+
+	list_flush(&call->custom_hdrs);
 }
 
 
@@ -690,14 +691,21 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 }
 
 
-void call_set_custom_hdrs(struct call *call, struct list *hdrs)
+void call_set_custom_hdrs(struct call *call, struct list hdrs)
 {
 	if (!call)
 		return;
 
-	mem_deref(call->custom_hdrs);
-	call->custom_hdrs = hdrs;
-	mem_ref(hdrs);
+	list_flush(&call->custom_hdrs);
+
+	struct le *le;
+	LIST_FOREACH(&hdrs, le) {
+		struct sip_hdr *hdr = le->data;
+		char *buf = NULL;
+		re_sdprintf(&buf, "%r", &hdr->name);
+		custom_hdrs_add(&call->custom_hdrs, buf, "%r", &hdr->val);
+		mem_deref(buf);
+	}
 }
 
 
@@ -706,7 +714,7 @@ const struct list *call_get_custom_hdrs(const struct call *call)
 	if (!call)
 		return NULL;
 
-	return call->custom_hdrs;
+	return &call->custom_hdrs;
 }
 
 

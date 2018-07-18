@@ -109,7 +109,7 @@ struct fixture {
 		re_cancel();			\
 	} while (0)
 
-const struct list *hdrs;
+static const struct list *hdrs;
 
 static void event_handler(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg)
@@ -987,7 +987,7 @@ int test_call_custom_headers(void)
 	struct fixture fix, *f = &fix;
 	int err = 0;
 	int some_id = 7;
-	struct list *custom_hdrs;
+	struct list custom_hdrs;
 	bool headers_matched = true;
 
 	fixture_init(f);
@@ -1000,23 +1000,22 @@ int test_call_custom_headers(void)
 	/* Make a call from A to B
 	 * with some custom headers in INVITE message */
 
-	err = custom_hdrs_alloc(&custom_hdrs);
-	err = custom_hdrs_add(custom_hdrs, "X-CALL_ID", "%d", some_id);
-	err = custom_hdrs_add(custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
+	list_init(&custom_hdrs);
+	err = custom_hdrs_add(&custom_hdrs, "X-CALL_ID", "%d", some_id);
+	err = custom_hdrs_add(&custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
 	ua_set_custom_hdrs(f->a.ua, custom_hdrs);
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
 
-	mem_deref(custom_hdrs);
-	custom_hdrs = NULL;
+	list_flush(&custom_hdrs);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
 	err = re_main_timeout(5000);
 
-	if (hdrs != NULL) {
+	if (!list_isempty(hdrs)) {
 		struct le *le;
 		for (le = list_head(hdrs); le; le = le->next) {
-		    struct sip_hdr *hdr = (struct sip_hdr *)(le->data);
+		    struct sip_hdr *hdr = le->data;
 		    if (pl_strcasecmp(&hdr->name, "X-CALL_ID") == 0) {
 		        char buf[20];
 		        re_snprintf(buf, sizeof(buf), "%d", some_id);
