@@ -190,14 +190,14 @@ int  call_notify_sipfrag(struct call *call, uint16_t scode,
 int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
 struct account *call_account(const struct call *call);
-void call_set_custom_hdrs(struct call *call, struct list hdrs);
+void call_set_custom_hdrs(struct call *call, const struct list *hdrs);
 
 
 /*
 * Custom headers
 */
 int custom_hdrs_print(struct re_printf *pf,
-		       const struct list custom_hdrs);
+		       const struct list *custom_hdrs);
 
 /*
  * Conf

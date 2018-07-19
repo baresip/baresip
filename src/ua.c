@@ -844,7 +844,7 @@ int ua_connect(struct ua *ua, struct call **callp,
 	pl.l = dialbuf->end;
 
 	if (!list_isempty(&ua->custom_hdrs))
-		call_set_custom_hdrs(call, ua->custom_hdrs);
+		call_set_custom_hdrs(call, &ua->custom_hdrs);
 
 	err = call_connect(call, &pl);
 
@@ -1346,7 +1346,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 			}
 		}
 
-		call_set_custom_hdrs(call, hdrs);
+		call_set_custom_hdrs(call, &hdrs);
 		list_flush(&hdrs);
 	}
 
@@ -2037,12 +2037,12 @@ int uag_set_extra_params(const char *eprm)
 }
 
 
-void ua_set_custom_hdrs(struct ua *ua, struct list custom_headers)
+void ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 {
 	list_flush(&ua->custom_hdrs);
 
 	struct le *le;
-	LIST_FOREACH(&custom_headers, le) {
+	LIST_FOREACH(custom_headers, le) {
 		struct sip_hdr *hdr = le->data;
 		char *buf = NULL;
 		re_sdprintf(&buf, "%r", &hdr->name);

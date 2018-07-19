@@ -160,7 +160,7 @@ typedef int (custom_hdrs_h)(const struct pl *name, const struct pl *val,
 
 int custom_hdrs_add(struct list *hdrs, const char *name,
 	const char *fmt, ...);
-int custom_hdrs_apply(const struct list hdrs,
+int custom_hdrs_apply(const struct list *hdrs,
 	custom_hdrs_h *h, void *arg);
 
 
@@ -688,7 +688,7 @@ void ua_set_catchall(struct ua *ua, bool enabled);
 void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...);
 int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name);
-void ua_set_custom_hdrs(struct ua *ua, struct list custom_hdrs);
+void ua_set_custom_hdrs(struct ua *ua, struct list *custom_hdrs);
 
 
 /* One instance */

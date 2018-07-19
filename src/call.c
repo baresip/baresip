@@ -691,7 +691,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 }
 
 
-void call_set_custom_hdrs(struct call *call, struct list hdrs)
+void call_set_custom_hdrs(struct call *call, const struct list *hdrs)
 {
 	if (!call)
 		return;
@@ -699,12 +699,18 @@ void call_set_custom_hdrs(struct call *call, struct list hdrs)
 	list_flush(&call->custom_hdrs);
 
 	struct le *le;
-	LIST_FOREACH(&hdrs, le) {
-		struct sip_hdr *hdr = le->data;
-		char *buf = NULL;
-		re_sdprintf(&buf, "%r", &hdr->name);
-		custom_hdrs_add(&call->custom_hdrs, buf, "%r", &hdr->val);
-		mem_deref(buf);
+	LIST_FOREACH(hdrs, le) {
+	    struct sip_hdr *hdr = le->data;
+	    char *buf = NULL;
+	    if (re_sdprintf(&buf, "%r", &hdr->name))
+	        return;
+
+	    if (custom_hdrs_add(&call->custom_hdrs, buf, "%r", &hdr->val)) {
+	        mem_deref(buf);
+	        return;
+	    }
+
+	    mem_deref(buf);
 	}
 }
 
@@ -1592,7 +1598,7 @@ static int send_invite(struct call *call)
 			      sipsess_close_handler, call,
 			      "Allow: %s\r\n%H%H", uag_allowed_methods(),
 			      ua_print_supported, call->ua,
-			      custom_hdrs_print, call->custom_hdrs);
+			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {
 		warning("call: sipsess_connect: %m\n", err);
 		goto out;

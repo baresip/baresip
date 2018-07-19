@@ -52,14 +52,14 @@ error:
 }
 
 
-int custom_hdrs_apply(const struct list hdrs,
+int custom_hdrs_apply(const struct list *hdrs,
 					  custom_hdrs_h *h,
 					  void *arg)
 {
 	int err;
 	struct le *le;
 
-	for (le = list_head(&hdrs); le; le = le->next) {
+	LIST_FOREACH(hdrs, le) {
 		struct sip_hdr *hdr = le->data;
 		err = h(&hdr->name, &hdr->val, arg);
 		if (err)
@@ -81,7 +81,7 @@ static int hdr_print_helper(const struct pl *name,
 
 
 int custom_hdrs_print(struct re_printf *pf,
-		       const struct list custom_hdrs)
+		       const struct list *custom_hdrs)
 {
 	return custom_hdrs_apply(custom_hdrs, hdr_print_helper, pf);
 }

@@ -1003,7 +1003,7 @@ int test_call_custom_headers(void)
 	list_init(&custom_hdrs);
 	err = custom_hdrs_add(&custom_hdrs, "X-CALL_ID", "%d", some_id);
 	err = custom_hdrs_add(&custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
-	ua_set_custom_hdrs(f->a.ua, custom_hdrs);
+	ua_set_custom_hdrs(f->a.ua, &custom_hdrs);
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
 
 	list_flush(&custom_hdrs);
