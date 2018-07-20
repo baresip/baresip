@@ -46,8 +46,8 @@ static void handle_message(struct message_lsnr *lsnr, struct ua *ua,
 
 	if (msg_ctype_cmp(&msg->ctyp, "text", "plain") && lsnr->recvh) {
 
-		lsnr->recvh(&msg->from.auri, &ctype_pl,
-			       msg->mb, lsnr->arg);
+		lsnr->recvh(ua, &msg->from.auri, &ctype_pl,
+			    msg->mb, lsnr->arg);
 
 		(void)sip_reply(uag_sip(), msg, 200, "OK");
 	}
