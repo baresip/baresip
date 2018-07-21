@@ -30,12 +30,19 @@ struct ua {
 	int af_media;                /**< Preferred Address Family for media */
 	enum presence_status my_status; /**< Presence Status                 */
 	bool catchall;               /**< Catch all inbound requests         */
+	struct list hdr_filter;      /**< Filter for incoming headers        */
+	struct list custom_hdrs;     /**< List of outgoing headers           */
 };
 
 struct ua_eh {
 	struct le le;
 	ua_event_h *h;
 	void *arg;
+};
+
+struct ua_xhdr_filter {
+	struct le le;
+	char *hdr_name;
 };
 
 static struct {
@@ -543,6 +550,9 @@ static void ua_destructor(void *arg)
 	if (list_isempty(&uag.ual)) {
 		sip_close(uag.sip, false);
 	}
+
+	list_flush(&ua->custom_hdrs);
+	list_flush(&ua->hdr_filter);
 }
 
 
@@ -830,6 +840,9 @@ int ua_connect(struct ua *ua, struct call **callp,
 
 	pl.p = (char *)dialbuf->buf;
 	pl.l = dialbuf->end;
+
+	if (!list_isempty(&ua->custom_hdrs))
+		call_set_custom_hdrs(call, &ua->custom_hdrs);
 
 	err = call_connect(call, &pl);
 
@@ -1309,6 +1322,32 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		goto error;
 	}
 
+	if (!list_isempty(&ua->hdr_filter)) {
+		struct list hdrs;
+		struct le *le;
+
+		list_init(&hdrs);
+
+		le = list_head(&ua->hdr_filter);
+		while (le) {
+		    const struct sip_hdr *tmp_hdr;
+		    const struct ua_xhdr_filter *filter = le->data;
+
+		    le = le->next;
+		    tmp_hdr = sip_msg_xhdr(msg, filter->hdr_name);
+
+		    if (tmp_hdr) {
+		        char name[256];
+		        pl_strcpy(&tmp_hdr->name, name, sizeof(name));
+		        if (custom_hdrs_add(&hdrs, name, "%r", &tmp_hdr->val))
+					goto error;
+			}
+		}
+
+		call_set_custom_hdrs(call, &hdrs);
+		list_flush(&hdrs);
+	}
+
 	err = call_accept(call, uag.sock, msg);
 	if (err)
 		goto error;
@@ -1318,6 +1357,37 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
  error:
 	mem_deref(call);
 	(void)sip_treply(NULL, uag.sip, msg, 500, "Call Error");
+}
+
+
+static void ua_xhdr_filter_destructor(void *arg)
+{
+	struct ua_xhdr_filter *filter = arg;
+	mem_deref(filter->hdr_name);
+}
+
+
+int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name)
+{
+	struct ua_xhdr_filter *filter;
+
+	if (!ua)
+		return EINVAL;
+
+	filter = mem_zalloc(sizeof(*filter), ua_xhdr_filter_destructor);
+	if (!filter) {
+		return ENOMEM;
+	}
+
+	if (str_dup(&filter->hdr_name, hdr_name))
+	{
+		mem_deref(filter);
+		return ENOMEM;
+	}
+
+	list_append(&ua->hdr_filter, &filter->le, filter);
+
+	return 0;
 }
 
 
@@ -1962,4 +2032,19 @@ int uag_set_extra_params(const char *eprm)
 		return str_dup(&uag.eprm, eprm);
 
 	return 0;
+}
+
+
+void ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
+{
+	list_flush(&ua->custom_hdrs);
+
+	struct le *le;
+	LIST_FOREACH(custom_headers, le) {
+		struct sip_hdr *hdr = le->data;
+		char *buf = NULL;
+		re_sdprintf(&buf, "%r", &hdr->name);
+		custom_hdrs_add(&ua->custom_hdrs, buf, "%r", &hdr->val);
+		mem_deref(buf);
+	}
 }

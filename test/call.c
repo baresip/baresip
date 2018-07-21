@@ -16,7 +16,8 @@
 enum behaviour {
 	BEHAVIOUR_ANSWER = 0,
 	BEHAVIOUR_PROGRESS,
-	BEHAVIOUR_REJECT
+	BEHAVIOUR_REJECT,
+	BEHAVIOUR_GET_HDRS,
 };
 
 enum action {
@@ -108,6 +109,7 @@ struct fixture {
 		re_cancel();			\
 	} while (0)
 
+static const struct list *hdrs;
 
 static void event_handler(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg)
@@ -160,6 +162,15 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			ua_hangup(ua, call, 0, 0);
 			call = NULL;
 			ag->failed = true;
+			break;
+
+		case BEHAVIOUR_GET_HDRS:
+			hdrs = call_get_custom_hdrs(call);
+			err = ua_answer(ua, call);
+			if (err) {
+				warning("ua_answer failed (%m)\n", err);
+				goto out;
+			}
 			break;
 
 		default:
@@ -966,6 +977,79 @@ int test_call_mediaenc(void)
 
 	if (fix.err)
 		return fix.err;
+
+	return err;
+}
+
+
+int test_call_custom_headers(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+	int some_id = 7;
+	struct list custom_hdrs;
+	bool headers_matched = true;
+
+	fixture_init(f);
+
+	ua_add_xhdr_filter(f->b.ua, "X-CALL_ID");
+	ua_add_xhdr_filter(f->b.ua, "X-HEADER_NAME");
+
+	f->behaviour = BEHAVIOUR_GET_HDRS;
+
+	/* Make a call from A to B
+	 * with some custom headers in INVITE message */
+
+	list_init(&custom_hdrs);
+	err = custom_hdrs_add(&custom_hdrs, "X-CALL_ID", "%d", some_id);
+	err = custom_hdrs_add(&custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
+	ua_set_custom_hdrs(f->a.ua, &custom_hdrs);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+
+	list_flush(&custom_hdrs);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+
+	if (!list_isempty(hdrs)) {
+		struct le *le;
+		for (le = list_head(hdrs); le; le = le->next) {
+		    struct sip_hdr *hdr = le->data;
+		    if (pl_strcasecmp(&hdr->name, "X-CALL_ID") == 0) {
+		        char buf[20];
+		        re_snprintf(buf, sizeof(buf), "%d", some_id);
+		        if (pl_strcasecmp(&hdr->val, buf) != 0) {
+		            headers_matched = false;
+		        }
+		    }
+		    if (pl_strcasecmp(&hdr->name, "X-HEADER_NAME") == 0) {
+		        if (pl_strcasecmp(&hdr->val, "VALUE") != 0) {
+		            headers_matched = false;
+		        }
+		    }
+		}
+	}
+	else {
+		headers_matched = false;
+	}
+
+	ASSERT_TRUE(headers_matched);
+
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+
+ out:
+	fixture_close(f);
 
 	return err;
 }

@@ -82,6 +82,7 @@ struct call {
 
 	uint32_t rtp_timeout_ms;  /**< RTP Timeout in [ms]                  */
 	uint32_t linenum;         /**< Line number from 1 to N              */
+	struct list custom_hdrs;  /**< List of custom headers if any */
 };
 
 
@@ -397,6 +398,8 @@ static void call_destructor(void *arg)
 	mem_deref(call->sub);
 	mem_deref(call->not);
 	mem_deref(call->acc);
+
+	list_flush(&call->custom_hdrs);
 }
 
 
@@ -685,6 +688,39 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		*callp = call;
 
 	return err;
+}
+
+
+void call_set_custom_hdrs(struct call *call, const struct list *hdrs)
+{
+	if (!call)
+		return;
+
+	list_flush(&call->custom_hdrs);
+
+	struct le *le;
+	LIST_FOREACH(hdrs, le) {
+	    struct sip_hdr *hdr = le->data;
+	    char *buf = NULL;
+	    if (re_sdprintf(&buf, "%r", &hdr->name))
+	        return;
+
+	    if (custom_hdrs_add(&call->custom_hdrs, buf, "%r", &hdr->val)) {
+	        mem_deref(buf);
+	        return;
+	    }
+
+	    mem_deref(buf);
+	}
+}
+
+
+const struct list *call_get_custom_hdrs(const struct call *call)
+{
+	if (!call)
+		return NULL;
+
+	return &call->custom_hdrs;
 }
 
 
@@ -1560,8 +1596,9 @@ static int send_invite(struct call *call)
 			      sipsess_progr_handler, sipsess_estab_handler,
 			      sipsess_info_handler, sipsess_refer_handler,
 			      sipsess_close_handler, call,
-			      "Allow: %s\r\n%H", uag_allowed_methods(),
-			      ua_print_supported, call->ua);
+			      "Allow: %s\r\n%H%H", uag_allowed_methods(),
+			      ua_print_supported, call->ua,
+			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {
 		warning("call: sipsess_connect: %m\n", err);
 		goto out;
