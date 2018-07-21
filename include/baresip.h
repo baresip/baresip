@@ -380,7 +380,8 @@ struct media_ctx {
  * Message
  */
 
-typedef void (message_recv_h)(const struct pl *peer, const struct pl *ctype,
+typedef void (message_recv_h)(struct ua *ua, const struct pl *peer,
+			      const struct pl *ctype,
 			      struct mbuf *body, void *arg);
 
 struct message;

@@ -1165,9 +1165,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
-static void message_handler(const struct pl *peer, const struct pl *ctype,
+static void message_handler(struct ua *ua, const struct pl *peer,
+			    const struct pl *ctype,
 			    struct mbuf *body, void *arg)
 {
+	(void)ua;
 	(void)ctype;
 	(void)arg;
 
