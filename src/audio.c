@@ -374,8 +374,14 @@ static int add_audio_codec(struct audio *a, struct sdp_media *m,
 		return EINVAL;
 	}
 
+	if (ac->ch == 0 || ac->pch == 0) {
+		warning("audio: illegal channels for audio codec '%s'\n",
+			ac->name);
+		return EINVAL;
+	}
+
 	return sdp_format_add(NULL, m, false, ac->pt, ac->name, ac->crate,
-			      ac->ch, ac->fmtp_ench, ac->fmtp_cmph, ac, false,
+			      ac->pch, ac->fmtp_ench, ac->fmtp_cmph, ac, false,
 			      "%s", ac->fmtp);
 }
 

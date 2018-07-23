@@ -235,7 +235,7 @@ static int plc(struct audec_state *st, int fmt, void *sampv, size_t *sampc)
 
 static struct aucodec silk[] = {
 	{
-		LE_INIT, 0, "SILK", 24000, 24000, 1, NULL,
+		LE_INIT, 0, "SILK", 24000, 24000, 1, 1, NULL,
 		encode_update, encode, decode_update, decode, plc, 0, 0
 	},
 
