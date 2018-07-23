@@ -357,18 +357,6 @@ static bool aucodec_equal(const struct aucodec *a, const struct aucodec *b)
 static int add_audio_codec(struct audio *a, struct sdp_media *m,
 			   struct aucodec *ac)
 {
-	if (!in_range(&a->cfg.srate, get_srate(ac))) {
-		debug("audio: skip %uHz codec (audio range %uHz - %uHz)\n",
-		      get_srate(ac), a->cfg.srate.min, a->cfg.srate.max);
-		return 0;
-	}
-
-	if (!in_range(&a->cfg.channels, get_ch(ac))) {
-		debug("audio: skip codec with %uch (audio range %uch-%uch)\n",
-		      get_ch(ac), a->cfg.channels.min, a->cfg.channels.max);
-		return 0;
-	}
-
 	if (ac->crate < 8000) {
 		warning("audio: illegal clock rate %u\n", ac->crate);
 		return EINVAL;

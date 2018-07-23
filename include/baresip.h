@@ -230,8 +230,6 @@ struct config_audio {
 	char play_dev[128];     /**< Audio playback device          */
 	char alert_mod[16];     /**< Audio alert module             */
 	char alert_dev[128];    /**< Audio alert device             */
-	struct range srate;     /**< Audio sampling rate in [Hz]    */
-	struct range channels;  /**< Nr. of audio channels (1=mono) */
 	uint32_t srate_play;    /**< Opt. sampling rate for player  */
 	uint32_t srate_src;     /**< Opt. sampling rate for source  */
 	uint32_t channels_play; /**< Opt. channels for player       */
