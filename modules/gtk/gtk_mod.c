@@ -543,12 +543,14 @@ static void ua_event_handler(struct ua *ua,
 
 
 #ifdef USE_NOTIFICATIONS
-static void message_handler(const struct pl *peer, const struct pl *ctype,
+static void message_handler(struct ua *ua,
+			    const struct pl *peer, const struct pl *ctype,
 			    struct mbuf *body, void *arg)
 {
 	struct gtk_mod *mod = arg;
 	char title[128];
 	char msg[512];
+	(void)ua;
 
 #if GLIB_CHECK_VERSION(2,40,0)
 	GNotification *notification;
