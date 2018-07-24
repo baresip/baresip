@@ -1586,6 +1586,13 @@ static int send_invite(struct call *call)
 	if (err)
 		return err;
 
+#if 0
+	info("- - - - - S D P - O f f e r - - - - -\n"
+	     "%b"
+	     "- - - - - - - - - - - - - - - - - - -\n",
+	     desc->buf, desc->end);
+#endif
+
 	err = sipsess_connect(&call->sess, uag_sipsess_sock(),
 			      call->peer_uri,
 			      call->local_name,
