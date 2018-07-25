@@ -5,7 +5,9 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
+#ifdef HAVE_PTHREAD
 #include <pthread.h>
+#endif
 #include <string.h>
 #include <time.h>
 #include <re.h>
@@ -31,6 +33,51 @@
   baresip -e"/vidloop h264"
  \endverbatim
  */
+
+#if !defined(HAVE_PTHREAD) && defined(WIN32)
+
+	typedef struct pthread_mutex_tag {
+	    HANDLE handle;
+	} pthread_mutex_t;
+
+	typedef struct pthread_mutexattr_tag {
+	    int attr;
+	} pthread_mutexattr_t;
+
+	static int pthread_mutex_lock(pthread_mutex_t *mutex)
+	{
+	    DWORD retvalue = WaitForSingleObject(mutex->handle, INFINITE);
+	    if (retvalue == WAIT_OBJECT_0) {
+	        return 0;
+	    }
+	    else {
+	        return EINVAL;
+	    }
+	}
+
+	static int pthread_mutex_unlock(pthread_mutex_t *mutex)
+	{
+	    return !ReleaseMutex(mutex->handle);
+	}
+
+	static int pthread_mutex_destroy(pthread_mutex_t *mutex)
+	{
+	    return !CloseHandle(mutex->handle);
+	}
+
+	static int pthread_mutex_init(pthread_mutex_t *mutex,
+				      const pthread_mutexattr_t *attr)
+	{
+	    HANDLE handle = CreateMutex(NULL, FALSE, NULL);
+	    if (handle != NULL) {
+	        mutex->handle = handle;
+	        return 0;
+	    }
+	    else {
+	        return 1;
+	    }
+	}
+#endif
 
 
 /** Video Statistics */
