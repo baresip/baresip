@@ -81,9 +81,131 @@ void audio_session_disable(void)
 #endif
 
 
+static void dump_devices(void)
+{
+	AudioObjectPropertyAddress propertyAddress = {
+		kAudioHardwarePropertyDevices,
+		kAudioObjectPropertyScopeGlobal,
+		kAudioObjectPropertyElementMaster
+	};
+
+	AudioDeviceID *audioDevices = NULL;
+	UInt32 dataSize = 0;
+	UInt32 deviceCount;
+	OSStatus status;
+
+	status = AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
+						&propertyAddress,
+						0,
+						NULL,
+						&dataSize);
+	if (kAudioHardwareNoError != status) {
+		warning("AudioObjectGetPropertyDataSize"
+			" (kAudioHardwarePropertyDevices) failed: %i\n",
+			status);
+		goto out;
+	}
+
+	deviceCount = dataSize / sizeof(AudioDeviceID);
+
+	audioDevices = mem_zalloc(dataSize, NULL);
+	if (NULL == audioDevices)
+		goto out;
+
+	status = AudioObjectGetPropertyData(kAudioObjectSystemObject,
+					    &propertyAddress,
+					    0,
+					    NULL,
+					    &dataSize,
+					    audioDevices);
+	if (kAudioHardwareNoError != status) {
+		warning("AudioObjectGetPropertyData"
+			" (kAudioHardwarePropertyDevices) failed: %i\n",
+			status);
+		goto out;
+	}
+
+	propertyAddress.mScope = kAudioDevicePropertyScopeInput;
+
+	re_printf("## devices: %u\n", deviceCount);
+
+	for (UInt32 i = 0; i < deviceCount; ++i) {
+
+		CFStringRef deviceUID = NULL;
+		CFStringRef deviceName = NULL;
+		CFStringRef deviceManufacturer = NULL;
+
+		dataSize = sizeof(deviceUID);
+		propertyAddress.mSelector = kAudioDevicePropertyDeviceUID;
+		status = AudioObjectGetPropertyData(audioDevices[i],
+						    &propertyAddress,
+						    0,
+						    NULL,
+						    &dataSize,
+						    &deviceUID);
+		if (kAudioHardwareNoError != status) {
+			warning("AudioObjectGetPropertyData"
+				" (kAudioDevicePropertyDeviceUID) "
+				"failed: %i\n", status);
+			continue;
+		}
+
+		dataSize = sizeof(deviceName);
+		propertyAddress.mSelector =
+			kAudioDevicePropertyDeviceNameCFString;
+
+		status = AudioObjectGetPropertyData(audioDevices[i],
+						    &propertyAddress,
+						    0,
+						    NULL,
+						    &dataSize,
+						    &deviceName);
+		if (kAudioHardwareNoError != status) {
+			warning("AudioObjectGetPropertyData"
+				" (kAudioDevicePropertyDeviceNameCFString)"
+				" failed: %i\n", status);
+			continue;
+		}
+
+
+		dataSize = sizeof(deviceManufacturer);
+		propertyAddress.mSelector =
+			kAudioDevicePropertyDeviceManufacturerCFString;
+
+		status = AudioObjectGetPropertyData(audioDevices[i],
+						    &propertyAddress,
+						    0,
+						    NULL,
+						    &dataSize,
+						    &deviceManufacturer);
+		if (kAudioHardwareNoError != status) {
+			warning("AudioObjectGetPropertyData"
+			" (kAudioDevicePropertyDeviceManufacturerCFString)"
+				" failed: %i\n", status);
+			continue;
+		}
+
+		re_printf("  [%u] UID:  '%s'\n", i,
+			  CFStringGetCStringPtr(deviceUID,
+						kCFStringEncodingUTF8));
+		re_printf("  [%u] Name: '%s'\n", i,
+			  CFStringGetCStringPtr(deviceName,
+						kCFStringEncodingUTF8));
+		re_printf("  [%u] Manu: '%s'\n", i,
+			  CFStringGetCStringPtr(deviceManufacturer,
+						kCFStringEncodingUTF8));
+	}
+
+ out:
+	mem_deref(audioDevices);
+}
+
+
 static int module_init(void)
 {
 	int err;
+
+	dump_devices();
 
 	err  = auplay_register(&auplay, baresip_auplayl(),
 			       "coreaudio", coreaudio_player_alloc);
