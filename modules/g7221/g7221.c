@@ -15,6 +15,7 @@ static struct g7221_aucodec g7221 = {
 		.srate     = 16000,
 		.crate     = 16000,
 		.ch        = 1,
+		.pch       = 1,
 		.encupdh   = g7221_encode_update,
 		.ench      = g7221_encode,
 		.decupdh   = g7221_decode_update,
