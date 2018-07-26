@@ -324,14 +324,14 @@ static inline uint32_t get_srate(const struct aucodec *ac)
 
 
 /*
- * Get the DSP channels for an audio-codec (exception for MPA)
+ * Get the DSP channels for an audio-codec
  */
 static inline uint32_t get_ch(const struct aucodec *ac)
 {
 	if (!ac)
 		return 0;
 
-	return !str_casecmp(ac->name, "MPA") ? 2 : ac->ch;
+	return ac->ch;
 }
 
 
@@ -494,7 +494,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	 * However, MPA support variable packet durations. Thus, MPA
 	 * should update the ts according to its current internal state.
 	 */
-	frame_size = sampc_rtp / get_ch(tx->ac);
+	frame_size = sampc_rtp / tx->ac->pch;
 
 	tx->ts_ext += (uint32_t)frame_size;
 
