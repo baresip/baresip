@@ -765,11 +765,12 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 			}
 
 			if (!le) {
-				re_hprintf(pf, "no such device for %s
-					video-source: %s\n", driver, device);
+				re_hprintf(pf, 
+					   "no such device for %s video-source: %s\n",
+					   driver, device);
 				re_hprintf(pf, "\rAvailable devices are:\n");
 
-				for (le = list_head(&vs->dev_list); le; 
+				for (le = list_head(&vs->dev_list); le;
 				     le = le->next) {
 
 						dev = le->data;
