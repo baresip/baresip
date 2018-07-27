@@ -718,7 +718,9 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 	struct config_video *vidcfg;
 	struct config *cfg;
 	struct video *v;
+	const struct vidsrc *vs;
 	struct le *le;
+	struct mediadev *dev;
 	char driver[16], device[128] = "";
 	int err = 0;
 
@@ -745,9 +747,36 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 		pl_strcpy(&pl_driver, driver, sizeof(driver));
 		pl_strcpy(&pl_device, device, sizeof(device));
 
-		if (!vidsrc_find(baresip_vidsrcl(), driver)) {
+		vs = vidsrc_find(baresip_vidsrcl(), driver);
+		if (!vs) {
 			re_hprintf(pf, "no such video-source: %s\n", driver);
 			return 0;
+		}
+		else{
+
+			for (le = list_head(&vs->dev_list); le;
+			     le = le->next) {
+
+				dev = le->data;
+
+				if (!str_cmp(dev->name, device)) {
+					break;
+				}
+			}
+
+			if (!le) {
+				re_hprintf(pf, "no such device for %s
+					video-source: %s\n", driver, device);
+				re_hprintf(pf, "\rAvailable devices are:\n");
+
+				for (le = list_head(&vs->dev_list); le; 
+				     le = le->next) {
+
+						dev = le->data;
+						re_hprintf(pf, "%s\n", dev->name);
+				}
+				return 0;
+			}
 		}
 
 		re_hprintf(pf, "switch video device: %s,%s\n",

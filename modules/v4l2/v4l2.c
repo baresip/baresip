@@ -411,6 +411,29 @@ static int read_frame(struct vidsrc_st *st)
 }
 
 
+static void set_available_devices(struct vidsrc* vs)
+{
+	int i, fd;
+	char *name;
+	char test_name[16];
+	struct mediadev *dev;
+
+	for (i=0;i < 16;i++) {
+
+		sprintf(test_name, "/dev/video%i", i);
+
+		if ((fd = open(test_name, O_RDONLY)) == -1) {
+			continue;
+		}
+		else {
+			str_dup(&name, test_name);
+			dev = mem_zalloc(sizeof(struct mediadev), NULL);
+			list_append(&vs->dev_list, &dev->le, dev);
+			dev->name = name;
+		}
+	}
+}
+
 static int vd_open(struct vidsrc_st *st, const char *device)
 {
 	st->fd = v4l2_open(device, O_RDWR);
@@ -476,7 +499,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		return EINVAL;
 
 	if (!str_isset(dev))
-		dev = "/dev/video0";
+		dev = ((struct mediadev*)list_head(&vs->dev_list)->data)->name;
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
@@ -524,14 +547,30 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int v4l_init(void)
 {
-	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+	int err;
+
+	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
 			       "v4l2", alloc, NULL);
+
+	list_init(&vidsrc->dev_list);
+	set_available_devices(vidsrc);
+
+	return err;
 }
 
 
 static int v4l_close(void)
 {
+	struct le *le;
+	struct mediadev *dev;
+
+	for (le = list_head(&vidsrc->dev_list); le; le = le->next) {
+		dev = le->data;
+		mem_deref((char*)dev->name);
+	}
+	list_flush(&vidsrc->dev_list);
 	vidsrc = mem_deref(vidsrc);
+
 	return 0;
 }
 

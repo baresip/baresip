@@ -807,6 +807,7 @@ struct cmds *cmds_find(const struct commands *commands,
 
 struct vidsrc;
 struct vidsrc_st;
+struct mediadev;
 
 /** Video Source parameters */
 struct vidsrc_prm {
@@ -836,9 +837,15 @@ typedef void (vidsrc_update_h)(struct vidsrc_st *st, struct vidsrc_prm *prm,
 			       const char *dev);
 
 /** Defines a video source */
+struct mediadev {
+	struct le   le;
+	const char  *name;
+};
+
 struct vidsrc {
 	struct le         le;
 	const char       *name;
+	struct list      dev_list;
 	vidsrc_alloc_h   *alloch;
 	vidsrc_update_h  *updateh;
 };
