@@ -84,7 +84,8 @@ static struct aucodec ac_dummy = {
 	.name = "FOO16",
 	.srate = 8000,
 	.crate = 8000,
-	.ch = 1,
+	.ch  = 1,
+	.pch = 1,
 	.ench = mock_l16_encode,
 	.dech = mock_l16_decode,
 };

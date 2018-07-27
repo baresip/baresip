@@ -82,7 +82,7 @@ struct call {
 
 	uint32_t rtp_timeout_ms;  /**< RTP Timeout in [ms]                  */
 	uint32_t linenum;         /**< Line number from 1 to N              */
-	struct list custom_hdrs;  /**< List of custom headers if any */
+	struct list custom_hdrs;  /**< List of custom headers if any        */
 };
 
 
@@ -693,24 +693,27 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs)
 {
+	struct le *le;
+
 	if (!call)
 		return;
 
 	list_flush(&call->custom_hdrs);
 
-	struct le *le;
 	LIST_FOREACH(hdrs, le) {
-	    struct sip_hdr *hdr = le->data;
-	    char *buf = NULL;
-	    if (re_sdprintf(&buf, "%r", &hdr->name))
-	        return;
+		struct sip_hdr *hdr = le->data;
+		char *buf = NULL;
 
-	    if (custom_hdrs_add(&call->custom_hdrs, buf, "%r", &hdr->val)) {
-	        mem_deref(buf);
-	        return;
-	    }
+		if (re_sdprintf(&buf, "%r", &hdr->name))
+			return;
 
-	    mem_deref(buf);
+		if (custom_hdrs_add(&call->custom_hdrs, buf,
+				    "%r", &hdr->val)) {
+			mem_deref(buf);
+			return;
+		}
+
+		mem_deref(buf);
 	}
 }
 
@@ -1582,6 +1585,13 @@ static int send_invite(struct call *call)
 	err = call_sdp_get(call, &desc, true);
 	if (err)
 		return err;
+
+#if 0
+	info("- - - - - S D P - O f f e r - - - - -\n"
+	     "%b"
+	     "- - - - - - - - - - - - - - - - - - -\n",
+	     desc->buf, desc->end);
+#endif
 
 	err = sipsess_connect(&call->sess, uag_sipsess_sock(),
 			      call->peer_uri,

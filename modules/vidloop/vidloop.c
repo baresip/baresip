@@ -5,7 +5,6 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
-#include <pthread.h>
 #include <string.h>
 #include <time.h>
 #include <re.h>
@@ -70,7 +69,7 @@ struct video_loop {
 	struct vidsz disp_size;
 	enum vidfmt src_fmt;
 	struct vidframe *frame;
-	pthread_mutex_t frame_mutex;
+	struct lock *frame_mutex;
 	bool new_frame;
 	uint64_t ts_start;      /* usec */
 	uint64_t ts_last;       /* usec */
@@ -135,12 +134,10 @@ static void display_handler(void *arg)
 
 	tmr_start(&vl->tmr_display, 10, display_handler, vl);
 
-	pthread_mutex_lock(&vl->frame_mutex);
+	lock_write_get(vl->frame_mutex);
 
-	if (!vl->new_frame) {
-		pthread_mutex_unlock(&vl->frame_mutex);
-		return;
-	}
+	if (!vl->new_frame)
+		goto out;
 
 	/* display frame */
 	err = vidisp_display(vl->vidisp, "Video Loop", vl->frame);
@@ -150,8 +147,9 @@ static void display_handler(void *arg)
 		info("vidloop: video-display was closed\n");
 		vl->vidisp = mem_deref(vl->vidisp);
 	}
-	pthread_mutex_unlock(&vl->frame_mutex);
 
+ out:
+	lock_rel(vl->frame_mutex);
 }
 
 
@@ -196,7 +194,7 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 	vl->disp_size = frame->size;
 	++vl->stats.disp_frames;
 
-	pthread_mutex_lock(&vl->frame_mutex);
+	lock_write_get(vl->frame_mutex);
 
 	if (vl->frame && ! vidsz_cmp(&vl->frame->size, &frame->size)) {
 		mem_deref(vl->frame);
@@ -208,7 +206,7 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 	vidframe_copy(vl->frame, frame);
 	vl->new_frame = true;
 
-	pthread_mutex_unlock(&vl->frame_mutex);
+	lock_rel(vl->frame_mutex);
 
 	mem_deref(frame_filt);
 
@@ -473,15 +471,15 @@ static void vidloop_destructor(void *arg)
 	mem_deref(vl->enc);
 	mem_deref(vl->dec);
 
-	pthread_mutex_lock(&vl->frame_mutex);
+	lock_write_get(vl->frame_mutex);
 	mem_deref(vl->vidisp);
 	mem_deref(vl->frame);
 	tmr_cancel(&vl->tmr_display);
-	pthread_mutex_unlock(&vl->frame_mutex);
+	lock_rel(vl->frame_mutex);
 
 	list_flush(&vl->filtencl);
 	list_flush(&vl->filtdecl);
-	pthread_mutex_destroy(&vl->frame_mutex);
+	mem_deref(vl->frame_mutex);
 }
 
 
@@ -631,7 +629,11 @@ static int video_loop_alloc(struct video_loop **vlp)
 	vl->cfg = cfg->video;
 	tmr_init(&vl->tmr_bw);
 	tmr_init(&vl->tmr_display);
-	pthread_mutex_init(&vl->frame_mutex, NULL);
+
+	err = lock_alloc(&vl->frame_mutex);
+	if (err)
+		goto out;
+
 	vl->new_frame = false;
 	vl->frame = NULL;
 

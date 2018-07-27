@@ -327,7 +327,7 @@ static int pkloss(struct audec_state *st, int16_t *sampv, size_t *sampc)
 
 
 static struct aucodec ilbc = {
-	LE_INIT, 0, "iLBC", 8000, 8000, 1, ilbc_fmtp,
+	LE_INIT, 0, "iLBC", 8000, 8000, 1, 1, ilbc_fmtp,
 	encode_update, encode, decode_update, decode, pkloss, 0, 0
 };
 

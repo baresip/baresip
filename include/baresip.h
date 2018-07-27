@@ -945,6 +945,7 @@ struct aucodec {
 	uint32_t srate;             /* Audio samplerate */
 	uint32_t crate;             /* RTP Clock rate   */
 	uint8_t ch;
+	uint8_t pch;                /* RTP packet channels */
 	const char *fmtp;
 	auenc_update_h *encupdh;
 	auenc_encode_h *ench;
