@@ -394,14 +394,11 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	/* optional password prompt */
 	if (pl_isset(&acc->laddr.uri.password)) {
 
-		warning("account: username:password is now deprecated"
+		warning("account: username:password is now disabled"
 			" please use ;auth_pass=xxx instead\n");
 
-		err = re_sdprintf(&acc->auth_pass, "%H",
-				  uri_password_unescape,
-				  &acc->laddr.uri.password);
-		if (err)
-			goto out;
+		err = EINVAL;
+		goto out;
 	}
 	else if (0 == msg_param_decode(&acc->laddr.params, "auth_pass", &pl)) {
 		err = pl_strdup(&acc->auth_pass, &pl);
