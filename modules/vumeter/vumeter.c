@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 
@@ -145,6 +146,12 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (*stp)
 		return 0;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("vumeter: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
 		return ENOMEM;
@@ -172,6 +179,12 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (*stp)
 		return 0;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("vumeter: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
 		return ENOMEM;
@@ -185,7 +198,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
+static int encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 {
 	struct vumeter_enc *vu = (void *)st;
 
@@ -196,7 +209,7 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 }
 
 
-static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
+static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 {
 	struct vumeter_dec *vu = (void *)st;
 

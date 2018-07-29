@@ -479,19 +479,20 @@ struct aufilt_prm {
 	uint32_t srate;       /**< Sampling rate in [Hz]        */
 	uint8_t  ch;          /**< Number of channels           */
 	uint32_t ptime;       /**< Wanted packet-time in [ms]   */
+	int      fmt;         /**< Sample format (enum aufmt)   */
 };
 
 typedef int (aufilt_encupd_h)(struct aufilt_enc_st **stp, void **ctx,
 			      const struct aufilt *af, struct aufilt_prm *prm,
 			      const struct audio *au);
 typedef int (aufilt_encode_h)(struct aufilt_enc_st *st,
-			      int16_t *sampv, size_t *sampc);
+			      void *sampv, size_t *sampc);
 
 typedef int (aufilt_decupd_h)(struct aufilt_dec_st **stp, void **ctx,
 			      const struct aufilt *af, struct aufilt_prm *prm,
 			      const struct audio *au);
 typedef int (aufilt_decode_h)(struct aufilt_dec_st *st,
-			      int16_t *sampv, size_t *sampc);
+			      void *sampv, size_t *sampc);
 
 struct aufilt {
 	struct le le;

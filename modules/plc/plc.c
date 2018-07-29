@@ -8,6 +8,7 @@
 
 #include <spandsp.h>
 #include <re.h>
+#include <rem_au.h>
 #include <baresip.h>
 
 
@@ -56,6 +57,12 @@ static int update(struct aufilt_dec_st **stp, void **ctx,
 		return ENOSYS;
 	}
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("plc: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
 		return ENOMEM;
@@ -82,7 +89,7 @@ static int update(struct aufilt_dec_st **stp, void **ctx,
  *
  * NOTE: sampc == 0 , means Packet loss
  */
-static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
+static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 {
 	struct plc_st *plc = (struct plc_st *)st;
 
