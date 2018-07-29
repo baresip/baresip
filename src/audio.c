@@ -414,6 +414,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	size_t sampc_rtp;
 	size_t len;
 	size_t ext_len = 0;
+	uint32_t ts_delta = 0;
 	int err;
 
 	if (!tx->ac || !tx->ac->ench)
@@ -449,8 +450,12 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 			   tx->enc_fmt, sampv, sampc);
 
 	if ((err & 0xffff0000) == 0x00010000) {
+
 		/* MPA needs some special treatment here */
-		tx->ts_ext = err & 0xffff;
+
+		ts_delta = err & 0xffff;
+		sampc = 0;
+
 		err = 0;
 	}
 	else if (err) {
@@ -471,6 +476,11 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 					  rtp_ts, tx->mb);
 			if (err)
 				goto out;
+		}
+
+		if (ts_delta) {
+			tx->ts_ext += ts_delta;
+			goto out;
 		}
 	}
 
