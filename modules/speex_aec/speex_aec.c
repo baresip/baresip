@@ -7,6 +7,7 @@
 #include <string.h>
 #include <speex/speex_echo.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 
@@ -70,6 +71,12 @@ static int aec_alloc(struct speex_st **stp, void **ctx, struct aufilt_prm *prm)
 
 	if (!stp || !ctx || !prm)
 		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("speex_aec: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	if (*ctx) {
 		*stp = mem_ref(*ctx);
@@ -172,7 +179,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
+static int encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 {
 	struct enc_st *est = (struct enc_st *)st;
 	struct speex_st *sp = est->st;
@@ -186,7 +193,7 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 }
 
 
-static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
+static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 {
 	struct dec_st *dst = (struct dec_st *)st;
 	struct speex_st *sp = dst->st;
@@ -206,6 +213,7 @@ static struct aufilt speex_aec = {
 static int module_init(void)
 {
 	aufilt_register(baresip_aufiltl(), &speex_aec);
+
 	return 0;
 }
 

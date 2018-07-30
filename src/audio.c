@@ -577,24 +577,18 @@ static void poll_aubuf_tx(struct audio *a)
 		sampc = sampc_rs;
 	}
 
-	if (tx->enc_fmt == AUFMT_S16LE) {
 
-		/* Process exactly one audio-frame in list order */
-		for (le = tx->filtl.head; le; le = le->next) {
-			struct aufilt_enc_st *st = le->data;
+	/* Process exactly one audio-frame in list order */
+	for (le = tx->filtl.head; le; le = le->next) {
+		struct aufilt_enc_st *st = le->data;
 
-			if (st->af && st->af->ench)
-				err |= st->af->ench(st, sampv, &sampc);
-		}
-		if (err) {
-			warning("audio: aufilter encode: %m\n", err);
-		}
+		if (st->af && st->af->ench)
+			err |= st->af->ench(st, sampv, &sampc);
 	}
-	else if (!list_isempty(&tx->filtl)) {
-		warning("audio: skipping audio-filters due to"
-			" incompatible format (%s)\n",
-			aufmt_name(tx->enc_fmt));
+	if (err) {
+		warning("audio: aufilter encode: %m\n", err);
 	}
+
 
 	/* Encode and send */
 	encode_rtp_send(a, tx, sampv, sampc);
@@ -789,19 +783,12 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 		goto out;
 	}
 
-	if (rx->dec_fmt == AUFMT_S16LE) {
-		/* Process exactly one audio-frame in reverse list order */
-		for (le = rx->filtl.tail; le; le = le->prev) {
-			struct aufilt_dec_st *st = le->data;
+	/* Process exactly one audio-frame in reverse list order */
+	for (le = rx->filtl.tail; le; le = le->prev) {
+		struct aufilt_dec_st *st = le->data;
 
-			if (st->af && st->af->dech)
-				err |= st->af->dech(st, rx->sampv, &sampc);
-		}
-	}
-	else if (!list_isempty(&rx->filtl)) {
-		warning("audio: skipping audio-filters due to"
-			" incompatible format (%s)\n",
-			aufmt_name(rx->dec_fmt));
+		if (st->af && st->af->dech)
+			err |= st->af->dech(st, rx->sampv, &sampc);
 	}
 
 	if (!rx->aubuf)
@@ -1250,7 +1237,8 @@ static void *tx_thread(void *arg)
 
 
 static void aufilt_param_set(struct aufilt_prm *prm,
-			     const struct aucodec *ac, uint32_t ptime)
+			     const struct aucodec *ac, uint32_t ptime,
+			     enum aufmt fmt)
 {
 	if (!ac) {
 		memset(prm, 0, sizeof(*prm));
@@ -1260,6 +1248,7 @@ static void aufilt_param_set(struct aufilt_prm *prm,
 	prm->srate      = get_srate(ac);
 	prm->ch         = get_ch(ac);
 	prm->ptime      = ptime;
+	prm->fmt        = fmt;
 }
 
 
@@ -1337,8 +1326,8 @@ static int aufilt_setup(struct audio *a)
 	if (!list_isempty(&tx->filtl) || !list_isempty(&rx->filtl))
 		return 0;
 
-	aufilt_param_set(&encprm, tx->ac, tx->ptime);
-	aufilt_param_set(&decprm, rx->ac, rx->ptime);
+	aufilt_param_set(&encprm, tx->ac, tx->ptime, tx->enc_fmt);
+	aufilt_param_set(&decprm, rx->ac, rx->ptime, rx->dec_fmt);
 
 	/* Audio filters */
 	for (le = list_head(baresip_aufiltl()); le; le = le->next) {
@@ -1348,21 +1337,27 @@ static int aufilt_setup(struct audio *a)
 		void *ctx = NULL;
 
 		if (af->encupdh) {
-			err |= af->encupdh(&encst, &ctx, af, &encprm, a);
-			if (err)
-				break;
-
-			encst->af = af;
-			list_append(&tx->filtl, &encst->le, encst);
+			err = af->encupdh(&encst, &ctx, af, &encprm, a);
+			if (err) {
+				warning("audio: error in encode audio-filter"
+					" '%s' (%m)\n", af->name, err);
+			}
+			else {
+				encst->af = af;
+				list_append(&tx->filtl, &encst->le, encst);
+			}
 		}
 
 		if (af->decupdh) {
-			err |= af->decupdh(&decst, &ctx, af, &decprm, a);
-			if (err)
-				break;
-
-			decst->af = af;
-			list_append(&rx->filtl, &decst->le, decst);
+			err = af->decupdh(&decst, &ctx, af, &decprm, a);
+			if (err) {
+				warning("audio: error in decode audio-filter"
+					" '%s' (%m)\n", af->name, err);
+			}
+			else {
+				decst->af = af;
+				list_append(&rx->filtl, &decst->le, decst);
+			}
 		}
 
 		if (err) {

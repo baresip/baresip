@@ -5,6 +5,7 @@
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -901,6 +902,12 @@ static int vu_encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (*stp)
 		return 0;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("vumeter: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), vu_enc_destructor);
 	if (!st)
 		return ENOMEM;
@@ -930,6 +937,12 @@ static int vu_decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (*stp)
 		return 0;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("vumeter: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), vu_dec_destructor);
 	if (!st)
 		return ENOMEM;
@@ -944,7 +957,7 @@ static int vu_decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-static int vu_encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
+static int vu_encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 {
 	struct vumeter_enc *vu = (struct vumeter_enc *)st;
 
@@ -955,7 +968,7 @@ static int vu_encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 }
 
 
-static int vu_decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
+static int vu_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 {
 	struct vumeter_dec *vu = (struct vumeter_dec *)st;
 
