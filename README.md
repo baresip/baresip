@@ -60,6 +60,7 @@ Distributed under BSD license
   - Configurable ringtone playback device
   - Automatic gain control (AGC) and Noise reducation
   - Acoustic echo control (AEC)
+  - Configurable audio sample format (Signed 16-bit, 24-bit, Float etc)
 
 * Audio-codecs:
   - AMR narrowband, AMR wideband
@@ -91,6 +92,7 @@ Distributed under BSD license
   - Configurable resolution/framerate/bitrate
   - Configurable video input/output
   - Support for asymmetric video
+  - Configurable video pixel format
 
 * Video-codecs:
   - H.265
