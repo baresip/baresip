@@ -60,9 +60,9 @@ static void *device_thread(void *arg)
 	int err;
 
 	if (!dev->run) {
-		goto out;
+		return NULL;
 	}
-	
+
 	sampc_in = dev->auplay->prm.srate * dev->auplay->prm.ch * PTIME/1000;
 	sampc_out = dev->ausrc->prm.srate * dev->ausrc->prm.ch * PTIME/1000;
 
