@@ -1,0 +1,96 @@
+/**
+ * @file rtcpsummary.c RTCP summary module
+ * Output RTCP stats at the end of a call if there are any
+ */
+#include <re.h>
+#include <baresip.h>
+
+static void ua_event_handler(struct ua *ua,
+			     enum ua_event ev,
+			     struct call *call,
+			     const char *prm,
+			     void *arg ) {
+	(void)call;
+	struct le *le;
+	const struct rtcp_stats *rtcp;
+	const struct stream *s;
+
+	switch (ev) {
+
+		case UA_EVENT_CALL_CLOSED:
+			debug("rtcpsummary: CALL_CLOSED");
+				for (le = call_streaml(call)->head; le; le = le->next) {
+					s = le->data;
+					rtcp = stream_rtcp_stats(s);
+
+					if (rtcp && (rtcp->tx.sent || rtcp->rx.sent)) {
+
+						info("\n");
+						/*
+						 * Add a stats line to make it easier to parse result from script/
+						 * Use a similar format use for the X-RTP-STAT header in a SIP bye message
+						 * See audio.c
+						 */
+						info("EX=BareSip;"   /* Reporter Identifier	             */
+							 "CS=%d;"        /* Call Setup in milliseconds       */
+							 "CD=%d;"        /* Call Duration in seconds	     */
+							 "PR=%u;PS=%u;"  /* Packets RX, TX according to RTCP */
+							 "PL=%d,%d;"     /* Packets Lost RX, TX              */
+							 "PD=%d,%d;"     /* Packets Discarded, RX, TX        */
+							 "JI=%.1f,%.1f;" /* Jitter RX, TX in ms 		     */
+							 "DL=%.1f;"      /* RTT in ms					     */
+							 "IP=%J,%J;"     /* Local, Remote IPs                */
+							 "\n"
+							,
+							 call_setup_duration(stream_call(s)) * 1000,
+							 call_duration(stream_call(s)),
+							 rtcp->rx.sent,
+							 rtcp->tx.sent,
+							 rtcp->rx.lost,
+							 rtcp->tx.lost,
+							 metric_get_rx_n_err(s),
+							 metric_get_tx_n_err(s),
+							 1.0 * rtcp->rx.jit/1000,
+							 1.0 * rtcp->tx.jit/1000,
+							 1.0 * rtcp->rtt/1000,
+							 sdp_media_laddr(stream_sdp(s)),
+							 sdp_media_raddr(stream_sdp(s)));
+					} else {
+						// put a line showing how RTCP stats were NOT collected
+						info("\n");
+						info("EX=BareSip;ERROR=No RTCP stats collected;\n");
+					}
+				}
+			break;
+
+		default:
+			break;
+	}
+}
+
+
+static int module_init(void)
+{
+	int err = uag_event_register(ua_event_handler, NULL);
+	if (err) {
+		info("Error loading rtcpsummary module: %d", err);
+		return err;
+	}
+	return 0;
+}
+
+
+static int module_close(void)
+{
+	debug("rtcpsummary: module closing..\n");
+	uag_event_unregister(ua_event_handler);
+	return 0;
+}
+
+
+const struct mod_export DECL_EXPORTS(rtcpsummary) = {
+	"rtcpsummary",
+	"application",
+	module_init,
+	module_close
+};
