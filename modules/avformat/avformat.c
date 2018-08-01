@@ -277,10 +277,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 #if LIBAVFORMAT_VERSION_INT >= ((52<<16) + (110<<8) + 0)
 	(void)fmt;
-	AVDictionary* options = NULL;
-	av_dict_set(&options,"list_devices","true",0);
-	AVInputFormat *iformat = av_find_input_format("v4l2");
-	ret = avformat_open_input(&st->ic, dev, iformat,&options);
+	ret = avformat_open_input(&st->ic, dev, NULL, NULL);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%d)\n",
 			dev, ret);
