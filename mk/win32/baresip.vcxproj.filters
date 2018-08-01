@@ -173,6 +173,9 @@
     <ClCompile Include="..\..\src\main.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\mediadev.c">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\menc.c">
       <Filter>src</Filter>
     </ClCompile>

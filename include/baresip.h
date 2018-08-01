@@ -377,6 +377,23 @@ struct media_ctx {
 
 
 /*
+ * Media Device
+ */
+
+struct mediadev;
+
+/** Defines a media device */
+struct mediadev {
+	struct le   le;
+	char  *name;
+};
+
+int mediadev_add(struct list *dev_list, const char *name);
+struct mediadev *mediadev_find(const struct list *dev_list, const char *name);
+int mediadev_print(struct re_printf *pf, const struct list *dev_list);
+
+
+/*
  * Message
  */
 
@@ -807,7 +824,6 @@ struct cmds *cmds_find(const struct commands *commands,
 
 struct vidsrc;
 struct vidsrc_st;
-struct mediadev;
 
 /** Video Source parameters */
 struct vidsrc_prm {
@@ -837,11 +853,6 @@ typedef void (vidsrc_update_h)(struct vidsrc_st *st, struct vidsrc_prm *prm,
 			       const char *dev);
 
 /** Defines a video source */
-struct mediadev {
-	struct le   le;
-	const char  *name;
-};
-
 struct vidsrc {
 	struct le         le;
 	const char       *name;

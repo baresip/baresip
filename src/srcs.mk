@@ -20,6 +20,7 @@ SRCS	+= contact.c
 SRCS	+= custom_hdrs.c
 SRCS	+= event.c
 SRCS	+= log.c
+SRCS	+= mediadev.c
 SRCS	+= menc.c
 SRCS	+= message.c
 SRCS	+= metric.c

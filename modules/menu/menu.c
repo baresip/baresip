@@ -720,7 +720,6 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 	struct video *v;
 	const struct vidsrc *vs;
 	struct le *le;
-	struct mediadev *dev;
 	char driver[16], device[128] = "";
 	int err = 0;
 
@@ -752,31 +751,15 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 			re_hprintf(pf, "no such video-source: %s\n", driver);
 			return 0;
 		}
-		else{
+		else if (list_count(&vs->dev_list)) {
 
-			for (le = list_head(&vs->dev_list); le;
-			     le = le->next) {
-
-				dev = le->data;
-
-				if (!str_cmp(dev->name, device)) {
-					break;
-				}
-			}
-
-			if (!le) {
+			if (!mediadev_find(&vs->dev_list, device)) {
 				re_hprintf(pf,
 				  "no such device for %s video-source: %s\n",
 				  driver, device);
-				re_hprintf(pf, "\rAvailable devices are:\n");
 
-				for (le = list_head(&vs->dev_list); le;
-				     le = le->next) {
+				mediadev_print(pf, &vs->dev_list);
 
-						dev = le->data;
-						re_hprintf(pf, "%s\n",
-							   dev->name);
-				}
 				return 0;
 			}
 		}
