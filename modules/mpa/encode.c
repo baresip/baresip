@@ -18,7 +18,6 @@ struct auenc_state {
 	int channels, samplerate;
 	SpeexResamplerState *resampler;
 	int16_t intermediate_buffer[MPA_FRAMESIZE*6];
-	uint32_t timestamp;
 };
 
 
@@ -71,7 +70,6 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	debug("MPA enc created %s\n",fmtp);
 #endif
 	aes->channels = ac->ch;
-	aes->timestamp = rand_u32();
 
 	prm.samplerate = 48000;
 	prm.bitrate    = 128000;
@@ -141,6 +139,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 {
 	int n;
 	spx_uint32_t intermediate_len,in_len;
+	uint32_t ts_delta = 0;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;
@@ -185,6 +184,8 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 	if (n > 0) {
 		*(uint32_t*)(void *)buf = 0;
 		*len = n+4;
+
+		ts_delta = ((MPA_FRAMESIZE*MPA_RTPRATE)<<4) / aes->samplerate;
 	}
 	else
 		*len = 0;
@@ -193,8 +194,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 	debug("MPA enc done %d %d %d %d %p\n",sampc,aes->channels,
 		*len,n,aes->enc);
 #endif
-	aes->timestamp += ((MPA_FRAMESIZE*MPA_RTPRATE)<<4) / aes->samplerate;
 
-	return 0x00010000 | ((aes->timestamp>>4) & 0x0000ffff);
+	return 0x00010000 | ((ts_delta>>4) & 0x0000ffff);
 }
 
