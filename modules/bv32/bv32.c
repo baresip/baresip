@@ -163,7 +163,7 @@ static int plc(struct audec_state *st, int fmt, void *sampv, size_t *sampc)
 
 
 static struct aucodec bv32 = {
-	LE_INIT, 0, "BV32", 16000, 16000, 1, NULL,
+	LE_INIT, 0, "BV32", 16000, 16000, 1, 1, NULL,
 	encode_update, encode,
 	decode_update, decode, plc,
 	NULL, NULL

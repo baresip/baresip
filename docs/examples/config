@@ -16,8 +16,6 @@ sip_trans_bsize		128
 audio_player		alsa,default
 audio_source		alsa,default
 audio_alert		alsa,default
-audio_srate		8000-48000
-audio_channels		1-2
 #ausrc_srate		48000
 #auplay_srate		48000
 #ausrc_channels		0

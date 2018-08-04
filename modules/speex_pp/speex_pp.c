@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <speex/speex_preprocess.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 
@@ -59,8 +60,14 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	(void)ctx;
 	(void)au;
 
-	if (!stp || !af || !prm || prm->ch != 1)
+	if (!stp || !af || !prm)
 		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("speex_pp: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	st = mem_zalloc(sizeof(*st), speexpp_destructor);
 	if (!st)
@@ -102,7 +109,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 }
 
 
-static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
+static int encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 {
 	struct preproc *pp = (struct preproc *)st;
 	int is_speech = 1;

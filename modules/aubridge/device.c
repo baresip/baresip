@@ -59,6 +59,10 @@ static void *device_thread(void *arg)
 	size_t sampc_out;
 	int err;
 
+	if (!dev->run) {
+		return NULL;
+	}
+
 	sampc_in = dev->auplay->prm.srate * dev->auplay->prm.ch * PTIME/1000;
 	sampc_out = dev->ausrc->prm.srate * dev->ausrc->prm.ch * PTIME/1000;
 

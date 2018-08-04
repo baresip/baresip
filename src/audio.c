@@ -324,14 +324,14 @@ static inline uint32_t get_srate(const struct aucodec *ac)
 
 
 /*
- * Get the DSP channels for an audio-codec (exception for MPA)
+ * Get the DSP channels for an audio-codec
  */
 static inline uint32_t get_ch(const struct aucodec *ac)
 {
 	if (!ac)
 		return 0;
 
-	return !str_casecmp(ac->name, "MPA") ? 2 : ac->ch;
+	return ac->ch;
 }
 
 
@@ -357,25 +357,19 @@ static bool aucodec_equal(const struct aucodec *a, const struct aucodec *b)
 static int add_audio_codec(struct audio *a, struct sdp_media *m,
 			   struct aucodec *ac)
 {
-	if (!in_range(&a->cfg.srate, get_srate(ac))) {
-		debug("audio: skip %uHz codec (audio range %uHz - %uHz)\n",
-		      get_srate(ac), a->cfg.srate.min, a->cfg.srate.max);
-		return 0;
-	}
-
-	if (!in_range(&a->cfg.channels, get_ch(ac))) {
-		debug("audio: skip codec with %uch (audio range %uch-%uch)\n",
-		      get_ch(ac), a->cfg.channels.min, a->cfg.channels.max);
-		return 0;
-	}
-
 	if (ac->crate < 8000) {
 		warning("audio: illegal clock rate %u\n", ac->crate);
 		return EINVAL;
 	}
 
+	if (ac->ch == 0 || ac->pch == 0) {
+		warning("audio: illegal channels for audio codec '%s'\n",
+			ac->name);
+		return EINVAL;
+	}
+
 	return sdp_format_add(NULL, m, false, ac->pt, ac->name, ac->crate,
-			      ac->ch, ac->fmtp_ench, ac->fmtp_cmph, ac, false,
+			      ac->pch, ac->fmtp_ench, ac->fmtp_cmph, ac, false,
 			      "%s", ac->fmtp);
 }
 
@@ -420,6 +414,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	size_t sampc_rtp;
 	size_t len;
 	size_t ext_len = 0;
+	uint32_t ts_delta = 0;
 	int err;
 
 	if (!tx->ac || !tx->ac->ench)
@@ -455,8 +450,12 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 			   tx->enc_fmt, sampv, sampc);
 
 	if ((err & 0xffff0000) == 0x00010000) {
+
 		/* MPA needs some special treatment here */
-		tx->ts_ext = err & 0xffff;
+
+		ts_delta = err & 0xffff;
+		sampc = 0;
+
 		err = 0;
 	}
 	else if (err) {
@@ -478,6 +477,11 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 			if (err)
 				goto out;
 		}
+
+		if (ts_delta) {
+			tx->ts_ext += ts_delta;
+			goto out;
+		}
 	}
 
 	/* Convert from audio samplerate to RTP clockrate */
@@ -488,7 +492,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	 * However, MPA support variable packet durations. Thus, MPA
 	 * should update the ts according to its current internal state.
 	 */
-	frame_size = sampc_rtp / get_ch(tx->ac);
+	frame_size = sampc_rtp / tx->ac->pch;
 
 	tx->ts_ext += (uint32_t)frame_size;
 
@@ -573,24 +577,18 @@ static void poll_aubuf_tx(struct audio *a)
 		sampc = sampc_rs;
 	}
 
-	if (tx->enc_fmt == AUFMT_S16LE) {
 
-		/* Process exactly one audio-frame in list order */
-		for (le = tx->filtl.head; le; le = le->next) {
-			struct aufilt_enc_st *st = le->data;
+	/* Process exactly one audio-frame in list order */
+	for (le = tx->filtl.head; le; le = le->next) {
+		struct aufilt_enc_st *st = le->data;
 
-			if (st->af && st->af->ench)
-				err |= st->af->ench(st, sampv, &sampc);
-		}
-		if (err) {
-			warning("audio: aufilter encode: %m\n", err);
-		}
+		if (st->af && st->af->ench)
+			err |= st->af->ench(st, sampv, &sampc);
 	}
-	else if (!list_isempty(&tx->filtl)) {
-		warning("audio: skipping audio-filters due to"
-			" incompatible format (%s)\n",
-			aufmt_name(tx->enc_fmt));
+	if (err) {
+		warning("audio: aufilter encode: %m\n", err);
 	}
+
 
 	/* Encode and send */
 	encode_rtp_send(a, tx, sampv, sampc);
@@ -785,19 +783,12 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 		goto out;
 	}
 
-	if (rx->dec_fmt == AUFMT_S16LE) {
-		/* Process exactly one audio-frame in reverse list order */
-		for (le = rx->filtl.tail; le; le = le->prev) {
-			struct aufilt_dec_st *st = le->data;
+	/* Process exactly one audio-frame in reverse list order */
+	for (le = rx->filtl.tail; le; le = le->prev) {
+		struct aufilt_dec_st *st = le->data;
 
-			if (st->af && st->af->dech)
-				err |= st->af->dech(st, rx->sampv, &sampc);
-		}
-	}
-	else if (!list_isempty(&rx->filtl)) {
-		warning("audio: skipping audio-filters due to"
-			" incompatible format (%s)\n",
-			aufmt_name(rx->dec_fmt));
+		if (st->af && st->af->dech)
+			err |= st->af->dech(st, rx->sampv, &sampc);
 	}
 
 	if (!rx->aubuf)
@@ -1246,7 +1237,8 @@ static void *tx_thread(void *arg)
 
 
 static void aufilt_param_set(struct aufilt_prm *prm,
-			     const struct aucodec *ac, uint32_t ptime)
+			     const struct aucodec *ac, uint32_t ptime,
+			     enum aufmt fmt)
 {
 	if (!ac) {
 		memset(prm, 0, sizeof(*prm));
@@ -1256,6 +1248,7 @@ static void aufilt_param_set(struct aufilt_prm *prm,
 	prm->srate      = get_srate(ac);
 	prm->ch         = get_ch(ac);
 	prm->ptime      = ptime;
+	prm->fmt        = fmt;
 }
 
 
@@ -1333,8 +1326,8 @@ static int aufilt_setup(struct audio *a)
 	if (!list_isempty(&tx->filtl) || !list_isempty(&rx->filtl))
 		return 0;
 
-	aufilt_param_set(&encprm, tx->ac, tx->ptime);
-	aufilt_param_set(&decprm, rx->ac, rx->ptime);
+	aufilt_param_set(&encprm, tx->ac, tx->ptime, tx->enc_fmt);
+	aufilt_param_set(&decprm, rx->ac, rx->ptime, rx->dec_fmt);
 
 	/* Audio filters */
 	for (le = list_head(baresip_aufiltl()); le; le = le->next) {
@@ -1344,21 +1337,27 @@ static int aufilt_setup(struct audio *a)
 		void *ctx = NULL;
 
 		if (af->encupdh) {
-			err |= af->encupdh(&encst, &ctx, af, &encprm, a);
-			if (err)
-				break;
-
-			encst->af = af;
-			list_append(&tx->filtl, &encst->le, encst);
+			err = af->encupdh(&encst, &ctx, af, &encprm, a);
+			if (err) {
+				warning("audio: error in encode audio-filter"
+					" '%s' (%m)\n", af->name, err);
+			}
+			else {
+				encst->af = af;
+				list_append(&tx->filtl, &encst->le, encst);
+			}
 		}
 
 		if (af->decupdh) {
-			err |= af->decupdh(&decst, &ctx, af, &decprm, a);
-			if (err)
-				break;
-
-			decst->af = af;
-			list_append(&rx->filtl, &decst->le, decst);
+			err = af->decupdh(&decst, &ctx, af, &decprm, a);
+			if (err) {
+				warning("audio: error in decode audio-filter"
+					" '%s' (%m)\n", af->name, err);
+			}
+			else {
+				decst->af = af;
+				list_append(&rx->filtl, &decst->le, decst);
+			}
 		}
 
 		if (err) {

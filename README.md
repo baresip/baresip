@@ -60,6 +60,7 @@ Distributed under BSD license
   - Configurable ringtone playback device
   - Automatic gain control (AGC) and Noise reducation
   - Acoustic echo control (AEC)
+  - Configurable audio sample format (Signed 16-bit, 24-bit, Float etc)
 
 * Audio-codecs:
   - AMR narrowband, AMR wideband
@@ -91,6 +92,7 @@ Distributed under BSD license
   - Configurable resolution/framerate/bitrate
   - Configurable video input/output
   - Support for asymmetric video
+  - Configurable video pixel format
 
 * Video-codecs:
   - H.265
@@ -283,7 +285,6 @@ silk          SILK audio codec
 snapshot      Save video-stream as PNG images
 sndfile       Audio dumper using libsndfile
 sndio         Audio driver for OpenBSD
-speex         Speex audio codec (deprecated)
 speex_aec     Acoustic Echo Cancellation (AEC) using libspeexdsp
 speex_pp      Audio pre-processor using libspeexdsp
 srtp          Secure RTP encryption (SDES) using libre SRTP-stack

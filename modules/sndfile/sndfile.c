@@ -6,6 +6,7 @@
 #include <sndfile.h>
 #include <time.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 
@@ -24,11 +25,13 @@
 struct sndfile_enc {
 	struct aufilt_enc_st af;  /* base class */
 	SNDFILE *enc;
+	enum aufmt fmt;
 };
 
 struct sndfile_dec {
 	struct aufilt_dec_st af;  /* base class */
 	SNDFILE *dec;
+	enum aufmt fmt;
 };
 
 static char file_path[256] = ".";
@@ -67,6 +70,17 @@ static void dec_destructor(void *arg)
 }
 
 
+static int get_format(enum aufmt fmt)
+{
+	switch (fmt) {
+
+	case AUFMT_S16LE:  return SF_FORMAT_PCM_16;
+	case AUFMT_FLOAT:  return SF_FORMAT_FLOAT;
+	default:           return 0;
+	}
+}
+
+
 static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 {
 	char filename[128];
@@ -74,15 +88,23 @@ static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 	time_t tnow = time(0);
 	struct tm *tm = localtime(&tnow);
 	SNDFILE *sf;
+	int format;
 
 	(void)re_snprintf(filename, sizeof(filename),
 			  "%s/dump-%H-%s.wav",
 				file_path,
 			  timestamp_print, tm, enc ? "enc" : "dec");
 
+	format = get_format(prm->fmt);
+	if (!format) {
+		warning("sndfile: sample format not supported (%s)\n",
+			aufmt_name(prm->fmt));
+		return NULL;
+	}
+
 	sfinfo.samplerate = prm->srate;
 	sfinfo.channels   = prm->ch;
-	sfinfo.format     = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+	sfinfo.format     = SF_FORMAT_WAV | format;
 
 	sf = sf_open(filename, SFM_WRITE, &sfinfo);
 	if (!sf) {
@@ -108,9 +130,14 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	(void)af;
 	(void)au;
 
+	if (!stp || !prm)
+		return EINVAL;
+
 	st = mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
 		return EINVAL;
+
+	st->fmt = prm->fmt;
 
 	st->enc = openfile(prm, true);
 	if (!st->enc)
@@ -135,9 +162,14 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	(void)af;
 	(void)au;
 
+	if (!stp || !prm)
+		return EINVAL;
+
 	st = mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
 		return EINVAL;
+
+	st->fmt = prm->fmt;
 
 	st->dec = openfile(prm, false);
 	if (!st->dec)
@@ -152,21 +184,33 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
+static int encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 {
 	struct sndfile_enc *sf = (struct sndfile_enc *)st;
+	size_t num_bytes;
 
-	sf_write_short(sf->enc, sampv, *sampc);
+	if (!st || !sampv || !sampc)
+		return EINVAL;
+
+	num_bytes = *sampc * aufmt_sample_size(sf->fmt);
+
+	sf_write_raw(sf->enc, sampv, num_bytes);
 
 	return 0;
 }
 
 
-static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
+static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 {
 	struct sndfile_dec *sf = (struct sndfile_dec *)st;
+	size_t num_bytes;
 
-	sf_write_short(sf->dec, sampv, *sampc);
+	if (!st || !sampv || !sampc)
+		return EINVAL;
+
+	num_bytes = *sampc * aufmt_sample_size(sf->fmt);
+
+	sf_write_raw(sf->dec, sampv, num_bytes);
 
 	return 0;
 }

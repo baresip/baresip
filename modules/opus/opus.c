@@ -63,6 +63,7 @@ static struct aucodec opus = {
 	.srate     = 48000,
 	.crate     = 48000,
 	.ch        = 2,
+	.pch       = 2,
 	.fmtp      = fmtp,
 	.encupdh   = opus_encode_update,
 	.ench      = opus_encode_frm,
