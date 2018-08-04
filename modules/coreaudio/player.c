@@ -140,6 +140,7 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 				       kAudioQueueProperty_CurrentDevice,
 				       &uid,
 				       sizeof(uid));
+		CFRelease(uid);
 		if (status) {
 			warning("coreaudio: player: failed to"
 				" set current device (%i)\n", status);

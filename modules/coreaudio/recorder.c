@@ -160,6 +160,7 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 				       kAudioQueueProperty_CurrentDevice,
 				       &uid,
 				       sizeof(uid));
+		CFRelease(uid);
 		if (status) {
 			warning("coreaudio: recorder: failed to"
 				" set current device (%i)\n", status);
