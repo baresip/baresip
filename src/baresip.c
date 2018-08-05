@@ -72,25 +72,10 @@ static int rmmod_handler(struct re_printf *pf, void *arg)
 }
 
 
-static int send_code(struct re_printf *pf, void *arg)
-{
-	const struct cmd_arg *carg = arg;
-	(void)pf;
-	uint8_t i;
-
-	for (i = 0; i < str_len(carg->prm); i++) {
-		ui_input_key(baresip_uis(), carg->prm[i], NULL);
-	}
-
-	return 0;
-}
-
-
 static const struct cmd corecmdv[] = {
 	{"quit", 'q', 0, "Quit",                     cmd_quit            },
 	{"insmod",  0, CMD_PRM, "Load module",       insmod_handler      },
 	{"rmmod",   0, CMD_PRM, "Unload module",     rmmod_handler       },
-	{"sndcode", 0, CMD_PRM, "Send Code",         send_code           },
 };
 
 
