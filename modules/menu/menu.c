@@ -751,7 +751,7 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 			re_hprintf(pf, "no such video-source: %s\n", driver);
 			return 0;
 		}
-		else if (!list_isempty) {
+		else if (!list_isempty(&vs->dev_list)) {
 
 			if (!mediadev_find(&vs->dev_list, device)) {
 				re_hprintf(pf,
