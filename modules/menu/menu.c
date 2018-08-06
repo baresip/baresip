@@ -817,6 +817,25 @@ static int digit_handler(struct re_printf *pf, void *arg)
 }
 
 
+static int send_code(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct call *call;
+	(void)pf;
+	size_t i;
+	int err = 0;
+
+	call = ua_call(uag_cur());
+	if (call) {
+		for (i = 0; i < str_len(carg->prm) && !err; i++) {
+			err = call_send_digit(call, carg->prm[i]);
+		}
+	}
+
+	return err;
+}
+
+
 static int toggle_statmode(struct re_printf *pf, void *arg)
 {
 	(void)pf;
@@ -884,6 +903,7 @@ static const struct cmd callcmdv[] = {
 {"",          'H',        0, "Hold previous call",  hold_prev_call        },
 {"",          'L',        0, "Resume previous call",hold_prev_call        },
 {"aubitrate",   0,  CMD_PRM, "Set audio bitrate",   set_audio_bitrate     },
+{"sndcode",   0,    CMD_PRM, "Send Code",           send_code             },
 
 #ifdef USE_VIDEO
 {"video_cycle", 'E',      0, "Cycle video encoder", call_videoenc_cycle   },
