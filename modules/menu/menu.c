@@ -822,7 +822,7 @@ static int send_code(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct call *call;
 	(void)pf;
-	uint8_t i;
+	size_t i;
 	int err = 0;
 
 	call = ua_call(uag_cur());

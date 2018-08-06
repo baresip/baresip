@@ -73,9 +73,9 @@ static int rmmod_handler(struct re_printf *pf, void *arg)
 
 
 static const struct cmd corecmdv[] = {
-	{"quit", 'q', 0, "Quit",                     cmd_quit            },
-	{"insmod",  0, CMD_PRM, "Load module",       insmod_handler      },
-	{"rmmod",   0, CMD_PRM, "Unload module",     rmmod_handler       },
+	{"quit", 'q', 0, "Quit",                     cmd_quit             },
+	{"insmod", 0, CMD_PRM, "Load module",        insmod_handler       },
+	{"rmmod",  0, CMD_PRM, "Unload module",      rmmod_handler        },
 };
 
 
