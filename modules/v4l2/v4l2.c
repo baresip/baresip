@@ -411,23 +411,28 @@ static int read_frame(struct vidsrc_st *st)
 }
 
 
-static void set_available_devices(struct vidsrc* vs)
+static int set_available_devices(struct vidsrc* vs)
 {
 	int i, fd;
 	char name[16];
+	int err;
 
 	for (i=0;i < 16;i++) {
 
-		sprintf(name, "/dev/video%i", i);
+		re_snprintf(name, sizeof(name), "/dev/video%i", i);
 
 		if ((fd = open(name, O_RDONLY)) == -1) {
 			continue;
 		}
 		else {
 			close(fd);
-			mediadev_add(&vs->dev_list, name);
+			err = mediadev_add(&vs->dev_list, name);
+			if (err)
+				return err;
 		}
 	}
+
+	return 0;
 }
 
 static int vd_open(struct vidsrc_st *st, const char *device)
@@ -495,7 +500,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		return EINVAL;
 
 	if (!str_isset(dev))
-		dev = ((struct mediadev*)list_head(&vs->dev_list)->data)->name;
+		dev = mediadev_get_default(&vs->dev_list)->name;
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
@@ -547,9 +552,11 @@ static int v4l_init(void)
 
 	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
 			       "v4l2", alloc, NULL);
+	if (err)
+		return err;
 
 	list_init(&vidsrc->dev_list);
-	set_available_devices(vidsrc);
+	err = set_available_devices(vidsrc);
 
 	return err;
 }

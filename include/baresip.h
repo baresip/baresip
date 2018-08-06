@@ -390,6 +390,7 @@ struct mediadev {
 
 int mediadev_add(struct list *dev_list, const char *name);
 struct mediadev *mediadev_find(const struct list *dev_list, const char *name);
+struct mediadev *mediadev_get_default(const struct list *dev_list);
 int mediadev_print(struct re_printf *pf, const struct list *dev_list);
 
 
