@@ -498,7 +498,7 @@ static const char *default_audio_device(void)
 
 
 #ifdef USE_VIDEO
-static const char *default_video_device(void)
+static int default_video_device_print(struct re_printf *pf, void *unused)
 {
 #ifdef DARWIN
 
@@ -511,7 +511,14 @@ static const char *default_video_device(void)
 #elif defined (WIN32)
 	return "dshow,nil";
 #else
-	return "v4l2,/dev/video0";
+	re_hprintf(pf, "%s", "v4l2,");
+	const struct vidsrc *vs = vidsrc_find(baresip_vidsrcl(), "v4l2");
+	if(vs) {
+		return re_hprintf(pf, "%s", mediadev_get_default(&vs->dev_list)->name);
+	}
+	else {
+		return re_hprintf(pf, "%s", "/dev/video0");
+	}
 #endif
 }
 
@@ -604,7 +611,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 #ifdef USE_VIDEO
 	err |= re_hprintf(pf,
 			  "\n# Video\n"
-			  "#video_source\t\t%s\n"
+			  "#video_source\t\t%H\n"
 			  "#video_display\t\t%s\n"
 			  "video_size\t\t%dx%d\n"
 			  "video_bitrate\t\t%u\n"
@@ -612,7 +619,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "video_fullscreen\tyes\n"
 			  "videnc_format\t\t%s\n"
 			  ,
-			  default_video_device(),
+			  default_video_device_print, NULL,
 			  default_video_display(),
 			  cfg->video.width, cfg->video.height,
 			  cfg->video.bitrate, cfg->video.fps,
