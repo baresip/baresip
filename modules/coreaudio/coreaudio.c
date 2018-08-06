@@ -135,7 +135,6 @@ CFStringRef coreaudio_get_device_uid(const char *name)
 
 		CFStringRef deviceUID = NULL;
 		CFStringRef deviceName = NULL;
-		CFStringRef deviceManufacturer = NULL;
 		const char *name_str;
 
 		dataSize = sizeof(deviceUID);
@@ -170,24 +169,6 @@ CFStringRef coreaudio_get_device_uid(const char *name)
 			continue;
 		}
 
-
-		dataSize = sizeof(deviceManufacturer);
-		propertyAddress.mSelector =
-			kAudioDevicePropertyDeviceManufacturerCFString;
-
-		status = AudioObjectGetPropertyData(audioDevices[i],
-						    &propertyAddress,
-						    0,
-						    NULL,
-						    &dataSize,
-						    &deviceManufacturer);
-		if (kAudioHardwareNoError != status) {
-			warning("AudioObjectGetPropertyData"
-			" (kAudioDevicePropertyDeviceManufacturerCFString)"
-				" failed: %i\n", status);
-			continue;
-		}
-
 		name_str = CFStringGetCStringPtr(deviceName,
 						 kCFStringEncodingUTF8);
 
@@ -197,12 +178,8 @@ CFStringRef coreaudio_get_device_uid(const char *name)
 		re_printf("  [%u] Name: '%s'\n", i,
 			  CFStringGetCStringPtr(deviceName,
 						kCFStringEncodingUTF8));
-		re_printf("  [%u] Manu: '%s'\n", i,
-			  CFStringGetCStringPtr(deviceManufacturer,
-						kCFStringEncodingUTF8));
 
 		if (0 == str_casecmp(name, name_str)) {
-			re_printf("match: %s\n", name_str);
 			found_deviceUID = deviceUID;
 			break;
 		}
