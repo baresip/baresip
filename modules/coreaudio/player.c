@@ -132,9 +132,17 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 		info("coreaudio: player: using device '%s'\n", device);
 
-		uid = CFStringCreateWithCString(NULL,
-						device,
-						kCFStringEncodingUTF8);
+		uid = coreaudio_get_device_uid(device);
+		if (!uid) {
+			warning("coreaudio: player: device not found: '%s'\n",
+				device);
+			err = ENODEV;
+			goto out;
+		}
+
+		re_printf("resolved:  %s -> %s\n",
+			  device,
+			  CFStringGetCStringPtr(uid, kCFStringEncodingUTF8));
 
 		status = AudioQueueSetProperty(st->queue,
 				       kAudioQueueProperty_CurrentDevice,

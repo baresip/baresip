@@ -152,9 +152,13 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 		info("coreaudio: recorder: using device '%s'\n", device);
 
-		uid = CFStringCreateWithCString(NULL,
-						device,
-						kCFStringEncodingUTF8);
+		uid = coreaudio_get_device_uid(device);
+		if (!uid) {
+			warning("coreaudio: recorder: device not found:"
+				" '%s'\n", device);
+			err = ENODEV;
+			goto out;
+		}
 
 		status = AudioQueueSetProperty(st->queue,
 				       kAudioQueueProperty_CurrentDevice,

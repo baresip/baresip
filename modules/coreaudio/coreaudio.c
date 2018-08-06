@@ -81,7 +81,7 @@ void audio_session_disable(void)
 #endif
 
 
-static void dump_devices(void)
+CFStringRef coreaudio_get_device_uid(const char *name)
 {
 	AudioObjectPropertyAddress propertyAddress = {
 		kAudioHardwarePropertyDevices,
@@ -93,6 +93,8 @@ static void dump_devices(void)
 	UInt32 dataSize = 0;
 	UInt32 deviceCount;
 	OSStatus status;
+
+	CFStringRef found_deviceUID = NULL;
 
 	status = AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
 						&propertyAddress,
@@ -134,6 +136,7 @@ static void dump_devices(void)
 		CFStringRef deviceUID = NULL;
 		CFStringRef deviceName = NULL;
 		CFStringRef deviceManufacturer = NULL;
+		const char *name_str;
 
 		dataSize = sizeof(deviceUID);
 		propertyAddress.mSelector = kAudioDevicePropertyDeviceUID;
@@ -185,6 +188,9 @@ static void dump_devices(void)
 			continue;
 		}
 
+		name_str = CFStringGetCStringPtr(deviceName,
+						 kCFStringEncodingUTF8);
+
 		re_printf("  [%u] UID:  '%s'\n", i,
 			  CFStringGetCStringPtr(deviceUID,
 						kCFStringEncodingUTF8));
@@ -194,18 +200,24 @@ static void dump_devices(void)
 		re_printf("  [%u] Manu: '%s'\n", i,
 			  CFStringGetCStringPtr(deviceManufacturer,
 						kCFStringEncodingUTF8));
+
+		if (0 == str_casecmp(name, name_str)) {
+			re_printf("match: %s\n", name_str);
+			found_deviceUID = deviceUID;
+			break;
+		}
 	}
 
  out:
 	mem_deref(audioDevices);
+
+	return found_deviceUID;
 }
 
 
 static int module_init(void)
 {
 	int err;
-
-	dump_devices();
 
 	err  = auplay_register(&auplay, baresip_auplayl(),
 			       "coreaudio", coreaudio_player_alloc);
