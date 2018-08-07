@@ -77,6 +77,11 @@ int main(int argc, char *argv[])
 	size_t i;
 	int err;
 
+	// turn off buffering to stdout, stderr, stdin
+	setbuf(stdout, NULL);
+	setbuf(stderr, NULL);
+	setbuf(stdin, NULL);
+
 	(void)re_fprintf(stdout, "baresip v%s"
 			 " Copyright (C) 2010 - 2018"
 			 " Alfred E. Heggestad et al.\n",
