@@ -97,13 +97,16 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 {
 	struct reg *reg = arg;
 	const struct sip_hdr *hdr;
+	enum ua_event e = sipreg_expires(reg->sipreg) ?
+				UA_EVENT_REGISTER_FAIL :
+				UA_EVENT_UNREGISTER_FAIL;
 
 	if (err) {
 		warning("reg: %s: Register: %m\n", ua_aor(reg->ua), err);
 
 		reg->scode = 999;
 
-		ua_event(reg->ua, UA_EVENT_REGISTER_FAIL, NULL, "%m", err);
+		ua_event(reg->ua, e, NULL, "%m", err);
 		return;
 	}
 
@@ -144,8 +147,7 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 			}
 		}
 
-		ua_event(reg->ua, UA_EVENT_REGISTER_OK, NULL, "%u %r",
-			 msg->scode, &msg->reason);
+		ua_event(reg->ua, e, NULL, "%u %r", msg->scode, &msg->reason);
 	}
 	else if (msg->scode >= 300) {
 
@@ -154,8 +156,7 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 
 		reg->scode = msg->scode;
 
-		ua_event(reg->ua, UA_EVENT_REGISTER_FAIL, NULL, "%u %r",
-			 msg->scode, &msg->reason);
+		ua_event(reg->ua, e, NULL, "%u %r", msg->scode, &msg->reason);
 	}
 }
 
