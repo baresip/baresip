@@ -59,7 +59,17 @@ struct mediadev *mediadev_find(const struct list *dev_list, const char *name)
 
 struct mediadev *mediadev_get_default(const struct list *dev_list)
 {
-	return (struct mediadev*)list_head(dev_list)->data;
+	struct le *le;
+
+	if (!dev_list)
+		return NULL;
+
+	le = list_head(dev_list);
+	if (le) {
+		return le->data;
+	}
+
+	return NULL;
 }
 
 

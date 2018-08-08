@@ -489,6 +489,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;
+	struct mediadev *md;
 	int err;
 
 	(void)ctx;
@@ -499,8 +500,16 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!stp || !size || !frameh)
 		return EINVAL;
 
-	if (!str_isset(dev))
-		dev = mediadev_get_default(&vs->dev_list)->name;
+	if (!str_isset(dev)) {
+		md = mediadev_get_default(&vs->dev_list);
+		if (md) {
+			dev = md->name;
+		}
+		else {
+			warning("v4l2: No available devices\n");
+			return ENODEV;
+		}
+	}
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
