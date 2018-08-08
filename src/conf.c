@@ -63,7 +63,7 @@ bool conf_fileexist(const char *path)
 	if ((st.st_mode & S_IFMT) != S_IFREG)
 		 return false;
 
-	return st.st_size > 0;
+	return true;
 }
 
 
