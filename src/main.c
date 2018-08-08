@@ -79,7 +79,9 @@ int main(int argc, char *argv[])
 	size_t i;
 	int err;
 
-	// turn off buffering to stdout, stderr, stdin
+	/*
+	 * turn off buffering to stdout, stderr, stdin
+	 */
 	setbuf(stdout, NULL);
 	setbuf(stderr, NULL);
 	setbuf(stdin, NULL);
@@ -182,7 +184,9 @@ int main(int argc, char *argv[])
 	 */
 	struct config *theconf = conf_config();
 	if (net_interface) {
-		str_ncpy(theconf->net.ifname, net_interface, sizeof(theconf->net.ifname));
+		str_ncpy(theconf->net.ifname,
+					net_interface,
+					sizeof(theconf->net.ifname));
 	}
 
 	/*
