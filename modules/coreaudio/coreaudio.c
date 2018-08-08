@@ -129,8 +129,6 @@ CFStringRef coreaudio_get_device_uid(const char *name)
 
 	propertyAddress.mScope = kAudioDevicePropertyScopeInput;
 
-	re_printf("## devices: %u\n", deviceCount);
-
 	for (UInt32 i = 0; i < deviceCount; ++i) {
 
 		CFStringRef deviceUID = NULL;
@@ -171,13 +169,6 @@ CFStringRef coreaudio_get_device_uid(const char *name)
 
 		name_str = CFStringGetCStringPtr(deviceName,
 						 kCFStringEncodingUTF8);
-
-		re_printf("  [%u] UID:  '%s'\n", i,
-			  CFStringGetCStringPtr(deviceUID,
-						kCFStringEncodingUTF8));
-		re_printf("  [%u] Name: '%s'\n", i,
-			  CFStringGetCStringPtr(deviceName,
-						kCFStringEncodingUTF8));
 
 		if (0 == str_casecmp(name, name_str)) {
 			found_deviceUID = deviceUID;

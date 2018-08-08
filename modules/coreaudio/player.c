@@ -140,10 +140,6 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			goto out;
 		}
 
-		re_printf("resolved:  %s -> %s\n",
-			  device,
-			  CFStringGetCStringPtr(uid, kCFStringEncodingUTF8));
-
 		status = AudioQueueSetProperty(st->queue,
 				       kAudioQueueProperty_CurrentDevice,
 				       &uid,
