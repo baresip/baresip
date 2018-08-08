@@ -59,6 +59,7 @@ static void usage(void)
 			 "\t-p <path>        Audio files\n"
 			 "\t-h -?            Help\n"
 			 "\t-t               Test and exit\n"
+			 "\t-n <net_if>      Specify network interface\n"
 			 "\t-u <parameters>  Extra UA parameters\n"
 			 "\t-v               Verbose debug\n"
 			 );
@@ -70,6 +71,7 @@ int main(int argc, char *argv[])
 	bool prefer_ipv6 = false, run_daemon = false, test = false;
 	const char *ua_eprm = NULL;
 	const char *execmdv[16];
+	const char *net_interface = NULL;
 	const char *audio_path = NULL;
 	const char *modv[16];
 	size_t execmdc = 0;
@@ -95,7 +97,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "6de:f:p:hu:vtm:");
+		const int c = getopt(argc, argv, "6de:f:p:hun:vtm:");
 		if (0 > c)
 			break;
 
@@ -148,6 +150,10 @@ int main(int argc, char *argv[])
 			test = true;
 			break;
 
+		case 'n':
+			net_interface = optarg;
+			break;
+
 		case 'u':
 			ua_eprm = optarg;
 			break;
@@ -172,9 +178,17 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	 * Initialise the top-level baresip struct, must be
-	 * done AFTER configuration is complete.
+	 * Set the network interface before initializing the config
 	 */
+	struct config *theconf = conf_config();
+	if (net_interface) {
+		str_ncpy(theconf->net.ifname, net_interface, sizeof(theconf->net.ifname));
+	}
+
+	/*
+	* Initialise the top-level baresip struct, must be
+	* done AFTER configuration is complete.
+	*/
 	err = baresip_init(conf_config(), prefer_ipv6);
 	if (err) {
 		warning("main: baresip init failed (%m)\n", err);
