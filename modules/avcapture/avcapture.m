@@ -369,17 +369,24 @@ static int module_init(void)
 
 	pool = [NSAutoreleasePool new];
 
+	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			      "avcapture", alloc, update);
+	if (err)
+		goto out;
+
 	/* populate devices */
 	for (dev in [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]) {
 
 		const char *name = [[dev localizedName] UTF8String];
 
 		debug("avcapture: found video device '%s'\n", name);
+
+		err = mediadev_add(&vidsrc->dev_list, name);
+		if (err)
+			goto out;
 	}
 
-	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
-			      "avcapture", alloc, update);
-
+ out:
 	[pool drain];
 
 	return err;
