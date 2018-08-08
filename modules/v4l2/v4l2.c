@@ -411,6 +411,30 @@ static int read_frame(struct vidsrc_st *st)
 }
 
 
+static int set_available_devices(struct vidsrc* vs)
+{
+	int i, fd;
+	char name[16];
+	int err;
+
+	for (i=0;i < 16;i++) {
+
+		re_snprintf(name, sizeof(name), "/dev/video%i", i);
+
+		if ((fd = open(name, O_RDONLY)) == -1) {
+			continue;
+		}
+		else {
+			close(fd);
+			err = mediadev_add(&vs->dev_list, name);
+			if (err)
+				return err;
+		}
+	}
+
+	return 0;
+}
+
 static int vd_open(struct vidsrc_st *st, const char *device)
 {
 	st->fd = v4l2_open(device, O_RDWR);
@@ -465,6 +489,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;
+	struct mediadev *md;
 	int err;
 
 	(void)ctx;
@@ -475,8 +500,16 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!stp || !size || !frameh)
 		return EINVAL;
 
-	if (!str_isset(dev))
-		dev = "/dev/video0";
+	if (!str_isset(dev)) {
+		md = mediadev_get_default(&vs->dev_list);
+		if (md) {
+			dev = md->name;
+		}
+		else {
+			warning("v4l2: No available devices\n");
+			return ENODEV;
+		}
+	}
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
@@ -524,8 +557,17 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int v4l_init(void)
 {
-	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+	int err;
+
+	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
 			       "v4l2", alloc, NULL);
+	if (err)
+		return err;
+
+	list_init(&vidsrc->dev_list);
+	err = set_available_devices(vidsrc);
+
+	return err;
 }
 
 

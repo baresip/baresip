@@ -19,6 +19,7 @@ static void destructor(void *arg)
 {
 	struct vidsrc *vs = arg;
 
+	list_flush(&vs->dev_list);
 	list_unlink(&vs->le);
 }
 
