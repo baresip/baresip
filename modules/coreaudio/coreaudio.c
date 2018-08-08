@@ -81,6 +81,108 @@ void audio_session_disable(void)
 #endif
 
 
+CFStringRef coreaudio_get_device_uid(const char *name)
+{
+	AudioObjectPropertyAddress propertyAddress = {
+		kAudioHardwarePropertyDevices,
+		kAudioObjectPropertyScopeGlobal,
+		kAudioObjectPropertyElementMaster
+	};
+
+	AudioDeviceID *audioDevices = NULL;
+	UInt32 dataSize = 0;
+	UInt32 deviceCount;
+	OSStatus status;
+
+	CFStringRef found_deviceUID = NULL;
+
+	status = AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
+						&propertyAddress,
+						0,
+						NULL,
+						&dataSize);
+	if (kAudioHardwareNoError != status) {
+		warning("AudioObjectGetPropertyDataSize"
+			" (kAudioHardwarePropertyDevices) failed: %i\n",
+			status);
+		goto out;
+	}
+
+	deviceCount = dataSize / sizeof(AudioDeviceID);
+
+	audioDevices = mem_zalloc(dataSize, NULL);
+	if (NULL == audioDevices)
+		goto out;
+
+	status = AudioObjectGetPropertyData(kAudioObjectSystemObject,
+					    &propertyAddress,
+					    0,
+					    NULL,
+					    &dataSize,
+					    audioDevices);
+	if (kAudioHardwareNoError != status) {
+		warning("AudioObjectGetPropertyData"
+			" (kAudioHardwarePropertyDevices) failed: %i\n",
+			status);
+		goto out;
+	}
+
+	propertyAddress.mScope = kAudioDevicePropertyScopeInput;
+
+	for (UInt32 i = 0; i < deviceCount; ++i) {
+
+		CFStringRef deviceUID = NULL;
+		CFStringRef deviceName = NULL;
+		const char *name_str;
+
+		dataSize = sizeof(deviceUID);
+		propertyAddress.mSelector = kAudioDevicePropertyDeviceUID;
+		status = AudioObjectGetPropertyData(audioDevices[i],
+						    &propertyAddress,
+						    0,
+						    NULL,
+						    &dataSize,
+						    &deviceUID);
+		if (kAudioHardwareNoError != status) {
+			warning("AudioObjectGetPropertyData"
+				" (kAudioDevicePropertyDeviceUID) "
+				"failed: %i\n", status);
+			continue;
+		}
+
+		dataSize = sizeof(deviceName);
+		propertyAddress.mSelector =
+			kAudioDevicePropertyDeviceNameCFString;
+
+		status = AudioObjectGetPropertyData(audioDevices[i],
+						    &propertyAddress,
+						    0,
+						    NULL,
+						    &dataSize,
+						    &deviceName);
+		if (kAudioHardwareNoError != status) {
+			warning("AudioObjectGetPropertyData"
+				" (kAudioDevicePropertyDeviceNameCFString)"
+				" failed: %i\n", status);
+			continue;
+		}
+
+		name_str = CFStringGetCStringPtr(deviceName,
+						 kCFStringEncodingUTF8);
+
+		if (0 == str_casecmp(name, name_str)) {
+			found_deviceUID = deviceUID;
+			break;
+		}
+	}
+
+ out:
+	mem_deref(audioDevices);
+
+	return found_deviceUID;
+}
+
+
 static int module_init(void)
 {
 	int err;

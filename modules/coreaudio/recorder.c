@@ -99,7 +99,6 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	int err;
 
 	(void)ctx;
-	(void)device;
 	(void)errh;
 
 	if (!stp || !as || !prm || prm->fmt != AUFMT_S16LE)
@@ -145,6 +144,33 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		warning("coreaudio: AudioQueueNewInput error: %i\n", status);
 		err = ENODEV;
 		goto out;
+	}
+
+	if (str_isset(device) && 0 != str_casecmp(device, "default")) {
+
+		CFStringRef uid;
+
+		info("coreaudio: recorder: using device '%s'\n", device);
+
+		uid = coreaudio_get_device_uid(device);
+		if (!uid) {
+			warning("coreaudio: recorder: device not found:"
+				" '%s'\n", device);
+			err = ENODEV;
+			goto out;
+		}
+
+		status = AudioQueueSetProperty(st->queue,
+				       kAudioQueueProperty_CurrentDevice,
+				       &uid,
+				       sizeof(uid));
+		CFRelease(uid);
+		if (status) {
+			warning("coreaudio: recorder: failed to"
+				" set current device (%i)\n", status);
+			err = ENODEV;
+			goto out;
+		}
 	}
 
 	for (i=0; i<ARRAY_SIZE(st->buf); i++)  {
