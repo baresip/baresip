@@ -15,6 +15,7 @@
 #   USE_CAIRO         Cairo module
 #   USE_CONS          Console input driver
 #   USE_COREAUDIO     MacOSX Coreaudio audio driver
+#   USE_ECHO          Echo module
 #   USE_EVDEV         Event Device module
 #   USE_G711          G.711 audio codec
 #   USE_G722          G.722 audio codec
@@ -329,6 +330,9 @@ endif
 ifneq ($(USE_QTCAPTURE),)
 MODULES   += qtcapture
 CFLAGS    += -DQTCAPTURE_RUNLOOP
+endif
+ifneq ($(USE_ECHO),)
+MODULES   += echo
 endif
 ifneq ($(USE_EVDEV),)
 MODULES   += evdev
