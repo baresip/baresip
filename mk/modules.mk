@@ -53,7 +53,6 @@
 #   USE_V4L2          Video4Linux2 module
 #   USE_WINWAVE       Windows audio driver
 #   USE_X11           X11 video output
-#   USE_ECHO          echo module
 #   USE_RTCPSUMMARY   RTCP summary output after calls
 #
 
@@ -462,9 +461,6 @@ MODULES   += gzrtp
 endif
 ifneq ($(USE_DSHOW),)
 MODULES   += dshow
-endif
-ifneq ($(USE_ECHO),)
-MODULES   += echo
 endif
 ifneq ($(USE_RTCPSUMMARY),)
 MODULES   += rtcpsummary
