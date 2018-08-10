@@ -476,7 +476,7 @@ static const char *default_audio_device(void)
 #if defined (ANDROID)
 	return "opensles,nil";
 #elif defined (DARWIN)
-	return "coreaudio,nil";
+	return "coreaudio,default";
 #elif defined (FREEBSD)
 	return "oss,/dev/dsp";
 #elif defined (OPENBSD)
