@@ -2037,12 +2037,17 @@ int uag_set_extra_params(const char *eprm)
 
 void ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 {
+	struct le *le;
+
+	if (!ua)
+		return;
+
 	list_flush(&ua->custom_hdrs);
 
-	struct le *le;
 	LIST_FOREACH(custom_headers, le) {
 		struct sip_hdr *hdr = le->data;
 		char *buf = NULL;
+
 		re_sdprintf(&buf, "%r", &hdr->name);
 		custom_hdrs_add(&ua->custom_hdrs, buf, "%r", &hdr->val);
 		mem_deref(buf);
