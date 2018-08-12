@@ -835,9 +835,9 @@ static int send_code(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct call *call;
-	(void)pf;
 	size_t i;
 	int err = 0;
+	(void)pf;
 
 	call = ua_call(uag_cur());
 	if (call) {
