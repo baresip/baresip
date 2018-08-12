@@ -354,8 +354,7 @@ static bool aucodec_equal(const struct aucodec *a, const struct aucodec *b)
 }
 
 
-static int add_audio_codec(struct audio *a, struct sdp_media *m,
-			   struct aucodec *ac)
+static int add_audio_codec(struct sdp_media *m, struct aucodec *ac)
 {
 	if (ac->crate < 8000) {
 		warning("audio: illegal clock rate %u\n", ac->crate);
@@ -1140,7 +1139,7 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 
 	/* Audio codecs */
 	for (le = list_head(aucodecl); le; le = le->next) {
-		err = add_audio_codec(a, stream_sdpmedia(a->strm), le->data);
+		err = add_audio_codec(stream_sdpmedia(a->strm), le->data);
 		if (err)
 			goto out;
 	}
