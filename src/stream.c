@@ -769,21 +769,27 @@ const struct sdp_media *stream_sdp(const struct stream *strm)
 	return strm ? strm->sdp : NULL;
 }
 
-uint32_t metric_get_tx_n_packets(const struct stream *strm) {
+uint32_t stream_metric_get_tx_n_packets(const struct stream *strm)
+{
 	return strm ? strm->metric_tx.n_packets : 0;
 }
-uint32_t metric_get_tx_n_bytes(const struct stream *strm) {
+uint32_t stream_metric_get_tx_n_bytes(const struct stream *strm)
+{
 	return strm ? strm->metric_tx.n_bytes : 0;
 }
-uint32_t metric_get_tx_n_err(const struct stream *strm) {
+uint32_t stream_metric_get_tx_n_err(const struct stream *strm)
+{
 	return strm ? strm->metric_tx.n_err : 0;
 }
-uint32_t metric_get_rx_n_packets(const struct stream *strm) {
+uint32_t stream_metric_get_rx_n_packets(const struct stream *strm)
+{
 	return strm ? strm->metric_rx.n_packets : 0;
 }
-uint32_t metric_get_rx_n_bytes(const struct stream *strm) {
+uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
+{
 	return strm ? strm->metric_rx.n_bytes : 0;
 }
-uint32_t metric_get_rx_n_err(const struct stream *strm) {
+uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
+{
 	return strm ? strm->metric_rx.n_err : 0;
 }

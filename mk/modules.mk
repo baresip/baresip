@@ -41,6 +41,7 @@
 #   USE_PLC           Packet Loss Concealment
 #   USE_PORTAUDIO     Portaudio audio driver
 #   USE_PULSE         Pulseaudio audio driver
+#   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL           libSDL video output
 #   USE_SILK          SILK (Skype) audio codec
 #   USE_SNDFILE       sndfile wav dumper
@@ -53,7 +54,6 @@
 #   USE_V4L2          Video4Linux2 module
 #   USE_WINWAVE       Windows audio driver
 #   USE_X11           X11 video output
-#   USE_RTCPSUMMARY   RTCP summary output after calls
 #
 
 
