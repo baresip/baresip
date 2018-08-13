@@ -1127,7 +1127,13 @@ double video_timestamp_to_seconds(uint64_t timestamp);
 
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
 struct call *stream_call(const struct stream *strm);
-
+const struct sdp_media *stream_sdp(const struct stream *strm);
+uint32_t stream_metric_get_tx_n_packets(const struct stream *strm);
+uint32_t stream_metric_get_tx_n_bytes(const struct stream *strm);
+uint32_t stream_metric_get_tx_n_err(const struct stream *strm);
+uint32_t stream_metric_get_rx_n_packets(const struct stream *strm);
+uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm);
+uint32_t stream_metric_get_rx_n_err(const struct stream *strm);
 
 /*
  * Media NAT

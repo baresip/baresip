@@ -41,6 +41,7 @@
 #   USE_PLC           Packet Loss Concealment
 #   USE_PORTAUDIO     Portaudio audio driver
 #   USE_PULSE         Pulseaudio audio driver
+#   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL           libSDL video output
 #   USE_SILK          SILK (Skype) audio codec
 #   USE_SNDFILE       sndfile wav dumper
@@ -460,4 +461,7 @@ MODULES   += gzrtp
 endif
 ifneq ($(USE_DSHOW),)
 MODULES   += dshow
+endif
+ifneq ($(USE_RTCPSUMMARY),)
+MODULES   += rtcpsummary
 endif
