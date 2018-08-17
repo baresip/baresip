@@ -820,8 +820,10 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 
 		++rx->stats.aubuf_overrun;
 
+#if 0
 		debug("audio: rx aubuf overrun (total %llu)\n",
 		      rx->stats.aubuf_overrun);
+#endif
 	}
 
 	if (rx->play_fmt == rx->dec_fmt) {
