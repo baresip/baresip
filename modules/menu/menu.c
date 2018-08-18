@@ -328,6 +328,7 @@ static int cmd_hangup(struct re_printf *pf, void *unused)
 static int create_ua(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = NULL;
 	struct le *le;
 	int err = 0;
 
@@ -337,7 +338,7 @@ static int create_ua(struct re_printf *pf, void *arg)
 		(void)mbuf_write_str(dialbuf, carg->prm);
 
 		(void)re_hprintf(pf, "Creating UA for %s ...\n", carg->prm);
-		err = ua_alloc(NULL, carg->prm);
+		err = ua_alloc(&ua, carg->prm);
 		if (err)
 			goto out;
 	}
@@ -351,13 +352,17 @@ static int create_ua(struct re_printf *pf, void *arg)
 			return err;
 
 		(void)re_hprintf(pf, "Creating UA for %s ...\n", uri);
-		err |=  ua_alloc(NULL, uri);
+		err |=  ua_alloc(&ua, uri);
 
 		mem_deref(uri);
 	}
 
+	if (account_regint(ua_account(ua))) {
+		(void)ua_register(ua);
+	}
+
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
-		const struct ua *ua = le->data;
+		ua = le->data;
 
 		err  = re_hprintf(pf, "%s ", ua == uag_cur() ? ">" : " ");
 		err |= ua_print_status(pf, ua);

@@ -99,6 +99,12 @@ static void create_services(AvahiClient *client)
 		return;
 	}
 
+	err = ua_register(avahi->local_ua);
+	if (err) {
+		warning("avahi: Could not register UA %s: %m\n", buf, err);
+		return;
+	}
+
 	re_snprintf(buf, sizeof(buf), "sip:%s@%s",
 				sys_username(),
 				hostname);
