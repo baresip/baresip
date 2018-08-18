@@ -331,17 +331,15 @@ static int create_ua(struct re_printf *pf, void *arg)
 	struct le *le;
 	int err = 0;
 
-	(void)pf;
-
-	 if (str_isset(carg->prm)) {
+	if (str_isset(carg->prm)) {
 
 		mbuf_rewind(dialbuf);
 		(void)mbuf_write_str(dialbuf, carg->prm);
 
 		(void)re_hprintf(pf, "Creating UA for %s ...\n", carg->prm);
 		err = ua_alloc(NULL, carg->prm);
-
-
+		if (err)
+			goto out;
 	}
 	else if (dialbuf->end > 0) {
 
@@ -367,11 +365,10 @@ static int create_ua(struct re_printf *pf, void *arg)
 
 	err |= re_hprintf(pf, "\n");
 
-
+ out:
 	if (err) {
 		(void)re_hprintf(pf, "menu: create_ua failed: %m\n", err);
 	}
-
 
 	return err;
 }
