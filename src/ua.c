@@ -165,6 +165,10 @@ int ua_register(struct ua *ua)
 		return EINVAL;
 
 	acc = ua->acc;
+
+	if (acc->regint == 0)
+		return 0;
+
 	uri = ua->acc->luri;
 	uri.user = uri.password = pl_null;
 
@@ -704,10 +708,6 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 	list_append(&uag.ual, &ua->le, ua);
-
-	if (ua->acc->regint) {
-		err = ua_register(ua);
-	}
 
 	if (!uag_current())
 		uag_current_set(ua);
