@@ -7,6 +7,7 @@
 #include <re.h>
 #include <baresip.h>
 
+
 static void printRtcpSummaryLine(const struct stream *s)
 {
 	const struct rtcp_stats *rtcp;
@@ -56,28 +57,30 @@ static void printRtcpSummaryLine(const struct stream *s)
 	}
 }
 
+
 static void ua_event_handler(struct ua *ua,
 			     enum ua_event ev,
 			     struct call *call,
 			     const char *prm,
 			     void *arg )
 {
-	(void)call;
-	struct le *le;
 	const struct stream *s;
+	struct le *le;
+	(void)call;
 
 	switch (ev) {
-		case UA_EVENT_CALL_CLOSED:
-			for (le = call_streaml(call)->head;
-						le;
-						le = le->next) {
-				s = le->data;
-				printRtcpSummaryLine(s);
-			}
-			break;
 
-		default:
-			break;
+	case UA_EVENT_CALL_CLOSED:
+		for (le = call_streaml(call)->head;
+		     le;
+		     le = le->next) {
+			s = le->data;
+			printRtcpSummaryLine(s);
+		}
+		break;
+
+	default:
+		break;
 	}
 }
 
