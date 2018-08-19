@@ -132,9 +132,12 @@ static int line_handler(const struct pl *addr, void *arg)
 	}
 
 	if (account_regint(acc) != 0) {
-		err = ua_register(ua);
-		if (err) {
-			warning("account: failed to register ua (%m)\n", err);
+		int e;
+
+		e = ua_register(ua);
+		if (e) {
+			warning("account: failed to register ua"
+				" '%s' (%m)\n", ua_aor(ua), e);
 		}
 	}
 
