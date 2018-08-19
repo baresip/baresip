@@ -13,6 +13,12 @@
 #define SECRET_KEY 0xdd
 
 
+struct menc_sess {
+	menc_event_h *eventh;
+	void *arg;
+};
+
+
 struct menc_media {
 	void *rtpsock;
 	struct udp_helper *uh_rtp;
@@ -67,6 +73,40 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 }
 
 
+static void sess_destructor(void *arg)
+{
+	struct menc_sess *sess = arg;
+	(void)sess;
+}
+
+
+static int mock_session_alloc(struct menc_sess **sessp,
+			      struct sdp_session *sdp, bool offerer,
+			      menc_event_h *eventh, menc_error_h *errorh,
+			      void *arg)
+{
+	struct menc_sess *sess;
+	int err = 0;
+
+	if (!sessp || !sdp)
+		return EINVAL;
+
+	sess = mem_zalloc(sizeof(*sess), sess_destructor);
+	if (!sess)
+		return ENOMEM;
+
+	sess->eventh  = eventh;
+	sess->arg     = arg;
+
+	if (err)
+		mem_deref(sess);
+	else
+		*sessp = sess;
+
+	return err;
+}
+
+
 static int mock_media_alloc(struct menc_media **mmp, struct menc_sess *sess,
 			    struct rtp_sock *rtp, int proto,
 			    void *rtpsock, void *rtcpsock,
@@ -99,6 +139,16 @@ static int mock_media_alloc(struct menc_media **mmp, struct menc_sess *sess,
 		*mmp = mm;
 	}
 
+	err = sdp_media_set_lattr(sdpm, true, "xrtp", NULL);
+	if (err)
+		goto out;
+
+	if (sdp_media_rattr(sdpm, "xrtp")) {
+
+		if (sess->eventh)
+			sess->eventh(MENC_EVENT_SECURE, "xrtp", sess->arg);
+	}
+
  out:
 	if (err)
 		mem_deref(mm);
@@ -110,6 +160,7 @@ static int mock_media_alloc(struct menc_media **mmp, struct menc_sess *sess,
 static struct menc menc_mock = {
 	.id        = "XRTP",
 	.sdp_proto = "RTP/XAVP",
+	.sessh     = mock_session_alloc,
 	.mediah    = mock_media_alloc
 };
 
