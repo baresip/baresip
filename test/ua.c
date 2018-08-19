@@ -113,6 +113,9 @@ static int reg(enum sip_transp tp)
 	err = ua_alloc(&t.ua, aor);
 	TEST_ERR(err);
 
+	err = ua_register(t.ua);
+	TEST_ERR(err);
+
 	err = uag_event_register(ua_event_handler, &t);
 	if (err)
 		goto out;
@@ -307,6 +310,9 @@ static int reg_dns(enum sip_transp tp)
 	err = ua_alloc(&t.ua, aor);
 	TEST_ERR(err);
 
+	err = ua_register(t.ua);
+	TEST_ERR(err);
+
 	err = uag_event_register(ua_event_handler, &t);
 	if (err)
 		goto out;
@@ -406,6 +412,9 @@ static int reg_auth(enum sip_transp tp)
 		return ENOMEM;
 
 	err = ua_alloc(&t.ua, aor);
+	TEST_ERR(err);
+
+	err = ua_register(t.ua);
 	TEST_ERR(err);
 
 	err = uag_event_register(ua_event_handler, &t);
@@ -556,6 +565,9 @@ static int reg_auth_dns(enum sip_transp tp)
 	TEST_ERR(err);
 
 	err = ua_alloc(&t.ua, aor);
+	TEST_ERR(err);
+
+	err = ua_register(t.ua);
 	TEST_ERR(err);
 
 	err = uag_event_register(ua_event_handler, &t);

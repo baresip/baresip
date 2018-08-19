@@ -131,6 +131,13 @@ static int line_handler(const struct pl *addr, void *arg)
 		return ENOENT;
 	}
 
+	if (account_regint(acc) != 0) {
+		err = ua_register(ua);
+		if (err) {
+			warning("account: failed to register ua (%m)\n", err);
+		}
+	}
+
 	/* optional password prompt */
 	if (!str_isset(account_auth_pass(acc))) {
 		char *pass = NULL;
