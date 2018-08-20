@@ -191,6 +191,7 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 	bufsz = sz->w * sz->h * pixsz;
 
 	if (st->image) {
+		st->image->data = NULL;
 		XDestroyImage(st->image);
 		st->image = NULL;
 	}
@@ -221,18 +222,23 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 	x11.shm_error = 0;
 	x11.errorh = XSetErrorHandler(error_handler);
 
-	if (!XShmAttach(st->disp, &st->shm)) {
-		warning("x11: failed to attach X to shared memory\n");
-		return ENOMEM;
+	if (st->xshmat){
+		if (!XShmAttach(st->disp, &st->shm)) {
+			warning("x11: failed to attach X to shared memory\n");
+			return ENOMEM;
+		}
 	}
 
 	XSync(st->disp, False);
 	XSetErrorHandler(x11.errorh);
 
-	if (x11.shm_error)
+	if (!XShmQueryExtension(st->disp)){
 		info("x11: shared memory disabled\n");
-	else
+		st->xshmat = false;
+	}
+	else{
 		st->xshmat = true;
+	}
 
 	gcv.graphics_exposures = false;
 
