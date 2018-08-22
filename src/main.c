@@ -79,6 +79,11 @@ int main(int argc, char *argv[])
 	size_t i;
 	int err;
 
+	/*
+	 * turn off buffering on stdout
+	 */
+	setbuf(stdout, NULL);
+
 	(void)re_fprintf(stdout, "baresip v%s"
 			 " Copyright (C) 2010 - 2018"
 			 " Alfred E. Heggestad et al.\n",
