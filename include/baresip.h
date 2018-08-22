@@ -433,6 +433,13 @@ typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, const struct ausrc *ausrc,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
 
+/** Defines an Audio Source */
+struct ausrc {
+	struct le        le;
+	const char      *name;
+	ausrc_alloc_h   *alloch;
+};
+
 int ausrc_register(struct ausrc **asp, struct list *ausrcl, const char *name,
 		   ausrc_alloc_h *alloch);
 const struct ausrc *ausrc_find(const struct list *ausrcl, const char *name);
@@ -463,6 +470,13 @@ typedef void (auplay_write_h)(void *sampv, size_t sampc, void *arg);
 typedef int  (auplay_alloc_h)(struct auplay_st **stp, const struct auplay *ap,
 			      struct auplay_prm *prm, const char *device,
 			      auplay_write_h *wh, void *arg);
+
+/** Defines an Audio Player */
+struct auplay {
+	struct le        le;
+	const char      *name;
+	auplay_alloc_h  *alloch;
+};
 
 int auplay_register(struct auplay **pp, struct list *auplayl,
 		    const char *name, auplay_alloc_h *alloch);

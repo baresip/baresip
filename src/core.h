@@ -90,12 +90,6 @@ struct auplay_st {
 	struct auplay *ap;
 };
 
-struct auplay {
-	struct le        le;
-	const char      *name;
-	auplay_alloc_h  *alloch;
-};
-
 
 /*
  * Audio Source
@@ -103,12 +97,6 @@ struct auplay {
 
 struct ausrc_st {
 	const struct ausrc *as;
-};
-
-struct ausrc {
-	struct le        le;
-	const char      *name;
-	ausrc_alloc_h   *alloch;
 };
 
 
