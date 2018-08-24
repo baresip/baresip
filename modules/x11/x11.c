@@ -232,7 +232,7 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 	XSync(st->disp, False);
 	XSetErrorHandler(x11.errorh);
 
-	if (!XShmQueryExtension(st->disp)){
+	if (x11.shm_error || !XShmQueryExtension(st->disp)){
 		info("x11: shared memory disabled\n");
 		st->xshmat = false;
 	}
