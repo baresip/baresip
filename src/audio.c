@@ -886,6 +886,8 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	int wrap;
 	int err;
 
+	MAGIC_CHECK(a);
+
 	if (!mb)
 		goto out;
 
@@ -1840,6 +1842,8 @@ static bool extmap_handler(const char *name, const char *value, void *arg)
 	struct sdp_extmap extmap;
 	int err;
 	(void)name;
+
+	MAGIC_CHECK(au);
 
 	err = sdp_extmap_decode(&extmap, value);
 	if (err) {
