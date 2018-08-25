@@ -264,6 +264,8 @@ static void audio_destructor(void *arg)
 {
 	struct audio *a = arg;
 
+	debug("audio: destroyed (started=%d)\n", a->started);
+
 	stop_tx(&a->tx, a);
 	stop_rx(&a->rx);
 
