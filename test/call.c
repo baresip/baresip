@@ -388,6 +388,7 @@ int test_call_answer_hangup_a(void)
 int test_call_answer_hangup_b(void)
 {
 	struct fixture fix, *f = &fix;
+	char uri[256];
 	int err = 0;
 
 	fixture_init(f);
@@ -395,8 +396,11 @@ int test_call_answer_hangup_b(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_HANGUP_B;
 
+	/* add angle brackets */
+	re_snprintf(uri, sizeof(uri), "<%s>", f->buri);
+
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, uri, NULL, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
