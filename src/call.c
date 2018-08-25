@@ -742,7 +742,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 	/* if the peer-address is a full SIP address then we need
 	 * to parse it and extract the SIP uri part.
 	 */
-	if (0 == sip_addr_decode(&addr, paddr) && addr.dname.p) {
+	if (0 == sip_addr_decode(&addr, paddr)) {
 		err = pl_strdup(&call->peer_uri, &addr.auri);
 	}
 	else {
