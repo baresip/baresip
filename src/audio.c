@@ -715,7 +715,7 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 }
 
 
-static int pt_handler(struct audio *a, uint8_t pt_old, uint8_t pt_new)
+static int update_payload_type(struct audio *a, uint8_t pt_old, uint8_t pt_new)
 {
 	const struct sdp_format *lc;
 
@@ -909,7 +909,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	/* XXX: this logic should be moved to stream.c */
 	if (hdr->pt != rx->pt) {
 
-		err = pt_handler(a, rx->pt, hdr->pt);
+		err = update_payload_type(a, rx->pt, hdr->pt);
 		if (err)
 			return;
 	}
