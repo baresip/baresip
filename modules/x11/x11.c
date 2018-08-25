@@ -231,8 +231,10 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 
 	if (x11.shm_error)
 		info("x11: shared memory disabled\n");
-	else
+	else {
+		info("x11: shared memory enabled\n");
 		st->xshmat = true;
+	}
 
 	gcv.graphics_exposures = false;
 
