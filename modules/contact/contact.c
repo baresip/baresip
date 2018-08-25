@@ -34,7 +34,7 @@ static int cmd_contact(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct contacts *contacts = baresip_contacts();
 	struct contact *cnt = NULL;
-	struct pl dname, user, pl;
+	struct pl dname, user, pl = pl_null;
 	struct le *le;
 	int err = 0;
 
