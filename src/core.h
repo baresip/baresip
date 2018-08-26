@@ -342,6 +342,9 @@ struct stream_param {
 
 /** Defines a generic media stream */
 struct stream {
+#ifndef RELEASE
+	uint32_t magic;          /**< Magic number for debugging            */
+#endif
 	struct le le;            /**< Linked list element                   */
 	struct config_avt cfg;   /**< Stream configuration                  */
 	struct call *call;       /**< Ref. to call object                   */

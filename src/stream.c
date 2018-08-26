@@ -10,6 +10,11 @@
 #include "core.h"
 
 
+/** Magic number */
+#define MAGIC 0x00511ea3
+#include "magic.h"
+
+
 enum {
 	RTP_RECV_SIZE = 8192,
 	RTP_CHECK_INTERVAL = 1000  /* how often to check for RTP [ms] */
@@ -34,6 +39,8 @@ static void check_rtp_handler(void *arg)
 	struct stream *strm = arg;
 	const uint64_t now = tmr_jiffies();
 	int diff_ms;
+
+	MAGIC_CHECK(strm);
 
 	tmr_start(&strm->tmr_rtp, RTP_CHECK_INTERVAL,
 		  check_rtp_handler, strm);
@@ -212,6 +219,8 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	bool flush = false;
 	int err;
 
+	MAGIC_CHECK(s);
+
 	s->ts_last = tmr_jiffies();
 
 	if (!mbuf_get_left(mb))
@@ -288,6 +297,8 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 	struct stream *s = arg;
 	(void)src;
 
+	MAGIC_CHECK(s);
+
 	s->ts_last = tmr_jiffies();
 
 	if (s->rtcph)
@@ -361,6 +372,8 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	s = mem_zalloc(sizeof(*s), stream_destructor);
 	if (!s)
 		return ENOMEM;
+
+	MAGIC_INIT(s);
 
 	s->cfg   = *cfg;
 	s->call  = call;
