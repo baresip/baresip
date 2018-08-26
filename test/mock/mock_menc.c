@@ -87,6 +87,8 @@ static int mock_session_alloc(struct menc_sess **sessp,
 {
 	struct menc_sess *sess;
 	int err = 0;
+	(void)offerer;
+	(void)errorh;
 
 	if (!sessp || !sdp)
 		return EINVAL;
