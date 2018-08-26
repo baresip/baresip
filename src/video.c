@@ -354,6 +354,8 @@ static int packet_handler(bool marker, uint64_t ts,
 	uint32_t rtp_ts;
 	int err;
 
+	MAGIC_CHECK(vtx->video);
+
 	if (!vtx->ts_base)
 		vtx->ts_base = ts;
 	vtx->ts_last = ts;
@@ -461,6 +463,8 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 {
 	struct vtx *vtx = arg;
 
+	MAGIC_CHECK(vtx->video);
+
 	/* XXX: save timestamp(s) and pass to encoder */
 	(void)timestamp;
 
@@ -484,6 +488,8 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 static void vidsrc_error_handler(int err, void *arg)
 {
 	struct vtx *vtx = arg;
+
+	MAGIC_CHECK(vtx->video);
 
 	warning("video: video-source error: %m\n", err);
 
@@ -539,6 +545,8 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 static void picup_tmr_handler(void *arg)
 {
 	struct vrx *vrx = arg;
+
+	MAGIC_CHECK(vrx->video);
 
 	request_picture_update(vrx);
 }
@@ -704,6 +712,8 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	(void)extv;
 	(void)extc;
 
+	MAGIC_CHECK(v);
+
 	if (!mb)
 		goto out;
 
@@ -723,6 +733,8 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 static void rtcp_handler(struct rtcp_msg *msg, void *arg)
 {
 	struct video *v = arg;
+
+	MAGIC_CHECK(v);
 
 	switch (msg->hdr.pt) {
 
@@ -903,6 +915,8 @@ static void vidisp_resize_handler(const struct vidsz *sz, void *arg)
 	struct vrx *vrx = arg;
 	(void)vrx;
 
+	MAGIC_CHECK(vrx->video);
+
 	info("video: display resized: %u x %u\n", sz->w, sz->h);
 
 	/* XXX: update wanted picturesize and send re-invite to peer */
@@ -968,6 +982,8 @@ enum {TMR_INTERVAL = 5};
 static void tmr_handler(void *arg)
 {
 	struct video *v = arg;
+
+	MAGIC_CHECK(v);
 
 	tmr_start(&v->tmr, TMR_INTERVAL * 1000, tmr_handler, v);
 
