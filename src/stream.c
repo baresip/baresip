@@ -202,7 +202,6 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 
  handler:
 	s->rtph(hdr, extv, extc, mb, s->arg);
-
 }
 
 
