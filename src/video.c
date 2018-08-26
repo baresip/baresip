@@ -675,7 +675,7 @@ out:
 }
 
 
-static int pt_handler(struct video *v, uint8_t pt_old, uint8_t pt_new)
+static int update_payload_type(struct video *v, uint8_t pt_old, uint8_t pt_new)
 {
 	const struct sdp_format *lc;
 
@@ -711,7 +711,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (hdr->pt == v->vrx.pt_rx)
 		goto out;
 
-	err = pt_handler(v, v->vrx.pt_rx, hdr->pt);
+	err = update_payload_type(v, v->vrx.pt_rx, hdr->pt);
 	if (err)
 		return;
 
