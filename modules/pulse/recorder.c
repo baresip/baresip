@@ -6,6 +6,7 @@
 #include <pulse/pulseaudio.h>
 #include <pulse/simple.h>
 #include <pthread.h>
+#include <string.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -115,6 +116,7 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			 ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
+	struct mediadev *md;
 	pa_sample_spec ss;
 	pa_buffer_attr attr;
 	int pa_error;
@@ -158,10 +160,12 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	attr.minreq    = (uint32_t)-1;
 	attr.fragsize  = (uint32_t)pa_usec_to_bytes(prm->ptime * 1000, &ss);
 
+	md = mediadev_get_default(&as->dev_list);
+
 	st->s = pa_simple_new(NULL,
 			      "Baresip",
 			      PA_STREAM_RECORD,
-			      str_isset(device) ? device : 0,
+			      str_isset(device) ? device : md->name,
 			      "VoIP Record",
 			      &ss,
 			      NULL,
@@ -191,3 +195,75 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	return err;
 }
+
+
+static void dev_list_cb(pa_context *c, const pa_source_info *l,
+						int eol, void *userdata)
+{
+	struct list *dev_list = userdata;
+	int err;
+
+	if (eol > 0) {
+		return;
+	}
+
+	/* In pulseaudio every sink automatically has a monitor source
+	This "output" device must be filtered out */
+	if(!strstr(l->name,"output")) {
+		err = mediadev_add(dev_list, l->name);
+		if (err) {
+			warning("pulse recorder: media device (%s) "
+					"can not be added\n",l->name);
+		}
+	}
+}
+
+
+static int set_available_devices(struct ausrc *as)
+{
+	int err;
+	pa_mainloop *pa_ml;
+	pa_mainloop_api *pa_mlapi;
+	pa_operation *pa_op;
+	pa_context *pa_ctx;
+
+	/* Create a mainloop API and connection to the default server */
+	pa_ml = pa_mainloop_new();
+	pa_mlapi = pa_mainloop_get_api(pa_ml);
+	pa_ctx = pa_context_new(pa_mlapi, "Baresip");
+
+	pa_context_connect(pa_ctx, NULL, 0, NULL);
+
+	while(pa_context_get_state(pa_ctx) != PA_CONTEXT_READY) {
+		err = pa_mainloop_iterate(pa_ml, 1, NULL);
+		if (err < 0) {
+			return err;
+		}
+	}
+
+	pa_op = pa_context_get_source_info_list(pa_ctx, dev_list_cb,
+						&as->dev_list);
+
+	while (pa_operation_get_state(pa_op) != PA_OPERATION_DONE) {
+		err = pa_mainloop_iterate(pa_ml, 1, NULL);
+		if (err < 0) {
+			return err;
+		}
+	}
+
+	pa_operation_unref(pa_op);
+	pa_context_disconnect(pa_ctx);
+	pa_context_unref(pa_ctx);
+	pa_mainloop_free(pa_ml);
+
+	return 0;
+}
+
+
+int pulse_recorder_init(struct ausrc *as)
+{
+	list_init(&as->dev_list);
+
+	return set_available_devices(as);
+}
+

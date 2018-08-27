@@ -12,3 +12,5 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			 struct media_ctx **ctx,
 			 struct ausrc_prm *prm, const char *device,
 			 ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
+int pulse_player_init(struct auplay *ap);
+int pulse_recorder_init(struct ausrc *as);

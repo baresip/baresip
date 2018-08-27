@@ -13,6 +13,7 @@ static void destructor(void *arg)
 {
 	struct auplay *ap = arg;
 
+	list_flush(&ap->dev_list);
 	list_unlink(&ap->le);
 }
 

@@ -575,6 +575,7 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 	struct config_audio *aucfg;
 	struct config *cfg;
 	struct audio *a;
+	const struct auplay *ap;
 	struct le *le;
 	char driver[16], device[128] = "";
 	int err = 0;
@@ -602,9 +603,22 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 		pl_strcpy(&pl_driver, driver, sizeof(driver));
 		pl_strcpy(&pl_device, device, sizeof(device));
 
-		if (!auplay_find(baresip_auplayl(), driver)) {
+		ap = auplay_find(baresip_auplayl(), driver);
+		if (!ap) {
 			re_hprintf(pf, "no such audio-player: %s\n", driver);
 			return 0;
+		}
+		else if (!list_isempty(&ap->dev_list)) {
+
+			if (!mediadev_find(&ap->dev_list, device)) {
+				re_hprintf(pf,
+				  "no such device for %s audio-player: %s\n",
+				  driver, device);
+
+				mediadev_print(pf, &ap->dev_list);
+
+				return 0;
+			}
 		}
 
 		re_hprintf(pf, "switch audio player: %s,%s\n",
@@ -649,6 +663,7 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	struct config_audio *aucfg;
 	struct config *cfg;
 	struct audio *a;
+	const struct ausrc *as;
 	struct le *le;
 	char driver[16], device[128] = "";
 	int err = 0;
@@ -676,9 +691,22 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 		pl_strcpy(&pl_driver, driver, sizeof(driver));
 		pl_strcpy(&pl_device, device, sizeof(device));
 
-		if (!ausrc_find(baresip_ausrcl(), driver)) {
+		as = ausrc_find(baresip_ausrcl(), driver);
+		if (!as) {
 			re_hprintf(pf, "no such audio-source: %s\n", driver);
 			return 0;
+		}
+		else if (!list_isempty(&as->dev_list)) {
+
+			if (!mediadev_find(&as->dev_list, device)) {
+				re_hprintf(pf,
+				  "no such device for %s audio-source: %s\n",
+				  driver, device);
+
+				mediadev_print(pf, &as->dev_list);
+
+				return 0;
+			}
 		}
 
 		re_hprintf(pf, "switch audio device: %s,%s\n",

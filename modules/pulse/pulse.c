@@ -4,6 +4,8 @@
  * Copyright (C) 2010 - 2016 Creytiv.com
  */
 
+#include <pulse/pulseaudio.h>
+#include <pulse/simple.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -32,6 +34,12 @@ static int module_init(void)
 			       "pulse", pulse_player_alloc);
 	err |= ausrc_register(&ausrc, baresip_ausrcl(),
 			      "pulse", pulse_recorder_alloc);
+
+	if (err)
+		return err;
+
+	err  = pulse_player_init(auplay);
+	err |= pulse_recorder_init(ausrc);
 
 	return err;
 }

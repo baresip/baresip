@@ -437,6 +437,7 @@ typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, const struct ausrc *ausrc,
 struct ausrc {
 	struct le        le;
 	const char      *name;
+	struct list      dev_list;
 	ausrc_alloc_h   *alloch;
 };
 
@@ -475,6 +476,7 @@ typedef int  (auplay_alloc_h)(struct auplay_st **stp, const struct auplay *ap,
 struct auplay {
 	struct le        le;
 	const char      *name;
+	struct list      dev_list;
 	auplay_alloc_h  *alloch;
 };
 
