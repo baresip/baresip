@@ -209,7 +209,7 @@ static void dev_list_cb(pa_context *c, const pa_source_info *l,
 
 	/* In pulseaudio every sink automatically has a monitor source
 	This "output" device must be filtered out */
-	if(!strstr(l->name,"output")) {
+	if (!strstr(l->name,"output")) {
 		err = mediadev_add(dev_list, l->name);
 		if (err) {
 			warning("pulse recorder: media device (%s) "
@@ -234,7 +234,7 @@ static int set_available_devices(struct ausrc *as)
 
 	pa_context_connect(pa_ctx, NULL, 0, NULL);
 
-	while(pa_context_get_state(pa_ctx) != PA_CONTEXT_READY) {
+	while (pa_context_get_state(pa_ctx) != PA_CONTEXT_READY) {
 		err = pa_mainloop_iterate(pa_ml, 1, NULL);
 		if (err < 0) {
 			return err;

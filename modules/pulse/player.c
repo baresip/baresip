@@ -190,7 +190,7 @@ static int set_available_devices(struct auplay *ap)
 
 	pa_context_connect(pa_ctx, NULL, 0, NULL);
 
-	while(pa_context_get_state(pa_ctx) != PA_CONTEXT_READY) {
+	while (pa_context_get_state(pa_ctx) != PA_CONTEXT_READY) {
 		err = pa_mainloop_iterate(pa_ml, 1, NULL);
 		if (err < 0) {
 			return err;
