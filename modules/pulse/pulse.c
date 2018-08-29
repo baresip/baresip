@@ -45,7 +45,9 @@ static int module_init(void)
 }
 
 
-int set_available_devices(struct list *dev_list, pa_operation *(get_dev_info_cb)(pa_context *, struct list *))
+int set_available_devices(struct list *dev_list, 
+			  pa_operation *(get_dev_info_cb)(pa_context *,
+							  struct list *))
 {
 	pa_mainloop *pa_ml = NULL;
 	pa_mainloop_api *pa_mlapi = NULL;
