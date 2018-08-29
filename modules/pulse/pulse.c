@@ -45,7 +45,7 @@ static int module_init(void)
 }
 
 
-int set_available_devices(struct list *dev_list, 
+int set_available_devices(struct list *dev_list,
 			  pa_operation *(get_dev_info_cb)(pa_context *,
 							  struct list *))
 {
