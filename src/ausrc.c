@@ -13,6 +13,7 @@ static void destructor(void *arg)
 {
 	struct ausrc *as = arg;
 
+	list_flush(&as->dev_list);
 	list_unlink(&as->le);
 }
 
