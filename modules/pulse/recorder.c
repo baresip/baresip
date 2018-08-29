@@ -208,7 +208,7 @@ static void dev_list_cb(pa_context *c, const pa_source_info *l,
 	}
 
 	/* In pulseaudio every sink automatically has a monitor source
-	This "output" device must be filtered out */
+	   This "output" device must be filtered out */
 	if (!strstr(l->name,"output")) {
 		err = mediadev_add(dev_list, l->name);
 		if (err) {
@@ -219,51 +219,21 @@ static void dev_list_cb(pa_context *c, const pa_source_info *l,
 }
 
 
-static int set_available_devices(struct ausrc *as)
-{
-	int err;
-	pa_mainloop *pa_ml;
-	pa_mainloop_api *pa_mlapi;
-	pa_operation *pa_op;
-	pa_context *pa_ctx;
+static pa_operation *get_dev_info(pa_context *pa_ctx, struct list *dev_list){
 
-	/* Create a mainloop API and connection to the default server */
-	pa_ml = pa_mainloop_new();
-	pa_mlapi = pa_mainloop_get_api(pa_ml);
-	pa_ctx = pa_context_new(pa_mlapi, "Baresip");
-
-	pa_context_connect(pa_ctx, NULL, 0, NULL);
-
-	while (pa_context_get_state(pa_ctx) != PA_CONTEXT_READY) {
-		err = pa_mainloop_iterate(pa_ml, 1, NULL);
-		if (err < 0) {
-			return err;
-		}
-	}
-
-	pa_op = pa_context_get_source_info_list(pa_ctx, dev_list_cb,
-						&as->dev_list);
-
-	while (pa_operation_get_state(pa_op) != PA_OPERATION_DONE) {
-		err = pa_mainloop_iterate(pa_ml, 1, NULL);
-		if (err < 0) {
-			return err;
-		}
-	}
-
-	pa_operation_unref(pa_op);
-	pa_context_disconnect(pa_ctx);
-	pa_context_unref(pa_ctx);
-	pa_mainloop_free(pa_ml);
-
-	return 0;
+	return pa_context_get_source_info_list(pa_ctx, dev_list_cb,
+						dev_list);
 }
 
 
 int pulse_recorder_init(struct ausrc *as)
 {
+	if (!as) {
+		return EINVAL;
+	}
+
 	list_init(&as->dev_list);
 
-	return set_available_devices(as);
+	return set_available_devices(&as->dev_list, get_dev_info);
 }
 

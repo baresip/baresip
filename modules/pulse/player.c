@@ -175,50 +175,20 @@ static void dev_list_cb(pa_context *c, const pa_sink_info *l, int eol,
 }
 
 
-static int set_available_devices(struct auplay *ap)
-{
-	int err;
-	pa_mainloop *pa_ml;
-	pa_mainloop_api *pa_mlapi;
-	pa_operation *pa_op;
-	pa_context *pa_ctx;
+static pa_operation *get_dev_info(pa_context *pa_ctx, struct list *dev_list){
 
-	/* Create a mainloop API and connection to the default server */
-	pa_ml = pa_mainloop_new();
-	pa_mlapi = pa_mainloop_get_api(pa_ml);
-	pa_ctx = pa_context_new(pa_mlapi, "Baresip");
-
-	pa_context_connect(pa_ctx, NULL, 0, NULL);
-
-	while (pa_context_get_state(pa_ctx) != PA_CONTEXT_READY) {
-		err = pa_mainloop_iterate(pa_ml, 1, NULL);
-		if (err < 0) {
-			return err;
-		}
-	}
-
-	pa_op = pa_context_get_sink_info_list(pa_ctx, dev_list_cb,
-						&ap->dev_list);
-
-	while (pa_operation_get_state(pa_op) != PA_OPERATION_DONE) {
-		err = pa_mainloop_iterate(pa_ml, 1, NULL);
-		if (err < 0) {
-			return err;
-		}
-	}
-
-	pa_operation_unref(pa_op);
-	pa_context_disconnect(pa_ctx);
-	pa_context_unref(pa_ctx);
-	pa_mainloop_free(pa_ml);
-
-	return 0;
+	return pa_context_get_sink_info_list(pa_ctx, dev_list_cb,
+						dev_list);
 }
 
 
 int pulse_player_init(struct auplay *ap)
 {
+	if (!ap) {
+		return EINVAL;
+	}
+
 	list_init(&ap->dev_list);
 
-	return set_available_devices(ap);
+	return set_available_devices(&ap->dev_list, get_dev_info);
 }
