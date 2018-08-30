@@ -6,6 +6,8 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
+#include <sys/socket.h>
+#include <sys/time.h>
 #include <string.h>
 #include <time.h>
 #include <png.h>
@@ -13,10 +15,10 @@
 #include <rem.h>
 #include <baresip.h>
 #include "png_vf.h"
-
+#include "sendfilename.h"
 
 static char *png_filename(const struct tm *tmx, const char *name,
-			  char *buf, unsigned int length);
+			  char *buf, unsigned int length, int microsecs);
 static void png_save_free(png_structp png_ptr, png_byte **png_row_pointers,
 			  int png_height);
 
@@ -36,12 +38,15 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 	unsigned int bytes_per_pixel = 3; /* RGB format */
 	time_t tnow;
 	struct tm *tmx;
-	char filename_buf[64];
+	char filename_buf[1024]={0};
 	struct vidframe *f2 = NULL;
 	int err = 0;
+	struct timeval current;
+	int n;
 
 	tnow = time(NULL);
 	tmx = localtime(&tnow);
+	gettimeofday(&current, NULL);
 
 	if (vf->fmt != VID_FMT_RGB32) {
 
@@ -119,7 +124,7 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 
 	/* Write the image data. */
 	fp = fopen(png_filename(tmx, path,
-				filename_buf, sizeof(filename_buf)), "wb");
+				filename_buf, sizeof(filename_buf),current.tv_usec), "wb");
 	if (fp == NULL) {
 		err = errno;
 		goto out;
@@ -138,6 +143,30 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 	png_destroy_write_struct(&png_ptr, &info_ptr);
 	if (fp)
 		fclose(fp);
+
+//	socket4video=-1;
+    if( !(socket4video > 0)){
+    	info("try to connect to socket %d\n",socket4video);
+    	socket4video = socket_connect();
+    	info("connected to socket %d\n",socket4video);
+    }
+
+    if( (socket4video > 0)){
+    	//sprintf(filename_buf, "Value of Pi = %f", 111.9);
+    	n = write(socket4video,filename_buf,strlen(filename_buf));
+    	//n = sendto(socket4video,filename_buf,strlen(filename_buf), 0, NULL, 0);
+    	//int n = send(socket4video,filename_buf,strlen(filename_buf),0);
+        if (n <= 0){ // error - no more writing
+        	warning("did not send file\n");
+        	close(socket4video);
+            socket4video = -1;
+            unlink(filename_buf);
+        }
+        else{
+        	info("sent filename: %s length %d\n", filename_buf, strlen(filename_buf));
+//        	shutdown(socket4video,SHUT_RDWR);
+        }
+    }
 
 	return 0;
 }
@@ -160,7 +189,7 @@ static void png_save_free(png_structp png_ptr, png_byte **png_row_pointers,
 
 
 static char *png_filename(const struct tm *tmx, const char *name,
-			  char *buf, unsigned int length)
+			  char *buf, unsigned int length, int microsecs)
 {
 	/*
 	 * -2013-03-03-15-22-56.png - 24 chars
@@ -182,8 +211,12 @@ static char *png_filename(const struct tm *tmx, const char *name,
 	sprintf(buf + strlen(buf), (tmx->tm_min < 10 ? "-0%d" : "-%d"),
 		tmx->tm_min);
 
-	sprintf(buf + strlen(buf), (tmx->tm_sec < 10 ? "-0%d.png" : "-%d.png"),
+	sprintf(buf + strlen(buf), (tmx->tm_sec < 10 ? "-0%d" : "-%d"),
 		tmx->tm_sec);
+
+	sprintf(buf + strlen(buf), "-%05d.png",microsecs);
+
+
 
 	return buf;
 }

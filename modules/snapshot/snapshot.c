@@ -3,12 +3,23 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <math.h>
+#include <sys/time.h>
 #include <string.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
 #include "png_vf.h"
+#include "sendfilename.h"
 
+
+/*
+ *
+
+
+https://stackoverflow.com/questions/1692184/converting-epoch-time-to-real-date-time
+ *
+ */
 
 /**
  * @defgroup snapshot snapshot
@@ -25,18 +36,23 @@
 
 
 static bool flag_enc, flag_dec;
-
+static struct timeval last = {.tv_sec=0, .tv_usec=0};
+static int frameRatePerSec=5;
+static bool continous_snapshot = true;
 
 static int encode(struct vidfilt_enc_st *st, struct vidframe *frame)
 {
 	(void)st;
+
+	// info("start encode snapshot\n");
+
 
 	if (!frame)
 		return 0;
 
 	if (flag_enc) {
 		flag_enc = false;
-		png_save_vidframe(frame, "snapshot-send");
+		png_save_vidframe(frame, "/tmp/snapshot-send");
 	}
 
 	return 0;
@@ -45,14 +61,37 @@ static int encode(struct vidfilt_enc_st *st, struct vidframe *frame)
 
 static int decode(struct vidfilt_dec_st *st, struct vidframe *frame)
 {
+	struct timeval current;
+	float diffInMilliSecs;
+	float millisecPerFrame = 1.0/(frameRatePerSec/1000.0);
+
 	(void)st;
+
+
+	if(last.tv_sec == 0 && last.tv_usec == 0){
+		gettimeofday(&last, NULL);
+	}
+
+	gettimeofday(&current, NULL);
+
+	diffInMilliSecs = ceil(current.tv_sec*1000 + current.tv_usec / 1000 -
+			last.tv_sec*1000 - last.tv_usec / 1000);
+
+	if(diffInMilliSecs < millisecPerFrame){
+/*		info("no decode snapshot");
+		info(" diff %f\n",diffInSecs);
+		info(" rate %d\n", frameRatePerSec);
+*/
+		return 0;
+	}
 
 	if (!frame)
 		return 0;
 
-	if (flag_dec) {
+	if (continous_snapshot || flag_dec) {
 		flag_dec = false;
-		png_save_vidframe(frame, "snapshot-recv");
+		png_save_vidframe(frame, "/tmp/snapshot-recv");
+		last = current;
 	}
 
 	return 0;
@@ -67,6 +106,9 @@ static int do_snapshot(struct re_printf *pf, void *arg)
 	/* NOTE: not re-entrant */
 	flag_enc = flag_dec = true;
 
+	info("snapshot enabled\n");
+	socket4video=-1;
+//	socket4video = socket_connect();
 	return 0;
 }
 
