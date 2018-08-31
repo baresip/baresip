@@ -86,6 +86,8 @@ static void *write_thread(void *arg)
 		}
 	}
 
+	snd_pcm_drain(st->write);
+
 	return NULL;
 }
 
