@@ -202,6 +202,7 @@ static void dev_list_cb(pa_context *c, const pa_source_info *l,
 {
 	struct list *dev_list = userdata;
 	int err;
+	(void)c;
 
 	if (eol > 0) {
 		return;
