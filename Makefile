@@ -13,7 +13,7 @@
 USE_VIDEO := 1
 
 PROJECT	  := baresip
-VERSION   := 0.5.10
+VERSION   := 0.5.11
 DESCR     := "Baresip is a modular SIP User-Agent with audio and video support"
 
 # Verbose and silent build modes
