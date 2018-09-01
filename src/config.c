@@ -919,6 +919,12 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f, "\n# Opus codec parameters\n");
 	(void)re_fprintf(f, "opus_bitrate\t\t28000 # 6000-510000\n");
+	(void)re_fprintf(f, "#opus_stereo\t\tyes\n");
+	(void)re_fprintf(f, "#opus_sprop_stereo\tyes\n");
+	(void)re_fprintf(f, "#opus_cbr\t\tno\n");
+	(void)re_fprintf(f, "#opus_inband_fec\tno\n");
+	(void)re_fprintf(f, "#opus_dtx\t\tno\n");
+	(void)re_fprintf(f, "#opus_mirror\t\tno\n");
 
 	(void)re_fprintf(f,
 			"\n# Selfview\n"

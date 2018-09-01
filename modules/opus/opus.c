@@ -20,6 +20,8 @@
  * Configuration options:
  *
  \verbatim
+  opus_stereo        yes     # Request peer to send stereo
+  opus_sprop_stereo  yes     # Sending stereo
   opus_bitrate    128000     # Average bitrate in [bps]
   opus_cbr        {yes,no}   # Constant Bitrate (inverse of VBR)
   opus_inbandfec  {yes,no}   # Enable inband Forward Error Correction (FEC)
