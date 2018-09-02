@@ -10,7 +10,7 @@ int daala_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 			struct videnc_param *prm, const char *fmtp,
 			videnc_packet_h *pkth, void *arg);
 int daala_encode(struct videnc_state *ves, bool update,
-		 const struct vidframe *frame);
+		 const struct vidframe *frame, uint64_t timestamp);
 
 
 /* Decode */
