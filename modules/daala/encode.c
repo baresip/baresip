@@ -43,9 +43,10 @@ static void dump_stats(const struct videnc_state *ves)
 
 
 static int send_packet(struct videnc_state *ves, bool marker,
-		       const uint8_t *pld, size_t pld_len)
+		       uint64_t timestamp, const uint8_t *pld, size_t pld_len)
 {
 	daala_packet dp;
+	uint64_t rtp_ts;
 	int err;
 
 	memset(&dp, 0, sizeof(dp));
@@ -54,7 +55,9 @@ static int send_packet(struct videnc_state *ves, bool marker,
 	dp.bytes = pld_len;
 	dp.b_o_s = marker;
 
-	err = ves->pkth(marker, NULL, 0, pld, pld_len, ves->arg);
+	rtp_ts = video_calc_rtp_timestamp_fix(timestamp);
+
+	err = ves->pkth(marker, rtp_ts, NULL, 0, pld, pld_len, ves->arg);
 	if (err)
 		return err;
 
@@ -124,7 +127,8 @@ int daala_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 }
 
 
-static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
+static int open_encoder(struct videnc_state *ves, const struct vidsz *size,
+			uint64_t timestamp)
 {
 	daala_info di;
 	daala_comment dc;
@@ -204,7 +208,8 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 			  dp.packetno);
 #endif
 
-		err = send_packet(ves, dp.b_o_s, dp.packet, dp.bytes);
+		err = send_packet(ves, dp.b_o_s, timestamp,
+				  dp.packet, dp.bytes);
 		if (err)
 			break;
 	}
@@ -217,7 +222,7 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 
 
 int daala_encode(struct videnc_state *ves, bool update,
-		 const struct vidframe *frame)
+		 const struct vidframe *frame, uint64_t timestamp)
 {
 	int r, err = 0;
 	daala_image img;
@@ -231,7 +236,7 @@ int daala_encode(struct videnc_state *ves, bool update,
 
 	if (!ves->enc || !vidsz_cmp(&ves->size, &frame->size)) {
 
-		err = open_encoder(ves, &frame->size);
+		err = open_encoder(ves, &frame->size, timestamp);
 		if (err)
 			return err;
 
@@ -283,7 +288,8 @@ int daala_encode(struct videnc_state *ves, bool update,
 			break;
 		}
 
-		err = send_packet(ves, dp.b_o_s, dp.packet, dp.bytes);
+		err = send_packet(ves, dp.b_o_s, timestamp,
+				  dp.packet, dp.bytes);
 		if (err)
 			break;
 	}
