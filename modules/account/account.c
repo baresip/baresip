@@ -81,7 +81,7 @@ static int account_write_template(const char *file)
 			 "#    ;stunpass=STUN/TURN/ICE-password\n"
 			 "#    ;stunserver=stun:[user:pass]@host[:port]\n"
 			 "#    ;video_codecs=h264,h263,...\n"
-			 "#    ;refer=0 (call transfer off)\n"
+			 "#    ;call_transfer=no (call transfer off)\n"
 			 "#\n"
 			 "# Examples:\n"
 			 "#\n"

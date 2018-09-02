@@ -287,7 +287,7 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 
 static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 {
-	struct pl auth_user;
+	struct pl auth_user, tmp;
 	size_t i;
 	int err = 0;
 
@@ -326,8 +326,10 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	if (pl_isset(&aor->dname))
 		err |= pl_strdup(&acc->dispname, &aor->dname);
 
-	acc->refer = 1;
-	err |= param_u32(&acc->refer, &aor->params, "refer");
+	if (0 != msg_param_decode(&aor->params, "call_transfer", &tmp))
+		acc->refer = 1;
+	else
+		acc->refer = pl_strcasecmp(&tmp, "no");
 
 	return err;
 }
