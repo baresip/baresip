@@ -8,6 +8,12 @@
 #include "core.h"
 
 
+/**
+ * Register an Audio Filter
+ *
+ * @param aufiltl List of Audio Filters
+ * @param af      Audio Filter to register
+ */
 void aufilt_register(struct list *aufiltl, struct aufilt *af)
 {
 	if (!aufiltl || !af)
@@ -19,6 +25,11 @@ void aufilt_register(struct list *aufiltl, struct aufilt *af)
 }
 
 
+/**
+ * Unregister an Audio Filter
+ *
+ * @param af Audio Filter to unregister
+ */
 void aufilt_unregister(struct aufilt *af)
 {
 	if (!af)
