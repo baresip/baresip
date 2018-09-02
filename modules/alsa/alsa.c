@@ -142,17 +142,7 @@ snd_pcm_format_t aufmt_to_alsaformat(enum aufmt fmt)
 
 static int alsa_init(void)
 {
-	struct pl val;
 	int err;
-
-	/* XXX: remove check later */
-	if (0 == conf_get(conf_cur(), "alsa_sample_format", &val)) {
-
-		warning("alsa: alsa_sample_format is deprecated"
-			" -- use ausrc_format or auplay_format instead\n");
-
-		(void)val;
-	}
 
 	err  = ausrc_register(&ausrc, baresip_ausrcl(),
 			      "alsa", alsa_src_alloc);
