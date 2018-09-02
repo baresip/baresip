@@ -273,8 +273,6 @@ int h265_encode(struct videnc_state *st, bool update,
 
 		h265_skip_startcode(&p, &len);
 
-		/* XXX: use pic_out.pts */
-
 		marker = (i+1)==nalc;  /* last NAL */
 
 		err = packetize(marker, p, len, st->pktsize,
