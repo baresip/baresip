@@ -326,6 +326,9 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	if (pl_isset(&aor->dname))
 		err |= pl_strdup(&acc->dispname, &aor->dname);
 
+	acc->refer = 1;
+	err |= param_u32(&acc->refer, &aor->params, "refer");
+
 	return err;
 }
 
@@ -955,6 +958,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 		}
 		err |= re_hprintf(pf, "\n");
 	}
+	err |= re_hprintf(pf, " refer:         %s\n", acc->refer);
 
 	return err;
 }

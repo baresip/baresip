@@ -205,6 +205,8 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 			      sip_auth_handler, ua_account(reg->ua), true,
 			      register_handler, reg,
 			      params[0] ? &params[1] : NULL,
+			      acc->refer ?
+			      "Allow: %s,REFER\r\n" :
 			      "Allow: %s\r\n", uag_allowed_methods());
 	if (err)
 		return err;

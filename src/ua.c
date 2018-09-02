@@ -512,7 +512,7 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 
 	err = sip_treplyf(NULL, NULL, uag.sip,
 			  msg, true, 200, "OK",
-			  "Allow: %s\r\n"
+			  "Allow: %s%s\r\n"
 			  "%H"
 			  "%H"
 			  "%s"
@@ -520,6 +520,7 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 			  "\r\n"
 			  "%b",
 			  uag_allowed_methods(),
+			  ua->acc->refer ? ",REFER" : "",
 			  ua_print_supported, ua,
 			  sip_contact_print, &contact,
 			  desc ? "Content-Type: application/sdp\r\n" : "",
@@ -1904,7 +1905,7 @@ struct list *uag_list(void)
  */
 const char *uag_allowed_methods(void)
 {
-	return "INVITE,ACK,BYE,CANCEL,OPTIONS,REFER,"
+	return "INVITE,ACK,BYE,CANCEL,OPTIONS,"
 		"NOTIFY,SUBSCRIBE,INFO,MESSAGE";
 }
 
