@@ -27,6 +27,7 @@ static const char str[] =
 	";stunuser=bob@bob.com"
 	";stunpass=taj:aa"
 	";stunserver=\"stun:stunserver.org\""
+	";call_transfer=no"
 	;
 
 
@@ -65,6 +66,7 @@ int test_account(void)
 	ASSERT_STREQ("bob@bob.com", account_stun_user(acc));
 	ASSERT_STREQ("taj:aa", account_stun_pass(acc));
 	ASSERT_STREQ("stunserver.org", account_stun_host(acc));
+	ASSERT_STREQ("no", account_call_transfer(acc));
 
  out:
 	mem_deref(acc);

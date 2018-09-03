@@ -635,6 +635,34 @@ int account_set_display_name(struct account *acc, const char *dname)
 
 
 /**
+ * Sets call transfer on (value "yes") or off (value "no")
+ *
+ * @param acc      User-Agent account
+ * @param value    "yes" or "no"
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_call_transfer(struct account *acc, const char *value)
+{
+	if (!acc)
+		return EINVAL;
+
+	if (0 == str_casecmp(value, "yes"))
+		acc->refer = 1;
+	else
+		if (0 == str_casecmp(value, "no"))
+			acc->refer = 0;
+		else {
+			warning("account: unknown call transfer: %r\n",
+				value);
+			return EINVAL;
+		}
+
+	return 0;
+}
+
+
+/**
  * Authenticate a User-Agent (UA)
  *
  * @param acc      User-Agent account
@@ -903,6 +931,19 @@ static const char *answermode_str(enum answermode mode)
 const char *account_mediaenc(const struct account *acc)
 {
 	return acc ? acc->mencid : NULL;
+}
+
+
+/**
+ * Get call transfer capability of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return "yes" or "no"
+ */
+const char *account_call_transfer(const struct account *acc)
+{
+	return acc->refer ? "yes" : "no";
 }
 
 
