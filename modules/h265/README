@@ -5,7 +5,7 @@ README h265 module
 Steps for building and testing:
 
 
-1. build and install x265 from https://github.com/mirror/x265.git
+1. build and install x265 from https://github.com/videolan/x265
 2. build and install ffmpeg from git://source.ffmpeg.org/ffmpeg.git
 
    $ ./configure --disable-everything --enable-decoder=hevc \
