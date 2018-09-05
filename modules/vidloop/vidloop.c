@@ -197,15 +197,23 @@ static int display(struct video_loop *vl, struct vidframe *frame)
 	lock_write_get(vl->frame_mutex);
 
 	if (vl->frame && ! vidsz_cmp(&vl->frame->size, &frame->size)) {
-		mem_deref(vl->frame);
+
+		info("vidloop: resolution changed:  %u x %u\n",
+		     frame->size.w, frame->size.h);
+
+		vl->frame = mem_deref(vl->frame);
 	}
 
 	if (!vl->frame) {
-		vidframe_alloc(&vl->frame, frame->fmt, &frame->size);
+		err = vidframe_alloc(&vl->frame, frame->fmt, &frame->size);
+		if (err)
+			goto out;
 	}
+
 	vidframe_copy(vl->frame, frame);
 	vl->new_frame = true;
 
+ out:
 	lock_rel(vl->frame_mutex);
 
 	mem_deref(frame_filt);
