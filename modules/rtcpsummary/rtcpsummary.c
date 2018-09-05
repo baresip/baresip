@@ -8,7 +8,10 @@
 #include <baresip.h>
 
 
-static void printRtcpSummaryLine(const struct stream *s)
+static rtcpsummary_callback_h *m_callback = NULL;
+
+
+static void printRtcpSummaryLine(const struct ua *ua, const struct stream *s)
 {
 	const struct rtcp_stats *rtcp;
 	rtcp = stream_rtcp_stats(s);
@@ -46,6 +49,24 @@ static void printRtcpSummaryLine(const struct stream *s)
 			 1.0 * rtcp->rtt/1000,
 			 sdp_media_laddr(stream_sdp(s)),
 			 sdp_media_raddr(stream_sdp(s)));
+
+		if (m_callback) {
+			m_callback(
+				ua,
+				call_setup_duration(stream_call(s)) * 1000,
+				call_duration(stream_call(s)),
+				rtcp->rx.sent,
+				rtcp->tx.sent,
+				rtcp->rx.lost,
+				rtcp->tx.lost,
+				stream_metric_get_rx_n_err(s),
+				stream_metric_get_tx_n_err(s),
+				1.0 * rtcp->rx.jit / 1000,
+				1.0 * rtcp->tx.jit / 1000,
+				1.0 * rtcp->rtt / 1000,
+				sdp_media_laddr(stream_sdp(s)),
+				sdp_media_raddr(stream_sdp(s)));
+		}
 	}
 	else {
 		/*
@@ -75,13 +96,19 @@ static void ua_event_handler(struct ua *ua,
 		     le;
 		     le = le->next) {
 			s = le->data;
-			printRtcpSummaryLine(s);
+			printRtcpSummaryLine(ua, s);
 		}
 		break;
 
 	default:
 		break;
 	}
+}
+
+
+void rtcpsummary_set_callback(rtcpsummary_callback_h *callback)
+{
+	m_callback = callback;
 }
 
 

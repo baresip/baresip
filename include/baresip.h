@@ -1151,6 +1151,24 @@ uint32_t stream_metric_get_rx_n_packets(const struct stream *strm);
 uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm);
 uint32_t stream_metric_get_rx_n_err(const struct stream *strm);
 
+
+/*
+ * RTCP summary module
+ */
+
+typedef void (rtcpsummary_callback_h)(
+	const struct ua *ua,
+	size_t call_setup, size_t call_duration,
+	size_t packets_rx, size_t packets_tx,
+	size_t packets_loss_rx, size_t packets_loss_tx,
+	size_t packets_discarded_rx, size_t packets_discarded_tx,
+	double jitter_rx, double jitter_tx,
+	double rtt,
+	const struct sa *laddr, const struct sa *raddr);
+
+void rtcpsummary_set_callback(rtcpsummary_callback_h *callback);
+
+
 /*
  * Media NAT
  */
