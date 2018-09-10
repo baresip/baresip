@@ -79,7 +79,7 @@ struct account {
 	uint16_t stun_port;          /**< STUN Port number                   */
 	struct le vcv[4];            /**< List elements for vidcodecl        */
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
-	bool refer;                  /**< Tells if REFER method is supported */
+	bool refer;                  /**< REFER method on/off                */
 };
 
 
