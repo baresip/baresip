@@ -154,7 +154,8 @@ static void ua_event_handler(struct ua *ua,
 
 	if (ev == UA_EVENT_REGISTER_OK) {
 
-		if (!mwi_find(ua))
+		if (!mwi_find(ua) &&
+		    (strcmp(account_mwi(ua_account(ua)), "yes") == 0))
 			mwi_subscribe(ua);
 	}
 	else if (ev == UA_EVENT_SHUTDOWN) {
@@ -191,7 +192,8 @@ static void tmr_handler(void *arg)
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
 
-		if (account_regint(acc) == 0) {
+		if ((account_regint(acc) == 0) &&
+		    (strcmp(account_mwi(acc), "yes") == 0)) {
 			mwi_subscribe(ua);
 		}
 	}

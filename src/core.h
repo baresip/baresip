@@ -79,6 +79,7 @@ struct account {
 	uint16_t stun_port;          /**< STUN Port number                   */
 	struct le vcv[4];            /**< List elements for vidcodecl        */
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
+	bool mwi;                    /**< MWI on/off                         */
 };
 
 

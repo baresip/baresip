@@ -287,7 +287,7 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 
 static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 {
-	struct pl auth_user;
+	struct pl auth_user, tmp;
 	size_t i;
 	int err = 0;
 
@@ -325,6 +325,11 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	if (pl_isset(&aor->dname))
 		err |= pl_strdup(&acc->dispname, &aor->dname);
+
+	if (0 != msg_param_decode(&aor->params, "mwi", &tmp))
+		acc->mwi = true;
+	else
+		acc->mwi = pl_strcasecmp(&tmp, "no") != 0;
 
 	return err;
 }
@@ -630,6 +635,34 @@ int account_set_display_name(struct account *acc, const char *dname)
 
 
 /**
+ * Sets MWI on (value "yes") or off (value "no")
+ *
+ * @param acc      User-Agent account
+ * @param value    "yes" or "no"
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_mwi(struct account *acc, const char *value)
+{
+	if (!acc)
+		return EINVAL;
+
+	if (0 == str_casecmp(value, "yes"))
+		acc->mwi = true;
+	else
+		if (0 == str_casecmp(value, "no"))
+			acc->mwi = false;
+		else {
+			warning("account: unknown mwi value: %r\n",
+				value);
+			return EINVAL;
+		}
+
+	return 0;
+}
+
+
+/**
  * Authenticate a User-Agent (UA)
  *
  * @param acc      User-Agent account
@@ -898,6 +931,19 @@ static const char *answermode_str(enum answermode mode)
 const char *account_mediaenc(const struct account *acc)
 {
 	return acc ? acc->mencid : NULL;
+}
+
+
+/**
+ * Get MWI capability of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return "yes" or "no"
+ */
+const char *account_mwi(const struct account *acc)
+{
+	return acc->mwi ? "yes" : "no";
 }
 
 
