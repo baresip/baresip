@@ -327,9 +327,9 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 		err |= pl_strdup(&acc->dispname, &aor->dname);
 
 	if (0 != msg_param_decode(&aor->params, "call_transfer", &tmp))
-		acc->refer = 1;
+		acc->refer = true;
 	else
-		acc->refer = pl_strcasecmp(&tmp, "no");
+		acc->refer = pl_strcasecmp(&tmp, "no") != 0;
 
 	return err;
 }
@@ -648,10 +648,10 @@ int account_set_call_transfer(struct account *acc, const char *value)
 		return EINVAL;
 
 	if (0 == str_casecmp(value, "yes"))
-		acc->refer = 1;
+		acc->refer = true;
 	else
 		if (0 == str_casecmp(value, "no"))
-			acc->refer = 0;
+			acc->refer = false;
 		else {
 			warning("account: unknown call transfer: %r\n",
 				value);
