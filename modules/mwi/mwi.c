@@ -64,6 +64,8 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 		ui_output(uis, "----- MWI for %s -----\n", ua_aor(mwi->ua));
 		ui_output(uis, "%b\n", mbuf_buf(msg->mb),
 			  mbuf_get_left(msg->mb));
+		ua_event(mwi->ua, UA_EVENT_MWI_NOTIFY, NULL, "%b",
+			  mbuf_buf(msg->mb), mbuf_get_left(msg->mb));
 	}
 
 	(void)sip_treply(NULL, sip, msg, 200, "OK");
