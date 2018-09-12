@@ -157,7 +157,7 @@ static void ua_event_handler(struct ua *ua,
 	if (ev == UA_EVENT_REGISTER_OK) {
 
 		if (!mwi_find(ua) &&
-		    (strcmp(account_mwi(ua_account(ua)), "yes") == 0))
+		    (str_casecmp(account_mwi(ua_account(ua)), "yes") == 0))
 			mwi_subscribe(ua);
 	}
 	else if (ev == UA_EVENT_SHUTDOWN) {
