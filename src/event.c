@@ -170,7 +170,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_REGISTER_OK:          return "REGISTER_OK";
 	case UA_EVENT_REGISTER_FAIL:        return "REGISTER_FAIL";
 	case UA_EVENT_UNREGISTERING:        return "UNREGISTERING";
-	case UA_EVENT_MWI_NOTIFY:           return "MWI_NOFIFY";
+	case UA_EVENT_MWI_NOTIFY:           return "MWI_NOTIFY";
 	case UA_EVENT_SHUTDOWN:             return "SHUTDOWN";
 	case UA_EVENT_EXIT:                 return "EXIT";
 	case UA_EVENT_CALL_INCOMING:        return "CALL_INCOMING";
