@@ -1220,6 +1220,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_UNREGISTERING:
 		return;
 
+	case UA_EVENT_MWI_NOTIFY:
+		info("----- MWI for %s -----\n", ua_aor(ua));
+		info("%s\n", prm);
+
 	default:
 		break;
 	}
