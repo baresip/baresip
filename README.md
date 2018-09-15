@@ -258,7 +258,6 @@ ilbc          iLBC audio codec
 isac          iSAC audio codec
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
-libsrtp       Secure RTP encryption using libsrtp
 menu          Interactive menu
 mpa           MPA Speech and Audio Codec
 mqtt          MQTT (Message Queue Telemetry Transport) module
