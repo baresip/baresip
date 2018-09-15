@@ -958,9 +958,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 		}
 	}
 	else {
-		rx->ts_recv.first = hdr->ts;
-		rx->ts_recv.last = hdr->ts;
-		rx->ts_recv.is_set = true;
+		timestamp_set(&rx->ts_recv, hdr->ts);
 	}
 
 	wrap = timestamp_wrap(hdr->ts, rx->ts_recv.last);

@@ -41,6 +41,18 @@ int timestamp_wrap(uint32_t ts_new, uint32_t ts_old)
 }
 
 
+void timestamp_set(struct timestamp_recv *ts, uint32_t rtp_ts)
+{
+	if (!ts)
+		return;
+
+	ts->first = rtp_ts;
+	ts->last  = rtp_ts;
+
+	ts->is_set = true;
+}
+
+
 /**
  * Calculate the total timestamp duration, in timestamp units.
  * The duration is calculated as the delta between the
@@ -61,5 +73,3 @@ uint64_t timestamp_duration(const struct timestamp_recv *ts)
 
 	return last_ext - ts->first;
 }
-
-
