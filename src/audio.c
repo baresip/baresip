@@ -1661,6 +1661,7 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		/* Audio source must be stopped first */
 		if (reset) {
 			tx->ausrc = mem_deref(tx->ausrc);
+			aubuf_flush(tx->aubuf);
 		}
 
 		tx->enc = mem_deref(tx->enc);
@@ -1730,6 +1731,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	if (reset) {
 
 		rx->auplay = mem_deref(rx->auplay);
+		aubuf_flush(rx->aubuf);
 
 		/* Reset audio filter chain */
 		list_flush(&rx->filtl);
