@@ -206,9 +206,6 @@
     <ClCompile Include="..\..\src\reg.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\rtpkeep.c">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\sdp.c">
       <Filter>src</Filter>
     </ClCompile>

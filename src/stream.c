@@ -147,7 +147,6 @@ static void stream_destructor(void *arg)
 
 	tmr_cancel(&s->tmr_rtp);
 	list_unlink(&s->le);
-	mem_deref(s->rtpkeep);
 	mem_deref(s->sdp);
 	mem_deref(s->mes);
 	mem_deref(s->mencs);
@@ -483,28 +482,6 @@ struct sdp_media *stream_sdpmedia(const struct stream *s)
 }
 
 
-static void stream_start_keepalive(struct stream *s)
-{
-	const char *rtpkeep;
-
-	if (!s)
-		return;
-
-	rtpkeep = call_account(s->call)->rtpkeep;
-
-	s->rtpkeep = mem_deref(s->rtpkeep);
-
-	if (rtpkeep && sdp_media_rformat(s->sdp, NULL)) {
-		int err;
-		err = rtpkeep_alloc(&s->rtpkeep, rtpkeep,
-				    IPPROTO_UDP, s->rtp, s->sdp);
-		if (err) {
-			warning("stream: rtpkeep_alloc failed: %m\n", err);
-		}
-	}
-}
-
-
 int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		struct mbuf *mb)
 {
@@ -531,8 +508,6 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		if (err)
 			s->metric_tx.n_err++;
 	}
-
-	rtpkeep_refresh(s->rtpkeep, ts);
 
 	return err;
 }
@@ -671,8 +646,6 @@ void stream_reset(struct stream *s)
 		return;
 
 	jbuf_flush(s->jbuf);
-
-	stream_start_keepalive(s);
 }
 
 

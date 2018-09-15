@@ -191,7 +191,6 @@
     <ClCompile Include="..\..\src\play.c" />
     <ClCompile Include="..\..\src\realtime.c" />
     <ClCompile Include="..\..\src\reg.c" />
-    <ClCompile Include="..\..\src\rtpkeep.c" />
     <ClCompile Include="..\..\src\sdp.c" />
     <ClCompile Include="..\..\src\sipreq.c" />
     <ClCompile Include="..\..\src\stream.c" />

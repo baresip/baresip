@@ -71,7 +71,6 @@ struct account {
 	uint32_t regint;             /**< Registration interval in [seconds] */
 	uint32_t pubint;             /**< Publication interval in [seconds]  */
 	char *regq;                  /**< Registration Q-value               */
-	char *rtpkeep;               /**< RTP Keepalive mechanism            */
 	char *sipnat;                /**< SIP Nat mechanism                  */
 	char *stun_user;             /**< STUN Username                      */
 	char *stun_pass;             /**< STUN Password                      */
@@ -303,17 +302,6 @@ int rtpext_decode(struct rtpext *ext, struct mbuf *mb);
 
 
 /*
- * RTP keepalive
- */
-
-struct rtpkeep;
-
-int  rtpkeep_alloc(struct rtpkeep **rkp, const char *method, int proto,
-		   struct rtp_sock *rtp, struct sdp_media *sdp);
-void rtpkeep_refresh(struct rtpkeep *rk, uint32_t ts);
-
-
-/*
  * SDP
  */
 
@@ -351,7 +339,6 @@ struct stream {
 	struct call *call;       /**< Ref. to call object                   */
 	struct sdp_media *sdp;   /**< SDP Media line                        */
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
-	struct rtpkeep *rtpkeep; /**< RTP Keepalive                         */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
 	struct jbuf *jbuf;       /**< Jitter Buffer for incoming RTP        */
 	struct mnat_media *mns;  /**< Media NAT traversal state             */

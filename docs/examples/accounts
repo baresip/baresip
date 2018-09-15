@@ -18,7 +18,6 @@
 #    ;regint=3600
 #    ;pubint=0 (publishing off)
 #    ;regq=0.5
-#    ;rtpkeep={zero,stun,dyna,rtcp}
 #    ;sipnat={outbound}
 #    ;stunserver=stun:[user:pass]@host[:port]
 #    ;video_codecs=h264,h263,...

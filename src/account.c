@@ -26,7 +26,6 @@ static void destructor(void *arg)
 	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++)
 		mem_deref(acc->outboundv[i]);
 	mem_deref(acc->regq);
-	mem_deref(acc->rtpkeep);
 	mem_deref(acc->sipnat);
 	mem_deref(acc->stun_user);
 	mem_deref(acc->stun_pass);
@@ -136,7 +135,6 @@ static int media_decode(struct account *acc, const struct pl *prm)
 
 	err |= param_dstr(&acc->mencid,  prm, "mediaenc");
 	err |= param_dstr(&acc->mnatid,  prm, "medianat");
-	err |= param_dstr(&acc->rtpkeep, prm, "rtpkeep" );
 	err |= param_u32(&acc->ptime,    prm, "ptime"   );
 
 	return err;
@@ -989,7 +987,6 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " regint:       %u\n", acc->regint);
 	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
 	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
-	err |= re_hprintf(pf, " rtpkeep:      %s\n", acc->rtpkeep);
 	err |= re_hprintf(pf, " sipnat:       %s\n", acc->sipnat);
 	err |= re_hprintf(pf, " stunserver:   stun:%s@%s:%u\n",
 			  acc->stun_user, acc->stun_host, acc->stun_port);

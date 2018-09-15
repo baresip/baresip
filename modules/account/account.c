@@ -75,7 +75,6 @@ static int account_write_template(const char *file)
 			 "#    ;regint=3600\n"
 			 "#    ;pubint=0 (publishing off)\n"
 			 "#    ;regq=0.5\n"
-			 "#    ;rtpkeep={zero,stun,dyna,rtcp}\n"
 			 "#    ;sipnat={outbound}\n"
 			 "#    ;stunuser=STUN/TURN/ICE-username\n"
 			 "#    ;stunpass=STUN/TURN/ICE-password\n"
