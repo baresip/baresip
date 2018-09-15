@@ -1,3 +1,88 @@
+2018-09-15 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.11
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.11
+	* NOTE: Requires libre v0.5.7 or later
+	        Requires librem v0.5.3 or later
+
+	* build:
+
+	* baresip-core:
+	  - account: disable password in the SIP uri
+	  - aucodec: add packet channels (pch) to struct (#489)
+	  - audio: add MAGIC_CHECK to some callback handlers
+	  - audio: fix timestamp for MPA codec
+	  - audio: remove audio_srate and audio_channels (#488)
+	  - audio: remove exception for MPA
+	  - aufilt: add sample format parameter (#492)
+	  - auplay/ausrc: Add dev_list to auplay and ausrc struct (#516)
+			  (thanks Nicolas Tizon)
+	  - call: dump SDP offer, ref #480
+	  - call: Support also SIP URI with missing display name. (#512)
+		  (thanks Christian Spielberger)
+	  - config: update template for coreaudio
+	  - contact: consider empty contacts file as existing
+		     contacts file (#501) (thanks Juha Heinanen)
+	  - main: add -n option for network interface
+	  - main: turn off buffering to standard output (#504)
+		  (thanks Geoff Stewart)
+	  - opus: refresh config template
+	  - stream: add magic number for debugging (ref #514)
+	  - ua: do ua_register explicitly (refs #508) (#509)
+	  - ua: added ua param to message handler (#485) (thanks Juha Heinanen)
+	  - ua: Sending and receiving custom headers (#470)
+		(thanks Encamy)
+	  - video: added more MAGIC_CHECK checks
+	  - vidsrc: Vidsrc devices list (#491) (thanks Nicolas Tizon)
+
+	* selftest:
+	  - test: use event-handler in mediaenc mock
+	  - test: add sip uri with angle brackets (ref #512)
+
+	* Modules:
+
+	* alsa: remove check for alsa_sample_format config
+
+	* alsa: On termination of alsa_play wait until buffer
+		was processed. (#520) (thanks Christian Spielberger)
+
+	* aubridge: check to make sure the device is running before
+		    dereferencing it. (#495) (thanks Geoff Stewart)
+
+	* avahi: fix warning when RELEASE=1
+
+	* avcapture: use mediadev API to add device names
+
+	* coreaudio: Coreaudio select device (#502)
+
+	* daala: update vidcodec API
+
+	* gtk: update message handler with struct ua pointer
+
+	* httpd: add CORS header in http reply (#517) (thanks Nicolas Tizon)
+
+	* menu: Send DTMF code command (#496) (thanks Nicolas Tizon)
+
+	* rtcpsummary: new RTCP summary module (#505)
+		       (thanks Geoff Stewart)
+
+	* speex: remove module (#494)
+
+	* srtp: add support for AES-GCM cipher
+
+	* vidloop: use portable lock instead of pthread mutex
+		   fix crash when resolution changes
+
+	* vidloop: Vidloop fix: video frame rendering is moved to
+		   main thread (#481) (thanks Nicolas Tizon)
+
+	* x11: check for shared memory extension
+
+	* x11grab: remove old linker path
+
+
 2018-07-04 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.10
