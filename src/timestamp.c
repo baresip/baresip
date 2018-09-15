@@ -69,7 +69,18 @@ uint64_t timestamp_duration(const struct timestamp_recv *ts)
 	if (!ts || !ts->is_set)
 		return 0;
 
-	last_ext = calc_extended_timestamp(ts->num_wraps, ts->last);
+	last_ext = timestamp_calc_extended(ts->num_wraps, ts->last);
 
 	return last_ext - ts->first;
+}
+
+
+uint64_t timestamp_calc_extended(uint32_t num_wraps, uint32_t ts)
+{
+	uint64_t ext_ts;
+
+	ext_ts  = (uint64_t)num_wraps * 0x100000000ULL;
+	ext_ts += (uint64_t)ts;
+
+	return ext_ts;
 }

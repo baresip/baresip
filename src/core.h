@@ -449,17 +449,7 @@ struct timestamp_recv {
 };
 
 
-static inline uint64_t calc_extended_timestamp(uint32_t num_wraps, uint32_t ts)
-{
-	uint64_t ext_ts;
-
-	ext_ts  = (uint64_t)num_wraps * 0x100000000ULL;
-	ext_ts += (uint64_t)ts;
-
-	return ext_ts;
-}
-
-
 int      timestamp_wrap(uint32_t ts_new, uint32_t ts_old);
 void     timestamp_set(struct timestamp_recv *ts, uint32_t rtp_ts);
 uint64_t timestamp_duration(const struct timestamp_recv *ts);
+uint64_t timestamp_calc_extended(uint32_t num_wraps, uint32_t ts);

@@ -938,10 +938,10 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
 		uint64_t ext_last, ext_now;
 
-		ext_last = calc_extended_timestamp(rx->ts_recv.num_wraps,
+		ext_last = timestamp_calc_extended(rx->ts_recv.num_wraps,
 						   rx->ts_recv.last);
 
-		ext_now = calc_extended_timestamp(rx->ts_recv.num_wraps,
+		ext_now = timestamp_calc_extended(rx->ts_recv.num_wraps,
 						  hdr->ts);
 
 		if (ext_now <= ext_last) {
