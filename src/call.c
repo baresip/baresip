@@ -843,9 +843,8 @@ int call_progress(struct call *call)
 		return err;
 
 	err = sipsess_progress(call->sess, 183, "Session Progress",
-			       desc, "Allow: %s%s\r\n",
-			       uag_allowed_methods(),
-			       ua_account(call->ua)->refer ? ",REFER" : "");
+			       desc, "Allow: %s\r\n",
+			       ua_allowed_methods(call->ua));
 
 	if (!err)
 		call_stream_start(call, false);
@@ -884,8 +883,7 @@ int call_answer(struct call *call, uint16_t scode)
 		return err;
 
 	err = sipsess_answer(call->sess, scode, "Answering", desc,
-			     "Allow: %s%s\r\n", uag_allowed_methods(),
-			     ua_account(call->ua)->refer ? ",REFER" : "");
+			     "Allow: %s\r\n", ua_allowed_methods(call->ua));
 
 	mem_deref(desc);
 
@@ -1344,8 +1342,7 @@ static void sipsess_refer_handler(struct sip *sip, const struct sip_msg *msg,
 			      ua_cuser(call->ua), "message/sipfrag",
 			      auth_handler, call->acc, true,
 			      sipnot_close_handler, call,
-			      "Allow: %s%s\r\n", uag_allowed_methods(),
-			      ua_account(call->ua)->refer ? ",REFER" : "");
+			      "Allow: %s\r\n", ua_allowed_methods(call->ua));
 	if (err) {
 		warning("call: refer: sipevent_accept failed: %m\n", err);
 		return;
@@ -1493,8 +1490,8 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			     sipsess_estab_handler, sipsess_info_handler,
 			     call->acc->refer ? sipsess_refer_handler : NULL,
 			     sipsess_close_handler,
-			     call, "Allow: %s%s\r\n", uag_allowed_methods(),
-			     ua_account(call->ua)->refer ? ",REFER" : "");
+			     call, "Allow: %s\r\n",
+			     ua_allowed_methods(call->ua));
 
 	if (err) {
 		warning("call: sipsess_accept: %m\n", err);
@@ -1614,8 +1611,8 @@ static int send_invite(struct call *call)
 			      sipsess_info_handler,
 			      call->acc->refer ? sipsess_refer_handler : NULL,
 			      sipsess_close_handler, call,
-			      "Allow: %s%s\r\n%H%H", uag_allowed_methods(),
-			      ua_account(call->ua)->refer ? ",REFER" : "",
+			      "Allow: %s\r\n%H%H",
+			      ua_allowed_methods(call->ua),
 			      ua_print_supported, call->ua,
 			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {
