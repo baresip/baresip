@@ -81,6 +81,7 @@ static int account_write_template(const char *file)
 			 "#    ;stunserver=stun:[user:pass]@host[:port]\n"
 			 "#    ;video_codecs=h264,h263,...\n"
 			 "#    ;mwi=no\n"
+			 "#    ;call_transfer=no\n"
 			 "#\n"
 			 "# Examples:\n"
 			 "#\n"

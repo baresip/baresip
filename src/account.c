@@ -329,6 +329,11 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	else
 		acc->mwi = pl_strcasecmp(&tmp, "no") != 0;
 
+	if (0 != msg_param_decode(&aor->params, "call_transfer", &tmp))
+		acc->refer = true;
+	else
+		acc->refer = pl_strcasecmp(&tmp, "no") != 0;
+
 	return err;
 }
 
@@ -661,6 +666,34 @@ int account_set_mwi(struct account *acc, const char *value)
 
 
 /**
+ * Sets call transfer on (value "yes") or off (value "no")
+ *
+ * @param acc      User-Agent account
+ * @param value    "yes" or "no"
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_call_transfer(struct account *acc, const char *value)
+{
+	if (!acc)
+		return EINVAL;
+
+	if (0 == str_casecmp(value, "yes"))
+		acc->refer = true;
+	else
+		if (0 == str_casecmp(value, "no"))
+			acc->refer = false;
+		else {
+			warning("account: unknown call transfer: %r\n",
+				value);
+			return EINVAL;
+		}
+
+	return 0;
+}
+
+
+/**
  * Authenticate a User-Agent (UA)
  *
  * @param acc      User-Agent account
@@ -945,6 +978,19 @@ const char *account_mwi(const struct account *acc)
 }
 
 
+/**
+ * Get call transfer capability of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return "yes" or "no"
+ */
+const char *account_call_transfer(const struct account *acc)
+{
+	return acc->refer ? "yes" : "no";
+}
+
+
 int account_debug(struct re_printf *pf, const struct account *acc)
 {
 	struct le *le;
@@ -998,6 +1044,9 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 		}
 		err |= re_hprintf(pf, "\n");
 	}
+	err |= re_hprintf(pf, " mwi:         %s\n", account_mwi(acc));
+	err |= re_hprintf(pf, " call_transfer:         %s\n",
+			  account_call_transfer(acc));
 
 	return err;
 }
