@@ -27,9 +27,11 @@
 static bool flag_enc, flag_dec;
 
 
-static int encode(struct vidfilt_enc_st *st, struct vidframe *frame)
+static int encode(struct vidfilt_enc_st *st, struct vidframe *frame,
+		  uint64_t *timestamp)
 {
 	(void)st;
+	(void)timestamp;
 
 	if (!frame)
 		return 0;
@@ -43,9 +45,11 @@ static int encode(struct vidfilt_enc_st *st, struct vidframe *frame)
 }
 
 
-static int decode(struct vidfilt_dec_st *st, struct vidframe *frame)
+static int decode(struct vidfilt_dec_st *st, struct vidframe *frame,
+		  uint64_t *timestamp)
 {
 	(void)st;
+	(void)timestamp;
 
 	if (!frame)
 		return 0;

@@ -1075,12 +1075,12 @@ struct vidfilt_dec_st {
 typedef int (vidfilt_encupd_h)(struct vidfilt_enc_st **stp, void **ctx,
 			       const struct vidfilt *vf);
 typedef int (vidfilt_encode_h)(struct vidfilt_enc_st *st,
-			       struct vidframe *frame);
+			       struct vidframe *frame, uint64_t *timestamp);
 
 typedef int (vidfilt_decupd_h)(struct vidfilt_dec_st **stp, void **ctx,
 			       const struct vidfilt *vf);
 typedef int (vidfilt_decode_h)(struct vidfilt_dec_st *st,
-			       struct vidframe *frame);
+			       struct vidframe *frame, uint64_t *timestamp);
 
 struct vidfilt {
 	struct le le;

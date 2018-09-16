@@ -79,7 +79,8 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 }
 
 
-static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
+static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame,
+			  uint64_t *timestamp)
 {
 	struct swscale_enc *enc = (struct swscale_enc *)st;
 	enum AVPixelFormat avpixfmt, avpixfmt_dst;
@@ -88,6 +89,7 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
 	int srcStride[4], dstStride[4];
 	int width, height, i, h;
 	int err = 0;
+	(void)timestamp;
 
 	if (!st)
 		return EINVAL;
