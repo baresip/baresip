@@ -519,7 +519,7 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 			  "Content-Length: %zu\r\n"
 			  "\r\n"
 			  "%b",
-			  uag_allowed_methods(),
+			  ua_allowed_methods(ua),
 			  ua_print_supported, ua,
 			  sip_contact_print, &contact,
 			  desc ? "Content-Type: application/sdp\r\n" : "",
@@ -1902,9 +1902,11 @@ struct list *uag_list(void)
  *
  * @return String of supported methods
  */
-const char *uag_allowed_methods(void)
+const char *ua_allowed_methods(const struct ua *ua)
 {
-	return "INVITE,ACK,BYE,CANCEL,OPTIONS,REFER,"
+	return ua->acc->refer ? "INVITE,ACK,BYE,CANCEL,OPTIONS,"
+		"NOTIFY,SUBSCRIBE,INFO,MESSAGE,REFER" :
+		"INVITE,ACK,BYE,CANCEL,OPTIONS,"
 		"NOTIFY,SUBSCRIBE,INFO,MESSAGE";
 }
 
