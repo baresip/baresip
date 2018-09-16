@@ -157,6 +157,7 @@ static int encode_win(struct vidfilt_enc_st *st, struct vidframe *frame,
 {
 	struct selfview_enc *enc = (struct selfview_enc *)st;
 	int err;
+	(void)timestamp;
 
 	if (!frame)
 		return 0;
@@ -179,6 +180,7 @@ static int encode_pip(struct vidfilt_enc_st *st, struct vidframe *frame,
 	struct selfview_enc *enc = (struct selfview_enc *)st;
 	struct selfview *selfview = enc->selfview;
 	int err = 0;
+	(void)timestamp;
 
 	if (!frame)
 		return 0;
@@ -211,6 +213,7 @@ static int decode_pip(struct vidfilt_dec_st *st, struct vidframe *frame,
 {
 	struct selfview_dec *dec = (struct selfview_dec *)st;
 	struct selfview *sv = dec->selfview;
+	(void)timestamp;
 
 	if (!frame)
 		return 0;
