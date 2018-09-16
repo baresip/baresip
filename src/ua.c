@@ -1547,7 +1547,7 @@ void ua_stop_all(bool forced)
 	}
 
 	if (ext_ref) {
-		info("ua: ext_ref -> cannot unload mods\n");
+		info("ua: in use by app module, deferring module unloading\n");
 		return;
 	}
 	else {
