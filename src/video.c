@@ -141,8 +141,7 @@ struct vrx {
 	double efps;                       /**< Estimated frame-rate      */
 	unsigned n_intra;                  /**< Intra-frames decoded      */
 	unsigned n_picup;                  /**< Picture updates sent      */
-	uint32_t ts_min;
-	uint32_t ts_max;
+	struct timestamp_recv ts_recv;     /**< Receive timestamp state   */
 
 	/** Statistics */
 	struct {
@@ -535,7 +534,6 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 
 	str_ncpy(vrx->device, video->cfg.disp_dev, sizeof(vrx->device));
 
-	vrx->ts_min = ~0;
 	vrx->fmt = (enum vidfmt)-1;
 
 	return err;
@@ -570,6 +568,41 @@ static void request_picture_update(struct vrx *vrx)
 }
 
 
+static void update_rtp_timestamp(struct timestamp_recv *tsr, uint32_t rtp_ts)
+{
+	int wrap;
+
+	if (tsr->is_set) {
+
+		wrap = timestamp_wrap(rtp_ts, tsr->last);
+
+		switch (wrap) {
+
+		case -1:
+			info("video: rtp timestamp wraps backwards"
+			     " (delta = %d) -- discard\n",
+			     (int32_t)(tsr->last - rtp_ts));
+			return;
+
+		case 0:
+			break;
+
+		case 1:
+			++tsr->num_wraps;
+			break;
+
+		default:
+			break;
+		}
+	}
+	else {
+		timestamp_set(tsr, rtp_ts);
+	}
+
+	tsr->last = rtp_ts;
+}
+
+
 /**
  * Decode incoming RTP packets using the Video decoder
  *
@@ -588,6 +621,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	struct vidframe *frame_filt = NULL;
 	struct vidframe frame_store, *frame = &frame_store;
 	struct le *le;
+	uint64_t timestamp;
 	bool intra;
 	int err = 0;
 
@@ -602,12 +636,15 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		goto out;
 	}
 
-	/* todo: check if RTP timestamp wraps */
+	update_rtp_timestamp(&vrx->ts_recv, hdr->ts);
 
-	if (hdr->ts < vrx->ts_min)
-		vrx->ts_min = hdr->ts;
-	if (hdr->ts > vrx->ts_max)
-		vrx->ts_max = hdr->ts;
+	/* convert the RTP timestamp to VIDEO_TIMEBASE timestamp */
+	timestamp = video_calc_timebase_timestamp(
+			  timestamp_calc_extended(vrx->ts_recv.num_wraps,
+						  vrx->ts_recv.last));
+
+	/* XXX: pass timestamp to decoder, filters, display */
+	(void)timestamp;
 
 	frame->data[0] = NULL;
 	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb);
@@ -1381,8 +1418,14 @@ static int vrx_debug(struct re_printf *pf, const struct vrx *vrx)
 			  vrx->stats.disp_frames);
 	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
 			  vrx->n_intra, vrx->n_picup);
-	err |= re_hprintf(pf, "     time = %.3f sec\n",
-			  video_calc_seconds(vrx->ts_max - vrx->ts_min));
+
+	if (vrx->ts_recv.is_set) {
+		err |= re_hprintf(pf, "     time = %.3f sec\n",
+		  video_calc_seconds(timestamp_duration(&vrx->ts_recv)));
+	}
+	else {
+		err |= re_hprintf(pf, "     time = (not started)\n");
+	}
 
 	return err;
 }

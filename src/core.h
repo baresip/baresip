@@ -430,6 +430,7 @@ int  video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 void video_update_picture(struct video *v);
 void video_sdp_attr_decode(struct video *v);
 int  video_print(struct re_printf *pf, const struct video *v);
+uint64_t video_calc_timebase_timestamp(uint64_t rtp_ts);
 
 
 /*
