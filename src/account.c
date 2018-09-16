@@ -974,6 +974,9 @@ const char *account_mediaenc(const struct account *acc)
  */
 const char *account_mwi(const struct account *acc)
 {
+	if (!acc)
+		return "no";
+
 	return acc->mwi ? "yes" : "no";
 }
 
@@ -1032,6 +1035,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 					  i+1, acc->outboundv[i]);
 		}
 	}
+	err |= re_hprintf(pf, " mwi:          %s\n", account_mwi(acc));
 	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);
 	err |= re_hprintf(pf, " regint:       %u\n", acc->regint);
 	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
@@ -1047,7 +1051,6 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 		}
 		err |= re_hprintf(pf, "\n");
 	}
-	err |= re_hprintf(pf, " mwi:         %s\n", account_mwi(acc));
 	err |= re_hprintf(pf, " call_transfer:         %s\n",
 			  account_call_transfer(acc));
 
