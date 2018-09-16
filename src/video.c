@@ -430,7 +430,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 		struct vidfilt_enc_st *st = le->data;
 
 		if (st->vf && st->vf->ench)
-			err |= st->vf->ench(st, frame);
+			err |= st->vf->ench(st, frame, &timestamp);
 	}
 
 	if (err)
@@ -691,7 +691,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		struct vidfilt_dec_st *st = le->data;
 
 		if (st->vf && st->vf->dech)
-			err |= st->vf->dech(st, frame);
+			err |= st->vf->dech(st, frame, &timestamp);
 	}
 
 	++vrx->stats.disp_frames;
