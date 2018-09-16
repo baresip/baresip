@@ -75,6 +75,12 @@ int panel_alloc(struct panel **panelp, const char *label,
 	if (!panelp || !width || !height)
 		return EINVAL;
 
+	if (width <= TEXT_WIDTH) {
+		info("vidinfo: width too small (%d < %d)\n",
+		     width, (int)TEXT_WIDTH );
+		return EINVAL;
+	}
+
 	panel = mem_zalloc(sizeof(*panel), destructor);
 	if (!panel)
 		return ENOMEM;
