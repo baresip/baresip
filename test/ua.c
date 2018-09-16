@@ -21,6 +21,7 @@ struct test {
 	unsigned got_register_ok;
 	unsigned n_resp;
 	uint32_t magic;
+	enum sip_transp tp_resp;
 };
 
 
@@ -653,6 +654,8 @@ static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
 
 	++t->n_resp;
 
+	t->tp_resp = msg->tp;
+
 	/* Verify SIP headers */
 
 	ASSERT_TRUE(sip_msg_hdr_has_value(msg, SIP_HDR_ALLOW, "INVITE"));
@@ -685,7 +688,7 @@ static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
 }
 
 
-int test_ua_options(void)
+static int test_ua_options_base(enum sip_transp transp)
 {
 	struct test t;
 	struct sa laddr;
@@ -694,17 +697,22 @@ int test_ua_options(void)
 
 	test_init(&t);
 
-	err = ua_init("test", true, false, false, false);
+	err = ua_init("test",
+		      transp == SIP_TRANSP_UDP,
+		      transp == SIP_TRANSP_TCP,
+		      false, false);
 	TEST_ERR(err);
 
-	err = sip_transp_laddr(uag_sip(), &laddr, SIP_TRANSP_UDP, NULL);
+	err = sip_transp_laddr(uag_sip(), &laddr, transp, NULL);
 	TEST_ERR(err);
 
 	err = ua_alloc(&t.ua, "Foo <sip:user@127.0.0.1>;regint=0");
 	TEST_ERR(err);
 
+	/* NOTE: no angle brackets in the Request URI */
 	n = re_snprintf(uri, sizeof(uri),
-			"sip:user@127.0.0.1:%u", sa_port(&laddr));
+			"sip:user@127.0.0.1:%u%s",
+			sa_port(&laddr), sip_transp_param(transp));
 	ASSERT_TRUE(n > 0);
 
 	err = ua_options_send(t.ua, uri, options_resp_handler, &t);
@@ -719,6 +727,7 @@ int test_ua_options(void)
 
 	/* verify after test is complete */
 	ASSERT_EQ(1, t.n_resp);
+	ASSERT_EQ(transp, t.tp_resp);
 
  out:
 	test_reset(&t);
@@ -726,5 +735,19 @@ int test_ua_options(void)
 	ua_stop_all(true);
 	ua_close();
 
+	return err;
+}
+
+
+int test_ua_options(void)
+{
+	int err = 0;
+
+	err |= test_ua_options_base(SIP_TRANSP_UDP);
+	TEST_ERR(err);
+	err |= test_ua_options_base(SIP_TRANSP_TCP);
+	TEST_ERR(err);
+
+ out:
 	return err;
 }
