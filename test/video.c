@@ -33,6 +33,11 @@ int test_video(void)
 	ASSERT_EQ(4294965000ULL, video_calc_rtp_timestamp(1431655, 30));
 	ASSERT_EQ(4294968000ULL, video_calc_rtp_timestamp(1431656, 30));
 
+	ASSERT_EQ(0,        video_calc_rtp_timestamp_fix(0));
+	ASSERT_EQ(90,       video_calc_rtp_timestamp_fix(1000));
+	ASSERT_EQ(90000,    video_calc_rtp_timestamp_fix(1000000));
+	ASSERT_EQ(90000000, video_calc_rtp_timestamp_fix(1000000000));
+
  out:
 	return err;
 }
