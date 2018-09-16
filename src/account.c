@@ -987,6 +987,9 @@ const char *account_mwi(const struct account *acc)
  */
 const char *account_call_transfer(const struct account *acc)
 {
+	if (!acc)
+		return "no";
+
 	return acc->refer ? "yes" : "no";
 }
 
