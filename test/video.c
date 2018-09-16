@@ -23,6 +23,11 @@ int test_video(void)
 	ASSERT_EQ(90000,    video_calc_rtp_timestamp_fix(1000000));
 	ASSERT_EQ(90000000, video_calc_rtp_timestamp_fix(1000000000));
 
+	ASSERT_EQ(0,          video_calc_timebase_timestamp(0));
+	ASSERT_EQ(1000,       video_calc_timebase_timestamp(90));
+	ASSERT_EQ(1000000,    video_calc_timebase_timestamp(90000));
+	ASSERT_EQ(1000000000, video_calc_timebase_timestamp(90000000));
+
  out:
 	return err;
 }
