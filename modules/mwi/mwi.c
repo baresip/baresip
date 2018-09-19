@@ -167,6 +167,9 @@ static void ua_event_handler(struct ua *ua,
 			struct mwi *mwi = le->data;
 			le = le->next;
 
+			if (ua != mwi->ua)
+				continue;
+
 			mwi->shutdown = true;
 
 			if (mwi->sub) {
