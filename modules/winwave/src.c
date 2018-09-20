@@ -173,7 +173,7 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 			  (DWORD_PTR) st,
 			  CALLBACK_FUNCTION | WAVE_FORMAT_DIRECT);
 	if (res != MMSYSERR_NOERROR) {
-		warning("winwave: waveInOpen: failed %d\n", err);
+		warning("winwave: waveInOpen: failed res=%d\n", res);
 		return EINVAL;
 	}
 
