@@ -394,11 +394,12 @@ static inline void draw_rgb(const uint8_t *pic, int w, int h)
 
 
 static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	NSAutoreleasePool *pool;
 	bool upd = false;
 	int err = 0;
+	(void)timestamp;
 
 	pool = [[NSAutoreleasePool alloc] init];
 	if (!pool)

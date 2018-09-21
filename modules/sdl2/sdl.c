@@ -162,13 +162,14 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	void *pixels;
 	uint8_t *d;
 	int dpitch, ret;
 	unsigned i, h;
 	uint32_t format;
+	(void)timestamp;
 
 	if (!st || !frame)
 		return EINVAL;

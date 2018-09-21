@@ -69,6 +69,7 @@ struct video_loop {
 	struct vidsz disp_size;
 	enum vidfmt src_fmt;
 	struct vidframe *frame;
+	uint64_t frame_timestamp;
 	struct lock *frame_mutex;
 	bool new_frame;
 	uint64_t ts_start;      /* usec */
@@ -140,7 +141,8 @@ static void display_handler(void *arg)
 		goto out;
 
 	/* display frame */
-	err = vidisp_display(vl->vidisp, "Video Loop", vl->frame);
+	err = vidisp_display(vl->vidisp, "Video Loop",
+			     vl->frame, vl->frame_timestamp);
 	vl->new_frame = false;
 
 	if (err == ENODEV) {
@@ -212,8 +214,8 @@ static int display(struct video_loop *vl, struct vidframe *frame,
 	}
 
 	vidframe_copy(vl->frame, frame);
+	vl->frame_timestamp = timestamp;
 	vl->new_frame = true;
-	/* XXX: pass timestamp to vidisp */
 
  out:
 	lock_rel(vl->frame_mutex);
