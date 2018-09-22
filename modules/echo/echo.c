@@ -42,13 +42,13 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 	switch (ev) {
 
-		case CALL_EVENT_CLOSED:
-			debug("echo: CALL_CLOSED: %s\n", str);
-			mem_deref(sess);
-			break;
+	case CALL_EVENT_CLOSED:
+		debug("echo: CALL_CLOSED: %s\n", str);
+		mem_deref(sess);
+		break;
 
-		default:
-			break;
+	default:
+		break;
 	}
 }
 
@@ -101,19 +101,19 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	switch (ev) {
 
-		case UA_EVENT_CALL_INCOMING:
-			debug("echo: CALL_INCOMING: peer=%s  -->  local=%s\n",
-					call_peeruri(call),
-					call_localuri(call));
+	case UA_EVENT_CALL_INCOMING:
+		debug("echo: CALL_INCOMING: peer=%s  -->  local=%s\n",
+				call_peeruri(call),
+				call_localuri(call));
 
-			err = new_session(call);
-			if (err) {
-				ua_hangup(ua, call, 500, "Server Error");
-			}
-			break;
+		err = new_session(call);
+		if (err) {
+			ua_hangup(ua, call, 500, "Server Error");
+		}
+		break;
 
-		default:
-			break;
+	default:
+		break;
 	}
 }
 
