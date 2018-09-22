@@ -14,11 +14,6 @@
 #include <rem.h>
 #include <baresip.h>
 
-int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp* vd,
-	struct vidisp_prm *prm, const char *dev, vidisp_resize_h *resizeh,
-	void *arg);
-int omx_vidisp_display(struct vidisp_st *st, const char *title,
-	const struct vidframe *frame, uint64_t timestamp);
 
 struct vidisp_st {
 	const struct vidisp *vd;  /* inheritance */
@@ -38,7 +33,7 @@ static void destructor(void *arg)
 }
 
 
-int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp *vd,
+static int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp *vd,
 		     struct vidisp_prm *prm, const char *dev,
 		     vidisp_resize_h *resizeh, void *arg)
 {
@@ -65,7 +60,7 @@ int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp *vd,
 }
 
 
-int omx_vidisp_display(struct vidisp_st *st, const char *title,
+static int omx_vidisp_display(struct vidisp_st *st, const char *title,
 		   const struct vidframe *frame, uint64_t timestamp)
 {
 	int err = 0;
