@@ -915,7 +915,7 @@ typedef int  (vidisp_alloc_h)(struct vidisp_st **vp,
 typedef int  (vidisp_update_h)(struct vidisp_st *st, bool fullscreen,
 			       int orient, const struct vidrect *window);
 typedef int  (vidisp_disp_h)(struct vidisp_st *st, const char *title,
-			     const struct vidframe *frame);
+			     const struct vidframe *frame, uint64_t timestamp);
 typedef void (vidisp_hide_h)(struct vidisp_st *st);
 
 /** Defines a Video display */
@@ -936,7 +936,7 @@ int vidisp_alloc(struct vidisp_st **stp, struct list *vidispl,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg);
 int vidisp_display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame);
+		   const struct vidframe *frame, uint64_t timestamp);
 const struct vidisp *vidisp_find(const struct list *vidispl, const char *name);
 struct vidisp *vidisp_get(struct vidisp_st *st);
 

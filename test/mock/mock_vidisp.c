@@ -52,10 +52,11 @@ static int mock_disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int mock_display(struct vidisp_st *st, const char *title,
-			const struct vidframe *frame)
+			const struct vidframe *frame, uint64_t timestamp)
 {
 	unsigned width, height;
 	(void)title;
+	(void)timestamp;
 
 	if (!st || !frame)
 		return EINVAL;

@@ -321,10 +321,11 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	struct vidframe frame_rgb;
 	int err = 0;
+	(void)timestamp;
 
 	if (!st->disp)
 		return ENODEV;

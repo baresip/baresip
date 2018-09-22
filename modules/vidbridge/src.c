@@ -83,14 +83,11 @@ struct vidsrc_st *vidbridge_src_find(const char *device)
 
 
 void vidbridge_src_input(struct vidsrc_st *st,
-			 const struct vidframe *frame)
+			 const struct vidframe *frame, uint64_t timestamp)
 {
 	if (!st || !frame)
 		return;
 
-	/* XXX: Read from vidisp input */
-	st->timestamp += VIDEO_TIMEBASE / st->fps;
-
 	if (st->frameh)
-		st->frameh((struct vidframe *)frame, st->timestamp, st->arg);
+		st->frameh((struct vidframe *)frame, timestamp, st->arg);
 }

@@ -61,15 +61,14 @@ static int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp *vd,
 
 
 static int omx_vidisp_display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	int err = 0;
 	void* buf;
 	uint32_t len;
-
 	struct vidframe omx_frame;
-
 	(void)title;
+	(void)timestamp;
 
 	if (frame->fmt != VID_FMT_YUV420P) {
 		return EINVAL;

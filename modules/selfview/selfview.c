@@ -157,7 +157,6 @@ static int encode_win(struct vidfilt_enc_st *st, struct vidframe *frame,
 {
 	struct selfview_enc *enc = (struct selfview_enc *)st;
 	int err;
-	(void)timestamp;
 
 	if (!frame)
 		return 0;
@@ -170,7 +169,7 @@ static int encode_win(struct vidfilt_enc_st *st, struct vidframe *frame,
 			return err;
 	}
 
-	return vidisp_display(enc->disp, "Selfview", frame);
+	return vidisp_display(enc->disp, "Selfview", frame, *timestamp);
 }
 
 
