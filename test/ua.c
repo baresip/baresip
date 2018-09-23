@@ -443,7 +443,6 @@ static int reg_auth(enum sip_transp tp)
 	uag_event_unregister(ua_event_handler);
 	test_reset(&t);
 
-
 	return err;
 }
 
