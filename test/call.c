@@ -609,6 +609,9 @@ int test_call_max(void)
  out:
 	fixture_close(f);
 
+	/* Set the max-calls limit */
+	conf_config()->call.max_calls = 0;
+
 	return err;
 }
 
