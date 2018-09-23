@@ -736,12 +736,15 @@ int ua_update_account(struct ua *ua)
 }
 
 
-static int uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
+int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 {
 	size_t len;
 	int err = 0;
 	bool uri_is_ip;
 	struct sa sa_addr;
+
+	if (!ua || !buf || !uri)
+		return EINVAL;
 
 	/* Skip initial whitespace */
 	while (isspace(*uri))
@@ -819,7 +822,7 @@ int ua_connect(struct ua *ua, struct call **callp,
 	if (params)
 		err |= mbuf_printf(dialbuf, "<");
 
-	err |= uri_complete(ua, dialbuf, uri);
+	err |= ua_uri_complete(ua, dialbuf, uri);
 
 	if (params) {
 		err |= mbuf_printf(dialbuf, ";%s", params);
@@ -1006,7 +1009,7 @@ int ua_options_send(struct ua *ua, const char *uri,
 	if (!dialbuf)
 		return ENOMEM;
 
-	err = uri_complete(ua, dialbuf, uri);
+	err = ua_uri_complete(ua, dialbuf, uri);
 	if (err)
 		goto out;
 
