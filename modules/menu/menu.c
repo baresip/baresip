@@ -30,12 +30,12 @@ static uint64_t start_ticks;          /**< Ticks when app started         */
 static struct tmr tmr_alert;          /**< Incoming call alert timer      */
 static struct tmr tmr_stat;           /**< Call status timer              */
 static enum statmode statmode;        /**< Status mode                    */
-static struct mbuf *dialbuf;          /**< Buffer for dialled number      */
 static struct le *le_cur;             /**< Current User-Agent (struct ua) */
 
 static struct {
 	struct play *play;
 	struct message_lsnr *message;
+	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
 	bool bell;
 	bool ringback_disabled;	      /**< no ringback on sip 180 respons */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
@@ -198,18 +198,18 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 	if (str_isset(carg->prm)) {
 
-		mbuf_rewind(dialbuf);
-		(void)mbuf_write_str(dialbuf, carg->prm);
+		mbuf_rewind(menu.dialbuf);
+		(void)mbuf_write_str(menu.dialbuf, carg->prm);
 
 		err = ua_connect(uag_cur(), NULL, NULL,
 				 carg->prm, NULL, VIDMODE_ON);
 	}
-	else if (dialbuf->end > 0) {
+	else if (menu.dialbuf->end > 0) {
 
 		char *uri;
 
-		dialbuf->pos = 0;
-		err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+		menu.dialbuf->pos = 0;
+		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
 		if (err)
 			return err;
 
@@ -261,18 +261,18 @@ static int options_command(struct re_printf *pf, void *arg)
 
 	if (str_isset(carg->prm)) {
 
-		mbuf_rewind(dialbuf);
-		(void)mbuf_write_str(dialbuf, carg->prm);
+		mbuf_rewind(menu.dialbuf);
+		(void)mbuf_write_str(menu.dialbuf, carg->prm);
 
 		err = ua_options_send(uag_cur(), carg->prm,
 				      options_resp_handler, NULL);
 	}
-	else if (dialbuf->end > 0) {
+	else if (menu.dialbuf->end > 0) {
 
 		char *uri;
 
-		dialbuf->pos = 0;
-		err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+		menu.dialbuf->pos = 0;
+		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
 		if (err)
 			return err;
 
@@ -334,20 +334,20 @@ static int create_ua(struct re_printf *pf, void *arg)
 
 	if (str_isset(carg->prm)) {
 
-		mbuf_rewind(dialbuf);
-		(void)mbuf_write_str(dialbuf, carg->prm);
+		mbuf_rewind(menu.dialbuf);
+		(void)mbuf_write_str(menu.dialbuf, carg->prm);
 
 		(void)re_hprintf(pf, "Creating UA for %s ...\n", carg->prm);
 		err = ua_alloc(&ua, carg->prm);
 		if (err)
 			goto out;
 	}
-	else if (dialbuf->end > 0) {
+	else if (menu.dialbuf->end > 0) {
 
 		char *uri;
 
-		dialbuf->pos = 0;
-		err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+		menu.dialbuf->pos = 0;
+		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
 		if (err)
 			return err;
 
@@ -1076,13 +1076,13 @@ static void redial_handler(void *arg)
 		return;
 	}
 
-	if (dialbuf->end == 0) {
+	if (menu.dialbuf->end == 0) {
 		warning("menu: redial: dialbuf is empty\n");
 		return;
 	}
 
-	dialbuf->pos = 0;
-	err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+	menu.dialbuf->pos = 0;
+	err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
 	if (err)
 		return;
 
@@ -1277,8 +1277,8 @@ static int module_init(void)
 		     menu.redial_delay);
 	}
 
-	dialbuf = mbuf_alloc(64);
-	if (!dialbuf)
+	menu.dialbuf = mbuf_alloc(64);
+	if (!menu.dialbuf)
 		return ENOMEM;
 
 	start_ticks = tmr_jiffies();
@@ -1323,7 +1323,7 @@ static int module_close(void)
 
 	tmr_cancel(&tmr_alert);
 	tmr_cancel(&tmr_stat);
-	dialbuf = mem_deref(dialbuf);
+	menu.dialbuf = mem_deref(menu.dialbuf);
 
 	le_cur = NULL;
 
