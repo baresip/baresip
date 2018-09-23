@@ -45,9 +45,11 @@ struct fixture {
 	uint32_t magic;
 	struct agent a, b;
 	struct sa laddr_sip;
+	struct sa laddr_tcp;
 	enum behaviour behaviour;
 	enum action estab_action;
 	char buri[256];
+	char buri_tcp[256];
 	int err;
 	unsigned exp_estab;
 	unsigned exp_closed;
@@ -60,7 +62,7 @@ struct fixture {
 	f->a.fix = f;							\
 	f->b.fix = f;							\
 									\
-	err = ua_init("test", true, true, true, false);			\
+	err = ua_init("test", true, true, false, false);		\
 	TEST_ERR(err);							\
 									\
 	f->magic = MAGIC;						\
@@ -84,8 +86,13 @@ struct fixture {
 	err = sip_transp_laddr(uag_sip(), &f->laddr_sip,		\
 			       SIP_TRANSP_UDP, NULL);			\
 	TEST_ERR(err);							\
+	err = sip_transp_laddr(uag_sip(), &f->laddr_tcp,		\
+			       SIP_TRANSP_TCP, NULL);			\
+	TEST_ERR(err);							\
 									\
-	re_snprintf(f->buri, sizeof(f->buri), "sip:b@%J", &f->laddr_sip);
+	re_snprintf(f->buri, sizeof(f->buri), "sip:b@%J", &f->laddr_sip);\
+	re_snprintf(f->buri_tcp, sizeof(f->buri_tcp),			\
+		    "sip:b@%J;transport=tcp", &f->laddr_tcp);\
 
 
 #define fixture_init(f)				\
@@ -110,6 +117,7 @@ struct fixture {
 	} while (0)
 
 static const struct list *hdrs;
+
 
 static void event_handler(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg)
@@ -260,7 +268,7 @@ int test_call_answer(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -294,7 +302,7 @@ int test_call_reject(void)
 	f->behaviour = BEHAVIOUR_REJECT;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -327,7 +335,7 @@ int test_call_af_mismatch(void)
 	ua_set_media_af(f->b.ua, AF_INET);
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -362,7 +370,7 @@ int test_call_answer_hangup_a(void)
 	f->estab_action = ACTION_HANGUP_A;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -396,11 +404,11 @@ int test_call_answer_hangup_b(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_HANGUP_B;
 
-	/* add angle brackets */
-	re_snprintf(uri, sizeof(uri), "<%s>", f->buri);
+	/* add angle brackets ? */
+	re_snprintf(uri, sizeof(uri), "%s", f->buri);
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, uri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, uri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -436,7 +444,7 @@ int test_call_rtp_timeout(void)
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	call = ua_call(f->a.ua);
@@ -499,7 +507,7 @@ int test_call_multiple(void)
 	 * Step 1 -- make 4 calls from A to B
 	 */
 	for (i=0; i<4; i++) {
-		err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+		err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 		TEST_ERR(err);
 	}
 
@@ -555,7 +563,7 @@ int test_call_multiple(void)
 	f->b.n_established = 0;
 	f->exp_estab = 2;
 	for (i=0; i<2; i++) {
-		err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+		err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 		TEST_ERR(err);
 	}
 
@@ -588,7 +596,7 @@ int test_call_max(void)
 
 	/* Make 2 calls, one should work and one should fail */
 	for (i=0; i<2; i++) {
-		err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+		err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 		TEST_ERR(err);
 	}
 
@@ -660,7 +668,7 @@ int test_call_dtmf(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri_tcp, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -716,7 +724,7 @@ int test_call_video(void)
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_ON);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -779,7 +787,7 @@ int test_call_aulevel(void)
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -816,7 +824,7 @@ int test_call_progress(void)
 	f->behaviour = BEHAVIOUR_PROGRESS;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -884,7 +892,7 @@ static int test_media_base(enum audio_mode txmode)
 	f->behaviour = BEHAVIOUR_ANSWER;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -959,7 +967,7 @@ int test_call_mediaenc(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1011,7 +1019,7 @@ int test_call_custom_headers(void)
 	err = custom_hdrs_add(&custom_hdrs, "X-CALL_ID", "%d", some_id);
 	err = custom_hdrs_add(&custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
 	ua_set_custom_hdrs(f->a.ua, &custom_hdrs);
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, NULL, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 
 	list_flush(&custom_hdrs);
 	TEST_ERR(err);

@@ -192,6 +192,7 @@ static int ua_print_call_status(struct re_printf *pf, void *unused)
 static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = uag_cur();
 	int err = 0;
 
 	(void)pf;
@@ -199,10 +200,15 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	if (str_isset(carg->prm)) {
 
 		mbuf_rewind(menu.dialbuf);
-		(void)mbuf_write_str(menu.dialbuf, carg->prm);
+
+		/* prepend sip scheme, append domain */
+		err  = ua_uri_complete(ua, menu.dialbuf, carg->prm);
+		err |= mbuf_write_u8(menu.dialbuf, 0);
+		if (err)
+			return err;
 
 		err = ua_connect(uag_cur(), NULL, NULL,
-				 carg->prm, NULL, VIDMODE_ON);
+				 (char *)menu.dialbuf->buf, VIDMODE_ON);
 	}
 	else if (menu.dialbuf->end > 0) {
 
@@ -213,7 +219,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		if (err)
 			return err;
 
-		err = ua_connect(uag_cur(), NULL, NULL, uri, NULL, VIDMODE_ON);
+		err = ua_connect(uag_cur(), NULL, NULL, uri, VIDMODE_ON);
 
 		mem_deref(uri);
 	}
@@ -1086,7 +1092,7 @@ static void redial_handler(void *arg)
 	if (err)
 		return;
 
-	err = ua_connect(uag_cur(), NULL, NULL, uri, NULL, VIDMODE_ON);
+	err = ua_connect(uag_cur(), NULL, NULL, uri, VIDMODE_ON);
 	if (err) {
 		warning("menu: redial: ua_connect failed (%m)\n", err);
 	}

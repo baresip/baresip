@@ -727,27 +727,18 @@ const struct list *call_get_custom_hdrs(const struct call *call)
 }
 
 
-int call_connect(struct call *call, const struct pl *paddr)
+int call_connect(struct call *call, const char *to_uri)
 {
-	struct sip_addr addr;
 	int err;
 
-	if (!call || !paddr)
+	if (!call || !to_uri)
 		return EINVAL;
 
-	info("call: connecting to '%r'..\n", paddr);
+	info("call: connecting to '%s'..\n", to_uri);
 
 	call->outgoing = true;
 
-	/* if the peer-address is a full SIP address then we need
-	 * to parse it and extract the SIP uri part.
-	 */
-	if (0 == sip_addr_decode(&addr, paddr)) {
-		err = pl_strdup(&call->peer_uri, &addr.auri);
-	}
-	else {
-		err = pl_strdup(&call->peer_uri, paddr);
-	}
+	err = str_dup(&call->peer_uri, to_uri);
 	if (err)
 		return err;
 

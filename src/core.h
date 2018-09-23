@@ -164,7 +164,7 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		const struct sip_msg *msg, struct call *xcall,
 		struct dnsc *dnsc,
 		call_event_h *eh, void *arg);
-int  call_connect(struct call *call, const struct pl *paddr);
+int  call_connect(struct call *call, const char *to_uri);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
 int  call_hangup(struct call *call, uint16_t scode, const char *reason);

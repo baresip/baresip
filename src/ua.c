@@ -378,11 +378,8 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
 				    call_localuri(call), true);
 		if (!err) {
-			struct pl pl;
 
-			pl_set_str(&pl, str);
-
-			err = call_connect(call2, &pl);
+			err = call_connect(call2, str);
 			if (err) {
 				warning("ua: transfer: connect error: %m\n",
 					err);
@@ -800,65 +797,49 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
  * @param ua        User-Agent
  * @param callp     Optional pointer to allocated call object
  * @param from_uri  Optional From uri, or NULL for default AOR
- * @param uri       SIP uri to connect to
- * @param params    Optional URI parameters
+ * @param to_uri    SIP uri to connect to
  * @param vmode     Video mode
  *
  * @return 0 if success, otherwise errorcode
+ *
+ * valid uris:
+ *
+ *   sip:user@domain.com
+ *   sip:user@domain.com;param=value
+ *
  */
 int ua_connect(struct ua *ua, struct call **callp,
-	       const char *from_uri, const char *uri,
-	       const char *params, enum vidmode vmode)
+	       const char *from_uri, const char *to_uri,
+	       enum vidmode vmode)
 {
 	struct call *call = NULL;
-	struct mbuf *dialbuf;
-	struct pl pl;
 	int err = 0;
 
-	if (!ua || !str_isset(uri))
+	if (!ua || !str_isset(to_uri))
 		return EINVAL;
 
-	dialbuf = mbuf_alloc(64);
-	if (!dialbuf)
-		return ENOMEM;
-
-	if (params)
-		err |= mbuf_printf(dialbuf, "<");
-
-	err |= ua_uri_complete(ua, dialbuf, uri);
-
-	if (params) {
-		err |= mbuf_printf(dialbuf, ";%s", params);
+#if 1
+	if (strstr(to_uri, "<")) {
+		warning("ua_connect: to_uri has angle brackets (%s)\n",
+			to_uri);
+		return EBADMSG;
 	}
-
-	/* Append any optional URI parameters */
-	err |= mbuf_write_pl(dialbuf, &ua->acc->luri.params);
-
-	if (params)
-		err |= mbuf_printf(dialbuf, ">");
-
-	if (err)
-		goto out;
+#endif
 
 	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)
 		goto out;
 
-	pl.p = (char *)dialbuf->buf;
-	pl.l = dialbuf->end;
-
 	if (!list_isempty(&ua->custom_hdrs))
 		call_set_custom_hdrs(call, &ua->custom_hdrs);
 
-	err = call_connect(call, &pl);
+	err = call_connect(call, to_uri);
 
+ out:
 	if (err)
 		mem_deref(call);
 	else if (callp)
 		*callp = call;
-
- out:
-	mem_deref(dialbuf);
 
 	return err;
 }
