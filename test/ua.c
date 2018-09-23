@@ -167,6 +167,7 @@ int test_ua_register(void)
 int test_ua_alloc(void)
 {
 	struct ua *ua;
+	struct mbuf *mb = mbuf_alloc(512);
 	uint32_t n_uas = list_count(uag_list());
 	int err = 0;
 
@@ -186,11 +187,17 @@ int test_ua_alloc(void)
 	ASSERT_EQ((n_uas + 1), list_count(uag_list()));
 	ASSERT_TRUE(ua == uag_find_aor("sip:user@127.0.0.1"));
 
+	/* verify URI complete function */
+	err = ua_uri_complete(ua, mb, "bob");
+	ASSERT_EQ(0, err);
+	TEST_STRCMP("sip:bob@127.0.0.1", 17, mb->buf, mb->end);
+
 	mem_deref(ua);
 
 	ASSERT_EQ((n_uas), list_count(uag_list()));
 
  out:
+	mem_deref(mb);
 	return err;
 }
 
