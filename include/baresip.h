@@ -126,6 +126,7 @@ typedef void (call_event_h)(struct call *call, enum call_event ev,
 			    const char *str, void *arg);
 typedef void (call_dtmf_h)(struct call *call, char key, void *arg);
 
+int  call_connect(struct call *call, const struct pl *paddr);
 int  call_modify(struct call *call);
 int  call_hold(struct call *call, bool hold);
 int  call_send_digit(struct call *call, char key);
