@@ -762,13 +762,13 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
  * @param ua        User-Agent
  * @param callp     Optional pointer to allocated call object
  * @param from_uri  Optional From uri, or NULL for default AOR
- * @param uri       SIP uri to connect to
+ * @param req_uri   SIP uri to connect to
  * @param vmode     Video mode
  *
  * @return 0 if success, otherwise errorcode
  */
 int ua_connect(struct ua *ua, struct call **callp,
-	       const char *from_uri, const char *uri,
+	       const char *from_uri, const char *req_uri,
 	       enum vidmode vmode)
 {
 	struct call *call = NULL;
@@ -776,14 +776,14 @@ int ua_connect(struct ua *ua, struct call **callp,
 	struct pl pl;
 	int err = 0;
 
-	if (!ua || !str_isset(uri))
+	if (!ua || !str_isset(req_uri))
 		return EINVAL;
 
 	dialbuf = mbuf_alloc(64);
 	if (!dialbuf)
 		return ENOMEM;
 
-	err |= ua_uri_complete(ua, dialbuf, uri);
+	err |= ua_uri_complete(ua, dialbuf, req_uri);
 
 	/* Append any optional URI parameters */
 	err |= mbuf_write_pl(dialbuf, &ua->acc->luri.params);

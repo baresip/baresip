@@ -123,6 +123,7 @@ struct fixture {
 
 static const struct list *hdrs;
 
+
 static void event_handler(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg)
 {
