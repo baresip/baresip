@@ -672,7 +672,7 @@ int test_call_dtmf(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri_tcp, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
