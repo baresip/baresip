@@ -1177,6 +1177,18 @@ static int add_transp_af(const struct sa *laddr)
 				warning("ua: tls_alloc() failed: %m\n", err);
 				return err;
 			}
+
+			if (str_isset(uag.cfg->ca)) {
+				const char *ca = NULL;
+				ca = uag.cfg->ca;
+				info("SIP CA: %s\n", ca);
+
+				err = tls_add_ca(uag.tls, ca);
+				if (err) {
+					warning("ua: tls_add_ca() failed: %m\n", err);
+					return err;
+				}
+			}
 		}
 
 		if (sa_isset(&local, SA_PORT))
