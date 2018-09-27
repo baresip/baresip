@@ -88,13 +88,6 @@ static struct {
 };
 
 
-/* prototypes */
-static int ua_call_alloc(struct call **callp, struct ua *ua,
-			 enum vidmode vidmode, const struct sip_msg *msg,
-			 struct call *xcall, const char *local_uri,
-			 bool use_rtp);
-
-
 /* This function is called when all SIP transactions are done */
 static void exit_handler(void *arg)
 {
@@ -426,20 +419,18 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 }
 
 
-static int ua_call_alloc(struct call **callp, struct ua *ua,
-			 enum vidmode vidmode, const struct sip_msg *msg,
-			 struct call *xcall, const char *local_uri,
-			 bool use_rtp)
+int ua_call_alloc(struct call **callp, struct ua *ua,
+		  enum vidmode vidmode, const struct sip_msg *msg,
+		  struct call *xcall, const char *local_uri,
+		  bool use_rtp)
 {
 	const struct network *net = baresip_network();
 	struct call_prm cprm;
 	int af = AF_UNSPEC;
 	int err;
 
-	if (*callp) {
-		warning("ua: call_alloc: call is already allocated\n");
-		return EALREADY;
-	}
+	if (!callp || !ua)
+		return EINVAL;
 
 	/* 1. if AF_MEDIA is set, we prefer it
 	 * 2. otherwise fall back to SIP AF
