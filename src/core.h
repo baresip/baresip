@@ -164,7 +164,6 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		const struct sip_msg *msg, struct call *xcall,
 		struct dnsc *dnsc,
 		call_event_h *eh, void *arg);
-int  call_connect(struct call *call, const char *to_uri);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
 int  call_hangup(struct call *call, uint16_t scode, const char *reason);
@@ -174,8 +173,6 @@ int  call_sdp_get(const struct call *call, struct mbuf **descp, bool offer);
 int  call_jbuf_stat(struct re_printf *pf, const struct call *call);
 int  call_info(struct re_printf *pf, const struct call *call);
 int  call_reset_transp(struct call *call, const struct sa *laddr);
-int  call_notify_sipfrag(struct call *call, uint16_t scode,
-			 const char *reason, ...);
 int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
 struct account *call_account(const struct call *call);

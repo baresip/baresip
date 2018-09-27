@@ -88,13 +88,6 @@ static struct {
 };
 
 
-/* prototypes */
-static int ua_call_alloc(struct call **callp, struct ua *ua,
-			 enum vidmode vidmode, const struct sip_msg *msg,
-			 struct call *xcall, const char *local_uri,
-			 bool use_rtp);
-
-
 /* This function is called when all SIP transactions are done */
 static void exit_handler(void *arg)
 {
@@ -305,8 +298,6 @@ static void call_event_handler(struct call *call, enum call_event ev,
 {
 	struct ua *ua = arg;
 	const char *peeruri;
-	struct call *call2 = NULL;
-	int err;
 
 	MAGIC_CHECK(ua);
 
@@ -365,31 +356,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		break;
 
 	case CALL_EVENT_TRANSFER:
-
-		/*
-		 * Create a new call to transfer target.
-		 *
-		 * NOTE: we will automatically connect a new call to the
-		 *       transfer target
-		 */
-
-		ua_printf(ua, "transferring call to %s\n", str);
-
-		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
-				    call_localuri(call), true);
-		if (!err) {
-
-			err = call_connect(call2, str);
-			if (err) {
-				warning("ua: transfer: connect error: %m\n",
-					err);
-			}
-		}
-
-		if (err) {
-			(void)call_notify_sipfrag(call, 500, "Call Error");
-			mem_deref(call2);
-		}
+		ua_event(ua, UA_EVENT_CALL_TRANSFER, call, str);
 		break;
 
 	case CALL_EVENT_TRANSFER_FAILED:
@@ -423,20 +390,18 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 }
 
 
-static int ua_call_alloc(struct call **callp, struct ua *ua,
-			 enum vidmode vidmode, const struct sip_msg *msg,
-			 struct call *xcall, const char *local_uri,
-			 bool use_rtp)
+int ua_call_alloc(struct call **callp, struct ua *ua,
+		  enum vidmode vidmode, const struct sip_msg *msg,
+		  struct call *xcall, const char *local_uri,
+		  bool use_rtp)
 {
 	const struct network *net = baresip_network();
 	struct call_prm cprm;
 	int af = AF_UNSPEC;
 	int err;
 
-	if (*callp) {
-		warning("ua: call_alloc: call is already allocated\n");
-		return EALREADY;
-	}
+	if (!callp || !ua)
+		return EINVAL;
 
 	/* 1. if AF_MEDIA is set, we prefer it
 	 * 2. otherwise fall back to SIP AF

@@ -126,6 +126,7 @@ typedef void (call_event_h)(struct call *call, enum call_event ev,
 			    const char *str, void *arg);
 typedef void (call_dtmf_h)(struct call *call, char key, void *arg);
 
+int  call_connect(struct call *call, const char *req_uri);
 int  call_modify(struct call *call);
 int  call_hold(struct call *call, bool hold);
 int  call_send_digit(struct call *call, char key);
@@ -134,6 +135,8 @@ bool call_has_video(const struct call *call);
 int  call_transfer(struct call *call, const char *uri);
 int  call_status(struct re_printf *pf, const struct call *call);
 int  call_debug(struct re_printf *pf, const struct call *call);
+int  call_notify_sipfrag(struct call *call, uint16_t scode,
+			 const char *reason, ...);
 void call_set_handlers(struct call *call, call_event_h *eh,
 		       call_dtmf_h *dtmfh, void *arg);
 uint16_t      call_scode(const struct call *call);
@@ -667,6 +670,7 @@ enum ua_event {
 	UA_EVENT_CALL_PROGRESS,
 	UA_EVENT_CALL_ESTABLISHED,
 	UA_EVENT_CALL_CLOSED,
+	UA_EVENT_CALL_TRANSFER,
 	UA_EVENT_CALL_TRANSFER_FAILED,
 	UA_EVENT_CALL_DTMF_START,
 	UA_EVENT_CALL_DTMF_END,
@@ -729,6 +733,10 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name);
 void ua_set_custom_hdrs(struct ua *ua, struct list *custom_hdrs);
 int  ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri);
+int  ua_call_alloc(struct call **callp, struct ua *ua,
+		   enum vidmode vidmode, const struct sip_msg *msg,
+		   struct call *xcall, const char *local_uri,
+		   bool use_rtp);
 
 
 /* One instance */
