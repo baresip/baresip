@@ -1852,6 +1852,8 @@ struct list *uag_list(void)
 /**
  * Return list of methods supported by the UA
  *
+ * @param ua User-Agent
+ *
  * @return String of supported methods
  */
 const char *ua_allowed_methods(const struct ua *ua)
