@@ -667,7 +667,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 
 	case MQ_CONNECT:
 		uri = data;
-		err = ua_connect(ua, &call, NULL, uri, NULL, VIDMODE_ON);
+		err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON);
 		if (err) {
 			gdk_threads_enter();
 			warning_dialog("Call failed",

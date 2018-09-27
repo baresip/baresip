@@ -763,14 +763,13 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
  * @param callp     Optional pointer to allocated call object
  * @param from_uri  Optional From uri, or NULL for default AOR
  * @param uri       SIP uri to connect to
- * @param params    Optional URI parameters
  * @param vmode     Video mode
  *
  * @return 0 if success, otherwise errorcode
  */
 int ua_connect(struct ua *ua, struct call **callp,
 	       const char *from_uri, const char *uri,
-	       const char *params, enum vidmode vmode)
+	       enum vidmode vmode)
 {
 	struct call *call = NULL;
 	struct mbuf *dialbuf;
@@ -784,20 +783,10 @@ int ua_connect(struct ua *ua, struct call **callp,
 	if (!dialbuf)
 		return ENOMEM;
 
-	if (params)
-		err |= mbuf_printf(dialbuf, "<");
-
 	err |= ua_uri_complete(ua, dialbuf, uri);
-
-	if (params) {
-		err |= mbuf_printf(dialbuf, ";%s", params);
-	}
 
 	/* Append any optional URI parameters */
 	err |= mbuf_write_pl(dialbuf, &ua->acc->luri.params);
-
-	if (params)
-		err |= mbuf_printf(dialbuf, ">");
 
 	if (err)
 		goto out;
