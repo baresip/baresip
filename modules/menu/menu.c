@@ -1100,6 +1100,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
 	struct player *player = baresip_player();
+	struct call *call2 = NULL;
+	int err;
 
 	(void)call;
 	(void)prm;
@@ -1211,6 +1213,37 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			}
 		}
 
+		break;
+
+	case UA_EVENT_CALL_TRANSFER:
+		/*
+		 * Create a new call to transfer target.
+		 *
+		 * NOTE: we will automatically connect a new call to the
+		 *       transfer target
+		 */
+
+		info("menu: transferring call %s to '%s'\n",
+		     call_id(call), prm);
+
+		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
+				    call_localuri(call), true);
+		if (!err) {
+			struct pl pl;
+
+			pl_set_str(&pl, prm);
+
+			err = call_connect(call2, &pl);
+			if (err) {
+				warning("ua: transfer: connect error: %m\n",
+					err);
+			}
+		}
+
+		if (err) {
+			(void)call_notify_sipfrag(call, 500, "Call Error");
+			mem_deref(call2);
+		}
 		break;
 
 	case UA_EVENT_REGISTER_OK:
