@@ -44,10 +44,12 @@ struct agent {
 struct fixture {
 	uint32_t magic;
 	struct agent a, b;
-	struct sa laddr_sip;
+	struct sa laddr_udp;
+	struct sa laddr_tcp;
 	enum behaviour behaviour;
 	enum action estab_action;
 	char buri[256];
+	char buri_tcp[256];
 	int err;
 	unsigned exp_estab;
 	unsigned exp_closed;
@@ -60,7 +62,7 @@ struct fixture {
 	f->a.fix = f;							\
 	f->b.fix = f;							\
 									\
-	err = ua_init("test", true, true, true, false);			\
+	err = ua_init("test", true, true, false, false);		\
 	TEST_ERR(err);							\
 									\
 	f->magic = MAGIC;						\
@@ -81,11 +83,21 @@ struct fixture {
 	err = uag_event_register(event_handler, f);			\
 	TEST_ERR(err);							\
 									\
-	err = sip_transp_laddr(uag_sip(), &f->laddr_sip,		\
+	err = sip_transp_laddr(uag_sip(), &f->laddr_udp,		\
 			       SIP_TRANSP_UDP, NULL);			\
 	TEST_ERR(err);							\
 									\
-	re_snprintf(f->buri, sizeof(f->buri), "sip:b@%J", &f->laddr_sip);
+	err = sip_transp_laddr(uag_sip(), &f->laddr_tcp,		\
+			       SIP_TRANSP_TCP, NULL);			\
+	TEST_ERR(err);							\
+									\
+	debug("test: local SIP transp: UDP=%J, TCP=%J\n",		\
+	      &f->laddr_udp, &f->laddr_tcp);				\
+									\
+	re_snprintf(f->buri, sizeof(f->buri),				\
+		    "sip:b@%J", &f->laddr_udp);				\
+	re_snprintf(f->buri_tcp, sizeof(f->buri_tcp),			\
+		    "sip:b@%J;transport=tcp", &f->laddr_tcp);
 
 
 #define fixture_init(f)				\
@@ -1054,6 +1066,34 @@ int test_call_custom_headers(void)
 	ASSERT_EQ(1, fix.b.n_incoming);
 	ASSERT_EQ(1, fix.b.n_established);
 	ASSERT_EQ(0, fix.b.n_closed);
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_tcp(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	/* Make a call using TCP-transport */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri_tcp, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(1, fix.b.n_established);
 
  out:
 	fixture_close(f);
