@@ -774,19 +774,19 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
  *
  */
 int ua_connect(struct ua *ua, struct call **callp,
-	       const char *from_uri, const char *to_uri,
+	       const char *from_uri, const char *req_uri,
 	       enum vidmode vmode)
 {
 	struct call *call = NULL;
 	int err = 0;
 
-	if (!ua || !str_isset(to_uri))
+	if (!ua || !str_isset(req_uri))
 		return EINVAL;
 
 #if 1
-	if (strstr(to_uri, "<")) {
-		warning("ua_connect: to_uri has angle brackets (%s)\n",
-			to_uri);
+	if (strstr(req_uri, "<")) {
+		warning("ua_connect: req_uri has angle brackets (%s)\n",
+			req_uri);
 		return EBADMSG;
 	}
 #endif
@@ -798,7 +798,7 @@ int ua_connect(struct ua *ua, struct call **callp,
 	if (!list_isempty(&ua->custom_hdrs))
 		call_set_custom_hdrs(call, &ua->custom_hdrs);
 
-	err = call_connect(call, to_uri);
+	err = call_connect(call, req_uri);
 
  out:
 	if (err)

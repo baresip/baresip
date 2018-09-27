@@ -727,18 +727,18 @@ const struct list *call_get_custom_hdrs(const struct call *call)
 }
 
 
-int call_connect(struct call *call, const char *to_uri)
+int call_connect(struct call *call, const char *req_uri)
 {
 	int err;
 
-	if (!call || !to_uri)
+	if (!call || !req_uri)
 		return EINVAL;
 
-	info("call: connecting to '%s'..\n", to_uri);
+	info("call: connecting to '%s'..\n", req_uri);
 
 	call->outgoing = true;
 
-	err = str_dup(&call->peer_uri, to_uri);
+	err = str_dup(&call->peer_uri, req_uri);
 	if (err)
 		return err;
 
