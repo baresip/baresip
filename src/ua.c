@@ -766,50 +766,45 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
  * @param vmode     Video mode
  *
  * @return 0 if success, otherwise errorcode
+ *
+ * valid uris:
+ *
+ *   sip:user@domain.com
+ *   sip:user@domain.com;param=value
+ *
  */
 int ua_connect(struct ua *ua, struct call **callp,
 	       const char *from_uri, const char *req_uri,
 	       enum vidmode vmode)
 {
 	struct call *call = NULL;
-	struct mbuf *dialbuf;
-	struct pl pl;
 	int err = 0;
 
 	if (!ua || !str_isset(req_uri))
 		return EINVAL;
 
-	dialbuf = mbuf_alloc(64);
-	if (!dialbuf)
-		return ENOMEM;
-
-	err |= ua_uri_complete(ua, dialbuf, req_uri);
-
-	/* Append any optional URI parameters */
-	err |= mbuf_write_pl(dialbuf, &ua->acc->luri.params);
-
-	if (err)
-		goto out;
+#if 1
+	if (strstr(req_uri, "<")) {
+		warning("ua_connect: req_uri has angle brackets (%s)\n",
+			req_uri);
+		return EBADMSG;
+	}
+#endif
 
 	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)
 		goto out;
 
-	pl.p = (char *)dialbuf->buf;
-	pl.l = dialbuf->end;
-
 	if (!list_isempty(&ua->custom_hdrs))
 		call_set_custom_hdrs(call, &ua->custom_hdrs);
 
-	err = call_connect(call, &pl);
+	err = call_connect(call, req_uri);
 
+ out:
 	if (err)
 		mem_deref(call);
 	else if (callp)
 		*callp = call;
-
- out:
-	mem_deref(dialbuf);
 
 	return err;
 }

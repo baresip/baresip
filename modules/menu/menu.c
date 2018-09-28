@@ -192,6 +192,7 @@ static int ua_print_call_status(struct re_printf *pf, void *unused)
 static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = uag_cur();
 	int err = 0;
 
 	(void)pf;
@@ -199,10 +200,15 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	if (str_isset(carg->prm)) {
 
 		mbuf_rewind(menu.dialbuf);
-		(void)mbuf_write_str(menu.dialbuf, carg->prm);
+
+		/* prepend sip scheme, append domain */
+		err  = ua_uri_complete(ua, menu.dialbuf, carg->prm);
+		err |= mbuf_write_u8(menu.dialbuf, 0);
+		if (err)
+			return err;
 
 		err = ua_connect(uag_cur(), NULL, NULL,
-				 carg->prm, VIDMODE_ON);
+				 (char *)menu.dialbuf->buf, VIDMODE_ON);
 	}
 	else if (menu.dialbuf->end > 0) {
 
@@ -1229,11 +1235,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
 				    call_localuri(call), true);
 		if (!err) {
-			struct pl pl;
 
-			pl_set_str(&pl, prm);
-
-			err = call_connect(call2, &pl);
+			err = call_connect(call2, prm);
 			if (err) {
 				warning("ua: transfer: connect error: %m\n",
 					err);

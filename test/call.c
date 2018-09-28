@@ -89,7 +89,6 @@ struct fixture {
 	err = sip_transp_laddr(uag_sip(), &f->laddr_udp,		\
 			       SIP_TRANSP_UDP, NULL);			\
 	TEST_ERR(err);							\
-									\
 	err = sip_transp_laddr(uag_sip(), &f->laddr_tcp,		\
 			       SIP_TRANSP_TCP, NULL);			\
 	TEST_ERR(err);							\
@@ -451,8 +450,8 @@ int test_call_answer_hangup_b(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_HANGUP_B;
 
-	/* add angle brackets */
-	re_snprintf(uri, sizeof(uri), "<%s>", f->buri);
+	/* add angle brackets ? */
+	re_snprintf(uri, sizeof(uri), "%s", f->buri);
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, uri, VIDMODE_OFF);
