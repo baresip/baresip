@@ -219,6 +219,7 @@ int test_call_format_float(void);
 int test_call_mediaenc(void);
 int test_call_custom_headers(void);
 int test_call_tcp(void);
+int test_call_transfer(void);
 
 #ifdef USE_VIDEO
 int test_video(void);

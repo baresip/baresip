@@ -39,6 +39,7 @@ static const struct test tests[] = {
 	TEST(test_call_format_float),
 	TEST(test_call_custom_headers),
 	TEST(test_call_tcp),
+	TEST(test_call_transfer),
 #ifdef USE_VIDEO
 	TEST(test_call_video),
 	TEST(test_video),
