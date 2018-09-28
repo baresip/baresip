@@ -1640,6 +1640,27 @@ int audio_level_get(const struct audio *a, double *levelp)
 
 
 /**
+ * Get the name of the used codec
+ *
+ * @param au     Audio object
+ *
+ * @return codec name if success, otherwise ""
+ */
+const char *audio_codec_get(struct audio *au)
+{
+	if(!au)
+		return "\0";
+
+	if(au->tx.ac)
+		return au->tx.ac->name;
+	else if(au->rx.ac)
+		return au->rx.ac->name;
+
+	return "\0";
+}
+
+
+/**
  * Print the audio debug information
  *
  * @param pf   Print function
