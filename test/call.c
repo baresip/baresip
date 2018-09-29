@@ -41,6 +41,7 @@ struct agent {
 	unsigned n_closed;
 	unsigned n_dtmf_recv;
 	unsigned n_transfer;
+	unsigned n_mediaenc;
 };
 
 struct fixture {
@@ -284,6 +285,10 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			(void)call_notify_sipfrag(call, 500, "Call Error");
 			mem_deref(call2);
 		}
+		break;
+
+	case UA_EVENT_CALL_MENC:
+		++ag->n_mediaenc;
 		break;
 
 	default:
@@ -1041,7 +1046,9 @@ int test_call_mediaenc(void)
 	ASSERT_EQ(1, fix.b.n_established);
 	ASSERT_EQ(0, fix.b.n_closed);
 
-	/* XXX: verify that the call was encrypted */
+	/* verify that the call was encrypted */
+	ASSERT_EQ(1, fix.a.n_mediaenc);
+	ASSERT_EQ(1, fix.b.n_mediaenc);
 
  out:
 	fixture_close(f);
