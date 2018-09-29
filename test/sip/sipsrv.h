@@ -25,9 +25,13 @@ struct sip_server {
 	uint64_t secret;
 	struct hash *ht_dom;
 	struct hash *ht_aor;
+
+	sip_exit_h *exith;
+	void *arg;
 };
 
-int sip_server_alloc(struct sip_server **srvp);
+int sip_server_alloc(struct sip_server **srvp,
+		     sip_exit_h *exith, void *arg);
 int sip_server_uri(struct sip_server *srv, char *uri, size_t sz,
 		   enum sip_transp tp);
 

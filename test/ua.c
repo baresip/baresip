@@ -94,6 +94,13 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
+static void sip_server_exit_handler(void *arg)
+{
+	(void)arg;
+	re_cancel();
+}
+
+
 static int reg(enum sip_transp tp)
 {
 	struct test t;
@@ -102,7 +109,7 @@ static int reg(enum sip_transp tp)
 
 	memset(&t, 0, sizeof t);
 
-	err = sip_server_alloc(&t.srvv[0]);
+	err = sip_server_alloc(&t.srvv[0], sip_server_exit_handler, NULL);
 	if (err) {
 		warning("failed to create sip server (%d/%m)\n", err, err);
 		goto out;
@@ -272,7 +279,8 @@ static int reg_dns(enum sip_transp tp)
 		struct sa sip_addr;
 		char arec[256];
 
-		err = sip_server_alloc(&t.srvv[i]);
+		err = sip_server_alloc(&t.srvv[i],
+				       sip_server_exit_handler, NULL);
 		if (err) {
 			warning("failed to create sip server (%d/%m)\n",
 				err, err);
@@ -388,7 +396,7 @@ static int reg_auth(enum sip_transp tp)
 
 	memset(&t, 0, sizeof t);
 
-	err = sip_server_alloc(&t.srvv[0]);
+	err = sip_server_alloc(&t.srvv[0], sip_server_exit_handler, NULL);
 	if (err) {
 		warning("failed to create sip server (%d/%m)\n", err, err);
 		goto out;
@@ -512,7 +520,8 @@ static int reg_auth_dns(enum sip_transp tp)
 		struct sa sip_addr;
 		char arec[256];
 
-		err = sip_server_alloc(&t.srvv[i]);
+		err = sip_server_alloc(&t.srvv[i],
+				       sip_server_exit_handler, NULL);
 		if (err) {
 			warning("failed to create sip server (%d/%m)\n",
 				err, err);
