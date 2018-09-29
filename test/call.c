@@ -749,6 +749,19 @@ int test_call_dtmf(void)
 
 
 #ifdef USE_VIDEO
+static void mock_vidisp_handler(const struct vidframe *frame,
+				uint64_t timestamp, void *arg)
+{
+	struct fixture *fix = arg;
+	(void)frame;
+	(void)timestamp;
+	(void)fix;
+
+	/* Stop the test */
+	re_cancel();
+}
+
+
 int test_call_video(void)
 {
 	struct fixture fix, *f = &fix;
@@ -764,7 +777,7 @@ int test_call_video(void)
 	mock_vidcodec_register();
 	err = mock_vidsrc_register(&vidsrc);
 	TEST_ERR(err);
-	err = mock_vidisp_register(&vidisp);
+	err = mock_vidisp_register(&vidisp, mock_vidisp_handler, f);
 	TEST_ERR(err);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
