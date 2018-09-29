@@ -143,8 +143,7 @@ static void *read_thread(void *arg)
 			continue;
 		}
 
-		/* XXX: review this */
-		timestamp = tmr_jiffies() * 1000;
+		timestamp = tmr_jiffies_usec();
 
 		call_frame_handler(st, st->mb->buf, timestamp);
 	}
