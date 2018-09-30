@@ -72,8 +72,13 @@ static int cmd_config_print(struct re_printf *pf, void *unused)
 
 static int cmd_ua_debug(struct re_printf *pf, void *unused)
 {
+	const struct ua *ua = uag_current();
 	(void)unused;
-	return ua_debug(pf, uag_current());
+
+	if (ua)
+		return ua_debug(pf, ua);
+	else
+		return re_hprintf(pf, "(no user-agent)\n");
 }
 
 
