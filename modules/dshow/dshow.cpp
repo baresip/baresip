@@ -188,7 +188,7 @@ static int enum_devices(struct vidsrc_st *st, const char *name,
 	ULONG fetched;
 	HRESULT res;
 	int id = 0;
-	int err = 0 ;
+	int err = 0;
 
 	res = CoCreateInstance(CLSID_SystemDeviceEnum, NULL,
 			       CLSCTX_INPROC_SERVER,
