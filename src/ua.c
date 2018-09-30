@@ -1500,7 +1500,7 @@ void ua_stop_all(bool forced)
 		list_unlink(&ua->le);
 		list_flush(&ua->calls);
 		mem_deref(ua);
-	}	
+	}
 
 	if (ext_ref) {
 		info("ua: in use (%u) by app module"
