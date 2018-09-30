@@ -1480,7 +1480,7 @@ void ua_close(void)
 void ua_stop_all(bool forced)
 {
 	struct le *le;
-	bool ext_ref = false;
+	unsigned ext_ref = 0;
 
 	info("ua: stop all (forced=%d)\n", forced);
 
@@ -1497,14 +1497,15 @@ void ua_stop_all(bool forced)
 			list_flush(&ua->calls);
 			mem_deref(ua);
 
-			ext_ref = true;
+			++ext_ref;
 		}
 
 		ua_event(ua, UA_EVENT_SHUTDOWN, NULL, NULL);
 	}
 
 	if (ext_ref) {
-		info("ua: in use by app module, deferring module unloading\n");
+		info("ua: in use (%u) by app module"
+		     ", deferring module unloading\n", ext_ref);
 		return;
 	}
 	else {
