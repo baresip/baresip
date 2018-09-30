@@ -179,7 +179,8 @@ private:
 static struct vidsrc *vsrc;
 
 
-static int get_device(struct vidsrc_st *st, const char *name)
+static int enum_devices(struct vidsrc_st *st, const char *name,
+			struct list *dev_list
 {
 	ICreateDevEnum *dev_enum;
 	IEnumMoniker *enum_mon;
@@ -187,10 +188,7 @@ static int get_device(struct vidsrc_st *st, const char *name)
 	ULONG fetched;
 	HRESULT res;
 	int id = 0;
-	bool found = false;
-
-	if (!st)
-		return EINVAL;
+	int err = 0 ;
 
 	res = CoCreateInstance(CLSID_SystemDeviceEnum, NULL,
 			       CLSCTX_INPROC_SERVER,
@@ -204,7 +202,7 @@ static int get_device(struct vidsrc_st *st, const char *name)
 		return ENOENT;
 
 	enum_mon->Reset();
-	while (enum_mon->Next(1, &mon, &fetched) == S_OK && !found) {
+	while (enum_mon->Next(1, &mon, &fetched) == S_OK) {
 
 		IPropertyBag *bag;
 		VARIANT var;
@@ -225,26 +223,61 @@ static int get_device(struct vidsrc_st *st, const char *name)
 					  dev_name, sizeof(dev_name),
 					  NULL, NULL);
 
-		if (len > 0) {
-			found = !str_isset(name) ||
-				!str_casecmp(dev_name, name);
+		SysFreeString(var.bstrVal);
+		bag->Release();
 
-			if (found) {
-				info("dshow: got device '%s' id=%d\n",
-				     name, id);
-				st->dev_moniker = mon;
+		if (len > 0) {
+			if (st) {
+				if (!str_isset(name) ||
+				    !str_casecmp(dev_name, name)) {
+					info("dshow: got device '%s' id=%d\n",
+					     name, id);
+					st->dev_moniker = mon;
+
+					return 0;
+				}
+			}
+			else {
+				err = mediadev_add(dev_list, dev_name);
+				if (err) {
+					return err;
+				}
 			}
 		}
 
-		SysFreeString(var.bstrVal);
-		bag->Release();
-		if (!found) {
-			mon->Release();
-			++id;
-		}
+		mon->Release();
+		++id;
 	}
 
-	return found ? 0 : ENOENT;
+	return err;
+
+}
+
+
+static int set_available_devices(struct list* dev_list)
+{
+	return enum_devices(NULL, NULL, dev_list);
+}
+
+
+static int get_device(struct vidsrc_st *st, const char *name)
+{
+	int err = 0;
+	bool found = false;
+
+	if (!st)
+		return EINVAL;
+
+	err = enum_devices(st, name, NULL);
+
+	if (err)
+		return err;
+
+	if (st->dev_moniker)
+		found = true;
+
+	return found? 0 : ENOENT;
+
 }
 
 
@@ -568,11 +601,19 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int module_init(void)
 {
+	int err;
 	if (CoInitialize(NULL) != S_OK)
 		return ENODATA;
 
-	return vidsrc_register(&vsrc, baresip_vidsrcl(),
+	err = vidsrc_register(&vsrc, baresip_vidsrcl(),
 			       "dshow", alloc, NULL);
+	if (err)
+		return err;
+
+	list_init(&vsrc->dev_list);
+	err = set_available_devices(&vsrc->dev_list);
+
+	return err;
 }
 
 
