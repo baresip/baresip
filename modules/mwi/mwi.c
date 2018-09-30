@@ -158,18 +158,11 @@ static void ua_event_handler(struct ua *ua,
 	}
 	else if (ev == UA_EVENT_SHUTDOWN) {
 
-		struct le *le;
+		struct mwi *mwi = mwi_find(ua);
 
 		info("mwi: shutdown\n");
 
-		le = list_head(&mwil);
-		while (le) {
-			struct mwi *mwi = le->data;
-			le = le->next;
-
-			if (ua != mwi->ua)
-				continue;
-
+		if (mwi) {
 			mwi->shutdown = true;
 
 			if (mwi->sub) {
@@ -189,14 +182,9 @@ static void tmr_handler(void *arg)
 
 	(void)arg;
 
-	for (le = list_head(uag_list()); le; le = le->next) {
-		struct ua *ua = le->data;
-		struct account *acc = ua_account(ua);
-
-		if ((account_regint(acc) == 0) &&
-		    (strcmp(account_mwi(acc), "yes") == 0)) {
-			mwi_subscribe(ua);
-		}
+	for (le = list_head(&mwil); le; le = le->next) {
+		struct mwi *mwi = le->data;
+		mwi_subscribe(mwi->ua);
 	}
 }
 
