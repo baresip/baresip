@@ -790,3 +790,18 @@ uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
 {
 	return strm ? strm->metric_rx.n_err : 0;
 }
+
+
+int stream_jbuf_reset(struct stream *strm,
+		      uint32_t frames_min, uint32_t frames_max)
+{
+	if (!strm)
+		return EINVAL;
+
+	strm->jbuf = mem_deref(strm->jbuf);
+
+	if (frames_min && frames_max)
+		return jbuf_alloc(&strm->jbuf, frames_min, frames_max);
+
+	return 0;
+}
