@@ -1491,16 +1491,15 @@ void ua_stop_all(bool forced)
 		struct ua *ua = le->data;
 		le = le->next;
 
+		ua_event(ua, UA_EVENT_SHUTDOWN, NULL, NULL);
+
 		if (mem_nrefs(ua) > 1) {
-
-			list_unlink(&ua->le);
-			list_flush(&ua->calls);
-			mem_deref(ua);
-
 			++ext_ref;
 		}
 
-		ua_event(ua, UA_EVENT_SHUTDOWN, NULL, NULL);
+		list_unlink(&ua->le);
+		list_flush(&ua->calls);
+		mem_deref(ua);
 	}
 
 	if (ext_ref) {
@@ -1512,16 +1511,8 @@ void ua_stop_all(bool forced)
 		module_app_unload();
 	}
 
-	if (!list_isempty(&uag.ual)) {
-		const uint32_t n = list_count(&uag.ual);
-		info("Stopping %u useragent%s.. %s\n",
-		     n, n==1 ? "" : "s", forced ? "(Forced)" : "");
-	}
-
 	if (forced)
 		sipsess_close_all(uag.sock);
-	else
-		list_flush(&uag.ual);
 
 	sip_close(uag.sip, forced);
 }

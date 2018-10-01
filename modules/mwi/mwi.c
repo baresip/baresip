@@ -160,9 +160,9 @@ static void ua_event_handler(struct ua *ua,
 
 		struct mwi *mwi = mwi_find(ua);
 
-		info("mwi: shutdown\n");
-
 		if (mwi) {
+
+			info("mwi: shutdown of %s\n", ua_aor(ua));
 			mwi->shutdown = true;
 
 			if (mwi->sub) {
