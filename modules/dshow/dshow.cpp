@@ -180,7 +180,7 @@ static struct vidsrc *vsrc;
 
 
 static int enum_devices(struct vidsrc_st *st, const char *name,
-			struct list *dev_list
+			struct list *dev_list)
 {
 	ICreateDevEnum *dev_enum;
 	IEnumMoniker *enum_mon;
