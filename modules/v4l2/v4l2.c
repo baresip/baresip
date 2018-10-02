@@ -411,7 +411,7 @@ static int read_frame(struct vidsrc_st *st)
 }
 
 
-static int set_available_devices(struct vidsrc* vs)
+static int set_available_devices(struct list* dev_list)
 {
 	int i, fd;
 	char name[16];
@@ -426,7 +426,7 @@ static int set_available_devices(struct vidsrc* vs)
 		}
 		else {
 			close(fd);
-			err = mediadev_add(&vs->dev_list, name);
+			err = mediadev_add(dev_list, name);
 			if (err)
 				return err;
 		}
@@ -565,7 +565,7 @@ static int v4l_init(void)
 		return err;
 
 	list_init(&vidsrc->dev_list);
-	err = set_available_devices(vidsrc);
+	err = set_available_devices(&vidsrc->dev_list);
 
 	return err;
 }
