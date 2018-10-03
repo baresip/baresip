@@ -106,6 +106,7 @@ static int encode(struct vidfilt_enc_st *_st, struct vidframe *frame,
 {
 	struct vidinfo_enc *st = (struct vidinfo_enc *)_st;
 	int err = 0;
+	(void)timestamp;
 
 	if (!st->panel) {
 
@@ -130,6 +131,7 @@ static int decode(struct vidfilt_dec_st *_st, struct vidframe *frame,
 {
 	struct vidinfo_dec *st = (struct vidinfo_dec *)_st;
 	int err = 0;
+	(void)timestamp;
 
 	if (!st->panel) {
 
