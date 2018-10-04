@@ -1086,14 +1086,15 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 		frames = pl_u32(&val) / rx->ptime;
 		if (0 == pl_strcasecmp(&type,"fixed")) {
 			/*
-				fixed jb, set to frames -1 as min and frames as max.
+			fixed jb, set to frames -1 as min and frames as max.
 			*/
 			stream_jbuf_reset(au->strm, frames - 1, frames);
 		}
 		else if (0 == pl_strcasecmp(&type, "auto")) {
 			/*
-				at the moment only min value is known, therefor max value is here set to 2 times min value
-				This needs to be addressed later
+			at the moment only min value is known, 
+			therefor max value is here set to 2 times min value
+			This needs to be addressed later
 			*/
 			stream_jbuf_reset(au->strm, frames, frames*2);
 		}
