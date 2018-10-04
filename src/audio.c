@@ -1092,7 +1092,7 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 		}
 		else if (0 == pl_strcasecmp(&type, "auto")) {
 			/*
-			at the moment only min value is known, 
+			at the moment only min value is known,
 			therefor max value is here set to 2 times min value
 			This needs to be addressed later
 			*/
