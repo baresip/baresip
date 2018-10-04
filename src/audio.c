@@ -1913,19 +1913,18 @@ void audio_sdp_attr_decode(struct audio *a)
 
 	if (!a)
 		return;
-	
+
 	/* This is probably only meaningful for audio data, but
 	   may be used with other media types if it makes sense. */
 	attr = sdp_media_rattr(stream_sdpmedia(a->strm), "ptime");
-	if (attr)
-	{
+	if (attr) {
 		struct autx *tx = &a->tx;
 		uint32_t ptime_tx = atoi(attr);
 
 		if (ptime_tx && ptime_tx != a->tx.ptime) {
 
 			info("audio: peer changed ptime_tx %ums -> %ums\n",
-				 a->tx.ptime, ptime_tx);
+				a->tx.ptime, ptime_tx);
 
 			tx->ptime = ptime_tx;
 
