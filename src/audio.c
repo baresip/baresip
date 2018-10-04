@@ -1044,11 +1044,11 @@ static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 		if (0 == str_cmp(str, "auto")) {
 
 			err |= sdp_media_set_lattr(sdp, false,
-							"ebuacip",
-							"jbdef %i auto %d-%d",
-							jb_id,
-							avt->jbuf_del.min * ptime,
-							avt->jbuf_del.max * ptime);
+					"ebuacip",
+					"jbdef %i auto %d-%d",
+					jb_id,
+					avt->jbuf_del.min * ptime,
+					avt->jbuf_del.max * ptime);
 		}
 		else if (0 == str_cmp(str, "fixed")) {
 
@@ -1079,10 +1079,12 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 	struct pl type, val;
 	uint32_t frames;
 
-	if (0 == re_regex(value, str_len(value), "jbdef [0-9]+ [^ ]+ [0-9]+", NULL, 					&type, &val))
-	{
+	if (0 == re_regex(value, str_len(value),
+		"jbdef [0-9]+ [^ ]+ [0-9]+",
+		NULL, &type, &val))	{
+
 		frames = pl_u32(&val) / rx->ptime;
-		if (0 == pl_strcasecmp(&type, "fixed")) {
+		if (0 == pl_strcasecmp(&type,"fixed")) {
 			/*
 				fixed jb, set to frames -1 as min and frames as max.
 			*/
@@ -1934,8 +1936,12 @@ void audio_sdp_attr_decode(struct audio *a)
 			}
 		}
 	}
-	// EBUACIP handler EBU TECH 3368 profile provisioning on incomming invite.
-	sdp_media_rattr_apply(stream_sdpmedia(a->strm), "ebuacip", ebuacip_handler, a);
+	/*
+	EBUACIP handler
+	EBU TECH 3368 profile provisioning on incomming invite.
+	*/
+	sdp_media_rattr_apply(stream_sdpmedia(a->strm),
+	 "ebuacip", ebuacip_handler, a);
 
 	/* Client-to-Mixer Audio Level Indication */
 	if (a->cfg.level) {
