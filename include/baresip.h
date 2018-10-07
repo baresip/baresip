@@ -220,6 +220,7 @@ struct config_sip {
 	char uuid[64];          /**< Universally Unique Identifier  */
 	char local[64];         /**< Local SIP Address              */
 	char cert[256];         /**< SIP Certificate                */
+	char cafile[256];       /**< SIP CA-file                    */
 };
 
 /** Call config */
