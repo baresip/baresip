@@ -116,28 +116,6 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 }
 
 
-static unsigned int find_dev(const char *name)
-{
-	WAVEINCAPS wic;
-	unsigned int i, nInDevices = waveInGetNumDevs();
-
-	if (!str_isset(name))
-		return WAVE_MAPPER;
-
-	for (i=0; i<nInDevices; i++) {
-		if (waveInGetDevCaps(i, &wic,
-				     sizeof(WAVEINCAPS))==MMSYSERR_NOERROR) {
-
-			if (0 == str_casecmp(name, wic.szPname)) {
-				return i;
-			}
-		}
-	}
-
-	return WAVE_MAPPER;
-}
-
-
 static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 			    unsigned int dev)
 {
@@ -187,6 +165,36 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 }
 
 
+static int winwave_get_dev_name(unsigned int i, char name[32])
+{
+	WAVEINCAPS wic;
+	int err = 0;
+
+	if (waveInGetDevCaps(i, &wic,
+			     sizeof(WAVEINCAPS)) == MMSYSERR_NOERROR) {
+		str_ncpy(name, wic.szPname, 32);
+	}
+	else {
+		err = ENODEV;
+	}
+
+	return err;
+}
+
+
+static unsigned int winwave_get_num_devs(void)
+{
+	return waveInGetNumDevs();
+}
+
+
+static int find_dev(const char *name, unsigned int *dev)
+{
+	return enum_devices(name, NULL, dev, winwave_get_num_devs,
+			    winwave_get_dev_name);
+}
+
+
 int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		      struct media_ctx **ctx,
 		      struct ausrc_prm *prm, const char *device,
@@ -194,6 +202,7 @@ int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	int err;
+	unsigned int dev;
 
 	(void)ctx;
 	(void)errh;
@@ -207,6 +216,11 @@ int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		return ENOTSUP;
 	}
 
+	err = find_dev(device, &dev);
+	if (err) {
+		return err;
+	}
+
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
 		return ENOMEM;
@@ -215,7 +229,7 @@ int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh  = rh;
 	st->arg = arg;
 
-	err = read_stream_open(st, prm, find_dev(device));
+	err |= read_stream_open(st, prm, dev);
 
 	if (err)
 		mem_deref(st);
@@ -223,4 +237,23 @@ int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		*stp = st;
 
 	return err;
+}
+
+
+static int set_available_devices(struct list *dev_list)
+{
+	return enum_devices(NULL, dev_list, NULL,
+			    winwave_get_num_devs, winwave_get_dev_name);
+}
+
+
+int winwave_src_init(struct ausrc *as)
+{
+	if (!as) {
+		return EINVAL;
+	}
+
+	list_init(&as->dev_list);
+
+	return set_available_devices(&as->dev_list);
 }

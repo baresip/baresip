@@ -128,28 +128,6 @@ static void CALLBACK waveOutCallback(HWAVEOUT hwo,
 }
 
 
-static unsigned int find_dev(const char *name)
-{
-	WAVEOUTCAPS wic;
-	unsigned int i, nInDevices = waveOutGetNumDevs();
-
-	if (!str_isset(name))
-		return WAVE_MAPPER;
-
-	for (i=0; i<nInDevices; i++) {
-		if (waveOutGetDevCaps(i, &wic,
-				      sizeof(WAVEOUTCAPS))==MMSYSERR_NOERROR) {
-
-			if (0 == str_cmp(name, wic.szPname)) {
-				return i;
-			}
-		}
-	}
-
-	return WAVE_MAPPER;
-}
-
-
 static int write_stream_open(struct auplay_st *st,
 			     const struct auplay_prm *prm,
 			     unsigned int dev)
@@ -192,12 +170,43 @@ static int write_stream_open(struct auplay_st *st,
 }
 
 
+static int winwave_get_dev_name(unsigned int i, char name[32])
+{
+	WAVEOUTCAPS wic;
+	int err = 0;
+
+	if (waveOutGetDevCaps(i, &wic,
+			      sizeof(WAVEOUTCAPS)) == MMSYSERR_NOERROR) {
+		str_ncpy(name, wic.szPname, 32);
+	}
+	else {
+		err = ENODEV;
+	}
+
+	return err;
+}
+
+
+static unsigned int winwave_get_num_devs(void)
+{
+	return waveOutGetNumDevs();
+}
+
+
+static int find_dev(const char *name, unsigned int *dev)
+{
+	return enum_devices(name, NULL, dev, winwave_get_num_devs,
+			    winwave_get_dev_name);
+}
+
+
 int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		       struct auplay_prm *prm, const char *device,
 		       auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
 	int i, err;
+	unsigned int dev;
 
 	if (!stp || !ap || !prm)
 		return EINVAL;
@@ -208,6 +217,11 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		return ENOTSUP;
 	}
 
+	err = find_dev(device, &dev);
+	if (err) {
+		return err;
+	}
+
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
 		return ENOMEM;
@@ -216,7 +230,7 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 
-	err = write_stream_open(st, prm, find_dev(device));
+	err = write_stream_open(st, prm, dev);
 	if (err)
 		goto out;
 
@@ -233,4 +247,23 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		*stp = st;
 
 	return err;
+}
+
+
+static int set_available_devices(struct list *dev_list)
+{
+	return enum_devices(NULL, dev_list, NULL,
+			    winwave_get_num_devs, winwave_get_dev_name);
+}
+
+
+int winwave_player_init(struct auplay *ap)
+{
+	if (!ap) {
+		return EINVAL;
+	}
+
+	list_init(&ap->dev_list);
+
+	return set_available_devices(&ap->dev_list);
 }
