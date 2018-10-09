@@ -54,7 +54,7 @@ int enum_devices(const char *name, struct list *dev_list,
 		}
 
 		if (dev) {
-			if(!str_casecmp(name, dev_name)) {
+			if (!str_casecmp(name, dev_name)) {
 				*dev = i;
 				break;
 			}
