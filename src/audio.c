@@ -1079,6 +1079,7 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 	struct aurx *rx = &au->rx;
 	struct pl type, val;
 	uint32_t frames;
+	(void)name;
 
 	if (0 == re_regex(value, str_len(value),
 		"jbdef [0-9]+ [^ ]+ [0-9]+",
