@@ -23,6 +23,10 @@ int mediadev_add(struct list *dev_list, const char *name)
 	if (!dev_list || !str_isset(name))
 		return EINVAL;
 
+	if (mediadev_find(dev_list, name)) {
+		return 0;
+	}
+
 	dev = mem_zalloc(sizeof(*dev), destructor);
 	if (!dev)
 		return ENOMEM;
