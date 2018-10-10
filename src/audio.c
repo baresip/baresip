@@ -1072,6 +1072,54 @@ static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 }
 
 
+static bool ebuacip_handler(const char *name, const char *value, void *arg)
+{
+	struct sdp_media *sdp;
+	struct audio *au = arg;
+	struct aurx *rx = &au->rx;
+	struct pl type, val;
+	uint32_t frames;
+
+	if (0 == re_regex(value, str_len(value),
+		"jbdef [0-9]+ [^ ]+ [0-9]+",
+		NULL, &type, &val)) {
+
+		const uint32_t ptime = rx->ptime ? rx->ptime : 20;
+
+		frames = pl_u32(&val) / ptime;
+
+		if (0 == pl_strcasecmp(&type,"fixed")) {
+
+			uint32_t frames_min;
+
+			/*
+			fixed jb, set to frames -1 as min and frames as max.
+			*/
+
+			if (frames > 1)
+				frames_min = frames - 1;
+			else
+				frames_min = 1;
+
+			stream_jbuf_reset(au->strm, frames_min, frames);
+		}
+		else if (0 == pl_strcasecmp(&type, "auto")) {
+			/*
+			at the moment only min value is known,
+			therefor max value is here set to 2 times min value
+			This needs to be addressed later
+			*/
+			stream_jbuf_reset(au->strm, frames, frames*2);
+		}
+
+		sdp = stream_sdpmedia(au->strm);
+		sdp_media_del_lattr(sdp, "ebuacip");
+	}
+
+	return false;
+}
+
+
 int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
@@ -1906,6 +1954,13 @@ void audio_sdp_attr_decode(struct audio *a)
 			}
 		}
 	}
+
+	/*
+	 * EBUACIP handler
+	 * EBU TECH 3368 profile provisioning on incoming invite.
+	 */
+	sdp_media_rattr_apply(stream_sdpmedia(a->strm), "ebuacip",
+			      ebuacip_handler, a);
 
 	/* Client-to-Mixer Audio Level Indication */
 	if (a->cfg.level) {
