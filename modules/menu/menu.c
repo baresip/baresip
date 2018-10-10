@@ -1258,6 +1258,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		info("%s\n", prm);
 		break;
 
+	case UA_EVENT_AUDIO_ERROR:
+		info("menu: audio error (%s)\n", prm);
+		mem_deref(call);
+		break;
+
 	default:
 		break;
 	}
