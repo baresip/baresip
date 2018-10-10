@@ -1044,11 +1044,11 @@ static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 		if (0 == str_cmp(str, "auto")) {
 
 			err |= sdp_media_set_lattr(sdp, false,
-						   "ebuacip",
-						   "jbdef %i auto %d-%d",
-						   jb_id,
-						   avt->jbuf_del.min * ptime,
-						   avt->jbuf_del.max * ptime);
+					"ebuacip",
+					"jbdef %i auto %d-%d",
+					jb_id,
+					avt->jbuf_del.min * ptime,
+					avt->jbuf_del.max * ptime);
 		}
 		else if (0 == str_cmp(str, "fixed")) {
 
@@ -1056,21 +1056,53 @@ static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 			jbvalue = avt->jbuf_del.max * ptime;
 
 			err |= sdp_media_set_lattr(sdp, false,
-						   "ebuacip",
-						   "jbdef %i fixed %d",
-						   jb_id, jbvalue);
+							"ebuacip",
+							"jbdef %i fixed %d",
+							jb_id, jbvalue);
 		}
 	}
 
 	/* set QOS recomendation use tos / 4 to set DSCP value */
 	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "qosrec %u",
-				   avt->rtp_tos / 4);
+							   avt->rtp_tos / 4);
 
 	/* EBU ACIP FEC:: NOT SET IN BARESIP */
 
 	return err;
 }
 
+static bool ebuacip_handler(const char *name, const char *value, void *arg)
+{
+	struct sdp_media *sdp;
+	struct audio *au = arg;
+	struct aurx *rx = &au->rx;
+	struct pl type, val;
+	uint32_t frames;
+
+	if (0 == re_regex(value, str_len(value),
+		"jbdef [0-9]+ [^ ]+ [0-9]+",
+		NULL, &type, &val))	{
+
+		frames = pl_u32(&val) / rx->ptime;
+		if (0 == pl_strcasecmp(&type,"fixed")) {
+			/*
+			fixed jb, set to frames -1 as min and frames as max.
+			*/
+			stream_jbuf_reset(au->strm, frames - 1, frames);
+		}
+		else if (0 == pl_strcasecmp(&type, "auto")) {
+			/*
+			at the moment only min value is known,
+			therefor max value is here set to 2 times min value
+			This needs to be addressed later
+			*/
+			stream_jbuf_reset(au->strm, frames, frames*2);
+		}
+		sdp = stream_sdpmedia(au->strm);
+		sdp_media_del_lattr(sdp,"ebuacip");
+	}
+	return false;
+}
 
 int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		const struct config *cfg,
@@ -1878,7 +1910,6 @@ static bool extmap_handler(const char *name, const char *value, void *arg)
 	return false;
 }
 
-
 void audio_sdp_attr_decode(struct audio *a)
 {
 	const char *attr;
@@ -1896,7 +1927,7 @@ void audio_sdp_attr_decode(struct audio *a)
 		if (ptime_tx && ptime_tx != a->tx.ptime) {
 
 			info("audio: peer changed ptime_tx %ums -> %ums\n",
-			     a->tx.ptime, ptime_tx);
+				a->tx.ptime, ptime_tx);
 
 			tx->ptime = ptime_tx;
 
@@ -1906,6 +1937,12 @@ void audio_sdp_attr_decode(struct audio *a)
 			}
 		}
 	}
+	/*
+	EBUACIP handler
+	EBU TECH 3368 profile provisioning on incomming invite.
+	*/
+	sdp_media_rattr_apply(stream_sdpmedia(a->strm),
+	 "ebuacip", ebuacip_handler, a);
 
 	/* Client-to-Mixer Audio Level Indication */
 	if (a->cfg.level) {
