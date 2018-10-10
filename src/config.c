@@ -32,6 +32,7 @@ static struct config core_config = {
 		16,
 		"",
 		"",
+		"",
 		""
 	},
 
