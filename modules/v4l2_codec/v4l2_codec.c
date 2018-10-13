@@ -12,6 +12,7 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -46,6 +47,9 @@ struct vidsrc_st {
 	uint8_t *buffer;
 	size_t buffer_len;
 	int fd;
+	pthread_t thread;
+	bool run;
+
 	struct {
 		unsigned n_key;
 		unsigned n_delta;
@@ -295,19 +299,13 @@ static void encoders_read(uint64_t rtp_ts, const uint8_t *buf, size_t sz)
 }
 
 
-static void read_handler(int flags, void *arg)
+static void read_frame(struct vidsrc_st *st)
 {
-	struct vidsrc_st *st = arg;
 	struct v4l2_buffer buf;
 	bool keyframe = false;
 	struct timeval ts;
 	uint64_t rtp_ts;
 	int err;
-
-	if (flags & FD_EXCEPT) {
-		warning("v4l2_codec: device error\n");
-		return;
-	}
 
 	memset(&buf, 0, sizeof(buf));
 
@@ -366,6 +364,18 @@ static void read_handler(int flags, void *arg)
 }
 
 
+static void *read_thread(void *arg)
+{
+	struct vidsrc_st *st = arg;
+
+	while (st->run) {
+		read_frame(st);
+	}
+
+	return NULL;
+}
+
+
 static int open_encoder(struct vidsrc_st *st, const char *device,
 			unsigned width, unsigned height)
 {
@@ -397,9 +407,12 @@ static int open_encoder(struct vidsrc_st *st, const char *device,
 	if (err)
 		goto out;
 
-	err = fd_listen(st->fd, FD_READ, read_handler, st);
-	if (err)
+	st->run = true;
+	err = pthread_create(&st->thread, NULL, read_thread, st);
+	if (err) {
+		st->run = false;
 		goto out;
+	}
 
 out:
 	return err;
@@ -510,6 +523,11 @@ static void src_destructor(void *arg)
 {
 	struct vidsrc_st *st = arg;
 
+	if (st->run) {
+		st->run = false;
+		pthread_join(st->thread, NULL);
+	}
+
 	if (st->fd >=0 ) {
 		info("v4l2_codec: encoder stats"
 		     " (keyframes:%u, deltaframes:%u)\n",
@@ -522,7 +540,6 @@ static void src_destructor(void *arg)
 		munmap(st->buffer, st->buffer_len);
 
 	if (st->fd >= 0) {
-		fd_close(st->fd);
 		close(st->fd);
 	}
 }
