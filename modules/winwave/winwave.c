@@ -23,10 +23,10 @@ static struct ausrc *ausrc;
 static struct auplay *auplay;
 
 
-int enum_devices(const char *name, struct list *dev_list,
-		 unsigned int *dev,
-		 unsigned int (winwave_get_num_devs)(void),
-		 int (winwave_get_dev_name)(unsigned int, char*))
+int winwave_enum_devices(const char *name, struct list *dev_list,
+			 unsigned int *dev,
+			 unsigned int (winwave_get_num_devs)(void),
+			 int (winwave_get_dev_name)(unsigned int, char*))
 {
 	/* The szPname member of the WAVEINCAPS/WAVEOUTCAPS structures
 	   is limited to MAXPNAMELEN characters, which is defined as 32 */

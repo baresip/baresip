@@ -190,8 +190,8 @@ static unsigned int winwave_get_num_devs(void)
 
 static int find_dev(const char *name, unsigned int *dev)
 {
-	return enum_devices(name, NULL, dev, winwave_get_num_devs,
-			    winwave_get_dev_name);
+	return winwave_enum_devices(name, NULL, dev, winwave_get_num_devs,
+				    winwave_get_dev_name);
 }
 
 
@@ -242,8 +242,9 @@ int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 static int set_available_devices(struct list *dev_list)
 {
-	return enum_devices(NULL, dev_list, NULL,
-			    winwave_get_num_devs, winwave_get_dev_name);
+	return winwave_enum_devices(NULL, dev_list, NULL,
+				    winwave_get_num_devs,
+				    winwave_get_dev_name);
 }
 
 
