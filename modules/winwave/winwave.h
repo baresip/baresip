@@ -24,3 +24,4 @@ int winwave_enum_devices(const char *name, struct list *dev_list,
 			 int (winwave_get_dev_name)(unsigned int, char[32]));
 int winwave_src_init(struct ausrc *as);
 int winwave_player_init(struct auplay *ap);
+unsigned winwave_get_format(enum aufmt fmt);

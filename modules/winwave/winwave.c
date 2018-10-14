@@ -7,6 +7,7 @@
 #include <rem.h>
 #include <windows.h>
 #include <mmsystem.h>
+#include <mmreg.h>
 #include <baresip.h>
 #include "winwave.h"
 
@@ -68,6 +69,17 @@ int winwave_enum_devices(const char *name, struct list *dev_list,
 	}
 
 	return err;
+}
+
+
+unsigned winwave_get_format(enum aufmt fmt)
+{
+	switch (fmt) {
+
+	case AUFMT_S16LE:   return WAVE_FORMAT_PCM;
+	case AUFMT_FLOAT:   return WAVE_FORMAT_IEEE_FLOAT;
+	default:            return WAVE_FORMAT_UNKNOWN;
+	}
 }
 
 

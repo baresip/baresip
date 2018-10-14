@@ -7,6 +7,7 @@
 #include <rem.h>
 #include <windows.h>
 #include <mmsystem.h>
+#include <mmreg.h>
 #include <baresip.h>
 #include "winwave.h"
 
@@ -22,6 +23,7 @@ struct auplay_st {
 	HWAVEOUT waveout;
 	volatile bool rdy;
 	size_t inuse;
+	size_t sampsz;
 	auplay_write_h *wh;
 	void *arg;
 };
@@ -70,7 +72,7 @@ static int dsp_write(struct auplay_st *st)
 	wh->lpData = (LPSTR)mb->buf;
 
 	if (st->wh) {
-		st->wh((void *)mb->buf, mb->size/2, st->arg);
+		st->wh((void *)mb->buf, mb->size/st->sampsz, st->arg);
 	}
 
 	wh->dwBufferLength = mb->size;
@@ -135,7 +137,17 @@ static int write_stream_open(struct auplay_st *st,
 	WAVEFORMATEX wfmt;
 	MMRESULT res;
 	uint32_t sampc;
+	unsigned format;
 	int i;
+
+	st->sampsz = aufmt_sample_size(prm->fmt);
+
+	format = winwave_get_format(prm->fmt);
+	if (format == WAVE_FORMAT_UNKNOWN) {
+		warning("winwave: playback: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	/* Open an audio I/O stream. */
 	st->waveout = NULL;
@@ -146,13 +158,13 @@ static int write_stream_open(struct auplay_st *st,
 
 	for (i = 0; i < WRITE_BUFFERS; i++) {
 		memset(&st->bufs[i].wh, 0, sizeof(WAVEHDR));
-		st->bufs[i].mb = mbuf_alloc(2 * sampc);
+		st->bufs[i].mb = mbuf_alloc(st->sampsz * sampc);
 	}
 
-	wfmt.wFormatTag      = WAVE_FORMAT_PCM;
+	wfmt.wFormatTag      = format;
 	wfmt.nChannels       = prm->ch;
 	wfmt.nSamplesPerSec  = prm->srate;
-	wfmt.wBitsPerSample  = 16;
+	wfmt.wBitsPerSample  = st->sampsz * 8;
 	wfmt.nBlockAlign     = (prm->ch * wfmt.wBitsPerSample) / 8;
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
@@ -210,12 +222,6 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	if (!stp || !ap || !prm)
 		return EINVAL;
-
-	if (prm->fmt != AUFMT_S16LE) {
-		warning("winwave: playback: unsupported sample format (%s)\n",
-			aufmt_name(prm->fmt));
-		return ENOTSUP;
-	}
 
 	err = find_dev(device, &dev);
 	if (err) {

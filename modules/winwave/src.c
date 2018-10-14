@@ -7,6 +7,7 @@
 #include <rem.h>
 #include <windows.h>
 #include <mmsystem.h>
+#include <mmreg.h>
 #include <baresip.h>
 #include "winwave.h"
 
@@ -22,6 +23,7 @@ struct ausrc_st {
 	HWAVEIN wavein;
 	volatile bool rdy;
 	size_t inuse;
+	size_t sampsz;
 	ausrc_read_h *rh;
 	void *arg;
 };
@@ -104,7 +106,8 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 		if (st->inuse < (READ_BUFFERS-1))
 			add_wave_in(st);
 
-		st->rh((void *)wh->lpData, wh->dwBytesRecorded/2, st->arg);
+		st->rh((void *)wh->lpData, wh->dwBytesRecorded/st->sampsz,
+		       st->arg);
 
 		waveInUnprepareHeader(st->wavein, wh, sizeof(*wh));
 		st->inuse--;
@@ -122,7 +125,17 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 	WAVEFORMATEX wfmt;
 	MMRESULT res;
 	uint32_t sampc;
+	unsigned format;
 	int i, err = 0;
+
+	st->sampsz = aufmt_sample_size(prm->fmt);
+
+	format = winwave_get_format(prm->fmt);
+	if (format == WAVE_FORMAT_UNKNOWN) {
+		warning("winwave: source: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	/* Open an audio INPUT stream. */
 	st->wavein = NULL;
@@ -133,15 +146,15 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 
 	for (i = 0; i < READ_BUFFERS; i++) {
 		memset(&st->bufs[i].wh, 0, sizeof(WAVEHDR));
-		st->bufs[i].mb = mbuf_alloc(2 * sampc);
+		st->bufs[i].mb = mbuf_alloc(st->sampsz * sampc);
 		if (!st->bufs[i].mb)
 			return ENOMEM;
 	}
 
-	wfmt.wFormatTag      = WAVE_FORMAT_PCM;
+	wfmt.wFormatTag      = format;
 	wfmt.nChannels       = prm->ch;
 	wfmt.nSamplesPerSec  = prm->srate;
-	wfmt.wBitsPerSample  = 16;
+	wfmt.wBitsPerSample  = st->sampsz * 8;
 	wfmt.nBlockAlign     = (prm->ch * wfmt.wBitsPerSample) / 8;
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
@@ -209,12 +222,6 @@ int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	if (!stp || !as || !prm)
 		return EINVAL;
-
-	if (prm->fmt != AUFMT_S16LE) {
-		warning("winwave: source: unsupported sample format (%s)\n",
-			aufmt_name(prm->fmt));
-		return ENOTSUP;
-	}
 
 	err = find_dev(device, &dev);
 	if (err) {
