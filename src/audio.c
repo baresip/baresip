@@ -578,7 +578,6 @@ static void poll_aubuf_tx(struct audio *a)
 		sampc = sampc_rs;
 	}
 
-
 	/* Process exactly one audio-frame in list order */
 	for (le = tx->filtl.head; le; le = le->next) {
 		struct aufilt_enc_st *st = le->data;
@@ -589,7 +588,6 @@ static void poll_aubuf_tx(struct audio *a)
 	if (err) {
 		warning("audio: aufilter encode: %m\n", err);
 	}
-
 
 	/* Encode and send */
 	encode_rtp_send(a, tx, sampv, sampc);
