@@ -171,7 +171,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL;
 	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
-	char buf[256];
+	char buf[1024];
 	int err;
 
 	err = json_decode_odict(&od, 32, (const char*)mb->buf, mb->end, 16);
