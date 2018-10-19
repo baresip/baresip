@@ -551,7 +551,6 @@ static void message_handler(struct ua *ua,
 	struct gtk_mod *mod = arg;
 	char title[128];
 	char msg[512];
-	(void)ua;
 
 #if GLIB_CHECK_VERSION(2,40,0)
 	GNotification *notification;
@@ -559,6 +558,7 @@ static void message_handler(struct ua *ua,
 	NotifyNotification *notification;
 #endif
 
+	(void)ua;
 	(void)ctype;
 
 
