@@ -1685,6 +1685,22 @@ void audio_stop(struct audio *a)
 }
 
 
+/**
+ * Check if audio has been started
+ *
+ * @param a Audio object
+ *
+ * @return True if audio has been started, otherwise false
+ */
+bool audio_started(const struct audio *a)
+{
+	if (!a)
+		return false;
+
+	return a->started;
+}
+
+
 int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		      int pt_tx, const char *params)
 {
