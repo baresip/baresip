@@ -288,8 +288,7 @@ int Srtp::unprotect_int(struct mbuf *mb, bool control)
 		return srtp_decrypt(m_srtp, mb);
 #else
 	size_t len = mbuf_get_left(mb);
-	uint32_t rc;
-	int err;
+	int rc, err;
 
 	if (control)
 		rc = SrtpHandler::unprotectCtrl(m_cc_ctrl, mbuf_buf(mb),
