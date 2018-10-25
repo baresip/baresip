@@ -232,7 +232,7 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
  * @note: On Darwin, this must be called from the main thread
  */
 static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	SDL_Rect rect;
 
