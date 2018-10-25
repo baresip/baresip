@@ -235,6 +235,7 @@ static int display(struct vidisp_st *st, const char *title,
 		   const struct vidframe *frame, uint64_t timestamp)
 {
 	SDL_Rect rect;
+	(void)timestamp;
 
 	if (!st || !sdl.open)
 		return EINVAL;
