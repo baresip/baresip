@@ -15,9 +15,7 @@
 #include <libavformat/avformat.h>
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 #include <libavutil/pixdesc.h>
-#endif
 
 
 /**
@@ -31,15 +29,6 @@
   video_source            avformat,/tmp/testfile.mp4
  \endverbatim
  */
-
-
-/* backward compat */
-#if LIBAVCODEC_VERSION_MAJOR>52 || LIBAVCODEC_VERSION_INT>=((52<<16)+(64<<8))
-#define LIBAVCODEC_HAVE_AVMEDIA_TYPES 1
-#endif
-#ifndef LIBAVCODEC_HAVE_AVMEDIA_TYPES
-#define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
-#endif
 
 
 #if LIBAVCODEC_VERSION_INT < ((54<<16)+(25<<8)+0)
