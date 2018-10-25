@@ -113,10 +113,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 			goto out;
 
 		got_pict = true;
-
-#elif LIBAVCODEC_VERSION_INT <= ((52<<16)+(23<<8)+0)
-		ret = avcodec_decode_video(st->ctx, frame, &got_pict,
-					   pkt->data, pkt->size);
 #else
 		ret = avcodec_decode_video2(st->ctx, frame,
 					    &got_pict, pkt);
@@ -371,11 +367,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 				goto out;
 			}
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(8<<8)+0)
 			ret = avcodec_open2(ctx, st->codec, NULL);
-#else
-			ret = avcodec_open(ctx, st->codec);
-#endif
 			if (ret < 0) {
 				err = ENOENT;
 				goto out;
