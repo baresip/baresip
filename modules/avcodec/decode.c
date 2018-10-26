@@ -109,13 +109,8 @@ static int init_decoder(struct viddec_state *st, const char *name)
 	if (!st->ctx || !st->pict)
 		return ENOMEM;
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(8<<8)+0)
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0)
 		return ENOENT;
-#else
-	if (avcodec_open(st->ctx, st->codec) < 0)
-		return ENOENT;
-#endif
 
 	return 0;
 }
@@ -206,11 +201,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		got_picture = true;
 
 	} while (0);
-
-#elif LIBAVCODEC_VERSION_INT <= ((52<<16)+(23<<8)+0)
-	ret = avcodec_decode_video(st->ctx, st->pict, &got_picture,
-				   st->mb->buf,
-				   (int)st->mb->end);
 #else
 	do {
 		AVPacket avpkt;

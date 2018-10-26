@@ -252,17 +252,10 @@ static int open_encoder(struct videnc_state *st,
 #endif
 	}
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(8<<8)+0)
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0) {
 		err = ENOENT;
 		goto out;
 	}
-#else
-	if (avcodec_open(st->ctx, st->codec) < 0) {
-		err = ENOENT;
-		goto out;
-	}
-#endif
 
 #if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 	st->pict->format = pix_fmt;
