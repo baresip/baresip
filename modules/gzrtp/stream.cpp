@@ -182,7 +182,7 @@ Stream::Stream(int& err, const ZRTPConfig& config, Session *session,
 {
 	err = 0;
 
-	m_zrtp_seq = 1; // TODO: randomize
+	m_zrtp_seq = rand_u16() & 0x7fff;
 	sa_init(&m_raddr, AF_INET);
 	tmr_init(&m_zrtp_timer);
 
