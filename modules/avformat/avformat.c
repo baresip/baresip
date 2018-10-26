@@ -229,9 +229,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 const char *dev, vidsrc_frame_h *frameh,
 		 vidsrc_error_h *errorh, void *arg)
 {
-#if LIBAVFORMAT_VERSION_INT < ((52<<16) + (110<<8) + 0)
-	AVFormatParameters prms;
-#endif
 	struct vidsrc_st *st;
 	bool found_stream = false;
 	uint32_t i;
@@ -239,6 +236,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	double input_fps = 0;
 
 	(void)mctx;
+	(void)fmt;
 	(void)errorh;
 
 	if (!stp || !vs || !prm || !size || !frameh)
@@ -260,8 +258,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	 * ffmpeg/doc/APIchanges
 	 */
 
-#if LIBAVFORMAT_VERSION_INT >= ((52<<16) + (110<<8) + 0)
-	(void)fmt;
 	ret = avformat_open_input(&st->ic, dev, NULL, NULL);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%d)\n",
@@ -269,28 +265,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		err = ENOENT;
 		goto out;
 	}
-#else
-
-	/* Params */
-	memset(&prms, 0, sizeof(prms));
-
-	prms.time_base          = av_d2q(prm->fps, INT_MAX);
-	prms.channels           = 1;
-	prms.width              = size->w;
-	prms.height             = size->h;
-	prms.pix_fmt            = AV_PIX_FMT_YUV420P;
-	prms.channel            = 0;
-
-	ret = av_open_input_file(&st->ic, dev, av_find_input_format(fmt),
-				 0, &prms);
-	if (ret < 0) {
-		warning("avformat: av_open_input_file(%s) failed (ret=%d)\n",
-			dev, ret);
-		err = ENOENT;
-		goto out;
-	}
-#endif
-
 
 #if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (4<<8) + 0)
 	ret = avformat_find_stream_info(st->ic, NULL);
@@ -303,10 +277,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		err = ENOENT;
 		goto out;
 	}
-
-#if 0
-	av_dump_format(st->ic, 0, dev, 0);
-#endif
 
 	for (i=0; i<st->ic->nb_streams; i++) {
 		const struct AVStream *strm = st->ic->streams[i];
@@ -353,10 +323,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			     prm->fps, input_fps);
 
 			prm->fps = input_fps;
-
-#if LIBAVFORMAT_VERSION_INT < ((52<<16) + (110<<8) + 0)
-			prms.time_base = av_d2q(input_fps, INT_MAX);
-#endif
 		}
 
 		if (ctx->codec_id != AV_CODEC_ID_NONE) {
