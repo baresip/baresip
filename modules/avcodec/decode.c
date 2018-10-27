@@ -427,7 +427,7 @@ int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 
 	(void)seq;
 
-	*intra = false;  /* XXX */
+	*intra = false;
 
 	/* let the decoder handle this */
 	st->got_keyframe = true;
@@ -446,6 +446,18 @@ int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 		}
 
 		return 0;
+	}
+
+	if (st->mb->end >= 5) {
+
+		/* 0 == I-frame
+		 * 1 == P-frame
+		 */
+		uint8_t pict_type = (st->mb->buf[4] & 0xc0) >> 6;
+
+		if (pict_type == I_FRAME) {
+			*intra = true;
+		}
 	}
 
 	err = ffdecode(st, frame);
