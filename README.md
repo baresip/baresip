@@ -192,7 +192,7 @@ directory.
 
 ## License
 
-The baresip project is using the BSD license.
+The baresip project is using the 3-clause BSD license.
 
 
 ## Contributing
