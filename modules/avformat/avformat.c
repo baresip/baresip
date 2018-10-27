@@ -31,7 +31,7 @@
  */
 
 
-#if LIBAVCODEC_VERSION_INT < ((54<<16)+(25<<8)+0)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 25, 0)
 #define AVCodecID CodecID
 #define AV_CODEC_ID_NONE  CODEC_ID_NONE
 #endif
@@ -102,7 +102,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		frame = avcodec_alloc_frame();
 #endif
 
-#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
 		ret = avcodec_send_packet(st->ctx, pkt);
 		if (ret < 0)
@@ -140,7 +140,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	/* convert timestamp */
 	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 	switch (frame->format) {
 
 	case AV_PIX_FMT_YUV420P:
@@ -155,9 +154,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 			av_get_pix_fmt_name(frame->format));
 		goto out;
 	}
-#else
-	vf.fmt = VID_FMT_YUV420P;
-#endif
 
 	vf.size = sz;
 	for (i=0; i<4; i++) {
@@ -212,7 +208,7 @@ static void *read_thread(void *data)
 		ts += (uint64_t) 1000 * pkt.duration * av_q2d(st->time_base);
 
 	out:
-#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(12<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 12, 100)
 		av_packet_unref(&pkt);
 #else
 		av_free_packet(&pkt);
@@ -374,7 +370,7 @@ static int module_init(void)
 #endif
 	avdevice_register_all();
 
-#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 13, 0)
 	avformat_network_init();
 #endif
 

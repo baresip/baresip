@@ -273,7 +273,7 @@ int h265_decode(struct viddec_state *vds, struct vidframe *frame,
 	avpkt.data = vds->mb->buf;
 	avpkt.size = (int)vds->mb->end;
 
-#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
 	ret = avcodec_send_packet(vds->ctx, &avpkt);
 	if (ret < 0) {

@@ -193,7 +193,7 @@ static int module_init(void)
 	debug("avcodec: using libavcodec H.264 encoder\n");
 #endif
 
-#if LIBAVCODEC_VERSION_INT < ((53<<16)+(10<<8)+0)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53, 10, 0)
 	avcodec_init();
 #endif
 

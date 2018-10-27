@@ -9,9 +9,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
 #include <libavutil/mem.h>
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 #include <libavutil/pixdesc.h>
-#endif
 #include "h26x.h"
 #include "avcodec.h"
 
@@ -94,11 +92,7 @@ static int init_decoder(struct viddec_state *st, const char *name)
 			return ENOENT;
 	}
 
-#if LIBAVCODEC_VERSION_INT >= ((52<<16)+(92<<8)+0)
 	st->ctx = avcodec_alloc_context3(st->codec);
-#else
-	st->ctx = avcodec_alloc_context();
-#endif
 
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 	st->pict = av_frame_alloc();
@@ -170,7 +164,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		return 0;
 	}
 
-#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
 	do {
 		AVPacket avpkt;
@@ -223,7 +217,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 
 		double fps;
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 		switch (st->pict->format) {
 
 		case AV_PIX_FMT_YUV420P:
@@ -246,9 +239,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 				av_get_pix_fmt_name(st->pict->format));
 			goto out;
 		}
-#else
-		frame->fmt = VID_FMT_YUV420P;
-#endif
 
 		for (i=0; i<4; i++) {
 			frame->data[i]     = st->pict->data[i];
@@ -257,7 +247,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
 
-#if LIBAVCODEC_VERSION_INT > ((56<<16)+(1<<8)+0)
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(56, 1, 0)
 		/* get the framerate of the decoded bitstream */
 		fps = av_q2d(st->ctx->framerate);
 		if (st->fps != fps) {

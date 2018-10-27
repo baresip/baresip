@@ -5,7 +5,7 @@
  */
 
 
-#if LIBAVCODEC_VERSION_INT < ((54<<16)+(25<<8)+0)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 25, 0)
 #define AVCodecID CodecID
 
 #define AV_CODEC_ID_NONE  CODEC_ID_NONE
