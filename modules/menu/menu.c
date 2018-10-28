@@ -26,10 +26,8 @@ enum statmode {
 };
 
 
-static uint64_t start_ticks;          /**< Ticks when app started         */
 static struct tmr tmr_alert;          /**< Incoming call alert timer      */
 static struct tmr tmr_stat;           /**< Call status timer              */
-static enum statmode statmode;        /**< Status mode                    */
 static struct le *le_cur;             /**< Current User-Agent (struct ua) */
 
 static struct {
@@ -42,6 +40,8 @@ static struct {
 	uint32_t redial_delay;        /**< Redial delay in [seconds]      */
 	uint32_t redial_attempts;     /**< Number of re-dial attempts     */
 	uint32_t current_attempts;    /**< Current number of re-dials     */
+	uint64_t start_ticks;         /**< Ticks when app started         */
+	enum statmode statmode;       /**< Status mode                    */
 } menu;
 
 
@@ -97,7 +97,7 @@ static void check_registrations(void)
 		  "\x1b[32mAll %u useragent%s registered successfully!"
 		  " (%u ms)\x1b[;m\n",
 		  n, n==1 ? "" : "s",
-		  (uint32_t)(tmr_jiffies() - start_ticks));
+		  (uint32_t)(tmr_jiffies() - menu.start_ticks));
 
 	ual_ready = true;
 }
@@ -525,14 +525,14 @@ static int call_xfer(struct re_printf *pf, void *arg)
 	static bool xfer_inprogress;
 
 	if (!xfer_inprogress && !carg->complete) {
-		statmode = STATMODE_OFF;
+		menu.statmode = STATMODE_OFF;
 		re_hprintf(pf, "\rPlease enter transfer target SIP uri:\n");
 	}
 
 	xfer_inprogress = true;
 
 	if (carg->complete) {
-		statmode = STATMODE_CALL;
+		menu.statmode = STATMODE_CALL;
 		xfer_inprogress = false;
 		return call_transfer(ua_call(uag_cur()), carg->prm);
 	}
@@ -885,10 +885,10 @@ static int toggle_statmode(struct re_printf *pf, void *arg)
 	(void)pf;
 	(void)arg;
 
-	if (statmode == STATMODE_OFF)
-		statmode = STATMODE_CALL;
+	if (menu.statmode == STATMODE_OFF)
+		menu.statmode = STATMODE_CALL;
 	else
-		statmode = STATMODE_OFF;
+		menu.statmode = STATMODE_OFF;
 
 	return 0;
 }
@@ -1019,7 +1019,7 @@ static void tmrstat_handler(void *arg)
 	if (ui_isediting(baresip_uis()))
 		return;
 
-	if (STATMODE_OFF != statmode) {
+	if (STATMODE_OFF != menu.statmode) {
 		(void)re_fprintf(stderr, "%H\r", call_status, call);
 	}
 }
@@ -1320,14 +1320,15 @@ static int module_init(void)
 	if (!menu.dialbuf)
 		return ENOMEM;
 
-	start_ticks = tmr_jiffies();
+	menu.start_ticks = tmr_jiffies();
 	tmr_init(&tmr_alert);
+
 	if (0 == conf_get(conf_cur(), "statmode_default", &val) &&
 	    0 == pl_strcasecmp(&val, "off")) {
-		statmode = STATMODE_OFF;
+		menu.statmode = STATMODE_OFF;
 	}
 	else {
-		statmode = STATMODE_CALL;
+		menu.statmode = STATMODE_CALL;
 	}
 
 	err  = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
