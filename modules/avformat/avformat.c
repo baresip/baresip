@@ -74,11 +74,7 @@ static void destructor(void *arg)
 		avcodec_close(st->ctx);
 
 	if (st->ic) {
-#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (21<<8) + 0)
 		avformat_close_input(&st->ic);
-#else
-		av_close_input_file(st->ic);
-#endif
 	}
 }
 
