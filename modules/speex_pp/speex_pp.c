@@ -112,22 +112,11 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 static int encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 {
 	struct preproc *pp = (struct preproc *)st;
-	int is_speech = 1;
 
 	if (!*sampc)
 		return 0;
 
-	/* NOTE: Using this macro to check libspeex version */
-#ifdef SPEEX_PREPROCESS_SET_NOISE_SUPPRESS
-	/* New API */
-	is_speech = speex_preprocess_run(pp->state, sampv);
-#else
-	/* Old API - not tested! */
-	is_speech = speex_preprocess(pp->state, sampv, NULL);
-#endif
-
-	/* XXX: Handle is_speech and VAD */
-	(void)is_speech;
+	speex_preprocess_run(pp->state, sampv);
 
 	return 0;
 }
