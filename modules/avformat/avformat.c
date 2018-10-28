@@ -258,7 +258,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		goto out;
 	}
 
-#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (4<<8) + 0)
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 4, 0)
 	ret = avformat_find_stream_info(st->ic, NULL);
 #else
 	ret = av_find_stream_info(st->ic);
@@ -274,7 +274,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		const struct AVStream *strm = st->ic->streams[i];
 		AVCodecContext *ctx;
 
-#if LIBAVFORMAT_VERSION_INT >= ((57<<16) + (33<<8) + 100)
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)
 
 		ctx = avcodec_alloc_context3(NULL);
 		if (!ctx) {
@@ -383,7 +383,7 @@ static int module_close(void)
 {
 	mod_avf = mem_deref(mod_avf);
 
-#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 13, 0)
 	avformat_network_deinit();
 #endif
 
