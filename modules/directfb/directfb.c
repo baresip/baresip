@@ -67,13 +67,14 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	void *pixels;
 	int pitch, i;
 	unsigned h;
 	uint8_t *p;
 	(void) title;
+	(void) timestamp;
 
 	if (!vidsz_cmp(&st->size, &frame->size)) {
 		if (st->size.w && st->size.h) {
