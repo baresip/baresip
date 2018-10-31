@@ -121,9 +121,12 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 		if (mbuf_get_left(netstring->mb) < (3))
 			break;
 
-		err = netstring_read((char*)netstring->mb->buf,
-				                 netstring->mb->end,
-				                 (char**)&mb.buf, &len);
+		mbuf_init(&mb);
+
+		err = netstring_read(
+				(char*)netstring->mb->buf + netstring->mb->pos,
+				netstring->mb->end,
+				(char**)&mb.buf, &len);
 		if (err) {
 
 			if (err == NETSTRING_ERROR_TOO_SHORT) {
@@ -144,6 +147,7 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 		end = netstring->mb->end;
 
 		netstring->mb->end = pos + len;
+		mb.end = len;
 
 		++netstring->n_rx;
 
