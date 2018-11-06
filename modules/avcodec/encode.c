@@ -613,8 +613,6 @@ int encode_x264(struct videnc_state *st, bool update,
 	for (i=0; i<i_nal && !err; i++) {
 		const uint8_t hdr = nal[i].i_ref_idc<<5 | nal[i].i_type<<0;
 		int offset = 0;
-
-#if X264_BUILD >= 76
 		const uint8_t *p = nal[i].p_payload;
 
 		/* Find the NAL Escape code [00 00 01] */
@@ -624,7 +622,6 @@ int encode_x264(struct videnc_state *st, bool update,
 			else if (p[2] == 0x01)
 				offset = 3 + 1;
 		}
-#endif
 
 		/* skip Supplemental Enhancement Information (SEI) */
 		if (nal[i].i_type == H264_NAL_SEI)
