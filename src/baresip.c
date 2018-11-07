@@ -14,7 +14,7 @@
  */
 static struct baresip {
 	struct network *net;
-	struct contacts contacts;
+	struct contacts *contacts;
 	struct commands *commands;
 	struct player *player;
 	struct message *message;
@@ -150,7 +150,7 @@ void baresip_close(void)
 	baresip.message = mem_deref(baresip.message);
 	baresip.player = mem_deref(baresip.player);
 	baresip.commands = mem_deref(baresip.commands);
-	contact_close(&baresip.contacts);
+	baresip.contacts = mem_deref(baresip.contacts);
 
 	baresip.net = mem_deref(baresip.net);
 
@@ -176,7 +176,7 @@ struct network *baresip_network(void)
  */
 struct contacts *baresip_contacts(void)
 {
-	return &baresip.contacts;
+	return baresip.contacts;
 }
 
 

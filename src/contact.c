@@ -24,6 +24,15 @@ struct contact {
 };
 
 
+struct contacts {
+	struct list cl;
+	struct hash *cht;
+
+	contact_update_h *handler;
+	void* handler_arg;
+};
+
+
 static void destructor(void *arg)
 {
 	struct contact *c = arg;
@@ -245,6 +254,16 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 }
 
 
+static void contacts_destructor(void *data)
+{
+	struct contacts *contacts = data;
+
+	hash_clear(contacts->cht);
+	contacts->cht = mem_deref(contacts->cht);
+	list_flush(&contacts->cl);
+}
+
+
 /**
  * Initialise the contacts sub-system
  *
@@ -252,36 +271,31 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
  *
  * @return 0 if success, otherwise errorcode
  */
-int contact_init(struct contacts *contacts)
+int contact_init(struct contacts **contactsp)
 {
+	struct contacts *contacts;
 	int err = 0;
 
-	if (!contacts)
+	if (!contactsp)
 		return EINVAL;
 
-	memset(contacts, 0, sizeof(*contacts));
+	contacts = mem_zalloc(sizeof(*contacts), contacts_destructor);
+	if (!contacts)
+		return ENOMEM;
 
 	list_init(&contacts->cl);
 
 	err = hash_alloc(&contacts->cht, 32);
+	if (err)
+		goto out;
+
+ out:
+	if (err)
+		mem_deref(contacts);
+	else
+		*contactsp = contacts;
 
 	return err;
-}
-
-
-/**
- * @param contacts Contacts container
- *
- * Close the contacts sub-system
- */
-void contact_close(struct contacts *contacts)
-{
-	if (!contacts)
-		return;
-
-	hash_clear(contacts->cht);
-	contacts->cht = mem_deref(contacts->cht);
-	list_flush(&contacts->cl);
 }
 
 
