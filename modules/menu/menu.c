@@ -26,14 +26,13 @@ enum statmode {
 };
 
 
-static struct tmr tmr_alert;          /**< Incoming call alert timer      */
-static struct tmr tmr_stat;           /**< Call status timer              */
-static struct le *le_cur;             /**< Current User-Agent (struct ua) */
-
 static struct {
+	struct tmr tmr_alert;         /**< Incoming call alert timer      */
+	struct tmr tmr_stat;          /**< Call status timer              */
 	struct play *play;            /**< Current audio player state     */
 	struct message_lsnr *message; /**< Message listener               */
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
+	struct le *le_cur;            /**< Current User-Agent (struct ua) */
 	bool bell;                    /**< ANSI Bell alert enabled        */
 	bool ringback_disabled;	      /**< no ringback on sip 180 respons */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
@@ -386,16 +385,17 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 	(void)pf;
 	(void)unused;
 
-	if (!le_cur)
-		le_cur = list_head(uag_list());
-	if (!le_cur)
+	if (!menu.le_cur)
+		menu.le_cur = list_head(uag_list());
+	if (!menu.le_cur)
 		return 0;
 
-	le_cur = le_cur->next ? le_cur->next : list_head(uag_list());
+	menu.le_cur = menu.le_cur->next ?
+		menu.le_cur->next : list_head(uag_list());
 
-	err = re_hprintf(pf, "ua: %s\n", ua_aor(list_ledata(le_cur)));
+	err = re_hprintf(pf, "ua: %s\n", ua_aor(list_ledata(menu.le_cur)));
 
-	uag_current_set(list_ledata(le_cur));
+	uag_current_set(list_ledata(menu.le_cur));
 
 	update_callstatus();
 
@@ -1014,7 +1014,7 @@ static void tmrstat_handler(void *arg)
 	if (!call)
 		return;
 
-	tmr_start(&tmr_stat, 100, tmrstat_handler, 0);
+	tmr_start(&menu.tmr_stat, 100, tmrstat_handler, 0);
 
 	if (ui_isediting(baresip_uis()))
 		return;
@@ -1029,9 +1029,9 @@ static void update_callstatus(void)
 {
 	/* if there are any active calls, enable the call status view */
 	if (have_active_calls())
-		tmr_start(&tmr_stat, 100, tmrstat_handler, 0);
+		tmr_start(&menu.tmr_stat, 100, tmrstat_handler, 0);
 	else
-		tmr_cancel(&tmr_stat);
+		tmr_cancel(&menu.tmr_stat);
 }
 
 
@@ -1044,7 +1044,7 @@ static void alert_start(void *arg)
 
 	ui_output(baresip_uis(), "\033[10;1000]\033[11;1000]\a");
 
-	tmr_start(&tmr_alert, 1000, alert_start, NULL);
+	tmr_start(&menu.tmr_alert, 1000, alert_start, NULL);
 }
 
 
@@ -1053,10 +1053,10 @@ static void alert_stop(void)
 	if (!menu.bell)
 		return;
 
-	if (tmr_isrunning(&tmr_alert))
+	if (tmr_isrunning(&menu.tmr_alert))
 		ui_output(baresip_uis(), "\r");
 
-	tmr_cancel(&tmr_alert);
+	tmr_cancel(&menu.tmr_alert);
 }
 
 
@@ -1326,7 +1326,7 @@ static int module_init(void)
 		return ENOMEM;
 
 	menu.start_ticks = tmr_jiffies();
-	tmr_init(&tmr_alert);
+	tmr_init(&menu.tmr_alert);
 
 	if (0 == conf_get(conf_cur(), "statmode_default", &val) &&
 	    0 == pl_strcasecmp(&val, "off")) {
@@ -1366,11 +1366,11 @@ static int module_close(void)
 	cmd_unregister(baresip_commands(), dialcmdv);
 	cmd_unregister(baresip_commands(), callcmdv);
 
-	tmr_cancel(&tmr_alert);
-	tmr_cancel(&tmr_stat);
+	tmr_cancel(&menu.tmr_alert);
+	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
 
-	le_cur = NULL;
+	menu.le_cur = NULL;
 
 	menu.play = mem_deref(menu.play);
 
