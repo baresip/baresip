@@ -31,10 +31,10 @@ static struct tmr tmr_stat;           /**< Call status timer              */
 static struct le *le_cur;             /**< Current User-Agent (struct ua) */
 
 static struct {
-	struct play *play;
-	struct message_lsnr *message;
+	struct play *play;            /**< Current audio player state     */
+	struct message_lsnr *message; /**< Message listener               */
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
-	bool bell;
+	bool bell;                    /**< ANSI Bell alert enabled        */
 	bool ringback_disabled;	      /**< no ringback on sip 180 respons */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
 	uint32_t redial_delay;        /**< Redial delay in [seconds]      */
