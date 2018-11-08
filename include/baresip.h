@@ -344,17 +344,10 @@ enum presence_status {
 struct contact;
 typedef void (contact_update_h)(struct contact *c, bool removed, void *arg);
 
-struct contacts {
-	struct list cl;
-	struct hash *cht;
-
-	contact_update_h *handler;
-	void* handler_arg;
-};
+struct contacts;
 
 
-int  contact_init(struct contacts *contacts);
-void contact_close(struct contacts *contacts);
+int  contact_init(struct contacts **contactsp);
 int  contact_add(struct contacts *contacts,
 		 struct contact **contactp, const struct pl *addr);
 void contact_remove(struct contacts *contacts, struct contact *c);

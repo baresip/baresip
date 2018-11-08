@@ -11,7 +11,7 @@
 
 int test_contact(void)
 {
-	struct contacts contacts;
+	struct contacts *contacts = NULL;
 	struct contact *c;
 	const char *addr = "sip:neil@young.com";
 	struct pl pl_addr;
@@ -22,22 +22,22 @@ int test_contact(void)
 
 	/* Verify that we have no contacts */
 
-	ASSERT_EQ(0, list_count(contact_list(&contacts)));
+	ASSERT_EQ(0, list_count(contact_list(contacts)));
 
-	c = contact_find(&contacts, "sip:null@void.com");
+	c = contact_find(contacts, "sip:null@void.com");
 	ASSERT_TRUE(c == NULL);
 
 	/* Add one contact, list should have one entry and
 	   find should return the added contact */
 
 	pl_set_str(&pl_addr, addr);
-	err = contact_add(&contacts, &c, &pl_addr);
+	err = contact_add(contacts, &c, &pl_addr);
 	ASSERT_EQ(0, err);
 	ASSERT_TRUE(c != NULL);
 
-	ASSERT_EQ(1, list_count(contact_list(&contacts)));
+	ASSERT_EQ(1, list_count(contact_list(contacts)));
 
-	c = contact_find(&contacts, addr);
+	c = contact_find(contacts, addr);
 	ASSERT_TRUE(c != NULL);
 
 	ASSERT_STREQ(addr, contact_str(c));
@@ -46,10 +46,10 @@ int test_contact(void)
 
 	mem_deref(c);
 
-	ASSERT_EQ(0, list_count(contact_list(&contacts)));
+	ASSERT_EQ(0, list_count(contact_list(contacts)));
 
  out:
-	contact_close(&contacts);
+	mem_deref(contacts);
 
 	return err;
 }
