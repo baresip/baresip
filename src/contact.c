@@ -29,7 +29,7 @@ struct contacts {
 	struct hash *cht;
 
 	contact_update_h *handler;
-	void* handler_arg;
+	void *handler_arg;
 };
 
 
@@ -40,6 +40,16 @@ static void destructor(void *arg)
 	hash_unlink(&c->he);
 	list_unlink(&c->le);
 	mem_deref(c->buf);
+}
+
+
+static void contacts_destructor(void *data)
+{
+	struct contacts *contacts = data;
+
+	hash_clear(contacts->cht);
+	mem_deref(contacts->cht);
+	list_flush(&contacts->cl);
 }
 
 
@@ -204,6 +214,7 @@ void contact_set_presence(struct contact *c, enum presence_status status)
 	c->status = status;
 }
 
+
 enum presence_status contact_presence(const struct contact *c)
 {
 	if (!c)
@@ -211,6 +222,7 @@ enum presence_status contact_presence(const struct contact *c)
 
 	return c->status;
 }
+
 
 const char *contact_presence_str(enum presence_status status)
 {
@@ -254,20 +266,10 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 }
 
 
-static void contacts_destructor(void *data)
-{
-	struct contacts *contacts = data;
-
-	hash_clear(contacts->cht);
-	contacts->cht = mem_deref(contacts->cht);
-	list_flush(&contacts->cl);
-}
-
-
 /**
  * Initialise the contacts sub-system
  *
- * @param contacts Contacts container
+ * @param contactsp Pointer to allocated contacts container
  *
  * @return 0 if success, otherwise errorcode
  */
