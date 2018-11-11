@@ -255,7 +255,7 @@ const char *contact_presence_str(enum presence_status status)
 }
 
 
-static int contact_print(struct re_printf *pf, const struct contact *cnt)
+int contact_print(struct re_printf *pf, const struct contact *cnt)
 {
 	if (!cnt)
 		return 0;
