@@ -154,9 +154,8 @@ void contact_remove(struct contacts *contacts, struct contact *contact)
 void contact_set_update_handler(struct contacts *contacts,
 				contact_update_h *updateh, void *arg)
 {
-	if (!contacts) {
+	if (!contacts)
 		return;
-	}
 
 	contacts->handler = updateh;
 	contacts->handler_arg = arg;
