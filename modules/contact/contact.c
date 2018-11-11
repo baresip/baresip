@@ -25,6 +25,7 @@ static char cmd_desc[128] = "Send MESSAGE to peer";
 static int confline_handler(const struct pl *addr, void *arg)
 {
 	struct contacts *contacts = arg;
+
 	return contact_add(contacts, NULL, addr);
 }
 
@@ -106,6 +107,7 @@ static int cmd_contact(struct re_printf *pf, void *arg)
 static int print_contacts(struct re_printf *pf, void *unused)
 {
 	(void)unused;
+
 	return contacts_print(pf, baresip_contacts());
 }
 
