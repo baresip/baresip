@@ -255,6 +255,15 @@ const char *contact_presence_str(enum presence_status status)
 }
 
 
+static int contact_print(struct re_printf *pf, const struct contact *cnt)
+{
+	if (!cnt)
+		return 0;
+
+	return re_hprintf(pf, "%r <%r>", &cnt->addr.dname, &cnt->addr.auri);
+}
+
+
 int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 {
 	const struct list *lst;
@@ -271,11 +280,10 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 
 	for (le = list_head(lst); le && !err; le = le->next) {
 		const struct contact *c = le->data;
-		const struct sip_addr *addr = &c->addr;
 
-		err = re_hprintf(pf, "%20s  %r <%r>\n",
+		err = re_hprintf(pf, "%20s  %H\n",
 				 contact_presence_str(c->status),
-				 &addr->dname, &addr->auri);
+				 contact_print, c);
 	}
 
 	err |= re_hprintf(pf, "\n");
