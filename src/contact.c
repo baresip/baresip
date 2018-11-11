@@ -19,6 +19,7 @@ struct contact {
 	struct le he;          /* hash-element with key 'auri' */
 	struct sip_addr addr;
 	char *buf;
+	char *uri;
 	enum presence_status status;
 	enum access access;
 };
@@ -40,6 +41,7 @@ static void destructor(void *arg)
 	hash_unlink(&c->he);
 	list_unlink(&c->le);
 	mem_deref(c->buf);
+	mem_deref(c->uri);
 }
 
 
@@ -87,6 +89,10 @@ int contact_add(struct contacts *contacts,
 		warning("contact: decode error '%r'\n", addr);
 		goto out;
 	}
+
+	err = pl_strdup(&c->uri, &c->addr.auri);
+	if (err)
+		goto out;
 
 	if (0 == msg_param_decode(&c->addr.params, "access", &pl)) {
 
@@ -180,6 +186,19 @@ struct sip_addr *contact_addr(const struct contact *c)
 const char *contact_str(const struct contact *c)
 {
 	return c ? c->buf : NULL;
+}
+
+
+/**
+ * Get the SIP uri of a contact
+ *
+ * @param c Contact
+ *
+ * @return SIP uri
+ */
+const char *contact_uri(const struct contact *c)
+{
+	return c ? c->uri : NULL;
 }
 
 

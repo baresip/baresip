@@ -362,6 +362,7 @@ struct contact  *contact_find(const struct contacts *contacts,
 struct sip_addr *contact_addr(const struct contact *c);
 struct list     *contact_list(const struct contacts *contacts);
 const char      *contact_str(const struct contact *c);
+const char      *contact_uri(const struct contact *c);
 const char      *contact_presence_str(enum presence_status status);
 
 

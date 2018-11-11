@@ -13,7 +13,8 @@ int test_contact(void)
 {
 	struct contacts *contacts = NULL;
 	struct contact *c;
-	const char *addr = "sip:neil@young.com";
+	const char *addr = "Neil Young <sip:neil@young.com>";
+	const char *uri = "sip:neil@young.com";
 	struct pl pl_addr;
 	int err;
 
@@ -37,10 +38,11 @@ int test_contact(void)
 
 	ASSERT_EQ(1, list_count(contact_list(contacts)));
 
-	c = contact_find(contacts, addr);
+	c = contact_find(contacts, uri);
 	ASSERT_TRUE(c != NULL);
 
 	ASSERT_STREQ(addr, contact_str(c));
+	ASSERT_STREQ(uri, contact_uri(c));
 
 	/* Delete 1 contact, verify that list is empty */
 
