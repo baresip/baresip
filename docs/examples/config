@@ -11,6 +11,7 @@ poll_method		epoll		# poll, select, epoll ..
 sip_trans_bsize		128
 #sip_listen		0.0.0.0:5060
 #sip_certificate	cert.pem
+#sip_cafile		ca.crt
 
 # Audio
 audio_player		alsa,default

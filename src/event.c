@@ -187,6 +187,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_MENC:            return "CALL_MENC";
 	case UA_EVENT_VU_TX:                return "VU_TX_REPORT";
 	case UA_EVENT_VU_RX:                return "VU_RX_REPORT";
+	case UA_EVENT_AUDIO_ERROR:          return "AUDIO_ERROR";
 	default: return "?";
 	}
 }

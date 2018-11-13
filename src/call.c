@@ -424,8 +424,7 @@ static void audio_error_handler(int err, const char *str, void *arg)
 		warning("call: audio device error: %m (%s)\n", err, str);
 	}
 
-	call_stream_stop(call);
-	call_event_handler(call, CALL_EVENT_CLOSED, str);
+	ua_event(call->ua, UA_EVENT_AUDIO_ERROR, call, "%d,%s", err, str);
 }
 
 
@@ -1314,13 +1313,14 @@ static void sipnot_close_handler(int err, const struct sip_msg *msg,
 {
 	struct call *call = arg;
 
-	if (err)
-		info("call: notification closed: %m\n", err);
-	else if (msg)
-		info("call: notification closed: %u %r\n",
-		     msg->scode, &msg->reason);
-
 	call->not = mem_deref(call->not);
+
+	if (err)
+		call_event_handler(call, CALL_EVENT_TRANSFER_FAILED,
+				   "%m", err);
+	else if (msg && msg->scode >= 300)
+		call_event_handler(call, CALL_EVENT_TRANSFER_FAILED,
+				   "%u %r", msg->scode, &msg->reason);
 }
 
 

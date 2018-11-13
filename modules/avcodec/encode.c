@@ -8,11 +8,7 @@
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
-#if LIBAVUTIL_VERSION_INT >= ((50<<16)+(29<<8)+0)
 #include <libavutil/opt.h>
-#else
-#include <libavcodec/opt.h>
-#endif
 #ifdef USE_X264
 #include <x264.h>
 #endif
@@ -183,11 +179,7 @@ static int open_encoder(struct videnc_state *st,
 	if (st->pict)
 		av_free(st->pict);
 
-#if LIBAVCODEC_VERSION_INT >= ((52<<16)+(92<<8)+0)
 	st->ctx = avcodec_alloc_context3(st->codec);
-#else
-	st->ctx = avcodec_alloc_context();
-#endif
 
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 	st->pict = av_frame_alloc();
@@ -252,23 +244,14 @@ static int open_encoder(struct videnc_state *st,
 #endif
 	}
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(8<<8)+0)
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0) {
 		err = ENOENT;
 		goto out;
 	}
-#else
-	if (avcodec_open(st->ctx, st->codec) < 0) {
-		err = ENOENT;
-		goto out;
-	}
-#endif
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 	st->pict->format = pix_fmt;
 	st->pict->width = size->w;
 	st->pict->height = size->h;
-#endif
 
  out:
 	if (err) {
@@ -630,8 +613,6 @@ int encode_x264(struct videnc_state *st, bool update,
 	for (i=0; i<i_nal && !err; i++) {
 		const uint8_t hdr = nal[i].i_ref_idc<<5 | nal[i].i_type<<0;
 		int offset = 0;
-
-#if X264_BUILD >= 76
 		const uint8_t *p = nal[i].p_payload;
 
 		/* Find the NAL Escape code [00 00 01] */
@@ -641,7 +622,6 @@ int encode_x264(struct videnc_state *st, bool update,
 			else if (p[2] == 0x01)
 				offset = 3 + 1;
 		}
-#endif
 
 		/* skip Supplemental Enhancement Information (SEI) */
 		if (nal[i].i_type == H264_NAL_SEI)
@@ -720,7 +700,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
 
 	mbuf_rewind(st->mb);
 
-#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 	do {
 		AVPacket *pkt;
 
@@ -748,7 +728,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
 		if (err)
 			return err;
 	} while (0);
-#elif LIBAVCODEC_VERSION_INT >= ((54<<16)+(1<<8)+0)
+#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54, 1, 0)
 	do {
 		AVPacket avpkt;
 		int got_packet;

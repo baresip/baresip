@@ -220,6 +220,7 @@ struct config_sip {
 	char uuid[64];          /**< Universally Unique Identifier  */
 	char local[64];         /**< Local SIP Address              */
 	char cert[256];         /**< SIP Certificate                */
+	char cafile[256];       /**< SIP CA-file                    */
 };
 
 /** Call config */
@@ -343,22 +344,16 @@ enum presence_status {
 struct contact;
 typedef void (contact_update_h)(struct contact *c, bool removed, void *arg);
 
-struct contacts {
-	struct list cl;
-	struct hash *cht;
-
-	contact_update_h *handler;
-	void* handler_arg;
-};
+struct contacts;
 
 
-int  contact_init(struct contacts *contacts);
-void contact_close(struct contacts *contacts);
+int  contact_init(struct contacts **contactsp);
 int  contact_add(struct contacts *contacts,
 		 struct contact **contactp, const struct pl *addr);
 void contact_remove(struct contacts *contacts, struct contact *c);
 void contact_set_update_handler(struct contacts *contacs,
 				contact_update_h *updateh, void *arg);
+int  contact_print(struct re_printf *pf, const struct contact *cnt);
 int  contacts_print(struct re_printf *pf, const struct contacts *contacts);
 enum presence_status contact_presence(const struct contact *c);
 void contact_set_presence(struct contact *c, enum presence_status status);
@@ -368,6 +363,7 @@ struct contact  *contact_find(const struct contacts *contacts,
 struct sip_addr *contact_addr(const struct contact *c);
 struct list     *contact_list(const struct contacts *contacts);
 const char      *contact_str(const struct contact *c);
+const char      *contact_uri(const struct contact *c);
 const char      *contact_presence_str(enum presence_status status);
 
 
@@ -678,6 +674,7 @@ enum ua_event {
 	UA_EVENT_CALL_MENC,
 	UA_EVENT_VU_TX,
 	UA_EVENT_VU_RX,
+	UA_EVENT_AUDIO_ERROR,
 
 	UA_EVENT_MAX,
 };
@@ -1125,7 +1122,9 @@ int  audio_debug(struct re_printf *pf, const struct audio *a);
 struct stream *audio_strm(const struct audio *au);
 int  audio_set_bitrate(struct audio *au, uint32_t bitrate);
 bool audio_rxaubuf_started(const struct audio *au);
+int  audio_start(struct audio *a);
 void audio_stop(struct audio *a);
+bool audio_started(const struct audio *a);
 void audio_set_hold(struct audio *au, bool hold);
 
 

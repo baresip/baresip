@@ -9,9 +9,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
 #include <libavutil/mem.h>
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 #include <libavutil/pixdesc.h>
-#endif
 #include "h26x.h"
 #include "avcodec.h"
 
@@ -94,11 +92,7 @@ static int init_decoder(struct viddec_state *st, const char *name)
 			return ENOENT;
 	}
 
-#if LIBAVCODEC_VERSION_INT >= ((52<<16)+(92<<8)+0)
 	st->ctx = avcodec_alloc_context3(st->codec);
-#else
-	st->ctx = avcodec_alloc_context();
-#endif
 
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 	st->pict = av_frame_alloc();
@@ -109,13 +103,8 @@ static int init_decoder(struct viddec_state *st, const char *name)
 	if (!st->ctx || !st->pict)
 		return ENOMEM;
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(8<<8)+0)
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0)
 		return ENOENT;
-#else
-	if (avcodec_open(st->ctx, st->codec) < 0)
-		return ENOENT;
-#endif
 
 	return 0;
 }
@@ -175,7 +164,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		return 0;
 	}
 
-#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
 	do {
 		AVPacket avpkt;
@@ -206,11 +195,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		got_picture = true;
 
 	} while (0);
-
-#elif LIBAVCODEC_VERSION_INT <= ((52<<16)+(23<<8)+0)
-	ret = avcodec_decode_video(st->ctx, st->pict, &got_picture,
-				   st->mb->buf,
-				   (int)st->mb->end);
 #else
 	do {
 		AVPacket avpkt;
@@ -233,7 +217,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 
 		double fps;
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 		switch (st->pict->format) {
 
 		case AV_PIX_FMT_YUV420P:
@@ -256,9 +239,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 				av_get_pix_fmt_name(st->pict->format));
 			goto out;
 		}
-#else
-		frame->fmt = VID_FMT_YUV420P;
-#endif
 
 		for (i=0; i<4; i++) {
 			frame->data[i]     = st->pict->data[i];
@@ -267,7 +247,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
 
-#if LIBAVCODEC_VERSION_INT > ((56<<16)+(1<<8)+0)
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(56, 1, 0)
 		/* get the framerate of the decoded bitstream */
 		fps = av_q2d(st->ctx->framerate);
 		if (st->fps != fps) {
@@ -437,7 +417,7 @@ int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 
 	(void)seq;
 
-	*intra = false;  /* XXX */
+	*intra = false;
 
 	/* let the decoder handle this */
 	st->got_keyframe = true;
@@ -456,6 +436,18 @@ int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 		}
 
 		return 0;
+	}
+
+	if (st->mb->end >= 5) {
+
+		/* 0 == I-frame
+		 * 1 == P-frame
+		 */
+		uint8_t pict_type = (st->mb->buf[4] & 0xc0) >> 6;
+
+		if (pict_type == I_FRAME) {
+			*intra = true;
+		}
 	}
 
 	err = ffdecode(st, frame);

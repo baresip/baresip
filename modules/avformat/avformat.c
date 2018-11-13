@@ -15,9 +15,7 @@
 #include <libavformat/avformat.h>
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 #include <libavutil/pixdesc.h>
-#endif
 
 
 /**
@@ -33,16 +31,7 @@
  */
 
 
-/* backward compat */
-#if LIBAVCODEC_VERSION_MAJOR>52 || LIBAVCODEC_VERSION_INT>=((52<<16)+(64<<8))
-#define LIBAVCODEC_HAVE_AVMEDIA_TYPES 1
-#endif
-#ifndef LIBAVCODEC_HAVE_AVMEDIA_TYPES
-#define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
-#endif
-
-
-#if LIBAVCODEC_VERSION_INT < ((54<<16)+(25<<8)+0)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 25, 0)
 #define AVCodecID CodecID
 #define AV_CODEC_ID_NONE  CODEC_ID_NONE
 #endif
@@ -85,11 +74,7 @@ static void destructor(void *arg)
 		avcodec_close(st->ctx);
 
 	if (st->ic) {
-#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (21<<8) + 0)
 		avformat_close_input(&st->ic);
-#else
-		av_close_input_file(st->ic);
-#endif
 	}
 }
 
@@ -113,7 +98,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		frame = avcodec_alloc_frame();
 #endif
 
-#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
 		ret = avcodec_send_packet(st->ctx, pkt);
 		if (ret < 0)
@@ -124,10 +109,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 			goto out;
 
 		got_pict = true;
-
-#elif LIBAVCODEC_VERSION_INT <= ((52<<16)+(23<<8)+0)
-		ret = avcodec_decode_video(st->ctx, frame, &got_pict,
-					   pkt->data, pkt->size);
 #else
 		ret = avcodec_decode_video2(st->ctx, frame,
 					    &got_pict, pkt);
@@ -155,7 +136,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	/* convert timestamp */
 	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 	switch (frame->format) {
 
 	case AV_PIX_FMT_YUV420P:
@@ -170,9 +150,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 			av_get_pix_fmt_name(frame->format));
 		goto out;
 	}
-#else
-	vf.fmt = VID_FMT_YUV420P;
-#endif
 
 	vf.size = sz;
 	for (i=0; i<4; i++) {
@@ -227,7 +204,7 @@ static void *read_thread(void *data)
 		ts += (uint64_t) 1000 * pkt.duration * av_q2d(st->time_base);
 
 	out:
-#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(12<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 12, 100)
 		av_packet_unref(&pkt);
 #else
 		av_free_packet(&pkt);
@@ -244,9 +221,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 const char *dev, vidsrc_frame_h *frameh,
 		 vidsrc_error_h *errorh, void *arg)
 {
-#if LIBAVFORMAT_VERSION_INT < ((52<<16) + (110<<8) + 0)
-	AVFormatParameters prms;
-#endif
 	struct vidsrc_st *st;
 	bool found_stream = false;
 	uint32_t i;
@@ -254,6 +228,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	double input_fps = 0;
 
 	(void)mctx;
+	(void)fmt;
 	(void)errorh;
 
 	if (!stp || !vs || !prm || !size || !frameh)
@@ -275,8 +250,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	 * ffmpeg/doc/APIchanges
 	 */
 
-#if LIBAVFORMAT_VERSION_INT >= ((52<<16) + (110<<8) + 0)
-	(void)fmt;
 	ret = avformat_open_input(&st->ic, dev, NULL, NULL);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%d)\n",
@@ -284,30 +257,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		err = ENOENT;
 		goto out;
 	}
-#else
 
-	/* Params */
-	memset(&prms, 0, sizeof(prms));
-
-	prms.time_base          = av_d2q(prm->fps, INT_MAX);
-	prms.channels           = 1;
-	prms.width              = size->w;
-	prms.height             = size->h;
-	prms.pix_fmt            = AV_PIX_FMT_YUV420P;
-	prms.channel            = 0;
-
-	ret = av_open_input_file(&st->ic, dev, av_find_input_format(fmt),
-				 0, &prms);
-	if (ret < 0) {
-		warning("avformat: av_open_input_file(%s) failed (ret=%d)\n",
-			dev, ret);
-		err = ENOENT;
-		goto out;
-	}
-#endif
-
-
-#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (4<<8) + 0)
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 4, 0)
 	ret = avformat_find_stream_info(st->ic, NULL);
 #else
 	ret = av_find_stream_info(st->ic);
@@ -319,15 +270,11 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		goto out;
 	}
 
-#if 0
-	av_dump_format(st->ic, 0, dev, 0);
-#endif
-
 	for (i=0; i<st->ic->nb_streams; i++) {
 		const struct AVStream *strm = st->ic->streams[i];
 		AVCodecContext *ctx;
 
-#if LIBAVFORMAT_VERSION_INT >= ((57<<16) + (33<<8) + 100)
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)
 
 		ctx = avcodec_alloc_context3(NULL);
 		if (!ctx) {
@@ -368,10 +315,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			     prm->fps, input_fps);
 
 			prm->fps = input_fps;
-
-#if LIBAVFORMAT_VERSION_INT < ((52<<16) + (110<<8) + 0)
-			prms.time_base = av_d2q(input_fps, INT_MAX);
-#endif
 		}
 
 		if (ctx->codec_id != AV_CODEC_ID_NONE) {
@@ -382,11 +325,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 				goto out;
 			}
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(8<<8)+0)
 			ret = avcodec_open2(ctx, st->codec, NULL);
-#else
-			ret = avcodec_open(ctx, st->codec);
-#endif
 			if (ret < 0) {
 				err = ENOENT;
 				goto out;
@@ -427,7 +366,7 @@ static int module_init(void)
 #endif
 	avdevice_register_all();
 
-#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 13, 0)
 	avformat_network_init();
 #endif
 
@@ -444,7 +383,7 @@ static int module_close(void)
 {
 	mod_avf = mem_deref(mod_avf);
 
-#if LIBAVFORMAT_VERSION_INT >= ((53<<16) + (13<<8) + 0)
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 13, 0)
 	avformat_network_deinit();
 #endif
 
