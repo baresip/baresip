@@ -94,15 +94,15 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 
 	if (str_isset(filename))
 	{
-		err = re_hprintf(pf, "playing audio file \"%s\" ..\n",filename);
+		err = re_hprintf(pf, "playing audio file \"%s\" ..\n", filename);
 		if (err)
 			return err;
 
 		err = play_file(&g_play, baresip_player(), filename, 0);
 		if (err)
 		{
-			warning("debug_cmd: play_file(%s) failed        (%m)\n",
-			filename, err);
+			warning("debug_cmd: play_file(%s) failed (%m)\n",
+					filename, err);
 			return err;
 		}
 	}
