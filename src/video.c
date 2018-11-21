@@ -1308,6 +1308,13 @@ void video_encoder_cycle(struct video *video)
 }
 
 
+/**
+ * Get the RTP Stream object from a Video object
+ *
+ * @param v  Video object
+ *
+ * @return RTP Stream object
+ */
 struct stream *video_strm(const struct video *v)
 {
 	return v ? v->strm : NULL;
@@ -1425,6 +1432,14 @@ static int vrx_debug(struct re_printf *pf, const struct vrx *vrx)
 }
 
 
+/**
+ * Print the video debug information
+ *
+ * @param pf   Print function
+ * @param v    Video object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int video_debug(struct re_printf *pf, const struct video *v)
 {
 	const struct vtx *vtx;
@@ -1465,6 +1480,15 @@ int video_print(struct re_printf *pf, const struct video *v)
 }
 
 
+/**
+ * Set the active video source
+ *
+ * @param v    Video object
+ * @param name Video source name
+ * @param dev  Video source device
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int video_set_source(struct video *v, const char *name, const char *dev)
 {
 	struct vidsrc *vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
@@ -1487,6 +1511,13 @@ int video_set_source(struct video *v, const char *name, const char *dev)
 }
 
 
+/**
+ * Set the device name of video source and display
+ *
+ * @param v    Video object
+ * @param src  Video source device
+ * @param disp Video display device
+ */
 void video_set_devicename(struct video *v, const char *src, const char *disp)
 {
 	if (!v)

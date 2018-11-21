@@ -2022,6 +2022,14 @@ static int aucodec_print(struct re_printf *pf, const struct aucodec *ac)
 }
 
 
+/**
+ * Print the audio debug information
+ *
+ * @param pf   Print function
+ * @param a    Audio object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_debug(struct re_printf *pf, const struct audio *a)
 {
 	const struct autx *tx;
