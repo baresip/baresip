@@ -1,5 +1,5 @@
 /**
- * @file session.h  GNU ZRTP: Session class implementation
+ * @file session.cpp  GNU ZRTP: Session class implementation
  *
  * Copyright (C) 2010 - 2017 Creytiv.com
  */
