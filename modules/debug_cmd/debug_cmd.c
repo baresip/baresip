@@ -94,7 +94,8 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 
 	if (str_isset(filename))
 	{
-		err = re_hprintf(pf, "playing audio file \"%s\" ..\n", filename);
+		err = re_hprintf(pf, "playing audio file \"%s\" ..\n",
+				 filename);
 		if (err)
 			return err;
 
