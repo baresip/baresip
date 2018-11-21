@@ -81,12 +81,14 @@ static int cmd_ua_debug(struct re_printf *pf, void *unused)
 		return re_hprintf(pf, "(no user-agent)\n");
 }
 
+
 static int cmd_play_file(struct re_printf *pf, void *arg)
 {
 	static struct play *g_play;
 	struct cmd_arg *carg = arg;
 	const char *filename = carg->prm;
 	int err;
+
 	/* Stop the current tone, if any */
 	g_play = mem_deref(g_play);
 
@@ -104,8 +106,10 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 			return err;
 		}
 	}
+
 	return err;
 }
+
 
 static int reload_config(struct re_printf *pf, void *arg)
 {
