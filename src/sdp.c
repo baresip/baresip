@@ -9,6 +9,14 @@
 #include "core.h"
 
 
+/**
+ * Get the numerical value from a remote attribute
+ *
+ * @param m    SDP Media object
+ * @param name Remote attribute name
+ *
+ * @return Numerical value or 0 if not found
+ */
 uint32_t sdp_media_rattr_u32(const struct sdp_media *m, const char *name)
 {
 	const char *attr = sdp_media_rattr(m, name);
@@ -16,9 +24,15 @@ uint32_t sdp_media_rattr_u32(const struct sdp_media *m, const char *name)
 }
 
 
-/*
+/**
  * Get a remote attribute from the SDP. Try the media-level first,
  * and if it does not exist then try session-level.
+ *
+ * @param s    SDP Session object
+ * @param m    SDP Media object
+ * @param name Remote attribute name
+ *
+ * @return Remote attribute value
  */
 const char *sdp_rattr(const struct sdp_session *s, const struct sdp_media *m,
 		      const char *name)
@@ -37,7 +51,18 @@ const char *sdp_rattr(const struct sdp_session *s, const struct sdp_media *m,
 }
 
 
-/* RFC 4572 */
+/**
+ * Decode an SDP fingerprint value
+ *
+ * @param attr SDP attribute value
+ * @param hash Returned hash method
+ * @param md   Returned message digest
+ * @param sz   Message digest size, set on return
+ *
+ * @return 0 if success, otherwise errorcode
+ *
+ * Reference: RFC 4572
+ */
 int sdp_fingerprint_decode(const char *attr, struct pl *hash,
 			   uint8_t *md, size_t *sz)
 {
@@ -67,6 +92,14 @@ int sdp_fingerprint_decode(const char *attr, struct pl *hash,
 }
 
 
+/**
+ * Check if an SDP media object has valid media. It is considered
+ * valid if it has one or more codecs, and the port number is set.
+ *
+ * @param m SDP Media object
+ *
+ * @return True if it has media, false if not
+ */
 bool sdp_media_has_media(const struct sdp_media *m)
 {
 	bool has;
@@ -100,6 +133,13 @@ int sdp_media_find_unused_pt(const struct sdp_media *m)
 }
 
 
+/**
+ * Move the first codec to the bottom of the remote codec list
+ *
+ * @param m SDP Media object
+ *
+ * @return SDP format for the first codec
+ */
 const struct sdp_format *sdp_media_format_cycle(struct sdp_media *m)
 {
 	struct sdp_format *sf;
