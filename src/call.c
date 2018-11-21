@@ -726,6 +726,14 @@ const struct list *call_get_custom_hdrs(const struct call *call)
 }
 
 
+/**
+ * Connect an outgoing call to a given SIP uri
+ *
+ * @param call  Call Object
+ * @param paddr SIP address or uri to connect to
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_connect(struct call *call, const struct pl *paddr)
 {
 	struct sip_addr addr;
@@ -999,6 +1007,14 @@ const char *call_peername(const struct call *call)
 }
 
 
+/**
+ * Print the call debug information
+ *
+ * @param pf   Print function
+ * @param call Call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_debug(struct re_printf *pf, const struct call *call)
 {
 	int err;
@@ -1038,6 +1054,14 @@ static int print_duration(struct re_printf *pf, const struct call *call)
 }
 
 
+/**
+ * Print the call status
+ *
+ * @param pf   Print function
+ * @param call Call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_status(struct re_printf *pf, const struct call *call)
 {
 	struct le *le;
@@ -1727,6 +1751,16 @@ int call_reset_transp(struct call *call, const struct sa *laddr)
 }
 
 
+/**
+ * Send a SIP NOTIFY with a SIP message fragment
+ *
+ * @param call   Call object
+ * @param scode  SIP Status code
+ * @param reason Formatted SIP Reason phrase
+ * @param ...    Variable arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_notify_sipfrag(struct call *call, uint16_t scode,
 			const char *reason, ...)
 {
@@ -1894,6 +1928,14 @@ uint16_t call_scode(const struct call *call)
 }
 
 
+/**
+ * Set the callback handlers for a call object
+ *
+ * @param call  Call object
+ * @param eh    Event handler
+ * @param dtmfh DTMF handler
+ * @param arg   Handler argument
+ */
 void call_set_handlers(struct call *call, call_event_h *eh,
 		       call_dtmf_h *dtmfh, void *arg)
 {
