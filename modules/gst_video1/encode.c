@@ -1,5 +1,5 @@
 /**
- * @file gst_video/encode.c  Video codecs using Gstreamer video pipeline
+ * @file gst_video1/encode.c  Video codecs using Gstreamer video pipeline
  *
  * Copyright (C) 2010 - 2013 Creytiv.com
  * Copyright (C) 2014 Fadeev Alexander

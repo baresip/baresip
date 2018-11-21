@@ -1,5 +1,5 @@
 /**
- * @file gst_video/sdp.c H.264 SDP Functions
+ * @file gst_video1/sdp.c H.264 SDP Functions
  *
  * Copyright (C) 2010 Creytiv.com
  */
