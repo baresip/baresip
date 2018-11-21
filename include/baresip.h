@@ -160,15 +160,14 @@ const struct list *call_get_custom_hdrs(const struct call *call);
 
 
 /*
-* Custom headers
-*/
+ * Custom headers
+ */
+
 typedef int (custom_hdrs_h)(const struct pl *name, const struct pl *val,
 	void *arg);     /* returns error code if any */
 
-int custom_hdrs_add(struct list *hdrs, const char *name,
-	const char *fmt, ...);
-int custom_hdrs_apply(const struct list *hdrs,
-	custom_hdrs_h *h, void *arg);
+int custom_hdrs_add(struct list *hdrs, const char *name, const char *fmt, ...);
+int custom_hdrs_apply(const struct list *hdrs, custom_hdrs_h *h, void *arg);
 
 
 /*
