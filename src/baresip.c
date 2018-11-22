@@ -32,15 +32,27 @@ static struct baresip {
 } baresip;
 
 
+static void stop_handler(void*arg)
+{
+	bool *forced = (bool*)arg;
+	ua_stop_all(*forced);
+
+}
+
+
 static int cmd_quit(struct re_printf *pf, void *unused)
 {
+	static struct tmr tmr;
+	bool forced = false;
 	int err;
 
 	(void)unused;
 
+	tmr_init(&tmr);
+
 	err = re_hprintf(pf, "Quit\n");
 
-	ua_stop_all(false);
+	tmr_start(&tmr, 100, stop_handler, (void*)&forced);
 
 	return err;
 }
