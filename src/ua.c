@@ -241,6 +241,13 @@ void ua_unregister(struct ua *ua)
 }
 
 
+/**
+ * Check if a User-Agent is registered
+ *
+ * @param ua User-Agent object
+ *
+ * @return True if registered, false if not registered
+ */
 bool ua_isregistered(const struct ua *ua)
 {
 	struct le *le;
@@ -685,6 +692,13 @@ int ua_alloc(struct ua **uap, const char *aor)
 }
 
 
+/**
+ * Update a User-agent object, reset register clients
+ *
+ * @param ua User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_update_account(struct ua *ua)
 {
 	if (!ua)
@@ -869,6 +883,14 @@ int ua_answer(struct ua *ua, struct call *call)
 }
 
 
+/**
+ * Answer an incoming call with early media
+ *
+ * @param ua   User-Agent
+ * @param call Call to answer, or NULL for current call
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_progress(struct ua *ua, struct call *call)
 {
 	if (!ua)
@@ -921,6 +943,14 @@ int ua_hold_answer(struct ua *ua, struct call *call)
 }
 
 
+/**
+ * Print the user-agent registration status
+ *
+ * @param pf  Print function
+ * @param ua  User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_print_status(struct re_printf *pf, const struct ua *ua)
 {
 	struct le *le;
@@ -1082,6 +1112,14 @@ struct call *ua_prev_call(const struct ua *ua)
 }
 
 
+/**
+ * Print the user-agent debug information
+ *
+ * @param pf  Print function
+ * @param ua  User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_debug(struct re_printf *pf, const struct ua *ua)
 {
 	struct le *le;
@@ -1818,6 +1856,13 @@ const char *ua_cuser(const struct ua *ua)
 }
 
 
+/**
+ * Get the local contact username
+ *
+ * @param ua User-Agent
+ *
+ * @return Local contact username
+ */
 const char *ua_local_cuser(const struct ua *ua)
 {
 	return ua ? ua->cuser : NULL;
@@ -1875,6 +1920,14 @@ const char *ua_allowed_methods(const struct ua *ua)
 }
 
 
+/**
+ * Print the supported extensions
+ *
+ * @param pf  Print function
+ * @param ua  User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_print_supported(struct re_printf *pf, const struct ua *ua)
 {
 	size_t i;
@@ -1893,6 +1946,13 @@ int ua_print_supported(struct re_printf *pf, const struct ua *ua)
 }
 
 
+/**
+ * Get the list of call objects
+ *
+ * @param ua User-Agent
+ *
+ * @return List of call objects (struct call)
+ */
 struct list *ua_calls(const struct ua *ua)
 {
 	return ua ? (struct list *)&ua->calls : NULL;
@@ -1965,6 +2025,12 @@ struct ua *uag_current(void)
 }
 
 
+/**
+ * Set the preferred address family for media
+ *
+ * @param ua       User-Agent
+ * @param af_media Address family (e.g. AF_INET, AF_INET6)
+ */
 void ua_set_media_af(struct ua *ua, int af_media)
 {
 	if (!ua)
