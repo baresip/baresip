@@ -90,7 +90,7 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	aes = *aesp;
 
 	if (!aes) {
-		const opus_int32 complex = 10;
+		const opus_int32 complex = opus_complexity;
 		int opuserr;
 
 		aes = mem_zalloc(sizeof(*aes), destructor);
