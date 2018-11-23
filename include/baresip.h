@@ -277,7 +277,7 @@ struct config_avt {
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 };
 
-/* Network */
+/** Network Configuration */
 struct config_net {
 	char ifname[64];        /**< Bind to interface (optional)   */
 	struct {
