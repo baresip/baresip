@@ -22,6 +22,7 @@ int opus_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		    int fmt, const void *sampv, size_t sampc);
 
 extern uint32_t opus_complexity;
+extern opus_int32 opus_application;
 
 /* Decode */
 int opus_decode_update(struct audec_state **adsp, const struct aucodec *ac,

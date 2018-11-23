@@ -929,6 +929,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#opus_dtx\t\tno\n");
 	(void)re_fprintf(f, "#opus_mirror\t\tno\n");
 	(void)re_fprintf(f, "#opus_complexity\t\t10\n");
+	(void)re_fprintf(f, "#opus_application\t\taudio\t# {voip,audio}\n");
 
 	(void)re_fprintf(f,
 			"\n# Selfview\n"
