@@ -976,18 +976,39 @@ int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 }
 
 
+/**
+ * Get the session call-id for the call
+ *
+ * @param call Call object
+ *
+ * @return Session call-id
+ */
 const char *call_id(const struct call *call)
 {
 	return call ? call->id : NULL;
 }
 
 
+/**
+ * Get the URI of the peer
+ *
+ * @param call  Call object
+ *
+ * @return Peer URI
+ */
 const char *call_peeruri(const struct call *call)
 {
 	return call ? call->peer_uri : NULL;
 }
 
 
+/**
+ * Get the local URI of the call
+ *
+ * @param call  Call object
+ *
+ * @return Local URI
+ */
 const char *call_localuri(const struct call *call)
 {
 	return call ? call->local_uri : NULL;
@@ -1143,6 +1164,13 @@ int call_send_digit(struct call *call, char key)
 }
 
 
+/**
+ * Get the User-Agent for the call
+ *
+ * @param call Call object
+ *
+ * @return User-Agent
+ */
 struct ua *call_get_ua(const struct call *call)
 {
 	return call ? call->ua : NULL;
@@ -1922,6 +1950,13 @@ int call_af(const struct call *call)
 }
 
 
+/**
+ * Get the SIP status code for the outgoing call
+ *
+ * @param call Call object
+ *
+ * @return SIP Status code
+ */
 uint16_t call_scode(const struct call *call)
 {
 	return call ? call->scode : 0;
@@ -1977,6 +2012,13 @@ bool call_is_onhold(const struct call *call)
 }
 
 
+/**
+ * Check if a call has direction outgoing
+ *
+ * @param call Call object
+ *
+ * @return True if outgoing, otherwise false
+ */
 bool call_is_outgoing(const struct call *call)
 {
 	return call ? call->outgoing : false;
