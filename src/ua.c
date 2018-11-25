@@ -1898,6 +1898,11 @@ void ua_pub_gruu_set(struct ua *ua, const struct pl *pval)
 }
 
 
+/**
+ * Get the list of User-Agents
+ *
+ * @return List of User-Agents (struct ua)
+ */
 struct list *uag_list(void)
 {
 	return &uag.ual;
@@ -1966,6 +1971,14 @@ static void eh_destructor(void *arg)
 }
 
 
+/**
+ * Register a User-Agent event handler
+ *
+ * @param h   Event handler
+ * @param arg Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int uag_event_register(ua_event_h *h, void *arg)
 {
 	struct ua_eh *eh;
@@ -1988,6 +2001,11 @@ int uag_event_register(ua_event_h *h, void *arg)
 }
 
 
+/**
+ * Unregister a User-Agent event handler
+ *
+ * @param h   Event handler
+ */
 void uag_event_unregister(ua_event_h *h)
 {
 	struct le *le;
@@ -2004,18 +2022,33 @@ void uag_event_unregister(ua_event_h *h)
 }
 
 
+/**
+ * Set the handler to receive incoming SIP SUBSCRIBE messages
+ *
+ * @param subh Subscribe handler
+ */
 void uag_set_sub_handler(sip_msg_h *subh)
 {
 	uag.subh = subh;
 }
 
 
+/**
+ * Set the current User-Agent
+ *
+ * @param ua User-Agent to set as current
+ */
 void uag_current_set(struct ua *ua)
 {
 	uag.ua_cur = ua;
 }
 
 
+/**
+ * Get the current User-Agent
+ *
+ * @return Current User-Agent, NULL if none
+ */
 struct ua *uag_current(void)
 {
 	if (list_isempty(uag_list()))
@@ -2056,6 +2089,13 @@ void ua_set_catchall(struct ua *ua, bool enabled)
 }
 
 
+/**
+ * Set extra parameters to use for all SIP Accounts
+ *
+ * @param eprm Extra parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int uag_set_extra_params(const char *eprm)
 {
 	uag.eprm = mem_deref(uag.eprm);
