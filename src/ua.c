@@ -241,6 +241,13 @@ void ua_unregister(struct ua *ua)
 }
 
 
+/**
+ * Check if a User-Agent is registered
+ *
+ * @param ua User-Agent object
+ *
+ * @return True if registered, false if not registered
+ */
 bool ua_isregistered(const struct ua *ua)
 {
 	struct le *le;
@@ -685,6 +692,13 @@ int ua_alloc(struct ua **uap, const char *aor)
 }
 
 
+/**
+ * Update a User-agent object, reset register clients
+ *
+ * @param ua User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_update_account(struct ua *ua)
 {
 	if (!ua)
@@ -869,6 +883,14 @@ int ua_answer(struct ua *ua, struct call *call)
 }
 
 
+/**
+ * Answer an incoming call with early media
+ *
+ * @param ua   User-Agent
+ * @param call Call to answer, or NULL for current call
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_progress(struct ua *ua, struct call *call)
 {
 	if (!ua)
@@ -921,6 +943,14 @@ int ua_hold_answer(struct ua *ua, struct call *call)
 }
 
 
+/**
+ * Print the user-agent registration status
+ *
+ * @param pf  Print function
+ * @param ua  User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_print_status(struct re_printf *pf, const struct ua *ua)
 {
 	struct le *le;
@@ -1082,6 +1112,14 @@ struct call *ua_prev_call(const struct ua *ua)
 }
 
 
+/**
+ * Print the user-agent debug information
+ *
+ * @param pf  Print function
+ * @param ua  User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_debug(struct re_printf *pf, const struct ua *ua)
 {
 	struct le *le;
@@ -1818,6 +1856,13 @@ const char *ua_cuser(const struct ua *ua)
 }
 
 
+/**
+ * Get the local contact username
+ *
+ * @param ua User-Agent
+ *
+ * @return Local contact username
+ */
 const char *ua_local_cuser(const struct ua *ua)
 {
 	return ua ? ua->cuser : NULL;
@@ -1853,6 +1898,11 @@ void ua_pub_gruu_set(struct ua *ua, const struct pl *pval)
 }
 
 
+/**
+ * Get the list of User-Agents
+ *
+ * @return List of User-Agents (struct ua)
+ */
 struct list *uag_list(void)
 {
 	return &uag.ual;
@@ -1875,6 +1925,14 @@ const char *ua_allowed_methods(const struct ua *ua)
 }
 
 
+/**
+ * Print the supported extensions
+ *
+ * @param pf  Print function
+ * @param ua  User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_print_supported(struct re_printf *pf, const struct ua *ua)
 {
 	size_t i;
@@ -1893,6 +1951,13 @@ int ua_print_supported(struct re_printf *pf, const struct ua *ua)
 }
 
 
+/**
+ * Get the list of call objects
+ *
+ * @param ua User-Agent
+ *
+ * @return List of call objects (struct call)
+ */
 struct list *ua_calls(const struct ua *ua)
 {
 	return ua ? (struct list *)&ua->calls : NULL;
@@ -1906,6 +1971,14 @@ static void eh_destructor(void *arg)
 }
 
 
+/**
+ * Register a User-Agent event handler
+ *
+ * @param h   Event handler
+ * @param arg Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int uag_event_register(ua_event_h *h, void *arg)
 {
 	struct ua_eh *eh;
@@ -1928,6 +2001,11 @@ int uag_event_register(ua_event_h *h, void *arg)
 }
 
 
+/**
+ * Unregister a User-Agent event handler
+ *
+ * @param h   Event handler
+ */
 void uag_event_unregister(ua_event_h *h)
 {
 	struct le *le;
@@ -1944,18 +2022,33 @@ void uag_event_unregister(ua_event_h *h)
 }
 
 
+/**
+ * Set the handler to receive incoming SIP SUBSCRIBE messages
+ *
+ * @param subh Subscribe handler
+ */
 void uag_set_sub_handler(sip_msg_h *subh)
 {
 	uag.subh = subh;
 }
 
 
+/**
+ * Set the current User-Agent
+ *
+ * @param ua User-Agent to set as current
+ */
 void uag_current_set(struct ua *ua)
 {
 	uag.ua_cur = ua;
 }
 
 
+/**
+ * Get the current User-Agent
+ *
+ * @return Current User-Agent, NULL if none
+ */
 struct ua *uag_current(void)
 {
 	if (list_isempty(uag_list()))
@@ -1965,6 +2058,12 @@ struct ua *uag_current(void)
 }
 
 
+/**
+ * Set the preferred address family for media
+ *
+ * @param ua       User-Agent
+ * @param af_media Address family (e.g. AF_INET, AF_INET6)
+ */
 void ua_set_media_af(struct ua *ua, int af_media)
 {
 	if (!ua)
@@ -1990,6 +2089,13 @@ void ua_set_catchall(struct ua *ua, bool enabled)
 }
 
 
+/**
+ * Set extra parameters to use for all SIP Accounts
+ *
+ * @param eprm Extra parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int uag_set_extra_params(const char *eprm)
 {
 	uag.eprm = mem_deref(uag.eprm);

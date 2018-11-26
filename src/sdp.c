@@ -113,27 +113,6 @@ bool sdp_media_has_media(const struct sdp_media *m)
 
 
 /**
- * Find a dynamic payload type that is not used
- *
- * @param m SDP Media
- *
- * @return Unused payload type, -1 if no found
- */
-int sdp_media_find_unused_pt(const struct sdp_media *m)
-{
-	int pt;
-
-	for (pt = PT_DYN_MAX; pt>=PT_DYN_MIN; pt--) {
-
-		if (!sdp_media_format(m, false, NULL, pt, NULL, -1, -1))
-			return pt;
-	}
-
-	return -1;
-}
-
-
-/**
  * Move the first codec to the bottom of the remote codec list
  *
  * @param m SDP Media object

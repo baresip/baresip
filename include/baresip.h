@@ -13,7 +13,7 @@ extern "C" {
 
 
 /** Defines the Baresip version string */
-#define BARESIP_VERSION "0.5.12"
+#define BARESIP_VERSION "0.6.0"
 
 
 #ifndef NET_MAX_NS
@@ -277,7 +277,7 @@ struct config_avt {
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 };
 
-/* Network */
+/** Network Configuration */
 struct config_net {
 	char ifname[64];        /**< Bind to interface (optional)   */
 	struct {
@@ -1203,7 +1203,6 @@ int realtime_enable(bool enable, int fps);
  */
 
 bool sdp_media_has_media(const struct sdp_media *m);
-int  sdp_media_find_unused_pt(const struct sdp_media *m);
 int  sdp_fingerprint_decode(const char *attr, struct pl *hash,
 			    uint8_t *md, size_t *sz);
 uint32_t sdp_media_rattr_u32(const struct sdp_media *sdpm, const char *name);
