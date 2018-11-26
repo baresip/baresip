@@ -18,6 +18,7 @@ static struct baresip {
 	struct commands *commands;
 	struct player *player;
 	struct message *message;
+	struct mqueue *mq;
 	struct list mnatl;
 	struct list mencl;
 	struct list aucodecl;
@@ -32,27 +33,28 @@ static struct baresip {
 } baresip;
 
 
-static void stop_handler(void*arg)
-{
-	bool *forced = (bool*)arg;
-	ua_stop_all(*forced);
+enum baresip_events {
+	BARESIP_QUIT,
+};
 
+
+static void mqueue_handler(int id, void *data, void *arg)
+{
+	bool *forced = (bool*)data;
+	ua_stop_all(*forced);
 }
 
 
 static int cmd_quit(struct re_printf *pf, void *unused)
 {
-	static struct tmr tmr;
 	bool forced = false;
 	int err;
 
 	(void)unused;
 
-	tmr_init(&tmr);
-
 	err = re_hprintf(pf, "Quit\n");
 
-	tmr_start(&tmr, 100, stop_handler, (void*)&forced);
+	mqueue_push(baresip.mq, BARESIP_QUIT, &forced);
 
 	return err;
 }
@@ -118,6 +120,10 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 	list_init(&baresip.vidispl);
 	list_init(&baresip.vidfiltl);
 
+	err = mqueue_alloc(&baresip.mq, mqueue_handler, NULL);
+	if (err)
+		return err;
+
 	/* Initialise Network */
 	err = net_alloc(&baresip.net, &cfg->net,
 			prefer_ipv6 ? AF_INET6 : AF_INET);
@@ -165,6 +171,7 @@ void baresip_close(void)
 	baresip.contacts = mem_deref(baresip.contacts);
 
 	baresip.net = mem_deref(baresip.net);
+	baresip.mq = mem_deref(baresip.mq);
 
 	ui_reset(&baresip.uis);
 }
