@@ -195,7 +195,8 @@ static int display(struct vidisp_st *st, const char *title,
 	if (!st->window) {
 		char capt[256];
 
-		st->flags = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
+		st->flags  = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
+		st->flags |= SDL_WINDOW_RESIZABLE ;
 
 		if (st->fullscreen)
 			st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
