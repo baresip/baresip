@@ -553,6 +553,47 @@ int account_set_regint(struct account *acc, uint32_t regint)
 
 
 /**
+ * Set the stun host for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param host  Stun host (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_host(struct account *acc, const char *host)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_host = mem_deref(acc->stun_host);
+
+	if (host)
+		return str_dup(&acc->stun_host, host);
+
+	return 0;
+}
+
+
+/**
+ * Set the port of the STUN host of a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param port    Port number
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_port(struct account *acc, uint16_t port)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_port = port;
+
+	return 0;
+}
+
+
+/**
  * Set the media encryption for a SIP account
  *
  * @param acc     User-Agent account
@@ -581,6 +622,42 @@ int account_set_mediaenc(struct account *acc, const char *mencid)
 	if (mencid) {
 		acc->menc = menc;
 		return str_dup(&acc->mencid, mencid);
+	}
+
+	return 0;
+}
+
+
+/**
+ * Set the media NAT handling for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param mnatid  Media NAT handling id
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_medianat(struct account *acc, const char *mnatid)
+{
+	const struct mnat *mnat;
+
+	if (!acc)
+		return EINVAL;
+
+	if (mnatid) {
+		mnat = mnat_find(baresip_mnatl(), mnatid);
+		if (!mnat) {
+			warning("account: medianat not found: `%s'\n",
+				mnatid);
+			return EINVAL;
+		}
+	}
+
+	acc->mnatid = mem_deref(acc->mnatid);
+	acc->mnat = NULL;
+
+	if (mnatid) {
+		acc->mnat = mnat;
+		return str_dup(&acc->mnatid, mnatid);
 	}
 
 	return 0;
@@ -940,6 +1017,19 @@ const char *account_stun_host(const struct account *acc)
 }
 
 
+/**
+ * Get the port of the STUN host of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Port number or 0 if not set
+ */
+uint16_t account_stun_port(const struct account *acc)
+{
+	return acc ? acc->stun_port : 0;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
@@ -962,6 +1052,19 @@ static const char *answermode_str(enum answermode mode)
 const char *account_mediaenc(const struct account *acc)
 {
 	return acc ? acc->mencid : NULL;
+}
+
+
+/**
+ * Get the media NAT handing of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Media NAT handling id or NULL if not set
+ */
+const char *account_medianat(const struct account *acc)
+{
+	return acc ? acc->mnatid : NULL;
 }
 
 
