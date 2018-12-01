@@ -34,7 +34,7 @@ static int print_contacts(struct re_printf *pf, void *unused)
 }
 
 
-static int sync_to_disk(const struct contact *cnt)
+static int save_current(const struct contact *cnt)
 {
 	char path[256] = "", file[256] = "";
 	FILE *f = NULL;
@@ -85,6 +85,7 @@ static int cmd_dial_contact(struct re_printf *pf, void *arg)
 	struct contact *cnt;
 	const char *uri;
 	int err = 0;
+	(void)arg;
 
 	cnt = contacts_current(baresip_contacts());
 	if (!cnt) {
@@ -116,8 +117,6 @@ static int cmd_message(struct re_printf *pf, void *arg)
 	}
 
 	uri = contact_uri(cnt);
-
-	info("sending message to: %s\n", uri);
 
 	err = message_send(uag_current(), uri, carg->prm,
 			   send_resp_handler, NULL);
@@ -154,12 +153,9 @@ static int load_current_contact(struct contacts *contacts, const char *path)
 			goto out;
 		}
 
-		info("loaded from disk: %s\n", buf);
 		pl_set_str(&pl, buf);
-		if (0 == sip_addr_decode(&addr, &pl)) {
+		if (0 == sip_addr_decode(&addr, &pl))
 			pl_strcpy(&addr.auri, buf, sizeof(buf));
-		}
-		re_printf("load: uri = %s\n", buf);
 
 		cnt = contact_find(contacts, buf);
 		if (!cnt) {
@@ -170,14 +166,13 @@ static int load_current_contact(struct contacts *contacts, const char *path)
 	if (!cnt) {
 		cnt = list_ledata(list_head(contact_list(contacts)));
 
-		err = sync_to_disk(cnt);
+		err = save_current(cnt);
 		if (err)
 			goto out;
 	}
 
-	if (cnt) {
+	if (cnt)
 		contacts_set_current(contacts, cnt);
-	}
 
  out:
 	if (f)
@@ -216,12 +211,11 @@ static int cmd_cycle_current(struct re_printf *pf, void *arg)
 
 	contacts_set_current(contacts, cnt);
 
-	re_hprintf(pf, "Current contact: %H\n", contact_print, le->data);
+	re_hprintf(pf, "Current contact: %H\n", contact_print, cnt);
 
-	/* Save to disk */
-	err = sync_to_disk(cnt);
+	err = save_current(cnt);
 	if (err) {
-		warning("contact: failed to write"
+		warning("contact: failed to save"
 			" current contact (%m)\n", err);
 	}
 
