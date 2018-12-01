@@ -872,7 +872,6 @@ int video_alloc(struct video **vp, const struct stream_param *stream_prm,
 	err = stream_alloc(&v->strm, stream_prm,
 			   &cfg->avt, call, sdp_sess, "video", label,
 			   mnat, mnat_sess, menc, menc_sess,
-			   call_localuri(call),
 			   stream_recv_handler, rtcp_handler, v);
 	if (err)
 		goto out;

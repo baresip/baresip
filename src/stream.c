@@ -359,7 +359,6 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		 const char *name, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
-		 const char *cname,
 		 stream_rtp_h *rtph, stream_rtcp_h *rtcph, void *arg)
 {
 	struct stream *s;
@@ -391,7 +390,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		}
 	}
 
-	err = str_dup(&s->cname, cname);
+	err = str_dup(&s->cname, prm->cname);
 	if (err)
 		goto out;
 
@@ -424,7 +423,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	if (s->rtcp) {
 		err |= sdp_media_set_lattr(s->sdp, true,
 					   "ssrc", "%u cname:%s",
-					   rtp_sess_ssrc(s->rtp), cname);
+					   rtp_sess_ssrc(s->rtp), prm->cname);
 	}
 
 	/* RFC 5761 */

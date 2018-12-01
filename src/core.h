@@ -325,6 +325,7 @@ typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 struct stream_param {
 	bool use_rtp;
 	int af;
+	const char *cname;
 };
 
 /** Defines a generic media stream */
@@ -371,7 +372,6 @@ int  stream_alloc(struct stream **sp, const struct stream_param *prm,
 		  const char *name, int label,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
-		  const char *cname,
 		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, void *arg);
 struct sdp_media *stream_sdpmedia(const struct stream *s);
 int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
