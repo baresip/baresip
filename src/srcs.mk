@@ -29,7 +29,6 @@ SRCS	+= module.c
 SRCS	+= mos.c
 SRCS	+= net.c
 SRCS	+= play.c
-SRCS	+= realtime.c
 SRCS	+= reg.c
 SRCS	+= rtpext.c
 SRCS	+= sdp.c

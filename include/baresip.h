@@ -1193,12 +1193,6 @@ int mnat_register(struct mnat **mnatp, struct list *mnatl,
 
 
 /*
- * Real-time
- */
-int realtime_enable(bool enable, int fps);
-
-
-/*
  * SDP
  */
 
