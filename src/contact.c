@@ -28,6 +28,7 @@ struct contact {
 struct contacts {
 	struct list cl;
 	struct hash *cht;
+	struct contact *cur;
 
 	contact_update_h *handler;
 	void *handler_arg;
@@ -48,6 +49,8 @@ static void destructor(void *arg)
 static void contacts_destructor(void *data)
 {
 	struct contacts *contacts = data;
+
+	mem_deref(contacts->cur);
 
 	hash_clear(contacts->cht);
 	mem_deref(contacts->cht);
@@ -146,6 +149,9 @@ void contact_remove(struct contacts *contacts, struct contact *contact)
 
 	hash_unlink(&contact->he);
 	list_unlink(&contact->le);
+
+	if (contacts->cur == contact)
+		contacts->cur = mem_deref(contacts->cur);
 
 	mem_deref(contact);
 }
@@ -281,7 +287,8 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 	for (le = list_head(lst); le && !err; le = le->next) {
 		const struct contact *c = le->data;
 
-		err = re_hprintf(pf, "%20s  %H\n",
+		err = re_hprintf(pf, "%s  %20s  %H\n",
+				 c == contacts->cur ? ">" : " ",
 				 contact_presence_str(c->status),
 				 contact_print, c);
 	}
@@ -377,4 +384,29 @@ bool contact_block_access(const struct contacts *contacts, const char *uri)
 		return c->access == ACCESS_BLOCK;
 
 	return false;
+}
+
+
+void contacts_set_current(struct contacts *contacts, struct contact *cnt)
+{
+	if (!contacts || !cnt)
+		return;
+
+	mem_deref(contacts->cur);
+	contacts->cur = mem_ref(cnt);
+}
+
+
+struct contact *contacts_current(const struct contacts *contacts)
+{
+	if (!contacts)
+		return NULL;
+
+	return contacts->cur;
+}
+
+
+struct le *contact_le(struct contact *cnt)
+{
+	return cnt ? &cnt->le : NULL;
 }

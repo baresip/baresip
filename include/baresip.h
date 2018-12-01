@@ -364,6 +364,9 @@ struct list     *contact_list(const struct contacts *contacts);
 const char      *contact_str(const struct contact *c);
 const char      *contact_uri(const struct contact *c);
 const char      *contact_presence_str(enum presence_status status);
+struct le       *contact_le(struct contact *cnt);
+void contacts_set_current(struct contacts *contacts, struct contact *cnt);
+struct contact *contacts_current(const struct contacts *contacts);
 
 
 /*
