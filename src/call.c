@@ -559,7 +559,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->state  = STATE_IDLE;
 	call->eh     = eh;
 	call->arg    = arg;
-	call->af     = prm ? prm->af : AF_INET;
+	call->af     = prm->af;
 
 	err = str_dup(&call->local_uri, local_uri);
 	if (local_name)
