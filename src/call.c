@@ -726,6 +726,14 @@ const struct list *call_get_custom_hdrs(const struct call *call)
 }
 
 
+/**
+ * Connect an outgoing call to a given SIP uri
+ *
+ * @param call  Call Object
+ * @param paddr SIP address or uri to connect to
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_connect(struct call *call, const struct pl *paddr)
 {
 	struct sip_addr addr;
@@ -968,18 +976,39 @@ int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 }
 
 
+/**
+ * Get the session call-id for the call
+ *
+ * @param call Call object
+ *
+ * @return Session call-id
+ */
 const char *call_id(const struct call *call)
 {
 	return call ? call->id : NULL;
 }
 
 
+/**
+ * Get the URI of the peer
+ *
+ * @param call  Call object
+ *
+ * @return Peer URI
+ */
 const char *call_peeruri(const struct call *call)
 {
 	return call ? call->peer_uri : NULL;
 }
 
 
+/**
+ * Get the local URI of the call
+ *
+ * @param call  Call object
+ *
+ * @return Local URI
+ */
 const char *call_localuri(const struct call *call)
 {
 	return call ? call->local_uri : NULL;
@@ -999,6 +1028,14 @@ const char *call_peername(const struct call *call)
 }
 
 
+/**
+ * Print the call debug information
+ *
+ * @param pf   Print function
+ * @param call Call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_debug(struct re_printf *pf, const struct call *call)
 {
 	int err;
@@ -1038,6 +1075,14 @@ static int print_duration(struct re_printf *pf, const struct call *call)
 }
 
 
+/**
+ * Print the call status
+ *
+ * @param pf   Print function
+ * @param call Call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_status(struct re_printf *pf, const struct call *call)
 {
 	struct le *le;
@@ -1119,6 +1164,13 @@ int call_send_digit(struct call *call, char key)
 }
 
 
+/**
+ * Get the User-Agent for the call
+ *
+ * @param call Call object
+ *
+ * @return User-Agent
+ */
 struct ua *call_get_ua(const struct call *call)
 {
 	return call ? call->ua : NULL;
@@ -1727,6 +1779,16 @@ int call_reset_transp(struct call *call, const struct sa *laddr)
 }
 
 
+/**
+ * Send a SIP NOTIFY with a SIP message fragment
+ *
+ * @param call   Call object
+ * @param scode  SIP Status code
+ * @param reason Formatted SIP Reason phrase
+ * @param ...    Variable arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_notify_sipfrag(struct call *call, uint16_t scode,
 			const char *reason, ...)
 {
@@ -1888,12 +1950,27 @@ int call_af(const struct call *call)
 }
 
 
+/**
+ * Get the SIP status code for the outgoing call
+ *
+ * @param call Call object
+ *
+ * @return SIP Status code
+ */
 uint16_t call_scode(const struct call *call)
 {
 	return call ? call->scode : 0;
 }
 
 
+/**
+ * Set the callback handlers for a call object
+ *
+ * @param call  Call object
+ * @param eh    Event handler
+ * @param dtmfh DTMF handler
+ * @param arg   Handler argument
+ */
 void call_set_handlers(struct call *call, call_event_h *eh,
 		       call_dtmf_h *dtmfh, void *arg)
 {
@@ -1935,6 +2012,13 @@ bool call_is_onhold(const struct call *call)
 }
 
 
+/**
+ * Check if a call has direction outgoing
+ *
+ * @param call Call object
+ *
+ * @return True if outgoing, otherwise false
+ */
 bool call_is_outgoing(const struct call *call)
 {
 	return call ? call->outgoing : false;

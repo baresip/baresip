@@ -1,3 +1,8 @@
+/**
+ * @file test.c  Selftest for Baresip core
+ *
+ * Copyright (C) 2010 Creytiv.com
+ */
 #include <math.h>
 #include <re.h>
 #include <baresip.h>

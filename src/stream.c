@@ -724,6 +724,13 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 }
 
 
+/**
+ * Get the RTCP Statistics from a media stream
+ *
+ * @param strm Stream object
+ *
+ * @return RTCP Statistics
+ */
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
 {
 	return strm ? &strm->rtcp_stats : NULL;

@@ -1,3 +1,8 @@
+/**
+ * @file mqtt.h Message Queue Telemetry Transport (MQTT) client -- interface
+ *
+ * Copyright (C) 2017 Creytiv.com
+ */
 
 
 struct mqtt {

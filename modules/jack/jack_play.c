@@ -1,5 +1,5 @@
 /**
- * @file jack.c  JACK audio driver -- player
+ * @file jack_play.c  JACK audio driver -- player
  *
  * Copyright (C) 2010 Creytiv.com
  */

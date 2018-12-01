@@ -90,7 +90,7 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	aes = *aesp;
 
 	if (!aes) {
-		const opus_int32 complex = 10;
+		const opus_int32 complex = opus_complexity;
 		int opuserr;
 
 		aes = mem_zalloc(sizeof(*aes), destructor);
@@ -100,8 +100,7 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		aes->ch = ac->ch;
 
 		aes->enc = opus_encoder_create(ac->srate, ac->ch,
-					       /* this has big impact on cpu */
-					       OPUS_APPLICATION_AUDIO,
+					       opus_application,
 					       &opuserr);
 		if (!aes->enc) {
 			warning("opus: encoder create: %s\n",

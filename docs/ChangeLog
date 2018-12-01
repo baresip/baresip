@@ -1,3 +1,86 @@
+2018-12-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.0
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.6.0
+	* NOTE: Requires libre v0.6.0 or later
+	        Requires librem v0.6.0 or later
+
+	* config:
+
+	  opus_complexity  {0-10}        # Encoder's computational complexity
+	  opus_application {audio, voip} # Encoder's intended application
+	  sip_cafile       ca.crt        # trusted Certificate Authorities
+
+	* baresip-core:
+	  - account: added support for per account mwi using
+	             ;mwi=on|off addr-param (#530) (thanks Juha Heinanen)
+		     per account support for call transfer (#535)
+		     (thanks Juha Heinanen)
+	  - audio: add audio_start()
+		   add audio_started()
+		   EBU/ACIP invite handler.
+		   flush aubuf when resetting codec
+	  - call: make call_connect() public
+		  make call_notify_sipfrag() public
+	  - contacts: make struct contacts opaque
+		      add contact_uri()
+	  - rtpkeep: code removed
+	  - sdp: remove unused functions
+	  - ua: add sip_cafile config option
+	        (thanks to @wnetbal for the original patch)
+		add event UA_EVENT_MWI_NOTIFY (thanks Juha Heinanen)
+		add event UA_EVENT_CALL_TRANSFER
+		add event UA_EVENT_AUDIO_ERROR
+		add ua_uri_complete()
+	  - vidfilt: add timestamp parameter to filter API
+	  - vidisp: add timestamp parameter to display API
+	  - video: add RTP timestamp state for receive
+
+	* selftest:
+	  - test: add call transfer test (ref #538)
+	  - test: add call via tcp test
+
+	* Modules:
+
+	* avcapture: fix video resolutions mismatches (#580) (Nicolas Tizon)
+
+	* avcodec: remove support for old versions of ffmpeg
+		   detect MPEG4 key-frames
+
+	* avformat: remove support for old versions of ffmpeg
+
+	* ctrl_tcp: Fix netstring frame handling (#569) (José Luis Millán)
+
+	* debug_cmd: /play will always stop current file playing.  (#578)
+		     (thanks Ola Palm)
+
+	* directfb: updated vidisp api (#568) (thanks andreygursky)
+
+	* dshow: mediadev support (#550) (Nicolas Tizon)
+
+	* echo: add support for video
+
+	* h265: change rate control to ABR (Average Bitrate) (#526)
+
+	* mwi: moved printing of mwi info from mwi module to menu module
+	       (thanks Juha Heinanen)
+
+	* opengl: properly handle linesize (#566)
+
+	* opus: add configuration parameter 'opus_complexity'
+		add configuration parameter 'opus_application'
+		(thanks José Luis Millán)
+
+	* libsrtp: module removed
+
+	* v4l2_codec: use thread instead of fd event (#558)
+
+	* winwave: add support for FLOAT sample format (#559)
+		   mediadev support (#556) (Nicolas Tizon)
+
+
 2018-09-15 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.11

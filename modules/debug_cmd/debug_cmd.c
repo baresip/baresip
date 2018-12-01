@@ -84,19 +84,28 @@ static int cmd_ua_debug(struct re_printf *pf, void *unused)
 
 static int cmd_play_file(struct re_printf *pf, void *arg)
 {
+	static struct play *g_play;
 	struct cmd_arg *carg = arg;
 	const char *filename = carg->prm;
-	int err;
+	int err = 0;
 
-	err = re_hprintf(pf, "playing audio file \"%s\" ..\n", filename);
-	if (err)
-		return err;
+	/* Stop the current tone, if any */
+	g_play = mem_deref(g_play);
 
-	err = play_file(NULL, baresip_player(), filename, 0);
-	if (err) {
-		warning("debug_cmd: play_file(%s) failed (%m)\n",
-			filename, err);
-		return err;
+	if (str_isset(filename))
+	{
+		err = re_hprintf(pf, "playing audio file \"%s\" ..\n",
+				 filename);
+		if (err)
+			return err;
+
+		err = play_file(&g_play, baresip_player(), filename, 0);
+		if (err)
+		{
+			warning("debug_cmd: play_file(%s) failed (%m)\n",
+					filename, err);
+			return err;
+		}
 	}
 
 	return err;

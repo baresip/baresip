@@ -997,6 +997,14 @@ const char *account_call_transfer(const struct account *acc)
 }
 
 
+/**
+ * Print the account debug information
+ *
+ * @param pf  Print function
+ * @param acc User-Agent account
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int account_debug(struct re_printf *pf, const struct account *acc)
 {
 	struct le *le;
