@@ -324,6 +324,7 @@ typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 /** Common parameters for media stream */
 struct stream_param {
 	bool use_rtp;
+	int af;
 };
 
 /** Defines a generic media stream */

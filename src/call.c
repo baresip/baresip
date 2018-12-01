@@ -542,6 +542,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	memset(&stream_prm, 0, sizeof(stream_prm));
 	stream_prm.use_rtp = prm->use_rtp;
+	stream_prm.af      = prm->af;
 
 	call = mem_zalloc(sizeof(*call), call_destructor);
 	if (!call)

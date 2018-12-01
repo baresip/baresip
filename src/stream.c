@@ -383,7 +383,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	s->rtcp  = s->cfg.rtcp_enable;
 
 	if (prm->use_rtp) {
-		err = stream_sock_alloc(s, call_af(call));
+		err = stream_sock_alloc(s, prm->af);
 		if (err) {
 			warning("stream: failed to create socket"
 				" for media '%s' (%m)\n", name, err);
