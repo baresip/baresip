@@ -364,7 +364,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	struct stream *s;
 	int err;
 
-	if (!sp || !prm || !cfg || !call || !rtph)
+	if (!sp || !prm || !cfg || !rtph)
 		return EINVAL;
 
 	s = mem_zalloc(sizeof(*s), stream_destructor);
