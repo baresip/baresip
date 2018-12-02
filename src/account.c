@@ -1056,7 +1056,7 @@ const char *account_mediaenc(const struct account *acc)
 
 
 /**
- * Get the media NAT handing of an account
+ * Get the media NAT handling of an account
  *
  * @param acc User-Agent account
  *
