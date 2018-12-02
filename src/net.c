@@ -456,6 +456,11 @@ void net_change(struct network *net, uint32_t interval,
 }
 
 
+/**
+ * Force a change in the network interfaces
+ *
+ * @param net Network instance
+ */
 void net_force_change(struct network *net)
 {
 	if (net && net->ch) {
@@ -487,6 +492,13 @@ static int dns_debug(struct re_printf *pf, const struct network *net)
 }
 
 
+/**
+ * Get the preferred address family (AF)
+ *
+ * @param net Network instance
+ *
+ * @return Preferred address family
+ */
 int net_af(const struct network *net)
 {
 	if (!net)
