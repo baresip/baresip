@@ -157,6 +157,13 @@ void contact_remove(struct contacts *contacts, struct contact *contact)
 }
 
 
+/**
+ * Set the contacts update handler
+ *
+ * @param contacts Contacts container
+ * @param updateh  Update handler
+ * @param arg      Handler argument
+ */
 void contact_set_update_handler(struct contacts *contacts,
 				contact_update_h *updateh, void *arg)
 {
@@ -223,6 +230,12 @@ struct list *contact_list(const struct contacts *contacts)
 }
 
 
+/**
+ * Set the presence status for a contact
+ *
+ * @param c      Contact
+ * @param status Presence status
+ */
 void contact_set_presence(struct contact *c, enum presence_status status)
 {
 	if (!c)
@@ -239,6 +252,13 @@ void contact_set_presence(struct contact *c, enum presence_status status)
 }
 
 
+/**
+ * Get the presence status for a contact
+ *
+ * @param c Contact
+ *
+ * @return Presence status
+ */
 enum presence_status contact_presence(const struct contact *c)
 {
 	if (!c)
@@ -248,6 +268,13 @@ enum presence_status contact_presence(const struct contact *c)
 }
 
 
+/**
+ * Get the presence status string
+ *
+ * @param status Presence status
+ *
+ * @return Presence status string
+ */
 const char *contact_presence_str(enum presence_status status)
 {
 	switch (status) {
@@ -261,6 +288,14 @@ const char *contact_presence_str(enum presence_status status)
 }
 
 
+/**
+ * Print a contact
+ *
+ * @param pf  Print function
+ * @param cnt Contact to print
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int contact_print(struct re_printf *pf, const struct contact *cnt)
 {
 	if (!cnt)
@@ -270,6 +305,14 @@ int contact_print(struct re_printf *pf, const struct contact *cnt)
 }
 
 
+/**
+ * Print all contacts
+ *
+ * @param pf       Print function
+ * @param contacts Contacts container
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 {
 	const struct list *lst;
@@ -387,6 +430,12 @@ bool contact_block_access(const struct contacts *contacts, const char *uri)
 }
 
 
+/**
+ * Set the current contact
+ *
+ * @param contacts Contacts container
+ * @param cnt      Contact to be set as current
+ */
 void contacts_set_current(struct contacts *contacts, struct contact *cnt)
 {
 	if (!contacts || !cnt)
@@ -397,6 +446,13 @@ void contacts_set_current(struct contacts *contacts, struct contact *cnt)
 }
 
 
+/**
+ * Get the current contact
+ *
+ * @param contacts Contacts container
+ *
+ * @return Current contact, or NULL if no current contact
+ */
 struct contact *contacts_current(const struct contacts *contacts)
 {
 	if (!contacts)
@@ -406,6 +462,13 @@ struct contact *contacts_current(const struct contacts *contacts)
 }
 
 
+/**
+ * Get the linked list element from a contact
+ *
+ * @param cnt Contact
+ *
+ * @return Linked-list element
+ */
 struct le *contact_le(struct contact *cnt)
 {
 	return cnt ? &cnt->le : NULL;
