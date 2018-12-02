@@ -1517,9 +1517,6 @@ void ua_close(void)
 
 	list_flush(&uag.ual);
 	list_flush(&uag.ehl);
-
-	/* note: must be done before mod_close() */
-	module_app_unload();
 }
 
 
@@ -1557,9 +1554,6 @@ void ua_stop_all(bool forced)
 		info("ua: in use (%u) by app module"
 		     ", deferring module unloading\n", ext_ref);
 		return;
-	}
-	else {
-		module_app_unload();
 	}
 
 	if (forced)
