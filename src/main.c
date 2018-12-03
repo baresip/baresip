@@ -266,6 +266,10 @@ int main(int argc, char *argv[])
 		ua_stop_all(true);
 
 	ua_close();
+
+	/* note: must be done before mod_close() */
+	module_app_unload();
+
 	conf_close();
 
 	baresip_close();

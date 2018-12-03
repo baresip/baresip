@@ -250,7 +250,6 @@ double   metric_avg_bitrate(const struct metric *metric);
  */
 
 int module_init(const struct conf *conf);
-void module_app_unload(void);
 
 
 /*
