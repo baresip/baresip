@@ -1551,8 +1551,7 @@ void ua_stop_all(bool forced)
 	}
 
 	if (ext_ref) {
-		info("ua: in use (%u) by app module"
-		     ", deferring module unloading\n", ext_ref);
+		info("ua: in use (%u) by app module\n", ext_ref);
 		return;
 	}
 
