@@ -103,10 +103,14 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 		struct vidsz sz;
 		NSString * const * preset;
 	} mapv[] = {
+#if !TARGET_OS_IPHONE
 		{{ 320 ,240}, &AVCaptureSessionPreset320x240 },
+#endif
 		{{ 352, 288}, &AVCaptureSessionPreset352x288 },
 		{{ 640, 480}, &AVCaptureSessionPreset640x480 },
+#if !TARGET_OS_IPHONE
 		{{ 960, 540}, &AVCaptureSessionPreset960x540 },
+#endif
 		{{1280, 720}, &AVCaptureSessionPreset1280x720}
 	};
 	int i, best = -1;
