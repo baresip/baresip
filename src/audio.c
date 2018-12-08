@@ -2367,6 +2367,8 @@ void audio_set_hold(struct audio *au, bool hold)
  *
  * @param au    Audio object
  * @param tx    True to get transmit codec, false to get receive codec
+ *
+ * @return      Audio codec if success, otherwise NULL
  */
 const struct aucodec *audio_codec(const struct audio *au, bool tx)
 {
