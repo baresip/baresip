@@ -234,10 +234,6 @@ USE_AUDIOUNIT := \
 	$(shell [ -d /System/Library/Frameworks/AudioUnit.framework ] \
 		&& echo "yes")
 
-USE_OPENGL := \
-	$(shell [ -d /System/Library/Frameworks/OpenGL.framework ] \
-		&& echo "yes")
-
 ifneq ($(USE_AVFOUNDATION),)
 USE_AVCAPTURE := yes
 else
