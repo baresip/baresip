@@ -248,11 +248,12 @@ static int opengles_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int opengles_display(struct vidisp_st *st, const char *title,
-			    const struct vidframe *frame)
+			    const struct vidframe *frame, uint64_t timestamp)
 {
 	int err;
 
 	(void)title;
+	(void)timestamp;
 
 	if (!st->vf) {
 		if (frame->size.w & 3) {
