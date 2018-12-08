@@ -1133,6 +1133,7 @@ int  audio_start(struct audio *a);
 void audio_stop(struct audio *a);
 bool audio_started(const struct audio *a);
 void audio_set_hold(struct audio *au, bool hold);
+const struct aucodec *audio_codec(const struct audio *au, bool tx);
 
 
 /*

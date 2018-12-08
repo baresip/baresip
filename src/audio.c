@@ -2360,3 +2360,18 @@ void audio_set_hold(struct audio *au, bool hold)
 
 	au->hold = hold;
 }
+
+
+/**
+ * Get audio codec of audio stream
+ *
+ * @param au    Audio object
+ * @param tx    True to get transmit codec, false to get receive codec
+ */
+const struct aucodec *audio_codec(const struct audio *au, bool tx)
+{
+	if (!au)
+		return NULL;
+
+	return tx ? au->tx.ac : au->rx.ac;
+}
