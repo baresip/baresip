@@ -397,8 +397,21 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 }
 
 
+/**
+ * Create a new call object
+ *
+ * @param callp     Pointer to allocated call object
+ * @param ua        User-agent
+ * @param vmode     Wanted video mode
+ * @param msg       SIP message for incoming calls
+ * @param xcall     Optional call to inherit properties from
+ * @param local_uri Local SIP uri
+ * @param use_rtp   Use RTP flag
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_call_alloc(struct call **callp, struct ua *ua,
-		  enum vidmode vidmode, const struct sip_msg *msg,
+		  enum vidmode vmode, const struct sip_msg *msg,
 		  struct call *xcall, const char *local_uri,
 		  bool use_rtp)
 {
@@ -423,7 +436,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	memset(&cprm, 0, sizeof(cprm));
 
 	sa_cpy(&cprm.laddr, net_laddr_af(net, af));
-	cprm.vidmode = vidmode;
+	cprm.vidmode = vmode;
 	cprm.af      = af;
 	cprm.use_rtp = use_rtp;
 
@@ -712,6 +725,15 @@ int ua_update_account(struct ua *ua)
 }
 
 
+/**
+ * Auto complete a SIP uri, add scheme and domain if missing
+ *
+ * @param ua  User-Agent
+ * @param buf Target buffer to print SIP uri
+ * @param uri Input SIP uri
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 {
 	struct account *acc;
