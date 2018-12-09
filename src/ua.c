@@ -1113,6 +1113,13 @@ struct call *ua_call(const struct ua *ua)
 }
 
 
+/**
+ * Get the previous call
+ *
+ * @param ua User-Agent
+ *
+ * @return Previous call or NULL if none
+ */
 struct call *ua_prev_call(const struct ua *ua)
 {
 	struct le *le;
