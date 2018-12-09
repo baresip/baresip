@@ -1083,10 +1083,15 @@ int test_call_custom_headers(void)
 	 * with some custom headers in INVITE message */
 
 	list_init(&custom_hdrs);
-	err = custom_hdrs_add(&custom_hdrs, "X-CALL_ID", "%d", some_id);
-	err = custom_hdrs_add(&custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
-	ua_set_custom_hdrs(f->a.ua, &custom_hdrs);
+	err  = custom_hdrs_add(&custom_hdrs, "X-CALL_ID", "%d", some_id);
+	err |= custom_hdrs_add(&custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
+	TEST_ERR(err);
+
+	err = ua_set_custom_hdrs(f->a.ua, &custom_hdrs);
+	TEST_ERR(err);
+
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
 
 	list_flush(&custom_hdrs);
 	TEST_ERR(err);

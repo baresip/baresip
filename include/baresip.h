@@ -735,7 +735,7 @@ void ua_set_catchall(struct ua *ua, bool enabled);
 void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...);
 int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name);
-void ua_set_custom_hdrs(struct ua *ua, struct list *custom_hdrs);
+int  ua_set_custom_hdrs(struct ua *ua, struct list *custom_hdrs);
 int  ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri);
 int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   enum vidmode vidmode, const struct sip_msg *msg,

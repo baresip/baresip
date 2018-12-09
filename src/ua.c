@@ -2122,21 +2122,29 @@ int uag_set_extra_params(const char *eprm)
 }
 
 
-void ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
+int ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 {
 	struct le *le;
+	int err;
 
 	if (!ua)
-		return;
+		return EINVAL;
 
 	list_flush(&ua->custom_hdrs);
 
 	LIST_FOREACH(custom_headers, le) {
 		struct sip_hdr *hdr = le->data;
-		char *buf = NULL;
+		char *buf;
 
-		re_sdprintf(&buf, "%r", &hdr->name);
-		custom_hdrs_add(&ua->custom_hdrs, buf, "%r", &hdr->val);
+		err = pl_strdup(&buf, &hdr->name);
+		if (err)
+			return err;
+
+		err = custom_hdrs_add(&ua->custom_hdrs, buf, "%r", &hdr->val);
 		mem_deref(buf);
+		if (err)
+			return err;
 	}
+
+	return 0;
 }
