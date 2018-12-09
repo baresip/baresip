@@ -1309,7 +1309,7 @@ static inline bool h264_is_keyframe(int type)
 #endif
 
 
-int module_preload(const char *module);
+int  module_preload(const char *module);
 int  module_load(const char *name);
 void module_unload(const char *name);
 void module_app_unload(void);
