@@ -2122,6 +2122,14 @@ int uag_set_extra_params(const char *eprm)
 }
 
 
+/**
+ * Set a list of custom SIP headers
+ *
+ * @param ua             User-Agent
+ * @param custom_headers List of custom SIP headers (struct sip_hdr)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 {
 	struct le *le;
