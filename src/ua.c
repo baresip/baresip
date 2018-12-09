@@ -1397,6 +1397,14 @@ static void ua_xhdr_filter_destructor(void *arg)
 }
 
 
+/**
+ * Add custom SIP header to filter for incoming calls
+ *
+ * @param ua       User-Agent
+ * @param hdr_name SIP Header name
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name)
 {
 	struct ua_xhdr_filter *filter;
@@ -1405,12 +1413,10 @@ int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name)
 		return EINVAL;
 
 	filter = mem_zalloc(sizeof(*filter), ua_xhdr_filter_destructor);
-	if (!filter) {
+	if (!filter)
 		return ENOMEM;
-	}
 
-	if (str_dup(&filter->hdr_name, hdr_name))
-	{
+	if (str_dup(&filter->hdr_name, hdr_name)) {
 		mem_deref(filter);
 		return ENOMEM;
 	}
