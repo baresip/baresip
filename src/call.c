@@ -719,6 +719,13 @@ void call_set_custom_hdrs(struct call *call, const struct list *hdrs)
 }
 
 
+/**
+ * Get the list of custom SIP headers
+ *
+ * @param call Call object
+ *
+ * @return List of custom SIP headers (struct sip_hdr)
+ */
 const struct list *call_get_custom_hdrs(const struct call *call)
 {
 	if (!call)
@@ -2027,6 +2034,12 @@ bool call_is_outgoing(const struct call *call)
 }
 
 
+/**
+ * Enable RTP timeout for a call
+ *
+ * @param call       Call object
+ * @param timeout_ms RTP Timeout in [milliseconds]
+ */
 void call_enable_rtp_timeout(struct call *call, uint32_t timeout_ms)
 {
 	if (!call)
@@ -2049,6 +2062,14 @@ uint32_t call_linenum(const struct call *call)
 }
 
 
+/**
+ * Find the call with a given line number
+ *
+ * @param calls   List of calls
+ * @param linenum Line number from 1 to N
+ *
+ * @return Call object if found, NULL if not found
+ */
 struct call *call_find_linenum(const struct list *calls, uint32_t linenum)
 {
 	struct le *le;
@@ -2064,6 +2085,12 @@ struct call *call_find_linenum(const struct list *calls, uint32_t linenum)
 }
 
 
+/**
+ * Set the current call
+ *
+ * @param calls List of calls
+ * @param call  Call to set as current
+ */
 void call_set_current(struct list *calls, struct call *call)
 {
 	if (!calls || !call)
