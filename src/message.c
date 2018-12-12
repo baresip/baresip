@@ -91,6 +91,13 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 }
 
 
+/**
+ * Create the messaging subsystem
+ *
+ * @param messagep Pointer to allocated messaging subsystem
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int message_init(struct message **messagep)
 {
 	struct message *message;
@@ -114,6 +121,16 @@ int message_init(struct message **messagep)
 }
 
 
+/**
+ * Listen to incoming SIP MESSAGE messages
+ *
+ * @param lsnrp   Pointer to allocate listener
+ * @param message Messaging subsystem
+ * @param recvh   Message receive handler
+ * @param arg     Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int message_listen(struct message_lsnr **lsnrp, struct message *message,
 		   message_recv_h *recvh, void *arg)
 {
