@@ -117,7 +117,7 @@ int coreaudio_enum_devices (const char *name, struct list *dev_list,
 		warning("AudioObjectGetPropertyDataSize"
 			" (kAudioHardwarePropertyDevices) failed: %i\n",
 			status);
-		err = 1;
+		err = ENODEV;
 		goto out;
 	}
 
@@ -139,7 +139,7 @@ int coreaudio_enum_devices (const char *name, struct list *dev_list,
 		warning("AudioObjectGetPropertyData"
 			" (kAudioHardwarePropertyDevices) failed: %i\n",
 			status);
-		err = 1;
+		err = ENODEV;
 		goto out;
 	}
 
@@ -209,9 +209,8 @@ int coreaudio_enum_devices (const char *name, struct list *dev_list,
 		}
 		else {
 			err = mediadev_add(dev_list, name_str);
-			if (err) {
+			if (err)
 				break;
-			}
 		}
 	}
 

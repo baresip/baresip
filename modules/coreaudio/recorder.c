@@ -207,9 +207,8 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 int coreaudio_recorder_init(struct ausrc *as)
 {
-	if (!as) {
+	if (!as)
 		return EINVAL;
-	}
 
 	list_init(&as->dev_list);
 

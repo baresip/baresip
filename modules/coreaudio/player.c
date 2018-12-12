@@ -195,11 +195,10 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 int coreaudio_player_init(struct auplay *ap)
 {
-	if (!ap) {
+	if (!ap)
 		return EINVAL;
-	}
 
 	list_init(&ap->dev_list);
 
-	return coreaudio_enum_devices (NULL, &ap->dev_list, NULL, false);
+	return coreaudio_enum_devices(NULL, &ap->dev_list, NULL, false);
 }
