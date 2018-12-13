@@ -762,36 +762,78 @@ const struct sdp_media *stream_sdp(const struct stream *strm)
 }
 
 
+/**
+ * Get the number of transmitted RTP packets
+ *
+ * @param strm Stream object
+ *
+ * @return Number of transmitted RTP packets
+ */
 uint32_t stream_metric_get_tx_n_packets(const struct stream *strm)
 {
 	return strm ? strm->metric_tx.n_packets : 0;
 }
 
 
+/**
+ * Get the number of transmitted RTP bytes
+ *
+ * @param strm Stream object
+ *
+ * @return Number of transmitted RTP bytes
+ */
 uint32_t stream_metric_get_tx_n_bytes(const struct stream *strm)
 {
 	return strm ? strm->metric_tx.n_bytes : 0;
 }
 
 
+/**
+ * Get the number of transmission errors
+ *
+ * @param strm Stream object
+ *
+ * @return Number of transmission errors
+ */
 uint32_t stream_metric_get_tx_n_err(const struct stream *strm)
 {
 	return strm ? strm->metric_tx.n_err : 0;
 }
 
 
+/**
+ * Get the number of received RTP packets
+ *
+ * @param strm Stream object
+ *
+ * @return Number of received RTP packets
+ */
 uint32_t stream_metric_get_rx_n_packets(const struct stream *strm)
 {
 	return strm ? strm->metric_rx.n_packets : 0;
 }
 
 
+/**
+ * Get the number of received RTP bytes
+ *
+ * @param strm Stream object
+ *
+ * @return Number of received RTP bytes
+ */
 uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
 {
 	return strm ? strm->metric_rx.n_bytes : 0;
 }
 
 
+/**
+ * Get the number of receive errors
+ *
+ * @param strm Stream object
+ *
+ * @return Number of receive errors
+ */
 uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
 {
 	return strm ? strm->metric_rx.n_err : 0;
