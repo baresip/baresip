@@ -152,7 +152,10 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 		info("coreaudio: recorder: using device '%s'\n", device);
 
-		uid = coreaudio_get_device_uid(device);
+		err = coreaudio_enum_devices(device, NULL, &uid, true);
+		if (err)
+			goto out;
+
 		if (!uid) {
 			warning("coreaudio: recorder: device not found:"
 				" '%s'\n", device);
@@ -199,4 +202,15 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		*stp = st;
 
 	return err;
+}
+
+
+int coreaudio_recorder_init(struct ausrc *as)
+{
+	if (!as)
+		return EINVAL;
+
+	list_init(&as->dev_list);
+
+	return coreaudio_enum_devices (NULL, &as->dev_list, NULL, true);
 }

@@ -132,7 +132,10 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 		info("coreaudio: player: using device '%s'\n", device);
 
-		uid = coreaudio_get_device_uid(device);
+		err = coreaudio_enum_devices(device, NULL, &uid, false);
+		if (err)
+			goto out;
+
 		if (!uid) {
 			warning("coreaudio: player: device not found: '%s'\n",
 				device);
@@ -187,4 +190,15 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		*stp = st;
 
 	return err;
+}
+
+
+int coreaudio_player_init(struct auplay *ap)
+{
+	if (!ap)
+		return EINVAL;
+
+	list_init(&ap->dev_list);
+
+	return coreaudio_enum_devices(NULL, &ap->dev_list, NULL, false);
 }
