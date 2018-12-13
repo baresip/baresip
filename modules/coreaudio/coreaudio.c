@@ -81,7 +81,7 @@ void audio_session_disable(void)
 #endif
 
 
-int coreaudio_enum_devices (const char *name, struct list *dev_list,
+int coreaudio_enum_devices(const char *name, struct list *dev_list,
 			    CFStringRef *uid, Boolean is_input)
 {
 	AudioObjectPropertyAddress propertyAddress = {
@@ -103,9 +103,8 @@ int coreaudio_enum_devices (const char *name, struct list *dev_list,
 	if (uid) {
 		*uid = NULL;
 
-		if (!str_isset(name)) {
+		if (!str_isset(name))
 			return 0;
-		}
 	}
 
 	status = AudioObjectGetPropertyDataSize(kAudioObjectSystemObject,
@@ -143,12 +142,10 @@ int coreaudio_enum_devices (const char *name, struct list *dev_list,
 		goto out;
 	}
 
-	if (is_input) {
+	if (is_input)
 		propertyAddress.mScope = kAudioDevicePropertyScopeInput;
-	}
-	else {
+	else
 		propertyAddress.mScope = kAudioDevicePropertyScopeOutput;
-	}
 
 	for (UInt32 i = 0; i < deviceCount; ++i) {
 
@@ -162,9 +159,8 @@ int coreaudio_enum_devices (const char *name, struct list *dev_list,
 							0,
 							NULL,
 							&dataSize);
-		if (dataSize == 0) {
+		if (dataSize == 0)
 			continue;
-		}
 
 		dataSize = sizeof(deviceUID);
 		propertyAddress.mSelector = kAudioDevicePropertyDeviceUID;
