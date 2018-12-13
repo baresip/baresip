@@ -17,6 +17,16 @@ static void hdr_destructor(void *arg)
 }
 
 
+/**
+ * Add a custom SIP header to the list
+ *
+ * @param hdrs List of custom headers
+ * @param name Header name
+ * @param fmt  Formatted header value
+ * @param ...  Variable arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int custom_hdrs_add(struct list *hdrs, const char *name,
 		    const char *fmt, ...)
 {
@@ -53,6 +63,15 @@ error:
 }
 
 
+/**
+ * Apply a function callback handler to all custom headers
+ *
+ * @param hdrs List of custom SIP headers
+ * @param h    Function handler
+ * @param arg  Handler argument
+ *
+ * @return Return value from function handler, if errors
+ */
 int custom_hdrs_apply(const struct list *hdrs, custom_hdrs_h *h, void *arg)
 {
 	struct le *le;
