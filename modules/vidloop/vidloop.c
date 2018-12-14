@@ -552,7 +552,7 @@ static void print_status(struct video_loop *vl)
 {
 	(void)re_fprintf(stdout,
 			 "\rstatus:"
-			 " %.3f sec [%s] [%s]  fmt=%s  intra=%zu "
+			 " %.3f sec [%s] [%s]  fmt=%s  key-frames=%zu "
 			 " EFPS=%.1f      %u kbit/s       \r",
 			 timestamp_state_duration(&vl->ts_src,
 						  VIDEO_TIMEBASE),

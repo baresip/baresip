@@ -1416,7 +1416,7 @@ static int vrx_debug(struct re_printf *pf, const struct vrx *vrx)
 			  vrx->vidisp ? vidisp_get(vrx->vidisp)->name : "none",
 			  vrx->size.w, vrx->size.h,
 			  vrx->stats.disp_frames);
-	err |= re_hprintf(pf, "     n_intra=%u, n_picup=%u\n",
+	err |= re_hprintf(pf, "     n_keyframes=%u, n_picup=%u\n",
 			  vrx->n_intra, vrx->n_picup);
 
 	if (vrx->ts_recv.is_set) {
