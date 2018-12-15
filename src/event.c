@@ -94,6 +94,17 @@ static int add_rtcp_stats(struct odict *od_parent, const struct rtcp_stats *rs)
 }
 
 
+/**
+ * Encode an event to a dictionary
+ *
+ * @param od   Dictionary to encode into
+ * @param ua   User-Agent
+ * @param ev   Event type
+ * @param call Call object (optional)
+ * @param prm  Event parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		      struct call *call, const char *prm)
 {
