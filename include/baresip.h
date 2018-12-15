@@ -388,8 +388,6 @@ struct media_ctx {
  * Media Device
  */
 
-struct mediadev;
-
 /** Defines a media device */
 struct mediadev {
 	struct le   le;

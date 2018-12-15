@@ -23,9 +23,8 @@ int mediadev_add(struct list *dev_list, const char *name)
 	if (!dev_list || !str_isset(name))
 		return EINVAL;
 
-	if (mediadev_find(dev_list, name)) {
+	if (mediadev_find(dev_list, name))
 		return 0;
-	}
 
 	dev = mem_zalloc(sizeof(*dev), destructor);
 	if (!dev)
@@ -69,9 +68,8 @@ struct mediadev *mediadev_get_default(const struct list *dev_list)
 		return NULL;
 
 	le = list_head(dev_list);
-	if (le) {
+	if (le)
 		return le->data;
-	}
 
 	return NULL;
 }
