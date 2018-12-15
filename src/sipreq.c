@@ -98,6 +98,19 @@ static int request(struct sip_req *sr)
 }
 
 
+/**
+ * Send a SIP request
+ *
+ * @param ua     User-Agent
+ * @param method SIP method
+ * @param uri    Target SIP uri
+ * @param resph  Response handler
+ * @param arg    Handler argument
+ * @param fmt    Formatted SIP headers and body
+ * @param ...    Variable arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int sip_req_send(struct ua *ua, const char *method, const char *uri,
 		 sip_resp_h *resph, void *arg, const char *fmt, ...)
 {
