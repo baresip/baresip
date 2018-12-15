@@ -15,6 +15,14 @@ static void destructor(void *data)
 }
 
 
+/**
+ * Add a media device to the devices list
+ *
+ * @param dev_list Device list
+ * @param name     Device name
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int mediadev_add(struct list *dev_list, const char *name)
 {
 	struct mediadev *dev;
@@ -44,6 +52,14 @@ int mediadev_add(struct list *dev_list, const char *name)
 }
 
 
+/**
+ * Find a media device in the device list
+ *
+ * @param dev_list Device list
+ * @param name     Device name
+ *
+ * @return Media device if found, NULL if not found
+ */
 struct mediadev *mediadev_find(const struct list *dev_list, const char *name)
 {
 	struct le *le;
@@ -60,6 +76,13 @@ struct mediadev *mediadev_find(const struct list *dev_list, const char *name)
 }
 
 
+/**
+ * Get the default media device
+ *
+ * @param dev_list Device list
+ *
+ * @return Default media device, NULL if none
+ */
 struct mediadev *mediadev_get_default(const struct list *dev_list)
 {
 	struct le *le;
@@ -75,6 +98,14 @@ struct mediadev *mediadev_get_default(const struct list *dev_list)
 }
 
 
+/**
+ * Print all media devices
+ *
+ * @param pf       Print function
+ * @param dev_list Device list
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int mediadev_print(struct re_printf *pf, const struct list *dev_list)
 {
 	struct le *le;
