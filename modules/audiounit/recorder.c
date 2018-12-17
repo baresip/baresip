@@ -138,6 +138,9 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	(void)device;
 	(void)errh;
 
+	if (!stp || !as || !prm)
+		return EINVAL;
+
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
 		return ENOMEM;

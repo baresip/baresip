@@ -115,6 +115,9 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	(void)device;
 
+	if (!stp || !ap || !prm)
+		return EINVAL;
+
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
 		return ENOMEM;
