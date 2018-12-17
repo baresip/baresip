@@ -17,7 +17,7 @@
  */
 
 
-AudioComponent output_comp = NULL;
+AudioComponent audiounit_comp = NULL;
 
 static struct auplay *auplay;
 static struct ausrc *ausrc;
@@ -65,8 +65,8 @@ static int module_init(void)
 	desc.componentFlags = 0;
 	desc.componentFlagsMask = 0;
 
-	output_comp = AudioComponentFindNext(NULL, &desc);
-	if (!output_comp) {
+	audiounit_comp = AudioComponentFindNext(NULL, &desc);
+	if (!audiounit_comp) {
 		warning("audiounit: Voice Processing I/O not found\n");
 		return ENOENT;
 	}

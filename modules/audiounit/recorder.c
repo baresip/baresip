@@ -155,7 +155,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	ret = AudioComponentInstanceNew(output_comp, &st->au);
+	ret = AudioComponentInstanceNew(audiounit_comp, &st->au);
 	if (ret)
 		goto out;
 

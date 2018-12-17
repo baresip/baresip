@@ -5,7 +5,7 @@
  */
 
 
-AudioComponent output_comp;
+AudioComponent audiounit_comp;
 
 
 struct audiosess;
