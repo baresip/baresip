@@ -22,7 +22,6 @@ struct ausrc_st {
 	pthread_mutex_t mutex;
 	ausrc_read_h *rh;
 	void *arg;
-	unsigned int ptime;
 };
 
 
@@ -59,7 +58,6 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 			   const AudioStreamPacketDescription *inPacketDesc)
 {
 	struct ausrc_st *st = userData;
-	unsigned int ptime;
 	ausrc_read_h *rh;
 	void *arg;
 	(void)inStartTime;
@@ -67,7 +65,6 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	(void)inPacketDesc;
 
 	pthread_mutex_lock(&st->mutex);
-	ptime = st->ptime;
 	rh  = st->rh;
 	arg = st->arg;
 	pthread_mutex_unlock(&st->mutex);
@@ -78,12 +75,6 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	rh(inQB->mAudioData, inQB->mAudioDataByteSize/2, arg);
 
 	AudioQueueEnqueueBuffer(inQ, inQB, 0, NULL);
-
-	/* Force a sleep here, coreaudio's timing is too fast */
-#if !TARGET_OS_IPHONE
-#define ENCODE_TIME 1000
-	usleep((ptime * 1000) - ENCODE_TIME);
-#endif
 }
 
 
@@ -108,7 +99,6 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->ptime = prm->ptime;
 	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
