@@ -37,6 +37,7 @@ struct vumeter_dec {
 	volatile bool started;
 };
 
+static bool vumeter_stderr;
 
 static void send_event(const struct audio *au, enum ua_event ev, double value)
 {
@@ -111,7 +112,8 @@ static void enc_tmr_handler(void *arg)
 	tmr_start(&st->tmr, 500, enc_tmr_handler, st);
 
 	if (st->started) {
-		print_vumeter(60, 31, st->avg_rec);
+		if (vumeter_stderr)
+			print_vumeter(60, 31, st->avg_rec);
 
 		send_event(st->au, UA_EVENT_VU_TX, st->avg_rec);
 	}
@@ -125,7 +127,8 @@ static void dec_tmr_handler(void *arg)
 	tmr_start(&st->tmr, 500, dec_tmr_handler, st);
 
 	if (st->started) {
-		print_vumeter(80, 32, st->avg_play);
+		if (vumeter_stderr)
+			print_vumeter(80, 32, st->avg_play);
 
 		send_event(st->au, UA_EVENT_VU_RX, st->avg_play);
 	}
@@ -233,7 +236,12 @@ static struct aufilt vumeter = {
 
 static int module_init(void)
 {
+	struct conf *conf = conf_cur();
+
+	conf_get_bool(conf, "vumeter_stderr", &vumeter_stderr);
+
 	aufilt_register(baresip_aufiltl(), &vumeter);
+
 	return 0;
 }
 
