@@ -925,7 +925,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 			a->rx.level_set = true;
 		}
 		else {
-			info("audio: rtp header ext ignored (id=%u)\n",
+			debug("audio: rtp header ext ignored (id=%u)\n",
 			     extv[i].id);
 		}
 	}
