@@ -43,6 +43,7 @@ static void interruptionListener(void *data, UInt32 inInterruptionState)
 static int module_init(void)
 {
 	AudioComponentDescription desc;
+	CFStringRef name = NULL;
 	int err;
 
 #if TARGET_OS_IPHONE
@@ -71,12 +72,17 @@ static int module_init(void)
 		return ENOENT;
 	}
 
+	if (0 == AudioComponentCopyName(audiounit_comp, &name)) {
+		debug("audiounit: using component '%s'\n",
+		      CFStringGetCStringPtr(name, kCFStringEncodingUTF8));
+	}
+
 	err  = auplay_register(&auplay, baresip_auplayl(),
 			       "audiounit", audiounit_player_alloc);
 	err |= ausrc_register(&ausrc, baresip_ausrcl(),
 			      "audiounit", audiounit_recorder_alloc);
 
-	return 0;
+	return err;
 }
 
 
