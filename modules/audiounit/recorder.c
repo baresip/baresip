@@ -100,17 +100,6 @@ static void interrupt_handler(bool interrupted, void *arg)
 }
 
 
-static uint32_t aufmt_to_formatflags(enum aufmt fmt)
-{
-	switch (fmt) {
-
-	case AUFMT_S16LE:  return kLinearPCMFormatFlagIsSignedInteger;
-	case AUFMT_FLOAT:  return kLinearPCMFormatFlagIsFloat;
-	default: return 0;
-	}
-}
-
-
 int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			     struct media_ctx **ctx,
 			     struct ausrc_prm *prm, const char *device,
@@ -200,11 +189,11 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
 #if TARGET_OS_IPHONE
-	fmt.mFormatFlags      = aufmt_to_formatflags(prm->fmt)
+	fmt.mFormatFlags      = audiounit_aufmt_to_formatflags(prm->fmt)
 		| kAudioFormatFlagsNativeEndian
 		| kAudioFormatFlagIsPacked;
 #else
-	fmt.mFormatFlags      = aufmt_to_formatflags(prm->fmt)
+	fmt.mFormatFlags      = audiounit_aufmt_to_formatflags(prm->fmt)
 		| kLinearPCMFormatFlagIsPacked;
 #endif
 	fmt.mBitsPerChannel   = 8 * st->sampsz;

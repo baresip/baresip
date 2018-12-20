@@ -6,6 +6,7 @@
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include "audiounit.h"
 
@@ -21,6 +22,17 @@ AudioComponent audiounit_comp = NULL;
 
 static struct auplay *auplay;
 static struct ausrc *ausrc;
+
+
+uint32_t audiounit_aufmt_to_formatflags(enum aufmt fmt)
+{
+	switch (fmt) {
+
+	case AUFMT_S16LE:  return kLinearPCMFormatFlagIsSignedInteger;
+	case AUFMT_FLOAT:  return kLinearPCMFormatFlagIsFloat;
+	default: return 0;
+	}
+}
 
 
 #if TARGET_OS_IPHONE
