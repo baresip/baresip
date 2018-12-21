@@ -638,7 +638,7 @@ int account_set_mediaenc(struct account *acc, const char *mencid)
  */
 int account_set_medianat(struct account *acc, const char *mnatid)
 {
-	const struct mnat *mnat;
+	const struct mnat *mnat = NULL;
 
 	if (!acc)
 		return EINVAL;
