@@ -438,9 +438,10 @@ MODULES   += v4l2 v4l2_codec
 endif
 ifneq ($(USE_OMX_RPI),)
 MODULES   += omx
-endif
+else
 ifneq ($(USE_OMX_BELLAGIO),)
 MODULES   += omx
+endif
 endif
 ifneq ($(USE_VPX),)
 MODULES   += vp8
