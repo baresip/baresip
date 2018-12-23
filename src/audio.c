@@ -908,7 +908,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 		return;
 
 	/* Audio payload-type changed? */
-	/* XXX: this logic should be moved to stream.c */
 	if (hdr->pt != rx->pt) {
 
 		err = update_payload_type(a, rx->pt, hdr->pt);
