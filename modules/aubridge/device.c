@@ -68,8 +68,8 @@ static void *device_thread(void *arg)
 
 	auresamp_init(&rs);
 
-	sampv_in  = mem_alloc(2 * sampc_in, NULL);
-	sampv_out = mem_alloc(2 * sampc_out, NULL);
+	sampv_in  = mem_alloc(sizeof(int16_t) * sampc_in, NULL);
+	sampv_out = mem_alloc(sizeof(int16_t) * sampc_out, NULL);
 	if (!sampv_in || !sampv_out)
 		goto out;
 
