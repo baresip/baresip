@@ -43,7 +43,6 @@
 #   USE_PULSE         Pulseaudio audio driver
 #   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL           libSDL video output
-#   USE_SILK          SILK (Skype) audio codec
 #   USE_SNDFILE       sndfile wav dumper
 #   USE_SPEEX_AEC     Speex Acoustic Echo Canceller
 #   USE_SPEEX_PP      Speex preprocessor
@@ -150,9 +149,6 @@ USE_SDL  := $(shell [ -f $(SYSROOT)/include/SDL/SDL.h ] || \
 USE_SDL2  := $(shell [ -f $(SYSROOT)/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT)/local/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT_ALT)/include/SDL2/SDl.h ] && echo "yes")
-USE_SILK := $(shell [ -f $(SYSROOT)/include/silk/SKP_Silk_SDK_API.h ] || \
-	[ -f $(SYSROOT_ALT)/include/silk/SKP_Silk_SDK_API.h ] || \
-	[ -f $(SYSROOT)/local/include/silk/SKP_Silk_SDK_API.h ] && echo "yes")
 USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
 	[ -f $(SYSROOT)/local/include/sndfile.h ] || \
 	[ -f $(SYSROOT_ALT)/include/sndfile.h ] || \
@@ -411,9 +407,6 @@ MODULES   += sdl
 endif
 ifneq ($(USE_SDL2),)
 MODULES   += sdl2
-endif
-ifneq ($(USE_SILK),)
-MODULES   += silk
 endif
 ifneq ($(USE_SNDFILE),)
 MODULES   += sndfile

@@ -75,7 +75,6 @@ Distributed under BSD license
   - L16
   - MPA
   - Opus
-  - Silk
 
 * Audio-drivers:
   - Advanced Linux Sound Architecture (ALSA) audio-driver
@@ -280,7 +279,6 @@ rst           Radio streamer using mpg123
 sdl           Simple DirectMedia Layer (SDL) video output driver
 sdl2          Simple DirectMedia Layer v2 (SDL2) video output driver
 selfview      Video selfview module
-silk          SILK audio codec
 snapshot      Save video-stream as PNG images
 sndfile       Audio dumper using libsndfile
 sndio         Audio driver for OpenBSD
