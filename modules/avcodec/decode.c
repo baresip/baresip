@@ -278,6 +278,9 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 	if (err)
 		return err;
 
+	if (!h264_is_keyframe(h264_hdr.type) && !st->got_keyframe)
+		return EPROTO;
+
 #if 0
 	re_printf("avcodec: decode: %s %s type=%2d %s  \n",
 		  marker ? "[M]" : "   ",
@@ -480,6 +483,9 @@ int decode_h263(struct viddec_state *st, struct vidframe *frame,
 	err = h263_hdr_decode(&hdr, src);
 	if (err)
 		return err;
+
+	if (hdr.i && !st->got_keyframe)
+		return EPROTO;
 
 #if 0
 	debug(".....[%s seq=%5u ] MODE %s -"
