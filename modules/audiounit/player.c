@@ -93,7 +93,7 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			   auplay_write_h *wh, void *arg)
 {
 	AudioStreamBasicDescription fmt;
-	AudioUnitElement outputBus = 0;
+	const AudioUnitElement outputBus = 0;
 	AURenderCallbackStruct cb;
 	struct auplay_st *st;
 	UInt32 enable = 1;

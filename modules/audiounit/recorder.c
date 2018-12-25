@@ -106,7 +106,8 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	AudioStreamBasicDescription fmt;
-	AudioUnitElement inputBus = 1;
+	const AudioUnitElement inputBus = 1;
+	const AudioUnitElement outputBus = 0;
 	AURenderCallbackStruct cb;
 	struct ausrc_st *st;
 	UInt32 enable = 1;
@@ -166,7 +167,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 #if ! TARGET_OS_IPHONE
 	enable = 0;
 	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
-				   kAudioUnitScope_Output, 0,
+				   kAudioUnitScope_Output, outputBus,
 				   &enable, sizeof(enable));
 	if (ret)
 		goto out;
