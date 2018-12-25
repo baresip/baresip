@@ -17,9 +17,9 @@ struct auplay_st {
 	struct audiosess_st *sess;
 	AudioUnit au;
 	pthread_mutex_t mutex;
+	uint32_t sampsz;
 	auplay_write_h *wh;
 	void *arg;
-	uint32_t sampsz;
 };
 
 
@@ -115,6 +115,12 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 
+	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
+	if (!st->sampsz) {
+		err = ENOTSUP;
+		goto out;
+	}
+
 	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)
 		goto out;
@@ -134,8 +140,6 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		warning("audiounit: EnableIO failed (%d)\n", ret);
 		goto out;
 	}
-
-	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
 
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;

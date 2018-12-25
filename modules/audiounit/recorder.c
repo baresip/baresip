@@ -19,9 +19,9 @@ struct ausrc_st {
 	AudioUnit au;
 	pthread_mutex_t mutex;
 	int ch;
+	uint32_t sampsz;
 	ausrc_read_h *rh;
 	void *arg;
-	uint32_t sampsz;
 };
 
 
@@ -139,6 +139,12 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->arg = arg;
 	st->ch  = prm->ch;
 
+	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
+	if (!st->sampsz) {
+		err = ENOTSUP;
+		goto out;
+	}
+
 	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)
 		goto out;
@@ -183,8 +189,6 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (ret)
 		goto out;
 #endif
-
-	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
 
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
