@@ -66,6 +66,11 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 
 	pthread_mutex_init(&aec->mutex, NULL);
 
+	if (prm->srate > 8000)
+		aec->subframe_len = 160;
+	else
+		aec->subframe_len = 80;
+
 	aec->inst = WebRtcAec_Create();
 	if (!aec->inst) {
 		err = ENODEV;

@@ -18,6 +18,7 @@ struct aec {
 	uint32_t sampc;
 	uint32_t srate;
 	uint32_t channels;
+	uint32_t subframe_len;
 };
 
 

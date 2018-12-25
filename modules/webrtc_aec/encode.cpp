@@ -13,14 +13,13 @@
 
 
 #define SOUND_CARD_BUF 20
-#define SKEW           20
 
 
 struct aec_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 
 	struct aec *aec;
-	float *buf;
+	float buf[160];
 };
 
 
@@ -30,7 +29,6 @@ static void enc_destructor(void *arg)
 
 	list_unlink(&st->af.le);
 	mem_deref(st->aec);
-	mem_deref(st->buf);
 }
 
 
@@ -61,8 +59,6 @@ int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (err)
 		goto out;
 
-	st->buf = (float *)mem_zalloc(st->aec->sampc * sizeof(float), NULL);
-
  out:
 	if (err)
 		mem_deref(st);
@@ -78,6 +74,11 @@ int webrtc_aec_encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 	struct aec_enc *enc = (struct aec_enc *)st;
 	struct aec *aec = enc->aec;
 	const float *nearend = (const float *)sampv;
+	float *rec = (float *)sampv;
+	const float *in;
+	float *out;
+	int num_bands = 1;//aec->channels;
+	size_t i;
 	int err = 0;
 	int r;
 
@@ -86,16 +87,24 @@ int webrtc_aec_encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 
 	pthread_mutex_lock(&aec->mutex);
 
-	r = WebRtcAec_Process(aec->inst, &nearend, aec->channels, &enc->buf,
-			      *sampc, SOUND_CARD_BUF, SKEW);
-	if (r != 0) {
-		warning("webrtc_aec: encode: WebRtcAec_Process error (%d)\n",
-			r);
-		err = EPROTO;
-		goto out;
-	}
+	for (i = 0; i < *sampc; i += aec->subframe_len) {
 
-	memcpy(sampv, enc->buf, *sampc * sizeof(float));
+		in  = &nearend[i];
+		out = enc->buf;
+
+		r = WebRtcAec_Process(aec->inst, &in, num_bands,
+				      &out, aec->subframe_len,
+				      SOUND_CARD_BUF, 0);
+		if (r != 0) {
+			warning("webrtc_aec: encode:"
+				" WebRtcAec_Process error (%d)\n",
+				r);
+			err = EPROTO;
+			goto out;
+		}
+
+		memcpy(&rec[i], out, aec->subframe_len * sizeof(float));
+	}
 
  out:
 	pthread_mutex_unlock(&aec->mutex);

@@ -68,20 +68,28 @@ int webrtc_aec_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 {
 	struct aec_dec *dec = (struct aec_dec *)st;
 	struct aec *aec = dec->aec;
+	const float *farend = (const float *)sampv;
 	int r;
 	int err = 0;
+	size_t i;
 
 	if (!st || !sampv || !sampc)
 		return EINVAL;
 
+	return 0; // todo
+
 	pthread_mutex_lock(&aec->mutex);
 
-	r = WebRtcAec_BufferFarend(aec->inst, (float *)sampv, *sampc);
-	if (r != 0) {
-		warning("webrtc_aec: decode: WebRtcAec_BufferFarend"
-			" error (%d)\n", r);
-		err = EPROTO;
-		goto out;
+	for (i = 0; i < *sampc; i += aec->subframe_len) {
+
+		r = WebRtcAec_BufferFarend(aec->inst, farend + i,
+					   aec->subframe_len);
+		if (r != 0) {
+			warning("webrtc_aec: decode: WebRtcAec_BufferFarend"
+				" error (%d)\n", r);
+			err = EPROTO;
+			goto out;
+		}
 	}
 
  out:
