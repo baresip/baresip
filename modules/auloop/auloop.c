@@ -44,6 +44,7 @@ struct audio_loop {
 	uint32_t srate;
 	uint32_t ch;
 	enum aufmt fmt;
+	bool started;
 
 	uint64_t n_read;
 	uint64_t n_write;
@@ -54,9 +55,57 @@ static struct audio_loop *gal = NULL;
 static char aucodec[64];
 
 
+static int print_summary(struct re_printf *pf, const struct audio_loop *al)
+{
+	const double scale = al->srate * al->ch;
+	int err;
+
+	err  = re_hprintf(pf, "~~~~~ Audioloop summary: ~~~~~\n");
+	err |= re_hprintf(pf, "%u Hz %uch %s\n\n",
+			  al->srate, al->ch, aufmt_name(al->fmt));
+
+	/* Source */
+	if (al->ausrc) {
+		struct ausrc *as = ausrc_get(al->ausrc);
+
+		err |= re_hprintf(pf,
+				  "* Source\n"
+				  "  module      %s\n"
+				  "  samples     %llu\n"
+				  "  duration    %.3f sec\n"
+				  "\n"
+				  ,
+				  as->name,
+				  al->n_read,
+				  (double)al->n_read / scale);
+	}
+
+	/* Player */
+	if (al->auplay) {
+		struct auplay *ap = auplay_get(al->auplay);
+
+		err |= re_hprintf(pf,
+				  "* Player\n"
+				  "  module      %s\n"
+				  "  samples     %llu\n"
+				  "  duration    %.3f sec\n"
+				  "\n"
+				  ,
+				  ap->name,
+				  al->n_write,
+				  (double)al->n_write / scale);
+	}
+
+	return err;
+}
+
+
 static void auloop_destructor(void *arg)
 {
 	struct audio_loop *al = arg;
+
+	if (al->started)
+		re_printf("%H\n", print_summary, al);
 
 	tmr_cancel(&al->tmr);
 	mem_deref(al->ausrc);
@@ -303,6 +352,8 @@ static int audio_loop_alloc(struct audio_loop **alp,
 	err = auloop_reset(al, srate, ch);
 	if (err)
 		goto out;
+
+	al->started = true;
 
  out:
 	if (err)
