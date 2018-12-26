@@ -458,6 +458,7 @@ int ausrc_alloc(struct ausrc_st **stp, struct list *ausrcl,
 		const char *name,
 		struct ausrc_prm *prm, const char *device,
 		ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
+struct ausrc *ausrc_get(struct ausrc_st *st);
 
 
 /*
@@ -496,6 +497,7 @@ int auplay_alloc(struct auplay_st **stp, struct list *auplayl,
 		 const char *name,
 		 struct auplay_prm *prm, const char *device,
 		 auplay_write_h *wh, void *arg);
+struct auplay *auplay_get(struct auplay_st *st);
 
 
 /*
