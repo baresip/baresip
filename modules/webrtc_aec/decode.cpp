@@ -76,8 +76,6 @@ int webrtc_aec_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 	if (!st || !sampv || !sampc)
 		return EINVAL;
 
-	return 0; // todo
-
 	pthread_mutex_lock(&aec->mutex);
 
 	for (i = 0; i < *sampc; i += aec->subframe_len) {

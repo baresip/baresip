@@ -40,13 +40,15 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	if (!stp || !ctx || !prm)
 		return EINVAL;
 
+	if (prm->srate > MAX_SAMPLE_RATE || prm->ch > MAX_CHANNELS)
+		return ENOTSUP;
+
 	if (*ctx) {
 		aec = (struct aec *)*ctx;
 
-		if (prm->srate != aec->srate ||
-		    prm->ch != aec->channels) {
+		if (prm->srate != aec->srate) {
 
-			warning("webrtc_aec: param mismatch\n");
+			warning("webrtc_aec: srate mismatch\n");
 			return ENOTSUP;
 		}
 
@@ -58,11 +60,7 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	if (!aec)
 		return ENOMEM;
 
-	info("webrtc_aec: creating shared state: [%u Hz, %u channels]\n",
-	     prm->srate, prm->ch);
-
 	aec->srate = prm->srate;
-	aec->channels = prm->ch;
 
 	pthread_mutex_init(&aec->mutex, NULL);
 
@@ -70,6 +68,10 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 		aec->subframe_len = 160;
 	else
 		aec->subframe_len = 80;
+
+	info("webrtc_aec: creating shared state:"
+	     " [%u Hz, %u channels, subframe %u bytes]\n",
+	     prm->srate, prm->ch, aec->subframe_len);
 
 	aec->inst = WebRtcAec_Create();
 	if (!aec->inst) {

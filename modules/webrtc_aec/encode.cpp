@@ -77,7 +77,7 @@ int webrtc_aec_encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 	float *rec = (float *)sampv;
 	const float *in;
 	float *out;
-	int num_bands = 1;//aec->channels;
+	const int num_bands = 1;
 	size_t i;
 	int err = 0;
 	int r;
