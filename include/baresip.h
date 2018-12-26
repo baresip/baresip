@@ -58,6 +58,7 @@ int account_set_auth_user(struct account *acc, const char *user);
 int account_set_auth_pass(struct account *acc, const char *pass);
 int account_set_outbound(struct account *acc, const char *ob, unsigned ix);
 int account_set_sipnat(struct account *acc, const char *sipnat);
+int account_set_answermode(struct account *acc, enum answermode mode);
 int account_set_display_name(struct account *acc, const char *dname);
 int account_set_regint(struct account *acc, uint32_t regint);
 int account_set_stun_host(struct account *acc, const char *host);

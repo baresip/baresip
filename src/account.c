@@ -884,6 +884,31 @@ enum answermode account_answermode(const struct account *acc)
 
 
 /**
+ * Set the answermode of an account
+ *
+ * @param acc  User-Agent account
+ * @param mode Answermode
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_answermode(struct account *acc, enum answermode mode)
+{
+	if (!acc)
+		return EINVAL;
+
+	if ((mode != ANSWERMODE_MANUAL) && (mode != ANSWERMODE_EARLY) &&
+	    (mode != ANSWERMODE_AUTO)) {
+		warning("account: invalid answermode : `%d'\n", mode);
+		return EINVAL;
+	}
+
+	acc->answermode = mode;
+
+	return 0;
+}
+
+
+/**
  * Get the SIP Display Name of an account
  *
  * @param acc User-Agent account
