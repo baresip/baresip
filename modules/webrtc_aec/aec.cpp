@@ -85,8 +85,6 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 		goto out;
 	}
 
-	aec->sampc = prm->srate * prm->ch * prm->ptime / 1000;
-
 	aec->config.nlpMode = kAecNlpModerate;
 	aec->config.skewMode = true;
 	aec->config.metricsMode = true;
