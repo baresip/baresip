@@ -235,7 +235,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	ret = AudioUnitGetProperty(st->au,
 				   kAudioUnitProperty_SampleRate,
 				   kAudioUnitScope_Input,
-				   0,
+				   inputBus,
 				   &hw_srate,
 				   &hw_size);
 	if (ret)

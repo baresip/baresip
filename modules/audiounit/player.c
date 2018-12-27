@@ -183,7 +183,7 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	ret = AudioUnitGetProperty(st->au,
 				   kAudioUnitProperty_SampleRate,
 				   kAudioUnitScope_Output,
-				   0,
+				   outputBus,
 				   &hw_srate,
 				   &hw_size);
 	if (ret)
