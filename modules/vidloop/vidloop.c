@@ -115,7 +115,7 @@ static void timestamp_state_update(struct timestamp_state *st,
 
 
 static double timestamp_state_duration(const struct timestamp_state *ts,
-				       uint32_t clock)
+				       uint32_t clock_rate)
 {
 	uint64_t dur;
 
@@ -124,7 +124,7 @@ static double timestamp_state_duration(const struct timestamp_state *ts,
 	else
 		dur = 0;
 
-	return (double)dur / (double)clock;
+	return (double)dur / (double)clock_rate;
 }
 
 
