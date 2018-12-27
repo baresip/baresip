@@ -299,7 +299,8 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 			return ENOMEM;
 	}
 
-	info("Audio-loop: %uHz, %dch\n", al->srate, al->ch);
+	info("Audio-loop: %uHz, %dch, %s\n", al->srate, al->ch,
+	     aufmt_name(al->fmt));
 
 	err = aubuf_alloc(&al->ab, 320, 0);
 	if (err)
