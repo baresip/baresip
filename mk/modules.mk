@@ -220,7 +220,6 @@ endif
 
 # Platform specific modules
 ifeq ($(OS),darwin)
-USE_COREAUDIO := yes
 
 USE_AVFOUNDATION := \
 	$(shell [ -d /System/Library/Frameworks/AVFoundation.framework ] \
@@ -228,6 +227,10 @@ USE_AVFOUNDATION := \
 
 USE_AUDIOUNIT := \
 	$(shell [ -d /System/Library/Frameworks/AudioUnit.framework ] \
+		&& echo "yes")
+
+USE_COREAUDIO := \
+	$(shell [ -d /System/Library/Frameworks/CoreAudio.framework ] \
 		&& echo "yes")
 
 ifneq ($(USE_AVFOUNDATION),)
