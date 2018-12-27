@@ -96,7 +96,7 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	const AudioUnitElement outputBus = 0;
 	AURenderCallbackStruct cb;
 	struct auplay_st *st;
-	UInt32 enable = 1;
+	const UInt32 enable = 1;
 	OSStatus ret = 0;
 	Float64 hw_srate = 0.0;
 	UInt32 hw_size = sizeof(hw_srate);
