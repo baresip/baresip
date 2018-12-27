@@ -5,7 +5,7 @@
 #
 
 
-WEBRTC_PATH	:= /home/alfredh/tmp
+WEBRTC_PATH	:= ../webrtc_sdk
 
 
 MOD		:= webrtc_aec

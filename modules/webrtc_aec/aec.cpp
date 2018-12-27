@@ -11,13 +11,14 @@
 #include "aec.h"
 
 
-/*
- * WARNING WARNING WARNING !!!
+/**
+ * @defgroup webrtc_aec webrtc_aec
  *
- * Experimental echo cancellation using WebRTC SDK.
- * This code is not working yet.
+ * Acoustic Echo Cancellation (AEC) using WebRTC SDK.
  *
+ * This code is experimental.
  */
+
 
 using namespace webrtc;
 
