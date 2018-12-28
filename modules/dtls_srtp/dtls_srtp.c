@@ -22,8 +22,6 @@
  *
  \verbatim
   <sip:user@domain.com>;mediaenc=dtls_srtp
-  <sip:user@domain.com>;mediaenc=dtls_srtpf
-  <sip:user@domain.com>;mediaenc=srtp-mandf
  \endverbatim
  *
  *
@@ -440,16 +438,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 
 
 static struct menc dtls_srtp = {
-	LE_INIT, "dtls_srtp",  "UDP/TLS/RTP/SAVP", session_alloc, media_alloc
-};
-
-static struct menc dtls_srtpf = {
-	LE_INIT, "dtls_srtpf", "UDP/TLS/RTP/SAVPF", session_alloc, media_alloc
-};
-
-static struct menc dtls_srtp2 = {
-	/* note: temp for Webrtc interop */
-	LE_INIT, "srtp-mandf", "RTP/SAVPF", session_alloc, media_alloc
+	LE_INIT, "dtls_srtp",  "UDP/TLS/RTP/SAVPF", session_alloc, media_alloc
 };
 
 
@@ -481,9 +470,7 @@ static int module_init(void)
 		return err;
 	}
 
-	menc_register(mencl, &dtls_srtpf);
 	menc_register(mencl, &dtls_srtp);
-	menc_register(mencl, &dtls_srtp2);
 
 	debug("DTLS-SRTP ready with profiles %s\n", srtp_profiles);
 
@@ -494,8 +481,6 @@ static int module_init(void)
 static int module_close(void)
 {
 	menc_unregister(&dtls_srtp);
-	menc_unregister(&dtls_srtpf);
-	menc_unregister(&dtls_srtp2);
 	tls = mem_deref(tls);
 
 	return 0;
