@@ -120,12 +120,6 @@ enum call_event {
 	CALL_EVENT_MENC,
 };
 
-enum menc_event {
-	MENC_EVENT_SECURE,
-	MENC_EVENT_VERIFY_REQUEST,
-	MENC_EVENT_PEER_VERIFIED,
-};
-
 struct call;
 
 typedef void (call_event_h)(struct call *call, enum call_event ev,
@@ -588,6 +582,13 @@ void error_msg(const char *fmt, ...);
 struct menc;
 struct menc_sess;
 struct menc_media;
+
+/** Defines a media encryption event */
+enum menc_event {
+	MENC_EVENT_SECURE,          /**< Media is secured               */
+	MENC_EVENT_VERIFY_REQUEST,  /**< Request user to verify a code  */
+	MENC_EVENT_PEER_VERIFIED,   /**< Peer was verified successfully */
+};
 
 
 typedef void (menc_error_h)(int err, void *arg);
