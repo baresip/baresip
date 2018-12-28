@@ -117,11 +117,7 @@ static bool verify_fingerprint(const struct sdp_session *sess,
 				   &hash, md_sdp, &sz_sdp))
 		return false;
 
-	if (0 == pl_strcasecmp(&hash, "sha-1")) {
-		type = TLS_FINGERPRINT_SHA1;
-		sz_dtls = 20;
-	}
-	else if (0 == pl_strcasecmp(&hash, "sha-256")) {
+	if (0 == pl_strcasecmp(&hash, "sha-256")) {
 		type = TLS_FINGERPRINT_SHA256;
 		sz_dtls = 32;
 	}
@@ -426,13 +422,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 		if (err)
 			return err;
 
-		if (0 == pl_strcasecmp(&hash, "SHA-1")) {
-			err = sdp_media_set_lattr(st->sdpm, true,
-						  "fingerprint", "SHA-1 %H",
-						  dtls_print_sha1_fingerprint,
-						  tls);
-		}
-		else if (0 == pl_strcasecmp(&hash, "SHA-256")) {
+		if (0 == pl_strcasecmp(&hash, "SHA-256")) {
 			err = sdp_media_set_lattr(st->sdpm, true,
 						  "fingerprint", "SHA-256 %H",
 						 dtls_print_sha256_fingerprint,
