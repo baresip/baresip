@@ -939,7 +939,6 @@ static int update(struct mnat_sess *sess)
 
 static int module_init(void)
 {
-#ifdef MODULE_CONF
 	struct pl pl;
 
 	conf_get_bool(conf_cur(), "ice_turn", &ice.turn);
@@ -965,7 +964,6 @@ static int module_init(void)
 			return EINVAL;
 		}
 	}
-#endif
 
 	return mnat_register(&mnat, baresip_mnatl(),
 			     "ice", "+sip.ice",

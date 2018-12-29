@@ -84,7 +84,6 @@ ifneq ($(STATIC),)
 CFLAGS    += -DSTATIC=1
 CXXFLAGS  += -DSTATIC=1
 endif
-CFLAGS    += -DMODULE_CONF
 
 INSTALL := install
 ifeq ($(DESTDIR),)
