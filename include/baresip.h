@@ -615,6 +615,7 @@ struct menc {
 void menc_register(struct list *mencl, struct menc *menc);
 void menc_unregister(struct menc *menc);
 const struct menc *menc_find(const struct list *mencl, const char *id);
+const char *menc_event_name(enum menc_event event);
 
 
 /*

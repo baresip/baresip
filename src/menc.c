@@ -63,3 +63,22 @@ const struct menc *menc_find(const struct list *mencl, const char *id)
 
 	return NULL;
 }
+
+
+/**
+ * Get the name of a media encryption event
+ *
+ * @param event Media encryption event
+ *
+ * @return String with media encryption event name
+ */
+const char *menc_event_name(enum menc_event event)
+{
+	switch (event) {
+
+	case MENC_EVENT_SECURE:         return "Secure";
+	case MENC_EVENT_VERIFY_REQUEST: return "Verify Request";
+	case MENC_EVENT_PEER_VERIFIED:  return "Peer Verified";
+	default: return "?";
+	}
+}
