@@ -352,17 +352,17 @@ struct stream {
 	bool rtcp;               /**< Enable RTCP                           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool jbuf_started;       /**< True if jitter-buffer was started     */
-	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
-	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
-	void *arg;               /**< Handler argument                      */
-	stream_error_h *errorh;  /**< Stream error handler                  */
-	void *errorh_arg;        /**< Error handler argument                */
 	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
 	uint64_t ts_last;        /**< Timestamp of last received RTP pkt    */
 	bool terminated;         /**< Stream is terminated flag             */
 	uint32_t rtp_timeout_ms; /**< RTP Timeout value in [ms]             */
 	bool rtp_estab;          /**< True if RTP stream is established     */
 	bool hold;               /**< Stream is on-hold (local)             */
+	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
+	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
+	void *arg;               /**< Handler argument                      */
+	stream_error_h *errorh;  /**< Stream error handler                  */
+	void *errorh_arg;        /**< Error handler argument                */
 };
 
 int  stream_alloc(struct stream **sp, const struct stream_param *prm,
