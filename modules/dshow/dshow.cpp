@@ -306,7 +306,7 @@ static int add_sample_grabber(struct vidsrc_st *st)
 
 	memset(&mt, 0, sizeof(mt));
 	mt.majortype = MEDIATYPE_Video;
-	mt.subtype = MEDIASUBTYPE_RGB32;  /* XXX: try YUV420P */
+	mt.subtype = MEDIASUBTYPE_RGB32;
 	hr = st->grabber->SetMediaType(&mt);
 	if (FAILED(hr))
 		return ENODEV;
