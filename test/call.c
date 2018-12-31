@@ -915,11 +915,14 @@ int test_call_progress(void)
 }
 
 
-static void float_sample_handler(const void *sampv, size_t sampc, void *arg)
+static void audio_sample_handler(const void *sampv, size_t sampc, void *arg)
 {
 	struct fixture *fix = arg;
+	int err = 0;
 	(void)sampv;
 	(void)sampc;
+
+	ASSERT_EQ(MAGIC, fix->magic);
 
 	/* Wait until the call is established and the incoming
 	 * audio samples are successfully decoded.
@@ -930,6 +933,10 @@ static void float_sample_handler(const void *sampv, size_t sampc, void *arg)
 	    ) {
 		re_cancel();
 	}
+
+ out:
+	if (err)
+		fixture_abort(fix, err);
 }
 
 
@@ -949,7 +956,7 @@ static int test_media_base(enum audio_mode txmode)
 
 	err = mock_ausrc_register(&ausrc);
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, float_sample_handler, f);
+	err = mock_auplay_register(&auplay, audio_sample_handler, f);
 	TEST_ERR(err);
 
 	f->estab_action = ACTION_NOTHING;
@@ -1024,7 +1031,7 @@ int test_call_mediaenc(void)
 
 	err = mock_ausrc_register(&ausrc);
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, float_sample_handler, f);
+	err = mock_auplay_register(&auplay, audio_sample_handler, f);
 	TEST_ERR(err);
 
 	f->estab_action = ACTION_NOTHING;
