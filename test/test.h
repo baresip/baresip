@@ -158,6 +158,14 @@ void mock_menc_unregister(void);
 
 
 /*
+ * Mock Media NAT-traversal
+ */
+
+int  mock_mnat_register(struct list *mnatl);
+void mock_mnat_unregister(void);
+
+
+/*
  * Mock Video-source
  */
 
@@ -222,6 +230,7 @@ int test_call_aulevel(void);
 int test_call_progress(void);
 int test_call_format_float(void);
 int test_call_mediaenc(void);
+int test_call_medianat(void);
 int test_call_custom_headers(void);
 int test_call_tcp(void);
 int test_call_transfer(void);

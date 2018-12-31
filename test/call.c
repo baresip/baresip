@@ -1071,6 +1071,59 @@ int test_call_mediaenc(void)
 }
 
 
+int test_call_medianat(void)
+{
+	struct fixture fix, *f = &fix;
+	struct ausrc *ausrc = NULL;
+	struct auplay *auplay = NULL;
+	int err;
+
+	err = mock_mnat_register(baresip_mnatl());
+	ASSERT_EQ(0, err);
+
+	/* Enable a dummy media NAT-traversal protocol */
+	fixture_init_prm(f, ";medianat=XNAT;ptime=1");
+
+	ASSERT_STREQ("XNAT", account_medianat(ua_account(f->a.ua)));
+
+	err = mock_ausrc_register(&ausrc);
+	TEST_ERR(err);
+	err = mock_auplay_register(&auplay, audio_sample_handler, f);
+	TEST_ERR(err);
+
+	f->estab_action = ACTION_NOTHING;
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+
+ out:
+	fixture_close(f);
+	mem_deref(auplay);
+	mem_deref(ausrc);
+
+	mock_mnat_unregister();
+
+	if (fix.err)
+		return fix.err;
+
+	return err;
+}
+
+
 int test_call_custom_headers(void)
 {
 	struct fixture fix, *f = &fix;
