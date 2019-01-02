@@ -379,7 +379,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	s->rtcph = rtcph;
 	s->arg   = arg;
 	s->pseq  = -1;
-	s->rtcp  = s->cfg.rtcp_enable;
+	s->rtcp  = true;
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);

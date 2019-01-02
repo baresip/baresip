@@ -79,7 +79,6 @@ static struct config core_config = {
 		0xb8,
 		{1024, 49152},
 		{0, 0},
-		true,
 		false,
 		{5, 10},
 		false,
@@ -225,6 +224,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	struct vidsz size = {0, 0};
 	struct pl txmode;
 	uint32_t v;
+	bool tmp;
 	int err = 0;
 
 	if (!cfg || !conf)
@@ -335,7 +335,13 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		cfg->avt.rtp_bw.min *= 1000;
 		cfg->avt.rtp_bw.max *= 1000;
 	}
-	(void)conf_get_bool(conf, "rtcp_enable", &cfg->avt.rtcp_enable);
+
+#if 1
+	if (0 == conf_get_bool(conf, "rtcp_enable", &tmp) && !tmp) {
+		warning("config: rtcp_enable ignored, always enabled\n");
+	}
+#endif
+
 	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);
 	(void)conf_get_range(conf, "jitter_buffer_delay",
 			     &cfg->avt.jbuf_del);
@@ -416,7 +422,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtp_tos\t\t\t%u\n"
 			 "rtp_ports\t\t%H\n"
 			 "rtp_bandwidth\t\t%H\n"
-			 "rtcp_enable\t\t%s\n"
 			 "rtcp_mux\t\t%s\n"
 			 "jitter_buffer_delay\t%H\n"
 			 "rtp_stats\t\t%s\n"
@@ -457,7 +462,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtp_tos,
 			 range_print, &cfg->avt.rtp_ports,
 			 range_print, &cfg->avt.rtp_bw,
-			 cfg->avt.rtcp_enable ? "yes" : "no",
 			 cfg->avt.rtcp_mux ? "yes" : "no",
 			 range_print, &cfg->avt.jbuf_del,
 			 cfg->avt.rtp_stats ? "yes" : "no",
@@ -614,7 +618,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtp_tos\t\t\t184\n"
 			  "#rtp_ports\t\t10000-20000\n"
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
-			  "rtcp_enable\t\tyes\n"
 			  "rtcp_mux\t\tno\n"
 			  "jitter_buffer_delay\t%u-%u\t\t# frames\n"
 			  "rtp_stats\t\tno\n"
