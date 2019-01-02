@@ -106,8 +106,8 @@ static OSStatus input_callback(void *inRefCon,
 			      outNumberFrames,
 			      &abl_conv);
 	if (ret) {
-		debug("audiounit: record: AudioUnitRender convert error (%d)\n",
-		      ret);
+		debug("audiounit: record: "
+		      "AudioUnitRender convert error (%d)\n", ret);
 		return ret;
 	}
 
@@ -209,12 +209,14 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (ret)
 		goto out;
 
-	ret = AudioUnitSetProperty(st->au_in, kAudioOutputUnitProperty_EnableIO,
+	ret = AudioUnitSetProperty(st->au_in,
+				   kAudioOutputUnitProperty_EnableIO,
 				   kAudioUnitScope_Input, inputBus,
 				   &enable, sizeof(enable));
 
 #if ! TARGET_OS_IPHONE
-	ret = AudioUnitSetProperty(st->au_in, kAudioOutputUnitProperty_EnableIO,
+	ret = AudioUnitSetProperty(st->au_in,
+				   kAudioOutputUnitProperty_EnableIO,
 				   kAudioUnitScope_Output, outputBus,
 				   &disable, sizeof(disable));
 	if (ret)
