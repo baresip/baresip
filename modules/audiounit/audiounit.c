@@ -18,7 +18,8 @@
  */
 
 
-AudioComponent audiounit_comp = NULL;
+AudioComponent audiounit_io = NULL;
+AudioComponent audiounit_conv = NULL;
 
 static struct auplay *auplay;
 static struct ausrc *ausrc;
@@ -78,13 +79,34 @@ static int module_init(void)
 	desc.componentFlags = 0;
 	desc.componentFlagsMask = 0;
 
-	audiounit_comp = AudioComponentFindNext(NULL, &desc);
-	if (!audiounit_comp) {
+	audiounit_comp_io = AudioComponentFindNext(NULL, &desc);
+	if (!audiounit_comp_io) {
+#if TARGET_OS_IPHONE
 		warning("audiounit: Voice Processing I/O not found\n");
+#else
+		warning("audiounit: AUHAL not found\n");
+#endif
 		return ENOENT;
 	}
 
-	if (0 == AudioComponentCopyName(audiounit_comp, &name)) {
+	if (0 == AudioComponentCopyName(audiounit_comp_io, &name)) {
+		debug("audiounit: using component '%s'\n",
+		      CFStringGetCStringPtr(name, kCFStringEncodingUTF8));
+	}
+
+	desc.componentType = kAudioUnitType_FormatConverter;
+	desc.componentSubType = kAudioUnitSubType_AUConverter;
+	desc.componentManufacturer = kAudioUnitManufacturer_Apple;
+	desc.componentFlags = 0;
+	desc.componentFlagsMask = 0;
+
+	audiounit_comp_conv = AudioComponentFindNext(NULL, &desc);
+	if (!audiounit_comp_conv) {
+		warning("audiounit: AU Converter not found\n");
+		return ENOENT;
+	}
+
+	if (0 == AudioComponentCopyName(audiounit_comp_conv, &name)) {
 		debug("audiounit: using component '%s'\n",
 		      CFStringGetCStringPtr(name, kCFStringEncodingUTF8));
 	}
