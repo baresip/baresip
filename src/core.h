@@ -349,7 +349,6 @@ struct stream {
 	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
 	int pt_enc;              /**< Payload type for encoding             */
-	bool rtcp;               /**< Enable RTCP                           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool jbuf_started;       /**< True if jitter-buffer was started     */
 	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
