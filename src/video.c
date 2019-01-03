@@ -559,8 +559,6 @@ static void request_picture_update(struct vrx *vrx)
 	/* send RTCP FIR to peer */
 	stream_send_fir(v->strm, v->nack_pli);
 
-	/* XXX: if RTCP is not enabled, send XML in SIP INFO ? */
-
 	++vrx->n_picup;
 }
 
