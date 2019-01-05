@@ -300,6 +300,7 @@ vidloop       Video-loop test module
 vp8           VP8 video codec
 vp9           VP9 video codec
 vumeter       Display audio levels in console
+webrtc_aec    Acoustic Echo Cancellation (AEC) using WebRTC SDK
 wincons       Console input driver for Windows
 winwave       Audio driver for Windows
 x11           X11 video output driver
