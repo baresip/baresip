@@ -275,6 +275,7 @@ portaudio     Portaudio driver
 pulse         Pulseaudio driver
 presence      Presence module
 qtcapture     Apple QTCapture video source driver
+rtcpsummary   RTCP summary module
 rst           Radio streamer using mpg123
 sdl           Simple DirectMedia Layer (SDL) video output driver
 sdl2          Simple DirectMedia Layer v2 (SDL2) video output driver
