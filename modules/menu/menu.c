@@ -403,6 +403,30 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 }
 
 
+static int cmd_ua_find(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = NULL;
+
+	if (str_isset(carg->prm)) {
+		ua = uag_find_aor(carg->prm);
+	}
+
+	if (!ua) {
+		warning("menu: ua_find failed: %s\n", carg->prm);
+		return ENOENT;
+	}
+
+	re_hprintf(pf, "ua: %s\n", ua_aor(ua));
+
+	uag_current_set(ua);
+
+	update_callstatus();
+
+	return 0;
+}
+
+
 static int print_commands(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -456,6 +480,7 @@ static const struct cmd cmdv[] = {
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 {"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
+{"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"ausrc",     0,   CMD_IPRM, "Switch audio source",     switch_audio_source  },
 {"auplay",    0,   CMD_IPRM, "Switch audio player",     switch_audio_player  },
 {"about",     0,          0, "About box",               about_box            },
