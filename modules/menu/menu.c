@@ -333,27 +333,10 @@ static int create_ua(struct re_printf *pf, void *arg)
 
 	if (str_isset(carg->prm)) {
 
-		mbuf_rewind(menu.dialbuf);
-		(void)mbuf_write_str(menu.dialbuf, carg->prm);
-
 		(void)re_hprintf(pf, "Creating UA for %s ...\n", carg->prm);
 		err = ua_alloc(&ua, carg->prm);
 		if (err)
 			goto out;
-	}
-	else if (menu.dialbuf->end > 0) {
-
-		char *uri;
-
-		menu.dialbuf->pos = 0;
-		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
-		if (err)
-			return err;
-
-		(void)re_hprintf(pf, "Creating UA for %s ...\n", uri);
-		err |=  ua_alloc(&ua, uri);
-
-		mem_deref(uri);
 	}
 
 	if (account_regint(ua_account(ua))) {
