@@ -151,7 +151,7 @@ static OSStatus input_callback(void *inRefCon,
 		return ret;
 	}
 
-	while(1) {
+	while (1) {
 		outNumberFrames = (st->conv_buf.nb_frames) * st->sampc_ratio;
 		if (outNumberFrames==0)
 			return noErr;
