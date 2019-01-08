@@ -7,8 +7,8 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <OpenGLES/ES1/gl.h>
-#include <OpenGLES/ES1/glext.h>
+#include <GLES/gl.h>
+#include <GLES/glext.h>
 #include "opengles.h"
 
 
