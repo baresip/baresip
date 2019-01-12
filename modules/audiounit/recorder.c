@@ -107,12 +107,12 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	AudioStreamBasicDescription fmt;
 	const AudioUnitElement inputBus = 1;
-	const AudioUnitElement outputBus = 0;
 	AURenderCallbackStruct cb;
 	struct ausrc_st *st;
 	const UInt32 enable = 1;
-	const UInt32 disable = 0;
 #if ! TARGET_OS_IPHONE
+	const AudioUnitElement outputBus = 0;
+	const UInt32 disable = 0;
 	UInt32 ausize = sizeof(AudioDeviceID);
 	AudioDeviceID inputDevice;
 	AudioObjectPropertyAddress auAddress = {
