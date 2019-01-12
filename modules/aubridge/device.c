@@ -28,7 +28,7 @@ static void destructor(void *arg)
 {
 	struct device *dev = arg;
 
-	device_stop(dev);
+	aubridge_device_stop(dev);
 
 	list_unlink(&dev->le);
 }
@@ -44,7 +44,8 @@ static bool list_apply_handler(struct le *le, void *arg)
 
 static struct device *find_device(const char *device)
 {
-	return list_ledata(hash_lookup(ht_device, hash_joaat_str(device),
+	return list_ledata(hash_lookup(aubridge_ht_device,
+				       hash_joaat_str(device),
 				       list_apply_handler, (void *)device));
 }
 
@@ -128,8 +129,8 @@ static void *device_thread(void *arg)
 }
 
 
-int device_connect(struct device **devp, const char *device,
-		   struct auplay_st *auplay, struct ausrc_st *ausrc)
+int aubridge_device_connect(struct device **devp, const char *device,
+			    struct auplay_st *auplay, struct ausrc_st *ausrc)
 {
 	struct device *dev;
 	int err = 0;
@@ -150,7 +151,8 @@ int device_connect(struct device **devp, const char *device,
 
 		str_ncpy(dev->name, device, sizeof(dev->name));
 
-		hash_append(ht_device, hash_joaat_str(device), &dev->le, dev);
+		hash_append(aubridge_ht_device, hash_joaat_str(device),
+			    &dev->le, dev);
 
 		*devp = dev;
 
@@ -176,7 +178,7 @@ int device_connect(struct device **devp, const char *device,
 }
 
 
-void device_stop(struct device *dev)
+void aubridge_device_stop(struct device *dev)
 {
 	if (!dev)
 		return;
