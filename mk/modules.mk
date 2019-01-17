@@ -15,11 +15,13 @@
 #   USE_CAIRO         Cairo module
 #   USE_CONS          Console input driver
 #   USE_COREAUDIO     MacOSX Coreaudio audio driver
+#   USE_ECHO          Echo module
 #   USE_EVDEV         Event Device module
 #   USE_G711          G.711 audio codec
 #   USE_G722          G.722 audio codec
 #   USE_G722_1        G.722.1 audio codec
 #   USE_G726          G.726 audio codec
+#   USE_G729          G.729 audio codec
 #   USE_GSM           GSM audio codec
 #   USE_GST           Gstreamer 0.10 audio module
 #   USE_GST1          Gstreamer 1.0 audio module
@@ -40,10 +42,9 @@
 #   USE_PLC           Packet Loss Concealment
 #   USE_PORTAUDIO     Portaudio audio driver
 #   USE_PULSE         Pulseaudio audio driver
+#   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL           libSDL video output
-#   USE_SILK          SILK (Skype) audio codec
 #   USE_SNDFILE       sndfile wav dumper
-#   USE_SPEEX         Speex audio codec
 #   USE_SPEEX_AEC     Speex Acoustic Echo Canceller
 #   USE_SPEEX_PP      Speex preprocessor
 #   USE_SRTP          Secure RTP module using libre
@@ -102,6 +103,9 @@ USE_G722_1 := $(shell [ -f $(SYSROOT)/include/g722_1.h ] || \
 USE_G726 := $(shell [ -f $(SYSROOT)/include/spandsp/g726.h ] || \
 	[ -f $(SYSROOT_ALT)/include/spandsp/g726.h ] || \
 	[ -f $(SYSROOT)/local/include/spandsp/g726.h ] && echo "yes")
+USE_G729 := $(shell [ -f $(SYSROOT)/include/bcg729/encoder.h ] || \
+	[ -f $(SYSROOT_ALT)/include/bcg729/encoder.h ] || \
+	[ -f $(SYSROOT)/local/include/bcg729/encoder.h ] && echo "yes")
 USE_GSM := $(shell [ -f $(SYSROOT)/include/gsm.h ] || \
 	[ -f $(SYSROOT_ALT)/include/gsm.h ] || \
 	[ -f $(SYSROOT)/include/gsm/gsm.h ] || \
@@ -149,10 +153,8 @@ USE_SDL  := $(shell [ -f $(SYSROOT)/include/SDL/SDL.h ] || \
 USE_SDL2  := $(shell [ -f $(SYSROOT)/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT)/local/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT_ALT)/include/SDL2/SDl.h ] && echo "yes")
-USE_SILK := $(shell [ -f $(SYSROOT)/include/silk/SKP_Silk_SDK_API.h ] || \
-	[ -f $(SYSROOT_ALT)/include/silk/SKP_Silk_SDK_API.h ] || \
-	[ -f $(SYSROOT)/local/include/silk/SKP_Silk_SDK_API.h ] && echo "yes")
 USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
+	[ -f $(SYSROOT)/local/include/sndfile.h ] || \
 	[ -f $(SYSROOT_ALT)/include/sndfile.h ] || \
 	[ -f $(SYSROOT_ALT)/usr/local/include/sndfile.h ] && echo "yes")
 USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
@@ -222,8 +224,6 @@ endif
 
 # Platform specific modules
 ifeq ($(OS),darwin)
-USE_COREAUDIO := yes
-USE_OPENGL    := yes
 
 USE_AVFOUNDATION := \
 	$(shell [ -d /System/Library/Frameworks/AVFoundation.framework ] \
@@ -231,6 +231,10 @@ USE_AVFOUNDATION := \
 
 USE_AUDIOUNIT := \
 	$(shell [ -d /System/Library/Frameworks/AudioUnit.framework ] \
+		&& echo "yes")
+
+USE_COREAUDIO := \
+	$(shell [ -d /System/Library/Frameworks/CoreAudio.framework ] \
 		&& echo "yes")
 
 ifneq ($(USE_AVFOUNDATION),)
@@ -271,6 +275,7 @@ MODULES   += srtp
 MODULES   += uuid
 MODULES   += debug_cmd
 MODULES   += ctrl_tcp
+MODULES   += b2bua
 
 ifneq ($(HAVE_LIBMQTT),)
 MODULES   += mqtt
@@ -281,9 +286,7 @@ MODULES   += aubridge aufile
 endif
 ifneq ($(USE_VIDEO),)
 MODULES   += vidloop selfview vidbridge
-ifneq ($(HAVE_PTHREAD),)
 MODULES   += fakevideo
-endif
 endif
 
 
@@ -331,6 +334,9 @@ ifneq ($(USE_QTCAPTURE),)
 MODULES   += qtcapture
 CFLAGS    += -DQTCAPTURE_RUNLOOP
 endif
+ifneq ($(USE_ECHO),)
+MODULES   += echo
+endif
 ifneq ($(USE_EVDEV),)
 MODULES   += evdev
 endif
@@ -345,6 +351,9 @@ MODULES   += g7221
 endif
 ifneq ($(USE_G726),)
 MODULES   += g726
+endif
+ifneq ($(USE_G729),)
+MODULES   += g729
 endif
 ifneq ($(USE_GSM),)
 MODULES   += gsm
@@ -409,14 +418,8 @@ endif
 ifneq ($(USE_SDL2),)
 MODULES   += sdl2
 endif
-ifneq ($(USE_SILK),)
-MODULES   += silk
-endif
 ifneq ($(USE_SNDFILE),)
 MODULES   += sndfile
-endif
-ifneq ($(USE_SPEEX),)
-MODULES   += speex
 endif
 ifneq ($(USE_SPEEX_AEC),)
 MODULES   += speex_aec
@@ -438,9 +441,10 @@ MODULES   += v4l2 v4l2_codec
 endif
 ifneq ($(USE_OMX_RPI),)
 MODULES   += omx
-endif
+else
 ifneq ($(USE_OMX_BELLAGIO),)
 MODULES   += omx
+endif
 endif
 ifneq ($(USE_VPX),)
 MODULES   += vp8
@@ -460,4 +464,7 @@ MODULES   += gzrtp
 endif
 ifneq ($(USE_DSHOW),)
 MODULES   += dshow
+endif
+ifneq ($(USE_RTCPSUMMARY),)
+MODULES   += rtcpsummary
 endif
