@@ -163,8 +163,8 @@ static void close_handler(int err, const struct sip_msg *msg,
 
 	pres->sub = mem_deref(pres->sub);
 
-	info("presence: subscriber closed <%r>: ",
-	     &contact_addr(pres->contact)->auri);
+	info("presence: subscriber closed <%s>: ",
+	     contact_uri(pres->contact));
 
 	if (substate) {
 		info("%s", sipevent_reason_name(substate->reason));
@@ -219,7 +219,6 @@ static int subscribe(struct presence *pres)
 {
 	const char *routev[1];
 	struct ua *ua;
-	char uri[256];
 	int err;
 
 	/* We use the first UA */
@@ -232,11 +231,10 @@ static int subscribe(struct presence *pres)
 	mem_deref(pres->ua);
 	pres->ua = mem_ref(ua);
 
-	pl_strcpy(&contact_addr(pres->contact)->auri, uri, sizeof(uri));
-
 	routev[0] = ua_outbound(ua);
 
-	err = sipevent_subscribe(&pres->sub, uag_sipevent_sock(), uri, NULL,
+	err = sipevent_subscribe(&pres->sub, uag_sipevent_sock(),
+				 contact_uri(pres->contact), NULL,
 				 ua_aor(ua), "presence", NULL, 600,
 				 ua_cuser(ua), routev, routev[0] ? 1 : 0,
 				 auth_handler, ua_account(ua), true, NULL,

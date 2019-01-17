@@ -306,7 +306,7 @@ static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 
 #ifdef AMR_WB
 static struct aucodec amr_wb = {
-	LE_INIT, NULL, "AMR-WB", 16000, 16000, 1, NULL,
+	LE_INIT, NULL, "AMR-WB", 16000, 16000, 1, 1, NULL,
 	encode_update, encode_wb,
 	decode_update, decode_wb,
 	NULL, amr_fmtp_enc, amr_fmtp_cmp
@@ -314,7 +314,7 @@ static struct aucodec amr_wb = {
 #endif
 #ifdef AMR_NB
 static struct aucodec amr_nb = {
-	LE_INIT, NULL, "AMR", 8000, 8000, 1, NULL,
+	LE_INIT, NULL, "AMR", 8000, 8000, 1, 1, NULL,
 	encode_update, encode_nb,
 	decode_update, decode_nb,
 	NULL, amr_fmtp_enc, amr_fmtp_cmp

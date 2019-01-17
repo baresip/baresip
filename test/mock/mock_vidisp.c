@@ -19,6 +19,12 @@ struct vidisp_st {
 };
 
 
+static struct {
+	mock_vidisp_h *disph;
+	void *arg;
+} mock;
+
+
 static void disp_destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
@@ -52,10 +58,11 @@ static int mock_disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int mock_display(struct vidisp_st *st, const char *title,
-			const struct vidframe *frame)
+			const struct vidframe *frame, uint64_t timestamp)
 {
 	unsigned width, height;
 	(void)title;
+	(void)timestamp;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -81,17 +88,22 @@ static int mock_display(struct vidisp_st *st, const char *title,
 	++st->n_frame;
 
 	if (st->n_frame >= 10) {
-		info("mock_vidisp: got %u frames -- stopping re_main\n",
-		     st->n_frame);
-		re_cancel();   /* XXX use a callback handler instead */
+		info("mock_vidisp: got %u frames\n", st->n_frame);
+
+		if (mock.disph)
+			mock.disph(frame, timestamp, mock.arg);
 	}
 
 	return 0;
 }
 
 
-int mock_vidisp_register(struct vidisp **vidispp)
+int mock_vidisp_register(struct vidisp **vidispp,
+			 mock_vidisp_h *disph, void *arg)
 {
+	mock.disph = disph;
+	mock.arg = arg;
+
 	return vidisp_register(vidispp, baresip_vidispl(), "mock-vidisp",
 			       mock_disp_alloc, NULL, mock_display, NULL);
 }

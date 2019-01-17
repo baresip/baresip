@@ -27,29 +27,72 @@
  */
 
 
-/* a piece from Google WebM's qedit.h:
- *
- *   https://code.google.com/p/webm/source/browse/qedit.h?repo=udpsample
- */
-static const
-IID IID_ISampleGrabber = {
-	0x6b652fff, 0x11fe, 0x4fce,
-	{ 0x92, 0xad, 0x02, 0x66, 0xb5, 0xd7, 0xc7, 0x8f }
+#ifndef __ISampleGrabberCB_INTERFACE_DEFINED__
+#define __ISampleGrabberCB_INTERFACE_DEFINED__
+
+/* interface ISampleGrabberCB */
+/* [unique][helpstring][local][uuid][object] */
+
+EXTERN_C const IID IID_ISampleGrabberCB;
+
+MIDL_INTERFACE("0579154A-2B53-4994-B0D0-E773148EFF85")
+ISampleGrabberCB : public IUnknown
+{
+public:
+	virtual HRESULT STDMETHODCALLTYPE SampleCB(
+		double SampleTime,
+		IMediaSample *pSample) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE BufferCB(
+		double SampleTime,
+		BYTE *pBuffer,
+		long BufferLen) = 0;
 };
 
-static const
-IID IID_ISampleGrabberCB = {
-	0x0579154a, 0x2b53, 0x4994,
-	{ 0xb0, 0xd0, 0xe7, 0x73, 0x14, 0x8e, 0xff, 0x85 }
+#endif 	/* __ISampleGrabberCB_INTERFACE_DEFINED__ */
+
+
+#ifndef __ISampleGrabber_INTERFACE_DEFINED__
+#define __ISampleGrabber_INTERFACE_DEFINED__
+
+/* interface ISampleGrabber */
+/* [unique][helpstring][local][uuid][object] */
+
+EXTERN_C const IID IID_ISampleGrabber;
+
+MIDL_INTERFACE("6B652FFF-11FE-4fce-92AD-0266B5D7C78F")
+ISampleGrabber : public IUnknown
+{
+public:
+	virtual HRESULT STDMETHODCALLTYPE SetOneShot(
+		BOOL OneShot) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE SetMediaType(
+		const AM_MEDIA_TYPE *pType) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE GetConnectedMediaType(
+		AM_MEDIA_TYPE *pType) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE SetBufferSamples(
+		BOOL BufferThem) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE GetCurrentBuffer(
+		/* [out][in] */ long *pBufferSize,
+		/* [out] */ long *pBuffer) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE GetCurrentSample(
+		/* [retval][out] */ IMediaSample **ppSample) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE SetCallback(
+		ISampleGrabberCB *pCallback,
+		long WhichMethodToCallback) = 0;
 };
 
-#include "qedit.h"
+DEFINE_GUID(CLSID_SampleGrabber, 0xc1f400a0, 0x3f08, 0x11d3,
+	0x9f, 0x0b, 0x00, 0x60, 0x08, 0x03, 0x9e, 0x37);
 
-/*
-const CLSID CLSID_SampleGrabber = { 0xc1f400a0, 0x3f08, 0x11d3,
-  { 0x9f, 0x0b, 0x00, 0x60, 0x08, 0x03, 0x9e, 0x37 }
-};
-*/
+#endif 	/* __ISampleGrabber_INTERFACE_DEFINED__ */
+
 
 class Grabber;
 
@@ -79,7 +122,7 @@ public:
 	STDMETHOD(QueryInterface)(REFIID InterfaceIdentifier,
 				  VOID** ppvObject) throw()
 	{
-		if (InterfaceIdentifier == __uuidof(ISampleGrabberCB)) {
+		if (InterfaceIdentifier == IID_ISampleGrabberCB) {
 			*ppvObject = (ISampleGrabberCB**) this;
 			return S_OK;
 		}
@@ -98,13 +141,27 @@ public:
 
 	STDMETHOD(BufferCB) (double sample_time, BYTE *buf, long buf_len)
 	{
+		int i, j = 0, k;
+		int buf_len_RGB32 = src->size.h*src->size.w;
+		uint32_t tmp_pix_RGB32;
+		uint32_t *buf_RGB32;
 		struct vidframe vidframe;
+		uint64_t timestamp = sample_time * VIDEO_TIMEBASE;
 
-		/* XXX: should be VID_FMT_BGR24 */
 		vidframe_init_buf(&vidframe, VID_FMT_RGB32, &src->size, buf);
 
+		//By default in Dshow, RGB32 image orientation is bottom-up
+		buf_RGB32 = (uint32_t *)buf;
+		for (i = buf_len_RGB32-1 ; i > buf_len_RGB32/2; i-=1) {
+			k = src->size.w*(j/src->size.w) + i%(src->size.w);
+			tmp_pix_RGB32 = buf_RGB32[k];
+			buf_RGB32[k] = buf_RGB32[i];
+			buf_RGB32[i] = tmp_pix_RGB32;
+			++j;
+		}
+
 		if (src->frameh)
-			src->frameh(&vidframe, src->arg);
+			src->frameh(&vidframe, timestamp, src->arg);
 
 		return S_OK;
 	}
@@ -122,7 +179,8 @@ private:
 static struct vidsrc *vsrc;
 
 
-static int get_device(struct vidsrc_st *st, const char *name)
+static int enum_devices(struct vidsrc_st *st, const char *name,
+			struct list *dev_list)
 {
 	ICreateDevEnum *dev_enum;
 	IEnumMoniker *enum_mon;
@@ -130,10 +188,7 @@ static int get_device(struct vidsrc_st *st, const char *name)
 	ULONG fetched;
 	HRESULT res;
 	int id = 0;
-	bool found = false;
-
-	if (!st)
-		return EINVAL;
+	int err = 0;
 
 	res = CoCreateInstance(CLSID_SystemDeviceEnum, NULL,
 			       CLSCTX_INPROC_SERVER,
@@ -147,7 +202,7 @@ static int get_device(struct vidsrc_st *st, const char *name)
 		return ENOENT;
 
 	enum_mon->Reset();
-	while (enum_mon->Next(1, &mon, &fetched) == S_OK && !found) {
+	while (enum_mon->Next(1, &mon, &fetched) == S_OK) {
 
 		IPropertyBag *bag;
 		VARIANT var;
@@ -168,26 +223,61 @@ static int get_device(struct vidsrc_st *st, const char *name)
 					  dev_name, sizeof(dev_name),
 					  NULL, NULL);
 
-		if (len > 0) {
-			found = !str_isset(name) ||
-				!str_casecmp(dev_name, name);
+		SysFreeString(var.bstrVal);
+		bag->Release();
 
-			if (found) {
-				info("dshow: got device '%s' id=%d\n",
-				     name, id);
-				st->dev_moniker = mon;
+		if (len > 0) {
+			if (st) {
+				if (!str_isset(name) ||
+				    !str_casecmp(dev_name, name)) {
+					info("dshow: got device '%s' id=%d\n",
+					     name, id);
+					st->dev_moniker = mon;
+
+					return 0;
+				}
+			}
+			else {
+				err = mediadev_add(dev_list, dev_name);
+				if (err) {
+					return err;
+				}
 			}
 		}
 
-		SysFreeString(var.bstrVal);
-		bag->Release();
-		if (!found) {
-			mon->Release();
-			++id;
-		}
+		mon->Release();
+		++id;
 	}
 
-	return found ? 0 : ENOENT;
+	return err;
+
+}
+
+
+static int set_available_devices(struct list* dev_list)
+{
+	return enum_devices(NULL, NULL, dev_list);
+}
+
+
+static int get_device(struct vidsrc_st *st, const char *name)
+{
+	int err = 0;
+	bool found = false;
+
+	if (!st)
+		return EINVAL;
+
+	err = enum_devices(st, name, NULL);
+
+	if (err)
+		return err;
+
+	if (st->dev_moniker)
+		found = true;
+
+	return found? 0 : ENOENT;
+
 }
 
 
@@ -216,7 +306,7 @@ static int add_sample_grabber(struct vidsrc_st *st)
 
 	memset(&mt, 0, sizeof(mt));
 	mt.majortype = MEDIATYPE_Video;
-	mt.subtype = MEDIASUBTYPE_RGB24;  /* XXX: try YUV420P */
+	mt.subtype = MEDIASUBTYPE_RGB32;
 	hr = st->grabber->SetMediaType(&mt);
 	if (FAILED(hr))
 		return ENODEV;
@@ -511,11 +601,19 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int module_init(void)
 {
+	int err;
 	if (CoInitialize(NULL) != S_OK)
 		return ENODATA;
 
-	return vidsrc_register(&vsrc, baresip_vidsrcl(),
+	err = vidsrc_register(&vsrc, baresip_vidsrcl(),
 			       "dshow", alloc, NULL);
+	if (err)
+		return err;
+
+	list_init(&vsrc->dev_list);
+	err = set_available_devices(&vsrc->dev_list);
+
+	return err;
 }
 
 

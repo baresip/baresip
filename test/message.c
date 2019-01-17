@@ -42,11 +42,13 @@ static bool test_is_complete(struct endpoint *ep)
 }
 
 
-static void message_recv_handler(const struct pl *peer, const struct pl *ctype,
-				 struct mbuf *body, void *arg)
+static void message_recv_handler(struct ua *ua, const struct pl *peer,
+				 const struct pl *ctype, struct mbuf *body,
+				 void *arg)
 {
 	struct endpoint *ep = arg;
 	int err = 0;
+	(void)ua;
 
 	info("[ %s ] recv msg from %r: \"%b\"\n", ep->uri, peer,
 	     mbuf_buf(body), mbuf_get_left(body));

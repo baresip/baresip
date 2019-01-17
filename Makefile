@@ -13,7 +13,7 @@
 USE_VIDEO := 1
 
 PROJECT	  := baresip
-VERSION   := 0.5.8
+VERSION   := 0.6.0
 DESCR     := "Baresip is a modular SIP User-Agent with audio and video support"
 
 # Verbose and silent build modes
@@ -84,7 +84,6 @@ ifneq ($(STATIC),)
 CFLAGS    += -DSTATIC=1
 CXXFLAGS  += -DSTATIC=1
 endif
-CFLAGS    += -DMODULE_CONF
 
 INSTALL := install
 ifeq ($(DESTDIR),)

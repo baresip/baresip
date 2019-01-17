@@ -13,6 +13,7 @@ static void destructor(void *arg)
 {
 	struct auplay *ap = arg;
 
+	list_flush(&ap->dev_list);
 	list_unlink(&ap->le);
 }
 
@@ -106,4 +107,17 @@ int auplay_alloc(struct auplay_st **stp, struct list *auplayl,
 		return EINVAL;
 
 	return ap->alloch(stp, ap, prm, device, wh, arg);
+}
+
+
+/**
+ * Get the audio player module from a audio player state
+ *
+ * @param st Audio player state
+ *
+ * @return Audio player module
+ */
+struct auplay *auplay_get(struct auplay_st *st)
+{
+	return st ? st->ap : NULL;
 }

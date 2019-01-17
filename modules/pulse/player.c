@@ -81,6 +81,7 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		       auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
+	struct mediadev *md;
 	pa_sample_spec ss;
 	pa_buffer_attr attr;
 	int err = 0, pa_error = 0;
@@ -118,10 +119,12 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	attr.minreq    = (uint32_t)-1;
 	attr.fragsize  = (uint32_t)-1;
 
+	md = mediadev_get_default(&ap->dev_list);
+
 	st->s = pa_simple_new(NULL,
 			      "Baresip",
 			      PA_STREAM_PLAYBACK,
-			      str_isset(device) ? device : 0,
+			      str_isset(device) ? device : md->name,
 			      "VoIP Playback",
 			      &ss,
 			      NULL,
@@ -150,4 +153,43 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		*stp = st;
 
 	return err;
+}
+
+
+static void dev_list_cb(pa_context *c, const pa_sink_info *l, int eol,
+			void *userdata)
+{
+	struct list *dev_list = userdata;
+	int err;
+	(void)c;
+
+	if (eol > 0) {
+		return;
+	}
+
+	err = mediadev_add(dev_list, l->name);
+
+	if (err) {
+		warning("pulse player: media device (%s) can not be added\n",
+			l->name);
+	}
+}
+
+
+static pa_operation *get_dev_info(pa_context *pa_ctx, struct list *dev_list){
+
+	return pa_context_get_sink_info_list(pa_ctx, dev_list_cb,
+						dev_list);
+}
+
+
+int pulse_player_init(struct auplay *ap)
+{
+	if (!ap) {
+		return EINVAL;
+	}
+
+	list_init(&ap->dev_list);
+
+	return set_available_devices(&ap->dev_list, get_dev_info);
 }

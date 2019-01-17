@@ -6,6 +6,7 @@
 #include <pulse/pulseaudio.h>
 #include <pulse/simple.h>
 #include <pthread.h>
+#include <string.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -115,6 +116,7 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			 ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
+	struct mediadev *md;
 	pa_sample_spec ss;
 	pa_buffer_attr attr;
 	int pa_error;
@@ -158,10 +160,12 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	attr.minreq    = (uint32_t)-1;
 	attr.fragsize  = (uint32_t)pa_usec_to_bytes(prm->ptime * 1000, &ss);
 
+	md = mediadev_get_default(&as->dev_list);
+
 	st->s = pa_simple_new(NULL,
 			      "Baresip",
 			      PA_STREAM_RECORD,
-			      str_isset(device) ? device : 0,
+			      str_isset(device) ? device : md->name,
 			      "VoIP Record",
 			      &ss,
 			      NULL,
@@ -191,3 +195,46 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	return err;
 }
+
+
+static void dev_list_cb(pa_context *c, const pa_source_info *l,
+						int eol, void *userdata)
+{
+	struct list *dev_list = userdata;
+	int err;
+	(void)c;
+
+	if (eol > 0) {
+		return;
+	}
+
+	/* In pulseaudio every sink automatically has a monitor source
+	   This "output" device must be filtered out */
+	if (!strstr(l->name,"output")) {
+		err = mediadev_add(dev_list, l->name);
+		if (err) {
+			warning("pulse recorder: media device (%s) "
+					"can not be added\n",l->name);
+		}
+	}
+}
+
+
+static pa_operation *get_dev_info(pa_context *pa_ctx, struct list *dev_list){
+
+	return pa_context_get_source_info_list(pa_ctx, dev_list_cb,
+						dev_list);
+}
+
+
+int pulse_recorder_init(struct ausrc *as)
+{
+	if (!as) {
+		return EINVAL;
+	}
+
+	list_init(&as->dev_list);
+
+	return set_available_devices(&as->dev_list, get_dev_info);
+}
+

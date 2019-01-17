@@ -11,8 +11,6 @@
  * @defgroup turn turn
  *
  * Traversal Using Relays around NAT (TURN) for media NAT traversal
- *
- * XXX: use turn RSV_TOKEN for RTP/RTCP even/odd pair ?
  */
 
 

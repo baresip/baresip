@@ -16,7 +16,7 @@ sudo: require
 addons:
     apt:
         packages:
-            libssl-dev
+            libssl-dev libgtk2.0-dev libsndfile1-dev libpulse-dev libavcodec-dev
 
 install:
     - git clone https://github.com/creytiv/re.git

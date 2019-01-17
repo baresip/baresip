@@ -14,7 +14,7 @@
  */
 static struct baresip {
 	struct network *net;
-	struct contacts contacts;
+	struct contacts *contacts;
 	struct commands *commands;
 	struct player *player;
 	struct message *message;
@@ -79,6 +79,14 @@ static const struct cmd corecmdv[] = {
 };
 
 
+/**
+ * Initialise the top-level baresip object
+ *
+ * @param cfg          Global configuration
+ * @param prefer_ipv6  True to prefer IPv6, false to prefer IPv4
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int baresip_init(struct config *cfg, bool prefer_ipv6)
 {
 	int err;
@@ -132,6 +140,9 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 }
 
 
+/**
+ * Close the top-level baresip object
+ */
 void baresip_close(void)
 {
 	cmd_unregister(baresip.commands, corecmdv);
@@ -139,7 +150,7 @@ void baresip_close(void)
 	baresip.message = mem_deref(baresip.message);
 	baresip.player = mem_deref(baresip.player);
 	baresip.commands = mem_deref(baresip.commands);
-	contact_close(&baresip.contacts);
+	baresip.contacts = mem_deref(baresip.contacts);
 
 	baresip.net = mem_deref(baresip.net);
 
@@ -147,42 +158,77 @@ void baresip_close(void)
 }
 
 
+/**
+ * Get the network subsystem
+ *
+ * @return Network subsystem
+ */
 struct network *baresip_network(void)
 {
 	return baresip.net;
 }
 
 
+/**
+ * Get the contacts subsystem
+ *
+ * @return Contacts subsystem
+ */
 struct contacts *baresip_contacts(void)
 {
-	return &baresip.contacts;
+	return baresip.contacts;
 }
 
 
+/**
+ * Get the commands subsystem
+ *
+ * @return Commands subsystem
+ */
 struct commands *baresip_commands(void)
 {
 	return baresip.commands;
 }
 
 
+/**
+ * Get the audio player
+ *
+ * @return Audio player
+ */
 struct player *baresip_player(void)
 {
 	return baresip.player;
 }
 
 
+/**
+ * Get the list of Media NATs
+ *
+ * @return List of Media NATs
+ */
 struct list *baresip_mnatl(void)
 {
 	return &baresip.mnatl;
 }
 
 
+/**
+ * Get the list of Media encryptions
+ *
+ * @return List of Media encryptions
+ */
 struct list *baresip_mencl(void)
 {
 	return &baresip.mencl;
 }
 
 
+/**
+ * Get the Message subsystem
+ *
+ * @return Message subsystem
+ */
 struct message *baresip_message(void)
 {
 	return baresip.message;
@@ -200,48 +246,88 @@ struct list *baresip_aucodecl(void)
 }
 
 
+/**
+ * Get the list of Audio Sources
+ *
+ * @return List of audio-sources
+ */
 struct list *baresip_ausrcl(void)
 {
 	return &baresip.ausrcl;
 }
 
 
+/**
+ * Get the list of Audio Players
+ *
+ * @return List of audio-players
+ */
 struct list *baresip_auplayl(void)
 {
 	return &baresip.auplayl;
 }
 
 
+/**
+ * Get the list of Audio Filters
+ *
+ * @return List of audio-filters
+ */
 struct list *baresip_aufiltl(void)
 {
 	return &baresip.aufiltl;
 }
 
 
+/**
+ * Get the list of Video codecs
+ *
+ * @return List of video-codecs
+ */
 struct list *baresip_vidcodecl(void)
 {
 	return &baresip.vidcodecl;
 }
 
 
+/**
+ * Get the list of Video sources
+ *
+ * @return List of video-sources
+ */
 struct list *baresip_vidsrcl(void)
 {
 	return &baresip.vidsrcl;
 }
 
 
+/**
+ * Get the list of Video displays
+ *
+ * @return List of video-displays
+ */
 struct list *baresip_vidispl(void)
 {
 	return &baresip.vidispl;
 }
 
 
+/**
+ * Get the list of Video filters
+ *
+ * @return List of video-filters
+ */
 struct list *baresip_vidfiltl(void)
 {
 	return &baresip.vidfiltl;
 }
 
 
+/**
+ * Get the User Interface (UI) subsystem
+ *
+ * @return User Interface (UI) subsystem
+ */
 struct ui_sub *baresip_uis(void)
 {
 	return &baresip.uis;

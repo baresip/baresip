@@ -18,8 +18,6 @@
 
 /*
  * Relay UA events as publish messages to the Broker
- *
- * XXX: move JSON encoding to baresip core
  */
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)

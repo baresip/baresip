@@ -87,6 +87,15 @@ static const char *presence_status_str(enum presence_status st)
 }
 
 
+static int print_etag_header(struct re_printf *pf, const char *etag)
+{
+	if (!etag)
+		return 0;
+
+	return re_hprintf(pf, "SIP-If-Match: %s\r\n", etag);
+}
+
+
 static int publish(struct publisher *pub)
 {
 	int err;
@@ -121,42 +130,22 @@ static int publish(struct publisher *pub)
 
 	mb->pos = 0;
 
-	/* XXX: can be simplified with 1 function call, by adding a
-	   print-handler that prints "SIP-If-Match: ETAG" */
-	if (pub->etag)
-		err = sip_req_send(pub->ua, "PUBLISH", aor,
-				   pub->expires ? response_handler : NULL,
-				   pub,
+	err = sip_req_send(pub->ua, "PUBLISH", aor,
+			   pub->expires ? response_handler : NULL,
+			   pub,
 			   "%s"
 			   "Event: presence\r\n"
 			   "Expires: %u\r\n"
-			   "SIP-If-Match: %s\r\n"
+			   "%H"
 			   "Content-Length: %zu\r\n"
 			   "\r\n"
 			   "%b",
 			   pub->expires
-				   ? "Content-Type: application/pidf+xml\r\n"
-				   : "",
+			   ? "Content-Type: application/pidf+xml\r\n"
+			   : "",
 
 			   pub->expires,
-			   pub->etag,
-			   mbuf_get_left(mb),
-			   mbuf_buf(mb),
-			   mbuf_get_left(mb));
-	else
-		err = sip_req_send(pub->ua, "PUBLISH", aor,
-				   pub->expires ? response_handler : NULL,
-				   pub,
-			   "%s"
-			   "Event: presence\r\n"
-			   "Expires: %u\r\n"
-			   "Content-Length: %zu\r\n"
-			   "\r\n"
-			   "%b",
-			   pub->expires
-				   ? "Content-Type: application/pidf+xml\r\n"
-				   : "",
-			   pub->expires,
+			   print_etag_header, pub->etag,
 			   mbuf_get_left(mb),
 			   mbuf_buf(mb),
 			   mbuf_get_left(mb));

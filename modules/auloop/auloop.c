@@ -20,8 +20,8 @@
  *
  * The following commands are available:
  \verbatim
- /auloop         Start audio-loop
- /auloop_stop    Stop audio-loop
+ /auloop <samplerate> <channels>    Start audio-loop
+ /auloop_stop                       Stop audio-loop
  \endverbatim
  */
 
@@ -32,7 +32,6 @@
 
 /** Audio Loop */
 struct audio_loop {
-	uint32_t index;
 	struct aubuf *ab;
 	struct ausrc_st *ausrc;
 	struct auplay_st *auplay;
@@ -45,34 +44,68 @@ struct audio_loop {
 	uint32_t srate;
 	uint32_t ch;
 	enum aufmt fmt;
+	bool started;
 
-	uint32_t n_read;
-	uint32_t n_write;
+	uint64_t n_read;
+	uint64_t n_write;
 };
 
-static const struct {
-	uint32_t srate;
-	uint32_t ch;
-} configv[] = {
-	{ 8000, 1},
-	{16000, 1},
-	{32000, 1},
-	{44100, 1},
-	{48000, 1},
-	{ 8000, 2},
-	{16000, 2},
-	{32000, 2},
-	{44100, 2},
-	{48000, 2},
-};
 
 static struct audio_loop *gal = NULL;
 static char aucodec[64];
 
 
+static int print_summary(struct re_printf *pf, const struct audio_loop *al)
+{
+	const double scale = al->srate * al->ch;
+	int err;
+
+	err  = re_hprintf(pf, "~~~~~ Audioloop summary: ~~~~~\n");
+	err |= re_hprintf(pf, "%u Hz %uch %s\n\n",
+			  al->srate, al->ch, aufmt_name(al->fmt));
+
+	/* Source */
+	if (al->ausrc) {
+		struct ausrc *as = ausrc_get(al->ausrc);
+
+		err |= re_hprintf(pf,
+				  "* Source\n"
+				  "  module      %s\n"
+				  "  samples     %llu\n"
+				  "  duration    %.3f sec\n"
+				  "\n"
+				  ,
+				  as->name,
+				  al->n_read,
+				  (double)al->n_read / scale);
+	}
+
+	/* Player */
+	if (al->auplay) {
+		struct auplay *ap = auplay_get(al->auplay);
+
+		err |= re_hprintf(pf,
+				  "* Player\n"
+				  "  module      %s\n"
+				  "  samples     %llu\n"
+				  "  duration    %.3f sec\n"
+				  "\n"
+				  ,
+				  ap->name,
+				  al->n_write,
+				  (double)al->n_write / scale);
+	}
+
+	return err;
+}
+
+
 static void auloop_destructor(void *arg)
 {
 	struct audio_loop *al = arg;
+
+	if (al->started)
+		re_printf("%H\n", print_summary, al);
 
 	tmr_cancel(&al->tmr);
 	mem_deref(al->ausrc);
@@ -87,14 +120,21 @@ static void auloop_destructor(void *arg)
 static void print_stats(struct audio_loop *al)
 {
 	double rw_ratio = 0.0;
+	double delay = (double)al->n_read - (double)al->n_write;
+	const double scale = al->srate * al->ch;
 
 	if (al->n_write)
-		rw_ratio = 1.0 * al->n_read / al->n_write;
+		rw_ratio = 1.0 * (double)al->n_read / (double)al->n_write;
 
 	(void)re_fprintf(stdout, "\r%uHz %dch %s "
-			 " n_read=%u n_write=%u rw_ratio=%.2f",
+			 " n_read=%.3f n_write=%.3f rw_delay=%.3f [sec]"
+			 " rw_ratio=%f"
+			 "          \r"
+			 ,
 			 al->srate, al->ch, aufmt_name(al->fmt),
-			 al->n_read, al->n_write, rw_ratio);
+			 (double)al->n_read / scale,
+			 (double)al->n_write / scale,
+			 delay / scale, rw_ratio);
 
 	if (str_isset(aucodec))
 		(void)re_fprintf(stdout, " codec='%s'", aucodec);
@@ -147,7 +187,7 @@ static void read_handler(const void *sampv, size_t sampc, void *arg)
 	size_t num_bytes = sampc * aufmt_sample_size(al->fmt);
 	int err;
 
-	++al->n_read;
+	al->n_read += sampc;
 
 	err = aubuf_write(al->ab, sampv, num_bytes);
 	if (err) {
@@ -162,7 +202,7 @@ static void write_handler(void *sampv, size_t sampc, void *arg)
 	size_t num_bytes = sampc * aufmt_sample_size(al->fmt);
 	int err;
 
-	++al->n_write;
+	al->n_write += sampc;
 
 	/* read from beginning */
 	if (al->ac) {
@@ -186,14 +226,13 @@ static void error_handler(int err, const char *str, void *arg)
 }
 
 
-static void start_codec(struct audio_loop *al, const char *name)
+static void start_codec(struct audio_loop *al, const char *name,
+			uint32_t srate, uint32_t ch)
 {
 	struct auenc_param prm = {PTIME, 0};
 	int err;
 
-	al->ac = aucodec_find(baresip_aucodecl(), name,
-			      configv[al->index].srate,
-			      configv[al->index].ch);
+	al->ac = aucodec_find(baresip_aucodecl(), name, srate, ch);
 	if (!al->ac) {
 		warning("auloop: could not find codec: %s\n", name);
 		return;
@@ -215,7 +254,7 @@ static void start_codec(struct audio_loop *al, const char *name)
 }
 
 
-static int auloop_reset(struct audio_loop *al)
+static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 {
 	struct auplay_prm auplay_prm;
 	struct ausrc_prm ausrc_prm;
@@ -240,7 +279,7 @@ static int auloop_reset(struct audio_loop *al)
 			return EINVAL;
 		}
 
-		start_codec(al, aucodec);
+		start_codec(al, aucodec, srate, ch);
 	}
 
 	/* audio player/source must be stopped first */
@@ -250,8 +289,8 @@ static int auloop_reset(struct audio_loop *al)
 	al->sampv  = mem_deref(al->sampv);
 	al->ab     = mem_deref(al->ab);
 
-	al->srate = configv[al->index].srate;
-	al->ch    = configv[al->index].ch;
+	al->srate = srate;
+	al->ch    = ch;
 
 	if (str_isset(aucodec)) {
 		al->sampc = al->srate * al->ch * PTIME / 1000;
@@ -260,7 +299,8 @@ static int auloop_reset(struct audio_loop *al)
 			return ENOMEM;
 	}
 
-	info("Audio-loop: %uHz, %dch\n", al->srate, al->ch);
+	info("Audio-loop: %uHz, %dch, %s\n", al->srate, al->ch,
+	     aufmt_name(al->fmt));
 
 	err = aubuf_alloc(&al->ab, 320, 0);
 	if (err)
@@ -298,7 +338,8 @@ static int auloop_reset(struct audio_loop *al)
 }
 
 
-static int audio_loop_alloc(struct audio_loop **alp)
+static int audio_loop_alloc(struct audio_loop **alp,
+			    uint32_t srate, uint32_t ch)
 {
 	struct audio_loop *al;
 	int err;
@@ -309,9 +350,11 @@ static int audio_loop_alloc(struct audio_loop **alp)
 
 	tmr_start(&al->tmr, 100, tmr_handler, al);
 
-	err = auloop_reset(al);
+	err = auloop_reset(al, srate, ch);
 	if (err)
 		goto out;
+
+	al->started = true;
 
  out:
 	if (err)
@@ -323,49 +366,35 @@ static int audio_loop_alloc(struct audio_loop **alp)
 }
 
 
-static int audio_loop_cycle(struct audio_loop *al)
-{
-	int err;
-
-	++al->index;
-
-	if (al->index >= ARRAY_SIZE(configv)) {
-		gal = mem_deref(gal);
-		info("\nAudio-loop stopped\n");
-		return 0;
-	}
-
-	err = auloop_reset(al);
-	if (err)
-		return err;
-
-	info("\nAudio-loop started: %uHz, %dch\n", al->srate, al->ch);
-
-	return 0;
-}
-
-
-/**
+/*
  * Start the audio loop (for testing)
  */
 static int auloop_start(struct re_printf *pf, void *arg)
 {
+	struct cmd_arg *carg = arg;
+	struct pl pl_srate, pl_ch;
+	uint32_t srate, ch;
 	int err;
 
-	(void)pf;
-	(void)arg;
+	if (gal)
+		return re_hprintf(pf, "audio-loop already running.\n");
 
-	if (gal) {
-		err = audio_loop_cycle(gal);
-		if (err) {
-			warning("auloop: loop cycle: %m\n", err);
-		}
+	err = re_regex(carg->prm, str_len(carg->prm), "[0-9]+ [0-9]+",
+		       &pl_srate, &pl_ch);
+	if (err) {
+		return re_hprintf(pf,
+				  "Usage:"
+				  " /auloop <samplerate> <channels>\n");
 	}
-	else {
-		err = audio_loop_alloc(&gal);
-		if (err) {
-			warning("auloop: alloc failed %m\n", err);
-		}
+
+	srate = pl_u32(&pl_srate);
+	ch    = pl_u32(&pl_ch);
+	if (!srate || !ch)
+		return re_hprintf(pf, "invalid samplerate or channels\n");
+
+	err = audio_loop_alloc(&gal, srate, ch);
+	if (err) {
+		warning("auloop: alloc failed %m\n", err);
 	}
 
 	return err;
@@ -386,8 +415,8 @@ static int auloop_stop(struct re_printf *pf, void *arg)
 
 
 static const struct cmd cmdv[] = {
-	{"auloop",      0, 0, "Start audio-loop", auloop_start },
-	{"auloop_stop", 0, 0, "Stop audio-loop",  auloop_stop  },
+	{"auloop",     0,CMD_PRM, "Start audio-loop <srate ch>", auloop_start},
+	{"auloop_stop",0,0,       "Stop audio-loop",             auloop_stop },
 };
 
 

@@ -7,6 +7,7 @@
 #include <rem.h>
 #include <windows.h>
 #include <mmsystem.h>
+#include <mmreg.h>
 #include <baresip.h>
 #include "winwave.h"
 
@@ -22,6 +23,7 @@ struct auplay_st {
 	HWAVEOUT waveout;
 	volatile bool rdy;
 	size_t inuse;
+	size_t sampsz;
 	auplay_write_h *wh;
 	void *arg;
 };
@@ -70,7 +72,7 @@ static int dsp_write(struct auplay_st *st)
 	wh->lpData = (LPSTR)mb->buf;
 
 	if (st->wh) {
-		st->wh((void *)mb->buf, mb->size/2, st->arg);
+		st->wh((void *)mb->buf, mb->size/st->sampsz, st->arg);
 	}
 
 	wh->dwBufferLength = mb->size;
@@ -128,28 +130,6 @@ static void CALLBACK waveOutCallback(HWAVEOUT hwo,
 }
 
 
-static unsigned int find_dev(const char *name)
-{
-	WAVEOUTCAPS wic;
-	unsigned int i, nInDevices = waveOutGetNumDevs();
-
-	if (!str_isset(name))
-		return WAVE_MAPPER;
-
-	for (i=0; i<nInDevices; i++) {
-		if (waveOutGetDevCaps(i, &wic,
-				      sizeof(WAVEOUTCAPS))==MMSYSERR_NOERROR) {
-
-			if (0 == str_cmp(name, wic.szPname)) {
-				return i;
-			}
-		}
-	}
-
-	return WAVE_MAPPER;
-}
-
-
 static int write_stream_open(struct auplay_st *st,
 			     const struct auplay_prm *prm,
 			     unsigned int dev)
@@ -157,7 +137,17 @@ static int write_stream_open(struct auplay_st *st,
 	WAVEFORMATEX wfmt;
 	MMRESULT res;
 	uint32_t sampc;
+	unsigned format;
 	int i;
+
+	st->sampsz = aufmt_sample_size(prm->fmt);
+
+	format = winwave_get_format(prm->fmt);
+	if (format == WAVE_FORMAT_UNKNOWN) {
+		warning("winwave: playback: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
 
 	/* Open an audio I/O stream. */
 	st->waveout = NULL;
@@ -168,13 +158,13 @@ static int write_stream_open(struct auplay_st *st,
 
 	for (i = 0; i < WRITE_BUFFERS; i++) {
 		memset(&st->bufs[i].wh, 0, sizeof(WAVEHDR));
-		st->bufs[i].mb = mbuf_alloc(2 * sampc);
+		st->bufs[i].mb = mbuf_alloc(st->sampsz * sampc);
 	}
 
-	wfmt.wFormatTag      = WAVE_FORMAT_PCM;
+	wfmt.wFormatTag      = format;
 	wfmt.nChannels       = prm->ch;
 	wfmt.nSamplesPerSec  = prm->srate;
-	wfmt.wBitsPerSample  = 16;
+	wfmt.wBitsPerSample  = st->sampsz * 8;
 	wfmt.nBlockAlign     = (prm->ch * wfmt.wBitsPerSample) / 8;
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
@@ -192,20 +182,50 @@ static int write_stream_open(struct auplay_st *st,
 }
 
 
+static int winwave_get_dev_name(unsigned int i, char name[32])
+{
+	WAVEOUTCAPS wic;
+	int err = 0;
+
+	if (waveOutGetDevCaps(i, &wic,
+			      sizeof(WAVEOUTCAPS)) == MMSYSERR_NOERROR) {
+		str_ncpy(name, wic.szPname, 32);
+	}
+	else {
+		err = ENODEV;
+	}
+
+	return err;
+}
+
+
+static unsigned int winwave_get_num_devs(void)
+{
+	return waveOutGetNumDevs();
+}
+
+
+static int find_dev(const char *name, unsigned int *dev)
+{
+	return winwave_enum_devices(name, NULL, dev, winwave_get_num_devs,
+				    winwave_get_dev_name);
+}
+
+
 int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		       struct auplay_prm *prm, const char *device,
 		       auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
 	int i, err;
+	unsigned int dev;
 
 	if (!stp || !ap || !prm)
 		return EINVAL;
 
-	if (prm->fmt != AUFMT_S16LE) {
-		warning("winwave: playback: unsupported sample format (%s)\n",
-			aufmt_name(prm->fmt));
-		return ENOTSUP;
+	err = find_dev(device, &dev);
+	if (err) {
+		return err;
 	}
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
@@ -216,7 +236,7 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 
-	err = write_stream_open(st, prm, find_dev(device));
+	err = write_stream_open(st, prm, dev);
 	if (err)
 		goto out;
 
@@ -233,4 +253,24 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		*stp = st;
 
 	return err;
+}
+
+
+static int set_available_devices(struct list *dev_list)
+{
+	return winwave_enum_devices(NULL, dev_list, NULL,
+				    winwave_get_num_devs,
+				    winwave_get_dev_name);
+}
+
+
+int winwave_player_init(struct auplay *ap)
+{
+	if (!ap) {
+		return EINVAL;
+	}
+
+	list_init(&ap->dev_list);
+
+	return set_available_devices(&ap->dev_list);
 }

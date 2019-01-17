@@ -101,10 +101,12 @@ static int decode_update(struct vidfilt_dec_st **stp, void **ctx,
 }
 
 
-static int encode(struct vidfilt_enc_st *_st, struct vidframe *frame)
+static int encode(struct vidfilt_enc_st *_st, struct vidframe *frame,
+		  uint64_t *timestamp)
 {
 	struct vidinfo_enc *st = (struct vidinfo_enc *)_st;
 	int err = 0;
+	(void)timestamp;
 
 	if (!st->panel) {
 
@@ -124,10 +126,12 @@ static int encode(struct vidfilt_enc_st *_st, struct vidframe *frame)
 }
 
 
-static int decode(struct vidfilt_dec_st *_st, struct vidframe *frame)
+static int decode(struct vidfilt_dec_st *_st, struct vidframe *frame,
+		  uint64_t *timestamp)
 {
 	struct vidinfo_dec *st = (struct vidinfo_dec *)_st;
 	int err = 0;
+	(void)timestamp;
 
 	if (!st->panel) {
 

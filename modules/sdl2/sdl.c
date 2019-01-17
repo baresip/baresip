@@ -162,13 +162,14 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	void *pixels;
 	uint8_t *d;
 	int dpitch, ret;
 	unsigned i, h;
 	uint32_t format;
+	(void)timestamp;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -194,7 +195,8 @@ static int display(struct vidisp_st *st, const char *title,
 	if (!st->window) {
 		char capt[256];
 
-		st->flags = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
+		st->flags  = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
+		st->flags |= SDL_WINDOW_RESIZABLE;
 
 		if (st->fullscreen)
 			st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -229,6 +231,7 @@ static int display(struct vidisp_st *st, const char *title,
 
 	if (!st->renderer) {
 
+		SDL_RendererInfo rend_info;
 		Uint32 flags = 0;
 
 		flags |= SDL_RENDERER_ACCELERATED;
@@ -239,6 +242,10 @@ static int display(struct vidisp_st *st, const char *title,
 			warning("sdl: unable to create renderer: %s\n",
 				SDL_GetError());
 			return ENOMEM;
+		}
+
+		if (!SDL_GetRendererInfo(st->renderer, &rend_info)) {
+			info("sdl: created renderer '%s'\n", rend_info.name);
 		}
 	}
 
@@ -329,7 +336,7 @@ static int module_close(void)
 {
 	vid = mem_deref(vid);
 
-	SDL_VideoQuit();
+	SDL_Quit();
 
 	return 0;
 }

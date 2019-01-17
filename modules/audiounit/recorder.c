@@ -19,9 +19,9 @@ struct ausrc_st {
 	AudioUnit au;
 	pthread_mutex_t mutex;
 	int ch;
+	uint32_t sampsz;
 	ausrc_read_h *rh;
 	void *arg;
-	uint32_t sampsz;
 };
 
 
@@ -100,28 +100,19 @@ static void interrupt_handler(bool interrupted, void *arg)
 }
 
 
-static uint32_t aufmt_to_formatflags(enum aufmt fmt)
-{
-	switch (fmt) {
-
-	case AUFMT_S16LE:  return kLinearPCMFormatFlagIsSignedInteger;
-	case AUFMT_FLOAT:  return kLinearPCMFormatFlagIsFloat;
-	default: return 0;
-	}
-}
-
-
 int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			     struct media_ctx **ctx,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	AudioStreamBasicDescription fmt;
-	AudioUnitElement inputBus = 1;
+	const AudioUnitElement inputBus = 1;
 	AURenderCallbackStruct cb;
 	struct ausrc_st *st;
-	UInt32 enable = 1;
+	const UInt32 enable = 1;
 #if ! TARGET_OS_IPHONE
+	const AudioUnitElement outputBus = 0;
+	const UInt32 disable = 0;
 	UInt32 ausize = sizeof(AudioDeviceID);
 	AudioDeviceID inputDevice;
 	AudioObjectPropertyAddress auAddress = {
@@ -138,6 +129,9 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	(void)device;
 	(void)errh;
 
+	if (!stp || !as || !prm)
+		return EINVAL;
+
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
 		return ENOMEM;
@@ -147,6 +141,12 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->arg = arg;
 	st->ch  = prm->ch;
 
+	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
+	if (!st->sampsz) {
+		err = ENOTSUP;
+		goto out;
+	}
+
 	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)
 		goto out;
@@ -155,7 +155,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	ret = AudioComponentInstanceNew(output_comp, &st->au);
+	ret = AudioComponentInstanceNew(audiounit_comp, &st->au);
 	if (ret)
 		goto out;
 
@@ -166,10 +166,9 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 
 #if ! TARGET_OS_IPHONE
-	enable = 0;
 	ret = AudioUnitSetProperty(st->au, kAudioOutputUnitProperty_EnableIO,
-				   kAudioUnitScope_Output, 0,
-				   &enable, sizeof(enable));
+				   kAudioUnitScope_Output, outputBus,
+				   &disable, sizeof(disable));
 	if (ret)
 		goto out;
 
@@ -192,16 +191,14 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 #endif
 
-	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
-
 	fmt.mSampleRate       = prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
 #if TARGET_OS_IPHONE
-	fmt.mFormatFlags      = aufmt_to_formatflags(prm->fmt)
+	fmt.mFormatFlags      = audiounit_aufmt_to_formatflags(prm->fmt)
 		| kAudioFormatFlagsNativeEndian
 		| kAudioFormatFlagIsPacked;
 #else
-	fmt.mFormatFlags      = aufmt_to_formatflags(prm->fmt)
+	fmt.mFormatFlags      = audiounit_aufmt_to_formatflags(prm->fmt)
 		| kLinearPCMFormatFlagIsPacked;
 #endif
 	fmt.mBitsPerChannel   = 8 * st->sampsz;
@@ -238,7 +235,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	ret = AudioUnitGetProperty(st->au,
 				   kAudioUnitProperty_SampleRate,
 				   kAudioUnitScope_Input,
-				   0,
+				   inputBus,
 				   &hw_srate,
 				   &hw_size);
 	if (ret)

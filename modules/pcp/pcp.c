@@ -125,7 +125,6 @@ static void is_complete(struct mnat_sess *sess)
 }
 
 
-/* todo: detect multiple responses */
 static void pcp_resp_handler(int err, struct pcp_msg *msg, void *arg)
 {
 	struct comp *comp = arg;

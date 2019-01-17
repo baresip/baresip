@@ -257,7 +257,7 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 }
 
 
-static inline void draw_yuv(GLhandleARB PHandle, int height,
+static inline void draw_yuv(GLhandleARB PHandle, int width, int height,
 			    const uint8_t *Ytex, int linesizeY,
 			    const uint8_t *Utex, int linesizeU,
 			    const uint8_t *Vtex, int linesizeV)
@@ -267,11 +267,14 @@ static inline void draw_yuv(GLhandleARB PHandle, int height,
 	/* This might not be required, but should not hurt. */
 	glEnable(GL_TEXTURE_2D);
 
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 	/* Select texture unit 1 as the active unit and bind the U texture. */
 	glActiveTexture(GL_TEXTURE1);
 	i = glGetUniformLocationARB(PHandle, "Utex");
 	glUniform1iARB(i,1);  /* Bind Utex to texture unit 1 */
 	glBindTexture(GL_TEXTURE_RECTANGLE_EXT,1);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, linesizeU);
 
 	glTexParameteri(GL_TEXTURE_RECTANGLE_EXT,
 			GL_TEXTURE_MAG_FILTER,GL_LINEAR);
@@ -279,13 +282,14 @@ static inline void draw_yuv(GLhandleARB PHandle, int height,
 			GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 	glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_EXT,0,GL_LUMINANCE,
-		     linesizeU, height/2, 0,
+		     width/2, height/2, 0,
 		     GL_LUMINANCE,GL_UNSIGNED_BYTE,Utex);
 
 	/* Select texture unit 2 as the active unit and bind the V texture. */
 	glActiveTexture(GL_TEXTURE2);
 	i = glGetUniformLocationARB(PHandle, "Vtex");
 	glBindTexture(GL_TEXTURE_RECTANGLE_EXT,2);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, linesizeV);
 	glUniform1iARB(i,2);  /* Bind Vtext to texture unit 2 */
 
 	glTexParameteri(GL_TEXTURE_RECTANGLE_EXT,
@@ -295,7 +299,7 @@ static inline void draw_yuv(GLhandleARB PHandle, int height,
 
 	glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_EXT,0,GL_LUMINANCE,
-		     linesizeV, height/2, 0,
+		     width/2, height/2, 0,
 		     GL_LUMINANCE,GL_UNSIGNED_BYTE,Vtex);
 
 	/* Select texture unit 0 as the active unit and bind the Y texture. */
@@ -303,6 +307,7 @@ static inline void draw_yuv(GLhandleARB PHandle, int height,
 	i = glGetUniformLocationARB(PHandle,"Ytex");
 	glUniform1iARB(i,0);  /* Bind Ytex to texture unit 0 */
 	glBindTexture(GL_TEXTURE_RECTANGLE_EXT,3);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, linesizeY);
 
 	glTexParameteri(GL_TEXTURE_RECTANGLE_EXT,
 			GL_TEXTURE_MAG_FILTER,GL_LINEAR);
@@ -311,7 +316,7 @@ static inline void draw_yuv(GLhandleARB PHandle, int height,
 	glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
 
 	glTexImage2D(GL_TEXTURE_RECTANGLE_EXT, 0, GL_LUMINANCE,
-		     linesizeY, height, 0,
+		     width, height, 0,
 		     GL_LUMINANCE, GL_UNSIGNED_BYTE, Ytex);
 }
 
@@ -394,11 +399,12 @@ static inline void draw_rgb(const uint8_t *pic, int w, int h)
 
 
 static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	NSAutoreleasePool *pool;
 	bool upd = false;
 	int err = 0;
+	(void)timestamp;
 
 	pool = [[NSAutoreleasePool alloc] init];
 	if (!pool)
@@ -455,7 +461,7 @@ static int display(struct vidisp_st *st, const char *title,
 				goto out;
 		}
 
-		draw_yuv(st->PHandle, frame->size.h,
+		draw_yuv(st->PHandle, frame->size.w, frame->size.h,
 			 frame->data[0], frame->linesize[0],
 			 frame->data[1], frame->linesize[1],
 			 frame->data[2], frame->linesize[2]);

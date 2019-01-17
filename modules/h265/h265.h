@@ -61,7 +61,7 @@ int h265_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		       struct videnc_param *prm, const char *fmtp,
 		       videnc_packet_h *pkth, void *arg);
 int h265_encode(struct videnc_state *ves, bool update,
-		const struct vidframe *frame);
+		const struct vidframe *frame, uint64_t timestamp);
 
 /* decoder */
 int h265_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,

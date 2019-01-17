@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -46,11 +46,14 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\$(Platform)\$(Configuration)\tmp\mk\win32\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <CodeAnalysisRuleSet>BasicDesignGuidelineRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\misc;..\..\..\dirent\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;USE_VIDEO;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=1024;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;USE_VIDEO;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=1024;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -61,6 +64,7 @@
       <CompileAs>CompileAsC</CompileAs>
       <DisableSpecificWarnings>4142;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename).obj</ObjectFileName>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalOptions>winmm.lib ..\..\..\re\$(Platform)\$(Configuration)\bin\re-win32.lib ..\..\..\rem\$(Platform)\$(Configuration)\bin\rem-win32.lib %(AdditionalOptions)</AdditionalOptions>
@@ -70,13 +74,13 @@
       <ProgramDatabaseFile>$(OutDir)baresip-win32.pdb</ProgramDatabaseFile>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\misc;..\..\..\dirent\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;USE_VIDEO;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=1024;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;USE_VIDEO;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=1024;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -94,7 +98,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -171,10 +175,12 @@
     <ClCompile Include="..\..\src\conf.c" />
     <ClCompile Include="..\..\src\config.c" />
     <ClCompile Include="..\..\src\contact.c" />
+    <ClCompile Include="..\..\src\custom_hdrs.c" />
     <ClCompile Include="..\..\src\h264.c" />
     <ClCompile Include="..\..\src\log.c" />
     <ClCompile Include="..\..\src\main.c" />
     <ClCompile Include="..\..\src\mctrl.c" />
+    <ClCompile Include="..\..\src\mediadev.c" />
     <ClCompile Include="..\..\src\menc.c" />
     <ClCompile Include="..\..\src\message.c" />
     <ClCompile Include="..\..\src\metric.c" />
@@ -185,10 +191,10 @@
     <ClCompile Include="..\..\src\play.c" />
     <ClCompile Include="..\..\src\realtime.c" />
     <ClCompile Include="..\..\src\reg.c" />
-    <ClCompile Include="..\..\src\rtpkeep.c" />
     <ClCompile Include="..\..\src\sdp.c" />
     <ClCompile Include="..\..\src\sipreq.c" />
     <ClCompile Include="..\..\src\stream.c" />
+    <ClCompile Include="..\..\src\timer.c" />
     <ClCompile Include="..\..\src\ua.c" />
     <ClCompile Include="..\..\src\ui.c" />
     <ClCompile Include="..\..\src\vidcodec.c" />
@@ -197,6 +203,11 @@
     <ClCompile Include="..\..\src\vidisp.c" />
     <ClCompile Include="..\..\src\vidsrc.c" />
     <ClCompile Include="static.c" />
+    <ClCompile Include="..\..\src\rtpext.c" />
+    <ClCompile Include="..\..\src\timestamp.c" />
+    <ClCompile Include="..\..\src\aulevel.c" />
+    <ClCompile Include="..\..\src\vidutil.c" />
+    <ClCompile Include="..\..\src\event.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

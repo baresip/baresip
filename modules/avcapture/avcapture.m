@@ -103,9 +103,14 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 		struct vidsz sz;
 		NSString * const * preset;
 	} mapv[] = {
-		{{ 192, 144}, &AVCaptureSessionPresetLow     },
-		{{ 480, 360}, &AVCaptureSessionPresetMedium  },
-		{{ 640, 480}, &AVCaptureSessionPresetHigh    },
+#if !TARGET_OS_IPHONE
+		{{ 320 ,240}, &AVCaptureSessionPreset320x240 },
+#endif
+		{{ 352, 288}, &AVCaptureSessionPreset352x288 },
+		{{ 640, 480}, &AVCaptureSessionPreset640x480 },
+#if !TARGET_OS_IPHONE
+		{{ 960, 540}, &AVCaptureSessionPreset960x540 },
+#endif
 		{{1280, 720}, &AVCaptureSessionPreset1280x720}
 	};
 	int i, best = -1;
@@ -118,9 +123,8 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 		    ![dev supportsAVCaptureSessionPreset:preset])
 			continue;
 
-		if (mapv[i].sz.w >= sz->w && mapv[i].sz.h >= sz->h)
-			best = i;
-		else
+		best = i;
+		if (mapv[i].sz.w <= sz->w && mapv[i].sz.h <= sz->h)
 			break;
 	}
 
@@ -128,7 +132,7 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 		return *mapv[best].preset;
 	else {
 		NSLog(@"no suitable preset found for %d x %d", sz->w, sz->h);
-		return AVCaptureSessionPresetHigh;
+		return AVCaptureSessionPreset352x288;
 	}
 }
 
@@ -234,7 +238,9 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
        fromConnection:(AVCaptureConnection *)conn
 {
 	const CVImageBufferRef b = CMSampleBufferGetImageBuffer(sampleBuffer);
+	CMTime ts = CMSampleBufferGetOutputPresentationTimeStamp(sampleBuffer);
 	struct vidframe vf;
+	uint64_t timestamp;
 
 	(void)captureOutput;
 	(void)conn;
@@ -246,8 +252,10 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 
 	vidframe_set_pixbuf(&vf, b);
 
+	timestamp = CMTimeGetSeconds(ts) * VIDEO_TIMEBASE;
+
 	if (vidframe_isvalid(&vf))
-		vsrc->frameh(&vf, vsrc->arg);
+		vsrc->frameh(&vf, timestamp, vsrc->arg);
 
 	CVPixelBufferUnlockBaseAddress(b, 0);
 }
@@ -365,17 +373,24 @@ static int module_init(void)
 
 	pool = [NSAutoreleasePool new];
 
+	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
+			      "avcapture", alloc, update);
+	if (err)
+		goto out;
+
 	/* populate devices */
 	for (dev in [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]) {
 
 		const char *name = [[dev localizedName] UTF8String];
 
 		debug("avcapture: found video device '%s'\n", name);
+
+		err = mediadev_add(&vidsrc->dev_list, name);
+		if (err)
+			goto out;
 	}
 
-	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
-			      "avcapture", alloc, update);
-
+ out:
 	[pool drain];
 
 	return err;

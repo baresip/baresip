@@ -66,7 +66,7 @@ static void tmr_polling(void *arg)
 }
 
 
-/**
+/*
  * NOTE: DSP cannot be destroyed inside handler
  */
 static void write_handler(void *sampv, size_t sampc, void *arg)
@@ -321,6 +321,13 @@ static void player_destructor(void *data)
 }
 
 
+/**
+ * Initialize the audio player
+ *
+ * @param playerp Pointer to allocated player state
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int play_init(struct player **playerp)
 {
 	struct player *player;
@@ -343,6 +350,12 @@ int play_init(struct player **playerp)
 }
 
 
+/**
+ * Set the path to the audio files
+ *
+ * @param player Player state
+ * @param path   Path to audio files
+ */
 void play_set_path(struct player *player, const char *path)
 {
 	if (!player)

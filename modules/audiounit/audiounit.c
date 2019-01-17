@@ -6,6 +6,7 @@
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include "audiounit.h"
 
@@ -17,10 +18,21 @@
  */
 
 
-AudioComponent output_comp = NULL;
+AudioComponent audiounit_comp = NULL;
 
 static struct auplay *auplay;
 static struct ausrc *ausrc;
+
+
+uint32_t audiounit_aufmt_to_formatflags(enum aufmt fmt)
+{
+	switch (fmt) {
+
+	case AUFMT_S16LE:  return kLinearPCMFormatFlagIsSignedInteger;
+	case AUFMT_FLOAT:  return kLinearPCMFormatFlagIsFloat;
+	default: return 0;
+	}
+}
 
 
 #if TARGET_OS_IPHONE
@@ -43,6 +55,7 @@ static void interruptionListener(void *data, UInt32 inInterruptionState)
 static int module_init(void)
 {
 	AudioComponentDescription desc;
+	CFStringRef name = NULL;
 	int err;
 
 #if TARGET_OS_IPHONE
@@ -65,10 +78,15 @@ static int module_init(void)
 	desc.componentFlags = 0;
 	desc.componentFlagsMask = 0;
 
-	output_comp = AudioComponentFindNext(NULL, &desc);
-	if (!output_comp) {
+	audiounit_comp = AudioComponentFindNext(NULL, &desc);
+	if (!audiounit_comp) {
 		warning("audiounit: Voice Processing I/O not found\n");
 		return ENOENT;
+	}
+
+	if (0 == AudioComponentCopyName(audiounit_comp, &name)) {
+		debug("audiounit: using component '%s'\n",
+		      CFStringGetCStringPtr(name, kCFStringEncodingUTF8));
 	}
 
 	err  = auplay_register(&auplay, baresip_auplayl(),
@@ -76,7 +94,7 @@ static int module_init(void)
 	err |= ausrc_register(&ausrc, baresip_ausrcl(),
 			      "audiounit", audiounit_recorder_alloc);
 
-	return 0;
+	return err;
 }
 
 

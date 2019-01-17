@@ -26,6 +26,7 @@ static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
 	switch (fmt) {
 
 	case VID_FMT_YUV420P: return AV_PIX_FMT_YUV420P;
+	case VID_FMT_YUV444P: return AV_PIX_FMT_YUV444P;
 	case VID_FMT_NV12:    return AV_PIX_FMT_NV12;
 	case VID_FMT_NV21:    return AV_PIX_FMT_NV21;
 	default:              return AV_PIX_FMT_NONE;
@@ -78,7 +79,8 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 }
 
 
-static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
+static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame,
+			  uint64_t *timestamp)
 {
 	struct swscale_enc *enc = (struct swscale_enc *)st;
 	enum AVPixelFormat avpixfmt, avpixfmt_dst;
@@ -87,6 +89,7 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame)
 	int srcStride[4], dstStride[4];
 	int width, height, i, h;
 	int err = 0;
+	(void)timestamp;
 
 	if (!st)
 		return EINVAL;

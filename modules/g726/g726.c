@@ -155,28 +155,28 @@ static int decode(struct audec_state *st, int fmt, void *sampv,
 static struct g726_aucodec g726[4] = {
 	{
 		{
-			LE_INIT, 0, "G726-40", 8000, 8000, 1, NULL,
+			LE_INIT, 0, "G726-40", 8000, 8000, 1, 1, NULL,
 			encode_update, encode, decode_update, decode, 0, 0, 0
 		},
 		40000
 	},
 	{
 		{
-			LE_INIT, 0, "G726-32", 8000, 8000, 1, NULL,
+			LE_INIT, 0, "G726-32", 8000, 8000, 1, 1, NULL,
 			encode_update, encode, decode_update, decode, 0, 0, 0
 		},
 		32000
 	},
 	{
 		{
-			LE_INIT, 0, "G726-24", 8000, 8000, 1, NULL,
+			LE_INIT, 0, "G726-24", 8000, 8000, 1, 1, NULL,
 			encode_update, encode, decode_update, decode, 0, 0, 0
 		},
 		24000
 	},
 	{
 		{
-			LE_INIT, 0, "G726-16", 8000, 8000, 1, NULL,
+			LE_INIT, 0, "G726-16", 8000, 8000, 1, 1, NULL,
 			encode_update, encode, decode_update, decode, 0, 0, 0
 		},
 		16000

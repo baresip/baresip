@@ -25,9 +25,6 @@
  */
 
 
-#define SRTP_MASTER_KEY_LEN  30
-
-
 struct menc_st {
 	/* one SRTP session per media line */
 	uint8_t key_tx[32];
@@ -47,6 +44,7 @@ struct menc_st {
 
 static const char aes_cm_128_hmac_sha1_32[] = "AES_CM_128_HMAC_SHA1_32";
 static const char aes_cm_128_hmac_sha1_80[] = "AES_CM_128_HMAC_SHA1_80";
+static const char aes_128_gcm[]             = "AEAD_AES_128_GCM";
 
 static const char *preferred_suite = aes_cm_128_hmac_sha1_80;
 
@@ -73,6 +71,7 @@ static bool cryptosuite_issupported(const struct pl *suite)
 {
 	if (0 == pl_strcasecmp(suite, aes_cm_128_hmac_sha1_32)) return true;
 	if (0 == pl_strcasecmp(suite, aes_cm_128_hmac_sha1_80)) return true;
+	if (0 == pl_strcasecmp(suite, aes_128_gcm))             return true;
 
 	return false;
 }
@@ -122,21 +121,38 @@ static enum srtp_suite resolve_suite(const char *suite)
 		return SRTP_AES_CM_128_HMAC_SHA1_32;
 	if (0 == str_casecmp(suite, aes_cm_128_hmac_sha1_80))
 		return SRTP_AES_CM_128_HMAC_SHA1_80;
+	if (0 == str_casecmp(suite, aes_128_gcm))
+		return SRTP_AES_128_GCM;
 
 	return -1;
+}
+
+
+static size_t get_master_keylen(enum srtp_suite suite)
+{
+	switch (suite) {
+
+	case SRTP_AES_CM_128_HMAC_SHA1_32: return 16+14;
+	case SRTP_AES_CM_128_HMAC_SHA1_80: return 16+14;
+	case SRTP_AES_128_GCM:             return 16+12;
+	default: return 0;
+	}
 }
 
 
 static int start_srtp(struct menc_st *st, const char *suite_name)
 {
 	enum srtp_suite suite;
+	size_t len;
 	int err;
 
 	suite = resolve_suite(suite_name);
 
+	len = get_master_keylen(suite);
+
 	/* allocate and initialize the SRTP session */
 	if (!st->srtp_tx) {
-		err = srtp_alloc(&st->srtp_tx, suite, st->key_tx, 30, 0);
+		err = srtp_alloc(&st->srtp_tx, suite, st->key_tx, len, 0);
 		if (err) {
 			warning("srtp: srtp_alloc TX failed (%m)\n", err);
 			return err;
@@ -144,7 +160,7 @@ static int start_srtp(struct menc_st *st, const char *suite_name)
 	}
 
 	if (!st->srtp_rx) {
-		err = srtp_alloc(&st->srtp_rx, suite, st->key_rx, 30, 0);
+		err = srtp_alloc(&st->srtp_rx, suite, st->key_rx, len, 0);
 		if (err) {
 			warning("srtp: srtp_alloc RX failed (%m)\n", err);
 			return err;
@@ -225,11 +241,13 @@ static int sdp_enc(struct menc_st *st, struct sdp_media *m,
 		   uint32_t tag, const char *suite)
 {
 	char key[128] = "";
-	size_t olen;
+	size_t len, olen;
 	int err;
 
+	len = get_master_keylen(resolve_suite(suite));
+
 	olen = sizeof(key);
-	err = base64_encode(st->key_tx, SRTP_MASTER_KEY_LEN, key, &olen);
+	err = base64_encode(st->key_tx, len, key, &olen);
 	if (err)
 		return err;
 
@@ -239,8 +257,10 @@ static int sdp_enc(struct menc_st *st, struct sdp_media *m,
 
 static int start_crypto(struct menc_st *st, const struct pl *key_info)
 {
-	size_t olen;
+	size_t olen, len;
 	int err;
+
+	len = get_master_keylen(resolve_suite(st->crypto_suite));
 
 	/* key-info is BASE64 encoded */
 
@@ -249,8 +269,9 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 	if (err)
 		return err;
 
-	if (SRTP_MASTER_KEY_LEN != olen) {
-		warning("srtp: srtp keylen is %u (should be 30)\n", olen);
+	if (len != olen) {
+		warning("srtp: %s: srtp keylen is %u (should be %zu)\n",
+			st->crypto_suite, olen, len);
 	}
 
 	err = start_srtp(st, st->crypto_suite);
@@ -346,7 +367,7 @@ static int alloc(struct menc_media **stp, struct menc_sess *sess,
 		if (err)
 			goto out;
 
-		rand_bytes(st->key_tx, SRTP_MASTER_KEY_LEN);
+		rand_bytes(st->key_tx, sizeof(st->key_tx));
 	}
 
 	/* SDP handling */

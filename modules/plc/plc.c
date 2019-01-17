@@ -8,6 +8,7 @@
 
 #include <spandsp.h>
 #include <re.h>
+#include <rem_au.h>
 #include <baresip.h>
 
 
@@ -35,12 +36,14 @@ static void destructor(void *arg)
 
 
 static int update(struct aufilt_dec_st **stp, void **ctx,
-		  const struct aufilt *af, struct aufilt_prm *prm)
+		  const struct aufilt *af, struct aufilt_prm *prm,
+		  const struct audio *au)
 {
 	struct plc_st *st;
 	int err = 0;
 	(void)ctx;
 	(void)af;
+	(void)au;
 
 	if (!stp || !prm)
 		return EINVAL;
@@ -52,6 +55,12 @@ static int update(struct aufilt_dec_st **stp, void **ctx,
 	if (prm->ch != 1) {
 		warning("plc: only mono supported (ch=%u)\n", prm->ch);
 		return ENOSYS;
+	}
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("plc: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
 	}
 
 	st = mem_zalloc(sizeof(*st), destructor);
@@ -80,7 +89,7 @@ static int update(struct aufilt_dec_st **stp, void **ctx,
  *
  * NOTE: sampc == 0 , means Packet loss
  */
-static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
+static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 {
 	struct plc_st *plc = (struct plc_st *)st;
 

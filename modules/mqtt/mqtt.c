@@ -26,7 +26,6 @@ static void fd_handler(int flags, void *arg)
 }
 
 
-/* XXX: use mosquitto_socket and fd_listen instead? */
 static void tmr_handler(void *data)
 {
 	struct mqtt *mqtt = data;

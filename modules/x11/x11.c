@@ -160,6 +160,7 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 	XGCValues gcv;
 	size_t bufsz, pixsz;
 	int err = 0;
+	bool try_shm;
 
 	if (!XGetWindowAttributes(st->disp, st->win, &attrs)) {
 		warning("x11: cant't get window attributes\n");
@@ -221,9 +222,17 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 	x11.shm_error = 0;
 	x11.errorh = XSetErrorHandler(error_handler);
 
-	if (!XShmAttach(st->disp, &st->shm)) {
-		warning("x11: failed to attach X to shared memory\n");
-		return ENOMEM;
+	try_shm = XShmQueryExtension(st->disp);
+	if (try_shm) {
+
+		if (!XShmAttach(st->disp, &st->shm)) {
+			warning("x11: failed to attach X to shared memory\n");
+			return ENOMEM;
+		}
+	}
+	else {
+		info("x11: no shm extension\n");
+		x11.shm_error = 1;
 	}
 
 	XSync(st->disp, False);
@@ -231,8 +240,10 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 
 	if (x11.shm_error)
 		info("x11: shared memory disabled\n");
-	else
+	else {
+		info("x11: shared memory enabled\n");
 		st->xshmat = true;
+	}
 
 	gcv.graphics_exposures = false;
 
@@ -310,10 +321,11 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	struct vidframe frame_rgb;
 	int err = 0;
+	(void)timestamp;
 
 	if (!st->disp)
 		return ENODEV;

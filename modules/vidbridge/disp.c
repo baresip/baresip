@@ -71,13 +71,13 @@ static bool list_apply_handler(struct le *le, void *arg)
 
 
 int vidbridge_disp_display(struct vidisp_st *st, const char *title,
-			   const struct vidframe *frame)
+			   const struct vidframe *frame, uint64_t timestamp)
 {
 	int err = 0;
 	(void)title;
 
 	if (st->vidsrc)
-		vidbridge_src_input(st->vidsrc, frame);
+		vidbridge_src_input(st->vidsrc, frame, timestamp);
 	else {
 		debug("vidbridge: display: dropping frame (%u x %u)\n",
 		      frame->size.w, frame->size.h);

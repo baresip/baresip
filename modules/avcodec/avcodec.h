@@ -5,7 +5,7 @@
  */
 
 
-#if LIBAVCODEC_VERSION_INT < ((54<<16)+(25<<8)+0)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 25, 0)
 #define AVCodecID CodecID
 
 #define AV_CODEC_ID_NONE  CODEC_ID_NONE
@@ -13,6 +13,14 @@
 #define AV_CODEC_ID_H264  CODEC_ID_H264
 #define AV_CODEC_ID_MPEG4 CODEC_ID_MPEG4
 
+#endif
+
+
+#if LIBAVUTIL_VERSION_MAJOR < 52
+#define AV_PIX_FMT_YUV420P   PIX_FMT_YUV420P
+#define AV_PIX_FMT_YUVJ420P  PIX_FMT_YUVJ420P
+#define AV_PIX_FMT_NV12      PIX_FMT_NV12
+#define AV_PIX_FMT_YUV444P   PIX_FMT_YUV444P
 #endif
 
 
@@ -30,10 +38,11 @@ struct videnc_state;
 int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		  struct videnc_param *prm, const char *fmtp,
 		  videnc_packet_h *pkth, void *arg);
-int encode(struct videnc_state *st, bool update, const struct vidframe *frame);
+int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
+	   uint64_t timestamp);
 #ifdef USE_X264
 int encode_x264(struct videnc_state *st, bool update,
-		const struct vidframe *frame);
+		const struct vidframe *frame, uint64_t timestamp);
 #endif
 
 

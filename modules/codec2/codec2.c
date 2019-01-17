@@ -173,6 +173,7 @@ static struct aucodec codec2 = {
 	8000,
 	8000,
 	1,
+	1,
 	NULL,
 	encode_update,
 	encode,

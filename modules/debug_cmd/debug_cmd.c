@@ -72,26 +72,40 @@ static int cmd_config_print(struct re_printf *pf, void *unused)
 
 static int cmd_ua_debug(struct re_printf *pf, void *unused)
 {
+	const struct ua *ua = uag_current();
 	(void)unused;
-	return ua_debug(pf, uag_current());
+
+	if (ua)
+		return ua_debug(pf, ua);
+	else
+		return re_hprintf(pf, "(no user-agent)\n");
 }
 
 
 static int cmd_play_file(struct re_printf *pf, void *arg)
 {
+	static struct play *g_play;
 	struct cmd_arg *carg = arg;
 	const char *filename = carg->prm;
-	int err;
+	int err = 0;
 
-	err = re_hprintf(pf, "playing audio file \"%s\" ..\n", filename);
-	if (err)
-		return err;
+	/* Stop the current tone, if any */
+	g_play = mem_deref(g_play);
 
-	err = play_file(NULL, baresip_player(), filename, 0);
-	if (err) {
-		warning("debug_cmd: play_file(%s) failed (%m)\n",
-			filename, err);
-		return err;
+	if (str_isset(filename))
+	{
+		err = re_hprintf(pf, "playing audio file \"%s\" ..\n",
+				 filename);
+		if (err)
+			return err;
+
+		err = play_file(&g_play, baresip_player(), filename, 0);
+		if (err)
+		{
+			warning("debug_cmd: play_file(%s) failed (%m)\n",
+					filename, err);
+			return err;
+		}
 	}
 
 	return err;
@@ -120,17 +134,17 @@ static int reload_config(struct re_printf *pf, void *arg)
 
 
 static const struct cmd debugcmdv[] = {
-{"main",     0,       0, "Main loop debug",          re_debug             },
-{"config",   0,       0, "Print configuration",      cmd_config_print     },
-{"sipstat", 'i',      0, "SIP debug",                ua_print_sip_status  },
-{"modules",  0,       0, "Module debug",             mod_debug            },
-{"netstat", 'n',      0, "Network debug",            cmd_net_debug        },
-{"sysinfo", 's',      0, "System info",              print_system_info    },
-{"timers",   0,       0, "Timer debug",              tmr_status           },
-{"uastat",  'u',      0, "UA debug",                 cmd_ua_debug         },
-{"memstat", 'y',      0, "Memory status",            mem_status           },
-{"play",     0, CMD_PRM, "Play audio file",          cmd_play_file        },
-{"conf_reload",0,     0, "Reload config file",       reload_config        },
+{"conf_reload", 0,       0, "Reload config file",     reload_config       },
+{"config",      0,       0, "Print configuration",    cmd_config_print    },
+{"main",        0,       0, "Main loop debug",        re_debug            },
+{"memstat",    'y',      0, "Memory status",          mem_status          },
+{"modules",     0,       0, "Module debug",           mod_debug           },
+{"netstat",    'n',      0, "Network debug",          cmd_net_debug       },
+{"play",        0, CMD_PRM, "Play audio file",        cmd_play_file       },
+{"sipstat",    'i',      0, "SIP debug",              ua_print_sip_status },
+{"sysinfo",    's',      0, "System info",            print_system_info   },
+{"timers",      0,       0, "Timer debug",            tmr_status          },
+{"uastat",     'u',      0, "UA debug",               cmd_ua_debug        },
 };
 
 

@@ -20,10 +20,14 @@
  * Configuration options:
  *
  \verbatim
+  opus_stereo        yes     # Request peer to send stereo
+  opus_sprop_stereo  yes     # Sending stereo
   opus_bitrate    128000     # Average bitrate in [bps]
   opus_cbr        {yes,no}   # Constant Bitrate (inverse of VBR)
   opus_inbandfec  {yes,no}   # Enable inband Forward Error Correction (FEC)
   opus_dtx        {yes,no}   # Enable Discontinuous Transmission (DTX)
+  opus_complexity {0-10}     # Encoder's computational complexity (10 max)
+  opus_application {audio, voip} # Encoder's intended application
  \endverbatim
  *
  * References:
@@ -39,6 +43,8 @@ static bool opus_mirror;
 static char fmtp[256] = "";
 static char fmtp_mirror[256];
 
+uint32_t opus_complexity = 10;
+opus_int32 opus_application = OPUS_APPLICATION_AUDIO;
 
 static int opus_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 			 bool offer, void *arg)
@@ -63,6 +69,7 @@ static struct aucodec opus = {
 	.srate     = 48000,
 	.crate     = 48000,
 	.ch        = 2,
+	.pch       = 2,
 	.fmtp      = fmtp,
 	.encupdh   = opus_encode_update,
 	.ench      = opus_encode_frm,
@@ -89,6 +96,7 @@ static int module_init(void)
 	uint32_t value;
 	char *p = fmtp + str_len(fmtp);
 	bool b, stereo = true, sprop_stereo = true;
+	struct pl pl;
 	int n = 0;
 
 	conf_get_bool(conf, "opus_stereo", &stereo);
@@ -147,6 +155,23 @@ static int module_init(void)
 	if (opus_mirror) {
 		opus.fmtp = NULL;
 		opus.fmtp_ench = opus_fmtp_enc;
+	}
+
+	(void)conf_get_u32(conf, "opus_complexity", &opus_complexity);
+
+	if (opus_complexity > 10)
+		opus_complexity = 10;
+
+	if (!conf_get(conf, "opus_application", &pl)) {
+		if (!pl_strcasecmp(&pl, "audio"))
+			opus_application = OPUS_APPLICATION_AUDIO;
+		else if (!pl_strcasecmp(&pl, "voip"))
+			opus_application = OPUS_APPLICATION_VOIP;
+		else {
+			warning("opus: unknown encoder application: %r\n",
+					&pl);
+			return EINVAL;
+		}
 	}
 
 	debug("opus: fmtp=\"%s\"\n", fmtp);

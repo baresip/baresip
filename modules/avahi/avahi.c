@@ -77,7 +77,7 @@ static void create_services(AvahiClient *client)
 {
 	int err;
 	char buf[128] = "";
-	char hostname[128] = "";
+	const char *hostname;
 
 	int if_idx = AVAHI_IF_UNSPEC;
 	int af = AVAHI_PROTO_INET;
@@ -85,8 +85,8 @@ static void create_services(AvahiClient *client)
 	struct sa laddr;
 
 	/* Build announced sipuri as username@hostname */
-	strncpy(hostname, avahi_client_get_host_name_fqdn(client),
-		sizeof (hostname));
+	hostname = avahi_client_get_host_name_fqdn(client);
+
 	re_snprintf(buf, sizeof(buf), "<sip:%s@%s>;regint=0",
 				sys_username(),
 				hostname);
@@ -96,6 +96,12 @@ static void create_services(AvahiClient *client)
 
 	if (err) {
 		warning("avahi: Could not create UA %s: %m\n", buf, err);
+		return;
+	}
+
+	err = ua_register(avahi->local_ua);
+	if (err) {
+		warning("avahi: Could not register UA %s: %m\n", buf, err);
 		return;
 	}
 

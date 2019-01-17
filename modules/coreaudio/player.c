@@ -86,8 +86,6 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	OSStatus status;
 	int err;
 
-	(void)device;
-
 	if (!stp || !ap || !prm || prm->fmt != AUFMT_S16LE)
 		return EINVAL;
 
@@ -128,6 +126,36 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
+	if (str_isset(device) && 0 != str_casecmp(device, "default")) {
+
+		CFStringRef uid;
+
+		info("coreaudio: player: using device '%s'\n", device);
+
+		err = coreaudio_enum_devices(device, NULL, &uid, false);
+		if (err)
+			goto out;
+
+		if (!uid) {
+			warning("coreaudio: player: device not found: '%s'\n",
+				device);
+			err = ENODEV;
+			goto out;
+		}
+
+		status = AudioQueueSetProperty(st->queue,
+				       kAudioQueueProperty_CurrentDevice,
+				       &uid,
+				       sizeof(uid));
+		CFRelease(uid);
+		if (status) {
+			warning("coreaudio: player: failed to"
+				" set current device (%i)\n", status);
+			err = ENODEV;
+			goto out;
+		}
+	}
+
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	bytc  = sampc * 2;
 
@@ -162,4 +190,15 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		*stp = st;
 
 	return err;
+}
+
+
+int coreaudio_player_init(struct auplay *ap)
+{
+	if (!ap)
+		return EINVAL;
+
+	list_init(&ap->dev_list);
+
+	return coreaudio_enum_devices(NULL, &ap->dev_list, NULL, false);
 }

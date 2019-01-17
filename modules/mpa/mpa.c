@@ -83,7 +83,8 @@ static struct aucodec mpa = {
 	.name      = "MPA",
 	.srate     = MPA_IORATE,
 	.crate     = MPA_RTPRATE,
-	.ch       = 1,
+	.ch        = 2,
+	.pch       = 1,
 /* MPA does not expect channels count, even those it is stereo */
 	.fmtp      = "layer=2",
 	.encupdh   = mpa_encode_update,

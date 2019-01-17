@@ -106,6 +106,28 @@ static void print_video_input(const struct vidsrc_st *st)
 }
 
 
+static void print_framerate(const struct vidsrc_st *st)
+{
+	struct v4l2_streamparm streamparm;
+	struct v4l2_fract tpf;
+	double fps;
+
+	memset(&streamparm, 0, sizeof(streamparm));
+
+	streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+
+	if (v4l2_ioctl(st->fd, VIDIOC_G_PARM, &streamparm) != 0) {
+		warning("v4l2: VIDIOC_G_PARM error (%m)\n", errno);
+		return;
+	}
+
+	tpf = streamparm.parm.capture.timeperframe;
+	fps = (double)tpf.denominator / (double)tpf.numerator;
+
+	info("v4l2: current framerate is %.2f fps\n", fps);
+}
+
+
 static int xioctl(int fd, unsigned long int request, void *arg)
 {
 	int r;
@@ -331,19 +353,22 @@ static int start_capturing(struct vidsrc_st *st)
 }
 
 
-static void call_frame_handler(struct vidsrc_st *st, uint8_t *buf)
+static void call_frame_handler(struct vidsrc_st *st, uint8_t *buf,
+			       uint64_t timestamp)
 {
 	struct vidframe frame;
 
 	vidframe_init_buf(&frame, match_fmt(st->pixfmt), &st->sz, buf);
 
-	st->frameh(&frame, st->arg);
+	st->frameh(&frame, timestamp, st->arg);
 }
 
 
 static int read_frame(struct vidsrc_st *st)
 {
 	struct v4l2_buffer buf;
+	struct timeval ts;
+	uint64_t timestamp;
 
 	memset(&buf, 0, sizeof(buf));
 
@@ -371,7 +396,11 @@ static int read_frame(struct vidsrc_st *st)
 		warning("v4l2: index >= n_buffers\n");
 	}
 
-	call_frame_handler(st, st->buffers[buf.index].start);
+	ts = buf.timestamp;
+	timestamp = 1000000U * ts.tv_sec + ts.tv_usec;
+	timestamp = timestamp * VIDEO_TIMEBASE / 1000000U;
+
+	call_frame_handler(st, st->buffers[buf.index].start, timestamp);
 
 	if (-1 == xioctl (st->fd, VIDIOC_QBUF, &buf)) {
 		warning("v4l2: VIDIOC_QBUF\n");
@@ -381,6 +410,30 @@ static int read_frame(struct vidsrc_st *st)
 	return 0;
 }
 
+
+static int set_available_devices(struct list* dev_list)
+{
+	int i, fd;
+	char name[16];
+	int err;
+
+	for (i=0;i < 16;i++) {
+
+		re_snprintf(name, sizeof(name), "/dev/video%i", i);
+
+		if ((fd = open(name, O_RDONLY)) == -1) {
+			continue;
+		}
+		else {
+			close(fd);
+			err = mediadev_add(dev_list, name);
+			if (err)
+				return err;
+		}
+	}
+
+	return 0;
+}
 
 static int vd_open(struct vidsrc_st *st, const char *device)
 {
@@ -436,6 +489,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;
+	struct mediadev *md;
 	int err;
 
 	(void)ctx;
@@ -446,8 +500,16 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!stp || !size || !frameh)
 		return EINVAL;
 
-	if (!str_isset(dev))
-		dev = "/dev/video0";
+	if (!str_isset(dev)) {
+		md = mediadev_get_default(&vs->dev_list);
+		if (md) {
+			dev = md->name;
+		}
+		else {
+			warning("v4l2: No available devices\n");
+			return ENODEV;
+		}
+	}
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
@@ -469,6 +531,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		goto out;
 
 	print_video_input(st);
+
+	print_framerate(st);
 
 	err = start_capturing(st);
 	if (err)
@@ -493,8 +557,17 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 static int v4l_init(void)
 {
-	return vidsrc_register(&vidsrc, baresip_vidsrcl(),
+	int err;
+
+	err = vidsrc_register(&vidsrc, baresip_vidsrcl(),
 			       "v4l2", alloc, NULL);
+	if (err)
+		return err;
+
+	list_init(&vidsrc->dev_list);
+	err = set_available_devices(&vidsrc->dev_list);
+
+	return err;
 }
 
 

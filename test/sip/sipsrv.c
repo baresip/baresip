@@ -215,8 +215,11 @@ static bool sip_msg_handler(const struct sip_msg *msg, void *arg)
 	}
 
  out:
-	if (srv->terminate)
-		re_cancel();  /* XXX: avoid this */
+	if (srv->terminate) {
+
+		if (srv->exith)
+			srv->exith(srv->arg);
+	}
 
 	return true;
 }
@@ -239,7 +242,8 @@ static void destructor(void *arg)
 }
 
 
-int sip_server_alloc(struct sip_server **srvp)
+int sip_server_alloc(struct sip_server **srvp,
+		     sip_exit_h *exith, void *arg)
 {
 	struct sip_server *srv;
 	struct sa laddr, laddrs;
@@ -296,6 +300,9 @@ int sip_server_alloc(struct sip_server **srvp)
 	err = hash_alloc(&srv->ht_aor, 32);
 	if (err)
 		goto out;
+
+	srv->exith = exith;
+	srv->arg = arg;
 
  out:
 	mem_deref(tls);

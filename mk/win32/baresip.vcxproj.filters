@@ -173,6 +173,9 @@
     <ClCompile Include="..\..\src\main.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\mediadev.c">
+      <Filter>src</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\menc.c">
       <Filter>src</Filter>
     </ClCompile>
@@ -201,9 +204,6 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\reg.c">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\rtpkeep.c">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\sdp.c">
@@ -361,6 +361,17 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\winwave\winwave.c">
       <Filter>modules\winwave</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtpext.c" />
+    <ClCompile Include="..\..\src\timestamp.c" />
+    <ClCompile Include="..\..\src\aulevel.c" />
+    <ClCompile Include="..\..\src\vidutil.c" />
+    <ClCompile Include="..\..\src\event.c" />
+    <ClCompile Include="..\..\src\timer.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\custom_hdrs.c">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -26,22 +26,21 @@ enum statmode {
 };
 
 
-static uint64_t start_ticks;          /**< Ticks when app started         */
-static struct tmr tmr_alert;          /**< Incoming call alert timer      */
-static struct tmr tmr_stat;           /**< Call status timer              */
-static enum statmode statmode;        /**< Status mode                    */
-static struct mbuf *dialbuf;          /**< Buffer for dialled number      */
-static struct le *le_cur;             /**< Current User-Agent (struct ua) */
-
 static struct {
-	struct play *play;
-	struct message_lsnr *message;
-	bool bell;
+	struct tmr tmr_alert;         /**< Incoming call alert timer      */
+	struct tmr tmr_stat;          /**< Call status timer              */
+	struct play *play;            /**< Current audio player state     */
+	struct message_lsnr *message; /**< Message listener               */
+	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
+	struct le *le_cur;            /**< Current User-Agent (struct ua) */
+	bool bell;                    /**< ANSI Bell alert enabled        */
 	bool ringback_disabled;	      /**< no ringback on sip 180 respons */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
 	uint32_t redial_delay;        /**< Redial delay in [seconds]      */
 	uint32_t redial_attempts;     /**< Number of re-dial attempts     */
 	uint32_t current_attempts;    /**< Current number of re-dials     */
+	uint64_t start_ticks;         /**< Ticks when app started         */
+	enum statmode statmode;       /**< Status mode                    */
 } menu;
 
 
@@ -50,6 +49,9 @@ static void update_callstatus(void);
 static void alert_stop(void);
 static int switch_audio_source(struct re_printf *pf, void *arg);
 static int switch_audio_player(struct re_printf *pf, void *arg);
+#ifdef USE_VIDEO
+static int switch_video_source(struct re_printf *pf, void *arg);
+#endif
 
 
 static void redial_reset(void)
@@ -94,7 +96,7 @@ static void check_registrations(void)
 		  "\x1b[32mAll %u useragent%s registered successfully!"
 		  " (%u ms)\x1b[;m\n",
 		  n, n==1 ? "" : "s",
-		  (uint32_t)(tmr_jiffies() - start_ticks));
+		  (uint32_t)(tmr_jiffies() - menu.start_ticks));
 
 	ual_ready = true;
 }
@@ -195,22 +197,22 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 	if (str_isset(carg->prm)) {
 
-		mbuf_rewind(dialbuf);
-		(void)mbuf_write_str(dialbuf, carg->prm);
+		mbuf_rewind(menu.dialbuf);
+		(void)mbuf_write_str(menu.dialbuf, carg->prm);
 
 		err = ua_connect(uag_cur(), NULL, NULL,
-				 carg->prm, NULL, VIDMODE_ON);
+				 carg->prm, VIDMODE_ON);
 	}
-	else if (dialbuf->end > 0) {
+	else if (menu.dialbuf->end > 0) {
 
 		char *uri;
 
-		dialbuf->pos = 0;
-		err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+		menu.dialbuf->pos = 0;
+		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
 		if (err)
 			return err;
 
-		err = ua_connect(uag_cur(), NULL, NULL, uri, NULL, VIDMODE_ON);
+		err = ua_connect(uag_cur(), NULL, NULL, uri, VIDMODE_ON);
 
 		mem_deref(uri);
 	}
@@ -258,18 +260,18 @@ static int options_command(struct re_printf *pf, void *arg)
 
 	if (str_isset(carg->prm)) {
 
-		mbuf_rewind(dialbuf);
-		(void)mbuf_write_str(dialbuf, carg->prm);
+		mbuf_rewind(menu.dialbuf);
+		(void)mbuf_write_str(menu.dialbuf, carg->prm);
 
 		err = ua_options_send(uag_cur(), carg->prm,
 				      options_resp_handler, NULL);
 	}
-	else if (dialbuf->end > 0) {
+	else if (menu.dialbuf->end > 0) {
 
 		char *uri;
 
-		dialbuf->pos = 0;
-		err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+		menu.dialbuf->pos = 0;
+		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
 		if (err)
 			return err;
 
@@ -325,38 +327,24 @@ static int cmd_hangup(struct re_printf *pf, void *unused)
 static int create_ua(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = NULL;
 	struct le *le;
 	int err = 0;
 
-	(void)pf;
-
-	 if (str_isset(carg->prm)) {
-
-		mbuf_rewind(dialbuf);
-		(void)mbuf_write_str(dialbuf, carg->prm);
+	if (str_isset(carg->prm)) {
 
 		(void)re_hprintf(pf, "Creating UA for %s ...\n", carg->prm);
-		err = ua_alloc(NULL, carg->prm);
-
-
-	}
-	else if (dialbuf->end > 0) {
-
-		char *uri;
-
-		dialbuf->pos = 0;
-		err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+		err = ua_alloc(&ua, carg->prm);
 		if (err)
-			return err;
+			goto out;
+	}
 
-		(void)re_hprintf(pf, "Creating UA for %s ...\n", uri);
-		err |=  ua_alloc(NULL, uri);
-
-		mem_deref(uri);
+	if (account_regint(ua_account(ua))) {
+		(void)ua_register(ua);
 	}
 
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
-		const struct ua *ua = le->data;
+		ua = le->data;
 
 		err  = re_hprintf(pf, "%s ", ua == uag_cur() ? ">" : " ");
 		err |= ua_print_status(pf, ua);
@@ -364,11 +352,10 @@ static int create_ua(struct re_printf *pf, void *arg)
 
 	err |= re_hprintf(pf, "\n");
 
-
+ out:
 	if (err) {
 		(void)re_hprintf(pf, "menu: create_ua failed: %m\n", err);
 	}
-
 
 	return err;
 }
@@ -381,20 +368,45 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 	(void)pf;
 	(void)unused;
 
-	if (!le_cur)
-		le_cur = list_head(uag_list());
-	if (!le_cur)
+	if (!menu.le_cur)
+		menu.le_cur = list_head(uag_list());
+	if (!menu.le_cur)
 		return 0;
 
-	le_cur = le_cur->next ? le_cur->next : list_head(uag_list());
+	menu.le_cur = menu.le_cur->next ?
+		menu.le_cur->next : list_head(uag_list());
 
-	err = re_hprintf(pf, "ua: %s\n", ua_aor(list_ledata(le_cur)));
+	err = re_hprintf(pf, "ua: %s\n", ua_aor(list_ledata(menu.le_cur)));
 
-	uag_current_set(list_ledata(le_cur));
+	uag_current_set(list_ledata(menu.le_cur));
 
 	update_callstatus();
 
 	return err;
+}
+
+
+static int cmd_ua_find(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = NULL;
+
+	if (str_isset(carg->prm)) {
+		ua = uag_find_aor(carg->prm);
+	}
+
+	if (!ua) {
+		warning("menu: ua_find failed: %s\n", carg->prm);
+		return ENOENT;
+	}
+
+	re_hprintf(pf, "ua: %s\n", ua_aor(ua));
+
+	uag_current_set(ua);
+
+	update_callstatus();
+
+	return 0;
 }
 
 
@@ -451,9 +463,13 @@ static const struct cmd cmdv[] = {
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 {"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
+{"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"ausrc",     0,   CMD_IPRM, "Switch audio source",     switch_audio_source  },
 {"auplay",    0,   CMD_IPRM, "Switch audio player",     switch_audio_player  },
 {"about",     0,          0, "About box",               about_box            },
+#ifdef USE_VIDEO
+{"vidsrc",    0,   CMD_IPRM, "Switch video source",     switch_video_source  },
+#endif
 
 };
 
@@ -517,14 +533,14 @@ static int call_xfer(struct re_printf *pf, void *arg)
 	static bool xfer_inprogress;
 
 	if (!xfer_inprogress && !carg->complete) {
-		statmode = STATMODE_OFF;
+		menu.statmode = STATMODE_OFF;
 		re_hprintf(pf, "\rPlease enter transfer target SIP uri:\n");
 	}
 
 	xfer_inprogress = true;
 
 	if (carg->complete) {
-		statmode = STATMODE_CALL;
+		menu.statmode = STATMODE_CALL;
 		xfer_inprogress = false;
 		return call_transfer(ua_call(uag_cur()), carg->prm);
 	}
@@ -567,6 +583,7 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 	struct config_audio *aucfg;
 	struct config *cfg;
 	struct audio *a;
+	const struct auplay *ap;
 	struct le *le;
 	char driver[16], device[128] = "";
 	int err = 0;
@@ -594,9 +611,22 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 		pl_strcpy(&pl_driver, driver, sizeof(driver));
 		pl_strcpy(&pl_device, device, sizeof(device));
 
-		if (!auplay_find(baresip_auplayl(), driver)) {
+		ap = auplay_find(baresip_auplayl(), driver);
+		if (!ap) {
 			re_hprintf(pf, "no such audio-player: %s\n", driver);
 			return 0;
+		}
+		else if (!list_isempty(&ap->dev_list)) {
+
+			if (!mediadev_find(&ap->dev_list, device)) {
+				re_hprintf(pf,
+				  "no such device for %s audio-player: %s\n",
+				  driver, device);
+
+				mediadev_print(pf, &ap->dev_list);
+
+				return 0;
+			}
 		}
 
 		re_hprintf(pf, "switch audio player: %s,%s\n",
@@ -641,6 +671,7 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	struct config_audio *aucfg;
 	struct config *cfg;
 	struct audio *a;
+	const struct ausrc *as;
 	struct le *le;
 	char driver[16], device[128] = "";
 	int err = 0;
@@ -668,9 +699,22 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 		pl_strcpy(&pl_driver, driver, sizeof(driver));
 		pl_strcpy(&pl_device, device, sizeof(device));
 
-		if (!ausrc_find(baresip_ausrcl(), driver)) {
+		as = ausrc_find(baresip_ausrcl(), driver);
+		if (!as) {
 			re_hprintf(pf, "no such audio-source: %s\n", driver);
 			return 0;
+		}
+		else if (!list_isempty(&as->dev_list)) {
+
+			if (!mediadev_find(&as->dev_list, device)) {
+				re_hprintf(pf,
+				  "no such device for %s audio-source: %s\n",
+				  driver, device);
+
+				mediadev_print(pf, &as->dev_list);
+
+				return 0;
+			}
 		}
 
 		re_hprintf(pf, "switch audio device: %s,%s\n",
@@ -703,6 +747,92 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 
 	return 0;
 }
+
+#ifdef USE_VIDEO
+static int switch_video_source(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl pl_driver, pl_device;
+	struct config_video *vidcfg;
+	struct config *cfg;
+	struct video *v;
+	const struct vidsrc *vs;
+	struct le *le;
+	char driver[16], device[128] = "";
+	int err = 0;
+
+	static bool switch_vid_inprogress;
+
+	if (!switch_vid_inprogress && !carg->complete) {
+		re_hprintf(pf,
+			   "\rPlease enter video device (driver,device)\n");
+	}
+
+	switch_vid_inprogress = true;
+
+	if (carg->complete) {
+
+		switch_vid_inprogress = false;
+
+		if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
+			     &pl_driver, &pl_device)) {
+
+			return re_hprintf(pf, "\rFormat should be:"
+					  " driver,device\n");
+		}
+
+		pl_strcpy(&pl_driver, driver, sizeof(driver));
+		pl_strcpy(&pl_device, device, sizeof(device));
+
+		vs = vidsrc_find(baresip_vidsrcl(), driver);
+		if (!vs) {
+			re_hprintf(pf, "no such video-source: %s\n", driver);
+			return 0;
+		}
+		else if (!list_isempty(&vs->dev_list)) {
+
+			if (!mediadev_find(&vs->dev_list, device)) {
+				re_hprintf(pf,
+				  "no such device for %s video-source: %s\n",
+				  driver, device);
+
+				mediadev_print(pf, &vs->dev_list);
+
+				return 0;
+			}
+		}
+
+		re_hprintf(pf, "switch video device: %s,%s\n",
+			   driver, device);
+
+		cfg = conf_config();
+		if (!cfg) {
+			return re_hprintf(pf, "no config object\n");
+		}
+
+		vidcfg = &cfg->video;
+
+		str_ncpy(vidcfg->src_mod, driver, sizeof(vidcfg->src_mod));
+		str_ncpy(vidcfg->src_dev, device, sizeof(vidcfg->src_dev));
+
+		for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
+
+			struct call *call = le->data;
+
+			v = call_video(call);
+
+			err = video_set_source(v, driver, device);
+			if (err) {
+				re_hprintf(pf, "failed to set video-source"
+					   " (%m)\n", err);
+				break;
+			}
+		}
+	}
+
+	return 0;
+}
+#endif
 
 
 #ifdef USE_VIDEO
@@ -739,15 +869,34 @@ static int digit_handler(struct re_printf *pf, void *arg)
 }
 
 
+static int send_code(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct call *call;
+	size_t i;
+	int err = 0;
+	(void)pf;
+
+	call = ua_call(uag_cur());
+	if (call) {
+		for (i = 0; i < str_len(carg->prm) && !err; i++) {
+			err = call_send_digit(call, carg->prm[i]);
+		}
+	}
+
+	return err;
+}
+
+
 static int toggle_statmode(struct re_printf *pf, void *arg)
 {
 	(void)pf;
 	(void)arg;
 
-	if (statmode == STATMODE_OFF)
-		statmode = STATMODE_CALL;
+	if (menu.statmode == STATMODE_OFF)
+		menu.statmode = STATMODE_CALL;
 	else
-		statmode = STATMODE_OFF;
+		menu.statmode = STATMODE_OFF;
 
 	return 0;
 }
@@ -806,6 +955,7 @@ static const struct cmd callcmdv[] = {
 {"",          'H',        0, "Hold previous call",  hold_prev_call        },
 {"",          'L',        0, "Resume previous call",hold_prev_call        },
 {"aubitrate",   0,  CMD_PRM, "Set audio bitrate",   set_audio_bitrate     },
+{"sndcode",   0,    CMD_PRM, "Send Code",           send_code             },
 
 #ifdef USE_VIDEO
 {"video_cycle", 'E',      0, "Cycle video encoder", call_videoenc_cycle   },
@@ -872,12 +1022,12 @@ static void tmrstat_handler(void *arg)
 	if (!call)
 		return;
 
-	tmr_start(&tmr_stat, 100, tmrstat_handler, 0);
+	tmr_start(&menu.tmr_stat, 100, tmrstat_handler, 0);
 
 	if (ui_isediting(baresip_uis()))
 		return;
 
-	if (STATMODE_OFF != statmode) {
+	if (STATMODE_OFF != menu.statmode) {
 		(void)re_fprintf(stderr, "%H\r", call_status, call);
 	}
 }
@@ -887,9 +1037,9 @@ static void update_callstatus(void)
 {
 	/* if there are any active calls, enable the call status view */
 	if (have_active_calls())
-		tmr_start(&tmr_stat, 100, tmrstat_handler, 0);
+		tmr_start(&menu.tmr_stat, 100, tmrstat_handler, 0);
 	else
-		tmr_cancel(&tmr_stat);
+		tmr_cancel(&menu.tmr_stat);
 }
 
 
@@ -902,7 +1052,7 @@ static void alert_start(void *arg)
 
 	ui_output(baresip_uis(), "\033[10;1000]\033[11;1000]\a");
 
-	tmr_start(&tmr_alert, 1000, alert_start, NULL);
+	tmr_start(&menu.tmr_alert, 1000, alert_start, NULL);
 }
 
 
@@ -911,10 +1061,10 @@ static void alert_stop(void)
 	if (!menu.bell)
 		return;
 
-	if (tmr_isrunning(&tmr_alert))
+	if (tmr_isrunning(&menu.tmr_alert))
 		ui_output(baresip_uis(), "\r");
 
-	tmr_cancel(&tmr_alert);
+	tmr_cancel(&menu.tmr_alert);
 }
 
 
@@ -934,17 +1084,17 @@ static void redial_handler(void *arg)
 		return;
 	}
 
-	if (dialbuf->end == 0) {
+	if (menu.dialbuf->end == 0) {
 		warning("menu: redial: dialbuf is empty\n");
 		return;
 	}
 
-	dialbuf->pos = 0;
-	err = mbuf_strdup(dialbuf, &uri, dialbuf->end);
+	menu.dialbuf->pos = 0;
+	err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
 	if (err)
 		return;
 
-	err = ua_connect(uag_cur(), NULL, NULL, uri, NULL, VIDMODE_ON);
+	err = ua_connect(uag_cur(), NULL, NULL, uri, VIDMODE_ON);
 	if (err) {
 		warning("menu: redial: ua_connect failed (%m)\n", err);
 	}
@@ -958,10 +1108,17 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
 	struct player *player = baresip_player();
+	struct call *call2 = NULL;
+	int err;
 
 	(void)call;
 	(void)prm;
 	(void)arg;
+
+#if 0
+	debug("menu: [ ua=%s call=%s ] event: %s (%s)\n",
+	      ua_aor(ua), call_id(call), uag_event_str(ev), prm);
+#endif
 
 	switch (ev) {
 
@@ -1066,12 +1223,58 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 		break;
 
+	case UA_EVENT_CALL_TRANSFER:
+		/*
+		 * Create a new call to transfer target.
+		 *
+		 * NOTE: we will automatically connect a new call to the
+		 *       transfer target
+		 */
+
+		info("menu: transferring call %s to '%s'\n",
+		     call_id(call), prm);
+
+		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
+				    call_localuri(call), true);
+		if (!err) {
+			struct pl pl;
+
+			pl_set_str(&pl, prm);
+
+			err = call_connect(call2, &pl);
+			if (err) {
+				warning("ua: transfer: connect error: %m\n",
+					err);
+			}
+		}
+
+		if (err) {
+			(void)call_notify_sipfrag(call, 500, "Call Error");
+			mem_deref(call2);
+		}
+		break;
+
+	case UA_EVENT_CALL_TRANSFER_FAILED:
+		info("menu: transfer failure: %s\n", prm);
+		mem_deref(call);
+		break;
+
 	case UA_EVENT_REGISTER_OK:
 		check_registrations();
 		break;
 
 	case UA_EVENT_UNREGISTERING:
 		return;
+
+	case UA_EVENT_MWI_NOTIFY:
+		info("----- MWI for %s -----\n", ua_aor(ua));
+		info("%s\n", prm);
+		break;
+
+	case UA_EVENT_AUDIO_ERROR:
+		info("menu: audio error (%s)\n", prm);
+		mem_deref(call);
+		break;
 
 	default:
 		break;
@@ -1082,9 +1285,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
-static void message_handler(const struct pl *peer, const struct pl *ctype,
+static void message_handler(struct ua *ua, const struct pl *peer,
+			    const struct pl *ctype,
 			    struct mbuf *body, void *arg)
 {
+	(void)ua;
 	(void)ctype;
 	(void)arg;
 
@@ -1124,18 +1329,19 @@ static int module_init(void)
 		     menu.redial_delay);
 	}
 
-	dialbuf = mbuf_alloc(64);
-	if (!dialbuf)
+	menu.dialbuf = mbuf_alloc(64);
+	if (!menu.dialbuf)
 		return ENOMEM;
 
-	start_ticks = tmr_jiffies();
-	tmr_init(&tmr_alert);
+	menu.start_ticks = tmr_jiffies();
+	tmr_init(&menu.tmr_alert);
+
 	if (0 == conf_get(conf_cur(), "statmode_default", &val) &&
 	    0 == pl_strcasecmp(&val, "off")) {
-		statmode = STATMODE_OFF;
+		menu.statmode = STATMODE_OFF;
 	}
 	else {
-		statmode = STATMODE_CALL;
+		menu.statmode = STATMODE_CALL;
 	}
 
 	err  = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
@@ -1168,11 +1374,11 @@ static int module_close(void)
 	cmd_unregister(baresip_commands(), dialcmdv);
 	cmd_unregister(baresip_commands(), callcmdv);
 
-	tmr_cancel(&tmr_alert);
-	tmr_cancel(&tmr_stat);
-	dialbuf = mem_deref(dialbuf);
+	tmr_cancel(&menu.tmr_alert);
+	tmr_cancel(&menu.tmr_stat);
+	menu.dialbuf = mem_deref(menu.dialbuf);
 
-	le_cur = NULL;
+	menu.le_cur = NULL;
 
 	menu.play = mem_deref(menu.play);
 

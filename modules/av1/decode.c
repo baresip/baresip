@@ -175,16 +175,20 @@ static inline int hdr_decode(struct hdr *hdr, struct mbuf *mb)
 }
 
 
-/* XXX: check keyframe flag */
 static inline bool is_keyframe(struct mbuf *mb)
 {
-	if (mbuf_get_left(mb) < 1)
+	aom_codec_stream_info_t si;
+	aom_codec_err_t ret;
+
+	memset(&si, 0, sizeof(si));
+
+	ret = aom_codec_peek_stream_info(&aom_codec_av1_dx_algo,
+					 mbuf_buf(mb),
+					 (unsigned int)mbuf_get_left(mb), &si);
+	if (ret != AOM_CODEC_OK)
 		return false;
 
-	if (mb->buf[mb->pos] & 0x01)
-		return false;
-
-	return true;
+	return si.is_kf;
 }
 
 

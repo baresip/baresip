@@ -8,22 +8,12 @@
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
-#if LIBAVUTIL_VERSION_INT >= ((50<<16)+(29<<8)+0)
 #include <libavutil/opt.h>
-#else
-#include <libavcodec/opt.h>
-#endif
 #ifdef USE_X264
 #include <x264.h>
 #endif
 #include "h26x.h"
 #include "avcodec.h"
-
-
-#if LIBAVUTIL_VERSION_MAJOR < 52
-#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
-#define AV_PIX_FMT_NV12    PIX_FMT_NV12
-#endif
 
 
 #ifndef AV_INPUT_BUFFER_MIN_SIZE
@@ -48,7 +38,6 @@ struct videnc_state {
 	AVFrame *pict;
 	struct mbuf *mb;
 	size_t sz_max; /* todo: figure out proper buffer size */
-	int64_t pts;
 	struct mbuf *mb_frag;
 	struct videnc_param encprm;
 	struct vidsz encsize;
@@ -190,11 +179,7 @@ static int open_encoder(struct videnc_state *st,
 	if (st->pict)
 		av_free(st->pict);
 
-#if LIBAVCODEC_VERSION_INT >= ((52<<16)+(92<<8)+0)
 	st->ctx = avcodec_alloc_context3(st->codec);
-#else
-	st->ctx = avcodec_alloc_context();
-#endif
 
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 	st->pict = av_frame_alloc();
@@ -219,6 +204,9 @@ static int open_encoder(struct videnc_state *st,
 
 	/* params to avoid libavcodec/x264 default preset error */
 	if (st->codec_id == AV_CODEC_ID_H264) {
+
+		av_opt_set(st->ctx->priv_data, "profile", "baseline", 0);
+
 		st->ctx->me_range = 16;
 		st->ctx->qmin = 10;
 		st->ctx->qmax = 51;
@@ -256,23 +244,14 @@ static int open_encoder(struct videnc_state *st,
 #endif
 	}
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(8<<8)+0)
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0) {
 		err = ENOENT;
 		goto out;
 	}
-#else
-	if (avcodec_open(st->ctx, st->codec) < 0) {
-		err = ENOENT;
-		goto out;
-	}
-#endif
 
-#if LIBAVCODEC_VERSION_INT >= ((53<<16)+(5<<8)+0)
 	st->pict->format = pix_fmt;
 	st->pict->width = size->w;
 	st->pict->height = size->h;
-#endif
 
  out:
 	if (err) {
@@ -448,32 +427,22 @@ static int open_encoder_x264(struct videnc_state *st, struct videnc_param *prm,
 	xprm.analyse.b_transform_8x8 = 0;
 	xprm.analyse.i_me_method = X264_ME_DIA;
 	xprm.analyse.i_subpel_refine = 0;
-#if X264_BUILD >= 59
 	xprm.rc.i_aq_mode = 0;
-#endif
 	xprm.analyse.b_mixed_references = 0;
 	xprm.analyse.i_trellis = 0;
-#if X264_BUILD >= 63
 	xprm.i_bframe_adaptive = X264_B_ADAPT_NONE;
-#endif
-#if X264_BUILD >= 70
 	xprm.rc.b_mb_tree = 0;
-#endif
 
 	/* slice-based threading (--tune=zerolatency) */
-#if X264_BUILD >= 80
 	xprm.rc.i_lookahead = 0;
 	xprm.i_sync_lookahead = 0;
 	xprm.i_bframe = 0;
-#endif
 
 	/* put SPS/PPS before each keyframe */
 	xprm.b_repeat_headers = 1;
 
-#if X264_BUILD >= 82
 	/* needed for x264_encoder_intra_refresh() */
 	xprm.b_intra_refresh = 1;
-#endif
 
 	if (st->x264)
 		x264_encoder_close(st->x264);
@@ -562,13 +531,14 @@ int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 
 #ifdef USE_X264
 int encode_x264(struct videnc_state *st, bool update,
-		const struct vidframe *frame)
+		const struct vidframe *frame, uint64_t timestamp)
 {
 	x264_picture_t pic_in, pic_out;
 	x264_nal_t *nal;
 	int i_nal;
 	int i, err, ret;
 	int csp, pln;
+	int64_t input_pts;
 	uint64_t ts;
 
 	if (!st || !frame)
@@ -605,17 +575,23 @@ int encode_x264(struct videnc_state *st, bool update,
 	}
 
 	if (update) {
-#if X264_BUILD >= 95
 		x264_encoder_intra_refresh(st->x264);
-#endif
 		debug("avcodec: x264 picture update\n");
 	}
 
 	x264_picture_init(&pic_in);
 
+	/*
+	 * We use the video source timestamp as PTS.
+	 * Since the PTS is in time_base units (derived from FPS) and
+	 * the input and output has the same units, this should work
+	 * fine, as long as the real FPS is less than the MAX FPS.
+	 */
+	input_pts = timestamp;
+
 	pic_in.i_type = update ? X264_TYPE_IDR : X264_TYPE_AUTO;
 	pic_in.i_qpplus1 = 0;
-	pic_in.i_pts = ++st->pts;
+	pic_in.i_pts = input_pts;
 
 	pic_in.img.i_csp = csp;
 	pic_in.img.i_plane = pln;
@@ -631,14 +607,12 @@ int encode_x264(struct videnc_state *st, bool update,
 	if (i_nal == 0)
 		return 0;
 
-	ts = video_calc_rtp_timestamp(pic_out.i_pts, st->encprm.fps);
+	ts = video_calc_rtp_timestamp_fix(pic_out.i_pts);
 
 	err = 0;
 	for (i=0; i<i_nal && !err; i++) {
 		const uint8_t hdr = nal[i].i_ref_idc<<5 | nal[i].i_type<<0;
 		int offset = 0;
-
-#if X264_BUILD >= 76
 		const uint8_t *p = nal[i].p_payload;
 
 		/* Find the NAL Escape code [00 00 01] */
@@ -648,7 +622,6 @@ int encode_x264(struct videnc_state *st, bool update,
 			else if (p[2] == 0x01)
 				offset = 3 + 1;
 		}
-#endif
 
 		/* skip Supplemental Enhancement Information (SEI) */
 		if (nal[i].i_type == H264_NAL_SEI)
@@ -666,10 +639,12 @@ int encode_x264(struct videnc_state *st, bool update,
 #endif
 
 
-int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
+int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
+	   uint64_t timestamp)
 {
 	int i, err, ret;
 	int pix_fmt;
+	int64_t pts;
 	uint64_t ts;
 
 	if (!st || !frame)
@@ -708,7 +683,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 		st->pict->data[i]     = frame->data[i];
 		st->pict->linesize[i] = frame->linesize[i];
 	}
-	st->pict->pts = st->pts++;
+	st->pict->pts = timestamp;
 	if (update) {
 		debug("avcodec: encoder picture update\n");
 		st->pict->key_frame = 1;
@@ -725,7 +700,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 
 	mbuf_rewind(st->mb);
 
-#if LIBAVCODEC_VERSION_INT >= ((57<<16)+(37<<8)+100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 	do {
 		AVPacket *pkt;
 
@@ -743,7 +718,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 			return 0;
 		}
 
-		ts = video_calc_rtp_timestamp(pkt->dts, st->encprm.fps);
+		pts = pkt->dts;
 
 		err = mbuf_write_mem(st->mb, pkt->data, pkt->size);
 		st->mb->pos = 0;
@@ -753,7 +728,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 		if (err)
 			return err;
 	} while (0);
-#elif LIBAVCODEC_VERSION_INT >= ((54<<16)+(1<<8)+0)
+#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54, 1, 0)
 	do {
 		AVPacket avpkt;
 		int got_packet;
@@ -772,7 +747,7 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 
 		mbuf_set_end(st->mb, avpkt.size);
 
-		ts = video_calc_rtp_timestamp(avpkt.dts, st->encprm.fps);
+		pts = avpkt.dts;
 
 	} while (0);
 #else
@@ -790,8 +765,10 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame)
 
 	mbuf_set_end(st->mb, ret);
 
-	ts = video_calc_rtp_timestamp(st->pict->pts, st->encprm.fps);
+	pts = st->pict->pts;
 #endif
+
+	ts = video_calc_rtp_timestamp_fix(pts);
 
 	switch (st->codec_id) {
 

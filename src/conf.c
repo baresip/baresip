@@ -63,7 +63,7 @@ bool conf_fileexist(const char *path)
 	if ((st.st_mode & S_IFMT) != S_IFREG)
 		 return false;
 
-	return st.st_size > 0;
+	return true;
 }
 
 
@@ -243,6 +243,15 @@ int conf_get_csv(const struct conf *conf, const char *name,
 }
 
 
+/**
+ * Get the video size of a configuration item
+ *
+ * @param conf Configuration object
+ * @param name Name of config item key
+ * @param sz   Returned video size of config item, if present
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int conf_get_vidsz(const struct conf *conf, const char *name, struct vidsz *sz)
 {
 	struct pl r, w, h;
@@ -273,6 +282,15 @@ int conf_get_vidsz(const struct conf *conf, const char *name, struct vidsz *sz)
 }
 
 
+/**
+ * Get the socket address of a configuration item
+ *
+ * @param conf Configuration object
+ * @param name Name of config item key
+ * @param sa   Returned socket address of config item, if present
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int conf_get_sa(const struct conf *conf, const char *name, struct sa *sa)
 {
 	struct pl opt;
@@ -398,6 +416,9 @@ struct conf *conf_cur(void)
 }
 
 
+/**
+ * Close the current configuration object
+ */
 void conf_close(void)
 {
 	conf_obj = mem_deref(conf_obj);

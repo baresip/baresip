@@ -40,6 +40,16 @@ void aucodec_unregister(struct aucodec *ac)
 }
 
 
+/**
+ * Find an Audio Codec
+ *
+ * @param aucodecl List of audio-codecs
+ * @param name     Audio codec name
+ * @param srate    Audio codec sampling rate
+ * @param ch       Audio codec number of channels
+ *
+ * @return Matching audio codec if found, NULL if not found
+ */
 const struct aucodec *aucodec_find(const struct list *aucodecl,
 				   const char *name, uint32_t srate,
 				   uint8_t ch)

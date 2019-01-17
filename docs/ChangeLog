@@ -1,3 +1,317 @@
+2018-12-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.0
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.6.0
+	* NOTE: Requires libre v0.6.0 or later
+	        Requires librem v0.6.0 or later
+
+	* config:
+
+	  opus_complexity  {0-10}        # Encoder's computational complexity
+	  opus_application {audio, voip} # Encoder's intended application
+	  sip_cafile       ca.crt        # trusted Certificate Authorities
+
+	* baresip-core:
+	  - account: added support for per account mwi using
+	             ;mwi=on|off addr-param (#530) (thanks Juha Heinanen)
+		     per account support for call transfer (#535)
+		     (thanks Juha Heinanen)
+	  - audio: add audio_start()
+		   add audio_started()
+		   EBU/ACIP invite handler.
+		   flush aubuf when resetting codec
+	  - call: make call_connect() public
+		  make call_notify_sipfrag() public
+	  - contacts: make struct contacts opaque
+		      add contact_uri()
+	  - rtpkeep: code removed
+	  - sdp: remove unused functions
+	  - ua: add sip_cafile config option
+	        (thanks to @wnetbal for the original patch)
+		add event UA_EVENT_MWI_NOTIFY (thanks Juha Heinanen)
+		add event UA_EVENT_CALL_TRANSFER
+		add event UA_EVENT_AUDIO_ERROR
+		add ua_uri_complete()
+	  - vidfilt: add timestamp parameter to filter API
+	  - vidisp: add timestamp parameter to display API
+	  - video: add RTP timestamp state for receive
+
+	* selftest:
+	  - test: add call transfer test (ref #538)
+	  - test: add call via tcp test
+
+	* Modules:
+
+	* avcapture: fix video resolutions mismatches (#580) (Nicolas Tizon)
+
+	* avcodec: remove support for old versions of ffmpeg
+		   detect MPEG4 key-frames
+
+	* avformat: remove support for old versions of ffmpeg
+
+	* ctrl_tcp: Fix netstring frame handling (#569) (José Luis Millán)
+
+	* debug_cmd: /play will always stop current file playing.  (#578)
+		     (thanks Ola Palm)
+
+	* directfb: updated vidisp api (#568) (thanks andreygursky)
+
+	* dshow: mediadev support (#550) (Nicolas Tizon)
+
+	* echo: add support for video
+
+	* h265: change rate control to ABR (Average Bitrate) (#526)
+
+	* mwi: moved printing of mwi info from mwi module to menu module
+	       (thanks Juha Heinanen)
+
+	* opengl: properly handle linesize (#566)
+
+	* opus: add configuration parameter 'opus_complexity'
+		add configuration parameter 'opus_application'
+		(thanks José Luis Millán)
+
+	* libsrtp: module removed
+
+	* v4l2_codec: use thread instead of fd event (#558)
+
+	* winwave: add support for FLOAT sample format (#559)
+		   mediadev support (#556) (Nicolas Tizon)
+
+
+2018-09-15 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.11
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.11
+	* NOTE: Requires libre v0.5.7 or later
+	        Requires librem v0.5.3 or later
+
+	* build:
+
+	* baresip-core:
+	  - account: disable password in the SIP uri
+	  - aucodec: add packet channels (pch) to struct (#489)
+	  - audio: add MAGIC_CHECK to some callback handlers
+	  - audio: fix timestamp for MPA codec
+	  - audio: remove audio_srate and audio_channels (#488)
+	  - audio: remove exception for MPA
+	  - aufilt: add sample format parameter (#492)
+	  - auplay/ausrc: Add dev_list to auplay and ausrc struct (#516)
+			  (thanks Nicolas Tizon)
+	  - call: dump SDP offer, ref #480
+	  - call: Support also SIP URI with missing display name. (#512)
+		  (thanks Christian Spielberger)
+	  - config: update template for coreaudio
+	  - contact: consider empty contacts file as existing
+		     contacts file (#501) (thanks Juha Heinanen)
+	  - main: add -n option for network interface
+	  - main: turn off buffering to standard output (#504)
+		  (thanks Geoff Stewart)
+	  - opus: refresh config template
+	  - stream: add magic number for debugging (ref #514)
+	  - ua: do ua_register explicitly (refs #508) (#509)
+	  - ua: added ua param to message handler (#485) (thanks Juha Heinanen)
+	  - ua: Sending and receiving custom headers (#470)
+		(thanks Encamy)
+	  - video: added more MAGIC_CHECK checks
+	  - vidsrc: Vidsrc devices list (#491) (thanks Nicolas Tizon)
+
+	* selftest:
+	  - test: use event-handler in mediaenc mock
+	  - test: add sip uri with angle brackets (ref #512)
+
+	* Modules:
+
+	* alsa: remove check for alsa_sample_format config
+
+	* alsa: On termination of alsa_play wait until buffer
+		was processed. (#520) (thanks Christian Spielberger)
+
+	* aubridge: check to make sure the device is running before
+		    dereferencing it. (#495) (thanks Geoff Stewart)
+
+	* avahi: fix warning when RELEASE=1
+
+	* avcapture: use mediadev API to add device names
+
+	* coreaudio: Coreaudio select device (#502)
+
+	* daala: update vidcodec API
+
+	* gtk: update message handler with struct ua pointer
+
+	* httpd: add CORS header in http reply (#517) (thanks Nicolas Tizon)
+
+	* menu: Send DTMF code command (#496) (thanks Nicolas Tizon)
+
+	* rtcpsummary: new RTCP summary module (#505)
+		       (thanks Geoff Stewart)
+
+	* speex: remove module (#494)
+
+	* srtp: add support for AES-GCM cipher
+
+	* vidloop: use portable lock instead of pthread mutex
+		   fix crash when resolution changes
+
+	* vidloop: Vidloop fix: video frame rendering is moved to
+		   main thread (#481) (thanks Nicolas Tizon)
+
+	* x11: check for shared memory extension
+
+	* x11grab: remove old linker path
+
+
+2018-07-04 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.10
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.10
+	* NOTE: Requires libre v0.5.7 or later
+	        Requires librem v0.5.3 or later
+
+	* build:
+	  - Updated MSVS project (thanks Encamy)
+
+	* baresip-core:
+	  - account: add more accessor functions (thanks Juha Heinanen)
+	  - audio: add audio_set_hold
+	  - aufilt: add struct audio parameter
+	  - mediaenc: add menc_event handler (thanks Juha Heinanen)
+	  - net: add support for IP-address in 'net_interface' (thanks @Encamy)
+	  - stream: add stream_call
+	  - stream: check SDP_SENDONLY flag
+	  - stream: correct flags in stream_send (thanks Andreas Hansson)
+	  - stream: set RTP socket buffersize to 65536 (ref #415)
+	  - ua: add events for VU level (thanks Ola Palm)
+	  - ua: add ua_update_account
+	  - ua: don't append domain if uri is IP address (thanks Ali Shirvani)
+	  - ui: add ui_input_long_command
+	  - videnc:  add timestamp parameter
+	  - video: add video_calc_rtp_timestamp_fix
+	  - video: lock when setting encoder (ref #418) (#441)
+
+	* Modules:
+
+	* aufile: add slow cpu detection
+
+	* auloop: add samplerate and channels argument to command
+
+	* av1: add timestamp parameter to encode function
+
+	* avcodec: add timestamp parameter to encode function
+		   set baseline profile on ffmpeg H.264 encoder
+		   remove checks for old versions of libx264
+
+	* dshow: fix build for VC and mingw (thanks @Encamy)
+		 add picture vertical flipping (thanks Nicolas Tizon)
+
+	* dtls_srtp: add usage of medienc event handler
+
+	* gst_video: add timestamp parameter to encode function
+
+	* gst_video1: add timestamp parameter to encode function
+
+	* h265: add timestamp parameter to encode function
+
+	* httpd: no echoing of long commands
+
+	* menu: add video switch command /vidsrc  (thanks Ali Shirvani)
+
+	* opensles: check state before calling Destroy
+
+	* sdl2: print renderer info
+
+	* vidloop: refactoring of timestamp routines
+
+	* vp8: add timestamp parameter to encode function
+
+	* vp9: add timestamp parameter to encode function
+
+	* vumeter: add periodic events (thanks Ola Palm)
+
+	* zrtp: add usage of medienc event handler (thanks Juha Heinanen)
+
+
+2018-04-21 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.9
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.5.9
+	* NOTE: Requires libre v0.5.7 or later
+	        Requires librem v0.5.2 or later
+
+	* build:
+	  - Updated MSVS project to VS15 and added several files
+	    to project settings (thanks Encamy)
+
+	* config:
+
+	  video_fps            29.97         # float
+
+	* baresip-core:
+	  - conf: add conf_get_float
+	  - timer: add tmr_jiffies_usec
+	  - timestamp: new file for timestamp helpers
+	  - ua: add catchall flag to struct ua
+	  - ua: add ua_set_catchall
+	  - ua: uag_find: return match if catchall flag is set
+	  - vidcodec: change rtp_ts from 32-bit to 64-bit
+	  - videnc: change framerate to double float
+	  - video: change framerate to double float
+	  - vidsrc: add frame timestamp
+	  - vidsrc: change framerate to double float
+
+	* selftest:
+	  - mediaenc: add testcase for media encryption
+
+	* Modules:
+
+	* avcapture: add support for video frame timestamp
+
+	* avcodec: fix compiling with old ffmpeg versions
+		   print framerate of decoded bitstream
+
+	* avformat: add support for video frame timestamp
+
+	* b2bua: add handling of all inbound SIP requests
+
+	* cairo: add support for video frame timestamp
+
+	* ctrl_tcp: Fix #369. documentation typo (#372)
+		    Fix #370. wrong assignent (#371)
+		    (thanks José Luis Millán)
+
+	* dshow: add support for video frame timestamp
+
+	* fakevideo: add support for video frame timestamp
+		     add support for timer polling (no pthreads)
+
+	* menu: added "statmode_default" config variable (#359)
+		(thanks Juha Heinanen)
+
+	* rst: add support for video frame timestamp
+
+	* swscale: add YUV444P pixel format
+
+	* v4l: add support for video frame timestamp
+
+	* v4l2: add support for video frame timestamp
+		show actual framerate
+
+	* vidbridge: add support for video frame timestamp
+
+	* vidloop: add videoloop summary
+
+	* x11grab: add support for video frame timestamp
+
+
 2018-02-11 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.8

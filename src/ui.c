@@ -89,6 +89,14 @@ void ui_input_str(const char *str)
 }
 
 
+/**
+ * Send an input pointer-length string to the UI subsystem
+ *
+ * @param pf  Print function
+ * @param pl  Input pointer-length string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 {
 	struct cmd_ctx *ctx = NULL;
@@ -105,6 +113,37 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 
 	if (pl->l > 1 && ctx)
 		err |= cmd_process(commands, &ctx, '\n', pf, NULL);
+
+	return err;
+}
+
+
+/**
+ * Send a long command with arguments to the UI subsystem.
+ * The slash prefix is optional.
+ *
+ * @param pf  Print function for the response
+ * @param pl  Long command with or without '/' prefix
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ui_input_long_command(struct re_printf *pf, const struct pl *pl)
+{
+	size_t offset;
+	int err;
+
+	if (!pl)
+		return EINVAL;
+
+	/* strip the prefix, if present */
+	if (pl->l > 1 && pl->p[0] == '/')
+		offset = 1;
+	else
+		offset = 0;
+
+	err = cmd_process_long(baresip_commands(),
+			       pl->p + offset,
+			       pl->l - offset, pf, NULL);
 
 	return err;
 }
@@ -156,6 +195,13 @@ void ui_reset(struct ui_sub *uis)
 }
 
 
+/**
+ * Check if the UI is in editor mode
+ *
+ * @param uis  UI Subsystem
+ *
+ * @return True if editing, otherwise false
+ */
 bool ui_isediting(const struct ui_sub *uis)
 {
 	if (!uis)
@@ -165,6 +211,16 @@ bool ui_isediting(const struct ui_sub *uis)
 }
 
 
+/**
+ * Prompt the user interactively for a password
+ *
+ * NOTE: This function is blocking and should not be called from
+ *       any re_main event handlers.
+ *
+ * @param passwordp  Pointer to allocated password string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int ui_password_prompt(char **passwordp)
 {
 	char pwd[64];

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 
@@ -23,6 +24,7 @@
 struct vumeter_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 	struct tmr tmr;
+	const struct audio *au;
 	double avg_rec;
 	volatile bool started;
 };
@@ -30,9 +32,30 @@ struct vumeter_enc {
 struct vumeter_dec {
 	struct aufilt_dec_st af;  /* inheritance */
 	struct tmr tmr;
+	const struct audio *au;
 	double avg_play;
 	volatile bool started;
 };
+
+static bool vumeter_stderr;
+
+static void send_event(const struct audio *au, enum ua_event ev, double value)
+{
+	struct stream *strm;
+	struct call *call;
+	struct ua *ua;
+
+	/* get the stream from the audio object */
+	strm = audio_strm(au);
+
+	/* get the call from the stream object */
+	call = stream_call(strm);
+
+	/* get the useragent from the call object */
+	ua = call_get_ua(call);
+
+	ua_event(ua, ev, call, "%.2f", value);
+}
 
 
 static void enc_destructor(void *arg)
@@ -86,10 +109,14 @@ static void enc_tmr_handler(void *arg)
 {
 	struct vumeter_enc *st = arg;
 
-	tmr_start(&st->tmr, 100, enc_tmr_handler, st);
+	tmr_start(&st->tmr, 500, enc_tmr_handler, st);
 
-	if (st->started)
-		print_vumeter(60, 31, st->avg_rec);
+	if (st->started) {
+		if (vumeter_stderr)
+			print_vumeter(60, 31, st->avg_rec);
+
+		send_event(st->au, UA_EVENT_VU_TX, st->avg_rec);
+	}
 }
 
 
@@ -97,15 +124,20 @@ static void dec_tmr_handler(void *arg)
 {
 	struct vumeter_dec *st = arg;
 
-	tmr_start(&st->tmr, 100, dec_tmr_handler, st);
+	tmr_start(&st->tmr, 500, dec_tmr_handler, st);
 
-	if (st->started)
-		print_vumeter(80, 32, st->avg_play);
+	if (st->started) {
+		if (vumeter_stderr)
+			print_vumeter(80, 32, st->avg_play);
+
+		send_event(st->au, UA_EVENT_VU_RX, st->avg_play);
+	}
 }
 
 
 static int encode_update(struct aufilt_enc_st **stp, void **ctx,
-			 const struct aufilt *af, struct aufilt_prm *prm)
+			 const struct aufilt *af, struct aufilt_prm *prm,
+			 const struct audio *au)
 {
 	struct vumeter_enc *st;
 	(void)ctx;
@@ -117,10 +149,17 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (*stp)
 		return 0;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("vumeter: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
 		return ENOMEM;
 
+	st->au = au;
 	tmr_start(&st->tmr, 100, enc_tmr_handler, st);
 
 	*stp = (struct aufilt_enc_st *)st;
@@ -130,7 +169,8 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 
 static int decode_update(struct aufilt_dec_st **stp, void **ctx,
-			 const struct aufilt *af, struct aufilt_prm *prm)
+			 const struct aufilt *af, struct aufilt_prm *prm,
+			 const struct audio *au)
 {
 	struct vumeter_dec *st;
 	(void)ctx;
@@ -142,10 +182,17 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (*stp)
 		return 0;
 
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("vumeter: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
 		return ENOMEM;
 
+	st->au = au;
 	tmr_start(&st->tmr, 100, dec_tmr_handler, st);
 
 	*stp = (struct aufilt_dec_st *)st;
@@ -154,9 +201,12 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
+static int encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 {
 	struct vumeter_enc *vu = (void *)st;
+
+	if (!st || !sampv || !sampc)
+		return EINVAL;
 
 	vu->avg_rec = aulevel_calc_dbov(sampv, *sampc);
 	vu->started = true;
@@ -165,9 +215,12 @@ static int encode(struct aufilt_enc_st *st, int16_t *sampv, size_t *sampc)
 }
 
 
-static int decode(struct aufilt_dec_st *st, int16_t *sampv, size_t *sampc)
+static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 {
 	struct vumeter_dec *vu = (void *)st;
+
+	if (!st || !sampv || !sampc)
+		return EINVAL;
 
 	vu->avg_play = aulevel_calc_dbov(sampv, *sampc);
 	vu->started = true;
@@ -183,7 +236,12 @@ static struct aufilt vumeter = {
 
 static int module_init(void)
 {
+	struct conf *conf = conf_cur();
+
+	conf_get_bool(conf, "vumeter_stderr", &vumeter_stderr);
+
 	aufilt_register(baresip_aufiltl(), &vumeter);
+
 	return 0;
 }
 

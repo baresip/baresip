@@ -19,8 +19,19 @@ struct contact {
 	struct le he;          /* hash-element with key 'auri' */
 	struct sip_addr addr;
 	char *buf;
+	char *uri;
 	enum presence_status status;
 	enum access access;
+};
+
+
+struct contacts {
+	struct list cl;
+	struct hash *cht;
+	struct contact *cur;
+
+	contact_update_h *handler;
+	void *handler_arg;
 };
 
 
@@ -31,6 +42,19 @@ static void destructor(void *arg)
 	hash_unlink(&c->he);
 	list_unlink(&c->le);
 	mem_deref(c->buf);
+	mem_deref(c->uri);
+}
+
+
+static void contacts_destructor(void *data)
+{
+	struct contacts *contacts = data;
+
+	mem_deref(contacts->cur);
+
+	hash_clear(contacts->cht);
+	mem_deref(contacts->cht);
+	list_flush(&contacts->cl);
 }
 
 
@@ -68,6 +92,10 @@ int contact_add(struct contacts *contacts,
 		warning("contact: decode error '%r'\n", addr);
 		goto out;
 	}
+
+	err = pl_strdup(&c->uri, &c->addr.auri);
+	if (err)
+		goto out;
 
 	if (0 == msg_param_decode(&c->addr.params, "access", &pl)) {
 
@@ -122,16 +150,25 @@ void contact_remove(struct contacts *contacts, struct contact *contact)
 	hash_unlink(&contact->he);
 	list_unlink(&contact->le);
 
+	if (contacts->cur == contact)
+		contacts->cur = mem_deref(contacts->cur);
+
 	mem_deref(contact);
 }
 
 
+/**
+ * Set the contacts update handler
+ *
+ * @param contacts Contacts container
+ * @param updateh  Update handler
+ * @param arg      Handler argument
+ */
 void contact_set_update_handler(struct contacts *contacts,
 				contact_update_h *updateh, void *arg)
 {
-	if (!contacts) {
+	if (!contacts)
 		return;
-	}
 
 	contacts->handler = updateh;
 	contacts->handler_arg = arg;
@@ -165,6 +202,19 @@ const char *contact_str(const struct contact *c)
 
 
 /**
+ * Get the SIP uri of a contact
+ *
+ * @param c Contact
+ *
+ * @return SIP uri
+ */
+const char *contact_uri(const struct contact *c)
+{
+	return c ? c->uri : NULL;
+}
+
+
+/**
  * Get the list of contacts
  *
  * @param contacts Contacts container
@@ -180,6 +230,12 @@ struct list *contact_list(const struct contacts *contacts)
 }
 
 
+/**
+ * Set the presence status for a contact
+ *
+ * @param c      Contact
+ * @param status Presence status
+ */
 void contact_set_presence(struct contact *c, enum presence_status status)
 {
 	if (!c)
@@ -195,6 +251,14 @@ void contact_set_presence(struct contact *c, enum presence_status status)
 	c->status = status;
 }
 
+
+/**
+ * Get the presence status for a contact
+ *
+ * @param c Contact
+ *
+ * @return Presence status
+ */
 enum presence_status contact_presence(const struct contact *c)
 {
 	if (!c)
@@ -203,6 +267,14 @@ enum presence_status contact_presence(const struct contact *c)
 	return c->status;
 }
 
+
+/**
+ * Get the presence status string
+ *
+ * @param status Presence status
+ *
+ * @return Presence status string
+ */
 const char *contact_presence_str(enum presence_status status)
 {
 	switch (status) {
@@ -216,6 +288,31 @@ const char *contact_presence_str(enum presence_status status)
 }
 
 
+/**
+ * Print a contact
+ *
+ * @param pf  Print function
+ * @param cnt Contact to print
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int contact_print(struct re_printf *pf, const struct contact *cnt)
+{
+	if (!cnt)
+		return 0;
+
+	return re_hprintf(pf, "%r <%r>", &cnt->addr.dname, &cnt->addr.auri);
+}
+
+
+/**
+ * Print all contacts
+ *
+ * @param pf       Print function
+ * @param contacts Contacts container
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 {
 	const struct list *lst;
@@ -232,11 +329,11 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 
 	for (le = list_head(lst); le && !err; le = le->next) {
 		const struct contact *c = le->data;
-		const struct sip_addr *addr = &c->addr;
 
-		err = re_hprintf(pf, "%20s  %r <%r>\n",
+		err = re_hprintf(pf, "%s  %20s  %H\n",
+				 c == contacts->cur ? ">" : " ",
 				 contact_presence_str(c->status),
-				 &addr->dname, &addr->auri);
+				 contact_print, c);
 	}
 
 	err |= re_hprintf(pf, "\n");
@@ -248,40 +345,35 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 /**
  * Initialise the contacts sub-system
  *
- * @param contacts Contacts container
+ * @param contactsp Pointer to allocated contacts container
  *
  * @return 0 if success, otherwise errorcode
  */
-int contact_init(struct contacts *contacts)
+int contact_init(struct contacts **contactsp)
 {
+	struct contacts *contacts;
 	int err = 0;
 
-	if (!contacts)
+	if (!contactsp)
 		return EINVAL;
 
-	memset(contacts, 0, sizeof(*contacts));
+	contacts = mem_zalloc(sizeof(*contacts), contacts_destructor);
+	if (!contacts)
+		return ENOMEM;
 
 	list_init(&contacts->cl);
 
 	err = hash_alloc(&contacts->cht, 32);
+	if (err)
+		goto out;
+
+ out:
+	if (err)
+		mem_deref(contacts);
+	else
+		*contactsp = contacts;
 
 	return err;
-}
-
-
-/**
- * @param contacts Contacts container
- *
- * Close the contacts sub-system
- */
-void contact_close(struct contacts *contacts)
-{
-	if (!contacts)
-		return;
-
-	hash_clear(contacts->cht);
-	contacts->cht = mem_deref(contacts->cht);
-	list_flush(&contacts->cl);
 }
 
 
@@ -335,4 +427,49 @@ bool contact_block_access(const struct contacts *contacts, const char *uri)
 		return c->access == ACCESS_BLOCK;
 
 	return false;
+}
+
+
+/**
+ * Set the current contact
+ *
+ * @param contacts Contacts container
+ * @param cnt      Contact to be set as current
+ */
+void contacts_set_current(struct contacts *contacts, struct contact *cnt)
+{
+	if (!contacts || !cnt)
+		return;
+
+	mem_deref(contacts->cur);
+	contacts->cur = mem_ref(cnt);
+}
+
+
+/**
+ * Get the current contact
+ *
+ * @param contacts Contacts container
+ *
+ * @return Current contact, or NULL if no current contact
+ */
+struct contact *contacts_current(const struct contacts *contacts)
+{
+	if (!contacts)
+		return NULL;
+
+	return contacts->cur;
+}
+
+
+/**
+ * Get the linked list element from a contact
+ *
+ * @param cnt Contact
+ *
+ * @return Linked-list element
+ */
+struct le *contact_le(struct contact *cnt)
+{
+	return cnt ? &cnt->le : NULL;
 }

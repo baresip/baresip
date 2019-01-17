@@ -31,9 +31,14 @@
 struct vidsrc_st {
 	const struct vidsrc *vs;  /* inheritance */
 	struct vidframe *frame;
+#ifdef HAVE_PTHREAD
 	pthread_t thread;
 	bool run;
-	int fps;
+#else
+	struct tmr tmr;
+#endif
+	uint64_t ts;
+	double fps;
 	vidsrc_frame_h *frameh;
 	void *arg;
 };
@@ -47,35 +52,63 @@ static struct vidsrc *vidsrc;
 static struct vidisp *vidisp;
 
 
+static void process_frame(struct vidsrc_st *st)
+{
+	st->ts += (VIDEO_TIMEBASE / st->fps);
+
+	st->frameh(st->frame, st->ts, st->arg);
+}
+
+
+#ifdef HAVE_PTHREAD
 static void *read_thread(void *arg)
 {
 	struct vidsrc_st *st = arg;
-	uint64_t ts = tmr_jiffies();
+
+	st->ts = tmr_jiffies_usec();
 
 	while (st->run) {
 
-		if (tmr_jiffies() < ts) {
+		if (tmr_jiffies_usec() < st->ts) {
 			sys_msleep(4);
 			continue;
 		}
 
-		st->frameh(st->frame, st->arg);
-
-		ts += (1000/st->fps);
+		process_frame(st);
 	}
 
 	return NULL;
 }
+#else
+static void tmr_handler(void *arg)
+{
+	struct vidsrc_st *st = arg;
+	const uint64_t now = tmr_jiffies_usec();
+
+	tmr_start(&st->tmr, 4, tmr_handler, st);
+
+	if (!st->ts)
+		st->ts = now;
+
+	if (now >= st->ts) {
+		process_frame(st);
+	}
+}
+#endif
 
 
 static void src_destructor(void *arg)
 {
 	struct vidsrc_st *st = arg;
 
+#ifdef HAVE_PTHREAD
 	if (st->run) {
 		st->run = false;
 		pthread_join(st->thread, NULL);
 	}
+#else
+	tmr_cancel(&st->tmr);
+#endif
 
 	mem_deref(st->frame);
 }
@@ -95,6 +128,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		     vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;
+	unsigned x;
 	int err;
 
 	(void)ctx;
@@ -118,12 +152,31 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (err)
 		goto out;
 
+	/* Pattern of three vertical bars in RGB */
+	for (x=0; x<size->w; x++) {
+
+		uint8_t r=0, g=0, b=0;
+
+		if (x < size->w/3)
+			r = 255;
+		else if (x < size->w*2/3)
+			g = 255;
+		else
+			b = 255;
+
+		vidframe_draw_vline(st->frame, x, 0, size->h, r, g, b);
+	}
+
+#ifdef HAVE_PTHREAD
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, read_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;
 	}
+#else
+	tmr_start(&st->tmr, 1, tmr_handler, st);
+#endif
 
  out:
 	if (err)
@@ -161,11 +214,12 @@ static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame)
+		   const struct vidframe *frame, uint64_t timestamp)
 {
 	(void)st;
 	(void)title;
 	(void)frame;
+	(void)timestamp;
 
 	return 0;
 }

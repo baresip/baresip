@@ -69,10 +69,12 @@ static void media_destructor(void *arg)
 
 
 static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
-                         bool offerer, menc_error_h *errorh, void *arg)
+			 bool offerer, menc_event_h *eventh,
+			 menc_error_h *errorh, void *arg)
 {
 	struct menc_sess *st;
 	(void)offerer;
+	(void)eventh;
 	(void)errorh;
 	(void)arg;
 	int err = 0;

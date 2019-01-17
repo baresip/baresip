@@ -19,6 +19,9 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_UNREGISTERING:
 		return "register";
 
+	case UA_EVENT_MWI_NOTIFY:
+		return "mwi";
+
 	case UA_EVENT_SHUTDOWN:
 	case UA_EVENT_EXIT:
 		return "application";
@@ -28,11 +31,16 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_PROGRESS:
 	case UA_EVENT_CALL_ESTABLISHED:
 	case UA_EVENT_CALL_CLOSED:
+	case UA_EVENT_CALL_TRANSFER:
 	case UA_EVENT_CALL_TRANSFER_FAILED:
 	case UA_EVENT_CALL_DTMF_START:
 	case UA_EVENT_CALL_DTMF_END:
 	case UA_EVENT_CALL_RTCP:
+	case UA_EVENT_CALL_MENC:
 		return "call";
+	case UA_EVENT_VU_RX:
+	case UA_EVENT_VU_TX:
+		return "VU_REPORT";
 
 	default:
 		return "other";
@@ -86,6 +94,17 @@ static int add_rtcp_stats(struct odict *od_parent, const struct rtcp_stats *rs)
 }
 
 
+/**
+ * Encode an event to a dictionary
+ *
+ * @param od   Dictionary to encode into
+ * @param ua   User-Agent
+ * @param ev   Event type
+ * @param call Call object (optional)
+ * @param prm  Event parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		      struct call *call, const char *prm)
 {
@@ -163,6 +182,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_REGISTER_OK:          return "REGISTER_OK";
 	case UA_EVENT_REGISTER_FAIL:        return "REGISTER_FAIL";
 	case UA_EVENT_UNREGISTERING:        return "UNREGISTERING";
+	case UA_EVENT_MWI_NOTIFY:           return "MWI_NOTIFY";
 	case UA_EVENT_SHUTDOWN:             return "SHUTDOWN";
 	case UA_EVENT_EXIT:                 return "EXIT";
 	case UA_EVENT_CALL_INCOMING:        return "CALL_INCOMING";
@@ -170,10 +190,15 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_PROGRESS:        return "CALL_PROGRESS";
 	case UA_EVENT_CALL_ESTABLISHED:     return "CALL_ESTABLISHED";
 	case UA_EVENT_CALL_CLOSED:          return "CALL_CLOSED";
+	case UA_EVENT_CALL_TRANSFER:        return "TRANSFER";
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
 	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
 	case UA_EVENT_CALL_RTCP:            return "CALL_RTCP";
+	case UA_EVENT_CALL_MENC:            return "CALL_MENC";
+	case UA_EVENT_VU_TX:                return "VU_TX_REPORT";
+	case UA_EVENT_VU_RX:                return "VU_RX_REPORT";
+	case UA_EVENT_AUDIO_ERROR:          return "AUDIO_ERROR";
 	default: return "?";
 	}
 }

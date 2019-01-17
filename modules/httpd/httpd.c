@@ -25,6 +25,18 @@
 static struct http_sock *httpsock;
 
 
+static int handle_input(struct re_printf *pf, const struct pl *pl)
+{
+	if (!pl)
+		return 0;
+
+	if (pl->l > 1 && pl->p[0] == '/')
+		return ui_input_long_command(pf, pl);
+	else
+		return ui_input_pl(pf, pl);
+}
+
+
 static int html_print_head(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -62,7 +74,7 @@ static int html_print_cmd(struct re_printf *pf, const struct pl *prm)
 			  "</body>\n"
 			  "</html>\n",
 			  html_print_head, NULL,
-			  ui_input_pl, &params);
+			  handle_input, &params);
 }
 
 
@@ -84,16 +96,21 @@ static int html_print_raw(struct re_printf *pf, const struct pl *prm)
 
 	return re_hprintf(pf,
 			  "%H",
-			  ui_input_pl, &params);
+			  handle_input, &params);
 }
 
 static void http_req_handler(struct http_conn *conn,
 			     const struct http_msg *msg, void *arg)
 {
+	struct mbuf *mb;
 	int err;
 	char *buf = NULL;
 	struct pl nprm;
 	(void)arg;
+
+	mb = mbuf_alloc(8192);
+	if (!mb)
+		return;
 
 	err = re_sdprintf(&buf, "%H", uri_header_unescape, &msg->prm);
 	if (err)
@@ -103,24 +120,44 @@ static void http_req_handler(struct http_conn *conn,
 
 	if (0 == pl_strcasecmp(&msg->path, "/")) {
 
-		http_creply(conn, 200, "OK",
-			    "text/html;charset=UTF-8",
-			    "%H", html_print_cmd, &nprm);
+		err = mbuf_printf(mb, "%H", html_print_cmd, &nprm);
+		if (!err) {
+			http_reply(conn, 200, "OK",
+				 "Content-Type: text/html;charset=UTF-8\r\n"
+				 "Content-Length: %zu\r\n"
+				 "Access-Control-Allow-Origin: *\r\n"
+				 "\r\n"
+				 "%b",
+				 mb->end,
+				 mb->buf, mb->end);
+		}
+
 	}
 	else if (0 == pl_strcasecmp(&msg->path, "/raw/")) {
 
-		http_creply(conn, 200, "OK",
-			    "text/plain;charset=UTF-8",
-			    "%H", html_print_raw, &nprm);
+		err = mbuf_printf(mb, "%H", html_print_raw, &nprm);
+		if (!err) {
+			http_reply(conn, 200, "OK",
+				 "Content-Type: text/plain;charset=UTF-8\r\n"
+				 "Content-Length: %zu\r\n"
+				 "Access-Control-Allow-Origin: *\r\n"
+				 "\r\n"
+				 "%b",
+				 mb->end,
+				 mb->buf, mb->end);
+		}
+
 	}
 	else {
 		goto error;
 	}
+	mem_deref(mb);
 	mem_deref(buf);
 
 	return;
 
  error:
+	mem_deref(mb);
 	mem_deref(buf);
 	http_ereply(conn, 404, "Not Found");
 }

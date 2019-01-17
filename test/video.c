@@ -18,20 +18,15 @@ int test_video(void)
 {
 	int err = 0;
 
-	/* test with framerate of zero */
-	ASSERT_EQ(0, video_calc_rtp_timestamp(1, 0));
+	ASSERT_EQ(0,        video_calc_rtp_timestamp_fix(0));
+	ASSERT_EQ(90,       video_calc_rtp_timestamp_fix(1000));
+	ASSERT_EQ(90000,    video_calc_rtp_timestamp_fix(1000000));
+	ASSERT_EQ(90000000, video_calc_rtp_timestamp_fix(1000000000));
 
-	ASSERT_EQ(         0, video_calc_rtp_timestamp(      0, 30));
-	ASSERT_EQ(      3000, video_calc_rtp_timestamp(      1, 30));
-	ASSERT_EQ(     30000, video_calc_rtp_timestamp(     10, 30));
-	ASSERT_EQ(    300000, video_calc_rtp_timestamp(    100, 30));
-	ASSERT_EQ(   3000000, video_calc_rtp_timestamp(   1000, 30));
-	ASSERT_EQ(  30000000, video_calc_rtp_timestamp(  10000, 30));
-	ASSERT_EQ( 300000000, video_calc_rtp_timestamp( 100000, 30));
-	ASSERT_EQ(3000000000, video_calc_rtp_timestamp(1000000, 30));
-
-	ASSERT_EQ(4294965000ULL, video_calc_rtp_timestamp(1431655, 30));
-	ASSERT_EQ(4294968000ULL, video_calc_rtp_timestamp(1431656, 30));
+	ASSERT_EQ(0,          video_calc_timebase_timestamp(0));
+	ASSERT_EQ(1000,       video_calc_timebase_timestamp(90));
+	ASSERT_EQ(1000000,    video_calc_timebase_timestamp(90000));
+	ASSERT_EQ(1000000000, video_calc_timebase_timestamp(90000000));
 
  out:
 	return err;

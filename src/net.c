@@ -11,10 +11,10 @@
 struct network {
 	struct config_net cfg;
 	struct sa laddr;
-	char ifname[16];
+	char ifname[64];
 #ifdef HAVE_INET6
 	struct sa laddr6;
-	char ifname6[16];
+	char ifname6[64];
 #endif
 	struct tmr tmr;
 	struct dnsc *dnsc;
@@ -86,7 +86,7 @@ static int net_dns_srv_get(const struct network *net,
 }
 
 
-/**
+/*
  * Check for DNS Server updates
  */
 static void dns_refresh(struct network *net)
@@ -105,7 +105,7 @@ static void dns_refresh(struct network *net)
 }
 
 
-/**
+/*
  * Detect changes in IP address(es)
  */
 static void ipchange_handler(void *arg)
@@ -301,9 +301,33 @@ int net_alloc(struct network **netp, const struct config_net *cfg, int af)
 
 	if (str_isset(cfg->ifname)) {
 
+		struct sa temp_sa;
 		bool got_it = false;
 
-		info("Binding to interface '%s'\n", cfg->ifname);
+		info("Binding to interface or IP address '%s'\n", cfg->ifname);
+
+		/* check for valid IP-address */
+		if (0 == sa_set_str(&temp_sa, cfg->ifname, 0)) {
+
+			switch (sa_af(&temp_sa)) {
+
+			case AF_INET:
+				net->laddr = temp_sa;
+				break;
+
+#ifdef HAVE_INET6
+			case AF_INET6:
+				net->laddr6 = temp_sa;
+				break;
+#endif
+
+			default:
+				err = EAFNOSUPPORT;
+				goto out;
+			}
+
+			goto print_network_data;
+		}
 
 		str_ncpy(net->ifname, cfg->ifname, sizeof(net->ifname));
 
@@ -351,6 +375,8 @@ int net_alloc(struct network **netp, const struct config_net *cfg, int af)
 					 sizeof(net->ifname6));
 #endif
 	}
+
+print_network_data:
 
 	if (sa_isset(&net->laddr, SA_ADDR)) {
 		re_snprintf(buf4, sizeof(buf4), " IPv4=%s:%j",
@@ -430,6 +456,11 @@ void net_change(struct network *net, uint32_t interval,
 }
 
 
+/**
+ * Force a change in the network interfaces
+ *
+ * @param net Network instance
+ */
 void net_force_change(struct network *net)
 {
 	if (net && net->ch) {
@@ -461,6 +492,13 @@ static int dns_debug(struct re_printf *pf, const struct network *net)
 }
 
 
+/**
+ * Get the preferred address family (AF)
+ *
+ * @param net Network instance
+ *
+ * @return Preferred address family
+ */
 int net_af(const struct network *net)
 {
 	if (!net)

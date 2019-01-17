@@ -8,17 +8,19 @@
 #
 #  addr-params:
 #    ;answermode={manual,early,auto}
-#    ;audio_codecs=speex/16000,pcma,...
+#    ;audio_codecs=opus/48000/2,pcma,...
 #    ;auth_user=username
+#    ;auth_pass=password
+#    ;call_transfer=no
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}
+#    ;mwi=no
 #    ;outbound="sip:primary.example.com;transport=tcp"
 #    ;outbound2=sip:secondary.example.com
 #    ;ptime={10,20,30,40,...}
 #    ;regint=3600
 #    ;pubint=0 (publishing off)
 #    ;regq=0.5
-#    ;rtpkeep={zero,stun,dyna,rtcp}
 #    ;sipnat={outbound}
 #    ;stunserver=stun:[user:pass]@host[:port]
 #    ;video_codecs=h264,h263,...

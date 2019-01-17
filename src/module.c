@@ -164,6 +164,9 @@ int module_init(const struct conf *conf)
 }
 
 
+/**
+ * Unload all application modules in reverse order
+ */
 void module_app_unload(void)
 {
 	struct le *le = list_tail(mod_list());
@@ -183,6 +186,13 @@ void module_app_unload(void)
 }
 
 
+/**
+ * Pre-load a module from the current working directory
+ *
+ * @param module Module name including extension
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int module_preload(const char *module)
 {
 	struct pl path, name;

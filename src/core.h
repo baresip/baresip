@@ -71,7 +71,6 @@ struct account {
 	uint32_t regint;             /**< Registration interval in [seconds] */
 	uint32_t pubint;             /**< Publication interval in [seconds]  */
 	char *regq;                  /**< Registration Q-value               */
-	char *rtpkeep;               /**< RTP Keepalive mechanism            */
 	char *sipnat;                /**< SIP Nat mechanism                  */
 	char *stun_user;             /**< STUN Username                      */
 	char *stun_pass;             /**< STUN Password                      */
@@ -79,6 +78,8 @@ struct account {
 	uint16_t stun_port;          /**< STUN Port number                   */
 	struct le vcv[4];            /**< List elements for vidcodecl        */
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
+	bool mwi;                    /**< MWI on/off                         */
+	bool refer;                  /**< REFER method on/off                */
 };
 
 
@@ -90,12 +91,6 @@ struct auplay_st {
 	struct auplay *ap;
 };
 
-struct auplay {
-	struct le        le;
-	const char      *name;
-	auplay_alloc_h  *alloch;
-};
-
 
 /*
  * Audio Source
@@ -103,12 +98,6 @@ struct auplay {
 
 struct ausrc_st {
 	const struct ausrc *as;
-};
-
-struct ausrc {
-	struct le        le;
-	const char      *name;
-	ausrc_alloc_h   *alloch;
 };
 
 
@@ -128,8 +117,6 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		uint32_t ptime, const struct list *aucodecl, bool offerer,
 		audio_event_h *eventh, audio_err_h *errh, void *arg);
-int  audio_start(struct audio *a);
-void audio_stop(struct audio *a);
 int  audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		       int pt_tx, const char *params);
 int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
@@ -176,7 +163,6 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		const struct sip_msg *msg, struct call *xcall,
 		struct dnsc *dnsc,
 		call_event_h *eh, void *arg);
-int  call_connect(struct call *call, const struct pl *paddr);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
 int  call_hangup(struct call *call, uint16_t scode, const char *reason);
@@ -186,12 +172,17 @@ int  call_sdp_get(const struct call *call, struct mbuf **descp, bool offer);
 int  call_jbuf_stat(struct re_printf *pf, const struct call *call);
 int  call_info(struct re_printf *pf, const struct call *call);
 int  call_reset_transp(struct call *call, const struct sa *laddr);
-int  call_notify_sipfrag(struct call *call, uint16_t scode,
-			 const char *reason, ...);
 int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
 struct account *call_account(const struct call *call);
+void call_set_custom_hdrs(struct call *call, const struct list *hdrs);
 
+
+/*
+* Custom headers
+*/
+int custom_hdrs_print(struct re_printf *pf,
+		       const struct list *custom_hdrs);
 
 /*
  * Conf
@@ -259,7 +250,6 @@ double   metric_avg_bitrate(const struct metric *metric);
  */
 
 int module_init(const struct conf *conf);
-void module_app_unload(void);
 
 
 /*
@@ -308,17 +298,6 @@ int rtpext_decode(struct rtpext *ext, struct mbuf *mb);
 
 
 /*
- * RTP keepalive
- */
-
-struct rtpkeep;
-
-int  rtpkeep_alloc(struct rtpkeep **rkp, const char *method, int proto,
-		   struct rtp_sock *rtp, struct sdp_media *sdp);
-void rtpkeep_refresh(struct rtpkeep *rk, uint32_t ts);
-
-
-/*
  * SDP
  */
 
@@ -344,16 +323,20 @@ typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 /** Common parameters for media stream */
 struct stream_param {
 	bool use_rtp;
+	int af;
+	const char *cname;
 };
 
 /** Defines a generic media stream */
 struct stream {
+#ifndef RELEASE
+	uint32_t magic;          /**< Magic number for debugging            */
+#endif
 	struct le le;            /**< Linked list element                   */
 	struct config_avt cfg;   /**< Stream configuration                  */
 	struct call *call;       /**< Ref. to call object                   */
 	struct sdp_media *sdp;   /**< SDP Media line                        */
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
-	struct rtpkeep *rtpkeep; /**< RTP Keepalive                         */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
 	struct jbuf *jbuf;       /**< Jitter Buffer for incoming RTP        */
 	struct mnat_media *mns;  /**< Media NAT traversal state             */
@@ -366,19 +349,19 @@ struct stream {
 	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
 	int pt_enc;              /**< Payload type for encoding             */
-	bool rtcp;               /**< Enable RTCP                           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool jbuf_started;       /**< True if jitter-buffer was started     */
-	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
-	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
-	void *arg;               /**< Handler argument                      */
-	stream_error_h *errorh;  /**< Stream error handler                  */
-	void *errorh_arg;        /**< Error handler argument                */
 	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
 	uint64_t ts_last;        /**< Timestamp of last received RTP pkt    */
 	bool terminated;         /**< Stream is terminated flag             */
 	uint32_t rtp_timeout_ms; /**< RTP Timeout value in [ms]             */
 	bool rtp_estab;          /**< True if RTP stream is established     */
+	bool hold;               /**< Stream is on-hold (local)             */
+	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
+	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
+	void *arg;               /**< Handler argument                      */
+	stream_error_h *errorh;  /**< Stream error handler                  */
+	void *errorh_arg;        /**< Error handler argument                */
 };
 
 int  stream_alloc(struct stream **sp, const struct stream_param *prm,
@@ -387,12 +370,9 @@ int  stream_alloc(struct stream **sp, const struct stream_param *prm,
 		  const char *name, int label,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
-		  const char *cname,
 		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, void *arg);
-struct sdp_media *stream_sdpmedia(const struct stream *s);
 int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
-void stream_update(struct stream *s);
 void stream_update_encoder(struct stream *s, int pt_enc);
 int  stream_jbuf_stat(struct re_printf *pf, const struct stream *s);
 void stream_hold(struct stream *s, bool hold);
@@ -405,6 +385,8 @@ void stream_set_error_handler(struct stream *strm,
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 int  stream_print(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
+int  stream_jbuf_reset(struct stream *strm,
+		       uint32_t frames_min, uint32_t frames_max);
 
 
 /*
@@ -413,42 +395,10 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 
 struct ua;
 
-void         ua_event(struct ua *ua, enum ua_event ev, struct call *call,
-		      const char *fmt, ...);
 void         ua_printf(const struct ua *ua, const char *fmt, ...);
 
 struct tls  *uag_tls(void);
-const char  *uag_allowed_methods(void);
-
-
-/*
- * Video Display
- */
-
-struct vidisp {
-	struct le        le;
-	const char      *name;
-	vidisp_alloc_h  *alloch;
-	vidisp_update_h *updateh;
-	vidisp_disp_h   *disph;
-	vidisp_hide_h   *hideh;
-};
-
-struct vidisp *vidisp_get(struct vidisp_st *st);
-
-
-/*
- * Video Source
- */
-
-struct vidsrc {
-	struct le         le;
-	const char       *name;
-	vidsrc_alloc_h   *alloch;
-	vidsrc_update_h  *updateh;
-};
-
-struct vidsrc *vidsrc_get(struct vidsrc_st *st);
+const char  *ua_allowed_methods(const struct ua *ua);
 
 
 /*
@@ -495,23 +445,7 @@ struct timestamp_recv {
 };
 
 
-static inline uint64_t calc_extended_timestamp(uint32_t num_wraps, uint32_t ts)
-{
-	uint64_t ext_ts;
-
-	ext_ts  = (uint64_t)num_wraps * 0x100000000ULL;
-	ext_ts += (uint64_t)ts;
-
-	return ext_ts;
-}
-
-
 int      timestamp_wrap(uint32_t ts_new, uint32_t ts_old);
+void     timestamp_set(struct timestamp_recv *ts, uint32_t rtp_ts);
 uint64_t timestamp_duration(const struct timestamp_recv *ts);
-
-
-/*
- * Timer
- */
-
-uint64_t tmr_jiffies_usec(void);
+uint64_t timestamp_calc_extended(uint32_t num_wraps, uint32_t ts);

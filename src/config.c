@@ -32,6 +32,7 @@ static struct config core_config = {
 		16,
 		"",
 		"",
+		"",
 		""
 	},
 
@@ -47,8 +48,6 @@ static struct config core_config = {
 		"","",
 		"","",
 		"","",
-		{8000, 48000},
-		{1, 2},
 		0,
 		0,
 		0,
@@ -80,7 +79,6 @@ static struct config core_config = {
 		0xb8,
 		{1024, 49152},
 		{0, 0},
-		true,
 		false,
 		{5, 10},
 		false,
@@ -226,6 +224,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	struct vidsz size = {0, 0};
 	struct pl txmode;
 	uint32_t v;
+	bool tmp;
 	int err = 0;
 
 	if (!cfg || !conf)
@@ -251,6 +250,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   sizeof(cfg->sip.local));
 	(void)conf_get_str(conf, "sip_certificate", cfg->sip.cert,
 			   sizeof(cfg->sip.cert));
+	(void)conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
+			   sizeof(cfg->sip.cafile));
 
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
@@ -277,8 +278,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   cfg->audio.alert_dev,
 			   sizeof(cfg->audio.alert_dev));
 
-	(void)conf_get_range(conf, "audio_srate", &cfg->audio.srate);
-	(void)conf_get_range(conf, "audio_channels", &cfg->audio.channels);
 	(void)conf_get_u32(conf, "ausrc_srate", &cfg->audio.srate_src);
 	(void)conf_get_u32(conf, "auplay_srate", &cfg->audio.srate_play);
 	(void)conf_get_u32(conf, "ausrc_channels", &cfg->audio.channels_src);
@@ -336,7 +335,13 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		cfg->avt.rtp_bw.min *= 1000;
 		cfg->avt.rtp_bw.max *= 1000;
 	}
-	(void)conf_get_bool(conf, "rtcp_enable", &cfg->avt.rtcp_enable);
+
+#if 1
+	if (0 == conf_get_bool(conf, "rtcp_enable", &tmp) && !tmp) {
+		warning("config: rtcp_enable ignored, always enabled\n");
+	}
+#endif
+
 	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);
 	(void)conf_get_range(conf, "jitter_buffer_delay",
 			     &cfg->avt.jbuf_del);
@@ -389,15 +394,13 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
-			 "call_max_calls\t%u\n"
+			 "call_max_calls\t\t%u\n"
 			 "\n"
 			 "# Audio\n"
 			 "audio_path\t\t%s\n"
 			 "audio_player\t\t%s,%s\n"
 			 "audio_source\t\t%s,%s\n"
 			 "audio_alert\t\t%s,%s\n"
-			 "audio_srate\t\t%H\n"
-			 "audio_channels\t\t%H\n"
 			 "auplay_srate\t\t%u\n"
 			 "ausrc_srate\t\t%u\n"
 			 "auplay_channels\t\t%u\n"
@@ -411,13 +414,14 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "video_size\t\t\"%ux%u\"\n"
 			 "video_bitrate\t\t%u\n"
 			 "video_fps\t\t%.2f\n"
+			 "video_fullscreen\t%s\n"
+			 "videnc_format\t\t%s\n"
 			 "\n"
 #endif
 			 "# AVT\n"
 			 "rtp_tos\t\t\t%u\n"
 			 "rtp_ports\t\t%H\n"
 			 "rtp_bandwidth\t\t%H\n"
-			 "rtcp_enable\t\t%s\n"
 			 "rtcp_mux\t\t%s\n"
 			 "jitter_buffer_delay\t%H\n"
 			 "rtp_stats\t\t%s\n"
@@ -442,8 +446,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->audio.play_mod,  cfg->audio.play_dev,
 			 cfg->audio.src_mod,   cfg->audio.src_dev,
 			 cfg->audio.alert_mod, cfg->audio.alert_dev,
-			 range_print, &cfg->audio.srate,
-			 range_print, &cfg->audio.channels,
 			 cfg->audio.srate_play, cfg->audio.srate_src,
 			 cfg->audio.channels_play, cfg->audio.channels_src,
 			 cfg->audio.level ? "yes" : "no",
@@ -453,12 +455,13 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->video.disp_mod, cfg->video.disp_dev,
 			 cfg->video.width, cfg->video.height,
 			 cfg->video.bitrate, cfg->video.fps,
+			 cfg->video.fullscreen ? "yes" : "no",
+			 vidfmt_name(cfg->video.enc_fmt),
 #endif
 
 			 cfg->avt.rtp_tos,
 			 range_print, &cfg->avt.rtp_ports,
 			 range_print, &cfg->avt.rtp_bw,
-			 cfg->avt.rtcp_enable ? "yes" : "no",
 			 cfg->avt.rtcp_mux ? "yes" : "no",
 			 range_print, &cfg->avt.jbuf_del,
 			 cfg->avt.rtp_stats ? "yes" : "no",
@@ -480,7 +483,7 @@ static const char *default_audio_device(void)
 #if defined (ANDROID)
 	return "opensles,nil";
 #elif defined (DARWIN)
-	return "coreaudio,nil";
+	return "coreaudio,default";
 #elif defined (FREEBSD)
 	return "oss,/dev/dsp";
 #elif defined (OPENBSD)
@@ -504,6 +507,8 @@ static const char *default_video_device(void)
 	return "avcapture,nil";
 #endif
 
+#elif defined (WIN32)
+	return "dshow,nil";
 #else
 	return "v4l2,/dev/video0";
 #endif
@@ -514,6 +519,8 @@ static const char *default_video_display(void)
 {
 #ifdef DARWIN
 	return "opengl,nil";
+#elif defined (WIN32)
+	return "sdl2,nil";
 #else
 	return "x11,nil";
 #endif
@@ -557,7 +564,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
-			  "call_max_calls\t%u\n"
+			  "call_max_calls\t\t%u\n"
 			  "\n"
 			  "# Audio\n"
 #if defined (SHARE_PATH)
@@ -570,8 +577,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "audio_player\t\t%s\n"
 			  "audio_source\t\t%s\n"
 			  "audio_alert\t\t%s\n"
-			  "audio_srate\t\t%u-%u\n"
-			  "audio_channels\t\t%u-%u\n"
 			  "#ausrc_srate\t\t48000\n"
 			  "#auplay_srate\t\t48000\n"
 			  "#ausrc_channels\t\t0\n"
@@ -588,10 +593,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  cfg->call.max_calls,
 			  default_audio_device(),
 			  default_audio_device(),
-			  default_audio_device(),
-			  cfg->audio.srate.min, cfg->audio.srate.max,
-			  cfg->audio.channels.min, cfg->audio.channels.max
-			  );
+			  default_audio_device());
 
 #ifdef USE_VIDEO
 	err |= re_hprintf(pf,
@@ -616,7 +618,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtp_tos\t\t\t184\n"
 			  "#rtp_ports\t\t10000-20000\n"
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
-			  "rtcp_enable\t\tyes\n"
 			  "rtcp_mux\t\tno\n"
 			  "jitter_buffer_delay\t%u-%u\t\t# frames\n"
 			  "rtp_stats\t\tno\n"
@@ -758,7 +759,6 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f, "\n# Audio codec Modules (in order)\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "opus" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "silk" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "amr" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "g7221" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "g722" MOD_EXT "\n");
@@ -766,7 +766,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "g711" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "gsm" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "l16" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "speex" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "bv32" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "mpa" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "codec2" MOD_EXT "\n");
@@ -886,13 +885,14 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "# Application Modules\n");
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "module_app\t\t" MOD_PRE "auloop"MOD_EXT"\n");
+	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "b2bua"MOD_EXT"\n");
 	(void)re_fprintf(f, "module_app\t\t"  MOD_PRE "contact"MOD_EXT"\n");
 	(void)re_fprintf(f, "module_app\t\t"  MOD_PRE "debug_cmd"MOD_EXT"\n");
 #ifdef LINUX
 	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "dtmfio"MOD_EXT"\n");
 #endif
 	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "echo"MOD_EXT"\n");
-	(void)re_fprintf(f, "#module_app\t\t\t" MOD_PRE "gtk" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "gtk" MOD_EXT "\n");
 	(void)re_fprintf(f, "module_app\t\t"  MOD_PRE "menu"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t"  MOD_PRE "mwi"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "natbd"MOD_EXT"\n");
@@ -922,18 +922,19 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
 
-	(void)re_fprintf(f, "\n# Speex codec parameters\n");
-	(void)re_fprintf(f, "speex_quality\t\t7 # 0-10\n");
-	(void)re_fprintf(f, "speex_complexity\t7 # 0-10\n");
-	(void)re_fprintf(f, "speex_enhancement\t0 # 0-1\n");
-	(void)re_fprintf(f, "speex_mode_nb\t\t3 # 1-6\n");
-	(void)re_fprintf(f, "speex_mode_wb\t\t6 # 1-6\n");
-	(void)re_fprintf(f, "speex_vbr\t\t0 # Variable Bit Rate 0-1\n");
-	(void)re_fprintf(f, "speex_vad\t\t0 # Voice Activity Detection 0-1\n");
-	(void)re_fprintf(f, "speex_agc_level\t\t8000\n");
-
 	(void)re_fprintf(f, "\n# Opus codec parameters\n");
 	(void)re_fprintf(f, "opus_bitrate\t\t28000 # 6000-510000\n");
+	(void)re_fprintf(f, "#opus_stereo\t\tyes\n");
+	(void)re_fprintf(f, "#opus_sprop_stereo\tyes\n");
+	(void)re_fprintf(f, "#opus_cbr\t\tno\n");
+	(void)re_fprintf(f, "#opus_inband_fec\tno\n");
+	(void)re_fprintf(f, "#opus_dtx\t\tno\n");
+	(void)re_fprintf(f, "#opus_mirror\t\tno\n");
+	(void)re_fprintf(f, "#opus_complexity\t\t10\n");
+	(void)re_fprintf(f, "#opus_application\t\taudio\t# {voip,audio}\n");
+
+	(void)re_fprintf(f, "\n");
+	(void)re_fprintf(f, "vumeter_stderr\t\tyes\n");
 
 	(void)re_fprintf(f,
 			"\n# Selfview\n"
@@ -954,8 +955,11 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			"\n# Menu\n"
-			"#redial_attempts\t\t3 # Num or <inf>\n"
-			"#redial_delay\t\t5 # Delay in seconds\n");
+			"#menu_bell\t\tyes\n"
+			"#redial_attempts\t3 # Num or <inf>\n"
+			"#redial_delay\t\t5 # Delay in seconds\n"
+			"#ringback_disabled\tyes\n"
+			"#statmode_default\toff\n");
 
 	if (f)
 		(void)fclose(f);

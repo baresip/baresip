@@ -6,7 +6,7 @@ baresip README
 
 
 Baresip is a portable and modular SIP User-Agent with audio and video support.
-Copyright (c) 2010 - 2018 Creytiv.com
+Copyright (c) 2010 - 2019 Creytiv.com
 Distributed under BSD license
 
 
@@ -60,6 +60,7 @@ Distributed under BSD license
   - Configurable ringtone playback device
   - Automatic gain control (AGC) and Noise reducation
   - Acoustic echo control (AEC)
+  - Configurable audio sample format (Signed 16-bit, 24-bit, Float etc)
 
 * Audio-codecs:
   - AMR narrowband, AMR wideband
@@ -74,8 +75,6 @@ Distributed under BSD license
   - L16
   - MPA
   - Opus
-  - Silk
-  - Speex
 
 * Audio-drivers:
   - Advanced Linux Sound Architecture (ALSA) audio-driver
@@ -92,6 +91,7 @@ Distributed under BSD license
   - Configurable resolution/framerate/bitrate
   - Configurable video input/output
   - Support for asymmetric video
+  - Configurable video pixel format
 
 * Video-codecs:
   - H.265
@@ -120,6 +120,7 @@ Distributed under BSD license
   - TURN server support
   - ICE and ICE-lite support
   - NATPMP support
+  - PCP (Port Control Protocol) support
 
 * Networking:
   - multihoming, IPv4/IPv6
@@ -190,7 +191,7 @@ directory.
 
 ## License
 
-The baresip project is using the BSD license.
+The baresip project is using the 3-clause BSD license.
 
 
 ## Contributing
@@ -229,7 +230,7 @@ cairo         Cairo video source
 codec2        Codec2 low bit rate speech codec
 cons          UDP/TCP console UI driver
 contact       Contacts module
-coreaudio     Apple Coreaudio driver
+coreaudio     Apple macOS Coreaudio driver
 ctrl_tcp      TCP control interface using JSON payload
 debug_cmd     Debug commands
 directfb      DirectFB video display module
@@ -256,7 +257,6 @@ ilbc          iLBC audio codec
 isac          iSAC audio codec
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
-libsrtp       Secure RTP encryption using libsrtp
 menu          Interactive menu
 mpa           MPA Speech and Audio Codec
 mqtt          MQTT (Message Queue Telemetry Transport) module
@@ -275,15 +275,14 @@ portaudio     Portaudio driver
 pulse         Pulseaudio driver
 presence      Presence module
 qtcapture     Apple QTCapture video source driver
+rtcpsummary   RTCP summary module
 rst           Radio streamer using mpg123
 sdl           Simple DirectMedia Layer (SDL) video output driver
 sdl2          Simple DirectMedia Layer v2 (SDL2) video output driver
 selfview      Video selfview module
-silk          SILK audio codec
 snapshot      Save video-stream as PNG images
 sndfile       Audio dumper using libsndfile
 sndio         Audio driver for OpenBSD
-speex         Speex audio codec
 speex_aec     Acoustic Echo Cancellation (AEC) using libspeexdsp
 speex_pp      Audio pre-processor using libspeexdsp
 srtp          Secure RTP encryption (SDES) using libre SRTP-stack
@@ -302,6 +301,7 @@ vidloop       Video-loop test module
 vp8           VP8 video codec
 vp9           VP9 video codec
 vumeter       Display audio levels in console
+webrtc_aec    Acoustic Echo Cancellation (AEC) using WebRTC SDK
 wincons       Console input driver for Windows
 winwave       Audio driver for Windows
 x11           X11 video output driver
@@ -392,7 +392,7 @@ zrtp          ZRTP media encryption module
 
 ## Supported platforms:
 
-* Android
+* Android (5.0 or later)
 * Apple Mac OS X and iOS
 * FreeBSD
 * Linux

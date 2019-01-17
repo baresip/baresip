@@ -9,6 +9,7 @@
 #include <gtk/gtk.h>
 #include "gtk_mod.h"
 
+
 /**
  * Create a URI combox box.
  *
@@ -36,6 +37,7 @@ GtkWidget *uri_combo_box_new(void)
 
 	return uri_combobox;
 }
+
 
 const char *uri_combo_box_get_text(GtkComboBox *box)
 {

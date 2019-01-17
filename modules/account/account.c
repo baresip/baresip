@@ -62,12 +62,14 @@ static int account_write_template(const char *file)
 			 "#\n"
 			 "#  addr-params:\n"
 			 "#    ;answermode={manual,early,auto}\n"
-			 "#    ;audio_codecs=speex/16000,pcma,...\n"
+			 "#    ;audio_codecs=opus/48000/2,pcma,...\n"
 			 "#    ;auth_user=username\n"
 			 "#    ;auth_pass=password\n"
+			 "#    ;call_transfer=no\n"
 			 "#    ;mediaenc={srtp,srtp-mand,srtp-mandf"
 			 ",dtls_srtp,zrtp}\n"
 			 "#    ;medianat={stun,turn,ice}\n"
+			 "#    ;mwi=no\n"
 			 "#    ;outbound=\"sip:primary.example.com"
 			 ";transport=tcp\"\n"
 			 "#    ;outbound2=sip:secondary.example.com\n"
@@ -75,7 +77,6 @@ static int account_write_template(const char *file)
 			 "#    ;regint=3600\n"
 			 "#    ;pubint=0 (publishing off)\n"
 			 "#    ;regq=0.5\n"
-			 "#    ;rtpkeep={zero,stun,dyna,rtcp}\n"
 			 "#    ;sipnat={outbound}\n"
 			 "#    ;stunuser=STUN/TURN/ICE-username\n"
 			 "#    ;stunpass=STUN/TURN/ICE-password\n"
@@ -107,6 +108,7 @@ static int account_write_template(const char *file)
  * Add a User-Agent (UA)
  *
  * @param addr SIP Address string
+ * @param arg  Handler argument (unused)
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -128,6 +130,16 @@ static int line_handler(const struct pl *addr, void *arg)
 	if (!acc) {
 		warning("account: no account for this ua\n");
 		return ENOENT;
+	}
+
+	if (account_regint(acc) != 0) {
+		int e;
+
+		e = ua_register(ua);
+		if (e) {
+			warning("account: failed to register ua"
+				" '%s' (%m)\n", ua_aor(ua), e);
+		}
 	}
 
 	/* optional password prompt */

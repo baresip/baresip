@@ -60,10 +60,8 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 	struct mwi *mwi = arg;
 
 	if (mbuf_get_left(msg->mb)) {
-		struct ui_sub *uis = baresip_uis();
-		ui_output(uis, "----- MWI for %s -----\n", ua_aor(mwi->ua));
-		ui_output(uis, "%b\n", mbuf_buf(msg->mb),
-			  mbuf_get_left(msg->mb));
+		ua_event(mwi->ua, UA_EVENT_MWI_NOTIFY, NULL, "%b",
+			  mbuf_buf(msg->mb), mbuf_get_left(msg->mb));
 	}
 
 	(void)sip_treply(NULL, sip, msg, 200, "OK");
@@ -154,20 +152,17 @@ static void ua_event_handler(struct ua *ua,
 
 	if (ev == UA_EVENT_REGISTER_OK) {
 
-		if (!mwi_find(ua))
+		if (!mwi_find(ua) &&
+		    (str_casecmp(account_mwi(ua_account(ua)), "yes") == 0))
 			mwi_subscribe(ua);
 	}
 	else if (ev == UA_EVENT_SHUTDOWN) {
 
-		struct le *le;
+		struct mwi *mwi = mwi_find(ua);
 
-		info("mwi: shutdown\n");
+		if (mwi) {
 
-		le = list_head(&mwil);
-		while (le) {
-			struct mwi *mwi = le->data;
-			le = le->next;
-
+			info("mwi: shutdown of %s\n", ua_aor(ua));
 			mwi->shutdown = true;
 
 			if (mwi->sub) {
@@ -187,13 +182,9 @@ static void tmr_handler(void *arg)
 
 	(void)arg;
 
-	for (le = list_head(uag_list()); le; le = le->next) {
-		struct ua *ua = le->data;
-		struct account *acc = ua_account(ua);
-
-		if (account_regint(acc) == 0) {
-			mwi_subscribe(ua);
-		}
+	for (le = list_head(&mwil); le; le = le->next) {
+		struct mwi *mwi = le->data;
+		mwi_subscribe(mwi->ua);
 	}
 }
 

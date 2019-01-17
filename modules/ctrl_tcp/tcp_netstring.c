@@ -115,15 +115,18 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 	/* extract all NETSTRING-frames in the TCP-stream */
 	for (;;) {
 
-		size_t len, end;
+		size_t len;
 		struct mbuf mb;
 
 		if (mbuf_get_left(netstring->mb) < (3))
 			break;
 
-		err = netstring_read((char*)netstring->mb->buf,
-				                 netstring->mb->end,
-				                 (char**)&mb.buf, &len);
+		mbuf_init(&mb);
+
+		err = netstring_read(
+				(char*)netstring->mb->buf + netstring->mb->pos,
+				netstring->mb->end,
+				(char**)&mb.buf, &len);
 		if (err) {
 
 			if (err == NETSTRING_ERROR_TOO_SHORT) {
@@ -140,17 +143,13 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 			return false;
 		}
 
-		pos = netstring->mb->pos;
-		end = netstring->mb->end;
-
-		netstring->mb->end = pos + len;
+		mb.end = len;
 
 		++netstring->n_rx;
 
 		netstring->frameh(&mb, netstring->arg);
 
-		netstring->mb->pos = pos + netstring_buffer_size(len);
-		netstring->mb->end = end;
+		netstring->mb->pos += netstring_buffer_size(len);
 
 		if (netstring->mb->pos >= netstring->mb->end) {
 			netstring->mb = mem_deref(netstring->mb);

@@ -73,7 +73,7 @@
   "param"      : "Connection reset by peer",
   "accountaor" : "sip:alice@atlanta.com",
   "direction"  : "incoming",
-  "peer"       : "sip:bob@biloxy.com",
+  "peeruri"    : "sip:bob@biloxy.com",
   "id"         : "73a12546589651f8"
  }
  \endverbatim
@@ -171,7 +171,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL;
 	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
-	char buf[256];
+	char buf[1024];
 	int err;
 
 	err = json_decode_odict(&od, 32, (const char*)mb->buf, mb->end, 16);
@@ -247,7 +247,7 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 
 	/* only one connection allowed */
 	st->tc = mem_deref(st->tc);
-	st->tc = mem_deref(st->ns);
+	st->ns = mem_deref(st->ns);
 
 	(void)tcp_accept(&st->tc, st->ts, NULL, NULL, tcp_close_handler, st);
 	(void)netstring_insert(&st->ns, st->tc, 0, command_handler, st);

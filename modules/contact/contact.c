@@ -18,95 +18,49 @@
  */
 
 
-static const char *chat_peer;         /**< Selected chat peer             */
-static char cmd_desc[128] = "Send MESSAGE to peer";
-
-
 static int confline_handler(const struct pl *addr, void *arg)
 {
 	struct contacts *contacts = arg;
+
 	return contact_add(contacts, NULL, addr);
-}
-
-
-static int cmd_contact(struct re_printf *pf, void *arg)
-{
-	const struct cmd_arg *carg = arg;
-	struct contacts *contacts = baresip_contacts();
-	struct contact *cnt = NULL;
-	struct pl dname, user, pl;
-	struct le *le;
-	int err = 0;
-
-	pl_set_str(&pl, carg->prm);
-
-	dname.l = user.l = pl.l;
-
-	err |= re_hprintf(pf, "\n");
-
-	for (le = list_head(contact_list(contacts)); le; le = le->next) {
-
-		struct contact *c = le->data;
-
-		dname.p = contact_addr(c)->dname.p;
-		user.p  = contact_addr(c)->uri.user.p;
-
-		/* if displayname is set, try to match the displayname
-		 * otherwise we try to match the username only
-		 */
-		if (dname.p) {
-
-			if (0 == pl_casecmp(&dname, &pl)) {
-				err |= re_hprintf(pf, "%s\n", contact_str(c));
-				cnt = c;
-			}
-		}
-		else if (user.p) {
-
-			if (0 == pl_casecmp(&user, &pl)) {
-				err |= re_hprintf(pf, "%s\n", contact_str(c));
-				cnt = c;
-			}
-		}
-	}
-
-	if (!cnt)
-		err |= re_hprintf(pf, "(no matches)\n");
-
-	if (carg->complete && cnt) {
-
-		switch (carg->key) {
-
-		case '|':
-			err = ua_connect(uag_current(), NULL, NULL,
-					 contact_str(cnt), NULL, VIDMODE_ON);
-			if (err) {
-				warning("contact: ua_connect failed: %m\n",
-					err);
-			}
-			break;
-
-		case '=':
-			chat_peer = contact_str(cnt);
-			(void)re_hprintf(pf, "Selected chat peer: %s\n",
-					 chat_peer);
-			re_snprintf(cmd_desc, sizeof(cmd_desc),
-				    "Send MESSAGE to %s", chat_peer);
-			break;
-
-		default:
-			break;
-		}
-	}
-
-	return err;
 }
 
 
 static int print_contacts(struct re_printf *pf, void *unused)
 {
 	(void)unused;
+
 	return contacts_print(pf, baresip_contacts());
+}
+
+
+static int save_current(const struct contact *cnt)
+{
+	char path[256] = "", file[256] = "";
+	FILE *f = NULL;
+	int err;
+
+	err = conf_path_get(path, sizeof(path));
+	if (err)
+		return err;
+
+	if (re_snprintf(file, sizeof(file), "%s/current_contact", path) < 0)
+		return ENOMEM;
+
+	f = fopen(file, "w");
+	if (!f)
+		return errno;
+
+	if (re_fprintf(f, "%s", contact_uri(cnt)) < 0) {
+		err = errno;
+		goto out;
+	}
+
+ out:
+	if (f)
+		(void)fclose(f);
+
+	return err;
 }
 
 
@@ -126,31 +80,155 @@ static void send_resp_handler(int err, const struct sip_msg *msg, void *arg)
 }
 
 
+static int cmd_dial_contact(struct re_printf *pf, void *arg)
+{
+	struct contact *cnt;
+	const char *uri;
+	int err = 0;
+	(void)arg;
+
+	cnt = contacts_current(baresip_contacts());
+	if (!cnt) {
+		return re_hprintf(pf, "contact: current contact not set\n");
+	}
+
+	uri = contact_uri(cnt);
+
+	err = ua_connect(uag_current(), NULL, NULL, uri, VIDMODE_ON);
+	if (err) {
+		warning("contact: ua_connect(%s) failed: %m\n",
+			uri, err);
+	}
+
+	return 0;
+}
+
+
 static int cmd_message(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	int err;
+	struct contact *cnt;
+	const char *uri;
+	int err = 0;
 
-	if (!str_isset(chat_peer)) {
-		return re_hprintf(pf, "contact: chat peer is not set\n");
+	cnt = contacts_current(baresip_contacts());
+	if (!cnt) {
+		return re_hprintf(pf, "contact: current contact not set\n");
 	}
 
-	err = message_send(uag_current(), chat_peer, carg->prm,
+	uri = contact_uri(cnt);
+
+	err = message_send(uag_current(), uri, carg->prm,
 			   send_resp_handler, NULL);
 	if (err) {
-		(void)re_hprintf(pf, "contact: message_send() failed (%m)\n",
-				 err);
+		(void)re_hprintf(pf, "contact: message_send(%s) failed (%m)\n",
+				 uri, err);
 	}
 
 	return err;
 }
 
 
+static int load_current_contact(struct contacts *contacts, const char *path)
+{
+	char file[256] = "";
+	char buf[1024];
+	struct contact *cnt = NULL;
+	struct sip_addr addr;
+	struct pl pl;
+	FILE *f = NULL;
+	int err = 0;
+
+	if (re_snprintf(file, sizeof(file), "%s/current_contact", path) < 0)
+		return ENOMEM;
+
+	if (conf_fileexist(file)) {
+
+		f = fopen(file, "r");
+		if (!f)
+			return errno;
+
+		if (!fgets(buf, (int)sizeof(buf), f)) {
+			err = errno;
+			goto out;
+		}
+
+		pl_set_str(&pl, buf);
+		if (0 == sip_addr_decode(&addr, &pl))
+			pl_strcpy(&addr.auri, buf, sizeof(buf));
+
+		cnt = contact_find(contacts, buf);
+		if (!cnt) {
+			info("contact from disk not found (%s)\n", buf);
+		}
+	}
+
+	if (!cnt) {
+		cnt = list_ledata(list_head(contact_list(contacts)));
+
+		err = save_current(cnt);
+		if (err)
+			goto out;
+	}
+
+	if (cnt)
+		contacts_set_current(contacts, cnt);
+
+ out:
+	if (f)
+		(void)fclose(f);
+
+	return err;
+}
+
+
+static int cmd_cycle_current(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct contacts *contacts = baresip_contacts();
+	const bool next = carg->key == '>';
+	struct contact *cnt;
+	struct le *le;
+	int err;
+
+	cnt = contacts_current(contacts);
+	if (cnt) {
+		le = contact_le(cnt);
+
+		if (next)
+			le = le->next ? le->next : le;
+		else
+			le = le->prev ? le->prev : le;
+	}
+	else {
+		/* No current contact, set the first one */
+		le = list_head(contact_list(contacts));
+		if (!le)
+			return re_hprintf(pf, "(no contacts)\n");
+	}
+
+	cnt = list_ledata(le);
+
+	contacts_set_current(contacts, cnt);
+
+	re_hprintf(pf, "Current contact: %H\n", contact_print, cnt);
+
+	err = save_current(cnt);
+	if (err) {
+		warning("contact: failed to save"
+			" current contact (%m)\n", err);
+	}
+
+	return 0;
+}
+
+
 static const struct cmd cmdv[] = {
-{"dialcontact", '|',  CMD_IPRM, "Dial from contacts",     cmd_contact        },
-{"chatpeer",    '=',  CMD_IPRM, "Select chat peer",       cmd_contact        },
-{"contacts",    'C',         0, "List contacts",          print_contacts     },
-{"message",     '-',   CMD_PRM, cmd_desc,                 cmd_message        },
+{"contacts",     'C',        0, "List contacts",          print_contacts    },
+{"dialcontact",  'D',        0, "Dial current contact",   cmd_dial_contact  },
+{"message",      'M',  CMD_PRM, "Message current contact",cmd_message       },
+{"contact_prev", '<',        0, "Set previous contact",   cmd_cycle_current },
+{"contact_next", '>',        0, "Set next contact",       cmd_cycle_current },
 };
 
 
@@ -233,6 +311,16 @@ static int module_init(void)
 
 	info("Populated %u contacts\n",
 	     list_count(contact_list(contacts)));
+
+	/* Load current contact after list was populated */
+	if (!list_isempty(contact_list(contacts))) {
+
+		err = load_current_contact(contacts, path);
+		if (err) {
+			warning("could not load current contact (%m)\n", err);
+			err = 0;
+		}
+	}
 
 	return err;
 }

@@ -47,6 +47,15 @@ static void vidfilt_enc_destructor(void *arg)
 }
 
 
+/**
+ * Allocate a video-filter encode state and append to list
+ *
+ * @param filtl List of video-filter states
+ * @param ctx   Media context
+ * @param vf    Video filter
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int vidfilt_enc_append(struct list *filtl, void **ctx,
 		       const struct vidfilt *vf)
 {
@@ -79,6 +88,15 @@ static void vidfilt_dec_destructor(void *arg)
 }
 
 
+/**
+ * Allocate a video-filter decode state and append to list
+ *
+ * @param filtl List of video-filter states
+ * @param ctx   Media context
+ * @param vf    Video filter
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int vidfilt_dec_append(struct list *filtl, void **ctx,
 		       const struct vidfilt *vf)
 {

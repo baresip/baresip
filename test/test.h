@@ -150,6 +150,22 @@ int mock_auplay_register(struct auplay **auplayp,
 
 
 /*
+ * Mock Media encryption
+ */
+
+void mock_menc_register(void);
+void mock_menc_unregister(void);
+
+
+/*
+ * Mock Media NAT-traversal
+ */
+
+int  mock_mnat_register(struct list *mnatl);
+void mock_mnat_unregister(void);
+
+
+/*
  * Mock Video-source
  */
 
@@ -171,8 +187,13 @@ void mock_vidcodec_unregister(void);
  */
 
 struct vidisp;
+struct vidframe;
 
-int mock_vidisp_register(struct vidisp **vidispp);
+typedef void (mock_vidisp_h)(const struct vidframe *frame, uint64_t timestamp,
+			     void *arg);
+
+int mock_vidisp_register(struct vidisp **vidispp,
+			 mock_vidisp_h *disph, void *arg);
 
 
 /* test cases */
@@ -208,6 +229,11 @@ int test_call_video(void);
 int test_call_aulevel(void);
 int test_call_progress(void);
 int test_call_format_float(void);
+int test_call_mediaenc(void);
+int test_call_medianat(void);
+int test_call_custom_headers(void);
+int test_call_tcp(void);
+int test_call_transfer(void);
 
 #ifdef USE_VIDEO
 int test_video(void);
