@@ -471,9 +471,16 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 }
 
 
-struct sdp_media *stream_sdpmedia(const struct stream *s)
+/**
+ * Get the sdp object from the stream
+ *
+ * @param strm Stream object
+ *
+ * @return SDP media object
+ */
+struct sdp_media *stream_sdpmedia(const struct stream *strm)
 {
-	return s ? s->sdp : NULL;
+	return strm ? strm->sdp : NULL;
 }
 
 
@@ -742,19 +749,6 @@ const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
 struct call *stream_call(const struct stream *strm)
 {
 	return strm ? strm->call : NULL;
-}
-
-
-/**
- * Get the sdp object from the stream
- *
- * @param strm Stream object
- *
- * @return SDP media object
- */
-const struct sdp_media *stream_sdp(const struct stream *strm)
-{
-	return strm ? strm->sdp : NULL;
 }
 
 
