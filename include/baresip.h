@@ -1164,6 +1164,7 @@ uint64_t video_calc_timebase_timestamp(uint64_t rtp_ts);
  * Generic stream
  */
 
+void stream_update(struct stream *s);
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
 struct call *stream_call(const struct stream *strm);
 struct sdp_media *stream_sdpmedia(const struct stream *s);
