@@ -316,13 +316,6 @@ typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
-/** Common parameters for media stream */
-struct stream_param {
-	bool use_rtp;
-	int af;
-	const char *cname;
-};
-
 /** Defines a generic media stream */
 struct stream {
 #ifndef RELEASE
