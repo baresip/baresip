@@ -946,8 +946,6 @@ static void vidisp_resize_handler(const struct vidsz *sz, void *arg)
 	MAGIC_CHECK(vrx->video);
 
 	info("video: display resized: %u x %u\n", sz->w, sz->h);
-
-	/* XXX: update wanted picturesize and send re-invite to peer */
 }
 
 
