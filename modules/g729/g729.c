@@ -141,7 +141,7 @@ static int g729_encode(struct auenc_state *aes, uint8_t *buf,
 
 	if (!len || !aes)
 		return EINVAL;
-	
+
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
