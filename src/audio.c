@@ -1701,6 +1701,16 @@ bool audio_started(const struct audio *a)
 }
 
 
+/**
+ * Set the audio encoder used
+ *
+ * @param a      Audio object
+ * @param ac     Audio codec to use
+ * @param pt_tx  Payload type for sending
+ * @param params Optional encoder parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		      int pt_tx, const char *params)
 {
@@ -1755,6 +1765,16 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 }
 
 
+/**
+ * Set the audio decoder used
+ *
+ * @param a      Audio object
+ * @param ac     Audio codec to use
+ * @param pt_rx  Payload type for receiving
+ * @param params Optional decoder parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		      int pt_rx, const char *params)
 {
