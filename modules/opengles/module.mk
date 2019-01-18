@@ -8,6 +8,7 @@ MOD		:= opengles
 $(MOD)_SRCS	+= opengles.c
 
 $(MOD)_CFLAGS	+= -DGL_GLEXT_PROTOTYPES
+$(MOD)_LFLAGS   += -lGLESv2 -lGLESv1_CM
 
 ifeq ($(OS),darwin)
 $(MOD)_SRCS	+= context.m
