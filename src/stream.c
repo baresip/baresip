@@ -540,6 +540,11 @@ static void stream_remote_set(struct stream *s)
 }
 
 
+/**
+ * Update the media stream
+ *
+ * @param s Stream object
+ */
 void stream_update(struct stream *s)
 {
 	const struct sdp_format *fmt;
