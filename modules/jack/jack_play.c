@@ -43,7 +43,7 @@ static inline float ausamp_short2float(int16_t in)
  * port to its output port. It will exit when stopped by
  * the user (e.g. using Ctrl-C on a unix-ish operating system)
  *
- * XXX avoid memory allocations in this function
+ * NOTE avoid memory allocations in this function
  */
 static int process_handler(jack_nframes_t nframes, void *arg)
 {
