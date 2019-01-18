@@ -21,7 +21,7 @@ struct ausrc_st {
 	void *arg;
 
 	jack_client_t *client;
-	jack_port_t *portv[2];
+	jack_port_t **portv;
 	jack_nframes_t nframes;       /* num frames per port (channel) */
 };
 
@@ -85,6 +85,7 @@ static void ausrc_destructor(void *arg)
 		jack_client_close(st->client);
 
 	mem_deref(st->sampv);
+	mem_deref(st->portv);
 }
 
 
@@ -193,9 +194,6 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
 
-	if (prm->ch > ARRAY_SIZE(st->portv))
-		return EINVAL;
-
 	if (prm->fmt != AUFMT_S16LE) {
 		warning("jack: source: unsupported sample format (%s)\n",
 			aufmt_name(prm->fmt));
@@ -210,6 +208,12 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
+
+	st->portv = mem_reallocarray(NULL, prm->ch, sizeof(*st->portv), NULL);
+	if (!st->portv) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	err = start_jack(st);
 	if (err)
