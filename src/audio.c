@@ -1962,8 +1962,12 @@ void audio_sdp_attr_decode(struct audio *a)
 			tx->ptime = ptime_tx;
 
 			if (tx->ac) {
-				tx->psize = 2 * get_framesize(tx->ac,
-							      ptime_tx);
+				size_t sz;
+
+				sz = aufmt_sample_size(tx->src_fmt);
+
+				tx->psize = sz * get_framesize(tx->ac,
+							       ptime_tx);
 			}
 		}
 	}
