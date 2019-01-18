@@ -1448,7 +1448,8 @@ static int start_player(struct aurx *rx, struct audio *a)
 		     " %uHz/%uch --> %uHz/%uch\n",
 		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
 
-		rx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * 2, NULL);
+		rx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t),
+					  NULL);
 		if (!rx->sampv_rs)
 			return ENOMEM;
 
@@ -1535,7 +1536,8 @@ static int start_source(struct autx *tx, struct audio *a)
 		     " %uHz/%uch <-- %uHz/%uch\n",
 		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
 
-		tx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * 2, NULL);
+		tx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t),
+					  NULL);
 		if (!tx->sampv_rs)
 			return ENOMEM;
 
