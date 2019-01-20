@@ -333,27 +333,10 @@ static int create_ua(struct re_printf *pf, void *arg)
 
 	if (str_isset(carg->prm)) {
 
-		mbuf_rewind(menu.dialbuf);
-		(void)mbuf_write_str(menu.dialbuf, carg->prm);
-
 		(void)re_hprintf(pf, "Creating UA for %s ...\n", carg->prm);
 		err = ua_alloc(&ua, carg->prm);
 		if (err)
 			goto out;
-	}
-	else if (menu.dialbuf->end > 0) {
-
-		char *uri;
-
-		menu.dialbuf->pos = 0;
-		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
-		if (err)
-			return err;
-
-		(void)re_hprintf(pf, "Creating UA for %s ...\n", uri);
-		err |=  ua_alloc(&ua, uri);
-
-		mem_deref(uri);
 	}
 
 	if (account_regint(ua_account(ua))) {
@@ -400,6 +383,30 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 	update_callstatus();
 
 	return err;
+}
+
+
+static int cmd_ua_find(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = NULL;
+
+	if (str_isset(carg->prm)) {
+		ua = uag_find_aor(carg->prm);
+	}
+
+	if (!ua) {
+		warning("menu: ua_find failed: %s\n", carg->prm);
+		return ENOENT;
+	}
+
+	re_hprintf(pf, "ua: %s\n", ua_aor(ua));
+
+	uag_current_set(ua);
+
+	update_callstatus();
+
+	return 0;
 }
 
 
@@ -456,6 +463,7 @@ static const struct cmd cmdv[] = {
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 {"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
+{"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"ausrc",     0,   CMD_IPRM, "Switch audio source",     switch_audio_source  },
 {"auplay",    0,   CMD_IPRM, "Switch audio player",     switch_audio_player  },
 {"about",     0,          0, "About box",               about_box            },

@@ -6,7 +6,7 @@ baresip README
 
 
 Baresip is a portable and modular SIP User-Agent with audio and video support.
-Copyright (c) 2010 - 2018 Creytiv.com
+Copyright (c) 2010 - 2019 Creytiv.com
 Distributed under BSD license
 
 
@@ -275,6 +275,7 @@ portaudio     Portaudio driver
 pulse         Pulseaudio driver
 presence      Presence module
 qtcapture     Apple QTCapture video source driver
+rtcpsummary   RTCP summary module
 rst           Radio streamer using mpg123
 sdl           Simple DirectMedia Layer (SDL) video output driver
 sdl2          Simple DirectMedia Layer v2 (SDL2) video output driver
@@ -300,6 +301,7 @@ vidloop       Video-loop test module
 vp8           VP8 video codec
 vp9           VP9 video codec
 vumeter       Display audio levels in console
+webrtc_aec    Acoustic Echo Cancellation (AEC) using WebRTC SDK
 wincons       Console input driver for Windows
 winwave       Audio driver for Windows
 x11           X11 video output driver

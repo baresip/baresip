@@ -44,8 +44,8 @@ static void printRtcpSummaryLine(const struct stream *s)
 			 1.0 * rtcp->rx.jit/1000,
 			 1.0 * rtcp->tx.jit/1000,
 			 1.0 * rtcp->rtt/1000,
-			 sdp_media_laddr(stream_sdp(s)),
-			 sdp_media_raddr(stream_sdp(s)));
+			 sdp_media_laddr(stream_sdpmedia(s)),
+			 sdp_media_raddr(stream_sdpmedia(s)));
 	}
 	else {
 		/*

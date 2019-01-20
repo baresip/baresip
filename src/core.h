@@ -117,10 +117,6 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		uint32_t ptime, const struct list *aucodecl, bool offerer,
 		audio_event_h *eventh, audio_err_h *errh, void *arg);
-int  audio_encoder_set(struct audio *a, const struct aucodec *ac,
-		       int pt_tx, const char *params);
-int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
-		       int pt_rx, const char *params);
 int  audio_send_digit(struct audio *a, char key);
 void audio_sdp_attr_decode(struct audio *a);
 int  audio_print_rtpstat(struct re_printf *pf, const struct audio *au);
@@ -320,13 +316,6 @@ typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
-/** Common parameters for media stream */
-struct stream_param {
-	bool use_rtp;
-	int af;
-	const char *cname;
-};
-
 /** Defines a generic media stream */
 struct stream {
 #ifndef RELEASE
@@ -349,7 +338,6 @@ struct stream {
 	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
 	int pt_enc;              /**< Payload type for encoding             */
-	bool rtcp;               /**< Enable RTCP                           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool jbuf_started;       /**< True if jitter-buffer was started     */
 	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
@@ -372,10 +360,8 @@ int  stream_alloc(struct stream **sp, const struct stream_param *prm,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
 		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, void *arg);
-struct sdp_media *stream_sdpmedia(const struct stream *s);
 int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
-void stream_update(struct stream *s);
 void stream_update_encoder(struct stream *s, int pt_enc);
 int  stream_jbuf_stat(struct re_printf *pf, const struct stream *s);
 void stream_hold(struct stream *s, bool hold);

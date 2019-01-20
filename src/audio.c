@@ -1448,7 +1448,8 @@ static int start_player(struct aurx *rx, struct audio *a)
 		     " %uHz/%uch --> %uHz/%uch\n",
 		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
 
-		rx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * 2, NULL);
+		rx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t),
+					  NULL);
 		if (!rx->sampv_rs)
 			return ENOMEM;
 
@@ -1535,7 +1536,8 @@ static int start_source(struct autx *tx, struct audio *a)
 		     " %uHz/%uch <-- %uHz/%uch\n",
 		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
 
-		tx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * 2, NULL);
+		tx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t),
+					  NULL);
 		if (!tx->sampv_rs)
 			return ENOMEM;
 
@@ -1699,6 +1701,16 @@ bool audio_started(const struct audio *a)
 }
 
 
+/**
+ * Set the audio encoder used
+ *
+ * @param a      Audio object
+ * @param ac     Audio codec to use
+ * @param pt_tx  Payload type for sending
+ * @param params Optional encoder parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		      int pt_tx, const char *params)
 {
@@ -1753,6 +1765,16 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 }
 
 
+/**
+ * Set the audio decoder used
+ *
+ * @param a      Audio object
+ * @param ac     Audio codec to use
+ * @param pt_rx  Payload type for receiving
+ * @param params Optional decoder parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		      int pt_rx, const char *params)
 {
@@ -1962,8 +1984,12 @@ void audio_sdp_attr_decode(struct audio *a)
 			tx->ptime = ptime_tx;
 
 			if (tx->ac) {
-				tx->psize = 2 * get_framesize(tx->ac,
-							      ptime_tx);
+				size_t sz;
+
+				sz = aufmt_sample_size(tx->src_fmt);
+
+				tx->psize = sz * get_framesize(tx->ac,
+							       ptime_tx);
 			}
 		}
 	}

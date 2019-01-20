@@ -460,7 +460,7 @@ static void menc_event_handler(const enum menc_event event,
 	struct call *call = arg;
 	MAGIC_CHECK(call);
 
-	if (strlen(prm) > 0)
+	if (str_isset(prm))
 		call_event_handler(call, CALL_EVENT_MENC, "%u,%s", event,
 				   prm);
 	else

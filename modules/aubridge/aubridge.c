@@ -29,20 +29,21 @@
 static struct ausrc *ausrc;
 static struct auplay *auplay;
 
-struct hash *ht_device;
+struct hash *aubridge_ht_device;
 
 
 static int module_init(void)
 {
 	int err;
 
-	err = hash_alloc(&ht_device, 32);
+	err = hash_alloc(&aubridge_ht_device, 32);
 	if (err)
 		return err;
 
-	err  = ausrc_register(&ausrc, baresip_ausrcl(), "aubridge", src_alloc);
+	err  = ausrc_register(&ausrc, baresip_ausrcl(), "aubridge",
+			      aubridge_src_alloc);
 	err |= auplay_register(&auplay, baresip_auplayl(),
-			       "aubridge", play_alloc);
+			       "aubridge", aubridge_play_alloc);
 
 	return err;
 }
@@ -53,7 +54,7 @@ static int module_close(void)
 	ausrc  = mem_deref(ausrc);
 	auplay = mem_deref(auplay);
 
-	ht_device = mem_deref(ht_device);
+	aubridge_ht_device = mem_deref(aubridge_ht_device);
 
 	return 0;
 }

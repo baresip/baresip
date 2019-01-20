@@ -559,8 +559,6 @@ static void request_picture_update(struct vrx *vrx)
 	/* send RTCP FIR to peer */
 	stream_send_fir(v->strm, v->nack_pli);
 
-	/* XXX: if RTCP is not enabled, send XML in SIP INFO ? */
-
 	++vrx->n_picup;
 }
 
@@ -948,8 +946,6 @@ static void vidisp_resize_handler(const struct vidsz *sz, void *arg)
 	MAGIC_CHECK(vrx->video);
 
 	info("video: display resized: %u x %u\n", sz->w, sz->h);
-
-	/* XXX: update wanted picturesize and send re-invite to peer */
 }
 
 

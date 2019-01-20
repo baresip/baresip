@@ -331,7 +331,7 @@ static int stream_sock_alloc(struct stream *s, int af)
 
 	err = rtp_listen(&s->rtp, IPPROTO_UDP, &laddr,
 			 s->cfg.rtp_ports.min, s->cfg.rtp_ports.max,
-			 s->rtcp, rtp_handler, rtcp_handler, s);
+			 true, rtp_handler, rtcp_handler, s);
 	if (err) {
 		warning("stream: rtp_listen failed: af=%s ports=%u-%u"
 			" (%m)\n", net_af2name(af),
@@ -379,7 +379,6 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	s->rtcph = rtcph;
 	s->arg   = arg;
 	s->pseq  = -1;
-	s->rtcp  = s->cfg.rtcp_enable;
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);
@@ -416,15 +415,12 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	}
 
 	/* RFC 5506 */
-	if (s->rtcp)
-		err |= sdp_media_set_lattr(s->sdp, true, "rtcp-rsize", NULL);
+	err |= sdp_media_set_lattr(s->sdp, true, "rtcp-rsize", NULL);
 
 	/* RFC 5576 */
-	if (s->rtcp) {
-		err |= sdp_media_set_lattr(s->sdp, true,
-					   "ssrc", "%u cname:%s",
-					   rtp_sess_ssrc(s->rtp), prm->cname);
-	}
+	err |= sdp_media_set_lattr(s->sdp, true,
+				   "ssrc", "%u cname:%s",
+				   rtp_sess_ssrc(s->rtp), prm->cname);
 
 	/* RFC 5761 */
 	if (cfg->rtcp_mux)
@@ -436,7 +432,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	if (mnat && s->rtp) {
 		err = mnat->mediah(&s->mns, mnat_sess, IPPROTO_UDP,
 				   rtp_sock(s->rtp),
-				   s->rtcp ? rtcp_sock(s->rtp) : NULL,
+				   rtcp_sock(s->rtp),
 				   s->sdp);
 		if (err)
 			goto out;
@@ -449,7 +445,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 				   s->rtp,
 				   IPPROTO_UDP,
 				   rtp_sock(s->rtp),
-				   s->rtcp ? rtcp_sock(s->rtp) : NULL,
+				   rtcp_sock(s->rtp),
 				   s->sdp);
 		if (err)
 			goto out;
@@ -475,9 +471,16 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 }
 
 
-struct sdp_media *stream_sdpmedia(const struct stream *s)
+/**
+ * Get the sdp object from the stream
+ *
+ * @param strm Stream object
+ *
+ * @return SDP media object
+ */
+struct sdp_media *stream_sdpmedia(const struct stream *strm)
 {
-	return s ? s->sdp : NULL;
+	return strm ? strm->sdp : NULL;
 }
 
 
@@ -537,6 +540,11 @@ static void stream_remote_set(struct stream *s)
 }
 
 
+/**
+ * Update the media stream
+ *
+ * @param s Stream object
+ */
 void stream_update(struct stream *s)
 {
 	const struct sdp_format *fmt;
@@ -556,7 +564,7 @@ void stream_update(struct stream *s)
 		err = s->menc->mediah(&s->mes, s->mencs, s->rtp,
 				      IPPROTO_UDP,
 				      rtp_sock(s->rtp),
-				      s->rtcp ? rtcp_sock(s->rtp) : NULL,
+				      rtcp_sock(s->rtp),
 				      s->sdp);
 		if (err) {
 			warning("stream: mediaenc update: %m\n", err);
@@ -746,19 +754,6 @@ const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
 struct call *stream_call(const struct stream *strm)
 {
 	return strm ? strm->call : NULL;
-}
-
-
-/**
- * Get the sdp object from the stream
- *
- * @param strm Stream object
- *
- * @return SDP media object
- */
-const struct sdp_media *stream_sdp(const struct stream *strm)
-{
-	return strm ? strm->sdp : NULL;
 }
 
 

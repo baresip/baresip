@@ -7,8 +7,13 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#ifdef DARWIN
 #include <OpenGLES/ES1/gl.h>
 #include <OpenGLES/ES1/glext.h>
+#else
+#include <GLES/gl.h>
+#include <GLES/glext.h>
+#endif
 #include "opengles.h"
 
 
@@ -208,7 +213,9 @@ static void destructor(void *arg)
 	glDeleteFramebuffersOES(1, &st->framebuffer);
 	glDeleteRenderbuffersOES(1, &st->renderbuffer);
 
+#ifdef DARWIN
 	context_destroy(st);
+#endif
 
 	mem_deref(st->vf);
 }
@@ -233,11 +240,13 @@ static int opengles_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 	st->vd = vd;
 
+#ifdef DARWIN
 	err = context_init(st);
 	if (err)
 		goto out;
 
  out:
+#endif
 	if (err)
 		mem_deref(st);
 	else
@@ -268,7 +277,9 @@ static int opengles_display(struct vidisp_st *st, const char *title,
 
 	vidconv(st->vf, frame, NULL);
 
+#ifdef DARWIN
 	context_render(st);
+#endif
 
 	return 0;
 }

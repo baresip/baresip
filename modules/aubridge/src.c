@@ -13,13 +13,13 @@ static void ausrc_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	device_stop(st->dev);
+	aubridge_device_stop(st->dev);
 
 	mem_deref(st->dev);
 }
 
 
-int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
+int aubridge_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	      struct media_ctx **ctx,
 	      struct ausrc_prm *prm, const char *device,
 	      ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -47,7 +47,7 @@ int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh   = rh;
 	st->arg  = arg;
 
-	err = device_connect(&st->dev, device, NULL, st);
+	err = aubridge_device_connect(&st->dev, device, NULL, st);
 	if (err)
 		goto out;
 

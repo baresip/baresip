@@ -270,7 +270,6 @@ struct config_avt {
 	uint8_t rtp_tos;        /**< Type-of-Service for outg. RTP  */
 	struct range rtp_ports; /**< RTP port range                 */
 	struct range rtp_bw;    /**< RTP Bandwidth range [bit/s]    */
-	bool rtcp_enable;       /**< RTCP is enabled                */
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
 	struct range jbuf_del;  /**< Delay, number of frames        */
 	bool rtp_stats;         /**< Enable RTP statistics          */
@@ -1136,6 +1135,10 @@ int  audio_start(struct audio *a);
 void audio_stop(struct audio *a);
 bool audio_started(const struct audio *a);
 void audio_set_hold(struct audio *au, bool hold);
+int  audio_encoder_set(struct audio *a, const struct aucodec *ac,
+		       int pt_tx, const char *params);
+int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
+		       int pt_rx, const char *params);
 const struct aucodec *audio_codec(const struct audio *au, bool tx);
 
 
@@ -1165,15 +1168,23 @@ uint64_t video_calc_timebase_timestamp(uint64_t rtp_ts);
  * Generic stream
  */
 
+/** Common parameters for media stream */
+struct stream_param {
+	bool use_rtp;
+	int af;
+	const char *cname;
+};
+void stream_update(struct stream *s);
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
 struct call *stream_call(const struct stream *strm);
-const struct sdp_media *stream_sdp(const struct stream *strm);
+struct sdp_media *stream_sdpmedia(const struct stream *s);
 uint32_t stream_metric_get_tx_n_packets(const struct stream *strm);
 uint32_t stream_metric_get_tx_n_bytes(const struct stream *strm);
 uint32_t stream_metric_get_tx_n_err(const struct stream *strm);
 uint32_t stream_metric_get_rx_n_packets(const struct stream *strm);
 uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm);
 uint32_t stream_metric_get_rx_n_err(const struct stream *strm);
+
 
 /*
  * Media NAT

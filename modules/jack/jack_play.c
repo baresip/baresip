@@ -20,7 +20,7 @@ struct auplay_st {
 	void *arg;
 
 	jack_client_t *client;
-	jack_port_t *portv[2];
+	jack_port_t **portv;
 	jack_nframes_t nframes;       /* num frames per port (channel) */
 };
 
@@ -43,7 +43,7 @@ static inline float ausamp_short2float(int16_t in)
  * port to its output port. It will exit when stopped by
  * the user (e.g. using Ctrl-C on a unix-ish operating system)
  *
- * XXX avoid memory allocations in this function
+ * NOTE avoid memory allocations in this function
  */
 static int process_handler(jack_nframes_t nframes, void *arg)
 {
@@ -83,6 +83,7 @@ static void auplay_destructor(void *arg)
 		jack_client_close(st->client);
 
 	mem_deref(st->sampv);
+	mem_deref(st->portv);
 }
 
 
@@ -198,9 +199,6 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	info("jack: play %uHz,%uch\n", prm->srate, prm->ch);
 
-	if (prm->ch > ARRAY_SIZE(st->portv))
-		return EINVAL;
-
 	if (prm->fmt != AUFMT_S16LE) {
 		warning("jack: playback: unsupported sample format (%s)\n",
 			aufmt_name(prm->fmt));
@@ -215,6 +213,12 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
+
+	st->portv = mem_reallocarray(NULL, prm->ch, sizeof(*st->portv), NULL);
+	if (!st->portv) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	err = start_jack(st);
 	if (err)

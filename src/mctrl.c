@@ -34,7 +34,7 @@ int mctrl_handle_media_control(struct pl *body, bool *pfu)
 	if (!body)
 		return EINVAL;
 
-	/* XXX: Poor-mans XML parsing (use xml-parser instead) */
+	/* Poor-mans XML parsing */
 	if (0 == re_regex(body->p, body->l, "picture_fast_update")) {
 		if (pfu)
 			*pfu = true;
