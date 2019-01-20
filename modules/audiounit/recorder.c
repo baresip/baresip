@@ -13,9 +13,6 @@
 #include "audiounit.h"
 
 
-#define MAX_NB_FRAMES 4096
-
-
 struct ausrc_st {
 	const struct ausrc *as;      /* inheritance */
 	struct audiosess_st *sess;
@@ -27,11 +24,7 @@ struct ausrc_st {
 	double sampc_ratio;
 	AudioBufferList *abl;
 	ausrc_read_h *rh;
-	struct {
-		void *mem[2];
-		uint8_t mem_idx;
-		uint32_t nb_frames;
-	} conv_buf;
+	struct conv_buf *buf;
 	void *arg;
 };
 
@@ -53,55 +46,9 @@ static void ausrc_destructor(void *arg)
 	AudioComponentInstanceDispose(st->au_conv);
 
 	mem_deref(st->sess);
-	mem_deref(st->conv_buf.mem[0]);
-	mem_deref(st->conv_buf.mem[1]);
+	mem_deref(st->buf);
 
 	pthread_mutex_destroy(&st->mutex);
-}
-
-
-static OSStatus init_data_write(struct ausrc_st *st, void **data,
-				uint32_t nb_frames)
-{
-	uint32_t mem_idx = st->conv_buf.mem_idx;
-
-	if (st->conv_buf.nb_frames + nb_frames > MAX_NB_FRAMES) {
-		return kAudioUnitErr_TooManyFramesToProcess;
-	}
-
-	*data = (uint8_t*)st->conv_buf.mem[mem_idx] +
-			  st->conv_buf.nb_frames * st->sampsz;
-
-	st->conv_buf.nb_frames = st->conv_buf.nb_frames + nb_frames;
-
-	return noErr;
-}
-
-
-static OSStatus init_data_read(struct ausrc_st *st, void **data,
-			       uint32_t nb_frames)
-{
-	uint32_t delta = 0;
-	uint32_t mem_idx = st->conv_buf.mem_idx;
-
-	if (st->conv_buf.nb_frames < nb_frames) {
-		return kAudioUnitErr_TooManyFramesToProcess;
-	}
-
-	*data = st->conv_buf.mem[mem_idx];
-
-	delta = st->conv_buf.nb_frames - nb_frames;
-
-	uint8_t *src = (uint8_t *)st->conv_buf.mem[mem_idx] +
-		       nb_frames * st->sampsz;
-
-	memcpy(st->conv_buf.mem[(mem_idx+1)%2],
-	       (void *)src, delta * st->sampsz);
-
-	st->conv_buf.mem_idx = (mem_idx + 1)%2;
-	st->conv_buf.nb_frames = delta;
-
-	return noErr;
 }
 
 
@@ -114,8 +61,10 @@ static OSStatus input_callback(void *inRefCon,
 {
 	struct ausrc_st *st = inRefCon;
 	AudioBufferList abl_in, abl_conv;
-	UInt32 outNumberFrames;
+	UInt32 nb_frames, nb_frames_max;
+	size_t framesz;
 	OSStatus ret;
+	int err;
 	ausrc_read_h *rh;
 	void *arg;
 
@@ -129,13 +78,15 @@ static OSStatus input_callback(void *inRefCon,
 	if (!rh)
 		return 0;
 
+	framesz = st->sampsz * st->ch;
 	st->abl = &abl_in;
 
 	abl_in.mNumberBuffers = 1;
 	abl_in.mBuffers[0].mNumberChannels = st->ch;
-	abl_in.mBuffers[0].mDataByteSize = inNumberFrames * st->sampsz;
-	ret = init_data_write(st, &abl_in.mBuffers[0].mData,
-			      inNumberFrames);
+	abl_in.mBuffers[0].mDataByteSize = inNumberFrames * (UInt32)framesz;
+
+	ret = init_data_write(st->buf, &abl_in.mBuffers[0].mData,
+			      framesz, inNumberFrames);
 	if (ret != noErr)
 		return ret;
 
@@ -152,8 +103,14 @@ static OSStatus input_callback(void *inRefCon,
 	}
 
 	while (1) {
-		outNumberFrames = (st->conv_buf.nb_frames) * st->sampc_ratio;
-		if (outNumberFrames==0)
+		err = get_nb_frames(st->buf, &nb_frames);
+		if (err)
+			return kAudioUnitErr_InvalidParameter;
+
+		/* Maximun number of resampled frames which can be delivered
+		   by the converter */
+		nb_frames_max = nb_frames * st->sampc_ratio;
+		if (inNumberFrames > nb_frames_max)
 			return noErr;
 
 		abl_conv.mNumberBuffers = 1;
@@ -164,7 +121,7 @@ static OSStatus input_callback(void *inRefCon,
 				      ioActionFlags,
 				      inTimeStamp,
 				      0,
-				      outNumberFrames,
+				      inNumberFrames,
 				      &abl_conv);
 		if (ret) {
 			debug("audiounit: record: "
@@ -187,15 +144,12 @@ static OSStatus convert_callback(void *inRefCon,
 			       AudioBufferList *ioData)
 {
 	struct ausrc_st *st = inRefCon;
-	AudioBufferList *abl;
+	size_t framesz;
 	OSStatus ret = noErr;
 
-	abl  = st->abl;
-
-	if (!abl)
-		return kAudioUnitErr_InvalidParameter;
-
-	ret = init_data_read(st, &ioData->mBuffers[0].mData, inNumberFrames);
+	framesz = st->sampsz * st->ch;
+	ret = init_data_read(st->buf, &ioData->mBuffers[0].mData,
+			     framesz, inNumberFrames);
 
 	return ret;
 }
@@ -219,13 +173,13 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	AudioStreamBasicDescription fmt, fmt_app;
 	const AudioUnitElement inputBus = 1;
-	const AudioUnitElement outputBus = 0;
 	const AudioUnitElement defaultBus = 0;
 	AURenderCallbackStruct cb_in, cb_conv;
 	struct ausrc_st *st;
 	const UInt32 enable = 1;
-	const UInt32 disable = 0;
 #if ! TARGET_OS_IPHONE
+	const AudioUnitElement outputBus = 0;
+	const UInt32 disable = 0;
 	UInt32 ausize = sizeof(AudioDeviceID);
 	AudioDeviceID inputDevice;
 	AudioObjectPropertyAddress auAddress = {
@@ -235,6 +189,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 #endif
 	Float64 hw_srate = 0.0;
 	UInt32 hw_size = sizeof(hw_srate);
+	size_t framesz;
 	OSStatus ret = 0;
 	int err;
 
@@ -260,10 +215,10 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	st->conv_buf.mem_idx = 0;
-	st->conv_buf.nb_frames = 0;
-	st->conv_buf.mem[0] = mem_alloc(MAX_NB_FRAMES * st->sampsz, NULL);
-	st->conv_buf.mem[1] = mem_alloc(MAX_NB_FRAMES * st->sampsz, NULL);
+	framesz = st->sampsz * st->ch;
+	err = conv_buf_alloc(&st->buf, framesz);
+	if (err)
+		goto out;
 
 	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)
