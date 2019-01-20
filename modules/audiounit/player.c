@@ -129,7 +129,7 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (err)
 		goto out;
 
-	ret = AudioComponentInstanceNew(audiounit_comp, &st->au);
+	ret = AudioComponentInstanceNew(audiounit_comp_io, &st->au);
 	if (ret)
 		goto out;
 
