@@ -21,11 +21,11 @@
 #define MAX_NB_FRAMES 4096
 
 
- struct conv_buf {
-	 void *mem[2];
-	 uint8_t mem_idx;
-	 uint32_t nb_frames;
- };
+struct conv_buf {
+	void *mem[2];
+	uint8_t mem_idx;
+	uint32_t nb_frames;
+};
 
 
 AudioComponent audiounit_io = NULL;
@@ -51,7 +51,10 @@ int conv_buf_alloc(struct conv_buf **bufp, size_t framesz)
 	if (!bufp)
 		return EINVAL;
 
-	buf = mem_alloc(sizeof(struct conv_buf), conv_buf_destructor);
+	buf = mem_zalloc(sizeof(*buf), conv_buf_destructor);
+	if (!buf)
+		return ENOMEM;
+
 	buf->mem_idx = 0;
 	buf->nb_frames = 0;
 	buf->mem[0] = mem_alloc(MAX_NB_FRAMES * framesz, NULL);
