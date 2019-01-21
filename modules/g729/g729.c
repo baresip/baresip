@@ -63,7 +63,8 @@ static int encode_update(struct auenc_state **aesp,
 	if (!st)
 		return ENOMEM;
 
-	st->encoder_object = initBcg729EncoderChannel(1);
+	// For the moment only 729A
+	st->encoder_object = initBcg729EncoderChannel(0);
 
 	*aesp = st;
 
@@ -90,7 +91,7 @@ static int decode_update(struct audec_state **adsp,
 
 	return 0;
 }
-/*
+
 static int g729_encode(struct auenc_state *aes, uint8_t *buf,
 				size_t *len, int fmt,
 				const void *sampv, size_t sampc)
@@ -117,7 +118,7 @@ static int g729_encode(struct auenc_state *aes, uint8_t *buf,
 			new_len += frameSize;
 		}
 
-		warning("g729_encode %u %u %u\n", sampc, *len, new_len);
+		/* warning("g729_encode %u %u %u\n", sampc, *len, new_len); */
 
 		if (new_len <= *len) {
 			*len = new_len;
@@ -128,29 +129,6 @@ static int g729_encode(struct auenc_state *aes, uint8_t *buf,
 			return ENOMEM;
 		}
 	}
-
-	return 0;
-}
-*/
-
-static int g729_encode(struct auenc_state *aes, uint8_t *buf,
-			size_t *len, int fmt, const void *sampv, size_t sampc)
-{
-	if (sampc != FRAME_SIZE)
-		return EPROTO;
-
-	if (!len || !aes)
-		return EINVAL;
-
-	if (fmt != AUFMT_S16LE)
-		return ENOTSUP;
-
-	bcg729Encoder(aes->encoder_object,
-		(int16_t *) sampv,
-		buf,
-		(uint8_t *) len
-	);
-	/* warning("g729_encode %u\n", *len); */
 
 	return 0;
 }
@@ -203,10 +181,24 @@ static int g729_decode(struct audec_state *ads, int fmt, void *sampv,
 	return 0;
 }
 
+static int g729_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
+		 bool offer, void *arg)
+{
+	const struct aucodec *ac = arg;
+	(void)offer;
+
+	if (!mb || !fmt || !ac)
+		return 0;
+
+	// For the moment only 729A
+	return mbuf_printf(mb, "a=fmtp:%s annexb=no\r\n",
+			   fmt->id);
+}
+
 static struct aucodec g729 = {
 	LE_INIT, "18", "G729", 8000, 8000, 1, 1, NULL,
 	encode_update, g729_encode, decode_update, g729_decode,
-	NULL, NULL, NULL
+	NULL, g729_fmtp_enc, NULL
 };
 
 static int module_init(void)
@@ -224,7 +216,7 @@ static int module_close(void)
 }
 
 
-EXPORT_SYM const struct mod_export DECL_EXPORTS(g711) = {
+EXPORT_SYM const struct mod_export DECL_EXPORTS(g729) = {
 	"g729",
 	"audio codec",
 	module_init,
