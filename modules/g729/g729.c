@@ -63,7 +63,7 @@ static int encode_update(struct auenc_state **aesp,
 	if (!st)
 		return ENOMEM;
 
-	// For the moment only 729A
+	/* For the moment only 729A */
 	st->encoder_object = initBcg729EncoderChannel(0);
 
 	*aesp = st;
@@ -190,7 +190,7 @@ static int g729_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 	if (!mb || !fmt || !ac)
 		return 0;
 
-	// For the moment only 729A
+	/* For the moment only 729A */
 	return mbuf_printf(mb, "a=fmtp:%s annexb=no\r\n",
 			   fmt->id);
 }
