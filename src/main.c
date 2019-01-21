@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "6de:f:p:hun:vtm:");
+		const int c = getopt(argc, argv, "6de:f:p:hu:n:vtm:");
 		if (0 > c)
 			break;
 
