@@ -53,7 +53,11 @@
  */
 
 enum {
-	AUDIO_SAMPSZ    = 3*1920  /* Max samples, 48000Hz 2ch at 60ms */
+	MAX_SRATE       = 48000,  /* Maximum sample rate in [Hz] */
+	MAX_CHANNELS    =     2,  /* Maximum number of channels  */
+	MAX_PTIME       =    60,  /* Maximum packet time in [ms] */
+
+	AUDIO_SAMPSZ    = MAX_SRATE * MAX_CHANNELS * MAX_PTIME / 1000,
 };
 
 
