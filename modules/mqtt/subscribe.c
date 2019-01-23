@@ -9,10 +9,6 @@
 #include <baresip.h>
 #include "mqtt.h"
 
-
-static const char *subscription_pattern = "/baresip/+";
-
-
 static int print_handler(const char *p, size_t size, void *arg)
 {
 	struct mbuf *mb = arg;
@@ -128,14 +124,14 @@ int mqtt_subscribe_start(struct mqtt *mqtt)
 {
 	int ret;
 
-	ret = mosquitto_subscribe(mqtt->mosq, NULL, subscription_pattern, 0);
+	ret = mosquitto_subscribe(mqtt->mosq, NULL, mqtt->subtopic, 0);
 	if (ret != MOSQ_ERR_SUCCESS) {
 		warning("mqtt: failed to subscribe (%s)\n",
 			mosquitto_strerror(ret));
 		return EPROTO;
 	}
 
-	info("mqtt: subscribed to pattern '%s'\n", subscription_pattern);
+	info("mqtt: subscribed to pattern '%s'\n", mqtt->subtopic);
 
 	return 0;
 }

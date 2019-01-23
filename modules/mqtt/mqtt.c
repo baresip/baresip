@@ -58,7 +58,7 @@ static void connect_callback(struct mosquitto *mosq, void *obj, int result)
 	(void)mqtt;
 
 	if (result != MOSQ_ERR_SUCCESS) {
-		warning("mqtt: could not connect to broker (%s)\n",
+		warning("mqtt: could not connect to broker (%s) \n",
 			mosquitto_strerror(result));
 		return;
 	}
@@ -94,8 +94,12 @@ static int module_init(void)
 		     mqttclientid, sizeof(mqttclientid));
 	conf_get_str(conf_cur(), "mqtt_basetopic",
 		     mqttbasetopic, sizeof(mqttbasetopic));
-	snprintf(mqttsubscribetopic, sizeof(mqttsubscribetopic),"/%s/command", mqttbasetopic);
+
+	info("mqtt: connecting to broker at %s:%d as %s topic %s\n", broker_host, broker_port, mqttclientid, mqttbasetopic);
+
+	snprintf(mqttsubscribetopic, sizeof(mqttsubscribetopic),"/%s/command/+", mqttbasetopic);
 	snprintf(mqttpublishtopic, sizeof(mqttpublishtopic),"/%s/event", mqttbasetopic);
+	info("mqtt: Publishing on %s, subscribing to %s\n", mqttpublishtopic, mqttsubscribetopic);
 	s_mqtt.basetopic = mqttbasetopic;
 	s_mqtt.subtopic = mqttsubscribetopic;
 	s_mqtt.pubtopic = mqttpublishtopic;
