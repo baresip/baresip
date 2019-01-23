@@ -11,6 +11,13 @@
 
 
 static char broker_host[256] = "127.0.0.1";
+static char mqttusername[256] = "";	/* Authentication user name, default none */
+static char mqttpassword[256] = "";	/* Authentication password, default none */
+static char mqttclientid[256] = "baresip";	/* Client ID - default "baresip" */
+static char mqttbasetopic[128] = "baresip";	/* Base topic for MQTT - default "baresip" - i.e. /baresip/event */
+static char mqttpublishtopic[256]; 
+static char mqttsubscribetopic[256]; 
+
 static uint32_t broker_port = 1883;
 
 static struct mqtt s_mqtt;
@@ -76,11 +83,26 @@ static int module_init(void)
 
 	mosquitto_lib_init();
 
+	/* Get configuration data */
 	conf_get_str(conf_cur(), "mqtt_broker_host",
 		     broker_host, sizeof(broker_host));
+	conf_get_str(conf_cur(), "mqtt_broker_user",
+		     mqttusername, sizeof(mqttusername));
+	conf_get_str(conf_cur(), "mqtt_broker_password",
+		     mqttpassword, sizeof(mqttpassword));
+	conf_get_str(conf_cur(), "mqtt_broker_clientid",
+		     mqttclientid, sizeof(mqttclientid));
+	conf_get_str(conf_cur(), "mqtt_basetopic",
+		     mqttbasetopic, sizeof(mqttbasetopic));
+	snprintf(mqttsubscribetopic, sizeof(mqttsubscribetopic),"/%s/command", mqttbasetopic);
+	snprintf(mqttpublishtopic, sizeof(mqttpublishtopic),"/%s/event", mqttbasetopic);
+	s_mqtt.basetopic = mqttbasetopic;
+	s_mqtt.subtopic = mqttsubscribetopic;
+	s_mqtt.pubtopic = mqttpublishtopic;
+
 	conf_get_u32(conf_cur(), "mqtt_broker_port", &broker_port);
 
-	s_mqtt.mosq = mosquitto_new("baresip", true, &s_mqtt);
+	s_mqtt.mosq = mosquitto_new(mqttclientid, true, &s_mqtt);
 	if (!s_mqtt.mosq) {
 		warning("mqtt: failed to create client instance\n");
 		return ENOMEM;
@@ -91,6 +113,10 @@ static int module_init(void)
 		return err;
 
 	mosquitto_connect_callback_set(s_mqtt.mosq, connect_callback);
+
+	if (*mqttusername != '\0') {
+		ret = mosquitto_username_pw_set(s_mqtt.mosq, mqttusername, mqttpassword);
+	}
 
 	ret = mosquitto_connect(s_mqtt.mosq, broker_host, broker_port,
 				keepalive);

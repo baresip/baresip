@@ -69,7 +69,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	   to the resp mbuf, send it back to broker */
 
 	re_snprintf(resp_topic, sizeof(resp_topic),
-		    "/baresip/command_resp/%s",
+		    "/%s/command_resp/%s", mqtt->basetopic,
 		    oe_tok ? oe_tok->u.str : "nil");
 
 	err = mqtt_publish_message(mqtt, resp_topic,
@@ -103,7 +103,7 @@ static void message_callback(struct mosquitto *mosq, void *obj,
 	msg.p = message->payload;
 	msg.l = message->payloadlen;
 
-	mosquitto_topic_matches_sub("/baresip/command", message->topic,
+	mosquitto_topic_matches_sub(mqtt->subtopic, message->topic,
 				    &match);
 	if (match) {
 		info("mqtt: got message for '%s' topic\n", message->topic);
