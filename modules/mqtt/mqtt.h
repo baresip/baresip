@@ -7,6 +7,9 @@
 
 struct mqtt {
 	struct mosquitto *mosq;
+	char *pubtopic;		/* Topic for publish */
+	char *subtopic;		/* Topic for subscribe */
+	char *basetopic;	/* Base topic */
 	struct tmr tmr;
 	int fd;
 };

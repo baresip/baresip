@@ -162,3 +162,11 @@ ice_mode		full	# {full,lite}
 
 # sndfile #
 snd_path 		/tmp/
+
+# MQTT
+#mqtt_broker_host        sollentuna.example.com
+#mqtt_broker_port        1883
+#mqtt_broker_clientid    baresip01	#Has to be unique for each client, defaults to "baresip"
+#mqtt_broker_user        alfred	
+#mqtt_broker_password    Crocus
+#mqtt_basetopic          baresip/01	# May be uniqe for each client you want to control. Defaults to "baresip"

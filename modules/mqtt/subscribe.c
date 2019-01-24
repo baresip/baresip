@@ -9,10 +9,6 @@
 #include <baresip.h>
 #include "mqtt.h"
 
-
-static const char *subscription_pattern = "/baresip/+";
-
-
 static int print_handler(const char *p, size_t size, void *arg)
 {
 	struct mbuf *mb = arg;
@@ -69,7 +65,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	   to the resp mbuf, send it back to broker */
 
 	re_snprintf(resp_topic, sizeof(resp_topic),
-		    "/baresip/command_resp/%s",
+		    "/%s/command_resp/%s", mqtt->basetopic,
 		    oe_tok ? oe_tok->u.str : "nil");
 
 	err = mqtt_publish_message(mqtt, resp_topic,
@@ -103,7 +99,7 @@ static void message_callback(struct mosquitto *mosq, void *obj,
 	msg.p = message->payload;
 	msg.l = message->payloadlen;
 
-	mosquitto_topic_matches_sub("/baresip/command", message->topic,
+	mosquitto_topic_matches_sub(mqtt->subtopic, message->topic,
 				    &match);
 	if (match) {
 		info("mqtt: got message for '%s' topic\n", message->topic);
@@ -128,14 +124,14 @@ int mqtt_subscribe_start(struct mqtt *mqtt)
 {
 	int ret;
 
-	ret = mosquitto_subscribe(mqtt->mosq, NULL, subscription_pattern, 0);
+	ret = mosquitto_subscribe(mqtt->mosq, NULL, mqtt->subtopic, 0);
 	if (ret != MOSQ_ERR_SUCCESS) {
 		warning("mqtt: failed to subscribe (%s)\n",
 			mosquitto_strerror(ret));
 		return EPROTO;
 	}
 
-	info("mqtt: subscribed to pattern '%s'\n", subscription_pattern);
+	info("mqtt: subscribed to pattern '%s'\n", mqtt->subtopic);
 
 	return 0;
 }

@@ -34,7 +34,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	if (err)
 		goto out;
 
-	err = mqtt_publish_message(mqtt, "/baresip/event", "%H",
+	err = mqtt_publish_message(mqtt, mqtt->pubtopic, "%H",
 				   json_encode_odict, od);
 	if (err) {
 		warning("mqtt: failed to publish message (%m)\n", err);
