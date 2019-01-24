@@ -96,11 +96,15 @@ static int g729_encode(struct auenc_state *aes, uint8_t *buf,
 				size_t *len, int fmt,
 				const void *sampv, size_t sampc)
 {
-	if (!len || !aes)
+	if (!len || !aes) {
+		warning("g729_encode: !len or !aes");
 		return EINVAL;
+	}
 
-	if (fmt != AUFMT_S16LE)
+	if (fmt != AUFMT_S16LE) {
+		warning("g729_encode: !AUFMT_S16LE");
 		return ENOTSUP;
+	}
 
 	if (sampc % FRAME_SIZE == 0) {
 		int x;
@@ -112,13 +116,19 @@ static int g729_encode(struct auenc_state *aes, uint8_t *buf,
 
 		for (x = 0; x < loops && new_len < *len; x++) {
 			uint8_t frameSize;
-		bcg729Encoder(aes->encoder_object, ddp, edp, &frameSize);
+
+			bcg729Encoder(
+				aes->encoder_object,
+				ddp,
+				edp,
+				&frameSize
+			);
 			edp += frameSize;
 			ddp += frameSize * 8;
 			new_len += frameSize;
 		}
 
-		/* warning("g729_encode %u %u %u\n", sampc, *len, new_len); */
+		/*info("g729_encode %u %u %u\n", sampc, *len, new_len);*/
 
 		if (new_len <= *len) {
 			*len = new_len;
@@ -148,7 +158,7 @@ static int g729_decode(struct audec_state *ads, int fmt, void *sampv,
 	if (len == 0) {  /* Native PLC interpolation */
 		bcg729Decoder(ads->decoder_object, NULL, 0, 1, 0, 0, ddp);
 		ddp += 80;
-		*sampc = 160;
+		*sampc = FRAME_SIZE;
 		warning("g729 zero length frame\n");
 		return 0;
 	}
@@ -167,8 +177,10 @@ static int g729_decode(struct audec_state *ads, int fmt, void *sampv,
 		);
 		ddp += 80;
 		edp += framesize;
-		new_len += 160;
+		new_len += FRAME_SIZE;
 	}
+
+	/*info("g729_decode %u %u %u\n", *sampc, len, new_len);*/
 
 	if (new_len <= *sampc) {
 		*sampc = new_len;
@@ -195,7 +207,7 @@ static int g729_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 			   fmt->id);
 }
 
-static struct aucodec g729 = {
+static struct aucodec ac_g729 = {
 	LE_INIT, "18", "G729", 8000, 8000, 1, 1, NULL,
 	encode_update, g729_encode, decode_update, g729_decode,
 	NULL, g729_fmtp_enc, NULL
@@ -203,14 +215,14 @@ static struct aucodec g729 = {
 
 static int module_init(void)
 {
-	aucodec_register(baresip_aucodecl(), &g729);
+	aucodec_register(baresip_aucodecl(), &ac_g729);
 
 	return 0;
 }
 
 static int module_close(void)
 {
-	aucodec_unregister(&g729);
+	aucodec_unregister(&ac_g729);
 
 	return 0;
 }
