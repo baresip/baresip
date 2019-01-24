@@ -106,7 +106,7 @@ static int module_init(void)
 		"/%s/command/+", mqttbasetopic);
 	snprintf(mqttpublishtopic, sizeof(mqttpublishtopic), "/%s/event",
 		mqttbasetopic);
-	info("mqtt: Publishing on %s, subscribing to %s\n", 
+	info("mqtt: Publishing on %s, subscribing to %s\n",
 		mqttpublishtopic, mqttsubscribetopic);
 	s_mqtt.basetopic = mqttbasetopic;
 	s_mqtt.subtopic = mqttsubscribetopic;
