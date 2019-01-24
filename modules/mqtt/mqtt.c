@@ -11,12 +11,16 @@
 
 
 static char broker_host[256] = "127.0.0.1";
-static char mqttusername[256] = "";	/* Authentication user name, default none */
-static char mqttpassword[256] = "";	/* Authentication password, default none */
-static char mqttclientid[256] = "baresip";	/* Client ID - default "baresip" */
-static char mqttbasetopic[128] = "baresip";	/* Base topic for MQTT - default "baresip" - i.e. /baresip/event */
-static char mqttpublishtopic[256]; 
-static char mqttsubscribetopic[256]; 
+/* Authentication user name, default none */
+static char mqttusername[256] = "";
+/* Authentication password, default none */
+static char mqttpassword[256] = "";
+/* Client ID - default "baresip" */
+static char mqttclientid[256] = "baresip";
+/* Base topic for MQTT - default "baresip" - i.e. /baresip/event */
+static char mqttbasetopic[128] = "baresip";
+static char mqttpublishtopic[256];
+static char mqttsubscribetopic[256];
 
 static uint32_t broker_port = 1883;
 
@@ -95,11 +99,15 @@ static int module_init(void)
 	conf_get_str(conf_cur(), "mqtt_basetopic",
 		     mqttbasetopic, sizeof(mqttbasetopic));
 
-	info("mqtt: connecting to broker at %s:%d as %s topic %s\n", broker_host, broker_port, mqttclientid, mqttbasetopic);
+	info("mqtt: connecting to broker at %s:%d as %s topic %s\n",
+		broker_host, broker_port, mqttclientid, mqttbasetopic);
 
-	snprintf(mqttsubscribetopic, sizeof(mqttsubscribetopic),"/%s/command/+", mqttbasetopic);
-	snprintf(mqttpublishtopic, sizeof(mqttpublishtopic),"/%s/event", mqttbasetopic);
-	info("mqtt: Publishing on %s, subscribing to %s\n", mqttpublishtopic, mqttsubscribetopic);
+	snprintf(mqttsubscribetopic, sizeof(mqttsubscribetopic),"/%s/command/+",
+		mqttbasetopic);
+	snprintf(mqttpublishtopic, sizeof(mqttpublishtopic),"/%s/event",
+		mqttbasetopic);
+	info("mqtt: Publishing on %s, subscribing to %s\n", mqttpublishtopic,
+		mqttsubscribetopic);
 	s_mqtt.basetopic = mqttbasetopic;
 	s_mqtt.subtopic = mqttsubscribetopic;
 	s_mqtt.pubtopic = mqttpublishtopic;
@@ -119,7 +127,8 @@ static int module_init(void)
 	mosquitto_connect_callback_set(s_mqtt.mosq, connect_callback);
 
 	if (*mqttusername != '\0') {
-		ret = mosquitto_username_pw_set(s_mqtt.mosq, mqttusername, mqttpassword);
+		ret = mosquitto_username_pw_set(s_mqtt.mosq, mqttusername,
+			mqttpassword);
 	}
 
 	ret = mosquitto_connect(s_mqtt.mosq, broker_host, broker_port,
