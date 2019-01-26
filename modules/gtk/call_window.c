@@ -515,7 +515,12 @@ void call_window_established(struct call_window *win)
 		return;
 
 	call_window_update_duration(win);
-	win->duration_timer_tag = g_timeout_add_seconds(1, call_timer, win);
+
+	if (!win->duration_timer_tag) {
+		win->duration_timer_tag = g_timeout_add_seconds(1, call_timer,
+								win);
+	}
+
 	last_call_win = win;
 	call_window_set_status(win, "established");
 }
