@@ -53,11 +53,7 @@
  */
 
 enum {
-	MAX_SRATE       = 48000,  /* Maximum sample rate in [Hz] */
-	MAX_CHANNELS    =     2,  /* Maximum number of channels  */
 	MAX_PTIME       =    60,  /* Maximum packet time in [ms] */
-
-	AUDIO_SAMPSZ    = MAX_SRATE * MAX_CHANNELS * MAX_PTIME / 1000,
 };
 
 
@@ -92,6 +88,7 @@ struct autx {
 	char device[64];              /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
+	size_t sampv_size;
 	uint32_t ptime;               /**< Packet time for sending         */
 	uint64_t ts_ext;              /**< Ext. Timestamp for outgoing RTP */
 	uint32_t ts_base;             /**< First timestamp sent            */
@@ -148,6 +145,7 @@ struct aurx {
 	char device[64];              /**< Audio player device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
+	size_t sampv_size;
 	uint32_t ptime;               /**< Packet time for receiving       */
 	int pt;                       /**< Payload type for incoming RTP   */
 	double level_last;            /**< Last audio level value [dBov]   */
@@ -563,7 +561,7 @@ static void poll_aubuf_tx(struct audio *a)
 
 	/* optional resampler */
 	if (tx->resamp.resample) {
-		size_t sampc_rs = AUDIO_SAMPSZ;
+		size_t sampc_rs = tx->sampv_size;
 
 		if (tx->enc_fmt != AUFMT_S16LE) {
 			warning("audio: skipping resampler due to"
@@ -754,7 +752,7 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 
 static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 {
-	size_t sampc = AUDIO_SAMPSZ;
+	size_t sampc = rx->sampv_size;
 	void *sampv;
 	struct le *le;
 	int err = 0;
@@ -801,7 +799,7 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 
 	/* optional resampler */
 	if (rx->resamp.resample) {
-		size_t sampc_rs = AUDIO_SAMPSZ;
+		size_t sampc_rs = rx->sampv_size;
 
 		if (rx->dec_fmt != AUFMT_S16LE) {
 			warning("audio: skipping resampler due to"
@@ -1134,6 +1132,7 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	struct autx *tx;
 	struct aurx *rx;
 	struct le *le;
+	uint32_t max_srate = 8000, max_channels = 1;
 	int err;
 
 	if (!ap || !cfg)
@@ -1192,16 +1191,29 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 
 	/* Audio codecs */
 	for (le = list_head(aucodecl); le; le = le->next) {
+
+		struct aucodec *ac = le->data;
+
 		err = add_audio_codec(stream_sdpmedia(a->strm), le->data);
 		if (err)
 			goto out;
+
+		if (ac->srate > max_srate)
+			max_srate = ac->srate;
+		if (ac->ch > max_channels)
+			max_channels = ac->ch;
 	}
 
+	tx->sampv_size = max_srate * max_channels * MAX_PTIME / 1000;
+	rx->sampv_size = max_srate * max_channels * MAX_PTIME / 1000;
+
+	info("audio: max samples:   %u\n", tx->sampv_size);
+
 	tx->mb = mbuf_alloc(STREAM_PRESZ + 4096);
-	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * aufmt_sample_size(tx->enc_fmt),
+	tx->sampv = mem_zalloc(tx->sampv_size * aufmt_sample_size(tx->enc_fmt),
 			       NULL);
 
-	rx->sampv = mem_zalloc(AUDIO_SAMPSZ * aufmt_sample_size(rx->dec_fmt),
+	rx->sampv = mem_zalloc(rx->sampv_size * aufmt_sample_size(rx->dec_fmt),
 			       NULL);
 	if (!tx->mb || !tx->sampv || !rx->sampv) {
 		err = ENOMEM;
@@ -1452,7 +1464,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 		     " %uHz/%uch --> %uHz/%uch\n",
 		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
 
-		rx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t),
+		rx->sampv_rs = mem_zalloc(rx->sampv_size * sizeof(int16_t),
 					  NULL);
 		if (!rx->sampv_rs)
 			return ENOMEM;
@@ -1540,7 +1552,7 @@ static int start_source(struct autx *tx, struct audio *a)
 		     " %uHz/%uch <-- %uHz/%uch\n",
 		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
 
-		tx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t),
+		tx->sampv_rs = mem_zalloc(tx->sampv_size * sizeof(int16_t),
 					  NULL);
 		if (!tx->sampv_rs)
 			return ENOMEM;
