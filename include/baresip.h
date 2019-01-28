@@ -1119,7 +1119,20 @@ int vidfilt_dec_append(struct list *filtl, void **ctx,
  */
 
 struct audio;
+struct stream_param;
+struct mnat;
+struct mnat_sess;
 
+typedef void (audio_event_h)(int key, bool end, void *arg);
+typedef void (audio_err_h)(int err, const char *str, void *arg);
+
+int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
+		const struct config *cfg,
+		struct call *call, struct sdp_session *sdp_sess, int label,
+		const struct mnat *mnat, struct mnat_sess *mnat_sess,
+		const struct menc *menc, struct menc_sess *menc_sess,
+		uint32_t ptime, const struct list *aucodecl, bool offerer,
+		audio_event_h *eventh, audio_err_h *errh, void *arg);
 void audio_mute(struct audio *a, bool muted);
 bool audio_ismuted(const struct audio *a);
 void audio_set_devicename(struct audio *a, const char *src, const char *play);
