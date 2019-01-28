@@ -63,6 +63,7 @@ static int account_write_template(const char *file)
 			 "#    ;auth_pass=password\n"
 			 "#    ;call_transfer=no\n"
 			 "#    ;cert=cert.pem\n"
+			 "#    ;cuser_ua={yes, no}  # default: yes\n"
 			 "#    ;mediaenc={srtp,srtp-mand,srtp-mandf"
 			 ",dtls_srtp,zrtp}\n"
 			 "#    ;medianat={stun,turn,ice}\n"

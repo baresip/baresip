@@ -22,6 +22,7 @@
 #    ;call_transfer=no
 #    ;catchall={yes, no}  # default: no
 #    ;cert=cert.pem
+#    ;cuser_ua={yes, no}  # default: yes
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}
 #    ;natpinhole={yes, no}  # default: no

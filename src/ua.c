@@ -1206,9 +1206,16 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 
-	/* generate a unique contact-user, this is needed to route
-	   incoming requests when using multiple useragents */
-	err = re_sdprintf(&ua->cuser, "%r-%p", &ua->acc->luri.user, ua);
+	if (ua->acc->cuser_ua) {
+		/* generate a unique contact-user, this is needed to route
+		   incoming requests when using multiple useragents */
+		err = re_sdprintf(&ua->cuser, "%r-%p", &ua->acc->luri.user,
+				  ua);
+	}
+	else {
+		err = re_sdprintf(&ua->cuser, "%r", &ua->acc->luri.user);
+	}
+
 	if (err)
 		goto out;
 
