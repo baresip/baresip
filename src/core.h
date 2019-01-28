@@ -73,6 +73,7 @@ struct account {
 	uint32_t pubint;             /**< Publication interval in [seconds]  */
 	uint32_t prio;               /**< Prio for serial registration       */
 	uint16_t tcpsrcport;         /**< TCP source port for SIP            */
+	bool cuser_ua;               /**< Added UA pointer to contact user   */
 	char *regq;                  /**< Registration Q-value               */
 	char *sipnat;                /**< SIP Nat mechanism                  */
 	char *stun_user;             /**< STUN Username                      */

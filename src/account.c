@@ -512,6 +512,9 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	err |= param_dstr(&acc->regq, &aor->params, "regq");
 
+	acc->cuser_ua = true;
+	err |= param_bool(&acc->cuser_ua, &aor->params, "cuser_ua");
+
 	for (i=0; i<RE_ARRAY_SIZE(acc->outboundv); i++) {
 
 		char expr[16] = "outbound";
@@ -2068,6 +2071,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " regint:       %u\n", acc->regint);
 	err |= re_hprintf(pf, " prio:         %u\n", acc->prio);
 	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
+	err |= re_hprintf(pf, " cuser_ua:     %s\n",
+			  acc->cuser_ua ? "yes" : "no");
 	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
 	err |= re_hprintf(pf, " inreq_allowed:%s\n",
 			  inreq_mode_str(acc->inreq_mode));
