@@ -61,6 +61,20 @@ struct vidsrc_st {
 static struct vidsrc *mod_avf;
 
 
+static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
+{
+	switch (pix_fmt) {
+
+	case AV_PIX_FMT_YUV420P:  return VID_FMT_YUV420P;
+	case AV_PIX_FMT_YUVJ420P: return VID_FMT_YUV420P;
+	case AV_PIX_FMT_YUV444P:  return VID_FMT_YUV444P;
+	case AV_PIX_FMT_NV12:     return VID_FMT_NV12;
+	case AV_PIX_FMT_NV21:     return VID_FMT_NV21;
+	default:                  return (enum vidfmt)-1;
+	}
+}
+
+
 static void destructor(void *arg)
 {
 	struct vidsrc_st *st = arg;
@@ -136,14 +150,8 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	/* convert timestamp */
 	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
 
-	switch (frame->format) {
-
-	case AV_PIX_FMT_YUV420P:
-	case AV_PIX_FMT_YUVJ420P:
-		vf.fmt = VID_FMT_YUV420P;
-		break;
-
-	default:
+	vf.fmt = avpixfmt_to_vidfmt(frame->format);
+	if (vf.fmt == (enum vidfmt)-1) {
 		warning("avformat: decode: bad pixel format"
 			" (%i) (%s)\n",
 			frame->format,
