@@ -464,11 +464,11 @@ static const struct cmd cmdv[] = {
 {"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
-{"ausrc",     0,   CMD_IPRM, "Switch audio source",     switch_audio_source  },
-{"auplay",    0,   CMD_IPRM, "Switch audio player",     switch_audio_player  },
+{"ausrc",     0,    CMD_PRM, "Switch audio source",     switch_audio_source  },
+{"auplay",    0,    CMD_PRM, "Switch audio player",     switch_audio_player  },
 {"about",     0,          0, "About box",               about_box            },
 #ifdef USE_VIDEO
-{"vidsrc",    0,   CMD_IPRM, "Switch video source",     switch_video_source  },
+{"vidsrc",    0,    CMD_PRM, "Switch video source",     switch_video_source  },
 #endif
 
 };
@@ -588,18 +588,7 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 	char driver[16], device[128] = "";
 	int err = 0;
 
-	static bool switch_aud_inprogress;
-
-	if (!switch_aud_inprogress && !carg->complete) {
-		re_hprintf(pf,
-			   "\rPlease enter audio device (driver,device)\n");
-	}
-
-	switch_aud_inprogress = true;
-
 	if (carg->complete) {
-
-		switch_aud_inprogress = false;
 
 		if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
 			     &pl_driver, &pl_device)) {
@@ -676,18 +665,7 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	char driver[16], device[128] = "";
 	int err = 0;
 
-	static bool switch_aud_inprogress;
-
-	if (!switch_aud_inprogress && !carg->complete) {
-		re_hprintf(pf,
-			   "\rPlease enter audio device (driver,device)\n");
-	}
-
-	switch_aud_inprogress = true;
-
 	if (carg->complete) {
-
-		switch_aud_inprogress = false;
 
 		if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
 			     &pl_driver, &pl_device)) {
@@ -761,18 +739,7 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 	char driver[16], device[128] = "";
 	int err = 0;
 
-	static bool switch_vid_inprogress;
-
-	if (!switch_vid_inprogress && !carg->complete) {
-		re_hprintf(pf,
-			   "\rPlease enter video device (driver,device)\n");
-	}
-
-	switch_vid_inprogress = true;
-
 	if (carg->complete) {
-
-		switch_vid_inprogress = false;
 
 		if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
 			     &pl_driver, &pl_device)) {
