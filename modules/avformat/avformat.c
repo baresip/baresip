@@ -330,6 +330,9 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 				err = ENOENT;
 				goto out;
 			}
+
+			debug("avformat: using decoder '%s' (%s)\n",
+			      st->codec->name, st->codec->long_name);
 		}
 
 		found_stream = true;
