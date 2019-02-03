@@ -530,6 +530,7 @@ static int call_mute(struct re_printf *pf, void *unused)
 static int call_xfer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	(void)pf;
 
 	if (carg->complete) {
 		return call_transfer(ua_call(uag_cur()), carg->prm);
