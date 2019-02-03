@@ -145,11 +145,9 @@ static int dns_server_handler(const struct pl *pl, void *arg)
 static enum aufmt resolve_aufmt(const struct pl *fmt)
 {
 	if (0 == pl_strcasecmp(fmt, "s16"))     return AUFMT_S16LE;
+	if (0 == pl_strcasecmp(fmt, "s16le"))   return AUFMT_S16LE;
 	if (0 == pl_strcasecmp(fmt, "float"))   return AUFMT_FLOAT;
 	if (0 == pl_strcasecmp(fmt, "s24_3le")) return AUFMT_S24_3LE;
-
-	/* XXX remove this after librem is fixed */
-	if (0 == pl_strcasecmp(fmt, "s16le"))   return AUFMT_S16LE;
 
 	return (enum aufmt)-1;
 }
