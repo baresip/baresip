@@ -530,18 +530,8 @@ static int call_mute(struct re_printf *pf, void *unused)
 static int call_xfer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	static bool xfer_inprogress;
-
-	if (!xfer_inprogress && !carg->complete) {
-		menu.statmode = STATMODE_OFF;
-		re_hprintf(pf, "\rPlease enter transfer target SIP uri:\n");
-	}
-
-	xfer_inprogress = true;
 
 	if (carg->complete) {
-		menu.statmode = STATMODE_CALL;
-		xfer_inprogress = false;
 		return call_transfer(ua_call(uag_cur()), carg->prm);
 	}
 
@@ -917,7 +907,7 @@ static const struct cmd callcmdv[] = {
 {"audio_debug",'A',       0, "Audio stream",        call_audio_debug      },
 {"audio_cycle",'e',       0, "Cycle audio encoder", call_audioenc_cycle   },
 {"mute",      'm',        0, "Call mute/un-mute",   call_mute             },
-{"transfer",  't', CMD_IPRM, "Transfer call",       call_xfer             },
+{"transfer",  't',  CMD_PRM, "Transfer call",       call_xfer             },
 {"hold",      'x',        0, "Call hold",           cmd_call_hold         },
 {"",          'H',        0, "Hold previous call",  hold_prev_call        },
 {"",          'L',        0, "Resume previous call",hold_prev_call        },
