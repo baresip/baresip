@@ -67,6 +67,19 @@ struct videnc_state {
 };
 
 
+static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
+{
+	switch (fmt) {
+
+	case VID_FMT_YUV420P: return AV_PIX_FMT_YUV420P;
+	case VID_FMT_YUV444P: return AV_PIX_FMT_YUV444P;
+	case VID_FMT_NV12:    return AV_PIX_FMT_NV12;
+	case VID_FMT_NV21:    return AV_PIX_FMT_NV21;
+	default:              return AV_PIX_FMT_NONE;
+	}
+}
+
+
 static void destructor(void *arg)
 {
 	struct videnc_state *st = arg;
@@ -650,21 +663,8 @@ int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
 	if (!st || !frame)
 		return EINVAL;
 
-	switch (frame->fmt) {
-
-	case VID_FMT_YUV420P:
-		pix_fmt = AV_PIX_FMT_YUV420P;
-		break;
-
-	case VID_FMT_NV12:
-		pix_fmt = AV_PIX_FMT_NV12;
-		break;
-
-	case VID_FMT_YUV444P:
-		pix_fmt = AV_PIX_FMT_YUV444P;
-		break;
-
-	default:
+	pix_fmt = vidfmt_to_avpixfmt(frame->fmt);
+	if (pix_fmt == AV_PIX_FMT_NONE) {
 		warning("avcodec: pixel format not supported (%s)\n",
 			vidfmt_name(frame->fmt));
 		return ENOTSUP;
