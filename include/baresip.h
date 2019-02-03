@@ -814,9 +814,6 @@ int  ui_password_prompt(char **passwordp);
 /** Command flags */
 enum {
 	CMD_PRM  = (1<<0),              /**< Command with parameter */
-	CMD_PROG = (1<<1),              /**< Show progress          */
-
-	CMD_IPRM = CMD_PRM | CMD_PROG,  /**< Interactive parameter  */
 };
 
 /** Command arguments */

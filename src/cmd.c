@@ -386,8 +386,7 @@ static int cmd_process_edit(struct commands *commands,
 		}
 	}
 	else {
-		if (compl ||
-		    (ctx->cmd && ctx->cmd->flags & CMD_PROG))
+		if (compl)
 			err = cmd_report(ctx->cmd, pf, ctx->mb, compl, data);
 	}
 
