@@ -340,6 +340,8 @@ int subscriber_init(void)
 
 	contact_set_update_handler(contacts, contact_handler, NULL);
 
+	contacts_enable_presence(contacts, true);
+
 	return err;
 }
 

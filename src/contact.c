@@ -29,6 +29,7 @@ struct contacts {
 	struct list cl;
 	struct hash *cht;
 	struct contact *cur;
+	bool enable_presence;
 
 	contact_update_h *handler;
 	void *handler_arg;
@@ -330,10 +331,14 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 	for (le = list_head(lst); le && !err; le = le->next) {
 		const struct contact *c = le->data;
 
-		err = re_hprintf(pf, "%s  %20s  %H\n",
-				 c == contacts->cur ? ">" : " ",
-				 contact_presence_str(c->status),
-				 contact_print, c);
+		err = re_hprintf(pf, "%s", c == contacts->cur ? ">" : " ");
+
+		if (contacts->enable_presence) {
+			err = re_hprintf(pf, "  %20s",
+					 contact_presence_str(c->status));
+		}
+
+		err = re_hprintf(pf, "  %H\n", contact_print, c);
 	}
 
 	err |= re_hprintf(pf, "\n");
@@ -472,4 +477,13 @@ struct contact *contacts_current(const struct contacts *contacts)
 struct le *contact_le(struct contact *cnt)
 {
 	return cnt ? &cnt->le : NULL;
+}
+
+
+void contacts_enable_presence(struct contacts *contacts, bool enabled)
+{
+	if (!contacts)
+		return;
+
+	contacts->enable_presence = enabled;
 }

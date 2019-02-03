@@ -349,6 +349,7 @@ int  contact_init(struct contacts **contactsp);
 int  contact_add(struct contacts *contacts,
 		 struct contact **contactp, const struct pl *addr);
 void contact_remove(struct contacts *contacts, struct contact *c);
+void contacts_enable_presence(struct contacts *contacts, bool enabled);
 void contact_set_update_handler(struct contacts *contacs,
 				contact_update_h *updateh, void *arg);
 int  contact_print(struct re_printf *pf, const struct contact *cnt);
