@@ -20,6 +20,7 @@ struct ausrc_st {
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
 	pthread_mutex_t mutex;
+	uint32_t sampsz;
 	ausrc_read_h *rh;
 	void *arg;
 };
@@ -72,7 +73,7 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	if (!rh)
 		return;
 
-	rh(inQB->mAudioData, inQB->mAudioDataByteSize/2, arg);
+	rh(inQB->mAudioData, inQB->mAudioDataByteSize/st->sampsz, arg);
 
 	AudioQueueEnqueueBuffer(inQ, inQB, 0, NULL);
 }
@@ -92,7 +93,7 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	(void)ctx;
 	(void)errh;
 
-	if (!stp || !as || !prm || prm->fmt != AUFMT_S16LE)
+	if (!stp || !as || !prm)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
@@ -103,8 +104,14 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh  = rh;
 	st->arg = arg;
 
+	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
+	if (!st->sampsz) {
+		err = ENOTSUP;
+		goto out;
+	}
+
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
-	bytc  = sampc * 2;
+	bytc  = sampc * st->sampsz;
 
 	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)
@@ -116,17 +123,17 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	fmt.mSampleRate       = (Float64)prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
-	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger |
+	fmt.mFormatFlags      = coreaudio_aufmt_to_formatflags(prm->fmt) |
 		                kAudioFormatFlagIsPacked;
 #ifdef __BIG_ENDIAN__
 	fmt.mFormatFlags     |= kAudioFormatFlagIsBigEndian;
 #endif
 
 	fmt.mFramesPerPacket  = 1;
-	fmt.mBytesPerFrame    = prm->ch * 2;
-	fmt.mBytesPerPacket   = prm->ch * 2;
+	fmt.mBytesPerFrame    = prm->ch * st->sampsz;
+	fmt.mBytesPerPacket   = prm->ch * st->sampsz;
 	fmt.mChannelsPerFrame = prm->ch;
-	fmt.mBitsPerChannel   = 16;
+	fmt.mBitsPerChannel   = 8 * st->sampsz;
 
 	status = AudioQueueNewInput(&fmt, record_handler, st, NULL,
 				     kCFRunLoopCommonModes, 0, &st->queue);

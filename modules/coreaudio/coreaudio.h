@@ -18,5 +18,6 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
 int coreaudio_enum_devices(const char *name, struct list *dev_list,
 			    CFStringRef *uid, Boolean is_input);
+uint32_t coreaudio_aufmt_to_formatflags(enum aufmt fmt);
 int coreaudio_player_init(struct auplay *ap);
 int coreaudio_recorder_init(struct ausrc *as);
