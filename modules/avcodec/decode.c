@@ -37,6 +37,20 @@ struct viddec_state {
 };
 
 
+static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
+{
+	switch (pix_fmt) {
+
+	case AV_PIX_FMT_YUV420P:  return VID_FMT_YUV420P;
+	case AV_PIX_FMT_YUVJ420P: return VID_FMT_YUV420P;
+	case AV_PIX_FMT_YUV444P:  return VID_FMT_YUV444P;
+	case AV_PIX_FMT_NV12:     return VID_FMT_NV12;
+	case AV_PIX_FMT_NV21:     return VID_FMT_NV21;
+	default:                  return (enum vidfmt)-1;
+	}
+}
+
+
 static inline int16_t seq_diff(uint16_t x, uint16_t y)
 {
 	return (int16_t)(y - x);
@@ -217,22 +231,8 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 
 		double fps;
 
-		switch (st->pict->format) {
-
-		case AV_PIX_FMT_YUV420P:
-		case AV_PIX_FMT_YUVJ420P:
-			frame->fmt = VID_FMT_YUV420P;
-			break;
-
-		case AV_PIX_FMT_NV12:
-			frame->fmt = VID_FMT_NV12;
-			break;
-
-		case AV_PIX_FMT_YUV444P:
-			frame->fmt = VID_FMT_YUV444P;
-			break;
-
-		default:
+		frame->fmt = avpixfmt_to_vidfmt(st->pict->format);
+		if (frame->fmt == (enum vidfmt)-1) {
 			warning("avcodec: decode: bad pixel format"
 				" (%i) (%s)\n",
 				st->pict->format,
