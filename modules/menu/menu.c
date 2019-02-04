@@ -532,11 +532,7 @@ static int call_xfer(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	(void)pf;
 
-	if (carg->complete) {
-		return call_transfer(ua_call(uag_cur()), carg->prm);
-	}
-
-	return 0;
+	return call_transfer(ua_call(uag_cur()), carg->prm);
 }
 
 
@@ -579,64 +575,61 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 	char driver[16], device[128] = "";
 	int err = 0;
 
-	if (carg->complete) {
+	if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
+		     &pl_driver, &pl_device)) {
 
-		if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
-			     &pl_driver, &pl_device)) {
+		return re_hprintf(pf, "\rFormat should be:"
+				  " driver,device\n");
+	}
 
-			return re_hprintf(pf, "\rFormat should be:"
-					  " driver,device\n");
-		}
+	pl_strcpy(&pl_driver, driver, sizeof(driver));
+	pl_strcpy(&pl_device, device, sizeof(device));
 
-		pl_strcpy(&pl_driver, driver, sizeof(driver));
-		pl_strcpy(&pl_device, device, sizeof(device));
+	ap = auplay_find(baresip_auplayl(), driver);
+	if (!ap) {
+		re_hprintf(pf, "no such audio-player: %s\n", driver);
+		return 0;
+	}
+	else if (!list_isempty(&ap->dev_list)) {
 
-		ap = auplay_find(baresip_auplayl(), driver);
-		if (!ap) {
-			re_hprintf(pf, "no such audio-player: %s\n", driver);
+		if (!mediadev_find(&ap->dev_list, device)) {
+			re_hprintf(pf,
+				   "no such device for %s audio-player: %s\n",
+				   driver, device);
+
+			mediadev_print(pf, &ap->dev_list);
+
 			return 0;
 		}
-		else if (!list_isempty(&ap->dev_list)) {
+	}
 
-			if (!mediadev_find(&ap->dev_list, device)) {
-				re_hprintf(pf,
-				  "no such device for %s audio-player: %s\n",
-				  driver, device);
+	re_hprintf(pf, "switch audio player: %s,%s\n",
+		   driver, device);
 
-				mediadev_print(pf, &ap->dev_list);
+	cfg = conf_config();
+	if (!cfg) {
+		return re_hprintf(pf, "no config object\n");
+	}
 
-				return 0;
-			}
-		}
+	aucfg = &cfg->audio;
 
-		re_hprintf(pf, "switch audio player: %s,%s\n",
-			   driver, device);
+	str_ncpy(aucfg->play_mod, driver, sizeof(aucfg->play_mod));
+	str_ncpy(aucfg->play_dev, device, sizeof(aucfg->play_dev));
 
-		cfg = conf_config();
-		if (!cfg) {
-			return re_hprintf(pf, "no config object\n");
-		}
+	str_ncpy(aucfg->alert_mod, driver, sizeof(aucfg->alert_mod));
+	str_ncpy(aucfg->alert_dev, device, sizeof(aucfg->alert_dev));
 
-		aucfg = &cfg->audio;
+	for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
 
-		str_ncpy(aucfg->play_mod, driver, sizeof(aucfg->play_mod));
-		str_ncpy(aucfg->play_dev, device, sizeof(aucfg->play_dev));
+		struct call *call = le->data;
 
-		str_ncpy(aucfg->alert_mod, driver, sizeof(aucfg->alert_mod));
-		str_ncpy(aucfg->alert_dev, device, sizeof(aucfg->alert_dev));
+		a = call_audio(call);
 
-		for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
-
-			struct call *call = le->data;
-
-			a = call_audio(call);
-
-			err = audio_set_player(a, driver, device);
-			if (err) {
-				re_hprintf(pf, "failed to set audio-player"
-					   " (%m)\n", err);
-				break;
-			}
+		err = audio_set_player(a, driver, device);
+		if (err) {
+			re_hprintf(pf, "failed to set audio-player"
+				   " (%m)\n", err);
+			break;
 		}
 	}
 
@@ -656,61 +649,58 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	char driver[16], device[128] = "";
 	int err = 0;
 
-	if (carg->complete) {
+	if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
+		     &pl_driver, &pl_device)) {
 
-		if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
-			     &pl_driver, &pl_device)) {
+		return re_hprintf(pf, "\rFormat should be:"
+				  " driver,device\n");
+	}
 
-			return re_hprintf(pf, "\rFormat should be:"
-					  " driver,device\n");
-		}
+	pl_strcpy(&pl_driver, driver, sizeof(driver));
+	pl_strcpy(&pl_device, device, sizeof(device));
 
-		pl_strcpy(&pl_driver, driver, sizeof(driver));
-		pl_strcpy(&pl_device, device, sizeof(device));
+	as = ausrc_find(baresip_ausrcl(), driver);
+	if (!as) {
+		re_hprintf(pf, "no such audio-source: %s\n", driver);
+		return 0;
+	}
+	else if (!list_isempty(&as->dev_list)) {
 
-		as = ausrc_find(baresip_ausrcl(), driver);
-		if (!as) {
-			re_hprintf(pf, "no such audio-source: %s\n", driver);
+		if (!mediadev_find(&as->dev_list, device)) {
+			re_hprintf(pf,
+				   "no such device for %s audio-source: %s\n",
+				   driver, device);
+
+			mediadev_print(pf, &as->dev_list);
+
 			return 0;
 		}
-		else if (!list_isempty(&as->dev_list)) {
+	}
 
-			if (!mediadev_find(&as->dev_list, device)) {
-				re_hprintf(pf,
-				  "no such device for %s audio-source: %s\n",
-				  driver, device);
+	re_hprintf(pf, "switch audio device: %s,%s\n",
+		   driver, device);
 
-				mediadev_print(pf, &as->dev_list);
+	cfg = conf_config();
+	if (!cfg) {
+		return re_hprintf(pf, "no config object\n");
+	}
 
-				return 0;
-			}
-		}
+	aucfg = &cfg->audio;
 
-		re_hprintf(pf, "switch audio device: %s,%s\n",
-			   driver, device);
+	str_ncpy(aucfg->src_mod, driver, sizeof(aucfg->src_mod));
+	str_ncpy(aucfg->src_dev, device, sizeof(aucfg->src_dev));
 
-		cfg = conf_config();
-		if (!cfg) {
-			return re_hprintf(pf, "no config object\n");
-		}
+	for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
 
-		aucfg = &cfg->audio;
+		struct call *call = le->data;
 
-		str_ncpy(aucfg->src_mod, driver, sizeof(aucfg->src_mod));
-		str_ncpy(aucfg->src_dev, device, sizeof(aucfg->src_dev));
+		a = call_audio(call);
 
-		for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
-
-			struct call *call = le->data;
-
-			a = call_audio(call);
-
-			err = audio_set_source(a, driver, device);
-			if (err) {
-				re_hprintf(pf, "failed to set audio-source"
-					   " (%m)\n", err);
-				break;
-			}
+		err = audio_set_source(a, driver, device);
+		if (err) {
+			re_hprintf(pf, "failed to set audio-source"
+				   " (%m)\n", err);
+			break;
 		}
 	}
 
@@ -730,61 +720,58 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 	char driver[16], device[128] = "";
 	int err = 0;
 
-	if (carg->complete) {
+	if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
+		     &pl_driver, &pl_device)) {
 
-		if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
-			     &pl_driver, &pl_device)) {
+		return re_hprintf(pf, "\rFormat should be:"
+				  " driver,device\n");
+	}
 
-			return re_hprintf(pf, "\rFormat should be:"
-					  " driver,device\n");
-		}
+	pl_strcpy(&pl_driver, driver, sizeof(driver));
+	pl_strcpy(&pl_device, device, sizeof(device));
 
-		pl_strcpy(&pl_driver, driver, sizeof(driver));
-		pl_strcpy(&pl_device, device, sizeof(device));
+	vs = vidsrc_find(baresip_vidsrcl(), driver);
+	if (!vs) {
+		re_hprintf(pf, "no such video-source: %s\n", driver);
+		return 0;
+	}
+	else if (!list_isempty(&vs->dev_list)) {
 
-		vs = vidsrc_find(baresip_vidsrcl(), driver);
-		if (!vs) {
-			re_hprintf(pf, "no such video-source: %s\n", driver);
+		if (!mediadev_find(&vs->dev_list, device)) {
+			re_hprintf(pf,
+				   "no such device for %s video-source: %s\n",
+				   driver, device);
+
+			mediadev_print(pf, &vs->dev_list);
+
 			return 0;
 		}
-		else if (!list_isempty(&vs->dev_list)) {
+	}
 
-			if (!mediadev_find(&vs->dev_list, device)) {
-				re_hprintf(pf,
-				  "no such device for %s video-source: %s\n",
-				  driver, device);
+	re_hprintf(pf, "switch video device: %s,%s\n",
+		   driver, device);
 
-				mediadev_print(pf, &vs->dev_list);
+	cfg = conf_config();
+	if (!cfg) {
+		return re_hprintf(pf, "no config object\n");
+	}
 
-				return 0;
-			}
-		}
+	vidcfg = &cfg->video;
 
-		re_hprintf(pf, "switch video device: %s,%s\n",
-			   driver, device);
+	str_ncpy(vidcfg->src_mod, driver, sizeof(vidcfg->src_mod));
+	str_ncpy(vidcfg->src_dev, device, sizeof(vidcfg->src_dev));
 
-		cfg = conf_config();
-		if (!cfg) {
-			return re_hprintf(pf, "no config object\n");
-		}
+	for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
 
-		vidcfg = &cfg->video;
+		struct call *call = le->data;
 
-		str_ncpy(vidcfg->src_mod, driver, sizeof(vidcfg->src_mod));
-		str_ncpy(vidcfg->src_dev, device, sizeof(vidcfg->src_dev));
+		v = call_video(call);
 
-		for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
-
-			struct call *call = le->data;
-
-			v = call_video(call);
-
-			err = video_set_source(v, driver, device);
-			if (err) {
-				re_hprintf(pf, "failed to set video-source"
-					   " (%m)\n", err);
-				break;
-			}
+		err = video_set_source(v, driver, device);
+		if (err) {
+			re_hprintf(pf, "failed to set video-source"
+				   " (%m)\n", err);
+			break;
 		}
 	}
 
