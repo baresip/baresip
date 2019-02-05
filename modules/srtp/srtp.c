@@ -339,13 +339,15 @@ static int alloc(struct menc_media **stp, struct menc_sess *sess,
 
 		st->sdpm = mem_ref(sdpm);
 
-		err = sdp_media_set_alt_protos(st->sdpm, 4,
-					       "RTP/AVP",
-					       "RTP/AVPF",
-					       "RTP/SAVP",
-					       "RTP/SAVPF");
-		if (err)
-			goto out;
+		if (0 == str_cmp(sdp_media_proto(sdpm), "RTP/AVP")) {
+			err = sdp_media_set_alt_protos(st->sdpm, 4,
+						       "RTP/AVP",
+						       "RTP/AVPF",
+						       "RTP/SAVP",
+						       "RTP/SAVPF");
+			if (err)
+				goto out;
+		}
 
 		if (rtpsock) {
 			st->rtpsock = mem_ref(rtpsock);
