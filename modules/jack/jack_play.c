@@ -133,6 +133,11 @@ static int start_jack(struct auplay_st *st)
 		return EINVAL;
 	}
 
+	st->sampc = st->nframes * st->prm.ch;
+	st->sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
+	if (!st->sampv)
+		return ENOMEM;
+
 	/* create one port per channel */
 	for (ch=0; ch<st->prm.ch; ch++) {
 
@@ -224,12 +229,6 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (err)
 		goto out;
 
-	st->sampc = st->nframes * prm->ch;
-	st->sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
-	if (!st->sampv) {
-		err = ENOMEM;
-		goto out;
-	}
 
 	info("jack: sampc=%zu\n", st->sampc);
 
