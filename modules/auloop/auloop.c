@@ -129,7 +129,6 @@ static void print_stats(struct audio_loop *al)
 	(void)re_fprintf(stdout, "\r%uHz %dch %s "
 			 " n_read=%.3f n_write=%.3f rw_delay=%.3f [sec]"
 			 " rw_ratio=%f"
-			 "          \r"
 			 ,
 			 al->srate, al->ch, aufmt_name(al->fmt),
 			 (double)al->n_read / scale,
@@ -138,6 +137,8 @@ static void print_stats(struct audio_loop *al)
 
 	if (str_isset(aucodec))
 		(void)re_fprintf(stdout, " codec='%s'", aucodec);
+
+	(void)re_fprintf(stdout, "          \r");
 
 	fflush(stdout);
 }
