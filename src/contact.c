@@ -480,6 +480,12 @@ struct le *contact_le(struct contact *cnt)
 }
 
 
+/**
+ * Enable or disable presence
+ *
+ * @param contacts Contacts container
+ * @param enabled  True to enable presence, false to disable
+ */
 void contacts_enable_presence(struct contacts *contacts, bool enabled)
 {
 	if (!contacts)

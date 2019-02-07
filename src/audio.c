@@ -1122,6 +1122,28 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 }
 
 
+/**
+ * Allocate an audio stream
+ *
+ * @param ap         Pointer to allocated audio stream object
+ * @param stream_prm Stream parameters
+ * @param cfg        Global configuration
+ * @param call       Call object
+ * @param sdp_sess   SDP Session
+ * @param label      SDP label
+ * @param mnat       Media NAT (optional)
+ * @param mnat_sess  Media NAT session (optional)
+ * @param menc       Media Encryption (optional)
+ * @param menc_sess  Media Encryption session (optional)
+ * @param ptime      Packet time in [ms]
+ * @param aucodecl   List of audio codecs
+ * @param offerer    True if SDP offerer, false if SDP answerer
+ * @param eventh     Event handler
+ * @param errh       Error handler
+ * @param arg        Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
