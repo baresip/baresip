@@ -200,9 +200,6 @@
     <ClCompile Include="..\..\src\play.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\realtime.c">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\reg.c">
       <Filter>src</Filter>
     </ClCompile>
