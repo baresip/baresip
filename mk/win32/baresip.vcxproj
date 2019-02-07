@@ -189,7 +189,6 @@
     <ClCompile Include="..\..\src\mos.c" />
     <ClCompile Include="..\..\src\net.c" />
     <ClCompile Include="..\..\src\play.c" />
-    <ClCompile Include="..\..\src\realtime.c" />
     <ClCompile Include="..\..\src\reg.c" />
     <ClCompile Include="..\..\src\sdp.c" />
     <ClCompile Include="..\..\src\sipreq.c" />
