@@ -27,4 +27,5 @@ install:
 
 script: 
     - make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
+    - make clean; make CCACHE= STATIC=yes
     - python2 ccheck.py
