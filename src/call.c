@@ -1203,7 +1203,7 @@ static int auth_handler(char **username, char **password,
 static int sipsess_offer_handler(struct mbuf **descp,
 				 const struct sip_msg *msg, void *arg)
 {
-	const bool got_offer = mbuf_get_left(msg->mb);
+	const bool got_offer = (0 != mbuf_get_left(msg->mb));
 	struct call *call = arg;
 	int err;
 
