@@ -304,7 +304,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 		char expr[16] = "outbound";
 
-		expr[8] = i + 1 + 0x30;
+		expr[8] = (char)(i + 1 + 0x30);
 		expr[9] = '\0';
 
 		err |= param_dstr(&acc->outboundv[i], &aor->params, expr);

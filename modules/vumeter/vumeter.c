@@ -84,7 +84,7 @@ static int audio_print_vu(struct re_printf *pf, double *level)
 
 	x = (*level + -AULEVEL_MIN) / -AULEVEL_MIN;
 
-	res = min(sizeof(buf) * x,
+	res = min((size_t)(sizeof(buf) * x),
 		  sizeof(buf)-1);
 
 	memset(buf, '=', res);
