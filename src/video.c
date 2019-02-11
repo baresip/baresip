@@ -251,7 +251,7 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 	 * time [ms] * bitrate [kbps] / 8 = bytes
 	 */
 	bandwidth_kbps = vtx->video->cfg.bitrate / 1000;
-	burst = (1 + jfs - prev_jfs) * bandwidth_kbps / 4;
+	burst = (size_t)((1 + jfs - prev_jfs) * bandwidth_kbps / 4);
 
 	burst = min(burst, BURST_MAX);
 	sent  = 0;

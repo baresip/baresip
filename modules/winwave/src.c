@@ -154,7 +154,7 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 	wfmt.wFormatTag      = format;
 	wfmt.nChannels       = prm->ch;
 	wfmt.nSamplesPerSec  = prm->srate;
-	wfmt.wBitsPerSample  = st->sampsz * 8;
+	wfmt.wBitsPerSample  = (WORD)(st->sampsz * 8);
 	wfmt.nBlockAlign     = (prm->ch * wfmt.wBitsPerSample) / 8;
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
