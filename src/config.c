@@ -578,7 +578,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#ausrc_srate\t\t48000\n"
 			  "#auplay_srate\t\t48000\n"
 			  "#ausrc_channels\t\t0\n"
-			  "#auplay_channels\t\t0\n"
+			  "#auplay_channels\t0\n"
 			  "#audio_txmode\t\tpoll\t\t# poll, thread\n"
 			  "audio_level\t\tno\n"
 			  "ausrc_format\t\ts16\t\t# s16, float, ..\n"
@@ -842,7 +842,7 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f, "\n# Video display modules\n");
 #ifdef DARWIN
-	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "opengl" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "opengl" MOD_EXT "\n");
 #endif
 #ifdef LINUX
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "directfb" MOD_EXT "\n");
@@ -863,6 +863,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "turn" MOD_EXT "\n");
 	(void)re_fprintf(f, "module\t\t\t" MOD_PRE "ice" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "natpmp" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "pcp" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Media encryption modules\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "srtp" MOD_EXT "\n");
