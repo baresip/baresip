@@ -61,7 +61,7 @@ static OSStatus input_callback(void *inRefCon,
 {
 	struct ausrc_st *st = inRefCon;
 	AudioBufferList abl_in, abl_conv;
-	UInt32 nb_frames, nb_frames_max;
+	uint32_t nb_frames, nb_frames_max;
 	size_t framesz;
 	OSStatus ret;
 	int err;
