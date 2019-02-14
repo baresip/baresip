@@ -146,7 +146,8 @@ int message_listen(struct message_lsnr **lsnrp, struct message *message,
 	lsnr->arg = arg;
 
 	list_append(&message->lsnrl, &lsnr->le, lsnr);
-	mem_ref(lsnr); //ref for list
+	/* ref for list 8 */
+	mem_ref(lsnr); 
 
 	if (lsnrp)
 		*lsnrp = lsnr;
