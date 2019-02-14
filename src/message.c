@@ -28,15 +28,6 @@ static void destructor(void *data)
 	mem_deref(message->sip_lsnr);
 }
 
-
-static void listener_destructor(void *data)
-{
-	struct message_lsnr *lsnr = data;
-
-	list_unlink(&lsnr->le);
-}
-
-
 static void handle_message(struct message_lsnr *lsnr, struct ua *ua,
 			   const struct sip_msg *msg)
 {
@@ -149,12 +140,13 @@ int message_listen(struct message_lsnr **lsnrp, struct message *message,
 			goto out;
 	}
 
-	lsnr = mem_zalloc(sizeof(*lsnr), listener_destructor);
+	lsnr = mem_zalloc(sizeof(*lsnr), NULL);
 
 	lsnr->recvh = recvh;
 	lsnr->arg = arg;
 
 	list_append(&message->lsnrl, &lsnr->le, lsnr);
+	mem_ref(lsnr); //ref for list
 
 	if (lsnrp)
 		*lsnrp = lsnr;
@@ -163,6 +155,16 @@ int message_listen(struct message_lsnr **lsnrp, struct message *message,
 	return err;
 }
 
+/**
+ * Stop listening to incoming SIP MESSAGE messages
+ *
+ * @param lsnrp   Pointer to allocated listener
+ */
+void message_stop_listening(struct message_lsnr *lsnrp)
+{
+	list_unlink(&lsnrp->le);
+	mem_deref(lsnrp);
+}
 
 /**
  * Send SIP instant MESSAGE to a peer

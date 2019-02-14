@@ -409,6 +409,7 @@ struct message_lsnr;
 int  message_init(struct message **messagep);
 int  message_listen(struct message_lsnr **lsnrp, struct message *message,
 		    message_recv_h *h, void *arg);
+void message_stop_listening(struct message_lsnr *lsnrp);
 int  message_send(struct ua *ua, const char *peer, const char *msg,
 		  sip_resp_h *resph, void *arg);
 

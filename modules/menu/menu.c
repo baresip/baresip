@@ -1262,7 +1262,6 @@ static int module_init(void)
 {
 	struct pl val;
 	int err;
-	struct message_lsnr *message;
 
 	/*
 	 * Read the config values
@@ -1313,11 +1312,10 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err = message_listen(&message, baresip_message(),
+	err = message_listen(&menu.message, baresip_message(),
 			     message_handler, NULL);
 	if (err)
 		return err;
-	menu.message = mem_ref(message);
 
 	return err;
 }

@@ -1050,6 +1050,7 @@ static int module_close(void)
 		pthread_join(mod_obj.thread, NULL);
 	mod_obj.mq = mem_deref(mod_obj.mq);
 	aufilt_unregister(&vumeter);
+	message_stop_listening(mod_obj.message);
 	mod_obj.message = mem_deref(mod_obj.message);
 
 #ifdef USE_LIBNOTIFY
