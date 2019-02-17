@@ -1,3 +1,155 @@
+2019-02-17 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.1
+
+Aleksei (2):
+      Update MSVS project (#655)
+      Fix warnings at windows compilation (#656)
+
+Alfred E. Heggestad (111):
+      call: prm parameter is mandatory
+      core: add address-family to stream_param (ref #583)
+      core: add cname to stream_param (ref #583)
+      realtime: remove code
+      contact: add support for current contact (#573)
+      play: update doxygen comments
+      mk: add detection of OpenGL framework (ref #575)
+      stream: make call optional (closes #583)
+      net: update doxygen comments
+      contact: update doxygen comments
+      Module app unload (#589)
+      mk: disable opengl module in default build
+      opengles: updated vidisp api
+      avcapture: fix build for ios (ref #593)
+      module: update doxygen comments
+      ua: add missing doxygen comments
+      ua_set_custom_hdrs: add error checking
+      ua: add doxygen comments
+      ua: fix formatting and update doxygen
+      ua: update doxygen comments
+      call: update doxygen comments
+      message: update doxygen comments
+      custom_hdrs: add doxygen comments
+      stream: update doxygen comments
+      video: rename intra to key-frames
+      sip: add doxygen comments
+      event: add doxygen comments
+      mediadev: minor code formatting
+      mediadev: add doxygen comments
+      audiounit: rename comp to 'audiounit_comp'
+      audiounit: check input parameters
+      coreaudio: remove blocking sleep (#605)
+      audio: change logline to debug (ref #609)
+      auloop: show read/write counters in stream duration (seconds)
+      audiounit: print name of audio component used
+      audiounit: move aufmt_to_formatflags to audiounit.c
+      rpm: remove support for in-tree RPM building
+      account: init mnat, fix warning on mingw32
+      mk: make sure omx.so is only added once (fixes #612)
+      silk: remove codec (#611)
+      aubridge: use sizeof sample format instead of 2
+      coreaudio: clarify that coreaudio module is for macOS
+      audio: cleanup comment
+      pcp: clean up comment
+      audiounit: check for valid sample size
+      audiounit: clarify usage of inputBus and outputBus
+      add accessor to ausrc/auplay base-class
+      auloop: add summary
+      vidloop: rename variable
+      mk: detect CoreAudio framework
+      webrtc aec (#617)
+      audiounit: clean up enable/disable
+      auloop: print sample format
+      audiounit: clarify usage of inputBus and outputBus
+      dtls_srtp: remove support for SHA-1 fingerprint
+      dtls_srtp: remove unused DTLS-SRTP methods
+      menc: move and document event type
+      menc: added menc_event_name()
+      remove obsolete compile flag MODULE_CONF
+      stream: move handlers to end of struct
+      test: check magic in audio sample handler
+      test: added testcase for call with mock medianat
+      dshow: remove a comment
+      call: using str_isset() is faster than strlen()
+      config: remove 'rtcp_enable', always enabled (#623)
+      stream: remove rtcp flag
+      update comments
+      Update README.md
+      README: added rtcpsummary module
+      aubridge: add module prefix to global symbols
+      update copyright year to 2019
+      audiounit: fix warnings on ios
+      stream: make stream_sdpmedia public
+      stream: make stream_update public
+      audio: make audio_{encoder,decoder}_set public
+      stream: make struct stream_param public
+      audio: use samplesize to calculate packet size
+      audio: use sizeof int16_t instead of 2
+      stream: update doxygen comments
+      audio: update doxygen comments
+      video: update comment
+      jack: allocate array of ports from channels (ref #625)
+      jack: update comment
+      audiounit: check memory allocation
+      main: fix bug with reading of -u parameter value
+      audio: split up definition of AUDIO_SAMPSZ
+      gtk: minor formatting improvements
+      gtk: check duration_timer_tag (ref #630)
+      audio: make audio_alloc() public
+      avformat: print decoder name (ref #639)
+      menu: change some commands from CMD_IPRM to CMD_PRM
+      avformat: add pixel format mapping function
+      avcodec: add pixel format mapping function
+      avcodec: add pixel format mapping function for encoder
+      menu: use CMD_PRM for call transfer
+      contact: add flag to enable presence (fixes #645)
+      cmd: remove support for progress/interactive commands
+      menu: fix warning
+      config: update comment
+      coreaudio: add support for multiple sample formats, including FLOAT
+      menu: no need to use command's complete flag
+      jack: allocate buffer before start (ref #647)
+      auloop: print newline at the end
+      Update .travis.yml (#652)
+      Update .travis.yml (#653)
+      fix some warnings reported by @Encamy
+      dshow: fix warning on win32
+      update doxygen comments
+      bump version to 0.6.1
+      config: refresh config template
+      audiounit: fix warning on ios
+
+José Luis Millán (2):
+      ctrl_tcp: increase command buffer size (#585)
+      vumeter: configuration option to disable vumeter output to stderr (#608)
+
+Juha Heinanen (4):
+      new account functions
+      fixed typo
+      added audio_codec api function
+      added @return description
+
+Nicolas Tizon (4):
+      sdl2: make window resizable (#587)
+      coreaudio: mediadev support (#600)
+      avcodec: force intra (H.263, H.264) frame request if no key frame received (#614)
+      audiounit: add AUConverter resampler (recorder) (#624)
+
+Olle E. Johansson (1):
+      Improve mqtt module (#642)
+
+Timmo Verlaan (2):
+      menu: add uafind to select ua by aor (#626)
+      menu: create_ua doesn't use dialbuf (#627)
+
+juha-h (5):
+      Merge pull request #588 from alfredh/new_account_functions
+      Merge pull request #598 from alfredh/audio_codec
+      added account_set_answermode api function (#619)
+      opengles android ndk r18 update (#629)
+      do not accept incoming calls without srtp if account has mandatory srtp (#651)
+
+
 2018-12-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.6.0
