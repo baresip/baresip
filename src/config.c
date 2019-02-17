@@ -29,7 +29,6 @@ static struct config core_config = {
 
 	/** SIP User-Agent */
 	{
-		16,
 		"",
 		"",
 		"",
@@ -237,7 +236,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	}
 
 	/* SIP */
-	(void)conf_get_u32(conf, "sip_trans_bsize", &cfg->sip.trans_bsize);
 	(void)conf_get_str(conf, "sip_listen", cfg->sip.local,
 			   sizeof(cfg->sip.local));
 	(void)conf_get_str(conf, "sip_certificate", cfg->sip.cert,
@@ -374,7 +372,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 	err = re_hprintf(pf,
 			 "\n"
 			 "# SIP\n"
-			 "sip_trans_bsize\t\t%u\n"
 			 "sip_listen\t\t%s\n"
 			 "sip_certificate\t%s\n"
 			 "\n"
@@ -419,7 +416,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 ,
 
-			 cfg->sip.trans_bsize, cfg->sip.local, cfg->sip.cert,
+			 cfg->sip.local, cfg->sip.cert,
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
@@ -534,7 +531,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 #endif
 				"\n"
 			  "\n# SIP\n"
-			  "sip_trans_bsize\t\t128\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
 			  "\n"

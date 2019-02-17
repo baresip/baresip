@@ -1490,7 +1490,7 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	}
 
 	uag.cfg = &cfg->sip;
-	bsize = cfg->sip.trans_bsize;
+	bsize = 16;
 
 	uag.use_udp = udp;
 	uag.use_tcp = tcp;

@@ -215,7 +215,6 @@ enum audio_mode {
 
 /** SIP User-Agent */
 struct config_sip {
-	uint32_t trans_bsize;   /**< SIP Transaction bucket size    */
 	char uuid[64];          /**< Universally Unique Identifier  */
 	char local[64];         /**< Local SIP Address              */
 	char cert[256];         /**< SIP Certificate                */
