@@ -193,7 +193,7 @@ EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           = include
 INCLUDE_FILE_PATTERNS  = 
-PREDEFINED             = "DEBUG_MODULE=foo /**< hei */" USE_VIDEO
+PREDEFINED             = "DEBUG_MODULE=foo /**< hei */"
 EXPAND_AS_DEFINED      = 
 SKIP_FUNCTION_MACROS   = YES
 #---------------------------------------------------------------------------

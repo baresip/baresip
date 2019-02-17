@@ -50,10 +50,8 @@ struct call {
 	struct sipnot *not;       /**< REFER/NOTIFY client                  */
 	struct list streaml;      /**< List of mediastreams (struct stream) */
 	struct audio *audio;      /**< Audio stream                         */
-#ifdef USE_VIDEO
 	struct video *video;      /**< Video stream                         */
 	struct bfcp *bfcp;        /**< BFCP Client                          */
-#endif
 	enum state state;         /**< Call state                           */
 	char *local_uri;          /**< Local SIP uri                        */
 	char *local_name;         /**< Local display name                   */
@@ -154,7 +152,6 @@ static void call_stream_start(struct call *call, bool active)
 		info("call: audio stream is disabled..\n");
 	}
 
-#ifdef USE_VIDEO
 	/* Video Stream */
 	sc = sdp_media_rformat(stream_sdpmedia(video_strm(call->video)), NULL);
 	if (sc) {
@@ -179,7 +176,6 @@ static void call_stream_start(struct call *call, bool active)
 			warning("call: could not start BFCP: %m\n", err);
 		}
 	}
-#endif
 
 	if (active) {
 		struct le *le;
@@ -205,9 +201,7 @@ static void call_stream_stop(struct call *call)
 	audio_stop(call->audio);
 
 	/* Video */
-#ifdef USE_VIDEO
 	video_stop(call->video);
-#endif
 
 	tmr_cancel(&call->tmr_inv);
 }
@@ -301,10 +295,8 @@ static int update_media(struct call *call)
 	/* media attributes */
 	audio_sdp_attr_decode(call->audio);
 
-#ifdef USE_VIDEO
 	if (call->video)
 		video_sdp_attr_decode(call->video);
-#endif
 
 	/* Update each stream */
 	FOREACH_STREAM {
@@ -331,7 +323,6 @@ static int update_media(struct call *call)
 		info("audio stream is disabled..\n");
 	}
 
-#ifdef USE_VIDEO
 	sc = sdp_media_rformat(stream_sdpmedia(video_strm(call->video)), NULL);
 	if (sc) {
 		err = video_encoder_set(call->video, sc->data,
@@ -353,7 +344,6 @@ static int update_media(struct call *call)
 		info("video stream is disabled..\n");
 		video_stop(call->video);
 	}
-#endif
 
 	return err;
 }
@@ -388,10 +378,8 @@ static void call_destructor(void *arg)
 	mem_deref(call->peer_uri);
 	mem_deref(call->peer_name);
 	mem_deref(call->audio);
-#ifdef USE_VIDEO
 	mem_deref(call->video);
 	mem_deref(call->bfcp);
-#endif
 	mem_deref(call->sdp);
 	mem_deref(call->mnats);
 	mem_deref(call->mencs);
@@ -428,7 +416,6 @@ static void audio_error_handler(int err, const char *str, void *arg)
 }
 
 
-#ifdef USE_VIDEO
 static void video_error_handler(int err, const char *str, void *arg)
 {
 	struct call *call = arg;
@@ -439,7 +426,6 @@ static void video_error_handler(int err, const char *str, void *arg)
 	call_stream_stop(call);
 	call_event_handler(call, CALL_EVENT_CLOSED, str);
 }
-#endif
 
 
 static void menc_error_handler(int err, void *arg)
@@ -621,7 +607,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (err)
 		goto out;
 
-#ifdef USE_VIDEO
 	/* We require at least one video codec, and at least one
 	   video source or video display */
 	use_video = (vidmode != VIDMODE_OFF)
@@ -652,10 +637,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		if (err)
 			goto out;
 	}
-#else
-	(void)use_video;
-	(void)vidmode;
-#endif
 
 	/* inherit certain properties from original call */
 	if (xcall) {
@@ -942,11 +923,7 @@ bool call_has_video(const struct call *call)
 	if (!call)
 		return false;
 
-#ifdef USE_VIDEO
 	return sdp_media_has_media(stream_sdpmedia(video_strm(call->video)));
-#else
-	return false;
-#endif
 }
 
 
@@ -1116,10 +1093,8 @@ int call_status(struct re_printf *pf, const struct call *call)
 
 	err |= re_hprintf(pf, " (bit/s)");
 
-#ifdef USE_VIDEO
 	if (call->video)
 		err |= video_print(pf, call->video);
-#endif
 
 	/* remove old junk */
 	err |= re_hprintf(pf, "    ");
@@ -1292,7 +1267,6 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 }
 
 
-#ifdef USE_VIDEO
 static void call_handle_info_req(struct call *call, const struct sip_msg *req)
 {
 	struct pl body;
@@ -1311,7 +1285,6 @@ static void call_handle_info_req(struct call *call, const struct sip_msg *req)
 		video_update_picture(call->video);
 	}
 }
-#endif
 
 
 static void dtmfend_handler(void *arg)
@@ -1356,13 +1329,11 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 			}
 		}
 	}
-#ifdef USE_VIDEO
 	else if (msg_ctype_cmp(&msg->ctyp,
 			       "application", "media_control+xml")) {
 		call_handle_info_req(call, msg);
 		(void)sip_reply(sip, msg, 200, "OK");
 	}
-#endif
 	else {
 		(void)sip_reply(sip, msg, 488, "Not Acceptable Here");
 	}
@@ -1755,12 +1726,7 @@ struct audio *call_audio(const struct call *call)
  */
 struct video *call_video(const struct call *call)
 {
-#ifdef USE_VIDEO
 	return call ? call->video : NULL;
-#else
-	(void)call;
-	return NULL;
-#endif
 }
 
 

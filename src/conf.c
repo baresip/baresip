@@ -390,10 +390,8 @@ int conf_modules(void)
 
 	print_populated("audio codec",  list_count(baresip_aucodecl()));
 	print_populated("audio filter", list_count(baresip_aufiltl()));
-#ifdef USE_VIDEO
 	print_populated("video codec",  list_count(baresip_vidcodecl()));
 	print_populated("video filter", list_count(baresip_vidfiltl()));
-#endif
 
  out:
 	return err;

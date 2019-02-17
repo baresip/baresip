@@ -753,7 +753,6 @@ int test_call_dtmf(void)
 }
 
 
-#ifdef USE_VIDEO
 static void mock_vidisp_handler(const struct vidframe *frame,
 				uint64_t timestamp, void *arg)
 {
@@ -812,7 +811,6 @@ int test_call_video(void)
 
 	return err;
 }
-#endif
 
 
 static void mock_sample_handler(const void *sampv, size_t sampc, void *arg)

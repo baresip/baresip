@@ -250,7 +250,6 @@ struct config_audio {
 	int dec_fmt;            /**< Audio decoder sample format    */
 };
 
-#ifdef USE_VIDEO
 /** Video */
 struct config_video {
 	char src_mod[16];       /**< Video source module            */
@@ -263,7 +262,6 @@ struct config_video {
 	bool fullscreen;        /**< Enable fullscreen display      */
 	int enc_fmt;            /**< Encoder pixelfmt (enum vidfmt) */
 };
-#endif
 
 /** Audio/Video Transport */
 struct config_avt {
@@ -285,12 +283,10 @@ struct config_net {
 	size_t nsc;             /**< Number of DNS nameservers      */
 };
 
-#ifdef USE_VIDEO
 /* BFCP */
 struct config_bfcp {
 	char proto[16];         /**< BFCP Transport (optional)      */
 };
-#endif
 
 /** SDP */
 struct config_sdp {
@@ -307,16 +303,12 @@ struct config {
 
 	struct config_audio audio;
 
-#ifdef USE_VIDEO
 	struct config_video video;
-#endif
 	struct config_avt avt;
 
 	struct config_net net;
 
-#ifdef USE_VIDEO
 	struct config_bfcp bfcp;
-#endif
 
 	struct config_sdp sdp;
 };

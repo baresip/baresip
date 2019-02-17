@@ -41,10 +41,8 @@ static const struct test tests[] = {
 	TEST(test_call_custom_headers),
 	TEST(test_call_tcp),
 	TEST(test_call_transfer),
-#ifdef USE_VIDEO
 	TEST(test_call_video),
 	TEST(test_video),
-#endif
 	TEST(test_cmd),
 	TEST(test_cmd_long),
 	TEST(test_contact),

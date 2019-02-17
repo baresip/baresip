@@ -61,7 +61,6 @@ static struct config core_config = {
 		AUFMT_S16LE,
 	},
 
-#ifdef USE_VIDEO
 	/** Video */
 	{
 		"", "",
@@ -72,7 +71,6 @@ static struct config core_config = {
 		true,
 		VID_FMT_YUV420P,
 	},
-#endif
 
 	/** Audio/Video Transport */
 	{
@@ -92,12 +90,10 @@ static struct config core_config = {
 		0
 	},
 
-#ifdef USE_VIDEO
 	/* BFCP */
 	{
 		""
 	},
-#endif
 
 	/* SDP */
 	{
@@ -177,7 +173,6 @@ static int conf_get_aufmt(const struct conf *conf, const char *name,
 }
 
 
-#ifdef USE_VIDEO
 static int conf_get_vidfmt(const struct conf *conf, const char *name,
 			   int *fmtp)
 {
@@ -204,7 +199,6 @@ static int conf_get_vidfmt(const struct conf *conf, const char *name,
 
 	return ENOENT;
 }
-#endif
 
 
 /**
@@ -303,7 +297,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	conf_get_aufmt(conf, "auenc_format", &cfg->audio.enc_fmt);
 	conf_get_aufmt(conf, "audec_format", &cfg->audio.dec_fmt);
 
-#ifdef USE_VIDEO
 	/* Video */
 	(void)conf_get_csv(conf, "video_source",
 			   cfg->video.src_mod, sizeof(cfg->video.src_mod),
@@ -320,9 +313,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_bool(conf, "video_fullscreen", &cfg->video.fullscreen);
 
 	conf_get_vidfmt(conf, "videnc_format", &cfg->video.enc_fmt);
-#else
-	(void)size;
-#endif
 
 	/* AVT - Audio/Video Transport */
 	if (0 == conf_get_u32(conf, "rtp_tos", &v))
@@ -355,11 +345,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_str(conf, "net_interface",
 			   cfg->net.ifname, sizeof(cfg->net.ifname));
 
-#ifdef USE_VIDEO
 	/* BFCP */
 	(void)conf_get_str(conf, "bfcp_proto", cfg->bfcp.proto,
 			   sizeof(cfg->bfcp.proto));
-#endif
 
 	/* SDP */
 	(void)conf_get_bool(conf, "sdp_ebuacip", &cfg->sdp.ebuacip);
@@ -405,7 +393,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "ausrc_channels\t\t%u\n"
 			 "audio_level\t\t%s\n"
 			 "\n"
-#ifdef USE_VIDEO
 			 "# Video\n"
 			 "video_source\t\t%s,%s\n"
 			 "video_display\t\t%s,%s\n"
@@ -415,7 +402,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "video_fullscreen\t%s\n"
 			 "videnc_format\t\t%s\n"
 			 "\n"
-#endif
 			 "# AVT\n"
 			 "rtp_tos\t\t\t%u\n"
 			 "rtp_ports\t\t%H\n"
@@ -428,11 +414,9 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "# Network\n"
 			 "net_interface\t\t%s\n"
 			 "\n"
-#ifdef USE_VIDEO
 			 "# BFCP\n"
 			 "bfcp_proto\t\t%s\n"
 			 "\n"
-#endif
 			 ,
 
 			 cfg->sip.trans_bsize, cfg->sip.local, cfg->sip.cert,
@@ -448,14 +432,12 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->audio.channels_play, cfg->audio.channels_src,
 			 cfg->audio.level ? "yes" : "no",
 
-#ifdef USE_VIDEO
 			 cfg->video.src_mod, cfg->video.src_dev,
 			 cfg->video.disp_mod, cfg->video.disp_dev,
 			 cfg->video.width, cfg->video.height,
 			 cfg->video.bitrate, cfg->video.fps,
 			 cfg->video.fullscreen ? "yes" : "no",
 			 vidfmt_name(cfg->video.enc_fmt),
-#endif
 
 			 cfg->avt.rtp_tos,
 			 range_print, &cfg->avt.rtp_ports,
@@ -467,9 +449,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 			 cfg->net.ifname
 
-#ifdef USE_VIDEO
 			 ,cfg->bfcp.proto
-#endif
 		   );
 
 	return err;
@@ -494,7 +474,6 @@ static const char *default_audio_device(void)
 }
 
 
-#ifdef USE_VIDEO
 static const char *default_video_device(void)
 {
 #ifdef DARWIN
@@ -523,7 +502,6 @@ static const char *default_video_display(void)
 	return "x11,nil";
 #endif
 }
-#endif
 
 
 static int default_interface_print(struct re_printf *pf, void *unused)
@@ -593,7 +571,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  default_audio_device(),
 			  default_audio_device());
 
-#ifdef USE_VIDEO
 	err |= re_hprintf(pf,
 			  "\n# Video\n"
 			  "#video_source\t\t%s\n"
@@ -609,7 +586,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  cfg->video.width, cfg->video.height,
 			  cfg->video.bitrate, cfg->video.fps,
 			  vidfmt_name(cfg->video.enc_fmt));
-#endif
 
 	err |= re_hprintf(pf,
 			  "\n# AVT - Audio/Video Transport\n"
@@ -626,11 +602,9 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max,
 			  default_interface_print, NULL);
 
-#ifdef USE_VIDEO
 	err |= re_hprintf(pf,
 			  "\n# BFCP\n"
 			  "#bfcp_proto\t\tudp\n");
-#endif
 
 	return err;
 }
@@ -798,7 +772,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "aubridge" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "aufile" MOD_EXT "\n");
 
-#ifdef USE_VIDEO
 
 	(void)re_fprintf(f, "\n# Video codec Modules (in order)\n");
 #ifdef USE_AVCODEC
@@ -851,7 +824,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "sdl2" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "fakevideo" MOD_EXT "\n");
 
-#endif /* USE_VIDEO */
 
 	(void)re_fprintf(f, "\n# Audio/Video source modules\n");
 	(void)re_fprintf(f, "#module\t\t\t" MOD_PRE "rst" MOD_EXT "\n");
@@ -899,9 +871,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "syslog"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "mqtt" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module_app\t\t" MOD_PRE "ctrl_tcp" MOD_EXT "\n");
-#ifdef USE_VIDEO
 	(void)re_fprintf(f, "module_app\t\t" MOD_PRE "vidloop"MOD_EXT"\n");
-#endif
 	(void)re_fprintf(f, "\n");
 
 	(void)re_fprintf(f, "\n#------------------------------------"

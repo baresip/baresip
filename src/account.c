@@ -240,7 +240,6 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 }
 
 
-#ifdef USE_VIDEO
 static int video_codecs_decode(struct account *acc, const struct pl *prm)
 {
 	struct list *vidcodecl = baresip_vidcodecl();
@@ -280,7 +279,6 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 
 	return 0;
 }
-#endif
 
 
 static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
@@ -392,9 +390,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	err |= sip_params_decode(acc, &acc->laddr);
 	       answermode_decode(acc, &acc->laddr.params);
 	err |= audio_codecs_decode(acc, &acc->laddr.params);
-#ifdef USE_VIDEO
 	err |= video_codecs_decode(acc, &acc->laddr.params);
-#endif
 	err |= media_decode(acc, &acc->laddr.params);
 	if (err)
 		goto out;
@@ -815,7 +811,6 @@ struct list *account_aucodecl(const struct account *acc)
 }
 
 
-#ifdef USE_VIDEO
 /**
  * Get the video codecs of an account
  *
@@ -828,7 +823,6 @@ struct list *account_vidcodecl(const struct account *acc)
 	return (acc && !list_isempty(&acc->vidcodecl))
 		? (struct list *)&acc->vidcodecl : baresip_vidcodecl();
 }
-#endif
 
 
 /**

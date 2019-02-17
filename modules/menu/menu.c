@@ -49,9 +49,7 @@ static void update_callstatus(void);
 static void alert_stop(void);
 static int switch_audio_source(struct re_printf *pf, void *arg);
 static int switch_audio_player(struct re_printf *pf, void *arg);
-#ifdef USE_VIDEO
 static int switch_video_source(struct re_printf *pf, void *arg);
-#endif
 
 
 static void redial_reset(void)
@@ -467,9 +465,7 @@ static const struct cmd cmdv[] = {
 {"ausrc",     0,    CMD_PRM, "Switch audio source",     switch_audio_source  },
 {"auplay",    0,    CMD_PRM, "Switch audio player",     switch_audio_player  },
 {"about",     0,          0, "About box",               about_box            },
-#ifdef USE_VIDEO
 {"vidsrc",    0,    CMD_PRM, "Switch video source",     switch_video_source  },
-#endif
 
 };
 
@@ -707,7 +703,7 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	return 0;
 }
 
-#ifdef USE_VIDEO
+
 static int switch_video_source(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -777,10 +773,8 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 
 	return 0;
 }
-#endif
 
 
-#ifdef USE_VIDEO
 static int call_videoenc_cycle(struct re_printf *pf, void *unused)
 {
 	(void)pf;
@@ -795,7 +789,6 @@ static int call_video_debug(struct re_printf *pf, void *unused)
 	(void)unused;
 	return video_debug(pf, call_video(ua_call(uag_cur())));
 }
-#endif
 
 
 static int digit_handler(struct re_printf *pf, void *arg)
@@ -901,11 +894,8 @@ static const struct cmd callcmdv[] = {
 {"",          'L',        0, "Resume previous call",hold_prev_call        },
 {"aubitrate",   0,  CMD_PRM, "Set audio bitrate",   set_audio_bitrate     },
 {"sndcode",   0,    CMD_PRM, "Send Code",           send_code             },
-
-#ifdef USE_VIDEO
 {"video_cycle", 'E',      0, "Cycle video encoder", call_videoenc_cycle   },
 {"video_debug", 'V',      0, "Video stream",        call_video_debug      },
-#endif
 
 /* Numeric keypad for DTMF events: */
 {NULL, '#',         0, NULL,                  digit_handler         },
