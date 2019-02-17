@@ -136,6 +136,7 @@ static int reload_config(struct re_printf *pf, void *arg)
 static int cmd_log_level(struct re_printf *pf, void *unused)
 {
 	int level;
+	(void)unused;
 
 	level = log_level_get();
 
