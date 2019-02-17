@@ -39,7 +39,6 @@ SRCS	+= timestamp.c
 SRCS	+= ua.c
 SRCS	+= ui.c
 
-ifneq ($(USE_VIDEO),)
 SRCS	+= bfcp.c
 SRCS	+= h264.c
 SRCS	+= mctrl.c
@@ -49,7 +48,6 @@ SRCS	+= vidfilt.c
 SRCS	+= vidisp.c
 SRCS	+= vidsrc.c
 SRCS	+= vidutil.c
-endif
 
 ifneq ($(STATIC),)
 SRCS	+= static.c

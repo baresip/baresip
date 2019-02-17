@@ -20,9 +20,7 @@ TEST_SRCS	+= mos.c
 TEST_SRCS	+= net.c
 TEST_SRCS	+= play.c
 TEST_SRCS	+= ua.c
-ifneq ($(USE_VIDEO),)
 TEST_SRCS	+= video.c
-endif
 
 
 #
@@ -46,11 +44,9 @@ TEST_SRCS	+= mock/mock_auplay.c
 TEST_SRCS	+= mock/mock_ausrc.c
 TEST_SRCS	+= mock/mock_mnat.c
 TEST_SRCS	+= mock/mock_menc.c
-ifneq ($(USE_VIDEO),)
 TEST_SRCS	+= mock/mock_vidsrc.c
 TEST_SRCS	+= mock/mock_vidcodec.c
 TEST_SRCS	+= mock/mock_vidisp.c
-endif
 
 TEST_SRCS	+= test.c
 

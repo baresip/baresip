@@ -280,10 +280,8 @@ endif
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge aufile
 endif
-ifneq ($(USE_VIDEO),)
 MODULES   += vidloop selfview vidbridge
 MODULES   += fakevideo
-endif
 
 
 ifneq ($(USE_ALSA),)
