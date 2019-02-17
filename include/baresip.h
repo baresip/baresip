@@ -811,7 +811,6 @@ enum {
 struct cmd_arg {
 	char key;         /**< Which key was pressed  */
 	char *prm;        /**< Optional parameter     */
-	bool complete;    /**< True if complete       */
 	void *data;       /**< Application data       */
 };
 
