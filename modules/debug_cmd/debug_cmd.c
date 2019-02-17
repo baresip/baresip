@@ -133,9 +133,27 @@ static int reload_config(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_log_level(struct re_printf *pf, void *unused)
+{
+	int level;
+
+	level = log_level_get();
+
+	--level;
+
+	if (level < LEVEL_DEBUG)
+		level = LEVEL_ERROR;
+
+	log_level_set(level);
+
+	return re_hprintf(pf, "Log level '%s'\n", log_level_name(level));
+}
+
+
 static const struct cmd debugcmdv[] = {
 {"conf_reload", 0,       0, "Reload config file",     reload_config       },
 {"config",      0,       0, "Print configuration",    cmd_config_print    },
+{"loglevel",   'v',      0, "Log level toggle",       cmd_log_level       },
 {"main",        0,       0, "Main loop debug",        re_debug            },
 {"memstat",    'y',      0, "Memory status",          mem_status          },
 {"modules",     0,       0, "Module debug",           mod_debug           },

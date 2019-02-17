@@ -555,6 +555,9 @@ struct log {
 
 void log_register_handler(struct log *logh);
 void log_unregister_handler(struct log *logh);
+void log_level_set(enum log_level level);
+enum log_level log_level_get(void);
+const char *log_level_name(enum log_level level);
 void log_enable_debug(bool enable);
 void log_enable_info(bool enable);
 void log_enable_stdout(bool enable);
