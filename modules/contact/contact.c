@@ -182,11 +182,9 @@ static int load_current_contact(struct contacts *contacts, const char *path)
 }
 
 
-static int cmd_cycle_current(struct re_printf *pf, void *arg)
+static int cycle_current(struct re_printf *pf, bool next)
 {
-	const struct cmd_arg *carg = arg;
 	struct contacts *contacts = baresip_contacts();
-	const bool next = carg->key == '>';
 	struct contact *cnt;
 	struct le *le;
 	int err;
@@ -223,12 +221,28 @@ static int cmd_cycle_current(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_current_prev(struct re_printf *pf, void *arg)
+{
+	(void)arg;
+
+	return cycle_current(pf, false);
+}
+
+
+static int cmd_current_next(struct re_printf *pf, void *arg)
+{
+	(void)arg;
+
+	return cycle_current(pf, true);
+}
+
+
 static const struct cmd cmdv[] = {
 {"contacts",     'C',        0, "List contacts",          print_contacts    },
 {"dialcontact",  'D',        0, "Dial current contact",   cmd_dial_contact  },
 {"message",      'M',  CMD_PRM, "Message current contact",cmd_message       },
-{"contact_prev", '<',        0, "Set previous contact",   cmd_cycle_current },
-{"contact_next", '>',        0, "Set next contact",       cmd_cycle_current },
+{"contact_prev", '<',        0, "Set previous contact",   cmd_current_prev  },
+{"contact_next", '>',        0, "Set next contact",       cmd_current_next  },
 };
 
 
