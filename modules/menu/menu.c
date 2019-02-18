@@ -30,7 +30,6 @@ static struct {
 	struct tmr tmr_alert;         /**< Incoming call alert timer      */
 	struct tmr tmr_stat;          /**< Call status timer              */
 	struct play *play;            /**< Current audio player state     */
-	struct message_lsnr *message; /**< Message listener               */
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
 	struct le *le_cur;            /**< Current User-Agent (struct ua) */
 	bool bell;                    /**< ANSI Bell alert enabled        */
@@ -1289,7 +1288,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err = message_listen(&menu.message, baresip_message(),
+	err = message_listen(baresip_message(),
 			     message_handler, NULL);
 	if (err)
 		return err;
@@ -1303,7 +1302,8 @@ static int module_close(void)
 	debug("menu: close (redial current_attempts=%d)\n",
 	      menu.current_attempts);
 
-	menu.message = mem_deref(menu.message);
+	message_unlisten(baresip_message(), message_handler);
+
 	uag_event_unregister(ua_event_handler);
 	cmd_unregister(baresip_commands(), cmdv);
 	cmd_unregister(baresip_commands(), dialcmdv);

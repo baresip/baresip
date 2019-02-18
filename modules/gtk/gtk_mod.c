@@ -42,7 +42,6 @@ struct gtk_mod {
 	pthread_t thread;
 	bool run;
 	bool contacts_inited;
-	struct message_lsnr *message;
 	struct mqueue *mq;
 	GApplication *app;
 	GtkStatusIcon *status_icon;
@@ -1016,7 +1015,7 @@ static int module_init(void)
 	aufilt_register(baresip_aufiltl(), &vumeter);
 
 #ifdef USE_NOTIFICATIONS
-	err = message_listen(&mod_obj.message, baresip_message(),
+	err = message_listen(baresip_message(),
 			     message_handler, &mod_obj);
 	if (err) {
 		warning("gtk: message_init failed (%m)\n", err);
@@ -1050,7 +1049,7 @@ static int module_close(void)
 		pthread_join(mod_obj.thread, NULL);
 	mod_obj.mq = mem_deref(mod_obj.mq);
 	aufilt_unregister(&vumeter);
-	mod_obj.message = mem_deref(mod_obj.message);
+	message_unlisten(baresip_message(), message_handler);
 
 #ifdef USE_LIBNOTIFY
 	if (notify_is_initted())

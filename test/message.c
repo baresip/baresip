@@ -194,7 +194,7 @@ static int test_message_transp(enum sip_transp transp)
 	b->other = a;
 
 	/* NOTE: can only listen to one global instance for now */
-	err = message_listen(NULL, b->message, message_recv_handler, b);
+	err = message_listen(b->message, message_recv_handler, b);
 	TEST_ERR(err);
 
 	/* Send a message from A to B */

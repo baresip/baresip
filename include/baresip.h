@@ -395,11 +395,11 @@ typedef void (message_recv_h)(struct ua *ua, const struct pl *peer,
 			      struct mbuf *body, void *arg);
 
 struct message;
-struct message_lsnr;
 
 int  message_init(struct message **messagep);
-int  message_listen(struct message_lsnr **lsnrp, struct message *message,
+int  message_listen(struct message *message,
 		    message_recv_h *h, void *arg);
+void message_unlisten(struct message *message, message_recv_h *recvh);
 int  message_send(struct ua *ua, const char *peer, const char *msg,
 		  sip_resp_h *resph, void *arg);
 
