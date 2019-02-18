@@ -293,8 +293,8 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 		if (re_snprintf(buf, sizeof(buf), "%s,%s",
 				sdp_media_name(st->sdpm),
 				st->crypto_suite))
-			(st->sess->eventh)(MENC_EVENT_SECURE, buf,
-					   st->sess->arg);
+			st->sess->eventh(MENC_EVENT_SECURE, buf,
+					 st->sess->arg);
 		else
 			warning("srtp: failed to print secure"
 				" event arguments\n");
