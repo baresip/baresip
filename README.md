@@ -261,7 +261,6 @@ menu          Interactive menu
 mpa           MPA Speech and Audio Codec
 mqtt          MQTT (Message Queue Telemetry Transport) module
 mwi           Message Waiting Indication
-natbd         NAT Behavior Discovery Module
 natpmp        NAT Port Mapping Protocol (NAT-PMP) module
 omx           OpenMAX IL video display module
 opengl        OpenGL video output
