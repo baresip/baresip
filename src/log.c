@@ -47,18 +47,35 @@ void log_unregister_handler(struct log *log)
 }
 
 
+/**
+ * Set the current log level
+ *
+ * @param level Log level
+ */
 void log_level_set(enum log_level level)
 {
 	lg.level = level;
 }
 
 
+/**
+ * Get the current log level
+ *
+ * @return Log level
+ */
 enum log_level log_level_get(void)
 {
 	return lg.level;
 }
 
 
+/**
+ * Get the log level as a string
+ *
+ * @param level Log level
+ *
+ * @return String with log level name
+ */
 const char *log_level_name(enum log_level level)
 {
 	switch (level) {

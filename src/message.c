@@ -162,6 +162,12 @@ int message_listen(struct message *message,
 }
 
 
+/**
+ * Stop listening to incoming SIP MESSAGE messages
+ *
+ * @param message Messaging subsystem
+ * @param recvh   Message receive handler
+ */
 void message_unlisten(struct message *message, message_recv_h *recvh)
 {
 	struct le *le;

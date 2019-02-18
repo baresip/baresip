@@ -282,7 +282,7 @@ struct config_net {
 	size_t nsc;             /**< Number of DNS nameservers      */
 };
 
-/* BFCP */
+/** BFCP Configuration */
 struct config_bfcp {
 	char proto[16];         /**< BFCP Transport (optional)      */
 };
