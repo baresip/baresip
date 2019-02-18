@@ -140,7 +140,6 @@
     <ClCompile Include="..\..\modules\l16\l16.c" />
     <ClCompile Include="..\..\modules\menu\menu.c" />
     <ClCompile Include="..\..\modules\mwi\mwi.c" />
-    <ClCompile Include="..\..\modules\natbd\natbd.c" />
     <ClCompile Include="..\..\modules\natpmp\libnatpmp.c" />
     <ClCompile Include="..\..\modules\natpmp\natpmp.c" />
     <ClCompile Include="..\..\modules\presence\notifier.c" />
