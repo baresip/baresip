@@ -337,6 +337,9 @@ static int session_alloc(struct menc_sess **sessp,
 			 void *arg)
 {
 	struct menc_sess *sess;
+	(void)sdp;
+	(void)offerer;
+	(void)errorh;
 
 	if (!sessp)
 		return EINVAL;
