@@ -65,6 +65,7 @@ struct video_loop {
 	struct vstat stat;
 	struct tmr tmr_bw;
 	struct tmr tmr_display;
+	struct tmr tmr_update_src;
 	struct vidsz src_size;
 	struct vidsz disp_size;
 	enum vidfmt src_fmt;
@@ -486,6 +487,7 @@ static void vidloop_destructor(void *arg)
 	mem_deref(vl->vsrc);
 	mem_deref(vl->enc);
 	mem_deref(vl->dec);
+	tmr_cancel(&vl->tmr_update_src);
 
 	lock_write_get(vl->frame_mutex);
 	mem_deref(vl->vidisp);
@@ -627,6 +629,30 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 }
 
 
+static void update_vidsrc(void *arg)
+{
+	struct video_loop *vl = arg;
+	struct vidsz size;
+	struct config *cfg = conf_config();
+	int err;
+
+	tmr_start(&vl->tmr_update_src, 10, update_vidsrc, vl);
+
+	if (!strcmp(vl->cfg.src_dev, cfg->video.src_dev))
+		return;
+
+
+	strcpy(vl->cfg.src_dev, cfg->video.src_dev);
+
+	size.w = cfg->video.width;
+	size.h = cfg->video.height;
+
+	err = vsrc_reopen(gvl, &size);
+	if (err)
+		gvl = mem_deref(gvl);
+}
+
+
 static int video_loop_alloc(struct video_loop **vlp)
 {
 	struct video_loop *vl;
@@ -645,6 +671,7 @@ static int video_loop_alloc(struct video_loop **vlp)
 	vl->cfg = cfg->video;
 	tmr_init(&vl->tmr_bw);
 	tmr_init(&vl->tmr_display);
+	tmr_init(&vl->tmr_update_src);
 
 	err = lock_alloc(&vl->frame_mutex);
 	if (err)
@@ -683,6 +710,7 @@ static int video_loop_alloc(struct video_loop **vlp)
 	/* NOTE: usually (e.g. SDL2),
 			 video frame must be rendered from main thread */
 	tmr_start(&vl->tmr_display, 10, display_handler, vl);
+	tmr_start(&vl->tmr_update_src, 10, update_vidsrc, vl);
 
  out:
 	if (err)
