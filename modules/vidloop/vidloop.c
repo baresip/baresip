@@ -641,7 +641,6 @@ static void update_vidsrc(void *arg)
 	if (!strcmp(vl->cfg.src_dev, cfg->video.src_dev))
 		return;
 
-
 	strcpy(vl->cfg.src_dev, cfg->video.src_dev);
 
 	size.w = cfg->video.width;
