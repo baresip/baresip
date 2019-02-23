@@ -265,6 +265,7 @@ endif
 # ------------------------------------------------------------------------- #
 
 MODULES   += $(EXTRA_MODULES)
+ifneq ($(BASIC_MODULES),no)
 MODULES   += stun turn ice auloop presence
 MODULES   += menu contact vumeter mwi account natpmp httpd
 MODULES   += srtp
@@ -272,6 +273,7 @@ MODULES   += uuid
 MODULES   += debug_cmd
 MODULES   += ctrl_tcp
 MODULES   += b2bua
+endif
 
 ifneq ($(HAVE_LIBMQTT),)
 MODULES   += mqtt
