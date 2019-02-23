@@ -273,7 +273,6 @@ MODULES   += uuid
 MODULES   += debug_cmd
 MODULES   += ctrl_tcp
 MODULES   += b2bua
-endif
 
 ifneq ($(HAVE_LIBMQTT),)
 MODULES   += mqtt
@@ -284,7 +283,7 @@ MODULES   += aubridge aufile
 endif
 MODULES   += vidloop selfview vidbridge
 MODULES   += fakevideo
-
+endif
 
 ifneq ($(USE_ALSA),)
 MODULES   += alsa
