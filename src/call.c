@@ -623,7 +623,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 				  acc->mnat, call->mnats,
 				  acc->menc, call->mencs,
 				  "main",
-				  account_vidcodecl(call->acc),
+				  account_vidcodecl(call->acc), !got_offer,
 				  video_error_handler, call);
 		if (err)
 			goto out;

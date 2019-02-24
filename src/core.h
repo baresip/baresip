@@ -349,6 +349,7 @@ int  stream_alloc(struct stream **sp, const struct stream_param *prm,
 		  const char *name, int label,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
+		  bool offerer,
 		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, void *arg);
 int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
@@ -394,6 +395,7 @@ int  video_alloc(struct video **vp, const struct stream_param *stream_prm,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
 		 const char *content, const struct list *vidcodecl,
+		 bool offerer,
 		 video_err_h *errh, void *arg);
 int  video_start(struct video *v, const char *peer);
 void video_stop(struct video *v);

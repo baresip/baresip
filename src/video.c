@@ -849,6 +849,7 @@ int video_alloc(struct video **vp, const struct stream_param *stream_prm,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		const char *content, const struct list *vidcodecl,
+		bool offerer,
 		video_err_h *errh, void *arg)
 {
 	struct video *v;
@@ -869,7 +870,7 @@ int video_alloc(struct video **vp, const struct stream_param *stream_prm,
 
 	err = stream_alloc(&v->strm, stream_prm,
 			   &cfg->avt, call, sdp_sess, "video", label,
-			   mnat, mnat_sess, menc, menc_sess,
+			   mnat, mnat_sess, menc, menc_sess, offerer,
 			   stream_recv_handler, rtcp_handler, v);
 	if (err)
 		goto out;
