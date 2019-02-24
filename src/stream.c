@@ -212,6 +212,12 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 }
 
 
+static inline bool is_rtcp_packet(unsigned pt)
+{
+	return 64 <= pt && pt <= 95;
+}
+
+
 static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			struct mbuf *mb, void *arg)
 {
@@ -220,6 +226,12 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	int err;
 
 	MAGIC_CHECK(s);
+
+	if (is_rtcp_packet(hdr->pt)) {
+		info("stream: drop incoming RTCP packet on RTP port"
+		     " (pt=%u)\n", hdr->pt);
+		return;
+	}
 
 	s->ts_last = tmr_jiffies();
 
