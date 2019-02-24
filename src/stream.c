@@ -17,7 +17,8 @@
 
 enum {
 	RTP_RECV_SIZE = 8192,
-	RTP_CHECK_INTERVAL = 1000  /* how often to check for RTP [ms] */
+	RTP_CHECK_INTERVAL = 1000,  /* how often to check for RTP [ms] */
+	PORT_DISCARD = 9,
 };
 
 
@@ -403,7 +404,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	}
 
 	err = sdp_media_add(&s->sdp, sdp_sess, name,
-			    s->rtp ? sa_port(rtp_local(s->rtp)) : 9,
+			    s->rtp ? sa_port(rtp_local(s->rtp)) : PORT_DISCARD,
 			    (menc && menc->sdp_proto) ? menc->sdp_proto :
 			    sdp_proto_rtpavp);
 	if (err)
