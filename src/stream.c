@@ -437,8 +437,11 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 				   rtp_sess_ssrc(s->rtp), prm->cname);
 
 	/* RFC 5761 */
-	if (cfg->rtcp_mux)
+	if (cfg->rtcp_mux &&
+	    (offerer || sdp_media_rattr(s->sdp, "rtcp-mux"))) {
+
 		err |= sdp_media_set_lattr(s->sdp, true, "rtcp-mux", NULL);
+	}
 
 	if (err)
 		goto out;
