@@ -10,7 +10,9 @@
 #include <bv32/bitpack.h>
 
 
-/*
+/**
+ * @defgroup bv32 bv32
+ *
  * BroadVoice32 Wideband Audio codec (RFC 4298)
  *
  * http://www.broadcom.com/support/broadvoice/downloads.php
