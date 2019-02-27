@@ -29,6 +29,8 @@
 /**
  * @defgroup omx omx
  *
+ * Raspberry Pi VideoCoreIV OpenMAX interface
+ *
  * TODO:
  *  * Proper sync OMX events across threads, instead of busy waiting
  */
