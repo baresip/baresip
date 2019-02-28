@@ -180,7 +180,7 @@ USE_SPEEX_PP := $(shell [ -f $(SYSROOT)/include/speex_preprocess.h ] || \
 USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
 	[ -f $(SYSROOT_ALT)/include/syslog.h ] || \
 	[ -f $(SYSROOT)/local/include/syslog.h ] && echo "yes")
-HAVE_LIBMQTT := $(shell [ -f $(SYSROOT)/include/mosquitto.h ] || \
+USE_MQTT := $(shell [ -f $(SYSROOT)/include/mosquitto.h ] || \
 	[ -f $(SYSROOT)/local/include/mosquitto.h ] \
 	&& echo "yes")
 USE_V4L  := $(shell [ -f $(SYSROOT)/include/libv4l1.h ] || \
@@ -284,9 +284,6 @@ MODULES   += turn
 MODULES   += uuid
 MODULES   += vumeter
 
-ifneq ($(HAVE_LIBMQTT),)
-MODULES   += mqtt
-endif
 
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge aufile
@@ -390,6 +387,12 @@ endif
 ifneq ($(USE_L16),)
 MODULES   += l16
 endif
+ifneq ($(USE_MPA),)
+MODULES   += mpa
+endif
+ifneq ($(USE_MQTT),)
+MODULES   += mqtt
+endif
 ifneq ($(USE_OPENGL),)
 MODULES   += opengl
 endif
@@ -398,9 +401,6 @@ MODULES   += opengles
 endif
 ifneq ($(USE_OPUS),)
 MODULES   += opus
-endif
-ifneq ($(USE_MPA),)
-MODULES   += mpa
 endif
 ifneq ($(USE_OSS),)
 MODULES   += oss
