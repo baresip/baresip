@@ -272,24 +272,26 @@ MODULES   += b2bua
 MODULES   += contact
 MODULES   += ctrl_tcp
 MODULES   += debug_cmd
+MODULES   += fakevideo
 MODULES   += httpd
 MODULES   += ice
 MODULES   += menu
 MODULES   += mwi
 MODULES   += natpmp
 MODULES   += presence
+MODULES   += selfview
 MODULES   += srtp
 MODULES   += stun
 MODULES   += turn
 MODULES   += uuid
+MODULES   += vidbridge
+MODULES   += vidloop
 MODULES   += vumeter
-
 
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge aufile
 endif
-MODULES   += vidloop selfview vidbridge
-MODULES   += fakevideo
+
 endif
 
 ifneq ($(USE_ALSA),)
