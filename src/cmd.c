@@ -345,7 +345,8 @@ int cmd_process_long(struct commands *commands, const char *str, size_t len,
 			err = cmd_long->h(pf_resp, &arg);
 	}
 	else {
-		err = re_hprintf(pf_resp, "command not found (%s)\n", name);
+		(void)re_hprintf(pf_resp, "command not found (%s)\n", name);
+		err = ENOTSUP;
 	}
 
  out:
