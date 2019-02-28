@@ -266,13 +266,23 @@ endif
 
 MODULES   += $(EXTRA_MODULES)
 ifneq ($(BASIC_MODULES),no)
-MODULES   += stun turn ice auloop presence
-MODULES   += menu contact vumeter mwi account natpmp httpd
-MODULES   += srtp
-MODULES   += uuid
-MODULES   += debug_cmd
-MODULES   += ctrl_tcp
+MODULES   += account
+MODULES   += auloop
 MODULES   += b2bua
+MODULES   += contact
+MODULES   += ctrl_tcp
+MODULES   += debug_cmd
+MODULES   += httpd
+MODULES   += ice
+MODULES   += menu
+MODULES   += mwi
+MODULES   += natpmp
+MODULES   += presence
+MODULES   += srtp
+MODULES   += stun
+MODULES   += turn
+MODULES   += uuid
+MODULES   += vumeter
 
 ifneq ($(HAVE_LIBMQTT),)
 MODULES   += mqtt
