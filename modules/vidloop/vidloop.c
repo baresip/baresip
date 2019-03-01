@@ -636,11 +636,13 @@ static void update_vidsrc(void *arg)
 	struct config *cfg = conf_config();
 	int err;
 
-	tmr_start(&vl->tmr_update_src, 10, update_vidsrc, vl);
+	tmr_start(&vl->tmr_update_src, 100, update_vidsrc, vl);
 
-	if (!strcmp(vl->cfg.src_dev, cfg->video.src_dev))
+	if (!strcmp(vl->cfg.src_mod, cfg->video.src_mod) &&
+	    !strcmp(vl->cfg.src_dev, cfg->video.src_dev))
 		return;
 
+	strcpy(vl->cfg.src_mod,cfg->video.src_mod);
 	strcpy(vl->cfg.src_dev, cfg->video.src_dev);
 
 	size.w = cfg->video.width;
