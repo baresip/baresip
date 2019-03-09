@@ -197,7 +197,7 @@ The baresip project is using the 3-clause BSD license.
 ## Contributing
 
 Patches can be sent via Github
-[Pull-Requests](https://github.com/creytiv/baresip/pulls) or to the RE devel
+[Pull-Requests](https://github.com/alfredh/baresip/pulls) or to the RE devel
 [mailing-list](http://lists.creytiv.com/mailman/listinfo/re-devel).
 
 

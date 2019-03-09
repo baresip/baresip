@@ -874,14 +874,14 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "# Module parameters\n");
 	(void)re_fprintf(f, "\n");
 
-	(void)re_fprintf(f, "\n");
-	(void)re_fprintf(f, "cons_listen\t\t0.0.0.0:5555\n");
+	(void)re_fprintf(f, "\n# UI Modules parameters\n");
+	(void)re_fprintf(f, "cons_listen\t\t0.0.0.0:5555 # cons\n");
 
 	(void)re_fprintf(f, "\n");
-	(void)re_fprintf(f, "http_listen\t\t0.0.0.0:8000\n");
+	(void)re_fprintf(f, "http_listen\t\t0.0.0.0:8000 # httpd - server\n");
 
 	(void)re_fprintf(f, "\n");
-	(void)re_fprintf(f, "ctrl_tcp_listen\t\t0.0.0.0:4444\n");
+	(void)re_fprintf(f, "ctrl_tcp_listen\t\t0.0.0.0:4444 # ctrl_tcp\n");
 
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
