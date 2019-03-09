@@ -141,9 +141,9 @@ module_app		vidloop.so
 # Module parameters
 
 # UI Modules parameters
-cons_listen			0.0.0.0:5555 # cons - Console UI UDP/TCP sockets
+cons_listen		0.0.0.0:5555 # cons - Console UI UDP/TCP sockets
 
-http_listen			0.0.0.0:8000 # httpd - HTTP Server
+http_listen		0.0.0.0:8000 # httpd - HTTP Server
 
 ctrl_tcp_listen		0.0.0.0:4444 # ctrl_tcp - TCP interface JSON
 
@@ -153,9 +153,9 @@ evdev_device		/dev/input/event0
 opus_bitrate		28000 # 6000-510000
 #opus_stereo		yes
 #opus_sprop_stereo	yes
-#opus_cbr			no
+#opus_cbr		no
 #opus_inband_fec	no
-#opus_dtx			no
+#opus_dtx		no
 #opus_mirror		no
 #opus_complexity	10
 #opus_application	audio # {voip,audio}
@@ -177,9 +177,9 @@ ice_mode		full # {full,lite}
 snd_path 		/tmp/
 
 # MQTT
-#mqtt_broker_host		sollentuna.example.com
-#mqtt_broker_port		1883
+#mqtt_broker_host	sollentuna.example.com
+#mqtt_broker_port	1883
 #mqtt_broker_clientid	baresip01 # Has to be unique for each client, defaults to "baresip"
-#mqtt_broker_user		alfred
+#mqtt_broker_user	alfred
 #mqtt_broker_password	Crocus
-#mqtt_basetopic			baresip/01 # May be uniqe for each client you want to control. Defaults to "baresip"
+#mqtt_basetopic		baresip/01 # May be uniqe for each client you want to control. Defaults to "baresip"
