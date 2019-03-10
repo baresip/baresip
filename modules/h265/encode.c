@@ -264,13 +264,12 @@ int h265_encode(struct videnc_state *st, bool update,
 	pict->format = pix_fmt;
 	pict->width = frame->size.w;
 	pict->height = frame->size.h;
+	pict->pts = timestamp;
 
 	for (i=0; i<4; i++) {
 		pict->data[i]     = frame->data[i];
 		pict->linesize[i] = frame->linesize[i];
 	}
-
-	pict->pts = timestamp;
 
 	if (update) {
 		debug("avcodec: encoder picture update\n");
@@ -329,7 +328,6 @@ int h265_encode(struct videnc_state *st, bool update,
 
 	err = packetize_annexb(ts, pkt->data, pkt->size,
 			       st->pktsize, st->pkth, st->arg);
-
 	if (err)
 		goto out;
 
