@@ -113,7 +113,7 @@ static int open_encoder(struct videnc_state *st, const struct vidsz *size,
 
 	if (0 == strcmp(h265_encoder->name, "libx265")) {
 
-		av_opt_set(st->ctx->priv_data, "profile", "main", 0);
+		av_opt_set(st->ctx->priv_data, "profile", "main444-8", 0);
 		av_opt_set(st->ctx->priv_data, "preset", "ultrafast", 0);
 		av_opt_set(st->ctx->priv_data, "tune", "zerolatency", 0);
 	}
