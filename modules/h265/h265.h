@@ -33,7 +33,7 @@
 						\
 	if (*(pkt)) {				\
 						\
-		av_packet_unref(*(pkt));	\
+		av_free_packet(*(pkt));		\
 		av_freep((pkt));		\
 	}
 #endif
