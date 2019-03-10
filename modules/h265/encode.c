@@ -299,7 +299,6 @@ int h265_encode(struct videnc_state *st, bool update,
 	}
 
 	got_packet = 1;
-
 #else
 	pkt = av_malloc(sizeof(*pkt));
 	if (!pkt) {
@@ -308,6 +307,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	}
 
 	av_init_packet(pkt);
+	av_new_packet(pkt, 65536);
 
 	ret = avcodec_encode_video2(st->ctx, pkt, pict, &got_packet);
 	if (ret < 0) {
