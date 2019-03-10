@@ -25,19 +25,6 @@ struct videnc_state {
 };
 
 
-static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
-{
-	switch (fmt) {
-
-	case VID_FMT_YUV420P: return AV_PIX_FMT_YUV420P;
-	case VID_FMT_YUV444P: return AV_PIX_FMT_YUV444P;
-	case VID_FMT_NV12:    return AV_PIX_FMT_NV12;
-	case VID_FMT_NV21:    return AV_PIX_FMT_NV21;
-	default:              return AV_PIX_FMT_NONE;
-	}
-}
-
-
 static void destructor(void *arg)
 {
 	struct videnc_state *st = arg;
@@ -47,11 +34,15 @@ static void destructor(void *arg)
 }
 
 
-static void encoder_close(struct videnc_state *st)
+static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
 {
-	if (st->ctx) {
-		avcodec_free_context(&st->ctx);
-		st->ctx = NULL;
+	switch (fmt) {
+
+	case VID_FMT_YUV420P: return AV_PIX_FMT_YUV420P;
+	case VID_FMT_YUV444P: return AV_PIX_FMT_YUV444P;
+	case VID_FMT_NV12:    return AV_PIX_FMT_NV12;
+	case VID_FMT_NV21:    return AV_PIX_FMT_NV21;
+	default:              return AV_PIX_FMT_NONE;
 	}
 }
 
@@ -78,10 +69,10 @@ int h265_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	}
 	else {
 		if (ves->ctx && (ves->bitrate != prm->bitrate ||
-				  ves->pktsize != prm->pktsize ||
-				  ves->fps     != prm->fps)) {
+				 ves->pktsize != prm->pktsize ||
+				 ves->fps     != prm->fps)) {
 
-			encoder_close(ves);
+			avcodec_free_context(&ves->ctx);
 		}
 	}
 
@@ -100,7 +91,8 @@ static int open_encoder(struct videnc_state *st, const struct vidsz *size,
 {
 	int ret, err = 0;
 
-	encoder_close(st);
+	if (st->ctx)
+		avcodec_free_context(&st->ctx);
 
 	st->ctx = avcodec_alloc_context3(h265_encoder);
 	if (!st->ctx) {
@@ -134,7 +126,8 @@ static int open_encoder(struct videnc_state *st, const struct vidsz *size,
 
  out:
 	if (err) {
-		encoder_close(st);
+		if (st->ctx)
+			avcodec_free_context(&st->ctx);
 	}
 
 	return err;
