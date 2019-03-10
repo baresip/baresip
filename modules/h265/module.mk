@@ -6,6 +6,6 @@
 
 MOD		:= h265
 $(MOD)_SRCS	+= h265.c encode.c decode.c fmt.c
-$(MOD)_LFLAGS	+= -lavcodec -lavutil
+$(MOD)_LFLAGS	+= `pkg-config --libs libavcodec libavutil`
 
 include mk/mod.mk
