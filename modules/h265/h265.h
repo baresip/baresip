@@ -6,6 +6,15 @@
 
 
 /*
+ * FFmpeg version wrappers
+ */
+
+#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(52, 20, 100)
+#define av_frame_alloc avcodec_alloc_frame
+#endif
+
+
+/*
  * H.265 format
  */
 enum {
