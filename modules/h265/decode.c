@@ -62,7 +62,6 @@ int h265_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		       const char *fmtp)
 {
 	struct viddec_state *vds;
-	AVCodec *codec;
 	int err = 0;
 	(void)vc;
 	(void)fmtp;
@@ -74,13 +73,6 @@ int h265_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 
 	if (vds)
 		return 0;
-
-	/* HEVC = H.265 */
-	codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
-	if (!codec) {
-		warning("h265: could not find H265 decoder\n");
-		return ENOSYS;
-	}
 
 	vds = mem_zalloc(sizeof(*vds), destructor);
 	if (!vds)
@@ -98,13 +90,13 @@ int h265_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		goto out;
 	}
 
-	vds->ctx = avcodec_alloc_context3(codec);
+	vds->ctx = avcodec_alloc_context3(h265_decoder);
 	if (!vds->ctx) {
 		err = ENOMEM;
 		goto out;
 	}
 
-	if (avcodec_open2(vds->ctx, codec, NULL) < 0) {
+	if (avcodec_open2(vds->ctx, h265_decoder, NULL) < 0) {
 		err = ENOMEM;
 		goto out;
 	}

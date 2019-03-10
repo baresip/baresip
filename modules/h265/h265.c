@@ -38,19 +38,20 @@ static struct vidcodec h265 = {
 
 
 AVCodec *h265_encoder;
+AVCodec *h265_decoder;
 
 
 static int module_init(void)
 {
 	char enc[64] = "libx265";
-
-	av_log_set_level(AV_LOG_WARNING);
+	char dec[64] = "hevc";
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
 	avcodec_register_all();
 #endif
 
 	conf_get_str(conf_cur(), "h265_encoder", enc, sizeof(enc));
+	conf_get_str(conf_cur(), "h265_decoder", enc, sizeof(enc));
 
 	h265_encoder = avcodec_find_encoder_by_name(enc);
 	if (!h265_encoder) {
@@ -58,8 +59,16 @@ static int module_init(void)
 		return ENOENT;
 	}
 
-	info("h265: using encoder '%s' (%s)\n", h265_encoder->name,
-	     h265_encoder->long_name);
+	h265_decoder = avcodec_find_decoder_by_name(dec);
+	if (!h265_decoder) {
+		warning("h265: decoder not found (%s)\n", dec);
+		return ENOENT;
+	}
+
+	info("h265: using encoder '%s' -- %s\n",
+	     h265_encoder->name, h265_encoder->long_name);
+	info("h265: using decoder '%s' -- %s\n",
+	     h265_decoder->name, h265_decoder->long_name);
 
 	vidcodec_register(baresip_vidcodecl(), &h265);
 

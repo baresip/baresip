@@ -925,6 +925,11 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#ringback_disabled\tyes\n"
 			"#statmode_default\toff\n");
 
+	(void)re_fprintf(f,
+			"\n# h265\n"
+			"#h265_encoder\t\tlibx265\n"
+			"#h265_decoder\t\thevc\n");
+
 	if (f)
 		(void)fclose(f);
 

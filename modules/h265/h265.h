@@ -46,6 +46,7 @@ struct h265_nal {
 
 
 extern AVCodec *h265_encoder;
+extern AVCodec *h265_decoder;
 
 
 void h265_nal_encode(uint8_t buf[2], unsigned nal_unit_type,
