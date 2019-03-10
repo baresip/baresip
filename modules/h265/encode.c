@@ -115,7 +115,8 @@ static int open_encoder(struct videnc_state *st, const struct vidsz *size,
 	st->ctx->height    = size->h;
 	st->ctx->pix_fmt   = pix_fmt;
 
-	st->ctx->time_base = av_d2q(st->fps, INT_MAX);
+	st->ctx->time_base.num = 1;
+	st->ctx->time_base.den = st->fps;
 
 	if (0 == strcmp(h265_encoder->name, "libx265")) {
 
