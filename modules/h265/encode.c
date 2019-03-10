@@ -221,11 +221,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	AVPacket *pkt = NULL;
 	enum AVPixelFormat pix_fmt;
 	uint64_t rtp_ts;
-	int64_t pts;
-	unsigned i;
-	int got_packet = 0;
-	int ret;
-	int err = 0;
+	int i, ret, got_packet = 0, err = 0;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -250,10 +246,6 @@ int h265_encode(struct videnc_state *st, bool update,
 		st->size = frame->size;
 	}
 
-	if (update) {
-		debug("h265: encode: picture update was requested\n");
-	}
-
 	pict = av_frame_alloc();
 	if (!pict) {
 		err = ENOMEM;
@@ -271,7 +263,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	}
 
 	if (update) {
-		debug("avcodec: encoder picture update\n");
+		debug("h265: encoder picture update\n");
 		pict->key_frame = 1;
 		pict->pict_type = AV_PICTURE_TYPE_I;
 	}
@@ -319,9 +311,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	if (!got_packet)
 		goto out;
 
-	pts = pkt->dts;
-
-	rtp_ts = video_calc_rtp_timestamp_fix(pts);
+	rtp_ts = video_calc_rtp_timestamp_fix(pkt->dts);
 
 	err = packetize_annexb(rtp_ts, pkt->data, pkt->size,
 			       st->pktsize, st->pkth, st->arg);
