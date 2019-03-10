@@ -1,5 +1,7 @@
 language: c
 
+dist: xenial
+
 os:
     - linux
     - osx
