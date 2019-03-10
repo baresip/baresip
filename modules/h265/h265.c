@@ -50,7 +50,7 @@ static int module_init(void)
 #endif
 
 	conf_get_str(conf_cur(), "h265_encoder", enc, sizeof(enc));
-	conf_get_str(conf_cur(), "h265_decoder", enc, sizeof(enc));
+	conf_get_str(conf_cur(), "h265_decoder", dec, sizeof(dec));
 
 	h265_encoder = avcodec_find_encoder_by_name(enc);
 	if (!h265_encoder) {
