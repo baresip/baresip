@@ -8,14 +8,14 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <x265.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/opt.h>
 #include "h265.h"
 
 
 struct videnc_state {
 	struct vidsz size;
-	x265_param *param;
-	x265_encoder *x265;
+	AVCodecContext *ctx;
 	double fps;
 	unsigned bitrate;
 	unsigned pktsize;
@@ -24,52 +24,34 @@ struct videnc_state {
 };
 
 
+static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
+{
+	switch (fmt) {
+
+	case VID_FMT_YUV420P: return AV_PIX_FMT_YUV420P;
+	case VID_FMT_YUV444P: return AV_PIX_FMT_YUV444P;
+	case VID_FMT_NV12:    return AV_PIX_FMT_NV12;
+	case VID_FMT_NV21:    return AV_PIX_FMT_NV21;
+	default:              return AV_PIX_FMT_NONE;
+	}
+}
+
+
 static void destructor(void *arg)
 {
 	struct videnc_state *st = arg;
 
-	if (st->x265)
-		x265_encoder_close(st->x265);
-	if (st->param)
-		x265_param_free(st->param);
+	if (st->ctx)
+		avcodec_free_context(&st->ctx);
 }
 
 
-static int set_params(struct videnc_state *st, double fps, unsigned bitrate)
+static void encoder_close(struct videnc_state *st)
 {
-	st->param = x265_param_alloc();
-	if (!st->param) {
-		warning("h265: x265_param_alloc failed\n");
-		return ENOMEM;
+	if (st->ctx) {
+		avcodec_free_context(&st->ctx);
+		st->ctx = NULL;
 	}
-
-	x265_param_default(st->param);
-
-	if (0 != x265_param_apply_profile(st->param, "main")) {
-		warning("h265: x265_param_apply_profile failed\n");
-		return EINVAL;
-	}
-
-	if (0 != x265_param_default_preset(st->param,
-					   "ultrafast", "zerolatency")) {
-
-		warning("h265: x265_param_default_preset error\n");
-		return EINVAL;
-	}
-
-	st->param->fpsNum = fps;
-	st->param->fpsDenom = 1;
-
-	/* VPS, SPS and PPS headers should be output with each keyframe */
-	st->param->bRepeatHeaders = 1;
-
-	/* Rate Control */
-	st->param->rc.rateControlMode = X265_RC_ABR;
-	st->param->rc.bitrate = bitrate / 1000;
-	st->param->rc.vbvMaxBitrate = bitrate / 1000;
-	st->param->rc.vbvBufferSize = 2 * bitrate / fps;
-
-	return 0;
 }
 
 
@@ -78,7 +60,6 @@ int h265_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		       videnc_packet_h *pkth, void *arg)
 {
 	struct videnc_state *ves;
-	int err = 0;
 	(void)fmtp;
 
 	if (!vesp || !vc || !prm || prm->pktsize < 3 || !pkth)
@@ -95,12 +76,11 @@ int h265_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		*vesp = ves;
 	}
 	else {
-		if (ves->x265 && (ves->bitrate != prm->bitrate ||
+		if (ves->ctx && (ves->bitrate != prm->bitrate ||
 				  ves->pktsize != prm->pktsize ||
 				  ves->fps     != prm->fps)) {
 
-			x265_encoder_close(ves->x265);
-			ves->x265 = NULL;
+			encoder_close(ves);
 		}
 	}
 
@@ -110,31 +90,54 @@ int h265_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	ves->pkth    = pkth;
 	ves->arg     = arg;
 
-	err = set_params(ves, prm->fps, prm->bitrate);
-	if (err)
-		return err;
-
 	return 0;
 }
 
 
-static int open_encoder(struct videnc_state *st, const struct vidsz *size)
+static int open_encoder(struct videnc_state *st, const struct vidsz *size,
+			enum AVPixelFormat pix_fmt)
 {
-	if (st->x265) {
-		debug("h265: re-opening encoder\n");
-		x265_encoder_close(st->x265);
+	int ret, err = 0;
+
+	encoder_close(st);
+
+	st->ctx = avcodec_alloc_context3(h265_encoder);
+	if (!st->ctx) {
+		err = ENOMEM;
+		goto out;
 	}
 
-	st->param->sourceWidth  = size->w;
-	st->param->sourceHeight = size->h;
+	av_opt_set_defaults(st->ctx);
 
-	st->x265 = x265_encoder_open(st->param);
-	if (!st->x265) {
-		warning("h265: x265_encoder_open failed\n");
-		return ENOMEM;
+	st->ctx->bit_rate  = st->bitrate;
+	st->ctx->width     = size->w;
+	st->ctx->height    = size->h;
+	st->ctx->pix_fmt   = pix_fmt;
+
+	st->ctx->time_base = av_d2q(st->fps, INT_MAX);
+
+	if (0 == strcmp(h265_encoder->name, "libx265")) {
+
+		av_opt_set(st->ctx->priv_data, "profile", "main", 0);
+		av_opt_set(st->ctx->priv_data, "preset", "ultrafast", 0);
+		av_opt_set(st->ctx->priv_data, "tune", "zerolatency", 0);
 	}
 
-	return 0;
+	ret = avcodec_open2(st->ctx, h265_encoder, NULL);
+	if (ret < 0) {
+
+		warning("h265: encoder: avcodec open failed %d (%s)\n",
+			ret, av_err2str(ret));
+		err = ENOENT;
+		goto out;
+	}
+
+ out:
+	if (err) {
+		encoder_close(st);
+	}
+
+	return err;
 }
 
 
@@ -186,44 +189,70 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 }
 
 
+static int packetize_annexb(uint64_t rtp_ts, const uint8_t *buf, size_t len,
+			    size_t pktsize, videnc_packet_h *pkth, void *arg)
+{
+	const uint8_t *start = buf;
+	const uint8_t *end   = buf + len;
+	const uint8_t *r;
+	int err = 0;
+
+	r = h265_find_startcode(start, end);
+
+	while (r < end) {
+		const uint8_t *r1;
+		bool marker;
+
+		/* skip zeros */
+		while (!*(r++))
+			;
+
+		r1 = h265_find_startcode(r, end);
+
+		marker = (r1 >= end);
+
+		err |= packetize(marker, r, r1-r,
+				 pktsize, rtp_ts,
+				 pkth, arg);
+
+		r = r1;
+	}
+
+	return err;
+}
+
+
 int h265_encode(struct videnc_state *st, bool update,
 		const struct vidframe *frame, uint64_t timestamp)
 {
-	x265_picture *pic_in = NULL, pic_out;
-	x265_nal *nalv;
-	uint32_t i, nalc = 0;
-	int colorspace;
-	int n, err = 0;
+	uint32_t i;
 	uint64_t ts;
+	AVFrame *pict;
+	AVPacket *pkt = NULL;
+	enum AVPixelFormat pix_fmt;
+	int ret;
+	int64_t pts;
+	uint8_t *p;
+	size_t len;
+	int err = 0;
 
 	if (!st || !frame)
 		return EINVAL;
 
-	switch (frame->fmt) {
-
-	case VID_FMT_YUV420P:
-		colorspace = X265_CSP_I420;
-		break;
-
-	case VID_FMT_YUV444P:
-		colorspace = X265_CSP_I444;
-		break;
-
-	default:
+	pix_fmt = vidfmt_to_avpixfmt(frame->fmt);
+	if (pix_fmt == AV_PIX_FMT_NONE) {
 		warning("h265: encode: pixel format not supported (%s)\n",
 			vidfmt_name(frame->fmt));
-		return EINVAL;
+		return ENOTSUP;
 	}
 
-	if (!st->x265 || !vidsz_cmp(&st->size, &frame->size) ||
-	    st->param->internalCsp != colorspace) {
+	if (!st->ctx || !vidsz_cmp(&st->size, &frame->size) ||
+	    st->ctx->pix_fmt != pix_fmt) {
 
 		debug("h265: encoder: reset %u x %u (%s)\n",
 		      frame->size.w, frame->size.h, vidfmt_name(frame->fmt));
 
-		st->param->internalCsp = colorspace;
-
-		err = open_encoder(st, &frame->size);
+		err = open_encoder(st, &frame->size, pix_fmt);
 		if (err)
 			return err;
 
@@ -234,56 +263,71 @@ int h265_encode(struct videnc_state *st, bool update,
 		debug("h265: encode: picture update was requested\n");
 	}
 
-	pic_in = x265_picture_alloc();
-	if (!pic_in) {
-		warning("h265: x265_picture_alloc failed\n");
-		return ENOMEM;
+	pict = av_frame_alloc();
+	pkt = av_packet_alloc();
+	if (!pict || !pkt) {
+		err = ENOMEM;
+		goto out;
 	}
 
-	x265_picture_init(st->param, pic_in);
+	pict->format = pix_fmt;
+	pict->width = frame->size.w;
+	pict->height = frame->size.h;
 
-	pic_in->sliceType  = update ? X265_TYPE_IDR : X265_TYPE_AUTO;
-	pic_in->pts        = timestamp;
-	pic_in->colorSpace = colorspace;
-
-	for (i=0; i<3; i++) {
-		pic_in->planes[i] = frame->data[i];
-		pic_in->stride[i] = frame->linesize[i];
+	for (i=0; i<4; i++) {
+		pict->data[i]     = frame->data[i];
+		pict->linesize[i] = frame->linesize[i];
 	}
 
-	/* NOTE: important to get the PTS of the "out" picture */
-	n = x265_encoder_encode(st->x265, &nalv, &nalc, pic_in, &pic_out);
-	if (n <= 0)
+	pict->pts = timestamp;
+
+	if (update) {
+		debug("avcodec: encoder picture update\n");
+		pict->key_frame = 1;
+		pict->pict_type = AV_PICTURE_TYPE_I;
+	}
+	else {
+		pict->key_frame = 0;
+		pict->pict_type = AV_PICTURE_TYPE_NONE;
+	}
+
+	ret = avcodec_send_frame(st->ctx, pict);
+	if (ret < 0) {
+		err = EBADMSG;
+		goto out;
+	}
+
+	/* NOTE: packet contains 4-byte startcode */
+	ret = avcodec_receive_packet(st->ctx, pkt);
+	if (ret < 0) {
+		info("h265: no packet yet ..\n");
+		err = 0;
+		goto out;
+	}
+
+	if (pkt->flags & AV_PKT_FLAG_KEY)
+		re_printf("h265: encoder KEY frame\n");
+
+	p   = pkt->data;
+	len = pkt->size;
+
+	h265_skip_startcode(&p, &len);
+
+	pts = pkt->dts;
+
+	ts = video_calc_rtp_timestamp_fix(pts);
+
+	err = packetize_annexb(ts, pkt->data, pkt->size,
+			       st->pktsize, st->pkth, st->arg);
+
+	if (err)
 		goto out;
 
-	ts = video_calc_rtp_timestamp_fix(pic_out.pts);
-
-	for (i=0; i<nalc; i++) {
-
-		x265_nal *nal = &nalv[i];
-		uint8_t *p = nal->payload;
-		size_t len = nal->sizeBytes;
-		bool marker;
-
-#if 0
-		debug("h265: encode: %s type=%2d  %s\n",
-			  h265_is_keyframe(nal->type) ? "<KEY>" : "     ",
-			  nal->type, h265_nalunit_name(nal->type));
-#endif
-
-		h265_skip_startcode(&p, &len);
-
-		marker = (i+1)==nalc;  /* last NAL */
-
-		err = packetize(marker, p, len, st->pktsize,
-				ts, st->pkth, st->arg);
-		if (err)
-			goto out;
-	}
-
  out:
-	if (pic_in)
-		x265_picture_free(pic_in);
+	if (pict)
+		av_free(pict);
+	if (pkt)
+		av_packet_free(&pkt);
 
 	return err;
 }

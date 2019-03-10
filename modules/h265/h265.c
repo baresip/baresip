@@ -7,7 +7,6 @@
 #include <re.h>
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
-#include <x265.h>
 #include "h265.h"
 
 
@@ -38,14 +37,29 @@ static struct vidcodec h265 = {
 };
 
 
+AVCodec *h265_encoder;
+
+
 static int module_init(void)
 {
-	info("h265: using x265 %s %s\n",
-	     x265_version_str, x265_build_info_str);
+	char enc[64] = "libx265";
+
+	av_log_set_level(AV_LOG_WARNING);
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
 	avcodec_register_all();
 #endif
+
+	conf_get_str(conf_cur(), "h265_encoder", enc, sizeof(enc));
+
+	h265_encoder = avcodec_find_encoder_by_name(enc);
+	if (!h265_encoder) {
+		warning("h265: encoder not found (%s)\n", enc);
+		return ENOENT;
+	}
+
+	info("h265: using encoder '%s' (%s)\n", h265_encoder->name,
+	     h265_encoder->long_name);
 
 	vidcodec_register(baresip_vidcodecl(), &h265);
 
