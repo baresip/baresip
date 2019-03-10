@@ -204,9 +204,7 @@ static int packetize_annexb(uint64_t rtp_ts, const uint8_t *buf, size_t len,
 
 		marker = (r1 >= end);
 
-		err |= packetize(marker, r, r1-r,
-				 pktsize, rtp_ts,
-				 pkth, arg);
+		err |= packetize(marker, r, r1-r, pktsize, rtp_ts, pkth, arg);
 
 		r = r1;
 	}
@@ -221,9 +219,9 @@ int h265_encode(struct videnc_state *st, bool update,
 	AVFrame *pict = NULL;
 	AVPacket *pkt = NULL;
 	enum AVPixelFormat pix_fmt;
-	uint64_t ts;
+	uint64_t rtp_ts;
 	int64_t pts;
-	uint32_t i;
+	unsigned i;
 	int got_packet = 0;
 	int ret;
 	int err = 0;
@@ -310,8 +308,6 @@ int h265_encode(struct videnc_state *st, bool update,
 
 	av_init_packet(pkt);
 
-	av_new_packet(pkt, 65536);
-
 	ret = avcodec_encode_video2(st->ctx, pkt, pict, &got_packet);
 	if (ret < 0) {
 		err = EBADMSG;
@@ -324,9 +320,9 @@ int h265_encode(struct videnc_state *st, bool update,
 
 	pts = pkt->dts;
 
-	ts = video_calc_rtp_timestamp_fix(pts);
+	rtp_ts = video_calc_rtp_timestamp_fix(pts);
 
-	err = packetize_annexb(ts, pkt->data, pkt->size,
+	err = packetize_annexb(rtp_ts, pkt->data, pkt->size,
 			       st->pktsize, st->pkth, st->arg);
 	if (err)
 		goto out;
