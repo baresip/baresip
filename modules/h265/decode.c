@@ -8,6 +8,7 @@
 #include <rem.h>
 #include <baresip.h>
 #include <libavutil/pixdesc.h>
+#include <libavutil/mem.h>
 #include <libavcodec/avcodec.h>
 #include "h265.h"
 
