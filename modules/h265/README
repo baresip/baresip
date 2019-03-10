@@ -8,13 +8,15 @@ Steps for building and testing:
 1. build and install x265 from https://github.com/videolan/x265
 2. build and install ffmpeg from git://source.ffmpeg.org/ffmpeg.git
 
-   $ ./configure --disable-everything --enable-decoder=hevc \
+   $ ./configure --disable-everything \
+         --enable-encoder=libx265 \
+         --enable-decoder=hevc \
          && make -j4 && sudo make install
 
 3. build baresip with H265 module:
 
    $ cd baresip
-   $ make EXTRA_MODULES=h265
+   $ make USE_H265=yes
 
 4. add h265.so to $HOME/.baresip/config
    module    h265.so
@@ -22,7 +24,7 @@ Steps for building and testing:
 5. start baresip with the "vidloop" module, to test a local loop
    from a suitable vidsrc and vidisp module:
 
-   $ ./baresip -evv
+   $ ./baresip -e "/vidloop h265"
 
 
 

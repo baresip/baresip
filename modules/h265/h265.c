@@ -15,14 +15,13 @@
  *
  * The H.265 video codec (aka HEVC)
  *
- * This is an experimental module adding support for H.265 video codec.
- * The encoder is using x265 and the decoder is using libavcodec.
+ * This module adds support for H.265 video codec.
+ * The encoder and decoder is using libavcodec.
  *
  *
  * References:
  *
  *    https://tools.ietf.org/html/rfc7798
- *    http://x265.org/
  *    https://www.ffmpeg.org/
  */
 
