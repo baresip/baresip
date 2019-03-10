@@ -49,7 +49,6 @@
 #   USE_SRTP          Secure RTP module using libre
 #   USE_STDIO         stdio input driver
 #   USE_SYSLOG        Syslog module
-#   USE_V4L           Video4Linux module
 #   USE_V4L2          Video4Linux2 module
 #   USE_WINWAVE       Windows audio driver
 #   USE_X11           X11 video output
@@ -182,9 +181,6 @@ USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
 	[ -f $(SYSROOT)/local/include/syslog.h ] && echo "yes")
 USE_MQTT := $(shell [ -f $(SYSROOT)/include/mosquitto.h ] || \
 	[ -f $(SYSROOT)/local/include/mosquitto.h ] \
-	&& echo "yes")
-USE_V4L  := $(shell [ -f $(SYSROOT)/include/libv4l1.h ] || \
-	[ -f $(SYSROOT)/local/include/libv4l1.h ] \
 	&& echo "yes")
 HAVE_LIBV4L2 := $(shell [ -f $(SYSROOT)/include/libv4l2.h ] || \
 	[ -f $(SYSROOT)/local/include/libv4l2.h ] \
@@ -436,9 +432,6 @@ MODULES   += stdio
 endif
 ifneq ($(USE_SYSLOG),)
 MODULES   += syslog
-endif
-ifneq ($(USE_V4L),)
-MODULES   += v4l
 endif
 ifneq ($(USE_V4L2),)
 MODULES   += v4l2 v4l2_codec
