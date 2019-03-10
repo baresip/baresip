@@ -31,7 +31,7 @@
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
 #define av_packet_free(pkt)			\
 						\
-	if ((pkt) && *(pkt)) {			\
+	if (*(pkt)) {				\
 						\
 		av_packet_unref(*(pkt));	\
 		av_freep((pkt));		\
