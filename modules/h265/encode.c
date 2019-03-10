@@ -346,8 +346,15 @@ int h265_encode(struct videnc_state *st, bool update,
  out:
 	if (pict)
 		av_free(pict);
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 	if (pkt)
 		av_packet_free(&pkt);
+#else
+	if (pkt) {
+		av_free_packet(pkt);
+		av_free(pkt);
+	}
+#endif
 
 	return err;
 }
