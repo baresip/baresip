@@ -9,6 +9,7 @@
 #include <rem.h>
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
+#include <libavutil/avutil.h>
 #include <libavutil/opt.h>
 #include "h265.h"
 
@@ -125,9 +126,7 @@ static int open_encoder(struct videnc_state *st, const struct vidsz *size,
 
 	ret = avcodec_open2(st->ctx, h265_encoder, NULL);
 	if (ret < 0) {
-
-		warning("h265: encoder: avcodec open failed %d (%s)\n",
-			ret, av_err2str(ret));
+		warning("h265: encoder: avcodec open failed ret=%d\n", ret);
 		err = ENOENT;
 		goto out;
 	}
@@ -285,10 +284,6 @@ int h265_encode(struct videnc_state *st, bool update,
 		debug("avcodec: encoder picture update\n");
 		pict->key_frame = 1;
 		pict->pict_type = AV_PICTURE_TYPE_I;
-	}
-	else {
-		pict->key_frame = 0;
-		pict->pict_type = AV_PICTURE_TYPE_NONE;
 	}
 
 	ret = avcodec_send_frame(st->ctx, pict);
