@@ -218,17 +218,15 @@ static int packetize_annexb(uint64_t rtp_ts, const uint8_t *buf, size_t len,
 int h265_encode(struct videnc_state *st, bool update,
 		const struct vidframe *frame, uint64_t timestamp)
 {
-	uint32_t i;
-	uint64_t ts;
 	AVFrame *pict = NULL;
 	AVPacket *pkt = NULL;
 	enum AVPixelFormat pix_fmt;
-	int ret;
+	uint64_t ts;
 	int64_t pts;
-	uint8_t *p;
-	size_t len;
-	int err = 0;
+	uint32_t i;
 	int got_packet = 0;
+	int ret;
+	int err = 0;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -324,13 +322,6 @@ int h265_encode(struct videnc_state *st, bool update,
 
 	if (!got_packet)
 		goto out;
-
-	pts = pkt->dts;
-
-	p   = pkt->data;
-	len = pkt->size;
-
-	h265_skip_startcode(&p, &len);
 
 	pts = pkt->dts;
 
