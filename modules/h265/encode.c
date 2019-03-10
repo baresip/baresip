@@ -226,7 +226,7 @@ int h265_encode(struct videnc_state *st, bool update,
 {
 	uint32_t i;
 	uint64_t ts;
-	AVFrame *pict;
+	AVFrame *pict = NULL;
 	AVPacket *pkt = NULL;
 	enum AVPixelFormat pix_fmt;
 	int ret;
@@ -234,6 +234,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	uint8_t *p;
 	size_t len;
 	int err = 0;
+	int got_packet = 0;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -263,8 +264,7 @@ int h265_encode(struct videnc_state *st, bool update,
 	}
 
 	pict = av_frame_alloc();
-	pkt = av_packet_alloc();
-	if (!pict || !pkt) {
+	if (!pict) {
 		err = ENOMEM;
 		goto out;
 	}
@@ -286,6 +286,14 @@ int h265_encode(struct videnc_state *st, bool update,
 		pict->pict_type = AV_PICTURE_TYPE_I;
 	}
 
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
+
+	pkt = av_packet_alloc();
+	if (!pkt) {
+		err = ENOMEM;
+		goto out;
+	}
+
 	ret = avcodec_send_frame(st->ctx, pict);
 	if (ret < 0) {
 		err = EBADMSG;
@@ -300,8 +308,24 @@ int h265_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-	if (pkt->flags & AV_PKT_FLAG_KEY)
-		re_printf("h265: encoder KEY frame\n");
+	got_packet = 1;
+
+#else
+	av_init_packet(pkt);
+
+	av_new_packet(pkt, 65536);
+
+	ret = avcodec_encode_video2(st->ctx, pkt, pict, &got_packet);
+	if (ret < 0) {
+		err = EBADMSG;
+		goto out;
+	}
+#endif
+
+	if (!got_packet)
+		goto out;
+
+	pts = pkt->dts;
 
 	p   = pkt->data;
 	len = pkt->size;
