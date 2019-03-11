@@ -17,6 +17,7 @@
 
 struct videnc_state {
 	struct vidsz size;
+	enum vidfmt fmt;
 	AVCodecContext *ctx;
 	double fps;
 	unsigned bitrate;
@@ -65,6 +66,8 @@ int h265_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		ves = mem_zalloc(sizeof(*ves), destructor);
 		if (!ves)
 			return ENOMEM;
+
+		ves->fmt = -1;
 
 		*vesp = ves;
 	}
@@ -219,22 +222,23 @@ int h265_encode(struct videnc_state *st, bool update,
 {
 	AVFrame *pict = NULL;
 	AVPacket *pkt = NULL;
-	enum AVPixelFormat pix_fmt;
 	uint64_t rtp_ts;
 	int i, ret, got_packet = 0, err = 0;
 
 	if (!st || !frame)
 		return EINVAL;
 
-	pix_fmt = vidfmt_to_avpixfmt(frame->fmt);
-	if (pix_fmt == AV_PIX_FMT_NONE) {
-		warning("h265: encode: pixel format not supported (%s)\n",
-			vidfmt_name(frame->fmt));
-		return ENOTSUP;
-	}
-
 	if (!st->ctx || !vidsz_cmp(&st->size, &frame->size) ||
-	    st->ctx->pix_fmt != pix_fmt) {
+	    st->fmt != frame->fmt) {
+
+		enum AVPixelFormat pix_fmt;
+
+		pix_fmt = vidfmt_to_avpixfmt(frame->fmt);
+		if (pix_fmt == AV_PIX_FMT_NONE) {
+			warning("h265: encode: pixel format not supported"
+				" (%s)\n", vidfmt_name(frame->fmt));
+			return ENOTSUP;
+		}
 
 		debug("h265: encoder: reset %u x %u (%s)\n",
 		      frame->size.w, frame->size.h, vidfmt_name(frame->fmt));
@@ -244,6 +248,7 @@ int h265_encode(struct videnc_state *st, bool update,
 			return err;
 
 		st->size = frame->size;
+		st->fmt = frame->fmt;
 	}
 
 	pict = av_frame_alloc();
@@ -252,7 +257,7 @@ int h265_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-	pict->format = pix_fmt;
+	pict->format = st->ctx->pix_fmt;
 	pict->width = frame->size.w;
 	pict->height = frame->size.h;
 	pict->pts = timestamp;
