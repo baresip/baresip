@@ -15,16 +15,12 @@
 
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 63, 100)
-#define avcodec_free_context(pavctx)			\
-	do {						\
-		AVCodecContext *avctx = *(pavctx);	\
-							\
-		if (avctx) {				\
-			avcodec_close(avctx);		\
-			av_freep((pavctx));		\
-		}					\
-							\
-	} while (0)
+#define avcodec_free_context(ctx)				\
+								\
+	if (*(ctx)) {						\
+		avcodec_close(*(ctx));				\
+		av_freep((ctx));				\
+	}
 #endif
 
 
