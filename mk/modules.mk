@@ -116,9 +116,7 @@ USE_GST_VIDEO1 := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
 USE_GTK := $(shell pkg-config 'gtk+-2.0 >= 2.22' && \
 		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
 ifneq ($(USE_AVCODEC),)
-USE_H265  := $(shell [ -f $(SYSROOT)/include/x265.h ] || \
-	[ -f $(SYSROOT)/local/include/x265.h ] || \
-	[ -f $(SYSROOT_ALT)/include/x265.h ] && echo "yes")
+USE_H265  := yes
 endif
 USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT)/local/include/iLBC_define.h ] && echo "yes")

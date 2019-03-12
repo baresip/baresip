@@ -6,6 +6,36 @@
 
 
 /*
+ * FFmpeg version wrappers
+ */
+
+#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(52, 20, 100)
+#define av_frame_alloc avcodec_alloc_frame
+#endif
+
+
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 63, 100)
+#define avcodec_free_context(ctx)				\
+								\
+	if (*(ctx)) {						\
+		avcodec_close(*(ctx));				\
+		av_freep((ctx));				\
+	}
+#endif
+
+
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
+#define av_packet_free(pkt)			\
+						\
+	if (*(pkt)) {				\
+						\
+		av_free_packet(*(pkt));		\
+		av_freep((pkt));		\
+	}
+#endif
+
+
+/*
  * H.265 format
  */
 enum {
@@ -44,12 +74,18 @@ struct h265_nal {
 	unsigned nuh_temporal_id_plus1:3;  /* temporal identifier plus 1 */
 };
 
+
+extern AVCodec *h265_encoder;
+extern AVCodec *h265_decoder;
+
+
 void h265_nal_encode(uint8_t buf[2], unsigned nal_unit_type,
 		     unsigned nuh_temporal_id_plus1);
 int  h265_nal_encode_mbuf(struct mbuf *mb, const struct h265_nal *nal);
 int  h265_nal_decode(struct h265_nal *nal, const uint8_t *p);
 void h265_nal_print(const struct h265_nal *nal);
 
+const uint8_t *h265_find_startcode(const uint8_t *p, const uint8_t *end);
 bool h265_have_startcode(const uint8_t *p, size_t len);
 void h265_skip_startcode(uint8_t **p, size_t *n);
 bool h265_is_keyframe(enum h265_naltype type);

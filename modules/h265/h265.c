@@ -7,7 +7,6 @@
 #include <re.h>
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
-#include <x265.h>
 #include "h265.h"
 
 
@@ -16,14 +15,13 @@
  *
  * The H.265 video codec (aka HEVC)
  *
- * This is an experimental module adding support for H.265 video codec.
- * The encoder is using x265 and the decoder is using libavcodec.
+ * This module adds support for H.265 video codec.
+ * The encoder and decoder is using libavcodec.
  *
  *
  * References:
  *
  *    https://tools.ietf.org/html/rfc7798
- *    http://x265.org/
  *    https://www.ffmpeg.org/
  */
 
@@ -38,14 +36,38 @@ static struct vidcodec h265 = {
 };
 
 
+AVCodec *h265_encoder;
+AVCodec *h265_decoder;
+
+
 static int module_init(void)
 {
-	info("h265: using x265 %s %s\n",
-	     x265_version_str, x265_build_info_str);
+	char enc[64] = "libx265";
+	char dec[64] = "hevc";
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
 	avcodec_register_all();
 #endif
+
+	conf_get_str(conf_cur(), "h265_encoder", enc, sizeof(enc));
+	conf_get_str(conf_cur(), "h265_decoder", dec, sizeof(dec));
+
+	h265_encoder = avcodec_find_encoder_by_name(enc);
+	if (!h265_encoder) {
+		warning("h265: encoder not found (%s)\n", enc);
+		return ENOENT;
+	}
+
+	h265_decoder = avcodec_find_decoder_by_name(dec);
+	if (!h265_decoder) {
+		warning("h265: decoder not found (%s)\n", dec);
+		return ENOENT;
+	}
+
+	info("h265: using encoder '%s' -- %s\n",
+	     h265_encoder->name, h265_encoder->long_name);
+	info("h265: using decoder '%s' -- %s\n",
+	     h265_decoder->name, h265_decoder->long_name);
 
 	vidcodec_register(baresip_vidcodecl(), &h265);
 

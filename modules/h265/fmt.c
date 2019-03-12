@@ -7,6 +7,7 @@
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
+#include <libavcodec/avcodec.h>
 #include "h265.h"
 
 
@@ -86,6 +87,42 @@ void h265_nal_print(const struct h265_nal *nal)
 
 static const uint8_t sc3[3] = {0, 0, 1};
 static const uint8_t sc4[4] = {0, 0, 0, 1};
+
+
+const uint8_t *h265_find_startcode(const uint8_t *p, const uint8_t *end)
+{
+	const uint8_t *a = p + 4 - ((long)p & 3);
+
+	for (end -= 3; p < a && p < end; p++ ) {
+		if (p[0] == 0 && p[1] == 0 && p[2] == 1)
+			return p;
+	}
+
+	for (end -= 3; p < end; p += 4) {
+		uint32_t x = *(const uint32_t*)(void *)p;
+		if ( (x - 0x01010101) & (~x) & 0x80808080 ) {
+			if (p[1] == 0 ) {
+				if ( p[0] == 0 && p[2] == 1 )
+					return p;
+				if ( p[2] == 0 && p[3] == 1 )
+					return p+1;
+			}
+			if ( p[3] == 0 ) {
+				if ( p[2] == 0 && p[4] == 1 )
+					return p+2;
+				if ( p[4] == 0 && p[5] == 1 )
+					return p+3;
+			}
+		}
+	}
+
+	for (end += 3; p < end; p++) {
+		if (p[0] == 0 && p[1] == 0 && p[2] == 1)
+			return p;
+	}
+
+	return end + 3;
+}
 
 
 void h265_skip_startcode(uint8_t **p, size_t *n)
