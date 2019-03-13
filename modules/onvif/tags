@@ -1,0 +1,216 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+DEBUG_LEVEL	device.c	18;"	d	file:
+DEBUG_LEVEL	fault.c	18;"	d	file:
+DEBUG_LEVEL	scopes.c	18;"	d	file:
+DEBUG_LEVEL	soap.c	31;"	d	file:
+DEBUG_LEVEL	wsd.c	19;"	d	file:
+DEBUG_MODULE	device.c	17;"	d	file:
+DEBUG_MODULE	fault.c	17;"	d	file:
+DEBUG_MODULE	scopes.c	17;"	d	file:
+DEBUG_MODULE	soap.c	30;"	d	file:
+DEBUG_MODULE	wsd.c	18;"	d	file:
+DEFAULT_ONVIF_PORT	wsd.h	9;"	d
+DEFAULT_SOAP_BUF_SIZE	soap.h	9;"	d
+DEFAULT_SOAP_XML_SIZE	soap.h	10;"	d
+FC_DataEncodingUnknown	fault.h	/^	FC_DataEncodingUnknown,$/;"	e	enum:fault_code
+FC_MustUnderstand	fault.h	/^	FC_MustUnderstand,$/;"	e	enum:fault_code
+FC_Receiver	fault.h	/^	FC_Receiver,$/;"	e	enum:fault_code
+FC_Sender	fault.h	/^	FC_Sender,$/;"	e	enum:fault_code
+FC_VersionMismatch	fault.h	/^	FC_VersionMismatch,$/;"	e	enum:fault_code
+FS_Action	fault.h	/^	FS_Action,$/;"	e	enum:fault_subcode
+FS_ActionNotSupported	fault.h	/^	FS_ActionNotSupported,$/;"	e	enum:fault_subcode
+FS_CriticalError	fault.h	/^	FS_CriticalError,$/;"	e	enum:fault_subcode
+FS_InvalidArgVal	fault.h	/^	FS_InvalidArgVal,$/;"	e	enum:fault_subcode
+FS_InvalidArgs	fault.h	/^	FS_InvalidArgs,$/;"	e	enum:fault_subcode
+FS_MissingAttr	fault.h	/^	FS_MissingAttr,$/;"	e	enum:fault_subcode
+FS_Namespace	fault.h	/^	FS_Namespace,$/;"	e	enum:fault_subcode
+FS_None	fault.h	/^	FS_None,$/;"	e	enum:fault_subcode
+FS_NotAuthorized	fault.h	/^	FS_NotAuthorized,$/;"	e	enum:fault_subcode
+FS_OperationProhibited	fault.h	/^	FS_OperationProhibited,$/;"	e	enum:fault_subcode
+FS_OutofMemory	fault.h	/^	FS_OutofMemory,$/;"	e	enum:fault_subcode
+FS_ProhibAttr	fault.h	/^	FS_ProhibAttr,$/;"	e	enum:fault_subcode
+FS_Tag	fault.h	/^	FS_Tag,$/;"	e	enum:fault_subcode
+FS_TagMismatch	fault.h	/^	FS_TagMismatch,$/;"	e	enum:fault_subcode
+FS_UnknownAction	fault.h	/^	FS_UnknownAction,$/;"	e	enum:fault_subcode
+FS_WellFormed	fault.h	/^	FS_WellFormed,$/;"	e	enum:fault_subcode
+MOD	module.mk	/^MOD			:= onvif$/;"	m
+SCT_END_NORMAL	soap.h	/^  SCT_END_NORMAL,             \/\/ TYPE 2: <\/ns:Key>$/;"	e	enum:soap_childtype
+SCT_IEND_NOPARAM	soap.h	/^  SCT_IEND_NOPARAM,           \/\/ TYPE 3: <ns:Key \/>$/;"	e	enum:soap_childtype
+SCT_IEND_PARAM	soap.h	/^  SCT_IEND_PARAM,             \/\/ TYPE 4: <ns:Key [param] \/>$/;"	e	enum:soap_childtype
+SCT_MAX	soap.h	/^  SCT_MAX,$/;"	e	enum:soap_childtype
+SCT_NORMAL_NOPARAM	soap.h	/^  SCT_NORMAL_NOPARAM,         \/\/ TYPE 0: <ns:Key>$/;"	e	enum:soap_childtype
+SCT_NORMAL_PARAM	soap.h	/^  SCT_NORMAL_PARAM,           \/\/ TYPE 1: <ns:Key [param]>$/;"	e	enum:soap_childtype
+SOAP_BC_IP4	wsd.h	11;"	d
+SOAP_BC_IP6	wsd.h	12;"	d
+SOAP_BC_PORT	wsd.h	13;"	d
+_ONVIF_DEVICE_H_	device.h	7;"	d
+_ONVIF_FAULT_H_	fault.h	7;"	d
+_ONVIF_SCOPES_H_	scopes.h	7;"	d
+_SOAP_H_	soap.h	7;"	d
+_WS_DISCOVERY_H_	wsd.h	7;"	d
+app_seq	wsd.c	/^static uint32_t app_seq = 0;$/;"	v	file:
+clk_seq	soap.c	/^static uint16_t clk_seq = 0;$/;"	v	file:
+d_scope_acc_firmware_version	scopes.c	/^char *d_scope_acc_firmware_version = "acc\/firmware\/version\/";$/;"	v
+d_scope_acc_firmware_version	scopes.h	/^char *d_scope_acc_firmware_version;$/;"	v
+d_scope_acc_mac	scopes.c	/^char *d_scope_acc_mac = "acc\/mac\/";$/;"	v
+d_scope_acc_mac	scopes.h	/^char *d_scope_acc_mac;$/;"	v
+d_scope_acc_mfr	scopes.c	/^char *d_scope_acc_mfr = "acc\/mfr\/";$/;"	v
+d_scope_acc_mfr	scopes.h	/^char *d_scope_acc_mfr;$/;"	v
+d_scope_hardware	scopes.c	/^char *d_scope_hardware = "hardware\/";$/;"	v
+d_scope_hardware	scopes.h	/^char *d_scope_hardware;$/;"	v
+d_scope_location_country	scopes.c	/^char *d_scope_location_country = "location\/country\/";$/;"	v
+d_scope_location_country	scopes.h	/^char *d_scope_location_country;$/;"	v
+d_scope_name	scopes.c	/^char *d_scope_name = "name\/";$/;"	v
+d_scope_name	scopes.h	/^char *d_scope_name;$/;"	v
+d_scope_preemble	scopes.c	/^char *d_scope_preemble = "onvif:\/\/www.onvif.org\/";$/;"	v
+d_scope_preemble	scopes.h	/^char *d_scope_preemble;$/;"	v
+d_scope_profile_streaming	scopes.c	/^char *d_scope_profile_streaming = "Profile\/Streaming";$/;"	v
+d_scope_profile_streaming	scopes.h	/^char *d_scope_profile_streaming;$/;"	v
+d_scope_type_device	scopes.c	/^char *d_scope_type_device = "type\/Device";$/;"	v
+d_scope_type_device	scopes.h	/^char *d_scope_type_device;$/;"	v
+d_scope_type_nvt	scopes.c	/^char *d_scope_type_nvt = "type\/Network_Video_Transmitter";$/;"	v
+d_scope_type_nvt	scopes.h	/^char *d_scope_type_nvt;$/;"	v
+d_service_path	wsd.c	/^static const char d_service_path[] = "\/onvif\/device_service";$/;"	v	file:
+envelope	soap.h	/^  struct soap_child *envelope;$/;"	m	struct:soap_msg	typeref:struct:soap_msg::soap_child
+fault_code	fault.h	/^enum fault_code {$/;"	g
+fault_subcode	fault.h	/^enum fault_subcode {$/;"	g
+fc_str	fault.c	/^const char *fc_str[] = {$/;"	v
+fs_str	fault.c	/^const char *fs_str[] = {$/;"	v
+http_req_handler	soap.c	/^static void http_req_handler(struct http_conn *conn,$/;"	f	file:
+httpsock	soap.c	/^struct http_sock *httpsock;$/;"	v	typeref:struct:http_sock
+instance_id	wsd.c	/^static uint64_t instance_id = 0;$/;"	v	file:
+key	soap.h	/^  struct pl   key;$/;"	m	struct:soap_child	typeref:struct:soap_child::pl
+l_childs	soap.h	/^  struct list l_childs;$/;"	m	struct:soap_child	typeref:struct:soap_child::list
+l_namespaces	soap.h	/^  struct list l_namespaces;$/;"	m	struct:soap_msg	typeref:struct:soap_msg::list
+l_parameters	soap.h	/^  struct list l_parameters;$/;"	m	struct:soap_child	typeref:struct:soap_child::list
+le	soap.h	/^  struct le   le;$/;"	m	struct:soap_child	typeref:struct:soap_child::le
+le	soap.h	/^  struct le le;$/;"	m	struct:soap_namespace	typeref:struct:soap_namespace::le
+le	soap.h	/^  struct le le;$/;"	m	struct:soap_parameter	typeref:struct:soap_parameter::le
+macaddr	soap.c	/^int macaddr(char *mac)$/;"	f
+macaddr_fmt	soap.c	/^int macaddr_fmt(char *mac)$/;"	f
+mb	soap.h	/^  struct mbuf *mb;$/;"	m	struct:soap_msg	typeref:struct:soap_msg::mbuf
+mbuf_add_scope	scopes.c	/^int mbuf_add_scope(struct mbuf *mb, const char *preemble,$/;"	f
+mbuf_concat_strings	soap.c	/^const char *mbuf_concat_strings(struct mbuf *buf, const char *s1,$/;"	f
+mbuf_reserve	soap.c	/^uint8_t *mbuf_reserve(struct mbuf *buf, size_t size, bool holdpos)$/;"	f
+metadata_version	wsd.c	/^static uint64_t metadata_version = 0;$/;"	v	file:
+module_close	soap.c	/^static int module_close(void)$/;"	f	file:
+module_init	soap.c	/^static int module_init(void)$/;"	f	file:
+msg	soap.h	/^  struct soap_msg *msg;$/;"	m	struct:soap_child	typeref:struct:soap_child::soap_msg
+ns	soap.h	/^  struct pl ns;$/;"	m	struct:soap_namespace	typeref:struct:soap_namespace::pl
+ns	soap.h	/^  struct pl ns;$/;"	m	struct:soap_parameter	typeref:struct:soap_parameter::pl
+ns	soap.h	/^  struct soap_namespace *ns;$/;"	m	struct:soap_child	typeref:struct:soap_child::soap_namespace
+nsnum	soap.h	/^  uint8_t nsnum;$/;"	m	struct:soap_msg
+onvif	soap.c	/^const struct mod_export DECL_EXPORTS(onvif) = {$/;"	v	typeref:struct:DECL_EXPORTS
+param	soap.h	/^  struct pl param;$/;"	m	struct:soap_parameter	typeref:struct:soap_parameter::pl
+pl_dup_replace	soap.c	/^int pl_dup_replace(struct pl *dst, const struct pl *src, const char *needle,$/;"	f
+pl_generate_uuid	soap.c	/^int pl_generate_uuid(struct pl *pl)$/;"	f
+pl_make_scopes	wsd.c	/^static int pl_make_scopes(struct pl *dst)$/;"	f	file:
+prolog	soap.h	/^  struct pl prolog;$/;"	m	struct:soap_msg	typeref:struct:soap_msg::pl
+sbuf	soap.c	/^static struct mbuf sbuf;$/;"	v	typeref:struct:mbuf	file:
+soap_child	soap.h	/^struct soap_child {$/;"	s
+soap_child_add_app_sequence	wsd.c	/^static int soap_child_add_app_sequence(struct soap_child *c,$/;"	f	file:
+soap_child_add_child	soap.c	/^struct soap_child *soap_child_add_child(struct soap_child *c,$/;"	f
+soap_child_add_endpoint_ref	wsd.c	/^static int soap_child_add_endpoint_ref(struct soap_child *c,$/;"	f	file:
+soap_child_add_message_id	soap.c	/^int soap_child_add_message_id(struct soap_child *c,	struct soap_namespace *n_a)$/;"	f
+soap_child_add_parameter	soap.c	/^int soap_child_add_parameter(struct soap_child *c, const char *param,$/;"	f
+soap_child_add_parameter_uint32	soap.c	/^int soap_child_add_parameter_uint32(struct soap_child *c, const char *param,$/;"	f
+soap_child_add_parameter_uint64	soap.c	/^int soap_child_add_parameter_uint64(struct soap_child *c, const char *param,$/;"	f
+soap_child_add_scope	scopes.c	/^static int soap_child_add_scope(struct soap_child *c,$/;"	f	file:
+soap_child_add_scopes	scopes.c	/^static int soap_child_add_scopes(struct soap_child *c,$/;"	f	file:
+soap_child_concat_value	soap.c	/^int soap_child_concat_value(struct soap_child *c, struct pl *v,$/;"	f
+soap_child_decode	soap.c	/^static int soap_child_decode(struct soap_msg *msg, struct soap_child *child,$/;"	f	file:
+soap_child_encode	soap.c	/^static int soap_child_encode(struct soap_child *c, struct mbuf *buf)$/;"	f	file:
+soap_child_has_child	soap.c	/^struct soap_child *soap_child_has_child(struct soap_child *c,$/;"	f
+soap_child_has_param	soap.c	/^struct soap_parameter *soap_child_has_param(struct soap_child *child,$/;"	f
+soap_child_key_equals	soap.c	/^static bool soap_child_key_equals(struct le *le, void *arg)$/;"	f	file:
+soap_child_parameter_decode	soap.c	/^static int soap_child_parameter_decode(struct soap_child *child)$/;"	f	file:
+soap_child_parameters_dup	soap.c	/^static int soap_child_parameters_dup(struct soap_child *dst,$/;"	f	file:
+soap_child_print	soap.c	/^static void soap_child_print(struct soap_child *c, int indent)$/;"	f	file:
+soap_child_set_value	soap.c	/^int soap_child_set_value(struct soap_child *c, const char *v, int len)$/;"	f
+soap_child_set_value_pl	soap.c	/^int soap_child_set_value_pl(struct soap_child *c, struct pl *v)$/;"	f
+soap_child_set_value_str	soap.c	/^int soap_child_set_value_str(struct soap_child *c, const char *v)$/;"	f
+soap_childtype	soap.h	/^enum soap_childtype {$/;"	g
+soap_decode_child_type	soap.c	/^static enum soap_childtype soap_decode_child_type(struct soap_child *child)$/;"	f	file:
+soap_is_endkey	soap.c	/^static int soap_is_endkey(struct soap_child *child, bool *endkey)$/;"	f	file:
+soap_mbuf	soap.c	/^struct mbuf *soap_mbuf()$/;"	f
+soap_msg	soap.h	/^struct soap_msg {$/;"	s
+soap_msg_add_namespace	soap.c	/^struct soap_namespace *soap_msg_add_namespace(struct soap_msg *msg,$/;"	f
+soap_msg_add_namespace_str	soap.c	/^struct soap_namespace *soap_msg_add_namespace_str(struct soap_msg *msg,$/;"	f
+soap_msg_body_has_child	soap.c	/^struct soap_child *soap_msg_body_has_child(struct soap_msg *msg,$/;"	f
+soap_msg_copy_namespace_by_value	soap.c	/^struct soap_namespace* soap_msg_copy_namespace_by_value(struct soap_msg *msg,$/;"	f
+soap_msg_decode	soap.c	/^static int soap_msg_decode(struct soap_msg *msg)$/;"	f	file:
+soap_msg_encode	soap.c	/^int soap_msg_encode(struct soap_msg *m)$/;"	f
+soap_msg_fault	fault.c	/^int soap_msg_fault(struct soap_msg *msg, struct soap_msg **presponse,$/;"	f
+soap_msg_get_device_information_handler	device.c	/^int soap_msg_get_device_information_handler(struct soap_msg *msg, struct soap_msg **presponse)$/;"	f
+soap_msg_get_scopes_handler	scopes.c	/^int soap_msg_get_scopes_handler(struct soap_msg *msg, struct soap_msg **presponse)$/;"	f
+soap_msg_has_body	soap.c	/^struct soap_child *soap_msg_has_body(const struct soap_msg *msg)$/;"	f
+soap_msg_has_header	soap.c	/^struct soap_child *soap_msg_has_header(const struct soap_msg *msg)$/;"	f
+soap_msg_has_namespace	soap.c	/^struct soap_namespace* soap_msg_has_namespace(struct soap_msg *msg,$/;"	f
+soap_msg_header_has_child	soap.c	/^struct soap_child *soap_msg_header_has_child(struct soap_msg *msg,$/;"	f
+soap_msg_make_response	soap.c	/^struct soap_msg *soap_msg_make_response(struct soap_msg *request)$/;"	f
+soap_msg_make_response_body	soap.c	/^static struct soap_child *soap_msg_make_response_body(struct soap_msg *msg,$/;"	f	file:
+soap_msg_make_response_envelope	soap.c	/^static struct soap_child *soap_msg_make_response_envelope(struct soap_msg *msg,$/;"	f	file:
+soap_msg_make_response_header	soap.c	/^static struct soap_child *soap_msg_make_response_header(struct soap_msg *msg,$/;"	f	file:
+soap_msg_namespace_by_value	soap.c	/^struct soap_namespace *soap_msg_namespace_by_value(const struct soap_msg *msg,$/;"	f
+soap_msg_print	soap.c	/^void soap_msg_print(struct soap_msg *m)$/;"	f
+soap_msg_system_reboot_handler	device.c	/^int soap_msg_system_reboot_handler(struct soap_msg *msg, struct soap_msg **presponse)$/;"	f
+soap_namespace	soap.h	/^struct soap_namespace {$/;"	s
+soap_namespaces_encode	soap.c	/^static int soap_namespaces_encode(struct mbuf *buf, struct list *l_namespaces)$/;"	f	file:
+soap_namespaces_print	soap.c	/^static void soap_namespaces_print(struct list *l_namespaces, int indent)$/;"	f	file:
+soap_param_val_contains	soap.c	/^static bool soap_param_val_contains(struct le *le, void *arg)$/;"	f	file:
+soap_param_val_endswith	soap.c	/^static bool soap_param_val_endswith(struct le *le, void *arg)$/;"	f	file:
+soap_parameter	soap.h	/^struct soap_parameter {$/;"	s
+soap_parameters_encode	soap.c	/^static int soap_parameters_encode(struct mbuf *buf, struct list *l_parameters)$/;"	f	file:
+soap_parameters_print	soap.c	/^static void soap_parameters_print(struct list *l_parameters, int indent)$/;"	f	file:
+soap_recv_handler	soap.c	/^static void soap_recv_handler(const struct sa *src, struct mbuf *mb, void *arg)$/;"	f	file:
+str_body	soap.c	/^static const char str_body[] = "Body";$/;"	v	file:
+str_device_wsdl	soap.c	/^const char *str_device_wsdl = "device\/wsdl";$/;"	v
+str_device_wsdl	soap.h	/^const char *str_device_wsdl;$/;"	v
+str_discovery	wsd.c	/^const char *str_discovery = "discovery";$/;"	v
+str_discovery	wsd.h	/^const char *str_discovery;$/;"	v
+str_endpref	wsd.c	/^static const char str_endpref[] = "EndpointReference";$/;"	v	file:
+str_env	soap.c	/^static const char str_env[] = "env";$/;"	v	file:
+str_envelope	soap.c	/^static const char str_envelope[] = "Envelope";$/;"	v	file:
+str_header	soap.c	/^static const char str_header[] = "Header";$/;"	v	file:
+str_http_ctype	soap.c	/^static const char *str_http_ctype = "application\/soap+xml;charset=UTF-8";$/;"	v	file:
+str_network_wsdl	soap.c	/^const char *str_network_wsdl = "http:\/\/www.onvif.org\/ver10\/network\/wsdl";$/;"	v
+str_network_wsdl	soap.h	/^const char *str_network_wsdl;$/;"	v
+str_response_has_no_body	soap.c	/^const char *str_response_has_no_body = "onvif: %s Response has no body.";$/;"	v
+str_response_has_no_body	soap.h	/^const char *str_response_has_no_body;$/;"	v
+str_response_has_no_header	soap.c	/^const char *str_response_has_no_header = "onvif: %s Response has no header.";$/;"	v
+str_response_has_no_header	soap.h	/^const char *str_response_has_no_header;$/;"	v
+str_soap_addressing	wsd.c	/^const char *str_soap_addressing = "http:\/\/schemas.xmlsoap.org\/ws\/2004\/08\/addressing";$/;"	v
+str_soap_addressing	wsd.h	/^const char *str_soap_addressing;$/;"	v
+str_soap_discovery	wsd.c	/^const char *str_soap_discovery = "http:\/\/docs.oasis-open.org\/ws-dd\/ns\/discovery\/2008\/09";$/;"	v
+str_soap_discovery	wsd.h	/^const char *str_soap_discovery;$/;"	v
+str_soap_env	soap.c	/^const char *str_soap_env = "http:\/\/www.w3.org\/2003\/05\/soap-envelope";$/;"	v
+str_soap_env	soap.h	/^const char *str_soap_env;$/;"	v
+str_soap_to	wsd.c	/^static const char str_soap_to[] = "urn:docs-oasis-open-org:ws-dd:discovery:2008:09";$/;"	v	file:
+str_spaces	soap.c	/^const char str_spaces[] = "                ";$/;"	v
+str_ver10_error	fault.c	/^static const char str_ver10_error[] = "http:\/\/www.onvif.org\/ver10\/error";$/;"	v	file:
+str_ver10_schema	scopes.c	/^static const char str_ver10_schema[] = "ver10\/schema";$/;"	v	file:
+str_xml_prolog	soap.c	/^static const char str_xml_prolog []       = "<?xml version=\\"1.0\\"?>";$/;"	v	file:
+str_xml_schema	soap.c	/^static const char str_xml_schema [] = "http:\/\/www.w3.org\/2000\/10\/XMLSchema";$/;"	v	file:
+str_xml_schema_ns	soap.c	/^static const char str_xml_schema_ns [] = "xs";$/;"	v	file:
+str_xmlns_a	wsd.c	/^static const char str_xmlns_a[] = "xmlns:a";$/;"	v	file:
+str_xmlns_d	wsd.c	/^static const char str_xmlns_d[] = "xmlns:d";$/;"	v	file:
+str_xmlns_ter	fault.c	/^static const char str_xmlns_ter[] = "xmlns:ter";$/;"	v	file:
+suffix	soap.h	/^  struct pl   suffix;$/;"	m	struct:soap_child	typeref:struct:soap_child::pl
+sxml	soap.c	/^static struct mbuf sxml;$/;"	v	typeref:struct:mbuf	file:
+udps	soap.c	/^struct udp_sock *udps;$/;"	v	typeref:struct:udp_sock
+value	soap.h	/^  struct pl   value;$/;"	m	struct:soap_child	typeref:struct:soap_child::pl
+value	soap.h	/^  struct pl value;$/;"	m	struct:soap_namespace	typeref:struct:soap_namespace::pl
+value	soap.h	/^  struct pl value;$/;"	m	struct:soap_parameter	typeref:struct:soap_parameter::pl
+wsd_action	wsd.c	/^static int wsd_action(struct soap_msg **pmsg, const char* action)$/;"	f	file:
+wsd_bye	wsd.c	/^int wsd_bye(struct soap_msg **msg)$/;"	f
+wsd_free	wsd.c	/^int wsd_free()$/;"	f
+wsd_handler	wsd.c	/^static int wsd_handler(struct soap_msg *msg, struct soap_msg **presponse,$/;"	f	file:
+wsd_hello	wsd.c	/^int wsd_hello(struct soap_msg **msg)$/;"	f
+wsd_init	wsd.c	/^int wsd_init()$/;"	f
+wsd_probe	wsd.c	/^int wsd_probe(struct soap_msg *msg, struct soap_msg **presponse)$/;"	f
+wsd_resolve	wsd.c	/^int wsd_resolve(struct soap_msg *msg, struct soap_msg **presponse)$/;"	f
