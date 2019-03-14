@@ -982,7 +982,6 @@ static int set_encoder_format(struct vtx *vtx, const char *src,
 
 	vtx->vsrc_size       = *size;
 	vtx->vsrc_prm.fps    = get_fps(vtx->video);
-	vtx->vsrc_prm.orient = VIDORIENT_PORTRAIT;
 
 	vtx->vsrc = mem_deref(vtx->vsrc);
 
@@ -1176,8 +1175,6 @@ int video_set_orient(struct video *v, int orient)
 	if (!v)
 		return EINVAL;
 
-	v->vtx.vsrc_prm.orient = v->vrx.orient = orient;
-	vidsrc_update(&v->vtx, NULL);
 	return vidisp_update(&v->vrx);
 }
 

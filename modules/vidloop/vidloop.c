@@ -612,7 +612,6 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 	     vl->cfg.src_mod, vl->cfg.src_dev,
 	     sz->w, sz->h, vl->cfg.fps);
 
-	vl->srcprm.orient = VIDORIENT_PORTRAIT;
 	vl->srcprm.fps    = vl->cfg.fps;
 
 	vl->vsrc = mem_deref(vl->vsrc);

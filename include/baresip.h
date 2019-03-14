@@ -854,7 +854,6 @@ struct vidsrc_st;
 
 /** Video Source parameters */
 struct vidsrc_prm {
-	int orient;       /**< Wanted picture orientation (enum vidorient) */
 	double fps;       /**< Wanted framerate                            */
 };
 
