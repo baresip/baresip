@@ -1162,23 +1162,6 @@ static void vidsrc_update(struct vtx *vtx, const char *dev)
 }
 
 
-/**
- * Set the orientation of the Video source and display
- *
- * @param v      Video stream
- * @param orient Video orientation (enum vidorient)
- *
- * @return 0 if success, otherwise errorcode
- */
-int video_set_orient(struct video *v, int orient)
-{
-	if (!v)
-		return EINVAL;
-
-	return vidisp_update(&v->vrx);
-}
-
-
 int video_encoder_set(struct video *v, struct vidcodec *vc,
 		      int pt_tx, const char *params)
 {
