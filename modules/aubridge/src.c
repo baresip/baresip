@@ -32,12 +32,6 @@ int aubridge_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm)
 		return EINVAL;
 
-	if (prm->fmt != AUFMT_S16LE) {
-		warning("aubridge: source: unsupported sample format (%s)\n",
-			aufmt_name(prm->fmt));
-		return ENOTSUP;
-	}
-
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
 		return ENOMEM;

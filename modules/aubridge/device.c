@@ -57,16 +57,31 @@ static void *device_thread(void *arg)
 	int16_t *sampv_in, *sampv_out;
 	size_t sampc_in;
 	size_t sampc_out;
+	size_t sampsz;
 
 	if (!dev->run) {
 		return NULL;
 	}
 
+	if (dev->auplay->prm.srate != dev->ausrc->prm.srate ||
+	    dev->auplay->prm.ch != dev->ausrc->prm.ch ||
+	    dev->auplay->prm.fmt != dev->ausrc->prm.fmt) {
+
+		warning("aubridge: incompatible ausrc/auplay parameters\n");
+		goto out;
+	}
+
+	info("aubridge: thread start: %u Hz, %u channels, format=%s\n",
+	     dev->auplay->prm.srate, dev->auplay->prm.ch,
+	     aufmt_name(dev->auplay->prm.fmt));
+
 	sampc_in = dev->auplay->prm.srate * dev->auplay->prm.ch * PTIME/1000;
 	sampc_out = dev->ausrc->prm.srate * dev->ausrc->prm.ch * PTIME/1000;
 
-	sampv_in  = mem_alloc(sizeof(int16_t) * sampc_in, NULL);
-	sampv_out = mem_alloc(sizeof(int16_t) * sampc_out, NULL);
+	sampsz = aufmt_sample_size(dev->auplay->prm.fmt);
+
+	sampv_in  = mem_alloc(sampsz * sampc_in, NULL);
+	sampv_out = mem_alloc(sampsz * sampc_out, NULL);
 	if (!sampv_in || !sampv_out)
 		goto out;
 
@@ -87,8 +102,7 @@ static void *device_thread(void *arg)
 		}
 
 		if (dev->ausrc && dev->ausrc->rh) {
-			dev->ausrc->rh(sampv_in, sampc_in,
-				       dev->ausrc->arg);
+			dev->ausrc->rh(sampv_in, sampc_in, dev->ausrc->arg);
 		}
 
 		ts += PTIME;
