@@ -59,16 +59,15 @@ static void *device_thread(void *arg)
 	size_t sampc_out;
 	size_t sampsz;
 
-	if (!dev->run) {
+	if (!dev->run)
 		return NULL;
-	}
 
 	if (dev->auplay->prm.srate != dev->ausrc->prm.srate ||
 	    dev->auplay->prm.ch != dev->ausrc->prm.ch ||
 	    dev->auplay->prm.fmt != dev->ausrc->prm.fmt) {
 
 		warning("aubridge: incompatible ausrc/auplay parameters\n");
-		goto out;
+		return NULL;
 	}
 
 	info("aubridge: thread start: %u Hz, %u channels, format=%s\n",
