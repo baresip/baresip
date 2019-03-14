@@ -54,11 +54,10 @@ static void *device_thread(void *arg)
 {
 	uint64_t now, ts = tmr_jiffies();
 	struct device *dev = arg;
-	struct auresamp rs;
 	int16_t *sampv_in, *sampv_out;
 	size_t sampc_in;
 	size_t sampc_out;
-	int err;
+	int err = 0;
 
 	if (!dev->run) {
 		return NULL;
@@ -67,17 +66,9 @@ static void *device_thread(void *arg)
 	sampc_in = dev->auplay->prm.srate * dev->auplay->prm.ch * PTIME/1000;
 	sampc_out = dev->ausrc->prm.srate * dev->ausrc->prm.ch * PTIME/1000;
 
-	auresamp_init(&rs);
-
 	sampv_in  = mem_alloc(sizeof(int16_t) * sampc_in, NULL);
 	sampv_out = mem_alloc(sizeof(int16_t) * sampc_out, NULL);
 	if (!sampv_in || !sampv_out)
-		goto out;
-
-	err = auresamp_setup(&rs,
-			     dev->auplay->prm.srate, dev->auplay->prm.ch,
-			     dev->ausrc->prm.srate, dev->ausrc->prm.ch);
-	if (err)
 		goto out;
 
 	while (dev->run) {
@@ -96,26 +87,9 @@ static void *device_thread(void *arg)
 			dev->auplay->wh(sampv_in, sampc_in, dev->auplay->arg);
 		}
 
-		if (rs.resample) {
-			err = auresamp(&rs,
-				       sampv_out, &sampc_out,
-				       sampv_in, sampc_in);
-			if (err) {
-				warning("aubridge: auresamp error"
-					" sampc_out=%zu, sampc_in=%zu (%m)\n",
-					sampc_out, sampc_in, err);
-			}
-
-			if (dev->ausrc && dev->ausrc->rh) {
-				dev->ausrc->rh(sampv_out, sampc_out,
-					       dev->ausrc->arg);
-			}
-		}
-		else {
-			if (dev->ausrc && dev->ausrc->rh) {
-				dev->ausrc->rh(sampv_in, sampc_in,
-					       dev->ausrc->arg);
-			}
+		if (dev->ausrc && dev->ausrc->rh) {
+			dev->ausrc->rh(sampv_in, sampc_in,
+				       dev->ausrc->arg);
 		}
 
 		ts += PTIME;
