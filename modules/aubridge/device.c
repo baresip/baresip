@@ -57,7 +57,6 @@ static void *device_thread(void *arg)
 	int16_t *sampv_in, *sampv_out;
 	size_t sampc_in;
 	size_t sampc_out;
-	int err = 0;
 
 	if (!dev->run) {
 		return NULL;
