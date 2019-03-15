@@ -74,11 +74,8 @@ static void destructor(void *arg)
 
 	mem_deref(st->mb);
 
-	if (st->ctx) {
-		if (st->ctx->codec)
-			avcodec_close(st->ctx);
-		av_free(st->ctx);
-	}
+	if (st->ctx)
+		avcodec_free_context(&st->ctx);
 
 	if (st->pict)
 		av_free(st->pict);
@@ -108,11 +105,7 @@ static int init_decoder(struct viddec_state *st, const char *name)
 
 	st->ctx = avcodec_alloc_context3(st->codec);
 
-#if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 	st->pict = av_frame_alloc();
-#else
-	st->pict = avcodec_alloc_frame();
-#endif
 
 	if (!st->ctx || !st->pict)
 		return ENOMEM;
