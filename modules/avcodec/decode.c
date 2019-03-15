@@ -124,8 +124,8 @@ static int init_decoder(struct viddec_state *st, const char *name)
 }
 
 
-int decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
-		  const char *fmtp)
+int avcodec_decode_update(struct viddec_state **vdsp,
+			  const struct vidcodec *vc, const char *fmtp)
 {
 	struct viddec_state *st;
 	int err = 0;
@@ -265,7 +265,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 }
 
 
-int decode_h264(struct viddec_state *st, struct vidframe *frame,
+int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
 {
 	struct h264_hdr h264_hdr;
@@ -410,7 +410,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 }
 
 
-int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
+int avcodec_decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 		 bool *intra, bool marker, uint16_t seq, struct mbuf *src)
 {
 	int err;
@@ -464,7 +464,7 @@ int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 }
 
 
-int decode_h263(struct viddec_state *st, struct vidframe *frame,
+int avcodec_decode_h263(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
 {
 	struct h263_hdr hdr;

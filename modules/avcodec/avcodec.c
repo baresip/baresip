@@ -133,8 +133,8 @@ static struct vidcodec h264 = {
 	NULL,
 	avcodec_encode_update,
 	avcodec_encode,
-	decode_update,
-	decode_h264,
+	avcodec_decode_update,
+	avcodec_decode_h264,
 	h264_fmtp_enc,
 	h264_fmtp_cmp,
 };
@@ -147,8 +147,8 @@ static struct vidcodec h263 = {
 	NULL,
 	avcodec_encode_update,
 	avcodec_encode,
-	decode_update,
-	decode_h263,
+	avcodec_decode_update,
+	avcodec_decode_h263,
 	h263_fmtp_enc,
 	NULL,
 };
@@ -161,8 +161,8 @@ static struct vidcodec mpg4 = {
 	NULL,
 	avcodec_encode_update,
 	avcodec_encode,
-	decode_update,
-	decode_mpeg4,
+	avcodec_decode_update,
+	avcodec_decode_mpeg4,
 	mpg4_fmtp_enc,
 	NULL,
 };

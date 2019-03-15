@@ -242,7 +242,7 @@ static int open_encoder(struct videnc_state *st,
 }
 
 
-int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
+static int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
 			 const struct pl *val)
 {
 	if (0 == pl_strcasecmp(name, "packetization-mode")) {
