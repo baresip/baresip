@@ -492,7 +492,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		if (err)
 			return err;
 	} while (0);
-#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54, 1, 0)
+#else
 	do {
 		AVPacket avpkt;
 		int got_packet;
@@ -514,22 +514,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		pts = avpkt.dts;
 
 	} while (0);
-#else
-	ret = avcodec_encode_video(st->ctx, st->mb->buf,
-				   (int)st->mb->size, st->pict);
-	if (ret < 0 )
-		return EBADMSG;
-
-	/* todo: figure out proper buffer size */
-	if (ret > (int)st->sz_max) {
-		debug("avcodec: grow encode buffer %u --> %d\n",
-		      st->sz_max, ret);
-		st->sz_max = ret;
-	}
-
-	mbuf_set_end(st->mb, ret);
-
-	pts = st->pict->pts;
 #endif
 
 	ts = video_calc_rtp_timestamp_fix(pts);
