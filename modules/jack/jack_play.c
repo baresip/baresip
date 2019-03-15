@@ -14,7 +14,7 @@ struct auplay_st {
 	const struct auplay *ap;  /* pointer to base-class (inheritance) */
 
 	struct auplay_prm prm;
-	int16_t *sampv;
+	float *sampv;
 	size_t sampc;             /* includes number of channels */
 	auplay_write_h *wh;
 	void *arg;
@@ -23,16 +23,6 @@ struct auplay_st {
 	jack_port_t **portv;
 	jack_nframes_t nframes;       /* num frames per port (channel) */
 };
-
-
-static inline float ausamp_short2float(int16_t in)
-{
-	float out;
-
-	out = (float) (in / (1.0 * 0x8000));
-
-	return out;
-}
 
 
 /**
@@ -64,8 +54,8 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 		buffer = jack_port_get_buffer(st->portv[ch], st->nframes);
 
 		for (j = 0; j < nframes; j++) {
-			int16_t samp = st->sampv[j*st->prm.ch + ch];
-			buffer[j] = ausamp_short2float(samp);
+			float samp = st->sampv[j*st->prm.ch + ch];
+			buffer[j] = samp;
 		}
 	}
 
@@ -134,7 +124,7 @@ static int start_jack(struct auplay_st *st)
 	}
 
 	st->sampc = st->nframes * st->prm.ch;
-	st->sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
+	st->sampv = mem_alloc(st->sampc * sizeof(float), NULL);
 	if (!st->sampv)
 		return ENOMEM;
 
@@ -204,7 +194,7 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	info("jack: play %uHz,%uch\n", prm->srate, prm->ch);
 
-	if (prm->fmt != AUFMT_S16LE) {
+	if (prm->fmt != AUFMT_FLOAT) {
 		warning("jack: playback: unsupported sample format (%s)\n",
 			aufmt_name(prm->fmt));
 		return ENOTSUP;

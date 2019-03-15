@@ -15,7 +15,7 @@ struct ausrc_st {
 	const struct ausrc *as;  /* pointer to base-class (inheritance) */
 
 	struct ausrc_prm prm;
-	int16_t *sampv;
+	float *sampv;
 	size_t sampc;             /* includes number of channels */
 	ausrc_read_h *rh;
 	void *arg;
@@ -24,26 +24,6 @@ struct ausrc_st {
 	jack_port_t **portv;
 	jack_nframes_t nframes;       /* num frames per port (channel) */
 };
-
-
-static inline int16_t ausamp_float2short(float in)
-{
-	double scaled_value;
-	int16_t out;
-
-	scaled_value = in * (8.0 * 0x10000000);
-
-	if (scaled_value >= (1.0 * 0x7fffffff)) {
-		out = 32767;
-	}
-	else if (scaled_value <= (-8.0 * 0x10000000)) {
-		out = -32768;
-	}
-	else
-		out = (short) (lrint (scaled_value) >> 16);
-
-	return out;
-}
 
 
 static int process_handler(jack_nframes_t nframes, void *arg)
@@ -62,8 +42,7 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 		buffer = jack_port_get_buffer(st->portv[ch], st->nframes);
 
 		for (j = 0; j < nframes; j++) {
-			int16_t samp;
-			samp = ausamp_float2short(buffer[j]);
+			float samp = buffer[j];
 			st->sampv[j*st->prm.ch + ch] = samp;
 		}
 	}
@@ -136,7 +115,7 @@ static int start_jack(struct ausrc_st *st)
 	}
 
 	st->sampc = st->nframes * st->prm.ch;
-	st->sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
+	st->sampv = mem_alloc(st->sampc * sizeof(float), NULL);
 	if (!st->sampv)
 		return ENOMEM;
 
@@ -199,7 +178,7 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
 
-	if (prm->fmt != AUFMT_S16LE) {
+	if (prm->fmt != AUFMT_FLOAT) {
 		warning("jack: source: unsupported sample format (%s)\n",
 			aufmt_name(prm->fmt));
 		return ENOTSUP;
