@@ -35,11 +35,6 @@ struct audio_loop {
 	struct aubuf *ab;
 	struct ausrc_st *ausrc;
 	struct auplay_st *auplay;
-	const struct aucodec *ac;
-	struct auenc_state *enc;
-	struct audec_state *dec;
-	int16_t *sampv;
-	size_t sampc;
 	struct tmr tmr;
 	uint32_t srate;
 	uint32_t ch;
@@ -52,7 +47,6 @@ struct audio_loop {
 
 
 static struct audio_loop *gal = NULL;
-static char aucodec[64];
 
 
 static int print_summary(struct re_printf *pf, const struct audio_loop *al)
@@ -110,10 +104,7 @@ static void auloop_destructor(void *arg)
 	tmr_cancel(&al->tmr);
 	mem_deref(al->ausrc);
 	mem_deref(al->auplay);
-	mem_deref(al->sampv);
 	mem_deref(al->ab);
-	mem_deref(al->enc);
-	mem_deref(al->dec);
 }
 
 
@@ -135,9 +126,6 @@ static void print_stats(struct audio_loop *al)
 			 (double)al->n_write / scale,
 			 delay / scale, rw_ratio);
 
-	if (str_isset(aucodec))
-		(void)re_fprintf(stdout, " codec='%s'", aucodec);
-
 	(void)re_fprintf(stdout, "          \r");
 
 	fflush(stdout);
@@ -150,35 +138,6 @@ static void tmr_handler(void *arg)
 
 	tmr_start(&al->tmr, 100, tmr_handler, al);
 	print_stats(al);
-}
-
-
-static int codec_read(struct audio_loop *al, int16_t *sampv, size_t sampc)
-{
-	uint8_t x[2560];
-	size_t xlen = sizeof(x);
-	int err;
-
-	aubuf_read_samp(al->ab, al->sampv, al->sampc);
-
-	err = al->ac->ench(al->enc, x, &xlen,
-			   AUFMT_S16LE, al->sampv, al->sampc);
-	if (err)
-		goto out;
-
-	if (al->ac->dech) {
-		err = al->ac->dech(al->dec, AUFMT_S16LE, sampv, &sampc,
-				   x, xlen);
-		if (err)
-			goto out;
-	}
-	else {
-		info("auloop: no decode handler\n");
-	}
-
- out:
-
-	return err;
 }
 
 
@@ -201,21 +160,11 @@ static void write_handler(void *sampv, size_t sampc, void *arg)
 {
 	struct audio_loop *al = arg;
 	size_t num_bytes = sampc * aufmt_sample_size(al->fmt);
-	int err;
 
 	al->n_write += sampc;
 
 	/* read from beginning */
-	if (al->ac) {
-		err = codec_read(al, sampv, sampc);
-		if (err) {
-			warning("auloop: codec_read error "
-				"on %zu samples (%m)\n", sampc, err);
-		}
-	}
-	else {
-		aubuf_read(al->ab, sampv, num_bytes);
-	}
+	aubuf_read(al->ab, sampv, num_bytes);
 }
 
 
@@ -224,34 +173,6 @@ static void error_handler(int err, const char *str, void *arg)
 	(void)arg;
 	warning("auloop: ausrc error: %m (%s)\n", err, str);
 	gal = mem_deref(gal);
-}
-
-
-static void start_codec(struct audio_loop *al, const char *name,
-			uint32_t srate, uint32_t ch)
-{
-	struct auenc_param prm = {PTIME, 0};
-	int err;
-
-	al->ac = aucodec_find(baresip_aucodecl(), name, srate, ch);
-	if (!al->ac) {
-		warning("auloop: could not find codec: %s\n", name);
-		return;
-	}
-
-	if (al->ac->encupdh) {
-		err = al->ac->encupdh(&al->enc, al->ac, &prm, NULL);
-		if (err) {
-			warning("auloop: encoder update failed: %m\n", err);
-		}
-	}
-
-	if (al->ac->decupdh) {
-		err = al->ac->decupdh(&al->dec, al->ac, NULL);
-		if (err) {
-			warning("auloop: decoder update failed: %m\n", err);
-		}
-	}
 }
 
 
@@ -273,32 +194,14 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 
 	al->fmt = cfg->audio.src_fmt;
 
-	/* Optional audio codec */
-	if (str_isset(aucodec)) {
-		if (cfg->audio.src_fmt != AUFMT_S16LE) {
-			warning("auloop: only s16 supported with codec\n");
-			return EINVAL;
-		}
-
-		start_codec(al, aucodec, srate, ch);
-	}
-
 	/* audio player/source must be stopped first */
 	al->auplay = mem_deref(al->auplay);
 	al->ausrc  = mem_deref(al->ausrc);
 
-	al->sampv  = mem_deref(al->sampv);
 	al->ab     = mem_deref(al->ab);
 
 	al->srate = srate;
 	al->ch    = ch;
-
-	if (str_isset(aucodec)) {
-		al->sampc = al->srate * al->ch * PTIME / 1000;
-		al->sampv = mem_alloc(al->sampc * 2, NULL);
-		if (!al->sampv)
-			return ENOMEM;
-	}
 
 	info("Audio-loop: %uHz, %dch, %s\n", al->srate, al->ch,
 	     aufmt_name(al->fmt));
@@ -423,8 +326,6 @@ static const struct cmd cmdv[] = {
 
 static int module_init(void)
 {
-	conf_get_str(conf_cur(), "auloop_codec", aucodec, sizeof(aucodec));
-
 	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 }
 
