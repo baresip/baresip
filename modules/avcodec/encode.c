@@ -160,11 +160,7 @@ static int open_encoder(struct videnc_state *st,
 
 	st->ctx = avcodec_alloc_context3(st->codec);
 
-#if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 	st->pict = av_frame_alloc();
-#else
-	st->pict = avcodec_alloc_frame();
-#endif
 
 	if (!st->ctx || !st->pict) {
 		err = ENOMEM;
@@ -463,15 +459,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	if (update) {
 		debug("avcodec: encoder picture update\n");
 		st->pict->key_frame = 1;
-#ifdef FF_I_TYPE
-		st->pict->pict_type = FF_I_TYPE;  /* Infra Frame */
-#else
 		st->pict->pict_type = AV_PICTURE_TYPE_I;
-#endif
-	}
-	else {
-		st->pict->key_frame = 0;
-		st->pict->pict_type = 0;
 	}
 
 	mbuf_rewind(st->mb);
