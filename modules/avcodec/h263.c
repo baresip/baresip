@@ -7,9 +7,6 @@
 #include <rem.h>
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
-#ifdef USE_X264
-#include <x264.h>
-#endif
 #include "h26x.h"
 #include "avcodec.h"
 

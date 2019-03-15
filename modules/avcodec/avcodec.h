@@ -35,15 +35,12 @@ extern AVCodec *avcodec_h264dec;
 
 struct videnc_state;
 
-int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
-		  struct videnc_param *prm, const char *fmtp,
-		  videnc_packet_h *pkth, void *arg);
-int encode(struct videnc_state *st, bool update, const struct vidframe *frame,
-	   uint64_t timestamp);
-#ifdef USE_X264
-int encode_x264(struct videnc_state *st, bool update,
-		const struct vidframe *frame, uint64_t timestamp);
-#endif
+int avcodec_encode_update(struct videnc_state **vesp,
+			  const struct vidcodec *vc,
+			  struct videnc_param *prm, const char *fmtp,
+			  videnc_packet_h *pkth, void *arg);
+int avcodec_encode(struct videnc_state *st, bool update,
+		   const struct vidframe *frame, uint64_t timestamp);
 
 
 /*
