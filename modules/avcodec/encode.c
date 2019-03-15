@@ -33,6 +33,7 @@ struct videnc_state {
 	struct mbuf *mb_frag;
 	struct videnc_param encprm;
 	struct vidsz encsize;
+	enum vidfmt fmt;
 	enum AVCodecID codec_id;
 	videnc_packet_h *pkth;
 	void *arg;
@@ -396,6 +397,7 @@ int avcodec_encode_update(struct videnc_state **vesp,
 	}
 
 	st->sz_max = st->mb->size;
+	st->fmt = -1;
 
 	err = init_encoder(st);
 	if (err) {
@@ -428,27 +430,31 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		   const struct vidframe *frame, uint64_t timestamp)
 {
 	int i, err, ret;
-	int pix_fmt;
 	int64_t pts;
 	uint64_t ts;
 
 	if (!st || !frame)
 		return EINVAL;
 
-	pix_fmt = vidfmt_to_avpixfmt(frame->fmt);
-	if (pix_fmt == AV_PIX_FMT_NONE) {
-		warning("avcodec: pixel format not supported (%s)\n",
-			vidfmt_name(frame->fmt));
-		return ENOTSUP;
-	}
+	if (!st->ctx || !vidsz_cmp(&st->encsize, &frame->size) ||
+	    st->fmt != frame->fmt) {
 
-	if (!st->ctx || !vidsz_cmp(&st->encsize, &frame->size)) {
+		enum AVPixelFormat pix_fmt;
+
+		pix_fmt = vidfmt_to_avpixfmt(frame->fmt);
+		if (pix_fmt == AV_PIX_FMT_NONE) {
+			warning("avcodec: pixel format not supported (%s)\n",
+				vidfmt_name(frame->fmt));
+			return ENOTSUP;
+		}
 
 		err = open_encoder(st, &st->encprm, &frame->size, pix_fmt);
 		if (err) {
 			warning("avcodec: open_encoder: %m\n", err);
 			return err;
 		}
+
+		st->fmt = frame->fmt;
 	}
 
 	for (i=0; i<4; i++) {
