@@ -38,7 +38,7 @@
  */
 
 
-const uint8_t h264_level_idc = 0x1f;
+static const uint8_t h264_level_idc = 0x1f;
 AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
 AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
 
