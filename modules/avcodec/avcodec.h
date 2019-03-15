@@ -24,6 +24,16 @@
 #endif
 
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 63, 100)
+#define avcodec_free_context(ctx)				\
+								\
+	if (*(ctx)) {						\
+		avcodec_close(*(ctx));				\
+		av_freep((ctx));				\
+	}
+#endif
+
+
 extern const uint8_t h264_level_idc;
 extern AVCodec *avcodec_h264enc;
 extern AVCodec *avcodec_h264dec;

@@ -75,14 +75,8 @@ static void destructor(void *arg)
 	mem_deref(st->mb);
 	mem_deref(st->mb_frag);
 
-	if (st->ctx) {
-		if (st->ctx->codec)
-			avcodec_close(st->ctx);
-#if LIBAVUTIL_VERSION_INT >= ((51<<16)+(8<<8)+0)
-		av_opt_free(st->ctx);
-#endif
-		av_free(st->ctx);
-	}
+	if (st->ctx)
+		avcodec_free_context(&st->ctx);
 
 	if (st->pict)
 		av_free(st->pict);
@@ -158,14 +152,8 @@ static int open_encoder(struct videnc_state *st,
 {
 	int err = 0;
 
-	if (st->ctx) {
-		if (st->ctx->codec)
-			avcodec_close(st->ctx);
-#if LIBAVUTIL_VERSION_INT >= ((51<<16)+(8<<8)+0)
-		av_opt_free(st->ctx);
-#endif
-		av_free(st->ctx);
-	}
+	if (st->ctx)
+		avcodec_free_context(&st->ctx);
 
 	if (st->pict)
 		av_free(st->pict);
@@ -243,15 +231,8 @@ static int open_encoder(struct videnc_state *st,
 
  out:
 	if (err) {
-		if (st->ctx) {
-			if (st->ctx->codec)
-				avcodec_close(st->ctx);
-#if LIBAVUTIL_VERSION_INT >= ((51<<16)+(8<<8)+0)
-			av_opt_free(st->ctx);
-#endif
-			av_free(st->ctx);
-			st->ctx = NULL;
-		}
+		if (st->ctx)
+			avcodec_free_context(&st->ctx);
 
 		if (st->pict) {
 			av_free(st->pict);
