@@ -27,7 +27,6 @@ struct picsz {
 struct videnc_state {
 	AVCodec *codec;
 	AVCodecContext *ctx;
-	AVFrame *pict;
 	struct mbuf *mb;
 	size_t sz_max; /* todo: figure out proper buffer size */
 	struct mbuf *mb_frag;
@@ -78,9 +77,6 @@ static void destructor(void *arg)
 
 	if (st->ctx)
 		avcodec_free_context(&st->ctx);
-
-	if (st->pict)
-		av_free(st->pict);
 }
 
 
@@ -156,14 +152,8 @@ static int open_encoder(struct videnc_state *st,
 	if (st->ctx)
 		avcodec_free_context(&st->ctx);
 
-	if (st->pict)
-		av_free(st->pict);
-
 	st->ctx = avcodec_alloc_context3(st->codec);
-
-	st->pict = av_frame_alloc();
-
-	if (!st->ctx || !st->pict) {
+	if (!st->ctx) {
 		err = ENOMEM;
 		goto out;
 	}
@@ -222,19 +212,10 @@ static int open_encoder(struct videnc_state *st,
 		goto out;
 	}
 
-	st->pict->format = pix_fmt;
-	st->pict->width = size->w;
-	st->pict->height = size->h;
-
  out:
 	if (err) {
 		if (st->ctx)
 			avcodec_free_context(&st->ctx);
-
-		if (st->pict) {
-			av_free(st->pict);
-			st->pict = NULL;
-		}
 	}
 	else
 		st->encsize = *size;
@@ -429,6 +410,7 @@ int avcodec_encode_update(struct videnc_state **vesp,
 int avcodec_encode(struct videnc_state *st, bool update,
 		   const struct vidframe *frame, uint64_t timestamp)
 {
+	AVFrame *pict = NULL;
 	int i, err, ret;
 	int64_t pts;
 	uint64_t ts;
@@ -457,15 +439,26 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		st->fmt = frame->fmt;
 	}
 
-	for (i=0; i<4; i++) {
-		st->pict->data[i]     = frame->data[i];
-		st->pict->linesize[i] = frame->linesize[i];
+	pict = av_frame_alloc();
+	if (!pict) {
+		err = ENOMEM;
+		goto out;
 	}
-	st->pict->pts = timestamp;
+
+	pict->format = st->ctx->pix_fmt;
+	pict->width = frame->size.w;
+	pict->height = frame->size.h;
+	pict->pts = timestamp;
+
+	for (i=0; i<4; i++) {
+		pict->data[i]     = frame->data[i];
+		pict->linesize[i] = frame->linesize[i];
+	}
+
 	if (update) {
 		debug("avcodec: encoder picture update\n");
-		st->pict->key_frame = 1;
-		st->pict->pict_type = AV_PICTURE_TYPE_I;
+		pict->key_frame = 1;
+		pict->pict_type = AV_PICTURE_TYPE_I;
 	}
 
 	mbuf_rewind(st->mb);
@@ -474,7 +467,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	do {
 		AVPacket *pkt;
 
-		ret = avcodec_send_frame(st->ctx, st->pict);
+		ret = avcodec_send_frame(st->ctx, pict);
 		if (ret < 0)
 			return EBADMSG;
 
@@ -509,7 +502,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		avpkt.size = (int)st->mb->size;
 
 		ret = avcodec_encode_video2(st->ctx, &avpkt,
-					    st->pict, &got_packet);
+					    pict, &got_packet);
 		if (ret < 0)
 			return EBADMSG;
 		if (!got_packet)
@@ -545,6 +538,10 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		err = EPROTO;
 		break;
 	}
+
+ out:
+	if (pict)
+		av_free(pict);
 
 	return err;
 }
