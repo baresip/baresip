@@ -28,7 +28,6 @@ struct videnc_state {
 	AVCodec *codec;
 	AVCodecContext *ctx;
 	struct mbuf *mb;
-	size_t sz_max; /* todo: figure out proper buffer size */
 	struct mbuf *mb_frag;
 	struct videnc_param encprm;
 	struct vidsz encsize;
@@ -377,7 +376,6 @@ int avcodec_encode_update(struct videnc_state **vesp,
 		goto out;
 	}
 
-	st->sz_max = st->mb->size;
 	st->fmt = -1;
 
 	err = init_encoder(st);
@@ -502,16 +500,16 @@ int avcodec_encode(struct videnc_state *st, bool update,
 
 	av_init_packet(pkt);
 
-	avpkt.data = st->mb->buf;
-	avpkt.size = (int)st->mb->size;
+	pkt.data = st->mb->buf;
+	pkt.size = (int)st->mb->size;
 
-	ret = avcodec_encode_video2(st->ctx, &avpkt, pict, &got_packet);
+	ret = avcodec_encode_video2(st->ctx, &pkt, pict, &got_packet);
 	if (ret < 0) {
 		err = EBADMSG;
 		goto out;
 	}
 
-	mbuf_set_end(st->mb, avpkt.size);
+	mbuf_set_end(st->mb, pkt.size);
 #endif
 
 	if (!got_packet)
