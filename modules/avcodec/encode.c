@@ -411,8 +411,9 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		   const struct vidframe *frame, uint64_t timestamp)
 {
 	AVFrame *pict = NULL;
+	AVPacket *pkt = NULL;
 	int i, err, ret;
-	int64_t pts;
+	int got_packet = 0;
 	uint64_t ts;
 
 	if (!st || !frame)
@@ -464,58 +465,59 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	mbuf_rewind(st->mb);
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
-	do {
-		AVPacket *pkt;
 
-		ret = avcodec_send_frame(st->ctx, pict);
-		if (ret < 0)
-			return EBADMSG;
+	pkt = av_packet_alloc();
+	if (!pkt) {
+		err = ENOMEM;
+		goto out;
+	}
 
-		pkt = av_packet_alloc();
-		if (!pkt)
-			return ENOMEM;
+	ret = avcodec_send_frame(st->ctx, pict);
+	if (ret < 0) {
+		err = EBADMSG;
+		goto out;
+	}
 
-		ret = avcodec_receive_packet(st->ctx, pkt);
-		if (ret < 0) {
-			av_packet_free(&pkt);
-			return 0;
-		}
+	ret = avcodec_receive_packet(st->ctx, pkt);
+	if (ret < 0) {
+		info("avcodec: no packet yet ..\n");
+		err = 0;
+		goto out;
+	}
 
-		pts = pkt->dts;
+	err = mbuf_write_mem(st->mb, pkt->data, pkt->size);
+	st->mb->pos = 0;
 
-		err = mbuf_write_mem(st->mb, pkt->data, pkt->size);
-		st->mb->pos = 0;
+	if (err)
+		goto out;
 
-		av_packet_free(&pkt);
-
-		if (err)
-			return err;
-	} while (0);
+	got_packet = 1;
 #else
-	do {
-		AVPacket avpkt;
-		int got_packet;
 
-		av_init_packet(&avpkt);
+	pkt = av_malloc(sizeof(*pkt));
+	if (!pkt) {
+		err = ENOMEM;
+		goto out;
+	}
 
-		avpkt.data = st->mb->buf;
-		avpkt.size = (int)st->mb->size;
+	av_init_packet(pkt);
 
-		ret = avcodec_encode_video2(st->ctx, &avpkt,
-					    pict, &got_packet);
-		if (ret < 0)
-			return EBADMSG;
-		if (!got_packet)
-			return 0;
+	avpkt.data = st->mb->buf;
+	avpkt.size = (int)st->mb->size;
 
-		mbuf_set_end(st->mb, avpkt.size);
+	ret = avcodec_encode_video2(st->ctx, &avpkt, pict, &got_packet);
+	if (ret < 0) {
+		err = EBADMSG;
+		goto out;
+	}
 
-		pts = avpkt.dts;
-
-	} while (0);
+	mbuf_set_end(st->mb, avpkt.size);
 #endif
 
-	ts = video_calc_rtp_timestamp_fix(pts);
+	if (!got_packet)
+		return 0;
+
+	ts = video_calc_rtp_timestamp_fix(pkt->pts);
 
 	switch (st->codec_id) {
 
@@ -542,6 +544,8 @@ int avcodec_encode(struct videnc_state *st, bool update,
  out:
 	if (pict)
 		av_free(pict);
+	if (pkt)
+		av_packet_free(&pkt);
 
 	return err;
 }
