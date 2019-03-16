@@ -163,6 +163,7 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->pix_fmt   = pix_fmt;
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
+	st->ctx->gop_size = 10 * prm->fps;
 
 	if (0 == str_cmp(st->codec->name, "libx264")) {
 
