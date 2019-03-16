@@ -39,6 +39,17 @@
 #endif
 
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
+#define av_packet_free(pkt)			\
+						\
+	if (*(pkt)) {				\
+						\
+		av_free_packet(*(pkt));		\
+		av_freep((pkt));		\
+	}
+#endif
+
+
 extern AVCodec *avcodec_h264enc;
 extern AVCodec *avcodec_h264dec;
 

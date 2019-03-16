@@ -500,8 +500,8 @@ int avcodec_encode(struct videnc_state *st, bool update,
 
 	av_init_packet(pkt);
 
-	pkt.data = st->mb->buf;
-	pkt.size = (int)st->mb->size;
+	pkt->data = st->mb->buf;
+	pkt->size = (int)st->mb->size;
 
 	ret = avcodec_encode_video2(st->ctx, &pkt, pict, &got_packet);
 	if (ret < 0) {
@@ -509,7 +509,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-	mbuf_set_end(st->mb, pkt.size);
+	mbuf_set_end(st->mb, pkt->size);
 #endif
 
 	if (!got_packet)
