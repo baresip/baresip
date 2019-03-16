@@ -27,7 +27,6 @@ struct picsz {
 struct videnc_state {
 	AVCodec *codec;
 	AVCodecContext *ctx;
-	struct mbuf *mb;
 	struct mbuf *mb_frag;
 	struct videnc_param encprm;
 	struct vidsz encsize;
@@ -71,7 +70,6 @@ static void destructor(void *arg)
 {
 	struct videnc_state *st = arg;
 
-	mem_deref(st->mb);
 	mem_deref(st->mb_frag);
 
 	if (st->ctx)
@@ -166,7 +164,7 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
 
-	if (0 == strcmp(st->codec->name, "libx264")) {
+	if (0 == str_cmp(st->codec->name, "libx264")) {
 
 		av_opt_set(st->ctx->priv_data, "profile", "baseline", 0);
 		av_opt_set(st->ctx->priv_data, "preset", "ultrafast", 0);
@@ -376,9 +374,8 @@ int avcodec_encode_update(struct videnc_state **vesp,
 		goto out;
 	}
 
-	st->mb  = mbuf_alloc(AV_INPUT_BUFFER_MIN_SIZE * 20);
 	st->mb_frag = mbuf_alloc(1024);
-	if (!st->mb || !st->mb_frag) {
+	if (!st->mb_frag) {
 		err = ENOMEM;
 		goto out;
 	}
@@ -417,9 +414,10 @@ int avcodec_encode(struct videnc_state *st, bool update,
 {
 	AVFrame *pict = NULL;
 	AVPacket *pkt = NULL;
-	int i, err, ret;
+	int i, err = 0, ret;
 	int got_packet = 0;
 	uint64_t ts;
+	struct mbuf mb;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -467,8 +465,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		pict->pict_type = AV_PICTURE_TYPE_I;
 	}
 
-	mbuf_rewind(st->mb);
-
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
 	pkt = av_packet_alloc();
@@ -490,12 +486,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-	err = mbuf_write_mem(st->mb, pkt->data, pkt->size);
-	st->mb->pos = 0;
-
-	if (err)
-		goto out;
-
 	got_packet = 1;
 #else
 
@@ -506,38 +496,39 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	}
 
 	av_init_packet(pkt);
-
-	pkt->data = st->mb->buf;
-	pkt->size = (int)st->mb->size;
+	av_new_packet(pkt, 65536);
 
 	ret = avcodec_encode_video2(st->ctx, pkt, pict, &got_packet);
 	if (ret < 0) {
 		err = EBADMSG;
 		goto out;
 	}
-
-	mbuf_set_end(st->mb, pkt->size);
 #endif
 
 	if (!got_packet)
 		return 0;
+
+	mb.buf = pkt->data;
+	mb.pos = 0;
+	mb.end = pkt->size;
+	mb.size = pkt->size;
 
 	ts = video_calc_rtp_timestamp_fix(pkt->pts);
 
 	switch (st->codec_id) {
 
 	case AV_CODEC_ID_H263:
-		err = h263_packetize(st, ts, st->mb, st->pkth, st->arg);
+		err = h263_packetize(st, ts, &mb, st->pkth, st->arg);
 		break;
 
 	case AV_CODEC_ID_H264:
-		err = h264_packetize(ts, st->mb->buf, st->mb->end,
+		err = h264_packetize(ts, pkt->data, pkt->size,
 				     st->encprm.pktsize,
 				     st->pkth, st->arg);
 		break;
 
 	case AV_CODEC_ID_MPEG4:
-		err = general_packetize(ts, st->mb, st->encprm.pktsize,
+		err = general_packetize(ts, &mb, st->encprm.pktsize,
 					st->pkth, st->arg);
 		break;
 
