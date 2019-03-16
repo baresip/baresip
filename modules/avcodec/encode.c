@@ -503,7 +503,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	pkt->data = st->mb->buf;
 	pkt->size = (int)st->mb->size;
 
-	ret = avcodec_encode_video2(st->ctx, &pkt, pict, &got_packet);
+	ret = avcodec_encode_video2(st->ctx, pkt, pict, &got_packet);
 	if (ret < 0) {
 		err = EBADMSG;
 		goto out;
