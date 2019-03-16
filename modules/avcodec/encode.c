@@ -166,6 +166,13 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
 
+	if (0 == strcmp(st->codec->name, "libx264")) {
+
+		av_opt_set(st->ctx->priv_data, "profile", "baseline", 0);
+		av_opt_set(st->ctx->priv_data, "preset", "ultrafast", 0);
+		av_opt_set(st->ctx->priv_data, "tune", "zerolatency", 0);
+	}
+
 	/* params to avoid libavcodec/x264 default preset error */
 	if (st->codec_id == AV_CODEC_ID_H264) {
 
