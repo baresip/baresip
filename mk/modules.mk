@@ -42,7 +42,7 @@
 #   USE_PORTAUDIO     Portaudio audio driver
 #   USE_PULSE         Pulseaudio audio driver
 #   USE_RTCPSUMMARY   RTCP summary output after calls
-#   USE_SDL           libSDL video output
+#   USE_SDL2          libSDL2 video output
 #   USE_SNDFILE       sndfile wav dumper
 #   USE_SPEEX_AEC     Speex Acoustic Echo Canceller
 #   USE_SPEEX_PP      Speex preprocessor
@@ -140,9 +140,6 @@ USE_PORTAUDIO := $(shell [ -f $(SYSROOT)/local/include/portaudio.h ] || \
 		[ -f $(SYSROOT)/include/portaudio.h ] || \
 		[ -f $(SYSROOT_ALT)/include/portaudio.h ] && echo "yes")
 USE_PULSE := $(shell pkg-config --exists libpulse && echo "yes")
-USE_SDL  := $(shell [ -f $(SYSROOT)/include/SDL/SDL.h ] || \
-	[ -f $(SYSROOT)/local/include/SDL/SDL.h ] || \
-	[ -f $(SYSROOT_ALT)/include/SDL/SDl.h ] && echo "yes")
 USE_SDL2  := $(shell [ -f $(SYSROOT)/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT)/local/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT_ALT)/include/SDL2/SDl.h ] && echo "yes")
@@ -409,9 +406,6 @@ MODULES   += portaudio
 endif
 ifneq ($(USE_PULSE),)
 MODULES   += pulse
-endif
-ifneq ($(USE_SDL),)
-MODULES   += sdl
 endif
 ifneq ($(USE_SDL2),)
 MODULES   += sdl2

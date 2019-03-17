@@ -112,7 +112,7 @@ Distributed under BSD license
   - X11 grabber video-source
   - DirectFB video-output
   - OpenGL/OpenGLES video-output
-  - SDL/SDL2 video-output
+  - SDL2 video-output
   - X11 video-output
 
 * NAT-traversal:
@@ -276,7 +276,6 @@ presence      Presence module
 qtcapture     Apple QTCapture video source driver
 rtcpsummary   RTCP summary module
 rst           Radio streamer using mpg123
-sdl           Simple DirectMedia Layer (SDL) video output driver
 sdl2          Simple DirectMedia Layer v2 (SDL2) video output driver
 selfview      Video selfview module
 snapshot      Save video-stream as PNG images
