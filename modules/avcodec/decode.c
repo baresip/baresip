@@ -74,11 +74,8 @@ static void destructor(void *arg)
 
 	mem_deref(st->mb);
 
-	if (st->ctx) {
-		if (st->ctx->codec)
-			avcodec_close(st->ctx);
-		av_free(st->ctx);
-	}
+	if (st->ctx)
+		avcodec_free_context(&st->ctx);
 
 	if (st->pict)
 		av_free(st->pict);
@@ -108,11 +105,7 @@ static int init_decoder(struct viddec_state *st, const char *name)
 
 	st->ctx = avcodec_alloc_context3(st->codec);
 
-#if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 	st->pict = av_frame_alloc();
-#else
-	st->pict = avcodec_alloc_frame();
-#endif
 
 	if (!st->ctx || !st->pict)
 		return ENOMEM;
@@ -124,8 +117,8 @@ static int init_decoder(struct viddec_state *st, const char *name)
 }
 
 
-int decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
-		  const char *fmtp)
+int avcodec_decode_update(struct viddec_state **vdsp,
+			  const struct vidcodec *vc, const char *fmtp)
 {
 	struct viddec_state *st;
 	int err = 0;
@@ -265,7 +258,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 }
 
 
-int decode_h264(struct viddec_state *st, struct vidframe *frame,
+int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
 {
 	struct h264_hdr h264_hdr;
@@ -410,7 +403,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 }
 
 
-int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
+int avcodec_decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 		 bool *intra, bool marker, uint16_t seq, struct mbuf *src)
 {
 	int err;
@@ -464,7 +457,7 @@ int decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 }
 
 
-int decode_h263(struct viddec_state *st, struct vidframe *frame,
+int avcodec_decode_h263(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
 {
 	struct h263_hdr hdr;

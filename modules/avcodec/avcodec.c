@@ -7,9 +7,6 @@
 #include <rem.h>
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
-#ifdef USE_X264
-#include <x264.h>
-#endif
 #include "h26x.h"
 #include "avcodec.h"
 
@@ -20,14 +17,8 @@
  * Video codecs using libavcodec
  *
  * This module implements H.263, H.264 and MPEG4 video codecs
- * using libavcodec from FFmpeg or libav projects, and libx264.
+ * using libavcodec from FFmpeg or libav projects.
  *
- * Build options:
- *
- \verbatim
-      $ make USE_X264=1    ; enable direct usage of libx264
-      $ make USE_X264=     ; use H.264 encoder from libavcodec
- \endverbatim
  *
  * Config options:
  *
@@ -47,7 +38,7 @@
  */
 
 
-const uint8_t h264_level_idc = 0x1f;
+static const uint8_t h264_level_idc = 0x1f;
 AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
 AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
 
@@ -140,14 +131,10 @@ static struct vidcodec h264 = {
 	"H264",
 	"packetization-mode=0",
 	NULL,
-	encode_update,
-#ifdef USE_X264
-	encode_x264,
-#else
-	encode,
-#endif
-	decode_update,
-	decode_h264,
+	avcodec_encode_update,
+	avcodec_encode,
+	avcodec_decode_update,
+	avcodec_decode_h264,
 	h264_fmtp_enc,
 	h264_fmtp_cmp,
 };
@@ -158,10 +145,10 @@ static struct vidcodec h263 = {
 	"H263",
 	NULL,
 	NULL,
-	encode_update,
-	encode,
-	decode_update,
-	decode_h263,
+	avcodec_encode_update,
+	avcodec_encode,
+	avcodec_decode_update,
+	avcodec_decode_h263,
 	h263_fmtp_enc,
 	NULL,
 };
@@ -172,10 +159,10 @@ static struct vidcodec mpg4 = {
 	"MP4V-ES",
 	NULL,
 	NULL,
-	encode_update,
-	encode,
-	decode_update,
-	decode_mpeg4,
+	avcodec_encode_update,
+	avcodec_encode,
+	avcodec_decode_update,
+	avcodec_decode_mpeg4,
 	mpg4_fmtp_enc,
 	NULL,
 };
@@ -184,14 +171,8 @@ static struct vidcodec mpg4 = {
 static int module_init(void)
 {
 	struct list *vidcodecl = baresip_vidcodecl();
-	char h264enc[64];
-	char h264dec[64];
-
-#ifdef USE_X264
-	debug("avcodec: x264 build %d\n", X264_BUILD);
-#else
-	debug("avcodec: using libavcodec H.264 encoder\n");
-#endif
+	char h264enc[64] = "libx264";
+	char h264dec[64] = "h264";
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53, 10, 0)
 	avcodec_init();
@@ -201,23 +182,21 @@ static int module_init(void)
 	avcodec_register_all();
 #endif
 
-	if (0 == conf_get_str(conf_cur(), "avcodec_h264dec",
-			      h264dec, sizeof(h264dec))) {
+	conf_get_str(conf_cur(), "avcodec_h264enc", h264enc, sizeof(h264enc));
+	conf_get_str(conf_cur(), "avcodec_h264dec", h264dec, sizeof(h264dec));
 
-		info("avcodec: using h264 decoder by name (%s)\n", h264dec);
+	avcodec_h264enc = avcodec_find_encoder_by_name(h264enc);
+	if (!avcodec_h264enc) {
+		warning("avcodec: h264 encoder not found (%s)\n", h264enc);
+	}
 
-		avcodec_h264dec = avcodec_find_decoder_by_name(h264dec);
-		if (!avcodec_h264dec) {
-			warning("avcodec: h264 decoder not found (%s)\n",
-				h264dec);
-			return ENOENT;
-		}
+	avcodec_h264dec = avcodec_find_decoder_by_name(h264dec);
+	if (!avcodec_h264dec) {
+		warning("avcodec: h264 decoder not found (%s)\n", h264dec);
+	}
+
+	if (avcodec_h264enc || avcodec_h264dec)
 		vidcodec_register(vidcodecl, &h264);
-	}
-	else {
-		if (avcodec_find_decoder(AV_CODEC_ID_H264))
-			vidcodec_register(vidcodecl, &h264);
-	}
 
 	if (avcodec_find_decoder(AV_CODEC_ID_H263))
 		vidcodec_register(vidcodecl, &h263);
@@ -225,17 +204,13 @@ static int module_init(void)
 	if (avcodec_find_decoder(AV_CODEC_ID_MPEG4))
 		vidcodec_register(vidcodecl, &mpg4);
 
-	if (0 == conf_get_str(conf_cur(), "avcodec_h264enc",
-			      h264enc, sizeof(h264enc))) {
-
-		info("avcodec: using h264 encoder by name (%s)\n", h264enc);
-
-		avcodec_h264enc = avcodec_find_encoder_by_name(h264enc);
-		if (!avcodec_h264enc) {
-			warning("avcodec: h264 encoder not found (%s)\n",
-				h264enc);
-			return ENOENT;
-		}
+	if (avcodec_h264enc) {
+		info("avcodec: using H.264 encoder '%s' -- %s\n",
+		     avcodec_h264enc->name, avcodec_h264enc->long_name);
+	}
+	if (avcodec_h264dec) {
+		info("avcodec: using H.264 decoder '%s' -- %s\n",
+		     avcodec_h264dec->name, avcodec_h264dec->long_name);
 	}
 
 	return 0;
