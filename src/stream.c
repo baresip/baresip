@@ -535,6 +535,7 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 static void stream_remote_set(struct stream *s)
 {
 	struct sa rtcp;
+	int err;
 
 	if (!s)
 		return;
@@ -556,6 +557,12 @@ static void stream_remote_set(struct stream *s)
 
 	rtcp_start(s->rtp, s->cname,
 		   s->rtcp_mux ? sdp_media_raddr(s->sdp): &rtcp);
+
+	/* Send a dummy RTCP packet to open NAT pinhole */
+	err = rtcp_send_app(s->rtp, "PING", (void *)"PONG", 4);
+	if (err) {
+		warning("stream: rtcp_send_app failed (%m)\n", err);
+	}
 }
 
 
