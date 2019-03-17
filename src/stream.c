@@ -546,6 +546,8 @@ static void stream_remote_set(struct stream *s)
 			info("%s: RTP/RTCP multiplexing enabled\n",
 			     sdp_media_name(s->sdp));
 		s->rtcp_mux = true;
+
+		sdp_media_set_lattr(s->sdp, true, "rtcp-mux", NULL);
 	}
 
 	rtcp_enable_mux(s->rtp, s->rtcp_mux);
