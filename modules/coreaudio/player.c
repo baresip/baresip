@@ -12,11 +12,7 @@
 
 
 /* This value can be tuned */
-#if TARGET_OS_IPHONE
-#define BUFC 20
-#else
 #define BUFC 6
-#endif
 
 
 struct auplay_st {
@@ -38,8 +34,6 @@ static void auplay_destructor(void *arg)
 	pthread_mutex_lock(&st->mutex);
 	st->wh = NULL;
 	pthread_mutex_unlock(&st->mutex);
-
-	audio_session_disable();
 
 	if (st->queue) {
 		AudioQueuePause(st->queue);
@@ -105,10 +99,6 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	}
 
 	err = pthread_mutex_init(&st->mutex, NULL);
-	if (err)
-		goto out;
-
-	err = audio_session_enable();
 	if (err)
 		goto out;
 

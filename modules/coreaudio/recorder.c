@@ -35,8 +35,6 @@ static void ausrc_destructor(void *arg)
 	st->rh = NULL;
 	pthread_mutex_unlock(&st->mutex);
 
-	audio_session_disable();
-
 	if (st->queue) {
 		AudioQueuePause(st->queue);
 		AudioQueueStop(st->queue, true);
@@ -114,10 +112,6 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	bytc  = sampc * st->sampsz;
 
 	err = pthread_mutex_init(&st->mutex, NULL);
-	if (err)
-		goto out;
-
-	err = audio_session_enable();
 	if (err)
 		goto out;
 
