@@ -31,12 +31,6 @@
  */
 
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 25, 0)
-#define AVCodecID CodecID
-#define AV_CODEC_ID_NONE  CODEC_ID_NONE
-#endif
-
-
 #if LIBAVUTIL_VERSION_MAJOR < 52
 #define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
 #define AV_PIX_FMT_YUVJ420P PIX_FMT_YUVJ420P
@@ -318,23 +312,20 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			prm->fps = input_fps;
 		}
 
-		if (ctx->codec_id != AV_CODEC_ID_NONE) {
-
-			codec = avcodec_find_decoder(ctx->codec_id);
-			if (!codec) {
-				err = ENOENT;
-				goto out;
-			}
-
-			ret = avcodec_open2(ctx, codec, NULL);
-			if (ret < 0) {
-				err = ENOENT;
-				goto out;
-			}
-
-			debug("avformat: using decoder '%s' (%s)\n",
-			      codec->name, codec->long_name);
+		codec = avcodec_find_decoder(ctx->codec_id);
+		if (!codec) {
+			err = ENOENT;
+			goto out;
 		}
+
+		ret = avcodec_open2(ctx, codec, NULL);
+		if (ret < 0) {
+			err = ENOENT;
+			goto out;
+		}
+
+		debug("avformat: using decoder '%s' (%s)\n",
+		      codec->name, codec->long_name);
 
 		found_stream = true;
 		break;
