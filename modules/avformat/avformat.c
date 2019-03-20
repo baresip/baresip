@@ -45,9 +45,9 @@ struct vidsrc_st {
 	AVCodecContext *ctx;
 	AVRational time_base;
 	struct vidsz sz;
+	int sindex;
 	vidsrc_frame_h *frameh;
 	void *arg;
-	int sindex;
 };
 
 
@@ -115,8 +115,7 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 
 	got_pict = true;
 #else
-	ret = avcodec_decode_video2(st->ctx, frame,
-				    &got_pict, pkt);
+	ret = avcodec_decode_video2(st->ctx, frame, &got_pict, pkt);
 #endif
 	if (ret < 0 || !got_pict)
 		goto out;
@@ -167,7 +166,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 static void *read_thread(void *data)
 {
 	struct vidsrc_st *st = data;
-
 	uint64_t now, ts = tmr_jiffies();
 
 	while (st->run) {
