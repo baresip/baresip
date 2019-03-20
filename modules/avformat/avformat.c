@@ -48,7 +48,6 @@ struct vidsrc_st {
 	pthread_t thread;
 	bool run;
 	AVFormatContext *ic;
-	AVCodec *codec;
 	AVCodecContext *ctx;
 	AVRational time_base;
 	struct vidsz sz;
@@ -59,20 +58,6 @@ struct vidsrc_st {
 
 
 static struct vidsrc *mod_avf;
-
-
-static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
-{
-	switch (pix_fmt) {
-
-	case AV_PIX_FMT_YUV420P:  return VID_FMT_YUV420P;
-	case AV_PIX_FMT_YUVJ420P: return VID_FMT_YUV420P;
-	case AV_PIX_FMT_YUV444P:  return VID_FMT_YUV444P;
-	case AV_PIX_FMT_NV12:     return VID_FMT_NV12;
-	case AV_PIX_FMT_NV21:     return VID_FMT_NV21;
-	default:                  return (enum vidfmt)-1;
-	}
-}
 
 
 static void destructor(void *arg)
@@ -93,6 +78,20 @@ static void destructor(void *arg)
 }
 
 
+static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
+{
+	switch (pix_fmt) {
+
+	case AV_PIX_FMT_YUV420P:  return VID_FMT_YUV420P;
+	case AV_PIX_FMT_YUVJ420P: return VID_FMT_YUV420P;
+	case AV_PIX_FMT_YUV444P:  return VID_FMT_YUV444P;
+	case AV_PIX_FMT_NV12:     return VID_FMT_NV12;
+	case AV_PIX_FMT_NV21:     return VID_FMT_NV21;
+	default:                  return (enum vidfmt)-1;
+	}
+}
+
+
 static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 {
 	AVFrame *frame = NULL;
@@ -102,47 +101,40 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	int64_t pts;
 	uint64_t timestamp;
 	const AVRational time_base = st->time_base;
-
-	if (st->codec) {
-		int got_pict, ret;
+	int got_pict, ret;
 
 #if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
-		frame = av_frame_alloc();
+	frame = av_frame_alloc();
 #else
-		frame = avcodec_alloc_frame();
+	frame = avcodec_alloc_frame();
 #endif
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
-		ret = avcodec_send_packet(st->ctx, pkt);
-		if (ret < 0)
-			goto out;
+	ret = avcodec_send_packet(st->ctx, pkt);
+	if (ret < 0)
+		goto out;
 
-		ret = avcodec_receive_frame(st->ctx, frame);
-		if (ret < 0)
-			goto out;
+	ret = avcodec_receive_frame(st->ctx, frame);
+	if (ret < 0)
+		goto out;
 
-		got_pict = true;
+	got_pict = true;
 #else
-		ret = avcodec_decode_video2(st->ctx, frame,
-					    &got_pict, pkt);
+	ret = avcodec_decode_video2(st->ctx, frame,
+				    &got_pict, pkt);
 #endif
-		if (ret < 0 || !got_pict)
-			goto out;
+	if (ret < 0 || !got_pict)
+		goto out;
 
-		sz.w = st->ctx->width;
-		sz.h = st->ctx->height;
+	sz.w = st->ctx->width;
+	sz.h = st->ctx->height;
 
-		/* check if size changed */
-		if (!vidsz_cmp(&sz, &st->sz)) {
-			info("avformat: size changed: %d x %d  ---> %d x %d\n",
-			     st->sz.w, st->sz.h, sz.w, sz.h);
-			st->sz = sz;
-		}
-	}
-	else {
-		/* No-codec option is not supported */
-		return;
+	/* check if size changed */
+	if (!vidsz_cmp(&sz, &st->sz)) {
+		info("avformat: size changed: %d x %d  ---> %d x %d\n",
+		     st->sz.w, st->sz.h, sz.w, sz.h);
+		st->sz = sz;
 	}
 
 	pts = frame->pts;
@@ -281,6 +273,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	for (i=0; i<st->ic->nb_streams; i++) {
 		const struct AVStream *strm = st->ic->streams[i];
 		AVCodecContext *ctx;
+		AVCodec *codec;
 
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)
 
@@ -327,20 +320,20 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 		if (ctx->codec_id != AV_CODEC_ID_NONE) {
 
-			st->codec = avcodec_find_decoder(ctx->codec_id);
-			if (!st->codec) {
+			codec = avcodec_find_decoder(ctx->codec_id);
+			if (!codec) {
 				err = ENOENT;
 				goto out;
 			}
 
-			ret = avcodec_open2(ctx, st->codec, NULL);
+			ret = avcodec_open2(ctx, codec, NULL);
 			if (ret < 0) {
 				err = ENOENT;
 				goto out;
 			}
 
 			debug("avformat: using decoder '%s' (%s)\n",
-			      st->codec->name, st->codec->long_name);
+			      codec->name, codec->long_name);
 		}
 
 		found_stream = true;
