@@ -11,7 +11,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#define FF_API_OLD_METADATA 0
 #include <libavformat/avformat.h>
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
@@ -97,11 +96,9 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	const AVRational time_base = st->time_base;
 	int got_pict, ret;
 
-#if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
 	frame = av_frame_alloc();
-#else
-	frame = avcodec_alloc_frame();
-#endif
+	if (!frame)
+		return;
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
@@ -355,16 +352,13 @@ static int module_init(void)
 {
 	/* register all codecs, demux and protocols */
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
+	av_register_all();
 	avcodec_register_all();
 #endif
 	avdevice_register_all();
 
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 13, 0)
 	avformat_network_init();
-#endif
-
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
-	av_register_all();
 #endif
 
 	return vidsrc_register(&mod_avf, baresip_vidsrcl(),
