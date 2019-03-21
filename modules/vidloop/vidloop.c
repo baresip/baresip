@@ -552,18 +552,20 @@ static int enable_codec(struct video_loop *vl, const char *name)
 
 static void print_status(struct video_loop *vl)
 {
-	(void)re_fprintf(stdout,
-			 "\rstatus:"
-			 " %.3f sec [%s] [%s]  fmt=%s  key-frames=%zu "
-			 " EFPS=%.1f      %u kbit/s       \r",
-			 timestamp_state_duration(&vl->ts_src,
-						  VIDEO_TIMEBASE),
+	re_printf("\rstatus:"
+		  " %.3f sec [%s] [%s]  fmt=%s "
+		  " EFPS=%.1f      %u kbit/s",
+		  timestamp_state_duration(&vl->ts_src, VIDEO_TIMEBASE),
+		  vl->vc_enc ? vl->vc_enc->name : "",
+		  vl->vc_dec ? vl->vc_dec->name : "",
+		  vidfmt_name(vl->cfg.enc_fmt),
+		  vl->stat.efps, vl->stat.bitrate);
 
-			 vl->vc_enc ? vl->vc_enc->name : "",
-			 vl->vc_dec ? vl->vc_dec->name : "",
-			 vidfmt_name(vl->cfg.enc_fmt),
-			 vl->stat.n_keyframe,
-			 vl->stat.efps, vl->stat.bitrate);
+	if (vl->enc || vl->dec)
+		re_printf("  key-frames=%zu", vl->stat.n_keyframe);
+
+	re_printf("       \r");
+
 	fflush(stdout);
 }
 
@@ -597,7 +599,7 @@ static void timeout_bw(void *arg)
 		return;
 	}
 
-	tmr_start(&vl->tmr_bw, 500, timeout_bw, vl);
+	tmr_start(&vl->tmr_bw, 100, timeout_bw, vl);
 
 	calc_bitrate(vl);
 	print_status(vl);
