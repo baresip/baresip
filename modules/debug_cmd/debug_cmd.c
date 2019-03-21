@@ -150,6 +150,13 @@ static int cmd_log_level(struct re_printf *pf, void *unused)
 	return re_hprintf(pf, "Log level '%s'\n", log_level_name(level));
 }
 
+static int print_uuid(struct re_printf *pf, void *arg)
+{
+	struct config *cfg = conf_config();
+	if (cfg)
+		re_hprintf(pf, "UUID: %s\n", cfg->sip.uuid);
+	return 0;
+}
 
 static const struct cmd debugcmdv[] = {
 {"conf_reload", 0,       0, "Reload config file",     reload_config       },
@@ -164,6 +171,7 @@ static const struct cmd debugcmdv[] = {
 {"sysinfo",    's',      0, "System info",            print_system_info   },
 {"timers",      0,       0, "Timer debug",            tmr_status          },
 {"uastat",     'u',      0, "UA debug",               cmd_ua_debug        },
+{"uuid",        0,      0, "Print UUID",              print_uuid          },
 };
 
 
