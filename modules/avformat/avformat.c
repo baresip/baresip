@@ -87,7 +87,7 @@ static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
 
 static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 {
-	AVFrame *frame = NULL;
+	AVFrame *frame;
 	struct vidframe vf;
 	struct vidsz sz;
 	unsigned i;
@@ -127,11 +127,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		st->sz = sz;
 	}
 
-	pts = frame->pts;
-
-	/* convert timestamp */
-	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
-
 	vf.fmt = avpixfmt_to_vidfmt(frame->format);
 	if (vf.fmt == (enum vidfmt)-1) {
 		warning("avformat: decode: bad pixel format"
@@ -146,6 +141,10 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		vf.data[i]     = frame->data[i];
 		vf.linesize[i] = frame->linesize[i];
 	}
+
+	/* convert timestamp */
+	pts = frame->pts;
+	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
 
 	st->frameh(&vf, timestamp, st->arg);
 
