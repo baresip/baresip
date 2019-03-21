@@ -39,7 +39,7 @@ struct vstat {
 	size_t bytes;
 	uint32_t bitrate;
 	double efps;
-	size_t n_intra;
+	size_t n_keyframe;
 };
 
 
@@ -236,7 +236,7 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 	struct vidframe frame;
 	struct mbuf *mb;
 	uint64_t timestamp;
-	bool intra;
+	bool keyframe;
 	int err = 0;
 
 	++vl->stats.enc_packets;
@@ -259,15 +259,15 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 	/* decode */
 	frame.data[0] = NULL;
 	if (vl->vc_dec && vl->dec) {
-		err = vl->vc_dec->dech(vl->dec, &frame, &intra,
+		err = vl->vc_dec->dech(vl->dec, &frame, &keyframe,
 				       marker, vl->seq++, mb);
 		if (err) {
 			warning("vidloop: codec decode: %m\n", err);
 			goto out;
 		}
 
-		if (intra)
-			++vl->stat.n_intra;
+		if (keyframe)
+			++vl->stat.n_keyframe;
 	}
 
 	/* convert the RTP timestamp to VIDEO_TIMEBASE timestamp */
@@ -451,7 +451,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 				  "\n"
 				  ,
 				  vl->vc_dec->name,
-				  vl->stat.n_intra);
+				  vl->stat.n_keyframe);
 	}
 
 	/* Display */
@@ -562,7 +562,7 @@ static void print_status(struct video_loop *vl)
 			 vl->vc_enc ? vl->vc_enc->name : "",
 			 vl->vc_dec ? vl->vc_dec->name : "",
 			 vidfmt_name(vl->cfg.enc_fmt),
-			 vl->stat.n_intra,
+			 vl->stat.n_keyframe,
 			 vl->stat.efps, vl->stat.bitrate);
 	fflush(stdout);
 }
