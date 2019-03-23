@@ -13,11 +13,6 @@
 #include "avcodec.h"
 
 
-#ifndef AV_INPUT_BUFFER_MIN_SIZE
-#define AV_INPUT_BUFFER_MIN_SIZE FF_MIN_BUFFER_SIZE
-#endif
-
-
 struct picsz {
 	enum h263_fmt fmt;  /**< Picture size */
 	uint8_t mpi;        /**< Minimum Picture Interval (1-32) */
@@ -53,6 +48,17 @@ struct videnc_state {
 };
 
 
+static void destructor(void *arg)
+{
+	struct videnc_state *st = arg;
+
+	mem_deref(st->mb_frag);
+
+	if (st->ctx)
+		avcodec_free_context(&st->ctx);
+}
+
+
 static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
 {
 	switch (fmt) {
@@ -63,17 +69,6 @@ static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
 	case VID_FMT_NV21:    return AV_PIX_FMT_NV21;
 	default:              return AV_PIX_FMT_NONE;
 	}
-}
-
-
-static void destructor(void *arg)
-{
-	struct videnc_state *st = arg;
-
-	mem_deref(st->mb_frag);
-
-	if (st->ctx)
-		avcodec_free_context(&st->ctx);
 }
 
 

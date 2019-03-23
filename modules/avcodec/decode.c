@@ -37,6 +37,24 @@ struct viddec_state {
 };
 
 
+static void destructor(void *arg)
+{
+	struct viddec_state *st = arg;
+
+	debug("avcodec: decoder stats"
+	      " (keyframes:%u, lost_fragments:%u)\n",
+	      st->stats.n_key, st->stats.n_lost);
+
+	mem_deref(st->mb);
+
+	if (st->ctx)
+		avcodec_free_context(&st->ctx);
+
+	if (st->pict)
+		av_free(st->pict);
+}
+
+
 static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
 {
 	switch (pix_fmt) {
@@ -61,24 +79,6 @@ static inline void fragment_rewind(struct viddec_state *vds)
 {
 	vds->mb->pos = vds->frag_start;
 	vds->mb->end = vds->frag_start;
-}
-
-
-static void destructor(void *arg)
-{
-	struct viddec_state *st = arg;
-
-	debug("avcodec: decoder stats"
-	      " (keyframes:%u, lost_fragments:%u)\n",
-	      st->stats.n_key, st->stats.n_lost);
-
-	mem_deref(st->mb);
-
-	if (st->ctx)
-		avcodec_free_context(&st->ctx);
-
-	if (st->pict)
-		av_free(st->pict);
 }
 
 
