@@ -32,7 +32,7 @@
 
 /** Audio Loop */
 struct audio_loop {
-	struct aubuf *ab;
+	struct aubuf *aubuf;
 	struct ausrc_st *ausrc;
 	struct auplay_st *auplay;
 	struct tmr tmr;
@@ -104,7 +104,7 @@ static void auloop_destructor(void *arg)
 	tmr_cancel(&al->tmr);
 	mem_deref(al->ausrc);
 	mem_deref(al->auplay);
-	mem_deref(al->ab);
+	mem_deref(al->aubuf);
 }
 
 
@@ -149,7 +149,7 @@ static void read_handler(const void *sampv, size_t sampc, void *arg)
 
 	al->n_read += sampc;
 
-	err = aubuf_write(al->ab, sampv, num_bytes);
+	err = aubuf_write(al->aubuf, sampv, num_bytes);
 	if (err) {
 		warning("auloop: aubuf_write: %m\n", err);
 	}
@@ -164,7 +164,7 @@ static void write_handler(void *sampv, size_t sampc, void *arg)
 	al->n_write += sampc;
 
 	/* read from beginning */
-	aubuf_read(al->ab, sampv, num_bytes);
+	aubuf_read(al->aubuf, sampv, num_bytes);
 }
 
 
@@ -198,7 +198,7 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 	al->auplay = mem_deref(al->auplay);
 	al->ausrc  = mem_deref(al->ausrc);
 
-	al->ab     = mem_deref(al->ab);
+	al->aubuf  = mem_deref(al->aubuf);
 
 	al->srate = srate;
 	al->ch    = ch;
@@ -206,7 +206,7 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 	info("Audio-loop: %uHz, %dch, %s\n", al->srate, al->ch,
 	     aufmt_name(al->fmt));
 
-	err = aubuf_alloc(&al->ab, 320, 0);
+	err = aubuf_alloc(&al->aubuf, 320, 0);
 	if (err)
 		return err;
 
