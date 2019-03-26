@@ -102,12 +102,14 @@ static int module_init(void)
 	info("mqtt: connecting to broker at %s:%d as %s topic %s\n",
 		broker_host, broker_port, mqttclientid, mqttbasetopic);
 
-	snprintf(mqttsubscribetopic, sizeof(mqttsubscribetopic),
-		"/%s/command/+", mqttbasetopic);
-	snprintf(mqttpublishtopic, sizeof(mqttpublishtopic), "/%s/event",
-		mqttbasetopic);
+	re_snprintf(mqttsubscribetopic, sizeof(mqttsubscribetopic),
+		    "/%s/command/+", mqttbasetopic);
+	re_snprintf(mqttpublishtopic, sizeof(mqttpublishtopic), "/%s/event",
+		    mqttbasetopic);
+
 	info("mqtt: Publishing on %s, subscribing to %s\n",
 		mqttpublishtopic, mqttsubscribetopic);
+
 	s_mqtt.basetopic = mqttbasetopic;
 	s_mqtt.subtopic = mqttsubscribetopic;
 	s_mqtt.pubtopic = mqttpublishtopic;
