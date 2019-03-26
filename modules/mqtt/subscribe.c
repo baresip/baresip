@@ -9,6 +9,7 @@
 #include <baresip.h>
 #include "mqtt.h"
 
+
 static int print_handler(const char *p, size_t size, void *arg)
 {
 	struct mbuf *mb = arg;
@@ -25,8 +26,6 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
 	char buf[256], resp_topic[256];
 	int err;
-
-	/* XXX: add transaction ID ? */
 
 	err = json_decode_odict(&od, 32, msg->p, msg->l, 16);
 	if (err) {
