@@ -890,6 +890,14 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#opus_complexity\t\t10\n");
 	(void)re_fprintf(f, "#opus_application\t\taudio\t# {voip,audio}\n");
 
+	(void)re_fprintf(f, "\n# Opus Multistream codec parameters\n");
+	(void)re_fprintf(f,
+			 "#opus_ms_channels\t2\t#total channels (2 or 4)\n");
+	(void)re_fprintf(f,
+			 "#opus_ms_streams\t\t2\t#number of streams\n");
+	(void)re_fprintf(f,
+			"#opus_ms_c_streams\t2\t#number of coupled streams\n");
+
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "vumeter_stderr\t\tyes\n");
 
