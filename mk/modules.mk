@@ -37,6 +37,7 @@
 #   USE_OMX_RPI       RaspberryPi VideoCore display driver
 #   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
 #   USE_OPUS          Opus audio codec
+#   USE_OPUS_MS       Opus multistream audio codec
 #   USE_OSS           OSS audio driver
 #   USE_PLC           Packet Loss Concealment
 #   USE_PORTAUDIO     Portaudio audio driver
@@ -130,6 +131,9 @@ USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
 USE_OPUS := $(shell [ -f $(SYSROOT)/include/opus/opus.h ] || \
 	[ -f $(SYSROOT_ALT)/include/opus/opus.h ] || \
 	[ -f $(SYSROOT)/local/include/opus/opus.h ] && echo "yes")
+USE_OPUS_MS := $(shell [ -f $(SYSROOT)/include/opus/opus_multistream.h ] || \
+	[ -f $(SYSROOT_ALT)/include/opus/opus_multistream.h ] || \
+	[ -f $(SYSROOT)/local/include/opus/opus_multistream.h ] && echo "yes")
 USE_OSS := $(shell [ -f $(SYSROOT)/include/soundcard.h ] || \
 	[ -f $(SYSROOT)/include/linux/soundcard.h ] || \
 	[ -f $(SYSROOT)/include/sys/soundcard.h ] && echo "yes")
@@ -379,6 +383,9 @@ MODULES   += jack
 endif
 ifneq ($(USE_L16),)
 MODULES   += l16
+endif
+ifneq ($(USE_OPUS_MS),)
+MODULES   += opus_multistream
 endif
 ifneq ($(USE_MPA),)
 MODULES   += mpa
