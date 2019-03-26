@@ -71,10 +71,10 @@ static int opus_multistream_fmtp_enc(struct mbuf *mb,
 
 
 static struct aucodec opus_multistream = {
-	.name      = "opus_multistream",
+	.name      = "opus_multistream",    /* NOTE: not standard */
 	.srate     = 48000,
 	.crate     = 48000,
-	.ch        = 2,
+	.ch        = 2,                     /* NOTE: configurable */
 	.pch       = 2,
 	.fmtp      = fmtp,
 	.encupdh   = opus_multistream_encode_update,
