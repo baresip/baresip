@@ -640,8 +640,10 @@ int test_call_max(void)
 	unsigned i;
 	int err = 0;
 
-	/* Set the max-calls limit */
-	conf_config()->call.max_calls = 1;
+	/* Set the max-calls limit to accept 1 incoming call. */
+	/* We start 2 calls from a.ua to b.ua. */
+	/* This are 2 outgoing calls and 1 incoming. */
+	conf_config()->call.max_calls = 3;
 
 	fixture_init(f);
 

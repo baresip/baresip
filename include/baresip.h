@@ -816,6 +816,7 @@ struct ua   *uag_find_param(const char *name, const char *val);
 struct sip  *uag_sip(void);
 const char  *uag_event_str(enum ua_event ev);
 struct list *uag_list(void);
+uint32_t     uag_call_count(void);
 void         uag_current_set(struct ua *ua);
 struct ua   *uag_current(void);
 struct tls  *uag_tls(void);

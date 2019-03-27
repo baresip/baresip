@@ -1532,7 +1532,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 	/* handle multiple calls */
 	if (config->call.max_calls &&
-	    list_count(&ua->calls) + 1 > config->call.max_calls) {
+	    uag_call_count() + 1 > config->call.max_calls) {
 
 		info("ua: rejected call from %r (maximum %d calls)\n",
 		     &msg->from.auri, config->call.max_calls);
@@ -2153,6 +2153,26 @@ void ua_pub_gruu_set(struct ua *ua, const struct pl *pval)
 struct list *uag_list(void)
 {
 	return &uag.ual;
+}
+
+
+/**
+ * Counts the calls from all user agents.
+ *
+ * @return the number of calls over all user agents.
+ */
+uint32_t uag_call_count(void)
+{
+	struct le *le;
+	uint32_t c = 0;
+
+	for (le = uag.ual.head; le; le = le->next) {
+		struct ua *ua = le->data;
+
+		c += list_count(&ua->calls);
+	}
+
+	return c;
 }
 
 
