@@ -271,9 +271,6 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 	if (err)
 		return err;
 
-	if (!h264_is_keyframe(h264_hdr.type) && !st->got_keyframe)
-		return EPROTO;
-
 #if 0
 	re_printf("avcodec: decode: %s %s type=%2d %s  \n",
 		  marker ? "[M]" : "   ",
@@ -281,6 +278,11 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		  h264_hdr.type,
 		  h264_nalunit_name(h264_hdr.type));
 #endif
+
+	if (h264_hdr.type == H264_NAL_SLICE && !st->got_keyframe) {
+		debug("avcodec: decoder waiting for keyframe\n");
+		return EPROTO;
+	}
 
 	if (h264_hdr.f) {
 		info("avcodec: H264 forbidden bit set!\n");

@@ -1310,7 +1310,7 @@ int h264_nal_send(bool first, bool last,
 const char *h264_nalunit_name(int type);
 static inline bool h264_is_keyframe(int type)
 {
-	return type == H264_NAL_SPS;
+	return type == H264_NAL_IDR_SLICE;
 }
 
 
