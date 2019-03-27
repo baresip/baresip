@@ -69,6 +69,7 @@ struct video_loop {
 	struct vidsz src_size;
 	struct vidsz disp_size;
 	enum vidfmt src_fmt;
+	enum vidfmt disp_fmt;
 	struct vidframe *frame;
 	uint64_t frame_timestamp;
 	struct lock *frame_mutex;
@@ -196,6 +197,7 @@ static int display(struct video_loop *vl, struct vidframe *frame,
 
 	/* save the displayed frame info */
 	vl->disp_size = frame->size;
+	vl->disp_fmt = frame->fmt;
 	++vl->stats.disp_frames;
 
 	lock_write_get(vl->frame_mutex);
@@ -424,9 +426,9 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 		double avg_pktrate;
 		double dur;
 
-		avg_bitrate = 8.0 * (double)vl->stats.enc_bytes / src_dur;
-		avg_pktrate = (double)vl->stats.enc_packets / src_dur;
 		dur = timestamp_state_duration(&vl->ts_rtp, 90000);
+		avg_bitrate = 8.0 * (double)vl->stats.enc_bytes / dur;
+		avg_pktrate = (double)vl->stats.enc_packets / dur;
 
 		err |= re_hprintf(pf,
 				  "* Encoder\n"
@@ -462,13 +464,13 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 				  "* Display\n"
 				  "  module      %s\n"
 				  "  resolution  %u x %u\n"
-				  "  fullscreen  %s\n"
+				  "  pixformat   %s\n"
 				  "  frames      %llu\n"
 				  "\n"
 				  ,
 				  vd->name,
 				  vl->disp_size.w, vl->disp_size.h,
-				  cfg->fullscreen ? "Yes" : "No",
+				  vidfmt_name(vl->disp_fmt),
 				  vl->stats.disp_frames);
 	}
 
@@ -674,6 +676,9 @@ static int video_loop_alloc(struct video_loop **vlp)
 	tmr_init(&vl->tmr_bw);
 	tmr_init(&vl->tmr_display);
 	tmr_init(&vl->tmr_update_src);
+
+	vl->src_fmt = -1;
+	vl->disp_fmt = -1;
 
 	err = lock_alloc(&vl->frame_mutex);
 	if (err)
