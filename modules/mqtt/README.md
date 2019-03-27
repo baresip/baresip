@@ -49,7 +49,7 @@ $ mosquitto_pub -t /baresip/xxx -m foo=42
 ```
 
 ```
-mosquitto_pub -t /baresip/command -m "/dial music"
+mosquitto_pub -t /baresip/command/ -m '{"command":"sysinfo"}'
 
 /baresip/command {"command":"dial","params":"music","token":"123"}
 /baresip/command_resp/123 (null)
