@@ -461,6 +461,8 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		pict->pict_type = AV_PICTURE_TYPE_I;
 	}
 
+	pict->color_range = AVCOL_RANGE_MPEG;
+
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
 	pkt = av_packet_alloc();
