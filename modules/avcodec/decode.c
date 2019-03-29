@@ -161,6 +161,7 @@ int avcodec_decode_update(struct viddec_state **vdsp,
 
 static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 {
+	AVPacket avpkt;
 	int i, got_picture, ret;
 	int err = 0;
 
@@ -171,54 +172,40 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		return 0;
 	}
 
+	av_init_packet(&avpkt);
+
+	avpkt.data = st->mb->buf;
+	avpkt.size = (int)st->mb->end;
+
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
-	do {
-		AVPacket avpkt;
+	ret = avcodec_send_packet(st->ctx, &avpkt);
+	if (ret < 0) {
+		warning("avcodec: avcodec_send_packet error,"
+			" packet=%zu bytes, ret=%d (%s)\n",
+			st->mb->end, ret, av_err2str(ret));
+		err = EBADMSG;
+		goto out;
+	}
 
-		av_init_packet(&avpkt);
-		avpkt.data = st->mb->buf;
-		avpkt.size = (int)st->mb->end;
+	ret = avcodec_receive_frame(st->ctx, st->pict);
+	if (ret == AVERROR(EAGAIN)) {
+		goto out;
+	}
+	else if (ret < 0) {
+		warning("avcodec_receive_frame error ret=%d\n", ret);
+		err = EBADMSG;
+		goto out;
+	}
 
-		ret = avcodec_send_packet(st->ctx, &avpkt);
-		if (ret < 0) {
-			warning("avcodec: avcodec_send_packet error,"
-				" packet=%zu bytes, ret=%d (%s)\n",
-				st->mb->end, ret, av_err2str(ret));
-			err = EBADMSG;
-			goto out;
-		}
-
-		ret = avcodec_receive_frame(st->ctx, st->pict);
-		if (ret == AVERROR(EAGAIN)) {
-			goto out;
-		}
-		else if (ret < 0) {
-			warning("avcodec_receive_frame error ret=%d\n", ret);
-			err = EBADMSG;
-			goto out;
-		}
-
-		got_picture = true;
-
-	} while (0);
+	got_picture = true;
 #else
-	do {
-		AVPacket avpkt;
-
-		av_init_packet(&avpkt);
-		avpkt.data = st->mb->buf;
-		avpkt.size = (int)st->mb->end;
-
-		ret = avcodec_decode_video2(st->ctx, st->pict,
-					    &got_picture, &avpkt);
-	} while (0);
-#endif
-
+	ret = avcodec_decode_video2(st->ctx, st->pict, &got_picture, &avpkt);
 	if (ret < 0) {
 		err = EBADMSG;
 		goto out;
 	}
+#endif
 
 	if (got_picture) {
 
