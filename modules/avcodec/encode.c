@@ -461,7 +461,9 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		pict->pict_type = AV_PICTURE_TYPE_I;
 	}
 
+#if LIBAVUTIL_VERSION_MAJOR >= 55
 	pict->color_range = AVCOL_RANGE_MPEG;
+#endif
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
