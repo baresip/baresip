@@ -113,6 +113,7 @@ static int open_encoder(struct videnc_state *st, const struct vidsz *size,
 
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = st->fps;
+	st->ctx->gop_size = 10 * st->fps;
 
 	if (0 == strcmp(h265_encoder->name, "libx265")) {
 
@@ -272,6 +273,8 @@ int h265_encode(struct videnc_state *st, bool update,
 		pict->key_frame = 1;
 		pict->pict_type = AV_PICTURE_TYPE_I;
 	}
+
+	pict->color_range = AVCOL_RANGE_MPEG;
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
