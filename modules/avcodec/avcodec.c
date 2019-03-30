@@ -56,22 +56,6 @@ int avcodec_resolve_codecid(const char *s)
 }
 
 
-static uint32_t packetization_mode(const char *fmtp)
-{
-	struct pl pl, mode;
-
-	if (!fmtp)
-		return 0;
-
-	pl_set_str(&pl, fmtp);
-
-	if (fmt_param_get(&pl, "packetization-mode", &mode))
-		return pl_u32(&mode);
-
-	return 0;
-}
-
-
 static int h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 			 bool offer, void *arg)
 {
@@ -95,7 +79,8 @@ static bool h264_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data)
 {
 	(void)data;
 
-	return packetization_mode(fmtp1) == packetization_mode(fmtp2);
+	return h264_packetization_mode(fmtp1) ==
+		h264_packetization_mode(fmtp2);
 }
 
 

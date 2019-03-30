@@ -85,3 +85,10 @@ int avcodec_decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 
 
 int avcodec_resolve_codecid(const char *s);
+
+
+/*
+ * SDP
+ */
+
+uint32_t h264_packetization_mode(const char *fmtp);
