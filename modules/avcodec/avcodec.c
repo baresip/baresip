@@ -75,15 +75,6 @@ static int h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 }
 
 
-static bool h264_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data)
-{
-	(void)data;
-
-	return h264_packetization_mode(fmtp1) ==
-		h264_packetization_mode(fmtp2);
-}
-
-
 static int h263_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 			 bool offer, void *arg)
 {

@@ -25,3 +25,11 @@ uint32_t h264_packetization_mode(const char *fmtp)
 	return 0;
 }
 
+
+bool h264_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *data)
+{
+	(void)data;
+
+	return h264_packetization_mode(lfmtp) ==
+		h264_packetization_mode(rfmtp);
+}
