@@ -165,6 +165,11 @@ static int open_encoder(struct videnc_state *st,
 		av_opt_set(st->ctx->priv_data, "profile", "baseline", 0);
 		av_opt_set(st->ctx->priv_data, "preset", "ultrafast", 0);
 		av_opt_set(st->ctx->priv_data, "tune", "zerolatency", 0);
+
+		if (st->u.h264.packetization_mode == 0) {
+			av_opt_set_int(st->ctx->priv_data,
+				       "slice-max-size", prm->pktsize, 0);
+		}
 	}
 
 	/* params to avoid libavcodec/x264 default preset error */
