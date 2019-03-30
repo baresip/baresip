@@ -68,10 +68,11 @@ static int h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 		return 0;
 
 	return mbuf_printf(mb, "a=fmtp:%s"
-			   " packetization-mode=0"
+			   " %s"
 			   ";profile-level-id=%02x%02x%02x"
 			   "\r\n",
-			   fmt->id, profile_idc, profile_iop, h264_level_idc);
+			   fmt->id, vc->variant,
+			   profile_idc, profile_iop, h264_level_idc);
 }
 
 
@@ -106,6 +107,20 @@ static struct vidcodec h264 = {
 	NULL,
 	"H264",
 	"packetization-mode=0",
+	NULL,
+	avcodec_encode_update,
+	avcodec_encode,
+	avcodec_decode_update,
+	avcodec_decode_h264,
+	h264_fmtp_enc,
+	h264_fmtp_cmp,
+};
+
+static struct vidcodec h264_1 = {
+	LE_INIT,
+	NULL,
+	"H264",
+	"packetization-mode=1",
 	NULL,
 	avcodec_encode_update,
 	avcodec_encode,
@@ -171,8 +186,10 @@ static int module_init(void)
 		warning("avcodec: h264 decoder not found (%s)\n", h264dec);
 	}
 
-	if (avcodec_h264enc || avcodec_h264dec)
+	if (avcodec_h264enc || avcodec_h264dec) {
 		vidcodec_register(vidcodecl, &h264);
+		vidcodec_register(vidcodecl, &h264_1);
+	}
 
 	if (avcodec_find_decoder(AV_CODEC_ID_H263))
 		vidcodec_register(vidcodecl, &h263);
@@ -198,6 +215,7 @@ static int module_close(void)
 	vidcodec_unregister(&mpg4);
 	vidcodec_unregister(&h263);
 	vidcodec_unregister(&h264);
+	vidcodec_unregister(&h264_1);
 
 	return 0;
 }
