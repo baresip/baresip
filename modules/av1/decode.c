@@ -19,7 +19,7 @@ enum {
 };
 
 
-/* XXX: re-using VP9 header format for now.. */
+/* NOTE: re-using VP9 header format for now.. */
 struct hdr {
 	unsigned x:1;
 	unsigned noref:1;
