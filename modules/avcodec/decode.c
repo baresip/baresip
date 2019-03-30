@@ -358,6 +358,33 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 
 		st->frag_seq = seq;
 	}
+	else if (H264_NAL_STAP_A == h264_hdr.type) {
+
+		while (mbuf_get_left(src) >= 2) {
+
+			const uint16_t len = ntohs(mbuf_read_u16(src));
+			struct h264_hdr lhdr;
+
+			if (mbuf_get_left(src) < len)
+				return EBADMSG;
+
+			err = h264_hdr_decode(&lhdr, src);
+			if (err)
+				return err;
+
+			if (h264_is_keyframe(lhdr.type))
+				*intra = true;
+
+			--src->pos;
+
+			err  = mbuf_write_mem(st->mb, nal_seq, 3);
+			err |= mbuf_write_mem(st->mb, mbuf_buf(src), len);
+			if (err)
+				goto out;
+
+			src->pos += len;
+		}
+	}
 	else {
 		warning("avcodec: unknown NAL type %u\n", h264_hdr.type);
 		return EBADMSG;
