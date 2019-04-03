@@ -115,6 +115,8 @@ static int reg(enum sip_transp tp)
 		goto out;
 	}
 
+	t.srvc = 1;
+
 	err = sip_server_uri(t.srvv[0], aor, sizeof(aor), tp);
 	TEST_ERR(err);
 
@@ -164,6 +166,7 @@ int test_ua_register(void)
 	err |= reg(SIP_TRANSP_TLS);
 #endif
 
+	ua_stop_all(true);
 	ua_close();
 
  out:
@@ -401,6 +404,8 @@ static int reg_auth(enum sip_transp tp)
 		warning("failed to create sip server (%d/%m)\n", err, err);
 		goto out;
 	}
+
+	t.srvc = 1;
 
 	err = domain_add(t.srvv[0], DOMAIN);
 	TEST_ERR(err);
