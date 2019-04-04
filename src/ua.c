@@ -58,6 +58,7 @@ static struct {
 	bool use_tcp;                  /**< Use TCP transport               */
 	bool use_tls;                  /**< Use TLS transport               */
 	bool prefer_ipv6;              /**< Force IPv6 transport            */
+	bool delayed_close;
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
 	void *arg;                     /**< UA Exit handler argument        */
@@ -77,6 +78,7 @@ static struct {
 	true,
 	true,
 	true,
+	false,
 	false,
 	NULL,
 	NULL,
@@ -533,7 +535,7 @@ static void ua_destructor(void *arg)
 	mem_deref(ua->pub_gruu);
 	mem_deref(ua->acc);
 
-	if (list_isempty(&uag.ual)) {
+	if (uag.delayed_close && list_isempty(&uag.ual)) {
 		sip_close(uag.sip, false);
 	}
 
@@ -1587,6 +1589,7 @@ void ua_stop_all(bool forced)
 
 	if (ext_ref) {
 		info("ua: in use (%u) by app module\n", ext_ref);
+		uag.delayed_close = true;
 		return;
 	}
 
