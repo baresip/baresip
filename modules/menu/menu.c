@@ -407,6 +407,31 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_ua_delete(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = NULL;
+
+	if (str_isset(carg->prm)) {
+		ua = uag_find_aor(carg->prm);
+	}
+
+	if (!ua) {
+		return ENOENT;
+	}
+
+	if (ua == uag_cur()) {
+		(void)cmd_ua_next(pf, NULL);
+	}
+
+	(void)re_hprintf(pf, "deleting ua: %s\n", carg->prm);
+	mem_deref(ua);
+	(void)ua_print_reg_status(pf, NULL);
+
+	return 0;
+}
+
+
 static int print_commands(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -460,6 +485,7 @@ static const struct cmd cmdv[] = {
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 {"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
+{"uadel",     0,    CMD_PRM, "Delete User-Agent",       cmd_ua_delete        },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"ausrc",     0,    CMD_PRM, "Switch audio source",     switch_audio_source  },
 {"auplay",    0,    CMD_PRM, "Switch audio player",     switch_audio_player  },
