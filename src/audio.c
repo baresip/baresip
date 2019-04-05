@@ -380,7 +380,7 @@ static int add_audio_codec(struct sdp_media *m, struct aucodec *ac)
 
 
 static int append_rtpext(struct audio *au, struct mbuf *mb,
-			 int16_t *sampv, size_t sampc)
+			 enum aufmt fmt, const void *sampv, size_t sampc)
 {
 	uint8_t data[1];
 	double level;
@@ -388,7 +388,7 @@ static int append_rtpext(struct audio *au, struct mbuf *mb,
 
 	/* audio level must be calculated from the audio samples that
 	 * are actually sent on the network. */
-	level = aulevel_calc_dbov(sampv, sampc);
+	level = aulevel_calc_dbov(fmt, sampv, sampc);
 
 	data[0] = (int)-level & 0x7f;
 
@@ -432,7 +432,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		/* skip the extension header */
 		tx->mb->pos += RTPEXT_HDR_SIZE;
 
-		err = append_rtpext(a, tx->mb, sampv, sampc);
+		err = append_rtpext(a, tx->mb, tx->enc_fmt, sampv, sampc);
 		if (err)
 			return;
 

@@ -102,7 +102,7 @@ const char *account_call_transfer(const struct account *acc);
 #define AULEVEL_MAX    (0.0)
 
 
-double aulevel_calc_dbov(const int16_t *sampv, size_t sampc);
+double aulevel_calc_dbov(int fmt, const void *sampv, size_t sampc);
 
 
 /*

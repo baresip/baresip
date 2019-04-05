@@ -27,6 +27,7 @@ struct vumeter_enc {
 	const struct audio *au;
 	double avg_rec;
 	volatile bool started;
+	enum aufmt fmt;
 };
 
 struct vumeter_dec {
@@ -35,9 +36,12 @@ struct vumeter_dec {
 	const struct audio *au;
 	double avg_play;
 	volatile bool started;
+	enum aufmt fmt;
 };
 
+
 static bool vumeter_stderr;
+
 
 static void send_event(const struct audio *au, enum ua_event ev, double value)
 {
@@ -143,23 +147,18 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	(void)ctx;
 	(void)prm;
 
-	if (!stp || !af)
+	if (!stp || !af || !prm)
 		return EINVAL;
 
 	if (*stp)
 		return 0;
-
-	if (prm->fmt != AUFMT_S16LE) {
-		warning("vumeter: unsupported sample format (%s)\n",
-			aufmt_name(prm->fmt));
-		return ENOTSUP;
-	}
 
 	st = mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
 		return ENOMEM;
 
 	st->au = au;
+	st->fmt = prm->fmt;
 	tmr_start(&st->tmr, 100, enc_tmr_handler, st);
 
 	*stp = (struct aufilt_enc_st *)st;
@@ -176,23 +175,18 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	(void)ctx;
 	(void)prm;
 
-	if (!stp || !af)
+	if (!stp || !af || !prm)
 		return EINVAL;
 
 	if (*stp)
 		return 0;
-
-	if (prm->fmt != AUFMT_S16LE) {
-		warning("vumeter: unsupported sample format (%s)\n",
-			aufmt_name(prm->fmt));
-		return ENOTSUP;
-	}
 
 	st = mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
 		return ENOMEM;
 
 	st->au = au;
+	st->fmt = prm->fmt;
 	tmr_start(&st->tmr, 100, dec_tmr_handler, st);
 
 	*stp = (struct aufilt_dec_st *)st;
@@ -208,7 +202,7 @@ static int encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 	if (!st || !sampv || !sampc)
 		return EINVAL;
 
-	vu->avg_rec = aulevel_calc_dbov(sampv, *sampc);
+	vu->avg_rec = aulevel_calc_dbov(vu->fmt, sampv, *sampc);
 	vu->started = true;
 
 	return 0;
@@ -222,7 +216,7 @@ static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 	if (!st || !sampv || !sampc)
 		return EINVAL;
 
-	vu->avg_play = aulevel_calc_dbov(sampv, *sampc);
+	vu->avg_play = aulevel_calc_dbov(vu->fmt, sampv, *sampc);
 	vu->started = true;
 
 	return 0;
