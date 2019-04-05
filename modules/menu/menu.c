@@ -99,17 +99,6 @@ static void check_registrations(void)
 }
 
 
-/**
- * Return the current User-Agent in focus
- *
- * @return Current User-Agent
- */
-static struct ua *uag_cur(void)
-{
-	return uag_current();
-}
-
-
 /* Return TRUE if there are any active calls for any UAs */
 static bool have_active_calls(void)
 {
@@ -148,7 +137,7 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		const struct ua *ua = le->data;
 
-		err  = re_hprintf(pf, "%s ", ua == uag_cur() ? ">" : " ");
+		err  = re_hprintf(pf, "%s ", ua == uag_current() ? ">" : " ");
 		err |= ua_print_status(pf, ua);
 	}
 
@@ -173,7 +162,7 @@ static int ua_print_call_status(struct re_printf *pf, void *unused)
 
 	(void)unused;
 
-	call = ua_call(uag_cur());
+	call = ua_call(uag_current());
 	if (call) {
 		err  = re_hprintf(pf, "\n%H\n", call_debug, call);
 	}
@@ -197,7 +186,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		mbuf_rewind(menu.dialbuf);
 		(void)mbuf_write_str(menu.dialbuf, carg->prm);
 
-		err = ua_connect(uag_cur(), NULL, NULL,
+		err = ua_connect(uag_current(), NULL, NULL,
 				 carg->prm, VIDMODE_ON);
 	}
 	else if (menu.dialbuf->end > 0) {
@@ -209,7 +198,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		if (err)
 			return err;
 
-		err = ua_connect(uag_cur(), NULL, NULL, uri, VIDMODE_ON);
+		err = ua_connect(uag_current(), NULL, NULL, uri, VIDMODE_ON);
 
 		mem_deref(uri);
 	}
@@ -260,7 +249,7 @@ static int options_command(struct re_printf *pf, void *arg)
 		mbuf_rewind(menu.dialbuf);
 		(void)mbuf_write_str(menu.dialbuf, carg->prm);
 
-		err = ua_options_send(uag_cur(), carg->prm,
+		err = ua_options_send(uag_current(), carg->prm,
 				      options_resp_handler, NULL);
 	}
 	else if (menu.dialbuf->end > 0) {
@@ -272,7 +261,7 @@ static int options_command(struct re_printf *pf, void *arg)
 		if (err)
 			return err;
 
-		err = ua_options_send(uag_cur(), uri,
+		err = ua_options_send(uag_current(), uri,
 				      options_resp_handler, NULL);
 
 		mem_deref(uri);
@@ -288,7 +277,7 @@ static int options_command(struct re_printf *pf, void *arg)
 
 static int cmd_answer(struct re_printf *pf, void *unused)
 {
-	struct ua *ua = uag_cur();
+	struct ua *ua = uag_current();
 	int err;
 	(void)unused;
 
@@ -312,7 +301,7 @@ static int cmd_hangup(struct re_printf *pf, void *unused)
 	menu.play = mem_deref(menu.play);
 	alert_stop();
 
-	ua_hangup(uag_cur(), NULL, 0, NULL);
+	ua_hangup(uag_current(), NULL, 0, NULL);
 
 	/* note: must be called after ua_hangup() */
 	menu_set_incall(have_active_calls());
@@ -343,7 +332,7 @@ static int create_ua(struct re_printf *pf, void *arg)
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		ua = le->data;
 
-		err  = re_hprintf(pf, "%s ", ua == uag_cur() ? ">" : " ");
+		err  = re_hprintf(pf, "%s ", ua == uag_current() ? ">" : " ");
 		err |= ua_print_status(pf, ua);
 	}
 
@@ -420,7 +409,7 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 		return ENOENT;
 	}
 
-	if (ua == uag_cur()) {
+	if (ua == uag_current()) {
 		(void)cmd_ua_next(pf, NULL);
 	}
 
@@ -442,7 +431,7 @@ static int print_commands(struct re_printf *pf, void *unused)
 static int cmd_print_calls(struct re_printf *pf, void *unused)
 {
 	(void)unused;
-	return ua_print_calls(pf, uag_cur());
+	return ua_print_calls(pf, uag_current());
 }
 
 
@@ -514,7 +503,7 @@ static const struct cmd dialcmdv[] = {
 static int call_audio_debug(struct re_printf *pf, void *unused)
 {
 	(void)unused;
-	return audio_debug(pf, call_audio(ua_call(uag_cur())));
+	return audio_debug(pf, call_audio(ua_call(uag_current())));
 }
 
 
@@ -522,7 +511,7 @@ static int call_audioenc_cycle(struct re_printf *pf, void *unused)
 {
 	(void)pf;
 	(void)unused;
-	audio_encoder_cycle(call_audio(ua_call(uag_cur())));
+	audio_encoder_cycle(call_audio(ua_call(uag_current())));
 	return 0;
 }
 
@@ -531,13 +520,13 @@ static int call_reinvite(struct re_printf *pf, void *unused)
 {
 	(void)pf;
 	(void)unused;
-	return call_modify(ua_call(uag_cur()));
+	return call_modify(ua_call(uag_current()));
 }
 
 
 static int call_mute(struct re_printf *pf, void *unused)
 {
-	struct audio *audio = call_audio(ua_call(uag_cur()));
+	struct audio *audio = call_audio(ua_call(uag_current()));
 	bool muted = !audio_ismuted(audio);
 	(void)unused;
 
@@ -553,7 +542,7 @@ static int call_xfer(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	(void)pf;
 
-	return call_transfer(ua_call(uag_cur()), carg->prm);
+	return call_transfer(ua_call(uag_current()), carg->prm);
 }
 
 
@@ -562,7 +551,7 @@ static int cmd_call_hold(struct re_printf *pf, void *arg)
 	(void)pf;
 	(void)arg;
 
-	return call_hold(ua_call(uag_cur()), true);
+	return call_hold(ua_call(uag_current()), true);
 }
 
 
@@ -571,7 +560,7 @@ static int cmd_call_resume(struct re_printf *pf, void *arg)
 	(void)pf;
 	(void)arg;
 
-	return call_hold(ua_call(uag_cur()), false);
+	return call_hold(ua_call(uag_current()), false);
 }
 
 
@@ -580,7 +569,7 @@ static int hold_prev_call(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	(void)pf;
 
-	return call_hold(ua_prev_call(uag_cur()), 'H' == carg->key);
+	return call_hold(ua_prev_call(uag_current()), 'H' == carg->key);
 }
 
 
@@ -640,7 +629,7 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 	str_ncpy(aucfg->alert_mod, driver, sizeof(aucfg->alert_mod));
 	str_ncpy(aucfg->alert_dev, device, sizeof(aucfg->alert_dev));
 
-	for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
+	for (le = list_tail(ua_calls(uag_current())); le; le = le->prev) {
 
 		struct call *call = le->data;
 
@@ -711,7 +700,7 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	str_ncpy(aucfg->src_mod, driver, sizeof(aucfg->src_mod));
 	str_ncpy(aucfg->src_dev, device, sizeof(aucfg->src_dev));
 
-	for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
+	for (le = list_tail(ua_calls(uag_current())); le; le = le->prev) {
 
 		struct call *call = le->data;
 
@@ -782,7 +771,7 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 	str_ncpy(vidcfg->src_mod, driver, sizeof(vidcfg->src_mod));
 	str_ncpy(vidcfg->src_dev, device, sizeof(vidcfg->src_dev));
 
-	for (le = list_tail(ua_calls(uag_cur())); le; le = le->prev) {
+	for (le = list_tail(ua_calls(uag_current())); le; le = le->prev) {
 
 		struct call *call = le->data;
 
@@ -804,7 +793,7 @@ static int call_videoenc_cycle(struct re_printf *pf, void *unused)
 {
 	(void)pf;
 	(void)unused;
-	video_encoder_cycle(call_video(ua_call(uag_cur())));
+	video_encoder_cycle(call_video(ua_call(uag_current())));
 	return 0;
 }
 
@@ -812,7 +801,7 @@ static int call_videoenc_cycle(struct re_printf *pf, void *unused)
 static int call_video_debug(struct re_printf *pf, void *unused)
 {
 	(void)unused;
-	return video_debug(pf, call_video(ua_call(uag_cur())));
+	return video_debug(pf, call_video(ua_call(uag_current())));
 }
 
 
@@ -824,7 +813,7 @@ static int digit_handler(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
-	call = ua_call(uag_cur());
+	call = ua_call(uag_current());
 	if (call)
 		err = call_send_digit(call, carg->key);
 
@@ -840,7 +829,7 @@ static int send_code(struct re_printf *pf, void *arg)
 	int err = 0;
 	(void)pf;
 
-	call = ua_call(uag_cur());
+	call = ua_call(uag_current());
 	if (call) {
 		for (i = 0; i < str_len(carg->prm) && !err; i++) {
 			err = call_send_digit(call, carg->prm[i]);
@@ -872,11 +861,11 @@ static int set_current_call(struct re_printf *pf, void *arg)
 	uint32_t linenum = atoi(carg->prm);
 	int err;
 
-	call = call_find_linenum(ua_calls(uag_cur()), linenum);
+	call = call_find_linenum(ua_calls(uag_current()), linenum);
 	if (call) {
 		err = re_hprintf(pf, "setting current call: line %u\n",
 				 linenum);
-		call_set_current(ua_calls(uag_cur()), call);
+		call_set_current(ua_calls(uag_current()), call);
 	}
 	else {
 		err = re_hprintf(pf, "call not found\n");
@@ -893,7 +882,7 @@ static int set_audio_bitrate(struct re_printf *pf, void *arg)
 	uint32_t bitrate = atoi(carg->prm);
 	int err;
 
-	call = ua_call(uag_cur());
+	call = ua_call(uag_current());
 	if (call) {
 		err = re_hprintf(pf, "setting audio bitrate: %u bps\n",
 				 bitrate);
@@ -978,7 +967,7 @@ static void tmrstat_handler(void *arg)
 	(void)arg;
 
 	/* the UI will only show the current active call */
-	call = ua_call(uag_cur());
+	call = ua_call(uag_current());
 	if (!call)
 		return;
 
@@ -1054,7 +1043,7 @@ static void redial_handler(void *arg)
 	if (err)
 		return;
 
-	err = ua_connect(uag_cur(), NULL, NULL, uri, VIDMODE_ON);
+	err = ua_connect(uag_current(), NULL, NULL, uri, VIDMODE_ON);
 	if (err) {
 		warning("menu: redial: ua_connect failed (%m)\n", err);
 	}
