@@ -90,6 +90,7 @@ struct vtx {
 	struct tmr tmr_rtp;                /**< Timer for sending RTP     */
 	unsigned skipc;                    /**< Number of frames skipped  */
 	struct list filtl;                 /**< Filters in encoding order */
+	enum vidfmt fmt;                   /**< Outgoing pixel format     */
 	char device[128];                  /**< Source device name        */
 	int muted_frames;                  /**< # of muted frames sent    */
 	uint32_t ts_offset;                /**< Random timestamp offset   */
@@ -436,6 +437,8 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 	if (err)
 		goto out;
 
+	vtx->fmt  = frame->fmt;
+
 	/* Encode the whole picture frame */
 	err = vtx->vc->ench(vtx->enc, vtx->picup, frame, timestamp);
 	if (err)
@@ -512,6 +515,8 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 	str_ncpy(vtx->device, video->cfg.src_dev, sizeof(vtx->device));
 
 	tmr_start(&vtx->tmr_rtp, 1, rtp_tmr_handler, vtx);
+
+	vtx->fmt = (enum vidfmt)-1;
 
 	return err;
 }
@@ -1360,7 +1365,7 @@ static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
 
 	err |= re_hprintf(pf, " tx: encode: %s %s\n",
 			  vtx->vc ? vtx->vc->name : "none",
-			  vtx->frame ? vidfmt_name(vtx->frame->fmt) : "?");
+			  vidfmt_name(vtx->fmt));
 	err |= re_hprintf(pf, "     source: %s %u x %u, fps=%.2f"
 			  " frames=%llu\n",
 			  vtx->vsrc ? vidsrc_get(vtx->vsrc)->name : "none",
