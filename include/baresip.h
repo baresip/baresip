@@ -1077,11 +1077,12 @@ struct vidfilt_dec_st {
 	struct le le;
 };
 
+/** Video Filter Parameters */
 struct vidfilt_prm {
-	unsigned width;
-	unsigned height;
-	int fmt;
-	double fps;
+	unsigned width;   /**< Picture width              */
+	unsigned height;  /**< Picture height             */
+	int fmt;          /**< Pixel format (enum vidfmt) */
+	double fps;       /**< Video framerate            */
 };
 
 typedef int (vidfilt_encupd_h)(struct vidfilt_enc_st **stp, void **ctx,
