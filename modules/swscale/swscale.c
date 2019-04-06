@@ -15,10 +15,8 @@ struct swscale_enc {
 	struct SwsContext *sws;
 	struct vidframe *frame;
 	struct vidsz dst_size;
+	enum vidfmt swscale_format;
 };
-
-
-static enum vidfmt swscale_format = VID_FMT_YUV420P;  /* XXX: configurable */
 
 
 static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
@@ -46,18 +44,13 @@ static void encode_destructor(void *arg)
 
 
 static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
-			 const struct vidfilt *vf)
+			 const struct vidfilt *vf, struct vidfilt_prm *prm,
+			 const struct video *vid)
 {
 	struct swscale_enc *st;
-	struct config *config = conf_config();
 	int err = 0;
 
-	if (!config) {
-		warning("swscale: no config\n");
-		return EINVAL;
-	}
-
-	if (!stp || !ctx || !vf)
+	if (!stp || !ctx || !vf || !prm)
 		return EINVAL;
 
 	if (*stp)
@@ -67,8 +60,9 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
-	st->dst_size.w = config->video.width;
-	st->dst_size.h = config->video.height;
+	st->dst_size.w = prm->width;
+	st->dst_size.h = prm->height;
+	st->swscale_format = prm->fmt;
 
 	if (err)
 		mem_deref(st);
@@ -107,10 +101,10 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame,
 		return EINVAL;
 	}
 
-	avpixfmt_dst = vidfmt_to_avpixfmt(swscale_format);
+	avpixfmt_dst = vidfmt_to_avpixfmt(enc->swscale_format);
 	if (avpixfmt_dst == AV_PIX_FMT_NONE) {
 		warning("swscale: unknown pixel-format (%s)\n",
-			vidfmt_name(swscale_format));
+			vidfmt_name(enc->swscale_format));
 		return EINVAL;
 	}
 
@@ -133,13 +127,13 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame,
 		info("swscale: created SwsContext:"
 		     " `%s' %d x %d --> `%s' %u x %u\n",
 		     vidfmt_name(frame->fmt), width, height,
-		     vidfmt_name(swscale_format),
+		     vidfmt_name(enc->swscale_format),
 		     enc->dst_size.w, enc->dst_size.h);
 	}
 
 	if (!enc->frame) {
 
-		err = vidframe_alloc(&enc->frame, swscale_format,
+		err = vidframe_alloc(&enc->frame, enc->swscale_format,
 				     &enc->dst_size);
 		if (err) {
 			warning("swscale: vidframe_alloc error (%m)\n", err);
