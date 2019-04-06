@@ -923,10 +923,16 @@ int video_alloc(struct video **vp, const struct stream_param *stream_prm,
 	/* Video filters */
 	for (le = list_head(baresip_vidfiltl()); le; le = le->next) {
 		struct vidfilt *vf = le->data;
+		struct vidfilt_prm prm;
 		void *ctx = NULL;
 
-		err |= vidfilt_enc_append(&v->vtx.filtl, &ctx, vf);
-		err |= vidfilt_dec_append(&v->vrx.filtl, &ctx, vf);
+		prm.width  = v->cfg.width;
+		prm.height = v->cfg.height;
+		prm.fmt    = v->cfg.enc_fmt;
+		prm.fps    = get_fps(v);
+
+		err |= vidfilt_enc_append(&v->vtx.filtl, &ctx, vf, &prm, v);
+		err |= vidfilt_dec_append(&v->vrx.filtl, &ctx, vf, &prm, v);
 		if (err) {
 			warning("video: video-filter '%s' failed (%m)\n",
 				vf->name, err);

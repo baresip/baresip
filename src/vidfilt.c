@@ -57,13 +57,14 @@ static void vidfilt_enc_destructor(void *arg)
  * @return 0 if success, otherwise errorcode
  */
 int vidfilt_enc_append(struct list *filtl, void **ctx,
-		       const struct vidfilt *vf)
+		       const struct vidfilt *vf, struct vidfilt_prm *prm,
+		       const struct video *vid)
 {
 	struct vidfilt_enc_st *st = NULL;
 	int err;
 
 	if (vf->encupdh) {
-		err = vf->encupdh(&st, ctx, vf);
+		err = vf->encupdh(&st, ctx, vf, prm, vid);
 		if (err)
 			return err;
 	}
@@ -98,13 +99,14 @@ static void vidfilt_dec_destructor(void *arg)
  * @return 0 if success, otherwise errorcode
  */
 int vidfilt_dec_append(struct list *filtl, void **ctx,
-		       const struct vidfilt *vf)
+		       const struct vidfilt *vf, struct vidfilt_prm *prm,
+		       const struct video *vid)
 {
 	struct vidfilt_dec_st *st = NULL;
 	int err;
 
 	if (vf->decupdh) {
-		err = vf->decupdh(&st, ctx, vf);
+		err = vf->decupdh(&st, ctx, vf, prm, vid);
 		if (err)
 			return err;
 	}

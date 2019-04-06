@@ -52,10 +52,13 @@ static void decode_destructor(void *arg)
 
 
 static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
-			 const struct vidfilt *vf)
+			 const struct vidfilt *vf, struct vidfilt_prm *prm,
+			 const struct video *vid)
 {
 	struct vidinfo_enc *st;
 	int err = 0;
+	(void)prm;
+	(void)vid;
 
 	if (!stp || !ctx || !vf)
 		return EINVAL;
@@ -77,10 +80,13 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 
 
 static int decode_update(struct vidfilt_dec_st **stp, void **ctx,
-			 const struct vidfilt *vf)
+			 const struct vidfilt *vf, struct vidfilt_prm *prm,
+			 const struct video *vid)
 {
 	struct vidinfo_dec *st;
 	int err = 0;
+	(void)prm;
+	(void)vid;
 
 	if (!stp || !ctx || !vf)
 		return EINVAL;

@@ -102,10 +102,13 @@ static int selfview_alloc(struct selfview **selfviewp, void **ctx)
 
 
 static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
-			 const struct vidfilt *vf)
+			 const struct vidfilt *vf, struct vidfilt_prm *prm,
+			 const struct video *vid)
 {
 	struct selfview_enc *st;
 	int err;
+	(void)prm;
+	(void)vid;
 
 	if (!stp || !ctx || !vf)
 		return EINVAL;
@@ -129,10 +132,13 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 
 
 static int decode_update(struct vidfilt_dec_st **stp, void **ctx,
-			 const struct vidfilt *vf)
+			 const struct vidfilt *vf, struct vidfilt_prm *prm,
+			 const struct video *vid)
 {
 	struct selfview_dec *st;
 	int err;
+	(void)prm;
+	(void)vid;
 
 	if (!stp || !ctx || !vf)
 		return EINVAL;

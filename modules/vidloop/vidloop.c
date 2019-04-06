@@ -690,12 +690,18 @@ static int video_loop_alloc(struct video_loop **vlp)
 	/* Video filters */
 	for (le = list_head(baresip_vidfiltl()); le; le = le->next) {
 		struct vidfilt *vf = le->data;
+		struct vidfilt_prm prm;
 		void *ctx = NULL;
+
+		prm.width  = vl->cfg.width;
+		prm.height = vl->cfg.height;
+		prm.fmt    = vl->cfg.enc_fmt;
+		prm.fps    = vl->cfg.fps;
 
 		info("vidloop: added video-filter `%s'\n", vf->name);
 
-		err |= vidfilt_enc_append(&vl->filtencl, &ctx, vf);
-		err |= vidfilt_dec_append(&vl->filtdecl, &ctx, vf);
+		err |= vidfilt_enc_append(&vl->filtencl, &ctx, vf, &prm, 0);
+		err |= vidfilt_dec_append(&vl->filtdecl, &ctx, vf, &prm, 0);
 		if (err) {
 			warning("vidloop: vidfilt error: %m\n", err);
 		}
