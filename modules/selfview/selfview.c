@@ -107,6 +107,8 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 {
 	struct selfview_enc *st;
 	int err;
+	(void)prm;
+	(void)vid;
 
 	if (!stp || !ctx || !vf)
 		return EINVAL;
@@ -135,6 +137,8 @@ static int decode_update(struct vidfilt_dec_st **stp, void **ctx,
 {
 	struct selfview_dec *st;
 	int err;
+	(void)prm;
+	(void)vid;
 
 	if (!stp || !ctx || !vf)
 		return EINVAL;

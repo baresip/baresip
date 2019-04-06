@@ -49,6 +49,7 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 {
 	struct swscale_enc *st;
 	int err = 0;
+	(void)vid;
 
 	if (!stp || !ctx || !vf || !prm)
 		return EINVAL;
