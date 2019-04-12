@@ -15,7 +15,7 @@
  */
 
 
-enum {NR_CODECS = 8};
+enum {NR_CODECS = 10};
 
 
 static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
