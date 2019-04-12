@@ -27,6 +27,7 @@ struct vidisp_st {
 	bool fullscreen;                /**< Fullscreen flag       */
 	struct tmr tmr;
 	Uint32 flags;
+	bool quit;
 };
 
 
@@ -115,6 +116,10 @@ static void event_handler(void *arg)
 				break;
 			}
 		}
+		else if (event.type == SDL_QUIT) {
+			st->quit = true;
+			break;
+		}
 	}
 }
 
@@ -173,6 +178,9 @@ static int display(struct vidisp_st *st, const char *title,
 
 	if (!st || !frame)
 		return EINVAL;
+
+	if (st->quit)
+		return ENODEV;
 
 	format = match_fmt(frame->fmt);
 	if (format == SDL_PIXELFORMAT_UNKNOWN) {
