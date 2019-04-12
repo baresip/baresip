@@ -112,6 +112,10 @@ static void event_handler(void *arg)
 				SDL_SetWindowFullscreen(st->window, st->flags);
 				break;
 
+			case SDLK_q:
+				ui_input_key(baresip_uis(), 'q', NULL);
+				break;
+
 			default:
 				break;
 			}
