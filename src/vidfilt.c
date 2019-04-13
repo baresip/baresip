@@ -53,6 +53,8 @@ static void vidfilt_enc_destructor(void *arg)
  * @param filtl List of video-filter states
  * @param ctx   Media context
  * @param vf    Video filter
+ * @param prm   Video filter parameters
+ * @param vid   Pointer to video object (optional)
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -95,6 +97,8 @@ static void vidfilt_dec_destructor(void *arg)
  * @param filtl List of video-filter states
  * @param ctx   Media context
  * @param vf    Video filter
+ * @param prm   Video filter parameters
+ * @param vid   Pointer to video object (optional)
  *
  * @return 0 if success, otherwise errorcode
  */
