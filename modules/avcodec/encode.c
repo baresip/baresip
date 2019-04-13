@@ -235,7 +235,8 @@ static int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
 	if (0 == pl_strcasecmp(name, "packetization-mode")) {
 		st->u.h264.packetization_mode = pl_u32(val);
 
-		if (st->u.h264.packetization_mode != 0) {
+		if (st->u.h264.packetization_mode != 0 &&
+		    st->u.h264.packetization_mode != 1 ) {
 			warning("avcodec: illegal packetization-mode %u\n",
 				st->u.h264.packetization_mode);
 			return EPROTO;

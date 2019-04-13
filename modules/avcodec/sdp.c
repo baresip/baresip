@@ -26,10 +26,14 @@ uint32_t h264_packetization_mode(const char *fmtp)
 }
 
 
-bool h264_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *data)
+bool h264_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
 {
-	(void)data;
+	const struct vidcodec *vc = arg;
+	(void)lfmtp;
 
-	return h264_packetization_mode(lfmtp) ==
+	if (!vc)
+		return false;
+
+	return h264_packetization_mode(vc->variant) ==
 		h264_packetization_mode(rfmtp);
 }
