@@ -131,7 +131,7 @@ static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
 		data = info.data;
 		size = info.size;
 
-		ts = GST_BUFFER_DTS_OR_PTS(buffer);
+		ts = GST_BUFFER_PTS(buffer);
 
 		if (ts == GST_CLOCK_TIME_NONE) {
 			warning("gst_video: timestamp is unknown\n");
