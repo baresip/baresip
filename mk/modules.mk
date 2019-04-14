@@ -267,6 +267,7 @@ MODULES   += b2bua
 MODULES   += contact
 MODULES   += ctrl_tcp
 MODULES   += debug_cmd
+MODULES   += echo
 MODULES   += fakevideo
 MODULES   += httpd
 MODULES   += ice
