@@ -90,6 +90,7 @@ static void message_callback(struct mosquitto *mosq, void *obj,
 	struct mqtt *mqtt = obj;
 	struct pl msg;
 	bool match = false;
+	(void)mosq;
 
 	info("mqtt: got message '%b' for topic '%s'\n",
 	     (char*) message->payload, (size_t)message->payloadlen,

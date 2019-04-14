@@ -30,6 +30,7 @@ static struct mqtt s_mqtt;
 static void fd_handler(int flags, void *arg)
 {
 	struct mqtt *mqtt = arg;
+	(void)flags;
 
 	mosquitto_loop_read(mqtt->mosq, 1);
 
@@ -59,7 +60,7 @@ static void connect_callback(struct mosquitto *mosq, void *obj, int result)
 {
 	struct mqtt *mqtt = obj;
 	int err;
-	(void)mqtt;
+	(void)mosq;
 
 	if (result != MOSQ_ERR_SUCCESS) {
 		warning("mqtt: could not connect to broker (%s) \n",
