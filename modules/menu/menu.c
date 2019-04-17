@@ -1059,8 +1059,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	struct player *player = baresip_player();
 	struct call *call2 = NULL;
 	int err;
-
-	(void)call;
 	(void)prm;
 	(void)arg;
 
