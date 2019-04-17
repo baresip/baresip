@@ -26,10 +26,6 @@
  */
 enum {
 	PT_CN       = 13,
-	PT_STAT_MIN = 0,
-	PT_STAT_MAX = 95,
-	PT_DYN_MIN  = 96,
-	PT_DYN_MAX  = 127
 };
 
 
