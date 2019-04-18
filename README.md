@@ -336,7 +336,6 @@ zrtp          ZRTP media encryption module
 * RFC 5168  XML Schema for Media Control
 * RFC 5285  A General Mechanism for RTP Header Extensions
 * RFC 5506  Support for Reduced-Size RTCP
-* RFC 5574  RTP Payload Format for the Speex Codec
 * RFC 5576  Source-Specific Media Attributes in SDP
 * RFC 5577  RTP Payload Format for ITU-T Recommendation G.722.1
 * RFC 5626  Managing Client-Initiated Connections in SIP
