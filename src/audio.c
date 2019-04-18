@@ -2152,7 +2152,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 				  aurx_calc_seconds(rx));
 	}
 	else {
-		err |= re_hprintf(pf, "     time = (not started)\n");
+		err |= re_hprintf(pf, "       time = (not started)\n");
 	}
 
 	err |= re_hprintf(pf,
