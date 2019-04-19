@@ -254,6 +254,7 @@ int reg_debug(struct re_printf *pf, const struct reg *reg)
 	err |= re_hprintf(pf, " scode:  %u (%s)\n",
 			  reg->scode, print_scode(reg->scode));
 	err |= re_hprintf(pf, " srv:    %s\n", reg->srv);
+	err |= re_hprintf(pf, " af:     %s\n", af_name(reg->af));
 
 	return err;
 }
