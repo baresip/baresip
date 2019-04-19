@@ -21,11 +21,6 @@
 #define FOREACH_STREAM						\
 	for (le = call->streaml.head; le; le = le->next)
 
-/** Call constants */
-enum {
-	PTIME           = 20,    /**< Packet time for audio               */
-};
-
 
 /** Call States */
 enum state {
