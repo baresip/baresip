@@ -66,7 +66,7 @@ struct fixture {
 	f->b.fix = f;							\
 	f->c.fix = f;							\
 									\
-	err = ua_init("test", true, true, false, false);		\
+	err = ua_init("test", true, true, false);			\
 	TEST_ERR(err);							\
 									\
 	f->magic = MAGIC;						\

@@ -1497,12 +1497,10 @@ static bool sub_handler(const struct sip_msg *msg, void *arg)
  * @param udp         Enable UDP transport
  * @param tcp         Enable TCP transport
  * @param tls         Enable TLS transport
- * @param prefer_ipv6 Prefer IPv6 flag
  *
  * @return 0 if success, otherwise errorcode
  */
-int ua_init(const char *software, bool udp, bool tcp, bool tls,
-	    bool prefer_ipv6)
+int ua_init(const char *software, bool udp, bool tcp, bool tls)
 {
 	struct config *cfg = conf_config();
 	struct network *net = baresip_network();
@@ -1520,7 +1518,7 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls,
 	uag.use_udp = udp;
 	uag.use_tcp = tcp;
 	uag.use_tls = tls;
-	uag.prefer_ipv6 = prefer_ipv6;
+	uag.prefer_ipv6 = cfg->net.prefer_ipv6;
 
 	list_init(&uag.ual);
 

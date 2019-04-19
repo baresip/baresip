@@ -181,7 +181,7 @@ static int test_message_transp(enum sip_transp transp)
 
 	test.transp = transp;
 
-	err = ua_init("test", enable_udp, enable_tcp, false, false);
+	err = ua_init("test", enable_udp, enable_tcp, false);
 	TEST_ERR(err);
 
 	err = endpoint_alloc(&a, &test, "a", transp);

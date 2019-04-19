@@ -743,8 +743,7 @@ int  ua_call_alloc(struct call **callp, struct ua *ua,
 
 
 /* One instance */
-int  ua_init(const char *software, bool udp, bool tcp, bool tls,
-	     bool prefer_ipv6);
+int  ua_init(const char *software, bool udp, bool tcp, bool tls);
 void ua_close(void);
 void ua_stop_all(bool forced);
 void uag_set_exit_handler(ua_exit_h *exith, void *arg);

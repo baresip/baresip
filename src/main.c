@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
 
 	/* Initialise User Agents */
 	err = ua_init("baresip v" BARESIP_VERSION " (" ARCH "/" OS ")",
-		      true, true, true, prefer_ipv6);
+		      true, true, true);
 	if (err)
 		goto out;
 

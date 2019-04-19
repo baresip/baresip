@@ -157,7 +157,7 @@ int test_ua_register(void)
 {
 	int err = 0;
 
-	err = ua_init("test", true, true, true, false);
+	err = ua_init("test", true, true, true);
 	TEST_ERR(err);
 
 	err |= reg(SIP_TRANSP_UDP);
@@ -323,7 +323,7 @@ static int reg_dns(enum sip_transp tp)
 	 * Start SIP client:
 	 */
 
-	err = ua_init("test", true, true, true, false);
+	err = ua_init("test", true, true, true);
 	TEST_ERR(err);
 
 	err = ua_alloc(&t.ua, aor);
@@ -471,7 +471,7 @@ int test_ua_register_auth(void)
 {
 	int err;
 
-	err = ua_init("test", true, true, true, false);
+	err = ua_init("test", true, true, true);
 	TEST_ERR(err);
 
 	err |= reg_auth(SIP_TRANSP_UDP);
@@ -582,7 +582,7 @@ static int reg_auth_dns(enum sip_transp tp)
 	 * Start SIP client:
 	 */
 
-	err = ua_init("test", true, true, true, false);
+	err = ua_init("test", true, true, true);
 	TEST_ERR(err);
 
 	err = ua_alloc(&t.ua, aor);
@@ -720,7 +720,7 @@ static int test_ua_options_base(enum sip_transp transp)
 	err = ua_init("test",
 		      transp == SIP_TRANSP_UDP,
 		      transp == SIP_TRANSP_TCP,
-		      false, false);
+		      false);
 	TEST_ERR(err);
 
 	err = sip_transp_laddr(uag_sip(), &laddr, transp, NULL);
