@@ -188,8 +188,14 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	* Initialise the top-level baresip struct, must be
-	* done AFTER configuration is complete.
+	 * Set prefer_ipv6 preferring the one given in -6 argument (if any)
+	 */
+	if (!prefer_ipv6)
+		prefer_ipv6 = conf_config()->net.prefer_ipv6;
+
+	/*
+	 * Initialise the top-level baresip struct, must be
+	 * done AFTER configuration is complete.
 	*/
 	err = baresip_init(conf_config(), prefer_ipv6);
 	if (err) {
