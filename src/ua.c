@@ -270,6 +270,29 @@ bool ua_isregistered(const struct ua *ua)
 }
 
 
+/**
+ * Destroy the user-agent, terminate all active calls and
+ * send the SHUTDOWN event.
+ *
+ * @param ua User-Agent object
+ */
+void ua_destroy(struct ua *ua)
+{
+	if (!ua)
+		return;
+
+	list_unlink(&ua->le);
+
+	/* send the shutdown event */
+	ua_event(ua, UA_EVENT_SHUTDOWN, NULL, NULL);
+
+	/* terminate all calls now */
+	list_flush(&ua->calls);
+
+	mem_deref(ua);
+}
+
+
 static struct call *ua_find_call_onhold(const struct ua *ua)
 {
 	struct le *le;
@@ -1576,15 +1599,11 @@ void ua_stop_all(bool forced)
 		struct ua *ua = le->data;
 		le = le->next;
 
-		ua_event(ua, UA_EVENT_SHUTDOWN, NULL, NULL);
-
 		if (mem_nrefs(ua) > 1) {
 			++ext_ref;
 		}
 
-		list_unlink(&ua->le);
-		list_flush(&ua->calls);
-		mem_deref(ua);
+		ua_destroy(ua);
 	}
 
 	if (ext_ref) {
