@@ -221,11 +221,10 @@ static void net_destructor(void *data)
  *
  * @param netp Pointer to allocated network instance
  * @param cfg  Network configuration
- * @param af   Preferred address family
  *
  * @return 0 if success, otherwise errorcode
  */
-int net_alloc(struct network **netp, const struct config_net *cfg, int af)
+int net_alloc(struct network **netp, const struct config_net *cfg)
 {
 	struct network *net;
 	struct sa nsv[NET_MAX_NS];
@@ -260,7 +259,7 @@ int net_alloc(struct network **netp, const struct config_net *cfg, int af)
 		return ENOMEM;
 
 	net->cfg = *cfg;
-	net->af  = af;
+	net->af  = cfg->prefer_ipv6 ? AF_INET6 : AF_INET;
 
 	tmr_init(&net->tmr);
 

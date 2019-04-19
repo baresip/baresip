@@ -621,7 +621,7 @@ struct network;
 
 typedef void (net_change_h)(void *arg);
 
-int  net_alloc(struct network **netp, const struct config_net *cfg, int af);
+int  net_alloc(struct network **netp, const struct config_net *cfg);
 int  net_use_nameserver(struct network *net, const struct sa *ns);
 void net_change(struct network *net, uint32_t interval,
 		net_change_h *ch, void *arg);

@@ -106,8 +106,7 @@ int baresip_init(struct config *cfg)
 	list_init(&baresip.vidfiltl);
 
 	/* Initialise Network */
-	err = net_alloc(&baresip.net, &cfg->net,
-			cfg->net.prefer_ipv6 ? AF_INET6 : AF_INET);
+	err = net_alloc(&baresip.net, &cfg->net);
 	if (err) {
 		warning("ua: network init failed: %m\n", err);
 		return err;
