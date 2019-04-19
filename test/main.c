@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
-	err = baresip_init(config, false);
+	err = baresip_init(config);
 	if (err)
 		goto out;
 

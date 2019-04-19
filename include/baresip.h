@@ -1374,7 +1374,7 @@ uint64_t tmr_jiffies_usec(void);
  * Baresip instance
  */
 
-int  baresip_init(struct config *cfg, bool prefer_ipv6);
+int  baresip_init(struct config *cfg);
 void baresip_close(void);
 struct network *baresip_network(void);
 struct contacts *baresip_contacts(void);
