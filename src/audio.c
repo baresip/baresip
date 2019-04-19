@@ -601,27 +601,35 @@ static void poll_aubuf_tx(struct audio *a)
 static void check_telev(struct audio *a, struct autx *tx)
 {
 	const struct sdp_format *fmt;
+	struct mbuf *mb;
 	bool marker = false;
 	int err;
 
-	tx->mb->pos = tx->mb->end = STREAM_PRESZ;
-
-	err = telev_poll(a->telev, &marker, tx->mb);
-	if (err)
+	mb = mbuf_alloc(STREAM_PRESZ + 64);
+	if (!mb)
 		return;
+
+	mb->pos = mb->end = STREAM_PRESZ;
+
+	err = telev_poll(a->telev, &marker, mb);
+	if (err)
+		goto out;
 
 	if (marker)
 		tx->ts_tel = (uint32_t)tx->ts_ext;
 
 	fmt = sdp_media_rformat(stream_sdpmedia(audio_strm(a)), telev_rtpfmt);
 	if (!fmt)
-		return;
+		goto out;
 
-	tx->mb->pos = STREAM_PRESZ;
-	err = stream_send(a->strm, false, marker, fmt->pt, tx->ts_tel, tx->mb);
+	mb->pos = STREAM_PRESZ;
+	err = stream_send(a->strm, false, marker, fmt->pt, tx->ts_tel, mb);
 	if (err) {
 		warning("audio: telev: stream_send %m\n", err);
 	}
+
+ out:
+	mem_deref(mb);
 }
 
 
