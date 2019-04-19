@@ -1,3 +1,161 @@
+2019-04-19 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.2
+
+Alfred E. Heggestad (124):
+      daala: remove module
+      remove USE_VIDEO compile flag (#658)
+      config: remove sip_trans_bsize option
+      contact: fix bug in contact prev/next
+      cmd: remove unused complete flag
+      log: add command to toggle loglevel ('v')
+      debug_cmd: fix warning
+      Remove natbd module (#659)
+      message: make listen/unlisten more robust (ref #650)
+      update doxygen comments
+      srtp: fix warnings
+      update README
+      stream: define port 9 as PORT_DISCARD
+      add offerer flag to video and stream
+      stream: check for multiplexed RTCP packets on RTP port
+      stream: change logic for rtcp-mux attribute
+      omx: update doxygen comment
+      bv32: add doxygen header
+      mk: modules in alphabetical order
+      mk: modules in alphabetical order
+      mk: modules in alphabetical order
+      h265: use avcodec API for the encoder
+      h265: fixes for Debian 8
+      h265: make it work with old encoder api
+      h265: init time_base manually
+      fix av_packet_free
+      allocate avpacket
+      h265: cleanup
+      cleanup
+      cleanup
+      h265: add configurable decoder
+      cleanup
+      use pkg-config for libs
+      h265: update documentation
+      mk: enable h265.so if avcodec installed
+      h265: include avutil mem.h
+      travis: use ubuntu 16.04
+      h265: add wrapper for av_frame_alloc
+      h265: add wrapper for avcodec_free_context
+      h265: fix config
+      fix crash with ffmpeg 2.8
+      add wrapper for av_packet_free
+      fix warning
+      use av_free_packet
+      cleanup
+      deprecate v4l.so -- use v4l2.so instead
+      h265: tested with YUV444P pixel format
+      h265: check pixel format on changes
+      Merge remote-tracking branch 'origin/master' into h265_use_avcodec_encoder
+      h265: fix avcodec_free_context wrapper
+      H265 use avcodec encoder (#668)
+      debian: add source format 1.0
+      aufile: add sample config (ref #663)
+      v4l: remove module, use v4l2.so instead
+      video: remote orient parameter
+      video: remove video_set_orient
+      aubridge: remove audio resampler
+      aubridge: fix warning
+      aubridge: add support for multiple sample formats
+      aubridge: fix warnings
+      auloop: remove usage of audio codec
+      jack: add support for FLOAT sample format
+      Avcodec remove libx264 (#671)
+      config: add avcodec.so sample config
+      stream: set rtcp-mux attribute if enabled
+      sdl: remove module
+      stream: send a dummy RTCP packet to open NAT pinhole
+      avcodec: use pkg-config for linker flags
+      avformat: use pkg-config for linker flags
+      config: remove usage of USE_AVCODEC
+      coreaudio: remove ios specific code
+      h265: one file per line
+      avformat: move AVCodec from struct to stack
+      avformat: remove codec_id check
+      avformat: minor cleanup
+      debian: remove usage of shlibs:Depends from dev package
+      debug_cmd: fix warning
+      avformat: minor cleanup
+      avformat: minor cleanup
+      vidloop: rename intra to keyframe
+      vidloop: print keyframes only if codec is enabled
+      avcodec: move destructor to the top of the file
+      plc: check input arguments
+      auloop: rename ab to aubuf
+      Opus multistream (#678)
+      mqtt: minor updates
+      mqtt: use re_snprintf
+      mqtt: update documentation (fixes #669)
+      h264: fix h264_is_keyframe, IDR_SLICE is keyframe
+      avcodec: check input arguments
+      vidloop: show video display pixel-format in summary
+      avcodec: clean up decoding code
+      avcodec: add color range MPEG
+      h265: add color range and GOP size
+      ffmpeg: check avutil version for color range
+      avcodec: set slice-max-size in H264 packetization-mode 0
+      avcodec: add sdp.c
+      avcodec: move h264_fmtp_cmp to sdp.c
+      avcodec: add support for H264 packetization mode 1
+      av1: update comment
+      avcodec: handle H264 STAP-A packets
+      test: fix ua register test-cases (ref #680)
+      ua: add delayed_close flag (ref #680)
+      menu: call uag_current() directly
+      video: save pixel format of outgoing stream
+      aulevel: add support for sample format FLOAT
+      Vidfilt add param (#682)
+      test: copy uri_cmp source from libre
+      sdl2: handle window closed event (SDL_QUIT)
+      vidloop: stop loop if window was closed
+      sdl2: add support for quit key
+      avcodec: fixes for packetization_mode 1
+      bump version to 0.6.2
+      vidfilt: update doxygen comments
+      rtcpsummary: fix warnings about unused variables
+      mqtt: fix warnings about unused variables
+      gst_video1: use GST_BUFFER_PTS
+      mk: add echo module to list of basic modules
+      core: remove some unused values
+      menu: call parameter is used
+      mwi: minor formatting changes
+      audio: align debug text
+      Update README.md
+      ua: add ua_destroy() -- ref #686
+
+Andreas Hansson (1):
+      Added debug cmd to print UUID (#674)
+
+Juha Heinanen (2):
+      do not add basic modules if BASIC_MODULES has value 'no'
+      exclude more modules if BASIC_MODULES=no
+
+Nicolas Tizon (1):
+      vidloop: update vidsrc (#662)
+
+Roger Sandholm (1):
+      Readme and config example correction, httpd comments (#666)
+
+Timmo Verlaan (1):
+      menu: add uadel to delete a uac by aor (#680)
+
+juha-h (1):
+      srtp: added sending of MENC_EVENT_SECURE event (#660)
+
+premultiply (1):
+      Add 48 khz sampling rate support (#685)
+
+weili-jiang (1):
+      Command not found returns error (#664)
+
+
+
+
 2019-02-17 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.6.1
