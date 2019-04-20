@@ -57,7 +57,6 @@ static struct {
 	bool use_udp;                  /**< Use UDP transport               */
 	bool use_tcp;                  /**< Use TCP transport               */
 	bool use_tls;                  /**< Use TLS transport               */
-	bool prefer_ipv6;              /**< Force IPv6 transport            */
 	bool delayed_close;
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
@@ -78,7 +77,6 @@ static struct {
 	true,
 	true,
 	true,
-	false,
 	false,
 	NULL,
 	NULL,
@@ -669,11 +667,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 	list_init(&ua->calls);
 
-#if HAVE_INET6
-	ua->af   = uag.prefer_ipv6 ? AF_INET6 : AF_INET;
-#else
-	ua->af   = AF_INET;
-#endif
+	ua->af   = net_af(baresip_network());
 
 	/* Decode SIP address */
 	if (uag.eprm) {
@@ -1292,7 +1286,8 @@ static int ua_add_transp(struct network *net)
 {
 	int err = 0;
 
-	if (!uag.prefer_ipv6) {
+	if (net_af(net) == AF_INET) {
+
 		if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
 			err |= add_transp_af(net_laddr_af(net, AF_INET));
 	}
@@ -1518,7 +1513,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls)
 	uag.use_udp = udp;
 	uag.use_tcp = tcp;
 	uag.use_tls = tls;
-	uag.prefer_ipv6 = cfg->net.prefer_ipv6;
 
 	list_init(&uag.ual);
 
