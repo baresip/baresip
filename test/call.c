@@ -1001,11 +1001,6 @@ int test_call_format_float(void)
 	err = test_media_base(AUDIO_MODE_POLL);
 	ASSERT_EQ(0, err);
 
-#ifdef HAVE_PTHREAD
-	err = test_media_base(AUDIO_MODE_THREAD);
-	ASSERT_EQ(0, err);
-#endif
-
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
 
  out:
