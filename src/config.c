@@ -216,7 +216,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	struct vidsz size = {0, 0};
 	struct pl txmode;
 	uint32_t v;
-	bool tmp;
 	int err = 0;
 
 	if (!cfg || !conf)
@@ -322,12 +321,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		cfg->avt.rtp_bw.min *= 1000;
 		cfg->avt.rtp_bw.max *= 1000;
 	}
-
-#if 1
-	if (0 == conf_get_bool(conf, "rtcp_enable", &tmp) && !tmp) {
-		warning("config: rtcp_enable ignored, always enabled\n");
-	}
-#endif
 
 	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);
 	(void)conf_get_range(conf, "jitter_buffer_delay",
