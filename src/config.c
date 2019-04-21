@@ -15,10 +15,6 @@
 #define MOD_PRE ""  /**< Module prefix */
 
 
-#undef SA_INIT
-#define SA_INIT { { {0} }, 0}
-
-
 #ifndef PREFIX
 #define PREFIX "/usr"
 #endif
