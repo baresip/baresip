@@ -11,83 +11,61 @@
 #include "../test.h"
 
 
-/* A dummy protocol header */
-#define L16_HEADER 0x1616
-
-
-static int mock_l16_encode(struct auenc_state *st, uint8_t *buf, size_t *len,
-			   int fmt, const void *sampv_void, size_t sampc)
+static int mock_raw_encode(struct auenc_state *st, uint8_t *buf, size_t *len,
+			   int fmt, const void *sampv, size_t sampc)
 {
-	int16_t *p = (void *)buf;
-	const int16_t *sampv = sampv_void;
+	const size_t sampsz = aufmt_sample_size(fmt);
+	size_t bytes;
 	(void)st;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;
 
-	if (*len < sampc*2)
-		return ENOMEM;
-
-	if (fmt != AUFMT_S16LE)
+	if (sampsz == 0)
 		return ENOTSUP;
 
-	*len = 2 + sampc*2;
+	bytes = sampc * sampsz;
+	if (bytes > *len)
+		return ENOMEM;
 
-	*p++ = L16_HEADER;
-
-	while (sampc--)
-		*p++ = htons(*sampv++);
+	memcpy(buf, sampv, bytes);
+	*len = bytes;
 
 	return 0;
 }
 
 
-static int mock_l16_decode(struct audec_state *st,
-			   int fmt, void *sampv_void, size_t *sampc,
+static int mock_raw_decode(struct audec_state *st,
+			   int fmt, void *sampv, size_t *sampc,
 			   const uint8_t *buf, size_t len)
 {
-	int16_t *p = (void *)buf;
-	int16_t *sampv = sampv_void;
-	uint16_t hdr;
+	const size_t sampsz = aufmt_sample_size(fmt);
 	(void)st;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;
 
-	if (len < 2)
-		return EINVAL;
-
-	if (*sampc < len/2)
-		return ENOMEM;
-
-	if (fmt != AUFMT_S16LE)
+	if (sampsz == 0)
 		return ENOTSUP;
 
-	*sampc = (len - 2)/2;
+	if (len / sampsz > *sampc)
+		return ENOMEM;
 
-	hdr = *p++;
-	if (L16_HEADER != hdr) {
-		warning("mock_aucodec: invalid L16 header"
-			" 0x%04x (len=%zu)\n", hdr, len);
-		return EPROTO;
-	}
-
-	len = len/2 - 2;
-	while (len--)
-		*sampv++ = ntohs(*p++);
+	memcpy(sampv, buf, len);
+	*sampc = len / sampsz;
 
 	return 0;
 }
 
 
 static struct aucodec ac_dummy = {
-	.name = "FOO16",
+	.name = "RAW-CODEC",
 	.srate = 8000,
 	.crate = 8000,
 	.ch  = 1,
 	.pch = 1,
-	.ench = mock_l16_encode,
-	.dech = mock_l16_decode,
+	.ench = mock_raw_encode,
+	.dech = mock_raw_decode,
 };
 
 
