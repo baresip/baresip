@@ -1169,6 +1169,12 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	if (!ap || !cfg)
 		return EINVAL;
 
+	if (ptime < 1 || ptime > MAX_PTIME) {
+		warning("audio: ptime %ums out of range (%ums - %ums)\n",
+			ptime, 1, MAX_PTIME);
+		return ENOTSUP;
+	}
+
 	a = mem_zalloc(sizeof(*a), audio_destructor);
 	if (!a)
 		return ENOMEM;
@@ -2010,7 +2016,8 @@ void audio_sdp_attr_decode(struct audio *a)
 		struct autx *tx = &a->tx;
 		uint32_t ptime_tx = atoi(attr);
 
-		if (ptime_tx && ptime_tx != a->tx.ptime) {
+		if (ptime_tx && ptime_tx != a->tx.ptime
+		    && ptime_tx <= MAX_PTIME) {
 
 			info("audio: peer changed ptime_tx %ums -> %ums\n",
 			     a->tx.ptime, ptime_tx);
