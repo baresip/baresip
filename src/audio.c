@@ -778,7 +778,7 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 				   mbuf_buf(mb), mbuf_get_left(mb));
 
 	}
-	else if (rx->ac->plch && rx->dec_fmt == AUFMT_S16LE) {
+	else if (rx->ac->plch) {
 		sampc = rx->ac->srate * rx->ac->ch * rx->ptime / 1000;
 
 		err = rx->ac->plch(rx->dec, rx->dec_fmt, rx->sampv, &sampc);
