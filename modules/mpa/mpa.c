@@ -79,7 +79,7 @@
 
 
 static struct aucodec mpa = {
-	.pt       = "14",
+	.pt        = "14",
 	.name      = "MPA",
 	.srate     = MPA_IORATE,
 	.crate     = MPA_RTPRATE,
@@ -106,34 +106,33 @@ static int module_init(void)
 
 	strcpy(mode,mpa.fmtp);
 
-		if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
-				if (value<1 || value>4) {
-						warning("MPA layer 1, 2 or 3 are allowed.");
-						return -1;
-				}
-				(void)re_snprintf(fmtp+strlen(fmtp),
-						sizeof(fmtp)-strlen(fmtp),
-						";layer=%d", value);
+	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
+		if (value<1 || value>4) {
+			warning("MPA layer 1, 2 or 3 are allowed.");
+			return -1;
 		}
-		if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
-				switch (value) {
-				case 32000:
-				case 44100:
-				case 48000:
-				case 16000:
-				case 22050:
-				case 24000:
-						break;
-				default:
-						warning("MPA samplerates of 16, 22.05, 24, 32, "
-								"44.1, and 48 kHz are allowed.\n");
-						return -1;
-				}
-				(void)re_snprintf(fmtp+strlen(fmtp),
-						sizeof(fmtp)-strlen(fmtp),
-						";samplerate=%d", value);
+		(void)re_snprintf(fmtp+strlen(fmtp),
+			sizeof(fmtp)-strlen(fmtp),
+			";layer=%d", value);
+	}
+	if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
+		switch (value) {
+		case 32000:
+		case 44100:
+		case 48000:
+		case 16000:
+		case 22050:
+		case 24000:
+			break;
+		default:
+			warning("MPA samplerates of 16, 22.05, 24, 32, "
+				"44.1, and 48 kHz are allowed.\n");
+			return -1;
 		}
-
+		(void)re_snprintf(fmtp+strlen(fmtp),
+			sizeof(fmtp)-strlen(fmtp),
+			";samplerate=%d", value);
+	}
 	if (0 == conf_get_u32(conf, "mpa_bitrate", &value)) {
 		if (value<8000 || value>384000) {
 			warning("MPA bitrate between 8000 and "
