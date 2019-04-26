@@ -273,11 +273,15 @@ bool ua_isregistered(const struct ua *ua)
  * send the SHUTDOWN event.
  *
  * @param ua User-Agent object
+ *
+ * @return Number of remaining references
  */
-void ua_destroy(struct ua *ua)
+unsigned ua_destroy(struct ua *ua)
 {
+	unsigned nrefs;
+
 	if (!ua)
-		return;
+		return 0;
 
 	list_unlink(&ua->le);
 
@@ -287,7 +291,12 @@ void ua_destroy(struct ua *ua)
 	/* terminate all calls now */
 	list_flush(&ua->calls);
 
+	/* number of remaining references (excluding this one) */
+	nrefs = mem_nrefs(ua) - 1;
+
 	mem_deref(ua);
+
+	return nrefs;
 }
 
 
@@ -1591,11 +1600,9 @@ void ua_stop_all(bool forced)
 		struct ua *ua = le->data;
 		le = le->next;
 
-		if (mem_nrefs(ua) > 1) {
+		if (ua_destroy(ua) != 0) {
 			++ext_ref;
 		}
-
-		ua_destroy(ua);
 	}
 
 	if (ext_ref) {
