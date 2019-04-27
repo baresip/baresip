@@ -329,16 +329,6 @@ static inline uint32_t get_ch(const struct aucodec *ac)
 }
 
 
-static inline uint32_t get_framesize(const struct aucodec *ac,
-				     uint32_t ptime)
-{
-	if (!ac)
-		return 0;
-
-	return calc_nsamp(ac->srate, get_ch(ac), ptime);
-}
-
-
 static bool aucodec_equal(const struct aucodec *a, const struct aucodec *b)
 {
 	if (!a || !b)
@@ -2019,8 +2009,9 @@ void audio_sdp_attr_decode(struct audio *a)
 
 				sz = aufmt_sample_size(tx->src_fmt);
 
-				tx->psize = sz * get_framesize(tx->ac,
-							       ptime_tx);
+				tx->psize = sz * calc_nsamp(tx->ac->srate,
+							    tx->ac->ch,
+							    ptime_tx);
 			}
 		}
 	}
