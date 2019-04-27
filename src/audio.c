@@ -318,18 +318,6 @@ static inline double calc_ptime(size_t nsamp, uint32_t srate, uint8_t channels)
 
 
 /*
- * Get the DSP samplerate for an audio-codec
- */
-static inline uint32_t get_srate(const struct aucodec *ac)
-{
-	if (!ac)
-		return 0;
-
-	return ac->srate;
-}
-
-
-/*
  * Get the DSP channels for an audio-codec
  */
 static inline uint32_t get_ch(const struct aucodec *ac)
@@ -347,7 +335,7 @@ static inline uint32_t get_framesize(const struct aucodec *ac,
 	if (!ac)
 		return 0;
 
-	return calc_nsamp(get_srate(ac), get_ch(ac), ptime);
+	return calc_nsamp(ac->srate, get_ch(ac), ptime);
 }
 
 
@@ -356,7 +344,7 @@ static bool aucodec_equal(const struct aucodec *a, const struct aucodec *b)
 	if (!a || !b)
 		return false;
 
-	return get_srate(a) == get_srate(b) && get_ch(a) == get_ch(b);
+	return a->srate == b->srate && get_ch(a) == get_ch(b);
 }
 
 
@@ -1333,7 +1321,7 @@ static void aufilt_param_set(struct aufilt_prm *prm,
 		return;
 	}
 
-	prm->srate      = get_srate(ac);
+	prm->srate      = ac->srate;
 	prm->ch         = get_ch(ac);
 	prm->ptime      = ptime;
 	prm->fmt        = fmt;
@@ -1462,7 +1450,7 @@ static int aufilt_setup(struct audio *a)
 static int start_player(struct aurx *rx, struct audio *a)
 {
 	const struct aucodec *ac = rx->ac;
-	uint32_t srate_dsp = get_srate(ac);
+	uint32_t srate_dsp;
 	uint32_t channels_dsp;
 	bool resamp = false;
 	int err;
@@ -1470,6 +1458,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 	if (!ac)
 		return 0;
 
+	srate_dsp    = ac->srate;
 	channels_dsp = get_ch(ac);
 
 	if (a->cfg.srate_play && a->cfg.srate_play != srate_dsp) {
@@ -1486,7 +1475,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 
 		info("audio: enable auplay resampler:"
 		     " %uHz/%uch --> %uHz/%uch\n",
-		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
+		     ac->srate, get_ch(ac), srate_dsp, channels_dsp);
 
 		rx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t),
 					  NULL);
@@ -1494,7 +1483,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 			return ENOMEM;
 
 		err = auresamp_setup(&rx->resamp,
-				     get_srate(ac), get_ch(ac),
+				     ac->srate, get_ch(ac),
 				     srate_dsp, channels_dsp);
 		if (err) {
 			warning("audio: could not setup auplay resampler"
@@ -1550,7 +1539,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 static int start_source(struct autx *tx, struct audio *a)
 {
 	const struct aucodec *ac = tx->ac;
-	uint32_t srate_dsp = get_srate(ac);
+	uint32_t srate_dsp;
 	uint32_t channels_dsp;
 	bool resamp = false;
 	int err;
@@ -1558,6 +1547,7 @@ static int start_source(struct autx *tx, struct audio *a)
 	if (!ac)
 		return 0;
 
+	srate_dsp    = ac->srate;
 	channels_dsp = get_ch(ac);
 
 	if (a->cfg.srate_src && a->cfg.srate_src != srate_dsp) {
@@ -1574,7 +1564,7 @@ static int start_source(struct autx *tx, struct audio *a)
 
 		info("audio: enable ausrc resampler:"
 		     " %uHz/%uch <-- %uHz/%uch\n",
-		     get_srate(ac), get_ch(ac), srate_dsp, channels_dsp);
+		     ac->srate, get_ch(ac), srate_dsp, channels_dsp);
 
 		tx->sampv_rs = mem_zalloc(AUDIO_SAMPSZ * sizeof(int16_t),
 					  NULL);
@@ -1583,7 +1573,7 @@ static int start_source(struct autx *tx, struct audio *a)
 
 		err = auresamp_setup(&tx->resamp,
 				     srate_dsp, channels_dsp,
-				     get_srate(ac), get_ch(ac));
+				     ac->srate, get_ch(ac));
 		if (err) {
 			warning("audio: could not setup ausrc resampler"
 				" (%m)\n", err);
@@ -1767,7 +1757,7 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 
 	if (ac != tx->ac) {
 		info("audio: Set audio encoder: %s %uHz %dch\n",
-		     ac->name, get_srate(ac), get_ch(ac));
+		     ac->name, ac->srate, get_ch(ac));
 
 		/* Audio source must be stopped first */
 		if (reset) {
@@ -1832,7 +1822,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	if (ac != rx->ac) {
 
 		info("audio: Set audio decoder: %s %uHz %dch\n",
-		     ac->name, get_srate(ac), get_ch(ac));
+		     ac->name, ac->srate, get_ch(ac));
 
 		rx->pt = pt_rx;
 		rx->ac = ac;
@@ -2083,7 +2073,7 @@ static int aucodec_print(struct re_printf *pf, const struct aucodec *ac)
 		return 0;
 
 	return re_hprintf(pf, "%s %uHz/%dch",
-			  ac->name, get_srate(ac), get_ch(ac));
+			  ac->name, ac->srate, get_ch(ac));
 }
 
 
@@ -2301,9 +2291,9 @@ int audio_print_rtpstat(struct re_printf *pf, const struct audio *a)
 		return 1;
 
 	if (a->tx.ac)
-		srate_tx = get_srate(a->tx.ac);
+		srate_tx = a->tx.ac->srate;
 	if (a->rx.ac)
-		srate_rx = get_srate(a->rx.ac);
+		srate_rx = a->rx.ac->srate;
 
 	err = re_hprintf(pf,
 			 "EX=BareSip;"   /* Reporter Identifier	             */
