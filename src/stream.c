@@ -648,7 +648,10 @@ void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx)
 	if (!s)
 		return;
 
-	rtcp_set_srate(s->rtp, srate_tx, srate_rx);
+	if (srate_tx)
+		rtcp_set_srate_tx(s->rtp, srate_tx);
+	if (srate_rx)
+		rtcp_set_srate_rx(s->rtp, srate_rx);
 }
 
 

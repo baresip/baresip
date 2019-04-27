@@ -1772,7 +1772,7 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		}
 	}
 
-	stream_set_srate(a->strm, ac->crate, ac->crate);
+	stream_set_srate(a->strm, ac->crate, 0);
 	stream_update_encoder(a->strm, pt_tx);
 
 	telev_set_srate(a->telev, ac->crate);
@@ -1827,7 +1827,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		}
 	}
 
-	stream_set_srate(a->strm, ac->crate, ac->crate);
+	stream_set_srate(a->strm, 0, ac->crate);
 
 	if (reset) {
 
