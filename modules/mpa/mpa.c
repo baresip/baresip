@@ -79,7 +79,7 @@
 
 
 static struct aucodec mpa = {
-	.pt       = "14",
+	.pt        = "14",
 	.name      = "MPA",
 	.srate     = MPA_IORATE,
 	.crate     = MPA_RTPRATE,
@@ -106,17 +106,6 @@ static int module_init(void)
 
 	strcpy(mode,mpa.fmtp);
 
-	if (0 == conf_get_u32(conf, "mpa_bitrate", &value)) {
-		if (value<8000 || value>384000) {
-			warning("MPA bitrate between 8000 and "
-				"384000 are allowed.\n");
-			return -1;
-		}
-
-		(void)re_snprintf(fmtp+strlen(fmtp),
-			sizeof(fmtp)-strlen(fmtp),
-			"; bitrate=%d", value);
-	}
 	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
 		if (value<1 || value>4) {
 			warning("MPA layer 1, 2 or 3 are allowed.");
@@ -124,7 +113,7 @@ static int module_init(void)
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp),
 			sizeof(fmtp)-strlen(fmtp),
-			"; layer=%d", value);
+			";layer=%d", value);
 	}
 	if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
 		switch (value) {
@@ -142,7 +131,18 @@ static int module_init(void)
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp),
 			sizeof(fmtp)-strlen(fmtp),
-			"; samplerate=%d", value);
+			";samplerate=%d", value);
+	}
+	if (0 == conf_get_u32(conf, "mpa_bitrate", &value)) {
+		if (value<8000 || value>384000) {
+			warning("MPA bitrate between 8000 and "
+				"384000 are allowed.\n");
+			return -1;
+		}
+
+		(void)re_snprintf(fmtp+strlen(fmtp),
+			sizeof(fmtp)-strlen(fmtp),
+			";bitrate=%d", value);
 	}
 	if (0 == conf_get_str(conf, "mpa_mode", mode, sizeof(mode))) {
 		char *p = mode;
@@ -162,11 +162,11 @@ static int module_init(void)
 
 		(void)re_snprintf(fmtp+strlen(fmtp),
 			sizeof(fmtp)-strlen(fmtp),
-			"; mode=%s", mode);
+			";mode=%s", mode);
 	}
 
-	if (fmtp[0]==';' && fmtp[1]==' ')
-		mpa.fmtp = fmtp+2;
+	if (fmtp[0]==';')
+		mpa.fmtp = fmtp+1;
 	else
 		mpa.fmtp = fmtp;
 
