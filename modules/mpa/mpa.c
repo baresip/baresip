@@ -109,14 +109,16 @@ static int module_init(void)
 	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
 		if (value<1 || value>4) {
 			warning("MPA layer 1, 2 or 3 are allowed.");
-			return -1;
+			return EINVAL;
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp),
 			sizeof(fmtp)-strlen(fmtp),
 			";layer=%d", value);
 	}
 	if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
+
 		switch (value) {
+
 		case 32000:
 		case 44100:
 		case 48000:
@@ -124,10 +126,11 @@ static int module_init(void)
 		case 22050:
 		case 24000:
 			break;
+
 		default:
 			warning("MPA samplerates of 16, 22.05, 24, 32, "
 				"44.1, and 48 kHz are allowed.\n");
-			return -1;
+			return EINVAL;
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp),
 			sizeof(fmtp)-strlen(fmtp),
@@ -137,7 +140,7 @@ static int module_init(void)
 		if (value<8000 || value>384000) {
 			warning("MPA bitrate between 8000 and "
 				"384000 are allowed.\n");
-			return -1;
+			return EINVAL;
 		}
 
 		(void)re_snprintf(fmtp+strlen(fmtp),
@@ -157,7 +160,7 @@ static int module_init(void)
 			&& strcmp(mode,"dual_channel")) {
 			warning("MPA mode: Permissible values are stereo, "
 			    "joint_stereo, single_channel, dual_channel.\n");
-			return -1;
+			return EINVAL;
 		}
 
 		(void)re_snprintf(fmtp+strlen(fmtp),
@@ -175,7 +178,7 @@ static int module_init(void)
 	if (res != MPG123_OK) {
 		warning("MPA libmpg123 init error %s\n",
 			mpg123_plain_strerror(res));
-		return -1;
+		return ENODEV;
 	}
 
 	aucodec_register(baresip_aucodecl(), &mpa);
@@ -203,4 +206,3 @@ EXPORT_SYM const struct mod_export DECL_EXPORTS(mpa) = {
 	module_init,
 	module_close,
 };
-
