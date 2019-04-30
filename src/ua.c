@@ -1980,6 +1980,9 @@ int ua_print_supported(struct re_printf *pf, const struct ua *ua)
 	size_t i;
 	int err;
 
+	if (!ua)
+		return 0;
+
 	err = re_hprintf(pf, "Supported:");
 
 	for (i=0; i<ua->extensionc; i++) {
