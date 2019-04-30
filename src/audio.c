@@ -1060,11 +1060,9 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 		"jbdef [0-9]+ [^ ]+ [0-9]+",
 		NULL, &type, &val)) {
 
-		const uint32_t ptime = rx->ptime ? rx->ptime : 20;
+		frames = pl_u32(&val) / rx->ptime;
 
-		frames = pl_u32(&val) / ptime;
-
-		if (0 == pl_strcasecmp(&type,"fixed")) {
+		if (0 == pl_strcasecmp(&type, "fixed")) {
 
 			uint32_t frames_min;
 
