@@ -2001,6 +2001,9 @@ void audio_sdp_attr_decode(struct audio *a)
 							    tx->ac->ch,
 							    ptime_tx);
 			}
+
+			sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
+					    "ptime", "%u", ptime_tx);
 		}
 	}
 
