@@ -743,7 +743,10 @@ static int test_ua_options_base(enum sip_transp transp)
 	if (err)
 		goto out;
 
-	TEST_ERR(t.err);
+	if (t.err) {
+		err = t.err;
+		goto out;
+	}
 
 	/* verify after test is complete */
 	ASSERT_EQ(1, t.n_resp);
