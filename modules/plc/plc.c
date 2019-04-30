@@ -71,8 +71,6 @@ static int update(struct aufilt_dec_st **stp, void **ctx,
 		goto out;
 	}
 
-	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
-
  out:
 	if (err)
 		mem_deref(st);
@@ -95,9 +93,11 @@ static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 	if (!st || !sampv || !sampc)
 		return EINVAL;
 
-	if (*sampc)
+	if (*sampc) {
 		plc_rx(&plc->plc, sampv, (int)*sampc);
-	else
+		plc->sampc = *sampc;
+	}
+	else if (plc->sampc)
 		*sampc = plc_fillin(&plc->plc, sampv, (int)plc->sampc);
 
 	return 0;
