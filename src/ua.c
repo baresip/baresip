@@ -688,11 +688,11 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 	if (ua->acc->sipnat) {
-		ua_printf(ua, "Using sipnat: `%s'\n", ua->acc->sipnat);
+		ua_printf(ua, "Using sipnat: '%s'\n", ua->acc->sipnat);
 	}
 
 	if (ua->acc->mnat) {
-		ua_printf(ua, "Using medianat `%s'\n",
+		ua_printf(ua, "Using medianat '%s'\n",
 			  ua->acc->mnat->id);
 
 		if (0 == str_casecmp(ua->acc->mnat->id, "ice"))
@@ -700,7 +700,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	}
 
 	if (ua->acc->menc) {
-		ua_printf(ua, "Using media encryption `%s'\n",
+		ua_printf(ua, "Using media encryption '%s'\n",
 			  ua->acc->menc->id);
 	}
 
