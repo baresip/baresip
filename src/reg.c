@@ -205,7 +205,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 			      sip_auth_handler, ua_account(reg->ua), true,
 			      register_handler, reg,
 			      params[0] ? &params[1] : NULL,
-			      "Allow: %s\r\n", ua_allowed_methods(reg->ua));
+			      "Allow: %H\r\n", ua_print_allowed, reg->ua);
 	if (err)
 		return err;
 

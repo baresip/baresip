@@ -517,14 +517,14 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
 
 	err = sip_treplyf(NULL, NULL, uag.sip,
 			  msg, true, 200, "OK",
-			  "Allow: %s\r\n"
+			  "Allow: %H\r\n"
 			  "%H"
 			  "%H"
 			  "%s"
 			  "Content-Length: %zu\r\n"
 			  "\r\n"
 			  "%b",
-			  ua_allowed_methods(ua),
+			  ua_print_allowed, ua,
 			  ua_print_supported, ua,
 			  sip_contact_print, &contact,
 			  desc ? "Content-Type: application/sdp\r\n" : "",
@@ -1952,18 +1952,28 @@ struct list *uag_list(void)
 
 
 /**
- * Return list of methods supported by the UA
+ * Print list of methods allowed by the UA
  *
- * @param ua User-Agent
+ * @param pf  Print function
+ * @param ua  User-Agent
  *
- * @return String of supported methods
+ * @return 0 if success, otherwise errorcode
  */
-const char *ua_allowed_methods(const struct ua *ua)
+int ua_print_allowed(struct re_printf *pf, const struct ua *ua)
 {
-	return ua->acc->refer ? "INVITE,ACK,BYE,CANCEL,OPTIONS,"
-		"NOTIFY,SUBSCRIBE,INFO,MESSAGE,REFER" :
-		"INVITE,ACK,BYE,CANCEL,OPTIONS,"
-		"NOTIFY,SUBSCRIBE,INFO,MESSAGE";
+	int err;
+
+	if (!ua || !ua->acc)
+		return 0;
+
+	err = re_hprintf(pf,
+			 "INVITE,ACK,BYE,CANCEL,OPTIONS,"
+			 "NOTIFY,SUBSCRIBE,INFO,MESSAGE");
+
+	if (ua->acc->refer)
+		err |= re_hprintf(pf, ",REFER");
+
+	return err;
 }
 
 

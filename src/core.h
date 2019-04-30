@@ -374,7 +374,7 @@ struct ua;
 void         ua_printf(const struct ua *ua, const char *fmt, ...);
 
 struct tls  *uag_tls(void);
-const char  *ua_allowed_methods(const struct ua *ua);
+int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
 
 
 /*
