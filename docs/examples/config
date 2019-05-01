@@ -154,7 +154,7 @@ opus_bitrate		28000 # 6000-510000
 #opus_stereo		yes
 #opus_sprop_stereo	yes
 #opus_cbr		no
-#opus_inband_fec	no
+#opus_inbandfec	no
 #opus_dtx		no
 #opus_mirror		no
 #opus_complexity	10
