@@ -664,7 +664,7 @@ int account_set_medianat(struct account *acc, const char *mnatid)
  * Sets audio codecs
  *
  * @param acc      User-Agent account
- * @param codecs   Comma separed list of audio codecs (NULL to disable)
+ * @param codecs   Comma separated list of audio codecs (NULL to disable)
  *
  * @return 0 if success, otherwise errorcode
  */
