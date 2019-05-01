@@ -107,7 +107,7 @@ static int reg(enum sip_transp tp)
 	char aor[256];
 	int err;
 
-	memset(&t, 0, sizeof t);
+	memset(&t, 0, sizeof(t));
 
 	err = sip_server_alloc(&t.srvv[0], sip_server_exit_handler, NULL);
 	if (err) {
@@ -263,7 +263,7 @@ static int reg_dns(enum sip_transp tp)
 	size_t i;
 	int err;
 
-	memset(&t, 0, sizeof t);
+	memset(&t, 0, sizeof(t));
 
 	/*
 	 * Setup server-side mocks:
@@ -397,7 +397,7 @@ static int reg_auth(enum sip_transp tp)
 	char aor[256];
 	int err;
 
-	memset(&t, 0, sizeof t);
+	memset(&t, 0, sizeof(t));
 
 	err = sip_server_alloc(&t.srvv[0], sip_server_exit_handler, NULL);
 	if (err) {
@@ -506,7 +506,7 @@ static int reg_auth_dns(enum sip_transp tp)
 	unsigned total_req = 0;
 	int err;
 
-	memset(&t, 0, sizeof t);
+	memset(&t, 0, sizeof(t));
 
 	/*
 	 * Setup server-side mocks:

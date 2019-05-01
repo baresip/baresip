@@ -679,7 +679,7 @@ int account_set_audio_codecs(struct account *acc, const char *codecs)
 	list_clear(&acc->aucodecl);
 
 	if (codecs) {
-		re_snprintf(buf, sizeof buf, ";audio_codecs=%s", codecs);
+		re_snprintf(buf, sizeof(buf), ";audio_codecs=%s", codecs);
 		pl_set_str(&pl, buf);
 		return audio_codecs_decode(acc, &pl);
 	}
