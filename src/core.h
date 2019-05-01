@@ -426,3 +426,4 @@ int      timestamp_wrap(uint32_t ts_new, uint32_t ts_old);
 void     timestamp_set(struct timestamp_recv *ts, uint32_t rtp_ts);
 uint64_t timestamp_duration(const struct timestamp_recv *ts);
 uint64_t timestamp_calc_extended(uint32_t num_wraps, uint32_t ts);
+double   timestamp_calc_seconds(uint64_t ts, uint32_t clock_rate);

@@ -187,17 +187,6 @@ struct audio {
 static const char *uri_aulevel = "urn:ietf:params:rtp-hdrext:ssrc-audio-level";
 
 
-static double audio_calc_seconds(uint64_t rtp_ts, uint32_t clock_rate)
-{
-	double timestamp;
-
-	/* convert from RTP clockrate to seconds */
-	timestamp = (double)rtp_ts / (double)clock_rate;
-
-	return timestamp;
-}
-
-
 static double autx_calc_seconds(const struct autx *autx)
 {
 	uint64_t dur;
@@ -207,7 +196,7 @@ static double autx_calc_seconds(const struct autx *autx)
 
 	dur = autx->ts_ext - autx->ts_base;
 
-	return audio_calc_seconds(dur, autx->ac->crate);
+	return timestamp_calc_seconds(dur, autx->ac->crate);
 }
 
 
@@ -220,7 +209,7 @@ static double aurx_calc_seconds(const struct aurx *aurx)
 
 	dur = timestamp_duration(&aurx->ts_recv);
 
-	return audio_calc_seconds(dur, aurx->ac->crate);
+	return timestamp_calc_seconds(dur, aurx->ac->crate);
 }
 
 
@@ -927,7 +916,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 			warning("audio: [time=%.3f]"
 				" discard old frame (%.3f seconds old)\n",
 				aurx_calc_seconds(rx),
-				audio_calc_seconds(delta, rx->ac->crate));
+				timestamp_calc_seconds(delta, rx->ac->crate));
 
 			discard = true;
 		}
