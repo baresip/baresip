@@ -435,7 +435,7 @@ static void menc_error_handler(int err, void *arg)
 }
 
 
-static void menc_event_handler(const enum menc_event event,
+static void menc_event_handler(enum menc_event event,
 			       const char *prm, void *arg)
 {
 	struct call *call = arg;
