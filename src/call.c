@@ -423,18 +423,6 @@ static void video_error_handler(int err, const char *str, void *arg)
 }
 
 
-static void menc_error_handler(int err, void *arg)
-{
-	struct call *call = arg;
-	MAGIC_CHECK(call);
-
-	warning("call: mediaenc '%s' error: %m\n", call->acc->mencid, err);
-
-	call_stream_stop(call);
-	call_event_handler(call, CALL_EVENT_CLOSED, "mediaenc failed");
-}
-
-
 static void menc_event_handler(enum menc_event event,
 			       const char *prm, void *arg)
 {
@@ -446,6 +434,18 @@ static void menc_event_handler(enum menc_event event,
 				   prm);
 	else
 		call_event_handler(call, CALL_EVENT_MENC, "%u", event);
+}
+
+
+static void menc_error_handler(int err, void *arg)
+{
+	struct call *call = arg;
+	MAGIC_CHECK(call);
+
+	warning("call: mediaenc '%s' error: %m\n", call->acc->mencid, err);
+
+	call_stream_stop(call);
+	call_event_handler(call, CALL_EVENT_CLOSED, "mediaenc failed");
 }
 
 
