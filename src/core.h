@@ -188,15 +188,6 @@ int mctrl_handle_media_control(struct pl *body, bool *pfu);
  * Media NAT traversal
  */
 
-struct mnat {
-	struct le le;
-	const char *id;
-	const char *ftag;
-	mnat_sess_h *sessh;
-	mnat_media_h *mediah;
-	mnat_update_h *updateh;
-};
-
 const struct mnat *mnat_find(const struct list *mnatl, const char *id);
 
 

@@ -1226,6 +1226,15 @@ typedef int (mnat_media_h)(struct mnat_media **mp, struct mnat_sess *sess,
 
 typedef int (mnat_update_h)(struct mnat_sess *sess);
 
+struct mnat {
+	struct le le;
+	const char *id;
+	const char *ftag;
+	mnat_sess_h *sessh;
+	mnat_media_h *mediah;
+	mnat_update_h *updateh;
+};
+
 int mnat_register(struct mnat **mnatp, struct list *mnatl,
 		  const char *id, const char *ftag,
 		  mnat_sess_h *sessh, mnat_media_h *mediah,
