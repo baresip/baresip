@@ -40,9 +40,6 @@ struct mnat_media {
 };
 
 
-static struct mnat *mnat;
-
-
 static void session_destructor(void *arg)
 {
 	struct mnat_sess *sess = arg;
@@ -228,17 +225,24 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 }
 
 
+static struct mnat mnat_stun = {
+	.id      = "stun",
+	.sessh   = session_alloc,
+	.mediah  = media_alloc,
+};
+
+
 static int module_init(void)
 {
-	return mnat_register(&mnat, baresip_mnatl(),
-			     "stun", NULL, session_alloc, media_alloc,
-			     NULL);
+	mnat_register(baresip_mnatl(), &mnat_stun);
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
-	mnat = mem_deref(mnat);
+	mnat_unregister(&mnat_stun);
 
 	return 0;
 }

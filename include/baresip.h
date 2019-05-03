@@ -1235,10 +1235,8 @@ struct mnat {
 	mnat_update_h *updateh;
 };
 
-int mnat_register(struct mnat **mnatp, struct list *mnatl,
-		  const char *id, const char *ftag,
-		  mnat_sess_h *sessh, mnat_media_h *mediah,
-		  mnat_update_h *updateh);
+void mnat_register(struct list *mnatl, struct mnat *mnat);
+void mnat_unregister(struct mnat *mnat);
 
 
 /*

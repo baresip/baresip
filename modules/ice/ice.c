@@ -70,7 +70,6 @@ struct mnat_media {
 };
 
 
-static struct mnat *mnat;
 static struct {
 	enum ice_mode mode;
 	enum ice_nomination nom;
@@ -937,6 +936,15 @@ static int update(struct mnat_sess *sess)
 }
 
 
+static struct mnat mnat_ice = {
+	.id      = "ice",
+	.ftag    = "+sip.ice",
+	.sessh   = session_alloc,
+	.mediah  = media_alloc,
+	.updateh = update,
+};
+
+
 static int module_init(void)
 {
 	struct pl pl;
@@ -965,15 +973,15 @@ static int module_init(void)
 		}
 	}
 
-	return mnat_register(&mnat, baresip_mnatl(),
-			     "ice", "+sip.ice",
-			     session_alloc, media_alloc, update);
+	mnat_register(baresip_mnatl(), &mnat_ice);
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
-	mnat = mem_deref(mnat);
+	mnat_unregister(&mnat_ice);
 
 	return 0;
 }

@@ -44,7 +44,6 @@ struct mnat_media {
 };
 
 
-static struct mnat *mnat;
 static struct sa natpmp_srv, natpmp_extaddr;
 static struct natpmp_req *natpmp_ext;
 
@@ -347,6 +346,13 @@ static bool net_rt_handler(const char *ifname, const struct sa *dst,
 }
 
 
+static struct mnat mnat_natpmp = {
+	.id      = "natpmp",
+	.sessh   = session_alloc,
+	.mediah  = media_alloc,
+};
+
+
 static int module_init(void)
 {
 	int err;
@@ -365,14 +371,15 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	return mnat_register(&mnat, baresip_mnatl(), "natpmp", NULL,
-			     session_alloc, media_alloc, NULL);
+	mnat_register(baresip_mnatl(), &mnat_natpmp);
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
-	mnat       = mem_deref(mnat);
+	mnat_unregister(&mnat_natpmp);
 	natpmp_ext = mem_deref(natpmp_ext);
 
 	return 0;
