@@ -20,7 +20,7 @@ struct menc_sess {
 
 
 struct menc_media {
-	void *rtpsock;
+	struct udp_sock *rtpsock;
 	struct udp_helper *uh_rtp;
 };
 
@@ -110,9 +110,9 @@ static int mock_session_alloc(struct menc_sess **sessp,
 
 
 static int mock_media_alloc(struct menc_media **mmp, struct menc_sess *sess,
-			    struct rtp_sock *rtp, int proto,
-			    void *rtpsock, void *rtcpsock,
-			    struct sdp_media *sdpm)
+			   struct rtp_sock *rtp,
+			   struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
+			   struct sdp_media *sdpm)
 {
 	struct menc_media *mm;
 	const int layer = 10; /* above zero */
@@ -123,8 +123,6 @@ static int mock_media_alloc(struct menc_media **mmp, struct menc_sess *sess,
 
 	if (!mmp || !sdpm)
 		return EINVAL;
-	if (proto != IPPROTO_UDP)
-		return EPROTONOSUPPORT;
 
 	mm = *mmp;
 	if (!mm) {

@@ -595,9 +595,9 @@ typedef int  (menc_sess_h)(struct menc_sess **sessp, struct sdp_session *sdp,
 			   menc_error_h *errorh, void *arg);
 
 typedef int  (menc_media_h)(struct menc_media **mp, struct menc_sess *sess,
-			    struct rtp_sock *rtp, int proto,
-			    void *rtpsock, void *rtcpsock,
-			    struct sdp_media *sdpm);
+			   struct rtp_sock *rtp,
+			   struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
+			   struct sdp_media *sdpm);
 
 struct menc {
 	struct le le;

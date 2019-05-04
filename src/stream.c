@@ -460,7 +460,6 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		s->mencs = mem_ref(menc_sess);
 		err = menc->mediah(&s->mes, menc_sess,
 				   s->rtp,
-				   IPPROTO_UDP,
 				   rtp_sock(s->rtp),
 				   rtcp_sock(s->rtp),
 				   s->sdp);
@@ -588,7 +587,6 @@ void stream_update(struct stream *s)
 
 	if (s->menc && s->menc->mediah) {
 		err = s->menc->mediah(&s->mes, s->mencs, s->rtp,
-				      IPPROTO_UDP,
 				      rtp_sock(s->rtp),
 				      rtcp_sock(s->rtp),
 				      s->sdp);

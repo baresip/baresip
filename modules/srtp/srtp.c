@@ -359,7 +359,7 @@ static int session_alloc(struct menc_sess **sessp,
 
 static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 		 struct rtp_sock *rtp,
-		 int proto, void *rtpsock, void *rtcpsock,
+		 struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
 		 struct sdp_media *sdpm)
 {
 	struct menc_st *st;
@@ -372,8 +372,6 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 
 	if (!stp || !sdpm || !sess)
 		return EINVAL;
-	if (proto != IPPROTO_UDP)
-		return EPROTONOSUPPORT;
 
 	st = (struct menc_st *)*stp;
 	if (!st) {
