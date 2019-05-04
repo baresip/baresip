@@ -1221,7 +1221,7 @@ typedef int (mnat_sess_h)(struct mnat_sess **sessp, struct dnsc *dnsc,
 			  mnat_estab_h *estabh, void *arg);
 
 typedef int (mnat_media_h)(struct mnat_media **mp, struct mnat_sess *sess,
-			   int proto, void *sock1, void *sock2,
+			   struct udp_sock *sock1, struct udp_sock *sock2,
 			   struct sdp_media *sdpm);
 
 typedef int (mnat_update_h)(struct mnat_sess *sess);

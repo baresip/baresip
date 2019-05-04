@@ -447,7 +447,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		goto out;
 
 	if (mnat && s->rtp) {
-		err = mnat->mediah(&s->mns, mnat_sess, IPPROTO_UDP,
+		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
 				   rtcp_sock(s->rtp),
 				   s->sdp);

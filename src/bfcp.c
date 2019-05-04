@@ -150,7 +150,7 @@ int bfcp_alloc(struct bfcp **bfcpp, struct sdp_session *sdp_sess,
 	if (mnat) {
 		info("bfcp: enabled medianat '%s' on UDP socket\n", mnat->id);
 
-		err = mnat->mediah(&bfcp->mnat_st, mnat_sess, IPPROTO_UDP,
+		err = mnat->mediah(&bfcp->mnat_st, mnat_sess,
 				   bfcp_sock(bfcp->conn), NULL, bfcp->sdpm);
 		if (err)
 			goto out;

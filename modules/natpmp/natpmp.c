@@ -254,7 +254,7 @@ static int comp_alloc(struct comp *comp, void *sock)
 
 
 static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
-		       int proto, void *sock1, void *sock2,
+		       struct udp_sock *sock1, struct udp_sock *sock2,
 		       struct sdp_media *sdpm)
 {
 	struct mnat_media *m;
@@ -262,7 +262,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	int err = 0;
 	(void)sock2;
 
-	if (!mp || !sess || !sdpm || proto != IPPROTO_UDP)
+	if (!mp || !sess || !sdpm)
 		return EINVAL;
 	if (!sock1)
 		return EINVAL;

@@ -787,7 +787,7 @@ static int ice_start(struct mnat_sess *sess)
 
 
 static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
-		       int proto, void *sock1, void *sock2,
+		       struct udp_sock *sock1, struct udp_sock *sock2,
 		       struct sdp_media *sdpm)
 {
 	struct mnat_media *m;
@@ -814,7 +814,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		role = ICE_ROLE_CONTROLLED;
 
 	err = icem_alloc(&m->icem, ice.mode, role,
-			 proto, ICE_LAYER,
+			 IPPROTO_UDP, ICE_LAYER,
 			 sess->tiebrk, sess->lufrag, sess->lpwd,
 			 conncheck_handler, m);
 	if (err)

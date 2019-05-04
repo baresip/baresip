@@ -70,8 +70,8 @@ static int mnat_session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 
 
 static int mnat_media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
-			   int proto, void *sock1, void *sock2,
-			   struct sdp_media *sdpm)
+			    struct udp_sock *sock1, struct udp_sock *sock2,
+			    struct sdp_media *sdpm)
 {
 	int err;
 
@@ -79,9 +79,6 @@ static int mnat_media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	(void)sess;
 	(void)sock1;
 	(void)sock2;
-
-	if (proto != IPPROTO_UDP)
-		return EPROTONOSUPPORT;
 
 	err = sdp_media_set_lattr(sdpm, true, "xnat", NULL);
 	if (err)
