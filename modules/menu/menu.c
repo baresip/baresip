@@ -1253,6 +1253,12 @@ static int module_init(void)
 	struct pl val;
 	int err;
 
+	menu.bell = true;
+	menu.redial_attempts = 0;
+	menu.redial_delay = 5;
+	menu.ringback_disabled = false;
+	menu.statmode = STATMODE_CALL;
+
 	/*
 	 * Read the config values
 	 */
