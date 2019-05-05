@@ -508,7 +508,7 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 	if (!s)
 		return EINVAL;
 
-	if (!sa_isset(sdp_media_raddr(s->sdp), SA_ALL))
+	if (!sa_isset(&s->raddr_rtp, SA_ALL))
 		return 0;
 	if (!(sdp_media_rdir(s->sdp) & SDP_SENDONLY))
 		return 0;
@@ -521,7 +521,7 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		pt = s->pt_enc;
 
 	if (pt >= 0) {
-		err = rtp_send(s->rtp, sdp_media_raddr(s->sdp), ext,
+		err = rtp_send(s->rtp, &s->raddr_rtp, ext,
 			       marker, pt, ts, mb);
 		if (err)
 			s->metric_tx.n_err++;
@@ -533,7 +533,6 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 
 static void stream_remote_set(struct stream *s)
 {
-	struct sa rtcp;
 	int err;
 
 	if (!s)
@@ -552,10 +551,14 @@ static void stream_remote_set(struct stream *s)
 
 	rtcp_enable_mux(s->rtp, s->rtcp_mux);
 
-	sdp_media_raddr_rtcp(s->sdp, &rtcp);
+	sa_cpy(&s->raddr_rtp, sdp_media_raddr(s->sdp));
 
-	rtcp_start(s->rtp, s->cname,
-		   s->rtcp_mux ? sdp_media_raddr(s->sdp): &rtcp);
+	if (s->rtcp_mux)
+		s->raddr_rtcp = s->raddr_rtp;
+	else
+		sdp_media_raddr_rtcp(s->sdp, &s->raddr_rtcp);
+
+	rtcp_start(s->rtp, s->cname, &s->raddr_rtcp);
 
 	/* Send a dummy RTCP packet to open NAT pinhole */
 	err = rtcp_send_app(s->rtp, "PING", (void *)"PONG", 4);
@@ -725,7 +728,6 @@ void stream_set_error_handler(struct stream *strm,
 
 int stream_debug(struct re_printf *pf, const struct stream *s)
 {
-	struct sa rrtcp;
 	int err;
 
 	if (!s)
@@ -735,10 +737,9 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 			  sdp_dir_name(sdp_media_dir(s->sdp)),
 			  s->pt_enc);
 
-	sdp_media_raddr_rtcp(s->sdp, &rrtcp);
 	err |= re_hprintf(pf, " local: %J, remote: %J/%J\n",
 			  sdp_media_laddr(s->sdp),
-			  sdp_media_raddr(s->sdp), &rrtcp);
+			  &s->raddr_rtp, &s->raddr_rtcp);
 
 	err |= rtp_debug(pf, s->rtp);
 	err |= jbuf_debug(pf, s->jbuf);
