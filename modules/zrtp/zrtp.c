@@ -348,6 +348,8 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 		       struct rtp_sock *rtp,
 		       struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
+		       const struct sa *raddr_rtp,
+		       const struct sa *raddr_rtcp,
 		       struct sdp_media *sdpm)
 {
 	struct menc_media *st;

@@ -112,6 +112,8 @@ static int mock_session_alloc(struct menc_sess **sessp,
 static int mock_media_alloc(struct menc_media **mmp, struct menc_sess *sess,
 			   struct rtp_sock *rtp,
 			   struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
+			   const struct sa *raddr_rtp,
+			   const struct sa *raddr_rtcp,
 			   struct sdp_media *sdpm)
 {
 	struct menc_media *mm;
@@ -120,6 +122,8 @@ static int mock_media_alloc(struct menc_media **mmp, struct menc_sess *sess,
 	(void)sess;
 	(void)rtp;
 	(void)rtcpsock;
+	(void)raddr_rtp;
+	(void)raddr_rtcp;
 
 	if (!mmp || !sdpm)
 		return EINVAL;

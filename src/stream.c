@@ -462,6 +462,8 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 				   s->rtp,
 				   rtp_sock(s->rtp),
 				   rtcp_sock(s->rtp),
+				   &s->raddr_rtp,
+				   &s->raddr_rtcp,
 				   s->sdp);
 		if (err)
 			goto out;
@@ -592,6 +594,8 @@ void stream_update(struct stream *s)
 		err = s->menc->mediah(&s->mes, s->mencs, s->rtp,
 				      rtp_sock(s->rtp),
 				      rtcp_sock(s->rtp),
+				      &s->raddr_rtp,
+				      &s->raddr_rtcp,
 				      s->sdp);
 		if (err) {
 			warning("stream: mediaenc update: %m\n", err);
