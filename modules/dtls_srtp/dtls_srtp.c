@@ -281,11 +281,6 @@ static int component_start(struct comp *comp, struct sdp_media *sdpm)
 	if (!comp->app_sock || comp->negotiated || comp->dtls_sock)
 		return 0;
 
-	if (comp->is_rtp)
-		raddr = *sdp_media_raddr(sdpm);
-	else
-		sdp_media_raddr_rtcp(sdpm, &raddr);
-
 	err = dtls_listen(&comp->dtls_sock, NULL,
 			  comp->app_sock, 2, LAYER_DTLS,
 			  dtls_conn_handler, comp);
@@ -293,6 +288,8 @@ static int component_start(struct comp *comp, struct sdp_media *sdpm)
 		warning("dtls_srtp: dtls_listen failed (%m)\n", err);
 		return err;
 	}
+
+	raddr = comp->raddr;
 
 	if (sa_isset(&raddr, SA_ALL)) {
 
@@ -383,6 +380,10 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 
 	st->compv[0].is_rtp = true;
 	st->compv[1].is_rtp = false;
+
+	st->compv[0].raddr = *raddr_rtp;
+	if (raddr_rtcp)
+		st->compv[1].raddr = *raddr_rtcp;
 
 	err = sdp_media_set_alt_protos(st->sdpm, 4,
 				       "RTP/SAVP",

@@ -17,6 +17,7 @@ struct comp {
 	struct srtp_stream *tx;
 	struct srtp_stream *rx;
 	struct udp_helper *uh_srtp;
+	struct sa raddr;
 	void *app_sock;
 	bool negotiated;
 	bool is_rtp;
