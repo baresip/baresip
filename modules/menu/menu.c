@@ -507,15 +507,6 @@ static int call_audio_debug(struct re_printf *pf, void *unused)
 }
 
 
-static int call_audioenc_cycle(struct re_printf *pf, void *unused)
-{
-	(void)pf;
-	(void)unused;
-	audio_encoder_cycle(call_audio(ua_call(uag_current())));
-	return 0;
-}
-
-
 static int call_reinvite(struct re_printf *pf, void *unused)
 {
 	(void)pf;
@@ -789,15 +780,6 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 }
 
 
-static int call_videoenc_cycle(struct re_printf *pf, void *unused)
-{
-	(void)pf;
-	(void)unused;
-	video_encoder_cycle(call_video(ua_call(uag_current())));
-	return 0;
-}
-
-
 static int call_video_debug(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -899,7 +881,6 @@ static int set_audio_bitrate(struct re_printf *pf, void *arg)
 static const struct cmd callcmdv[] = {
 
 {"aubitrate",    0,  CMD_PRM, "Set audio bitrate",    set_audio_bitrate    },
-{"audio_cycle", 'e',       0, "Cycle audio encoder",  call_audioenc_cycle  },
 {"audio_debug", 'A',       0, "Audio stream",         call_audio_debug     },
 {"hold",        'x',       0, "Call hold",            cmd_call_hold        },
 {"line",        '@', CMD_PRM, "Set current call <line>", set_current_call  },
@@ -911,7 +892,6 @@ static const struct cmd callcmdv[] = {
 {"sndcode",      0,  CMD_PRM, "Send Code",            send_code            },
 {"statmode",    'S',       0, "Statusmode toggle",    toggle_statmode      },
 {"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
-{"video_cycle", 'E',       0, "Cycle video encoder",  call_videoenc_cycle  },
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
 
 /* Numeric keypad for DTMF events: */

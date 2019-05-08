@@ -1274,28 +1274,6 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 
 
 /**
- * Use the next video encoder in the local list of negotiated codecs
- *
- * @param video  Video object
- */
-void video_encoder_cycle(struct video *video)
-{
-	const struct sdp_format *rc = NULL;
-
-	if (!video)
-		return;
-
-	rc = sdp_media_format_cycle(stream_sdpmedia(video_strm(video)));
-	if (!rc) {
-		info("cycle video: no remote codec found\n");
-		return;
-	}
-
-	(void)video_encoder_set(video, rc->data, rc->pt, rc->params);
-}
-
-
-/**
  * Get the RTP Stream object from a Video object
  *
  * @param v  Video object
