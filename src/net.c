@@ -28,6 +28,54 @@ struct network {
 };
 
 
+struct ifentry {
+	int af;
+	char *ifname;
+	struct sa *ip;
+	size_t sz;
+	bool found;
+};
+
+
+static bool if_getname_handler(const char *ifname, const struct sa *sa,
+			       void *arg)
+{
+	struct ifentry *ife = arg;
+
+	if (ife->af != sa_af(sa))
+		return false;
+
+	if (sa_cmp(sa, ife->ip, SA_ADDR)) {
+		str_ncpy(ife->ifname, ifname, ife->sz);
+		ife->found = true;
+		return true;
+	}
+
+	return false;
+}
+
+
+static int network_if_getname(char *ifname, size_t sz,
+			      int af, const struct sa *ip)
+{
+	struct ifentry ife;
+	int err;
+
+	if (!ifname || !sz || !ip)
+		return EINVAL;
+
+	ife.af     = af;
+	ife.ifname = ifname;
+	ife.ip     = (struct sa *)ip;
+	ife.sz     = sz;
+	ife.found  = false;
+
+	err = net_if_apply(if_getname_handler, &ife);
+
+	return ife.found ? err : ENODEV;
+}
+
+
 static int net_dnssrv_add(struct network *net, const struct sa *sa)
 {
 	if (!net)
@@ -363,15 +411,17 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	}
 	else {
 		(void)net_default_source_addr_get(AF_INET, &net->laddr);
-		(void)net_rt_default_get(AF_INET, net->ifname,
-					 sizeof(net->ifname));
+
+		network_if_getname(net->ifname, sizeof(net->ifname),
+				   AF_INET, &net->laddr);
 
 #ifdef HAVE_INET6
 		sa_init(&net->laddr6, AF_INET6);
 
 		(void)net_default_source_addr_get(AF_INET6, &net->laddr6);
-		(void)net_rt_default_get(AF_INET6, net->ifname6,
-					 sizeof(net->ifname6));
+
+		network_if_getname(net->ifname6, sizeof(net->ifname6),
+				   AF_INET6, &net->laddr6);
 #endif
 	}
 
