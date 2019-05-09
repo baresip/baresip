@@ -1247,8 +1247,6 @@ bool sdp_media_has_media(const struct sdp_media *m);
 int  sdp_fingerprint_decode(const char *attr, struct pl *hash,
 			    uint8_t *md, size_t *sz);
 uint32_t sdp_media_rattr_u32(const struct sdp_media *sdpm, const char *name);
-const char *sdp_rattr(const struct sdp_session *s, const struct sdp_media *m,
-		      const char *name);
 
 
 /*

@@ -25,33 +25,6 @@ uint32_t sdp_media_rattr_u32(const struct sdp_media *m, const char *name)
 
 
 /**
- * Get a remote attribute from the SDP. Try the media-level first,
- * and if it does not exist then try session-level.
- *
- * @param s    SDP Session object
- * @param m    SDP Media object
- * @param name Remote attribute name
- *
- * @return Remote attribute value
- */
-const char *sdp_rattr(const struct sdp_session *s, const struct sdp_media *m,
-		      const char *name)
-{
-	const char *x;
-
-	x = sdp_media_rattr(m, name);
-	if (x)
-		return x;
-
-	x = sdp_session_rattr(s, name);
-	if (x)
-		return x;
-
-	return NULL;
-}
-
-
-/**
  * Decode an SDP fingerprint value
  *
  * @param attr SDP attribute value
