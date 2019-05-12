@@ -7,9 +7,11 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
+#endif
 #include "modules/audio_processing/aec/echo_cancellation.h"
 #include "aec.h"
-
 
 /**
  * @defgroup webrtc_aec webrtc_aec
