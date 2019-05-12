@@ -356,6 +356,8 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 	zrtp_status_t s;
 	int layer = 10; /* above zero */
 	int err = 0;
+	(void)raddr_rtp;
+	(void)raddr_rtcp;
 
 	if (!stp || !sess)
 		return EINVAL;
