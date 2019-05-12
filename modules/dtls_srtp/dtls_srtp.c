@@ -273,7 +273,7 @@ static void dtls_conn_handler(const struct sa *peer, void *arg)
 }
 
 
-static int component_start(struct comp *comp, struct sdp_media *sdpm)
+static int component_start(struct comp *comp)
 {
 	struct sa raddr;
 	int err = 0;
@@ -324,10 +324,10 @@ static int media_start(struct dtls_srtp *st, struct sdp_media *sdpm)
 	if (!sdp_media_has_media(sdpm))
 		return 0;
 
-	err = component_start(&st->compv[0], sdpm);
+	err = component_start(&st->compv[0]);
 
 	if (!st->mux)
-		err |= component_start(&st->compv[1], sdpm);
+		err |= component_start(&st->compv[1]);
 
 	if (err)
 		return err;
