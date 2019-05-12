@@ -199,14 +199,16 @@ bool net_check(struct network *net)
 #endif
 	}
 	else {
-		(void)net_default_source_addr_get(AF_INET, &net->laddr);
-		(void)net_rt_default_get(AF_INET, net->ifname,
-					 sizeof(net->ifname));
+		net_default_source_addr_get(AF_INET, &net->laddr);
+
+		network_if_getname(net->ifname, sizeof(net->ifname),
+				   AF_INET, &net->laddr);
 
 #ifdef HAVE_INET6
-		(void)net_default_source_addr_get(AF_INET6, &net->laddr6);
-		(void)net_rt_default_get(AF_INET6, net->ifname6,
-					 sizeof(net->ifname6));
+		net_default_source_addr_get(AF_INET6, &net->laddr6);
+
+		network_if_getname(net->ifname6, sizeof(net->ifname6),
+				   AF_INET6, &net->laddr6);
 #endif
 	}
 
