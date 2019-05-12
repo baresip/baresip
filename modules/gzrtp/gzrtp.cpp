@@ -101,15 +101,17 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 
 static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
                        struct rtp_sock *rtp,
-                       int proto, void *rtpsock, void *rtcpsock,
-                       struct sdp_media *sdpm)
+                       struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
+ 		       const struct sa *raddr_rtp,
+		       const struct sa *raddr_rtcp,
+		       struct sdp_media *sdpm)
 {
 	struct menc_media *st;
 	int err = 0;
 	StreamMediaType med_type;
 	const char *med_name;
 
-	if (!stp || !sess || !sess->session || proto != IPPROTO_UDP)
+	if (!stp || !sess || !sess->session)
 		return EINVAL;
 
 	st = *stp;
