@@ -47,7 +47,6 @@ struct mnat_media {
 };
 
 
-static struct mnat *mnat;
 static struct sa pcp_srv;
 static struct list sessl;
 static struct pcp_listener *lsnr;
@@ -205,7 +204,7 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 
 
 static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
-		       int proto, void *sock1, void *sock2,
+		       struct udp_sock *sock1, struct udp_sock *sock2,
 		       struct sdp_media *sdpm)
 {
 	struct mnat_media *m;
@@ -214,7 +213,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	unsigned i;
 	int err = 0;
 
-	if (!mp || !sess || !sdpm || proto != IPPROTO_UDP)
+	if (!mp || !sess || !sdpm)
 		return EINVAL;
 
 	m = mem_zalloc(sizeof(*m), media_destructor);
@@ -238,7 +237,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 			goto out;
 
 		rand_bytes(map.nonce, sizeof(map.nonce));
-		map.proto = proto;
+		map.proto = IPPROTO_UDP;
 		map.int_port = sa_port(&laddr);
 		/* note: using same address-family as the PCP server */
 		sa_init(&map.ext_addr, sa_af(&pcp_srv));
@@ -315,6 +314,13 @@ static void pcp_msg_handler(const struct pcp_msg *msg, void *arg)
 }
 
 
+static struct mnat mnat_pcp = {
+	.id      = "pcp",
+	.sessh   = session_alloc,
+	.mediah  = media_alloc,
+};
+
+
 static int module_init(void)
 {
 	struct pl pl;
@@ -343,15 +349,16 @@ static int module_init(void)
 		err = 0;
 	}
 
-	return mnat_register(&mnat, baresip_mnatl(), "pcp", NULL,
-			     session_alloc, media_alloc, NULL);
+	mnat_register(baresip_mnatl(), &mnat_pcp);
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
 	lsnr = mem_deref(lsnr);
-	mnat = mem_deref(mnat);
+	mnat_unregister(&mnat_pcp);
 	return 0;
 }
 
