@@ -37,6 +37,7 @@ struct menu{
 	struct odict *ovaufile;       /**< Override aufile dictionary     */
 	struct tmr tmr_play;          /**< Tones play timer               */
 	size_t outcnt;                /**< Outgoing call counter          */
+	bool even;                    /**< Print UA events flag           */
 };
 
 /*Get menu object*/

@@ -1488,6 +1488,17 @@ static int cmd_set_ringback(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_events(struct re_printf *pf, void *unused)
+{
+	struct menu *menu = menu_get();
+	(void) pf;
+	(void) unused;
+
+	menu->even = !menu->even;
+	return 0;
+}
+
+
 /*Static call menu*/
 static const struct cmd cmdv[] = {
 
@@ -1533,6 +1544,7 @@ static const struct cmd cmdv[] = {
 #endif
 {"set_ringback",0,  CMD_PRM, "Overwrite ringback tone temporarily. ",
                                                         cmd_set_ringback     },
+{"events",    0,          0, "Toggle ua events",        cmd_events},
 
 };
 

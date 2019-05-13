@@ -669,11 +669,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	int err;
 	(void)arg;
 
-#if 0
-	debug("menu: [ ua=%s call=%s ] event: %s (%s)\n",
-	      account_aor(acc), call_id(call), uag_event_str(ev), prm);
-#endif
-
+	if (menu.even)
+		info("menu: [ ua=%s call=%s ] event: %s (%s)\n",
+		     account_aor(acc), call_id(call), uag_event_str(ev), prm);
 
 	ardir =sdp_media_rdir(
 			stream_sdpmedia(audio_strm(call_audio(call))));
