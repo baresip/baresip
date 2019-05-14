@@ -1774,6 +1774,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		      int pt_rx, const char *params)
 {
 	struct aurx *rx;
+	struct sdp_media *m;
 	bool reset = false;
 	int err = 0;
 
@@ -1783,6 +1784,8 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	rx = &a->rx;
 
 	reset = !aucodec_equal(ac, rx->ac);
+	m = stream_sdpmedia(audio_strm(a));
+	reset |= sdp_media_dir(m)!=SDP_SENDRECV;
 
 	if (ac != rx->ac) {
 
@@ -1805,6 +1808,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	stream_set_srate(a->strm, 0, ac->crate);
 
 	if (reset) {
+		stream_reset(audio_strm(a));
 
 		rx->auplay = mem_deref(rx->auplay);
 		aubuf_flush(rx->aubuf);
