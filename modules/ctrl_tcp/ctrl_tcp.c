@@ -173,11 +173,12 @@ static int encode_response(int cmd_error, struct mbuf *resp, const char *token)
 static bool command_handler(struct mbuf *mb, void *arg)
 {
 	struct ctrl_st *st = arg;
-	struct mbuf *resp = mbuf_alloc(2048);
+	struct mbuf *resp = mbuf_alloc(128);
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL;
 	const char *cmd, *prm, *tok;
-	char buf[1024];
+	size_t buflen;
+	char *buf = NULL;
 	int err;
 
 	err = json_decode_odict(&od, 32, (const char*)mb->buf, mb->end, 16);
@@ -197,7 +198,12 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	debug("ctrl_tcp: handle_command:  cmd='%s', params:'%s', token='%s'\n",
 	      cmd, prm, tok);
 
-	re_snprintf(buf, sizeof(buf), "%s%s%s", cmd, prm ? " " : "", prm);
+	buflen = strlen(cmd) + 1;
+	if (prm)
+		buflen += (strlen(prm) + 1);
+
+	buf = mem_zalloc(buflen, NULL);
+	re_snprintf(buf, buflen, "%s%s%s", cmd, prm ? " " : "", prm);
 
 	resp->pos = NETSTRING_HEADER_SIZE;
 
@@ -212,7 +218,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 		/* Relay message to long commands */
 		err = cmd_process_long(baresip_commands(),
 					   buf,
-					   str_len(buf),
+					   buflen,
 					   &pf, NULL);
 	}
 
@@ -233,6 +239,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	}
 
  out:
+	mem_deref(buf);
 	mem_deref(resp);
 	mem_deref(od);
 
@@ -268,7 +275,7 @@ static void sendEvent(struct ua *ua, enum ua_event ev,
 	     struct call *call, const char *prm, void *arg)
 {
 	struct ctrl_st *st = arg;
-	struct mbuf *buf = mbuf_alloc(1024);
+	struct mbuf *buf = mbuf_alloc(192);
 	struct re_printf pf = {print_handler, buf};
 	struct odict *od = NULL;
 	int err;
