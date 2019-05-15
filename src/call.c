@@ -1175,7 +1175,6 @@ static int sipsess_offer_handler(struct mbuf **descp,
 {
 	const bool got_offer = (0 != mbuf_get_left(msg->mb));
 	struct call *call = arg;
-	struct le *le;
 	int err;
 
 	MAGIC_CHECK(call);
@@ -1196,8 +1195,6 @@ static int sipsess_offer_handler(struct mbuf **descp,
 		if (err)
 			return err;
 
-		FOREACH_STREAM
-			stream_reset(le->data);
 	}
 
 	/* Encode SDP Answer */
