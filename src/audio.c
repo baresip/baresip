@@ -1150,7 +1150,7 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	rx->dec_fmt = cfg->audio.dec_fmt;
 
 	err = stream_alloc(&a->strm, stream_prm, &cfg->avt, call, sdp_sess,
-			   "audio", label,
+			   MEDIA_AUDIO, label,
 			   mnat, mnat_sess, menc, menc_sess, offerer,
 			   stream_recv_handler, NULL, a);
 	if (err)

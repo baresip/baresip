@@ -281,6 +281,11 @@ int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb);
  * Stream
  */
 
+enum media_type {
+	MEDIA_AUDIO = 0,
+	MEDIA_VIDEO,
+};
+
 struct rtp_header;
 
 enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
@@ -312,6 +317,7 @@ struct stream {
 	struct metric metric_rx; /**< Metrics for receiving                 */
 	struct sa raddr_rtp;
 	struct sa raddr_rtcp;
+	enum media_type type;
 	char *cname;             /**< RTCP Canonical end-point identifier   */
 	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
@@ -334,7 +340,7 @@ struct stream {
 int  stream_alloc(struct stream **sp, const struct stream_param *prm,
 		  const struct config_avt *cfg,
 		  struct call *call, struct sdp_session *sdp_sess,
-		  const char *name, int label,
+		  enum media_type type, int label,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
 		  bool offerer,

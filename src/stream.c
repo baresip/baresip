@@ -158,6 +158,17 @@ static void stream_destructor(void *arg)
 }
 
 
+static const char *media_name(enum media_type type)
+{
+	switch (type) {
+
+	case MEDIA_AUDIO: return "audio";
+	case MEDIA_VIDEO: return "video";
+	default:          return "???";
+	}
+}
+
+
 static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 		       struct mbuf *mb)
 {
@@ -369,7 +380,7 @@ static int stream_sock_alloc(struct stream *s, int af)
 int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		 const struct config_avt *cfg,
 		 struct call *call, struct sdp_session *sdp_sess,
-		 const char *name, int label,
+		 enum media_type type, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
 		 bool offerer,
@@ -389,6 +400,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 
 	s->cfg   = *cfg;
 	s->call  = call;
+	s->type  = type;
 	s->rtph  = rtph;
 	s->rtcph = rtcph;
 	s->arg   = arg;
@@ -398,7 +410,8 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		err = stream_sock_alloc(s, prm->af);
 		if (err) {
 			warning("stream: failed to create socket"
-				" for media '%s' (%m)\n", name, err);
+				" for media '%s' (%m)\n",
+				media_name(type), err);
 			goto out;
 		}
 	}
@@ -416,7 +429,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 			goto out;
 	}
 
-	err = sdp_media_add(&s->sdp, sdp_sess, name,
+	err = sdp_media_add(&s->sdp, sdp_sess, media_name(type),
 			    s->rtp ? sa_port(rtp_local(s->rtp)) : PORT_DISCARD,
 			    (menc && menc->sdp_proto) ? menc->sdp_proto :
 			    sdp_proto_rtpavp);
