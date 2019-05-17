@@ -104,6 +104,33 @@ static void set_state(struct call *call, enum state st)
 }
 
 
+static const struct sdp_format *sdp_media_rcodec(const struct sdp_media *m)
+{
+	const struct list *lst;
+	struct le *le;
+
+	if (!m || !sdp_media_rport(m))
+		return NULL;
+
+	lst = sdp_media_format_lst(m, false);
+
+	for (le=list_head(lst); le; le=le->next) {
+
+		const struct sdp_format *fmt = le->data;
+
+		if (!fmt->sup)
+			continue;
+
+		if (!fmt->data)
+			continue;
+
+		return fmt;
+	}
+
+	return NULL;
+}
+
+
 static void call_stream_start(struct call *call, bool active)
 {
 	const struct sdp_format *sc;
@@ -112,7 +139,7 @@ static void call_stream_start(struct call *call, bool active)
 	debug("call: stream start (active=%d)\n", active);
 
 	/* Audio Stream */
-	sc = sdp_media_rformat(stream_sdpmedia(audio_strm(call->audio)), NULL);
+	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
 	if (sc) {
 		struct aucodec *ac = sc->data;
 
@@ -301,7 +328,7 @@ static int update_media(struct call *call)
 	if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
 		err = call->acc->mnat->updateh(call->mnats);
 
-	sc = sdp_media_rformat(stream_sdpmedia(audio_strm(call->audio)), NULL);
+	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
 	if (sc) {
 		struct aucodec *ac = sc->data;
 		if (ac) {
@@ -1435,7 +1462,7 @@ static bool have_common_audio_codecs(const struct call *call)
 	const struct sdp_format *sc;
 	struct aucodec *ac;
 
-	sc = sdp_media_rformat(stream_sdpmedia(audio_strm(call->audio)), NULL);
+	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
 	if (!sc)
 		return false;
 
