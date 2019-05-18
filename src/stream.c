@@ -460,6 +460,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		goto out;
 
 	if (mnat && s->rtp) {
+		s->mnat = mnat;
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
 				   rtcp_sock(s->rtp),
@@ -758,6 +759,9 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 	err |= re_hprintf(pf, " local: %J, remote: %J/%J\n",
 			  sdp_media_laddr(s->sdp),
 			  &s->raddr_rtp, &s->raddr_rtcp);
+
+	err |= re_hprintf(pf, " mnat: %s\n",
+			  s->mnat ? s->mnat->id : "(none)");
 
 	err |= rtp_debug(pf, s->rtp);
 	err |= jbuf_debug(pf, s->jbuf);

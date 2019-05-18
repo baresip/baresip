@@ -309,6 +309,7 @@ struct stream {
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
 	struct jbuf *jbuf;       /**< Jitter Buffer for incoming RTP        */
+	const struct mnat *mnat; /**< Media NAT traversal module            */
 	struct mnat_media *mns;  /**< Media NAT traversal state             */
 	const struct menc *menc; /**< Media encryption module               */
 	struct menc_sess *mencs; /**< Media encryption session state        */
