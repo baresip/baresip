@@ -43,8 +43,10 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	if (!stp || !ctx || !prm)
 		return EINVAL;
 
-	if (prm->srate > MAX_SAMPLE_RATE || prm->ch > MAX_CHANNELS)
+	if (prm->srate > MAX_SAMPLE_RATE || prm->ch > MAX_CHANNELS) {
+		warning("webrtc_aec: unsupported samplerate or channels\n");
 		return ENOTSUP;
+	}
 
 	if (*ctx) {
 		aec = (struct aec *)*ctx;
