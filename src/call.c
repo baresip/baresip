@@ -143,31 +143,26 @@ static void call_stream_start(struct call *call, bool active)
 	if (sc) {
 		struct aucodec *ac = sc->data;
 
-		if (ac) {
-			err  = audio_encoder_set(call->audio, sc->data,
-						 sc->pt, sc->params);
-			if (err) {
-				warning("call: start:"
-					" audio_encoder_set error: %m\n", err);
-			}
-			err |= audio_decoder_set(call->audio, sc->data,
-						 sc->pt, sc->params);
-			if (err) {
-				warning("call: start:"
-					" audio_decoder_set error: %m\n", err);
-			}
-
-			if (!err) {
-				err = audio_start(call->audio);
-				if (err) {
-					warning("call: start:"
-						" audio_start error: %m\n",
-						err);
-				}
-			}
+		err  = audio_encoder_set(call->audio, ac,
+					 sc->pt, sc->params);
+		if (err) {
+			warning("call: start:"
+				" audio_encoder_set error: %m\n", err);
 		}
-		else {
-			info("call: no common audio-codecs..\n");
+		err |= audio_decoder_set(call->audio, ac,
+					 sc->pt, sc->params);
+		if (err) {
+			warning("call: start:"
+				" audio_decoder_set error: %m\n", err);
+		}
+
+		if (!err) {
+			err = audio_start(call->audio);
+			if (err) {
+				warning("call: start:"
+					" audio_start error: %m\n",
+					err);
+			}
 		}
 	}
 	else {
@@ -331,15 +326,11 @@ static int update_media(struct call *call)
 	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
 	if (sc) {
 		struct aucodec *ac = sc->data;
-		if (ac) {
-			err  = audio_decoder_set(call->audio, sc->data,
-						 sc->pt, sc->params);
-			err |= audio_encoder_set(call->audio, sc->data,
-						 sc->pt, sc->params);
-		}
-		else {
-			info("no common audio-codecs..\n");
-		}
+
+		err  = audio_decoder_set(call->audio, ac,
+					 sc->pt, sc->params);
+		err |= audio_encoder_set(call->audio, ac,
+					 sc->pt, sc->params);
 	}
 	else {
 		info("audio stream is disabled..\n");
