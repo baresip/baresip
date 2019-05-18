@@ -1332,7 +1332,8 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 			char s = toupper(sig.p[0]);
 			uint32_t duration = pl_u32(&dur);
 
-			info("received DTMF: '%c' (duration=%r)\n", s, &dur);
+			info("call: received DTMF: '%c' (duration=%r)\n",
+			     s, &dur);
 
 			(void)sip_reply(sip, msg, 200, "OK");
 
