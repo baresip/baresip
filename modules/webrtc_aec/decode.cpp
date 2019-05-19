@@ -48,7 +48,7 @@ int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
 		break;
 
 	default:
-		warning("webrtc_aec: unsupported sample format (%s)\n",
+		warning("webrtc_aec: dec: unsupported sample format (%s)\n",
 			aufmt_name((enum aufmt)prm->fmt));
 		return ENOTSUP;
 	}

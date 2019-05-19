@@ -53,7 +53,7 @@ int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
 		break;
 
 	default:
-		warning("webrtc_aec: unsupported sample format (%s)\n",
+		warning("webrtc_aec: enc: unsupported sample format (%s)\n",
 			aufmt_name((enum aufmt)prm->fmt));
 		return ENOTSUP;
 	}
