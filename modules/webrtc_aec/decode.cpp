@@ -10,7 +10,6 @@
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
-#include "modules/audio_processing/aec/echo_cancellation.h"
 #include "aec.h"
 
 
