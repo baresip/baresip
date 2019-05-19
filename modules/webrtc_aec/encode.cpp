@@ -152,6 +152,9 @@ int webrtc_aec_encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 	case AUFMT_FLOAT:
 		err = encode_float(enc, (float *)sampv, *sampc);
 		break;
+
+	default:
+		return ENOTSUP;
 	}
 
 	return err;
