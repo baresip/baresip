@@ -18,6 +18,7 @@ struct aec_dec {
 	struct aufilt_dec_st af;  /* inheritance */
 
 	struct aec *aec;
+	enum aufmt fmt;
 };
 
 
@@ -37,10 +38,16 @@ int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
 	struct aec_dec *st;
 	int err;
 
-	if (!stp || !af)
+	if (!stp || !af || !prm)
 		return EINVAL;
 
-	if (prm->fmt != AUFMT_FLOAT) {
+	switch (prm->fmt) {
+
+	case AUFMT_S16LE:
+	case AUFMT_FLOAT:
+		break;
+
+	default:
 		warning("webrtc_aec: unsupported sample format (%s)\n",
 			aufmt_name((enum aufmt)prm->fmt));
 		return ENOTSUP;
@@ -52,6 +59,8 @@ int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
 	st = (struct aec_dec *)mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
 		return ENOMEM;
+
+	st->fmt = (enum aufmt)prm->fmt;
 
 	err = webrtc_aec_alloc(&st->aec, ctx, prm);
 	if (err)
@@ -67,21 +76,17 @@ int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-int webrtc_aec_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
+static int decode_float(struct aec_dec *dec, const float *sampv, size_t sampc)
 {
-	struct aec_dec *dec = (struct aec_dec *)st;
 	struct aec *aec = dec->aec;
 	const float *farend = (const float *)sampv;
+	size_t i;
 	int r;
 	int err = 0;
-	size_t i;
-
-	if (!st || !sampv || !sampc)
-		return EINVAL;
 
 	pthread_mutex_lock(&aec->mutex);
 
-	for (i = 0; i < *sampc; i += aec->subframe_len) {
+	for (i = 0; i < sampc; i += aec->subframe_len) {
 
 		r = WebRtcAec_BufferFarend(aec->inst, farend + i,
 					   aec->subframe_len);
@@ -95,6 +100,40 @@ int webrtc_aec_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 
  out:
 	pthread_mutex_unlock(&aec->mutex);
+
+	return err;
+}
+
+
+int webrtc_aec_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
+{
+	struct aec_dec *dec = (struct aec_dec *)st;
+	float *flt;
+	int err = 0;
+
+	if (!st || !sampv || !sampc)
+		return EINVAL;
+
+	/* convert samples to float if needed */
+	switch (dec->fmt) {
+
+	case AUFMT_S16LE:
+		flt = (float *)mem_alloc(*sampc * sizeof(float), NULL);
+		if (!flt)
+			return ENOMEM;
+
+		auconv_from_s16(AUFMT_FLOAT, flt, (int16_t *)sampv, *sampc);
+		err = decode_float(dec, flt, *sampc);
+		mem_deref(flt);
+		break;
+
+	case AUFMT_FLOAT:
+		err = decode_float(dec, (float *)sampv, *sampc);
+		break;
+
+	default:
+		return ENOTSUP;
+	}
 
 	return err;
 }
