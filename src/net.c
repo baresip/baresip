@@ -357,7 +357,6 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	}
 
 	sa_init(&net->laddr, AF_INET);
-	(void)sa_set_str(&net->laddr, "127.0.0.1", 0);
 
 	if (str_isset(cfg->ifname)) {
 
