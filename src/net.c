@@ -11,10 +11,8 @@
 struct network {
 	struct config_net cfg;
 	struct sa laddr;
-	char ifname[64];
 #ifdef HAVE_INET6
 	struct sa laddr6;
-	char ifname6[64];
 #endif
 	struct tmr tmr;
 	struct dnsc *dnsc;
@@ -73,6 +71,25 @@ static int network_if_getname(char *ifname, size_t sz,
 	err = net_if_apply(if_getname_handler, &ife);
 
 	return ife.found ? err : ENODEV;
+}
+
+
+static int print_addr(struct re_printf *pf, const struct sa *ip)
+{
+	if (!ip)
+		return 0;
+
+	if (sa_isset(ip, SA_ADDR)) {
+
+		char ifname[256] = "???";
+
+		network_if_getname(ifname, sizeof(ifname), sa_af(ip), ip);
+
+		return re_hprintf(pf, "%s|%j", ifname, ip);
+	}
+	else {
+		return re_hprintf(pf, "(not set)");
+	}
 }
 
 
@@ -201,14 +218,8 @@ bool net_check(struct network *net)
 	else {
 		net_default_source_addr_get(AF_INET, &net->laddr);
 
-		network_if_getname(net->ifname, sizeof(net->ifname),
-				   AF_INET, &net->laddr);
-
 #ifdef HAVE_INET6
 		net_default_source_addr_get(AF_INET6, &net->laddr6);
-
-		network_if_getname(net->ifname6, sizeof(net->ifname6),
-				   AF_INET6, &net->laddr6);
 #endif
 	}
 
@@ -378,10 +389,7 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 			goto print_network_data;
 		}
 
-		str_ncpy(net->ifname, cfg->ifname, sizeof(net->ifname));
-
-		err = net_if_getaddr(cfg->ifname,
-				     AF_INET, &net->laddr);
+		err = net_if_getaddr(cfg->ifname, AF_INET, &net->laddr);
 		if (err) {
 			info("net: %s: could not get IPv4 address (%m)\n",
 			     cfg->ifname, err);
@@ -390,11 +398,7 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 			got_it = true;
 
 #ifdef HAVE_INET6
-		str_ncpy(net->ifname6, cfg->ifname,
-			 sizeof(net->ifname6));
-
-		err = net_if_getaddr(cfg->ifname,
-				     AF_INET6, &net->laddr6);
+		err = net_if_getaddr(cfg->ifname, AF_INET6, &net->laddr6);
 		if (err) {
 			info("net: %s: could not get IPv6 address (%m)\n",
 			     cfg->ifname, err);
@@ -414,36 +418,29 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	else {
 		(void)net_default_source_addr_get(AF_INET, &net->laddr);
 
-		network_if_getname(net->ifname, sizeof(net->ifname),
-				   AF_INET, &net->laddr);
-
 #ifdef HAVE_INET6
 		sa_init(&net->laddr6, AF_INET6);
 
 		(void)net_default_source_addr_get(AF_INET6, &net->laddr6);
-
-		network_if_getname(net->ifname6, sizeof(net->ifname6),
-				   AF_INET6, &net->laddr6);
 #endif
 	}
 
 print_network_data:
 
 	if (sa_isset(&net->laddr, SA_ADDR)) {
-		re_snprintf(buf4, sizeof(buf4), " IPv4=%s:%j",
-			    net->ifname, &net->laddr);
+		re_snprintf(buf4, sizeof(buf4), " IPv4=%H",
+			    print_addr, &net->laddr);
 	}
 #ifdef HAVE_INET6
 	if (sa_isset(&net->laddr6, SA_ADDR)) {
-		re_snprintf(buf6, sizeof(buf6), " IPv6=%s:%j",
-			    net->ifname6, &net->laddr6);
+		re_snprintf(buf6, sizeof(buf6), " IPv6=%H",
+			    print_addr, &net->laddr6);
 	}
 #endif
 
 	(void)dns_srv_get(net->domain, sizeof(net->domain), nsv, &nsn);
 
-	info("Local network address: %s %s\n",
-	     buf4, buf6);
+	info("Local network address: %s %s\n", buf4, buf6);
 
  out:
 	if (err)
@@ -576,11 +573,9 @@ int net_debug(struct re_printf *pf, const struct network *net)
 
 	err  = re_hprintf(pf, "--- Network debug ---\n");
 	err |= re_hprintf(pf, " Preferred AF:  %s\n", net_af2name(net->af));
-	err |= re_hprintf(pf, " Local IPv4: %9s - %j\n",
-			  net->ifname, &net->laddr);
+	err |= re_hprintf(pf, " Local IPv4:  %H\n", print_addr, &net->laddr);
 #ifdef HAVE_INET6
-	err |= re_hprintf(pf, " Local IPv6: %9s - %j\n",
-			  net->ifname6, &net->laddr6);
+	err |= re_hprintf(pf, " Local IPv6:  %H\n", print_addr, &net->laddr6);
 #endif
 	err |= re_hprintf(pf, " Domain: %s\n", net->domain);
 
