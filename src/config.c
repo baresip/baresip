@@ -363,6 +363,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "# SIP\n"
 			 "sip_listen\t\t%s\n"
 			 "sip_certificate\t%s\n"
+			 "sip_cafile\t\t%s\n"
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
@@ -406,7 +407,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 ,
 
-			 cfg->sip.local, cfg->sip.cert,
+			 cfg->sip.local, cfg->sip.cert, cfg->sip.cafile,
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
@@ -441,6 +442,16 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 		   );
 
 	return err;
+}
+
+
+static const char *default_cafile(void)
+{
+#ifdef DARWIN
+	return "/etc/ssl/cert.pem";
+#else
+	return "/etc/ssl/certs/ca-certificates.crt";
+#endif
 }
 
 
@@ -524,6 +535,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n# SIP\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
+			  "#sip_cafile\t\t%s\n"
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
@@ -552,6 +564,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "audec_format\t\ts16\t\t# s16, float, ..\n"
 			  ,
 			  poll_method_name(poll_method_best()),
+			  default_cafile(),
 			  cfg->call.local_timeout,
 			  cfg->call.max_calls,
 			  default_audio_device(),
