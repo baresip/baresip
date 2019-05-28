@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <iLBC_define.h>
 #include <iLBC_decode.h>
@@ -236,7 +237,7 @@ static int decode_update(struct audec_state **adsp,
 
 
 static int encode(struct auenc_state *st, uint8_t *buf,
-		  size_t *len, const int16_t *sampv, size_t sampc)
+		  size_t *len, int fmt, const void *sampv, size_t sampc)
 {
 	float float_buf[sampc];
 	uint32_t i;
@@ -248,9 +249,12 @@ static int encode(struct auenc_state *st, uint8_t *buf,
 		return ENOMEM;
 	}
 
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	/* Convert from 16-bit samples to float */
 	for (i=0; i<sampc; i++) {
-		const int16_t v = sampv[i];
+		const int16_t v = ((int16_t *)sampv)[i];
 		float_buf[i] = (float)v;
 	}
 
@@ -291,9 +295,12 @@ static int do_dec(struct audec_state *st, int16_t *sampv, size_t *sampc,
 }
 
 
-static int decode(struct audec_state *st, int16_t *sampv,
+static int decode(struct audec_state *st, int fmt, void *sampv,
 		  size_t *sampc, const uint8_t *buf, size_t len)
 {
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	/* Try to detect mode */
 	if (st->dec_bytes != len) {
 
@@ -316,13 +323,17 @@ static int decode(struct audec_state *st, int16_t *sampv,
 		}
 	}
 
-	return do_dec(st, sampv, sampc, buf, len);
+	return do_dec(st, (int16_t *)sampv, sampc, buf, len);
 }
 
 
-static int pkloss(struct audec_state *st, int16_t *sampv, size_t *sampc)
+static int pkloss(struct audec_state *st, int fmt, void *sampv,
+		  size_t *sampc)
 {
-	return do_dec(st, sampv, sampc, NULL, 0);
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
+	return do_dec(st, (int16_t *)sampv, sampc, NULL, 0);
 }
 
 
