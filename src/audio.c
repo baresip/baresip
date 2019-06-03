@@ -882,11 +882,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 			return;
 	}
 
-	if (hdr->m) {
-		stream_reset(a->strm);
-		debug("audio: rtp marker bit set\n");
-	}
-
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	for (i=0; i<extc; i++) {
 
