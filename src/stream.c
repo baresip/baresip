@@ -265,15 +265,21 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		s->rtp_estab = true;
 	}
 
-	if (hdr->ssrc != s->ssrc_rx) {
-		if (s->ssrc_rx) {
-			flush = true;
-			info("stream: %s: SSRC changed %x -> %x"
-			     " (%u bytes from %J)\n",
-			     sdp_media_name(s->sdp), s->ssrc_rx, hdr->ssrc,
-			     mbuf_get_left(mb), src);
-		}
+	if (!s->pseq_set) {
 		s->ssrc_rx = hdr->ssrc;
+		s->pseq = hdr->seq - 1;
+		s->pseq_set = true;
+	}
+	else if (hdr->ssrc != s->ssrc_rx) {
+
+		info("stream: %s: SSRC changed 0x%x -> 0x%x"
+		     " (%u bytes from %J)\n",
+		     sdp_media_name(s->sdp), s->ssrc_rx, hdr->ssrc,
+		     mbuf_get_left(mb), src);
+
+		s->ssrc_rx = hdr->ssrc;
+		s->pseq = hdr->seq - 1;
+		flush = true;
 	}
 
 	if (s->jbuf) {
