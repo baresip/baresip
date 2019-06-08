@@ -165,7 +165,10 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 	int i, got_picture, ret;
 	int err = 0;
 
-	st->mb->pos = 0;
+	err = mbuf_fill(st->mb, 0x00, AV_INPUT_BUFFER_PADDING_SIZE);
+	if (err)
+		return err;
+	st->mb->end -= AV_INPUT_BUFFER_PADDING_SIZE;
 
 	if (!st->got_keyframe) {
 		debug("avcodec: waiting for key frame ..\n");
