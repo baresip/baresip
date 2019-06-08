@@ -14,6 +14,11 @@
 #include "avcodec.h"
 
 
+#ifndef AV_INPUT_BUFFER_PADDING_SIZE
+#define AV_INPUT_BUFFER_PADDING_SIZE 64
+#endif
+
+
 enum {
 	DECODE_MAXSZ = 524288,
 };
