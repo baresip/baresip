@@ -317,9 +317,6 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		mem_deref(mb2);
 	}
 	else {
-		if (lostcalc(s, hdr->seq) > 0)
-			handle_rtp(s, hdr, NULL);
-
 		handle_rtp(s, hdr, mb);
 	}
 }
