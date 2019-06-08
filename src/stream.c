@@ -282,7 +282,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		void *mb2 = NULL;
 
 		/* Put frame in Jitter Buffer */
-		if (flush)
+		if (flush && s->jbuf_started)
 			jbuf_flush(s->jbuf);
 
 		err = jbuf_put(s->jbuf, hdr, mb);
@@ -705,7 +705,8 @@ void stream_reset(struct stream *s)
 	if (!s)
 		return;
 
-	jbuf_flush(s->jbuf);
+	if (s->jbuf && s->jbuf_started)
+		jbuf_flush(s->jbuf);
 }
 
 
