@@ -454,25 +454,28 @@ print_network_data:
 /**
  * Use a specific DNS server
  *
- * @param net Network instance
- * @param ns  DNS Server IP address and port
+ * @param net  Network instance
+ * @param srvv DNS Nameservers
+ * @param srvc Number of nameservers
  *
  * @return 0 if success, otherwise errorcode
  */
-int net_use_nameserver(struct network *net, const struct sa *ns)
+int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
 {
-	struct dnsc *dnsc;
-	int err;
+	size_t i;
 
-	if (!net || !ns)
+	if (!net)
 		return EINVAL;
 
-	err = dnsc_alloc(&dnsc, NULL, ns, 1);
-	if (err)
-		return err;
+	net->nsn = (uint32_t)min(ARRAY_SIZE(net->nsv), srvc);
 
-	mem_deref(net->dnsc);
-	net->dnsc = dnsc;
+	if (srvv) {
+		for (i=0; i<srvc; i++) {
+			net->nsv[i] = srvv[i];
+		}
+	}
+
+	dns_refresh(net);
 
 	return 0;
 }

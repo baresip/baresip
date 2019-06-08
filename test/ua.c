@@ -275,7 +275,7 @@ static int reg_dns(enum sip_transp tp)
 	info("| DNS-server on %J\n", &dnssrv->addr);
 
 	/* NOTE: must be done before ua_init() */
-	err = net_use_nameserver(net, &dnssrv->addr);
+	err = net_use_nameserver(net, &dnssrv->addr, 1);
 	TEST_ERR(err);
 
 	for (i=0; i<server_count; i++) {
@@ -518,7 +518,7 @@ static int reg_auth_dns(enum sip_transp tp)
 	info("| DNS-server on %J\n", &dnssrv->addr);
 
 	/* NOTE: must be done before ua_init() */
-	err = net_use_nameserver(net, &dnssrv->addr);
+	err = net_use_nameserver(net, &dnssrv->addr, 1);
 	TEST_ERR(err);
 
 	for (i=0; i<server_count; i++) {
