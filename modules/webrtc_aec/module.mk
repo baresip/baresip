@@ -14,10 +14,10 @@ $(MOD)_SRCS	+= aec.cpp
 $(MOD)_SRCS	+= encode.cpp
 $(MOD)_SRCS	+= decode.cpp
 
-CPPFLAGS	+= -I$(WEBRTC_PATH)/include
+CPPFLAGS	+= -isystem $(WEBRTC_PATH)/include
 
 LIBS	+= \
-	-L$(WEBRTC_PATH)/lib/x64/Debug \
+	-L$(WEBRTC_PATH)/lib/Debug \
 	-lwebrtc_full \
 	-lstdc++
 

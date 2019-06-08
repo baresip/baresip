@@ -5,10 +5,11 @@
  */
 
 
+#include <pthread.h>
 #include "modules/audio_processing/aec/echo_cancellation.h"
 
 
-#define MAX_SAMPLE_RATE  16000
+#define MAX_SAMPLE_RATE  32000
 #define MAX_CHANNELS         1
 
 
@@ -21,6 +22,7 @@ struct aec {
 	pthread_mutex_t mutex;
 	uint32_t srate;
 	uint32_t subframe_len;
+	int num_bands;
 };
 
 

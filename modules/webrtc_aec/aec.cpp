@@ -13,6 +13,7 @@
 #include "modules/audio_processing/aec/echo_cancellation.h"
 #include "aec.h"
 
+
 /**
  * @defgroup webrtc_aec webrtc_aec
  *
@@ -43,8 +44,15 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	if (!stp || !ctx || !prm)
 		return EINVAL;
 
-	if (prm->srate > MAX_SAMPLE_RATE || prm->ch > MAX_CHANNELS) {
-		warning("webrtc_aec: unsupported samplerate or channels\n");
+	if (prm->srate > MAX_SAMPLE_RATE) {
+		warning("webrtc_aec: unsupported samplerate (%u > %u)\n",
+			prm->srate, MAX_SAMPLE_RATE);
+		return ENOTSUP;
+	}
+
+	if (prm->ch > MAX_CHANNELS) {
+		warning("webrtc_aec: unsupported channels (%u > %u)\n",
+			prm->ch, MAX_CHANNELS);
 		return ENOTSUP;
 	}
 
@@ -74,9 +82,14 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	else
 		aec->subframe_len = 80;
 
+	if (prm->srate > 16000)
+		aec->num_bands = prm->srate / 16000;
+	else
+		aec->num_bands = 1;
+
 	info("webrtc_aec: creating shared state:"
-	     " [%u Hz, %u channels, subframe %u bytes]\n",
-	     prm->srate, prm->ch, aec->subframe_len);
+	     " [%u Hz, %u channels, subframe %u samples, num_bands %d]\n",
+	     prm->srate, prm->ch, aec->subframe_len, aec->num_bands);
 
 	aec->inst = WebRtcAec_Create();
 	if (!aec->inst) {
@@ -90,10 +103,10 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 		goto out;
 	}
 
-	aec->config.nlpMode = kAecNlpModerate;
-	aec->config.skewMode = true;
-	aec->config.metricsMode = true;
-	aec->config.delay_logging = true;
+	aec->config.nlpMode       = kAecNlpModerate;
+	aec->config.skewMode      = kAecFalse;
+	aec->config.metricsMode   = kAecFalse;
+	aec->config.delay_logging = kAecFalse;
 
 	/* Sets local configuration modes. */
 	r = WebRtcAec_set_config(aec->inst, aec->config);

@@ -87,7 +87,6 @@ static int encode_float(struct aec_enc *enc, float *sampv, size_t sampc)
 	const float *in;
 	float *out;
 	float *rec = (float *)sampv;
-	const int num_bands = 1;
 	size_t i;
 	int r;
 	int err = 0;
@@ -99,7 +98,7 @@ static int encode_float(struct aec_enc *enc, float *sampv, size_t sampc)
 		in  = &nearend[i];
 		out = enc->buf;
 
-		r = WebRtcAec_Process(aec->inst, &in, num_bands,
+		r = WebRtcAec_Process(aec->inst, &in, aec->num_bands,
 				      &out, aec->subframe_len,
 				      SOUND_CARD_BUF, 0);
 		if (r != 0) {
