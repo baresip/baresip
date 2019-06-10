@@ -20,6 +20,10 @@
  * Acoustic Echo Cancellation (AEC) using WebRTC SDK.
  *
  * This code is experimental.
+ *
+ * Reference:
+ *
+ *     https://webrtc.org/native-code/
  */
 
 
