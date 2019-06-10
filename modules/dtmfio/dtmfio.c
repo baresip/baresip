@@ -69,18 +69,6 @@ static FILE *fd;
 static const char *DTMF_OUT = "/tmp/dtmf.out";
 
 
-static void dtmf_handler(struct call *call, char key, void *arg)
-{
-	(void)call;
-	(void)arg;
-
-	if ( key != 0 ) {
-		fprintf(fd, "%c", key);
-		fflush(fd);
-	}
-}
-
-
 static void ua_event_handler(struct ua *ua,
 			     enum ua_event ev,
 			     struct call *call,
@@ -94,11 +82,15 @@ static void ua_event_handler(struct ua *ua,
 	if ( ev == UA_EVENT_CALL_ESTABLISHED ) {
 		fprintf(fd, "E");
 		fflush(fd);
-		call_set_handlers( call, NULL, dtmf_handler, NULL);
 	}
 
 	if (ev == UA_EVENT_CALL_CLOSED ) {
 		fprintf(fd, "F");
+		fflush(fd);
+	}
+
+	if (ev == UA_EVENT_CALL_DTMF_START) {
+		fprintf(fd, "%s", prm);
 		fflush(fd);
 	}
 }
