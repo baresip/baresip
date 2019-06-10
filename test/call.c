@@ -129,6 +129,9 @@ struct fixture {
 static const struct list *hdrs;
 
 
+static const char dtmf_digits[] = "123";
+
+
 static void event_handler(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg)
 {
@@ -289,6 +292,16 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_MENC:
 		++ag->n_mediaenc;
+		break;
+
+	case UA_EVENT_CALL_DTMF_START:
+		ASSERT_EQ(1, str_len(prm));
+		ASSERT_EQ(dtmf_digits[ag->n_dtmf_recv], prm[0]);
+		++ag->n_dtmf_recv;
+
+		if (ag->n_dtmf_recv >= str_len(dtmf_digits)) {
+			re_cancel();
+		}
 		break;
 
 	default:
@@ -676,33 +689,6 @@ int test_call_max(void)
 }
 
 
-static const char dtmf_digits[] = "123";
-
-
-static void dtmf_handler(struct call *call, char key, void *arg)
-{
-	struct agent *ag = arg;
-	int err = 0;
-	(void)call;
-
-	/* ignore key-release */
-	if (key == KEYCODE_REL)
-		return;
-
-	ASSERT_EQ(dtmf_digits[ag->n_dtmf_recv], key);
-	++ag->n_dtmf_recv;
-
-	if (ag->n_dtmf_recv >= str_len(dtmf_digits)) {
-		re_cancel();
-	}
-
- out:
-	if (err) {
-		fixture_abort(ag->fix, err);
-	}
-}
-
-
 int test_call_dtmf(void)
 {
 	struct fixture fix, *f = &fix;
@@ -727,9 +713,6 @@ int test_call_dtmf(void)
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
-
-	call_set_handlers(ua_call(f->a.ua), NULL, dtmf_handler, &f->a);
-	call_set_handlers(ua_call(f->b.ua), NULL, dtmf_handler, &f->b);
 
 	/* send some DTMF digits from A to B .. */
 	for (i=0; i<n; i++) {
