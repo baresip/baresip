@@ -480,9 +480,6 @@ static int pipeline_push(struct videnc_state *st, const struct vidframe *frame,
 	GstFlowReturn ret;
 	int err = 0;
 
-#if 1
-	/* XXX: should not block the function here */
-
 	/*
 	 * Wait "start feed".
 	 */
@@ -497,7 +494,6 @@ static int pipeline_push(struct videnc_state *st, const struct vidframe *frame,
 	pthread_mutex_unlock(&st->streamer.wait.mutex);
 	if (err)
 		return err;
-#endif
 
 	/*
 	 * Copy frame into buffer for gstreamer
