@@ -447,6 +447,8 @@ static void menc_event_handler(enum menc_event event,
 	struct call *call = arg;
 	MAGIC_CHECK(call);
 
+	debug("call: mediaenc event '%s' (%s)\n", menc_event_name(event), prm);
+
 	if (str_isset(prm))
 		call_event_handler(call, CALL_EVENT_MENC, "%u,%s", event,
 				   prm);

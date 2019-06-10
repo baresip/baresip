@@ -771,6 +771,9 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 	err |= re_hprintf(pf, " mnat: %s\n",
 			  s->mnat ? s->mnat->id : "(none)");
 
+	err |= re_hprintf(pf, " menc: %s\n",
+			  s->menc ? s->menc->id : "(none)");
+
 	err |= rtp_debug(pf, s->rtp);
 	err |= jbuf_debug(pf, s->jbuf);
 
