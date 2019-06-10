@@ -9,7 +9,6 @@
 #include "modules/audio_processing/aec/echo_cancellation.h"
 
 
-#define MAX_SAMPLE_RATE  32000
 #define MAX_CHANNELS         1
 
 
