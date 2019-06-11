@@ -102,6 +102,9 @@ static int module_init(void)
 	conf_get_bool(conf, "opus_stereo", &stereo);
 	conf_get_bool(conf, "opus_sprop_stereo", &sprop_stereo);
 
+	if (!stereo || !sprop_stereo)
+		opus.ch = 1;
+
 	/* always set stereo parameter first */
 	n = re_snprintf(p, sizeof(fmtp) - str_len(p),
 			"stereo=%d;sprop-stereo=%d", stereo, sprop_stereo);
