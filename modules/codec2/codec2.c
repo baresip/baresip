@@ -187,6 +187,8 @@ static struct aucodec codec2 = {
 
 static int module_init(void)
 {
+	info("codec2: using mode %d\n", CODEC2_MODE);
+
 	aucodec_register(baresip_aucodecl(), &codec2);
 
 	return 0;
