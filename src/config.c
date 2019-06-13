@@ -326,7 +326,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	/* Network */
 #if HAVE_INET6
-	(void)conf_get_bool(conf, "prefer_ipv6", &cfg->net.prefer_ipv6);
+	(void)conf_get_bool(conf, "net_prefer_ipv6", &cfg->net.prefer_ipv6);
 #endif
 	(void)conf_apply(conf, "dns_server", dns_server_handler, &cfg->net);
 	(void)conf_get_str(conf, "net_interface",
@@ -399,7 +399,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtp_timeout\t\t%u # in seconds\n"
 			 "\n"
 			 "# Network\n"
-			 "prefer_ipv6\t\t%s\n"
+			 "net_prefer_ipv6\t\t%s\n"
 			 "net_interface\t\t%s\n"
 			 "\n"
 			 "# BFCP\n"
@@ -597,7 +597,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
 			  "\n# Network\n"
-			  "prefer_ipv6\t\tno\n"
+			  "net_prefer_ipv6\t\tno\n"
 			  "#dns_server\t\t10.0.0.1:53\n"
 			  "#net_interface\t\t%H\n",
 			  cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max,
