@@ -12,7 +12,7 @@
 /**
  * @defgroup codec2 codec2
  *
- * The CODEC2 audio codec
+ * The CODEC2 low-bitrate speech audio codec
  *
  * https://en.wikipedia.org/wiki/Codec2
  */
