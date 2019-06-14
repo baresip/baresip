@@ -17,6 +17,7 @@ extern const struct mod_export exports_stun;
 extern const struct mod_export exports_turn;
 extern const struct mod_export exports_ice;
 extern const struct mod_export exports_vumeter;
+extern const struct mod_export exports_httpd;
 
 
 const struct mod_export *mod_table[] = {
@@ -34,5 +35,6 @@ const struct mod_export *mod_table[] = {
 	&exports_turn,
 	&exports_ice,
 	&exports_vumeter,
+	&exports_httpd,
 	NULL
 };
