@@ -122,6 +122,17 @@ static int module_init(void)
 
 		p += n;
 	}
+	if (0 == conf_get_u32(conf, "opus_samplerate", &value)) {
+
+		if ((value != 8000) && (value != 12000) && (value != 16000) &&
+		    (value != 24000) && (value != 48000)) {
+			warning("opus: invalid samplerate: %d\n", value);
+			return EINVAL;
+		}
+		opus.srate = value;
+
+		p += n;
+	}
 
 	if (0 == conf_get_bool(conf, "opus_cbr", &b)) {
 
