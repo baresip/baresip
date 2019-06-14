@@ -130,8 +130,6 @@ static int module_init(void)
 			return EINVAL;
 		}
 		opus.srate = value;
-
-		p += n;
 	}
 
 	if (0 == conf_get_bool(conf, "opus_cbr", &b)) {
