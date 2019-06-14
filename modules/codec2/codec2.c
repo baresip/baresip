@@ -18,11 +18,6 @@
  */
 
 
-enum {
-	CODEC2_MODE = CODEC2_MODE_2400
-};
-
-
 struct auenc_state {
 	struct CODEC2 *c2;
 };
@@ -30,6 +25,9 @@ struct auenc_state {
 struct audec_state {
 	struct CODEC2 *c2;
 };
+
+
+static uint32_t codec2_mode = CODEC2_MODE_2400;
 
 
 static void encode_destructor(void *data)
@@ -60,7 +58,7 @@ static int encode_update(struct auenc_state **aesp,
 	if (!st)
 		return ENOMEM;
 
-	st->c2 = codec2_create(CODEC2_MODE);
+	st->c2 = codec2_create(codec2_mode);
 	if (!st->c2) {
 		err = ENOMEM;
 		goto out;
@@ -106,7 +104,7 @@ static int decode_update(struct audec_state **adsp,
 	if (!st)
 		return ENOMEM;
 
-	st->c2 = codec2_create(CODEC2_MODE);
+	st->c2 = codec2_create(codec2_mode);
 	if (!st->c2) {
 		err = ENOMEM;
 		goto out;
@@ -181,7 +179,9 @@ static struct aucodec codec2 = {
 
 static int module_init(void)
 {
-	info("codec2: using mode %d\n", CODEC2_MODE);
+	conf_get_u32(conf_cur(), "codec2_mode", &codec2_mode);
+
+	info("codec2: using mode %d\n", codec2_mode);
 
 	aucodec_register(baresip_aucodecl(), &codec2);
 
