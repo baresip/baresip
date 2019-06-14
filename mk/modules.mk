@@ -13,6 +13,7 @@
 #   USE_AVFORMAT      avformat video source module
 #   USE_BV32          BroadVoice32 Wideband Audio codec
 #   USE_CAIRO         Cairo module
+#   USE_CODEC2        CODEC2 low-bitrate speech audio codec
 #   USE_CONS          Console input driver
 #   USE_COREAUDIO     MacOSX Coreaudio audio driver
 #   USE_ECHO          Echo module
@@ -85,6 +86,9 @@ USE_BV32  := $(shell [ -f $(SYSROOT)/include/bv32/bv32.h ] || \
 USE_CAIRO  := $(shell [ -f $(SYSROOT)/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT)/local/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT_ALT)/include/cairo/cairo.h ] && echo "yes")
+USE_CODEC2  := $(shell [ -f $(SYSROOT)/include/codec2/codec2.h ] || \
+	[ -f $(SYSROOT)/local/include/codec2/codec2.h ] || \
+	[ -f $(SYSROOT_ALT)/include/codec2/codec2.h ] && echo "yes")
 USE_DTLS := $(shell [ -f $(SYSROOT)/include/openssl/dtls1.h ] || \
 	[ -f $(SYSROOT)/local/include/openssl/dtls1.h ] || \
 	[ -f $(SYSROOT_ALT)/include/openssl/dtls1.h ] && echo "yes")
@@ -314,6 +318,9 @@ MODULES   += vidinfo
 ifneq ($(USE_MPG123),)
 MODULES   += rst
 endif
+endif
+ifneq ($(USE_CODEC2),)
+MODULES   += codec2
 endif
 ifneq ($(USE_CONS),)
 MODULES   += cons
