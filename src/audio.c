@@ -415,8 +415,6 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 		ts_delta = err & 0xffff;
 		sampc = 0;
-
-		err = 0;
 	}
 	else if (err) {
 		warning("audio: %s encode error: %d samples (%m)\n",
