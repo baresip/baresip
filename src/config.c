@@ -889,11 +889,12 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#opus_stereo\t\tyes\n");
 	(void)re_fprintf(f, "#opus_sprop_stereo\tyes\n");
 	(void)re_fprintf(f, "#opus_cbr\t\tno\n");
-	(void)re_fprintf(f, "#opus_inbandfec\tno\n");
+	(void)re_fprintf(f, "#opus_inbandfec\t\tno\n");
 	(void)re_fprintf(f, "#opus_dtx\t\tno\n");
 	(void)re_fprintf(f, "#opus_mirror\t\tno\n");
-	(void)re_fprintf(f, "#opus_complexity\t\t10\n");
-	(void)re_fprintf(f, "#opus_application\t\taudio\t# {voip,audio}\n");
+	(void)re_fprintf(f, "#opus_complexity\t10\n");
+	(void)re_fprintf(f, "#opus_application\taudio\t# {voip,audio}\n");
+	(void)re_fprintf(f, "#opus_samplerate\t48000\n");
 
 	(void)re_fprintf(f, "\n# Opus Multistream codec parameters\n");
 	(void)re_fprintf(f,
