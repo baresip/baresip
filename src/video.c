@@ -437,7 +437,8 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 	if (err)
 		goto out;
 
-	vtx->fmt  = frame->fmt;
+	if (frame)
+		vtx->fmt = frame->fmt;
 
 	/* Encode the whole picture frame */
 	err = vtx->vc->ench(vtx->enc, vtx->picup, frame, timestamp);
