@@ -101,6 +101,8 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 		goto out;
 	}
 
+	WebRtcAec_enable_delay_agnostic(WebRtcAec_aec_core(aec->inst), 1);
+
 	aec->config.nlpMode       = kAecNlpModerate;
 	aec->config.skewMode      = kAecFalse;
 	aec->config.metricsMode   = kAecFalse;
