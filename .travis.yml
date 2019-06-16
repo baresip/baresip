@@ -17,6 +17,9 @@ addons:
     apt:
         packages:
             libssl-dev libgtk2.0-dev libsndfile1-dev libpulse-dev libavcodec-dev libopus-dev
+    homebrew:
+        packages:
+        - codec2
 
 install:
     - git clone https://github.com/creytiv/re.git
