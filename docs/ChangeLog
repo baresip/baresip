@@ -1,3 +1,138 @@
+2019-06-22 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.3
+
+Alfred E. Heggestad (99):
+      baresip: remove prefer_ipv6 from api, use config instead
+      ua: remove prefer_ipv6 from api, use config instead
+      audio: allocate mbuf for encoded telephony events
+      net: remove af from api, use config instead
+      gst: remove old module, use gst1 instead
+      gst_video: remove old module, use gst_video1 instead
+      gst1: update comment
+      httpd: update comment
+      call: remove unused constant
+      reg: print address family of registration
+      ua: clean up prefer_ipv6 code
+      test: disable test for AUDIO_MODE_THREAD
+      config: remove old check for rtcp_enable
+      config: remove unused macro SA_INIT
+      config: remove unused MOD_PRE
+      test: mock aucodec support all sample formats
+      audio: check that ptime is within the range of 1-60ms
+      audio: dont check sample format for packetloss handler
+      audio: use audio codec srate directly, remove get_srate wrapper
+      audio: remove get_framesize
+      audio: handle rtcp sample-rate for asymmetric codecs
+      audio: remove get_ch()
+      mpa: return posix error code instead of -1
+      mk: sort list of files in alphabetical order
+      menu: sort and align incall commands table
+      ua: check input argument to ua_print_supported
+      test: check error from test fixture
+      ua: use a print handler to print allowed methods
+      ua: use a single tick instead of backtick for logging
+      audio: mirror ptime attribute if changed by peer (ref #688) (#700)
+      audio: receive ptime is always set
+      plc: count samples from audio input
+      use sizeof(x) instead of sizeof x
+      account: fix typo
+      timestamp: add timestamp_calc_seconds()
+      call: remove const from menc_event_handler
+      call: swap order of menc event and error handler
+      mnat: make struct mnat public
+      mnat: change to a simpler register api
+      menc: protocol is always UDP
+      mnat: change api to always use UDP protocol
+      stream: add remote RTP/RTCP address to object
+      menc: add remote RTP/RTCP address to API
+      dtls_srtp: use remote address from mediaenc API
+      dtls_srtp: remove dtls_print_sha1_fingerprint
+      remove audio/video codec cycle
+      net: add network_if_getname()
+      sdp: remove sdp_media_format_cycle (unused)
+      sdp: remove sdp_rattr() -- unused
+      pcp: updated MNAT api
+      gzrtp: updated menc api (ref #713)
+      dtls_srtp: fix warning
+      zrtp: fix warnings
+      net: use network_if_getname to get interface name
+      stream: use enum media_type instead of a string
+      call: only include aucodec codecs in remote sdp (ref #718)
+      call: simplify audio encoder/decodet set
+      stream: add pointer to medianat module
+      webrtc_aec: add warning
+      ua: use KEYCODE_REL in dtmf handler (ref #719)
+      call: add prefix to logline
+      webrtc_aec: add sample format converter to decoder (ref #712)
+      webrtc_aec: add sample format converter to encoder (ref #712)
+      webrtc_aec: add enc/dec to log line
+      webrtc_aec: fix enum warning
+      webrtc_aec: echo_cancellation.h is included in aec.h (ref #712)
+      config: add sip_cafile to template
+      net: add a function to print IP-addr and interface
+      net: dont init local address to 127.0.0.1
+      audio: handle marker bit in stream.c (#724)
+      avcodec: make sure ffmpeg input buffer has AV_INPUT_BUFFER_PADDING_SIZE space at the end
+      stream: update doxygen comments
+      stream: only flush jitter-buffer if it was started
+      avcodec: fallback define for AV_INPUT_BUFFER_PADDING_SIZE
+      stream: add pseq_set flag
+      stream: dont calculate loss if no jitter buffer
+      webrtc_aec: add support for 32000Hz samplerate
+      net: multiple nameservers in net_use_nameserver()
+      webrtc_aec: add reference to webrtc native
+      dtmfio: use UA_EVENT_CALL_DTMF_START to handle dtmf events
+      test: use event handler to receive DTMF events
+      webrtc_aec: remove samplerate check
+      prepare for 0.6.3 release
+      gst_video1: cleanup
+      stream: print mediaenc id
+      config: add net prefix to prefer_ipv6
+      codec2: print mode
+      codec2: modern init of struct aucodec
+      codec2: add config param codec2_mode
+      codec2: round up bytes per frame
+      win32: add httpd module to static.c
+      codec2: update description
+      mk: add detection of codec2.so module
+      video: check if frame pointer is valid
+      contact: set err properly
+      audio: no need to clear err, it is not used
+      config: add opus_samplerate to template
+      travis: add building of codec2 on OSX (#736)
+      config: add webrtc_aec to template
+
+Christian Spielberger (2):
+      call: reset streams on call hold (#707)
+      Bugfix/flush buffers on call hold (#716)
+
+Dmitry (2):
+      opus: fixed opus_inbandfec param name in config and examples (#704)
+      menu: set default values for optional config params (#705)
+
+Juha Heinanen (1):
+      webrtc_aec: enable delay-agnostic echo cancellation
+
+Nicolas Tizon (1):
+      audio: increase buffer size for audio device string (#710)
+
+juha-h (5):
+      - added prefer_ipv6 config variable (#692)
+      webrtc_aec module: added pthread.h include to .cpp files (#714)
+      - Updated ilbc module encode/decode/pkloss function arguments (#723)
+      - Use opus in mono mode (opus/48000/1) if opus_stereo or (#730)
+      - Added opus_samplerate config parameter. (#733)
+
+premultiply (1):
+      Interop: Parameters reordering and whitespace removal (#698)
+
+weili-jiang (1):
+      Count ua references prior to destroy in case UA_EVENT_SHUTDOWN causes references to be removed (#702)
+
+
+
+
 2019-04-19 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.6.2
