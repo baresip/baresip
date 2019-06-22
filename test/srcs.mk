@@ -16,7 +16,6 @@ TEST_SRCS	+= contact.c
 TEST_SRCS	+= cplusplus.c
 TEST_SRCS	+= event.c
 TEST_SRCS	+= message.c
-TEST_SRCS	+= mos.c
 TEST_SRCS	+= net.c
 TEST_SRCS	+= play.c
 TEST_SRCS	+= ua.c
