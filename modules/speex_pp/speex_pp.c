@@ -21,6 +21,8 @@
 struct preproc {
 	struct aufilt_enc_st af;    /* base class */
 	SpeexPreprocessState *state;
+	uint32_t srate;
+	size_t frame_size;
 };
 
 
@@ -51,33 +53,11 @@ static void speexpp_destructor(void *arg)
 }
 
 
-static int encode_update(struct aufilt_enc_st **stp, void **ctx,
-			 const struct aufilt *af, struct aufilt_prm *prm,
-			 const struct audio *au)
+static int init_state(struct preproc *st, size_t frame_size)
 {
-	struct preproc *st;
-	unsigned sampc;
-	(void)ctx;
-	(void)au;
-
-	if (!stp || !af || !prm)
-		return EINVAL;
-
-	if (prm->fmt != AUFMT_S16LE) {
-		warning("speex_pp: unsupported sample format (%s)\n",
-			aufmt_name(prm->fmt));
-		return ENOTSUP;
-	}
-
-	st = mem_zalloc(sizeof(*st), speexpp_destructor);
-	if (!st)
-		return ENOMEM;
-
-	sampc = prm->srate * prm->ch * prm->ptime / 1000;
-
-	st->state = speex_preprocess_state_init(sampc, prm->srate);
+	st->state = speex_preprocess_state_init((int)frame_size, st->srate);
 	if (!st->state)
-		goto error;
+		return ENOMEM;
 
 	speex_preprocess_ctl(st->state, SPEEX_PREPROCESS_SET_DENOISE,
 			     &pp_conf.denoise_enabled);
@@ -97,24 +77,67 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	speex_preprocess_ctl(st->state, SPEEX_PREPROCESS_SET_DEREVERB,
 			     &pp_conf.dereverb_enabled);
 
+	st->frame_size = frame_size;
+
+	info("speex_pp: state inited (frame_size=%zu)\n", frame_size);
+
+	return 0;
+}
+
+
+static int encode_update(struct aufilt_enc_st **stp, void **ctx,
+			 const struct aufilt *af, struct aufilt_prm *prm,
+			 const struct audio *au)
+{
+	struct preproc *st;
+	(void)ctx;
+	(void)au;
+
+	if (!stp || !af || !prm)
+		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("speex_pp: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
+		return ENOTSUP;
+	}
+
+	st = mem_zalloc(sizeof(*st), speexpp_destructor);
+	if (!st)
+		return ENOMEM;
+
+	st->srate = prm->srate;
+
 	info("speex_pp: Speex preprocessor loaded: srate = %uHz\n",
 	     prm->srate);
 
 	*stp = (struct aufilt_enc_st *)st;
 	return 0;
-
- error:
-	mem_deref(st);
-	return ENOMEM;
 }
 
 
 static int encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
 {
 	struct preproc *pp = (struct preproc *)st;
+	int err;
+
+	if (!st || !sampv || !sampc)
+		return EINVAL;
 
 	if (!*sampc)
 		return 0;
+
+	if (pp->state && *sampc != pp->frame_size) {
+
+		speex_preprocess_state_destroy(pp->state);
+		pp->state = NULL;
+	}
+
+	if (!pp->state) {
+		err = init_state(pp, *sampc);
+		if (err)
+			return err;
+	}
 
 	speex_preprocess_run(pp->state, sampv);
 
