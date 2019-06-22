@@ -234,6 +234,7 @@ int test_call_medianat(void);
 int test_call_custom_headers(void);
 int test_call_tcp(void);
 int test_call_transfer(void);
+int test_call_rtcp(void);
 
 int test_video(void);
 

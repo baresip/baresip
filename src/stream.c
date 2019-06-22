@@ -345,6 +345,11 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 		ua_event(call_get_ua(s->call), UA_EVENT_CALL_RTCP, s->call,
 			 "%s", sdp_media_name(stream_sdpmedia(s)));
 		break;
+
+	case RTCP_APP:
+		ua_event(call_get_ua(s->call), UA_EVENT_CALL_RTCP, s->call,
+			 "%s", sdp_media_name(stream_sdpmedia(s)));
+		break;
 	}
 }
 

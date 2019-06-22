@@ -42,6 +42,7 @@ struct agent {
 	unsigned n_dtmf_recv;
 	unsigned n_transfer;
 	unsigned n_mediaenc;
+	unsigned n_rtcp;
 };
 
 struct fixture {
@@ -56,6 +57,7 @@ struct fixture {
 	int err;
 	unsigned exp_estab;
 	unsigned exp_closed;
+	bool stop_on_rtcp;
 };
 
 
@@ -302,6 +304,13 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		if (ag->n_dtmf_recv >= str_len(dtmf_digits)) {
 			re_cancel();
 		}
+		break;
+
+	case UA_EVENT_CALL_RTCP:
+		++ag->n_rtcp;
+
+		if (f->stop_on_rtcp && ag->peer->n_rtcp > 0)
+			re_cancel();
 		break;
 
 	default:
@@ -1256,6 +1265,37 @@ int test_call_transfer(void)
 	ASSERT_EQ(0, list_count(ua_calls(f->a.ua)));
 	ASSERT_EQ(1, list_count(ua_calls(f->b.ua)));
 	ASSERT_EQ(1, list_count(ua_calls(f->c.ua)));
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_rtcp(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+
+	/* Use a low packet time, so the test completes quickly */
+	fixture_init_prm(f, ";ptime=1");
+
+	f->estab_action = ACTION_NOTHING;
+	f->stop_on_rtcp = true;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify that one or more RTCP packets were received */
+	ASSERT_TRUE(fix.a.n_rtcp > 0);
+	ASSERT_TRUE(fix.b.n_rtcp > 0);
 
  out:
 	fixture_close(f);
