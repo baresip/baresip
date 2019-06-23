@@ -389,6 +389,30 @@ static int stream_sock_alloc(struct stream *s, int af)
 }
 
 
+static int start_mediaenc(struct stream *strm)
+{
+	int err;
+
+	if (strm->menc && strm->menc->mediah) {
+
+		info("stream: starting mediaenc '%s'\n", strm->menc->id);
+
+		err = strm->menc->mediah(&strm->mes, strm->mencs, strm->rtp,
+					 rtp_sock(strm->rtp),
+					 rtcp_sock(strm->rtp),
+					 &strm->raddr_rtp,
+					 &strm->raddr_rtcp,
+					 strm->sdp);
+		if (err) {
+			warning("stream: start mediaenc error: %m\n", err);
+			return err;
+		}
+	}
+
+	return 0;
+}
+
+
 int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		 const struct config_avt *cfg,
 		 struct call *call, struct sdp_session *sdp_sess,
@@ -484,13 +508,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	if (menc && s->rtp) {
 		s->menc  = menc;
 		s->mencs = mem_ref(menc_sess);
-		err = menc->mediah(&s->mes, menc_sess,
-				   s->rtp,
-				   rtp_sock(s->rtp),
-				   rtcp_sock(s->rtp),
-				   &s->raddr_rtp,
-				   &s->raddr_rtcp,
-				   s->sdp);
+		err = start_mediaenc(s);
 		if (err)
 			goto out;
 	}
@@ -617,12 +635,7 @@ void stream_update(struct stream *s)
 		stream_remote_set(s);
 
 	if (s->menc && s->menc->mediah) {
-		err = s->menc->mediah(&s->mes, s->mencs, s->rtp,
-				      rtp_sock(s->rtp),
-				      rtcp_sock(s->rtp),
-				      &s->raddr_rtp,
-				      &s->raddr_rtcp,
-				      s->sdp);
+		err = start_mediaenc(s);
 		if (err) {
 			warning("stream: mediaenc update: %m\n", err);
 		}
