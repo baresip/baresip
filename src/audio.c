@@ -156,6 +156,7 @@ struct aurx {
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
 	bool need_conv;               /**< Sample format conversion needed */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
+	size_t last_sampc;
 
 	struct {
 		uint64_t aubuf_overrun;
@@ -729,22 +730,28 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 		err = rx->ac->dech(rx->dec,
 				   rx->dec_fmt, rx->sampv, &sampc,
 				   mbuf_buf(mb), mbuf_get_left(mb));
+		if (err) {
+			warning("audio: %s codec decode %u bytes: %m\n",
+				rx->ac->name, mbuf_get_left(mb), err);
+			goto out;
+		}
 
+		rx->last_sampc = sampc;
 	}
-	else if (rx->ac->plch) {
-		sampc = rx->ac->srate * rx->ac->ch * rx->ptime / 1000;
+	else if (rx->last_sampc && rx->ac->plch) {
+
+		sampc = rx->last_sampc;
 
 		err = rx->ac->plch(rx->dec, rx->dec_fmt, rx->sampv, &sampc);
+		if (err) {
+			warning("audio: %s codec plc %u bytes: %m\n",
+				rx->ac->name, mbuf_get_left(mb), err);
+			goto out;
+		}
 	}
 	else {
 		/* no PLC in the codec, might be done in filters below */
 		sampc = 0;
-	}
-
-	if (err) {
-		warning("audio: %s codec decode %u bytes: %m\n",
-			rx->ac->name, mbuf_get_left(mb), err);
-		goto out;
 	}
 
 	/* Process exactly one audio-frame in reverse list order */
