@@ -2075,10 +2075,8 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  autx_calc_seconds(tx));
 
 	err |= re_hprintf(pf,
-			  " rx:   decode: %H %s\n"
-			  "       ptime=%ums pt=%d\n",
-			  aucodec_print, rx->ac, aufmt_name(rx->dec_fmt),
-			  rx->ptime, rx->pt);
+			  " rx:   decode: %H %s\n",
+			  aucodec_print, rx->ac, aufmt_name(rx->dec_fmt));
 	err |= re_hprintf(pf, "       aubuf: %H"
 			  " (cur %.2fms, max %.2fms, or %llu, ur %llu)\n",
 			  aubuf_debug, rx->aubuf,
