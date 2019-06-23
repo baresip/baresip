@@ -1353,14 +1353,6 @@ void module_app_unload(void);
 
 
 /*
- * MOS (Mean Opinion Score)
- */
-
-double mos_calculate(double *r_factor, double rtt,
-		     double jitter, uint32_t num_packets_lost);
-
-
-/*
  * Generic event
  */
 
