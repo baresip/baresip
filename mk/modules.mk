@@ -44,7 +44,6 @@
 #   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL2          libSDL2 video output
 #   USE_SNDFILE       sndfile wav dumper
-#   USE_SPEEX_AEC     Speex Acoustic Echo Canceller
 #   USE_SPEEX_PP      Speex preprocessor
 #   USE_SRTP          Secure RTP module using libre
 #   USE_STDIO         stdio input driver
@@ -165,9 +164,6 @@ USE_MPA  := $(shell [ -f $(SYSROOT)/include/twolame.h ] || \
 	[ -f $(SYSROOT_ALT)/include/twolame.h ] && echo "yes")
 endif
 endif
-USE_SPEEX_AEC := $(shell [ -f $(SYSROOT)/include/speex/speex_echo.h ] || \
-	[ -f $(SYSROOT)/local/include/speex/speex_echo.h ] || \
-	[ -f $(SYSROOT_ALT)/include/speex/speex_echo.h ] && echo "yes")
 USE_SPEEX_PP := $(shell [ -f $(SYSROOT)/include/speex_preprocess.h ] || \
 	[ -f $(SYSROOT)/local/include/speex_preprocess.h ] || \
 	[ -f $(SYSROOT)/local/include/speex/speex_preprocess.h ] || \
@@ -415,9 +411,6 @@ MODULES   += sdl2
 endif
 ifneq ($(USE_SNDFILE),)
 MODULES   += sndfile
-endif
-ifneq ($(USE_SPEEX_AEC),)
-MODULES   += speex_aec
 endif
 ifneq ($(USE_SPEEX_PP),)
 MODULES   += speex_pp
