@@ -507,7 +507,6 @@ struct aufilt_dec_st {
 struct aufilt_prm {
 	uint32_t srate;       /**< Sampling rate in [Hz]        */
 	uint8_t  ch;          /**< Number of channels           */
-	uint32_t ptime;       /**< Wanted packet-time in [ms]   */
 	int      fmt;         /**< Sample format (enum aufmt)   */
 };
 
