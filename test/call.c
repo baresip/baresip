@@ -294,6 +294,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_MENC:
 		++ag->n_mediaenc;
+		ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call))));
 		break;
 
 	case UA_EVENT_CALL_DTMF_START:

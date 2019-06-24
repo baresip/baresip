@@ -449,6 +449,25 @@ static void menc_event_handler(enum menc_event event,
 
 	debug("call: mediaenc event '%s' (%s)\n", menc_event_name(event), prm);
 
+	switch (event) {
+
+	case MENC_EVENT_SECURE:
+		if (strstr(prm, "audio")) {
+			stream_set_secure(audio_strm(call->audio), true);
+		}
+		else if (strstr(prm, "video")) {
+			stream_set_secure(video_strm(call->video), true);
+		}
+		else {
+			info("call: mediaenc: no match for stream (%s)\n",
+			     prm);
+		}
+		break;
+
+	default:
+		break;
+	}
+
 	if (str_isset(prm))
 		call_event_handler(call, CALL_EVENT_MENC, "%u,%s", event,
 				   prm);

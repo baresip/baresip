@@ -149,8 +149,13 @@ static int mock_media_alloc(struct menc_media **mmp, struct menc_sess *sess,
 
 	if (sdp_media_rattr(sdpm, "xrtp")) {
 
+		char buf[64];
+
+		re_snprintf(buf, sizeof(buf), "%s,xrtp",
+			    sdp_media_name(sdpm));
+
 		if (sess->eventh)
-			sess->eventh(MENC_EVENT_SECURE, "xrtp", sess->arg);
+			sess->eventh(MENC_EVENT_SECURE, buf, sess->arg);
 	}
 
  out:

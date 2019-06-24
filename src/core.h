@@ -332,6 +332,7 @@ struct stream {
 	uint32_t rtp_timeout_ms; /**< RTP Timeout value in [ms]             */
 	bool rtp_estab;          /**< True if RTP stream is established     */
 	bool hold;               /**< Stream is on-hold (local)             */
+	bool menc_secure;        /**< Media stream is secure                */
 	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
 	void *arg;               /**< Handler argument                      */
@@ -363,6 +364,7 @@ int  stream_print(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 int  stream_jbuf_reset(struct stream *strm,
 		       uint32_t frames_min, uint32_t frames_max);
+void stream_set_secure(struct stream *strm, bool secure);
 
 
 /*

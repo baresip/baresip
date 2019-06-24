@@ -789,8 +789,9 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 	err |= re_hprintf(pf, " mnat: %s\n",
 			  s->mnat ? s->mnat->id : "(none)");
 
-	err |= re_hprintf(pf, " menc: %s\n",
-			  s->menc ? s->menc->id : "(none)");
+	err |= re_hprintf(pf, " menc: %s (secure=%s)\n",
+			  s->menc ? s->menc->id : "(none)",
+			  s->menc_secure ? "yes" : "no");
 
 	err |= rtp_debug(pf, s->rtp);
 	err |= jbuf_debug(pf, s->jbuf);
@@ -926,4 +927,19 @@ int stream_jbuf_reset(struct stream *strm,
 		return jbuf_alloc(&strm->jbuf, frames_min, frames_max);
 
 	return 0;
+}
+
+
+void stream_set_secure(struct stream *strm, bool secure)
+{
+	if (!strm)
+		return;
+
+	strm->menc_secure = secure;
+}
+
+
+bool stream_is_secure(const struct stream *strm)
+{
+	return strm ? strm->menc_secure : false;
 }
