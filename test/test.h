@@ -150,6 +150,15 @@ int mock_auplay_register(struct auplay **auplayp,
 
 
 /*
+ * Mock Audio-filter
+ */
+
+
+void mock_aufilt_register(void);
+void mock_aufilt_unregister(void);
+
+
+/*
  * Mock Media encryption
  */
 
@@ -204,6 +213,7 @@ int test_call_af_mismatch(void);
 int test_call_answer(void);
 int test_call_answer_hangup_a(void);
 int test_call_answer_hangup_b(void);
+int test_call_aufilt(void);
 int test_call_aulevel(void);
 int test_call_custom_headers(void);
 int test_call_dtmf(void);

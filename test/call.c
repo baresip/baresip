@@ -1303,3 +1303,19 @@ int test_call_rtcp(void)
 
 	return err;
 }
+
+
+int test_call_aufilt(void)
+{
+	int err;
+
+	mock_aufilt_register();
+
+	err = test_media_base(AUDIO_MODE_POLL);
+	ASSERT_EQ(0, err);
+
+ out:
+	mock_aufilt_unregister();
+
+	return err;
+}

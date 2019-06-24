@@ -39,6 +39,7 @@ TEST_SRCS	+= mock/cert.c
 endif
 
 TEST_SRCS	+= mock/mock_aucodec.c
+TEST_SRCS	+= mock/mock_aufilt.c
 TEST_SRCS	+= mock/mock_auplay.c
 TEST_SRCS	+= mock/mock_ausrc.c
 TEST_SRCS	+= mock/mock_mnat.c
