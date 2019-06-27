@@ -188,9 +188,6 @@
     <ClCompile Include="..\..\src\module.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\mos.c">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\net.c">
       <Filter>src</Filter>
     </ClCompile>

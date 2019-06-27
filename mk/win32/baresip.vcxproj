@@ -185,7 +185,6 @@
     <ClCompile Include="..\..\src\metric.c" />
     <ClCompile Include="..\..\src\mnat.c" />
     <ClCompile Include="..\..\src\module.c" />
-    <ClCompile Include="..\..\src\mos.c" />
     <ClCompile Include="..\..\src\net.c" />
     <ClCompile Include="..\..\src\play.c" />
     <ClCompile Include="..\..\src\reg.c" />
