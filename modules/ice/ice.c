@@ -699,6 +699,7 @@ static void conncheck_handler(int err, bool update, void *arg)
 		warning("ice: connectivity check failed: %m\n", err);
 	}
 	else {
+		const struct ice_cand *cand1, *cand2;
 		bool changed;
 
 		m->complete = true;
@@ -710,6 +711,15 @@ static void conncheck_handler(int err, bool update, void *arg)
 			sess->send_reinvite = true;
 
 		(void)set_media_attributes(m);
+
+		cand1 = icem_selected_rcand(m->icem, 1);
+		cand2 = icem_selected_rcand(m->icem, 2);
+
+		if (m->connh) {
+			m->connh(icem_lcand_addr(cand1),
+				  icem_lcand_addr(cand2),
+				  m->arg);
+		}
 
 		/* Check all conncheck flags */
 		LIST_FOREACH(&sess->medial, le) {
