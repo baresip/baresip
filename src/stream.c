@@ -413,6 +413,24 @@ static int start_mediaenc(struct stream *strm)
 }
 
 
+static void mnat_connected_handler(const struct sa *raddr1,
+				   const struct sa *raddr2, void *arg)
+{
+	struct stream *strm = arg;
+
+	info("stream: mnat connected: raddr %J %J\n", raddr1, raddr2);
+
+	strm->raddr_rtp = *raddr1;
+
+	if (strm->rtcp_mux)
+		strm->raddr_rtcp = *raddr1;
+	else if (raddr2)
+		strm->raddr_rtcp = *raddr2;
+
+	strm->mnat_connected = true;
+}
+
+
 int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		 const struct config_avt *cfg,
 		 struct call *call, struct sdp_session *sdp_sess,
@@ -500,7 +518,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
 				   rtcp_sock(s->rtp),
-				   s->sdp, NULL, NULL);
+				   s->sdp, mnat_connected_handler, s);
 		if (err)
 			goto out;
 	}
