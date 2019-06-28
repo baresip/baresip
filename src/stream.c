@@ -500,7 +500,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
 				   rtcp_sock(s->rtp),
-				   s->sdp);
+				   s->sdp, NULL, NULL);
 		if (err)
 			goto out;
 	}

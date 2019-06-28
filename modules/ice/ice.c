@@ -67,6 +67,8 @@ struct mnat_media {
 	bool complete;
 	bool terminated;
 	int nstun;                   /**< Number of pending STUN candidates  */
+	mnat_connected_h *connh;
+	void *arg;
 };
 
 
@@ -788,7 +790,8 @@ static int ice_start(struct mnat_sess *sess)
 
 static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		       struct udp_sock *sock1, struct udp_sock *sock2,
-		       struct sdp_media *sdpm)
+		       struct sdp_media *sdpm,
+		       mnat_connected_h *connh, void *arg)
 {
 	struct mnat_media *m;
 	enum ice_role role;
@@ -834,6 +837,9 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		if (m->compv[i].sock)
 			err |= icem_comp_add(m->icem, i+1, m->compv[i].sock);
 	}
+
+	m->connh = connh;
+	m->arg = arg;
 
 	if (sa_isset(&sess->srv, SA_ALL))
 		err |= media_start(sess, m);

@@ -255,12 +255,15 @@ static int comp_alloc(struct comp *comp, void *sock)
 
 static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		       struct udp_sock *sock1, struct udp_sock *sock2,
-		       struct sdp_media *sdpm)
+		       struct sdp_media *sdpm,
+		       mnat_connected_h *connh, void *arg)
 {
 	struct mnat_media *m;
 	unsigned i;
 	int err = 0;
 	(void)sock2;
+	(void)connh;
+	(void)arg;
 
 	if (!mp || !sess || !sdpm)
 		return EINVAL;

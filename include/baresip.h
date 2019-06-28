@@ -1215,6 +1215,10 @@ struct mnat_media;
 typedef void (mnat_estab_h)(int err, uint16_t scode, const char *reason,
 			    void *arg);
 
+typedef void (mnat_connected_h)(const struct sa *raddr1,
+				const struct sa *raddr2, void *arg);
+
+
 typedef int (mnat_sess_h)(struct mnat_sess **sessp, struct dnsc *dnsc,
 			  int af, const char *srv, uint16_t port,
 			  const char *user, const char *pass,
@@ -1223,7 +1227,8 @@ typedef int (mnat_sess_h)(struct mnat_sess **sessp, struct dnsc *dnsc,
 
 typedef int (mnat_media_h)(struct mnat_media **mp, struct mnat_sess *sess,
 			   struct udp_sock *sock1, struct udp_sock *sock2,
-			   struct sdp_media *sdpm);
+			   struct sdp_media *sdpm,
+			   mnat_connected_h *connh, void *arg);
 
 typedef int (mnat_update_h)(struct mnat_sess *sess);
 
