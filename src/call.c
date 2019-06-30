@@ -328,27 +328,10 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 }
 
 
-static int update_media(struct call *call)
+static int update_audio(struct call *call)
 {
 	const struct sdp_format *sc;
-	struct le *le;
 	int err = 0;
-
-	debug("call: update media\n");
-
-	/* media attributes */
-	audio_sdp_attr_decode(call->audio);
-
-	if (call->video)
-		video_sdp_attr_decode(call->video);
-
-	/* Update each stream */
-	FOREACH_STREAM {
-		stream_update(le->data);
-	}
-
-	if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
-		err = call->acc->mnat->updateh(call->mnats);
 
 	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
 	if (sc) {
@@ -362,6 +345,15 @@ static int update_media(struct call *call)
 	else {
 		info("audio stream is disabled..\n");
 	}
+
+	return err;
+}
+
+
+static int update_video(struct call *call)
+{
+	const struct sdp_format *sc;
+	int err = 0;
 
 	sc = sdp_media_rformat(stream_sdpmedia(video_strm(call->video)), NULL);
 	if (sc) {
@@ -384,6 +376,35 @@ static int update_media(struct call *call)
 		info("video stream is disabled..\n");
 		video_stop(call->video);
 	}
+
+	return err;
+}
+
+
+static int update_media(struct call *call)
+{
+	struct le *le;
+	int err = 0;
+
+	debug("call: update media\n");
+
+	/* media attributes */
+	audio_sdp_attr_decode(call->audio);
+
+	if (call->video)
+		video_sdp_attr_decode(call->video);
+
+	/* Update each stream */
+	FOREACH_STREAM {
+		stream_update(le->data);
+	}
+
+	if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
+		err = call->acc->mnat->updateh(call->mnats);
+
+	err |= update_audio(call);
+
+	err |= update_video(call);
 
 	return err;
 }
@@ -1260,7 +1281,6 @@ static int sipsess_offer_handler(struct mbuf **descp,
 		err = update_media(call);
 		if (err)
 			return err;
-
 	}
 
 	/* Encode SDP Answer */
