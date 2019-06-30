@@ -597,8 +597,6 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 
 static void stream_remote_set(struct stream *s)
 {
-	int err;
-
 	if (!s)
 		return;
 
@@ -622,13 +620,7 @@ static void stream_remote_set(struct stream *s)
 	else
 		sdp_media_raddr_rtcp(s->sdp, &s->raddr_rtcp);
 
-	rtcp_start(s->rtp, s->cname, &s->raddr_rtcp);
-
-	/* Send a dummy RTCP packet to open NAT pinhole */
-	err = rtcp_send_app(s->rtp, "PING", (void *)"PONG", 4);
-	if (err) {
-		warning("stream: rtcp_send_app failed (%m)\n", err);
-	}
+	stream_start(s);
 }
 
 
@@ -961,4 +953,26 @@ void stream_set_secure(struct stream *strm, bool secure)
 bool stream_is_secure(const struct stream *strm)
 {
 	return strm ? strm->menc_secure : false;
+}
+
+
+int stream_start(const struct stream *strm)
+{
+	int err;
+
+	if (!strm)
+		return EINVAL;
+
+	debug("stream: starting RTCP with remote %J\n", &strm->raddr_rtcp);
+
+	rtcp_start(strm->rtp, strm->cname, &strm->raddr_rtcp);
+
+	/* Send a dummy RTCP packet to open NAT pinhole */
+	err = rtcp_send_app(strm->rtp, "PING", (void *)"PONG", 4);
+	if (err) {
+		warning("stream: rtcp_send_app failed (%m)\n", err);
+		return err;
+	}
+
+	return 0;
 }

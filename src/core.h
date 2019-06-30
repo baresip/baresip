@@ -366,6 +366,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 int  stream_jbuf_reset(struct stream *strm,
 		       uint32_t frames_min, uint32_t frames_max);
 void stream_set_secure(struct stream *strm, bool secure);
+int  stream_start(const struct stream *strm);
 
 
 /*
