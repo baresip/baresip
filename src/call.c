@@ -131,12 +131,10 @@ static const struct sdp_format *sdp_media_rcodec(const struct sdp_media *m)
 }
 
 
-static void call_stream_start(struct call *call, bool active)
+static int start_audio(struct call *call)
 {
 	const struct sdp_format *sc;
-	int err;
-
-	debug("call: stream start (active=%d)\n", active);
+	int err = 0;
 
 	/* Audio Stream */
 	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
@@ -169,6 +167,15 @@ static void call_stream_start(struct call *call, bool active)
 		info("call: audio stream is disabled..\n");
 	}
 
+	return err;
+}
+
+
+static int start_video(struct call *call)
+{
+	const struct sdp_format *sc;
+	int err = 0;
+
 	/* Video Stream */
 	sc = sdp_media_rformat(stream_sdpmedia(video_strm(call->video)), NULL);
 	if (sc) {
@@ -185,6 +192,26 @@ static void call_stream_start(struct call *call, bool active)
 	}
 	else if (call->video) {
 		info("call: video stream is disabled..\n");
+	}
+
+	return err;
+}
+
+
+static void call_stream_start(struct call *call, bool active)
+{
+	int err;
+
+	debug("call: stream start (active=%d)\n", active);
+
+	err = start_audio(call);
+	if (err) {
+		warning("call: could not start audio: %m\n", err);
+	}
+
+	err = start_video(call);
+	if (err) {
+		warning("call: could not start video: %m\n", err);
 	}
 
 	if (call->bfcp) {
