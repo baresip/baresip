@@ -57,7 +57,6 @@ struct dtls_srtp {
 	struct comp compv[2];
 	const struct menc_sess *sess;
 	struct sdp_media *sdpm;
-	struct tmr tmr;
 	bool started;
 	bool active;
 	bool mux;
@@ -81,8 +80,6 @@ static void destructor(void *arg)
 {
 	struct dtls_srtp *st = arg;
 	size_t i;
-
-	tmr_cancel(&st->tmr);
 
 	for (i=0; i<2; i++) {
 		struct comp *c = &st->compv[i];
@@ -338,14 +335,6 @@ static int media_start(struct dtls_srtp *st, struct sdp_media *sdpm)
 }
 
 
-static void timeout(void *arg)
-{
-	struct dtls_srtp *st = arg;
-
-	media_start(st, st->sdpm);
-}
-
-
 static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 		       struct rtp_sock *rtp,
 		       struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
@@ -408,8 +397,9 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 	if (setup) {
 		st->active = !(0 == str_casecmp(setup, "active"));
 
-		/* note: we need to wait for ICE to settle ... */
-		tmr_start(&st->tmr, 100, timeout, st);
+		err = media_start(st, st->sdpm);
+		if (err)
+			return err;
 	}
 
 	/* SDP offer/answer on fingerprint attribute */
