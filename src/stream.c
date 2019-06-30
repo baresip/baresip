@@ -804,8 +804,9 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 			  sdp_media_laddr(s->sdp),
 			  &s->raddr_rtp, &s->raddr_rtcp);
 
-	err |= re_hprintf(pf, " mnat: %s\n",
-			  s->mnat ? s->mnat->id : "(none)");
+	err |= re_hprintf(pf, " mnat: %s (connected=%s)\n",
+			  s->mnat ? s->mnat->id : "(none)",
+			  s->mnat_connected ? "yes" : "no");
 
 	err |= re_hprintf(pf, " menc: %s (secure=%s)\n",
 			  s->menc ? s->menc->id : "(none)",
