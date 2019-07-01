@@ -138,8 +138,7 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 				       ODICT_STRING, call_peeruri(call));
 
 		call_identifier = call_id(call);
-		if (call_identifier)
-		{
+		if (call_identifier) {
 			err |= odict_entry_add(od, "id", ODICT_STRING,
 						   call_identifier);
 		}
