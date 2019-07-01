@@ -275,7 +275,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	err = odict_entry_add(od, "event", ODICT_BOOL, true);
 	err |= event_encode_dict(od, ua, ev, call, prm);
 	if (err)
+	{
+		warning("ctrl_tcp: failed to encode event (%m)\n", err);
 		goto out;
+	}
 
 	err = json_encode_odict(&pf, od);
 	if (err) {
