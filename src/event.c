@@ -129,13 +129,20 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 	if (call) {
 
 		const char *dir;
+		const char *call_identifier;
 
 		dir = call_is_outgoing(call) ? "outgoing" : "incoming";
 
 		err |= odict_entry_add(od, "direction", ODICT_STRING, dir);
 		err |= odict_entry_add(od, "peeruri",
 				       ODICT_STRING, call_peeruri(call));
-		err |= odict_entry_add(od, "id", ODICT_STRING, call_id(call));
+
+		call_identifier = call_id(call);
+		if (call_identifier) {
+			err |= odict_entry_add(od, "id", ODICT_STRING,
+						   call_identifier);
+		}
+
 		if (err)
 			goto out;
 	}
