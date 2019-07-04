@@ -816,6 +816,9 @@ static int send_code(struct re_printf *pf, void *arg)
 		for (i = 0; i < str_len(carg->prm) && !err; i++) {
 			err = call_send_digit(call, carg->prm[i]);
 		}
+		if (!err) {
+			err = call_send_digit(call, KEYCODE_REL);
+		}
 	}
 
 	return err;
