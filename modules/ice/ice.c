@@ -955,6 +955,7 @@ static int update(struct mnat_sess *sess)
 static struct mnat mnat_ice = {
 	.id      = "ice",
 	.ftag    = "+sip.ice",
+	.wait_connected = true,
 	.sessh   = session_alloc,
 	.mediah  = media_alloc,
 	.updateh = update,

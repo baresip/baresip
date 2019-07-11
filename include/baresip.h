@@ -1236,6 +1236,7 @@ struct mnat {
 	struct le le;
 	const char *id;
 	const char *ftag;
+	bool wait_connected;
 	mnat_sess_h *sessh;
 	mnat_media_h *mediah;
 	mnat_update_h *updateh;
