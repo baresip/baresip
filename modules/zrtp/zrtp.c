@@ -526,7 +526,10 @@ static void on_zrtp_security_event(zrtp_stream_t *stream,
 
 
 static struct menc menc_zrtp = {
-	LE_INIT, "zrtp", "RTP/AVP", session_alloc, media_alloc
+	.id        = "zrtp",
+	.sdp_proto = "RTP/AVP",
+	.sessh     = session_alloc,
+	.mediah    = media_alloc
 };
 
 
