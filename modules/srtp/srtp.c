@@ -449,15 +449,24 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 
 
 static struct menc menc_srtp_opt = {
-	LE_INIT, "srtp", "RTP/AVP", session_alloc, media_alloc
+	.id        = "srtp",
+	.sdp_proto = "RTP/AVP",
+	.sessh     = session_alloc,
+	.mediah    = media_alloc
 };
 
 static struct menc menc_srtp_mand = {
-	LE_INIT, "srtp-mand", "RTP/SAVP", session_alloc, media_alloc
+	.id        = "srtp-mand",
+	.sdp_proto = "RTP/SAVP",
+	.sessh     = session_alloc,
+	.mediah    = media_alloc
 };
 
 static struct menc menc_srtp_mandf = {
-	LE_INIT, "srtp-mandf", "RTP/SAVPF", session_alloc, media_alloc
+	.id        = "srtp-mandf",
+	.sdp_proto = "RTP/SAVPF",
+	.sessh     = session_alloc,
+	.mediah    = media_alloc
 };
 
 
