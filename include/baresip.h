@@ -604,6 +604,7 @@ struct menc {
 	struct le le;
 	const char *id;
 	const char *sdp_proto;
+	bool wait_secure;
 	menc_sess_h *sessh;
 	menc_media_h *mediah;
 };

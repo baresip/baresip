@@ -433,6 +433,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 static struct menc dtls_srtp = {
 	.id        = "dtls_srtp",
 	.sdp_proto = "UDP/TLS/RTP/SAVPF",
+	.wait_secure = true,
 	.sessh     = session_alloc,
 	.mediah    = media_alloc
 };
