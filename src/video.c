@@ -740,7 +740,7 @@ static int update_payload_type(struct video *v, uint8_t pt_old, uint8_t pt_new)
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
-				struct mbuf *mb, void *arg)
+				struct mbuf *mb, bool loss, void *arg)
 {
 	struct video *v = arg;
 	int err;

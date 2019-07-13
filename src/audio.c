@@ -714,7 +714,7 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 }
 
 
-static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
+static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, bool loss)
 {
 	size_t sampc = AUDIO_SAMPSZ;
 	void *sampv;
@@ -724,6 +724,20 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 	/* No decoder set */
 	if (!rx->ac)
 		return 0;
+
+	if (loss) {
+
+		err = rx->ac->plch(rx->dec,
+				   rx->dec_fmt, rx->sampv, &sampc,
+				   mbuf_buf(mb), mbuf_get_left(mb));
+		if (err) {
+			warning("audio: %s codec decode %u bytes: %m\n",
+				rx->ac->name, mbuf_get_left(mb), err);
+			goto out;
+		}
+
+		goto next;
+	}
 
 	if (mbuf_get_left(mb)) {
 
@@ -738,7 +752,10 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 
 		rx->last_sampc = sampc;
 	}
+#if 0
 	else if (rx->last_sampc && rx->ac->plch) {
+
+		re_printf("--- calling PLC handler ---\n");
 
 		sampc = rx->last_sampc;
 
@@ -749,11 +766,13 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 			goto out;
 		}
 	}
+#endif
 	else {
 		/* no PLC in the codec, might be done in filters below */
 		sampc = 0;
 	}
 
+ next:
 	/* Process exactly one audio-frame in reverse list order */
 	for (le = rx->filtl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;
@@ -849,7 +868,7 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
-				struct mbuf *mb, void *arg)
+				struct mbuf *mb, bool loss, void *arg)
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
@@ -965,7 +984,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	}
 
  out:
-	(void)aurx_stream_decode(&a->rx, mb);
+	(void)aurx_stream_decode(&a->rx, mb, loss);
 }
 
 
