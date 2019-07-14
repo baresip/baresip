@@ -451,7 +451,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	 * However, MPA support variable packet durations. Thus, MPA
 	 * should update the ts according to its current internal state.
 	 */
-	frame_size = sampc_rtp / tx->ac->pch;
+	frame_size = sampc_rtp / tx->ac->ch;
 
 	tx->ts_ext += (uint32_t)frame_size;
 
