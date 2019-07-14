@@ -895,6 +895,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#opus_complexity\t10\n");
 	(void)re_fprintf(f, "#opus_application\taudio\t# {voip,audio}\n");
 	(void)re_fprintf(f, "#opus_samplerate\t48000\n");
+	(void)re_fprintf(f, "#opus_packet_loss\t10\t# 0-100 percent\n");
 
 	(void)re_fprintf(f, "\n# Opus Multistream codec parameters\n");
 	(void)re_fprintf(f,

@@ -45,6 +45,8 @@ static char fmtp_mirror[256];
 
 uint32_t opus_complexity = 10;
 opus_int32 opus_application = OPUS_APPLICATION_AUDIO;
+opus_int32 opus_packet_loss = 0;
+
 
 static int opus_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 			 bool offer, void *arg)
@@ -184,6 +186,14 @@ static int module_init(void)
 					&pl);
 			return EINVAL;
 		}
+	}
+
+	if (0 == conf_get_u32(conf, "opus_packet_loss", &value)) {
+
+		if (value > 100)
+			opus_packet_loss = 100;
+		else
+			opus_packet_loss = value;
 	}
 
 	debug("opus: fmtp=\"%s\"\n", fmtp);
