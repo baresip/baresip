@@ -74,7 +74,6 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	struct opus_param prm, conf_prm;
 	opus_int32 fch, vbr;
 	const struct aucodec *auc = ac;
-	opus_int32 loss = 20;  /* XXX: config */
 
 	(void)param;
 
@@ -146,7 +145,6 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	(void)opus_encoder_ctl(aes->enc, OPUS_SET_VBR(vbr));
 	(void)opus_encoder_ctl(aes->enc, OPUS_SET_INBAND_FEC(prm.inband_fec));
 	(void)opus_encoder_ctl(aes->enc, OPUS_SET_DTX(prm.dtx));
-	(void)opus_encoder_ctl(aes->enc, OPUS_SET_PACKET_LOSS_PERC(loss));
 
 	if (opus_packet_loss) {
 		opus_encoder_ctl(aes->enc,
