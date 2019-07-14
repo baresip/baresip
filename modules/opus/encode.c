@@ -146,6 +146,10 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	(void)opus_encoder_ctl(aes->enc, OPUS_SET_INBAND_FEC(prm.inband_fec));
 	(void)opus_encoder_ctl(aes->enc, OPUS_SET_DTX(prm.dtx));
 
+	if (opus_packet_loss) {
+		opus_encoder_ctl(aes->enc,
+				 OPUS_SET_PACKET_LOSS_PERC(opus_packet_loss));
+	}
 
 #if 0
 	{
