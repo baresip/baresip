@@ -22,6 +22,15 @@ enum {
 };
 
 
+static bool mnat_ready(const struct stream *strm)
+{
+	if (strm->mnat && strm->mnat->wait_connected)
+		return strm->mnat_connected;
+	else
+		return true;
+}
+
+
 static void stream_close(struct stream *strm, int err)
 {
 	stream_error_h *errorh = strm->errorh;
@@ -419,6 +428,7 @@ static void mnat_connected_handler(const struct sa *raddr1,
 				   const struct sa *raddr2, void *arg)
 {
 	struct stream *strm = arg;
+	int err;
 
 	info("stream: mnat connected: raddr %J %J\n", raddr1, raddr2);
 
@@ -430,6 +440,12 @@ static void mnat_connected_handler(const struct sa *raddr1,
 		strm->raddr_rtcp = *raddr2;
 
 	strm->mnat_connected = true;
+
+	if (strm->mencs) {
+		err = start_mediaenc(strm);
+		if (err)
+			stream_close(strm, err);
+	}
 }
 
 
@@ -519,7 +535,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		s->mnat = mnat;
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
-				   rtcp_sock(s->rtp),
+				   cfg->rtcp_mux ? NULL : rtcp_sock(s->rtp),
 				   s->sdp, mnat_connected_handler, s);
 		if (err)
 			goto out;
@@ -528,9 +544,13 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	if (menc && s->rtp) {
 		s->menc  = menc;
 		s->mencs = mem_ref(menc_sess);
-		err = start_mediaenc(s);
-		if (err)
-			goto out;
+
+		if (mnat_ready(s)) {
+
+			err = start_mediaenc(s);
+			if (err)
+				goto out;
+		}
 	}
 
 	if (err)
@@ -581,6 +601,11 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 	if (s->hold)
 		return 0;
 
+	if (!stream_is_ready(s)) {
+		warning("stream: send: not ready\n");
+		return EINTR;
+	}
+
 	metric_add_packet(&s->metric_tx, mbuf_get_left(mb));
 
 	if (pt < 0)
@@ -622,7 +647,10 @@ static void stream_remote_set(struct stream *s)
 	else
 		sdp_media_raddr_rtcp(s->sdp, &s->raddr_rtcp);
 
-	stream_start(s);
+	if (stream_is_ready(s)) {
+
+		stream_start(s);
+	}
 }
 
 
@@ -639,6 +667,8 @@ void stream_update(struct stream *s)
 	if (!s)
 		return;
 
+	info("stream: update\n");
+
 	fmt = sdp_media_rformat(s->sdp, NULL);
 
 	s->pt_enc = fmt ? fmt->pt : -1;
@@ -646,7 +676,8 @@ void stream_update(struct stream *s)
 	if (sdp_media_has_media(s->sdp))
 		stream_remote_set(s);
 
-	if (s->menc && s->menc->mediah) {
+	if (s->mencs && mnat_ready(s)) {
+
 		err = start_mediaenc(s);
 		if (err) {
 			warning("stream: mediaenc update: %m\n", err);
@@ -943,6 +974,31 @@ int stream_jbuf_reset(struct stream *strm,
 }
 
 
+bool stream_is_ready(const struct stream *strm)
+{
+	if (!strm)
+		return false;
+
+	/* Media NAT */
+	if (strm->mnat) {
+		if (!mnat_ready(strm))
+			return false;
+	}
+
+	/* Media Enc */
+	if (strm->menc && strm->menc->wait_secure) {
+
+		if (!strm->menc_secure)
+			return false;
+	}
+
+	if (!sa_isset(&strm->raddr_rtp, SA_ALL))
+		return false;
+
+	return !strm->terminated;
+}
+
+
 void stream_set_secure(struct stream *strm, bool secure)
 {
 	if (!strm)
@@ -965,7 +1021,8 @@ int stream_start(const struct stream *strm)
 	if (!strm)
 		return EINVAL;
 
-	debug("stream: starting RTCP with remote %J\n", &strm->raddr_rtcp);
+	debug("stream: %s: starting RTCP with remote %J\n",
+			media_name(strm->type), &strm->raddr_rtcp);
 
 	rtcp_start(strm->rtp, strm->cname, &strm->raddr_rtcp);
 
