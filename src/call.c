@@ -204,14 +204,18 @@ static void call_stream_start(struct call *call, bool active)
 
 	debug("call: stream start (active=%d)\n", active);
 
-	err = start_audio(call);
-	if (err) {
-		warning("call: could not start audio: %m\n", err);
+	if (stream_is_ready(audio_strm(call->audio))) {
+		err = start_audio(call);
+		if (err) {
+			warning("call: could not start audio: %m\n", err);
+		}
 	}
 
-	err = start_video(call);
-	if (err) {
-		warning("call: could not start video: %m\n", err);
+	if (stream_is_ready(video_strm(call->video))) {
+		err = start_video(call);
+		if (err) {
+			warning("call: could not start video: %m\n", err);
+		}
 	}
 
 	if (call->bfcp) {
@@ -402,9 +406,13 @@ static int update_media(struct call *call)
 	if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
 		err = call->acc->mnat->updateh(call->mnats);
 
-	err |= update_audio(call);
+	if (stream_is_ready(audio_strm(call->audio))) {
+		err |= update_audio(call);
+	}
 
-	err |= update_video(call);
+	if (stream_is_ready(video_strm(call->video))) {
+		err |= update_video(call);
+	}
 
 	return err;
 }
@@ -502,9 +510,13 @@ static void menc_event_handler(enum menc_event event,
 	case MENC_EVENT_SECURE:
 		if (strstr(prm, "audio")) {
 			stream_set_secure(audio_strm(call->audio), true);
+			stream_start(audio_strm(call->audio));
+			start_audio(call);
 		}
 		else if (strstr(prm, "video")) {
 			stream_set_secure(video_strm(call->video), true);
+			stream_start(video_strm(call->video));
+			start_video(call);
 		}
 		else {
 			info("call: mediaenc: no match for stream (%s)\n",
