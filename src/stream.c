@@ -295,7 +295,6 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 		struct rtp_header hdr2;
 		void *mb2 = NULL;
-		bool loss = false;
 
 		/* Put frame in Jitter Buffer */
 		if (flush && s->jbuf_started)
@@ -320,10 +319,10 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		s->jbuf_started = true;
 
 		if (lostcalc(s, hdr2.seq) > 0) {
-			loss = true;
+			handle_rtp(s, &hdr2, mb2, true);
 		}
 
-		handle_rtp(s, &hdr2, mb2, loss);
+		handle_rtp(s, &hdr2, mb2, false);
 
 		mem_deref(mb2);
 	}

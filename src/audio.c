@@ -717,7 +717,7 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, bool loss)
 {
 	size_t sampc = AUDIO_SAMPSZ;
-	int16_t *sampv = rx->sampv;
+	void *sampv;
 	struct le *le;
 	int err = 0;
 
@@ -735,14 +735,11 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, bool loss)
 				rx->ac->name, mbuf_get_left(mb), err);
 			goto out;
 		}
-
-		sampv += sampc;
 	}
-
-	if (mbuf_get_left(mb)) {
+	else if (mbuf_get_left(mb)) {
 
 		err = rx->ac->dech(rx->dec,
-				   rx->dec_fmt, sampv, &sampc,
+				   rx->dec_fmt, rx->sampv, &sampc,
 				   mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
 			warning("audio: %s codec decode %u bytes: %m\n",
@@ -752,21 +749,6 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, bool loss)
 
 		rx->last_sampc = sampc;
 	}
-#if 0
-	else if (rx->last_sampc && rx->ac->plch) {
-
-		re_printf("--- calling PLC handler ---\n");
-
-		sampc = rx->last_sampc;
-
-		err = rx->ac->plch(rx->dec, rx->dec_fmt, rx->sampv, &sampc);
-		if (err) {
-			warning("audio: %s codec plc %u bytes: %m\n",
-				rx->ac->name, mbuf_get_left(mb), err);
-			goto out;
-		}
-	}
-#endif
 	else {
 		/* no PLC in the codec, might be done in filters below */
 		sampc = 0;
@@ -878,7 +860,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
 	MAGIC_CHECK(a);
 
-	if (!mb)
+	if (!mb || loss)
 		goto out;
 
 	/* Telephone event? */
