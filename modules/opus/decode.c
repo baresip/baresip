@@ -108,32 +108,52 @@ int opus_decode_pkloss(struct audec_state *ads,
 		       int fmt, void *sampv, size_t *sampc,
 		       const uint8_t *buf, size_t len)
 {
-	int16_t *s16 = sampv;
 	int n;
 	opus_int32 frame_size;
 	size_t nsamp = 0;
+	bool fec;
 
 	if (!ads || !sampv || !sampc)
 		return EINVAL;
 
+	/*
+	 * FEC=0 -> use PLC
+	 * FEC=1 -> use inband FEC
+	 */
+	fec = 1;
+
 	opus_decoder_ctl(ads->dec, OPUS_GET_LAST_PACKET_DURATION(&frame_size));
 
-	n = opus_decode(ads->dec, buf, (opus_int32)len,
-			sampv, (int)(frame_size), 1);
-	if (n < 0) {
-		warning("opus: decode error: %s\n", opus_strerror(n));
-		return EPROTO;
+	switch (fmt) {
+
+	case AUFMT_S16LE:
+		n = opus_decode(ads->dec,
+				fec ? buf : NULL,
+				fec ? (opus_int32)len : 0,
+				sampv, (int)(frame_size), fec);
+		if (n < 0) {
+			warning("opus: decode error: %s\n", opus_strerror(n));
+			return EPROTO;
+		}
+		break;
+
+	case AUFMT_FLOAT:
+		n = opus_decode_float(ads->dec,
+				      fec ? buf : NULL,
+				      fec ? (opus_int32)len : 0,
+				      sampv, (int)(frame_size), fec);
+		if (n < 0) {
+			warning("opus: decode error: %s\n", opus_strerror(n));
+			return EPROTO;
+		}
+
+		break;
+
+	default:
+		return ENOTSUP;
 	}
 
-	nsamp = n * ads->ch;
-	s16 += nsamp;
-
-	n = opus_decode(ads->dec, buf, (opus_int32)len,
-			s16, (int)(frame_size), 0);
-	if (n < 0)
-		return EPROTO;
-
-	nsamp += (n * ads->ch);
+	nsamp = (n * ads->ch);
 
 	if (nsamp > *sampc) {
 		warning("opus: pkloss: buffer too small.\n");
@@ -142,7 +162,7 @@ int opus_decode_pkloss(struct audec_state *ads,
 
 	*sampc = nsamp;
 
-	re_printf("opus: pkloss: %zu samples\n", *sampc);
+	re_printf("opus: pkloss: %zu samples (fec=%d)\n", *sampc, fec);
 
 	return 0;
 }
