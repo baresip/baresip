@@ -13,6 +13,11 @@
 #include "avcodec.h"
 
 
+enum {
+	KEYFRAME_INTERVAL = 10  /* Keyframes per second */
+};
+
+
 struct picsz {
 	enum h263_fmt fmt;  /**< Picture size */
 	uint8_t mpi;        /**< Minimum Picture Interval (1-32) */
@@ -158,7 +163,7 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->pix_fmt   = pix_fmt;
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
-	st->ctx->gop_size = 10 * prm->fps;
+	st->ctx->gop_size = KEYFRAME_INTERVAL * prm->fps;
 
 	if (0 == str_cmp(st->codec->name, "libx264")) {
 
