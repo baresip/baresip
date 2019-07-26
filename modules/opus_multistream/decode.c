@@ -127,7 +127,8 @@ int opus_multistream_decode_frm(struct audec_state *ads,
 
 
 int opus_multistream_decode_pkloss(struct audec_state *ads,
-		       int fmt, void *sampv, size_t *sampc)
+				   int fmt, void *sampv, size_t *sampc,
+				   const uint8_t *buf, size_t len)
 {
 	int n;
 

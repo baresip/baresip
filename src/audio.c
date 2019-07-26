@@ -742,7 +742,8 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 
 		sampc = rx->last_sampc;
 
-		err = rx->ac->plch(rx->dec, rx->dec_fmt, rx->sampv, &sampc);
+		err = rx->ac->plch(rx->dec, rx->dec_fmt, rx->sampv, &sampc,
+				   NULL, 0);
 		if (err) {
 			warning("audio: %s codec plc %u bytes: %m\n",
 				rx->ac->name, mbuf_get_left(mb), err);

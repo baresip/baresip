@@ -977,7 +977,8 @@ typedef int (audec_decode_h)(struct audec_state *ads,
 			     int fmt, void *sampv, size_t *sampc,
 			     const uint8_t *buf, size_t len);
 typedef int (audec_plc_h)(struct audec_state *ads,
-			  int fmt, void *sampv, size_t *sampc);
+			  int fmt, void *sampv, size_t *sampc,
+			  const uint8_t *buf, size_t len);
 
 struct aucodec {
 	struct le le;
