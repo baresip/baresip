@@ -965,7 +965,10 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	}
 
  out:
-	(void)aurx_stream_decode(&a->rx, mb, lostc);
+	if (lostc)
+		aurx_stream_decode(&a->rx, mb, lostc);
+
+	(void)aurx_stream_decode(&a->rx, mb, 0);
 }
 
 

@@ -120,7 +120,7 @@ int opus_decode_pkloss(struct audec_state *ads,
 	 * FEC=0 -> use PLC
 	 * FEC=1 -> use inband FEC
 	 */
-	fec = 1;
+	fec = opus_packet_loss > 0;
 
 	opus_decoder_ctl(ads->dec, OPUS_GET_LAST_PACKET_DURATION(&frame_size));
 
