@@ -162,7 +162,5 @@ int opus_decode_pkloss(struct audec_state *ads,
 
 	*sampc = nsamp;
 
-	re_printf("opus: pkloss: %zu samples (fec=%d)\n", *sampc, fec);
-
 	return 0;
 }
