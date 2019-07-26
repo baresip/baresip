@@ -30,12 +30,6 @@
  */
 
 
-#if LIBAVUTIL_VERSION_MAJOR < 52
-#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
-#define AV_PIX_FMT_YUVJ420P PIX_FMT_YUVJ420P
-#endif
-
-
 struct vidsrc_st {
 	const struct vidsrc *vs;  /* inheritance */
 	pthread_t thread;

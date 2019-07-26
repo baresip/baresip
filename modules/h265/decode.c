@@ -13,11 +13,6 @@
 #include "h265.h"
 
 
-#if LIBAVUTIL_VERSION_MAJOR < 52
-#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
-#endif
-
-
 enum {
 	FU_HDR_SIZE = 1
 };

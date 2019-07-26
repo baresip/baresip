@@ -16,14 +16,6 @@
 #endif
 
 
-#if LIBAVUTIL_VERSION_MAJOR < 52
-#define AV_PIX_FMT_YUV420P   PIX_FMT_YUV420P
-#define AV_PIX_FMT_YUVJ420P  PIX_FMT_YUVJ420P
-#define AV_PIX_FMT_NV12      PIX_FMT_NV12
-#define AV_PIX_FMT_YUV444P   PIX_FMT_YUV444P
-#endif
-
-
 #if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(52, 20, 100)
 #define av_frame_alloc avcodec_alloc_frame
 #endif
