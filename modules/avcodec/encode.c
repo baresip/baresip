@@ -183,32 +183,28 @@ static int open_encoder(struct videnc_state *st,
 		st->ctx->max_qdiff = 4;
 
 		if (st->codec == avcodec_find_encoder_by_name("nvenc_h264") ||
-		st->codec == avcodec_find_encoder_by_name("h264_nvenc")) {
+		    st->codec == avcodec_find_encoder_by_name("h264_nvenc")) {
 
-#if LIBAVUTIL_VERSION_INT >= ((51<<16)+(21<<8)+0)
 			err = av_opt_set(st->ctx->priv_data,
-				"preset", "llhp", 0);
-
+					 "preset", "llhp", 0);
 			if (err < 0) {
 				debug("avcodec: h264 nvenc setting preset "
-					"\"llhp\" failed; error: %u\n", err);
+				      "\"llhp\" failed; error: %u\n", err);
 			}
 			else {
 				debug("avcodec: h264 nvenc preset "
-					"\"llhp\" selected\n");
+				      "\"llhp\" selected\n");
 			}
 			err = av_opt_set_int(st->ctx->priv_data,
-				"2pass", 1, 0);
-
+					     "2pass", 1, 0);
 			if (err < 0) {
 				debug("avcodec: h264 nvenc option "
-					"\"2pass\" failed; error: %u\n", err);
+				      "\"2pass\" failed; error: %u\n", err);
 			}
 			else {
 				debug("avcodec: h264 nvenc option "
-					"\"2pass\" selected\n");
+				      "\"2pass\" selected\n");
 			}
-#endif
 		}
 	}
 
