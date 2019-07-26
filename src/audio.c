@@ -849,7 +849,7 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb)
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
-				struct mbuf *mb, void *arg)
+				struct mbuf *mb, unsigned lostc, void *arg)
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;

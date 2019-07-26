@@ -179,7 +179,7 @@ static const char *media_name(enum media_type type)
 
 
 static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
-		       struct mbuf *mb)
+		       struct mbuf *mb, unsigned lostc)
 {
 	struct rtpext extv[8];
 	size_t extc = 0;
@@ -228,7 +228,7 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 	}
 
  handler:
-	s->rtph(hdr, extv, extc, mb, s->arg);
+	s->rtph(hdr, extv, extc, mb, lostc, s->arg);
 }
 
 
@@ -295,6 +295,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 		struct rtp_header hdr2;
 		void *mb2 = NULL;
+		int lostc;
 
 		/* Put frame in Jitter Buffer */
 		if (flush && s->jbuf_started)
@@ -318,15 +319,14 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 		s->jbuf_started = true;
 
-		if (lostcalc(s, hdr2.seq) > 0)
-			handle_rtp(s, hdr, NULL);
+		lostc = lostcalc(s, hdr2.seq);
 
-		handle_rtp(s, &hdr2, mb2);
+		handle_rtp(s, &hdr2, mb2, lostc > 0 ? lostc : 0);
 
 		mem_deref(mb2);
 	}
 	else {
-		handle_rtp(s, hdr, mb);
+		handle_rtp(s, hdr, mb, 0);
 	}
 }
 

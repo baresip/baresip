@@ -292,7 +292,7 @@ enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 
 typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct rtpext *extv, size_t extc,
-			    struct mbuf *mb, void *arg);
+			    struct mbuf *mb, unsigned lostc, void *arg);
 typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
