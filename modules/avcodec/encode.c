@@ -213,13 +213,13 @@ static int open_encoder(struct videnc_state *st,
 		goto out;
 	}
 
+	st->encsize = *size;
+
  out:
 	if (err) {
 		if (st->ctx)
 			avcodec_free_context(&st->ctx);
 	}
-	else
-		st->encsize = *size;
 
 	return err;
 }
