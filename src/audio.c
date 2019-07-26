@@ -714,7 +714,7 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 }
 
 
-static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, bool loss)
+static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, unsigned lostc)
 {
 	size_t sampc = AUDIO_SAMPSZ;
 	void *sampv;
@@ -725,7 +725,7 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, bool loss)
 	if (!rx->ac)
 		return 0;
 
-	if (loss && rx->ac->plch) {
+	if (lostc && rx->ac->plch) {
 
 		err = rx->ac->plch(rx->dec,
 				   rx->dec_fmt, rx->sampv, &sampc,
@@ -849,7 +849,7 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, bool loss)
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
-				struct mbuf *mb, bool loss, void *arg)
+				struct mbuf *mb, unsigned lostc, void *arg)
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
@@ -860,7 +860,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
 	MAGIC_CHECK(a);
 
-	if (!mb || loss)
+	if (!mb)
 		goto out;
 
 	/* Telephone event? */
@@ -965,7 +965,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	}
 
  out:
-	(void)aurx_stream_decode(&a->rx, mb, loss);
+	(void)aurx_stream_decode(&a->rx, mb, lostc);
 }
 
 
