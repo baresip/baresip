@@ -328,7 +328,7 @@ static int decode(struct audec_state *st, int fmt, void *sampv,
 
 
 static int pkloss(struct audec_state *st, int fmt, void *sampv,
-		  size_t *sampc)
+		  size_t *sampc, const uint8_t *buf, size_t len)
 {
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
