@@ -336,7 +336,7 @@ static int module_init(void)
 	}
 
 	err = vidisp_register(&vid, baresip_vidispl(),
-			      "sdl2", alloc, NULL, display, hide);
+			      "sdl", alloc, NULL, display, hide);
 	if (err)
 		return err;
 
