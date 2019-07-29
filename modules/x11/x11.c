@@ -174,16 +174,6 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 		pixsz = 4;
 		break;
 
-	case 16:
-		st->pixfmt = VID_FMT_RGB565;
-		pixsz = 2;
-		break;
-
-	case 15:
-		st->pixfmt = VID_FMT_RGB555;
-		pixsz = 2;
-		break;
-
 	default:
 		warning("x11: colordepth not supported: %d\n", attrs.depth);
 		return ENOSYS;
