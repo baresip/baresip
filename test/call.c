@@ -72,6 +72,7 @@ struct fixture {
 	TEST_ERR(err);							\
 									\
 	f->magic = MAGIC;						\
+	f->estab_action = ACTION_RECANCEL;				\
 	f->exp_estab = 1;						\
 	f->exp_closed = 1;						\
 	mock_aucodec_register();					\
