@@ -5,17 +5,6 @@
  */
 
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 25, 0)
-#define AVCodecID CodecID
-
-#define AV_CODEC_ID_NONE  CODEC_ID_NONE
-#define AV_CODEC_ID_H263  CODEC_ID_H263
-#define AV_CODEC_ID_H264  CODEC_ID_H264
-#define AV_CODEC_ID_MPEG4 CODEC_ID_MPEG4
-
-#endif
-
-
 #if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(52, 20, 100)
 #define av_frame_alloc avcodec_alloc_frame
 #endif
