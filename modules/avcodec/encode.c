@@ -488,7 +488,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 
 	ret = avcodec_receive_packet(st->ctx, pkt);
 	if (ret < 0) {
-		info("avcodec: no packet yet ..\n");
 		err = 0;
 		goto out;
 	}
