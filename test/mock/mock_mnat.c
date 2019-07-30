@@ -10,8 +10,17 @@
 
 
 struct mnat_sess {
+	struct list medial;
 	struct tmr tmr;
 	mnat_estab_h *estabh;
+	void *arg;
+};
+
+
+struct mnat_media {
+	struct le le;
+	struct sdp_media *sdpm;
+	mnat_connected_h *connh;
 	void *arg;
 };
 
@@ -21,6 +30,16 @@ static void sess_destructor(void *data)
 	struct mnat_sess *sess = data;
 
 	tmr_cancel(&sess->tmr);
+	list_flush(&sess->medial);
+}
+
+
+static void media_destructor(void *arg)
+{
+	struct mnat_media *m = arg;
+
+	list_unlink(&m->le);
+	mem_deref(m->sdpm);
 }
 
 
@@ -74,6 +93,7 @@ static int mnat_media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 			    struct sdp_media *sdpm,
 			    mnat_connected_h *connh, void *arg)
 {
+	struct mnat_media *m;
 	int err;
 
 	(void)mp;
@@ -83,18 +103,64 @@ static int mnat_media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	(void)connh;
 	(void)arg;
 
+	if (!mp || !sess || !sock1 || !sdpm)
+		return EINVAL;
+
+	m = mem_zalloc(sizeof(*m), media_destructor);
+	if (!m)
+		return ENOMEM;
+
 	err = sdp_media_set_lattr(sdpm, true, "xnat", NULL);
 	if (err)
-		return err;
+		goto out;
+
+	m->sdpm  = mem_ref(sdpm);
+	m->connh = connh;
+	m->arg   = arg;
+
+	list_append(&sess->medial, &m->le, m);
+
+ out:
+	if (err)
+		mem_deref(m);
+	else
+		*mp = m;
+
+	return err;
+}
+
+
+static int mnat_session_update(struct mnat_sess *sess)
+{
+	struct le *le;
+
+	if (!sess)
+		return EINVAL;
+
+	for (le = sess->medial.head; le; le = le->next) {
+		struct mnat_media *m = le->data;
+		struct sa rtp, rtcp;
+
+		rtp = *sdp_media_raddr(m->sdpm);
+		sdp_media_raddr_rtcp(m->sdpm, &rtcp);
+
+		if (sa_isset(&rtp, SA_ALL) &&
+		    sa_isset(&rtcp, SA_ALL)) {
+
+			if (m->connh)
+				m->connh(&rtp, &rtcp, m->arg);
+		}
+	}
 
 	return 0;
 }
 
 
 static struct mnat mnat_mock = {
-	.id     = "XNAT",
-	.sessh  = mnat_session_alloc,
-	.mediah = mnat_media_alloc,
+	.id      = "XNAT",
+	.sessh   = mnat_session_alloc,
+	.mediah  = mnat_media_alloc,
+	.updateh = mnat_session_update,
 };
 
 
