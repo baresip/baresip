@@ -665,7 +665,7 @@ void stream_update(struct stream *s)
 	if (!s)
 		return;
 
-	info("stream: update\n");
+	info("stream: update '%s'\n", media_name(s->type));
 
 	fmt = sdp_media_rformat(s->sdp, NULL);
 
