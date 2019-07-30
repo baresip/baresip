@@ -920,6 +920,9 @@ static int update(struct mnat_sess *sess)
 	struct le *le;
 	int err = 0;
 
+	if (!sess)
+		return EINVAL;
+
 	/* SDP session */
 	(void)sdp_session_rattr_apply(sess->sdp, NULL, sdp_attr_handler, sess);
 
