@@ -859,6 +859,7 @@ struct vidsrc_st;
 /** Video Source parameters */
 struct vidsrc_prm {
 	double fps;       /**< Wanted framerate                            */
+	int fmt;          /**< Wanted pixel format (enum vidfmt)           */
 };
 
 /**

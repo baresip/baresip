@@ -994,6 +994,7 @@ static int set_encoder_format(struct vtx *vtx, const char *src,
 
 	vtx->vsrc_size       = *size;
 	vtx->vsrc_prm.fps    = get_fps(vtx->video);
+	vtx->vsrc_prm.fmt    = vtx->video->cfg.enc_fmt;
 
 	vtx->vsrc = mem_deref(vtx->vsrc);
 
