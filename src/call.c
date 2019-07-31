@@ -305,7 +305,8 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 		return;
 	}
 
-	info("call: media-nat '%s' established\n", call->acc->mnatid);
+	info("call: media-nat '%s' established/gathered\n",
+	     call->acc->mnatid);
 
 	/* Re-INVITE */
 	if (!call->mnat_wait) {
@@ -548,6 +549,26 @@ static void menc_error_handler(int err, void *arg)
 }
 
 
+static void stream_mnatconn_handler(struct stream *strm, void *arg)
+{
+	struct call *call = arg;
+
+	if (stream_is_ready(strm)) {
+
+		switch (strm->type) {
+
+		case MEDIA_AUDIO:
+			start_audio(call);
+			break;
+
+		case MEDIA_VIDEO:
+			start_video(call);
+			break;
+		}
+	}
+}
+
+
 static void stream_error_handler(struct stream *strm, int err, void *arg)
 {
 	struct call *call = arg;
@@ -739,7 +760,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
-		stream_set_error_handler(strm, stream_error_handler, call);
+		stream_set_error_handler(strm, stream_mnatconn_handler,
+					 stream_error_handler, call);
 	}
 
 	if (cfg->avt.rtp_timeout) {

@@ -295,6 +295,7 @@ typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct mbuf *mb, unsigned lostc, void *arg);
 typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
+typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
 /** Defines a generic media stream */
@@ -337,6 +338,7 @@ struct stream {
 	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
 	void *arg;               /**< Handler argument                      */
+	stream_mnatconn_h *mnatconnh;
 	stream_error_h *errorh;  /**< Stream error handler                  */
 	void *errorh_arg;        /**< Error handler argument                */
 };
@@ -359,6 +361,7 @@ void stream_send_fir(struct stream *s, bool pli);
 void stream_reset(struct stream *s);
 void stream_set_bw(struct stream *s, uint32_t bps);
 void stream_set_error_handler(struct stream *strm,
+			      stream_mnatconn_h *mnatconnh,
 			      stream_error_h *errorh, void *arg);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 int  stream_print(struct re_printf *pf, const struct stream *s);

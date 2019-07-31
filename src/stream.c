@@ -444,6 +444,13 @@ static void mnat_connected_handler(const struct sa *raddr1,
 		if (err)
 			stream_close(strm, err);
 	}
+	else if (stream_is_ready(strm)) {
+
+		stream_start(strm);
+
+		if (strm->mnatconnh)
+			strm->mnatconnh(strm, strm->errorh_arg);
+	}
 }
 
 
@@ -802,11 +809,13 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 
 
 void stream_set_error_handler(struct stream *strm,
+			      stream_mnatconn_h *mnatconnh,
 			      stream_error_h *errorh, void *arg)
 {
 	if (!strm)
 		return;
 
+	strm->mnatconnh  = mnatconnh;
 	strm->errorh     = errorh;
 	strm->errorh_arg = arg;
 }
@@ -1020,7 +1029,7 @@ int stream_start(const struct stream *strm)
 		return EINVAL;
 
 	debug("stream: %s: starting RTCP with remote %J\n",
-			media_name(strm->type), &strm->raddr_rtcp);
+	      media_name(strm->type), &strm->raddr_rtcp);
 
 	rtcp_start(strm->rtp, strm->cname, &strm->raddr_rtcp);
 
