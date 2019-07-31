@@ -28,6 +28,7 @@
   opus_dtx        {yes,no}   # Enable Discontinuous Transmission (DTX)
   opus_complexity {0-10}     # Encoder's computational complexity (10 max)
   opus_application {audio, voip} # Encoder's intended application
+  opus_packet_loss {0-100}   # Expected packet loss for FEC
  \endverbatim
  *
  * References:
