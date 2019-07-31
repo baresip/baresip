@@ -25,7 +25,7 @@
  *
  *     http://www.webmproject.org/
  *
- *     draft-ietf-payload-vp9-02
+ *     draft-ietf-payload-vp9-07
  */
 
 
