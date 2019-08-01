@@ -63,12 +63,12 @@ static int mock_vidsrc_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs   = vs;
+	st->vs     = vs;
 	st->fps    = prm->fps;
 	st->frameh = frameh;
 	st->arg    = arg;
 
-	err = vidframe_alloc(&st->frame, VID_FMT_YUV420P, size);
+	err = vidframe_alloc(&st->frame, prm->fmt, size);
 	if (err)
 		goto out;
 
