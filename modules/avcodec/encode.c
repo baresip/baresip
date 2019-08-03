@@ -82,7 +82,7 @@ static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *device_ctx,
 	}
 	info("hw pix %s\n", av_get_pix_fmt_name(hw_pix_fmt));
 
-	frames_ctx = (AVHWFramesContext *)(hw_frames_ref->data);
+	frames_ctx = (AVHWFramesContext *)(void *)hw_frames_ref->data;
 	frames_ctx->format    = hw_pix_fmt;
 	frames_ctx->sw_format = AV_PIX_FMT_NV12;
 	frames_ctx->width     = width;
@@ -204,9 +204,12 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->bit_rate  = prm->bitrate;
 	st->ctx->width     = size->w;
 	st->ctx->height    = size->h;
+
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (hw_type == AV_HWDEVICE_TYPE_VAAPI)
 		st->ctx->pix_fmt   = hw_pix_fmt;
 	else
+#endif
 		st->ctx->pix_fmt   = pix_fmt;
 
 	st->ctx->time_base.num = 1;
