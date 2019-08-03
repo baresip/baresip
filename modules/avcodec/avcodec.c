@@ -169,8 +169,9 @@ static int module_init(void)
 	struct list *vidcodecl = baresip_vidcodecl();
 	char h264enc[64] = "libx264";
 	char h264dec[64] = "h264";
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 	char hwaccel[64];
-	int ret;
+#endif
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53, 10, 0)
 	avcodec_init();
@@ -219,6 +220,7 @@ static int module_init(void)
 			      hwaccel, sizeof(hwaccel))) {
 
 		enum AVHWDeviceType type;
+		int ret;
 		int i;
 
 		info("avcodec: enable hwaccel using '%s'\n",
