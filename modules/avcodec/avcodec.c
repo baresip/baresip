@@ -296,7 +296,9 @@ static int module_close(void)
 	vidcodec_unregister(&h264);
 	vidcodec_unregister(&h264_1);
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 	av_buffer_unref(&hw_device_ctx);
+#endif
 
 	return 0;
 }
