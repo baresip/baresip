@@ -200,8 +200,13 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 	int i, got_picture, ret;
 	int err = 0;
 
-	if (st->ctx->hw_device_ctx)
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	if (st->ctx->hw_device_ctx) {
 		hw_frame = av_frame_alloc();
+		if (!hw_frame)
+			return ENOMEM;
+	}
+#endif
 
 	err = mbuf_fill(st->mb, 0x00, AV_INPUT_BUFFER_PADDING_SIZE);
 	if (err)
