@@ -65,6 +65,7 @@ static void destructor(void *arg)
 }
 
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *device_ctx,
 			   int width, int height)
 {
@@ -104,6 +105,7 @@ static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *device_ctx,
 
 	return err;
 }
+#endif
 
 
 static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
@@ -255,6 +257,7 @@ static int open_encoder(struct videnc_state *st,
 		}
 	}
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (hw_device_ctx) {
 
 		/* set hw_frames_ctx for encoder's AVCodecContext */
@@ -266,6 +269,7 @@ static int open_encoder(struct videnc_state *st,
 			goto out;
 		}
 	}
+#endif
 
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0) {
 		err = ENOENT;
@@ -531,6 +535,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	pict->color_range = AVCOL_RANGE_MPEG;
 #endif
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (hw_device_ctx) {
 
 		if ((err = av_hwframe_get_buffer(st->ctx->hw_frames_ctx,
@@ -553,6 +558,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 
 		av_frame_copy_props(hw_frame, pict);
 	}
+#endif
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
