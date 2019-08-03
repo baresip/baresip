@@ -213,6 +213,7 @@ static int module_init(void)
 		     avcodec_h264dec->name, avcodec_h264dec->long_name);
 	}
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 	/* common for encode/decode */
 	if (0 == conf_get_str(conf_cur(), "avcodec_hwaccel",
 			      hwaccel, sizeof(hwaccel))) {
@@ -269,6 +270,7 @@ static int module_init(void)
 			return ENOTSUP;
 		}
 	}
+#endif
 
 	return 0;
 }
