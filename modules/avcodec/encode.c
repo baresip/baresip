@@ -204,7 +204,11 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->bit_rate  = prm->bitrate;
 	st->ctx->width     = size->w;
 	st->ctx->height    = size->h;
-	st->ctx->pix_fmt   = hw_device_ctx ? hw_pix_fmt : pix_fmt;
+	if (hw_type == AV_HWDEVICE_TYPE_VAAPI)
+		st->ctx->pix_fmt   = hw_pix_fmt;
+	else
+		st->ctx->pix_fmt   = pix_fmt;
+
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
 	st->ctx->gop_size = KEYFRAME_INTERVAL * prm->fps;
@@ -258,7 +262,7 @@ static int open_encoder(struct videnc_state *st,
 	}
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-	if (hw_device_ctx) {
+	if (hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 
 		/* set hw_frames_ctx for encoder's AVCodecContext */
 
@@ -511,11 +515,11 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-	if (hw_device_ctx) {
+	if (hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 		hw_frame = av_frame_alloc();
 	}
 
-	pict->format = hw_device_ctx ? AV_PIX_FMT_NV12 : st->ctx->pix_fmt;
+	pict->format = hw_frame ? AV_PIX_FMT_NV12 : st->ctx->pix_fmt;
 	pict->width = frame->size.w;
 	pict->height = frame->size.h;
 	pict->pts = timestamp;
@@ -536,7 +540,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 #endif
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-	if (hw_device_ctx) {
+	if ( hw_type == AV_HWDEVICE_TYPE_VAAPI ) {
 
 		if ((err = av_hwframe_get_buffer(st->ctx->hw_frames_ctx,
 						 hw_frame, 0)) < 0) {

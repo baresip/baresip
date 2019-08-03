@@ -86,6 +86,21 @@ static inline void fragment_rewind(struct viddec_state *vds)
 }
 
 
+static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
+                                        const enum AVPixelFormat *pix_fmts)
+{
+       const enum AVPixelFormat *p;
+
+       for (p = pix_fmts; *p != -1; p++) {
+               if (*p == hw_pix_fmt)
+                       return *p;
+       }
+
+       fprintf(stderr, "Failed to get HW surface format.\n");
+       return AV_PIX_FMT_NONE;
+}
+
+
 static int init_decoder(struct viddec_state *st, const char *name)
 {
 	enum AVCodecID codec_id;
@@ -113,6 +128,18 @@ static int init_decoder(struct viddec_state *st, const char *name)
 
 	if (!st->ctx || !st->pict)
 		return ENOMEM;
+
+	/* Hardware accelleration */
+       if (hw_device_ctx) {
+               st->ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
+               st->ctx->get_format = get_hw_format;
+
+               info("avcodec: decode: hardware accel enabled\n");
+       }
+       else {
+               info("avcodec: decode: hardware accel disabled\n");
+       }
+
 
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0)
 		return ENOENT;
@@ -165,9 +192,13 @@ int avcodec_decode_update(struct viddec_state **vdsp,
 
 static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 {
+	AVFrame *hw_frame = NULL;
 	AVPacket avpkt;
 	int i, got_picture, ret;
 	int err = 0;
+
+	if (st->ctx->hw_device_ctx)
+		hw_frame = av_frame_alloc();
 
 	err = mbuf_fill(st->mb, 0x00, AV_INPUT_BUFFER_PADDING_SIZE);
 	if (err)
@@ -195,7 +226,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 		goto out;
 	}
 
-	ret = avcodec_receive_frame(st->ctx, st->pict);
+	ret = avcodec_receive_frame(st->ctx, hw_frame ? hw_frame : st->pict);
 	if (ret == AVERROR(EAGAIN)) {
 		goto out;
 	}
@@ -216,6 +247,16 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 
 	if (got_picture) {
 
+		if (hw_frame) {
+			/* retrieve data from GPU to CPU */
+			ret = av_hwframe_transfer_data(st->pict, hw_frame, 0);
+			if (ret < 0) {
+				fprintf(stderr, "Error transferring the data"
+					" to system memory\n");
+				goto out;
+			}
+		}
+
 		frame->fmt = avpixfmt_to_vidfmt(st->pict->format);
 		if (frame->fmt == (enum vidfmt)-1) {
 			warning("avcodec: decode: bad pixel format"
@@ -234,6 +275,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 	}
 
  out:
+	av_frame_free(&hw_frame);
 	return err;
 }
 

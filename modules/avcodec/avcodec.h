@@ -35,6 +35,7 @@ extern AVCodec *avcodec_h264enc;
 extern AVCodec *avcodec_h264dec;
 extern AVBufferRef *hw_device_ctx;
 extern enum AVPixelFormat hw_pix_fmt;
+extern enum AVHWDeviceType hw_type;
 
 
 /*

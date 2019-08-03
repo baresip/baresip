@@ -46,6 +46,7 @@ AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
 
 AVBufferRef *hw_device_ctx = NULL;
 enum AVPixelFormat hw_pix_fmt;
+enum AVHWDeviceType hw_type = AV_HWDEVICE_TYPE_NONE;
 
 
 int avcodec_resolve_codecid(const char *s)
@@ -277,6 +278,8 @@ static int module_init(void)
 				av_err2str(ret));
 			return ENOTSUP;
 		}
+
+		hw_type = type;
 	}
 #endif
 
