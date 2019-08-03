@@ -173,6 +173,10 @@ static int module_init(void)
 	char hwaccel[64];
 #endif
 
+#if 1
+	av_log_set_level(AV_LOG_VERBOSE);
+#endif
+
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53, 10, 0)
 	avcodec_init();
 #endif
@@ -250,6 +254,8 @@ static int module_init(void)
 					av_hwdevice_get_type_name(type));
 				return ENOSYS;
 			}
+
+			info("hardware methods: 0x%x\n", config->methods);
 
 			if (config->methods
 			    & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX
