@@ -44,9 +44,11 @@ AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
 AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
 
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 AVBufferRef *hw_device_ctx = NULL;
 enum AVPixelFormat hw_pix_fmt;
 enum AVHWDeviceType hw_type = AV_HWDEVICE_TYPE_NONE;
+#endif
 
 
 int avcodec_resolve_codecid(const char *s)

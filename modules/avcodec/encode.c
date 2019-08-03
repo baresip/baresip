@@ -515,9 +515,11 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 		hw_frame = av_frame_alloc();
 	}
+#endif
 
 	pict->format = hw_frame ? AV_PIX_FMT_NV12 : st->ctx->pix_fmt;
 	pict->width = frame->size.w;
@@ -540,7 +542,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 #endif
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-	if ( hw_type == AV_HWDEVICE_TYPE_VAAPI ) {
+	if (hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 
 		if ((err = av_hwframe_get_buffer(st->ctx->hw_frames_ctx,
 						 hw_frame, 0)) < 0) {
