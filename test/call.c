@@ -751,12 +751,21 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 				uint64_t timestamp, void *arg)
 {
 	struct fixture *fix = arg;
+	int err = 0;
 	(void)frame;
 	(void)timestamp;
 	(void)fix;
 
+	ASSERT_EQ(MAGIC, fix->magic);
+
+	ASSERT_EQ(conf_config()->video.enc_fmt, frame->fmt);
+
 	/* Stop the test */
 	re_cancel();
+
+ out:
+	if (err)
+		fixture_abort(fix, err);
 }
 
 
@@ -768,6 +777,7 @@ int test_call_video(void)
 	int err = 0;
 
 	conf_config()->video.fps = 100;
+	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init(f);
 
