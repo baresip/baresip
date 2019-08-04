@@ -80,7 +80,6 @@ static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *device_ctx,
 		fprintf(stderr, "Failed to create hardware frame context.\n");
 		return -1;
 	}
-	info("hw pix %s\n", av_get_pix_fmt_name(hw_pix_fmt));
 
 	frames_ctx = (AVHWFramesContext *)(void *)hw_frames_ref->data;
 	frames_ctx->format    = hw_pix_fmt;
@@ -231,7 +230,14 @@ static int open_encoder(struct videnc_state *st,
 	/* params to avoid libavcodec/x264 default preset error */
 	if (st->codec_id == AV_CODEC_ID_H264) {
 
-		av_opt_set(st->ctx->priv_data, "profile", "baseline", 0);
+		if (0 == str_cmp(st->codec->name, "h264_vaapi")) {
+			av_opt_set(st->ctx->priv_data, "profile",
+				   "constrained_baseline", 0);
+		}
+		else {
+			av_opt_set(st->ctx->priv_data, "profile",
+				   "baseline", 0);
+		}
 
 		st->ctx->me_range = 16;
 		st->ctx->qmin = 10;
@@ -524,7 +530,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	}
 #endif
 
-	pict->format = hw_frame ? AV_PIX_FMT_NV12 : st->ctx->pix_fmt;
+	pict->format = vidfmt_to_avpixfmt(frame->fmt);
 	pict->width = frame->size.w;
 	pict->height = frame->size.h;
 	pict->pts = timestamp;
@@ -559,8 +565,8 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		}
 
 		if ((err = av_hwframe_transfer_data(hw_frame, pict, 0)) < 0) {
-			fprintf(stderr, "Error while transferring frame"
-				" data to surface."
+			warning("avcodec: encode: Error while transferring"
+				" frame data to surface."
 				"Error code: %s.\n", av_err2str(err));
 			goto out;
 		}
