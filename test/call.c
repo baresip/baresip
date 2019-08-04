@@ -758,7 +758,7 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 
 	ASSERT_EQ(MAGIC, fix->magic);
 
-	ASSERT_EQ(conf_config()->video.enc_fmt, frame->fmt);
+	ASSERT_EQ(conf_config()->video.enc_fmt, (int)frame->fmt);
 
 	/* Stop the test */
 	re_cancel();
