@@ -77,8 +77,9 @@ static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *device_ctx,
 	     width, height);
 
 	if (!(hw_frames_ref = av_hwframe_ctx_alloc(device_ctx))) {
-		fprintf(stderr, "Failed to create hardware frame context.\n");
-		return -1;
+		warning("avcodec: encode: Failed to create hardware"
+			" frame context.\n");
+		return ENOMEM;
 	}
 
 	frames_ctx = (AVHWFramesContext *)(void *)hw_frames_ref->data;
@@ -278,7 +279,8 @@ static int open_encoder(struct videnc_state *st,
 		if ((err = set_hwframe_ctx(st->ctx, hw_device_ctx,
 					   size->w, size->h)) < 0) {
 
-			fprintf(stderr, "Failed to set hwframe context.\n");
+			warning("avcodec: encode: Failed to set"
+				" hwframe context.\n");
 			goto out;
 		}
 	}
@@ -555,7 +557,8 @@ int avcodec_encode(struct videnc_state *st, bool update,
 
 		if ((err = av_hwframe_get_buffer(st->ctx->hw_frames_ctx,
 						 hw_frame, 0)) < 0) {
-			fprintf(stderr, "Error code: %s.\n", av_err2str(err));
+			warning("avcodec: encode: Error code: %s.\n",
+				av_err2str(err));
 			goto out;
 		}
 

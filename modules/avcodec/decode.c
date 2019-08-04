@@ -90,15 +90,16 @@ static inline void fragment_rewind(struct viddec_state *vds)
 static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
                                         const enum AVPixelFormat *pix_fmts)
 {
-       const enum AVPixelFormat *p;
+	const enum AVPixelFormat *p;
 
-       for (p = pix_fmts; *p != -1; p++) {
-               if (*p == hw_pix_fmt)
-                       return *p;
-       }
+	for (p = pix_fmts; *p != -1; p++) {
+		if (*p == hw_pix_fmt)
+			return *p;
+	}
 
-       fprintf(stderr, "Failed to get HW surface format.\n");
-       return AV_PIX_FMT_NONE;
+	warning("avcodec: decode: Failed to get HW surface format.\n");
+
+	return AV_PIX_FMT_NONE;
 }
 #endif
 
@@ -260,8 +261,8 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 			/* retrieve data from GPU to CPU */
 			ret = av_hwframe_transfer_data(st->pict, hw_frame, 0);
 			if (ret < 0) {
-				fprintf(stderr, "Error transferring the data"
-					" to system memory\n");
+				warning("avcodec: decode: Error transferring"
+					" the data to system memory\n");
 				goto out;
 			}
 		}
