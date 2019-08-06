@@ -29,6 +29,8 @@ static int mock_encode_update(struct aufilt_enc_st **stp, void **ctx,
 			      const struct audio *au)
 {
 	struct mock_enc *st;
+	(void)ctx;
+	(void)au;
 
 	if (!stp || !af || !prm)
 		return EINVAL;
