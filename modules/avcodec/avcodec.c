@@ -6,6 +6,7 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#include <libavutil/pixdesc.h>
 #include <libavcodec/avcodec.h>
 #include "h26x.h"
 #include "avcodec.h"
@@ -41,6 +42,13 @@
 static const uint8_t h264_level_idc = 0x1f;
 AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
 AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
+
+
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+AVBufferRef *avcodec_hw_device_ctx = NULL;
+enum AVPixelFormat avcodec_hw_pix_fmt;
+enum AVHWDeviceType avcodec_hw_type = AV_HWDEVICE_TYPE_NONE;
+#endif
 
 
 int avcodec_resolve_codecid(const char *s)
@@ -164,6 +172,9 @@ static int module_init(void)
 	struct list *vidcodecl = baresip_vidcodecl();
 	char h264enc[64] = "libx264";
 	char h264dec[64] = "h264";
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	char hwaccel[64];
+#endif
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53, 10, 0)
 	avcodec_init();
@@ -206,6 +217,63 @@ static int module_init(void)
 		     avcodec_h264dec->name, avcodec_h264dec->long_name);
 	}
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	/* common for encode/decode */
+	if (0 == conf_get_str(conf_cur(), "avcodec_hwaccel",
+			      hwaccel, sizeof(hwaccel))) {
+
+		enum AVHWDeviceType type;
+		int ret;
+		int i;
+
+		info("avcodec: enable hwaccel using '%s'\n", hwaccel);
+
+		type = av_hwdevice_find_type_by_name(hwaccel);
+		if (type == AV_HWDEVICE_TYPE_NONE) {
+
+			warning("avcodec: Device type"
+				" '%s' is not supported.\n", hwaccel);
+
+			return ENOSYS;
+		}
+
+		for (i = 0;; i++) {
+			const AVCodecHWConfig *config;
+
+			config = avcodec_get_hw_config(avcodec_h264dec, i);
+			if (!config) {
+				warning("avcodec: Decoder %s does not"
+					" support device type %s.\n",
+					avcodec_h264dec->name,
+					av_hwdevice_get_type_name(type));
+				return ENOSYS;
+			}
+
+			if (config->methods
+			    & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX
+			    &&
+			    config->device_type == type) {
+
+				avcodec_hw_pix_fmt = config->pix_fmt;
+
+				info("avcodec: decode: using hardware"
+				     " pixel format '%s'\n",
+				     av_get_pix_fmt_name(config->pix_fmt));
+				break;
+			}
+		}
+
+		if ((ret = av_hwdevice_ctx_create(&avcodec_hw_device_ctx, type,
+						  NULL, NULL, 0)) < 0) {
+			warning("avcodec: Failed to create HW device (%s)\n",
+				av_err2str(ret));
+			return ENOTSUP;
+		}
+
+		avcodec_hw_type = type;
+	}
+#endif
+
 	return 0;
 }
 
@@ -216,6 +284,11 @@ static int module_close(void)
 	vidcodec_unregister(&h263);
 	vidcodec_unregister(&h264);
 	vidcodec_unregister(&h264_1);
+
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	if (avcodec_hw_device_ctx)
+		av_buffer_unref(&avcodec_hw_device_ctx);
+#endif
 
 	return 0;
 }

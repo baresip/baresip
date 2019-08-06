@@ -9,6 +9,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavutil/mem.h>
 #include <libavutil/opt.h>
+#include <libavutil/pixdesc.h>
 #include "h26x.h"
 #include "avcodec.h"
 
@@ -62,6 +63,49 @@ static void destructor(void *arg)
 	if (st->ctx)
 		avcodec_free_context(&st->ctx);
 }
+
+
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *device_ctx,
+			   int width, int height)
+{
+	AVBufferRef *hw_frames_ref;
+	AVHWFramesContext *frames_ctx = NULL;
+	int err = 0;
+
+	info("avcodec: encode: create hardware frames.. (%d x %d)\n",
+	     width, height);
+
+	if (!(hw_frames_ref = av_hwframe_ctx_alloc(device_ctx))) {
+		warning("avcodec: encode: Failed to create hardware"
+			" frame context.\n");
+		return ENOMEM;
+	}
+
+	frames_ctx = (AVHWFramesContext *)(void *)hw_frames_ref->data;
+	frames_ctx->format    = avcodec_hw_pix_fmt;
+	frames_ctx->sw_format = AV_PIX_FMT_NV12;
+	frames_ctx->width     = width;
+	frames_ctx->height    = height;
+	frames_ctx->initial_pool_size = 20;
+
+	if ((err = av_hwframe_ctx_init(hw_frames_ref)) < 0) {
+		warning("avcodec: encode:"
+			" Failed to initialize hardware frame context."
+			"Error code: %s\n",av_err2str(err));
+		av_buffer_unref(&hw_frames_ref);
+		return err;
+	}
+
+	ctx->hw_frames_ctx = av_buffer_ref(hw_frames_ref);
+	if (!ctx->hw_frames_ctx)
+		err = AVERROR(ENOMEM);
+
+	av_buffer_unref(&hw_frames_ref);
+
+	return err;
+}
+#endif
 
 
 static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
@@ -160,7 +204,14 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->bit_rate  = prm->bitrate;
 	st->ctx->width     = size->w;
 	st->ctx->height    = size->h;
-	st->ctx->pix_fmt   = pix_fmt;
+
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI)
+		st->ctx->pix_fmt   = avcodec_hw_pix_fmt;
+	else
+#endif
+		st->ctx->pix_fmt   = pix_fmt;
+
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
 	st->ctx->gop_size = KEYFRAME_INTERVAL * prm->fps;
@@ -180,7 +231,14 @@ static int open_encoder(struct videnc_state *st,
 	/* params to avoid libavcodec/x264 default preset error */
 	if (st->codec_id == AV_CODEC_ID_H264) {
 
-		av_opt_set(st->ctx->priv_data, "profile", "baseline", 0);
+		if (0 == str_cmp(st->codec->name, "h264_vaapi")) {
+			av_opt_set(st->ctx->priv_data, "profile",
+				   "constrained_baseline", 0);
+		}
+		else {
+			av_opt_set(st->ctx->priv_data, "profile",
+				   "baseline", 0);
+		}
 
 		st->ctx->me_range = 16;
 		st->ctx->qmin = 10;
@@ -212,6 +270,21 @@ static int open_encoder(struct videnc_state *st,
 			}
 		}
 	}
+
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
+
+		/* set hw_frames_ctx for encoder's AVCodecContext */
+
+		if ((err = set_hwframe_ctx(st->ctx, avcodec_hw_device_ctx,
+					   size->w, size->h)) < 0) {
+
+			warning("avcodec: encode: Failed to set"
+				" hwframe context.\n");
+			goto out;
+		}
+	}
+#endif
 
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0) {
 		err = ENOENT;
@@ -416,6 +489,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		   const struct vidframe *frame, uint64_t timestamp)
 {
 	AVFrame *pict = NULL;
+	AVFrame *hw_frame = NULL;
 	AVPacket *pkt = NULL;
 	int i, err = 0, ret;
 	int got_packet = 0;
@@ -452,7 +526,17 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-	pict->format = st->ctx->pix_fmt;
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
+		hw_frame = av_frame_alloc();
+		if (!hw_frame) {
+			err = ENOMEM;
+			goto out;
+		}
+	}
+#endif
+
+	pict->format = vidfmt_to_avpixfmt(frame->fmt);
 	pict->width = frame->size.w;
 	pict->height = frame->size.h;
 	pict->pts = timestamp;
@@ -472,6 +556,32 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	pict->color_range = AVCOL_RANGE_MPEG;
 #endif
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
+
+		if ((err = av_hwframe_get_buffer(st->ctx->hw_frames_ctx,
+						 hw_frame, 0)) < 0) {
+			warning("avcodec: encode: Error code: %s.\n",
+				av_err2str(err));
+			goto out;
+		}
+
+		if (!hw_frame->hw_frames_ctx) {
+			err = AVERROR(ENOMEM);
+			goto out;
+		}
+
+		if ((err = av_hwframe_transfer_data(hw_frame, pict, 0)) < 0) {
+			warning("avcodec: encode: Error while transferring"
+				" frame data to surface."
+				"Error code: %s.\n", av_err2str(err));
+			goto out;
+		}
+
+		av_frame_copy_props(hw_frame, pict);
+	}
+#endif
+
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
 	pkt = av_packet_alloc();
@@ -480,7 +590,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-	ret = avcodec_send_frame(st->ctx, pict);
+	ret = avcodec_send_frame(st->ctx, hw_frame ? hw_frame : pict);
 	if (ret < 0) {
 		err = EBADMSG;
 		goto out;
@@ -548,6 +658,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		av_free(pict);
 	if (pkt)
 		av_packet_free(&pkt);
+	av_frame_free(&hw_frame);
 
 	return err;
 }
