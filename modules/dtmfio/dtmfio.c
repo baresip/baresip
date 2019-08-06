@@ -76,6 +76,7 @@ static void ua_event_handler(struct ua *ua,
 			     void *arg )
 {
 	(void)ua;
+	(void)call;
 	(void)prm;
 	(void)arg;
 

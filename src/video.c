@@ -746,6 +746,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	int err;
 	(void)extv;
 	(void)extc;
+	(void)lostc;
 
 	MAGIC_CHECK(v);
 

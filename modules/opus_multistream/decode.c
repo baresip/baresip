@@ -131,6 +131,8 @@ int opus_multistream_decode_pkloss(struct audec_state *ads,
 				   const uint8_t *buf, size_t len)
 {
 	int n;
+	(void)buf;
+	(void)len;
 
 	if (!ads || !sampv || !sampc)
 		return EINVAL;
