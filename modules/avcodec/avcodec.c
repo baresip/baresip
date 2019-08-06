@@ -230,35 +230,28 @@ static int module_init(void)
 		int ret;
 		int i;
 
-		info("avcodec: enable hwaccel using '%s'\n",
-		     hwaccel);
+		info("avcodec: enable hwaccel using '%s'\n", hwaccel);
 
 		type = av_hwdevice_find_type_by_name(hwaccel);
 		if (type == AV_HWDEVICE_TYPE_NONE) {
 
 			warning("avcodec: Device type"
-				" '%s' is not supported.\n",
-				hwaccel);
+				" '%s' is not supported.\n", hwaccel);
 
 			return ENOSYS;
 		}
-
-		info("AVHWDeviceType %d (%s)\n",
-		     type, av_hwdevice_get_type_name(type));
 
 		for (i = 0;; i++) {
 			const AVCodecHWConfig *config;
 
 			config = avcodec_get_hw_config(avcodec_h264dec, i);
 			if (!config) {
-				warning("Decoder %s does not"
+				warning("avcodec: Decoder %s does not"
 					" support device type %s.\n",
 					avcodec_h264dec->name,
 					av_hwdevice_get_type_name(type));
 				return ENOSYS;
 			}
-
-			info("hardware methods: 0x%x\n", config->methods);
 
 			if (config->methods
 			    & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX

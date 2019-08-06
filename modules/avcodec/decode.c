@@ -138,7 +138,8 @@ static int init_decoder(struct viddec_state *st, const char *name)
 		st->ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
 		st->ctx->get_format = get_hw_format;
 
-		info("avcodec: decode: hardware accel enabled\n");
+		info("avcodec: decode: hardware accel enabled (%s)\n",
+		     av_hwdevice_get_type_name(hw_type));
 	}
 	else {
 		info("avcodec: decode: hardware accel disabled\n");
