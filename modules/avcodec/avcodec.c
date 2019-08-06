@@ -176,10 +176,6 @@ static int module_init(void)
 	char hwaccel[64];
 #endif
 
-#if 1
-	av_log_set_level(AV_LOG_VERBOSE);
-#endif
-
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53, 10, 0)
 	avcodec_init();
 #endif
