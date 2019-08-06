@@ -83,7 +83,7 @@ static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *device_ctx,
 	}
 
 	frames_ctx = (AVHWFramesContext *)(void *)hw_frames_ref->data;
-	frames_ctx->format    = hw_pix_fmt;
+	frames_ctx->format    = avcodec_hw_pix_fmt;
 	frames_ctx->sw_format = AV_PIX_FMT_NV12;
 	frames_ctx->width     = width;
 	frames_ctx->height    = height;
@@ -206,8 +206,8 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->height    = size->h;
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-	if (hw_type == AV_HWDEVICE_TYPE_VAAPI)
-		st->ctx->pix_fmt   = hw_pix_fmt;
+	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI)
+		st->ctx->pix_fmt   = avcodec_hw_pix_fmt;
 	else
 #endif
 		st->ctx->pix_fmt   = pix_fmt;
@@ -272,11 +272,11 @@ static int open_encoder(struct videnc_state *st,
 	}
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-	if (hw_type == AV_HWDEVICE_TYPE_VAAPI) {
+	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 
 		/* set hw_frames_ctx for encoder's AVCodecContext */
 
-		if ((err = set_hwframe_ctx(st->ctx, hw_device_ctx,
+		if ((err = set_hwframe_ctx(st->ctx, avcodec_hw_device_ctx,
 					   size->w, size->h)) < 0) {
 
 			warning("avcodec: encode: Failed to set"
@@ -527,8 +527,12 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	}
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-	if (hw_type == AV_HWDEVICE_TYPE_VAAPI) {
+	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 		hw_frame = av_frame_alloc();
+		if (!hw_frame) {
+			err = ENOMEM;
+			goto out;
+		}
 	}
 #endif
 
@@ -553,7 +557,7 @@ int avcodec_encode(struct videnc_state *st, bool update,
 #endif
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-	if (hw_type == AV_HWDEVICE_TYPE_VAAPI) {
+	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 
 		if ((err = av_hwframe_get_buffer(st->ctx->hw_frames_ctx,
 						 hw_frame, 0)) < 0) {

@@ -93,7 +93,7 @@ static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
 	const enum AVPixelFormat *p;
 
 	for (p = pix_fmts; *p != -1; p++) {
-		if (*p == hw_pix_fmt)
+		if (*p == avcodec_hw_pix_fmt)
 			return *p;
 	}
 
@@ -134,12 +134,12 @@ static int init_decoder(struct viddec_state *st, const char *name)
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
 	/* Hardware accelleration */
-	if (hw_device_ctx) {
-		st->ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
+	if (avcodec_hw_device_ctx) {
+		st->ctx->hw_device_ctx = av_buffer_ref(avcodec_hw_device_ctx);
 		st->ctx->get_format = get_hw_format;
 
 		info("avcodec: decode: hardware accel enabled (%s)\n",
-		     av_hwdevice_get_type_name(hw_type));
+		     av_hwdevice_get_type_name(avcodec_hw_type));
 	}
 	else {
 		info("avcodec: decode: hardware accel disabled\n");

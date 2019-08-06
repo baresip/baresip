@@ -35,9 +35,9 @@ extern AVCodec *avcodec_h264enc;
 extern AVCodec *avcodec_h264dec;
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-extern AVBufferRef *hw_device_ctx;
-extern enum AVPixelFormat hw_pix_fmt;
-extern enum AVHWDeviceType hw_type;
+extern AVBufferRef *avcodec_hw_device_ctx;
+extern enum AVPixelFormat avcodec_hw_pix_fmt;
+extern enum AVHWDeviceType avcodec_hw_type;
 #endif
 
 

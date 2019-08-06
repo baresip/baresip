@@ -45,9 +45,9 @@ AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
 
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-AVBufferRef *hw_device_ctx = NULL;
-enum AVPixelFormat hw_pix_fmt;
-enum AVHWDeviceType hw_type = AV_HWDEVICE_TYPE_NONE;
+AVBufferRef *avcodec_hw_device_ctx = NULL;
+enum AVPixelFormat avcodec_hw_pix_fmt;
+enum AVHWDeviceType avcodec_hw_type = AV_HWDEVICE_TYPE_NONE;
 #endif
 
 
@@ -258,7 +258,7 @@ static int module_init(void)
 			    &&
 			    config->device_type == type) {
 
-				hw_pix_fmt = config->pix_fmt;
+				avcodec_hw_pix_fmt = config->pix_fmt;
 
 				info("avcodec: decode: using hardware"
 				     " pixel format '%s'\n",
@@ -267,14 +267,14 @@ static int module_init(void)
 			}
 		}
 
-		if ((ret = av_hwdevice_ctx_create(&hw_device_ctx, type,
+		if ((ret = av_hwdevice_ctx_create(&avcodec_hw_device_ctx, type,
 						  NULL, NULL, 0)) < 0) {
 			warning("avcodec: Failed to create HW device (%s)\n",
 				av_err2str(ret));
 			return ENOTSUP;
 		}
 
-		hw_type = type;
+		avcodec_hw_type = type;
 	}
 #endif
 
@@ -290,7 +290,8 @@ static int module_close(void)
 	vidcodec_unregister(&h264_1);
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-	av_buffer_unref(&hw_device_ctx);
+	if (avcodec_hw_device_ctx)
+		av_buffer_unref(&avcodec_hw_device_ctx);
 #endif
 
 	return 0;
