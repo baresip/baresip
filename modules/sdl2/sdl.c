@@ -44,6 +44,7 @@ static uint32_t match_fmt(enum vidfmt fmt)
 	case VID_FMT_YUV420P:	return SDL_PIXELFORMAT_IYUV;
 #if SDL_VERSION_ATLEAST(2, 0, 4)
 	case VID_FMT_NV12:	return SDL_PIXELFORMAT_NV12;
+	case VID_FMT_NV21:	return SDL_PIXELFORMAT_NV21;
 #endif
 	case VID_FMT_RGB32:     return SDL_PIXELFORMAT_ARGB8888;
 	default:		return SDL_PIXELFORMAT_UNKNOWN;
@@ -57,6 +58,7 @@ static uint32_t chroma_step(enum vidfmt fmt)
 
 	case VID_FMT_YUV420P:	return 2;
 	case VID_FMT_NV12:	return 1;
+	case VID_FMT_NV21:	return 1;
 	case VID_FMT_RGB32:     return 0;
 	default:		return 0;
 	}
