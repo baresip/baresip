@@ -13,7 +13,6 @@
 #include <baresip.h>
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES 1
 #include <spandsp/telephony.h>
-#include <spandsp/alloc.h>
 #include <spandsp/fast_convert.h>
 #include <spandsp/saturated.h>
 #include <spandsp/vector_int.h>
