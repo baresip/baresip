@@ -64,7 +64,6 @@ struct ausrc_st {
 
 
 typedef struct _GstFakeSink GstFakeSink;
-static char gst_uri[256] = "http://relay1.slayradio.org:8000/";
 static struct ausrc *ausrc;
 
 
@@ -373,13 +372,12 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	int err;
-
 	(void)ctx;
 
-	if (!device)
-		device = gst_uri;
+	if (!stp || !as || !prm)
+		return EINVAL;
 
-	if (!prm)
+	if (!str_isset(device))
 		return EINVAL;
 
 	if (prm->fmt != AUFMT_S16LE) {
