@@ -494,7 +494,7 @@ static const char *default_video_device(void)
 static const char *default_video_display(void)
 {
 #ifdef DARWIN
-	return "opengl,nil";
+	return "sdl,nil";
 #elif defined (WIN32)
 	return "sdl2,nil";
 #else
@@ -578,7 +578,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "video_size\t\t%dx%d\n"
 			  "video_bitrate\t\t%u\n"
 			  "video_fps\t\t%.2f\n"
-			  "video_fullscreen\tyes\n"
+			  "video_fullscreen\tno\n"
 			  "videnc_format\t\t%s\n"
 			  ,
 			  default_video_device(),
