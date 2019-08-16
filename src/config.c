@@ -598,7 +598,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#rtp_timeout\t\t60\n"
 			  "\n# Network\n"
 			  "net_prefer_ipv6\t\tno\n"
-			  "#dns_server\t\t10.0.0.1:53\n"
+			  "#dns_server\t\t1.1.1.1:53\n"
+			  "#dns_server\t\t1.0.0.1:53\n"
 			  "#net_interface\t\t%H\n",
 			  cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max,
 			  default_interface_print, NULL);
