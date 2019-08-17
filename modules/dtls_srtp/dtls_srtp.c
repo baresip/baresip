@@ -218,6 +218,8 @@ static void dtls_estab_handler(void *arg)
 			       ds->active ? cli_key : srv_key, 30, true);
 	err |= srtp_stream_add(&comp->rx, suite,
 			       ds->active ? srv_key : cli_key, 30, false);
+	if (err)
+		return;
 
 	err |= srtp_install(comp);
 	if (err) {
@@ -260,6 +262,12 @@ static void dtls_conn_handler(const struct sa *peer, void *arg)
 	(void)peer;
 
 	info("dtls_srtp: incoming DTLS connect from %J\n", peer);
+
+	if (comp->tls_conn) {
+		warning("dtls_srtp: dtls already accepted (peer = %J)\n",
+			dtls_peer(comp->tls_conn));
+		return;
+	}
 
 	err = dtls_accept(&comp->tls_conn, tls, comp->dtls_sock,
 			  dtls_estab_handler, NULL, dtls_close_handler, comp);
