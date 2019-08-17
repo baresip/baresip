@@ -503,6 +503,19 @@ static const char *default_video_display(void)
 }
 
 
+static const char *default_avcodec_hwaccel(void)
+{
+#if defined (LINUX)
+	return "vaapi";
+#elif defined (DARWIN)
+	return "videotoolbox";
+#else
+	return "none";
+#endif
+
+}
+
+
 static int default_interface_print(struct re_printf *pf, void *unused)
 {
 	char ifname[64];
@@ -937,7 +950,9 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f,
 			"\n# avcodec\n"
 			"#avcodec_h264enc\tlibx264\n"
-			"#avcodec_h264dec\th264\n");
+			"#avcodec_h264dec\th264\n"
+			"#avcodec_hwaccel\t%s\n",
+			default_avcodec_hwaccel());
 
 	(void)re_fprintf(f,
 			"\n# h265\n"
