@@ -210,7 +210,7 @@ test:	$(TEST_BIN)
 
 $(TEST_BIN):	$(STATICLIB) $(TEST_OBJS)
 	@echo "  LD      $@"
-	$(HIDE)$(CXX) $(LFLAGS) $(TEST_OBJS) \
+	$(HIDE)$(LD) $(LFLAGS) $(TEST_OBJS) \
 		-L$(LIBRE_SO) -L. \
 		-l$(PROJECT) -lre $(LIBS) $(TEST_LIBS) -o $@
 
