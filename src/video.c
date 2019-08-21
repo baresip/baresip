@@ -1298,22 +1298,6 @@ void video_update_picture(struct video *v)
 
 
 /**
- * Get the driver-specific view of the video stream
- *
- * @param v Video stream
- *
- * @return Opaque view
- */
-void *video_view(const struct video *v)
-{
-	if (!v)
-		return NULL;
-
-	return v->vrx.vidisp_prm.view;
-}
-
-
-/**
  * Set the current Video Source device name
  *
  * @param v   Video stream

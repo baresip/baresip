@@ -1171,7 +1171,6 @@ const struct aucodec *audio_codec(const struct audio *au, bool tx);
 struct video;
 
 void  video_mute(struct video *v, bool muted);
-void *video_view(const struct video *v);
 int   video_set_fullscreen(struct video *v, bool fs);
 void  video_vidsrc_set_device(struct video *v, const char *dev);
 int   video_set_source(struct video *v, const char *name, const char *dev);
