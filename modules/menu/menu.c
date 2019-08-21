@@ -147,6 +147,33 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 }
 
 
+static int cmd_set_answermode(struct re_printf *pf, void *arg)
+{
+	enum answermode mode;
+	const struct cmd_arg *carg = arg;
+	(void)pf;
+
+	if (0 == str_cmp(carg->prm, "manual")) {
+		mode = ANSWERMODE_MANUAL;
+	}
+	else if (0 == str_cmp(carg->prm, "early")) {
+		mode = ANSWERMODE_EARLY;
+	}
+	else if (0 == str_cmp(carg->prm, "auto")) {
+		mode = ANSWERMODE_AUTO;
+	}
+	else {
+		(void)re_hprintf(pf, "Invalid answer mode: %s\n", carg->prm);
+		return EINVAL;
+	}
+
+	account_set_answermode(ua_account(uag_current()), mode);
+	(void)re_hprintf(pf, "Answer mode changed to: %s\n", carg->prm);
+
+	return 0;
+}
+
+
 /**
  * Print the current SIP Call status for the current User-Agent
  *
@@ -471,6 +498,7 @@ static const struct cmd cmdv[] = {
 {"listcalls", 'l',        0, "List active calls",       cmd_print_calls      },
 {"options",   'o',  CMD_PRM, "Options",                 options_command      },
 {"reginfo",   'r',        0, "Registration info",       ua_print_reg_status  },
+{"answermode",0,    CMD_PRM, "Set answer mode",         cmd_set_answermode   },
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 {"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
