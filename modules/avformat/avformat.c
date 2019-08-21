@@ -227,11 +227,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->frameh = frameh;
 	st->arg    = arg;
 
-	/*
-	 * avformat_open_input() was added in lavf 53.2.0 according to
-	 * ffmpeg/doc/APIchanges
-	 */
-
 	ret = avformat_open_input(&st->ic, dev, NULL, NULL);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%d)\n",
@@ -240,12 +235,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		goto out;
 	}
 
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 4, 0)
 	ret = avformat_find_stream_info(st->ic, NULL);
-#else
-	ret = av_find_stream_info(st->ic);
-#endif
-
 	if (ret < 0) {
 		warning("avformat: %s: no stream info\n", dev);
 		err = ENOENT;
