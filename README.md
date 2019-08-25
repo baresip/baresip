@@ -61,6 +61,7 @@ Distributed under BSD license
   - Automatic gain control (AGC) and Noise reducation
   - Acoustic echo control (AEC)
   - Configurable audio sample format (Signed 16-bit, 24-bit, Float etc)
+  - EBU ACIP (Audio Contribution over IP) Profile
 
 * Audio-codecs:
   - AMR narrowband, AMR wideband
@@ -92,6 +93,7 @@ Distributed under BSD license
   - Configurable video input/output
   - Support for asymmetric video
   - Configurable video pixel format
+  - Hardware accelleration for video encoder/decoder
 
 * Video-codecs:
   - H.265
