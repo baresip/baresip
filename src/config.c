@@ -822,9 +822,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "vidbridge" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Video display modules\n");
-#ifdef DARWIN
-	(void)re_fprintf(f, "#module\t\t\t" "opengl" MOD_EXT "\n");
-#endif
 #ifdef LINUX
 	(void)re_fprintf(f, "#module\t\t\t" "directfb" MOD_EXT "\n");
 #endif
