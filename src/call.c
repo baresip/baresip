@@ -61,6 +61,7 @@ struct call {
 	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
+	bool should_answer;       /**< True if answer-after=0 in Call-info  */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -630,6 +631,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	struct call *call;
 	struct le *le;
 	struct stream_param stream_prm;
+	const struct sip_hdr *hdr;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
 	bool use_video = true, got_offer = false;
 	int label = 0;
@@ -663,6 +665,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->eh     = eh;
 	call->arg    = arg;
 	call->af     = prm->af;
+	call->should_answer = false;
 
 	err = str_dup(&call->local_uri, local_uri);
 	if (local_name)
@@ -683,6 +686,18 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	/* Check for incoming SDP Offer */
 	if (msg && mbuf_get_left(msg->mb))
 		got_offer = true;
+
+	/* Check Call-Info header for ;answer-after=0 */
+	hdr = sip_msg_hdr(msg, SIP_HDR_CALL_INFO);
+	if (hdr) {
+		struct pl aprm;
+		if (0 == msg_param_decode(&hdr->val, "answer-after", &aprm)) {
+			if (0 == pl_strcasecmp(&aprm, "0")) {
+				info("call: answer-after=0\n");
+				call->should_answer = true;
+			}
+		}
+	}
 
 	/* Initialise media NAT handling */
 	if (acc->mnat) {
@@ -1040,6 +1055,22 @@ bool call_has_video(const struct call *call)
 		return false;
 
 	return sdp_media_has_media(stream_sdpmedia(video_strm(call->video)));
+}
+
+
+/**
+ * Check if we should immediately answer on current call
+ *
+ * @param call  Call object
+ *
+ * @return True, if should answer, otherwise false
+ */
+bool call_should_answer(const struct call *call)
+{
+	if (!call)
+		return false;
+
+	return call->should_answer;
 }
 
 

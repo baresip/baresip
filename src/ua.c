@@ -356,6 +356,12 @@ static void call_event_handler(struct call *call, enum call_event ev,
 			break;
 		}
 
+		/* Imeddiately answer if ;answer-after=0 present in Call-Info*/
+		if (call_should_answer(call)) {
+			(void)call_answer(call, 200);
+			break;
+		}
+
 		switch (ua->acc->answermode) {
 
 		case ANSWERMODE_EARLY:
