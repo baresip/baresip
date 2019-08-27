@@ -93,7 +93,7 @@ Distributed under BSD license
   - Configurable video input/output
   - Support for asymmetric video
   - Configurable video pixel format
-  - Hardware accelleration for video encoder/decoder
+  - Hardware acceleration for video encoder/decoder
 
 * Video-codecs:
   - H.265
