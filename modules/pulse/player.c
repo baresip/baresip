@@ -81,7 +81,6 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		       auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
-	struct mediadev *md;
 	pa_sample_spec ss;
 	pa_buffer_attr attr;
 	int err = 0, pa_error = 0;
@@ -119,12 +118,10 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	attr.minreq    = (uint32_t)-1;
 	attr.fragsize  = (uint32_t)-1;
 
-	md = mediadev_get_default(&ap->dev_list);
-
 	st->s = pa_simple_new(NULL,
 			      "Baresip",
 			      PA_STREAM_PLAYBACK,
-			      str_isset(device) ? device : md->name,
+			      str_isset(device) ? device : NULL,
 			      "VoIP Playback",
 			      &ss,
 			      NULL,
