@@ -46,6 +46,7 @@ struct vidsz;
 /** Defines the answermodes */
 enum answermode {
 	ANSWERMODE_MANUAL = 0,
+	ANSWERMODE_INTERCOM,
 	ANSWERMODE_EARLY,
 	ANSWERMODE_AUTO
 };

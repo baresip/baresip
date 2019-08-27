@@ -156,6 +156,9 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 	if (0 == str_cmp(carg->prm, "manual")) {
 		mode = ANSWERMODE_MANUAL;
 	}
+	else if (0 == str_cmp(carg->prm, "intercom")) {
+		mode = ANSWERMODE_INTERCOM;
+	}
 	else if (0 == str_cmp(carg->prm, "early")) {
 		mode = ANSWERMODE_EARLY;
 	}
@@ -1070,6 +1073,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 {
 	struct player *player = baresip_player();
 	struct call *call2 = NULL;
+	enum answermode amode;
 	int err;
 	(void)prm;
 	(void)arg;
@@ -1093,10 +1097,13 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		/* stop any ringtones */
 		menu.play = mem_deref(menu.play);
 
-		/* Only play the ringtones if answermode is "Manual".
+		/* Only play the ringtones
+		 * if answermode is "Manual" or "Intercom".
 		 * If the answermode is "auto" then be silent.
 		 */
-		if (ANSWERMODE_MANUAL == account_answermode(ua_account(ua))) {
+		amode = account_answermode(ua_account(ua));
+		if ((ANSWERMODE_MANUAL == amode) ||
+			(ANSWERMODE_INTERCOM == amode)) {
 
 			if (list_count(ua_calls(ua)) > 1) {
 				(void)play_file(&menu.play, player,

@@ -61,7 +61,7 @@ static int account_write_template(const char *file)
 			 "#    ;transport={udp,tcp,tls}\n"
 			 "#\n"
 			 "#  addr-params:\n"
-			 "#    ;answermode={manual,early,auto}\n"
+			 "#    ;answermode={manual,intercom,early,auto}\n"
 			 "#    ;audio_codecs=opus/48000/2,pcma,...\n"
 			 "#    ;auth_user=username\n"
 			 "#    ;auth_pass=password\n"

@@ -356,12 +356,6 @@ static void call_event_handler(struct call *call, enum call_event ev,
 			break;
 		}
 
-		/* Imeddiately answer if ;answer-after=0 present in Call-Info*/
-		if (call_should_answer(call)) {
-			(void)call_answer(call, 200);
-			break;
-		}
-
 		switch (ua->acc->answermode) {
 
 		case ANSWERMODE_EARLY:
@@ -371,6 +365,13 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		case ANSWERMODE_AUTO:
 			(void)call_answer(call, 200);
 			break;
+
+		case ANSWERMODE_INTERCOM:
+			if (call_should_answer(call)) {
+				info("ua: Intercom mode enabled\n");
+				(void)call_answer(call, 200);
+				break;
+			}
 
 		case ANSWERMODE_MANUAL:
 		default:
