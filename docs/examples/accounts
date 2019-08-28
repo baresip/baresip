@@ -7,7 +7,7 @@
 #    ;transport={udp,tcp,tls}
 #
 #  addr-params:
-#    ;answermode={manual,intercom,early,auto}
+#    ;answermode={manual,early,auto,intercom}
 #    ;audio_codecs=opus/48000/2,pcma,...
 #    ;auth_user=username
 #    ;auth_pass=password

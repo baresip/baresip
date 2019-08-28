@@ -156,14 +156,14 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 	if (0 == str_cmp(carg->prm, "manual")) {
 		mode = ANSWERMODE_MANUAL;
 	}
-	else if (0 == str_cmp(carg->prm, "intercom")) {
-		mode = ANSWERMODE_INTERCOM;
-	}
 	else if (0 == str_cmp(carg->prm, "early")) {
 		mode = ANSWERMODE_EARLY;
 	}
 	else if (0 == str_cmp(carg->prm, "auto")) {
 		mode = ANSWERMODE_AUTO;
+	}
+	else if (0 == str_cmp(carg->prm, "intercom")) {
+		mode = ANSWERMODE_INTERCOM;
 	}
 	else {
 		(void)re_hprintf(pf, "Invalid answer mode: %s\n", carg->prm);

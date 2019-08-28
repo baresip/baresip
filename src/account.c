@@ -151,14 +151,14 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 		if (0 == pl_strcasecmp(&amode, "manual")) {
 			prm->answermode = ANSWERMODE_MANUAL;
 		}
-		else if (0 == pl_strcasecmp(&amode, "intercom")) {
-			prm->answermode = ANSWERMODE_INTERCOM;
-		}
 		else if (0 == pl_strcasecmp(&amode, "early")) {
 			prm->answermode = ANSWERMODE_EARLY;
 		}
 		else if (0 == pl_strcasecmp(&amode, "auto")) {
 			prm->answermode = ANSWERMODE_AUTO;
+		}
+		else if (0 == pl_strcasecmp(&amode, "intercom")) {
+			prm->answermode = ANSWERMODE_INTERCOM;
 		}
 		else {
 			warning("account: answermode unknown (%r)\n", &amode);
@@ -893,8 +893,8 @@ int account_set_answermode(struct account *acc, enum answermode mode)
 	if (!acc)
 		return EINVAL;
 
-	if ((mode != ANSWERMODE_MANUAL) && (mode != ANSWERMODE_INTERCOM) &&
-	    (mode != ANSWERMODE_EARLY) && (mode != ANSWERMODE_AUTO)) {
+	if ((mode != ANSWERMODE_MANUAL) && (mode != ANSWERMODE_EARLY) &&
+	    (mode != ANSWERMODE_AUTO) && (mode != ANSWERMODE_INTERCOM)) {
 		warning("account: invalid answermode : `%d'\n", mode);
 		return EINVAL;
 	}
@@ -1057,9 +1057,9 @@ static const char *answermode_str(enum answermode mode)
 	switch (mode) {
 
 	case ANSWERMODE_MANUAL: return "manual";
-	case ANSWERMODE_INTERCOM: return "intercom";
 	case ANSWERMODE_EARLY:  return "early";
 	case ANSWERMODE_AUTO:   return "auto";
+	case ANSWERMODE_INTERCOM: return "intercom";
 	default: return "???";
 	}
 }
