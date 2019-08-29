@@ -308,6 +308,9 @@ static int cmd_answer(struct re_printf *pf, void *unused)
 	int err;
 	(void)unused;
 
+	if (!ua_call(ua))
+		return 0;
+
 	err = re_hprintf(pf, "%s: Answering incoming call\n", ua_aor(ua));
 
 	/* Stop any ongoing ring-tones */
