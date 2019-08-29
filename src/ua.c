@@ -367,10 +367,14 @@ static void call_event_handler(struct call *call, enum call_event ev,
 			break;
 
 		case ANSWERMODE_INTERCOM:
-			if (call_should_answer(call)) {
-				info("ua: Intercom mode enabled\n");
-				(void)call_answer(call, 200);
-				break;
+			if (call_aa_inv(call)) {
+				if (call_aa_delay(call) > 0) {
+					call_start_aa_timer(call);
+				}
+				else {
+					(void)call_answer(call, 200);
+					break;
+				}
 			}
 
 		case ANSWERMODE_MANUAL:

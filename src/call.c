@@ -55,13 +55,15 @@ struct call {
 	char *id;                 /**< Cached session call-id               */
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
+	struct tmr tmr_aa;        /**< Timer for incoming answer-after=x    */
 	time_t time_start;        /**< Time when call started               */
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
 	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
-	bool should_answer;       /**< True if answer-after=0 in Call-info  */
+	bool aa_inv;              /**< True if answer-after=x in Call-Info  */
+	uint32_t aa_delay;        /**< Time until auto answer on call       */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -81,6 +83,7 @@ struct call {
 
 
 static int send_invite(struct call *call);
+static void answer_after_handler(void *arg);
 
 
 static const char *state_name(enum state st)
@@ -665,7 +668,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->eh     = eh;
 	call->arg    = arg;
 	call->af     = prm->af;
-	call->should_answer = false;
+	call->aa_inv = false;
 
 	err = str_dup(&call->local_uri, local_uri);
 	if (local_name)
@@ -687,14 +690,16 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (msg && mbuf_get_left(msg->mb))
 		got_offer = true;
 
-	/* Check Call-Info header for ;answer-after=0 */
+	/* Check Call-Info header for ;answer-after=x */
 	hdr = sip_msg_hdr(msg, SIP_HDR_CALL_INFO);
 	if (hdr) {
-		struct pl aprm;
-		if (0 == msg_param_decode(&hdr->val, "answer-after", &aprm)) {
-			if (0 == pl_strcasecmp(&aprm, "0")) {
-				info("call: answer-after=0\n");
-				call->should_answer = true;
+		struct pl aaval;
+		if (0 == msg_param_decode(&hdr->val, "answer-after", &aaval)) {
+			call->aa_delay = pl_u32(&aaval);
+			if (acc->answermode == ANSWERMODE_INTERCOM) {
+				info("call: answer-after=%u\n",
+						call->aa_delay);
+				call->aa_inv = true;
 			}
 		}
 	}
@@ -1059,18 +1064,45 @@ bool call_has_video(const struct call *call)
 
 
 /**
- * Check if we should immediately answer on current call
+ * Check if we got invitation to answer on call
  *
  * @param call  Call object
  *
- * @return True, if should answer, otherwise false
+ * @return True, if got invitation, otherwise false
  */
-bool call_should_answer(const struct call *call)
+bool call_aa_inv(const struct call *call)
 {
 	if (!call)
 		return false;
 
-	return call->should_answer;
+	return call->aa_inv;
+}
+
+
+/**
+ * Get time until auto answer on call
+ *
+ * @param call  Call object
+ *
+ * @return Time in seconds
+ */
+uint32_t call_aa_delay(const struct call *call)
+{
+	return call ? call->aa_delay : 0;
+}
+
+
+/**
+ * Start timer for auto answer on call
+ *
+ * @param call  Call object
+ *
+ * @return
+ */
+void call_start_aa_timer(struct call *call)
+{
+	tmr_start(&call->tmr_aa,
+			call->aa_delay*1000, answer_after_handler, call);
 }
 
 
@@ -1390,6 +1422,8 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	if (call->state == STATE_ESTABLISHED)
 		return;
 
+	tmr_cancel(&call->tmr_aa);
+
 	set_state(call, STATE_ESTABLISHED);
 
 	call_stream_start(call, true);
@@ -1579,6 +1613,14 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 
 	call_stream_stop(call);
 	call_event_handler(call, CALL_EVENT_CLOSED, reason);
+}
+
+
+static void answer_after_handler(void *arg)
+{
+	struct call *call = arg;
+
+	(void)call_answer(call, 200);
 }
 
 

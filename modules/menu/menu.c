@@ -1102,8 +1102,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		 * If the answermode is "auto" then be silent.
 		 */
 		amode = account_answermode(ua_account(ua));
-		if ((ANSWERMODE_MANUAL == amode) ||
-			(ANSWERMODE_INTERCOM == amode)) {
+		if ((amode == ANSWERMODE_MANUAL) ||
+			(amode == ANSWERMODE_INTERCOM)) {
 
 			if (list_count(ua_calls(ua)) > 1) {
 				(void)play_file(&menu.play, player,
