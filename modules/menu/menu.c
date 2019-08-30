@@ -305,11 +305,15 @@ static int options_command(struct re_printf *pf, void *arg)
 static int cmd_answer(struct re_printf *pf, void *unused)
 {
 	struct ua *ua = uag_current();
+	struct call *call;
 	int err;
 	(void)unused;
 
-	if (!ua_call(ua))
-		return 0;
+	call = ua_call(ua);
+	if (!call || call_is_outgoing(call)) {
+		err = re_hprintf(pf, "no pending incoming calls to answer\n");
+		return err;
+	}
 
 	err = re_hprintf(pf, "%s: Answering incoming call\n", ua_aor(ua));
 
