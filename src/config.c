@@ -928,8 +928,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			"\n# ICE\n"
 			"ice_turn\t\tno\n"
 			"ice_debug\t\tno\n"
-			"ice_nomination\t\tregular\t# {regular,aggressive}\n"
-			"ice_mode\t\tfull\t# {full,lite}\n");
+			"ice_nomination\t\tregular\t# {regular,aggressive}\n");
 
 	(void)re_fprintf(f,
 			"\n# ZRTP\n"
