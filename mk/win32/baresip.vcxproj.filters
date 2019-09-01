@@ -212,9 +212,6 @@
     <ClCompile Include="..\..\src\ui.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\bfcp.c">
-      <Filter>src\video</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\h264.c">
       <Filter>src\video</Filter>
     </ClCompile>

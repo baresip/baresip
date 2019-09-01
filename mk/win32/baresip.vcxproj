@@ -168,7 +168,6 @@
     <ClCompile Include="..\..\src\auplay.c" />
     <ClCompile Include="..\..\src\ausrc.c" />
     <ClCompile Include="..\..\src\baresip.c" />
-    <ClCompile Include="..\..\src\bfcp.c" />
     <ClCompile Include="..\..\src\call.c" />
     <ClCompile Include="..\..\src\cmd.c" />
     <ClCompile Include="..\..\src\conf.c" />

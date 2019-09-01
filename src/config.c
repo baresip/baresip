@@ -82,11 +82,6 @@ static struct config core_config = {
 		0
 	},
 
-	/* BFCP */
-	{
-		""
-	},
-
 	/* SDP */
 	{
 		false
@@ -332,10 +327,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_str(conf, "net_interface",
 			   cfg->net.ifname, sizeof(cfg->net.ifname));
 
-	/* BFCP */
-	(void)conf_get_str(conf, "bfcp_proto", cfg->bfcp.proto,
-			   sizeof(cfg->bfcp.proto));
-
 	/* SDP */
 	(void)conf_get_bool(conf, "sdp_ebuacip", &cfg->sdp.ebuacip);
 
@@ -402,9 +393,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "net_prefer_ipv6\t\t%s\n"
 			 "net_interface\t\t%s\n"
 			 "\n"
-			 "# BFCP\n"
-			 "bfcp_proto\t\t%s\n"
-			 "\n"
 			 ,
 
 			 cfg->sip.local, cfg->sip.cert, cfg->sip.cafile,
@@ -437,8 +425,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 			 cfg->net.prefer_ipv6 ? "yes" : "no",
 			 cfg->net.ifname
-
-			 ,cfg->bfcp.proto
 		   );
 
 	return err;
@@ -616,10 +602,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#net_interface\t\t%H\n",
 			  cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max,
 			  default_interface_print, NULL);
-
-	err |= re_hprintf(pf,
-			  "\n# BFCP\n"
-			  "#bfcp_proto\t\tudp\n");
 
 	return err;
 }

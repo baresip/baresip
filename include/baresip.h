@@ -283,11 +283,6 @@ struct config_net {
 	size_t nsc;             /**< Number of DNS nameservers      */
 };
 
-/** BFCP Configuration */
-struct config_bfcp {
-	char proto[16];         /**< BFCP Transport (optional)      */
-};
-
 /** SDP */
 struct config_sdp {
 	bool ebuacip;           /**< Enable EBU-ACIP parameters     */
@@ -307,8 +302,6 @@ struct config {
 	struct config_avt avt;
 
 	struct config_net net;
-
-	struct config_bfcp bfcp;
 
 	struct config_sdp sdp;
 };

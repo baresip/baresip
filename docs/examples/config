@@ -54,9 +54,6 @@ net_prefer_ipv6		no
 #dns_server		1.0.0.1:53
 #net_interface		wlan1
 
-# BFCP
-#bfcp_proto		udp
-
 #------------------------------------------------------------------------------
 # Modules
 

@@ -46,7 +46,6 @@ struct call {
 	struct list streaml;      /**< List of mediastreams (struct stream) */
 	struct audio *audio;      /**< Audio stream                         */
 	struct video *video;      /**< Video stream                         */
-	struct bfcp *bfcp;        /**< BFCP Client                          */
 	enum state state;         /**< Call state                           */
 	char *local_uri;          /**< Local SIP uri                        */
 	char *local_name;         /**< Local display name                   */
@@ -215,13 +214,6 @@ static void call_stream_start(struct call *call, bool active)
 		err = start_video(call);
 		if (err) {
 			warning("call: could not start video: %m\n", err);
-		}
-	}
-
-	if (call->bfcp) {
-		err = bfcp_start(call->bfcp);
-		if (err) {
-			warning("call: could not start BFCP: %m\n", err);
 		}
 	}
 
@@ -449,7 +441,6 @@ static void call_destructor(void *arg)
 	mem_deref(call->peer_name);
 	mem_deref(call->audio);
 	mem_deref(call->video);
-	mem_deref(call->bfcp);
 	mem_deref(call->sdp);
 	mem_deref(call->mnats);
 	mem_deref(call->mencs);
@@ -743,15 +734,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		if (err)
 			goto out;
  	}
-
-	if (str_isset(cfg->bfcp.proto)) {
-
-		err = bfcp_alloc(&call->bfcp, call->sdp,
-				 cfg->bfcp.proto, !got_offer,
-				 acc->mnat, call->mnats);
-		if (err)
-			goto out;
-	}
 
 	/* inherit certain properties from original call */
 	if (xcall) {

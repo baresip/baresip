@@ -109,17 +109,6 @@ int  audio_print_rtpstat(struct re_printf *pf, const struct audio *au);
 
 
 /*
- * BFCP
- */
-
-struct bfcp;
-int bfcp_alloc(struct bfcp **bfcpp, struct sdp_session *sdp_sess,
-	       const char *proto, bool offerer,
-	       const struct mnat *mnat, struct mnat_sess *mnat_sess);
-int bfcp_start(struct bfcp *bfcp);
-
-
-/*
  * Call Control
  */
 

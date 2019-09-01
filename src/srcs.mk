@@ -12,7 +12,6 @@ SRCS	+= aulevel.c
 SRCS	+= auplay.c
 SRCS	+= ausrc.c
 SRCS	+= baresip.c
-SRCS	+= bfcp.c
 SRCS	+= call.c
 SRCS	+= cmd.c
 SRCS	+= conf.c
