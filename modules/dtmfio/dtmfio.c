@@ -99,8 +99,10 @@ static void ua_event_handler(struct ua *ua,
 
 static int module_init(void)
 {
+	int err;
+
 	if ( mkfifo( DTMF_OUT, S_IWUSR | S_IRUSR ) ) {
-		int err = errno;
+		err = errno;
 		warning("Creation of the FIFO errored."
 		      " This might cause issues. (%m)\n", err);
 		return err;
@@ -113,7 +115,9 @@ static int module_init(void)
 		      " This might cause issues.\n");
 	}
 
-	uag_event_register( ua_event_handler, NULL );
+	err = uag_event_register(ua_event_handler, NULL);
+	if (err)
+		return err;
 
 	return 0;
 }
