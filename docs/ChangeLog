@@ -1,3 +1,101 @@
+2019-09-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.4
+
+Aleksei (1):
+      Update MSVS project (Remove mos.c) (#744)
+
+Alfred E. Heggestad (77):
+      test: added testcase for RTCP
+      speex_pp: handle changes in frame_size
+      mos: remove code (unused) (#739)
+      speex_aec: deprecate and remove module (#740)
+      aufilt: remove ptime parameter
+      audio: add last sample count
+      audio: remove recv ptime and pt from debug
+      stream: common function for start mediaenc
+      stream: added set/is_secure
+      test: sort tests in alphabetical order
+      test: added mock aufilt and testcase
+      mnat: add media connected handler
+      ice: use connected handler
+      stream: add mnat_connected_handler
+      call: split call start into audio/video
+      stream: print mnat_connected
+      dtls_srtp: remove 100ms timer
+      stream: add stream_start()
+      call: split update_media into audio/video
+      srtp: use designated initializers to init struct menc
+      zrtp: use designated initializers to init struct menc
+      dtls_srtp: use designated initializers to init struct menc
+      mnat: add wait_connected flag (#752)
+      menc: add wait_secure flag (#754)
+      opus: add opus_packet_loss config
+      audio: fix rtp timestamps for opus mono (ref #753)
+      webrtc interop (#756)
+      avcodec: remove compile time check (LIBAVUTIL_VERSION_INT)
+      avcodec: minor cleanup
+      avcodec: define KEYFRAME_INTERVAL
+      travis: use ubuntu xenial (#764)
+      remove PIX_FMT wrapper for old ffmpeg
+      stream: add lost count to RTP handler
+      aucodec: add buffer to packet-loss handler
+      add support for Opus FEC (WIP) (#755)
+      test: explicitly set BEHAVIOUR_ANSWER
+      test: set default action to ACTION_RECANCEL
+      x11: remove support for 16-bit RGB colors
+      sdl2: use vidisp name 'sdl'
+      stream: reorder functions
+      ice: check argument
+      avcodec: remove decoder framerate
+      stream: add media name to debug
+      test: remove testcase for C++
+      avcodec: remove log-line
+      avcodec: remove old ffmpeg wrapper for AVCodecID
+      test: add media-line to mnat mock
+      vidsrc: add wanted pixel format to parameters
+      stream: add handler for mnat connected
+      vp9: decode V and P fields
+      opus: update docs (ref #768)
+      test: use pixel format from api
+      test: use pixel format YUV420P
+      fix warning on linux
+      video: fix warning
+      test: fix warnings
+      dtmfio: fix warning
+      opus_multistream: fix warnings
+      Avcodec hwaccel (#770)
+      fakevideo: use pixel format from parameters
+      sdl2: add support for pixel format NV21
+      bump version to 0.6.4
+      mk: update Doxyfile
+      gst1: remove hard-coded uri
+      config: update default config
+      config: use cloudflare as sample DNS servers
+      config: print default hwaccel for avcodec.so module
+      dtls_srtp: make it more robust
+      test: use LD to link selftest
+      avformat: remove check for avformat >= 53.4.0
+      video: remove video_view
+      avformat: better logging
+      config: add mqtt template (ref #780)
+      Update README.md
+      docs: refresh example config
+      config: remove openl.so from template
+      README: fix typo
+
+Timmo Verlaan (1):
+      menu: sndcode should signal release of key (#749)
+
+seamus (1):
+      menu: add answermode command (#779)
+
+trampster (1):
+      Allow CALL_CLOSED to be raised when call_id is not set. (#748)
+
+
+
+
 2019-06-22 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.6.3
