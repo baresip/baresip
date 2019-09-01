@@ -167,7 +167,8 @@ static void pcp_resp_handler(int err, struct pcp_msg *msg, void *arg)
 }
 
 
-static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
+static int session_alloc(struct mnat_sess **sessp,
+			 const struct mnat *mnat, struct dnsc *dnsc,
 			 int af, const char *srv, uint16_t port,
 			 const char *user, const char *pass,
 			 struct sdp_session *ss, bool offerer,
@@ -175,6 +176,7 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 {
 	struct mnat_sess *sess;
 	int err = 0;
+	(void)mnat;
 	(void)af;
 	(void)port;
 	(void)user;
@@ -205,13 +207,16 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 
 static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		       struct udp_sock *sock1, struct udp_sock *sock2,
-		       struct sdp_media *sdpm)
+		       struct sdp_media *sdpm,
+		       mnat_connected_h *connh, void *arg)
 {
 	struct mnat_media *m;
 	struct sa laddr;
 	struct pcp_map map;
 	unsigned i;
 	int err = 0;
+	(void)connh;
+	(void)arg;
 
 	if (!mp || !sess || !sdpm)
 		return EINVAL;
