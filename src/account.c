@@ -146,6 +146,8 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl amode;
 
+	prm->answermode = ANSWERMODE_MANUAL;
+
 	if (0 == msg_param_decode(pl, "answermode", &amode)) {
 
 		if (0 == pl_strcasecmp(&amode, "manual")) {
@@ -159,7 +161,6 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 		}
 		else {
 			warning("account: answermode unknown (%r)\n", &amode);
-			prm->answermode = ANSWERMODE_MANUAL;
 		}
 	}
 }
