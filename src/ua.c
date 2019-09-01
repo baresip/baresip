@@ -1760,16 +1760,6 @@ struct sipevent_sock *uag_sipevent_sock(void)
 }
 
 
-struct tls *uag_tls(void)
-{
-#ifdef USE_TLS
-	return uag.tls;
-#else
-	return NULL;
-#endif
-}
-
-
 /**
  * Find the correct UA from the contact user
  *

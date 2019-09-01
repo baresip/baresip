@@ -370,7 +370,6 @@ struct ua;
 
 void         ua_printf(const struct ua *ua, const char *fmt, ...);
 
-struct tls  *uag_tls(void);
 int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
 
 
