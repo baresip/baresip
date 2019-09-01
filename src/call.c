@@ -686,7 +686,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	/* Initialise media NAT handling */
 	if (acc->mnat) {
-		err = acc->mnat->sessh(&call->mnats,
+		err = acc->mnat->sessh(&call->mnats, acc->mnat,
 				       dnsc, call->af,
 				       acc->stun_host, acc->stun_port,
 				       acc->stun_user, acc->stun_pass,

@@ -1221,7 +1221,8 @@ typedef void (mnat_connected_h)(const struct sa *raddr1,
 				const struct sa *raddr2, void *arg);
 
 
-typedef int (mnat_sess_h)(struct mnat_sess **sessp, struct dnsc *dnsc,
+typedef int (mnat_sess_h)(struct mnat_sess **sessp,
+			  const struct mnat *mnat, struct dnsc *dnsc,
 			  int af, const char *srv, uint16_t port,
 			  const char *user, const char *pass,
 			  struct sdp_session *sdp, bool offerer,

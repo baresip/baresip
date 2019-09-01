@@ -194,7 +194,8 @@ static void natpmp_resp_handler(int err, const struct natpmp_resp *resp,
 }
 
 
-static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
+static int session_alloc(struct mnat_sess **sessp,
+			 const struct mnat *mnat, struct dnsc *dnsc,
 			 int af, const char *srv, uint16_t port,
 			 const char *user, const char *pass,
 			 struct sdp_session *ss, bool offerer,
@@ -202,6 +203,7 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 {
 	struct mnat_sess *sess;
 	int err = 0;
+	(void)mnat;
 	(void)af;
 	(void)port;
 	(void)user;

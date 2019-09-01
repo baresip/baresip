@@ -169,7 +169,8 @@ static void dns_handler(int err, const struct sa *srv, void *arg)
 }
 
 
-static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
+static int session_alloc(struct mnat_sess **sessp,
+			 const struct mnat *mnat, struct dnsc *dnsc,
 			 int af, const char *srv, uint16_t port,
 			 const char *user, const char *pass,
 			 struct sdp_session *ss, bool offerer,
@@ -177,6 +178,7 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 {
 	struct mnat_sess *sess;
 	int err;
+	(void)mnat;
 	(void)ss;
 	(void)offerer;
 
