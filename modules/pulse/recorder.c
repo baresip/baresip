@@ -116,7 +116,6 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			 ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
-	struct mediadev *md;
 	pa_sample_spec ss;
 	pa_buffer_attr attr;
 	int pa_error;
@@ -160,12 +159,10 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	attr.minreq    = (uint32_t)-1;
 	attr.fragsize  = (uint32_t)pa_usec_to_bytes(prm->ptime * 1000, &ss);
 
-	md = mediadev_get_default(&as->dev_list);
-
 	st->s = pa_simple_new(NULL,
 			      "Baresip",
 			      PA_STREAM_RECORD,
-			      str_isset(device) ? device : md->name,
+			      str_isset(device) ? device : NULL,
 			      "VoIP Record",
 			      &ss,
 			      NULL,
