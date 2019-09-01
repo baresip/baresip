@@ -23,7 +23,7 @@
 #   USE_G722_1        G.722.1 audio codec
 #   USE_G726          G.726 audio codec
 #   USE_GSM           GSM audio codec
-#   USE_GST1          Gstreamer 1.0 audio module
+#   USE_GST           Gstreamer audio module
 #   USE_GST_VIDEO1    Gstreamer 1.0 video module
 #   USE_GTK           GTK+ user interface
 #   USE_H265          H.265 video codec
@@ -108,7 +108,7 @@ USE_GSM := $(shell [ -f $(SYSROOT)/include/gsm.h ] || \
 	[ -f $(SYSROOT)/include/gsm/gsm.h ] || \
 	[ -f $(SYSROOT)/local/include/gsm.h ] || \
 	[ -f $(SYSROOT)/local/include/gsm/gsm.h ] && echo "yes")
-USE_GST1 := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
+USE_GST := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
 USE_GST_VIDEO1 := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
 		&& echo "yes")
 USE_GTK := $(shell pkg-config 'gtk+-2.0 >= 2.22' && \
@@ -352,8 +352,8 @@ endif
 ifneq ($(USE_GSM),)
 MODULES   += gsm
 endif
-ifneq ($(USE_GST1),)
-MODULES   += gst1
+ifneq ($(USE_GST),)
+MODULES   += gst
 endif
 ifneq ($(USE_GST_VIDEO1),)
 MODULES   += gst_video1

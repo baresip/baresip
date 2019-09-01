@@ -1,5 +1,5 @@
 /**
- * @file gst1/gst.c  Gstreamer 1.0 playbin pipeline
+ * @file gst/gst.c  Gstreamer 1.0 playbin pipeline
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
@@ -16,11 +16,11 @@
 
 
 /**
- * @defgroup gst1 gst1
+ * @defgroup gst gst
  *
  * Audio source module using gstreamer 1.0 as input
  *
- * The module 'gst1' is using the Gstreamer framework to play external
+ * The module 'gst' is using the Gstreamer framework to play external
  * media and provide this as an internal audio source.
  *
  * Example config:
@@ -453,8 +453,8 @@ static int mod_gst_close(void)
 }
 
 
-EXPORT_SYM const struct mod_export DECL_EXPORTS(gst1) = {
-	"gst1",
+EXPORT_SYM const struct mod_export DECL_EXPORTS(gst) = {
+	"gst",
 	"sound",
 	mod_gst_init,
 	mod_gst_close
