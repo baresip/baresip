@@ -1682,21 +1682,6 @@ int uag_reset_transp(bool reg, bool reinvite)
 
 
 /**
- * Print the SIP Status for all User-Agents
- *
- * @param pf     Print handler for debug output
- * @param unused Unused parameter
- *
- * @return 0 if success, otherwise errorcode
- */
-int ua_print_sip_status(struct re_printf *pf, void *unused)
-{
-	(void)unused;
-	return sip_debug(pf, uag.sip);
-}
-
-
-/**
  * Print all calls for a given User-Agent
  *
  * @param pf     Print handler for debug output

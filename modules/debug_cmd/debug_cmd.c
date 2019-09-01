@@ -112,6 +112,13 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_sip_debug(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	return sip_debug(pf, uag_sip());
+}
+
+
 static int reload_config(struct re_printf *pf, void *arg)
 {
 	int err;
@@ -171,11 +178,11 @@ static const struct cmd debugcmdv[] = {
 {"modules",     0,       0, "Module debug",           mod_debug           },
 {"netstat",    'n',      0, "Network debug",          cmd_net_debug       },
 {"play",        0, CMD_PRM, "Play audio file",        cmd_play_file       },
-{"sipstat",    'i',      0, "SIP debug",              ua_print_sip_status },
+{"sipstat",    'i',      0, "SIP debug",              cmd_sip_debug       },
 {"sysinfo",    's',      0, "System info",            print_system_info   },
 {"timers",      0,       0, "Timer debug",            tmr_status          },
 {"uastat",     'u',      0, "UA debug",               cmd_ua_debug        },
-{"uuid",        0,      0, "Print UUID",              print_uuid          },
+{"uuid",        0,       0, "Print UUID",             print_uuid          },
 };
 
 
