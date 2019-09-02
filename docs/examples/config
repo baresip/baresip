@@ -108,7 +108,7 @@ module			x11.so
 # Audio/Video source modules
 #module			rst.so
 #module			gst.so
-#module			gst_video1.so
+#module			gst_video.so
 
 # Media NAT modules
 module			stun.so

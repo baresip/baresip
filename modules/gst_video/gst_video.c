@@ -1,5 +1,5 @@
 /**
- * @file gst_video1/gst_video.c  Video codecs using Gstreamer 1.0
+ * @file gst_video/gst_video.c  Video codecs using Gstreamer 1.0
  *
  * Copyright (C) 2010 Creytiv.com
  * Copyright (C) 2014 Fadeev Alexander
@@ -13,7 +13,7 @@
 
 
 /**
- * @defgroup gst_video1 gst_video1
+ * @defgroup gst_video gst_video
  *
  * This module implements video codecs using Gstreamer 1.0
  *
@@ -29,10 +29,10 @@
 static struct vidcodec h264 = {
 	.name      = "H264",
 	.variant   = "packetization-mode=0",
-	.encupdh   = gst_video1_encoder_set,
-	.ench      = gst_video1_encode,
-	.fmtp_ench = gst_video1_fmtp_enc,
-	.fmtp_cmph = gst_video1_fmtp_cmp,
+	.encupdh   = gst_video_encoder_set,
+	.ench      = gst_video_encode,
+	.fmtp_ench = gst_video_fmtp_enc,
+	.fmtp_cmph = gst_video_fmtp_cmp,
 };
 
 
@@ -58,8 +58,8 @@ static int module_close(void)
 }
 
 
-EXPORT_SYM const struct mod_export DECL_EXPORTS(gst_video1) = {
-	"gst_video1",
+EXPORT_SYM const struct mod_export DECL_EXPORTS(gst_video) = {
+	"gst_video",
 	"vidcodec",
 	module_init,
 	module_close

@@ -1,5 +1,5 @@
 /**
- * @file gst_video1/encode.c  Video codecs using Gstreamer video pipeline
+ * @file gst_video/encode.c  Video codecs using Gstreamer video pipeline
  *
  * Copyright (C) 2010 - 2013 Creytiv.com
  * Copyright (C) 2014 Fadeev Alexander
@@ -411,7 +411,7 @@ static void param_handler(const struct pl *name, const struct pl *val,
 }
 
 
-int gst_video1_encoder_set(struct videnc_state **stp,
+int gst_video_encoder_set(struct videnc_state **stp,
 			  const struct vidcodec *vc,
 			  struct videnc_param *prm, const char *fmtp,
 			  videnc_packet_h *pkth, void *arg)
@@ -576,7 +576,7 @@ static int pipeline_push(struct videnc_state *st, const struct vidframe *frame,
 }
 
 
-int gst_video1_encode(struct videnc_state *st, bool update,
+int gst_video_encode(struct videnc_state *st, bool update,
 		      const struct vidframe *frame, uint64_t timestamp)
 {
 	int err;

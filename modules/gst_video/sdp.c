@@ -1,5 +1,5 @@
 /**
- * @file gst_video1/sdp.c H.264 SDP Functions
+ * @file gst_video/sdp.c H.264 SDP Functions
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -12,7 +12,7 @@
 static const uint8_t gst_video_h264_level_idc = 0x0c;
 
 
-uint32_t gst_video1_h264_packetization_mode(const char *fmtp)
+uint32_t gst_video_h264_packetization_mode(const char *fmtp)
 {
 	struct pl pl, mode;
 
@@ -28,7 +28,7 @@ uint32_t gst_video1_h264_packetization_mode(const char *fmtp)
 }
 
 
-int gst_video1_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
+int gst_video_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 		       bool offer, void *arg)
 {
 	struct vidcodec *vc = arg;
@@ -48,10 +48,10 @@ int gst_video1_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 }
 
 
-bool gst_video1_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data)
+bool gst_video_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data)
 {
 	(void)data;
 
-	return gst_video1_h264_packetization_mode(fmtp1) ==
-		gst_video1_h264_packetization_mode(fmtp2);
+	return gst_video_h264_packetization_mode(fmtp1) ==
+		gst_video_h264_packetization_mode(fmtp2);
 }
