@@ -519,7 +519,15 @@ void net_force_change(struct network *net)
 }
 
 
-static int dns_debug(struct re_printf *pf, const struct network *net)
+/**
+ * Print DNS server debug information
+ *
+ * @param pf     Print handler for debug output
+ * @param net    Network instance
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int net_dns_debug(struct re_printf *pf, const struct network *net)
 {
 	struct sa nsv[NET_MAX_NS];
 	uint32_t i, nsn = ARRAY_SIZE(nsv);
@@ -585,7 +593,7 @@ int net_debug(struct re_printf *pf, const struct network *net)
 
 	err |= net_rt_debug(pf, NULL);
 
-	err |= dns_debug(pf, net);
+	err |= net_dns_debug(pf, net);
 
 	return err;
 }
