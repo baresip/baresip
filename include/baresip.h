@@ -624,6 +624,7 @@ void net_change(struct network *net, uint32_t interval,
 void net_force_change(struct network *net);
 bool net_check(struct network *net);
 int  net_af(const struct network *net);
+int  net_dns_debug(struct re_printf *pf, const struct network *net);
 int  net_debug(struct re_printf *pf, const struct network *net);
 const struct sa *net_laddr_af(const struct network *net, int af);
 const char      *net_domain(const struct network *net);
