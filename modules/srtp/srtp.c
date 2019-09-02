@@ -34,8 +34,9 @@ struct menc_sess {
 struct menc_st {
 	/* one SRTP session per media line */
 	const struct menc_sess *sess;
-	uint8_t key_tx[32];
-	uint8_t key_rx[32];
+	uint8_t key_tx[32+12];
+	/* base64_decoding worst case encoded 32+12 key */
+	uint8_t key_rx[46];
 	struct srtp *srtp_tx, *srtp_rx;
 	bool use_srtp;
 	bool got_sdp;
@@ -52,6 +53,7 @@ struct menc_st {
 static const char aes_cm_128_hmac_sha1_32[] = "AES_CM_128_HMAC_SHA1_32";
 static const char aes_cm_128_hmac_sha1_80[] = "AES_CM_128_HMAC_SHA1_80";
 static const char aes_128_gcm[]             = "AEAD_AES_128_GCM";
+static const char aes_256_gcm[]             = "AEAD_AES_256_GCM";
 
 static const char *preferred_suite = aes_cm_128_hmac_sha1_80;
 
@@ -79,6 +81,7 @@ static bool cryptosuite_issupported(const struct pl *suite)
 	if (0 == pl_strcasecmp(suite, aes_cm_128_hmac_sha1_32)) return true;
 	if (0 == pl_strcasecmp(suite, aes_cm_128_hmac_sha1_80)) return true;
 	if (0 == pl_strcasecmp(suite, aes_128_gcm))             return true;
+	if (0 == pl_strcasecmp(suite, aes_256_gcm))             return true;
 
 	return false;
 }
@@ -130,6 +133,8 @@ static enum srtp_suite resolve_suite(const char *suite)
 		return SRTP_AES_CM_128_HMAC_SHA1_80;
 	if (0 == str_casecmp(suite, aes_128_gcm))
 		return SRTP_AES_128_GCM;
+	if (0 == str_casecmp(suite, aes_256_gcm))
+		return SRTP_AES_256_GCM;
 
 	return -1;
 }
@@ -142,6 +147,7 @@ static size_t get_master_keylen(enum srtp_suite suite)
 	case SRTP_AES_CM_128_HMAC_SHA1_32: return 16+14;
 	case SRTP_AES_CM_128_HMAC_SHA1_80: return 16+14;
 	case SRTP_AES_128_GCM:             return 16+12;
+	case SRTP_AES_256_GCM:             return 32+12;
 	default: return 0;
 	}
 }
