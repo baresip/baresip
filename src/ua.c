@@ -616,7 +616,7 @@ static int create_register_clients(struct ua *ua)
 
 	/* Register clients */
 	if (uag.cfg && str_isset(uag.cfg->uuid))
-	        add_extension(ua, "gruu");
+		add_extension(ua, "gruu");
 
 	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
 
@@ -901,7 +901,7 @@ void ua_hangup(struct ua *ua, struct call *call,
 	(void)call_hangup(call, scode, reason);
 
 	ua_event(ua, UA_EVENT_CALL_CLOSED, call,
-	         reason ? reason : "Connection reset by user");
+		 reason ? reason : "Connection reset by user");
 
 	mem_deref(call);
 
@@ -1395,16 +1395,18 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 		le = list_head(&ua->hdr_filter);
 		while (le) {
-		    const struct sip_hdr *tmp_hdr;
-		    const struct ua_xhdr_filter *filter = le->data;
+			const struct sip_hdr *tmp_hdr;
+			const struct ua_xhdr_filter *filter = le->data;
 
-		    le = le->next;
-		    tmp_hdr = sip_msg_xhdr(msg, filter->hdr_name);
+			le = le->next;
+			tmp_hdr = sip_msg_xhdr(msg, filter->hdr_name);
 
-		    if (tmp_hdr) {
-		        char name[256];
-		        pl_strcpy(&tmp_hdr->name, name, sizeof(name));
-		        if (custom_hdrs_add(&hdrs, name, "%r", &tmp_hdr->val))
+			if (tmp_hdr) {
+				char name[256];
+
+				pl_strcpy(&tmp_hdr->name, name, sizeof(name));
+				if (custom_hdrs_add(&hdrs, name,
+						    "%r", &tmp_hdr->val))
 					goto error;
 			}
 		}
