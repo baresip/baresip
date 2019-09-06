@@ -159,6 +159,7 @@ static int mnat_session_update(struct mnat_sess *sess)
 
 static struct mnat mnat_mock = {
 	.id      = "XNAT",
+	.wait_connected = true,
 	.sessh   = mnat_session_alloc,
 	.mediah  = mnat_media_alloc,
 	.updateh = mnat_session_update,
