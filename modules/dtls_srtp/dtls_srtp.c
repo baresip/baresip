@@ -278,10 +278,12 @@ static void dtls_conn_handler(const struct sa *peer, void *arg)
 }
 
 
-static int component_start(struct comp *comp)
+static int component_start(struct comp *comp, const struct sa *raddr)
 {
-	struct sa raddr;
 	int err = 0;
+
+	debug("dtls_srtp: component start: %s [raddr=%J]\n",
+	      comp->is_rtp ? "RTP" : "RTCP", raddr);
 
 	if (!comp->app_sock || comp->negotiated || comp->dtls_sock)
 		return 0;
@@ -294,14 +296,14 @@ static int component_start(struct comp *comp)
 		return err;
 	}
 
-	raddr = comp->raddr;
-
-	if (sa_isset(&raddr, SA_ALL)) {
+	if (sa_isset(raddr, SA_ALL)) {
 
 		if (comp->ds->active && !comp->tls_conn) {
 
+			info("dtls_srtp: dtls connect to %J\n", raddr);
+
 			err = dtls_connect(&comp->tls_conn, tls,
-					   comp->dtls_sock, &raddr,
+					   comp->dtls_sock, raddr,
 					   dtls_estab_handler, NULL,
 					   dtls_close_handler, comp);
 			if (err) {
@@ -316,7 +318,9 @@ static int component_start(struct comp *comp)
 }
 
 
-static int media_start(struct dtls_srtp *st, struct sdp_media *sdpm)
+static int media_start(struct dtls_srtp *st, struct sdp_media *sdpm,
+		       const struct sa *raddr_rtp,
+		       const struct sa *raddr_rtcp)
 {
 	int err = 0;
 
@@ -329,10 +333,10 @@ static int media_start(struct dtls_srtp *st, struct sdp_media *sdpm)
 	if (!sdp_media_has_media(sdpm))
 		return 0;
 
-	err = component_start(&st->compv[0]);
+	err = component_start(&st->compv[0], raddr_rtp);
 
 	if (!st->mux)
-		err |= component_start(&st->compv[1]);
+		err |= component_start(&st->compv[1], raddr_rtcp);
 
 	if (err)
 		return err;
@@ -378,10 +382,6 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 	st->compv[0].is_rtp = true;
 	st->compv[1].is_rtp = false;
 
-	st->compv[0].raddr = *raddr_rtp;
-	if (raddr_rtcp)
-		st->compv[1].raddr = *raddr_rtcp;
-
 	err = sdp_media_set_alt_protos(st->sdpm, 4,
 				       "RTP/SAVP",
 				       "RTP/SAVPF",
@@ -405,7 +405,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 	if (setup) {
 		st->active = !(0 == str_casecmp(setup, "active"));
 
-		err = media_start(st, st->sdpm);
+		err = media_start(st, st->sdpm, raddr_rtp, raddr_rtcp);
 		if (err)
 			return err;
 	}
