@@ -404,7 +404,9 @@ static int start_mediaenc(struct stream *strm)
 
 	if (strm->menc && strm->menc->mediah) {
 
-		info("stream: starting mediaenc '%s'\n", strm->menc->id);
+		info("stream: %s: starting mediaenc '%s' (wait_secure=%d)\n",
+		     media_name(strm->type), strm->menc->id,
+		     strm->menc->wait_secure);
 
 		err = strm->menc->mediah(&strm->mes, strm->mencs, strm->rtp,
 					 rtp_sock(strm->rtp),
@@ -428,7 +430,8 @@ static void mnat_connected_handler(const struct sa *raddr1,
 	struct stream *strm = arg;
 	int err;
 
-	info("stream: mnat connected: raddr %J %J\n", raddr1, raddr2);
+	info("stream: mnat '%s' connected: raddr %J %J\n",
+	     strm->mnat->id, raddr1, raddr2);
 
 	strm->raddr_rtp = *raddr1;
 
