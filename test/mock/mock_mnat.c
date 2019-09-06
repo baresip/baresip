@@ -165,11 +165,9 @@ static struct mnat mnat_mock = {
 };
 
 
-int mock_mnat_register(struct list *mnatl)
+void mock_mnat_register(struct list *mnatl)
 {
 	mnat_register(mnatl, &mnat_mock);
-
-	return 0;
 }
 
 

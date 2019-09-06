@@ -1076,8 +1076,7 @@ int test_call_medianat(void)
 	struct auplay *auplay = NULL;
 	int err;
 
-	err = mock_mnat_register(baresip_mnatl());
-	ASSERT_EQ(0, err);
+	mock_mnat_register(baresip_mnatl());
 
 	/* Enable a dummy media NAT-traversal protocol */
 	fixture_init_prm(f, ";medianat=XNAT;ptime=1");

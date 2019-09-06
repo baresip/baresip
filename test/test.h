@@ -170,7 +170,7 @@ void mock_menc_unregister(void);
  * Mock Media NAT-traversal
  */
 
-int  mock_mnat_register(struct list *mnatl);
+void mock_mnat_register(struct list *mnatl);
 void mock_mnat_unregister(void);
 
 
