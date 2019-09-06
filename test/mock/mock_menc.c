@@ -169,6 +169,7 @@ static int mock_media_alloc(struct menc_media **mmp, struct menc_sess *sess,
 static struct menc menc_mock = {
 	.id        = "XRTP",
 	.sdp_proto = "RTP/XAVP",
+	.wait_secure = true,
 	.sessh     = mock_session_alloc,
 	.mediah    = mock_media_alloc
 };
