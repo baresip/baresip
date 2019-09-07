@@ -407,7 +407,7 @@ ifneq ($(USE_PULSE),)
 MODULES   += pulse
 endif
 ifneq ($(USE_SDL2),)
-MODULES   += sdl2
+MODULES   += sdl
 endif
 ifneq ($(USE_SNDFILE),)
 MODULES   += sndfile

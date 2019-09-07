@@ -103,7 +103,7 @@ module			v4l2.so
 
 # Video display modules
 module			x11.so
-#module			sdl2.so
+#module			sdl.so
 
 # Audio/Video source modules
 #module			rst.so

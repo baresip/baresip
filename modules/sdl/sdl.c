@@ -1,5 +1,5 @@
 /**
- * @file sdl2/sdl.c  Simple DirectMedia Layer module for SDL v2.0
+ * @file sdl/sdl.c  Simple DirectMedia Layer module for SDL v2.0
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -11,7 +11,7 @@
 
 
 /**
- * @defgroup sdl2 sdl2
+ * @defgroup sdl sdl
  *
  * Video display using Simple DirectMedia Layer version 2 (SDL2)
  */
@@ -192,7 +192,7 @@ static int display(struct vidisp_st *st, const char *title,
 
 	format = match_fmt(frame->fmt);
 	if (format == SDL_PIXELFORMAT_UNKNOWN) {
-		warning("sdl2: pixel format not supported (%s)\n",
+		warning("sdl: pixel format not supported (%s)\n",
 			vidfmt_name(frame->fmt));
 		return ENOTSUP;
 	}
@@ -334,7 +334,7 @@ static int module_init(void)
 	int err;
 
 	if (SDL_VideoInit(NULL) < 0) {
-		warning("sdl2: unable to init Video: %s\n",
+		warning("sdl: unable to init Video: %s\n",
 			SDL_GetError());
 		return ENODEV;
 	}
@@ -358,8 +358,8 @@ static int module_close(void)
 }
 
 
-EXPORT_SYM const struct mod_export DECL_EXPORTS(sdl2) = {
-	"sdl2",
+EXPORT_SYM const struct mod_export DECL_EXPORTS(sdl) = {
+	"sdl",
 	"vidisp",
 	module_init,
 	module_close,

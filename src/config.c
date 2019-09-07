@@ -482,7 +482,7 @@ static const char *default_video_display(void)
 #ifdef DARWIN
 	return "sdl,nil";
 #elif defined (WIN32)
-	return "sdl2,nil";
+	return "sdl,nil";
 #else
 	return "x11,nil";
 #endif
@@ -808,7 +808,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "directfb" MOD_EXT "\n");
 #endif
 	(void)re_fprintf(f, "#module\t\t\t" "x11" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" "sdl2" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" "sdl" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "fakevideo" MOD_EXT "\n");
 
 
