@@ -553,12 +553,9 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 		s->menc  = menc;
 		s->mencs = mem_ref(menc_sess);
 
-		if (mnat_ready(s)) {
-
-			err = start_mediaenc(s);
-			if (err)
-				goto out;
-		}
+		err = start_mediaenc(s);
+		if (err)
+			goto out;
 	}
 
 	if (err)

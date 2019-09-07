@@ -44,6 +44,7 @@ static const struct test tests[] = {
 	TEST(test_call_tcp),
 	TEST(test_call_transfer),
 	TEST(test_call_video),
+	TEST(test_call_webrtc),
 	TEST(test_cmd),
 	TEST(test_cmd_long),
 	TEST(test_contact),

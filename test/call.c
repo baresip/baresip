@@ -1331,3 +1331,71 @@ int test_call_aufilt(void)
 
 	return err;
 }
+
+
+/*
+ * Simulate a complete WebRTC testcase
+ */
+int test_call_webrtc(void)
+{
+	struct fixture fix, *f = &fix;
+	struct vidsrc *vidsrc = NULL;
+	int err;
+
+	mock_mnat_register(baresip_mnatl());
+	mock_menc_register();
+
+	/* to enable video, we need one vidsrc and vidcodec */
+	mock_vidcodec_register();
+	err = mock_vidsrc_register(&vidsrc);
+	TEST_ERR(err);
+
+	fixture_init_prm(f, ";medianat=XNAT;mediaenc=xrtp");
+
+	f->estab_action = ACTION_NOTHING;
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->stop_on_rtcp = true;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify MNAT */
+
+	/* verify that MENC is secure */
+
+	ASSERT_TRUE(
+	  stream_is_secure(audio_strm(call_audio(ua_call(f->a.ua)))));
+	ASSERT_TRUE(
+	  stream_is_secure(audio_strm(call_audio(ua_call(f->b.ua)))));
+
+	ASSERT_TRUE(
+	  stream_is_secure(video_strm(call_video(ua_call(f->a.ua)))));
+	ASSERT_TRUE(
+	  stream_is_secure(video_strm(call_video(ua_call(f->b.ua)))));
+
+	/* verify that one or more RTCP packets were received */
+	ASSERT_TRUE(fix.a.n_rtcp > 0);
+	ASSERT_TRUE(fix.b.n_rtcp > 0);
+
+	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
+	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
+
+ out:
+	fixture_close(f);
+
+	mem_deref(vidsrc);
+	mock_vidcodec_unregister();
+	mock_menc_unregister();
+	mock_mnat_unregister();
+
+	if (fix.err)
+		return fix.err;
+
+	return err;
+}
