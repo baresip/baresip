@@ -578,9 +578,9 @@ enum menc_event {
 };
 
 
-typedef void (menc_error_h)(int err, void *arg);
-
 typedef void (menc_event_h)(enum menc_event event, const char *prm, void *arg);
+
+typedef void (menc_error_h)(int err, void *arg);
 
 typedef int  (menc_sess_h)(struct menc_sess **sessp, struct sdp_session *sdp,
 			   bool offerer, menc_event_h *eventh,
