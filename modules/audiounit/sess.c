@@ -117,7 +117,7 @@ int audiosess_alloc(struct audiosess_st **stp,
 	ret = AudioSessionSetActive(true);
 	if (ret) {
 		warning("audiounit: AudioSessionSetActive: %d\n", ret);
-		err = ENOSYS;
+		err = ENOTSUP;
 		goto out;
 	}
 
