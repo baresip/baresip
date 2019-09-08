@@ -74,7 +74,6 @@ module			opus.so
 module			g711.so
 #module			gsm.so
 #module			l16.so
-#module			bv32.so
 
 # Audio filter Modules (in encoding order)
 #module			vumeter.so

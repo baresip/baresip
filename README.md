@@ -65,7 +65,6 @@ Distributed under BSD license
 
 * Audio-codecs:
   - AMR narrowband, AMR wideband
-  - BroadVoice32 BV32
   - Codec2
   - G.711
   - G.722
@@ -227,7 +226,6 @@ avcapture     Video source using iOS AVFoundation video capture
 avcodec       Video codec using FFmpeg/libav libavcodec
 avformat      Video source using FFmpeg/libav libavformat
 b2bua         Back-to-Back User-Agent (B2BUA) module
-bv32          BroadVoice32 audio codec
 cairo         Cairo video source
 codec2        Codec2 low bit rate speech codec
 cons          UDP/TCP console UI driver
