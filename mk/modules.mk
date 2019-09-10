@@ -11,7 +11,6 @@
 #   USE_AVCAPTURE     AVFoundation video capture for OSX/iOS
 #   USE_AVCODEC       avcodec video codec module
 #   USE_AVFORMAT      avformat video source module
-#   USE_BV32          BroadVoice32 Wideband Audio codec
 #   USE_CAIRO         Cairo module
 #   USE_CODEC2        CODEC2 low-bitrate speech audio codec
 #   USE_CONS          Console input driver
@@ -80,8 +79,6 @@ USE_AVFORMAT := $(shell [ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ] && echo "yes")
 USE_AVAHI := $(shell pkg-config --exists avahi-client && echo "yes")
-USE_BV32  := $(shell [ -f $(SYSROOT)/include/bv32/bv32.h ] || \
-	[ -f $(SYSROOT)/local/include/bv32/bv32.h ] && echo "yes")
 USE_CAIRO  := $(shell [ -f $(SYSROOT)/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT)/local/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT_ALT)/include/cairo/cairo.h ] && echo "yes")
@@ -304,9 +301,6 @@ endif
 endif
 ifneq ($(USE_AVAHI),)
 MODULES   += avahi
-endif
-ifneq ($(USE_BV32),)
-MODULES   += bv32
 endif
 ifneq ($(USE_CAIRO),)
 MODULES   += cairo
