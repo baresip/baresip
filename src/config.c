@@ -945,6 +945,10 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "#mqtt_broker_password\tpass\n"
 			 "#mqtt_basetopic\t\tbaresip/01\n");
 
+	(void)re_fprintf(f,
+			 "\n# sndfile\n"
+			 "#snd_path\t\t/tmp\n");
+
 	if (f)
 		(void)fclose(f);
 
