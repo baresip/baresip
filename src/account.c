@@ -35,6 +35,8 @@ static void destructor(void *arg)
 	mem_deref(acc->aor);
 	mem_deref(acc->dispname);
 	mem_deref(acc->buf);
+	mem_deref(acc->ausrc_mod);
+	mem_deref(acc->ausrc_dev);
 }
 
 
@@ -138,6 +140,29 @@ static int media_decode(struct account *acc, const struct pl *prm)
 	err |= param_u32(&acc->ptime,    prm, "ptime"   );
 
 	return err;
+}
+
+
+static int decode_pair(char **val1, char **val2,
+		       const char *name, const struct pl *params)
+{
+	struct pl val, pl1, pl2;
+	int err = 0;
+
+	if (0 == msg_param_decode(params, name, &val)) {
+
+		/* note: second value may be quoted */
+		err = re_regex(val.p, val.l, "[^,]+,[~]*", &pl1, &pl2);
+		if (err)
+			return err;
+
+		err  = pl_strdup(val1, &pl1);
+		err |= pl_strdup(val2, &pl2);
+		if (err)
+			return err;
+	}
+
+	return 0;
 }
 
 
@@ -395,6 +420,13 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	err |= media_decode(acc, &acc->laddr.params);
 	if (err)
 		goto out;
+
+	err = decode_pair(&acc->ausrc_mod, &acc->ausrc_dev,
+			  "audio_source", &acc->laddr.params);
+	if (err) {
+		warning("account: audio_source parse error\n");
+		goto out;
+	}
 
 	/* optional password prompt */
 	if (0 == msg_param_decode(&acc->laddr.params, "auth_pass", &pl)) {
@@ -1176,6 +1208,11 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	}
 	err |= re_hprintf(pf, " call_transfer:         %s\n",
 			  account_call_transfer(acc));
+
+	if (acc->ausrc_mod) {
+		err |= re_hprintf(pf, " audio_source: %s,%s\n",
+				  acc->ausrc_mod, acc->ausrc_dev);
+	}
 
 	return err;
 }

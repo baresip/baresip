@@ -89,7 +89,8 @@ struct autx {
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
-	char device[128];             /**< Audio source device name        */
+	char *module;
+	char *device;             /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for sending         */
@@ -278,6 +279,9 @@ static void audio_destructor(void *arg)
 
 	mem_deref(a->strm);
 	mem_deref(a->telev);
+
+	mem_deref(a->tx.module);
+	mem_deref(a->tx.device);
 }
 
 
@@ -1121,6 +1125,7 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		uint32_t ptime, const struct list *aucodecl, bool offerer,
 		audio_event_h *eventh, audio_err_h *errh, void *arg)
 {
+	struct account *acc;
 	struct audio *a;
 	struct autx *tx;
 	struct aurx *rx;
@@ -1214,7 +1219,23 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		goto out;
 
 	auresamp_init(&tx->resamp);
-	str_ncpy(tx->device, a->cfg.src_dev, sizeof(tx->device));
+
+	acc = call_account(call);
+	if (acc && acc->ausrc_mod) {
+
+		tx->module = mem_ref(acc->ausrc_mod);
+		tx->device = mem_ref(acc->ausrc_dev);
+
+		re_printf(".... audio: using account specific source:"
+			  " (%s,%s)\n",
+			  tx->module,
+			  tx->device);
+	}
+	else {
+		err  = str_dup(&tx->module, a->cfg.src_mod);
+		err |= str_dup(&tx->device, a->cfg.src_dev);
+	}
+
 	tx->ptime  = ptime;
 	tx->ts_ext = tx->ts_base = rand_u16();
 	tx->marker = true;
@@ -1572,12 +1593,12 @@ static int start_source(struct autx *tx, struct audio *a)
 		}
 
 		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
-				  NULL, a->cfg.src_mod,
+				  NULL, tx->module,
 				  &prm, tx->device,
 				  ausrc_read_handler, ausrc_error_handler, a);
 		if (err) {
 			warning("audio: start_source failed (%s.%s): %m\n",
-				a->cfg.src_mod, tx->device, err);
+				tx->module, tx->device, err);
 			return err;
 		}
 
@@ -2135,7 +2156,7 @@ void audio_set_devicename(struct audio *a, const char *src, const char *play)
 	if (!a)
 		return;
 
-	str_ncpy(a->tx.device, src, sizeof(a->tx.device));
+	str_dup(&a->tx.device, src);
 	str_ncpy(a->rx.device, play, sizeof(a->rx.device));
 }
 
