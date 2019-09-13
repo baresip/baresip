@@ -397,15 +397,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		goto out;
 
 	/* optional password prompt */
-	if (pl_isset(&acc->laddr.uri.password)) {
-
-		warning("account: username:password is now disabled"
-			" please use ;auth_pass=xxx instead\n");
-
-		err = EINVAL;
-		goto out;
-	}
-	else if (0 == msg_param_decode(&acc->laddr.params, "auth_pass", &pl)) {
+	if (0 == msg_param_decode(&acc->laddr.params, "auth_pass", &pl)) {
 		err = pl_strdup(&acc->auth_pass, &pl);
 		if (err)
 			goto out;
