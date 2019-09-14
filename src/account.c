@@ -1209,10 +1209,5 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " call_transfer:         %s\n",
 			  account_call_transfer(acc));
 
-	if (acc->ausrc_mod) {
-		err |= re_hprintf(pf, " audio_source: %s,%s\n",
-				  acc->ausrc_mod, acc->ausrc_dev);
-	}
-
 	return err;
 }

@@ -63,6 +63,7 @@ static int account_write_template(const char *file)
 			 "#  addr-params:\n"
 			 "#    ;answermode={manual,early,auto}\n"
 			 "#    ;audio_codecs=opus/48000/2,pcma,...\n"
+			 "#    ;audio_source=alsa,default\n"
 			 "#    ;auth_user=username\n"
 			 "#    ;auth_pass=password\n"
 			 "#    ;call_transfer=no\n"
