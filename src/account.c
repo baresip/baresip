@@ -144,7 +144,7 @@ static int media_decode(struct account *acc, const struct pl *prm)
 
 
 static int decode_pair(char **val1, char **val2,
-		       const char *name, const struct pl *params)
+		       const struct pl *params, const char *name)
 {
 	struct pl val, pl1, pl2;
 	int err = 0;
@@ -422,7 +422,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		goto out;
 
 	err = decode_pair(&acc->ausrc_mod, &acc->ausrc_dev,
-			  "audio_source", &acc->laddr.params);
+			  &acc->laddr.params, "audio_source");
 	if (err) {
 		warning("account: audio_source parse error\n");
 		goto out;
