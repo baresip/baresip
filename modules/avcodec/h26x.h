@@ -95,10 +95,3 @@ enum h263_mode h263_hdr_mode(const struct h263_hdr *hdr);
 const uint8_t *h263_strm_find_psc(const uint8_t *p, uint32_t size);
 int  h263_strm_decode(struct h263_strm *s, struct mbuf *mb);
 void h263_hdr_copy_strm(struct h263_hdr *hdr, const struct h263_strm *s);
-
-
-/*
- * H.264
- */
-
-int h264_decode_sprop_params(AVCodecContext *codec, struct pl *pl);
