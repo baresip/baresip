@@ -1138,7 +1138,7 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		audio_event_h *eventh, audio_err_h *errh, void *arg);
 void audio_mute(struct audio *a, bool muted);
 bool audio_ismuted(const struct audio *a);
-void audio_set_devicename(struct audio *a, const char *src, const char *play);
+int  audio_set_devicename(struct audio *a, const char *src, const char *play);
 int  audio_set_source(struct audio *au, const char *mod, const char *device);
 int  audio_set_player(struct audio *au, const char *mod, const char *device);
 int  audio_level_get(const struct audio *au, double *level);
