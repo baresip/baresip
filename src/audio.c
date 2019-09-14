@@ -146,6 +146,7 @@ struct aurx {
 	volatile bool aubuf_started;  /**< Aubuf was started flag          */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in decoding order */
+	char *module;                 /**< Audio player module name        */
 	char *device;                 /**< Audio player device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
@@ -275,6 +276,7 @@ static void audio_destructor(void *arg)
 	mem_deref(a->rx.sampv_rs);
 	mem_deref(a->tx.module);
 	mem_deref(a->tx.device);
+	mem_deref(a->rx.module);
 	mem_deref(a->rx.device);
 
 	list_flush(&a->tx.filtl);
@@ -1239,7 +1241,20 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	tx->marker = true;
 
 	auresamp_init(&rx->resamp);
-	err |= str_dup(&rx->device, a->cfg.play_dev);
+
+	if (acc && acc->auplay_mod) {
+
+		rx->module = mem_ref(acc->auplay_mod);
+		rx->device = mem_ref(acc->auplay_dev);
+
+		info("audio: using account specific player: (%s,%s)\n",
+		     rx->module, rx->device);
+	}
+	else {
+		err  = str_dup(&rx->module, a->cfg.play_mod);
+		err |= str_dup(&rx->device, a->cfg.play_dev);
+	}
+
 	rx->pt     = -1;
 	rx->ptime  = ptime;
 
@@ -1502,12 +1517,12 @@ static int start_player(struct aurx *rx, struct audio *a)
 		}
 
 		err = auplay_alloc(&rx->auplay, baresip_auplayl(),
-				   a->cfg.play_mod,
+				   rx->module,
 				   &prm, rx->device,
 				   auplay_write_handler, rx);
 		if (err) {
 			warning("audio: start_player failed (%s.%s): %m\n",
-				a->cfg.play_mod, rx->device, err);
+				rx->module, rx->device, err);
 			return err;
 		}
 

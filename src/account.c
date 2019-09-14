@@ -37,6 +37,8 @@ static void destructor(void *arg)
 	mem_deref(acc->buf);
 	mem_deref(acc->ausrc_mod);
 	mem_deref(acc->ausrc_dev);
+	mem_deref(acc->auplay_mod);
+	mem_deref(acc->auplay_dev);
 }
 
 
@@ -421,10 +423,12 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	if (err)
 		goto out;
 
-	err = decode_pair(&acc->ausrc_mod, &acc->ausrc_dev,
-			  &acc->laddr.params, "audio_source");
+	err  = decode_pair(&acc->ausrc_mod, &acc->ausrc_dev,
+			   &acc->laddr.params, "audio_source");
+	err |= decode_pair(&acc->auplay_mod, &acc->auplay_dev,
+			   &acc->laddr.params, "audio_player");
 	if (err) {
-		warning("account: audio_source parse error\n");
+		warning("account: audio_source/player parse error\n");
 		goto out;
 	}
 
