@@ -319,7 +319,6 @@ zrtp          ZRTP media encryption module
 * RFC 3984  RTP Payload Format for H.264 Video
 * RFC 4145  TCP-Based Media Transport in SDP
 * RFC 4240  Basic Network Media Services with SIP (partly)
-* RFC 4298  Broadvoice Speech Codecs
 * RFC 4347  Datagram Transport Layer Security
 * RFC 4568  SDP Security Descriptions for Media Streams
 * RFC 4572  Connection-Oriented Media Transport over TLS Protocol in SDP
