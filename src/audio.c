@@ -89,7 +89,7 @@ struct autx {
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
-	char device[128];             /**< Audio source device name        */
+	char *device;                 /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for sending         */
@@ -145,7 +145,7 @@ struct aurx {
 	volatile bool aubuf_started;  /**< Aubuf was started flag          */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in decoding order */
-	char device[128];             /**< Audio player device name        */
+	char *device;                 /**< Audio player device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
 	uint32_t ptime;               /**< Packet time for receiving       */
@@ -272,6 +272,8 @@ static void audio_destructor(void *arg)
 	mem_deref(a->rx.aubuf);
 	mem_deref(a->tx.sampv_rs);
 	mem_deref(a->rx.sampv_rs);
+	mem_deref(a->tx.device);
+	mem_deref(a->rx.device);
 
 	list_flush(&a->tx.filtl);
 	list_flush(&a->rx.filtl);
@@ -1214,13 +1216,13 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		goto out;
 
 	auresamp_init(&tx->resamp);
-	str_ncpy(tx->device, a->cfg.src_dev, sizeof(tx->device));
+	err |= str_dup(&tx->device, a->cfg.src_dev);
 	tx->ptime  = ptime;
 	tx->ts_ext = tx->ts_base = rand_u16();
 	tx->marker = true;
 
 	auresamp_init(&rx->resamp);
-	str_ncpy(rx->device, a->cfg.play_dev, sizeof(rx->device));
+	err |= str_dup(&rx->device, a->cfg.play_dev);
 	rx->pt     = -1;
 	rx->ptime  = ptime;
 
@@ -2129,14 +2131,23 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
  * @param a     Audio object
  * @param src   Audio source device name
  * @param play  Audio player device name
+ *
+ * @return 0 if success, otherwise errorcode
  */
-void audio_set_devicename(struct audio *a, const char *src, const char *play)
+int audio_set_devicename(struct audio *a, const char *src, const char *play)
 {
-	if (!a)
-		return;
+	int err;
 
-	str_ncpy(a->tx.device, src, sizeof(a->tx.device));
-	str_ncpy(a->rx.device, play, sizeof(a->rx.device));
+	if (!a)
+		return EINVAL;
+
+	a->tx.device = mem_deref(a->tx.device);
+	a->rx.device = mem_deref(a->rx.device);
+
+	err  = str_dup(&a->tx.device, src);
+	err |= str_dup(&a->rx.device, play);
+
+	return err;
 }
 
 
