@@ -18,7 +18,7 @@
  *
  * Supported version:
  *      libmpg123   1.16.0 or later
- *      libtwolame  0.3.13 or later
+ *      libmp3lame  3.100 or later
  *
  * References:
  *
