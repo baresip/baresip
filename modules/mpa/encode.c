@@ -74,17 +74,13 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	prm.samplerate = 48000;
 	prm.bitrate    = 128000;
 	prm.layer      = 2;
-	prm.mode       = SINGLE_CHANNEL;
+	prm.mode       = MONO;
 	mpa_decode_fmtp(&prm, fmtp);
 	aes->samplerate = prm.samplerate;
 
 	result = 0;
 
-	result |= lame_set_mode(aes->enc,
-		prm.mode == SINGLE_CHANNEL ? MONO :
-		prm.mode == DUAL_CHANNEL ? DUAL_CHANNEL :
-		prm.mode == JOINT_STEREO ? JOINT_STEREO :
-		prm.mode == STEREO ? STEREO : NOT_SET);
+	result |= lame_set_mode(aes->enc, prm.mode);
 	result |= lame_set_brate(aes->enc, prm.bitrate/1000);
 	result |= lame_set_in_samplerate(aes->enc, prm.samplerate);
 	result |= lame_set_out_samplerate(aes->enc, prm.samplerate);

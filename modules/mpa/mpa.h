@@ -15,8 +15,7 @@ struct mpa_param {
 	unsigned samplerate;
 	unsigned bitrate;
 	unsigned layer;
-	enum { AUTO=0, STEREO, JOINT_STEREO, SINGLE_CHANNEL, DUAL_CHANNEL }
-		mode;
+	int mode;  /* MPEG_mode */
 };
 
 
