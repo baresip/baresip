@@ -17,10 +17,10 @@ sudo: require
 addons:
     apt:
         packages:
-            libssl-dev libgtk2.0-dev libsndfile1-dev libpulse-dev libavcodec-dev libopus-dev
+            libssl-dev libgtk2.0-dev libsndfile1-dev libpulse-dev libavcodec-dev libopus-dev libmpg123-dev
     homebrew:
         packages:
-        - codec2
+        - codec2 mpg123
 
 install:
     - git clone https://github.com/creytiv/re.git
