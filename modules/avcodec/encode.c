@@ -161,7 +161,7 @@ static int decode_sdpparam_h263(struct videnc_state *st, const struct pl *name,
 }
 
 
-static int init_encoder(struct videnc_state *st)
+static int init_encoder(struct videnc_state *st, const char *name)
 {
 	/*
 	 * Special handling of H.264 encoder
@@ -171,6 +171,15 @@ static int init_encoder(struct videnc_state *st)
 		st->codec = avcodec_h264enc;
 
 		info("avcodec: h264 encoder activated\n");
+
+		return 0;
+	}
+
+	if (0 == str_casecmp(name, "h265")) {
+
+		st->codec = avcodec_h265enc;
+
+		info("avcodec: h265 encoder activated\n");
 
 		return 0;
 	}
@@ -269,6 +278,13 @@ static int open_encoder(struct videnc_state *st,
 				      "\"2pass\" selected\n");
 			}
 		}
+	}
+
+	if (0 == str_cmp(st->codec->name, "libx265")) {
+
+		av_opt_set(st->ctx->priv_data, "profile", "main444-8", 0);
+		av_opt_set(st->ctx->priv_data, "preset", "ultrafast", 0);
+		av_opt_set(st->ctx->priv_data, "tune", "zerolatency", 0);
 	}
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
@@ -446,6 +462,7 @@ int avcodec_encode_update(struct videnc_state **vesp,
 
 	st->codec_id = avcodec_resolve_codecid(vc->name);
 	if (st->codec_id == AV_CODEC_ID_NONE) {
+		warning("avcodec: unknown encoder (%s)\n", vc->name);
 		err = EINVAL;
 		goto out;
 	}
@@ -458,7 +475,7 @@ int avcodec_encode_update(struct videnc_state **vesp,
 
 	st->fmt = -1;
 
-	err = init_encoder(st);
+	err = init_encoder(st, vc->name);
 	if (err) {
 		warning("avcodec: %s: could not init encoder\n", vc->name);
 		goto out;
@@ -647,6 +664,14 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		err = general_packetize(ts, &mb, st->encprm.pktsize,
 					st->pkth, st->arg);
 		break;
+
+#ifdef AV_CODEC_ID_H265
+	case AV_CODEC_ID_H265:
+		err = h265_packetize(ts, pkt->data, pkt->size,
+				     st->encprm.pktsize,
+				     st->pkth, st->arg);
+		break;
+#endif
 
 	default:
 		err = EPROTO;

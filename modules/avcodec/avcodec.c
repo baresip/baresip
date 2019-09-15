@@ -42,6 +42,8 @@
 static const uint8_t h264_level_idc = 0x1f;
 AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
 AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
+AVCodec *avcodec_h265enc;
+AVCodec *avcodec_h265dec;
 
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
@@ -59,6 +61,10 @@ int avcodec_resolve_codecid(const char *s)
 		return AV_CODEC_ID_H264;
 	else if (0 == str_casecmp(s, "MP4V-ES"))
 		return AV_CODEC_ID_MPEG4;
+#ifdef AV_CODEC_ID_H265
+	else if (0 == str_casecmp(s, "H265"))
+		return AV_CODEC_ID_H265;
+#endif
 	else
 		return AV_CODEC_ID_NONE;
 }
@@ -166,12 +172,23 @@ static struct vidcodec mpg4 = {
 	NULL,
 };
 
+static struct vidcodec h265 = {
+	.name      = "H265",
+	.fmtp      = "profile-id=1",
+	.encupdh   = avcodec_encode_update,
+	.ench      = avcodec_encode,
+	.decupdh   = avcodec_decode_update,
+	.dech      = avcodec_decode_h265,
+};
+
 
 static int module_init(void)
 {
 	struct list *vidcodecl = baresip_vidcodecl();
 	char h264enc[64] = "libx264";
 	char h264dec[64] = "h264";
+	char h265enc[64] = "libx265";
+	char h265dec[64] = "hevc";
 #if LIBAVUTIL_VERSION_MAJOR >= 56
 	char hwaccel[64];
 #endif
@@ -186,6 +203,8 @@ static int module_init(void)
 
 	conf_get_str(conf_cur(), "avcodec_h264enc", h264enc, sizeof(h264enc));
 	conf_get_str(conf_cur(), "avcodec_h264dec", h264dec, sizeof(h264dec));
+	conf_get_str(conf_cur(), "avcodec_h265enc", h265enc, sizeof(h265enc));
+	conf_get_str(conf_cur(), "avcodec_h265dec", h265dec, sizeof(h265dec));
 
 	avcodec_h264enc = avcodec_find_encoder_by_name(h264enc);
 	if (!avcodec_h264enc) {
@@ -196,6 +215,9 @@ static int module_init(void)
 	if (!avcodec_h264dec) {
 		warning("avcodec: h264 decoder not found (%s)\n", h264dec);
 	}
+
+	avcodec_h265enc = avcodec_find_encoder_by_name(h265enc);
+	avcodec_h265dec = avcodec_find_decoder_by_name(h265dec);
 
 	if (avcodec_h264enc || avcodec_h264dec) {
 		vidcodec_register(vidcodecl, &h264);
@@ -208,6 +230,9 @@ static int module_init(void)
 	if (avcodec_find_decoder(AV_CODEC_ID_MPEG4))
 		vidcodec_register(vidcodecl, &mpg4);
 
+	if (avcodec_h265enc || avcodec_h265dec)
+		vidcodec_register(vidcodecl, &h265);
+
 	if (avcodec_h264enc) {
 		info("avcodec: using H.264 encoder '%s' -- %s\n",
 		     avcodec_h264enc->name, avcodec_h264enc->long_name);
@@ -215,6 +240,15 @@ static int module_init(void)
 	if (avcodec_h264dec) {
 		info("avcodec: using H.264 decoder '%s' -- %s\n",
 		     avcodec_h264dec->name, avcodec_h264dec->long_name);
+	}
+
+	if (avcodec_h265enc) {
+		info("avcodec: using H.265 encoder '%s' -- %s\n",
+		     avcodec_h265enc->name, avcodec_h265enc->long_name);
+	}
+	if (avcodec_h265dec) {
+		info("avcodec: using H.265 decoder '%s' -- %s\n",
+		     avcodec_h265dec->name, avcodec_h265dec->long_name);
 	}
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
@@ -280,6 +314,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
+	vidcodec_unregister(&h265);
 	vidcodec_unregister(&mpg4);
 	vidcodec_unregister(&h263);
 	vidcodec_unregister(&h264);

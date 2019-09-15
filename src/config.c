@@ -773,7 +773,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "avcodec" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "vp8" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "vp9" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" "h265" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Video filter Modules (in encoding order)\n");
 	(void)re_fprintf(f, "#module\t\t\t" "selfview" MOD_EXT "\n");
@@ -928,13 +927,10 @@ int config_write_template(const char *file, const struct config *cfg)
 			"\n# avcodec\n"
 			"#avcodec_h264enc\tlibx264\n"
 			"#avcodec_h264dec\th264\n"
+			"#avcodec_h265enc\tlibx265\n"
+			"#avcodec_h265dec\thevc\n"
 			"#avcodec_hwaccel\t%s\n",
 			default_avcodec_hwaccel());
-
-	(void)re_fprintf(f,
-			"\n# h265\n"
-			"#h265_encoder\t\tlibx265\n"
-			"#h265_decoder\t\thevc\n");
 
 	(void)re_fprintf(f,
 			 "\n# mqtt\n"

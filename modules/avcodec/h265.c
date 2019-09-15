@@ -1,5 +1,5 @@
 /**
- * @file h265/fmt.c H.265 Video Codec -- protocol format
+ * @file h265.c H.265 Video Codec -- protocol format
  *
  * Copyright (C) 2010 Creytiv.com
  */
@@ -8,7 +8,8 @@
 #include <re.h>
 #include <baresip.h>
 #include <libavcodec/avcodec.h>
-#include "h265.h"
+#include "h26x.h"
+#include "avcodec.h"
 
 
 /*
@@ -199,4 +200,83 @@ const char *h265_nalunit_name(enum h265_naltype type)
 	}
 
 	return "???";
+}
+
+
+static inline int packetize(bool marker, const uint8_t *buf, size_t len,
+			    size_t maxlen, uint64_t rtp_ts,
+			    videnc_packet_h *pkth, void *arg)
+{
+	int err = 0;
+
+	if (len <= maxlen) {
+		err = pkth(marker, rtp_ts, NULL, 0, buf, len, arg);
+	}
+	else {
+		struct h265_nal nal;
+		uint8_t fu_hdr[3];
+		const size_t flen = maxlen - sizeof(fu_hdr);
+
+		err = h265_nal_decode(&nal, buf);
+		if (err) {
+			warning("h265: encode: could not decode"
+				" NAL of %zu bytes (%m)\n", len, err);
+			return err;
+		}
+
+		h265_nal_encode(fu_hdr, H265_NAL_FU,
+				nal.nuh_temporal_id_plus1);
+
+		fu_hdr[2] = 1<<7 | nal.nal_unit_type;
+
+		buf+=2;
+		len-=2;
+
+		while (len > flen) {
+			err |= pkth(false, rtp_ts, fu_hdr, 3, buf, flen,
+				    arg);
+
+			buf += flen;
+			len -= flen;
+			fu_hdr[2] &= ~(1 << 7); /* clear Start bit */
+		}
+
+		fu_hdr[2] |= 1<<6;  /* set END bit */
+
+		err |= pkth(marker, rtp_ts, fu_hdr, 3, buf, len,
+			    arg);
+	}
+
+	return err;
+}
+
+
+int h265_packetize(uint64_t rtp_ts, const uint8_t *buf, size_t len,
+		   size_t pktsize, videnc_packet_h *pkth, void *arg)
+{
+	const uint8_t *start = buf;
+	const uint8_t *end   = buf + len;
+	const uint8_t *r;
+	int err = 0;
+
+	r = h265_find_startcode(start, end);
+
+	while (r < end) {
+		const uint8_t *r1;
+		bool marker;
+
+		/* skip zeros */
+		while (!*(r++))
+			;
+
+		r1 = h265_find_startcode(r, end);
+
+		marker = (r1 >= end);
+
+		err |= packetize(marker, r, r1-r, pktsize, rtp_ts, pkth, arg);
+
+		r = r1;
+	}
+
+	return err;
 }

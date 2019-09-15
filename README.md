@@ -248,7 +248,6 @@ gst           Gstreamer audio source
 gst_video     Gstreamer video codec
 gtk           GTK+ 2.0 UI
 gzrtp         ZRTP module using GNU ZRTP C++ library
-h265          H.265 video codec
 httpd         HTTP webserver UI-module
 ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec

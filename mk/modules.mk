@@ -25,7 +25,6 @@
 #   USE_GST           Gstreamer audio module
 #   USE_GST_VIDEO     Gstreamer video module
 #   USE_GTK           GTK+ user interface
-#   USE_H265          H.265 video codec
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
 #   USE_JACK          JACK Audio Connection Kit audio driver
@@ -110,9 +109,6 @@ USE_GST_VIDEO := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
 		&& echo "yes")
 USE_GTK := $(shell pkg-config 'gtk+-2.0 >= 2.22' && \
 		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
-ifneq ($(USE_AVCODEC),)
-USE_H265  := yes
-endif
 USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT)/local/include/iLBC_define.h ] && echo "yes")
 USE_ISAC := $(shell [ -f $(SYSROOT)/include/isac.h ] || \
@@ -354,9 +350,6 @@ MODULES   += gst_video
 endif
 ifneq ($(USE_GTK),)
 MODULES   += gtk
-endif
-ifneq ($(USE_H265),)
-MODULES   += h265
 endif
 ifneq ($(USE_ILBC),)
 MODULES   += ilbc

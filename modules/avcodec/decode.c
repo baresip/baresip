@@ -120,6 +120,10 @@ static int init_decoder(struct viddec_state *st, const char *name)
 		st->codec = avcodec_h264dec;
 		info("avcodec: h264 decoder activated\n");
 	}
+	else if (0 == str_casecmp(name, "h265")) {
+		st->codec = avcodec_h265dec;
+		info("avcodec: h265 decoder activated\n");
+	}
 	else {
 		st->codec = avcodec_find_decoder(codec_id);
 		if (!st->codec)
@@ -626,6 +630,169 @@ int avcodec_decode_h263(struct viddec_state *st, struct vidframe *frame,
 
  out:
 	mbuf_rewind(st->mb);
+
+	return err;
+}
+
+
+enum {
+	H265_FU_HDR_SIZE = 1
+};
+
+struct h265_fu {
+	unsigned s:1;
+	unsigned e:1;
+	unsigned type:6;
+};
+
+
+static inline int h265_fu_decode(struct h265_fu *fu, struct mbuf *mb)
+{
+	uint8_t v;
+
+	if (mbuf_get_left(mb) < 1)
+		return EBADMSG;
+
+	v = mbuf_read_u8(mb);
+
+	fu->s    = v>>7 & 0x1;
+	fu->e    = v>>6 & 0x1;
+	fu->type = v>>0 & 0x3f;
+
+	return 0;
+}
+
+
+int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
+		       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
+{
+	static const uint8_t nal_seq[3] = {0, 0, 1};
+	struct h265_nal hdr;
+	int err;
+
+	if (!vds || !frame || !intra || !mb)
+		return EINVAL;
+
+	*intra = false;
+
+	err = h265_nal_decode(&hdr, mbuf_buf(mb));
+	if (err)
+		return err;
+
+	mbuf_advance(mb, H265_HDR_SIZE);
+
+#if 0
+	debug("h265: decode: %s type=%2d  %s\n",
+		  h265_is_keyframe(hdr.nal_unit_type) ? "<KEY>" : "     ",
+		  hdr.nal_unit_type,
+		  h265_nalunit_name(hdr.nal_unit_type));
+#endif
+
+	if (vds->frag && hdr.nal_unit_type != H265_NAL_FU) {
+		debug("h265: lost fragments; discarding previous NAL\n");
+		fragment_rewind(vds);
+		vds->frag = false;
+	}
+
+	/* handle NAL types */
+	if (0 <= hdr.nal_unit_type && hdr.nal_unit_type <= 40) {
+
+		if (h265_is_keyframe(hdr.nal_unit_type))
+			*intra = true;
+
+		mb->pos -= H265_HDR_SIZE;
+
+		err  = mbuf_write_mem(vds->mb, nal_seq, 3);
+		err |= mbuf_write_mem(vds->mb, mbuf_buf(mb),mbuf_get_left(mb));
+		if (err)
+			goto out;
+	}
+	else if (H265_NAL_FU == hdr.nal_unit_type) {
+
+		struct h265_fu fu;
+
+		err = h265_fu_decode(&fu, mb);
+		if (err)
+			return err;
+
+		if (fu.s) {
+			if (h265_is_keyframe(fu.type))
+				*intra = true;
+
+			if (vds->frag) {
+				debug("h265: lost fragments; ignoring NAL\n");
+				fragment_rewind(vds);
+			}
+
+			vds->frag_start = vds->mb->pos;
+			vds->frag = true;
+
+			hdr.nal_unit_type = fu.type;
+
+			err  = mbuf_write_mem(vds->mb, nal_seq, 3);
+			err = h265_nal_encode_mbuf(vds->mb, &hdr);
+			if (err)
+				goto out;
+		}
+		else {
+			if (!vds->frag) {
+				debug("h265: ignoring fragment\n");
+				return 0;
+			}
+
+			if (seq_diff(vds->frag_seq, seq) != 1) {
+				debug("h265: lost fragments detected\n");
+				fragment_rewind(vds);
+				vds->frag = false;
+				return 0;
+			}
+		}
+
+		err = mbuf_write_mem(vds->mb, mbuf_buf(mb), mbuf_get_left(mb));
+		if (err)
+			goto out;
+
+		if (fu.e)
+			vds->frag = false;
+
+		vds->frag_seq = seq;
+	}
+	else {
+		warning("h265: unknown NAL type %u (%s) [%zu bytes]\n",
+			hdr.nal_unit_type,
+			h265_nalunit_name(hdr.nal_unit_type),
+			mbuf_get_left(mb));
+		return EPROTO;
+	}
+
+	if (*intra) {
+		vds->got_keyframe = true;
+		++vds->stats.n_key;
+	}
+
+	if (!marker) {
+
+		if (vds->mb->end > DECODE_MAXSZ) {
+			warning("h265: decode buffer size exceeded\n");
+			err = ENOMEM;
+			goto out;
+		}
+
+		return 0;
+	}
+
+	if (vds->frag) {
+		err = EPROTO;
+		goto out;
+	}
+
+	err = ffdecode(vds, frame);
+	if (err)
+		goto out;
+
+ out:
+	mbuf_rewind(vds->mb);
+	vds->frag = false;
 
 	return err;
 }

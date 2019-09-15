@@ -34,6 +34,9 @@
 extern AVCodec *avcodec_h264enc;
 extern AVCodec *avcodec_h264dec;
 
+extern AVCodec *avcodec_h265enc;
+extern AVCodec *avcodec_h265dec;
+
 #if LIBAVUTIL_VERSION_MAJOR >= 56
 extern AVBufferRef *avcodec_hw_device_ctx;
 extern enum AVPixelFormat avcodec_hw_pix_fmt;
@@ -67,6 +70,8 @@ int avcodec_decode_h263(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
 int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
+int avcodec_decode_h265(struct viddec_state *st, struct vidframe *frame,
+			bool *intra, bool eof, uint16_t seq, struct mbuf *src);
 int avcodec_decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
 		 bool *intra, bool eof, uint16_t seq, struct mbuf *src);
 
