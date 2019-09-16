@@ -29,6 +29,7 @@ static const char str[] =
 	";stunserver=\"stun:stunserver.org\""
 	";mwi=no"
 	";call_transfer=no"
+	";audio_source=null,null"
 	;
 
 

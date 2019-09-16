@@ -89,6 +89,7 @@ struct autx {
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
+	char *module;                 /**< Audio source module name        */
 	char *device;                 /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
@@ -145,6 +146,7 @@ struct aurx {
 	volatile bool aubuf_started;  /**< Aubuf was started flag          */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in decoding order */
+	char *module;                 /**< Audio player module name        */
 	char *device;                 /**< Audio player device name        */
 	void *sampv;                  /**< Sample buffer                   */
 	int16_t *sampv_rs;            /**< Sample buffer for resampler     */
@@ -272,7 +274,9 @@ static void audio_destructor(void *arg)
 	mem_deref(a->rx.aubuf);
 	mem_deref(a->tx.sampv_rs);
 	mem_deref(a->rx.sampv_rs);
+	mem_deref(a->tx.module);
 	mem_deref(a->tx.device);
+	mem_deref(a->rx.module);
 	mem_deref(a->rx.device);
 
 	list_flush(&a->tx.filtl);
@@ -1123,6 +1127,7 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		uint32_t ptime, const struct list *aucodecl, bool offerer,
 		audio_event_h *eventh, audio_err_h *errh, void *arg)
 {
+	struct account *acc;
 	struct audio *a;
 	struct autx *tx;
 	struct aurx *rx;
@@ -1216,13 +1221,40 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 		goto out;
 
 	auresamp_init(&tx->resamp);
-	err |= str_dup(&tx->device, a->cfg.src_dev);
+
+	acc = call_account(call);
+	if (acc && acc->ausrc_mod) {
+
+		tx->module = mem_ref(acc->ausrc_mod);
+		tx->device = mem_ref(acc->ausrc_dev);
+
+		info("audio: using account specific source: (%s,%s)\n",
+		     tx->module, tx->device);
+	}
+	else {
+		err  = str_dup(&tx->module, a->cfg.src_mod);
+		err |= str_dup(&tx->device, a->cfg.src_dev);
+	}
+
 	tx->ptime  = ptime;
 	tx->ts_ext = tx->ts_base = rand_u16();
 	tx->marker = true;
 
 	auresamp_init(&rx->resamp);
-	err |= str_dup(&rx->device, a->cfg.play_dev);
+
+	if (acc && acc->auplay_mod) {
+
+		rx->module = mem_ref(acc->auplay_mod);
+		rx->device = mem_ref(acc->auplay_dev);
+
+		info("audio: using account specific player: (%s,%s)\n",
+		     rx->module, rx->device);
+	}
+	else {
+		err  = str_dup(&rx->module, a->cfg.play_mod);
+		err |= str_dup(&rx->device, a->cfg.play_dev);
+	}
+
 	rx->pt     = -1;
 	rx->ptime  = ptime;
 
@@ -1485,12 +1517,12 @@ static int start_player(struct aurx *rx, struct audio *a)
 		}
 
 		err = auplay_alloc(&rx->auplay, baresip_auplayl(),
-				   a->cfg.play_mod,
+				   rx->module,
 				   &prm, rx->device,
 				   auplay_write_handler, rx);
 		if (err) {
 			warning("audio: start_player failed (%s.%s): %m\n",
-				a->cfg.play_mod, rx->device, err);
+				rx->module, rx->device, err);
 			return err;
 		}
 
@@ -1574,12 +1606,12 @@ static int start_source(struct autx *tx, struct audio *a)
 		}
 
 		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
-				  NULL, a->cfg.src_mod,
+				  NULL, tx->module,
 				  &prm, tx->device,
 				  ausrc_read_handler, ausrc_error_handler, a);
 		if (err) {
 			warning("audio: start_source failed (%s.%s): %m\n",
-				a->cfg.src_mod, tx->device, err);
+				tx->module, tx->device, err);
 			return err;
 		}
 

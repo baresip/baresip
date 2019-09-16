@@ -76,6 +76,10 @@ struct account {
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
 	bool mwi;                    /**< MWI on/off                         */
 	bool refer;                  /**< REFER method on/off                */
+	char *ausrc_mod;
+	char *ausrc_dev;
+	char *auplay_mod;
+	char *auplay_dev;
 };
 
 
