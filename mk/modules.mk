@@ -152,9 +152,9 @@ HAVE_SPEEXDSP := \
 endif
 ifneq ($(USE_MPG123),)
 ifneq ($(HAVE_SPEEXDSP),)
-USE_MPA  := $(shell [ -f $(SYSROOT)/include/twolame.h ] || \
-	[ -f $(SYSROOT)/local/include/twolame.h ] || \
-	[ -f $(SYSROOT_ALT)/include/twolame.h ] && echo "yes")
+USE_MPA  := $(shell [ -f $(SYSROOT)/include/lame/lame.h ] || \
+	[ -f $(SYSROOT)/local/include/lame/lame.h ] || \
+	[ -f $(SYSROOT_ALT)/include/lame/lame.h ] && echo "yes")
 endif
 endif
 USE_SPEEX_PP := $(shell [ -f $(SYSROOT)/include/speex_preprocess.h ] || \

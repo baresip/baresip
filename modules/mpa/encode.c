@@ -7,14 +7,14 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <twolame.h>
+#include <lame/lame.h>
 #include <string.h>
 #include <speex/speex_resampler.h>
 #include "mpa.h"
 
 
 struct auenc_state {
-	twolame_options *enc;
+	lame_global_flags *enc;
 	int channels, samplerate;
 	SpeexResamplerState *resampler;
 	int16_t intermediate_buffer[MPA_FRAMESIZE*6];
@@ -31,7 +31,7 @@ static void destructor(void *arg)
 	}
 
 	if (aes->enc)
-		twolame_close(&aes->enc);
+		lame_close(aes->enc);
 #ifdef DEBUG
 	debug("MPA enc destroyed\n");
 #endif
@@ -60,7 +60,7 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	else
 		memset(aes,0,sizeof(*aes));
 
-	aes->enc = twolame_init();
+	aes->enc = lame_init();
 	if (!aes->enc) {
 		warning("MPA enc create failed\n");
 		mem_deref(aes);
@@ -74,42 +74,31 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	prm.samplerate = 48000;
 	prm.bitrate    = 128000;
 	prm.layer      = 2;
-	prm.mode       = SINGLE_CHANNEL;
+	prm.mode       = MONO;
 	mpa_decode_fmtp(&prm, fmtp);
 	aes->samplerate = prm.samplerate;
 
 	result = 0;
-#ifdef DEBUG
-	result |= twolame_set_verbosity(aes->enc, 5);
-#else
-	result |= twolame_set_verbosity(aes->enc, 0);
-#endif
 
-	result |= twolame_set_mode(aes->enc,
-		prm.mode == SINGLE_CHANNEL ? TWOLAME_MONO :
-		prm.mode == DUAL_CHANNEL ? TWOLAME_DUAL_CHANNEL :
-		prm.mode == JOINT_STEREO ? TWOLAME_JOINT_STEREO :
-		prm.mode == STEREO ? TWOLAME_STEREO : TWOLAME_AUTO_MODE);
-	result |= twolame_set_version(aes->enc,
-		prm.samplerate < 32000 ? TWOLAME_MPEG2 : TWOLAME_MPEG1);
-	result |= twolame_set_bitrate(aes->enc, prm.bitrate/1000);
-	result |= twolame_set_in_samplerate(aes->enc, prm.samplerate);
-	result |= twolame_set_out_samplerate(aes->enc, prm.samplerate);
-	result |= twolame_set_num_channels(aes->enc, 2);
+	result |= lame_set_mode(aes->enc, prm.mode);
+	result |= lame_set_brate(aes->enc, prm.bitrate/1000);
+	result |= lame_set_in_samplerate(aes->enc, prm.samplerate);
+	result |= lame_set_out_samplerate(aes->enc, prm.samplerate);
+	result |= lame_set_num_channels(aes->enc, 2);
 	if (result!=0) {
 		warning("MPA enc set failed\n");
 		err=EINVAL;
 		goto out;
 	}
 
-	result = twolame_init_params(aes->enc);
+	result = lame_init_params(aes->enc);
 	if (result!=0) {
 		warning("MPA enc init params failed\n");
 		err=EINVAL;
 		goto out;
 	}
 #ifdef DEBUG
-	twolame_print_config(aes->enc);
+	lame_print_config(aes->enc);
 #endif
 	if (prm.samplerate != MPA_IORATE) {
 		aes->resampler = speex_resampler_init(2, MPA_IORATE,
@@ -159,7 +148,7 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 				strerror(n), in_len, sampc/2);
 			return EPROTO;
 		}
-		n = twolame_encode_buffer_interleaved(aes->enc,
+		n = lame_encode_buffer_interleaved(aes->enc,
 			aes->intermediate_buffer, intermediate_len,
 			buf+4, (int)(*len)-4);
 #ifdef DEBUG
@@ -168,9 +157,9 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 #endif
 	}
 	else {
-		n = twolame_encode_buffer_interleaved(aes->enc,
-			sampv, (int)(sampc/2),
-			buf+4, (int)(*len)-4);
+		n = lame_encode_buffer_interleaved(aes->enc,
+				   (int16_t *)sampv, (int)(sampc/2),
+				   buf+4, (int)(*len)-4);
 #ifdef DEBUG
 		debug("MPA enc %d %d %d %d\n",sampc,
 			aes->channels,*len,n);
