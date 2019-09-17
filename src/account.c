@@ -39,6 +39,7 @@ static void destructor(void *arg)
 	mem_deref(acc->ausrc_dev);
 	mem_deref(acc->auplay_mod);
 	mem_deref(acc->auplay_dev);
+	mem_deref(acc->extra);
 }
 
 
@@ -140,6 +141,20 @@ static int media_decode(struct account *acc, const struct pl *prm)
 	err |= param_dstr(&acc->mencid,  prm, "mediaenc");
 	err |= param_dstr(&acc->mnatid,  prm, "medianat");
 	err |= param_u32(&acc->ptime,    prm, "ptime"   );
+
+	return err;
+}
+
+
+/* Decode extra parameter */
+static int extra_decode(struct account *acc, const struct pl *prm)
+{
+	int err = 0;
+
+	if (!acc || !prm)
+		return EINVAL;
+
+	err |= param_dstr(&acc->extra, prm, "extra");
 
 	return err;
 }
@@ -458,6 +473,8 @@ int account_alloc(struct account **accp, const char *sipaddr)
 				acc->mencid);
 		}
 	}
+
+	err |= extra_decode(acc, &acc->laddr.params);
 
  out:
 	if (err)
@@ -1149,6 +1166,19 @@ const char *account_call_transfer(const struct account *acc)
 
 
 /**
+ * Get extra parameter value of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return extra parameter value
+ */
+const char *account_extra(const struct account *acc)
+{
+	return acc ? acc->extra : NULL;
+}
+
+
+/**
  * Print the account debug information
  *
  * @param pf  Print function
@@ -1212,6 +1242,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	}
 	err |= re_hprintf(pf, " call_transfer:         %s\n",
 			  account_call_transfer(acc));
+	err |= re_hprintf(pf, " extra:         %s\n",
+			  acc->extra ? acc->extra : "none");
 
 	return err;
 }

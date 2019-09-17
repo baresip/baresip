@@ -80,6 +80,7 @@ struct account {
 	char *ausrc_dev;
 	char *auplay_mod;
 	char *auplay_dev;
+	char *extra;                 /**< Extra parameters                   */
 };
 
 
