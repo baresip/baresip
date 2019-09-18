@@ -63,6 +63,7 @@ static void usage(void)
 			 "\t-n <net_if>      Specify network interface\n"
 			 "\t-u <parameters>  Extra UA parameters\n"
 			 "\t-v               Verbose debug\n"
+			 "\t-i               Include SIP trace in output\n"
 			 );
 }
 
@@ -75,6 +76,7 @@ int main(int argc, char *argv[])
 	const char *net_interface = NULL;
 	const char *audio_path = NULL;
 	const char *modv[16];
+	bool sip_trace = false;
 	size_t execmdc = 0;
 	size_t modc = 0;
 	size_t i;
@@ -98,7 +100,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "46de:f:p:hu:n:vtm:");
+		const int c = getopt(argc, argv, "46de:f:p:hu:n:vtm:i");
 		if (0 > c)
 			break;
 
@@ -165,6 +167,10 @@ int main(int argc, char *argv[])
 
 		case 'v':
 			log_enable_debug(true);
+			break;
+
+		case 'i':
+			sip_trace = true;
 			break;
 
 		default:
@@ -247,6 +253,9 @@ int main(int argc, char *argv[])
 		if (err)
 			goto out;
 	}
+
+	if (sip_trace)
+		uag_enable_sip_trace(true);
 
 	if (test)
 		goto out;
