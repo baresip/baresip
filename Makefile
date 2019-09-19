@@ -193,15 +193,10 @@ libbaresip.pc:
 	@echo 'Libs: -L$${libdir} -lbaresip' >> libbaresip.pc
 	@echo 'Cflags: -I$${includedir}' >> libbaresip.pc
 
-# GPROF requires static linking
 $(BIN):	$(APP_OBJS)
 	@echo "  LD      $@"
-ifneq ($(GPROF),)
-	$(HIDE)$(LD) $(LFLAGS) $(APP_LFLAGS) $^ ../re/libre.a $(LIBS) -o $@
-else
 	$(HIDE)$(LD) $(LFLAGS) $(APP_LFLAGS) $^ \
 		-L$(LIBRE_SO) -lre $(LIBS) -o $@
-endif
 
 
 .PHONY: test
