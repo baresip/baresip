@@ -69,15 +69,15 @@ int aac_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 static int get_stream_info(struct audec_state *ads)
 {
-	CStreamInfo *info     = aacDecoder_GetStreamInfo(ads->dec);
+	CStreamInfo *info = aacDecoder_GetStreamInfo(ads->dec);
 
 	if (!info) {
-		warning("Unable to get stream info\n");
+		warning("aac: Unable to get stream info\n");
 		return EPROTO;
 	}
 
 	if (info->sampleRate <= 0) {
-		warning("Stream info not initialized\n");
+		warning("aac: Stream info not initialized\n");
 		return EPROTO;
 	}
 
@@ -109,6 +109,7 @@ int aac_decode_frm(struct audec_state *ads,
 	size_t nsamp = 0;
 	unsigned i;
 	int16_t *s16 = sampv;
+	int size;
 
 	if (!ads || !sampv || !sampc || !buf)
 		return EINVAL;
@@ -122,17 +123,14 @@ int aac_decode_frm(struct audec_state *ads,
 		return EPROTO;
 	}
 
-	int size = (int)*sampc;
+	size = (int)*sampc;
 
 	for (i=0; i<8; i++) {
 
-		error = aacDecoder_DecodeFrame(ads->dec,
-					       &s16[nsamp],
-					       size,
-					       0);
-		if (error == AAC_DEC_NOT_ENOUGH_BITS) {
+		error = aacDecoder_DecodeFrame(ads->dec, &s16[nsamp], size, 0);
+		if (error == AAC_DEC_NOT_ENOUGH_BITS)
 			break;
-		}
+
 		if (error != AAC_DEC_OK) {
 			warning("aac: aacDecoder_DecodeFrame() failed: 0x%x\n",
 				error);
