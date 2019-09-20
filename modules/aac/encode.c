@@ -11,9 +11,6 @@
 #include "aac.h"
 
 
-#define BITRATE 64000
-
-
 struct auenc_state {
 	HANDLE_AACENCODER enc;
 	unsigned ch;
@@ -63,11 +60,11 @@ int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	error |= aacEncoder_SetParam(aes->enc, AACENC_AOT, AOT_ER_AAC_LD);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_TRANSMUX,
 				     TT_MP4_LATM_MCP1);
-	error |= aacEncoder_SetParam(aes->enc, AACENC_GRANULE_LENGTH, 480);
-	error |= aacEncoder_SetParam(aes->enc, AACENC_TPSUBFRAMES, 2);
-	error |= aacEncoder_SetParam(aes->enc, AACENC_BITRATE, BITRATE);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_SAMPLERATE, ac->srate);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_CHANNELMODE, ac->ch);
+	error |= aacEncoder_SetParam(aes->enc, AACENC_GRANULE_LENGTH, 480);
+	error |= aacEncoder_SetParam(aes->enc, AACENC_TPSUBFRAMES, 2);
+	error |= aacEncoder_SetParam(aes->enc, AACENC_BITRATE, AAC_BITRATE);
 	if (error != AACENC_OK) {
 		err = EINVAL;
 		goto out;

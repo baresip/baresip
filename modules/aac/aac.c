@@ -15,11 +15,12 @@ static struct aucodec aac = {
 	.crate     = 90000,
 	.ch        = AAC_CHANNELS,
 	.pch       = 1,
-	.fmtp      = "profile-level-id=24;object=23;bitrate=64000",
 	.encupdh   = aac_encode_update,
 	.ench      = aac_encode_frm,
 	.decupdh   = aac_decode_update,
 	.dech      = aac_decode_frm,
+	.fmtp_ench = aac_fmtp_enc,
+	.fmtp_cmph = aac_fmtp_cmp,
 };
 
 
