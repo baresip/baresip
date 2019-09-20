@@ -13,7 +13,6 @@
 
 struct auenc_state {
 	HANDLE_AACENCODER enc;
-	unsigned ch;
 };
 
 
@@ -47,11 +46,9 @@ int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	if (!aes)
 		return ENOMEM;
 
-	aes->ch = ac->ch;
-
-	error = aacEncOpen(&aes->enc, 0, ac->ch);
+	error = aacEncOpen(&aes->enc, 0, AAC_CHANNELS);
 	if (error != AACENC_OK) {
-		warning("Unable to open the encoder: 0x%x\n",
+		warning("aac: Unable to open the encoder: 0x%x\n",
 			error);
 		err = ENOMEM;
 		goto out;
@@ -61,7 +58,8 @@ int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	error |= aacEncoder_SetParam(aes->enc, AACENC_TRANSMUX,
 				     TT_MP4_LATM_MCP1);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_SAMPLERATE, ac->srate);
-	error |= aacEncoder_SetParam(aes->enc, AACENC_CHANNELMODE, ac->ch);
+	error |= aacEncoder_SetParam(aes->enc, AACENC_CHANNELMODE,
+				     AAC_CHANNELS);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_GRANULE_LENGTH, 480);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_TPSUBFRAMES, 2);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_BITRATE, AAC_BITRATE);
@@ -130,7 +128,7 @@ int aac_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		error = aacEncEncode(aes->enc, &in_buf, &out_buf, &in_args,
 				     &out_args);
 		if (error != AACENC_OK) {
-			warning("Unable to encode frame: 0x%x\n", error);
+			warning("aac: Unable to encode frame: 0x%x\n", error);
 			return EINVAL;
 		}
 
