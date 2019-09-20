@@ -11,6 +11,11 @@
 #include "aac.h"
 
 
+enum {
+	FRAME_SIZE = 480
+};
+
+
 struct auenc_state {
 	HANDLE_AACENCODER enc;
 };
@@ -60,7 +65,8 @@ int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	error |= aacEncoder_SetParam(aes->enc, AACENC_SAMPLERATE, ac->srate);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_CHANNELMODE,
 				     AAC_CHANNELS);
-	error |= aacEncoder_SetParam(aes->enc, AACENC_GRANULE_LENGTH, 480);
+	error |= aacEncoder_SetParam(aes->enc, AACENC_GRANULE_LENGTH,
+				     FRAME_SIZE);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_TPSUBFRAMES, 2);
 	error |= aacEncoder_SetParam(aes->enc, AACENC_BITRATE, AAC_BITRATE);
 	if (error != AACENC_OK) {
@@ -91,7 +97,8 @@ int aac_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 	void *in_ptr, *out_ptr;
 	AACENC_ERROR error;
 	const int16_t *s16 = sampv;
-	int i;
+	size_t i;
+	int total = 0;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;
@@ -99,15 +106,12 @@ int aac_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	const unsigned framesize = 480;
-	int total = 0;
-
-	for (i=0; i<2; i++) {
+	for (i=0; i<sampc; i+=FRAME_SIZE) {
 
 		in_ptr               = (void *)s16;
-		in_buffer_size       = sizeof(int16_t) * (int)framesize;
+		in_buffer_size       = sizeof(int16_t) * FRAME_SIZE;
 
-		in_args.numInSamples = (int)framesize;
+		in_args.numInSamples = FRAME_SIZE;
 
 		in_buffer_element_size   = 2;
 		in_buf.numBufs           = 1;
@@ -132,7 +136,7 @@ int aac_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 			return EINVAL;
 		}
 
-		s16 += framesize;
+		s16 += FRAME_SIZE;
 
 		buf += out_args.numOutBytes;
 		total += out_args.numOutBytes;
