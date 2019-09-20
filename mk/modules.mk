@@ -5,6 +5,7 @@
 #
 # External libraries:
 #
+#   USE_AAC           AAC audio codec
 #   USE_ALSA          ALSA audio driver
 #   USE_AMR           Adaptive Multi-Rate (AMR) audio codec
 #   USE_AUDIOUNIT     AudioUnit audio driver for OSX/iOS
@@ -63,6 +64,8 @@ USE_L16   := 1
 
 ifneq ($(OS),win32)
 
+USE_AAC  := $(shell [ -f $(SYSROOT)/local/include/fdk-aac/FDK_audio.h ] || \
+	[ -f $(SYSROOT_ALT)/include/fdk-aac/FDK_audio.h ] && echo "yes")
 USE_ALSA  := $(shell [ -f $(SYSROOT)/include/alsa/asoundlib.h ] || \
 	[ -f $(SYSROOT_ALT)/include/alsa/asoundlib.h ] && echo "yes")
 USE_AMR   := $(shell [ -d $(SYSROOT)/include/opencore-amrnb ] || \
@@ -277,6 +280,9 @@ endif
 
 endif
 
+ifneq ($(USE_AAC),)
+MODULES   += aac
+endif
 ifneq ($(USE_ALSA),)
 MODULES   += alsa
 endif
