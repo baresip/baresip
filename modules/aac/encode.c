@@ -90,15 +90,15 @@ int aac_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 	AACENC_BufDesc in_buf   = { 0 }, out_buf = { 0 };
 	AACENC_InArgs  in_args  = { 0 };
 	AACENC_OutArgs out_args = { 0 };
-	int in_buffer_identifier = IN_AUDIO_DATA;
-	int in_buffer_size, in_buffer_element_size;
-	int out_buffer_identifier = OUT_BITSTREAM_DATA;
-	int out_buffer_size, out_buffer_element_size;
-	void *in_ptr, *out_ptr;
+	int in_id = IN_AUDIO_DATA;
+	int in_buffer_size;
+	int out_id = OUT_BITSTREAM_DATA;
+	int out_buffer_size, out_elem_size=1;
 	AACENC_ERROR error;
 	const int16_t *s16 = sampv;
-	size_t i;
 	int total = 0;
+	int in_elem_size = sizeof(int16_t);
+	size_t i;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;
@@ -108,26 +108,23 @@ int aac_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 
 	for (i=0; i<sampc; i+=FRAME_SIZE) {
 
-		in_ptr               = (void *)s16;
 		in_buffer_size       = sizeof(int16_t) * FRAME_SIZE;
 
 		in_args.numInSamples = FRAME_SIZE;
 
-		in_buffer_element_size   = 2;
 		in_buf.numBufs           = 1;
-		in_buf.bufs              = &in_ptr;
-		in_buf.bufferIdentifiers = &in_buffer_identifier;
+		in_buf.bufs              = (void **)&s16;
+		in_buf.bufferIdentifiers = &in_id;
 		in_buf.bufSizes          = &in_buffer_size;
-		in_buf.bufElSizes        = &in_buffer_element_size;
+		in_buf.bufElSizes        = &in_elem_size;
 
-		out_ptr                   = buf;
 		out_buffer_size           = (int)*len;
-		out_buffer_element_size   = 1;
+
 		out_buf.numBufs           = 1;
-		out_buf.bufs              = &out_ptr;
-		out_buf.bufferIdentifiers = &out_buffer_identifier;
+		out_buf.bufs              = (void **)&buf;
+		out_buf.bufferIdentifiers = &out_id;
 		out_buf.bufSizes          = &out_buffer_size;
-		out_buf.bufElSizes        = &out_buffer_element_size;
+		out_buf.bufElSizes        = &out_elem_size;
 
 		error = aacEncEncode(aes->enc, &in_buf, &out_buf, &in_args,
 				     &out_args);
