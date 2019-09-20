@@ -59,11 +59,11 @@ static void usage(void)
 			 "\t-m <module>      Pre-load modules (repeat)\n"
 			 "\t-p <path>        Audio files\n"
 			 "\t-h -?            Help\n"
+			 "\t-s               Enable SIP trace\n"
 			 "\t-t               Test and exit\n"
 			 "\t-n <net_if>      Specify network interface\n"
 			 "\t-u <parameters>  Extra UA parameters\n"
 			 "\t-v               Verbose debug\n"
-			 "\t-i               Include SIP trace in output\n"
 			 );
 }
 
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "46de:f:p:hu:n:vtm:i");
+		const int c = getopt(argc, argv, "46de:f:p:hu:n:vstm:");
 		if (0 > c)
 			break;
 
@@ -153,6 +153,10 @@ int main(int argc, char *argv[])
 			audio_path = optarg;
 			break;
 
+		case 's':
+			sip_trace = true;
+			break;
+
 		case 't':
 			test = true;
 			break;
@@ -167,10 +171,6 @@ int main(int argc, char *argv[])
 
 		case 'v':
 			log_enable_debug(true);
-			break;
-
-		case 'i':
-			sip_trace = true;
 			break;
 
 		default:
