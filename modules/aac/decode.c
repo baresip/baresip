@@ -14,11 +14,6 @@
 
 struct audec_state {
 	HANDLE_AACDECODER dec;
-
-	unsigned sample_rate;
-	unsigned frame_size;
-	unsigned channels;
-	bool set;
 };
 
 
@@ -67,36 +62,6 @@ int aac_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 }
 
 
-static int get_stream_info(struct audec_state *ads)
-{
-	CStreamInfo *info = aacDecoder_GetStreamInfo(ads->dec);
-
-	if (!info) {
-		warning("aac: Unable to get stream info\n");
-		return EPROTO;
-	}
-
-	if (info->sampleRate <= 0) {
-		warning("aac: Stream info not initialized\n");
-		return EPROTO;
-	}
-
-	ads->sample_rate = info->sampleRate;
-	ads->channels = info->numChannels;
-	ads->frame_size  = info->frameSize;
-
-	if (!ads->set) {
-		re_printf("aac stream info:\n");
-		re_printf(".... samplerate: %u\n", ads->sample_rate);
-		re_printf(".... frame_size: %u\n", ads->frame_size);
-		re_printf(".... channels:   %u\n", ads->channels);
-		ads->set = true;
-	}
-
-	return 0;
-}
-
-
 int aac_decode_frm(struct audec_state *ads,
 		   int fmt, void *sampv, size_t *sampc,
 		   const uint8_t *buf, size_t len)
@@ -105,7 +70,6 @@ int aac_decode_frm(struct audec_state *ads,
 	UINT bufferSize = (UINT)len;
 	UINT valid = (UINT)len;
 	AAC_DECODER_ERROR error;
-	int ret;
 	size_t nsamp = 0;
 	unsigned i;
 	int16_t *s16 = sampv;
@@ -127,6 +91,8 @@ int aac_decode_frm(struct audec_state *ads,
 
 	for (i=0; i<8; i++) {
 
+		CStreamInfo *info;
+
 		error = aacDecoder_DecodeFrame(ads->dec, &s16[nsamp], size, 0);
 		if (error == AAC_DEC_NOT_ENOUGH_BITS)
 			break;
@@ -137,23 +103,25 @@ int aac_decode_frm(struct audec_state *ads,
 			return EPROTO;
 		}
 
-		ret = get_stream_info(ads);
-		if (ret) {
-			warning("aac: could not get stream info\n");
-			return ret;
+		info = aacDecoder_GetStreamInfo(ads->dec);
+		if (!info) {
+			warning("aac: Unable to get stream info\n");
+			return EBADMSG;
 		}
 
-		if (ads->sample_rate != AAC_SRATE) {
-			warning("aac: sample rate mismatch\n");
+		if (info->sampleRate != AAC_SRATE) {
+			warning("aac: decode samplerate mismatch (%d != %d)\n",
+				info->sampleRate, AAC_SRATE);
 			return EPROTO;
 		}
-		if (ads->channels != AAC_CHANNELS) {
-			warning("aac: channels mismatch\n");
+		if (info->numChannels != AAC_CHANNELS) {
+			warning("aac: decode channels mismatch (%d != %d)\n",
+				info->numChannels, AAC_CHANNELS);
 			return EPROTO;
 		}
 
-		nsamp += (ads->frame_size * ads->channels);
-		size  -= (ads->frame_size * ads->channels);
+		nsamp += (info->frameSize * info->numChannels);
+		size  -= (info->frameSize * info->numChannels);
 	}
 
 	if (nsamp > *sampc)
