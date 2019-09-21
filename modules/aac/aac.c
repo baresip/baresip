@@ -9,6 +9,13 @@
 #include "aac.h"
 
 
+/**
+ * @defgroup aac aac
+ *
+ * Advanced Audio Coding (AAC) audio codec
+ */
+
+
 static struct aucodec aac = {
 	.name      = "MP4A-LATM",
 	.srate     = AAC_SRATE,
