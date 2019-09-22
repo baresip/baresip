@@ -214,6 +214,7 @@ Patches can be sent via Github
 
 ## Modular Plugin Architecture:
 ```
+aac           Advanced Audio Coding (AAC) audio codec
 account       Account loader
 alsa          ALSA audio driver
 amr           Adaptive Multi-Rate (AMR) audio codec
@@ -339,6 +340,7 @@ zrtp          ZRTP media encryption module
 * RFC 5763  Framework for Establishing a SRTP Security Context Using DTLS
 * RFC 5764  DTLS Extension to Establish Keys for SRTP
 * RFC 6263  App. Mechanism for Keeping Alive NAT Associated with RTP / RTCP
+* RFC 6416  RTP Payload Format for MPEG-4 Audio/Visual Streams
 * RFC 6464  A RTP Header Extension for Client-to-Mixer Audio Level Indication
 * RFC 6716  Definition of the Opus Audio Codec
 * RFC 6886  NAT Port Mapping Protocol (NAT-PMP)
