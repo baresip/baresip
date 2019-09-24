@@ -1656,6 +1656,7 @@ void uag_enable_sip_trace(bool enable)
 #ifdef LIBRE_HAVE_SIPTRACE
 	sip_set_trace_handler(uag.sip, enable ? sip_trace_handler : NULL);
 #else
+	(void)enable;
 	warning("no sip trace in libre\n");
 #endif
 }
