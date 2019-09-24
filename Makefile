@@ -43,9 +43,10 @@ LIBREM_PATH	:= $(shell [ -d ../rem ] && echo "../rem")
 endif
 
 
-CFLAGS    += -I. -Iinclude -I$(LIBRE_INC) -I$(SYSROOT)/include
+CFLAGS    += -I. -Iinclude -I$(LIBRE_INC)
 CFLAGS    += -I$(LIBREM_PATH)/include
 CFLAGS    += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
+CFLAGS    += -I/usr/local/include/rem
 
 CXXFLAGS  += -I. -Iinclude -I$(LIBRE_INC)
 CXXFLAGS  += -I$(LIBREM_PATH)/include
@@ -134,12 +135,12 @@ endif
 ifneq ($(STATIC),)
 LIBS      += $(MOD_LFLAGS)
 else
-LIBS      += -L$(SYSROOT)/local/lib
-MOD_LFLAGS += -L$(SYSROOT)/local/lib
+#LIBS      += -L$(SYSROOT)/local/lib
+#MOD_LFLAGS += -L$(SYSROOT)/local/lib
 endif
 
 LIBS      += -lrem -lm
-LIBS      += -L$(SYSROOT)/lib
+#LIBS      += -L$(SYSROOT)/lib
 
 ifeq ($(OS),win32)
 TEST_LIBS += -static-libgcc
