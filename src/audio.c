@@ -1627,7 +1627,7 @@ static int start_source(struct autx *tx, struct audio *a)
 				err = pthread_create(&tx->u.thr.tid, NULL,
 						     tx_thread, a);
 				if (err) {
-					tx->u.thr.tid = false;
+					tx->u.thr.run = false;
 					return err;
 				}
 			}
