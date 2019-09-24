@@ -138,6 +138,9 @@ static void destructor(void *arg)
 
 	tmr_cancel(&st->tmr);
 	sdl_reset(st);
+
+	/* needed to close the window */
+	SDL_PumpEvents();
 }
 
 
