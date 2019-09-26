@@ -8,7 +8,8 @@
 #include <baresip.h>
 
 
-static void printRtcpSummaryLine(const struct stream *s)
+static void print_rtcp_summary_line(const struct call *call,
+				    const struct stream *s)
 {
 	const struct rtcp_stats *rtcp;
 	rtcp = stream_rtcp_stats(s);
@@ -33,8 +34,8 @@ static void printRtcpSummaryLine(const struct stream *s)
 			"IP=%J,%J;"    /* Local, Remote IPs */
 			 "\n"
 			,
-			 call_setup_duration(stream_call(s)) * 1000,
-			 call_duration(stream_call(s)),
+			 call_setup_duration(call) * 1000,
+			 call_duration(call),
 			 rtcp->rx.sent,
 			 rtcp->tx.sent,
 			 rtcp->rx.lost,
@@ -77,7 +78,7 @@ static void ua_event_handler(struct ua *ua,
 		     le;
 		     le = le->next) {
 			s = le->data;
-			printRtcpSummaryLine(s);
+			print_rtcp_summary_line(call, s);
 		}
 		break;
 
