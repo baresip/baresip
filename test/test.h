@@ -125,7 +125,7 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
  * Mock Audio-codec
  */
 
-void mock_aucodec_register(void);
+void mock_aucodec_register(struct list *aucodecl);
 void mock_aucodec_unregister(void);
 
 /*

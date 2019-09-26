@@ -75,7 +75,7 @@ struct fixture {
 	f->estab_action = ACTION_RECANCEL;				\
 	f->exp_estab = 1;						\
 	f->exp_closed = 1;						\
-	mock_aucodec_register();					\
+	mock_aucodec_register(baresip_aucodecl());			\
 									\
 	err = ua_alloc(&f->a.ua,					\
 		       "A <sip:a@127.0.0.1>;regint=0" prm);		\

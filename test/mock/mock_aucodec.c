@@ -69,9 +69,9 @@ static struct aucodec ac_dummy = {
 };
 
 
-void mock_aucodec_register(void)
+void mock_aucodec_register(struct list *aucodecl)
 {
-	aucodec_register(baresip_aucodecl(), &ac_dummy);
+	aucodec_register(aucodecl, &ac_dummy);
 }
 
 
