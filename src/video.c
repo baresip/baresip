@@ -1478,3 +1478,12 @@ void video_set_devicename(struct video *v, const char *src, const char *disp)
 	str_ncpy(v->vtx.device, src, sizeof(v->vtx.device));
 	str_ncpy(v->vrx.device, disp, sizeof(v->vrx.device));
 }
+
+
+const struct vidcodec *video_codec(const struct video *vid, bool tx)
+{
+	if (!vid)
+		return NULL;
+
+	return tx ? vid->vtx.vc : vid->vrx.vc;
+}
