@@ -32,6 +32,7 @@ SRCS	+= net.c
 SRCS	+= play.c
 SRCS	+= reg.c
 SRCS	+= rtpext.c
+SRCS	+= rtpstat.c
 SRCS	+= sdp.c
 SRCS	+= sipreq.c
 SRCS	+= stream.c

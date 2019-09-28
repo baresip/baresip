@@ -2069,7 +2069,7 @@ void call_set_xrtpstat(struct call *call)
 
 	sipsess_set_close_headers(call->sess,
 				  "X-RTP-Stat: %H\r\n",
-				  audio_print_rtpstat, call->audio);
+				  rtpstat_print, call);
 }
 
 

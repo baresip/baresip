@@ -265,6 +265,13 @@ int rtpext_decode(struct rtpext *ext, struct mbuf *mb);
 
 
 /*
+ * RTP Stats
+ */
+
+int rtpstat_print(struct re_printf *pf, const struct call *call);
+
+
+/*
  * SDP
  */
 
