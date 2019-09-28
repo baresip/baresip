@@ -543,6 +543,7 @@ static void menc_error_handler(int err, void *arg)
 static void stream_mnatconn_handler(struct stream *strm, void *arg)
 {
 	struct call *call = arg;
+	MAGIC_CHECK(call);
 
 	if (stream_is_ready(strm)) {
 
