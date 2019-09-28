@@ -110,7 +110,6 @@ struct audio;
 
 int  audio_send_digit(struct audio *a, char key);
 void audio_sdp_attr_decode(struct audio *a);
-int  audio_print_rtpstat(struct re_printf *pf, const struct audio *au);
 
 
 /*

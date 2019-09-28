@@ -51,8 +51,8 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 			 "JI=%.1f,%.1f;" /* Jitter RX, TX in timestamp units */
 			 "IP=%J,%J"      /* Local, Remote IPs                */
 			 ,
-			 call_setup_duration(s->call) * 1000,
-			 call_duration(s->call),
+			 call_setup_duration(call) * 1000,
+			 call_duration(call),
 
 			 s->metric_rx.n_packets,
 			 s->metric_tx.n_packets,
