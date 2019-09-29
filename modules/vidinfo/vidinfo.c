@@ -108,6 +108,9 @@ static int decode(struct vidfilt_dec_st *_st, struct vidframe *frame,
 			x0 = 4;
 			y0 = frame->size.h - MAX_PIXELS_HEIGHT;
 			break;
+
+		default:
+			return EINVAL;
 		}
 
 		vidinfo_draw_box(frame, *timestamp, &st->stats, st->vid,
