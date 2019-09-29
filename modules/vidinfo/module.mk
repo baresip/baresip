@@ -5,8 +5,8 @@
 #
 
 MOD		:= vidinfo
-$(MOD)_SRCS	+= vidinfo.c panel.c
-$(MOD)_LFLAGS	+= $(shell pkg-config --libs cairo)
-$(MOD)_CFLAGS	+= $(shell pkg-config --cflags cairo)
+$(MOD)_SRCS	+= draw.c
+$(MOD)_SRCS	+= vidinfo.c
+$(MOD)_SRCS	+= xga_font_data.c
 
 include mk/mod.mk

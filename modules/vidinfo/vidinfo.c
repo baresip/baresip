@@ -7,6 +7,7 @@
 #include <rem.h>
 #include <baresip.h>
 #include "vidinfo.h"
+#include "xga_font_data.h"
 
 
 /**
@@ -19,27 +20,28 @@
  */
 
 
-struct vidinfo_enc {
-	struct vidfilt_enc_st vf;  /* base member (inheritance) */
+#define MAX_CHARS_WIDTH  32
+#define MAX_CHARS_HEIGHT 10
 
-	struct panel *panel;
+#define MAX_PIXELS_WIDTH   (MAX_CHARS_WIDTH  * FONT_WIDTH)
+#define MAX_PIXELS_HEIGHT  (MAX_CHARS_HEIGHT * FONT_HEIGHT)
+
+
+enum layout {
+	LAYOUT_TOP,
+	LAYOUT_BOTTOM,
 };
 
 
 struct vidinfo_dec {
 	struct vidfilt_dec_st vf;  /* base member (inheritance) */
 
-	struct panel *panel;
+	struct stats stats;
+	const struct video *vid;
 };
 
 
-static void encode_destructor(void *arg)
-{
-	struct vidinfo_enc *st = arg;
-
-	list_unlink(&st->vf.le);
-	mem_deref(st->panel);
-}
+static enum layout box_layout = LAYOUT_TOP;
 
 
 static void decode_destructor(void *arg)
@@ -47,35 +49,6 @@ static void decode_destructor(void *arg)
 	struct vidinfo_dec *st = arg;
 
 	list_unlink(&st->vf.le);
-	mem_deref(st->panel);
-}
-
-
-static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
-			 const struct vidfilt *vf, struct vidfilt_prm *prm,
-			 const struct video *vid)
-{
-	struct vidinfo_enc *st;
-	int err = 0;
-	(void)prm;
-	(void)vid;
-
-	if (!stp || !ctx || !vf)
-		return EINVAL;
-
-	if (*stp)
-		return 0;
-
-	st = mem_zalloc(sizeof(*st), encode_destructor);
-	if (!st)
-		return ENOMEM;
-
-	if (err)
-		mem_deref(st);
-	else
-		*stp = (struct vidfilt_enc_st *)st;
-
-	return err;
 }
 
 
@@ -98,6 +71,8 @@ static int decode_update(struct vidfilt_dec_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
+	st->vid = vid;
+
 	if (err)
 		mem_deref(st);
 	else
@@ -107,64 +82,67 @@ static int decode_update(struct vidfilt_dec_st **stp, void **ctx,
 }
 
 
-static int encode(struct vidfilt_enc_st *_st, struct vidframe *frame,
-		  uint64_t *timestamp)
-{
-	struct vidinfo_enc *st = (struct vidinfo_enc *)_st;
-	int err = 0;
-	(void)timestamp;
-
-	if (!st->panel) {
-
-		unsigned width = frame->size.w;
-		unsigned height = MIN(PANEL_HEIGHT, frame->size.h);
-
-		err = panel_alloc(&st->panel, "encode", 0, width, height);
-		if (err)
-			return err;
-	}
-
-	panel_add_frame(st->panel, tmr_jiffies());
-
-	panel_draw(st->panel, frame);
-
-	return 0;
-}
-
-
 static int decode(struct vidfilt_dec_st *_st, struct vidframe *frame,
 		  uint64_t *timestamp)
 {
 	struct vidinfo_dec *st = (struct vidinfo_dec *)_st;
-	int err = 0;
-	(void)timestamp;
 
-	if (!st->panel) {
+	if (!st)
+		return EINVAL;
 
-		unsigned width = frame->size.w;
-		unsigned height = MIN(PANEL_HEIGHT, frame->size.h);
-		unsigned yoffs = frame->size.h - PANEL_HEIGHT;
+	if (frame && timestamp) {
 
-		err = panel_alloc(&st->panel, "decode", yoffs, width, height);
-		if (err)
-			return err;
+		unsigned x0, y0;
+
+		if (frame->fmt != VID_FMT_YUV420P)
+			return ENOTSUP;
+
+		switch (box_layout) {
+
+		case LAYOUT_TOP:
+			x0 = 4;
+			y0 = 4;
+			break;
+
+		case LAYOUT_BOTTOM:
+			x0 = 4;
+			y0 = frame->size.h - MAX_PIXELS_HEIGHT;
+			break;
+		}
+
+		vidinfo_draw_box(frame, *timestamp, &st->stats, st->vid,
+				 x0, y0, MAX_PIXELS_WIDTH, MAX_PIXELS_HEIGHT);
+
+		st->stats.last_timestamp = *timestamp;
 	}
-
-	panel_add_frame(st->panel, tmr_jiffies());
-
-	panel_draw(st->panel, frame);
 
 	return 0;
 }
 
 
 static struct vidfilt vidinfo = {
-	LE_INIT, "vidinfo", encode_update, encode, decode_update, decode
+	.name    = "vidinfo",
+	.decupdh = decode_update,
+	.dech    = decode,
 };
 
 
 static int module_init(void)
 {
+	struct pl pl;
+
+	if (0 == conf_get(conf_cur(), "vidinfo_layout", &pl)) {
+
+		if (0 == pl_strcasecmp(&pl, "top")) {
+
+			box_layout = LAYOUT_TOP;
+		}
+		else if (0 == pl_strcasecmp(&pl, "bottom")) {
+
+			box_layout = LAYOUT_BOTTOM;
+		}
+	}
+
 	vidfilt_register(baresip_vidfiltl(), &vidinfo);
 
 	return 0;

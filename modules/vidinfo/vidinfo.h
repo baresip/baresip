@@ -5,38 +5,11 @@
  */
 
 
-#include <cairo/cairo.h>
-
-
-#define PANEL_HEIGHT 24
-#define TEXT_WIDTH 220
-
-
-struct panel {
-	struct vidsz size;
-	struct vidsz size_text;
-	unsigned yoffs;
-	unsigned xoffs;
-	char *label;
-
-	uint64_t *rrdv;
-	size_t rrdsz;
-	size_t rrdc;
-	uint64_t rrd_sum;
-
-	unsigned nframes;
-	uint64_t ts;
-	double fps;
-	struct tmr tmr;
-
-	uint64_t pts_prev;
-
-	/* cairo backend: */
-	cairo_surface_t *surface;
-	cairo_t *cr;
+struct stats {
+	uint64_t last_timestamp;
 };
 
-int  panel_alloc(struct panel **panelp, const char *label,
-		 unsigned yoffs, int width, int height);
-void panel_add_frame(struct panel *panel, uint64_t pts);
-int  panel_draw(struct panel *panel, struct vidframe *frame);
+
+int vidinfo_draw_box(struct vidframe *frame, uint64_t timestamp,
+		     const struct stats *stats, const struct video *vid,
+		     int x0, int y0, int width, int height);

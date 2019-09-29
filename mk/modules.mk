@@ -272,6 +272,7 @@ MODULES   += stun
 MODULES   += turn
 MODULES   += uuid
 MODULES   += vidbridge
+MODULES   += vidinfo
 MODULES   += vidloop
 MODULES   += vumeter
 
@@ -307,7 +308,6 @@ MODULES   += avahi
 endif
 ifneq ($(USE_CAIRO),)
 MODULES   += cairo
-MODULES   += vidinfo
 ifneq ($(USE_MPG123),)
 MODULES   += rst
 endif
