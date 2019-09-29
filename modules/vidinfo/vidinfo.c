@@ -85,7 +85,7 @@ static int decode_update(struct vidfilt_dec_st **stp, void **ctx,
 static int decode(struct vidfilt_dec_st *_st, struct vidframe *frame,
 		  uint64_t *timestamp)
 {
-	struct vidinfo_dec *st = (struct vidinfo_dec *)_st;
+	struct vidinfo_dec *st = (struct vidinfo_dec *)(void *)_st;
 
 	if (!st)
 		return EINVAL;
