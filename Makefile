@@ -152,8 +152,12 @@ endif
 ifneq ($(STATIC),)
 LIBS      += $(MOD_LFLAGS)
 else
-#LIBS      += -L$(SYSROOT)/local/lib
-#MOD_LFLAGS += -L$(SYSROOT)/local/lib
+
+ifneq ($(SYSROOT_LOCAL),)
+LIBS      += -L$(SYSROOT_LOCAL)/lib
+MOD_LFLAGS += -L$(SYSROOT_LOCAL)/lib
+endif
+
 endif
 
 LIBS      += -lrem -lm
