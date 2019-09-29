@@ -743,8 +743,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
-		stream_set_error_handler(strm, stream_mnatconn_handler,
-					 stream_error_handler, call);
+		stream_set_session_handlers(strm, stream_mnatconn_handler,
+					    stream_error_handler, call);
 	}
 
 	if (cfg->avt.rtp_timeout) {

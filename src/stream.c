@@ -92,9 +92,8 @@ static void stream_close(struct stream *strm, int err)
 	strm->terminated = true;
 	strm->errorh = NULL;
 
-	if (errorh) {
-		errorh(strm, err, strm->errorh_arg);
-	}
+	if (errorh)
+		errorh(strm, err, strm->sess_arg);
 }
 
 
@@ -452,7 +451,7 @@ static void mnat_connected_handler(const struct sa *raddr1,
 		stream_start(strm);
 
 		if (strm->mnatconnh)
-			strm->mnatconnh(strm, strm->errorh_arg);
+			strm->mnatconnh(strm, strm->sess_arg);
 	}
 }
 
@@ -808,16 +807,16 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 }
 
 
-void stream_set_error_handler(struct stream *strm,
-			      stream_mnatconn_h *mnatconnh,
-			      stream_error_h *errorh, void *arg)
+void stream_set_session_handlers(struct stream *strm,
+				 stream_mnatconn_h *mnatconnh,
+				 stream_error_h *errorh, void *arg)
 {
 	if (!strm)
 		return;
 
 	strm->mnatconnh  = mnatconnh;
 	strm->errorh     = errorh;
-	strm->errorh_arg = arg;
+	strm->sess_arg   = arg;
 }
 
 
