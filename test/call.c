@@ -1325,7 +1325,7 @@ int test_call_aufilt(void)
 {
 	int err;
 
-	mock_aufilt_register();
+	mock_aufilt_register(baresip_aufiltl());
 
 	err = test_media_base(AUDIO_MODE_POLL);
 	ASSERT_EQ(0, err);

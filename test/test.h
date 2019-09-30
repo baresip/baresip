@@ -154,7 +154,7 @@ int mock_auplay_register(struct auplay **auplayp, struct list *auplayl,
  */
 
 
-void mock_aufilt_register(void);
+void mock_aufilt_register(struct list *aufiltl);
 void mock_aufilt_unregister(void);
 
 

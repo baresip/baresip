@@ -64,9 +64,9 @@ static struct aufilt af_dummy = {
 };
 
 
-void mock_aufilt_register(void)
+void mock_aufilt_register(struct list *aufiltl)
 {
-	aufilt_register(baresip_aufiltl(), &af_dummy);
+	aufilt_register(aufiltl, &af_dummy);
 }
 
 
