@@ -1131,7 +1131,8 @@ struct mnat_sess;
 typedef void (audio_event_h)(int key, bool end, void *arg);
 typedef void (audio_err_h)(int err, const char *str, void *arg);
 
-int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
+int audio_alloc(struct audio **ap, struct list *streaml,
+		const struct stream_param *stream_prm,
 		const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,

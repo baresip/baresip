@@ -1119,7 +1119,8 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
  *
  * @return 0 if success, otherwise errorcode
  */
-int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
+int audio_alloc(struct audio **ap, struct list *streaml,
+		const struct stream_param *stream_prm,
 		const struct config *cfg,
 		struct call *call, struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
@@ -1159,7 +1160,8 @@ int audio_alloc(struct audio **ap, const struct stream_param *stream_prm,
 	tx->enc_fmt = cfg->audio.enc_fmt;
 	rx->dec_fmt = cfg->audio.dec_fmt;
 
-	err = stream_alloc(&a->strm, stream_prm, &cfg->avt, call, sdp_sess,
+	err = stream_alloc(&a->strm, streaml,
+			   stream_prm, &cfg->avt, call, sdp_sess,
 			   MEDIA_AUDIO, label,
 			   mnat, mnat_sess, menc, menc_sess, offerer,
 			   stream_recv_handler, NULL, a);

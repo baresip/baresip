@@ -706,7 +706,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	}
 
 	/* Audio stream */
-	err = audio_alloc(&call->audio, &stream_prm, cfg, call,
+	err = audio_alloc(&call->audio, &call->streaml, &stream_prm, cfg, call,
 			  call->sdp, ++label,
 			  acc->mnat, call->mnats, acc->menc, call->mencs,
 			  acc->ptime, account_aucodecl(call->acc), !got_offer,
@@ -725,7 +725,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	/* Video stream */
 	if (use_video) {
-		err = video_alloc(&call->video, &stream_prm, cfg,
+		err = video_alloc(&call->video, &call->streaml,
+				  &stream_prm, cfg,
 				  call, call->sdp, ++label,
 				  acc->mnat, call->mnats,
 				  acc->menc, call->mencs,

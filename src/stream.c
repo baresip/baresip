@@ -456,7 +456,8 @@ static void mnat_connected_handler(const struct sa *raddr1,
 }
 
 
-int stream_alloc(struct stream **sp, const struct stream_param *prm,
+int stream_alloc(struct stream **sp, struct list *streaml,
+		 const struct stream_param *prm,
 		 const struct config_avt *cfg,
 		 struct call *call, struct sdp_session *sdp_sess,
 		 enum media_type type, int label,
@@ -565,7 +566,7 @@ int stream_alloc(struct stream **sp, const struct stream_param *prm,
 	metric_init(&s->metric_tx);
 	metric_init(&s->metric_rx);
 
-	list_append(call_streaml(call), &s->le, s);
+	list_append(streaml, &s->le, s);
 
  out:
 	if (err)

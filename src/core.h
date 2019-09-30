@@ -343,7 +343,8 @@ struct stream {
 	void *sess_arg;          /**< Session handlers argument             */
 };
 
-int  stream_alloc(struct stream **sp, const struct stream_param *prm,
+int  stream_alloc(struct stream **sp, struct list *streaml,
+		  const struct stream_param *prm,
 		  const struct config_avt *cfg,
 		  struct call *call, struct sdp_session *sdp_sess,
 		  enum media_type type, int label,
@@ -392,7 +393,8 @@ struct video;
 
 typedef void (video_err_h)(int err, const char *str, void *arg);
 
-int  video_alloc(struct video **vp, const struct stream_param *stream_prm,
+int  video_alloc(struct video **vp, struct list *streaml,
+		 const struct stream_param *stream_prm,
 		 const struct config *cfg,
 		 struct call *call, struct sdp_session *sdp_sess, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
