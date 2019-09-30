@@ -145,7 +145,7 @@ struct auplay;
 
 typedef void (mock_sample_h)(const void *sampv, size_t sampc, void *arg);
 
-int mock_auplay_register(struct auplay **auplayp,
+int mock_auplay_register(struct auplay **auplayp, struct list *auplayl,
 			 mock_sample_h *sampleh, void *arg);
 
 

@@ -848,7 +848,8 @@ int test_call_aulevel(void)
 
 	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, mock_sample_handler, f);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   mock_sample_handler, f);
 	TEST_ERR(err);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -959,7 +960,8 @@ static int test_media_base(enum audio_mode txmode)
 
 	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, audio_sample_handler, f);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   audio_sample_handler, f);
 	TEST_ERR(err);
 
 	f->estab_action = ACTION_NOTHING;
@@ -1029,7 +1031,8 @@ int test_call_mediaenc(void)
 
 	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, audio_sample_handler, f);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   audio_sample_handler, f);
 	TEST_ERR(err);
 
 	f->estab_action = ACTION_NOTHING;
@@ -1085,7 +1088,8 @@ int test_call_medianat(void)
 
 	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, audio_sample_handler, f);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   audio_sample_handler, f);
 	TEST_ERR(err);
 
 	f->estab_action = ACTION_NOTHING;
