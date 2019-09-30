@@ -134,7 +134,7 @@ void mock_aucodec_unregister(void);
 
 struct ausrc;
 
-int mock_ausrc_register(struct ausrc **ausrcp);
+int mock_ausrc_register(struct ausrc **ausrcp, struct list *ausrcl);
 
 
 /*

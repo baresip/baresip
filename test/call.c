@@ -711,7 +711,7 @@ int test_call_dtmf(void)
 	fixture_init_prm(f, ";ptime=1");
 
 	/* audio-source is needed for dtmf/telev to work */
-	err = mock_ausrc_register(&ausrc);
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -846,7 +846,7 @@ int test_call_aulevel(void)
 
 	conf_config()->audio.level = true;
 
-	err = mock_ausrc_register(&ausrc);
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, mock_sample_handler, f);
 	TEST_ERR(err);
@@ -957,7 +957,7 @@ static int test_media_base(enum audio_mode txmode)
 	conf_config()->audio.src_fmt = AUFMT_FLOAT;
 	conf_config()->audio.play_fmt = AUFMT_FLOAT;
 
-	err = mock_ausrc_register(&ausrc);
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, audio_sample_handler, f);
 	TEST_ERR(err);
@@ -1027,7 +1027,7 @@ int test_call_mediaenc(void)
 
 	ASSERT_STREQ("xrtp", account_mediaenc(ua_account(f->a.ua)));
 
-	err = mock_ausrc_register(&ausrc);
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, audio_sample_handler, f);
 	TEST_ERR(err);
@@ -1083,7 +1083,7 @@ int test_call_medianat(void)
 
 	ASSERT_STREQ("XNAT", account_medianat(ua_account(f->a.ua)));
 
-	err = mock_ausrc_register(&ausrc);
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, audio_sample_handler, f);
 	TEST_ERR(err);
