@@ -91,6 +91,7 @@ int vidinfo_draw_box(struct vidframe *frame, uint64_t timestamp,
 {
 	const struct vidcodec *vc;
 	struct stream *strm;
+	const struct rtcp_stats *rtcp;
 	struct vidpt pos = {x0+2, y0+2};
 	int64_t dur;
 
@@ -104,12 +105,10 @@ int vidinfo_draw_box(struct vidframe *frame, uint64_t timestamp,
 	draw_text(frame, &pos,
 		  "[%H]\n"
 		  "Resolution:   %u x %u\n"
-		  "Pixel format: %s\n"
 		  "Framerate:    %.1f\n"
 		  ,
 		  fmt_gmtime, NULL,
 		  frame->size.w, frame->size.h,
-		  vidfmt_name(frame->fmt),
 		  (double)VIDEO_TIMEBASE / (double)dur);
 
 	vc = video_codec(vid, false);
@@ -118,11 +117,18 @@ int vidinfo_draw_box(struct vidframe *frame, uint64_t timestamp,
 	}
 
 	strm = video_strm(vid);
-	if (strm) {
-		const struct rtcp_stats *rtcp = stream_rtcp_stats(strm);
+	rtcp = stream_rtcp_stats(strm);
+	if (rtcp && rtcp->rx.sent) {
 
-		draw_text(frame, &pos, "Jitter:       %.1f ms\n",
-			  (double)rtcp->rx.jit * .001);
+		double loss;
+
+		loss = 100.0 * (double)rtcp->rx.lost / (double)rtcp->rx.sent;
+
+		draw_text(frame, &pos,
+			  "Jitter:       %.1f ms\n"
+			  "Packetloss:   %.2f %%\n"
+			  ,
+			  (double)rtcp->rx.jit * .001, loss);
 	}
 
 	return 0;
