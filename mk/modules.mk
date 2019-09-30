@@ -74,10 +74,12 @@ USE_AMR   := $(shell [ -d $(SYSROOT)/include/opencore-amrnb ] || \
 	[ -d $(SYSROOT)/local/include/amrnb ] || \
 	[ -d $(SYSROOT)/include/amrnb ] && echo "yes")
 USE_AVCODEC := $(shell [ -f $(SYSROOT)/include/libavcodec/avcodec.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT)/local/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavcodec/avcodec.h ] && echo "yes")
 USE_AVFORMAT := $(shell [ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/local/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ] && echo "yes")
