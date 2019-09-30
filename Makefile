@@ -35,6 +35,12 @@ LIBRE_MK  := $(shell [ -f /usr/local/share/re/re.mk ] && \
 endif
 endif
 
+
+ifeq ($(SYSROOT_LOCAL),)
+SYSROOT_LOCAL := $(shell [ -d /usr/local/include ] && echo "/usr/local")
+endif
+
+
 include $(LIBRE_MK)
 include mk/modules.mk
 
@@ -43,14 +49,26 @@ LIBREM_PATH	:= $(shell [ -d ../rem ] && echo "../rem")
 endif
 
 
-CFLAGS    += -I. -Iinclude -I$(LIBRE_INC) -I$(SYSROOT)/include
+CFLAGS    += -I. -Iinclude -I$(LIBRE_INC)
+ifneq ($(LIBREM_PATH),)
 CFLAGS    += -I$(LIBREM_PATH)/include
+endif
 CFLAGS    += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
+ifneq ($(SYSROOT_LOCAL),)
+CFLAGS    += -I$(SYSROOT_LOCAL)/include/rem
+endif
+
 
 CXXFLAGS  += -I. -Iinclude -I$(LIBRE_INC)
+ifneq ($(LIBREM_PATH),)
 CXXFLAGS  += -I$(LIBREM_PATH)/include
+endif
 CXXFLAGS  += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
+ifneq ($(SYSROOT_LOCAL),)
+CXXFLAGS  += -I$(SYSROOT_LOCAL)/include/rem
+endif
 CXXFLAGS  += $(EXTRA_CXXFLAGS)
+
 
 # XXX: common for C/C++
 CPPFLAGS += -DHAVE_INTTYPES_H
@@ -134,12 +152,16 @@ endif
 ifneq ($(STATIC),)
 LIBS      += $(MOD_LFLAGS)
 else
-LIBS      += -L$(SYSROOT)/local/lib
-MOD_LFLAGS += -L$(SYSROOT)/local/lib
+
+ifneq ($(SYSROOT_LOCAL),)
+LIBS      += -L$(SYSROOT_LOCAL)/lib
+MOD_LFLAGS += -L$(SYSROOT_LOCAL)/lib
+endif
+
 endif
 
 LIBS      += -lrem -lm
-LIBS      += -L$(SYSROOT)/lib
+#LIBS      += -L$(SYSROOT)/lib
 
 ifeq ($(OS),win32)
 TEST_LIBS += -static-libgcc
