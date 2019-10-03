@@ -1048,6 +1048,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		struct ausrc_prm prm;
 		size_t sz;
 		size_t psize_alloc;
+		uint32_t maxsz = 30;
 
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
@@ -1086,7 +1087,8 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		tx->psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 		if (psize_alloc != tx->psize) {
 			tx->ausrc_prm = prm;
-			tx->aubuf_maxsz = tx->psize * 30;
+			conf_get_u32(conf_cur(), "audio_aubufmaxsize_tx", &maxsz);
+			tx->aubuf_maxsz = tx->psize * maxsz;
 			err = aubuf_resize(tx->aubuf, tx->psize,
 					   tx->aubuf_maxsz);
 			if (err) {
