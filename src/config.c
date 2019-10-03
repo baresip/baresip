@@ -891,6 +891,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "auenc_format\t\ts16\t\t# s16, float, ..\n"
 			  "audec_format\t\ts16\t\t# s16, float, ..\n"
 			  "audio_buffer\t\t%H\t\t# ms\n"
+			  "#audio_buffer_tx\t20-120\t\t# ms\n"
 			  "audio_buffer_mode\t%s\t\t# fixed, adaptive\n"
 			  "audio_silence\t\t%.1lf\t\t# in [dB]\n"
 			  "audio_telev_pt\t\t%u\t\t"
