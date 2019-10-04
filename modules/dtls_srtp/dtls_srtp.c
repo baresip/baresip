@@ -300,7 +300,10 @@ static int component_start(struct comp *comp, const struct sa *raddr)
 
 		if (comp->ds->active && !comp->tls_conn) {
 
-			info("dtls_srtp: dtls connect to %J\n", raddr);
+			info("dtls_srtp: '%s,%s' dtls connect to %J\n",
+			     sdp_media_name(comp->ds->sdpm),
+			     comp->is_rtp ? "RTP" : "RTCP",
+			     raddr);
 
 			err = dtls_connect(&comp->tls_conn, tls,
 					   comp->dtls_sock, raddr,
