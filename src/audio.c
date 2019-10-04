@@ -1339,7 +1339,7 @@ static int autx_print_pipeline(struct re_printf *pf, const struct autx *autx)
 		return 0;
 
 	err = re_hprintf(pf, "audio tx pipeline:  %10s",
-			 autx->ausrc ? autx->ausrc->as->name : "src");
+			 autx->ausrc ? autx->ausrc->as->name : "(src)");
 
 	for (le = list_head(&autx->filtl); le; le = le->next) {
 		struct aufilt_enc_st *st = le->data;
@@ -1349,7 +1349,7 @@ static int autx_print_pipeline(struct re_printf *pf, const struct autx *autx)
 	}
 
 	err |= re_hprintf(pf, " ---> %s\n",
-			  autx->ac ? autx->ac->name : "encoder");
+			  autx->ac ? autx->ac->name : "(encoder)");
 
 	return err;
 }
@@ -1364,7 +1364,7 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *aurx)
 		return 0;
 
 	err = re_hprintf(pf, "audio rx pipeline:  %10s",
-			 aurx->auplay ? aurx->auplay->ap->name : "play");
+			 aurx->auplay ? aurx->auplay->ap->name : "(play)");
 
 	for (le = list_head(&aurx->filtl); le; le = le->next) {
 		struct aufilt_dec_st *st = le->data;
@@ -1374,7 +1374,7 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *aurx)
 	}
 
 	err |= re_hprintf(pf, " <--- %s\n",
-			  aurx->ac ? aurx->ac->name : "decoder");
+			  aurx->ac ? aurx->ac->name : "(decoder)");
 
 	return err;
 }
