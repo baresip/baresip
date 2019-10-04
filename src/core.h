@@ -178,13 +178,6 @@ int mctrl_handle_media_control(struct pl *body, bool *pfu);
 
 
 /*
- * Media NAT traversal
- */
-
-const struct mnat *mnat_find(const struct list *mnatl, const char *id);
-
-
-/*
  * Metric
  */
 

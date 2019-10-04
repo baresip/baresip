@@ -1244,6 +1244,7 @@ struct mnat {
 
 void mnat_register(struct list *mnatl, struct mnat *mnat);
 void mnat_unregister(struct mnat *mnat);
+const struct mnat *mnat_find(const struct list *mnatl, const char *id);
 
 
 /*
