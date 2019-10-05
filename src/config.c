@@ -43,7 +43,6 @@ static struct config core_config = {
 		0,
 		0,
 		0,
-		false,
 		AUDIO_MODE_POLL,
 		false,
 		AUFMT_S16LE,
@@ -198,7 +197,7 @@ static int conf_get_vidfmt(const struct conf *conf, const char *name,
  */
 int config_parse_conf(struct config *cfg, const struct conf *conf)
 {
-	struct pl pollm, as, ap;
+	struct pl pollm;
 	enum poll_method method;
 	struct vidsz size = {0, 0};
 	struct pl txmode;
@@ -259,10 +258,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_u32(conf, "auplay_srate", &cfg->audio.srate_play);
 	(void)conf_get_u32(conf, "ausrc_channels", &cfg->audio.channels_src);
 	(void)conf_get_u32(conf, "auplay_channels", &cfg->audio.channels_play);
-
-	if (0 == conf_get(conf, "audio_source", &as) &&
-	    0 == conf_get(conf, "audio_player", &ap))
-		cfg->audio.src_first = as.p < ap.p;
 
 	if (0 == conf_get(conf, "audio_txmode", &txmode)) {
 

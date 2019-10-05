@@ -1675,15 +1675,8 @@ int audio_start(struct audio *a)
 			return err;
 	}
 
-	/* configurable order of play/src start */
-	if (a->cfg.src_first) {
-		err  = start_source(&a->tx, a);
-		err |= start_player(&a->rx, a);
-	}
-	else {
-		err  = start_player(&a->rx, a);
-		err |= start_source(&a->tx, a);
-	}
+	err  = start_player(&a->rx, a);
+	err |= start_source(&a->tx, a);
 	if (err)
 		return err;
 
