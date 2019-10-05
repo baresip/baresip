@@ -1049,7 +1049,7 @@ int video_start(struct video *v, const char *peer)
 		return EINVAL;
 
 	if (peer) {
-		mem_deref(v->peer);
+		v->peer = mem_deref(v->peer);
 		err = str_dup(&v->peer, peer);
 		if (err)
 			return err;
