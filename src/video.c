@@ -887,6 +887,8 @@ int video_alloc(struct video **vp, struct list *streaml,
 	if (vidisp_find(baresip_vidispl(), NULL) == NULL)
 		sdp_media_set_ldir(v->strm->sdp, SDP_SENDONLY);
 
+	stream_set_srate(v->strm, VIDEO_SRATE, VIDEO_SRATE);
+
 	if (cfg->avt.rtp_bw.max >= AUDIO_BANDWIDTH) {
 		stream_set_bw(v->strm, cfg->avt.rtp_bw.max - AUDIO_BANDWIDTH);
 	}
@@ -1052,8 +1054,6 @@ int video_start(struct video *v, const char *peer)
 		if (err)
 			return err;
 	}
-
-	stream_set_srate(v->strm, VIDEO_SRATE, VIDEO_SRATE);
 
 	if (vidisp_find(baresip_vidispl(), NULL)) {
 		err = set_vidisp(&v->vrx);
