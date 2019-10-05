@@ -393,7 +393,7 @@ int  video_alloc(struct video **vp, struct list *streaml,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
 		 const char *content, const struct list *vidcodecl,
-		 bool offerer,
+		 const struct list *vidfiltl, bool offerer,
 		 video_err_h *errh, void *arg);
 int  video_start(struct video *v, const char *peer);
 void video_stop(struct video *v);

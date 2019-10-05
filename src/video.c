@@ -857,6 +857,7 @@ int video_alloc(struct video **vp, struct list *streaml,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		const char *content, const struct list *vidcodecl,
+		const struct list *vidfiltl,
 		bool offerer,
 		video_err_h *errh, void *arg)
 {
@@ -924,7 +925,7 @@ int video_alloc(struct video **vp, struct list *streaml,
 	}
 
 	/* Video filters */
-	for (le = list_head(baresip_vidfiltl()); le; le = le->next) {
+	for (le = list_head(vidfiltl); le; le = le->next) {
 		struct vidfilt *vf = le->data;
 		struct vidfilt_prm prm;
 		void *ctx = NULL;
@@ -1413,10 +1414,10 @@ int video_debug(struct re_printf *pf, const struct video *v)
 	if (err)
 		return err;
 
-	if (!list_isempty(baresip_vidfiltl())) {
+	if (!list_isempty(&vtx->filtl))
 		err |= vtx_print_pipeline(pf, vtx);
+	if (!list_isempty(&vrx->filtl))
 		err |= vrx_print_pipeline(pf, vrx);
-	}
 
 	err |= stream_debug(pf, v->strm);
 
