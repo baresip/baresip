@@ -1,0 +1,24 @@
+Strategy guide line for 2020
+============================
+
+- integrate proxy selection
+	- parallel mode
+	- serial mode
+	- Cisco mode (e.g. on the fly hand over)
+	- UA prio
+
+- multicast rtpplay/rtpsend --> module, filter
+	- prio handling
+	- call on hold for prio 1-2 multicast
+	- ONVIF, LS-mic, audiomonitoring, multicast through idle pipe
+
+
+Command & Control
+=================
+
+- add prio to INVITE message
+	- write RFC draft
+	- implement in baresip
+
+- add auto-answer to INVITE (Siemens server)
+
