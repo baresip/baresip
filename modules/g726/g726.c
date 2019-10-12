@@ -155,29 +155,57 @@ static int decode(struct audec_state *st, int fmt, void *sampv,
 static struct g726_aucodec g726[4] = {
 	{
 		{
-			LE_INIT, 0, "G726-40", 8000, 8000, 1, 1, NULL,
-			encode_update, encode, decode_update, decode, 0, 0, 0
+			.name    = "G726-40",
+			.srate   = 8000,
+			.crate   = 8000,
+			.ch      = 1,
+			.pch     = 1,
+			.encupdh = encode_update,
+			.ench    = encode,
+			.decupdh = decode_update,
+			.dech    = decode,
 		},
 		40000
 	},
 	{
 		{
-			LE_INIT, 0, "G726-32", 8000, 8000, 1, 1, NULL,
-			encode_update, encode, decode_update, decode, 0, 0, 0
+			.name    = "G726-32",
+			.srate   = 8000,
+			.crate   = 8000,
+			.ch      = 1,
+			.pch     = 1,
+			.encupdh = encode_update,
+			.ench    = encode,
+			.decupdh = decode_update,
+			.dech    = decode,
 		},
 		32000
 	},
 	{
 		{
-			LE_INIT, 0, "G726-24", 8000, 8000, 1, 1, NULL,
-			encode_update, encode, decode_update, decode, 0, 0, 0
+			.name    = "G726-24",
+			.srate   = 8000,
+			.crate   = 8000,
+			.ch      = 1,
+			.pch     = 1,
+			.encupdh = encode_update,
+			.ench    = encode,
+			.decupdh = decode_update,
+			.dech    = decode,
 		},
 		24000
 	},
 	{
 		{
-			LE_INIT, 0, "G726-16", 8000, 8000, 1, 1, NULL,
-			encode_update, encode, decode_update, decode, 0, 0, 0
+			.name    = "G726-16",
+			.srate   = 8000,
+			.crate   = 8000,
+			.ch      = 1,
+			.pch     = 1,
+			.encupdh = encode_update,
+			.ench    = encode,
+			.decupdh = decode_update,
+			.dech    = decode,
 		},
 		16000
 	}
