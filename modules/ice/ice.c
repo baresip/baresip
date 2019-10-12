@@ -24,7 +24,6 @@
   ice_turn        {yes,no}             # Enable TURN candidates
   ice_debug       {yes,no}             # Enable ICE debugging/tracing
   ice_nomination  {regular,aggressive} # Regular or aggressive nomination
-  ice_mode        {full,lite}          # Full ICE-mode or ICE-lite
  \endverbatim
  */
 
