@@ -117,13 +117,25 @@ static int pcma_decode(struct audec_state *ads, int fmt, void *sampv,
 
 
 static struct aucodec pcmu = {
-	LE_INIT, "0", "PCMU", 8000, 8000, 1, 1, NULL,
-	NULL, pcmu_encode, NULL, pcmu_decode, NULL, NULL, NULL
+	.pt    = "0",
+	.name  = "PCMU",
+	.srate = 8000,
+	.crate = 8000,
+	.ch    = 1,
+	.pch   = 1,
+	.ench  = pcmu_encode,
+	.dech  = pcmu_decode,
 };
 
 static struct aucodec pcma = {
-	LE_INIT, "8", "PCMA", 8000, 8000, 1, 1, NULL,
-	NULL, pcma_encode, NULL, pcma_decode, NULL, NULL, NULL
+	.pt    = "8",
+	.name  = "PCMA",
+	.srate = 8000,
+	.crate = 8000,
+	.ch    = 1,
+	.pch   = 1,
+	.ench  = pcma_encode,
+	.dech  = pcma_decode,
 };
 
 
