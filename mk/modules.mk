@@ -70,6 +70,7 @@ USE_AAC  := $(shell [ -f $(SYSROOT)/include/fdk-aac/FDK_audio.h ] || \
 USE_ALSA  := $(shell [ -f $(SYSROOT)/include/alsa/asoundlib.h ] || \
 	[ -f $(SYSROOT_ALT)/include/alsa/asoundlib.h ] && echo "yes")
 USE_AMR   := $(shell [ -d $(SYSROOT)/include/opencore-amrnb ] || \
+	[ -d $(SYSROOT_LOCAL)/include/opencore-amrnb ] || \
 	[ -d $(SYSROOT_ALT)/include/opencore-amrnb ] || \
 	[ -d $(SYSROOT)/local/include/amrnb ] || \
 	[ -d $(SYSROOT)/include/amrnb ] && echo "yes")
