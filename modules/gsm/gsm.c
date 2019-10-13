@@ -156,8 +156,16 @@ static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 
 
 static struct aucodec ac_gsm = {
-	LE_INIT, "3", "GSM", 8000, 8000, 1, 1, NULL,
-	encode_update, encode, decode_update, decode, NULL, NULL, NULL
+	.pt      = "3",
+	.name    = "GSM",
+	.srate   = 8000,
+	.crate   = 8000,
+	.ch      = 1,
+	.pch     = 1,
+	.encupdh = encode_update,
+	.ench    = encode,
+	.decupdh = decode_update,
+	.dech    = decode,
 };
 
 
