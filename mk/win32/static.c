@@ -2,39 +2,38 @@
 #include <re_types.h>
 #include <re_mod.h>
 
-extern const struct mod_export exports_cons;
-extern const struct mod_export exports_wincons;
-extern const struct mod_export exports_g711;
-extern const struct mod_export exports_winwave;
-extern const struct mod_export exports_dshow;
 extern const struct mod_export exports_account;
-extern const struct mod_export exports_contact;
-extern const struct mod_export exports_menu;
 extern const struct mod_export exports_auloop;
-extern const struct mod_export exports_vidloop;
-extern const struct mod_export exports_uuid;
+extern const struct mod_export exports_contact;
+extern const struct mod_export exports_dshow;
+extern const struct mod_export exports_g711;
+extern const struct mod_export exports_httpd;
+extern const struct mod_export exports_ice;
+extern const struct mod_export exports_menu;
 extern const struct mod_export exports_stun;
 extern const struct mod_export exports_turn;
-extern const struct mod_export exports_ice;
+extern const struct mod_export exports_uuid;
+extern const struct mod_export exports_vidloop;
 extern const struct mod_export exports_vumeter;
-extern const struct mod_export exports_httpd;
+extern const struct mod_export exports_wincons;
+extern const struct mod_export exports_winwave;
 
 
 const struct mod_export *mod_table[] = {
-	&exports_wincons,
-	&exports_g711,
-	&exports_winwave,
-	&exports_dshow,
 	&exports_account,
-	&exports_contact,
-	&exports_menu,
 	&exports_auloop,
-	&exports_vidloop,
-	&exports_uuid,
+	&exports_contact,
+	&exports_dshow,
+	&exports_g711,
+	&exports_httpd,
+	&exports_ice,
+	&exports_menu,
 	&exports_stun,
 	&exports_turn,
-	&exports_ice,
+	&exports_uuid,
+	&exports_vidloop,
 	&exports_vumeter,
-	&exports_httpd,
+	&exports_wincons,
+	&exports_winwave,
 	NULL
 };
