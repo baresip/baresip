@@ -131,7 +131,7 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 
 	(void)unused;
 
-	err = re_hprintf(pf, "\n--- Useragents: %u ---\n",
+	err = re_hprintf(pf, "\n--- User Agents (%u) ---\n",
 			 list_count(uag_list()));
 
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
