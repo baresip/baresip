@@ -1732,7 +1732,7 @@ int ua_print_calls(struct re_printf *pf, const struct ua *ua)
 
 	n = list_count(&ua->calls);
 
-	err |= re_hprintf(pf, "\n--- List of active calls (%u): ---\n",
+	err |= re_hprintf(pf, "\n--- Active calls (%u) ---\n",
 			  n);
 
 	for (linenum=CALL_LINENUM_MIN; linenum<CALL_LINENUM_MAX; linenum++) {
