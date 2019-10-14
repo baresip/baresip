@@ -325,7 +325,7 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 
 	lst = contact_list(contacts);
 
-	err = re_hprintf(pf, "\n--- Contacts: (%u) ---\n",
+	err = re_hprintf(pf, "\n--- Contacts (%u) ---\n",
 			 list_count(lst));
 
 	for (le = list_head(lst); le && !err; le = le->next) {
