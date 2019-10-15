@@ -4,6 +4,9 @@
 # Copyright (C) 2010 Creytiv.com
 #
 
+# opencore-amr source directory
+AMR_PATH ?= ../amr
+
 MOD		:= amr
 $(MOD)_SRCS	+= amr.c sdp.c
 
@@ -27,6 +30,11 @@ else
 ifneq ($(shell [ -d $(SYSROOT)/include/amrnb ] && echo 1),)
 $(MOD)_CFLAGS	+= -DAMR_NB=1 -I$(SYSROOT)/include/amrnb
 $(MOD)_LFLAGS	+= -lamrnb
+else
+ifneq ($(shell [ -d $(AMR_PATH)/include/opencore-amrnb ] && echo 1),)
+$(MOD)_CFLAGS	+= -DAMR_NB=1 -I$(AMR_PATH)/include/opencore-amrnb
+$(MOD)_LFLAGS	+= -lamrnb
+endif
 endif
 endif
 endif
