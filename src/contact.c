@@ -331,14 +331,14 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 	for (le = list_head(lst); le && !err; le = le->next) {
 		const struct contact *c = le->data;
 
-		err = re_hprintf(pf, "%s", c == contacts->cur ? ">" : " ");
+		err = re_hprintf(pf, "%s ", c == contacts->cur ? ">" : " ");
 
 		if (contacts->enable_presence) {
-			err |= re_hprintf(pf, "  %20s",
+			err |= re_hprintf(pf, "%20s ",
 					  contact_presence_str(c->status));
 		}
 
-		err |= re_hprintf(pf, "  %H\n", contact_print, c);
+		err |= re_hprintf(pf, "%H\n", contact_print, c);
 	}
 
 	err |= re_hprintf(pf, "\n");
