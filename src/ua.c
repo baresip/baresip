@@ -1743,8 +1743,8 @@ int ua_print_calls(struct re_printf *pf, const struct ua *ua)
 		if (call) {
 			++count;
 
-			err |= re_hprintf(pf, "  %c %H\n",
-					  call == ua_call(ua) ? '>' : ' ',
+			err |= re_hprintf(pf, "%s %H\n",
+					  call == ua_call(ua) ? ">" : " ",
 					  call_info, call);
 		}
 
