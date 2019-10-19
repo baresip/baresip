@@ -63,7 +63,7 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 }
 
 
-static int new_session(struct call *call)
+static int new_session(struct ua *ua, struct call *call)
 {
 	struct session *sess;
 	char a[64];
@@ -84,7 +84,7 @@ static int new_session(struct call *call)
 			call_dtmf_handler, sess);
 
 	list_append(&sessionl, &sess->le, sess);
-	ua_answer(uag_current(), NULL);
+	err = ua_answer(ua, call);
 
 	if (err)
 		mem_deref(sess);
@@ -107,7 +107,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				call_peeruri(call),
 				call_localuri(call));
 
-		err = new_session(call);
+		err = new_session(ua, call);
 		if (err) {
 			ua_hangup(ua, call, 500, "Server Error");
 		}
