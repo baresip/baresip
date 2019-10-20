@@ -65,7 +65,7 @@ USE_L16   := 1
 ifneq ($(OS),win32)
 
 USE_AAC  := $(shell [ -f $(SYSROOT)/include/fdk-aac/FDK_audio.h ] || \
-	[ -f $(SYSROOT)/local/include/fdk-aac/FDK_audio.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/fdk-aac/FDK_audio.h ] || \
 	[ -f $(SYSROOT_ALT)/include/fdk-aac/FDK_audio.h ] && echo "yes")
 USE_ALSA  := $(shell [ -f $(SYSROOT)/include/alsa/asoundlib.h ] || \
 	[ -f $(SYSROOT_ALT)/include/alsa/asoundlib.h ] && echo "yes")
