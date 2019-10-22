@@ -76,6 +76,8 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 	err = mod_add(&m, lookup_static_module(name));
 	if (!err)
 		goto out;
+	else
+		warning("could not load static module %r\n", name);
 #else
 	(void)namestr;
 #endif
