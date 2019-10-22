@@ -81,6 +81,9 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 		err = mod_add(&m, mex);
 		goto out;
 	}
+	else {
+		err = ENOENT;
+	}
 #else
 	(void)namestr;
 #endif
