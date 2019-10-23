@@ -224,7 +224,11 @@ static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 
 
 static struct aufilt vumeter = {
-	LE_INIT, "vumeter", encode_update, encode, decode_update, decode
+	.name    = "vumeter",
+	.encupdh = encode_update,
+	.ench    = encode,
+	.decupdh = decode_update,
+	.dech    = decode
 };
 
 

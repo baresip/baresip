@@ -105,7 +105,9 @@ static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 
 
 static struct aufilt plc = {
-	LE_INIT, "plc", NULL, NULL, update, decode
+	.name    = "plc",
+	.decupdh = update,
+	.dech    = decode
 };
 
 

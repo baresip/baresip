@@ -155,7 +155,9 @@ static void config_parse(struct conf *conf)
 
 
 static struct aufilt preproc = {
-	LE_INIT, "speex_pp", encode_update, encode, NULL, NULL
+	.name    = "speex_pp",
+	.encupdh = encode_update,
+	.ench    = encode,
 };
 
 static int module_init(void)

@@ -982,9 +982,11 @@ static int vu_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 
 
 static struct aufilt vumeter = {
-	LE_INIT, "gtk_vumeter",
-	vu_encode_update, vu_encode,
-	vu_decode_update, vu_decode
+	.name    = "gtk_vumeter",
+	.encupdh = vu_encode_update,
+	.ench    = vu_encode,
+	.decupdh = vu_decode_update,
+	.dech    = vu_decode
 };
 
 
