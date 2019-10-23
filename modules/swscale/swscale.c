@@ -169,7 +169,9 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame,
 
 
 static struct vidfilt vf_swscale = {
-	LE_INIT, "swscale", encode_update, encode_process, NULL, NULL
+	.name    = "swscale",
+	.encupdh = encode_update,
+	.ench    = encode_process,
 };
 
 

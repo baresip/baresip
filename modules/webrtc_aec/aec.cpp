@@ -147,9 +147,11 @@ void webrtc_aec_debug(const struct aec *aec)
 
 
 static struct aufilt webrtc_aec = {
-	LE_INIT, "webrtc_aec",
-	webrtc_aec_encode_update, webrtc_aec_encode,
-	webrtc_aec_decode_update, webrtc_aec_decode
+	.name    = "webrtc_aec",
+	.encupdh = webrtc_aec_encode_update,
+	.ench    = webrtc_aec_encode,
+	.decupdh = webrtc_aec_decode_update,
+	.dech    = webrtc_aec_decode
 };
 
 

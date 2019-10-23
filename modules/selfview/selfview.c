@@ -250,11 +250,16 @@ static int decode_pip(struct vidfilt_dec_st *st, struct vidframe *frame,
 
 
 static struct vidfilt selfview_win = {
-	LE_INIT, "selfview_window", encode_update, encode_win, NULL, NULL
+	.name    = "selfview_window",
+	.encupdh = encode_update,
+	.ench    = encode_win,
 };
 static struct vidfilt selfview_pip = {
-	LE_INIT, "selfview_pip",
-	encode_update, encode_pip, decode_update, decode_pip
+	.name    = "selfview_pip",
+	.encupdh = encode_update,
+	.ench    = encode_pip,
+	.decupdh = decode_update,
+	.dech    = decode_pip
 };
 
 
