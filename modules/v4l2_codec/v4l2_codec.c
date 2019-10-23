@@ -589,17 +589,12 @@ out:
 
 
 static struct vidcodec h264 = {
-	LE_INIT,
-	NULL,
-	"H264",
-	"packetization-mode=0",
-	NULL,
-	encode_update,
-	encode_packet,
-	NULL,
-	NULL,
-	h264_fmtp_enc,
-	h264_fmtp_cmp,
+	.name      = "H264",
+	.variant   = "packetization-mode=0",
+	.encupdh   = encode_update,
+	.ench      = encode_packet,
+	.fmtp_ench = h264_fmtp_enc,
+	.fmtp_cmph = h264_fmtp_cmp,
 };
 
 
