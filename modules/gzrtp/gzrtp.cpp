@@ -170,7 +170,10 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 
 
 static struct menc menc_zrtp = {
-	LE_INIT, "zrtp", "RTP/AVP", session_alloc, media_alloc
+	.id        = "zrtp",
+	.sdp_proto = "RTP/AVP",
+	.sessh     = session_alloc,
+	.mediah    = media_alloc
 };
 
 
