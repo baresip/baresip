@@ -746,9 +746,12 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	int err;
 	(void)extv;
 	(void)extc;
-	(void)lostc;
 
 	MAGIC_CHECK(v);
+
+	/* in case of packet loss, we need to receive a new keyframe */
+	if (lostc)
+		request_picture_update(&v->vrx);
 
 	if (!mb)
 		goto out;
