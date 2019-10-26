@@ -40,6 +40,7 @@ static struct {
 	uint32_t current_attempts;    /**< Current number of re-dials     */
 	uint64_t start_ticks;         /**< Ticks when app started         */
 	enum statmode statmode;       /**< Status mode                    */
+	char redial_aor[128];
 } menu;
 
 
@@ -1029,7 +1030,8 @@ static void redial_handler(void *arg)
 	if (err)
 		return;
 
-	err = ua_connect(uag_current(), NULL, NULL, uri, VIDMODE_ON);
+	err = ua_connect(uag_find_aor(menu.redial_aor), NULL, NULL,
+			 uri, VIDMODE_ON);
 	if (err) {
 		warning("menu: redial: ua_connect failed (%m)\n", err);
 	}
@@ -1143,6 +1145,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				     menu.redial_delay);
 
 				++menu.current_attempts;
+
+				str_ncpy(menu.redial_aor, ua_aor(ua),
+					 sizeof(menu.redial_aor));
 
 				tmr_start(&menu.tmr_redial,
 					  menu.redial_delay*1000,
