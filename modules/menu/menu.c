@@ -274,29 +274,8 @@ static int options_command(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
-	if (str_isset(carg->prm)) {
-
-		mbuf_rewind(menu.dialbuf);
-		(void)mbuf_write_str(menu.dialbuf, carg->prm);
-
-		err = ua_options_send(uag_current(), carg->prm,
-				      options_resp_handler, NULL);
-	}
-	else if (menu.dialbuf->end > 0) {
-
-		char *uri;
-
-		menu.dialbuf->pos = 0;
-		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
-		if (err)
-			return err;
-
-		err = ua_options_send(uag_current(), uri,
-				      options_resp_handler, NULL);
-
-		mem_deref(uri);
-	}
-
+	err = ua_options_send(uag_current(), carg->prm,
+			      options_resp_handler, NULL);
 	if (err) {
 		warning("menu: ua_options failed: %m\n", err);
 	}
@@ -344,7 +323,6 @@ static int create_ua(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = NULL;
-	struct le *le;
 	int err = 0;
 
 	if (str_isset(carg->prm)) {
@@ -359,14 +337,7 @@ static int create_ua(struct re_printf *pf, void *arg)
 		(void)ua_register(ua);
 	}
 
-	for (le = list_head(uag_list()); le && !err; le = le->next) {
-		ua = le->data;
-
-		err  = re_hprintf(pf, "%s ", ua == uag_current() ? ">" : " ");
-		err |= ua_print_status(pf, ua);
-	}
-
-	err |= re_hprintf(pf, "\n");
+	err = ua_print_reg_status(pf, NULL);
 
  out:
 	if (err) {
