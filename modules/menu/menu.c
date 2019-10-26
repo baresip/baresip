@@ -257,12 +257,12 @@ static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
 
 		mbuf_set_pos(msg->mb, 0);
 		info("----- OPTIONS of %r -----\n%b",
-		     &(msg->to.auri), mbuf_buf(msg->mb),
+		     &msg->to.auri, mbuf_buf(msg->mb),
 		     mbuf_get_left(msg->mb));
 		return;
 	}
 
-	info("%r: OPTIONS failed: %u %r\n", &(msg->to.auri),
+	info("%r: OPTIONS failed: %u %r\n", &msg->to.auri,
 	     msg->scode, &msg->reason);
 }
 
@@ -1064,7 +1064,6 @@ static void redial_handler(void *arg)
 	}
 
 	mem_deref(uri);
-
 }
 
 
