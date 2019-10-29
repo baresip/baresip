@@ -270,16 +270,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		}
 #endif
 
-		if (st->pict->key_frame) {
-
-			re_printf(">>> KEYFRAME <<<\n");
-
-			*intra = true;
-			st->got_keyframe = true;
-			++st->stats.n_key;
-		}
-
-
 		frame->fmt = avpixfmt_to_vidfmt(st->pict->format);
 		if (frame->fmt == (enum vidfmt)-1) {
 			warning("avcodec: decode: bad pixel format"
@@ -295,6 +285,13 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		}
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
+
+		if (st->pict->key_frame) {
+
+			*intra = true;
+			st->got_keyframe = true;
+			++st->stats.n_key;
+		}
 	}
 
  out:
