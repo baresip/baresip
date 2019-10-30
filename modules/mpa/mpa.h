@@ -35,3 +35,6 @@ int mpa_decode_frm(struct audec_state *ads,
 
 /* SDP */
 void mpa_decode_fmtp(struct mpa_param *prm, const char *fmtp);
+
+
+void mpa_mirror_params(const char *fmtp);
