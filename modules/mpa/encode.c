@@ -50,6 +50,13 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	if (!aesp || !ac || !ac->ch)
 		return EINVAL;
 
+	debug("mpa: encoder fmtp (%s)\n", fmtp);
+
+	/* Save the incoming MPA parameters from SDP offer */
+	if (str_isset(fmtp)) {
+		mpa_mirror_params(fmtp);
+	}
+
 	aes = *aesp;
 	if (!aes) {
 		aes = mem_zalloc(sizeof(*aes), destructor);

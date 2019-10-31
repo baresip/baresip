@@ -78,6 +78,29 @@
 */
 
 
+static bool mpa_mirror;
+static char fmtp[256] = "";
+static char fmtp_mirror[256];
+
+
+static int mpa_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
+			 bool offer, void *arg)
+{
+	bool mirror;
+
+	(void)arg;
+	(void)offer;
+
+	if (!mb || !fmt)
+		return 0;
+
+	mirror = !offer && str_isset(fmtp_mirror);
+
+	return mbuf_printf(mb, "a=fmtp:%s %s\r\n",
+			   fmt->id, mirror ? fmtp_mirror : fmtp);
+}
+
+
 static struct aucodec mpa = {
 	.pt        = "14",
 	.name      = "MPA",
@@ -94,11 +117,21 @@ static struct aucodec mpa = {
 };
 
 
+void mpa_mirror_params(const char *x)
+{
+	if (!mpa_mirror)
+		return;
+
+	info("mpa: mirror parameters: \"%s\"\n", x);
+
+	str_ncpy(fmtp_mirror, x, sizeof(fmtp_mirror));
+}
+
+
 static int module_init(void)
 {
 	struct conf *conf = conf_cur();
 	uint32_t value;
-	static char fmtp[256];
 	static char mode[30];
 	int res;
 
@@ -172,6 +205,13 @@ static int module_init(void)
 		mpa.fmtp = fmtp+1;
 	else
 		mpa.fmtp = fmtp;
+
+	(void)conf_get_bool(conf, "mpa_mirror", &mpa_mirror);
+
+	if (mpa_mirror) {
+		mpa.fmtp = NULL;
+		mpa.fmtp_ench = mpa_fmtp_enc;
+	}
 
 	/* init decoder library */
 	res = mpg123_init();
