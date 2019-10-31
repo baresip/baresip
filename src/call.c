@@ -2153,6 +2153,21 @@ struct call *call_find_linenum(const struct list *calls, uint32_t linenum)
 }
 
 
+struct call *call_find_id(const struct list *calls, const char *id)
+{
+	struct le *le;
+
+	for (le = list_head(calls); le; le = le->next) {
+		struct call *call = le->data;
+
+		if (0 == str_cmp(id, call->id))
+			return call;
+	}
+
+	return NULL;
+}
+
+
 /**
  * Set the current call
  *
