@@ -521,9 +521,9 @@ static int session_alloc(struct mnat_sess **sessp,
 {
 	struct mnat_sess *sess;
 	const char *usage;
-	int err;
+	int err = 0;
 
-	if (!sessp || !dnsc || !srv || !user || !pass || !ss || !estabh)
+	if (!sessp || !dnsc || !srv || !ss || !estabh)
 		return EINVAL;
 
 	info("ice: new session with %s-server at %s (username=%s)\n",
@@ -543,10 +543,12 @@ static int session_alloc(struct mnat_sess **sessp,
 	sess->estabh = estabh;
 	sess->arg    = arg;
 
-	err  = str_dup(&sess->user, user);
-	err |= str_dup(&sess->pass, pass);
-	if (err)
-		goto out;
+	if (user && pass) {
+		err  = str_dup(&sess->user, user);
+		err |= str_dup(&sess->pass, pass);
+		if (err)
+			goto out;
+	}
 
 	rand_str(sess->lufrag, sizeof(sess->lufrag));
 	rand_str(sess->lpwd,   sizeof(sess->lpwd));
