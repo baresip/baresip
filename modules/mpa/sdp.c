@@ -33,10 +33,10 @@ void mpa_decode_fmtp(struct mpa_param *prm, const char *fmtp)
 	pl_set_str(&pl, fmtp);
 
 	if (fmt_param_get(&pl, "bitrate", &val))
-		assign_if (&prm->bitrate, &val, 8000, 384000);
+		assign_if (&prm->bitrate, &val, 32000, 320000);
 
 	if (fmt_param_get(&pl, "samplerate", &val))
-		assign_if (&prm->samplerate, &val, 16000, 48000);
+		assign_if (&prm->samplerate, &val, 32000, 48000);
 
 	if (fmt_param_get(&pl, "layer", &val))
 		assign_if (&prm->layer, &val, 1, 3);
@@ -47,10 +47,10 @@ void mpa_decode_fmtp(struct mpa_param *prm, const char *fmtp)
 			prm->mode = STEREO;
 		else if (!strncmp("joint_stereo",val.p,val.l))
 			prm->mode = JOINT_STEREO;
-		else if (!strncmp("single_channel",val.p,val.l))
-			prm->mode = MONO;
 		else if (!strncmp("dual_channel",val.p,val.l))
 			prm->mode = DUAL_CHANNEL;
+		else if (!strncmp("single_channel",val.p,val.l))
+			prm->mode = MONO;
 	}
 }
 
