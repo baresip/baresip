@@ -139,15 +139,11 @@ static int module_init(void)
 
 	strcpy(mode,mpa.fmtp);
 
-	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
-		if (value<1 || value>4) {
-			warning("MPA layer 1, 2 or 3 are allowed.");
-			return EINVAL;
-		}
-		(void)re_snprintf(fmtp+strlen(fmtp),
-			sizeof(fmtp)-strlen(fmtp),
-			";layer=%d", value);
-	}
+	/* advertise layer 3 encoding only */
+	(void)re_snprintf(fmtp+strlen(fmtp),
+		sizeof(fmtp)-strlen(fmtp),
+		"layer=%d", 3);
+
 	if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
 
 		switch (value) {
