@@ -25,6 +25,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	struct odict *od = NULL;
 	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
 	char buf[256], resp_topic[256];
+	const char *aor, *callid;
 	int err;
 
 	err = json_decode_odict(&od, 32, msg->p, msg->l, 16);
@@ -40,6 +41,31 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	if (!oe_cmd) {
 		warning("mqtt: missing json entries\n");
 		goto out;
+	}
+
+	aor    = odict_string(od, "accountaor");
+	callid = odict_string(od, "callid");
+
+	if (aor) {
+		struct ua *ua = uag_find_aor(aor);
+		if (!ua) {
+			warning("mqtt: ua not found (%s)\n", aor);
+			goto out;
+		}
+
+		uag_current_set(ua);
+
+		if (callid) {
+			struct call *call;
+
+			call = call_find_id(ua_calls(ua), callid);
+			if (!call) {
+				warning("mqtt: call not found (%s)\n", callid);
+				goto out;
+			}
+
+			call_set_current(ua_calls(ua), call);
+		}
 	}
 
 	debug("mqtt: handle_command:  cmd='%s', token='%s'\n",
