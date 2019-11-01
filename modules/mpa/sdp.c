@@ -39,7 +39,7 @@ void mpa_decode_fmtp(struct mpa_param *prm, const char *fmtp)
 		assign_if (&prm->samplerate, &val, 32000, 48000);
 
 	if (fmt_param_get(&pl, "layer", &val))
-		assign_if (&prm->layer, &val, 1, 3);
+		assign_if (&prm->layer, &val, 3, 3);
 
 	if (fmt_param_get(&pl, "mode", &val)) {
 
