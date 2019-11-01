@@ -79,8 +79,8 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	aes->channels = ac->ch;
 
 	prm.samplerate = 48000;
-	prm.bitrate    = 128000;
-	prm.layer      = 2;
+	prm.bitrate    = 64000;
+	prm.layer      = 3;
 	prm.mode       = MONO;
 	mpa_decode_fmtp(&prm, fmtp);
 	aes->samplerate = prm.samplerate;
@@ -92,6 +92,10 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	result |= lame_set_in_samplerate(aes->enc, prm.samplerate);
 	result |= lame_set_out_samplerate(aes->enc, prm.samplerate);
 	result |= lame_set_num_channels(aes->enc, 2);
+	result |= lame_set_VBR(aes->enc, vbr_off);
+	result |= lame_set_bWriteVbrTag(aes->enc, 0);
+	result |= lame_set_strict_ISO(aes->enc, 1);
+	result |= lame_set_disable_reservoir(aes->enc, 1);
 	if (result!=0) {
 		warning("MPA enc set failed\n");
 		err=EINVAL;
