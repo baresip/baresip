@@ -408,11 +408,11 @@ static int start_mediaenc(struct stream *strm)
 		     strm->menc->wait_secure);
 
 		err = strm->menc->mediah(&strm->mes, strm->mencs, strm->rtp,
-					 rtp_sock(strm->rtp),
-					 rtcp_sock(strm->rtp),
-					 &strm->raddr_rtp,
-					 &strm->raddr_rtcp,
-					 strm->sdp);
+				 rtp_sock(strm->rtp),
+				 strm->rtcp_mux ? NULL : rtcp_sock(strm->rtp),
+				 &strm->raddr_rtp,
+				 strm->rtcp_mux ? NULL : &strm->raddr_rtcp,
+				 strm->sdp);
 		if (err) {
 			warning("stream: start mediaenc error: %m\n", err);
 			return err;
