@@ -22,7 +22,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 {
 	struct mbuf *resp = mbuf_alloc(1024);
 	struct re_printf pf = {print_handler, resp};
-	struct odict *od = NULL;
+	struct odict *od = NULL, *od_resp = NULL;
 	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
 	char buf[256], resp_topic[256];
 	const char *aor, *callid;
@@ -86,6 +86,8 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 		warning("mqtt: error processing command (%m)\n", err);
 	}
 
+	err |= mbuf_write_u8(resp, '\0');
+
 	/* NOTE: the command will now write the response
 	   to the resp mbuf, send it back to broker */
 
@@ -93,9 +95,23 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 		    "/%s/command_resp/%s", mqtt->basetopic,
 		    oe_tok ? oe_tok->u.str : "nil");
 
+	err = odict_alloc(&od_resp, 8);
+	if (err)
+		goto out;
+
+	err  = odict_entry_add(od_resp, "response", ODICT_BOOL, true);
+	err |= odict_entry_add(od_resp, "ok", ODICT_BOOL, (bool)err==0);
+	err |= odict_entry_add(od_resp, "data", ODICT_STRING, resp->buf);
+	if (oe_tok) {
+		err |= odict_entry_add(od_resp, "token",
+				       ODICT_STRING, oe_tok->u.str);
+	}
+	if (err)
+		goto out;
+
 	err = mqtt_publish_message(mqtt, resp_topic,
-				   "%b",
-				   resp->buf, resp->end);
+				   "%H",
+				   json_encode_odict, od_resp);
 	if (err) {
 		warning("mqtt: failed to publish message (%m)\n", err);
 		goto out;
@@ -103,6 +119,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 
  out:
 	mem_deref(resp);
+	mem_deref(od_resp);
 	mem_deref(od);
 }
 
