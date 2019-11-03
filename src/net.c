@@ -482,6 +482,30 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
 
 
 /**
+ * Set network IP address
+ *
+ * @param net  Network instance
+ * @param ip   IP address
+ */
+
+void net_set_address(struct network *net, const struct sa *ip)
+{
+	switch (sa_af(ip)) {
+
+	case AF_INET:
+		sa_cpy(&net->laddr, ip);
+		return;
+
+#ifdef HAVE_INET6
+	case AF_INET6:
+		sa_cpy(&net->laddr6, ip);
+		return;
+#endif
+	}
+}
+
+
+/**
  * Check for networking changes with a regular interval
  *
  * @param net       Network instance
@@ -563,6 +587,26 @@ int net_af(const struct network *net)
 		return AF_UNSPEC;
 
 	return net->af;
+}
+
+
+/**
+ * Set the preferred address family (AF)
+ *
+ * @param net Network instance
+ * @param Preferred address family
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int net_set_af(struct network *net, int af)
+{
+	if (af != AF_INET && af != AF_INET6)
+		return EAFNOSUPPORT;
+
+	if (net)
+		net->af = af;
+
+	return 0;
 }
 
 
