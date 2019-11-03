@@ -49,9 +49,9 @@ static void usage(void)
 	(void)re_fprintf(stderr,
 			 "Usage: baresip [options]\n"
 			 "options:\n"
-			 "\t-4               Prefer IPv4\n"
+			 "\t-4               Force IPv4 only\n"
 #if HAVE_INET6
-			 "\t-6               Prefer IPv6\n"
+			 "\t-6               Force IPv6 only\n"
 #endif
 			 "\t-d               Daemon\n"
 			 "\t-e <commands>    Execute commands (repeat)\n"
