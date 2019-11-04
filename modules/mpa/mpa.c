@@ -18,7 +18,7 @@
  *
  * Supported version:
  *      libmpg123   1.16.0 or later
- *      libtwolame  0.3.13 or later 
+ *      libtwolame  0.3.13 or later
  *      libmp3lame  3.100 or later
  *
  * References:
@@ -159,8 +159,8 @@ static int module_init(void)
 			case 24000:
 				break;
 			default:
-				warning("MPA samplerates of 16, 22.05, 24, 32, "
-					"44.1, and 48 kHz are allowed.\n");
+				warning("MPA samplerates of 16, 22.05, 24, 32,"
+					" 44.1, and 48 kHz are allowed.\n");
 				return EINVAL;
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp),
