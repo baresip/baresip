@@ -87,7 +87,7 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		return ENOMEM;
 	}
 #ifdef DEBUG
-	debug("MPA enc created %s\n",fmtp);
+	debug("MPA enc created %s\n", fmtp);
 #endif
 	aes->channels = ac->ch;
 	aes->samplerate = prm.samplerate;
@@ -101,19 +101,23 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		result |= twolame_set_verbosity(aes->enc2, 0);
 #endif
 		result |= twolame_set_mode(aes->enc2, prm.mode);
-		result |= twolame_set_version(aes->enc2,
-			prm.samplerate < 32000 ?
-			TWOLAME_MPEG2 : TWOLAME_MPEG1);
+		result |= twolame_set_version(aes->enc2, 
+					      prm.samplerate < 32000 ?
+					      TWOLAME_MPEG2 : TWOLAME_MPEG1);
 		result |= twolame_set_bitrate(aes->enc2, prm.bitrate/1000);
-		result |= twolame_set_in_samplerate(aes->enc2, prm.samplerate);
-		result |= twolame_set_out_samplerate(aes->enc2, prm.samplerate);
+		result |= twolame_set_in_samplerate(aes->enc2,
+						    prm.samplerate);
+		result |= twolame_set_out_samplerate(aes->enc2,
+						     prm.samplerate);
 		result |= twolame_set_num_channels(aes->enc2, 2);
 	}
 	if (aes->enc3) {
 		result |= lame_set_mode(aes->enc3, prm.mode);
 		result |= lame_set_brate(aes->enc3, prm.bitrate/1000);
-		result |= lame_set_in_samplerate(aes->enc3, prm.samplerate);
-		result |= lame_set_out_samplerate(aes->enc3, prm.samplerate);
+		result |= lame_set_in_samplerate(aes->enc3,
+						 prm.samplerate);
+		result |= lame_set_out_samplerate(aes->enc3,
+						  prm.samplerate);
 		result |= lame_set_num_channels(aes->enc3, 2);
 		result |= lame_set_VBR(aes->enc3, vbr_off);
 		result |= lame_set_bWriteVbrTag(aes->enc3, 0);
