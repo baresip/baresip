@@ -101,7 +101,7 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		result |= twolame_set_verbosity(aes->enc2, 0);
 #endif
 		result |= twolame_set_mode(aes->enc2, prm.mode);
-		result |= twolame_set_version(aes->enc2, 
+		result |= twolame_set_version(aes->enc2,
 					      prm.samplerate < 32000 ?
 					      TWOLAME_MPEG2 : TWOLAME_MPEG1);
 		result |= twolame_set_bitrate(aes->enc2, prm.bitrate/1000);
