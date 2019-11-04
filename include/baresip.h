@@ -276,7 +276,7 @@ struct config_avt {
 
 /** Network Configuration */
 struct config_net {
-	bool prefer_ipv6;       /**< Prefer IPv6 over IPv4          */
+	int af;                 /**< AF_UNSPEC, AF_INET or AF_INET6 */
 	char ifname[64];        /**< Bind to interface (optional)   */
 	struct {
 		char addr[64];

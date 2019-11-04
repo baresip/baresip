@@ -320,7 +320,7 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		return ENOMEM;
 
 	net->cfg = *cfg;
-	net->af  = cfg->prefer_ipv6 ? AF_INET6 : AF_INET;
+	net->af  = cfg->af == AF_UNSPEC ? AF_INET : cfg->af;
 
 	tmr_init(&net->tmr);
 

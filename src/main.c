@@ -70,7 +70,7 @@ static void usage(void)
 
 int main(int argc, char *argv[])
 {
-	int prefer_ipv6 = -1, run_daemon = false, test = false;
+	int af = AF_UNSPEC, run_daemon = false, test = false;
 	const char *ua_eprm = NULL;
 	const char *execmdv[16];
 	const char *net_interface = NULL;
@@ -112,12 +112,12 @@ int main(int argc, char *argv[])
 			return -2;
 
 		case '4':
-			prefer_ipv6 = false;
+			af = AF_INET;
 			break;
 
 #if HAVE_INET6
 		case '6':
-			prefer_ipv6 = true;
+			af = AF_INET6;
 			break;
 #endif
 
@@ -201,10 +201,8 @@ int main(int argc, char *argv[])
 	/*
 	 * Set prefer_ipv6 preferring the one given in -6 argument (if any)
 	 */
-	if (prefer_ipv6 != -1)
-		conf_config()->net.prefer_ipv6 = prefer_ipv6;
-	else
-		prefer_ipv6 = conf_config()->net.prefer_ipv6;
+	if (af != AF_UNSPEC)
+		conf_config()->net.af = af;
 
 	/*
 	 * Initialise the top-level baresip struct, must be
