@@ -490,6 +490,9 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
 
 void net_set_address(struct network *net, const struct sa *ip)
 {
+	if (!net)
+		return;
+
 	switch (sa_af(ip)) {
 
 	case AF_INET:
