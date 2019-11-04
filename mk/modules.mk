@@ -30,7 +30,7 @@
 #   USE_ISAC          iSAC audio codec
 #   USE_JACK          JACK Audio Connection Kit audio driver
 #   USE_L16           L16 audio codec
-#   USE_MPA           MPA audo codec
+#   USE_MPA           MPA audio codec
 #   USE_MPG123        Use mpg123
 #   USE_OMX_RPI       RaspberryPi VideoCore display driver
 #   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
@@ -160,12 +160,12 @@ HAVE_SPEEXDSP := \
 endif
 ifneq ($(USE_MPG123),)
 ifneq ($(HAVE_SPEEXDSP),)
-USE_MPA  := $(shell [ -f $(SYSROOT)/include/twolame.h ] || \
+USE_MPA  := $(shell ([ -f $(SYSROOT)/include/twolame.h ] || \
 	[ -f $(SYSROOT)/local/include/twolame.h ] || \
-	[ -f $(SYSROOT_ALT)/include/twolame.h ] || \
-	[ -f $(SYSROOT)/include/lame/lame.h ] || \
+	[ -f $(SYSROOT_ALT)/include/twolame.h ]) && \
+	([ -f $(SYSROOT)/include/lame/lame.h ] || \
 	[ -f $(SYSROOT)/local/include/lame/lame.h ] || \
-	[ -f $(SYSROOT_ALT)/include/lame/lame.h ] && echo "yes")
+	[ -f $(SYSROOT_ALT)/include/lame/lame.h ]) && echo "yes")
 endif
 endif
 USE_SPEEX_PP := $(shell [ -f $(SYSROOT)/include/speex_preprocess.h ] || \
