@@ -102,7 +102,8 @@ int mpa_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 #endif
 		result |= twolame_set_mode(aes->enc2, prm.mode);
 		result |= twolame_set_version(aes->enc2,
-			prm.samplerate < 32000 ? TWOLAME_MPEG2 : TWOLAME_MPEG1);
+			prm.samplerate < 32000 ?
+			TWOLAME_MPEG2 : TWOLAME_MPEG1);
 		result |= twolame_set_bitrate(aes->enc2, prm.bitrate/1000);
 		result |= twolame_set_in_samplerate(aes->enc2, prm.samplerate);
 		result |= twolame_set_out_samplerate(aes->enc2, prm.samplerate);
@@ -193,8 +194,8 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 				aes->intermediate_buffer, intermediate_len,
 				buf+4, (int)(*len)-4);
 #ifdef DEBUG
-			debug("MPA enc %d %d %d %d %d %p\n",intermediate_len,sampc,
-				aes->channels,*len,n,aes->enc2);
+			debug("MPA enc %d %d %d %d %d %p\n",intermediate_len,
+				sampc,aes->channels,*len,n,aes->enc2);
 #endif
 		}
 		if (aes->enc3) {
@@ -202,8 +203,8 @@ int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 				aes->intermediate_buffer, intermediate_len,
 				buf+4, (int)(*len)-4);
 #ifdef DEBUG
-			debug("MPA enc %d %d %d %d %d %p\n",intermediate_len,sampc,
-				aes->channels,*len,n,aes->enc3);
+			debug("MPA enc %d %d %d %d %d %p\n",intermediate_len,
+				sampc,aes->channels,*len,n,aes->enc3);
 #endif
 		}
 	}
