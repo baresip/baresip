@@ -18,6 +18,7 @@
  *
  * Supported version:
  *      libmpg123   1.16.0 or later
+ *      libtwolame  0.3.13 or later
  *      libmp3lame  3.100 or later
  *
  * References:
@@ -109,7 +110,7 @@ static struct aucodec mpa = {
 	.ch        = 2,
 	.pch       = 1,
 /* MPA does not expect channels count, even those it is stereo */
-	.fmtp      = "layer=3",
+	.fmtp      = "layer=2",
 	.encupdh   = mpa_encode_update,
 	.ench      = mpa_encode_frm,
 	.decupdh   = mpa_decode_update,
@@ -139,27 +140,28 @@ static int module_init(void)
 
 	strcpy(mode,mpa.fmtp);
 
-	/* advertise layer 3 encoding only */
-	(void)re_snprintf(fmtp+strlen(fmtp),
-		sizeof(fmtp)-strlen(fmtp),
-		"layer=%d", 3);
-
-	if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
-
-		switch (value) {
-
-		case 32000:
-		case 44100:
-		case 48000:
-		case 16000:
-		case 22050:
-		case 24000:
-			break;
-
-		default:
-			warning("MPA samplerates of 16, 22.05, 24, 32, "
-				"44.1, and 48 kHz are allowed.\n");
+	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
+		if (value<2 || value>3) {
+			warning("MPA layer 2 or 3 are allowed.");
 			return EINVAL;
+		}
+		(void)re_snprintf(fmtp+strlen(fmtp),
+			sizeof(fmtp)-strlen(fmtp),
+			"layer=%d", value);
+	}
+	if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
+		switch (value) {
+			case 32000:
+			case 44100:
+			case 48000:
+			case 16000:
+			case 22050:
+			case 24000:
+				break;
+			default:
+				warning("MPA samplerates of 16, 22.05, 24, 32,"
+					" 44.1, and 48 kHz are allowed.\n");
+				return EINVAL;
 		}
 		(void)re_snprintf(fmtp+strlen(fmtp),
 			sizeof(fmtp)-strlen(fmtp),
