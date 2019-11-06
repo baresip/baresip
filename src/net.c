@@ -603,7 +603,7 @@ int net_af(const struct network *net)
  */
 int net_set_af(struct network *net, int af)
 {
-	if (af != AF_INET && af != AF_INET6)
+	if (af != AF_INET && af != AF_INET6 && af != AF_UNSPEC)
 		return EAFNOSUPPORT;
 
 	if (net)
