@@ -44,6 +44,7 @@ struct call {
 	char *id;                 /**< Cached session call-id               */
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
+	struct tmr tmr_answ;      /**< Timer for delayed answer             */
 	time_t time_start;        /**< Time when call started               */
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
@@ -374,6 +375,7 @@ static void call_destructor(void *arg)
 	call_stream_stop(call);
 	list_unlink(&call->le);
 	tmr_cancel(&call->tmr_dtmf);
+	tmr_cancel(&call->tmr_answ);
 
 	mem_deref(call->sess);
 	mem_deref(call->id);
@@ -665,6 +667,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->config_call = cfg->call;
 
 	tmr_init(&call->tmr_inv);
+	tmr_init(&call->tmr_answ);
 
 	call->acc    = mem_ref(acc);
 	call->ua     = ua;
@@ -1012,6 +1015,8 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	if (!call || !call->sess)
 		return EINVAL;
+
+	tmr_cancel(&call->tmr_answ);
 
 	if (CALL_STATE_INCOMING != call->state) {
 		info("call: answer: call is not in incoming state (%s)\n",
@@ -1754,6 +1759,14 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 }
 
 
+static void delayed_answer_handler(void *arg)
+{
+	struct call *call = arg;
+
+	(void)call_answer(call, 200, VIDMODE_ON);
+}
+
+
 static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
@@ -2331,4 +2344,13 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 	}
 
 	return 0;
+}
+
+
+void call_start_answtmr(struct call *call, uint32_t ms)
+{
+	if (!call)
+		return;
+
+	tmr_start(&call->tmr_answ, ms, delayed_answer_handler, call);
 }

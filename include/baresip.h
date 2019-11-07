@@ -218,6 +218,7 @@ void call_set_current(struct list *calls, struct call *call);
 const struct list *call_get_custom_hdrs(const struct call *call);
 int call_set_media_direction(struct call *call, enum sdp_dir a,
 			     enum sdp_dir v);
+void call_start_answtmr(struct call *call, uint32_t ms);
 
 
 /*

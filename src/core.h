@@ -54,6 +54,7 @@ struct account {
 
 	/* parameters: */
 	enum answermode answermode;  /**< Answermode for incoming calls      */
+	uint32_t adelay;             /**< Delay for delayed auto answer [ms] */
 	struct le acv[16];           /**< List elements for aucodecl         */
 	struct list aucodecl;        /**< List of preferred audio-codecs     */
 	char *auth_user;             /**< Authentication username            */

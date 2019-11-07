@@ -163,7 +163,7 @@ static int decode_pair(char **val1, char **val2,
 /* Decode answermode parameter */
 static void answermode_decode(struct account *prm, const struct pl *pl)
 {
-	struct pl amode;
+	struct pl amode, adelay;
 
 	prm->answermode = ANSWERMODE_MANUAL;
 
@@ -182,6 +182,9 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 			warning("account: answermode unknown (%r)\n", &amode);
 		}
 	}
+
+	if (0 == msg_param_decode(pl, "answerdelay", &adelay))
+		prm->adelay = pl_u32(&adelay);
 }
 
 
