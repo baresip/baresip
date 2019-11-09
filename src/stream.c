@@ -302,9 +302,10 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 		err = jbuf_put(s->jbuf, hdr, mb);
 		if (err) {
-			info("%s: dropping %u bytes from %J (%m)\n",
+			info("stream: %s: dropping %u bytes from %J"
+			     " [seq=%u, ts=%u] (%m)\n",
 			     sdp_media_name(s->sdp), mb->end,
-			     src, err);
+			     src, hdr->seq, hdr->ts, err);
 			s->metric_rx.n_err++;
 		}
 
