@@ -986,6 +986,7 @@ struct aucodec {
 	uint32_t crate;             /* RTP Clock rate   */
 	uint8_t ch;
 	uint8_t pch;                /* RTP packet channels */
+	uint32_t ptime;             /* Packet time in [ms] (optional) */
 	const char *fmtp;
 	auenc_update_h *encupdh;
 	auenc_encode_h *ench;
