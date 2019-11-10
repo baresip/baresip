@@ -543,9 +543,17 @@ static void menc_error_handler(int err, void *arg)
 static void stream_mnatconn_handler(struct stream *strm, void *arg)
 {
 	struct call *call = arg;
+	int err;
 	MAGIC_CHECK(call);
 
-	if (stream_is_ready(strm)) {
+	if (strm->mencs) {
+		err = stream_start_mediaenc(strm);
+		if (err) {
+			call_event_handler(call, CALL_EVENT_CLOSED,
+					   "mediaenc failed %m", err);
+		}
+	}
+	else if (stream_is_ready(strm)) {
 
 		switch (strm->type) {
 

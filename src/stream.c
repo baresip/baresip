@@ -431,7 +431,6 @@ static void mnat_connected_handler(const struct sa *raddr1,
 				   const struct sa *raddr2, void *arg)
 {
 	struct stream *strm = arg;
-	int err;
 
 	info("stream: mnat '%s' connected: raddr %J %J\n",
 	     strm->mnat->id, raddr1, raddr2);
@@ -445,18 +444,13 @@ static void mnat_connected_handler(const struct sa *raddr1,
 
 	strm->mnat_connected = true;
 
-	if (strm->mencs) {
-		err = stream_start_mediaenc(strm);
-		if (err)
-			stream_close(strm, err);
-	}
-	else if (stream_is_ready(strm)) {
+	if (stream_is_ready(strm)) {
 
 		stream_start(strm);
-
-		if (strm->mnatconnh)
-			strm->mnatconnh(strm, strm->sess_arg);
 	}
+
+	if (strm->mnatconnh)
+		strm->mnatconnh(strm, strm->sess_arg);
 }
 
 
