@@ -398,9 +398,12 @@ static int stream_sock_alloc(struct stream *s, int af)
 }
 
 
-static int start_mediaenc(struct stream *strm)
+int stream_start_mediaenc(struct stream *strm)
 {
 	int err;
+
+	if (!strm)
+		return EINVAL;
 
 	if (strm->menc && strm->menc->mediah) {
 
@@ -443,7 +446,7 @@ static void mnat_connected_handler(const struct sa *raddr1,
 	strm->mnat_connected = true;
 
 	if (strm->mencs) {
-		err = start_mediaenc(strm);
+		err = stream_start_mediaenc(strm);
 		if (err)
 			stream_close(strm, err);
 	}
@@ -554,7 +557,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		s->menc  = menc;
 		s->mencs = mem_ref(menc_sess);
 
-		err = start_mediaenc(s);
+		err = stream_start_mediaenc(s);
 		if (err)
 			goto out;
 	}
@@ -684,7 +687,7 @@ void stream_update(struct stream *s)
 
 	if (s->mencs && mnat_ready(s)) {
 
-		err = start_mediaenc(s);
+		err = stream_start_mediaenc(s);
 		if (err) {
 			warning("stream: mediaenc update: %m\n", err);
 		}
