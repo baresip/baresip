@@ -250,6 +250,7 @@ gst_video     Gstreamer video codec
 gtk           GTK+ 2.0 UI
 gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module
+i2s           I2S (Inter-IC Sound) audio driver
 ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec
 isac          iSAC audio codec
