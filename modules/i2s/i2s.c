@@ -16,13 +16,24 @@
 #include "i2s.h"
 
 
+/**
+ * @defgroup i2s i2s
+ *
+ * I2S audio driver module for freeRTOS (ESP32 Espressif)
+ *
+ * This module adds an audio source for I2S MEMs microphone (mono/stereo) and
+ * an audio player for I2S class D amplifiers. It was tested with:
+ *
+ * - ESP32-WROOM from Espressif
+ * - Sparkfun I2S Audio Breakout - MAX98357A SF14809 - CLASS D stereo amplifier
+ * - Adafruit I2S MEMS Microphone Breakout - SPH0645LM4H
+ */
+
+
 static struct ausrc *ausrc = NULL;
 static struct auplay *auplay = NULL;
 static enum I2SOnMask _i2s_on = I2O_NONE;
 
-/*---------------------------------------------------------------
-                            CONFIG
----------------------------------------------------------------*/
 
 static int i2s_init(void)
 {
