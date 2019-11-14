@@ -88,7 +88,10 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	int64_t pts;
 	uint64_t timestamp;
 	const AVRational time_base = st->time_base;
-	int got_pict, ret;
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
+	int got_pict;
+#endif
+	int ret;
 
 	frame = av_frame_alloc();
 	if (!frame)
@@ -103,13 +106,11 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	ret = avcodec_receive_frame(st->ctx, frame);
 	if (ret < 0)
 		goto out;
-
-	got_pict = true;
 #else
 	ret = avcodec_decode_video2(st->ctx, frame, &got_pict, pkt);
-#endif
 	if (ret < 0 || !got_pict)
 		goto out;
+#endif
 
 	sz.w = st->ctx->width;
 	sz.h = st->ctx->height;
