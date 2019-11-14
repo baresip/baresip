@@ -86,7 +86,6 @@ static int mock_session_alloc(struct menc_sess **sessp,
 			      void *arg)
 {
 	struct menc_sess *sess;
-	int err = 0;
 	(void)offerer;
 	(void)errorh;
 
@@ -100,12 +99,9 @@ static int mock_session_alloc(struct menc_sess **sessp,
 	sess->eventh  = eventh;
 	sess->arg     = arg;
 
-	if (err)
-		mem_deref(sess);
-	else
-		*sessp = sess;
+	*sessp = sess;
 
-	return err;
+	return 0;
 }
 
 

@@ -120,7 +120,6 @@ static int mock_decode_update(struct viddec_state **vdsp,
 			      const struct vidcodec *vc, const char *fmtp)
 {
 	struct viddec_state *vds;
-	int err = 0;
 	(void)vc;
 	(void)fmtp;
 
@@ -136,12 +135,9 @@ static int mock_decode_update(struct viddec_state **vdsp,
 	if (!vds)
 		return ENOMEM;
 
-	if (err)
-		mem_deref(vds);
-	else
-		*vdsp = vds;
+	*vdsp = vds;
 
-	return err;
+	return 0;
 }
 
 
