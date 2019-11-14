@@ -149,7 +149,6 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 vidisp_resize_h *resizeh, void *arg)
 {
 	struct vidisp_st *st;
-	int err = 0;
 
 	/* Not used by SDL */
 	(void)dev;
@@ -168,12 +167,9 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 	tmr_start(&st->tmr, 100, event_handler, st);
 
-	if (err)
-		mem_deref(st);
-	else
-		*stp = st;
+	*stp = st;
 
-	return err;
+	return 0;
 }
 
 
