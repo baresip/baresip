@@ -174,7 +174,6 @@ static int encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 			 struct auenc_param *prm, const char *fmtp)
 {
 	struct auenc_state *st;
-	int err = 0;
 
 	if (!aesp || !ac || !prm)
 		return EINVAL;
@@ -197,12 +196,9 @@ static int encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		prm->ptime = st->mode;
 	}
 
-	if (err)
-		mem_deref(st);
-	else
-		*aesp = st;
+	*aesp = st;
 
-	return err;
+	return 0;
 }
 
 
@@ -210,8 +206,6 @@ static int decode_update(struct audec_state **adsp,
 			 const struct aucodec *ac, const char *fmtp)
 {
 	struct audec_state *st;
-	int err = 0;
-	(void)fmtp;
 
 	if (!adsp || !ac)
 		return EINVAL;
@@ -227,12 +221,9 @@ static int decode_update(struct audec_state **adsp,
 	if (str_isset(fmtp))
 		decoder_fmtp_decode(st, fmtp);
 
-	if (err)
-		mem_deref(st);
-	else
-		*adsp = st;
+	*adsp = st;
 
-	return err;
+	return 0;
 }
 
 
