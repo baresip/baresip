@@ -198,14 +198,19 @@ static void ipchange_handler(void *arg)
  */
 bool net_check(struct network *net)
 {
-	struct sa laddr = net->laddr;
+	struct sa laddr;
 #ifdef HAVE_INET6
-	struct sa laddr6 = net->laddr6;
+	struct sa laddr6;
 #endif
 	bool change = false;
 
 	if (!net)
 		return false;
+
+	laddr = net->laddr;
+#ifdef HAVE_INET6
+	laddr6 = net->laddr6;
+#endif
 
 	if (str_isset(net->cfg.ifname)) {
 
