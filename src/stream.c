@@ -556,9 +556,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 			goto out;
 	}
 
-	if (err)
-		goto out;
-
 	s->pt_enc = -1;
 
 	metric_init(&s->metric_tx);
