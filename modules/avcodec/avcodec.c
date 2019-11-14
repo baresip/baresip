@@ -261,9 +261,8 @@ static int module_init(void)
 
 			config = avcodec_get_hw_config(avcodec_h264dec, i);
 			if (!config) {
-				warning("avcodec: Decoder %s does not"
+				warning("avcodec: Decoder does not"
 					" support device type %s.\n",
-					avcodec_h264dec->name,
 					av_hwdevice_get_type_name(type));
 				return ENOSYS;
 			}

@@ -379,6 +379,8 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 
 			/* encode NAL header back to buffer */
 			err = h264_hdr_encode(&h264_hdr, st->mb);
+			if (err)
+				goto out;
 		}
 		else {
 			if (!st->frag) {
@@ -658,7 +660,7 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 	}
 
 	/* handle NAL types */
-	if (0 <= hdr.nal_unit_type && hdr.nal_unit_type <= 40) {
+	if (hdr.nal_unit_type <= 40) {
 
 		mb->pos -= H265_HDR_SIZE;
 

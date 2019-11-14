@@ -509,7 +509,9 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	AVFrame *hw_frame = NULL;
 	AVPacket *pkt = NULL;
 	int i, err = 0, ret;
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
 	int got_packet = 0;
+#endif
 	uint64_t ts;
 	struct mbuf mb;
 
@@ -618,8 +620,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		err = 0;
 		goto out;
 	}
-
-	got_packet = 1;
 #else
 
 	pkt = av_malloc(sizeof(*pkt));
@@ -636,10 +636,10 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		err = EBADMSG;
 		goto out;
 	}
-#endif
 
 	if (!got_packet)
 		return 0;
+#endif
 
 	mb.buf = pkt->data;
 	mb.pos = 0;
