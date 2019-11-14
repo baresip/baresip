@@ -57,7 +57,6 @@ static int decode_update(struct vidfilt_dec_st **stp, void **ctx,
 			 const struct video *vid)
 {
 	struct vidinfo_dec *st;
-	int err = 0;
 	(void)prm;
 	(void)vid;
 
@@ -73,12 +72,9 @@ static int decode_update(struct vidfilt_dec_st **stp, void **ctx,
 
 	st->vid = vid;
 
-	if (err)
-		mem_deref(st);
-	else
-		*stp = (struct vidfilt_dec_st *)st;
+	*stp = (struct vidfilt_dec_st *)st;
 
-	return err;
+	return 0;
 }
 
 
