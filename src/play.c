@@ -41,7 +41,6 @@ struct play {
 #ifndef PREFIX
 #define PREFIX "/usr"
 #endif
-static const char default_play_path[FS_PATH_MAX] = PREFIX "/share/baresip";
 
 
 struct player {
@@ -646,8 +645,8 @@ int play_init(struct player **playerp)
 
 	list_init(&player->playl);
 
-	str_ncpy(player->play_path, default_play_path,
-		 sizeof(player->play_path));
+	str_ncpy(player->play_path, conf_config()->audio.audio_path,
+			sizeof(player->play_path));
 
 	*playerp = player;
 
