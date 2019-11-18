@@ -267,6 +267,8 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 					" the data to system memory\n");
 				goto out;
 			}
+
+			st->pict->key_frame = hw_frame->key_frame;
 		}
 #endif
 
