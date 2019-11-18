@@ -184,6 +184,7 @@ int mctrl_handle_media_control(struct pl *body, bool *pfu);
 struct metric {
 	/* internal stuff: */
 	struct tmr tmr;
+	struct lock *lock;
 	uint64_t ts_start;
 	bool started;
 
@@ -198,7 +199,7 @@ struct metric {
 	uint32_t n_bytes_last;
 };
 
-void     metric_init(struct metric *metric);
+int      metric_init(struct metric *metric);
 void     metric_reset(struct metric *metric);
 void     metric_add_packet(struct metric *metric, size_t packetsize);
 double   metric_avg_bitrate(const struct metric *metric);
