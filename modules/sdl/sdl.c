@@ -295,6 +295,9 @@ static int display(struct vidisp_st *st, const char *title,
 		hstep = i==0 ? 1 : 2;
 		wstep = i==0 ? 1 : chroma_step(frame->fmt);
 
+		if (wstep == 0)
+			continue;
+
 		dsz = dpitch / wstep;
 		sz  = min(frame->linesize[i], dsz);
 
