@@ -1193,6 +1193,10 @@ struct stream_param {
 	int af;
 	const char *cname;
 };
+
+typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
+typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
+
 void stream_update(struct stream *s);
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
 struct call *stream_call(const struct stream *strm);
@@ -1203,7 +1207,13 @@ uint32_t stream_metric_get_tx_n_err(const struct stream *strm);
 uint32_t stream_metric_get_rx_n_packets(const struct stream *strm);
 uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm);
 uint32_t stream_metric_get_rx_n_err(const struct stream *strm);
+void stream_set_secure(struct stream *strm, bool secure);
 bool stream_is_secure(const struct stream *strm);
+int  stream_start_mediaenc(struct stream *strm);
+int  stream_start(const struct stream *strm);
+void stream_set_session_handlers(struct stream *strm,
+				 stream_mnatconn_h *mnatconnh,
+				 stream_error_h *errorh, void *arg);
 
 
 /*

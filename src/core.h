@@ -288,8 +288,6 @@ typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct mbuf *mb, unsigned lostc, void *arg);
 typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
-typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
-typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
 /** Defines a generic media stream */
 struct stream {
@@ -354,17 +352,11 @@ void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
 void stream_send_fir(struct stream *s, bool pli);
 void stream_reset(struct stream *s);
 void stream_set_bw(struct stream *s, uint32_t bps);
-void stream_set_session_handlers(struct stream *strm,
-				 stream_mnatconn_h *mnatconnh,
-				 stream_error_h *errorh, void *arg);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 int  stream_print(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 int  stream_jbuf_reset(struct stream *strm,
 		       uint32_t frames_min, uint32_t frames_max);
-void stream_set_secure(struct stream *strm, bool secure);
-int  stream_start_mediaenc(struct stream *strm);
-int  stream_start(const struct stream *strm);
 bool stream_is_ready(const struct stream *strm);
 
 
