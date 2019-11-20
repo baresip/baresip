@@ -1,5 +1,5 @@
 /**
- * @file i2s freeRTOS I2S audio driver module
+ * @file i2s.c freeRTOS I2S audio driver module
  *
  * Copyright (C) 2019 cspiel.at
  */

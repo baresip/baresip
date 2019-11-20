@@ -1101,6 +1101,7 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
  * Allocate an audio stream
  *
  * @param ap         Pointer to allocated audio stream object
+ * @param streaml    List of streams
  * @param stream_prm Stream parameters
  * @param cfg        Global configuration
  * @param call       Call object

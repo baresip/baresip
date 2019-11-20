@@ -602,7 +602,7 @@ int net_af(const struct network *net)
  * Set the preferred address family (AF)
  *
  * @param net Network instance
- * @param Preferred address family
+ * @param af  Preferred address family
  *
  * @return 0 if success, otherwise errorcode
  */
