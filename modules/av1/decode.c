@@ -61,6 +61,9 @@ int av1_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		       const char *fmtp)
 {
 	struct viddec_state *vds;
+	aom_codec_dec_cfg_t cfg = {
+		.allow_lowbitdepth = 1
+	};
 	aom_codec_err_t res;
 	int err = 0;
 	(void)vc;
@@ -84,7 +87,7 @@ int av1_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		goto out;
 	}
 
-	res = aom_codec_dec_init(&vds->ctx, &aom_codec_av1_dx_algo, NULL, 0);
+	res = aom_codec_dec_init(&vds->ctx, &aom_codec_av1_dx_algo, &cfg, 0);
 	if (res) {
 		err = ENOMEM;
 		goto out;
