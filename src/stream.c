@@ -398,6 +398,13 @@ static int stream_sock_alloc(struct stream *s, int af)
 }
 
 
+/**
+ * Start media encryption
+ *
+ * @param strm   Stream object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int stream_start_mediaenc(struct stream *strm)
 {
 	int err;
@@ -805,6 +812,14 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 }
 
 
+/**
+ * Set optional session handlers
+ *
+ * @param strm      Stream object
+ * @param mnatconnh Media NAT connected handler
+ * @param errorh    Error handler
+ * @param arg       Handler argument
+ */
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
 				 stream_error_h *errorh, void *arg)
@@ -1003,6 +1018,12 @@ bool stream_is_ready(const struct stream *strm)
 }
 
 
+/**
+ * Set the secure flag on the stream object
+ *
+ * @param strm   Stream object
+ * @param secure True for secure, false for insecure
+ */
 void stream_set_secure(struct stream *strm, bool secure)
 {
 	if (!strm)
@@ -1012,12 +1033,26 @@ void stream_set_secure(struct stream *strm, bool secure)
 }
 
 
+/**
+ * Get the secure flag on the stream object
+ *
+ * @param strm   Stream object
+ *
+ * @return True for secure, false for insecure
+ */
 bool stream_is_secure(const struct stream *strm)
 {
 	return strm ? strm->menc_secure : false;
 }
 
 
+/**
+ * Start the media stream
+ *
+ * @param strm   Stream object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int stream_start(const struct stream *strm)
 {
 	int err;
