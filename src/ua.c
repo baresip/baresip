@@ -1651,6 +1651,11 @@ void uag_set_exit_handler(ua_exit_h *exith, void *arg)
 }
 
 
+/**
+ * Enable SIP message tracing
+ *
+ * @param enable True to enable, false to disable
+ */
 void uag_enable_sip_trace(bool enable)
 {
 #ifdef LIBRE_HAVE_SIPTRACE

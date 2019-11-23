@@ -2161,6 +2161,14 @@ struct call *call_find_linenum(const struct list *calls, uint32_t linenum)
 }
 
 
+/**
+ * Find a call by call-id
+ *
+ * @param calls   List of calls
+ * @param id      Call-id string
+ *
+ * @return Call object if found, NULL if not found
+ */
 struct call *call_find_id(const struct list *calls, const char *id)
 {
 	struct le *le;
