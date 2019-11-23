@@ -558,8 +558,10 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 
 	s->pt_enc = -1;
 
-	metric_init(&s->metric_tx);
-	metric_init(&s->metric_rx);
+	err  = metric_init(&s->metric_tx);
+	err |= metric_init(&s->metric_rx);
+	if (err)
+		goto out;
 
 	list_append(streaml, &s->le, s);
 
