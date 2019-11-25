@@ -4,100 +4,102 @@
  * Copyright (C) 2019 Hessischer Rundfunk
  */
 
-#include <re.h>
-#include <rem.h>
+#include "aptx.h"
 #include <baresip.h>
 #include <openaptx.h>
+#include <re.h>
+#include <rem.h>
 #include <stdlib.h>
-#include "aptx.h"
 
-struct auenc_state
-{
-	struct aptx_context *enc;
+struct auenc_state {
+  struct aptx_context *enc;
 };
 
-static void destructor(void *arg)
-{
-	struct auenc_state *aes = arg;
 
-	if (aes->enc)
-		aptx_finish(aes->enc);
+static void destructor(void *arg) {
+  struct auenc_state *aes = arg;
+
+  if (aes->enc)
+    aptx_finish(aes->enc);
 }
 
-int aptx_encode_update(struct auenc_state **aesp, const struct aucodec *ac, struct auenc_param *param, const char *fmtp)
-{
-	struct auenc_state *aes;
-	int err = 0;
 
-	(void)param;
+int aptx_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
+                       struct auenc_param *param, const char *fmtp) {
+  struct auenc_state *aes;
+  int err = 0;
 
-	if (!aesp || !ac || !ac->ch)
-		return EINVAL;
+  (void)param;
 
-	aes = *aesp;
+  if (!aesp || !ac || !ac->ch)
+    return EINVAL;
 
-	if (aes)
-		goto out;
+  aes = *aesp;
 
-	aes = mem_zalloc(sizeof(*aes), destructor);
-	if (!aes)
-		return ENOMEM;
+  if (aes)
+    goto out;
 
-	aes->enc = aptx_init(APTX_VARIANT);
-	if (!aes->enc)
-	{
-		warning("Cannot initialize aptX encoder.\n");
-		err = ENOMEM;
-		goto out;
-	}
+  aes = mem_zalloc(sizeof(*aes), destructor);
+  if (!aes)
+    return ENOMEM;
 
-	*aesp = aes;
+  aes->enc = aptx_init(APTX_VARIANT);
+  if (!aes->enc) {
+    warning("aptx: Cannot initialize encoder.\n");
+    err = ENOMEM;
+    goto out;
+  }
+
+  *aesp = aes;
 
 out:
-	if (err)
-		mem_deref(aes);
+  if (err)
+    mem_deref(aes);
 
-	return err;
+  return err;
 }
 
-int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len, int fmt, const void *sampv, size_t sampc)
-{
-	size_t processed = 0;
-	size_t written = 0;
 
-	const uint8_t *s16 = sampv;
+int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len, int fmt,
+                    const void *sampv, size_t sampc) {
+  size_t processed = 0;
+  size_t written = 0;
 
-	uint8_t *intermediate_buf;
-	size_t intermediate_len;
+  const uint8_t *s16 = sampv;
 
-	if (!aes || !buf || !len || !sampv)
-		return EINVAL;
+  uint8_t *intermediate_buf;
+  size_t intermediate_len;
 
-	if (fmt != AUFMT_S16LE)
-		return ENOTSUP;
+  if (!aes || !buf || !len || !sampv)
+    return EINVAL;
 
-	intermediate_len = sampc * APTX_WORDSIZE;
-	intermediate_buf = (uint8_t *)malloc(intermediate_len);
+  if (fmt != AUFMT_S16LE)
+    return ENOTSUP;
 
-	if (!intermediate_buf)
-		return ENOMEM;
+  intermediate_len = sampc * APTX_WORDSIZE;
+  intermediate_buf = (uint8_t *)malloc(intermediate_len);
 
-	/* map S16 to S24 intermediate buffer */
-	for (size_t s = 0; s < sampc; s++)
-	{
-		intermediate_buf[s * APTX_WORDSIZE] = 0;
-		intermediate_buf[s * APTX_WORDSIZE + 1] = s16[s * 2];
-		intermediate_buf[s * APTX_WORDSIZE + 2] = s16[s * 2 + 1];
-	}
+  if (!intermediate_buf)
+    return ENOMEM;
 
-	processed = aptx_encode(aes->enc, intermediate_buf, intermediate_len, buf, *len, &written);
+  /* map S16 to S24 intermediate buffer */
+  for (size_t s = 0; s < sampc; s++) {
+    intermediate_buf[s * APTX_WORDSIZE] = 0;
+    intermediate_buf[s * APTX_WORDSIZE + 1] = s16[s * 2];
+    intermediate_buf[s * APTX_WORDSIZE + 2] = s16[s * 2 + 1];
+  }
 
-	free(intermediate_buf);
+  processed = aptx_encode(aes->enc, intermediate_buf, intermediate_len, buf,
+                          *len, &written);
 
-	if (processed != intermediate_len)
-		warning("aptX encoding stopped in the middle of the sample, dropped %u bytes\n", (unsigned int)(intermediate_len - processed));
+  free(intermediate_buf);
 
-	*len = written;
+  if (processed != intermediate_len)
+    warning("aptx: Encoding stopped in the middle of the sample, "
+            "dropped %u bytes\n",
+            (unsigned int)(intermediate_len - processed));
 
-	return 0;
+  *len = written;
+
+  return 0;
 }
