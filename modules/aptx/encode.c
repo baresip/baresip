@@ -4,12 +4,12 @@
  * Copyright (C) 2019 Hessischer Rundfunk
  */
 
-#include "aptx.h"
-#include <baresip.h>
-#include <openaptx.h>
+#include <stdlib.h>
 #include <re.h>
 #include <rem.h>
-#include <stdlib.h>
+#include <baresip.h>
+#include <openaptx.h>
+#include "aptx.h"
 
 struct auenc_state {
   struct aptx_context *enc;

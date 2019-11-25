@@ -4,9 +4,9 @@
  * Copyright (C) 2019 Hessischer Rundfunk
  */
 
-#include "aptx.h"
-#include <baresip.h>
 #include <re.h>
+#include <baresip.h>
+#include "aptx.h"
 
 /**
  * @defgroup aptx aptx

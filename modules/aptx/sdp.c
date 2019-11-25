@@ -4,10 +4,10 @@
  * Copyright (C) 2019 Hessischer Rundfunk
  */
 
-#include "aptx.h"
+#include <re.h>
 #include <baresip.h>
 #include <openaptx.h>
-#include <re.h>
+#include "aptx.h"
 
 
 static unsigned param_value(const char *fmtp, const char *name) {
