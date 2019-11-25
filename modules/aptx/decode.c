@@ -26,7 +26,7 @@ static void destructor(void *arg)
 
 
 int aptx_decode_update(struct audec_state **adsp, const struct aucodec *ac,
-                       const char *fmtp)
+					   const char *fmtp)
 {
 	struct audec_state *ads;
 	int err = 0;
@@ -63,7 +63,7 @@ out:
 
 
 int aptx_decode_frm(struct audec_state *ads, int fmt, void *sampv,
-                    size_t *sampc, const uint8_t *buf, size_t len)
+					size_t *sampc, const uint8_t *buf, size_t len)
 {
 	size_t processed = 0;
 	size_t written = 0;
@@ -82,8 +82,8 @@ int aptx_decode_frm(struct audec_state *ads, int fmt, void *sampv,
 
 	if (processed != len)
 		warning("aptx: Decoding stopped in the middle of the sample, "
-		        "dropped %u bytes\n",
-		        (unsigned int)(len - processed));
+				"dropped %u bytes\n",
+				(unsigned int)(len - processed));
 
 	if (*sampc > 0) {
 		/* remap S24 to S16 in same buffer */
