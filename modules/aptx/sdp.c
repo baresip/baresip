@@ -10,7 +10,8 @@
 #include "aptx.h"
 
 
-static unsigned param_value(const char *fmtp, const char *name) {
+static unsigned param_value(const char *fmtp, const char *name)
+{
 	struct pl pl, val;
 
 	if (!fmtp || !name)
@@ -26,7 +27,8 @@ static unsigned param_value(const char *fmtp, const char *name) {
 
 
 int aptx_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt, bool offer,
-				  void *arg) {
+                  void *arg)
+{
 	(void)offer;
 	(void)arg;
 
@@ -34,25 +36,26 @@ int aptx_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt, bool offer,
 		return 0;
 
 	return mbuf_printf(mb,
-					   "a=fmtp:%s "
-					   "variant=%s; bitresolution=%u;\r\n",
-					   fmt->id,
-					   APTX_VARIANT == APTX_VARIANT_HD ? "hd" : "standard",
-					   APTX_VARIANT == APTX_VARIANT_HD ? 24 : 16);
+	                   "a=fmtp:%s "
+	                   "variant=%s; bitresolution=%u;\r\n",
+	                   fmt->id,
+	                   APTX_VARIANT == APTX_VARIANT_HD ? "hd" : "standard",
+	                   APTX_VARIANT == APTX_VARIANT_HD ? 24 : 16);
 }
 
 
-bool aptx_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg) {
+bool aptx_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
+{
 	(void)lfmtp;
 	(void)arg;
 
 	/*
 	if (param_value(rfmtp, "variant") != APTX_VARIANT)
-			return false;
+	        return false;
 	*/
 
 	if (param_value(rfmtp, "bitresolution") !=
-		(APTX_VARIANT == APTX_VARIANT_HD ? 24 : 16))
+	    (APTX_VARIANT == APTX_VARIANT_HD ? 24 : 16))
 		return false;
 
 	return true;

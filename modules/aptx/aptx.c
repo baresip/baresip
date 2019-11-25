@@ -29,29 +29,31 @@
  */
 
 static struct aucodec aptx = {
-	.name = "aptx",
-	.srate = APTX_SRATE,
-	.crate = APTX_SRATE,
-	.ch = APTX_CHANNELS,
-	.pch = APTX_CHANNELS,
-	.ptime = 4,
-	.encupdh = aptx_encode_update,
-	.ench = aptx_encode_frm,
-	.decupdh = aptx_decode_update,
-	.dech = aptx_decode_frm,
-	.fmtp_ench = aptx_fmtp_enc,
-	.fmtp_cmph = aptx_fmtp_cmp,
+    .name = "aptx",
+    .srate = APTX_SRATE,
+    .crate = APTX_SRATE,
+    .ch = APTX_CHANNELS,
+    .pch = APTX_CHANNELS,
+    .ptime = 4,
+    .encupdh = aptx_encode_update,
+    .ench = aptx_encode_frm,
+    .decupdh = aptx_decode_update,
+    .dech = aptx_decode_frm,
+    .fmtp_ench = aptx_fmtp_enc,
+    .fmtp_cmph = aptx_fmtp_cmp,
 };
 
 
-static int module_init(void) {
+static int module_init(void)
+{
 	aucodec_register(baresip_aucodecl(), &aptx);
 
 	return 0;
 }
 
 
-static int module_close(void) {
+static int module_close(void)
+{
 	aucodec_unregister(&aptx);
 
 	return 0;
@@ -59,8 +61,8 @@ static int module_close(void) {
 
 
 EXPORT_SYM const struct mod_export DECL_EXPORTS(aptx) = {
-	"aptx",
-	"audio codec",
-	module_init,
-	module_close,
+    "aptx",
+    "audio codec",
+    module_init,
+    module_close,
 };

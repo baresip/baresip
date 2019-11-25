@@ -16,7 +16,8 @@ struct auenc_state {
 };
 
 
-static void destructor(void *arg) {
+static void destructor(void *arg)
+{
 	struct auenc_state *aes = arg;
 
 	if (aes->enc)
@@ -25,7 +26,8 @@ static void destructor(void *arg) {
 
 
 int aptx_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
-					   struct auenc_param *param, const char *fmtp) {
+                       struct auenc_param *param, const char *fmtp)
+{
 	struct auenc_state *aes;
 	int err = 0;
 
@@ -61,7 +63,8 @@ out:
 
 
 int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
-					int fmt, const void *sampv, size_t sampc) {
+                    int fmt, const void *sampv, size_t sampc)
+{
 	size_t processed = 0;
 	size_t written = 0;
 
@@ -90,14 +93,14 @@ int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 	}
 
 	processed = aptx_encode(aes->enc, intermediate_buf, intermediate_len, buf,
-							*len, &written);
+	                        *len, &written);
 
 	free(intermediate_buf);
 
 	if (processed != intermediate_len)
 		warning("aptx: Encoding stopped in the middle of the sample, "
-				"dropped %u bytes\n",
-				(unsigned int)(intermediate_len - processed));
+		        "dropped %u bytes\n",
+		        (unsigned int)(intermediate_len - processed));
 
 	*len = written;
 
