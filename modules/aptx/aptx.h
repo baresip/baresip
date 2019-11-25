@@ -18,8 +18,8 @@ enum {
 int aptx_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
                        struct auenc_param *param, const char *fmtp);
 
-int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len, int fmt,
-                    const void *sampv, size_t sampc);
+int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
+                    int fmt, const void *sampv, size_t sampc);
 
 
 int aptx_decode_update(struct audec_state **adsp, const struct aucodec *ac,
