@@ -80,7 +80,7 @@ int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		return ENOTSUP;
 
 	intermediate_len = sampc * APTX_WORDSIZE;
-	intermediate_buf = (uint8_t *)malloc(intermediate_len);
+	intermediate_buf = mem_alloc(intermediate_len);
 
 	if (!intermediate_buf)
 		return ENOMEM;
@@ -95,7 +95,7 @@ int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 	processed = aptx_encode(aes->enc, intermediate_buf, intermediate_len,
 	                        buf, *len, &written);
 
-	free(intermediate_buf);
+	mem_deref(intermediate_buf);
 
 	if (processed != intermediate_len)
 		warning("aptx: Encoding stopped in the middle of the sample, "
