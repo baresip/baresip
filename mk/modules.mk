@@ -101,6 +101,7 @@ USE_G722 := $(shell [ -f $(SYSROOT)/include/spandsp/g722.h ] || \
 	[ -f $(SYSROOT_ALT)/include/spandsp/g722.h ] || \
 	[ -f $(SYSROOT)/local/include/spandsp/g722.h ] && echo "yes")
 USE_G722_1 := $(shell [ -f $(SYSROOT)/include/g722_1.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/g722_1.h ] || \
 	[ -f $(SYSROOT_ALT)/include/g722_1.h ] || \
 	[ -f $(SYSROOT)/local/include/g722_1.h ] && echo "yes")
 USE_G726 := $(shell [ -f $(SYSROOT)/include/spandsp/g726.h ] || \
