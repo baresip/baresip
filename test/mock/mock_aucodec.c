@@ -18,6 +18,7 @@ static int mock_raw_encode(struct auenc_state *st,
 	const size_t sampsz = aufmt_sample_size(fmt);
 	size_t bytes;
 	(void)st;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;
@@ -42,6 +43,7 @@ static int mock_raw_decode(struct audec_state *st,
 {
 	const size_t sampsz = aufmt_sample_size(fmt);
 	(void)st;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;

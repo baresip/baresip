@@ -74,6 +74,7 @@ int aac_decode_frm(struct audec_state *ads,
 	unsigned i;
 	int16_t *s16 = sampv;
 	int size;
+	(void)marker;
 
 	if (!ads || !sampv || !sampc || !buf)
 		return EINVAL;

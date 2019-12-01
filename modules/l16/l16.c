@@ -25,6 +25,7 @@ static int encode(struct auenc_state *st,
 	int16_t *p = (void *)buf;
 	const int16_t *sampv16 = sampv;
 	(void)st;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;
@@ -50,6 +51,7 @@ static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 	int16_t *p = (void *)buf;
 	int16_t *sampv16 = sampv;
 	(void)st;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;

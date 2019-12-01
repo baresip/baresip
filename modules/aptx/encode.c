@@ -32,6 +32,7 @@ int aptx_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	int err = 0;
 
 	(void)param;
+	(void)fmtp;
 
 	if (!aesp || !ac || !ac->ch)
 		return EINVAL;
@@ -73,6 +74,7 @@ int aptx_encode_frm(struct auenc_state *aes,
 
 	uint8_t *intermediate_buf;
 	size_t intermediate_len;
+	(void)marker;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;

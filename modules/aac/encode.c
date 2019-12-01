@@ -31,13 +31,14 @@ static void destructor(void *arg)
 
 
 int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
-		       struct auenc_param *param, const char *fmtp)
+		      struct auenc_param *param, const char *fmtp)
 {
 	struct auenc_state *aes;
 	AACENC_ERROR error;
 	int err = 0;
 
 	(void)param;
+	(void)fmtp;
 
 	if (!aesp || !ac || !ac->ch)
 		return EINVAL;
@@ -86,7 +87,7 @@ int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 
 int aac_encode_frm(struct auenc_state *aes,
 		   bool *marker, uint8_t *buf, size_t *len,
-		    int fmt, const void *sampv, size_t sampc)
+		   int fmt, const void *sampv, size_t sampc)
 {
 	AACENC_BufDesc in_buf, out_buf;
 	AACENC_InArgs  in_args;
@@ -97,6 +98,7 @@ int aac_encode_frm(struct auenc_state *aes,
 	const int16_t *s16 = sampv;
 	size_t total = 0;
 	size_t i;
+	(void)marker;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;

@@ -69,6 +69,7 @@ int opus_decode_frm(struct audec_state *ads,
 		    bool marker, const uint8_t *buf, size_t len)
 {
 	int n;
+	(void)marker;
 
 	if (!ads || !sampv || !sampc || !buf)
 		return EINVAL;

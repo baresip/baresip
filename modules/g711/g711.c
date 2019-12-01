@@ -22,6 +22,7 @@ static int pcmu_encode(struct auenc_state *aes, bool *marker, uint8_t *buf,
 	const int16_t *p = sampv;
 
 	(void)aes;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;
@@ -48,6 +49,7 @@ static int pcmu_decode(struct audec_state *ads, int fmt, void *sampv,
 	int16_t *p = sampv;
 
 	(void)ads;
+	(void)marker;
 
 	if (!sampv || !sampc || !buf)
 		return EINVAL;
@@ -73,6 +75,7 @@ static int pcma_encode(struct auenc_state *aes, bool *marker, uint8_t *buf,
 	const int16_t *p = sampv;
 
 	(void)aes;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;
@@ -99,6 +102,7 @@ static int pcma_decode(struct audec_state *ads, int fmt, void *sampv,
 	int16_t *p = sampv;
 
 	(void)ads;
+	(void)marker;
 
 	if (!sampv || !sampc || !buf)
 		return EINVAL;

@@ -69,6 +69,7 @@ int aptx_decode_frm(struct audec_state *ads, int fmt, void *sampv,
 	size_t written = 0;
 
 	uint8_t *s16 = sampv;
+	(void)marker;
 
 	if (!ads || !sampv || !sampc || !buf)
 		return EINVAL;

@@ -179,6 +179,7 @@ int opus_encode_frm(struct auenc_state *aes,
 		    int fmt, const void *sampv, size_t sampc)
 {
 	opus_int32 n;
+	(void)marker;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;

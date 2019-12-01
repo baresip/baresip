@@ -121,6 +121,7 @@ int mpa_decode_frm(struct audec_state *ads,
 	spx_uint32_t intermediate_len;
 	spx_uint32_t out_len;
 	int16_t *sampv = sampv_void;
+	(void)marker;
 
 #ifdef DEBUG
 	debug("MPA dec start %d %ld\n",len, *sampc);

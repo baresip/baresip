@@ -232,6 +232,7 @@ static int encode(struct auenc_state *st, bool *marker, uint8_t *buf,
 {
 	float float_buf[sampc];
 	uint32_t i;
+	(void)marker;
 
 	/* Make sure there is enough space */
 	if (*len < st->enc_bytes) {
@@ -289,6 +290,8 @@ static int do_dec(struct audec_state *st, int16_t *sampv, size_t *sampc,
 static int decode(struct audec_state *st, int fmt, void *sampv,
 		  size_t *sampc, bool marker, const uint8_t *buf, size_t len)
 {
+	(void)marker;
+
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
@@ -321,6 +324,9 @@ static int decode(struct audec_state *st, int fmt, void *sampv,
 static int pkloss(struct audec_state *st, int fmt, void *sampv,
 		  size_t *sampc, const uint8_t *buf, size_t len)
 {
+	(void)buf;
+	(void)len;
+
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 

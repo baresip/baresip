@@ -772,6 +772,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 {
 	struct video *v = arg;
+	(void)strm;
 
 	MAGIC_CHECK(v);
 
