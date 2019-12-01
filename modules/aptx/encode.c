@@ -62,7 +62,8 @@ out:
 }
 
 
-int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
+int aptx_encode_frm(struct auenc_state *aes,
+		    bool *marker, uint8_t *buf, size_t *len,
                     int fmt, const void *sampv, size_t sampc)
 {
 	size_t processed = 0;
@@ -80,7 +81,7 @@ int aptx_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
 		return ENOTSUP;
 
 	intermediate_len = sampc * APTX_WORDSIZE;
-	intermediate_buf = mem_alloc(intermediate_len);
+	intermediate_buf = mem_alloc(intermediate_len, NULL);
 
 	if (!intermediate_buf)
 		return ENOMEM;

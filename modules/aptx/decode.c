@@ -63,7 +63,7 @@ out:
 
 
 int aptx_decode_frm(struct audec_state *ads, int fmt, void *sampv,
-                    size_t *sampc, const uint8_t *buf, size_t len)
+                    size_t *sampc, bool marker, const uint8_t *buf, size_t len)
 {
 	size_t processed = 0;
 	size_t written = 0;
