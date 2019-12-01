@@ -1267,7 +1267,6 @@ const struct mnat *mnat_find(const struct list *mnatl, const char *id);
 bool sdp_media_has_media(const struct sdp_media *m);
 int  sdp_fingerprint_decode(const char *attr, struct pl *hash,
 			    uint8_t *md, size_t *sz);
-uint32_t sdp_media_rattr_u32(const struct sdp_media *sdpm, const char *name);
 
 
 /*
