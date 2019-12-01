@@ -383,6 +383,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	size_t len;
 	size_t ext_len = 0;
 	uint32_t ts_delta = 0;
+	bool marker = tx->marker;
 	int err;
 
 	if (!tx->ac || !tx->ac->ench)
@@ -414,7 +415,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 	len = mbuf_get_space(tx->mb);
 
-	err = tx->ac->ench(tx->enc, mbuf_buf(tx->mb), &len,
+	err = tx->ac->ench(tx->enc, &marker, mbuf_buf(tx->mb), &len,
 			   tx->enc_fmt, sampv, sampc);
 
 	if ((err & 0xffff0000) == 0x00010000) {
@@ -438,7 +439,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		uint32_t rtp_ts = tx->ts_ext & 0xffffffff;
 
 		if (len) {
-			err = stream_send(a->strm, ext_len!=0, tx->marker, -1,
+			err = stream_send(a->strm, ext_len!=0, marker, -1,
 					  rtp_ts, tx->mb);
 			if (err)
 				goto out;
@@ -721,7 +722,8 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 }
 
 
-static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, unsigned lostc)
+static int aurx_stream_decode(struct aurx *rx, bool marker,
+			      struct mbuf *mb, unsigned lostc)
 {
 	size_t sampc = AUDIO_SAMPSZ;
 	void *sampv;
@@ -747,7 +749,7 @@ static int aurx_stream_decode(struct aurx *rx, struct mbuf *mb, unsigned lostc)
 
 		err = rx->ac->dech(rx->dec,
 				   rx->dec_fmt, rx->sampv, &sampc,
-				   mbuf_buf(mb), mbuf_get_left(mb));
+				   marker, mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
 			warning("audio: %s codec decode %u bytes: %m\n",
 				rx->ac->name, mbuf_get_left(mb), err);
@@ -973,9 +975,9 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
  out:
 	if (lostc)
-		aurx_stream_decode(&a->rx, mb, lostc);
+		aurx_stream_decode(&a->rx, hdr->m, mb, lostc);
 
-	(void)aurx_stream_decode(&a->rx, mb, 0);
+	(void)aurx_stream_decode(&a->rx, hdr->m, mb, 0);
 }
 
 

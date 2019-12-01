@@ -119,7 +119,7 @@ static int decode_update(struct audec_state **adsp,
 }
 
 
-static int encode(struct auenc_state *st, uint8_t *buf,
+static int encode(struct auenc_state *st, bool *marker, uint8_t *buf,
 		  size_t *len, int fmt, const void *sampv, size_t sampc)
 {
 	if (!buf || !len || !sampv)
@@ -138,7 +138,7 @@ static int encode(struct auenc_state *st, uint8_t *buf,
 
 
 static int decode(struct audec_state *st, int fmt, void *sampv,
-		  size_t *sampc, const uint8_t *buf, size_t len)
+		  size_t *sampc, bool marker, const uint8_t *buf, size_t len)
 {
 	if (!sampv || !sampc || !buf)
 		return EINVAL;

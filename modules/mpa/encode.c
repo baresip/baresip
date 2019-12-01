@@ -168,7 +168,8 @@ out:
 }
 
 
-int mpa_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
+int mpa_encode_frm(struct auenc_state *aes,
+		   bool *marker, uint8_t *buf, size_t *len,
 		   int fmt, const void *sampv, size_t sampc)
 {
 	int n = 0;

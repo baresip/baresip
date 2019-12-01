@@ -84,7 +84,8 @@ int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 }
 
 
-int aac_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
+int aac_encode_frm(struct auenc_state *aes,
+		   bool *marker, uint8_t *buf, size_t *len,
 		    int fmt, const void *sampv, size_t sampc)
 {
 	AACENC_BufDesc in_buf, out_buf;

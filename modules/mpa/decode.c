@@ -113,7 +113,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 int mpa_decode_frm(struct audec_state *ads,
 		   int fmt, void *sampv_void, size_t *sampc,
-		    const uint8_t *buf, size_t len)
+		   bool marker, const uint8_t *buf, size_t len)
 {
 	int result, channels, encoding, i;
 	long samplerate;

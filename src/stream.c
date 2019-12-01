@@ -260,9 +260,11 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (!(sdp_media_ldir(s->sdp) & SDP_RECVONLY))
 		return;
 
+#if 0
 	/* The marker bit indicates the beginning of a talkspurt. */
 	if (hdr->m && s->type == MEDIA_AUDIO)
 		flush = true;
+#endif
 
 	metric_add_packet(&s->metric_rx, mbuf_get_left(mb));
 

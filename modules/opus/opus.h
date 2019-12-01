@@ -18,7 +18,8 @@ struct opus_param {
 /* Encode */
 int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		       struct auenc_param *prm, const char *fmtp);
-int opus_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
+int opus_encode_frm(struct auenc_state *aes,
+		    bool *marker, uint8_t *buf, size_t *len,
 		    int fmt, const void *sampv, size_t sampc);
 
 extern uint32_t opus_complexity;
@@ -30,7 +31,7 @@ int opus_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 		       const char *fmtp);
 int opus_decode_frm(struct audec_state *ads,
 		    int fmt, void *sampv, size_t *sampc,
-		    const uint8_t *buf, size_t len);
+		    bool marker, const uint8_t *buf, size_t len);
 int opus_decode_pkloss(struct audec_state *st,
 		       int fmt, void *sampv, size_t *sampc,
 		       const uint8_t *buf, size_t len);

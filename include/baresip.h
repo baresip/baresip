@@ -967,14 +967,14 @@ typedef int (auenc_update_h)(struct auenc_state **aesp,
 			     const struct aucodec *ac,
 			     struct auenc_param *prm, const char *fmtp);
 typedef int (auenc_encode_h)(struct auenc_state *aes,
-			     uint8_t *buf, size_t *len,
+			     bool *marker, uint8_t *buf, size_t *len,
 			     int fmt, const void *sampv, size_t sampc);
 
 typedef int (audec_update_h)(struct audec_state **adsp,
 			     const struct aucodec *ac, const char *fmtp);
 typedef int (audec_decode_h)(struct audec_state *ads,
 			     int fmt, void *sampv, size_t *sampc,
-			     const uint8_t *buf, size_t len);
+			     bool marker, const uint8_t *buf, size_t len);
 typedef int (audec_plc_h)(struct audec_state *ads,
 			  int fmt, void *sampv, size_t *sampc,
 			  const uint8_t *buf, size_t len);

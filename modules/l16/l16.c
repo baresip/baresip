@@ -18,7 +18,8 @@
 enum {NR_CODECS = 10};
 
 
-static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
+static int encode(struct auenc_state *st,
+		  bool *marker, uint8_t *buf, size_t *len,
 		  int fmt, const void *sampv, size_t sampc)
 {
 	int16_t *p = (void *)buf;
@@ -44,7 +45,7 @@ static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 
 
 static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
-		  const uint8_t *buf, size_t len)
+		  bool marker, const uint8_t *buf, size_t len)
 {
 	int16_t *p = (void *)buf;
 	int16_t *sampv16 = sampv;

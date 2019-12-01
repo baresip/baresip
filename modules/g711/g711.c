@@ -16,7 +16,7 @@
  */
 
 
-static int pcmu_encode(struct auenc_state *aes, uint8_t *buf,
+static int pcmu_encode(struct auenc_state *aes, bool *marker, uint8_t *buf,
 		       size_t *len, int fmt, const void *sampv, size_t sampc)
 {
 	const int16_t *p = sampv;
@@ -42,7 +42,8 @@ static int pcmu_encode(struct auenc_state *aes, uint8_t *buf,
 
 
 static int pcmu_decode(struct audec_state *ads, int fmt, void *sampv,
-		       size_t *sampc, const uint8_t *buf, size_t len)
+		       size_t *sampc, bool marker,
+		       const uint8_t *buf, size_t len)
 {
 	int16_t *p = sampv;
 
@@ -66,7 +67,7 @@ static int pcmu_decode(struct audec_state *ads, int fmt, void *sampv,
 }
 
 
-static int pcma_encode(struct auenc_state *aes, uint8_t *buf,
+static int pcma_encode(struct auenc_state *aes, bool *marker, uint8_t *buf,
 		       size_t *len, int fmt, const void *sampv, size_t sampc)
 {
 	const int16_t *p = sampv;
@@ -92,7 +93,8 @@ static int pcma_encode(struct auenc_state *aes, uint8_t *buf,
 
 
 static int pcma_decode(struct audec_state *ads, int fmt, void *sampv,
-		       size_t *sampc, const uint8_t *buf, size_t len)
+		       size_t *sampc, bool marker,
+		       const uint8_t *buf, size_t len)
 {
 	int16_t *p = sampv;
 

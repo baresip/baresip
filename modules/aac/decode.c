@@ -64,7 +64,7 @@ int aac_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 int aac_decode_frm(struct audec_state *ads,
 		   int fmt, void *sampv, size_t *sampc,
-		   const uint8_t *buf, size_t len)
+		   bool marker, const uint8_t *buf, size_t len)
 {
 	UCHAR *pBuffer = (UCHAR *)buf;
 	UINT bufferSize = (UINT)len;

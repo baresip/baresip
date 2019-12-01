@@ -50,7 +50,7 @@ int g7221_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 int g7221_decode(struct audec_state *ads,
 		 int fmt, void *sampv, size_t *sampc,
-		 const uint8_t *buf, size_t len)
+		 bool marker, const uint8_t *buf, size_t len)
 {
 	size_t framec;
 
