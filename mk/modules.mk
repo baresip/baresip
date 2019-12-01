@@ -8,6 +8,7 @@
 #   USE_AAC           AAC audio codec
 #   USE_ALSA          ALSA audio driver
 #   USE_AMR           Adaptive Multi-Rate (AMR) audio codec
+#   USE_APTX          aptX audio codec
 #   USE_AUDIOUNIT     AudioUnit audio driver for OSX/iOS
 #   USE_AVCAPTURE     AVFoundation video capture for OSX/iOS
 #   USE_AVCODEC       avcodec video codec module
@@ -74,6 +75,9 @@ USE_AMR   := $(shell [ -d $(SYSROOT)/include/opencore-amrnb ] || \
 	[ -d $(SYSROOT_ALT)/include/opencore-amrnb ] || \
 	[ -d $(SYSROOT)/local/include/amrnb ] || \
 	[ -d $(SYSROOT)/include/amrnb ] && echo "yes")
+USE_APTX  := $(shell [ -f $(SYSROOT)/include/openaptx.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/openaptx.h ] || \
+	[ -f $(SYSROOT_ALT)/include/openaptx.h ] && echo "yes")
 USE_AVCODEC := $(shell [ -f $(SYSROOT)/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT)/local/include/libavcodec/avcodec.h ] || \
@@ -298,6 +302,9 @@ MODULES   += alsa
 endif
 ifneq ($(USE_AMR),)
 MODULES   += amr
+endif
+ifneq ($(USE_APTX),)
+MODULES   += aptx
 endif
 ifneq ($(USE_AUDIOUNIT),)
 MODULES   += audiounit
