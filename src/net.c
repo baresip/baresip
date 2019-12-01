@@ -308,14 +308,14 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	 */
 #ifdef HAVE_INET6
 	if (!check_ipv6()) {
-		error_msg("libre was compiled without IPv6-support"
-		      ", but baresip was compiled with\n");
+		warning("libre was compiled without IPv6-support"
+			", but baresip was compiled with\n");
 		return EAFNOSUPPORT;
 	}
 #else
 	if (check_ipv6()) {
-		error_msg("libre was compiled with IPv6-support"
-		      ", but baresip was compiled without\n");
+		warning("libre was compiled with IPv6-support"
+			", but baresip was compiled without\n");
 		return EAFNOSUPPORT;
 	}
 #endif

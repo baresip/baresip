@@ -249,8 +249,8 @@ int Srtp::protect_int(struct mbuf *mb, bool control)
 
 	if (len > mbuf_get_space(mb)) {
 		// this should never happen
-		error_msg("zrtp: protect: length > space (%u > %u)\n",
-		         len, mbuf_get_space(mb));
+		warning("zrtp: protect: length > space (%u > %u)\n",
+			len, mbuf_get_space(mb));
 		abort();
 	}
 
