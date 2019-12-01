@@ -340,26 +340,18 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 
 	s->ts_last = tmr_jiffies();
 
-	if (s->rtcph)
-		s->rtcph(msg, s->arg);
-
 	switch (msg->hdr.pt) {
 
 	case RTCP_SR:
 		(void)rtcp_stats(s->rtp, msg->r.sr.ssrc, &s->rtcp_stats);
-
-		if (s->cfg.rtp_stats)
-			call_set_xrtpstat(s->call);
-
-		ua_event(call_get_ua(s->call), UA_EVENT_CALL_RTCP, s->call,
-			 "%s", sdp_media_name(stream_sdpmedia(s)));
-		break;
-
-	case RTCP_APP:
-		ua_event(call_get_ua(s->call), UA_EVENT_CALL_RTCP, s->call,
-			 "%s", sdp_media_name(stream_sdpmedia(s)));
 		break;
 	}
+
+	if (s->rtcph)
+		s->rtcph(s, msg, s->arg);
+
+	if (s->sessrtcph)
+		s->sessrtcph(s, msg, s->sess_arg);
 }
 
 
@@ -464,7 +456,7 @@ static void mnat_connected_handler(const struct sa *raddr1,
 int stream_alloc(struct stream **sp, struct list *streaml,
 		 const struct stream_param *prm,
 		 const struct config_avt *cfg,
-		 struct call *call, struct sdp_session *sdp_sess,
+		 struct sdp_session *sdp_sess,
 		 enum media_type type, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
@@ -484,7 +476,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	MAGIC_INIT(s);
 
 	s->cfg   = *cfg;
-	s->call  = call;
 	s->type  = type;
 	s->rtph  = rtph;
 	s->rtcph = rtcph;
@@ -822,12 +813,14 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
  */
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
+				 stream_rtcp_h *rtcph,
 				 stream_error_h *errorh, void *arg)
 {
 	if (!strm)
 		return;
 
 	strm->mnatconnh  = mnatconnh;
+	strm->sessrtcph  = rtcph;
 	strm->errorh     = errorh;
 	strm->sess_arg   = arg;
 }
@@ -884,19 +877,6 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
 {
 	return strm ? &strm->rtcp_stats : NULL;
-}
-
-
-/**
- * Get the call object from the stream
- *
- * @param strm Stream object
- *
- * @return Call object
- */
-struct call *stream_call(const struct stream *strm)
-{
-	return strm ? strm->call : NULL;
 }
 
 

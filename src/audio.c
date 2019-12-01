@@ -181,6 +181,7 @@ struct audio {
 	bool hold;                    /**< Local hold flag                 */
 	unsigned extmap_aulevel;      /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
+	audio_level_h *levelh;
 	audio_err_h *errh;            /**< Audio error handler             */
 	void *arg;                    /**< Handler argument                */
 };
@@ -1123,13 +1124,13 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 int audio_alloc(struct audio **ap, struct list *streaml,
 		const struct stream_param *stream_prm,
 		const struct config *cfg,
-		struct call *call, struct sdp_session *sdp_sess, int label,
+		struct account *acc, struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		uint32_t ptime, const struct list *aucodecl, bool offerer,
-		audio_event_h *eventh, audio_err_h *errh, void *arg)
+		audio_event_h *eventh, audio_level_h *levelh,
+		audio_err_h *errh, void *arg)
 {
-	struct account *acc;
 	struct audio *a;
 	struct autx *tx;
 	struct aurx *rx;
@@ -1162,7 +1163,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	rx->dec_fmt = cfg->audio.dec_fmt;
 
 	err = stream_alloc(&a->strm, streaml,
-			   stream_prm, &cfg->avt, call, sdp_sess,
+			   stream_prm, &cfg->avt, sdp_sess,
 			   MEDIA_AUDIO, label,
 			   mnat, mnat_sess, menc, menc_sess, offerer,
 			   stream_recv_handler, NULL, a);
@@ -1225,7 +1226,6 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	auresamp_init(&tx->resamp);
 
-	acc = call_account(call);
 	if (acc && acc->ausrc_mod) {
 
 		tx->module = mem_ref(acc->ausrc_mod);
@@ -1262,6 +1262,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	rx->ptime  = ptime;
 
 	a->eventh  = eventh;
+	a->levelh  = levelh;
 	a->errh    = errh;
 	a->arg     = arg;
 
@@ -2028,6 +2029,16 @@ void audio_sdp_attr_decode(struct audio *a)
 				      "extmap",
 				      extmap_handler, a);
 	}
+}
+
+
+void audio_level_put(const struct audio *au, bool tx, double lvl)
+{
+	if (!au)
+		return;
+
+	if (au->levelh)
+		au->levelh(tx, lvl, au->arg);
 }
 
 

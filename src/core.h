@@ -285,7 +285,6 @@ enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct rtpext *extv, size_t extc,
 			    struct mbuf *mb, unsigned lostc, void *arg);
-typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
 
 /** Defines a generic media stream */
@@ -295,7 +294,6 @@ struct stream {
 #endif
 	struct le le;            /**< Linked list element                   */
 	struct config_avt cfg;   /**< Stream configuration                  */
-	struct call *call;       /**< Ref. to call object                   */
 	struct sdp_media *sdp;   /**< SDP Media line                        */
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
@@ -329,6 +327,7 @@ struct stream {
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
 	void *arg;               /**< Handler argument                      */
 	stream_mnatconn_h *mnatconnh;/**< Medianat connected handler        */
+	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
 	stream_error_h *errorh;  /**< Stream error handler                  */
 	void *sess_arg;          /**< Session handlers argument             */
 };
@@ -336,7 +335,7 @@ struct stream {
 int  stream_alloc(struct stream **sp, struct list *streaml,
 		  const struct stream_param *prm,
 		  const struct config_avt *cfg,
-		  struct call *call, struct sdp_session *sdp_sess,
+		  struct sdp_session *sdp_sess,
 		  enum media_type type, int label,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
@@ -381,7 +380,7 @@ typedef void (video_err_h)(int err, const char *str, void *arg);
 int  video_alloc(struct video **vp, struct list *streaml,
 		 const struct stream_param *stream_prm,
 		 const struct config *cfg,
-		 struct call *call, struct sdp_session *sdp_sess, int label,
+		 struct sdp_session *sdp_sess, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
 		 const char *content, const struct list *vidcodecl,

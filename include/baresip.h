@@ -1133,21 +1133,24 @@ struct mnat;
 struct mnat_sess;
 
 typedef void (audio_event_h)(int key, bool end, void *arg);
+typedef void (audio_level_h)(bool tx, double lvl, void *arg);
 typedef void (audio_err_h)(int err, const char *str, void *arg);
 
 int audio_alloc(struct audio **ap, struct list *streaml,
 		const struct stream_param *stream_prm,
 		const struct config *cfg,
-		struct call *call, struct sdp_session *sdp_sess, int label,
+		struct account *acc, struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		uint32_t ptime, const struct list *aucodecl, bool offerer,
-		audio_event_h *eventh, audio_err_h *errh, void *arg);
+		audio_event_h *eventh, audio_level_h *levelh,
+		audio_err_h *errh, void *arg);
 void audio_mute(struct audio *a, bool muted);
 bool audio_ismuted(const struct audio *a);
 int  audio_set_devicename(struct audio *a, const char *src, const char *play);
 int  audio_set_source(struct audio *au, const char *mod, const char *device);
 int  audio_set_player(struct audio *au, const char *mod, const char *device);
+void audio_level_put(const struct audio *au, bool tx, double lvl);
 int  audio_level_get(const struct audio *au, double *level);
 int  audio_debug(struct re_printf *pf, const struct audio *a);
 struct stream *audio_strm(const struct audio *au);
@@ -1196,11 +1199,12 @@ struct stream_param {
 };
 
 typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
+typedef void (stream_rtcp_h)(struct stream *strm,
+			     struct rtcp_msg *msg, void *arg);
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
 void stream_update(struct stream *s);
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
-struct call *stream_call(const struct stream *strm);
 struct sdp_media *stream_sdpmedia(const struct stream *s);
 uint32_t stream_metric_get_tx_n_packets(const struct stream *strm);
 uint32_t stream_metric_get_tx_n_bytes(const struct stream *strm);
@@ -1214,6 +1218,7 @@ int  stream_start_mediaenc(struct stream *strm);
 int  stream_start(const struct stream *strm);
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
+				 stream_rtcp_h *rtcph,
 				 stream_error_h *errorh, void *arg);
 
 

@@ -464,6 +464,16 @@ static void audio_event_handler(int key, bool end, void *arg)
 }
 
 
+static void audio_level_handler(bool tx, double lvl, void *arg)
+{
+	struct call *call = arg;
+	MAGIC_CHECK(call);
+
+	ua_event(call->ua, tx ? UA_EVENT_VU_TX : UA_EVENT_VU_RX,
+		 call, "%.2f", lvl);
+}
+
+
 static void audio_error_handler(int err, const char *str, void *arg)
 {
 	struct call *call = arg;
@@ -565,6 +575,31 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 			start_video(call);
 			break;
 		}
+	}
+}
+
+
+static void stream_rtcp_handler(struct stream *strm,
+				struct rtcp_msg *msg, void *arg)
+{
+	struct call *call = arg;
+
+	MAGIC_CHECK(call);
+
+	switch (msg->hdr.pt) {
+
+	case RTCP_SR:
+		if (strm->cfg.rtp_stats)
+			call_set_xrtpstat(call);
+
+		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,
+			 "%s", sdp_media_name(stream_sdpmedia(strm)));
+		break;
+
+	case RTCP_APP:
+		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,
+			 "%s", sdp_media_name(stream_sdpmedia(strm)));
+		break;
 	}
 }
 
@@ -714,11 +749,12 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	}
 
 	/* Audio stream */
-	err = audio_alloc(&call->audio, &call->streaml, &stream_prm, cfg, call,
+	err = audio_alloc(&call->audio, &call->streaml, &stream_prm, cfg, acc,
 			  call->sdp, ++label,
 			  acc->mnat, call->mnats, acc->menc, call->mencs,
 			  acc->ptime, account_aucodecl(call->acc), !got_offer,
-			  audio_event_handler, audio_error_handler, call);
+			  audio_event_handler, audio_level_handler,
+			  audio_error_handler, call);
 	if (err)
 		goto out;
 
@@ -735,7 +771,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (use_video) {
 		err = video_alloc(&call->video, &call->streaml,
 				  &stream_prm, cfg,
-				  call, call->sdp, ++label,
+				  call->sdp, ++label,
 				  acc->mnat, call->mnats,
 				  acc->menc, call->mencs,
 				  "main",
@@ -754,6 +790,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
 		stream_set_session_handlers(strm, stream_mnatconn_handler,
+					    stream_rtcp_handler,
 					    stream_error_handler, call);
 	}
 
@@ -1733,7 +1770,7 @@ static int send_invite(struct call *call)
 	struct mbuf *desc;
 	int err;
 
-	routev[0] = ua_outbound(call->ua);
+	routev[0] = account_outbound(call->acc, 0);
 
 	err = call_sdp_get(call, &desc, true);
 	if (err)
