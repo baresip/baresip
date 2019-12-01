@@ -138,7 +138,7 @@ static int module_init(void)
 
 	/** generate fmtp string based on config file */
 
-	strcpy(mode,mpa.fmtp);
+	str_ncpy(mode, mpa.fmtp, sizeof(mode));
 
 	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
 		if (value<2 || value>3) {
