@@ -62,15 +62,13 @@ static void call_event_handler(struct call *call, enum call_event ev,
 	case CALL_EVENT_ESTABLISHED:
 		debug("b2bua: CALL_ESTABLISHED: peer_uri=%s\n",
 		      call_peeruri(call));
-		ua_answer(call_get_ua(call2), call2);
+		call_answer(call2, 200);
 		break;
 
 	case CALL_EVENT_CLOSED:
 		debug("b2bua: CALL_CLOSED: %s\n", str);
 
-		mem_ref(call2);
-
-		ua_hangup(call_get_ua(call2), call2, call_scode(call), "");
+		call_hangup(call2, call_scode(call), "");
 		mem_deref(sess);
 		break;
 
