@@ -218,6 +218,7 @@ aac           Advanced Audio Coding (AAC) audio codec
 account       Account loader
 alsa          ALSA audio driver
 amr           Adaptive Multi-Rate (AMR) audio codec
+aptx          Audio Processing Technology codec (aptX)
 aubridge      Audio bridge module
 audiounit     AudioUnit audio driver for MacOSX/iOS
 aufile        Audio module for using a WAV-file as audio input
@@ -345,6 +346,7 @@ zrtp          ZRTP media encryption module
 * RFC 6464  A RTP Header Extension for Client-to-Mixer Audio Level Indication
 * RFC 6716  Definition of the Opus Audio Codec
 * RFC 6886  NAT Port Mapping Protocol (NAT-PMP)
+* RFC 7310  RTP Payload Format for Standard apt-X and Enhanced apt-X Codecs
 * RFC 7587  RTP Payload Format for the Opus Speech and Audio Codec
 * RFC 7741  RTP Payload Format for VP8 Video
 * RFC 7798  RTP Payload Format for High Efficiency Video Coding (HEVC)
