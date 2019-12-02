@@ -63,35 +63,46 @@ out:
 
 
 int aptx_decode_frm(struct audec_state *ads, int fmt, void *sampv,
-                    size_t *sampc, bool marker, const uint8_t *buf, size_t len)
+                    size_t *sampc, bool marker, const uint8_t *buf,
+                    size_t len)
 {
 	size_t processed = 0;
 	size_t written = 0;
 
-	uint8_t *s16 = sampv;
+	uint8_t *sampv_buf = sampv;
+
 	(void)marker;
 
 	if (!ads || !sampv || !sampc || !buf)
 		return EINVAL;
 
-	if (fmt != AUFMT_S16LE)
-		return ENOTSUP;
-
-	processed = aptx_decode(ads->dec, buf, len, s16, *sampc, &written);
+	processed = aptx_decode(ads->dec, buf, len, sampv, *sampc, &written);
 
 	*sampc = written / APTX_WORDSIZE;
+
+	if (written == 0)
+		return 0;
 
 	if (processed != len)
 		warning("aptx: Decoding stopped in the middle of the sample, "
 		        "dropped %u bytes\n",
 		        (unsigned int)(len - processed));
 
-	if (*sampc > 0) {
+	switch (fmt) {
+
+	case AUFMT_S16LE:
 		/* remap S24 to S16 in same buffer */
 		for (size_t s = 0; s < *sampc; s++) {
-			s16[s * 2] = s16[(s * APTX_WORDSIZE) + 1];
-			s16[s * 2 + 1] = s16[(s * APTX_WORDSIZE) + 2];
+			sampv_buf[s * 2]     = sampv_buf[(s * APTX_WORDSIZE) + 1];
+			sampv_buf[s * 2 + 1] = sampv_buf[(s * APTX_WORDSIZE) + 2];
 		}
+		break;
+
+	case AUFMT_S24_3LE:
+		break;
+
+	default:
+		return ENOTSUP;
 	}
 
 	return 0;
