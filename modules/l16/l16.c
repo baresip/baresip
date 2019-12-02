@@ -74,8 +74,8 @@ static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 
 /* See RFC 3551 */
 static struct aucodec l16v[NR_CODECS] = {
-{LE_INIT,    0, "L16", 48000, 48000, 2, 2,  5, 0, 0, encode, 0, decode, 0,0,0},
-{LE_INIT, "10", "L16", 44100, 44100, 2, 2,  5, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", 48000, 48000, 2, 2,  4, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT, "10", "L16", 44100, 44100, 2, 2,  4, 0, 0, encode, 0, decode, 0,0,0},
 {LE_INIT,    0, "L16", 32000, 32000, 2, 2, 10, 0, 0, encode, 0, decode, 0,0,0},
 {LE_INIT,    0, "L16", 16000, 16000, 2, 2, 20, 0, 0, encode, 0, decode, 0,0,0},
 {LE_INIT,    0, "L16",  8000,  8000, 2, 2, 20, 0, 0, encode, 0, decode, 0,0,0},
