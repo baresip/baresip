@@ -375,22 +375,9 @@ int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
 
 struct video;
 
-typedef void (video_err_h)(int err, const char *str, void *arg);
 
-int  video_alloc(struct video **vp, struct list *streaml,
-		 const struct stream_param *stream_prm,
-		 const struct config *cfg,
-		 struct sdp_session *sdp_sess, int label,
-		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
-		 const struct menc *menc, struct menc_sess *menc_sess,
-		 const char *content, const struct list *vidcodecl,
-		 const struct list *vidfiltl, bool offerer,
-		 video_err_h *errh, void *arg);
-int  video_start(struct video *v, const char *peer);
 void video_stop(struct video *v);
 bool video_is_started(const struct video *v);
-int  video_encoder_set(struct video *v, struct vidcodec *vc,
-		       int pt_tx, const char *params);
 int  video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		       const char *fmtp);
 void video_update_picture(struct video *v);
