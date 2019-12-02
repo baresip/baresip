@@ -135,7 +135,6 @@ module_app		auloop.so
 #module_app		b2bua.so
 module_app		contact.so
 #module_app		debug_cmd.so
-#module_app		dtmfio.so
 #module_app		echo.so
 #module_app		gtk.so
 module_app		menu.so
