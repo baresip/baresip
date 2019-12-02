@@ -269,7 +269,6 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 }
 
 
-/* prm->view points to the XWINDOW ID */
 static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg)
@@ -294,11 +293,7 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		goto out;
 	}
 
-	/* Use provided view, or create our own */
-	if (prm && prm->view)
-		st->win = (Window)prm->view;
-	else
-		st->internal = true;
+	st->internal = true;
 
  out:
 	if (err)

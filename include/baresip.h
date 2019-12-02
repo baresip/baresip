@@ -910,7 +910,6 @@ struct vidisp_st;
 
 /** Video Display parameters */
 struct vidisp_prm {
-	void *view;       /**< Optional view (set by application or module) */
 	bool fullscreen;  /**< Enable fullscreen display                    */
 };
 
