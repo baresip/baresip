@@ -179,9 +179,9 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			break;
 
 		case BEHAVIOUR_PROGRESS:
-			err = ua_progress(ua, call);
+			err = call_progress(call);
 			if (err) {
-				warning("ua_progress failed (%m)\n", err);
+				warning("call_progress failed (%m)\n", err);
 				goto out;
 			}
 			break;

@@ -978,6 +978,13 @@ int call_hangup(struct call *call, uint16_t scode, const char *reason)
 }
 
 
+/**
+ * Answer an incoming call with early media
+ *
+ * @param call Call to answer
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_progress(struct call *call)
 {
 	struct mbuf *desc;

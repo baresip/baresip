@@ -140,7 +140,6 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		call_event_h *eh, void *arg);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
-int  call_progress(struct call *call);
 int  call_sdp_get(const struct call *call, struct mbuf **descp, bool offer);
 int  call_jbuf_stat(struct re_printf *pf, const struct call *call);
 int  call_info(struct re_printf *pf, const struct call *call);

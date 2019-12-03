@@ -933,29 +933,6 @@ int ua_answer(struct ua *ua, struct call *call)
 
 
 /**
- * Answer an incoming call with early media
- *
- * @param ua   User-Agent
- * @param call Call to answer, or NULL for current call
- *
- * @return 0 if success, otherwise errorcode
- */
-int ua_progress(struct ua *ua, struct call *call)
-{
-	if (!ua)
-		return EINVAL;
-
-	if (!call) {
-		call = ua_call(ua);
-		if (!call)
-			return ENOENT;
-	}
-
-	return call_progress(call);
-}
-
-
-/**
  * Put the current call on hold and answer the incoming call
  *
  * @param ua   User-Agent
