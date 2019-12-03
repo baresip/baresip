@@ -92,19 +92,21 @@ int aptx_encode_frm(struct auenc_state *aes, bool *marker, uint8_t *buf,
 		/* map S16 to S24 intermediate buffer */
 		for (size_t s = 0; s < sampc; s++) {
 			intermediate_buf[s * APTX_WORDSIZE] = 0;
-			intermediate_buf[s * APTX_WORDSIZE + 1] = sampv_buf[s * 2];
-			intermediate_buf[s * APTX_WORDSIZE + 2] = sampv_buf[s * 2 + 1];
+			intermediate_buf[s * APTX_WORDSIZE + 1] =
+			    sampv_buf[s * 2];
+			intermediate_buf[s * APTX_WORDSIZE + 2] =
+			    sampv_buf[s * 2 + 1];
 		}
 
 		processed = aptx_encode(aes->enc, intermediate_buf, sampv_len,
-                                buf, *len, &written);
+		                        buf, *len, &written);
 
 		mem_deref(intermediate_buf);
 		break;
 
 	case AUFMT_S24_3LE:
-		processed = aptx_encode(aes->enc, sampv_buf, sampv_len,
-                                buf, *len, &written);
+		processed = aptx_encode(aes->enc, sampv_buf, sampv_len, buf,
+		                        *len, &written);
 		break;
 
 	default:
