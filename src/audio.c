@@ -1176,6 +1176,19 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		stream_set_bw(a->strm, AUDIO_BANDWIDTH);
 	}
 
+	/* Audio codecs */
+	for (le = list_head(aucodecl); le; le = le->next) {
+
+		struct aucodec *ac = le->data;
+
+		if (ac->ptime)
+			ptime = min(ptime, ac->ptime);
+
+		err = add_audio_codec(stream_sdpmedia(a->strm), ac);
+		if (err)
+			goto out;
+	}
+
 	err = sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
 				  "ptime", "%u", ptime);
 	if (err)
@@ -1200,12 +1213,6 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 			goto out;
 	}
 
-	/* Audio codecs */
-	for (le = list_head(aucodecl); le; le = le->next) {
-		err = add_audio_codec(stream_sdpmedia(a->strm), le->data);
-		if (err)
-			goto out;
-	}
 
 	tx->mb = mbuf_alloc(STREAM_PRESZ + 4096);
 	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * aufmt_sample_size(tx->enc_fmt),
