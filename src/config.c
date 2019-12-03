@@ -842,9 +842,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module_app\t\t" "b2bua"MOD_EXT"\n");
 	(void)re_fprintf(f, "module_app\t\t"  "contact"MOD_EXT"\n");
 	(void)re_fprintf(f, "module_app\t\t"  "debug_cmd"MOD_EXT"\n");
-#ifdef LINUX
-	(void)re_fprintf(f, "#module_app\t\t"  "dtmfio"MOD_EXT"\n");
-#endif
 	(void)re_fprintf(f, "#module_app\t\t"  "echo"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "gtk" MOD_EXT "\n");
 	(void)re_fprintf(f, "module_app\t\t"  "menu"MOD_EXT"\n");

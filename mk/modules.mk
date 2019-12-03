@@ -241,7 +241,6 @@ endif
 endif
 ifeq ($(OS),linux)
 USE_EVDEV := $(shell [ -f $(SYSROOT)/include/linux/input.h ] && echo "yes")
-MODULES   += dtmfio
 endif
 ifeq ($(OS),win32)
 USE_WINWAVE := yes
@@ -249,9 +248,6 @@ MODULES   += wincons
 endif
 ifeq ($(OS),openbsd)
 MODULES   += sndio
-endif
-ifeq ($(OS),freebsd)
-MODULES   += dtmfio
 endif
 
 ifneq ($(USE_GTK),)
