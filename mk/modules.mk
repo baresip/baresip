@@ -133,7 +133,7 @@ USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
 	[ -f $(SYSROOT_ALT)/include/mpg123.h ] && echo "yes")
 USE_OPUS := $(shell [ -f $(SYSROOT)/include/opus/opus.h ] || \
 	[ -f $(SYSROOT_ALT)/include/opus/opus.h ] || \
-	[ -f $(SYSROOT)/local/include/opus/opus.h ] && echo "yes")
+	[ -f $(SYSROOT_LOCAL)/include/opus/opus.h ] && echo "yes")
 USE_OPUS_MS := $(shell [ -f $(SYSROOT)/include/opus/opus_multistream.h ] || \
 	[ -f $(SYSROOT_ALT)/include/opus/opus_multistream.h ] || \
 	[ -f $(SYSROOT)/local/include/opus/opus_multistream.h ] && echo "yes")
