@@ -375,7 +375,6 @@ int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
 struct video;
 
 
-void video_stop(struct video *v);
 bool video_is_started(const struct video *v);
 int  video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		       const char *fmtp);
