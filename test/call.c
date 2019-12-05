@@ -1396,9 +1396,9 @@ int test_call_webrtc(void)
 	ASSERT_TRUE(
 	  stream_is_secure(video_strm(call_video(ua_call(f->b.ua)))));
 
-	/* verify that one or more RTCP packets were received */
-	ASSERT_TRUE(fix.a.n_rtcp > 0);
-	ASSERT_TRUE(fix.b.n_rtcp > 0);
+	/* verify that one or more RTP packets were received */
+	ASSERT_TRUE(fix.a.n_rtpestab > 0);
+	ASSERT_TRUE(fix.b.n_rtpestab > 0);
 
 	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
