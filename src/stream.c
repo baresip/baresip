@@ -1052,11 +1052,13 @@ int stream_start(const struct stream *strm)
 
 	rtcp_start(strm->rtp, strm->cname, &strm->raddr_rtcp);
 
-	/* Send a dummy RTCP packet to open NAT pinhole */
-	err = rtcp_send_app(strm->rtp, "PING", (void *)"PONG", 4);
-	if (err) {
-		warning("stream: rtcp_send_app failed (%m)\n", err);
-		return err;
+	if (!strm->mnat) {
+		/* Send a dummy RTCP packet to open NAT pinhole */
+		err = rtcp_send_app(strm->rtp, "PING", (void *)"PONG", 4);
+		if (err) {
+			warning("stream: rtcp_send_app failed (%m)\n", err);
+			return err;
+		}
 	}
 
 	return 0;
