@@ -199,6 +199,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
 	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
+	case UA_EVENT_CALL_RTPESTAB:        return "CALL_RTPESTAB";
 	case UA_EVENT_CALL_RTCP:            return "CALL_RTCP";
 	case UA_EVENT_CALL_MENC:            return "CALL_MENC";
 	case UA_EVENT_VU_TX:                return "VU_TX_REPORT";

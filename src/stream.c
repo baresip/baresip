@@ -273,6 +273,9 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		     ", receiving from %J\n",
 		     sdp_media_name(s->sdp), src);
 		s->rtp_estab = true;
+
+		if (s->rtpestabh)
+			s->rtpestabh(s, s->sess_arg);
 	}
 
 	if (!s->pseq_set) {
@@ -815,6 +818,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
  */
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
+				 stream_rtpestab_h *rtpestabh,
 				 stream_rtcp_h *rtcph,
 				 stream_error_h *errorh, void *arg)
 {
@@ -822,6 +826,7 @@ void stream_set_session_handlers(struct stream *strm,
 		return;
 
 	strm->mnatconnh  = mnatconnh;
+	strm->rtpestabh  = rtpestabh;
 	strm->sessrtcph  = rtcph;
 	strm->errorh     = errorh;
 	strm->sess_arg   = arg;

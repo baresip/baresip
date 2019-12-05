@@ -326,6 +326,7 @@ struct stream {
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
 	void *arg;               /**< Handler argument                      */
 	stream_mnatconn_h *mnatconnh;/**< Medianat connected handler        */
+	stream_rtpestab_h *rtpestabh;
 	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
 	stream_error_h *errorh;  /**< Stream error handler                  */
 	void *sess_arg;          /**< Session handlers argument             */

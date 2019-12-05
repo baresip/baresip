@@ -579,6 +579,16 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 }
 
 
+static void stream_rtpestab_handler(struct stream *strm, void *arg)
+{
+	struct call *call = arg;
+	MAGIC_CHECK(call);
+
+	ua_event(call->ua, UA_EVENT_CALL_RTPESTAB, call,
+		 "%s", sdp_media_name(stream_sdpmedia(strm)));
+}
+
+
 static void stream_rtcp_handler(struct stream *strm,
 				struct rtcp_msg *msg, void *arg)
 {
@@ -790,6 +800,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
 		stream_set_session_handlers(strm, stream_mnatconn_handler,
+					    stream_rtpestab_handler,
 					    stream_rtcp_handler,
 					    stream_error_handler, call);
 	}

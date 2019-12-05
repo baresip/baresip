@@ -677,6 +677,7 @@ enum ua_event {
 	UA_EVENT_CALL_TRANSFER_FAILED,
 	UA_EVENT_CALL_DTMF_START,
 	UA_EVENT_CALL_DTMF_END,
+	UA_EVENT_CALL_RTPESTAB,
 	UA_EVENT_CALL_RTCP,
 	UA_EVENT_CALL_MENC,
 	UA_EVENT_VU_TX,
@@ -1213,6 +1214,7 @@ struct stream_param {
 };
 
 typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
+typedef void (stream_rtpestab_h)(struct stream *strm, void *arg);
 typedef void (stream_rtcp_h)(struct stream *strm,
 			     struct rtcp_msg *msg, void *arg);
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
@@ -1232,6 +1234,7 @@ int  stream_start_mediaenc(struct stream *strm);
 int  stream_start(const struct stream *strm);
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
+				 stream_rtpestab_h *rtpestabh,
 				 stream_rtcp_h *rtcph,
 				 stream_error_h *errorh, void *arg);
 
