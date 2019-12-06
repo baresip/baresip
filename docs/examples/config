@@ -17,6 +17,7 @@ call_local_timeout	120
 call_max_calls		4
 
 # Audio
+#audio_path		/usr/local/share/baresip
 audio_player		alsa,default
 audio_source		alsa,default
 audio_alert		alsa,default
@@ -47,6 +48,7 @@ rtp_tos			184
 rtcp_mux		no
 jitter_buffer_delay	5-10		# frames
 rtp_stats		no
+#rtp_timeout		60
 
 # Network
 net_prefer_ipv6		no
@@ -134,7 +136,7 @@ module_tmp		account.so
 module_app		auloop.so
 #module_app		b2bua.so
 module_app		contact.so
-#module_app		debug_cmd.so
+module_app		debug_cmd.so
 #module_app		echo.so
 #module_app		gtk.so
 module_app		menu.so
@@ -148,6 +150,7 @@ module_app		vidloop.so
 
 #------------------------------------------------------------------------------
 # Module parameters
+
 
 # UI Modules parameters
 cons_listen		0.0.0.0:5555 # cons - Console UI UDP/TCP sockets
@@ -163,7 +166,7 @@ opus_bitrate		28000 # 6000-510000
 #opus_stereo		yes
 #opus_sprop_stereo	yes
 #opus_cbr		no
-#opus_inbandfec	no
+#opus_inbandfec		no
 #opus_dtx		no
 #opus_mirror		no
 #opus_complexity	10
@@ -179,7 +182,6 @@ video_selfview		window # {window,pip}
 ice_turn		no
 ice_debug		no
 ice_nomination		regular	# {regular,aggressive}
-ice_mode		full	# {full,lite}
 
 # ZRTP
 #zrtp_hash		no  # Disable SDP zrtp-hash (not recommended)
@@ -191,8 +193,12 @@ ice_mode		full	# {full,lite}
 #ringback_disabled	no
 #statmode_default	off
 
-# sndfile #
-snd_path 		/tmp/
+# avcodec
+#avcodec_h264enc	libx264
+#avcodec_h264dec	h264
+#avcodec_h265enc	libx265
+#avcodec_h265dec	hevc
+#avcodec_hwaccel	videotoolbox
 
 # MQTT
 #mqtt_broker_host	sollentuna.example.com
@@ -201,3 +207,6 @@ snd_path 		/tmp/
 #mqtt_broker_user	alfred
 #mqtt_broker_password	Crocus
 #mqtt_basetopic		baresip/01 # May be uniqe for each client you want to control. Defaults to "baresip"
+
+# sndfile
+#snd_path		/tmp
