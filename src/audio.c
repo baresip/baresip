@@ -1128,7 +1128,7 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
  * @param streaml    List of streams
  * @param stream_prm Stream parameters
  * @param cfg        Global configuration
- * @param call       Call object
+ * @param acc        User-Agent account
  * @param sdp_sess   SDP Session
  * @param label      SDP label
  * @param mnat       Media NAT (optional)
@@ -1139,6 +1139,7 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
  * @param aucodecl   List of audio codecs
  * @param offerer    True if SDP offerer, false if SDP answerer
  * @param eventh     Event handler
+ * @param levelh     Audio level handler
  * @param errh       Error handler
  * @param arg        Handler argument
  *

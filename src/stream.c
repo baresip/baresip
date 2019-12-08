@@ -813,6 +813,8 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
  *
  * @param strm      Stream object
  * @param mnatconnh Media NAT connected handler
+ * @param rtpestabh Incoming RTP established handler
+ * @param rtcph     Incoming RTCP message handler
  * @param errorh    Error handler
  * @param arg       Handler argument
  */
