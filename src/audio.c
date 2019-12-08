@@ -1008,6 +1008,8 @@ static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 {
 	struct sdp_media *sdp = stream_sdpmedia(au->strm);
 	const struct config_avt *avt = &au->strm->cfg;
+	const struct list *lst;
+	struct le *le;
 	char str[64];
 	int jbvalue = 0;
 	int jb_id = 0;
@@ -1048,6 +1050,25 @@ static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 				   avt->rtp_tos / 4);
 
 	/* EBU ACIP FEC:: NOT SET IN BARESIP */
+
+	lst = sdp_media_format_lst(sdp, true);
+	for (le = list_head(lst); le; le = le->next) {
+
+		const struct sdp_format *fmt = le->data;
+		struct aucodec *ac = fmt->data;
+
+		if (!fmt->sup)
+			continue;
+
+		if (!fmt->data)
+			continue;
+
+		if (ac->ptime) {
+			err |= sdp_media_set_lattr(sdp, false, "ebuacip",
+						   "plength %s %u",
+						   fmt->id, ac->ptime);
+		}
+	}
 
 	return err;
 }
@@ -1137,6 +1158,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	struct autx *tx;
 	struct aurx *rx;
 	struct le *le;
+	uint32_t minptime = ptime;
 	int err;
 
 	if (!ap || !cfg)
@@ -1182,15 +1204,17 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		struct aucodec *ac = le->data;
 
 		if (ac->ptime)
-			ptime = min(ptime, ac->ptime);
+			minptime = min(minptime, ac->ptime);
 
 		err = add_audio_codec(stream_sdpmedia(a->strm), ac);
 		if (err)
 			goto out;
 	}
 
-	err = sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
-				  "ptime", "%u", ptime);
+	err  = sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
+				   "minptime", "%u", minptime);
+	err |= sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
+				   "ptime", "%u", ptime);
 	if (err)
 		goto out;
 
@@ -1208,7 +1232,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	if (cfg->sdp.ebuacip) {
 
-		err = set_ebuacip_params(a, ptime);
+		err = set_ebuacip_params(a, minptime);
 		if (err)
 			goto out;
 	}
