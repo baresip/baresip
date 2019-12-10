@@ -18,6 +18,7 @@ SRCS	+= conf.c
 SRCS	+= config.c
 SRCS	+= contact.c
 SRCS	+= custom_hdrs.c
+SRCS	+= dtmf.c
 SRCS	+= event.c
 SRCS	+= h264.c
 SRCS	+= log.c

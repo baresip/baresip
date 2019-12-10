@@ -24,6 +24,7 @@
 #define MAGIC 0x000a0d10
 #include "magic.h"
 
+#include "dtmf.h"
 
 /**
  * \page GenericAudioStream Generic Audio Stream
@@ -69,11 +70,11 @@ enum {
 
  Processing encoder pipeline:
 
- .    .-------.   .-------.   .--------.   .--------.   .--------.
- |    |       |   |       |   |        |   |        |   |        |
- |O-->| ausrc |-->| aubuf |-->| resamp |-->| aufilt |-->| encode |---> RTP
- |    |       |   |       |   |        |   |        |   |        |
- '    '-------'   '-------'   '--------'   '--------'   '--------'
+ .    .-------.   .-------.   .--------.   .------.   .--------.   .--------.
+ |    |       |   |       |   |        |   |      |   |        |   |        |
+ |O-->| ausrc |-->| aubuf |-->| resamp |-->| DTMF |-->| aufilt |-->| encode |---> RTP
+ |    |       |   |       |   |        |   | ins. |   |        |   |        |
+ '    '-------'   '-------'   '--------'   '------'   '--------'   '--------'
 
  \endverbatim
  *
@@ -118,6 +119,7 @@ struct autx {
 		} thr;
 	} u;
 #endif
+	struct dtmf_generator dtmfgen;	/**< DTMF generator state	    */
 };
 
 
@@ -542,6 +544,17 @@ static void poll_aubuf_tx(struct audio *a)
 
 		sampv = tx->sampv_rs;
 		sampc = sampc_rs;
+	}
+
+	/* check if we should generate DTMF audio */
+	if (tx->enc_fmt == AUFMT_S16LE &&
+	    dtmf_is_empty(&tx->dtmfgen) == false) {
+		size_t x;
+
+		for (x = 0; x != sampc; x++) {
+			if (dtmf_get_sample(&tx->dtmfgen, (int16_t *)sampv + x))
+				break;
+		}
 	}
 
 	/* Process exactly one audio-frame in list order */
@@ -1938,6 +1951,11 @@ int audio_send_digit(struct audio *a, char key)
 		if (event == -1) {
 			warning("audio: invalid DTMF digit (0x%02x)\n", key);
 			return EINVAL;
+		}
+
+		err = dtmf_queue_digit(&a->tx.dtmfgen, key, a->tx.ac->crate, 0, 0);
+		if (err) {
+			warning("audio: invalid DTMF digit overflow (0x%02x)\n", key);
 		}
 
 		err = telev_send(a->telev, event, false);
