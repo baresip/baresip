@@ -4,7 +4,9 @@
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #define _DEFAULT_SOURCE 1
+#ifndef __FreeBSD__
 #define _POSIX_C_SOURCE 199309L
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -13,7 +15,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-
 
 /**
  * @defgroup gst gst
