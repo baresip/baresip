@@ -23,3 +23,10 @@ selftest
 src/static.c
 build*
 *.pc
+
+# Backup files
+*~
+*.bak
+*.old
+*.orig
+*.rej
