@@ -44,6 +44,7 @@
 #   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL2          libSDL2 video output
 #   USE_SNDFILE       sndfile wav dumper
+#   USE_SNDIO         sndio audo driver
 #   USE_SPEEX_PP      Speex preprocessor
 #   USE_SRTP          Secure RTP module using libre
 #   USE_STDIO         stdio input driver
@@ -154,6 +155,8 @@ USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
 	[ -f $(SYSROOT)/local/include/sndfile.h ] || \
 	[ -f $(SYSROOT_ALT)/include/sndfile.h ] || \
 	[ -f $(SYSROOT_ALT)/usr/local/include/sndfile.h ] && echo "yes")
+USE_SNDIO := $(shell [ -f $(SYSROOT)/include/sndio.h ] || \
+	[ -f $(SYSROOT)/local/include/sndio.h ] && echo "yes")
 USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
 HAVE_SPEEXDSP := $(shell \
 	[ -f $(SYSROOT)/local/lib/libspeexdsp$(LIB_SUFFIX) ] || \
@@ -245,9 +248,6 @@ endif
 ifeq ($(OS),win32)
 USE_WINWAVE := yes
 MODULES   += wincons
-endif
-ifeq ($(OS),openbsd)
-MODULES   += sndio
 endif
 
 ifneq ($(USE_GTK),)
@@ -422,6 +422,9 @@ MODULES   += speex_pp
 endif
 ifneq ($(USE_STDIO),)
 MODULES   += stdio
+endif
+ifneq ($(USE_SNDIO),)
+MODULES   += sndio
 endif
 ifneq ($(USE_SYSLOG),)
 MODULES   += syslog
