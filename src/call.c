@@ -336,6 +336,10 @@ static int update_audio(struct call *call)
 
 		err  = audio_decoder_set(call->audio, ac,
 					 sc->pt, sc->params);
+		if (err) {
+			warning("call: update:"
+				" audio_decoder_set error: %m\n", err);
+		}
 		err |= audio_encoder_set(call->audio, ac,
 					 sc->pt, sc->params);
 	}
