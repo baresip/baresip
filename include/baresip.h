@@ -251,6 +251,7 @@ struct config_audio {
 	int play_fmt;           /**< Audio playback sample format   */
 	int enc_fmt;            /**< Audio encoder sample format    */
 	int dec_fmt;            /**< Audio decoder sample format    */
+	struct range buffer;    /**< Audio receive buffer in [ms]   */
 };
 
 /** Video */

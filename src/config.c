@@ -49,6 +49,7 @@ static struct config core_config = {
 		AUFMT_S16LE,
 		AUFMT_S16LE,
 		AUFMT_S16LE,
+		{20, 160},
 	},
 
 	/** Video */
@@ -277,6 +278,12 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	conf_get_aufmt(conf, "auplay_format", &cfg->audio.play_fmt);
 	conf_get_aufmt(conf, "auenc_format", &cfg->audio.enc_fmt);
 	conf_get_aufmt(conf, "audec_format", &cfg->audio.dec_fmt);
+
+	conf_get_range(conf, "audio_buffer", &cfg->audio.buffer);
+	if (!cfg->audio.buffer.min || !cfg->audio.buffer.max) {
+		warning("config: audio_buffer cannot be zero\n");
+		return EINVAL;
+	}
 
 	/* Video */
 	(void)conf_get_csv(conf, "video_source",
@@ -559,6 +566,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "auplay_format\t\ts16\t\t# s16, float, ..\n"
 			  "auenc_format\t\ts16\t\t# s16, float, ..\n"
 			  "audec_format\t\ts16\t\t# s16, float, ..\n"
+			  "audio_buffer\t\t%H\t\t# ms\n"
 			  ,
 			  poll_method_name(poll_method_best()),
 			  default_cafile(),
@@ -566,7 +574,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  cfg->call.max_calls,
 			  default_audio_device(),
 			  default_audio_device(),
-			  default_audio_device());
+			  default_audio_device(),
+			  range_print, &cfg->audio.buffer);
 
 	err |= re_hprintf(pf,
 			  "\n# Video\n"
