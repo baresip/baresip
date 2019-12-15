@@ -1237,6 +1237,7 @@ void stream_set_session_handlers(struct stream *strm,
 				 stream_rtpestab_h *rtpestabh,
 				 stream_rtcp_h *rtcph,
 				 stream_error_h *errorh, void *arg);
+const char *stream_name(const struct stream *strm);
 
 
 /*

@@ -1065,3 +1065,12 @@ int stream_start(const struct stream *strm)
 
 	return 0;
 }
+
+
+const char *stream_name(const struct stream *strm)
+{
+	if (!strm)
+		return NULL;
+
+	return media_name(strm->type);
+}
