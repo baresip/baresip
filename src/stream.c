@@ -194,7 +194,7 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 		int err;
 
 		if (hdr->x.type != RTPEXT_TYPE_MAGIC) {
-			info("stream: unknown ext type ignored (0x%04x)\n",
+			debug("stream: unknown ext type ignored (0x%04x)\n",
 			     hdr->x.type);
 			goto handler;
 		}
