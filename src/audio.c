@@ -1541,17 +1541,31 @@ static int start_player(struct aurx *rx, struct audio *a)
 		prm.fmt        = rx->play_fmt;
 
 		if (!rx->aubuf) {
-			size_t psize;
-			size_t sz = aufmt_sample_size(rx->play_fmt);
+			const size_t sz = aufmt_sample_size(rx->play_fmt);
+			const size_t ptime_min = a->cfg.buffer.min;
+			const size_t ptime_max = a->cfg.buffer.max;
+			size_t min_sz;
+			size_t max_sz;
 
-			psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
+			if (!ptime_min || !ptime_max)
+				return EINVAL;
 
-			rx->aubuf_maxsz = psize * 8;
+			min_sz = sz*calc_nsamp(prm.srate, prm.ch, ptime_min);
+			max_sz = sz*calc_nsamp(prm.srate, prm.ch, ptime_max);
 
-			err = aubuf_alloc(&rx->aubuf, psize * 1,
-					  rx->aubuf_maxsz);
-			if (err)
+			debug("audio: create recv buffer"
+			      " [%zu - %zu ms]"
+			      " [%zu - %zu bytes]\n",
+			      ptime_min, ptime_max, min_sz, max_sz);
+
+			err = aubuf_alloc(&rx->aubuf, min_sz, max_sz);
+			if (err) {
+				warning("audio: aubuf alloc error (%m)\n",
+					err);
 				return err;
+			}
+
+			rx->aubuf_maxsz = max_sz;
 		}
 
 		err = auplay_alloc(&rx->auplay, baresip_auplayl(),
