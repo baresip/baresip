@@ -47,6 +47,7 @@ struct menc_st {
 	struct udp_helper *uh_rtp;   /**< UDP helper for RTP encryption    */
 	struct udp_helper *uh_rtcp;  /**< UDP helper for RTCP encryption   */
 	struct sdp_media *sdpm;
+	const struct stream *strm;   /**< pointer to parent */
 };
 
 
@@ -300,6 +301,7 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 				sdp_media_name(st->sdpm),
 				st->crypto_suite))
 			st->sess->eventh(MENC_EVENT_SECURE, buf,
+					 (struct stream *)st->strm,
 					 st->sess->arg);
 		else
 			warning("srtp: failed to print secure"
@@ -368,7 +370,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 		 struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
 	         const struct sa *raddr_rtp,
 	         const struct sa *raddr_rtcp,
-		 struct sdp_media *sdpm)
+		 struct sdp_media *sdpm, const struct stream *strm)
 {
 	struct menc_st *st;
 	const char *rattr = NULL;
@@ -392,6 +394,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 
 		st->sess = sess;
 		st->sdpm = mem_ref(sdpm);
+		st->strm = strm;
 
 		if (0 == str_cmp(sdp_media_proto(sdpm), "RTP/AVP")) {
 			err = sdp_media_set_alt_protos(st->sdpm, 4,

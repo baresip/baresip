@@ -420,7 +420,7 @@ int stream_start_mediaenc(struct stream *strm)
 				 strm->rtcp_mux ? NULL : rtcp_sock(strm->rtp),
 				 &strm->raddr_rtp,
 				 strm->rtcp_mux ? NULL : &strm->raddr_rtcp,
-				 strm->sdp);
+					 strm->sdp, strm);
 		if (err) {
 			warning("stream: start mediaenc error: %m\n", err);
 			return err;

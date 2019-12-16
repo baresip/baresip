@@ -582,7 +582,8 @@ enum menc_event {
 };
 
 
-typedef void (menc_event_h)(enum menc_event event, const char *prm, void *arg);
+typedef void (menc_event_h)(enum menc_event event, const char *prm,
+			    struct stream *strm, void *arg);
 
 typedef void (menc_error_h)(int err, void *arg);
 
@@ -595,7 +596,8 @@ typedef int  (menc_media_h)(struct menc_media **mp, struct menc_sess *sess,
 			   struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
 			   const struct sa *raddr_rtp,
 			   const struct sa *raddr_rtcp,
-			   struct sdp_media *sdpm);
+			   struct sdp_media *sdpm,
+			   const struct stream *strm);
 
 struct menc {
 	struct le le;

@@ -57,6 +57,7 @@ struct dtls_srtp {
 	struct comp compv[2];
 	const struct menc_sess *sess;
 	struct sdp_media *sdpm;
+	const struct stream *strm;   /**< pointer to parent */
 	bool started;
 	bool active;
 	bool mux;
@@ -230,8 +231,9 @@ static void dtls_estab_handler(void *arg)
 		if (re_snprintf(buf, sizeof(buf), "%s,%s",
 				sdp_media_name(ds->sdpm),
 				comp->is_rtp ? "RTP" : "RTCP"))
-			(ds->sess->eventh)(MENC_EVENT_SECURE, buf,
-					   ds->sess->arg);
+			ds->sess->eventh(MENC_EVENT_SECURE, buf,
+					 (struct stream *)ds->strm,
+					 ds->sess->arg);
 		else
 			warning("dtls_srtp: failed to print secure"
 				" event arguments\n");
@@ -355,7 +357,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 		       struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
 		       const struct sa *raddr_rtp,
 		       const struct sa *raddr_rtcp,
-		       struct sdp_media *sdpm)
+		       struct sdp_media *sdpm, const struct stream *strm)
 {
 	struct dtls_srtp *st;
 	const char *setup, *fingerprint;
@@ -376,6 +378,7 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 
 	st->sess = sess;
 	st->sdpm = mem_ref(sdpm);
+	st->strm = strm;
 	st->compv[0].app_sock = mem_ref(rtpsock);
 	st->compv[1].app_sock = mem_ref(rtcpsock);
 

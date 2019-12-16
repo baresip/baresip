@@ -504,9 +504,10 @@ static void video_error_handler(int err, const char *str, void *arg)
 
 
 static void menc_event_handler(enum menc_event event,
-			       const char *prm, void *arg)
+			       const char *prm, struct stream *strm, void *arg)
 {
 	struct call *call = arg;
+	(void)strm;
 	MAGIC_CHECK(call);
 
 	debug("call: mediaenc event '%s' (%s)\n", menc_event_name(event), prm);
