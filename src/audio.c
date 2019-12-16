@@ -1541,19 +1541,17 @@ static int start_player(struct aurx *rx, struct audio *a)
 		prm.fmt        = rx->play_fmt;
 
 		if (!rx->aubuf) {
-			const size_t ssz = aufmt_sample_size(rx->play_fmt);
-
+			const size_t sz = aufmt_sample_size(rx->play_fmt);
 			const size_t ptime_min = a->cfg.buffer.min;
 			const size_t ptime_max = a->cfg.buffer.max;
-
 			size_t min_sz;
 			size_t max_sz;
 
 			if (!ptime_min || !ptime_max)
 				return EINVAL;
 
-			min_sz = ssz*calc_nsamp(prm.srate, prm.ch, ptime_min);
-			max_sz = ssz*calc_nsamp(prm.srate, prm.ch, ptime_max);
+			min_sz = sz*calc_nsamp(prm.srate, prm.ch, ptime_min);
+			max_sz = sz*calc_nsamp(prm.srate, prm.ch, ptime_max);
 
 			debug("audio: create recv buffer"
 			      " [%zu - %zu ms]"
