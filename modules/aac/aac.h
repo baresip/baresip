@@ -60,5 +60,3 @@ void aac_decode_fmtp(struct aac_param *prm, const char *fmtp);
 
 
 void aac_mirror_params(const char *fmtp);
-
-void aac_set_params(const char *fmtp);

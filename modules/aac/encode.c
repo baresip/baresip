@@ -207,7 +207,7 @@ int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		prm.constantduration = enc_info.frameLength;
 		prm.bitrate = aacEncoder_GetParam(aes->enc, AACENC_BITRATE);
 
-		info("aac: Encoder configuration: conf=%w, "
+		debug("aac: Encoder configuration: conf=%w, "
 		     "frameLength=%u, inputChannels=%u, nDelay=%u\n",
 		     enc_info.confBuf, enc_info.confSize,
 		     enc_info.frameLength, enc_info.inputChannels,

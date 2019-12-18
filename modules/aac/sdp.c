@@ -43,7 +43,7 @@ bool aac_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
 
 	pl_set_str(&pl, rfmtp);
 
-	info("aac: compare: %s\n", rfmtp);
+	debug("aac: compare: %s\n", rfmtp);
 
 	if (fmt_param_get(&pl, "mode", &val)) {
 		if (strncasecmp("AAC-hbr", val.p, val.l))

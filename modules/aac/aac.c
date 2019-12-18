@@ -137,7 +137,7 @@ int aac_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt, bool offer,
 
 void aac_mirror_params(const char *x)
 {
-	info("aac: mirror parameters: \"%s\"\n", x);
+	debug("aac: mirror parameters: \"%s\"\n", x);
 
 	str_ncpy(fmtp_mirror, x, sizeof(fmtp_mirror));
 }
@@ -280,7 +280,7 @@ static int module_init(void)
 	prm.bitrate = aacEncoder_GetParam(enc, AACENC_BITRATE);
 	prm.profile_level_id = aac_profile;
 
-	info("aac: Encoder configuration: conf=%w, "
+	debug("aac: Encoder configuration: conf=%w, "
 	     "frameLength=%u, inputChannels=%u, nDelay=%u\n",
 	     enc_info.confBuf, enc_info.confSize,
 	     enc_info.frameLength, enc_info.inputChannels, enc_info.nDelay);
