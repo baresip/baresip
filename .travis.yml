@@ -21,6 +21,7 @@ addons:
     homebrew:
         packages:
         - codec2
+        - fdk-aac
         - mpg123
         - spandsp
 
