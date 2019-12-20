@@ -20,7 +20,9 @@ addons:
             libssl-dev libgtk2.0-dev libsndfile1-dev libpulse-dev libavcodec-dev libopus-dev libmpg123-dev libspandsp-dev
     homebrew:
         packages:
-        - codec2 mpg123 spandsp
+        - codec2
+        - mpg123
+        - spandsp
 
 install:
     - git clone https://github.com/creytiv/re.git
