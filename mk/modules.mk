@@ -94,7 +94,7 @@ USE_CAIRO  := $(shell [ -f $(SYSROOT)/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT)/local/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT_ALT)/include/cairo/cairo.h ] && echo "yes")
 USE_CODEC2  := $(shell [ -f $(SYSROOT)/include/codec2/codec2.h ] || \
-	[ -f $(SYSROOT)/local/include/codec2/codec2.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/codec2/codec2.h ] || \
 	[ -f $(SYSROOT_ALT)/include/codec2/codec2.h ] && echo "yes")
 USE_DTLS := $(shell [ -f $(SYSROOT)/include/openssl/dtls1.h ] || \
 	[ -f $(SYSROOT)/local/include/openssl/dtls1.h ] || \
