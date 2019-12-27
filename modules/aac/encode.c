@@ -300,7 +300,7 @@ int aac_encode_frm(struct auenc_state *aes, bool *marker, uint8_t *buf,
 
 	buf += AU_HDR_LEN; /* single access unit only! */
 
-	while ((sampc > sampi) && (i < UINT8_MAX)) {
+	while (((INT)sampc > sampi) && (i < UINT8_MAX)) {
 		in_size = (INT)sizeof(int16_t) * ((INT)sampc - sampi);
 
 		in_buf.numBufs = 1;
