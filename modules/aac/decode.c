@@ -163,7 +163,7 @@ int aac_decode_frm(struct audec_state *ads, int fmt, void *sampv,
 	int err = 0;
 	size_t nsamp = 0;
 	int16_t *s16 = sampv;
-	size_t pos = 0;
+	UINT pos = 0;
 	struct au_hdr au_data;
 	(void)marker;
 
@@ -183,7 +183,7 @@ int aac_decode_frm(struct audec_state *ads, int fmt, void *sampv,
 	while (len > pos) {
 		CStreamInfo *info;
 
-		bufferSize = len - pos;
+		bufferSize = (UINT)len - pos;
 		valid = bufferSize;
 
 		error =
