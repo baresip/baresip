@@ -279,8 +279,8 @@ int aac_encode_frm(struct auenc_state *aes, bool *marker, uint8_t *buf,
 	INT out_id = OUT_BITSTREAM_DATA, out_size, out_elem_size = 1;
 
 	const int16_t *s16 = sampv;
-	size_t total = 0;
-	size_t sampi = 0;
+	INT total = 0;
+	INT sampi = 0;
 
 	/* uint16_t au_sizes[UINT8_MAX]; */
 	uint8_t i = 0;
@@ -301,7 +301,7 @@ int aac_encode_frm(struct auenc_state *aes, bool *marker, uint8_t *buf,
 	buf += AU_HDR_LEN; /* single access unit only! */
 
 	while ((sampc > sampi) && (i < UINT8_MAX)) {
-		in_size = sizeof(int16_t) * (sampc - sampi);
+		in_size = (INT)sizeof(int16_t) * ((INT)sampc - sampi);
 
 		in_buf.numBufs = 1;
 		in_buf.bufs = (void **)&s16;
@@ -309,7 +309,7 @@ int aac_encode_frm(struct auenc_state *aes, bool *marker, uint8_t *buf,
 		in_buf.bufSizes = &in_size;
 		in_buf.bufElSizes = &in_elem_size;
 
-		out_size = *len - total - AU_HDR_LEN; /* 1 au only! */
+		out_size = (INT)*len - total - AU_HDR_LEN; /* 1 au only! */
 
 		out_buf.numBufs = 1;
 		out_buf.bufs = (void **)&buf;
@@ -317,7 +317,7 @@ int aac_encode_frm(struct auenc_state *aes, bool *marker, uint8_t *buf,
 		out_buf.bufSizes = &out_size;
 		out_buf.bufElSizes = &out_elem_size;
 
-		in_args.numInSamples = sampc - sampi;
+		in_args.numInSamples = (INT)sampc - sampi;
 		in_args.numAncBytes = 0;
 
 		error = aacEncEncode(aes->enc, &in_buf, &out_buf, &in_args,
