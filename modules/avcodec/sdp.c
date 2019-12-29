@@ -49,7 +49,7 @@ int avcodec_h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 }
 
 
-bool h264_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
+bool avcodec_h264_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
 {
 	const struct vidcodec *vc = arg;
 	(void)lfmtp;

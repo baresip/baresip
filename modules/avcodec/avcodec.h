@@ -86,4 +86,4 @@ int avcodec_resolve_codecid(const char *s);
 uint32_t h264_packetization_mode(const char *fmtp);
 int avcodec_h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 		  bool offer, void *arg);
-bool h264_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *data);
+bool avcodec_h264_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *data);
