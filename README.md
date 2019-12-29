@@ -318,7 +318,6 @@ zrtp          ZRTP media encryption module
 * RFC 3863  Presence Information Data Format (PIDF)
 * RFC 3951  Internet Low Bit Rate Codec (iLBC)
 * RFC 3952  RTP Payload Format for iLBC Speech
-* RFC 3984  RTP Payload Format for H.264 Video
 * RFC 4145  TCP-Based Media Transport in SDP
 * RFC 4240  Basic Network Media Services with SIP (partly)
 * RFC 4347  Datagram Transport Layer Security
@@ -341,6 +340,7 @@ zrtp          ZRTP media encryption module
 * RFC 5761  Multiplexing RTP Data and Control Packets on a Single Port
 * RFC 5763  Framework for Establishing a SRTP Security Context Using DTLS
 * RFC 5764  DTLS Extension to Establish Keys for SRTP
+* RFC 6184  RTP Payload Format for H.264 Video
 * RFC 6263  App. Mechanism for Keeping Alive NAT Associated with RTP / RTCP
 * RFC 6416  RTP Payload Format for MPEG-4 Audio/Visual Streams
 * RFC 6464  A RTP Header Extension for Client-to-Mixer Audio Level Indication
