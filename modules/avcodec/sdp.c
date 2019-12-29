@@ -10,6 +10,9 @@
 #include "avcodec.h"
 
 
+static const uint8_t h264_level_idc = 0x1f;
+
+
 uint32_t h264_packetization_mode(const char *fmtp)
 {
 	struct pl pl, mode;
@@ -23,6 +26,26 @@ uint32_t h264_packetization_mode(const char *fmtp)
 		return pl_u32(&mode);
 
 	return 0;
+}
+
+
+int avcodec_h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
+			  bool offer, void *arg)
+{
+	struct vidcodec *vc = arg;
+	const uint8_t profile_idc = 0x42; /* baseline profile */
+	const uint8_t profile_iop = 0x80;
+	(void)offer;
+
+	if (!mb || !fmt || !vc)
+		return 0;
+
+	return mbuf_printf(mb, "a=fmtp:%s"
+			   " %s"
+			   ";profile-level-id=%02x%02x%02x"
+			   "\r\n",
+			   fmt->id, vc->variant,
+			   profile_idc, profile_iop, h264_level_idc);
 }
 
 
