@@ -4,6 +4,7 @@
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <string.h>
+#include <stdlib.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -1354,6 +1355,7 @@ int test_call_webrtc(void)
 	struct fixture fix, *f = &fix;
 	struct ausrc *ausrc = NULL;
 	struct vidsrc *vidsrc = NULL;
+	struct sdp_media *sdp_a, *sdp_b;
 	int err;
 
 	mock_mnat_register(baresip_mnatl());
@@ -1402,6 +1404,17 @@ int test_call_webrtc(void)
 
 	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
+
+	/* Verify SDP attributes */
+
+	sdp_a = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	sdp_b = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+
+	ASSERT_TRUE(NULL != sdp_media_rattr(sdp_a, "ssrc"));
+	ASSERT_EQ(20, atoi(sdp_media_rattr(sdp_a, "ptime")));
+
+	ASSERT_TRUE(NULL != sdp_media_rattr(sdp_b, "ssrc"));
+	ASSERT_EQ(20, atoi(sdp_media_rattr(sdp_b, "ptime")));
 
  out:
 	fixture_close(f);
