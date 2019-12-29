@@ -523,7 +523,8 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	}
 
 	/* RFC 5506 */
-	err |= sdp_media_set_lattr(s->sdp, true, "rtcp-rsize", NULL);
+	if (offerer || sdp_media_rattr(s->sdp, "rtcp-rsize"))
+		err |= sdp_media_set_lattr(s->sdp, true, "rtcp-rsize", NULL);
 
 	/* RFC 5576 */
 	err |= sdp_media_set_lattr(s->sdp, true,
