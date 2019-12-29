@@ -45,7 +45,6 @@ struct mnat_sess {
 	bool offerer;
 	char *user;
 	char *pass;
-	int mediac;
 	bool started;
 	bool send_reinvite;
 	mnat_estab_h *estabh;
@@ -64,6 +63,7 @@ struct mnat_media {
 	struct mnat_sess *sess;
 	struct sdp_media *sdpm;
 	struct icem *icem;
+	bool gathered;
 	bool complete;
 	bool terminated;
 	int nstun;                   /**< Number of pending STUN candidates  */
@@ -657,6 +657,22 @@ static bool refresh_laddr(struct mnat_media *m,
 }
 
 
+static bool all_gathered(const struct mnat_sess *sess)
+{
+	struct le *le;
+
+	for (le = sess->medial.head; le; le = le->next) {
+
+		struct mnat_media *m = le->data;
+
+		if (!m->gathered)
+			return false;
+	}
+
+	return true;
+}
+
+
 static void gather_handler(int err, uint16_t scode, const char *reason,
 			   void *arg)
 {
@@ -678,7 +694,9 @@ static void gather_handler(int err, uint16_t scode, const char *reason,
 
 		(void)set_media_attributes(m);
 
-		if (--m->sess->mediac)
+		m->gathered = true;
+
+		if (!all_gathered(m->sess))
 			return;
 	}
 
@@ -865,7 +883,6 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		mem_deref(m);
 	else {
 		*mp = m;
-		++sess->mediac;
 	}
 
 	return err;
