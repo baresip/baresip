@@ -718,6 +718,23 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 
 		vds->frag_seq = seq;
 	}
+	else if (hdr.nal_unit_type == H265_NAL_AP) {
+
+		while (mbuf_get_left(mb) >= 2) {
+
+			const uint16_t len = ntohs(mbuf_read_u16(mb));
+
+			if (mbuf_get_left(mb) < len)
+				return EBADMSG;
+
+			err  = mbuf_write_mem(vds->mb, nal_seq, 3);
+			err |= mbuf_write_mem(vds->mb, mbuf_buf(mb), len);
+			if (err)
+				goto out;
+
+                        mb->pos += len;
+		}
+	}
 	else {
 		warning("h265: unknown NAL type %u (%s) [%zu bytes]\n",
 			hdr.nal_unit_type,
