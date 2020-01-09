@@ -41,15 +41,28 @@ struct audio_loop {
 	enum aufmt fmt;
 	bool started;
 
-	uint64_t n_read;
-	uint64_t n_write;
+	size_t aubuf_maxsz;
+	uint64_t aubuf_overrun;
+	uint64_t aubuf_underrun;
+
+	struct stats {
+		uint64_t n_samp;
+		uint64_t n_frames;
+	} stats_src, stats_play;
 };
 
 
 static struct audio_loop *gal = NULL;
 
 
-static int print_summary(struct re_printf *pf, const struct audio_loop *al)
+static inline uint32_t calc_nsamp(uint32_t srate, uint8_t channels,
+				  uint16_t ptime)
+{
+	return srate * channels * ptime / 1000;
+}
+
+
+static int print_summary(struct re_printf *pf, struct audio_loop *al)
 {
 	const double scale = al->srate * al->ch;
 	int err;
@@ -61,33 +74,68 @@ static int print_summary(struct re_printf *pf, const struct audio_loop *al)
 	/* Source */
 	if (al->ausrc) {
 		struct ausrc *as = ausrc_get(al->ausrc);
+		const char *name = as->name;
+		const struct stats *stats = &al->stats_src;
+		double dur;
+
+		al->ausrc = mem_deref(al->ausrc);
+
+		dur = (double)stats->n_samp / scale;
 
 		err |= re_hprintf(pf,
 				  "* Source\n"
 				  "  module      %s\n"
 				  "  samples     %llu\n"
 				  "  duration    %.3f sec\n"
+				  "  frames      %llu (avg ptime %.2fms)\n"
 				  "\n"
 				  ,
-				  as->name,
-				  al->n_read,
-				  (double)al->n_read / scale);
+				  name,
+				  stats->n_samp,
+				  dur,
+				  al->stats_src.n_frames,
+				  1000.0*dur / (double)al->stats_src.n_frames
+				  );
+	}
+
+	if (al->aubuf) {
+
+		err |= re_hprintf(pf,
+				  "* Aubuf\n"
+				  "  overrun     %llu\n"
+				  "  underrun    %llu\n"
+				  "\n"
+				  ,
+				  al->aubuf_overrun,
+				  al->aubuf_underrun);
 	}
 
 	/* Player */
 	if (al->auplay) {
 		struct auplay *ap = auplay_get(al->auplay);
+		const char *name = ap->name;
+		const struct stats *stats = &al->stats_play;
+		double dur;
+
+		/* stop device first */
+		al->auplay = mem_deref(al->auplay);
+
+		dur = (double)stats->n_samp / scale;
 
 		err |= re_hprintf(pf,
 				  "* Player\n"
 				  "  module      %s\n"
 				  "  samples     %llu\n"
 				  "  duration    %.3f sec\n"
+				  "  frames      %llu (avg ptime %.2fms)\n"
 				  "\n"
 				  ,
-				  ap->name,
-				  al->n_write,
-				  (double)al->n_write / scale);
+				  name,
+				  stats->n_samp,
+				  dur,
+				  stats->n_frames,
+				  1000.0*dur / (double)stats->n_frames
+				  );
 	}
 
 	return err;
@@ -111,19 +159,20 @@ static void auloop_destructor(void *arg)
 static void print_stats(struct audio_loop *al)
 {
 	double rw_ratio = 0.0;
-	double delay = (double)al->n_read - (double)al->n_write;
+	double delay;
 	const double scale = al->srate * al->ch;
 
-	if (al->n_write)
-		rw_ratio = 1.0 * (double)al->n_read / (double)al->n_write;
+	delay = (double)al->stats_src.n_samp - (double)al->stats_play.n_samp;
+
+	rw_ratio = (double)al->stats_src.n_samp/(double)al->stats_play.n_samp;
 
 	(void)re_fprintf(stdout, "\r%uHz %dch %s "
 			 " n_read=%.3f n_write=%.3f rw_delay=%.3f [sec]"
 			 " rw_ratio=%f"
 			 ,
 			 al->srate, al->ch, aufmt_name(al->fmt),
-			 (double)al->n_read / scale,
-			 (double)al->n_write / scale,
+			 (double)al->stats_src.n_samp / scale,
+			 (double)al->stats_play.n_samp / scale,
 			 delay / scale, rw_ratio);
 
 	(void)re_fprintf(stdout, "          \r");
@@ -141,13 +190,19 @@ static void tmr_handler(void *arg)
 }
 
 
-static void read_handler(const void *sampv, size_t sampc, void *arg)
+static void src_read_handler(const void *sampv, size_t sampc, void *arg)
 {
 	struct audio_loop *al = arg;
 	size_t num_bytes = sampc * aufmt_sample_size(al->fmt);
+	struct stats *stats = &al->stats_src;
 	int err;
 
-	al->n_read += sampc;
+	stats->n_samp   += sampc;
+	stats->n_frames += 1;
+
+	if (aubuf_cur_size(al->aubuf) >= al->aubuf_maxsz) {
+		++al->aubuf_overrun;
+	}
 
 	err = aubuf_write(al->aubuf, sampv, num_bytes);
 	if (err) {
@@ -160,8 +215,14 @@ static void write_handler(void *sampv, size_t sampc, void *arg)
 {
 	struct audio_loop *al = arg;
 	size_t num_bytes = sampc * aufmt_sample_size(al->fmt);
+	struct stats *stats = &al->stats_play;
 
-	al->n_write += sampc;
+	stats->n_samp   += sampc;
+	stats->n_frames += 1;
+
+	if (al->stats_src.n_samp && aubuf_cur_size(al->aubuf) < num_bytes) {
+		++al->aubuf_underrun;
+	}
 
 	/* read from beginning */
 	aubuf_read(al->aubuf, sampv, num_bytes);
@@ -206,7 +267,13 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 	info("Audio-loop: %uHz, %dch, %s\n", al->srate, al->ch,
 	     aufmt_name(al->fmt));
 
-	err = aubuf_alloc(&al->aubuf, 320, 0);
+	size_t min_sz;
+	size_t sampsz = aufmt_sample_size(al->fmt);
+
+	min_sz = sampsz * calc_nsamp(al->srate, al->ch, PTIME);
+	al->aubuf_maxsz = sampsz * calc_nsamp(al->srate, al->ch, PTIME*5);
+
+	err = aubuf_alloc(&al->aubuf, min_sz, al->aubuf_maxsz);
 	if (err)
 		return err;
 
@@ -228,10 +295,11 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 	ausrc_prm.ch         = al->ch;
 	ausrc_prm.ptime      = PTIME;
 	ausrc_prm.fmt        = al->fmt;
+
 	err = ausrc_alloc(&al->ausrc, baresip_ausrcl(),
 			  NULL, cfg->audio.src_mod,
 			  &ausrc_prm, cfg->audio.src_dev,
-			  read_handler, error_handler, al);
+			  src_read_handler, error_handler, al);
 	if (err) {
 		warning("auloop: ausrc %s,%s failed: %m\n", cfg->audio.src_mod,
 			cfg->audio.src_dev, err);
