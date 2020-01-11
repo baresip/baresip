@@ -46,6 +46,8 @@ static void ua_exit_handler(void *arg)
 
 static void tmr_quit_handler(void *arg)
 {
+	(void)arg;
+
 	ua_stop_all(false);
 }
 
