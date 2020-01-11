@@ -229,6 +229,7 @@ static int module_init(void)
 		if (aac_constantduration != 480 &&
 		    aac_constantduration != 512)
 			aac_constantduration = 480;
+		break;
 	case AOT_ER_AAC_ELD:
 		/* 39: MPEG-4 AAC Enhanced Low-Delay */
 		aac_profile = ENHANCED_LOW_DELAY_AUDIO_PROFILE;
