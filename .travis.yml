@@ -17,7 +17,14 @@ sudo: require
 addons:
     apt:
         packages:
-            libssl-dev libgtk2.0-dev libsndfile1-dev libpulse-dev libavcodec-dev libopus-dev libmpg123-dev libspandsp-dev
+        - libavcodec-dev
+        - libgtk2.0-dev
+        - libmpg123-dev
+        - libopus-dev
+        - libpulse-dev
+        - libsndfile1-dev
+        - libspandsp-dev
+        - libssl-dev
     homebrew:
         packages:
         - codec2
