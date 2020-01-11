@@ -281,9 +281,9 @@ static int module_init(void)
 	prm.profile_level_id = aac_profile;
 
 	debug("aac: Encoder configuration: conf=%w, "
-	     "frameLength=%u, inputChannels=%u, nDelay=%u\n",
+	     "frameLength=%u, inputChannels=%u\n",
 	     enc_info.confBuf, enc_info.confSize,
-	     enc_info.frameLength, enc_info.inputChannels, enc_info.nDelay);
+	     enc_info.frameLength, enc_info.inputChannels);
 
 	re_snprintf(prm.config, sizeof(prm.config), "%w",
 			enc_info.confBuf, enc_info.confSize);
