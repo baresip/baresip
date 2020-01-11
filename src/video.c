@@ -653,6 +653,13 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	if (!vidframe_isvalid(frame))
 		goto out;
 
+	if (!vrx->size.w) {
+		info("video: receiving with resolution %u x %u"
+		     " and format '%s'\n",
+		     frame->size.w, frame->size.h,
+		     vidfmt_name(frame->fmt));
+	}
+
 	vrx->size = frame->size;
 	vrx->fmt  = frame->fmt;
 
