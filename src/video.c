@@ -18,10 +18,6 @@
 #include "magic.h"
 
 
-enum {
-	MAX_MUTED_FRAMES = 3,
-};
-
 /** Video transmit parameters */
 enum {
 	MEDIA_POLL_RATE = 250,                 /**< in [Hz]             */
@@ -84,7 +80,6 @@ struct vtx {
 	struct vidsrc_st *vsrc;            /**< Video source              */
 	struct lock *lock_enc;             /**< Lock for encoder          */
 	struct vidframe *frame;            /**< Source frame              */
-	struct vidframe *mute_frame;       /**< Frame with muted video    */
 	struct lock *lock_tx;              /**< Protect the sendq         */
 	struct list sendq;                 /**< Tx-Queue (struct vidqent) */
 	struct tmr tmr_rtp;                /**< Timer for sending RTP     */
@@ -92,10 +87,8 @@ struct vtx {
 	struct list filtl;                 /**< Filters in encoding order */
 	enum vidfmt fmt;                   /**< Outgoing pixel format     */
 	char device[128];                  /**< Source device name        */
-	int muted_frames;                  /**< # of muted frames sent    */
 	uint32_t ts_offset;                /**< Random timestamp offset   */
 	bool picup;                        /**< Send picture update       */
-	bool muted;                        /**< Muted flag                */
 	int frames;                        /**< Number of frames sent     */
 	double efps;                       /**< Estimated frame-rate      */
 	uint64_t ts_base;                  /**< First RTP timestamp sent  */
@@ -308,7 +301,6 @@ static void video_destructor(void *arg)
 	mem_deref(vtx->vsrc);
 	lock_write_get(vtx->lock_enc);
 	mem_deref(vtx->frame);
-	mem_deref(vtx->mute_frame);
 	mem_deref(vtx->enc);
 	list_flush(&vtx->filtl);
 	lock_rel(vtx->lock_enc);
@@ -472,16 +464,8 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 
 	++vtx->stats.src_frames;
 
-	/* Is the video muted? If so insert video mute image */
-	if (vtx->muted)
-		frame = vtx->mute_frame;
-
-	if (vtx->muted && vtx->muted_frames >= MAX_MUTED_FRAMES)
-		return;
-
 	/* Encode and send */
 	encode_rtp_send(vtx, frame, timestamp);
-	vtx->muted_frames++;
 }
 
 
@@ -1015,13 +999,6 @@ static int set_encoder_format(struct vtx *vtx, const char *src,
 		return err;
 	}
 
-	vtx->mute_frame = mem_deref(vtx->mute_frame);
-	err = vidframe_alloc(&vtx->mute_frame, vtx->video->cfg.enc_fmt, size);
-	if (err)
-		return err;
-
-	vidframe_fill(vtx->mute_frame, 0xff, 0xff, 0xff);
-
 	return err;
 }
 
@@ -1114,29 +1091,6 @@ void video_stop(struct video *v)
 bool video_is_started(const struct video *v)
 {
 	return v ? v->started : false;
-}
-
-
-/**
- * Mute the video stream
- *
- * @param v     Video stream
- * @param muted True to mute, false to un-mute
- */
-void video_mute(struct video *v, bool muted)
-{
-	struct vtx *vtx;
-
-	if (!v)
-		return;
-
-	vtx = &v->vtx;
-
-	vtx->muted        = muted;
-	vtx->muted_frames = 0;
-	vtx->picup        = true;
-
-	video_update_picture(v);
 }
 
 

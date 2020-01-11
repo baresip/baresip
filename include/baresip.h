@@ -1191,7 +1191,6 @@ int  video_encoder_set(struct video *v, struct vidcodec *vc,
 		       int pt_tx, const char *params);
 int  video_start(struct video *v, const char *peer);
 void video_stop(struct video *v);
-void  video_mute(struct video *v, bool muted);
 int   video_set_fullscreen(struct video *v, bool fs);
 void  video_vidsrc_set_device(struct video *v, const char *dev);
 int   video_set_source(struct video *v, const char *name, const char *dev);
