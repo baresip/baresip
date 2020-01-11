@@ -18,6 +18,7 @@ addons:
     apt:
         packages:
         - libavcodec-dev
+        - libfdk-aac-dev
         - libgtk2.0-dev
         - libmpg123-dev
         - libopus-dev
