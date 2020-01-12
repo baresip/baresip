@@ -18,6 +18,7 @@
 
 struct auplay_st {
 	const struct auplay *ap;      /* inheritance */
+
 	struct dspbuf bufs[WRITE_BUFFERS];
 	int pos;
 	HWAVEOUT waveout;
@@ -68,6 +69,7 @@ static int dsp_write(struct auplay_st *st)
 	if (wh->dwFlags & WHDR_PREPARED) {
 		return EINVAL;
 	}
+
 	mb = st->bufs[st->pos].mb;
 	wh->lpData = (LPSTR)mb->buf;
 
@@ -224,9 +226,8 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		return EINVAL;
 
 	err = find_dev(device, &dev);
-	if (err) {
+	if (err)
 		return err;
-	}
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
@@ -266,9 +267,8 @@ static int set_available_devices(struct list *dev_list)
 
 int winwave_player_init(struct auplay *ap)
 {
-	if (!ap) {
+	if (!ap)
 		return EINVAL;
-	}
 
 	list_init(&ap->dev_list);
 

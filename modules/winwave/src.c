@@ -18,6 +18,7 @@
 
 struct ausrc_st {
 	const struct ausrc *as;      /* inheritance */
+
 	struct dspbuf bufs[READ_BUFFERS];
 	int pos;
 	HWAVEIN wavein;
@@ -224,9 +225,8 @@ int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		return EINVAL;
 
 	err = find_dev(device, &dev);
-	if (err) {
+	if (err)
 		return err;
-	}
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
@@ -257,9 +257,8 @@ static int set_available_devices(struct list *dev_list)
 
 int winwave_src_init(struct ausrc *as)
 {
-	if (!as) {
+	if (!as)
 		return EINVAL;
-	}
 
 	list_init(&as->dev_list);
 
