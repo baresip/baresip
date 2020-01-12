@@ -79,7 +79,6 @@ static int dsp_write(struct auplay_st *st)
 
 	wh->dwBufferLength = mb->size;
 	wh->dwFlags = 0;
-	wh->dwUser = (DWORD_PTR) mb;
 
 	waveOutPrepareHeader(st->waveout, wh, sizeof(*wh));
 
@@ -161,13 +160,15 @@ static int write_stream_open(struct auplay_st *st,
 	for (i = 0; i < WRITE_BUFFERS; i++) {
 		memset(&st->bufs[i].wh, 0, sizeof(WAVEHDR));
 		st->bufs[i].mb = mbuf_alloc(st->sampsz * sampc);
+		if (!st->bufs[i].mb)
+			return ENOMEM;
 	}
 
 	wfmt.wFormatTag      = format;
 	wfmt.nChannels       = prm->ch;
 	wfmt.nSamplesPerSec  = prm->srate;
 	wfmt.wBitsPerSample  = (WORD)(st->sampsz * 8);
-	wfmt.nBlockAlign     = (prm->ch * wfmt.wBitsPerSample) / 8;
+	wfmt.nBlockAlign     = prm->ch * st->sampsz;
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
 
@@ -244,7 +245,7 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	/* The write runs at 100ms intervals
 	 * prepare enough buffers to suite its needs
 	 */
-	for (i = 0; i < 5; i++)
+	for (i = 0; i < WRITE_BUFFERS; i++)
 		dsp_write(st);
 
  out:

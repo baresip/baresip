@@ -60,7 +60,6 @@ static int add_wave_in(struct ausrc_st *st)
 	wh->dwBufferLength  = db->mb->size;
 	wh->dwBytesRecorded = 0;
 	wh->dwFlags         = 0;
-	wh->dwUser          = (DWORD_PTR)db->mb;
 
 	waveInPrepareHeader(st->wavein, wh, sizeof(*wh));
 	res = waveInAddBuffer(st->wavein, wh, sizeof(*wh));
@@ -156,7 +155,7 @@ static int read_stream_open(struct ausrc_st *st, const struct ausrc_prm *prm,
 	wfmt.nChannels       = prm->ch;
 	wfmt.nSamplesPerSec  = prm->srate;
 	wfmt.wBitsPerSample  = (WORD)(st->sampsz * 8);
-	wfmt.nBlockAlign     = (prm->ch * wfmt.wBitsPerSample) / 8;
+	wfmt.nBlockAlign     = prm->ch * st->sampsz;
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
 
