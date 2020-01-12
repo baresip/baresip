@@ -174,6 +174,8 @@ opus_bitrate		28000 # 6000-510000
 #opus_samplerate	48000
 #opus_packet_loss	10	# 0-100 percent
 
+#jack_connect_ports	yes
+
 # Selfview
 video_selfview		window # {window,pip}
 #selfview_size		64x64
