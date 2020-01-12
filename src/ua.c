@@ -1477,6 +1477,7 @@ static void sip_trace_handler(bool tx, enum sip_transp tp,
 			      const struct sa *src, const struct sa *dst,
 			      const uint8_t *pkt, size_t len, void *arg)
 {
+	(void)tx;
 	(void)arg;
 
 	re_printf("\x1b[36;1m"
