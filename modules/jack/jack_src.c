@@ -81,7 +81,7 @@ static int start_jack(struct ausrc_st *st)
 
 	bool jack_connect_ports = true;
 	(void)conf_get_bool(conf, "jack_connect_ports",
-				&jack_connect_ports);
+				  &jack_connect_ports);
 
 	/* open a client connection to the JACK server */
 
@@ -148,7 +148,7 @@ static int start_jack(struct ausrc_st *st)
 	}
 
 	if (jack_connect_ports) {
-                info("jack: connecting default output ports\n");
+		info("jack: connecting default output ports\n");
 		ports = jack_get_ports (st->client, NULL, NULL,
 					JackPortIsOutput);
 		if (ports == NULL) {

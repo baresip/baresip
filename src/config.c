@@ -903,8 +903,8 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "vumeter_stderr\t\tyes\n");
 
-        (void)re_fprintf(f, "\n");
-        (void)re_fprintf(f, "#jack_connect_ports\tyes\n");
+	(void)re_fprintf(f, "\n");
+	(void)re_fprintf(f, "#jack_connect_ports\tyes\n");
 
 	(void)re_fprintf(f,
 			"\n# Selfview\n"

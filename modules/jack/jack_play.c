@@ -89,8 +89,8 @@ static int start_jack(struct auplay_st *st)
 	jack_nframes_t engine_srate;
 
 	bool jack_connect_ports = true;
-        (void)conf_get_bool(conf, "jack_connect_ports",
-                           &jack_connect_ports);
+	(void)conf_get_bool(conf, "jack_connect_ports",
+				  &jack_connect_ports);
 
 	/* open a client connection to the JACK server */
 
@@ -175,7 +175,8 @@ static int start_jack(struct auplay_st *st)
 
 		for (ch=0; ch<st->prm.ch; ch++) {
 
-			if (jack_connect (st->client, jack_port_name (st->portv[ch]),
+			if (jack_connect (st->client,
+					  jack_port_name (st->portv[ch]),
 					  ports[ch])) {
 				warning("jack: cannot connect output ports\n");
 			}
