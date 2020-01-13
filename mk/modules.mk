@@ -128,7 +128,7 @@ USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 USE_ISAC := $(shell [ -f $(SYSROOT)/include/isac.h ] || \
 	[ -f $(SYSROOT)/local/include/isac.h ] && echo "yes")
 USE_JACK := $(shell [ -f $(SYSROOT)/include/jack/jack.h ] || \
-	[ -f $(SYSROOT)/local/include/jack/jack.h ] && echo "yes")
+	[ -f $(SYSROOT_LOCAL)/include/jack/jack.h ] && echo "yes")
 USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
 	[ -f $(SYSROOT)/local/include/mpg123.h ] || \
 	[ -f $(SYSROOT_ALT)/include/mpg123.h ] && echo "yes")
