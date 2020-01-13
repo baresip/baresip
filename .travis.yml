@@ -19,6 +19,7 @@ addons:
         packages:
         - libavcodec-dev
         - libgtk2.0-dev
+        - libjack-jackd2-dev
         - libmpg123-dev
         - libopus-dev
         - libpulse-dev
@@ -29,6 +30,7 @@ addons:
         packages:
         - codec2
         - fdk-aac
+        - jack
         - mpg123
         - spandsp
 
