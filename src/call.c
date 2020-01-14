@@ -1624,6 +1624,36 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 }
 
 
+static void sipsess_notify_handler(struct sip *sip, const struct sip_msg *msg,
+				 void *arg)
+{
+	struct call *call = arg;
+
+	struct sipevent_event event;
+	const struct sip_hdr *hdr;
+
+	hdr = sip_msg_hdr(msg, SIP_HDR_EVENT);
+	if (!hdr || sipevent_event_decode(&event, &hdr->val)) {
+		(void)sip_reply(sip, msg, 400, "Invalid Event Header");
+		return;
+	}
+
+	if (pl_strcmp(&event.event, "talk") == 0) {
+		(void)sip_reply(sip, msg, 200, "OK");
+		if (call->state == STATE_INCOMING) {
+			call_answer(call, 200);
+		} else {
+			call_hold(call, false);
+		}
+	} else if (pl_strcmp(&event.event, "hold") == 0) {
+		(void)sip_reply(sip, msg, 200, "OK");
+		call_hold(call, true);
+	} else {
+		(void)sip_reply(sip, msg, 489, "Bad Event");
+	}
+}
+
+
 static bool have_common_audio_codecs(const struct call *call)
 {
 	const struct sdp_format *sc;
@@ -1637,7 +1667,6 @@ static bool have_common_audio_codecs(const struct call *call)
 
 	return ac != NULL;
 }
-
 
 int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		const struct sip_msg *msg)
@@ -1718,6 +1747,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			     sipsess_offer_handler, sipsess_answer_handler,
 			     sipsess_estab_handler, sipsess_info_handler,
 			     call->acc->refer ? sipsess_refer_handler : NULL,
+			     sipsess_notify_handler,
 			     sipsess_close_handler,
 			     call, "Allow: %H\r\n",
 			     ua_print_allowed, call->ua);
@@ -1841,6 +1871,7 @@ static int send_invite(struct call *call)
 			      sipsess_progr_handler, sipsess_estab_handler,
 			      sipsess_info_handler,
 			      call->acc->refer ? sipsess_refer_handler : NULL,
+			      sipsess_notify_handler,
 			      sipsess_close_handler, call,
 			      "Allow: %H\r\n%H%H",
 			      ua_print_allowed, call->ua,
