@@ -23,7 +23,7 @@
  *
  \verbatim
   aac_samplerate     48000	# Encoded/decoded audio sample rate [Hz]
-  aac_samplerate         1	# Encoded/decoded audio channels
+  aac_channels           1	# Encoded/decoded audio channels
   aac_aot               23	# Audio Object Type (AOT)
 				#  2: MPEG-4 AAC Low Complexity (AAC-LC)
 				#  5: MPEG-4 AAC Low Complexity with
@@ -62,14 +62,15 @@ uint32_t aac_bitrate, aac_profile, aac_constantduration;
 
 
 static struct aucodec aac = {
-	.name = "mpeg4-generic",
-	.encupdh = aac_encode_update,
-	.ench = aac_encode_frm,
-	.decupdh = aac_decode_update,
-	.dech = aac_decode_frm,
+	.name      = "mpeg4-generic",
+	.encupdh   = aac_encode_update,
+	.ench      = aac_encode_frm,
+	.decupdh   = aac_decode_update,
+	.dech      = aac_decode_frm,
 	.fmtp_ench = aac_fmtp_enc,
 	.fmtp_cmph = aac_fmtp_cmp,
-	.ptime = 1, /* 480 samples per access unit @ 48000 hz */
+/* make sure audio packet is always <= 120 samples */
+	.ptime     = 1,
 };
 
 
