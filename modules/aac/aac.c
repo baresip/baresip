@@ -69,7 +69,7 @@ static struct aucodec aac = {
 	.dech      = aac_decode_frm,
 	.fmtp_ench = aac_fmtp_enc,
 	.fmtp_cmph = aac_fmtp_cmp,
-/* make sure audio packet is always <= 120 samples */
+/* try to make sure PCM audio buffer is always <= 120 samples */
 	.ptime     = 1,
 };
 
