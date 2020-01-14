@@ -1624,7 +1624,7 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 }
 
 
-static void sipsess_notify_handler(struct sip *sip, const struct sip_msg *msg,
+static bool sipsess_notify_handler(struct sip *sip, const struct sip_msg *msg,
 				 void *arg)
 {
 	struct call *call = arg;
@@ -1635,7 +1635,7 @@ static void sipsess_notify_handler(struct sip *sip, const struct sip_msg *msg,
 	hdr = sip_msg_hdr(msg, SIP_HDR_EVENT);
 	if (!hdr || sipevent_event_decode(&event, &hdr->val)) {
 		(void)sip_reply(sip, msg, 400, "Invalid Event Header");
-		return;
+		return true;
 	}
 
 	if (pl_strcmp(&event.event, "talk") == 0) {
@@ -1649,8 +1649,9 @@ static void sipsess_notify_handler(struct sip *sip, const struct sip_msg *msg,
 		(void)sip_reply(sip, msg, 200, "OK");
 		call_hold(call, true);
 	} else {
-		(void)sip_reply(sip, msg, 489, "Bad Event");
+		return false;
 	}
+	return true;
 }
 
 
