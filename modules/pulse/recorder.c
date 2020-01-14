@@ -66,7 +66,7 @@ static void *read_thread(void *arg)
 
 		ret = pa_simple_read(st->s, st->sampv, num_bytes, &pa_error);
 		if (ret < 0) {
-			warning("pulse: pa_simple_write error (%s)\n",
+			warning("pulse: pa_simple_read error (%s)\n",
 				pa_strerror(pa_error));
 			continue;
 		}

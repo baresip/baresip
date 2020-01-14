@@ -109,6 +109,9 @@ enum h265_naltype {
 	H265_NAL_TRAIL_N         = 0,
 	H265_NAL_TRAIL_R         = 1,
 
+	H265_NAL_TSA_N           = 2,
+	H265_NAL_TSA_R           = 3,
+
 	H265_NAL_RASL_N          = 8,
 	H265_NAL_RASL_R          = 9,
 

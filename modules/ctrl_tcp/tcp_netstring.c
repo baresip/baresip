@@ -107,8 +107,10 @@ static bool netstring_recv_handler(int *errp, struct mbuf *mbx, bool *estab,
 
 	err = mbuf_write_mem(netstring->mb, mbuf_buf(mbx),
 			mbuf_get_left(mbx));
-	if (err)
+	if (err) {
+		netstring->mb->pos = pos;
 		goto out;
+	}
 
 	netstring->mb->pos = pos;
 

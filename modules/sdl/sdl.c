@@ -149,7 +149,6 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 vidisp_resize_h *resizeh, void *arg)
 {
 	struct vidisp_st *st;
-	int err = 0;
 
 	/* Not used by SDL */
 	(void)dev;
@@ -168,12 +167,9 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 	tmr_start(&st->tmr, 100, event_handler, st);
 
-	if (err)
-		mem_deref(st);
-	else
-		*stp = st;
+	*stp = st;
 
-	return err;
+	return 0;
 }
 
 
@@ -298,6 +294,9 @@ static int display(struct vidisp_st *st, const char *title,
 
 		hstep = i==0 ? 1 : 2;
 		wstep = i==0 ? 1 : chroma_step(frame->fmt);
+
+		if (wstep == 0)
+			continue;
 
 		dsz = dpitch / wstep;
 		sz  = min(frame->linesize[i], dsz);

@@ -198,14 +198,19 @@ static void ipchange_handler(void *arg)
  */
 bool net_check(struct network *net)
 {
-	struct sa laddr = net->laddr;
+	struct sa laddr;
 #ifdef HAVE_INET6
-	struct sa laddr6 = net->laddr6;
+	struct sa laddr6;
 #endif
 	bool change = false;
 
 	if (!net)
 		return false;
+
+	laddr = net->laddr;
+#ifdef HAVE_INET6
+	laddr6 = net->laddr6;
+#endif
 
 	if (str_isset(net->cfg.ifname)) {
 
@@ -303,14 +308,14 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	 */
 #ifdef HAVE_INET6
 	if (!check_ipv6()) {
-		error_msg("libre was compiled without IPv6-support"
-		      ", but baresip was compiled with\n");
+		warning("libre was compiled without IPv6-support"
+			", but baresip was compiled with\n");
 		return EAFNOSUPPORT;
 	}
 #else
 	if (check_ipv6()) {
-		error_msg("libre was compiled with IPv6-support"
-		      ", but baresip was compiled without\n");
+		warning("libre was compiled with IPv6-support"
+			", but baresip was compiled without\n");
 		return EAFNOSUPPORT;
 	}
 #endif
@@ -320,7 +325,7 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		return ENOMEM;
 
 	net->cfg = *cfg;
-	net->af  = cfg->prefer_ipv6 ? AF_INET6 : AF_INET;
+	net->af  = cfg->af == AF_UNSPEC ? AF_INET : cfg->af;
 
 	tmr_init(&net->tmr);
 
@@ -482,6 +487,33 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
 
 
 /**
+ * Set network IP address
+ *
+ * @param net  Network instance
+ * @param ip   IP address
+ */
+
+void net_set_address(struct network *net, const struct sa *ip)
+{
+	if (!net)
+		return;
+
+	switch (sa_af(ip)) {
+
+	case AF_INET:
+		sa_cpy(&net->laddr, ip);
+		return;
+
+#ifdef HAVE_INET6
+	case AF_INET6:
+		sa_cpy(&net->laddr6, ip);
+		return;
+#endif
+	}
+}
+
+
+/**
  * Check for networking changes with a regular interval
  *
  * @param net       Network instance
@@ -563,6 +595,26 @@ int net_af(const struct network *net)
 		return AF_UNSPEC;
 
 	return net->af;
+}
+
+
+/**
+ * Set the preferred address family (AF)
+ *
+ * @param net Network instance
+ * @param af  Preferred address family
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int net_set_af(struct network *net, int af)
+{
+	if (af != AF_INET && af != AF_INET6 && af != AF_UNSPEC)
+		return EAFNOSUPPORT;
+
+	if (net)
+		net->af = af;
+
+	return 0;
 }
 
 

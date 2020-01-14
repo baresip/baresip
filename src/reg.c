@@ -196,8 +196,8 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 
 	reg->sipreg = mem_deref(reg->sipreg);
 	err = sipreg_register(&reg->sipreg, uag_sip(), reg_uri,
-			      ua_aor(reg->ua),
-			      acc ? acc->dispname : NULL, ua_aor(reg->ua),
+			      account_aor(acc),
+			      acc ? acc->dispname : NULL, account_aor(acc),
 			      regint, ua_local_cuser(reg->ua),
 			      routev[0] ? routev : NULL,
 			      routev[0] ? 1 : 0,

@@ -39,7 +39,6 @@
  */
 
 
-static const uint8_t h264_level_idc = 0x1f;
 AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
 AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
 AVCodec *avcodec_h265enc;
@@ -67,26 +66,6 @@ int avcodec_resolve_codecid(const char *s)
 #endif
 	else
 		return AV_CODEC_ID_NONE;
-}
-
-
-static int h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
-			 bool offer, void *arg)
-{
-	struct vidcodec *vc = arg;
-	const uint8_t profile_idc = 0x42; /* baseline profile */
-	const uint8_t profile_iop = 0x80;
-	(void)offer;
-
-	if (!mb || !fmt || !vc)
-		return 0;
-
-	return mbuf_printf(mb, "a=fmtp:%s"
-			   " %s"
-			   ";profile-level-id=%02x%02x%02x"
-			   "\r\n",
-			   fmt->id, vc->variant,
-			   profile_idc, profile_iop, h264_level_idc);
 }
 
 
@@ -123,8 +102,8 @@ static struct vidcodec h264 = {
 	.ench      = avcodec_encode,
 	.decupdh   = avcodec_decode_update,
 	.dech      = avcodec_decode_h264,
-	.fmtp_ench = h264_fmtp_enc,
-	.fmtp_cmph = h264_fmtp_cmp,
+	.fmtp_ench = avcodec_h264_fmtp_enc,
+	.fmtp_cmph = avcodec_h264_fmtp_cmp,
 };
 
 static struct vidcodec h264_1 = {
@@ -134,8 +113,8 @@ static struct vidcodec h264_1 = {
 	.ench      = avcodec_encode,
 	.decupdh   = avcodec_decode_update,
 	.dech      = avcodec_decode_h264,
-	.fmtp_ench = h264_fmtp_enc,
-	.fmtp_cmph = h264_fmtp_cmp,
+	.fmtp_ench = avcodec_h264_fmtp_enc,
+	.fmtp_cmph = avcodec_h264_fmtp_cmp,
 };
 
 static struct vidcodec h263 = {
@@ -261,9 +240,8 @@ static int module_init(void)
 
 			config = avcodec_get_hw_config(avcodec_h264dec, i);
 			if (!config) {
-				warning("avcodec: Decoder %s does not"
+				warning("avcodec: Decoder does not"
 					" support device type %s.\n",
-					avcodec_h264dec->name,
 					av_hwdevice_get_type_name(type));
 				return ENOSYS;
 			}

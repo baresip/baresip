@@ -228,19 +228,3 @@ void warning(const char *fmt, ...)
 	vlog(LEVEL_WARN, fmt, ap);
 	va_end(ap);
 }
-
-
-/**
- * Print an ERROR message to the logging system
- *
- * @param fmt   Formatted message
- * @param ...   Variable arguments
- */
-void error_msg(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vlog(LEVEL_ERROR, fmt, ap);
-	va_end(ap);
-}

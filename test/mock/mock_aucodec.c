@@ -11,12 +11,14 @@
 #include "../test.h"
 
 
-static int mock_raw_encode(struct auenc_state *st, uint8_t *buf, size_t *len,
+static int mock_raw_encode(struct auenc_state *st,
+			   bool *marker, uint8_t *buf, size_t *len,
 			   int fmt, const void *sampv, size_t sampc)
 {
 	const size_t sampsz = aufmt_sample_size(fmt);
 	size_t bytes;
 	(void)st;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;
@@ -37,10 +39,11 @@ static int mock_raw_encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 
 static int mock_raw_decode(struct audec_state *st,
 			   int fmt, void *sampv, size_t *sampc,
-			   const uint8_t *buf, size_t len)
+			   bool marker, const uint8_t *buf, size_t len)
 {
 	const size_t sampsz = aufmt_sample_size(fmt);
 	(void)st;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;

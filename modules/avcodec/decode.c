@@ -267,6 +267,8 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 					" the data to system memory\n");
 				goto out;
 			}
+
+			st->pict->key_frame = hw_frame->key_frame;
 		}
 #endif
 
@@ -379,6 +381,8 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 
 			/* encode NAL header back to buffer */
 			err = h264_hdr_encode(&h264_hdr, st->mb);
+			if (err)
+				goto out;
 		}
 		else {
 			if (!st->frag) {
@@ -658,7 +662,7 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 	}
 
 	/* handle NAL types */
-	if (0 <= hdr.nal_unit_type && hdr.nal_unit_type <= 40) {
+	if (hdr.nal_unit_type <= 40) {
 
 		mb->pos -= H265_HDR_SIZE;
 
@@ -713,6 +717,23 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 			vds->frag = false;
 
 		vds->frag_seq = seq;
+	}
+	else if (hdr.nal_unit_type == H265_NAL_AP) {
+
+		while (mbuf_get_left(mb) >= 2) {
+
+			const uint16_t len = ntohs(mbuf_read_u16(mb));
+
+			if (mbuf_get_left(mb) < len)
+				return EBADMSG;
+
+			err  = mbuf_write_mem(vds->mb, nal_seq, 3);
+			err |= mbuf_write_mem(vds->mb, mbuf_buf(mb), len);
+			if (err)
+				goto out;
+
+                        mb->pos += len;
+		}
 	}
 	else {
 		warning("h265: unknown NAL type %u (%s) [%zu bytes]\n",

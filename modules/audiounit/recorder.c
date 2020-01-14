@@ -146,6 +146,9 @@ static OSStatus convert_callback(void *inRefCon,
 	struct ausrc_st *st = inRefCon;
 	size_t framesz;
 	OSStatus ret = noErr;
+	(void)ioActionFlags;
+	(void)inTimeStamp;
+	(void)inBusNumber;
 
 	framesz = st->sampsz * st->ch;
 	ret = init_data_read(st->buf, &ioData->mBuffers[0].mData,

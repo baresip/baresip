@@ -88,7 +88,10 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	int64_t pts;
 	uint64_t timestamp;
 	const AVRational time_base = st->time_base;
-	int got_pict, ret;
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
+	int got_pict;
+#endif
+	int ret;
 
 	frame = av_frame_alloc();
 	if (!frame)
@@ -103,13 +106,11 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 	ret = avcodec_receive_frame(st->ctx, frame);
 	if (ret < 0)
 		goto out;
-
-	got_pict = true;
 #else
 	ret = avcodec_decode_video2(st->ctx, frame, &got_pict, pkt);
-#endif
 	if (ret < 0 || !got_pict)
 		goto out;
+#endif
 
 	sz.w = st->ctx->width;
 	sz.h = st->ctx->height;
@@ -229,8 +230,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 	ret = avformat_open_input(&st->ic, dev, NULL, NULL);
 	if (ret < 0) {
-		warning("avformat: avformat_open_input(%s) failed (ret=%s)\n",
-			dev, av_err2str(ret));
+		warning("avformat: avformat_open_input(%s) failed (ret=%d)\n",
+			dev, ret);
 		err = ENOENT;
 		goto out;
 	}
@@ -292,8 +293,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 		codec = avcodec_find_decoder(ctx->codec_id);
 		if (!codec) {
-			warning("avformat: decoder not found (%s)\n",
-				avcodec_get_name(ctx->codec_id));
+			warning("avformat: decoder not found (codec_id=%d)\n",
+				ctx->codec_id);
 			err = ENOENT;
 			goto out;
 		}

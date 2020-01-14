@@ -10,21 +10,6 @@
 
 
 /**
- * Get the numerical value from a remote attribute
- *
- * @param m    SDP Media object
- * @param name Remote attribute name
- *
- * @return Numerical value or 0 if not found
- */
-uint32_t sdp_media_rattr_u32(const struct sdp_media *m, const char *name)
-{
-	const char *attr = sdp_media_rattr(m, name);
-	return attr ? atoi(attr) : 0;
-}
-
-
-/**
  * Decode an SDP fingerprint value
  *
  * @param attr SDP attribute value

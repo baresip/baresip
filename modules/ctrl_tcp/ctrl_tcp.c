@@ -189,7 +189,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	}
 
 	debug("ctrl_tcp: handle_command:  cmd='%s', params:'%s', token='%s'\n",
-	      oe_cmd ? oe_cmd->u.str : "",
+	      oe_cmd->u.str,
 	      oe_prm ? oe_prm->u.str : "",
 	      oe_tok ? oe_tok->u.str : "");
 

@@ -254,10 +254,11 @@ static int decode_wb(struct audec_state *st,
 
 
 #ifdef AMR_NB
-static int encode_nb(struct auenc_state *st, uint8_t *buf,
+static int encode_nb(struct auenc_state *st, bool *marker, uint8_t *buf,
 		     size_t *len, int fmt, const void *sampv, size_t sampc)
 {
 	int r;
+	(void)marker;
 
 	if (!st || !buf || !len || !sampv || sampc != FRAMESIZE_NB)
 		return EINVAL;
@@ -281,8 +282,11 @@ static int encode_nb(struct auenc_state *st, uint8_t *buf,
 
 
 static int decode_nb(struct audec_state *st, int fmt, void *sampv,
-		     size_t *sampc, const uint8_t *buf, size_t len)
+		     size_t *sampc,
+		     bool marker, const uint8_t *buf, size_t len)
 {
+	(void)marker;
+
 	if (!st || !sampv || !sampc || !buf)
 		return EINVAL;
 

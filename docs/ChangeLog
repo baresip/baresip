@@ -1,3 +1,175 @@
+2019-12-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.5
+
+
+Alfred E. Heggestad (138):
+      mnat: add struct mnat pointer to session handler
+      ice: add ice-lite, move to per-account config
+      modules: check return value from uag_event_register()
+      menu: check return value of account_set_answermode
+      ua: move ua_print_sip_status to debug_cmd module
+      pcp: updated mnat api
+      modules: rename gst1.so to gst.so
+      account: make answermode code more robust
+      bfcp: remove code
+      ua: remove uag_tls()
+      sdl: add support for YUYV422 pixel format
+      modules: rename gst_video1.so to gst_video.so
+      sdl: add support for UYVY422 pixel format
+      ua: fix whitespace
+      test: mock_mnat_register return void
+      stream: debug tuning
+      test: enable wait_connected flag on mock mnat
+      dtls_srtp: dont store remote address on the state
+      test: enable wait_secure flag on mock mediaenc
+      modules: rename sdl2.so to sdl.so
+      menc: sort handlers in logical order
+      audiounit: use error ENOTSUP if AudioSessionSetActive fails
+      test: add webrtc test-case
+      audiounit: check return value of AudioUnitSetProperty()
+      bv32: remove module (#793)
+      audiounit: fix samplerate for iOS
+      config: add snd_path to template
+      account: remove check for deprecated password
+      audio: use dynamically allocated string for device name
+      Update README.md
+      avcodec: remove unused prototype
+      avcodec: fix unused parameter warning
+      move h265.so into avcodec.so
+      Update .travis.yml (#798)
+      Account specific audio source and playback (#796)
+      mpa: switch encoder to use lame (#797)
+      mk: remove GPROF
+      ua: add support for SIP trace (#804)
+      AAC codec (#805)
+      audio: set the correct variable to false if pthread_create() fails
+      sdl: properly close window (OSX)
+      ua: fix warning
+      rtcpsummary: use call object from event handler
+      test: move aucodec list one level up
+      video: add vidcodec accessor
+      refactoring; move rtp stats code to separate .c file
+      rtpstat cleanup
+      call: check magic
+      vidinfo: add video overlay box with decoder info
+      vidinfo: fix compiler warning on linux
+      vidinfo: fix compiler warning on Android
+      stream: rename to stream_set_session_handlers()
+      Fix osx build (#809)
+      vidinfo: delete old file
+      test: move ausrc list one level up
+      test: move auplay list one level up
+      test: move aufilt list one level up
+      video: use vidcodec's list in video_decoder_set()
+      stream: add stream-list to stream/audio/video API
+      vidinfo: remove pixelformat, add packetloss
+      mk: add detection in SYSROOT_LOCAL
+      dtls_srtp: add media name and component type to logline
+      mnat: make mnat_find() public
+      audio: print name in parenthesis if not set
+      video: move vidfilt list one level up
+      audio: remove hack for starting source/player first
+      video: set stream samplerate in alloc
+      video: fix potential use of free'd string
+      ice: fix documentation
+      g711: use designated initialisers
+      g722: use designated initialisers
+      g726: use designated initialisers
+      ilbc: use designated initialisers
+      mk: check for ilbc in
+      gsm: use designated initialisers
+      amr: fix detection in SYSROOT_LOCAL
+      amr: use designated initialisers
+      isac: use designated initialisers
+      test: add audio_codecs to account testcase
+      win32: sort module exports in alphabetical order
+      win32: add debug_cmd to static list of modules
+      echo: no need to use uag_current() -- ref #815
+      mk: detect aac in SYSROOT_LOCAL
+      modules: use designated initializers
+      modules: use designated initializers
+      v4l2_codec: use designated initializers
+      wincons: use designated initializers
+      gzrtp: use designated initializers
+      avcodec: use designated initializers
+      video: request keyframe during packet-loss
+      mk: detect mqtt.so in SYSROOT_LOCAL
+      menu: fix formatting
+      menu: clean up usage of uag_current() -- ref #815
+      menu: save UA aor for redialing
+      avcodec: use AVFrame key_frame flag to check for keyframes (#830)
+      call: add call_find_id() -- ref #815
+      menu: new command /callfind -- ref #815
+      ice: make username/password optional
+      mqtt: add ua/call selection -- fixes #815
+      stream: no RTCP socket for mediaenc, if muxed
+      mqtt: encode response with JSON -- fix #826
+      main: change help text for -4 and -6 (ref #834)
+      docs: thanks to @premultiply
+      net: change prefer_ipv6 to int af, fixes #834
+      pulse: fix log text
+      avformat: fix build on Debian 8
+      stream: log more details
+      stream: make stream_start_mediaenc() public for core
+      stream: move start_mediaenc to call.c
+      audio: add ptime to struct aucodec (#849)
+      README: add i2s module
+      docs: thanks to Christian Spielberger
+      test: remove unused setting of int err
+      stream: remove code not executed
+      message: no need to check err
+      net: fix potential deref of NULL pointer
+      vidinfo: no need to check err
+      natpmp: no need to check err
+      ilbc: no need to check err
+      ctrl_tcp: no need to check oe_cmd here
+      avformat: remove got_pict hack
+      avcodec: minor fixes
+      sdl: remove int err, not needed
+      pulse: check the correct pointer
+      v4l2_codec: remove int err, not needed
+      alsa: store return value in a long
+      avcodec: copy key_frame flag from hardware frame
+      stream: make some functions public
+      ctrl_tcp: restore mbuf pos on errors
+      metric: add lock for multi-threading
+      sdl: skip plane if wstep is zero
+      aubridge: clear pointers after thread has exited
+      fix doxygen comments
+      av1: set allow_lowbitdepth to get correct pixel-format
+      bump version to 0.6.5
+      stream: check return value of metric_init()
+      stream: update doxygen comments
+      update doxygen comments
+
+Christian Spielberger (2):
+      aui2s: add rtos i2s audio driver module (#848)
+      i2s: add doxygen defgroup header (#850)
+
+Juha Heinanen (3):
+      - Added 'net_set_address' and 'net_set_af' API functions.
+      Added safety check to net_set_address() API function.
+      - Added AF_UNSPEC to supported net_set_af families.
+
+juha-h (4):
+      - Exposed net_dns_debug function to API. (#791)
+      Added possibility to include ";extra" parameter to an account and access (#803)
+      - Search include files also from opencore-amr source directory (#822)
+      Merge pull request #843 from alfredh/net_stuff
+
+premultiply (5):
+      Unify response list header layout (#821)
+      More common list format (#823)
+      MPA fmtp mirroring (#837)
+      MPA layer 3 encoding fixes (#839)
+      MPA L2 and L3 encoding (#844)
+
+trampster (2):
+      Pass NULL to pa_simple_new if no device specified to indicate to PulseAudio we want to use the default (#785)
+      Add support for aes_256_gcm (#790)
+
+
 2019-09-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.6.4

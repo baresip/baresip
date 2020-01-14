@@ -18,10 +18,6 @@
 #include "magic.h"
 
 
-enum {
-	MAX_MUTED_FRAMES = 3,
-};
-
 /** Video transmit parameters */
 enum {
 	MEDIA_POLL_RATE = 250,                 /**< in [Hz]             */
@@ -84,7 +80,6 @@ struct vtx {
 	struct vidsrc_st *vsrc;            /**< Video source              */
 	struct lock *lock_enc;             /**< Lock for encoder          */
 	struct vidframe *frame;            /**< Source frame              */
-	struct vidframe *mute_frame;       /**< Frame with muted video    */
 	struct lock *lock_tx;              /**< Protect the sendq         */
 	struct list sendq;                 /**< Tx-Queue (struct vidqent) */
 	struct tmr tmr_rtp;                /**< Timer for sending RTP     */
@@ -92,10 +87,8 @@ struct vtx {
 	struct list filtl;                 /**< Filters in encoding order */
 	enum vidfmt fmt;                   /**< Outgoing pixel format     */
 	char device[128];                  /**< Source device name        */
-	int muted_frames;                  /**< # of muted frames sent    */
 	uint32_t ts_offset;                /**< Random timestamp offset   */
 	bool picup;                        /**< Send picture update       */
-	bool muted;                        /**< Muted flag                */
 	int frames;                        /**< Number of frames sent     */
 	double efps;                       /**< Estimated frame-rate      */
 	uint64_t ts_base;                  /**< First RTP timestamp sent  */
@@ -308,7 +301,6 @@ static void video_destructor(void *arg)
 	mem_deref(vtx->vsrc);
 	lock_write_get(vtx->lock_enc);
 	mem_deref(vtx->frame);
-	mem_deref(vtx->mute_frame);
 	mem_deref(vtx->enc);
 	list_flush(&vtx->filtl);
 	lock_rel(vtx->lock_enc);
@@ -472,16 +464,8 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 
 	++vtx->stats.src_frames;
 
-	/* Is the video muted? If so insert video mute image */
-	if (vtx->muted)
-		frame = vtx->mute_frame;
-
-	if (vtx->muted && vtx->muted_frames >= MAX_MUTED_FRAMES)
-		return;
-
 	/* Encode and send */
 	encode_rtp_send(vtx, frame, timestamp);
-	vtx->muted_frames++;
 }
 
 
@@ -669,6 +653,13 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	if (!vidframe_isvalid(frame))
 		goto out;
 
+	if (!vrx->size.w) {
+		info("video: receiving with resolution %u x %u"
+		     " and format '%s'\n",
+		     frame->size.w, frame->size.h,
+		     vidfmt_name(frame->fmt));
+	}
+
 	vrx->size = frame->size;
 	vrx->fmt  = frame->fmt;
 
@@ -769,9 +760,10 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 }
 
 
-static void rtcp_handler(struct rtcp_msg *msg, void *arg)
+static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 {
 	struct video *v = arg;
+	(void)strm;
 
 	MAGIC_CHECK(v);
 
@@ -856,7 +848,7 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 int video_alloc(struct video **vp, struct list *streaml,
 		const struct stream_param *stream_prm,
 		const struct config *cfg,
-		struct call *call, struct sdp_session *sdp_sess, int label,
+		struct sdp_session *sdp_sess, int label,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		const char *content, const struct list *vidcodecl,
@@ -881,7 +873,7 @@ int video_alloc(struct video **vp, struct list *streaml,
 	tmr_init(&v->tmr);
 
 	err = stream_alloc(&v->strm, streaml, stream_prm,
-			   &cfg->avt, call, sdp_sess, MEDIA_VIDEO, label,
+			   &cfg->avt, sdp_sess, MEDIA_VIDEO, label,
 			   mnat, mnat_sess, menc, menc_sess, offerer,
 			   stream_recv_handler, rtcp_handler, v);
 	if (err)
@@ -976,7 +968,7 @@ static int set_vidisp(struct vrx *vrx)
 	struct vidisp *vd;
 
 	vrx->vidisp = mem_deref(vrx->vidisp);
-	vrx->vidisp_prm.view = NULL;
+
 	vrx->vidisp_prm.fullscreen = vrx->video->cfg.fullscreen;
 
 	vd = (struct vidisp *)vidisp_find(baresip_vidispl(),
@@ -1013,13 +1005,6 @@ static int set_encoder_format(struct vtx *vtx, const char *src,
 		info("video: no video source '%s': %m\n", src, err);
 		return err;
 	}
-
-	vtx->mute_frame = mem_deref(vtx->mute_frame);
-	err = vidframe_alloc(&vtx->mute_frame, vtx->video->cfg.enc_fmt, size);
-	if (err)
-		return err;
-
-	vidframe_fill(vtx->mute_frame, 0xff, 0xff, 0xff);
 
 	return err;
 }
@@ -1113,29 +1098,6 @@ void video_stop(struct video *v)
 bool video_is_started(const struct video *v)
 {
 	return v ? v->started : false;
-}
-
-
-/**
- * Mute the video stream
- *
- * @param v     Video stream
- * @param muted True to mute, false to un-mute
- */
-void video_mute(struct video *v, bool muted)
-{
-	struct vtx *vtx;
-
-	if (!v)
-		return;
-
-	vtx = &v->vtx;
-
-	vtx->muted        = muted;
-	vtx->muted_frames = 0;
-	vtx->picup        = true;
-
-	video_update_picture(v);
 }
 
 

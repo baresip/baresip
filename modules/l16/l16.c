@@ -18,12 +18,14 @@
 enum {NR_CODECS = 10};
 
 
-static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
+static int encode(struct auenc_state *st,
+		  bool *marker, uint8_t *buf, size_t *len,
 		  int fmt, const void *sampv, size_t sampc)
 {
 	int16_t *p = (void *)buf;
 	const int16_t *sampv16 = sampv;
 	(void)st;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;
@@ -44,11 +46,12 @@ static int encode(struct auenc_state *st, uint8_t *buf, size_t *len,
 
 
 static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
-		  const uint8_t *buf, size_t len)
+		  bool marker, const uint8_t *buf, size_t len)
 {
 	int16_t *p = (void *)buf;
 	int16_t *sampv16 = sampv;
 	(void)st;
+	(void)marker;
 
 	if (!buf || !len || !sampv)
 		return EINVAL;
@@ -71,16 +74,16 @@ static int decode(struct audec_state *st, int fmt, void *sampv, size_t *sampc,
 
 /* See RFC 3551 */
 static struct aucodec l16v[NR_CODECS] = {
-{LE_INIT,    0, "L16", 48000, 48000, 2, 2, 0, 0, encode, 0, decode, 0, 0, 0},
-{LE_INIT, "10", "L16", 44100, 44100, 2, 2, 0, 0, encode, 0, decode, 0, 0, 0},
-{LE_INIT,    0, "L16", 32000, 32000, 2, 2, 0, 0, encode, 0, decode, 0, 0, 0},
-{LE_INIT,    0, "L16", 16000, 16000, 2, 2, 0, 0, encode, 0, decode, 0, 0, 0},
-{LE_INIT,    0, "L16",  8000,  8000, 2, 2, 0, 0, encode, 0, decode, 0, 0, 0},
-{LE_INIT,    0, "L16", 48000, 48000, 1, 1, 0, 0, encode, 0, decode, 0, 0, 0},
-{LE_INIT, "11", "L16", 44100, 44100, 1, 1, 0, 0, encode, 0, decode, 0, 0, 0},
-{LE_INIT,    0, "L16", 32000, 32000, 1, 1, 0, 0, encode, 0, decode, 0, 0, 0},
-{LE_INIT,    0, "L16", 16000, 16000, 1, 1, 0, 0, encode, 0, decode, 0, 0, 0},
-{LE_INIT,    0, "L16",  8000,  8000, 1, 1, 0, 0, encode, 0, decode, 0, 0, 0},
+{LE_INIT,    0, "L16", 48000, 48000, 2, 2,  4, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT, "10", "L16", 44100, 44100, 2, 2,  4, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", 32000, 32000, 2, 2, 10, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", 16000, 16000, 2, 2, 20, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16",  8000,  8000, 2, 2, 20, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", 48000, 48000, 1, 1, 10, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT, "11", "L16", 44100, 44100, 1, 1, 10, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", 32000, 32000, 1, 1, 20, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16", 16000, 16000, 1, 1, 20, 0, 0, encode, 0, decode, 0,0,0},
+{LE_INIT,    0, "L16",  8000,  8000, 1, 1, 20, 0, 0, encode, 0, decode, 0,0,0},
 };
 
 

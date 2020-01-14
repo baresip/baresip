@@ -101,7 +101,6 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 int message_init(struct message **messagep)
 {
 	struct message *message;
-	int err = 0;
 
 	if (!messagep)
 		return EINVAL;
@@ -112,12 +111,9 @@ int message_init(struct message **messagep)
 
 	/* note: cannot create sip listener here, there is not UAs yet */
 
-	if (err)
-		mem_deref(message);
-	else
-		*messagep = message;
+	*messagep = message;
 
-	return err;
+	return 0;
 }
 
 

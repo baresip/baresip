@@ -884,10 +884,32 @@ static int set_audio_bitrate(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_find_call(struct re_printf *pf, void *arg)
+{
+	struct cmd_arg *carg = arg;
+	const char *id = carg->prm;
+	struct list *calls = ua_calls(uag_current());
+	struct call *call;
+	int err;
+
+	call = call_find_id(calls, id);
+	if (call) {
+		err = re_hprintf(pf, "setting current call: %s\n", id);
+		call_set_current(calls, call);
+	}
+	else {
+		err = re_hprintf(pf, "call not found (id=%s)\n", id);
+	}
+
+	return err;
+}
+
+
 static const struct cmd callcmdv[] = {
 
 {"aubitrate",    0,  CMD_PRM, "Set audio bitrate",    set_audio_bitrate    },
 {"audio_debug", 'A',       0, "Audio stream",         call_audio_debug     },
+{"callfind",     0,  CMD_PRM, "Find call <callid>",   cmd_find_call        },
 {"hold",        'x',       0, "Call hold",            cmd_call_hold        },
 {"line",        '@', CMD_PRM, "Set current call <line>", set_current_call  },
 {"mute",        'm',       0, "Call mute/un-mute",    call_mute            },

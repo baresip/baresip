@@ -57,6 +57,7 @@ struct menc_media {
 	void *rtpsock;
 	void *rtcpsock;
 	zrtp_stream_t *zrtp_stream;
+	const struct stream *strm;   /**< pointer to parent */
 };
 
 
@@ -350,7 +351,8 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 		       struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
 		       const struct sa *raddr_rtp,
 		       const struct sa *raddr_rtcp,
-		       struct sdp_media *sdpm)
+		       struct sdp_media *sdpm,
+		       const struct stream *strm)
 {
 	struct menc_media *st;
 	zrtp_status_t s;
@@ -371,6 +373,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 		return ENOMEM;
 
 	st->sess = sess;
+	st->strm = strm;
 	if (rtpsock) {
 		st->rtpsock = mem_ref(rtpsock);
 		err |= udp_register_helper(&st->uh_rtp, rtpsock, layer,
@@ -482,7 +485,9 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 					sess_info.peer_zid.buffer,
 					(size_t)sess_info.peer_zid.length))
 				(sess->eventh)(MENC_EVENT_VERIFY_REQUEST,
-					       buf, sess->arg);
+					       buf,
+					       (struct stream *)st->strm,
+					       sess->arg);
 			else
 				warning("zrtp: failed to print verify "
 					" arguments\n");
@@ -497,7 +502,9 @@ static void on_zrtp_secure(zrtp_stream_t *stream)
 					sess_info.peer_zid.buffer,
 					(size_t)sess_info.peer_zid.length))
 				(sess->eventh)(MENC_EVENT_PEER_VERIFIED,
-					       buf, sess->arg);
+					       buf,
+					       (struct stream *)st->strm,
+					       sess->arg);
 			else
 				warning("zrtp: failed to print verified "
 					" argument\n");

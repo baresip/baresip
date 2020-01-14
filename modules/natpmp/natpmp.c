@@ -202,7 +202,6 @@ static int session_alloc(struct mnat_sess **sessp,
 			 mnat_estab_h *estabh, void *arg)
 {
 	struct mnat_sess *sess;
-	int err = 0;
 	(void)mnat;
 	(void)af;
 	(void)port;
@@ -221,12 +220,9 @@ static int session_alloc(struct mnat_sess **sessp,
 	sess->estabh = estabh;
 	sess->arg    = arg;
 
-	if (err)
-		mem_deref(sess);
-	else
-		*sessp = sess;
+	*sessp = sess;
 
-	return err;
+	return 0;
 }
 
 

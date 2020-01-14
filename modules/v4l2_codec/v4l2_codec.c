@@ -424,7 +424,6 @@ static int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 			 videnc_packet_h *pkth, void *arg)
 {
 	struct videnc_state *st;
-	int err = 0;
 	(void)fmtp;
 
 	if (!vesp || !vc || !prm || !pkth)
@@ -446,12 +445,9 @@ static int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	info("v4l2_codec: video encoder %s: %.2f fps, %d bit/s, pktsize=%u\n",
 	      vc->name, prm->fps, prm->bitrate, prm->pktsize);
 
-	if (err)
-		mem_deref(st);
-	else
-		*vesp = st;
+	*vesp = st;
 
-	return err;
+	return 0;
 }
 
 

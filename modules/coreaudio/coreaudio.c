@@ -162,6 +162,7 @@ uint32_t coreaudio_aufmt_to_formatflags(enum aufmt fmt)
 	switch (fmt) {
 
 	case AUFMT_S16LE:  return kLinearPCMFormatFlagIsSignedInteger;
+	case AUFMT_S24_3LE:return kLinearPCMFormatFlagIsSignedInteger;
 	case AUFMT_FLOAT:  return kLinearPCMFormatFlagIsFloat;
 	default: return 0;
 	}

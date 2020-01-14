@@ -66,9 +66,10 @@ int opus_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 int opus_decode_frm(struct audec_state *ads,
 		    int fmt, void *sampv, size_t *sampc,
-		    const uint8_t *buf, size_t len)
+		    bool marker, const uint8_t *buf, size_t len)
 {
 	int n;
+	(void)marker;
 
 	if (!ads || !sampv || !sampc || !buf)
 		return EINVAL;

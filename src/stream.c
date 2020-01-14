@@ -194,7 +194,7 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 		int err;
 
 		if (hdr->x.type != RTPEXT_TYPE_MAGIC) {
-			info("stream: unknown ext type ignored (0x%04x)\n",
+			debug("stream: unknown ext type ignored (0x%04x)\n",
 			     hdr->x.type);
 			goto handler;
 		}
@@ -260,9 +260,11 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (!(sdp_media_ldir(s->sdp) & SDP_RECVONLY))
 		return;
 
+#if 0
 	/* The marker bit indicates the beginning of a talkspurt. */
 	if (hdr->m && s->type == MEDIA_AUDIO)
 		flush = true;
+#endif
 
 	metric_add_packet(&s->metric_rx, mbuf_get_left(mb));
 
@@ -271,6 +273,9 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		     ", receiving from %J\n",
 		     sdp_media_name(s->sdp), src);
 		s->rtp_estab = true;
+
+		if (s->rtpestabh)
+			s->rtpestabh(s, s->sess_arg);
 	}
 
 	if (!s->pseq_set) {
@@ -302,9 +307,10 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 		err = jbuf_put(s->jbuf, hdr, mb);
 		if (err) {
-			info("%s: dropping %u bytes from %J (%m)\n",
+			info("stream: %s: dropping %u bytes from %J"
+			     " [seq=%u, ts=%u] (%m)\n",
 			     sdp_media_name(s->sdp), mb->end,
-			     src, err);
+			     src, hdr->seq, hdr->ts, err);
 			s->metric_rx.n_err++;
 		}
 
@@ -339,26 +345,18 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 
 	s->ts_last = tmr_jiffies();
 
-	if (s->rtcph)
-		s->rtcph(msg, s->arg);
-
 	switch (msg->hdr.pt) {
 
 	case RTCP_SR:
 		(void)rtcp_stats(s->rtp, msg->r.sr.ssrc, &s->rtcp_stats);
-
-		if (s->cfg.rtp_stats)
-			call_set_xrtpstat(s->call);
-
-		ua_event(call_get_ua(s->call), UA_EVENT_CALL_RTCP, s->call,
-			 "%s", sdp_media_name(stream_sdpmedia(s)));
-		break;
-
-	case RTCP_APP:
-		ua_event(call_get_ua(s->call), UA_EVENT_CALL_RTCP, s->call,
-			 "%s", sdp_media_name(stream_sdpmedia(s)));
 		break;
 	}
+
+	if (s->rtcph)
+		s->rtcph(s, msg, s->arg);
+
+	if (s->sessrtcph)
+		s->sessrtcph(s, msg, s->sess_arg);
 }
 
 
@@ -397,9 +395,19 @@ static int stream_sock_alloc(struct stream *s, int af)
 }
 
 
-static int start_mediaenc(struct stream *strm)
+/**
+ * Start media encryption
+ *
+ * @param strm   Stream object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int stream_start_mediaenc(struct stream *strm)
 {
 	int err;
+
+	if (!strm)
+		return EINVAL;
 
 	if (strm->menc && strm->menc->mediah) {
 
@@ -408,11 +416,11 @@ static int start_mediaenc(struct stream *strm)
 		     strm->menc->wait_secure);
 
 		err = strm->menc->mediah(&strm->mes, strm->mencs, strm->rtp,
-					 rtp_sock(strm->rtp),
-					 rtcp_sock(strm->rtp),
-					 &strm->raddr_rtp,
-					 &strm->raddr_rtcp,
-					 strm->sdp);
+				 rtp_sock(strm->rtp),
+				 strm->rtcp_mux ? NULL : rtcp_sock(strm->rtp),
+				 &strm->raddr_rtp,
+				 strm->rtcp_mux ? NULL : &strm->raddr_rtcp,
+					 strm->sdp, strm);
 		if (err) {
 			warning("stream: start mediaenc error: %m\n", err);
 			return err;
@@ -427,7 +435,6 @@ static void mnat_connected_handler(const struct sa *raddr1,
 				   const struct sa *raddr2, void *arg)
 {
 	struct stream *strm = arg;
-	int err;
 
 	info("stream: mnat '%s' connected: raddr %J %J\n",
 	     strm->mnat->id, raddr1, raddr2);
@@ -441,25 +448,20 @@ static void mnat_connected_handler(const struct sa *raddr1,
 
 	strm->mnat_connected = true;
 
-	if (strm->mencs) {
-		err = start_mediaenc(strm);
-		if (err)
-			stream_close(strm, err);
-	}
-	else if (stream_is_ready(strm)) {
+	if (stream_is_ready(strm)) {
 
 		stream_start(strm);
-
-		if (strm->mnatconnh)
-			strm->mnatconnh(strm, strm->sess_arg);
 	}
+
+	if (strm->mnatconnh)
+		strm->mnatconnh(strm, strm->sess_arg);
 }
 
 
 int stream_alloc(struct stream **sp, struct list *streaml,
 		 const struct stream_param *prm,
 		 const struct config_avt *cfg,
-		 struct call *call, struct sdp_session *sdp_sess,
+		 struct sdp_session *sdp_sess,
 		 enum media_type type, int label,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
@@ -479,7 +481,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	MAGIC_INIT(s);
 
 	s->cfg   = *cfg;
-	s->call  = call;
 	s->type  = type;
 	s->rtph  = rtph;
 	s->rtcph = rtcph;
@@ -522,7 +523,8 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	}
 
 	/* RFC 5506 */
-	err |= sdp_media_set_lattr(s->sdp, true, "rtcp-rsize", NULL);
+	if (offerer || sdp_media_rattr(s->sdp, "rtcp-rsize"))
+		err |= sdp_media_set_lattr(s->sdp, true, "rtcp-rsize", NULL);
 
 	/* RFC 5576 */
 	err |= sdp_media_set_lattr(s->sdp, true,
@@ -553,18 +555,17 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		s->menc  = menc;
 		s->mencs = mem_ref(menc_sess);
 
-		err = start_mediaenc(s);
+		err = stream_start_mediaenc(s);
 		if (err)
 			goto out;
 	}
 
-	if (err)
-		goto out;
-
 	s->pt_enc = -1;
 
-	metric_init(&s->metric_tx);
-	metric_init(&s->metric_rx);
+	err  = metric_init(&s->metric_tx);
+	err |= metric_init(&s->metric_rx);
+	if (err)
+		goto out;
 
 	list_append(streaml, &s->le, s);
 
@@ -683,7 +684,7 @@ void stream_update(struct stream *s)
 
 	if (s->mencs && mnat_ready(s)) {
 
-		err = start_mediaenc(s);
+		err = stream_start_mediaenc(s);
 		if (err) {
 			warning("stream: mediaenc update: %m\n", err);
 		}
@@ -808,14 +809,28 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 }
 
 
+/**
+ * Set optional session handlers
+ *
+ * @param strm      Stream object
+ * @param mnatconnh Media NAT connected handler
+ * @param rtpestabh Incoming RTP established handler
+ * @param rtcph     Incoming RTCP message handler
+ * @param errorh    Error handler
+ * @param arg       Handler argument
+ */
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
+				 stream_rtpestab_h *rtpestabh,
+				 stream_rtcp_h *rtcph,
 				 stream_error_h *errorh, void *arg)
 {
 	if (!strm)
 		return;
 
 	strm->mnatconnh  = mnatconnh;
+	strm->rtpestabh  = rtpestabh;
+	strm->sessrtcph  = rtcph;
 	strm->errorh     = errorh;
 	strm->sess_arg   = arg;
 }
@@ -872,19 +887,6 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
 {
 	return strm ? &strm->rtcp_stats : NULL;
-}
-
-
-/**
- * Get the call object from the stream
- *
- * @param strm Stream object
- *
- * @return Call object
- */
-struct call *stream_call(const struct stream *strm)
-{
-	return strm ? strm->call : NULL;
 }
 
 
@@ -1006,6 +1008,12 @@ bool stream_is_ready(const struct stream *strm)
 }
 
 
+/**
+ * Set the secure flag on the stream object
+ *
+ * @param strm   Stream object
+ * @param secure True for secure, false for insecure
+ */
 void stream_set_secure(struct stream *strm, bool secure)
 {
 	if (!strm)
@@ -1015,12 +1023,26 @@ void stream_set_secure(struct stream *strm, bool secure)
 }
 
 
+/**
+ * Get the secure flag on the stream object
+ *
+ * @param strm   Stream object
+ *
+ * @return True for secure, false for insecure
+ */
 bool stream_is_secure(const struct stream *strm)
 {
 	return strm ? strm->menc_secure : false;
 }
 
 
+/**
+ * Start the media stream
+ *
+ * @param strm   Stream object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int stream_start(const struct stream *strm)
 {
 	int err;
@@ -1033,12 +1055,23 @@ int stream_start(const struct stream *strm)
 
 	rtcp_start(strm->rtp, strm->cname, &strm->raddr_rtcp);
 
-	/* Send a dummy RTCP packet to open NAT pinhole */
-	err = rtcp_send_app(strm->rtp, "PING", (void *)"PONG", 4);
-	if (err) {
-		warning("stream: rtcp_send_app failed (%m)\n", err);
-		return err;
+	if (!strm->mnat) {
+		/* Send a dummy RTCP packet to open NAT pinhole */
+		err = rtcp_send_app(strm->rtp, "PING", (void *)"PONG", 4);
+		if (err) {
+			warning("stream: rtcp_send_app failed (%m)\n", err);
+			return err;
+		}
 	}
 
 	return 0;
+}
+
+
+const char *stream_name(const struct stream *strm)
+{
+	if (!strm)
+		return NULL;
+
+	return media_name(strm->type);
 }

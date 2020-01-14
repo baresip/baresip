@@ -96,11 +96,11 @@ static void *device_thread(void *arg)
 		if (ts > now)
 			continue;
 
-		if (dev->auplay && dev->auplay->wh) {
+		if (dev->auplay->wh) {
 			dev->auplay->wh(sampv_in, sampc_in, dev->auplay->arg);
 		}
 
-		if (dev->ausrc && dev->ausrc->rh) {
+		if (dev->ausrc->rh) {
 			dev->ausrc->rh(sampv_in, sampc_in, dev->ausrc->arg);
 		}
 
@@ -169,11 +169,11 @@ void aubridge_device_stop(struct device *dev)
 	if (!dev)
 		return;
 
-	dev->auplay = NULL;
-	dev->ausrc = NULL;
-
 	if (dev->run) {
 		dev->run = false;
 		pthread_join(dev->thread, NULL);
 	}
+
+	dev->auplay = NULL;
+	dev->ausrc = NULL;
 }

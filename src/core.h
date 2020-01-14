@@ -140,9 +140,6 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		call_event_h *eh, void *arg);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
-int  call_hangup(struct call *call, uint16_t scode, const char *reason);
-int  call_progress(struct call *call);
-int  call_answer(struct call *call, uint16_t scode);
 int  call_sdp_get(const struct call *call, struct mbuf **descp, bool offer);
 int  call_jbuf_stat(struct re_printf *pf, const struct call *call);
 int  call_info(struct re_printf *pf, const struct call *call);
@@ -184,6 +181,7 @@ int mctrl_handle_media_control(struct pl *body, bool *pfu);
 struct metric {
 	/* internal stuff: */
 	struct tmr tmr;
+	struct lock *lock;
 	uint64_t ts_start;
 	bool started;
 
@@ -198,7 +196,7 @@ struct metric {
 	uint32_t n_bytes_last;
 };
 
-void     metric_init(struct metric *metric);
+int      metric_init(struct metric *metric);
 void     metric_reset(struct metric *metric);
 void     metric_add_packet(struct metric *metric, size_t packetsize);
 double   metric_avg_bitrate(const struct metric *metric);
@@ -286,10 +284,7 @@ enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct rtpext *extv, size_t extc,
 			    struct mbuf *mb, unsigned lostc, void *arg);
-typedef void (stream_rtcp_h)(struct rtcp_msg *msg, void *arg);
 
-typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
-typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
 /** Defines a generic media stream */
 struct stream {
@@ -298,7 +293,6 @@ struct stream {
 #endif
 	struct le le;            /**< Linked list element                   */
 	struct config_avt cfg;   /**< Stream configuration                  */
-	struct call *call;       /**< Ref. to call object                   */
 	struct sdp_media *sdp;   /**< SDP Media line                        */
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
@@ -332,6 +326,8 @@ struct stream {
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
 	void *arg;               /**< Handler argument                      */
 	stream_mnatconn_h *mnatconnh;/**< Medianat connected handler        */
+	stream_rtpestab_h *rtpestabh;/**< RTP established handler           */
+	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
 	stream_error_h *errorh;  /**< Stream error handler                  */
 	void *sess_arg;          /**< Session handlers argument             */
 };
@@ -339,7 +335,7 @@ struct stream {
 int  stream_alloc(struct stream **sp, struct list *streaml,
 		  const struct stream_param *prm,
 		  const struct config_avt *cfg,
-		  struct call *call, struct sdp_session *sdp_sess,
+		  struct sdp_session *sdp_sess,
 		  enum media_type type, int label,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
@@ -354,16 +350,11 @@ void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
 void stream_send_fir(struct stream *s, bool pli);
 void stream_reset(struct stream *s);
 void stream_set_bw(struct stream *s, uint32_t bps);
-void stream_set_session_handlers(struct stream *strm,
-				 stream_mnatconn_h *mnatconnh,
-				 stream_error_h *errorh, void *arg);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 int  stream_print(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 int  stream_jbuf_reset(struct stream *strm,
 		       uint32_t frames_min, uint32_t frames_max);
-void stream_set_secure(struct stream *strm, bool secure);
-int  stream_start(const struct stream *strm);
 bool stream_is_ready(const struct stream *strm);
 
 
@@ -384,22 +375,8 @@ int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
 
 struct video;
 
-typedef void (video_err_h)(int err, const char *str, void *arg);
 
-int  video_alloc(struct video **vp, struct list *streaml,
-		 const struct stream_param *stream_prm,
-		 const struct config *cfg,
-		 struct call *call, struct sdp_session *sdp_sess, int label,
-		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
-		 const struct menc *menc, struct menc_sess *menc_sess,
-		 const char *content, const struct list *vidcodecl,
-		 const struct list *vidfiltl, bool offerer,
-		 video_err_h *errh, void *arg);
-int  video_start(struct video *v, const char *peer);
-void video_stop(struct video *v);
 bool video_is_started(const struct video *v);
-int  video_encoder_set(struct video *v, struct vidcodec *vc,
-		       int pt_tx, const char *params);
 int  video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		       const char *fmtp);
 void video_update_picture(struct video *v);

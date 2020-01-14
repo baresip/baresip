@@ -647,8 +647,8 @@ static void update_vidsrc(void *arg)
 	    !strcmp(vl->cfg.src_dev, cfg->video.src_dev))
 		return;
 
-	strcpy(vl->cfg.src_mod,cfg->video.src_mod);
-	strcpy(vl->cfg.src_dev, cfg->video.src_dev);
+	str_ncpy(vl->cfg.src_mod, cfg->video.src_mod, sizeof(vl->cfg.src_mod));
+	str_ncpy(vl->cfg.src_dev, cfg->video.src_dev, sizeof(vl->cfg.src_dev));
 
 	size.w = cfg->video.width;
 	size.h = cfg->video.height;

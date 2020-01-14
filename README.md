@@ -6,7 +6,7 @@ baresip README
 
 
 Baresip is a portable and modular SIP User-Agent with audio and video support.
-Copyright (c) 2010 - 2019 Creytiv.com
+Copyright (c) 2010 - 2020 Creytiv.com
 Distributed under BSD license
 
 
@@ -218,6 +218,7 @@ aac           Advanced Audio Coding (AAC) audio codec
 account       Account loader
 alsa          ALSA audio driver
 amr           Adaptive Multi-Rate (AMR) audio codec
+aptx          Audio Processing Technology codec (aptX)
 aubridge      Audio bridge module
 audiounit     AudioUnit audio driver for MacOSX/iOS
 aufile        Audio module for using a WAV-file as audio input
@@ -250,6 +251,7 @@ gst_video     Gstreamer video codec
 gtk           GTK+ 2.0 UI
 gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module
+i2s           I2S (Inter-IC Sound) audio driver
 ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec
 isac          iSAC audio codec
@@ -316,7 +318,6 @@ zrtp          ZRTP media encryption module
 * RFC 3863  Presence Information Data Format (PIDF)
 * RFC 3951  Internet Low Bit Rate Codec (iLBC)
 * RFC 3952  RTP Payload Format for iLBC Speech
-* RFC 3984  RTP Payload Format for H.264 Video
 * RFC 4145  TCP-Based Media Transport in SDP
 * RFC 4240  Basic Network Media Services with SIP (partly)
 * RFC 4347  Datagram Transport Layer Security
@@ -339,11 +340,13 @@ zrtp          ZRTP media encryption module
 * RFC 5761  Multiplexing RTP Data and Control Packets on a Single Port
 * RFC 5763  Framework for Establishing a SRTP Security Context Using DTLS
 * RFC 5764  DTLS Extension to Establish Keys for SRTP
+* RFC 6184  RTP Payload Format for H.264 Video
 * RFC 6263  App. Mechanism for Keeping Alive NAT Associated with RTP / RTCP
 * RFC 6416  RTP Payload Format for MPEG-4 Audio/Visual Streams
 * RFC 6464  A RTP Header Extension for Client-to-Mixer Audio Level Indication
 * RFC 6716  Definition of the Opus Audio Codec
 * RFC 6886  NAT Port Mapping Protocol (NAT-PMP)
+* RFC 7310  RTP Payload Format for Standard apt-X and Enhanced apt-X Codecs
 * RFC 7587  RTP Payload Format for the Opus Speech and Audio Codec
 * RFC 7741  RTP Payload Format for VP8 Video
 * RFC 7798  RTP Payload Format for High Efficiency Video Coding (HEVC)

@@ -933,29 +933,6 @@ int ua_answer(struct ua *ua, struct call *call)
 
 
 /**
- * Answer an incoming call with early media
- *
- * @param ua   User-Agent
- * @param call Call to answer, or NULL for current call
- *
- * @return 0 if success, otherwise errorcode
- */
-int ua_progress(struct ua *ua, struct call *call)
-{
-	if (!ua)
-		return EINVAL;
-
-	if (!call) {
-		call = ua_call(ua);
-		if (!call)
-			return ENOENT;
-	}
-
-	return call_progress(call);
-}
-
-
-/**
  * Put the current call on hold and answer the incoming call
  *
  * @param ua   User-Agent
@@ -1500,6 +1477,7 @@ static void sip_trace_handler(bool tx, enum sip_transp tp,
 			      const struct sa *src, const struct sa *dst,
 			      const uint8_t *pkt, size_t len, void *arg)
 {
+	(void)tx;
 	(void)arg;
 
 	re_printf("\x1b[36;1m"
@@ -1651,6 +1629,11 @@ void uag_set_exit_handler(ua_exit_h *exith, void *arg)
 }
 
 
+/**
+ * Enable SIP message tracing
+ *
+ * @param enable True to enable, false to disable
+ */
 void uag_enable_sip_trace(bool enable)
 {
 #ifdef LIBRE_HAVE_SIPTRACE
