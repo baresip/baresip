@@ -2030,6 +2030,29 @@ int ua_print_allowed(struct re_printf *pf, const struct ua *ua)
 
 
 /**
+ * Print the supported events header
+ *
+ * @param pf  Print function
+ * @param ua  User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_print_allowed_events(struct re_printf *pf, const struct ua *ua)
+{
+	int err = 0;
+
+	if (!ua || !ua->acc)
+		return 0;
+
+	if (ua->acc->remote_control) {
+		err = re_hprintf(pf, "Allow-Events: talk,hold\r\n");
+	}
+
+	return err;
+}
+
+
+/**
  * Print the supported extensions
  *
  * @param pf  Print function

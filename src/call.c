@@ -1749,8 +1749,9 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			     call->acc->refer ? sipsess_refer_handler : NULL,
 			     call->acc->remote_control ? sipsess_notify_handler : NULL,
 			     sipsess_close_handler,
-			     call, "Allow: %H\r\n",
-			     ua_print_allowed, call->ua);
+			     call, "Allow: %H\r\n%H",
+			     ua_print_allowed, call->ua,
+			     ua_print_allowed_events, call->ua);
 
 	if (err) {
 		warning("call: sipsess_accept: %m\n", err);
@@ -1873,8 +1874,9 @@ static int send_invite(struct call *call)
 			      call->acc->refer ? sipsess_refer_handler : NULL,
 			      call->acc->remote_control ? sipsess_notify_handler : NULL,
 			      sipsess_close_handler, call,
-			      "Allow: %H\r\n%H%H",
+			      "Allow: %H\r\n%H%H%H",
 			      ua_print_allowed, call->ua,
+			      ua_print_allowed_events, call->ua,
 			      ua_print_supported, call->ua,
 			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {
