@@ -356,6 +356,11 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	else
 		acc->refer = pl_strcasecmp(&tmp, "no") != 0;
 
+	if (0 != msg_param_decode(&aor->params, "remote_control", &tmp))
+		acc->remote_control = false;
+	else
+		acc->remote_control = pl_strcasecmp(&tmp, "yes") == 0;
+
 	return err;
 }
 
@@ -793,6 +798,34 @@ int account_set_call_transfer(struct account *acc, const char *value)
 
 
 /**
+ * Sets remote control on (value "yes") or off (value "no")
+ *
+ * @param acc      User-Agent account
+ * @param value    "yes" or "no"
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_remote_control(struct account *acc, const char *value)
+{
+	if (!acc)
+		return EINVAL;
+
+	if (0 == str_casecmp(value, "yes"))
+		acc->remote_control = true;
+	else
+		if (0 == str_casecmp(value, "no"))
+			acc->remote_control = false;
+		else {
+			warning("account: unknown remote control: %r\n",
+				value);
+			return EINVAL;
+		}
+
+	return 0;
+}
+
+
+/**
  * Authenticate a User-Agent (UA)
  *
  * @param acc      User-Agent account
@@ -1150,6 +1183,21 @@ const char *account_call_transfer(const struct account *acc)
 	return acc->refer ? "yes" : "no";
 }
 
+/**
+ * Get call remote control capability of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return "yes" or "no"
+ */
+const char *account_remote_control(const struct account *acc)
+{
+	if (!acc)
+		return "no";
+
+	return acc->remote_control ? "yes" : "no";
+}
+
 
 /**
  * Get extra parameter value of an account
@@ -1232,6 +1280,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  account_call_transfer(acc));
 	err |= re_hprintf(pf, " extra:         %s\n",
 			  acc->extra ? acc->extra : "none");
+	err |= re_hprintf(pf, " remote_control:        %s\n",
+			  account_remote_control(acc));
 
 	return err;
 }

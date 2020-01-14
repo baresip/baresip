@@ -80,6 +80,7 @@ struct account {
 	char *auplay_mod;
 	char *auplay_dev;
 	char *extra;                 /**< Extra parameters                   */
+	bool remote_control;         /**< Remote call-control on/off         */
 };
 
 
