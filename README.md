@@ -64,6 +64,8 @@ Distributed under BSD license
   - EBU ACIP (Audio Contribution over IP) Profile
 
 * Audio-codecs:
+  - AAC
+  - aptX
   - AMR narrowband, AMR wideband
   - Codec2
   - G.711
