@@ -26,7 +26,6 @@ struct ua {
 	size_t    extensionc;        /**< Number of SIP extensions           */
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
-	int af;                      /**< Preferred Address Family           */
 	int af_media;                /**< Preferred Address Family for media */
 	enum presence_status my_status; /**< Presence Status                 */
 	bool catchall;               /**< Catch all inbound requests         */
@@ -460,9 +459,6 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (ua->af_media) {
 		af = ua->af_media;
 	}
-	else if (ua->af) {
-		af = ua->af;
-	}
 
 	memset(&cprm, 0, sizeof(cprm));
 
@@ -675,7 +671,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 	list_init(&ua->calls);
 
-	ua->af   = net_af(baresip_network());
+	ua->af_media = net_af(baresip_network());
 
 	/* Decode SIP address */
 	if (uag.eprm) {
@@ -1165,7 +1161,7 @@ int ua_debug(struct re_printf *pf, const struct ua *ua)
 	err |= re_hprintf(pf, " nrefs:     %u\n", mem_nrefs(ua));
 	err |= re_hprintf(pf, " cuser:     %s\n", ua->cuser);
 	err |= re_hprintf(pf, " pub-gruu:  %s\n", ua->pub_gruu);
-	err |= re_hprintf(pf, " af:        %s\n", net_af2name(ua->af));
+	err |= re_hprintf(pf, " af_media:  %s\n", net_af2name(ua->af_media));
 	err |= re_hprintf(pf, " %H", ua_print_supported, ua);
 
 	err |= account_debug(pf, ua->acc);
@@ -1271,7 +1267,7 @@ static int ua_add_transp(struct network *net)
 {
 	int err = 0;
 
-	if (net_af(net) == AF_INET) {
+	if (net_af_supported(net, AF_INET)) {
 
 		if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
 			err |= add_transp_af(net_laddr_af(net, AF_INET));
