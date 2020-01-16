@@ -120,7 +120,7 @@ static int net_dns_srv_get(const struct network *net,
 			   struct sa *srvv, uint32_t *n, bool *from_sys)
 {
 	struct sa nsv[NET_MAX_NS];
-	uint32_t i, nsn = ARRAY_SIZE(nsv);
+	uint32_t i, j, nsn = ARRAY_SIZE(nsv);
 	int err;
 
 	err = dns_srv_get(NULL, 0, nsv, &nsn);
@@ -147,10 +147,16 @@ static int net_dns_srv_get(const struct network *net,
 		if (nsn > *n)
 			return E2BIG;
 
-		for (i=0; i<nsn; i++)
-			srvv[i] = nsv[i];
+		for (i=0, j=0; i<*n && j<nsn; j++) {
 
-		*n = nsn;
+			if (!net_af_supported(net, sa_af(&nsv[j])))
+				continue;
+
+			srvv[i] = nsv[j];
+			++i;
+		}
+
+		*n = i;
 
 		if (from_sys)
 			*from_sys = true;
@@ -230,10 +236,12 @@ bool net_check(struct network *net)
 #endif
 	}
 	else {
-		net_default_source_addr_get(AF_INET, &net->laddr);
+		if (net_af_supported(net, AF_INET))
+			net_default_source_addr_get(AF_INET, &net->laddr);
 
 #ifdef HAVE_INET6
-		net_default_source_addr_get(AF_INET6, &net->laddr6);
+		if (net_af_supported(net, AF_INET6))
+			net_default_source_addr_get(AF_INET6, &net->laddr6);
 #endif
 	}
 
@@ -252,8 +260,28 @@ bool net_check(struct network *net)
 		     &laddr6, &net->laddr6);
 	}
 #endif
+	debug("net: check for IP changes: change=%d\n", change);
 
 	return change;
+}
+
+
+/*
+ * @param af AF_UNSPEC or AF_INET or AF_INET6
+ */
+bool net_af_supported(const struct network *net, int af)
+{
+	if (!net)
+		return false;
+
+	switch (net->cfg.af) {
+
+	case AF_UNSPEC:
+		return true;
+
+	default:
+		return af == net->cfg.af;
+	}
 }
 
 
@@ -301,6 +329,8 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	if (!netp || !cfg)
 		return EINVAL;
 
+	re_printf(".... cfg net:  af = %d\n", cfg->af);
+
 	/*
 	 * baresip/libre must be built with matching HAVE_INET6 value.
 	 * if different the size of `struct sa' will not match and the
@@ -344,6 +374,9 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 					ns, err);
 				goto out;
 			}
+
+			if (!net_af_supported(net, sa_af(&sa)))
+				continue;
 
 			err = net_dnssrv_add(net, &sa);
 			if (err) {
@@ -420,12 +453,14 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		}
 	}
 	else {
-		(void)net_default_source_addr_get(AF_INET, &net->laddr);
+		if (net_af_supported(net, AF_INET))
+			net_default_source_addr_get(AF_INET, &net->laddr);
 
 #ifdef HAVE_INET6
 		sa_init(&net->laddr6, AF_INET6);
 
-		(void)net_default_source_addr_get(AF_INET6, &net->laddr6);
+		if (net_af_supported(net, AF_INET6))
+			net_default_source_addr_get(AF_INET6, &net->laddr6);
 #endif
 	}
 
@@ -476,6 +511,10 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
 
 	if (srvv) {
 		for (i=0; i<srvc; i++) {
+
+			if (!net_af_supported(net, sa_af(&srvv[i])))
+				return EAFNOSUPPORT;
+
 			net->nsv[i] = srvv[i];
 		}
 	}
@@ -492,24 +531,30 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
  * @param net  Network instance
  * @param ip   IP address
  */
-
-void net_set_address(struct network *net, const struct sa *ip)
+int net_set_address(struct network *net, const struct sa *ip)
 {
-	if (!net)
-		return;
+	if (!net || !ip)
+		return EINVAL;
+
+	if (!net_af_supported(net, sa_af(ip)))
+		return EAFNOSUPPORT;
 
 	switch (sa_af(ip)) {
 
 	case AF_INET:
 		sa_cpy(&net->laddr, ip);
-		return;
+		break;
 
 #ifdef HAVE_INET6
 	case AF_INET6:
 		sa_cpy(&net->laddr6, ip);
-		return;
+		break;
 #endif
+	default:
+		return EAFNOSUPPORT;
 	}
+
+	return 0;
 }
 
 
@@ -618,6 +663,20 @@ int net_set_af(struct network *net, int af)
 }
 
 
+static bool if_debug_handler(const char *ifname, const struct sa *sa,
+			     void *arg)
+{
+	void **argv = arg;
+	struct re_printf *pf = argv[0];
+	struct network *net = argv[1];
+
+	if (net_af_supported(net, sa_af(sa)))
+		re_hprintf(pf, " %10s:  %j\n", ifname, sa);
+
+	return false;
+}
+
+
 /**
  * Get the local IP Address for a specific Address Family (AF)
  *
@@ -684,6 +743,7 @@ const char *net_domain(const struct network *net)
  */
 int net_debug(struct re_printf *pf, const struct network *net)
 {
+	void *argv[2] = {pf, (void *)net};
 	int err;
 
 	if (!net)
@@ -697,9 +757,8 @@ int net_debug(struct re_printf *pf, const struct network *net)
 #endif
 	err |= re_hprintf(pf, " Domain: %s\n", net->domain);
 
-	err |= net_if_debug(pf, NULL);
-
-	err |= net_rt_debug(pf, NULL);
+	err |= re_hprintf(pf, "net interfaces:\n");
+	err |= net_if_apply(if_debug_handler, argv);
 
 	err |= net_dns_debug(pf, net);
 
