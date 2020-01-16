@@ -19,7 +19,6 @@ struct network {
 	struct sa nsv[NET_MAX_NS];/**< Configured name servers      */
 	uint32_t nsn;        /**< Number of configured name servers */
 	uint32_t interval;
-	int af;              /**< Preferred address family          */
 	char domain[64];     /**< DNS domain from network           */
 	net_change_h *ch;
 	void *arg;
@@ -355,7 +354,6 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		return ENOMEM;
 
 	net->cfg = *cfg;
-	net->af  = cfg->af == AF_UNSPEC ? AF_INET : cfg->af;
 
 	tmr_init(&net->tmr);
 
@@ -628,22 +626,6 @@ int net_dns_debug(struct re_printf *pf, const struct network *net)
 
 
 /**
- * Get the preferred address family (AF)
- *
- * @param net Network instance
- *
- * @return Preferred address family
- */
-int net_af(const struct network *net)
-{
-	if (!net)
-		return AF_UNSPEC;
-
-	return net->af;
-}
-
-
-/**
  * Set the preferred address family (AF)
  *
  * @param net Network instance
@@ -657,7 +639,7 @@ int net_set_af(struct network *net, int af)
 		return EAFNOSUPPORT;
 
 	if (net)
-		net->af = af;
+		net->cfg.af = af;
 
 	return 0;
 }
@@ -750,7 +732,6 @@ int net_debug(struct re_printf *pf, const struct network *net)
 		return 0;
 
 	err  = re_hprintf(pf, "--- Network debug ---\n");
-	err |= re_hprintf(pf, " Preferred AF:  %s\n", net_af2name(net->af));
 	err |= re_hprintf(pf, " Local IPv4:  %H\n", print_addr, &net->laddr);
 #ifdef HAVE_INET6
 	err |= re_hprintf(pf, " Local IPv6:  %H\n", print_addr, &net->laddr6);

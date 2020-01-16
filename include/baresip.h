@@ -631,7 +631,6 @@ void net_change(struct network *net, uint32_t interval,
 void net_force_change(struct network *net);
 bool net_check(struct network *net);
 bool net_af_supported(const struct network *net, int af);
-int  net_af(const struct network *net);
 int  net_set_af(struct network *net, int af);
 int  net_dns_debug(struct re_printf *pf, const struct network *net);
 int  net_debug(struct re_printf *pf, const struct network *net);

@@ -9,7 +9,9 @@
 #include "test.h"
 
 
-static struct config_net default_config;
+static struct config_net default_config = {
+	.af = AF_INET
+};
 
 
 static void net_change_handler(void *arg)
@@ -30,7 +32,7 @@ int test_network(void)
 	TEST_ERR(err);
 	ASSERT_TRUE(net != NULL);
 
-	ASSERT_EQ(AF_INET, net_af(net));
+	ASSERT_TRUE(net_af_supported(net, AF_INET));
 
 	net_change(net, 1, net_change_handler, &change_count);
 

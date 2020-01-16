@@ -646,6 +646,23 @@ static int create_register_clients(struct ua *ua)
 }
 
 
+static int best_effort_af(const struct network *net)
+{
+	const int afv[2] = { AF_INET, AF_INET6 };
+	size_t i;
+
+	for (i=0; i<ARRAY_SIZE(afv); i++) {
+		int af = afv[i];
+
+		if (net_af_supported(net, af) &&
+		    sa_isset(net_laddr_af(net, af), SA_ADDR))
+			return af;
+	}
+
+	return AF_UNSPEC;
+}
+
+
 /**
  * Allocate a SIP User-Agent
  *
@@ -671,7 +688,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 	list_init(&ua->calls);
 
-	ua->af_media = net_af(baresip_network());
+	ua->af_media = best_effort_af(baresip_network());
 
 	/* Decode SIP address */
 	if (uag.eprm) {
