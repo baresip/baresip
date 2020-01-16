@@ -619,39 +619,6 @@ int net_set_af(struct network *net, int af)
 
 
 /**
- * Print networking debug information
- *
- * @param pf     Print handler for debug output
- * @param net    Network instance
- *
- * @return 0 if success, otherwise errorcode
- */
-int net_debug(struct re_printf *pf, const struct network *net)
-{
-	int err;
-
-	if (!net)
-		return 0;
-
-	err  = re_hprintf(pf, "--- Network debug ---\n");
-	err |= re_hprintf(pf, " Preferred AF:  %s\n", net_af2name(net->af));
-	err |= re_hprintf(pf, " Local IPv4:  %H\n", print_addr, &net->laddr);
-#ifdef HAVE_INET6
-	err |= re_hprintf(pf, " Local IPv6:  %H\n", print_addr, &net->laddr6);
-#endif
-	err |= re_hprintf(pf, " Domain: %s\n", net->domain);
-
-	err |= net_if_debug(pf, NULL);
-
-	err |= net_rt_debug(pf, NULL);
-
-	err |= net_dns_debug(pf, net);
-
-	return err;
-}
-
-
-/**
  * Get the local IP Address for a specific Address Family (AF)
  *
  * @param net Network instance
@@ -704,4 +671,37 @@ const char *net_domain(const struct network *net)
 		return NULL;
 
 	return net->domain[0] ? net->domain : NULL;
+}
+
+
+/**
+ * Print networking debug information
+ *
+ * @param pf     Print handler for debug output
+ * @param net    Network instance
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int net_debug(struct re_printf *pf, const struct network *net)
+{
+	int err;
+
+	if (!net)
+		return 0;
+
+	err  = re_hprintf(pf, "--- Network debug ---\n");
+	err |= re_hprintf(pf, " Preferred AF:  %s\n", net_af2name(net->af));
+	err |= re_hprintf(pf, " Local IPv4:  %H\n", print_addr, &net->laddr);
+#ifdef HAVE_INET6
+	err |= re_hprintf(pf, " Local IPv6:  %H\n", print_addr, &net->laddr6);
+#endif
+	err |= re_hprintf(pf, " Domain: %s\n", net->domain);
+
+	err |= net_if_debug(pf, NULL);
+
+	err |= net_rt_debug(pf, NULL);
+
+	err |= net_dns_debug(pf, net);
+
+	return err;
 }
