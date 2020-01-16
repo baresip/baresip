@@ -144,7 +144,7 @@ USE_OSS := $(shell [ -f $(SYSROOT)/include/soundcard.h ] || \
 USE_PLC := $(shell [ -f $(SYSROOT)/include/spandsp/plc.h ] || \
 	[ -f $(SYSROOT_ALT)/include/spandsp/plc.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/spandsp/plc.h ] && echo "yes")
-USE_PORTAUDIO := $(shell [ -f $(SYSROOT)/local/include/portaudio.h ] || \
+USE_PORTAUDIO := $(shell [ -f $(SYSROOT_LOCAL)/include/portaudio.h ] || \
 		[ -f $(SYSROOT)/include/portaudio.h ] || \
 		[ -f $(SYSROOT_ALT)/include/portaudio.h ] && echo "yes")
 USE_PULSE := $(shell pkg-config --exists libpulse && echo "yes")
