@@ -35,6 +35,15 @@ struct ifentry {
 };
 
 
+static void net_destructor(void *data)
+{
+	struct network *net = data;
+
+	tmr_cancel(&net->tmr);
+	mem_deref(net->dnsc);
+}
+
+
 static bool if_getname_handler(const char *ifname, const struct sa *sa,
 			       void *arg)
 {
@@ -270,15 +279,6 @@ static bool check_ipv6(void)
 	struct sa sa;
 
 	return 0 == sa_set_str(&sa, "::1", 2000);
-}
-
-
-static void net_destructor(void *data)
-{
-	struct network *net = data;
-
-	tmr_cancel(&net->tmr);
-	mem_deref(net->dnsc);
 }
 
 
