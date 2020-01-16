@@ -94,6 +94,17 @@ static int add_rtcp_stats(struct odict *od_parent, const struct rtcp_stats *rs)
 }
 
 
+/**
+ * Encode an event to a dictionary
+ *
+ * @param od   Dictionary to encode into
+ * @param ua   User-Agent
+ * @param ev   Event type
+ * @param call Call object (optional)
+ * @param prm  Event parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		      struct call *call, const char *prm)
 {
@@ -118,13 +129,20 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 	if (call) {
 
 		const char *dir;
+		const char *call_identifier;
 
 		dir = call_is_outgoing(call) ? "outgoing" : "incoming";
 
 		err |= odict_entry_add(od, "direction", ODICT_STRING, dir);
 		err |= odict_entry_add(od, "peeruri",
 				       ODICT_STRING, call_peeruri(call));
-		err |= odict_entry_add(od, "id", ODICT_STRING, call_id(call));
+
+		call_identifier = call_id(call);
+		if (call_identifier) {
+			err |= odict_entry_add(od, "id", ODICT_STRING,
+						   call_identifier);
+		}
+
 		if (err)
 			goto out;
 	}
@@ -140,10 +158,8 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 
 		if (0 == str_casecmp(prm, "audio"))
 			strm = audio_strm(call_audio(call));
-#ifdef USE_VIDEO
 		else if (0 == str_casecmp(prm, "video"))
 			strm = video_strm(call_video(call));
-#endif
 
 		err = add_rtcp_stats(od, stream_rtcp_stats(strm));
 		if (err)
@@ -183,6 +199,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
 	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
+	case UA_EVENT_CALL_RTPESTAB:        return "CALL_RTPESTAB";
 	case UA_EVENT_CALL_RTCP:            return "CALL_RTCP";
 	case UA_EVENT_CALL_MENC:            return "CALL_MENC";
 	case UA_EVENT_VU_TX:                return "VU_TX_REPORT";

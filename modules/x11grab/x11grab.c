@@ -68,12 +68,6 @@ static int x11grab_open(struct vidsrc_st *st, const struct vidsz *sz)
 		st->pixfmt = VID_FMT_RGB32;
 		break;
 
-	case 16:
-		st->pixfmt = (st->image->green_mask == 0x7e0)
-			? VID_FMT_RGB565
-			: VID_FMT_RGB555;
-		break;
-
 	default:
 		warning("x11grab: not supported: bpp=%d\n",
 			st->image->bits_per_pixel);

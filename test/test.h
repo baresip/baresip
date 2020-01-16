@@ -125,7 +125,7 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
  * Mock Audio-codec
  */
 
-void mock_aucodec_register(void);
+void mock_aucodec_register(struct list *aucodecl);
 void mock_aucodec_unregister(void);
 
 /*
@@ -134,7 +134,7 @@ void mock_aucodec_unregister(void);
 
 struct ausrc;
 
-int mock_ausrc_register(struct ausrc **ausrcp);
+int mock_ausrc_register(struct ausrc **ausrcp, struct list *ausrcl);
 
 
 /*
@@ -145,8 +145,17 @@ struct auplay;
 
 typedef void (mock_sample_h)(const void *sampv, size_t sampc, void *arg);
 
-int mock_auplay_register(struct auplay **auplayp,
+int mock_auplay_register(struct auplay **auplayp, struct list *auplayl,
 			 mock_sample_h *sampleh, void *arg);
+
+
+/*
+ * Mock Audio-filter
+ */
+
+
+void mock_aufilt_register(struct list *aufiltl);
+void mock_aufilt_unregister(void);
 
 
 /*
@@ -155,6 +164,14 @@ int mock_auplay_register(struct auplay **auplayp,
 
 void mock_menc_register(void);
 void mock_menc_unregister(void);
+
+
+/*
+ * Mock Media NAT-traversal
+ */
+
+void mock_mnat_register(struct list *mnatl);
+void mock_mnat_unregister(void);
 
 
 /*
@@ -192,51 +209,39 @@ int mock_vidisp_register(struct vidisp **vidispp,
 
 int test_account(void);
 int test_aulevel(void);
-int test_cmd(void);
-int test_cmd_long(void);
-int test_event(void);
-int test_contact(void);
-int test_ua_alloc(void);
-int test_uag_find_param(void);
-int test_ua_register(void);
-int test_ua_register_dns(void);
-int test_ua_register_auth(void);
-int test_ua_register_auth_dns(void);
-int test_ua_options(void);
-int test_message(void);
-int test_mos(void);
-int test_network(void);
-int test_play(void);
-
-int test_call_answer(void);
-int test_call_reject(void);
 int test_call_af_mismatch(void);
+int test_call_answer(void);
 int test_call_answer_hangup_a(void);
 int test_call_answer_hangup_b(void);
-int test_call_rtp_timeout(void);
-int test_call_multiple(void);
-int test_call_max(void);
-int test_call_dtmf(void);
-int test_call_video(void);
+int test_call_aufilt(void);
 int test_call_aulevel(void);
-int test_call_progress(void);
-int test_call_format_float(void);
-int test_call_mediaenc(void);
 int test_call_custom_headers(void);
+int test_call_dtmf(void);
+int test_call_format_float(void);
+int test_call_max(void);
+int test_call_mediaenc(void);
+int test_call_medianat(void);
+int test_call_multiple(void);
+int test_call_progress(void);
+int test_call_reject(void);
+int test_call_rtcp(void);
+int test_call_rtp_timeout(void);
 int test_call_tcp(void);
 int test_call_transfer(void);
-
-#ifdef USE_VIDEO
+int test_call_video(void);
+int test_call_webrtc(void);
+int test_cmd(void);
+int test_cmd_long(void);
+int test_contact(void);
+int test_event(void);
+int test_message(void);
+int test_network(void);
+int test_play(void);
+int test_ua_alloc(void);
+int test_ua_options(void);
+int test_ua_register(void);
+int test_ua_register_auth(void);
+int test_ua_register_auth_dns(void);
+int test_ua_register_dns(void);
+int test_uag_find_param(void);
 int test_video(void);
-#endif
-
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int test_cplusplus(void);
-
-#ifdef __cplusplus
-}
-#endif

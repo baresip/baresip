@@ -217,7 +217,11 @@ static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 
 
 static struct aufilt sndfile = {
-	LE_INIT, "sndfile", encode_update, encode, decode_update, decode
+	.name    = "sndfile",
+	.encupdh = encode_update,
+	.ench    = encode,
+	.decupdh = decode_update,
+	.dech    = decode
 };
 
 

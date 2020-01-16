@@ -275,7 +275,7 @@ static int editor_input(struct commands *commands, struct mbuf *mb, char key,
 
 
 static int cmd_report(const struct cmd *cmd, struct re_printf *pf,
-		      struct mbuf *mb, bool compl, void *data)
+		      struct mbuf *mb, void *data)
 {
 	struct cmd_arg arg;
 	int err;
@@ -288,7 +288,6 @@ static int cmd_report(const struct cmd *cmd, struct re_printf *pf,
 		return err;
 
 	arg.key      = cmd->key;
-	arg.complete = compl;
 	arg.data     = data;
 
 	err = cmd->h(pf, &arg);
@@ -340,14 +339,14 @@ int cmd_process_long(struct commands *commands, const char *str, size_t len,
 
 		arg.key      = LONG_PREFIX;
 		arg.prm      = prm;
-		arg.complete = true;
 		arg.data     = data;
 
 		if (cmd_long->h)
 			err = cmd_long->h(pf_resp, &arg);
 	}
 	else {
-		err = re_hprintf(pf_resp, "command not found (%s)\n", name);
+		(void)re_hprintf(pf_resp, "command not found (%s)\n", name);
+		err = ENOTSUP;
 	}
 
  out:
@@ -386,9 +385,8 @@ static int cmd_process_edit(struct commands *commands,
 		}
 	}
 	else {
-		if (compl ||
-		    (ctx->cmd && ctx->cmd->flags & CMD_PROG))
-			err = cmd_report(ctx->cmd, pf, ctx->mb, compl, data);
+		if (compl)
+			err = cmd_report(ctx->cmd, pf, ctx->mb, data);
 	}
 
 	if (del)
@@ -563,7 +561,6 @@ int cmd_process(struct commands *commands, struct cmd_ctx **ctxp, char key,
 
 		arg.key      = key;
 		arg.prm      = NULL;
-		arg.complete = true;
 		arg.data     = data;
 
 		return cmd->h(pf, &arg);

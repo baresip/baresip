@@ -11,14 +11,16 @@
 #include <gtk/gtk.h>
 #include "gtk_mod.h"
 
+
 struct dial_dialog {
 	struct gtk_mod *mod;
 	GtkWidget *dialog;
 	GtkComboBox *uri_combobox;
 };
 
+
 static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
-		gpointer arg)
+				    gpointer arg)
 {
 	struct dial_dialog *dd = arg;
 	char *uri;
@@ -38,6 +40,7 @@ static void destructor(void *arg)
 
 	gtk_widget_destroy(dd->dialog);
 }
+
 
 struct dial_dialog *dial_dialog_alloc(struct gtk_mod *mod)
 {
@@ -89,8 +92,12 @@ struct dial_dialog *dial_dialog_alloc(struct gtk_mod *mod)
 	return dd;
 }
 
+
 void dial_dialog_show(struct dial_dialog *dd)
 {
+	if (!dd)
+		return;
+
 	gtk_window_present(GTK_WINDOW(dd->dialog));
 	gtk_widget_grab_focus(gtk_bin_get_child(GTK_BIN(dd->uri_combobox)));
 }

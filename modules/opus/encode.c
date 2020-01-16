@@ -90,7 +90,7 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	aes = *aesp;
 
 	if (!aes) {
-		const opus_int32 complex = 10;
+		const opus_int32 complex = opus_complexity;
 		int opuserr;
 
 		aes = mem_zalloc(sizeof(*aes), destructor);
@@ -100,8 +100,7 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		aes->ch = ac->ch;
 
 		aes->enc = opus_encoder_create(ac->srate, ac->ch,
-					       /* this has big impact on cpu */
-					       OPUS_APPLICATION_AUDIO,
+					       opus_application,
 					       &opuserr);
 		if (!aes->enc) {
 			warning("opus: encoder create: %s\n",
@@ -147,6 +146,10 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 	(void)opus_encoder_ctl(aes->enc, OPUS_SET_INBAND_FEC(prm.inband_fec));
 	(void)opus_encoder_ctl(aes->enc, OPUS_SET_DTX(prm.dtx));
 
+	if (opus_packet_loss) {
+		opus_encoder_ctl(aes->enc,
+				 OPUS_SET_PACKET_LOSS_PERC(opus_packet_loss));
+	}
 
 #if 0
 	{
@@ -171,10 +174,12 @@ int opus_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 }
 
 
-int opus_encode_frm(struct auenc_state *aes, uint8_t *buf, size_t *len,
+int opus_encode_frm(struct auenc_state *aes,
+		    bool *marker, uint8_t *buf, size_t *len,
 		    int fmt, const void *sampv, size_t sampc)
 {
 	opus_int32 n;
+	(void)marker;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;

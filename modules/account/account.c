@@ -63,6 +63,8 @@ static int account_write_template(const char *file)
 			 "#  addr-params:\n"
 			 "#    ;answermode={manual,early,auto}\n"
 			 "#    ;audio_codecs=opus/48000/2,pcma,...\n"
+			 "#    ;audio_source=alsa,default\n"
+			 "#    ;audio_player=alsa,default\n"
 			 "#    ;auth_user=username\n"
 			 "#    ;auth_pass=password\n"
 			 "#    ;call_transfer=no\n"
@@ -138,7 +140,7 @@ static int line_handler(const struct pl *addr, void *arg)
 		e = ua_register(ua);
 		if (e) {
 			warning("account: failed to register ua"
-				" '%s' (%m)\n", ua_aor(ua), e);
+				" '%s' (%m)\n", account_aor(acc), e);
 		}
 	}
 

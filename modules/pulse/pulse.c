@@ -64,7 +64,7 @@ int set_available_devices(struct list *dev_list,
 	}
 
 	pa_mlapi = pa_mainloop_get_api(pa_ml);
-	if (!pa_ml){
+	if (!pa_mlapi){
 		warning("pulse: pa_mainloop_get_api failed\n");
 		err = 1;
 		goto out;

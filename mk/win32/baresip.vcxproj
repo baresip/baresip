@@ -53,7 +53,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\misc;..\..\..\dirent\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;USE_VIDEO;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=1024;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=1024;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -80,7 +80,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\misc;..\..\..\dirent\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;USE_VIDEO;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=1024;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=1024;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -140,7 +140,6 @@
     <ClCompile Include="..\..\modules\l16\l16.c" />
     <ClCompile Include="..\..\modules\menu\menu.c" />
     <ClCompile Include="..\..\modules\mwi\mwi.c" />
-    <ClCompile Include="..\..\modules\natbd\natbd.c" />
     <ClCompile Include="..\..\modules\natpmp\libnatpmp.c" />
     <ClCompile Include="..\..\modules\natpmp\natpmp.c" />
     <ClCompile Include="..\..\modules\presence\notifier.c" />
@@ -169,7 +168,6 @@
     <ClCompile Include="..\..\src\auplay.c" />
     <ClCompile Include="..\..\src\ausrc.c" />
     <ClCompile Include="..\..\src\baresip.c" />
-    <ClCompile Include="..\..\src\bfcp.c" />
     <ClCompile Include="..\..\src\call.c" />
     <ClCompile Include="..\..\src\cmd.c" />
     <ClCompile Include="..\..\src\conf.c" />
@@ -186,10 +184,8 @@
     <ClCompile Include="..\..\src\metric.c" />
     <ClCompile Include="..\..\src\mnat.c" />
     <ClCompile Include="..\..\src\module.c" />
-    <ClCompile Include="..\..\src\mos.c" />
     <ClCompile Include="..\..\src\net.c" />
     <ClCompile Include="..\..\src\play.c" />
-    <ClCompile Include="..\..\src\realtime.c" />
     <ClCompile Include="..\..\src\reg.c" />
     <ClCompile Include="..\..\src\sdp.c" />
     <ClCompile Include="..\..\src\sipreq.c" />

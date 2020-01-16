@@ -1,24 +1,24 @@
 /**
- * @file gst/gst.c  Gstreamer playbin pipeline
+ * @file gst/gst.c  Gstreamer 1.0 playbin pipeline
  *
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
+#define _DEFAULT_SOURCE 1
+#define _POSIX_C_SOURCE 199309L
 #include <stdlib.h>
 #include <string.h>
-#define __USE_POSIX199309
 #include <time.h>
 #include <pthread.h>
 #include <gst/gst.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include "gst.h"
 
 
 /**
  * @defgroup gst gst
  *
- * Audio source module using gstreamer as input
+ * Audio source module using gstreamer 1.0 as input
  *
  * The module 'gst' is using the Gstreamer framework to play external
  * media and provide this as an internal audio source.
@@ -64,7 +64,6 @@ struct ausrc_st {
 
 
 typedef struct _GstFakeSink GstFakeSink;
-static char gst_uri[256] = "http://relay1.slayradio.org:8000/";
 static struct ausrc *ausrc;
 
 
@@ -97,8 +96,6 @@ static gboolean bus_watch_handler(GstBus *bus, GstMessage *msg, gpointer data)
 	switch (GST_MESSAGE_TYPE(msg)) {
 
 	case GST_MESSAGE_EOS:
-		/* XXX decrementing repeat count? */
-
 		/* Re-start stream */
 		if (st->run) {
 			gst_element_set_state(st->pipeline, GST_STATE_NULL);
@@ -112,7 +109,7 @@ static gboolean bus_watch_handler(GstBus *bus, GstMessage *msg, gpointer data)
 	case GST_MESSAGE_ERROR:
 		gst_message_parse_error(msg, &err, &d);
 
-		warning("gst: Error: %d(%m) message=%s\n", err->code,
+		warning("gst: Error: %d(%m) message=\"%s\"\n", err->code,
 			err->code, err->message);
 		warning("gst: Debug: %s\n", d);
 
@@ -192,6 +189,7 @@ static void play_packet(struct ausrc_st *st)
 /* Expected format: 16-bit signed PCM */
 static void packet_handler(struct ausrc_st *st, GstBuffer *buffer)
 {
+	GstMapInfo info;
 	int err;
 
 	if (!st->run)
@@ -201,11 +199,17 @@ static void packet_handler(struct ausrc_st *st, GstBuffer *buffer)
 	 *       pretty quickly..
 	 */
 
-	err = aubuf_write(st->aubuf, GST_BUFFER_DATA(buffer),
-			  GST_BUFFER_SIZE(buffer));
+	if (!gst_buffer_map(buffer, &info, GST_MAP_READ)) {
+		warning("gst: gst_buffer_map failed\n");
+		return;
+	}
+
+	err = aubuf_write(st->aubuf, info.data, info.size);
 	if (err) {
 		warning("gst: aubuf_write: %m\n", err);
 	}
+
+	gst_buffer_unmap(buffer, &info);
 
 	/* Empty buffer now */
 	while (st->run) {
@@ -225,11 +229,12 @@ static void handoff_handler(GstFakeSink *fakesink, GstBuffer *buffer,
 			    GstPad *pad, gpointer user_data)
 {
 	struct ausrc_st *st = user_data;
-
+	GstCaps *caps;
 	(void)fakesink;
-	(void)pad;
 
-	format_check(st, gst_caps_get_structure(GST_BUFFER_CAPS(buffer), 0));
+	caps = gst_pad_get_current_caps(pad);
+
+	format_check(st, gst_caps_get_structure(caps, 0));
 
 	packet_handler(st, buffer);
 }
@@ -240,15 +245,13 @@ static void set_caps(struct ausrc_st *st)
 	GstCaps *caps;
 
 	/* Set the capabilities we want */
-	caps = gst_caps_new_simple("audio/x-raw-int",
+	caps = gst_caps_new_simple("audio/x-raw",
 				   "rate",     G_TYPE_INT,    st->prm.srate,
 				   "channels", G_TYPE_INT,    st->prm.ch,
 				   "width",    G_TYPE_INT,    16,
 				   "signed",   G_TYPE_BOOLEAN,true,
 				   NULL);
-#if 0
-	gst_dump_caps(caps);
-#endif
+
 	g_object_set(G_OBJECT(st->capsfilt), "caps", caps, NULL);
 }
 
@@ -317,7 +320,7 @@ static int gst_setup(struct ausrc_st *st)
 	gst_element_link_many(st->capsfilt, st->sink, NULL);
 
 	/* add ghostpad */
-	pad = gst_element_get_pad(st->capsfilt, "sink");
+	pad = gst_element_get_static_pad(st->capsfilt, "sink");
 	gst_element_add_pad(st->bin, gst_ghost_pad_new("sink", pad));
 	gst_object_unref(GST_OBJECT(pad));
 
@@ -327,6 +330,7 @@ static int gst_setup(struct ausrc_st *st)
 	/* Override audio-sink handoff handler */
 	g_object_set(G_OBJECT(st->sink), "signal-handoffs", TRUE, NULL);
 	g_signal_connect(st->sink, "handoff", G_CALLBACK(handoff_handler), st);
+
 	g_object_set(G_OBJECT(st->source), "audio-sink", st->bin, NULL);
 
 	/********************* Misc **************************/
@@ -368,16 +372,19 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	int err;
-
 	(void)ctx;
 
-	if (!device)
-		device = gst_uri;
-
-	if (!prm)
+	if (!stp || !as || !prm)
 		return EINVAL;
-	if (prm->fmt != AUFMT_S16LE)
+
+	if (!str_isset(device))
+		return EINVAL;
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("gst: unsupported sample format (%s)\n",
+			aufmt_name(prm->fmt));
 		return ENOTSUP;
+	}
 
 	st = mem_zalloc(sizeof(*st), gst_destructor);
 	if (!st)

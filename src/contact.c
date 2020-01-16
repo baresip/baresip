@@ -28,6 +28,8 @@ struct contact {
 struct contacts {
 	struct list cl;
 	struct hash *cht;
+	struct contact *cur;
+	bool enable_presence;
 
 	contact_update_h *handler;
 	void *handler_arg;
@@ -48,6 +50,8 @@ static void destructor(void *arg)
 static void contacts_destructor(void *data)
 {
 	struct contacts *contacts = data;
+
+	mem_deref(contacts->cur);
 
 	hash_clear(contacts->cht);
 	mem_deref(contacts->cht);
@@ -147,10 +151,20 @@ void contact_remove(struct contacts *contacts, struct contact *contact)
 	hash_unlink(&contact->he);
 	list_unlink(&contact->le);
 
+	if (contacts->cur == contact)
+		contacts->cur = mem_deref(contacts->cur);
+
 	mem_deref(contact);
 }
 
 
+/**
+ * Set the contacts update handler
+ *
+ * @param contacts Contacts container
+ * @param updateh  Update handler
+ * @param arg      Handler argument
+ */
 void contact_set_update_handler(struct contacts *contacts,
 				contact_update_h *updateh, void *arg)
 {
@@ -217,6 +231,12 @@ struct list *contact_list(const struct contacts *contacts)
 }
 
 
+/**
+ * Set the presence status for a contact
+ *
+ * @param c      Contact
+ * @param status Presence status
+ */
 void contact_set_presence(struct contact *c, enum presence_status status)
 {
 	if (!c)
@@ -233,6 +253,13 @@ void contact_set_presence(struct contact *c, enum presence_status status)
 }
 
 
+/**
+ * Get the presence status for a contact
+ *
+ * @param c Contact
+ *
+ * @return Presence status
+ */
 enum presence_status contact_presence(const struct contact *c)
 {
 	if (!c)
@@ -242,6 +269,13 @@ enum presence_status contact_presence(const struct contact *c)
 }
 
 
+/**
+ * Get the presence status string
+ *
+ * @param status Presence status
+ *
+ * @return Presence status string
+ */
 const char *contact_presence_str(enum presence_status status)
 {
 	switch (status) {
@@ -255,6 +289,14 @@ const char *contact_presence_str(enum presence_status status)
 }
 
 
+/**
+ * Print a contact
+ *
+ * @param pf  Print function
+ * @param cnt Contact to print
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int contact_print(struct re_printf *pf, const struct contact *cnt)
 {
 	if (!cnt)
@@ -264,6 +306,14 @@ int contact_print(struct re_printf *pf, const struct contact *cnt)
 }
 
 
+/**
+ * Print all contacts
+ *
+ * @param pf       Print function
+ * @param contacts Contacts container
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 {
 	const struct list *lst;
@@ -275,15 +325,20 @@ int contacts_print(struct re_printf *pf, const struct contacts *contacts)
 
 	lst = contact_list(contacts);
 
-	err = re_hprintf(pf, "\n--- Contacts: (%u) ---\n",
+	err = re_hprintf(pf, "\n--- Contacts (%u) ---\n",
 			 list_count(lst));
 
 	for (le = list_head(lst); le && !err; le = le->next) {
 		const struct contact *c = le->data;
 
-		err = re_hprintf(pf, "%20s  %H\n",
-				 contact_presence_str(c->status),
-				 contact_print, c);
+		err = re_hprintf(pf, "%s ", c == contacts->cur ? ">" : " ");
+
+		if (contacts->enable_presence) {
+			err |= re_hprintf(pf, "%20s ",
+					  contact_presence_str(c->status));
+		}
+
+		err |= re_hprintf(pf, "%H\n", contact_print, c);
 	}
 
 	err |= re_hprintf(pf, "\n");
@@ -377,4 +432,64 @@ bool contact_block_access(const struct contacts *contacts, const char *uri)
 		return c->access == ACCESS_BLOCK;
 
 	return false;
+}
+
+
+/**
+ * Set the current contact
+ *
+ * @param contacts Contacts container
+ * @param cnt      Contact to be set as current
+ */
+void contacts_set_current(struct contacts *contacts, struct contact *cnt)
+{
+	if (!contacts || !cnt)
+		return;
+
+	mem_deref(contacts->cur);
+	contacts->cur = mem_ref(cnt);
+}
+
+
+/**
+ * Get the current contact
+ *
+ * @param contacts Contacts container
+ *
+ * @return Current contact, or NULL if no current contact
+ */
+struct contact *contacts_current(const struct contacts *contacts)
+{
+	if (!contacts)
+		return NULL;
+
+	return contacts->cur;
+}
+
+
+/**
+ * Get the linked list element from a contact
+ *
+ * @param cnt Contact
+ *
+ * @return Linked-list element
+ */
+struct le *contact_le(struct contact *cnt)
+{
+	return cnt ? &cnt->le : NULL;
+}
+
+
+/**
+ * Enable or disable presence
+ *
+ * @param contacts Contacts container
+ * @param enabled  True to enable presence, false to disable
+ */
+void contacts_enable_presence(struct contacts *contacts, bool enabled)
+{
+	if (!contacts)
+		return;
+
+	contacts->enable_presence = enabled;
 }

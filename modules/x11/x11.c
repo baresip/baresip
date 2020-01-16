@@ -174,16 +174,6 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 		pixsz = 4;
 		break;
 
-	case 16:
-		st->pixfmt = VID_FMT_RGB565;
-		pixsz = 2;
-		break;
-
-	case 15:
-		st->pixfmt = VID_FMT_RGB555;
-		pixsz = 2;
-		break;
-
 	default:
 		warning("x11: colordepth not supported: %d\n", attrs.depth);
 		return ENOSYS;
@@ -279,13 +269,13 @@ static int x11_reset(struct vidisp_st *st, const struct vidsz *sz)
 }
 
 
-/* prm->view points to the XWINDOW ID */
 static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg)
 {
 	struct vidisp_st *st;
 	int err = 0;
+	(void)prm;
 	(void)dev;
 	(void)resizeh;
 	(void)arg;
@@ -304,11 +294,7 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		goto out;
 	}
 
-	/* Use provided view, or create our own */
-	if (prm && prm->view)
-		st->win = (Window)prm->view;
-	else
-		st->internal = true;
+	st->internal = true;
 
  out:
 	if (err)

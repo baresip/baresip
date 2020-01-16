@@ -6,6 +6,7 @@
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include "audiounit.h"
 
@@ -116,7 +117,7 @@ int audiosess_alloc(struct audiosess_st **stp,
 	ret = AudioSessionSetActive(true);
 	if (ret) {
 		warning("audiounit: AudioSessionSetActive: %d\n", ret);
-		err = ENOSYS;
+		err = ENOTSUP;
 		goto out;
 	}
 

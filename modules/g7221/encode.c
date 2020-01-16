@@ -5,6 +5,7 @@
  */
 
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 #define G722_1_EXPOSE_INTERNAL_STRUCTURES
@@ -49,13 +50,18 @@ int g7221_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 }
 
 
-int g7221_encode(struct auenc_state *aes, uint8_t *buf, size_t *len,
+int g7221_encode(struct auenc_state *aes,
+		 bool *marker, uint8_t *buf, size_t *len,
 		 int fmt, const void *sampv, size_t sampc)
 {
 	size_t framec;
+	(void)marker;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
 
 	framec = sampc / aes->enc.frame_size;
 

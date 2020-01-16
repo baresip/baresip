@@ -259,7 +259,9 @@ int publisher_init(void)
 	struct le *le;
 	int err = 0;
 
-	uag_event_register(pub_ua_event_handler, NULL);
+	err = uag_event_register(pub_ua_event_handler, NULL);
+	if (err)
+		return err;
 
 	for (le = list_head(uag_list()); le; le = le->next) {
 

@@ -19,6 +19,7 @@
  * Supported version:
  *      libmpg123   1.16.0 or later
  *      libtwolame  0.3.13 or later
+ *      libmp3lame  3.100 or later
  *
  * References:
  *
@@ -78,8 +79,31 @@
 */
 
 
+static bool mpa_mirror;
+static char fmtp[256] = "";
+static char fmtp_mirror[256];
+
+
+static int mpa_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
+			 bool offer, void *arg)
+{
+	bool mirror;
+
+	(void)arg;
+	(void)offer;
+
+	if (!mb || !fmt)
+		return 0;
+
+	mirror = !offer && str_isset(fmtp_mirror);
+
+	return mbuf_printf(mb, "a=fmtp:%s %s\r\n",
+			   fmt->id, mirror ? fmtp_mirror : fmtp);
+}
+
+
 static struct aucodec mpa = {
-	.pt       = "14",
+	.pt        = "14",
 	.name      = "MPA",
 	.srate     = MPA_IORATE,
 	.crate     = MPA_RTPRATE,
@@ -94,55 +118,65 @@ static struct aucodec mpa = {
 };
 
 
+void mpa_mirror_params(const char *x)
+{
+	if (!mpa_mirror)
+		return;
+
+	info("mpa: mirror parameters: \"%s\"\n", x);
+
+	str_ncpy(fmtp_mirror, x, sizeof(fmtp_mirror));
+}
+
+
 static int module_init(void)
 {
 	struct conf *conf = conf_cur();
 	uint32_t value;
-	static char fmtp[256];
 	static char mode[30];
 	int res;
 
 	/** generate fmtp string based on config file */
 
-	strcpy(mode,mpa.fmtp);
+	str_ncpy(mode, mpa.fmtp, sizeof(mode));
 
+	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
+		if (value<2 || value>3) {
+			warning("MPA layer 2 or 3 are allowed.");
+			return EINVAL;
+		}
+		(void)re_snprintf(fmtp+strlen(fmtp),
+			sizeof(fmtp)-strlen(fmtp),
+			"layer=%d", value);
+	}
+	if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
+		switch (value) {
+			case 32000:
+			case 44100:
+			case 48000:
+			case 16000:
+			case 22050:
+			case 24000:
+				break;
+			default:
+				warning("MPA samplerates of 16, 22.05, 24, 32,"
+					" 44.1, and 48 kHz are allowed.\n");
+				return EINVAL;
+		}
+		(void)re_snprintf(fmtp+strlen(fmtp),
+			sizeof(fmtp)-strlen(fmtp),
+			";samplerate=%d", value);
+	}
 	if (0 == conf_get_u32(conf, "mpa_bitrate", &value)) {
 		if (value<8000 || value>384000) {
 			warning("MPA bitrate between 8000 and "
 				"384000 are allowed.\n");
-			return -1;
+			return EINVAL;
 		}
 
 		(void)re_snprintf(fmtp+strlen(fmtp),
 			sizeof(fmtp)-strlen(fmtp),
-			"; bitrate=%d", value);
-	}
-	if (0 == conf_get_u32(conf, "mpa_layer", &value)) {
-		if (value<1 || value>4) {
-			warning("MPA layer 1, 2 or 3 are allowed.");
-			return -1;
-		}
-		(void)re_snprintf(fmtp+strlen(fmtp),
-			sizeof(fmtp)-strlen(fmtp),
-			"; layer=%d", value);
-	}
-	if (0 == conf_get_u32(conf, "mpa_samplerate", &value)) {
-		switch (value) {
-		case 32000:
-		case 44100:
-		case 48000:
-		case 16000:
-		case 22050:
-		case 24000:
-			break;
-		default:
-			warning("MPA samplerates of 16, 22.05, 24, 32, "
-				"44.1, and 48 kHz are allowed.\n");
-			return -1;
-		}
-		(void)re_snprintf(fmtp+strlen(fmtp),
-			sizeof(fmtp)-strlen(fmtp),
-			"; samplerate=%d", value);
+			";bitrate=%d", value);
 	}
 	if (0 == conf_get_str(conf, "mpa_mode", mode, sizeof(mode))) {
 		char *p = mode;
@@ -157,25 +191,32 @@ static int module_init(void)
 			&& strcmp(mode,"dual_channel")) {
 			warning("MPA mode: Permissible values are stereo, "
 			    "joint_stereo, single_channel, dual_channel.\n");
-			return -1;
+			return EINVAL;
 		}
 
 		(void)re_snprintf(fmtp+strlen(fmtp),
 			sizeof(fmtp)-strlen(fmtp),
-			"; mode=%s", mode);
+			";mode=%s", mode);
 	}
 
-	if (fmtp[0]==';' && fmtp[1]==' ')
-		mpa.fmtp = fmtp+2;
+	if (fmtp[0]==';')
+		mpa.fmtp = fmtp+1;
 	else
 		mpa.fmtp = fmtp;
+
+	(void)conf_get_bool(conf, "mpa_mirror", &mpa_mirror);
+
+	if (mpa_mirror) {
+		mpa.fmtp = NULL;
+		mpa.fmtp_ench = mpa_fmtp_enc;
+	}
 
 	/* init decoder library */
 	res = mpg123_init();
 	if (res != MPG123_OK) {
 		warning("MPA libmpg123 init error %s\n",
 			mpg123_plain_strerror(res));
-		return -1;
+		return ENODEV;
 	}
 
 	aucodec_register(baresip_aucodecl(), &mpa);
@@ -203,4 +244,3 @@ EXPORT_SYM const struct mod_export DECL_EXPORTS(mpa) = {
 	module_init,
 	module_close,
 };
-

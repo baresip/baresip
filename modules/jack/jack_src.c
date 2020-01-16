@@ -15,35 +15,15 @@ struct ausrc_st {
 	const struct ausrc *as;  /* pointer to base-class (inheritance) */
 
 	struct ausrc_prm prm;
-	int16_t *sampv;
+	float *sampv;
 	size_t sampc;             /* includes number of channels */
 	ausrc_read_h *rh;
 	void *arg;
 
 	jack_client_t *client;
-	jack_port_t *portv[2];
+	jack_port_t **portv;
 	jack_nframes_t nframes;       /* num frames per port (channel) */
 };
-
-
-static inline int16_t ausamp_float2short(float in)
-{
-	double scaled_value;
-	int16_t out;
-
-	scaled_value = in * (8.0 * 0x10000000);
-
-	if (scaled_value >= (1.0 * 0x7fffffff)) {
-		out = 32767;
-	}
-	else if (scaled_value <= (-8.0 * 0x10000000)) {
-		out = -32768;
-	}
-	else
-		out = (short) (lrint (scaled_value) >> 16);
-
-	return out;
-}
 
 
 static int process_handler(jack_nframes_t nframes, void *arg)
@@ -62,8 +42,7 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 		buffer = jack_port_get_buffer(st->portv[ch], st->nframes);
 
 		for (j = 0; j < nframes; j++) {
-			int16_t samp;
-			samp = ausamp_float2short(buffer[j]);
+			float samp = buffer[j];
 			st->sampv[j*st->prm.ch + ch] = samp;
 		}
 	}
@@ -85,11 +64,13 @@ static void ausrc_destructor(void *arg)
 		jack_client_close(st->client);
 
 	mem_deref(st->sampv);
+	mem_deref(st->portv);
 }
 
 
 static int start_jack(struct ausrc_st *st)
 {
+	struct conf *conf = conf_cur();
 	const char **ports;
 	const char *client_name = "baresip";
 	const char *server_name = NULL;
@@ -97,6 +78,10 @@ static int start_jack(struct ausrc_st *st)
 	jack_status_t status;
 	unsigned ch;
 	jack_nframes_t engine_srate;
+
+	bool jack_connect_ports = true;
+	(void)conf_get_bool(conf, "jack_connect_ports",
+				  &jack_connect_ports);
 
 	/* open a client connection to the JACK server */
 
@@ -134,6 +119,11 @@ static int start_jack(struct ausrc_st *st)
 		return EINVAL;
 	}
 
+	st->sampc = st->nframes * st->prm.ch;
+	st->sampv = mem_alloc(st->sampc * sizeof(float), NULL);
+	if (!st->sampv)
+		return ENOMEM;
+
 	/* create one port per channel */
 	for (ch=0; ch<st->prm.ch; ch++) {
 
@@ -157,22 +147,24 @@ static int start_jack(struct ausrc_st *st)
 		return ENODEV;
 	}
 
-	ports = jack_get_ports (st->client, NULL, NULL,
-				JackPortIsOutput);
-	if (ports == NULL) {
-		warning("jack: no physical playback ports\n");
-		return ENODEV;
-	}
-
-	for (ch=0; ch<st->prm.ch; ch++) {
-
-		if (jack_connect(st->client, ports[ch],
-				 jack_port_name(st->portv[ch]))) {
-			warning("jack: cannot connect output ports\n");
+	if (jack_connect_ports) {
+		info("jack: connecting default output ports\n");
+		ports = jack_get_ports (st->client, NULL, NULL,
+					JackPortIsOutput);
+		if (ports == NULL) {
+			warning("jack: no physical playback ports\n");
+			return ENODEV;
 		}
-	}
 
-	jack_free(ports);
+		for (ch=0; ch<st->prm.ch; ch++) {
+			if (jack_connect(st->client, ports[ch],
+					 jack_port_name(st->portv[ch]))) {
+				warning("jack: cannot connect output ports\n");
+			}
+		}
+
+		jack_free(ports);
+	}
 
 	return 0;
 }
@@ -193,10 +185,7 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
 
-	if (prm->ch > ARRAY_SIZE(st->portv))
-		return EINVAL;
-
-	if (prm->fmt != AUFMT_S16LE) {
+	if (prm->fmt != AUFMT_FLOAT) {
 		warning("jack: source: unsupported sample format (%s)\n",
 			aufmt_name(prm->fmt));
 		return ENOTSUP;
@@ -211,16 +200,15 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh  = rh;
 	st->arg = arg;
 
-	err = start_jack(st);
-	if (err)
-		goto out;
-
-	st->sampc = st->nframes * prm->ch;
-	st->sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
-	if (!st->sampv) {
+	st->portv = mem_reallocarray(NULL, prm->ch, sizeof(*st->portv), NULL);
+	if (!st->portv) {
 		err = ENOMEM;
 		goto out;
 	}
+
+	err = start_jack(st);
+	if (err)
+		goto out;
 
 	info("jack: source sampc=%zu\n", st->sampc);
 

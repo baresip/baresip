@@ -7,6 +7,7 @@
 #include <baresip.h>
 #include "core.h"
 
+
 static void hdr_destructor(void *arg)
 {
 	struct sip_hdr *hdr = arg;
@@ -16,15 +17,25 @@ static void hdr_destructor(void *arg)
 }
 
 
+/**
+ * Add a custom SIP header to the list
+ *
+ * @param hdrs List of custom headers
+ * @param name Header name
+ * @param fmt  Formatted header value
+ * @param ...  Variable arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int custom_hdrs_add(struct list *hdrs, const char *name,
-					const char *fmt, ...)
+		    const char *fmt, ...)
 {
 	struct pl temp_pl = { NULL, 0 };
-	char *value = NULL;
-	int err = 0;
 	struct sip_hdr *hdr;
-
+	char *value = NULL;
 	va_list ap;
+	int err = 0;
+
 	va_start(ap, fmt);
 	err = re_vsdprintf(&value, fmt, ap);
 	va_end(ap);
@@ -48,19 +59,27 @@ int custom_hdrs_add(struct list *hdrs, const char *name,
 
 error:
 	mem_deref(hdr);
-	return(err);
+	return err;
 }
 
 
-int custom_hdrs_apply(const struct list *hdrs,
-					  custom_hdrs_h *h,
-					  void *arg)
+/**
+ * Apply a function callback handler to all custom headers
+ *
+ * @param hdrs List of custom SIP headers
+ * @param h    Function handler
+ * @param arg  Handler argument
+ *
+ * @return Return value from function handler, if errors
+ */
+int custom_hdrs_apply(const struct list *hdrs, custom_hdrs_h *h, void *arg)
 {
-	int err;
 	struct le *le;
+	int err;
 
 	LIST_FOREACH(hdrs, le) {
 		struct sip_hdr *hdr = le->data;
+
 		err = h(&hdr->name, &hdr->val, arg);
 		if (err)
 			return err;
@@ -70,18 +89,16 @@ int custom_hdrs_apply(const struct list *hdrs,
 }
 
 
-static int hdr_print_helper(const struct pl *name,
-							const struct pl *val,
-							void *arg)
+static int hdr_print_helper(const struct pl *name, const struct pl *val,
+			    void *arg)
 {
 	struct re_printf *pf = arg;
-	int err = re_hprintf(pf, "%r: %r\r\n", name, val);
-	return err;
+
+	return re_hprintf(pf, "%r: %r\r\n", name, val);
 }
 
 
-int custom_hdrs_print(struct re_printf *pf,
-		       const struct list *custom_hdrs)
+int custom_hdrs_print(struct re_printf *pf, const struct list *custom_hdrs)
 {
 	return custom_hdrs_apply(custom_hdrs, hdr_print_helper, pf);
 }

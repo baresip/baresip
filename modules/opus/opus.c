@@ -26,6 +26,9 @@
   opus_cbr        {yes,no}   # Constant Bitrate (inverse of VBR)
   opus_inbandfec  {yes,no}   # Enable inband Forward Error Correction (FEC)
   opus_dtx        {yes,no}   # Enable Discontinuous Transmission (DTX)
+  opus_complexity {0-10}     # Encoder's computational complexity (10 max)
+  opus_application {audio, voip} # Encoder's intended application
+  opus_packet_loss {0-100}   # Expected packet loss for FEC
  \endverbatim
  *
  * References:
@@ -40,6 +43,10 @@
 static bool opus_mirror;
 static char fmtp[256] = "";
 static char fmtp_mirror[256];
+
+uint32_t opus_complexity = 10;
+opus_int32 opus_application = OPUS_APPLICATION_AUDIO;
+opus_int32 opus_packet_loss = 0;
 
 
 static int opus_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
@@ -92,10 +99,14 @@ static int module_init(void)
 	uint32_t value;
 	char *p = fmtp + str_len(fmtp);
 	bool b, stereo = true, sprop_stereo = true;
+	struct pl pl;
 	int n = 0;
 
 	conf_get_bool(conf, "opus_stereo", &stereo);
 	conf_get_bool(conf, "opus_sprop_stereo", &sprop_stereo);
+
+	if (!stereo || !sprop_stereo)
+		opus.ch = 1;
 
 	/* always set stereo parameter first */
 	n = re_snprintf(p, sizeof(fmtp) - str_len(p),
@@ -113,6 +124,15 @@ static int module_init(void)
 			return ENOMEM;
 
 		p += n;
+	}
+	if (0 == conf_get_u32(conf, "opus_samplerate", &value)) {
+
+		if ((value != 8000) && (value != 12000) && (value != 16000) &&
+		    (value != 24000) && (value != 48000)) {
+			warning("opus: invalid samplerate: %d\n", value);
+			return EINVAL;
+		}
+		opus.srate = value;
 	}
 
 	if (0 == conf_get_bool(conf, "opus_cbr", &b)) {
@@ -150,6 +170,31 @@ static int module_init(void)
 	if (opus_mirror) {
 		opus.fmtp = NULL;
 		opus.fmtp_ench = opus_fmtp_enc;
+	}
+
+	(void)conf_get_u32(conf, "opus_complexity", &opus_complexity);
+
+	if (opus_complexity > 10)
+		opus_complexity = 10;
+
+	if (!conf_get(conf, "opus_application", &pl)) {
+		if (!pl_strcasecmp(&pl, "audio"))
+			opus_application = OPUS_APPLICATION_AUDIO;
+		else if (!pl_strcasecmp(&pl, "voip"))
+			opus_application = OPUS_APPLICATION_VOIP;
+		else {
+			warning("opus: unknown encoder application: %r\n",
+					&pl);
+			return EINVAL;
+		}
+	}
+
+	if (0 == conf_get_u32(conf, "opus_packet_loss", &value)) {
+
+		if (value > 100)
+			opus_packet_loss = 100;
+		else
+			opus_packet_loss = value;
 	}
 
 	debug("opus: fmtp=\"%s\"\n", fmtp);

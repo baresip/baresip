@@ -91,12 +91,12 @@ static int mock_auplay_alloc(struct auplay_st **stp, const struct auplay *ap,
 }
 
 
-int mock_auplay_register(struct auplay **auplayp,
+int mock_auplay_register(struct auplay **auplayp, struct list *auplayl,
 			 mock_sample_h *sampleh, void *arg)
 {
 	mock.sampleh = sampleh;
 	mock.arg = arg;
 
-	return auplay_register(auplayp, baresip_auplayl(),
+	return auplay_register(auplayp, auplayl,
 			      "mock-auplay", mock_auplay_alloc);
 }

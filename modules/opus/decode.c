@@ -66,9 +66,10 @@ int opus_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 int opus_decode_frm(struct audec_state *ads,
 		    int fmt, void *sampv, size_t *sampc,
-		    const uint8_t *buf, size_t len)
+		    bool marker, const uint8_t *buf, size_t len)
 {
 	int n;
+	(void)marker;
 
 	if (!ads || !sampv || !sampc || !buf)
 		return EINVAL;
@@ -105,34 +106,62 @@ int opus_decode_frm(struct audec_state *ads,
 
 
 int opus_decode_pkloss(struct audec_state *ads,
-		       int fmt, void *sampv, size_t *sampc)
+		       int fmt, void *sampv, size_t *sampc,
+		       const uint8_t *buf, size_t len)
 {
 	int n;
+	opus_int32 frame_size;
+	size_t nsamp = 0;
+	bool fec;
 
 	if (!ads || !sampv || !sampc)
 		return EINVAL;
 
+	/*
+	 * FEC=0 -> use PLC
+	 * FEC=1 -> use inband FEC
+	 */
+	fec = opus_packet_loss > 0;
+
+	opus_decoder_ctl(ads->dec, OPUS_GET_LAST_PACKET_DURATION(&frame_size));
+
 	switch (fmt) {
 
 	case AUFMT_S16LE:
-		n = opus_decode(ads->dec, NULL, 0,
-				sampv, (int)(*sampc/ads->ch), 0);
-		if (n < 0)
+		n = opus_decode(ads->dec,
+				fec ? buf : NULL,
+				fec ? (opus_int32)len : 0,
+				sampv, (int)(frame_size), fec);
+		if (n < 0) {
+			warning("opus: decode error: %s\n", opus_strerror(n));
 			return EPROTO;
+		}
 		break;
 
 	case AUFMT_FLOAT:
-		n = opus_decode_float(ads->dec, NULL, 0,
-				      sampv, (int)(*sampc/ads->ch), 0);
-		if (n < 0)
+		n = opus_decode_float(ads->dec,
+				      fec ? buf : NULL,
+				      fec ? (opus_int32)len : 0,
+				      sampv, (int)(frame_size), fec);
+		if (n < 0) {
+			warning("opus: decode error: %s\n", opus_strerror(n));
 			return EPROTO;
+		}
+
 		break;
 
 	default:
 		return ENOTSUP;
 	}
 
-	*sampc = n * ads->ch;
+	nsamp = (n * ads->ch);
+
+	if (nsamp > *sampc) {
+		warning("opus: pkloss: buffer too small.\n");
+		return ENOMEM;
+	}
+
+	*sampc = nsamp;
 
 	return 0;
 }

@@ -76,7 +76,9 @@ static int do_snapshot(struct re_printf *pf, void *arg)
 
 
 static struct vidfilt snapshot = {
-	LE_INIT, "snapshot", NULL, encode, NULL, decode,
+	.name = "snapshot",
+	.ench = encode,
+	.dech = decode,
 };
 
 

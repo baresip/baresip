@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include <iLBC_define.h>
 #include <iLBC_decode.h>
@@ -173,7 +174,6 @@ static int encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 			 struct auenc_param *prm, const char *fmtp)
 {
 	struct auenc_state *st;
-	int err = 0;
 
 	if (!aesp || !ac || !prm)
 		return EINVAL;
@@ -196,12 +196,9 @@ static int encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		prm->ptime = st->mode;
 	}
 
-	if (err)
-		mem_deref(st);
-	else
-		*aesp = st;
+	*aesp = st;
 
-	return err;
+	return 0;
 }
 
 
@@ -209,8 +206,6 @@ static int decode_update(struct audec_state **adsp,
 			 const struct aucodec *ac, const char *fmtp)
 {
 	struct audec_state *st;
-	int err = 0;
-	(void)fmtp;
 
 	if (!adsp || !ac)
 		return EINVAL;
@@ -226,20 +221,18 @@ static int decode_update(struct audec_state **adsp,
 	if (str_isset(fmtp))
 		decoder_fmtp_decode(st, fmtp);
 
-	if (err)
-		mem_deref(st);
-	else
-		*adsp = st;
+	*adsp = st;
 
-	return err;
+	return 0;
 }
 
 
-static int encode(struct auenc_state *st, uint8_t *buf,
-		  size_t *len, const int16_t *sampv, size_t sampc)
+static int encode(struct auenc_state *st, bool *marker, uint8_t *buf,
+		  size_t *len, int fmt, const void *sampv, size_t sampc)
 {
 	float float_buf[sampc];
 	uint32_t i;
+	(void)marker;
 
 	/* Make sure there is enough space */
 	if (*len < st->enc_bytes) {
@@ -248,9 +241,12 @@ static int encode(struct auenc_state *st, uint8_t *buf,
 		return ENOMEM;
 	}
 
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	/* Convert from 16-bit samples to float */
 	for (i=0; i<sampc; i++) {
-		const int16_t v = sampv[i];
+		const int16_t v = ((int16_t *)sampv)[i];
 		float_buf[i] = (float)v;
 	}
 
@@ -291,9 +287,14 @@ static int do_dec(struct audec_state *st, int16_t *sampv, size_t *sampc,
 }
 
 
-static int decode(struct audec_state *st, int16_t *sampv,
-		  size_t *sampc, const uint8_t *buf, size_t len)
+static int decode(struct audec_state *st, int fmt, void *sampv,
+		  size_t *sampc, bool marker, const uint8_t *buf, size_t len)
 {
+	(void)marker;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	/* Try to detect mode */
 	if (st->dec_bytes != len) {
 
@@ -316,19 +317,35 @@ static int decode(struct audec_state *st, int16_t *sampv,
 		}
 	}
 
-	return do_dec(st, sampv, sampc, buf, len);
+	return do_dec(st, (int16_t *)sampv, sampc, buf, len);
 }
 
 
-static int pkloss(struct audec_state *st, int16_t *sampv, size_t *sampc)
+static int pkloss(struct audec_state *st, int fmt, void *sampv,
+		  size_t *sampc, const uint8_t *buf, size_t len)
 {
-	return do_dec(st, sampv, sampc, NULL, 0);
+	(void)buf;
+	(void)len;
+
+	if (fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
+	return do_dec(st, (int16_t *)sampv, sampc, NULL, 0);
 }
 
 
 static struct aucodec ilbc = {
-	LE_INIT, 0, "iLBC", 8000, 8000, 1, 1, ilbc_fmtp,
-	encode_update, encode, decode_update, decode, pkloss, 0, 0
+	.name    = "iLBC",
+	.srate   = 8000,
+	.crate   = 8000,
+	.ch      = 1,
+	.pch     = 1,
+	.fmtp    = ilbc_fmtp,
+	.encupdh = encode_update,
+	.ench    = encode,
+	.decupdh = decode_update,
+	.dech    = decode,
+	.plch    = pkloss,
 };
 
 

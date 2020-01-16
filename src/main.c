@@ -44,13 +44,22 @@ static void ua_exit_handler(void *arg)
 }
 
 
+static void tmr_quit_handler(void *arg)
+{
+	(void)arg;
+
+	ua_stop_all(false);
+}
+
+
 static void usage(void)
 {
 	(void)re_fprintf(stderr,
 			 "Usage: baresip [options]\n"
 			 "options:\n"
+			 "\t-4               Force IPv4 only\n"
 #if HAVE_INET6
-			 "\t-6               Prefer IPv6\n"
+			 "\t-6               Force IPv6 only\n"
 #endif
 			 "\t-d               Daemon\n"
 			 "\t-e <commands>    Execute commands (repeat)\n"
@@ -58,7 +67,8 @@ static void usage(void)
 			 "\t-m <module>      Pre-load modules (repeat)\n"
 			 "\t-p <path>        Audio files\n"
 			 "\t-h -?            Help\n"
-			 "\t-t               Test and exit\n"
+			 "\t-s               Enable SIP trace\n"
+			 "\t-t <sec>         Quit after <sec> seconds\n"
 			 "\t-n <net_if>      Specify network interface\n"
 			 "\t-u <parameters>  Extra UA parameters\n"
 			 "\t-v               Verbose debug\n"
@@ -68,15 +78,18 @@ static void usage(void)
 
 int main(int argc, char *argv[])
 {
-	bool prefer_ipv6 = false, run_daemon = false, test = false;
+	int af = AF_UNSPEC, run_daemon = false;
 	const char *ua_eprm = NULL;
 	const char *execmdv[16];
 	const char *net_interface = NULL;
 	const char *audio_path = NULL;
 	const char *modv[16];
+	struct tmr tmr_quit;
+	bool sip_trace = false;
 	size_t execmdc = 0;
 	size_t modc = 0;
 	size_t i;
+	uint32_t tmo = 0;
 	int err;
 
 	/*
@@ -85,7 +98,7 @@ int main(int argc, char *argv[])
 	setbuf(stdout, NULL);
 
 	(void)re_fprintf(stdout, "baresip v%s"
-			 " Copyright (C) 2010 - 2018"
+			 " Copyright (C) 2010 - 2020"
 			 " Alfred E. Heggestad et al.\n",
 			 BARESIP_VERSION);
 
@@ -95,9 +108,11 @@ int main(int argc, char *argv[])
 	if (err)
 		goto out;
 
+	tmr_init(&tmr_quit);
+
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "6de:f:p:hun:vtm:");
+		const int c = getopt(argc, argv, "46de:f:p:hu:n:vst:m:");
 		if (0 > c)
 			break;
 
@@ -108,9 +123,13 @@ int main(int argc, char *argv[])
 			usage();
 			return -2;
 
+		case '4':
+			af = AF_INET;
+			break;
+
 #if HAVE_INET6
 		case '6':
-			prefer_ipv6 = true;
+			af = AF_INET6;
 			break;
 #endif
 
@@ -146,8 +165,12 @@ int main(int argc, char *argv[])
 			audio_path = optarg;
 			break;
 
+		case 's':
+			sip_trace = true;
+			break;
+
 		case 't':
-			test = true;
+			tmo = atoi(optarg);
 			break;
 
 		case 'n':
@@ -188,10 +211,16 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	* Initialise the top-level baresip struct, must be
-	* done AFTER configuration is complete.
+	 * Set prefer_ipv6 preferring the one given in -6 argument (if any)
+	 */
+	if (af != AF_UNSPEC)
+		conf_config()->net.af = af;
+
+	/*
+	 * Initialise the top-level baresip struct, must be
+	 * done AFTER configuration is complete.
 	*/
-	err = baresip_init(conf_config(), prefer_ipv6);
+	err = baresip_init(conf_config());
 	if (err) {
 		warning("main: baresip init failed (%m)\n", err);
 		goto out;
@@ -223,7 +252,7 @@ int main(int argc, char *argv[])
 
 	/* Initialise User Agents */
 	err = ua_init("baresip v" BARESIP_VERSION " (" ARCH "/" OS ")",
-		      true, true, true, prefer_ipv6);
+		      true, true, true);
 	if (err)
 		goto out;
 
@@ -235,8 +264,8 @@ int main(int argc, char *argv[])
 			goto out;
 	}
 
-	if (test)
-		goto out;
+	if (sip_trace)
+		uag_enable_sip_trace(true);
 
 	/* Load modules */
 	err = conf_modules();
@@ -258,14 +287,24 @@ int main(int argc, char *argv[])
 		ui_input_str(execmdv[i]);
 	}
 
+	if (tmo) {
+		tmr_start(&tmr_quit, tmo * 1000, tmr_quit_handler, NULL);
+	}
+
 	/* Main loop */
 	err = re_main(signal_handler);
 
  out:
+	tmr_cancel(&tmr_quit);
+
 	if (err)
 		ua_stop_all(true);
 
 	ua_close();
+
+	/* note: must be done before mod_close() */
+	module_app_unload();
+
 	conf_close();
 
 	baresip_close();

@@ -70,7 +70,8 @@ int test_play(void)
 	int err;
 
 	/* use a mock audio-driver to save the audio-samples */
-	err = mock_auplay_register(&auplay, sample_handler, &test);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   sample_handler, &test);
 	ASSERT_EQ(0, err);
 
 	err = play_init(&player);

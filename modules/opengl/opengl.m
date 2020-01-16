@@ -229,18 +229,10 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		goto out;
 	}
 
-	/* Use provided view, or create our own */
-	if (prm && prm->view) {
-		[st->ctx setView:prm->view];
-	}
-	else {
-		err = create_window(st);
-		if (err)
-			goto out;
-
-		if (prm)
-			prm->view = [st->win contentView];
-	}
+	/* create our own */
+	err = create_window(st);
+	if (err)
+		goto out;
 
 	/* Enable vertical sync */
 	[st->ctx setValues:&vsync forParameter:NSOpenGLCPSwapInterval];

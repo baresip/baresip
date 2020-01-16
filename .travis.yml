@@ -1,3 +1,4 @@
+dist: xenial
 language: c
 
 os:
@@ -16,7 +17,22 @@ sudo: require
 addons:
     apt:
         packages:
-            libssl-dev libgtk2.0-dev libsndfile1-dev libpulse-dev libavcodec-dev
+        - libavcodec-dev
+        - libgtk2.0-dev
+        - libjack-jackd2-dev
+        - libmpg123-dev
+        - libopus-dev
+        - libpulse-dev
+        - libsndfile1-dev
+        - libspandsp-dev
+        - libssl-dev
+    homebrew:
+        packages:
+        - codec2
+        - fdk-aac
+        - jack
+        - mpg123
+        - spandsp
 
 install:
     - git clone https://github.com/creytiv/re.git
@@ -27,4 +43,5 @@ install:
 
 script: 
     - make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
+    - make clean; make CCACHE= STATIC=yes
     - python2 ccheck.py

@@ -112,6 +112,13 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_sip_debug(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	return sip_debug(pf, uag_sip());
+}
+
+
 static int reload_config(struct re_printf *pf, void *arg)
 {
 	int err;
@@ -133,18 +140,49 @@ static int reload_config(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_log_level(struct re_printf *pf, void *unused)
+{
+	int level;
+	(void)unused;
+
+	level = log_level_get();
+
+	--level;
+
+	if (level < LEVEL_DEBUG)
+		level = LEVEL_ERROR;
+
+	log_level_set(level);
+
+	return re_hprintf(pf, "Log level '%s'\n", log_level_name(level));
+}
+
+
+static int print_uuid(struct re_printf *pf, void *arg)
+{
+	struct config *cfg = conf_config();
+	(void)arg;
+
+	if (cfg)
+		re_hprintf(pf, "UUID: %s\n", cfg->sip.uuid);
+	return 0;
+}
+
+
 static const struct cmd debugcmdv[] = {
 {"conf_reload", 0,       0, "Reload config file",     reload_config       },
 {"config",      0,       0, "Print configuration",    cmd_config_print    },
+{"loglevel",   'v',      0, "Log level toggle",       cmd_log_level       },
 {"main",        0,       0, "Main loop debug",        re_debug            },
 {"memstat",    'y',      0, "Memory status",          mem_status          },
 {"modules",     0,       0, "Module debug",           mod_debug           },
 {"netstat",    'n',      0, "Network debug",          cmd_net_debug       },
 {"play",        0, CMD_PRM, "Play audio file",        cmd_play_file       },
-{"sipstat",    'i',      0, "SIP debug",              ua_print_sip_status },
+{"sipstat",    'i',      0, "SIP debug",              cmd_sip_debug       },
 {"sysinfo",    's',      0, "System info",            print_system_info   },
 {"timers",      0,       0, "Timer debug",            tmr_status          },
 {"uastat",     'u',      0, "UA debug",               cmd_ua_debug        },
+{"uuid",        0,       0, "Print UUID",             print_uuid          },
 };
 
 

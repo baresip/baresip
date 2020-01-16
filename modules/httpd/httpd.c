@@ -12,15 +12,23 @@
  *
  * HTTP Server module for the User-Interface
  *
- * Open your favourite web browser and point it to http://127.0.0.1:8000/
  *
+ * Open your favourite web browser and point it to http://127.0.0.1:8000/
  * Example URLs:
+ *
  \verbatim
   http://127.0.0.1:8000?h                  -- Print the Help menu
   http://127.0.0.1:8000?d1234@target.com   -- Make an outgoing call
  \endverbatim
+ *
+ * The following options can be configured:
+ *
+ \verbatim
+  http_listen     0.0.0.0:8000         # IP-address and port to listen on
+ \endverbatim
  */
 
+enum {HTTP_PORT = 8000};
 
 static struct http_sock *httpsock;
 
@@ -99,6 +107,7 @@ static int html_print_raw(struct re_printf *pf, const struct pl *prm)
 			  handle_input, &params);
 }
 
+
 static void http_req_handler(struct http_conn *conn,
 			     const struct http_msg *msg, void *arg)
 {
@@ -167,8 +176,6 @@ static int output_handler(const char *str)
 {
 	(void)str;
 
-	/* XXX: print 'str' to all active HTTP connections */
-
 	return 0;
 }
 
@@ -185,7 +192,7 @@ static int module_init(void)
 	int err;
 
 	if (conf_get_sa(conf_cur(), "http_listen", &laddr)) {
-		sa_set_str(&laddr, "0.0.0.0", 8000);
+		sa_set_str(&laddr, "0.0.0.0", HTTP_PORT);
 	}
 
 	err = http_listen(&httpsock, &laddr, http_req_handler, NULL);

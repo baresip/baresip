@@ -9,35 +9,18 @@
 #include "core.h"
 
 
-uint32_t sdp_media_rattr_u32(const struct sdp_media *m, const char *name)
-{
-	const char *attr = sdp_media_rattr(m, name);
-	return attr ? atoi(attr) : 0;
-}
-
-
-/*
- * Get a remote attribute from the SDP. Try the media-level first,
- * and if it does not exist then try session-level.
+/**
+ * Decode an SDP fingerprint value
+ *
+ * @param attr SDP attribute value
+ * @param hash Returned hash method
+ * @param md   Returned message digest
+ * @param sz   Message digest size, set on return
+ *
+ * @return 0 if success, otherwise errorcode
+ *
+ * Reference: RFC 4572
  */
-const char *sdp_rattr(const struct sdp_session *s, const struct sdp_media *m,
-		      const char *name)
-{
-	const char *x;
-
-	x = sdp_media_rattr(m, name);
-	if (x)
-		return x;
-
-	x = sdp_session_rattr(s, name);
-	if (x)
-		return x;
-
-	return NULL;
-}
-
-
-/* RFC 4572 */
 int sdp_fingerprint_decode(const char *attr, struct pl *hash,
 			   uint8_t *md, size_t *sz)
 {
@@ -67,6 +50,14 @@ int sdp_fingerprint_decode(const char *attr, struct pl *hash,
 }
 
 
+/**
+ * Check if an SDP media object has valid media. It is considered
+ * valid if it has one or more codecs, and the port number is set.
+ *
+ * @param m SDP Media object
+ *
+ * @return True if it has media, false if not
+ */
 bool sdp_media_has_media(const struct sdp_media *m)
 {
 	bool has;
@@ -76,51 +67,6 @@ bool sdp_media_has_media(const struct sdp_media *m)
 		return sdp_media_rport(m) != 0;
 
 	return false;
-}
-
-
-/**
- * Find a dynamic payload type that is not used
- *
- * @param m SDP Media
- *
- * @return Unused payload type, -1 if no found
- */
-int sdp_media_find_unused_pt(const struct sdp_media *m)
-{
-	int pt;
-
-	for (pt = PT_DYN_MAX; pt>=PT_DYN_MIN; pt--) {
-
-		if (!sdp_media_format(m, false, NULL, pt, NULL, -1, -1))
-			return pt;
-	}
-
-	return -1;
-}
-
-
-const struct sdp_format *sdp_media_format_cycle(struct sdp_media *m)
-{
-	struct sdp_format *sf;
-	struct list *lst;
-
- again:
-	sf = (struct sdp_format *)sdp_media_rformat(m, NULL);
-	if (!sf)
-		return NULL;
-
-	lst = sf->le.list;
-
-	/* move top-most codec to end of list */
-	list_unlink(&sf->le);
-	list_append(lst, &sf->le, sf);
-
-	sf = (struct sdp_format *)sdp_media_rformat(m, NULL);
-	if (!str_casecmp(sf->name, telev_rtpfmt))
-		goto again;
-
-	return sf;
 }
 
 

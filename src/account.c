@@ -35,6 +35,11 @@ static void destructor(void *arg)
 	mem_deref(acc->aor);
 	mem_deref(acc->dispname);
 	mem_deref(acc->buf);
+	mem_deref(acc->ausrc_mod);
+	mem_deref(acc->ausrc_dev);
+	mem_deref(acc->auplay_mod);
+	mem_deref(acc->auplay_dev);
+	mem_deref(acc->extra);
 }
 
 
@@ -141,10 +146,49 @@ static int media_decode(struct account *acc, const struct pl *prm)
 }
 
 
+/* Decode extra parameter */
+static int extra_decode(struct account *acc, const struct pl *prm)
+{
+	int err = 0;
+
+	if (!acc || !prm)
+		return EINVAL;
+
+	err |= param_dstr(&acc->extra, prm, "extra");
+
+	return err;
+}
+
+
+static int decode_pair(char **val1, char **val2,
+		       const struct pl *params, const char *name)
+{
+	struct pl val, pl1, pl2;
+	int err = 0;
+
+	if (0 == msg_param_decode(params, name, &val)) {
+
+		/* note: second value may be quoted */
+		err = re_regex(val.p, val.l, "[^,]+,[~]*", &pl1, &pl2);
+		if (err)
+			return err;
+
+		err  = pl_strdup(val1, &pl1);
+		err |= pl_strdup(val2, &pl2);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+
 /* Decode answermode parameter */
 static void answermode_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl amode;
+
+	prm->answermode = ANSWERMODE_MANUAL;
 
 	if (0 == msg_param_decode(pl, "answermode", &amode)) {
 
@@ -159,7 +203,6 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 		}
 		else {
 			warning("account: answermode unknown (%r)\n", &amode);
-			prm->answermode = ANSWERMODE_MANUAL;
 		}
 	}
 }
@@ -240,7 +283,6 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 }
 
 
-#ifdef USE_VIDEO
 static int video_codecs_decode(struct account *acc, const struct pl *prm)
 {
 	struct list *vidcodecl = baresip_vidcodecl();
@@ -280,7 +322,6 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 
 	return 0;
 }
-#endif
 
 
 static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
@@ -304,7 +345,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 		char expr[16] = "outbound";
 
-		expr[8] = i + 1 + 0x30;
+		expr[8] = (char)(i + 1 + 0x30);
 		expr[9] = '\0';
 
 		err |= param_dstr(&acc->outboundv[i], &aor->params, expr);
@@ -392,23 +433,22 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	err |= sip_params_decode(acc, &acc->laddr);
 	       answermode_decode(acc, &acc->laddr.params);
 	err |= audio_codecs_decode(acc, &acc->laddr.params);
-#ifdef USE_VIDEO
 	err |= video_codecs_decode(acc, &acc->laddr.params);
-#endif
 	err |= media_decode(acc, &acc->laddr.params);
 	if (err)
 		goto out;
 
-	/* optional password prompt */
-	if (pl_isset(&acc->laddr.uri.password)) {
-
-		warning("account: username:password is now disabled"
-			" please use ;auth_pass=xxx instead\n");
-
-		err = EINVAL;
+	err  = decode_pair(&acc->ausrc_mod, &acc->ausrc_dev,
+			   &acc->laddr.params, "audio_source");
+	err |= decode_pair(&acc->auplay_mod, &acc->auplay_dev,
+			   &acc->laddr.params, "audio_player");
+	if (err) {
+		warning("account: audio_source/player parse error\n");
 		goto out;
 	}
-	else if (0 == msg_param_decode(&acc->laddr.params, "auth_pass", &pl)) {
+
+	/* optional password prompt */
+	if (0 == msg_param_decode(&acc->laddr.params, "auth_pass", &pl)) {
 		err = pl_strdup(&acc->auth_pass, &pl);
 		if (err)
 			goto out;
@@ -433,6 +473,8 @@ int account_alloc(struct account **accp, const char *sipaddr)
 				acc->mencid);
 		}
 	}
+
+	err |= extra_decode(acc, &acc->laddr.params);
 
  out:
 	if (err)
@@ -553,6 +595,47 @@ int account_set_regint(struct account *acc, uint32_t regint)
 
 
 /**
+ * Set the stun host for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param host  Stun host (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_host(struct account *acc, const char *host)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_host = mem_deref(acc->stun_host);
+
+	if (host)
+		return str_dup(&acc->stun_host, host);
+
+	return 0;
+}
+
+
+/**
+ * Set the port of the STUN host of a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param port    Port number
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_port(struct account *acc, uint16_t port)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_port = port;
+
+	return 0;
+}
+
+
+/**
  * Set the media encryption for a SIP account
  *
  * @param acc     User-Agent account
@@ -588,10 +671,46 @@ int account_set_mediaenc(struct account *acc, const char *mencid)
 
 
 /**
+ * Set the media NAT handling for a SIP account
+ *
+ * @param acc     User-Agent account
+ * @param mnatid  Media NAT handling id
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_medianat(struct account *acc, const char *mnatid)
+{
+	const struct mnat *mnat = NULL;
+
+	if (!acc)
+		return EINVAL;
+
+	if (mnatid) {
+		mnat = mnat_find(baresip_mnatl(), mnatid);
+		if (!mnat) {
+			warning("account: medianat not found: `%s'\n",
+				mnatid);
+			return EINVAL;
+		}
+	}
+
+	acc->mnatid = mem_deref(acc->mnatid);
+	acc->mnat = NULL;
+
+	if (mnatid) {
+		acc->mnat = mnat;
+		return str_dup(&acc->mnatid, mnatid);
+	}
+
+	return 0;
+}
+
+
+/**
  * Sets audio codecs
  *
  * @param acc      User-Agent account
- * @param codecs   Comma separed list of audio codecs (NULL to disable)
+ * @param codecs   Comma separated list of audio codecs (NULL to disable)
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -606,7 +725,7 @@ int account_set_audio_codecs(struct account *acc, const char *codecs)
 	list_clear(&acc->aucodecl);
 
 	if (codecs) {
-		re_snprintf(buf, sizeof buf, ";audio_codecs=%s", codecs);
+		re_snprintf(buf, sizeof(buf), ";audio_codecs=%s", codecs);
 		pl_set_str(&pl, buf);
 		return audio_codecs_decode(acc, &pl);
 	}
@@ -738,7 +857,6 @@ struct list *account_aucodecl(const struct account *acc)
 }
 
 
-#ifdef USE_VIDEO
 /**
  * Get the video codecs of an account
  *
@@ -751,7 +869,6 @@ struct list *account_vidcodecl(const struct account *acc)
 	return (acc && !list_isempty(&acc->vidcodecl))
 		? (struct list *)&acc->vidcodecl : baresip_vidcodecl();
 }
-#endif
 
 
 /**
@@ -803,6 +920,31 @@ uint32_t account_pubint(const struct account *acc)
 enum answermode account_answermode(const struct account *acc)
 {
 	return acc ? acc->answermode : ANSWERMODE_MANUAL;
+}
+
+
+/**
+ * Set the answermode of an account
+ *
+ * @param acc  User-Agent account
+ * @param mode Answermode
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_answermode(struct account *acc, enum answermode mode)
+{
+	if (!acc)
+		return EINVAL;
+
+	if ((mode != ANSWERMODE_MANUAL) && (mode != ANSWERMODE_EARLY) &&
+	    (mode != ANSWERMODE_AUTO)) {
+		warning("account: invalid answermode : `%d'\n", mode);
+		return EINVAL;
+	}
+
+	acc->answermode = mode;
+
+	return 0;
 }
 
 
@@ -940,6 +1082,19 @@ const char *account_stun_host(const struct account *acc)
 }
 
 
+/**
+ * Get the port of the STUN host of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Port number or 0 if not set
+ */
+uint16_t account_stun_port(const struct account *acc)
+{
+	return acc ? acc->stun_port : 0;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
@@ -962,6 +1117,19 @@ static const char *answermode_str(enum answermode mode)
 const char *account_mediaenc(const struct account *acc)
 {
 	return acc ? acc->mencid : NULL;
+}
+
+
+/**
+ * Get the media NAT handling of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Media NAT handling id or NULL if not set
+ */
+const char *account_medianat(const struct account *acc)
+{
+	return acc ? acc->mnatid : NULL;
 }
 
 
@@ -997,6 +1165,27 @@ const char *account_call_transfer(const struct account *acc)
 }
 
 
+/**
+ * Get extra parameter value of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return extra parameter value
+ */
+const char *account_extra(const struct account *acc)
+{
+	return acc ? acc->extra : NULL;
+}
+
+
+/**
+ * Print the account debug information
+ *
+ * @param pf  Print function
+ * @param acc User-Agent account
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int account_debug(struct re_printf *pf, const struct account *acc)
 {
 	struct le *le;
@@ -1053,6 +1242,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	}
 	err |= re_hprintf(pf, " call_transfer:         %s\n",
 			  account_call_transfer(acc));
+	err |= re_hprintf(pf, " extra:         %s\n",
+			  acc->extra ? acc->extra : "none");
 
 	return err;
 }

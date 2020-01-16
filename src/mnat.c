@@ -9,54 +9,34 @@
 #include "core.h"
 
 
-static void destructor(void *arg)
+/**
+ * Register a Media NAT traversal module
+ *
+ * @param mnatl    List of Media-NAT modules
+ * @param mnat     Media NAT traversal module
+ */
+void mnat_register(struct list *mnatl, struct mnat *mnat)
 {
-	struct mnat *mnat = arg;
+	if (!mnatl || !mnat)
+		return;
 
-	list_unlink(&mnat->le);
+	list_append(mnatl, &mnat->le, mnat);
+
+	info("medianat: %s\n", mnat->id);
 }
 
 
 /**
- * Register a Media NAT traversal module
+ * Unregister a Media NAT traversal module
  *
- * @param mnatp    Pointer to allocated Media NAT traversal module
- * @param mnatl    List of Media-NAT modules
- * @param id       Media NAT Identifier
- * @param ftag     SIP Feature tag (optional)
- * @param sessh    Session allocation handler
- * @param mediah   Media allocation handler
- * @param updateh  Update handler
- *
- * @return 0 if success, otherwise errorcode
+ * @param mnat     Media NAT traversal module
  */
-int mnat_register(struct mnat **mnatp, struct list *mnatl,
-		  const char *id, const char *ftag,
-		  mnat_sess_h *sessh, mnat_media_h *mediah,
-		  mnat_update_h *updateh)
+void mnat_unregister(struct mnat *mnat)
 {
-	struct mnat *mnat;
-
-	if (!mnatp || !id || !sessh || !mediah)
-		return EINVAL;
-
-	mnat = mem_zalloc(sizeof(*mnat), destructor);
 	if (!mnat)
-		return ENOMEM;
+		return;
 
-	list_append(mnatl, &mnat->le, mnat);
-
-	mnat->id      = id;
-	mnat->ftag    = ftag;
-	mnat->sessh   = sessh;
-	mnat->mediah  = mediah;
-	mnat->updateh = updateh;
-
-	info("medianat: %s\n", id);
-
-	*mnatp = mnat;
-
-	return 0;
+	list_unlink(&mnat->le);
 }
 
 

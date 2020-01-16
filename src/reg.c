@@ -196,8 +196,8 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 
 	reg->sipreg = mem_deref(reg->sipreg);
 	err = sipreg_register(&reg->sipreg, uag_sip(), reg_uri,
-			      ua_aor(reg->ua),
-			      acc ? acc->dispname : NULL, ua_aor(reg->ua),
+			      account_aor(acc),
+			      acc ? acc->dispname : NULL, account_aor(acc),
 			      regint, ua_local_cuser(reg->ua),
 			      routev[0] ? routev : NULL,
 			      routev[0] ? 1 : 0,
@@ -205,7 +205,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 			      sip_auth_handler, ua_account(reg->ua), true,
 			      register_handler, reg,
 			      params[0] ? &params[1] : NULL,
-			      "Allow: %s\r\n", ua_allowed_methods(reg->ua));
+			      "Allow: %H\r\n", ua_print_allowed, reg->ua);
 	if (err)
 		return err;
 
@@ -254,6 +254,7 @@ int reg_debug(struct re_printf *pf, const struct reg *reg)
 	err |= re_hprintf(pf, " scode:  %u (%s)\n",
 			  reg->scode, print_scode(reg->scode));
 	err |= re_hprintf(pf, " srv:    %s\n", reg->srv);
+	err |= re_hprintf(pf, " af:     %s\n", af_name(reg->af));
 
 	return err;
 }

@@ -8,42 +8,53 @@
 poll_method		epoll		# poll, select, epoll ..
 
 # SIP
-sip_trans_bsize		128
 #sip_listen		0.0.0.0:5060
 #sip_certificate	cert.pem
 #sip_cafile		ca.crt
 
+# Call
+call_local_timeout	120
+call_max_calls		4
+
 # Audio
+#audio_path		/usr/local/share/baresip
 audio_player		alsa,default
 audio_source		alsa,default
 audio_alert		alsa,default
 #ausrc_srate		48000
 #auplay_srate		48000
 #ausrc_channels		0
-#auplay_channels		0
+#auplay_channels	0
+#audio_txmode		poll		# poll, thread
+audio_level		no
+ausrc_format		s16		# s16, float, ..
+auplay_format		s16		# s16, float, ..
+auenc_format		s16		# s16, float, ..
+audec_format		s16		# s16, float, ..
 
 # Video
 #video_source		v4l2,/dev/video0
 #video_display		x11,nil
 video_size		352x288
 video_bitrate		512000
-video_fps		25
+video_fps		25.00
+video_fullscreen	no
+videnc_format		yuv420p
 
 # AVT - Audio/Video Transport
 rtp_tos			184
 #rtp_ports		10000-20000
 #rtp_bandwidth		512-1024 # [kbit/s]
-rtcp_enable		yes
 rtcp_mux		no
 jitter_buffer_delay	5-10		# frames
 rtp_stats		no
+#rtp_timeout		60
 
 # Network
-#dns_server		10.0.0.1:53
+net_prefer_ipv6		no
+#dns_server		1.1.1.1:53
+#dns_server		1.0.0.1:53
 #net_interface		wlan1
-
-# BFCP
-#bfcp_proto		udp
 
 #------------------------------------------------------------------------------
 # Modules
@@ -58,7 +69,6 @@ module			stdio.so
 
 # Audio codec Modules (in order)
 module			opus.so
-#module			silk.so
 #module			amr.so
 #module			g7221.so
 #module			g722.so
@@ -66,14 +76,13 @@ module			opus.so
 module			g711.so
 #module			gsm.so
 #module			l16.so
-#module			bv32.so
 
 # Audio filter Modules (in encoding order)
 #module			vumeter.so
 #module			sndfile.so
-#module			speex_aec.so
 #module			speex_pp.so
 #module			plc.so
+#module			webrtc_aec.so
 
 # Audio driver Modules
 module			alsa.so
@@ -81,13 +90,13 @@ module			alsa.so
 
 # Video codec Modules (in order)
 module			avcodec.so
-module			vpx.so
+#module			vp8.so
+#module			vp9.so
 
 # Video filter Modules (in encoding order)
 #module			selfview.so
 
 # Video source modules
-#module			v4l.so
 module			v4l2.so
 #module			avformat.so
 #module			x11grab.so
@@ -95,17 +104,19 @@ module			v4l2.so
 
 # Video display modules
 module			x11.so
-#module			sdl2.so
+#module			sdl.so
 
 # Audio/Video source modules
 #module			rst.so
 #module			gst.so
+#module			gst_video.so
 
 # Media NAT modules
 module			stun.so
 module			turn.so
 module			ice.so
 #module			natpmp.so
+#module			pcp.so
 
 # Media encryption modules
 #module			srtp.so
@@ -123,30 +134,47 @@ module_tmp		account.so
 # Application Modules
 
 module_app		auloop.so
+#module_app		b2bua.so
 module_app		contact.so
+module_app		debug_cmd.so
+#module_app		echo.so
+#module_app		gtk.so
 module_app		menu.so
 #module_app		mwi.so
-#module_app		natbd.so
 #module_app		presence.so
 #module_app		syslog.so
+#module_app		mqtt.so
+#module_app		ctrl_tcp.so
 module_app		vidloop.so
-#module_app		gtk.so
 
 
 #------------------------------------------------------------------------------
 # Module parameters
 
 
-cons_listen		0.0.0.0:5555
+# UI Modules parameters
+cons_listen		0.0.0.0:5555 # cons - Console UI UDP/TCP sockets
+
+http_listen		0.0.0.0:8000 # httpd - HTTP Server
+
+ctrl_tcp_listen		0.0.0.0:4444 # ctrl_tcp - TCP interface JSON
 
 evdev_device		/dev/input/event0
 
 # Opus codec parameters
 opus_bitrate		28000 # 6000-510000
+#opus_stereo		yes
+#opus_sprop_stereo	yes
+#opus_cbr		no
+#opus_inbandfec		no
+#opus_dtx		no
+#opus_mirror		no
+#opus_complexity	10
+#opus_application	audio	# {voip,audio}
+#opus_samplerate	48000
+#opus_packet_loss	10	# 0-100 percent
 
-# NAT Behavior Discovery
-natbd_server		creytiv.com
-natbd_interval		600		# in seconds
+#jack_connect_ports	yes
 
 # Selfview
 video_selfview		window # {window,pip}
@@ -156,10 +184,31 @@ video_selfview		window # {window,pip}
 ice_turn		no
 ice_debug		no
 ice_nomination		regular	# {regular,aggressive}
-ice_mode		full	# {full,lite}
 
 # ZRTP
 #zrtp_hash		no  # Disable SDP zrtp-hash (not recommended)
 
-# sndfile #
-snd_path 		/tmp/
+# Menu
+#menu_bell		yes
+#redial_attempts	0 # Num or <inf>
+#redial_delay		5 # Delay in seconds
+#ringback_disabled	no
+#statmode_default	off
+
+# avcodec
+#avcodec_h264enc	libx264
+#avcodec_h264dec	h264
+#avcodec_h265enc	libx265
+#avcodec_h265dec	hevc
+#avcodec_hwaccel	videotoolbox
+
+# MQTT
+#mqtt_broker_host	sollentuna.example.com
+#mqtt_broker_port	1883
+#mqtt_broker_clientid	baresip01 # Has to be unique for each client, defaults to "baresip"
+#mqtt_broker_user	alfred
+#mqtt_broker_password	Crocus
+#mqtt_basetopic		baresip/01 # May be uniqe for each client you want to control. Defaults to "baresip"
+
+# sndfile
+#snd_path		/tmp

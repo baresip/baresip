@@ -253,7 +253,7 @@ int sip_server_alloc(struct sip_server **srvp,
 	if (!srvp)
 		return EINVAL;
 
-	srv = mem_zalloc(sizeof *srv, destructor);
+	srv = mem_zalloc(sizeof(*srv), destructor);
 	if (!srv)
 		return ENOMEM;
 

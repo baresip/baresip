@@ -51,7 +51,6 @@ static int update(struct aufilt_dec_st **stp, void **ctx,
 	if (*stp)
 		return 0;
 
-	/* XXX: add support for stereo PLC */
 	if (prm->ch != 1) {
 		warning("plc: only mono supported (ch=%u)\n", prm->ch);
 		return ENOSYS;
@@ -72,8 +71,6 @@ static int update(struct aufilt_dec_st **stp, void **ctx,
 		goto out;
 	}
 
-	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
-
  out:
 	if (err)
 		mem_deref(st);
@@ -93,9 +90,14 @@ static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 {
 	struct plc_st *plc = (struct plc_st *)st;
 
-	if (*sampc)
+	if (!st || !sampv || !sampc)
+		return EINVAL;
+
+	if (*sampc) {
 		plc_rx(&plc->plc, sampv, (int)*sampc);
-	else
+		plc->sampc = *sampc;
+	}
+	else if (plc->sampc)
 		*sampc = plc_fillin(&plc->plc, sampv, (int)plc->sampc);
 
 	return 0;
@@ -103,13 +105,16 @@ static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
 
 
 static struct aufilt plc = {
-	LE_INIT, "plc", NULL, NULL, update, decode
+	.name    = "plc",
+	.decupdh = update,
+	.dech    = decode
 };
 
 
 static int module_init(void)
 {
 	aufilt_register(baresip_aufiltl(), &plc);
+
 	return 0;
 }
 
@@ -117,6 +122,7 @@ static int module_init(void)
 static int module_close(void)
 {
 	aufilt_unregister(&plc);
+
 	return 0;
 }
 

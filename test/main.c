@@ -28,38 +28,38 @@ static const struct test tests[] = {
 	TEST(test_call_answer),
 	TEST(test_call_answer_hangup_a),
 	TEST(test_call_answer_hangup_b),
-	TEST(test_call_reject),
-	TEST(test_call_rtp_timeout),
-	TEST(test_call_mediaenc),
-	TEST(test_call_multiple),
-	TEST(test_call_max),
-	TEST(test_call_dtmf),
+	TEST(test_call_aufilt),
 	TEST(test_call_aulevel),
-	TEST(test_call_progress),
-	TEST(test_call_format_float),
 	TEST(test_call_custom_headers),
+	TEST(test_call_dtmf),
+	TEST(test_call_format_float),
+	TEST(test_call_max),
+	TEST(test_call_mediaenc),
+	TEST(test_call_medianat),
+	TEST(test_call_multiple),
+	TEST(test_call_progress),
+	TEST(test_call_reject),
+	TEST(test_call_rtcp),
+	TEST(test_call_rtp_timeout),
 	TEST(test_call_tcp),
 	TEST(test_call_transfer),
-#ifdef USE_VIDEO
 	TEST(test_call_video),
-	TEST(test_video),
-#endif
+	TEST(test_call_webrtc),
 	TEST(test_cmd),
 	TEST(test_cmd_long),
 	TEST(test_contact),
-	TEST(test_cplusplus),
 	TEST(test_event),
 	TEST(test_message),
-	TEST(test_mos),
 	TEST(test_network),
 	TEST(test_play),
 	TEST(test_ua_alloc),
 	TEST(test_ua_options),
 	TEST(test_ua_register),
-	TEST(test_ua_register_dns),
 	TEST(test_ua_register_auth),
 	TEST(test_ua_register_auth_dns),
+	TEST(test_ua_register_dns),
 	TEST(test_uag_find_param),
+	TEST(test_video),
 };
 
 
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
-	err = baresip_init(config, false);
+	err = baresip_init(config);
 	if (err)
 		goto out;
 

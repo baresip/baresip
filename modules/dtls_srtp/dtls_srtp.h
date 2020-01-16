@@ -23,7 +23,6 @@ struct comp {
 };
 
 /* dtls.c */
-int dtls_print_sha1_fingerprint(struct re_printf *pf, const struct tls *tls);
 int dtls_print_sha256_fingerprint(struct re_printf *pf, const struct tls *tls);
 
 

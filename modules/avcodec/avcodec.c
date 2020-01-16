@@ -6,10 +6,8 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#include <libavutil/pixdesc.h>
 #include <libavcodec/avcodec.h>
-#ifdef USE_X264
-#include <x264.h>
-#endif
 #include "h26x.h"
 #include "avcodec.h"
 
@@ -20,14 +18,8 @@
  * Video codecs using libavcodec
  *
  * This module implements H.263, H.264 and MPEG4 video codecs
- * using libavcodec from FFmpeg or libav projects, and libx264.
+ * using libavcodec from FFmpeg or libav projects.
  *
- * Build options:
- *
- \verbatim
-      $ make USE_X264=1    ; enable direct usage of libx264
-      $ make USE_X264=     ; use H.264 encoder from libavcodec
- \endverbatim
  *
  * Config options:
  *
@@ -47,9 +39,17 @@
  */
 
 
-const uint8_t h264_level_idc = 0x1f;
 AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
 AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
+AVCodec *avcodec_h265enc;
+AVCodec *avcodec_h265dec;
+
+
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+AVBufferRef *avcodec_hw_device_ctx = NULL;
+enum AVPixelFormat avcodec_hw_pix_fmt;
+enum AVHWDeviceType avcodec_hw_type = AV_HWDEVICE_TYPE_NONE;
+#endif
 
 
 int avcodec_resolve_codecid(const char *s)
@@ -60,51 +60,12 @@ int avcodec_resolve_codecid(const char *s)
 		return AV_CODEC_ID_H264;
 	else if (0 == str_casecmp(s, "MP4V-ES"))
 		return AV_CODEC_ID_MPEG4;
+#ifdef AV_CODEC_ID_H265
+	else if (0 == str_casecmp(s, "H265"))
+		return AV_CODEC_ID_H265;
+#endif
 	else
 		return AV_CODEC_ID_NONE;
-}
-
-
-static uint32_t packetization_mode(const char *fmtp)
-{
-	struct pl pl, mode;
-
-	if (!fmtp)
-		return 0;
-
-	pl_set_str(&pl, fmtp);
-
-	if (fmt_param_get(&pl, "packetization-mode", &mode))
-		return pl_u32(&mode);
-
-	return 0;
-}
-
-
-static int h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
-			 bool offer, void *arg)
-{
-	struct vidcodec *vc = arg;
-	const uint8_t profile_idc = 0x42; /* baseline profile */
-	const uint8_t profile_iop = 0x80;
-	(void)offer;
-
-	if (!mb || !fmt || !vc)
-		return 0;
-
-	return mbuf_printf(mb, "a=fmtp:%s"
-			   " packetization-mode=0"
-			   ";profile-level-id=%02x%02x%02x"
-			   "\r\n",
-			   fmt->id, profile_idc, profile_iop, h264_level_idc);
-}
-
-
-static bool h264_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data)
-{
-	(void)data;
-
-	return packetization_mode(fmtp1) == packetization_mode(fmtp2);
 }
 
 
@@ -135,62 +96,65 @@ static int mpg4_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 
 
 static struct vidcodec h264 = {
-	LE_INIT,
-	NULL,
-	"H264",
-	"packetization-mode=0",
-	NULL,
-	encode_update,
-#ifdef USE_X264
-	encode_x264,
-#else
-	encode,
-#endif
-	decode_update,
-	decode_h264,
-	h264_fmtp_enc,
-	h264_fmtp_cmp,
+	.name      = "H264",
+	.variant   = "packetization-mode=0",
+	.encupdh   = avcodec_encode_update,
+	.ench      = avcodec_encode,
+	.decupdh   = avcodec_decode_update,
+	.dech      = avcodec_decode_h264,
+	.fmtp_ench = avcodec_h264_fmtp_enc,
+	.fmtp_cmph = avcodec_h264_fmtp_cmp,
+};
+
+static struct vidcodec h264_1 = {
+	.name      = "H264",
+	.variant   = "packetization-mode=1",
+	.encupdh   = avcodec_encode_update,
+	.ench      = avcodec_encode,
+	.decupdh   = avcodec_decode_update,
+	.dech      = avcodec_decode_h264,
+	.fmtp_ench = avcodec_h264_fmtp_enc,
+	.fmtp_cmph = avcodec_h264_fmtp_cmp,
 };
 
 static struct vidcodec h263 = {
-	LE_INIT,
-	"34",
-	"H263",
-	NULL,
-	NULL,
-	encode_update,
-	encode,
-	decode_update,
-	decode_h263,
-	h263_fmtp_enc,
-	NULL,
+	.pt        = "34",
+	.name      = "H263",
+	.encupdh   = avcodec_encode_update,
+	.ench      = avcodec_encode,
+	.decupdh   = avcodec_decode_update,
+	.dech      = avcodec_decode_h263,
+	.fmtp_ench = h263_fmtp_enc,
 };
 
 static struct vidcodec mpg4 = {
-	LE_INIT,
-	NULL,
-	"MP4V-ES",
-	NULL,
-	NULL,
-	encode_update,
-	encode,
-	decode_update,
-	decode_mpeg4,
-	mpg4_fmtp_enc,
-	NULL,
+	.name      = "MP4V-ES",
+	.encupdh   = avcodec_encode_update,
+	.ench      = avcodec_encode,
+	.decupdh   = avcodec_decode_update,
+	.dech      = avcodec_decode_mpeg4,
+	.fmtp_ench = mpg4_fmtp_enc,
+};
+
+static struct vidcodec h265 = {
+	.name      = "H265",
+	.fmtp      = "profile-id=1",
+	.encupdh   = avcodec_encode_update,
+	.ench      = avcodec_encode,
+	.decupdh   = avcodec_decode_update,
+	.dech      = avcodec_decode_h265,
 };
 
 
 static int module_init(void)
 {
 	struct list *vidcodecl = baresip_vidcodecl();
-	char h264enc[64];
-	char h264dec[64];
-
-#ifdef USE_X264
-	debug("avcodec: x264 build %d\n", X264_BUILD);
-#else
-	debug("avcodec: using libavcodec H.264 encoder\n");
+	char h264enc[64] = "libx264";
+	char h264dec[64] = "h264";
+	char h265enc[64] = "libx265";
+	char h265dec[64] = "hevc";
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	char hwaccel[64];
 #endif
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53, 10, 0)
@@ -201,22 +165,27 @@ static int module_init(void)
 	avcodec_register_all();
 #endif
 
-	if (0 == conf_get_str(conf_cur(), "avcodec_h264dec",
-			      h264dec, sizeof(h264dec))) {
+	conf_get_str(conf_cur(), "avcodec_h264enc", h264enc, sizeof(h264enc));
+	conf_get_str(conf_cur(), "avcodec_h264dec", h264dec, sizeof(h264dec));
+	conf_get_str(conf_cur(), "avcodec_h265enc", h265enc, sizeof(h265enc));
+	conf_get_str(conf_cur(), "avcodec_h265dec", h265dec, sizeof(h265dec));
 
-		info("avcodec: using h264 decoder by name (%s)\n", h264dec);
-
-		avcodec_h264dec = avcodec_find_decoder_by_name(h264dec);
-		if (!avcodec_h264dec) {
-			warning("avcodec: h264 decoder not found (%s)\n",
-				h264dec);
-			return ENOENT;
-		}
-		vidcodec_register(vidcodecl, &h264);
+	avcodec_h264enc = avcodec_find_encoder_by_name(h264enc);
+	if (!avcodec_h264enc) {
+		warning("avcodec: h264 encoder not found (%s)\n", h264enc);
 	}
-	else {
-		if (avcodec_find_decoder(AV_CODEC_ID_H264))
-			vidcodec_register(vidcodecl, &h264);
+
+	avcodec_h264dec = avcodec_find_decoder_by_name(h264dec);
+	if (!avcodec_h264dec) {
+		warning("avcodec: h264 decoder not found (%s)\n", h264dec);
+	}
+
+	avcodec_h265enc = avcodec_find_encoder_by_name(h265enc);
+	avcodec_h265dec = avcodec_find_decoder_by_name(h265dec);
+
+	if (avcodec_h264enc || avcodec_h264dec) {
+		vidcodec_register(vidcodecl, &h264);
+		vidcodec_register(vidcodecl, &h264_1);
 	}
 
 	if (avcodec_find_decoder(AV_CODEC_ID_H263))
@@ -225,18 +194,82 @@ static int module_init(void)
 	if (avcodec_find_decoder(AV_CODEC_ID_MPEG4))
 		vidcodec_register(vidcodecl, &mpg4);
 
-	if (0 == conf_get_str(conf_cur(), "avcodec_h264enc",
-			      h264enc, sizeof(h264enc))) {
+	if (avcodec_h265enc || avcodec_h265dec)
+		vidcodec_register(vidcodecl, &h265);
 
-		info("avcodec: using h264 encoder by name (%s)\n", h264enc);
-
-		avcodec_h264enc = avcodec_find_encoder_by_name(h264enc);
-		if (!avcodec_h264enc) {
-			warning("avcodec: h264 encoder not found (%s)\n",
-				h264enc);
-			return ENOENT;
-		}
+	if (avcodec_h264enc) {
+		info("avcodec: using H.264 encoder '%s' -- %s\n",
+		     avcodec_h264enc->name, avcodec_h264enc->long_name);
 	}
+	if (avcodec_h264dec) {
+		info("avcodec: using H.264 decoder '%s' -- %s\n",
+		     avcodec_h264dec->name, avcodec_h264dec->long_name);
+	}
+
+	if (avcodec_h265enc) {
+		info("avcodec: using H.265 encoder '%s' -- %s\n",
+		     avcodec_h265enc->name, avcodec_h265enc->long_name);
+	}
+	if (avcodec_h265dec) {
+		info("avcodec: using H.265 decoder '%s' -- %s\n",
+		     avcodec_h265dec->name, avcodec_h265dec->long_name);
+	}
+
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	/* common for encode/decode */
+	if (0 == conf_get_str(conf_cur(), "avcodec_hwaccel",
+			      hwaccel, sizeof(hwaccel))) {
+
+		enum AVHWDeviceType type;
+		int ret;
+		int i;
+
+		info("avcodec: enable hwaccel using '%s'\n", hwaccel);
+
+		type = av_hwdevice_find_type_by_name(hwaccel);
+		if (type == AV_HWDEVICE_TYPE_NONE) {
+
+			warning("avcodec: Device type"
+				" '%s' is not supported.\n", hwaccel);
+
+			return ENOSYS;
+		}
+
+		for (i = 0;; i++) {
+			const AVCodecHWConfig *config;
+
+			config = avcodec_get_hw_config(avcodec_h264dec, i);
+			if (!config) {
+				warning("avcodec: Decoder does not"
+					" support device type %s.\n",
+					av_hwdevice_get_type_name(type));
+				return ENOSYS;
+			}
+
+			if (config->methods
+			    & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX
+			    &&
+			    config->device_type == type) {
+
+				avcodec_hw_pix_fmt = config->pix_fmt;
+
+				info("avcodec: decode: using hardware"
+				     " pixel format '%s'\n",
+				     av_get_pix_fmt_name(config->pix_fmt));
+				break;
+			}
+		}
+
+		if ((ret = av_hwdevice_ctx_create(&avcodec_hw_device_ctx, type,
+						  NULL, NULL, 0)) < 0) {
+			warning("avcodec: Failed to create HW device (%s)\n",
+				av_err2str(ret));
+			return ENOTSUP;
+		}
+
+		avcodec_hw_type = type;
+	}
+#endif
 
 	return 0;
 }
@@ -244,9 +277,16 @@ static int module_init(void)
 
 static int module_close(void)
 {
+	vidcodec_unregister(&h265);
 	vidcodec_unregister(&mpg4);
 	vidcodec_unregister(&h263);
 	vidcodec_unregister(&h264);
+	vidcodec_unregister(&h264_1);
+
+#if LIBAVUTIL_VERSION_MAJOR >= 56
+	if (avcodec_hw_device_ctx)
+		av_buffer_unref(&avcodec_hw_device_ctx);
+#endif
 
 	return 0;
 }

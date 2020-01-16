@@ -8,6 +8,7 @@
 #include <gtk/gtk.h>
 #include "gtk_mod.h"
 
+
 struct transfer_dialog {
 	struct call_window *call_win;
 	GtkWidget *dialog;
@@ -35,7 +36,7 @@ static void set_status(struct transfer_dialog *td, const char *status)
 
 
 static void on_dialog_response(GtkDialog *dialog, gint response_id,
-		struct transfer_dialog *win)
+			       struct transfer_dialog *win)
 {
 	char *uri;
 
@@ -119,16 +120,25 @@ struct transfer_dialog *transfer_dialog_alloc(struct call_window *call_win)
 	return win;
 }
 
+
 void transfer_dialog_show(struct transfer_dialog *td)
 {
+	if (!td)
+		return;
+
 	gtk_window_present(GTK_WINDOW(td->dialog));
 	gtk_widget_grab_focus(gtk_bin_get_child(GTK_BIN(td->uri_combobox)));
 	set_status(td, NULL);
 }
 
+
 void transfer_dialog_fail(struct transfer_dialog *td, const char *reason)
 {
 	char buf[256];
+
+	if (!td)
+		return;
+
 	re_snprintf(buf, sizeof buf, "Transfer failed: %s", reason);
 	set_status(td, buf);
 }

@@ -4,6 +4,7 @@
  * Copyright (C) 2010 - 2015 Creytiv.com
  */
 #include <string.h>
+#include <stdlib.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -42,6 +43,8 @@ struct agent {
 	unsigned n_dtmf_recv;
 	unsigned n_transfer;
 	unsigned n_mediaenc;
+	unsigned n_rtpestab;
+	unsigned n_rtcp;
 };
 
 struct fixture {
@@ -56,6 +59,8 @@ struct fixture {
 	int err;
 	unsigned exp_estab;
 	unsigned exp_closed;
+	bool stop_on_rtp;
+	bool stop_on_rtcp;
 };
 
 
@@ -66,13 +71,14 @@ struct fixture {
 	f->b.fix = f;							\
 	f->c.fix = f;							\
 									\
-	err = ua_init("test", true, true, false, false);		\
+	err = ua_init("test", true, true, false);			\
 	TEST_ERR(err);							\
 									\
 	f->magic = MAGIC;						\
+	f->estab_action = ACTION_RECANCEL;				\
 	f->exp_estab = 1;						\
 	f->exp_closed = 1;						\
-	mock_aucodec_register();					\
+	mock_aucodec_register(baresip_aucodecl());			\
 									\
 	err = ua_alloc(&f->a.ua,					\
 		       "A <sip:a@127.0.0.1>;regint=0" prm);		\
@@ -129,6 +135,9 @@ struct fixture {
 static const struct list *hdrs;
 
 
+static const char dtmf_digits[] = "123";
+
+
 static void event_handler(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg)
 {
@@ -173,9 +182,9 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			break;
 
 		case BEHAVIOUR_PROGRESS:
-			err = ua_progress(ua, call);
+			err = call_progress(call);
 			if (err) {
-				warning("ua_progress failed (%m)\n", err);
+				warning("call_progress failed (%m)\n", err);
 				goto out;
 			}
 			break;
@@ -289,6 +298,31 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_MENC:
 		++ag->n_mediaenc;
+		ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call))));
+		break;
+
+	case UA_EVENT_CALL_DTMF_START:
+		ASSERT_EQ(1, str_len(prm));
+		ASSERT_EQ(dtmf_digits[ag->n_dtmf_recv], prm[0]);
+		++ag->n_dtmf_recv;
+
+		if (ag->n_dtmf_recv >= str_len(dtmf_digits)) {
+			re_cancel();
+		}
+		break;
+
+	case UA_EVENT_CALL_RTPESTAB:
+		++ag->n_rtpestab;
+
+		if (f->stop_on_rtp && ag->peer->n_rtpestab > 0)
+			re_cancel();
+		break;
+
+	case UA_EVENT_CALL_RTCP:
+		++ag->n_rtcp;
+
+		if (f->stop_on_rtcp && ag->peer->n_rtcp > 0)
+			re_cancel();
 		break;
 
 	default:
@@ -676,33 +710,6 @@ int test_call_max(void)
 }
 
 
-static const char dtmf_digits[] = "123";
-
-
-static void dtmf_handler(struct call *call, char key, void *arg)
-{
-	struct agent *ag = arg;
-	int err = 0;
-	(void)call;
-
-	/* ignore key-release */
-	if (key == KEYCODE_REL)
-		return;
-
-	ASSERT_EQ(dtmf_digits[ag->n_dtmf_recv], key);
-	++ag->n_dtmf_recv;
-
-	if (ag->n_dtmf_recv >= str_len(dtmf_digits)) {
-		re_cancel();
-	}
-
- out:
-	if (err) {
-		fixture_abort(ag->fix, err);
-	}
-}
-
-
 int test_call_dtmf(void)
 {
 	struct fixture fix, *f = &fix;
@@ -714,7 +721,7 @@ int test_call_dtmf(void)
 	fixture_init_prm(f, ";ptime=1");
 
 	/* audio-source is needed for dtmf/telev to work */
-	err = mock_ausrc_register(&ausrc);
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -727,9 +734,6 @@ int test_call_dtmf(void)
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
-
-	call_set_handlers(ua_call(f->a.ua), NULL, dtmf_handler, &f->a);
-	call_set_handlers(ua_call(f->b.ua), NULL, dtmf_handler, &f->b);
 
 	/* send some DTMF digits from A to B .. */
 	for (i=0; i<n; i++) {
@@ -753,17 +757,25 @@ int test_call_dtmf(void)
 }
 
 
-#ifdef USE_VIDEO
 static void mock_vidisp_handler(const struct vidframe *frame,
 				uint64_t timestamp, void *arg)
 {
 	struct fixture *fix = arg;
+	int err = 0;
 	(void)frame;
 	(void)timestamp;
 	(void)fix;
 
+	ASSERT_EQ(MAGIC, fix->magic);
+
+	ASSERT_EQ(conf_config()->video.enc_fmt, (int)frame->fmt);
+
 	/* Stop the test */
 	re_cancel();
+
+ out:
+	if (err)
+		fixture_abort(fix, err);
 }
 
 
@@ -775,6 +787,7 @@ int test_call_video(void)
 	int err = 0;
 
 	conf_config()->video.fps = 100;
+	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init(f);
 
@@ -812,7 +825,6 @@ int test_call_video(void)
 
 	return err;
 }
-#endif
 
 
 static void mock_sample_handler(const void *sampv, size_t sampc, void *arg)
@@ -844,11 +856,13 @@ int test_call_aulevel(void)
 
 	conf_config()->audio.level = true;
 
-	err = mock_ausrc_register(&ausrc);
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, mock_sample_handler, f);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   mock_sample_handler, f);
 	TEST_ERR(err);
 
+	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
@@ -915,11 +929,14 @@ int test_call_progress(void)
 }
 
 
-static void float_sample_handler(const void *sampv, size_t sampc, void *arg)
+static void audio_sample_handler(const void *sampv, size_t sampc, void *arg)
 {
 	struct fixture *fix = arg;
+	int err = 0;
 	(void)sampv;
 	(void)sampc;
+
+	ASSERT_EQ(MAGIC, fix->magic);
 
 	/* Wait until the call is established and the incoming
 	 * audio samples are successfully decoded.
@@ -930,6 +947,10 @@ static void float_sample_handler(const void *sampv, size_t sampc, void *arg)
 	    ) {
 		re_cancel();
 	}
+
+ out:
+	if (err)
+		fixture_abort(fix, err);
 }
 
 
@@ -947,9 +968,10 @@ static int test_media_base(enum audio_mode txmode)
 	conf_config()->audio.src_fmt = AUFMT_FLOAT;
 	conf_config()->audio.play_fmt = AUFMT_FLOAT;
 
-	err = mock_ausrc_register(&ausrc);
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, float_sample_handler, f);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   audio_sample_handler, f);
 	TEST_ERR(err);
 
 	f->estab_action = ACTION_NOTHING;
@@ -996,11 +1018,6 @@ int test_call_format_float(void)
 	err = test_media_base(AUDIO_MODE_POLL);
 	ASSERT_EQ(0, err);
 
-#ifdef HAVE_PTHREAD
-	err = test_media_base(AUDIO_MODE_THREAD);
-	ASSERT_EQ(0, err);
-#endif
-
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
 
  out:
@@ -1022,9 +1039,10 @@ int test_call_mediaenc(void)
 
 	ASSERT_STREQ("xrtp", account_mediaenc(ua_account(f->a.ua)));
 
-	err = mock_ausrc_register(&ausrc);
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, float_sample_handler, f);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   audio_sample_handler, f);
 	TEST_ERR(err);
 
 	f->estab_action = ACTION_NOTHING;
@@ -1064,6 +1082,59 @@ int test_call_mediaenc(void)
 }
 
 
+int test_call_medianat(void)
+{
+	struct fixture fix, *f = &fix;
+	struct ausrc *ausrc = NULL;
+	struct auplay *auplay = NULL;
+	int err;
+
+	mock_mnat_register(baresip_mnatl());
+
+	/* Enable a dummy media NAT-traversal protocol */
+	fixture_init_prm(f, ";medianat=XNAT;ptime=1");
+
+	ASSERT_STREQ("XNAT", account_medianat(ua_account(f->a.ua)));
+
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	TEST_ERR(err);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   audio_sample_handler, f);
+	TEST_ERR(err);
+
+	f->estab_action = ACTION_NOTHING;
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+
+ out:
+	fixture_close(f);
+	mem_deref(auplay);
+	mem_deref(ausrc);
+
+	mock_mnat_unregister();
+
+	if (fix.err)
+		return fix.err;
+
+	return err;
+}
+
+
 int test_call_custom_headers(void)
 {
 	struct fixture fix, *f = &fix;
@@ -1083,10 +1154,15 @@ int test_call_custom_headers(void)
 	 * with some custom headers in INVITE message */
 
 	list_init(&custom_hdrs);
-	err = custom_hdrs_add(&custom_hdrs, "X-CALL_ID", "%d", some_id);
-	err = custom_hdrs_add(&custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
-	ua_set_custom_hdrs(f->a.ua, &custom_hdrs);
+	err  = custom_hdrs_add(&custom_hdrs, "X-CALL_ID", "%d", some_id);
+	err |= custom_hdrs_add(&custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
+	TEST_ERR(err);
+
+	err = ua_set_custom_hdrs(f->a.ua, &custom_hdrs);
+	TEST_ERR(err);
+
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
 
 	list_flush(&custom_hdrs);
 	TEST_ERR(err);
@@ -1218,6 +1294,139 @@ int test_call_transfer(void)
 
  out:
 	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_rtcp(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+
+	/* Use a low packet time, so the test completes quickly */
+	fixture_init_prm(f, ";ptime=1");
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+	f->stop_on_rtcp = true;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify that one or more RTCP packets were received */
+	ASSERT_TRUE(fix.a.n_rtcp > 0);
+	ASSERT_TRUE(fix.b.n_rtcp > 0);
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_aufilt(void)
+{
+	int err;
+
+	mock_aufilt_register(baresip_aufiltl());
+
+	err = test_media_base(AUDIO_MODE_POLL);
+	ASSERT_EQ(0, err);
+
+ out:
+	mock_aufilt_unregister();
+
+	return err;
+}
+
+
+/*
+ * Simulate a complete WebRTC testcase
+ */
+int test_call_webrtc(void)
+{
+	struct fixture fix, *f = &fix;
+	struct ausrc *ausrc = NULL;
+	struct vidsrc *vidsrc = NULL;
+	struct sdp_media *sdp_a, *sdp_b;
+	int err;
+
+	mock_mnat_register(baresip_mnatl());
+	mock_menc_register();
+
+	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	TEST_ERR(err);
+
+	/* to enable video, we need one vidsrc and vidcodec */
+	mock_vidcodec_register();
+	err = mock_vidsrc_register(&vidsrc);
+	TEST_ERR(err);
+
+	fixture_init_prm(f, ";medianat=XNAT;mediaenc=xrtp");
+
+	f->estab_action = ACTION_NOTHING;
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->stop_on_rtp = true;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify MNAT */
+
+	/* verify that MENC is secure */
+
+	ASSERT_TRUE(
+	  stream_is_secure(audio_strm(call_audio(ua_call(f->a.ua)))));
+	ASSERT_TRUE(
+	  stream_is_secure(audio_strm(call_audio(ua_call(f->b.ua)))));
+
+	ASSERT_TRUE(
+	  stream_is_secure(video_strm(call_video(ua_call(f->a.ua)))));
+	ASSERT_TRUE(
+	  stream_is_secure(video_strm(call_video(ua_call(f->b.ua)))));
+
+	/* verify that one or more RTP packets were received */
+	ASSERT_TRUE(fix.a.n_rtpestab > 0);
+	ASSERT_TRUE(fix.b.n_rtpestab > 0);
+
+	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
+	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
+
+	/* Verify SDP attributes */
+
+	sdp_a = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	sdp_b = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+
+	ASSERT_TRUE(NULL != sdp_media_rattr(sdp_a, "ssrc"));
+	ASSERT_EQ(20, atoi(sdp_media_rattr(sdp_a, "ptime")));
+
+	ASSERT_TRUE(NULL != sdp_media_rattr(sdp_b, "ssrc"));
+	ASSERT_EQ(20, atoi(sdp_media_rattr(sdp_b, "ptime")));
+
+ out:
+	fixture_close(f);
+
+	mem_deref(vidsrc);
+	mem_deref(ausrc);
+	mock_vidcodec_unregister();
+	mock_menc_unregister();
+	mock_mnat_unregister();
+
+	if (fix.err)
+		return fix.err;
 
 	return err;
 }

@@ -1,43 +1,34 @@
 /**
- * @file sdl/sdl.c  SDL - Simple DirectMedia Layer v1.2
+ * @file sdl/sdl.c  Simple DirectMedia Layer module for SDL v2.0
  *
  * Copyright (C) 2010 Creytiv.com
  */
-#include <SDL/SDL.h>
-#include <string.h>
+
+#include <SDL2/SDL.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include "sdl.h"
 
 
 /**
  * @defgroup sdl sdl
  *
- * Video display using Simple DirectMedia Layer (SDL)
+ * Video display using Simple DirectMedia Layer version 2 (SDL2)
  */
 
 
-/** Local constants */
-enum {
-	KEY_RELEASE_VAL = 250  /**< Key release value in [ms] */
-};
-
 struct vidisp_st {
-	const struct vidisp *vd;  /* inheritance */
-};
-
-/** Global SDL data */
-static struct {
-	struct tmr tmr;
-	SDL_Surface *screen;            /**< SDL Surface           */
-	SDL_Overlay *bmp;               /**< SDL YUV Overlay       */
+	const struct vidisp *vd;        /**< Inheritance (1st)     */
+	SDL_Window *window;             /**< SDL Window            */
+	SDL_Renderer *renderer;         /**< SDL Renderer          */
+	SDL_Texture *texture;           /**< Texture for pixels    */
 	struct vidsz size;              /**< Current size          */
-	vidisp_resize_h *resizeh;       /**< Screen resize handler */
-	void *arg;                      /**< Handler argument      */
-	bool fullscreen;
-	bool open;
-} sdl;
+	enum vidfmt fmt;                /**< Current pixel format  */
+	bool fullscreen;                /**< Fullscreen flag       */
+	struct tmr tmr;
+	Uint32 flags;
+	bool quit;
+};
 
 
 static struct vidisp *vid;
@@ -46,133 +37,97 @@ static struct vidisp *vid;
 static void event_handler(void *arg);
 
 
-static void sdl_reset(void)
+static uint32_t match_fmt(enum vidfmt fmt)
 {
-	if (sdl.bmp) {
-		SDL_FreeYUVOverlay(sdl.bmp);
-		sdl.bmp = NULL;
-	}
+	switch (fmt) {
 
-	if (sdl.screen) {
-		SDL_FreeSurface(sdl.screen);
-		sdl.screen = NULL;
+	case VID_FMT_YUV420P:	return SDL_PIXELFORMAT_IYUV;
+	case VID_FMT_YUYV422:   return SDL_PIXELFORMAT_YUY2;
+	case VID_FMT_UYVY422:   return SDL_PIXELFORMAT_UYVY;
+#if SDL_VERSION_ATLEAST(2, 0, 4)
+	case VID_FMT_NV12:	return SDL_PIXELFORMAT_NV12;
+	case VID_FMT_NV21:	return SDL_PIXELFORMAT_NV21;
+#endif
+	case VID_FMT_RGB32:     return SDL_PIXELFORMAT_ARGB8888;
+	default:		return SDL_PIXELFORMAT_UNKNOWN;
 	}
 }
 
 
-static void handle_resize(int w, int h)
+static uint32_t chroma_step(enum vidfmt fmt)
 {
-	struct vidsz size;
+	switch (fmt) {
 
-	size.w = w;
-	size.h = h;
-
-	/* notify app */
-	if (sdl.resizeh)
-		sdl.resizeh(&size, sdl.arg);
+	case VID_FMT_YUV420P:	return 2;
+	case VID_FMT_NV12:	return 1;
+	case VID_FMT_NV21:	return 1;
+	case VID_FMT_RGB32:     return 0;
+	default:		return 0;
+	}
 }
 
 
-static void timeout(void *arg)
+static void sdl_reset(struct vidisp_st *st)
 {
-	(void)arg;
+	if (st->texture) {
+		/*SDL_DestroyTexture(st->texture);*/
+		st->texture = NULL;
+	}
 
-	tmr_start(&sdl.tmr, 1, event_handler, NULL);
+	if (st->renderer) {
+		/*SDL_DestroyRenderer(st->renderer);*/
+		st->renderer = NULL;
+	}
 
-	/* Emulate key-release */
-	ui_input_key(baresip_uis(), KEYCODE_REL, NULL);
+	if (st->window) {
+		SDL_DestroyWindow(st->window);
+		st->window = NULL;
+	}
 }
 
 
 static void event_handler(void *arg)
 {
+	struct vidisp_st *st = arg;
 	SDL_Event event;
-	char ch;
 
-	(void)arg;
+	tmr_start(&st->tmr, 100, event_handler, st);
 
-	tmr_start(&sdl.tmr, 100, event_handler, NULL);
-
+	/* NOTE: events must be checked from main thread */
 	while (SDL_PollEvent(&event)) {
 
-		switch (event.type) {
-
-		case SDL_KEYDOWN:
+		if (event.type == SDL_KEYDOWN) {
 
 			switch (event.key.keysym.sym) {
 
-			case SDLK_ESCAPE:
-				if (!sdl.fullscreen)
-					break;
+			case SDLK_f:
+				/* press key 'f' to toggle fullscreen */
+				st->fullscreen = !st->fullscreen;
+				info("sdl: %sable fullscreen mode\n",
+				     st->fullscreen ? "en" : "dis");
 
-				sdl.fullscreen = false;
-				sdl_reset();
+				if (st->fullscreen)
+					st->flags |=
+						SDL_WINDOW_FULLSCREEN_DESKTOP;
+				else
+					st->flags &=
+						~SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+				SDL_SetWindowFullscreen(st->window, st->flags);
 				break;
 
-			case SDLK_f:
-				if (sdl.fullscreen)
-					break;
-
-				sdl.fullscreen = true;
-				sdl_reset();
+			case SDLK_q:
+				ui_input_key(baresip_uis(), 'q', NULL);
 				break;
 
 			default:
-				ch = event.key.keysym.unicode & 0x7f;
-
-				/* Relay key-press to UI subsystem */
-				if (isprint(ch)) {
-					tmr_start(&sdl.tmr, KEY_RELEASE_VAL,
-						  timeout, NULL);
-					ui_input_key(baresip_uis(), ch, NULL);
-				}
 				break;
 			}
-
-			break;
-
-		case SDL_VIDEORESIZE:
-			handle_resize(event.resize.w, event.resize.h);
-			break;
-
-		case SDL_QUIT:
-			ui_input_key(baresip_uis(), 'q', NULL);
-			break;
-
-		default:
+		}
+		else if (event.type == SDL_QUIT) {
+			st->quit = true;
 			break;
 		}
-	}
-}
-
-
-static int sdl_open(void)
-{
-	if (sdl.open)
-		return 0;
-
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		warning("sdl: unable to init SDL: %s\n", SDL_GetError());
-		return ENODEV;
-	}
-
-	SDL_EnableUNICODE(1);
-
-	tmr_start(&sdl.tmr, 100, event_handler, NULL);
-	sdl.open = true;
-
-	return 0;
-}
-
-
-static void sdl_close(void)
-{
-	tmr_cancel(&sdl.tmr);
-	sdl_reset();
-
-	if (sdl.open) {
-		SDL_Quit();
-		sdl.open = false;
 	}
 }
 
@@ -180,9 +135,12 @@ static void sdl_close(void)
 static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
-	(void)st;
 
-	sdl_close();
+	tmr_cancel(&st->tmr);
+	sdl_reset(st);
+
+	/* needed to close the window */
+	SDL_PumpEvents();
 }
 
 
@@ -191,72 +149,72 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 vidisp_resize_h *resizeh, void *arg)
 {
 	struct vidisp_st *st;
-	int err;
 
 	/* Not used by SDL */
-	(void)prm;
 	(void)dev;
+	(void)resizeh;
+	(void)arg;
 
-	if (sdl.open)
-		return EBUSY;
+	if (!stp || !vd)
+		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
 		return ENOMEM;
 
 	st->vd = vd;
+	st->fullscreen = prm ? prm->fullscreen : false;
 
-	sdl.resizeh = resizeh;
-	sdl.arg     = arg;
+	tmr_start(&st->tmr, 100, event_handler, st);
 
-	err = sdl_open();
+	*stp = st;
 
-	if (err)
-		mem_deref(st);
-	else
-		*stp = st;
-
-	return err;
+	return 0;
 }
 
 
-/**
- * Display a video frame
- *
- * @param st    Video display state
- * @param title Window title
- * @param frame Video frame
- *
- * @return 0 if success, otherwise errorcode
- *
- * @note: On Darwin, this must be called from the main thread
- */
 static int display(struct vidisp_st *st, const char *title,
 		   const struct vidframe *frame, uint64_t timestamp)
 {
-	SDL_Rect rect;
+	void *pixels;
+	uint8_t *d;
+	int dpitch, ret;
+	unsigned i, h;
+	uint32_t format;
 	(void)timestamp;
 
-	if (!st || !sdl.open)
+	if (!st || !frame)
 		return EINVAL;
 
-	if (!vidsz_cmp(&sdl.size, &frame->size)) {
-		if (sdl.size.w && sdl.size.h) {
-			info("sdl: reset size %u x %u  --->  %u x %u\n",
-			     sdl.size.w, sdl.size.h,
-			     frame->size.w, frame->size.h);
-		}
-		sdl_reset();
+	if (st->quit)
+		return ENODEV;
+
+	format = match_fmt(frame->fmt);
+	if (format == SDL_PIXELFORMAT_UNKNOWN) {
+		warning("sdl: pixel format not supported (%s)\n",
+			vidfmt_name(frame->fmt));
+		return ENOTSUP;
 	}
 
-	if (!sdl.screen) {
-		int flags = SDL_HWSURFACE | SDL_ASYNCBLIT | SDL_HWACCEL;
+	if (!vidsz_cmp(&st->size, &frame->size) || frame->fmt != st->fmt) {
+		if (st->size.w && st->size.h) {
+			info("sdl: reset size:"
+			     " %s %u x %u ---> %s %u x %u\n",
+			     vidfmt_name(st->fmt), st->size.w, st->size.h,
+			     vidfmt_name(frame->fmt),
+			     frame->size.w, frame->size.h);
+		}
+		sdl_reset(st);
+	}
+
+	if (!st->window) {
 		char capt[256];
 
-		if (sdl.fullscreen)
-			flags |= SDL_FULLSCREEN;
-		else if (sdl.resizeh)
-			flags |= SDL_RESIZABLE;
+		st->flags  = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
+		st->flags |= SDL_WINDOW_RESIZABLE;
+
+		if (st->fullscreen)
+			st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 
 		if (title) {
 			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
@@ -267,54 +225,136 @@ static int display(struct vidisp_st *st, const char *title,
 				    frame->size.w, frame->size.h);
 		}
 
-		SDL_WM_SetCaption(capt, capt);
-
-		sdl.screen = SDL_SetVideoMode(frame->size.w, frame->size.h,
-					      0, flags);
-		if (!sdl.screen) {
-			warning("sdl: unable to get video screen: %s\n",
+		st->window = SDL_CreateWindow(capt,
+					      SDL_WINDOWPOS_CENTERED,
+					      SDL_WINDOWPOS_CENTERED,
+					      frame->size.w, frame->size.h,
+					      st->flags);
+		if (!st->window) {
+			warning("sdl: unable to create sdl window: %s\n",
 				SDL_GetError());
 			return ENODEV;
 		}
 
-		sdl.size = frame->size;
+		st->size = frame->size;
+		st->fmt = frame->fmt;
+
+		SDL_RaiseWindow(st->window);
+		SDL_SetWindowBordered(st->window, true);
+		SDL_ShowWindow(st->window);
 	}
 
-	if (!sdl.bmp) {
-		sdl.bmp = SDL_CreateYUVOverlay(frame->size.w, frame->size.h,
-					       SDL_YV12_OVERLAY, sdl.screen);
-		if (!sdl.bmp) {
-			warning("sdl: unable to create overlay: %s\n",
+	if (!st->renderer) {
+
+		SDL_RendererInfo rend_info;
+		Uint32 flags = 0;
+
+		flags |= SDL_RENDERER_ACCELERATED;
+		flags |= SDL_RENDERER_PRESENTVSYNC;
+
+		st->renderer = SDL_CreateRenderer(st->window, -1, flags);
+		if (!st->renderer) {
+			warning("sdl: unable to create renderer: %s\n",
+				SDL_GetError());
+			return ENOMEM;
+		}
+
+		if (!SDL_GetRendererInfo(st->renderer, &rend_info)) {
+			info("sdl: created renderer '%s'\n", rend_info.name);
+		}
+	}
+
+	if (!st->texture) {
+
+		st->texture = SDL_CreateTexture(st->renderer,
+						format,
+						SDL_TEXTUREACCESS_STREAMING,
+						frame->size.w, frame->size.h);
+		if (!st->texture) {
+			warning("sdl: unable to create texture: %s\n",
 				SDL_GetError());
 			return ENODEV;
 		}
 	}
 
-	SDL_LockYUVOverlay(sdl.bmp);
-	picture_copy(sdl.bmp->pixels, sdl.bmp->pitches, frame);
-	SDL_UnlockYUVOverlay(sdl.bmp);
+	ret = SDL_LockTexture(st->texture, NULL, &pixels, &dpitch);
+	if (ret != 0) {
+		warning("sdl: unable to lock texture (ret=%d)\n", ret);
+		return ENODEV;
+	}
 
-	rect.x = 0;
-	rect.y = 0;
-	rect.w = sdl.size.w;
-	rect.h = sdl.size.h;
+	d = pixels;
+	for (i=0; i<3; i++) {
 
-	SDL_DisplayYUVOverlay(sdl.bmp, &rect);
+		const uint8_t *s = frame->data[i];
+		unsigned sz, dsz, hstep, wstep;
+
+		if (!frame->data[i] || !frame->linesize[i])
+			break;
+
+		hstep = i==0 ? 1 : 2;
+		wstep = i==0 ? 1 : chroma_step(frame->fmt);
+
+		if (wstep == 0)
+			continue;
+
+		dsz = dpitch / wstep;
+		sz  = min(frame->linesize[i], dsz);
+
+		for (h = 0; h < frame->size.h; h += hstep) {
+
+			memcpy(d, s, sz);
+
+			s += frame->linesize[i];
+			d += dsz;
+		}
+	}
+
+	SDL_UnlockTexture(st->texture);
+
+	/* Blit the sprite onto the screen */
+	SDL_RenderCopy(st->renderer, st->texture, NULL, NULL);
+
+	/* Update the screen! */
+	SDL_RenderPresent(st->renderer);
 
 	return 0;
 }
 
 
+static void hide(struct vidisp_st *st)
+{
+	if (!st || !st->window)
+		return;
+
+	SDL_HideWindow(st->window);
+}
+
+
 static int module_init(void)
 {
-	return vidisp_register(&vid, baresip_vidispl(),
-			       "sdl", alloc, NULL, display, NULL);
+	int err;
+
+	if (SDL_VideoInit(NULL) < 0) {
+		warning("sdl: unable to init Video: %s\n",
+			SDL_GetError());
+		return ENODEV;
+	}
+
+	err = vidisp_register(&vid, baresip_vidispl(),
+			      "sdl", alloc, NULL, display, hide);
+	if (err)
+		return err;
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
 	vid = mem_deref(vid);
+
+	SDL_Quit();
 
 	return 0;
 }

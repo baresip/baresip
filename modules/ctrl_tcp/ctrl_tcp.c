@@ -171,7 +171,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL;
 	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
-	char buf[256];
+	char buf[1024];
 	int err;
 
 	err = json_decode_odict(&od, 32, (const char*)mb->buf, mb->end, 16);
@@ -189,7 +189,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	}
 
 	debug("ctrl_tcp: handle_command:  cmd='%s', params:'%s', token='%s'\n",
-	      oe_cmd ? oe_cmd->u.str : "",
+	      oe_cmd->u.str,
 	      oe_prm ? oe_prm->u.str : "",
 	      oe_tok ? oe_tok->u.str : "");
 
@@ -274,8 +274,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	err = odict_entry_add(od, "event", ODICT_BOOL, true);
 	err |= event_encode_dict(od, ua, ev, call, prm);
-	if (err)
+	if (err) {
+		warning("ctrl_tcp: failed to encode event (%m)\n", err);
 		goto out;
+	}
 
 	err = json_encode_odict(&pf, od);
 	if (err) {

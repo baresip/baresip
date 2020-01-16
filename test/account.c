@@ -29,6 +29,8 @@ static const char str[] =
 	";stunserver=\"stun:stunserver.org\""
 	";mwi=no"
 	";call_transfer=no"
+	";audio_source=null,null"
+	";audio_codecs=RAW-CODEC"
 	;
 
 
@@ -36,7 +38,11 @@ int test_account(void)
 {
 	struct account *acc = NULL;
 	struct sip_addr *addr;
+	const struct aucodec *ac;
+	struct list *lst;
 	int err = 0;
+
+	mock_aucodec_register(baresip_aucodecl());
 
 	err = account_alloc(&acc, str);
 	TEST_ERR(err);
@@ -70,7 +76,14 @@ int test_account(void)
 	ASSERT_STREQ("no", account_mwi(acc));
 	ASSERT_STREQ("no", account_call_transfer(acc));
 
+	lst = account_aucodecl(acc);
+	ac = list_ledata(list_head(lst));
+	ASSERT_EQ(1, list_count(lst));
+	ASSERT_STREQ("RAW-CODEC", ac->name);
+
  out:
+	mock_aucodec_unregister();
+
 	mem_deref(acc);
 	return err;
 }

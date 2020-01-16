@@ -61,9 +61,6 @@
     <Filter Include="modules\mwi">
       <UniqueIdentifier>{a7b0f22a-b82a-4594-a367-d8b8a9882f0d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\natbd">
-      <UniqueIdentifier>{7ceb961c-1033-4259-8f3e-ffa2d28a0f12}</UniqueIdentifier>
-    </Filter>
     <Filter Include="modules\natpmp">
       <UniqueIdentifier>{c093ccc3-d662-46e0-83df-2eb34e7e7d21}</UniqueIdentifier>
     </Filter>
@@ -191,16 +188,10 @@
     <ClCompile Include="..\..\src\module.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\mos.c">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\net.c">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\play.c">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\realtime.c">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\reg.c">
@@ -220,9 +211,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ui.c">
       <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\bfcp.c">
-      <Filter>src\video</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\h264.c">
       <Filter>src\video</Filter>
@@ -295,9 +283,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\mwi\mwi.c">
       <Filter>modules\mwi</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\natbd\natbd.c">
-      <Filter>modules\natbd</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\natpmp\libnatpmp.c">
       <Filter>modules\natpmp</Filter>

@@ -107,3 +107,16 @@ int ausrc_alloc(struct ausrc_st **stp, struct list *ausrcl,
 
 	return as->alloch(stp, as, ctx, prm, device, rh, errh, arg);
 }
+
+
+/**
+ * Get the audio source module from a audio source state
+ *
+ * @param st Audio source state
+ *
+ * @return Audio source module
+ */
+struct ausrc *ausrc_get(struct ausrc_st *st)
+{
+	return st ? (struct ausrc *)st->as : NULL;
+}

@@ -20,9 +20,9 @@ struct ausrc_st {
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
 	pthread_mutex_t mutex;
+	uint32_t sampsz;
 	ausrc_read_h *rh;
 	void *arg;
-	unsigned int ptime;
 };
 
 
@@ -34,8 +34,6 @@ static void ausrc_destructor(void *arg)
 	pthread_mutex_lock(&st->mutex);
 	st->rh = NULL;
 	pthread_mutex_unlock(&st->mutex);
-
-	audio_session_disable();
 
 	if (st->queue) {
 		AudioQueuePause(st->queue);
@@ -59,7 +57,6 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 			   const AudioStreamPacketDescription *inPacketDesc)
 {
 	struct ausrc_st *st = userData;
-	unsigned int ptime;
 	ausrc_read_h *rh;
 	void *arg;
 	(void)inStartTime;
@@ -67,7 +64,6 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	(void)inPacketDesc;
 
 	pthread_mutex_lock(&st->mutex);
-	ptime = st->ptime;
 	rh  = st->rh;
 	arg = st->arg;
 	pthread_mutex_unlock(&st->mutex);
@@ -75,15 +71,9 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	if (!rh)
 		return;
 
-	rh(inQB->mAudioData, inQB->mAudioDataByteSize/2, arg);
+	rh(inQB->mAudioData, inQB->mAudioDataByteSize/st->sampsz, arg);
 
 	AudioQueueEnqueueBuffer(inQ, inQB, 0, NULL);
-
-	/* Force a sleep here, coreaudio's timing is too fast */
-#if !TARGET_OS_IPHONE
-#define ENCODE_TIME 1000
-	usleep((ptime * 1000) - ENCODE_TIME);
-#endif
 }
 
 
@@ -101,42 +91,43 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	(void)ctx;
 	(void)errh;
 
-	if (!stp || !as || !prm || prm->fmt != AUFMT_S16LE)
+	if (!stp || !as || !prm)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
 		return ENOMEM;
 
-	st->ptime = prm->ptime;
 	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 
+	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
+	if (!st->sampsz) {
+		err = ENOTSUP;
+		goto out;
+	}
+
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
-	bytc  = sampc * 2;
+	bytc  = sampc * st->sampsz;
 
 	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)
 		goto out;
 
-	err = audio_session_enable();
-	if (err)
-		goto out;
-
 	fmt.mSampleRate       = (Float64)prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
-	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger |
+	fmt.mFormatFlags      = coreaudio_aufmt_to_formatflags(prm->fmt) |
 		                kAudioFormatFlagIsPacked;
 #ifdef __BIG_ENDIAN__
 	fmt.mFormatFlags     |= kAudioFormatFlagIsBigEndian;
 #endif
 
 	fmt.mFramesPerPacket  = 1;
-	fmt.mBytesPerFrame    = prm->ch * 2;
-	fmt.mBytesPerPacket   = prm->ch * 2;
+	fmt.mBytesPerFrame    = prm->ch * st->sampsz;
+	fmt.mBytesPerPacket   = prm->ch * st->sampsz;
 	fmt.mChannelsPerFrame = prm->ch;
-	fmt.mBitsPerChannel   = 16;
+	fmt.mBitsPerChannel   = 8 * st->sampsz;
 
 	status = AudioQueueNewInput(&fmt, record_handler, st, NULL,
 				     kCFRunLoopCommonModes, 0, &st->queue);
@@ -152,7 +143,10 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 		info("coreaudio: recorder: using device '%s'\n", device);
 
-		uid = coreaudio_get_device_uid(device);
+		err = coreaudio_enum_devices(device, NULL, &uid, true);
+		if (err)
+			goto out;
+
 		if (!uid) {
 			warning("coreaudio: recorder: device not found:"
 				" '%s'\n", device);
@@ -199,4 +193,15 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		*stp = st;
 
 	return err;
+}
+
+
+int coreaudio_recorder_init(struct ausrc *as)
+{
+	if (!as)
+		return EINVAL;
+
+	list_init(&as->dev_list);
+
+	return coreaudio_enum_devices (NULL, &as->dev_list, NULL, true);
 }

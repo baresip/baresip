@@ -9,7 +9,7 @@
 
 
 struct message {
-	struct list lsnrl;
+	struct list lsnrl;          /* struct message_lsnr */
 	struct sip_lsnr *sip_lsnr;
 };
 
@@ -91,10 +91,16 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 }
 
 
+/**
+ * Create the messaging subsystem
+ *
+ * @param messagep Pointer to allocated messaging subsystem
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int message_init(struct message **messagep)
 {
 	struct message *message;
-	int err = 0;
 
 	if (!messagep)
 		return EINVAL;
@@ -105,16 +111,22 @@ int message_init(struct message **messagep)
 
 	/* note: cannot create sip listener here, there is not UAs yet */
 
-	if (err)
-		mem_deref(message);
-	else
-		*messagep = message;
+	*messagep = message;
 
-	return err;
+	return 0;
 }
 
 
-int message_listen(struct message_lsnr **lsnrp, struct message *message,
+/**
+ * Listen to incoming SIP MESSAGE messages
+ *
+ * @param message Messaging subsystem
+ * @param recvh   Message receive handler
+ * @param arg     Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int message_listen(struct message *message,
 		   message_recv_h *recvh, void *arg)
 {
 	struct message_lsnr *lsnr;
@@ -133,17 +145,40 @@ int message_listen(struct message_lsnr **lsnrp, struct message *message,
 	}
 
 	lsnr = mem_zalloc(sizeof(*lsnr), listener_destructor);
+	if (!lsnr)
+		return ENOMEM;
 
 	lsnr->recvh = recvh;
 	lsnr->arg = arg;
 
 	list_append(&message->lsnrl, &lsnr->le, lsnr);
 
-	if (lsnrp)
-		*lsnrp = lsnr;
-
  out:
 	return err;
+}
+
+
+/**
+ * Stop listening to incoming SIP MESSAGE messages
+ *
+ * @param message Messaging subsystem
+ * @param recvh   Message receive handler
+ */
+void message_unlisten(struct message *message, message_recv_h *recvh)
+{
+	struct le *le;
+
+	if (!message)
+		return;
+
+	le = message->lsnrl.head;
+	while (le) {
+		struct message_lsnr *lsnr = le->data;
+		le = le->next;
+
+		if (lsnr->recvh == recvh)
+			mem_deref(lsnr);
+	}
 }
 
 

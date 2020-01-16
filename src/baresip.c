@@ -83,11 +83,10 @@ static const struct cmd corecmdv[] = {
  * Initialise the top-level baresip object
  *
  * @param cfg          Global configuration
- * @param prefer_ipv6  True to prefer IPv6, false to prefer IPv4
  *
  * @return 0 if success, otherwise errorcode
  */
-int baresip_init(struct config *cfg, bool prefer_ipv6)
+int baresip_init(struct config *cfg)
 {
 	int err;
 
@@ -107,8 +106,7 @@ int baresip_init(struct config *cfg, bool prefer_ipv6)
 	list_init(&baresip.vidfiltl);
 
 	/* Initialise Network */
-	err = net_alloc(&baresip.net, &cfg->net,
-			prefer_ipv6 ? AF_INET6 : AF_INET);
+	err = net_alloc(&baresip.net, &cfg->net);
 	if (err) {
 		warning("ua: network init failed: %m\n", err);
 		return err;

@@ -424,7 +424,6 @@ static int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 			 videnc_packet_h *pkth, void *arg)
 {
 	struct videnc_state *st;
-	int err = 0;
 	(void)fmtp;
 
 	if (!vesp || !vc || !prm || !pkth)
@@ -446,12 +445,9 @@ static int encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	info("v4l2_codec: video encoder %s: %.2f fps, %d bit/s, pktsize=%u\n",
 	      vc->name, prm->fps, prm->bitrate, prm->pktsize);
 
-	if (err)
-		mem_deref(st);
-	else
-		*vesp = st;
+	*vesp = st;
 
-	return err;
+	return 0;
 }
 
 
@@ -589,17 +585,12 @@ out:
 
 
 static struct vidcodec h264 = {
-	LE_INIT,
-	NULL,
-	"H264",
-	"packetization-mode=0",
-	NULL,
-	encode_update,
-	encode_packet,
-	NULL,
-	NULL,
-	h264_fmtp_enc,
-	h264_fmtp_cmp,
+	.name      = "H264",
+	.variant   = "packetization-mode=0",
+	.encupdh   = encode_update,
+	.ench      = encode_packet,
+	.fmtp_ench = h264_fmtp_enc,
+	.fmtp_cmph = h264_fmtp_cmp,
 };
 
 

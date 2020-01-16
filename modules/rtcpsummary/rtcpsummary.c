@@ -8,7 +8,8 @@
 #include <baresip.h>
 
 
-static void printRtcpSummaryLine(const struct stream *s)
+static void print_rtcp_summary_line(const struct call *call,
+				    const struct stream *s)
 {
 	const struct rtcp_stats *rtcp;
 	rtcp = stream_rtcp_stats(s);
@@ -33,8 +34,8 @@ static void printRtcpSummaryLine(const struct stream *s)
 			"IP=%J,%J;"    /* Local, Remote IPs */
 			 "\n"
 			,
-			 call_setup_duration(stream_call(s)) * 1000,
-			 call_duration(stream_call(s)),
+			 call_setup_duration(call) * 1000,
+			 call_duration(call),
 			 rtcp->rx.sent,
 			 rtcp->tx.sent,
 			 rtcp->rx.lost,
@@ -44,8 +45,8 @@ static void printRtcpSummaryLine(const struct stream *s)
 			 1.0 * rtcp->rx.jit/1000,
 			 1.0 * rtcp->tx.jit/1000,
 			 1.0 * rtcp->rtt/1000,
-			 sdp_media_laddr(stream_sdp(s)),
-			 sdp_media_raddr(stream_sdp(s)));
+			 sdp_media_laddr(stream_sdpmedia(s)),
+			 sdp_media_raddr(stream_sdpmedia(s)));
 	}
 	else {
 		/*
@@ -62,11 +63,13 @@ static void ua_event_handler(struct ua *ua,
 			     enum ua_event ev,
 			     struct call *call,
 			     const char *prm,
-			     void *arg )
+			     void *arg)
 {
 	const struct stream *s;
 	struct le *le;
-	(void)call;
+	(void)ua;
+	(void)prm;
+	(void)arg;
 
 	switch (ev) {
 
@@ -75,7 +78,7 @@ static void ua_event_handler(struct ua *ua,
 		     le;
 		     le = le->next) {
 			s = le->data;
-			printRtcpSummaryLine(s);
+			print_rtcp_summary_line(call, s);
 		}
 		break;
 

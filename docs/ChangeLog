@@ -1,3 +1,801 @@
+2019-12-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.5
+
+
+Alfred E. Heggestad (138):
+      mnat: add struct mnat pointer to session handler
+      ice: add ice-lite, move to per-account config
+      modules: check return value from uag_event_register()
+      menu: check return value of account_set_answermode
+      ua: move ua_print_sip_status to debug_cmd module
+      pcp: updated mnat api
+      modules: rename gst1.so to gst.so
+      account: make answermode code more robust
+      bfcp: remove code
+      ua: remove uag_tls()
+      sdl: add support for YUYV422 pixel format
+      modules: rename gst_video1.so to gst_video.so
+      sdl: add support for UYVY422 pixel format
+      ua: fix whitespace
+      test: mock_mnat_register return void
+      stream: debug tuning
+      test: enable wait_connected flag on mock mnat
+      dtls_srtp: dont store remote address on the state
+      test: enable wait_secure flag on mock mediaenc
+      modules: rename sdl2.so to sdl.so
+      menc: sort handlers in logical order
+      audiounit: use error ENOTSUP if AudioSessionSetActive fails
+      test: add webrtc test-case
+      audiounit: check return value of AudioUnitSetProperty()
+      bv32: remove module (#793)
+      audiounit: fix samplerate for iOS
+      config: add snd_path to template
+      account: remove check for deprecated password
+      audio: use dynamically allocated string for device name
+      Update README.md
+      avcodec: remove unused prototype
+      avcodec: fix unused parameter warning
+      move h265.so into avcodec.so
+      Update .travis.yml (#798)
+      Account specific audio source and playback (#796)
+      mpa: switch encoder to use lame (#797)
+      mk: remove GPROF
+      ua: add support for SIP trace (#804)
+      AAC codec (#805)
+      audio: set the correct variable to false if pthread_create() fails
+      sdl: properly close window (OSX)
+      ua: fix warning
+      rtcpsummary: use call object from event handler
+      test: move aucodec list one level up
+      video: add vidcodec accessor
+      refactoring; move rtp stats code to separate .c file
+      rtpstat cleanup
+      call: check magic
+      vidinfo: add video overlay box with decoder info
+      vidinfo: fix compiler warning on linux
+      vidinfo: fix compiler warning on Android
+      stream: rename to stream_set_session_handlers()
+      Fix osx build (#809)
+      vidinfo: delete old file
+      test: move ausrc list one level up
+      test: move auplay list one level up
+      test: move aufilt list one level up
+      video: use vidcodec's list in video_decoder_set()
+      stream: add stream-list to stream/audio/video API
+      vidinfo: remove pixelformat, add packetloss
+      mk: add detection in SYSROOT_LOCAL
+      dtls_srtp: add media name and component type to logline
+      mnat: make mnat_find() public
+      audio: print name in parenthesis if not set
+      video: move vidfilt list one level up
+      audio: remove hack for starting source/player first
+      video: set stream samplerate in alloc
+      video: fix potential use of free'd string
+      ice: fix documentation
+      g711: use designated initialisers
+      g722: use designated initialisers
+      g726: use designated initialisers
+      ilbc: use designated initialisers
+      mk: check for ilbc in
+      gsm: use designated initialisers
+      amr: fix detection in SYSROOT_LOCAL
+      amr: use designated initialisers
+      isac: use designated initialisers
+      test: add audio_codecs to account testcase
+      win32: sort module exports in alphabetical order
+      win32: add debug_cmd to static list of modules
+      echo: no need to use uag_current() -- ref #815
+      mk: detect aac in SYSROOT_LOCAL
+      modules: use designated initializers
+      modules: use designated initializers
+      v4l2_codec: use designated initializers
+      wincons: use designated initializers
+      gzrtp: use designated initializers
+      avcodec: use designated initializers
+      video: request keyframe during packet-loss
+      mk: detect mqtt.so in SYSROOT_LOCAL
+      menu: fix formatting
+      menu: clean up usage of uag_current() -- ref #815
+      menu: save UA aor for redialing
+      avcodec: use AVFrame key_frame flag to check for keyframes (#830)
+      call: add call_find_id() -- ref #815
+      menu: new command /callfind -- ref #815
+      ice: make username/password optional
+      mqtt: add ua/call selection -- fixes #815
+      stream: no RTCP socket for mediaenc, if muxed
+      mqtt: encode response with JSON -- fix #826
+      main: change help text for -4 and -6 (ref #834)
+      docs: thanks to @premultiply
+      net: change prefer_ipv6 to int af, fixes #834
+      pulse: fix log text
+      avformat: fix build on Debian 8
+      stream: log more details
+      stream: make stream_start_mediaenc() public for core
+      stream: move start_mediaenc to call.c
+      audio: add ptime to struct aucodec (#849)
+      README: add i2s module
+      docs: thanks to Christian Spielberger
+      test: remove unused setting of int err
+      stream: remove code not executed
+      message: no need to check err
+      net: fix potential deref of NULL pointer
+      vidinfo: no need to check err
+      natpmp: no need to check err
+      ilbc: no need to check err
+      ctrl_tcp: no need to check oe_cmd here
+      avformat: remove got_pict hack
+      avcodec: minor fixes
+      sdl: remove int err, not needed
+      pulse: check the correct pointer
+      v4l2_codec: remove int err, not needed
+      alsa: store return value in a long
+      avcodec: copy key_frame flag from hardware frame
+      stream: make some functions public
+      ctrl_tcp: restore mbuf pos on errors
+      metric: add lock for multi-threading
+      sdl: skip plane if wstep is zero
+      aubridge: clear pointers after thread has exited
+      fix doxygen comments
+      av1: set allow_lowbitdepth to get correct pixel-format
+      bump version to 0.6.5
+      stream: check return value of metric_init()
+      stream: update doxygen comments
+      update doxygen comments
+
+Christian Spielberger (2):
+      aui2s: add rtos i2s audio driver module (#848)
+      i2s: add doxygen defgroup header (#850)
+
+Juha Heinanen (3):
+      - Added 'net_set_address' and 'net_set_af' API functions.
+      Added safety check to net_set_address() API function.
+      - Added AF_UNSPEC to supported net_set_af families.
+
+juha-h (4):
+      - Exposed net_dns_debug function to API. (#791)
+      Added possibility to include ";extra" parameter to an account and access (#803)
+      - Search include files also from opencore-amr source directory (#822)
+      Merge pull request #843 from alfredh/net_stuff
+
+premultiply (5):
+      Unify response list header layout (#821)
+      More common list format (#823)
+      MPA fmtp mirroring (#837)
+      MPA layer 3 encoding fixes (#839)
+      MPA L2 and L3 encoding (#844)
+
+trampster (2):
+      Pass NULL to pa_simple_new if no device specified to indicate to PulseAudio we want to use the default (#785)
+      Add support for aes_256_gcm (#790)
+
+
+2019-09-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.4
+
+Aleksei (1):
+      Update MSVS project (Remove mos.c) (#744)
+
+Alfred E. Heggestad (77):
+      test: added testcase for RTCP
+      speex_pp: handle changes in frame_size
+      mos: remove code (unused) (#739)
+      speex_aec: deprecate and remove module (#740)
+      aufilt: remove ptime parameter
+      audio: add last sample count
+      audio: remove recv ptime and pt from debug
+      stream: common function for start mediaenc
+      stream: added set/is_secure
+      test: sort tests in alphabetical order
+      test: added mock aufilt and testcase
+      mnat: add media connected handler
+      ice: use connected handler
+      stream: add mnat_connected_handler
+      call: split call start into audio/video
+      stream: print mnat_connected
+      dtls_srtp: remove 100ms timer
+      stream: add stream_start()
+      call: split update_media into audio/video
+      srtp: use designated initializers to init struct menc
+      zrtp: use designated initializers to init struct menc
+      dtls_srtp: use designated initializers to init struct menc
+      mnat: add wait_connected flag (#752)
+      menc: add wait_secure flag (#754)
+      opus: add opus_packet_loss config
+      audio: fix rtp timestamps for opus mono (ref #753)
+      webrtc interop (#756)
+      avcodec: remove compile time check (LIBAVUTIL_VERSION_INT)
+      avcodec: minor cleanup
+      avcodec: define KEYFRAME_INTERVAL
+      travis: use ubuntu xenial (#764)
+      remove PIX_FMT wrapper for old ffmpeg
+      stream: add lost count to RTP handler
+      aucodec: add buffer to packet-loss handler
+      add support for Opus FEC (WIP) (#755)
+      test: explicitly set BEHAVIOUR_ANSWER
+      test: set default action to ACTION_RECANCEL
+      x11: remove support for 16-bit RGB colors
+      sdl2: use vidisp name 'sdl'
+      stream: reorder functions
+      ice: check argument
+      avcodec: remove decoder framerate
+      stream: add media name to debug
+      test: remove testcase for C++
+      avcodec: remove log-line
+      avcodec: remove old ffmpeg wrapper for AVCodecID
+      test: add media-line to mnat mock
+      vidsrc: add wanted pixel format to parameters
+      stream: add handler for mnat connected
+      vp9: decode V and P fields
+      opus: update docs (ref #768)
+      test: use pixel format from api
+      test: use pixel format YUV420P
+      fix warning on linux
+      video: fix warning
+      test: fix warnings
+      dtmfio: fix warning
+      opus_multistream: fix warnings
+      Avcodec hwaccel (#770)
+      fakevideo: use pixel format from parameters
+      sdl2: add support for pixel format NV21
+      bump version to 0.6.4
+      mk: update Doxyfile
+      gst1: remove hard-coded uri
+      config: update default config
+      config: use cloudflare as sample DNS servers
+      config: print default hwaccel for avcodec.so module
+      dtls_srtp: make it more robust
+      test: use LD to link selftest
+      avformat: remove check for avformat >= 53.4.0
+      video: remove video_view
+      avformat: better logging
+      config: add mqtt template (ref #780)
+      Update README.md
+      docs: refresh example config
+      config: remove openl.so from template
+      README: fix typo
+
+Timmo Verlaan (1):
+      menu: sndcode should signal release of key (#749)
+
+seamus (1):
+      menu: add answermode command (#779)
+
+trampster (1):
+      Allow CALL_CLOSED to be raised when call_id is not set. (#748)
+
+
+
+
+2019-06-22 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.3
+
+Alfred E. Heggestad (99):
+      baresip: remove prefer_ipv6 from api, use config instead
+      ua: remove prefer_ipv6 from api, use config instead
+      audio: allocate mbuf for encoded telephony events
+      net: remove af from api, use config instead
+      gst: remove old module, use gst1 instead
+      gst_video: remove old module, use gst_video1 instead
+      gst1: update comment
+      httpd: update comment
+      call: remove unused constant
+      reg: print address family of registration
+      ua: clean up prefer_ipv6 code
+      test: disable test for AUDIO_MODE_THREAD
+      config: remove old check for rtcp_enable
+      config: remove unused macro SA_INIT
+      config: remove unused MOD_PRE
+      test: mock aucodec support all sample formats
+      audio: check that ptime is within the range of 1-60ms
+      audio: dont check sample format for packetloss handler
+      audio: use audio codec srate directly, remove get_srate wrapper
+      audio: remove get_framesize
+      audio: handle rtcp sample-rate for asymmetric codecs
+      audio: remove get_ch()
+      mpa: return posix error code instead of -1
+      mk: sort list of files in alphabetical order
+      menu: sort and align incall commands table
+      ua: check input argument to ua_print_supported
+      test: check error from test fixture
+      ua: use a print handler to print allowed methods
+      ua: use a single tick instead of backtick for logging
+      audio: mirror ptime attribute if changed by peer (ref #688) (#700)
+      audio: receive ptime is always set
+      plc: count samples from audio input
+      use sizeof(x) instead of sizeof x
+      account: fix typo
+      timestamp: add timestamp_calc_seconds()
+      call: remove const from menc_event_handler
+      call: swap order of menc event and error handler
+      mnat: make struct mnat public
+      mnat: change to a simpler register api
+      menc: protocol is always UDP
+      mnat: change api to always use UDP protocol
+      stream: add remote RTP/RTCP address to object
+      menc: add remote RTP/RTCP address to API
+      dtls_srtp: use remote address from mediaenc API
+      dtls_srtp: remove dtls_print_sha1_fingerprint
+      remove audio/video codec cycle
+      net: add network_if_getname()
+      sdp: remove sdp_media_format_cycle (unused)
+      sdp: remove sdp_rattr() -- unused
+      pcp: updated MNAT api
+      gzrtp: updated menc api (ref #713)
+      dtls_srtp: fix warning
+      zrtp: fix warnings
+      net: use network_if_getname to get interface name
+      stream: use enum media_type instead of a string
+      call: only include aucodec codecs in remote sdp (ref #718)
+      call: simplify audio encoder/decodet set
+      stream: add pointer to medianat module
+      webrtc_aec: add warning
+      ua: use KEYCODE_REL in dtmf handler (ref #719)
+      call: add prefix to logline
+      webrtc_aec: add sample format converter to decoder (ref #712)
+      webrtc_aec: add sample format converter to encoder (ref #712)
+      webrtc_aec: add enc/dec to log line
+      webrtc_aec: fix enum warning
+      webrtc_aec: echo_cancellation.h is included in aec.h (ref #712)
+      config: add sip_cafile to template
+      net: add a function to print IP-addr and interface
+      net: dont init local address to 127.0.0.1
+      audio: handle marker bit in stream.c (#724)
+      avcodec: make sure ffmpeg input buffer has AV_INPUT_BUFFER_PADDING_SIZE space at the end
+      stream: update doxygen comments
+      stream: only flush jitter-buffer if it was started
+      avcodec: fallback define for AV_INPUT_BUFFER_PADDING_SIZE
+      stream: add pseq_set flag
+      stream: dont calculate loss if no jitter buffer
+      webrtc_aec: add support for 32000Hz samplerate
+      net: multiple nameservers in net_use_nameserver()
+      webrtc_aec: add reference to webrtc native
+      dtmfio: use UA_EVENT_CALL_DTMF_START to handle dtmf events
+      test: use event handler to receive DTMF events
+      webrtc_aec: remove samplerate check
+      prepare for 0.6.3 release
+      gst_video1: cleanup
+      stream: print mediaenc id
+      config: add net prefix to prefer_ipv6
+      codec2: print mode
+      codec2: modern init of struct aucodec
+      codec2: add config param codec2_mode
+      codec2: round up bytes per frame
+      win32: add httpd module to static.c
+      codec2: update description
+      mk: add detection of codec2.so module
+      video: check if frame pointer is valid
+      contact: set err properly
+      audio: no need to clear err, it is not used
+      config: add opus_samplerate to template
+      travis: add building of codec2 on OSX (#736)
+      config: add webrtc_aec to template
+
+Christian Spielberger (2):
+      call: reset streams on call hold (#707)
+      Bugfix/flush buffers on call hold (#716)
+
+Dmitry (2):
+      opus: fixed opus_inbandfec param name in config and examples (#704)
+      menu: set default values for optional config params (#705)
+
+Juha Heinanen (1):
+      webrtc_aec: enable delay-agnostic echo cancellation
+
+Nicolas Tizon (1):
+      audio: increase buffer size for audio device string (#710)
+
+juha-h (5):
+      - added prefer_ipv6 config variable (#692)
+      webrtc_aec module: added pthread.h include to .cpp files (#714)
+      - Updated ilbc module encode/decode/pkloss function arguments (#723)
+      - Use opus in mono mode (opus/48000/1) if opus_stereo or (#730)
+      - Added opus_samplerate config parameter. (#733)
+
+premultiply (1):
+      Interop: Parameters reordering and whitespace removal (#698)
+
+weili-jiang (1):
+      Count ua references prior to destroy in case UA_EVENT_SHUTDOWN causes references to be removed (#702)
+
+
+
+
+2019-04-19 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.2
+
+Alfred E. Heggestad (124):
+      daala: remove module
+      remove USE_VIDEO compile flag (#658)
+      config: remove sip_trans_bsize option
+      contact: fix bug in contact prev/next
+      cmd: remove unused complete flag
+      log: add command to toggle loglevel ('v')
+      debug_cmd: fix warning
+      Remove natbd module (#659)
+      message: make listen/unlisten more robust (ref #650)
+      update doxygen comments
+      srtp: fix warnings
+      update README
+      stream: define port 9 as PORT_DISCARD
+      add offerer flag to video and stream
+      stream: check for multiplexed RTCP packets on RTP port
+      stream: change logic for rtcp-mux attribute
+      omx: update doxygen comment
+      bv32: add doxygen header
+      mk: modules in alphabetical order
+      mk: modules in alphabetical order
+      mk: modules in alphabetical order
+      h265: use avcodec API for the encoder
+      h265: fixes for Debian 8
+      h265: make it work with old encoder api
+      h265: init time_base manually
+      fix av_packet_free
+      allocate avpacket
+      h265: cleanup
+      cleanup
+      cleanup
+      h265: add configurable decoder
+      cleanup
+      use pkg-config for libs
+      h265: update documentation
+      mk: enable h265.so if avcodec installed
+      h265: include avutil mem.h
+      travis: use ubuntu 16.04
+      h265: add wrapper for av_frame_alloc
+      h265: add wrapper for avcodec_free_context
+      h265: fix config
+      fix crash with ffmpeg 2.8
+      add wrapper for av_packet_free
+      fix warning
+      use av_free_packet
+      cleanup
+      deprecate v4l.so -- use v4l2.so instead
+      h265: tested with YUV444P pixel format
+      h265: check pixel format on changes
+      Merge remote-tracking branch 'origin/master' into h265_use_avcodec_encoder
+      h265: fix avcodec_free_context wrapper
+      H265 use avcodec encoder (#668)
+      debian: add source format 1.0
+      aufile: add sample config (ref #663)
+      v4l: remove module, use v4l2.so instead
+      video: remote orient parameter
+      video: remove video_set_orient
+      aubridge: remove audio resampler
+      aubridge: fix warning
+      aubridge: add support for multiple sample formats
+      aubridge: fix warnings
+      auloop: remove usage of audio codec
+      jack: add support for FLOAT sample format
+      Avcodec remove libx264 (#671)
+      config: add avcodec.so sample config
+      stream: set rtcp-mux attribute if enabled
+      sdl: remove module
+      stream: send a dummy RTCP packet to open NAT pinhole
+      avcodec: use pkg-config for linker flags
+      avformat: use pkg-config for linker flags
+      config: remove usage of USE_AVCODEC
+      coreaudio: remove ios specific code
+      h265: one file per line
+      avformat: move AVCodec from struct to stack
+      avformat: remove codec_id check
+      avformat: minor cleanup
+      debian: remove usage of shlibs:Depends from dev package
+      debug_cmd: fix warning
+      avformat: minor cleanup
+      avformat: minor cleanup
+      vidloop: rename intra to keyframe
+      vidloop: print keyframes only if codec is enabled
+      avcodec: move destructor to the top of the file
+      plc: check input arguments
+      auloop: rename ab to aubuf
+      Opus multistream (#678)
+      mqtt: minor updates
+      mqtt: use re_snprintf
+      mqtt: update documentation (fixes #669)
+      h264: fix h264_is_keyframe, IDR_SLICE is keyframe
+      avcodec: check input arguments
+      vidloop: show video display pixel-format in summary
+      avcodec: clean up decoding code
+      avcodec: add color range MPEG
+      h265: add color range and GOP size
+      ffmpeg: check avutil version for color range
+      avcodec: set slice-max-size in H264 packetization-mode 0
+      avcodec: add sdp.c
+      avcodec: move h264_fmtp_cmp to sdp.c
+      avcodec: add support for H264 packetization mode 1
+      av1: update comment
+      avcodec: handle H264 STAP-A packets
+      test: fix ua register test-cases (ref #680)
+      ua: add delayed_close flag (ref #680)
+      menu: call uag_current() directly
+      video: save pixel format of outgoing stream
+      aulevel: add support for sample format FLOAT
+      Vidfilt add param (#682)
+      test: copy uri_cmp source from libre
+      sdl2: handle window closed event (SDL_QUIT)
+      vidloop: stop loop if window was closed
+      sdl2: add support for quit key
+      avcodec: fixes for packetization_mode 1
+      bump version to 0.6.2
+      vidfilt: update doxygen comments
+      rtcpsummary: fix warnings about unused variables
+      mqtt: fix warnings about unused variables
+      gst_video1: use GST_BUFFER_PTS
+      mk: add echo module to list of basic modules
+      core: remove some unused values
+      menu: call parameter is used
+      mwi: minor formatting changes
+      audio: align debug text
+      Update README.md
+      ua: add ua_destroy() -- ref #686
+
+Andreas Hansson (1):
+      Added debug cmd to print UUID (#674)
+
+Juha Heinanen (2):
+      do not add basic modules if BASIC_MODULES has value 'no'
+      exclude more modules if BASIC_MODULES=no
+
+Nicolas Tizon (1):
+      vidloop: update vidsrc (#662)
+
+Roger Sandholm (1):
+      Readme and config example correction, httpd comments (#666)
+
+Timmo Verlaan (1):
+      menu: add uadel to delete a uac by aor (#680)
+
+juha-h (1):
+      srtp: added sending of MENC_EVENT_SECURE event (#660)
+
+premultiply (1):
+      Add 48 khz sampling rate support (#685)
+
+weili-jiang (1):
+      Command not found returns error (#664)
+
+
+
+
+2019-02-17 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.1
+
+Aleksei (2):
+      Update MSVS project (#655)
+      Fix warnings at windows compilation (#656)
+
+Alfred E. Heggestad (111):
+      call: prm parameter is mandatory
+      core: add address-family to stream_param (ref #583)
+      core: add cname to stream_param (ref #583)
+      realtime: remove code
+      contact: add support for current contact (#573)
+      play: update doxygen comments
+      mk: add detection of OpenGL framework (ref #575)
+      stream: make call optional (closes #583)
+      net: update doxygen comments
+      contact: update doxygen comments
+      Module app unload (#589)
+      mk: disable opengl module in default build
+      opengles: updated vidisp api
+      avcapture: fix build for ios (ref #593)
+      module: update doxygen comments
+      ua: add missing doxygen comments
+      ua_set_custom_hdrs: add error checking
+      ua: add doxygen comments
+      ua: fix formatting and update doxygen
+      ua: update doxygen comments
+      call: update doxygen comments
+      message: update doxygen comments
+      custom_hdrs: add doxygen comments
+      stream: update doxygen comments
+      video: rename intra to key-frames
+      sip: add doxygen comments
+      event: add doxygen comments
+      mediadev: minor code formatting
+      mediadev: add doxygen comments
+      audiounit: rename comp to 'audiounit_comp'
+      audiounit: check input parameters
+      coreaudio: remove blocking sleep (#605)
+      audio: change logline to debug (ref #609)
+      auloop: show read/write counters in stream duration (seconds)
+      audiounit: print name of audio component used
+      audiounit: move aufmt_to_formatflags to audiounit.c
+      rpm: remove support for in-tree RPM building
+      account: init mnat, fix warning on mingw32
+      mk: make sure omx.so is only added once (fixes #612)
+      silk: remove codec (#611)
+      aubridge: use sizeof sample format instead of 2
+      coreaudio: clarify that coreaudio module is for macOS
+      audio: cleanup comment
+      pcp: clean up comment
+      audiounit: check for valid sample size
+      audiounit: clarify usage of inputBus and outputBus
+      add accessor to ausrc/auplay base-class
+      auloop: add summary
+      vidloop: rename variable
+      mk: detect CoreAudio framework
+      webrtc aec (#617)
+      audiounit: clean up enable/disable
+      auloop: print sample format
+      audiounit: clarify usage of inputBus and outputBus
+      dtls_srtp: remove support for SHA-1 fingerprint
+      dtls_srtp: remove unused DTLS-SRTP methods
+      menc: move and document event type
+      menc: added menc_event_name()
+      remove obsolete compile flag MODULE_CONF
+      stream: move handlers to end of struct
+      test: check magic in audio sample handler
+      test: added testcase for call with mock medianat
+      dshow: remove a comment
+      call: using str_isset() is faster than strlen()
+      config: remove 'rtcp_enable', always enabled (#623)
+      stream: remove rtcp flag
+      update comments
+      Update README.md
+      README: added rtcpsummary module
+      aubridge: add module prefix to global symbols
+      update copyright year to 2019
+      audiounit: fix warnings on ios
+      stream: make stream_sdpmedia public
+      stream: make stream_update public
+      audio: make audio_{encoder,decoder}_set public
+      stream: make struct stream_param public
+      audio: use samplesize to calculate packet size
+      audio: use sizeof int16_t instead of 2
+      stream: update doxygen comments
+      audio: update doxygen comments
+      video: update comment
+      jack: allocate array of ports from channels (ref #625)
+      jack: update comment
+      audiounit: check memory allocation
+      main: fix bug with reading of -u parameter value
+      audio: split up definition of AUDIO_SAMPSZ
+      gtk: minor formatting improvements
+      gtk: check duration_timer_tag (ref #630)
+      audio: make audio_alloc() public
+      avformat: print decoder name (ref #639)
+      menu: change some commands from CMD_IPRM to CMD_PRM
+      avformat: add pixel format mapping function
+      avcodec: add pixel format mapping function
+      avcodec: add pixel format mapping function for encoder
+      menu: use CMD_PRM for call transfer
+      contact: add flag to enable presence (fixes #645)
+      cmd: remove support for progress/interactive commands
+      menu: fix warning
+      config: update comment
+      coreaudio: add support for multiple sample formats, including FLOAT
+      menu: no need to use command's complete flag
+      jack: allocate buffer before start (ref #647)
+      auloop: print newline at the end
+      Update .travis.yml (#652)
+      Update .travis.yml (#653)
+      fix some warnings reported by @Encamy
+      dshow: fix warning on win32
+      update doxygen comments
+      bump version to 0.6.1
+      config: refresh config template
+      audiounit: fix warning on ios
+
+José Luis Millán (2):
+      ctrl_tcp: increase command buffer size (#585)
+      vumeter: configuration option to disable vumeter output to stderr (#608)
+
+Juha Heinanen (4):
+      new account functions
+      fixed typo
+      added audio_codec api function
+      added @return description
+
+Nicolas Tizon (4):
+      sdl2: make window resizable (#587)
+      coreaudio: mediadev support (#600)
+      avcodec: force intra (H.263, H.264) frame request if no key frame received (#614)
+      audiounit: add AUConverter resampler (recorder) (#624)
+
+Olle E. Johansson (1):
+      Improve mqtt module (#642)
+
+Timmo Verlaan (2):
+      menu: add uafind to select ua by aor (#626)
+      menu: create_ua doesn't use dialbuf (#627)
+
+juha-h (5):
+      Merge pull request #588 from alfredh/new_account_functions
+      Merge pull request #598 from alfredh/audio_codec
+      added account_set_answermode api function (#619)
+      opengles android ndk r18 update (#629)
+      do not accept incoming calls without srtp if account has mandatory srtp (#651)
+
+
+2018-12-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.6.0
+
+	* GIT URL: https://github.com/alfredh/baresip.git
+	* GIT tag: v0.6.0
+	* NOTE: Requires libre v0.6.0 or later
+	        Requires librem v0.6.0 or later
+
+	* config:
+
+	  opus_complexity  {0-10}        # Encoder's computational complexity
+	  opus_application {audio, voip} # Encoder's intended application
+	  sip_cafile       ca.crt        # trusted Certificate Authorities
+
+	* baresip-core:
+	  - account: added support for per account mwi using
+	             ;mwi=on|off addr-param (#530) (thanks Juha Heinanen)
+		     per account support for call transfer (#535)
+		     (thanks Juha Heinanen)
+	  - audio: add audio_start()
+		   add audio_started()
+		   EBU/ACIP invite handler.
+		   flush aubuf when resetting codec
+	  - call: make call_connect() public
+		  make call_notify_sipfrag() public
+	  - contacts: make struct contacts opaque
+		      add contact_uri()
+	  - rtpkeep: code removed
+	  - sdp: remove unused functions
+	  - ua: add sip_cafile config option
+	        (thanks to @wnetbal for the original patch)
+		add event UA_EVENT_MWI_NOTIFY (thanks Juha Heinanen)
+		add event UA_EVENT_CALL_TRANSFER
+		add event UA_EVENT_AUDIO_ERROR
+		add ua_uri_complete()
+	  - vidfilt: add timestamp parameter to filter API
+	  - vidisp: add timestamp parameter to display API
+	  - video: add RTP timestamp state for receive
+
+	* selftest:
+	  - test: add call transfer test (ref #538)
+	  - test: add call via tcp test
+
+	* Modules:
+
+	* avcapture: fix video resolutions mismatches (#580) (Nicolas Tizon)
+
+	* avcodec: remove support for old versions of ffmpeg
+		   detect MPEG4 key-frames
+
+	* avformat: remove support for old versions of ffmpeg
+
+	* ctrl_tcp: Fix netstring frame handling (#569) (José Luis Millán)
+
+	* debug_cmd: /play will always stop current file playing.  (#578)
+		     (thanks Ola Palm)
+
+	* directfb: updated vidisp api (#568) (thanks andreygursky)
+
+	* dshow: mediadev support (#550) (Nicolas Tizon)
+
+	* echo: add support for video
+
+	* h265: change rate control to ABR (Average Bitrate) (#526)
+
+	* mwi: moved printing of mwi info from mwi module to menu module
+	       (thanks Juha Heinanen)
+
+	* opengl: properly handle linesize (#566)
+
+	* opus: add configuration parameter 'opus_complexity'
+		add configuration parameter 'opus_application'
+		(thanks José Luis Millán)
+
+	* libsrtp: module removed
+
+	* v4l2_codec: use thread instead of fd event (#558)
+
+	* winwave: add support for FLOAT sample format (#559)
+		   mediadev support (#556) (Nicolas Tizon)
+
+
 2018-09-15 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.11

@@ -15,6 +15,12 @@
  * @defgroup aufile aufile
  *
  * Audio module for using a WAV-file as audio input
+ *
+ * Sample config:
+ *
+ \verbatim
+  audio_source            aufile,/tmp/test.wav
+ \endverbatim
  */
 
 

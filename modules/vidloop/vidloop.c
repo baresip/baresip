@@ -39,7 +39,7 @@ struct vstat {
 	size_t bytes;
 	uint32_t bitrate;
 	double efps;
-	size_t n_intra;
+	size_t n_keyframe;
 };
 
 
@@ -65,9 +65,11 @@ struct video_loop {
 	struct vstat stat;
 	struct tmr tmr_bw;
 	struct tmr tmr_display;
+	struct tmr tmr_update_src;
 	struct vidsz src_size;
 	struct vidsz disp_size;
 	enum vidfmt src_fmt;
+	enum vidfmt disp_fmt;
 	struct vidframe *frame;
 	uint64_t frame_timestamp;
 	struct lock *frame_mutex;
@@ -115,7 +117,7 @@ static void timestamp_state_update(struct timestamp_state *st,
 
 
 static double timestamp_state_duration(const struct timestamp_state *ts,
-				       uint32_t clock)
+				       uint32_t clock_rate)
 {
 	uint64_t dur;
 
@@ -124,7 +126,7 @@ static double timestamp_state_duration(const struct timestamp_state *ts,
 	else
 		dur = 0;
 
-	return (double)dur / (double)clock;
+	return (double)dur / (double)clock_rate;
 }
 
 
@@ -148,6 +150,7 @@ static void display_handler(void *arg)
 	if (err == ENODEV) {
 		info("vidloop: video-display was closed\n");
 		vl->vidisp = mem_deref(vl->vidisp);
+		vl->err = err;
 	}
 
  out:
@@ -195,6 +198,7 @@ static int display(struct video_loop *vl, struct vidframe *frame,
 
 	/* save the displayed frame info */
 	vl->disp_size = frame->size;
+	vl->disp_fmt = frame->fmt;
 	++vl->stats.disp_frames;
 
 	lock_write_get(vl->frame_mutex);
@@ -235,7 +239,7 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 	struct vidframe frame;
 	struct mbuf *mb;
 	uint64_t timestamp;
-	bool intra;
+	bool keyframe;
 	int err = 0;
 
 	++vl->stats.enc_packets;
@@ -258,15 +262,15 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 	/* decode */
 	frame.data[0] = NULL;
 	if (vl->vc_dec && vl->dec) {
-		err = vl->vc_dec->dech(vl->dec, &frame, &intra,
+		err = vl->vc_dec->dech(vl->dec, &frame, &keyframe,
 				       marker, vl->seq++, mb);
 		if (err) {
 			warning("vidloop: codec decode: %m\n", err);
 			goto out;
 		}
 
-		if (intra)
-			++vl->stat.n_intra;
+		if (keyframe)
+			++vl->stat.n_keyframe;
 	}
 
 	/* convert the RTP timestamp to VIDEO_TIMEBASE timestamp */
@@ -423,9 +427,9 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 		double avg_pktrate;
 		double dur;
 
-		avg_bitrate = 8.0 * (double)vl->stats.enc_bytes / src_dur;
-		avg_pktrate = (double)vl->stats.enc_packets / src_dur;
 		dur = timestamp_state_duration(&vl->ts_rtp, 90000);
+		avg_bitrate = 8.0 * (double)vl->stats.enc_bytes / dur;
+		avg_pktrate = (double)vl->stats.enc_packets / dur;
 
 		err |= re_hprintf(pf,
 				  "* Encoder\n"
@@ -450,7 +454,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 				  "\n"
 				  ,
 				  vl->vc_dec->name,
-				  vl->stat.n_intra);
+				  vl->stat.n_keyframe);
 	}
 
 	/* Display */
@@ -461,13 +465,13 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 				  "* Display\n"
 				  "  module      %s\n"
 				  "  resolution  %u x %u\n"
-				  "  fullscreen  %s\n"
+				  "  pixformat   %s\n"
 				  "  frames      %llu\n"
 				  "\n"
 				  ,
 				  vd->name,
 				  vl->disp_size.w, vl->disp_size.h,
-				  cfg->fullscreen ? "Yes" : "No",
+				  vidfmt_name(vl->disp_fmt),
 				  vl->stats.disp_frames);
 	}
 
@@ -486,6 +490,7 @@ static void vidloop_destructor(void *arg)
 	mem_deref(vl->vsrc);
 	mem_deref(vl->enc);
 	mem_deref(vl->dec);
+	tmr_cancel(&vl->tmr_update_src);
 
 	lock_write_get(vl->frame_mutex);
 	mem_deref(vl->vidisp);
@@ -550,18 +555,20 @@ static int enable_codec(struct video_loop *vl, const char *name)
 
 static void print_status(struct video_loop *vl)
 {
-	(void)re_fprintf(stdout,
-			 "\rstatus:"
-			 " %.3f sec [%s] [%s]  fmt=%s  intra=%zu "
-			 " EFPS=%.1f      %u kbit/s       \r",
-			 timestamp_state_duration(&vl->ts_src,
-						  VIDEO_TIMEBASE),
+	re_printf("\rstatus:"
+		  " %.3f sec [%s] [%s]  fmt=%s "
+		  " EFPS=%.1f      %u kbit/s",
+		  timestamp_state_duration(&vl->ts_src, VIDEO_TIMEBASE),
+		  vl->vc_enc ? vl->vc_enc->name : "",
+		  vl->vc_dec ? vl->vc_dec->name : "",
+		  vidfmt_name(vl->cfg.enc_fmt),
+		  vl->stat.efps, vl->stat.bitrate);
 
-			 vl->vc_enc ? vl->vc_enc->name : "",
-			 vl->vc_dec ? vl->vc_dec->name : "",
-			 vidfmt_name(vl->cfg.enc_fmt),
-			 vl->stat.n_intra,
-			 vl->stat.efps, vl->stat.bitrate);
+	if (vl->enc || vl->dec)
+		re_printf("  key-frames=%zu", vl->stat.n_keyframe);
+
+	re_printf("       \r");
+
 	fflush(stdout);
 }
 
@@ -595,7 +602,7 @@ static void timeout_bw(void *arg)
 		return;
 	}
 
-	tmr_start(&vl->tmr_bw, 500, timeout_bw, vl);
+	tmr_start(&vl->tmr_bw, 100, timeout_bw, vl);
 
 	calc_bitrate(vl);
 	print_status(vl);
@@ -610,8 +617,8 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 	     vl->cfg.src_mod, vl->cfg.src_dev,
 	     sz->w, sz->h, vl->cfg.fps);
 
-	vl->srcprm.orient = VIDORIENT_PORTRAIT;
 	vl->srcprm.fps    = vl->cfg.fps;
+	vl->srcprm.fmt    = vl->cfg.enc_fmt;
 
 	vl->vsrc = mem_deref(vl->vsrc);
 	err = vidsrc_alloc(&vl->vsrc, baresip_vidsrcl(),
@@ -624,6 +631,31 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 	}
 
 	return err;
+}
+
+
+static void update_vidsrc(void *arg)
+{
+	struct video_loop *vl = arg;
+	struct vidsz size;
+	struct config *cfg = conf_config();
+	int err;
+
+	tmr_start(&vl->tmr_update_src, 100, update_vidsrc, vl);
+
+	if (!strcmp(vl->cfg.src_mod, cfg->video.src_mod) &&
+	    !strcmp(vl->cfg.src_dev, cfg->video.src_dev))
+		return;
+
+	str_ncpy(vl->cfg.src_mod, cfg->video.src_mod, sizeof(vl->cfg.src_mod));
+	str_ncpy(vl->cfg.src_dev, cfg->video.src_dev, sizeof(vl->cfg.src_dev));
+
+	size.w = cfg->video.width;
+	size.h = cfg->video.height;
+
+	err = vsrc_reopen(gvl, &size);
+	if (err)
+		gvl = mem_deref(gvl);
 }
 
 
@@ -645,6 +677,10 @@ static int video_loop_alloc(struct video_loop **vlp)
 	vl->cfg = cfg->video;
 	tmr_init(&vl->tmr_bw);
 	tmr_init(&vl->tmr_display);
+	tmr_init(&vl->tmr_update_src);
+
+	vl->src_fmt = -1;
+	vl->disp_fmt = -1;
 
 	err = lock_alloc(&vl->frame_mutex);
 	if (err)
@@ -656,12 +692,18 @@ static int video_loop_alloc(struct video_loop **vlp)
 	/* Video filters */
 	for (le = list_head(baresip_vidfiltl()); le; le = le->next) {
 		struct vidfilt *vf = le->data;
+		struct vidfilt_prm prm;
 		void *ctx = NULL;
+
+		prm.width  = vl->cfg.width;
+		prm.height = vl->cfg.height;
+		prm.fmt    = vl->cfg.enc_fmt;
+		prm.fps    = vl->cfg.fps;
 
 		info("vidloop: added video-filter `%s'\n", vf->name);
 
-		err |= vidfilt_enc_append(&vl->filtencl, &ctx, vf);
-		err |= vidfilt_dec_append(&vl->filtdecl, &ctx, vf);
+		err |= vidfilt_enc_append(&vl->filtencl, &ctx, vf, &prm, 0);
+		err |= vidfilt_dec_append(&vl->filtdecl, &ctx, vf, &prm, 0);
 		if (err) {
 			warning("vidloop: vidfilt error: %m\n", err);
 		}
@@ -683,6 +725,7 @@ static int video_loop_alloc(struct video_loop **vlp)
 	/* NOTE: usually (e.g. SDL2),
 			 video frame must be rendered from main thread */
 	tmr_start(&vl->tmr_display, 10, display_handler, vl);
+	tmr_start(&vl->tmr_update_src, 10, update_vidsrc, vl);
 
  out:
 	if (err)

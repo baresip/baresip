@@ -26,7 +26,7 @@ int test_network(void)
 	unsigned change_count = 0;
 	int err;
 
-	err = net_alloc(&net, &default_config, AF_INET);
+	err = net_alloc(&net, &default_config);
 	TEST_ERR(err);
 	ASSERT_TRUE(net != NULL);
 

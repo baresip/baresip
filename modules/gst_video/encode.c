@@ -3,10 +3,11 @@
  *
  * Copyright (C) 2010 - 2013 Creytiv.com
  * Copyright (C) 2014 Fadeev Alexander
+ * Copyright (C) 2015 Thomas Strobel
  */
-#define _DEFAULT_SOURCE 1
+
 #define __USE_POSIX199309
-#define _BSD_SOURCE 1
+#define _DEFAULT_SOURCE 1
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
@@ -18,15 +19,18 @@
 #include <gst/gst.h>
 #include <gst/video/video.h>
 #include <gst/app/gstappsrc.h>
+#include <gst/app/gstappsink.h>
 #include "gst_video.h"
 
 
 struct videnc_state {
 
-	struct vidsz size;
-	unsigned fps;
-	unsigned bitrate;
-	unsigned pktsize;
+	struct {
+		struct vidsz size;
+		unsigned fps;
+		unsigned bitrate;
+		unsigned pktsize;
+	} encoder;
 
 	struct {
 		uint32_t packetization_mode;
@@ -38,151 +42,167 @@ struct videnc_state {
 	} h264;
 
 	videnc_packet_h *pkth;
-	void *pkth_arg;
+	void *arg;
 
 	/* Gstreamer */
-	GstElement *pipeline, *source, *sink;
-	GstBus *bus;
-	gulong need_data_handler;
-	gulong enough_data_handler;
-	gulong new_buffer_handler;
-	bool gst_inited;
+	struct {
+		bool valid;
 
-	/* Main loop thread. */
-	int run;
-	pthread_t tid;
+		GstElement *pipeline;
+		GstAppSrc *source;
 
-	/* Thread synchronization. */
-	pthread_mutex_t mutex;
-	pthread_cond_t wait;
-	int bwait;
+		GstAppSrcCallbacks appsrcCallbacks;
+		GstAppSinkCallbacks appsinkCallbacks;
+
+		struct {
+			pthread_mutex_t mutex;
+			pthread_cond_t cond;
+			int flag;
+		} eos;
+
+		/* Thread synchronization. */
+		struct {
+			pthread_mutex_t mutex;
+			pthread_cond_t cond;
+			/* 0: no-wait, 1: wait, -1: pipeline destroyed */
+			int flag;
+		} wait;
+	} streamer;
 };
 
 
-static void gst_encoder_close(struct videnc_state *st);
-
-
-static void internal_bus_watch_handler(struct videnc_state *st)
+static void appsrc_need_data_cb(GstAppSrc *src, guint size, gpointer user_data)
 {
-	GError *err;
-	gchar *d;
-	GstMessage *msg = gst_bus_pop(st->bus);
-
-	if (!msg) {
-		/* take a nap (300ms) */
-		usleep(300 * 1000);
-		return;
-	}
-
-	switch (GST_MESSAGE_TYPE(msg)) {
-
-	case GST_MESSAGE_EOS:
-
-		/* XXX decrementing repeat count? */
-
-		/* Re-start stream */
-		gst_element_set_state(st->pipeline, GST_STATE_NULL);
-		gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
-		break;
-
-	case GST_MESSAGE_ERROR:
-		gst_message_parse_error(msg, &err, &d);
-
-		warning("gst_video: Error: %d(%m) message=%s\n", err->code,
-			err->code, err->message);
-		warning("gst_video: Debug: %s\n", d);
-
-		g_free(d);
-		g_error_free(err);
-
-		st->run = FALSE;
-		break;
-
-	default:
-		break;
-	}
-
-	gst_message_unref(msg);
-}
-
-
-static void *internal_thread(void *arg)
-{
-	struct videnc_state *st = arg;
-
-	/* Now set to playing and iterate. */
-	debug("gst_video: Setting pipeline to PLAYING\n");
-
-	gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
-
-	while (st->run) {
-		internal_bus_watch_handler(st);
-	}
-
-	debug("gst_video: Pipeline thread was stopped.\n");
-
-	return NULL;
-}
-
-
-static void internal_appsrc_start_feed(GstElement * pipeline, guint size,
-				       struct videnc_state *st)
-{
-	(void)pipeline;
+	struct videnc_state *st = user_data;
+	(void)src;
 	(void)size;
 
-	if (!st)
-		return;
-
-	pthread_mutex_lock(&st->mutex);
-	st->bwait = FALSE;
-	pthread_cond_signal(&st->wait);
-	pthread_mutex_unlock(&st->mutex);
+	pthread_mutex_lock(&st->streamer.wait.mutex);
+	if (st->streamer.wait.flag == 1){
+		st->streamer.wait.flag = 0;
+		pthread_cond_signal(&st->streamer.wait.cond);
+	}
+	pthread_mutex_unlock(&st->streamer.wait.mutex);
 }
 
 
-static void internal_appsrc_stop_feed(GstElement * pipeline,
-				      struct videnc_state *st)
+static void appsrc_enough_data_cb(GstAppSrc *src, gpointer user_data)
 {
-	(void)pipeline;
+	struct videnc_state *st = user_data;
+	(void)src;
 
-	if (!st)
-		return;
-
-	pthread_mutex_lock(&st->mutex);
-	st->bwait = TRUE;
-	pthread_mutex_unlock(&st->mutex);
+	pthread_mutex_lock(&st->streamer.wait.mutex);
+	if (st->streamer.wait.flag == 0)
+		st->streamer.wait.flag = 1;
+	pthread_mutex_unlock(&st->streamer.wait.mutex);
 }
 
 
-/* The appsink has received a buffer */
-static void internal_appsink_new_buffer(GstElement *sink,
-					struct videnc_state *st)
+static void appsrc_destroy_notify_cb(struct videnc_state *st)
 {
+	pthread_mutex_lock(&st->streamer.wait.mutex);
+	st->streamer.wait.flag = -1;
+	pthread_cond_signal(&st->streamer.wait.cond);
+	pthread_mutex_unlock(&st->streamer.wait.mutex);
+}
+
+
+/* The appsink has received a sample */
+static GstFlowReturn appsink_new_sample_cb(GstAppSink *sink,
+					   gpointer user_data)
+{
+	struct videnc_state *st = user_data;
+	GstSample *sample;
 	GstBuffer *buffer;
+	GstMapInfo info;
+	guint8 *data;
+	gsize size;
 
-	if (!st)
-		return;
+	/* Retrieve the sample */
+	sample = gst_app_sink_pull_sample(sink);
 
-	/* Retrieve the buffer */
-	g_signal_emit_by_name(sink, "pull-buffer", &buffer);
-
-	if (buffer) {
+	if (sample) {
 		GstClockTime ts;
 		uint64_t rtp_ts;
 
-		guint8 *data = GST_BUFFER_DATA(buffer);
-		guint size = GST_BUFFER_SIZE(buffer);
+		buffer = gst_sample_get_buffer(sample);
+		gst_buffer_map( buffer, &info, (GstMapFlags)(GST_MAP_READ) );
 
-		ts = GST_BUFFER_TIMESTAMP(buffer);
+		data = info.data;
+		size = info.size;
 
-		rtp_ts = (uint64_t)((90000ULL*ts) / 1000000000UL );
+		ts = GST_BUFFER_PTS(buffer);
 
-		h264_packetize(rtp_ts, data, size, st->pktsize,
-			       st->pkth, st->pkth_arg);
+		if (ts == GST_CLOCK_TIME_NONE) {
+			warning("gst_video: timestamp is unknown\n");
+			rtp_ts = 0;
+		}
+		else {
+			/* convert from nanoseconds to RTP clock */
+			rtp_ts = (uint64_t)((90000ULL * ts) / 1000000000UL);
+		}
 
-		gst_buffer_unref(buffer);
+		h264_packetize(rtp_ts, data, size, st->encoder.pktsize,
+			       st->pkth, st->arg);
+
+		gst_buffer_unmap(buffer, &info);
+		gst_sample_unref(sample);
 	}
+
+	return GST_FLOW_OK;
+}
+
+
+static void appsink_end_of_stream_cb(GstAppSink *src, gpointer user_data)
+{
+	struct videnc_state *st = user_data;
+	(void)src;
+
+	pthread_mutex_lock(&st->streamer.eos.mutex);
+	if (st->streamer.eos.flag == 0) {
+		st->streamer.eos.flag = 1;
+		pthread_cond_signal(&st->streamer.eos.cond);
+	}
+	pthread_mutex_unlock(&st->streamer.eos.mutex);
+}
+
+
+static void appsink_destroy_notify_cb(struct videnc_state *st)
+{
+	pthread_mutex_lock(&st->streamer.eos.mutex);
+	st->streamer.eos.flag = -1;
+	pthread_cond_signal(&st->streamer.eos.cond);
+	pthread_mutex_unlock(&st->streamer.eos.mutex);
+}
+
+
+static GstBusSyncReply bus_sync_handler_cb(GstBus *bus, GstMessage *msg,
+					   struct videnc_state *st)
+{
+	(void)bus;
+
+	if ((GST_MESSAGE_TYPE (msg)) == GST_MESSAGE_ERROR) {
+		GError *err = NULL;
+		gchar *dbg_info = NULL;
+		gst_message_parse_error (msg, &err, &dbg_info);
+		warning("gst_video: Error: %d(%m) message=%s\n",
+			err->code, err->code, err->message);
+		warning("gst_video: Debug: %s\n", dbg_info);
+		g_error_free (err);
+		g_free (dbg_info);
+
+		/* mark pipeline as broked */
+		st->streamer.valid = false;
+	}
+
+	gst_message_unref(msg);
+	return GST_BUS_DROP;
+}
+
+
+static void bus_destroy_notify_cb(struct videnc_state *st)
+{
+	(void)st;
 }
 
 
@@ -201,207 +221,170 @@ static void internal_appsink_new_buffer(GstElement *sink,
  *  '--------'   '-----------'   '----------'
  * </pre>
  */
-static int gst_encoder_init(struct videnc_state *st, int width, int height,
-			    int framerate, int bitrate)
+static int pipeline_init(struct videnc_state *st, const struct vidsz *size)
 {
+	GstAppSrc *source;
+	GstAppSink *sink;
+	GstBus *bus;
 	GError* gerror = NULL;
 	char pipeline[1024];
+	GstStateChangeReturn ret;
 	int err = 0;
 
-	gst_encoder_close(st);
+	if (!st || !size)
+		return EINVAL;
 
 	snprintf(pipeline, sizeof(pipeline),
-	 "appsrc name=source is-live=TRUE block=TRUE do-timestamp=TRUE ! "
+	 "appsrc name=source is-live=TRUE block=TRUE "
+	 "do-timestamp=TRUE max-bytes=1000000 ! "
 	 "videoparse width=%d height=%d format=i420 framerate=%d/1 ! "
-	 "x264enc byte-stream=TRUE rc-lookahead=0"
-	 " sync-lookahead=0 bitrate=%d ! "
+	 "x264enc byte-stream=TRUE rc-lookahead=0 "
+	 "tune=zerolatency speed-preset=ultrafast "
+	 "sync-lookahead=0 bitrate=%d ! "
 	 "appsink name=sink emit-signals=TRUE drop=TRUE",
-	 width, height, framerate, bitrate / 1000 /* kbit/s */);
-
-	debug("gst_video: format: yu12 = yuv420p = i420\n");
+	 size->w, size->h,
+	 st->encoder.fps, st->encoder.bitrate / 1000 /* kbit/s */);
 
 	/* Initialize pipeline. */
-	st->pipeline = gst_parse_launch(pipeline, &gerror);
+	st->streamer.pipeline = gst_parse_launch(pipeline, &gerror);
+
 	if (gerror) {
-		warning("gst_video: launch error: %s: %s\n",
-			gerror->message, pipeline);
+		warning("gst_video: launch error: %d: %s: %s\n",
+			gerror->code, gerror->message, pipeline);
 		err = gerror->code;
 		g_error_free(gerror);
-		goto out;
-	}
-
-	st->source = gst_bin_get_by_name(GST_BIN(st->pipeline), "source");
-	st->sink   = gst_bin_get_by_name(GST_BIN(st->pipeline), "sink");
-	if (!st->source || !st->sink) {
-		warning("gst_video: failed to get source or sink"
-			" pipeline elements\n");
-		err = ENOMEM;
-		goto out;
+		return err;
 	}
 
 	/* Configure appsource */
-	st->need_data_handler = g_signal_connect(st->source, "need-data",
-				 G_CALLBACK(internal_appsrc_start_feed), st);
-	st->enough_data_handler = g_signal_connect(st->source, "enough-data",
-				   G_CALLBACK(internal_appsrc_stop_feed), st);
+	source = GST_APP_SRC(gst_bin_get_by_name(
+				 GST_BIN(st->streamer.pipeline), "source"));
+	gst_app_src_set_callbacks(source, &(st->streamer.appsrcCallbacks),
+			  st, (GDestroyNotify)appsrc_destroy_notify_cb);
 
 	/* Configure appsink. */
-	st->new_buffer_handler = g_signal_connect(st->sink, "new-buffer",
-				  G_CALLBACK(internal_appsink_new_buffer), st);
-
-	/********************* Misc **************************/
+	sink = GST_APP_SINK(gst_bin_get_by_name(
+				GST_BIN(st->streamer.pipeline), "sink"));
+	gst_app_sink_set_callbacks(sink, &(st->streamer.appsinkCallbacks),
+			   st, (GDestroyNotify)appsink_destroy_notify_cb);
+	gst_object_unref(GST_OBJECT(sink));
 
 	/* Bus watch */
-	st->bus = gst_pipeline_get_bus(GST_PIPELINE(st->pipeline));
+	bus = gst_pipeline_get_bus(GST_PIPELINE(st->streamer.pipeline));
+	gst_bus_set_sync_handler(bus, (GstBusSyncHandler)bus_sync_handler_cb,
+				 st, (GDestroyNotify)bus_destroy_notify_cb);
+	gst_object_unref(GST_OBJECT(bus));
 
-	/********************* Thread **************************/
+	/* Set start values of locks */
+	pthread_mutex_lock(&st->streamer.wait.mutex);
+	st->streamer.wait.flag = 0;
+	pthread_mutex_unlock(&st->streamer.wait.mutex);
 
-	/* Synchronization primitives. */
-	pthread_mutex_init(&st->mutex, NULL);
-	pthread_cond_init(&st->wait, NULL);
-	st->bwait = FALSE;
+	pthread_mutex_lock(&st->streamer.eos.mutex);
+	st->streamer.eos.flag = 0;
+	pthread_mutex_unlock(&st->streamer.eos.mutex);
 
-	err = gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
-	if (GST_STATE_CHANGE_FAILURE == err) {
-		g_warning("set state returned GST_STATE_CHANGE_FAILUER\n");
-	}
-
-	/* Launch thread with gstreamer loop. */
-	st->run = true;
-	err = pthread_create(&st->tid, NULL, internal_thread, st);
-	if (err) {
-		st->run = false;
+	/* Start pipeline */
+	ret = gst_element_set_state(st->streamer.pipeline, GST_STATE_PLAYING);
+	if (GST_STATE_CHANGE_FAILURE == ret) {
+		g_warning("set state returned GST_STATE_CHANGE_FAILURE\n");
+		err = EPROTO;
 		goto out;
 	}
 
-	st->gst_inited = true;
+	st->streamer.source = source;
+
+	/* Mark pipeline as working */
+	st->streamer.valid = true;
 
  out:
 	return err;
 }
 
 
-static int gst_video_push(struct videnc_state *st, const uint8_t *src,
-			  size_t size, uint64_t timestamp)
-{
-	GstBuffer *buffer;
-	int ret = 0;
-
-	if (!st) {
-		return EINVAL;
-	}
-
-	if (!size) {
-		warning("gst_video: push: eos returned %d at %d\n",
-			ret, __LINE__);
-		gst_app_src_end_of_stream((GstAppSrc *)st->source);
-		return ret;
-	}
-
-	/* Wait "start feed". */
-	pthread_mutex_lock(&st->mutex);
-	if (st->bwait) {
-#define WAIT_TIME_SECONDS 5
-		struct timespec ts;
-		struct timeval tp;
-		gettimeofday(&tp, NULL);
-		ts.tv_sec  = tp.tv_sec;
-		ts.tv_nsec = tp.tv_usec * 1000;
-		ts.tv_sec += WAIT_TIME_SECONDS;
-		/* Wait. */
-		ret = pthread_cond_timedwait(&st->wait, &st->mutex, &ts);
-		if (ETIMEDOUT == ret) {
-			warning("gst_video: Raw frame is lost"
-				" because of timeout\n");
-			return ret;
-		}
-	}
-	pthread_mutex_unlock(&st->mutex);
-
-	/* Create a new empty buffer */
-	buffer = gst_buffer_new();
-	GST_BUFFER_MALLOCDATA(buffer) = (guint8 *)src;
-	GST_BUFFER_SIZE(buffer) = (guint)size;
-	GST_BUFFER_DATA(buffer) = GST_BUFFER_MALLOCDATA(buffer);
-
-	buffer->timestamp = timestamp * 1000000000ULL / VIDEO_TIMEBASE;
-
-	ret = gst_app_src_push_buffer((GstAppSrc *)st->source, buffer);
-
-	if (ret != GST_FLOW_OK) {
-		warning("gst_video: push buffer returned"
-			" %d for %d bytes \n", ret, size);
-		return ret;
-	}
-
-	return ret;
-}
-
-
-static void gst_encoder_close(struct videnc_state *st)
+static void pipeline_close(struct videnc_state *st)
 {
 	if (!st)
 		return;
 
-	st->gst_inited = false;
+	st->streamer.valid = false;
 
-	/* Remove asynchronous callbacks to prevent using gst_video_t
-	   context ("st") after releasing. */
-	if (st->source) {
-		g_signal_handler_disconnect(st->source,
-					    st->need_data_handler);
-		g_signal_handler_disconnect(st->source,
-					    st->enough_data_handler);
-	}
-	if (st->sink) {
-		g_signal_handler_disconnect(st->sink, st->new_buffer_handler);
+	if (st->streamer.source) {
+		gst_object_unref(GST_OBJECT(st->streamer.source));
+		st->streamer.source = NULL;
 	}
 
-	/* Stop thread. */
-	if (st->run) {
-		st->run = false;
-		pthread_join(st->tid, NULL);
-	}
+	if (st->streamer.pipeline) {
+		gst_element_set_state(st->streamer.pipeline, GST_STATE_NULL);
 
-	if (st->source) {
-		gst_object_unref(GST_OBJECT(st->source));
-		st->source = NULL;
-	}
-	if (st->sink) {
-		gst_object_unref(GST_OBJECT(st->sink));
-		st->sink = NULL;
-	}
-	if (st->bus) {
-		gst_object_unref(GST_OBJECT(st->bus));
-		st->bus = NULL;
-	}
-
-	if (st->pipeline) {
-		gst_element_set_state(st->pipeline, GST_STATE_NULL);
-		gst_object_unref(GST_OBJECT(st->pipeline));
-		st->pipeline = NULL;
+		/* pipeline */
+		gst_object_unref(GST_OBJECT(st->streamer.pipeline));
+		st->streamer.pipeline = NULL;
 	}
 }
 
 
-static void encode_destructor(void *arg)
+static void destruct_resources(void *data)
+{
+	struct videnc_state *st = data;
+
+	/* close pipeline */
+	pipeline_close(st);
+
+	/* destroy locks */
+	pthread_mutex_destroy(&st->streamer.eos.mutex);
+	pthread_cond_destroy(&st->streamer.eos.cond);
+
+	pthread_mutex_destroy(&st->streamer.wait.mutex);
+	pthread_cond_destroy(&st->streamer.wait.cond);
+}
+
+
+static int allocate_resources(struct videnc_state **stp)
+{
+	struct videnc_state *st;
+
+	st = mem_zalloc(sizeof(*st), destruct_resources);
+	if (!st)
+		return ENOMEM;
+
+	*stp = st;
+
+	/* initialize locks */
+	pthread_mutex_init(&st->streamer.eos.mutex, NULL);
+	pthread_cond_init(&st->streamer.eos.cond, NULL);
+
+	pthread_mutex_init(&st->streamer.wait.mutex, NULL);
+	pthread_cond_init(&st->streamer.wait.cond, NULL);
+
+
+	/* Set appsource callbacks. */
+	st->streamer.appsrcCallbacks.need_data = &appsrc_need_data_cb;
+	st->streamer.appsrcCallbacks.enough_data = &appsrc_enough_data_cb;
+
+	/* Set appsink callbacks. */
+	st->streamer.appsinkCallbacks.new_sample = &appsink_new_sample_cb;
+	st->streamer.appsinkCallbacks.eos = &appsink_end_of_stream_cb;
+
+	return 0;
+}
+
+
+/*
+  decode sdpparameter for h264
+*/
+static void param_handler(const struct pl *name, const struct pl *val,
+			  void *arg)
 {
 	struct videnc_state *st = arg;
 
-	gst_encoder_close(st);
-}
-
-
-static int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
-				const struct pl *val)
-{
 	if (0 == pl_strcasecmp(name, "packetization-mode")) {
 		st->h264.packetization_mode = pl_u32(val);
 
 		if (st->h264.packetization_mode != 0) {
 			warning("gst_video: illegal packetization-mode %u\n",
 				st->h264.packetization_mode);
-			return EPROTO;
+			return;
 		}
 	}
 	else if (0 == pl_strcasecmp(name, "profile-level-id")) {
@@ -409,7 +392,7 @@ static int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
 		if (prof.l != 6) {
 			warning("gst_video: invalid profile-level-id (%r)\n",
 				val);
-			return EPROTO;
+			return;
 		}
 
 		prof.l = 2;
@@ -424,92 +407,195 @@ static int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
 		st->h264.max_smbps = pl_u32(val);
 	}
 
-	return 0;
+	return;
 }
 
 
-static void param_handler(const struct pl *name, const struct pl *val,
-			  void *arg)
+int gst_video_encoder_set(struct videnc_state **stp,
+			  const struct vidcodec *vc,
+			  struct videnc_param *prm, const char *fmtp,
+			  videnc_packet_h *pkth, void *arg)
 {
-	struct videnc_state *st = arg;
-
-	(void)decode_sdpparam_h264(st, name, val);
-}
-
-
-int gst_video_encode_update(struct videnc_state **vesp,
-			    const struct vidcodec *vc,
-			    struct videnc_param *prm, const char *fmtp,
-			    videnc_packet_h *pkth, void *arg)
-{
-	struct videnc_state *ves;
+	struct videnc_state *st = *stp;
 	int err = 0;
 
-	if (!vesp || !vc || !prm)
+	if (!stp || !vc || !prm || !pkth)
 		return EINVAL;
 
-	ves = *vesp;
+	if (!st) {
+		err = allocate_resources(stp);
+		if (err) {
+			warning("gst_video: resource allocation failed\n");
+			return err;
+		}
+		st = *stp;
 
-	if (!ves) {
-
-		ves = mem_zalloc(sizeof(*ves), encode_destructor);
-		if (!ves)
-			return ENOMEM;
-
-		*vesp = ves;
+		st->pkth = pkth;
+		st->arg = arg;
 	}
 	else {
-		if (ves->gst_inited && (ves->bitrate != prm->bitrate ||
-					ves->pktsize != prm->pktsize ||
-					ves->fps     != prm->fps)) {
-			gst_encoder_close(ves);
+		if (!st->streamer.valid) {
+			warning("gst_video codec: trying to work"
+				" with invalid pipeline\n");
+			return EINVAL;
+		}
+
+		if ((st->encoder.bitrate != prm->bitrate ||
+	             st->encoder.pktsize != prm->pktsize ||
+	             st->encoder.fps     != prm->fps)) {
+
+			pipeline_close(st);
 		}
 	}
 
+	st->encoder.bitrate = prm->bitrate;
+	st->encoder.pktsize = prm->pktsize;
+	st->encoder.fps     = prm->fps;
+
 	if (str_isset(fmtp)) {
 		struct pl sdp_fmtp;
-
 		pl_set_str(&sdp_fmtp, fmtp);
 
-		fmt_param_apply(&sdp_fmtp, param_handler, ves);
+		/* store new parameters */
+		fmt_param_apply(&sdp_fmtp, param_handler, st);
 	}
 
-	ves->bitrate = prm->bitrate;
-	ves->pktsize = prm->pktsize;
-	ves->fps     = prm->fps;
-	ves->pkth    = pkth;
-	ves->pkth_arg = arg;
-
-	info("gst_video: video encoder %s: %.2f fps, %d bit/s, pktsize=%u\n",
-	      vc->name, prm->fps, prm->bitrate, prm->pktsize);
+	info("gst_video: video encoder %s: %d fps, %d bit/s, pktsize=%u\n",
+	     vc->name, st->encoder.fps,
+	     st->encoder.bitrate, st->encoder.pktsize);
 
 	return err;
 }
 
 
-int gst_video_encode(struct videnc_state *st, bool update,
-		     const struct vidframe *frame, uint64_t timestamp)
+/*
+ * couple gstreamer tightly by lock-stepping
+ */
+static int pipeline_push(struct videnc_state *st, const struct vidframe *frame,
+			 uint64_t timestamp)
 {
+	GstBuffer *buffer;
 	uint8_t *data;
 	size_t size;
-	int height;
+	GstFlowReturn ret;
+	int err = 0;
+
+	/*
+	 * Wait "start feed".
+	 */
+	pthread_mutex_lock(&st->streamer.wait.mutex);
+	if (st->streamer.wait.flag == 1) {
+		pthread_cond_wait(&st->streamer.wait.cond,
+				  &st->streamer.wait.mutex);
+	}
+	if (st->streamer.eos.flag == -1)
+		/* error */
+		err = ENODEV;
+	pthread_mutex_unlock(&st->streamer.wait.mutex);
+	if (err)
+		return err;
+
+	/*
+	 * Copy frame into buffer for gstreamer
+	 */
+
+	/* NOTE: I420 (YUV420P): hardcoded. */
+	size = frame->linesize[0] * frame->size.h
+		+ frame->linesize[1] * frame->size.h * 0.5
+		+ frame->linesize[2] * frame->size.h * 0.5;
+
+	/* allocate memory; memory is freed within callback of
+	   gst_memory_new_wrapped of gst_video_push */
+	data = g_try_malloc(size);
+	if (!data)
+		return ENOMEM;
+
+	/* copy content of frame */
+	size = 0;
+	memcpy(&data[size], frame->data[0],
+	       frame->linesize[0] * frame->size.h);
+	size += frame->linesize[0] * frame->size.h;
+	memcpy(&data[size], frame->data[1],
+	       frame->linesize[1] * frame->size.h * 0.5);
+	size += frame->linesize[1] * frame->size.h * 0.5;
+	memcpy(&data[size], frame->data[2],
+	       frame->linesize[2] * frame->size.h * 0.5);
+	size += frame->linesize[2] * frame->size.h * 0.5;
+
+	/* Wrap memory in a gstreamer buffer */
+	buffer = gst_buffer_new();
+	gst_buffer_insert_memory(buffer, -1,
+				 gst_memory_new_wrapped (0, data, size, 0,
+							 size, data, g_free));
+
+	/* convert timestamp to nanoseconds */
+	buffer->pts = timestamp * 1000000000ULL / VIDEO_TIMEBASE;
+
+	/*
+	 * Push data and EOS into gstreamer.
+	 */
+
+	ret = gst_app_src_push_buffer(st->streamer.source, buffer);
+	if (ret != GST_FLOW_OK) {
+		warning("gst_video: pushing buffer failed\n");
+		err = EPROTO;
+		goto out;
+	}
+
+#if 0
+	ret = gst_app_src_end_of_stream(st->streamer.source);
+	if (ret != GST_FLOW_OK) {
+		warning("gst_video: pushing EOS failed\n");
+		err = EPROTO;
+		goto out;
+	}
+#endif
+
+
+#if 0
+	/*
+	 * Wait "processing done".
+	 */
+	pthread_mutex_lock(&st->streamer.eos.mutex);
+	if (st->streamer.eos.flag == 0)
+		/* will returns with EOS (1) or error (-1) */
+		pthread_cond_wait(&st->streamer.wait.cond,
+				  &st->streamer.wait.mutex);
+	if (st->streamer.eos.flag == 1)
+		/* reset eos */
+		st->streamer.eos.flag = 0;
+	else
+		/* error */
+		err = -1;
+	pthread_mutex_unlock(&st->streamer.wait.mutex);
+#endif
+
+
+ out:
+	return err;
+}
+
+
+int gst_video_encode(struct videnc_state *st, bool update,
+		      const struct vidframe *frame, uint64_t timestamp)
+{
 	int err;
 
 	if (!st || !frame || frame->fmt != VID_FMT_YUV420P)
 		return EINVAL;
 
-	if (!st->gst_inited || !vidsz_cmp(&st->size, &frame->size)) {
+	if (!st->streamer.valid ||
+	    !vidsz_cmp(&st->encoder.size, &frame->size)) {
 
-		err = gst_encoder_init(st, frame->size.w, frame->size.h,
-				     st->fps, st->bitrate);
+		pipeline_close(st);
 
+		err = pipeline_init(st, &frame->size);
 		if (err) {
-			warning("gst_video codec: gst_video_alloc failed\n");
+			warning("gst_video: pipeline initialization failed\n");
 			return err;
 		}
 
-		/* To detect if requested size was changed. */
-		st->size = frame->size;
+		st->encoder.size = frame->size;
 	}
 
 	if (update) {
@@ -517,26 +603,11 @@ int gst_video_encode(struct videnc_state *st, bool update,
 		      ", it's not implemented...\n");
 	}
 
-	height = frame->size.h;
+	/*
+	 * Push frame into pipeline.
+	 * Function call will return once frame has been processed completely.
+	 */
+	err = pipeline_push(st, frame, timestamp);
 
-	/* NOTE: I420 (YUV420P): hardcoded. */
-	size = frame->linesize[0] * height
-		+ frame->linesize[1] * height * 0.5
-		+ frame->linesize[2] * height * 0.5;
-
-	data = malloc(size);    /* XXX: memory-leak ? */
-	if (!data)
-		return ENOMEM;
-
-	size = 0;
-
-	/* XXX: avoid memcpy here ? */
-	memcpy(&data[size], frame->data[0], frame->linesize[0] * height);
-	size += frame->linesize[0] * height;
-	memcpy(&data[size], frame->data[1], frame->linesize[1] * height * 0.5);
-	size += frame->linesize[1] * height * 0.5;
-	memcpy(&data[size], frame->data[2], frame->linesize[2] * height * 0.5);
-	size += frame->linesize[2] * height * 0.5;
-
-	return gst_video_push(st, data, size, timestamp);
+	return err;
 }

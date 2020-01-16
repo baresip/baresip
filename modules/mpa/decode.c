@@ -113,7 +113,7 @@ int mpa_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 
 int mpa_decode_frm(struct audec_state *ads,
 		   int fmt, void *sampv_void, size_t *sampc,
-		    const uint8_t *buf, size_t len)
+		   bool marker, const uint8_t *buf, size_t len)
 {
 	int result, channels, encoding, i;
 	long samplerate;
@@ -121,6 +121,7 @@ int mpa_decode_frm(struct audec_state *ads,
 	spx_uint32_t intermediate_len;
 	spx_uint32_t out_len;
 	int16_t *sampv = sampv_void;
+	(void)marker;
 
 #ifdef DEBUG
 	debug("MPA dec start %d %ld\n",len, *sampc);

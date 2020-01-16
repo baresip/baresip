@@ -12,11 +12,7 @@
 
 
 /* This value can be tuned */
-#if TARGET_OS_IPHONE
-#define BUFC 20
-#else
 #define BUFC 6
-#endif
 
 
 struct auplay_st {
@@ -24,6 +20,7 @@ struct auplay_st {
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
 	pthread_mutex_t mutex;
+	uint32_t sampsz;
 	auplay_write_h *wh;
 	void *arg;
 };
@@ -37,8 +34,6 @@ static void auplay_destructor(void *arg)
 	pthread_mutex_lock(&st->mutex);
 	st->wh = NULL;
 	pthread_mutex_unlock(&st->mutex);
-
-	audio_session_disable();
 
 	if (st->queue) {
 		AudioQueuePause(st->queue);
@@ -70,7 +65,7 @@ static void play_handler(void *userData, AudioQueueRef outQ,
 	if (!wh)
 		return;
 
-	wh(outQB->mAudioData, outQB->mAudioDataByteSize/2, arg);
+	wh(outQB->mAudioData, outQB->mAudioDataByteSize/st->sampsz, arg);
 
 	AudioQueueEnqueueBuffer(outQ, outQB, 0, NULL);
 }
@@ -86,7 +81,7 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	OSStatus status;
 	int err;
 
-	if (!stp || !ap || !prm || prm->fmt != AUFMT_S16LE)
+	if (!stp || !ap || !prm)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
@@ -97,26 +92,28 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 
-	err = pthread_mutex_init(&st->mutex, NULL);
-	if (err)
+	st->sampsz = (uint32_t)aufmt_sample_size(prm->fmt);
+	if (!st->sampsz) {
+		err = ENOTSUP;
 		goto out;
+	}
 
-	err = audio_session_enable();
+	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)
 		goto out;
 
 	fmt.mSampleRate       = (Float64)prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
-	fmt.mFormatFlags      = kLinearPCMFormatFlagIsSignedInteger |
+	fmt.mFormatFlags      = coreaudio_aufmt_to_formatflags(prm->fmt) |
 		                kAudioFormatFlagIsPacked;
 #ifdef __BIG_ENDIAN__
 	fmt.mFormatFlags     |= kAudioFormatFlagIsBigEndian;
 #endif
 	fmt.mFramesPerPacket  = 1;
-	fmt.mBytesPerFrame    = prm->ch * 2;
-	fmt.mBytesPerPacket   = prm->ch * 2;
+	fmt.mBytesPerFrame    = prm->ch * st->sampsz;
+	fmt.mBytesPerPacket   = prm->ch * st->sampsz;
 	fmt.mChannelsPerFrame = prm->ch;
-	fmt.mBitsPerChannel   = 16;
+	fmt.mBitsPerChannel   = 8 * st->sampsz;
 
 	status = AudioQueueNewOutput(&fmt, play_handler, st, NULL,
 				     kCFRunLoopCommonModes, 0, &st->queue);
@@ -132,7 +129,10 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 		info("coreaudio: player: using device '%s'\n", device);
 
-		uid = coreaudio_get_device_uid(device);
+		err = coreaudio_enum_devices(device, NULL, &uid, false);
+		if (err)
+			goto out;
+
 		if (!uid) {
 			warning("coreaudio: player: device not found: '%s'\n",
 				device);
@@ -154,7 +154,7 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	}
 
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
-	bytc  = sampc * 2;
+	bytc  = sampc * st->sampsz;
 
 	for (i=0; i<ARRAY_SIZE(st->buf); i++)  {
 
@@ -187,4 +187,15 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		*stp = st;
 
 	return err;
+}
+
+
+int coreaudio_player_init(struct auplay *ap)
+{
+	if (!ap)
+		return EINVAL;
+
+	list_init(&ap->dev_list);
+
+	return coreaudio_enum_devices(NULL, &ap->dev_list, NULL, false);
 }

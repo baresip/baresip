@@ -186,12 +186,28 @@ static int plc(struct audec_state *st, int16_t *sampv, size_t *sampc)
 
 static struct aucodec isacv[] = {
 	{
-	LE_INIT, 0, "isac", 32000, 32000, 1, 1, NULL,
-	encode_update, encode, decode_update, decode, plc, NULL, NULL
+		.name    = "isac",
+		.srate   = 32000,
+		.crate   = 32000,
+		.ch      = 1,
+		.pch     = 1,
+		.encupdh = encode_update,
+		.ench    = encode,
+		.decupdh = decode_update,
+		.dech    = decode,
+		.plch    = plc,
 	},
 	{
-	LE_INIT, 0, "isac", 16000, 16000, 1, 1, NULL,
-	encode_update, encode, decode_update, decode, plc, NULL, NULL
+		.name    = "isac",
+		.srate   = 16000,
+		.crate   = 16000,
+		.ch      = 1,
+		.pch     = 1,
+		.encupdh = encode_update,
+		.ench    = encode,
+		.decupdh = decode_update,
+		.dech    = decode,
+		.plch    = plc,
 	}
 };
 

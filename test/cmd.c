@@ -22,7 +22,6 @@ static int cmd_test(struct re_printf *pf, void *arg)
 
 	ASSERT_EQ('@', carg->key);
 	ASSERT_TRUE(NULL == carg->prm);
-	ASSERT_EQ(true, carg->complete);
 
 	++test->cmd_called;
 

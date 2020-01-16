@@ -140,11 +140,8 @@ static struct mwi *mwi_find(const struct ua *ua)
 }
 
 
-static void ua_event_handler(struct ua *ua,
-			     enum ua_event ev,
-			     struct call *call,
-			     const char *prm,
-			     void *arg )
+static void ua_event_handler(struct ua *ua, enum ua_event ev,
+			     struct call *call, const char *prm, void *arg)
 {
 	(void)call;
 	(void)prm;

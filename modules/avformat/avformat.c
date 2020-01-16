@@ -11,7 +11,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#define FF_API_OLD_METADATA 0
 #include <libavformat/avformat.h>
 #include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
@@ -31,30 +30,17 @@
  */
 
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 25, 0)
-#define AVCodecID CodecID
-#define AV_CODEC_ID_NONE  CODEC_ID_NONE
-#endif
-
-
-#if LIBAVUTIL_VERSION_MAJOR < 52
-#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
-#define AV_PIX_FMT_YUVJ420P PIX_FMT_YUVJ420P
-#endif
-
-
 struct vidsrc_st {
 	const struct vidsrc *vs;  /* inheritance */
 	pthread_t thread;
 	bool run;
 	AVFormatContext *ic;
-	AVCodec *codec;
 	AVCodecContext *ctx;
 	AVRational time_base;
 	struct vidsz sz;
+	int sindex;
 	vidsrc_frame_h *frameh;
 	void *arg;
-	int sindex;
 };
 
 
@@ -79,71 +65,65 @@ static void destructor(void *arg)
 }
 
 
+static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
+{
+	switch (pix_fmt) {
+
+	case AV_PIX_FMT_YUV420P:  return VID_FMT_YUV420P;
+	case AV_PIX_FMT_YUVJ420P: return VID_FMT_YUV420P;
+	case AV_PIX_FMT_YUV444P:  return VID_FMT_YUV444P;
+	case AV_PIX_FMT_NV12:     return VID_FMT_NV12;
+	case AV_PIX_FMT_NV21:     return VID_FMT_NV21;
+	default:                  return (enum vidfmt)-1;
+	}
+}
+
+
 static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 {
-	AVFrame *frame = NULL;
+	AVFrame *frame;
 	struct vidframe vf;
 	struct vidsz sz;
 	unsigned i;
 	int64_t pts;
 	uint64_t timestamp;
 	const AVRational time_base = st->time_base;
-
-	if (st->codec) {
-		int got_pict, ret;
-
-#if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
-		frame = av_frame_alloc();
-#else
-		frame = avcodec_alloc_frame();
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
+	int got_pict;
 #endif
+	int ret;
+
+	frame = av_frame_alloc();
+	if (!frame)
+		return;
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
-		ret = avcodec_send_packet(st->ctx, pkt);
-		if (ret < 0)
-			goto out;
+	ret = avcodec_send_packet(st->ctx, pkt);
+	if (ret < 0)
+		goto out;
 
-		ret = avcodec_receive_frame(st->ctx, frame);
-		if (ret < 0)
-			goto out;
-
-		got_pict = true;
+	ret = avcodec_receive_frame(st->ctx, frame);
+	if (ret < 0)
+		goto out;
 #else
-		ret = avcodec_decode_video2(st->ctx, frame,
-					    &got_pict, pkt);
+	ret = avcodec_decode_video2(st->ctx, frame, &got_pict, pkt);
+	if (ret < 0 || !got_pict)
+		goto out;
 #endif
-		if (ret < 0 || !got_pict)
-			goto out;
 
-		sz.w = st->ctx->width;
-		sz.h = st->ctx->height;
+	sz.w = st->ctx->width;
+	sz.h = st->ctx->height;
 
-		/* check if size changed */
-		if (!vidsz_cmp(&sz, &st->sz)) {
-			info("avformat: size changed: %d x %d  ---> %d x %d\n",
-			     st->sz.w, st->sz.h, sz.w, sz.h);
-			st->sz = sz;
-		}
-	}
-	else {
-		/* No-codec option is not supported */
-		return;
+	/* check if size changed */
+	if (!vidsz_cmp(&sz, &st->sz)) {
+		info("avformat: size changed: %d x %d  ---> %d x %d\n",
+		     st->sz.w, st->sz.h, sz.w, sz.h);
+		st->sz = sz;
 	}
 
-	pts = frame->pts;
-
-	/* convert timestamp */
-	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
-
-	switch (frame->format) {
-
-	case AV_PIX_FMT_YUV420P:
-	case AV_PIX_FMT_YUVJ420P:
-		vf.fmt = VID_FMT_YUV420P;
-		break;
-
-	default:
+	vf.fmt = avpixfmt_to_vidfmt(frame->format);
+	if (vf.fmt == (enum vidfmt)-1) {
 		warning("avformat: decode: bad pixel format"
 			" (%i) (%s)\n",
 			frame->format,
@@ -156,6 +136,10 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 		vf.data[i]     = frame->data[i];
 		vf.linesize[i] = frame->linesize[i];
 	}
+
+	/* convert timestamp */
+	pts = frame->pts;
+	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
 
 	st->frameh(&vf, timestamp, st->arg);
 
@@ -173,7 +157,6 @@ static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
 static void *read_thread(void *data)
 {
 	struct vidsrc_st *st = data;
-
 	uint64_t now, ts = tmr_jiffies();
 
 	while (st->run) {
@@ -245,11 +228,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->frameh = frameh;
 	st->arg    = arg;
 
-	/*
-	 * avformat_open_input() was added in lavf 53.2.0 according to
-	 * ffmpeg/doc/APIchanges
-	 */
-
 	ret = avformat_open_input(&st->ic, dev, NULL, NULL);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%d)\n",
@@ -258,12 +236,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		goto out;
 	}
 
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 4, 0)
 	ret = avformat_find_stream_info(st->ic, NULL);
-#else
-	ret = av_find_stream_info(st->ic);
-#endif
-
 	if (ret < 0) {
 		warning("avformat: %s: no stream info\n", dev);
 		err = ENOENT;
@@ -273,6 +246,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	for (i=0; i<st->ic->nb_streams; i++) {
 		const struct AVStream *strm = st->ic->streams[i];
 		AVCodecContext *ctx;
+		AVCodec *codec;
 
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)
 
@@ -317,20 +291,22 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			prm->fps = input_fps;
 		}
 
-		if (ctx->codec_id != AV_CODEC_ID_NONE) {
-
-			st->codec = avcodec_find_decoder(ctx->codec_id);
-			if (!st->codec) {
-				err = ENOENT;
-				goto out;
-			}
-
-			ret = avcodec_open2(ctx, st->codec, NULL);
-			if (ret < 0) {
-				err = ENOENT;
-				goto out;
-			}
+		codec = avcodec_find_decoder(ctx->codec_id);
+		if (!codec) {
+			warning("avformat: decoder not found (codec_id=%d)\n",
+				ctx->codec_id);
+			err = ENOENT;
+			goto out;
 		}
+
+		ret = avcodec_open2(ctx, codec, NULL);
+		if (ret < 0) {
+			err = ENOENT;
+			goto out;
+		}
+
+		debug("avformat: using decoder '%s' (%s)\n",
+		      codec->name, codec->long_name);
 
 		found_stream = true;
 		break;
@@ -362,16 +338,13 @@ static int module_init(void)
 {
 	/* register all codecs, demux and protocols */
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
+	av_register_all();
 	avcodec_register_all();
 #endif
 	avdevice_register_all();
 
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 13, 0)
 	avformat_network_init();
-#endif
-
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
-	av_register_all();
 #endif
 
 	return vidsrc_register(&mod_avf, baresip_vidsrcl(),

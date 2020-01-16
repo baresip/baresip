@@ -44,7 +44,6 @@ struct mnat_media {
 };
 
 
-static struct mnat *mnat;
 static struct sa natpmp_srv, natpmp_extaddr;
 static struct natpmp_req *natpmp_ext;
 
@@ -195,14 +194,15 @@ static void natpmp_resp_handler(int err, const struct natpmp_resp *resp,
 }
 
 
-static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
+static int session_alloc(struct mnat_sess **sessp,
+			 const struct mnat *mnat, struct dnsc *dnsc,
 			 int af, const char *srv, uint16_t port,
 			 const char *user, const char *pass,
 			 struct sdp_session *ss, bool offerer,
 			 mnat_estab_h *estabh, void *arg)
 {
 	struct mnat_sess *sess;
-	int err = 0;
+	(void)mnat;
 	(void)af;
 	(void)port;
 	(void)user;
@@ -220,12 +220,9 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 	sess->estabh = estabh;
 	sess->arg    = arg;
 
-	if (err)
-		mem_deref(sess);
-	else
-		*sessp = sess;
+	*sessp = sess;
 
-	return err;
+	return 0;
 }
 
 
@@ -255,15 +252,18 @@ static int comp_alloc(struct comp *comp, void *sock)
 
 
 static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
-		       int proto, void *sock1, void *sock2,
-		       struct sdp_media *sdpm)
+		       struct udp_sock *sock1, struct udp_sock *sock2,
+		       struct sdp_media *sdpm,
+		       mnat_connected_h *connh, void *arg)
 {
 	struct mnat_media *m;
 	unsigned i;
 	int err = 0;
 	(void)sock2;
+	(void)connh;
+	(void)arg;
 
-	if (!mp || !sess || !sdpm || proto != IPPROTO_UDP)
+	if (!mp || !sess || !sdpm)
 		return EINVAL;
 	if (!sock1)
 		return EINVAL;
@@ -347,6 +347,13 @@ static bool net_rt_handler(const char *ifname, const struct sa *dst,
 }
 
 
+static struct mnat mnat_natpmp = {
+	.id      = "natpmp",
+	.sessh   = session_alloc,
+	.mediah  = media_alloc,
+};
+
+
 static int module_init(void)
 {
 	int err;
@@ -365,14 +372,15 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	return mnat_register(&mnat, baresip_mnatl(), "natpmp", NULL,
-			     session_alloc, media_alloc, NULL);
+	mnat_register(baresip_mnatl(), &mnat_natpmp);
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
-	mnat       = mem_deref(mnat);
+	mnat_unregister(&mnat_natpmp);
 	natpmp_ext = mem_deref(natpmp_ext);
 
 	return 0;

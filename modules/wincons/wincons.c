@@ -181,9 +181,8 @@ static int output_handler(const char *str)
 
 
 static struct ui ui_wincons = {
-	LE_INIT,
-	"wincons",
-	output_handler
+	.name    = "wincons",
+	.outputh = output_handler
 };
 
 

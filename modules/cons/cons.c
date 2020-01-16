@@ -224,9 +224,8 @@ static void log_handler(uint32_t level, const char *msg)
 
 
 static struct ui ui_cons = {
-	LE_INIT,
-	"cons",
-	output_handler
+	.name    = "cons",
+	.outputh = output_handler
 };
 
 

@@ -30,9 +30,10 @@ GtkWidget *uri_combo_box_new(void)
 
 	for (le = list_head(contact_list(contacts)); le; le = le->next) {
 		struct contact *c = le->data;
+
 		gtk_combo_box_text_append_text(
-				GTK_COMBO_BOX_TEXT(uri_combobox),
-				contact_str(c));
+				       GTK_COMBO_BOX_TEXT(uri_combobox),
+				       contact_str(c));
 	}
 
 	return uri_combobox;
@@ -43,5 +44,6 @@ const char *uri_combo_box_get_text(GtkComboBox *box)
 {
 	GtkEntry *entry = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(box)));
 	GtkEntryBuffer *buf = gtk_entry_get_buffer(entry);
+
 	return gtk_entry_buffer_get_text(buf);
 }

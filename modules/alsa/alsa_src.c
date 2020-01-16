@@ -68,20 +68,18 @@ static void *read_thread(void *arg)
 
 	while (st->run) {
 		size_t sampc;
-		void *sampv;
+		long n;
 
-		sampv = st->sampv;
-
-		err = snd_pcm_readi(st->read, sampv, num_frames);
-		if (err == -EPIPE) {
+		n = snd_pcm_readi(st->read, st->sampv, num_frames);
+		if (n == -EPIPE) {
 			snd_pcm_prepare(st->read);
 			continue;
 		}
-		else if (err <= 0) {
+		else if (n <= 0) {
 			continue;
 		}
 
-		sampc = err * st->prm.ch;
+		sampc = n * st->prm.ch;
 
 		st->rh(st->sampv, sampc, st->arg);
 	}

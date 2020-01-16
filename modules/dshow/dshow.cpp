@@ -146,7 +146,7 @@ public:
 		uint32_t tmp_pix_RGB32;
 		uint32_t *buf_RGB32;
 		struct vidframe vidframe;
-		uint64_t timestamp = sample_time * VIDEO_TIMEBASE;
+		uint64_t timestamp = (uint64_t)(sample_time * VIDEO_TIMEBASE);
 
 		vidframe_init_buf(&vidframe, VID_FMT_RGB32, &src->size, buf);
 
@@ -306,7 +306,7 @@ static int add_sample_grabber(struct vidsrc_st *st)
 
 	memset(&mt, 0, sizeof(mt));
 	mt.majortype = MEDIATYPE_Video;
-	mt.subtype = MEDIASUBTYPE_RGB32;  /* XXX: try YUV420P */
+	mt.subtype = MEDIASUBTYPE_RGB32;
 	hr = st->grabber->SetMediaType(&mt);
 	if (FAILED(hr))
 		return ENODEV;

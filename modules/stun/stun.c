@@ -36,11 +36,7 @@ struct mnat_media {
 	struct stun_keepalive *ska2;
 	void *sock1;
 	void *sock2;
-	int proto;
 };
-
-
-static struct mnat *mnat;
 
 
 static void session_destructor(void *arg)
@@ -112,12 +108,12 @@ static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 	int err = 0;
 
 	if (m->sock1) {
-		err |= stun_keepalive_alloc(&m->ska1, m->proto,
+		err |= stun_keepalive_alloc(&m->ska1, IPPROTO_UDP,
 					    m->sock1, LAYER, &sess->srv, NULL,
 					    mapped_handler1, m);
 	}
 	if (m->sock2) {
-		err |= stun_keepalive_alloc(&m->ska2, m->proto,
+		err |= stun_keepalive_alloc(&m->ska2, IPPROTO_UDP,
 					    m->sock2, LAYER, &sess->srv, NULL,
 					    mapped_handler2, m);
 	}
@@ -157,7 +153,8 @@ static void dns_handler(int err, const struct sa *srv, void *arg)
 }
 
 
-static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
+static int session_alloc(struct mnat_sess **sessp,
+			 const struct mnat *mnat, struct dnsc *dnsc,
 			 int af, const char *srv, uint16_t port,
 			 const char *user, const char *pass,
 			 struct sdp_session *ss, bool offerer,
@@ -165,6 +162,7 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 {
 	struct mnat_sess *sess;
 	int err;
+	(void)mnat;
 	(void)user;
 	(void)pass;
 	(void)ss;
@@ -194,11 +192,14 @@ static int session_alloc(struct mnat_sess **sessp, struct dnsc *dnsc,
 
 
 static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
-		       int proto, void *sock1, void *sock2,
-		       struct sdp_media *sdpm)
+		       struct udp_sock *sock1, struct udp_sock *sock2,
+		       struct sdp_media *sdpm,
+		       mnat_connected_h *connh, void *arg)
 {
 	struct mnat_media *m;
 	int err = 0;
+	(void)connh;
+	(void)arg;
 
 	if (!mp || !sess || !sdpm)
 		return EINVAL;
@@ -212,7 +213,6 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->sess  = sess;
 	m->sock1 = mem_ref(sock1);
 	m->sock2 = mem_ref(sock2);
-	m->proto = proto;
 
 	if (sa_isset(&sess->srv, SA_ALL))
 		err = media_start(sess, m);
@@ -228,17 +228,24 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 }
 
 
+static struct mnat mnat_stun = {
+	.id      = "stun",
+	.sessh   = session_alloc,
+	.mediah  = media_alloc,
+};
+
+
 static int module_init(void)
 {
-	return mnat_register(&mnat, baresip_mnatl(),
-			     "stun", NULL, session_alloc, media_alloc,
-			     NULL);
+	mnat_register(baresip_mnatl(), &mnat_stun);
+
+	return 0;
 }
 
 
 static int module_close(void)
 {
-	mnat = mem_deref(mnat);
+	mnat_unregister(&mnat_stun);
 
 	return 0;
 }

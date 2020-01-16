@@ -47,14 +47,26 @@ static void vidfilt_enc_destructor(void *arg)
 }
 
 
+/**
+ * Allocate a video-filter encode state and append to list
+ *
+ * @param filtl List of video-filter states
+ * @param ctx   Media context
+ * @param vf    Video filter
+ * @param prm   Video filter parameters
+ * @param vid   Pointer to video object (optional)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int vidfilt_enc_append(struct list *filtl, void **ctx,
-		       const struct vidfilt *vf)
+		       const struct vidfilt *vf, struct vidfilt_prm *prm,
+		       const struct video *vid)
 {
 	struct vidfilt_enc_st *st = NULL;
 	int err;
 
 	if (vf->encupdh) {
-		err = vf->encupdh(&st, ctx, vf);
+		err = vf->encupdh(&st, ctx, vf, prm, vid);
 		if (err)
 			return err;
 	}
@@ -79,14 +91,26 @@ static void vidfilt_dec_destructor(void *arg)
 }
 
 
+/**
+ * Allocate a video-filter decode state and append to list
+ *
+ * @param filtl List of video-filter states
+ * @param ctx   Media context
+ * @param vf    Video filter
+ * @param prm   Video filter parameters
+ * @param vid   Pointer to video object (optional)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int vidfilt_dec_append(struct list *filtl, void **ctx,
-		       const struct vidfilt *vf)
+		       const struct vidfilt *vf, struct vidfilt_prm *prm,
+		       const struct video *vid)
 {
 	struct vidfilt_dec_st *st = NULL;
 	int err;
 
 	if (vf->decupdh) {
-		err = vf->decupdh(&st, ctx, vf);
+		err = vf->decupdh(&st, ctx, vf, prm, vid);
 		if (err)
 			return err;
 	}

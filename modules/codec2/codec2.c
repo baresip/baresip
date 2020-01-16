@@ -12,15 +12,10 @@
 /**
  * @defgroup codec2 codec2
  *
- * The CODEC2 audio codec
+ * The CODEC2 low-bitrate speech audio codec
  *
  * https://en.wikipedia.org/wiki/Codec2
  */
-
-
-enum {
-	CODEC2_MODE = CODEC2_MODE_2400
-};
 
 
 struct auenc_state {
@@ -30,6 +25,9 @@ struct auenc_state {
 struct audec_state {
 	struct CODEC2 *c2;
 };
+
+
+static uint32_t codec2_mode = CODEC2_MODE_2400;
 
 
 static void encode_destructor(void *data)
@@ -60,7 +58,7 @@ static int encode_update(struct auenc_state **aesp,
 	if (!st)
 		return ENOMEM;
 
-	st->c2 = codec2_create(CODEC2_MODE);
+	st->c2 = codec2_create(codec2_mode);
 	if (!st->c2) {
 		err = ENOMEM;
 		goto out;
@@ -106,7 +104,7 @@ static int decode_update(struct audec_state **adsp,
 	if (!st)
 		return ENOMEM;
 
-	st->c2 = codec2_create(CODEC2_MODE);
+	st->c2 = codec2_create(codec2_mode);
 	if (!st->c2) {
 		err = ENOMEM;
 		goto out;
@@ -122,13 +120,18 @@ static int decode_update(struct audec_state **adsp,
 }
 
 
-static int encode(struct auenc_state *aes, uint8_t *buf,
+static int encode(struct auenc_state *aes, bool *marker, uint8_t *buf,
 		  size_t *len, int fmt, const void *sampv, size_t sampc)
 {
+	size_t bytes_per_frame;
+	(void)marker;
+
 	if (!buf || !len || !sampv)
 		return EINVAL;
 
-	if (*len < (size_t)codec2_bits_per_frame(aes->c2)/8)
+	bytes_per_frame = (codec2_bits_per_frame(aes->c2) + 7) / 8;
+
+	if (*len < bytes_per_frame)
 		return ENOMEM;
 	if (sampc != (size_t)codec2_samples_per_frame(aes->c2))
 		return EPROTO;
@@ -138,21 +141,26 @@ static int encode(struct auenc_state *aes, uint8_t *buf,
 
 	codec2_encode(aes->c2, buf, (short *)sampv);
 
-	*len = codec2_bits_per_frame(aes->c2)/8;
+	*len = bytes_per_frame;
 
 	return 0;
 }
 
 
 static int decode(struct audec_state *ads, int fmt, void *sampv,
-		  size_t *sampc, const uint8_t *buf, size_t len)
+		  size_t *sampc, bool marker, const uint8_t *buf, size_t len)
 {
+	size_t bytes_per_frame;
+	(void)marker;
+
 	if (!sampv || !sampc || !buf)
 		return EINVAL;
 
+	bytes_per_frame = (codec2_bits_per_frame(ads->c2) + 7) / 8;
+
 	if (*sampc < (size_t)codec2_samples_per_frame(ads->c2))
 		return ENOMEM;
-	if (len < (size_t)codec2_bits_per_frame(ads->c2)/8)
+	if (len < bytes_per_frame)
 		return EPROTO;
 
 	if (fmt != AUFMT_S16LE)
@@ -167,26 +175,24 @@ static int decode(struct audec_state *ads, int fmt, void *sampv,
 
 
 static struct aucodec codec2 = {
-	LE_INIT,
-	NULL,
-	"CODEC2",
-	8000,
-	8000,
-	1,
-	1,
-	NULL,
-	encode_update,
-	encode,
-	decode_update,
-	decode,
-	NULL,
-	NULL,
-	NULL
+	.name      = "CODEC2",
+	.srate     = 8000,
+	.crate     = 8000,
+	.ch        = 1,
+	.pch       = 1,
+	.encupdh   = encode_update,
+	.ench      = encode,
+	.decupdh   = decode_update,
+	.dech      = decode,
 };
 
 
 static int module_init(void)
 {
+	conf_get_u32(conf_cur(), "codec2_mode", &codec2_mode);
+
+	info("codec2: using mode %d\n", codec2_mode);
+
 	aucodec_register(baresip_aucodecl(), &codec2);
 
 	return 0;

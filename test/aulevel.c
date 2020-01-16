@@ -5,6 +5,7 @@
  */
 
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 #include "test.h"
 
@@ -50,7 +51,7 @@ int test_aulevel(void)
 
 		double level;
 
-		level = aulevel_calc_dbov(testv[i].sampv,
+		level = aulevel_calc_dbov(AUFMT_S16LE, testv[i].sampv,
 					  ARRAY_SIZE(testv[i].sampv));
 
 		ASSERT_DOUBLE_EQ(testv[i].level, level, PREC);
