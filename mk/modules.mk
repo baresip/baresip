@@ -89,7 +89,6 @@ USE_AVFORMAT := $(shell [ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/local/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ] && echo "yes")
-USE_AVAHI := $(shell pkg-config --exists avahi-client && echo "yes")
 USE_CAIRO  := $(shell [ -f $(SYSROOT)/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT)/local/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT_ALT)/include/cairo/cairo.h ] && echo "yes")
@@ -313,9 +312,6 @@ MODULES   += avcodec
 ifneq ($(USE_AVFORMAT),)
 MODULES   += avformat
 endif
-endif
-ifneq ($(USE_AVAHI),)
-MODULES   += avahi
 endif
 ifneq ($(USE_CAIRO),)
 MODULES   += cairo
