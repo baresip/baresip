@@ -1076,46 +1076,42 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 {
 	struct sdp_media *sdp;
 	struct audio *au = arg;
-	struct aurx *rx = &au->rx;
-	struct pl type, val;
+	struct autx *tx = &au->tx;
+	struct pl type, val,val2;
 	uint32_t frames;
 	(void)name;
 
+	/* check type first */
 	if (0 == re_regex(value, str_len(value),
-		"jbdef [0-9]+ [^ ]+ [0-9]+",
-		NULL, &type, &val)) {
-
-		frames = pl_u32(&val) / rx->ptime;
-
+		"jbdef [0-9]+ [a-z]+ [0-9]+-[0-9]+",NULL, &type, &val, &val2)) {
+			/* check for type auto */
+			if (0 == pl_strcasecmp(&type, "auto")) {
+				/* max frames for stream jb == audio jb / tx->ptime */
+				frames = pl_u32(&val2) / tx->ptime;
+				au->cfg.buffer.min = pl_u32(&val);
+				au->cfg.buffer.max = pl_u32(&val2);
+				stream_jbuf_reset(au->strm, 1, frames);
+			}
+		}
+	else if (0 == re_regex(value, str_len(value),
+		"jbdef [0-9]+ [a-z]+ [0-9]+",NULL, &type, &val)) {
+		/* check type fixed */
 		if (0 == pl_strcasecmp(&type, "fixed")) {
-
-			uint32_t frames_min;
-
-			/*
-			fixed jb, set to frames -1 as min and frames as max.
-			*/
-
-			if (frames > 1)
-				frames_min = frames - 1;
-			else
-				frames_min = 1;
-
-			stream_jbuf_reset(au->strm, frames_min, frames);
+			frames = pl_u32(&val) / tx->ptime;
+			/* have at least one packet in buffer */
+			au->cfg.buffer.min = pl_u32(&val);
+			au->cfg.buffer.max = pl_u32(&val);
+			stream_jbuf_reset(au->strm, 1, frames);
 		}
-		else if (0 == pl_strcasecmp(&type, "auto")) {
-			/*
-			at the moment only min value is known,
-			therefor max value is here set to 2 times min value
-			This needs to be addressed later
-			*/
-			stream_jbuf_reset(au->strm, frames, frames*2);
-		}
-
+	}
+	else {
+		info("kunde inte sätta jb värden.\n");
+		return false;
+	}
+	 info("tx ptime == \"%i\"\n",tx->ptime);
 		sdp = stream_sdpmedia(au->strm);
 		sdp_media_del_lattr(sdp, "ebuacip");
-	}
-
-	return false;
+		return true;
 }
 
 
