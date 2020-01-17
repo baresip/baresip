@@ -1078,7 +1078,7 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 	struct audio *au = arg;
 	struct autx *tx = &au->tx;
 	struct pl type, val,val2;
-	uint32_t frames;
+	uint32_t frames= 0;
 	(void)name;
 
 	/* check type first, if not fixed or auto, return false */
