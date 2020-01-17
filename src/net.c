@@ -222,10 +222,13 @@ bool net_check(struct network *net)
 
 	if (str_isset(net->cfg.ifname)) {
 
-		(void)net_if_getaddr(net->cfg.ifname, AF_INET, &net->laddr);
+		if (net_af_supported(net, AF_INET))
+			net_if_getaddr(net->cfg.ifname, AF_INET, &net->laddr);
 
 #ifdef HAVE_INET6
-		(void)net_if_getaddr(net->cfg.ifname, AF_INET6, &net->laddr6);
+		if (net_af_supported(net, AF_INET6))
+			net_if_getaddr(net->cfg.ifname, AF_INET6,
+				       &net->laddr6);
 #endif
 	}
 	else {
@@ -415,22 +418,32 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 			goto print_network_data;
 		}
 
-		err = net_if_getaddr(cfg->ifname, AF_INET, &net->laddr);
-		if (err) {
-			info("net: %s: could not get IPv4 address (%m)\n",
-			     cfg->ifname, err);
+		if (net_af_supported(net, AF_INET)) {
+
+			err = net_if_getaddr(cfg->ifname, AF_INET,
+					     &net->laddr);
+			if (err) {
+				info("net: %s: could not get IPv4 address"
+				     " (%m)\n",
+				     cfg->ifname, err);
+			}
+			else
+				got_it = true;
 		}
-		else
-			got_it = true;
 
 #ifdef HAVE_INET6
-		err = net_if_getaddr(cfg->ifname, AF_INET6, &net->laddr6);
-		if (err) {
-			info("net: %s: could not get IPv6 address (%m)\n",
-			     cfg->ifname, err);
+		if (net_af_supported(net, AF_INET6)) {
+
+			err = net_if_getaddr(cfg->ifname, AF_INET6,
+					     &net->laddr6);
+			if (err) {
+				info("net: %s: could not get IPv6 address"
+				     " (%m)\n",
+				     cfg->ifname, err);
+			}
+			else
+				got_it = true;
 		}
-		else
-			got_it = true;
 #endif
 		if (got_it)
 			err = 0;
