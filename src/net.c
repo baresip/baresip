@@ -119,7 +119,7 @@ static int net_dns_srv_get(const struct network *net,
 			   struct sa *srvv, uint32_t *n, bool *from_sys)
 {
 	struct sa nsv[NET_MAX_NS];
-	uint32_t i, j, nsn = ARRAY_SIZE(nsv);
+	uint32_t i, nsn = ARRAY_SIZE(nsv);
 	int err;
 
 	err = dns_srv_get(NULL, 0, nsv, &nsn);
@@ -146,16 +146,10 @@ static int net_dns_srv_get(const struct network *net,
 		if (nsn > *n)
 			return E2BIG;
 
-		for (i=0, j=0; i<*n && j<nsn; j++) {
+		for (i=0; i<nsn; i++)
+			srvv[i] = nsv[i];
 
-			if (!net_af_supported(net, sa_af(&nsv[j])))
-				continue;
-
-			srvv[i] = nsv[j];
-			++i;
-		}
-
-		*n = i;
+		*n = nsn;
 
 		if (from_sys)
 			*from_sys = true;
@@ -373,9 +367,6 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 				goto out;
 			}
 
-			if (!net_af_supported(net, sa_af(&sa)))
-				continue;
-
 			err = net_dnssrv_add(net, &sa);
 			if (err) {
 				warning("net: failed to add nameserver: %m\n",
@@ -509,9 +500,6 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
 
 	if (srvv) {
 		for (i=0; i<srvc; i++) {
-
-			if (!net_af_supported(net, sa_af(&srvv[i])))
-				return EAFNOSUPPORT;
 
 			net->nsv[i] = srvv[i];
 		}
