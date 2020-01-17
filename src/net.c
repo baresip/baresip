@@ -492,7 +492,6 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
  * @param net  Network instance
  * @param ip   IP address
  */
-
 void net_set_address(struct network *net, const struct sa *ip)
 {
 	if (!net)
