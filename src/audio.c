@@ -1081,32 +1081,38 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 	uint32_t frames;
 	(void)name;
 
-	/* check type first */
+	/* check type first, if not fixed or auto, return false */
 	if (0 == re_regex(value, str_len(value),
 		"jbdef [0-9]+ [a-z]+ [0-9]+-[0-9]+",NULL, &type, &val, &val2)) {
 			/* check for type auto */
 			if (0 == pl_strcasecmp(&type, "auto")) {
 				/* max frames for stream jb == audio jb / tx->ptime */
 				frames = pl_u32(&val2) / tx->ptime;
+				/* set audio buffer from min and max value*/
 				au->cfg.buffer.min = pl_u32(&val);
 				au->cfg.buffer.max = pl_u32(&val2);
-				stream_jbuf_reset(au->strm, 1, frames);
 			}
 		}
 	else if (0 == re_regex(value, str_len(value),
 		"jbdef [0-9]+ [a-z]+ [0-9]+",NULL, &type, &val)) {
 		/* check type fixed */
 		if (0 == pl_strcasecmp(&type, "fixed")) {
+			/* Tx ptime is from incoming sdp. */
 			frames = pl_u32(&val) / tx->ptime;
-			/* have at least one packet in buffer */
+			/* set both audio buffer min and max value to val*/
 			au->cfg.buffer.min = pl_u32(&val);
 			au->cfg.buffer.max = pl_u32(&val);
-			stream_jbuf_reset(au->strm, 1, frames);
 		}
 	}
 	else {
 		return false;
 	}
+	/* Set stream jb min to 1 packet. 
+		If calculated frames is less than 1, add one */
+	if(frames <= 1 ) {
+		frames = 2;
+	}
+	stream_jbuf_reset(au->strm, 1, frames);
 	sdp = stream_sdpmedia(au->strm);
 	sdp_media_del_lattr(sdp, "ebuacip");
 	return true;
