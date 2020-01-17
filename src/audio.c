@@ -1011,7 +1011,6 @@ static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 	const struct list *lst;
 	struct le *le;
 	char str[64];
-	int jbvalue = 0;
 	int jb_id = 0;
 	int err = 0;
 
@@ -1030,18 +1029,17 @@ static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 						   "ebuacip",
 						   "jbdef %i auto %d-%d",
 						   jb_id,
-						   avt->jbuf_del.min * ptime,
-						   avt->jbuf_del.max * ptime);
+						   au->cfg.buffer.min,
+						   au->cfg.buffer.max);
 		}
 		else if (0 == str_cmp(str, "fixed")) {
 
-			/* define jb value in option */
-			jbvalue = avt->jbuf_del.max * ptime;
+			/* define jb value in option from audio buffer min value */
 
 			err |= sdp_media_set_lattr(sdp, false,
 						   "ebuacip",
 						   "jbdef %i fixed %d",
-						   jb_id, jbvalue);
+						   jb_id, au->cfg.buffer.min);
 		}
 	}
 
