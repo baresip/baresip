@@ -1105,13 +1105,11 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 		}
 	}
 	else {
-		info("kunde inte sätta jb värden.\n");
 		return false;
 	}
-	 info("tx ptime == \"%i\"\n",tx->ptime);
-		sdp = stream_sdpmedia(au->strm);
-		sdp_media_del_lattr(sdp, "ebuacip");
-		return true;
+	sdp = stream_sdpmedia(au->strm);
+	sdp_media_del_lattr(sdp, "ebuacip");
+	return true;
 }
 
 
