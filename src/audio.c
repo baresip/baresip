@@ -1034,8 +1034,7 @@ static int set_ebuacip_params(struct audio *au, uint32_t ptime)
 		}
 		else if (0 == str_cmp(str, "fixed")) {
 
-			/* define jb value in option from audio buffer min value */
-
+		/* define jb value in option from audio buffer min value */
 			err |= sdp_media_set_lattr(sdp, false,
 						   "ebuacip",
 						   "jbdef %i fixed %d",
@@ -1082,11 +1081,14 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 	(void)name;
 
 	/* check type first, if not fixed or auto, return false */
+
 	if (0 == re_regex(value, str_len(value),
-		"jbdef [0-9]+ [a-z]+ [0-9]+-[0-9]+",NULL, &type, &val, &val2)) {
+			  "jbdef [0-9]+ [a-z]+ [0-9]+-[0-9]+",
+			   NULL, &type, &val, &val2)) {
 			/* check for type auto */
 			if (0 == pl_strcasecmp(&type, "auto")) {
-				/* max frames for stream jb == audio jb / tx->ptime */
+			    /* max frames for stream jb
+			        == audio jb / tx->ptime */
 				frames = pl_u32(&val2) / tx->ptime;
 				/* set audio buffer from min and max value*/
 				au->cfg.buffer.min = pl_u32(&val);
@@ -1107,9 +1109,9 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 	else {
 		return false;
 	}
-	/* Set stream jb min to 1 packet. 
+	/* Set stream jb min to 1 packet.
 		If calculated frames is less than 1, add one */
-	if(frames <= 1 ) {
+	if (frames <= 1 ) {
 		frames = 2;
 	}
 	stream_jbuf_reset(au->strm, 1, frames);
