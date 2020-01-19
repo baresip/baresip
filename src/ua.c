@@ -427,6 +427,43 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 }
 
 
+static int best_effort_af(const struct network *net)
+{
+	const int afv[2] = { AF_INET, AF_INET6 };
+	size_t i;
+
+	for (i=0; i<ARRAY_SIZE(afv); i++) {
+		int af = afv[i];
+
+		if (net_af_supported(net, af) &&
+		    sa_isset(net_laddr_af(net, af), SA_ADDR))
+			return af;
+	}
+
+	return AF_UNSPEC;
+}
+
+
+static int sdp_af_hint(struct mbuf *mb)
+{
+	struct pl af;
+	int err;
+
+	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
+		       "IN IP[46]+", &af);
+	if (err)
+		return AF_UNSPEC;
+
+	switch (af.p[0]) {
+
+	case '4': return AF_INET;
+	case '6': return AF_INET6;
+	}
+
+	return AF_UNSPEC;
+}
+
+
 /**
  * Create a new call object
  *
@@ -448,10 +485,23 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	const struct network *net = baresip_network();
 	struct call_prm cprm;
 	int af = AF_UNSPEC;
+	int af_sdp = AF_UNSPEC;
 	int err;
 
 	if (!callp || !ua)
 		return EINVAL;
+
+	if (msg) {
+		af_sdp = sdp_af_hint(msg->mb);
+
+		info("ua: using AF from sdp offer: af=%s\n",
+		     net_af2name(af_sdp));
+
+		if (!net_af_supported(baresip_network(), af_sdp)) {
+			warning("ua: SDP offer AF not supported (%s)\n",
+				net_af2name(af_sdp));
+		}
+	}
 
 	/* 1. if AF_MEDIA is set, we prefer it
 	 * 2. otherwise fall back to SIP AF
@@ -459,6 +509,11 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (ua->af_media) {
 		af = ua->af_media;
 	}
+	else if (af_sdp) {
+		af = af_sdp;
+	}
+	else
+		af = best_effort_af(net);
 
 	memset(&cprm, 0, sizeof(cprm));
 
@@ -646,23 +701,6 @@ static int create_register_clients(struct ua *ua)
 }
 
 
-static int best_effort_af(const struct network *net)
-{
-	const int afv[2] = { AF_INET, AF_INET6 };
-	size_t i;
-
-	for (i=0; i<ARRAY_SIZE(afv); i++) {
-		int af = afv[i];
-
-		if (net_af_supported(net, af) &&
-		    sa_isset(net_laddr_af(net, af), SA_ADDR))
-			return af;
-	}
-
-	return AF_UNSPEC;
-}
-
-
 /**
  * Allocate a SIP User-Agent
  *
@@ -687,8 +725,6 @@ int ua_alloc(struct ua **uap, const char *aor)
 	MAGIC_INIT(ua);
 
 	list_init(&ua->calls);
-
-	ua->af_media = best_effort_af(baresip_network());
 
 	/* Decode SIP address */
 	if (uag.eprm) {
