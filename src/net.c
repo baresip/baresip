@@ -513,7 +513,6 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
 
 	if (srvv) {
 		for (i=0; i<srvc; i++) {
-
 			net->nsv[i] = srvv[i];
 		}
 	}
