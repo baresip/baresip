@@ -1004,7 +1004,7 @@ static int add_telev_codec(struct audio *a)
  *
  * Ref: https://tech.ebu.ch/docs/tech/tech3368.pdf
  */
-static int set_ebuacip_params(struct audio *au, uint32_t ptime)
+static int set_ebuacip_params(struct audio *au)
 {
 	struct sdp_media *sdp = stream_sdpmedia(au->strm);
 	const struct config_avt *avt = &au->strm->cfg;
@@ -1233,7 +1233,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	if (cfg->sdp.ebuacip) {
 
-		err = set_ebuacip_params(a, minptime);
+		err = set_ebuacip_params(a);
 		if (err)
 			goto out;
 	}
