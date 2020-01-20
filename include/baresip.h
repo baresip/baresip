@@ -15,6 +15,9 @@ extern "C" {
 /** Defines the Baresip version string */
 #define BARESIP_VERSION "0.6.5"
 
+/** Defines the Baresip version number */
+#define BARESIP_VERSION_NUMBER 0x000605
+
 
 #ifndef NET_MAX_NS
 #define NET_MAX_NS (4)
