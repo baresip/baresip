@@ -177,6 +177,9 @@ const char *h265_nalunit_name(enum h265_naltype type)
 	case H265_NAL_TRAIL_N:         return "TRAIL_N";
 	case H265_NAL_TRAIL_R:         return "TRAIL_R";
 
+	case H265_NAL_TSA_N:           return "TSA_N";
+	case H265_NAL_TSA_R:           return "TSA_R";
+
 	case H265_NAL_RASL_N:          return "RASL_N";
 	case H265_NAL_RASL_R:          return "RASL_R";
 

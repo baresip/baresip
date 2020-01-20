@@ -1,9 +1,11 @@
 /**
- * @file aac/sdp.c AAC SDP Functions
+ * @file aac/sdp.c MPEG-4 AAC SDP Functions
  *
  * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2019 Hessischer Rundfunk
  */
 
+#include <strings.h>
 #include <re.h>
 #include <baresip.h>
 #include <fdk-aac/FDK_audio.h>
@@ -26,30 +28,64 @@ static unsigned param_value(const char *fmtp, const char *name)
 }
 
 
-int aac_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
-		 bool offer, void *arg)
-{
-	(void)offer;
-	(void)arg;
-
-	if (!mb || !fmt)
-		return 0;
-
-	return mbuf_printf(mb, "a=fmtp:%s "
-			   "profile-level-id=24;object=%i;bitrate=%u\r\n",
-			   fmt->id, AOT_ER_AAC_LD, AAC_BITRATE);
-}
-
-
+/* check decoding compatibility of remote format */
 bool aac_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
 {
 	(void)lfmtp;
 	(void)arg;
 
-	if (param_value(rfmtp, "object") != AOT_ER_AAC_LD)
+	uint32_t plid;
+
+	struct pl pl, val;
+
+	if (!rfmtp)
 		return false;
 
-	if (param_value(rfmtp, "bitrate") != AAC_BITRATE)
+	pl_set_str(&pl, rfmtp);
+
+	debug("aac: compare: %s\n", rfmtp);
+
+	if (fmt_param_get(&pl, "mode", &val)) {
+		if (strncasecmp("AAC-hbr", val.p, val.l))
+			return false;
+	}
+
+	if (param_value(rfmtp, "streamType") != 5)
+		return false;
+
+	if (param_value(rfmtp, "sizeLength") != SIZELENGTH)
+		return false;
+
+	if (param_value(rfmtp, "indexLength") != INDEXLENGTH)
+		return false;
+
+	if (param_value(rfmtp, "indexDeltaLength") != INDEXDELTALENGTH)
+		return false;
+
+	if (param_value(rfmtp, "bitrate") < 8000 ||
+	    param_value(rfmtp, "bitrate") > 576000)
+		return false;
+
+	switch (param_value(rfmtp, "constantDuration")) {
+	case 120:
+	case 128:
+	case 240:
+	case 256:
+	case 480:
+	case 512:
+	case 960:
+	case 1024:
+	case 1920:
+	case 2048:
+		break;
+	default:
+		return false;
+	}
+
+	plid = param_value(rfmtp, "profile-level-id");
+	if (!((plid >= 14 && plid <= 29) ||
+	      (plid >= 41 && plid <= 52) ||
+	      (plid >= 76 && plid <= 77)))
 		return false;
 
 	return true;

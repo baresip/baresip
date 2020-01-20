@@ -275,6 +275,7 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 {
 	struct vidisp_st *st;
 	int err = 0;
+	(void)prm;
 	(void)dev;
 	(void)resizeh;
 	(void)arg;

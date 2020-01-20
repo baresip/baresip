@@ -44,6 +44,7 @@
 #   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL2          libSDL2 video output
 #   USE_SNDFILE       sndfile wav dumper
+#   USE_SNDIO         sndio audo driver
 #   USE_SPEEX_PP      Speex preprocessor
 #   USE_SRTP          Secure RTP module using libre
 #   USE_STDIO         stdio input driver
@@ -88,12 +89,11 @@ USE_AVFORMAT := $(shell [ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/local/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ] && echo "yes")
-USE_AVAHI := $(shell pkg-config --exists avahi-client && echo "yes")
 USE_CAIRO  := $(shell [ -f $(SYSROOT)/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT)/local/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT_ALT)/include/cairo/cairo.h ] && echo "yes")
 USE_CODEC2  := $(shell [ -f $(SYSROOT)/include/codec2/codec2.h ] || \
-	[ -f $(SYSROOT)/local/include/codec2/codec2.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/codec2/codec2.h ] || \
 	[ -f $(SYSROOT_ALT)/include/codec2/codec2.h ] && echo "yes")
 USE_DTLS := $(shell [ -f $(SYSROOT)/include/openssl/dtls1.h ] || \
 	[ -f $(SYSROOT)/local/include/openssl/dtls1.h ] || \
@@ -103,14 +103,14 @@ USE_DTLS_SRTP := $(shell [ -f $(SYSROOT)/include/openssl/srtp.h ] || \
 	[ -f $(SYSROOT_ALT)/include/openssl/srtp.h ] && echo "yes")
 USE_G722 := $(shell [ -f $(SYSROOT)/include/spandsp/g722.h ] || \
 	[ -f $(SYSROOT_ALT)/include/spandsp/g722.h ] || \
-	[ -f $(SYSROOT)/local/include/spandsp/g722.h ] && echo "yes")
+	[ -f $(SYSROOT_LOCAL)/include/spandsp/g722.h ] && echo "yes")
 USE_G722_1 := $(shell [ -f $(SYSROOT)/include/g722_1.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/g722_1.h ] || \
 	[ -f $(SYSROOT_ALT)/include/g722_1.h ] || \
 	[ -f $(SYSROOT)/local/include/g722_1.h ] && echo "yes")
 USE_G726 := $(shell [ -f $(SYSROOT)/include/spandsp/g726.h ] || \
 	[ -f $(SYSROOT_ALT)/include/spandsp/g726.h ] || \
-	[ -f $(SYSROOT)/local/include/spandsp/g726.h ] && echo "yes")
+	[ -f $(SYSROOT_LOCAL)/include/spandsp/g726.h ] && echo "yes")
 USE_GSM := $(shell [ -f $(SYSROOT)/include/gsm.h ] || \
 	[ -f $(SYSROOT_ALT)/include/gsm.h ] || \
 	[ -f $(SYSROOT)/include/gsm/gsm.h ] || \
@@ -127,13 +127,13 @@ USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 USE_ISAC := $(shell [ -f $(SYSROOT)/include/isac.h ] || \
 	[ -f $(SYSROOT)/local/include/isac.h ] && echo "yes")
 USE_JACK := $(shell [ -f $(SYSROOT)/include/jack/jack.h ] || \
-	[ -f $(SYSROOT)/local/include/jack/jack.h ] && echo "yes")
+	[ -f $(SYSROOT_LOCAL)/include/jack/jack.h ] && echo "yes")
 USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
 	[ -f $(SYSROOT)/local/include/mpg123.h ] || \
 	[ -f $(SYSROOT_ALT)/include/mpg123.h ] && echo "yes")
 USE_OPUS := $(shell [ -f $(SYSROOT)/include/opus/opus.h ] || \
 	[ -f $(SYSROOT_ALT)/include/opus/opus.h ] || \
-	[ -f $(SYSROOT)/local/include/opus/opus.h ] && echo "yes")
+	[ -f $(SYSROOT_LOCAL)/include/opus/opus.h ] && echo "yes")
 USE_OPUS_MS := $(shell [ -f $(SYSROOT)/include/opus/opus_multistream.h ] || \
 	[ -f $(SYSROOT_ALT)/include/opus/opus_multistream.h ] || \
 	[ -f $(SYSROOT)/local/include/opus/opus_multistream.h ] && echo "yes")
@@ -142,8 +142,8 @@ USE_OSS := $(shell [ -f $(SYSROOT)/include/soundcard.h ] || \
 	[ -f $(SYSROOT)/include/sys/soundcard.h ] && echo "yes")
 USE_PLC := $(shell [ -f $(SYSROOT)/include/spandsp/plc.h ] || \
 	[ -f $(SYSROOT_ALT)/include/spandsp/plc.h ] || \
-	[ -f $(SYSROOT)/local/include/spandsp/plc.h ] && echo "yes")
-USE_PORTAUDIO := $(shell [ -f $(SYSROOT)/local/include/portaudio.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/spandsp/plc.h ] && echo "yes")
+USE_PORTAUDIO := $(shell [ -f $(SYSROOT_LOCAL)/include/portaudio.h ] || \
 		[ -f $(SYSROOT)/include/portaudio.h ] || \
 		[ -f $(SYSROOT_ALT)/include/portaudio.h ] && echo "yes")
 USE_PULSE := $(shell pkg-config --exists libpulse && echo "yes")
@@ -154,6 +154,8 @@ USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
 	[ -f $(SYSROOT)/local/include/sndfile.h ] || \
 	[ -f $(SYSROOT_ALT)/include/sndfile.h ] || \
 	[ -f $(SYSROOT_ALT)/usr/local/include/sndfile.h ] && echo "yes")
+USE_SNDIO := $(shell [ -f $(SYSROOT)/include/sndio.h ] || \
+	[ -f $(SYSROOT)/local/include/sndio.h ] && echo "yes")
 USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
 HAVE_SPEEXDSP := $(shell \
 	[ -f $(SYSROOT)/local/lib/libspeexdsp$(LIB_SUFFIX) ] || \
@@ -241,17 +243,10 @@ endif
 endif
 ifeq ($(OS),linux)
 USE_EVDEV := $(shell [ -f $(SYSROOT)/include/linux/input.h ] && echo "yes")
-MODULES   += dtmfio
 endif
 ifeq ($(OS),win32)
 USE_WINWAVE := yes
 MODULES   += wincons
-endif
-ifeq ($(OS),openbsd)
-MODULES   += sndio
-endif
-ifeq ($(OS),freebsd)
-MODULES   += dtmfio
 endif
 
 ifneq ($(USE_GTK),)
@@ -317,9 +312,6 @@ MODULES   += avcodec
 ifneq ($(USE_AVFORMAT),)
 MODULES   += avformat
 endif
-endif
-ifneq ($(USE_AVAHI),)
-MODULES   += avahi
 endif
 ifneq ($(USE_CAIRO),)
 MODULES   += cairo
@@ -426,6 +418,9 @@ MODULES   += speex_pp
 endif
 ifneq ($(USE_STDIO),)
 MODULES   += stdio
+endif
+ifneq ($(USE_SNDIO),)
+MODULES   += sndio
 endif
 ifneq ($(USE_SYSLOG),)
 MODULES   += syslog

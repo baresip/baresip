@@ -63,47 +63,60 @@ out:
 }
 
 
-int aptx_encode_frm(struct auenc_state *aes,
-		    bool *marker, uint8_t *buf, size_t *len,
-                    int fmt, const void *sampv, size_t sampc)
+int aptx_encode_frm(struct auenc_state *aes, bool *marker, uint8_t *buf,
+                    size_t *len, int fmt, const void *sampv, size_t sampc)
 {
 	size_t processed = 0;
 	size_t written = 0;
 
-	const uint8_t *s16 = sampv;
-
 	uint8_t *intermediate_buf;
-	size_t intermediate_len;
+	size_t sampv_len;
+
+	const uint8_t *sampv_buf = sampv;
+
 	(void)marker;
 
 	if (!aes || !buf || !len || !sampv)
 		return EINVAL;
 
-	if (fmt != AUFMT_S16LE)
+	sampv_len = sampc * APTX_WORDSIZE;
+
+	switch (fmt) {
+
+	case AUFMT_S16LE:
+		intermediate_buf = mem_alloc(sampv_len, NULL);
+
+		if (!intermediate_buf)
+			return ENOMEM;
+
+		/* map S16 to S24 intermediate buffer */
+		for (size_t s = 0; s < sampc; s++) {
+			intermediate_buf[s * APTX_WORDSIZE] = 0;
+			intermediate_buf[s * APTX_WORDSIZE + 1] =
+			    sampv_buf[s * 2];
+			intermediate_buf[s * APTX_WORDSIZE + 2] =
+			    sampv_buf[s * 2 + 1];
+		}
+
+		processed = aptx_encode(aes->enc, intermediate_buf, sampv_len,
+		                        buf, *len, &written);
+
+		mem_deref(intermediate_buf);
+		break;
+
+	case AUFMT_S24_3LE:
+		processed = aptx_encode(aes->enc, sampv_buf, sampv_len, buf,
+		                        *len, &written);
+		break;
+
+	default:
 		return ENOTSUP;
-
-	intermediate_len = sampc * APTX_WORDSIZE;
-	intermediate_buf = mem_alloc(intermediate_len, NULL);
-
-	if (!intermediate_buf)
-		return ENOMEM;
-
-	/* map S16 to S24 intermediate buffer */
-	for (size_t s = 0; s < sampc; s++) {
-		intermediate_buf[s * APTX_WORDSIZE] = 0;
-		intermediate_buf[s * APTX_WORDSIZE + 1] = s16[s * 2];
-		intermediate_buf[s * APTX_WORDSIZE + 2] = s16[s * 2 + 1];
 	}
 
-	processed = aptx_encode(aes->enc, intermediate_buf, intermediate_len,
-	                        buf, *len, &written);
-
-	mem_deref(intermediate_buf);
-
-	if (processed != intermediate_len)
+	if (processed != sampv_len)
 		warning("aptx: Encoding stopped in the middle of the sample, "
 		        "dropped %u bytes\n",
-		        (unsigned int)(intermediate_len - processed));
+		        (unsigned int)(sampv_len - processed));
 
 	*len = written;
 

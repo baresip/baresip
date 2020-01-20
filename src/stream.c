@@ -194,7 +194,7 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 		int err;
 
 		if (hdr->x.type != RTPEXT_TYPE_MAGIC) {
-			info("stream: unknown ext type ignored (0x%04x)\n",
+			debug("stream: unknown ext type ignored (0x%04x)\n",
 			     hdr->x.type);
 			goto handler;
 		}
@@ -273,6 +273,9 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		     ", receiving from %J\n",
 		     sdp_media_name(s->sdp), src);
 		s->rtp_estab = true;
+
+		if (s->rtpestabh)
+			s->rtpestabh(s, s->sess_arg);
 	}
 
 	if (!s->pseq_set) {
@@ -417,7 +420,7 @@ int stream_start_mediaenc(struct stream *strm)
 				 strm->rtcp_mux ? NULL : rtcp_sock(strm->rtp),
 				 &strm->raddr_rtp,
 				 strm->rtcp_mux ? NULL : &strm->raddr_rtcp,
-				 strm->sdp);
+					 strm->sdp, strm);
 		if (err) {
 			warning("stream: start mediaenc error: %m\n", err);
 			return err;
@@ -520,7 +523,8 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	}
 
 	/* RFC 5506 */
-	err |= sdp_media_set_lattr(s->sdp, true, "rtcp-rsize", NULL);
+	if (offerer || sdp_media_rattr(s->sdp, "rtcp-rsize"))
+		err |= sdp_media_set_lattr(s->sdp, true, "rtcp-rsize", NULL);
 
 	/* RFC 5576 */
 	err |= sdp_media_set_lattr(s->sdp, true,
@@ -810,11 +814,14 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
  *
  * @param strm      Stream object
  * @param mnatconnh Media NAT connected handler
+ * @param rtpestabh Incoming RTP established handler
+ * @param rtcph     Incoming RTCP message handler
  * @param errorh    Error handler
  * @param arg       Handler argument
  */
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
+				 stream_rtpestab_h *rtpestabh,
 				 stream_rtcp_h *rtcph,
 				 stream_error_h *errorh, void *arg)
 {
@@ -822,6 +829,7 @@ void stream_set_session_handlers(struct stream *strm,
 		return;
 
 	strm->mnatconnh  = mnatconnh;
+	strm->rtpestabh  = rtpestabh;
 	strm->sessrtcph  = rtcph;
 	strm->errorh     = errorh;
 	strm->sess_arg   = arg;
@@ -1047,12 +1055,23 @@ int stream_start(const struct stream *strm)
 
 	rtcp_start(strm->rtp, strm->cname, &strm->raddr_rtcp);
 
-	/* Send a dummy RTCP packet to open NAT pinhole */
-	err = rtcp_send_app(strm->rtp, "PING", (void *)"PONG", 4);
-	if (err) {
-		warning("stream: rtcp_send_app failed (%m)\n", err);
-		return err;
+	if (!strm->mnat) {
+		/* Send a dummy RTCP packet to open NAT pinhole */
+		err = rtcp_send_app(strm->rtp, "PING", (void *)"PONG", 4);
+		if (err) {
+			warning("stream: rtcp_send_app failed (%m)\n", err);
+			return err;
+		}
 	}
 
 	return 0;
+}
+
+
+const char *stream_name(const struct stream *strm)
+{
+	if (!strm)
+		return NULL;
+
+	return media_name(strm->type);
 }

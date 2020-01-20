@@ -18,6 +18,7 @@
 
 struct auplay_st {
 	const struct auplay *ap;      /* inheritance */
+
 	struct dspbuf bufs[WRITE_BUFFERS];
 	int pos;
 	HWAVEOUT waveout;
@@ -68,6 +69,7 @@ static int dsp_write(struct auplay_st *st)
 	if (wh->dwFlags & WHDR_PREPARED) {
 		return EINVAL;
 	}
+
 	mb = st->bufs[st->pos].mb;
 	wh->lpData = (LPSTR)mb->buf;
 
@@ -77,7 +79,6 @@ static int dsp_write(struct auplay_st *st)
 
 	wh->dwBufferLength = mb->size;
 	wh->dwFlags = 0;
-	wh->dwUser = (DWORD_PTR) mb;
 
 	waveOutPrepareHeader(st->waveout, wh, sizeof(*wh));
 
@@ -159,13 +160,15 @@ static int write_stream_open(struct auplay_st *st,
 	for (i = 0; i < WRITE_BUFFERS; i++) {
 		memset(&st->bufs[i].wh, 0, sizeof(WAVEHDR));
 		st->bufs[i].mb = mbuf_alloc(st->sampsz * sampc);
+		if (!st->bufs[i].mb)
+			return ENOMEM;
 	}
 
 	wfmt.wFormatTag      = format;
 	wfmt.nChannels       = prm->ch;
 	wfmt.nSamplesPerSec  = prm->srate;
 	wfmt.wBitsPerSample  = (WORD)(st->sampsz * 8);
-	wfmt.nBlockAlign     = (prm->ch * wfmt.wBitsPerSample) / 8;
+	wfmt.nBlockAlign     = prm->ch * st->sampsz;
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
 
@@ -224,9 +227,8 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		return EINVAL;
 
 	err = find_dev(device, &dev);
-	if (err) {
+	if (err)
 		return err;
-	}
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
@@ -243,7 +245,7 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	/* The write runs at 100ms intervals
 	 * prepare enough buffers to suite its needs
 	 */
-	for (i = 0; i < 5; i++)
+	for (i = 0; i < WRITE_BUFFERS; i++)
 		dsp_write(st);
 
  out:
@@ -266,9 +268,8 @@ static int set_available_devices(struct list *dev_list)
 
 int winwave_player_init(struct auplay *ap)
 {
-	if (!ap) {
+	if (!ap)
 		return EINVAL;
-	}
 
 	list_init(&ap->dev_list);
 

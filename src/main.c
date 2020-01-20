@@ -44,6 +44,14 @@ static void ua_exit_handler(void *arg)
 }
 
 
+static void tmr_quit_handler(void *arg)
+{
+	(void)arg;
+
+	ua_stop_all(false);
+}
+
+
 static void usage(void)
 {
 	(void)re_fprintf(stderr,
@@ -60,7 +68,7 @@ static void usage(void)
 			 "\t-p <path>        Audio files\n"
 			 "\t-h -?            Help\n"
 			 "\t-s               Enable SIP trace\n"
-			 "\t-t               Test and exit\n"
+			 "\t-t <sec>         Quit after <sec> seconds\n"
 			 "\t-n <net_if>      Specify network interface\n"
 			 "\t-u <parameters>  Extra UA parameters\n"
 			 "\t-v               Verbose debug\n"
@@ -70,16 +78,18 @@ static void usage(void)
 
 int main(int argc, char *argv[])
 {
-	int af = AF_UNSPEC, run_daemon = false, test = false;
+	int af = AF_UNSPEC, run_daemon = false;
 	const char *ua_eprm = NULL;
 	const char *execmdv[16];
 	const char *net_interface = NULL;
 	const char *audio_path = NULL;
 	const char *modv[16];
+	struct tmr tmr_quit;
 	bool sip_trace = false;
 	size_t execmdc = 0;
 	size_t modc = 0;
 	size_t i;
+	uint32_t tmo = 0;
 	int err;
 
 	/*
@@ -88,7 +98,7 @@ int main(int argc, char *argv[])
 	setbuf(stdout, NULL);
 
 	(void)re_fprintf(stdout, "baresip v%s"
-			 " Copyright (C) 2010 - 2019"
+			 " Copyright (C) 2010 - 2020"
 			 " Alfred E. Heggestad et al.\n",
 			 BARESIP_VERSION);
 
@@ -98,9 +108,11 @@ int main(int argc, char *argv[])
 	if (err)
 		goto out;
 
+	tmr_init(&tmr_quit);
+
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "46de:f:p:hu:n:vstm:");
+		const int c = getopt(argc, argv, "46de:f:p:hu:n:vst:m:");
 		if (0 > c)
 			break;
 
@@ -158,7 +170,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 't':
-			test = true;
+			tmo = atoi(optarg);
 			break;
 
 		case 'n':
@@ -255,9 +267,6 @@ int main(int argc, char *argv[])
 	if (sip_trace)
 		uag_enable_sip_trace(true);
 
-	if (test)
-		goto out;
-
 	/* Load modules */
 	err = conf_modules();
 	if (err)
@@ -278,10 +287,16 @@ int main(int argc, char *argv[])
 		ui_input_str(execmdv[i]);
 	}
 
+	if (tmo) {
+		tmr_start(&tmr_quit, tmo * 1000, tmr_quit_handler, NULL);
+	}
+
 	/* Main loop */
 	err = re_main(signal_handler);
 
  out:
+	tmr_cancel(&tmr_quit);
+
 	if (err)
 		ua_stop_all(true);
 

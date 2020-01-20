@@ -6,7 +6,7 @@ baresip README
 
 
 Baresip is a portable and modular SIP User-Agent with audio and video support.
-Copyright (c) 2010 - 2019 Creytiv.com
+Copyright (c) 2010 - 2020 Creytiv.com
 Distributed under BSD license
 
 
@@ -64,6 +64,8 @@ Distributed under BSD license
   - EBU ACIP (Audio Contribution over IP) Profile
 
 * Audio-codecs:
+  - AAC
+  - aptX
   - AMR narrowband, AMR wideband
   - Codec2
   - G.711
@@ -223,7 +225,6 @@ aubridge      Audio bridge module
 audiounit     AudioUnit audio driver for MacOSX/iOS
 aufile        Audio module for using a WAV-file as audio input
 auloop        Audio-loop test module
-avahi         Avahi Zeroconf Module
 avcapture     Video source using iOS AVFoundation video capture
 avcodec       Video codec using FFmpeg/libav libavcodec
 avformat      Video source using FFmpeg/libav libavformat
@@ -314,11 +315,11 @@ zrtp          ZRTP media encryption module
 * RFC 3016  RTP Payload Format for MPEG-4 Audio/Visual Streams
 * RFC 3428  SIP Extension for Instant Messaging
 * RFC 3711  The Secure Real-time Transport Protocol (SRTP)
+* RFC 3640  RTP Payload Format for Transport of MPEG-4 Elementary Streams
 * RFC 3856  A Presence Event Package for SIP
 * RFC 3863  Presence Information Data Format (PIDF)
 * RFC 3951  Internet Low Bit Rate Codec (iLBC)
 * RFC 3952  RTP Payload Format for iLBC Speech
-* RFC 3984  RTP Payload Format for H.264 Video
 * RFC 4145  TCP-Based Media Transport in SDP
 * RFC 4240  Basic Network Media Services with SIP (partly)
 * RFC 4347  Datagram Transport Layer Security
@@ -341,6 +342,7 @@ zrtp          ZRTP media encryption module
 * RFC 5761  Multiplexing RTP Data and Control Packets on a Single Port
 * RFC 5763  Framework for Establishing a SRTP Security Context Using DTLS
 * RFC 5764  DTLS Extension to Establish Keys for SRTP
+* RFC 6184  RTP Payload Format for H.264 Video
 * RFC 6263  App. Mechanism for Keeping Alive NAT Associated with RTP / RTCP
 * RFC 6416  RTP Payload Format for MPEG-4 Audio/Visual Streams
 * RFC 6464  A RTP Header Extension for Client-to-Mixer Audio Level Indication

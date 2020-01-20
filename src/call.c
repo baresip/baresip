@@ -336,6 +336,10 @@ static int update_audio(struct call *call)
 
 		err  = audio_decoder_set(call->audio, ac,
 					 sc->pt, sc->params);
+		if (err) {
+			warning("call: update:"
+				" audio_decoder_set error: %m\n", err);
+		}
 		err |= audio_encoder_set(call->audio, ac,
 					 sc->pt, sc->params);
 	}
@@ -500,9 +504,10 @@ static void video_error_handler(int err, const char *str, void *arg)
 
 
 static void menc_event_handler(enum menc_event event,
-			       const char *prm, void *arg)
+			       const char *prm, struct stream *strm, void *arg)
 {
 	struct call *call = arg;
+	(void)strm;
 	MAGIC_CHECK(call);
 
 	debug("call: mediaenc event '%s' (%s)\n", menc_event_name(event), prm);
@@ -576,6 +581,16 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 			break;
 		}
 	}
+}
+
+
+static void stream_rtpestab_handler(struct stream *strm, void *arg)
+{
+	struct call *call = arg;
+	MAGIC_CHECK(call);
+
+	ua_event(call->ua, UA_EVENT_CALL_RTPESTAB, call,
+		 "%s", sdp_media_name(stream_sdpmedia(strm)));
 }
 
 
@@ -790,6 +805,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
 		stream_set_session_handlers(strm, stream_mnatconn_handler,
+					    stream_rtpestab_handler,
 					    stream_rtcp_handler,
 					    stream_error_handler, call);
 	}
@@ -978,6 +994,13 @@ int call_hangup(struct call *call, uint16_t scode, const char *reason)
 }
 
 
+/**
+ * Answer an incoming call with early media
+ *
+ * @param call Call to answer
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_progress(struct call *call)
 {
 	struct mbuf *desc;

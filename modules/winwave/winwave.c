@@ -35,7 +35,6 @@ int winwave_enum_devices(const char *name, struct list *dev_list,
 	int err = 0;
 	unsigned int i, nDevices = winwave_get_num_devs();
 
-
 	if (!dev_list && !dev)
 		return EINVAL;
 
@@ -50,9 +49,8 @@ int winwave_enum_devices(const char *name, struct list *dev_list,
 	for (i=0; i<nDevices; i++) {
 
 		err = winwave_get_dev_name (i, dev_name);
-		if (err) {
+		if (err)
 			break;
-		}
 
 		if (dev) {
 			if (!str_casecmp(name, dev_name)) {

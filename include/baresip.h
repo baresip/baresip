@@ -129,6 +129,7 @@ typedef void (call_dtmf_h)(struct call *call, char key, void *arg);
 
 int  call_connect(struct call *call, const struct pl *paddr);
 int  call_answer(struct call *call, uint16_t scode);
+int  call_progress(struct call *call);
 int  call_hangup(struct call *call, uint16_t scode, const char *reason);
 int  call_modify(struct call *call);
 int  call_hold(struct call *call, bool hold);
@@ -250,6 +251,7 @@ struct config_audio {
 	int play_fmt;           /**< Audio playback sample format   */
 	int enc_fmt;            /**< Audio encoder sample format    */
 	int dec_fmt;            /**< Audio decoder sample format    */
+	struct range buffer;    /**< Audio receive buffer in [ms]   */
 };
 
 /** Video */
@@ -580,7 +582,8 @@ enum menc_event {
 };
 
 
-typedef void (menc_event_h)(enum menc_event event, const char *prm, void *arg);
+typedef void (menc_event_h)(enum menc_event event, const char *prm,
+			    struct stream *strm, void *arg);
 
 typedef void (menc_error_h)(int err, void *arg);
 
@@ -593,7 +596,8 @@ typedef int  (menc_media_h)(struct menc_media **mp, struct menc_sess *sess,
 			   struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
 			   const struct sa *raddr_rtp,
 			   const struct sa *raddr_rtcp,
-			   struct sdp_media *sdpm);
+			   struct sdp_media *sdpm,
+			   const struct stream *strm);
 
 struct menc {
 	struct le le;
@@ -621,7 +625,7 @@ typedef void (net_change_h)(void *arg);
 int  net_alloc(struct network **netp, const struct config_net *cfg);
 int  net_use_nameserver(struct network *net,
 			const struct sa *srvv, size_t srvc);
-void net_set_address(struct network *net, const struct sa *ip);
+int  net_set_address(struct network *net, const struct sa *ip);
 void net_change(struct network *net, uint32_t interval,
 		net_change_h *ch, void *arg);
 void net_force_change(struct network *net);
@@ -676,6 +680,7 @@ enum ua_event {
 	UA_EVENT_CALL_TRANSFER_FAILED,
 	UA_EVENT_CALL_DTMF_START,
 	UA_EVENT_CALL_DTMF_END,
+	UA_EVENT_CALL_RTPESTAB,
 	UA_EVENT_CALL_RTCP,
 	UA_EVENT_CALL_MENC,
 	UA_EVENT_VU_TX,
@@ -706,7 +711,6 @@ int  ua_connect(struct ua *ua, struct call **callp,
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason);
 int  ua_answer(struct ua *ua, struct call *call);
-int  ua_progress(struct ua *ua, struct call *call);
 int  ua_hold_answer(struct ua *ua, struct call *call);
 int  ua_options_send(struct ua *ua, const char *uri,
 		     options_resp_h *resph, void *arg);
@@ -1172,7 +1176,21 @@ const struct aucodec *audio_codec(const struct audio *au, bool tx);
 
 struct video;
 
-void  video_mute(struct video *v, bool muted);
+typedef void (video_err_h)(int err, const char *str, void *arg);
+
+int  video_alloc(struct video **vp, struct list *streaml,
+		 const struct stream_param *stream_prm,
+		 const struct config *cfg,
+		 struct sdp_session *sdp_sess, int label,
+		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
+		 const struct menc *menc, struct menc_sess *menc_sess,
+		 const char *content, const struct list *vidcodecl,
+		 const struct list *vidfiltl, bool offerer,
+		 video_err_h *errh, void *arg);
+int  video_encoder_set(struct video *v, struct vidcodec *vc,
+		       int pt_tx, const char *params);
+int  video_start(struct video *v, const char *peer);
+void video_stop(struct video *v);
 int   video_set_fullscreen(struct video *v, bool fs);
 void  video_vidsrc_set_device(struct video *v, const char *dev);
 int   video_set_source(struct video *v, const char *name, const char *dev);
@@ -1198,6 +1216,7 @@ struct stream_param {
 };
 
 typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
+typedef void (stream_rtpestab_h)(struct stream *strm, void *arg);
 typedef void (stream_rtcp_h)(struct stream *strm,
 			     struct rtcp_msg *msg, void *arg);
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
@@ -1217,8 +1236,10 @@ int  stream_start_mediaenc(struct stream *strm);
 int  stream_start(const struct stream *strm);
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
+				 stream_rtpestab_h *rtpestabh,
 				 stream_rtcp_h *rtcph,
 				 stream_error_h *errorh, void *arg);
+const char *stream_name(const struct stream *strm);
 
 
 /*
