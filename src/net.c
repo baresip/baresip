@@ -491,24 +491,30 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
  *
  * @param net  Network instance
  * @param ip   IP address
+ *
+ * @return 0 if success, otherwise errorcode
  */
-void net_set_address(struct network *net, const struct sa *ip)
+int net_set_address(struct network *net, const struct sa *ip)
 {
 	if (!net)
-		return;
+		return EINVAL;
 
 	switch (sa_af(ip)) {
 
 	case AF_INET:
 		sa_cpy(&net->laddr, ip);
-		return;
+		break;
 
 #ifdef HAVE_INET6
 	case AF_INET6:
 		sa_cpy(&net->laddr6, ip);
-		return;
+		break;
 #endif
+	default:
+		return EAFNOSUPPORT;
 	}
+
+	return 0;
 }
 
 
