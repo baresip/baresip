@@ -76,7 +76,7 @@ static struct config core_config = {
 
 	/* Network */
 	{
-		false,
+		AF_UNSPEC,
 		"",
 		{ {""} },
 		0
