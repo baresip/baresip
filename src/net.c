@@ -529,14 +529,13 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
  *
  * @param net  Network instance
  * @param ip   IP address
+ *
+ * @return 0 if success, otherwise errorcode
  */
 int net_set_address(struct network *net, const struct sa *ip)
 {
-	if (!net || !ip)
+	if (!net)
 		return EINVAL;
-
-	if (!net_af_supported(net, sa_af(ip)))
-		return EAFNOSUPPORT;
 
 	switch (sa_af(ip)) {
 
