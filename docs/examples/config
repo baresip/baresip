@@ -5,55 +5,60 @@
 #------------------------------------------------------------------------------
 
 # Core
-poll_method		epoll		# poll, select, epoll ..
+poll_method		    epoll	# poll, select, epoll ..
 
 # SIP
-#sip_listen		0.0.0.0:5060
+#sip_listen		    0.0.0.0:5060
 #sip_certificate	cert.pem
-#sip_cafile		ca.crt
+#sip_cafile		    ca.crt
 
 # Call
 call_local_timeout	120
 call_max_calls		4
 
 # Audio
-#audio_path		/usr/local/share/baresip
+audio_buffer        200     # ms
+#audio_path		    /usr/local/share/baresip
 audio_player		alsa,default
 audio_source		alsa,default
-audio_alert		alsa,default
+audio_alert		    alsa,default
 #ausrc_srate		48000
 #auplay_srate		48000
 #ausrc_channels		0
 #auplay_channels	0
-#audio_txmode		poll		# poll, thread
-audio_level		no
-ausrc_format		s16		# s16, float, ..
-auplay_format		s16		# s16, float, ..
-auenc_format		s16		# s16, float, ..
-audec_format		s16		# s16, float, ..
+#audio_txmode		poll	# poll, thread
+audio_level		    no
+ausrc_format		s16		# s16, s24_3le, float
+auplay_format		s16		# s16, s24_3le, float
+auenc_format		s16		# s16, s24_3le, float
+audec_format		s16		# s16, s24_3le, float
+
+# EBU ACIP
+#sdp_ebuacip         yes     # enable EBU ACIP parameters in SDP
+#ebuacip_jb_type     fixed   # auto,fixed
 
 # Video
 #video_source		v4l2,/dev/video0
 #video_display		x11,nil
-video_size		352x288
+video_size		    352x288
 video_bitrate		512000
-video_fps		25.00
+video_fps		    25.00
 video_fullscreen	no
 videnc_format		yuv420p
 
 # AVT - Audio/Video Transport
-rtp_tos			184
-#rtp_ports		10000-20000
+rtp_tos			    184
+#rtp_ports		    10000-20000
 #rtp_bandwidth		512-1024 # [kbit/s]
-rtcp_mux		no
+rtcp_mux		    no
 jitter_buffer_delay	5-10		# frames
 rtp_stats		no
 #rtp_timeout		60
 
 # Network
 net_prefer_ipv6		no
-#dns_server		1.1.1.1:53
-#dns_server		1.0.0.1:53
+#dns_server		    1.1.1.1:53
+#dns_server		    1.0.0.1:53
 #net_interface		wlan1
 
 #------------------------------------------------------------------------------
@@ -153,9 +158,9 @@ module_app		vidloop.so
 
 
 # UI Modules parameters
-cons_listen		0.0.0.0:5555 # cons - Console UI UDP/TCP sockets
+cons_listen		    0.0.0.0:5555 # cons - Console UI UDP/TCP sockets
 
-http_listen		0.0.0.0:8000 # httpd - HTTP Server
+http_listen		    0.0.0.0:8000 # httpd - HTTP Server
 
 ctrl_tcp_listen		0.0.0.0:4444 # ctrl_tcp - TCP interface JSON
 
@@ -165,14 +170,14 @@ evdev_device		/dev/input/event0
 opus_bitrate		28000 # 6000-510000
 #opus_stereo		yes
 #opus_sprop_stereo	yes
-#opus_cbr		no
+#opus_cbr		    no
 #opus_inbandfec		no
-#opus_dtx		no
+#opus_dtx		    no
 #opus_mirror		no
 #opus_complexity	10
 #opus_application	audio	# {voip,audio}
 #opus_samplerate	48000
-#opus_packet_loss	10	# 0-100 percent
+#opus_packet_loss	10	# 0-100 (expected packet loss)
 
 #jack_connect_ports	yes
 
@@ -181,15 +186,15 @@ video_selfview		window # {window,pip}
 #selfview_size		64x64
 
 # ICE
-ice_turn		no
-ice_debug		no
+ice_turn		    no
+ice_debug		    no
 ice_nomination		regular	# {regular,aggressive}
 
 # ZRTP
-#zrtp_hash		no  # Disable SDP zrtp-hash (not recommended)
+#zrtp_hash		    no  # Disable SDP zrtp-hash (not recommended)
 
 # Menu
-#menu_bell		yes
+#menu_bell		    yes
 #redial_attempts	0 # Num or <inf>
 #redial_delay		5 # Delay in seconds
 #ringback_disabled	no
@@ -211,4 +216,4 @@ ice_nomination		regular	# {regular,aggressive}
 #mqtt_basetopic		baresip/01 # May be uniqe for each client you want to control. Defaults to "baresip"
 
 # sndfile
-#snd_path		/tmp
+#snd_path		    /tmp
