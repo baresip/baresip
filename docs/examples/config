@@ -17,6 +17,7 @@ call_local_timeout	120
 call_max_calls		4
 
 # Audio
+audio_buffer        	200     	# ms
 #audio_path		/usr/local/share/baresip
 audio_player		alsa,default
 audio_source		alsa,default
@@ -31,6 +32,10 @@ ausrc_format		s16		# s16, float, ..
 auplay_format		s16		# s16, float, ..
 auenc_format		s16		# s16, float, ..
 audec_format		s16		# s16, float, ..
+
+# EBU ACIP
+#sdp_ebuacip         	yes     # enable EBU ACIP parameters in SDP
+#ebuacip_jb_type     	fixed   # auto,fixed
 
 # Video
 #video_source		v4l2,/dev/video0
@@ -172,7 +177,7 @@ opus_bitrate		28000 # 6000-510000
 #opus_complexity	10
 #opus_application	audio	# {voip,audio}
 #opus_samplerate	48000
-#opus_packet_loss	10	# 0-100 percent
+#opus_packet_loss	10	# 0-100 percent (expected packet loss)
 
 #jack_connect_ports	yes
 
