@@ -325,7 +325,7 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	if (!netp || !cfg)
 		return EINVAL;
 
-	re_printf(".... cfg net:  af = %d\n", cfg->af);
+	re_printf(".... cfg net:  af = %s\n", net_af2name(cfg->af));
 
 	/*
 	 * baresip/libre must be built with matching HAVE_INET6 value.
