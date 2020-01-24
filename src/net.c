@@ -222,17 +222,22 @@ bool net_check(struct network *net)
 
 	if (str_isset(net->cfg.ifname)) {
 
-		(void)net_if_getaddr(net->cfg.ifname, AF_INET, &net->laddr);
+		if (net_af_enabled(net, AF_INET))
+			net_if_getaddr(net->cfg.ifname, AF_INET, &net->laddr);
 
 #ifdef HAVE_INET6
-		(void)net_if_getaddr(net->cfg.ifname, AF_INET6, &net->laddr6);
+		if (net_af_enabled(net, AF_INET6))
+			net_if_getaddr(net->cfg.ifname, AF_INET6,
+				       &net->laddr6);
 #endif
 	}
 	else {
-		net_default_source_addr_get(AF_INET, &net->laddr);
+		if (net_af_enabled(net, AF_INET))
+			net_default_source_addr_get(AF_INET, &net->laddr);
 
 #ifdef HAVE_INET6
-		net_default_source_addr_get(AF_INET6, &net->laddr6);
+		if (net_af_enabled(net, AF_INET6))
+			net_default_source_addr_get(AF_INET6, &net->laddr6);
 #endif
 	}
 
@@ -251,8 +256,33 @@ bool net_check(struct network *net)
 		     &laddr6, &net->laddr6);
 	}
 #endif
+	debug("net: check for IP changes: change=%d\n", change);
 
 	return change;
+}
+
+
+/**
+ * Check if address family is enabled
+ *
+ * @param net Network instance
+ * @param af  AF_INET or AF_INET6
+ *
+ * @return True if enabled, false if disabled
+ */
+bool net_af_enabled(const struct network *net, int af)
+{
+	if (!net || af == AF_UNSPEC)
+		return false;
+
+	switch (net->cfg.af) {
+
+	case AF_UNSPEC:
+		return true;
+
+	default:
+		return af == net->cfg.af;
+	}
 }
 
 
@@ -391,22 +421,32 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 			goto print_network_data;
 		}
 
-		err = net_if_getaddr(cfg->ifname, AF_INET, &net->laddr);
-		if (err) {
-			info("net: %s: could not get IPv4 address (%m)\n",
-			     cfg->ifname, err);
+		if (net_af_enabled(net, AF_INET)) {
+
+			err = net_if_getaddr(cfg->ifname, AF_INET,
+					     &net->laddr);
+			if (err) {
+				info("net: %s: could not get IPv4 address"
+				     " (%m)\n",
+				     cfg->ifname, err);
+			}
+			else
+				got_it = true;
 		}
-		else
-			got_it = true;
 
 #ifdef HAVE_INET6
-		err = net_if_getaddr(cfg->ifname, AF_INET6, &net->laddr6);
-		if (err) {
-			info("net: %s: could not get IPv6 address (%m)\n",
-			     cfg->ifname, err);
+		if (net_af_enabled(net, AF_INET6)) {
+
+			err = net_if_getaddr(cfg->ifname, AF_INET6,
+					     &net->laddr6);
+			if (err) {
+				info("net: %s: could not get IPv6 address"
+				     " (%m)\n",
+				     cfg->ifname, err);
+			}
+			else
+				got_it = true;
 		}
-		else
-			got_it = true;
 #endif
 		if (got_it)
 			err = 0;
@@ -418,12 +458,14 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		}
 	}
 	else {
-		(void)net_default_source_addr_get(AF_INET, &net->laddr);
+		if (net_af_enabled(net, AF_INET))
+			net_default_source_addr_get(AF_INET, &net->laddr);
 
 #ifdef HAVE_INET6
 		sa_init(&net->laddr6, AF_INET6);
 
-		(void)net_default_source_addr_get(AF_INET6, &net->laddr6);
+		if (net_af_enabled(net, AF_INET6))
+			net_default_source_addr_get(AF_INET6, &net->laddr6);
 #endif
 	}
 
@@ -612,9 +654,9 @@ static bool if_debug_handler(const char *ifname, const struct sa *sa,
 	struct re_printf *pf = argv[0];
 	struct network *net = argv[1];
 	int err = 0;
-	(void)net;
 
-	err = re_hprintf(pf, " %10s:  %j\n", ifname, sa);
+	if (net_af_enabled(net, sa_af(sa)))
+		err = re_hprintf(pf, " %10s:  %j\n", ifname, sa);
 
 	return err != 0;
 }
@@ -693,9 +735,13 @@ int net_debug(struct re_printf *pf, const struct network *net)
 		return 0;
 
 	err  = re_hprintf(pf, "--- Network debug ---\n");
-	err |= re_hprintf(pf, " Local IPv4:  %H\n", print_addr, &net->laddr);
+	err |= re_hprintf(pf, " Local IPv4:  [%s] %H\n",
+			  net_af_enabled(net, AF_INET) ? "E" : ".",
+			  print_addr, &net->laddr);
 #ifdef HAVE_INET6
-	err |= re_hprintf(pf, " Local IPv6:  %H\n", print_addr, &net->laddr6);
+	err |= re_hprintf(pf, " Local IPv6:  [%s] %H\n",
+			  net_af_enabled(net, AF_INET6) ? "E" : ".",
+			  print_addr, &net->laddr6);
 #endif
 	err |= re_hprintf(pf, " Domain: %s\n", net->domain);
 

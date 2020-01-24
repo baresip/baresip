@@ -32,6 +32,9 @@ int test_network(void)
 	TEST_ERR(err);
 	ASSERT_TRUE(net != NULL);
 
+	ASSERT_TRUE( net_af_enabled(net, AF_INET));
+	ASSERT_TRUE(!net_af_enabled(net, AF_INET6));
+
 	net_change(net, 1, net_change_handler, &change_count);
 
 	ASSERT_EQ(0, change_count);
