@@ -435,7 +435,7 @@ static int best_effort_af(const struct network *net)
 	for (i=0; i<ARRAY_SIZE(afv); i++) {
 		int af = afv[i];
 
-		if (net_af_supported(net, af) &&
+		if (net_af_enabled(net, af) &&
 		    sa_isset(net_laddr_af(net, af), SA_ADDR))
 			return af;
 	}
@@ -497,7 +497,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		info("ua: using AF from sdp offer: af=%s\n",
 		     net_af2name(af_sdp));
 
-		if (!net_af_supported(baresip_network(), af_sdp)) {
+		if (!net_af_enabled(baresip_network(), af_sdp)) {
 			warning("ua: SDP offer AF not supported (%s)\n",
 				net_af2name(af_sdp));
 		}
@@ -1320,7 +1320,7 @@ static int ua_add_transp(struct network *net)
 {
 	int err = 0;
 
-	if (net_af_supported(net, AF_INET)) {
+	if (net_af_enabled(net, AF_INET)) {
 
 		if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
 			err |= add_transp_af(net_laddr_af(net, AF_INET));

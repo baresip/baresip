@@ -430,7 +430,7 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 	if (sa_is_loopback(sa) || sa_is_linklocal(sa))
 		return false;
 
-	if (!net_af_supported(baresip_network(), sa_af(sa)))
+	if (!net_af_enabled(baresip_network(), sa_af(sa)))
 		return false;
 
 	lprio = is_cellular(sa) ? 0 : 10;
