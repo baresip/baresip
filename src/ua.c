@@ -26,7 +26,6 @@ struct ua {
 	size_t    extensionc;        /**< Number of SIP extensions           */
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
-	int af;                      /**< Preferred Address Family           */
 	int af_media;                /**< Preferred Address Family for media */
 	enum presence_status my_status; /**< Presence Status                 */
 	bool catchall;               /**< Catch all inbound requests         */
@@ -727,7 +726,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 	list_init(&ua->calls);
 
-	ua->af   = AF_INET;
+	ua->af_media = AF_UNSPEC;
 
 	/* Decode SIP address */
 	if (uag.eprm) {
