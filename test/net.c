@@ -32,8 +32,6 @@ int test_network(void)
 	TEST_ERR(err);
 	ASSERT_TRUE(net != NULL);
 
-	ASSERT_EQ(AF_INET, net_af(net));
-
 	net_change(net, 1, net_change_handler, &change_count);
 
 	ASSERT_EQ(0, change_count);

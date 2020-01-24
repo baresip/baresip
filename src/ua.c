@@ -675,7 +675,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 	list_init(&ua->calls);
 
-	ua->af   = net_af(baresip_network());
+	ua->af   = AF_INET;
 
 	/* Decode SIP address */
 	if (uag.eprm) {
@@ -1271,11 +1271,8 @@ static int ua_add_transp(struct network *net)
 {
 	int err = 0;
 
-	if (net_af(net) == AF_INET) {
-
-		if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
-			err |= add_transp_af(net_laddr_af(net, AF_INET));
-	}
+	if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
+		err |= add_transp_af(net_laddr_af(net, AF_INET));
 
 #if HAVE_INET6
 	if (sa_isset(net_laddr_af(net, AF_INET6), SA_ADDR))
