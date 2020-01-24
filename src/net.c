@@ -650,11 +650,12 @@ static bool if_debug_handler(const char *ifname, const struct sa *sa,
 	void **argv = arg;
 	struct re_printf *pf = argv[0];
 	struct network *net = argv[1];
+	int err = 0;
 
 	if (net_af_supported(net, sa_af(sa)))
-		re_hprintf(pf, " %10s:  %j\n", ifname, sa);
+		err = re_hprintf(pf, " %10s:  %j\n", ifname, sa);
 
-	return false;
+	return err != 0;
 }
 
 
