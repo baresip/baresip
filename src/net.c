@@ -623,6 +623,21 @@ int net_set_af(struct network *net, int af)
 }
 
 
+static bool if_debug_handler(const char *ifname, const struct sa *sa,
+			     void *arg)
+{
+	void **argv = arg;
+	struct re_printf *pf = argv[0];
+	struct network *net = argv[1];
+	int err = 0;
+	(void)net;
+
+	err = re_hprintf(pf, " %10s:  %j\n", ifname, sa);
+
+	return err != 0;
+}
+
+
 /**
  * Get the local IP Address for a specific Address Family (AF)
  *
@@ -689,6 +704,7 @@ const char *net_domain(const struct network *net)
  */
 int net_debug(struct re_printf *pf, const struct network *net)
 {
+	void *argv[2] = {pf, (void *)net};
 	int err;
 
 	if (!net)
@@ -702,9 +718,8 @@ int net_debug(struct re_printf *pf, const struct network *net)
 #endif
 	err |= re_hprintf(pf, " Domain: %s\n", net->domain);
 
-	err |= net_if_debug(pf, NULL);
-
-	err |= net_rt_debug(pf, NULL);
+	err |= re_hprintf(pf, "net interfaces:\n");
+	err |= net_if_apply(if_debug_handler, argv);
 
 	err |= net_dns_debug(pf, net);
 
