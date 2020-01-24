@@ -26,6 +26,7 @@ struct ua {
 	size_t    extensionc;        /**< Number of SIP extensions           */
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
+	int af;                      /**< Preferred Address Family           */
 	int af_media;                /**< Preferred Address Family for media */
 	enum presence_status my_status; /**< Presence Status                 */
 	bool catchall;               /**< Catch all inbound requests         */
@@ -726,6 +727,8 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 	list_init(&ua->calls);
 
+	ua->af   = AF_INET;
+
 	/* Decode SIP address */
 	if (uag.eprm) {
 		err = re_sdprintf(&buf, "%s;%s", aor, uag.eprm);
@@ -1320,11 +1323,8 @@ static int ua_add_transp(struct network *net)
 {
 	int err = 0;
 
-	if (net_af_enabled(net, AF_INET)) {
-
-		if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
-			err |= add_transp_af(net_laddr_af(net, AF_INET));
-	}
+	if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
+		err |= add_transp_af(net_laddr_af(net, AF_INET));
 
 #if HAVE_INET6
 	if (sa_isset(net_laddr_af(net, AF_INET6), SA_ADDR))

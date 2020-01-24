@@ -324,9 +324,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	/* Network */
 #if HAVE_INET6
-	(void)conf_get_bool(conf, "net_prefer_ipv6", &prefer_ipv6);
-	if (prefer_ipv6)
-		cfg->net.af = AF_INET6;
+	if (0 == conf_get_bool(conf, "net_prefer_ipv6", &prefer_ipv6))
+		info("config: net_prefer_ipv6 ignored\n");
 #endif
 	(void)conf_apply(conf, "dns_server", dns_server_handler, &cfg->net);
 	(void)conf_get_str(conf, "net_interface",
@@ -395,7 +394,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtp_timeout\t\t%u # in seconds\n"
 			 "\n"
 			 "# Network\n"
-			 "net_prefer_ipv6\t\t%s\n"
 			 "net_interface\t\t%s\n"
 			 "\n"
 			 ,
@@ -428,7 +426,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 
-			 cfg->net.af == AF_INET6 ? "yes" : "no",
 			 cfg->net.ifname
 		   );
 
@@ -603,7 +600,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
 			  "\n# Network\n"
-			  "net_prefer_ipv6\t\tno\n"
 			  "#dns_server\t\t1.1.1.1:53\n"
 			  "#dns_server\t\t1.0.0.1:53\n"
 			  "#net_interface\t\t%H\n",

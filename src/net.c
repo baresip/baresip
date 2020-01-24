@@ -625,10 +625,10 @@ int net_dns_debug(struct re_printf *pf, const struct network *net)
 
 
 /**
- * Set the preferred address family (AF)
+ * Set the enabled address family (AF)
  *
  * @param net Network instance
- * @param af  Preferred address family
+ * @param af  Enabled address family
  *
  * @return 0 if success, otherwise errorcode
  */
