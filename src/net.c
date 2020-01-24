@@ -262,12 +262,17 @@ bool net_check(struct network *net)
 }
 
 
-/*
- * @param af AF_UNSPEC or AF_INET or AF_INET6
+/**
+ * Check if address family is enabled
+ *
+ * @param net Network instance
+ * @param af  AF_INET or AF_INET6
+ *
+ * @return True if enabled, false if disabled
  */
 bool net_af_enabled(const struct network *net, int af)
 {
-	if (!net)
+	if (!net || af == AF_UNSPEC)
 		return false;
 
 	switch (net->cfg.af) {
@@ -324,8 +329,6 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 
 	if (!netp || !cfg)
 		return EINVAL;
-
-	re_printf(".... cfg net:  af = %s\n", net_af2name(cfg->af));
 
 	/*
 	 * baresip/libre must be built with matching HAVE_INET6 value.
