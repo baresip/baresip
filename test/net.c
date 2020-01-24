@@ -9,7 +9,9 @@
 #include "test.h"
 
 
-static struct config_net default_config;
+static struct config_net default_config = {
+	.af = AF_INET
+};
 
 
 static void net_change_handler(void *arg)
