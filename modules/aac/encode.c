@@ -225,12 +225,10 @@ int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		      "\tSBR_RATIO=%u\n"
 		      "\tAFTERBURNER=%u\n"
 		      "\tBANDWIDTH=%u\n"
-		      "\tPEAK_BITRATE=%u\n"
 		      "\tTRANSMUX=%u\n"
 		      "\tHEADER PERIOD=%u\n"
 		      "\tSIGNALING_MODE=%u\n"
 		      "\tTPSUBFRAMES=%u\n"
-		      "\tAUDIOMUXVER=%u\n"
 		      "\tPROTECTION=%u\n"
 		      "\tANCILLARY_BITRATE=%u\n"
 		      "\tMETADATA_MODE=%u\n",
@@ -245,12 +243,10 @@ int aac_encode_update(struct auenc_state **aesp, const struct aucodec *ac,
 		      aacEncoder_GetParam(aes->enc, AACENC_SBR_RATIO),
 		      aacEncoder_GetParam(aes->enc, AACENC_AFTERBURNER),
 		      aacEncoder_GetParam(aes->enc, AACENC_BANDWIDTH),
-		      aacEncoder_GetParam(aes->enc, AACENC_PEAK_BITRATE),
 		      aacEncoder_GetParam(aes->enc, AACENC_TRANSMUX),
 		      aacEncoder_GetParam(aes->enc, AACENC_HEADER_PERIOD),
 		      aacEncoder_GetParam(aes->enc, AACENC_SIGNALING_MODE),
 		      aacEncoder_GetParam(aes->enc, AACENC_TPSUBFRAMES),
-		      aacEncoder_GetParam(aes->enc, AACENC_AUDIOMUXVER),
 		      aacEncoder_GetParam(aes->enc, AACENC_PROTECTION),
 		      aacEncoder_GetParam(aes->enc, AACENC_ANCILLARY_BITRATE),
 		      aacEncoder_GetParam(aes->enc, AACENC_METADATA_MODE));
