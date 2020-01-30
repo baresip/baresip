@@ -64,7 +64,7 @@ static void *play_thread(void *arg)
 	struct ausrc_st *st = arg;
 	int16_t *sampv;
 
-	sampv = mem_alloc(st->sampc * 2, NULL);
+	sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
 	if (!sampv)
 		return NULL;
 
@@ -106,7 +106,7 @@ static void timeout(void *arg)
 	tmr_start(&st->tmr, 1000, timeout, st);
 
 	/* check if audio buffer is empty */
-	if (aubuf_cur_size(st->aubuf) < (2 * st->sampc)) {
+	if (aubuf_cur_size(st->aubuf) < (sizeof(int16_t) * st->sampc)) {
 
 		info("aufile: end of file\n");
 
@@ -143,7 +143,7 @@ static int read_file(struct ausrc_st *st)
 
 		/* convert from Little-Endian to Native-Endian */
 		sampv = (void *)mb->buf;
-		for (i=0; i<mb->end/2; i++) {
+		for (i=0; i<mb->end/sizeof(int16_t); i++) {
 			sampv[i] = sys_ltohs(sampv[i]);
 		}
 
@@ -220,14 +220,12 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->ptime = prm->ptime;
 
-	info("aufile: audio ptime=%u sampc=%zu aubuf=[%u:%u]\n",
-	     st->ptime, st->sampc,
-	     prm->srate * prm->ch * 2,
-	     prm->srate * prm->ch * 40);
+	info("aufile: audio ptime=%u sampc=%zu\n",
+	     st->ptime, st->sampc);
 
 	/* 1 - inf seconds of audio */
 	err = aubuf_alloc(&st->aubuf,
-			  prm->srate * prm->ch * 2,
+			  st->sampc * 2,
 			  0);
 	if (err)
 		goto out;
