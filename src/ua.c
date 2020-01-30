@@ -491,28 +491,24 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (!callp || !ua)
 		return EINVAL;
 
-	if (msg) {
-		af_sdp = sdp_af_hint(msg->mb);
-
+	if (msg && (af_sdp = sdp_af_hint(msg->mb))) {
 		info("ua: using AF from sdp offer: af=%s\n",
 		     net_af2name(af_sdp));
-
-		if (!net_af_enabled(baresip_network(), af_sdp)) {
+		if (!net_af_enabled(net, af_sdp)) {
 			warning("ua: SDP offer AF not supported (%s)\n",
 				net_af2name(af_sdp));
 		}
-	}
-
-	/* 1. if AF_MEDIA is set, we prefer it
-	 * 2. otherwise fall back to SIP AF
-	 */
-	if (ua->af_media) {
+		else if (!sa_isset(net_laddr_af(net, af_sdp), SA_ADDR)) {
+			warning("ua: SDP offer AF not available (%s)\n",
+				net_af2name(af_sdp));
+		}
+		else {
+			af = af_sdp;
+		}
+	} else if (ua->af_media &&
+		   sa_isset(net_laddr_af(net, ua->af_media), SA_ADDR)) {
 		af = ua->af_media;
-	}
-	else if (af_sdp) {
-		af = af_sdp;
-	}
-	else
+	} else
 		af = best_effort_af(net);
 
 	memset(&cprm, 0, sizeof(cprm));
