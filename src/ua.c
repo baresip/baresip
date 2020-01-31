@@ -505,10 +505,12 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		else {
 			af = af_sdp;
 		}
-	} else if (ua->af_media &&
+	}
+	else if (ua->af_media &&
 		   sa_isset(net_laddr_af(net, ua->af_media), SA_ADDR)) {
 		af = ua->af_media;
-	} else
+	}
+	else
 		af = best_effort_af(net);
 
 	memset(&cprm, 0, sizeof(cprm));
