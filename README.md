@@ -342,6 +342,7 @@ zrtp          ZRTP media encryption module
 * RFC 5761  Multiplexing RTP Data and Control Packets on a Single Port
 * RFC 5763  Framework for Establishing a SRTP Security Context Using DTLS
 * RFC 5764  DTLS Extension to Establish Keys for SRTP
+* RFC 6157  IPv6 Transition in SIP
 * RFC 6184  RTP Payload Format for H.264 Video
 * RFC 6263  App. Mechanism for Keeping Alive NAT Associated with RTP / RTCP
 * RFC 6416  RTP Payload Format for MPEG-4 Audio/Visual Streams
