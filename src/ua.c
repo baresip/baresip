@@ -484,8 +484,8 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 {
 	const struct network *net = baresip_network();
 	struct call_prm cprm;
-	int af = AF_UNSPEC;
-	int af_sdp = AF_UNSPEC;
+	int af;
+	int af_sdp;
 	int err;
 
 	if (!callp || !ua)
@@ -494,17 +494,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (msg && (af_sdp = sdp_af_hint(msg->mb))) {
 		info("ua: using AF from sdp offer: af=%s\n",
 		     net_af2name(af_sdp));
-		if (!net_af_enabled(net, af_sdp)) {
-			warning("ua: SDP offer AF not supported (%s)\n",
-				net_af2name(af_sdp));
-		}
-		else if (!sa_isset(net_laddr_af(net, af_sdp), SA_ADDR)) {
-			warning("ua: SDP offer AF not available (%s)\n",
-				net_af2name(af_sdp));
-		}
-		else {
-			af = af_sdp;
-		}
+		af = af_sdp;
 	}
 	else if (ua->af_media &&
 		   sa_isset(net_laddr_af(net, ua->af_media), SA_ADDR)) {
@@ -1356,7 +1346,9 @@ static bool require_handler(const struct sip_hdr *hdr,
 static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 {
 	struct config *config = conf_config();
+	const struct network *net = baresip_network();
 	const struct sip_hdr *hdr;
+	int af_sdp;
 	struct ua *ua;
 	struct call *call = NULL;
 	char to_uri[256];
@@ -1400,6 +1392,25 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 				  "Content-Length: 0\r\n\r\n",
 				  &hdr->val);
 		return;
+	}
+
+	/* Check if offered media AF is supported and available */
+	af_sdp = sdp_af_hint(msg->mb);
+	if (af_sdp) {
+		if (!net_af_enabled(net, af_sdp)) {
+			warning("ua: SDP offer AF not supported (%s)\n",
+				net_af2name(af_sdp));
+			af_sdp = 0;
+		} else if (!sa_isset(net_laddr_af(net, af_sdp), SA_ADDR)) {
+			warning("ua: SDP offer AF not available (%s)\n",
+				net_af2name(af_sdp));
+			af_sdp = 0;
+		}
+		if (!af_sdp) {
+			(void)sip_treply(NULL, uag_sip(), msg, 488,
+					 "Not Acceptable Here");
+			return;
+		}
 	}
 
 	(void)pl_strcpy(&msg->to.auri, to_uri, sizeof(to_uri));
