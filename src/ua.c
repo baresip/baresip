@@ -1401,7 +1401,8 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 			warning("ua: SDP offer AF not supported (%s)\n",
 				net_af2name(af_sdp));
 			af_sdp = 0;
-		} else if (!sa_isset(net_laddr_af(net, af_sdp), SA_ADDR)) {
+		}
+		else if (!sa_isset(net_laddr_af(net, af_sdp), SA_ADDR)) {
 			warning("ua: SDP offer AF not available (%s)\n",
 				net_af2name(af_sdp));
 			af_sdp = 0;
