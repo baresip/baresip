@@ -1286,11 +1286,12 @@ void video_vidsrc_set_device(struct video *v, const char *dev)
 }
 
 
-static bool sdprattr_contains(struct stream *s, const char *name,
-			      const char *str)
+static bool nack_handler(const char *name, const char *value, void *arg)
 {
-	const char *attr = sdp_media_rattr(stream_sdpmedia(s), name);
-	return attr ? (NULL != strstr(attr, str)) : false;
+	(void)name;
+	(void)arg;
+
+	return NULL != strcasestr(value, "nack");
 }
 
 
@@ -1300,7 +1301,8 @@ void video_sdp_attr_decode(struct video *v)
 		return;
 
 	/* RFC 4585 */
-	v->nack_pli = sdprattr_contains(v->strm, "rtcp-fb", "nack");
+	if (sdp_media_rattr_apply(v->strm->sdp, "rtcp-fb", nack_handler, 0))
+		v->nack_pli = true;
 }
 
 
