@@ -120,8 +120,6 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 		n_bindings = sip_msg_hdr_count(msg, SIP_HDR_CONTACT);
 		reg->af    = sipmsg_af(msg);
 
-		ua_set_media_af(reg->ua, reg->af);
-
 		if (msg->scode != reg->scode) {
 			ua_printf(reg->ua, "{%d/%s/%s} %u %r (%s)"
 				  " [%u binding%s]\n",
@@ -268,4 +266,13 @@ int reg_status(struct re_printf *pf, const struct reg *reg)
 		return 0;
 
 	return re_hprintf(pf, " %s %s", print_scode(reg->scode), reg->srv);
+}
+
+
+int reg_af(const struct reg *reg)
+{
+	if (!reg)
+		return 0;
+
+	return reg->af;
 }

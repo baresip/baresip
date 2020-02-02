@@ -427,10 +427,17 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 }
 
 
-static int best_effort_af(const struct network *net)
+static int best_effort_af(struct ua *ua, const struct network *net)
 {
+	struct le *le;
 	const int afv[2] = { AF_INET, AF_INET6 };
 	size_t i;
+
+	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
+		const struct reg *reg = le->data;
+		if (reg_isok(reg))
+			return reg_af(reg);
+	}
 
 	for (i=0; i<ARRAY_SIZE(afv); i++) {
 		int af = afv[i];
@@ -498,10 +505,15 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	}
 	else if (ua->af_media &&
 		   sa_isset(net_laddr_af(net, ua->af_media), SA_ADDR)) {
+		info("ua: using ua's preferred AF: af=%s\n",
+		     net_af2name(ua->af_media));
 		af = ua->af_media;
 	}
-	else
-		af = best_effort_af(net);
+	else {
+		af = best_effort_af(ua, net);
+		info("ua: using best effort AF: af=%s\n",
+		     net_af2name(af));
+	}
 
 	memset(&cprm, 0, sizeof(cprm));
 
