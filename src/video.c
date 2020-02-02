@@ -1291,7 +1291,7 @@ static bool nack_handler(const char *name, const char *value, void *arg)
 	(void)name;
 	(void)arg;
 
-	return NULL != strcasestr(value, "nack");
+	return 0 == re_regex(value, str_len(value), "nack");
 }
 
 
