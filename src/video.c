@@ -460,7 +460,9 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 
 	MAGIC_CHECK(vtx->video);
 
+	lock_write_get(vtx->lock_enc);
 	++vtx->frames;
+	lock_rel(vtx->lock_enc);
 
 	++vtx->stats.src_frames;
 
@@ -1019,12 +1021,17 @@ static void tmr_handler(void *arg)
 
 	tmr_start(&v->tmr, TMR_INTERVAL * 1000, tmr_handler, v);
 
+	/* protect vtx.frames */
+	lock_write_get(v->vtx.lock_enc);
+
 	/* Estimate framerates */
 	v->vtx.efps = (double)v->vtx.frames / (double)TMR_INTERVAL;
 	v->vrx.efps = (double)v->vrx.frames / (double)TMR_INTERVAL;
 
 	v->vtx.frames = 0;
 	v->vrx.frames = 0;
+
+	lock_rel(v->vtx.lock_enc);
 }
 
 
