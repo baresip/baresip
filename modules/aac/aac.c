@@ -25,12 +25,12 @@
   aac_samplerate     48000	# Encoded/decoded audio sample rate [Hz]
   aac_channels           1	# Encoded/decoded audio channels
   aac_aot               23	# Audio Object Type (AOT)
-				#  2: MPEG-4 AAC Low Complexity (AAC-LC)
-				#  5: MPEG-4 AAC Low Complexity with
-				#     Spectral Band Replication (HE-AAC)
-                           	# 29: MPEG-4 AAC Low Complexity with
-				#     Spectral Band Replication and
-				#     Parametric Stereo (HE-AAC v2)
+                        	#  2: MPEG-4 AAC Low Complexity (AAC-LC)
+                        	#  5: MPEG-4 AAC Low Complexity with
+                        	#     Spectral Band Replication (HE-AAC)
+                        	# 29: MPEG-4 AAC Low Complexity with
+                        	#     Spectral Band Replication and
+                        	#     Parametric Stereo (HE-AAC v2)
                         	# 23: MPEG-4 AAC Low-Delay (AAC-LD)
                         	# 39: MPEG-4 AAC Enhanced Low-Delay (AAC-ELD)
   aac_bitrate       128000	# Average bitrate in [bps]
@@ -70,7 +70,7 @@ static struct aucodec aac = {
 	.fmtp_ench = aac_fmtp_enc,
 	.fmtp_cmph = aac_fmtp_cmp,
 /* try to make sure PCM audio buffer is always <= 120 samples */
-	.ptime     = 1,
+	.ptime     = 2,      /* 96 samples per channel @ 48000 hz */
 };
 
 
