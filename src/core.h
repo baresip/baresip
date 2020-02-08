@@ -70,8 +70,7 @@ struct account {
 	char *sipnat;                /**< SIP Nat mechanism                  */
 	char *stun_user;             /**< STUN Username                      */
 	char *stun_pass;             /**< STUN Password                      */
-	char *stun_host;             /**< STUN Hostname                      */
-	uint16_t stun_port;          /**< STUN Port number                   */
+	struct stun_uri *stun_host;  /**< STUN Server                        */
 	struct le vcv[4];            /**< List elements for vidcodecl        */
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
 	bool mwi;                    /**< MWI on/off                         */

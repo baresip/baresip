@@ -36,6 +36,7 @@ SRCS	+= rtpstat.c
 SRCS	+= sdp.c
 SRCS	+= sipreq.c
 SRCS	+= stream.c
+SRCS	+= stunuri.c
 SRCS	+= timer.c
 SRCS	+= timestamp.c
 SRCS	+= ua.c

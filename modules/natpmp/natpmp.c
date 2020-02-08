@@ -196,7 +196,7 @@ static void natpmp_resp_handler(int err, const struct natpmp_resp *resp,
 
 static int session_alloc(struct mnat_sess **sessp,
 			 const struct mnat *mnat, struct dnsc *dnsc,
-			 int af, const char *srv, uint16_t port,
+			 int af, const struct stun_uri *srv,
 			 const char *user, const char *pass,
 			 struct sdp_session *ss, bool offerer,
 			 mnat_estab_h *estabh, void *arg)
@@ -204,13 +204,13 @@ static int session_alloc(struct mnat_sess **sessp,
 	struct mnat_sess *sess;
 	(void)mnat;
 	(void)af;
-	(void)port;
+	(void)srv;
 	(void)user;
 	(void)pass;
 	(void)ss;
 	(void)offerer;
 
-	if (!sessp || !dnsc || !srv || !ss || !estabh)
+	if (!sessp || !dnsc || !ss || !estabh)
 		return EINVAL;
 
 	sess = mem_zalloc(sizeof(*sess), session_destructor);

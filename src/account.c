@@ -79,27 +79,19 @@ static int param_u32(uint32_t *v, const struct pl *params, const char *name)
 static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 {
 	struct pl srv, tmp;
-	struct uri uri;
 	int err;
 
 	if (!acc || !aor)
 		return EINVAL;
 
-	memset(&uri, 0, sizeof(uri));
-
 	if (0 == msg_param_decode(&aor->params, "stunserver", &srv)) {
 
 		info("using stunserver: '%r'\n", &srv);
 
-		err = uri_decode(&uri, &srv);
+		err = stunuri_decode(&acc->stun_host, &srv);
 		if (err) {
-			warning("account: %r: decode failed: %m\n", &srv, err);
-			memset(&uri, 0, sizeof(uri));
-		}
-
-		if (0 != pl_strcasecmp(&uri.scheme, "stun")) {
-			warning("account: unknown scheme: %r\n", &uri.scheme);
-			return EINVAL;
+			warning("account: decode '%r' failed: %m\n",
+				&srv, err);
 		}
 	}
 
@@ -107,24 +99,13 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 
 	if (0 == msg_param_exists(&aor->params, "stunuser", &tmp))
 		err |= param_dstr(&acc->stun_user, &aor->params, "stunuser");
-	else if (pl_isset(&uri.user))
-		err |= pl_strdup(&acc->stun_user, &uri.user);
 	else
 		err |= pl_strdup(&acc->stun_user, &aor->uri.user);
 
 	if (0 == msg_param_exists(&aor->params, "stunpass", &tmp))
 		err |= param_dstr(&acc->stun_pass, &aor->params, "stunpass");
-	else if (pl_isset(&uri.password))
-		err |= pl_strdup(&acc->stun_pass, &uri.password);
 	else if (acc->auth_pass)
 		err |= str_dup(&acc->stun_pass, acc->auth_pass);
-
-	if (pl_isset(&uri.host))
-		err |= pl_strdup(&acc->stun_host, &uri.host);
-	else
-		err |= pl_strdup(&acc->stun_host, &aor->uri.host);
-
-	acc->stun_port = uri.port;
 
 	return err;
 }
@@ -607,10 +588,8 @@ int account_set_stun_host(struct account *acc, const char *host)
 	if (!acc)
 		return EINVAL;
 
-	acc->stun_host = mem_deref(acc->stun_host);
-
-	if (host)
-		return str_dup(&acc->stun_host, host);
+	if (acc->stun_host)
+		return stunuri_set_host(acc->stun_host, host);
 
 	return 0;
 }
@@ -629,7 +608,8 @@ int account_set_stun_port(struct account *acc, uint16_t port)
 	if (!acc)
 		return EINVAL;
 
-	acc->stun_port = port;
+	if (acc->stun_host)
+		return stunuri_set_port(acc->stun_host, port);
 
 	return 0;
 }
@@ -1078,7 +1058,10 @@ const char *account_stun_pass(const struct account *acc)
  */
 const char *account_stun_host(const struct account *acc)
 {
-	return acc ? acc->stun_host : NULL;
+	if (!acc)
+		return NULL;
+
+	return acc->stun_host ? acc->stun_host->host : NULL;
 }
 
 
@@ -1091,7 +1074,10 @@ const char *account_stun_host(const struct account *acc)
  */
 uint16_t account_stun_port(const struct account *acc)
 {
-	return acc ? acc->stun_port : 0;
+	if (!acc)
+		return 0;
+
+	return acc->stun_host ? acc->stun_host->port : 0;
 }
 
 
@@ -1230,8 +1216,10 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
 	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
 	err |= re_hprintf(pf, " sipnat:       %s\n", acc->sipnat);
-	err |= re_hprintf(pf, " stunserver:   stun:%s@%s:%u\n",
-			  acc->stun_user, acc->stun_host, acc->stun_port);
+	err |= re_hprintf(pf, " stunuser:     %s\n", acc->stun_user);
+	err |= re_hprintf(pf, " stunserver:   %H\n",
+			  stunuri_print, acc->stun_host);
+
 	if (!list_isempty(&acc->vidcodecl)) {
 		err |= re_hprintf(pf, " video_codecs:");
 		for (le = list_head(&acc->vidcodecl); le; le = le->next) {

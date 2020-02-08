@@ -909,7 +909,6 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			"\n# ICE\n"
-			"ice_turn\t\tno\n"
 			"ice_debug\t\tno\n"
 			"ice_nomination\t\tregular\t# {regular,aggressive}\n");
 

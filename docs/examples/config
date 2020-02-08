@@ -186,7 +186,6 @@ video_selfview		window # {window,pip}
 #selfview_size		64x64
 
 # ICE
-ice_turn		no
 ice_debug		no
 ice_nomination		regular	# {regular,aggressive}
 
