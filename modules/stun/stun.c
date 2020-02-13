@@ -155,7 +155,7 @@ static void dns_handler(int err, const struct sa *srv, void *arg)
 
 static int session_alloc(struct mnat_sess **sessp,
 			 const struct mnat *mnat, struct dnsc *dnsc,
-			 int af, const char *srv, uint16_t port,
+			 int af, const struct stun_uri *srv,
 			 const char *user, const char *pass,
 			 struct sdp_session *ss, bool offerer,
 			 mnat_estab_h *estabh, void *arg)
@@ -171,6 +171,9 @@ static int session_alloc(struct mnat_sess **sessp,
 	if (!sessp || !dnsc || !srv || !ss || !estabh)
 		return EINVAL;
 
+	if (srv->scheme != STUN_SCHEME_STUN)
+		return ENOTSUP;
+
 	sess = mem_zalloc(sizeof(*sess), session_destructor);
 	if (!sess)
 		return ENOMEM;
@@ -180,7 +183,8 @@ static int session_alloc(struct mnat_sess **sessp,
 
 	err = stun_server_discover(&sess->dnsq, dnsc,
 				   stun_usage_binding, stun_proto_udp,
-				   af, srv, port, dns_handler, sess);
+				   af, srv->host, srv->port,
+				   dns_handler, sess);
 
 	if (err)
 		mem_deref(sess);

@@ -1244,6 +1244,30 @@ int  stream_debug(struct re_printf *pf, const struct stream *s);
 
 
 /*
+ * STUN URI
+ */
+
+enum stun_scheme {
+	STUN_SCHEME_STUN,
+	STUN_SCHEME_STUNS,
+	STUN_SCHEME_TURN,
+	STUN_SCHEME_TURNS,
+};
+
+struct stun_uri {
+	enum stun_scheme scheme;
+	char *host;
+	uint16_t port;
+};
+
+int stunuri_decode(struct stun_uri **sup, const struct pl *pl);
+int stunuri_set_host(struct stun_uri *su, const char *host);
+int stunuri_set_port(struct stun_uri *su, uint16_t port);
+int stunuri_print(struct re_printf *pf, const struct stun_uri *su);
+const char *stunuri_scheme_name(enum stun_scheme scheme);
+
+
+/*
  * Media NAT
  */
 
@@ -1260,7 +1284,7 @@ typedef void (mnat_connected_h)(const struct sa *raddr1,
 
 typedef int (mnat_sess_h)(struct mnat_sess **sessp,
 			  const struct mnat *mnat, struct dnsc *dnsc,
-			  int af, const char *srv, uint16_t port,
+			  int af, const struct stun_uri *srv,
 			  const char *user, const char *pass,
 			  struct sdp_session *sdp, bool offerer,
 			  mnat_estab_h *estabh, void *arg);

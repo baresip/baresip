@@ -54,7 +54,7 @@ static void tmr_handler(void *data)
 
 static int mnat_session_alloc(struct mnat_sess **sessp,
 			      const struct mnat *mnat, struct dnsc *dnsc,
-			      int af, const char *srv, uint16_t port,
+			      int af, const struct stun_uri *srv,
 			      const char *user, const char *pass,
 			      struct sdp_session *sdp, bool offerer,
 			      mnat_estab_h *estabh, void *arg)
@@ -64,7 +64,6 @@ static int mnat_session_alloc(struct mnat_sess **sessp,
 	(void)dnsc;
 	(void)af;
 	(void)srv;
-	(void)port;
 	(void)user;
 	(void)pass;
 	(void)sdp;

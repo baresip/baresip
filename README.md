@@ -349,6 +349,8 @@ zrtp          ZRTP media encryption module
 * RFC 6464  A RTP Header Extension for Client-to-Mixer Audio Level Indication
 * RFC 6716  Definition of the Opus Audio Codec
 * RFC 6886  NAT Port Mapping Protocol (NAT-PMP)
+* RFC 7064  URI Scheme for STUN Protocol
+* RFC 7065  TURN Uniform Resource Identifiers
 * RFC 7310  RTP Payload Format for Standard apt-X and Enhanced apt-X Codecs
 * RFC 7587  RTP Payload Format for the Opus Speech and Audio Codec
 * RFC 7741  RTP Payload Format for VP8 Video
