@@ -181,7 +181,7 @@ struct audio {
 	bool hold;                    /**< Local hold flag                 */
 	unsigned extmap_aulevel;      /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
-	audio_level_h *levelh;
+	audio_level_h *levelh;        /**< Audio level handler             */
 	audio_err_h *errh;            /**< Audio error handler             */
 	void *arg;                    /**< Handler argument                */
 };
