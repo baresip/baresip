@@ -288,11 +288,6 @@ struct config_net {
 	size_t nsc;             /**< Number of DNS nameservers      */
 };
 
-/** SDP */
-struct config_sdp {
-	bool ebuacip;           /**< Enable EBU-ACIP parameters     */
-};
-
 
 /** Core configuration */
 struct config {
@@ -307,8 +302,6 @@ struct config {
 	struct config_avt avt;
 
 	struct config_net net;
-
-	struct config_sdp sdp;
 };
 
 int config_parse_conf(struct config *cfg, const struct conf *conf);
