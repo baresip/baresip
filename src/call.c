@@ -1127,6 +1127,9 @@ int call_hold(struct call *call, bool hold)
 
 int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 {
+	if (!call)
+		return EINVAL;
+
 	return sdp_encode(descp, call->sdp, offer);
 }
 
