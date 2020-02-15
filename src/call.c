@@ -1054,7 +1054,7 @@ int call_answer(struct call *call, uint16_t scode)
 			return err;
 	}
 
-	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, (struct call *)call,
+	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call,
 		 "%s", !call->got_offer ? "offer" : "answer");
 
 	err = sdp_encode(&desc, call->sdp, !call->got_offer);
@@ -1135,9 +1135,6 @@ int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 {
 	if (!call)
 		return EINVAL;
-
-	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, (struct call *)call,
-		 "%s", offer ? "offer" : "answer");
 
 	return sdp_encode(descp, call->sdp, offer);
 }
@@ -1806,6 +1803,8 @@ static int send_invite(struct call *call)
 	int err;
 
 	routev[0] = account_outbound(call->acc, 0);
+
+	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
 	err = call_sdp_get(call, &desc, true);
 	if (err)

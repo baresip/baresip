@@ -150,7 +150,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_LOCAL_SDP:
 		info(".... ebuacip: CALL_CONNECT event\n");
-		set_ebuacip_params(call_audio(call));
+		if (0 == str_casecmp(prm, "offer"))
+			set_ebuacip_params(call_audio(call));
 		break;
 
 	case UA_EVENT_CALL_REMOTE_SDP:
