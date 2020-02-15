@@ -205,6 +205,8 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_VU_TX:                return "VU_TX_REPORT";
 	case UA_EVENT_VU_RX:                return "VU_RX_REPORT";
 	case UA_EVENT_AUDIO_ERROR:          return "AUDIO_ERROR";
+	case UA_EVENT_CALL_LOCAL_SDP:       return "CALL_LOCAL_SDP";
+	case UA_EVENT_CALL_REMOTE_SDP:      return "CALL_REMOTE_SDP";
 	default: return "?";
 	}
 }

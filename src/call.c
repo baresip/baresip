@@ -389,6 +389,9 @@ static int update_media(struct call *call)
 
 	debug("call: update media\n");
 
+	ua_event(call->ua, UA_EVENT_CALL_REMOTE_SDP, call,
+		 call->got_offer ? "offer" : "answer");
+
 	/* media attributes */
 	audio_sdp_attr_decode(call->audio);
 
@@ -1051,6 +1054,9 @@ int call_answer(struct call *call, uint16_t scode)
 			return err;
 	}
 
+	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, (struct call *)call,
+		 "%s", !call->got_offer ? "offer" : "answer");
+
 	err = sdp_encode(&desc, call->sdp, !call->got_offer);
 	if (err)
 		return err;
@@ -1127,6 +1133,12 @@ int call_hold(struct call *call, bool hold)
 
 int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 {
+	if (!call)
+		return EINVAL;
+
+	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, (struct call *)call,
+		 "%s", offer ? "offer" : "answer");
+
 	return sdp_encode(descp, call->sdp, offer);
 }
 

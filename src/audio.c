@@ -999,120 +999,6 @@ static int add_telev_codec(struct audio *a)
 }
 
 
-/*
- * EBU ACIP (Audio Contribution over IP) Profile
- *
- * Ref: https://tech.ebu.ch/docs/tech/tech3368.pdf
- */
-static int set_ebuacip_params(struct audio *au)
-{
-	struct sdp_media *sdp = stream_sdpmedia(au->strm);
-	const struct config_avt *avt = &au->strm->cfg;
-	const struct list *lst;
-	struct le *le;
-	char str[64];
-	int jb_id = 0;
-	int err = 0;
-
-	/* set ebuacip version fixed value 0 for now. */
-	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "version %i", 0);
-
-	/* set jb option, only one in our case */
-	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "jb %i", jb_id);
-
-	/* define jb value in option */
-	if (0 == conf_get_str(conf_cur(), "ebuacip_jb_type",str,sizeof(str))) {
-
-		if (0 == str_cmp(str, "auto")) {
-
-			err |= sdp_media_set_lattr(sdp, false,
-						   "ebuacip",
-						   "jbdef %i auto %d-%d",
-						   jb_id,
-						   au->cfg.buffer.min,
-						   au->cfg.buffer.max);
-		}
-		else if (0 == str_cmp(str, "fixed")) {
-
-		/* define jb value in option from audio buffer min value */
-			err |= sdp_media_set_lattr(sdp, false,
-						   "ebuacip",
-						   "jbdef %i fixed %d",
-						   jb_id, au->cfg.buffer.min);
-		}
-	}
-
-	/* set QOS recomendation use tos / 4 to set DSCP value */
-	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "qosrec %u",
-				   avt->rtp_tos / 4);
-
-	/* EBU ACIP FEC:: NOT SET IN BARESIP */
-
-	lst = sdp_media_format_lst(sdp, true);
-	for (le = list_head(lst); le; le = le->next) {
-
-		const struct sdp_format *fmt = le->data;
-		struct aucodec *ac = fmt->data;
-
-		if (!fmt->sup)
-			continue;
-
-		if (!fmt->data)
-			continue;
-
-		if (ac->ptime) {
-			err |= sdp_media_set_lattr(sdp, false, "ebuacip",
-						   "plength %s %u",
-						   fmt->id, ac->ptime);
-		}
-	}
-
-	return err;
-}
-
-
-static bool ebuacip_handler(const char *name, const char *value, void *arg)
-{
-	struct sdp_media *sdp;
-	struct audio *au = arg;
-	struct pl type, val, val2;
-	(void)name;
-
-	/* check type first, if not fixed or auto, return false */
-
-	if (0 == re_regex(value, str_len(value),
-			  "jbdef [0-9]+ [a-z]+ [0-9]+-[0-9]+",
-			  NULL, &type, &val, &val2)) {
-
-		/* check for type auto */
-		if (0 == pl_strcasecmp(&type, "auto")) {
-			/* set audio buffer from min and max value*/
-			au->cfg.buffer.min = pl_u32(&val);
-			au->cfg.buffer.max = pl_u32(&val2);
-		}
-	}
-	else if (0 == re_regex(value, str_len(value),
-			       "jbdef [0-9]+ [a-z]+ [0-9]+",
-			       NULL, &type, &val)) {
-
-		/* check type fixed */
-		if (0 == pl_strcasecmp(&type, "fixed")) {
-			/* set both audio buffer min and max value to val*/
-			au->cfg.buffer.min = pl_u32(&val);
-			au->cfg.buffer.max = pl_u32(&val);
-		}
-	}
-	else {
-		return false;
-	}
-
-	sdp = stream_sdpmedia(au->strm);
-	sdp_media_del_lattr(sdp, "ebuacip");
-
-	return true;
-}
-
-
 /**
  * Allocate an audio stream
  *
@@ -1222,14 +1108,6 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		if (err)
 			goto out;
 	}
-
-	if (cfg->sdp.ebuacip) {
-
-		err = set_ebuacip_params(a);
-		if (err)
-			goto out;
-	}
-
 
 	tx->mb = mbuf_alloc(STREAM_PRESZ + 4096);
 	tx->sampv = mem_zalloc(AUDIO_SAMPSZ * aufmt_sample_size(tx->enc_fmt),
@@ -2056,13 +1934,6 @@ void audio_sdp_attr_decode(struct audio *a)
 		}
 	}
 
-	/*
-	 * EBUACIP handler
-	 * EBU TECH 3368 profile provisioning on incoming invite.
-	 */
-	sdp_media_rattr_apply(stream_sdpmedia(a->strm), "ebuacip",
-			      ebuacip_handler, a);
-
 	/* Client-to-Mixer Audio Level Indication */
 	if (a->cfg.level) {
 		sdp_media_rattr_apply(stream_sdpmedia(a->strm),
@@ -2414,4 +2285,10 @@ const struct aucodec *audio_codec(const struct audio *au, bool tx)
 		return NULL;
 
 	return tx ? au->tx.ac : au->rx.ac;
+}
+
+
+struct config_audio *audio_config(struct audio *au)
+{
+	return au ? &au->cfg : NULL;
 }

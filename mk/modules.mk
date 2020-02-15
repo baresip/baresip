@@ -282,6 +282,7 @@ MODULES   += vidbridge
 MODULES   += vidinfo
 MODULES   += vidloop
 MODULES   += vumeter
+MODULES   += ebuacip
 
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge aufile
