@@ -679,8 +679,8 @@ enum ua_event {
 	UA_EVENT_VU_TX,
 	UA_EVENT_VU_RX,
 	UA_EVENT_AUDIO_ERROR,
-	UA_EVENT_CALL_LOCAL_SDP,
-	UA_EVENT_CALL_REMOTE_SDP,
+	UA_EVENT_CALL_LOCAL_SDP,      /**< param: offer or answer */
+	UA_EVENT_CALL_REMOTE_SDP,     /**< param: offer or answer */
 
 	UA_EVENT_MAX,
 };

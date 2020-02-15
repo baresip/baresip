@@ -2288,6 +2288,13 @@ const struct aucodec *audio_codec(const struct audio *au, bool tx)
 }
 
 
+/**
+ * Accessor function to audio configuration
+ *
+ * @param au Audio object
+ *
+ * @return Audio configuration
+ */
 struct config_audio *audio_config(struct audio *au)
 {
 	return au ? &au->cfg : NULL;

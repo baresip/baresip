@@ -15,6 +15,11 @@
  *
  * Ref: https://tech.ebu.ch/docs/tech/tech3368.pdf
  *
+ * Example config:
+ *
+ \verbatim
+  ebuacip_jb_type       auto|fixed
+ \endverbatim
  */
 
 static char jb_type[16];
