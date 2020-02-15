@@ -136,6 +136,9 @@ Distributed under BSD license
   - Simple configuration files
   - MQTT (Message Queue Telemetry Transport) module
 
+* Profiles:
+  - EBU ACIP (Audio Contribution over IP) Profile
+
 
 ## Building
 
@@ -239,6 +242,7 @@ debug_cmd     Debug commands
 directfb      DirectFB video display module
 dshow         Windows DirectShow video source
 dtls_srtp     DTLS-SRTP end-to-end encryption
+ebuacip       EBU ACIP (Audio Contribution over IP) Profile
 echo          Echo server module
 evdev         Linux input driver
 fakevideo     Fake video input/output driver

@@ -265,6 +265,7 @@ MODULES   += b2bua
 MODULES   += contact
 MODULES   += ctrl_tcp
 MODULES   += debug_cmd
+MODULES   += ebuacip
 MODULES   += echo
 MODULES   += fakevideo
 MODULES   += httpd
@@ -282,7 +283,6 @@ MODULES   += vidbridge
 MODULES   += vidinfo
 MODULES   += vidloop
 MODULES   += vumeter
-MODULES   += ebuacip
 
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge aufile
