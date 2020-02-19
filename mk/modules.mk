@@ -265,6 +265,7 @@ MODULES   += b2bua
 MODULES   += contact
 MODULES   += ctrl_tcp
 MODULES   += debug_cmd
+MODULES   += ebuacip
 MODULES   += echo
 MODULES   += fakevideo
 MODULES   += httpd

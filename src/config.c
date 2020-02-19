@@ -81,11 +81,6 @@ static struct config core_config = {
 		{ {""} },
 		0
 	},
-
-	/* SDP */
-	{
-		false
-	},
 };
 
 
@@ -330,9 +325,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_apply(conf, "dns_server", dns_server_handler, &cfg->net);
 	(void)conf_get_str(conf, "net_interface",
 			   cfg->net.ifname, sizeof(cfg->net.ifname));
-
-	/* SDP */
-	(void)conf_get_bool(conf, "sdp_ebuacip", &cfg->sdp.ebuacip);
 
 	return err;
 }

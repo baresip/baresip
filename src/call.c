@@ -389,6 +389,9 @@ static int update_media(struct call *call)
 
 	debug("call: update media\n");
 
+	ua_event(call->ua, UA_EVENT_CALL_REMOTE_SDP, call,
+		 call->got_offer ? "offer" : "answer");
+
 	/* media attributes */
 	audio_sdp_attr_decode(call->audio);
 
@@ -1050,6 +1053,9 @@ int call_answer(struct call *call, uint16_t scode)
 		if (err)
 			return err;
 	}
+
+	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call,
+		 "%s", !call->got_offer ? "offer" : "answer");
 
 	err = sdp_encode(&desc, call->sdp, !call->got_offer);
 	if (err)
@@ -1797,6 +1803,8 @@ static int send_invite(struct call *call)
 	int err;
 
 	routev[0] = account_outbound(call->acc, 0);
+
+	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
 	err = call_sdp_get(call, &desc, true);
 	if (err)

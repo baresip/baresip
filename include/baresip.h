@@ -288,11 +288,6 @@ struct config_net {
 	size_t nsc;             /**< Number of DNS nameservers      */
 };
 
-/** SDP */
-struct config_sdp {
-	bool ebuacip;           /**< Enable EBU-ACIP parameters     */
-};
-
 
 /** Core configuration */
 struct config {
@@ -307,8 +302,6 @@ struct config {
 	struct config_avt avt;
 
 	struct config_net net;
-
-	struct config_sdp sdp;
 };
 
 int config_parse_conf(struct config *cfg, const struct conf *conf);
@@ -686,6 +679,8 @@ enum ua_event {
 	UA_EVENT_VU_TX,
 	UA_EVENT_VU_RX,
 	UA_EVENT_AUDIO_ERROR,
+	UA_EVENT_CALL_LOCAL_SDP,      /**< param: offer or answer */
+	UA_EVENT_CALL_REMOTE_SDP,     /**< param: offer or answer */
 
 	UA_EVENT_MAX,
 };
@@ -1168,6 +1163,7 @@ int  audio_encoder_set(struct audio *a, const struct aucodec *ac,
 int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		       int pt_rx, const char *params);
 const struct aucodec *audio_codec(const struct audio *au, bool tx);
+struct config_audio *audio_config(struct audio *au);
 
 
 /*
