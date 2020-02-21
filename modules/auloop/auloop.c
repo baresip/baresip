@@ -220,7 +220,7 @@ static void write_handler(void *sampv, size_t sampc, void *arg)
 	stats->n_samp   += sampc;
 	stats->n_frames += 1;
 
-	if (al->stats_src.n_samp && aubuf_cur_size(al->aubuf) < num_bytes) {
+	if (stats->n_samp && aubuf_cur_size(al->aubuf) < num_bytes) {
 		++al->aubuf_underrun;
 	}
 
