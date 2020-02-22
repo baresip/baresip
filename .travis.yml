@@ -18,6 +18,7 @@ addons:
     apt:
         packages:
         - libavcodec-dev
+        - libavformat-dev
         - libgtk2.0-dev
         - libjack-jackd2-dev
         - libmpg123-dev
@@ -30,6 +31,7 @@ addons:
         packages:
         - codec2
         - fdk-aac
+        - ffmpeg
         - jack
         - mpg123
         - spandsp
