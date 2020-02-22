@@ -294,7 +294,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 }
 
 
-void shared_set_audio(struct shared *sh, struct ausrc_st *st)
+void avformat_shared_set_audio(struct shared *sh, struct ausrc_st *st)
 {
 	if (!sh)
 		return;
@@ -305,7 +305,7 @@ void shared_set_audio(struct shared *sh, struct ausrc_st *st)
 }
 
 
-void shared_set_video(struct shared *sh, struct vidsrc_st *st)
+void avformat_shared_set_video(struct shared *sh, struct vidsrc_st *st)
 {
 	if (!sh)
 		return;

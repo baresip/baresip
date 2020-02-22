@@ -27,7 +27,7 @@ static void audio_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	shared_set_audio(st->shared, NULL);
+	avformat_shared_set_audio(st->shared, NULL);
 	mem_deref(st->shared);
 }
 
@@ -114,7 +114,7 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	shared_set_audio(st->shared, st);
+	avformat_shared_set_audio(st->shared, st);
 
  out:
 	if (err)

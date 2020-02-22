@@ -27,7 +27,7 @@ static void video_destructor(void *arg)
 {
 	struct vidsrc_st *st = arg;
 
-	shared_set_video(st->shared, NULL);
+	avformat_shared_set_video(st->shared, NULL);
 	mem_deref(st->shared);
 }
 
@@ -90,8 +90,7 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		goto out;
 	}
 
-	shared_set_video(st->shared, st);
-
+	avformat_shared_set_video(st->shared, st);
 
  out:
 	if (err)
