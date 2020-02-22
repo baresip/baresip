@@ -111,6 +111,9 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	uint64_t timestamp;
 	unsigned i;
 	int ret;
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
+	int got_pict;
+#endif
 
 	if (!st->vid.ctx)
 		return;
@@ -119,6 +122,8 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	if (!frame)
 		return;
 
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
+
 	ret = avcodec_send_packet(st->vid.ctx, pkt);
 	if (ret < 0)
 		goto out;
@@ -126,6 +131,12 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	ret = avcodec_receive_frame(st->vid.ctx, frame);
 	if (ret < 0)
 		goto out;
+
+#else
+	ret = avcodec_decode_video2(st->ctx, frame, &got_pict, pkt);
+	if (ret < 0 || !got_pict)
+		goto out;
+#endif
 
 	vf.fmt = avpixfmt_to_vidfmt(frame->format);
 	if (vf.fmt == (enum vidfmt)-1) {
