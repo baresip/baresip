@@ -114,7 +114,7 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	int got_pict;
 #endif
 
-	if (!st->vid.ctx)
+	if (!st || !st->vid.ctx)
 		return;
 
 	frame = av_frame_alloc();

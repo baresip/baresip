@@ -16,24 +16,10 @@
 #include "mod_avformat.h"
 
 
-/*
- * TODO:
- *
- * ok - Test looping
- * ok - check audio input/out samplerate/channels
- * ok - add locking of shared resources
- * ok - note: one single thread (shared) for audio+video
- * ok - add audio resampler -> (not yet)
- *    - test seeking fwd/back
- *    - proper timestamp sync
- *    - media-context, use device name or not?
- */
-
-
 /**
  * @defgroup avformat avformat
  *
- * Video source using FFmpeg libavformat
+ * Audio/video source using FFmpeg libavformat
  *
  *
  * Example config:
@@ -51,8 +37,6 @@ static struct vidsrc *mod_avf;
 static void shared_destructor(void *arg)
 {
 	struct shared *st = arg;
-
-	info(".... avformat: ** shared context destroyed **\n");
 
 	if (st->run) {
 		st->run = false;
@@ -174,15 +158,13 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 
 	codec = avcodec_find_decoder(ctx->codec_id);
 	if (!codec) {
-		info("avformat: can't find codec %i\n",
-		     ctx->codec_id);
+		info("avformat: can't find codec %i\n", ctx->codec_id);
 		return ENOENT;
 	}
 
 	ret = avcodec_open2(ctx, codec, NULL);
 	if (ret < 0) {
-		warning("avformat: error opening codec (%i)\n",
-			ret);
+		warning("avformat: error opening codec (%i)\n", ret);
 		return ENOMEM;
 	}
 
@@ -205,7 +187,8 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 	int err;
 	int ret;
 
-	info(".... avformat: shared state (%s)\n", dev);
+	if (!shp || !dev)
+		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), shared_destructor);
 	if (!st)
@@ -227,12 +210,6 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 		err = ENOENT;
 		goto out;
 	}
-
-#if 0
-	av_dump_format(st->ic, 0, "", 0);
-#endif
-
-	info("nb_streams: %d\n", st->ic->nb_streams);
 
 	for (i=0; i<st->ic->nb_streams; i++) {
 

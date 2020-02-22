@@ -134,7 +134,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 	int got_frame;
 #endif
 
-	if (!st->au.ctx)
+	if (!st || !st->au.ctx)
 		return;
 
 	memset(&frame, 0, sizeof(frame));
