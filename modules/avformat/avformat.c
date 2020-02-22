@@ -12,7 +12,6 @@
 #include <rem.h>
 #include <baresip.h>
 #include <libavformat/avformat.h>
-#include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
 #include "mod_avformat.h"
 
@@ -313,7 +312,6 @@ static int module_init(void)
 	int err;
 
 	avformat_network_init();
-	avdevice_register_all();
 
 	err  = ausrc_register(&ausrc, baresip_ausrcl(),
 			      "avformat", avformat_audio_alloc);
