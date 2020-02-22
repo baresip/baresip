@@ -59,11 +59,15 @@ static void shared_destructor(void *arg)
 		pthread_join(st->thread, NULL);
 	}
 
-	if (st->au.ctx)
+	if (st->au.ctx) {
 		avcodec_close(st->au.ctx);
+		avcodec_free_context(&st->au.ctx);
+	}
 
-	if (st->vid.ctx)
+	if (st->vid.ctx) {
 		avcodec_close(st->vid.ctx);
+		avcodec_free_context(&st->vid.ctx);
+	}
 
 	if (st->ic)
 		avformat_close_input(&st->ic);
