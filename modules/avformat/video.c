@@ -133,7 +133,7 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 		goto out;
 
 #else
-	ret = avcodec_decode_video2(st->ctx, frame, &got_pict, pkt);
+	ret = avcodec_decode_video2(st->vid.ctx, frame, &got_pict, pkt);
 	if (ret < 0 || !got_pict)
 		goto out;
 #endif
