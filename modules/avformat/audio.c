@@ -79,8 +79,7 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		st->shared = mem_ref(*ctx);
 	}
 	else {
-		err = avformat_shared_alloc(&st->shared, dev, prm->srate,
-					    0, 0);
+		err = avformat_shared_alloc(&st->shared, dev);
 		if (err)
 			goto out;
 
@@ -92,7 +91,7 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	if (st->shared->au.idx < 0 || !st->shared->au.ctx) {
 		info("avformat: audio: media file has no audio stream\n");
-		err = ENOSTR;
+		err = ENOENT;
 		goto out;
 	}
 
