@@ -128,7 +128,7 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 {
-	AVFrame avframe;
+	AVFrame frame;
 	int ret;
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
 	int got_frame;
@@ -137,7 +137,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 	if (!st->au.ctx)
 		return;
 
-	memset(&avframe, 0, sizeof(avframe));
+	memset(&frame, 0, sizeof(frame));
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
@@ -145,14 +145,14 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 	if (ret < 0)
 		return;
 
-	ret = avcodec_receive_frame(st->au.ctx, &avframe);
+	ret = avcodec_receive_frame(st->au.ctx, &frame);
 	if (ret < 0)
 		return;
 
 #else
-	ret = avcodec_decode_audio4(st->ctx, frame, &got_frame, pkt);
+	ret = avcodec_decode_audio4(st->au.ctx, frame, &got_frame, pkt);
 	if (ret < 0 || !got_frame)
-		goto out;
+		return;
 #endif
 
 	/* NOTE: pass timestamp to application */
@@ -160,12 +160,12 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 	lock_read_get(st->lock);
 
 	if (st->ausrc_st && st->ausrc_st->readh) {
-		st->ausrc_st->readh(avframe.data[0],
-				    avframe.nb_samples * avframe.channels,
+		st->ausrc_st->readh(frame.data[0],
+				    frame.nb_samples * frame.channels,
 				    st->ausrc_st->arg);
 	}
 
 	lock_rel(st->lock);
 
-	av_frame_unref(&avframe);
+	av_frame_unref(&frame);
 }
