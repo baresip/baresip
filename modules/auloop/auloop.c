@@ -242,6 +242,7 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 	struct auplay_prm auplay_prm;
 	struct ausrc_prm ausrc_prm;
 	const struct config *cfg = conf_config();
+	size_t min_sz, sampsz;
 	int err;
 
 	if (!cfg)
@@ -267,8 +268,7 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 	info("Audio-loop: %uHz, %dch, %s\n", al->srate, al->ch,
 	     aufmt_name(al->fmt));
 
-	size_t min_sz;
-	size_t sampsz = aufmt_sample_size(al->fmt);
+	sampsz = aufmt_sample_size(al->fmt);
 
 	min_sz = sampsz * calc_nsamp(al->srate, al->ch, PTIME);
 	al->aubuf_maxsz = sampsz * calc_nsamp(al->srate, al->ch, PTIME*5);
