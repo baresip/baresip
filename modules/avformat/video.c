@@ -86,7 +86,7 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 	if (st->shared->vid.idx < 0 || !st->shared->vid.ctx) {
 		info("avformat: video: media file has no video stream\n");
-		err = ENOSTR;
+		err = ENOENT;
 		goto out;
 	}
 
