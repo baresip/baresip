@@ -6,6 +6,8 @@
 
 MOD		:= avformat
 $(MOD)_SRCS	+= avformat.c
+$(MOD)_SRCS	+= audio.c
+$(MOD)_SRCS	+= video.c
 $(MOD)_LFLAGS	+= \
 	`pkg-config --libs libavdevice libavformat libavcodec libavutil`
 
