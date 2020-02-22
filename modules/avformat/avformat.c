@@ -235,6 +235,8 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 		const struct AVStream *strm = st->ic->streams[i];
 		AVCodecContext *ctx;
 
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)
+
 		ctx = avcodec_alloc_context3(NULL);
 		if (!ctx) {
 			err = ENOMEM;
@@ -247,6 +249,9 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 			err = EPROTO;
 			goto out;
 		}
+#else
+		ctx = strm->codec;
+#endif
 
 		switch (ctx->codec_type) {
 
