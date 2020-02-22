@@ -150,7 +150,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 		return;
 
 #else
-	ret = avcodec_decode_audio4(st->au.ctx, frame, &got_frame, pkt);
+	ret = avcodec_decode_audio4(st->au.ctx, &frame, &got_frame, pkt);
 	if (ret < 0 || !got_frame)
 		return;
 #endif
