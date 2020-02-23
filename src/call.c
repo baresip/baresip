@@ -182,9 +182,15 @@ static int start_video(struct call *call)
 					 sc->params);
 		err |= video_decoder_set(call->video, sc->data, sc->pt,
 					 sc->rparams);
-		if (!err && !video_is_started(call->video)) {
-			err = video_start(call->video, call->peer_uri);
+		if (err)
+			return err;
+
+		if (!video_is_started(call->video)) {
+			err  = video_start_display(call->video,
+						   call->peer_uri);
+			err |= video_start(call->video);
 		}
+
 		if (err) {
 			warning("call: video stream error: %m\n", err);
 		}
@@ -366,7 +372,9 @@ static int update_video(struct call *call)
 		}
 
 		if (!video_is_started(call->video)) {
-			err = video_start(call->video, call->peer_uri);
+			err  = video_start_display(call->video,
+						   call->peer_uri);
+			err |= video_start(call->video);
 			if (err) {
 				warning("call: update: failed to"
 					" start video (%m)\n", err);

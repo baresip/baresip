@@ -1035,31 +1035,13 @@ static void tmr_handler(void *arg)
 }
 
 
-int video_start(struct video *v, const char *peer)
+int video_start(struct video *v)
 {
 	struct vidsz size;
 	int err;
 
 	if (!v)
 		return EINVAL;
-
-	if (peer) {
-		v->peer = mem_deref(v->peer);
-		err = str_dup(&v->peer, peer);
-		if (err)
-			return err;
-	}
-
-	if (vidisp_find(baresip_vidispl(), NULL)) {
-		err = set_vidisp(&v->vrx);
-		if (err) {
-			warning("video: could not set vidisp '%s': %m\n",
-				v->vrx.device, err);
-		}
-	}
-	else {
-		info("video: no video display\n");
-	}
 
 	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
 		size.w = v->cfg.width;
@@ -1085,6 +1067,36 @@ int video_start(struct video *v, const char *peer)
 	}
 
 	v->started = true;
+
+	return 0;
+}
+
+
+int video_start_display(struct video *v, const char *peer)
+{
+	int err;
+
+	if (!v)
+		return EINVAL;
+
+	if (peer) {
+		v->peer = mem_deref(v->peer);
+		err = str_dup(&v->peer, peer);
+		if (err)
+			return err;
+	}
+
+	if (vidisp_find(baresip_vidispl(), NULL)) {
+		err = set_vidisp(&v->vrx);
+		if (err) {
+			warning("video: could not set vidisp '%s': %m\n",
+				v->vrx.device, err);
+			return err;
+		}
+	}
+	else {
+		info("video: no video display\n");
+	}
 
 	return 0;
 }
