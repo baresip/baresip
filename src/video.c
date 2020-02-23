@@ -1006,7 +1006,7 @@ static void tmr_handler(void *arg)
 }
 
 
-int video_start_source(struct video *v)
+int video_start_source(struct video *v, struct media_ctx **ctx)
 {
 	struct vtx *vtx = &v->vtx;
 	struct vidsz size;
@@ -1031,7 +1031,7 @@ int video_start_source(struct video *v)
 
 		vtx->vsrc = mem_deref(vtx->vsrc);
 
-		err = vs->alloch(&vtx->vsrc, vs, NULL, &vtx->vsrc_prm,
+		err = vs->alloch(&vtx->vsrc, vs, ctx, &vtx->vsrc_prm,
 				 &vtx->vsrc_size, NULL, v->vtx.device,
 				 vidsrc_frame_handler,
 				 vidsrc_error_handler, vtx);
