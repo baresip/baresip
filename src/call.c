@@ -188,7 +188,7 @@ static int start_video(struct call *call)
 		if (!video_is_started(call->video)) {
 			err  = video_start_display(call->video,
 						   call->peer_uri);
-			err |= video_start(call->video);
+			err |= video_start_source(call->video);
 		}
 
 		if (err) {
@@ -374,7 +374,7 @@ static int update_video(struct call *call)
 		if (!video_is_started(call->video)) {
 			err  = video_start_display(call->video,
 						   call->peer_uri);
-			err |= video_start(call->video);
+			err |= video_start_source(call->video);
 			if (err) {
 				warning("call: update: failed to"
 					" start video (%m)\n", err);

@@ -983,35 +983,6 @@ static int set_vidisp(struct vrx *vrx)
 }
 
 
-/* Set the encoder format - can be called multiple times */
-static int set_encoder_format(struct vtx *vtx, const char *src,
-			      const char *dev, struct vidsz *size)
-{
-	struct vidsrc *vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
-							 src);
-	int err;
-
-	if (!vs)
-		return ENOENT;
-
-	vtx->vsrc_size       = *size;
-	vtx->vsrc_prm.fps    = get_fps(vtx->video);
-	vtx->vsrc_prm.fmt    = vtx->video->cfg.enc_fmt;
-
-	vtx->vsrc = mem_deref(vtx->vsrc);
-
-	err = vs->alloch(&vtx->vsrc, vs, NULL, &vtx->vsrc_prm,
-			 &vtx->vsrc_size, NULL, dev, vidsrc_frame_handler,
-			 vidsrc_error_handler, vtx);
-	if (err) {
-		info("video: no video source '%s': %m\n", src, err);
-		return err;
-	}
-
-	return err;
-}
-
-
 enum {TMR_INTERVAL = 5};
 static void tmr_handler(void *arg)
 {
@@ -1035,8 +1006,9 @@ static void tmr_handler(void *arg)
 }
 
 
-int video_start(struct video *v)
+int video_start_source(struct video *v)
 {
+	struct vtx *vtx = &v->vtx;
 	struct vidsz size;
 	int err;
 
@@ -1044,12 +1016,27 @@ int video_start(struct video *v)
 		return EINVAL;
 
 	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
+
+		struct vidsrc *vs;
+
+		vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
+						  v->cfg.src_mod);
+
 		size.w = v->cfg.width;
 		size.h = v->cfg.height;
-		err = set_encoder_format(&v->vtx, v->cfg.src_mod,
-					 v->vtx.device, &size);
+
+		vtx->vsrc_size       = size;
+		vtx->vsrc_prm.fps    = get_fps(v);
+		vtx->vsrc_prm.fmt    = v->cfg.enc_fmt;
+
+		vtx->vsrc = mem_deref(vtx->vsrc);
+
+		err = vs->alloch(&vtx->vsrc, vs, NULL, &vtx->vsrc_prm,
+				 &vtx->vsrc_size, NULL, v->vtx.device,
+				 vidsrc_frame_handler,
+				 vidsrc_error_handler, vtx);
 		if (err) {
-			warning("video: could not set encoder format to"
+			warning("video: could not set source to"
 				" [%u x %u] %m\n",
 				size.w, size.h, err);
 		}
