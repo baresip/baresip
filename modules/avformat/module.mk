@@ -6,7 +6,9 @@
 
 MOD		:= avformat
 $(MOD)_SRCS	+= avformat.c
+$(MOD)_SRCS	+= audio.c
+$(MOD)_SRCS	+= video.c
 $(MOD)_LFLAGS	+= \
-	`pkg-config --libs libavdevice libavformat libavcodec libavutil`
+	`pkg-config --libs libavformat libavcodec libavutil`
 
 include mk/mod.mk

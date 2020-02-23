@@ -1,7 +1,7 @@
 /**
- * @file avformat.c  libavformat video-source
+ * @file avformat.c  libavformat media-source
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2020 Creytiv.com
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
@@ -12,241 +12,209 @@
 #include <rem.h>
 #include <baresip.h>
 #include <libavformat/avformat.h>
-#include <libavdevice/avdevice.h>
 #include <libavcodec/avcodec.h>
-#include <libavutil/pixdesc.h>
+#include "mod_avformat.h"
 
 
 /**
  * @defgroup avformat avformat
  *
- * Video source using FFmpeg/libav libavformat
+ * Audio/video source using FFmpeg libavformat
  *
  *
  * Example config:
  \verbatim
+  audio_source            avformat,/tmp/testfile.mp4
   video_source            avformat,/tmp/testfile.mp4
  \endverbatim
  */
 
 
-struct vidsrc_st {
-	const struct vidsrc *vs;  /* inheritance */
-	pthread_t thread;
-	bool run;
-	AVFormatContext *ic;
-	AVCodecContext *ctx;
-	AVRational time_base;
-	struct vidsz sz;
-	int sindex;
-	vidsrc_frame_h *frameh;
-	void *arg;
-};
-
-
+static struct ausrc *ausrc;
 static struct vidsrc *mod_avf;
 
 
-static void destructor(void *arg)
+static void shared_destructor(void *arg)
 {
-	struct vidsrc_st *st = arg;
+	struct shared *st = arg;
 
 	if (st->run) {
 		st->run = false;
 		pthread_join(st->thread, NULL);
 	}
 
-	if (st->ctx && st->ctx->codec)
-		avcodec_close(st->ctx);
+	if (st->au.ctx) {
+		avcodec_close(st->au.ctx);
+		avcodec_free_context(&st->au.ctx);
+	}
 
-	if (st->ic) {
+	if (st->vid.ctx) {
+		avcodec_close(st->vid.ctx);
+		avcodec_free_context(&st->vid.ctx);
+	}
+
+	if (st->ic)
 		avformat_close_input(&st->ic);
-	}
-}
 
-
-static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
-{
-	switch (pix_fmt) {
-
-	case AV_PIX_FMT_YUV420P:  return VID_FMT_YUV420P;
-	case AV_PIX_FMT_YUVJ420P: return VID_FMT_YUV420P;
-	case AV_PIX_FMT_YUV444P:  return VID_FMT_YUV444P;
-	case AV_PIX_FMT_NV12:     return VID_FMT_NV12;
-	case AV_PIX_FMT_NV21:     return VID_FMT_NV21;
-	default:                  return (enum vidfmt)-1;
-	}
-}
-
-
-static void handle_packet(struct vidsrc_st *st, AVPacket *pkt)
-{
-	AVFrame *frame;
-	struct vidframe vf;
-	struct vidsz sz;
-	unsigned i;
-	int64_t pts;
-	uint64_t timestamp;
-	const AVRational time_base = st->time_base;
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
-	int got_pict;
-#endif
-	int ret;
-
-	frame = av_frame_alloc();
-	if (!frame)
-		return;
-
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
-
-	ret = avcodec_send_packet(st->ctx, pkt);
-	if (ret < 0)
-		goto out;
-
-	ret = avcodec_receive_frame(st->ctx, frame);
-	if (ret < 0)
-		goto out;
-#else
-	ret = avcodec_decode_video2(st->ctx, frame, &got_pict, pkt);
-	if (ret < 0 || !got_pict)
-		goto out;
-#endif
-
-	sz.w = st->ctx->width;
-	sz.h = st->ctx->height;
-
-	/* check if size changed */
-	if (!vidsz_cmp(&sz, &st->sz)) {
-		info("avformat: size changed: %d x %d  ---> %d x %d\n",
-		     st->sz.w, st->sz.h, sz.w, sz.h);
-		st->sz = sz;
-	}
-
-	vf.fmt = avpixfmt_to_vidfmt(frame->format);
-	if (vf.fmt == (enum vidfmt)-1) {
-		warning("avformat: decode: bad pixel format"
-			" (%i) (%s)\n",
-			frame->format,
-			av_get_pix_fmt_name(frame->format));
-		goto out;
-	}
-
-	vf.size = sz;
-	for (i=0; i<4; i++) {
-		vf.data[i]     = frame->data[i];
-		vf.linesize[i] = frame->linesize[i];
-	}
-
-	/* convert timestamp */
-	pts = frame->pts;
-	timestamp = pts * VIDEO_TIMEBASE * time_base.num / time_base.den;
-
-	st->frameh(&vf, timestamp, st->arg);
-
- out:
-	if (frame) {
-#if LIBAVUTIL_VERSION_INT >= ((52<<16)+(20<<8)+100)
-		av_frame_free(&frame);
-#else
-		av_free(frame);
-#endif
-	}
+	mem_deref(st->lock);
 }
 
 
 static void *read_thread(void *data)
 {
-	struct vidsrc_st *st = data;
-	uint64_t now, ts = tmr_jiffies();
+	struct shared *st = data;
+	uint64_t now, offset = tmr_jiffies();
+	double auts = 0, vidts = 0;
 
 	while (st->run) {
+
 		AVPacket pkt;
 		int ret;
 
 		sys_msleep(4);
+
 		now = tmr_jiffies();
 
-		if (ts > now)
-			continue;
+		for (;;) {
+			double xts;
 
-		av_init_packet(&pkt);
+			if (st->au.idx >=0 && st->vid.idx >=0)
+				xts = min(auts, vidts);
+			else if (st->au.idx >=0)
+				xts = auts;
+			else if (st->au.idx >=0)
+				xts = vidts;
+			else
+				break;
 
-		ret = av_read_frame(st->ic, &pkt);
-		if (ret < 0) {
-			debug("avformat: rewind stream (ret=%d)\n", ret);
-			sys_msleep(1000);
-			av_seek_frame(st->ic, -1, 0, 0);
-			continue;
+			if (now < (offset + xts))
+				break;
+
+			av_init_packet(&pkt);
+
+			ret = av_read_frame(st->ic, &pkt);
+			if (ret == (int)AVERROR_EOF) {
+
+				debug("avformat: rewind stream\n");
+
+				sys_msleep(1000);
+
+				ret = av_seek_frame(st->ic, -1, 0,
+						    AVSEEK_FLAG_BACKWARD);
+				if (ret < 0) {
+					info("avformat: seek error (%d)\n",
+					     ret);
+					goto out;
+				}
+
+				offset = tmr_jiffies();
+				break;
+			}
+			else if (ret < 0) {
+				debug("avformat: read error (%d)\n", ret);
+				goto out;
+			}
+
+			if (pkt.stream_index == st->au.idx) {
+
+				if (pkt.pts == AV_NOPTS_VALUE) {
+					warning("no audio pts\n");
+				}
+
+				auts = 1000 * pkt.pts *
+					av_q2d(st->au.time_base);
+
+				avformat_audio_decode(st, &pkt);
+			}
+			else if (pkt.stream_index == st->vid.idx) {
+
+				if (pkt.pts == AV_NOPTS_VALUE) {
+					warning("no video pts\n");
+				}
+
+				vidts = 1000 * pkt.pts *
+					av_q2d(st->vid.time_base);
+
+				avformat_video_decode(st, &pkt);
+			}
+
+			av_packet_unref(&pkt);
 		}
-
-		if (pkt.stream_index != st->sindex)
-			goto out;
-
-		handle_packet(st, &pkt);
-
-		ts += (uint64_t) 1000 * pkt.duration * av_q2d(st->time_base);
-
-	out:
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 12, 100)
-		av_packet_unref(&pkt);
-#else
-		av_free_packet(&pkt);
-#endif
 	}
 
+ out:
 	return NULL;
 }
 
 
-static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
-		 struct media_ctx **mctx, struct vidsrc_prm *prm,
-		 const struct vidsz *size, const char *fmt,
-		 const char *dev, vidsrc_frame_h *frameh,
-		 vidsrc_error_h *errorh, void *arg)
+static int open_codec(struct stream *s, const struct AVStream *strm, int i,
+		      AVCodecContext *ctx)
 {
-	struct vidsrc_st *st;
-	bool found_stream = false;
-	uint32_t i;
-	int ret, err = 0;
-	double input_fps = 0;
+	AVCodec *codec;
+	int ret;
 
-	(void)mctx;
-	(void)fmt;
-	(void)errorh;
+	if (s->idx >= 0 || s->ctx)
+		return 0;
 
-	if (!stp || !vs || !prm || !size || !frameh)
+	codec = avcodec_find_decoder(ctx->codec_id);
+	if (!codec) {
+		info("avformat: can't find codec %i\n", ctx->codec_id);
+		return ENOENT;
+	}
+
+	ret = avcodec_open2(ctx, codec, NULL);
+	if (ret < 0) {
+		warning("avformat: error opening codec (%i)\n", ret);
+		return ENOMEM;
+	}
+
+	s->time_base = strm->time_base;
+	s->ctx = ctx;
+	s->idx = i;
+
+	debug("avformat: '%s' using decoder '%s' (%s)\n",
+	      av_get_media_type_string(ctx->codec_type),
+	      codec->name, codec->long_name);
+
+	return 0;
+}
+
+
+int avformat_shared_alloc(struct shared **shp, const char *dev)
+{
+	struct shared *st;
+	unsigned i;
+	int err;
+	int ret;
+
+	if (!shp || !dev)
 		return EINVAL;
 
-	debug("avformat: alloc dev='%s'\n", dev);
-
-	st = mem_zalloc(sizeof(*st), destructor);
+	st = mem_zalloc(sizeof(*st), shared_destructor);
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = vs;
-	st->sz     = *size;
-	st->frameh = frameh;
-	st->arg    = arg;
+	st->id = "avformat";
+
+	st->au.idx  = -1;
+	st->vid.idx = -1;
+
+	err = lock_alloc(&st->lock);
+	if (err)
+		goto out;
 
 	ret = avformat_open_input(&st->ic, dev, NULL, NULL);
 	if (ret < 0) {
-		warning("avformat: avformat_open_input(%s) failed (ret=%d)\n",
-			dev, ret);
-		err = ENOENT;
-		goto out;
-	}
-
-	ret = avformat_find_stream_info(st->ic, NULL);
-	if (ret < 0) {
-		warning("avformat: %s: no stream info\n", dev);
+		warning("avformat: avformat_open_input(%s) failed (ret=%s)\n",
+			dev, av_err2str(ret));
 		err = ENOENT;
 		goto out;
 	}
 
 	for (i=0; i<st->ic->nb_streams; i++) {
+
 		const struct AVStream *strm = st->ic->streams[i];
 		AVCodecContext *ctx;
-		AVCodec *codec;
 
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)
 
@@ -262,59 +230,27 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			err = EPROTO;
 			goto out;
 		}
-
 #else
 		ctx = strm->codec;
 #endif
 
-		if (ctx->codec_type != AVMEDIA_TYPE_VIDEO)
-			continue;
+		switch (ctx->codec_type) {
 
-		debug("avformat: stream %u:  %u x %u "
-		      "  time_base=%d/%d\n",
-		      i, ctx->width, ctx->height,
-		      strm->time_base.num, strm->time_base.den);
+		case AVMEDIA_TYPE_AUDIO:
+			err = open_codec(&st->au, strm, i, ctx);
+			if (err)
+				goto out;
+			break;
 
-		st->sz.w   = ctx->width;
-		st->sz.h   = ctx->height;
-		st->ctx    = ctx;
-		st->sindex = strm->index;
-		st->time_base = strm->time_base;
+		case AVMEDIA_TYPE_VIDEO:
+			err = open_codec(&st->vid, strm, i, ctx);
+			if (err)
+				goto out;
+			break;
 
-		input_fps = av_q2d(strm->avg_frame_rate);
-		if (prm->fps != input_fps) {
-			info("avformat: updating %.2f fps from config"
-			     " to native "
-			     "input material fps %.2f\n",
-			     prm->fps, input_fps);
-
-			prm->fps = input_fps;
+		default:
+			break;
 		}
-
-		codec = avcodec_find_decoder(ctx->codec_id);
-		if (!codec) {
-			warning("avformat: decoder not found (codec_id=%d)\n",
-				ctx->codec_id);
-			err = ENOENT;
-			goto out;
-		}
-
-		ret = avcodec_open2(ctx, codec, NULL);
-		if (ret < 0) {
-			err = ENOENT;
-			goto out;
-		}
-
-		debug("avformat: using decoder '%s' (%s)\n",
-		      codec->name, codec->long_name);
-
-		found_stream = true;
-		break;
-	}
-
-	if (!found_stream) {
-		err = ENOENT;
-		goto out;
 	}
 
 	st->run = true;
@@ -325,40 +261,60 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	}
 
  out:
+
 	if (err)
 		mem_deref(st);
 	else
-		*stp = st;
+		*shp = st;
 
 	return err;
 }
 
 
+void avformat_shared_set_audio(struct shared *sh, struct ausrc_st *st)
+{
+	if (!sh)
+		return;
+
+	lock_write_get(sh->lock);
+	sh->ausrc_st = st;
+	lock_rel(sh->lock);
+}
+
+
+void avformat_shared_set_video(struct shared *sh, struct vidsrc_st *st)
+{
+	if (!sh)
+		return;
+
+	lock_write_get(sh->lock);
+	sh->vidsrc_st = st;
+	lock_rel(sh->lock);
+}
+
+
 static int module_init(void)
 {
-	/* register all codecs, demux and protocols */
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
-	av_register_all();
-	avcodec_register_all();
-#endif
-	avdevice_register_all();
+	int err;
 
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 13, 0)
 	avformat_network_init();
-#endif
 
-	return vidsrc_register(&mod_avf, baresip_vidsrcl(),
-			       "avformat", alloc, NULL);
+	err  = ausrc_register(&ausrc, baresip_ausrcl(),
+			      "avformat", avformat_audio_alloc);
+
+	err |= vidsrc_register(&mod_avf, baresip_vidsrcl(),
+			       "avformat", avformat_video_alloc, NULL);
+
+	return err;
 }
 
 
 static int module_close(void)
 {
 	mod_avf = mem_deref(mod_avf);
+	ausrc = mem_deref(ausrc);
 
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(53, 13, 0)
 	avformat_network_deinit();
-#endif
 
 	return 0;
 }
@@ -366,7 +322,7 @@ static int module_close(void)
 
 EXPORT_SYM const struct mod_export DECL_EXPORTS(avformat) = {
 	"avformat",
-	"vidsrc",
+	"avsrc",
 	module_init,
 	module_close
 };
