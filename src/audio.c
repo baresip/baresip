@@ -89,6 +89,7 @@ struct autx {
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
+	struct media_ctx **ctx;
 	char *module;                 /**< Audio source module name        */
 	char *device;                 /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
@@ -1528,7 +1529,7 @@ static int start_source(struct autx *tx, struct audio *a)
 		}
 
 		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
-				  NULL, tx->module,
+				  tx->ctx, tx->module,
 				  &prm, tx->device,
 				  ausrc_read_handler, ausrc_error_handler, a);
 		if (err) {
@@ -2298,4 +2299,13 @@ const struct aucodec *audio_codec(const struct audio *au, bool tx)
 struct config_audio *audio_config(struct audio *au)
 {
 	return au ? &au->cfg : NULL;
+}
+
+
+void audio_set_media_context(struct audio *au, struct media_ctx **ctx)
+{
+	if (!au)
+		return;
+
+	au->tx.ctx = ctx;
 }
