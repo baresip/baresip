@@ -26,11 +26,9 @@ static void destructor(void *arg)
 {
 	struct session *sess = arg;
 
-	debug("echo: session destroyed (in=%p)\n",
-			sess->call_in);
+	debug("echo: session destroyed\n");
 
 	list_unlink(&sess->le);
-	mem_deref(sess->call_in);
 }
 
 
@@ -44,6 +42,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 	case CALL_EVENT_CLOSED:
 		debug("echo: CALL_CLOSED: %s\n", str);
+		mem_deref(sess->call_in);
 		mem_deref(sess);
 		break;
 
