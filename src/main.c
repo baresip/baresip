@@ -34,6 +34,17 @@ static void signal_handler(int sig)
 }
 
 
+static void net_change_handler(void *arg)
+{
+	(void)arg;
+
+	info("IP-address changed: %j\n",
+	     net_laddr_af(baresip_network(), AF_INET));
+
+	(void)uag_reset_transp(true, true);
+}
+
+
 static void ua_exit_handler(void *arg)
 {
 	(void)arg;
@@ -255,6 +266,8 @@ int main(int argc, char *argv[])
 		      true, true, true);
 	if (err)
 		goto out;
+
+	net_change(baresip_network(), 60, net_change_handler, NULL);
 
 	uag_set_exit_handler(ua_exit_handler, NULL);
 
