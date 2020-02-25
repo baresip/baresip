@@ -1511,17 +1511,6 @@ int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name)
 }
 
 
-static void net_change_handler(void *arg)
-{
-	(void)arg;
-
-	info("IP-address changed: %j\n",
-	     net_laddr_af(baresip_network(), AF_INET));
-
-	(void)uag_reset_transp(true, true);
-}
-
-
 static bool sub_handler(const struct sip_msg *msg, void *arg)
 {
 	struct ua *ua;
@@ -1616,8 +1605,6 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls)
 			      sub_handler, NULL);
 	if (err)
 		goto out;
-
-	net_change(net, 60, net_change_handler, NULL);
 
  out:
 	if (err) {
