@@ -66,7 +66,9 @@ struct dtls_srtp {
 static struct tls *tls;
 static const char* srtp_profiles =
 	"SRTP_AES128_CM_SHA1_80:"
-	"SRTP_AES128_CM_SHA1_32";
+	"SRTP_AES128_CM_SHA1_32:"
+	"SRTP_AEAD_AES_128_GCM:"
+	"SRTP_AEAD_AES_256_GCM";
 
 
 static void sess_destructor(void *arg)
@@ -185,13 +187,27 @@ static int session_alloc(struct menc_sess **sessp,
 }
 
 
+static size_t get_master_keylen(enum srtp_suite suite)
+{
+	switch (suite) {
+
+		case SRTP_AES_CM_128_HMAC_SHA1_32: return 16+14;
+		case SRTP_AES_CM_128_HMAC_SHA1_80: return 16+14;
+		case SRTP_AES_128_GCM:             return 16+12;
+		case SRTP_AES_256_GCM:             return 32+12;
+		default: return 0;
+	}
+}
+
+
 static void dtls_estab_handler(void *arg)
 {
 	struct comp *comp = arg;
 	const struct dtls_srtp *ds = comp->ds;
 	enum srtp_suite suite;
-	uint8_t cli_key[30], srv_key[30];
+	uint8_t cli_key[32+12], srv_key[32+12];
 	char buf[32] = "";
+	size_t keylen;
 	int err;
 
 	if (!verify_fingerprint(ds->sess->sdp, ds->sdpm, comp->tls_conn)) {
@@ -215,10 +231,12 @@ static void dtls_estab_handler(void *arg)
 	     sdp_media_name(ds->sdpm),
 	     comp->is_rtp ? "RTP" : "RTCP", srtp_suite_name(suite));
 
+	keylen = get_master_keylen(suite);
+
 	err |= srtp_stream_add(&comp->tx, suite,
-			       ds->active ? cli_key : srv_key, 30, true);
+			       ds->active ? cli_key : srv_key, keylen, true);
 	err |= srtp_stream_add(&comp->rx, suite,
-			       ds->active ? srv_key : cli_key, 30, false);
+			       ds->active ? srv_key : cli_key, keylen, false);
 	if (err)
 		return;
 
