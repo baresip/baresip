@@ -144,8 +144,9 @@ static int line_handler(const struct pl *addr, void *arg)
 		}
 	}
 
-	/* optional password prompt */
-	if (!str_isset(account_auth_pass(acc))) {
+	/* prompt password if auth_user is set, but auth_pass is not  */
+	if (str_isset(account_auth_user(acc)) &&
+	    !str_isset(account_auth_pass(acc))) {
 		char *pass = NULL;
 
 		(void)re_printf("Please enter password for %s: ",
