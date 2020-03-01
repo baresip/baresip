@@ -77,13 +77,6 @@ static void *play_thread(void *arg)
 		if (ts > now)
 			continue;
 
-#if 1
-		if (now > ts + 100) {
-			debug("aufile: cpu lagging behind (%llu ms)\n",
-			      now - ts);
-		}
-#endif
-
 		aubuf_read_samp(st->aubuf, sampv, st->sampc);
 
 		st->rh(sampv, st->sampc, st->arg);
@@ -92,8 +85,6 @@ static void *play_thread(void *arg)
 	}
 
 	mem_deref(sampv);
-
-	info("aufile: player thread exited\n");
 
 	return NULL;
 }
