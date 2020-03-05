@@ -66,6 +66,8 @@ int test_play(void)
 	struct player *player = NULL;
 	struct play *play = NULL;
 	struct mbuf *mb_tone = NULL;
+	char *play_mod = NULL;
+	char *play_dev = NULL;
 	struct test test = {0};
 	int err;
 
@@ -80,7 +82,8 @@ int test_play(void)
 	mb_tone = generate_tone();
 	ASSERT_TRUE(mb_tone != NULL);
 
-	err = play_tone(&play, player, mb_tone, 8000, 1, 0);
+	err = play_tone(&play, player, mb_tone, 8000, 1, 0,
+	                play_mod, play_dev);
 	ASSERT_EQ(0, err);
 
 	err = re_main_timeout(10000);

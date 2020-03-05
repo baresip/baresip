@@ -86,8 +86,11 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 {
 	static struct play *g_play;
 	struct cmd_arg *carg = arg;
+	struct config *cfg;
 	const char *filename = carg->prm;
 	int err = 0;
+
+	cfg = conf_config();
 
 	/* Stop the current tone, if any */
 	g_play = mem_deref(g_play);
@@ -99,7 +102,8 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 		if (err)
 			return err;
 
-		err = play_file(&g_play, baresip_player(), filename, 0);
+		err = play_file(&g_play, baresip_player(), filename, 0,
+                        cfg->audio.alert_mod, cfg->audio.alert_dev);
 		if (err)
 		{
 			warning("debug_cmd: play_file(%s) failed (%m)\n",
