@@ -18,7 +18,6 @@
  *
  \verbatim
   ice_debug       {yes,no}             # Enable ICE debugging/tracing
-  ice_nomination  {regular,aggressive} # Regular or aggressive nomination
  \endverbatim
  */
 
@@ -69,10 +68,8 @@ struct mnat_media {
 
 
 static struct {
-	enum ice_nomination nom;
 	bool debug;
 } ice = {
-	ICE_NOMINATION_REGULAR,
 	false
 };
 
@@ -841,7 +838,6 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	if (err)
 		goto out;
 
-	icem_conf(m->icem)->nom   = ice.nom;
 	icem_conf(m->icem)->debug = ice.debug;
 	icem_conf(m->icem)->rc    = 4;
 
@@ -983,20 +979,7 @@ static struct mnat mnat_icelite = {
 
 static int module_init(void)
 {
-	struct pl pl;
-
 	conf_get_bool(conf_cur(), "ice_debug", &ice.debug);
-
-	if (!conf_get(conf_cur(), "ice_nomination", &pl)) {
-		if (0 == pl_strcasecmp(&pl, "regular"))
-			ice.nom = ICE_NOMINATION_REGULAR;
-		else if (0 == pl_strcasecmp(&pl, "aggressive"))
-			ice.nom = ICE_NOMINATION_AGGRESSIVE;
-		else {
-			warning("ice: unknown nomination: %r\n", &pl);
-			return EINVAL;
-		}
-	}
 
 	mnat_register(baresip_mnatl(), &mnat_ice);
 	mnat_register(baresip_mnatl(), &mnat_icelite);
