@@ -3,10 +3,6 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
-#ifdef __APPLE__
-#include <CoreFoundation/CoreFoundation.h>
-#include <SystemConfiguration/SCNetworkReachability.h>
-#endif
 #include <re.h>
 #include <baresip.h>
 
@@ -311,34 +307,6 @@ static int icem_gather_relay(struct mnat_media *m,
 }
 
 
-static bool is_cellular(const struct sa *laddr)
-{
-#if TARGET_OS_IPHONE
-	SCNetworkReachabilityRef r;
-	SCNetworkReachabilityFlags flags = 0;
-	bool cell = false;
-
-	r = SCNetworkReachabilityCreateWithAddressPair(NULL,
-						       &laddr->u.sa, NULL);
-	if (!r)
-		return false;
-
-	if (SCNetworkReachabilityGetFlags(r, &flags)) {
-
-		if (flags & kSCNetworkReachabilityFlagsIsWWAN)
-			cell = true;
-	}
-
-	CFRelease(r);
-
-	return cell;
-#else
-	(void)laddr;
-	return false;
-#endif
-}
-
-
 static void ice_printf(struct mnat_media *m, const char *fmt, ...)
 {
 	va_list ap;
@@ -431,7 +399,7 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 	if (!net_af_enabled(baresip_network(), sa_af(sa)))
 		return false;
 
-	lprio = is_cellular(sa) ? 0 : 10;
+	lprio = 0;
 
 	ice_printf(m, "added interface: %s:%j (local prio %u)\n",
 		   ifname, sa, lprio);
