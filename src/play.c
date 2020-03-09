@@ -216,17 +216,12 @@ int play_tone(struct play **playp, struct player *player,
 {
 	struct auplay_prm wprm;
 	struct play *play;
-	struct config *cfg;
 	int err;
 
 	if (!player)
 		return EINVAL;
 	if (playp && *playp)
 		return EALREADY;
-
-	cfg = conf_config();
-	if (!cfg)
-		return ENOENT;
 
 	play = mem_zalloc(sizeof(*play), destructor);
 	if (!play)
