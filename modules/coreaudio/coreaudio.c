@@ -92,6 +92,8 @@ int coreaudio_enum_devices(const char *name, struct list *dev_list,
 		CFStringRef deviceUID = NULL;
 		CFStringRef deviceName = NULL;
 		const char *name_str;
+		/* fallback if CFStringGetCStringPtr fails */
+		char name_buf[64];
 
 		propertyAddress.mSelector   = kAudioDevicePropertyStreams;
 		status = AudioObjectGetPropertyDataSize(audioDevices[i],
@@ -136,6 +138,20 @@ int coreaudio_enum_devices(const char *name, struct list *dev_list,
 
 		name_str = CFStringGetCStringPtr(deviceName,
 						 kCFStringEncodingUTF8);
+
+		/* CFStringGetCStringPtr can and does fail
+		 * (documented behavior) */
+		if (0 == name_str) {
+			if (!CFStringGetCString(deviceName,
+						name_buf,
+						sizeof(name_buf),
+						kCFStringEncodingUTF8)) {
+				warning("CFStringGetCString "
+					" failed: %i\n", status);
+				continue;
+			}
+			name_str = name_buf;
+		}
 
 		if (uid) {
 			if (0 == str_casecmp(name, name_str)) {
