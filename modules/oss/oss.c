@@ -180,6 +180,7 @@ static void ausrc_destructor(void *arg)
 static void *record_thread(void *arg)
 {
 	struct ausrc_st *st = arg;
+	struct auframe af;
 	int n;
 
 	while (st->run) {
@@ -188,7 +189,10 @@ static void *record_thread(void *arg)
 		if (n <= 0)
 			continue;
 
-		st->rh(st->sampv, n/2, st->arg);
+		af.sampv = st->sampv;
+		af.sampc = n/2;
+
+		st->rh(&af, st->arg);
 	}
 
 	return NULL;

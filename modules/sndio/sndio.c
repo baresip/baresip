@@ -78,8 +78,13 @@ static void *read_thread(void *arg)
 	}
 
 	while (st->run) {
+		struct auframe af;
 		size_t n = sio_read(st->hdl, st->sampv, st->sampc*2);
-		st->rh(st->sampv, n/2, st->arg);
+
+		af.sampv = st->sampv;
+		af.sampc = n/2;
+
+		st->rh(&af, st->arg);
 	}
 
  out:
