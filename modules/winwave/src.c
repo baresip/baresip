@@ -85,6 +85,7 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 {
 	struct ausrc_st *st = (struct ausrc_st *)dwInstance;
 	WAVEHDR *wh = (WAVEHDR *)dwParam1;
+	struct auframe af;
 
 	(void)hwo;
 	(void)dwParam2;
@@ -106,8 +107,10 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 		if (st->inuse < (READ_BUFFERS-1))
 			add_wave_in(st);
 
-		st->rh((void *)wh->lpData, wh->dwBytesRecorded/st->sampsz,
-		       st->arg);
+		af.sampv = (void *)wh->lpData;
+		af.sampc = wh->dwBytesRecorded/st->sampsz;
+
+		st->rh(&af, st->arg);
 
 		waveInUnprepareHeader(st->wavein, wh, sizeof(*wh));
 		st->inuse--;
