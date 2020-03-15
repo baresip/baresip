@@ -57,6 +57,7 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 			   const AudioStreamPacketDescription *inPacketDesc)
 {
 	struct ausrc_st *st = userData;
+	struct auframe af;
 	ausrc_read_h *rh;
 	void *arg;
 	(void)inStartTime;
@@ -71,7 +72,10 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	if (!rh)
 		return;
 
-	rh(inQB->mAudioData, inQB->mAudioDataByteSize/st->sampsz, arg);
+	af.sampv = inQB->mAudioData;
+	af.sampc = inQB->mAudioDataByteSize/st->sampsz;
+
+	rh(&af, arg);
 
 	AudioQueueEnqueueBuffer(inQ, inQB, 0, NULL);
 }

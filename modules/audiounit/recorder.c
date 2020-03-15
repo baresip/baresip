@@ -103,6 +103,8 @@ static OSStatus input_callback(void *inRefCon,
 	}
 
 	while (1) {
+		struct auframe af;
+
 		err = get_nb_frames(st->buf, &nb_frames);
 		if (err)
 			return kAudioUnitErr_InvalidParameter;
@@ -129,9 +131,12 @@ static OSStatus input_callback(void *inRefCon,
 			return ret;
 		}
 
-		rh(abl_conv.mBuffers[0].mData,
-		   abl_conv.mBuffers[0].mDataByteSize/st->sampsz, arg);
+		af.sampv = abl_conv.mBuffers[0].mData;
+		af.sampc = abl_conv.mBuffers[0].mDataByteSize/st->sampsz;
+
+		rh(&af, arg);
 	}
+
 	return noErr;
 }
 

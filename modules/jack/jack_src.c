@@ -29,6 +29,7 @@ struct ausrc_st {
 static int process_handler(jack_nframes_t nframes, void *arg)
 {
 	struct ausrc_st *st = arg;
+	struct auframe af;
 	size_t sampc = nframes * st->prm.ch;
 	size_t ch, j;
 
@@ -47,8 +48,11 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 		}
 	}
 
+	af.sampv = st->sampv;
+	af.sampc = sampc;
+
 	/* 1. read data from app (signed 16-bit) interleaved */
-	st->rh(st->sampv, sampc, st->arg);
+	st->rh(&af, st->arg);
 
 	return 0;
 }

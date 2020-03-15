@@ -69,6 +69,11 @@ static void *play_thread(void *arg)
 
 	while (st->run) {
 
+		struct auframe af = {
+			.sampv = sampv,
+			.sampc = st->sampc
+		};
+
 		sys_msleep(4);
 
 		now = tmr_jiffies();
@@ -84,7 +89,7 @@ static void *play_thread(void *arg)
 
 		aubuf_read(st->aubuf, sampv, num_bytes);
 
-		st->rh(sampv, st->sampc, st->arg);
+		st->rh(&af, st->arg);
 
 		ts += st->ptime;
 	}

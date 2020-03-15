@@ -196,16 +196,16 @@ static void tmr_handler(void *arg)
 }
 
 
-static void src_read_handler(const void *sampv, size_t sampc, void *arg)
+static void src_read_handler(struct auframe *af, void *arg)
 {
 	struct audio_loop *al = arg;
-	size_t num_bytes = sampc * aufmt_sample_size(al->fmt);
+	size_t num_bytes = af->sampc * aufmt_sample_size(al->fmt);
 	struct stats *stats = &al->stats_src;
 	int err;
 
 	lock_write_get(al->lock);
 
-	stats->n_samp   += sampc;
+	stats->n_samp   += af->sampc;
 	stats->n_frames += 1;
 
 	if (aubuf_cur_size(al->aubuf) >= al->aubuf_maxsz) {
@@ -214,7 +214,7 @@ static void src_read_handler(const void *sampv, size_t sampc, void *arg)
 
 	lock_rel(al->lock);
 
-	err = aubuf_write(al->aubuf, sampv, num_bytes);
+	err = aubuf_write(al->aubuf, af->sampv, num_bytes);
 	if (err) {
 		warning("auloop: aubuf_write: %m\n", err);
 	}

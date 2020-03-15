@@ -64,6 +64,11 @@ static void *read_thread(void *arg)
 
 	while (st->run) {
 
+		struct auframe af = {
+			.sampv = st->sampv,
+			.sampc = st->sampc
+		};
+
 		ret = pa_simple_read(st->s, st->sampv, num_bytes, &pa_error);
 		if (ret < 0) {
 			warning("pulse: pa_simple_read error (%s)\n",
@@ -92,7 +97,7 @@ static void *read_thread(void *arg)
 			}
 		}
 
-		st->rh(st->sampv, st->sampc, st->arg);
+		st->rh(&af, st->arg);
 	}
 
 	return NULL;
