@@ -642,14 +642,14 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
  * @param sampc  Number of samples in buffer
  * @param arg    Handler argument
  */
-static void ausrc_read_handler(const void *sampv, size_t sampc, void *arg)
+static void ausrc_read_handler(struct auframe *af, void *arg)
 {
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
-	size_t num_bytes = sampc * aufmt_sample_size(tx->src_fmt);
+	size_t num_bytes = af->sampc * aufmt_sample_size(tx->src_fmt);
 
 	if (tx->muted)
-		memset((void *)sampv, 0, num_bytes);
+		memset((void *)af->sampv, 0, num_bytes);
 
 	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
 
@@ -659,7 +659,7 @@ static void ausrc_read_handler(const void *sampv, size_t sampc, void *arg)
 		      tx->stats.aubuf_overrun);
 	}
 
-	(void)aubuf_write(tx->aubuf, sampv, num_bytes);
+	(void)aubuf_write(tx->aubuf, af->sampv, num_bytes);
 
 	tx->aubuf_started = true;
 

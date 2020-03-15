@@ -24,11 +24,15 @@ struct ausrc_st {
 static void tmr_handler(void *arg)
 {
 	struct ausrc_st *st = arg;
+	struct auframe af = {
+		.sampv = st->sampv,
+		.sampc = st->sampc
+	};
 
 	tmr_start(&st->tmr, st->prm.ptime, tmr_handler, st);
 
 	if (st->rh)
-		st->rh(st->sampv, st->sampc, st->arg);
+		st->rh(&af, st->arg);
 }
 
 

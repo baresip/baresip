@@ -38,6 +38,11 @@ struct vidframe;
 struct vidrect;
 struct vidsz;
 
+struct auframe {
+	void *sampv;
+	size_t sampc;
+};
+
 
 /*
  * Account
@@ -411,7 +416,7 @@ struct ausrc_prm {
 	int        fmt;         /**< Sample format (enum aufmt) */
 };
 
-typedef void (ausrc_read_h)(const void *sampv, size_t sampc, void *arg);
+typedef void (ausrc_read_h)(struct auframe *af, void *arg);
 typedef void (ausrc_error_h)(int err, const char *str, void *arg);
 
 typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, const struct ausrc *ausrc,

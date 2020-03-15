@@ -59,6 +59,7 @@ static int read_callback(const void *inputBuffer, void *outputBuffer,
 			 PaStreamCallbackFlags statusFlags, void *userData)
 {
 	struct ausrc_st *st = userData;
+	struct auframe af;
 	size_t sampc;
 
 	(void)outputBuffer;
@@ -70,7 +71,10 @@ static int read_callback(const void *inputBuffer, void *outputBuffer,
 
 	sampc = frameCount * st->ch;
 
-	st->rh(inputBuffer, sampc, st->arg);
+	af.sampv = (void *)inputBuffer;
+	af.sampc = sampc;
+
+	st->rh(&af, st->arg);
 
 	return paContinue;
 }

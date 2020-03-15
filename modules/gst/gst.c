@@ -175,6 +175,10 @@ static void format_check(struct ausrc_st *st, GstStructure *s)
 static void play_packet(struct ausrc_st *st)
 {
 	int16_t buf[st->sampc];
+	struct auframe af = {
+		.sampv = buf,
+		.sampc = st->sampc
+	};
 
 	/* timed read from audio-buffer */
 	if (aubuf_get_samp(st->aubuf, st->prm.ptime, buf, st->sampc))
@@ -182,7 +186,7 @@ static void play_packet(struct ausrc_st *st)
 
 	/* call read handler */
 	if (st->rh)
-		st->rh(buf, st->sampc, st->arg);
+		st->rh(&af, st->arg);
 }
 
 

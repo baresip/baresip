@@ -160,9 +160,13 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 	lock_read_get(st->lock);
 
 	if (st->ausrc_st && st->ausrc_st->readh) {
-		st->ausrc_st->readh(frame.data[0],
-				    frame.nb_samples * frame.channels,
-				    st->ausrc_st->arg);
+
+		struct auframe af = {
+			.sampv = frame.data[0],
+			.sampc = frame.nb_samples * frame.channels
+		};
+
+		st->ausrc_st->readh(&af, st->ausrc_st->arg);
 	}
 
 	lock_rel(st->lock);
