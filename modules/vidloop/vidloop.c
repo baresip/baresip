@@ -152,6 +152,7 @@ static void display_handler(void *arg)
 		vl->vidisp = mem_deref(vl->vidisp);
 		vl->err = err;
 	}
+	++vl->stats.disp_frames;
 
  out:
 	lock_rel(vl->frame_mutex);
@@ -199,7 +200,6 @@ static int display(struct video_loop *vl, struct vidframe *frame,
 	/* save the displayed frame info */
 	vl->disp_size = frame->size;
 	vl->disp_fmt = frame->fmt;
-	++vl->stats.disp_frames;
 
 	lock_write_get(vl->frame_mutex);
 
