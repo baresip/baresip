@@ -1021,6 +1021,11 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 
 		vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
 						  v->cfg.src_mod);
+		if (!vs) {
+			warning("video: source not found: %s\n",
+				v->cfg.src_mod);
+			return ENOENT;
+		}
 
 		size.w = v->cfg.width;
 		size.h = v->cfg.height;
