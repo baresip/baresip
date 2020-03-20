@@ -46,7 +46,7 @@ struct call {
 	struct list streaml;      /**< List of mediastreams (struct stream) */
 	struct audio *audio;      /**< Audio stream                         */
 	struct video *video;      /**< Video stream                         */
-	struct media_ctx *ctx;
+	struct media_ctx *ctx;    /**< Shared A/V source media context      */
 	enum state state;         /**< Call state                           */
 	char *local_uri;          /**< Local SIP uri                        */
 	char *local_name;         /**< Local display name                   */

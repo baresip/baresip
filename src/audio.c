@@ -89,7 +89,7 @@ struct autx {
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
-	struct media_ctx **ctx;
+	struct media_ctx **ctx;       /**< Shared A/V source media context */
 	char *module;                 /**< Audio source module name        */
 	char *device;                 /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
