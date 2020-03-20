@@ -206,6 +206,8 @@ static int aufile_load(struct mbuf *mb, const char *filename,
  * @param srate    Sampling rate
  * @param ch       Number of channels
  * @param repeat   Number of times to repeat
+ * @param play_mod Audio player module
+ * @param play_dev Audio player device
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -269,6 +271,8 @@ int play_tone(struct play **playp, struct player *player,
  * @param player   Audio-file player
  * @param filename Name of WAV file to play
  * @param repeat   Number of times to repeat
+ * @param play_mod Audio player module
+ * @param play_dev Audio player device
  *
  * @return 0 if success, otherwise errorcode
  */
