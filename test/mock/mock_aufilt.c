@@ -48,10 +48,14 @@ static int mock_encode_update(struct aufilt_enc_st **stp, void **ctx,
 }
 
 
-static int mock_encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
+static int mock_encode(struct aufilt_enc_st *st, struct auframe *af)
 {
-	if (!st || !sampv || !sampc)
+	if (!st || !af)
 		return EINVAL;
+
+	/* check that sampv is ref'able */
+	if (0 == mem_nrefs(af->sampv))
+		return EBADMSG;
 
 	return 0;
 }

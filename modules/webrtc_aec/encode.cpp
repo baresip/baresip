@@ -119,36 +119,38 @@ static int encode_float(struct aec_enc *enc, float *sampv, size_t sampc)
 }
 
 
-int webrtc_aec_encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
+int webrtc_aec_encode(struct aufilt_enc_st *st, struct auframe *af)
 {
 	struct aec_enc *enc = (struct aec_enc *)st;
 	float *flt;
 	int err = 0;
 
-	if (!st || !sampv || !sampc)
+	if (!st || !af)
 		return EINVAL;
 
 	switch (enc->fmt) {
 
 	case AUFMT_S16LE:
 		/* convert from S16 to FLOAT */
-		flt = (float *)mem_alloc(*sampc * sizeof(float), NULL);
+		flt = (float *)mem_alloc(af->sampc * sizeof(float), NULL);
 		if (!flt)
 			return ENOMEM;
 
-		auconv_from_s16(AUFMT_FLOAT, flt, (int16_t *)sampv, *sampc);
+		auconv_from_s16(AUFMT_FLOAT, flt,
+				(int16_t *)af->sampv, af->sampc);
 
 		/* process */
-		err = encode_float(enc, flt, *sampc);
+		err = encode_float(enc, flt, af->sampc);
 
 		/* convert from FLOAT to S16 */
-		auconv_to_s16((int16_t *)sampv, AUFMT_FLOAT, flt, *sampc);
+		auconv_to_s16((int16_t *)af->sampv, AUFMT_FLOAT,
+			      flt, af->sampc);
 
 		mem_deref(flt);
 		break;
 
 	case AUFMT_FLOAT:
-		err = encode_float(enc, (float *)sampv, *sampc);
+		err = encode_float(enc, (float *)af->sampv, af->sampc);
 		break;
 
 	default:

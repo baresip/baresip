@@ -116,30 +116,30 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 }
 
 
-static int encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
+static int encode(struct aufilt_enc_st *st, struct auframe *af)
 {
 	struct preproc *pp = (struct preproc *)st;
 	int err;
 
-	if (!st || !sampv || !sampc)
+	if (!st || !af)
 		return EINVAL;
 
-	if (!*sampc)
+	if (!af->sampc)
 		return 0;
 
-	if (pp->state && *sampc != pp->frame_size) {
+	if (pp->state && af->sampc != pp->frame_size) {
 
 		speex_preprocess_state_destroy(pp->state);
 		pp->state = NULL;
 	}
 
 	if (!pp->state) {
-		err = init_state(pp, *sampc);
+		err = init_state(pp, af->sampc);
 		if (err)
 			return err;
 	}
 
-	speex_preprocess_run(pp->state, sampv);
+	speex_preprocess_run(pp->state, af->sampv);
 
 	return 0;
 }

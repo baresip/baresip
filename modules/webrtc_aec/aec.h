@@ -30,7 +30,7 @@ struct aec {
 int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
 			     const struct aufilt *af, struct aufilt_prm *prm,
 			     const struct audio *au);
-int webrtc_aec_encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc);
+int webrtc_aec_encode(struct aufilt_enc_st *st, struct auframe *af);
 
 
 /* Decoder */

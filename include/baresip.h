@@ -38,9 +38,13 @@ struct vidframe;
 struct vidrect;
 struct vidsz;
 
+
+/**
+ * Defines a frame of audio samples
+ */
 struct auframe {
-	void *sampv;
-	size_t sampc;
+	void *sampv;   /**< Audio samples (must be mem_ref'd) */
+	size_t sampc;  /**< Total number of audio samples     */
 };
 
 
@@ -510,7 +514,7 @@ typedef int (aufilt_encupd_h)(struct aufilt_enc_st **stp, void **ctx,
 			      const struct aufilt *af, struct aufilt_prm *prm,
 			      const struct audio *au);
 typedef int (aufilt_encode_h)(struct aufilt_enc_st *st,
-			      void *sampv, size_t *sampc);
+			      struct auframe *af);
 
 typedef int (aufilt_decupd_h)(struct aufilt_dec_st **stp, void **ctx,
 			      const struct aufilt *af, struct aufilt_prm *prm,

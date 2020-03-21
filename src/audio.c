@@ -475,6 +475,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 static void poll_aubuf_tx(struct audio *a)
 {
 	struct autx *tx = &a->tx;
+	struct auframe af;
 	int16_t *sampv = tx->sampv;
 	size_t sampc;
 	size_t sz;
@@ -545,19 +546,22 @@ static void poll_aubuf_tx(struct audio *a)
 		sampc = sampc_rs;
 	}
 
+	af.sampv = sampv;
+	af.sampc = sampc;
+
 	/* Process exactly one audio-frame in list order */
 	for (le = tx->filtl.head; le; le = le->next) {
 		struct aufilt_enc_st *st = le->data;
 
 		if (st->af && st->af->ench)
-			err |= st->af->ench(st, sampv, &sampc);
+			err |= st->af->ench(st, &af);
 	}
 	if (err) {
 		warning("audio: aufilter encode: %m\n", err);
 	}
 
 	/* Encode and send */
-	encode_rtp_send(a, tx, sampv, sampc);
+	encode_rtp_send(a, tx, af.sampv, af.sampc);
 }
 
 

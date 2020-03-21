@@ -959,11 +959,11 @@ static int vu_decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-static int vu_encode(struct aufilt_enc_st *st, void *sampv, size_t *sampc)
+static int vu_encode(struct aufilt_enc_st *st, struct auframe *af)
 {
 	struct vumeter_enc *vu = (struct vumeter_enc *)st;
 
-	vu->avg_rec = calc_avg_s16(sampv, *sampc);
+	vu->avg_rec = calc_avg_s16(af->sampv, af->sampc);
 	vu->started = true;
 
 	return 0;
