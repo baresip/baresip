@@ -196,14 +196,14 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 }
 
 
-static int decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
+static int decode(struct aufilt_dec_st *st, struct auframe *af)
 {
 	struct vumeter_dec *vu = (void *)st;
 
-	if (!st || !sampv || !sampc)
+	if (!st || !af)
 		return EINVAL;
 
-	vu->avg_play = aulevel_calc_dbov(vu->fmt, sampv, *sampc);
+	vu->avg_play = aulevel_calc_dbov(vu->fmt, af->sampv, af->sampc);
 	vu->started = true;
 
 	return 0;

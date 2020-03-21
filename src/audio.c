@@ -730,6 +730,7 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 static int aurx_stream_decode(struct aurx *rx, bool marker,
 			      struct mbuf *mb, unsigned lostc)
 {
+	struct auframe af;
 	size_t sampc = AUDIO_SAMPSZ;
 	void *sampv;
 	struct le *le;
@@ -768,18 +769,22 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 		sampc = 0;
 	}
 
+	af.sampv = rx->sampv;
+	af.sampc = sampc;
+
 	/* Process exactly one audio-frame in reverse list order */
 	for (le = rx->filtl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;
 
 		if (st->af && st->af->dech)
-			err |= st->af->dech(st, rx->sampv, &sampc);
+			err |= st->af->dech(st, &af);
 	}
 
 	if (!rx->aubuf)
 		goto out;
 
-	sampv = rx->sampv;
+	sampv = af.sampv;
+	sampc = af.sampc;
 
 	/* optional resampler */
 	if (rx->resamp.resample) {

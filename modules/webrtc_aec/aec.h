@@ -38,7 +38,7 @@ int webrtc_aec_encode(struct aufilt_enc_st *st, struct auframe *af);
 int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
 			     const struct aufilt *af, struct aufilt_prm *prm,
 			     const struct audio *au);
-int webrtc_aec_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc);
+int webrtc_aec_decode(struct aufilt_dec_st *st, struct auframe *af);
 
 
 /* Common */

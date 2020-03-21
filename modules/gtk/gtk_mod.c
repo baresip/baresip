@@ -970,11 +970,11 @@ static int vu_encode(struct aufilt_enc_st *st, struct auframe *af)
 }
 
 
-static int vu_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
+static int vu_decode(struct aufilt_dec_st *st, struct auframe *af)
 {
 	struct vumeter_dec *vu = (struct vumeter_dec *)st;
 
-	vu->avg_play = calc_avg_s16(sampv, *sampc);
+	vu->avg_play = calc_avg_s16(af->sampv, af->sampc);
 	vu->started = true;
 
 	return 0;

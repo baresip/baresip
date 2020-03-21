@@ -520,7 +520,7 @@ typedef int (aufilt_decupd_h)(struct aufilt_dec_st **stp, void **ctx,
 			      const struct aufilt *af, struct aufilt_prm *prm,
 			      const struct audio *au);
 typedef int (aufilt_decode_h)(struct aufilt_dec_st *st,
-			      void *sampv, size_t *sampc);
+			      struct auframe *af);
 
 struct aufilt {
 	struct le le;

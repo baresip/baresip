@@ -104,30 +104,31 @@ static int decode_float(struct aec_dec *dec, const float *sampv, size_t sampc)
 }
 
 
-int webrtc_aec_decode(struct aufilt_dec_st *st, void *sampv, size_t *sampc)
+int webrtc_aec_decode(struct aufilt_dec_st *st, struct auframe *af)
 {
 	struct aec_dec *dec = (struct aec_dec *)st;
 	float *flt;
 	int err = 0;
 
-	if (!st || !sampv || !sampc)
+	if (!st || !af)
 		return EINVAL;
 
 	/* convert samples to float if needed */
 	switch (dec->fmt) {
 
 	case AUFMT_S16LE:
-		flt = (float *)mem_alloc(*sampc * sizeof(float), NULL);
+		flt = (float *)mem_alloc(af->sampc * sizeof(float), NULL);
 		if (!flt)
 			return ENOMEM;
 
-		auconv_from_s16(AUFMT_FLOAT, flt, (int16_t *)sampv, *sampc);
-		err = decode_float(dec, flt, *sampc);
+		auconv_from_s16(AUFMT_FLOAT, flt,
+				(int16_t *)af->sampv, af->sampc);
+		err = decode_float(dec, flt, af->sampc);
 		mem_deref(flt);
 		break;
 
 	case AUFMT_FLOAT:
-		err = decode_float(dec, (float *)sampv, *sampc);
+		err = decode_float(dec, (float *)af->sampv, af->sampc);
 		break;
 
 	default:
