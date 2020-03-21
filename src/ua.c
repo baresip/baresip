@@ -958,7 +958,7 @@ void ua_hangup(struct ua *ua, struct call *call,
 			return;
 	}
 
-	(void)call_hangup(call, scode, reason);
+	call_hangup(call, scode, reason);
 
 	ua_event(ua, UA_EVENT_CALL_CLOSED, call,
 		 reason ? reason : "Connection reset by user");

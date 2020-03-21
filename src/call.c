@@ -969,12 +969,17 @@ int call_modify(struct call *call)
 }
 
 
-int call_hangup(struct call *call, uint16_t scode, const char *reason)
+/**
+ * Hangup the call
+ *
+ * @param call   Call to hangup
+ * @param scode  Optional status code
+ * @param reason Optional reason
+ */
+void call_hangup(struct call *call, uint16_t scode, const char *reason)
 {
-	int err = 0;
-
 	if (!call)
-		return EINVAL;
+		return;
 
 	if (call->config_avt.rtp_stats)
 		call_set_xrtpstat(call);
@@ -1003,8 +1008,6 @@ int call_hangup(struct call *call, uint16_t scode, const char *reason)
 	set_state(call, STATE_TERMINATED);
 
 	call_stream_stop(call);
-
-	return err;
 }
 
 

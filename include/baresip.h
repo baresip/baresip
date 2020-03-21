@@ -135,7 +135,7 @@ typedef void (call_dtmf_h)(struct call *call, char key, void *arg);
 int  call_connect(struct call *call, const struct pl *paddr);
 int  call_answer(struct call *call, uint16_t scode);
 int  call_progress(struct call *call);
-int  call_hangup(struct call *call, uint16_t scode, const char *reason);
+void call_hangup(struct call *call, uint16_t scode, const char *reason);
 int  call_modify(struct call *call);
 int  call_hold(struct call *call, bool hold);
 int  call_send_digit(struct call *call, char key);
