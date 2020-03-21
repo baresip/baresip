@@ -1056,7 +1056,7 @@ int call_answer(struct call *call, uint16_t scode)
 		return 0;
 	}
 
-	info("answering call from %s with %u\n", call->peer_uri, scode);
+	info("call: answering call from %s with %u\n", call->peer_uri, scode);
 
 	if (call->got_offer) {
 
