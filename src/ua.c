@@ -114,6 +114,15 @@ void ua_printf(const struct ua *ua, const char *fmt, ...)
 }
 
 
+/**
+ * Send a User-Agent event to all UA event handlers
+ *
+ * @param ua   User-Agent object (optional)
+ * @param ev   User-agent event
+ * @param call Call object (optional)
+ * @param fmt  Formatted arguments
+ * @param ...  Variable arguments
+ */
 void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...)
 {
