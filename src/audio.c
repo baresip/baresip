@@ -778,6 +778,7 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 		sampc = 0;
 	}
 
+	af.fmt   = rx->dec_fmt;
 	af.sampv = rx->sampv;
 	af.sampc = sampc;
 
