@@ -135,6 +135,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
 	int err;
+	(void)ua;
 	(void)prm;
 	(void)arg;
 
