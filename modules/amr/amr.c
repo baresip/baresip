@@ -205,10 +205,12 @@ static int decode_update(struct audec_state **adsp,
 
 
 #ifdef AMR_WB
-static int encode_wb(struct auenc_state *st, uint8_t *buf, size_t *len,
+static int encode_wb(struct auenc_state *st,
+		     bool *marker, uint8_t *buf, size_t *len,
 		     int fmt, const void *sampv, size_t sampc)
 {
 	int n;
+	(void)marker;
 
 	if (sampc != L_FRAME16k)
 		return EINVAL;
@@ -234,8 +236,10 @@ static int encode_wb(struct auenc_state *st, uint8_t *buf, size_t *len,
 
 static int decode_wb(struct audec_state *st,
 		     int fmt, void *sampv, size_t *sampc,
-		     const uint8_t *buf, size_t len)
+		     bool marker, const uint8_t *buf, size_t len)
 {
+	(void)marker;
+
 	if (*sampc < L_FRAME16k)
 		return ENOMEM;
 	if (len > NB_SERIAL_MAX)
