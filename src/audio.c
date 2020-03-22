@@ -652,7 +652,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	struct autx *tx = &a->tx;
 	size_t num_bytes = af->sampc * aufmt_sample_size(tx->src_fmt);
 
-	if (tx->src_fmt != af->fmt) {
+	if ((int)tx->src_fmt != af->fmt) {
 		warning("audio: ausrc format mismatch:"
 			" expected=%d(%s), actual=%d(%s)\n",
 			tx->src_fmt, aufmt_name(tx->src_fmt),
