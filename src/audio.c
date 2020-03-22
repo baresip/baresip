@@ -546,6 +546,7 @@ static void poll_aubuf_tx(struct audio *a)
 		sampc = sampc_rs;
 	}
 
+	af.fmt = tx->enc_fmt;
 	af.sampv = sampv;
 	af.sampc = sampc;
 
@@ -650,7 +651,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 {
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
-	size_t num_bytes = af->sampc * aufmt_sample_size(tx->src_fmt);
+	size_t num_bytes = auframe_size(af);
 
 	if ((int)tx->src_fmt != af->fmt) {
 		warning("audio: ausrc format mismatch:"
@@ -661,7 +662,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	}
 
 	if (tx->muted)
-		memset((void *)af->sampv, 0, num_bytes);
+		auframe_mute(af);
 
 	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
 

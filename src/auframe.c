@@ -40,9 +40,18 @@ size_t auframe_size(const struct auframe *af)
 
 	sz = aufmt_sample_size(af->fmt);
 	if (sz == 0) {
-		warning("auframe: illegal format %d (%s)\n",
+		warning("auframe: size: illegal format %d (%s)\n",
 			af->fmt, aufmt_name(af->fmt));
 	}
 
 	return af->sampc * sz;
+}
+
+
+void auframe_mute(struct auframe *af)
+{
+	if (!af)
+		return;
+
+	memset(af->sampv, 0, auframe_size(af));
 }

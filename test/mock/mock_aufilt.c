@@ -57,6 +57,9 @@ static int mock_encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (0 == mem_nrefs(af->sampv))
 		return EBADMSG;
 
+	if (0 == auframe_size(af))
+		return EBADMSG;
+
 	return 0;
 }
 

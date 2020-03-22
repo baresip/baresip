@@ -109,6 +109,7 @@ struct auframe {
 
 void   auframe_init(struct auframe *af, int fmt, void *sampv, size_t sampc);
 size_t auframe_size(const struct auframe *af);
+void   auframe_mute(struct auframe *af);
 
 
 /*
