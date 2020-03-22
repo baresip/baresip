@@ -39,15 +39,6 @@ struct vidrect;
 struct vidsz;
 
 
-/**
- * Defines a frame of audio samples
- */
-struct auframe {
-	void *sampv;   /**< Audio samples (must be mem_ref'd) */
-	size_t sampc;  /**< Total number of audio samples     */
-};
-
-
 /*
  * Account
  */
@@ -101,6 +92,23 @@ const char *account_medianat(const struct account *acc);
 const char *account_mwi(const struct account *acc);
 const char *account_call_transfer(const struct account *acc);
 const char *account_extra(const struct account *acc);
+
+
+/*
+ * Audio frame
+ */
+
+/**
+ * Defines a frame of audio samples
+ */
+struct auframe {
+	int fmt;       /**< Sample format (enum aufmt)        */
+	void *sampv;   /**< Audio samples (must be mem_ref'd) */
+	size_t sampc;  /**< Total number of audio samples     */
+};
+
+void   auframe_init(struct auframe *af, int fmt, void *sampv, size_t sampc);
+size_t auframe_size(const struct auframe *af);
 
 
 /*

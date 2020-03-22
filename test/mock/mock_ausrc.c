@@ -25,6 +25,7 @@ static void tmr_handler(void *arg)
 {
 	struct ausrc_st *st = arg;
 	struct auframe af = {
+		.fmt   = st->prm.fmt,
 		.sampv = st->sampv,
 		.sampc = st->sampc
 	};

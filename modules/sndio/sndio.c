@@ -81,6 +81,7 @@ static void *read_thread(void *arg)
 		struct auframe af;
 		size_t n = sio_read(st->hdl, st->sampv, st->sampc*2);
 
+		af.fmt   = AUFMT_S16LE;
 		af.sampv = st->sampv;
 		af.sampc = n/2;
 

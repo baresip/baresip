@@ -17,6 +17,7 @@ struct ausrc_st {
 	const struct ausrc *as;  /* base class */
 
 	struct shared *shared;
+	enum aufmt fmt;
 	ausrc_read_h *readh;
 	ausrc_error_h *errh;
 	void *arg;
@@ -73,6 +74,7 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->readh = readh;
 	st->errh  = errh;
 	st->arg   = arg;
+	st->fmt   = prm->fmt;
 
 	/* todo: also lookup "dev" ? */
 	if (ctx && *ctx && (*ctx)->id && !strcmp((*ctx)->id, "avformat")) {
@@ -162,6 +164,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 	if (st->ausrc_st && st->ausrc_st->readh) {
 
 		struct auframe af = {
+			.fmt   = st->ausrc_st->fmt,
 			.sampv = frame.data[0],
 			.sampc = frame.nb_samples * frame.channels
 		};

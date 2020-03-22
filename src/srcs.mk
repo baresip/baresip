@@ -8,6 +8,7 @@ SRCS	+= account.c
 SRCS	+= aucodec.c
 SRCS	+= audio.c
 SRCS	+= aufilt.c
+SRCS	+= auframe.c
 SRCS	+= aulevel.c
 SRCS	+= auplay.c
 SRCS	+= ausrc.c

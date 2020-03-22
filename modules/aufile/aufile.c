@@ -26,6 +26,7 @@
 
 struct ausrc_st {
 	const struct ausrc *as;  /* base class */
+
 	struct tmr tmr;
 	struct aufile *aufile;
 	struct aubuf *aubuf;
@@ -71,6 +72,7 @@ static void *play_thread(void *arg)
 	while (st->run) {
 
 		struct auframe af = {
+			.fmt   = AUFMT_S16LE,
 			.sampv = sampv,
 			.sampc = st->sampc
 		};

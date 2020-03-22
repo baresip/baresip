@@ -102,6 +102,7 @@ static void *device_thread(void *arg)
 
 		if (dev->ausrc->rh) {
 			struct auframe af = {
+				.fmt   = dev->ausrc->prm.fmt,
 				.sampv = sampv_in,
 				.sampc = sampc_in
 			};

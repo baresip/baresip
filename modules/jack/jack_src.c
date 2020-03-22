@@ -48,6 +48,7 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 		}
 	}
 
+	af.fmt   = st->prm.fmt;
 	af.sampv = st->sampv;
 	af.sampc = sampc;
 

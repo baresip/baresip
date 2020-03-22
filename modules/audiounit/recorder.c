@@ -21,6 +21,7 @@ struct ausrc_st {
 	pthread_mutex_t mutex;
 	int ch;
 	uint32_t sampsz;
+	int fmt;
 	double sampc_ratio;
 	AudioBufferList *abl;
 	ausrc_read_h *rh;
@@ -131,6 +132,7 @@ static OSStatus input_callback(void *inRefCon,
 			return ret;
 		}
 
+		af.fmt   = st->fmt;
 		af.sampv = abl_conv.mBuffers[0].mData;
 		af.sampc = abl_conv.mBuffers[0].mDataByteSize/st->sampsz;
 
@@ -222,6 +224,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		err = ENOTSUP;
 		goto out;
 	}
+	st->fmt = prm->fmt;
 
 	framesz = st->sampsz * st->ch;
 	err = conv_buf_alloc(&st->buf, framesz);

@@ -189,6 +189,7 @@ static void *record_thread(void *arg)
 		if (n <= 0)
 			continue;
 
+		af.fmt   = AUFMT_S16LE;
 		af.sampv = st->sampv;
 		af.sampc = n/2;
 
