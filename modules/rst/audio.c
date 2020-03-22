@@ -29,6 +29,7 @@ struct ausrc_st {
 	uint32_t ptime;
 	size_t sampc;
 	size_t sampsz;
+	enum aufmt fmt;
 };
 
 
@@ -70,6 +71,7 @@ static void *play_thread(void *arg)
 	while (st->run) {
 
 		struct auframe af = {
+			.fmt   = st->fmt,
 			.sampv = sampv,
 			.sampc = st->sampc
 		};
@@ -220,6 +222,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	st->sampsz = aufmt_sample_size(prm->fmt);
+	st->fmt = prm->fmt;
 
 	st->ptime = prm->ptime;
 

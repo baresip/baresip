@@ -32,6 +32,7 @@ struct ausrc_st {
 	void *arg;
 	volatile bool ready;
 	unsigned ch;
+	enum aufmt fmt;
 };
 
 struct auplay_st {
@@ -71,6 +72,7 @@ static int read_callback(const void *inputBuffer, void *outputBuffer,
 
 	sampc = frameCount * st->ch;
 
+	af.fmt   = st->fmt;
 	af.sampv = (void *)inputBuffer;
 	af.sampc = sampc;
 
@@ -235,6 +237,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh  = rh;
 	st->arg = arg;
 	st->ch  = prm->ch;
+	st->fmt = prm->fmt;
 
 	st->ready = true;
 

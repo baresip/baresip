@@ -176,6 +176,7 @@ static void play_packet(struct ausrc_st *st)
 {
 	int16_t buf[st->sampc];
 	struct auframe af = {
+		.fmt   = AUFMT_S16LE,
 		.sampv = buf,
 		.sampc = st->sampc
 	};

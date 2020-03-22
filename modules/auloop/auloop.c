@@ -203,6 +203,12 @@ static void src_read_handler(struct auframe *af, void *arg)
 	struct stats *stats = &al->stats_src;
 	int err;
 
+	if (af->fmt != (int)al->fmt) {
+		warning("auloop: format mismatch: exp=%d, actual=%d\n",
+			al->fmt, af->fmt);
+		return;
+	}
+
 	lock_write_get(al->lock);
 
 	stats->n_samp   += af->sampc;

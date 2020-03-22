@@ -79,6 +79,7 @@ static void *read_thread(void *arg)
 			continue;
 		}
 
+		af.fmt   = st->prm.fmt;
 		af.sampv = st->sampv;
 		af.sampc = n * st->prm.ch;
 
