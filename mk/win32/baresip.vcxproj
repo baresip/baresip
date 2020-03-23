@@ -186,9 +186,11 @@
     <ClCompile Include="..\..\src\net.c" />
     <ClCompile Include="..\..\src\play.c" />
     <ClCompile Include="..\..\src\reg.c" />
+    <ClCompile Include="..\..\src\rtpstat.c" />
     <ClCompile Include="..\..\src\sdp.c" />
     <ClCompile Include="..\..\src\sipreq.c" />
     <ClCompile Include="..\..\src\stream.c" />
+    <ClCompile Include="..\..\src\stunuri.c" />
     <ClCompile Include="..\..\src\timer.c" />
     <ClCompile Include="..\..\src\ua.c" />
     <ClCompile Include="..\..\src\ui.c" />

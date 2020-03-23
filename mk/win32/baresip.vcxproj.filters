@@ -358,5 +358,11 @@
     <ClCompile Include="..\..\src\custom_hdrs.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\stunuri.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtpstat.c">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
