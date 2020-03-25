@@ -865,6 +865,19 @@ struct sip_addr *account_laddr(const struct account *acc)
 
 
 /**
+ * Get the decoded AOR URI of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Decoded URI
+ */
+struct uri *account_luri(const struct account *acc)
+{
+	return acc ? (struct uri *)&acc->luri : NULL;
+}
+
+
+/**
  * Get the Registration interval of an account
  *
  * @param acc User-Agent account
