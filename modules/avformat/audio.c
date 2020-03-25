@@ -8,8 +8,10 @@
 #include <rem.h>
 #include <baresip.h>
 #include <pthread.h>
+#include <libavutil/opt.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libswresample/swresample.h>
 #include "mod_avformat.h"
 
 
@@ -17,7 +19,8 @@ struct ausrc_st {
 	const struct ausrc *as;  /* base class */
 
 	struct shared *shared;
-	enum aufmt fmt;
+	struct ausrc_prm prm;
+	SwrContext *swr;
 	ausrc_read_h *readh;
 	ausrc_error_h *errh;
 	void *arg;
@@ -30,6 +33,9 @@ static void audio_destructor(void *arg)
 
 	avformat_shared_set_audio(st->shared, NULL);
 	mem_deref(st->shared);
+
+	if (st->swr)
+		swr_free(&st->swr);
 }
 
 
@@ -51,20 +57,12 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	struct shared *sh;
-	enum AVSampleFormat format;
 	int err = 0;
 
 	if (!stp || !as || !prm || !readh)
 		return EINVAL;
 
 	info("avformat: audio: loading input file '%s'\n", dev);
-
-	format = aufmt_to_avsampleformat(prm->fmt);
-	if (format == AV_SAMPLE_FMT_NONE) {
-		warning("avformat: audio: unsupported sampleformat (%s)\n",
-			aufmt_name(prm->fmt));
-		return ENOTSUP;
-	}
 
 	st = mem_zalloc(sizeof(*st), audio_destructor);
 	if (!st)
@@ -74,7 +72,7 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->readh = readh;
 	st->errh  = errh;
 	st->arg   = arg;
-	st->fmt   = prm->fmt;
+	st->prm   = *prm;
 
 	/* todo: also lookup "dev" ? */
 	if (ctx && *ctx && (*ctx)->id && !strcmp((*ctx)->id, "avformat")) {
@@ -97,26 +95,18 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	if (sh->au.ctx->sample_rate != (int)prm->srate ||
-	    sh->au.ctx->channels != prm->ch) {
-		info("avformat: audio: samplerate/channels"
-		     " mismatch: param=%u/%u, file=%u/%u\n",
-		     prm->srate, prm->ch,
-		     sh->au.ctx->sample_rate, sh->au.ctx->channels);
-		err = ENOTSUP;
-		goto out;
-	}
-
-	if (format != sh->au.ctx->sample_fmt) {
-		info("avformat: audio: sample format mismatch:"
-		     " param=%s, file=%s\n",
-		     av_get_sample_fmt_name(format),
-		     av_get_sample_fmt_name(sh->au.ctx->sample_fmt));
-		err = ENOTSUP;
+	st->swr = swr_alloc();
+	if (!st->swr) {
+		err = ENOMEM;
 		goto out;
 	}
 
 	avformat_shared_set_audio(st->shared, st);
+
+	info("avformat: audio: converting %u/%u %s -> %u/%u %s\n",
+	     sh->au.ctx->sample_rate, sh->au.ctx->channels,
+	     av_get_sample_fmt_name(sh->au.ctx->sample_fmt),
+	     prm->srate, prm->ch, aufmt_name(prm->fmt));
 
  out:
 	if (err)
@@ -131,6 +121,7 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 {
 	AVFrame frame;
+	AVFrame frame2;
 	int ret;
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
 	int got_frame;
@@ -140,6 +131,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 		return;
 
 	memset(&frame, 0, sizeof(frame));
+	memset(&frame2, 0, sizeof(frame2));
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
@@ -163,16 +155,35 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 
 	if (st->ausrc_st && st->ausrc_st->readh) {
 
-		struct auframe af = {
-			.fmt   = st->ausrc_st->fmt,
-			.sampv = frame.data[0],
-			.sampc = frame.nb_samples * frame.channels
-		};
+		struct auframe af;
+
+		frame.channel_layout =
+			av_get_default_channel_layout(frame.channels);
+
+		frame2.channels       = st->ausrc_st->prm.ch;
+		frame2.channel_layout =
+			av_get_default_channel_layout(st->ausrc_st->prm.ch);
+		frame2.sample_rate    = st->ausrc_st->prm.srate;
+		frame2.format         =
+			aufmt_to_avsampleformat(st->ausrc_st->prm.fmt);
+
+		ret = swr_convert_frame(st->ausrc_st->swr, &frame2, &frame);
+		if (ret) {
+			warning("avformat: swr_convert_frame failed (%d)\n",
+				ret);
+			goto unlock;
+		}
+
+		af.fmt   = st->ausrc_st->prm.fmt;
+		af.sampv = frame2.data[0];
+		af.sampc = frame2.nb_samples * frame2.channels;
 
 		st->ausrc_st->readh(&af, st->ausrc_st->arg);
 	}
 
+ unlock:
 	lock_rel(st->lock);
 
+	av_frame_unref(&frame2);
 	av_frame_unref(&frame);
 }
