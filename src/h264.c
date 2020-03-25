@@ -204,6 +204,8 @@ const char *h264_nalunit_name(int type)
 	case H264_NAL_AUD:         return "AUD";
 	case H264_NAL_FILLER_DATA: return "FILLER";
 
+	case H264_NAL_STAP_A:      return "STAP-A";
+	case H264_NAL_STAP_B:      return "STAP-B";
 	case H264_NAL_FU_A:        return "FU-A";
 	case H264_NAL_FU_B:        return "FU-B";
 	}
