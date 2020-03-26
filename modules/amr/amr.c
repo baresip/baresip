@@ -242,7 +242,7 @@ static int decode_wb(struct audec_state *st,
 
 	if (*sampc < L_FRAME16k)
 		return ENOMEM;
-	if (len > NB_SERIAL_MAX)
+	if (len > (1+NB_SERIAL_MAX))
 		return EINVAL;
 
 	if (fmt != AUFMT_S16LE)
