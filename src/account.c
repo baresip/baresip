@@ -1743,6 +1743,32 @@ const char *account_mediaenc(const struct account *acc)
 	return acc ? acc->mencid : NULL;
 }
 
+const char *account_luri_anonym(const struct account *acc, char *buf,
+				size_t len)
+{
+	struct pl transport = PL_INIT;
+
+	if (!acc)
+		return 0;
+
+	/* parse transport, set to UDP if not available */
+	if (!msg_param_decode(&acc->luri.params, "transport", &transport))
+		pl_set_str(&transport, "udp");
+
+	/* assume local IP address used if regint==0 */
+	if (!acc->regint) {
+		re_snprintf(buf, len, "%r:%r@local:%d;transport=%r",
+			    &acc->luri.scheme, &acc->luri.user,
+			    acc->luri.port, &transport);
+	}
+	else {
+		re_snprintf(buf, len, "%r:%r@%r:%d;transport=%r",
+			    &acc->luri.scheme, &acc->luri.user,
+			    &acc->luri.host, acc->luri.port, &transport);
+	}
+
+	return buf;
+}
 
 /**
  * Get the media NAT handling of an account
@@ -1965,6 +1991,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 {
 	struct le *le;
 	size_t i;
+	char buf[256];
 	int err = 0;
 
 	if (!acc)
@@ -1976,6 +2003,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " luri:         %H\n",
 			  uri_encode, &acc->luri);
 	err |= re_hprintf(pf, " aor:          %s\n", acc->aor);
+	err |= re_hprintf(pf, " anonym aor:   %s\n",
+			  account_luri_anonym(acc, buf, sizeof buf));
 	err |= re_hprintf(pf, " dispname:     %s\n", acc->dispname);
 	err |= re_hprintf(pf, " 100rel:       %s\n",
 			  rel100_mode_str(acc->rel100_mode));

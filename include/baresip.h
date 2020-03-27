@@ -163,6 +163,8 @@ uint32_t account_autelev_pt(struct account *acc);
 const char* account_uas_user(const struct account *acc);
 const char* account_uas_pass(const struct account *acc);
 bool account_uas_isset(const struct account *acc);
+const char *account_luri_anonym(const struct account *acc, char *buf,
+				size_t len);
 
 /*
  * Call
