@@ -1635,6 +1635,36 @@ int audio_start(struct audio *a)
 }
 
 
+int audio_start_source(struct audio *a, struct list *aufiltl)
+{
+	int err;
+
+	if (!a)
+		return EINVAL;
+
+	/* NOTE: audio encoder must be set first */
+	if (!a->tx.ac) {
+		warning("audio: start_source: no encoder set\n");
+		return ENOENT;
+	}
+
+	/* Audio filter */
+	if (!list_isempty(aufiltl)) {
+		err = aufilt_setup(a);
+		if (err)
+			return err;
+	}
+
+	err = start_source(&a->tx, a);
+	if (err)
+		return err;
+
+	a->started = true;
+
+	return 0;
+}
+
+
 /**
  * Stop the audio playback and recording
  *

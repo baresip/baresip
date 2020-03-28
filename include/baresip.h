@@ -1176,6 +1176,7 @@ struct stream *audio_strm(const struct audio *au);
 int  audio_set_bitrate(struct audio *au, uint32_t bitrate);
 bool audio_rxaubuf_started(const struct audio *au);
 int  audio_start(struct audio *a);
+int  audio_start_source(struct audio *a, struct list *aufiltl);
 void audio_stop(struct audio *a);
 bool audio_started(const struct audio *a);
 void audio_set_hold(struct audio *au, bool hold);
