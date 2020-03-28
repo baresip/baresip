@@ -1190,7 +1190,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				info("menu: call closed -- not redialing\n");
 			}
 		}
-
 		break;
 
 	case UA_EVENT_CALL_TRANSFER:
