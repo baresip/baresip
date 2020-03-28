@@ -21,6 +21,15 @@ struct ausrc_st {
 };
 
 
+static void ausrc_destructor(void *arg)
+{
+	struct ausrc_st *st = arg;
+
+	tmr_cancel(&st->tmr);
+	mem_deref(st->sampv);
+}
+
+
 static void tmr_handler(void *arg)
 {
 	struct ausrc_st *st = arg;
@@ -34,15 +43,6 @@ static void tmr_handler(void *arg)
 
 	if (st->rh)
 		st->rh(&af, st->arg);
-}
-
-
-static void ausrc_destructor(void *arg)
-{
-	struct ausrc_st *st = arg;
-
-	tmr_cancel(&st->tmr);
-	mem_deref(st->sampv);
 }
 
 
