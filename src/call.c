@@ -519,6 +519,7 @@ static void menc_event_handler(enum menc_event event,
 			       const char *prm, struct stream *strm, void *arg)
 {
 	struct call *call = arg;
+	int err;
 	(void)strm;
 	MAGIC_CHECK(call);
 
@@ -530,12 +531,20 @@ static void menc_event_handler(enum menc_event event,
 		if (strstr(prm, "audio")) {
 			stream_set_secure(audio_strm(call->audio), true);
 			stream_start(audio_strm(call->audio));
-			start_audio(call);
+			err = start_audio(call);
+			if (err) {
+				warning("call: secure: could not"
+					" start audio: %m\n", err);
+			}
 		}
 		else if (strstr(prm, "video")) {
 			stream_set_secure(video_strm(call->video), true);
 			stream_start(video_strm(call->video));
-			start_video(call);
+			err = start_video(call);
+			if (err) {
+				warning("call: secure: could not"
+					" start video: %m\n", err);
+			}
 		}
 		else {
 			info("call: mediaenc: no match for stream (%s)\n",
@@ -585,11 +594,19 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 		switch (strm->type) {
 
 		case MEDIA_AUDIO:
-			start_audio(call);
+			err = start_audio(call);
+			if (err) {
+				warning("call: mnatconn: could not"
+					" start audio: %m\n", err);
+			}
 			break;
 
 		case MEDIA_VIDEO:
-			start_video(call);
+			err = start_video(call);
+			if (err) {
+				warning("call: mnatconn: could not"
+					" start video: %m\n", err);
+			}
 			break;
 		}
 	}
