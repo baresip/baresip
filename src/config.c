@@ -197,7 +197,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	enum poll_method method;
 	struct vidsz size = {0, 0};
 	struct pl txmode;
-	bool prefer_ipv6 = false;
 	uint32_t v;
 	int err = 0;
 
@@ -318,10 +317,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	}
 
 	/* Network */
-#if HAVE_INET6
-	if (0 == conf_get_bool(conf, "net_prefer_ipv6", &prefer_ipv6))
-		info("config: net_prefer_ipv6 ignored\n");
-#endif
 	(void)conf_apply(conf, "dns_server", dns_server_handler, &cfg->net);
 	(void)conf_get_str(conf, "net_interface",
 			   cfg->net.ifname, sizeof(cfg->net.ifname));
