@@ -56,7 +56,6 @@ rtp_stats		no
 #rtp_timeout		60
 
 # Network
-net_prefer_ipv6		no
 #dns_server		1.1.1.1:53
 #dns_server		1.0.0.1:53
 #net_interface		wlan1
