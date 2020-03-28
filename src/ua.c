@@ -87,6 +87,30 @@ static struct {
 };
 
 
+static void ua_destructor(void *arg)
+{
+	struct ua *ua = arg;
+
+	list_unlink(&ua->le);
+
+	if (!list_isempty(&ua->regl))
+		ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
+
+	list_flush(&ua->calls);
+	list_flush(&ua->regl);
+	mem_deref(ua->cuser);
+	mem_deref(ua->pub_gruu);
+	mem_deref(ua->acc);
+
+	if (uag.delayed_close && list_isempty(&uag.ual)) {
+		sip_close(uag.sip, false);
+	}
+
+	list_flush(&ua->custom_hdrs);
+	list_flush(&ua->hdr_filter);
+}
+
+
 /* This function is called when all SIP transactions are done */
 static void exit_handler(void *arg)
 {
@@ -606,30 +630,6 @@ static void handle_options(struct ua *ua, const struct sip_msg *msg)
  out:
 	mem_deref(desc);
 	mem_deref(call);
-}
-
-
-static void ua_destructor(void *arg)
-{
-	struct ua *ua = arg;
-
-	list_unlink(&ua->le);
-
-	if (!list_isempty(&ua->regl))
-		ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
-
-	list_flush(&ua->calls);
-	list_flush(&ua->regl);
-	mem_deref(ua->cuser);
-	mem_deref(ua->pub_gruu);
-	mem_deref(ua->acc);
-
-	if (uag.delayed_close && list_isempty(&uag.ual)) {
-		sip_close(uag.sip, false);
-	}
-
-	list_flush(&ua->custom_hdrs);
-	list_flush(&ua->hdr_filter);
 }
 
 
