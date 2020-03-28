@@ -1427,10 +1427,9 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
+	(void)msg;
 
 	MAGIC_CHECK(call);
-
-	(void)msg;
 
 	if (call->state == STATE_ESTABLISHED)
 		return;
