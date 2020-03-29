@@ -366,15 +366,10 @@ static int append_rtpext(struct audio *au, struct mbuf *mb,
 }
 
 
-/**
- * Encoder audio and send via stream
+/*
+ * Encode audio and send via stream
  *
  * @note This function has REAL-TIME properties
- *
- * @param a     Audio object
- * @param tx    Audio transmit object
- * @param sampv Audio samples
- * @param sampc Number of audio samples
  */
 static void encode_rtp_send(struct audio *a, struct autx *tx,
 			    int16_t *sampv, size_t sampc)
@@ -601,7 +596,7 @@ static void check_telev(struct audio *a, struct autx *tx)
 }
 
 
-/**
+/*
  * Write samples to Audio Player.
  *
  * @note This function has REAL-TIME properties
@@ -612,10 +607,6 @@ static void check_telev(struct audio *a, struct autx *tx)
  * @note This function may be called from any thread
  *
  * @note The sample format is set in rx->play_fmt
- *
- * @param sampv  Buffer to fill with audio samples
- * @param sampc  Number of samples in buffer
- * @param arg    Handler argument
  */
 static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 {
@@ -636,16 +627,12 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 }
 
 
-/**
+/*
  * Read samples from Audio Source
  *
  * @note This function has REAL-TIME properties
  *
  * @note This function may be called from any thread
- *
- * @param sampv  Buffer with audio samples
- * @param sampc  Number of samples in buffer
- * @param arg    Handler argument
  */
 static void ausrc_read_handler(struct auframe *af, void *arg)
 {
