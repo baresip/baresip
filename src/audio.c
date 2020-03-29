@@ -1302,7 +1302,7 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *aurx)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int aufilt_setup(struct audio *a)
+static int aufilt_setup(struct audio *a, struct list *aufiltl)
 {
 	struct aufilt_prm encprm, decprm;
 	struct autx *tx = &a->tx;
@@ -1321,7 +1321,7 @@ static int aufilt_setup(struct audio *a)
 	aufilt_param_set(&decprm, rx->ac, rx->dec_fmt);
 
 	/* Audio filters */
-	for (le = list_head(baresip_aufiltl()); le; le = le->next) {
+	for (le = list_head(aufiltl); le; le = le->next) {
 		struct aufilt *af = le->data;
 		struct aufilt_enc_st *encst = NULL;
 		struct aufilt_dec_st *decst = NULL;
@@ -1362,7 +1362,8 @@ static int aufilt_setup(struct audio *a)
 }
 
 
-static int start_player(struct aurx *rx, struct audio *a)
+static int start_player(struct aurx *rx, struct audio *a,
+			struct list *auplayl)
 {
 	const struct aucodec *ac = rx->ac;
 	uint32_t srate_dsp;
@@ -1408,7 +1409,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 	}
 
 	/* Start Audio Player */
-	if (!rx->auplay && auplay_find(baresip_auplayl(), NULL)) {
+	if (!rx->auplay && auplay_find(auplayl, NULL)) {
 
 		struct auplay_prm prm;
 
@@ -1445,7 +1446,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 			rx->aubuf_maxsz = max_sz;
 		}
 
-		err = auplay_alloc(&rx->auplay, baresip_auplayl(),
+		err = auplay_alloc(&rx->auplay, auplayl,
 				   rx->module,
 				   &prm, rx->device,
 				   auplay_write_handler, rx);
@@ -1465,7 +1466,7 @@ static int start_player(struct aurx *rx, struct audio *a)
 }
 
 
-static int start_source(struct autx *tx, struct audio *a)
+static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 {
 	const struct aucodec *ac = tx->ac;
 	uint32_t srate_dsp;
@@ -1511,7 +1512,7 @@ static int start_source(struct autx *tx, struct audio *a)
 	}
 
 	/* Start Audio Source */
-	if (!tx->ausrc && ausrc_find(baresip_ausrcl(), NULL) && !a->hold) {
+	if (!tx->ausrc && ausrc_find(ausrcl, NULL) && !a->hold) {
 
 		struct ausrc_prm prm;
 		size_t sz;
@@ -1534,7 +1535,7 @@ static int start_source(struct autx *tx, struct audio *a)
 				return err;
 		}
 
-		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
+		err = ausrc_alloc(&tx->ausrc, ausrcl,
 				  tx->ctx, tx->module,
 				  &prm, tx->device,
 				  ausrc_read_handler, ausrc_error_handler, a);
@@ -1588,6 +1589,7 @@ static int start_source(struct autx *tx, struct audio *a)
  */
 int audio_start(struct audio *a)
 {
+	struct list *aufiltl = baresip_aufiltl();
 	int err;
 
 	if (!a)
@@ -1596,14 +1598,15 @@ int audio_start(struct audio *a)
 	debug("audio: start\n");
 
 	/* Audio filter */
-	if (!list_isempty(baresip_aufiltl())) {
-		err = aufilt_setup(a);
+	if (!list_isempty(aufiltl)) {
+
+		err = aufilt_setup(a, aufiltl);
 		if (err)
 			return err;
 	}
 
-	err  = start_player(&a->rx, a);
-	err |= start_source(&a->tx, a);
+	err  = start_player(&a->rx, a, baresip_auplayl());
+	err |= start_source(&a->tx, a, baresip_ausrcl());
 	if (err)
 		return err;
 
@@ -1622,7 +1625,8 @@ int audio_start(struct audio *a)
 }
 
 
-int audio_start_source(struct audio *a, struct list *aufiltl)
+int audio_start_source(struct audio *a, struct list *ausrcl,
+		       struct list *aufiltl)
 {
 	int err;
 
@@ -1637,12 +1641,13 @@ int audio_start_source(struct audio *a, struct list *aufiltl)
 
 	/* Audio filter */
 	if (!list_isempty(aufiltl)) {
-		err = aufilt_setup(a);
+
+		err = aufilt_setup(a, aufiltl);
 		if (err)
 			return err;
 	}
 
-	err = start_source(&a->tx, a);
+	err = start_source(&a->tx, a, ausrcl);
 	if (err)
 		return err;
 
