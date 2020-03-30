@@ -20,7 +20,7 @@
 struct auplay_st {
 	const struct auplay *ap;  /* pointer to base-class (inheritance) */
 	pthread_t thread;
-	bool run;
+	volatile bool run;
 	snd_pcm_t *write;
 	void *sampv;
 	size_t sampc;
