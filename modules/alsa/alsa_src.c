@@ -20,7 +20,7 @@
 struct ausrc_st {
 	const struct ausrc *as;  /* pointer to base-class (inheritance) */
 	pthread_t thread;
-	bool run;
+	volatile bool run;
 	snd_pcm_t *read;
 	void *sampv;
 	size_t sampc;
