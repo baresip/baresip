@@ -138,7 +138,7 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		err |= odict_entry_add(od, "peeruri",
 				       ODICT_STRING, call_peeruri(call));
 		peerdisplayname = call_peername(call);
-		if(peerdisplayname){
+		if (peerdisplayname){
 				err |= odict_entry_add(od, "peerdisplayname",
 						ODICT_STRING, peerdisplayname);
 		}
