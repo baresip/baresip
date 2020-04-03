@@ -53,6 +53,17 @@ mosquitto_pub -t /baresip/command/ -m '{"command":"sysinfo"}'
 
 /baresip/command {"command":"dial","params":"music","token":"123"}
 /baresip/command_resp/123 (null)
+
+```
+## Outgoing call
+```
 /baresip/event {"type":"CALL_ESTABLISHED","class":"call","accountaor":"sip:aeh@iptel.org","direction":"outgoing","peeruri":"sip:music@iptel.org","id":"4d758140c42c5d55","param":"sip:music@iptel.org"}
 /baresip/event {"type":"CALL_CLOSED","class":"call","accountaor":"sip:aeh@iptel.org","direction":"outgoing","peeruri":"sip:music@iptel.org","id":"4d758140c42c5d55","param":"Connection reset by user"}
+
+```
+## Incoming call
+```
+/baresip/event {"type":"CALL_ESTABLISHED","class":"call","accountaor":"sip:aeh@iptel.org","direction":"incoming","peeruri":"sip:music@iptel.org", "peerdisplayname":"MUSIC IP-TEL", "id":"4d758140c42c5d55","param":"sip:aeh@iptel.org"}
+/baresip/event {"type":"CALL_CLOSED","class":"call","accountaor":"sip:aeh@iptel.org","direction":"outgoing","peeruri":"sip:music@iptel.org","id":"4d758140c42c5d55","param":"Connection reset by user"}
+
 ```
