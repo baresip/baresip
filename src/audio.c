@@ -194,6 +194,8 @@ static const char *uri_aulevel = "urn:ietf:params:rtp-hdrext:ssrc-audio-level";
 
 uint16_t audio_jb_current_value(const struct audio* au)
 {
+	if (!au)
+		return 0;
 	return au->rx.stats.aubuf_current_jb;
 }
 static double autx_calc_seconds(const struct autx *autx)
@@ -616,7 +618,7 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 {
 	struct aurx *rx = arg;
 	size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
-	int b_p_ms = 0; // bytes per ms
+	int b_p_ms = 0; /* bytes per ms */
 
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
 
@@ -624,13 +626,13 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 
 #if 0
 		debug("audio: rx aubuf underrun (total %llu)\n",
-		      rx->stats.aubuf_underrun);
+			rx->stats.aubuf_underrun);
 #endif
 	}
 	b_p_ms = aufmt_sample_size(rx->play_fmt)*
 		rx->auplay_prm.srate *rx->auplay_prm.ch / 1000;
 	if (rx->stats.aubuf_current_jb != aubuf_cur_size(rx->aubuf)/b_p_ms) {
-			rx->stats.aubuf_current_jb = aubuf_cur_size(rx->aubuf)/b_p_ms;
+		rx->stats.aubuf_current_jb = aubuf_cur_size(rx->aubuf)/b_p_ms;
 	}
 	aubuf_read(rx->aubuf, sampv, num_bytes);
 }
