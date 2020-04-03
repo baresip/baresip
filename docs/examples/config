@@ -216,5 +216,5 @@ ice_nomination		regular	# {regular,aggressive}
 #snd_path		/tmp
 
 # EBU ACIP
-#sdp_ebuacip         	yes     # enable EBU ACIP parameters in SDP
+#sdp_ebuacip         	yes     # enable parameters in SDP
 #ebuacip_jb_type     	fixed   # auto,fixed
