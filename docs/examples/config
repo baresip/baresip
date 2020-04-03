@@ -33,10 +33,6 @@ auplay_format		s16		# s16, float, ..
 auenc_format		s16		# s16, float, ..
 audec_format		s16		# s16, float, ..
 
-# EBU ACIP
-#sdp_ebuacip         	yes     # enable EBU ACIP parameters in SDP
-#ebuacip_jb_type     	fixed   # auto,fixed
-
 # Video
 #video_source		v4l2,/dev/video0
 #video_display		x11,nil
@@ -114,6 +110,9 @@ module			x11.so
 #module			rst.so
 #module			gst.so
 #module			gst_video.so
+
+# Compatibility modules
+#module			ebuacip.so
 
 # Media NAT modules
 module			stun.so
@@ -215,3 +214,7 @@ ice_nomination		regular	# {regular,aggressive}
 
 # sndfile
 #snd_path		/tmp
+
+# EBU ACIP
+#sdp_ebuacip         	yes     # enable EBU ACIP parameters in SDP
+#ebuacip_jb_type     	fixed   # auto,fixed

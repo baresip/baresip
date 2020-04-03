@@ -805,6 +805,9 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "gst" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "gst_video" MOD_EXT "\n");
 
+	(void)re_fprintf(f, "\n# Compatibility modules\n");
+	(void)re_fprintf(f, "#module\t\t\t" "ebuacip" MOD_EXT "\n");
+
 	(void)re_fprintf(f, "\n# Media NAT modules\n");
 	(void)re_fprintf(f, "module\t\t\t" "stun" MOD_EXT "\n");
 	(void)re_fprintf(f, "module\t\t\t" "turn" MOD_EXT "\n");
@@ -933,6 +936,11 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f,
 			 "\n# sndfile\n"
 			 "#snd_path\t\t/tmp\n");
+
+	(void)re_fprintf(f,
+			 "\n# EBU ACIP\n"
+			 "#sdp_ebuacip\t\tyes\t# enable EBU ACIP parameters in SDP\n"
+			 "#ebuacip_jb_type\t\tfixed\t# auto,fixed\n");
 
 	if (f)
 		(void)fclose(f);
