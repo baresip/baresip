@@ -630,9 +630,9 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 #endif
 	}
 	b_p_ms = aufmt_sample_size(rx->play_fmt)*
-                rx->auplay_prm.srate *rx->auplay_prm.ch / 1000;
+		rx->auplay_prm.srate *rx->auplay_prm.ch / 1000;
 	if (rx->stats.aubuf_current_jb != aubuf_cur_size(rx->aubuf)/b_p_ms) {
-                rx->stats.aubuf_current_jb = aubuf_cur_size(rx->aubuf)/b_p_ms;
+		rx->stats.aubuf_current_jb = aubuf_cur_size(rx->aubuf)/b_p_ms;
 	}
 	aubuf_read(rx->aubuf, sampv, num_bytes);
 }
