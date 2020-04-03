@@ -177,6 +177,13 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 }
 
 
+int event_add_au_jb_stat(struct odict *od_parent, const struct call *call){
+	int err = 0;
+	err = odict_entry_add(od_parent, "audio_jb_ms",ODICT_INT,
+					(int64_t)audio_jb_current_value(call_audio(call)));
+	return err;
+}
+
 /**
  * Get the name of the User-Agent event
  *
