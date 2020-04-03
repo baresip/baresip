@@ -162,7 +162,7 @@ struct aurx {
 	size_t last_sampc;
 
 	struct {
-		uint16_t aubuf_current_jb;
+		uint32_t aubuf_current_jb;
 		uint64_t aubuf_overrun;
 		uint64_t aubuf_underrun;
 		uint64_t n_discard;
@@ -192,7 +192,7 @@ struct audio {
 /* RFC 6464 */
 static const char *uri_aulevel = "urn:ietf:params:rtp-hdrext:ssrc-audio-level";
 
-uint16_t audio_jb_current_value(const struct audio* au)
+uint32_t audio_jb_current_value(const struct audio* au)
 {
 	if (!au)
 		return 0;
@@ -618,7 +618,7 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 {
 	struct aurx *rx = arg;
 	size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
-	int b_p_ms = 0; /* bytes per ms */
+	uint32_t b_p_ms = 0; /* bytes per ms */
 
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
 
