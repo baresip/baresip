@@ -36,7 +36,8 @@ static void tmr_handler(void *arg)
 	struct auframe af = {
 		.fmt   = st->prm.fmt,
 		.sampv = st->sampv,
-		.sampc = st->sampc
+		.sampc = st->sampc,
+		.timestamp = tmr_jiffies_usec()
 	};
 
 	tmr_start(&st->tmr, st->prm.ptime, tmr_handler, st);

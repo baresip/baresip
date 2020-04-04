@@ -40,6 +40,7 @@ struct ausrc_st {
 	pthread_t thread;
 	bool run;
 	int fd;
+	struct ausrc_prm prm;
 	int16_t *sampv;
 	size_t sampc;
 	ausrc_read_h *rh;
@@ -181,6 +182,7 @@ static void *record_thread(void *arg)
 {
 	struct ausrc_st *st = arg;
 	struct auframe af;
+	uint64_t sampc = 0;
 	int n;
 
 	while (st->run) {
@@ -192,6 +194,9 @@ static void *record_thread(void *arg)
 		af.fmt   = AUFMT_S16LE;
 		af.sampv = st->sampv;
 		af.sampc = n/2;
+		af.timestamp = sampc * AUDIO_TIMEBASE / st->prm.srate;
+
+		sampc += n/2;
 
 		st->rh(&af, st->arg);
 	}
@@ -246,6 +251,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!device)
 		device = oss_dev;
 
+	st->prm = *prm;
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 
 	st->sampv = mem_alloc(2 * st->sampc, NULL);

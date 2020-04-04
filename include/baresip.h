@@ -22,6 +22,11 @@ extern "C" {
 
 
 /*
+ * Clock-rate for audio timestamp
+ */
+#define AUDIO_TIMEBASE 1000000U
+
+/*
  * Clock-rate for video timestamp
  */
 #define VIDEO_TIMEBASE 1000000U
@@ -106,6 +111,7 @@ struct auframe {
 	int fmt;       /**< Sample format (enum aufmt)        */
 	void *sampv;   /**< Audio samples (must be mem_ref'd) */
 	size_t sampc;  /**< Total number of audio samples     */
+	uint64_t timestamp;  /**< Timestamp in AUDIO_TIMEBASE units */
 };
 
 void   auframe_init(struct auframe *af, int fmt, void *sampv, size_t sampc);
