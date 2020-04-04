@@ -34,7 +34,7 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 	size_t ch, j;
 	uint64_t ts;
 
-	ts = jack_frame_time(st->client) * AUDIO_TIMEBASE / st->prm.srate;
+	ts = jack_frames_to_time(st->client, jack_last_frame_time(st->client));
 
 	/* 2. convert from 16-bit to float and copy to Jack */
 
