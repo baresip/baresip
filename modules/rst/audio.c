@@ -73,7 +73,8 @@ static void *play_thread(void *arg)
 		struct auframe af = {
 			.fmt   = st->fmt,
 			.sampv = sampv,
-			.sampc = st->sampc
+			.sampc = st->sampc,
+			.timestamp = ts * 1000
 		};
 
 		sys_msleep(4);

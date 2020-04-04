@@ -53,6 +53,7 @@ static void ausrc_destructor(void *arg)
 static void *read_thread(void *arg)
 {
 	struct ausrc_st *st = arg;
+	uint64_t frames = 0;
 	int num_frames;
 	int err;
 
@@ -82,6 +83,9 @@ static void *read_thread(void *arg)
 		af.fmt   = st->prm.fmt;
 		af.sampv = st->sampv;
 		af.sampc = n * st->prm.ch;
+		af.timestamp = frames * AUDIO_TIMEBASE / st->prm.srate;
+
+		frames += n;
 
 		st->rh(&af, st->arg);
 	}

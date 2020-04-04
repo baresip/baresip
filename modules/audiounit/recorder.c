@@ -19,6 +19,7 @@ struct ausrc_st {
 	AudioUnit au_in;
 	AudioUnit au_conv;
 	pthread_mutex_t mutex;
+	struct ausrc_prm prm;
 	int ch;
 	uint32_t sampsz;
 	int fmt;
@@ -105,6 +106,7 @@ static OSStatus input_callback(void *inRefCon,
 
 	while (1) {
 		struct auframe af;
+		uint64_t ts;
 
 		err = get_nb_frames(st->buf, &nb_frames);
 		if (err)
@@ -132,9 +134,13 @@ static OSStatus input_callback(void *inRefCon,
 			return ret;
 		}
 
+		ts  = AUDIO_TIMEBASE*inTimeStamp->mSampleTime / st->prm.srate;
+		ts *= st->sampc_ratio;
+
 		af.fmt   = st->fmt;
 		af.sampv = abl_conv.mBuffers[0].mData;
 		af.sampc = abl_conv.mBuffers[0].mDataByteSize/st->sampsz;
+		af.timestamp = ts;
 
 		rh(&af, arg);
 	}
@@ -225,6 +231,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 	st->fmt = prm->fmt;
+	st->prm = *prm;
 
 	framesz = st->sampsz * st->ch;
 	err = conv_buf_alloc(&st->buf, framesz);

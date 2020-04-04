@@ -155,6 +155,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 
 	if (st->ausrc_st && st->ausrc_st->readh) {
 
+		const AVRational tb = st->au.time_base;
 		struct auframe af;
 
 		frame.channel_layout =
@@ -177,6 +178,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 		af.fmt   = st->ausrc_st->prm.fmt;
 		af.sampv = frame2.data[0];
 		af.sampc = frame2.nb_samples * frame2.channels;
+		af.timestamp = frame.pts * AUDIO_TIMEBASE * tb.num / tb.den;
 
 		st->ausrc_st->readh(&af, st->ausrc_st->arg);
 	}
