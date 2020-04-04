@@ -1173,6 +1173,7 @@ void audio_level_put(const struct audio *au, bool tx, double lvl);
 int  audio_level_get(const struct audio *au, double *level);
 int  audio_debug(struct re_printf *pf, const struct audio *a);
 struct stream *audio_strm(const struct audio *au);
+uint64_t audio_jb_current_value(const struct audio* au);
 int  audio_set_bitrate(struct audio *au, uint32_t bitrate);
 bool audio_rxaubuf_started(const struct audio *au);
 int  audio_start(struct audio *a);
@@ -1449,7 +1450,7 @@ void module_app_unload(void);
 
 int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		      struct call *call, const char *prm);
-
+int event_add_au_jb_stat(struct odict *od_parent, const struct call *call);
 
 /*
  * Timer

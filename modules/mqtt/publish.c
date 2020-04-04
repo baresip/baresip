@@ -34,6 +34,14 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	if (err)
 		goto out;
 
+	/* send audio jitter buffer values together with VU rx values. */
+	if (ev == UA_EVENT_VU_RX) {
+		err = event_add_au_jb_stat(od,call);
+		if (err) {
+			info("Could not add audio jb value.\n");
+		}
+	}
+
 	err = mqtt_publish_message(mqtt, mqtt->pubtopic, "%H",
 				   json_encode_odict, od);
 	if (err) {
