@@ -58,7 +58,8 @@ static void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 	struct auframe af = {
 		.fmt   = AUFMT_S16LE,
 		.sampv = st->sampv[st->bufferId],
-		.sampc = st->sampc
+		.sampc = st->sampc,
+		.timestamp = tmr_jiffies_usec()
 	};
 	(void)bq;
 
