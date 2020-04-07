@@ -38,7 +38,7 @@ struct audio_loop {
 	struct lock *lock;
 	struct tmr tmr;
 	uint32_t srate;
-	uint32_t ch;
+	uint8_t ch;
 	enum aufmt fmt;
 	bool started;
 
@@ -256,7 +256,7 @@ static void error_handler(int err, const char *str, void *arg)
 }
 
 
-static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
+static int auloop_reset(struct audio_loop *al, uint32_t srate, uint8_t ch)
 {
 	struct auplay_prm auplay_prm;
 	struct ausrc_prm ausrc_prm;
@@ -330,7 +330,7 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint32_t ch)
 
 
 static int audio_loop_alloc(struct audio_loop **alp,
-			    uint32_t srate, uint32_t ch)
+			    uint32_t srate, uint8_t ch)
 {
 	struct audio_loop *al;
 	int err;
@@ -387,7 +387,7 @@ static int auloop_start(struct re_printf *pf, void *arg)
 	if (!srate || !ch)
 		return re_hprintf(pf, "invalid samplerate or channels\n");
 
-	err = audio_loop_alloc(&gal, srate, ch);
+	err = audio_loop_alloc(&gal, srate, (uint8_t)ch);
 	if (err) {
 		warning("auloop: alloc failed %m\n", err);
 	}
