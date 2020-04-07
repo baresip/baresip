@@ -13,6 +13,7 @@
 #include <baresip.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavdevice/avdevice.h>
 #include "mod_avformat.h"
 
 
@@ -203,7 +204,20 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 	if (err)
 		goto out;
 
-	ret = avformat_open_input(&st->ic, dev, NULL, NULL);
+	avdevice_register_all();
+
+	ff_const59 AVInputFormat *input_format;
+
+	input_format = av_find_input_format(dev);
+
+	if (!input_format) {
+		warning("avformat: av_find_input_format(%s) not found\n",
+			dev);
+		err = ENOENT;
+		goto out;
+	}
+
+	ret = avformat_open_input(&st->ic, dev, input_format, NULL);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%s)\n",
 			dev, av_err2str(ret));
