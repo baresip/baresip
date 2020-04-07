@@ -75,9 +75,9 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	if (!rh)
 		return;
 
-	af.fmt   = st->fmt;
-	af.sampv = inQB->mAudioData;
-	af.sampc = inQB->mAudioDataByteSize/st->sampsz;
+	auframe_init(&af, st->fmt, inQB->mAudioData,
+		     inQB->mAudioDataByteSize/st->sampsz);
+
 	af.timestamp = AUDIO_TIMEBASE*inStartTime->mSampleTime / st->prm.srate;
 
 	rh(&af, arg);
