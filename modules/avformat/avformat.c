@@ -204,8 +204,6 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 	if (err)
 		goto out;
 
-	avdevice_register_all();
-
 	ff_const59 AVInputFormat *input_format;
 
 	input_format = av_find_input_format(dev);
@@ -312,6 +310,8 @@ static int module_init(void)
 	int err;
 
 	avformat_network_init();
+
+	avdevice_register_all();
 
 	err  = ausrc_register(&ausrc, baresip_ausrcl(),
 			      "avformat", avformat_audio_alloc);
