@@ -1458,6 +1458,7 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		      struct call *call, const char *prm);
 int event_add_au_jb_stat(struct odict *od_parent, const struct call *call);
 
+
 /*
  * Timer
  */
