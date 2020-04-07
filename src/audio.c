@@ -192,12 +192,15 @@ struct audio {
 /* RFC 6464 */
 static const char *uri_aulevel = "urn:ietf:params:rtp-hdrext:ssrc-audio-level";
 
+
 uint64_t audio_jb_current_value(const struct audio* au)
 {
 	if (!au)
 		return 0;
 	return au->rx.stats.aubuf_current_jb;
 }
+
+
 static double autx_calc_seconds(const struct autx *autx)
 {
 	uint64_t dur;

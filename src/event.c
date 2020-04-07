@@ -185,6 +185,7 @@ int event_add_au_jb_stat(struct odict *od_parent, const struct call *call)
 	return err;
 }
 
+
 /**
  * Get the name of the User-Agent event
  *
