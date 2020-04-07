@@ -15,9 +15,6 @@ void auframe_init(struct auframe *af, int fmt, void *sampv, size_t sampc)
 	if (!af)
 		return;
 
-	info("auframe: init: fmt=%s, %zu samples\n",
-	     aufmt_name(fmt), sampc);
-
 	if (0 == aufmt_sample_size(fmt)) {
 		warning("auframe: init: unsupported sample format %d (%s)\n",
 			fmt, aufmt_name(fmt));
