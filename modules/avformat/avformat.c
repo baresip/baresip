@@ -184,6 +184,7 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 int avformat_shared_alloc(struct shared **shp, const char *dev)
 {
 	struct shared *st;
+	AVInputFormat *input_format;
 	unsigned i;
 	int err;
 	int ret;
@@ -203,8 +204,6 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 	err = lock_alloc(&st->lock);
 	if (err)
 		goto out;
-
-	ff_const59 AVInputFormat *input_format;
 
 	input_format = av_find_input_format(dev);
 	if (!input_format)
