@@ -207,13 +207,8 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 	ff_const59 AVInputFormat *input_format;
 
 	input_format = av_find_input_format(dev);
-
-	if (!input_format) {
-		warning("avformat: av_find_input_format(%s) not found\n",
-			dev);
-		err = ENOENT;
-		goto out;
-	}
+	if (!input_format)
+		input_format = NULL;
 
 	ret = avformat_open_input(&st->ic, dev, input_format, NULL);
 	if (ret < 0) {
