@@ -17,6 +17,7 @@ addons:
     apt:
         packages:
         - libavcodec-dev
+        - libavdevice-dev
         - libavformat-dev
         - libgtk2.0-dev
         - libjack-jackd2-dev
