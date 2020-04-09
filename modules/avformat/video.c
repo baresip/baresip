@@ -42,6 +42,7 @@ static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
 	case AV_PIX_FMT_NV12:     return VID_FMT_NV12;
 	case AV_PIX_FMT_NV21:     return VID_FMT_NV21;
 	case AV_PIX_FMT_UYVY422:  return VID_FMT_UYVY422;
+	case AV_PIX_FMT_YUYV422:  return VID_FMT_YUYV422;
 	default:                  return (enum vidfmt)-1;
 	}
 }
