@@ -82,7 +82,7 @@ static void *read_thread(void *data)
 				xts = min(auts, vidts);
 			else if (st->au.idx >=0)
 				xts = auts;
-			else if (st->au.idx >=0)
+			else if (st->vid.idx >=0)
 				xts = vidts;
 			else
 				break;
