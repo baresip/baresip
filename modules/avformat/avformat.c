@@ -219,7 +219,6 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 		re_snprintf(buf, sizeof(buf), "%d", (int)cfg->video.fps);
 		av_dict_set(&format_opts, "frame_rate", buf, 0);
 	}
-	av_dict_set(&format_opts, "camera_index", "1", 0);
 
 	ret = avformat_open_input(&st->ic, dev, input_format, &format_opts);
 	if (ret < 0) {
