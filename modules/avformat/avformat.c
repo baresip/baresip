@@ -78,6 +78,9 @@ static void *read_thread(void *data)
 		for (;;) {
 			double xts;
 
+			if (!st->run)
+				break;
+
 			if (st->au.idx >=0 && st->vid.idx >=0)
 				xts = min(auts, vidts);
 			else if (st->au.idx >=0)
