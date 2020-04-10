@@ -181,12 +181,13 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 }
 
 
-int avformat_shared_alloc(struct shared **shp, const char *dev)
+int avformat_shared_alloc(struct shared **shp, const char *dev,
+			  const double fps, const struct vidsz *size,
+			  bool video)
 {
 	struct shared *st;
 	AVInputFormat *input_format;
 	AVDictionary *format_opts = NULL;
-	struct config *cfg = conf_config();
 	char buf[16];
 	unsigned i;
 	int err;
@@ -210,15 +211,20 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 
 	input_format = av_find_input_format(dev);
 
-	if (cfg->video.width) {
-		re_snprintf(buf, sizeof(buf), "%dx%d",
-			    cfg->video.width, cfg->video.height);
-		av_dict_set(&format_opts, "video_size", buf, 0);
+	if (video) {
+		if (size->w) {
+			re_snprintf(buf, sizeof(buf), "%dx%d",
+				    size->w, size->h);
+			info("****** video size = %s\n", buf);
+			av_dict_set(&format_opts, "video_size", buf, 0);
+		}
+		if (fps) {
+			re_snprintf(buf, sizeof(buf), "%d", (int)fps);
+			av_dict_set(&format_opts, "frame_rate", buf, 0);
+			info("****** frame rate = %s\n", buf);
+		}
 	}
-	if (cfg->video.fps) {
-		re_snprintf(buf, sizeof(buf), "%d", (int)cfg->video.fps);
-		av_dict_set(&format_opts, "frame_rate", buf, 0);
-	}
+	av_dict_set(&format_opts, "camera_index", "1", 0);
 
 	ret = avformat_open_input(&st->ic, dev, input_format, &format_opts);
 	if (ret < 0) {

@@ -22,7 +22,9 @@ struct shared {
 };
 
 
-int  avformat_shared_alloc(struct shared **shp, const char *dev);
+int avformat_shared_alloc(struct shared **shp, const char *dev,
+			  const double fps, const struct vidsz *size,
+			  bool video);
 void avformat_shared_set_audio(struct shared *sh, struct ausrc_st *st);
 void avformat_shared_set_video(struct shared *sh, struct vidsrc_st *st);
 
