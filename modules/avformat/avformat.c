@@ -88,9 +88,6 @@ static void *read_thread(void *data)
 			else
 				break;
 
-			//			if (now < (offset + xts))
-			//				break;
-
 			av_init_packet(&pkt);
 
 			ret = av_read_frame(st->ic, &pkt);
