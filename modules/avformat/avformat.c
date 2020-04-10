@@ -83,13 +83,13 @@ static void *read_thread(void *data)
 				xts = min(auts, vidts);
 			else if (st->au.idx >=0)
 				xts = auts;
-			else if (st->au.idx >=0)
+			else if (st->vid.idx >=0)
 				xts = vidts;
 			else
 				break;
 
-			if (now < (offset + xts))
-				break;
+			//			if (now < (offset + xts))
+			//				break;
 
 			av_init_packet(&pkt);
 
@@ -185,6 +185,9 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 {
 	struct shared *st;
 	AVInputFormat *input_format;
+	AVDictionary *format_opts = NULL;
+	struct config *cfg = conf_config();
+	char buf[16];
 	unsigned i;
 	int err;
 	int ret;
@@ -207,7 +210,18 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 
 	input_format = av_find_input_format(dev);
 
-	ret = avformat_open_input(&st->ic, dev, input_format, NULL);
+	if (cfg->video.width) {
+		re_snprintf(buf, sizeof(buf), "%dx%d",
+			    cfg->video.width, cfg->video.height);
+		av_dict_set(&format_opts, "video_size", buf, 0);
+	}
+	if (cfg->video.fps) {
+		re_snprintf(buf, sizeof(buf), "%d", (int)cfg->video.fps);
+		av_dict_set(&format_opts, "frame_rate", buf, 0);
+	}
+	av_dict_set(&format_opts, "camera_index", "1", 0);
+
+	ret = avformat_open_input(&st->ic, dev, input_format, &format_opts);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%s)\n",
 			dev, av_err2str(ret));
@@ -270,6 +284,8 @@ int avformat_shared_alloc(struct shared **shp, const char *dev)
 		mem_deref(st);
 	else
 		*shp = st;
+
+	av_dict_free(&format_opts);
 
 	return err;
 }
