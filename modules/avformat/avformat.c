@@ -222,7 +222,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 	if (video && fps) {
-		re_snprintf(buf, sizeof(buf), "%d", (int)fps);
+		re_snprintf(buf, sizeof(buf), "%2.f", fps);
 		ret = av_dict_set(&format_opts, "framerate", buf, 0);
 		if (ret != 0) {
 			warning("avformat: av_dict_set(framerate) failed"
