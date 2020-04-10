@@ -211,20 +211,26 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 
 	input_format = av_find_input_format(dev);
 
-	if (video) {
-		if (size->w) {
-			re_snprintf(buf, sizeof(buf), "%dx%d",
-				    size->w, size->h);
-			info("****** video size = %s\n", buf);
-			av_dict_set(&format_opts, "video_size", buf, 0);
-		}
-		if (fps) {
-			re_snprintf(buf, sizeof(buf), "%d", (int)fps);
-			av_dict_set(&format_opts, "frame_rate", buf, 0);
-			info("****** frame rate = %s\n", buf);
+	if (video && size->w) {
+		re_snprintf(buf, sizeof(buf), "%dx%d", size->w, size->h);
+		ret = av_dict_set(&format_opts, "video_size", buf, 0);
+		if (ret != 0) {
+			warning("avformat: av_dict_set(video_size) failed"
+				" (ret=%s)\n", av_err2str(ret));
+			err = ENOENT;
+			goto out;
 		}
 	}
-	av_dict_set(&format_opts, "camera_index", "1", 0);
+	if (video && fps) {
+		re_snprintf(buf, sizeof(buf), "%d", (int)fps);
+		ret = av_dict_set(&format_opts, "frame_rate", buf, 0);
+		if (ret != 0) {
+			warning("avformat: av_dict_set(frame_rate) failed"
+				" (ret=%s)\n", av_err2str(ret));
+			err = ENOENT;
+			goto out;
+		}
+	}
 
 	ret = avformat_open_input(&st->ic, dev, input_format, &format_opts);
 	if (ret < 0) {
