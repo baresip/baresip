@@ -91,6 +91,10 @@ static void *read_thread(void *data)
 			else
 				break;
 
+			if (!(st->is_realtime))
+				if (now < (offset + xts))
+					break;
+
 			av_init_packet(&pkt);
 
 			ret = av_read_frame(st->ic, &pkt);
@@ -204,6 +208,9 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 
 	st->au.idx  = -1;
 	st->vid.idx = -1;
+
+	st->is_realtime = 0==strcmp(dev, "android_camera") ||
+		0==strcmp(dev, "v4l2");
 
 	err = lock_alloc(&st->lock);
 	if (err)

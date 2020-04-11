@@ -12,6 +12,7 @@ struct shared {
 	struct lock *lock;
 	AVFormatContext *ic;
 	pthread_t thread;
+	bool is_realtime;
 	bool run;
 
 	struct stream {
