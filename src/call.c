@@ -1062,6 +1062,14 @@ int call_progress(struct call *call)
 }
 
 
+/**
+ * Answer an incoming call
+ *
+ * @param call  Call to answer
+ * @param scode Status code
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int call_answer(struct call *call, uint16_t scode)
 {
 	struct mbuf *desc;
