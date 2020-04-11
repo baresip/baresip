@@ -10,6 +10,14 @@
 #include <baresip.h>
 
 
+/**
+ * Initialize an audio frame
+ *
+ * @param af    Audio frame
+ * @param fmt   Sample format (enum aufmt)
+ * @param sampv Audio samples
+ * @param sampc Total number of audio samples
+ */
 void auframe_init(struct auframe *af, int fmt, void *sampv, size_t sampc)
 {
 	if (!af)
@@ -28,6 +36,13 @@ void auframe_init(struct auframe *af, int fmt, void *sampv, size_t sampc)
 }
 
 
+/**
+ * Get the size of an audio frame
+ *
+ * @param af Audio frame
+ *
+ * @return Number of bytes
+ */
 size_t auframe_size(const struct auframe *af)
 {
 	size_t sz;
@@ -45,6 +60,11 @@ size_t auframe_size(const struct auframe *af)
 }
 
 
+/**
+ * Silence all samples in an audio frame
+ *
+ * @param af Audio frame
+ */
 void auframe_mute(struct auframe *af)
 {
 	if (!af)
