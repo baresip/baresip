@@ -185,7 +185,6 @@ video_selfview		window # {window,pip}
 
 # ICE
 ice_debug		no
-ice_nomination		regular	# {regular,aggressive}
 
 # ZRTP
 #zrtp_hash		no  # Disable SDP zrtp-hash (not recommended)
