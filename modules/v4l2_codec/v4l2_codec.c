@@ -32,12 +32,6 @@
  * for devices that supports compressed formats such as H.264.
  * The module implements both the vidsrc API and the vidcodec API.
  *
- *
- * TODO:
- *
- * - timestamp syncronization
- * - how to configure the wanted bitrate and framerate
- * - how to handle Key-frame requests
  */
 
 
@@ -64,7 +58,7 @@ struct videnc_state {
 };
 
 
-/* TODO: global data, move to per vidsrc instance */
+/* NOTE: global data, move to per vidsrc instance */
 static struct {
 	/* List of encoder-states (struct videnc_state) */
 	struct list encoderl;
@@ -461,7 +455,7 @@ static int encode_packet(struct videnc_state *st, bool update,
 	(void)timestamp;
 
 	/*
-	 * XXX: add support for KEY frame requests
+	 * NOTE: add support for KEY frame requests
 	 */
 	if (update) {
 		info("v4l2_codec: peer requested a KEY frame (ignored)\n");
