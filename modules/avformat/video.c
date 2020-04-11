@@ -105,7 +105,7 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 void avformat_video_decode(struct shared *st, AVPacket *pkt)
 {
-	const AVRational tb = st->vid.time_base;
+	AVRational tb;
 	struct vidframe vf;
 	AVFrame *frame;
 	uint64_t timestamp;
@@ -117,6 +117,8 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 
 	if (!st || !st->vid.ctx)
 		return;
+
+	tb = st->vid.time_base;
 
 	frame = av_frame_alloc();
 	if (!frame)
