@@ -166,8 +166,8 @@ static inline int packetize(bool marker, uint64_t rtp_ts,
 }
 
 
-int av1_encode(struct videnc_state *ves, bool update,
-		const struct vidframe *frame, uint64_t timestamp)
+int av1_encode_packet(struct videnc_state *ves, bool update,
+		      const struct vidframe *frame, uint64_t timestamp)
 {
 	aom_enc_frame_flags_t flags = 0;
 	aom_codec_iter_t iter = NULL;
@@ -198,7 +198,7 @@ int av1_encode(struct videnc_state *ves, bool update,
 	img = aom_img_wrap(NULL, img_fmt, frame->size.w, frame->size.h,
 			   16, NULL);
 	if (!img) {
-		warning("vp9: encoder: could not allocate image\n");
+		warning("av1: encoder: could not allocate image\n");
 		err = ENOMEM;
 		goto out;
 	}
@@ -232,9 +232,6 @@ int av1_encode(struct videnc_state *ves, bool update,
 
 		if (pkt->data.frame.flags & AOM_FRAME_IS_KEY)
 			keyframe = true;
-
-		if (pkt->data.frame.flags & AOM_FRAME_IS_FRAGMENT)
-			marker = false;
 
 		if (pkt->data.frame.partition_id >= 0)
 			partid = pkt->data.frame.partition_id;
