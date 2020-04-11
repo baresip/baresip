@@ -84,11 +84,16 @@ USE_AVCODEC := $(shell [ -f $(SYSROOT)/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT)/local/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavcodec/avcodec.h ] && echo "yes")
-USE_AVFORMAT := $(shell [ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
+USE_AVFORMAT := $(shell ([ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/local/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavformat/avformat.h ] || \
-	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ] && echo "yes")
+	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ]) && \
+	([ -f $(SYSROOT)/include/libavformat/avdevice.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/libavdevice/avdevice.h ] || \
+	[ -f $(SYSROOT)/local/include/libavdevice/avdevice.h ] || \
+	[ -f $(SYSROOT)/include/$(MACHINE)/libavdevice/avdevice.h ] || \
+	[ -f $(SYSROOT_ALT)/include/libavdevice/avdevice.h ]) && echo "yes")
 USE_CAIRO  := $(shell [ -f $(SYSROOT)/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT)/local/include/cairo/cairo.h ] || \
 	[ -f $(SYSROOT_ALT)/include/cairo/cairo.h ] && echo "yes")
