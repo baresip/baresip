@@ -938,8 +938,7 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			 "\n# EBU ACIP\n"
-			 "#sdp_ebuacip\t\tyes\t# enable parameters in SDP\n"
-			 "#ebuacip_jb_type\t\tfixed\t# auto,fixed\n");
+			 "#ebuacip_jb_type\tfixed\t# auto,fixed\n");
 
 	if (f)
 		(void)fclose(f);

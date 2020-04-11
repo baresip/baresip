@@ -215,5 +215,4 @@ ice_debug		no
 #snd_path		/tmp
 
 # EBU ACIP
-#sdp_ebuacip         	yes     # enable parameters in SDP
 #ebuacip_jb_type     	fixed   # auto,fixed
