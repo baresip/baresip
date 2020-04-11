@@ -190,6 +190,8 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 			  bool video)
 {
 	struct shared *st;
+	struct pl pl_fmt, pl_dev;
+	char *format = NULL, *device = NULL;
 	AVInputFormat *input_format;
 	AVDictionary *format_opts = NULL;
 	char buf[16];
@@ -209,14 +211,23 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	st->au.idx  = -1;
 	st->vid.idx = -1;
 
-	st->is_realtime = 0==strcmp(dev, "android_camera") ||
-		0==strcmp(dev, "v4l2");
+	if (0 == re_regex(dev, str_len(dev), "[^,]+,[^]+", &pl_fmt, &pl_dev)) {
+		pl_strdup(&format, &pl_fmt);
+		pl_strdup(&device, &pl_dev);
+	}
+	else {
+		pl_set_str(&pl_fmt, dev);
+		pl_strdup(&format, &pl_fmt);
+	}
+
+	st->is_realtime = 0==strcmp(format, "android_camera") ||
+		0==strcmp(format, "v4l2");
 
 	err = lock_alloc(&st->lock);
 	if (err)
 		goto out;
 
-	input_format = av_find_input_format(dev);
+	input_format = av_find_input_format(format);
 
 	if (video && size->w) {
 		re_snprintf(buf, sizeof(buf), "%dx%d", size->w, size->h);
@@ -228,6 +239,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 			goto out;
 		}
 	}
+
 	if (video && fps) {
 		re_snprintf(buf, sizeof(buf), "%2.f", fps);
 		ret = av_dict_set(&format_opts, "framerate", buf, 0);
@@ -239,7 +251,17 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
-	ret = avformat_open_input(&st->ic, dev, input_format, &format_opts);
+	if (video && device) {
+		ret = av_dict_set(&format_opts, "camera_index", device, 0);
+		if (ret != 0) {
+			warning("avformat: av_dict_set(camera_index) failed"
+				" (ret=%s)\n", av_err2str(ret));
+			err = ENOENT;
+			goto out;
+		}
+	}
+
+	ret = avformat_open_input(&st->ic, format, input_format, &format_opts);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%s)\n",
 			dev, av_err2str(ret));
@@ -302,6 +324,9 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		mem_deref(st);
 	else
 		*shp = st;
+
+	mem_deref(format);
+	mem_deref(device);
 
 	av_dict_free(&format_opts);
 
