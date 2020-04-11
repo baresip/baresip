@@ -177,6 +177,14 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 }
 
 
+/**
+ * Add audio buffer status
+ *
+ * @param od_parent  Dictionary to encode into
+ * @param call       Call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int event_add_au_jb_stat(struct odict *od_parent, const struct call *call)
 {
 	int err = 0;
