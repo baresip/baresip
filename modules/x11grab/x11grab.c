@@ -22,8 +22,6 @@
  *
  * X11 window-grabbing video-source module
  *
- *
- * XXX: add option to select a specific X window and x,y offset
  */
 
 
@@ -44,13 +42,14 @@ struct vidsrc_st {
 static struct vidsrc *vidsrc;
 
 
-static int x11grab_open(struct vidsrc_st *st, const struct vidsz *sz)
+static int x11grab_open(struct vidsrc_st *st, const struct vidsz *sz,
+			const char *dev)
 {
 	int x = 0, y = 0;
 
-	st->disp = XOpenDisplay(NULL);
+	st->disp = XOpenDisplay(dev);
 	if (!st->disp) {
-		warning("x11grab: error opening display\n");
+		warning("x11grab: error opening display '%s'\n", dev);
 		return ENODEV;
 	}
 
@@ -163,7 +162,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 	(void)ctx;
 	(void)fmt;
-	(void)dev;
 	(void)errorh;
 
 	if (!stp || !prm || !size || !frameh)
@@ -179,7 +177,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->frameh = frameh;
 	st->arg    = arg;
 
-	err = x11grab_open(st, size);
+	err = x11grab_open(st, size, dev);
 	if (err)
 		goto out;
 

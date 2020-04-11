@@ -1258,10 +1258,10 @@ static void message_handler(struct ua *ua, const struct pl *peer,
 			    const struct pl *ctype,
 			    struct mbuf *body, void *arg)
 {
+	struct config *cfg;
 	(void)ua;
 	(void)ctype;
 	(void)arg;
-	struct config *cfg;
 
 	cfg = conf_config();
 

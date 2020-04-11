@@ -786,7 +786,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "v4l2" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "v4l2_codec" MOD_EXT "\n");
 #endif
-	(void)re_fprintf(f, "#module\t\t\t" "avformat" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "x11grab" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "cairo" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "vidbridge" MOD_EXT "\n");
@@ -801,6 +800,7 @@ int config_write_template(const char *file, const struct config *cfg)
 
 
 	(void)re_fprintf(f, "\n# Audio/Video source modules\n");
+	(void)re_fprintf(f, "#module\t\t\t" "avformat" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "rst" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "gst" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "gst_video" MOD_EXT "\n");
@@ -899,8 +899,7 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			"\n# ICE\n"
-			"ice_debug\t\tno\n"
-			"ice_nomination\t\tregular\t# {regular,aggressive}\n");
+			"ice_debug\t\tno\n");
 
 	(void)re_fprintf(f,
 			"\n# ZRTP\n"
@@ -939,8 +938,7 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			 "\n# EBU ACIP\n"
-			 "#sdp_ebuacip\t\tyes\t# enable parameters in SDP\n"
-			 "#ebuacip_jb_type\t\tfixed\t# auto,fixed\n");
+			 "#ebuacip_jb_type\tfixed\t# auto,fixed\n");
 
 	if (f)
 		(void)fclose(f);

@@ -158,7 +158,7 @@ static void process(struct vidsrc_st *st, uint64_t timestamp)
 static void *read_thread(void *arg)
 {
 	struct vidsrc_st *st = arg;
-	uint64_t ts = 0, ts_start;
+	uint64_t ts = 0, ts_start = 0;
 
 	while (st->run) {
 
