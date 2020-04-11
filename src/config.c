@@ -786,7 +786,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "v4l2" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "v4l2_codec" MOD_EXT "\n");
 #endif
-	(void)re_fprintf(f, "#module\t\t\t" "avformat" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "x11grab" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "cairo" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "vidbridge" MOD_EXT "\n");
@@ -801,6 +800,7 @@ int config_write_template(const char *file, const struct config *cfg)
 
 
 	(void)re_fprintf(f, "\n# Audio/Video source modules\n");
+	(void)re_fprintf(f, "#module\t\t\t" "avformat" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "rst" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "gst" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "gst_video" MOD_EXT "\n");
