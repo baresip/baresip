@@ -193,10 +193,18 @@ struct audio {
 static const char *uri_aulevel = "urn:ietf:params:rtp-hdrext:ssrc-audio-level";
 
 
-uint64_t audio_jb_current_value(const struct audio* au)
+/**
+ * Get the current audio receive buffer length in milliseconds
+ *
+ * @param au Audio object
+ *
+ * @return Audio buffer length in [ms]
+ */
+uint64_t audio_jb_current_value(const struct audio *au)
 {
 	if (!au)
 		return 0;
+
 	return au->rx.stats.aubuf_current_jb;
 }
 
@@ -1641,6 +1649,15 @@ int audio_start(struct audio *a)
 }
 
 
+/**
+ * Start the audio source
+ *
+ * @param a       Audio object
+ * @param ausrcl  List of audio sources
+ * @param aufiltl List of audio filters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int audio_start_source(struct audio *a, struct list *ausrcl,
 		       struct list *aufiltl)
 {
@@ -2001,6 +2018,13 @@ void audio_sdp_attr_decode(struct audio *a)
 }
 
 
+/**
+ * Put an audio level value, call the level handler
+ *
+ * @param au  Audio object
+ * @param tx  Direction; true for transmit, false for receive
+ * @param lvl Audio level value
+ */
 void audio_level_put(const struct audio *au, bool tx, double lvl)
 {
 	if (!au)
@@ -2359,6 +2383,12 @@ struct config_audio *audio_config(struct audio *au)
 }
 
 
+/**
+ * Set the media context
+ *
+ * @param au  Audio object
+ * @param ctx Media context
+ */
 void audio_set_media_context(struct audio *au, struct media_ctx **ctx)
 {
 	if (!au)
