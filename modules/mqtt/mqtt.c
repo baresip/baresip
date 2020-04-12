@@ -132,6 +132,8 @@ static int module_init(void)
 	if (*mqttusername != '\0') {
 		ret = mosquitto_username_pw_set(s_mqtt.mosq, mqttusername,
 			mqttpassword);
+		if (ret != MOSQ_ERR_SUCCESS)
+			return ret == MOSQ_ERR_ERRNO ? errno : EIO;
 	}
 
 	ret = mosquitto_connect(s_mqtt.mosq, broker_host, broker_port,
