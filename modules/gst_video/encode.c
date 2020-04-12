@@ -416,11 +416,13 @@ int gst_video_encoder_set(struct videnc_state **stp,
 			  struct videnc_param *prm, const char *fmtp,
 			  videnc_packet_h *pkth, void *arg)
 {
-	struct videnc_state *st = *stp;
+	struct videnc_state *st;
 	int err = 0;
 
 	if (!stp || !vc || !prm || !pkth)
 		return EINVAL;
+
+	st = *stp;
 
 	if (!st) {
 		err = allocate_resources(stp);
