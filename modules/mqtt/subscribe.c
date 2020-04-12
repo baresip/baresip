@@ -69,7 +69,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	}
 
 	debug("mqtt: handle_command:  cmd='%s', token='%s'\n",
-	      oe_cmd ? oe_cmd->u.str : "",
+	      oe_cmd->u.str,
 	      oe_tok ? oe_tok->u.str : "");
 
 	re_snprintf(buf, sizeof(buf), "%s%s%s",
