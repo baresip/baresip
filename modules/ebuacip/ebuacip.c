@@ -37,8 +37,6 @@ static int set_ebuacip_params(struct audio *au)
 	int jb_id = 0;
 	int err = 0;
 
-	info(".... ebuacip: adding SDP parameters\n");
-
 	/* set ebuacip version fixed value 0 for now. */
 	err |= sdp_media_set_lattr(sdp, false, "ebuacip", "version %i", 0);
 
@@ -99,34 +97,28 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 	struct audio *au = arg;
 	struct config_audio *cfg = audio_config(au);
 	struct sdp_media *sdp;
-	struct pl type, val, val2;
+	struct pl val, val_min, val_max;
 	(void)name;
-
-	info(".... ebuacip: param '%s'\n", value);
 
 	/* check type first, if not fixed or auto, return false */
 
 	if (0 == re_regex(value, str_len(value),
-			  "jbdef [0-9]+ [a-z]+ [0-9]+-[0-9]+",
-			  NULL, &type, &val, &val2)) {
+			  "jbdef [0-9]+ auto [0-9]+-[0-9]+",
+			  NULL, &val_min, &val_max)) {
 
-		/* check for type auto */
-		if (0 == pl_strcasecmp(&type, "auto")) {
-			/* set audio buffer from min and max value*/
-			cfg->buffer.min = pl_u32(&val);
-			cfg->buffer.max = pl_u32(&val2);
-		}
+		/* set audio buffer from min and max value*/
+		cfg->buffer.min = pl_u32(&val_min);
+		cfg->buffer.max = pl_u32(&val_max);
 	}
 	else if (0 == re_regex(value, str_len(value),
-			       "jbdef [0-9]+ [a-z]+ [0-9]+",
-			       NULL, &type, &val)) {
+			       "jbdef [0-9]+ fixed [0-9]+",
+			       NULL, &val)) {
 
-		/* check type fixed */
-		if (0 == pl_strcasecmp(&type, "fixed")) {
-			/* set both audio buffer min and max value to val*/
-			cfg->buffer.min = pl_u32(&val);
-			cfg->buffer.max = pl_u32(&val);
-		}
+		uint32_t v = pl_u32(&val);
+
+		/* set both audio buffer min and max value to val*/
+		cfg->buffer.min = v;
+		cfg->buffer.max = v;
 	}
 	else {
 		return false;
@@ -154,13 +146,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	switch (ev) {
 
 	case UA_EVENT_CALL_LOCAL_SDP:
-		info(".... ebuacip: CALL_CONNECT event\n");
 		if (0 == str_casecmp(prm, "offer"))
 			set_ebuacip_params(call_audio(call));
 		break;
 
 	case UA_EVENT_CALL_REMOTE_SDP:
-		info(".... ebuacip: SDP_OFFER event\n");
 		au = call_audio(call);
 		sdp_media_rattr_apply(stream_sdpmedia(audio_strm(au)),
 				      "ebuacip", ebuacip_handler, au);
