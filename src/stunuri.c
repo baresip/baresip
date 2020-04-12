@@ -45,6 +45,14 @@ static void destructor(void *arg)
 }
 
 
+/**
+ * Decode a STUN uri from a string
+ *
+ * @param sup Pointer to allocated STUN uri
+ * @param pl  Pointer-length string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
 {
 	struct stun_uri *su;
@@ -91,6 +99,14 @@ int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
 }
 
 
+/**
+ * Set the hostname on a STUN uri
+ *
+ * @param su   STUN uri
+ * @param host Hostname to set
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int stunuri_set_host(struct stun_uri *su, const char *host)
 {
 	if (!su || !host)
@@ -102,6 +118,14 @@ int stunuri_set_host(struct stun_uri *su, const char *host)
 }
 
 
+/**
+ * Set the port number on a STUN uri
+ *
+ * @param su   STUN uri
+ * @param port Port number to set
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int stunuri_set_port(struct stun_uri *su, uint16_t port)
 {
 	if (!su)
@@ -113,6 +137,14 @@ int stunuri_set_port(struct stun_uri *su, uint16_t port)
 }
 
 
+/**
+ * Print a STUN uri
+ *
+ * @param pf Print function
+ * @param su STUN uri
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int stunuri_print(struct re_printf *pf, const struct stun_uri *su)
 {
 	int err = 0;
@@ -128,6 +160,13 @@ int stunuri_print(struct re_printf *pf, const struct stun_uri *su)
 }
 
 
+/**
+ * Get the name of the STUN scheme
+ *
+ * @param scheme STUN scheme
+ *
+ * @return String with STUN scheme
+ */
 const char *stunuri_scheme_name(enum stun_scheme scheme)
 {
 	switch (scheme) {

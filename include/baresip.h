@@ -1275,17 +1275,19 @@ int  stream_debug(struct re_printf *pf, const struct stream *s);
  * STUN URI
  */
 
+/** Defines the STUN uri scheme */
 enum stun_scheme {
-	STUN_SCHEME_STUN,
-	STUN_SCHEME_STUNS,
-	STUN_SCHEME_TURN,
-	STUN_SCHEME_TURNS,
+	STUN_SCHEME_STUN,  /**< STUN scheme        */
+	STUN_SCHEME_STUNS, /**< Secure STUN scheme */
+	STUN_SCHEME_TURN,  /**< TURN scheme        */
+	STUN_SCHEME_TURNS, /**< Secure TURN scheme */
 };
 
+/** Defines a STUN/TURN uri */
 struct stun_uri {
-	enum stun_scheme scheme;
-	char *host;
-	uint16_t port;
+	enum stun_scheme scheme;  /**< STUN Scheme            */
+	char *host;               /**< Hostname or IP-address */
+	uint16_t port;            /**< Port number            */
 };
 
 int stunuri_decode(struct stun_uri **sup, const struct pl *pl);
