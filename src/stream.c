@@ -836,6 +836,14 @@ void stream_set_session_handlers(struct stream *strm,
 }
 
 
+/**
+ * Print stream debug info
+ *
+ * @param pf Print function
+ * @param s  Stream object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int stream_debug(struct re_printf *pf, const struct stream *s)
 {
 	int err;
@@ -1068,6 +1076,13 @@ int stream_start(const struct stream *strm)
 }
 
 
+/**
+ * Get the name of the stream type (e.g. audio or video)
+ *
+ * @param strm Stream object
+ *
+ * @return Name of stream type
+ */
 const char *stream_name(const struct stream *strm)
 {
 	if (!strm)

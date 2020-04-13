@@ -1238,9 +1238,9 @@ const struct vidcodec *video_codec(const struct video *vid, bool tx);
 
 /** Common parameters for media stream */
 struct stream_param {
-	bool use_rtp;
-	int af;
-	const char *cname;
+	bool use_rtp;       /**< Enable or disable RTP */
+	int af;             /**< Wanted address family */
+	const char *cname;  /**< Canonical name        */
 };
 
 typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
