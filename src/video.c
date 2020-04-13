@@ -847,6 +847,28 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 }
 
 
+/**
+ * Allocate a video stream
+ *
+ * @param vp         Pointer to allocated video stream object
+ * @param streaml    List of streams
+ * @param stream_prm Stream parameters
+ * @param cfg        Global configuration
+ * @param sdp_sess   SDP Session
+ * @param label      SDP label
+ * @param mnat       Media NAT (optional)
+ * @param mnat_sess  Media NAT session (optional)
+ * @param menc       Media Encryption (optional)
+ * @param menc_sess  Media Encryption session (optional)
+ * @param content    SDP content attribute
+ * @param vidcodecl  List of video codecs
+ * @param vidfiltl   List of video filters
+ * @param offerer    True if SDP offerer, false if SDP answerer
+ * @param errh       Error handler
+ * @param arg        Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int video_alloc(struct video **vp, struct list *streaml,
 		const struct stream_param *stream_prm,
 		const struct config *cfg,
@@ -1006,6 +1028,14 @@ static void tmr_handler(void *arg)
 }
 
 
+/**
+ * Start the video source
+ *
+ * @param v   Video object
+ * @param ctx Media context
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int video_start_source(struct video *v, struct media_ctx **ctx)
 {
 	struct vtx *vtx = &v->vtx;
@@ -1064,6 +1094,14 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 }
 
 
+/**
+ * Start the video display
+ *
+ * @param v    Video object
+ * @param peer Peer name
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int video_start_display(struct video *v, const char *peer)
 {
 	int err;
@@ -1094,6 +1132,11 @@ int video_start_display(struct video *v, const char *peer)
 }
 
 
+/**
+ * Stop the video source
+ *
+ * @param v   Video object
+ */
 void video_stop(struct video *v)
 {
 	if (!v)
@@ -1154,6 +1197,16 @@ static void vidsrc_update(struct vtx *vtx, const char *dev)
 }
 
 
+/**
+ * Set the video encoder used
+ *
+ * @param v      Video object
+ * @param vc     Video codec to use
+ * @param pt_tx  Payload type for sending
+ * @param params Optional encoder parameters
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int video_encoder_set(struct video *v, struct vidcodec *vc,
 		      int pt_tx, const char *params)
 {
@@ -1460,6 +1513,14 @@ void video_set_devicename(struct video *v, const char *src, const char *disp)
 }
 
 
+/**
+ * Get video codec of video stream
+ *
+ * @param vid Video object
+ * @param tx  True to get transmit codec, false to get receive codec
+ *
+ * @return Video codec if success, otherwise NULL
+ */
 const struct vidcodec *video_codec(const struct video *vid, bool tx)
 {
 	if (!vid)
