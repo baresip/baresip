@@ -321,7 +321,7 @@ void Stream::stop()
 
 int Stream::sdp_encode(struct sdp_media *sdpm)
 {
-	// TODO: signaling hash
+	// NOTE: signaling hash
 	return 0;
 }
 
@@ -331,7 +331,7 @@ int Stream::sdp_decode(const struct sdp_media *sdpm)
 	if (sa_isset(sdp_media_raddr(sdpm), SA_ALL)) {
 		m_raddr = *sdp_media_raddr(sdpm);
 	}
-	// TODO: signaling hash
+	// NOTE: signaling hash
 
 	return 0;
 }
