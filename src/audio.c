@@ -1650,15 +1650,33 @@ int audio_level_get(const struct audio *a, double *levelp)
  */
 const char *audio_codec_get(struct audio *au)
 {
-	if(!au)
+	const struct aucodec *ac;
+	if (!au)
 		return "\0";
 
-	if(au->tx.ac)
-		return au->tx.ac->name;
-	else if(au->rx.ac)
-		return au->rx.ac->name;
+	ac = audio_codec_getstruct(au);
+	return ac ? ac->name : "\0";
+}
 
-	return "\0";
+
+/**
+ * Get the audio codec struct from the audio struct
+ *
+ * @param au	Audio object
+
+ * @return struct aucodec*	pointer to the codec if success, NULL otherwise
+ */
+const struct aucodec *audio_codec_getstruct(struct audio *au)
+{
+	if (!au)
+		return NULL;
+
+	if (au->tx.ac)
+		return au->tx.ac;
+	else
+		return aurecv_codec(au->aur);
+
+	return NULL;
 }
 
 

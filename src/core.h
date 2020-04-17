@@ -147,6 +147,7 @@ bool aurecv_level_set(const struct audio_recv *ar);
 double aurecv_level(const struct audio_recv *ar);
 int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar);
 int aurecv_print_pipeline(struct re_printf *pf, const struct audio_recv *ar);
+const struct aucodec *aurecv_codec_getstruct(struct audio_recv *ar);
 
 
 /*

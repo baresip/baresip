@@ -1385,6 +1385,7 @@ int  audio_set_player(struct audio *au, const char *mod, const char *device);
 void audio_level_put(const struct audio *au, bool tx, double lvl);
 int  audio_level_get(const struct audio *au, double *level);
 const char *audio_codec_get(struct audio *au);
+const struct aucodec *audio_codec_getstruct(struct audio *au);
 int  audio_debug(struct re_printf *pf, const struct audio *a);
 struct stream *audio_strm(const struct audio *au);
 uint64_t audio_jb_current_value(const struct audio *au);
