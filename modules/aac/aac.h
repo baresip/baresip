@@ -18,18 +18,19 @@ struct aac_param {
 };
 
 
-enum { AU_HDR_LEN = 4, /* single access unit only!!! */
+enum {
+	AU_HDR_LEN = 4, /* single access unit only!!! */
 
-       SIZELENGTH = 13,
-       INDEXLENGTH = 3,
-       INDEXDELTALENGTH = 3,
+	AAC_SIZELENGTH = 13,
+	AAC_INDEXLENGTH = 3,
+	AAC_INDEXDELTALENGTH = 3,
 
-       HIGH_QUALITY_AUDIO_PROFILE = 16,       /* L3 */
-       LOW_DELAY_AUDIO_PROFILE = 25,          /* L4 */
-       ENHANCED_LOW_DELAY_AUDIO_PROFILE = 76, /* L1 */
-       HIGH_EFFICIENCY_AAC_PROFILE = 46,      /* L4 */
-       HIGH_EFFICIENCY_AAC_V2_PROFILE = 49,   /* L3 */
-       AAC_PROFILE = 41,                      /* L2 */
+	HIGH_QUALITY_AUDIO_PROFILE = 16,       /* L3 */
+	LOW_DELAY_AUDIO_PROFILE = 25,          /* L4 */
+	ENHANCED_LOW_DELAY_AUDIO_PROFILE = 76, /* L1 */
+	HIGH_EFFICIENCY_AAC_PROFILE = 46,      /* L4 */
+	HIGH_EFFICIENCY_AAC_V2_PROFILE = 49,   /* L3 */
+	AAC_PROFILE = 41,                      /* L2 */
 };
 
 extern uint32_t aac_samplerate, aac_channels, aac_aot;

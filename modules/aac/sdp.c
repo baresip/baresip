@@ -53,13 +53,13 @@ bool aac_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
 	if (param_value(rfmtp, "streamType") != 5)
 		return false;
 
-	if (param_value(rfmtp, "sizeLength") != SIZELENGTH)
+	if (param_value(rfmtp, "sizeLength") != AAC_SIZELENGTH)
 		return false;
 
-	if (param_value(rfmtp, "indexLength") != INDEXLENGTH)
+	if (param_value(rfmtp, "indexLength") != AAC_INDEXLENGTH)
 		return false;
 
-	if (param_value(rfmtp, "indexDeltaLength") != INDEXDELTALENGTH)
+	if (param_value(rfmtp, "indexDeltaLength") != AAC_INDEXDELTALENGTH)
 		return false;
 
 	if (param_value(rfmtp, "bitrate") < 8000 ||

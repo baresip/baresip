@@ -54,7 +54,7 @@ static int hdr_decode(struct au_hdr *au_data, const uint8_t *p,
 
 	bits = ntohs(*(uint16_t *)(void *)&p[2]);
 
-	au_data->size = bits >> ((sizeof(uint16_t) * 8) - SIZELENGTH);
+	au_data->size = bits >> ((sizeof(uint16_t) * 8) - AAC_SIZELENGTH);
 
 	if (au_data->size == 0) {
 		warning("aac: decode: invalid access unit size (zero)\n",

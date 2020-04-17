@@ -87,8 +87,8 @@ void aac_encode_fmtp(const struct aac_param *prm)
 	                  "; indexDeltaLength=%u"
 	                  "; bitrate=%u",
 	                  prm->profile_level_id, prm->config, "AAC-hbr",
-	                  prm->constantduration, SIZELENGTH,
-	                  INDEXLENGTH, INDEXDELTALENGTH,
+	                  prm->constantduration, AAC_SIZELENGTH,
+	                  AAC_INDEXLENGTH, AAC_INDEXDELTALENGTH,
 	                  prm->bitrate);
 }
 
