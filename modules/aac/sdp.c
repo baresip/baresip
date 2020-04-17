@@ -50,7 +50,7 @@ bool aac_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
 			return false;
 	}
 
-	if (param_value(rfmtp, "streamType") != 5)
+	if (param_value(rfmtp, "streamType") != AAC_STREAMTYPE_AUDIO)
 		return false;
 
 	if (param_value(rfmtp, "sizeLength") != AAC_SIZELENGTH)
