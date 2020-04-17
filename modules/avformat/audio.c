@@ -74,7 +74,6 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->arg   = arg;
 	st->prm   = *prm;
 
-	/* todo: also lookup "dev" ? */
 	if (ctx && *ctx && (*ctx)->id && !strcmp((*ctx)->id, "avformat")) {
 		st->shared = mem_ref(*ctx);
 	}
