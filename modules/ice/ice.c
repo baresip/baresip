@@ -28,6 +28,7 @@ struct mnat_sess {
 	struct sa srv;
 	struct stun_dns *dnsq;
 	struct sdp_session *sdp;
+	struct tmr tmr_async;
 	char lufrag[8];
 	char lpwd[32];
 	uint64_t tiebrk;
@@ -303,6 +304,7 @@ static void session_destructor(void *arg)
 {
 	struct mnat_sess *sess = arg;
 
+	tmr_cancel(&sess->tmr_async);
 	list_flush(&sess->medial);
 	mem_deref(sess->dnsq);
 	mem_deref(sess->user);
@@ -446,6 +448,22 @@ static void dns_handler(int err, const struct sa *srv, void *arg)
 }
 
 
+static void tmr_async_handler(void *arg)
+{
+	struct mnat_sess *sess = arg;
+	struct le *le;
+
+	for (le = sess->medial.head; le; le = le->next) {
+
+		struct mnat_media *m = le->data;
+
+		net_if_apply(if_handler, m);
+
+		call_gather_handler(0, m, 0, "");
+	}
+}
+
+
 static int session_alloc(struct mnat_sess **sessp,
 			 const struct mnat *mnat, struct dnsc *dnsc,
 			 int af, const struct stun_uri *srv,
@@ -457,25 +475,27 @@ static int session_alloc(struct mnat_sess **sessp,
 	const char *usage;
 	int err = 0;
 
-	if (!sessp || !dnsc || !srv || !ss || !estabh)
+	if (!sessp || !dnsc || !ss || !estabh)
 		return EINVAL;
 
-	info("ice: new session with %s-server at %s (username=%s)\n",
-	     srv->scheme == STUN_SCHEME_TURN ? "TURN" : "STUN",
-	     srv->host, user);
+	if (srv) {
+		info("ice: new session with %s-server at %s (username=%s)\n",
+		     srv->scheme == STUN_SCHEME_TURN ? "TURN" : "STUN",
+		     srv->host, user);
 
-	switch (srv->scheme) {
+		switch (srv->scheme) {
 
-	case STUN_SCHEME_STUN:
-		usage = stun_usage_binding;
-		break;
+		case STUN_SCHEME_STUN:
+			usage = stun_usage_binding;
+			break;
 
-	case STUN_SCHEME_TURN:
-		usage = stun_usage_relay;
-		break;
+		case STUN_SCHEME_TURN:
+			usage = stun_usage_relay;
+			break;
 
-	default:
-		return ENOTSUP;
+		default:
+			return ENOTSUP;
+		}
 	}
 
 	sess = mem_zalloc(sizeof(*sess), session_destructor);
@@ -505,11 +525,17 @@ static int session_alloc(struct mnat_sess **sessp,
 	if (err)
 		goto out;
 
-	sess->turn = (srv->scheme == STUN_SCHEME_TURN);
+	if (srv) {
+		sess->turn = (srv->scheme == STUN_SCHEME_TURN);
 
-	err = stun_server_discover(&sess->dnsq, dnsc, usage, stun_proto_udp,
-				   af, srv->host, srv->port,
-				   dns_handler, sess);
+		err = stun_server_discover(&sess->dnsq, dnsc,
+					   usage, stun_proto_udp,
+					   af, srv->host, srv->port,
+					   dns_handler, sess);
+	}
+	else {
+		tmr_start(&sess->tmr_async, 1, tmr_async_handler, sess);
+	}
 
  out:
 	if (err)
