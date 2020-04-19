@@ -35,7 +35,6 @@ struct mnat_sess {
 	char lufrag[8];
 	char lpwd[32];
 	uint64_t tiebrk;
-	enum ice_mode mode;
 	bool turn;
 	bool offerer;
 	char *user;
@@ -263,9 +262,6 @@ static int start_gathering(struct mnat_media *m,
 	unsigned i;
 	int err = 0;
 
-	if (m->sess->mode != ICE_MODE_FULL)
-		return EINVAL;
-
 	/* for each component */
 	for (i=0; i<2; i++) {
 		struct comp *comp = &m->compv[i];
@@ -420,29 +416,12 @@ static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 
 	net_if_apply(if_handler, m);
 
-	switch (sess->mode) {
-
-	default:
-	case ICE_MODE_FULL:
-		if (sess->turn) {
-			err = icem_gather_relay(m,
-						sess->user, sess->pass);
-		}
-		else {
-			err = icem_gather_srflx(m);
-		}
-		break;
-
-	case ICE_MODE_LITE:
-		err = icem_lite_set_default_candidates(m->icem);
-		if (err) {
-			warning("ice: could not set"
-				" default candidates (%m)\n", err);
-			return err;
-		}
-
-		gather_handler(0, 0, NULL, m);
-		break;
+	if (sess->turn) {
+		err = icem_gather_relay(m,
+					sess->user, sess->pass);
+	}
+	else {
+		err = icem_gather_srflx(m);
 	}
 
 	return err;
@@ -514,11 +493,6 @@ static int session_alloc(struct mnat_sess **sessp,
 	if (!sess)
 		return ENOMEM;
 
-	if (0 == str_casecmp(mnat->id, "ice"))
-		sess->mode = ICE_MODE_FULL;
-	else if (0 == str_casecmp(mnat->id, "ice-lite"))
-		sess->mode = ICE_MODE_LITE;
-
 	sess->sdp    = mem_ref(ss);
 	sess->estabh = estabh;
 	sess->arg    = arg;
@@ -534,11 +508,6 @@ static int session_alloc(struct mnat_sess **sessp,
 	rand_str(sess->lpwd,   sizeof(sess->lpwd));
 	sess->tiebrk = rand_u64();
 	sess->offerer = offerer;
-
-	if (ICE_MODE_LITE == sess->mode) {
-		err |= sdp_session_set_lattr(ss, true,
-					     ice_attr_lite, NULL);
-	}
 
 	err |= sdp_session_set_lattr(ss, true,
 				     ice_attr_ufrag, sess->lufrag);
@@ -780,16 +749,14 @@ static int ice_start(struct mnat_sess *sess)
 		if (sdp_media_has_media(m->sdpm)) {
 			m->complete = false;
 
-			if (sess->mode == ICE_MODE_FULL) {
-				err = icem_conncheck_start(m->icem);
-				if (err)
-					return err;
+			err = icem_conncheck_start(m->icem);
+			if (err)
+				return err;
 
-				/* set the pair states
-				   -- first media stream only */
-				if (sess->medial.head == le) {
-					ice_candpair_set_states(m->icem);
-				}
+			/* set the pair states
+			   -- first media stream only */
+			if (sess->medial.head == le) {
+				ice_candpair_set_states(m->icem);
 			}
 		}
 		else {
@@ -831,7 +798,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	else
 		role = ICE_ROLE_CONTROLLED;
 
-	err = icem_alloc(&m->icem, sess->mode, role,
+	err = icem_alloc(&m->icem, ICE_MODE_FULL, role,
 			 IPPROTO_UDP, ICE_LAYER,
 			 sess->tiebrk, sess->lufrag, sess->lpwd,
 			 conncheck_handler, m);
@@ -967,22 +934,12 @@ static struct mnat mnat_ice = {
 	.updateh = update,
 };
 
-static struct mnat mnat_icelite = {
-	.id      = "ice-lite",
-	.ftag    = "+sip.ice",
-	.wait_connected = true,
-	.sessh   = session_alloc,
-	.mediah  = media_alloc,
-	.updateh = update,
-};
-
 
 static int module_init(void)
 {
 	conf_get_bool(conf_cur(), "ice_debug", &ice.debug);
 
 	mnat_register(baresip_mnatl(), &mnat_ice);
-	mnat_register(baresip_mnatl(), &mnat_icelite);
 
 	return 0;
 }
@@ -990,7 +947,6 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	mnat_unregister(&mnat_icelite);
 	mnat_unregister(&mnat_ice);
 
 	return 0;
