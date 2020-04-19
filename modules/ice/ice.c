@@ -13,12 +13,8 @@
  * Interactive Connectivity Establishment (ICE) for media NAT traversal
  *
  * This module enables ICE for NAT traversal. You can enable ICE
- * in your accounts file with the parameter ;medianat=ice. The following
- * options can be configured:
+ * in your accounts file with the parameter ;medianat=ice.
  *
- \verbatim
-  ice_debug       {yes,no}             # Enable ICE debugging/tracing
- \endverbatim
  */
 
 
@@ -63,13 +59,6 @@ struct mnat_media {
 	int nstun;                   /**< Number of pending STUN candidates  */
 	mnat_connected_h *connh;
 	void *arg;
-};
-
-
-static struct {
-	bool debug;
-} ice = {
-	false
 };
 
 
@@ -805,7 +794,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	if (err)
 		goto out;
 
-	icem_conf(m->icem)->debug = ice.debug;
+	icem_conf(m->icem)->debug = LEVEL_DEBUG==log_level_get();
 	icem_conf(m->icem)->rc    = 4;
 
 	icem_set_conf(m->icem, icem_conf(m->icem));
@@ -937,8 +926,6 @@ static struct mnat mnat_ice = {
 
 static int module_init(void)
 {
-	conf_get_bool(conf_cur(), "ice_debug", &ice.debug);
-
 	mnat_register(baresip_mnatl(), &mnat_ice);
 
 	return 0;
