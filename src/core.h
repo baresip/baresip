@@ -54,7 +54,7 @@ struct account {
 
 	/* parameters: */
 	enum answermode answermode;  /**< Answermode for incoming calls      */
-	struct le acv[8];            /**< List elements for aucodecl         */
+	struct le acv[16];           /**< List elements for aucodecl         */
 	struct list aucodecl;        /**< List of preferred audio-codecs     */
 	char *auth_user;             /**< Authentication username            */
 	char *auth_pass;             /**< Authentication password            */
