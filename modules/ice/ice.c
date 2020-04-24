@@ -474,6 +474,7 @@ static int session_alloc(struct mnat_sess **sessp,
 	struct mnat_sess *sess;
 	const char *usage;
 	int err = 0;
+	(void)mnat;
 
 	if (!sessp || !dnsc || !ss || !estabh)
 		return EINVAL;
