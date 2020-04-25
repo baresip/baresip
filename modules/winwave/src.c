@@ -87,7 +87,6 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 	struct ausrc_st *st = (struct ausrc_st *)dwInstance;
 	WAVEHDR *wh = (WAVEHDR *)dwParam1;
 	struct auframe af;
-	MMTIME mmtime;
 
 	(void)hwo;
 	(void)dwParam2;
@@ -109,12 +108,10 @@ static void CALLBACK waveInCallback(HWAVEOUT hwo,
 		if (st->inuse < (READ_BUFFERS-1))
 			add_wave_in(st);
 
-		waveInGetPosition(st->wavein, &mmtime, sizeof(mmtime));
-
 		af.fmt   = st->fmt;
 		af.sampv = (void *)wh->lpData;
 		af.sampc = wh->dwBytesRecorded/st->sampsz;
-		af.timestamp = mmtime.u.ms * 1000;
+		af.timestamp = tmr_jiffies_usec();
 
 		st->rh(&af, st->arg);
 
