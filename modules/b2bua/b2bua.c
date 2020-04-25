@@ -62,7 +62,8 @@ static void call_event_handler(struct call *call, enum call_event ev,
 	case CALL_EVENT_ESTABLISHED:
 		debug("b2bua: CALL_ESTABLISHED: peer_uri=%s\n",
 		      call_peeruri(call));
-		call_answer(call2, 200);
+		call_answer(call2, 200,
+			    call_has_video(call) ? VIDMODE_ON : VIDMODE_OFF);
 		break;
 
 	case CALL_EVENT_CLOSED:

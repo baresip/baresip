@@ -174,7 +174,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		switch (f->behaviour) {
 
 		case BEHAVIOUR_ANSWER:
-			err = ua_answer(ua, call);
+			err = ua_answer(ua, call, VIDMODE_ON);
 			if (err) {
 				warning("ua_answer failed (%m)\n", err);
 				goto out;
@@ -197,7 +197,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 
 		case BEHAVIOUR_GET_HDRS:
 			hdrs = call_get_custom_hdrs(call);
-			err = ua_answer(ua, call);
+			err = ua_answer(ua, call, VIDMODE_ON);
 			if (err) {
 				warning("ua_answer failed (%m)\n", err);
 				goto out;

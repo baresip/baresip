@@ -296,7 +296,7 @@ static int cmd_answer(struct re_printf *pf, void *unused)
 	/* Stop any ongoing ring-tones */
 	menu.play = mem_deref(menu.play);
 
-	ua_hold_answer(ua, NULL);
+	ua_hold_answer(ua, NULL, VIDMODE_ON);
 
 	return err;
 }

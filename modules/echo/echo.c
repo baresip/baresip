@@ -83,7 +83,7 @@ static int new_session(struct ua *ua, struct call *call)
 			call_dtmf_handler, sess);
 
 	list_append(&sessionl, &sess->le, sess);
-	err = ua_answer(ua, call);
+	err = ua_answer(ua, call, VIDMODE_ON);
 
 	if (err)
 		mem_deref(sess);

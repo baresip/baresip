@@ -146,6 +146,12 @@ enum call_event {
 	CALL_EVENT_MENC,
 };
 
+/** Video mode */
+enum vidmode {
+	VIDMODE_OFF = 0,    /**< Video disabled                */
+	VIDMODE_ON,         /**< Video enabled                 */
+};
+
 struct call;
 
 typedef void (call_event_h)(struct call *call, enum call_event ev,
@@ -153,7 +159,7 @@ typedef void (call_event_h)(struct call *call, enum call_event ev,
 typedef void (call_dtmf_h)(struct call *call, char key, void *arg);
 
 int  call_connect(struct call *call, const struct pl *paddr);
-int  call_answer(struct call *call, uint16_t scode);
+int  call_answer(struct call *call, uint16_t scode, enum vidmode vmode);
 int  call_progress(struct call *call);
 void call_hangup(struct call *call, uint16_t scode, const char *reason);
 int  call_modify(struct call *call);
@@ -712,12 +718,6 @@ enum ua_event {
 	UA_EVENT_MAX,
 };
 
-/** Video mode */
-enum vidmode {
-	VIDMODE_OFF = 0,    /**< Video disabled                */
-	VIDMODE_ON,         /**< Video enabled                 */
-};
-
 /** Defines the User-Agent event handler */
 typedef void (ua_event_h)(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg);
@@ -732,8 +732,8 @@ int  ua_connect(struct ua *ua, struct call **callp,
 		enum vidmode vmode);
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason);
-int  ua_answer(struct ua *ua, struct call *call);
-int  ua_hold_answer(struct ua *ua, struct call *call);
+int  ua_answer(struct ua *ua, struct call *call, enum vidmode vmode);
+int  ua_hold_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_options_send(struct ua *ua, const char *uri,
 		     options_resp_h *resph, void *arg);
 int  ua_debug(struct re_printf *pf, const struct ua *ua);
