@@ -472,7 +472,7 @@ static int session_alloc(struct mnat_sess **sessp,
 			 mnat_estab_h *estabh, void *arg)
 {
 	struct mnat_sess *sess;
-	const char *usage;
+	const char *usage = NULL;
 	int err = 0;
 	(void)mnat;
 
