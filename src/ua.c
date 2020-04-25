@@ -395,7 +395,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 			break;
 
 		case ANSWERMODE_AUTO:
-			(void)call_answer(call, 200);
+			(void)call_answer(call, 200, VIDMODE_ON);
 			break;
 
 		case ANSWERMODE_MANUAL:
@@ -972,12 +972,13 @@ void ua_hangup(struct ua *ua, struct call *call,
 /**
  * Answer an incoming call
  *
- * @param ua   User-Agent
- * @param call Call to answer, or NULL for current call
+ * @param ua    User-Agent
+ * @param call  Call to answer, or NULL for current call
+ * @param vmode Wanted video mode
  *
  * @return 0 if success, otherwise errorcode
  */
-int ua_answer(struct ua *ua, struct call *call)
+int ua_answer(struct ua *ua, struct call *call, enum vidmode vmode)
 {
 	if (!ua)
 		return EINVAL;
@@ -988,19 +989,20 @@ int ua_answer(struct ua *ua, struct call *call)
 			return ENOENT;
 	}
 
-	return call_answer(call, 200);
+	return call_answer(call, 200, vmode);
 }
 
 
 /**
  * Put the current call on hold and answer the incoming call
  *
- * @param ua   User-Agent
- * @param call Call to answer, or NULL for current call
+ * @param ua    User-Agent
+ * @param call  Call to answer, or NULL for current call
+ * @param vmode Wanted video mode for the incoming call
  *
  * @return 0 if success, otherwise errorcode
  */
-int ua_hold_answer(struct ua *ua, struct call *call)
+int ua_hold_answer(struct ua *ua, struct call *call, enum vidmode vmode)
 {
 	struct call *pcall;
 	int err;
@@ -1025,7 +1027,7 @@ int ua_hold_answer(struct ua *ua, struct call *call)
 			return err;
 	}
 
-	return ua_answer(ua, call);
+	return ua_answer(ua, call, vmode);
 }
 
 

@@ -1067,10 +1067,11 @@ int call_progress(struct call *call)
  *
  * @param call  Call to answer
  * @param scode Status code
+ * @param vmode Wanted video mode
  *
  * @return 0 if success, otherwise errorcode
  */
-int call_answer(struct call *call, uint16_t scode)
+int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 {
 	struct mbuf *desc;
 	int err;
@@ -1083,6 +1084,9 @@ int call_answer(struct call *call, uint16_t scode)
 		     state_name(call->state));
 		return 0;
 	}
+
+	if (vmode == VIDMODE_OFF)
+		call->video = mem_deref(call->video);
 
 	info("call: answering call from %s with %u\n", call->peer_uri, scode);
 

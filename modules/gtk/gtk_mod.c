@@ -700,7 +700,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 
 	case MQ_ANSWER:
 		call = data;
-		err = ua_answer(ua, call);
+		err = ua_answer(ua, call, VIDMODE_ON);
 		if (err) {
 			gdk_threads_enter();
 			warning_dialog("Call failed",
