@@ -56,6 +56,7 @@ struct account {
 	bool sipans;                 /**< Allow SIP header auto answer mode  */
 	enum answermode answermode;  /**< Answermode for incoming calls      */
 	uint32_t adelay;             /**< Delay for delayed auto answer [ms] */
+	enum dtmfmode dtmfmode;      /**< Send type for DTMF tones           */
 	struct le acv[16];           /**< List elements for aucodecl         */
 	struct list aucodecl;        /**< List of preferred audio-codecs     */
 	char *auth_user;             /**< Authentication username            */
