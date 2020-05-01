@@ -256,7 +256,6 @@ bool net_check(struct network *net)
 		     &laddr6, &net->laddr6);
 	}
 #endif
-	debug("net: check for IP changes: change=%d\n", change);
 
 	return change;
 }
