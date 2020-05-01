@@ -56,7 +56,7 @@ static struct {
 	bool use_udp;                  /**< Use UDP transport               */
 	bool use_tcp;                  /**< Use TCP transport               */
 	bool use_tls;                  /**< Use TLS transport               */
-	bool delayed_close;
+	bool delayed_close;            /**< Module will close SIP stack     */
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
 	void *arg;                     /**< UA Exit handler argument        */
