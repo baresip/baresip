@@ -82,6 +82,36 @@ static int cmd_ua_debug(struct re_printf *pf, void *unused)
 }
 
 
+/**
+ * Returns the current User-Agent and general codec state.
+ * Formatted as JSON, for use with TCP / MQTT API interface.
+ *
+ * @return Current User-Agent, NULL if none
+ */
+static int cmd_api_uastate(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	int err;
+	struct odict *od = NULL;
+
+	err = odict_alloc(&od, 8);
+	if (err)
+		return err;
+
+	struct le *le;
+	for (le = list_head(uag_list()); le && !err; le = le->next) {
+		const struct ua *ua = le->data;
+
+		err |= ua_state_json_api(od, pf, ua);
+		err |= json_encode_odict(pf, od);
+
+		if (err)
+			warning("debug: failed to encode json (%m)\n", err);
+	}
+	return re_hprintf(pf, "\n");
+}
+
+
 static int cmd_play_file(struct re_printf *pf, void *arg)
 {
 	static struct play *g_play;
@@ -187,6 +217,7 @@ static const struct cmd debugcmdv[] = {
 {"timers",      0,       0, "Timer debug",            tmr_status          },
 {"uastat",     'u',      0, "UA debug",               cmd_ua_debug        },
 {"uuid",        0,       0, "Print UUID",             print_uuid          },
+{"apistate",    0,       0, "User Agent state",       cmd_api_uastate     },
 };
 
 
