@@ -1263,6 +1263,8 @@ int ua_state_json_api(struct odict *od, struct re_printf *pf, const struct ua *u
 
 	/* user-agent info */
 	err |= odict_entry_add(od, "cuser", ODICT_STRING, ua->cuser);
+	/* TODO: 'selected_ua' not working, it's always true? */
+	err |= odict_entry_add(od, "selected_ua", ODICT_BOOL, ua == uag_current());
 
 	/* account info */
 	err |= account_json_api(od, cfg, ua->acc);
@@ -1272,8 +1274,6 @@ int ua_state_json_api(struct odict *od, struct re_printf *pf, const struct ua *u
 	/* registration info */
 	err |= odict_entry_add(reg, "interval", ODICT_INT, ua->acc->regint);
 	err |= odict_entry_add(reg, "q_value", ODICT_DOUBLE, ua->acc->regq);
-	/* TODO: current not working */
-	err |= odict_entry_add(reg, "current", ODICT_BOOL, ua == uag_current());
 
 	for (le = ua->regl.head; le; le = le->next) {
 		/* TODO: how to get only current ua register state? */
