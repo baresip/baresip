@@ -1259,40 +1259,54 @@ int account_debug(struct re_printf *pf, const struct account *acc)
  *
  * @return 0 if success, otherwise errorcode
  */
-int account_json_api(struct odict *od, struct odict *odcfg, const struct account *acc)
+int account_json_api(struct odict *od, struct odict *odcfg,
+		const struct account *acc)
 {
 	int err = 0;
+	struct odict *obn = NULL;
+	const char *stunhost = "";
 
 	if (!acc)
 		return 0;
 
 	/* account */
 	err |= odict_entry_add(od, "aor", ODICT_STRING, acc->aor);
-	err |= odict_entry_add(od, "display_name", ODICT_STRING, acc->dispname);
+	if (acc->dispname) {
+		err |= odict_entry_add(od, "display_name", ODICT_STRING,
+				acc->dispname);
+	}
 
 	/* config */
-	err |= odict_entry_add(odcfg, "sip_nat", ODICT_STRING, account_sipnat(acc));
+	if (acc->sipnat) {
+		err |= odict_entry_add(odcfg, "sip_nat", ODICT_STRING,
+				acc->sipnat);
+	}
 
-	struct odict *obn = NULL;
 	err |= odict_alloc(&obn, 8);
 	for (size_t i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
 		if (acc->outboundv[i]) {
-			err |= odict_entry_add(obn, "outbound", ODICT_STRING, acc->outboundv[i]);
+			err |= odict_entry_add(obn, "outbound", ODICT_STRING,
+					acc->outboundv[i]);
 		}
 	}
 	err |= odict_entry_add(odcfg, "sip_nat_outbound", ODICT_ARRAY, obn);
 
-	const char *stunhost = account_stun_host(acc) ? account_stun_host(acc) : "";
+	stunhost = account_stun_host(acc) ? account_stun_host(acc) : "";
 	err |= odict_entry_add(odcfg, "stun_host", ODICT_STRING, stunhost);
-	err |= odict_entry_add(odcfg, "stun_port", ODICT_INT, account_stun_port(acc));
-	err |= odict_entry_add(odcfg, "stun_user", ODICT_STRING, account_stun_user(acc));
-	const char *stunpwd = account_stun_pass(acc) != NULL ? "***" : "";
-	err |= odict_entry_add(odcfg, "stun_pass", ODICT_STRING, stunpwd);
+	err |= odict_entry_add(odcfg, "stun_port", ODICT_INT,
+			account_stun_port(acc));
+	if (acc->stun_user) {
+		err |= odict_entry_add(odcfg, "stun_user", ODICT_STRING,
+				acc->stun_user);
+	}
 
-	err |= odict_entry_add(odcfg, "answer_mode", ODICT_STRING, answermode_str(acc->answermode));
+	err |= odict_entry_add(odcfg, "answer_mode", ODICT_STRING,
+			answermode_str(acc->answermode));
 	err |= odict_entry_add(odcfg, "call_transfer", ODICT_BOOL, acc->refer);
 
-	err |= odict_entry_add(odcfg, "packet_time", ODICT_INT, account_ptime(acc));
+	err |= odict_entry_add(odcfg, "packet_time", ODICT_INT,
+			account_ptime(acc));
 
+	mem_deref(obn);
 	return err;
 }

@@ -93,12 +93,12 @@ static int cmd_api_uastate(struct re_printf *pf, void *unused)
 	(void)unused;
 	int err;
 	struct odict *od = NULL;
+	struct le *le;
 
 	err = odict_alloc(&od, 8);
 	if (err)
 		return err;
 
-	struct le *le;
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		const struct ua *ua = le->data;
 
@@ -108,6 +108,8 @@ static int cmd_api_uastate(struct re_printf *pf, void *unused)
 		if (err)
 			warning("debug: failed to encode json (%m)\n", err);
 	}
+
+	mem_deref(od);
 	return re_hprintf(pf, "\n");
 }
 

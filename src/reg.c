@@ -271,8 +271,8 @@ int reg_debug(struct re_printf *pf, const struct reg *reg)
 /**
  * Print the registration information in JSON
  *
- * @param pf  Print function
- * @param ua  Registration object
+ * @param od  Registration dict
+ * @param reg Registration object
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -283,10 +283,12 @@ int reg_json_api(struct odict *od, const struct reg *reg)
 	if (!reg)
 		return 0;
 
-	err |= odict_entry_add(od, "id", ODICT_INT, reg->id);
-	err |= odict_entry_add(od, "scode", ODICT_INT, reg->scode);
-	err |= odict_entry_add(od, "srv", ODICT_STRING, reg->srv);
-	err |= odict_entry_add(od, "af", ODICT_STRING, af_name(reg->af));
+	err |= odict_entry_add(od, "id", ODICT_INT, (int64_t) reg->id);
+	err |= odict_entry_add(od, "scode", ODICT_INT, (int64_t) reg->scode);
+	if (reg->srv)
+		err |= odict_entry_add(od, "srv", ODICT_STRING, reg->srv);
+	err |= odict_entry_add(od, "ip_version", ODICT_STRING,
+			af_name(reg->af));
 
 	return err;
 }

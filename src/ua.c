@@ -1248,7 +1248,8 @@ int ua_debug(struct re_printf *pf, const struct ua *ua)
  *
  * @return 0 if success, otherwise errorcode
  */
-int ua_state_json_api(struct odict *od, struct re_printf *pf, const struct ua *ua)
+int ua_state_json_api(struct odict *od, struct re_printf *pf,
+		const struct ua *ua)
 {
 	struct odict *reg = NULL;
 	struct odict *cfg = NULL;
@@ -1264,7 +1265,8 @@ int ua_state_json_api(struct odict *od, struct re_printf *pf, const struct ua *u
 	/* user-agent info */
 	err |= odict_entry_add(od, "cuser", ODICT_STRING, ua->cuser);
 	/* TODO: 'selected_ua' not working, it's always true? */
-	err |= odict_entry_add(od, "selected_ua", ODICT_BOOL, ua == uag_current());
+	err |= odict_entry_add(od, "selected_ua", ODICT_BOOL,
+			ua == uag_current());
 
 	/* account info */
 	err |= account_json_api(od, cfg, ua->acc);
@@ -1272,7 +1274,8 @@ int ua_state_json_api(struct odict *od, struct re_printf *pf, const struct ua *u
 		warning("ua: failed to encode json account (%m)\n", err);
 
 	/* registration info */
-	err |= odict_entry_add(reg, "interval", ODICT_INT, ua->acc->regint);
+	err |= odict_entry_add(reg, "interval", ODICT_INT,
+			(int64_t) ua->acc->regint);
 	err |= odict_entry_add(reg, "q_value", ODICT_DOUBLE, ua->acc->regq);
 
 	for (le = ua->regl.head; le; le = le->next) {
@@ -1288,7 +1291,8 @@ int ua_state_json_api(struct odict *od, struct re_printf *pf, const struct ua *u
 	err |= odict_entry_add(od, "registration", ODICT_OBJECT, reg);
 	if (err)
 		warning("ua: failed to encode json package (%m)\n", err);
-
+	mem_deref(cfg);
+	mem_deref(reg);
 	return err;
 }
 
