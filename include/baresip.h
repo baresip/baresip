@@ -59,7 +59,8 @@ struct account;
 
 int account_alloc(struct account **accp, const char *sipaddr);
 int account_debug(struct re_printf *pf, const struct account *acc);
-int account_json_api(struct odict *odacc, struct odict *odcfg, const struct account *acc);
+int account_json_api(struct odict *odacc, struct odict *odcfg,
+		 const struct account *acc);
 int account_set_auth_user(struct account *acc, const char *user);
 int account_set_auth_pass(struct account *acc, const char *pass);
 int account_set_outbound(struct account *acc, const char *ob, unsigned ix);
