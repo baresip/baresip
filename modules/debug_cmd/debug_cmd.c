@@ -83,10 +83,10 @@ static int cmd_ua_debug(struct re_printf *pf, void *unused)
 
 
 /**
- * Returns the current User-Agent and general codec state.
+ * Returns all the User-Agents and their general codec state.
  * Formatted as JSON, for use with TCP / MQTT API interface.
  *
- * @return Current User-Agent, NULL if none
+ * @return All User-Agents available, NULL if none
  */
 static int cmd_api_uastate(struct re_printf *pf, void *unused)
 {
@@ -102,7 +102,8 @@ static int cmd_api_uastate(struct re_printf *pf, void *unused)
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		const struct ua *ua = le->data;
 
-		err |= ua_state_json_api(od, pf, ua);
+		err |= ua_state_json_api(od, ua);
+		/* todo: add to list */
 		err |= json_encode_odict(pf, od);
 
 		if (err)

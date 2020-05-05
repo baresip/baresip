@@ -1243,13 +1243,11 @@ int ua_debug(struct re_printf *pf, const struct ua *ua)
  * Print the user-agent information in JSON
  *
  * @param od  User-Agent dict
- * @param pf  Print function
  * @param ua  User-Agent object
  *
  * @return 0 if success, otherwise errorcode
  */
-int ua_state_json_api(struct odict *od, struct re_printf *pf,
-		const struct ua *ua)
+int ua_state_json_api(struct odict *od, const struct ua *ua)
 {
 	struct odict *reg = NULL;
 	struct odict *cfg = NULL;
@@ -1279,14 +1277,14 @@ int ua_state_json_api(struct odict *od, struct re_printf *pf,
 	err |= odict_entry_add(reg, "q_value", ODICT_DOUBLE, ua->acc->regq);
 
 	for (le = ua->regl.head; le; le = le->next) {
+		struct reg *regm = le->data;
 		/* TODO: how to get only current ua register state? */
-		err |= reg_json_api(reg, le->data);
+		err |= reg_json_api(reg, regm);
 	}
 	if (err)
 		warning("ua: failed to encode json registration (%m)\n", err);
 
 	/* package */
-	/* TODO: this is complaining, how to build these objects? */
 	err |= odict_entry_add(od, "settings", ODICT_OBJECT, cfg);
 	err |= odict_entry_add(od, "registration", ODICT_OBJECT, reg);
 	if (err)
