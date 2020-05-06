@@ -260,8 +260,9 @@ static int module_init(void)
 			}
 		}
 
-		if ((ret = av_hwdevice_ctx_create(&avcodec_hw_device_ctx, type,
-						  NULL, NULL, 0)) < 0) {
+		ret = av_hwdevice_ctx_create(&avcodec_hw_device_ctx, type,
+					     NULL, NULL, 0);
+		if (ret < 0) {
 			warning("avcodec: Failed to create HW device (%s)\n",
 				av_err2str(ret));
 			return ENOTSUP;
