@@ -1149,6 +1149,22 @@ void video_stop(struct video *v)
 }
 
 
+/**
+ * Stop the video display
+ *
+ * @param v   Video object
+ */
+void video_stop_display(struct video *v)
+{
+	if (!v)
+		return;
+
+	debug("video: stopping video display ..\n");
+
+	v->vrx.vidisp = mem_deref(v->vrx.vidisp);
+}
+
+
 bool video_is_started(const struct video *v)
 {
 	return v ? v->started : false;
