@@ -210,6 +210,7 @@ int module_preload(const char *module)
 /**
  * Load a module by name or by filename
  *
+ * @param path Module path
  * @param name Module name incl/excl extension, excluding module path
  *
  * @return 0 if success, otherwise errorcode
@@ -217,10 +218,10 @@ int module_preload(const char *module)
  * example:    "foo"
  * example:    "foo.so"
  */
-int module_load(const char *name)
+int module_load(const char *path, const char *name)
 {
 	char filename[256];
-	struct pl path, pl_name;
+	struct pl pl_path, pl_name;
 	int err;
 
 	if (!str_isset(name))
@@ -228,12 +229,10 @@ int module_load(const char *name)
 
 	append_extension(filename, sizeof(filename), name);
 
+	pl_set_str(&pl_path, path);
 	pl_set_str(&pl_name, filename);
 
-	if (conf_get(conf_cur(), "module_path", &path))
-		pl_set_str(&path, ".");
-
-	err = load_module(NULL, &path, &pl_name);
+	err = load_module(NULL, &pl_path, &pl_name);
 
 	return err;
 }

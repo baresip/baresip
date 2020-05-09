@@ -49,9 +49,13 @@ static int cmd_quit(struct re_printf *pf, void *unused)
 static int insmod_handler(struct re_printf *pf, void *arg)
 {
        const struct cmd_arg *carg = arg;
+       char path[256];
        int err;
 
-       err = module_load(carg->prm);
+       if (conf_get_str(conf_cur(), "module_path", path, sizeof(path)))
+	       str_ncpy(path, ".", sizeof(path));
+
+       err = module_load(path, carg->prm);
        if (err) {
                return re_hprintf(pf, "insmod: ERROR: could not load module"
                                  " '%s': %m\n", carg->prm, err);
