@@ -1230,6 +1230,7 @@ struct stream *video_strm(const struct video *v);
 double video_timestamp_to_seconds(uint64_t timestamp);
 uint64_t video_calc_timebase_timestamp(uint64_t rtp_ts);
 const struct vidcodec *video_codec(const struct video *vid, bool tx);
+void video_sdp_attr_decode(struct video *v);
 
 
 /*

@@ -379,7 +379,6 @@ bool video_is_started(const struct video *v);
 int  video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		       const char *fmtp);
 void video_update_picture(struct video *v);
-void video_sdp_attr_decode(struct video *v);
 int  video_print(struct re_printf *pf, const struct video *v);
 
 
