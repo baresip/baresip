@@ -78,7 +78,9 @@ struct fixture {
 	f->estab_action = ACTION_RECANCEL;				\
 	f->exp_estab = 1;						\
 	f->exp_closed = 1;						\
-	mock_aucodec_register(baresip_aucodecl());			\
+	/* NOTE: See Makefile TEST_MODULES */				\
+	err = module_load(".", "g711");					\
+	TEST_ERR(err);							\
 									\
 	err = ua_alloc(&f->a.ua,					\
 		       "A <sip:a@127.0.0.1>;regint=0" prm);		\
@@ -119,7 +121,7 @@ struct fixture {
 	mem_deref(f->b.ua);			\
 	mem_deref(f->a.ua);			\
 						\
-	mock_aucodec_unregister();		\
+	module_unload("g711");			\
 						\
 	uag_event_unregister(event_handler);	\
 						\
