@@ -372,6 +372,31 @@ int conf_configure(void)
 
 
 /**
+ * Configure the system from a buffer
+ *
+ * @param buf Buffer with config
+ * @param sz  Size of buffer
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int conf_configure_buf(const uint8_t *buf, size_t sz)
+{
+	int err;
+
+	if (!buf || !sz)
+		return EINVAL;
+
+	conf_obj = mem_deref(conf_obj);
+
+	err = conf_alloc_buf(&conf_obj, buf, sz);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+
+/**
  * Load all modules from config file
  *
  * @return 0 if success, otherwise errorcode

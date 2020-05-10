@@ -215,6 +215,7 @@ int custom_hdrs_apply(const struct list *hdrs, custom_hdrs_h *h, void *arg);
 typedef int (confline_h)(const struct pl *addr, void *arg);
 
 int  conf_configure(void);
+int  conf_configure_buf(const uint8_t *buf, size_t sz);
 int  conf_modules(void);
 void conf_path_set(const char *path);
 int  conf_path_get(char *path, size_t sz);
