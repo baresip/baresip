@@ -246,7 +246,7 @@ static const char *print_scode(uint16_t scode)
  * Print the registration debug information
  *
  * @param pf  Print function
- * @param ua  Registration object
+ * @param reg Registration object
  *
  * @return 0 if success, otherwise errorcode
  */
