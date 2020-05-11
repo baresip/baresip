@@ -1275,7 +1275,7 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 	for (le = list_head(&ua->regl); le; le = le->next) {
 		struct reg *regm = le->data;
 		err |= reg_json_api(reg, regm);
-		i++;
+		++i;
 	}
 	if (i > 1)
 		warning("ua: multiple registrations for one account");
