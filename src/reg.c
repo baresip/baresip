@@ -284,10 +284,12 @@ int reg_json_api(struct odict *od, const struct reg *reg)
 		return 0;
 
 	err |= odict_entry_add(od, "id", ODICT_INT, (int64_t) reg->id);
-	err |= odict_entry_add(od, "scode", ODICT_INT, (int64_t) reg->scode);
+	err |= odict_entry_add(od, "state", ODICT_BOOL, reg_isok(reg));
+	err |= odict_entry_add(od, "code", ODICT_INT, (int64_t) reg->scode);
 	if (reg->srv)
 		err |= odict_entry_add(od, "srv", ODICT_STRING, reg->srv);
-	err |= odict_entry_add(od, "ip_version", ODICT_STRING,
+
+	err |= odict_entry_add(od, "ipv", ODICT_STRING,
 			af_name(reg->af));
 
 	return err;

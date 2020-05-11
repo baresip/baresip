@@ -1252,6 +1252,7 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 	struct odict *reg = NULL;
 	struct odict *cfg = NULL;
 	struct le *le;
+	size_t i = 0;
 	int err = 0;
 
 	if (!ua)
@@ -1262,7 +1263,6 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 
 	/* user-agent info */
 	err |= odict_entry_add(od, "cuser", ODICT_STRING, ua->cuser);
-	/* TODO: 'selected_ua' not working, it's always true? */
 	err |= odict_entry_add(od, "selected_ua", ODICT_BOOL,
 			ua == uag_current());
 
@@ -1272,15 +1272,18 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 		warning("ua: failed to encode json account (%m)\n", err);
 
 	/* registration info */
+	for (le = list_head(&ua->regl); le; le = le->next) {
+		struct reg *regm = le->data;
+		err |= reg_json_api(reg, regm);
+		i++;
+	}
+	if (i > 1)
+		warning("ua: multiple registrations for one account");
+
 	err |= odict_entry_add(reg, "interval", ODICT_INT,
 			(int64_t) ua->acc->regint);
 	err |= odict_entry_add(reg, "q_value", ODICT_DOUBLE, ua->acc->regq);
 
-	for (le = ua->regl.head; le; le = le->next) {
-		struct reg *regm = le->data;
-		/* TODO: how to get only current ua register state? */
-		err |= reg_json_api(reg, regm);
-	}
 	if (err)
 		warning("ua: failed to encode json registration (%m)\n", err);
 
@@ -1289,6 +1292,7 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 	err |= odict_entry_add(od, "registration", ODICT_OBJECT, reg);
 	if (err)
 		warning("ua: failed to encode json package (%m)\n", err);
+
 	mem_deref(cfg);
 	mem_deref(reg);
 	return err;
