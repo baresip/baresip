@@ -242,6 +242,14 @@ static const char *print_scode(uint16_t scode)
 }
 
 
+/**
+ * Print the registration debug information
+ *
+ * @param pf  Print function
+ * @param reg Registration object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int reg_debug(struct re_printf *pf, const struct reg *reg)
 {
 	int err = 0;
@@ -255,6 +263,34 @@ int reg_debug(struct re_printf *pf, const struct reg *reg)
 			  reg->scode, print_scode(reg->scode));
 	err |= re_hprintf(pf, " srv:    %s\n", reg->srv);
 	err |= re_hprintf(pf, " af:     %s\n", af_name(reg->af));
+
+	return err;
+}
+
+
+/**
+ * Print the registration information in JSON
+ *
+ * @param od  Registration dict
+ * @param reg Registration object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int reg_json_api(struct odict *od, const struct reg *reg)
+{
+	int err = 0;
+
+	if (!reg)
+		return 0;
+
+	err |= odict_entry_add(od, "id", ODICT_INT, (int64_t) reg->id);
+	err |= odict_entry_add(od, "state", ODICT_BOOL, reg_isok(reg));
+	err |= odict_entry_add(od, "code", ODICT_INT, (int64_t) reg->scode);
+	if (reg->srv)
+		err |= odict_entry_add(od, "srv", ODICT_STRING, reg->srv);
+
+	err |= odict_entry_add(od, "ipv", ODICT_STRING,
+			af_name(reg->af));
 
 	return err;
 }

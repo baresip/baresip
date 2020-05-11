@@ -220,6 +220,7 @@ int  reg_register(struct reg *reg, const char *reg_uri,
 void reg_unregister(struct reg *reg);
 bool reg_isok(const struct reg *reg);
 int  reg_debug(struct re_printf *pf, const struct reg *reg);
+int  reg_json_api(struct odict *od, const struct reg *reg);
 int  reg_status(struct re_printf *pf, const struct reg *reg);
 int  reg_af(const struct reg *reg);
 
