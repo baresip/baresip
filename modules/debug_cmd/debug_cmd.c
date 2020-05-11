@@ -85,15 +85,16 @@ static int cmd_ua_debug(struct re_printf *pf, void *unused)
 /**
  * Returns all the User-Agents and their general codec state.
  * Formatted as JSON, for use with TCP / MQTT API interface.
+ * JSON object with 'cuser' as the key.
  *
  * @return All User-Agents available, NULL if none
  */
 static int cmd_api_uastate(struct re_printf *pf, void *unused)
 {
-	(void)unused;
-	int err;
 	struct odict *od = NULL;
 	struct le *le;
+	int err;
+	(void)unused;
 
 	err = odict_alloc(&od, 8);
 	if (err)
@@ -101,16 +102,21 @@ static int cmd_api_uastate(struct re_printf *pf, void *unused)
 
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		const struct ua *ua = le->data;
+		struct odict *odua;
 
-		err |= ua_state_json_api(od, ua);
-		/* todo: add to list */
-		err |= json_encode_odict(pf, od);
+		err = odict_alloc(&odua, 8);
 
-		if (err)
-			warning("debug: failed to encode json (%m)\n", err);
+		err |= ua_state_json_api(odua, ua);
+		err |= odict_entry_add(od, ua_aor(ua), ODICT_OBJECT, odua);
+		mem_deref(odua);
 	}
 
+	err |= json_encode_odict(pf, od);
+	if (err)
+		warning("debug: failed to encode json (%m)\n", err);
+
 	mem_deref(od);
+
 	return re_hprintf(pf, "\n");
 }
 
