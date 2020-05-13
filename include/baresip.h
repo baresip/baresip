@@ -73,6 +73,7 @@ int account_set_stun_port(struct account *acc, uint16_t port);
 int account_set_mediaenc(struct account *acc, const char *mediaenc);
 int account_set_medianat(struct account *acc, const char *medianat);
 int account_set_audio_codecs(struct account *acc, const char *codecs);
+int account_set_video_codecs(struct account *acc, const char *codecs);
 int account_set_mwi(struct account *acc, const char *value);
 int account_set_call_transfer(struct account *acc, const char *value);
 int account_auth(const struct account *acc, char **username, char **password,

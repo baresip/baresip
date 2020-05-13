@@ -715,6 +715,34 @@ int account_set_audio_codecs(struct account *acc, const char *codecs)
 
 
 /**
+ * Sets video codecs
+ *
+ * @param acc      User-Agent account
+ * @param codecs   Comma separated list of video codecs (NULL to disable)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_video_codecs(struct account *acc, const char *codecs)
+{
+	char buf[256];
+	struct pl pl;
+
+	if (!acc)
+		return EINVAL;
+
+	list_clear(&acc->vidcodecl);
+
+	if (codecs) {
+		re_snprintf(buf, sizeof(buf), ";video_codecs=%s", codecs);
+		pl_set_str(&pl, buf);
+		return video_codecs_decode(acc, &pl);
+	}
+
+	return 0;
+}
+
+
+/**
  * Sets the displayed name. Pass null in dname to disable display name
  *
  * @param acc      User-Agent account
