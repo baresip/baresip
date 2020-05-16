@@ -292,8 +292,9 @@ static int open_encoder(struct videnc_state *st,
 
 		/* set hw_frames_ctx for encoder's AVCodecContext */
 
-		if ((err = set_hwframe_ctx(st->ctx, avcodec_hw_device_ctx,
-					   size->w, size->h)) < 0) {
+		err = set_hwframe_ctx(st->ctx, avcodec_hw_device_ctx,
+				      size->w, size->h);
+		if (err < 0) {
 
 			warning("avcodec: encode: Failed to set"
 				" hwframe context.\n");
@@ -320,7 +321,7 @@ static int open_encoder(struct videnc_state *st,
 
 
 static int decode_sdpparam_h264(struct videnc_state *st, const struct pl *name,
-			 const struct pl *val)
+				const struct pl *val)
 {
 	if (0 == pl_strcasecmp(name, "packetization-mode")) {
 		st->u.h264.packetization_mode = pl_u32(val);
