@@ -639,6 +639,21 @@ static bool all_gathered(const struct mnat_sess *sess)
 }
 
 
+static bool all_completed(const struct mnat_sess *sess)
+{
+	struct le *le;
+
+	/* Check all conncheck flags */
+	LIST_FOREACH(&sess->medial, le) {
+		struct mnat_media *mx = le->data;
+		if (!mx->complete)
+			return false;
+	}
+
+	return true;
+}
+
+
 static void gather_handler(int err, uint16_t scode, const char *reason,
 			   void *arg)
 {
@@ -678,7 +693,7 @@ static void conncheck_handler(int err, bool update, void *arg)
 {
 	struct mnat_media *m = arg;
 	struct mnat_sess *sess = m->sess;
-	struct le *le;
+	bool sess_complete = false;
 
 	info("ice: %s: connectivity check is complete (update=%d)\n",
 	     sdp_media_name(m->sdpm), update);
@@ -705,29 +720,24 @@ static void conncheck_handler(int err, bool update, void *arg)
 		cand1 = icem_selected_rcand(m->icem, 1);
 		cand2 = icem_selected_rcand(m->icem, 2);
 
+		sess_complete = all_completed(sess);
+
 		if (m->connh) {
 			m->connh(icem_lcand_addr(cand1),
 				  icem_lcand_addr(cand2),
 				  m->arg);
 		}
-
-		/* Check all conncheck flags */
-		LIST_FOREACH(&sess->medial, le) {
-			struct mnat_media *mx = le->data;
-			if (!mx->complete)
-				return;
-		}
 	}
 
 	/* call estab-handler and send re-invite */
-	if (sess->send_reinvite && update) {
+	if (sess_complete && sess->send_reinvite && update) {
 
 		info("ice: %s: sending Re-INVITE with updated"
 		     " default candidates\n",
 		     sdp_media_name(m->sdpm));
 
-		sess->estabh(0, 0, NULL, sess->arg);
 		sess->send_reinvite = false;
+		sess->estabh(0, 0, NULL, sess->arg);
 	}
 }
 
