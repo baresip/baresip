@@ -164,6 +164,7 @@ USE_SNDIO := $(shell [ -f $(SYSROOT)/include/sndio.h ] || \
 USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
 HAVE_SPEEXDSP := $(shell \
 	[ -f $(SYSROOT)/local/lib/libspeexdsp$(LIB_SUFFIX) ] || \
+	[ -f $(SYSROOT)/lib64/libspeexdsp$(LIB_SUFFIX) ] || \
 	[ -f $(SYSROOT)/lib/libspeexdsp$(LIB_SUFFIX) ] || \
 	[ -f $(SYSROOT_ALT)/lib/libspeexdsp$(LIB_SUFFIX) ] && echo "yes")
 ifeq ($(HAVE_SPEEXDSP),)
