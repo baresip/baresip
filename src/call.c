@@ -1409,6 +1409,8 @@ static int sipsess_offer_handler(struct mbuf **descp,
 
 	if (got_offer) {
 
+		call->got_offer = true;
+
 		/* Decode SDP Offer */
 		err = sdp_decode(call->sdp, msg->mb, true);
 		if (err) {
@@ -1435,6 +1437,8 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	MAGIC_CHECK(call);
 
 	debug("call: got SDP answer (%zu bytes)\n", mbuf_get_left(msg->mb));
+
+	call->got_offer = false;
 
 	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
 		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
