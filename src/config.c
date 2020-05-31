@@ -93,7 +93,7 @@ static int range_print(struct re_printf *pf, const struct range *rng)
 }
 
 
-static int dns_server_handler(const struct pl *pl, void *arg)
+static int dns_handler(const struct pl *pl, void *arg, bool fallback)
 {
 	struct config_net *cfg = arg;
 	const size_t max_count = ARRAY_SIZE(cfg->nsv);
@@ -108,6 +108,9 @@ static int dns_server_handler(const struct pl *pl, void *arg)
 	/* Append dns_server to the network config */
 	err = pl_strcpy(pl, cfg->nsv[cfg->nsc].addr,
 			sizeof(cfg->nsv[0].addr));
+
+	cfg->nsv[cfg->nsc].fallback = fallback;
+
 	if (err) {
 		warning("config: dns_server: could not copy string (%r)\n",
 			pl);
@@ -117,6 +120,26 @@ static int dns_server_handler(const struct pl *pl, void *arg)
 	++cfg->nsc;
 
 	return 0;
+}
+
+
+static int dns_server_handler(const struct pl *pl, void *arg)
+{
+	int err;
+
+	err = dns_handler(pl, arg, false);
+
+	return err;
+}
+
+
+static int dns_fallback_handler(const struct pl *pl, void *arg)
+{
+	int err;
+
+	err = dns_handler(pl, arg, true);
+
+	return err;
 }
 
 
@@ -318,6 +341,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	/* Network */
 	(void)conf_apply(conf, "dns_server", dns_server_handler, &cfg->net);
+	(void)conf_apply(conf, "dns_fallback",
+			   dns_fallback_handler, &cfg->net);
 	(void)conf_get_str(conf, "net_interface",
 			   cfg->net.ifname, sizeof(cfg->net.ifname));
 
@@ -589,6 +614,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n# Network\n"
 			  "#dns_server\t\t1.1.1.1:53\n"
 			  "#dns_server\t\t1.0.0.1:53\n"
+			  "#dns_fallback\t\t8.8.8.8:53\n"
 			  "#net_interface\t\t%H\n",
 			  cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max,
 			  default_interface_print, NULL);
