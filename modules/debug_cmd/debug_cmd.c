@@ -142,7 +142,7 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 			return err;
 
 		err = play_file(&g_play, baresip_player(), filename, 0,
-                        cfg->audio.alert_mod, cfg->audio.alert_dev);
+					    cfg->audio.alert_mod, cfg->audio.alert_dev);
 		if (err)
 		{
 			warning("debug_cmd: play_file(%s) failed (%m)\n",

@@ -203,58 +203,58 @@ static int module_init(void)
 	aac.crate = aac_samplerate;
 
 	switch (aac_aot) {
-	case AOT_AAC_LC:
-		/*  2: MPEG-4 AAC Low Complexity */
-		aac_profile = HIGH_QUALITY_AUDIO_PROFILE;
-		aac_constantduration = 1024;
-		aac_ratio = 1;
-		break;
-	case AOT_SBR:
-		/*  5: MPEG-4 AAC Low Complexity with Spectral Band
-		       Replication (HE-AAC) */
-		aac_profile = HIGH_EFFICIENCY_AAC_PROFILE;
-		aac_constantduration = 2048;
-		aac_ratio = 2;
-		break;
-	case AOT_PS: /* Stereo only! */
-		/* 29: MPEG-4 AAC Low Complexity with Spectral Band
-		       Replication and Parametric Stereo (HE-AAC v2) */
-		aac_profile = HIGH_EFFICIENCY_AAC_V2_PROFILE;
-		aac_constantduration = 2048;
-		aac_ratio = 2;
-		aac_channels = 2;
-		break;
-	case AOT_ER_AAC_LD:
-		/* 23: MPEG-4 AAC Low-Delay */
-		aac_profile = LOW_DELAY_AUDIO_PROFILE;
-		aac_ratio = 1;
-		if (aac_constantduration != 480 &&
-		    aac_constantduration != 512)
-			aac_constantduration = 480;
-		break;
-	case AOT_ER_AAC_ELD:
-		/* 39: MPEG-4 AAC Enhanced Low-Delay */
-		aac_profile = ENHANCED_LOW_DELAY_AUDIO_PROFILE;
-		if (aac_channels == 2) ++aac_profile;
-		aac_ratio = 1;
-		switch (aac_constantduration) {
-		case 120:
-		case 128:
-		case 240:
-		case 256:
-		case 480:
-		case 512:
+		case AOT_AAC_LC:
+			/*  2: MPEG-4 AAC Low Complexity */
+			aac_profile = HIGH_QUALITY_AUDIO_PROFILE;
+			aac_constantduration = 1024;
+			aac_ratio = 1;
+			break;
+		case AOT_SBR:
+			/*  5: MPEG-4 AAC Low Complexity with Spectral Band
+				Replication (HE-AAC) */
+			aac_profile = HIGH_EFFICIENCY_AAC_PROFILE;
+			aac_constantduration = 2048;
+			aac_ratio = 2;
+			break;
+		case AOT_PS: /* Stereo only! */
+			/* 29: MPEG-4 AAC Low Complexity with Spectral Band
+				Replication and Parametric Stereo (HE-AAC v2) */
+			aac_profile = HIGH_EFFICIENCY_AAC_V2_PROFILE;
+			aac_constantduration = 2048;
+			aac_ratio = 2;
+			aac_channels = 2;
+			break;
+		case AOT_ER_AAC_LD:
+			/* 23: MPEG-4 AAC Low-Delay */
+			aac_profile = LOW_DELAY_AUDIO_PROFILE;
+			aac_ratio = 1;
+			if (aac_constantduration != 480 &&
+				aac_constantduration != 512)
+				aac_constantduration = 480;
+			break;
+		case AOT_ER_AAC_ELD:
+			/* 39: MPEG-4 AAC Enhanced Low-Delay */
+			aac_profile = ENHANCED_LOW_DELAY_AUDIO_PROFILE;
+			if (aac_channels == 2) ++aac_profile;
+			aac_ratio = 1;
+			switch (aac_constantduration) {
+			case 120:
+			case 128:
+			case 240:
+			case 256:
+			case 480:
+			case 512:
+				break;
+			default:
+				aac_constantduration = 120;
+				break;
+			}
 			break;
 		default:
-			aac_constantduration = 120;
-			break;
-		}
-		break;
-	default:
-		warning("AAC Audio object types 2 (AAC-LC), 5 "
-			"(HE-AAC), 29 (HE-AAC v2), 23 (AAC-LD) "
-			"and 39 (AAC-ELD) are allowed.\n");
-		return EINVAL;
+			warning("AAC Audio object types 2 (AAC-LC), 5 "
+				"(HE-AAC), 29 (HE-AAC v2), 23 (AAC-LD) "
+				"and 39 (AAC-ELD) are allowed.\n");
+			return EINVAL;
 	}
 
 	error = aacEncOpen(&enc, 0, 0);

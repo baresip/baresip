@@ -1125,11 +1125,10 @@ uint16_t account_stun_port(const struct account *acc)
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
-
-	case ANSWERMODE_MANUAL: return "manual";
-	case ANSWERMODE_EARLY:  return "early";
-	case ANSWERMODE_AUTO:   return "auto";
-	default: return "???";
+		case ANSWERMODE_MANUAL: return "manual";
+		case ANSWERMODE_EARLY:  return "early";
+		case ANSWERMODE_AUTO:   return "auto";
+		default: return "???";
 	}
 }
 
@@ -1281,9 +1280,9 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 /**
  * Print the account information in JSON
  *
- * @param od  Account dict
+ * @param od     Account dict
  * @param odcfg  Configuration dict
- * @param acc User-Agent account
+ * @param acc    User-Agent account
  *
  * @return 0 if success, otherwise errorcode
  */

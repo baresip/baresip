@@ -195,10 +195,10 @@ static int ua_print_call_status(struct re_printf *pf, void *unused)
 
 	call = ua_call(uag_current());
 	if (call) {
-		err  = re_hprintf(pf, "\n%H\n", call_debug, call);
+		err = re_hprintf(pf, "\n%H\n", call_debug, call);
 	}
 	else {
-		err  = re_hprintf(pf, "\n(no active calls)\n");
+		err = re_hprintf(pf, "\n(no active calls)\n");
 	}
 
 	return err;
