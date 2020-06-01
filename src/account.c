@@ -1301,6 +1301,8 @@ int account_json_api(struct odict *od, struct odict *odcfg,
 	if (acc->dispname) {
 		err |= odict_entry_add(od, "display_name", ODICT_STRING,
 				acc->dispname);
+	} else {
+		err |= odict_entry_add(od, "display_name", ODICT_STRING,"");
 	}
 
 	/* config */
