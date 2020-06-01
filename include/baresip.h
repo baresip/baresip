@@ -173,10 +173,11 @@ bool call_has_video(const struct call *call);
 int  call_transfer(struct call *call, const char *uri);
 int  call_status(struct re_printf *pf, const struct call *call);
 int  call_debug(struct re_printf *pf, const struct call *call);
+int  call_json_api(struct odict *od, const struct call *call);
 int  call_notify_sipfrag(struct call *call, uint16_t scode,
-			 const char *reason, ...);
+			   const char *reason, ...);
 void call_set_handlers(struct call *call, call_event_h *eh,
-		       call_dtmf_h *dtmfh, void *arg);
+			   call_dtmf_h *dtmfh, void *arg);
 uint16_t      call_scode(const struct call *call);
 uint32_t      call_duration(const struct call *call);
 uint32_t      call_setup_duration(const struct call *call);

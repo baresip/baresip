@@ -1251,6 +1251,7 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 {
 	struct odict *reg = NULL;
 	struct odict *cfg = NULL;
+	struct odict *ucl = NULL;
 	struct le *le;
 	size_t i = 0;
 	int err = 0;
@@ -1260,6 +1261,7 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 
 	err |= odict_alloc(&reg, 8);
 	err |= odict_alloc(&cfg, 8);
+	err |= odict_alloc(&ucl, 8);
 
 	/* user-agent info */
 	err |= odict_entry_add(od, "cuser", ODICT_STRING, ua->cuser);
@@ -1268,8 +1270,10 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 
 	/* account info */
 	err |= account_json_api(od, cfg, ua->acc);
-	if (err)
+	if (err) {
 		warning("ua: failed to encode json account (%m)\n", err);
+		err = 0;
+	}
 
 	/* registration info */
 	for (le = list_head(&ua->regl); le; le = le->next) {
@@ -1282,19 +1286,31 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 
 	err |= odict_entry_add(reg, "interval", ODICT_INT,
 			(int64_t) ua->acc->regint);
-	err |= odict_entry_add(reg, "q_value", ODICT_DOUBLE, ua->acc->regq);
+	err |= odict_entry_add(reg, "q_value", ODICT_DOUBLE,
+			ua->acc->regq);
 
-	if (err)
+	if (err) {
 		warning("ua: failed to encode json registration (%m)\n", err);
+		err = 0;
+	}
+
+	/* call info */
+	err |= call_json_api(ucl, ua_call(ua));
+	if (err) {
+		warning("ua: failed to encode json call (%m)\n", err);
+		err = 0;
+	}
 
 	/* package */
 	err |= odict_entry_add(od, "settings", ODICT_OBJECT, cfg);
 	err |= odict_entry_add(od, "registration", ODICT_OBJECT, reg);
+	err |= odict_entry_add(od, "call", ODICT_OBJECT, ucl);
 	if (err)
 		warning("ua: failed to encode json package (%m)\n", err);
 
 	mem_deref(cfg);
 	mem_deref(reg);
+	mem_deref(ucl);
 	return err;
 }
 

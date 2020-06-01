@@ -1,7 +1,7 @@
 /**
  * @file src/call.c  Call Control
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2020 Creytiv.com
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,15 +85,14 @@ static int send_invite(struct call *call);
 static const char *state_name(enum state st)
 {
 	switch (st) {
-
-	case STATE_IDLE:        return "IDLE";
-	case STATE_INCOMING:    return "INCOMING";
-	case STATE_OUTGOING:    return "OUTGOING";
-	case STATE_RINGING:     return "RINGING";
-	case STATE_EARLY:       return "EARLY";
-	case STATE_ESTABLISHED: return "ESTABLISHED";
-	case STATE_TERMINATED:  return "TERMINATED";
-	default:                return "???";
+		case STATE_IDLE:        return "IDLE";
+		case STATE_INCOMING:    return "INCOMING";
+		case STATE_OUTGOING:    return "OUTGOING";
+		case STATE_RINGING:     return "RINGING";
+		case STATE_EARLY:       return "EARLY";
+		case STATE_ESTABLISHED: return "ESTABLISHED";
+		case STATE_TERMINATED:  return "TERMINATED";
+		default:                return "???";
 	}
 }
 
@@ -305,7 +304,7 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 	}
 
 	info("call: media-nat '%s' established/gathered\n",
-	     call->acc->mnatid);
+		 call->acc->mnatid);
 
 	/* Re-INVITE */
 	if (!call->mnat_wait) {
@@ -1235,42 +1234,6 @@ const char *call_peername(const struct call *call)
 }
 
 
-/**
- * Print the call debug information
- *
- * @param pf   Print function
- * @param call Call object
- *
- * @return 0 if success, otherwise errorcode
- */
-int call_debug(struct re_printf *pf, const struct call *call)
-{
-	int err;
-
-	if (!call)
-		return 0;
-
-	err = re_hprintf(pf, "===== Call debug (%s) =====\n",
-			 state_name(call->state));
-
-	/* SIP Session debug */
-	err |= re_hprintf(pf,
-			  " local_uri: %s <%s>\n"
-			  " peer_uri:  %s <%s>\n"
-			  " af=%s id=%s\n",
-			  call->local_name, call->local_uri,
-			  call->peer_name, call->peer_uri,
-			  net_af2name(call->af), call->id);
-	err |= re_hprintf(pf, " direction: %s\n",
-			  call->outgoing ? "Outgoing" : "Incoming");
-
-	/* SDP debug */
-	err |= sdp_session_debug(pf, call->sdp);
-
-	return err;
-}
-
-
 static int print_duration(struct re_printf *pf, const struct call *call)
 {
 	const uint32_t dur = call_duration(call);
@@ -1719,9 +1682,9 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 		if (sa_af(raddr) != call->af) {
 			info("call: incompatible address-family"
-			     " (local=%s, remote=%s)\n",
-			     net_af2name(call->af),
-			     net_af2name(sa_af(raddr)));
+				 " (local=%s, remote=%s)\n",
+				 net_af2name(call->af),
+				 net_af2name(sa_af(raddr)));
 
 			sip_treply(NULL, uag_sip(), msg,
 				   488, "Not Acceptable Here");
@@ -2314,4 +2277,94 @@ void call_set_current(struct list *calls, struct call *call)
 
 	list_unlink(&call->le);
 	list_append(calls, &call->le, call);
+}
+
+
+/**
+ * Print the call debug information
+ *
+ * @param pf   Print function
+ * @param call Call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_debug(struct re_printf *pf, const struct call *call)
+{
+	int err;
+
+	if (!call)
+		return 0;
+
+	err = re_hprintf(pf, "===== Call debug (%s) =====\n",
+			 state_name(call->state));
+
+	/* SIP Session debug */
+	err |= re_hprintf(pf,
+			  " local_uri: %s <%s>\n"
+			  " peer_uri:  %s <%s>\n"
+			  " af=%s id=%s\n",
+			  call->local_name, call->local_uri,
+			  call->peer_name, call->peer_uri,
+			  net_af2name(call->af), call->id);
+	err |= re_hprintf(pf, " direction: %s\n",
+			  call->outgoing ? "Outgoing" : "Incoming");
+
+	/* SDP debug */
+	err |= sdp_session_debug(pf, call->sdp);
+
+	return err;
+}
+
+
+/**
+ * Print the call information in JSON
+ *
+ * @param od   Call dict
+ * @param call Ongoing call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_json_api(struct odict *od, const struct call *call)
+{
+	struct odict *sod = NULL;
+	int err = 0;
+
+	if (!call) {
+		err |= odict_entry_add(od, "state", ODICT_STRING,
+				state_name(STATE_IDLE));
+		return err;
+	}
+
+	err |= odict_alloc(&sod, 8);
+
+	err |= odict_entry_add(od, "id", ODICT_STRING,
+			call ? call->id : "--");
+	err |= odict_entry_add(od, "state", ODICT_STRING,
+			state_name(call->state));
+
+	if (call->peer_uri)
+		err |= odict_entry_add(od, "peer_uri", ODICT_STRING,
+				call->peer_uri);
+
+	if (call->peer_name)
+		err |= odict_entry_add(od, "peer_display_name", ODICT_STRING,
+				call->peer_name);
+
+	err |= odict_entry_add(od, "direction", ODICT_STRING,
+			call->outgoing ? "outgoing" : "incoming");
+	err |= odict_entry_add(od, "on_hold", ODICT_BOOL,
+			call->on_hold ? true : false);
+
+	err |= odict_entry_add(od, "start_time", ODICT_INT,
+			(int64_t)call->time_start);
+	err |= odict_entry_add(od, "request_time", ODICT_INT,
+			(int64_t)call->time_conn); //time_initiated
+
+	/* SDP parse */
+	err |= sdp_session_json_api(sod, call->sdp);
+	err |= odict_entry_add(od, "session", ODICT_OBJECT, sod);
+
+	mem_deref(sod);
+
+	return err;
 }
