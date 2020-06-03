@@ -432,7 +432,9 @@ static const char *default_cafile(void)
 
 static const char *default_audio_device(void)
 {
-#if defined (ANDROID)
+#if defined (DEFAULT_AUDIO_DEVICE)
+	return DEFAULT_AUDIO_DEVICE;
+#elif defined (ANDROID)
 	return "opensles,nil";
 #elif defined (DARWIN)
 	return "coreaudio,default";
