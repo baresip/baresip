@@ -1026,11 +1026,14 @@ static int module_init(void)
 	mod_obj.whitespace_handling = WHITESPACE_HANDLING_NONE;
 	if (!conf_get(conf, "whitespace_handling", &pl)) {
 		if (!pl_strcasecmp(&pl, "none"))
-			mod_obj.whitespace_handling = WHITESPACE_HANDLING_NONE;
+			mod_obj.whitespace_handling =
+						WHITESPACE_HANDLING_NONE;
 		else if (!pl_strcasecmp(&pl, "remove"))
-			mod_obj.whitespace_handling = WHITESPACE_HANDLING_REMOVE;
+			mod_obj.whitespace_handling =
+						WHITESPACE_HANDLING_REMOVE;
 		else if (!pl_strcasecmp(&pl, "uri_escape"))
-			mod_obj.whitespace_handling = WHITESPACE_HANDLING_ESCAPE;
+			mod_obj.whitespace_handling =
+						WHITESPACE_HANDLING_ESCAPE;
 		else {
 			warning("whitespace_handling: unknown handler: %r\n",
 				&pl);
