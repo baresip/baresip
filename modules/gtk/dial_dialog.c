@@ -18,6 +18,21 @@ struct dial_dialog {
 	GtkComboBox *uri_combobox;
 };
 
+static void remove_char(char* str, char find)
+{
+    int i = 0, k = 0;
+    while (str[i]) {
+        if (str[i] == find)
+            ++i;
+        else
+            str[k++] = str[i++];
+    }
+    str[k] = '\0';
+}
+
+static void encode_whitespace(char* str)
+{
+}
 
 static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
 				    gpointer arg)
@@ -27,6 +42,10 @@ static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
 
 	if (response_id == GTK_RESPONSE_ACCEPT) {
 		uri = (char *)uri_combo_box_get_text(dd->uri_combobox);
+                if (gtk_mod_whitespace_handling(dd->mod) == WHITESPACE_HANDLING_REMOVE)
+                    remove_char(uri, ' ');
+                else if (gtk_mod_whitespace_handling(dd->mod) == WHITESPACE_HANDLING_ESCAPE)
+                    encode_whitespace(uri);
 		gtk_mod_connect(dd->mod, uri);
 	}
 
@@ -40,7 +59,6 @@ static void destructor(void *arg)
 
 	gtk_widget_destroy(dd->dialog);
 }
-
 
 struct dial_dialog *dial_dialog_alloc(struct gtk_mod *mod)
 {
