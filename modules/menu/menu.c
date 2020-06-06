@@ -449,7 +449,7 @@ static const char about_fmt[] =
 	"| with audio and video support                               |\n"
 	"|                                                            |\n"
 	"| License:   BSD                                             |\n"
-	"| Homepage:  https://github.com/alfredh/baresip              |\n"
+	"| Homepage:  https://github.com/baresip/baresip              |\n"
 	"|                                                            |\n"
 	"'------------------------------------------------------------'\n"
 	;

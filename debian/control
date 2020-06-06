@@ -30,5 +30,5 @@ Architecture: any
 Section: libdevel
 Depends: libbaresip (= ${binary:Version}), ${misc:Depends}
 Description: Baresip library development files
- See https://github.com/alfredh/baresip/wiki/Using-baresip-as-a-library
+ See https://github.com/baresip/baresip/wiki/Using-baresip-as-a-library
  for an example.
