@@ -32,10 +32,10 @@ static void remove_char(char* str, char find)
 
 static char* encode_whitespace(char* str)
 {
-        /* create a new string which could up to 20 replacements
+	/* create a new string which could up to 20 replacements
 	 */
 	char* encoded_uri = malloc(strlen(str)+61);
-        int i = 0, k = 0;
+	int i = 0, k = 0;
 	while (str[i]) {
 		if (str[i] == ' ') {
 			encoded_uri[k++] = '%';

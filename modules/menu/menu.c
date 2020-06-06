@@ -258,7 +258,6 @@ static int dial_handler(struct re_printf *pf, void *arg)
 			remove_char(uri_with_parameters, ' ');
 		else if (menu.whitespace_handling ==
 					WHITESPACE_HANDLING_ESCAPE) {
-			
 			uri_with_parameters = encode_whitespace(
 						uri_with_parameters);
 		}
