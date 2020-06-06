@@ -53,7 +53,7 @@ struct gtk_mod {
 	struct dial_dialog *dial_dialog;
 	GSList *call_windows;
 	GSList *incoming_call_menus;
-        int whitespace_handling;
+	int whitespace_handling;
 };
 
 static struct gtk_mod mod_obj;
@@ -637,9 +637,9 @@ void gtk_mod_connect(struct gtk_mod *mod, const char *uri)
 
 int gtk_mod_whitespace_handling(struct gtk_mod *mod)
 {
-        if (!mod)
-                return;
-        return mod->whitespace_handling;
+	if (!mod)
+		return 0;
+	return mod->whitespace_handling;
 }
 
 
@@ -1018,25 +1018,25 @@ static const struct cmd cmdv[] = {
 
 static int module_init(void)
 {
-        struct conf *conf = conf_cur();
+	struct conf *conf = conf_cur();
 	int err = 0;
-        struct pl pl;
+	struct pl pl;
 
-        err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
-        mod_obj.whitespace_handling = WHITESPACE_HANDLING_NONE;
-        if (!conf_get(conf, "whitespace_handling", &pl)) {
-            if (!pl_strcasecmp(&pl, "none"))
-                mod_obj.whitespace_handling = WHITESPACE_HANDLING_NONE;
-            else if (!pl_strcasecmp(&pl, "remove"))
-                mod_obj.whitespace_handling = WHITESPACE_HANDLING_REMOVE;
-            else if (!pl_strcasecmp(&pl, "uri_escape"))
-                mod_obj.whitespace_handling = WHITESPACE_HANDLING_ESCAPE;
-            else {
-                warning("whitespace_handling: unknown whitespace handler: %r\n",
-                    &pl);
-                return EINVAL;
-            }
-        }
+	err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
+	mod_obj.whitespace_handling = WHITESPACE_HANDLING_NONE;
+	if (!conf_get(conf, "whitespace_handling", &pl)) {
+		if (!pl_strcasecmp(&pl, "none"))
+			mod_obj.whitespace_handling = WHITESPACE_HANDLING_NONE;
+		else if (!pl_strcasecmp(&pl, "remove"))
+			mod_obj.whitespace_handling = WHITESPACE_HANDLING_REMOVE;
+		else if (!pl_strcasecmp(&pl, "uri_escape"))
+			mod_obj.whitespace_handling = WHITESPACE_HANDLING_ESCAPE;
+		else {
+			warning("whitespace_handling: unknown handler: %r\n",
+				&pl);
+			return EINVAL;
+		}
+	}
 
 	if (err)
 		return err;
