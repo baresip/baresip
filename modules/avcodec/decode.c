@@ -696,7 +696,7 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 			hdr.nal_unit_type = fu.type;
 
 			err  = mbuf_write_mem(vds->mb, nal_seq, 3);
-			err = h265_nal_encode_mbuf(vds->mb, &hdr);
+			err |= h265_nal_encode_mbuf(vds->mb, &hdr);
 			if (err)
 				goto out;
 		}

@@ -2,7 +2,7 @@ baresip README
 ==============
 
 
-![Baresip Logo](https://raw.githubusercontent.com/alfredh/baresip/master/share/logo.png)
+![Baresip Logo](https://raw.githubusercontent.com/baresip/baresip/master/share/logo.png)
 
 
 Baresip is a portable and modular SIP User-Agent with audio and video support.
@@ -10,7 +10,7 @@ Copyright (c) 2010 - 2020 Creytiv.com
 Distributed under BSD license
 
 
-[![Build Status](https://travis-ci.org/alfredh/baresip.svg?branch=master)](https://travis-ci.org/alfredh/baresip)
+[![Build Status](https://travis-ci.org/baresip/baresip.svg?branch=master)](https://travis-ci.org/baresip/baresip)
 
 
 ## Features:
@@ -191,7 +191,7 @@ the main [website](http://creytiv.com/doxygen/baresip-dox/html/)
 ### Examples
 
 Configuration examples are available from the
-[examples](https://github.com/alfredh/baresip/tree/master/docs/examples)
+[examples](https://github.com/baresip/baresip/tree/master/docs/examples)
 directory.
 
 
@@ -203,7 +203,7 @@ The baresip project is using the 3-clause BSD license.
 ## Contributing
 
 Patches can be sent via Github
-[Pull-Requests](https://github.com/alfredh/baresip/pulls) or to the RE devel
+[Pull-Requests](https://github.com/baresip/baresip/pulls) or to the RE devel
 [mailing-list](http://lists.creytiv.com/mailman/listinfo/re-devel).
 
 
@@ -444,5 +444,5 @@ zrtp          ZRTP media encryption module
 ## References
 
 * Project homepage: http://www.creytiv.com/baresip.html
-* Github: https://github.com/alfredh/baresip
+* Github: https://github.com/baresip/baresip
 * Mailing-list: http://lists.creytiv.com/mailman/listinfo/re-devel

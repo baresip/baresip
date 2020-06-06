@@ -310,7 +310,9 @@ static void accounts_menu_set_status(struct gtk_mod *mod,
 static void notify_incoming_call(struct gtk_mod *mod,
 		struct call *call)
 {
-	static const char *title = "Incoming call";
+	char title[128];
+	re_snprintf(title, sizeof title, "Incoming call from %s",
+					call_peername(call));
 	const char *msg = call_peeruri(call);
 	GtkWidget *call_menu;
 	GtkWidget *menu_item;
