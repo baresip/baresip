@@ -220,8 +220,24 @@ static void remove_char(char* str, char find)
 	str[k] = '\0';
 }
 
-static void encode_whitespace(char* str)
+static char* encode_whitespace(char* str)
 {
+	/* create a new string which could up to 20 replacements
+	 */
+	char* encoded_uri = malloc(sizeof(str)+61);
+	int i = 0, k = 0;
+	while (str[i]) {
+		if (str[i] == ' ') {
+			encoded_uri[k++] = '%';
+			encoded_uri[k++] = '2';
+			encoded_uri[k++] = '0';
+			++i;
+		}
+		else
+			encoded_uri[k++] = str[i++];
+	}
+	encoded_uri[k] = '\0';
+	return encoded_uri;
 }
 
 
@@ -235,14 +251,21 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	if (str_isset(carg->prm)) {
 		mbuf_rewind(menu.dialbuf);
 		(void)mbuf_write_str(menu.dialbuf, carg->prm);
+		char *uri_with_parameters = malloc(sizeof(carg->prm)+1);
+		str_ncpy(uri_with_parameters,
+				carg->prm, sizeof(uri_with_parameters));
 		if (menu.whitespace_handling == WHITESPACE_HANDLING_REMOVE)
-			remove_char(carg->prm, ' ');
+			remove_char(uri_with_parameters, ' ');
 		else if (menu.whitespace_handling ==
-					WHITESPACE_HANDLING_ESCAPE)
-			encode_whitespace(carg->prm);
+					WHITESPACE_HANDLING_ESCAPE) {
+			
+			uri_with_parameters = encode_whitespace(
+						uri_with_parameters);
+		}
 
 		err = ua_connect(uag_current(), NULL, NULL,
-				 carg->prm, VIDMODE_ON);
+				 uri_with_parameters, VIDMODE_ON);
+		free(uri_with_parameters);
 	}
 	else if (menu.dialbuf->end > 0) {
 

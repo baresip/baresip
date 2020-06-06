@@ -30,8 +30,25 @@ static void remove_char(char* str, char find)
 	str[k] = '\0';
 }
 
-static void encode_whitespace(char* str)
+static char* encode_whitespace(char* str)
 {
+        /* create a new string which could up to 20 replacements
+	 */
+	char* encoded_uri = malloc(strlen(str)+61);
+        int i = 0, k = 0;
+	while (str[i]) {
+		if (str[i] == ' ') {
+			encoded_uri[k++] = '%';
+                        encoded_uri[k++] = '2';
+                        encoded_uri[k++] = '0';
+			++i;
+		}
+		else
+			encoded_uri[k++] = str[i++];
+	}
+	encoded_uri[k] = '\0';
+	free(str);
+	return encoded_uri;
 }
 
 static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
@@ -47,7 +64,7 @@ static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
 			remove_char(uri, ' ');
 		else if (gtk_mod_whitespace_handling(dd->mod) ==
 						WHITESPACE_HANDLING_ESCAPE)
-			encode_whitespace(uri);
+			uri = encode_whitespace(uri);
 		gtk_mod_connect(dd->mod, uri);
 	}
 
