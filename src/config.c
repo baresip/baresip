@@ -422,7 +422,9 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 static const char *default_cafile(void)
 {
-#ifdef DARWIN
+#if defined (DEFAULT_CAFILE)
+	return DEFAULT_CAFILE;
+#elif defined (DARWIN)
 	return "/etc/ssl/cert.pem";
 #else
 	return "/etc/ssl/certs/ca-certificates.crt";
