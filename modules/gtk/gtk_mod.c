@@ -53,7 +53,7 @@ struct gtk_mod {
 	struct dial_dialog *dial_dialog;
 	GSList *call_windows;
 	GSList *incoming_call_menus;
-	int whitespace_handling;
+	bool clean_number;
 };
 
 static struct gtk_mod mod_obj;
@@ -635,11 +635,11 @@ void gtk_mod_connect(struct gtk_mod *mod, const char *uri)
 	mqueue_push(mod->mq, MQ_CONNECT, (char *)uri);
 }
 
-int gtk_mod_whitespace_handling(struct gtk_mod *mod)
+bool gtk_mod_clean_number(struct gtk_mod *mod)
 {
 	if (!mod)
-		return 0;
-	return mod->whitespace_handling;
+		return false;
+	return mod->clean_number;
 }
 
 
@@ -1018,28 +1018,12 @@ static const struct cmd cmdv[] = {
 
 static int module_init(void)
 {
-	struct conf *conf = conf_cur();
+	mod_obj.clean_number = false;
+	conf_get_bool(conf_cur(), "gtk_clean_number", &mod_obj.clean_number);
+
 	int err = 0;
-	struct pl pl;
 
 	err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
-	mod_obj.whitespace_handling = WHITESPACE_HANDLING_NONE;
-	if (!conf_get(conf, "whitespace_handling", &pl)) {
-		if (!pl_strcasecmp(&pl, "none"))
-			mod_obj.whitespace_handling =
-						WHITESPACE_HANDLING_NONE;
-		else if (!pl_strcasecmp(&pl, "remove"))
-			mod_obj.whitespace_handling =
-						WHITESPACE_HANDLING_REMOVE;
-		else if (!pl_strcasecmp(&pl, "uri_escape"))
-			mod_obj.whitespace_handling =
-						WHITESPACE_HANDLING_ESCAPE;
-		else {
-			warning("whitespace_handling: unknown handler: %r\n",
-				&pl);
-			return EINVAL;
-		}
-	}
 
 	if (err)
 		return err;

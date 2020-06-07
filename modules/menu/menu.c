@@ -25,10 +25,6 @@ enum statmode {
 	STATMODE_OFF,
 };
 
-#define WHITESPACE_HANDLING_NONE 0
-#define WHITESPACE_HANDLING_REMOVE 1
-#define WHITESPACE_HANDLING_ESCAPE 2
-
 static struct {
 	struct tmr tmr_alert;         /**< Incoming call alert timer      */
 	struct tmr tmr_stat;          /**< Call status timer              */
@@ -43,7 +39,7 @@ static struct {
 	uint32_t current_attempts;    /**< Current number of re-dials     */
 	uint64_t start_ticks;         /**< Ticks when app started         */
 	enum statmode statmode;       /**< Status mode                    */
-	uint32_t whitespace_handling;
+	bool clean_number;            /**< Remove -/() from diald numbers */
 	char redial_aor[128];
 } menu;
 
@@ -208,38 +204,42 @@ static int ua_print_call_status(struct re_printf *pf, void *unused)
 	return err;
 }
 
-static void remove_char(char* str, char find)
+static void clean_number(char* str)
 {
+	struct pl pl;
+	/* only clean numeric numbers
+	 * In other cases trust the user input
+	 */
+	int err = re_regex(str, sizeof(str), "[A-Za-z]+", &pl);
+	if (err == 0)
+		return;
+
+	/* remove (0) which is in some formated numbers
+	 */
 	int i = 0, k = 0;
+	if (str[0] == '+')
+		while (str[i] && i < 7) {
+			if (str[i] == '('
+			 && str[i+1]
+			 && str[i+1] == '0'
+			 && str[i+2]
+			 && str[i+2] == ')')
+				str[i+1] = ' ';
+			++i;
+		}
+	i = 0;
 	while (str[i]) {
-		if (str[i] == find)
+		if (str[i] == ' '
+		 || str[i] == '-'
+		 || str[i] == '/'
+		 || str[i] == '('
+		 || str[i] == ')')
 			++i;
 		else
 			str[k++] = str[i++];
 	}
 	str[k] = '\0';
 }
-
-static char* encode_whitespace(char* str)
-{
-	/* create a new string which could up to 20 replacements
-	 */
-	char* encoded_uri = malloc(sizeof(str)+61);
-	int i = 0, k = 0;
-	while (str[i]) {
-		if (str[i] == ' ') {
-			encoded_uri[k++] = '%';
-			encoded_uri[k++] = '2';
-			encoded_uri[k++] = '0';
-			++i;
-		}
-		else
-			encoded_uri[k++] = str[i++];
-	}
-	encoded_uri[k] = '\0';
-	return encoded_uri;
-}
-
 
 static int dial_handler(struct re_printf *pf, void *arg)
 {
@@ -251,20 +251,11 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	if (str_isset(carg->prm)) {
 		mbuf_rewind(menu.dialbuf);
 		(void)mbuf_write_str(menu.dialbuf, carg->prm);
-		char *uri_with_parameters = malloc(sizeof(carg->prm)+1);
-		str_ncpy(uri_with_parameters,
-				carg->prm, sizeof(uri_with_parameters));
-		if (menu.whitespace_handling == WHITESPACE_HANDLING_REMOVE)
-			remove_char(uri_with_parameters, ' ');
-		else if (menu.whitespace_handling ==
-					WHITESPACE_HANDLING_ESCAPE) {
-			uri_with_parameters = encode_whitespace(
-						uri_with_parameters);
-		}
+		if (menu.clean_number)
+			clean_number(carg->prm);
 
 		err = ua_connect(uag_current(), NULL, NULL,
-				 uri_with_parameters, VIDMODE_ON);
-		free(uri_with_parameters);
+				 carg->prm, VIDMODE_ON);
 	}
 	else if (menu.dialbuf->end > 0) {
 
@@ -274,11 +265,8 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
 		if (err)
 			return err;
-		if (menu.whitespace_handling == WHITESPACE_HANDLING_REMOVE)
-			remove_char(uri, ' ');
-		else if (menu.whitespace_handling ==
-					WHITESPACE_HANDLING_ESCAPE)
-			encode_whitespace(uri);
+		if (menu.clean_number)
+			clean_number(uri);
 
 		err = ua_connect(uag_current(), NULL, NULL, uri, VIDMODE_ON);
 
@@ -1326,7 +1314,7 @@ static void message_handler(struct ua *ua, const struct pl *peer,
 
 static int module_init(void)
 {
-	struct pl val, pl;
+	struct pl val;
 	int err;
 
 	menu.bell = true;
@@ -1334,7 +1322,7 @@ static int module_init(void)
 	menu.redial_delay = 5;
 	menu.ringback_disabled = false;
 	menu.statmode = STATMODE_CALL;
-	menu.whitespace_handling = WHITESPACE_HANDLING_NONE;
+	menu.clean_number = false;
 
 	/*
 	 * Read the config values
@@ -1342,6 +1330,7 @@ static int module_init(void)
 	conf_get_bool(conf_cur(), "menu_bell", &menu.bell);
 	conf_get_bool(conf_cur(), "ringback_disabled",
 		      &menu.ringback_disabled);
+	conf_get_bool(conf_cur(), "menu_clean_number", &menu.clean_number);
 
 	if (0 == conf_get(conf_cur(), "redial_attempts", &val) &&
 	    0 == pl_strcasecmp(&val, "inf")) {
@@ -1373,20 +1362,6 @@ static int module_init(void)
 	}
 	else {
 		menu.statmode = STATMODE_CALL;
-	}
-
-	if (!conf_get(conf_cur(), "whitespace_handling", &pl)) {
-		if (!pl_strcasecmp(&pl, "none"))
-			menu.whitespace_handling = WHITESPACE_HANDLING_NONE;
-		else if (!pl_strcasecmp(&pl, "remove"))
-			menu.whitespace_handling = WHITESPACE_HANDLING_REMOVE;
-		else if (!pl_strcasecmp(&pl, "uri_escape"))
-			menu.whitespace_handling = WHITESPACE_HANDLING_ESCAPE;
-		else {
-			warning("whitespace_handling: unknown handler: %r\n",
-				&pl);
-			return EINVAL;
-		}
 	}
 
 	err  = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));

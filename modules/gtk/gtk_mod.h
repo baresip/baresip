@@ -3,10 +3,6 @@
  *
  * Copyright (C) 2015 Charles E. Lehner
  */
-#define WHITESPACE_HANDLING_NONE 0
-#define WHITESPACE_HANDLING_REMOVE 1
-#define WHITESPACE_HANDLING_ESCAPE 2
-
 struct gtk_mod;
 struct call_window;
 struct dial_dialog;
@@ -54,4 +50,4 @@ GtkWidget *uri_combo_box_new(void);
 const char *uri_combo_box_get_text(GtkComboBox *box);
 
 /* Helper functions */
-int gtk_mod_whitespace_handling(struct gtk_mod *mod);
+bool gtk_mod_clean_number(struct gtk_mod *mod);

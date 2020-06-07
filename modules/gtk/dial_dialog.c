@@ -18,37 +18,41 @@ struct dial_dialog {
 	GtkComboBox *uri_combobox;
 };
 
-static void remove_char(char* str, char find)
+static void clean_number(char* str)
 {
+	struct pl pl;
+	/* only clean numeric numbers
+	 * In other cases trust the user input
+	 */
+	int err = re_regex(str, sizeof(str), "[A-Za-z]+", &pl);
+	if (err == 0)
+		return;
+
+	/* remove (0) which is in some formated numbers
+	 */
 	int i = 0, k = 0;
+	if (str[0] == '+')
+		while (str[i] && i < 7) {
+			if (str[i] == '('
+			 && str[i+1]
+			 && str[i+1] == '0'
+			 && str[i+2]
+			 && str[i+2] == ')')
+				str[i+1] = ' ';
+			++i;
+		}
+	i = 0;
 	while (str[i]) {
-		if (str[i] == find)
+		if (str[i] == ' '
+		 || str[i] == '-'
+		 || str[i] == '/'
+		 || str[i] == '('
+		 || str[i] == ')')
 			++i;
 		else
 			str[k++] = str[i++];
 	}
 	str[k] = '\0';
-}
-
-static char* encode_whitespace(char* str)
-{
-	/* create a new string which could up to 20 replacements
-	 */
-	char* encoded_uri = malloc(sizeof(str)+61);
-	int i = 0, k = 0;
-	while (str[i]) {
-		if (str[i] == ' ') {
-			encoded_uri[k++] = '%';
-                        encoded_uri[k++] = '2';
-                        encoded_uri[k++] = '0';
-			++i;
-		}
-		else
-			encoded_uri[k++] = str[i++];
-	}
-	encoded_uri[k] = '\0';
-	free(str);
-	return encoded_uri;
 }
 
 static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
@@ -59,12 +63,8 @@ static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
 
 	if (response_id == GTK_RESPONSE_ACCEPT) {
 		uri = (char *)uri_combo_box_get_text(dd->uri_combobox);
-		if (gtk_mod_whitespace_handling(dd->mod) ==
-						WHITESPACE_HANDLING_REMOVE)
-			remove_char(uri, ' ');
-		else if (gtk_mod_whitespace_handling(dd->mod) ==
-						WHITESPACE_HANDLING_ESCAPE)
-			uri = encode_whitespace(uri);
+		if (gtk_mod_clean_number(dd->mod))
+			clean_number(uri);
 		gtk_mod_connect(dd->mod, uri);
 	}
 
