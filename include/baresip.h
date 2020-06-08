@@ -319,6 +319,7 @@ struct config_net {
 	char ifname[64];        /**< Bind to interface (optional)   */
 	struct {
 		char addr[64];
+		bool fallback;
 	} nsv[NET_MAX_NS];      /**< Configured DNS nameservers     */
 	size_t nsc;             /**< Number of DNS nameservers      */
 };
