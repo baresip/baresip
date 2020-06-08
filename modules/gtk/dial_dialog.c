@@ -20,30 +20,35 @@ struct dial_dialog {
 
 static void clean_number(char* str)
 {
-	struct pl pl;
 	/* only clean numeric numbers
 	 * In other cases trust the user input
 	 */
-	int err = re_regex(str, sizeof(str), "[A-Za-z]+", &pl);
+	int err = re_regex(str, sizeof(str), "[A-Za-z]");
 	if (err == 0)
 		return;
 
-	/* remove (0) which is in some formated numbers
+	/* remove (0) which is in some mal-formated numbers
+	 * but only if trailed by another character
 	 */
 	int i = 0, k = 0;
-	if (str[0] == '+')
-		while (str[i] && i < 7) {
+	if (str[0] == '+' || (str[0] == '0' && str[1] == '0'))
+		while (str[i]) {
 			if (str[i] == '('
-			 && str[i+1]
 			 && str[i+1] == '0'
-			 && str[i+2]
-			 && str[i+2] == ')')
+			 && str[i+2] == ')'
+			 && (str[i+3] == ' '
+				 || (str[i+3] >= '0' && str[i+3] <= '9')
+			    )
+			) {
 				str[i+1] = ' ';
+				break;
+			}
 			++i;
 		}
 	i = 0;
 	while (str[i]) {
 		if (str[i] == ' '
+		 || str[i] == '.'
 		 || str[i] == '-'
 		 || str[i] == '/'
 		 || str[i] == '('
