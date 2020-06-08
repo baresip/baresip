@@ -18,14 +18,14 @@ struct dial_dialog {
 	GtkComboBox *uri_combobox;
 };
 
-static void clean_number(char* str)
+static int clean_number(char* str)
 {
 	/* only clean numeric numbers
 	 * In other cases trust the user input
 	 */
 	int err = re_regex(str, sizeof(str), "[A-Za-z]");
 	if (err == 0)
-		return;
+		return 0;
 
 	/* remove (0) which is in some mal-formated numbers
 	 * but only if trailed by another character
@@ -58,6 +58,7 @@ static void clean_number(char* str)
 			str[k++] = str[i++];
 	}
 	str[k] = '\0';
+	return k;
 }
 
 static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
@@ -68,8 +69,12 @@ static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
 
 	if (response_id == GTK_RESPONSE_ACCEPT) {
 		uri = (char *)uri_combo_box_get_text(dd->uri_combobox);
-		if (gtk_mod_clean_number(dd->mod))
-			clean_number(uri);
+		if (gtk_mod_clean_number(dd->mod)) {
+			int length = clean_number(uri);
+			if (length)
+				uri_combo_box_set_text(dd->uri_combobox,
+					uri, length);
+		}
 		gtk_mod_connect(dd->mod, uri);
 	}
 
