@@ -1,0 +1,41 @@
+com.creytiv.Baresip
+com.creytiv.Baresip
+com.creytiv.Baresip
+invoke
+(IN s command, OUT s response);
+<h1>Signals</h1>
+event
+(s class, s evtype, s param);
+<h1 id="gdbus-interface-com-creytiv-Baresip">Description</h1>
+<p>This DBus interface supports invoking of baresip commands and sends UA Events as DBus signal.</p>
+<h1 id="gdbus-methods-com.creytiv.Baresip">Method Details</h1>
+<h2 id="gdbus-method-com-creytiv-Baresip.invoke">The invoke() method</h2>
+com.creytiv.Baresip.invoke()
+<pre><code>invoke (IN  s command,
+        OUT s response);</code></pre>
+<p>Invokes a baresip command which can be a single character command or a long command with appended parameters. Use a blank to separate the command from its parameters! Multiple parameters are often separated by commas. But this depends on the implementation of the command.</p>
+<dl>
+<dt><code>IN s command</code>:</dt>
+<dd><p>The command to be executed with appended parameters.</p>
+</dd>
+<dt><code>OUT s response</code>:</dt>
+<dd><p>The output of the command.</p>
+</dd>
+</dl>
+<h1 id="gdbus-signals-com.creytiv.Baresip">Signal Details</h1>
+<h2 id="gdbus-signal-com-creytiv-Baresip.event">The &quot;event&quot; signal</h2>
+com.creytiv.Baresip::event
+<pre><code>event (s class,
+       s evtype,
+       s param);</code></pre>
+<dl>
+<dt><code>s class</code>:</dt>
+<dd><p>The UA event class.</p>
+</dd>
+<dt><code>s evtype</code>:</dt>
+<dd><p>The UA event type.</p>
+</dd>
+<dt><code>s param</code>:</dt>
+<dd><p>The whole event as JSON object including additional parameters.</p>
+</dd>
+</dl>
