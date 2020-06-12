@@ -79,17 +79,16 @@ static GActionEntry app_entries[] = {
 static struct call *get_call_from_gvariant(GVariant *param)
 {
 	gint64 call_ptr;
-	struct call *call;
 	struct list *calls = ua_calls(uag_current());
 	struct le *le;
 
 	call_ptr = g_variant_get_int64(param);
-	call = GINT_TO_POINTER(call_ptr);
 
-	for (le = list_head(calls); le; le = le->next)
-		if (le->data == call)
-			return call;
+	for (le = list_head(calls); le; le = le->next) {
+		if (GPOINTER_TO_INT(le->data) == call_ptr)
+			return le->data;
 
+	}
 	return NULL;
 }
 
