@@ -22,17 +22,6 @@
 	for (le = call->streaml.head; le; le = le->next)
 
 
-/** Call States */
-enum state {
-	STATE_IDLE = 0,
-	STATE_INCOMING,
-	STATE_OUTGOING,
-	STATE_RINGING,
-	STATE_EARLY,
-	STATE_ESTABLISHED,
-	STATE_TERMINATED
-};
-
 /** SIP Call Control object */
 struct call {
 	MAGIC_DECL                /**< Magic number for debugging           */
@@ -2162,6 +2151,22 @@ int call_af(const struct call *call)
 uint16_t call_scode(const struct call *call)
 {
 	return call ? call->scode : 0;
+}
+
+
+/**
+ * Get state of the call
+ *
+ * @param call Call object
+ *
+ * @return Call state or STATE_UNKNOWN if call object is NULL
+ */
+enum state call_state(const struct call *call)
+{
+	if (!call)
+		return STATE_UNKNOWN;
+
+	return call->state;
 }
 
 
