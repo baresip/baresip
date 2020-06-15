@@ -97,20 +97,20 @@ static int start_jack(struct ausrc_st *st)
 	st->client = jack_client_open(client_name, options,
 				      &status, server_name);
 	if (st->client == NULL) {
-		warning("jack: jack_client_open() failed, "
+		warning("jackdst: jack_client_open() failed, "
 			"status = 0x%2.0x\n", status);
 
 		if (status & JackServerFailed) {
-			warning("jack: Unable to connect to JACK server\n");
+			warning("jackdst: Unable to connect to JACK server\n");
 		}
 		return ENODEV;
 	}
 	if (status & JackServerStarted) {
-		info("jack: JACK server started\n");
+		info("jackdst: JACK server started\n");
 	}
-	if (status & JackNameNotUnique) {
+	if (status) {
 		client_name = jack_get_client_name(st->client);
-		info("jack: unique name `%s' assigned\n", client_name);
+		info("jackdst: unique name `%s' assigned\n", client_name);
 	}
 
 	jack_set_process_callback(st->client, process_handler, st);
@@ -118,13 +118,13 @@ static int start_jack(struct ausrc_st *st)
 	engine_srate = jack_get_sample_rate(st->client);
 	st->nframes  = jack_get_buffer_size(st->client);
 
-	info("jack: engine sample rate: %" PRIu32 " max_frames=%u\n",
+	info("jackdst: engine sample rate: %" PRIu32 " max_frames=%u\n",
 	     engine_srate, st->nframes);
 
 	/* currently the application must use the same sample-rate
 	   as the jack server backend */
 	if (engine_srate != st->prm.srate) {
-		warning("jack: samplerate %uHz expected\n", engine_srate);
+		warning("jackdst: samplerate %uHz expected\n", engine_srate);
 		return EINVAL;
 	}
 
@@ -143,7 +143,7 @@ static int start_jack(struct ausrc_st *st)
 						   JACK_DEFAULT_AUDIO_TYPE,
 						   JackPortIsInput, 0);
 		if ( st->portv[ch] == NULL) {
-			warning("jack: no more JACK ports available\n");
+			warning("jackdst: no more JACK ports available\n");
 			return ENODEV;
 		}
 	}
@@ -152,23 +152,23 @@ static int start_jack(struct ausrc_st *st)
 	 * process() callback will start running now. */
 
 	if (jack_activate (st->client)) {
-		warning("jack: cannot activate client");
+		warning("jackdst: cannot activate client");
 		return ENODEV;
 	}
 
 	if (jack_connect_ports) {
-		info("jack: connecting default output ports\n");
+		info("jackdst: connecting default output ports\n");
 		ports = jack_get_ports (st->client, NULL, NULL,
 					JackPortIsOutput);
 		if (ports == NULL) {
-			warning("jack: no physical playback ports\n");
+			warning("jackdst: no physical playback ports\n");
 			return ENODEV;
 		}
 
 		for (ch=0; ch<st->prm.ch; ch++) {
 			if (jack_connect(st->client, ports[ch],
 					 jack_port_name(st->portv[ch]))) {
-				warning("jack: cannot connect output ports\n");
+				warning("jackdst: cannot connect output ports\n");
 			}
 		}
 
@@ -195,7 +195,7 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		return EINVAL;
 
 	if (prm->fmt != AUFMT_FLOAT) {
-		warning("jack: source: unsupported sample format (%s)\n",
+		warning("jackdst: source: unsupported sample format (%s)\n",
 			aufmt_name(prm->fmt));
 		return ENOTSUP;
 	}
@@ -219,7 +219,7 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	info("jack: source sampc=%zu\n", st->sampc);
+	info("jackdst: source sampc=%zu\n", st->sampc);
 
  out:
 	if (err)
