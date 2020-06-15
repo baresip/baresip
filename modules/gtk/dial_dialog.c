@@ -89,6 +89,7 @@ static void destructor(void *arg)
 	gtk_widget_destroy(dd->dialog);
 }
 
+
 struct dial_dialog *dial_dialog_alloc(struct gtk_mod *mod)
 {
 	struct dial_dialog *dd;

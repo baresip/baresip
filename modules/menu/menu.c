@@ -25,6 +25,7 @@ enum statmode {
 	STATMODE_OFF,
 };
 
+
 static struct {
 	struct tmr tmr_alert;         /**< Incoming call alert timer      */
 	struct tmr tmr_stat;          /**< Call status timer              */
@@ -254,6 +255,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	(void)pf;
 
 	if (str_isset(carg->prm)) {
+
 		mbuf_rewind(menu.dialbuf);
 		(void)mbuf_write_str(menu.dialbuf, carg->prm);
 		if (menu.clean_number)

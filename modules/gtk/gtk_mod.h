@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2015 Charles E. Lehner
  */
+
 struct gtk_mod;
 struct call_window;
 struct dial_dialog;

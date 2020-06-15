@@ -1024,7 +1024,6 @@ static int module_init(void)
 	int err = 0;
 
 	err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
-
 	if (err)
 		return err;
 
