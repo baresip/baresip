@@ -22,17 +22,6 @@
 	for (le = call->streaml.head; le; le = le->next)
 
 
-/** Call States */
-enum state {
-	STATE_IDLE = 0,
-	STATE_INCOMING,
-	STATE_OUTGOING,
-	STATE_RINGING,
-	STATE_EARLY,
-	STATE_ESTABLISHED,
-	STATE_TERMINATED
-};
-
 /** SIP Call Control object */
 struct call {
 	MAGIC_DECL                /**< Magic number for debugging           */
@@ -47,7 +36,7 @@ struct call {
 	struct audio *audio;      /**< Audio stream                         */
 	struct video *video;      /**< Video stream                         */
 	struct media_ctx *ctx;    /**< Shared A/V source media context      */
-	enum state state;         /**< Call state                           */
+	enum call_state state;    /**< Call state                           */
 	char *local_uri;          /**< Local SIP uri                        */
 	char *local_name;         /**< Local display name                   */
 	char *peer_uri;           /**< Peer SIP Address                     */
@@ -82,23 +71,24 @@ struct call {
 static int send_invite(struct call *call);
 
 
-static const char *state_name(enum state st)
+static const char *state_name(enum call_state st)
 {
 	switch (st) {
 
-	case STATE_IDLE:        return "IDLE";
-	case STATE_INCOMING:    return "INCOMING";
-	case STATE_OUTGOING:    return "OUTGOING";
-	case STATE_RINGING:     return "RINGING";
-	case STATE_EARLY:       return "EARLY";
-	case STATE_ESTABLISHED: return "ESTABLISHED";
-	case STATE_TERMINATED:  return "TERMINATED";
+	case CALL_STATE_IDLE:        return "IDLE";
+	case CALL_STATE_INCOMING:    return "INCOMING";
+	case CALL_STATE_OUTGOING:    return "OUTGOING";
+	case CALL_STATE_RINGING:     return "RINGING";
+	case CALL_STATE_EARLY:       return "EARLY";
+	case CALL_STATE_ESTABLISHED: return "ESTABLISHED";
+	case CALL_STATE_TERMINATED:  return "TERMINATED";
+	case CALL_STATE_UNKNOWN:     return "UNKNOWN";
 	default:                return "???";
 	}
 }
 
 
-static void set_state(struct call *call, enum state st)
+static void set_state(struct call *call, enum call_state st)
 {
 	call->state = st;
 }
@@ -318,11 +308,11 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 
 	switch (call->state) {
 
-	case STATE_OUTGOING:
+	case CALL_STATE_OUTGOING:
 		(void)send_invite(call);
 		break;
 
-	case STATE_INCOMING:
+	case CALL_STATE_INCOMING:
 		call_event_handler(call, CALL_EVENT_INCOMING, call->peer_uri);
 		break;
 
@@ -442,7 +432,7 @@ static void call_destructor(void *arg)
 {
 	struct call *call = arg;
 
-	if (call->state != STATE_IDLE)
+	if (call->state != CALL_STATE_IDLE)
 		print_summary(call);
 
 	call_stream_stop(call);
@@ -657,7 +647,7 @@ static void stream_error_handler(struct stream *strm, int err, void *arg)
 		sdp_media_name(stream_sdpmedia(strm)), err);
 
 	call->scode = 701;
-	set_state(call, STATE_TERMINATED);
+	set_state(call, CALL_STATE_TERMINATED);
 
 	call_stream_stop(call);
 	call_event_handler(call, CALL_EVENT_CLOSED, "rtp stream error");
@@ -738,7 +728,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	call->acc    = mem_ref(acc);
 	call->ua     = ua;
-	call->state  = STATE_IDLE;
+	call->state  = CALL_STATE_IDLE;
 	call->eh     = eh;
 	call->arg    = arg;
 	call->af     = prm->af;
@@ -948,7 +938,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 	if (err)
 		return err;
 
-	set_state(call, STATE_OUTGOING);
+	set_state(call, CALL_STATE_OUTGOING);
 
 	/* If we are using asyncronous medianat like STUN/TURN, then
 	 * wait until completed before sending the INVITE */
@@ -1003,7 +993,7 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 
 	switch (call->state) {
 
-	case STATE_INCOMING:
+	case CALL_STATE_INCOMING:
 		if (scode < 400) {
 			scode = 486;
 			reason = "Rejected";
@@ -1022,7 +1012,7 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 		break;
 	}
 
-	set_state(call, STATE_TERMINATED);
+	set_state(call, CALL_STATE_TERMINATED);
 
 	call_stream_stop(call);
 }
@@ -1079,7 +1069,7 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	if (!call || !call->sess)
 		return EINVAL;
 
-	if (STATE_INCOMING != call->state) {
+	if (CALL_STATE_INCOMING != call->state) {
 		info("call: answer: call is not in incoming state (%s)\n",
 		     state_name(call->state));
 		return 0;
@@ -1300,8 +1290,8 @@ int call_status(struct re_printf *pf, const struct call *call)
 
 	switch (call->state) {
 
-	case STATE_EARLY:
-	case STATE_ESTABLISHED:
+	case CALL_STATE_EARLY:
+	case CALL_STATE_ESTABLISHED:
 		break;
 	default:
 		return 0;
@@ -1464,10 +1454,10 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 
 	MAGIC_CHECK(call);
 
-	if (call->state == STATE_ESTABLISHED)
+	if (call->state == CALL_STATE_ESTABLISHED)
 		return;
 
-	set_state(call, STATE_ESTABLISHED);
+	set_state(call, CALL_STATE_ESTABLISHED);
 
 	call_stream_start(call, true);
 
@@ -1767,7 +1757,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	if (err)
 		return err;
 
-	set_state(call, STATE_INCOMING);
+	set_state(call, CALL_STATE_INCOMING);
 
 	/* New call */
 	if (call->config_call.local_timeout) {
@@ -1819,11 +1809,11 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	switch (msg->scode) {
 
 	case 180:
-		set_state(call, STATE_RINGING);
+		set_state(call, CALL_STATE_RINGING);
 		break;
 
 	case 183:
-		set_state(call, STATE_EARLY);
+		set_state(call, CALL_STATE_EARLY);
 		break;
 	}
 
@@ -2162,6 +2152,22 @@ int call_af(const struct call *call)
 uint16_t call_scode(const struct call *call)
 {
 	return call ? call->scode : 0;
+}
+
+
+/**
+ * Get state of the call
+ *
+ * @param call Call object
+ *
+ * @return Call state or CALL_STATE_UNKNOWN if call object is NULL
+ */
+enum call_state call_state(const struct call *call)
+{
+	if (!call)
+		return CALL_STATE_UNKNOWN;
+
+	return call->state;
 }
 
 
