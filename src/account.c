@@ -616,6 +616,50 @@ int account_set_stun_port(struct account *acc, uint16_t port)
 
 
 /**
+ * Set the STUN user for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param user  STUN username (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_user(struct account *acc, const char *user)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_user = mem_deref(acc->stun_user);
+
+	if (user)
+		return str_dup(&acc->stun_user, user);
+
+	return 0;
+}
+
+
+/**
+ * Set the STUN password for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param pass  STUN password (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_pass(struct account *acc, const char *pass)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_pass = mem_deref(acc->stun_pass);
+
+	if (pass)
+		return str_dup(&acc->stun_pass, pass);
+
+	return 0;
+}
+
+
+/**
  * Set the media encryption for a SIP account
  *
  * @param acc     User-Agent account
