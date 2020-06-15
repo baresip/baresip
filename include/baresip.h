@@ -150,15 +150,15 @@ enum call_event {
 };
 
 /** Call States */
-enum state {
-	STATE_IDLE = 0,
-	STATE_INCOMING,
-	STATE_OUTGOING,
-	STATE_RINGING,
-	STATE_EARLY,
-	STATE_ESTABLISHED,
-	STATE_TERMINATED,
-	STATE_UNKNOWN
+enum call_state {
+	CALL_STATE_IDLE = 0,
+	CALL_STATE_INCOMING,
+	CALL_STATE_OUTGOING,
+	CALL_STATE_RINGING,
+	CALL_STATE_EARLY,
+	CALL_STATE_ESTABLISHED,
+	CALL_STATE_TERMINATED,
+	CALL_STATE_UNKNOWN
 };
 
 /** Video mode */
@@ -190,7 +190,7 @@ int  call_notify_sipfrag(struct call *call, uint16_t scode,
 void call_set_handlers(struct call *call, call_event_h *eh,
 		       call_dtmf_h *dtmfh, void *arg);
 uint16_t      call_scode(const struct call *call);
-enum state    call_state(const struct call *call);
+enum call_state call_state(const struct call *call);
 uint32_t      call_duration(const struct call *call);
 uint32_t      call_setup_duration(const struct call *call);
 const char   *call_id(const struct call *call);
