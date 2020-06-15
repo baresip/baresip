@@ -35,6 +35,7 @@ struct call_window {
 	guint vumeter_timer_tag;
 	bool closed;
 	int cur_key;
+	struct play *play_dtmf_tone;
 };
 
 enum call_window_events {
@@ -217,22 +218,33 @@ static gboolean call_on_window_close(GtkWidget *widget, GdkEventAny *event,
 static gboolean call_on_key_press(GtkWidget *window, GdkEvent *ev,
 				  struct call_window *win)
 {
+	struct config *cfg;
+	cfg = conf_config();
 	gchar key = ev->key.string[0];
 	(void)window;
+	char wavfile[32];
 
 	switch (key) {
-
 	case '1': case '2': case '3':
 	case '4': case '5': case '6':
-	case '7': case '8': case '9':
-	case '*': case '0': case '#':
-		win->cur_key = key;
-		call_send_digit(win->call, key);
-		return TRUE;
-
+	case '7': case '8': case '9': case '0':
+		re_snprintf(wavfile, sizeof wavfile, "sound%c.wav", key);
+		break;
+	case '*':
+		re_snprintf(wavfile, sizeof wavfile, "sound%s.wav", "star");
+		break;
+	case '#':
+		re_snprintf(wavfile, sizeof wavfile, "sound%s.wav", "route");
+		break;
 	default:
 		return FALSE;
 	}
+	(void)play_file(&win->play_dtmf_tone, baresip_player(),
+		wavfile, -1, cfg->audio.alert_mod,
+		cfg->audio.alert_dev);
+	win->cur_key = key;
+	call_send_digit(win->call, key);
+	return TRUE;
 }
 
 
@@ -242,8 +254,9 @@ static gboolean call_on_key_release(GtkWidget *window, GdkEvent *ev,
 	(void)window;
 
 	if (win->cur_key && win->cur_key == ev->key.string[0]) {
-		win->cur_key = 0;
-		call_send_digit(win->call, 0);
+		win->play_dtmf_tone = mem_deref(win->play_dtmf_tone);
+		win->cur_key = KEYCODE_REL;
+		call_send_digit(win->call, KEYCODE_REL);
 		return TRUE;
 	}
 
