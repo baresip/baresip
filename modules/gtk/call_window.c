@@ -222,71 +222,26 @@ static gboolean call_on_key_press(GtkWidget *window, GdkEvent *ev,
 	cfg = conf_config();
 	gchar key = ev->key.string[0];
 	(void)window;
+	char wavfile[32];
 
 	switch (key) {
-	case '1':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound1.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
-		break;
-	case '2':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound2.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
-		break;
-	case '3':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound3.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
-		break;
-	case '4':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound4.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
-		break;
-	case '5':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound5.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
-		break;
-	case '6':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound6.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
-		break;
-	case '7':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound7.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
-		break;
-	case '8':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound8.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
-		break;
-	case '9':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound9.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
+	case '1': case '2': case '3':
+	case '4': case '5': case '6':
+	case '7': case '8': case '9': case '0':
+		re_snprintf(wavfile, sizeof wavfile, "sound%c.wav", key);
 		break;
 	case '*':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-		 	"soundstar.wav", -1, cfg->audio.alert_mod,
-		 	cfg->audio.alert_dev);
-		break;
-	case '0':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"sound0.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
+		re_snprintf(wavfile, sizeof wavfile, "sound%s.wav", "star");
 		break;
 	case '#':
-		(void)play_file(&win->play_dtmf_tone, baresip_player(),
-			"soundroute.wav", -1, cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
+		re_snprintf(wavfile, sizeof wavfile, "sound%s.wav", "route");
 		break;
 	default:
 		return FALSE;
 	}
+	(void)play_file(&win->play_dtmf_tone, baresip_player(),
+		wavfile, -1, cfg->audio.alert_mod,
+		cfg->audio.alert_dev);
 	win->cur_key = key;
 	call_send_digit(win->call, key);
 	return TRUE;
