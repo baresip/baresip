@@ -106,8 +106,8 @@ class ccheck:
     # print an error message and increase error count
     #
     def error(self, msg):
-        print >> sys.stderr, "%s:%d: %s" % \
-              (self.cur_filename, self.cur_lineno, msg)
+        print("%s:%d: %s" % \
+              (self.cur_filename, self.cur_lineno, msg), file=sys.stderr)
         self.errors += 1
 
 
@@ -115,14 +115,14 @@ class ccheck:
     # print statistics
     #
     def print_stats(self):
-        print "Statistics:"
-        print "~~~~~~~~~~~"
-        print "Number of files processed:   ",
+        print("Statistics:")
+        print("~~~~~~~~~~~")
+        print("Number of files processed:   ", end=' ')
         for e in self.extensions:
-            print " %s: %d" % (e, len(self.files[e])),
-        print ""
-        print "Number of lines with errors:   %d" % self.errors
-        print ""
+            print(" %s: %d" % (e, len(self.files[e])), end=' ')
+        print("")
+        print("Number of lines with errors:   %d" % self.errors)
+        print("")
 
 
     #
@@ -335,7 +335,7 @@ class ccheck:
                     self.files[e].append(f)
                     self.parse_file(f, e)
                     return
-        print "unknown extension: " + f
+        print("unknown extension: " + f)
 
 
     def rec_quasiglob(self, top, patterns, exclude):
@@ -365,18 +365,18 @@ class ccheck:
 
 
 def usage():
-    print "%s version %s" % (PROGRAM, VERSION)
-    print ""
-    print "Usage:"
-    print ""
-    print "  %s [options] [file]... [dir]..." % PROGRAM
-    print ""
-    print "options:"
-    print ""
-    print "  -h --help     Display help"
-    print "  -V --version  Show version info"
-    print "  -q --quiet    Print warnings only"
-    print "  -e --exclude  Exclude pattern(s)"
+    print("%s version %s" % (PROGRAM, VERSION))
+    print("")
+    print("Usage:")
+    print("")
+    print("  %s [options] [file]... [dir]..." % PROGRAM)
+    print("")
+    print("options:")
+    print("")
+    print("  -h --help     Display help")
+    print("  -V --version  Show version info")
+    print("  -q --quiet    Print warnings only")
+    print("  -e --exclude  Exclude pattern(s)")
 
 
 #
@@ -391,8 +391,8 @@ def main():
         opts, args = getopt.getopt(sys.argv[1:], \
                                    'hVqe:',
                                    ['help', 'version', 'quiet', 'exclude='])
-    except getopt.GetoptError, err:
-        print str(err)
+    except getopt.GetoptError as err:
+        print(str(err))
         usage()
         sys.exit(2)
     for o, a in opts:
@@ -400,7 +400,7 @@ def main():
             usage()
             sys.exit()
         elif o in ('-V', '--version'):
-            print "%s version %s, written by %s" % (PROGRAM, VERSION, AUTHOR)
+            print("%s version %s, written by %s" % (PROGRAM, VERSION, AUTHOR))
             sys.exit()
         elif o in ('-q', '--quiet'):
             quiet = True
@@ -418,7 +418,7 @@ def main():
             elif os.path.isfile(f):
                 cc.parse_any_file(f)
             else:
-                print "unknown file type: " + f
+                print("unknown file type: " + f)
     else:
         # scan all files recursively
         cc.build_file_list('.', exclude)
