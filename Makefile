@@ -301,7 +301,7 @@ clean:
 
 .PHONY: ccheck
 ccheck:
-	@ccheck.pl > /dev/null
+	@test/ccheck.py
 
 version:
 	@perl -pi -e 's/BARESIP_VERSION.*/BARESIP_VERSION \"$(VERSION)"/' \
