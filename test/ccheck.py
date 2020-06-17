@@ -13,6 +13,7 @@
 #
 #    Haavard Wik Thorkildssen <havard.thorkildssen@telio.ch>
 #    Mal Minhas <mal@malm.co.uk>
+#    Sebastian Reimers
 #
 #
 # TODO:
@@ -23,7 +24,7 @@
 import sys, os, re, fnmatch, getopt
 
 PROGRAM = 'ccheck'
-VERSION = '0.1.0'
+VERSION = '0.2.0'
 AUTHOR  = 'Alfred E. Heggestad'
 
 
