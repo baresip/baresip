@@ -278,6 +278,9 @@ static void on_bus_aquired (GDBusConnection *connection,
                                       const gchar     *name,
                                       gpointer         arg)
 {
+	(void) connection;
+	(void) arg;
+	info("ctrl_dbus: bus aquired name=%s\n", name);
 }
 
 
@@ -296,6 +299,8 @@ static int ctrl_init(void)
 {
 	int err;
 	const char *name;
+	const char syst[] = "system";
+	struct pl use = {syst, sizeof(syst)};
 
 	err = ctrl_alloc(&m_st);
 	if (err)
@@ -305,21 +310,23 @@ static int ctrl_init(void)
 	if (err)
 		goto outerr;
 
+	conf_get(conf_cur(), "ctrl_dbus_use", &use);
 	name = dbus_baresip_interface_info()->name;
 	m_st->bus_owner = g_bus_own_name(
-			G_BUS_TYPE_SYSTEM,
+			!pl_strcmp(&use, "session") ?
+				G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM,
 			name, G_BUS_NAME_OWNER_FLAGS_NONE, on_bus_aquired,
 			on_name_acquired, on_name_lost, m_st, NULL);
 
 	if (!m_st->bus_owner) {
-		warning("ctrl_dbus: could not acquire %s on the system-bus\n",
-				name);
+		warning("ctrl_dbus: could not acquire %s on the %r-bus\n",
+				name, &use);
 		err = EINVAL;
 		goto outerr;
 	}
 
-	info("ctrl_dbus: name %s acquired on the system-bus bus_owner=%u\n",
-			name, m_st->bus_owner);
+	info("ctrl_dbus: name %s acquired on the %r-bus bus_owner=%u\n",
+			name, &use, m_st->bus_owner);
 	return 0;
 
 outerr:

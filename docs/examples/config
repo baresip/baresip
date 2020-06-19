@@ -150,6 +150,7 @@ module_app		menu.so
 #module_app		ctrl_tcp.so
 module_app		vidloop.so
 # module_app		ctrl_dbus.so
+# ctrl_dbus_use		system       # system, session
 
 
 #------------------------------------------------------------------------------
