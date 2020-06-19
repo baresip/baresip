@@ -576,6 +576,37 @@ int account_set_regint(struct account *acc, uint32_t regint)
 
 
 /**
+ * Set the STUN server URI for a SIP account
+ *
+ * @param acc   User-Agent account
+ * @param uri   STUN server URI (NULL to reset)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_stun_uri(struct account *acc, const char *uri)
+{
+	struct pl pl;
+	int err;
+
+	if (!acc)
+		return EINVAL;
+
+	acc->stun_host = mem_deref(acc->stun_host);
+
+	if (!uri)
+		return 0;
+
+	pl_set_str(&pl, uri);
+	err = stunuri_decode(&acc->stun_host, &pl);
+	if (err)
+		warning("account: decode '%r' failed: %m\n",
+			&pl, err);
+
+	return err;
+}
+
+
+/**
  * Set the stun host for a SIP account
  *
  * @param acc   User-Agent account
@@ -1131,6 +1162,22 @@ const char *account_stun_user(const struct account *acc)
 const char *account_stun_pass(const struct account *acc)
 {
 	return acc ? acc->stun_pass : NULL;
+}
+
+
+/**
+ * Get the STUN server URI of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return STUN server URI
+ */
+const struct stun_uri *account_stun_uri(const struct account *acc)
+{
+	if (!acc)
+		return NULL;
+
+	return acc->stun_host ? acc->stun_host : NULL;
 }
 
 
