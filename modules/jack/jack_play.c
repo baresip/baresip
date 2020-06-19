@@ -108,10 +108,8 @@ static int start_jack(struct auplay_st *st)
 	if (status & JackServerStarted) {
 		info("jack: JACK server started\n");
 	}
-	if (status & JackNameNotUnique) {
-		client_name = jack_get_client_name(st->client);
-		info("jack: unique name `%s' assigned\n", client_name);
-	}
+	client_name = jack_get_client_name(st->client);
+	info("jack: source unique name `%s' assigned\n", client_name);
 
 	jack_set_process_callback(st->client, process_handler, st);
 
