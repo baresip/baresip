@@ -155,6 +155,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	if (st->freq < 10 || st->freq > 20000)
 	{
+		warning("ausine: frequency must be between 10 and 20000 Hz\n");
 		err = ENOTSUP;
 		goto out;
 	}
