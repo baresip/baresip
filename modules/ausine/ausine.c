@@ -64,7 +64,8 @@ static void *play_thread(void *arg)
 	int16_t *sampv;
 	double sample, rad_per_sec;
 	double sec_per_frame = 1.0 / 48000;
-	int inc, frames;
+	int inc;
+	size_t frames;
 
 	sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
 	if (!sampv)
@@ -90,7 +91,7 @@ static void *play_thread(void *arg)
 		rad_per_sec = st->freq * 2.0 * PI;
 		frames = st->sampc / 2;
 
-		for (int frame = 0; frame < frames; frame += 1) {
+		for (size_t frame = 0; frame < frames; frame += 1) {
 			sample = sin((st->sec_offset + frame * sec_per_frame)
 					* rad_per_sec);
 			sampv[inc] = (int16_t)(SCALE * 50 / 100.0f * sample);
