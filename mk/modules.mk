@@ -291,7 +291,7 @@ MODULES   += vidloop
 MODULES   += vumeter
 
 ifneq ($(HAVE_PTHREAD),)
-MODULES   += aubridge aufile
+MODULES   += aubridge aufile ausine
 endif
 
 endif
