@@ -40,11 +40,10 @@ addons:
 install:
     - git clone https://github.com/creytiv/re.git
     - git clone https://github.com/creytiv/rem.git
-    - curl -OL 'https://github.com/alfredh/pytools/raw/master/ccheck.py'
     - for p in ${LIBRE} ${LIBREM}; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo ldconfig; fi
 
 script: 
     - make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
     - make clean; make CCACHE= STATIC=yes
-    - python2 ccheck.py
+    - make ccheck
