@@ -682,7 +682,7 @@ Alfred E. Heggestad (111):
       config: refresh config template
       audiounit: fix warning on ios
 
-JosÈ Luis Mill·n (2):
+Jos√© Luis Mill√°n (2):
       ctrl_tcp: increase command buffer size (#585)
       vumeter: configuration option to disable vumeter output to stderr (#608)
 
@@ -766,7 +766,7 @@ juha-h (5):
 
 	* avformat: remove support for old versions of ffmpeg
 
-	* ctrl_tcp: Fix netstring frame handling (#569) (JosÈ Luis Mill·n)
+	* ctrl_tcp: Fix netstring frame handling (#569) (Jos√© Luis Mill√°n)
 
 	* debug_cmd: /play will always stop current file playing.  (#578)
 		     (thanks Ola Palm)
@@ -786,7 +786,7 @@ juha-h (5):
 
 	* opus: add configuration parameter 'opus_complexity'
 		add configuration parameter 'opus_application'
-		(thanks JosÈ Luis Mill·n)
+		(thanks Jos√© Luis Mill√°n)
 
 	* libsrtp: module removed
 
@@ -1001,7 +1001,7 @@ juha-h (5):
 
 	* ctrl_tcp: Fix #369. documentation typo (#372)
 		    Fix #370. wrong assignent (#371)
-		    (thanks JosÈ Luis Mill·n)
+		    (thanks Jos√© Luis Mill√°n)
 
 	* dshow: add support for video frame timestamp
 
@@ -1043,7 +1043,7 @@ juha-h (5):
 	* new modules:
 
 	  - ctrl_tcp      TCP control interface using JSON payload
-			  (thanks JosÈ Luis Mill·n)
+			  (thanks Jos√© Luis Mill√°n)
 
 	* config:
 
@@ -1097,7 +1097,7 @@ juha-h (5):
 	* codec2: update aucodec API with audio sample format
 
 	* ctrl_tcp: new module for TCP control interface using JSON payload
-		   (thanks JosÈ Luis Mill·n)
+		   (thanks Jos√© Luis Mill√°n)
 
 	* g711: update aucodec API with audio sample format
 
