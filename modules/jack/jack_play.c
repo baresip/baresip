@@ -76,7 +76,6 @@ static void auplay_destructor(void *arg)
 	mem_deref(st->portv);
 }
 
-
 static int start_jack(struct auplay_st *st)
 {
 	struct conf *conf = conf_cur();
@@ -92,10 +91,19 @@ static int start_jack(struct auplay_st *st)
 	(void)conf_get_bool(conf, "jack_connect_ports",
 				  &jack_connect_ports);
 
-	/* open a client connection to the JACK server */
+	/* open a client connection to the JACK server */ 
+	size_t len = jack_client_name_size();
+	char *conf_name = mem_alloc(len+1, NULL);
+	
+	if(conf_get_str(conf, "jack_client_name", conf_name, len)){
+		st->client = jack_client_open(conf_name, options,
+						&status, server_name);
+	}else{
+		st->client = jack_client_open(client_name, options,
+							&status, server_name);	
+	}
+	mem_deref(conf_name);
 
-	st->client = jack_client_open(client_name, options,
-				      &status, server_name);
 	if (st->client == NULL) {
 		warning("jack: jack_client_open() failed, "
 			"status = 0x%2.0x\n", status);
