@@ -95,7 +95,7 @@ static int start_jack(struct auplay_st *st)
 	size_t len = jack_client_name_size();
 	char *conf_name = mem_alloc(len+1, NULL);
 	
-	if(conf_get_str(conf, "jack_client_name", conf_name, len)){
+	if(!conf_get_str(conf, "jack_client_name", conf_name, len)){
 		st->client = jack_client_open(conf_name, options,
 						&status, server_name);
 	}else{
