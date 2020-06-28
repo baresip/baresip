@@ -375,6 +375,7 @@ static int update_video(struct call *call)
 	else if (call->video) {
 		info("video stream is disabled..\n");
 		video_stop(call->video);
+		video_stop_display(call->video);
 	}
 
 	return err;
