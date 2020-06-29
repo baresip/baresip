@@ -1,4 +1,4 @@
-Contributions are welcome to the Baresip project.
+## Contributions are welcome to the Baresip project
 
 The preferred way to contribute is via a Pull Request (PR).
 
@@ -14,3 +14,7 @@ The preferred way to contribute is via a Pull Request (PR).
 * The code must pass "make ccheck"
 
 * Doxygen comments is nice to add, but it is not mandatory
+
+## How to add new modules
+
+* https://github.com/baresip/baresip/wiki/How-to-add-new-modules
