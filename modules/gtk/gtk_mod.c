@@ -72,26 +72,17 @@ static void reject_activated(GSimpleAction *, GVariant *, gpointer);
 static void denotify_incoming_call(struct gtk_mod *, struct call *);
 
 static GActionEntry app_entries[] = {
-	{"answer", answer_activated, "x", NULL, NULL, {0} },
-	{"reject", reject_activated, "x", NULL, NULL, {0} },
+	{"answer", answer_activated, "s", NULL, NULL, {0} },
+	{"reject", reject_activated, "s", NULL, NULL, {0} },
 };
 
 
 static struct call *get_call_from_gvariant(GVariant *param)
 {
-	gint64 call_ptr;
-	struct call *call;
 	struct list *calls = ua_calls(uag_current());
-	struct le *le;
+	const gchar *call_ptr = g_variant_get_string(param, NULL);
 
-	call_ptr = g_variant_get_int64(param);
-	call = GINT_TO_POINTER(call_ptr);
-
-	for (le = list_head(calls); le; le = le->next)
-		if (le->data == call)
-			return call;
-
-	return NULL;
+	return call_find_id(calls, call_ptr);
 }
 
 
@@ -341,7 +332,7 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	g_notification_set_urgent(notification, TRUE);
 #endif
 
-	target = g_variant_new_int64(GPOINTER_TO_INT(call));
+	target = g_variant_new_string(call_id(call));
 	g_notification_set_body(notification, msg);
 	g_notification_add_button_with_target_value(notification,
 			"Answer", "app.answer", target);

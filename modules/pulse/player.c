@@ -29,6 +29,8 @@ struct auplay_st {
 static void auplay_destructor(void *arg)
 {
 	struct auplay_st *st = arg;
+	int pa_error = 0;
+	int pa_ret;
 
 	/* Wait for termination of other thread */
 	if (st->run) {
@@ -37,8 +39,14 @@ static void auplay_destructor(void *arg)
 		(void)pthread_join(st->thread, NULL);
 	}
 
-	if (st->s)
+	if (st->s) {
+		pa_ret = pa_simple_drain(st->s, &pa_error);
+		if (pa_ret < 0)
+			warning("pulse: pa_simple_drain error (%s)\n",
+				 pa_strerror(pa_error));
+
 		pa_simple_free(st->s);
+	}
 
 	mem_deref(st->sampv);
 }
