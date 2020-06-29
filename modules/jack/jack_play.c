@@ -94,13 +94,15 @@ static int start_jack(struct auplay_st *st)
 	/* open a client connection to the JACK server */ 
 	size_t len = jack_client_name_size();
 	char *conf_name = mem_alloc(len+1, NULL);
-	
-	if(!conf_get_str(conf, "jack_client_name", conf_name, len)){
+
+	if (!conf_get_str(conf, "jack_client_name", 
+													conf_name, len)) {
 		st->client = jack_client_open(conf_name, options,
 						&status, server_name);
-	}else{
-		st->client = jack_client_open(client_name, options,
-							&status, server_name);	
+	}
+	else {
+		st->client = jack_client_open(client_name, 
+			options, &status, server_name);
 	}
 	mem_deref(conf_name);
 
