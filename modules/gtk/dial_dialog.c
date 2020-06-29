@@ -25,7 +25,7 @@ static int clean_number(char* str)
 	 */
 	int err = re_regex(str, sizeof(str), "[A-Za-z]");
 	if (err == 0)
-		return 0;
+		return -1;
 
 	/* remove (0) which is in some mal-formated numbers
 	 * but only if trailed by another character
@@ -71,7 +71,7 @@ static void dial_dialog_on_response(GtkDialog *dialog, gint response_id,
 		uri = (char *)uri_combo_box_get_text(dd->uri_combobox);
 		if (gtk_mod_clean_number(dd->mod)) {
 			int length = clean_number(uri);
-			if (length)
+			if (length >= 0)
 				uri_combo_box_set_text(dd->uri_combobox,
 					uri, length);
 		}
