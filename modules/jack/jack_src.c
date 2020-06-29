@@ -90,14 +90,14 @@ static int start_jack(struct ausrc_st *st)
 
 	bool jack_connect_ports = true;
 	(void)conf_get_bool(conf, "jack_connect_ports",
-				  &jack_connect_ports);
+				&jack_connect_ports);
 
 	/* open a client connection to the JACK server */
 	size_t len = jack_client_name_size();
 	char *conf_name = mem_alloc(len+1, NULL);
 
-	if (!conf_get_str(conf, "jack_client_name", 
-													conf_name, len)) {
+	if (!conf_get_str(conf, "jack_client_name",
+								conf_name, len)) {
 		st->client = jack_client_open(conf_name, options,
 						&status, server_name);
 	}
