@@ -195,6 +195,10 @@ ice_debug		no
 #redial_delay		5 # Delay in seconds
 #ringback_disabled	no
 #statmode_default	off
+#menu_clean_number	no
+
+# GTK
+#gtk_clean_number	no
 
 # avcodec
 #avcodec_h264enc	libx264

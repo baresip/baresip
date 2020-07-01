@@ -39,6 +39,13 @@ GtkWidget *uri_combo_box_new(void)
 	return uri_combobox;
 }
 
+void uri_combo_box_set_text(GtkComboBox *box, char* str, int length)
+{
+	gchar* number = g_strdup (str);
+	GtkEntry *entry = GTK_ENTRY(gtk_bin_get_child(GTK_BIN(box)));
+	GtkEntryBuffer *buf = gtk_entry_get_buffer(entry);
+	gtk_entry_buffer_set_text(buf, number, length);
+}
 
 const char *uri_combo_box_get_text(GtkComboBox *box)
 {

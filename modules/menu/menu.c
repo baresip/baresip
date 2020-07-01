@@ -40,6 +40,7 @@ static struct {
 	uint32_t current_attempts;    /**< Current number of re-dials     */
 	uint64_t start_ticks;         /**< Ticks when app started         */
 	enum statmode statmode;       /**< Status mode                    */
+	bool clean_number;            /**< Remove -/() from diald numbers */
 	char redial_aor[128];
 } menu;
 
@@ -204,6 +205,47 @@ static int ua_print_call_status(struct re_printf *pf, void *unused)
 	return err;
 }
 
+static void clean_number(char* str)
+{
+	/* only clean numeric numbers
+	 * In other cases trust the user input
+	 */
+	int err = re_regex(str, sizeof(str), "[A-Za-z]");
+	if (err == 0)
+		return;
+
+	/* remove (0) which is in some mal-formated numbers
+	 * but only if trailed by another character
+	 */
+	int i = 0, k = 0;
+	if (str[0] == '+' || (str[0] == '0' && str[1] == '0'))
+		while (str[i]) {
+			if (str[i] == '('
+			 && str[i+1] == '0'
+			 && str[i+2] == ')'
+			 && (str[i+3] == ' '
+				 || (str[i+3] >= '0' && str[i+3] <= '9')
+			    )
+			) {
+				str[i+1] = ' ';
+				break;
+			}
+			++i;
+		}
+	i = 0;
+	while (str[i]) {
+		if (str[i] == ' '
+		 || str[i] == '.'
+		 || str[i] == '-'
+		 || str[i] == '/'
+		 || str[i] == '('
+		 || str[i] == ')')
+			++i;
+		else
+			str[k++] = str[i++];
+	}
+	str[k] = '\0';
+}
 
 static int dial_handler(struct re_printf *pf, void *arg)
 {
@@ -216,6 +258,8 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 		mbuf_rewind(menu.dialbuf);
 		(void)mbuf_write_str(menu.dialbuf, carg->prm);
+		if (menu.clean_number)
+			clean_number(carg->prm);
 
 		err = ua_connect(uag_current(), NULL, NULL,
 				 carg->prm, VIDMODE_ON);
@@ -228,6 +272,8 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		err = mbuf_strdup(menu.dialbuf, &uri, menu.dialbuf->end);
 		if (err)
 			return err;
+		if (menu.clean_number)
+			clean_number(uri);
 
 		err = ua_connect(uag_current(), NULL, NULL, uri, VIDMODE_ON);
 
@@ -1283,6 +1329,7 @@ static int module_init(void)
 	menu.redial_delay = 5;
 	menu.ringback_disabled = false;
 	menu.statmode = STATMODE_CALL;
+	menu.clean_number = false;
 
 	/*
 	 * Read the config values
@@ -1290,6 +1337,7 @@ static int module_init(void)
 	conf_get_bool(conf_cur(), "menu_bell", &menu.bell);
 	conf_get_bool(conf_cur(), "ringback_disabled",
 		      &menu.ringback_disabled);
+	conf_get_bool(conf_cur(), "menu_clean_number", &menu.clean_number);
 
 	if (0 == conf_get(conf_cur(), "redial_attempts", &val) &&
 	    0 == pl_strcasecmp(&val, "inf")) {

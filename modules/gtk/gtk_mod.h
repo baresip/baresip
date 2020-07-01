@@ -48,4 +48,8 @@ void transfer_dialog_fail(struct transfer_dialog *, const char *reason);
 
 /* URI entry combo box */
 GtkWidget *uri_combo_box_new(void);
+void uri_combo_box_set_text(GtkComboBox *box, char* str, int length);
 const char *uri_combo_box_get_text(GtkComboBox *box);
+
+/* Helper functions */
+bool gtk_mod_clean_number(struct gtk_mod *mod);

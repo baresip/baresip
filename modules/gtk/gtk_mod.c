@@ -53,6 +53,7 @@ struct gtk_mod {
 	struct dial_dialog *dial_dialog;
 	GSList *call_windows;
 	GSList *incoming_call_menus;
+	bool clean_number;
 };
 
 static struct gtk_mod mod_obj;
@@ -625,6 +626,13 @@ void gtk_mod_connect(struct gtk_mod *mod, const char *uri)
 	mqueue_push(mod->mq, MQ_CONNECT, (char *)uri);
 }
 
+bool gtk_mod_clean_number(struct gtk_mod *mod)
+{
+	if (!mod)
+		return false;
+	return mod->clean_number;
+}
+
 
 static void warning_dialog(const char *title, const char *fmt, ...)
 {
@@ -1001,6 +1009,9 @@ static const struct cmd cmdv[] = {
 
 static int module_init(void)
 {
+	mod_obj.clean_number = false;
+	conf_get_bool(conf_cur(), "gtk_clean_number", &mod_obj.clean_number);
+
 	int err = 0;
 
 	err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
