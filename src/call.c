@@ -1079,7 +1079,8 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	if (vmode == VIDMODE_OFF)
 		call->video = mem_deref(call->video);
 
-	info("call: answering call from %s with %u\n", call->peer_uri, scode);
+	info("call: answering call on line %u from %s with %u\n",
+			call->linenum, call->peer_uri, scode);
 
 	if (call->got_offer) {
 
