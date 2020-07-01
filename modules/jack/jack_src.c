@@ -157,7 +157,7 @@ static int start_jack(struct ausrc_st *st)
 	if (jack_connect_ports) {
 		info("jack: connecting default output ports\n");
 		ports = jack_get_ports (st->client, NULL, NULL,
-					JackPortIsOutput);
+					JackPortIsOutput | JackPortIsPhysical);
 		if (ports == NULL) {
 			warning("jack: no physical playback ports\n");
 			return ENODEV;

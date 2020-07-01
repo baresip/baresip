@@ -165,18 +165,27 @@ static int start_jack(struct auplay_st *st)
 	if (jack_connect_ports) {
 		info("jack: connecting default input ports\n");
 		ports = jack_get_ports (st->client, NULL, NULL,
-					JackPortIsInput);
+					JackPortIsInput | JackPortIsPhysical);
 		if (ports == NULL) {
 			warning("jack: no physical playback ports\n");
 			return ENODEV;
 		}
 
-		for (ch=0; ch<st->prm.ch; ch++) {
-
+		/* Connect all physical ports. In case of for example mono audio
+		 * with 2 physical playback ports, connect the single registered
+		 * port to both physical port.
+		 */
+		unsigned channelIndex = 0;
+		for (unsigned i = 0; ports[i] != NULL; i++) {
 			if (jack_connect (st->client,
-					  jack_port_name (st->portv[ch]),
-					  ports[ch])) {
+					  jack_port_name (st->portv[channelIndex]),
+					  ports[i])) {
 				warning("jack: cannot connect output ports\n");
+			}
+
+			channelIndex++;
+			if (channelIndex >= st->prm.ch) {
+				channelIndex = 0;
 			}
 		}
 
