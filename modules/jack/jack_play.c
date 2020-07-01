@@ -175,17 +175,17 @@ static int start_jack(struct auplay_st *st)
 		 * audio with 2 physical playback ports, connect the
 		 * single registered port to both physical port.
 		 */
-		unsigned channel_index = 0;
+		ch = 0;
 		for (unsigned i = 0; ports[i] != NULL; i++) {
 			if (jack_connect (st->client,
-					  jack_port_name (st->portv[channel_index]),
-					  ports[i])) {
+					jack_port_name (st->portv[ch]),
+						ports[i])) {
 				warning("jack: cannot connect output ports\n");
 			}
 
-			++channel_index;
-			if (channel_index >= st->prm.ch) {
-				channel_index = 0;
+			++ch;
+			if (ch >= st->prm.ch) {
+				ch = 0;
 			}
 		}
 
