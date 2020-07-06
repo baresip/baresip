@@ -16,10 +16,12 @@ struct network {
 #endif
 	struct tmr tmr;
 	struct dnsc *dnsc;
-	struct sa nsv[NET_MAX_NS];/**< Configured name servers      */
-	uint32_t nsn;        /**< Number of configured name servers */
+	struct sa nsv[NET_MAX_NS];/**< Configured name servers           */
+	uint32_t nsn;        /**< Number of configured name servers      */
+	struct sa nsvf[NET_MAX_NS];/**< Configured fallback name servers */
+	uint32_t nsnf;       /**< Number of configured fallback name servers */
 	uint32_t interval;
-	char domain[64];     /**< DNS domain from network           */
+	char domain[64];     /**< DNS domain from network                */
 	net_change_h *ch;
 	void *arg;
 };
@@ -101,15 +103,22 @@ static int print_addr(struct re_printf *pf, const struct sa *ip)
 }
 
 
-static int net_dnssrv_add(struct network *net, const struct sa *sa)
+static int net_dns_srv_add(struct network *net, const struct sa *sa,
+		bool fallback)
 {
 	if (!net)
 		return EINVAL;
 
-	if (net->nsn >= ARRAY_SIZE(net->nsv))
+	if (!fallback && net->nsn >= ARRAY_SIZE(net->nsv))
 		return E2BIG;
 
-	sa_cpy(&net->nsv[net->nsn++], sa);
+	if (fallback && net->nsnf >= ARRAY_SIZE(net->nsvf))
+		return E2BIG;
+
+	if (fallback)
+		sa_cpy(&net->nsvf[net->nsnf++], sa);
+	else
+		sa_cpy(&net->nsv[net->nsn++], sa);
 
 	return 0;
 }
@@ -120,6 +129,8 @@ static int net_dns_srv_get(const struct network *net,
 {
 	struct sa nsv[NET_MAX_NS];
 	uint32_t i, nsn = ARRAY_SIZE(nsv);
+	uint32_t offset;
+	uint32_t limit = *n;
 	int err;
 
 	err = dns_srv_get(NULL, 0, nsv, &nsn);
@@ -129,7 +140,7 @@ static int net_dns_srv_get(const struct network *net,
 
 	if (net->nsn) {
 
-		if (net->nsn > *n)
+		if (net->nsn > limit)
 			return E2BIG;
 
 		/* Use any configured nameservers */
@@ -143,7 +154,7 @@ static int net_dns_srv_get(const struct network *net,
 			*from_sys = false;
 	}
 	else {
-		if (nsn > *n)
+		if (nsn > limit)
 			return E2BIG;
 
 		for (i=0; i<nsn; i++)
@@ -153,6 +164,22 @@ static int net_dns_srv_get(const struct network *net,
 
 		if (from_sys)
 			*from_sys = true;
+	}
+
+	/* Add Fallback nameservers */
+	if (net->nsnf) {
+		offset = *n;
+		if ((offset + net->nsnf) > limit) {
+			warning("net: too many DNS nameservers, "
+					"fallback DNS ignored\n");
+			return 0;
+		}
+
+		for (i=0; i<net->nsnf; i++) {
+			srvv[offset+i] = net->nsvf[i];
+		}
+
+		*n = offset + net->nsnf;
 	}
 
 	return 0;
@@ -372,7 +399,7 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 				goto out;
 			}
 
-			err = net_dnssrv_add(net, &sa);
+			err = net_dns_srv_add(net, &sa, cfg->nsv[i].fallback);
 			if (err) {
 				warning("net: failed to add nameserver: %m\n",
 					err);

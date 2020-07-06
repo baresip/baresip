@@ -90,12 +90,23 @@ static int start_jack(struct ausrc_st *st)
 
 	bool jack_connect_ports = true;
 	(void)conf_get_bool(conf, "jack_connect_ports",
-				  &jack_connect_ports);
+				&jack_connect_ports);
 
 	/* open a client connection to the JACK server */
+	size_t len = jack_client_name_size();
+	char *conf_name = mem_alloc(len+1, NULL);
 
-	st->client = jack_client_open(client_name, options,
-				      &status, server_name);
+	if (!conf_get_str(conf, "jack_client_name",
+			conf_name, len)) {
+		st->client = jack_client_open(conf_name, options,
+						&status, server_name);
+	}
+	else {
+		st->client = jack_client_open(client_name, options,
+							&status, server_name);
+	}
+	mem_deref(conf_name);
+
 	if (st->client == NULL) {
 		warning("jack: jack_client_open() failed, "
 			"status = 0x%2.0x\n", status);
@@ -108,10 +119,8 @@ static int start_jack(struct ausrc_st *st)
 	if (status & JackServerStarted) {
 		info("jack: JACK server started\n");
 	}
-	if (status & JackNameNotUnique) {
-		client_name = jack_get_client_name(st->client);
-		info("jack: unique name `%s' assigned\n", client_name);
-	}
+	client_name = jack_get_client_name(st->client);
+	info("jack: destination unique name `%s' assigned\n", client_name);
 
 	jack_set_process_callback(st->client, process_handler, st);
 
@@ -159,7 +168,7 @@ static int start_jack(struct ausrc_st *st)
 	if (jack_connect_ports) {
 		info("jack: connecting default output ports\n");
 		ports = jack_get_ports (st->client, NULL, NULL,
-					JackPortIsOutput);
+					JackPortIsOutput | JackPortIsPhysical);
 		if (ports == NULL) {
 			warning("jack: no physical playback ports\n");
 			return ENODEV;

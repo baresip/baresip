@@ -76,7 +76,6 @@ static void auplay_destructor(void *arg)
 	mem_deref(st->portv);
 }
 
-
 static int start_jack(struct auplay_st *st)
 {
 	struct conf *conf = conf_cur();
@@ -93,9 +92,20 @@ static int start_jack(struct auplay_st *st)
 				  &jack_connect_ports);
 
 	/* open a client connection to the JACK server */
+	size_t len = jack_client_name_size();
+	char *conf_name = mem_alloc(len+1, NULL);
 
-	st->client = jack_client_open(client_name, options,
-				      &status, server_name);
+	if (!conf_get_str(conf, "jack_client_name",
+			conf_name, len)) {
+		st->client = jack_client_open(conf_name, options,
+						&status, server_name);
+	}
+	else {
+		st->client = jack_client_open(client_name,
+			options, &status, server_name);
+	}
+	mem_deref(conf_name);
+
 	if (st->client == NULL) {
 		warning("jack: jack_client_open() failed, "
 			"status = 0x%2.0x\n", status);
@@ -108,10 +118,8 @@ static int start_jack(struct auplay_st *st)
 	if (status & JackServerStarted) {
 		info("jack: JACK server started\n");
 	}
-	if (status & JackNameNotUnique) {
-		client_name = jack_get_client_name(st->client);
-		info("jack: unique name `%s' assigned\n", client_name);
-	}
+	client_name = jack_get_client_name(st->client);
+	info("jack: source unique name `%s' assigned\n", client_name);
 
 	jack_set_process_callback(st->client, process_handler, st);
 
@@ -167,18 +175,27 @@ static int start_jack(struct auplay_st *st)
 	if (jack_connect_ports) {
 		info("jack: connecting default input ports\n");
 		ports = jack_get_ports (st->client, NULL, NULL,
-					JackPortIsInput);
+					JackPortIsInput | JackPortIsPhysical);
 		if (ports == NULL) {
 			warning("jack: no physical playback ports\n");
 			return ENODEV;
 		}
 
-		for (ch=0; ch<st->prm.ch; ch++) {
-
+		/* Connect all physical ports. In case of for example mono
+		 * audio with 2 physical playback ports, connect the
+		 * single registered port to both physical port.
+		 */
+		ch = 0;
+		for (unsigned i = 0; ports[i] != NULL; i++) {
 			if (jack_connect (st->client,
-					  jack_port_name (st->portv[ch]),
-					  ports[ch])) {
+					jack_port_name (st->portv[ch]),
+						ports[i])) {
 				warning("jack: cannot connect output ports\n");
+			}
+
+			++ch;
+			if (ch >= st->prm.ch) {
+				ch = 0;
 			}
 		}
 

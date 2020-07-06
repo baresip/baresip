@@ -86,7 +86,9 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 		warning("mqtt: error processing command (%m)\n", err);
 	}
 
-	err |= mbuf_write_u8(resp, '\0');
+	err = mbuf_write_u8(resp, '\0');
+	if (err)
+		goto out;
 
 	/* NOTE: the command will now write the response
 	   to the resp mbuf, send it back to broker */

@@ -53,6 +53,7 @@ struct gtk_mod {
 	struct dial_dialog *dial_dialog;
 	GSList *call_windows;
 	GSList *incoming_call_menus;
+	bool clean_number;
 };
 
 static struct gtk_mod mod_obj;
@@ -71,26 +72,17 @@ static void reject_activated(GSimpleAction *, GVariant *, gpointer);
 static void denotify_incoming_call(struct gtk_mod *, struct call *);
 
 static GActionEntry app_entries[] = {
-	{"answer", answer_activated, "x", NULL, NULL, {0} },
-	{"reject", reject_activated, "x", NULL, NULL, {0} },
+	{"answer", answer_activated, "s", NULL, NULL, {0} },
+	{"reject", reject_activated, "s", NULL, NULL, {0} },
 };
 
 
 static struct call *get_call_from_gvariant(GVariant *param)
 {
-	gint64 call_ptr;
-	struct call *call;
 	struct list *calls = ua_calls(uag_current());
-	struct le *le;
+	const gchar *call_ptr = g_variant_get_string(param, NULL);
 
-	call_ptr = g_variant_get_int64(param);
-	call = GINT_TO_POINTER(call_ptr);
-
-	for (le = list_head(calls); le; le = le->next)
-		if (le->data == call)
-			return call;
-
-	return NULL;
+	return call_find_id(calls, call_ptr);
 }
 
 
@@ -309,7 +301,9 @@ static void accounts_menu_set_status(struct gtk_mod *mod,
 static void notify_incoming_call(struct gtk_mod *mod,
 		struct call *call)
 {
-	static const char *title = "Incoming call";
+	char title[128];
+	re_snprintf(title, sizeof title, "Incoming call from %s",
+					call_peername(call));
 	const char *msg = call_peeruri(call);
 	GtkWidget *call_menu;
 	GtkWidget *menu_item;
@@ -338,7 +332,7 @@ static void notify_incoming_call(struct gtk_mod *mod,
 	g_notification_set_urgent(notification, TRUE);
 #endif
 
-	target = g_variant_new_int64(GPOINTER_TO_INT(call));
+	target = g_variant_new_string(call_id(call));
 	g_notification_set_body(notification, msg);
 	g_notification_add_button_with_target_value(notification,
 			"Answer", "app.answer", target);
@@ -630,6 +624,13 @@ void gtk_mod_connect(struct gtk_mod *mod, const char *uri)
 		return;
 
 	mqueue_push(mod->mq, MQ_CONNECT, (char *)uri);
+}
+
+bool gtk_mod_clean_number(struct gtk_mod *mod)
+{
+	if (!mod)
+		return false;
+	return mod->clean_number;
 }
 
 
@@ -1008,6 +1009,9 @@ static const struct cmd cmdv[] = {
 
 static int module_init(void)
 {
+	mod_obj.clean_number = false;
+	conf_get_bool(conf_cur(), "gtk_clean_number", &mod_obj.clean_number);
+
 	int err = 0;
 
 	err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
