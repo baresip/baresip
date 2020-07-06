@@ -19,6 +19,12 @@
  *
  * Acoustic Echo Cancellation (AEC) using WebRTC SDK.
  *
+ * Configuration options:
+ *
+ \verbatim
+  webrtc_aec_extended_filter {yes,no} # Enable extended_filter
+ \endverbatim
+ *
  * This code is experimental.
  *
  * Reference:
