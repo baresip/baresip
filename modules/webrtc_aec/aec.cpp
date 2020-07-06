@@ -19,6 +19,12 @@
  *
  * Acoustic Echo Cancellation (AEC) using WebRTC SDK.
  *
+ * Configuration options:
+ *
+ \verbatim
+  webrtc_aec_extended_filter {yes,no} # Enable extended_filter
+ \endverbatim
+ *
  * This code is experimental.
  *
  * Reference:
@@ -41,6 +47,8 @@ static void aec_destructor(void *arg)
 
 int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 {
+	struct conf *conf = conf_cur();
+	bool extended_filter = false;
 	struct aec *aec;
 	int err = 0;
 	int r;
@@ -102,6 +110,13 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	}
 
 	WebRtcAec_enable_delay_agnostic(WebRtcAec_aec_core(aec->inst), 1);
+
+	conf_get_bool(conf, "webrtc_aec_extended_filter", &extended_filter);
+	if (extended_filter) {
+		info("webrtc_aec: enabling extended_filter\n");
+		WebRtcAec_enable_extended_filter(WebRtcAec_aec_core(aec->inst),
+						 1);
+	}
 
 	aec->config.nlpMode       = kAecNlpModerate;
 	aec->config.skewMode      = kAecFalse;
