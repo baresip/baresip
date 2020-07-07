@@ -35,7 +35,7 @@ addons:
         - jack
         - mpg123
         - spandsp
-        update: true
+        update: false
 
 install:
     - git clone https://github.com/creytiv/re.git
