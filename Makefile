@@ -263,8 +263,10 @@ $(BUILD): Makefile
 install: $(BIN) $(MOD_BINS)
 	@mkdir -p $(DESTDIR)$(BINDIR)
 	$(INSTALL) -m 0755 $(BIN) $(DESTDIR)$(BINDIR)
+ifeq ($(STATIC),)
 	@mkdir -p $(DESTDIR)$(MOD_PATH)
 	$(INSTALL) -m 0644 $(MOD_BINS) $(DESTDIR)$(MOD_PATH)
+endif
 	@mkdir -p $(DESTDIR)$(SHARE_PATH)
 	$(INSTALL) -m 0644 share/* $(DESTDIR)$(SHARE_PATH)
 
