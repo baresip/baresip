@@ -2339,7 +2339,7 @@ int call_json_api(struct odict *od, const struct call *call)
 
 	if (!call) {
 		err |= odict_entry_add(od, "state", ODICT_STRING,
-				state_name(STATE_IDLE));
+				state_name(CALL_STATE_IDLE));
 		return err;
 	}
 
