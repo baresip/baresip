@@ -1,0 +1,67 @@
+/**
+ * @file comvideo.h  Commend specific video source
+ *
+ * Copyright (C) 2020 Commend.com
+ */
+
+#ifndef BARESIP_COMVIDEO_SRC_H
+#define BARESIP_COMVIDEO_SRC_H
+
+#include <stdlib.h>
+#include <re.h>
+#include <rem.h>
+#include <baresip.h>
+#include <gst/gst.h>
+#include <cameradclient/cameradclient.h>
+#include <videoclient/videoclient.h>
+
+#define DBUS_PROPERTY_SIZE          128
+
+struct comvideo_data {
+	GstVideoClient *video_client;
+	CameradClient *camerad_client;
+	GList *encoders;
+
+	char camerad_dbus_name[DBUS_PROPERTY_SIZE];
+	char camerad_dbus_path[DBUS_PROPERTY_SIZE];
+
+	char video_dbus_name[DBUS_PROPERTY_SIZE];
+	char video_dbus_path[DBUS_PROPERTY_SIZE];
+};
+
+extern struct comvideo_data  comvideo_codec;
+
+/*
+ * Encode
+ */
+
+struct videnc_state;
+
+
+void
+camera_h264_sample_received(GstCameraSrc *src,
+			    GstSample *sample, struct vidsrc_st *st);
+
+
+int
+encode_h264(struct videnc_state *st, bool update,
+	    const struct vidframe *frame, uint64_t timestamp);
+
+
+int
+encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
+		   struct videnc_param *prm, const char *fmtp,
+		   videnc_packet_h *pkth, void *arg);
+
+/*
+ * Decode
+ */
+
+int decode_h264(struct viddec_state *st, struct vidframe *frame,
+		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
+
+
+int decode_h264_update(struct viddec_state **vdsp, const struct vidcodec *vc,
+		       const char *fmtp);
+
+#endif //BARESIP_COMVIDEO_SRC_H
