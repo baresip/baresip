@@ -49,6 +49,7 @@ struct menc_sess {
 
 struct menc_media {
 	Stream *stream;
+	const struct stream *strm;  /**< pointer to parent */
 };
 
 
@@ -104,7 +105,8 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
                        struct udp_sock *rtpsock, struct udp_sock *rtcpsock,
  		       const struct sa *raddr_rtp,
 		       const struct sa *raddr_rtcp,
-		       struct sdp_media *sdpm)
+		       struct sdp_media *sdpm,
+		       const struct stream *strm)
 {
 	struct menc_media *st;
 	int err = 0;
@@ -136,6 +138,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 	else
 		med_type = MT_UNKNOWN;
 
+	st->strm = strm;
 	st->stream = sess->session->create_stream(
 	                       *s_zrtp_config,
 	                       (struct udp_sock *)rtpsock,
