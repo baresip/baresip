@@ -38,7 +38,7 @@ addons:
         update: false
 
 install:
-    - git clone https://github.com/creytiv/re.git
+    - git clone https://github.com/baresip/re.git
     - git clone https://github.com/creytiv/rem.git
     - for p in ${LIBRE} ${LIBREM}; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
     - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo ldconfig; fi
