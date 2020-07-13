@@ -10,6 +10,7 @@
 #   USE_AMR           Adaptive Multi-Rate (AMR) audio codec
 #   USE_APTX          aptX audio codec
 #   USE_AUDIOUNIT     AudioUnit audio driver for OSX/iOS
+#   USE_AUPIPE        Unix pipe audio driver
 #   USE_AVCAPTURE     AVFoundation video capture for OSX/iOS
 #   USE_AVCODEC       avcodec video codec module
 #   USE_AVFORMAT      avformat video source module
@@ -310,6 +311,9 @@ MODULES   += aptx
 endif
 ifneq ($(USE_AUDIOUNIT),)
 MODULES   += audiounit
+endif
+ifneq ($(USE_AUPIPE),)
+MODULES   += aupipe
 endif
 ifneq ($(USE_AVCAPTURE),)
 MODULES   += avcapture
