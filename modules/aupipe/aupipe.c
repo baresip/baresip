@@ -107,8 +107,9 @@ static void *record_thread(void *arg) {
 			if (fd == -1 && errno == EAGAIN) {
 																silence = true;
 												} else if (fd == -1) {
-																error_msg("aupipe_record: accept failed: %d (%m)\n",
-																					errno, errno);
+																error_msg(
+																    "aupipe_record: accept failed: %d (%m)\n",
+																		errno, errno);
 																silence = true;
 			} else {
 				struct timeval tv = { 0, st->ptime * 1000 / 4 };
@@ -131,14 +132,16 @@ static void *record_thread(void *arg) {
 												} else if (n == -1 && errno == EAGAIN) {
 																silence = true;
 												} else if (n == -1) {
-																error_msg("aupipe_record: read failed: %d (%m)\n",
-																          errno, errno);
+																error_msg(
+																    "aupipe_record: read failed: %d (%m)\n",
+																    errno, errno);
 																restart = true;
 																silence = true;
 												} else if ((size_t)n < st->sampc*2) {
-																error_msg("aupipe_record: partial read: %d\n", n);
+																error_msg(
+																    "aupipe_record: partial read: %d\n", n);
 												} else {
-//                                debug("aupipe_record: read %d bytes\n", n);
+/*                               debug("aupipe_record: read %d bytes\n", n); */
 												}
 								}
 
@@ -184,8 +187,7 @@ static void *play_thread(void *arg) {
 			fd = accept(st->fd, NULL, NULL);
 			if (fd == -1 && errno == EAGAIN) {
 																silence = true;
-												}
-												else if (fd == -1) {
+												} else if (fd == -1) {
 				error_msg("aupipe_play: accept: %d (%m)\n", errno, errno);
 																silence = true;
 			}
@@ -196,13 +198,14 @@ static void *play_thread(void *arg) {
 								if (!silence) {
 												n = write(fd, st->sampv, st->sampc*2);
 												if (n < 0) {
-																warning("aupipe_play: write failed: %d %m\n", errno, errno);
+																warning("aupipe_play: write failed: %d %m\n",
+																        errno, errno);
 																close(fd);
 																fd = -1;
 												} else if ((size_t)n < st->sampc*2) {
 																warning("aupipe_play: partial write: %d\n", n);
 												} else {
-//                                debug("aupipe_play: write %d bytes\n", n);
+/*                                debug("aupipe_play: write %d bytes\n", n); */
 												}
 								}
 
@@ -224,8 +227,7 @@ static void *play_thread(void *arg) {
 static int aupipe_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 														struct media_ctx **ctx,
 														struct ausrc_prm *prm, const char *device,
-														ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
-{
+														ausrc_read_h *rh, ausrc_error_h *errh, void *arg) {
 	struct sockaddr_un addr = { 0 };
 	struct ausrc_st *st;
 				struct timeval tv;
@@ -273,7 +275,8 @@ static int aupipe_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 				 */
 				tv.tv_sec = 0;
 				tv.tv_usec = st->ptime * 1000 / 2;
-				if (setsockopt(st->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) == -1) {
+				if (setsockopt(st->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv))
+				    == -1) {
 								error_msg("setsockopt failed: %d (%m)\n", errno, errno);
 								err = errno;
 								goto out;
@@ -313,8 +316,7 @@ static int aupipe_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 static int aupipe_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 														 struct auplay_prm *prm, const char *device,
-														 auplay_write_h *wh, void *arg)
-{
+														 auplay_write_h *wh, void *arg) {
 	struct sockaddr_un addr = { 0 };
 	struct auplay_st *st;
 	int err;
