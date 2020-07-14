@@ -350,10 +350,14 @@ static int update_audio(struct call *call)
 
 static int update_video(struct call *call)
 {
-	const struct sdp_format *sc;
+	const struct sdp_format *sc = NULL;
 	int err = 0;
 
-	sc = sdp_media_rformat(stream_sdpmedia(video_strm(call->video)), NULL);
+	struct sdp_media *m = stream_sdpmedia(video_strm(call->video));
+
+	if (!sdp_media_disabled(m))
+		sc = sdp_media_rformat(m, NULL);
+
 	if (sc) {
 		err = video_encoder_set(call->video, sc->data,
 					sc->pt, sc->params);
