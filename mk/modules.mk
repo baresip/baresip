@@ -264,6 +264,7 @@ endif
 # ------------------------------------------------------------------------- #
 
 MODULES   += $(EXTRA_MODULES)
+
 ifneq ($(BASIC_MODULES),no)
 MODULES   += account
 MODULES   += auloop
@@ -319,6 +320,9 @@ MODULES   += avcodec
 ifneq ($(USE_AVFORMAT),)
 MODULES   += avformat
 endif
+endif
+ifneq ($(USE_AVFILTER),)
+MODULES   += avfilter
 endif
 ifneq ($(USE_CAIRO),)
 MODULES   += cairo
