@@ -22,15 +22,15 @@ static int swap_lines(uint8_t *a, uint8_t *b, size_t size) {
 static int reverse_lines(uint8_t *data, int linesize, int count) {
 	for (int i = 0; i < count/2; i++)
 		swap_lines(data + linesize * i,
-       data + linesize * (count - i - 1),
-       abs(linesize));
+			   data + linesize * (count - i - 1),
+			   abs(linesize));
 	return 0;
 }
 
 /*
- *	Sometimes AVFrame contains planes with lines in bottom-up order.
- *	Then linesize is negative and data points to the last row in buffer.
- *	Baresip uses unsigned linesizes, lets reorder lines to fix it.
+ * Sometimes AVFrame contains planes with lines in bottom-up order.
+ * Then linesize is negative and data points to the last row in buffer.
+ * Baresip uses unsigned linesizes, lets reorder lines to fix it.
  */
 int avframe_ensure_topdown(AVFrame *frame)
 {
@@ -42,7 +42,7 @@ int avframe_ensure_topdown(AVFrame *frame)
 			if (ls >= 0) continue;
 			int h = i == 0 ? frame->height : frame->height/2;
 			reverse_lines(frame->data[i], ls, h);
-			frame->data[i] = frame->data[i] + ls * (h - 1);
+			frame->data[i]     = frame->data[i] + ls * (h - 1);
 			frame->linesize[i] = abs(ls);
 		}
 		break;
@@ -50,10 +50,13 @@ int avframe_ensure_topdown(AVFrame *frame)
 	default:
 		/* TODO support more formats */
 		for (int i=0; i<4; i++) {
+
 			if (frame->linesize[0] <0) {
+
 				warning("avfilter: unsupported frame"
-          " format with negative linesize: %d",
-          frame->format);
+					" format with negative linesize: %d",
+					frame->format);
+
 				return EPROTO;
 			}
 		}
@@ -79,11 +82,11 @@ enum vidfmt avpixfmt_to_vidfmt(const enum AVPixelFormat pix_fmt)
 {
 	switch (pix_fmt) {
 
-	case AV_PIX_FMT_YUV420P:	return VID_FMT_YUV420P;
+	case AV_PIX_FMT_YUV420P:  return VID_FMT_YUV420P;
 	case AV_PIX_FMT_YUVJ420P: return VID_FMT_YUV420P;
-	case AV_PIX_FMT_YUV444P:	return VID_FMT_YUV444P;
-	case AV_PIX_FMT_NV12:			return VID_FMT_NV12;
-	case AV_PIX_FMT_NV21:			return VID_FMT_NV21;
+	case AV_PIX_FMT_YUV444P:  return VID_FMT_YUV444P;
+	case AV_PIX_FMT_NV12:     return VID_FMT_NV12;
+	case AV_PIX_FMT_NV21:     return VID_FMT_NV21;
 	default:                  return (enum vidfmt)-1;
 	}
 }

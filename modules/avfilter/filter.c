@@ -15,9 +15,8 @@
 #include "avfilter.h"
 #include "util.h"
 
-
 int filter_init(struct avfilter_st *st, char* filter_descr,
-		 struct vidframe *frame)
+		struct vidframe *frame)
 {
 	char args[512];
 	int err = 0;
@@ -27,10 +26,10 @@ int filter_init(struct avfilter_st *st, char* filter_descr,
 		return 0;
 	}
 
-	const AVFilter *buffersrc	 = avfilter_get_by_name("buffer");
+	const AVFilter *buffersrc = avfilter_get_by_name("buffer");
 	const AVFilter *buffersink = avfilter_get_by_name("buffersink");
 	AVFilterInOut *outputs = avfilter_inout_alloc();
-	AVFilterInOut *inputs	 = avfilter_inout_alloc();
+	AVFilterInOut *inputs = avfilter_inout_alloc();
 
 	enum AVPixelFormat src_format = vidfmt_to_avpixfmt(frame->fmt);
 	enum AVPixelFormat pix_fmts[] = { src_format, AV_PIX_FMT_NONE };
@@ -39,19 +38,20 @@ int filter_init(struct avfilter_st *st, char* filter_descr,
 	st->vframe_in = av_frame_alloc();
 	st->vframe_out = av_frame_alloc();
 	if (!outputs || !inputs || !st->filter_graph ||
-      !st->vframe_in || !st->vframe_out) {
+	    !st->vframe_in || !st->vframe_out) {
 		err = AVERROR(ENOMEM);
 		goto end;
 	}
 
 	/* buffer video source */
 	snprintf(args, sizeof(args),
-		"video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=1/1",
-		frame->size.w, frame->size.h, src_format, 1, 25);
+		 "video_size=%dx%d:pix_fmt=%d:"
+		 "time_base=%d/%d:pixel_aspect=1/1",
+		 frame->size.w, frame->size.h, src_format, 1, 25);
 
 	err = avfilter_graph_create_filter(
-          &st->buffersrc_ctx, buffersrc, "in",
-				  args, NULL, st->filter_graph);
+		&st->buffersrc_ctx, buffersrc, "in", args, NULL,
+		st->filter_graph);
 	if (err < 0) {
 		warning("avfilter: cannot create buffer source\n");
 		goto end;
@@ -59,41 +59,47 @@ int filter_init(struct avfilter_st *st, char* filter_descr,
 
 	/* buffer video sink: to terminate the filter chain. */
 	err = avfilter_graph_create_filter(
-          &st->buffersink_ctx, buffersink, "out",
-					NULL, NULL, st->filter_graph);
+		&st->buffersink_ctx, buffersink, "out", NULL, NULL,
+		st->filter_graph);
 	if (err < 0) {
 		warning("avfilter: cannot create buffer sink\n");
 		goto end;
 	}
 
 	err = av_opt_set_int_list(
-     st->buffersink_ctx, "pix_fmts", pix_fmts,
-		 AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN);
+		st->buffersink_ctx, "pix_fmts", pix_fmts, AV_PIX_FMT_NONE,
+		AV_OPT_SEARCH_CHILDREN);
 	if (err < 0) {
-		warning("avfilter: Cannot set output pixel format\n");
+		warning("avfilter: cannot set output pixel format\n");
 		goto end;
 	}
 
-	outputs->name				= av_strdup("in");
+	outputs->name       = av_strdup("in");
 	outputs->filter_ctx = st->buffersrc_ctx;
-	outputs->pad_idx		= 0;
-	outputs->next				= NULL;
+	outputs->pad_idx    = 0;
+	outputs->next       = NULL;
 
-	inputs->name			 = av_strdup("out");
+	inputs->name       = av_strdup("out");
 	inputs->filter_ctx = st->buffersink_ctx;
-	inputs->pad_idx		 = 0;
-	inputs->next			 = NULL;
+	inputs->pad_idx    = 0;
+	inputs->next       = NULL;
 
-	if ((err = avfilter_graph_parse_ptr(
-          st->filter_graph, filter_descr,
-					&inputs, &outputs, NULL)) < 0)
+	err = avfilter_graph_parse_ptr(st->filter_graph, filter_descr,
+				       &inputs, &outputs, NULL);
+	if (err < 0) {
+		warning("avfilter: error parsing filter description: %s\n",
+			filter_descr);
 		goto end;
+	}
 
-	if ((err = avfilter_graph_config(st->filter_graph, NULL)) < 0)
+	err = avfilter_graph_config(st->filter_graph, NULL);
+	if (err < 0) {
+		warning("avfilter: filter graph config failed\n");
 		goto end;
+	}
 
-	st->size = frame->size;
-	st->format = frame->fmt;
+	st->size    = frame->size;
+	st->format  = frame->fmt;
 	st->enabled = true;
 
 	info("avfilter: filter graph initialized for %s\n", filter_descr);
@@ -105,7 +111,8 @@ int filter_init(struct avfilter_st *st, char* filter_descr,
 	return err;
 }
 
-int filter_reset(struct avfilter_st* st) {
+int filter_reset(struct avfilter_st* st)
+{
 	if (!st->enabled)
 		return 0;
 	if (st->filter_graph)
@@ -119,12 +126,13 @@ int filter_reset(struct avfilter_st* st) {
 	return 0;
 }
 
-bool filter_valid(struct avfilter_st* st, struct vidframe *frame) {
-	return (
-		!st->enabled ||
+bool filter_valid(struct avfilter_st* st, struct vidframe *frame)
+{
+	bool res = !st->enabled ||
 		((st->size.h == frame->size.h) &&
 		 (st->size.w == frame->size.w) &&
-		 (st->format == frame->fmt)));
+		 (st->format == frame->fmt));
+	return res;
 }
 
 int filter_encode(struct avfilter_st* st, struct vidframe *frame,
@@ -142,18 +150,18 @@ int filter_encode(struct avfilter_st* st, struct vidframe *frame,
 
 	/* fill the source frame */
 	st->vframe_in->format = vidfmt_to_avpixfmt(frame->fmt);
-	st->vframe_in->width = frame->size.w;
+	st->vframe_in->width  = frame->size.w;
 	st->vframe_in->height = frame->size.h;
-	st->vframe_in->pts = *timestamp;
+	st->vframe_in->pts    = *timestamp;
 
 	for (i=0; i<4; i++) {
-		st->vframe_in->data[i] = frame->data[i];
+		st->vframe_in->data[i]     = frame->data[i];
 		st->vframe_in->linesize[i] = frame->linesize[i];
 	}
 
 	/* push source frame into the filter graph */
-	err = av_buffersrc_add_frame_flags(st->buffersrc_ctx,
-			st->vframe_in, AV_BUFFERSRC_FLAG_KEEP_REF);
+	err = av_buffersrc_add_frame_flags(
+		st->buffersrc_ctx, st->vframe_in, AV_BUFFERSRC_FLAG_KEEP_REF);
 	if (err < 0) {
 		warning("avfilter: error while feeding the filtergraph\n");
 		goto out;
@@ -166,7 +174,7 @@ int filter_encode(struct avfilter_st* st, struct vidframe *frame,
 		goto out;
 	if (err < 0) {
 		warning("avfilter: error while getting"
-      " filtered frame from the filtergraph\n");
+			" filtered frame from the filtergraph\n");
 		goto out;
 	}
 
@@ -174,7 +182,7 @@ int filter_encode(struct avfilter_st* st, struct vidframe *frame,
 
 	/* Copy filtered frame back to the input frame */
 	for (i=0; i<4; i++) {
-		frame->data[i]		 = st->vframe_out->data[i];
+		frame->data[i] = st->vframe_out->data[i];
 		frame->linesize[i] = st->vframe_out->linesize[i];
 	}
 	frame->size.h = st->vframe_out->height;

@@ -17,14 +17,16 @@
 /**
  * @defgroup avfilter avfilter
  *
- * Apply FFmpeg filter graph to outcoming stream
+ * Video filters using libavfilter
  *
+ * This module allows to dynamically apply complex video filter graphs
+ * to outcoming stream using libavfilter from FFmpeg project.
  *
  * Commands:
  *
  \verbatim
- avfilter [filter_string] Apply avfilter to outcoming stream
- avfilter [Empty filter_string] Stop avfilter
+ avfilter <FILTER> - Enable avfilter for outcoming stream
+ avfilter          - Disable avfilter
  \endverbatim
  *
  * Example:
@@ -32,6 +34,11 @@
  \verbatim
  avfilter movie=watermark.png[pic];[in][pic]overlay=10:10[out]
  \endverbatim
+ *
+ * References:
+ *
+ *     https://ffmpeg.org/ffmpeg-filters.html
+ *
  */
 
 static struct lock *lock = (void*)0;
@@ -49,8 +56,8 @@ static void st_destructor(void *arg)
 
 
 static int update(struct vidfilt_enc_st **stp, void **ctx,
-	const struct vidfilt *vf, struct vidfilt_prm *prm,
-	const struct video *vid)
+		  const struct vidfilt *vf, struct vidfilt_prm *prm,
+		  const struct video *vid)
 {
 	struct avfilter_st *st;
 	(void)vid;
@@ -73,7 +80,7 @@ static int update(struct vidfilt_enc_st **stp, void **ctx,
 
 
 static int encode(struct vidfilt_enc_st *enc_st, struct vidframe *frame,
-	uint64_t *timestamp)
+		  uint64_t *timestamp)
 {
 	struct avfilter_st *st = (struct avfilter_st *)enc_st;
 	int err=0;
@@ -106,8 +113,8 @@ static int avfilter_command(struct re_printf *pf, void *arg)
 	if (str_isset(carg->prm)) {
 		str_ncpy(filter_descr, carg->prm, sizeof(filter_descr));
 		info("avfilter: enabled for %s\n", filter_descr);
-  }
-  else {
+	}
+	else {
 		str_ncpy(filter_descr, "", sizeof(filter_descr));
 		info("avfilter: disabled\n");
 	}
@@ -119,8 +126,8 @@ static int avfilter_command(struct re_printf *pf, void *arg)
 }
 
 static struct vidfilt avfilter = {
-	.name = "avfilter",
-	.ench = encode,
+	.name    = "avfilter",
+	.ench    = encode,
 	.encupdh = update
 };
 
