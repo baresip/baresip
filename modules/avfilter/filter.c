@@ -128,7 +128,7 @@ void filter_reset(struct avfilter_st* st)
 }
 
 
-bool filter_valid(struct avfilter_st* st, struct vidframe *frame)
+bool filter_valid(const struct avfilter_st* st, const struct vidframe *frame)
 {
 	bool res = !st->enabled ||
 		((st->size.h == frame->size.h) &&

@@ -33,7 +33,7 @@ int filter_init(struct avfilter_st *st, char* filter_descr,
 
 void filter_reset(struct avfilter_st *st);
 
-bool filter_valid(struct avfilter_st *st, struct vidframe *frame);
+bool filter_valid(const struct avfilter_st *st, const struct vidframe *frame);
 
 int filter_encode(struct avfilter_st *st, struct vidframe *frame,
 		  uint64_t *timestamp);
