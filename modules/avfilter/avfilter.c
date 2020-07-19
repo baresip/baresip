@@ -41,7 +41,7 @@
  *
  */
 
-static struct lock *lock = (void*)0;
+static struct lock *lock;
 static char filter_descr[MAX_DESCR] = "";
 static bool filter_updated = false;
 
@@ -142,7 +142,7 @@ static int module_init(void)
 	int err;
 	err = lock_alloc(&lock);
 	if (err)
-		return ENOMEM;
+		return err;
 
 	vidfilt_register(baresip_vidfiltl(), &avfilter);
 	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
@@ -151,7 +151,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	mem_deref(lock);
+	lock = mem_deref(lock);
 	vidfilt_unregister(&avfilter);
 	cmd_unregister(baresip_commands(), cmdv);
 	return 0;
