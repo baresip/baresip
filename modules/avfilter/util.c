@@ -4,6 +4,7 @@
  * Copyright (C) 2020 Mikhail Kurkov
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include <re.h>
 #include <rem.h>
@@ -12,9 +13,8 @@
 #include "util.h"
 
 
-static int swap_lines(uint8_t *a, uint8_t *b, size_t size)
+static int swap_lines(uint8_t *a, uint8_t *b, uint8_t *tmp, size_t size)
 {
-	uint8_t tmp[size];
 	memcpy(tmp, a, size);
 	memcpy(a, b, size);
 	memcpy(b, tmp, size);
@@ -24,10 +24,18 @@ static int swap_lines(uint8_t *a, uint8_t *b, size_t size)
 
 static int reverse_lines(uint8_t *data, int linesize, int count)
 {
+	size_t size = abs(linesize) * sizeof(uint8_t);
+	uint8_t *tmp = malloc(size);
+	if (!tmp)
+		return ENOMEM;
+
 	for (int i = 0; i < count/2; i++)
 		swap_lines(data + linesize * i,
 			   data + linesize * (count - i - 1),
-			   abs(linesize));
+			   tmp,
+			   size);
+
+	free(tmp);
 	return 0;
 }
 
