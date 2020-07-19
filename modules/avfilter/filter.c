@@ -113,7 +113,7 @@ int filter_init(struct avfilter_st *st, char* filter_descr,
 }
 
 
-int filter_reset(struct avfilter_st* st)
+void filter_reset(struct avfilter_st* st)
 {
 	if (!st->enabled)
 		return 0;
@@ -125,7 +125,6 @@ int filter_reset(struct avfilter_st* st)
 		av_frame_free(&st->vframe_out);
 	st->enabled = false;
 	info("avfilter: filter graph reset\n");
-	return 0;
 }
 
 

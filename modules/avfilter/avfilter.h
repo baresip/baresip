@@ -31,7 +31,7 @@ struct avfilter_st {
 int filter_init(struct avfilter_st *st, char* filter_descr,
 		struct vidframe *frame);
 
-int filter_reset(struct avfilter_st *st);
+void filter_reset(struct avfilter_st *st);
 
 bool filter_valid(struct avfilter_st *st, struct vidframe *frame);
 
