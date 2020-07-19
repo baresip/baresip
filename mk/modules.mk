@@ -320,6 +320,9 @@ ifneq ($(USE_AVFORMAT),)
 MODULES   += avformat
 endif
 endif
+ifneq ($(USE_AVFILTER),)
+MODULES   += avfilter
+endif
 ifneq ($(USE_CAIRO),)
 MODULES   += cairo
 ifneq ($(USE_MPG123),)

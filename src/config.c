@@ -806,6 +806,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "snapshot" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "swscale" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "vidinfo" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" "avfilter" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Video source modules\n");
 #if defined (DARWIN)
