@@ -125,6 +125,7 @@ static int avfilter_command(struct re_printf *pf, void *arg)
 	return 0;
 }
 
+
 static struct vidfilt avfilter = {
 	.name    = "avfilter",
 	.ench    = encode,

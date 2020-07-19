@@ -11,7 +11,9 @@
 #include <libavutil/frame.h>
 #include "util.h"
 
-static int swap_lines(uint8_t *a, uint8_t *b, size_t size) {
+
+static int swap_lines(uint8_t *a, uint8_t *b, size_t size)
+{
 	uint8_t tmp[size];
 	memcpy(tmp, a, size);
 	memcpy(a, b, size);
@@ -19,13 +21,16 @@ static int swap_lines(uint8_t *a, uint8_t *b, size_t size) {
 	return 0;
 }
 
-static int reverse_lines(uint8_t *data, int linesize, int count) {
+
+static int reverse_lines(uint8_t *data, int linesize, int count)
+{
 	for (int i = 0; i < count/2; i++)
 		swap_lines(data + linesize * i,
 			   data + linesize * (count - i - 1),
 			   abs(linesize));
 	return 0;
 }
+
 
 /*
  * Sometimes AVFrame contains planes with lines in bottom-up order.
@@ -65,6 +70,7 @@ int avframe_ensure_topdown(AVFrame *frame)
 	return 0;
 }
 
+
 enum AVPixelFormat vidfmt_to_avpixfmt(const enum vidfmt fmt)
 {
 
@@ -77,6 +83,7 @@ enum AVPixelFormat vidfmt_to_avpixfmt(const enum vidfmt fmt)
 	default:              return AV_PIX_FMT_NONE;
 	}
 }
+
 
 enum vidfmt avpixfmt_to_vidfmt(const enum AVPixelFormat pix_fmt)
 {
