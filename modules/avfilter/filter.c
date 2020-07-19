@@ -116,7 +116,7 @@ int filter_init(struct avfilter_st *st, char* filter_descr,
 void filter_reset(struct avfilter_st* st)
 {
 	if (!st->enabled)
-		return 0;
+		return;
 	if (st->filter_graph)
 		avfilter_graph_free(&st->filter_graph);
 	if (st->vframe_in)
