@@ -48,7 +48,7 @@ int filter_init(struct avfilter_st *st, char* filter_descr,
 	snprintf(args, sizeof(args),
 		 "video_size=%dx%d:pix_fmt=%d:"
 		 "time_base=%d/%d:pixel_aspect=1/1",
-		 frame->size.w, frame->size.h, src_format, 1, 25);
+		 frame->size.w, frame->size.h, src_format, 1, VIDEO_TIMEBASE);
 
 	err = avfilter_graph_create_filter(
 		&st->buffersrc_ctx, buffersrc, "in", args, NULL,
