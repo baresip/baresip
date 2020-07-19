@@ -79,7 +79,7 @@ int avframe_ensure_topdown(AVFrame *frame)
 }
 
 
-enum AVPixelFormat vidfmt_to_avpixfmt(const enum vidfmt fmt)
+enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
 {
 
 	switch (fmt) {
@@ -93,7 +93,7 @@ enum AVPixelFormat vidfmt_to_avpixfmt(const enum vidfmt fmt)
 }
 
 
-enum vidfmt avpixfmt_to_vidfmt(const enum AVPixelFormat pix_fmt)
+enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
 {
 	switch (pix_fmt) {
 
