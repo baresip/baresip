@@ -89,7 +89,7 @@ USE_AVFORMAT := $(shell ([ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/local/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ]) && \
-	([ -f $(SYSROOT)/include/libavformat/avdevice.h ] || \
+	([ -f $(SYSROOT)/include/libavdevice/avdevice.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/libavdevice/avdevice.h ] || \
 	[ -f $(SYSROOT)/local/include/libavdevice/avdevice.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavdevice/avdevice.h ] || \
