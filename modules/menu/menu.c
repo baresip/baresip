@@ -523,7 +523,7 @@ static const struct cmd cmdv[] = {
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 {"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"uanew",     'R',  CMD_PRM, "Create User-Agent",       create_ua            },
-{"uadel",     'D',  CMD_PRM, "Delete User-Agent",       cmd_ua_delete        },
+{"uadel",     'K',  CMD_PRM, "Delete User-Agent",       cmd_ua_delete        },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"ausrc",     0,    CMD_PRM, "Switch audio source",     switch_audio_source  },
 {"auplay",    0,    CMD_PRM, "Switch audio player",     switch_audio_player  },
