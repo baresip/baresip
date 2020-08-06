@@ -7,6 +7,10 @@
 #include <time.h>
 #ifdef USE_OPENSSL
 #include <openssl/crypto.h>
+#if OPENSSL_API_COMPAT < 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
+#define OPENSSL_VERSION SSLEAY_VERSION
+#define OpenSSL_version SSLeay_version
+#endif
 #endif
 #include <re.h>
 #include <baresip.h>
@@ -56,7 +60,7 @@ static int print_system_info(struct re_printf *pf, void *arg)
 
 #ifdef USE_OPENSSL
 	err |= re_hprintf(pf, " OpenSSL:  %s\n",
-			  SSLeay_version(SSLEAY_VERSION));
+			  OpenSSL_version(OPENSSL_VERSION));
 #endif
 
 	return err;
