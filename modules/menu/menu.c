@@ -205,8 +205,11 @@ static int ua_print_call_status(struct re_printf *pf, void *unused)
 	return err;
 }
 
-static void clean_number(char* str)
+
+static void clean_number(char *str)
 {
+	int i = 0, k = 0;
+
 	/* only clean numeric numbers
 	 * In other cases trust the user input
 	 */
@@ -217,7 +220,6 @@ static void clean_number(char* str)
 	/* remove (0) which is in some mal-formated numbers
 	 * but only if trailed by another character
 	 */
-	int i = 0, k = 0;
 	if (str[0] == '+' || (str[0] == '0' && str[1] == '0'))
 		while (str[i]) {
 			if (str[i] == '('
