@@ -218,11 +218,10 @@ static gboolean call_on_window_close(GtkWidget *widget, GdkEventAny *event,
 static gboolean call_on_key_press(GtkWidget *window, GdkEvent *ev,
 				  struct call_window *win)
 {
-	struct config *cfg;
-	cfg = conf_config();
+	struct config *cfg = conf_config();
 	gchar key = ev->key.string[0];
-	(void)window;
 	char wavfile[32];
+	(void)window;
 
 	switch (key) {
 	case '1': case '2': case '3':
