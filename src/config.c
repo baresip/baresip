@@ -78,7 +78,7 @@ static struct config core_config = {
 	{
 		AF_UNSPEC,
 		"",
-		{ {""} },
+		{ {"",0} },
 		0
 	},
 };
