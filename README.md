@@ -80,6 +80,7 @@ Distributed under BSD license
 
 * Audio-drivers:
   - Advanced Linux Sound Architecture (ALSA) audio-driver
+  - PulseAudio POSIX OSes audio-driver
   - Android OpenSLES audio-driver
   - Gstreamer playbin input audio-driver
   - JACK Audio Connection Kit audio-driver
