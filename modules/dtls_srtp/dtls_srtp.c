@@ -483,7 +483,7 @@ static int module_init(void)
 		return err;
 	}
 
-	err = tls_set_selfsigned_rsa(tls, "dtls@baresip", 1024);
+	err = tls_set_selfsigned_rsa(tls, "dtls@baresip", 2048);
 	if (err) {
 		warning("dtls_srtp: failed to self-sign certificate (%m)\n",
 			err);
