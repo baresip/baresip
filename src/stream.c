@@ -737,6 +737,23 @@ void stream_hold(struct stream *s, bool hold)
 }
 
 
+void stream_set_ldir(struct stream *s, enum sdp_dir dir)
+{
+	if (!s)
+		return;
+
+	if (dir == SDP_INACTIVE) {
+		sdp_media_set_disabled(s->sdp, true);
+	}
+	else {
+		sdp_media_set_disabled(s->sdp, false);
+		sdp_media_set_ldir(s->sdp, dir);
+	}
+
+	stream_reset(s);
+}
+
+
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx)
 {
 	if (!s)

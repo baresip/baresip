@@ -838,6 +838,34 @@ static int call_video_debug(struct re_printf *pf, void *unused)
 }
 
 
+static int set_video_dir(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	int err = 0;
+
+	if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_INACTIVE))) {
+		err = call_set_video_dir(ua_call(uag_current()), SDP_INACTIVE);
+	}
+	else if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_SENDONLY))) {
+		err = call_set_video_dir(ua_call(uag_current()), SDP_SENDONLY);
+	}
+	else if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_RECVONLY))) {
+		err = call_set_video_dir(ua_call(uag_current()), SDP_RECVONLY);
+	}
+	else if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_SENDRECV))) {
+		err = call_set_video_dir(ua_call(uag_current()), SDP_SENDRECV);
+	}
+	else {
+		(void)re_hprintf(pf, "Invalid video direction %s"
+			" (inactive, sendonly, recvonly, sendrecv)\n",
+			carg->prm);
+		return EINVAL;
+	}
+
+	return err;
+}
+
+
 static int digit_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -969,6 +997,7 @@ static const struct cmd callcmdv[] = {
 {"statmode",    'S',       0, "Statusmode toggle",    toggle_statmode      },
 {"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
+{"video_dir",     0, CMD_PRM, "Set video direction",  set_video_dir        },
 
 /* Numeric keypad for DTMF events: */
 {NULL, '#',         0, NULL,                  digit_handler         },
