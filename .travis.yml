@@ -13,6 +13,53 @@ env:
 
 sudo: require
 
+jobs:
+  include:
+      - name: OpenSSL 1.0.2g
+        os: linux
+        dist: xenial
+        addons:
+          apt:
+            update: false
+        stage: openssl
+      - name: OpenSSL 1.1.1f
+        os: linux
+        dist: focal
+        addons:
+          apt:
+            update: false
+        stage: openssl
+      - name: macOS 10.15.5
+        os: osx
+        osx_image: xcode12.0
+        stage: openssl
+      - name: LibreSSL
+        os: linux
+        addons:
+          apt:
+            update: false
+        dist: xenial
+        script:
+          - wget "https://github.com/baresip/ci/releases/download/v0.1/assets.tar.gz"
+          - tar -xf assets.tar.gz
+          - make EXTRA_CFLAGS="-Iassets/libressl/include -Werror" EXTRA_LFLAGS="-Lassets/libressl" CCACHE=;
+        stage: openssl
+      - name: OpenSSL 1.1.1g no-deprecated
+        os: linux
+        dist: xenial
+        addons:
+          apt:
+            update: false
+        script:
+          - wget "https://github.com/baresip/ci/releases/download/v0.1/assets.tar.gz"
+          - tar -xf assets.tar.gz
+          - make EXTRA_CFLAGS="-Iassets/openssl/include -Werror" EXTRA_LFLAGS="-Lassets/openssl" CCACHE=;
+        stage: openssl
+
+stages:
+    - test
+    - openssl
+
 addons:
     apt:
         packages:
