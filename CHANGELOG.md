@@ -71,5 +71,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ice: remove ice_debug, use log level DEBUG instead
 - ice: make stun server optional
 
+### Contributors (many thanks)
+
+- Alfred E. Heggestad
+- Alexander Gramner
+- Andrew Webster
+- Christian Spielberger
+- Davide Alberani
+- Ethan Funk
+- juha-h
+- Juha Heinanen
+- mbattista
+- Michael Malone
+- Mikl Kurkov
+- ndilieto
+- Robert Scheck
+- Roger Sandholm
+- Sebastian Reimers
+
 
 [Unreleased]: https://github.com/baresip/baresip/compare/v0.6.6...HEAD
