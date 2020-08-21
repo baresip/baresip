@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Using [baresip/re] fork now**
+- **Using [baresip/re](https://github.com/baresip/re) fork now**
 - audio: move calculation to audio_jb_current_value
 - avformat: clean up docs
 - gzrtp: update docs
