@@ -1,5 +1,5 @@
-# Changelog
-All notable changes to this project will be documented in this file.
+# Baresip Changelog
+All notable changes to baresip will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -64,7 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - config: init newly added member
 - menu: fix segfault in ua_event_handler [#1059](https://github.com/baresip/baresip/pull/1059) [#1061](https://github.com/baresip/baresip/pull/1061)
 - debug_cmd: fix OpenSSL no-deprecated [#1065](https://github.com/baresip/baresip/pull/1065)
-
 
 ### Removed
 - ice: remove support for ICE-lite
