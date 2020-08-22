@@ -19,6 +19,7 @@
 #    ;outbound2=sip:secondary.example.com
 #    ;ptime={10,20,30,40,...}
 #    ;regint=3600
+#    ;rwait=90
 #    ;pubint=0 (publishing off)
 #    ;regq=0.5
 #    ;sipnat={outbound}
