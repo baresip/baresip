@@ -422,3 +422,12 @@ const struct sa *reg_laddr(const struct reg *reg)
 
 	return sipreg_laddr(reg->sipreg);
 }
+
+
+uint32_t reg_proxy_expires(const struct reg *reg)
+{
+	if (!reg)
+		return 0;
+
+	return sipreg_proxy_expires(reg->sipreg);
+}

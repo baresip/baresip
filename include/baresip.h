@@ -917,6 +917,7 @@ void ua_unregister(struct ua *ua);
 void ua_stop_register(struct ua *ua);
 bool ua_isregistered(const struct ua *ua);
 bool ua_regfailed(const struct ua *ua);
+uint32_t ua_proxy_expires(const struct ua *ua);
 unsigned ua_destroy(struct ua *ua);
 void ua_pub_gruu_set(struct ua *ua, const struct pl *pval);
 const char     *ua_cuser(const struct ua *ua);

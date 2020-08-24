@@ -2210,3 +2210,22 @@ bool ua_req_allowed(const struct ua *ua, const struct sip_msg *msg)
 
 	return account_inreq_mode(ua->acc) == INREQ_MODE_ON;
 }
+
+
+uint32_t ua_proxy_expires(const struct ua *ua)
+{
+	struct le *le;
+
+	if (!ua)
+		return 0;
+
+	for (le = ua->regl.head; le; le = le->next) {
+
+		const struct reg *reg = le->data;
+
+		if (reg)
+			return reg_proxy_expires(reg);
+	}
+
+	return 0;
+}
