@@ -122,7 +122,7 @@ Distributed under BSD license
 * NAT-traversal:
   - STUN support
   - TURN server support
-  - ICE and ICE-lite support
+  - ICE support
   - NATPMP support
   - PCP (Port Control Protocol) support
 
