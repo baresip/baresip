@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - snapshot: Add snapshot_send and snapshot_recv commands [#1029]
 - webrtc_aec: 'extended_filter' config option [#1030]
 - avfilter: FFmpeg filter graphs integration [#1038]
+- reg: view proxy expiry value in reg_status [#1068]
+- account: add parameter rwait for re-register interval [#1069]
 
 ### Changed
 
@@ -136,5 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1059]: https://github.com/baresip/baresip/pull/1059
 [#1061]: https://github.com/baresip/baresip/pull/1061
 [#1065]: https://github.com/baresip/baresip/pull/1065
+[#1068]: https://github.com/baresip/baresip/pull/1068
+[#1069]: https://github.com/baresip/baresip/pull/1069
 
 [Unreleased]: https://github.com/baresip/baresip/compare/v0.6.6...HEAD
