@@ -316,6 +316,12 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	acc->regint = REG_INTERVAL + (rand_u32()&0xff);
 	err |= param_u32(&acc->regint, &aor->params, "regint");
+	err |= param_u32(&acc->rwait, &aor->params, "rwait");
+	if (acc->rwait > 95)
+		acc->rwait = 95;
+
+	if (acc->rwait && acc->rwait < 5)
+		acc->rwait = 5;
 
 	acc->pubint = 0;
 	err |= param_u32(&acc->pubint, &aor->params, "pubint");

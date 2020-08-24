@@ -209,7 +209,10 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	if (err)
 		return err;
 
-	return 0;
+	if (acc->rwait)
+		err = sipreg_set_rwait(reg->sipreg, acc->rwait);
+
+	return err;
 }
 
 
