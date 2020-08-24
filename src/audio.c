@@ -188,10 +188,8 @@ static void stop_tx(struct autx *tx, struct audio *a)
 	}
 
 	/* audio source must be stopped first */
-	tx->ausrc_fb = true;
 	tx->ausrc = mem_deref(tx->ausrc);
 	tx->aubuf = mem_deref(tx->aubuf);
-	tx->ausrc_fb = false;
 
 	list_flush(&tx->filtl);
 }
