@@ -1172,6 +1172,24 @@ int call_hold(struct call *call, bool hold)
 }
 
 
+/**
+ * Sets the video direction of the given call
+ *
+ * @param call  Call object
+ * @param dir   SDP media direction
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_set_video_dir(struct call *call, enum sdp_dir dir)
+{
+	if (!call)
+		return EINVAL;
+
+	stream_set_ldir(video_strm(call_video(call)), dir);
+	return call_modify(call);
+}
+
+
 int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 {
 	if (!call)
