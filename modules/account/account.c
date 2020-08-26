@@ -77,6 +77,7 @@ static int account_write_template(const char *file)
 			 "#    ;outbound2=sip:secondary.example.com\n"
 			 "#    ;ptime={10,20,30,40,...}\n"
 			 "#    ;regint=3600\n"
+			 "#    ;prio={0,1,2,3,...}\n"
 			 "#    ;pubint=0 (publishing off)\n"
 			 "#    ;regq=0.5\n"
 			 "#    ;sipnat={outbound}\n"

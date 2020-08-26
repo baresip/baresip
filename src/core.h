@@ -67,6 +67,7 @@ struct account {
 	uint32_t regint;             /**< Registration interval in [seconds] */
 	uint32_t rwait;              /**< R. Int. in [%] from proxy expiry   */
 	uint32_t pubint;             /**< Publication interval in [seconds]  */
+	uint32_t prio;               /**< Prio for serial registration       */
 	char *regq;                  /**< Registration Q-value               */
 	char *sipnat;                /**< SIP Nat mechanism                  */
 	char *stun_user;             /**< STUN Username                      */
