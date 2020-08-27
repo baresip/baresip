@@ -301,6 +301,33 @@ bool ua_isregistered(const struct ua *ua)
 
 
 /**
+ * Check if last User-Agent registration failed
+ *
+ * @param ua User-Agent object
+ *
+ * @return True if registration failed
+ */
+bool ua_regfailed(const struct ua *ua)
+{
+	struct le *le;
+	bool failed = true;
+
+	if (!ua)
+		return false;
+
+	for (le = ua->regl.head; le; le = le->next) {
+
+		const struct reg *reg = le->data;
+
+		/* both registration failed? */
+		failed &= reg_failed(reg);
+	}
+
+	return failed;
+}
+
+
+/**
  * Destroy the user-agent, terminate all active calls and
  * send the SHUTDOWN event.
  *

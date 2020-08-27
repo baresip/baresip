@@ -237,6 +237,15 @@ bool reg_isok(const struct reg *reg)
 }
 
 
+bool reg_failed(const struct reg *reg)
+{
+	if (!reg || !reg->scode)
+		return false;
+
+	return !reg_isok(reg);
+}
+
+
 static const char *print_scode(uint16_t scode)
 {
 	if (0 == scode)        return "\x1b[33m" "zzz" "\x1b[;m";

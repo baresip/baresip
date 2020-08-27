@@ -769,6 +769,7 @@ int  ua_update_account(struct ua *ua);
 int  ua_register(struct ua *ua);
 void ua_unregister(struct ua *ua);
 bool ua_isregistered(const struct ua *ua);
+bool ua_regfailed(const struct ua *ua);
 unsigned ua_destroy(struct ua *ua);
 void ua_pub_gruu_set(struct ua *ua, const struct pl *pval);
 const char     *ua_aor(const struct ua *ua);
