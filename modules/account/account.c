@@ -135,7 +135,7 @@ static int line_handler(const struct pl *addr, void *arg)
 		return ENOENT;
 	}
 
-	if (account_regint(acc) != 0) {
+	if (account_regint(acc) && !account_prio(acc)) {
 		int e;
 
 		e = ua_register(ua);

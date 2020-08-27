@@ -1800,7 +1800,7 @@ int uag_reset_transp(bool reg, bool reinvite)
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 
-		if (reg && ua->acc->regint) {
+		if (reg && ua->acc->regint && !ua->acc->prio) {
 			err |= ua_register(ua);
 		}
 
