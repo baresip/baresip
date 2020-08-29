@@ -183,9 +183,6 @@ opus_bitrate		28000 # 6000-510000
 video_selfview		window # {window,pip}
 #selfview_size		64x64
 
-# ICE
-ice_debug		no
-
 # ZRTP
 #zrtp_hash		no  # Disable SDP zrtp-hash (not recommended)
 

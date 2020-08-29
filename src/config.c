@@ -936,10 +936,6 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#selfview_size\t\t64x64\n");
 
 	(void)re_fprintf(f,
-			"\n# ICE\n"
-			"ice_debug\t\tno\n");
-
-	(void)re_fprintf(f,
 			"\n# ZRTP\n"
 			"#zrtp_hash\t\tno  # Disable SDP zrtp-hash "
 			"(not recommended)\n");
