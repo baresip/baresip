@@ -3,9 +3,6 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
-#ifdef SOLARIS
-#define __EXTENSIONS__ 1
-#endif
 #include <getopt.h>
 #include <re.h>
 #include <baresip.h>
@@ -24,7 +21,6 @@ struct test {
 static const struct test tests[] = {
 	TEST(test_account),
 	TEST(test_aulevel),
-	/*TEST(test_call_af_mismatch),*/
 	TEST(test_call_answer),
 	TEST(test_call_answer_hangup_a),
 	TEST(test_call_answer_hangup_b),

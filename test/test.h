@@ -209,7 +209,6 @@ int mock_vidisp_register(struct vidisp **vidispp,
 
 int test_account(void);
 int test_aulevel(void);
-int test_call_af_mismatch(void);
 int test_call_answer(void);
 int test_call_answer_hangup_a(void);
 int test_call_answer_hangup_b(void);

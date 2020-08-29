@@ -412,41 +412,6 @@ int test_call_reject(void)
 }
 
 
-int test_call_af_mismatch(void)
-{
-	struct fixture fix, *f = &fix;
-	int err = 0;
-
-	fixture_init(f);
-
-	ua_set_media_af(f->a.ua, AF_INET6);
-	ua_set_media_af(f->b.ua, AF_INET);
-
-	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
-	TEST_ERR(err);
-
-	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5000);
-	TEST_ERR(err);
-	TEST_ERR(fix.err);
-
-	ASSERT_EQ(0, fix.a.n_incoming);
-	ASSERT_EQ(0, fix.a.n_established);
-	ASSERT_EQ(1, fix.a.n_closed);
-	ASSERT_EQ(488, fix.a.close_scode);
-
-	ASSERT_EQ(0, fix.b.n_incoming);
-	ASSERT_EQ(0, fix.b.n_established);
-	ASSERT_EQ(1, fix.b.n_closed);
-
- out:
-	fixture_close(f);
-
-	return err;
-}
-
-
 int test_call_answer_hangup_a(void)
 {
 	struct fixture fix, *f = &fix;
