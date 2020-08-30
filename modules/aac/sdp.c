@@ -31,12 +31,12 @@ static unsigned param_value(const char *fmtp, const char *name)
 /* check decoding compatibility of remote format */
 bool aac_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
 {
+	struct pl pl, val;
+	uint32_t plid;
+	unsigned bitrate;
+
 	(void)lfmtp;
 	(void)arg;
-
-	uint32_t plid;
-
-	struct pl pl, val;
 
 	if (!rfmtp)
 		return false;
@@ -62,8 +62,8 @@ bool aac_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
 	if (param_value(rfmtp, "indexDeltaLength") != AAC_INDEXDELTALENGTH)
 		return false;
 
-	if (param_value(rfmtp, "bitrate") < 8000 ||
-	    param_value(rfmtp, "bitrate") > 576000)
+	bitrate = param_value(rfmtp, "bitrate");
+	if (bitrate && (bitrate < 8000 || bitrate > 576000))
 		return false;
 
 	switch (param_value(rfmtp, "constantDuration")) {
