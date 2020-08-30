@@ -83,8 +83,7 @@ static int encode(struct vidfilt_enc_st *enc_st, struct vidframe *frame,
 		  uint64_t *timestamp)
 {
 	struct avfilter_st *st = (struct avfilter_st *)enc_st;
-	int err=0;
-	(void)timestamp;
+	int err;
 
 	if (!frame)
 		return 0;
@@ -105,8 +104,8 @@ static int encode(struct vidfilt_enc_st *enc_st, struct vidframe *frame,
 
 static int avfilter_command(struct re_printf *pf, void *arg)
 {
-	(void)pf;
 	const struct cmd_arg *carg = arg;
+	(void)pf;
 
 	lock_write_get(lock);
 

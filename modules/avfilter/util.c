@@ -47,10 +47,15 @@ static int reverse_lines(uint8_t *data, int linesize, int count)
  */
 int avframe_ensure_topdown(AVFrame *frame)
 {
+	int i;
+
+	if (!frame)
+		return EINVAL;
+
 	switch (frame->format) {
 
 	case AV_PIX_FMT_YUV420P:
-		for (int i=0; i<4; i++) {
+		for (i=0; i<4; i++) {
 			int ls = frame->linesize[i];
 			if (ls >= 0) continue;
 			int h = i == 0 ? frame->height : frame->height/2;
@@ -62,9 +67,9 @@ int avframe_ensure_topdown(AVFrame *frame)
 
 	default:
 		/* TODO support more formats */
-		for (int i=0; i<4; i++) {
+		for (i=0; i<4; i++) {
 
-			if (frame->linesize[0] <0) {
+			if (frame->linesize[i] <0) {
 
 				warning("avfilter: unsupported frame"
 					" format with negative linesize: %d",
@@ -81,7 +86,6 @@ int avframe_ensure_topdown(AVFrame *frame)
 
 enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
 {
-
 	switch (fmt) {
 
 	case VID_FMT_YUV420P: return AV_PIX_FMT_YUV420P;

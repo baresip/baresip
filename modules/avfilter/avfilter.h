@@ -28,7 +28,7 @@ struct avfilter_st {
  * Filter API
  */
 
-int filter_init(struct avfilter_st *st, char* filter_descr,
+int filter_init(struct avfilter_st *st, const char *filter_descr,
 		struct vidframe *frame);
 
 void filter_reset(struct avfilter_st *st);

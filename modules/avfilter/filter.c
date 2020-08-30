@@ -16,7 +16,7 @@
 #include "util.h"
 
 
-int filter_init(struct avfilter_st *st, char* filter_descr,
+int filter_init(struct avfilter_st *st, const char *filter_descr,
 		struct vidframe *frame)
 {
 	char args[512];
@@ -113,8 +113,11 @@ int filter_init(struct avfilter_st *st, char* filter_descr,
 }
 
 
-void filter_reset(struct avfilter_st* st)
+void filter_reset(struct avfilter_st *st)
 {
+	if (!st)
+		return;
+
 	if (!st->enabled)
 		return;
 	if (st->filter_graph)
@@ -128,7 +131,7 @@ void filter_reset(struct avfilter_st* st)
 }
 
 
-bool filter_valid(const struct avfilter_st* st, const struct vidframe *frame)
+bool filter_valid(const struct avfilter_st *st, const struct vidframe *frame)
 {
 	bool res = !st->enabled ||
 		((st->size.h == frame->size.h) &&
@@ -138,7 +141,7 @@ bool filter_valid(const struct avfilter_st* st, const struct vidframe *frame)
 }
 
 
-int filter_encode(struct avfilter_st* st, struct vidframe *frame,
+int filter_encode(struct avfilter_st *st, struct vidframe *frame,
 		  uint64_t *timestamp)
 {
 	unsigned i;
