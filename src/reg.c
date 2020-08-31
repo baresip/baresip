@@ -232,19 +232,19 @@ void reg_unregister(struct reg *reg)
 
 bool reg_isok(const struct reg *reg)
 {
-	if (!reg)
+	if (!reg || !reg->sipreg)
 		return false;
 
-	return 200 <= reg->scode && reg->scode <= 299;
+	return sipreg_registered(reg->sipreg);
 }
 
 
 bool reg_failed(const struct reg *reg)
 {
-	if (!reg || !reg->scode)
+	if (!reg || !reg->sipreg)
 		return false;
 
-	return !reg_isok(reg);
+	return sipreg_failed(reg->sipreg);
 }
 
 
