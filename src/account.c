@@ -324,6 +324,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	if (acc->rwait && acc->rwait < 5)
 		acc->rwait = 5;
 
+	err |= param_u32(&acc->fbregint, &aor->params, "fbregint");
 	acc->pubint = 0;
 	err |= param_u32(&acc->pubint, &aor->params, "pubint");
 
