@@ -97,9 +97,11 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 {
 	struct reg *reg = arg;
 	const struct sip_hdr *hdr;
+	uint32_t prio = account_prio(ua_account(reg->ua));
 
 	if (err) {
-		warning("reg: %s: Register: %m\n", ua_aor(reg->ua), err);
+		warning("reg: %s (prio %u): Register: %m\n", ua_aor(reg->ua),
+				prio, err);
 
 		reg->scode = 999;
 
@@ -121,9 +123,9 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 		reg->af    = sipmsg_af(msg);
 
 		if (msg->scode != reg->scode) {
-			ua_printf(reg->ua, "{%d/%s/%s} %u %r (%s)"
+			ua_printf(reg->ua, "(prio %u) {%d/%s/%s} %u %r (%s)"
 				  " [%u binding%s]\n",
-				  reg->id, sip_transp_name(msg->tp),
+				  prio, reg->id, sip_transp_name(msg->tp),
 				  af_name(reg->af), msg->scode, &msg->reason,
 				  reg->srv, n_bindings,
 				  1==n_bindings?"":"s");
@@ -149,8 +151,8 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 	}
 	else if (msg->scode >= 300) {
 
-		warning("reg: %s: %u %r (%s)\n", ua_aor(reg->ua),
-			msg->scode, &msg->reason, reg->srv);
+		warning("reg: %s (prio %u): %u %r (%s)\n", ua_aor(reg->ua),
+				prio, msg->scode, &msg->reason, reg->srv);
 
 		reg->scode = msg->scode;
 
