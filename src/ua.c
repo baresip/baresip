@@ -169,14 +169,7 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 }
 
 
-/**
- * Start registration of a User-Agent
- *
- * @param ua User-Agent
- *
- * @return 0 if success, otherwise errorcode
- */
-int ua_register(struct ua *ua)
+static int start_register(struct ua *ua, bool fallback)
 {
 	struct account *acc;
 	struct le *le;
@@ -228,15 +221,18 @@ int ua_register(struct ua *ua)
 		}
 	}
 
-	ua_event(ua, UA_EVENT_REGISTERING, NULL, NULL);
+	if (!fallback)
+		ua_event(ua, UA_EVENT_REGISTERING, NULL, NULL);
 
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
 		struct reg *reg = le->data;
 
 		err = reg_register(reg, reg_uri, params,
-				   acc->regint, acc->outboundv[i]);
+				   fallback ? 0 : acc->regint,
+				   acc->outboundv[i]);
 		if (err) {
-			warning("ua: SIP register failed: %m\n", err);
+			warning("ua: SIP%s register failed: %m\n",
+					fallback ? " fallback" : "", err);
 
 			ua_event(ua, UA_EVENT_REGISTER_FAIL, NULL, "%m", err);
 			goto out;
@@ -247,6 +243,38 @@ int ua_register(struct ua *ua)
 	mem_deref(reg_uri);
 
 	return err;
+}
+
+
+/**
+ * Start registration of a User-Agent
+ *
+ * @param ua User-Agent
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_register(struct ua *ua)
+{
+	debug("ua: %s %s\n", __func__, ua_aor(ua));
+	return start_register(ua, false);
+}
+
+
+/**
+ * Start fallback registration checks (Cisco-keep-alive) of a User-Agent. These
+ * are in the sense of RFC3261 REGISTER requests with expire set to zero. A
+ * SIP proxy will handle this as un-register and send a 200 OK. Then the UA is
+ * not registered but it knows that the SIP proxy is available and can be used
+ * as fallback proxy.
+ *
+ * @param ua User-Agent
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_fallback(struct ua *ua)
+{
+	debug("ua: %s %s\n", __func__, ua_aor(ua));
+	return start_register(ua, true);
 }
 
 
