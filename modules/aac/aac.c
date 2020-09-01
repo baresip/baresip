@@ -70,7 +70,7 @@ static struct aucodec aac = {
 	.fmtp_ench = aac_fmtp_enc,
 	.fmtp_cmph = aac_fmtp_cmp,
 /* try to make sure PCM audio buffer is always <= 120 samples */
-	.ptime     = 2,      /* 96 samples per channel @ 48000 hz */
+	.ptime     = 4,      /* 96 samples per channel @ 48000 hz */
 };
 
 
