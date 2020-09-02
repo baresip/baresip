@@ -2238,6 +2238,21 @@ struct ua *uag_current(void)
 
 
 /**
+ * Get UAG-TLS Context
+ *
+ * @return TLS Context if used, NULL otherwise
+ */
+struct tls *uag_tls(void)
+{
+#ifdef USE_TLS
+	return uag.tls ? uag.tls : NULL;
+#else
+	return NULL;
+#endif
+}
+
+
+/**
  * Set the preferred address family for media
  *
  * @param ua       User-Agent
