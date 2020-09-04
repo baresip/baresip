@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - avfilter: FFmpeg filter graphs integration [#1038]
 - reg: view proxy expiry value in reg_status [#1068]
 - account: add parameter rwait for re-register interval [#1069]
+- call, stream, menu: add cmd to set the direction of video stream [#1073]
 
 ### Changed
 
@@ -44,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - jack: modifying info message on jack client creation [#1019]
 - call: when video stream is disabled, stop also video display [#1023]
 - dtls_srtp: use tls_set_selfsigned_rsa with keysize 2048 [#1062] [#1056]
+- rst: use a min ptime of 20ms
+- aac: change ptime to 4ms
 
 ### Fixed
 
@@ -72,12 +75,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - config: init newly added member
 - menu: fix segfault in ua_event_handler [#1059] [#1061]
 - debug_cmd: fix OpenSSL no-deprecated [#1065]
+- aac: handle missing bitrate parameter in SDP format
+- av1: properly configure encoder
 
 ### Removed
 
 - ice: remove support for ICE-lite
 - ice: remove ice_debug, use log level DEBUG instead
 - ice: make stun server optional
+- config: remove ice_debug option (unused)
 
 ### Contributors (many thanks)
 
@@ -85,9 +91,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Alexander Gramner
 - Andrew Webster
 - Christian Spielberger
+- Christoph Huber
 - Davide Alberani
 - Ethan Funk
-- juha-h
 - Juha Heinanen
 - mbattista
 - Michael Malone
@@ -140,5 +146,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1065]: https://github.com/baresip/baresip/pull/1065
 [#1068]: https://github.com/baresip/baresip/pull/1068
 [#1069]: https://github.com/baresip/baresip/pull/1069
+[#1073]: https://github.com/baresip/baresip/pull/1073
 
 [Unreleased]: https://github.com/baresip/baresip/compare/v0.6.6...HEAD
