@@ -7,6 +7,9 @@
 # opencore-amr source directory
 AMR_PATH ?= ../amr
 
+# opencore-amr vo-amrwbenc source directory
+AMRWBENC_PATH ?= ../vo-amrwbenc
+
 MOD		:= amr
 $(MOD)_SRCS	+= amr.c sdp.c
 
@@ -63,6 +66,11 @@ else
 ifneq ($(shell [ -f $(SYSROOT)/include/vo-amrwbenc/enc_if.h ] && echo 1),)
 $(MOD)_CFLAGS	+= -DAMR_WB=1 -I$(SYSROOT)/include/vo-amrwbenc
 $(MOD)_LFLAGS	+= -lvo-amrwbenc
+else
+ifneq ($(shell [ -d $(AMRWBENC_PATH)/include/vo-amrwbenc ] && echo 1),)
+$(MOD)_CFLAGS	+= -DAMR_WB=1 -I$(AMRWBENC_PATH)/include/vo-amrwbenc
+$(MOD)_LFLAGS	+= -lvo-amrwbenc
+endif
 endif
 endif
 endif
@@ -74,6 +82,11 @@ endif
 ifneq ($(shell [ -f $(SYSROOT)/include/opencore-amrwb/dec_if.h ] && echo 1 ),)
 $(MOD)_CFLAGS	+= -I$(SYSROOT)/include/opencore-amrwb
 $(MOD)_LFLAGS	+= -lopencore-amrwb
+else
+ifneq ($(shell [ -f $(AMR_PATH)/include/opencore-amrwb/dec_if.h ] && echo 1),)
+$(MOD)_CFLAGS	+= -I$(AMR_PATH)/include/opencore-amrwb
+$(MOD)_LFLAGS	+= -lopencore-amrwb
+endif
 endif
 
 
