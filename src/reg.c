@@ -188,6 +188,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	struct account *acc;
 	const char *routev[1];
 	int err;
+	bool failed;
 
 	if (!reg || !reg_uri)
 		return EINVAL;
@@ -196,6 +197,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	routev[0] = outbound;
 	acc = ua_account(reg->ua);
 
+	failed = sipreg_failed(reg->sipreg);
 	reg->sipreg = mem_deref(reg->sipreg);
 	err = sipreg_register(&reg->sipreg, uag_sip(), reg_uri,
 			      account_aor(acc),
@@ -213,6 +215,10 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 
 	if (acc->rwait)
 		err = sipreg_set_rwait(reg->sipreg, acc->rwait);
+
+
+	if (failed)
+		sipreg_incfailc(reg->sipreg);
 
 	return err;
 }
