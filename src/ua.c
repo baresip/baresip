@@ -1861,6 +1861,9 @@ int uag_reset_transp(bool reg, bool reinvite)
 		if (reg && ua->acc->regint && !ua->acc->prio) {
 			err |= ua_register(ua);
 		}
+		else if (reg && ua->acc->regint) {
+			err |= ua_fallback(ua);
+		}
 
 		/* update all active calls */
 		if (reinvite) {
