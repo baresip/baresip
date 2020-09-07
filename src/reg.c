@@ -14,6 +14,7 @@ struct reg {
 	struct ua *ua;               /**< Pointer to parent UA object        */
 	struct sipreg *sipreg;       /**< SIP Register client                */
 	int id;                      /**< Registration ID (for SIP outbound) */
+	int regint;                  /**< Registration interval              */
 
 	/* status: */
 	uint16_t scode;              /**< Registration status code           */
@@ -98,14 +99,19 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 	struct reg *reg = arg;
 	const struct sip_hdr *hdr;
 	uint32_t prio = account_prio(ua_account(reg->ua));
+	enum ua_event evok =  reg->regint ?
+		UA_EVENT_REGISTER_OK : UA_EVENT_FALLBACK_OK;
+	enum ua_event evfail = reg->regint ?
+		UA_EVENT_REGISTER_FAIL : UA_EVENT_FALLBACK_FAIL;
 
 	if (err) {
-		warning("reg: %s (prio %u): Register: %m\n", ua_aor(reg->ua),
-				prio, err);
+		if (reg->regint)
+			warning("reg: %s (prio %u): Register: %m\n",
+					ua_aor(reg->ua), prio, err);
 
 		reg->scode = 999;
 
-		ua_event(reg->ua, UA_EVENT_REGISTER_FAIL, NULL, "%m", err);
+		ua_event(reg->ua, evfail, NULL, "%m", err);
 		return;
 	}
 
@@ -122,7 +128,7 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 		n_bindings = sip_msg_hdr_count(msg, SIP_HDR_CONTACT);
 		reg->af    = sipmsg_af(msg);
 
-		if (msg->scode != reg->scode) {
+		if (msg->scode != reg->scode && reg->regint) {
 			ua_printf(reg->ua, "(prio %u) {%d/%s/%s} %u %r (%s)"
 				  " [%u binding%s]\n",
 				  prio, reg->id, sip_transp_name(msg->tp),
@@ -146,7 +152,7 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 			}
 		}
 
-		ua_event(reg->ua, UA_EVENT_REGISTER_OK, NULL, "%u %r",
+		ua_event(reg->ua, evok, NULL, "%u %r",
 			 msg->scode, &msg->reason);
 	}
 	else if (msg->scode >= 300) {
@@ -156,7 +162,7 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 
 		reg->scode = msg->scode;
 
-		ua_event(reg->ua, UA_EVENT_REGISTER_FAIL, NULL, "%u %r",
+		ua_event(reg->ua, evfail, NULL, "%u %r",
 			 msg->scode, &msg->reason);
 	}
 }
@@ -194,6 +200,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 		return EINVAL;
 
 	reg->scode = 0;
+	reg->regint = regint;
 	routev[0] = outbound;
 	acc = ua_account(reg->ua);
 

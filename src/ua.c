@@ -234,7 +234,10 @@ static int start_register(struct ua *ua, bool fallback)
 			warning("ua: SIP%s register failed: %m\n",
 					fallback ? " fallback" : "", err);
 
-			ua_event(ua, UA_EVENT_REGISTER_FAIL, NULL, "%m", err);
+			ua_event(ua, fallback ?
+					UA_EVENT_REGISTER_FAIL :
+					UA_EVENT_FALLBACK_FAIL,
+					NULL, "%m", err);
 			goto out;
 		}
 	}
