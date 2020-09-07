@@ -135,10 +135,14 @@ static int line_handler(const struct pl *addr, void *arg)
 		return ENOENT;
 	}
 
-	if (account_regint(acc) && !account_prio(acc)) {
+	if (account_regint(acc)) {
 		int e;
 
-		e = ua_register(ua);
+		if (!account_prio(acc))
+			e = ua_register(ua);
+		else
+			e = ua_fallback(ua);
+
 		if (e) {
 			warning("account: failed to register ua"
 				" '%s' (%m)\n", account_aor(acc), e);

@@ -989,7 +989,7 @@ struct uri *account_luri(const struct account *acc)
 
 
 /**
- * Get the Registration interval of an account
+ * Get the registration interval of an account
  *
  * @param acc User-Agent account
  *
@@ -998,6 +998,19 @@ struct uri *account_luri(const struct account *acc)
 uint32_t account_regint(const struct account *acc)
 {
 	return acc ? acc->regint : 0;
+}
+
+
+/**
+ * Get the fallback registration interval of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Registration interval in [seconds]
+ */
+uint32_t account_fbregint(const struct account *acc)
+{
+	return acc ? acc->fbregint : 0;
 }
 
 

@@ -86,6 +86,7 @@ struct list *account_vidcodecl(const struct account *acc);
 struct sip_addr *account_laddr(const struct account *acc);
 struct uri *account_luri(const struct account *acc);
 uint32_t account_regint(const struct account *acc);
+uint32_t account_fbregint(const struct account *acc);
 uint32_t account_pubint(const struct account *acc);
 uint32_t account_ptime(const struct account *acc);
 uint32_t account_prio(const struct account *acc);
