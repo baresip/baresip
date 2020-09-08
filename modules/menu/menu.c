@@ -384,8 +384,11 @@ static int create_ua(struct re_printf *pf, void *arg)
 	}
 
 	acc = ua_account(ua);
-	if (account_regint(acc) && !account_prio(acc)) {
-		(void)ua_register(ua);
+	if (account_regint(acc)) {
+		if (!account_prio(acc))
+			(void)ua_register(ua);
+		else
+			(void)ua_fallback(ua);
 	}
 
 	err = ua_print_reg_status(pf, NULL);
