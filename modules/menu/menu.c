@@ -943,7 +943,7 @@ static int set_audio_bitrate(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
 	struct call *call;
-	uint32_t bitrate = atoi(carg->prm);
+	uint32_t bitrate = str_isset(carg->prm) ? atoi(carg->prm) : 0;
 	int err;
 
 	call = ua_call(uag_current());
