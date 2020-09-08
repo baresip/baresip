@@ -281,6 +281,7 @@ MODULES   += mwi
 MODULES   += natpmp
 MODULES   += presence
 MODULES   += selfview
+MODULES   += serreg
 MODULES   += srtp
 MODULES   += stun
 MODULES   += turn
