@@ -399,9 +399,6 @@ endif
 ifneq ($(USE_OPENGL),)
 MODULES   += opengl
 endif
-ifneq ($(USE_OPENGLES),)
-MODULES   += opengles
-endif
 ifneq ($(USE_OPUS),)
 MODULES   += opus
 endif
