@@ -273,6 +273,9 @@ int ua_register(struct ua *ua)
  */
 int ua_fallback(struct ua *ua)
 {
+	if (!ua_account(ua)->fbregint)
+		return 0;
+
 	debug("ua: %s %s\n", __func__, ua_aor(ua));
 	return start_register(ua, true);
 }
