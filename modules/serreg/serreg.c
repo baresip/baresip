@@ -123,6 +123,30 @@ static int register_curprio(void)
 }
 
 
+static int fallback_update(void)
+{
+	int err = EINVAL;
+	struct le *le;
+	for (le = list_head(uag_list()); le; le = le->next) {
+		struct ua *ua = le->data;
+		uint32_t prio = account_prio(ua_account(ua));
+
+		if (!account_regint(ua_account(ua)))
+			continue;
+
+		if (prio == sreg.prio)
+			continue;
+
+		err = ua_fallback(ua);
+		if (err)
+			warning("serreg: could not start fallback %s (%m)\n",
+					ua_aor(ua), err);
+	}
+
+	return err;
+}
+
+
 static void inc_account_prio(void)
 {
 	struct le *le;
@@ -177,6 +201,20 @@ static void next_account(struct ua *ua)
 }
 
 
+static void fallback_ok(struct ua *ua)
+{
+	uint32_t prio = account_prio(ua_account(ua));
+	debug("serreg: fallback prio %u ok %s.\n", prio, ua_aor(ua));
+	if (prio <= sreg.prio) {
+		info("serreg: Fallback %s ok -> prio %u.\n", ua_aor(ua), prio);
+		sreg.prio = prio;
+		sreg.ready = false;
+		if (!register_curprio())
+			(void)fallback_update();
+	}
+}
+
+
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
@@ -186,6 +224,14 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	switch (ev) {
 
+
+	case UA_EVENT_FALLBACK_FAIL:
+		debug("serreg: fallback fail %s.\n", ua_aor(ua));
+		break;
+
+	case UA_EVENT_FALLBACK_OK:
+		fallback_ok(ua);
+		break;
 
 	case UA_EVENT_REGISTER_OK:
 		sreg.prio = account_prio(ua_account(ua));
