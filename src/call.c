@@ -1015,6 +1015,9 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 		     sip_dialog_callid(sipsess_dialog(call->sess)),
 		     call->peer_uri);
 
+		if (call->not)
+			call_notify_sipfrag(call, 487, "Request Terminated");
+
 		call->sess = mem_deref(call->sess);
 		break;
 	}
