@@ -67,7 +67,7 @@ ifneq ($(shell [ -f $(SYSROOT)/include/vo-amrwbenc/enc_if.h ] && echo 1),)
 $(MOD)_CFLAGS	+= -DAMR_WB=1 -I$(SYSROOT)/include/vo-amrwbenc
 $(MOD)_LFLAGS	+= -lvo-amrwbenc
 else
-ifneq ($(shell [ -d $(AMRWBENC_PATH)/include/vo-amrwbenc/enc_if.h ] && \
+ifneq ($(shell [ -f $(AMRWBENC_PATH)/include/vo-amrwbenc/enc_if.h ] && \
 	echo 1),)
 $(MOD)_CFLAGS	+= -DAMR_WB=1 -I$(AMRWBENC_PATH)/include/vo-amrwbenc
 $(MOD)_LFLAGS	+= -lvo-amrwbenc
