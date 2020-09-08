@@ -107,6 +107,7 @@ static int register_curprio(void)
 	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
 		uint32_t prio = account_prio(ua_account(ua));
+		uint32_t fbregint = account_fbregint(ua_account(ua));
 
 		if (!account_regint(ua_account(ua)))
 			continue;
@@ -114,7 +115,8 @@ static int register_curprio(void)
 		if (prio != sreg.prio)
 			continue;
 
-		err = ua_register(ua);
+		if (!fbregint || !ua_regfailed(ua))
+			err = ua_register(ua);
 	}
 
 	return err;
@@ -197,6 +199,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			break;
 
 		next_account(ua);
+		(void)ua_fallback(ua);
 		break;
 
 	default:
