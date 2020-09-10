@@ -39,6 +39,7 @@ static struct {
 	uint32_t prio;            /**< Current account prio           */
 	uint32_t maxprio;         /**< Maximum account prio           */
 	bool ready;               /**< All UA registered flag         */
+	uint32_t sprio;           /**< Prev successful prio           */
 } sreg;
 
 
@@ -148,8 +149,17 @@ static void next_account(struct ua *ua)
 {
 	uint32_t prio = sreg.prio;
 
+	if (sreg.sprio == (uint32_t) -1)
+		sreg.sprio = prio;
+
 	while (check_registrations()) {
 		inc_account_prio();
+
+		if (sreg.sprio == sreg.prio) {
+			/* no UA with success */
+			sreg.prio = (uint32_t) -1;
+			break;
+		}
 
 		info("serreg: Register %s fail -> prio %u.\n",
 				ua_aor(ua), sreg.prio);
@@ -178,6 +188,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_REGISTER_OK:
 		sreg.prio = account_prio(ua_account(ua));
 		check_registrations();
+		sreg.sprio = sreg.prio;
 		break;
 
 	case UA_EVENT_REGISTER_FAIL:
@@ -201,6 +212,7 @@ static int module_init(void)
 	sreg.maxprio = 0;
 	sreg.prio = 0;
 	sreg.ready = false;
+	sreg.sprio = (uint32_t) -1;
 
 	err = uag_event_register(ua_event_handler, NULL);
 	return err;
