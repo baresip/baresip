@@ -30,3 +30,9 @@ build*
 *.old
 *.orig
 *.rej
+
+# ctags
+tags
+
+# Vim swp files
+*.swp
