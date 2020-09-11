@@ -471,6 +471,54 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 }
 
 
+#ifdef USE_TLS
+static int cmd_tls_issuer(struct re_printf *pf, void *unused)
+{
+	int err = 0;
+	struct mbuf *mb;
+
+	mb = mbuf_alloc(20);
+	if (!mb)
+		return ENOMEM;
+
+	err = tls_get_issuer(uag_tls(), mb);
+	if (err){
+		warning("menu: Unable to get certificate issuer (%m)\n", err);
+		goto out;
+	}
+
+	(void)re_hprintf(pf, "TLS Cert Issuer: %b\n", mb->buf, mb->pos);
+
+ out:
+	mem_deref(mb);
+	return err;
+}
+
+
+static int cmd_tls_subject(struct re_printf *pf, void *unused)
+{
+	int err = 0;
+	struct mbuf *mb;
+
+	mb = mbuf_alloc(20);
+	if (!mb)
+		return ENOMEM;
+
+	err = tls_get_subject(uag_tls(), mb);
+	if (err) {
+		warning("menu: Unable to get certificate subject (%m)\n", err);
+		goto out;
+	}
+
+	(void)re_hprintf(pf, "TLS Cert Subject: %b\n", mb->buf, mb->pos);
+
+ out:
+	mem_deref(mb);
+	return err;
+}
+#endif
+
+
 static int print_commands(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -527,6 +575,10 @@ static const struct cmd cmdv[] = {
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
 {"uadel",     0,    CMD_PRM, "Delete User-Agent",       cmd_ua_delete        },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
+#ifdef USE_TLS
+{"tlsissuer", 0,          0, "TLS certificate issuer",  cmd_tls_issuer    },
+{"tlssubject",0,          0, "TLS certificate subject", cmd_tls_subject   },
+#endif
 {"ausrc",     0,    CMD_PRM, "Switch audio source",     switch_audio_source  },
 {"auplay",    0,    CMD_PRM, "Switch audio player",     switch_audio_player  },
 {"about",     0,          0, "About box",               about_box            },

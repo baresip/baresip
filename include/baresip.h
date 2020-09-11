@@ -812,6 +812,7 @@ const char  *uag_event_str(enum ua_event ev);
 struct list *uag_list(void);
 void         uag_current_set(struct ua *ua);
 struct ua   *uag_current(void);
+struct tls  *uag_tls(void);
 struct sipsess_sock  *uag_sipsess_sock(void);
 struct sipevent_sock *uag_sipevent_sock(void);
 
