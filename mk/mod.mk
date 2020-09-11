@@ -18,6 +18,11 @@ $(MOD)_OBJS     += $(patsubst %.S,$(BUILD)/modules/$(MOD)/%.o,\
 
 $(MOD)_NAME := $(MOD)
 
+$(MOD)_CCHECK_OPT     := $(patsubst %.c,modules/$(MOD)/%.c,\
+	$($(MOD)_CCHECK_OPT))
+$(MOD)_CCHECK_OPT     := $(patsubst %.h,modules/$(MOD)/%.h,\
+	$($(MOD)_CCHECK_OPT))
+MOD_CCHECK_OPT        := $(MOD_CCHECK_OPT) $($(MOD)_CCHECK_OPT)
 
 #
 # function to extract the name of the module from the file/dir path

@@ -303,7 +303,7 @@ clean:
 
 .PHONY: ccheck
 ccheck:
-	@test/ccheck.py
+	@test/ccheck.py $(MOD_CCHECK_OPT)
 
 version:
 	@perl -pi -e 's/BARESIP_VERSION.*/BARESIP_VERSION \"$(VERSION)"/' \
