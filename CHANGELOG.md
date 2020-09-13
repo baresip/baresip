@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2020-09-11
+
 ### Added
 
 - aac: add AAC_STREAMTYPE_AUDIO enum value
@@ -32,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - reg: view proxy expiry value in reg_status [#1068]
 - account: add parameter rwait for re-register interval [#1069]
 - call, stream, menu: add cmd to set the direction of video stream [#1073]
+- Added AMRWBENC_PATH env var to amr module module.mk [#1081]
 
 ### Changed
 
@@ -77,6 +80,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - debug_cmd: fix OpenSSL no-deprecated [#1065]
 - aac: handle missing bitrate parameter in SDP format
 - av1: properly configure encoder
+- call: When terminating outgoing call, terminate also possible refer
+  subscription [#1082]
+- menu: fix segfault in /aubitrate command
+- amr: should check if file (instead of directory) exists
 
 ### Removed
 
@@ -84,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ice: remove ice_debug, use log level DEBUG instead
 - ice: make stun server optional
 - config: remove ice_debug option (unused)
+- opengles: remove module (not working) [#1079]
 
 ### Contributors (many thanks)
 
@@ -147,5 +155,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1068]: https://github.com/baresip/baresip/pull/1068
 [#1069]: https://github.com/baresip/baresip/pull/1069
 [#1073]: https://github.com/baresip/baresip/pull/1073
+[#1079]: https://github.com/baresip/baresip/pull/1079
+[#1081]: https://github.com/baresip/baresip/pull/1081
+[#1082]: https://github.com/baresip/baresip/pull/1082
 
-[Unreleased]: https://github.com/baresip/baresip/compare/v0.6.6...HEAD
+[Unreleased]: https://github.com/baresip/baresip/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/baresip/baresip/compare/v0.6.6...v1.0.0
