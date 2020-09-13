@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ua, menu: new command to print certificate issuer and subject [#1078]
+- gitignore: add ctags and Vim swp files [#1084]
+
+### Contributors (many thanks)
+
+- Christoph Huber
+- Christian Spielberger
+
 ## [1.0.0] - 2020-09-11
 
 ### Added
@@ -158,6 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1079]: https://github.com/baresip/baresip/pull/1079
 [#1081]: https://github.com/baresip/baresip/pull/1081
 [#1082]: https://github.com/baresip/baresip/pull/1082
+[#1078]: https://github.com/baresip/baresip/pull/1078
+[#1084]: https://github.com/baresip/baresip/pull/1084
 
 [Unreleased]: https://github.com/baresip/baresip/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/baresip/baresip/compare/v0.6.6...v1.0.0
