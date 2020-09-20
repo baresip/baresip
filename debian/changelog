@@ -1,3 +1,9 @@
+baresip (1.0.0) unstable; urgency=medium
+
+  * version 1.0.0
+
+ -- Alfred E. Heggestad <alfred.heggestad@gmail.com>  Sun, 20 Sep 2020 13:24:20 +0300
+
 baresip (0.6.6) unstable; urgency=medium
 
   * version 0.6.6
