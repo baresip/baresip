@@ -277,6 +277,7 @@ struct config_sip {
 	char local[64];         /**< Local SIP Address              */
 	char cert[256];         /**< SIP Certificate                */
 	char cafile[256];       /**< SIP CA-file                    */
+	uint16_t tcp_timeout;   /**< TCP idle timeout               */
 };
 
 /** Call config */

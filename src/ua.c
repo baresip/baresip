@@ -1337,7 +1337,8 @@ static int add_transp_af(const struct sa *laddr)
 	if (uag.use_udp)
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_UDP, &local);
 	if (uag.use_tcp)
-		err |= sip_transp_add(uag.sip, SIP_TRANSP_TCP, &local);
+		err |= sip_transp_add(uag.sip, SIP_TRANSP_TCP, &local,
+					uag.cfg->tcp_timeout);
 	if (err) {
 		warning("ua: SIP Transport failed: %m\n", err);
 		return err;
@@ -1355,7 +1356,7 @@ static int add_transp_af(const struct sa *laddr)
 			}
 
 			err = tls_alloc(&uag.tls, TLS_METHOD_SSLV23,
-					cert, NULL);
+					uag.cfg->tcp_timeout, cert, NULL);
 			if (err) {
 				warning("ua: tls_alloc() failed: %m\n", err);
 				return err;

@@ -473,10 +473,12 @@ static struct menc dtls_srtp = {
 
 static int module_init(void)
 {
+	struct config *cfg = conf_config();
 	struct list *mencl = baresip_mencl();
 	int err;
 
-	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, NULL, NULL);
+	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, cfg->sip.tcp_timeout,
+			NULL, NULL);
 	if (err) {
 		warning("dtls_srtp: failed to create DTLS context (%m)\n",
 			err);

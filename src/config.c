@@ -247,6 +247,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   sizeof(cfg->sip.cert));
 	(void)conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
 			   sizeof(cfg->sip.cafile));
+	cfg->sip.tcp_timeout = TCP_IDLE_TIMEOUT;
+	if (!conf_get_u32(conf, "tcp_timeout", &v))
+		cfg->sip.tcp_timeout = v;
 
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
