@@ -6,7 +6,7 @@ baresip README
 
 
 Baresip is a portable and modular SIP User-Agent with audio and video support.
-Copyright (c) 2010 - 2020 Creytiv.com
+Copyright (c) 2010 - 2020 Alfred E. Heggestad and Contributors
 Distributed under BSD license
 
 
@@ -183,12 +183,6 @@ The config files in $HOME/.baresip are automatically generated
 the first time you run baresip.
 
 
-## Documentation
-
-The online documentation generated with doxygen is available in
-the main [website](http://creytiv.com/doxygen/baresip-dox/html/)
-
-
 ### Examples
 
 Configuration examples are available from the
@@ -204,8 +198,8 @@ The baresip project is using the 3-clause BSD license.
 ## Contributing
 
 Patches can be sent via Github
-[Pull-Requests](https://github.com/baresip/baresip/pulls) or to the RE devel
-[mailing-list](http://lists.creytiv.com/mailman/listinfo/re-devel).
+[Pull-Requests](https://github.com/baresip/baresip/pulls) or to the Baresip
+[mailing-list](https://groups.google.com/g/baresip).
 
 
 ## Design goals:
@@ -440,11 +434,9 @@ zrtp          ZRTP media encryption module
 * [libre - baresip fork](https://github.com/baresip/re)
 * [librem](https://github.com/creytiv/rem)
 * [retest](https://github.com/creytiv/retest)
-* [restund](http://creytiv.com/restund.html)
 
 
 ## References
 
-* Project homepage: http://www.creytiv.com/baresip.html
 * Github: https://github.com/baresip/baresip
-* Mailing-list: http://lists.creytiv.com/mailman/listinfo/re-devel
+* Mailing-list: https://groups.google.com/g/baresip
