@@ -17,6 +17,7 @@
 #   USE_CODEC2        CODEC2 low-bitrate speech audio codec
 #   USE_CONS          Console input driver
 #   USE_COREAUDIO     MacOSX Coreaudio audio driver
+#   USE_DBUS          DBus control interface
 #   USE_ECHO          Echo module
 #   USE_EVDEV         Event Device module
 #   USE_G711          G.711 audio codec
@@ -63,6 +64,7 @@ ifneq ($(MOD_AUTODETECT),)
 USE_CONS  := 1
 USE_G711  := 1
 USE_L16   := 1
+USE_DBUS  := 1
 
 ifneq ($(OS),win32)
 
@@ -162,6 +164,7 @@ USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
 USE_SNDIO := $(shell [ -f $(SYSROOT)/include/sndio.h ] || \
 	[ -f $(SYSROOT)/local/include/sndio.h ] && echo "yes")
 USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
+HAVE_GLIB := $(shell pkg-config --exists glib-2.0 && echo "yes")
 HAVE_SPEEXDSP := $(shell \
 	[ -f $(SYSROOT)/local/lib/libspeexdsp$(LIB_SUFFIX) ] || \
 	[ -f $(SYSROOT)/lib64/libspeexdsp$(LIB_SUFFIX) ] || \
@@ -365,6 +368,11 @@ MODULES   += g726
 endif
 ifneq ($(USE_GSM),)
 MODULES   += gsm
+endif
+ifneq ($(HAVE_GLIB),)
+ifneq ($(USE_DBUS),)
+MODULES   += ctrl_dbus
+endif
 endif
 ifneq ($(USE_GST),)
 MODULES   += gst

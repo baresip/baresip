@@ -74,6 +74,7 @@ addons:
         - libsndfile1-dev
         - libspandsp-dev
         - libssl-dev
+        - libglib2.0-dev
     homebrew:
         packages:
         - codec2
