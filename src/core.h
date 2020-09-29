@@ -65,8 +65,10 @@ struct account {
 	char *outboundv[2];          /**< Optional SIP outbound proxies      */
 	uint32_t ptime;              /**< Configured packet time in [ms]     */
 	uint32_t regint;             /**< Registration interval in [seconds] */
+	uint32_t fbregint;           /**< Fallback R. interval in [seconds]  */
 	uint32_t rwait;              /**< R. Int. in [%] from proxy expiry   */
 	uint32_t pubint;             /**< Publication interval in [seconds]  */
+	uint32_t prio;               /**< Prio for serial registration       */
 	char *regq;                  /**< Registration Q-value               */
 	char *sipnat;                /**< SIP Nat mechanism                  */
 	char *stun_user;             /**< STUN Username                      */
@@ -220,6 +222,7 @@ int  reg_register(struct reg *reg, const char *reg_uri,
 		    const char *params, uint32_t regint, const char *outbound);
 void reg_unregister(struct reg *reg);
 bool reg_isok(const struct reg *reg);
+bool reg_failed(const struct reg *reg);
 int  reg_debug(struct re_printf *pf, const struct reg *reg);
 int  reg_json_api(struct odict *od, const struct reg *reg);
 int  reg_status(struct re_printf *pf, const struct reg *reg);

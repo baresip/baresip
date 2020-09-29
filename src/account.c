@@ -316,6 +316,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	acc->regint = REG_INTERVAL + (rand_u32()&0xff);
 	err |= param_u32(&acc->regint, &aor->params, "regint");
+	err |= param_u32(&acc->prio, &aor->params, "prio");
 	err |= param_u32(&acc->rwait, &aor->params, "rwait");
 	if (acc->rwait > 95)
 		acc->rwait = 95;
@@ -323,6 +324,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	if (acc->rwait && acc->rwait < 5)
 		acc->rwait = 5;
 
+	err |= param_u32(&acc->fbregint, &aor->params, "fbregint");
 	acc->pubint = 0;
 	err |= param_u32(&acc->pubint, &aor->params, "pubint");
 
@@ -987,7 +989,7 @@ struct uri *account_luri(const struct account *acc)
 
 
 /**
- * Get the Registration interval of an account
+ * Get the registration interval of an account
  *
  * @param acc User-Agent account
  *
@@ -996,6 +998,32 @@ struct uri *account_luri(const struct account *acc)
 uint32_t account_regint(const struct account *acc)
 {
 	return acc ? acc->regint : 0;
+}
+
+
+/**
+ * Get the fallback registration interval of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Registration interval in [seconds]
+ */
+uint32_t account_fbregint(const struct account *acc)
+{
+	return acc ? acc->fbregint : 0;
+}
+
+
+/**
+ * Get the priority of an account. Priority 0 is default.
+ *
+ * @param acc User-Agent account
+ *
+ * @return Priority
+ */
+uint32_t account_prio(const struct account *acc)
+{
+	return acc ? acc->prio : 0;
 }
 
 
@@ -1351,6 +1379,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " mwi:          %s\n", account_mwi(acc));
 	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);
 	err |= re_hprintf(pf, " regint:       %u\n", acc->regint);
+	err |= re_hprintf(pf, " prio:         %u\n", acc->prio);
 	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
 	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
 	err |= re_hprintf(pf, " sipnat:       %s\n", acc->sipnat);

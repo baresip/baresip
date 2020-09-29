@@ -145,6 +145,7 @@ module_app		debug_cmd.so
 module_app		menu.so
 #module_app		mwi.so
 #module_app		presence.so
+#module_app		serreg.so
 #module_app		syslog.so
 #module_app		mqtt.so
 #module_app		ctrl_tcp.so

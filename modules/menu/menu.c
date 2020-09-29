@@ -84,7 +84,7 @@ static void check_registrations(void)
 	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
 
-		if (!ua_isregistered(ua))
+		if (!ua_isregistered(ua) && !account_prio(ua_account(ua)))
 			return;
 	}
 
@@ -372,6 +372,7 @@ static int create_ua(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = NULL;
+	struct account *acc;
 	int err = 0;
 
 	if (str_isset(carg->prm)) {
@@ -382,8 +383,12 @@ static int create_ua(struct re_printf *pf, void *arg)
 			goto out;
 	}
 
-	if (account_regint(ua_account(ua))) {
-		(void)ua_register(ua);
+	acc = ua_account(ua);
+	if (account_regint(acc)) {
+		if (!account_prio(acc))
+			(void)ua_register(ua);
+		else
+			(void)ua_fallback(ua);
 	}
 
 	err = ua_print_reg_status(pf, NULL);

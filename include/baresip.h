@@ -86,8 +86,10 @@ struct list *account_vidcodecl(const struct account *acc);
 struct sip_addr *account_laddr(const struct account *acc);
 struct uri *account_luri(const struct account *acc);
 uint32_t account_regint(const struct account *acc);
+uint32_t account_fbregint(const struct account *acc);
 uint32_t account_pubint(const struct account *acc);
 uint32_t account_ptime(const struct account *acc);
+uint32_t account_prio(const struct account *acc);
 enum answermode account_answermode(const struct account *acc);
 const char *account_display_name(const struct account *acc);
 const char *account_aor(const struct account *acc);
@@ -716,6 +718,8 @@ enum ua_event {
 	UA_EVENT_REGISTER_OK,
 	UA_EVENT_REGISTER_FAIL,
 	UA_EVENT_UNREGISTERING,
+	UA_EVENT_FALLBACK_OK,
+	UA_EVENT_FALLBACK_FAIL,
 	UA_EVENT_MWI_NOTIFY,
 	UA_EVENT_SHUTDOWN,
 	UA_EVENT_EXIT,
@@ -766,8 +770,10 @@ int  ua_print_status(struct re_printf *pf, const struct ua *ua);
 int  ua_print_supported(struct re_printf *pf, const struct ua *ua);
 int  ua_update_account(struct ua *ua);
 int  ua_register(struct ua *ua);
+int  ua_fallback(struct ua *ua);
 void ua_unregister(struct ua *ua);
 bool ua_isregistered(const struct ua *ua);
+bool ua_regfailed(const struct ua *ua);
 unsigned ua_destroy(struct ua *ua);
 void ua_pub_gruu_set(struct ua *ua, const struct pl *pval);
 const char     *ua_aor(const struct ua *ua);

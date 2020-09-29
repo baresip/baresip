@@ -14,6 +14,7 @@ struct reg {
 	struct ua *ua;               /**< Pointer to parent UA object        */
 	struct sipreg *sipreg;       /**< SIP Register client                */
 	int id;                      /**< Registration ID (for SIP outbound) */
+	int regint;                  /**< Registration interval              */
 
 	/* status: */
 	uint16_t scode;              /**< Registration status code           */
@@ -97,13 +98,20 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 {
 	struct reg *reg = arg;
 	const struct sip_hdr *hdr;
+	uint32_t prio = account_prio(ua_account(reg->ua));
+	enum ua_event evok =  reg->regint ?
+		UA_EVENT_REGISTER_OK : UA_EVENT_FALLBACK_OK;
+	enum ua_event evfail = reg->regint ?
+		UA_EVENT_REGISTER_FAIL : UA_EVENT_FALLBACK_FAIL;
 
 	if (err) {
-		warning("reg: %s: Register: %m\n", ua_aor(reg->ua), err);
+		if (reg->regint)
+			warning("reg: %s (prio %u): Register: %m\n",
+					ua_aor(reg->ua), prio, err);
 
 		reg->scode = 999;
 
-		ua_event(reg->ua, UA_EVENT_REGISTER_FAIL, NULL, "%m", err);
+		ua_event(reg->ua, evfail, NULL, "%m", err);
 		return;
 	}
 
@@ -120,10 +128,10 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 		n_bindings = sip_msg_hdr_count(msg, SIP_HDR_CONTACT);
 		reg->af    = sipmsg_af(msg);
 
-		if (msg->scode != reg->scode) {
-			ua_printf(reg->ua, "{%d/%s/%s} %u %r (%s)"
+		if (msg->scode != reg->scode && reg->regint) {
+			ua_printf(reg->ua, "(prio %u) {%d/%s/%s} %u %r (%s)"
 				  " [%u binding%s]\n",
-				  reg->id, sip_transp_name(msg->tp),
+				  prio, reg->id, sip_transp_name(msg->tp),
 				  af_name(reg->af), msg->scode, &msg->reason,
 				  reg->srv, n_bindings,
 				  1==n_bindings?"":"s");
@@ -144,17 +152,17 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 			}
 		}
 
-		ua_event(reg->ua, UA_EVENT_REGISTER_OK, NULL, "%u %r",
+		ua_event(reg->ua, evok, NULL, "%u %r",
 			 msg->scode, &msg->reason);
 	}
 	else if (msg->scode >= 300) {
 
-		warning("reg: %s: %u %r (%s)\n", ua_aor(reg->ua),
-			msg->scode, &msg->reason, reg->srv);
+		warning("reg: %s (prio %u): %u %r (%s)\n", ua_aor(reg->ua),
+				prio, msg->scode, &msg->reason, reg->srv);
 
 		reg->scode = msg->scode;
 
-		ua_event(reg->ua, UA_EVENT_REGISTER_FAIL, NULL, "%u %r",
+		ua_event(reg->ua, evfail, NULL, "%u %r",
 			 msg->scode, &msg->reason);
 	}
 }
@@ -186,14 +194,17 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	struct account *acc;
 	const char *routev[1];
 	int err;
+	bool failed;
 
 	if (!reg || !reg_uri)
 		return EINVAL;
 
 	reg->scode = 0;
+	reg->regint = regint;
 	routev[0] = outbound;
 	acc = ua_account(reg->ua);
 
+	failed = sipreg_failed(reg->sipreg);
 	reg->sipreg = mem_deref(reg->sipreg);
 	err = sipreg_register(&reg->sipreg, uag_sip(), reg_uri,
 			      account_aor(acc),
@@ -211,6 +222,12 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 
 	if (acc->rwait)
 		err = sipreg_set_rwait(reg->sipreg, acc->rwait);
+
+	if (acc->fbregint)
+		err = sipreg_set_fbregint(reg->sipreg, acc->fbregint);
+
+	if (failed)
+		sipreg_incfailc(reg->sipreg);
 
 	return err;
 }
@@ -230,10 +247,19 @@ void reg_unregister(struct reg *reg)
 
 bool reg_isok(const struct reg *reg)
 {
-	if (!reg)
+	if (!reg || !reg->sipreg)
 		return false;
 
-	return 200 <= reg->scode && reg->scode <= 299;
+	return sipreg_registered(reg->sipreg);
+}
+
+
+bool reg_failed(const struct reg *reg)
+{
+	if (!reg || !reg->sipreg)
+		return false;
+
+	return sipreg_failed(reg->sipreg);
 }
 
 

@@ -77,6 +77,7 @@ static int account_write_template(const char *file)
 			 "#    ;outbound2=sip:secondary.example.com\n"
 			 "#    ;ptime={10,20,30,40,...}\n"
 			 "#    ;regint=3600\n"
+			 "#    ;prio={0,1,2,3,...}\n"
 			 "#    ;pubint=0 (publishing off)\n"
 			 "#    ;regq=0.5\n"
 			 "#    ;sipnat={outbound}\n"
@@ -134,10 +135,14 @@ static int line_handler(const struct pl *addr, void *arg)
 		return ENOENT;
 	}
 
-	if (account_regint(acc) != 0) {
+	if (account_regint(acc)) {
 		int e;
 
-		e = ua_register(ua);
+		if (!account_prio(acc))
+			e = ua_register(ua);
+		else
+			e = ua_fallback(ua);
+
 		if (e) {
 			warning("account: failed to register ua"
 				" '%s' (%m)\n", account_aor(acc), e);
