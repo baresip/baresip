@@ -1447,6 +1447,23 @@ static int add_transp_af(const struct sa *laddr)
 	}
 #endif
 
+	err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WS, &local,
+				     false, NULL);
+	if (err) {
+		warning("ua: could not add Websock transport (%m)\n", err);
+		return err;
+	}
+
+#ifdef USE_TLS
+	err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WSS, &local,
+				     false, uag.cfg->cert);
+	if (err) {
+		warning("ua: could not add secure Websock transport (%m)\n",
+			err);
+		return err;
+	}
+#endif
+
 	return err;
 }
 

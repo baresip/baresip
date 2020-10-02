@@ -49,6 +49,8 @@ static int sipmsg_af(const struct sip_msg *msg)
 
 	case SIP_TRANSP_TCP:
 	case SIP_TRANSP_TLS:
+	case SIP_TRANSP_WS:
+	case SIP_TRANSP_WSS:
 		err = tcp_conn_local_get(sip_msg_tcpconn(msg), &laddr);
 		break;
 
