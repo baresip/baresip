@@ -4,7 +4,11 @@
  * Copyright (C) 2010 Creytiv.com
  */
 #include <string.h>
-#include <dirent.h>
+#ifndef WIN32
+#include "<dirent.h>
+#else
+#include "../mk/win32/dirent.h"
+#endif
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>

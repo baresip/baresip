@@ -36,3 +36,9 @@ tags
 
 # Vim swp files
 *.swp
+
+# Window build folder
+Win32/*
+
+# Visual studio config
+mk/win32/baresip.vcxproj.user

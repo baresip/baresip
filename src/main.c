@@ -10,7 +10,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_GETOPT
 #include <getopt.h>
+#endif
 #include <re.h>
 #include <baresip.h>
 
@@ -119,6 +121,7 @@ int main(int argc, char *argv[])
 
 	tmr_init(&tmr_quit);
 
+#ifdef HAVE_GETOPT
 	for (;;) {
 		const int c = getopt(argc, argv, "46de:f:p:hu:n:vst:m:");
 		if (0 > c)
@@ -197,6 +200,10 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+#else
+	(void)argc;
+	(void)argv;
+#endif
 
 	err = conf_configure();
 	if (err) {
