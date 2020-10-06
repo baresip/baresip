@@ -24,7 +24,8 @@ static struct config core_config = {
 		"",
 		"",
 		"",
-		""
+		"",
+		900
 	},
 
 	/** Call config */
@@ -247,6 +248,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   sizeof(cfg->sip.cert));
 	(void)conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
 			   sizeof(cfg->sip.cafile));
+	if (!conf_get_u32(conf, "sip_timeout", &v))
+		cfg->sip.timeout = v;
 
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
@@ -371,6 +374,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_listen\t\t%s\n"
 			 "sip_certificate\t%s\n"
 			 "sip_cafile\t\t%s\n"
+			 "sip_timeout\t\t%u\n"
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
@@ -411,6 +415,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 ,
 
 			 cfg->sip.local, cfg->sip.cert, cfg->sip.cafile,
+			 cfg->sip.timeout,
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
@@ -553,6 +558,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
 			  "#sip_cafile\t\t%s\n"
+			  "#sip_timeout\t\t%u\n"
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
@@ -582,7 +588,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "audio_buffer\t\t%H\t\t# ms\n"
 			  ,
 			  poll_method_name(poll_method_best()),
-			  default_cafile(),
+			  default_cafile(), cfg->sip.timeout,
 			  cfg->call.local_timeout,
 			  cfg->call.max_calls,
 			  default_audio_device(),

@@ -1721,6 +1721,7 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls)
 		goto out;
 	}
 
+	sip_set_timeout(uag.sip, uag.cfg->timeout);
 	err = ua_add_transp(net);
 	if (err)
 		goto out;

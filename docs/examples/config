@@ -55,6 +55,7 @@ rtp_stats		no
 #dns_server		1.1.1.1:53
 #dns_server		1.0.0.1:53
 #net_interface		wlan1
+#sip_timeout		900
 
 #------------------------------------------------------------------------------
 # Modules
