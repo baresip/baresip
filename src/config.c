@@ -5,7 +5,7 @@
  */
 #include <string.h>
 #ifndef WIN32
-#include "<dirent.h>
+#include <dirent.h>
 #else
 #include "../mk/win32/dirent.h"
 #endif
