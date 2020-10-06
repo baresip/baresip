@@ -152,6 +152,7 @@ module_app		menu.so
 module_app		vidloop.so
 # module_app		ctrl_dbus.so
 # ctrl_dbus_use		system       # system, session
+# module_app		httpreq.so
 
 
 #------------------------------------------------------------------------------
@@ -220,3 +221,4 @@ video_selfview		window # {window,pip}
 
 # EBU ACIP
 #ebuacip_jb_type     	fixed   # auto,fixed
+
