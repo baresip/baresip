@@ -51,6 +51,7 @@ static void alert_stop(void);
 static int switch_audio_source(struct re_printf *pf, void *arg);
 static int switch_audio_player(struct re_printf *pf, void *arg);
 static int switch_video_source(struct re_printf *pf, void *arg);
+static void alert_start(void *arg);
 
 
 static void redial_reset(void)
@@ -68,6 +69,97 @@ static const char *translate_errorcode(uint16_t scode)
 	case 486: return "busy.wav";
 	case 487: return NULL; /* ignore */
 	default:  return "error.wav";
+	}
+}
+
+
+static void menu_play(const char *fname, int repeat)
+{
+	struct config *cfg = conf_config();
+	struct player *player = baresip_player();
+
+	menu.play = mem_deref(menu.play);
+	(void)play_file(&menu.play, player, fname, repeat,
+			cfg->audio.play_mod,
+			cfg->audio.play_dev);
+}
+
+
+static void play_incoming(const struct ua *ua, bool waiting)
+{
+	/* stop any ringtones */
+	menu.play = mem_deref(menu.play);
+
+	/* Only play the ringtones if answermode is "Manual".
+	 * If the answermode is "auto" then be silent.
+	 */
+	if (ANSWERMODE_MANUAL == account_answermode(ua_account(ua))) {
+
+		if (waiting) {
+			menu_play("callwaiting.wav", 3);
+		}
+		else {
+			/* Alert user */
+			menu_play("ring.wav", -1);
+		}
+
+		if (menu.bell)
+			alert_start(0);
+	}
+}
+
+
+static void play_ringback(void)
+{
+	/* stop any ringtones */
+	menu.play = mem_deref(menu.play);
+
+	if (menu.ringback_disabled) {
+		info("\nRingback disabled\n");
+	}
+	else {
+		menu_play("ringback.wav", -1);
+	}
+}
+
+
+static void play_resume(const struct call *call)
+{
+	struct le *lec;
+	struct le *leu;
+	struct ua *uain;
+	bool incoming = false;
+	bool ringing = false;
+
+	for (leu = uag_list()->head; leu; leu = leu->next) {
+		struct ua *ua = leu->data;
+
+		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
+			if (lec->data == call)
+				continue;
+
+			switch (call_state(lec->data)) {
+			case CALL_STATE_EARLY:
+			case CALL_STATE_ESTABLISHED:
+				return;
+			case CALL_STATE_INCOMING:
+				incoming = true;
+				uain = ua;
+				break;
+			case CALL_STATE_RINGING:
+				ringing = true;
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	if (incoming) {
+		play_incoming(uain, uag_call_count() > 2);
+	}
+	else if (ringing) {
+		play_ringback();
 	}
 }
 
@@ -1195,9 +1287,7 @@ static void redial_handler(void *arg)
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
-	struct player *player = baresip_player();
 	struct call *call2 = NULL;
-	struct config *cfg;
 	int err;
 	(void)prm;
 	(void)arg;
@@ -1207,7 +1297,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	      ua_aor(ua), call_id(call), uag_event_str(ev), prm);
 #endif
 
-	cfg = conf_config();
 
 	switch (ev) {
 
@@ -1220,49 +1309,14 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		     " (press 'a' to accept)\n",
 		     ua_aor(ua), call_peername(call), call_peeruri(call));
 
-		/* stop any ringtones */
-		menu.play = mem_deref(menu.play);
-
-		/* Only play the ringtones if answermode is "Manual".
-		 * If the answermode is "auto" then be silent.
-		 */
-		if (ANSWERMODE_MANUAL == account_answermode(ua_account(ua))) {
-
-			if (list_count(ua_calls(ua)) > 1) {
-				(void)play_file(&menu.play, player,
-						"callwaiting.wav", 3,
-						cfg->audio.play_mod,
-						cfg->audio.play_dev);
-			}
-			else {
-				/* Alert user */
-				(void)play_file(&menu.play, player,
-						"ring.wav", -1,
-						cfg->audio.alert_mod,
-						cfg->audio.alert_dev);
-			}
-
-			if (menu.bell)
-				alert_start(0);
-		}
+		play_incoming(ua, uag_call_count() > 1);
 		break;
 
 	case UA_EVENT_CALL_RINGING:
-		if (call != ua_call(uag_current()))
-			break;
+		if (call == ua_call(uag_current()))
+			play_ringback();
+		break;
 
-		/* stop any ringtones */
-		menu.play = mem_deref(menu.play);
-
-		if (menu.ringback_disabled) {
-			info("\nRingback disabled\n");
-		}
-		else {
-			(void)play_file(&menu.play, player,
-					"ringback.wav", -1,
-					cfg->audio.play_mod,
-					cfg->audio.play_dev);
-		}
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
@@ -1283,15 +1337,12 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (call_scode(call)) {
 			const char *tone;
 			tone = translate_errorcode(call_scode(call));
-			if (tone) {
-				(void)play_file(&menu.play, player,
-						tone, 1,
-						cfg->audio.play_mod,
-						cfg->audio.play_dev);
-			}
+			if (tone)
+				menu_play(tone, 1);
 		}
 
 		alert_stop();
+		play_resume(call);
 
 		/* Activate the re-dialing if:
 		 *
