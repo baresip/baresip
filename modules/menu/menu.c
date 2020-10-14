@@ -73,6 +73,35 @@ static const char *translate_errorcode(uint16_t scode)
 }
 
 
+/**
+ * Decode a SDP direction
+ *
+ * @param pl  SDP direction as string
+ *
+ * @return sdp_dir SDP direction
+ */
+static enum sdp_dir decode_sdp_enum(struct pl *pl)
+{
+	if (!pl)
+		return SDP_INACTIVE;
+
+	if (!pl_strcmp(pl, "inactive")) {
+		return SDP_INACTIVE;
+	}
+	else if (!pl_strcmp(pl, "sendonly")) {
+		return  SDP_SENDONLY;
+	}
+	else if (!pl_strcmp(pl, "recvonly")) {
+		return SDP_RECVONLY;
+	}
+	else if (!pl_strcmp(pl, "sendrecv")) {
+		return SDP_SENDRECV;
+	}
+
+	return SDP_INACTIVE;
+}
+
+
 static void menu_play(const char *fname, int repeat)
 {
 	struct config *cfg = conf_config();
@@ -448,6 +477,61 @@ static int cmd_answer(struct re_printf *pf, void *unused)
 	return err;
 }
 
+/**
+ * Accepts the pending call with special audio and video direction
+ *
+ * @param pf     Print handler for debug output
+ * @param arg    Command arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_answerdir(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	enum sdp_dir adir, vdir;
+	struct pl argdir[2] = {PL_INIT, PL_INIT};
+	struct ua *ua = uag_current();
+	int err = 0;
+
+	(void) pf;
+
+	const char *usage = "Usage: /acceptdir"
+			" audio=<inactive, sendonly, recvonly, sendrecv>"
+			" video=<inactive, sendonly, recvonly, sendrecv>\n"
+			"/acceptdir <sendonly, recvonly, sendrecv>\n"
+			"Audio & video must not be"
+			" inactive at the same time\n";
+
+	err = re_regex(carg->prm, str_len(carg->prm),
+		"audio=[^ ]* video=[^ ]*", &argdir[0], &argdir[1]);
+	if (err)
+		err = re_regex(carg->prm, str_len(carg->prm),
+			"[^ ]*", &argdir[0]);
+
+	if (err) {
+		warning("%s", usage);
+		return EINVAL;
+	}
+
+	if (!pl_isset(&argdir[1]))
+		argdir[1] = argdir[0];
+
+	adir = decode_sdp_enum(&argdir[0]);
+	vdir = decode_sdp_enum(&argdir[1]);
+
+	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
+		warning("%s", usage);
+		return EINVAL;
+	}
+
+	err = call_set_media_direction(ua_call(ua), adir, vdir);
+
+	menu.play = mem_deref(menu.play);
+	ua_hold_answer(ua, NULL, VIDMODE_ON);
+
+	return 0;
+}
+
 
 static int cmd_hangup(struct re_printf *pf, void *unused)
 {
@@ -662,6 +746,8 @@ static const struct cmd cmdv[] = {
 
 {"about",     0,          0, "About box",               about_box            },
 {"accept",    'a',        0, "Accept incoming call",    cmd_answer           },
+{"acceptdir", 0,    CMD_PRM, "Accept incoming call with audio and video"
+                             "direction.",              cmd_answerdir        },
 {"answermode",0,    CMD_PRM, "Set answer mode",         cmd_set_answermode   },
 {"auplay",    0,    CMD_PRM, "Switch audio player",     switch_audio_player  },
 {"ausrc",     0,    CMD_PRM, "Switch audio source",     switch_audio_source  },
