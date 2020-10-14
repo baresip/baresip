@@ -355,10 +355,6 @@ static int cmd_hangup(struct re_printf *pf, void *unused)
 	(void)pf;
 	(void)unused;
 
-	/* Stop any ongoing ring-tones */
-	menu.play = mem_deref(menu.play);
-	alert_stop();
-
 	ua_hangup(uag_current(), NULL, 0, NULL);
 
 	/* note: must be called after ua_hangup() */
