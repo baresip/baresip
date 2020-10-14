@@ -1252,6 +1252,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_RINGING:
+		if (call != ua_call(uag_current()))
+			break;
+
 		/* stop any ringtones */
 		menu.play = mem_deref(menu.play);
 
