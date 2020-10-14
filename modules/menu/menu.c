@@ -1317,6 +1317,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			play_ringback();
 		break;
 
+	case UA_EVENT_CALL_PROGRESS:
+		if (call == ua_call(uag_current()))
+			menu.play = mem_deref(menu.play);
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
