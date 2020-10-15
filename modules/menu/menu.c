@@ -164,6 +164,30 @@ static void play_resume(const struct call *call)
 }
 
 
+static bool has_established_call(void)
+{
+	struct le *lec;
+	struct le *leu;
+
+	for (leu = uag_list()->head; leu; leu = leu->next) {
+		struct ua *ua = leu->data;
+
+		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
+
+			switch (call_state(lec->data)) {
+			case CALL_STATE_EARLY:
+			case CALL_STATE_ESTABLISHED:
+				return true;
+			default:
+				break;
+			}
+		}
+	}
+
+	return false;
+}
+
+
 static void check_registrations(void)
 {
 	static bool ual_ready = false;
@@ -1294,7 +1318,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_RINGING:
-		if (call == ua_call(uag_current()))
+		if (call == ua_call(uag_current()) && !has_established_call())
 			play_ringback();
 		break;
 
