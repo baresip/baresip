@@ -193,23 +193,6 @@ static void check_registrations(void)
 }
 
 
-/* Return TRUE if there are any active calls for any UAs */
-static bool have_active_calls(void)
-{
-	struct le *le;
-
-	for (le = list_head(uag_list()); le; le = le->next) {
-
-		struct ua *ua = le->data;
-
-		if (ua_call(ua))
-			return true;
-	}
-
-	return false;
-}
-
-
 /**
  * Print the SIP Registration for all User-Agents
  *
@@ -448,9 +431,6 @@ static int cmd_hangup(struct re_printf *pf, void *unused)
 	(void)unused;
 
 	ua_hangup(uag_current(), NULL, 0, NULL);
-
-	/* note: must be called after ua_hangup() */
-	menu_set_incall(have_active_calls());
 
 	return 0;
 }
@@ -1216,7 +1196,7 @@ static void tmrstat_handler(void *arg)
 static void update_callstatus(void)
 {
 	/* if there are any active calls, enable the call status view */
-	if (have_active_calls())
+	if (uag_call_count())
 		tmr_start(&menu.tmr_stat, 100, tmrstat_handler, 0);
 	else
 		tmr_cancel(&menu.tmr_stat);
@@ -1434,7 +1414,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 	}
 
-	menu_set_incall(have_active_calls());
+	menu_set_incall(ev == UA_EVENT_CALL_CLOSED ?
+			uag_call_count() > 1 : uag_call_count());
 	update_callstatus();
 }
 
