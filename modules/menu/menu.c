@@ -46,7 +46,7 @@ static struct {
 
 
 static int  menu_set_incall(bool incall);
-static void update_callstatus(void);
+static void update_callstatus(bool incall);
 static void alert_stop(void);
 static int switch_audio_source(struct re_printf *pf, void *arg);
 static int switch_audio_player(struct re_printf *pf, void *arg);
@@ -489,7 +489,7 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 
 	uag_current_set(list_ledata(menu.le_cur));
 
-	update_callstatus();
+	update_callstatus(uag_call_count());
 
 	return err;
 }
@@ -513,7 +513,7 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 
 	uag_current_set(ua);
 
-	update_callstatus();
+	update_callstatus(uag_call_count());
 
 	return 0;
 }
@@ -1193,10 +1193,10 @@ static void tmrstat_handler(void *arg)
 }
 
 
-static void update_callstatus(void)
+static void update_callstatus(bool incall)
 {
 	/* if there are any active calls, enable the call status view */
-	if (uag_call_count())
+	if (incall)
 		tmr_start(&menu.tmr_stat, 100, tmrstat_handler, 0);
 	else
 		tmr_cancel(&menu.tmr_stat);
@@ -1268,6 +1268,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
 	struct call *call2 = NULL;
+	bool incall;
 	int err;
 	(void)prm;
 	(void)arg;
@@ -1414,9 +1415,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 	}
 
-	menu_set_incall(ev == UA_EVENT_CALL_CLOSED ?
-			uag_call_count() > 1 : uag_call_count());
-	update_callstatus();
+	incall = ev == UA_EVENT_CALL_CLOSED ?
+			uag_call_count() > 1 : uag_call_count();
+	menu_set_incall(incall);
+	update_callstatus(incall);
 }
 
 
