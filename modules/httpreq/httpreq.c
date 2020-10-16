@@ -25,6 +25,7 @@
  *                    user and password is cleared.
  * http_setbody     - Sets HTTP body (for POST, PUT requests). If no parameter
  *                    is specified then the body is cleared.
+ * http_settimeout  - Sets timeout (currently) only for DNS requests.
  * http_clear       - Clears all internal data.
  * http_get         - Sends an HTTP GET request and performs authentication if
  *                    requested by the HTTP server and http_setauth was invoked
@@ -232,12 +233,28 @@ static int cmd_clear(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_settimeout(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	uint32_t v;
+	int err = ensure_carg_alloc(carg);
+	if (err) {
+		re_hprintf(pf, "Usage:\nhttp_settimeout <ms>\n");
+		return err;
+	}
+
+	v = (uint32_t) atoi(carg->prm);
+	return http_client_set_timeout(d->client, v);
+}
+
+
 static const struct cmd cmdv[] = {
 
 {"http_get",  0, CMD_PRM, "httpreq: send HTTP GET request",  cmd_httpget  },
 {"http_post", 0, CMD_PRM, "httpreq: send HTTP POST request", cmd_httppost },
 {"http_setauth", 0, CMD_PRM, "httpreq: set user and password", cmd_setauth },
 {"http_setbody", 0, CMD_PRM, "httpreq: set body", cmd_setbody },
+{"http_settimeout", 0, CMD_PRM, "httpreq: set timeout in ms", cmd_settimeout },
 {"http_clear", 0, CMD_PRM, "httpreq: clear all internal data", cmd_clear },
 
 };
