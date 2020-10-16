@@ -28,6 +28,7 @@
 #   USE_GST           Gstreamer audio module
 #   USE_GST_VIDEO     Gstreamer video module
 #   USE_GTK           GTK+ user interface
+#   USE_HTTPREQ       HTTP request module
 #   USE_ILBC          iLBC audio codec
 #   USE_ISAC          iSAC audio codec
 #   USE_JACK          JACK Audio Connection Kit audio driver
@@ -65,6 +66,7 @@ USE_CONS  := 1
 USE_G711  := 1
 USE_L16   := 1
 USE_DBUS  := 1
+USE_HTTPREQ  := 1
 
 ifneq ($(OS),win32)
 
@@ -383,6 +385,9 @@ MODULES   += gst_video
 endif
 ifneq ($(USE_GTK),)
 MODULES   += gtk
+endif
+ifneq ($(USE_HTTPREQ),)
+MODULES   += httpreq
 endif
 ifneq ($(USE_ILBC),)
 MODULES   += ilbc
