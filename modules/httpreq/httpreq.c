@@ -45,6 +45,7 @@
 
 struct httpreq_data {
 	const struct config_net *cfg;
+	struct network *net;
 	struct http_cli *client;
 	struct http_reqconn *conn;
 };
@@ -55,6 +56,7 @@ static void destructor(void *arg)
 	struct httpreq_data *d = arg;
 	mem_deref(d->client);
 	mem_deref(d->conn);
+	mem_deref(d->net);
 }
 
 
@@ -87,18 +89,38 @@ static void http_resph(int err, const struct http_msg *msg, void *arg)
 }
 
 
+static void net_handler(void *arg)
+{
+	(void) arg;
+	const struct sa *sa;
+
+	sa = net_laddr_af(d->net, AF_INET);
+	if (sa)
+		http_client_set_laddr(d->client, sa);
+	info("httpreq: network changed %j", sa);
+#ifdef HAVE_INET6
+	sa = net_laddr_af(d->net, AF_INET6);
+	if (sa)
+		http_client_set_laddr6(d->client, sa);
+	info("httpreq: network changed %j", sa);
+#endif
+}
+
+
 static int ensure_alloc(void)
 {
 	int err = 0;
-	struct network *net = baresip_network();
+	if (!d->net)
+		err = net_alloc(&d->net, d->cfg);
 
-	if (!net) {
-		warning("httpreq: no baresip network\n");
+	if (err) {
+		warning("httpreq: could not create network\n");
 		return err;
 	}
 
+	net_change(d->net, 60, net_handler, NULL);
 	if (!d->client)
-		err = http_client_alloc(&d->client, net_dnsc(net));
+		err = http_client_alloc(&d->client, net_dnsc(d->net));
 
 	if (err) {
 		warning("httpreq: could not alloc http client\n");
