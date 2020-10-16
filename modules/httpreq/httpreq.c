@@ -18,14 +18,20 @@
  * Combines libre structs http_cli and http_reqcon to provide HTTP requests.
  * Supports:
  *   - GET, POST requests
+ *   - basic, digest authentication
  *
  * Commands:
+ * http_setauth     - Sets user and password. If no parameter is specified then
+ *                    user and password is cleared.
  * http_setbody     - Sets HTTP body (for POST, PUT requests). If no parameter
  *                    is specified then the body is cleared.
  * http_clear       - Clears all internal data.
- * http_get         - Sends an HTTP GET request.
- * http_post        - Sends an HTTP POST request. Use at least http_setbody
- *                    before this command.
+ * http_get         - Sends an HTTP GET request and performs authentication if
+ *                    requested by the HTTP server and http_setauth was invoked
+ *                    before.
+ * http_post        - Sends an HTTP POST request and performs authentication if
+ *                    requested by the HTTP server and http_setauth was invoked
+ *                    before. Use at least http_setbody before this command.
  */
 
 struct httpreq_data {
@@ -185,6 +191,26 @@ static int cmd_httppost(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_setauth(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl user = PL_INIT;
+	struct pl pass = PL_INIT;
+	int err = ensure_alloc();
+	if (err)
+		return err;
+
+	err = re_regex(carg->prm, strlen(carg->prm), "[^ ]* [^ ]*",
+			&user, &pass);
+	if (err)
+		err = re_regex(carg->prm, strlen(carg->prm), "[^ ]*", &user);
+
+	return http_reqconn_set_auth(d->conn,
+			pl_isset(&user) ? &user : NULL,
+			pl_isset(&pass) ? &pass : NULL);
+}
+
+
 static int cmd_setbody(struct re_printf *pf, void *arg)
 {
 	struct pl pl;
@@ -210,6 +236,7 @@ static const struct cmd cmdv[] = {
 
 {"http_get",  0, CMD_PRM, "httpreq: send HTTP GET request",  cmd_httpget  },
 {"http_post", 0, CMD_PRM, "httpreq: send HTTP POST request", cmd_httppost },
+{"http_setauth", 0, CMD_PRM, "httpreq: set user and password", cmd_setauth },
 {"http_setbody", 0, CMD_PRM, "httpreq: set body", cmd_setbody },
 {"http_clear", 0, CMD_PRM, "httpreq: clear all internal data", cmd_clear },
 
