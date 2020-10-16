@@ -19,6 +19,7 @@
  * Supports:
  *   - GET, POST requests
  *   - basic, digest and bearer authentication
+ *   - TLS
  *
  * Commands:
  * http_setauth     - Sets user and password. If no parameter is specified then
@@ -30,6 +31,7 @@
  * http_settimeout  - Sets timeout (currently) only for DNS requests.
  * http_setctype    - Sets content type for HTTP header. If no parameter is
  *                    specified then the content type is cleared.
+ * http_setcert     - Sets client certificate file.
  * http_addheader   - Adds a custom header (without newline).
  * http_clrheaders  - Clears all custom headers.
  * http_clear       - Clears all internal data.
@@ -284,6 +286,75 @@ static int cmd_clear(struct re_printf *pf, void *arg)
 }
 
 
+#ifdef USE_TLS
+static int cmd_setcert(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	int err = ensure_carg_alloc(carg);
+	if (err) {
+		re_hprintf(pf, "Usage:\nhttp_setcert <certfile>\n");
+		return err;
+	}
+
+	return http_client_set_cert(d->client, carg->prm);
+}
+
+
+static int cmd_setkey(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	int err = ensure_carg_alloc(carg);
+	if (err) {
+		re_hprintf(pf, "Usage:\nhttp_setkey <keyfile>\n");
+		return err;
+	}
+
+	return http_client_set_key(d->client, carg->prm);
+}
+
+
+static int cmd_sethostname(struct re_printf *pf, void *arg)
+{
+	struct pl pl;
+	struct pl *plp = &pl;
+	int err = pl_opt_arg(&plp, arg);
+	if (err)
+		return err;
+
+	return http_client_set_tls_hostname(d->client, plp);
+}
+
+
+static int ca_handler(const struct pl *pl, void *arg)
+{
+	struct mbuf *mb;
+	char *parm;
+	int err;
+	(void) arg;
+
+	if (!pl_isset(pl))
+		return EINVAL;
+
+	err = ensure_alloc();
+	if (err)
+		return err;
+
+	mb = mbuf_alloc(pl->l + 1);
+	mbuf_write_pl(mb, pl);
+	mbuf_write_u8(mb, 0);
+	mbuf_set_pos(mb, 0);
+
+	parm = (char*) mbuf_buf(mb);
+	err = http_client_add_ca(d->client, parm);
+
+	mem_deref(mb);
+
+	/* ignore err, just print warning */
+	return 0;
+}
+#endif
+
+
 static int cmd_settimeout(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -313,6 +384,14 @@ static const struct cmd cmdv[] = {
 {"http_clrheaders", 0, CMD_PRM, "httpreq: clear custom headers",
 	cmd_clrheader },
 {"http_clear", 0, CMD_PRM, "httpreq: clear all internal data", cmd_clear },
+#ifdef USE_TLS
+{"http_setcert", 0, CMD_PRM, "httpreq: set client certificate file",
+	cmd_setcert },
+{"http_setkey", 0, CMD_PRM, "httpreq: set client private key file",
+	cmd_setkey },
+{"http_sethostname", 0, CMD_PRM, "httpreq: set hostname for the hostname "
+	"check", cmd_sethostname },
+#endif
 
 };
 
@@ -320,6 +399,10 @@ static const struct cmd cmdv[] = {
 static int module_init(void)
 {
 	int err = 0;
+#ifdef USE_TLS
+	struct pl pl;
+	char *buf;
+#endif
 
 	info("httpreq: module init\n");
 	d = mem_zalloc(sizeof(*d), destructor);
@@ -327,6 +410,45 @@ static int module_init(void)
 		return ENOMEM;
 
 	d->cfg = &conf_config()->net;
+
+#ifdef USE_TLS
+	if (!conf_get(conf_cur(), "httpreq_hostname", &pl)) {
+		err = ensure_alloc();
+		if (err)
+			return err;
+
+		err = http_reqconn_set_tls_hostname(d->conn, &pl);
+	}
+
+	if (!conf_get(conf_cur(), "httpreq_cert", &pl)) {
+		err |= ensure_alloc();
+		if (err)
+			return err;
+
+		err = pl_strdup(&buf, &pl);
+		if (err)
+			return err;
+
+		err = http_client_set_cert(d->client, buf);
+		mem_deref(buf);
+	}
+
+	if (!conf_get(conf_cur(), "httpreq_key", &pl)) {
+		err |= ensure_alloc();
+		if (err)
+			return err;
+
+		err = pl_strdup(&buf, &pl);
+		if (err)
+			return err;
+
+		err = http_client_set_key(d->client, buf);
+		mem_deref(buf);
+	}
+
+	err |= conf_apply(conf_cur(), "httpreq_ca", ca_handler, d->client);
+#endif
+
 	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	if (err) {
 		d->client = mem_deref(d->client);
