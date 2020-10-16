@@ -364,5 +364,8 @@
     <ClCompile Include="..\..\src\rtpstat.c">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\auframe.c">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
