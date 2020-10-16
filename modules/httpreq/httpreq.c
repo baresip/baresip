@@ -26,6 +26,8 @@
  * http_setbody     - Sets HTTP body (for POST, PUT requests). If no parameter
  *                    is specified then the body is cleared.
  * http_settimeout  - Sets timeout (currently) only for DNS requests.
+ * http_setctype    - Sets content type for HTTP header. If no parameter is
+ *                    specified then the content type is cleared.
  * http_clear       - Clears all internal data.
  * http_get         - Sends an HTTP GET request and performs authentication if
  *                    requested by the HTTP server and http_setauth was invoked
@@ -224,6 +226,18 @@ static int cmd_setbody(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_setctype(struct re_printf *pf, void *arg)
+{
+	struct pl pl;
+	struct pl *plp = &pl;
+	int err = pl_opt_arg(&plp, arg);
+	if (err)
+		return err;
+
+	return http_reqconn_set_ctype(d->conn, plp);
+}
+
+
 static int cmd_clear(struct re_printf *pf, void *arg)
 {
 	(void) arg;
@@ -255,6 +269,7 @@ static const struct cmd cmdv[] = {
 {"http_setauth", 0, CMD_PRM, "httpreq: set user and password", cmd_setauth },
 {"http_setbody", 0, CMD_PRM, "httpreq: set body", cmd_setbody },
 {"http_settimeout", 0, CMD_PRM, "httpreq: set timeout in ms", cmd_settimeout },
+{"http_setctype", 0, CMD_PRM, "httpreq: set content-type", cmd_setctype },
 {"http_clear", 0, CMD_PRM, "httpreq: clear all internal data", cmd_clear },
 
 };
