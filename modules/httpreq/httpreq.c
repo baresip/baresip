@@ -28,6 +28,8 @@
  * http_settimeout  - Sets timeout (currently) only for DNS requests.
  * http_setctype    - Sets content type for HTTP header. If no parameter is
  *                    specified then the content type is cleared.
+ * http_addheader   - Adds a custom header (without newline).
+ * http_clrheaders  - Clears all custom headers.
  * http_clear       - Clears all internal data.
  * http_get         - Sends an HTTP GET request and performs authentication if
  *                    requested by the HTTP server and http_setauth was invoked
@@ -238,6 +240,27 @@ static int cmd_setctype(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_addheader(struct re_printf *pf, void *arg)
+{
+	struct pl pl = PL_INIT;
+	int err = pl_set_arg(&pl, arg);
+	if (err) {
+		re_hprintf(pf, "Usage:\nhttp_addheader <header>\n");
+		return err;
+	}
+
+	return http_reqconn_add_header(d->conn, &pl);
+}
+
+
+static int cmd_clrheader(struct re_printf *pf, void *arg)
+{
+	(void) arg;
+	(void) http_reqconn_clr_header(d->conn);
+	return 0;
+}
+
+
 static int cmd_clear(struct re_printf *pf, void *arg)
 {
 	(void) arg;
@@ -270,6 +293,10 @@ static const struct cmd cmdv[] = {
 {"http_setbody", 0, CMD_PRM, "httpreq: set body", cmd_setbody },
 {"http_settimeout", 0, CMD_PRM, "httpreq: set timeout in ms", cmd_settimeout },
 {"http_setctype", 0, CMD_PRM, "httpreq: set content-type", cmd_setctype },
+{"http_addheader", 0, CMD_PRM, "httpreq: add a custom header "
+	"(without newline)", cmd_addheader },
+{"http_clrheaders", 0, CMD_PRM, "httpreq: clear custom headers",
+	cmd_clrheader },
 {"http_clear", 0, CMD_PRM, "httpreq: clear all internal data", cmd_clear },
 
 };
