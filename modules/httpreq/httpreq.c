@@ -17,11 +17,15 @@
  *
  * Combines libre structs http_cli and http_reqcon to provide HTTP requests.
  * Supports:
- *   - GET requests
+ *   - GET, POST requests
  *
  * Commands:
+ * http_setbody     - Sets HTTP body (for POST, PUT requests). If no parameter
+ *                    is specified then the body is cleared.
  * http_clear       - Clears all internal data.
  * http_get         - Sends an HTTP GET request.
+ * http_post        - Sends an HTTP POST request. Use at least http_setbody
+ *                    before this command.
  */
 
 struct httpreq_data {
@@ -118,6 +122,27 @@ static int pl_set_arg(struct pl *pl, const struct cmd_arg *carg)
 }
 
 
+static int pl_opt_arg(struct pl **plp, const struct cmd_arg *carg)
+{
+	struct pl *pl = *plp;
+	if (!plp)
+		return EINVAL;
+
+	int err = ensure_alloc();
+	if (err)
+		return err;
+
+	if (!carg || !str_isset(carg->prm)) {
+		*plp = NULL;
+		return 0;
+	}
+
+	pl->p = carg->prm;
+	pl->l = strlen(carg->prm);
+	return 0;
+}
+
+
 static int send_request(struct re_printf *pf, void *arg, const struct pl *met)
 {
 	struct pl uri;
@@ -147,6 +172,31 @@ static int cmd_httpget(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_httppost(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	struct pl pl = PL("POST");
+
+	err = send_request(pf, arg, &pl);
+	if (err)
+		re_hprintf(pf, "Usage:\nhttp_post <uri>\n");
+
+	return err;
+}
+
+
+static int cmd_setbody(struct re_printf *pf, void *arg)
+{
+	struct pl pl;
+	struct pl *plp = &pl;
+	int err = pl_opt_arg(&plp, arg);
+	if (err)
+		return err;
+
+	return http_reqconn_set_body(d->conn, plp);
+}
+
+
 static int cmd_clear(struct re_printf *pf, void *arg)
 {
 	(void) arg;
@@ -159,6 +209,8 @@ static int cmd_clear(struct re_printf *pf, void *arg)
 static const struct cmd cmdv[] = {
 
 {"http_get",  0, CMD_PRM, "httpreq: send HTTP GET request",  cmd_httpget  },
+{"http_post", 0, CMD_PRM, "httpreq: send HTTP POST request", cmd_httppost },
+{"http_setbody", 0, CMD_PRM, "httpreq: set body", cmd_setbody },
 {"http_clear", 0, CMD_PRM, "httpreq: clear all internal data", cmd_clear },
 
 };
