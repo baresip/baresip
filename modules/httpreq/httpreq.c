@@ -18,11 +18,13 @@
  * Combines libre structs http_cli and http_reqcon to provide HTTP requests.
  * Supports:
  *   - GET, POST requests
- *   - basic, digest authentication
+ *   - basic, digest and bearer authentication
  *
  * Commands:
  * http_setauth     - Sets user and password. If no parameter is specified then
  *                    user and password is cleared.
+ * http_setbearer   - Sets bearer token. If no parameter is specified then the
+ *                    bearer is cleared.
  * http_setbody     - Sets HTTP body (for POST, PUT requests). If no parameter
  *                    is specified then the body is cleared.
  * http_settimeout  - Sets timeout (currently) only for DNS requests.
@@ -216,6 +218,18 @@ static int cmd_setauth(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_setbearer(struct re_printf *pf, void *arg)
+{
+	struct pl pl;
+	struct pl *plp = &pl;
+	int err = pl_opt_arg(&plp, arg);
+	if (err)
+		return err;
+
+	return http_reqconn_set_bearer(d->conn, plp);
+}
+
+
 static int cmd_setbody(struct re_printf *pf, void *arg)
 {
 	struct pl pl;
@@ -290,6 +304,7 @@ static const struct cmd cmdv[] = {
 {"http_get",  0, CMD_PRM, "httpreq: send HTTP GET request",  cmd_httpget  },
 {"http_post", 0, CMD_PRM, "httpreq: send HTTP POST request", cmd_httppost },
 {"http_setauth", 0, CMD_PRM, "httpreq: set user and password", cmd_setauth },
+{"http_setbearer", 0, CMD_PRM, "httpreq: set bearer token", cmd_setbearer },
 {"http_setbody", 0, CMD_PRM, "httpreq: set body", cmd_setbody },
 {"http_settimeout", 0, CMD_PRM, "httpreq: set timeout in ms", cmd_settimeout },
 {"http_setctype", 0, CMD_PRM, "httpreq: set content-type", cmd_setctype },
