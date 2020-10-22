@@ -218,12 +218,11 @@ static void fallback_ok(struct ua *ua)
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
+	(void)call;
 	(void)prm;
 	(void)arg;
 
-
 	switch (ev) {
-
 
 	case UA_EVENT_FALLBACK_FAIL:
 		debug("serreg: fallback fail %s.\n", ua_aor(ua));
