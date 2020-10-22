@@ -573,6 +573,7 @@ static int cmd_tls_issuer(struct re_printf *pf, void *unused)
 {
 	int err = 0;
 	struct mbuf *mb;
+	(void)unused;
 
 	mb = mbuf_alloc(20);
 	if (!mb)
@@ -596,6 +597,7 @@ static int cmd_tls_subject(struct re_printf *pf, void *unused)
 {
 	int err = 0;
 	struct mbuf *mb;
+	(void)unused;
 
 	mb = mbuf_alloc(20);
 	if (!mb)
