@@ -180,7 +180,7 @@ static int pl_opt_arg(struct pl **plp, const struct cmd_arg *carg)
 }
 
 
-static int send_request(struct re_printf *pf, void *arg, const struct pl *met)
+static int send_request(void *arg, const struct pl *met)
 {
 	struct pl uri;
 	int err = pl_set_arg(&uri, arg);
@@ -201,7 +201,7 @@ static int cmd_httpget(struct re_printf *pf, void *arg)
 	int err = 0;
 	struct pl pl = PL("GET");
 
-	err = send_request(pf, arg, &pl);
+	err = send_request(arg, &pl);
 	if (err)
 		re_hprintf(pf, "Usage:\nhttp_get <uri>\n");
 
@@ -214,7 +214,7 @@ static int cmd_httppost(struct re_printf *pf, void *arg)
 	int err = 0;
 	struct pl pl = PL("POST");
 
-	err = send_request(pf, arg, &pl);
+	err = send_request(arg, &pl);
 	if (err)
 		re_hprintf(pf, "Usage:\nhttp_post <uri>\n");
 
@@ -227,7 +227,10 @@ static int cmd_setauth(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct pl user = PL_INIT;
 	struct pl pass = PL_INIT;
-	int err = ensure_alloc();
+	int err;
+	(void)pf;
+
+	err = ensure_alloc();
 	if (err)
 		return err;
 
@@ -246,7 +249,10 @@ static int cmd_setbearer(struct re_printf *pf, void *arg)
 {
 	struct pl pl;
 	struct pl *plp = &pl;
-	int err = pl_opt_arg(&plp, arg);
+	int err;
+	(void)pf;
+
+	err = pl_opt_arg(&plp, arg);
 	if (err)
 		return err;
 
@@ -258,7 +264,10 @@ static int cmd_setbody(struct re_printf *pf, void *arg)
 {
 	struct pl pl;
 	struct pl *plp = &pl;
-	int err = pl_opt_arg(&plp, arg);
+	int err;
+	(void)pf;
+
+	err = pl_opt_arg(&plp, arg);
 	if (err)
 		return err;
 
@@ -270,7 +279,10 @@ static int cmd_setctype(struct re_printf *pf, void *arg)
 {
 	struct pl pl;
 	struct pl *plp = &pl;
-	int err = pl_opt_arg(&plp, arg);
+	int err;
+	(void)pf;
+
+	err = pl_opt_arg(&plp, arg);
 	if (err)
 		return err;
 
@@ -293,7 +305,9 @@ static int cmd_addheader(struct re_printf *pf, void *arg)
 
 static int cmd_clrheader(struct re_printf *pf, void *arg)
 {
-	(void) arg;
+	(void)pf;
+	(void)arg;
+
 	(void) http_reqconn_clr_header(d->conn);
 	return 0;
 }
@@ -301,7 +315,9 @@ static int cmd_clrheader(struct re_printf *pf, void *arg)
 
 static int cmd_clear(struct re_printf *pf, void *arg)
 {
-	(void) arg;
+	(void)pf;
+	(void)arg;
+
 	d->conn = mem_deref(d->conn);
 	d->client = mem_deref(d->client);
 	return 0;
@@ -339,7 +355,10 @@ static int cmd_sethostname(struct re_printf *pf, void *arg)
 {
 	struct pl pl;
 	struct pl *plp = &pl;
-	int err = pl_opt_arg(&plp, arg);
+	int err;
+	(void)pf;
+
+	err = pl_opt_arg(&plp, arg);
 	if (err)
 		return err;
 
