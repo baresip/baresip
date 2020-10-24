@@ -660,28 +660,29 @@ static int about_box(struct re_printf *pf, void *unused)
 
 static const struct cmd cmdv[] = {
 
+{"about",     0,          0, "About box",               about_box            },
 {"accept",    'a',        0, "Accept incoming call",    cmd_answer           },
-{"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
+{"answermode",0,    CMD_PRM, "Set answer mode",         cmd_set_answermode   },
+{"auplay",    0,    CMD_PRM, "Switch audio player",     switch_audio_player  },
+{"ausrc",     0,    CMD_PRM, "Switch audio source",     switch_audio_source  },
 {"callstat",  'c',        0, "Call status",             ua_print_call_status },
 {"dial",      'd',  CMD_PRM, "Dial",                    dial_handler         },
+{"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"help",      'h',        0, "Help menu",               print_commands       },
 {"listcalls", 'l',        0, "List active calls",       cmd_print_calls      },
 {"options",   'o',  CMD_PRM, "Options",                 options_command      },
 {"reginfo",   'r',        0, "Registration info",       ua_print_reg_status  },
-{"answermode",0,    CMD_PRM, "Set answer mode",         cmd_set_answermode   },
-{NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
-{"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
-{"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
 {"uadel",     0,    CMD_PRM, "Delete User-Agent",       cmd_ua_delete        },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
-#ifdef USE_TLS
-{"tlsissuer", 0,          0, "TLS certificate issuer",  cmd_tls_issuer    },
-{"tlssubject",0,          0, "TLS certificate subject", cmd_tls_subject   },
-#endif
-{"ausrc",     0,    CMD_PRM, "Switch audio source",     switch_audio_source  },
-{"auplay",    0,    CMD_PRM, "Switch audio player",     switch_audio_player  },
-{"about",     0,          0, "About box",               about_box            },
+{"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
+{"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"vidsrc",    0,    CMD_PRM, "Switch video source",     switch_video_source  },
+{NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
+
+#ifdef USE_TLS
+{"tlsissuer", 0,          0, "TLS certificate issuer",  cmd_tls_issuer       },
+{"tlssubject",0,          0, "TLS certificate subject", cmd_tls_subject      },
+#endif
 
 };
 
