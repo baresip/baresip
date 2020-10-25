@@ -399,15 +399,23 @@ static int ca_handler(const struct pl *pl, void *arg)
 static int cmd_settimeout(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct http_conf conf;
 	uint32_t v;
-	int err = ensure_carg_alloc(carg);
+	int err;
+
+	err = ensure_carg_alloc(carg);
 	if (err) {
 		re_hprintf(pf, "Usage:\nhttp_settimeout <ms>\n");
 		return err;
 	}
 
 	v = (uint32_t) atoi(carg->prm);
-	return http_client_set_timeout(d->client, v);
+
+	conf.conn_timeout = v;
+	conf.recv_timeout = 60000;
+	conf.idle_timeout = 900000;
+
+	return http_client_set_config(d->client, &conf);
 }
 
 
