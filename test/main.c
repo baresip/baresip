@@ -211,6 +211,8 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
+	str_ncpy(config->net.ifname, "127.0.0.1", sizeof(config->net.ifname));
+
 	err = baresip_init(config);
 	if (err)
 		goto out;
