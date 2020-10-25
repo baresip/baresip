@@ -268,7 +268,6 @@ endif
 
 # ------------------------------------------------------------------------- #
 
-MODULES   += $(EXTRA_MODULES)
 ifneq ($(BASIC_MODULES),no)
 MODULES   += account
 MODULES   += auloop
@@ -478,3 +477,5 @@ endif
 ifneq ($(USE_RTCPSUMMARY),)
 MODULES   += rtcpsummary
 endif
+
+MODULES   += $(EXTRA_MODULES)
