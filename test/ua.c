@@ -182,25 +182,25 @@ int test_ua_alloc(void)
 	int err = 0;
 
 	/* make sure we dont have that UA already */
-	ASSERT_TRUE(NULL == uag_find_aor("sip:user@127.0.0.1"));
+	ASSERT_TRUE(NULL == uag_find_aor("sip:user@test.invalid"));
 
-	err = ua_alloc(&ua, "Foo <sip:user@127.0.0.1>;regint=0");
+	err = ua_alloc(&ua, "Foo <sip:user@test.invalid>;regint=0");
 	if (err)
 		return err;
 
 	/* verify this UA-instance */
 	ASSERT_TRUE(!ua_isregistered(ua));
-	ASSERT_STREQ("sip:user@127.0.0.1", ua_aor(ua));
+	ASSERT_STREQ("sip:user@test.invalid", ua_aor(ua));
 	ASSERT_TRUE(NULL == ua_call(ua));
 
 	/* verify global UA keeper */
 	ASSERT_EQ((n_uas + 1), list_count(uag_list()));
-	ASSERT_TRUE(ua == uag_find_aor("sip:user@127.0.0.1"));
+	ASSERT_TRUE(ua == uag_find_aor("sip:user@test.invalid"));
 
 	/* verify URI complete function */
 	err = ua_uri_complete(ua, mb, "bob");
 	ASSERT_EQ(0, err);
-	TEST_STRCMP("sip:bob@127.0.0.1", 17, mb->buf, mb->end);
+	TEST_STRCMP("sip:bob@test.invalid", 20, mb->buf, mb->end);
 
 	mem_deref(ua);
 
@@ -219,8 +219,8 @@ int test_uag_find_param(void)
 
 	ASSERT_TRUE(NULL == uag_find_param("not", "found"));
 
-	err  = ua_alloc(&ua1, "<sip:x@127.0.0.1>;regint=0;abc");
-	err |= ua_alloc(&ua2, "<sip:x@127.0.0.1>;regint=0;def=123");
+	err  = ua_alloc(&ua1, "<sip:x@test.invalid>;regint=0;abc");
+	err |= ua_alloc(&ua2, "<sip:x@test.invalid>;regint=0;def=123");
 	if (err)
 		goto out;
 
@@ -281,6 +281,7 @@ static int reg_dns(enum sip_transp tp)
 	for (i=0; i<server_count; i++) {
 		struct sa sip_addr;
 		char arec[256];
+		uint8_t addr[16];
 
 		err = sip_server_alloc(&t.srvv[i],
 				       sip_server_exit_handler, NULL);
@@ -309,8 +310,23 @@ static int reg_dns(enum sip_transp tp)
 					 arec);
 		TEST_ERR(err);
 
-		err = dns_server_add_a(dnssrv, arec, sa_in(&sip_addr));
-		TEST_ERR(err);
+		switch (sa_af(&sip_addr)) {
+
+		case AF_INET:
+			err = dns_server_add_a(dnssrv, arec, sa_in(&sip_addr));
+			TEST_ERR(err);
+			break;
+
+		case AF_INET6:
+			sa_in6(&sip_addr, addr);
+			err = dns_server_add_aaaa(dnssrv, arec, addr);
+			TEST_ERR(err);
+			break;
+
+		default:
+			err = EAFNOSUPPORT;
+			goto out;
+		}
 	}
 	t.srvc = server_count;
 
@@ -524,6 +540,7 @@ static int reg_auth_dns(enum sip_transp tp)
 	for (i=0; i<server_count; i++) {
 		struct sa sip_addr;
 		char arec[256];
+		uint8_t addr[16];
 
 		err = sip_server_alloc(&t.srvv[i],
 				       sip_server_exit_handler, NULL);
@@ -566,8 +583,23 @@ static int reg_auth_dns(enum sip_transp tp)
 					 arec);
 		TEST_ERR(err);
 
-		err = dns_server_add_a(dnssrv, arec, sa_in(&sip_addr));
-		TEST_ERR(err);
+		switch (sa_af(&sip_addr)) {
+
+		case AF_INET:
+			err = dns_server_add_a(dnssrv, arec, sa_in(&sip_addr));
+			TEST_ERR(err);
+			break;
+
+		case AF_INET6:
+			sa_in6(&sip_addr, addr);
+			err = dns_server_add_aaaa(dnssrv, arec, addr);
+			TEST_ERR(err);
+			break;
+
+		default:
+			err = EAFNOSUPPORT;
+			goto out;
+		}
 	}
 	t.srvc = server_count;
 
@@ -731,8 +763,8 @@ static int test_ua_options_base(enum sip_transp transp)
 
 	/* NOTE: no angle brackets in the Request URI */
 	n = re_snprintf(uri, sizeof(uri),
-			"sip:user@127.0.0.1:%u%s",
-			sa_port(&laddr), sip_transp_param(transp));
+			"sip:user@%J%s",
+			&laddr, sip_transp_param(transp));
 	ASSERT_TRUE(n > 0);
 
 	err = ua_options_send(t.ua, uri, options_resp_handler, &t);
