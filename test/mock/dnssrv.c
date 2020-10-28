@@ -207,6 +207,40 @@ int dns_server_add_a(struct dns_server *srv, const char *name, uint32_t addr)
 }
 
 
+int dns_server_add_aaaa(struct dns_server *srv, const char *name,
+			const uint8_t *addr)
+{
+	struct dnsrr *rr;
+	int err;
+
+	if (!srv || !name)
+		return EINVAL;
+
+	rr = dns_rr_alloc();
+	if (!rr)
+		return ENOMEM;
+
+	err = str_dup(&rr->name, name);
+	if (err)
+		goto out;
+
+	rr->type = DNS_TYPE_AAAA;
+	rr->dnsclass = DNS_CLASS_IN;
+	rr->ttl = 3600;
+	rr->rdlen = 0;
+
+	memcpy(rr->rdata.aaaa.addr, addr, 16);
+
+	list_append(&srv->rrl, &rr->le, rr);
+
+ out:
+	if (err)
+		mem_deref(rr);
+
+	return err;
+}
+
+
 int dns_server_add_srv(struct dns_server *srv, const char *name,
 		       uint16_t pri, uint16_t weight, uint16_t port,
 		       const char *target)
