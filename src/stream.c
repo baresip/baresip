@@ -592,6 +592,18 @@ struct sdp_media *stream_sdpmedia(const struct stream *strm)
 }
 
 
+/**
+ * Write stream data to the network
+ *
+ * @param s		Stream object
+ * @param ext		Extension bit
+ * @param marker	Marker bit
+ * @param pt		Payload type
+ * @param ts		Timestamp
+ * @param mb		Payload buffer
+ *
+ * @return int	0 if success, errorcode otherwise
+ */
 int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		struct mbuf *mb)
 {
@@ -602,8 +614,17 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 
 	if (!sa_isset(&s->raddr_rtp, SA_ALL))
 		return 0;
+
 	if (!(sdp_media_rdir(s->sdp) & SDP_SENDONLY))
 		return 0;
+
+	if (sdp_media_ldir(s->sdp) == SDP_RECVONLY)
+		return 0;
+
+	if (sdp_media_ldir(s->sdp) == SDP_INACTIVE)
+
+		return 0;
+
 	if (s->hold)
 		return 0;
 
