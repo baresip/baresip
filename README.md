@@ -110,7 +110,7 @@ Distributed under BSD license
   - FFmpeg/libav libavformat/avdevice input
   - Cairo video-source test module
   - Direct Show video-source
-  - MacOSX QTcapture/AVCapture video-source
+  - MacOSX AVCapture video-source
   - RST media player
   - Linux V4L/V4L2 video-source
   - X11 grabber video-source
@@ -273,7 +273,6 @@ plc           Packet Loss Concealment (PLC) using spandsp
 portaudio     Portaudio driver
 pulse         Pulseaudio driver
 presence      Presence module
-qtcapture     Apple QTCapture video source driver
 rtcpsummary   RTCP summary module
 rst           Radio streamer using mpg123
 sdl           Simple DirectMedia Layer 2.0 (SDL) video output driver

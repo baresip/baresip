@@ -246,8 +246,6 @@ USE_COREAUDIO := \
 
 ifneq ($(USE_AVFOUNDATION),)
 USE_AVCAPTURE := yes
-else
-USE_QTCAPTURE := yes
 endif
 
 
@@ -345,10 +343,6 @@ MODULES   += coreaudio
 endif
 ifneq ($(USE_DTLS_SRTP),)
 MODULES   += dtls_srtp
-endif
-ifneq ($(USE_QTCAPTURE),)
-MODULES   += qtcapture
-CFLAGS    += -DQTCAPTURE_RUNLOOP
 endif
 ifneq ($(USE_ECHO),)
 MODULES   += echo

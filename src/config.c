@@ -484,13 +484,7 @@ static const char *default_audio_device(void)
 static const char *default_video_device(void)
 {
 #ifdef DARWIN
-
-#ifdef QTCAPTURE_RUNLOOP
-	return "qtcapture,nil";
-#else
 	return "avcapture,nil";
-#endif
-
 #elif defined (WIN32)
 	return "dshow,nil";
 #else
@@ -815,11 +809,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n# Video source modules\n");
 #if defined (DARWIN)
 
-#ifdef QTCAPTURE_RUNLOOP
-	(void)re_fprintf(f, "module\t\t\t" "qtcapture" MOD_EXT "\n");
-#else
 	(void)re_fprintf(f, "module\t\t\t" "avcapture" MOD_EXT "\n");
-#endif
 
 #elif defined (WIN32)
 	(void)re_fprintf(f, "module\t\t\t" "dshow" MOD_EXT "\n");
