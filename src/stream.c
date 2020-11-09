@@ -486,6 +486,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->rtcph = rtcph;
 	s->arg   = arg;
 	s->pseq  = -1;
+	s->ldir = SDP_SENDRECV;
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);
@@ -622,7 +623,6 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		return 0;
 
 	if (sdp_media_ldir(s->sdp) == SDP_INACTIVE)
-
 		return 0;
 
 	if (s->hold)
@@ -753,7 +753,7 @@ void stream_hold(struct stream *s, bool hold)
 		return;
 
 	s->hold = hold;
-	sdp_media_set_ldir(s->sdp, hold ? SDP_SENDONLY : SDP_SENDRECV);
+	sdp_media_set_ldir(s->sdp, hold ? SDP_SENDONLY : s->ldir);
 	stream_reset(s);
 }
 
@@ -763,13 +763,14 @@ void stream_set_ldir(struct stream *s, enum sdp_dir dir)
 	if (!s)
 		return;
 
-	if (dir == SDP_INACTIVE) {
+	s->ldir = dir;
+
+	if (dir == SDP_INACTIVE)
 		sdp_media_set_disabled(s->sdp, true);
-	}
-	else {
+	else
 		sdp_media_set_disabled(s->sdp, false);
-		sdp_media_set_ldir(s->sdp, dir);
-	}
+
+	sdp_media_set_ldir(s->sdp, dir);
 
 	stream_reset(s);
 }
