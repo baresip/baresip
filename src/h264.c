@@ -129,7 +129,7 @@ int h264_nal_send(bool first, bool last,
 		const uint8_t nri  = hdr & 0x60;
 		const size_t sz = maxsz - 2;
 
-		fu_hdr[0] = nri | H264_NAL_FU_A;
+		fu_hdr[0] = nri | H264_NALU_FU_A;
 		fu_hdr[1] = first ? (1<<7 | type) : type;
 
 		while (size > sz) {
@@ -182,33 +182,7 @@ int h264_packetize(uint64_t rtp_ts, const uint8_t *buf, size_t len,
 }
 
 
-/**
- * Get the name of an H.264 nal unit
- *
- * @param type NAL unit type
- *
- * @return A string containing the NAL unit name
- */
-const char *h264_nalunit_name(int type)
+bool h264_is_keyframe(int type)
 {
-	switch (type) {
-
-	case H264_NAL_SLICE:       return "SLICE";
-	case H264_NAL_DPA:         return "DPA";
-	case H264_NAL_DPB:         return "DPB";
-	case H264_NAL_DPC:         return "DPC";
-	case H264_NAL_IDR_SLICE:   return "IDR_SLICE";
-	case H264_NAL_SEI:         return "SEI";
-	case H264_NAL_SPS:         return "SPS";
-	case H264_NAL_PPS:         return "PPS";
-	case H264_NAL_AUD:         return "AUD";
-	case H264_NAL_FILLER_DATA: return "FILLER";
-
-	case H264_NAL_STAP_A:      return "STAP-A";
-	case H264_NAL_STAP_B:      return "STAP-B";
-	case H264_NAL_FU_A:        return "FU-A";
-	case H264_NAL_FU_B:        return "FU-B";
-	}
-
-	return "???";
+	return type == H264_NALU_IDR_SLICE;
 }

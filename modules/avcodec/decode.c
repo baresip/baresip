@@ -329,10 +329,10 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		  marker ? "[M]" : "   ",
 		  h264_is_keyframe(h264_hdr.type) ? "<KEY>" : "     ",
 		  h264_hdr.type,
-		  h264_nalunit_name(h264_hdr.type));
+		  h264_nal_unit_name(h264_hdr.type));
 #endif
 
-	if (h264_hdr.type == H264_NAL_SLICE && !st->got_keyframe) {
+	if (h264_hdr.type == H264_NALU_SLICE && !st->got_keyframe) {
 		debug("avcodec: decoder waiting for keyframe\n");
 		return EPROTO;
 	}
@@ -342,7 +342,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		return EBADMSG;
 	}
 
-	if (st->frag && h264_hdr.type != H264_NAL_FU_A) {
+	if (st->frag && h264_hdr.type != H264_NALU_FU_A) {
 		debug("avcodec: lost fragments; discarding previous NAL\n");
 		fragment_rewind(st);
 		st->frag = false;
@@ -362,7 +362,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		if (err)
 			goto out;
 	}
-	else if (H264_NAL_FU_A == h264_hdr.type) {
+	else if (H264_NALU_FU_A == h264_hdr.type) {
 		struct h264_fu fu;
 
 		err = h264_fu_hdr_decode(&fu, src);
@@ -416,7 +416,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 
 		st->frag_seq = seq;
 	}
-	else if (H264_NAL_STAP_A == h264_hdr.type) {
+	else if (H264_NALU_STAP_A == h264_hdr.type) {
 
 		while (mbuf_get_left(src) >= 2) {
 

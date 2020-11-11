@@ -1396,32 +1396,6 @@ int sip_req_send(struct ua *ua, const char *method, const char *uri,
  * H.264
  */
 
-/** NAL unit types (RFC 3984, Table 1) */
-enum {
-	H264_NAL_UNKNOWN      = 0,
-	/* 1-23   NAL unit  Single NAL unit packet per H.264 */
-	H264_NAL_SLICE        = 1,
-	H264_NAL_DPA          = 2,
-	H264_NAL_DPB          = 3,
-	H264_NAL_DPC          = 4,
-	H264_NAL_IDR_SLICE    = 5,
-	H264_NAL_SEI          = 6,
-	H264_NAL_SPS          = 7,
-	H264_NAL_PPS          = 8,
-	H264_NAL_AUD          = 9,
-	H264_NAL_END_SEQUENCE = 10,
-	H264_NAL_END_STREAM   = 11,
-	H264_NAL_FILLER_DATA  = 12,
-	H264_NAL_SPS_EXT      = 13,
-	H264_NAL_AUX_SLICE    = 19,
-
-	H264_NAL_STAP_A       = 24,  /**< Single-time aggregation packet */
-	H264_NAL_STAP_B       = 25,  /**< Single-time aggregation packet */
-	H264_NAL_MTAP16       = 26,  /**< Multi-time aggregation packet  */
-	H264_NAL_MTAP24       = 27,  /**< Multi-time aggregation packet  */
-	H264_NAL_FU_A         = 28,  /**< Fragmentation unit             */
-	H264_NAL_FU_B         = 29,  /**< Fragmentation unit             */
-};
 
 /**
  * H.264 Header defined in RFC 3984
@@ -1462,11 +1436,7 @@ int h264_nal_send(bool first, bool last,
 		  bool marker, uint32_t ihdr, uint64_t rtp_ts,
 		  const uint8_t *buf, size_t size, size_t maxsz,
 		  videnc_packet_h *pkth, void *arg);
-const char *h264_nalunit_name(int type);
-static inline bool h264_is_keyframe(int type)
-{
-	return type == H264_NAL_IDR_SLICE;
-}
+bool h264_is_keyframe(int type);
 
 
 /*
