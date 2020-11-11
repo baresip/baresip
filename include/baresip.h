@@ -1397,26 +1397,6 @@ int sip_req_send(struct ua *ua, const char *method, const char *uri,
  */
 
 
-/**
- * H.264 Header defined in RFC 3984
- *
- * <pre>
-      +---------------+
-      |0|1|2|3|4|5|6|7|
-      +-+-+-+-+-+-+-+-+
-      |F|NRI|  Type   |
-      +---------------+
- * </pre>
- */
-struct h264_hdr {
-	unsigned f:1;      /**< 1 bit  - Forbidden zero bit (must be 0) */
-	unsigned nri:2;    /**< 2 bits - nal_ref_idc                    */
-	unsigned type:5;   /**< 5 bits - nal_unit_type                  */
-};
-
-int h264_hdr_encode(const struct h264_hdr *hdr, struct mbuf *mb);
-int h264_hdr_decode(struct h264_hdr *hdr, struct mbuf *mb);
-
 /** Fragmentation Unit header */
 struct h264_fu {
 	unsigned s:1;      /**< Start bit                               */
