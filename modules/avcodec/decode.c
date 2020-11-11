@@ -311,7 +311,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 			bool *intra, bool marker, uint16_t seq,
 			struct mbuf *src)
 {
-	struct h264_hdr h264_hdr;
+	struct h264_nal_header h264_hdr;
 	const uint8_t nal_seq[3] = {0, 0, 1};
 	int err;
 
@@ -320,7 +320,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 
 	*intra = false;
 
-	err = h264_hdr_decode(&h264_hdr, src);
+	err = h264_nal_header_decode(&h264_hdr, src);
 	if (err)
 		return err;
 
@@ -385,7 +385,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 			mbuf_write_mem(st->mb, nal_seq, 3);
 
 			/* encode NAL header back to buffer */
-			err = h264_hdr_encode(&h264_hdr, st->mb);
+			err = h264_nal_header_encode(st->mb, &h264_hdr);
 			if (err)
 				goto out;
 		}
@@ -421,12 +421,12 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		while (mbuf_get_left(src) >= 2) {
 
 			const uint16_t len = ntohs(mbuf_read_u16(src));
-			struct h264_hdr lhdr;
+			struct h264_nal_header lhdr;
 
 			if (mbuf_get_left(src) < len)
 				return EBADMSG;
 
-			err = h264_hdr_decode(&lhdr, src);
+			err = h264_nal_header_decode(&lhdr, src);
 			if (err)
 				return err;
 

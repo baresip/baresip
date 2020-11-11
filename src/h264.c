@@ -9,33 +9,6 @@
 #include <baresip.h>
 
 
-int h264_hdr_encode(const struct h264_hdr *hdr, struct mbuf *mb)
-{
-	uint8_t v;
-
-	v = hdr->f<<7 | hdr->nri<<5 | hdr->type<<0;
-
-	return mbuf_write_u8(mb, v);
-}
-
-
-int h264_hdr_decode(struct h264_hdr *hdr, struct mbuf *mb)
-{
-	uint8_t v;
-
-	if (mbuf_get_left(mb) < 1)
-		return ENOENT;
-
-	v = mbuf_read_u8(mb);
-
-	hdr->f    = v>>7 & 0x1;
-	hdr->nri  = v>>5 & 0x3;
-	hdr->type = v>>0 & 0x1f;
-
-	return 0;
-}
-
-
 int h264_fu_hdr_encode(const struct h264_fu *fu, struct mbuf *mb)
 {
 	uint8_t v = fu->s<<7 | fu->s<<6 | fu->r<<5 | fu->type;
