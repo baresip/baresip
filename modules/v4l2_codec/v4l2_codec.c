@@ -316,14 +316,14 @@ static void read_frame(struct vidsrc_st *st)
 
 	{
 		struct mbuf mb = {0,0,0,0};
-		struct h264_hdr hdr;
+		struct h264_nal_header hdr;
 
 		mb.buf = st->buffer;
 		mb.pos = 4;
 		mb.end = buf.bytesused - 4;
 		mb.size = buf.bytesused;
 
-		err = h264_hdr_decode(&hdr, &mb);
+		err = h264_nal_header_decode(&hdr, &mb);
 		if (err) {
 			warning("could not decode H.264 header\n");
 		}
