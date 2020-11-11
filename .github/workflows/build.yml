@@ -1,0 +1,72 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+        os: [ubuntu-16.04, ubuntu-18.04, ubuntu-20.04, macos-latest]
+        exclude:
+           - os: macos-latest
+             compiler: gcc
+    env:
+      CC: ${{ matrix.compiler }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: install packages
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo apt-get install -y libavcodec-dev \
+                            libavdevice-dev \
+                            libavformat-dev \
+                            libgtk2.0-dev \
+                            libjack-jackd2-dev \
+                            libmpg123-dev \
+                            libopus-dev \
+                            libpulse-dev \
+                            libsndfile1-dev \
+                            libspandsp-dev \
+                            libssl-dev \
+                            libglib2.0-dev
+    
+    - name: install aac
+      if: ${{ matrix.os == 'ubuntu-20.04' }}
+      run: |
+        sudo apt-get install -y libfdk-aac-dev
+
+    - name: install packages
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        brew install codec2 \
+                        fdk-aac \
+                        ffmpeg \
+                        jack \
+                        mpg123 \
+                        spandsp
+
+    - name: make re/rem
+      run: |
+        git clone https://github.com/baresip/re.git
+        git clone https://github.com/creytiv/rem.git
+        for p in re rem; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
+
+    - name: ldconfig
+      if: ${{ runner.os == 'Linux' }}
+      run: sudo ldconfig
+
+    - name: make baresip linux
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
+        make clean; make CCACHE= STATIC=yes
+
+    - name: make baresip macOS
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        make V=1 CCACHE= info test modules
+        make clean; make CCACHE= STATIC=yes

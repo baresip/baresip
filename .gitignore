@@ -21,7 +21,7 @@ selftest
 
 # Generated files
 src/static.c
-build*
+/build*
 *.pc
 
 # Backup files
