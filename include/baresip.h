@@ -788,8 +788,6 @@ enum presence_status ua_presence_status(const struct ua *ua);
 void ua_presence_status_set(struct ua *ua, const enum presence_status status);
 void ua_set_media_af(struct ua *ua, int af_media);
 void ua_set_catchall(struct ua *ua, bool enabled);
-void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
-	      const char *fmt, ...);
 int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name);
 int  ua_set_custom_hdrs(struct ua *ua, struct list *custom_hdrs);
 int  ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri);
@@ -806,15 +804,12 @@ void ua_stop_all(bool forced);
 void uag_set_exit_handler(ua_exit_h *exith, void *arg);
 void uag_enable_sip_trace(bool enable);
 int  uag_reset_transp(bool reg, bool reinvite);
-int  uag_event_register(ua_event_h *eh, void *arg);
-void uag_event_unregister(ua_event_h *eh);
 void uag_set_sub_handler(sip_msg_h *subh);
 int  uag_set_extra_params(const char *eprm);
 struct ua   *uag_find(const struct pl *cuser);
 struct ua   *uag_find_aor(const char *aor);
 struct ua   *uag_find_param(const char *name, const char *val);
 struct sip  *uag_sip(void);
-const char  *uag_event_str(enum ua_event ev);
 struct list *uag_list(void);
 uint32_t     uag_call_count(void);
 void         uag_current_set(struct ua *ua);
@@ -1443,6 +1438,11 @@ void module_app_unload(void);
 int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		      struct call *call, const char *prm);
 int event_add_au_jb_stat(struct odict *od_parent, const struct call *call);
+int  uag_event_register(ua_event_h *eh, void *arg);
+void uag_event_unregister(ua_event_h *eh);
+void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
+	      const char *fmt, ...);
+const char  *uag_event_str(enum ua_event ev);
 
 
 /*

@@ -33,12 +33,6 @@ struct ua {
 	struct list custom_hdrs;     /**< List of outgoing headers           */
 };
 
-struct ua_eh {
-	struct le le;
-	ua_event_h *h;
-	void *arg;
-};
-
 struct ua_xhdr_filter {
 	struct le le;
 	char *hdr_name;
@@ -47,7 +41,6 @@ struct ua_xhdr_filter {
 static struct {
 	struct config_sip *cfg;        /**< SIP configuration               */
 	struct list ual;               /**< List of User-Agents (struct ua) */
-	struct list ehl;               /**< Event handlers (struct ua_eh)   */
 	struct sip *sip;               /**< SIP Stack                       */
 	struct sip_lsnr *lsnr;         /**< SIP Listener                    */
 	struct sipsess_sock *sock;     /**< SIP Session socket              */
@@ -66,7 +59,6 @@ static struct {
 #endif
 } uag = {
 	NULL,
-	LIST_INIT,
 	LIST_INIT,
 	NULL,
 	NULL,
@@ -135,37 +127,6 @@ void ua_printf(const struct ua *ua, const char *fmt, ...)
 	va_start(ap, fmt);
 	info("%r@%r: %v", &ua->acc->luri.user, &ua->acc->luri.host, fmt, &ap);
 	va_end(ap);
-}
-
-
-/**
- * Send a User-Agent event to all UA event handlers
- *
- * @param ua   User-Agent object (optional)
- * @param ev   User-agent event
- * @param call Call object (optional)
- * @param fmt  Formatted arguments
- * @param ...  Variable arguments
- */
-void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
-	      const char *fmt, ...)
-{
-	struct le *le;
-	char buf[256];
-	va_list ap;
-
-	va_start(ap, fmt);
-	(void)re_vsnprintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-
-	/* send event to all clients */
-	le = uag.ehl.head;
-	while (le) {
-		struct ua_eh *eh = le->data;
-		le = le->next;
-
-		eh->h(ua, ev, call, buf, eh->arg);
-	}
 }
 
 
@@ -1781,7 +1742,6 @@ void ua_close(void)
 #endif
 
 	list_flush(&uag.ual);
-	list_flush(&uag.ehl);
 }
 
 
@@ -2241,64 +2201,6 @@ int ua_print_supported(struct re_printf *pf, const struct ua *ua)
 struct list *ua_calls(const struct ua *ua)
 {
 	return ua ? (struct list *)&ua->calls : NULL;
-}
-
-
-static void eh_destructor(void *arg)
-{
-	struct ua_eh *eh = arg;
-	list_unlink(&eh->le);
-}
-
-
-/**
- * Register a User-Agent event handler
- *
- * @param h   Event handler
- * @param arg Handler argument
- *
- * @return 0 if success, otherwise errorcode
- */
-int uag_event_register(ua_event_h *h, void *arg)
-{
-	struct ua_eh *eh;
-
-	if (!h)
-		return EINVAL;
-
-	uag_event_unregister(h);
-
-	eh = mem_zalloc(sizeof(*eh), eh_destructor);
-	if (!eh)
-		return ENOMEM;
-
-	eh->h = h;
-	eh->arg = arg;
-
-	list_append(&uag.ehl, &eh->le, eh);
-
-	return 0;
-}
-
-
-/**
- * Unregister a User-Agent event handler
- *
- * @param h   Event handler
- */
-void uag_event_unregister(ua_event_h *h)
-{
-	struct le *le;
-
-	for (le = uag.ehl.head; le; le = le->next) {
-
-		struct ua_eh *eh = le->data;
-
-		if (eh->h == h) {
-			mem_deref(eh);
-			break;
-		}
-	}
 }
 
 

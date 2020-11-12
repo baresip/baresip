@@ -9,6 +9,24 @@
 #include "core.h"
 
 
+struct ua_eh {
+	struct le le;
+	ua_event_h *h;
+	void *arg;
+};
+
+
+static struct list ehl;               /**< Event handlers (struct ua_eh)   */
+
+
+static void eh_destructor(void *arg)
+{
+	struct ua_eh *eh = arg;
+
+	list_unlink(&eh->le);
+}
+
+
 static const char *event_class_name(enum ua_event ev)
 {
 	switch (ev) {
@@ -191,6 +209,88 @@ int event_add_au_jb_stat(struct odict *od_parent, const struct call *call)
 	err = odict_entry_add(od_parent, "audio_jb_ms",ODICT_INT,
 			    (int64_t)audio_jb_current_value(call_audio(call)));
 	return err;
+}
+
+
+/**
+ * Register a User-Agent event handler
+ *
+ * @param h   Event handler
+ * @param arg Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int uag_event_register(ua_event_h *h, void *arg)
+{
+	struct ua_eh *eh;
+
+	if (!h)
+		return EINVAL;
+
+	uag_event_unregister(h);
+
+	eh = mem_zalloc(sizeof(*eh), eh_destructor);
+	if (!eh)
+		return ENOMEM;
+
+	eh->h = h;
+	eh->arg = arg;
+
+	list_append(&ehl, &eh->le, eh);
+
+	return 0;
+}
+
+
+/**
+ * Unregister a User-Agent event handler
+ *
+ * @param h   Event handler
+ */
+void uag_event_unregister(ua_event_h *h)
+{
+	struct le *le;
+
+	for (le = ehl.head; le; le = le->next) {
+
+		struct ua_eh *eh = le->data;
+
+		if (eh->h == h) {
+			mem_deref(eh);
+			break;
+		}
+	}
+}
+
+
+/**
+ * Send a User-Agent event to all UA event handlers
+ *
+ * @param ua   User-Agent object (optional)
+ * @param ev   User-agent event
+ * @param call Call object (optional)
+ * @param fmt  Formatted arguments
+ * @param ...  Variable arguments
+ */
+void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
+	      const char *fmt, ...)
+{
+	struct le *le;
+	char buf[256];
+	va_list ap;
+
+	va_start(ap, fmt);
+	(void)re_vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+
+	/* send event to all clients */
+	le = ehl.head;
+	while (le) {
+		struct ua_eh *eh = le->data;
+		le = le->next;
+
+		eh->h(ua, ev, call, buf, eh->arg);
+	}
 }
 
 
