@@ -235,8 +235,8 @@ static int start_register(struct ua *ua, bool fallback)
 					fallback ? " fallback" : "", err);
 
 			ua_event(ua, fallback ?
-					UA_EVENT_REGISTER_FAIL :
-					UA_EVENT_FALLBACK_FAIL,
+					UA_EVENT_FALLBACK_FAIL :
+					UA_EVENT_REGISTER_FAIL,
 					NULL, "%m", err);
 			goto out;
 		}
@@ -434,6 +434,8 @@ static void call_event_handler(struct call *call, enum call_event ev,
 	MAGIC_CHECK(ua);
 
 	peeruri = call_peeruri(call);
+	if (!peeruri)
+		return;
 
 	switch (ev) {
 
@@ -460,6 +462,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 			break;
 
 		case ANSWERMODE_MANUAL:
+		default:
 			ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
 			break;
 		}
