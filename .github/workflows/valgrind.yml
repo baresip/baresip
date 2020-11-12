@@ -1,0 +1,41 @@
+name: valgrind leak check
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest 
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: install packages
+      run: |
+        sudo apt-get install -y libavcodec-dev \
+                            libavdevice-dev \
+                            libavformat-dev \
+                            libgtk2.0-dev \
+                            libjack-jackd2-dev \
+                            libmpg123-dev \
+                            libopus-dev \
+                            libpulse-dev \
+                            libsndfile1-dev \
+                            libspandsp-dev \
+                            libssl-dev \
+                            libglib2.0-dev
+    
+    - name: install aac
+      run: |
+        sudo apt-get install -y libfdk-aac-dev
+
+    - name: make re/rem
+      run: |
+        git clone https://github.com/baresip/re.git
+        git clone https://github.com/creytiv/rem.git
+        for p in re rem; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
+        sudo ldconfig
+
+    - name: make baresip selftest
+      run: make EXTRA_CFLAGS="-Werror" CCACHE= test;
+
+    - name: valgrind test
+      run: valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./selftest 
