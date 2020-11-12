@@ -21,7 +21,8 @@ jobs:
                             libsndfile1-dev \
                             libspandsp-dev \
                             libssl-dev \
-                            libglib2.0-dev
+                            libglib2.0-dev \
+                            valgrind
     
     - name: install aac
       run: |
