@@ -58,6 +58,8 @@ enum {
 	MAX_PTIME       =    60,  /* Maximum packet time in [ms] */
 
 	AUDIO_SAMPSZ    = MAX_SRATE * MAX_CHANNELS * MAX_PTIME / 1000,
+
+	SILENCE_Q = 1024 * 1024,  /* Quadratic sample value for silence */
 };
 
 
@@ -627,6 +629,27 @@ static void check_telev(struct audio *a, struct autx *tx)
 }
 
 
+static bool silence(const int16_t *sampv, size_t sampc)
+{
+#ifdef USE_SILENCE_DETECTION
+	int32_t sum = 0;
+	size_t i;
+
+	for (i = 0; i < sampc; i++) {
+		sum += sampv[i]*sampv[i];
+
+		if (sum > (int32_t) (i + 1) * SILENCE_Q)
+			return false;
+	}
+#else
+	(void) sampv;
+	(void) sampc;
+#endif
+
+	return true;
+}
+
+
 /*
  * Write samples to Audio Player.
  *
@@ -662,6 +685,11 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 	}
 
 	aubuf_read(rx->aubuf, sampv, num_bytes);
+
+	/* decide if we have silence */
+	if (!err && rx->play_fmt == AUFMT_S16LE) {
+		stream_silence_on(a->strm, silence(sampv, sampc));
+	}
 }
 
 

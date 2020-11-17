@@ -362,6 +362,12 @@ int stream_decode(struct stream *s)
 }
 
 
+void stream_silence_on(struct stream *s, bool on)
+{
+	jbuf_silence(s->jbuf, on);
+}
+
+
 static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 {
 	struct stream *s = arg;
