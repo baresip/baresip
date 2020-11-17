@@ -331,6 +331,7 @@ struct config_avt {
 	struct range rtp_bw;    /**< RTP Bandwidth range [bit/s]    */
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
 	struct range jbuf_del;  /**< Delay, number of frames        */
+	uint32_t jbuf_wish;     /**< Startup wish delay of frames   */
 	bool rtp_stats;         /**< Enable RTP statistics          */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 };

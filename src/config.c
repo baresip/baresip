@@ -74,6 +74,7 @@ static struct config core_config = {
 		{0, 0},
 		false,
 		{5, 10},
+		0,
 		false,
 		0
 	},
@@ -336,6 +337,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);
 	(void)conf_get_range(conf, "jitter_buffer_delay",
 			     &cfg->avt.jbuf_del);
+	(void)conf_get_u32(conf, "jitter_buffer_wish",
+			     &cfg->avt.jbuf_wish);
 	(void)conf_get_bool(conf, "rtp_stats", &cfg->avt.rtp_stats);
 	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
 
@@ -406,6 +409,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtp_bandwidth\t\t%H\n"
 			 "rtcp_mux\t\t%s\n"
 			 "jitter_buffer_delay\t%H\n"
+			 "jitter_buffer_wish\t%u\n"
 			 "rtp_stats\t\t%s\n"
 			 "rtp_timeout\t\t%u # in seconds\n"
 			 "\n"
@@ -439,6 +443,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 range_print, &cfg->avt.rtp_bw,
 			 cfg->avt.rtcp_mux ? "yes" : "no",
 			 range_print, &cfg->avt.jbuf_del,
+			 cfg->avt.jbuf_wish,
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 
@@ -611,6 +616,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
 			  "rtcp_mux\t\tno\n"
 			  "jitter_buffer_delay\t%u-%u\t\t# frames\n"
+			  "#jitter_buffer_wish\t%u\t\t# frames for start\n"
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
 			  "\n# Network\n"
@@ -619,6 +625,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#dns_fallback\t\t8.8.8.8:53\n"
 			  "#net_interface\t\t%H\n",
 			  cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max,
+			  cfg->avt.jbuf_del.min + 1,
 			  default_interface_print, NULL);
 
 	return err;

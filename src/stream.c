@@ -534,8 +534,9 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	/* Jitter buffer */
 	if (cfg->jbuf_del.min && cfg->jbuf_del.max) {
 
-		err = jbuf_alloc(&s->jbuf, cfg->jbuf_del.min,
-				 cfg->jbuf_del.max);
+		err  = jbuf_alloc(&s->jbuf, cfg->jbuf_del.min,
+				cfg->jbuf_del.max);
+		err |= jbuf_set_wish(s->jbuf, cfg->jbuf_wish);
 		if (err)
 			goto out;
 	}
