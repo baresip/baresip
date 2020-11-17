@@ -241,7 +241,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		goto out;
 
 	if (video && size->w) {
-		re_snprintf(buf, sizeof(buf), "%dx%d", size->w, size->h);
+		re_snprintf(buf, sizeof(buf), "%ux%u", size->w, size->h);
 		ret = av_dict_set(&format_opts, "video_size", buf, 0);
 		if (ret != 0) {
 			warning("avformat: av_dict_set(video_size) failed"
