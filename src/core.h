@@ -289,6 +289,7 @@ enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct rtpext *extv, size_t extc,
 			    struct mbuf *mb, unsigned lostc, void *arg);
+typedef int (stream_pt_h)(uint8_t pt, struct mbuf *mb, void *arg);
 
 
 /** Defines a generic media stream */
@@ -320,6 +321,7 @@ struct stream {
 	int pt_enc;              /**< Payload type for encoding             */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool jbuf_started;       /**< True if jitter-buffer was started     */
+	stream_pt_h *pth;        /**< Stream payload type handler           */
 	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
 	uint64_t ts_last;        /**< Timestamp of last received RTP pkt    */
 	bool terminated;         /**< Stream is terminated flag             */
@@ -346,7 +348,8 @@ int  stream_alloc(struct stream **sp, struct list *streaml,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
 		  bool offerer,
-		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, void *arg);
+		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, stream_pt_h *pth,
+		  void *arg);
 int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
 void stream_update_encoder(struct stream *s, int pt_enc);
@@ -362,6 +365,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 int  stream_jbuf_reset(struct stream *strm,
 		       uint32_t frames_min, uint32_t frames_max);
 bool stream_is_ready(const struct stream *strm);
+int stream_decode(struct stream *strm);
 
 
 /*

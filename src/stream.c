@@ -295,8 +295,12 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		flush = true;
 	}
 
-	if (s->jbuf) {
+	/* payload-type changed? */
+	err = s->pth(hdr->pt, mb, s->arg);
+	if (err)
+		return;
 
+	if (s->jbuf) {
 		struct rtp_header hdr2;
 		void *mb2 = NULL;
 		int lostc;
@@ -466,12 +470,13 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
 		 bool offerer,
-		 stream_rtp_h *rtph, stream_rtcp_h *rtcph, void *arg)
+		 stream_rtp_h *rtph, stream_rtcp_h *rtcph, stream_pt_h *pth,
+		 void *arg)
 {
 	struct stream *s;
 	int err;
 
-	if (!sp || !prm || !cfg || !rtph)
+	if (!sp || !prm || !cfg || !rtph || !pth)
 		return EINVAL;
 
 	s = mem_zalloc(sizeof(*s), stream_destructor);
@@ -483,6 +488,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->cfg   = *cfg;
 	s->type  = type;
 	s->rtph  = rtph;
+	s->pth   = pth;
 	s->rtcph = rtcph;
 	s->arg   = arg;
 	s->pseq  = -1;

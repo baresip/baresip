@@ -711,21 +711,22 @@ out:
 }
 
 
-static int update_payload_type(struct video *v, uint8_t pt_old, uint8_t pt_new)
+static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 {
+	struct video *v = arg;
 	const struct sdp_format *lc;
 
-	lc = sdp_media_lformat(stream_sdpmedia(v->strm), pt_new);
+	if (v->vrx.pt_rx == (uint8_t)-1 || v->vrx.pt_rx == pt)
+		return 0;
+
+	info("Video decoder changed payload %u -> %u\n",
+			v->vrx.pt_rx, pt);
+
+	lc = sdp_media_lformat(stream_sdpmedia(v->strm), pt);
 	if (!lc)
 		return ENOENT;
 
-	if (pt_old != (uint8_t)-1) {
-		info("Video decoder changed payload %u -> %u\n",
-		     pt_old, pt_new);
-	}
-
-	v->vrx.pt_rx = pt_new;
-
+	v->vrx.pt_rx = pt;
 	return video_decoder_set(v, lc->data, lc->pt, lc->rparams);
 }
 
@@ -736,7 +737,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 				struct mbuf *mb, unsigned lostc, void *arg)
 {
 	struct video *v = arg;
-	int err;
 	(void)extv;
 	(void)extc;
 
@@ -752,10 +752,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	/* Video payload-type changed? */
 	if (hdr->pt == v->vrx.pt_rx)
 		goto out;
-
-	err = update_payload_type(v, v->vrx.pt_rx, hdr->pt);
-	if (err)
-		return;
 
  out:
 	(void)video_stream_decode(&v->vrx, hdr, mb);
@@ -899,7 +895,8 @@ int video_alloc(struct video **vp, struct list *streaml,
 	err = stream_alloc(&v->strm, streaml, stream_prm,
 			   &cfg->avt, sdp_sess, MEDIA_VIDEO, label,
 			   mnat, mnat_sess, menc, menc_sess, offerer,
-			   stream_recv_handler, rtcp_handler, v);
+			   stream_recv_handler, rtcp_handler,
+			   stream_pt_handler, v);
 	if (err)
 		goto out;
 
