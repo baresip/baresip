@@ -641,8 +641,15 @@ static void check_telev(struct audio *a, struct autx *tx)
  */
 static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 {
-	struct aurx *rx = arg;
+	int err = 0;
+	struct audio *a = arg;
+	struct aurx *rx = &a->rx;
 	size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
+
+	err = stream_decode(a->strm);
+	while (!err && aubuf_cur_size(rx->aubuf) < num_bytes) {
+		err = stream_decode(a->strm);
+	}
 
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
 
@@ -1466,7 +1473,7 @@ static int start_player(struct aurx *rx, struct audio *a,
 		err = auplay_alloc(&rx->auplay, auplayl,
 				   rx->module,
 				   &prm, rx->device,
-				   auplay_write_handler, rx);
+				   auplay_write_handler, a);
 		if (err) {
 			warning("audio: start_player failed (%s.%s): %m\n",
 				rx->module, rx->device, err);
@@ -1813,6 +1820,15 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	m = stream_sdpmedia(audio_strm(a));
 	reset |= sdp_media_dir(m)!=SDP_SENDRECV;
 
+	if (reset || ac != rx->ac) {
+		rx->auplay = mem_deref(rx->auplay);
+		aubuf_flush(rx->aubuf);
+		stream_reset(a->strm);
+
+		/* Reset audio filter chain */
+		list_flush(&rx->filtl);
+	}
+
 	if (ac != rx->ac) {
 
 		info("audio: Set audio decoder: %s %uHz %dch\n",
@@ -1833,17 +1849,8 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 
 	stream_set_srate(a->strm, 0, ac->crate);
 
-	if (reset) {
-		stream_reset(audio_strm(a));
-
-		rx->auplay = mem_deref(rx->auplay);
-		aubuf_flush(rx->aubuf);
-
-		/* Reset audio filter chain */
-		list_flush(&rx->filtl);
-
+	if (!rx->auplay)
 		err |= audio_start(a);
-	}
 
 	return err;
 }
@@ -2250,7 +2257,7 @@ int audio_set_player(struct audio *au, const char *mod, const char *device)
 
 		err = auplay_alloc(&rx->auplay, baresip_auplayl(),
 				   mod, &rx->auplay_prm, device,
-				   auplay_write_handler, rx);
+				   auplay_write_handler, au);
 		if (err) {
 			warning("audio: set_player failed (%s.%s): %m\n",
 				mod, device, err);

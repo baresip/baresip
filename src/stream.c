@@ -91,6 +91,8 @@ static void stream_close(struct stream *strm, int err)
 
 	strm->terminated = true;
 	strm->errorh = NULL;
+	strm->jbuf_started = false;
+	jbuf_flush(strm->jbuf);
 
 	if (errorh)
 		errorh(strm, err, strm->sess_arg);
@@ -304,13 +306,12 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	}
 
 	if (s->jbuf) {
-		struct rtp_header hdr2;
-		void *mb2 = NULL;
-		int lostc;
 
 		/* Put frame in Jitter Buffer */
-		if (flush && s->jbuf_started)
+		if (flush) {
 			jbuf_flush(s->jbuf);
+			s->jbuf_started = false;
+		}
 
 		err = jbuf_put(s->jbuf, hdr, mb);
 		if (err) {
@@ -321,25 +322,43 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			s->metric_rx.n_err++;
 		}
 
-		if (jbuf_get(s->jbuf, &hdr2, &mb2)) {
-
-			if (!s->jbuf_started)
-				return;
-
-			memset(&hdr2, 0, sizeof(hdr2));
-		}
-
-		s->jbuf_started = true;
-
-		lostc = lostcalc(s, hdr2.seq);
-
-		handle_rtp(s, &hdr2, mb2, lostc > 0 ? lostc : 0);
-
-		mem_deref(mb2);
+		if (s->type == MEDIA_VIDEO)
+			(void) stream_decode(s);
 	}
 	else {
 		handle_rtp(s, hdr, mb, 0);
 	}
+}
+
+
+/**
+ * Decodes one RTP packet. For audio streams this function is called by the
+ * auplay write handler and runs in the auplay thread. For video streams there
+ * is only the RTP thread which also does the decoding.
+ *
+ * @param s The stream
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int stream_decode(struct stream *s)
+{
+	struct rtp_header hdr;
+	void *mb;
+	int lostc;
+
+	if (!s->jbuf)
+		return ENOENT;
+
+	if (jbuf_get(s->jbuf, &hdr, &mb))
+		return ENOENT;
+
+	lostc = lostcalc(s, hdr.seq);
+	s->jbuf_started = true;
+
+	handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0);
+	mem_deref(mb);
+
+	return 0;
 }
 
 

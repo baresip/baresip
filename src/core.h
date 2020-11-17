@@ -364,6 +364,7 @@ void stream_set_bw(struct stream *s, uint32_t bps);
 int  stream_print(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 bool stream_is_ready(const struct stream *strm);
+int  stream_decode(struct stream *s);
 
 
 /*
