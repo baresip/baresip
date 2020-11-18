@@ -9,6 +9,7 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#include "aufile.h"
 
 
 /**
@@ -41,6 +42,9 @@ struct ausrc_st {
 
 
 static struct ausrc *ausrc;
+#ifdef USE_SNDFILE
+static struct auplay *auplay;
+#endif
 
 
 static void destructor(void *arg)
@@ -253,14 +257,23 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 static int module_init(void)
 {
-	return ausrc_register(&ausrc, baresip_ausrcl(),
+	int err;
+	err  = ausrc_register(&ausrc, baresip_ausrcl(),
 			      "aufile", alloc_handler);
+#ifdef USE_SNDFILE
+	err |= auplay_register(&auplay, baresip_auplayl(),
+			       "aufile", play_alloc);
+#endif
+	return err;
 }
 
 
 static int module_close(void)
 {
 	ausrc = mem_deref(ausrc);
+#ifdef USE_SNDFILE
+	auplay = mem_deref(auplay);
+#endif
 
 	return 0;
 }
