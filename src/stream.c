@@ -322,8 +322,11 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			s->metric_rx.n_err++;
 		}
 
-		if (s->type == MEDIA_VIDEO)
-			(void) stream_decode(s);
+		if (s->type == MEDIA_VIDEO) {
+
+			if (stream_decode(s) == EAGAIN)
+				(void) stream_decode(s);
+		}
 	}
 	else {
 		handle_rtp(s, hdr, mb, 0);
@@ -338,18 +341,21 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
  *
  * @param s The stream
  *
- * @return 0 if success, otherwise errorcode
+ * @return 0 if success, EAGAIN if it should be called again in order to avoid
+ * a jitter buffer overflow, otherwise errorcode
  */
 int stream_decode(struct stream *s)
 {
 	struct rtp_header hdr;
 	void *mb;
 	int lostc;
+	int err;
 
 	if (!s->jbuf)
 		return ENOENT;
 
-	if (jbuf_get(s->jbuf, &hdr, &mb))
+	err = jbuf_get(s->jbuf, &hdr, &mb);
+	if (err && err != EAGAIN)
 		return ENOENT;
 
 	lostc = lostcalc(s, hdr.seq);
@@ -358,7 +364,7 @@ int stream_decode(struct stream *s)
 	handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0);
 	mem_deref(mb);
 
-	return 0;
+	return err;
 }
 
 

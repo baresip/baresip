@@ -158,6 +158,7 @@ struct aurx {
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
 	bool need_conv;               /**< Sample format conversion needed */
+	uint32_t again;               /**< Stream decode EAGAIN counter    */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
 	size_t last_sampc;
 
@@ -629,22 +630,23 @@ static void check_telev(struct audio *a, struct autx *tx)
 }
 
 
-static bool silence(const int16_t *sampv, size_t sampc)
+static bool silence(const void *sampv, size_t sampc, int fmt)
 {
-#ifdef USE_SILENCE_DETECTION
+	const int16_t *v;
+
+	if (fmt != AUFMT_S16LE)
+		return true;
+
+	v = sampv;
 	int32_t sum = 0;
 	size_t i;
 
 	for (i = 0; i < sampc; i++) {
-		sum += sampv[i]*sampv[i];
+		sum += v[i]*v[i];
 
 		if (sum > (int32_t) (i + 1) * SILENCE_Q)
 			return false;
 	}
-#else
-	(void) sampv;
-	(void) sampc;
-#endif
 
 	return true;
 }
@@ -670,7 +672,13 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 	size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
 
 	err = stream_decode(a->strm);
-	while (!err && aubuf_cur_size(rx->aubuf) < num_bytes) {
+
+	while (err == EAGAIN ||
+			(!err && aubuf_cur_size(rx->aubuf) < num_bytes)) {
+
+		if (err == EAGAIN)
+			++rx->again;
+
 		err = stream_decode(a->strm);
 	}
 
@@ -686,10 +694,22 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 
 	aubuf_read(rx->aubuf, sampv, num_bytes);
 
-	/* decide if we have silence */
-	if (!err && rx->play_fmt == AUFMT_S16LE) {
-		stream_silence_on(a->strm, silence(sampv, sampc));
+	/* Reduce latency after EAGAIN? */
+	if (rx->again && silence(sampv, sampc, rx->play_fmt)) {
+
+		rx->again--;
+		if (aubuf_cur_size(rx->aubuf) >= num_bytes) {
+			aubuf_read(rx->aubuf, sampv, num_bytes);
+			debug("Dropped a frame to reduce latency\n");
+		}
 	}
+
+#ifdef USE_SILENCE_DETECTION
+	/* decide if we have silence */
+	if (!err)
+		stream_silence_on(a->strm, silence(sampv, sampc,
+					rx->play_fmt));
+#endif
 }
 
 
