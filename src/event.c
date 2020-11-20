@@ -35,6 +35,8 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_REGISTER_OK:
 	case UA_EVENT_REGISTER_FAIL:
 	case UA_EVENT_UNREGISTERING:
+	case UA_EVENT_FALLBACK_OK:
+	case UA_EVENT_FALLBACK_FAIL:
 		return "register";
 
 	case UA_EVENT_MWI_NOTIFY:
@@ -308,6 +310,8 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_REGISTERING:          return "REGISTERING";
 	case UA_EVENT_REGISTER_OK:          return "REGISTER_OK";
 	case UA_EVENT_REGISTER_FAIL:        return "REGISTER_FAIL";
+	case UA_EVENT_FALLBACK_OK:          return "FALLBACK_OK";
+	case UA_EVENT_FALLBACK_FAIL:        return "FALLBACK_FAIL";
 	case UA_EVENT_UNREGISTERING:        return "UNREGISTERING";
 	case UA_EVENT_MWI_NOTIFY:           return "MWI_NOTIFY";
 	case UA_EVENT_SHUTDOWN:             return "SHUTDOWN";
