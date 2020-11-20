@@ -441,10 +441,10 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			" inactive at the same time\n";
 
 	err = re_regex(carg->prm, str_len(carg->prm),
-		"audio=[^ ]* video=[^ ]*", &argdir[0], &argdir[1]);
+		"[^ ]* audio=[^ ]* video=[^ ]*", &pluri, &argdir[0], &argdir[1]);
 	if (err)
 		err = re_regex(carg->prm, str_len(carg->prm),
-			"[^ ]*", &argdir[0]);
+			"[^ ]* [^ ]*",&pluri, &argdir[0]);
 
 	if (err) {
 		warning("%s", usage);
