@@ -132,7 +132,7 @@ static int encode(struct auenc_state *aes, bool *marker, uint8_t *buf,
 		bcg729Encoder(aes->enc, (int16_t*)sampv, (uint8_t*)buf, &olen);
 
 	*len = count * 10;
-	
+
 	return 0;
 }
 
