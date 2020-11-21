@@ -24,6 +24,7 @@
 #   USE_G722          G.722 audio codec
 #   USE_G722_1        G.722.1 audio codec
 #   USE_G726          G.726 audio codec
+#   USE_G729          G.729 audio codec
 #   USE_GSM           GSM audio codec
 #   USE_GST           Gstreamer audio module
 #   USE_GST_VIDEO     Gstreamer video module
@@ -120,6 +121,9 @@ USE_G722_1 := $(shell [ -f $(SYSROOT)/include/g722_1.h ] || \
 USE_G726 := $(shell [ -f $(SYSROOT)/include/spandsp/g726.h ] || \
 	[ -f $(SYSROOT_ALT)/include/spandsp/g726.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/spandsp/g726.h ] && echo "yes")
+USE_G729 := $(shell [ -f $(SYSROOT)/include/bcg729/decoder.h ] || \
+	[ -f $(SYSROOT_ALT)/include/bcg729/decoder.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/bcg729/decoder.h ] && echo "yes")
 USE_GSM := $(shell [ -f $(SYSROOT)/include/gsm.h ] || \
 	[ -f $(SYSROOT_ALT)/include/gsm.h ] || \
 	[ -f $(SYSROOT)/include/gsm/gsm.h ] || \
@@ -246,6 +250,8 @@ USE_COREAUDIO := \
 
 ifneq ($(USE_AVFOUNDATION),)
 USE_AVCAPTURE := yes
+else
+USE_QTCAPTURE := yes
 endif
 
 
@@ -344,6 +350,10 @@ endif
 ifneq ($(USE_DTLS_SRTP),)
 MODULES   += dtls_srtp
 endif
+ifneq ($(USE_QTCAPTURE),)
+MODULES   += qtcapture
+CFLAGS    += -DQTCAPTURE_RUNLOOP
+endif
 ifneq ($(USE_ECHO),)
 MODULES   += echo
 endif
@@ -361,6 +371,9 @@ MODULES   += g7221
 endif
 ifneq ($(USE_G726),)
 MODULES   += g726
+endif
+ifneq ($(USE_G729),)
+MODULES   += g729
 endif
 ifneq ($(USE_GSM),)
 MODULES   += gsm
