@@ -126,13 +126,10 @@ static int encode(struct auenc_state *aes, bool *marker, uint8_t *buf,
 	if ((sampc % 160) != 0)
 		return EPROTO;
 
-	/* Input should be processed in 160 bit (20 byte) segments */
-	/* Output of each segment is 80 bits (10 bytes) long */
-
-	count = sampc / 160;
+	count = sampc / 80;
 
 	for (i = 0; i < count; i++)
-		bcg729Encoder(aes->enc, (int16_t*)sampv + i * 20,
+		bcg729Encoder(aes->enc, (int16_t*)sampv + i * 80,
 			      (uint8_t*)buf + i * 10, &olen);
 
 	*len = count * 10;
