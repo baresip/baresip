@@ -80,7 +80,7 @@ static const char *translate_errorcode(uint16_t scode)
  *
  * @return sdp_dir SDP direction
  */
-static enum sdp_dir decode_sdp_enum(struct pl *pl)
+static enum sdp_dir decode_sdp_enum(const struct pl *pl)
 {
 	if (!pl)
 		return SDP_INACTIVE;

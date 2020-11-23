@@ -1092,6 +1092,7 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 			call->linenum, call->peer_uri, scode);
 
 	if (call->got_offer) {
+
 		err = update_media(call);
 		if (err)
 			return err;
@@ -2354,9 +2355,9 @@ void call_set_current(struct list *calls, struct call *call)
 /**
  * Set stream sdp media line direction attribute
  *
- * @param call	Call object
- * @param a	Audio SDP direction
- * @param v	Video SDP direction if video available
+ * @param call Call object
+ * @param a    Audio SDP direction
+ * @param v    Video SDP direction if video available
  *
  * @return int	0 if success, errorcode otherwise
  */
