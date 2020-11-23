@@ -319,6 +319,7 @@ struct stream {
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
 	bool pseq_set;           /**< True if sequence number is set        */
 	int pt_enc;              /**< Payload type for encoding             */
+	int pt_dec;              /**< Payload type for decoding             */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool jbuf_started;       /**< True if jitter-buffer was started     */
 	stream_pt_h *pth;        /**< Stream payload type handler           */

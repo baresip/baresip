@@ -296,9 +296,12 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	}
 
 	/* payload-type changed? */
-	err = s->pth(hdr->pt, mb, s->arg);
-	if (err)
-		return;
+	if (s->pt_dec != hdr->pt) {
+		s->pt_dec = hdr->pt;
+		err = s->pth(hdr->pt, mb, s->arg);
+		if (err)
+			return;
+	}
 
 	if (s->jbuf) {
 		struct rtp_header hdr2;
