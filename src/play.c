@@ -177,6 +177,8 @@ static void destructor(void *arg)
 	mtx_destroy(&play->lock);
 	mem_deref(play->aubuf);
 	mem_deref(play->filename);
+	ua_event(NULL, UA_EVENT_CUSTOM, NULL, "play finished players=%u",
+			list_count(&baresip_player()->playl));
 
 	if (play->playp)
 		*play->playp = NULL;
@@ -307,6 +309,8 @@ int play_tone(struct play **playp, struct player *player,
 
 	list_append(&player->playl, &play->le, play);
 	tmr_start(&play->tmr, PTIME,  tmr_polling, play);
+	ua_event(NULL, UA_EVENT_CUSTOM, NULL, "play started %s",
+		 play->filename);
 
  out:
 	if (err) {
@@ -465,6 +469,7 @@ static int play_file_ausrc(struct play **playp,
 		goto out;
 
 	tmr_start(&play->tmr, 4,  tmr_polling, play);
+	ua_event(NULL, UA_EVENT_CUSTOM, NULL, "play started %s", filename);
 
 out:
 	if (err) {
