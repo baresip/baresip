@@ -467,12 +467,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	uri = mem_alloc(pluri.l + 1, NULL);
-	if (!uri)
-		return ENOMEM;
-
-	err = pl_strcpy(&pluri, uri, pluri.l + 1);
-	if (err)
+	err = pl_strdup(&uri, &pluri);
+	if(err)
 		goto out;
 
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
