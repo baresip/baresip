@@ -486,6 +486,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->rtcph = rtcph;
 	s->arg   = arg;
 	s->pseq  = -1;
+	s->ldir = SDP_SENDRECV;
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);
@@ -592,6 +593,18 @@ struct sdp_media *stream_sdpmedia(const struct stream *strm)
 }
 
 
+/**
+ * Write stream data to the network
+ *
+ * @param s		Stream object
+ * @param ext		Extension bit
+ * @param marker	Marker bit
+ * @param pt		Payload type
+ * @param ts		Timestamp
+ * @param mb		Payload buffer
+ *
+ * @return int	0 if success, errorcode otherwise
+ */
 int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		struct mbuf *mb)
 {
@@ -602,8 +615,16 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 
 	if (!sa_isset(&s->raddr_rtp, SA_ALL))
 		return 0;
+
 	if (!(sdp_media_rdir(s->sdp) & SDP_SENDONLY))
 		return 0;
+
+	if (sdp_media_ldir(s->sdp) == SDP_RECVONLY)
+		return 0;
+
+	if (sdp_media_ldir(s->sdp) == SDP_INACTIVE)
+		return 0;
+
 	if (s->hold)
 		return 0;
 
@@ -732,7 +753,7 @@ void stream_hold(struct stream *s, bool hold)
 		return;
 
 	s->hold = hold;
-	sdp_media_set_ldir(s->sdp, hold ? SDP_SENDONLY : SDP_SENDRECV);
+	sdp_media_set_ldir(s->sdp, hold ? SDP_SENDONLY : s->ldir);
 	stream_reset(s);
 }
 
@@ -742,13 +763,14 @@ void stream_set_ldir(struct stream *s, enum sdp_dir dir)
 	if (!s)
 		return;
 
-	if (dir == SDP_INACTIVE) {
+	s->ldir = dir;
+
+	if (dir == SDP_INACTIVE)
 		sdp_media_set_disabled(s->sdp, true);
-	}
-	else {
+	else
 		sdp_media_set_disabled(s->sdp, false);
-		sdp_media_set_ldir(s->sdp, dir);
-	}
+
+	sdp_media_set_ldir(s->sdp, dir);
 
 	stream_reset(s);
 }

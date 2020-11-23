@@ -2350,3 +2350,32 @@ void call_set_current(struct list *calls, struct call *call)
 	list_unlink(&call->le);
 	list_append(calls, &call->le, call);
 }
+
+
+/**
+ * Set stream sdp media line direction attribute
+ *
+ * @param call Call object
+ * @param a    Audio SDP direction
+ * @param v    Video SDP direction if video available
+ *
+ * @return int	0 if success, errorcode otherwise
+ */
+int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
+{
+	if (!call)
+		return EINVAL;
+
+	stream_set_ldir(audio_strm(call_audio(call)), a);
+
+	if (video_strm(call_video(call))) {
+		if (vidisp_find(baresip_vidispl(), NULL) == NULL)
+			stream_set_ldir(video_strm(
+				call_video(call)), v & SDP_SENDONLY);
+		else
+			stream_set_ldir(video_strm(call_video(call)), v);
+
+	}
+
+	return 0;
+}

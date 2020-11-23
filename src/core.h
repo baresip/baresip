@@ -299,6 +299,7 @@ struct stream {
 	struct le le;            /**< Linked list element                   */
 	struct config_avt cfg;   /**< Stream configuration                  */
 	struct sdp_media *sdp;   /**< SDP Media line                        */
+	enum sdp_dir ldir;       /**< SDP direction of the stream           */
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
 	struct jbuf *jbuf;       /**< Jitter Buffer for incoming RTP        */
