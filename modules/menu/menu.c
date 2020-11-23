@@ -1382,6 +1382,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 {
 	struct call *call2 = NULL;
 	bool incall;
+	enum sdp_dir ardir, vrdir;
 	int err;
 	(void)prm;
 	(void)arg;
@@ -1399,9 +1400,17 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		/* set the current User-Agent to the one with the call */
 		uag_current_set(ua);
 
-		info("%s: Incoming call from: %s %s -"
+		ardir =sdp_media_rdir(
+			stream_sdpmedia(audio_strm(call_audio(call))));
+		vrdir = sdp_media_rdir(
+			stream_sdpmedia(video_strm(call_video(call))));
+		if (!call_has_video(call))
+			vrdir = SDP_INACTIVE;
+
+		info("%s: Incoming call from: %s %s - audio-video: %s-%s -"
 		     " (press 'a' to accept)\n",
-		     ua_aor(ua), call_peername(call), call_peeruri(call));
+		     ua_aor(ua), call_peername(call), call_peeruri(call),
+		     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
 		play_incoming(ua, uag_call_count() > 1);
 		break;
