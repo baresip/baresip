@@ -418,6 +418,71 @@ static int dial_handler(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_dialdir(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	enum sdp_dir adir, vdir;
+	struct pl argdir[2] = {PL_INIT, PL_INIT};
+	struct pl pluri;
+	struct call *call;
+	char *uri;
+	struct ua *ua = uag_current();
+
+	int err = 0;
+
+	(void) pf;
+
+	const char *usage = "Usage: /dialdir <address/telnr.>"
+			" audio=<inactive, sendonly, recvonly, sendrecv>"
+			" video=<inactive, sendonly, recvonly, sendrecv>\n"
+			"/dialdir <address/telnr.>"
+			" <sendonly, recvonly, sendrecv>\n"
+			"Audio & video must not be"
+			" inactive at the same time\n";
+
+	err = re_regex(carg->prm, str_len(carg->prm),
+		"[^ ]* audio=[^ ]* video=[^ ]*",
+		&pluri, &argdir[0], &argdir[1]);
+	if (err)
+		err = re_regex(carg->prm, str_len(carg->prm),
+			"[^ ]* [^ ]*",&pluri, &argdir[0]);
+
+	if (err) {
+		warning("%s", usage);
+		return EINVAL;
+	}
+
+	if (!pl_isset(&argdir[1]))
+		argdir[1] = argdir[0];
+
+	adir = decode_sdp_enum(&argdir[0]);
+	vdir = decode_sdp_enum(&argdir[1]);
+
+	if (err) {
+		warning("%s", usage);
+		return err;
+	}
+
+	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
+		warning("%s", usage);
+		return EINVAL;
+	}
+
+	err = pl_strdup(&uri, &pluri);
+	if (err)
+		goto out;
+
+	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
+	if (err)
+		goto out;
+
+ out:
+	mem_deref(uri);
+
+	return err;
+}
+
+
 static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
 {
 	(void)arg;
@@ -753,6 +818,8 @@ static const struct cmd cmdv[] = {
 {"ausrc",     0,    CMD_PRM, "Switch audio source",     switch_audio_source  },
 {"callstat",  'c',        0, "Call status",             ua_print_call_status },
 {"dial",      'd',  CMD_PRM, "Dial",                    dial_handler         },
+{"dialdir",   0,    CMD_PRM, "Dial with audio and video"
+                             "direction.",              cmd_dialdir          },
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"help",      'h',        0, "Help menu",               print_commands       },
 {"listcalls", 'l',        0, "List active calls",       cmd_print_calls      },

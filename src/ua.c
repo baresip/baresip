@@ -905,19 +905,21 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 
 
 /**
- * Connect an outgoing call to a given SIP uri
+ * Connect an outgoing call to a given SIP uri with audio and video direction
  *
  * @param ua        User-Agent
  * @param callp     Optional pointer to allocated call object
  * @param from_uri  Optional From uri, or NULL for default AOR
  * @param req_uri   SIP uri to connect to
  * @param vmode     Video mode
+ * @param adir      Audio media direction
+ * @param vdir      Video media direction
  *
  * @return 0 if success, otherwise errorcode
  */
-int ua_connect(struct ua *ua, struct call **callp,
+int ua_connect_dir(struct ua *ua, struct call **callp,
 	       const char *from_uri, const char *req_uri,
-	       enum vidmode vmode)
+	       enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir)
 {
 	struct call *call = NULL;
 	struct mbuf *dialbuf;
@@ -949,6 +951,14 @@ int ua_connect(struct ua *ua, struct call **callp,
 	if (!list_isempty(&ua->custom_hdrs))
 		call_set_custom_hdrs(call, &ua->custom_hdrs);
 
+	if (adir != SDP_SENDRECV || vdir != SDP_SENDRECV) {
+		err = call_set_media_direction(call, adir, vdir);
+		if (err) {
+			mem_deref(call);
+			goto out;
+		}
+	}
+
 	err = call_connect(call, &pl);
 
 	if (err)
@@ -960,6 +970,26 @@ int ua_connect(struct ua *ua, struct call **callp,
 	mem_deref(dialbuf);
 
 	return err;
+}
+
+
+/**
+ * Connect an outgoing call to a given SIP uri
+ *
+ * @param ua        User-Agent
+ * @param callp     Optional pointer to allocated call object
+ * @param from_uri  Optional From uri, or NULL for default AOR
+ * @param req_uri   SIP uri to connect to
+ * @param vmode     Video mode
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_connect(struct ua *ua, struct call **callp,
+	       const char *from_uri, const char *req_uri,
+	       enum vidmode vmode)
+{
+	return ua_connect_dir(ua, callp, from_uri, req_uri, vmode,
+		SDP_SENDRECV, SDP_SENDRECV);
 }
 
 

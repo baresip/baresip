@@ -759,6 +759,9 @@ int  ua_alloc(struct ua **uap, const char *aor);
 int  ua_connect(struct ua *ua, struct call **callp,
 		const char *from_uri, const char *req_uri,
 		enum vidmode vmode);
+int  ua_connect_dir(struct ua *ua, struct call **callp,
+		    const char *from_uri, const char *req_uri,
+		    enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir);
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason);
 int  ua_answer(struct ua *ua, struct call *call, enum vidmode vmode);

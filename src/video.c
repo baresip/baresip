@@ -904,7 +904,7 @@ int video_alloc(struct video **vp, struct list *streaml,
 		goto out;
 
 	if (vidisp_find(baresip_vidispl(), NULL) == NULL)
-		sdp_media_set_ldir(v->strm->sdp, SDP_SENDONLY);
+		stream_set_ldir(v->strm, SDP_SENDONLY);
 
 	stream_set_srate(v->strm, VIDEO_SRATE, VIDEO_SRATE);
 
