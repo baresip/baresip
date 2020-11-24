@@ -723,25 +723,6 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 }
 
 
-static int update_payload_type(struct audio *a, uint8_t pt_old, uint8_t pt_new)
-{
-	const struct sdp_format *lc;
-
-	lc = sdp_media_lformat(stream_sdpmedia(a->strm), pt_new);
-	if (!lc)
-		return ENOENT;
-
-	if (pt_old != (uint8_t)-1) {
-		info("Audio decoder changed payload %u -> %u\n",
-		     pt_old, pt_new);
-	}
-
-	a->rx.pt = pt_new;
-
-	return audio_decoder_set(a, lc->data, lc->pt, lc->params);
-}
-
-
 static void handle_telev(struct audio *a, struct mbuf *mb)
 {
 	int event, digit;
@@ -753,6 +734,34 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 	digit = telev_code2digit(event);
 	if (digit >= 0 && a->eventh)
 		a->eventh(digit, end, a->arg);
+}
+
+
+static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
+{
+	struct audio *a = arg;
+	const struct sdp_format *lc;
+	struct aurx *rx = &a->rx;
+
+	if (!rx || rx->pt == pt)
+		return 0;
+
+	lc = sdp_media_lformat(stream_sdpmedia(a->strm), pt);
+
+	/* Telephone event? */
+	if (lc && !str_casecmp(lc->name, "telephone-event")) {
+		handle_telev(a, mb);
+		return ENOENT;
+	}
+
+	if (!lc)
+		return ENOENT;
+
+	if (rx->pt != (uint8_t)-1)
+		info("Audio decoder changed payload %u -> %u\n", rx->pt, pt);
+
+	a->rx.pt = pt;
+	return audio_decoder_set(a, lc->data, lc->pt, lc->params);
 }
 
 
@@ -903,36 +912,15 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	bool discard = false;
 	size_t i;
 	int wrap;
-	int err;
 
 	MAGIC_CHECK(a);
 
 	if (!mb)
 		goto out;
 
-	/* Telephone event? */
-	if (hdr->pt != rx->pt) {
-		const struct sdp_format *fmt;
-
-		fmt = sdp_media_lformat(stream_sdpmedia(a->strm), hdr->pt);
-
-		if (fmt && !str_casecmp(fmt->name, "telephone-event")) {
-			handle_telev(a, mb);
-			return;
-		}
-	}
-
 	/* Comfort Noise (CN) as of RFC 3389 */
 	if (PT_CN == hdr->pt)
 		return;
-
-	/* Audio payload-type changed? */
-	if (hdr->pt != rx->pt) {
-
-		err = update_payload_type(a, rx->pt, hdr->pt);
-		if (err)
-			return;
-	}
 
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	for (i=0; i<extc; i++) {
@@ -1107,7 +1095,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 			   stream_prm, &cfg->avt, sdp_sess,
 			   MEDIA_AUDIO, label,
 			   mnat, mnat_sess, menc, menc_sess, offerer,
-			   stream_recv_handler, NULL, a);
+			   stream_recv_handler, NULL, stream_pt_handler, a);
 	if (err)
 		goto out;
 
