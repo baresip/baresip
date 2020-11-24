@@ -441,7 +441,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			" inactive at the same time\n";
 
 	err = re_regex(carg->prm, str_len(carg->prm),
-		"[^ ]* audio=[^ ]* video=[^ ]*", &pluri, &argdir[0], &argdir[1]);
+		"[^ ]* audio=[^ ]* video=[^ ]*",
+		&pluri, &argdir[0], &argdir[1]);
 	if (err)
 		err = re_regex(carg->prm, str_len(carg->prm),
 			"[^ ]* [^ ]*",&pluri, &argdir[0]);
@@ -468,7 +469,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	}
 
 	err = pl_strdup(&uri, &pluri);
-	if(err)
+	if (err)
 		goto out;
 
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
