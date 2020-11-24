@@ -488,14 +488,15 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 
 	MAGIC_INIT(s);
 
-	s->cfg   = *cfg;
-	s->type  = type;
-	s->rtph  = rtph;
-	s->pth   = pth;
-	s->rtcph = rtcph;
-	s->arg   = arg;
-	s->pseq  = -1;
-	s->ldir = SDP_SENDRECV;
+	s->cfg    = *cfg;
+	s->type   = type;
+	s->rtph   = rtph;
+	s->pth    = pth;
+	s->rtcph  = rtcph;
+	s->arg    = arg;
+	s->pseq   = -1;
+	s->ldir   = SDP_SENDRECV;
+	s->pt_dec = -1;
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);
