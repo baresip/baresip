@@ -21,7 +21,7 @@ jobs:
     - name: install packages
       if: ${{ runner.os == 'Linux' }}
       run: |
-        sudo apt-get install -y libavcodec-dev \
+        sudo apt-get update && sudo apt-get install -y libavcodec-dev \
                             libavdevice-dev \
                             libavformat-dev \
                             libgtk2.0-dev \
@@ -37,7 +37,7 @@ jobs:
     - name: install aac
       if: ${{ matrix.os == 'ubuntu-20.04' }}
       run: |
-        sudo apt-get install -y libfdk-aac-dev
+        sudo apt-get update && sudo apt-get install -y libfdk-aac-dev
 
     - name: install packages
       if: ${{ runner.os == 'macOS' }}
