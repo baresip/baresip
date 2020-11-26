@@ -170,8 +170,18 @@ struct aurx {
 		uint64_t n_discard;
 	} stats;
 
+	volatile int32_t wcnt;       /**< Write handler call count         */
+
+#ifdef HAVE_PTHREAD
+	struct {
+		pthread_t tid;
+		bool run;
+		pthread_cond_t cond;
+		pthread_mutex_t mutex;
+	} thr;                /**< Audio decode thread             */
+#else
 	struct tmr tmr;       /**< Timer for audio decoding        */
-	volatile int32_t wcnt;
+#endif
 };
 
 
@@ -292,9 +302,19 @@ static void stop_rx(struct aurx *rx)
 		return;
 
 	/* audio player must be stopped first */
+#ifdef HAVE_PTHREAD
+	if (rx->thr.run) {
+		rx->thr.run = false;
+		pthread_cond_signal(&rx->thr.cond);
+		pthread_join(rx->thr.tid, NULL);
+	}
+
+#else
+	tmr_cancel(&rx->tmr);
+#endif
+
 	rx->auplay = mem_deref(rx->auplay);
 	rx->aubuf  = mem_deref(rx->aubuf);
-	tmr_cancel(&rx->tmr);
 	list_flush(&rx->filtl);
 }
 
@@ -321,6 +341,8 @@ static void audio_destructor(void *arg)
 	mem_deref(a->tx.device);
 	mem_deref(a->rx.module);
 	mem_deref(a->rx.device);
+	pthread_mutex_destroy(&a->rx.thr.mutex);
+	pthread_cond_destroy(&a->rx.thr.cond);
 
 	list_flush(&a->tx.filtl);
 	list_flush(&a->rx.filtl);
@@ -675,8 +697,44 @@ static void audio_decode(void *arg)
 		if (err && err != EAGAIN)
 			break;
 
+#ifdef HAVE_PTHREAD
+		if (!rx->thr.run)
+			break;
+#endif
 	}
 }
+
+
+#ifdef HAVE_PTHREAD
+static void *rx_thread(void *arg)
+{
+	struct audio *a = arg;
+	struct timespec ts;
+	uint64_t ms;
+	int err = 0;
+
+	while (a->rx.thr.run) {
+
+		ms = tmr_jiffies() + 500;
+		ts.tv_sec = ms / 1000;
+		ts.tv_nsec = (ms % 1000) * 1000000UL;
+
+		err = pthread_mutex_lock(&a->rx.thr.mutex);
+		if (err)
+			return NULL;
+
+		pthread_cond_timedwait(&a->rx.thr.cond, &a->rx.thr.mutex, &ts);
+
+		err = pthread_mutex_unlock(&a->rx.thr.mutex);
+		if (!a->rx.thr.run || err)
+			break;
+
+		audio_decode(a);
+	}
+
+	return NULL;
+}
+#endif
 
 
 /*
@@ -727,9 +785,25 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 			silence(sampv, sampc, rx->play_fmt));
 #endif
 
-	/* as soon as possible decode aubuf_minsz bytes in polling thread */
 	rx->wcnt++;
+#ifdef HAVE_PTHREAD
+	pthread_mutex_lock(&a->rx.thr.mutex);
+	if (!rx->thr.run) {
+		rx->thr.run = true;
+		err = pthread_create(&rx->thr.tid, NULL, rx_thread, a);
+		if (err) {
+			rx->thr.run = false;
+			return;
+		}
+	}
+
+	/* decode aubuf_minsz bytes in decoding thread */
+	pthread_cond_signal(&a->rx.thr.cond);
+	pthread_mutex_unlock(&a->rx.thr.mutex);
+#else
+	/* decode aubuf_minsz bytes in polling thread */
 	tmr_start(&rx->tmr, 0, audio_decode, a);
+#endif
 }
 
 
@@ -1263,6 +1337,12 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	rx->pt     = -1;
 	rx->ptime  = ptime;
+#ifdef HAVE_PTHREAD
+	err  = pthread_mutex_init(&rx->thr.mutex, NULL);
+	err |= pthread_cond_init(&rx->thr.cond, NULL);
+	if (err)
+		goto out;
+#endif
 
 	a->eventh  = eventh;
 	a->levelh  = levelh;
