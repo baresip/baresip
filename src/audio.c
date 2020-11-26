@@ -143,7 +143,9 @@ struct aurx {
 	const struct aucodec *ac;     /**< Current audio decoder           */
 	struct audec_state *dec;      /**< Audio decoder state (optional)  */
 	struct aubuf *aubuf;          /**< Incoming audio buffer           */
+	size_t aubuf_minsz;           /**< Minimum aubuf size in [bytes]   */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
+	size_t num_bytes;             /**< Size of one frame in [bytes]    */
 	volatile bool aubuf_started;  /**< Aubuf was started flag          */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in decoding order */
@@ -167,6 +169,9 @@ struct aurx {
 		uint64_t aubuf_underrun;
 		uint64_t n_discard;
 	} stats;
+
+	struct tmr tmr;       /**< Timer for audio decoding        */
+	volatile int32_t wcnt;
 };
 
 
@@ -289,7 +294,7 @@ static void stop_rx(struct aurx *rx)
 	/* audio player must be stopped first */
 	rx->auplay = mem_deref(rx->auplay);
 	rx->aubuf  = mem_deref(rx->aubuf);
-
+	tmr_cancel(&rx->tmr);
 	list_flush(&rx->filtl);
 }
 
@@ -652,6 +657,28 @@ static bool silence(const void *sampv, size_t sampc, int fmt)
 }
 
 
+static void audio_decode(void *arg)
+{
+	struct audio *a = arg;
+	struct aurx *rx = &a->rx;
+	int err = 0;
+
+	while (rx->wcnt > 0 || err == EAGAIN ||
+			(!err && aubuf_cur_size(rx->aubuf) < rx->num_bytes)) {
+
+		rx->wcnt--;
+		if (err == EAGAIN)
+			++rx->again;
+
+		err = stream_decode(a->strm);
+
+		if (err && err != EAGAIN)
+			break;
+
+	}
+}
+
+
 /*
  * Write samples to Audio Player.
  *
@@ -669,22 +696,12 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 	int err = 0;
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
-	size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
+	rx->num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
 
-	err = stream_decode(a->strm);
-
-	while (err == EAGAIN ||
-			(!err && aubuf_cur_size(rx->aubuf) < num_bytes)) {
-
-		if (err == EAGAIN)
-			++rx->again;
-
-		err = stream_decode(a->strm);
-	}
-
-	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
+	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < rx->num_bytes) {
 
 		++rx->stats.aubuf_underrun;
+		err = ENOENT;
 
 #if 0
 		debug("audio: rx aubuf underrun (total %llu)\n",
@@ -692,24 +709,27 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 #endif
 	}
 
-	aubuf_read(rx->aubuf, sampv, num_bytes);
+	aubuf_read(rx->aubuf, sampv, rx->num_bytes);
 
 	/* Reduce latency after EAGAIN? */
-	if (rx->again && silence(sampv, sampc, rx->play_fmt)) {
+	if (rx->again && (err || silence(sampv, sampc, rx->play_fmt))) {
 
 		rx->again--;
-		if (aubuf_cur_size(rx->aubuf) >= num_bytes) {
-			aubuf_read(rx->aubuf, sampv, num_bytes);
+		if (aubuf_cur_size(rx->aubuf) >= rx->aubuf_minsz) {
+			aubuf_read(rx->aubuf, sampv, rx->num_bytes);
 			debug("Dropped a frame to reduce latency\n");
 		}
 	}
 
 #ifdef USE_SILENCE_DETECTION
 	/* decide if we have silence */
-	if (!err)
-		stream_silence_on(a->strm, silence(sampv, sampc,
-					rx->play_fmt));
+	stream_silence_on(a->strm, err ? true :
+			silence(sampv, sampc, rx->play_fmt));
 #endif
+
+	/* as soon as possible decode aubuf_minsz bytes in polling thread */
+	rx->wcnt++;
+	tmr_start(&rx->tmr, 0, audio_decode, a);
 }
 
 
@@ -1515,6 +1535,7 @@ static int start_player(struct aurx *rx, struct audio *a,
 				return err;
 			}
 
+			rx->aubuf_minsz = min_sz;
 			rx->aubuf_maxsz = max_sz;
 		}
 
