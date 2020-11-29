@@ -112,12 +112,10 @@ struct autx {
 	} stats;
 
 #ifdef HAVE_PTHREAD
-	union {
-		struct {
-			pthread_t tid;/**< Audio transmit thread           */
-			bool run;     /**< Audio transmit thread running   */
-		} thr;
-	} u;
+	struct {
+		pthread_t tid;/**< Audio transmit thread           */
+		bool run;     /**< Audio transmit thread running   */
+	} thr;
 #endif
 };
 
@@ -262,9 +260,9 @@ static void stop_tx(struct autx *tx, struct audio *a)
 
 #ifdef HAVE_PTHREAD
 	case AUDIO_MODE_THREAD:
-		if (tx->u.thr.run) {
-			tx->u.thr.run = false;
-			pthread_join(tx->u.thr.tid, NULL);
+		if (tx->thr.run) {
+			tx->thr.run = false;
+			pthread_join(tx->thr.tid, NULL);
 		}
 		break;
 #endif
@@ -1213,7 +1211,7 @@ static void *tx_thread(void *arg)
 	struct autx *tx = &a->tx;
 	uint64_t ts = 0;
 
-	while (a->tx.u.thr.run) {
+	while (tx->thr.run) {
 
 		uint64_t now;
 
@@ -1222,7 +1220,7 @@ static void *tx_thread(void *arg)
 		if (!tx->aubuf_started)
 			continue;
 
-		if (!a->tx.u.thr.run)
+		if (!tx->thr.run)
 			break;
 
 		now = tmr_jiffies();
@@ -1571,12 +1569,12 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 
 #ifdef HAVE_PTHREAD
 		case AUDIO_MODE_THREAD:
-			if (!tx->u.thr.run) {
-				tx->u.thr.run = true;
-				err = pthread_create(&tx->u.thr.tid, NULL,
+			if (!tx->thr.run) {
+				tx->thr.run = true;
+				err = pthread_create(&tx->thr.tid, NULL,
 						     tx_thread, a);
 				if (err) {
-					tx->u.thr.run = false;
+					tx->thr.run = false;
 					return err;
 				}
 			}
