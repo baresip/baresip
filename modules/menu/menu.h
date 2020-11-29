@@ -31,7 +31,7 @@ struct menu{
 };
 
 /*Get menu object*/
-struct menu *get_menu(void);
+struct menu *menu_get(void);
 
 
 /*Dynamic menu related functions*/

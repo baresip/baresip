@@ -67,7 +67,7 @@ static int about_box(struct re_printf *pf, void *unused)
 static int cmd_answer(struct re_printf *pf, void *unused)
 {
 	struct ua *ua = uag_current();
-	struct menu *menu = get_menu();
+	struct menu *menu = menu_get();
 	int err;
 	(void)unused;
 
@@ -96,7 +96,7 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	enum sdp_dir adir, vdir;
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
 	struct ua *ua = uag_current();
-	struct menu *menu = get_menu();
+	struct menu *menu = menu_get();
 	int err = 0;
 
 	(void) pf;
@@ -388,7 +388,7 @@ static void clean_number(char *str)
 static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct menu *menu = get_menu();
+	struct menu *menu = menu_get();
 	int err = 0;
 
 	(void)pf;
@@ -593,8 +593,8 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 
 static int cmd_ua_next(struct re_printf *pf, void *unused)
 {
+	struct menu *menu = menu_get();
 	int err;
-	struct menu *menu = get_menu();
 
 	(void)pf;
 	(void)unused;

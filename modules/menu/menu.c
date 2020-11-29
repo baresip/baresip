@@ -7,8 +7,8 @@
 #include <time.h>
 #include <re.h>
 #include <baresip.h>
-
 #include "menu.h"
+
 
 /**
  * @defgroup menu menu
@@ -488,7 +488,7 @@ static void message_handler(struct ua *ua, const struct pl *peer,
  *
  * @return ptr to menu object
  */
-struct menu* get_menu(void)
+struct menu *menu_get(void)
 {
 	return &menu;
 }

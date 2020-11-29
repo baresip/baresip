@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <re.h>
 #include <baresip.h>
-
 #include "menu.h"
 
 
@@ -152,7 +151,7 @@ static int send_code(struct re_printf *pf, void *arg)
 
 static int toggle_statmode(struct re_printf *pf, void *arg)
 {
-	struct menu *menu = get_menu();
+	struct menu *menu = menu_get();
 
 	(void)pf;
 	(void)arg;
