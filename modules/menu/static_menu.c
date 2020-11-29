@@ -611,7 +611,7 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 
 	uag_current_set(list_ledata(menu->le_cur));
 
-	update_callstatus(uag_call_count());
+	menu_update_callstatus(uag_call_count());
 
 	return err;
 }
@@ -660,7 +660,7 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 
 	uag_current_set(ua);
 
-	update_callstatus(uag_call_count());
+	menu_update_callstatus(uag_call_count());
 
 	return 0;
 }

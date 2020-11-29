@@ -88,7 +88,7 @@ static void tmrstat_handler(void *arg)
 }
 
 
-void update_callstatus(bool incall)
+void menu_update_callstatus(bool incall)
 {
 	/* if there are any active calls, enable the call status view */
 	if (incall)
@@ -460,7 +460,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	incall = ev == UA_EVENT_CALL_CLOSED ?
 			uag_call_count() > 1 : uag_call_count();
 	menu_set_incall(incall);
-	update_callstatus(incall);
+	menu_update_callstatus(incall);
 }
 
 

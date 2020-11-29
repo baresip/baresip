@@ -48,4 +48,4 @@ void dial_menu_unregister(void);
 
 
 /*Generic menu funtions*/
-void update_callstatus(bool incall);
+void menu_update_callstatus(bool incall);
