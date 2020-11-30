@@ -330,6 +330,7 @@ struct config_avt {
 	struct range rtp_ports; /**< RTP port range                 */
 	struct range rtp_bw;    /**< RTP Bandwidth range [bit/s]    */
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
+	enum jbuf_type jbtype;  /**< Jitter buffer type             */
 	struct range jbuf_del;  /**< Delay, number of frames        */
 	uint32_t jbuf_wish;     /**< Startup wish delay of frames   */
 	bool rtp_stats;         /**< Enable RTP statistics          */
