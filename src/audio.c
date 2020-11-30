@@ -170,6 +170,7 @@ struct aurx {
 		uint64_t n_discard;
 	} stats;
 
+	enum jbuf_type jbtype;       /**< Jitter buffer type               */
 	volatile int32_t wcnt;       /**< Write handler call count         */
 
 #ifdef HAVE_PTHREAD
@@ -657,6 +658,39 @@ static void check_telev(struct audio *a, struct autx *tx)
 }
 
 
+/*
+ * Write samples to Audio Player. This version of the write handler is used
+ * for the configuration jitter_buffer_type JBUF_FIXED.
+ *
+ * @note This function has REAL-TIME properties
+ *
+ * @note The application is responsible for filling in silence in
+ *       the case of underrun
+ *
+ * @note This function may be called from any thread
+ *
+ * @note The sample format is set in rx->play_fmt
+ */
+static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
+{
+	struct audio *a = arg;
+	struct aurx *rx = &a->rx;
+	size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
+
+	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
+
+		++rx->stats.aubuf_underrun;
+
+#if 0
+		debug("audio: rx aubuf underrun (total %llu)\n",
+			rx->stats.aubuf_underrun);
+#endif
+	}
+
+	aubuf_read(rx->aubuf, sampv, num_bytes);
+}
+
+
 static bool silence(const void *sampv, size_t sampc, int fmt)
 {
 	const int16_t *v;
@@ -738,18 +772,13 @@ static void *rx_thread(void *arg)
 
 
 /*
- * Write samples to Audio Player.
+ * Write samples to Audio Player. This version of the write handler is used
+ * for the configuration jitter_buffer_type JBUF_ADAPTIVE.
  *
- * @note This function has REAL-TIME properties
+ * @note See auplay_write_handler()!
  *
- * @note The application is responsible for filling in silence in
- *       the case of underrun
- *
- * @note This function may be called from any thread
- *
- * @note The sample format is set in rx->play_fmt
  */
-static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
+static void auplay_write_handler2(void *sampv, size_t sampc, void *arg)
 {
 	int err = 0;
 	struct audio *a = arg;
@@ -1237,6 +1266,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	tx->enc_fmt = cfg->audio.enc_fmt;
 	rx->dec_fmt = cfg->audio.dec_fmt;
+	rx->jbtype  = cfg->avt.jbtype;
 
 	err = stream_alloc(&a->strm, streaml,
 			   stream_prm, &cfg->avt, sdp_sess,
@@ -1622,6 +1652,8 @@ static int start_player(struct aurx *rx, struct audio *a,
 		err = auplay_alloc(&rx->auplay, auplayl,
 				   rx->module,
 				   &prm, rx->device,
+				   rx->jbtype == JBUF_ADAPTIVE ?
+				   auplay_write_handler2 :
 				   auplay_write_handler, a);
 		if (err) {
 			warning("audio: start_player failed (%s.%s): %m\n",
@@ -2383,21 +2415,21 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
  * Set the audio player state to a new audio player module and device.
  * The current audio player will be stopped.
  *
- * @param au     Audio object
+ * @param a      Audio object
  * @param mod    Audio player module (NULL to stop)
  * @param device Audio player device name
  *
  * @return 0 if success, otherwise errorcode
  */
-int audio_set_player(struct audio *au, const char *mod, const char *device)
+int audio_set_player(struct audio *a, const char *mod, const char *device)
 {
 	struct aurx *rx;
 	int err;
 
-	if (!au)
+	if (!a)
 		return EINVAL;
 
-	rx = &au->rx;
+	rx = &a->rx;
 
 	/* stop the audio device first */
 	rx->auplay = mem_deref(rx->auplay);
@@ -2406,7 +2438,9 @@ int audio_set_player(struct audio *au, const char *mod, const char *device)
 
 		err = auplay_alloc(&rx->auplay, baresip_auplayl(),
 				   mod, &rx->auplay_prm, device,
-				   auplay_write_handler, au);
+				   rx->jbtype == JBUF_ADAPTIVE ?
+				   auplay_write_handler2 :
+				   auplay_write_handler, a);
 		if (err) {
 			warning("audio: set_player failed (%s.%s): %m\n",
 				mod, device, err);
