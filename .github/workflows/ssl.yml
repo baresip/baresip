@@ -12,10 +12,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: rem
+        repo: https://github.com/creytiv/rem
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
     - name: make re/rem
       run: |
-        git clone https://github.com/baresip/re.git
-        git clone https://github.com/creytiv/rem.git
         for p in re rem; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
         sudo ldconfig
 
