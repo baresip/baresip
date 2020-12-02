@@ -234,10 +234,17 @@ static int cmd_setauth(struct re_printf *pf, void *arg)
 	if (err)
 		return err;
 
-	err = re_regex(carg->prm, strlen(carg->prm), "[^ ]* [^ ]*",
-			&user, &pass);
-	if (err)
-		err = re_regex(carg->prm, strlen(carg->prm), "[^ ]*", &user);
+	if (carg->prm) {
+		err = re_regex(carg->prm, strlen(carg->prm), "[^ ]* [^ ]*",
+				&user, &pass);
+		if (err)
+			err = re_regex(carg->prm, strlen(carg->prm), "[^ ]*",
+					&user);
+	}
+	else {
+		re_hprintf(pf, "Usage:\nhttp_setauth <user> [pass]\n");
+		return err;
+	}
 
 	return http_reqconn_set_auth(d->conn,
 			pl_isset(&user) ? &user : NULL,
