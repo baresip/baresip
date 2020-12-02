@@ -58,13 +58,13 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame) {
 
 int decode_h264(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool marker, uint16_t seq, struct mbuf *src) {
-	struct h264_hdr h264_hdr;
+	struct h264_nal_header h264_hdr;
 	const uint8_t nal_seq[3] = {0, 0, 1};
 	int err;
 
 	*intra = false;
 
-	err = h264_hdr_decode(&h264_hdr, src);
+	err = h264_nal_header_decode(&h264_hdr, src);
 	if (err)
 		return err;
 
@@ -73,7 +73,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 		return EBADMSG;
 	}
 
-	if (st->frag && h264_hdr.type != H264_NAL_FU_A) {
+	if (st->frag && h264_hdr.type != H264_NALU_FU_A) {
 		debug("comvideo: lost fragments; discarding previous NAL\n");
 		fragment_rewind(st);
 		st->frag = false;
@@ -95,7 +95,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 				      mbuf_get_left(src));
 		if (err)
 			goto out;
-	} else if (H264_NAL_FU_A == h264_hdr.type) {
+	} else if (H264_NALU_FU_A == h264_hdr.type) {
 		struct h264_fu fu;
 
 		err = h264_fu_hdr_decode(&fu, src);
@@ -121,7 +121,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 			mbuf_write_mem(st->mb, nal_seq, 3);
 
 			/* encode NAL header back to buffer */
-			err = h264_hdr_encode(&h264_hdr, st->mb);
+			err = h264_nal_header_encode(st->mb, &h264_hdr);
 		} else {
 			if (!st->frag) {
 				debug("comvideo: ignoring fragment"
