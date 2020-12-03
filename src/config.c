@@ -956,6 +956,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "\n# mqtt\n"
 			 "#mqtt_broker_host\t127.0.0.1\n"
 			 "#mqtt_broker_port\t1883\n"
+			 "#mqtt_broker_cafile\t/path/to/broker-ca.crt\n"
 			 "#mqtt_broker_clientid\tbaresip01\n"
 			 "#mqtt_broker_user\tuser\n"
 			 "#mqtt_broker_password\tpass\n"
