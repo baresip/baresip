@@ -141,10 +141,11 @@ static int module_init(void)
 	}
 
 	if (*broker_cafile != '\0') {
-        ret = mosquitto_tls_set(s_mqtt.mosq, broker_cafile, NULL, NULL, NULL, NULL);
+		ret = mosquitto_tls_set(s_mqtt.mosq, broker_cafile,
+				NULL, NULL, NULL, NULL);
 		if (ret != MOSQ_ERR_SUCCESS)
 			return ret == MOSQ_ERR_ERRNO ? errno : EIO;
-    }
+	}
 
 	ret = mosquitto_connect(s_mqtt.mosq, broker_host, broker_port,
 				keepalive);
