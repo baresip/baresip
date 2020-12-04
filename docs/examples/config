@@ -211,6 +211,7 @@ video_selfview		window # {window,pip}
 # MQTT
 #mqtt_broker_host	sollentuna.example.com
 #mqtt_broker_port	1883
+#mqtt_broker_cafile	/usr/share/ca-certificates/mozilla/Amazon_Root_CA_1.crt # set this to enforce TLS, default off
 #mqtt_broker_clientid	baresip01 # Has to be unique for each client, defaults to "baresip"
 #mqtt_broker_user	alfred
 #mqtt_broker_password	Crocus
