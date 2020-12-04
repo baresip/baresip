@@ -216,6 +216,8 @@ video_selfview		window # {window,pip}
 #mqtt_broker_user	alfred
 #mqtt_broker_password	Crocus
 #mqtt_basetopic		baresip/01 # May be uniqe for each client you want to control. Defaults to "baresip"
+#mqtt_subscribetopic	/my/baresip/+/control # defaults to /${mqtt_basetopic}/command/+
+#mqtt_publishtopic		/my/baresip/123/event # defaults to /${mqtt_basetopic}/event
 
 # sndfile
 #snd_path		/tmp
