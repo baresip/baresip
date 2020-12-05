@@ -26,6 +26,7 @@ jobs:
                             libavformat-dev \
                             libgtk2.0-dev \
                             libjack-jackd2-dev \
+                            libmosquitto-dev \
                             libmpg123-dev \
                             libopus-dev \
                             libpulse-dev \
