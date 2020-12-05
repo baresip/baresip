@@ -715,6 +715,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 {
 	struct video *v = arg;
 	const struct sdp_format *lc;
+	(void)mb;
 
 	if (v->vrx.pt_rx == (uint8_t)-1 || v->vrx.pt_rx == pt)
 		return 0;
