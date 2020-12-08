@@ -73,7 +73,9 @@ static struct config core_config = {
 		{1024, 49152},
 		{0, 0},
 		false,
+		JBUF_FIXED,
 		{5, 10},
+		0,
 		false,
 		0
 	},
@@ -210,6 +212,32 @@ static int conf_get_vidfmt(const struct conf *conf, const char *name,
 }
 
 
+static const char *jbuf_type_str(enum jbuf_type jbtype)
+{
+	switch (jbtype) {
+	case JBUF_OFF:
+		return "off";
+	case JBUF_FIXED:
+		return "fixed";
+	case JBUF_ADAPTIVE:
+		return "adaptive";
+	}
+
+	return "?";
+}
+
+
+static enum jbuf_type resolve_jbuf_type(const struct pl *pl)
+{
+	if (0 == pl_strcasecmp(pl, "off"))      return JBUF_OFF;
+	if (0 == pl_strcasecmp(pl, "fixed"))    return JBUF_FIXED;
+	if (0 == pl_strcasecmp(pl, "adaptive")) return JBUF_ADAPTIVE;
+
+	warning("unsupported jitter buffer type (%r)\n", pl);
+	return JBUF_FIXED;
+}
+
+
 /**
  * Parse the core configuration file and update baresip core config
  *
@@ -224,6 +252,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	enum poll_method method;
 	struct vidsz size = {0, 0};
 	struct pl txmode;
+	struct pl jbtype;
 	uint32_t v;
 	int err = 0;
 
@@ -334,8 +363,13 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	}
 
 	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);
+	if (0 == conf_get(conf, "jitter_buffer_type", &jbtype))
+		cfg->avt.jbtype = resolve_jbuf_type(&jbtype);
+
 	(void)conf_get_range(conf, "jitter_buffer_delay",
 			     &cfg->avt.jbuf_del);
+	(void)conf_get_u32(conf, "jitter_buffer_wish",
+			     &cfg->avt.jbuf_wish);
 	(void)conf_get_bool(conf, "rtp_stats", &cfg->avt.rtp_stats);
 	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
 
@@ -405,7 +439,9 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtp_ports\t\t%H\n"
 			 "rtp_bandwidth\t\t%H\n"
 			 "rtcp_mux\t\t%s\n"
+			 "jitter_buffer_type\t%s\n"
 			 "jitter_buffer_delay\t%H\n"
+			 "jitter_buffer_wish\t%u\n"
 			 "rtp_stats\t\t%s\n"
 			 "rtp_timeout\t\t%u # in seconds\n"
 			 "\n"
@@ -438,7 +474,9 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 range_print, &cfg->avt.rtp_ports,
 			 range_print, &cfg->avt.rtp_bw,
 			 cfg->avt.rtcp_mux ? "yes" : "no",
+			 jbuf_type_str(cfg->avt.jbtype),
 			 range_print, &cfg->avt.jbuf_del,
+			 cfg->avt.jbuf_wish,
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 
@@ -610,7 +648,10 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#rtp_ports\t\t10000-20000\n"
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
 			  "rtcp_mux\t\tno\n"
+			  "jitter_buffer_type\tfixed\t\t# off, fixed,"
+				" adaptive\n"
 			  "jitter_buffer_delay\t%u-%u\t\t# frames\n"
+			  "#jitter_buffer_wish\t%u\t\t# frames for start\n"
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
 			  "\n# Network\n"
@@ -619,6 +660,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#dns_fallback\t\t8.8.8.8:53\n"
 			  "#net_interface\t\t%H\n",
 			  cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max,
+			  cfg->avt.jbuf_del.min + 1,
 			  default_interface_print, NULL);
 
 	return err;

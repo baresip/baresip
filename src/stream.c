@@ -91,6 +91,8 @@ static void stream_close(struct stream *strm, int err)
 
 	strm->terminated = true;
 	strm->errorh = NULL;
+	strm->jbuf_started = false;
+	jbuf_flush(strm->jbuf);
 
 	if (errorh)
 		errorh(strm, err, strm->sess_arg);
@@ -304,13 +306,12 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	}
 
 	if (s->jbuf) {
-		struct rtp_header hdr2;
-		void *mb2 = NULL;
-		int lostc;
 
 		/* Put frame in Jitter Buffer */
-		if (flush && s->jbuf_started)
+		if (flush) {
 			jbuf_flush(s->jbuf);
+			s->jbuf_started = false;
+		}
 
 		err = jbuf_put(s->jbuf, hdr, mb);
 		if (err) {
@@ -321,25 +322,56 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			s->metric_rx.n_err++;
 		}
 
-		if (jbuf_get(s->jbuf, &hdr2, &mb2)) {
+		if (s->type == MEDIA_VIDEO ||
+			s->cfg.jbtype == JBUF_FIXED) {
 
-			if (!s->jbuf_started)
-				return;
-
-			memset(&hdr2, 0, sizeof(hdr2));
+			if (stream_decode(s) == EAGAIN)
+				(void) stream_decode(s);
 		}
-
-		s->jbuf_started = true;
-
-		lostc = lostcalc(s, hdr2.seq);
-
-		handle_rtp(s, &hdr2, mb2, lostc > 0 ? lostc : 0);
-
-		mem_deref(mb2);
 	}
 	else {
 		handle_rtp(s, hdr, mb, 0);
 	}
+}
+
+
+/**
+ * Decodes one RTP packet. For audio streams this function is called by the
+ * auplay write handler and runs in the auplay thread. For video streams there
+ * is only the RTP thread which also does the decoding.
+ *
+ * @param s The stream
+ *
+ * @return 0 if success, EAGAIN if it should be called again in order to avoid
+ * a jitter buffer overflow, otherwise errorcode
+ */
+int stream_decode(struct stream *s)
+{
+	struct rtp_header hdr;
+	void *mb;
+	int lostc;
+	int err;
+
+	if (!s->jbuf)
+		return ENOENT;
+
+	err = jbuf_get(s->jbuf, &hdr, &mb);
+	if (err && err != EAGAIN)
+		return ENOENT;
+
+	lostc = lostcalc(s, hdr.seq);
+	s->jbuf_started = true;
+
+	handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0);
+	mem_deref(mb);
+
+	return err;
+}
+
+
+void stream_silence_on(struct stream *s, bool on)
+{
+	jbuf_silence(s->jbuf, on);
 }
 
 
@@ -513,10 +545,13 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		goto out;
 
 	/* Jitter buffer */
-	if (cfg->jbuf_del.min && cfg->jbuf_del.max) {
+	if (cfg->jbtype != JBUF_OFF &&
+			cfg->jbuf_del.min && cfg->jbuf_del.max) {
 
-		err = jbuf_alloc(&s->jbuf, cfg->jbuf_del.min,
-				 cfg->jbuf_del.max);
+		err  = jbuf_alloc(&s->jbuf, cfg->jbuf_del.min,
+				cfg->jbuf_del.max);
+		err |= jbuf_set_type(s->jbuf, cfg->jbtype);
+		err |= jbuf_set_wish(s->jbuf, cfg->jbuf_wish);
 		if (err)
 			goto out;
 	}
@@ -1022,21 +1057,6 @@ uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
 uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
 {
 	return strm ? strm->metric_rx.n_err : 0;
-}
-
-
-int stream_jbuf_reset(struct stream *strm,
-		      uint32_t frames_min, uint32_t frames_max)
-{
-	if (!strm)
-		return EINVAL;
-
-	strm->jbuf = mem_deref(strm->jbuf);
-
-	if (frames_min && frames_max)
-		return jbuf_alloc(&strm->jbuf, frames_min, frames_max);
-
-	return 0;
 }
 
 
