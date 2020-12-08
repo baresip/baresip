@@ -1453,13 +1453,6 @@ const char  *uag_event_str(enum ua_event ev);
 
 
 /*
- * Timer
- */
-
-uint64_t tmr_jiffies_usec(void);
-
-
-/*
  * Baresip instance
  */
 
