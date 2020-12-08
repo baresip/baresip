@@ -99,14 +99,13 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	struct menu *menu = menu_get();
 	int err = 0;
 
-	(void) pf;
-
 	const char *usage = "Usage: /acceptdir"
 			" audio=<inactive, sendonly, recvonly, sendrecv>"
 			" video=<inactive, sendonly, recvonly, sendrecv>\n"
 			"/acceptdir <sendonly, recvonly, sendrecv>\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
+	(void) pf;
 
 	err = re_regex(carg->prm, str_len(carg->prm),
 		"audio=[^ ]* video=[^ ]*", &argdir[0], &argdir[1]);
@@ -436,10 +435,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct call *call;
 	char *uri;
 	struct ua *ua = uag_current();
-
 	int err = 0;
-
-	(void) pf;
 
 	const char *usage = "Usage: /dialdir <address/telnr.>"
 			" audio=<inactive, sendonly, recvonly, sendrecv>"
@@ -448,6 +444,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			" <sendonly, recvonly, sendrecv>\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
+	(void) pf;
 
 	err = re_regex(carg->prm, str_len(carg->prm),
 		"[^ ]* audio=[^ ]* video=[^ ]*",

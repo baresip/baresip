@@ -65,10 +65,10 @@ static struct httpreq_data *d = NULL;
 
 static void http_resph(int err, const struct http_msg *msg, void *arg)
 {
-	(void) arg;
 	struct pl pl;
 	const struct pl *v;
 	const struct http_hdr *hdr;
+	(void) arg;
 
 	if (err) {
 		warning("httpreq: HTTP response error (%m)\n", err);
@@ -91,8 +91,8 @@ static void http_resph(int err, const struct http_msg *msg, void *arg)
 
 static void net_handler(void *arg)
 {
-	(void) arg;
 	const struct sa *sa;
+	(void) arg;
 
 	sa = net_laddr_af(d->net, AF_INET);
 	if (sa)
@@ -162,10 +162,11 @@ static int pl_set_arg(struct pl *pl, const struct cmd_arg *carg)
 static int pl_opt_arg(struct pl **plp, const struct cmd_arg *carg)
 {
 	struct pl *pl = *plp;
+	int err;
 	if (!plp)
 		return EINVAL;
 
-	int err = ensure_alloc();
+	err = ensure_alloc();
 	if (err)
 		return err;
 
