@@ -583,7 +583,7 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 
 	MAGIC_CHECK(ua);
 
-	if (key != KEYCODE_REL) {
+	if (key != KEYCODE_NONE && key != KEYCODE_REL) {
 
 		key_str[0] = key;
 		key_str[1] = '\0';
