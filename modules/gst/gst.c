@@ -243,6 +243,8 @@ static void handoff_handler(GstFakeSink *fakesink, GstBuffer *buffer,
 
 	format_check(st, gst_caps_get_structure(caps, 0));
 
+	gst_caps_unref(caps);
+
 	packet_handler(st, buffer);
 }
 
