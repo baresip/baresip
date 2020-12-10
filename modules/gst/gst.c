@@ -335,8 +335,10 @@ static int gst_setup(struct ausrc_st *st)
 	gst_bin_add_many(GST_BIN(st->pipeline), st->source, NULL);
 
 	/* Override audio-sink handoff handler */
-	g_object_set(G_OBJECT(st->sink), "signal-handoffs", TRUE, NULL);
 	g_signal_connect(st->sink, "handoff", G_CALLBACK(handoff_handler), st);
+	g_object_set(G_OBJECT(st->sink),
+		"signal-handoffs", TRUE,
+		"async", FALSE, NULL);
 
 	g_object_set(G_OBJECT(st->source), "audio-sink", st->bin, NULL);
 
