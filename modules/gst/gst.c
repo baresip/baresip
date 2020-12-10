@@ -66,6 +66,8 @@ struct ausrc_st {
 typedef struct _GstFakeSink GstFakeSink;
 static struct ausrc *ausrc;
 
+static char *uri_regex = "([a-z][a-z0-9+.-]*):(?://).*";
+
 
 static void *thread(void *arg)
 {
@@ -352,6 +354,30 @@ static int gst_setup(struct ausrc_st *st)
 }
 
 
+static int setup_uri(struct ausrc_st *st, const char *device)
+{
+	int err = 0;
+
+	if (g_regex_match_simple(
+		uri_regex, device, 0, G_REGEX_MATCH_NOTEMPTY)) {
+		err = str_dup(&st->uri, device);
+	}
+	else {
+		err = access(device, W_OK);
+		if (!err) {
+			size_t urilength = strlen(device) + 8;
+			char *uri = mem_alloc(urilength, NULL);
+			if (re_snprintf(uri, urilength, "file://%s",
+					device) < 0)
+				return ENOMEM;
+			st->uri = uri;
+		}
+	}
+
+	return err;
+}
+
+
 static void gst_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
@@ -400,9 +426,8 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->errh = errh;
 	st->arg  = arg;
 
-	err = str_dup(&st->uri, device);
-	if (err)
-		goto out;
+	err = setup_uri(st, device);
+	if (err) goto out;
 
 	st->prm   = *prm;
 
