@@ -1419,6 +1419,7 @@ int account_json_api(struct odict *od, struct odict *odcfg,
 	int err = 0;
 	struct odict *obn = NULL;
 	const char *stunhost = "";
+	size_t i;
 
 	if (!acc)
 		return 0;
@@ -1437,7 +1438,7 @@ int account_json_api(struct odict *od, struct odict *odcfg,
 	}
 
 	err |= odict_alloc(&obn, 8);
-	for (size_t i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
+	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
 		if (acc->outboundv[i]) {
 			err |= odict_entry_add(obn, "outbound", ODICT_STRING,
 					acc->outboundv[i]);
