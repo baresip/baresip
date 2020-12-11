@@ -505,6 +505,7 @@ static int module_init(void)
 	menu.ringback_disabled = false;
 	menu.statmode = STATMODE_CALL;
 	menu.clean_number = false;
+	menu.play = NULL;
 
 	/*
 	 * Read the config values
