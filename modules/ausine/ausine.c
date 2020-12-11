@@ -79,6 +79,7 @@ static void *play_thread(void *arg)
 			.sampc = st->sampc,
 			.timestamp = ts * 1000
 		};
+		size_t frame;
 
 		sys_msleep(4);
 
@@ -91,7 +92,7 @@ static void *play_thread(void *arg)
 		rad_per_sec = st->freq * 2.0 * PI;
 		frames = st->sampc / 2;
 
-		for (size_t frame = 0; frame < frames; frame += 1) {
+		for (frame = 0; frame < frames; frame += 1) {
 			sample = sin((st->sec_offset + frame * sec_per_frame)
 					* rad_per_sec);
 			sampv[inc] = (int16_t)(SCALE * 50 / 100.0f * sample);
