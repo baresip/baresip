@@ -32,7 +32,7 @@ int coreaudio_enum_devices(const char *name, struct list *dev_list,
 
 	AudioDeviceID *audioDevices = NULL;
 	UInt32 dataSize = 0;
-	UInt32 deviceCount;
+	UInt32 deviceCount, i;
 	OSStatus status;
 
 	int err = 0;
@@ -87,7 +87,7 @@ int coreaudio_enum_devices(const char *name, struct list *dev_list,
 	else
 		propertyAddress.mScope = kAudioDevicePropertyScopeOutput;
 
-	for (UInt32 i = 0; i < deviceCount; ++i) {
+	for (i = 0; i < deviceCount; ++i) {
 
 		CFStringRef deviceUID = NULL;
 		CFStringRef deviceName = NULL;
