@@ -21,6 +21,7 @@
 
 static uint64_t start_ticks;          /**< Ticks when app started         */
 static time_t start_time;             /**< Start time of application      */
+static struct play *g_play;
 
 
 static int cmd_net_debug(struct re_printf *pf, void *unused)
@@ -128,7 +129,6 @@ static int cmd_api_uastate(struct re_printf *pf, void *unused)
 
 static int cmd_play_file(struct re_printf *pf, void *arg)
 {
-	static struct play *g_play;
 	struct cmd_arg *carg = arg;
 	struct config *cfg;
 	const char *filename = carg->prm;
@@ -253,6 +253,7 @@ static int module_close(void)
 {
 	cmd_unregister(baresip_commands(), debugcmdv);
 
+	mem_deref(g_play);
 	return 0;
 }
 
