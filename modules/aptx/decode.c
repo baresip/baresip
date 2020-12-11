@@ -68,9 +68,8 @@ int aptx_decode_frm(struct audec_state *ads, int fmt, void *sampv,
 {
 	size_t processed = 0;
 	size_t written = 0;
-
 	uint8_t *sampv_buf = sampv;
-
+	size_t s;
 	(void)marker;
 
 	if (!ads || !sampv || !sampc || !buf)
@@ -92,7 +91,7 @@ int aptx_decode_frm(struct audec_state *ads, int fmt, void *sampv,
 
 	case AUFMT_S16LE:
 		/* remap S24 to S16 in same buffer */
-		for (size_t s = 0; s < *sampc; s++) {
+		for (s = 0; s < *sampc; s++) {
 			sampv_buf[s * 2] = sampv_buf[(s * APTX_WORDSIZE) + 1];
 			sampv_buf[s * 2 + 1] =
 			    sampv_buf[(s * APTX_WORDSIZE) + 2];

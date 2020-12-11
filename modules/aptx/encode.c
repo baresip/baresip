@@ -73,7 +73,7 @@ int aptx_encode_frm(struct auenc_state *aes, bool *marker, uint8_t *buf,
 	size_t sampv_len;
 
 	const uint8_t *sampv_buf = sampv;
-
+	size_t s;
 	(void)marker;
 
 	if (!aes || !buf || !len || !sampv)
@@ -90,7 +90,7 @@ int aptx_encode_frm(struct auenc_state *aes, bool *marker, uint8_t *buf,
 			return ENOMEM;
 
 		/* map S16 to S24 intermediate buffer */
-		for (size_t s = 0; s < sampc; s++) {
+		for (s = 0; s < sampc; s++) {
 			intermediate_buf[s * APTX_WORDSIZE] = 0;
 			intermediate_buf[s * APTX_WORDSIZE + 1] =
 			    sampv_buf[s * 2];
