@@ -985,6 +985,12 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#ringback_disabled\tno\n"
 			"#statmode_default\toff\n"
 			"#menu_clean_number\tno\n"
+			"#ring_aufile\t\tring.wav\n"
+			"#callwaiting_aufile\tcallwaiting.wav\n"
+			"#ringback_aufile\tringback.wav\n"
+			"#notfound_aufile\tnotfound.wav\n"
+			"#busy_aufile\t\tbusy.wav\n"
+			"#error_aufile\t\terror.wav\n"
 			);
 
 	(void)re_fprintf(f,
