@@ -76,6 +76,7 @@ static void auplay_destructor(void *arg)
 	mem_deref(st->portv);
 }
 
+
 static int start_jack(struct auplay_st *st)
 {
 	struct conf *conf = conf_cur();
@@ -173,6 +174,9 @@ static int start_jack(struct auplay_st *st)
 	 */
 
 	if (jack_connect_ports) {
+
+		unsigned i;
+
 		info("jack: connecting default input ports\n");
 		ports = jack_get_ports (st->client, NULL, NULL,
 					JackPortIsInput | JackPortIsPhysical);
@@ -186,7 +190,7 @@ static int start_jack(struct auplay_st *st)
 		 * single registered port to both physical port.
 		 */
 		ch = 0;
-		for (unsigned i = 0; ports[i] != NULL; i++) {
+		for (i = 0; ports[i] != NULL; i++) {
 			if (jack_connect (st->client,
 					jack_port_name (st->portv[ch]),
 						ports[i])) {
