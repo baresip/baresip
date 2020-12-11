@@ -983,7 +983,9 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#redial_attempts\t0 # Num or <inf>\n"
 			"#redial_delay\t\t5 # Delay in seconds\n"
 			"#ringback_disabled\tno\n"
-			"#statmode_default\toff\n");
+			"#statmode_default\toff\n"
+			"#menu_clean_number\tno\n"
+			);
 
 	(void)re_fprintf(f,
 			"\n# avcodec\n"
