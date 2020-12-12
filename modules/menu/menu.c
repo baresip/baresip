@@ -105,7 +105,7 @@ static void redial_reset(void)
 }
 
 
-static const char *translate_errorcode(uint16_t scode)
+static char *errorcode_fb_aufile(uint16_t scode)
 {
 	switch (scode) {
 
@@ -117,15 +117,38 @@ static const char *translate_errorcode(uint16_t scode)
 }
 
 
-static void menu_play(const char *fname, int repeat)
+static char *errorcode_key_aufile(uint16_t scode)
+{
+	switch (scode) {
+
+	case 404: return "notfound_aufile";
+	case 486: return "busy_aufile";
+	case 487: return NULL; /* ignore */
+	default:  return "error_aufile";
+	}
+}
+
+
+static void menu_play(const char *ckey, const char *fname, int repeat)
 {
 	struct config *cfg = conf_config();
 	struct player *player = baresip_player();
 
+	struct pl pl = PL_INIT;
+	char *file = NULL;
+
+	if (conf_get(conf_cur(), ckey, &pl))
+		pl_set_str(&pl, fname);
+
+	if (!pl_isset(&pl))
+		return;
+
+	pl_strdup(&file, &pl);
 	menu.play = mem_deref(menu.play);
-	(void)play_file(&menu.play, player, fname, repeat,
+	(void)play_file(&menu.play, player, file, repeat,
 			cfg->audio.play_mod,
 			cfg->audio.play_dev);
+	mem_deref(file);
 }
 
 
@@ -140,11 +163,11 @@ static void play_incoming(const struct ua *ua, bool waiting)
 	if (ANSWERMODE_MANUAL == account_answermode(ua_account(ua))) {
 
 		if (waiting) {
-			menu_play("callwaiting.wav", 3);
+			menu_play("callwaiting_aufile", "callwaiting.wav", 3);
 		}
 		else {
 			/* Alert user */
-			menu_play("ring.wav", -1);
+			menu_play("ring_aufile", "ring.wav", -1);
 		}
 
 		if (menu.bell)
@@ -162,7 +185,7 @@ static void play_ringback(void)
 		info("\nRingback disabled\n");
 	}
 	else {
-		menu_play("ringback.wav", -1);
+		menu_play("ringback_aufile", "ringback.wav", -1);
 	}
 }
 
@@ -297,6 +320,25 @@ static void redial_handler(void *arg)
 }
 
 
+static void menu_play_closed(struct call *call)
+{
+	u_int16_t scode;
+	const char *key;
+	const char *fb;
+
+	/* stop any ringtones */
+	menu.play = mem_deref(menu.play);
+
+	if (call_scode(call)) {
+		scode = call_scode(call);
+		key = errorcode_key_aufile(scode);
+		fb = errorcode_fb_aufile(scode);
+
+		menu_play(key, fb, 1);
+	}
+}
+
+
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
@@ -357,15 +399,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_CLOSED:
-		/* stop any ringtones */
-		menu.play = mem_deref(menu.play);
-
-		if (call_scode(call)) {
-			const char *tone;
-			tone = translate_errorcode(call_scode(call));
-			if (tone)
-				menu_play(tone, 1);
-		}
+		menu_play_closed(call);
 
 		alert_stop();
 		play_resume(call);
