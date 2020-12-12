@@ -104,7 +104,7 @@ static void timeout(void *arg)
 	tmr_start(&st->tmr, st->ptime, timeout, st);
 
 	/* check if audio buffer is empty */
-	if (aubuf_cur_size(st->aubuf) < (sizeof(int16_t) * st->sampc)) {
+	if (aubuf_cur_size(st->aubuf) == 0) {
 
 		info("aufile: end of file\n");
 
