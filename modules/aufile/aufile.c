@@ -101,8 +101,7 @@ static void *play_thread(void *arg)
 static void timeout(void *arg)
 {
 	struct ausrc_st *st = arg;
-
-	tmr_start(&st->tmr, 1000, timeout, st);
+	tmr_start(&st->tmr, st->ptime, timeout, st);
 
 	/* check if audio buffer is empty */
 	if (aubuf_cur_size(st->aubuf) < (sizeof(int16_t) * st->sampc)) {
@@ -136,7 +135,7 @@ static int read_file(struct ausrc_st *st)
 			break;
 
 		if (mb->end == 0) {
-			info("aufile: end of file\n");
+			info("aufile: read end of file\n");
 			break;
 		}
 
@@ -233,7 +232,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	tmr_start(&st->tmr, 1000, timeout, st);
+	tmr_start(&st->tmr, st->ptime, timeout, st);
 
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, play_thread, st);
