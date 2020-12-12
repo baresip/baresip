@@ -39,6 +39,7 @@ static void auplay_destructor(void *arg)
 	if (st->run) {
 		debug("alsa: stopping playback thread (%s)\n", st->device);
 		st->run = false;
+		snd_pcm_drop(st->write);
 		(void)pthread_join(st->thread, NULL);
 	}
 
