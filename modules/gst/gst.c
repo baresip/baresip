@@ -98,14 +98,8 @@ static gboolean bus_watch_handler(GstBus *bus, GstMessage *msg, gpointer data)
 	switch (GST_MESSAGE_TYPE(msg)) {
 
 	case GST_MESSAGE_EOS:
-		/* Re-start stream */
-		if (st->run) {
-			gst_element_set_state(st->pipeline, GST_STATE_NULL);
-			gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
-		}
-		else {
-			g_main_loop_quit(loop);
-		}
+		if (st->errh)
+			st->errh(0, "end of stream", st->arg);
 		break;
 
 	case GST_MESSAGE_ERROR:
