@@ -45,10 +45,7 @@ static int account_write_template(const char *file)
 	}
 
 	pass = "PASSWORD";
-
-	domain = net_domain(baresip_network());
-	if (!domain)
-		domain = "domain";
+	domain = "domain";
 
 	r = re_fprintf(f,
 			 "#\n"

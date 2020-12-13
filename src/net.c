@@ -729,22 +729,6 @@ struct dnsc *net_dnsc(const struct network *net)
 
 
 /**
- * Get the network domain name
- *
- * @param net Network instance
- *
- * @return Network domain
- */
-const char *net_domain(const struct network *net)
-{
-	if (!net)
-		return NULL;
-
-	return net->domain[0] ? net->domain : NULL;
-}
-
-
-/**
  * Print networking debug information
  *
  * @param pf     Print handler for debug output
@@ -769,7 +753,6 @@ int net_debug(struct re_printf *pf, const struct network *net)
 			  net_af_enabled(net, AF_INET6) ? "E" : ".",
 			  print_addr, &net->laddr6);
 #endif
-	err |= re_hprintf(pf, " Domain: %s\n", net->domain);
 
 	err |= re_hprintf(pf, "net interfaces:\n");
 	err |= net_if_apply(if_debug_handler, argv);

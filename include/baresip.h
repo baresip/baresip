@@ -688,7 +688,6 @@ int  net_set_af(struct network *net, int af);
 int  net_dns_debug(struct re_printf *pf, const struct network *net);
 int  net_debug(struct re_printf *pf, const struct network *net);
 const struct sa *net_laddr_af(const struct network *net, int af);
-const char      *net_domain(const struct network *net);
 struct dnsc     *net_dnsc(const struct network *net);
 
 
