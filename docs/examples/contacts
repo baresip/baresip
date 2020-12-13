@@ -7,5 +7,5 @@
 #    ;presence={none,p2p}
 #
 
-"Echo Server" <sip:echo@creytiv.com>
+"Music Server" <sip:music@iptel.org>
 "alfredh" <sip:alfredh@home>;presence=p2p

@@ -276,7 +276,7 @@ static int write_template(const char *file)
 			 "#\n"
 			 "\n"
 			 "\n"
-			 "\"Echo Server\" <sip:echo@creytiv.com>\n"
+			 "\"Music Server\" <sip:music@iptel.org>\n"
 			 "\"%s\" <sip:%s@%s>;presence=p2p\n"
 			 "\n"
 			 "# Access rules\n"
