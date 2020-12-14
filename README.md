@@ -10,7 +10,7 @@ Copyright (c) 2010 - 2020 Alfred E. Heggestad and Contributors
 Distributed under BSD license
 
 
-[![Build Status](https://travis-ci.org/baresip/baresip.svg?branch=master)](https://travis-ci.org/baresip/baresip)
+![Build](https://github.com/baresip/re/workflows/Build/badge.svg)
 
 
 ## Features:
