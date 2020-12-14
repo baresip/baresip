@@ -22,8 +22,9 @@ struct play {
 	struct auplay_st *auplay;
 	struct tmr tmr;
 	int repeat;
+	uint64_t delay;
+	uint64_t trep;
 	bool eof;
-	bool restart;
 
 	char *filename;
 	const struct ausrc *ausrc;
@@ -79,16 +80,23 @@ static bool check_restart(void *arg)
 {
 	struct play *play = arg;
 
+	if (play->trep) {
+		if (play->trep > tmr_jiffies())
+			return false;
+
+		play->trep = 0;
+		return true;
+	}
+
 	if (play->repeat > 0)
 		play->repeat--;
 
-	if (play->repeat == 0) {
+	if (play->repeat == 0)
 		play->eof = true;
-		return false;
-	}
+	else
+		play->trep = tmr_jiffies() + play->delay;
 
-	play->restart = true;
-	return true;
+	return false;
 }
 
 
@@ -313,7 +321,7 @@ static void aubuf_write_handler(void *sampv, size_t sampc, void *arg)
 	aubuf_read(play->aubuf, sampv, sz);
 
 	lock_write_get(play->lock);
-	if (!play->ausrc_st && play->restart)
+	if (play->trep && check_restart(play))
 		start_ausrc(play);
 
 	lock_rel(play->lock);
@@ -421,23 +429,31 @@ out:
 }
 
 
-static void parse_play_settings(char *file, int *repeat)
+static void parse_play_settings(char *file, int *repeat, int *delay)
 {
 	struct pl f = PL_INIT;
 	struct pl r = PL_INIT;
+	struct pl d = PL_INIT;
 	int err;
 
 	if (!file || !repeat)
 		return;
 
-	err = re_regex(file, str_len(file), "[^,]+,[ ]*[^,]+",
-			&f, NULL, &r);
+	err = re_regex(file, str_len(file), "[^,]+,[ ]*[^,]+,[ ]*[^,]+",
+			&f, NULL, &r, NULL, &d);
+	if (err)
+		err = re_regex(file, str_len(file), "[^,]+,[ ]*[^,]+",
+			       &f, NULL, &r);
+
 	if (err || !pl_isset(&r))
 		return;
 
 	*repeat = (int) pl_u32(&r);
 	if (*repeat == 0 && r.p[0] == '-')
 		*repeat = -1;
+
+	if (delay && pl_isset(&d))
+		*delay = (int) pl_u32(&d);
 
 	(void)pl_strcpy(&f, file, str_len(file));
 }
@@ -463,6 +479,7 @@ int play_file(struct play **playp, struct player *player,
 	char path[FS_PATH_MAX];
 	const struct ausrc *ausrc;
 	struct mbuf *mb = NULL;
+	int delay = 0;
 	uint32_t srate = 0;
 	uint8_t ch = 0;
 	struct play *play = NULL;
@@ -477,7 +494,7 @@ int play_file(struct play **playp, struct player *player,
 		return EALREADY;
 
 	str_ncpy(file, filename, sizeof(file));
-	parse_play_settings(file, &repeat);
+	parse_play_settings(file, &repeat, &delay);
 
 	if (re_snprintf(path, sizeof(path), "%s/%s",
 			player->play_path, file) < 0)
@@ -510,6 +527,8 @@ int play_file(struct play **playp, struct player *player,
 
  out:
 	mem_deref(mb);
+	if (play)
+		play->delay = delay;
 
 	if (err) {
 		mem_deref(play);
