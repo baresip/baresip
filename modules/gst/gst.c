@@ -66,6 +66,8 @@ struct ausrc_st {
 typedef struct _GstFakeSink GstFakeSink;
 static struct ausrc *ausrc;
 
+static char *uri_regex = "([a-z][a-z0-9+.-]*):(?://).*";
+
 
 static void *thread(void *arg)
 {
@@ -96,14 +98,8 @@ static gboolean bus_watch_handler(GstBus *bus, GstMessage *msg, gpointer data)
 	switch (GST_MESSAGE_TYPE(msg)) {
 
 	case GST_MESSAGE_EOS:
-		/* Re-start stream */
-		if (st->run) {
-			gst_element_set_state(st->pipeline, GST_STATE_NULL);
-			gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
-		}
-		else {
-			g_main_loop_quit(loop);
-		}
+		if (st->errh)
+			st->errh(0, "end of stream", st->arg);
 		break;
 
 	case GST_MESSAGE_ERROR:
@@ -241,6 +237,8 @@ static void handoff_handler(GstFakeSink *fakesink, GstBuffer *buffer,
 
 	format_check(st, gst_caps_get_structure(caps, 0));
 
+	gst_caps_unref(caps);
+
 	packet_handler(st, buffer);
 }
 
@@ -333,8 +331,10 @@ static int gst_setup(struct ausrc_st *st)
 	gst_bin_add_many(GST_BIN(st->pipeline), st->source, NULL);
 
 	/* Override audio-sink handoff handler */
-	g_object_set(G_OBJECT(st->sink), "signal-handoffs", TRUE, NULL);
 	g_signal_connect(st->sink, "handoff", G_CALLBACK(handoff_handler), st);
+	g_object_set(G_OBJECT(st->sink),
+		"signal-handoffs", TRUE,
+		"async", FALSE, NULL);
 
 	g_object_set(G_OBJECT(st->source), "audio-sink", st->bin, NULL);
 
@@ -349,6 +349,30 @@ static int gst_setup(struct ausrc_st *st)
 	g_object_set(G_OBJECT(st->source), "uri", st->uri, NULL);
 
 	return 0;
+}
+
+
+static int setup_uri(struct ausrc_st *st, const char *device)
+{
+	int err = 0;
+
+	if (g_regex_match_simple(
+		uri_regex, device, 0, G_REGEX_MATCH_NOTEMPTY)) {
+		err = str_dup(&st->uri, device);
+	}
+	else {
+		err = access(device, W_OK);
+		if (!err) {
+			size_t urilength = strlen(device) + 8;
+			char *uri = mem_alloc(urilength, NULL);
+			if (re_snprintf(uri, urilength, "file://%s",
+					device) < 0)
+				return ENOMEM;
+			st->uri = uri;
+		}
+	}
+
+	return err;
 }
 
 
@@ -400,9 +424,8 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->errh = errh;
 	st->arg  = arg;
 
-	err = str_dup(&st->uri, device);
-	if (err)
-		goto out;
+	err = setup_uri(st, device);
+	if (err) goto out;
 
 	st->prm   = *prm;
 
