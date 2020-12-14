@@ -58,6 +58,9 @@ rtp_stats		no
 #dns_server		1.0.0.1:53
 #net_interface		wlan1
 
+# Play tones
+#file_ausrc		aufile
+
 #------------------------------------------------------------------------------
 # Modules
 

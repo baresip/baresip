@@ -658,7 +658,10 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#dns_server\t\t1.1.1.1:53\n"
 			  "#dns_server\t\t1.0.0.1:53\n"
 			  "#dns_fallback\t\t8.8.8.8:53\n"
-			  "#net_interface\t\t%H\n",
+			  "#net_interface\t\t%H\n"
+			  "\n"
+			  "# Play tones\n"
+			  "#file_ausrc\t\taufile\n",
 			  cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max,
 			  cfg->avt.jbuf_del.min + 1,
 			  default_interface_print, NULL);
