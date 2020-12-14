@@ -322,7 +322,7 @@ static void redial_handler(void *arg)
 
 static void menu_play_closed(struct call *call)
 {
-	u_int16_t scode;
+	uint16_t scode;
 	const char *key;
 	const char *fb;
 
