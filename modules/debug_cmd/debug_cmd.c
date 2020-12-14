@@ -253,7 +253,7 @@ static int module_close(void)
 {
 	cmd_unregister(baresip_commands(), debugcmdv);
 
-	mem_deref(g_play);
+	g_play = mem_deref(g_play);
 	return 0;
 }
 
