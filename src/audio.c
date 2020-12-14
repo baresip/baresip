@@ -342,8 +342,11 @@ static void audio_destructor(void *arg)
 	mem_deref(a->tx.device);
 	mem_deref(a->rx.module);
 	mem_deref(a->rx.device);
+
+#ifdef HAVE_PTHREAD
 	pthread_mutex_destroy(&a->rx.thr.mutex);
 	pthread_cond_destroy(&a->rx.thr.cond);
+#endif
 
 	list_flush(&a->tx.filtl);
 	list_flush(&a->rx.filtl);
