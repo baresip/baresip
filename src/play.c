@@ -331,6 +331,7 @@ static void aubuf_write_handler(void *sampv, size_t sampc, void *arg)
 static void ausrc_error_handler(int err, const char *str, void *arg)
 {
 	struct play *play = arg;
+	(void)str;
 
 	if (err == 0) {
 		lock_write_get(play->lock);
