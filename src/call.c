@@ -161,39 +161,6 @@ static int start_audio(struct call *call)
 }
 
 
-static int start_video(struct call *call)
-{
-	const struct sdp_format *sc;
-	int err = 0;
-
-	/* Video Stream */
-	sc = sdp_media_rformat(stream_sdpmedia(video_strm(call->video)), NULL);
-	if (sc) {
-		err  = video_encoder_set(call->video, sc->data, sc->pt,
-					 sc->params);
-		err |= video_decoder_set(call->video, sc->data, sc->pt,
-					 sc->rparams);
-		if (err)
-			return err;
-
-		if (!video_is_started(call->video)) {
-			err  = video_start_display(call->video,
-						   call->peer_uri);
-			err |= video_start_source(call->video, &call->ctx);
-		}
-
-		if (err) {
-			warning("call: video stream error: %m\n", err);
-		}
-	}
-	else if (call->video) {
-		info("call: video stream is disabled..\n");
-	}
-
-	return err;
-}
-
-
 static void call_stream_start(struct call *call, bool active)
 {
 	int err;
@@ -208,7 +175,7 @@ static void call_stream_start(struct call *call, bool active)
 	}
 
 	if (stream_is_ready(video_strm(call->video))) {
-		err = start_video(call);
+		err = video_start(call->video, &call->ctx, call->peer_uri);
 		if (err) {
 			warning("call: could not start video: %m\n", err);
 		}
@@ -327,6 +294,8 @@ static int update_audio(struct call *call)
 	const struct sdp_format *sc;
 	int err = 0;
 
+	debug("audio: update\n");
+
 	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
 	if (sc) {
 		struct aucodec *ac = sc->data;
@@ -342,44 +311,6 @@ static int update_audio(struct call *call)
 	}
 	else {
 		info("audio stream is disabled..\n");
-	}
-
-	return err;
-}
-
-
-static int update_video(struct call *call)
-{
-	const struct sdp_format *sc = NULL;
-	int err = 0;
-
-	struct sdp_media *m = stream_sdpmedia(video_strm(call->video));
-
-	if (!sdp_media_disabled(m))
-		sc = sdp_media_rformat(m, NULL);
-
-	if (sc) {
-		err = video_encoder_set(call->video, sc->data,
-					sc->pt, sc->params);
-		if (err) {
-			warning("call: video stream error: %m\n", err);
-			return err;
-		}
-
-		if (!video_is_started(call->video)) {
-			err  = video_start_display(call->video,
-						   call->peer_uri);
-			err |= video_start_source(call->video, &call->ctx);
-			if (err) {
-				warning("call: update: failed to"
-					" start video (%m)\n", err);
-			}
-		}
-	}
-	else if (call->video) {
-		info("video stream is disabled..\n");
-		video_stop(call->video);
-		video_stop_display(call->video);
 	}
 
 	return err;
@@ -415,7 +346,7 @@ static int update_media(struct call *call)
 	}
 
 	if (stream_is_ready(video_strm(call->video))) {
-		err |= update_video(call);
+		err |= video_update(call->video, &call->ctx, call->peer_uri);
 	}
 
 	return err;
@@ -537,7 +468,8 @@ static void menc_event_handler(enum menc_event event,
 		else if (strstr(prm, "video")) {
 			stream_set_secure(video_strm(call->video), true);
 			stream_start(video_strm(call->video));
-			err = start_video(call);
+			err = video_start(call->video, &call->ctx,
+				call->peer_uri);
 			if (err) {
 				warning("call: secure: could not"
 					" start video: %m\n", err);
@@ -599,7 +531,8 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 			break;
 
 		case MEDIA_VIDEO:
-			err = start_video(call);
+			err = video_start(call->video, &call->ctx,
+				call->peer_uri);
 			if (err) {
 				warning("call: mnatconn: could not"
 					" start video: %m\n", err);
@@ -977,6 +910,7 @@ int call_modify(struct call *call)
 	if (!err)
 		err = sipsess_modify(call->sess, desc);
 
+	err = update_media(call);
 	mem_deref(desc);
 
 	return err;
