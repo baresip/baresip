@@ -22,7 +22,17 @@ struct play {
 	struct auplay_st *auplay;
 	struct tmr tmr;
 	int repeat;
+	uint64_t delay;
+	uint64_t trep;
 	bool eof;
+
+	char *filename;
+	const struct ausrc *ausrc;
+	struct ausrc_st *ausrc_st;
+	struct ausrc_prm sprm;
+	size_t minsz;
+	size_t maxsz;
+	struct aubuf *aubuf;
 };
 
 
@@ -38,7 +48,7 @@ struct player {
 };
 
 
-static void tmr_polling(void *arg);
+static int start_ausrc(struct play *play);
 
 
 static void tmr_stop(void *arg)
@@ -55,7 +65,7 @@ static void tmr_polling(void *arg)
 
 	lock_write_get(play->lock);
 
-	tmr_start(&play->tmr, 1000, tmr_polling, arg);
+	tmr_start(&play->tmr, PTIME, tmr_polling, play);
 
 	if (play->eof) {
 		if (play->repeat == 0)
@@ -63,6 +73,30 @@ static void tmr_polling(void *arg)
 	}
 
 	lock_rel(play->lock);
+}
+
+
+static bool check_restart(void *arg)
+{
+	struct play *play = arg;
+
+	if (play->trep) {
+		if (play->trep > tmr_jiffies())
+			return false;
+
+		play->trep = 0;
+		return true;
+	}
+
+	if (play->repeat > 0)
+		play->repeat--;
+
+	if (play->repeat == 0)
+		play->eof = true;
+	else
+		play->trep = tmr_jiffies() + play->delay;
+
+	return false;
 }
 
 
@@ -91,13 +125,8 @@ static void write_handler(void *sampv, size_t sampc, void *arg)
 		pos += count;
 
 		if (pos < sz) {
-			if (play->repeat > 0)
-				play->repeat--;
-
-			if (play->repeat == 0) {
-				play->eof = true;
+			if (!check_restart(play))
 				goto silence;
-			}
 
 			play->mb->pos = 0;
 		}
@@ -122,12 +151,16 @@ static void destructor(void *arg)
 	play->eof = true;
 	lock_rel(play->lock);
 
+	mem_deref(play->ausrc_st);
 	mem_deref(play->auplay);
 	mem_deref(play->mb);
 	mem_deref(play->lock);
+	mem_deref(play->aubuf);
+	mem_deref(play->filename);
 
 	if (play->playp)
 		*play->playp = NULL;
+
 }
 
 
@@ -230,7 +263,7 @@ int play_tone(struct play **playp, struct player *player,
 		return ENOMEM;
 
 	tmr_init(&play->tmr);
-	play->repeat = repeat;
+	play->repeat = repeat ? repeat : 1;
 	play->mb     = mem_ref(tone);
 
 	err = lock_alloc(&play->lock);
@@ -249,7 +282,7 @@ int play_tone(struct play **playp, struct player *player,
 		goto out;
 
 	list_append(&player->playl, &play->le, play);
-	tmr_start(&play->tmr, 1000, tmr_polling, play);
+	tmr_start(&play->tmr, PTIME,  tmr_polling, play);
 
  out:
 	if (err) {
@@ -261,6 +294,168 @@ int play_tone(struct play **playp, struct player *player,
 	}
 
 	return err;
+}
+
+
+static void ausrc_read_handler(struct auframe *af, void *arg)
+{
+	struct play *play = arg;
+	size_t fsize    = auframe_size(af);
+	int err = 0;
+
+	if (play->eof)
+		return;
+
+
+	err = aubuf_write(play->aubuf, af->sampv, fsize);
+	if (err)
+		warning("play: aubuf_write: %m \n", err);
+}
+
+
+static void aubuf_write_handler(void *sampv, size_t sampc, void *arg)
+{
+	struct play *play = arg;
+	size_t sz = sampc * aufmt_sample_size(play->sprm.fmt);
+
+	aubuf_read(play->aubuf, sampv, sz);
+
+	lock_write_get(play->lock);
+	if (play->trep && check_restart(play))
+		start_ausrc(play);
+
+	lock_rel(play->lock);
+}
+
+
+static void ausrc_error_handler(int err, const char *str, void *arg)
+{
+	struct play *play = arg;
+
+	if (err == 0) {
+		lock_write_get(play->lock);
+		play->ausrc_st = mem_deref(play->ausrc_st);
+		check_restart(play);
+		lock_rel(play->lock);
+	}
+}
+
+
+static int start_ausrc(struct play *play)
+{
+	int err;
+	const struct ausrc *ausrc = play->ausrc;
+
+	err = ausrc->alloch(&play->ausrc_st, ausrc, NULL, &play->sprm,
+			play->filename,
+			ausrc_read_handler, ausrc_error_handler, play);
+
+	return err;
+}
+
+
+static int play_file_ausrc(struct play **playp, struct player *player,
+		    const struct ausrc *ausrc,
+		    const char *filename, int repeat,
+		    const char *play_mod, const char *play_dev)
+{
+	int err = 0;
+	size_t sampsz;
+	struct auplay_prm wprm;
+	struct ausrc_prm sprm;
+	struct play *play;
+	struct config *cfg = conf_config();
+	uint32_t srate = cfg->audio.srate_src;
+	uint32_t channels = cfg->audio.channels_src;
+
+	play = mem_zalloc(sizeof(*play), destructor);
+	if (!play)
+		return ENOMEM;
+
+	if (!srate)
+		srate = 16000;
+
+	if (!channels)
+		channels = 1;
+
+	err = lock_alloc(&play->lock);
+	if (err)
+		goto out;
+
+	wprm.ch = channels;
+	wprm.srate = srate;
+	wprm.ptime = PTIME;
+	wprm.fmt = AUFMT_S16LE;
+
+	sprm.ch = channels;
+	sprm.srate = srate;
+	sprm.ptime = PTIME;
+	sprm.fmt = AUFMT_S16LE;
+
+	play->sprm = sprm;
+	play->repeat = repeat ? repeat : 1;
+	str_dup(&play->filename, filename);
+
+	sampsz = aufmt_sample_size(sprm.fmt);
+	play->maxsz = (5 * sampsz * srate * channels * PTIME) / 1000;
+	play->minsz = (3 * sampsz * srate * channels * PTIME) / 1000;
+	err = aubuf_alloc(&play->aubuf, play->minsz, play->maxsz);
+	if (err)
+		goto out;
+
+	err = auplay_alloc(&play->auplay, baresip_auplayl(),
+			   play_mod, &wprm,
+			   play_dev, aubuf_write_handler, play);
+	if (err)
+		goto out;
+
+	play->ausrc = ausrc;
+	err = start_ausrc(play);
+	if (err)
+		goto out;
+
+	tmr_start(&play->tmr, PTIME,  tmr_polling, play);
+
+out:
+	if (err) {
+		mem_deref(play);
+	}
+	else if (playp) {
+		play->playp = playp;
+		*playp = play;
+	}
+
+	return err;
+}
+
+
+static void parse_play_settings(char *file, int *repeat, int *delay)
+{
+	struct pl f = PL_INIT;
+	struct pl r = PL_INIT;
+	struct pl d = PL_INIT;
+	int err;
+
+	if (!file || !repeat)
+		return;
+
+	err = re_regex(file, str_len(file), "[^,]+,[ ]*[^,]+,[ ]*[^,]+",
+			&f, NULL, &r, NULL, &d);
+	if (err)
+		err = re_regex(file, str_len(file), "[^,]+,[ ]*[^,]+",
+			       &f, NULL, &r);
+
+	if (err || !pl_isset(&r))
+		return;
+
+	*repeat = (int) pl_u32(&r);
+	if (*repeat == 0 && r.p[0] == '-')
+		*repeat = -1;
+
+	if (delay && pl_isset(&d))
+		*delay = (int) pl_u32(&d);
+
+	(void)pl_strcpy(&f, file, str_len(file));
 }
 
 
@@ -280,10 +475,17 @@ int play_file(struct play **playp, struct player *player,
 	      const char *filename, int repeat,
 	      const char *play_mod, const char *play_dev)
 {
-	struct mbuf *mb;
+	char file[FS_PATH_MAX];
 	char path[FS_PATH_MAX];
+	const struct ausrc *ausrc;
+	struct mbuf *mb = NULL;
+	int delay = 0;
 	uint32_t srate = 0;
 	uint8_t ch = 0;
+	struct play *play = NULL;
+
+	char srcn[FS_PATH_MAX];
+
 	int err;
 
 	if (!player)
@@ -291,9 +493,24 @@ int play_file(struct play **playp, struct player *player,
 	if (playp && *playp)
 		return EALREADY;
 
+	str_ncpy(file, filename, sizeof(file));
+	parse_play_settings(file, &repeat, &delay);
+
 	if (re_snprintf(path, sizeof(path), "%s/%s",
-			player->play_path, filename) < 0)
+			player->play_path, file) < 0)
 		return ENOMEM;
+
+
+	if (!conf_get_str(conf_cur(), "file_ausrc", srcn, sizeof(srcn))) {
+		ausrc = ausrc_find(baresip_ausrcl(), srcn);
+		if (ausrc) {
+			err = play_file_ausrc(&play, player, ausrc,
+					      path, repeat,
+					      play_mod, play_dev);
+
+			goto out;
+		}
+	}
 
 	mb = mbuf_alloc(1024);
 	if (!mb)
@@ -305,11 +522,21 @@ int play_file(struct play **playp, struct player *player,
 		goto out;
 	}
 
-	err = play_tone(playp, player, mb, srate,
+	err = play_tone(&play, player, mb, srate,
 	                ch, repeat, play_mod, play_dev);
 
  out:
 	mem_deref(mb);
+	if (play)
+		play->delay = delay;
+
+	if (err) {
+		mem_deref(play);
+	}
+	else if (playp) {
+		play->playp = playp;
+		*playp = play;
+	}
 
 	return err;
 }
