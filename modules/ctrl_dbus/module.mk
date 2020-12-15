@@ -11,6 +11,7 @@ $(MOD)_LFLAGS	+= $(shell pkg-config --libs glib-2.0 gio-unix-2.0)
 $(MOD)_CFLAGS	+= \
 	$(shell pkg-config --cflags glib-2.0 gio-unix-2.0 | \
 		sed -e 's/-I/-isystem/g' )
+$(MOD)_CFLAGS	+= -Wno-unused-parameter -Wno-declaration-after-statement
 
 $(MOD)_CCHECK_OPT	= -e baresipbus.h -e baresipbus.c
 
