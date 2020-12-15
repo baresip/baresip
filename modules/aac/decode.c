@@ -82,12 +82,13 @@ int aac_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 {
 	struct audec_state *ads;
 	AAC_DECODER_ERROR error;
-	int err = 0;
-	(void)fmtp;
-
 	struct pl config;
+	UCHAR *conf;
+	UINT length;
 	char config_str[64];
 	uint8_t config_bin[32];
+	int err = 0;
+	(void)fmtp;
 
 	if (!adsp || !ac || !ac->ch)
 		return EINVAL;
@@ -122,8 +123,8 @@ int aac_decode_update(struct audec_state **adsp, const struct aucodec *ac,
 	if (err)
 		goto out;
 
-	UCHAR *conf = config_bin;
-	const UINT length = (UINT)strlen(config_str)/2;
+	conf = config_bin;
+	length = (UINT)strlen(config_str)/2;
 
 	error = aacDecoder_ConfigRaw(ads->dec, &conf, &length);
 	if (error != AAC_DEC_OK) {
