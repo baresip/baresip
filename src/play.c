@@ -355,7 +355,7 @@ static int start_ausrc(struct play *play)
 }
 
 
-static int play_file_ausrc(struct play **playp, struct player *player,
+static int play_file_ausrc(struct play **playp,
 		    const struct ausrc *ausrc,
 		    const char *filename, int repeat,
 		    const char *play_mod, const char *play_dev)
@@ -505,7 +505,7 @@ int play_file(struct play **playp, struct player *player,
 	if (!conf_get_str(conf_cur(), "file_ausrc", srcn, sizeof(srcn))) {
 		ausrc = ausrc_find(baresip_ausrcl(), srcn);
 		if (ausrc) {
-			err = play_file_ausrc(&play, player, ausrc,
+			err = play_file_ausrc(&play, ausrc,
 					      path, repeat,
 					      play_mod, play_dev);
 
