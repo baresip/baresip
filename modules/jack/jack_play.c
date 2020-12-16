@@ -83,18 +83,20 @@ static int start_jack(struct auplay_st *st)
 	const char **ports;
 	const char *client_name = "baresip";
 	const char *server_name = NULL;
+	char *conf_name;
 	jack_options_t options = JackNullOption;
 	jack_status_t status;
 	unsigned ch;
 	jack_nframes_t engine_srate;
+	size_t len;
 
 	bool jack_connect_ports = true;
 	(void)conf_get_bool(conf, "jack_connect_ports",
 				  &jack_connect_ports);
 
 	/* open a client connection to the JACK server */
-	size_t len = jack_client_name_size();
-	char *conf_name = mem_alloc(len+1, NULL);
+	len = jack_client_name_size();
+	conf_name = mem_alloc(len+1, NULL);
 
 	if (!conf_get_str(conf, "jack_client_name",
 			conf_name, len)) {
