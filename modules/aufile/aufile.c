@@ -31,6 +31,7 @@ struct ausrc_st {
 	struct tmr tmr;
 	struct aufile *aufile;
 	struct aubuf *aubuf;
+	struct ausrc_prm *prm;          /**< Audio src parameter             */
 	uint32_t ptime;
 	size_t sampc;
 	bool run;
@@ -188,6 +189,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh   = rh;
 	st->errh = errh;
 	st->arg  = arg;
+	st->prm  = prm;
 
 	err = aufile_open(&st->aufile, &fprm, dev, AUFILE_READ);
 	if (err) {
@@ -198,26 +200,11 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	info("aufile: %s: %u Hz, %d channels\n",
 	     dev, fprm.srate, fprm.channels);
 
-	if (fprm.srate != prm->srate) {
-		warning("aufile: input file (%s) must have sample-rate"
-			" %u Hz\n", dev, prm->srate);
-		err = ENODEV;
-		goto out;
-	}
-	if (fprm.channels != prm->ch) {
-		warning("aufile: input file (%s) must have channels = %d\n",
-			dev, prm->ch);
-		err = ENODEV;
-		goto out;
-	}
-	if (fprm.fmt != AUFMT_S16LE) {
-		warning("aufile: input file must have format S16LE\n");
-		err = ENODEV;
-		goto out;
-	}
+	/* return wav format to caller */
+	prm->srate = fprm.srate;
+	prm->ch    = fprm.channels;
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
-
 	st->ptime = prm->ptime;
 
 	info("aufile: audio ptime=%u sampc=%zu\n",
