@@ -93,7 +93,6 @@ struct vtx {
 	double efps;                       /**< Estimated frame-rate      */
 	uint64_t ts_base;                  /**< First RTP timestamp sent  */
 	uint64_t ts_last;                  /**< Last RTP timestamp sent   */
-	bool started;                      /**< True if vtx is started    */
 
 	/** Statistics */
 	struct {
@@ -137,7 +136,6 @@ struct vrx {
 	unsigned n_intra;                  /**< Intra-frames decoded      */
 	unsigned n_picup;                  /**< Picture updates sent      */
 	struct timestamp_recv ts_recv;     /**< Receive timestamp state   */
-	bool started;                      /**< True if vrx is started    */
 
 	/** Statistics */
 	struct {
@@ -172,8 +170,6 @@ struct vidqent {
 
 
 static void request_picture_update(struct vrx *vrx);
-static int video_start_display(struct video *v, const char *peer);
-static int video_start_source(struct video *v, struct media_ctx **ctx);
 static void video_stop_display(struct video *v);
 static void video_stop_source(struct video *v);
 
@@ -1065,25 +1061,15 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 				sc->rparams);
 
 		/* Stop / Start source & display*/
-		if (dir == SDP_SENDRECV) {
-			err |= video_start_display(v, peer);
+		if (dir & SDP_SENDONLY)
 			err |= video_start_source(v, ctx);
-		}
-
-		if (dir == SDP_INACTIVE) {
-			video_stop_display(v);
+		else
 			video_stop_source(v);
-		}
 
-		if (dir == SDP_SENDONLY) {
-			video_stop_display(v);
-			err |= video_start_source(v, ctx);
-		}
-
-		if (dir == SDP_RECVONLY && v->vtx.started) {
-			video_stop_source(v);
+		if (dir & SDP_RECVONLY)
 			err |= video_start_display(v, peer);
-		}
+		else
+			video_stop_display(v);
 
 		if (err) {
 			warning("video: video stream error: %m\n", err);
@@ -1102,57 +1088,6 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 
 
 /**
- * Start video streams according to the the media direction
- *
- * @param v    Video object
- * @param ctx  Media context
- * @param peer Peer-URI as string
- *
- * @return int 0 if success, otherwise errorcode
- */
-int video_start(struct video *v, struct media_ctx **ctx, const char *peer)
-{
-	const struct sdp_format *sc = NULL;
-	enum sdp_dir dir;
-	int err = 0;
-
-	if (!v)
-		return EINVAL;
-
-	debug ("video: start\n");
-
-	dir = sdp_media_dir(stream_sdpmedia(v->strm));
-	sc = sdp_media_rformat(stream_sdpmedia(v->strm), NULL);
-	if (sc) {
-		if (dir & SDP_SENDONLY)
-			err |= video_encoder_set(v, sc->data, sc->pt,
-				sc->params);
-
-		if (dir & SDP_RECVONLY)
-			err |= video_decoder_set(v, sc->data, sc->pt,
-				sc->rparams);
-
-		if (err)
-			return err;
-
-		if (dir & SDP_SENDONLY)
-			err |= video_start_source(v, ctx);
-
-		if (dir & SDP_RECVONLY)
-			err |= video_start_display(v, peer);
-
-		if (err)
-			warning("video: video stream error: %m\n", err);
-	}
-	else if (v) {
-		info("video: video stream is disabled..\n");
-	}
-
-	return err;
-}
-
-
-/**
  * Start the video source
  *
  * @param v   Video object
@@ -1160,7 +1095,7 @@ int video_start(struct video *v, struct media_ctx **ctx, const char *peer)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int video_start_source(struct video *v, struct media_ctx **ctx)
+int video_start_source(struct video *v, struct media_ctx **ctx)
 {
 	struct vtx *vtx = &v->vtx;
 	struct vidsz size;
@@ -1169,7 +1104,7 @@ static int video_start_source(struct video *v, struct media_ctx **ctx)
 	if (!v)
 		return EINVAL;
 
-	if (v->vtx.started)
+	if (v->vtx.vsrc)
 		return 0;
 
 	debug("video: start source\n");
@@ -1217,7 +1152,6 @@ static int video_start_source(struct video *v, struct media_ctx **ctx)
 		     vrx_print_pipeline, &v->vrx);
 	}
 
-	v->vtx.started = true;
 	return 0;
 }
 
@@ -1230,18 +1164,17 @@ static int video_start_source(struct video *v, struct media_ctx **ctx)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int video_start_display(struct video *v, const char *peer)
+int video_start_display(struct video *v, const char *peer)
 {
 	int err;
 
 	if (!v)
 		return EINVAL;
 
-	if (v->vrx.started)
+	if (v->vrx.vidisp)
 		return 0;
 
 	debug("video: start display\n");
-
 
 	if (peer) {
 		v->peer = mem_deref(v->peer);
@@ -1262,7 +1195,6 @@ static int video_start_display(struct video *v, const char *peer)
 		info("video: no video display\n");
 	}
 
-	v->vrx.started = true;
 	return 0;
 }
 
@@ -1277,12 +1209,8 @@ static void video_stop_source(struct video *v)
 	if (!v)
 		return;
 
-	if (!v->vtx.started)
-		return;
-
 	debug("video: stopping video source ..\n");
 
-	v->vtx.started = false;
 	v->vtx.vsrc = mem_deref(v->vtx.vsrc);
 }
 
@@ -1297,12 +1225,8 @@ static void video_stop_display(struct video *v)
 	if (!v)
 		return;
 
-	if (!v->vrx.started)
-		return;
-
 	debug("video: stopping video display ..\n");
 
-	v->vrx.started = false;
 	v->vrx.vidisp = mem_deref(v->vrx.vidisp);
 }
 
@@ -1603,9 +1527,9 @@ int video_debug(struct re_printf *pf, const struct video *v)
 
 	err = re_hprintf(pf, "\n--- Video stream ---\n");
 	err |= re_hprintf(pf, " source started: %s\n",
-		v->vtx.started ? "yes" : "no");
+		v->vtx.vsrc ? "yes" : "no");
 	err |= re_hprintf(pf, " display started: %s\n",
-		v->vrx.started ? "yes" : "no");
+		v->vrx.vidisp ? "yes" : "no");
 
 	err |= vtx_debug(pf, vtx);
 	err |= vrx_debug(pf, vrx);

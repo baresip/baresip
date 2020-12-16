@@ -175,7 +175,7 @@ static void call_stream_start(struct call *call, bool active)
 	}
 
 	if (stream_is_ready(video_strm(call->video))) {
-		err = video_start(call->video, &call->ctx, call->peer_uri);
+		err = video_update(call->video, &call->ctx, call->peer_uri);
 		if (err) {
 			warning("call: could not start video: %m\n", err);
 		}
@@ -468,7 +468,7 @@ static void menc_event_handler(enum menc_event event,
 		else if (strstr(prm, "video")) {
 			stream_set_secure(video_strm(call->video), true);
 			stream_start(video_strm(call->video));
-			err = video_start(call->video, &call->ctx,
+			err = video_update(call->video, &call->ctx,
 				call->peer_uri);
 			if (err) {
 				warning("call: secure: could not"
@@ -531,7 +531,7 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 			break;
 
 		case MEDIA_VIDEO:
-			err = video_start(call->video, &call->ctx,
+			err = video_update(call->video, &call->ctx,
 				call->peer_uri);
 			if (err) {
 				warning("call: mnatconn: could not"
