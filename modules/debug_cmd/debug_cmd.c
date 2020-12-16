@@ -4,6 +4,7 @@
  * Copyright (C) 2010 - 2016 Creytiv.com
  */
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #ifdef USE_OPENSSL
 #include <openssl/crypto.h>
@@ -17,7 +18,6 @@
  *
  * Advanced debug commands
  */
-
 
 static uint64_t start_ticks;          /**< Ticks when app started         */
 static time_t start_time;             /**< Start time of application      */
@@ -160,6 +160,90 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 }
 
 
+static void fileinfo_readh(struct auframe *af, void *arg)
+{
+	size_t *sampc = arg;
+
+	if (!af || !arg)
+		return;
+
+	*sampc += af->sampc;
+}
+
+
+struct ausrc_st;
+
+
+/**
+ * Command fileinfo reads given audio file with ausrc that is specified in
+ * config file_ausrc and returns the length in milli seconds. The file has
+ * to be located in the path specified by audio_path.
+ *
+ * Usage:
+ * /fileinfo audiofile
+ *
+ * @param pf Print handler is used to return length.
+ * @param arg Command argument contains the file name.
+ *
+ * @return The length of the fileplay file in milli seconds.
+ */
+/* ------------------------------------------------------------------------- */
+static int cmd_fileinfo(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	size_t sampc = 0;
+	struct ausrc_prm prm;
+	int err = 0;
+	uint32_t ms = 0;
+	size_t len;
+	char *path;
+	char aumod[16];
+	struct ausrc_st *ausrc_st = NULL;
+
+	if (!str_isset(carg->prm)) {
+		re_hprintf(pf, "fileplay: filename not specified\n");
+		return EINVAL;
+	}
+
+	err = conf_get_str(conf_cur(), "file_ausrc", aumod, sizeof(aumod));
+	if (err) {
+		warning("debug_cmd: file_ausrc is not set\n");
+		return EINVAL;
+	}
+
+	len = str_len(conf_config()->audio.audio_path) + str_len(carg->prm)
+		+ 2;
+	path = mem_zalloc(len, NULL);
+	re_snprintf(path, len, "%s/%s",
+			conf_config()->audio.audio_path,
+			carg->prm);
+
+	prm.srate = 0;
+	prm.ch = 0;
+	prm.ptime = 0;
+	prm.fmt = 0;
+
+	/* prm->ptime == 0 means blocking mode for ausrc */
+	err = ausrc_alloc(&ausrc_st, baresip_ausrcl(),
+			NULL, aumod,
+			&prm, path,
+			fileinfo_readh, NULL, &sampc);
+	if (err)
+		warning("debug_cmd: %s - ausrc %s does not support blocking "
+				"mode or reading source %s failed. (%m)\n",
+				__func__, aumod, carg->prm, err);
+
+	if (prm.ch && prm.srate)
+		ms = sampc * 1000 / prm.ch / prm.srate;
+
+	re_hprintf(pf, "debug_cmd: length = %u ms\n", ms);
+
+	mem_deref(ausrc_st);
+	mem_deref(path);
+	return err;
+}
+
+
 static int cmd_sip_debug(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -226,6 +310,7 @@ static const struct cmd debugcmdv[] = {
 {"modules",     0,       0, "Module debug",           mod_debug           },
 {"netstat",    'n',      0, "Network debug",          cmd_net_debug       },
 {"play",        0, CMD_PRM, "Play audio file",        cmd_play_file       },
+{"fileinfo",    0, CMD_PRM, "Audio file info",        cmd_fileinfo        },
 {"sipstat",    'i',      0, "SIP debug",              cmd_sip_debug       },
 {"sysinfo",    's',      0, "System info",            print_system_info   },
 {"timers",      0,       0, "Timer debug",            tmr_status          },
