@@ -31,6 +31,7 @@ struct ausrc_st {
 	struct tmr tmr;
 	struct aufile *aufile;
 	struct aubuf *aubuf;
+	enum aufmt fmt;                 /**< Wav file sample format          */
 	struct ausrc_prm *prm;          /**< Audio src parameter             */
 	uint32_t ptime;
 	size_t sampc;
@@ -122,9 +123,12 @@ static int read_file(struct ausrc_st *st)
 {
 	struct mbuf *mb;
 	int err;
+	size_t n;
+	struct mbuf *mb2 = NULL;
 
 	for (;;) {
 		uint16_t *sampv;
+		uint8_t *p;
 		size_t i;
 
 		mb = mbuf_alloc(4096);
@@ -143,19 +147,45 @@ static int read_file(struct ausrc_st *st)
 		}
 
 		/* convert from Little-Endian to Native-Endian */
+		n = mb->end;
 		sampv = (void *)mb->buf;
-		for (i=0; i<mb->end/sizeof(int16_t); i++) {
-			sampv[i] = sys_ltohs(sampv[i]);
+		p     = (void *)mb->buf;
+
+		switch (st->fmt) {
+		case AUFMT_S16LE:
+			/* convert from Little-Endian to Native-Endian */
+			for (i = 0; i < n/2; i++)
+				sampv[i] = sys_ltohs(sampv[i]);
+
+			aubuf_append(st->aubuf, mb);
+			mb = mem_deref(mb);
+			break;
+		case AUFMT_PCMA:
+		case AUFMT_PCMU:
+			mb2 = mbuf_alloc(2 * n);
+			for (i = 0; i < n; i++) {
+				err |= mbuf_write_u16(mb2,
+					   st->fmt == AUFMT_PCMA ?
+					   (uint16_t) g711_alaw2pcm(p[i]) :
+					   (uint16_t) g711_ulaw2pcm(p[i]) );
+			}
+
+			mbuf_set_pos(mb2, 0);
+			aubuf_append(st->aubuf, mb2);
+			mb = mem_deref(mb);
+			mb2 = mem_deref(mb2);
+			break;
+
+		default:
+			err = ENOSYS;
+			break;
 		}
-
-		aubuf_append(st->aubuf, mb);
-
-		mb = mem_deref(mb);
 	}
 
 	info("aufile: loaded %zu bytes\n", aubuf_cur_size(st->aubuf));
 
 	mem_deref(mb);
+	mem_deref(mb2);
 	return err;
 }
 
@@ -197,12 +227,13 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	info("aufile: %s: %u Hz, %d channels\n",
-	     dev, fprm.srate, fprm.channels);
+	info("aufile: %s: %u Hz, %d channels, %s\n",
+	     dev, fprm.srate, fprm.channels, aufmt_name(fprm.fmt));
 
 	/* return wav format to caller */
 	prm->srate = fprm.srate;
 	prm->ch    = fprm.channels;
+	st->fmt    = fprm.fmt;
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	st->ptime = prm->ptime;
