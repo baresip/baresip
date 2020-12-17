@@ -396,9 +396,11 @@ static int play_file_ausrc(struct play **playp,
 	size_t sampsz;
 	struct ausrc_prm sprm;
 	struct play *play;
-	struct config *cfg = conf_config();
-	uint32_t srate = cfg->audio.srate_src;
-	uint32_t channels = cfg->audio.channels_src;
+	uint32_t srate = 0;
+	uint32_t channels = 0;
+
+	conf_get_u32(conf_cur(), "file_srate", &srate);
+	conf_get_u32(conf_cur(), "file_channels", &channels);
 
 	play = mem_zalloc(sizeof(*play), destructor);
 	if (!play)
