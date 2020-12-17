@@ -317,12 +317,17 @@ static void aubuf_write_handler(void *sampv, size_t sampc, void *arg)
 {
 	struct play *play = arg;
 	size_t sz = sampc * aufmt_sample_size(play->sprm.fmt);
+	size_t left = aubuf_cur_size(play->aubuf);
 
 	aubuf_read(play->aubuf, sampv, sz);
 
 	lock_write_get(play->lock);
-	if (play->trep && check_restart(play))
+	if (!play->trep && !play->ausrc_st && left < sz) {
+		check_restart(play);
+	}
+	else if (play->trep && check_restart(play)) {
 		start_ausrc(play);
+	}
 
 	lock_rel(play->lock);
 }
@@ -336,7 +341,6 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 	if (err == 0) {
 		lock_write_get(play->lock);
 		play->ausrc_st = mem_deref(play->ausrc_st);
-		check_restart(play);
 		lock_rel(play->lock);
 	}
 }
