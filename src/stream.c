@@ -1155,7 +1155,7 @@ int stream_start(const struct stream *strm)
 int stream_open_natpinhole(const struct stream *strm)
 {
 	int err = 0;
-	struct mbuf *mb;
+	struct mbuf *mb = NULL;
 	const struct sdp_format *sc = NULL;
 
 	if (!strm)
