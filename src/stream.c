@@ -1146,6 +1146,51 @@ int stream_start(const struct stream *strm)
 
 
 /**
+ * Open NAT-pinhole via RTP empty package
+ *
+ * @param strm	Stream object
+ *
+ * @return int 0 if success, otherwise errorcode
+ */
+int stream_open_natpinhole(const struct stream *strm)
+{
+	int err = 0;
+	struct mbuf *mb;
+	const struct sdp_format *sc = NULL;
+
+	if (!strm)
+		return EINVAL;
+
+	if (!strm->mnat) {
+
+		sc = sdp_media_rformat(strm->sdp, NULL);
+		if (!sc)
+			return EINVAL;
+
+		mb = mbuf_alloc(RTP_HEADER_SIZE);
+		if (!mb)
+			return ENOMEM;
+
+		mbuf_set_end(mb, RTP_HEADER_SIZE);
+		mbuf_advance(mb, RTP_HEADER_SIZE);
+
+		/* Send a dummy RTP packet to open NAT pinhole */
+		err = rtp_send(strm->rtp, &strm->raddr_rtp, false, false,
+			sc->pt, 0, mb);
+		if (err) {
+			warning("stream: rtp_send to open natpinhole"
+				"failed (%m)\n", err);
+			goto out;
+		}
+	}
+
+ out:
+	mem_deref(mb);
+	return err;
+}
+
+
+/**
  * Get the name of the stream type (e.g. audio or video)
  *
  * @param strm Stream object
