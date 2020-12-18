@@ -1066,10 +1066,13 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 		else
 			video_stop_source(v);
 
-		if (dir & SDP_RECVONLY)
+		if (dir & SDP_RECVONLY) {
+			err |= stream_open_natpinhole(v->strm);
 			err |= video_start_display(v, peer);
-		else
+		}
+		else {
 			video_stop_display(v);
+		}
 
 		if (err) {
 			warning("video: video stream error: %m\n", err);

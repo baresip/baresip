@@ -1297,6 +1297,7 @@ void stream_set_secure(struct stream *strm, bool secure);
 bool stream_is_secure(const struct stream *strm);
 int  stream_start_mediaenc(struct stream *strm);
 int  stream_start(const struct stream *strm);
+int stream_open_natpinhole(const struct stream *strm);
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
 				 stream_rtpestab_h *rtpestabh,
