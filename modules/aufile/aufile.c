@@ -35,6 +35,7 @@ struct ausrc_st {
 	struct ausrc_prm *prm;          /**< Audio src parameter             */
 	uint32_t ptime;
 	size_t sampc;
+	bool blk;                       /**< Blocking mode for fileinfo      */
 	bool run;
 	pthread_t thread;
 	ausrc_read_h *rh;
@@ -68,6 +69,13 @@ static void *play_thread(void *arg)
 	uint64_t now, ts = tmr_jiffies();
 	struct ausrc_st *st = arg;
 	int16_t *sampv;
+	uint32_t ptime = st->ptime;
+	uint32_t ms = 4;
+
+	if (st->blk) {
+		ptime = 0;
+		ms = 0;
+	}
 
 	sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
 	if (!sampv)
@@ -82,7 +90,7 @@ static void *play_thread(void *arg)
 			.timestamp = ts * 1000
 		};
 
-		sys_msleep(4);
+		sys_msleep(ms);
 
 		now = tmr_jiffies();
 
@@ -93,7 +101,7 @@ static void *play_thread(void *arg)
 
 		st->rh(&af, st->arg);
 
-		ts += st->ptime;
+		ts += ptime;
 
 		if (aubuf_cur_size(st->aubuf) == 0)
 			st->run = false;
@@ -224,6 +232,9 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	st->errh = errh;
 	st->arg  = arg;
 	st->prm  = prm;
+	st->blk  = prm->ptime == 0;
+	if (st->blk)
+		prm->ptime = 40;
 
 	err = aufile_open(&st->aufile, &fprm, dev, AUFILE_READ);
 	if (err) {
@@ -264,6 +275,9 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 		st->run = false;
 		goto out;
 	}
+
+	if (st->blk)
+		pthread_join(st->thread, NULL);
 
  out:
 	if (err)
