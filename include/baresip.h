@@ -1249,10 +1249,10 @@ int  video_alloc(struct video **vp, struct list *streaml,
 		 video_err_h *errh, void *arg);
 int  video_encoder_set(struct video *v, struct vidcodec *vc,
 		       int pt_tx, const char *params);
+int  video_update(struct video *v, struct media_ctx **ctx, const char *peer);
 int  video_start_source(struct video *v, struct media_ctx **ctx);
 int  video_start_display(struct video *v, const char *peer);
 void video_stop(struct video *v);
-void video_stop_display(struct video *v);
 int   video_set_fullscreen(struct video *v, bool fs);
 void  video_vidsrc_set_device(struct video *v, const char *dev);
 int   video_set_source(struct video *v, const char *name, const char *dev);

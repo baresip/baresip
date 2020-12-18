@@ -152,7 +152,6 @@ struct video {
 	struct vtx vtx;         /**< Transmit/encoder direction           */
 	struct vrx vrx;         /**< Receive/decoder direction            */
 	struct tmr tmr;         /**< Timer for frame-rate estimation      */
-	bool started;           /**< True if video is started             */
 	char *peer;             /**< Peer URI                             */
 	bool nack_pli;          /**< Send NACK/PLI to peer                */
 	video_err_h *errh;      /**< Error handler                        */
@@ -171,7 +170,8 @@ struct vidqent {
 
 
 static void request_picture_update(struct vrx *vrx);
-
+static void video_stop_display(struct video *v);
+static void video_stop_source(struct video *v);
 
 static void vidqent_destructor(void *arg)
 {
@@ -1027,6 +1027,67 @@ static void tmr_handler(void *arg)
 
 
 /**
+ * Update video object and start/stop according to media direction
+ *
+ * @param v    Video object
+ * @param ctx  Media context
+ * @param peer Peer-URI as string
+ *
+ * @return int 0 if success, otherwise errorcode
+ */
+int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
+{
+	const struct sdp_format *sc = NULL;
+	enum sdp_dir dir;
+	struct sdp_media *m = NULL;
+	int err = 0;
+
+	m = stream_sdpmedia(v->strm);
+
+	debug("video: update\n");
+
+	if (!sdp_media_disabled(m)) {
+		dir = sdp_media_dir(stream_sdpmedia(v->strm));
+		sc = sdp_media_rformat(m, NULL);
+	}
+
+	if (sc) {
+		if (dir & SDP_SENDONLY)
+			err = video_encoder_set(v, sc->data, sc->pt,
+				sc->params);
+
+		if (dir & SDP_RECVONLY)
+			err |= video_decoder_set(v, sc->data, sc->pt,
+				sc->rparams);
+
+		/* Stop / Start source & display*/
+		if (dir & SDP_SENDONLY)
+			err |= video_start_source(v, ctx);
+		else
+			video_stop_source(v);
+
+		if (dir & SDP_RECVONLY)
+			err |= video_start_display(v, peer);
+		else
+			video_stop_display(v);
+
+		if (err) {
+			warning("video: video stream error: %m\n", err);
+			return err;
+		}
+
+	}
+	else if (v) {
+		info("video: video stream is disabled..\n");
+		video_stop_source(v);
+		video_stop_display(v);
+	}
+
+	return err;
+}
+
+
+/**
  * Start the video source
  *
  * @param v   Video object
@@ -1042,6 +1103,11 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 
 	if (!v)
 		return EINVAL;
+
+	if (v->vtx.vsrc)
+		return 0;
+
+	debug("video: start source\n");
 
 	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
 
@@ -1086,8 +1152,6 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 		     vrx_print_pipeline, &v->vrx);
 	}
 
-	v->started = true;
-
 	return 0;
 }
 
@@ -1106,6 +1170,11 @@ int video_start_display(struct video *v, const char *peer)
 
 	if (!v)
 		return EINVAL;
+
+	if (v->vrx.vidisp)
+		return 0;
+
+	debug("video: start display\n");
 
 	if (peer) {
 		v->peer = mem_deref(v->peer);
@@ -1135,14 +1204,13 @@ int video_start_display(struct video *v, const char *peer)
  *
  * @param v   Video object
  */
-void video_stop(struct video *v)
+static void video_stop_source(struct video *v)
 {
 	if (!v)
 		return;
 
 	debug("video: stopping video source ..\n");
 
-	v->started = false;
 	v->vtx.vsrc = mem_deref(v->vtx.vsrc);
 }
 
@@ -1152,7 +1220,7 @@ void video_stop(struct video *v)
  *
  * @param v   Video object
  */
-void video_stop_display(struct video *v)
+static void video_stop_display(struct video *v)
 {
 	if (!v)
 		return;
@@ -1163,9 +1231,15 @@ void video_stop_display(struct video *v)
 }
 
 
-bool video_is_started(const struct video *v)
+/**
+ * Stop video sourc & display
+ *
+ * @param v  Video object
+ */
+void video_stop(struct video *v)
 {
-	return v ? v->started : false;
+	video_stop_source(v);
+	video_stop_display(v);
 }
 
 
@@ -1452,7 +1526,10 @@ int video_debug(struct re_printf *pf, const struct video *v)
 	vrx = &v->vrx;
 
 	err = re_hprintf(pf, "\n--- Video stream ---\n");
-	err |= re_hprintf(pf, " started: %s\n", v->started ? "yes" : "no");
+	err |= re_hprintf(pf, " source started: %s\n",
+		v->vtx.vsrc ? "yes" : "no");
+	err |= re_hprintf(pf, " display started: %s\n",
+		v->vrx.vidisp ? "yes" : "no");
 
 	err |= vtx_debug(pf, vtx);
 	err |= vrx_debug(pf, vrx);
