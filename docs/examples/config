@@ -60,6 +60,8 @@ rtp_stats		no
 
 # Play tones
 #file_ausrc		aufile
+#file_srate		16000
+#file_channels		1
 
 #------------------------------------------------------------------------------
 # Modules

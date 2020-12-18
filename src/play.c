@@ -20,6 +20,8 @@ struct play {
 	struct lock *lock;
 	struct mbuf *mb;
 	struct auplay_st *auplay;
+	char *mod;
+	char *dev;
 	struct tmr tmr;
 	int repeat;
 	uint64_t delay;
@@ -49,6 +51,7 @@ struct player {
 
 
 static int start_ausrc(struct play *play);
+static int start_auplay(struct play *play);
 
 
 static void tmr_stop(void *arg)
@@ -70,6 +73,12 @@ static void tmr_polling(void *arg)
 	if (play->eof) {
 		if (play->repeat == 0)
 			tmr_start(&play->tmr, 1, tmr_stop, arg);
+	}
+	else if (play->aubuf && !play->auplay) {
+		if (aubuf_cur_size(play->aubuf))
+			start_auplay(play);
+
+		tmr_start(&play->tmr, 4, tmr_polling, play);
 	}
 
 	lock_rel(play->lock);
@@ -153,6 +162,8 @@ static void destructor(void *arg)
 
 	mem_deref(play->ausrc_st);
 	mem_deref(play->auplay);
+	mem_deref(play->mod);
+	mem_deref(play->dev);
 	mem_deref(play->mb);
 	mem_deref(play->lock);
 	mem_deref(play->aubuf);
@@ -317,12 +328,17 @@ static void aubuf_write_handler(void *sampv, size_t sampc, void *arg)
 {
 	struct play *play = arg;
 	size_t sz = sampc * aufmt_sample_size(play->sprm.fmt);
+	size_t left = aubuf_cur_size(play->aubuf);
 
 	aubuf_read(play->aubuf, sampv, sz);
 
 	lock_write_get(play->lock);
-	if (play->trep && check_restart(play))
+	if (!play->trep && !play->ausrc_st && left < sz) {
+		check_restart(play);
+	}
+	else if (play->trep && check_restart(play)) {
 		start_ausrc(play);
+	}
 
 	lock_rel(play->lock);
 }
@@ -336,7 +352,6 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 	if (err == 0) {
 		lock_write_get(play->lock);
 		play->ausrc_st = mem_deref(play->ausrc_st);
-		check_restart(play);
 		lock_rel(play->lock);
 	}
 }
@@ -355,6 +370,23 @@ static int start_ausrc(struct play *play)
 }
 
 
+static int start_auplay(struct play *play)
+{
+	struct auplay_prm wprm;
+	int err;
+
+	wprm.ch    = play->sprm.ch;
+	wprm.srate = play->sprm.srate;
+	wprm.ptime = play->sprm.ptime;
+	wprm.fmt   = play->sprm.fmt;
+
+	err = auplay_alloc(&play->auplay, baresip_auplayl(),
+			   play->mod, &wprm,
+			   play->dev, aubuf_write_handler, play);
+	return err;
+}
+
+
 static int play_file_ausrc(struct play **playp,
 		    const struct ausrc *ausrc,
 		    const char *filename, int repeat,
@@ -362,12 +394,13 @@ static int play_file_ausrc(struct play **playp,
 {
 	int err = 0;
 	size_t sampsz;
-	struct auplay_prm wprm;
 	struct ausrc_prm sprm;
 	struct play *play;
-	struct config *cfg = conf_config();
-	uint32_t srate = cfg->audio.srate_src;
-	uint32_t channels = cfg->audio.channels_src;
+	uint32_t srate = 0;
+	uint32_t channels = 0;
+
+	conf_get_u32(conf_cur(), "file_srate", &srate);
+	conf_get_u32(conf_cur(), "file_channels", &channels);
 
 	play = mem_zalloc(sizeof(*play), destructor);
 	if (!play)
@@ -383,10 +416,8 @@ static int play_file_ausrc(struct play **playp,
 	if (err)
 		goto out;
 
-	wprm.ch = channels;
-	wprm.srate = srate;
-	wprm.ptime = PTIME;
-	wprm.fmt = AUFMT_S16LE;
+	str_dup(&play->mod, play_mod);
+	str_dup(&play->dev, play_dev);
 
 	sprm.ch = channels;
 	sprm.srate = srate;
@@ -398,15 +429,9 @@ static int play_file_ausrc(struct play **playp,
 	str_dup(&play->filename, filename);
 
 	sampsz = aufmt_sample_size(sprm.fmt);
-	play->maxsz = (5 * sampsz * srate * channels * PTIME) / 1000;
-	play->minsz = (3 * sampsz * srate * channels * PTIME) / 1000;
+	play->maxsz = (24 * sampsz * srate * channels * PTIME) / 1000;
+	play->minsz = ( 3 * sampsz * srate * channels * PTIME) / 1000;
 	err = aubuf_alloc(&play->aubuf, play->minsz, play->maxsz);
-	if (err)
-		goto out;
-
-	err = auplay_alloc(&play->auplay, baresip_auplayl(),
-			   play_mod, &wprm,
-			   play_dev, aubuf_write_handler, play);
 	if (err)
 		goto out;
 
@@ -415,7 +440,7 @@ static int play_file_ausrc(struct play **playp,
 	if (err)
 		goto out;
 
-	tmr_start(&play->tmr, PTIME,  tmr_polling, play);
+	tmr_start(&play->tmr, 4,  tmr_polling, play);
 
 out:
 	if (err) {
