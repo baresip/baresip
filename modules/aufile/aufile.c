@@ -94,6 +94,9 @@ static void *play_thread(void *arg)
 		st->rh(&af, st->arg);
 
 		ts += st->ptime;
+
+		if (aubuf_cur_size(st->aubuf) == 0)
+			st->run = false;
 	}
 
 	mem_deref(sampv);
@@ -108,7 +111,8 @@ static void timeout(void *arg)
 	tmr_start(&st->tmr, st->ptime, timeout, st);
 
 	/* check if audio buffer is empty */
-	if (aubuf_cur_size(st->aubuf) == 0) {
+	if (!st->run) {
+		tmr_cancel(&st->tmr);
 
 		info("aufile: end of file\n");
 
