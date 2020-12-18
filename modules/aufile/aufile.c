@@ -9,6 +9,7 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#include "aufile.h"
 
 
 /**
@@ -41,6 +42,7 @@ struct ausrc_st {
 
 
 static struct ausrc *ausrc;
+static struct auplay *auplay;
 
 
 static void destructor(void *arg)
@@ -253,14 +255,19 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 static int module_init(void)
 {
-	return ausrc_register(&ausrc, baresip_ausrcl(),
+	int err;
+	err  = ausrc_register(&ausrc, baresip_ausrcl(),
 			      "aufile", alloc_handler);
+	err |= auplay_register(&auplay, baresip_auplayl(),
+			       "aufile", play_alloc);
+	return err;
 }
 
 
 static int module_close(void)
 {
 	ausrc = mem_deref(ausrc);
+	auplay = mem_deref(auplay);
 
 	return 0;
 }
