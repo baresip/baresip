@@ -22,7 +22,7 @@ jobs:
     - uses: sreimers/pr-dependency-action@v0.3
       with:
         name: rem
-        repo: https://github.com/creytiv/rem
+        repo: https://github.com/baresip/rem
         secret: ${{ secrets.GITHUB_TOKEN }}
 
     - name: make re/rem
