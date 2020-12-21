@@ -168,6 +168,7 @@ struct fileinfo_st {
 	struct ausrc_prm prm;
 	size_t sampc;
 	struct tmr tmr;
+	bool   finished;
 };
 
 
@@ -183,6 +184,26 @@ static void fileinfo_destruct(void *arg)
 static void fileinfo_timeout(void *arg)
 {
 	struct fileinfo_st *st = arg;
+	size_t ms = 0;
+
+	if (st->prm.ch && st->prm.srate)
+		ms = st->sampc * 1000 / st->prm.ch / st->prm.srate;
+
+	if (st->finished) {
+		info("debug_cmd: length = %u ms\n", ms);
+		ua_event(NULL, UA_EVENT_MAX, NULL, "debug_cmd: length = %u ms",
+				ms);
+	}
+	else if (ms) {
+		warning("debug_cmd: timeout, length > %u ms\n", ms);
+		ua_event(NULL, UA_EVENT_MAX, NULL, "debug_cmd: timeout, "
+				"length > %u ms", ms);
+	}
+	else {
+		info("debug_cmd: timeout\n");
+		ua_event(NULL, UA_EVENT_MAX, NULL, "debug_cmd: timeout");
+	}
+
 	mem_deref(st);
 }
 
@@ -201,15 +222,10 @@ static void fileinfo_readh(struct auframe *af, void *arg)
 static void fileinfo_errh(int err, const char *str, void *arg)
 {
 	struct fileinfo_st *st = arg;
-	size_t ms = 0;
 	(void) err;
 	(void) str;
 
-	if (st->prm.ch && st->prm.srate)
-		ms = st->sampc * 1000 / st->prm.ch / st->prm.srate;
-
-	info("debug_cmd: length = %u ms\n", ms);
-	ua_event(NULL, UA_EVENT_MAX, NULL, "debug_cmd: length = %u ms", ms);
+	st->finished = err ? false : true;
 	tmr_start(&st->tmr, 0, fileinfo_timeout, st);
 }
 
