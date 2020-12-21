@@ -1354,11 +1354,10 @@ static int sipsess_offer_handler(struct mbuf **descp,
 {
 	const bool got_offer = (0 != mbuf_get_left(msg->mb));
 	struct call *call = arg;
+	enum sdp_dir ardir, vrdir;
 	int err;
 
 	MAGIC_CHECK(call);
-
-	info("call: got re-INVITE%s\n", got_offer ? " (SDP Offer)" : "");
 
 	if (got_offer) {
 
@@ -1373,9 +1372,23 @@ static int sipsess_offer_handler(struct mbuf **descp,
 		}
 
 		err = update_media(call);
-		if (err)
+		if (err) {
+			warning("call: reinvite: could not update media: %m\n",
+				err);
 			return err;
+		}
 	}
+
+	ardir =sdp_media_rdir(
+		stream_sdpmedia(audio_strm(call_audio(call))));
+	vrdir = sdp_media_rdir(
+		stream_sdpmedia(video_strm(call_video(call))));
+	if (!call_has_video(call))
+		vrdir = SDP_INACTIVE;
+
+	info("call: got re-INVITE%s audio-video: %s-%s\n"
+		, got_offer ? " (SDP Offer)" : "",
+		sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
 	/* Encode SDP Answer */
 	return sdp_encode(descp, call->sdp, !got_offer);
