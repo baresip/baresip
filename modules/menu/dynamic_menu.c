@@ -242,7 +242,7 @@ static const struct cmd callcmdv[] = {
 {"statmode",    'S',       0, "Statusmode toggle",    toggle_statmode      },
 {"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
-{"video_dir",     0, CMD_PRM, "Set video direction",  set_video_dir        },
+{"videodir",      0, CMD_PRM, "Set video direction",  set_video_dir        },
 
 /* Numeric keypad for DTMF events: */
 {NULL, '#',         0, NULL,                  digit_handler         },
