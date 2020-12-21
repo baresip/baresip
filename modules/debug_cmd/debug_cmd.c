@@ -160,18 +160,58 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 }
 
 
+struct ausrc_st;
+
+
+struct fileinfo_st {
+	struct ausrc_st *ausrc;
+	struct ausrc_prm prm;
+	size_t sampc;
+	struct tmr tmr;
+};
+
+
+static void fileinfo_destruct(void *arg)
+{
+	struct fileinfo_st *st = arg;
+
+	tmr_cancel(&st->tmr);
+	mem_deref(st->ausrc);
+}
+
+
+static void fileinfo_timeout(void *arg)
+{
+	struct fileinfo_st *st = arg;
+	mem_deref(st);
+}
+
+
 static void fileinfo_readh(struct auframe *af, void *arg)
 {
-	size_t *sampc = arg;
+	struct fileinfo_st *st = arg;
 
 	if (!af || !arg)
 		return;
 
-	*sampc += af->sampc;
+	st->sampc += af->sampc;
 }
 
 
-struct ausrc_st;
+static void fileinfo_errh(int err, const char *str, void *arg)
+{
+	struct fileinfo_st *st = arg;
+	size_t ms = 0;
+	(void) err;
+	(void) str;
+
+	if (st->prm.ch && st->prm.srate)
+		ms = st->sampc * 1000 / st->prm.ch / st->prm.srate;
+
+	info("debug_cmd: length = %u ms\n", ms);
+	ua_event(NULL, UA_EVENT_MAX, NULL, "debug_cmd: length = %u ms", ms);
+	tmr_start(&st->tmr, 0, fileinfo_timeout, st);
+}
 
 
 /**
@@ -191,14 +231,11 @@ struct ausrc_st;
 static int cmd_fileinfo(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	size_t sampc = 0;
-	struct ausrc_prm prm;
 	int err = 0;
-	uint32_t ms = 0;
 	size_t len;
 	char *path;
 	char aumod[16];
-	struct ausrc_st *ausrc_st = NULL;
+	struct fileinfo_st *st = NULL;
 
 	if (!str_isset(carg->prm)) {
 		re_hprintf(pf, "fileplay: filename not specified\n");
@@ -218,27 +255,27 @@ static int cmd_fileinfo(struct re_printf *pf, void *arg)
 			conf_config()->audio.audio_path,
 			carg->prm);
 
-	prm.srate = 0;
-	prm.ch = 0;
-	prm.ptime = 0;
-	prm.fmt = 0;
-
 	/* prm->ptime == 0 means blocking mode for ausrc */
-	err = ausrc_alloc(&ausrc_st, baresip_ausrcl(),
+	st = mem_zalloc(sizeof(*st), fileinfo_destruct);
+	if (!st) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	err = ausrc_alloc(&st->ausrc, baresip_ausrcl(),
 			NULL, aumod,
-			&prm, path,
-			fileinfo_readh, NULL, &sampc);
+			&st->prm, path,
+			fileinfo_readh, fileinfo_errh, st);
 	if (err)
-		warning("debug_cmd: %s - ausrc %s does not support blocking "
-				"mode or reading source %s failed. (%m)\n",
+		warning("debug_cmd: %s - ausrc %s does not support zero ptime "
+				"or reading source %s failed. (%m)\n",
 				__func__, aumod, carg->prm, err);
 
-	if (prm.ch && prm.srate)
-		ms = sampc * 1000 / prm.ch / prm.srate;
+	tmr_start(&st->tmr, 5000, fileinfo_timeout, st);
+out:
+	if (err)
+		mem_deref(st);
 
-	re_hprintf(pf, "debug_cmd: length = %u ms\n", ms);
-
-	mem_deref(ausrc_st);
 	mem_deref(path);
 	return err;
 }
