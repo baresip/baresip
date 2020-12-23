@@ -340,3 +340,8 @@ src/static.c: $(BUILD) Makefile $(APP_MK) $(MOD_MK)
 	done
 	@echo "  NULL"  >> $@
 	@echo "};"  >> $@
+
+bareinfo: info
+	@echo "  LIBREM_PATH:   $(LIBREM_PATH)"
+	@echo "  LIBREM_INC:    $(LIBREM_INC)"
+	@echo "  LIBREM_SO:     $(LIBREM_SO)"
