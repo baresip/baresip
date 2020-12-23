@@ -439,9 +439,6 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st->ptime)
 		st->ptime = 20;
 
-	if (!st->ptime)
-		st->ptime = 20;
-
 	if (!prm->srate)
 		prm->srate = 16000;
 
