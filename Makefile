@@ -61,18 +61,45 @@ LIBREM_PATH	:= $(shell [ -f $(SYSROOT)/include/rem/rem.h ] && \
 	echo "$(SYSROOT)")
 endif
 
+# Include path
 LIBREM_INC := $(shell [ -f $(LIBREM_PATH)/include/rem.h ] && \
 	echo "$(LIBREM_PATH)/include")
 ifeq ($(LIBREM_INC),)
 LIBREM_INC := $(shell [ -f $(LIBREM_PATH)/include/rem/rem.h ] && \
 	echo "$(LIBREM_PATH)/include/rem")
 endif
+ifeq ($(LIBREM_INC),)
+LIBREM_INC := $(shell [ -f /usr/local/include/rem/rem.h ] && \
+	echo "/usr/local/include/rem")
+endif
+ifeq ($(LIBREM_INC),)
+LIBREM_INC := $(shell [ -f /usr/include/rem/rem.h ] && echo "/usr/include/rem")
+endif
 
+# Library path
+ifeq ($(LIBREM_SO),)
+LIBREM_SO  := $(shell [ -f $(LIBREM_PATH)/librem.a ] && \
+	echo "$(LIBREM_PATH)")
+endif
+ifeq ($(LIBREM_SO),)
 LIBREM_SO :=$(shell [ -f $(LIBREM_PATH)/librem$(LIB_SUFFIX) ] && \
 	echo "$(LIBREM_PATH)")
+endif
 ifeq ($(LIBREM_SO),)
 LIBREM_SO := $(shell [ -f $(LIBREM_PATH)/lib/librem$(LIB_SUFFIX) ] && \
 	echo "$(LIBREM_PATH)/lib")
+endif
+ifeq ($(LIBREM_SO),)
+LIBREM_SO  := $(shell [ -f /usr/local/lib/librem$(LIB_SUFFIX) ] \
+	&& echo "/usr/local/lib")
+endif
+ifeq ($(LIBREM_SO),)
+LIBREM_SO  := $(shell [ -f /usr/lib/librem$(LIB_SUFFIX) ] && \
+	echo "/usr/lib")
+endif
+ifeq ($(LIBREM_SO),)
+LIBREM_SO  := $(shell [ -f /usr/lib64/librem$(LIB_SUFFIX) ] && \
+	echo "/usr/lib64")
 endif
 
 
