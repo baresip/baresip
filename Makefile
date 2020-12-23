@@ -49,34 +49,46 @@ ifndef LIBREM_PATH
 LIBREM_PATH	:= $(shell [ -d ../rem ] && echo "../rem")
 endif
 
+ifeq ($(LIBREM_PATH),)
+ifneq ($(SYSROOT_LOCAL),)
+LIBREM_PATH	:= $(shell [ -f $(SYSROOT_LOCAL)/include/rem/rem.h ] && \
+	echo "$(SYSROOT_LOCAL)")
+endif
+endif
+
+ifeq ($(LIBREM_PATH),)
+LIBREM_PATH	:= $(shell [ -f $(SYSROOT)/include/rem/rem.h ] && \
+	echo "$(SYSROOT)")
+endif
+
+LIBREM_INC := $(shell [ -f $(LIBREM_PATH)/include/rem.h ] && \
+	echo "$(LIBREM_PATH)/include")
+ifeq ($(LIBREM_INC),)
+LIBREM_INC := $(shell [ -f $(LIBREM_PATH)/include/rem/rem.h ] && \
+	echo "$(LIBREM_PATH)/include/rem")
+endif
+
+LIBREM_SO :=$(shell [ -f $(LIBREM_PATH)/librem$(LIB_SUFFIX) ] && \
+	echo "$(LIBREM_PATH)")
+ifeq ($(LIBREM_SO),)
+LIBREM_SO := $(shell [ -f $(LIBREM_PATH)/lib/librem$(LIB_SUFFIX) ] && \
+	echo "$(LIBREM_PATH)/lib")
+endif
+
 
 CFLAGS    += -I. -Iinclude -I$(LIBRE_INC)
-ifneq ($(LIBREM_PATH),)
-CFLAGS    += -I$(LIBREM_PATH)/include
-endif
-CFLAGS    += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
-ifneq ($(SYSROOT_LOCAL),)
-CFLAGS    += -I$(SYSROOT_LOCAL)/include/rem
-endif
+CFLAGS    += -I$(LIBREM_INC)
 
 
 CXXFLAGS  += -I. -Iinclude -I$(LIBRE_INC)
-ifneq ($(LIBREM_PATH),)
-CXXFLAGS  += -I$(LIBREM_PATH)/include
-endif
-CXXFLAGS  += -I$(SYSROOT)/local/include/rem -I$(SYSROOT)/include/rem
-ifneq ($(SYSROOT_LOCAL),)
-CXXFLAGS  += -I$(SYSROOT_LOCAL)/include/rem
-endif
+CXXFLAGS  += -I$(LIBREM_INC)
 CXXFLAGS  += $(EXTRA_CXXFLAGS)
 
 
 # XXX: common for C/C++
 CPPFLAGS += -DHAVE_INTTYPES_H
 
-ifneq ($(LIBREM_PATH),)
-CLANG_OPTIONS  += -I$(LIBREM_PATH)/include
-endif
+CLANG_OPTIONS  += -I$(LIBREM_INC)
 
 ifeq ($(OS),win32)
 STATIC    := yes
@@ -145,9 +157,7 @@ LIB_OBJS  := $(OBJS) $(MOD_OBJS)
 TEST_OBJS := $(patsubst %.c,$(BUILD)/test/%.o,$(filter %.c,$(TEST_SRCS)))
 TEST_OBJS += $(patsubst %.cpp,$(BUILD)/test/%.o,$(filter %.cpp,$(TEST_SRCS)))
 
-ifneq ($(LIBREM_PATH),)
-LIBS	+= -L$(LIBREM_PATH)
-endif
+LIBS	+= -L$(LIBREM_SO)
 
 # Static build: include module linker-flags in binary
 ifneq ($(STATIC),)
