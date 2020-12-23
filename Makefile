@@ -36,13 +36,14 @@ endif
 endif
 
 
-ifeq ($(SYSROOT_LOCAL),)
-SYSROOT_LOCAL := $(shell [ -d /usr/local/include ] && echo "/usr/local")
-endif
-
-
 include $(LIBRE_MK)
 include mk/modules.mk
+
+ifeq ($(SYSROOT_LOCAL),)
+ifeq  ($(SYSROOT),/usr)
+SYSROOT_LOCAL := $(shell [ -d /usr/local/include ] && echo "/usr/local")
+endif
+endif
 
 ifndef LIBREM_PATH
 LIBREM_PATH	:= $(shell [ -d ../rem ] && echo "../rem")
