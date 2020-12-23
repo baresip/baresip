@@ -19,6 +19,11 @@
  * Advanced debug commands
  */
 
+enum {
+	UA_EVENT_FILEINFO = UA_EVENT_MAX + 1,
+};
+
+
 static uint64_t start_ticks;          /**< Ticks when app started         */
 static time_t start_time;             /**< Start time of application      */
 static struct play *g_play;
@@ -160,9 +165,6 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 }
 
 
-struct ausrc_st;
-
-
 struct fileinfo_st {
 	struct ausrc_st *ausrc;
 	struct ausrc_prm prm;
@@ -184,31 +186,31 @@ static void fileinfo_destruct(void *arg)
 static void fileinfo_timeout(void *arg)
 {
 	struct fileinfo_st *st = arg;
-	size_t ms = 0;
+	double s  = 0.;
 
 	if (st->prm.ch && st->prm.srate)
-		ms = st->sampc * 1000 / st->prm.ch / st->prm.srate;
+		s = ((double) st->sampc)  / st->prm.ch / st->prm.srate;
 
 	if (st->finished) {
-		info("debug_cmd: length = %u ms\n", ms);
-		ua_event(NULL, UA_EVENT_MAX, NULL, "debug_cmd: length = %u ms",
-				ms);
+		info("debug_cmd: length = %1.3lf seconds\n", s);
+		ua_event(NULL, UA_EVENT_FILEINFO, NULL,
+			 "debug_cmd: length = %lf seconds", s);
 	}
-	else if (ms) {
-		warning("debug_cmd: timeout, length > %u ms\n", ms);
-		ua_event(NULL, UA_EVENT_MAX, NULL, "debug_cmd: timeout, "
-				"length > %u ms", ms);
+	else if (s > 0.) {
+		warning("debug_cmd: timeout, length > %1.3lf seconds\n", s);
+		ua_event(NULL, UA_EVENT_FILEINFO, NULL,
+			 "debug_cmd: timeout, length > %1.3lf seconds", s);
 	}
 	else {
 		info("debug_cmd: timeout\n");
-		ua_event(NULL, UA_EVENT_MAX, NULL, "debug_cmd: timeout");
+		ua_event(NULL, UA_EVENT_FILEINFO, NULL, "debug_cmd: timeout");
 	}
 
 	mem_deref(st);
 }
 
 
-static void fileinfo_readh(struct auframe *af, void *arg)
+static void fileinfo_read_handler(struct auframe *af, void *arg)
 {
 	struct fileinfo_st *st = arg;
 
@@ -219,10 +221,9 @@ static void fileinfo_readh(struct auframe *af, void *arg)
 }
 
 
-static void fileinfo_errh(int err, const char *str, void *arg)
+static void fileinfo_err_handler(int err, const char *str, void *arg)
 {
 	struct fileinfo_st *st = arg;
-	(void) err;
 	(void) str;
 
 	st->finished = err ? false : true;
@@ -231,24 +232,24 @@ static void fileinfo_errh(int err, const char *str, void *arg)
 
 
 /**
- * Command fileinfo reads given audio file with ausrc that is specified in
- * config file_ausrc and returns the length in milli seconds. The file has
- * to be located in the path specified by audio_path.
+ * Command aufileinfo reads given audio file with ausrc that is specified in
+ * config file_ausrc, computes the length in milli seconds and sends a ua_event
+ * to inform about the result. The file has to be located in the path specified
+ * by audio_path.
  *
  * Usage:
- * /fileinfo audiofile
+ * /aufileinfo audiofile
  *
  * @param pf Print handler is used to return length.
  * @param arg Command argument contains the file name.
  *
- * @return The length of the fileplay file in milli seconds.
+ * @return 0 if success, otherwise errorcode
  */
 /* ------------------------------------------------------------------------- */
-static int cmd_fileinfo(struct re_printf *pf, void *arg)
+static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	int err = 0;
-	size_t len;
 	char *path;
 	char aumod[16];
 	struct fileinfo_st *st = NULL;
@@ -264,10 +265,7 @@ static int cmd_fileinfo(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	len = str_len(conf_config()->audio.audio_path) + str_len(carg->prm)
-		+ 2;
-	path = mem_zalloc(len, NULL);
-	re_snprintf(path, len, "%s/%s",
+	re_sdprintf(&path, "%s/%s",
 			conf_config()->audio.audio_path,
 			carg->prm);
 
@@ -281,11 +279,13 @@ static int cmd_fileinfo(struct re_printf *pf, void *arg)
 	err = ausrc_alloc(&st->ausrc, baresip_ausrcl(),
 			NULL, aumod,
 			&st->prm, path,
-			fileinfo_readh, fileinfo_errh, st);
-	if (err)
+			fileinfo_read_handler, fileinfo_err_handler, st);
+	if (err) {
 		warning("debug_cmd: %s - ausrc %s does not support zero ptime "
 				"or reading source %s failed. (%m)\n",
 				__func__, aumod, carg->prm, err);
+		goto out;
+	}
 
 	tmr_start(&st->tmr, 5000, fileinfo_timeout, st);
 out:
@@ -363,7 +363,7 @@ static const struct cmd debugcmdv[] = {
 {"modules",     0,       0, "Module debug",           mod_debug           },
 {"netstat",    'n',      0, "Network debug",          cmd_net_debug       },
 {"play",        0, CMD_PRM, "Play audio file",        cmd_play_file       },
-{"fileinfo",    0, CMD_PRM, "Audio file info",        cmd_fileinfo        },
+{"aufileinfo",  0, CMD_PRM, "Audio file info",        cmd_aufileinfo      },
 {"sipstat",    'i',      0, "SIP debug",              cmd_sip_debug       },
 {"sysinfo",    's',      0, "System info",            print_system_info   },
 {"timers",      0,       0, "Timer debug",            tmr_status          },
