@@ -170,7 +170,6 @@ struct vidqent {
 
 
 static void request_picture_update(struct vrx *vrx);
-static void video_stop_display(struct video *v);
 static void video_stop_source(struct video *v);
 
 static void vidqent_destructor(void *arg)
@@ -1223,7 +1222,7 @@ static void video_stop_source(struct video *v)
  *
  * @param v   Video object
  */
-static void video_stop_display(struct video *v)
+void video_stop_display(struct video *v)
 {
 	if (!v)
 		return;

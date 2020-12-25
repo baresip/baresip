@@ -1252,6 +1252,7 @@ int  video_encoder_set(struct video *v, struct vidcodec *vc,
 int  video_update(struct video *v, struct media_ctx **ctx, const char *peer);
 int  video_start_source(struct video *v, struct media_ctx **ctx);
 int  video_start_display(struct video *v, const char *peer);
+void video_stop_display(struct video *v);
 void video_stop(struct video *v);
 int   video_set_fullscreen(struct video *v, bool fs);
 void  video_vidsrc_set_device(struct video *v, const char *dev);
