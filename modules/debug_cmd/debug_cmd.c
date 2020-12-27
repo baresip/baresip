@@ -4,6 +4,7 @@
  * Copyright (C) 2010 - 2016 Creytiv.com
  */
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #ifdef USE_OPENSSL
 #include <openssl/crypto.h>
@@ -17,6 +18,10 @@
  *
  * Advanced debug commands
  */
+
+enum {
+	UA_EVENT_FILEINFO = UA_EVENT_MAX + 1,
+};
 
 
 static uint64_t start_ticks;          /**< Ticks when app started         */
@@ -160,6 +165,138 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 }
 
 
+struct fileinfo_st {
+	struct ausrc_st *ausrc;
+	struct ausrc_prm prm;
+	size_t sampc;
+	struct tmr tmr;
+	bool   finished;
+};
+
+
+static void fileinfo_destruct(void *arg)
+{
+	struct fileinfo_st *st = arg;
+
+	tmr_cancel(&st->tmr);
+	mem_deref(st->ausrc);
+}
+
+
+static void fileinfo_timeout(void *arg)
+{
+	struct fileinfo_st *st = arg;
+	double s  = 0.;
+
+	if (st->prm.ch && st->prm.srate)
+		s = ((double) st->sampc)  / st->prm.ch / st->prm.srate;
+
+	if (st->finished) {
+		info("debug_cmd: length = %1.3lf seconds\n", s);
+		ua_event(NULL, UA_EVENT_FILEINFO, NULL,
+			 "debug_cmd: length = %lf seconds", s);
+	}
+	else if (s > 0.) {
+		warning("debug_cmd: timeout, length > %1.3lf seconds\n", s);
+		ua_event(NULL, UA_EVENT_FILEINFO, NULL,
+			 "debug_cmd: timeout, length > %1.3lf seconds", s);
+	}
+	else {
+		info("debug_cmd: timeout\n");
+		ua_event(NULL, UA_EVENT_FILEINFO, NULL, "debug_cmd: timeout");
+	}
+
+	mem_deref(st);
+}
+
+
+static void fileinfo_read_handler(struct auframe *af, void *arg)
+{
+	struct fileinfo_st *st = arg;
+
+	if (!af || !arg)
+		return;
+
+	st->sampc += af->sampc;
+}
+
+
+static void fileinfo_err_handler(int err, const char *str, void *arg)
+{
+	struct fileinfo_st *st = arg;
+	(void) str;
+
+	st->finished = err ? false : true;
+	tmr_start(&st->tmr, 0, fileinfo_timeout, st);
+}
+
+
+/**
+ * Command aufileinfo reads given audio file with ausrc that is specified in
+ * config file_ausrc, computes the length in milli seconds and sends a ua_event
+ * to inform about the result. The file has to be located in the path specified
+ * by audio_path.
+ *
+ * Usage:
+ * /aufileinfo audiofile
+ *
+ * @param pf Print handler is used to return length.
+ * @param arg Command argument contains the file name.
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+/* ------------------------------------------------------------------------- */
+static int cmd_aufileinfo(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	int err = 0;
+	char *path;
+	char aumod[16];
+	struct fileinfo_st *st = NULL;
+
+	if (!str_isset(carg->prm)) {
+		re_hprintf(pf, "fileplay: filename not specified\n");
+		return EINVAL;
+	}
+
+	err = conf_get_str(conf_cur(), "file_ausrc", aumod, sizeof(aumod));
+	if (err) {
+		warning("debug_cmd: file_ausrc is not set\n");
+		return EINVAL;
+	}
+
+	re_sdprintf(&path, "%s/%s",
+			conf_config()->audio.audio_path,
+			carg->prm);
+
+	/* prm->ptime == 0 means blocking mode for ausrc */
+	st = mem_zalloc(sizeof(*st), fileinfo_destruct);
+	if (!st) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	err = ausrc_alloc(&st->ausrc, baresip_ausrcl(),
+			NULL, aumod,
+			&st->prm, path,
+			fileinfo_read_handler, fileinfo_err_handler, st);
+	if (err) {
+		warning("debug_cmd: %s - ausrc %s does not support zero ptime "
+				"or reading source %s failed. (%m)\n",
+				__func__, aumod, carg->prm, err);
+		goto out;
+	}
+
+	tmr_start(&st->tmr, 5000, fileinfo_timeout, st);
+out:
+	if (err)
+		mem_deref(st);
+
+	mem_deref(path);
+	return err;
+}
+
+
 static int cmd_sip_debug(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -226,6 +363,7 @@ static const struct cmd debugcmdv[] = {
 {"modules",     0,       0, "Module debug",           mod_debug           },
 {"netstat",    'n',      0, "Network debug",          cmd_net_debug       },
 {"play",        0, CMD_PRM, "Play audio file",        cmd_play_file       },
+{"aufileinfo",  0, CMD_PRM, "Audio file info",        cmd_aufileinfo      },
 {"sipstat",    'i',      0, "SIP debug",              cmd_sip_debug       },
 {"sysinfo",    's',      0, "System info",            print_system_info   },
 {"timers",      0,       0, "Timer debug",            tmr_status          },

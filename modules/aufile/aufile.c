@@ -68,6 +68,10 @@ static void *play_thread(void *arg)
 	uint64_t now, ts = tmr_jiffies();
 	struct ausrc_st *st = arg;
 	int16_t *sampv;
+	uint32_t ms = 4;
+
+	if (!st->ptime)
+		ms = 0;
 
 	sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
 	if (!sampv)
@@ -82,7 +86,7 @@ static void *play_thread(void *arg)
 			.timestamp = ts * 1000
 		};
 
-		sys_msleep(4);
+		sys_msleep(ms);
 
 		now = tmr_jiffies();
 
@@ -94,6 +98,9 @@ static void *play_thread(void *arg)
 		st->rh(&af, st->arg);
 
 		ts += st->ptime;
+
+		if (aubuf_cur_size(st->aubuf) == 0)
+			st->run = false;
 	}
 
 	mem_deref(sampv);
@@ -105,10 +112,11 @@ static void *play_thread(void *arg)
 static void timeout(void *arg)
 {
 	struct ausrc_st *st = arg;
-	tmr_start(&st->tmr, st->ptime, timeout, st);
+	tmr_start(&st->tmr, st->ptime ? st->ptime : 40, timeout, st);
 
 	/* check if audio buffer is empty */
-	if (aubuf_cur_size(st->aubuf) == 0) {
+	if (!st->run) {
+		tmr_cancel(&st->tmr);
 
 		info("aufile: end of file\n");
 
@@ -197,6 +205,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	struct aufile_prm fprm;
+	uint32_t   ptime;
 	int err;
 	(void)ctx;
 
@@ -215,11 +224,16 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = as;
-	st->rh   = rh;
-	st->errh = errh;
-	st->arg  = arg;
-	st->prm  = prm;
+	st->as    = as;
+	st->rh    = rh;
+	st->errh  = errh;
+	st->arg   = arg;
+	st->prm   = prm;
+	st->ptime = prm->ptime;
+
+	ptime = st->ptime;
+	if (!ptime)
+		ptime = 40;
 
 	err = aufile_open(&st->aufile, &fprm, dev, AUFILE_READ);
 	if (err) {
@@ -233,13 +247,11 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	/* return wav format to caller */
 	prm->srate = fprm.srate;
 	prm->ch    = fprm.channels;
+
 	st->fmt    = fprm.fmt;
+	st->sampc  = prm->srate * prm->ch * ptime / 1000;
 
-	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
-	st->ptime = prm->ptime;
-
-	info("aufile: audio ptime=%u sampc=%zu\n",
-	     st->ptime, st->sampc);
+	info("aufile: audio ptime=%u sampc=%zu\n", st->ptime, st->sampc);
 
 	/* 1 - inf seconds of audio */
 	err = aubuf_alloc(&st->aubuf,
@@ -252,7 +264,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	tmr_start(&st->tmr, st->ptime, timeout, st);
+	tmr_start(&st->tmr, ptime, timeout, st);
 
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, play_thread, st);

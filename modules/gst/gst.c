@@ -55,6 +55,7 @@ struct ausrc_st {
 	struct aubuf *aubuf;        /**< Packet buffer           */
 	size_t psize;               /**< Packet size in bytes    */
 	size_t sampc;
+	uint32_t ptime;
 
 	/* Gstreamer */
 	char *uri;
@@ -178,8 +179,13 @@ static void play_packet(struct ausrc_st *st)
 	};
 
 	/* timed read from audio-buffer */
-	if (aubuf_get_samp(st->aubuf, st->prm.ptime, buf, st->sampc))
+	if (st->prm.ptime && aubuf_get_samp(st->aubuf, st->prm.ptime, buf,
+				st->sampc))
 		return;
+
+	/* immediate read from audio-buffer */
+	if (!st->prm.ptime)
+		aubuf_read_samp(st->aubuf, buf, st->sampc);
 
 	/* call read handler */
 	if (st->rh)
@@ -361,14 +367,16 @@ static int setup_uri(struct ausrc_st *st, const char *device)
 		err = str_dup(&st->uri, device);
 	}
 	else {
-		err = access(device, W_OK);
-		if (!err) {
+		if (!access(device, W_OK)) {
 			size_t urilength = strlen(device) + 8;
 			char *uri = mem_alloc(urilength, NULL);
 			if (re_snprintf(uri, urilength, "file://%s",
 					device) < 0)
 				return ENOMEM;
 			st->uri = uri;
+		}
+		else {
+			err = errno;
 		}
 	}
 
@@ -427,9 +435,18 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	err = setup_uri(st, device);
 	if (err) goto out;
 
-	st->prm   = *prm;
+	st->ptime = prm->ptime;
+	if (!st->ptime)
+		st->ptime = 20;
 
-	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
+	if (!prm->srate)
+		prm->srate = 16000;
+
+	if (!prm->ch)
+		prm->ch = 1;
+
+	st->prm   = *prm;
+	st->sampc = prm->srate * prm->ch * st->ptime / 1000;
 	st->psize = 2 * st->sampc;
 
 	err = aubuf_alloc(&st->aubuf, st->psize, 0);
