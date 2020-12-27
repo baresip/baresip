@@ -79,7 +79,9 @@ static void *write_thread(void *arg)
 			}
 		}
 		else if (n < 0) {
-			warning("alsa: write error: %s\n", snd_strerror(n));
+			if (st->run)
+				warning("alsa: write error: %s\n",
+					snd_strerror(n));
 		}
 		else if (n != samples) {
 			warning("alsa: write: wrote %d of %d samples\n",
