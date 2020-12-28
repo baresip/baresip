@@ -61,7 +61,7 @@ static void *write_thread(void *arg)
 			break;
 
 		t += ptime;
-		dt = t - tmr_jiffies();
+		dt = (int)(t - tmr_jiffies());
 		if (dt <= 2)
 			continue;
 
