@@ -313,7 +313,7 @@ int omx_display_enable(struct omx_state* st,
 	if (!st->buffers) {
 		st->buffers =
 			malloc(portdef.nBufferCountActual * sizeof(void*));
-		st->num_buffers = portdef.nBufferCountActual;
+		st->num_buffers = (int)portdef.nBufferCountActual;
 		st->current_buffer = 0;
 
 		for (i = 0; i < portdef.nBufferCountActual; i++) {
@@ -345,7 +345,7 @@ int omx_display_input_buffer(struct omx_state* st,
 	if (!st->buffers) return EINVAL;
 
 	*pbuf = st->buffers[0]->pBuffer;
-	*plen = st->buffers[0]->nAllocLen;
+	*plen = (uint32_t)st->buffers[0]->nAllocLen;
 
 	st->buffers[0]->nFilledLen = *plen;
 	st->buffers[0]->nOffset = 0;

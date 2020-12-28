@@ -67,12 +67,12 @@ static void *write_thread(void *arg)
 
 		sampv = st->sampv;
 
-		n = snd_pcm_writei(st->write, sampv, samples);
+		n = (int)snd_pcm_writei(st->write, sampv, samples);
 
 		if (-EPIPE == n) {
 			snd_pcm_prepare(st->write);
 
-			n = snd_pcm_writei(st->write, sampv, samples);
+			n = (int)snd_pcm_writei(st->write, sampv, samples);
 			if (n != samples) {
 				warning("alsa: write error: %s\n",
 					snd_strerror(n));
