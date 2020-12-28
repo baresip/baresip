@@ -1,0 +1,9 @@
+digraph States {
+	"" -> FM_IDLE [label="init"];
+	FM_FADEOUT -> FM_MIX;
+	FM_MIX -> FM_FADEIN;
+	FM_FADEIN -> FM_IDLE;
+	FM_IDLE -> FM_FADEOUT [label="start"];
+	FM_FADEIN -> FM_FADEOUT [label="restart" style="dotted"];
+}
+
