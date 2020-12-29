@@ -7,6 +7,7 @@
 
 struct shared {
 	const char *id;
+
 	struct ausrc_st *ausrc_st;    /* pointer */
 	struct vidsrc_st *vidsrc_st;  /* pointer */
 	struct lock *lock;
