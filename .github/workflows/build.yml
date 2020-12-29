@@ -15,6 +15,7 @@ jobs:
              compiler: gcc
     env:
       CC: ${{ matrix.compiler }}
+      MACOSX_DEPLOYMENT_TARGET: "10.10"
 
     steps:
     - uses: actions/checkout@v2
@@ -79,5 +80,5 @@ jobs:
     - name: make baresip macOS
       if: ${{ runner.os == 'macOS' }}
       run: |
-        make V=1 CCACHE= info test modules
+        make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
         make clean; make CCACHE= STATIC=yes
