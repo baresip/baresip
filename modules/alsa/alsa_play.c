@@ -54,7 +54,7 @@ static void auplay_destructor(void *arg)
 static void *write_thread(void *arg)
 {
 	struct auplay_st *st = arg;
-	int n;
+	long n;
 	int num_frames;
 
 	num_frames = st->prm.srate * st->prm.ptime / 1000;

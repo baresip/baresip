@@ -187,7 +187,7 @@ static void *record_thread(void *arg)
 
 	while (st->run) {
 
-		n = read(st->fd, st->sampv, st->sampc*2);
+		n = (int)read(st->fd, st->sampv, st->sampc*2);
 		if (n <= 0)
 			continue;
 
@@ -214,7 +214,7 @@ static void *play_thread(void *arg)
 
 		st->wh(st->sampv, st->sampc, st->arg);
 
-		n = write(st->fd, st->sampv, st->sampc*2);
+		n = (int)write(st->fd, st->sampv, st->sampc*2);
 		if (n < 0) {
 			warning("oss: write: %m\n", errno);
 			break;
@@ -266,7 +266,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	err = oss_reset(st->fd, prm->srate, prm->ch, st->sampc, 0);
+	err = oss_reset(st->fd, prm->srate, prm->ch, (int)st->sampc, 0);
 	if (err)
 		goto out;
 
@@ -324,7 +324,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
-	err = oss_reset(st->fd, prm->srate, prm->ch, st->sampc, 0);
+	err = oss_reset(st->fd, prm->srate, prm->ch, (int)st->sampc, 0);
 	if (err)
 		goto out;
 
