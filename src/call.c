@@ -205,7 +205,7 @@ static void call_stream_stop(struct call *call)
 	audio_stop(call->audio);
 
 	/* Video */
-	video_stop(call->video);
+	video_stop(call->video, &call->ctx);
 
 	tmr_cancel(&call->tmr_inv);
 }

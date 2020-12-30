@@ -170,7 +170,7 @@ struct vidqent {
 
 
 static void request_picture_update(struct vrx *vrx);
-static void video_stop_source(struct video *v);
+static void video_stop_source(struct video *v, struct media_ctx **ctx);
 
 static void vidqent_destructor(void *arg)
 {
@@ -1063,7 +1063,7 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 		if (dir & SDP_SENDONLY)
 			err |= video_start_source(v, ctx);
 		else
-			video_stop_source(v);
+			video_stop_source(v, ctx);
 
 		if (dir & SDP_RECVONLY) {
 			err |= stream_open_natpinhole(v->strm);
@@ -1081,7 +1081,7 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 	}
 	else if (v) {
 		info("video: video stream is disabled..\n");
-		video_stop_source(v);
+		video_stop_source(v, ctx);
 		video_stop_display(v);
 	}
 
@@ -1206,7 +1206,7 @@ int video_start_display(struct video *v, const char *peer)
  *
  * @param v   Video object
  */
-static void video_stop_source(struct video *v)
+static void video_stop_source(struct video *v, struct media_ctx **ctx)
 {
 	if (!v)
 		return;
@@ -1214,6 +1214,7 @@ static void video_stop_source(struct video *v)
 	debug("video: stopping video source ..\n");
 
 	v->vtx.vsrc = mem_deref(v->vtx.vsrc);
+	*ctx = NULL;
 }
 
 
@@ -1238,9 +1239,9 @@ void video_stop_display(struct video *v)
  *
  * @param v  Video object
  */
-void video_stop(struct video *v)
+void video_stop(struct video *v, struct media_ctx **ctx)
 {
-	video_stop_source(v);
+	video_stop_source(v, ctx);
 	video_stop_display(v);
 }
 
