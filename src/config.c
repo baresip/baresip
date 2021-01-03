@@ -16,6 +16,11 @@
 #endif
 
 
+#if defined (DARWIN)
+#include <TargetConditionals.h>
+#endif
+
+
 /** Core Run-time Configuration - populated from config file */
 static struct config core_config = {
 
@@ -502,7 +507,12 @@ static const char *default_audio_device(void)
 #elif defined (ANDROID)
 	return "opensles,nil";
 #elif defined (DARWIN)
+	#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE || \
+	    defined(TARGET_OS_SIMULATOR) && TARGET_OS_SIMULATOR
+	return "audiounit,default";
+	#else
 	return "coreaudio,default";
+	#endif
 #elif defined (FREEBSD)
 	return "oss,/dev/dsp";
 #elif defined (OPENBSD)
@@ -812,8 +822,14 @@ int config_write_template(const char *file, const struct config *cfg)
 #if defined (ANDROID)
 	(void)re_fprintf(f, "module\t\t\t" "opensles" MOD_EXT "\n");
 #elif defined (DARWIN)
+	#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE || \
+	    defined(TARGET_OS_SIMULATOR) && TARGET_OS_SIMULATOR
+	(void)re_fprintf(f, "#module\t\t\t" "coreaudio" MOD_EXT "\n");
+	(void)re_fprintf(f, "module\t\t\t" "audiounit" MOD_EXT "\n");
+	#else
 	(void)re_fprintf(f, "module\t\t\t" "coreaudio" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "audiounit" MOD_EXT "\n");
+	#endif
 #elif defined (FREEBSD)
 	(void)re_fprintf(f, "module\t\t\t" "oss" MOD_EXT "\n");
 #elif defined (OPENBSD)
