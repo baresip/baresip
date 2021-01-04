@@ -1177,6 +1177,7 @@ static int module_init(void)
 
 	err = static_menu_register();
 	err |= dial_menu_register();
+	err |= commend_menu_register();
 	if (err)
 		return err;
 
@@ -1204,6 +1205,7 @@ static int module_close(void)
 	static_menu_unregister();
 	dial_menu_unregister();
 	dynamic_menu_unregister();
+	commend_menu_unregister();
 
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);

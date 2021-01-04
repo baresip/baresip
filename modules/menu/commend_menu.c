@@ -7,8 +7,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <limits.h>
 #include <re.h>
 #include <baresip.h>
+
+#include "menu.h"
 
 /**
  * @defgroup commend_commands commend_commands
@@ -25,17 +28,135 @@
 enum reg_status_t {
 	STATUS_DISABLED = 0,
 	STATUS_NOT_REGISTERED,
-	STATUS_REGISTERED
+	STATUS_REGISTERED,
+	STATUS_REACHABLE
 };
 
 struct ua_time {
-	uint64_t reg_time;
 	struct le le;
+	uint64_t reg_time;
 	struct ua *p_ua;
 };
 
 struct sip_log_t sip_log;
 static struct list ua_reg_times = LIST_INIT;
+struct play *play = NULL;
+static bool mute = false;
+
+/**
+ * Get if global SIP ca is set
+ *
+ * @param pf		Print handler for debug output.
+ * @param arg		Command argument: unused
+ *
+ * @return	 0	on success
+ */
+static int com_sip_ca(struct re_printf *pf, void *unused)
+{
+	int err;
+
+	(void)unused;
+
+	err = re_hprintf(pf, "SIP CA %sset\n",
+			strlen(conf_config()->sip.cafile) > 0 ? "" : "not ");
+
+	return err;
+}
+
+
+/**
+ * Get if global SIP certificate is set
+ *
+ * @param pf		Print handler for debug output.
+ * @param arg		Command argument: unused
+ *
+ * @return	 0	on success
+ */
+static int com_sip_certificate(struct re_printf *pf, void *unused)
+{
+	int err;
+
+	(void)unused;
+
+	err = re_hprintf(pf, "SIP certificate %sset\n",
+			strlen(conf_config()->sip.cert) > 0 ? "" : "not ");
+
+	return err;
+}
+
+
+/**
+ * Get the name of the codec used by the current call
+ *
+ * @param pf		Print handler for debug output.
+ * @param arg		Command argument: unused
+ *
+ * @return	 0	on success
+ */
+static int com_codec_name(struct re_printf *pf, void *unused)
+{
+	int err;
+
+	(void)unused;
+
+	err = re_hprintf(pf, "Codec '%s' used\n",
+			audio_codec_get(call_audio(ua_call(menu_uacur()))));
+
+	return err;
+}
+
+
+/**
+ * Stop playback of all audio files started with  com_start_play_file
+ *
+ * @param pf		Print handler for debug output.
+ * @param arg		Command argument: unused
+ *
+ * @return	 0	on success
+ */
+static int com_stop_play_file(struct re_printf *pf, void *unused)
+{
+	(void)pf;
+	(void)unused;
+
+	/* stop any playback */
+	play = mem_deref(play);
+
+	return 0;
+}
+
+
+/**
+ * Play the audio file given
+ *
+ * @param pf		Print handler for debug output.
+ * @param arg		Command argument: filename of audio
+
+ * @return	 0	on success
+ */
+static int com_start_play_file(struct re_printf *pf, void *arg)
+{
+	struct cmd_arg *carg = arg;
+	const char *filename = carg->prm;
+	struct config *cfg;
+	int err;
+
+	cfg = conf_config();
+	err = re_hprintf(pf, "playing audio file \"%s\" ..\n", filename);
+	if (err)
+		return err;
+
+	err = play_file(&play, baresip_player(), filename, 0,
+			cfg->audio.alert_mod, cfg->audio.alert_dev);
+	if (err) {
+		warning("commend commands: play_file(%s) failed (%m)\n",
+			filename, err);
+		return err;
+	}
+
+	return err;
+}
+
 
 /**
  * Set a current call by its id
@@ -44,8 +165,8 @@ static struct list ua_reg_times = LIST_INIT;
  * @param arg		Command argument: line ID
 
  * @return	 0	on success
- * 			-1	Parameter out of range
- * 			-2	No element found
+ *			-1	Parameter out of range
+ *			-2	No element found
  */
 static int com_set_line_by_id(struct re_printf *pf, void *arg)
 {
@@ -69,11 +190,13 @@ static int com_set_line_by_id(struct re_printf *pf, void *arg)
 	if (!p_call_id_arg || !strlen(p_call_id_arg))
 		return -1;
 
-	for (p_ua_le = list_head(uag_list()); p_ua_le; p_ua_le = p_ua_le->next) {
+	for (p_ua_le = list_head(uag_list()); p_ua_le;
+			p_ua_le = p_ua_le->next) {
 
 		p_ua = p_ua_le->data;
 
-		for (p_call_le = list_head(ua_calls(p_ua)); p_call_le; p_call_le = p_call_le->next) {
+		for (p_call_le = list_head(ua_calls(p_ua)); p_call_le;
+				p_call_le = p_call_le->next) {
 
 			p_call = p_call_le->data;
 			p_call_id = call_id(p_call);
@@ -84,14 +207,16 @@ static int com_set_line_by_id(struct re_printf *pf, void *arg)
 				break;
 			}
 
-			// Caution: Don't change linked lists within list-for-loop! Otherwise this will crash
+			/* Caution: Don't change linked lists within
+			 * list-for-loop! Otherwise this will crash */
 		}
 	}
 
 	if (p_line_call) {
 		call_set_current(ua_calls(p_line_ua), p_line_call);
 		return 0;
-	} else {
+	}
+	else {
 		return -2;
 	}
 }
@@ -100,12 +225,13 @@ static int com_set_line_by_id(struct re_printf *pf, void *arg)
 /**
  * Find next not established call
  *
- * @param p_ua_ne		Pointer to user agent with not established call
- * @param p_call_ne		Pointer to not established call
+ * @param p_ua_ne	Pointer to user agent with not established call
+ * @param p_call_ne	Pointer to not established call
 
  * @return
  */
-static void find_not_established_call(struct ua **p_ua_ne, struct call **p_call_ne)
+static void find_not_established_call(struct ua **p_ua_ne,
+		struct call **p_call_ne)
 {
 	struct le *p_ua_le = NULL;
 	struct ua *p_ua = NULL;
@@ -116,11 +242,13 @@ static void find_not_established_call(struct ua **p_ua_ne, struct call **p_call_
 	*p_ua_ne = NULL;
 	*p_call_ne = NULL;
 
-	for (p_ua_le = list_head(uag_list()); p_ua_le; p_ua_le = p_ua_le->next) {
+	for (p_ua_le = list_head(uag_list()); p_ua_le;
+			p_ua_le = p_ua_le->next) {
 
 		p_ua = p_ua_le->data;
 
-		for (p_call_le = list_head(ua_calls(p_ua)); p_call_le; p_call_le = p_call_le->next) {
+		for (p_call_le = list_head(ua_calls(p_ua)); p_call_le;
+				p_call_le = p_call_le->next) {
 
 			p_call = p_call_le->data;
 			p_state = call_statename(p_call);
@@ -130,7 +258,8 @@ static void find_not_established_call(struct ua **p_ua_ne, struct call **p_call_
 				*p_call_ne = p_call;
 			}
 
-			// Caution: Don't change linked lists within list-for-loop! Otherwise this will crash
+			/* Caution: Don't change linked lists within
+			 * list-for-loop! Otherwise this will crash */
 		}
 	}
 }
@@ -152,7 +281,7 @@ static int com_hangup_not_established(struct re_printf *pf, void *unused)
 	(void)pf;
 	(void)unused;
 
-	while(find_not_established_call(&p_ua, &p_call), p_ua && p_call)
+	while (find_not_established_call(&p_ua, &p_call), p_ua && p_call)
 		ua_hangup(p_ua, p_call, 0, NULL);
 
 	return 0;
@@ -194,41 +323,46 @@ static int com_hangup_all(struct re_printf *pf, void *unused)
  *
  * @param carg
  * @return	 0	on success
- * 			-1	Parameter out of range
- * 			-2	No element found
+ *			-1	Parameter out of range
+ *			-2	No element found
  */
-static int search_ua(struct le **le, void *arg)
+static int search_ua(struct le **lep, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua;
-	struct le *listElement = NULL;
-	long value = LONG_MIN;
+	struct le *le = NULL;
+	unsigned long value = LONG_MIN;
 	int err = 0;
 
 	if (str_isset(carg->prm)) {
-		value = strtol(carg->prm, NULL, 10);
-		if(value >= 1 && value <= list_count(uag_list())) {
-			//Iterate to selected server
-			for (listElement = list_head(uag_list()); value > 1; listElement = listElement->next) {
-				value--;
+		value = strtoul(carg->prm, NULL, 10);
+		if (value >= 1 && value <= list_count(uag_list())) {
+			/*Iterate to selected server */
+			for (le = list_head(uag_list()); value > 1;
+					le = le->next) {
+				--value;
 			}
-		} else {
+		}
+		else {
 			err = -1;
 		}
-	} else {
-		ua = uag_current();
-		//search for current entry
-		for (listElement = list_head(uag_list()); listElement->data != ua; listElement = listElement->next) {
+	}
+	else {
+		ua = menu_uacur();
+		/*search for current entry */
+		for (le = list_head(uag_list());
+				le->data != ua; le = le->next) {
 		}
 	}
 
-	if(listElement)
-		*le = listElement;
+	if (le && lep)
+		*lep = le;
 	else
 		err = -2;
 
 	return err;
 }
+
 
 /**
  * Set current server to number given by arg,
@@ -237,7 +371,7 @@ static int search_ua(struct le **le, void *arg)
  * @param pf	Print handler for debug output
  * @param arg	Command argument
  *
- * @return 	 0 	if success
+ * @return	 0	if success
  *			-1	Parameter out of range
  *			-2	Failed to set current server
  */
@@ -252,25 +386,29 @@ static int com_ua_set_current(struct re_printf *pf, void *arg)
 	if (!err) {
 		ua = le->data;
 
-		uag_current_set(ua);
+		menu_uacur_set(ua);
 
-		if(ua == uag_current()) {
-			//Print active server
+		if (ua == menu_uacur()) {
+			/*Print active server */
 			err = re_hprintf(pf, "Server %s activated\n",
 					account_aor(ua_account(ua)));
-		} else {
+		}
+		else {
 			err = -2;
 		}
 	}
 
 	if (err) {
-		warning("commend commands: set current server failed: %m\n", err);
-	} else {
+		warning("commend commands: set current server failed: %m\n",
+				err);
+	}
+	else {
 		debug("commend commands: set current server successful");
 	}
 
 	return err;
 }
+
 
 /**
  * Get registration state for server number given by arg,
@@ -279,7 +417,7 @@ static int com_ua_set_current(struct re_printf *pf, void *arg)
  * @param pf	Print handler for debug output
  * @param arg	Command argument
  *
- * @return 	 0 	if success
+ * @return	 0	if success
  *			-1	Parameter out of range
  */
 static int com_ua_is_register(struct re_printf *pf, void *arg)
@@ -293,14 +431,16 @@ static int com_ua_is_register(struct re_printf *pf, void *arg)
 	if (!err) {
 		ua = le->data;
 
-		//Print registration state
+		/*Print registration state */
 		err = re_hprintf(pf, "Server %s is %sregistered\n",
-				account_aor(ua_account(ua)), !ua_isregistered(ua) ? "not " : "");
+				account_aor(ua_account(ua)),
+				!ua_isregistered(ua) ? "not " : "");
 	}
 
 	if (err) {
 		warning("commend commands: register server failed: %m\n", err);
-	} else {
+	}
+	else {
 		debug("commend commands: register server successful");
 	}
 
@@ -315,7 +455,7 @@ static int com_ua_is_register(struct re_printf *pf, void *arg)
  * @param pf	Print handler for debug output
  * @param arg	Command argument
  *
- * @return 	 0 	if success
+ * @return	 0	if success
  *			-1	Parameter out of range
  */
 static int com_ua_register(struct re_printf *pf, void *arg)
@@ -329,21 +469,24 @@ static int com_ua_register(struct re_printf *pf, void *arg)
 	if (!err) {
 		ua = le->data;
 
-		//Register selected server
-		if(!ua_isregistered(ua)) {
+		/*Register selected server */
+		if (!ua_isregistered(ua)) {
 			(void)ua_register(ua);
-			err = re_hprintf(pf, "Register %s\n", account_aor(ua_account(ua)));
+			err = re_hprintf(pf, "Register %s\n",
+					account_aor(ua_account(ua)));
 		}
 	}
 
 	if (err) {
 		warning("commend commands: register server failed: %m\n", err);
-	} else {
+	}
+	else {
 		debug("commend commands: register server successful");
 	}
 
 	return err;
 }
+
 
 /**
  * Delete server number given by arg, if arg is empty
@@ -352,8 +495,8 @@ static int com_ua_register(struct re_printf *pf, void *arg)
  * @param pf	Print handler for debug output
  * @param arg	Command argument
  *
- * @return 	 0 	if success
- * 			-1	unable to delete last element
+ * @return	 0	if success
+ *			-1	unable to delete last element
  *			-2	Parameter out of range
  */
 static int com_ua_delete(struct re_printf *pf, void *arg)
@@ -362,7 +505,7 @@ static int com_ua_delete(struct re_printf *pf, void *arg)
 	struct ua *ua;
 	int err = 0;
 
-	if(list_count(uag_list()) == 1) {
+	if (list_count(uag_list()) == 1) {
 		re_hprintf(pf, "Unable to delete last element\n");
 		return -1;
 	}
@@ -371,29 +514,33 @@ static int com_ua_delete(struct re_printf *pf, void *arg)
 
 	if (!err) {
 		ua = le->data;
-		if (ua == uag_current()) {
-			//Move to next ua befor delete
+		if (ua == menu_uacur()) {
+			/*Move to next ua befor delete */
 			le = le->next ? le->next : list_head(uag_list());
-			uag_current_set(le->data);
+			menu_uacur_set(le->data);
 		}
 
-		//Delete selected server
-		if(ua_isregistered(ua)) {
-			(void)ua_unregister(ua);	//Clearly remove all clients
-			err = re_hprintf(pf, "Unregister %s\n", account_aor(ua_account(ua)));
+		/*Delete selected server */
+		if (ua_isregistered(ua)) {
+			err = re_hprintf(pf, "Unregister %s\n",
+					account_aor(ua_account(ua)));
 		}
-		err = re_hprintf(pf, "Delete %s\n", account_aor(ua_account(ua)));
-		mem_deref(ua);	//ua_destructor() deletes element from list
+		err = re_hprintf(pf, "Delete %s\n",
+				account_aor(ua_account(ua)));
+		mem_deref(ua);	/*ua_destructor() deletes element from list */
 	}
 
 	if (err) {
 		warning("commend commands: delete server failed: %m\n", err);
-	} else {
+	}
+	else {
 		debug("commend commands: delete server successful");
 	}
 
 	return err;
 }
+
+
 /**
  * Remove user agent time entry which is destroyed in the near future
  * from user agent time list
@@ -407,6 +554,7 @@ static void ua_time_destructor(void *arg)
 	struct ua_time *p_time = arg;
 	list_unlink(&p_time->le);
 }
+
 
 /**
  * Update user agent time entry
@@ -423,7 +571,8 @@ static void update_ua_reg_time_entry(struct ua *p_ua)
 	uint64_t reg_time = tmr_jiffies();
 	struct ua_time *p_time;
 
-	for (time_elem = list_head(&ua_reg_times); time_elem; time_elem = time_elem->next) {
+	for (time_elem = list_head(&ua_reg_times); time_elem;
+			time_elem = time_elem->next) {
 		p_time = time_elem->data;
 
 		if (p_time && p_time->p_ua == p_ua) {
@@ -444,6 +593,7 @@ static void update_ua_reg_time_entry(struct ua *p_ua)
 	}
 }
 
+
 /**
  * Remove user agent time entry from list
  *
@@ -456,7 +606,8 @@ static void remove_ua_reg_time_entry(struct ua *p_ua)
 {
 	struct le *time_elem;
 
-	for (time_elem = list_head(&ua_reg_times); time_elem; time_elem = time_elem->next) {
+	for (time_elem = list_head(&ua_reg_times); time_elem;
+			time_elem = time_elem->next) {
 		struct ua_time *p_time = time_elem->data;
 
 		if (p_time && p_time->p_ua == p_ua) {
@@ -466,6 +617,7 @@ static void remove_ua_reg_time_entry(struct ua *p_ua)
 		}
 	}
 }
+
 
 /**
  * Redirect events to internal functions
@@ -481,7 +633,6 @@ static void remove_ua_reg_time_entry(struct ua *p_ua)
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
-	(void)call;
 	(void)prm;
 	(void)arg;
 
@@ -497,10 +648,18 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		remove_ua_reg_time_entry(ua);
 		break;
 
+	case UA_EVENT_CALL_ESTABLISHED:
+		{
+			struct audio *audio = call_audio(call);
+			audio_mute(audio, mute);
+		}
+		break;
+
 	default:
 		break;
 	}
 }
+
 
 /**
  * Print the current status of proxy servers
@@ -525,34 +684,48 @@ static int com_reginfo(struct re_printf *pf, void *unused)
 		struct le *time_elem;
 		uint32_t reg_duration = 0;
 		enum reg_status_t reg_status = STATUS_NOT_REGISTERED;
+		bool isreachable;
+		bool isregistered;
+		int32_t pexpire;
 
-		if (ua_isregistered(p_ua))
-			reg_status = STATUS_REGISTERED;
-		else
-		if (ua_isdisabled(p_ua))
-			reg_status = STATUS_DISABLED;
-
-		for (time_elem = list_head(&ua_reg_times); time_elem; time_elem = time_elem->next) {
+		for (time_elem = list_head(&ua_reg_times); time_elem;
+				time_elem = time_elem->next) {
 			struct ua_time *p_time = time_elem->data;
 
 			if (p_time && p_time->p_ua == p_ua) {
-				reg_duration = (uint32_t)((tmr_jiffies() - p_time->reg_time) / 1000);
-
+				reg_duration = (uint32_t)((tmr_jiffies() -
+						p_time->reg_time) / 1000);
 				break;
 			}
 		}
 
+		isreachable = ua_isregistered(p_ua) &&
+				   reg_duration == 0 && ua_regint(p_ua) == 0;
+		isregistered  = ua_isregistered(p_ua) &&
+				     ua_regint(p_ua) > 0;
+		pexpire = 0;
+		/* server expire time is only valid for registered servers */
+		if (ua_regint(p_ua)!=0)
+			pexpire = account_regint(ua_account(p_ua));
+
+		if (isregistered)
+			reg_status = STATUS_REGISTERED;
+		else if (isreachable)
+			reg_status = STATUS_REACHABLE;
+		else if (ua_isdisabled(p_ua))
+			reg_status = STATUS_DISABLED;
+
 		res |= re_hprintf(pf, "%s %s %u %u %u\n",
-						p_ua == uag_current() ? ">" : " ",
-						ua_aor(p_ua),
-						reg_status,
-						ua_regint(p_ua),
-						reg_duration
-						);
+					p_ua == menu_uacur() ? ">" : " ",
+					account_aor(ua_account(p_ua)),
+					reg_status,
+					pexpire,
+					reg_duration);
 	}
 
 	return res;
 }
+
 
 /**
  * Set mute on or off, if no parameter given show current state
@@ -566,8 +739,7 @@ static int com_reginfo(struct re_printf *pf, void *unused)
 static int com_mic_mute(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct audio *audio = call_audio(ua_call(uag_current()));
-	bool mute;
+	struct audio *audio = call_audio(ua_call(menu_uacur()));
 	int err = 0;
 
 	(void)pf;
@@ -575,19 +747,22 @@ static int com_mic_mute(struct re_printf *pf, void *arg)
 	if (str_isset(carg->prm)) {
 		mute = !strcmp(carg->prm, "on");
 		audio_mute(audio, mute);
-	} else {
-		mute = audio_ismuted(audio);
+	}
+	else {
 		(void)re_hprintf(pf, "call %smuted\n", mute ? "" : "un-");
 	}
 
 	if (err) {
-		warning("commend commands: setting microphone mute failed: %m\n", err);
-	} else {
+		warning("commend commands: setting microphone mute failed:"
+				" %m\n", err);
+	}
+	else {
 		debug("commend commands: microphone mute is %d", mute);
 	}
 
 	return 0;
 }
+
 
 /**
  * Print the current used memory returned from Linux kernel
@@ -599,27 +774,123 @@ static int com_mic_mute(struct re_printf *pf, void *arg)
  */
 static int com_get_memory(struct re_printf *pf, void *unused)
 {
-	(void)unused;
 	long memUsage;
-	FILE *status_file;
+	FILE *f;
+	(void)unused;
 
 	memUsage = 0;
-	status_file = fopen("/proc/self/status", "r");
+	f = fopen("/proc/self/status", "r");
 
-	if (status_file){
+	if (f) {
 		char tmp_buffer[512];
-		fread(tmp_buffer, 512, 1, status_file);
-		char* mem;
-		mem = strstr(tmp_buffer, "Mem:");
-		if (mem) {
-			mem += 4; // strlen(Mem;)
-			memUsage = strtol(mem, NULL, 10);
+		char *p;
+		fread(tmp_buffer, 512, 1, f);
+		p = strstr(tmp_buffer, "Mem:");
+		if (p) {
+			p += 4; /* strlen(Mem;) */
+			memUsage = strtol(p, NULL, 10);
 		}
 	}
 
-	fclose(status_file);
-
+	fclose(f);
 	return re_hprintf(pf, "Mem usage: %ld", memUsage);
+}
+
+
+/**
+ * Initialize SIP log structure
+ */
+static void com_sip_log_init(void)
+{
+	int i;
+
+	sip_log.idx = 0;
+	for (i = 0; i < LOG_SIZE; ++i)
+		sip_log.entries[i].p_buffer = NULL;
+
+	enable_sip_log(&sip_log);
+}
+
+
+/**
+ * Disable SIP log and cleanup log entries
+ */
+static void com_sip_log_disable_and_cleanup(void)
+{
+	int i;
+
+	disable_sip_log();
+
+	sip_log.idx = 0;
+	for (i = 0; i < LOG_SIZE; ++i) {
+		if (sip_log.entries[i].p_buffer) {
+			mem_deref(sip_log.entries[i].p_buffer);
+			sip_log.entries[i].p_buffer = NULL;
+		}
+	}
+}
+
+
+/**
+ * Print SIP log
+ *
+ * @param pf		Print handler for debug output
+ * @param unused	unused parameter
+ *
+ * @return	0 if success, otherwise errorcode
+ */
+static int com_sip_trace(struct re_printf *pf, void *unused)
+{
+	int i, read_idx, res = 0;
+
+	(void)unused;
+
+	read_idx = sip_log.idx - 1;
+
+	for (i = 0; i < LOG_SIZE; ++i) {
+
+		read_idx &= LOG_IDX_MASK;
+
+		if (sip_log.entries[read_idx].p_buffer) {
+			struct timeval *p_ts =
+				&sip_log.entries[read_idx].timestamp;
+
+			res |= re_hprintf(pf, "Timestamp: %d.%06d\n",
+					p_ts->tv_sec,
+					p_ts->tv_usec);
+			if (sip_log.entries[read_idx].direction ==
+					LOG_DIR_SEND)
+				res |= re_hprintf(pf, "--->>>\n");
+			else
+				res |= re_hprintf(pf, "<<<---\n");
+			res |= re_hprintf(pf, "\n%s\n__MSG_LINE__\n\n",
+					sip_log.entries[read_idx].p_buffer);
+		}
+
+		--read_idx;
+	}
+
+	return res;
+}
+
+
+/**
+ * Clear SIP log
+ *
+ * @param pf		Print handler for debug output
+ * @param unused	unused parameter
+ *
+ * @return	0 if success, otherwise errorcode
+ */
+static int com_sip_trace_clear(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+	(void)pf;
+
+	com_sip_log_disable_and_cleanup();
+	enable_sip_log(&sip_log);
+
+	return 0;
 }
 
 /**
@@ -657,6 +928,7 @@ static int com_call_info(struct re_printf *pf, const struct call *call)
 			  call_peername(call));
 }
 
+
 /**
  * Print all calls with Commend specific informations
  *
@@ -665,119 +937,77 @@ static int com_call_info(struct re_printf *pf, const struct call *call)
  *
  * @return	0 if success, otherwise errorcode
  */
-static int com_print_calls(struct re_printf *pf, void *unused)
+static int com_print_calls(struct re_printf *pf, void *arg)
 {
-	(void)unused;
-	return ua_print_calls(pf, uag_current(), com_call_info);
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : menu_get()->ua_cur;
+
+	return ua_print_calls(pf, ua, com_call_info);
 }
 
-/**
- * Initialize SIP log structure
- */
-static void com_sip_log_init(void)
-{
-	int i;
-
-	sip_log.idx = 0;
-	for (i = 0; i < LOG_SIZE; ++i)
-		sip_log.entries[i].p_buffer = NULL;
-
-	enable_sip_log(&sip_log);
-}
 
 /**
- * Disable SIP log and cleanup log entries
- */
-static void com_sip_log_disable_and_cleanup(void)
-{
-	int i;
-
-	disable_sip_log();
-
-	sip_log.idx = 0;
-	for (i = 0; i < LOG_SIZE; ++i) {
-		if (sip_log.entries[i].p_buffer) {
-			mem_deref(sip_log.entries[i].p_buffer);
-			sip_log.entries[i].p_buffer = NULL;
-		}
-	}
-}
-
-/**
- * Print SIP log
+ * Switch to user agent with active call and
+ * print all calls with Commend specific informations
  *
  * @param pf		Print handler for debug output
  * @param unused	unused parameter
  *
- * @return	0 if success, otherwise errorcode
+ * @return	0 if success, otherwise_current errorcode
  */
-static int com_sip_trace(struct re_printf *pf, void *unused)
+static int com_print_active_calls(struct re_printf *pf, void *unused)
 {
-	int i, read_idx, res = 0;
-
+	int err = 0;
+	bool printed = false;
+	struct ua *ua = NULL;
+	struct le *le = NULL;
 	(void)unused;
 
-	read_idx = sip_log.idx - 1;
+	for (le = list_head(uag_list()); le; le = le->next) {
 
-	for (i = 0; i < LOG_SIZE; ++i) {
-
-		read_idx &= LOG_IDX_MASK;
-
-		if (sip_log.entries[read_idx].p_buffer) {
-			struct timeval *p_ts = &sip_log.entries[read_idx].timestamp;
-
-			res |= re_hprintf(pf, "Timestamp: %d.%06d\n", p_ts->tv_sec, p_ts->tv_usec);
-			if (sip_log.entries[read_idx].direction == LOG_DIR_SEND)
-				res |= re_hprintf(pf, "--->>>\n");
-			else
-				res |= re_hprintf(pf, "<<<---\n");
-			res |= re_hprintf(pf, "\n%s\n__MSG_LINE__\n\n", sip_log.entries[read_idx].p_buffer);
+		ua = le->data;
+		if (ua_call(ua)) {
+			err = ua_print_calls(pf, ua, com_call_info);
+			printed = true;
+			break;
 		}
-
-		--read_idx;
 	}
 
-	return res;
+	if(!printed)
+		err = ua_print_calls(pf, menu_get()->ua_cur, com_call_info);
+
+	return err;
 }
 
-/**
- * Clear SIP log
- *
- * @param pf		Print handler for debug output
- * @param unused	unused parameter
- *
- * @return	0 if success, otherwise errorcode
- */
-static int com_sip_trace_clear(struct re_printf *pf, void *unused)
-{
-	(void)unused;
-	(void)pf;
-
-	com_sip_log_disable_and_cleanup();
-	enable_sip_log(&sip_log);
-
-	return 0;
-}
 
 static const struct cmd cmdv[] = {
 
-{"com_listcalls",	0,	0,		"List active calls Commend format",	com_print_calls	},
-{"com_hangup_all",	0,	0,		"Hangup all calls",					com_hangup_all	},
-{"com_hangup_not_est",	0,	0,		"Hangup all calls which are not established",		com_hangup_not_established	},
-{"com_set_line_by_id",	0,	0,		"Set line by ID",					com_set_line_by_id	},
-{"com_memory"	,	0,	0,		"Show used process memory",			com_get_memory	},
-{"com_mic_mute"	,	0,	CMD_PRM,"Set microphone mute on/off",		com_mic_mute	},
-{"com_sip_trace",	0,	0,		"Show SIP trace",			com_sip_trace	},
-{"com_sip_trace_clear",	0,	0,		"Clear SIP trace",			com_sip_trace_clear	},
-{"com_reginfo",		0,	0,		"Proxy server registration details",com_reginfo	},
-{"com_ua_del",		0,	CMD_PRM,"Delete a proxy server",			com_ua_delete	},
-{"com_ua_reg",		0,	CMD_PRM,"Register a proxy server",			com_ua_register	},
-{"com_ua_isreg",	0,	CMD_PRM,"Is proxy server registered",		com_ua_is_register	},
-{"com_ua_set_cur",	0,	CMD_PRM,"Set proxy server to use",			com_ua_set_current	},
+{"com_listcalls", 0, 0, "List active calls Commend format", com_print_calls},
+{"com_list_active_calls", 0, 0, "Switch to active call and list in Commend"
+	" format", com_print_active_calls},
+{"com_hangup_all", 0, 0, "Hangup all calls", com_hangup_all},
+{"com_hangup_not_est", 0, 0, "Hangup all calls which are not established",
+	com_hangup_not_established},
+{"com_set_line_by_id", 0, 0, "Set line by ID", com_set_line_by_id},
+{"com_memory", 0, 0, "Show used process memory", com_get_memory},
+{"com_mic_mute", 0, CMD_PRM, "Set microphone mute on/off", com_mic_mute},
+{"com_sip_trace", 0, 0, "Show SIP trace", com_sip_trace},
+{"com_sip_trace_clear", 0, 0, "Clear SIP trace", com_sip_trace_clear},
+{"com_reginfo", 0, 0, "Proxy server registration details", com_reginfo},
+{"com_ua_del", 0, CMD_PRM, "Delete a proxy server", com_ua_delete},
+{"com_ua_reg", 0, CMD_PRM, "Register a proxy server", com_ua_register},
+{"com_ua_isreg", 0, CMD_PRM, "Is proxy server registered", com_ua_is_register},
+{"com_ua_set_cur", 0, CMD_PRM, "Set proxy server to use", com_ua_set_current},
+{"com_play", 0, CMD_PRM, "Start audio file playback", com_start_play_file},
+{"com_stop", 0, 0, "Stop audio file playback", com_stop_play_file},
+{"com_codec_cur", 0, 0, "Codec name of current call", com_codec_name},
+{"com_sip_cert", 0, 0, "Is SIP certificate set", com_sip_certificate},
+{"com_sip_ca", 0, 0, "Is SIP CA set", com_sip_ca},
 
 };
 
-static int module_init(void)
+
+int commend_menu_register(void)
 {
 	int err;
 
@@ -795,19 +1025,11 @@ static int module_init(void)
 }
 
 
-static int module_close(void)
+void commend_menu_unregister(void)
 {
 	cmd_unregister(baresip_commands(), cmdv);
 
 	com_sip_log_disable_and_cleanup();
-
-	return 0;
+	uag_event_unregister(ua_event_handler);
+	list_flush(&ua_reg_times);
 }
-
-
-const struct mod_export DECL_EXPORTS(commend_commands) = {
-	"commend_commands",
-	"application",
-	module_init,
-	module_close
-};

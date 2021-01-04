@@ -63,6 +63,9 @@ void static_menu_unregister(void);
 int dial_menu_register(void);
 void dial_menu_unregister(void);
 
+/*Commend menu related functions*/
+int commend_menu_register(void);
+void commend_menu_unregister(void);
 
 /*Generic menu funtions*/
 void menu_update_callstatus(bool incall);
