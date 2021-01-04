@@ -138,7 +138,8 @@ static int init_aubuf(struct mixstatus *st)
 
 	err = aubuf_alloc(&st->aubuf, wishsz, maxsz);
 	if (err) {
-		warning("mixausrc: Could not allocate aubuf.");
+		warning("mixausrc: Could not allocate aubuf. wishsz=%lu, "
+				"maxsz=%lu (%m)\n", wishsz, maxsz, err);
 		goto out;
 	}
 
@@ -147,7 +148,7 @@ static int init_aubuf(struct mixstatus *st)
 
 	st->rbuf = mem_zalloc(sizeof(int16_t)*st->sampc, NULL);
 	if (!st->rbuf) {
-		warning("mixausrc: Could not allocate rbuf.");
+		warning("mixausrc: Could not allocate rbuf.\n");
 		goto out;
 	}
 
@@ -337,7 +338,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 		return EINVAL;
 
 	if (prm->ch!=1) {
-		warning("mixausrc: Only mono is supported.");
+		warning("mixausrc: Only mono is supported.\n");
 		return EINVAL;
 	}
 
@@ -478,7 +479,8 @@ static int process(struct mixstatus *st, struct auframe *af)
 		st->n_fade = n * pnbr;
 	}
 	else if (st->sampc != n) {
-		warning("mixausrc: sampc changed %lu --> %lu.", st->sampc, n);
+		warning("mixausrc: sampc changed %lu --> %lu.\n",
+				st->sampc, n);
 		stop_ausrc(st);
 		return EINVAL;
 	}
@@ -578,7 +580,7 @@ static float conv_volume(const struct pl *pl)
 
 static void print_usage(const char *name)
 {
-	warning("mixausrc: Missing parameters. Usage:\n"
+	info("mixausrc: Missing parameters. Usage:\n"
 			"%s <module> <param> [minvol] [ausvol]\n"
 			"module  The audio source module.\n"
 			"param   The audio source parameter. If this is an"
