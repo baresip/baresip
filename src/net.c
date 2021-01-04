@@ -170,7 +170,7 @@ static int net_dns_srv_get(const struct network *net,
 	if (net->nsnf) {
 		offset = *n;
 		if ((offset + net->nsnf) > limit) {
-			warning("net: too many DNS nameservers, "
+			debug("net: too many DNS nameservers, "
 					"fallback DNS ignored\n");
 			return 0;
 		}
