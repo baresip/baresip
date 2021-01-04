@@ -292,7 +292,7 @@ MODULES   += vidbridge
 MODULES   += vidinfo
 MODULES   += vidloop
 MODULES   += vumeter
-#MODULES   += mixausrc
+MODULES   += mixausrc
 
 ifneq ($(HAVE_PTHREAD),)
 MODULES   += aubridge aufile ausine
