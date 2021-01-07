@@ -188,6 +188,18 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 }
 
 
+static void autoanswer_allow_decode(struct account *prm, const struct pl *pl)
+{
+	struct pl v;
+
+	if (0 == msg_param_decode(pl, "sip_autoanswer", &v)) {
+		if (0 == pl_strcasecmp(&v, "yes")) {
+			prm->sipans = true;
+		}
+	}
+}
+
+
 static int csl_parse(struct pl *pl, char *str, size_t sz)
 {
 	struct pl ws = PL_INIT, val, ws2 = PL_INIT, cma = PL_INIT;
@@ -420,6 +432,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	acc->ptime = 20;
 	err |= sip_params_decode(acc, &acc->laddr);
 	       answermode_decode(acc, &acc->laddr.params);
+	       autoanswer_allow_decode(acc, &acc->laddr.params);
 	err |= audio_codecs_decode(acc, &acc->laddr.params);
 	err |= video_codecs_decode(acc, &acc->laddr.params);
 	err |= media_decode(acc, &acc->laddr.params);
@@ -1246,6 +1259,18 @@ uint16_t account_stun_port(const struct account *acc)
 }
 
 
+/**
+ * Returns if SIP auto answer is allowed for the account
+ *
+ * @param acc User-Agent account
+ * @return true if allowed, otherwise false
+ */
+bool account_sip_autoanswer(const struct account *acc)
+{
+	return acc ? acc->sipans : false;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
@@ -1355,6 +1380,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " dispname:     %s\n", acc->dispname);
 	err |= re_hprintf(pf, " answermode:   %s\n",
 			  answermode_str(acc->answermode));
+	err |= re_hprintf(pf, " sipans: %s\n", acc->sipans ? "yes" : "no");
 	if (!list_isempty(&acc->aucodecl)) {
 		err |= re_hprintf(pf, " audio_codecs:");
 		for (le = list_head(&acc->aucodecl); le; le = le->next) {

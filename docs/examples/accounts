@@ -10,6 +10,7 @@
 #    ;answermode={manual,early,auto}
 #    ;answerdelay=0
 #    ;audio_codecs=opus/48000/2,pcma,...
+#    ;sip_autoanswer={yes, no}
 #    ;auth_user=username
 #    ;auth_pass=password
 #    ;call_transfer=no

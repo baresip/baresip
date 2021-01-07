@@ -107,6 +107,7 @@ const char *account_medianat(const struct account *acc);
 const char *account_mwi(const struct account *acc);
 const char *account_call_transfer(const struct account *acc);
 const char *account_extra(const struct account *acc);
+bool account_sip_autoanswer(const struct account *acc);
 
 
 /*
