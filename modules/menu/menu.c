@@ -21,6 +21,10 @@
  */
 static struct menu menu;
 
+enum {
+	MIN_RINGTIME = 1000,
+};
+
 
 static int menu_set_incall(bool incall)
 {
@@ -344,6 +348,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
 	struct call *call2 = NULL;
+	struct account *acc;
+	int32_t adelay = -1;
 	bool incall;
 	enum sdp_dir ardir, vrdir;
 	int err;
@@ -375,7 +381,16 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		     ua_aor(ua), call_peername(call), call_peeruri(call),
 		     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
-		play_incoming(ua, uag_call_count() > 1);
+		acc = ua_account(ua);
+		if (acc && account_sip_autoanswer(acc))
+			adelay = call_answer_delay(call);
+
+		if (adelay >= 0)
+			call_start_answtmr(call, adelay);
+
+		if (adelay == -1 || adelay >= MIN_RINGTIME)
+			play_incoming(ua, uag_call_count() > 1);
+
 		break;
 
 	case UA_EVENT_CALL_RINGING:
