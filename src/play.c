@@ -35,6 +35,8 @@ struct play {
 	size_t minsz;
 	size_t maxsz;
 	struct aubuf *aubuf;
+	play_finish_h *fh;
+	void *arg;
 };
 
 
@@ -172,6 +174,8 @@ static void destructor(void *arg)
 	if (play->playp)
 		*play->playp = NULL;
 
+	if (play->fh)
+		play->fh(play, play->arg);
 }
 
 
@@ -565,6 +569,22 @@ int play_file(struct play **playp, struct player *player,
 	}
 
 	return err;
+}
+
+
+/**
+ * Set the finish handler for given play state
+ *
+ * @param play The play state
+ * @param fh   The finish handler
+ */
+void play_set_finish_handler(struct play *play, play_finish_h *fh, void *arg)
+{
+	if (!play)
+		return;
+
+	play->fh  = fh;
+	play->arg = arg;
 }
 
 
