@@ -5,6 +5,7 @@
  */
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include <re.h>
 #include <baresip.h>
 #include "menu.h"
@@ -533,6 +534,7 @@ static int module_init(void)
 	struct pl val;
 	int err;
 
+	memset(&menu, 0, sizeof(menu));
 	menu.bell = true;
 	menu.redial_attempts = 0;
 	menu.redial_delay = 5;
