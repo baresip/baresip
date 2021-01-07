@@ -344,6 +344,43 @@ static void menu_play_closed(struct call *call)
 }
 
 
+static void auans_play_finished(struct play *play, void *arg)
+{
+	struct call *call = arg;
+	struct ua *ua = call_get_ua(call);
+	int32_t adelay = call_answer_delay(call);
+	(void) play;
+
+	if (call_state(call) == CALL_STATE_INCOMING) {
+		call_start_answtmr(call, adelay);
+		if (adelay >= MIN_RINGTIME)
+			play_incoming(ua, uag_call_count() > 1);
+	}
+}
+
+
+static void start_sip_autoanswer(struct call *call)
+{
+	int32_t adelay = call_answer_delay(call);
+	struct ua *ua = call_get_ua(call);
+	bool beep = true;
+
+	if (adelay == -1)
+		return;
+
+	conf_get_bool(conf_cur(), "sip_autoanswer_beep", &beep);
+	if (beep) {
+		menu_play("sip_autoanswer_aufile", "message.wav", 1);
+		play_set_finish_handler(menu.play, auans_play_finished, call);
+	}
+	else {
+		call_start_answtmr(call, adelay);
+		if (adelay >= MIN_RINGTIME)
+			play_incoming(ua, uag_call_count() > 1);
+	}
+}
+
+
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
@@ -385,11 +422,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (acc && account_sip_autoanswer(acc))
 			adelay = call_answer_delay(call);
 
-		if (adelay >= 0)
-			call_start_answtmr(call, adelay);
-
-		if (adelay == -1 || adelay >= MIN_RINGTIME)
+		if (adelay == -1)
 			play_incoming(ua, uag_call_count() > 1);
+		else
+			start_sip_autoanswer(call);
 
 		break;
 
