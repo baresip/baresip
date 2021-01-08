@@ -651,7 +651,33 @@ static void call_rfc5373_autoanswer(struct call *call,
 static void call_decode_sip_autoanswer(struct call *call,
 		const struct sip_msg *msg)
 {
+	const struct sip_hdr *hdr;
+	struct pl v1, v2;
+
 	call->adelay = -1;
+
+	/* polycom (HDA50), avaya, grandstream, snom */
+	hdr = sip_msg_hdr(msg, SIP_HDR_CALL_INFO);
+	if (hdr && !msg_param_decode(&hdr->val, "answer-after", &v1)) {
+		call->adelay = pl_u32(&v1) * 1000;
+		return;
+	}
+
+	hdr = sip_msg_hdr(msg, SIP_HDR_ALERT_INFO);
+	if (hdr && !msg_param_decode(&hdr->val, "info", &v1) &&
+		!msg_param_decode(&hdr->val, "delay", &v2)) {
+		if (!pl_strcmp(&v1, "alert-autoanswer")) {
+			call->adelay = pl_u32(&v2) * 1000;
+			return;
+		}
+	}
+
+	if (hdr && !msg_param_decode(&hdr->val, "info", &v1)) {
+		if (!pl_strcmp(&v1, "alert-autoanswer")) {
+			call->adelay = 0;
+			return;
+		}
+	}
 
 	/* RFC 5373 */
 	call_rfc5373_autoanswer(call, msg, "Answer-Mode");
