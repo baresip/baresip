@@ -1,5 +1,5 @@
 /**
- * @file call.c Static menu related functions
+ * @file static_menu.c Static menu related functions
  *
  * Copyright (C) 2010 Creytiv.com
  */

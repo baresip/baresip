@@ -1238,7 +1238,8 @@ void video_stop_display(struct video *v)
 /**
  * Stop video sourc & display
  *
- * @param v  Video object
+ * @param v   Video object
+ * @param ctx Media context
  */
 void video_stop(struct video *v, struct media_ctx **ctx)
 {
