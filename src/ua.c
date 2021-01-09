@@ -1674,7 +1674,6 @@ static bool sub_handler(const struct sip_msg *msg, void *arg)
 }
 
 
-#ifdef LIBRE_HAVE_SIPTRACE
 static void sip_trace_handler(bool tx, enum sip_transp tp,
 			      const struct sa *src, const struct sa *dst,
 			      const uint8_t *pkt, size_t len, void *arg)
@@ -1690,7 +1689,6 @@ static void sip_trace_handler(bool tx, enum sip_transp tp,
 		  ,
 		  sip_transp_name(tp), src, dst, pkt, len);
 }
-#endif
 
 
 /**
@@ -1835,12 +1833,7 @@ void uag_set_exit_handler(ua_exit_h *exith, void *arg)
  */
 void uag_enable_sip_trace(bool enable)
 {
-#ifdef LIBRE_HAVE_SIPTRACE
 	sip_set_trace_handler(uag.sip, enable ? sip_trace_handler : NULL);
-#else
-	(void)enable;
-	warning("no sip trace in libre\n");
-#endif
 }
 
 
