@@ -87,7 +87,8 @@ FILE_PATTERNS          = *.cpp *.c \
                          *.m \
                          *.dox
 RECURSIVE              = YES
-EXCLUDE                = modules/ctrl_tcp/netstring
+EXCLUDE                = modules/ctrl_tcp/netstring \
+			 modules/ctrl_dbus
 
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       = */.svn/*
@@ -114,7 +115,7 @@ VERBATIM_HEADERS       = YES
 # configuration options related to the alphabetical class index
 #---------------------------------------------------------------------------
 ALPHABETICAL_INDEX     = YES
-COLS_IN_ALPHA_INDEX    = 5
+#COLS_IN_ALPHA_INDEX    = 5
 IGNORE_PREFIX          = 
 #---------------------------------------------------------------------------
 # configuration options related to the HTML output
@@ -144,7 +145,7 @@ LATEX_OUTPUT           = latex
 LATEX_CMD_NAME         = latex
 MAKEINDEX_CMD_NAME     = makeindex
 COMPACT_LATEX          = NO
-PAPER_TYPE             = a4wide
+#PAPER_TYPE             = a4wide
 EXTRA_PACKAGES         = 
 LATEX_HEADER           = 
 PDF_HYPERLINKS         = NO
@@ -223,7 +224,7 @@ DIRECTORY_GRAPH        = YES
 DOT_IMAGE_FORMAT       = png
 DOT_PATH               = 
 DOTFILE_DIRS           = 
-DOT_GRAPH_MAX_NODES    = 250
+DOT_GRAPH_MAX_NODES    = 500
 #MAX_DOT_GRAPH_WIDTH    = 1024
 #MAX_DOT_GRAPH_HEIGHT   = 1024
 #MAX_DOT_GRAPH_DEPTH    = 1000
