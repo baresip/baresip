@@ -27,7 +27,7 @@ struct ua {
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
 	int af_media;                /**< Preferred Address Family for media */
-	enum presence_status my_status; /**< Presence Status                 */
+	enum presence_status pstat;  /**< Presence Status                    */
 	bool catchall;               /**< Catch all inbound requests         */
 	struct list hdr_filter;      /**< Filter for incoming headers        */
 	struct list custom_hdrs;     /**< List of outgoing headers           */
@@ -1179,7 +1179,7 @@ const char *ua_aor(const struct ua *ua)
  */
 enum presence_status ua_presence_status(const struct ua *ua)
 {
-	return ua ? ua->my_status : PRESENCE_UNKNOWN;
+	return ua ? ua->pstat : PRESENCE_UNKNOWN;
 }
 
 
@@ -1194,7 +1194,7 @@ void ua_presence_status_set(struct ua *ua, const enum presence_status status)
 	if (!ua)
 		return;
 
-	ua->my_status = status;
+	ua->pstat = status;
 }
 
 
