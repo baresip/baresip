@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#include <stdlib.h>
 #include <re.h>
 #include <baresip.h>
 
@@ -387,6 +388,32 @@ static void clean_number(char *str)
 }
 
 
+static enum answer_method auto_answer_method(void)
+{
+	struct pl met;
+	int err;
+
+	err = conf_get(conf_cur(), "sip_autoanswer_method", &met);
+	if (err)
+		return ANSM_NONE;
+
+	if (!pl_strcmp(&met, "rfc5373")) {
+		return ANSM_RFC5373;
+	}
+	else if (!pl_strcmp(&met, "call-info")) {
+		return ANSM_CALLINFO;
+	}
+	else if (!pl_strcmp(&met, "alert-info")) {
+		return ANSM_ALERTINFO;
+	}
+	else {
+		warning("menu: SIP auto answer method %r is not supported",
+				met);
+		return ANSM_NONE;
+	}
+}
+
+
 static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -395,6 +422,10 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	int err = 0;
 
 	(void)pf;
+
+	if (menu->adelay >= 0)
+		(void)ua_enable_autoanswer(menu_current(), menu->adelay,
+				auto_answer_method());
 
 	if (str_isset(carg->prm)) {
 
@@ -413,7 +444,8 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		menu->dialbuf->pos = 0;
 		err = mbuf_strdup(menu->dialbuf, &uri, menu->dialbuf->end);
 		if (err)
-			return err;
+			goto out;
+
 		if (menu->clean_number)
 			clean_number(uri);
 
@@ -425,6 +457,10 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	if (err) {
 		warning("menu: ua_connect failed: %m\n", err);
 	}
+
+out:
+	if (menu->adelay >= 0)
+		(void)ua_disable_autoanswer(ua, auto_answer_method());
 
 	return err;
 }
@@ -594,6 +630,37 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 	err |= re_hprintf(pf, "\n");
 
 	return err;
+}
+
+
+/**
+ * Set SIP auto answer delay for outgoing calls
+ *
+ * @param pf     Print handler for debug output
+ * @param arg    Optional command argument
+ *		 An integer that specifies the answer delay in [seconds].
+ *		 If no argument is specified, then SIP auto answer is disabled
+ *		 for outgoing calls.
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_set_adelay(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+
+	if (!carg->prm) {
+		menu_get()->adelay = -1;
+		return 0;
+	}
+
+	menu_get()->adelay = atoi(carg->prm);
+	if (menu_get()->adelay >= 0)
+		(void)re_hprintf(pf, "SIP auto answer delay changed to %d\n",
+				 menu_get()->adelay);
+	else
+		(void)re_hprintf(pf, "SIP auto answer delay disabled\n");
+
+	return 0;
 }
 
 
@@ -845,6 +912,8 @@ static const struct cmd cmdv[] = {
 {"listcalls", 'l',        0, "List active calls",       cmd_print_calls      },
 {"options",   'o',  CMD_PRM, "Options",                 options_command      },
 {"reginfo",   'r',        0, "Registration info",       ua_print_reg_status  },
+{"setadelay", 0,    CMD_PRM, "Set answer delay for outgoing call",
+                                                        cmd_set_adelay       },
 {"uadel",     0,    CMD_PRM, "Delete User-Agent",       cmd_ua_delete        },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },

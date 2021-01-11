@@ -29,6 +29,7 @@ struct menu{
 	enum statmode statmode;       /**< Status mode                    */
 	bool clean_number;            /**< Remove -/() from diald numbers */
 	char redial_aor[128];
+	int32_t adelay;               /**< Outgoing auto answer delay     */
 };
 
 /*Get menu object*/
