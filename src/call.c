@@ -1354,6 +1354,7 @@ static int sipsess_offer_handler(struct mbuf **descp,
 {
 	const bool got_offer = (0 != mbuf_get_left(msg->mb));
 	struct call *call = arg;
+	struct sdp_media *vmedia = NULL;
 	enum sdp_dir ardir, vrdir;
 	int err;
 
@@ -1379,12 +1380,17 @@ static int sipsess_offer_handler(struct mbuf **descp,
 		}
 	}
 
-	ardir =sdp_media_rdir(
+	ardir = sdp_media_rdir(
 		stream_sdpmedia(audio_strm(call_audio(call))));
-	vrdir = sdp_media_rdir(
-		stream_sdpmedia(video_strm(call_video(call))));
-	if (!call_has_video(call))
+
+	vmedia = stream_sdpmedia(video_strm(call_video(call)));
+	if (sdp_media_rport(vmedia) == 0 ||
+		list_head(sdp_media_format_lst(vmedia, false)) == 0) {
 		vrdir = SDP_INACTIVE;
+	}
+	else {
+		vrdir = sdp_media_rdir(vmedia);
+	}
 
 	info("call: got re-INVITE%s audio-video: %s-%s\n"
 		, got_offer ? " (SDP Offer)" : "",
