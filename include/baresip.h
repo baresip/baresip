@@ -801,6 +801,9 @@ void ua_set_media_af(struct ua *ua, int af_media);
 void ua_set_catchall(struct ua *ua, bool enabled);
 int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name);
 int  ua_set_custom_hdrs(struct ua *ua, struct list *custom_hdrs);
+int  ua_add_custom_hdr(struct ua *ua, const struct pl *name,
+		       const struct pl *value);
+int  ua_rm_custom_hdr(struct ua *ua, struct pl *name);
 int  ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri);
 int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   enum vidmode vidmode, const struct sip_msg *msg,

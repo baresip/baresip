@@ -2311,6 +2311,66 @@ int uag_set_extra_params(const char *eprm)
 
 
 /**
+ * Add a custom SIP header
+ *
+ * @param ua     User-Agent
+ * @param name   Custom SIP header name
+ * @param value  Custom SIP header value
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_add_custom_hdr(struct ua *ua, const struct pl *name,
+		      const struct pl *value)
+{
+	int err;
+	char *buf;
+
+	if (!ua || !name || !value)
+		return EINVAL;
+
+	err = pl_strdup(&buf, name);
+	if (err)
+		return err;
+
+	err = custom_hdrs_add(&ua->custom_hdrs, buf, "%r", value);
+	mem_deref(buf);
+	if (err)
+		return err;
+
+	return 0;
+}
+
+
+/**
+ * Remove a custom SIP header
+ *
+ * @param ua    User-Agent
+ * @param name  Custom SIP header name
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_rm_custom_hdr(struct ua *ua, struct pl *name)
+{
+	struct le *le;
+
+	if (!ua)
+		return EINVAL;
+
+	LIST_FOREACH(&ua->custom_hdrs, le) {
+		struct sip_hdr *h = le->data;
+		if (!pl_cmp(&h->name, name)) {
+			list_unlink(le);
+			mem_deref(h);
+
+			return 0;
+		}
+	}
+
+	return 0;
+}
+
+
+/**
  * Set a list of custom SIP headers
  *
  * @param ua             User-Agent
@@ -2329,15 +2389,8 @@ int ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 	list_flush(&ua->custom_hdrs);
 
 	LIST_FOREACH(custom_headers, le) {
-		struct sip_hdr *hdr = le->data;
-		char *buf;
-
-		err = pl_strdup(&buf, &hdr->name);
-		if (err)
-			return err;
-
-		err = custom_hdrs_add(&ua->custom_hdrs, buf, "%r", &hdr->val);
-		mem_deref(buf);
+		const struct sip_hdr *hdr = le->data;
+		err = ua_add_custom_hdr(ua, &hdr->name, &hdr->val);
 		if (err)
 			return err;
 	}
