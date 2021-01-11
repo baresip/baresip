@@ -83,13 +83,22 @@ static int cmd_config_print(struct re_printf *pf, void *unused)
 
 static int cmd_ua_debug(struct re_printf *pf, void *unused)
 {
-	const struct ua *ua = uag_current();
+	struct le *le;
+	int err;
 	(void)unused;
 
-	if (ua)
-		return ua_debug(pf, ua);
-	else
+	if (list_isempty(uag_list()))
 		return re_hprintf(pf, "(no user-agent)\n");
+
+	for (le = list_head(uag_list()); le; le = le->next) {
+		struct ua *ua = le->data;
+
+		err = ua_debug(pf, ua);
+		if (err)
+			return err;
+	}
+
+	return 0;
 }
 
 
