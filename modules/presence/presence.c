@@ -9,7 +9,7 @@
 
 
 static int status_update(struct ua *current_ua,
-			 const enum presence_status new_status)
+			 enum presence_status new_status)
 {
 	if (ua_presence_status(current_ua) == new_status)
 		return 0;
@@ -28,27 +28,31 @@ static int status_update(struct ua *current_ua,
 }
 
 
-static int cmd_online(struct re_printf *pf, void *arg)
+static int cmd_pres(struct re_printf *pf, void *arg)
 {
-	(void)pf;
-	(void)arg;
+	const struct cmd_arg *carg = arg;
+	enum presence_status new_status;
+	struct le *le;
 
-	return status_update(uag_current(), PRESENCE_OPEN);
-}
+	if (0 == str_casecmp(carg->prm, "online"))
+		new_status = PRESENCE_OPEN;
+	else if (0 == str_casecmp(carg->prm, "offline"))
+		new_status = PRESENCE_CLOSED;
+	else
+		return re_hprintf(pf, "usage: /presence online|offline\n");
 
+	for (le = list_head(uag_list()); le; le = le->next) {
+		struct ua *ua = le->data;
 
-static int cmd_offline(struct re_printf *pf, void *arg)
-{
-	(void)pf;
-	(void)arg;
+		status_update(ua, new_status);
+	}
 
-	return status_update(uag_current(), PRESENCE_CLOSED);
+	return 0;
 }
 
 
 static const struct cmd cmdv[] = {
-	{"presence_online",  '[', 0, "Set presence online",   cmd_online  },
-	{"presence_offline", ']', 0, "Set presence offline",  cmd_offline },
+	{"presence", 0, CMD_PRM, "Set presence <online|offline>", cmd_pres },
 };
 
 
