@@ -388,6 +388,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
+	struct ua *ua = uag_current();
 	int err = 0;
 
 	(void)pf;
@@ -399,7 +400,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		if (menu->clean_number)
 			clean_number(carg->prm);
 
-		err = ua_connect(uag_current(), NULL, NULL,
+		err = ua_connect(ua, NULL, NULL,
 				 carg->prm, VIDMODE_ON);
 	}
 	else if (menu->dialbuf->end > 0) {
@@ -413,7 +414,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		if (menu->clean_number)
 			clean_number(uri);
 
-		err = ua_connect(uag_current(), NULL, NULL, uri, VIDMODE_ON);
+		err = ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
 
 		mem_deref(uri);
 	}

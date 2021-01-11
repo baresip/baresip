@@ -70,15 +70,16 @@ static int cmd_call_hold(struct re_printf *pf, void *arg)
 static int set_current_call(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
+	struct ua *ua = uag_current();
 	struct call *call;
 	uint32_t linenum = atoi(carg->prm);
 	int err;
 
-	call = call_find_linenum(ua_calls(uag_current()), linenum);
+	call = call_find_linenum(ua_calls(ua), linenum);
 	if (call) {
 		err = re_hprintf(pf, "setting current call: line %u\n",
 				 linenum);
-		call_set_current(ua_calls(uag_current()), call);
+		call_set_current(ua_calls(ua), call);
 	}
 	else {
 		err = re_hprintf(pf, "call not found\n");
@@ -184,19 +185,20 @@ static int call_video_debug(struct re_printf *pf, void *unused)
 static int set_video_dir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = uag_current();
 	int err = 0;
 
 	if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_INACTIVE))) {
-		err = call_set_video_dir(ua_call(uag_current()), SDP_INACTIVE);
+		err = call_set_video_dir(ua_call(ua), SDP_INACTIVE);
 	}
 	else if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_SENDONLY))) {
-		err = call_set_video_dir(ua_call(uag_current()), SDP_SENDONLY);
+		err = call_set_video_dir(ua_call(ua), SDP_SENDONLY);
 	}
 	else if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_RECVONLY))) {
-		err = call_set_video_dir(ua_call(uag_current()), SDP_RECVONLY);
+		err = call_set_video_dir(ua_call(ua), SDP_RECVONLY);
 	}
 	else if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_SENDRECV))) {
-		err = call_set_video_dir(ua_call(uag_current()), SDP_SENDRECV);
+		err = call_set_video_dir(ua_call(ua), SDP_SENDRECV);
 	}
 	else {
 		(void)re_hprintf(pf, "Invalid video direction %s"

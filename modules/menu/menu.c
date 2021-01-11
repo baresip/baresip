@@ -379,12 +379,12 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_RINGING:
-		if (call == ua_call(uag_current()) && !has_established_call())
+		if (call == ua_call(ua) && !has_established_call())
 			play_ringback();
 		break;
 
 	case UA_EVENT_CALL_PROGRESS:
-		if (call == ua_call(uag_current()))
+		if (call == ua_call(ua))
 			menu.play = mem_deref(menu.play);
 		break;
 
