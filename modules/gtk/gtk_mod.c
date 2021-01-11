@@ -54,6 +54,7 @@ struct gtk_mod {
 	GSList *call_windows;
 	GSList *incoming_call_menus;
 	bool clean_number;
+	struct ua *ua_cur;
 };
 
 static struct gtk_mod mod_obj;
@@ -77,9 +78,24 @@ static GActionEntry app_entries[] = {
 };
 
 
+static void gtk_current_ua_set(struct ua *ua)
+{
+	mod_obj.ua_cur = ua;
+}
+
+
+static struct ua *gtk_current_ua(void)
+{
+	if (!mod_obj.ua_cur)
+		mod_obj.ua_cur = list_ledata(list_head(uag_list()));
+
+	return mod_obj.ua_cur;
+}
+
+
 static struct call *get_call_from_gvariant(GVariant *param)
 {
-	struct list *calls = ua_calls(uag_current());
+	struct list *calls = ua_calls(gtk_current_ua());
 	const gchar *call_ptr = g_variant_get_string(param, NULL);
 
 	return call_find_id(calls, call_ptr);
@@ -203,7 +219,7 @@ static GtkMenuItem *accounts_menu_add_item(struct gtk_mod *mod,
 	GtkMenuShell *accounts_menu = GTK_MENU_SHELL(mod->accounts_menu);
 	GtkWidget *item;
 	GSList *group = mod->accounts_menu_group;
-	struct ua *ua_current = uag_current();
+	struct ua *ua_current = gtk_current_ua();
 	char buf[256];
 
 	re_snprintf(buf, sizeof buf, "%s%s", ua_aor(ua),
@@ -244,7 +260,7 @@ static GtkMenuItem *accounts_menu_get_item(struct gtk_mod *mod,
 
 static void update_current_accounts_menu_item(struct gtk_mod *mod)
 {
-	GtkMenuItem *item = accounts_menu_get_item(mod, uag_current());
+	GtkMenuItem *item = accounts_menu_get_item(mod, gtk_current_ua());
 
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), TRUE);
 }
@@ -258,7 +274,7 @@ static void update_ua_presence(struct gtk_mod *mod)
 	GtkMenuShell *status_menu = GTK_MENU_SHELL(mod->status_menu);
 	GList *items = status_menu->children;
 
-	cur_status = ua_presence_status(uag_current());
+	cur_status = ua_presence_status(gtk_current_ua());
 
 	for (; items; items = items->next) {
 		item = items->data;
@@ -668,7 +684,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 	const char *uri;
 	struct call *call;
 	int err;
-	struct ua *ua = uag_current();
+	struct ua *ua = gtk_current_ua();
 
 	switch ((enum gtk_mod_events)id) {
 
@@ -730,7 +746,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 
 	case MQ_SELECT_UA:
 		ua = data;
-		uag_current_set(ua);
+		gtk_current_ua_set(ua);
 		break;
 	}
 }

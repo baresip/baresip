@@ -277,12 +277,12 @@ static void mqueue_handler(int id, void *data, void *arg)
 	switch ((enum call_window_events)id) {
 
 	case MQ_HANGUP:
-		ua_hangup(uag_current(), win->call, 0, NULL);
+		ua_hangup(call_get_ua(win->call), win->call, 0, NULL);
 		break;
 
 	case MQ_CLOSE:
 		if (!win->closed) {
-			ua_hangup(uag_current(), win->call, 0, NULL);
+			ua_hangup(call_get_ua(win->call), win->call, 0, NULL);
 			win->closed = true;
 		}
 		mem_deref(win);
