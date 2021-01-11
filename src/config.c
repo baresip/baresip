@@ -1003,6 +1003,8 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#statmode_default\toff\n"
 			"#menu_clean_number\tno\n"
 			"#sip_autoanswer_beep\tyes\n"
+			"#sip_autoanswer_method\trfc5373 "
+				"# {rfc5373,call-info,alert-info}\n"
 			"#ring_aufile\t\tring.wav\n"
 			"#callwaiting_aufile\tcallwaiting.wav\n"
 			"#ringback_aufile\tringback.wav\n"

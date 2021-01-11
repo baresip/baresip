@@ -205,6 +205,7 @@ video_selfview		window # {window,pip}
 #statmode_default	off
 #menu_clean_number	no
 #sip_autoanswer_beep	yes
+#sip_autoanswer_method	rfc5373 # {rfc5373,call-info,alert-info}
 #ring_aufile		ring.wav
 #callwaiting_aufile	callwaiting.wav
 #ringback_aufile	ringback.wav
