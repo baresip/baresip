@@ -48,6 +48,7 @@ struct ausrc_st {
 
 	pthread_t tid;              /**< Thread ID               */
 	bool run;                   /**< Running flag            */
+	bool eos;                   /**< Reached end of stream   */
 	ausrc_read_h *rh;           /**< Read handler            */
 	ausrc_error_h *errh;        /**< Error handler           */
 	void *arg;                  /**< Handler argument        */
@@ -56,6 +57,8 @@ struct ausrc_st {
 	size_t psize;               /**< Packet size in bytes    */
 	size_t sampc;
 	uint32_t ptime;
+
+	struct tmr tmr;
 
 	/* Gstreamer */
 	char *uri;
@@ -99,8 +102,8 @@ static gboolean bus_watch_handler(GstBus *bus, GstMessage *msg, gpointer data)
 	switch (GST_MESSAGE_TYPE(msg)) {
 
 	case GST_MESSAGE_EOS:
-		if (st->errh)
-			st->errh(0, "end of stream", st->arg);
+		st->run = false;
+		st->eos = true;
 		break;
 
 	case GST_MESSAGE_ERROR:
@@ -394,6 +397,8 @@ static void gst_destructor(void *arg)
 		pthread_join(st->tid, NULL);
 	}
 
+	tmr_cancel(&st->tmr);
+
 	gst_element_set_state(st->pipeline, GST_STATE_NULL);
 	gst_object_unref(GST_OBJECT(st->pipeline));
 
@@ -401,6 +406,23 @@ static void gst_destructor(void *arg)
 	mem_deref(st->aubuf);
 }
 
+static void timeout(void *arg)
+{
+	struct ausrc_st *st = arg;
+	tmr_start(&st->tmr, st->ptime ? st->ptime : 40, timeout, st);
+
+	/* check if source is still running */
+	if (!st->run) {
+		tmr_cancel(&st->tmr);
+
+		if (st->eos) {
+			info("gst: end of file\n");
+			/* error handler must be called from re_main thread */
+			if (st->errh)
+				st->errh(0, "end of file", st->arg);
+		}
+	}
+}
 
 static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct media_ctx **ctx,
@@ -457,8 +479,12 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	st->run  = true;
+	st->run = true;
+	st->eos = false;
 	err = pthread_create(&st->tid, NULL, thread, st);
+
+	tmr_start(&st->tmr, st->ptime, timeout, st);
+
 	if (err) {
 		st->run = false;
 		goto out;
