@@ -80,6 +80,33 @@ static void send_resp_handler(int err, const struct sip_msg *msg, void *arg)
 }
 
 
+static struct ua *ua_lookup_domain(const char *target_uri)
+{
+	const struct list *lst = uag_list();
+	struct uri uri;
+	struct pl pl;
+	struct le *le;
+
+	pl_set_str(&pl, target_uri);
+
+	if (uri_decode(&uri, &pl))
+		goto out;
+
+	for (le = list_head(lst); le; le = le->next) {
+		struct ua *ua = le->data;
+		struct account *acc = ua_account(ua);
+		struct uri *luri = account_luri(acc);
+
+		if (0 == pl_casecmp(&uri.host, &luri->host))
+			return ua;
+	}
+
+out:
+	/* no matches -- use first useragent */
+	return list_ledata(lst->head);
+}
+
+
 static int cmd_dial_contact(struct re_printf *pf, void *arg)
 {
 	struct contact *cnt;
@@ -94,7 +121,7 @@ static int cmd_dial_contact(struct re_printf *pf, void *arg)
 
 	uri = contact_uri(cnt);
 
-	err = ua_connect(uag_current(), NULL, NULL, uri, VIDMODE_ON);
+	err = ua_connect(ua_lookup_domain(uri), NULL, NULL, uri, VIDMODE_ON);
 	if (err) {
 		warning("contact: ua_connect(%s) failed: %m\n",
 			uri, err);
@@ -118,7 +145,7 @@ static int cmd_message(struct re_printf *pf, void *arg)
 
 	uri = contact_uri(cnt);
 
-	err = message_send(uag_current(), uri, carg->prm,
+	err = message_send(ua_lookup_domain(uri), uri, carg->prm,
 			   send_resp_handler, NULL);
 	if (err) {
 		(void)re_hprintf(pf, "contact: message_send(%s) failed (%m)\n",
