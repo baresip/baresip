@@ -367,7 +367,7 @@ static int setup_uri(struct ausrc_st *st, const char *device)
 		err = str_dup(&st->uri, device);
 	}
 	else {
-		if (!access(device, W_OK)) {
+		if (!access(device, R_OK)) {
 			size_t urilength = strlen(device) + 8;
 			char *uri = mem_alloc(urilength, NULL);
 			if (re_snprintf(uri, urilength, "file://%s",
