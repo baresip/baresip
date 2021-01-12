@@ -799,7 +799,7 @@ static int vtx_print_pipeline(struct re_printf *pf, const struct vtx *vtx)
 	vs = vidsrc_get(vtx->vsrc);
 
 	err = re_hprintf(pf, "video tx pipeline: %10s",
-			 vs ? vs->name : "src");
+			 vs ? vs->name : "(src)");
 
 	for (le = list_head(&vtx->filtl); le; le = le->next) {
 		struct vidfilt_enc_st *st = le->data;
@@ -809,7 +809,7 @@ static int vtx_print_pipeline(struct re_printf *pf, const struct vtx *vtx)
 	}
 
 	err |= re_hprintf(pf, " ---> %s\n",
-			  vtx->vc ? vtx->vc->name : "encoder");
+			  vtx->vc ? vtx->vc->name : "(encoder)");
 
 	return err;
 }
@@ -827,7 +827,7 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 	vd = vidisp_get(vrx->vidisp);
 
 	err = re_hprintf(pf, "video rx pipeline: %10s",
-			 vd ? vd->name : "disp");
+			 vd ? vd->name : "(disp)");
 
 	for (le = list_head(&vrx->filtl); le; le = le->next) {
 		struct vidfilt_dec_st *st = le->data;
@@ -837,7 +837,7 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 	}
 
 	err |= re_hprintf(pf, " <--- %s\n",
-			  vrx->vc ? vrx->vc->name : "decoder");
+			  vrx->vc ? vrx->vc->name : "(decoder)");
 
 	return err;
 }
