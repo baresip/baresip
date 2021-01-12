@@ -195,6 +195,7 @@ USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
 	[ -f $(SYSROOT_ALT)/include/syslog.h ] || \
 	[ -f $(SYSROOT)/local/include/syslog.h ] && echo "yes")
 USE_MQTT := $(shell [ -f $(SYSROOT)/include/mosquitto.h ] || \
+	[ -f $(SYSROOT_ALT)/include/mosquitto.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/mosquitto.h ] \
 	&& echo "yes")
 HAVE_LIBV4L2 := $(shell [ -f $(SYSROOT)/include/libv4l2.h ] || \
