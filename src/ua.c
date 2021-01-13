@@ -746,6 +746,21 @@ static int create_register_clients(struct ua *ua)
 }
 
 
+static char *autoans_header_name(enum answer_method met)
+{
+	switch (met) {
+		case ANSM_RFC5373:
+			return "Answer-Mode";
+		case ANSM_CALLINFO:
+			return "Call-Info";
+		case ANSM_ALERTINFO:
+			return "Alert-Info";
+		default:
+			return NULL;
+	}
+}
+
+
 /**
  * Allocate a SIP User-Agent
  *
@@ -2396,4 +2411,90 @@ int ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 	}
 
 	return 0;
+}
+
+
+/**
+ * Enables SIP auto answer with given method and answer delay in seconds.
+ * If SIP auto answer is activated then a SIP header is added to the INVITE
+ * request that informs the callee to answer the call after the specified delay
+ * automatically. This enables to setup intercom applications.
+ * This SIP auto answer headers are supported:
+ * - Answer-Mode: Auto (RFC 5373)
+ * - Call-Info: <http://www.notused.com>;answer-after=0
+ * - Alert-Info: <...>;info=alert-autoanswer;delay=0
+ *
+ * @param ua      User-Agent
+ * @param adelay  Answer delay
+ * @param met     SIP auto answer method.
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
+		enum answer_method met)
+{
+	struct pl n;
+	struct pl v;
+	struct mbuf *mb = NULL;
+	struct pl url = PL("<http://www.notused.com>");
+	int err = 0;
+	char *name;
+
+	if (adelay < 0)
+		met =  ANSM_NONE;
+
+	if (met) {
+		mb = mbuf_alloc(20);
+		if (!mb)
+			return ENOMEM;
+	}
+
+	switch (met) {
+	case ANSM_RFC5373:
+		err = mbuf_printf(mb, "Auto");
+		break;
+	case ANSM_CALLINFO:
+		err = mbuf_printf(mb, "%r;answer-after=%d", &url, adelay);
+		break;
+	case ANSM_ALERTINFO:
+		err = mbuf_printf(mb, "%r;info=alert-autoanswer;delay=%d",
+				&url, adelay);
+		break;
+	default:
+		err = EINVAL;
+		goto out;
+		break;
+	}
+
+	name = autoans_header_name(met);
+	pl_set_str(&n, name);
+	mbuf_set_pos(mb, 0);
+	pl_set_mbuf(&v, mb);
+	err = ua_add_custom_hdr(ua, &n, &v);
+
+out:
+	mem_deref(mb);
+	return err;
+}
+
+
+/**
+ * Disables SIP auto answer with given method.
+ *
+ * @param ua      User-Agent
+ * @param met     SIP auto answer method.
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int  ua_disable_autoanswer(struct ua *ua, enum answer_method met)
+{
+	struct pl n;
+	char *name;
+
+	name = autoans_header_name(met);
+	if (!name)
+		return EINVAL;
+
+	pl_set_str(&n, name);
+	return ua_rm_custom_hdr(ua, &n);
 }
