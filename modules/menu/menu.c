@@ -389,6 +389,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	int32_t adelay = -1;
 	bool incall;
 	enum sdp_dir ardir, vrdir;
+	uint32_t count;
 	int err;
 	(void)prm;
 	(void)arg;
@@ -399,6 +400,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 #endif
 
 
+	count = uag_call_count();
 	switch (ev) {
 
 	case UA_EVENT_CALL_INCOMING:
@@ -422,8 +424,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (acc && account_sip_autoanswer(acc))
 			adelay = call_answer_delay(call);
 
-		if (adelay == -1)
-			play_incoming(ua, uag_call_count() > 1);
+		if (adelay == -1 || count > 1)
+			play_incoming(ua, count > 1);
 		else
 			start_sip_autoanswer(call);
 
@@ -543,8 +545,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 	}
 
-	incall = ev == UA_EVENT_CALL_CLOSED ?
-			uag_call_count() > 1 : uag_call_count();
+	incall = ev == UA_EVENT_CALL_CLOSED ? count > 1 : count;
 	menu_set_incall(incall);
 	menu_update_callstatus(incall);
 }
