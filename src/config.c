@@ -1009,7 +1009,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#notfound_aufile\tnotfound.wav\n"
 			"#busy_aufile\t\tbusy.wav\n"
 			"#error_aufile\t\terror.wav\n"
-			"#sip_autoanswer_aufile\tmessage.wav\n"
+			"#sip_autoanswer_aufile\tautoanswer.wav\n"
 			);
 
 	(void)re_fprintf(f,

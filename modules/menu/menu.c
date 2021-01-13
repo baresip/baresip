@@ -370,7 +370,7 @@ static void start_sip_autoanswer(struct call *call)
 
 	conf_get_bool(conf_cur(), "sip_autoanswer_beep", &beep);
 	if (beep) {
-		menu_play("sip_autoanswer_aufile", "message.wav", 1);
+		menu_play("sip_autoanswer_aufile", "autoanswer.wav", 1);
 		play_set_finish_handler(menu.play, auans_play_finished, call);
 	}
 	else {

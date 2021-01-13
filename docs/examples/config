@@ -211,7 +211,7 @@ video_selfview		window # {window,pip}
 #notfound_aufile	notfound.wav
 #busy_aufile		busy.wav
 #error_aufile		error.wav
-#sip_autoanswer_aufile	message.wav
+#sip_autoanswer_aufile	autoanswer.wav
 
 # GTK
 #gtk_clean_number	no
