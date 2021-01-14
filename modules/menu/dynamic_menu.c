@@ -12,7 +12,7 @@
 static int set_audio_bitrate(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 	struct call *call;
 	uint32_t bitrate = str_isset(carg->prm) ? atoi(carg->prm) : 0;
 	int err;
@@ -34,7 +34,7 @@ static int set_audio_bitrate(struct re_printf *pf, void *arg)
 static int call_audio_debug(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 
 	return audio_debug(pf, call_audio(ua_call(ua)));
 }
@@ -43,7 +43,7 @@ static int call_audio_debug(struct re_printf *pf, void *arg)
 static int cmd_find_call(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 	const char *id = carg->prm;
 	struct list *calls = ua_calls(ua);
 	struct call *call;
@@ -65,7 +65,7 @@ static int cmd_find_call(struct re_printf *pf, void *arg)
 static int cmd_call_hold(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 
 	(void)pf;
 
@@ -76,7 +76,7 @@ static int cmd_call_hold(struct re_printf *pf, void *arg)
 static int set_current_call(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 	struct call *call;
 	uint32_t linenum = atoi(carg->prm);
 	int err;
@@ -98,7 +98,7 @@ static int set_current_call(struct re_printf *pf, void *arg)
 static int call_mute(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 	struct audio *audio = call_audio(ua_call(ua));
 	bool muted = !audio_ismuted(audio);
 
@@ -114,14 +114,14 @@ static int hold_prev_call(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	(void)pf;
 
-	return call_hold(ua_prev_call(uag_current()), 'H' == carg->key);
+	return call_hold(ua_prev_call(menu_current()), 'H' == carg->key);
 }
 
 
 static int call_reinvite(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 	(void)pf;
 
 	return call_modify(ua_call(ua));
@@ -133,14 +133,14 @@ static int cmd_call_resume(struct re_printf *pf, void *arg)
 	(void)pf;
 	(void)arg;
 
-	return call_hold(ua_call(uag_current()), false);
+	return call_hold(ua_call(menu_current()), false);
 }
 
 
 static int send_code(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 	struct call *call;
 	size_t i;
 	int err = 0;
@@ -179,7 +179,7 @@ static int toggle_statmode(struct re_printf *pf, void *arg)
 static int call_xfer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 	(void)pf;
 
 	return call_transfer(ua_call(ua), carg->prm);
@@ -189,7 +189,7 @@ static int call_xfer(struct re_printf *pf, void *arg)
 static int call_video_debug(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct ua *ua = carg->data ? carg->data : menu_current();
 
 	return video_debug(pf, call_video(ua_call(ua)));
 }
@@ -198,7 +198,7 @@ static int call_video_debug(struct re_printf *pf, void *arg)
 static int set_video_dir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = uag_current();
+	struct ua *ua = menu_current();
 	int err = 0;
 
 	if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_INACTIVE))) {
@@ -232,7 +232,7 @@ static int digit_handler(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
-	call = ua_call(uag_current());
+	call = ua_call(menu_current());
 	if (call)
 		err = call_send_digit(call, carg->key);
 

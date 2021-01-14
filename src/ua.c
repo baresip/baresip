@@ -816,9 +816,6 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 	list_append(&uag.ual, &ua->le, ua);
 
-	if (!uag_current())
-		uag_current_set(ua);
-
  out:
 	mem_deref(buf);
 	if (err)
@@ -1331,8 +1328,6 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 
 	/* user-agent info */
 	err |= odict_entry_add(od, "cuser", ODICT_STRING, ua->cuser);
-	err |= odict_entry_add(od, "selected_ua", ODICT_BOOL,
-			ua == uag_current());
 
 	/* account info */
 	err |= account_json_api(od, cfg, ua->acc);
@@ -2250,31 +2245,6 @@ struct list *ua_calls(const struct ua *ua)
 void uag_set_sub_handler(sip_msg_h *subh)
 {
 	uag.subh = subh;
-}
-
-
-/**
- * Set the current User-Agent
- *
- * @param ua User-Agent to set as current
- */
-void uag_current_set(struct ua *ua)
-{
-	uag.ua_cur = ua;
-}
-
-
-/**
- * Get the current User-Agent
- *
- * @return Current User-Agent, NULL if none
- */
-struct ua *uag_current(void)
-{
-	if (list_isempty(uag_list()))
-		return NULL;
-
-	return uag.ua_cur;
 }
 
 

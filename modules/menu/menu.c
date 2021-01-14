@@ -78,7 +78,7 @@ static void tmrstat_handler(void *arg)
 	(void)arg;
 
 	/* the UI will only show the current active call */
-	call = ua_call(uag_current());
+	call = ua_call(menu_current());
 	if (!call)
 		return;
 
@@ -406,7 +406,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_INCOMING:
 
 		/* set the current User-Agent to the one with the call */
-		uag_current_set(ua);
+		menu_current_set(ua);
 
 		ardir =sdp_media_rdir(
 			stream_sdpmedia(audio_strm(call_audio(call))));
@@ -578,6 +578,21 @@ static void message_handler(struct ua *ua, const struct pl *peer,
 struct menu *menu_get(void)
 {
 	return &menu;
+}
+
+
+void menu_current_set(struct ua *ua)
+{
+	menu.ua_cur = ua;
+}
+
+
+struct ua *menu_current(void)
+{
+	if (!menu.ua_cur)
+		menu.ua_cur = list_ledata(list_head(uag_list()));
+
+	return menu.ua_cur;
 }
 
 
