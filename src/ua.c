@@ -38,7 +38,7 @@ struct ua_xhdr_filter {
 	char *hdr_name;
 };
 
-static struct {
+static struct uag {
 	struct config_sip *cfg;        /**< SIP configuration               */
 	struct list ual;               /**< List of User-Agents (struct ua) */
 	struct sip *sip;               /**< SIP Stack                       */
