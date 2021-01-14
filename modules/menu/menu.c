@@ -21,6 +21,10 @@
  */
 static struct menu menu;
 
+enum {
+	MIN_RINGTIME = 1000,
+};
+
 
 static int menu_set_incall(bool incall)
 {
@@ -340,12 +344,52 @@ static void menu_play_closed(struct call *call)
 }
 
 
+static void auans_play_finished(struct play *play, void *arg)
+{
+	struct call *call = arg;
+	struct ua *ua = call_get_ua(call);
+	int32_t adelay = call_answer_delay(call);
+	(void) play;
+
+	if (call_state(call) == CALL_STATE_INCOMING) {
+		call_start_answtmr(call, adelay);
+		if (adelay >= MIN_RINGTIME)
+			play_incoming(ua, uag_call_count() > 1);
+	}
+}
+
+
+static void start_sip_autoanswer(struct call *call)
+{
+	int32_t adelay = call_answer_delay(call);
+	struct ua *ua = call_get_ua(call);
+	bool beep = true;
+
+	if (adelay == -1)
+		return;
+
+	conf_get_bool(conf_cur(), "sip_autoanswer_beep", &beep);
+	if (beep) {
+		menu_play("sip_autoanswer_aufile", "autoanswer.wav", 1);
+		play_set_finish_handler(menu.play, auans_play_finished, call);
+	}
+	else {
+		call_start_answtmr(call, adelay);
+		if (adelay >= MIN_RINGTIME)
+			play_incoming(ua, uag_call_count() > 1);
+	}
+}
+
+
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
 	struct call *call2 = NULL;
+	struct account *acc;
+	int32_t adelay = -1;
 	bool incall;
 	enum sdp_dir ardir, vrdir;
+	uint32_t count;
 	int err;
 	(void)prm;
 	(void)arg;
@@ -356,6 +400,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 #endif
 
 
+	count = uag_call_count();
 	switch (ev) {
 
 	case UA_EVENT_CALL_INCOMING:
@@ -375,7 +420,15 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		     ua_aor(ua), call_peername(call), call_peeruri(call),
 		     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
-		play_incoming(ua, uag_call_count() > 1);
+		acc = ua_account(ua);
+		if (acc && account_sip_autoanswer(acc))
+			adelay = call_answer_delay(call);
+
+		if (adelay == -1 || count > 1)
+			play_incoming(ua, count > 1);
+		else
+			start_sip_autoanswer(call);
+
 		break;
 
 	case UA_EVENT_CALL_RINGING:
@@ -492,8 +545,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 	}
 
-	incall = ev == UA_EVENT_CALL_CLOSED ?
-			uag_call_count() > 1 : uag_call_count();
+	incall = ev == UA_EVENT_CALL_CLOSED ? count > 1 : count;
 	menu_set_incall(incall);
 	menu_update_callstatus(incall);
 }

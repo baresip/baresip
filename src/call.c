@@ -37,6 +37,7 @@ struct call {
 	struct video *video;      /**< Video stream                         */
 	struct media_ctx *ctx;    /**< Shared A/V source media context      */
 	enum call_state state;    /**< Call state                           */
+	int32_t adelay;           /**< Auto answer delay in ms              */
 	char *local_uri;          /**< Local SIP uri                        */
 	char *local_name;         /**< Local display name                   */
 	char *peer_uri;           /**< Peer SIP Address                     */
@@ -44,6 +45,7 @@ struct call {
 	char *id;                 /**< Cached session call-id               */
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
+	struct tmr tmr_answ;      /**< Timer for delayed answer             */
 	time_t time_start;        /**< Time when call started               */
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
@@ -374,6 +376,7 @@ static void call_destructor(void *arg)
 	call_stream_stop(call);
 	list_unlink(&call->le);
 	tmr_cancel(&call->tmr_dtmf);
+	tmr_cancel(&call->tmr_answ);
 
 	mem_deref(call->sess);
 	mem_deref(call->id);
@@ -611,6 +614,78 @@ static int assign_linenum(uint32_t *linenum, const struct list *lst)
 
 
 /**
+ * Decode the SIP-Header for RFC 5373 auto answer of incoming call
+ *
+ * @param call Call object
+ * @param msg  SIP message
+ * @param name SIP header name
+ */
+static void call_rfc5373_autoanswer(struct call *call,
+		const struct sip_msg *msg, const char *name)
+{
+	const struct sip_hdr *hdr;
+	struct pl v1;
+
+	hdr = sip_msg_xhdr(msg, name);
+	if (!hdr || pl_strcasecmp(&hdr->val, "Auto"))
+		return;
+
+	if (!msg_param_exists(&hdr->val, "require", &v1) &&
+			!account_sip_autoanswer(call->acc)) {
+
+		warning("call: rejected, since %s is not allowed\n", name);
+		call_hangup(call, 0, NULL);
+		return;
+	}
+
+	call->adelay = 0;
+}
+
+
+/**
+ * Decode the SIP-Header for auto answer options of incoming call
+ *
+ * @param call Call object
+ * @param msg  SIP message
+ */
+static void call_decode_sip_autoanswer(struct call *call,
+		const struct sip_msg *msg)
+{
+	const struct sip_hdr *hdr;
+	struct pl v1, v2;
+
+	call->adelay = -1;
+
+	/* polycom (HDA50), avaya, grandstream, snom */
+	hdr = sip_msg_hdr(msg, SIP_HDR_CALL_INFO);
+	if (hdr && !msg_param_decode(&hdr->val, "answer-after", &v1)) {
+		call->adelay = pl_u32(&v1) * 1000;
+		return;
+	}
+
+	hdr = sip_msg_hdr(msg, SIP_HDR_ALERT_INFO);
+	if (hdr && !msg_param_decode(&hdr->val, "info", &v1) &&
+		!msg_param_decode(&hdr->val, "delay", &v2)) {
+		if (!pl_strcmp(&v1, "alert-autoanswer")) {
+			call->adelay = pl_u32(&v2) * 1000;
+			return;
+		}
+	}
+
+	if (hdr && !msg_param_decode(&hdr->val, "info", &v1)) {
+		if (!pl_strcmp(&v1, "alert-autoanswer")) {
+			call->adelay = 0;
+			return;
+		}
+	}
+
+	/* RFC 5373 */
+	call_rfc5373_autoanswer(call, msg, "Answer-Mode");
+	call_rfc5373_autoanswer(call, msg, "Priv-Answer-Mode");
+}
+
+
+/**
  * Allocate a new Call state object
  *
  * @param callp       Pointer to allocated Call state object
@@ -665,6 +740,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->config_call = cfg->call;
 
 	tmr_init(&call->tmr_inv);
+	tmr_init(&call->tmr_answ);
 
 	call->acc    = mem_ref(acc);
 	call->ua     = ua;
@@ -672,6 +748,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->eh     = eh;
 	call->arg    = arg;
 	call->af     = prm->af;
+	call_decode_sip_autoanswer(call, msg);
 
 	err = str_dup(&call->local_uri, local_uri);
 	if (local_name)
@@ -756,7 +833,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 				  video_error_handler, call);
 		if (err)
 			goto out;
- 	}
+	}
 
 	/* inherit certain properties from original call */
 	if (xcall) {
@@ -1013,6 +1090,8 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	if (!call || !call->sess)
 		return EINVAL;
 
+	tmr_cancel(&call->tmr_answ);
+
 	if (CALL_STATE_INCOMING != call->state) {
 		info("call: answer: call is not in incoming state (%s)\n",
 		     state_name(call->state));
@@ -1210,10 +1289,12 @@ int call_debug(struct re_printf *pf, const struct call *call)
 	err |= re_hprintf(pf,
 			  " local_uri: %s <%s>\n"
 			  " peer_uri:  %s <%s>\n"
-			  " af=%s id=%s\n",
+			  " af=%s id=%s\n"
+			  " autoanswer delay: %d\n",
 			  call->local_name, call->local_uri,
 			  call->peer_name, call->peer_uri,
-			  net_af2name(call->af), call->id);
+			  net_af2name(call->af), call->id,
+			  call->adelay);
 	err |= re_hprintf(pf, " direction: %s\n",
 			  call->outgoing ? "Outgoing" : "Incoming");
 
@@ -1754,6 +1835,14 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 }
 
 
+static void delayed_answer_handler(void *arg)
+{
+	struct call *call = arg;
+
+	(void)call_answer(call, 200, VIDMODE_ON);
+}
+
+
 static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
@@ -2244,6 +2333,17 @@ uint32_t call_linenum(const struct call *call)
 
 
 /**
+ * Get the answer delay of this call
+ *
+ * @return answer delay in ms
+ */
+int32_t call_answer_delay(const struct call *call)
+{
+	return call ? call->adelay : -1;
+}
+
+
+/**
  * Find the call with a given line number
  *
  * @param calls   List of calls
@@ -2331,4 +2431,13 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 	}
 
 	return 0;
+}
+
+
+void call_start_answtmr(struct call *call, uint32_t ms)
+{
+	if (!call)
+		return;
+
+	tmr_start(&call->tmr_answ, ms, delayed_answer_handler, call);
 }

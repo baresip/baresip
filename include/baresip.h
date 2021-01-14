@@ -107,6 +107,7 @@ const char *account_medianat(const struct account *acc);
 const char *account_mwi(const struct account *acc);
 const char *account_call_transfer(const struct account *acc);
 const char *account_extra(const struct account *acc);
+bool account_sip_autoanswer(const struct account *acc);
 
 
 /*
@@ -212,12 +213,14 @@ bool          call_is_onhold(const struct call *call);
 bool          call_is_outgoing(const struct call *call);
 void          call_enable_rtp_timeout(struct call *call, uint32_t timeout_ms);
 uint32_t      call_linenum(const struct call *call);
+int32_t       call_answer_delay(const struct call *call);
 struct call  *call_find_linenum(const struct list *calls, uint32_t linenum);
 struct call  *call_find_id(const struct list *calls, const char *id);
 void call_set_current(struct list *calls, struct call *call);
 const struct list *call_get_custom_hdrs(const struct call *call);
 int call_set_media_direction(struct call *call, enum sdp_dir a,
 			     enum sdp_dir v);
+void call_start_answtmr(struct call *call, uint32_t ms);
 
 
 /*
@@ -697,6 +700,7 @@ struct dnsc     *net_dnsc(const struct network *net);
 
 struct play;
 struct player;
+typedef void (play_finish_h)(struct play *play, void *arg);
 
 int  play_file(struct play **playp, struct player *player,
 	       const char *filename, int repeat,
@@ -705,6 +709,7 @@ int  play_tone(struct play **playp, struct player *player,
 	       struct mbuf *tone,
 	       uint32_t srate, uint8_t ch, int repeat,
 	       const char *play_mod, const char *play_dev);
+void play_set_finish_handler(struct play *play, play_finish_h *fh, void *arg);
 int  play_init(struct player **playerp);
 void play_set_path(struct player *player, const char *path);
 

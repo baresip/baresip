@@ -53,7 +53,9 @@ struct account {
 	char *aor;                   /**< Local SIP uri                      */
 
 	/* parameters: */
+	bool sipans;                 /**< Allow SIP header auto answer mode  */
 	enum answermode answermode;  /**< Answermode for incoming calls      */
+	uint32_t adelay;             /**< Delay for delayed auto answer [ms] */
 	struct le acv[16];           /**< List elements for aucodecl         */
 	struct list aucodecl;        /**< List of preferred audio-codecs     */
 	char *auth_user;             /**< Authentication username            */
@@ -150,7 +152,6 @@ int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
 struct account *call_account(const struct call *call);
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs);
-
 
 /*
 * Custom headers

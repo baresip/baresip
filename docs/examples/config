@@ -204,12 +204,14 @@ video_selfview		window # {window,pip}
 #ringback_disabled	no
 #statmode_default	off
 #menu_clean_number	no
+#sip_autoanswer_beep	yes
 #ring_aufile		ring.wav
 #callwaiting_aufile	callwaiting.wav
 #ringback_aufile	ringback.wav
 #notfound_aufile	notfound.wav
 #busy_aufile		busy.wav
 #error_aufile		error.wav
+#sip_autoanswer_aufile	autoanswer.wav
 
 # GTK
 #gtk_clean_number	no
