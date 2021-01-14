@@ -12,11 +12,12 @@
 static int set_audio_bitrate(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	struct call *call;
 	uint32_t bitrate = str_isset(carg->prm) ? atoi(carg->prm) : 0;
 	int err;
 
-	call = ua_call(uag_current());
+	call = ua_call(ua);
 	if (call) {
 		err = re_hprintf(pf, "setting audio bitrate: %u bps\n",
 				 bitrate);
@@ -30,18 +31,21 @@ static int set_audio_bitrate(struct re_printf *pf, void *arg)
 }
 
 
-static int call_audio_debug(struct re_printf *pf, void *unused)
+static int call_audio_debug(struct re_printf *pf, void *arg)
 {
-	(void)unused;
-	return audio_debug(pf, call_audio(ua_call(uag_current())));
+	struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
+
+	return audio_debug(pf, call_audio(ua_call(ua)));
 }
 
 
 static int cmd_find_call(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	const char *id = carg->prm;
-	struct list *calls = ua_calls(uag_current());
+	struct list *calls = ua_calls(ua);
 	struct call *call;
 	int err;
 
@@ -60,17 +64,19 @@ static int cmd_find_call(struct re_printf *pf, void *arg)
 
 static int cmd_call_hold(struct re_printf *pf, void *arg)
 {
-	(void)pf;
-	(void)arg;
+	struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 
-	return call_hold(ua_call(uag_current()), true);
+	(void)pf;
+
+	return call_hold(ua_call(ua), true);
 }
 
 
 static int set_current_call(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
-	struct ua *ua = uag_current();
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	struct call *call;
 	uint32_t linenum = atoi(carg->prm);
 	int err;
@@ -89,11 +95,12 @@ static int set_current_call(struct re_printf *pf, void *arg)
 }
 
 
-static int call_mute(struct re_printf *pf, void *unused)
+static int call_mute(struct re_printf *pf, void *arg)
 {
-	struct audio *audio = call_audio(ua_call(uag_current()));
+	struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
+	struct audio *audio = call_audio(ua_call(ua));
 	bool muted = !audio_ismuted(audio);
-	(void)unused;
 
 	(void)re_hprintf(pf, "\ncall %smuted\n", muted ? "" : "un-");
 	audio_mute(audio, muted);
@@ -111,11 +118,13 @@ static int hold_prev_call(struct re_printf *pf, void *arg)
 }
 
 
-static int call_reinvite(struct re_printf *pf, void *unused)
+static int call_reinvite(struct re_printf *pf, void *arg)
 {
+	struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	(void)pf;
-	(void)unused;
-	return call_modify(ua_call(uag_current()));
+
+	return call_modify(ua_call(ua));
 }
 
 
@@ -131,12 +140,13 @@ static int cmd_call_resume(struct re_printf *pf, void *arg)
 static int send_code(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	struct call *call;
 	size_t i;
 	int err = 0;
 	(void)pf;
 
-	call = ua_call(uag_current());
+	call = ua_call(ua);
 	if (call) {
 		for (i = 0; i < str_len(carg->prm) && !err; i++) {
 			err = call_send_digit(call, carg->prm[i]);
@@ -169,16 +179,19 @@ static int toggle_statmode(struct re_printf *pf, void *arg)
 static int call_xfer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	(void)pf;
 
-	return call_transfer(ua_call(uag_current()), carg->prm);
+	return call_transfer(ua_call(ua), carg->prm);
 }
 
 
-static int call_video_debug(struct re_printf *pf, void *unused)
+static int call_video_debug(struct re_printf *pf, void *arg)
 {
-	(void)unused;
-	return video_debug(pf, call_video(ua_call(uag_current())));
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
+
+	return video_debug(pf, call_video(ua_call(ua)));
 }
 
 

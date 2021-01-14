@@ -64,12 +64,12 @@ static int about_box(struct re_printf *pf, void *unused)
 }
 
 
-static int cmd_answer(struct re_printf *pf, void *unused)
+static int cmd_answer(struct re_printf *pf, void *arg)
 {
-	struct ua *ua = uag_current();
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	struct menu *menu = menu_get();
 	int err;
-	(void)unused;
 
 	err = re_hprintf(pf, "%s: Answering incoming call\n", ua_aor(ua));
 
@@ -95,7 +95,7 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	enum sdp_dir adir, vdir;
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
-	struct ua *ua = uag_current();
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	struct menu *menu = menu_get();
 	int err = 0;
 
@@ -142,6 +142,7 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 {
 	enum answermode mode;
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	int err;
 
 	if (0 == str_cmp(carg->prm, "manual")) {
@@ -158,7 +159,7 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	err = account_set_answermode(ua_account(uag_current()), mode);
+	err = account_set_answermode(ua_account(ua), mode);
 	if (err)
 		return err;
 
@@ -171,6 +172,7 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 static int switch_audio_player(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	struct pl pl_driver, pl_device;
 	struct config_audio *aucfg;
 	struct config *cfg;
@@ -224,7 +226,7 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 	str_ncpy(aucfg->alert_mod, driver, sizeof(aucfg->alert_mod));
 	str_ncpy(aucfg->alert_dev, device, sizeof(aucfg->alert_dev));
 
-	for (le = list_tail(ua_calls(uag_current())); le; le = le->prev) {
+	for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
 
 		struct call *call = le->data;
 
@@ -245,6 +247,7 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 static int switch_audio_source(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	struct pl pl_driver, pl_device;
 	struct config_audio *aucfg;
 	struct config *cfg;
@@ -295,7 +298,7 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	str_ncpy(aucfg->src_mod, driver, sizeof(aucfg->src_mod));
 	str_ncpy(aucfg->src_dev, device, sizeof(aucfg->src_dev));
 
-	for (le = list_tail(ua_calls(uag_current())); le; le = le->prev) {
+	for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
 
 		struct call *call = le->data;
 
@@ -321,14 +324,14 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int ua_print_call_status(struct re_printf *pf, void *unused)
+static int ua_print_call_status(struct re_printf *pf, void *arg)
 {
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	struct call *call;
 	int err;
 
-	(void)unused;
-
-	call = ua_call(uag_current());
+	call = ua_call(ua);
 	if (call) {
 		err  = re_hprintf(pf, "\n%H\n", call_debug, call);
 	}
@@ -388,7 +391,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
-	struct ua *ua = uag_current();
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	int err = 0;
 
 	(void)pf;
@@ -435,7 +438,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct pl pluri;
 	struct call *call;
 	char *uri;
-	struct ua *ua = uag_current();
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	int err = 0;
 
 	const char *usage = "Usage: /dialdir <address/telnr.>"
@@ -490,12 +493,14 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 }
 
 
-static int cmd_hangup(struct re_printf *pf, void *unused)
+static int cmd_hangup(struct re_printf *pf, void *arg)
 {
-	(void)pf;
-	(void)unused;
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 
-	ua_hangup(uag_current(), NULL, 0, NULL);
+	(void)pf;
+
+	ua_hangup(ua, NULL, 0, NULL);
 
 	return 0;
 }
@@ -508,10 +513,12 @@ static int print_commands(struct re_printf *pf, void *unused)
 }
 
 
-static int cmd_print_calls(struct re_printf *pf, void *unused)
+static int cmd_print_calls(struct re_printf *pf, void *arg)
 {
-	(void)unused;
-	return ua_print_calls(pf, uag_current());
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
+
+	return ua_print_calls(pf, ua);
 }
 
 
@@ -544,11 +551,12 @@ static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
 static int options_command(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : uag_current();
 	int err = 0;
 
 	(void)pf;
 
-	err = ua_options_send(uag_current(), carg->prm,
+	err = ua_options_send(ua, carg->prm,
 			      options_resp_handler, NULL);
 	if (err) {
 		warning("menu: ua_options failed: %m\n", err);

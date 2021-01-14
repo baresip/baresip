@@ -26,6 +26,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
 	char buf[256], resp_topic[256];
 	const char *aor, *callid;
+	struct ua *ua = NULL;
 	int err;
 
 	err = json_decode_odict(&od, 32, msg->p, msg->l, 16);
@@ -47,13 +48,11 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	callid = odict_string(od, "callid");
 
 	if (aor) {
-		struct ua *ua = uag_find_aor(aor);
+		ua = uag_find_aor(aor);
 		if (!ua) {
 			warning("mqtt: ua not found (%s)\n", aor);
 			goto out;
 		}
-
-		uag_current_set(ua);
 
 		if (callid) {
 			struct call *call;
@@ -81,7 +80,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	err = cmd_process_long(baresip_commands(),
 			       buf,
 			       str_len(buf),
-			       &pf, NULL);
+			       &pf, ua);
 	if (err) {
 		warning("mqtt: error processing command (%m)\n", err);
 	}
