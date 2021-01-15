@@ -643,7 +643,45 @@ static void call_rfc5373_autoanswer(struct call *call,
 
 
 /**
- * Decode the SIP-Header for auto answer options of incoming call
+ * Decodes given SIP header for auto answer options of incoming call
+ *
+ * @param call Call object
+ * @param hdr  SIP header (Call-Info or Alert-Info)
+ * @return true if success, otherwise false
+ */
+static bool call_hdr_dec_sip_autoanswer(struct call *call,
+		const struct sip_hdr *hdr)
+{
+	struct pl v1, v2;
+	if (!call || !hdr)
+		return false;
+
+	if (!msg_param_decode(&hdr->val, "answer-after", &v1)) {
+		call->adelay = pl_u32(&v1) * 1000;
+		return true;
+	}
+
+	if (!msg_param_decode(&hdr->val, "info", &v1) &&
+			!msg_param_decode(&hdr->val, "delay", &v2)) {
+		if (!pl_strcmp(&v1, "alert-autoanswer")) {
+			call->adelay = pl_u32(&v2) * 1000;
+			return true;
+		}
+	}
+
+	if (!msg_param_decode(&hdr->val, "info", &v1)) {
+		if (!pl_strcmp(&v1, "alert-autoanswer")) {
+			call->adelay = 0;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+/**
+ * Decode the SIP message for auto answer options of incoming call
  *
  * @param call Call object
  * @param msg  SIP message
@@ -652,32 +690,17 @@ static void call_decode_sip_autoanswer(struct call *call,
 		const struct sip_msg *msg)
 {
 	const struct sip_hdr *hdr;
-	struct pl v1, v2;
 
 	call->adelay = -1;
 
-	/* polycom (HDA50), avaya, grandstream, snom */
+	/* polycom (HDA50), avaya, grandstream, snom, gigaset, yealink */
 	hdr = sip_msg_hdr(msg, SIP_HDR_CALL_INFO);
-	if (hdr && !msg_param_decode(&hdr->val, "answer-after", &v1)) {
-		call->adelay = pl_u32(&v1) * 1000;
+	if (call_hdr_dec_sip_autoanswer(call, hdr))
 		return;
-	}
 
 	hdr = sip_msg_hdr(msg, SIP_HDR_ALERT_INFO);
-	if (hdr && !msg_param_decode(&hdr->val, "info", &v1) &&
-		!msg_param_decode(&hdr->val, "delay", &v2)) {
-		if (!pl_strcmp(&v1, "alert-autoanswer")) {
-			call->adelay = pl_u32(&v2) * 1000;
-			return;
-		}
-	}
-
-	if (hdr && !msg_param_decode(&hdr->val, "info", &v1)) {
-		if (!pl_strcmp(&v1, "alert-autoanswer")) {
-			call->adelay = 0;
-			return;
-		}
-	}
+	if (call_hdr_dec_sip_autoanswer(call, hdr))
+		return;
 
 	/* RFC 5373 */
 	call_rfc5373_autoanswer(call, msg, "Answer-Mode");
