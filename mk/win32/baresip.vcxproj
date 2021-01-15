@@ -192,7 +192,6 @@
     <ClCompile Include="..\..\src\sipreq.c" />
     <ClCompile Include="..\..\src\stream.c" />
     <ClCompile Include="..\..\src\stunuri.c" />
-    <ClCompile Include="..\..\src\timer.c" />
     <ClCompile Include="..\..\src\ua.c" />
     <ClCompile Include="..\..\src\ui.c" />
     <ClCompile Include="..\..\src\vidcodec.c" />
