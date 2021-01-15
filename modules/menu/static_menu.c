@@ -705,6 +705,10 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 
 	if (ua == menu_current()) {
 		(void)cmd_ua_next(pf, NULL);
+
+		if (ua == menu_current()) {
+			menu_current_set(NULL);
+		}
 	}
 
 	(void)re_hprintf(pf, "deleting ua: %s\n", carg->prm);
