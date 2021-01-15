@@ -753,6 +753,14 @@ enum ua_event {
 	UA_EVENT_MAX,
 };
 
+/** SIP auto answer method */
+enum answer_method {
+	ANSM_NONE = 0,
+	ANSM_RFC5373,
+	ANSM_CALLINFO,
+	ANSM_ALERTINFO,
+};
+
 /** Defines the User-Agent event handler */
 typedef void (ua_event_h)(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg);
@@ -801,6 +809,12 @@ void ua_set_media_af(struct ua *ua, int af_media);
 void ua_set_catchall(struct ua *ua, bool enabled);
 int ua_add_xhdr_filter(struct ua *ua, const char *hdr_name);
 int  ua_set_custom_hdrs(struct ua *ua, struct list *custom_hdrs);
+int  ua_add_custom_hdr(struct ua *ua, const struct pl *name,
+		       const struct pl *value);
+int  ua_rm_custom_hdr(struct ua *ua, struct pl *name);
+int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
+		enum answer_method met);
+int  ua_disable_autoanswer(struct ua *ua, enum answer_method met);
 int  ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri);
 int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   enum vidmode vidmode, const struct sip_msg *msg,

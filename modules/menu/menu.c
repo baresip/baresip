@@ -609,6 +609,7 @@ static int module_init(void)
 	menu.statmode = STATMODE_CALL;
 	menu.clean_number = false;
 	menu.play = NULL;
+	menu.adelay = -1;
 
 	/*
 	 * Read the config values
