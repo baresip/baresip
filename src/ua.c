@@ -38,7 +38,8 @@ struct ua_xhdr_filter {
 	char *hdr_name;
 };
 
-static struct uag {
+
+struct uag {
 	struct config_sip *cfg;        /**< SIP configuration               */
 	struct list ual;               /**< List of User-Agents (struct ua) */
 	struct sip *sip;               /**< SIP Stack                       */
@@ -56,7 +57,9 @@ static struct uag {
 #ifdef USE_TLS
 	struct tls *tls;               /**< TLS Context                     */
 #endif
-} uag = {
+};
+
+static struct uag uag = {
 	NULL,
 	LIST_INIT,
 	NULL,
