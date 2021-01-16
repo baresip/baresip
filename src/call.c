@@ -2358,6 +2358,8 @@ uint32_t call_linenum(const struct call *call)
 /**
  * Get the answer delay of this call
  *
+ * @param call Call object
+ *
  * @return answer delay in ms
  */
 int32_t call_answer_delay(const struct call *call)

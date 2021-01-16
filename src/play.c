@@ -577,6 +577,7 @@ int play_file(struct play **playp, struct player *player,
  *
  * @param play The play state
  * @param fh   The finish handler
+ * @param arg  Handler argument
  */
 void play_set_finish_handler(struct play *play, play_finish_h *fh, void *arg)
 {
