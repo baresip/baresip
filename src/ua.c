@@ -749,17 +749,14 @@ static int create_register_clients(struct ua *ua)
 }
 
 
-static char *autoans_header_name(enum answer_method met)
+static const char *autoans_header_name(enum answer_method met)
 {
 	switch (met) {
-		case ANSM_RFC5373:
-			return "Answer-Mode";
-		case ANSM_CALLINFO:
-			return "Call-Info";
-		case ANSM_ALERTINFO:
-			return "Alert-Info";
-		default:
-			return NULL;
+
+	case ANSM_RFC5373:   return "Answer-Mode";
+	case ANSM_CALLINFO:  return "Call-Info";
+	case ANSM_ALERTINFO: return "Alert-Info";
+	default: return NULL;
 	}
 }
 
@@ -2441,7 +2438,7 @@ int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 	struct mbuf *mb = NULL;
 	struct pl url = PL("<http://www.notused.com>");
 	int err = 0;
-	char *name;
+	const char *name;
 
 	if (adelay < 0)
 		met =  ANSM_NONE;
@@ -2453,6 +2450,7 @@ int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 	}
 
 	switch (met) {
+
 	case ANSM_RFC5373:
 		err = mbuf_printf(mb, "Auto");
 		break;
@@ -2492,7 +2490,7 @@ out:
 int  ua_disable_autoanswer(struct ua *ua, enum answer_method met)
 {
 	struct pl n;
-	char *name;
+	const char *name;
 
 	name = autoans_header_name(met);
 	if (!name)
