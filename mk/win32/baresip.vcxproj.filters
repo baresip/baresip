@@ -215,9 +215,6 @@
     <ClCompile Include="..\..\src\h264.c">
       <Filter>src\video</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\mctrl.c">
-      <Filter>src\video</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\vidcodec.c">
       <Filter>src\video</Filter>
     </ClCompile>

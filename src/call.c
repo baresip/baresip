@@ -1567,26 +1567,6 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 }
 
 
-static void call_handle_info_req(struct call *call, const struct sip_msg *req)
-{
-	struct pl body;
-	bool pfu;
-	int err;
-
-	pl_set_mbuf(&body, req->mb);
-
-	err = mctrl_handle_media_control(&body, &pfu);
-	if (err)
-		return;
-
-	debug("call: receive media control: fast_update=%d\n", pfu);
-
-	if (pfu) {
-		video_update_picture(call->video);
-	}
-}
-
-
 static void dtmfend_handler(void *arg)
 {
 	struct call *call = arg;
@@ -1629,11 +1609,6 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 				call->dtmfh(call, s, call->arg);
 			}
 		}
-	}
-	else if (msg_ctype_cmp(&msg->ctyp,
-			       "application", "media_control+xml")) {
-		call_handle_info_req(call, msg);
-		(void)sip_reply(sip, msg, 200, "OK");
 	}
 	else {
 		(void)sip_reply(sip, msg, 488, "Not Acceptable Here");

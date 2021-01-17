@@ -22,7 +22,6 @@ SRCS	+= custom_hdrs.c
 SRCS	+= event.c
 SRCS	+= h264.c
 SRCS	+= log.c
-SRCS	+= mctrl.c
 SRCS	+= mediadev.c
 SRCS	+= menc.c
 SRCS	+= message.c

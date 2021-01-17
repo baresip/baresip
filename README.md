@@ -333,7 +333,6 @@ zrtp          ZRTP media encryption module
 * RFC 4796  The SDP Content Attribute
 * RFC 4867  RTP Payload Format for the AMR and AMR-WB Audio Codecs
 * RFC 4961  Symmetric RTP / RTP Control Protocol (RTCP)
-* RFC 5168  XML Schema for Media Control
 * RFC 5285  A General Mechanism for RTP Header Extensions
 * RFC 5373  Requesting Answering Modes for SIP
 * RFC 5506  Support for Reduced-Size RTCP

@@ -171,13 +171,6 @@ int conf_get_float(const struct conf *conf, const char *name, double *val);
 
 
 /*
- * Media control
- */
-
-int mctrl_handle_media_control(struct pl *body, bool *pfu);
-
-
-/*
  * Metric
  */
 

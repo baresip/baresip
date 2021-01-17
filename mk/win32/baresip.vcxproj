@@ -177,7 +177,6 @@
     <ClCompile Include="..\..\src\h264.c" />
     <ClCompile Include="..\..\src\log.c" />
     <ClCompile Include="..\..\src\main.c" />
-    <ClCompile Include="..\..\src\mctrl.c" />
     <ClCompile Include="..\..\src\mediadev.c" />
     <ClCompile Include="..\..\src\menc.c" />
     <ClCompile Include="..\..\src\message.c" />
