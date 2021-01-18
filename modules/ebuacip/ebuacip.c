@@ -140,7 +140,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 #if 1
 	debug(".... ebuacip: [ ua=%s call=%s ] event: %s (%s)\n",
-	      ua_aor(ua), call_id(call), uag_event_str(ev), prm);
+	      account_aor(ua_account(ua)), call_id(call),
+	      uag_event_str(ev), prm);
 #endif
 
 	switch (ev) {

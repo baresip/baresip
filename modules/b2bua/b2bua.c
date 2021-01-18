@@ -165,8 +165,10 @@ static int b2bua_status(struct re_printf *pf, void *arg)
 	(void)arg;
 
 	err |= re_hprintf(pf, "B2BUA status:\n");
-	err |= re_hprintf(pf, "  inbound:  %s\n", ua_aor(ua_in));
-	err |= re_hprintf(pf, "  outbound: %s\n", ua_aor(ua_out));
+	err |= re_hprintf(pf, "  inbound:  %s\n",
+			  account_aor(ua_account(ua_in)));
+	err |= re_hprintf(pf, "  outbound: %s\n",
+			  account_aor(ua_account(ua_out)));
 
 	err |= re_hprintf(pf, "sessions:\n");
 

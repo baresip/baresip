@@ -127,7 +127,8 @@ static int cmd_api_uastate(struct re_printf *pf, void *unused)
 		err = odict_alloc(&odua, 8);
 
 		err |= ua_state_json_api(odua, ua);
-		err |= odict_entry_add(od, ua_aor(ua), ODICT_OBJECT, odua);
+		err |= odict_entry_add(od, account_aor(ua_account(ua)),
+				       ODICT_OBJECT, odua);
 		mem_deref(odua);
 	}
 

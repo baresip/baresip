@@ -190,7 +190,7 @@ int test_ua_alloc(void)
 
 	/* verify this UA-instance */
 	ASSERT_TRUE(!ua_isregistered(ua));
-	ASSERT_STREQ("sip:user@test.invalid", ua_aor(ua));
+	ASSERT_STREQ("sip:user@test.invalid", account_aor(ua_account(ua)));
 	ASSERT_TRUE(NULL == ua_call(ua));
 
 	/* verify global UA keeper */

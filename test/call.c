@@ -152,7 +152,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 
 #if 1
 	info("test: [ %s ] event: %s (%s)\n",
-		  ua_aor(ua), uag_event_str(ev), prm);
+	     account_aor(ua_account(ua)), uag_event_str(ev), prm);
 #endif
 
 	ASSERT_TRUE(f != NULL);
