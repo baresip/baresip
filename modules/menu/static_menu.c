@@ -719,6 +719,26 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
+{
+	struct ua *ua = NULL;
+
+	(void)unused;
+
+	menu_current_set(NULL);
+
+	while (list_head(uag_list()))
+	{
+		ua = list_head(uag_list())->data;
+		mem_deref(ua);
+	}
+
+	(void)ua_print_reg_status(pf, NULL);
+
+	return 0;
+}
+
+
 static int cmd_ua_find(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -919,6 +939,7 @@ static const struct cmd cmdv[] = {
 {"setadelay", 0,    CMD_PRM, "Set answer delay for outgoing call",
                                                         cmd_set_adelay       },
 {"uadel",     0,    CMD_PRM, "Delete User-Agent",       cmd_ua_delete        },
+{"uadelall",  0,    CMD_PRM, "Delete all User-Agents",  cmd_ua_delete_all    },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
 {"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
