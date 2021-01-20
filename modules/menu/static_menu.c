@@ -144,7 +144,8 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 {
 	enum answermode mode;
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct ua *ua = carg->data ? carg->data : menu_uadial();
+	struct le *le;
 	int err;
 
 	if (0 == str_cmp(carg->prm, "manual")) {
@@ -161,9 +162,19 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	err = account_set_answermode(ua_account(ua), mode);
-	if (err)
-		return err;
+	if (ua) {
+		err = account_set_answermode(ua_account(ua), mode);
+		if (err)
+			return err;
+	}
+	else {
+		for (le = list_head(uag_list()); le; le = le->next) {
+			ua = le->data;
+			err = account_set_answermode(ua_account(ua), mode);
+			if (err)
+				return err;
+		}
+	}
 
 	(void)re_hprintf(pf, "Answer mode changed to: %s\n", carg->prm);
 
@@ -174,13 +185,13 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 static int switch_audio_player(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct pl pl_driver, pl_device;
 	struct config_audio *aucfg;
 	struct config *cfg;
 	struct audio *a;
 	const struct auplay *ap;
 	struct le *le;
+	struct le *leu;
 	char driver[16], device[128] = "";
 	int err = 0;
 
@@ -228,17 +239,20 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 	str_ncpy(aucfg->alert_mod, driver, sizeof(aucfg->alert_mod));
 	str_ncpy(aucfg->alert_dev, device, sizeof(aucfg->alert_dev));
 
-	for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
+	for (leu = list_head(uag_list()); leu; leu = leu->next) {
+		struct ua *ua = leu->data;
+		for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
 
-		struct call *call = le->data;
+			struct call *call = le->data;
 
-		a = call_audio(call);
+			a = call_audio(call);
 
-		err = audio_set_player(a, driver, device);
-		if (err) {
-			re_hprintf(pf, "failed to set audio-player"
-				   " (%m)\n", err);
-			break;
+			err = audio_set_player(a, driver, device);
+			if (err) {
+				re_hprintf(pf, "failed to set audio-player"
+						" (%m)\n", err);
+				break;
+			}
 		}
 	}
 
@@ -249,13 +263,13 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 static int switch_audio_source(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct pl pl_driver, pl_device;
 	struct config_audio *aucfg;
 	struct config *cfg;
 	struct audio *a;
 	const struct ausrc *as;
 	struct le *le;
+	struct le *leu;
 	char driver[16], device[128] = "";
 	int err = 0;
 
@@ -300,17 +314,20 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	str_ncpy(aucfg->src_mod, driver, sizeof(aucfg->src_mod));
 	str_ncpy(aucfg->src_dev, device, sizeof(aucfg->src_dev));
 
-	for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
+	for (leu = list_head(uag_list()); leu; leu = leu->next) {
+		struct ua *ua = leu->data;
+		for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
 
-		struct call *call = le->data;
+			struct call *call = le->data;
 
-		a = call_audio(call);
+			a = call_audio(call);
 
-		err = audio_set_source(a, driver, device);
-		if (err) {
-			re_hprintf(pf, "failed to set audio-source"
-				   " (%m)\n", err);
-			break;
+			err = audio_set_source(a, driver, device);
+			if (err) {
+				re_hprintf(pf, "failed to set audio-source"
+						" (%m)\n", err);
+				break;
+			}
 		}
 	}
 
@@ -419,7 +436,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct ua *ua = carg->data ? carg->data : menu->ua_dial;
 	int err = 0;
 
 	(void)pf;
@@ -475,7 +492,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct pl pluri;
 	struct call *call;
 	char *uri;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct ua *ua = carg->data ? carg->data : menu_uadial();
 	int err = 0;
 
 	const char *usage = "Usage: /dialdir <address/telnr.>"
@@ -626,13 +643,14 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 
 	(void)unused;
 
-	err = re_hprintf(pf, "\n--- User Agents (%u) ---\n",
-			 list_count(uag_list()));
+	err = re_hprintf(pf, "\n--- User Agents (%u) %s---\n",
+			 list_count(uag_list()),
+			 !menu_uadial() ? "*auto* ": "");
 
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		const struct ua *ua = le->data;
 
-		err  = re_hprintf(pf, "%s ", ua == menu_uacur() ? ">" : " ");
+		err  = re_hprintf(pf, "%s ", ua == menu_uadial() ? ">" : " ");
 		err |= ua_print_status(pf, ua);
 	}
 
@@ -681,18 +699,15 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 	(void)pf;
 	(void)unused;
 
-	if (!menu->le_cur)
-		menu->le_cur = list_head(uag_list());
-	if (!menu->le_cur)
-		return 0;
+	/* le_dial == NULL means automatic mode */
+	if (!menu->le_dial)
+		menu->le_dial = list_head(uag_list());
+	else
+		menu->le_dial = menu->le_dial->next;
 
-	menu->le_cur = menu->le_cur->next ?
-		menu->le_cur->next : list_head(uag_list());
-
-	err = re_hprintf(pf, "ua: %s\n",
-			 account_aor(ua_account(list_ledata(menu->le_cur))));
-
-	menu_uacur_set(list_ledata(menu->le_cur));
+	menu->ua_dial = list_ledata(menu->le_dial);
+	err = re_hprintf(pf, "ua: %s\n", menu->le_dial ?
+			account_aor(ua_account(menu->ua_dial)) : "*auto*");
 
 	menu_update_callstatus(uag_call_count());
 
@@ -704,6 +719,7 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = NULL;
+	struct menu *menu = menu_get();
 
 	if (str_isset(carg->prm)) {
 		ua = uag_find_aor(carg->prm);
@@ -713,12 +729,12 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 		return ENOENT;
 	}
 
-	if (ua == menu_uacur()) {
-		(void)cmd_ua_next(pf, NULL);
+	if (ua == menu->ua_cur)
+		menu->ua_cur = NULL;
 
-		if (ua == menu_uacur()) {
-			menu_uacur_set(NULL);
-		}
+	if (ua == menu->ua_dial) {
+		menu->ua_dial = NULL;
+		menu->le_dial = NULL;
 	}
 
 	(void)re_hprintf(pf, "deleting ua: %s\n", carg->prm);
@@ -732,10 +748,9 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
 {
 	struct ua *ua = NULL;
+	struct menu *menu = menu_get();
 
 	(void)unused;
-
-	menu_uacur_set(NULL);
 
 	while (list_head(uag_list()))
 	{
@@ -745,6 +760,10 @@ static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
 
 	(void)ua_print_reg_status(pf, NULL);
 
+	menu->ua_cur  = NULL;
+	menu->ua_dial = NULL;
+	menu->le_dial = NULL;
+
 	return 0;
 }
 
@@ -753,6 +772,7 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = NULL;
+	struct menu *menu = menu_get();
 
 	if (str_isset(carg->prm)) {
 		ua = uag_find_aor(carg->prm);
@@ -765,7 +785,7 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 
 	re_hprintf(pf, "ua: %s\n", account_aor(ua_account(ua)));
 
-	menu_uacur_set(ua);
+	menu->ua_dial = ua;
 
 	menu_update_callstatus(uag_call_count());
 

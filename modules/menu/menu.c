@@ -404,10 +404,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	switch (ev) {
 
 	case UA_EVENT_CALL_INCOMING:
-
 		/* set the current User-Agent to the one with the call */
-		menu_uacur_set(ua);
-
+		menu.ua_cur = ua;
 		ardir =sdp_media_rdir(
 			stream_sdpmedia(audio_strm(call_audio(call))));
 		vrdir = sdp_media_rdir(
@@ -431,16 +429,19 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_RINGING:
+		menu.ua_cur = ua;
 		if (call == ua_call(ua) && !has_established_call())
 			play_ringback();
 		break;
 
 	case UA_EVENT_CALL_PROGRESS:
+		menu.ua_cur = ua;
 		if (call == ua_call(ua))
 			menu.play = mem_deref(menu.play);
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
+		menu.ua_cur = ua;
 		/* stop any ringtones */
 		menu.play = mem_deref(menu.play);
 
@@ -580,18 +581,15 @@ struct menu *menu_get(void)
 }
 
 
-void menu_uacur_set(struct ua *ua)
+struct ua *menu_uacur(void)
 {
-	menu.ua_cur = ua;
+	return menu.ua_cur;
 }
 
 
-struct ua *menu_uacur(void)
+struct ua *menu_uadial(void)
 {
-	if (!menu.ua_cur)
-		menu.ua_cur = list_ledata(list_head(uag_list()));
-
-	return menu.ua_cur;
+	return menu.ua_dial;
 }
 
 
@@ -684,7 +682,7 @@ static int module_close(void)
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
 
-	menu.le_cur = NULL;
+	menu.le_dial = NULL;
 
 	menu.play = mem_deref(menu.play);
 
