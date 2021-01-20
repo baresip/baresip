@@ -29,7 +29,8 @@ static struct config core_config = {
 		"",
 		"",
 		"",
-		""
+		"",
+		SIP_TRANSP_UDP,
 	},
 
 	/** Call config */
@@ -254,6 +255,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	struct vidsz size = {0, 0};
 	struct pl txmode;
 	struct pl jbtype;
+	struct pl tr;
 	uint32_t v;
 	int err = 0;
 
@@ -281,6 +283,16 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   sizeof(cfg->sip.cert));
 	(void)conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
 			   sizeof(cfg->sip.cafile));
+	if (!conf_get(conf, "sip_trans_def", &tr)) {
+		if (!pl_strcasecmp(&tr, "tcp"))
+			cfg->sip.transp = SIP_TRANSP_TCP;
+		else if (!pl_strcasecmp(&tr, "tls"))
+			cfg->sip.transp = SIP_TRANSP_TLS;
+		else if (!pl_strcasecmp(&tr, "ws"))
+			cfg->sip.transp = SIP_TRANSP_WS;
+		else if (!pl_strcasecmp(&tr, "wss"))
+			cfg->sip.transp = SIP_TRANSP_WSS;
+	}
 
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
@@ -410,6 +422,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_listen\t\t%s\n"
 			 "sip_certificate\t%s\n"
 			 "sip_cafile\t\t%s\n"
+			 "sip_trans_def\t%s\n"
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
@@ -452,6 +465,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 ,
 
 			 cfg->sip.local, cfg->sip.cert, cfg->sip.cafile,
+			 sip_transp_name(cfg->sip.transp),
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
@@ -595,6 +609,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
 			  "#sip_cafile\t\t%s\n"
+			  "#sip_trans_def\tudp\n"
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
