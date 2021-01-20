@@ -831,7 +831,7 @@ void uag_enable_sip_trace(bool enable);
 int  uag_reset_transp(bool reg, bool reinvite);
 void uag_set_sub_handler(sip_msg_h *subh);
 int  uag_set_extra_params(const char *eprm);
-struct ua   *uag_find(const struct pl *cuser);
+struct ua   *uag_find(const struct sip_msg *msg);
 struct ua   *uag_find_aor(const char *aor);
 struct ua   *uag_find_param(const char *name, const char *val);
 struct sip  *uag_sip(void);

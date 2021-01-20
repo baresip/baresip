@@ -686,7 +686,7 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 	if (pl_strcmp(&msg->met, "OPTIONS"))
 		return false;
 
-	ua = uag_find(&msg->uri.user);
+	ua = uag_find(msg);
 	if (!ua) {
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
 		return true;
@@ -932,6 +932,48 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 }
 
 
+static bool uri_host_local(const struct uri *uri)
+{
+	const struct sa *sal;
+	struct sa sap;
+	int err;
+
+	if (!uri)
+		return false;
+
+	if (!pl_strcmp(&uri->host, "localhost"))
+		return true;
+
+	if (!pl_strcmp(&uri->host, "127.0.0.1"))
+		return true;
+
+	if (!pl_strcmp(&uri->host, "::1"))
+		return true;
+
+	sal = net_laddr_af(baresip_network(), AF_INET);
+
+	err = sa_set(&sap, &uri->host, 0);
+	if (err)
+		return false;
+
+	if (sal && sa_cmp(sal, &sap, SA_ADDR))
+		return true;
+
+#ifdef HAVE_INET6
+	sal = net_laddr_af(baresip_network(), AF_INET6);
+	if (sal && sa_cmp(sal, &sap, SA_ADDR))
+		return true;
+#endif
+
+	return false;
+}
+
+
+static bool uri_mismatch_af(
+		const struct uri *accu, const struct uri *peeru);
+static bool match_port(uint16_t port1, uint16_t port2, bool tls);
+
+
 /**
  * Connect an outgoing call to a given SIP uri with audio and video direction
  *
@@ -965,7 +1007,6 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 
 	/* Append any optional URI parameters */
 	err |= mbuf_write_pl(dialbuf, &ua->acc->luri.params);
-
 	if (err)
 		goto out;
 
@@ -1528,7 +1569,7 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	      sip_transp_name(msg->tp),
 	      &msg->src, &msg->dst);
 
-	ua = uag_find(&msg->uri.user);
+	ua = uag_find(msg);
 	if (!ua) {
 		warning("ua: %r: UA not found: %r\n",
 			&msg->from.auri, &msg->uri.user);
@@ -1673,7 +1714,7 @@ static bool sub_handler(const struct sip_msg *msg, void *arg)
 
 	(void)arg;
 
-	ua = uag_find(&msg->uri.user);
+	ua = uag_find(msg);
 	if (!ua) {
 		warning("subscribe: no UA found for %r\n", &msg->uri.user);
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
@@ -1982,41 +2023,140 @@ struct sipevent_sock *uag_sipevent_sock(void)
 }
 
 
+static bool uri_match_transport(const struct uri *accu, enum sip_transp tp)
+{
+	struct pl pl1 = PL("udp");
+
+	(void)msg_param_decode(&accu->params, "transport", &pl1);
+
+	/* incoming calls: tp of SIP message */
+	return !pl_strcasecmp(&pl1, sip_transp_name(tp));
+}
+
+
+static bool match_port(uint16_t port1, uint16_t port2, bool tls)
+{
+	if (!port1)
+		port1 = tls ? SIP_PORT_TLS : SIP_PORT;
+
+	if (!port2)
+		port2 = tls ? SIP_PORT_TLS : SIP_PORT;
+
+	return port1 == port2;
+}
+
+
+static bool uri_mismatch_af(
+		const struct uri *accu, const struct uri *peeru)
+{
+	struct config *cfg = conf_config();
+#ifdef HAVE_INET6
+	struct sa sa1;
+	struct sa sa2;
+	int err;
+#endif
+
+	/* we list cases where we know there is a mismatch in af */
+#ifdef HAVE_INET6
+	if (accu->af == AF_INET && peeru->af == AF_INET6)
+		return true;
+
+	if (accu->af == AF_INET6 && peeru->af == AF_INET)
+		return true;
+
+	if (accu->af == AF_INET6 && peeru->af == AF_INET6) {
+		err =  sa_set(&sa1, &accu->host, 0);
+		err |= sa_set(&sa2, &peeru->host, 0);
+
+		if (err) {
+			warning("ua: No valid IPv6 URI %r, %r (%m)\n",
+					&accu->host,
+					&peeru->host, err);
+			return true;
+		}
+
+		return sa_is_linklocal(&sa1) != sa_is_linklocal(&sa2);
+	}
+
+	/* if peer uri is a domain, then we want the preferred af */
+	if (peeru->af == AF_UNSPEC) {
+		if (cfg->net.af == AF_INET6 && accu->af == AF_INET)
+			return true;
+
+		if (cfg->net.af != AF_INET6 && accu->af == AF_INET6)
+			return true;
+	}
+#endif
+
+	/* both IPv4 or we can't decide if af will match */
+	return false;
+}
+
+
 /**
- * Find the correct UA from the contact user
+ * Find the correct UA from SIP message
  *
- * @param cuser Contact username
+ * @param msg SIP message
  *
  * @return Matching UA if found, NULL if not found
  */
-struct ua *uag_find(const struct pl *cuser)
+struct ua *uag_find(const struct sip_msg *msg)
 {
 	struct le *le;
+	const struct pl *cuser = &msg->uri.user;
+	struct ua *uaf = NULL;  /* fallback ua */
 
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 
-		if (0 == pl_strcasecmp(cuser, ua->cuser))
+		if (0 == pl_strcasecmp(cuser, ua->cuser)) {
+			ua_printf(ua, "selected for %r\n", cuser);
 			return ua;
+		}
 	}
 
-	/* Try also matching by AOR, for better interop */
+	/* Try also matching by AOR, for better interop and for peer-to-peer
+	 * calls */
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
+		struct account *acc = ua->acc;
 
-		if (0 == pl_casecmp(cuser, &ua->acc->luri.user))
+		if (!uri_match_transport(&acc->luri, msg->tp))
+			continue;
+
+		if (uri_mismatch_af(&acc->luri, &msg->uri))
+			continue;
+
+		if (!match_port(acc->luri.port, msg->uri.port,
+					msg->tp == SIP_TRANSP_TLS))
+			continue;
+
+		if (uri_host_local(&acc->luri) != uri_host_local(&msg->uri))
+			continue;
+
+		if (!uaf)
+			uaf = ua;
+
+		if (0 == pl_casecmp(cuser, &ua->acc->luri.user)) {
+			ua_printf(ua, "account match for %r\n", cuser);
 			return ua;
+		}
 	}
 
 	/* Last resort, try any catchall UAs */
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 
-		if (ua->catchall)
+		if (ua->catchall) {
+			ua_printf(ua, "use catch-all account for %r\n", cuser);
 			return ua;
+		}
 	}
 
-	return NULL;
+	if (uaf)
+		ua_printf(uaf, "selected\n");
+
+	return uaf;
 }
 
 
