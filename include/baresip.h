@@ -284,6 +284,7 @@ struct config_sip {
 	char local[64];         /**< Local SIP Address              */
 	char cert[256];         /**< SIP Certificate                */
 	char cafile[256];       /**< SIP CA-file                    */
+	enum sip_transp transp; /**< Default outgoing SIP transport protocol */
 };
 
 /** Call config */
