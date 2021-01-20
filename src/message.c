@@ -71,7 +71,7 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 	if (pl_strcmp(&msg->met, "MESSAGE"))
 		return false;
 
-	ua = uag_find(&msg->uri.user);
+	ua = uag_find_msg(msg);
 	if (!ua) {
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
 		return true;
