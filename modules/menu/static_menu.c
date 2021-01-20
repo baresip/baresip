@@ -263,13 +263,13 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 static int switch_audio_source(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct pl pl_driver, pl_device;
 	struct config_audio *aucfg;
 	struct config *cfg;
 	struct audio *a;
 	const struct ausrc *as;
 	struct le *le;
+	struct le *leu;
 	char driver[16], device[128] = "";
 	int err = 0;
 
@@ -314,17 +314,20 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 	str_ncpy(aucfg->src_mod, driver, sizeof(aucfg->src_mod));
 	str_ncpy(aucfg->src_dev, device, sizeof(aucfg->src_dev));
 
-	for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
+	for (leu = list_head(uag_list()); leu; leu = leu->next) {
+		struct ua *ua = leu->data;
+		for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
 
-		struct call *call = le->data;
+			struct call *call = le->data;
 
-		a = call_audio(call);
+			a = call_audio(call);
 
-		err = audio_set_source(a, driver, device);
-		if (err) {
-			re_hprintf(pf, "failed to set audio-source"
-				   " (%m)\n", err);
-			break;
+			err = audio_set_source(a, driver, device);
+			if (err) {
+				re_hprintf(pf, "failed to set audio-source"
+						" (%m)\n", err);
+				break;
+			}
 		}
 	}
 
@@ -433,7 +436,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct ua *ua = carg->data;
 	int err = 0;
 
 	(void)pf;
@@ -489,7 +492,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct pl pluri;
 	struct call *call;
 	char *uri;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct ua *ua = carg->data;
 	int err = 0;
 
 	const char *usage = "Usage: /dialdir <address/telnr.>"
@@ -612,8 +615,7 @@ static int options_command(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	int err = 0;
-
-	(void)pf;
+	(void) pf;
 
 	err = ua_options_send(ua, carg->prm,
 			      options_resp_handler, NULL);
@@ -646,7 +648,6 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		const struct ua *ua = le->data;
 
-		err  = re_hprintf(pf, "%s ", ua == menu_uacur() ? ">" : " ");
 		err |= ua_print_status(pf, ua);
 	}
 
@@ -687,33 +688,6 @@ static int cmd_set_adelay(struct re_printf *pf, void *arg)
 }
 
 
-static int cmd_ua_next(struct re_printf *pf, void *unused)
-{
-	struct menu *menu = menu_get();
-	int err;
-
-	(void)pf;
-	(void)unused;
-
-	if (!menu->le_cur)
-		menu->le_cur = list_head(uag_list());
-	if (!menu->le_cur)
-		return 0;
-
-	menu->le_cur = menu->le_cur->next ?
-		menu->le_cur->next : list_head(uag_list());
-
-	err = re_hprintf(pf, "ua: %s\n",
-			 account_aor(ua_account(list_ledata(menu->le_cur))));
-
-	menu_uacur_set(list_ledata(menu->le_cur));
-
-	menu_update_callstatus(uag_call_count());
-
-	return err;
-}
-
-
 static int cmd_ua_delete(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -725,14 +699,6 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 
 	if (!ua) {
 		return ENOENT;
-	}
-
-	if (ua == menu_uacur()) {
-		(void)cmd_ua_next(pf, NULL);
-
-		if (ua == menu_uacur()) {
-			menu_uacur_set(NULL);
-		}
 	}
 
 	(void)re_hprintf(pf, "deleting ua: %s\n", carg->prm);
@@ -748,8 +714,6 @@ static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
 	struct ua *ua = NULL;
 
 	(void)unused;
-
-	menu_uacur_set(NULL);
 
 	while (list_head(uag_list()))
 	{
@@ -778,8 +742,6 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 	}
 
 	re_hprintf(pf, "ua: %s\n", account_aor(ua_account(ua)));
-
-	menu_uacur_set(ua);
 
 	menu_update_callstatus(uag_call_count());
 
@@ -830,6 +792,7 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 	struct video *v;
 	const struct vidsrc *vs;
 	struct le *le;
+	struct le *leu;
 	char driver[16], device[128] = "";
 	int err = 0;
 
@@ -874,17 +837,20 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 	str_ncpy(vidcfg->src_mod, driver, sizeof(vidcfg->src_mod));
 	str_ncpy(vidcfg->src_dev, device, sizeof(vidcfg->src_dev));
 
-	for (le = list_tail(ua_calls(menu_uacur())); le; le = le->prev) {
+	for (leu = list_head(uag_list()); leu; leu = leu->next) {
+		struct ua *ua = leu->data;
+		for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
 
-		struct call *call = le->data;
+			struct call *call = le->data;
 
-		v = call_video(call);
+			v = call_video(call);
 
-		err = video_set_source(v, driver, device);
-		if (err) {
-			re_hprintf(pf, "failed to set video-source"
-				   " (%m)\n", err);
-			break;
+			err = video_set_source(v, driver, device);
+			if (err) {
+				re_hprintf(pf, "failed to set video-source"
+						" (%m)\n", err);
+				break;
+			}
 		}
 	}
 
@@ -966,7 +932,6 @@ static const struct cmd cmdv[] = {
 {"uadelall",  0,    CMD_PRM, "Delete all User-Agents",  cmd_ua_delete_all    },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
-{"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"vidsrc",    0,    CMD_PRM, "Switch video source",     switch_video_source  },
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 
