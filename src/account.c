@@ -294,21 +294,21 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 			return 0;
 
 		while (0 == csl_parse(&vcs, cname, sizeof(cname))) {
-			struct vidcodec *vc;
+			struct le *le;
 
-			vc = (struct vidcodec *)vidcodec_find(vidcodecl,
-							      cname, NULL);
-			if (!vc) {
-				warning("account: video codec not found: %s\n",
-					cname);
-				continue;
+			for (le=list_head(vidcodecl); le; le=le->next) {
+				struct vidcodec *vc = le->data;
+
+				if (0 != str_casecmp(cname, vc->name))
+					continue;
+
+				/* static list with references to vidcodec */
+				list_append(&acc->vidcodecl, &acc->vcv[i++],
+						vc);
+
+				if (i >= ARRAY_SIZE(acc->vcv))
+					return 0;
 			}
-
-			/* NOTE: static list with references to vidcodec */
-			list_append(&acc->vidcodecl, &acc->vcv[i++], vc);
-
-			if (i >= ARRAY_SIZE(acc->vcv))
-				break;
 		}
 	}
 
