@@ -936,8 +936,8 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 	if (!lc)
 		return ENOENT;
 
-	if (rx->pt != (uint8_t)-1)
-		info("Audio decoder changed payload %u -> %u\n", rx->pt, pt);
+	if (rx->pt != -1)
+		info("Audio decoder changed payload %d -> %u\n", rx->pt, pt);
 
 	a->rx.pt = pt;
 	return audio_decoder_set(a, lc->data, lc->pt, lc->params);

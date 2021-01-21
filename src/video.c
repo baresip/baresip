@@ -719,7 +719,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 	if (v->vrx.pt_rx == (uint8_t)-1 || v->vrx.pt_rx == pt)
 		return 0;
 
-	info("Video decoder changed payload %u -> %u\n",
+	info("Video decoder changed payload %d -> %u\n",
 			v->vrx.pt_rx, pt);
 
 	lc = sdp_media_lformat(stream_sdpmedia(v->strm), pt);
