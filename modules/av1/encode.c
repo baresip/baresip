@@ -46,6 +46,7 @@ int av1_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		      videnc_packet_h *pkth, void *arg)
 {
 	struct videnc_state *ves;
+	(void)fmtp;
 
 	if (!vesp || !vc || !prm || prm->pktsize < (HDR_SIZE + 1))
 		return EINVAL;
