@@ -37,7 +37,7 @@ static const char *presence_status_str(enum presence_status st)
 
 static int notify(struct notifier *not, enum presence_status status)
 {
-	const char *aor = ua_aor(not->ua);
+	const char *aor = account_aor(ua_account(not->ua));
 	struct mbuf *mb;
 	int err;
 

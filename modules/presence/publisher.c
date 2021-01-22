@@ -30,6 +30,7 @@ static int publish(struct publisher *pub);
 static void response_handler(int err, const struct sip_msg *msg, void *arg)
 {
 	struct publisher *pub = arg;
+	const struct account *acc = ua_account(pub->ua);
 	const struct sip_hdr *etag_hdr;
 
 	if (err)
@@ -54,7 +55,7 @@ static void response_handler(int err, const struct sip_msg *msg, void *arg)
 		}
 		else {
 			warning("%s: publisher got 200 OK without etag\n",
-				ua_aor(pub->ua));
+				account_aor(acc));
 		}
 	}
 	else if (msg->scode == 412) {
@@ -67,7 +68,7 @@ static void response_handler(int err, const struct sip_msg *msg, void *arg)
 	}
 	else {
 		warning("%s: publisher got error response %u %r\n",
-			ua_aor(pub->ua), msg->scode, &msg->reason);
+			account_aor(acc), msg->scode, &msg->reason);
 	}
 
 	return;
@@ -99,7 +100,7 @@ static int print_etag_header(struct re_printf *pf, const char *etag)
 static int publish(struct publisher *pub)
 {
 	int err;
-	const char *aor = ua_aor(pub->ua);
+	const char *aor = account_aor(ua_account(pub->ua));
 	struct mbuf *mb;
 
 	mb = mbuf_alloc(1024);

@@ -15,7 +15,7 @@ static int status_update(struct ua *current_ua,
 		return 0;
 
 	info("presence: update status of '%s' from '%s' to '%s'\n",
-	     ua_aor(current_ua),
+	     account_aor(ua_account(current_ua)),
 	     contact_presence_str(ua_presence_status(current_ua)),
 	     contact_presence_str(new_status));
 
