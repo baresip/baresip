@@ -79,7 +79,7 @@ static void close_handler(int err, const struct sip_msg *msg,
 	(void)substate;
 
 	info("mwi: subscription for %s closed: %s (%u %r)\n",
-	     ua_aor(mwi->ua),
+	     account_aor(ua_account(mwi->ua)),
 	     err ? strerror(err) : "",
 	     err ? 0 : msg->scode,
 	     err ? 0 : &msg->reason);
@@ -90,6 +90,7 @@ static void close_handler(int err, const struct sip_msg *msg,
 
 static int mwi_subscribe(struct ua *ua)
 {
+	const char *aor = account_aor(ua_account(ua));
 	const char *routev[1];
 	struct mwi *mwi;
 	int err;
@@ -103,10 +104,10 @@ static int mwi_subscribe(struct ua *ua)
 
 	routev[0] = ua_outbound(ua);
 
-	info("mwi: subscribing to messages for %s\n", ua_aor(ua));
+	info("mwi: subscribing to messages for %s\n", aor);
 
-	err = sipevent_subscribe(&mwi->sub, uag_sipevent_sock(), ua_aor(ua),
-				 NULL, ua_aor(ua), "message-summary", NULL,
+	err = sipevent_subscribe(&mwi->sub, uag_sipevent_sock(), aor,
+				 NULL, aor, "message-summary", NULL,
 	                         600, ua_cuser(ua),
 				 routev, routev[0] ? 1 : 0,
 	                         auth_handler, ua_account(ua), true, NULL,
@@ -143,6 +144,7 @@ static struct mwi *mwi_find(const struct ua *ua)
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
+	const struct account *acc = ua_account(ua);
 	(void)call;
 	(void)prm;
 	(void)arg;
@@ -150,7 +152,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	if (ev == UA_EVENT_REGISTER_OK) {
 
 		if (!mwi_find(ua) &&
-		    (str_casecmp(account_mwi(ua_account(ua)), "yes") == 0))
+		    (str_casecmp(account_mwi(acc), "yes") == 0))
 			mwi_subscribe(ua);
 	}
 	else if (ev == UA_EVENT_SHUTDOWN) {
@@ -159,7 +161,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 		if (mwi) {
 
-			info("mwi: shutdown of %s\n", ua_aor(ua));
+			info("mwi: shutdown of %s\n", account_aor(acc));
 			mwi->shutdown = true;
 
 			if (mwi->sub) {
