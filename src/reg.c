@@ -99,8 +99,9 @@ static bool contact_handler(const struct sip_hdr *hdr,
 static void register_handler(int err, const struct sip_msg *msg, void *arg)
 {
 	struct reg *reg = arg;
+	const struct account *acc = ua_account(reg->ua);
 	const struct sip_hdr *hdr;
-	uint32_t prio = account_prio(ua_account(reg->ua));
+	uint32_t prio = account_prio(acc);
 	enum ua_event evok =  reg->regint ?
 		UA_EVENT_REGISTER_OK : UA_EVENT_FALLBACK_OK;
 	enum ua_event evfail = reg->regint ?
@@ -109,7 +110,7 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 	if (err) {
 		if (reg->regint)
 			warning("reg: %s (prio %u): Register: %m\n",
-					ua_aor(reg->ua), prio, err);
+				account_aor(acc), prio, err);
 
 		reg->scode = 999;
 
@@ -159,7 +160,7 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 	}
 	else if (msg->scode >= 300) {
 
-		warning("reg: %s (prio %u): %u %r (%s)\n", ua_aor(reg->ua),
+		warning("reg: %s (prio %u): %u %r (%s)\n", account_aor(acc),
 				prio, msg->scode, &msg->reason, reg->srv);
 
 		reg->scode = msg->scode;

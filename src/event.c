@@ -140,7 +140,8 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 
 	if (ua) {
 		err |= odict_entry_add(od, "accountaor",
-				       ODICT_STRING, ua_aor(ua));
+				       ODICT_STRING,
+				       account_aor(ua_account(ua)));
 	}
 
 	if (err)

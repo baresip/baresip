@@ -220,7 +220,11 @@ static int start_register(struct ua *ua, bool fallback)
  */
 int ua_register(struct ua *ua)
 {
-	debug("ua: %s %s\n", __func__, ua_aor(ua));
+	if (!ua)
+		return EINVAL;
+
+	debug("ua: ua_register %s\n", account_aor(ua->acc));
+
 	return start_register(ua, false);
 }
 
@@ -238,10 +242,11 @@ int ua_register(struct ua *ua)
  */
 int ua_fallback(struct ua *ua)
 {
-	if (!ua_account(ua)->fbregint)
+	if (!ua || !ua_account(ua)->fbregint)
 		return 0;
 
-	debug("ua: %s %s\n", __func__, ua_aor(ua));
+	debug("ua: ua_fallback %s\n", account_aor(ua->acc));
+
 	return start_register(ua, true);
 }
 
