@@ -222,7 +222,7 @@ static GtkMenuItem *accounts_menu_add_item(struct gtk_mod *mod,
 	struct ua *ua_current = gtk_current_ua();
 	char buf[256];
 
-	re_snprintf(buf, sizeof buf, "%s%s", ua_aor(ua),
+	re_snprintf(buf, sizeof buf, "%s%s", account_aor(ua_account(ua)),
 			ua_isregistered(ua) ? " (OK)" : "");
 	item = gtk_radio_menu_item_new_with_label(group, buf);
 	group = gtk_radio_menu_item_get_group(
@@ -307,7 +307,7 @@ static void accounts_menu_set_status(struct gtk_mod *mod,
 {
 	GtkMenuItem *item = accounts_menu_get_item(mod, ua);
 	char buf[256];
-	re_snprintf(buf, sizeof buf, "%s (%s)", ua_aor(ua),
+	re_snprintf(buf, sizeof buf, "%s (%s)", account_aor(ua_account(ua)),
 			ua_event_reg_str(ev));
 	gtk_menu_item_set_label(item, buf);
 }
