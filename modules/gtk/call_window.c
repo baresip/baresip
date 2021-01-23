@@ -8,7 +8,7 @@
 #include <baresip.h>
 #include <gtk/gtk.h>
 #include "gtk_mod.h"
-
+#include <pthread.h>
 
 struct call_window {
 	struct gtk_mod *mod;
@@ -46,6 +46,7 @@ enum call_window_events {
 	MQ_TRANSFER,
 };
 
+static pthread_mutex_t last_data_mut = PTHREAD_MUTEX_INITIALIZER;
 static struct call_window *last_call_win = NULL;
 static struct vumeter_dec *last_dec = NULL;
 static struct vumeter_enc *last_enc = NULL;
@@ -143,30 +144,36 @@ static void call_window_set_vu_enc(struct call_window *win,
 
 void call_window_got_vu_dec(struct vumeter_dec *dec)
 {
+	pthread_mutex_lock(&last_data_mut);
 	if (last_call_win)
 		call_window_set_vu_dec(last_call_win, dec);
 	else
 		last_dec = dec;
+	pthread_mutex_unlock(&last_data_mut);
 }
 
 
 void call_window_got_vu_enc(struct vumeter_enc *enc)
 {
+	pthread_mutex_lock(&last_data_mut);
 	if (last_call_win)
 		call_window_set_vu_enc(last_call_win, enc);
 	else
 		last_enc = enc;
+	pthread_mutex_unlock(&last_data_mut);
 }
 
 
 static void got_call_window(struct call_window *win)
 {
+	pthread_mutex_lock(&last_data_mut);
 	if (last_enc)
 		call_window_set_vu_enc(win, last_enc);
 	if (last_dec)
 		call_window_set_vu_dec(win, last_dec);
 	if (!last_enc || !last_dec)
 		last_call_win = win;
+	pthread_mutex_unlock(&last_data_mut);
 }
 
 
@@ -277,7 +284,10 @@ static void mqueue_handler(int id, void *data, void *arg)
 	switch ((enum call_window_events)id) {
 
 	case MQ_HANGUP:
-		ua_hangup(call_get_ua(win->call), win->call, 0, NULL);
+		if (!win->closed) {
+			ua_hangup(call_get_ua(win->call), win->call, 0, NULL);
+			win->closed = true;
+		}
 		break;
 
 	case MQ_CLOSE:
@@ -323,8 +333,9 @@ static void call_window_destructor(void *arg)
 	if (window->vumeter_timer_tag)
 		g_source_remove(window->vumeter_timer_tag);
 
-	/* TODO: avoid race conditions here */
+	pthread_mutex_lock(&last_data_mut);
 	last_call_win = NULL;
+	pthread_mutex_unlock(&last_data_mut);
 }
 
 
@@ -516,7 +527,9 @@ void call_window_progress(struct call_window *win)
 		return;
 
 	win->duration_timer_tag = g_timeout_add_seconds(1, call_timer, win);
+	pthread_mutex_lock(&last_data_mut);
 	last_call_win = win;
+	pthread_mutex_unlock(&last_data_mut);
 	call_window_set_status(win, "progress");
 }
 
@@ -533,7 +546,9 @@ void call_window_established(struct call_window *win)
 								win);
 	}
 
+	pthread_mutex_lock(&last_data_mut);
 	last_call_win = win;
+	pthread_mutex_unlock(&last_data_mut);
 	call_window_set_status(win, "established");
 }
 
