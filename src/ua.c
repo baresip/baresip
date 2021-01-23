@@ -1186,19 +1186,6 @@ int ua_options_send(struct ua *ua, const char *uri,
 
 
 /**
- * Get the AOR of a User-Agent
- *
- * @param ua User-Agent object
- *
- * @return AOR
- */
-const char *ua_aor(const struct ua *ua)
-{
-	return ua ? account_aor(ua->acc) : NULL;
-}
-
-
-/**
  * Get presence status of a User-Agent
  *
  * @param ua User-Agent object
