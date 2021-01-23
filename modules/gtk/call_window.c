@@ -9,6 +9,7 @@
 #include <gtk/gtk.h>
 #include "gtk_mod.h"
 #include <pthread.h>
+#include <string.h>
 
 struct call_window {
 	struct gtk_mod *mod;
@@ -488,6 +489,7 @@ void call_window_closed(struct call_window *win, const char *reason)
 {
 	char buf[256];
 	const char *status;
+	const char *user_trigger_reason = "Connection reset by user";
 
 	if (!win)
 		return;
@@ -512,6 +514,12 @@ void call_window_closed(struct call_window *win, const char *reason)
 	call_window_set_status(win, status);
 	win->transfer_dialog = mem_deref(win->transfer_dialog);
 	win->closed = true;
+
+	if (strncmp(reason, user_trigger_reason,
+	    strlen(user_trigger_reason)) == 0) {
+		mqueue_push(win->mq, MQ_CLOSE, win);
+		return;
+	}
 }
 
 
