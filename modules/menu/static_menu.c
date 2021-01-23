@@ -72,7 +72,8 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 	struct menu *menu = menu_get();
 	int err;
 
-	err = re_hprintf(pf, "%s: Answering incoming call\n", ua_aor(ua));
+	err = re_hprintf(pf, "%s: Answering incoming call\n",
+			 account_aor(ua_account(ua)));
 
 	/* Stop any ongoing ring-tones */
 	menu->play = mem_deref(menu->play);
@@ -680,7 +681,8 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 	menu->le_cur = menu->le_cur->next ?
 		menu->le_cur->next : list_head(uag_list());
 
-	err = re_hprintf(pf, "ua: %s\n", ua_aor(list_ledata(menu->le_cur)));
+	err = re_hprintf(pf, "ua: %s\n",
+			 account_aor(ua_account(list_ledata(menu->le_cur))));
 
 	menu_current_set(list_ledata(menu->le_cur));
 
@@ -753,7 +755,7 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 		return ENOENT;
 	}
 
-	re_hprintf(pf, "ua: %s\n", ua_aor(ua));
+	re_hprintf(pf, "ua: %s\n", account_aor(ua_account(ua)));
 
 	menu_current_set(ua);
 

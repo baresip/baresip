@@ -385,7 +385,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
 	struct call *call2 = NULL;
-	struct account *acc;
+	struct account *acc = ua_account(ua);
 	int32_t adelay = -1;
 	bool incall;
 	enum sdp_dir ardir, vrdir;
@@ -396,7 +396,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 #if 0
 	debug("menu: [ ua=%s call=%s ] event: %s (%s)\n",
-	      ua_aor(ua), call_id(call), uag_event_str(ev), prm);
+	      account_aor(acc), call_id(call), uag_event_str(ev), prm);
 #endif
 
 
@@ -417,10 +417,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 		info("%s: Incoming call from: %s %s - audio-video: %s-%s -"
 		     " (press 'a' to accept)\n",
-		     ua_aor(ua), call_peername(call), call_peeruri(call),
+		     account_aor(acc), call_peername(call), call_peeruri(call),
 		     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
-		acc = ua_account(ua);
 		if (acc && account_sip_autoanswer(acc))
 			adelay = call_answer_delay(call);
 
@@ -477,7 +476,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 				++menu.current_attempts;
 
-				str_ncpy(menu.redial_aor, ua_aor(ua),
+				str_ncpy(menu.redial_aor, account_aor(acc),
 					 sizeof(menu.redial_aor));
 
 				tmr_start(&menu.tmr_redial,
@@ -533,7 +532,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		return;
 
 	case UA_EVENT_MWI_NOTIFY:
-		info("----- MWI for %s -----\n", ua_aor(ua));
+		info("----- MWI for %s -----\n", account_aor(acc));
 		info("%s\n", prm);
 		break;
 
