@@ -4,6 +4,7 @@
 
 extern const struct mod_export exports_account;
 extern const struct mod_export exports_auloop;
+extern const struct mod_export exports_cons;
 extern const struct mod_export exports_contact;
 extern const struct mod_export exports_debug_cmd;
 extern const struct mod_export exports_dshow;
@@ -23,6 +24,7 @@ extern const struct mod_export exports_winwave;
 const struct mod_export *mod_table[] = {
 	&exports_account,
 	&exports_auloop,
+	&exports_cons,
 	&exports_contact,
 	&exports_debug_cmd,
 	&exports_dshow,
