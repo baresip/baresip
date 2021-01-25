@@ -136,7 +136,7 @@ static int endpoint_alloc(struct endpoint **epp, struct test *test,
 	ep->test = test;
 
 	if (re_snprintf(aor, sizeof(aor),
-			"%s <sip:%s@%j;transport=%s>;regint=0",
+			"%s <sip:%s@%J;transport=%s>;regint=0",
 			name, name, &laddr,
 			sip_transp_name(transp)) < 0) {
 		err = ENOMEM;

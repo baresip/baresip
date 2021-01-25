@@ -49,7 +49,7 @@ struct agent {
 
 struct fixture {
 	uint32_t magic;
-	struct agent a, b, c;
+	struct agent a, b, b2, c;
 	struct sa laddr_udp;
 	struct sa laddr_tcp;
 	enum behaviour behaviour;
@@ -69,6 +69,7 @@ struct fixture {
 									\
 	f->a.fix = f;							\
 	f->b.fix = f;							\
+	f->b2.fix = f;							\
 	f->c.fix = f;							\
 									\
 	err = ua_init("test", true, true, false);			\
@@ -80,19 +81,6 @@ struct fixture {
 	f->exp_closed = 1;						\
 	/* NOTE: See Makefile TEST_MODULES */				\
 	err = module_load(".", "g711");					\
-	TEST_ERR(err);							\
-									\
-	err = ua_alloc(&f->a.ua,					\
-		       "A <sip:a@127.0.0.1>;regint=0" prm);		\
-	TEST_ERR(err);							\
-	err = ua_alloc(&f->b.ua,					\
-		       "B <sip:b@127.0.0.1>;regint=0" prm);		\
-	TEST_ERR(err);							\
-									\
-	f->a.peer = &f->b;						\
-	f->b.peer = &f->a;						\
-									\
-	err = uag_event_register(event_handler, f);			\
 	TEST_ERR(err);							\
 									\
 	err = sip_transp_laddr(uag_sip(), &f->laddr_udp,		\
@@ -109,7 +97,27 @@ struct fixture {
 	re_snprintf(f->buri, sizeof(f->buri),				\
 		    "sip:b@%J", &f->laddr_udp);				\
 	re_snprintf(f->buri_tcp, sizeof(f->buri_tcp),			\
-		    "sip:b@%J;transport=tcp", &f->laddr_tcp);
+		    "sip:b@%J;transport=tcp", &f->laddr_tcp);           \
+									\
+	err = ua_alloc(&f->a.ua,					\
+		       "A <sip:a@127.0.0.1>;regint=0" prm);		\
+	TEST_ERR(err);							\
+	{								\
+	char aor[256];							\
+	re_snprintf(aor, sizeof(aor), "B <%s>;regint=0" prm, f->buri);	\
+	err = ua_alloc(&f->b.ua, aor);					\
+	TEST_ERR(err);							\
+	re_snprintf(aor, sizeof(aor), "B <%s>;regint=0" prm,		\
+			f->buri_tcp);					\
+	err = ua_alloc(&f->b2.ua, aor);					\
+	TEST_ERR(err);							\
+	}								\
+	f->a.peer = &f->b;						\
+	f->b.peer = &f->a;						\
+	f->b2.peer = &f->a;						\
+									\
+	err = uag_event_register(event_handler, f);			\
+	TEST_ERR(err);							\
 
 
 #define fixture_init(f)				\
@@ -162,6 +170,8 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		ag = &f->a;
 	else if (ua == f->b.ua)
 		ag = &f->b;
+	else if (ua == f->b2.ua)
+		ag = &f->b2;
 	else if (ua == f->c.ua)
 		ag = &f->c;
 	else {
@@ -1201,7 +1211,7 @@ int test_call_tcp(void)
 	TEST_ERR(fix.err);
 
 	ASSERT_EQ(1, fix.a.n_established);
-	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(1, fix.b2.n_established);
 
  out:
 	fixture_close(f);
@@ -1222,11 +1232,13 @@ int test_call_transfer(void)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
+	char c[256];
 
 	fixture_init(f);
 
 	/* Create a 3rd useragent needed for transfer */
-	err = ua_alloc(&f->c.ua, "C <sip:c@127.0.0.1>;regint=0");
+	re_snprintf(c, sizeof(c), "C <sip:c@%J>;regint=0", &f->laddr_udp);
+	err = ua_alloc(&f->c.ua, c);
 	TEST_ERR(err);
 
 	f->c.peer = &f->b;
