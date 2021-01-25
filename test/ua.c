@@ -758,7 +758,9 @@ static int test_ua_options_base(enum sip_transp transp)
 	err = sip_transp_laddr(uag_sip(), &laddr, transp, NULL);
 	TEST_ERR(err);
 
-	err = ua_alloc(&t.ua, "Foo <sip:user@127.0.0.1>;regint=0");
+	re_snprintf(uri, sizeof(uri), "Foo <sip:user@%J%s>;regint=0", &laddr,
+			sip_transp_param(transp));
+	err = ua_alloc(&t.ua, uri);
 	TEST_ERR(err);
 
 	/* NOTE: no angle brackets in the Request URI */
