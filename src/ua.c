@@ -882,10 +882,8 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 	bool uri_is_ip;
 	int err = 0;
 
-	if (!ua || !buf || !uri)
+	if (!buf || !uri)
 		return EINVAL;
-
-	acc = ua->acc;
 
 	/* Skip initial whitespace */
 	while (isspace(*uri))
@@ -899,10 +897,14 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 
 	err |= mbuf_write_str(buf, uri);
 
+	if (!ua)
+		return 0;
+
 	/* Append domain if missing and uri is not IP address */
 
 	/* check if uri is valid IP address */
 	uri_is_ip = (0 == sa_set_str(&sa_addr, uri, 0));
+	acc = ua->acc;
 
 	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
 		1 != uri_is_ip) {
@@ -929,6 +931,34 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 	}
 
 	return err;
+}
+
+
+static bool uri_only_user(const struct uri *uri)
+{
+	bool ret;
+	struct sa sa;
+
+	/* Note:
+	 * If only user is given then uri_decode sets uri->host instead of
+	 * uri->user. We don't know if this is a bug. But if somebody changes
+	 * this behavior then the following line has to be adapted.          */
+	ret = pl_isset(&uri->host) && !pl_isset(&uri->user);
+
+	/* exclude IP addresses */
+	ret = ret && 0 != sa_set(&sa, &uri->host, 0);
+
+	return ret;
+}
+
+
+static bool uri_user_and_host(const struct uri *uri)
+{
+	bool ret;
+
+	ret = pl_isset(&uri->host) && pl_isset(&uri->user);
+
+	return ret;
 }
 
 
@@ -969,9 +999,125 @@ static bool uri_host_local(const struct uri *uri)
 }
 
 
+static bool acc_inactive(const struct account *acc)
+{
+	const struct uri *uri;
+
+	if (acc->regint)
+		return false;
+
+	uri = &acc->luri;
+	if (!uri_host_local(uri))
+		return true;
+
+	return false;
+}
+
+
 static bool uri_mismatch_af(
 		const struct uri *accu, const struct uri *peeru);
 static bool match_port(uint16_t port1, uint16_t port2, bool tls);
+static bool uri_match_transport(const struct uri *accu,
+		const struct uri *peeru, enum sip_transp tp);
+
+
+/**
+ * Find a User-Agent (UA) best fitting for an INVITE to given SIP uri
+ *
+ * @param req_uri The SIP uri for the INVITE
+ *
+ * @return User-Agent (UA) if found, otherwise NULL
+ */
+static struct ua *uag_find_connect(const struct pl *req_uri)
+{
+	struct le *le;
+	struct uri *uri;
+	struct ua *ret = NULL;
+	struct sip_addr addr;
+	int err;
+
+	if (!req_uri)
+		return NULL;
+
+	if (!uag.ual.head)
+		return NULL;
+
+	err = sip_addr_decode(&addr, req_uri);
+	if (err) {
+		warning("ua: address %r could not be parsed: %m\n",
+				&req_uri, err);
+		return NULL;
+	}
+
+	uri = &addr.uri;
+	for (le = uag.ual.head; le; le = le->next) {
+		struct ua *ua = le->data;
+		struct account *acc = ua->acc;
+		struct pl pl = PL_INIT;
+
+		if (acc_inactive(acc))
+			continue;
+
+		if (acc->regint && !ua_isregistered(ua))
+			continue;
+
+		if (uri_only_user(uri)) {
+			if (acc->regint) {
+				ret = ua;
+				break;
+			}
+		}
+
+		if (uri_user_and_host(uri) && acc->regint) {
+			if (0 != pl_cmp(&uri->host, &acc->luri.host)) {
+				continue;
+			}
+			else {
+				ret = ua;
+				break;
+			}
+		}
+
+		/* Now we select a local account for peer-to-peer calls.
+		 * uri = IP | domain | user@domain. */
+
+		/* address family match */
+		if (uri_mismatch_af(&acc->luri, uri))
+			continue;
+
+		/* transport protocol match */
+		if (!uri_match_transport(&acc->luri, uri, SIP_TRANSP_NONE))
+			continue;
+
+		/* port match */
+		(void)msg_param_decode(&acc->luri.params, "transport", &pl);
+		if (!match_port(acc->luri.port, uri->port,
+					0 == pl_strcasecmp(&pl, "tls")))
+			continue;
+
+		if (!acc->regint && !uri_only_user(uri)) {
+			/* Remember local account.
+			 * But we prefer registered UA. */
+			ret = ua;
+		}
+	}
+
+	if (ret) {
+		ua_printf(ret, "selected for connect\n");
+	}
+	else {
+		/* Ok, seems that matching account is missing. */
+		if (uri_only_user(uri)) {
+			warning("ua: Could not find UA for %r\n", &uri->host);
+			return NULL;
+		}
+
+		ret = uag.ual.head->data;
+		ua_printf(ret, "fallback selection\n");
+	}
+
+	return ret;
+}
 
 
 /**
@@ -996,12 +1142,28 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	struct pl pl;
 	int err = 0;
 
-	if (!ua || !str_isset(req_uri))
+	if (!str_isset(req_uri))
 		return EINVAL;
 
 	dialbuf = mbuf_alloc(64);
 	if (!dialbuf)
 		return ENOMEM;
+
+	if (!ua) {
+		err = ua_uri_complete(NULL, dialbuf, req_uri);
+		if (err)
+			goto out;
+
+		pl.p = (char *)dialbuf->buf;
+		pl.l = dialbuf->end;
+		ua = uag_find_connect(&pl);
+		if (!ua) {
+			err = ENOENT;
+			goto out;
+		}
+
+		mbuf_rewind(dialbuf);
+	}
 
 	err |= ua_uri_complete(ua, dialbuf, req_uri);
 
@@ -1043,7 +1205,7 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 
 
 /**
- * Connect an outgoing call to a given SIP uri
+ * Connect an outgoing call to a given SIP uri. The ua may be NULL
  *
  * @param ua        User-Agent
  * @param callp     Optional pointer to allocated call object
@@ -1964,6 +2126,7 @@ int ua_print_calls(struct re_printf *pf, const struct ua *ua)
 
 	n = list_count(&ua->calls);
 
+	ua_printf(ua, "");
 	err |= re_hprintf(pf, "\n--- Active calls (%u) ---\n",
 			  n);
 
@@ -2023,11 +2186,21 @@ struct sipevent_sock *uag_sipevent_sock(void)
 }
 
 
-static bool uri_match_transport(const struct uri *accu, enum sip_transp tp)
+static bool uri_match_transport(const struct uri *accu,
+		const struct uri *peeru, enum sip_transp tp)
 {
 	struct pl pl1 = PL("udp");
+	struct pl pl2 = PL_INIT;
 
 	(void)msg_param_decode(&accu->params, "transport", &pl1);
+
+	if (tp == SIP_TRANSP_NONE) {
+		/* outgoing calls */
+		pl_set_str(&pl2, sip_transp_name(uag.cfg->transp));
+		(void)msg_param_decode(&peeru->params, "transport", &pl2);
+
+		return !pl_casecmp(&pl1, &pl2);
+	}
 
 	/* incoming calls: tp of SIP message */
 	return !pl_strcasecmp(&pl1, sip_transp_name(tp));
@@ -2159,7 +2332,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		struct ua *ua = le->data;
 		struct account *acc = ua->acc;
 
-		if (!uri_match_transport(&acc->luri, msg->tp))
+		if (!uri_match_transport(&acc->luri, &msg->uri, msg->tp))
 			continue;
 
 		if (uri_mismatch_af(&acc->luri, &msg->uri))
