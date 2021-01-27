@@ -103,7 +103,7 @@ struct dial_dialog *dial_dialog_alloc(struct gtk_mod *mod)
 	if (!dd)
 		return NULL;
 
-	dial = gtk_dialog_new_with_buttons("Dial", NULL, 0, NULL);
+	dial = gtk_dialog_new_with_buttons("Dial", NULL, 0, NULL, NULL);
 
 	/* Cancel */
 	button = gtk_button_new_with_label("Cancel");
