@@ -127,7 +127,7 @@ USE_GSM := $(shell [ -f $(SYSROOT)/include/gsm.h ] || \
 USE_GST := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
 USE_GST_VIDEO := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
 		&& echo "yes")
-USE_GTK := $(shell pkg-config 'gtk+-2.0 >= 2.22' && \
+USE_GTK := $(shell pkg-config 'gtk+-3.0 >= 3.0' && \
 		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
 USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/iLBC_define.h ] || \
