@@ -225,3 +225,52 @@ int message_send(struct ua *ua, const char *peer, const char *msg,
 
 	return err;
 }
+
+
+/**
+ * Encode a SIP instant MESSAGE to a dictionary
+ *
+ * @param od    Dictionary to encode into
+ * @param ua    User-Agent
+ * @param peer  Peer address URI
+ * @param ctype Content type ("text/plain")
+ * @param body  Buffer containing the SIP message body
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int message_encode_dict(struct odict *od, struct ua *ua, const struct pl *peer,
+			      const struct pl *ctype, struct mbuf *body)
+{
+	int err = 0;
+	char *buf1 = NULL;
+	char *buf2 = NULL;
+	char *buf3 = NULL;
+	size_t pos = 0;
+
+	if (!od || !ua || !pl_isset(peer))
+		return EINVAL;
+
+	err  = pl_strdup(&buf1, peer);
+	err |= pl_strdup(&buf2, ctype);
+	if (body) {
+		pos = body->pos;
+		err |= mbuf_strdup(body, &buf3, mbuf_get_left(body));
+		body->pos = pos;
+	}
+
+	if (err)
+		goto out;
+
+	err |= odict_entry_add(od, "ua", ODICT_STRING,
+			account_aor(ua_account(ua)));
+	err |= odict_entry_add(od, "from",  ODICT_STRING, buf1);
+	err |= odict_entry_add(od, "ctype", ODICT_STRING, buf2);
+	if (buf3)
+		err |= odict_entry_add(od, "body",  ODICT_STRING, buf3);
+
+out:
+	mem_deref(buf1);
+	mem_deref(buf2);
+	mem_deref(buf3);
+	return err;
+}
