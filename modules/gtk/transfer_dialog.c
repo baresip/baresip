@@ -99,7 +99,7 @@ struct transfer_dialog *transfer_dialog_alloc(struct call_window *call_win)
 			 G_CALLBACK(gtk_widget_hide_on_delete), win);
 
 	/* Spinner and status */
-	hbox = gtk_hbox_new(FALSE, 0);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_box_pack_start(GTK_BOX(content), hbox, FALSE, FALSE, 0);
 
 	spinner = gtk_spinner_new();
