@@ -37,5 +37,19 @@ on the implementation of the command.
 		<arg name="evtype" type="s" direction="out" />
 		<arg name="param" type="s" direction="out" />
 		</signal>
+
+<!--
+     message:
+     @ua:    User-Agent local SIP URI (aor)
+     @peer:  Peer address URI
+     @ctype: Content type ("text/plain")
+     @body:  SIP message body
+-->
+		<signal name="message">
+		<arg name="ua" type="s" direction="out" />
+		<arg name="peer" type="s" direction="out" />
+		<arg name="ctype" type="s" direction="out" />
+		<arg name="body" type="s" direction="out" />
+		</signal>
 	</interface>
 </node>
