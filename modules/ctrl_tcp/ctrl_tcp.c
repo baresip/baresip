@@ -218,7 +218,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	resp->pos = NETSTRING_HEADER_SIZE;
 	err = tcp_send(st->tc, resp);
 	if (err) {
-		warning("ctrl_tcp: failed to send the message (%m)\n", err);
+		warning("ctrl_tcp: failed to send the response (%m)\n", err);
 	}
 
  out:
@@ -281,7 +281,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	err = json_encode_odict(&pf, od);
 	if (err) {
-		warning("ctrl_tcp: failed to encode json (%m)\n", err);
+		warning("ctrl_tcp: failed to encode event JSON (%m)\n", err);
 		goto out;
 	}
 
@@ -289,8 +289,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		buf->pos = NETSTRING_HEADER_SIZE;
 		err = tcp_send(st->tc, buf);
 		if (err) {
-			warning("ctrl_tcp: failed to send the message (%m)\n",
-				err);
+			warning("ctrl_tcp: failed to send event (%m)\n", err);
 		}
 	}
 
