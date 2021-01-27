@@ -22,9 +22,9 @@
 #endif
 
 /* About */
-#define COPYRIGHT " Copyright (C) 2010 - 2019 Alfred E. Heggestad et al."
+#define COPYRIGHT " Copyright (C) 2010 - 2021 Alfred E. Heggestad et al."
 #define COMMENTS "A modular SIP User-Agent with audio and video support"
-#define WEBSITE "http://www.creytiv.com/baresip.html"
+#define WEBSITE "https://github.com/baresip/baresip"
 #define LICENSE "BSD"
 
 
