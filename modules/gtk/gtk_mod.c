@@ -174,7 +174,7 @@ static void menu_on_account_toggled(GtkCheckMenuItem *menu_item,
 				    struct gtk_mod *mod)
 {
 	struct ua *ua = g_object_get_data(G_OBJECT(menu_item), "ua");
-	if (menu_item->active)
+	if (gtk_check_menu_item_get_active(menu_item))
 		mqueue_push(mod->mq, MQ_SELECT_UA, ua);
 }
 
@@ -244,8 +244,8 @@ static GtkMenuItem *accounts_menu_get_item(struct gtk_mod *mod,
 					   struct ua *ua)
 {
 	GtkMenuItem *item;
-	GtkMenuShell *accounts_menu = GTK_MENU_SHELL(mod->accounts_menu);
-	GList *items = accounts_menu->children;
+	GtkContainer *accounts_menu_cont = GTK_CONTAINER(mod->accounts_menu);
+	GList *items = gtk_container_get_children(accounts_menu_cont);
 
 	for (; items; items = items->next) {
 		item = items->data;
@@ -271,8 +271,8 @@ static void update_ua_presence(struct gtk_mod *mod)
 	GtkCheckMenuItem *item = 0;
 	enum presence_status cur_status;
 	void *status;
-	GtkMenuShell *status_menu = GTK_MENU_SHELL(mod->status_menu);
-	GList *items = status_menu->children;
+	GtkContainer *status_menu_cont = GTK_CONTAINER(mod->status_menu);
+	GList *items = gtk_container_get_children(status_menu_cont);
 
 	cur_status = ua_presence_status(gtk_current_ua());
 
