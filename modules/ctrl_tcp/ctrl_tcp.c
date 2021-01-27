@@ -300,6 +300,51 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
+static void message_handler(struct ua *ua, const struct pl *peer,
+			    const struct pl *ctype,
+			    struct mbuf *body, void *arg)
+{
+	struct ctrl_st *st = arg;
+	struct mbuf *buf = mbuf_alloc(1024);
+	struct re_printf pf = {print_handler, buf};
+	struct odict *od = NULL;
+	int err;
+
+	buf->pos = NETSTRING_HEADER_SIZE;
+
+	err = odict_alloc(&od, 8);
+	if (err)
+		return;
+
+	err  = odict_entry_add(od, "message", ODICT_BOOL, true);
+	err |= message_encode_dict(od, ua, peer, ctype, body);
+	if (err) {
+		warning("ctrl_tcp: failed to encode message (%m)\n", err);
+		goto out;
+	}
+
+	err = json_encode_odict(&pf, od);
+	if (err) {
+		warning("ctrl_tcp: failed to encode event JSON (%m)\n", err);
+		goto out;
+	}
+
+	buf->pos = NETSTRING_HEADER_SIZE;
+	if (!st->tc)
+		goto out;
+
+	err = tcp_send(st->tc, buf);
+	if (err) {
+		warning("ctrl_tcp: failed to send the SIP message (%m)\n",
+			err);
+	}
+
+out:
+	mem_deref(buf);
+	mem_deref(od);
+}
+
+
 static void ctrl_destructor(void *arg)
 {
 	struct ctrl_st *st = arg;
@@ -358,6 +403,10 @@ static int ctrl_init(void)
 	if (err)
 		return err;
 
+	err = message_listen(baresip_message(), message_handler, ctrl);
+	if (err)
+		return err;
+
 	return 0;
 }
 
@@ -365,6 +414,7 @@ static int ctrl_init(void)
 static int ctrl_close(void)
 {
 	uag_event_unregister(ua_event_handler);
+	message_unlisten(baresip_message(), message_handler);
 	ctrl = mem_deref(ctrl);
 
 	return 0;
