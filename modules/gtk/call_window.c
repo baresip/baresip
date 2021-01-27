@@ -146,8 +146,10 @@ static void call_window_set_vu_enc(struct call_window *win,
 void call_window_got_vu_dec(struct vumeter_dec *dec)
 {
 	pthread_mutex_lock(&last_data_mut);
-	if (last_call_win)
+	if (last_call_win) {
 		call_window_set_vu_dec(last_call_win, dec);
+		last_dec = NULL;
+	}
 	else
 		last_dec = dec;
 	pthread_mutex_unlock(&last_data_mut);
@@ -157,8 +159,10 @@ void call_window_got_vu_dec(struct vumeter_dec *dec)
 void call_window_got_vu_enc(struct vumeter_enc *enc)
 {
 	pthread_mutex_lock(&last_data_mut);
-	if (last_call_win)
+	if (last_call_win) {
 		call_window_set_vu_enc(last_call_win, enc);
+		last_enc = NULL;
+	}
 	else
 		last_enc = enc;
 	pthread_mutex_unlock(&last_data_mut);
@@ -168,10 +172,14 @@ void call_window_got_vu_enc(struct vumeter_enc *enc)
 static void got_call_window(struct call_window *win)
 {
 	pthread_mutex_lock(&last_data_mut);
-	if (last_enc)
+	if (last_enc) {
 		call_window_set_vu_enc(win, last_enc);
-	if (last_dec)
+		last_enc = NULL;
+	}
+	if (last_dec) {
 		call_window_set_vu_dec(win, last_dec);
+		last_dec = NULL;
+	}
 	if (!last_enc || !last_dec)
 		last_call_win = win;
 	pthread_mutex_unlock(&last_data_mut);
