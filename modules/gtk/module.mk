@@ -12,7 +12,7 @@ $(MOD)_LFLAGS	+= $(shell pkg-config --libs gtk+-3.0 $($(MOD)_EXTRA))
 $(MOD)_CFLAGS	+= \
 	$(shell pkg-config --cflags gtk+-3.0 $($(MOD)_EXTRA) | \
 		sed -e 's/-I/-isystem/g' )
-$(MOD)_CFLAGS	+= -Wno-strict-prototypes
+$(MOD)_CFLAGS	+= -Wno-strict-prototypes -Wno-deprecated-declarations
 
 ifneq ($(USE_LIBNOTIFY),)
 $(MOD)_EXTRA	 = libnotify
