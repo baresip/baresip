@@ -76,7 +76,6 @@ Distributed under BSD license
   - G.726
   - GSM
   - iLBC
-  - iSAC
   - L16
   - MPA
   - Opus
@@ -258,7 +257,6 @@ httpd         HTTP webserver UI-module
 i2s           I2S (Inter-IC Sound) audio driver
 ice           ICE protocol for NAT Traversal
 ilbc          iLBC audio codec
-isac          iSAC audio codec
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
 menu          Interactive menu
@@ -357,7 +355,6 @@ zrtp          ZRTP media encryption module
 * RFC 7741  RTP Payload Format for VP8 Video
 * RFC 7798  RTP Payload Format for High Efficiency Video Coding (HEVC)
 
-* draft-ietf-avt-rtp-isac-04
 * draft-ietf-payload-vp9-07
 
 
