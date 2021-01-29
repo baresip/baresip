@@ -529,8 +529,7 @@ static void ua_event_handler(struct ua *ua,
 		win = get_call_window(mod, call);
 		if (win)
 			call_window_closed(win, prm);
-		else
-			denotify_incoming_call(mod, call);
+		denotify_incoming_call(mod, call);
 		break;
 
 	case UA_EVENT_CALL_RINGING:
@@ -549,6 +548,7 @@ static void ua_event_handler(struct ua *ua,
 		win = get_create_call_window(mod, call);
 		if (win)
 			call_window_established(win);
+		denotify_incoming_call(mod, call);
 		break;
 
 	case UA_EVENT_CALL_TRANSFER_FAILED:
