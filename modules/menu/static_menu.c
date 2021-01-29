@@ -552,10 +552,18 @@ static int print_commands(struct re_printf *pf, void *unused)
 
 static int cmd_print_calls(struct re_printf *pf, void *arg)
 {
-	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct le *le;
+	int err;
+	(void) arg;
 
-	return ua_print_calls(pf, ua);
+	for (le = list_head(uag_list()); le; le = le->next) {
+		const struct ua *ua = le->data;
+		err = ua_print_calls(pf, ua);
+		if (err)
+			return err;
+	}
+
+	return 0;
 }
 
 
