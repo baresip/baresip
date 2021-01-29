@@ -68,7 +68,7 @@ static int about_box(struct re_printf *pf, void *unused)
 static int cmd_answer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct menu *menu = menu_get();
 	int err;
 
@@ -97,7 +97,7 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	enum sdp_dir adir, vdir;
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct menu *menu = menu_get();
 	int err = 0;
 
@@ -144,7 +144,7 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 {
 	enum answermode mode;
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	int err;
 
 	if (0 == str_cmp(carg->prm, "manual")) {
@@ -174,7 +174,7 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 static int switch_audio_player(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct pl pl_driver, pl_device;
 	struct config_audio *aucfg;
 	struct config *cfg;
@@ -249,7 +249,7 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 static int switch_audio_source(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct pl pl_driver, pl_device;
 	struct config_audio *aucfg;
 	struct config *cfg;
@@ -329,7 +329,7 @@ static int switch_audio_source(struct re_printf *pf, void *arg)
 static int ua_print_call_status(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
 	int err;
 
@@ -419,13 +419,13 @@ static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	int err = 0;
 
 	(void)pf;
 
 	if (menu->adelay >= 0)
-		(void)ua_enable_autoanswer(menu_current(), menu->adelay,
+		(void)ua_enable_autoanswer(menu_uacur(), menu->adelay,
 				auto_answer_method());
 
 	if (str_isset(carg->prm)) {
@@ -475,7 +475,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct pl pluri;
 	struct call *call;
 	char *uri;
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	int err = 0;
 
 	const char *usage = "Usage: /dialdir <address/telnr.>"
@@ -533,7 +533,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 static int cmd_hangup(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 
 	(void)pf;
 
@@ -553,7 +553,7 @@ static int print_commands(struct re_printf *pf, void *unused)
 static int cmd_print_calls(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 
 	return ua_print_calls(pf, ua);
 }
@@ -588,7 +588,7 @@ static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
 static int options_command(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_current();
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	int err = 0;
 
 	(void)pf;
@@ -624,7 +624,7 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		const struct ua *ua = le->data;
 
-		err  = re_hprintf(pf, "%s ", ua == menu_current() ? ">" : " ");
+		err  = re_hprintf(pf, "%s ", ua == menu_uacur() ? ">" : " ");
 		err |= ua_print_status(pf, ua);
 	}
 
@@ -684,7 +684,7 @@ static int cmd_ua_next(struct re_printf *pf, void *unused)
 	err = re_hprintf(pf, "ua: %s\n",
 			 account_aor(ua_account(list_ledata(menu->le_cur))));
 
-	menu_current_set(list_ledata(menu->le_cur));
+	menu_uacur_set(list_ledata(menu->le_cur));
 
 	menu_update_callstatus(uag_call_count());
 
@@ -705,11 +705,11 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 		return ENOENT;
 	}
 
-	if (ua == menu_current()) {
+	if (ua == menu_uacur()) {
 		(void)cmd_ua_next(pf, NULL);
 
-		if (ua == menu_current()) {
-			menu_current_set(NULL);
+		if (ua == menu_uacur()) {
+			menu_uacur_set(NULL);
 		}
 	}
 
@@ -727,7 +727,7 @@ static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
 
 	(void)unused;
 
-	menu_current_set(NULL);
+	menu_uacur_set(NULL);
 
 	while (list_head(uag_list()))
 	{
@@ -757,7 +757,7 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 
 	re_hprintf(pf, "ua: %s\n", account_aor(ua_account(ua)));
 
-	menu_current_set(ua);
+	menu_uacur_set(ua);
 
 	menu_update_callstatus(uag_call_count());
 
@@ -852,7 +852,7 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 	str_ncpy(vidcfg->src_mod, driver, sizeof(vidcfg->src_mod));
 	str_ncpy(vidcfg->src_dev, device, sizeof(vidcfg->src_dev));
 
-	for (le = list_tail(ua_calls(menu_current())); le; le = le->prev) {
+	for (le = list_tail(ua_calls(menu_uacur())); le; le = le->prev) {
 
 		struct call *call = le->data;
 

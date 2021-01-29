@@ -34,8 +34,8 @@ struct menu{
 
 /*Get menu object*/
 struct menu *menu_get(void);
-void menu_current_set(struct ua *ua);
-struct ua *menu_current(void);
+void menu_uacur_set(struct ua *ua);
+struct ua *menu_uacur(void);
 
 
 /*Dynamic menu related functions*/
