@@ -425,7 +425,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	(void)pf;
 
 	if (menu->adelay >= 0)
-		(void)ua_enable_autoanswer(menu_uacur(), menu->adelay,
+		(void)ua_enable_autoanswer(ua, menu->adelay,
 				auto_answer_method());
 
 	if (str_isset(carg->prm)) {
