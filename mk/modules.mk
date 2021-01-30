@@ -30,7 +30,6 @@
 #   USE_GTK           GTK+ user interface
 #   USE_HTTPREQ       HTTP request module
 #   USE_ILBC          iLBC audio codec
-#   USE_ISAC          iSAC audio codec
 #   USE_JACK          JACK Audio Connection Kit audio driver
 #   USE_L16           L16 audio codec
 #   USE_MPA           MPA audio codec
@@ -133,8 +132,6 @@ USE_GTK := $(shell pkg-config 'gtk+-2.0 >= 2.22' && \
 USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/iLBC_define.h ] || \
 	[ -f $(SYSROOT)/local/include/iLBC_define.h ] && echo "yes")
-USE_ISAC := $(shell [ -f $(SYSROOT)/include/isac.h ] || \
-	[ -f $(SYSROOT)/local/include/isac.h ] && echo "yes")
 USE_JACK := $(shell [ -f $(SYSROOT)/include/jack/jack.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/jack/jack.h ] && echo "yes")
 USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
@@ -386,9 +383,6 @@ MODULES   += httpreq
 endif
 ifneq ($(USE_ILBC),)
 MODULES   += ilbc
-endif
-ifneq ($(USE_ISAC),)
-MODULES   += isac
 endif
 ifneq ($(USE_JACK),)
 MODULES   += jack
