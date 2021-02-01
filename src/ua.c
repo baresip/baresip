@@ -1028,7 +1028,7 @@ static bool uri_match_transport(const struct uri *accu,
  *
  * @return User-Agent (UA) if found, otherwise NULL
  */
-static struct ua *uag_find_connect(const struct pl *req_uri)
+struct ua *uag_find_connect(const struct pl *req_uri)
 {
 	struct le *le;
 	struct uri *uri;
