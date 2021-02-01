@@ -432,6 +432,33 @@ static enum answer_method auto_answer_method(void)
 }
 
 
+static struct ua *find_dial_ua(const char *uri)
+{
+	int err;
+	struct mbuf *dialbuf;
+	struct pl pl;
+	struct ua *ua = NULL;
+
+	dialbuf = mbuf_alloc(64);
+	if (!dialbuf)
+		return NULL;
+
+	err = ua_uri_complete(NULL, dialbuf, uri);
+	if (err)
+		goto out;
+
+	pl.p = (char *)dialbuf->buf;
+	pl.l = dialbuf->end;
+	ua = uag_find_connect(&pl);
+	if (!ua)
+		goto out;
+
+out:
+	mem_deref(dialbuf);
+	return ua;
+}
+
+
 static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -452,6 +479,9 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		if (menu->clean_number)
 			clean_number(carg->prm);
 
+		if (!ua)
+			ua = find_dial_ua(carg->prm);
+
 		err = ua_connect(ua, NULL, NULL,
 				 carg->prm, VIDMODE_ON);
 	}
@@ -466,6 +496,9 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 		if (menu->clean_number)
 			clean_number(uri);
+
+		if (!ua)
+			ua = find_dial_ua(uri);
 
 		err = ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
 
@@ -535,6 +568,9 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	err = pl_strdup(&uri, &pluri);
 	if (err)
 		goto out;
+
+	if (!ua)
+		ua = find_dial_ua(uri);
 
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
 	if (err)

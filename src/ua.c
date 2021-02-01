@@ -1142,28 +1142,12 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	struct pl pl;
 	int err = 0;
 
-	if (!str_isset(req_uri))
+	if (!ua || !str_isset(req_uri))
 		return EINVAL;
 
 	dialbuf = mbuf_alloc(64);
 	if (!dialbuf)
 		return ENOMEM;
-
-	if (!ua) {
-		err = ua_uri_complete(NULL, dialbuf, req_uri);
-		if (err)
-			goto out;
-
-		pl.p = (char *)dialbuf->buf;
-		pl.l = dialbuf->end;
-		ua = uag_find_connect(&pl);
-		if (!ua) {
-			err = ENOENT;
-			goto out;
-		}
-
-		mbuf_rewind(dialbuf);
-	}
 
 	err |= ua_uri_complete(ua, dialbuf, req_uri);
 
