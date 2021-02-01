@@ -587,12 +587,6 @@ struct ua *menu_uacur(void)
 }
 
 
-struct ua *menu_uadial(void)
-{
-	return menu.ua_dial;
-}
-
-
 static int module_init(void)
 {
 	struct pl val;
@@ -681,8 +675,6 @@ static int module_close(void)
 	tmr_cancel(&menu.tmr_alert);
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
-
-	menu.le_dial = NULL;
 
 	menu.play = mem_deref(menu.play);
 

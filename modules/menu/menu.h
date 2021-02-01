@@ -17,8 +17,6 @@ struct menu{
 	struct tmr tmr_stat;          /**< Call status timer              */
 	struct play *play;            /**< Current audio player state     */
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
-	struct le *le_dial;           /**< Dial UA list element           */
-	struct ua *ua_dial;           /**< Dial UA                        */
 	struct ua *ua_cur;            /**< Current UA for call interaction*/
 	bool bell;                    /**< ANSI Bell alert enabled        */
 	bool ringback_disabled;	      /**< no ringback on sip 180 respons */
@@ -36,7 +34,6 @@ struct menu{
 /*Get menu object*/
 struct menu *menu_get(void);
 struct ua *menu_uacur(void);
-struct ua *menu_uadial(void);
 
 
 /*Dynamic menu related functions*/

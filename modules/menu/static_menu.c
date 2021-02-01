@@ -144,7 +144,7 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 {
 	enum answermode mode;
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uadial();
+	struct ua *ua = carg->data;
 	struct le *le;
 	int err;
 
@@ -463,7 +463,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
-	struct ua *ua = carg->data ? carg->data : menu->ua_dial;
+	struct ua *ua = carg->data;
 	int err = 0;
 
 	(void)pf;
@@ -525,7 +525,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct pl pluri;
 	struct call *call;
 	char *uri;
-	struct ua *ua = carg->data ? carg->data : menu_uadial();
+	struct ua *ua = carg->data;
 	int err = 0;
 
 	const char *usage = "Usage: /dialdir <address/telnr.>"
@@ -679,14 +679,12 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 
 	(void)unused;
 
-	err = re_hprintf(pf, "\n--- User Agents (%u) %s---\n",
-			 list_count(uag_list()),
-			 !menu_uadial() ? "*auto* ": "");
+	err = re_hprintf(pf, "\n--- User Agents (%u)---\n",
+			 list_count(uag_list()));
 
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		const struct ua *ua = le->data;
 
-		err  = re_hprintf(pf, "%s ", ua == menu_uadial() ? ">" : " ");
 		err |= ua_print_status(pf, ua);
 	}
 
@@ -727,30 +725,6 @@ static int cmd_set_adelay(struct re_printf *pf, void *arg)
 }
 
 
-static int cmd_ua_next(struct re_printf *pf, void *unused)
-{
-	struct menu *menu = menu_get();
-	int err;
-
-	(void)pf;
-	(void)unused;
-
-	/* le_dial == NULL means automatic mode */
-	if (!menu->le_dial)
-		menu->le_dial = list_head(uag_list());
-	else
-		menu->le_dial = menu->le_dial->next;
-
-	menu->ua_dial = list_ledata(menu->le_dial);
-	err = re_hprintf(pf, "ua: %s\n", menu->le_dial ?
-			account_aor(ua_account(menu->ua_dial)) : "*auto*");
-
-	menu_update_callstatus(uag_call_count());
-
-	return err;
-}
-
-
 static int cmd_ua_delete(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -767,11 +741,6 @@ static int cmd_ua_delete(struct re_printf *pf, void *arg)
 
 	if (ua == menu->ua_cur)
 		menu->ua_cur = NULL;
-
-	if (ua == menu->ua_dial) {
-		menu->ua_dial = NULL;
-		menu->le_dial = NULL;
-	}
 
 	(void)re_hprintf(pf, "deleting ua: %s\n", carg->prm);
 	mem_deref(ua);
@@ -797,8 +766,6 @@ static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
 	(void)ua_print_reg_status(pf, NULL);
 
 	menu->ua_cur  = NULL;
-	menu->ua_dial = NULL;
-	menu->le_dial = NULL;
 
 	return 0;
 }
@@ -808,7 +775,6 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = NULL;
-	struct menu *menu = menu_get();
 
 	if (str_isset(carg->prm)) {
 		ua = uag_find_aor(carg->prm);
@@ -819,10 +785,7 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 		return ENOENT;
 	}
 
-	re_hprintf(pf, "ua: %s\n", account_aor(ua_account(ua)));
-
-	menu->ua_dial = ua;
-
+	re_hprintf(pf, "ua: %s %p\n", account_aor(ua_account(ua)), ua);
 	menu_update_callstatus(uag_call_count());
 
 	return 0;
@@ -1008,7 +971,6 @@ static const struct cmd cmdv[] = {
 {"uadelall",  0,    CMD_PRM, "Delete all User-Agents",  cmd_ua_delete_all    },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
-{"uanext",    'T',        0, "Toggle UAs",              cmd_ua_next          },
 {"vidsrc",    0,    CMD_PRM, "Switch video source",     switch_video_source  },
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 
