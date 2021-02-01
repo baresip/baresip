@@ -126,7 +126,8 @@ void ua_printf(const struct ua *ua, const char *fmt, ...)
 		return;
 
 	va_start(ap, fmt);
-	info("%r@%r: %v", &ua->acc->luri.user, &ua->acc->luri.host, fmt, &ap);
+	info("%p %r@%r: %v", ua, &ua->acc->luri.user, &ua->acc->luri.host, fmt,
+			&ap);
 	va_end(ap);
 }
 
@@ -1317,7 +1318,7 @@ int ua_print_status(struct re_printf *pf, const struct ua *ua)
 	if (!ua)
 		return 0;
 
-	err = re_hprintf(pf, "%-42s", ua->acc->aor);
+	err = re_hprintf(pf, "%p %-42s", ua, ua->acc->aor);
 
 	for (le = ua->regl.head; le; le = le->next)
 		err |= reg_status(pf, le->data);
