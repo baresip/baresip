@@ -2170,6 +2170,20 @@ struct sipevent_sock *uag_sipevent_sock(void)
 }
 
 
+/**
+ * Checks if the transport protocol matches between SIP URI accu and SIP URI
+ * peeru for outgoing calls. If accu has no transport parameter set, then UDP
+ * is used. If peeru has no transport parameter set, then the configured
+ * default transport protocol is used.
+ *
+ * Checks if the transport protocol of accu matches tp for incoming calls.
+ *
+ * @param accu   Account SIP URI
+ * @param peeru  Peer SIP URI
+ * @param tp     Transport protocol for incoming calls
+ *
+ * @return true, if the transport protocol matches.
+ */
 static bool uri_match_transport(const struct uri *accu,
 		const struct uri *peeru, enum sip_transp tp)
 {
@@ -2191,6 +2205,17 @@ static bool uri_match_transport(const struct uri *accu,
 }
 
 
+/**
+ * Checks if two port numbers are matching and uses the default SIP port if not
+ * set. If tls is set then SIP_PORT_TLS is used for the default port. Otherwise
+ * SIP_PORT is used.
+ *
+ * @param port1 Port number 1
+ * @param port2 Port number 2
+ * @param tls   True for transport protocol TLS is used.
+ *
+ * @return true, if port1 matches port2.
+ */
 static bool match_port(uint16_t port1, uint16_t port2, bool tls)
 {
 	if (!port1)
