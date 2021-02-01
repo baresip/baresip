@@ -170,8 +170,9 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	struct mbuf *resp = mbuf_alloc(2048);
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL;
-	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
+	const struct odict_entry *oe_cmd, *oe_prm, *oe_dat, *oe_tok;
 	char buf[1024];
+	void *data = NULL;
 	int err;
 
 	err = json_decode_odict(&od, 32, (const char*)mb->buf, mb->end, 16);
@@ -182,6 +183,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 
 	oe_cmd = odict_lookup(od, "command");
 	oe_prm = odict_lookup(od, "params");
+	oe_dat = odict_lookup(od, "data");
 	oe_tok = odict_lookup(od, "token");
 	if (!oe_cmd) {
 		warning("ctrl_tcp: missing json entries\n");
@@ -200,11 +202,15 @@ static bool command_handler(struct mbuf *mb, void *arg)
 
 	resp->pos = NETSTRING_HEADER_SIZE;
 
+	if (oe_dat)
+		sscanf(oe_dat->u.str, "%p", &data);
+
 	/* Relay message to long commands */
 	err = cmd_process_long(baresip_commands(),
 			       buf,
 			       str_len(buf),
-			       &pf, NULL);
+			       &pf,
+			       data);
 	if (err) {
 		warning("ctrl_tcp: error processing command (%m)\n", err);
 	}
