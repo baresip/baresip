@@ -43,20 +43,25 @@ static int call_audio_debug(struct re_printf *pf, void *arg)
 static int cmd_find_call(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct le *le;
 	const char *id = carg->prm;
-	struct list *calls = ua_calls(ua);
 	struct call *call;
 	int err;
 
-	call = call_find_id(calls, id);
-	if (call) {
-		err = re_hprintf(pf, "setting current call: %s\n", id);
-		call_set_current(calls, call);
+	for (le = list_head(uag_list()); le; le = le->next) {
+		struct ua *ua = le->data;
+		struct list *calls = ua_calls(ua);
+
+		call = call_find_id(calls, id);
+		if (call) {
+			err = re_hprintf(pf, "setting current call: %s\n", id);
+			call_set_current(calls, call);
+			menu_get()->ua_cur = call_get_ua(call);
+		}
 	}
-	else {
+
+	if (!call)
 		err = re_hprintf(pf, "call not found (id=%s)\n", id);
-	}
 
 	return err;
 }
