@@ -2441,6 +2441,34 @@ struct ua *uag_find_param(const char *name, const char *value)
 
 
 /**
+ * Finds UA at given address
+ *
+ * @param p Pointer to be checked
+ *
+ * @return Matching UA if found, NULL if not found
+ */
+struct ua *uag_find_pointer(const void *p)
+{
+	struct le *le;
+
+	if (!p)
+		return NULL;
+
+	for (le = uag.ual.head; le; le = le->next) {
+		struct ua *ua = le->data;
+
+		if (ua == p) {
+			ua_printf(ua, "ua: found at %p\n", p);
+			return ua;
+		}
+	}
+
+	warning("ua: No UA at %p\n", p);
+	return NULL;
+}
+
+
+/**
  * Get the contact user/uri of a User-Agent (UA)
  *
  * If the Public GRUU is set, it will be returned.

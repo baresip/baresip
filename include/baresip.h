@@ -837,6 +837,7 @@ struct ua   *uag_find_msg(const struct sip_msg *msg);
 struct ua   *uag_find_aor(const char *aor);
 struct ua   *uag_find_param(const char *name, const char *val);
 struct ua   *uag_find_connect(const struct pl *req_uri);
+struct ua   *uag_find_pointer(const void *p);
 struct sip  *uag_sip(void);
 struct list *uag_list(void);
 uint32_t     uag_call_count(void);
