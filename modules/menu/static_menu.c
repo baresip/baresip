@@ -144,7 +144,8 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 {
 	enum answermode mode;
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct ua *ua = carg->data;
+	struct le *le;
 	int err;
 
 	if (0 == str_cmp(carg->prm, "manual")) {
@@ -161,9 +162,19 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	err = account_set_answermode(ua_account(ua), mode);
-	if (err)
-		return err;
+	if (ua) {
+		err = account_set_answermode(ua_account(ua), mode);
+		if (err)
+			return err;
+	}
+	else {
+		for (le = list_head(uag_list()); le; le = le->next) {
+			ua = le->data;
+			err = account_set_answermode(ua_account(ua), mode);
+			if (err)
+				return err;
+		}
+	}
 
 	(void)re_hprintf(pf, "Answer mode changed to: %s\n", carg->prm);
 
