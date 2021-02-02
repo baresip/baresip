@@ -369,7 +369,7 @@ struct call_window *call_window_new(struct call *call, struct gtk_mod *mod)
 	gtk_window_set_type_hint(GTK_WINDOW(window),
 			GDK_WINDOW_TYPE_HINT_DIALOG);
 
-	vbox = gtk_vbox_new(FALSE, 0);
+	vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
 	gtk_container_add(GTK_CONTAINER(window), vbox);
 
 	/* Peer name and URI */
@@ -388,7 +388,7 @@ struct call_window *call_window_new(struct call *call, struct gtk_mod *mod)
 	gtk_box_pack_start(GTK_BOX(vbox), status, FALSE, FALSE, 0);
 
 	/* Progress bars */
-	hbox = gtk_hbox_new(FALSE, 0);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
 	gtk_box_set_spacing(GTK_BOX(hbox), 6);
 	gtk_container_set_border_width(GTK_CONTAINER(hbox), 5);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
@@ -410,7 +410,7 @@ struct call_window *call_window_new(struct call *call, struct gtk_mod *mod)
 	gtk_box_pack_end(GTK_BOX(hbox), image, FALSE, FALSE, 0);
 
 	/* Buttons */
-	button_box = gtk_hbutton_box_new();
+	button_box = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
 	gtk_button_box_set_layout(GTK_BUTTON_BOX(button_box),
 			GTK_BUTTONBOX_END);
 	gtk_box_set_spacing(GTK_BOX(button_box), 6);
