@@ -5,7 +5,7 @@
 #
 
 MOD		:= ctrl_dbus
-$(MOD)_SRCS	+= ctrl_dbus.c baresipbus.c
+$(MOD)_SRCS	+= baresipbus.c ctrl_dbus.c
 
 $(MOD)_LFLAGS	+= $(shell pkg-config --libs glib-2.0 gio-unix-2.0)
 $(MOD)_CFLAGS	+= \
@@ -15,5 +15,7 @@ $(MOD)_CFLAGS	+= -Wno-unused-parameter -Wno-declaration-after-statement
 
 $(MOD)_CCHECK_OPT	= -e baresipbus.h -e baresipbus.c
 
-include mk/mod.mk
+modules/ctrl_dbus/baresipbus.c: modules/ctrl_dbus/com.creytiv.Baresip.xml
+	@cd $(dir $@) && ./gen.sh
 
+include mk/mod.mk
