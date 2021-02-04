@@ -228,6 +228,7 @@ int test_call_reject(void);
 int test_call_rtcp(void);
 int test_call_rtp_timeout(void);
 int test_call_tcp(void);
+int test_call_deny_udp(void);
 int test_call_transfer(void);
 int test_call_video(void);
 int test_call_webrtc(void);
