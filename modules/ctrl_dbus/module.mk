@@ -16,7 +16,7 @@ $(MOD)_CFLAGS	+= -Wno-unused-parameter -Wno-declaration-after-statement \
 
 $(MOD)_CCHECK_OPT	= -e baresipbus.h -e baresipbus.c
 
-modules/ctrl_dbus/baresipbus.c: modules/ctrl_dbus/com.creytiv.Baresip.xml
+modules/ctrl_dbus/baresipbus.c: modules/ctrl_dbus/com.github.Baresip.xml
 	@cd $(dir $@) && ./gen.sh
 
 include mk/mod.mk
