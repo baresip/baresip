@@ -316,7 +316,7 @@ static void message_handler(struct ua *ua, const struct pl *peer,
 		return;
 
 	err  = odict_entry_add(od, "message", ODICT_BOOL, true);
-	err |= message_encode_dict(od, ua, peer, ctype, body);
+	err |= message_encode_dict(od, ua_account(ua), peer, ctype, body);
 	if (err) {
 		warning("ctrl_tcp: failed to encode message (%m)\n", err);
 		goto out;
