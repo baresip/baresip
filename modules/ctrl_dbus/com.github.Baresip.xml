@@ -5,12 +5,12 @@
 -->
 <node>
 <!--
-     com.creytiv.Baresip:
+     com.github.Baresip:
 
 This DBus interface supports invoking of baresip commands and sends UA Events
 as DBus signal.
 -->
-	<interface name="com.creytiv.Baresip">
+	<interface name="com.github.Baresip">
 <!--
      invoke:
      @command:  The command to be executed with appended parameters.
