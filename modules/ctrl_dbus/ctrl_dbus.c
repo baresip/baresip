@@ -55,6 +55,9 @@
  }
  \endverbatim
  *
+ * SIP messages are converted to DBUS signals
+ *
+ *
  * Copyright (C) 2020 commend.com - Christian Spielberger
  */
 
@@ -186,6 +189,46 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
+static void message_handler(struct ua *ua, const struct pl *peer,
+			    const struct pl *ctype,
+			    struct mbuf *body, void *arg)
+{
+	struct ctrl_st *st = arg;
+	char *buf1 = NULL;
+	char *buf2 = NULL;
+	char *buf3 = NULL;
+	size_t pos = 0;
+	const char *aor = account_aor(ua_account(ua));
+	int err = 0;
+
+	if (!st->interface)
+		return;
+
+	err |= pl_strdup(&buf1, peer);
+	err |= pl_strdup(&buf2, ctype);
+	if (body) {
+		pos = body->pos;
+		err |= mbuf_strdup(body, &buf3, mbuf_get_left(body));
+		body->pos = pos;
+	}
+
+	if (err) {
+		warning("ctrl_dbus: failed to convert SIP message (%m)\n",
+				err);
+		goto out;
+	}
+
+	dbus_baresip_emit_message(st->interface,
+			aor ? aor : "",
+			buf1, buf2, buf3);
+
+out:
+	mem_deref(buf1);
+	mem_deref(buf2);
+	mem_deref(buf3);
+}
+
+
 static void ctrl_destructor(void *arg)
 {
 	struct ctrl_st *st = arg;
@@ -310,6 +353,10 @@ static int ctrl_init(void)
 	if (err)
 		goto outerr;
 
+	err = message_listen(baresip_message(), message_handler, m_st);
+	if (err)
+		return err;
+
 	conf_get(conf_cur(), "ctrl_dbus_use", &use);
 	name = dbus_baresip_interface_info()->name;
 	m_st->bus_owner = g_bus_own_name(
@@ -339,6 +386,7 @@ outerr:
 static int ctrl_close(void)
 {
 	uag_event_unregister(ua_event_handler);
+	message_unlisten(baresip_message(), message_handler);
 	m_st = mem_deref(m_st);
 	return 0;
 }

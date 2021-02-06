@@ -457,6 +457,9 @@ int  message_listen(struct message *message,
 void message_unlisten(struct message *message, message_recv_h *recvh);
 int  message_send(struct ua *ua, const char *peer, const char *msg,
 		  sip_resp_h *resph, void *arg);
+int message_encode_dict(struct odict *od, struct account *acc,
+			const struct pl *peer, const struct pl *ctype,
+			struct mbuf *body);
 
 
 /*
