@@ -934,36 +934,38 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 
 static bool uri_host_local(const struct uri *uri)
 {
+
+	const char *hostv[] = {
+		"localhost",
+		"127.0.0.1",
+		"::1"
+	};
+	int afv[2] = {AF_INET, AF_INET6};
 	const struct sa *sal;
 	struct sa sap;
+	size_t i;
 	int err;
 
 	if (!uri)
 		return false;
 
-	if (!pl_strcmp(&uri->host, "localhost"))
-		return true;
+	for (i=0; i<ARRAY_SIZE(hostv); i++) {
 
-	if (!pl_strcmp(&uri->host, "127.0.0.1"))
-		return true;
+		if (!pl_strcmp(&uri->host, hostv[i]))
+			return true;
+	}
 
-	if (!pl_strcmp(&uri->host, "::1"))
-		return true;
+	for (i=0; i<ARRAY_SIZE(afv); i++) {
 
-	sal = net_laddr_af(baresip_network(), AF_INET);
+		sal = net_laddr_af(baresip_network(), afv[i]);
 
-	err = sa_set(&sap, &uri->host, 0);
-	if (err)
-		return false;
+		err = sa_set(&sap, &uri->host, 0);
+		if (err)
+			continue;
 
-	if (sal && sa_cmp(sal, &sap, SA_ADDR))
-		return true;
-
-#ifdef HAVE_INET6
-	sal = net_laddr_af(baresip_network(), AF_INET6);
-	if (sal && sa_cmp(sal, &sap, SA_ADDR))
-		return true;
-#endif
+		if (sa_cmp(sal, &sap, SA_ADDR))
+			return true;
+	}
 
 	return false;
 }
