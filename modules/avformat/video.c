@@ -11,6 +11,7 @@
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/pixdesc.h>
+#include <libswscale/swscale.h>
 #include "mod_avformat.h"
 
 
@@ -44,6 +45,20 @@ static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
 	case AV_PIX_FMT_UYVY422:  return VID_FMT_UYVY422;
 	case AV_PIX_FMT_YUYV422:  return VID_FMT_YUYV422;
 	default:                  return (enum vidfmt)-1;
+	}
+}
+
+static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt vid_fmt)
+{
+	switch (vid_fmt) {
+
+	case VID_FMT_YUV420P:  return AV_PIX_FMT_YUV420P;
+	case VID_FMT_YUV444P:  return AV_PIX_FMT_YUV444P;
+	case VID_FMT_NV12:     return AV_PIX_FMT_NV12;
+	case VID_FMT_NV21:     return AV_PIX_FMT_NV21;
+	case VID_FMT_UYVY422:  return AV_PIX_FMT_UYVY422;
+	case VID_FMT_YUYV422:  return AV_PIX_FMT_YUYV422;
+	default:                  return (enum AVPixelFormat)-1;
 	}
 }
 
@@ -92,6 +107,7 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		goto out;
 	}
 
+
 	avformat_shared_set_video(st->shared, st);
 
  out:
@@ -108,7 +124,8 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 {
 	AVRational tb;
 	struct vidframe vf;
-	AVFrame *frame;
+	AVFrame *frame = 0, *frame2 = 0;
+	struct SwsContext * sws_ctx = 0;
 	uint64_t timestamp;
 	unsigned i;
 	int ret;
@@ -141,12 +158,38 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 		goto out;
 #endif
 
-	vf.fmt = avpixfmt_to_vidfmt(frame->format);
+	AVCodecContext *vctx = st->vid.ctx;
+
+	sws_ctx = sws_getContext (
+			vctx->width, vctx->height, vctx->pix_fmt,
+			vctx->width, vctx->height,  AV_PIX_FMT_YUYV422,
+			SWS_BICUBIC, NULL, NULL, NULL);
+	if (!sws_ctx)
+		return;
+
+	frame2 = av_frame_alloc();
+	if (!frame2)
+		goto out;
+
+	frame2->format = vidfmt_to_avpixfmt(VID_FMT_YUYV422);
+	frame2->width = frame->width;
+	frame2->height = frame->height;
+
+	ret = av_frame_get_buffer(frame2, 0);
+	if (ret < 0)
+		goto out;
+
+	ret = sws_scale(sws_ctx, (const uint8_t * const *) frame->data, frame->linesize, 0,
+			frame->height, frame2->data, frame2->linesize);
+	if (ret < 0)
+		goto out;
+
+	vf.fmt = avpixfmt_to_vidfmt(frame2->format);
 	if (vf.fmt == (enum vidfmt)-1) {
 		warning("avformat: decode: bad pixel format"
 			" (%i) (%s)\n",
-			frame->format,
-			av_get_pix_fmt_name(frame->format));
+			frame2->format,
+			av_get_pix_fmt_name(frame2->format));
 		goto out;
 	}
 
@@ -154,8 +197,8 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	vf.size.h = st->vid.ctx->height;
 
 	for (i=0; i<4; i++) {
-		vf.data[i]     = frame->data[i];
-		vf.linesize[i] = frame->linesize[i];
+		vf.data[i]     = frame2->data[i];
+		vf.linesize[i] = frame2->linesize[i];
 	}
 
 	/* convert timestamp */
@@ -171,4 +214,8 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
  out:
 	if (frame)
 		av_frame_free(&frame);
+	if (frame2)
+		av_frame_free(&frame);
+	if (sws_ctx)
+		sws_freeContext(sws_ctx);
 }

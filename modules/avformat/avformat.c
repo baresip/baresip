@@ -14,6 +14,7 @@
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
+#include <libswscale/swscale.h>
 #include "mod_avformat.h"
 
 
@@ -151,7 +152,6 @@ static void *read_thread(void *data)
 	return NULL;
 }
 
-
 static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 		      AVCodecContext *ctx)
 {
@@ -272,6 +272,14 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
+	ret = av_dict_set(&format_opts, "input_format", "mjpeg", 0);
+	if (ret != 0) {
+		warning("avformat: av_dict_set(input_format) failed"
+			" (ret=%s)\n", av_err2str(ret));
+		err = ENOENT;
+		goto out;
+	}
+
 	ret = avformat_open_input(&st->ic, dev, input_format, &format_opts);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%s)\n",
@@ -382,7 +390,6 @@ static int module_init(void)
 
 	return err;
 }
-
 
 static int module_close(void)
 {
