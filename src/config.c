@@ -279,8 +279,12 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   sizeof(cfg->sip.local));
 	(void)conf_get_str(conf, "sip_certificate", cfg->sip.cert,
 			   sizeof(cfg->sip.cert));
-	(void)conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
-			   sizeof(cfg->sip.cafile));
+	if (0 != conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
+			   sizeof(cfg->sip.cafile))) {
+		warning("config: no sip_cafile defined, "
+			"tls connections won't work\n");
+	}
+
 
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
@@ -594,7 +598,11 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n# SIP\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
-			  "#sip_cafile\t\t%s\n"
+#if defined (DEFAULT_CAFILE) || defined (DARWIN) || defined (LINUX)
+			 "sip_cafile\t\t%s\n"
+#else
+			 "#sip_cafile\t\t%s\n"
+#endif
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
