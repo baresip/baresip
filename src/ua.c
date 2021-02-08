@@ -2123,9 +2123,13 @@ struct ua *uag_find(const struct pl *cuser)
 struct ua *uag_find_msg(const struct sip_msg *msg)
 {
 	struct le *le;
-	const struct pl *cuser = &msg->uri.user;
+	const struct pl *cuser;
 	struct ua *uaf = NULL;  /* fallback ua */
 
+	if (!msg)
+		return NULL;
+
+	cuser = &msg->uri.user;
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 
