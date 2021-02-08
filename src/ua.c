@@ -2027,13 +2027,15 @@ struct sipevent_sock *uag_sipevent_sock(void)
 static bool uri_match_transport(const struct uri *accu, enum sip_transp tp)
 {
 	struct pl pl;
+	enum sip_transp tpa;
 	int err;
 
 	err = msg_param_decode(&accu->params, "transport", &pl);
 	if (err)
 		return true;
 
-	return !pl_strcasecmp(&pl, sip_transp_name(tp));
+	tpa = sip_transp_decode(&pl);
+	return tpa == tp;
 }
 
 
