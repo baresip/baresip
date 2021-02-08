@@ -2049,10 +2049,10 @@ static bool uri_match_af(const struct uri *accu, const struct uri *peeru)
 
 	/* we list cases where we know there is a mismatch in af */
 #ifdef HAVE_INET6
-	if (accu->af == AF_INET && peeru->af == AF_INET6)
-		return false;
+	if (peeru->af == AF_UNSPEC || accu->af == AF_UNSPEC)
+		return true;
 
-	if (accu->af == AF_INET6 && peeru->af == AF_INET)
+	if (accu->af != peeru->af)
 		return false;
 
 	if (accu->af == AF_INET6 && peeru->af == AF_INET6) {
@@ -2068,10 +2068,6 @@ static bool uri_match_af(const struct uri *accu, const struct uri *peeru)
 
 		return sa_is_linklocal(&sa1) == sa_is_linklocal(&sa2);
 	}
-
-	/* if peer uri is a domain, we simply return true */
-	if (peeru->af == AF_UNSPEC)
-		return true;
 #endif
 
 	/* both IPv4 or we can't decide if af will match */
