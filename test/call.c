@@ -1210,6 +1210,50 @@ int test_call_tcp(void)
 }
 
 
+int test_call_deny_udp(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+	char curi[256];
+
+	fixture_init(f);
+
+	mem_deref(f->a.ua);
+	mem_deref(f->b.ua);
+	err = ua_alloc(&f->a.ua, "A <sip:a@127.0.0.1;transport=tcp>;regint=0");
+	TEST_ERR(err);
+	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1;transport=tcp>;regint=0");
+	TEST_ERR(err);
+
+	f->a.peer = &f->b;
+	f->b.peer = &f->a;
+
+	f->b.n_closed = 1;
+	f->estab_action = ACTION_RECANCEL;
+
+	/* Make a call using UDP-transport */
+	re_snprintf(curi, sizeof(curi), "sip:b@%J;transport=udp",
+			&f->laddr_udp);
+	err = ua_connect(f->a.ua, 0, NULL, curi, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(0, fix.b.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+	ASSERT_EQ(0, fix.b.n_incoming);
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
 /*
  *  Step 1. Call from A to B
  *
