@@ -2145,17 +2145,20 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		struct ua *ua = le->data;
 		struct account *acc = ua->acc;
 
-		if (!uri_match_transport(&acc->luri, msg->tp))
-			continue;
+		if (!acc->regint) {
+			if (!uri_match_transport(&acc->luri, msg->tp))
+				continue;
 
-		if (!uri_match_af(&acc->luri, &msg->uri))
-			continue;
+			if (!uri_match_af(&acc->luri, &msg->uri))
+				continue;
 
-		if (uri_host_local(&acc->luri) != uri_host_local(&msg->uri))
-			continue;
+			if (uri_host_local(&acc->luri) !=
+					uri_host_local(&msg->uri))
+				continue;
 
-		if (!uaf)
-			uaf = ua;
+			if (!uaf)
+				uaf = ua;
+		}
 
 		if (0 == pl_casecmp(cuser, &ua->acc->luri.user)) {
 			ua_printf(ua, "account match for %r\n", cuser);
