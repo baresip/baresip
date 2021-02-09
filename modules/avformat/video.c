@@ -108,7 +108,7 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 {
 	AVRational tb;
 	struct vidframe vf;
-	AVFrame *frame;
+	AVFrame *frame = 0, *frame2 = 0;
 	uint64_t timestamp;
 	unsigned i;
 	int ret;
@@ -140,6 +140,21 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	if (ret < 0 || !got_pict)
 		goto out;
 #endif
+
+	frame2 = av_frame_alloc();
+	frame2->format = AV_PIX_FMT_YUV420P;
+	ret = av_hwframe_transfer_data(frame2, frame, 0);
+	if (ret < 0)
+		goto out;
+
+	ret = av_frame_copy_props(frame2, frame);
+	if (ret < 0) {
+		goto out;
+	}
+
+	av_frame_unref(frame);
+	av_frame_move_ref(frame, frame2);
+	av_frame_free(&frame2);
 
 	vf.fmt = avpixfmt_to_vidfmt(frame->format);
 	if (vf.fmt == (enum vidfmt)-1) {

@@ -173,6 +173,18 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 		return ENOMEM;
 	}
 
+	AVBufferRef *hwctx;
+	ret = av_hwdevice_ctx_create(&hwctx, AV_HWDEVICE_TYPE_VAAPI,
+			NULL, NULL, 0);
+	if (ret < 0) {
+		warning("avformat: error opening hw device vaapi (%i)\n", ret);
+		return ENOMEM;
+	}
+
+	ctx->hw_device_ctx = av_buffer_ref(hwctx);
+
+	av_buffer_unref(&hwctx);
+
 	s->time_base = strm->time_base;
 	s->ctx = ctx;
 	s->idx = i;
@@ -270,6 +282,14 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 			err = ENOENT;
 			goto out;
 		}
+	}
+
+	ret = av_dict_set(&format_opts, "input_format", "mjpeg", 0);
+	if (ret != 0) {
+		warning("avformat: av_dict_set(input_format) failed"
+				" (ret=%s)\n", av_err2str(ret));
+		err = ENOENT;
+		goto out;
 	}
 
 	ret = avformat_open_input(&st->ic, dev, input_format, &format_opts);
