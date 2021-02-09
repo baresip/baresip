@@ -19,12 +19,13 @@ enum {
 
 
 /* Sender */
-typedef int (mcsender_send_h)(uint32_t ext_len, bool marker, uint32_t rtp_ts,
+typedef int (mcsender_send_h)(size_t ext_len, bool marker, uint32_t rtp_ts,
 	struct mbuf *mb, void *arg);
 
 int  mcsender_alloc(struct sa *addr, const struct aucodec *codec);
 void mcsender_stopall(void);
 void mcsender_stop(struct sa *addr);
+void mcsender_enable(bool enable);
 
 void mcsender_print(struct re_printf *pf);
 
@@ -33,6 +34,8 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio);
 void mcreceiver_unregall(void);
 void mcreceiver_unreg(struct sa *addr);
 int mcreceiver_chprio(struct sa *addr, uint32_t prio);
+void mcreceiver_enprio(uint32_t prio);
+void mcreceiver_enable(bool enable);
 
 void mcreceiver_print(struct re_printf *pf);
 

@@ -16,10 +16,15 @@
 #include "multicast.h"
 
 #define DEBUG_MODULE "mcsource"
-#define DEBUG_LEVEL 5
+#define DEBUG_LEVEL 6
 #include <re_dbg.h>
 
 
+/**
+ * Multicast source struct
+ *
+ * Contains configuration of the audio source and buffer for the audio data
+ */
 struct mcsource {
 	struct config_audio *cfg;
 	struct ausrc_st *ausrc;
@@ -59,11 +64,6 @@ struct mcsource {
 };
 
 
-/**
- * @brief Multicast source destructor
- *
- * @param arg Multicast source object
- */
 static void mcsource_destructor(void *arg)
 {
 	struct mcsource *src = arg;
@@ -84,20 +84,20 @@ static void mcsource_destructor(void *arg)
 	src->aubuf = mem_deref(src->aubuf);
 	list_flush(&src->filtl);
 
-	src->enc = mem_deref(src->enc);
-	src->mb = mem_deref(src->mb);
-	src->sampv = mem_deref(src->sampv);
+	src->enc      = mem_deref(src->enc);
+	src->mb       = mem_deref(src->mb);
+	src->sampv    = mem_deref(src->sampv);
 	src->sampv_rs = mem_deref(src->sampv_rs);
 
-	src->module = mem_deref(src->module);
-	src->device = mem_deref(src->device);
+	src->module   = mem_deref(src->module);
+	src->device   = mem_deref(src->device);
 }
 
 
 /**
- * @brief Encode and send audio data via @src->sendh
+ * Encode and send audio data via multicast send handler of @src
  *
- * @note This function hase REAL-TIME properties
+ * @note This function has REAL-TIME properties
  *
  * @param src	Multicast source object
  * @param sampv Samplebuffer
@@ -162,7 +162,7 @@ static void encode_rtp_send(struct mcsource *src, uint16_t *sampv,
 
 
 /**
- * @brief Poll timed read from audio buffer
+ * Poll timed read from audio buffer
  *
  * @note This function has REAL-TIME properties
  *
@@ -226,7 +226,7 @@ static void poll_aubuf_tx(struct mcsource *src)
 
 	auframe_init (&af, src->enc_fmt, sampv, sampc);
 
-	/* Process exactly one audio-frame in list order */
+	/* process exactly one audio-frame in list order */
 	for (le = src->filtl.head; le; le = le->next) {
 		struct aufilt_enc_st * st = le->data;
 
@@ -235,14 +235,14 @@ static void poll_aubuf_tx(struct mcsource *src)
 	}
 
 	if (err)
-		warning("multicast source: aufilter encode: &m\n", err);
+		warning("multicast source: aufilter encode (%m)\n", err);
 
 	encode_rtp_send(src, af.sampv, af.sampc);
 }
 
 
 /**
- * @brief Audio source error handler
+ * Audio source error handler
  *
  * @param err Error code
  * @param str Error string
@@ -257,11 +257,11 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 
 
 /**
- * @brief Audio source read handler
+ * Audio source read handler
  *
  * @note This function has REAL-TIME properties
  *
- * @param af	Audioframe
+ * @param af	Audio frame
  * @param arg	Multicast source object
  */
 static void ausrc_read_handler(struct auframe *af, void *arg)
@@ -276,8 +276,6 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 			af->fmt, aufmt_name(af->fmt));
 		return;
 	}
-
-	/*mute !?!?!? have to check what happens if call is active*/
 
 	(void) aubuf_write(src->aubuf, af->sampv, num_bytes);
 	src->aubuf_started = true;
@@ -297,16 +295,16 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 #ifdef HAVE_PTHREAD
 /**
- * @brief Standalone trasmitter thread function
+ * Standalone trasmitter thread function
  *
  * @param arg Multicast source object
  *
- * @return void* NULL ptr
+ * @return NULL
  */
 static void *tx_thread(void *arg)
 {
 	struct mcsource *src = arg;
-	uint32_t ts = 0;
+	uint64_t ts = 0;
 
 	while (src->thr.run) {
 		uint64_t now;
@@ -337,11 +335,11 @@ static void *tx_thread(void *arg)
 
 
 /**
- * @brief Start audio source
+ * Start audio source
  *
  * @param src Multicast source object
  *
- * @return int 0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 static int start_source(struct mcsource *src)
 {
@@ -404,7 +402,7 @@ static int start_source(struct mcsource *src)
 			ausrc_read_handler, ausrc_error_handler, src);
 		if (err) {
 			warning ("multicast source: start_source faild (%s-%s)"
-				" :%m\n", src->module, src->device, err);
+				" (%m)\n", src->module, src->device, err);
 			return err;
 		}
 
@@ -442,12 +440,12 @@ static int start_source(struct mcsource *src)
 
 
 /**
- * @brief Setup all available audio filter for the encoder
+ * Setup all available audio filter for the encoder
  *
  * @param src		Multicast source object
  * @param aufiltl	List of audio filter
  *
- * @return int 0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 static int aufilt_setup(struct mcsource *src, struct list *aufiltl)
 {
@@ -496,14 +494,14 @@ static int aufilt_setup(struct mcsource *src, struct list *aufiltl)
 
 
 /**
- * @brief Start Multicast source
+ * Start multicast source
  *
  * @param srcp	Multicast source ptr
  * @param ac	Audio codec
- * @param sendh	Send Handler ptr
- * @param arg	Send Hanlder Argument
+ * @param sendh	Send handler ptr
+ * @param arg	Send handler Argument
  *
- * @return int 0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 int mcsource_start(struct mcsource **srcp, const struct aucodec *ac,
 	mcsender_send_h *sendh, void *arg)
@@ -551,7 +549,8 @@ int mcsource_start(struct mcsource **srcp, const struct aucodec *ac,
 
 		err = src->ac->encupdh(&src->enc, src->ac, &prm, NULL);
 		if (err) {
-			warning ("multicast source: alloc encoder: &m\n", err);
+			warning ("multicast source: alloc encoder (%m)\n",
+				err);
 			goto out;
 		}
 	}

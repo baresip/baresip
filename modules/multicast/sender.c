@@ -16,13 +16,18 @@
 #include "multicast.h"
 
 #define DEBUG_MODULE "mcsend"
-#define DEBUG_LEVEL 5
+#define DEBUG_LEVEL 6
 #include <re_dbg.h>
 
 
 static struct list mcsenderl = LIST_INIT;
 
 
+/**
+ * Multicast sender struct
+ *
+ * Contains data to send audio stream to the network
+ */
 struct mcsender {
 	struct le le;
 
@@ -33,14 +38,10 @@ struct mcsender {
 	const struct aucodec *ac;
 
 	struct mcsource *src;
+	bool enable;
 };
 
 
-/**
- * @brief Multicasta sender destructor
- *
- * @param arg Multicast sender object
- */
 static void mcsender_destructor(void *arg)
 {
 	struct mcsender *mcsender = arg;
@@ -51,7 +52,7 @@ static void mcsender_destructor(void *arg)
 
 
 /**
- * @brief Multicast addess comparison
+ * Multicast address comparison
  *
  * @param le	List element (mcsender)
  * @param arg	Argument     (address)
@@ -69,15 +70,15 @@ static bool mcsender_addr_cmp(struct le *le, void *arg)
 
 
 /**
- * @brief Multicast send handler
+ * Multicast send handler
  *
  * @param ext_len	RTP extension header Length
- * @param marker 	RTP marker
+ * @param marker	RTP marker
  * @param mb		Data to send
  *
- * @return int 0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
-static int mcsender_send_handler(uint32_t ext_len, bool marker,
+static int mcsender_send_handler(size_t ext_len, bool marker,
 	uint32_t rtp_ts, struct mbuf *mb, void *arg)
 {
 	struct mcsender *mcsender = arg;
@@ -86,6 +87,12 @@ static int mcsender_send_handler(uint32_t ext_len, bool marker,
 
 	if (!mb)
 		return EINVAL;
+
+	if (!mcsender->enable)
+		return 0;
+
+	if (uag_call_count())
+		return 0;
 
 	pl_set_str(&placpt, mcsender->ac->pt);
 	err = rtp_send(mcsender->rtp, &mcsender->addr, ext_len != 0, marker,
@@ -96,7 +103,24 @@ static int mcsender_send_handler(uint32_t ext_len, bool marker,
 
 
 /**
- * @brief Stop all existing multicast sender
+ * Enable / Disable all existing sender
+ *
+ * @param enable
+ */
+void mcsender_enable(bool enable)
+{
+	struct le *le;
+	struct mcsender *mcsender;
+
+	LIST_FOREACH(&mcsenderl, le) {
+		mcsender = le->data;
+		mcsender->enable = enable;
+	}
+}
+
+
+/**
+ * Stop all existing multicast sender
  */
 void mcsender_stopall(void)
 {
@@ -105,7 +129,7 @@ void mcsender_stopall(void)
 
 
 /**
- * @brief Stop the multicast sender with @addr
+ * Stop the multicast sender with @addr
  *
  * @param addr Address
  */
@@ -122,17 +146,17 @@ void mcsender_stop(struct sa *addr)
 
 	mcsender = le->data;
 	list_unlink(&mcsender->le);
-	mem_deref(mcsender);
+	mcsender = mem_deref(mcsender);
 }
 
 
 /**
- * @brief Allocate a new multicast sender object
+ * Allocate a new multicast sender object
  *
  * @param addr	Destination address
  * @param codec	Used audio codec
  *
- * @return int 0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 int mcsender_alloc(struct sa *addr, const struct aucodec *codec)
 {
@@ -152,6 +176,7 @@ int mcsender_alloc(struct sa *addr, const struct aucodec *codec)
 
 	sa_cpy(&mcsender->addr, addr);
 	mcsender->ac = codec;
+	mcsender->enable = true;
 
 	err = rtp_open(&mcsender->rtp, sa_af(&mcsender->addr));
 	if (err)
@@ -164,26 +189,27 @@ int mcsender_alloc(struct sa *addr, const struct aucodec *codec)
 
  out:
 	if (err)
-		mem_deref(mcsender);
+		mcsender = mem_deref(mcsender);
 
 	return err;
 }
 
 
 /**
- * @brief Print all available multicast sender
+ * Print all available multicast sender
  *
  * @param pf Printer
  */
 void mcsender_print(struct re_printf *pf)
 {
-	struct le *le;
-	struct mcsender *mcsender;
+	struct le *le = NULL;
+	struct mcsender *mcsender = NULL;
 
 	re_hprintf(pf, "Multicast Sender List:\n");
 	LIST_FOREACH(&mcsenderl, le) {
 		mcsender = le->data;
-		re_hprintf(pf, "   %J - %s\n", &mcsender->addr,
-			mcsender->ac->name);
+		re_hprintf(pf, "   %J - %s%s\n", &mcsender->addr,
+			mcsender->ac->name,
+			mcsender->enable ? " (enabled)" : " (disabled)");
 	}
 }

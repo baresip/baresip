@@ -1,7 +1,7 @@
 /**
  * @file multicast.c
  *
- * @note only std payload types (pt) of RTP are acceped! (PCMU, PCMA, G722 ...)
+ * @note supported codecs are PCMU, PCMA, G722
  *
  * Copyright (C) 2021 Commend.com - c.huber@commend.com
  */
@@ -12,17 +12,17 @@
 #include "multicast.h"
 
 #define DEBUG_MODULE "multicast"
-#define DEBUG_LEVEL 5
+#define DEBUG_LEVEL 6
 #include <re_dbg.h>
 
 
 /**
- * @brief Decode IP-addess <IP>:<PORT>
+ * Decode IP-address <IP>:<PORT>
  *
  * @param pladdr	Parameter string
  * @param addr		Address ptr
  *
- * @return int 0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 static int decode_addr(struct pl *pladdr, struct sa *addr)
 {
@@ -30,13 +30,13 @@ static int decode_addr(struct pl *pladdr, struct sa *addr)
 
 	err = sa_decode(addr, pladdr->p, pladdr->l);
 	if (err)
-		warning ("multicast: addess decode %m\n", err);
+		warning ("multicast: address decode (%m)\n", err);
 
 
 	if (sa_port(addr) % 2) {
 		err = EINVAL;
-		warning("multicast: addess port for RTP should be even (%d)\n",
-			sa_port(addr));
+		warning("multicast: address port for RTP should be even"
+			" (%d)\n" , sa_port(addr));
 	}
 
 	return err;
@@ -44,12 +44,12 @@ static int decode_addr(struct pl *pladdr, struct sa *addr)
 
 
 /**
- * @brief Decode Audiocodec <CODEC>
+ * Decode Audiocodec <CODEC>
  *
  * @param plcodec	Parameter string
  * @param codecptr	Codec ptr
  *
- * @return int 0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 static int decode_codec(struct pl *plcodec, struct aucodec **codecptr)
 {
@@ -77,11 +77,11 @@ static int decode_codec(struct pl *plcodec, struct aucodec **codecptr)
 
 
 /**
- * @brief Check audio encoder RTP payload type
+ * Check audio encoder RTP payload type
  *
  * @param ac	Audiocodec object
  *
- * @return int 0 if succes, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 static int check_rtp_pt(struct aucodec *ac)
 {
@@ -93,12 +93,12 @@ static int check_rtp_pt(struct aucodec *ac)
 
 
 /**
- * @brief Create a new multicast sender
+ * Create a new multicast sender
  *
  * @param pf	Printer
  * @param arg	Command arguments
  *
- * @return int 0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 static int cmd_mcsend(struct re_printf *pf, void *arg)
 {
@@ -119,32 +119,58 @@ static int cmd_mcsend(struct re_printf *pf, void *arg)
 		goto out;
 
 	err = check_rtp_pt(codec);
-	if (err) {
-		warning ("multicast: non standardized RTP "
-			"payload type found as codec: %m\n", err);
+	if (err)
 		goto out;
-	}
 
 	err = mcsender_alloc(&addr, codec);
 
   out:
-	if (err) {
+	if (err)
 		re_hprintf(pf,
 			"usage: /mcsend addr=<IP>:<PORT> codec=<CODEC>\n");
-		re_hprintf(pf, "errorcode: %d (%m)\n", err, err);
-	}
 
 	return err;
 }
 
 
 /**
- * @brief Stop all multicast sender
+ * Enable / Disable all multicast sender without removing it
  *
  * @param pf	Printer
  * @param arg	Command arguments
  *
- * @return int always 0
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_mcsenden(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	struct pl plenable;
+	bool enable;
+
+	err = re_regex(carg->prm, str_len(carg->prm),
+		"enable=[^ ]*", &plenable);
+	if (err)
+		goto out;
+
+	enable = pl_u32(&plenable);
+	mcsender_enable(enable);
+
+  out:
+	if (err)
+		re_hprintf(pf, "usage: /mcsenden enable=<0,1>");
+
+	return err;
+}
+
+
+/**
+ * Stop all multicast sender
+ *
+ * @param pf	Printer
+ * @param arg	Command arguments
+ *
+ * @return always 0
  */
 static int cmd_mcstopall(struct re_printf *pf, void *arg)
 {
@@ -157,12 +183,12 @@ static int cmd_mcstopall(struct re_printf *pf, void *arg)
 
 
 /**
- * @brief Stop a specified multicast sender
+ * Stop a specified multicast sender
  *
  * @param pf	Printer
  * @param arg	Command arguments
  *
- * @return int 0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 static int cmd_mcstop(struct re_printf *pf, void *arg)
 {
@@ -192,6 +218,11 @@ static int cmd_mcstop(struct re_printf *pf, void *arg)
 
 /**
  * Print all multicast information
+ *
+ * @param pf	Printer
+ * @param arg	Command arguments
+ *
+ * @return alwasys 0
  */
 static int cmd_mcinfo(struct re_printf *pf, void *arg)
 {
@@ -199,9 +230,258 @@ static int cmd_mcinfo(struct re_printf *pf, void *arg)
 	(void)arg;
 
 	mcsender_print(pf);
-	/* mcrecv_printinfo(); */
+	mcreceiver_print(pf);
 
 	return 0;
+}
+
+
+/**
+ * Create a new multicast listener with prio
+ *
+ * @param pf	Printer
+ * @param arg	Command arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_mcreg(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	struct pl pladdr, plprio;
+	struct sa addr;
+	uint32_t prio;
+
+	err = re_regex(carg->prm, str_len(carg->prm), "addr=[^ ]* prio=[^ ]*",
+		&pladdr, &plprio);
+	if (err)
+		goto out;
+
+	prio = pl_u32(&plprio);
+	err = decode_addr(&pladdr, &addr);
+	if (err || !prio) {
+		if (!prio)
+			err = EINVAL;
+		goto out;
+	}
+
+	err = mcreceiver_alloc(&addr, prio);
+	if (err)
+		goto out;
+
+  out:
+	if (err)
+		re_hprintf(pf, "usage: /mcreg addr=<IP>:<PORT>"
+			"prio=<1-255>\n");
+
+	return err;
+}
+
+
+/**
+ * Un-register a multicast listener
+ *
+ * @param pf	Printer
+ * @param arg	Command arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_mcunreg(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	struct pl pladdr;
+	struct sa addr;
+
+	err = re_regex(carg->prm, str_len(carg->prm),
+		"addr=[^ ]*", &pladdr);
+	if (err)
+		goto out;
+
+	err = decode_addr(&pladdr, &addr);
+	if (err)
+		goto out;
+
+	mcreceiver_unreg(&addr);
+
+  out:
+	if (err)
+		re_hprintf(pf, "usage: /mcunreg addr=<IP>:<PORT>\n");
+
+	return err;
+}
+
+
+/**
+ * Un-register all multicast listener
+ *
+ * @param pf	Printer
+ * @param arg	Command arguments
+ *
+ * @return always 0
+ */
+static int cmd_mcunregall(struct re_printf *pf, void *arg)
+{
+	(void) pf;
+	(void) arg;
+
+	mcreceiver_unregall();
+	return 0;
+}
+
+
+/**
+ * Change priority of existing multicast listener
+ *
+ * @param pf	Printer
+ * @param arg	Command arguments
+ *
+ * @return  0 if success, otherwise errorcode
+ */
+static int cmd_mcchprio(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	struct pl pladdr, plprio;
+	uint32_t prio;
+	struct sa addr;
+
+	err = re_regex(carg->prm, str_len(carg->prm),
+		"addr=[^ ]* prio=[^ ]*", &pladdr, &plprio);
+	if (err)
+		goto out;
+
+	err = decode_addr(&pladdr, &addr);
+	if (err)
+		goto out;
+
+	prio = pl_u32(&plprio);
+
+	err = mcreceiver_chprio(&addr, prio);
+
+  out:
+	if (err)
+		re_hprintf(pf, "usage: /mcchprio addr=<IP>:<PORT>"
+			"prio=<1-255>\n");
+
+	return err;
+}
+
+
+/**
+ * Enables all multicast listener with prio <= given prio and
+ * disables those with prio > given pri
+ *
+ * @param pf	Printer
+ * @param arg	Command arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_mcprioen(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	struct pl plprio;
+	uint32_t prio;
+
+	err = re_regex(carg->prm, str_len(carg->prm),
+		"prio=[^ ]*", &plprio);
+	if (err)
+		goto out;
+
+	prio = pl_u32(&plprio);
+	mcreceiver_enprio(prio);
+
+  out:
+	if (err)
+		re_hprintf(pf, "usage: /mcprioen prio=<1-255>\n");
+
+	return err;
+}
+
+
+/**
+ * Enable / Disable all multicast receiver without removing it
+ *
+ * @param pf	Printer
+ * @param arg	Command arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_mcregen(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	struct pl plenable;
+	bool enable;
+
+	err = re_regex(carg->prm, str_len(carg->prm),
+		"enable=[^ ]*", &plenable);
+	if (err)
+		goto out;
+
+	enable = pl_u32(&plenable);
+	mcreceiver_enable(enable);
+
+  out:
+	if (err)
+		re_hprintf(pf, "usage: /mcregen enable=<0,1>");
+
+	return err;
+}
+
+
+/**
+ * config handler: call this handler foreach line given by @conf_apply function
+ *
+ * @param pl	pl containing the parameter of the config line
+ * @param arg	(int*) external priority counter
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int module_read_config_handler(const struct pl *pl, void *arg)
+{
+	struct cmd_arg cmd_arg;
+	char buf[48 + 5 + 10];
+	int err = 0;
+	int n = 0;
+	int *prio = (int *) arg;
+
+	if (pl_strchr(pl, '-'))
+		goto out;
+
+	n = re_snprintf(buf, 48 + 4, "addr=%r prio=%d", pl, *prio);
+	if (n < 0 && n > 48 + 5)
+		goto out;
+
+	cmd_arg.prm = buf;
+	err = cmd_mcreg(NULL, &cmd_arg);
+
+  out:
+	if (!err)
+		(*prio)++;
+
+	return err;
+}
+
+
+/**
+ * Read the config lines for configured multicast addresses
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int module_read_config(void)
+{
+	int err = 0, prio = 1;
+	struct sa laddr;
+
+	sa_init(&laddr, AF_INET);
+	err = conf_apply(conf_cur(), "multicast_listener",
+		module_read_config_handler, &prio);
+	if (err)
+		warning("Could not parse multicast config from file");
+
+	return err;
 }
 
 
@@ -214,25 +494,16 @@ static const struct cmd cmdv[] = {
 	{"mcsend",    0, CMD_PRM, "Send multicast"            , cmd_mcsend   },
 	{"mcstop",    0, CMD_PRM, "Stop multicast"            , cmd_mcstop   },
 	{"mcstopall", 0, CMD_PRM, "Stop all multicast"        , cmd_mcstopall},
+	{"mcsenden",  0, CMD_PRM, "Enable/Disable all sender" , cmd_mcsenden },
 
-	/*
-	{"mc_register", 0, CMD_PRM, "Register a new MC to listen on",
-		cmd_mc_register},
-	{"mc_unregister", 0, CMD_PRM, "Unregister an MC", cmd_mc_unregister},
-	{"mc_chprio", 0, CMD_PRM, "Change priority of existing MC listener",
-		cmd_mc_chprio},
-	{"mc_clearl", 0, CMD_PRM, "Clear all existing MC listeners",
-	cmd_mc_clearl},
-	{"mc_clears", 0, CMD_PRM, "Clear all existing MC sender",
-	cmd_mc_clears},
-	{"mc_create", 0, CMD_PRM, "Create a MC", cmd_mc_create},
-	{"mc_stop", 0, CMD_PRM, "Stop a MC", cmd_mc_stop},
-	{"mc_prio_en", 0, CMD_PRM, "Enable/Disable all MC lower than given",
-		cmd_mc_disableprio},
-	{"mc_send_en", 0, CMD_PRM, "Enable/Disable MC send", cmd_mc_send_en},
-	{"mc_receive_en", 0, CMD_PRM, "Enable/Disable MC receive",
-		cmd_mc_receive_en}
-	*/
+	{"mcreg",     0, CMD_PRM, "Reg. multicast listener"   , cmd_mcreg    },
+	{"mcunreg",   0, CMD_PRM, "Unreg. multicast listener" , cmd_mcunreg  },
+	{"mcunregall",0, CMD_PRM, "Unreg. all multicast listener",
+		cmd_mcunregall},
+	{"mcchprio"  ,0, CMD_PRM, "Change priority"           , cmd_mcchprio },
+	{"mcprioen"  ,0, CMD_PRM, "Enable Listener Prio >="   , cmd_mcprioen },
+	{"mcregen"   ,0, CMD_PRM, "Enable / Disable all listener",
+		cmd_mcregen},
 };
 
 
@@ -241,6 +512,7 @@ static int module_init(void)
 	int err = 0;
 
 	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err |= module_read_config();
 
 	return err;
 }
@@ -249,7 +521,7 @@ static int module_init(void)
 static int module_close(void)
 {
 	mcsender_stopall();
-	/* mcrecever_stopall(); */
+	mcreceiver_unregall();
 
 	cmd_unregister(baresip_commands(), cmdv);
 
