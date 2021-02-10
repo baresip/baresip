@@ -106,13 +106,12 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	struct menu *menu = menu_get();
 	int err = 0;
 
-	const char *usage = "Usage: /acceptdir"
+	const char *usage = "usage: /acceptdir"
 			" audio=<inactive, sendonly, recvonly, sendrecv>"
 			" video=<inactive, sendonly, recvonly, sendrecv>\n"
 			"/acceptdir <sendonly, recvonly, sendrecv>\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
-	(void) pf;
 
 	err = re_regex(carg->prm, str_len(carg->prm),
 		"audio=[^ ]* video=[^ ]*", &argdir[0], &argdir[1]);
@@ -121,7 +120,7 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 			"[^ ]*", &argdir[0]);
 
 	if (err) {
-		warning("%s", usage);
+		(void) re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
 
@@ -132,7 +131,7 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	vdir = decode_sdp_enum(&argdir[1]);
 
 	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
-		warning("%s", usage);
+		(void) re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
 
@@ -411,7 +410,7 @@ static void clean_number(char *str)
 }
 
 
-static enum answer_method auto_answer_method(void)
+static enum answer_method auto_answer_method(struct re_printf *pf)
 {
 	struct pl met;
 	int err;
@@ -430,8 +429,8 @@ static enum answer_method auto_answer_method(void)
 		return ANSM_ALERTINFO;
 	}
 	else {
-		warning("menu: SIP auto answer method %r is not supported",
-				met);
+		(void)re_hprintf(pf, "SIP auto answer method %r is not"
+				 " supported", met);
 		return ANSM_NONE;
 	}
 }
@@ -482,14 +481,14 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 	if (menu->adelay >= 0)
 		(void)ua_enable_autoanswer(ua, menu->adelay,
-				auto_answer_method());
+				auto_answer_method(pf));
 
 	err = ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
 
 	if (menu->adelay >= 0)
-		(void)ua_disable_autoanswer(ua, auto_answer_method());
+		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
 	if (err) {
-		warning("menu: ua_connect failed: %m\n", err);
+		(void)re_hprintf(pf, "ua_connect failed: %m\n", err);
 	}
 
 out:
@@ -509,14 +508,13 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct ua *ua = carg->data;
 	int err = 0;
 
-	const char *usage = "Usage: /dialdir <address/telnr.>"
+	const char *usage = "usage: /dialdir <address/number>"
 			" audio=<inactive, sendonly, recvonly, sendrecv>"
 			" video=<inactive, sendonly, recvonly, sendrecv>\n"
-			"/dialdir <address/telnr.>"
+			"/dialdir <address/number>"
 			" <sendonly, recvonly, sendrecv>\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
-	(void) pf;
 
 	err = re_regex(carg->prm, str_len(carg->prm),
 		"[^ ]* audio=[^ ]* video=[^ ]*",
@@ -526,7 +524,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			"[^ ]* [^ ]*",&pluri, &argdir[0]);
 
 	if (err) {
-		warning("%s", usage);
+		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
 
@@ -537,12 +535,12 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	vdir = decode_sdp_enum(&argdir[1]);
 
 	if (err) {
-		warning("%s", usage);
+		(void)re_hprintf(pf, "%s", usage);
 		return err;
 	}
 
 	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
-		warning("%s", usage);
+		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
 
@@ -554,7 +552,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		ua = uag_find_requri(carg->prm);
 
 	if (!ua) {
-		re_hprintf(pf, "could not find UA for %s\n", carg->prm);
+		(void)re_hprintf(pf, "could not find UA for %s\n", carg->prm);
 		err = EINVAL;
 		goto out;
 	}
@@ -640,7 +638,6 @@ static int options_command(struct re_printf *pf, void *arg)
 	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
 	char *uri = NULL;
 	int err = 0;
-	(void) pf;
 
 	err = pl_strdup(&uri, &word[0]);
 	if (err)
@@ -650,7 +647,7 @@ static int options_command(struct re_printf *pf, void *arg)
 		ua = uag_find_requri(uri);
 
 	if (!ua) {
-		re_hprintf(pf, "could not find UA for %s\n", uri);
+		(void)re_hprintf(pf, "could not find UA for %s\n", uri);
 		err = EINVAL;
 		goto out;
 	}
@@ -660,7 +657,7 @@ static int options_command(struct re_printf *pf, void *arg)
 out:
 	mem_deref(uri);
 	if (err) {
-		warning("menu: ua_options failed: %m\n", err);
+		(void)re_hprintf(pf, "could not send options: %m\n", err);
 	}
 
 	return err;
@@ -779,11 +776,12 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 	}
 
 	if (!ua) {
-		warning("menu: ua_find failed: %s\n", carg->prm);
+		(void)re_hprintf(pf, "could not find User-Agent: %s\n",
+				 carg->prm);
 		return ENOENT;
 	}
 
-	re_hprintf(pf, "ua: %s\n", account_aor(ua_account(ua)));
+	(void)re_hprintf(pf, "ua: %s\n", account_aor(ua_account(ua)));
 
 	menu_update_callstatus(uag_call_count());
 
@@ -841,8 +839,8 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 	if (re_regex(carg->prm, str_len(carg->prm), "[^,]+,[~]*",
 		     &pl_driver, &pl_device)) {
 
-		return re_hprintf(pf, "\rFormat should be:"
-				  " driver,device\n");
+		(void)re_hprintf(pf, "usage: /vidsrc <driver>,<device>\n");
+		return EINVAL;
 	}
 
 	pl_strcpy(&pl_driver, driver, sizeof(driver));
@@ -850,13 +848,13 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 
 	vs = vidsrc_find(baresip_vidsrcl(), driver);
 	if (!vs) {
-		re_hprintf(pf, "no such video-source: %s\n", driver);
+		(void)re_hprintf(pf, "no such video-source: %s\n", driver);
 		return 0;
 	}
 	else if (!list_isempty(&vs->dev_list)) {
 
 		if (!mediadev_find(&vs->dev_list, device)) {
-			re_hprintf(pf,
+			(void)re_hprintf(pf,
 				   "no such device for %s video-source: %s\n",
 				   driver, device);
 
@@ -866,12 +864,12 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 		}
 	}
 
-	re_hprintf(pf, "switch video device: %s,%s\n",
-		   driver, device);
+	(void)re_hprintf(pf, "switch video device: %s,%s\n", driver, device);
 
 	cfg = conf_config();
 	if (!cfg) {
-		return re_hprintf(pf, "no config object\n");
+		(void)re_hprintf(pf, "no config object\n");
+		return EINVAL;
 	}
 
 	vidcfg = &cfg->video;
@@ -889,8 +887,9 @@ static int switch_video_source(struct re_printf *pf, void *arg)
 
 			err = video_set_source(v, driver, device);
 			if (err) {
-				re_hprintf(pf, "failed to set video-source"
-						" (%m)\n", err);
+				(void)re_hprintf(pf,
+						 "failed to set video-source"
+						 " (%m)\n", err);
 				break;
 			}
 		}
@@ -913,7 +912,8 @@ static int cmd_tls_issuer(struct re_printf *pf, void *unused)
 
 	err = tls_get_issuer(uag_tls(), mb);
 	if (err){
-		warning("menu: Unable to get certificate issuer (%m)\n", err);
+		(void)re_hprintf(pf, "unable to get certificate issuer (%m)\n",
+				 err);
 		goto out;
 	}
 
@@ -937,7 +937,8 @@ static int cmd_tls_subject(struct re_printf *pf, void *unused)
 
 	err = tls_get_subject(uag_tls(), mb);
 	if (err) {
-		warning("menu: Unable to get certificate subject (%m)\n", err);
+		(void)re_hprintf(pf, "unable to get certificate subject"
+				 " (%m)\n", err);
 		goto out;
 	}
 

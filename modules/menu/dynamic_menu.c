@@ -15,19 +15,19 @@ static int set_audio_bitrate(struct re_printf *pf, void *arg)
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
 	uint32_t bitrate = str_isset(carg->prm) ? atoi(carg->prm) : 0;
-	int err;
 
 	call = ua_call(ua);
 	if (call) {
-		err = re_hprintf(pf, "setting audio bitrate: %u bps\n",
+		(void)re_hprintf(pf, "setting audio bitrate: %u bps\n",
 				 bitrate);
 		audio_set_bitrate(call_audio(call), bitrate);
 	}
 	else {
-		err = re_hprintf(pf, "call not found\n");
+		(void)re_hprintf(pf, "call not found\n");
+		return EINVAL;
 	}
 
-	return err;
+	return 0;
 }
 
 
@@ -46,10 +46,13 @@ static int cmd_find_call(struct re_printf *pf, void *arg)
 	const char *id = carg->prm;
 	struct call *call = menu_find_call(id);
 
-	if (!call)
-		(void)re_hprintf(pf, "menu: call not found (id=%s)\n", id);
-	else
-		(void)re_hprintf(pf, "menu: setting current call: %s\n", id);
+	if (call) {
+		(void)re_hprintf(pf, "setting current call: %s\n", id);
+	}
+	else {
+		(void)re_hprintf(pf, "call not found (id=%s)\n", id);
+		return EINVAL;
+	}
 
 	return 0;
 }
@@ -72,20 +75,20 @@ static int set_current_call(struct re_printf *pf, void *arg)
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
 	uint32_t linenum = atoi(carg->prm);
-	int err;
 
 	call = call_find_linenum(ua_calls(ua), linenum);
 	if (call) {
-		err = re_hprintf(pf, "setting current call: line %u\n",
+		(void)re_hprintf(pf, "setting current call: line %u\n",
 				 linenum);
 		menu_selcall(call);
 	}
 	else {
-		err = re_hprintf(pf, "menu: call not found (ua=%s, line=%u)\n",
+		(void)re_hprintf(pf, "call not found (ua=%s, line=%u)\n",
 				account_aor(ua_account(ua)), linenum);
+		return EINVAL;
 	}
 
-	return err;
+	return 0;
 }
 
 
@@ -212,7 +215,7 @@ static int set_video_dir(struct re_printf *pf, void *arg)
 		err = call_set_video_dir(call, SDP_SENDRECV);
 	}
 	else {
-		(void)re_hprintf(pf, "Invalid video direction %s"
+		(void)re_hprintf(pf, "invalid video direction %s"
 			" (inactive, sendonly, recvonly, sendrecv)\n",
 			carg->prm);
 		return EINVAL;
