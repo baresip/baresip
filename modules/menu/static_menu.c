@@ -437,13 +437,12 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
 	struct ua *ua = carg->data;
+	const char *puri = carg->prm;
+	char *uri = NULL;
 	int err = 0;
 
 	(void)pf;
 
-	if (menu->adelay >= 0)
-		(void)ua_enable_autoanswer(ua, menu->adelay,
-				auto_answer_method());
 
 	if (str_isset(carg->prm)) {
 
@@ -452,12 +451,8 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		if (menu->clean_number)
 			clean_number(carg->prm);
 
-		err = ua_connect(ua, NULL, NULL,
-				 carg->prm, VIDMODE_ON);
 	}
 	else if (menu->dialbuf->end > 0) {
-
-		char *uri;
 
 		menu->dialbuf->pos = 0;
 		err = mbuf_strdup(menu->dialbuf, &uri, menu->dialbuf->end);
@@ -467,19 +462,32 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		if (menu->clean_number)
 			clean_number(uri);
 
-		err = ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
-
-		mem_deref(uri);
+		puri = uri;
 	}
 
+	if (!ua)
+		ua = uag_find_requri(puri);
+
+	if (!ua) {
+		re_hprintf(pf, "could not find UA for %s\n", puri);
+		err = EINVAL;
+		goto out;
+	}
+
+	if (menu->adelay >= 0)
+		(void)ua_enable_autoanswer(ua, menu->adelay,
+				auto_answer_method());
+
+	err = ua_connect(ua, NULL, NULL, puri, VIDMODE_ON);
+
+	if (menu->adelay >= 0)
+		(void)ua_disable_autoanswer(ua, auto_answer_method());
 	if (err) {
 		warning("menu: ua_connect failed: %m\n", err);
 	}
 
 out:
-	if (menu->adelay >= 0)
-		(void)ua_disable_autoanswer(ua, auto_answer_method());
-
+	mem_deref(uri);
 	return err;
 }
 
@@ -535,6 +543,15 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	err = pl_strdup(&uri, &pluri);
 	if (err)
 		goto out;
+
+	if (!ua)
+		ua = uag_find_requri(carg->prm);
+
+	if (!ua) {
+		re_hprintf(pf, "could not find UA for %s\n", carg->prm);
+		err = EINVAL;
+		goto out;
+	}
 
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
 	if (err)
