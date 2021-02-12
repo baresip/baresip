@@ -38,20 +38,22 @@ static void listener_destructor(void *data)
 
 
 static void handle_message(struct message_lsnr *lsnr, struct ua *ua,
-			   const struct sip_msg *msg)
+			   const struct sip_msg *msg, bool hdld)
 {
 	static const char ctype_text[] = "text/plain";
 	struct pl ctype_pl = {ctype_text, sizeof(ctype_text)-1};
 	(void)ua;
 
-	if (msg_ctype_cmp(&msg->ctyp, "text", "plain") && lsnr->recvh) {
+	if (msg_ctype_cmp(&msg->ctyp, "text", "plain")) {
 
-		lsnr->recvh(ua, &msg->from.auri, &ctype_pl,
-			    msg->mb, lsnr->arg);
+		if (lsnr->recvh)
+			lsnr->recvh(ua, &msg->from.auri, &ctype_pl,
+				    msg->mb, lsnr->arg);
 
-		(void)sip_reply(uag_sip(), msg, 200, "OK");
+		if (!hdld)
+			(void)sip_reply(uag_sip(), msg, 200, "OK");
 	}
-	else {
+	else if (!hdld) {
 		(void)sip_replyf(uag_sip(), msg, 415, "Unsupported Media Type",
 				 "Accept: %s\r\n"
 				 "Content-Length: 0\r\n"
@@ -82,7 +84,7 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 
 		le = le->next;
 
-		handle_message(lsnr, ua, msg);
+		handle_message(lsnr, ua, msg, hdld);
 
 		hdld = true;
 	}
