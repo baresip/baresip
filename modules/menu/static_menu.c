@@ -72,13 +72,18 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 	struct menu *menu = menu_get();
 	int err;
 
+	if (!ua)
+		re_hprintf(pf, "no current User-Agent\n");
+
 	err = re_hprintf(pf, "%s: Answering incoming call\n",
 			 account_aor(ua_account(ua)));
 
 	/* Stop any ongoing ring-tones */
 	menu->play = mem_deref(menu->play);
 
-	ua_hold_answer(ua, NULL, VIDMODE_ON);
+	err = ua_hold_answer(ua, NULL, VIDMODE_ON);
+	if (err)
+		re_hprintf(pf, "no incoming call found\n");
 
 	return err;
 }
