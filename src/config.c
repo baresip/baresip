@@ -282,7 +282,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	if (0 != conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
 			   sizeof(cfg->sip.cafile))) {
 		warning("config: no sip_cafile defined, "
-			"tls connections won't work\n");
+			"tls connections maybe won't work\n");
 	}
 
 
