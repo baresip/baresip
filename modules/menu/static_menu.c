@@ -185,13 +185,13 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 static int switch_audio_player(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct pl pl_driver, pl_device;
 	struct config_audio *aucfg;
 	struct config *cfg;
 	struct audio *a;
 	const struct auplay *ap;
 	struct le *le;
+	struct le *leu;
 	char driver[16], device[128] = "";
 	int err = 0;
 
@@ -239,17 +239,20 @@ static int switch_audio_player(struct re_printf *pf, void *arg)
 	str_ncpy(aucfg->alert_mod, driver, sizeof(aucfg->alert_mod));
 	str_ncpy(aucfg->alert_dev, device, sizeof(aucfg->alert_dev));
 
-	for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
+	for (leu = list_head(uag_list()); leu; leu = leu->next) {
+		struct ua *ua = leu->data;
+		for (le = list_tail(ua_calls(ua)); le; le = le->prev) {
 
-		struct call *call = le->data;
+			struct call *call = le->data;
 
-		a = call_audio(call);
+			a = call_audio(call);
 
-		err = audio_set_player(a, driver, device);
-		if (err) {
-			re_hprintf(pf, "failed to set audio-player"
-				   " (%m)\n", err);
-			break;
+			err = audio_set_player(a, driver, device);
+			if (err) {
+				re_hprintf(pf, "failed to set audio-player"
+						" (%m)\n", err);
+				break;
+			}
 		}
 	}
 
