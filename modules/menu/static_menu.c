@@ -436,20 +436,23 @@ static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
-	struct ua *ua = carg->data;
-	const char *puri = carg->prm;
+	struct pl word[2] = {PL_INIT, PL_INIT};
+	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
 	char *uri = NULL;
 	int err = 0;
 
 	(void)pf;
 
+	err = pl_strdup(&uri, &word[0]);
+	if (err)
+		return err;
 
-	if (str_isset(carg->prm)) {
+	if (str_isset(uri)) {
 
 		mbuf_rewind(menu->dialbuf);
-		(void)mbuf_write_str(menu->dialbuf, carg->prm);
+		(void)mbuf_write_str(menu->dialbuf, uri);
 		if (menu->clean_number)
-			clean_number(carg->prm);
+			clean_number(uri);
 
 	}
 	else if (menu->dialbuf->end > 0) {
@@ -461,15 +464,13 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 		if (menu->clean_number)
 			clean_number(uri);
-
-		puri = uri;
 	}
 
 	if (!ua)
-		ua = uag_find_requri(puri);
+		ua = uag_find_requri(uri);
 
 	if (!ua) {
-		re_hprintf(pf, "could not find UA for %s\n", puri);
+		re_hprintf(pf, "could not find UA for %s\n", uri);
 		err = EINVAL;
 		goto out;
 	}
@@ -478,7 +479,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		(void)ua_enable_autoanswer(ua, menu->adelay,
 				auto_answer_method());
 
-	err = ua_connect(ua, NULL, NULL, puri, VIDMODE_ON);
+	err = ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
 
 	if (menu->adelay >= 0)
 		(void)ua_disable_autoanswer(ua, auto_answer_method());
@@ -499,7 +500,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
 	struct pl pluri;
 	struct call *call;
-	char *uri;
+	char *uri = NULL;
 	struct ua *ua = carg->data;
 	int err = 0;
 
@@ -630,12 +631,29 @@ static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
 static int options_command(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct pl word[2] = {PL_INIT, PL_INIT};
+	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
+	char *uri = NULL;
 	int err = 0;
 	(void) pf;
 
-	err = ua_options_send(ua, carg->prm,
-			      options_resp_handler, NULL);
+	err = pl_strdup(&uri, &word[0]);
+	if (err)
+		goto out;
+
+	if (!ua)
+		ua = uag_find_requri(uri);
+
+	if (!ua) {
+		re_hprintf(pf, "could not find UA for %s\n", uri);
+		err = EINVAL;
+		goto out;
+	}
+
+	err = ua_options_send(ua, uri, options_resp_handler, NULL);
+
+out:
+	mem_deref(uri);
 	if (err) {
 		warning("menu: ua_options failed: %m\n", err);
 	}
@@ -656,6 +674,7 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 {
 	struct le *le;
 	int err;
+	uint32_t i = 0;
 
 	(void)unused;
 
@@ -665,6 +684,7 @@ static int ua_print_reg_status(struct re_printf *pf, void *unused)
 	for (le = list_head(uag_list()); le && !err; le = le->next) {
 		const struct ua *ua = le->data;
 
+		err  = re_hprintf(pf, "%u - ", i++);
 		err |= ua_print_status(pf, ua);
 	}
 

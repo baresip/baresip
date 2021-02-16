@@ -644,6 +644,51 @@ struct ua *menu_uacur(void)
 }
 
 
+/**
+ * Manual selection of the UA via command parameter
+ * - carg->data has highest priority
+ * - otherwise second word in carg->prm is checked for an UA index
+ *
+ * @param pf    Print backend
+ * @param carg  Command argument
+ *
+ * @return The UA if found, NULL otherwise.
+ */
+struct ua   *menu_ua_carg(struct re_printf *pf, const struct cmd_arg *carg,
+		struct pl *word1, struct pl *word2)
+{
+	int err;
+	struct le *le;
+	uint32_t i;
+	struct ua *ua = carg->data;
+
+	if (ua)
+		return ua;
+
+	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [^ ]+", word1,
+			word2);
+	if (err)
+		return NULL;
+
+	i = pl_u32(word2);
+
+	le = uag_list()->head;
+	while (le && i--)
+		le = le->next;
+
+	if (le) {
+		ua = le->data;
+		info("%s: selected for request\n",
+				account_aor(ua_account(ua)));
+	}
+	else {
+		re_hprintf(pf, "no User-Agent at pos %r\n", word2);
+	}
+
+	return ua;
+}
+
+
 static int module_init(void)
 {
 	struct pl val;

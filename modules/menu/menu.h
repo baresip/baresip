@@ -39,6 +39,8 @@ struct call *menu_find_call(const char *id);
 void menu_selcall(struct call *call);
 struct call *menu_callcur(void);
 struct ua   *menu_uacur(void);
+struct ua   *menu_ua_carg(struct re_printf *pf, const struct cmd_arg *carg,
+		struct pl *word1, struct pl *word2);
 
 
 /*Dynamic menu related functions*/
