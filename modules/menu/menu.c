@@ -588,7 +588,7 @@ struct menu *menu_get(void)
 struct call *menu_find_call(const char *id)
 {
 	struct le *le;
-	struct call *call = NULL;
+	struct call *call;
 
 	if (!str_isset(id))
 		return NULL;
@@ -598,9 +598,11 @@ struct call *menu_find_call(const char *id)
 		struct list *calls = ua_calls(ua);
 
 		call = call_find_id(calls, id);
+		if (call)
+			return call;
 	}
 
-	return call;
+	return NULL;
 }
 
 
