@@ -2365,7 +2365,8 @@ struct ua *uag_find_requri(const char *requri)
 					!sa_set(&sa, &uri->host, 0)) {
 				/* Remember local account.
 				 * But we prefer registered UA. */
-				ret = ua;
+				if (!ret)
+					ret = ua;
 			}
 		}
 	}
