@@ -28,6 +28,7 @@
 #    ;regq=0.5
 #    ;sipnat={outbound}
 #    ;stunserver=stun:[user:pass]@host[:port]
+#    ;verify_server_cert=yes
 #    ;video_codecs=h264,h263,...
 #
 # Examples:

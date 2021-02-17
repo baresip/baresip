@@ -200,6 +200,18 @@ static void autoanswer_allow_decode(struct account *prm, const struct pl *pl)
 }
 
 
+static void verify_decode(struct account *prm, const struct pl *pl)
+{
+	struct pl v;
+
+	if (0 == msg_param_decode(pl, "verify_server_cert", &v)) {
+		if (0 == pl_strcasecmp(&v, "no")) {
+			prm->verify = false;
+		}
+	}
+}
+
+
 static int csl_parse(struct pl *pl, char *str, size_t sz)
 {
 	struct pl ws = PL_INIT, val, ws2 = PL_INIT, cma = PL_INIT;
@@ -430,9 +442,11 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 	/* Decode parameters */
 	acc->ptime = 20;
+	acc->verify = true;
 	err |= sip_params_decode(acc, &acc->laddr);
 	       answermode_decode(acc, &acc->laddr.params);
 	       autoanswer_allow_decode(acc, &acc->laddr.params);
+	       verify_decode(acc, &acc->laddr.params);
 	err |= audio_codecs_decode(acc, &acc->laddr.params);
 	err |= video_codecs_decode(acc, &acc->laddr.params);
 	err |= media_decode(acc, &acc->laddr.params);
@@ -1268,6 +1282,18 @@ uint16_t account_stun_port(const struct account *acc)
 bool account_sip_autoanswer(const struct account *acc)
 {
 	return acc ? acc->sipans : false;
+}
+
+
+/**
+ * Returns if the server certificate for SIP TLS should be verified
+ *
+ * @param acc User-Agent account
+ * @return true by default, false if verify_server=no in accounts
+ */
+bool account_verify_server(const struct account *acc)
+{
+	return acc ? acc->verify : true;
 }
 
 
