@@ -1945,6 +1945,9 @@ static int send_invite(struct call *call)
 		goto out;
 	}
 
+	if (!account_verify_server(call->acc))
+		(void) sipsess_enverify(call->sess, false);
+
 	err = str_dup(&call->id,
 		      sip_dialog_callid(sipsess_dialog(call->sess)));
 

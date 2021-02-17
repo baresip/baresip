@@ -14,6 +14,7 @@ struct sip_req {
 	struct sip_dialog *dlg;
 	struct sip_auth *auth;
 	struct sip_request *req;
+	struct ua *ua;
 	char *method;
 	char *fmt;
 	sip_resp_h *resph;
@@ -92,9 +93,17 @@ static int auth_handler(char **username, char **password,
 
 static int request(struct sip_req *sr)
 {
-	return sip_drequestf(&sr->req, uag_sip(), true, sr->method, sr->dlg,
+	int err;
+	err = sip_drequestf(&sr->req, uag_sip(), true, sr->method, sr->dlg,
 			     0, sr->auth, NULL, resp_handler,
 			     sr, sr->fmt ? "%s" : NULL, sr->fmt);
+	if (err)
+		return err;
+
+	if (!account_verify_server(ua_account(sr->ua)))
+		(void)sip_request_enverify(sr->req, false);
+
+	return err;
 }
 
 
@@ -127,6 +136,7 @@ int sip_req_send(struct ua *ua, const char *method, const char *uri,
 	if (!sr)
 		return ENOMEM;
 
+	sr->ua = ua;
 	sr->resph = resph;
 	sr->arg   = arg;
 
