@@ -379,6 +379,25 @@ static struct call *ua_find_call_onhold(const struct ua *ua)
 }
 
 
+static struct call *ua_find_call_state(const struct ua *ua, enum call_state st)
+{
+	struct le *le;
+
+	if (!ua)
+		return NULL;
+
+	for (le = ua->calls.tail; le; le = le->prev) {
+
+		struct call *call = le->data;
+
+		if (call_state(call) == st)
+			return call;
+	}
+
+	return NULL;
+}
+
+
 static void resume_call(struct ua *ua)
 {
 	struct call *call;
@@ -1150,10 +1169,10 @@ int ua_answer(struct ua *ua, struct call *call, enum vidmode vmode)
 
 
 /**
- * Put the current call on hold and answer the incoming call
+ * Put the established call on hold and answer the given call
  *
  * @param ua    User-Agent
- * @param call  Call to answer, or NULL for current call
+ * @param call  Call to answer, or NULL for last incoming call
  * @param vmode Wanted video mode for the incoming call
  *
  * @return 0 if success, otherwise errorcode
@@ -1167,13 +1186,13 @@ int ua_hold_answer(struct ua *ua, struct call *call, enum vidmode vmode)
 		return EINVAL;
 
 	if (!call) {
-		call = ua_call(ua);
+		call = ua_find_call_state(ua, CALL_STATE_INCOMING);
 		if (!call)
 			return ENOENT;
 	}
 
-	/* put previous call on-hold */
-	pcall = ua_prev_call(ua);
+	/* put established call on-hold */
+	pcall = ua_find_call_state(ua, CALL_STATE_ESTABLISHED);
 	if (pcall) {
 		ua_printf(ua, "putting call with '%s' on hold\n",
 		     call_peeruri(pcall));
