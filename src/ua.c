@@ -882,10 +882,8 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 	bool uri_is_ip;
 	int err = 0;
 
-	if (!ua || !buf || !uri)
+	if (!buf || !uri)
 		return EINVAL;
-
-	acc = ua->acc;
 
 	/* Skip initial whitespace */
 	while (isspace(*uri))
@@ -899,10 +897,14 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 
 	err |= mbuf_write_str(buf, uri);
 
+	if (!ua)
+		return 0;
+
 	/* Append domain if missing and uri is not IP address */
 
 	/* check if uri is valid IP address */
 	uri_is_ip = (0 == sa_set_str(&sa_addr, uri, 0));
+	acc = ua->acc;
 
 	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
 		1 != uri_is_ip) {
@@ -929,6 +931,35 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 	}
 
 	return err;
+}
+
+
+static bool uri_only_user(const struct uri *uri)
+{
+	bool ret;
+	struct sa sa;
+
+	/* Note:
+	 * If only user is given then uri_decode sets uri->host instead of
+	 * uri->user. We don't know if this is a bug. But if somebody changes
+	 * this behavior then the following line has to be adapted.          */
+	ret = pl_isset(&uri->host) && !pl_isset(&uri->user);
+
+	/* exclude IP addresses */
+	if (!sa_set(&sa, &uri->host, 0))
+		ret = false;
+
+	return ret;
+}
+
+
+static bool uri_user_and_host(const struct uri *uri)
+{
+	bool ret;
+
+	ret = pl_isset(&uri->host) && pl_isset(&uri->user);
+
+	return ret;
 }
 
 
@@ -2023,7 +2054,8 @@ struct sipevent_sock *uag_sipevent_sock(void)
 }
 
 
-static bool uri_match_transport(const struct uri *accu, enum sip_transp tp)
+static bool uri_match_transport(const struct uri *accu,
+		const struct uri *peeru, enum sip_transp tp)
 {
 	struct pl pl;
 	enum sip_transp tpa;
@@ -2034,6 +2066,13 @@ static bool uri_match_transport(const struct uri *accu, enum sip_transp tp)
 		return true;
 
 	tpa = sip_transp_decode(&pl);
+	if (peeru) {
+		/* outgoing calls */
+		tp = uag.cfg->transp;
+		if (!msg_param_decode(&peeru->params, "transport", &pl))
+			tp = sip_transp_decode(&pl);
+	}
+
 	return tpa == tp;
 }
 
@@ -2145,7 +2184,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		struct account *acc = ua->acc;
 
 		if (!acc->regint) {
-			if (!uri_match_transport(&acc->luri, msg->tp))
+			if (!uri_match_transport(&acc->luri, NULL, msg->tp))
 				continue;
 
 			if (!uri_match_af(&acc->luri, &msg->uri))
@@ -2238,6 +2277,116 @@ struct ua *uag_find_param(const char *name, const char *value)
 	}
 
 	return NULL;
+}
+
+
+/**
+ * Find a User-Agent (UA) best fitting for an SIP request
+ *
+ * @param requri The SIP uri for the request
+ *
+ * @return User-Agent (UA) if found, otherwise NULL
+ */
+struct ua *uag_find_requri(const char *requri)
+{
+	struct mbuf *mb;
+	struct pl pl;
+	struct uri *uri;
+	struct le *le;
+	struct ua *ret = NULL;
+	struct sip_addr addr;
+	struct sa sa;
+	int err;
+
+	if (!requri)
+		return NULL;
+
+	if (!uag.ual.head)
+		return NULL;
+
+	mb = mbuf_alloc(16);
+	if (!mb)
+		return NULL;
+
+	err = ua_uri_complete(NULL, mb, requri);
+	if (err)
+		goto out;
+
+	mbuf_set_pos(mb, 0);
+	pl_set_mbuf(&pl, mb);
+	err = sip_addr_decode(&addr, &pl);
+	if (err) {
+		warning("ua: address %r could not be parsed: %m\n",
+				&pl, err);
+		goto out;
+	}
+
+	uri = &addr.uri;
+	for (le = uag.ual.head; le; le = le->next) {
+		struct ua *ua = le->data;
+		struct account *acc = ua->acc;
+
+		/* account inactive */
+		if (!acc->regint && !uri_host_local(&acc->luri))
+			continue;
+
+		/* not registered */
+		if (acc->regint && !ua_isregistered(ua))
+			continue;
+
+		if (uri_only_user(uri)) {
+			if (acc->regint) {
+				ret = ua;
+				break;
+			}
+		}
+
+		if (uri_user_and_host(uri) && acc->regint) {
+			if (0 != pl_cmp(&uri->host, &acc->luri.host)) {
+				continue;
+			}
+			else {
+				ret = ua;
+				break;
+			}
+		}
+
+		/* Now we select a local account for peer-to-peer calls.
+		 * uri = user@IP | user@domain | IP. */
+		if (!acc->regint) {
+			if (!uri_match_transport(&acc->luri, uri,
+						 SIP_TRANSP_NONE))
+				continue;
+
+			if (!uri_match_af(&acc->luri, uri))
+				continue;
+
+			if (!uri_only_user(uri) ||
+					!sa_set(&sa, &uri->host, 0)) {
+				/* Remember local account.
+				 * But we prefer registered UA. */
+				if (!ret)
+					ret = ua;
+			}
+		}
+	}
+
+	if (ret) {
+		ua_printf(ret, "selected for request\n");
+	}
+	else {
+		/* Ok, seems that matching account is missing. */
+		if (uri_only_user(uri)) {
+			goto out;
+		}
+
+		ret = uag.ual.head->data;
+		ua_printf(ret, "fallback selection\n");
+	}
+
+out:
+	mem_deref(mb);
+	return ret;
 }
 
 

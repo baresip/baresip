@@ -78,7 +78,7 @@ static void tmrstat_handler(void *arg)
 	(void)arg;
 
 	/* the UI will only show the current active call */
-	call = ua_call(menu_uacur());
+	call = menu_callcur();
 	if (!call)
 		return;
 
@@ -406,7 +406,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_INCOMING:
 
 		/* set the current User-Agent to the one with the call */
-		menu_uacur_set(ua);
+		menu_selcall(call);
 
 		ardir =sdp_media_rdir(
 			stream_sdpmedia(audio_strm(call_audio(call))));
@@ -431,16 +431,18 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_RINGING:
-		if (call == ua_call(ua) && !has_established_call())
+		menu_selcall(call);
+		if (!has_established_call())
 			play_ringback();
 		break;
 
 	case UA_EVENT_CALL_PROGRESS:
-		if (call == ua_call(ua))
-			menu.play = mem_deref(menu.play);
+		menu_selcall(call);
+		menu.play = mem_deref(menu.play);
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
+		menu_selcall(call);
 		/* stop any ringtones */
 		menu.play = mem_deref(menu.play);
 
@@ -487,6 +489,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				info("menu: call closed -- not redialing\n");
 			}
 		}
+
+		if (!str_cmp(call_id(call), menu.callid))
+			menu_selcall(NULL);
 		break;
 
 	case UA_EVENT_CALL_TRANSFER:
@@ -580,18 +585,107 @@ struct menu *menu_get(void)
 }
 
 
-void menu_uacur_set(struct ua *ua)
+struct call *menu_find_call(const char *id)
 {
-	menu.ua_cur = ua;
+	struct le *le;
+	struct call *call;
+
+	if (!str_isset(id))
+		return NULL;
+
+	for (le = list_head(uag_list()); le; le = le->next) {
+		struct ua *ua = le->data;
+		struct list *calls = ua_calls(ua);
+
+		call = call_find_id(calls, id);
+		if (call)
+			return call;
+	}
+
+	return NULL;
 }
 
 
+/**
+ * Selects the active call.
+ *
+ * @param call The call
+ */
+void menu_selcall(struct call *call)
+{
+	menu.callid = mem_deref(menu.callid);
+
+	if (call) {
+		str_dup(&menu.callid, call_id(call));
+		call_set_current(ua_calls(call_get_ua(call)), call);
+	}
+}
+
+
+/**
+ * Gets the active call.
+ *
+ * @return The active call.
+ */
+struct call *menu_callcur(void)
+{
+	return menu_find_call(menu.callid);
+}
+
+
+/**
+ * Get UA of active call
+ *
+ * @return ptr to UA object
+ */
 struct ua *menu_uacur(void)
 {
-	if (!menu.ua_cur)
-		menu.ua_cur = list_ledata(list_head(uag_list()));
+	return call_get_ua(menu_callcur());
+}
 
-	return menu.ua_cur;
+
+/**
+ * Manual selection of the UA via command parameter
+ * - carg->data has highest priority
+ * - otherwise second word in carg->prm is checked for an UA index
+ *
+ * @param pf    Print backend
+ * @param carg  Command argument
+ *
+ * @return The UA if found, NULL otherwise.
+ */
+struct ua   *menu_ua_carg(struct re_printf *pf, const struct cmd_arg *carg,
+		struct pl *word1, struct pl *word2)
+{
+	int err;
+	struct le *le;
+	uint32_t i;
+	struct ua *ua = carg->data;
+
+	if (ua)
+		return ua;
+
+	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [^ ]+", word1,
+			word2);
+	if (err)
+		return NULL;
+
+	i = pl_u32(word2);
+
+	le = uag_list()->head;
+	while (le && i--)
+		le = le->next;
+
+	if (le) {
+		ua = le->data;
+		info("%s: selected for request\n",
+				account_aor(ua_account(ua)));
+	}
+	else {
+		re_hprintf(pf, "no User-Agent at pos %r\n", word2);
+	}
+
+	return ua;
 }
 
 
@@ -683,9 +777,7 @@ static int module_close(void)
 	tmr_cancel(&menu.tmr_alert);
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
-
-	menu.le_cur = NULL;
-
+	menu.callid = mem_deref(menu.callid);
 	menu.play = mem_deref(menu.play);
 
 	tmr_cancel(&menu.tmr_redial);
