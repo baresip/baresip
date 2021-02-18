@@ -220,6 +220,7 @@ int main(int argc, char *argv[])
 		goto out;
 
 	str_ncpy(config->sip.local, "127.0.0.1:0", sizeof(config->sip.local));
+	config->sip.verify_server = false;
 
 	uag_set_exit_handler(ua_exit_handler, NULL);
 
