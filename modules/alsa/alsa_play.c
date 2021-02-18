@@ -73,7 +73,7 @@ static void *write_thread(void *arg)
 			snd_pcm_prepare(st->write);
 
 			n = snd_pcm_writei(st->write, sampv, samples);
-			if (n != samples) {
+			if (n < 0) {
 				warning("alsa: write error: %s\n",
 					snd_strerror((int) n));
 			}
