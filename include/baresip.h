@@ -285,6 +285,7 @@ struct config_sip {
 	char cert[256];         /**< SIP Certificate                */
 	char cafile[256];       /**< SIP CA-file                    */
 	enum sip_transp transp; /**< Default outgoing SIP transport protocol */
+	bool verify_server;     /**< Enable SIP TLS verify server   */
 };
 
 /** Call config */
