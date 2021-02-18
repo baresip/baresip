@@ -12,6 +12,7 @@ poll_method		epoll		# poll, select, epoll ..
 #sip_certificate	cert.pem
 #sip_cafile		ca.crt
 #sip_trans_def		udp
+#sip_verify_server	yes
 
 # Call
 call_local_timeout	120
