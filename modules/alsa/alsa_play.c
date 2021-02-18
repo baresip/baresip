@@ -54,7 +54,7 @@ static void auplay_destructor(void *arg)
 static void *write_thread(void *arg)
 {
 	struct auplay_st *st = arg;
-	long n;
+	snd_pcm_sframes_t n;
 	int num_frames;
 
 	num_frames = st->prm.srate * st->prm.ptime / 1000;
@@ -75,17 +75,17 @@ static void *write_thread(void *arg)
 			n = snd_pcm_writei(st->write, sampv, samples);
 			if (n != samples) {
 				warning("alsa: write error: %s\n",
-					snd_strerror(n));
+					snd_strerror((int) n));
 			}
 		}
 		else if (n < 0) {
 			if (st->run)
 				warning("alsa: write error: %s\n",
-					snd_strerror(n));
+					snd_strerror((int) n));
 		}
 		else if (n != samples) {
 			warning("alsa: write: wrote %d of %d samples\n",
-				n, samples);
+				(int) n, samples);
 		}
 	}
 
