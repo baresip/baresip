@@ -282,17 +282,20 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   sizeof(cfg->sip.local));
 	(void)conf_get_str(conf, "sip_certificate", cfg->sip.cert,
 			   sizeof(cfg->sip.cert));
+	(void)conf_get_bool(conf, "sip_verify_server",
+			&cfg->sip.verify_server);
 	if (0 != conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
 			   sizeof(cfg->sip.cafile))) {
-		warning("config: no sip_cafile defined, "
-			"tls connections maybe won't work\n");
+		if (cfg->sip.verify_server) {
+			warning("config: no sip_cafile defined "
+				"and sip_verify_server is enabled, "
+				"sip tls connections maybe won't work\n");
+		}
 	}
 
 	if (!conf_get(conf, "sip_trans_def", &tr))
 		cfg->sip.transp = sip_transp_decode(&tr);
 
-	(void)conf_get_bool(conf, "sip_verify_server",
-			&cfg->sip.verify_server);
 
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
