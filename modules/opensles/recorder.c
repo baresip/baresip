@@ -71,7 +71,7 @@ static void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 
 	(*st->recBufferQueue)->Enqueue(st->recBufferQueue,
 				       st->sampv[st->bufferId],
-				       st->sampc * 2);
+				       (unsigned int)(st->sampc * 2));
 }
 
 
@@ -145,7 +145,7 @@ static int startRecording(struct ausrc_st *st)
 	st->bufferId = 0;
 	r = (*st->recBufferQueue)->Enqueue(st->recBufferQueue,
 					   st->sampv[st->bufferId],
-					   st->sampc * 2);
+					   (unsigned int)(st->sampc * 2));
 	if (SL_RESULT_SUCCESS != r)
 		return ENODEV;
 
