@@ -365,52 +365,6 @@ static int search_ua(struct le **lep, void *arg)
 
 
 /**
- * Set current server to number given by arg,
- * if arg is empty the current server will be used.
- *
- * @param pf	Print handler for debug output
- * @param arg	Command argument
- *
- * @return	 0	if success
- *			-1	Parameter out of range
- *			-2	Failed to set current server
- */
-static int com_ua_set_current(struct re_printf *pf, void *arg)
-{
-	struct le *le = NULL;
-	struct ua *ua;
-	int err = 0;
-
-	err = search_ua(&le, arg);
-
-	if (!err) {
-		ua = le->data;
-
-		menu_uacur_set(ua);
-
-		if (ua == menu_uacur()) {
-			/*Print active server */
-			err = re_hprintf(pf, "Server %s activated\n",
-					account_aor(ua_account(ua)));
-		}
-		else {
-			err = -2;
-		}
-	}
-
-	if (err) {
-		warning("commend commands: set current server failed: %m\n",
-				err);
-	}
-	else {
-		debug("commend commands: set current server successful");
-	}
-
-	return err;
-}
-
-
-/**
  * Get registration state for server number given by arg,
  * if arg is empty the current server will be used.
  *
@@ -514,11 +468,6 @@ static int com_ua_delete(struct re_printf *pf, void *arg)
 
 	if (!err) {
 		ua = le->data;
-		if (ua == menu_uacur()) {
-			/*Move to next ua befor delete */
-			le = le->next ? le->next : list_head(uag_list());
-			menu_uacur_set(le->data);
-		}
 
 		/*Delete selected server */
 		if (ua_isregistered(ua)) {
@@ -939,52 +888,24 @@ static int com_call_info(struct re_printf *pf, const struct call *call)
  */
 static int com_print_calls(struct re_printf *pf, void *arg)
 {
-	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_get()->ua_cur;
-
-	return ua_print_calls(pf, ua, com_call_info);
-}
-
-
-/**
- * Switch to user agent with active call and
- * print all calls with Commend specific informations
- *
- * @param pf		Print handler for debug output
- * @param unused	unused parameter
- *
- * @return	0 if success, otherwise_current errorcode
- */
-static int com_print_active_calls(struct re_printf *pf, void *unused)
-{
-	int err = 0;
-	bool printed = false;
-	struct ua *ua = NULL;
-	struct le *le = NULL;
-	(void)unused;
+	struct le *le;
+	int err;
+	(void) arg;
 
 	for (le = list_head(uag_list()); le; le = le->next) {
-
-		ua = le->data;
-		if (ua_call(ua)) {
-			err = ua_print_calls(pf, ua, com_call_info);
-			printed = true;
-			break;
-		}
+		const struct ua *ua = le->data;
+		err = ua_print_calls(pf, ua, com_call_info);
+		if (err)
+			return err;
 	}
 
-	if(!printed)
-		err = ua_print_calls(pf, menu_get()->ua_cur, com_call_info);
-
-	return err;
+	return 0;
 }
 
 
 static const struct cmd cmdv[] = {
 
 {"com_listcalls", 0, 0, "List active calls Commend format", com_print_calls},
-{"com_list_active_calls", 0, 0, "Switch to active call and list in Commend"
-	" format", com_print_active_calls},
 {"com_hangup_all", 0, 0, "Hangup all calls", com_hangup_all},
 {"com_hangup_not_est", 0, 0, "Hangup all calls which are not established",
 	com_hangup_not_established},
@@ -997,7 +918,6 @@ static const struct cmd cmdv[] = {
 {"com_ua_del", 0, CMD_PRM, "Delete a proxy server", com_ua_delete},
 {"com_ua_reg", 0, CMD_PRM, "Register a proxy server", com_ua_register},
 {"com_ua_isreg", 0, CMD_PRM, "Is proxy server registered", com_ua_is_register},
-{"com_ua_set_cur", 0, CMD_PRM, "Set proxy server to use", com_ua_set_current},
 {"com_play", 0, CMD_PRM, "Start audio file playback", com_start_play_file},
 {"com_stop", 0, 0, "Stop audio file playback", com_stop_play_file},
 {"com_codec_cur", 0, 0, "Codec name of current call", com_codec_name},
