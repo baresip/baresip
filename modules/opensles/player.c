@@ -54,7 +54,8 @@ static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 	st->wh(st->sampv[st->bufferId], st->sampc, st->arg);
 
 	(*st->BufferQueue)->Enqueue(bq /*st->BufferQueue*/,
-				    st->sampv[st->bufferId], st->sampc * 2);
+				    st->sampv[st->bufferId],
+				    (unsigned int)(st->sampc * 2));
 
 	st->bufferId = ( st->bufferId + 1 ) % N_PLAY_QUEUE_BUFFERS;
 }

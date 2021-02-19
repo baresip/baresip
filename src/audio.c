@@ -753,7 +753,7 @@ static void *rx_thread(void *arg)
 	while (a->rx.thr.run) {
 
 		ms = tmr_jiffies() + 500;
-		ts.tv_sec = ms / 1000;
+		ts.tv_sec = (time_t)(ms / 1000);
 		ts.tv_nsec = (ms % 1000) * 1000000UL;
 
 		err = pthread_mutex_lock(&a->rx.thr.mutex);
