@@ -63,6 +63,7 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <sys/eventfd.h>
 #include <re.h>
 #include <baresip.h>
 #include "baresipbus.h"
@@ -81,6 +82,15 @@ struct ctrl_st {
 
 	guint bus_owner;            /**< Handle of dbus owner    */
 	DBusBaresip *interface;     /**< dbus interface          */
+
+	char *command;              /**< Current command                     */
+	int fd;                     /**< File descriptor for wake-up         */
+	struct mbuf *mb;            /**< Command response buffer             */
+
+	struct {
+		pthread_mutex_t mutex;
+		pthread_cond_t cond;
+	} wait;
 };
 
 static struct ctrl_st *m_st = NULL;
@@ -93,6 +103,47 @@ static int print_handler(const char *p, size_t size, void *arg)
 }
 
 
+static void command_handler(int flags, void *arg)
+{
+	struct ctrl_st *st = arg;
+	char buf[8];
+
+	if (!st->command)
+		return;
+
+	st->mb = mbuf_alloc(128);
+	struct re_printf pf = {print_handler, st->mb};
+	int err;
+	size_t len = strlen(st->command);
+
+	if (len == 1) {
+		/* Relay message to key commands */
+		err = cmd_process(baresip_commands(),
+					   NULL,
+					   st->command[0],
+					   &pf, NULL);
+	}
+	else {
+		/* Relay message to long commands */
+		err = cmd_process_long(baresip_commands(),
+					   st->command,
+					   len,
+					   &pf, NULL);
+	}
+
+	if (err)
+		warning("ctrl_dbus: error processing command (%m)\n", err);
+
+	mbuf_set_pos(st->mb, 0);
+	st->command = mem_deref(st->command);
+
+	pthread_mutex_lock(&st->wait.mutex);
+	pthread_cond_signal(&st->wait.cond);
+	read(st->fd, buf, sizeof(buf));
+	pthread_mutex_unlock(&st->wait.mutex);
+}
+
+
 static gboolean
 on_handle_invoke(DBusBaresip *interface,
 		GDBusMethodInvocation *invocation,
@@ -101,36 +152,19 @@ on_handle_invoke(DBusBaresip *interface,
 {
 	char *response;
 	struct ctrl_st *st = arg;
-	(void) st;
+	char buf[8] = {0,0,0,0,0,0,0,1};
 
-	struct mbuf *mb = mbuf_alloc(128);
-	struct re_printf pf = {print_handler, mb};
-	int err;
-	size_t len = strlen(command);
+	str_dup(&st->command, command);
 
-	if (len == 1) {
-		/* Relay message to key commands */
-		err = cmd_process(baresip_commands(),
-					   NULL,
-					   command[0],
-					   &pf, NULL);
-	}
-	else {
-		/* Relay message to long commands */
-		err = cmd_process_long(baresip_commands(),
-					   command,
-					   len,
-					   &pf, NULL);
-	}
+	pthread_mutex_lock(&st->wait.mutex);
+	write(st->fd, buf, sizeof(buf));
+	pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
+	pthread_mutex_unlock(&st->wait.mutex);
 
-	if (err)
-		warning("ctrl_dbus: error processing command (%m)\n", err);
-
-	mbuf_set_pos(mb, 0);
-	mbuf_strdup(mb, &response, mbuf_get_left(mb));
+	mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
 	dbus_baresip_complete_invoke(interface, invocation, response);
 	mem_deref(response);
-	mem_deref(mb);
+	st->mb = mem_deref(st->mb);
 	return true;
 }
 
@@ -249,17 +283,35 @@ static void ctrl_destructor(void *arg)
 		g_object_unref (st->interface);
 
 	g_main_loop_unref(st->loop);
+
+	pthread_mutex_destroy(&st->wait.mutex);
+	pthread_cond_destroy(&st->wait.cond);
 }
 
 
 static void *thread(void *arg)
 {
 	struct ctrl_st *st = arg;
+	int err;
 
 	st->run = true;
+	st->fd = eventfd(0, 0);
+	if (st->fd == -1) {
+		warning("ctrl_dbus: eventfd does not work (%m)\n", errno);
+		return NULL;
+	}
+
+	err = fd_listen(st->fd, FD_READ, command_handler, st);
+	if (err) {
+		warning("ctrl_dbus: can not listen on eventfd (%m)\n", err);
+		return NULL;
+	}
+
 	while (st->run)
 		g_main_loop_run(st->loop);
 
+	fd_close(st->fd);
+	close(st->fd);
 	return NULL;
 }
 
@@ -275,6 +327,9 @@ static int ctrl_alloc(struct ctrl_st **stp)
 	st = mem_zalloc(sizeof(*st), ctrl_destructor);
 	if (!st)
 		return ENOMEM;
+
+	pthread_mutex_init(&st->wait.mutex, NULL);
+	pthread_cond_init(&st->wait.cond, NULL);
 
 	st->loop = g_main_loop_new(NULL, false);
 	if (!st->loop) {
