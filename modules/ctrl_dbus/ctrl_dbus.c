@@ -63,7 +63,7 @@
 
 #include <string.h>
 #include <stdint.h>
-#include <sys/eventfd.h>
+#include <unistd.h>
 #include <re.h>
 #include <baresip.h>
 #include "baresipbus.h"
@@ -84,7 +84,7 @@ struct ctrl_st {
 	DBusBaresip *interface;     /**< dbus interface          */
 
 	char *command;              /**< Current command                     */
-	int fd;                     /**< File descriptor for wake-up         */
+	int fd[2];                  /**< Pipe file descriptors for wake-up   */
 	struct mbuf *mb;            /**< Command response buffer             */
 
 	struct {
@@ -139,7 +139,7 @@ static void command_handler(int flags, void *arg)
 
 	pthread_mutex_lock(&st->wait.mutex);
 	pthread_cond_signal(&st->wait.cond);
-	read(st->fd, buf, sizeof(buf));
+	read(st->fd[0], buf, sizeof(buf));
 	pthread_mutex_unlock(&st->wait.mutex);
 }
 
@@ -157,7 +157,7 @@ on_handle_invoke(DBusBaresip *interface,
 	str_dup(&st->command, command);
 
 	pthread_mutex_lock(&st->wait.mutex);
-	write(st->fd, buf, sizeof(buf));
+	write(st->fd[1], buf, sizeof(buf));
 	pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
 	pthread_mutex_unlock(&st->wait.mutex);
 
@@ -295,23 +295,23 @@ static void *thread(void *arg)
 	int err;
 
 	st->run = true;
-	st->fd = eventfd(0, 0);
-	if (st->fd == -1) {
-		warning("ctrl_dbus: eventfd does not work (%m)\n", errno);
+	if (pipe(st->fd) == -1) {
+		warning("ctrl_dbus: could not create pipe (%m)\n", errno);
 		return NULL;
 	}
 
-	err = fd_listen(st->fd, FD_READ, command_handler, st);
+	err = fd_listen(st->fd[0], FD_READ, command_handler, st);
 	if (err) {
-		warning("ctrl_dbus: can not listen on eventfd (%m)\n", err);
+		warning("ctrl_dbus: can not listen on pipe (%m)\n", err);
 		return NULL;
 	}
 
 	while (st->run)
 		g_main_loop_run(st->loop);
 
-	fd_close(st->fd);
-	close(st->fd);
+	fd_close(st->fd[0]);
+	close(st->fd[0]);
+	close(st->fd[1]);
 	return NULL;
 }
 
