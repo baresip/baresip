@@ -141,13 +141,14 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 		goto out;
 #endif
 
+#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (st->vid.ctx->hw_device_ctx) {
 		AVFrame *frame2;
 		frame2 = av_frame_alloc();
 		if (!frame2)
 			goto out;
 
-		// Many hw decoders are happy about YUV420P
+		/* Many hw decoders are happy about YUV420P */
 		frame2->format = AV_PIX_FMT_YUV420P;
 		ret = av_hwframe_transfer_data(frame2, frame, 0);
 		if (ret < 0) {
@@ -165,6 +166,7 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 		av_frame_move_ref(frame, frame2);
 		av_frame_free(&frame2);
 	}
+#endif
 
 	vf.fmt = avpixfmt_to_vidfmt(frame->format);
 	if (vf.fmt == (enum vidfmt)-1) {
