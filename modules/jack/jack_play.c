@@ -247,7 +247,7 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 
-	if(device)
+	if (str_isset(device))
 		st->device = device;
 
 	st->portv = mem_reallocarray(NULL, prm->ch, sizeof(*st->portv), NULL);
