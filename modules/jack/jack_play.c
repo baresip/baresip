@@ -183,21 +183,16 @@ static int start_jack(struct auplay_st *st)
 		if(st->device) {
 			info("jack: connecting input ports matching regexp %s\n", st->device);
 			ports = jack_get_ports (st->client, st->device, NULL,
-					JackPortIsInput);
-
-			if (ports == NULL) {
-				warning("jack: no input ports\n");
-				return ENODEV;
-			}
+						JackPortIsInput);
 		} else {
 			info("jack: connecting physical input ports\n");
 			ports = jack_get_ports (st->client, NULL, NULL,
-					JackPortIsInput | JackPortIsPhysical);
+						JackPortIsInput | JackPortIsPhysical);
+		}
 
-			if (ports == NULL) {
-				warning("jack: no physical playback ports\n");
-				return ENODEV;
-			}
+		if (ports == NULL) {
+			warning("jack: no input ports found\n");
+			return ENODEV;
 		}
 
 		/* Connect all ports. In case of for example mono
