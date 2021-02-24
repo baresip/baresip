@@ -18,6 +18,7 @@ struct auplay_st {
 	size_t sampc;             /* includes number of channels */
 	auplay_write_h *wh;
 	void *arg;
+	const char *device;
 
 	jack_client_t *client;
 	jack_port_t **portv;
@@ -179,17 +180,29 @@ static int start_jack(struct auplay_st *st)
 
 		unsigned i;
 
-		info("jack: connecting default input ports\n");
-		ports = jack_get_ports (st->client, NULL, NULL,
+		if(st->device) {
+			info("jack: connecting input ports matching regexp %s\n", st->device);
+			ports = jack_get_ports (st->client, st->device, NULL,
+					JackPortIsInput);
+
+			if (ports == NULL) {
+				warning("jack: no input ports\n");
+				return ENODEV;
+			}
+		} else {
+			info("jack: connecting physical input ports\n");
+			ports = jack_get_ports (st->client, NULL, NULL,
 					JackPortIsInput | JackPortIsPhysical);
-		if (ports == NULL) {
-			warning("jack: no physical playback ports\n");
-			return ENODEV;
+
+			if (ports == NULL) {
+				warning("jack: no physical playback ports\n");
+				return ENODEV;
+			}
 		}
 
-		/* Connect all physical ports. In case of for example mono
-		 * audio with 2 physical playback ports, connect the
-		 * single registered port to both physical port.
+		/* Connect all ports. In case of for example mono
+		 * audio with 2 playback ports, connect the
+		 * single registered port to both port.
 		 */
 		ch = 0;
 		for (i = 0; ports[i] != NULL; i++) {
@@ -219,8 +232,6 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	struct auplay_st *st;
 	int err = 0;
 
-	(void)device;
-
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
 
@@ -240,6 +251,9 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
+
+	if(device)
+		st->device = device;
 
 	st->portv = mem_reallocarray(NULL, prm->ch, sizeof(*st->portv), NULL);
 	if (!st->portv) {
