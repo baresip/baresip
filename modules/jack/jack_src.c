@@ -19,6 +19,7 @@ struct ausrc_st {
 	size_t sampc;             /* includes number of channels */
 	ausrc_read_h *rh;
 	void *arg;
+	const char *device;
 
 	jack_client_t *client;
 	jack_port_t **portv;
@@ -166,17 +167,24 @@ static int start_jack(struct ausrc_st *st)
 	}
 
 	if (jack_connect_ports) {
-		info("jack: connecting default output ports\n");
-		ports = jack_get_ports (st->client, NULL, NULL,
-					JackPortIsOutput | JackPortIsPhysical);
+		if(st->device) {
+			info("jack: connecting output ports matching regexp %s\n", st->device);
+			ports = jack_get_ports (st->client, st->device, NULL,
+						JackPortIsOutput);
+		} else {
+			info("jack: connecting default output ports\n");
+			ports = jack_get_ports (st->client, NULL, NULL,
+						JackPortIsOutput | JackPortIsPhysical);
+		}
+
 		if (ports == NULL) {
-			warning("jack: no physical playback ports\n");
+			warning("jack: no output ports found\n");
 			return ENODEV;
 		}
 
 		for (ch=0; ch<st->prm.ch; ch++) {
 			if (jack_connect(st->client, ports[ch],
-					 jack_port_name(st->portv[ch]))) {
+					jack_port_name(st->portv[ch]))) {
 				warning("jack: cannot connect output ports\n");
 			}
 		}
@@ -197,7 +205,6 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	int err = 0;
 
 	(void)ctx;
-	(void)device;
 	(void)errh;
 
 	if (!stp || !as || !prm || !rh)
@@ -217,6 +224,9 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
+
+	if(device)
+		st->device = device;
 
 	st->portv = mem_reallocarray(NULL, prm->ch, sizeof(*st->portv), NULL);
 	if (!st->portv) {
