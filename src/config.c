@@ -31,7 +31,7 @@ static struct config core_config = {
 		"",
 		"",
 		SIP_TRANSP_UDP,
-		true,
+		false,
 	},
 
 	/** Call config */
@@ -619,7 +619,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			 "#sip_cafile\t\t%s\n"
 #endif
 			  "#sip_trans_def\tudp\n"
-			  "#sip_verify_server\tyes\n"
+			  "sip_verify_server\tyes\n"
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
