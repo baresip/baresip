@@ -167,14 +167,20 @@ static int start_jack(struct ausrc_st *st)
 	}
 
 	if (jack_connect_ports) {
-		if(st->device) {
-			info("jack: connecting output ports matching regexp %s\n", st->device);
+
+		/* If device is specified, get the ports matching the
+		 * regexp specified in the device string. Otherwise, get all
+		 * physical ports. */
+		if (st->device) {
+			info("jack: connect output ports matching regexp %s\n",
+				st->device);
 			ports = jack_get_ports (st->client, st->device, NULL,
 						JackPortIsOutput);
-		} else {
-			info("jack: connecting default output ports\n");
+		}
+		else {
+			info("jack: connect to physical output ports\n");
 			ports = jack_get_ports (st->client, NULL, NULL,
-						JackPortIsOutput | JackPortIsPhysical);
+				JackPortIsOutput | JackPortIsPhysical);
 		}
 
 		if (ports == NULL) {
