@@ -180,14 +180,20 @@ static int start_jack(struct auplay_st *st)
 
 		unsigned i;
 
-		if(st->device) {
-			info("jack: connecting input ports matching regexp %s\n", st->device);
+		/* If device is specified, get the ports matching the
+		 * regexp specified in the device string. Otherwise, get all
+		 * physical ports. */
+
+		if (st->device) {
+			info("jack: connect input ports matching regexp %s\n",
+				st->device);
 			ports = jack_get_ports (st->client, st->device, NULL,
-						JackPortIsInput);
-		} else {
-			info("jack: connecting physical input ports\n");
+				JackPortIsInput);
+		}
+		else {
+			info("jack: connect physical input ports\n");
 			ports = jack_get_ports (st->client, NULL, NULL,
-						JackPortIsInput | JackPortIsPhysical);
+				JackPortIsInput | JackPortIsPhysical);
 		}
 
 		if (ports == NULL) {
@@ -195,16 +201,16 @@ static int start_jack(struct auplay_st *st)
 			return ENODEV;
 		}
 
-		/* Connect all ports. In case of for example mono
-		 * audio with 2 playback ports, connect the
-		 * single registered port to both port.
+		/* Connect all ports. In case of for example mono audio with
+		 * 2 jack input ports, connect the single registered port to
+		 * both input port.
 		 */
 		ch = 0;
 		for (i = 0; ports[i] != NULL; i++) {
 			if (jack_connect (st->client,
 					jack_port_name (st->portv[ch]),
 						ports[i])) {
-				warning("jack: cannot connect output ports\n");
+				warning("jack: cannot connect input ports\n");
 			}
 
 			++ch;
