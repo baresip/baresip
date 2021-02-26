@@ -236,7 +236,7 @@ static void play_resume(const struct call *call)
 }
 
 
-static bool has_established_call(void)
+static bool has_outgoing_call(void)
 {
 	struct le *lec;
 	struct le *leu;
@@ -247,6 +247,8 @@ static bool has_established_call(void)
 		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
 
 			switch (call_state(lec->data)) {
+			case CALL_STATE_OUTGOING:
+			case CALL_STATE_RINGING:
 			case CALL_STATE_EARLY:
 			case CALL_STATE_ESTABLISHED:
 				return true;
@@ -432,7 +434,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_RINGING:
 		menu_selcall(call);
-		if (!has_established_call())
+		if (!has_outgoing_call())
 			play_ringback();
 		break;
 
