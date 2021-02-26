@@ -2212,8 +2212,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			if (!uri_match_af(&acc->luri, &msg->uri))
 				continue;
 
-			if (uri_host_local(&acc->luri) !=
-					uri_host_local(&msg->uri))
+			if (!uri_host_local(&msg->uri))
 				continue;
 
 			if (!uaf)
@@ -2347,10 +2346,6 @@ struct ua *uag_find_requri(const char *requri)
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 		struct account *acc = ua->acc;
-
-		/* account inactive */
-		if (!acc->regint && !uri_host_local(&acc->luri))
-			continue;
 
 		/* not registered */
 		if (acc->regint && !ua_isregistered(ua))
