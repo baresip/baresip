@@ -18,6 +18,7 @@ struct auplay_st {
 	size_t sampc;             /* includes number of channels */
 	auplay_write_h *wh;
 	void *arg;
+	const char *device;
 
 	jack_client_t *client;
 	jack_port_t **portv;
@@ -179,24 +180,37 @@ static int start_jack(struct auplay_st *st)
 
 		unsigned i;
 
-		info("jack: connecting default input ports\n");
-		ports = jack_get_ports (st->client, NULL, NULL,
-					JackPortIsInput | JackPortIsPhysical);
+		/* If device is specified, get the ports matching the
+		 * regexp specified in the device string. Otherwise, get all
+		 * physical ports. */
+
+		if (st->device) {
+			info("jack: connect input ports matching regexp %s\n",
+				st->device);
+			ports = jack_get_ports (st->client, st->device, NULL,
+				JackPortIsInput);
+		}
+		else {
+			info("jack: connect physical input ports\n");
+			ports = jack_get_ports (st->client, NULL, NULL,
+				JackPortIsInput | JackPortIsPhysical);
+		}
+
 		if (ports == NULL) {
-			warning("jack: no physical playback ports\n");
+			warning("jack: no input ports found\n");
 			return ENODEV;
 		}
 
-		/* Connect all physical ports. In case of for example mono
-		 * audio with 2 physical playback ports, connect the
-		 * single registered port to both physical port.
+		/* Connect all ports. In case of for example mono audio with
+		 * 2 jack input ports, connect the single registered port to
+		 * both input port.
 		 */
 		ch = 0;
 		for (i = 0; ports[i] != NULL; i++) {
 			if (jack_connect (st->client,
 					jack_port_name (st->portv[ch]),
 						ports[i])) {
-				warning("jack: cannot connect output ports\n");
+				warning("jack: cannot connect input ports\n");
 			}
 
 			++ch;
@@ -219,8 +233,6 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	struct auplay_st *st;
 	int err = 0;
 
-	(void)device;
-
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
 
@@ -240,6 +252,9 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
+
+	if (str_isset(device))
+		st->device = device;
 
 	st->portv = mem_reallocarray(NULL, prm->ch, sizeof(*st->portv), NULL);
 	if (!st->portv) {
