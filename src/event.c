@@ -129,6 +129,7 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		      struct call *call, const char *prm)
 {
 	const char *event_str = uag_event_str(ev);
+	enum sdp_dir ardir;
 	int err = 0;
 
 	if (!od)
@@ -168,6 +169,11 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 			err |= odict_entry_add(od, "id", ODICT_STRING,
 						   call_identifier);
 		}
+
+		ardir = sdp_media_rdir(
+				stream_sdpmedia(audio_strm(call_audio(call))));
+		err |= odict_entry_add(od, "remoteaudiodir", ODICT_STRING,
+				sdp_dir_name(ardir));
 
 		if (err)
 			goto out;
