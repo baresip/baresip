@@ -39,11 +39,11 @@ static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
 	case AV_PIX_FMT_YUV420P:  return VID_FMT_YUV420P;
 	case AV_PIX_FMT_YUVJ420P: return VID_FMT_YUV420P;
 	case AV_PIX_FMT_YUV444P:  return VID_FMT_YUV444P;
-	case AV_PIX_FMT_NV12:	  return VID_FMT_NV12;
-	case AV_PIX_FMT_NV21:	  return VID_FMT_NV21;
+	case AV_PIX_FMT_NV12:     return VID_FMT_NV12;
+	case AV_PIX_FMT_NV21:     return VID_FMT_NV21;
 	case AV_PIX_FMT_UYVY422:  return VID_FMT_UYVY422;
 	case AV_PIX_FMT_YUYV422:  return VID_FMT_YUYV422;
-	default:				  return (enum vidfmt)-1;
+	default:                  return (enum vidfmt)-1;
 	}
 }
 
@@ -69,7 +69,7 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs	   = vs;
+	st->vs     = vs;
 	st->frameh = frameh;
 	st->arg    = arg;
 
@@ -78,7 +78,7 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	}
 	else {
 		err = avformat_shared_alloc(&st->shared, dev,
-						prm->fps, size, true);
+					    prm->fps, size, true);
 		if (err)
 			goto out;
 
@@ -181,7 +181,7 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	vf.size.h = st->vid.ctx->height;
 
 	for (i=0; i<4; i++) {
-		vf.data[i]	   = frame->data[i];
+		vf.data[i]     = frame->data[i];
 		vf.linesize[i] = frame->linesize[i];
 	}
 

@@ -28,8 +28,8 @@
  *
  * Example config:
  \verbatim
-  audio_source			  avformat,/tmp/testfile.mp4
-  video_source			  avformat,/tmp/testfile.mp4
+  audio_source            avformat,/tmp/testfile.mp4
+  video_source            avformat,/tmp/testfile.mp4
 
   avformat_hwaccel		vaapi
   avformat_inputformat	mjpeg
@@ -116,10 +116,10 @@ static void *read_thread(void *data)
 				sys_msleep(1000);
 
 				ret = av_seek_frame(st->ic, -1, 0,
-							AVSEEK_FLAG_BACKWARD);
+						    AVSEEK_FLAG_BACKWARD);
 				if (ret < 0) {
 					info("avformat: seek error (%d)\n",
-						 ret);
+					     ret);
 					goto out;
 				}
 
@@ -164,7 +164,7 @@ static void *read_thread(void *data)
 
 
 static int open_codec(struct stream *s, const struct AVStream *strm, int i,
-			  AVCodecContext *ctx)
+		      AVCodecContext *ctx)
 {
 	AVCodec *codec = avformat_decoder;
 	int ret;
@@ -209,8 +209,8 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 	s->idx = i;
 
 	debug("avformat: '%s' using decoder '%s' (%s)\n",
-		  av_get_media_type_string(ctx->codec_type),
-		  codec->name, codec->long_name);
+	      av_get_media_type_string(ctx->codec_type),
+	      codec->name, codec->long_name);
 
 	return 0;
 }
@@ -239,7 +239,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 
 	st->id = "avformat";
 
-	st->au.idx	= -1;
+	st->au.idx  = -1;
 	st->vid.idx = -1;
 
 	if (0 == re_regex(dev, str_len(dev), "[^,]+,[^]+", &pl_fmt, &pl_dev)) {
@@ -259,7 +259,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		input_format = av_find_input_format(format);
 		if (input_format) {
 			debug("avformat: using format '%s' (%s)\n",
-				  input_format->name, input_format->long_name);
+			      input_format->name, input_format->long_name);
 		}
 		else {
 			warning("avformat: input format not found (%s)\n",
@@ -444,10 +444,10 @@ static int module_init(void)
 	avdevice_register_all();
 
 	err  = ausrc_register(&ausrc, baresip_ausrcl(),
-				  "avformat", avformat_audio_alloc);
+			      "avformat", avformat_audio_alloc);
 
 	err |= vidsrc_register(&mod_avf, baresip_vidsrcl(),
-				   "avformat", avformat_video_alloc, NULL);
+			       "avformat", avformat_video_alloc, NULL);
 
 	return err;
 }
