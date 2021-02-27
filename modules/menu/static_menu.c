@@ -447,9 +447,11 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
-	err = pl_strdup(&uri, &word[0]);
-	if (err)
-		return err;
+	if (pl_isset(&word[0])) {
+		err = pl_strdup(&uri, &word[0]);
+		if (err)
+			return err;
+	}
 
 	if (str_isset(uri)) {
 
