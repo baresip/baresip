@@ -412,12 +412,10 @@ zrtp          ZRTP media encryption module
 
 ### Supported compilers:
 
-* gcc 3.x
-* gcc 4.x
-* gcc 5.x
-* gcc 6.x
+* gcc 4.x or later
 * ms vc2003 compiler
-* clang
+* clang 3.x or later
+
 
 ### Supported versions of OpenSSL
 
@@ -425,6 +423,7 @@ zrtp          ZRTP media encryption module
 * OpenSSL version 1.0.2
 * OpenSSL version 1.1.0
 * LibreSSL version 2.x
+* LibreSSL version 3.x
 
 
 ## Related projects
