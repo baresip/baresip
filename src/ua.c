@@ -416,6 +416,13 @@ static struct call *ua_find_active_call(struct ua *ua)
 }
 
 
+/**
+ * Put the established call on hold and resumes the given call
+ *
+ * @param call  Call to answer, or NULL for last incoming call
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int uag_hold_resume(struct call *call)
 {
 	int err = 0;
