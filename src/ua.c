@@ -398,16 +398,55 @@ static struct call *ua_find_call_state(const struct ua *ua, enum call_state st)
 }
 
 
-static void resume_call(struct ua *ua)
+static struct call *ua_find_active_call(struct ua *ua)
 {
-	struct call *call;
+	struct le *le = NULL;
 
-	call = ua_find_call_onhold(ua);
-	if (call) {
-		ua_printf(ua, "resuming previous call with '%s'\n",
-			  call_peeruri(call));
-		call_hold(call, false);
+	if (!ua)
+		return NULL;
+
+	for (le = list_head(&ua->calls); le; le = le->next) {
+		struct call *call = le->data;
+		if (call_state(call) == CALL_STATE_ESTABLISHED &&
+			!call_is_onhold(call))
+			return call;
 	}
+
+	return NULL;
+}
+
+
+int uag_hold_resume(struct call *call)
+{
+	int err = 0;
+	struct le *le = NULL;
+	struct ua *ua = NULL;
+	struct call *acall = NULL, *toresume = call;
+
+	if (!toresume) {
+		for (le = list_tail(&uag.ual); le; le = le->next) {
+			ua = le->data;
+			toresume = ua_find_call_onhold(ua);
+		}
+	}
+
+	if (!toresume) {
+		warning ("ua: no call found to resume\n");
+		return EINVAL;
+	}
+
+	for (le = list_head(&uag.ual); le; le = le->next) {
+		ua = le->data;
+		acall = ua_find_active_call(ua);
+		if (acall) {
+			err = call_hold(acall, true);
+			break;
+		}
+	}
+
+	err |= call_hold(toresume, false);
+
+	return err;
 }
 
 
@@ -484,7 +523,7 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		ua_event(ua, UA_EVENT_CALL_CLOSED, call, str);
 		mem_deref(call);
 
-		resume_call(ua);
+		uag_hold_resume(NULL);
 		break;
 
 	case CALL_EVENT_TRANSFER:
@@ -1140,7 +1179,7 @@ void ua_hangup(struct ua *ua, struct call *call,
 
 	mem_deref(call);
 
-	resume_call(ua);
+	uag_hold_resume(NULL);
 }
 
 
