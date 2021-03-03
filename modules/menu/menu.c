@@ -496,6 +496,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			menu_selcall(NULL);
 		break;
 
+	case UA_EVENT_CALL_REMOTE_SDP:
+		if (!str_cmp(prm, "answer"))
+			menu_selcall(call);
+		break;
+
 	case UA_EVENT_CALL_TRANSFER:
 		/*
 		 * Create a new call to transfer target.
