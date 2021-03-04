@@ -111,7 +111,10 @@ static int hold_prev_call(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	(void)pf;
 
-	return call_hold(ua_prev_call(menu_uacur()), 'H' == carg->key);
+	if (carg->key == 'H')
+		return call_hold(ua_prev_call(menu_uacur()), true);
+	else
+		return uag_hold_resume(ua_prev_call(menu_uacur()));
 }
 
 
@@ -131,7 +134,7 @@ static int cmd_call_resume(struct re_printf *pf, void *arg)
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	(void)pf;
 
-	return call_hold(ua_call(ua), false);
+	return uag_hold_resume(ua_call(ua));
 }
 
 
