@@ -583,6 +583,75 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 }
 
 
+static void call_hangupalldir(bool outgoing)
+{
+	struct ua *ua = NULL;
+	struct call *call = NULL;
+	struct le *lecall = NULL, *leua = NULL;
+	struct list *calls = NULL;
+
+	for (leua = list_head(uag_list()); leua; leua = leua->next) {
+		ua = leua->data;
+		calls = ua_calls(ua);
+		lecall = list_head(calls);
+		while (lecall) {
+			call = lecall->data;
+			lecall = lecall->next;
+
+			if (outgoing == call_is_outgoing(call))
+				ua_hangup(ua, call, 0, NULL);
+		}
+	}
+}
+
+
+static int cmd_hangupall(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct le *le;
+	struct ua *ua = NULL;
+	struct pl pldir;
+	int err = 0;
+
+	(void) pf;
+
+	if (!str_len(carg->prm)) {
+		pl_set_str(&pldir, "all");
+	}
+	else {
+		err = re_regex(carg->prm, str_len(carg->prm),
+			"dir=[^ ]*", &pldir);
+		if (err)
+			return err;
+	}
+
+	if (!pl_strcmp(&pldir, "all")) {
+		for (le = list_head(uag_list()); le; le = le->next) {
+			ua = le->data;
+
+			while (ua_call(ua))
+				ua_hangup(ua, NULL, 0, NULL);
+		}
+	}
+	else if (!pl_strcmp(&pldir, "out")) {
+		call_hangupalldir(true);
+	}
+	else if (!pl_strcmp(&pldir, "in")) {
+		call_hangupalldir(false);
+	}
+	else {
+		err = EINVAL;
+		goto out;
+	}
+
+  out:
+	if (err)
+		(void)re_hprintf(pf, "/hangupall dir=<all, in, out>\n");
+
+	return err;
+}
+
+
 static int print_commands(struct re_printf *pf, void *unused)
 {
 	(void)unused;
@@ -967,6 +1036,8 @@ static const struct cmd cmdv[] = {
 {"dialdir",   0,    CMD_PRM, "Dial with audio and video"
                              "direction.",              cmd_dialdir          },
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
+{"hangupall", 0,    CMD_PRM, "Hangup all calls with direction"
+                                                       ,cmd_hangupall        },
 {"help",      'h',        0, "Help menu",               print_commands       },
 {"listcalls", 'l',        0, "List active calls",       cmd_print_calls      },
 {"options",   'o',  CMD_PRM, "Options",                 options_command      },
