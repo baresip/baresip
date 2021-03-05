@@ -1243,7 +1243,7 @@ int ua_answer(struct ua *ua, struct call *call, enum vidmode vmode)
 		return EINVAL;
 
 	if (!call) {
-		call = ua_call(ua);
+		call = ua_find_call_state(ua, CALL_STATE_INCOMING);
 		if (!call)
 			return ENOENT;
 	}
