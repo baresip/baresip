@@ -453,6 +453,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		/* We must stop the re-dialing if the call was
 		   established */
 		redial_reset();
+		uag_hold_others(call);
 		break;
 
 	case UA_EVENT_CALL_CLOSED:
