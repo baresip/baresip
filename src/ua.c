@@ -527,8 +527,6 @@ static void call_event_handler(struct call *call, enum call_event ev,
 	case CALL_EVENT_CLOSED:
 		ua_event(ua, UA_EVENT_CALL_CLOSED, call, str);
 		mem_deref(call);
-
-		uag_hold_resume(NULL);
 		break;
 
 	case CALL_EVENT_TRANSFER:
@@ -1183,8 +1181,6 @@ void ua_hangup(struct ua *ua, struct call *call,
 		 reason ? reason : "Connection reset by user");
 
 	mem_deref(call);
-
-	uag_hold_resume(NULL);
 }
 
 
