@@ -457,6 +457,44 @@ int uag_hold_resume(struct call *call)
 }
 
 
+/**
+ * Put all established calls on hold, except the given one
+ *
+ * @param call  Excluded call, or NULL
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int uag_hold_others(struct call *call)
+{
+	int err = 0;
+	struct le *le = NULL;
+	struct ua *ua = NULL;
+	struct call *acall = NULL;
+
+	for (le = list_head(&uag.ual); le && !acall; le = le->next) {
+		ua = le->data;
+
+		for (le = list_head(&ua->calls); le; le = le->next) {
+			struct call *ccall = le->data;
+			if (ccall == call)
+				continue;
+
+			if (call_state(ccall) == CALL_STATE_ESTABLISHED &&
+					!call_is_onhold(ccall)) {
+				acall = ccall;
+				break;
+			}
+		}
+	}
+
+	if (!acall)
+		return 0;
+
+	err = call_hold(acall, true);
+	return err;
+}
+
+
 static void call_event_handler(struct call *call, enum call_event ev,
 			       const char *str, void *arg)
 {
