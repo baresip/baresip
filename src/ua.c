@@ -436,8 +436,8 @@ int uag_hold_resume(struct call *call)
 	}
 
 	if (!toresume) {
-		warning ("ua: no call found to resume\n");
-		return EINVAL;
+		debug ("ua: no call to resume\n");
+		return 0;
 	}
 
 	for (le = list_head(&uag.ual); le; le = le->next) {
