@@ -430,27 +430,22 @@ int uag_hold_resume(struct call *call)
 	struct ua *ua = NULL;
 	struct call *acall = NULL, *toresume = call;
 
-	if (!toresume) {
-		for (le = list_tail(&uag.ual); le; le = le->next) {
-			ua = le->data;
-			toresume = ua_find_call_onhold(ua);
-		}
+	for (le = list_head(&uag.ual); le && !toresume; le = le->next) {
+		ua = le->data;
+		toresume = ua_find_call_onhold(ua);
 	}
 
 	if (!toresume) {
-		warning ("ua: no call found to resume\n");
-		return EINVAL;
+		debug ("ua: no call to resume\n");
+		return 0;
 	}
 
-	for (le = list_head(&uag.ual); le; le = le->next) {
+	for (le = list_head(&uag.ual); le && !acall; le = le->next) {
 		ua = le->data;
 		acall = ua_find_active_call(ua);
-		if (acall) {
-			err = call_hold(acall, true);
-			break;
-		}
 	}
 
+	err =  call_hold(acall, true);
 	err |= call_hold(toresume, false);
 
 	return err;
@@ -529,8 +524,6 @@ static void call_event_handler(struct call *call, enum call_event ev,
 	case CALL_EVENT_CLOSED:
 		ua_event(ua, UA_EVENT_CALL_CLOSED, call, str);
 		mem_deref(call);
-
-		uag_hold_resume(NULL);
 		break;
 
 	case CALL_EVENT_TRANSFER:
@@ -1185,8 +1178,6 @@ void ua_hangup(struct ua *ua, struct call *call,
 		 reason ? reason : "Connection reset by user");
 
 	mem_deref(call);
-
-	uag_hold_resume(NULL);
 }
 
 
