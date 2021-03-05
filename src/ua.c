@@ -440,15 +440,12 @@ int uag_hold_resume(struct call *call)
 		return 0;
 	}
 
-	for (le = list_head(&uag.ual); le; le = le->next) {
+	for (le = list_head(&uag.ual); le && !acall; le = le->next) {
 		ua = le->data;
 		acall = ua_find_active_call(ua);
-		if (acall) {
-			err = call_hold(acall, true);
-			break;
-		}
 	}
 
+	err =  call_hold(acall, true);
 	err |= call_hold(toresume, false);
 
 	return err;
