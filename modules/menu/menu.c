@@ -497,7 +497,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_REMOTE_SDP:
-		if (!str_cmp(prm, "answer"))
+		if (!str_cmp(prm, "answer") &&
+				call_state(call) == CALL_STATE_ESTABLISHED)
 			menu_selcall(call);
 		break;
 
