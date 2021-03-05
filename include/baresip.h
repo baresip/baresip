@@ -825,6 +825,7 @@ int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   enum vidmode vidmode, const struct sip_msg *msg,
 		   struct call *xcall, const char *local_uri,
 		   bool use_rtp);
+struct call *ua_find_call_state(const struct ua *ua, enum call_state st);
 
 
 /* One instance */
@@ -832,6 +833,7 @@ int  ua_init(const char *software, bool udp, bool tcp, bool tls);
 void ua_close(void);
 void ua_stop_all(bool forced);
 int  uag_hold_resume(struct call *call);
+int  uag_hold_others(struct call *call);
 void uag_set_exit_handler(ua_exit_h *exith, void *arg);
 void uag_enable_sip_trace(bool enable);
 int  uag_reset_transp(bool reg, bool reinvite);

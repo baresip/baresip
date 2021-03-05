@@ -65,25 +65,44 @@ static int about_box(struct re_printf *pf, void *unused)
 }
 
 
+static int answer_call(struct ua *ua, struct call *call)
+{
+	struct menu *menu = menu_get();
+	int err;
+
+	if (!ua)
+		return EINVAL;
+
+	if (!call)
+		call = ua_find_call_state(ua, CALL_STATE_INCOMING);
+
+	if (!call)
+		return ENOENT;
+
+	/* Stop any ongoing ring-tones */
+	menu->play = mem_deref(menu->play);
+
+	err  = uag_hold_others(call);
+	err |= ua_answer(ua, call, VIDMODE_ON);
+	return err;
+}
+
+
 static int cmd_answer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
-	struct menu *menu = menu_get();
 	int err;
 
 	if (!ua)
 		re_hprintf(pf, "no current User-Agent\n");
 
-	err = re_hprintf(pf, "%s: Answering incoming call\n",
+	(void)re_hprintf(pf, "%s: Answering incoming call\n",
 			 account_aor(ua_account(ua)));
 
-	/* Stop any ongoing ring-tones */
-	menu->play = mem_deref(menu->play);
-
-	err = ua_hold_answer(ua, NULL, VIDMODE_ON);
+	err = answer_call(ua, NULL);
 	if (err)
-		re_hprintf(pf, "no incoming call found\n");
+		re_hprintf(pf, "could not answer call (%m)\n", err);
 
 	return err;
 }
@@ -103,7 +122,7 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	enum sdp_dir adir, vdir;
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
-	struct menu *menu = menu_get();
+	struct call *call;
 	int err = 0;
 
 	const char *usage = "usage: /acceptdir"
@@ -135,10 +154,11 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	err = call_set_media_direction(ua_call(ua), adir, vdir);
-
-	menu->play = mem_deref(menu->play);
-	ua_hold_answer(ua, NULL, VIDMODE_ON);
+	call = ua_call(ua);
+	(void)call_set_media_direction(call, adir, vdir);
+	err = answer_call(ua, call);
+	if (err)
+		re_hprintf(pf, "could not answer call (%m)\n", err);
 
 	return 0;
 }

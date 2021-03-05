@@ -379,7 +379,7 @@ static struct call *ua_find_call_onhold(const struct ua *ua)
 }
 
 
-static struct call *ua_find_call_state(const struct ua *ua, enum call_state st)
+struct call *ua_find_call_state(const struct ua *ua, enum call_state st)
 {
 	struct le *le;
 
@@ -448,6 +448,44 @@ int uag_hold_resume(struct call *call)
 	err =  call_hold(acall, true);
 	err |= call_hold(toresume, false);
 
+	return err;
+}
+
+
+/**
+ * Put all established calls on hold, except the given one
+ *
+ * @param call  Excluded call, or NULL
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int uag_hold_others(struct call *call)
+{
+	int err = 0;
+	struct le *le = NULL;
+	struct ua *ua = NULL;
+	struct call *acall = NULL;
+
+	for (le = list_head(&uag.ual); le && !acall; le = le->next) {
+		ua = le->data;
+
+		for (le = list_head(&ua->calls); le; le = le->next) {
+			struct call *ccall = le->data;
+			if (ccall == call)
+				continue;
+
+			if (call_state(ccall) == CALL_STATE_ESTABLISHED &&
+					!call_is_onhold(ccall)) {
+				acall = ccall;
+				break;
+			}
+		}
+	}
+
+	if (!acall)
+		return 0;
+
+	err = call_hold(acall, true);
 	return err;
 }
 
@@ -1196,7 +1234,7 @@ int ua_answer(struct ua *ua, struct call *call, enum vidmode vmode)
 		return EINVAL;
 
 	if (!call) {
-		call = ua_call(ua);
+		call = ua_find_call_state(ua, CALL_STATE_INCOMING);
 		if (!call)
 			return ENOENT;
 	}
