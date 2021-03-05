@@ -379,7 +379,7 @@ static struct call *ua_find_call_onhold(const struct ua *ua)
 }
 
 
-static struct call *ua_find_call_state(const struct ua *ua, enum call_state st)
+struct call *ua_find_call_state(const struct ua *ua, enum call_state st)
 {
 	struct le *le;
 

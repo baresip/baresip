@@ -825,6 +825,7 @@ int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   enum vidmode vidmode, const struct sip_msg *msg,
 		   struct call *xcall, const char *local_uri,
 		   bool use_rtp);
+struct call *ua_find_call_state(const struct ua *ua, enum call_state st);
 
 
 /* One instance */
