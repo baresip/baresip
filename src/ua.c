@@ -430,11 +430,9 @@ int uag_hold_resume(struct call *call)
 	struct ua *ua = NULL;
 	struct call *acall = NULL, *toresume = call;
 
-	if (!toresume) {
-		for (le = list_tail(&uag.ual); le; le = le->next) {
-			ua = le->data;
-			toresume = ua_find_call_onhold(ua);
-		}
+	for (le = list_head(&uag.ual); le && !toresume; le = le->next) {
+		ua = le->data;
+		toresume = ua_find_call_onhold(ua);
 	}
 
 	if (!toresume) {
