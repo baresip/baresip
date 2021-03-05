@@ -962,6 +962,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module_app\t\t" "ctrl_tcp" MOD_EXT "\n");
 	(void)re_fprintf(f, "module_app\t\t" "vidloop"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "httpreq"MOD_EXT"\n");
+	(void)re_fprintf(f, "#module_app\t\t" "multicast"MOD_EXT"\n");
 	(void)re_fprintf(f, "\n");
 
 	(void)re_fprintf(f, "\n#------------------------------------"
