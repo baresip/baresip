@@ -691,7 +691,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#dns_fallback\t\t8.8.8.8:53\n"
 			  "#net_interface\t\t%H\n"
 			  "\n"
-			  "# multicasting - last octet should be even"
+			  "# multicasting - last octet should be even\n"
                           "#multicast_listener\t\t224.0.2.22"
 			  "\n"
 			  "# Play tones\n"
