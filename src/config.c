@@ -690,10 +690,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#dns_server\t\t1.0.0.1:53\n"
 			  "#dns_fallback\t\t8.8.8.8:53\n"
 			  "#net_interface\t\t%H\n"
-			  "\n"
-			  "# multicasting - last octet should be even\n"
-                          "#multicast_listener\t\t224.0.2.22"
-			  "\n"
 			  "# Play tones\n"
 			  "#file_ausrc\t\taufile\n"
 			  "#file_srate\t\t16000\n"
@@ -1071,15 +1067,18 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			 "\n# HTTP request module\n"
-			 "# httpreq_ca\t\ttrusted1.pem\n"
-			 "# httpreq_ca\t\ttrusted2.pem\n"
-			 "# httpreq_dns\t\t1.1.1.1\n"
-			 "# httpreq_dns\t\t8.8.8.8\n"
-			 "# httpreq_hostname\tmyserver\n"
-			 "# httpreq_cert\t\tcert.pem\n"
-			 "# httpreq_key\t\tkey.pem\n"
-			 );
-
+			 "#httpreq_ca\t\ttrusted1.pem\n"
+			 "#httpreq_ca\t\ttrusted2.pem\n"
+			 "#httpreq_dns\t\t1.1.1.1\n"
+			 "#httpreq_dns\t\t8.8.8.8\n"
+			 "#httpreq_hostname\tmyserver\n"
+			 "#httpreq_cert\t\tcert.pem\n"
+			 "#httpreq_key\t\tkey.pem\n");
+	(void)re_fprintf(f,
+			 "\n# multicast receivers (in priority order) - port number must be even\n"
+                         "#multicast_listener\t\t224.0.2.21:50000\n"
+			 "#multicast_listener\t\t224.0.2.21:50002\n"
+			 "\n");
 	if (f)
 		(void)fclose(f);
 
