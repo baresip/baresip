@@ -514,6 +514,9 @@ static int module_init(void)
 	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 	err |= module_read_config();
 
+	if (!err)
+                info("multicast: enabled\n");
+
 	return err;
 }
 
