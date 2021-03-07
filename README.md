@@ -6,7 +6,7 @@ baresip README
 
 
 Baresip is a portable and modular SIP User-Agent with audio and video support.
-Copyright (c) 2010 - 2020 Alfred E. Heggestad and Contributors
+Copyright (c) 2010 - 2021 Alfred E. Heggestad and Contributors
 Distributed under BSD license
 
 
@@ -44,6 +44,7 @@ Distributed under BSD license
   - DNS NAPTR/SRV support
   - Multiple accounts support
   - DTMF support (RTP, SIP INFO)
+  - Multicast sending & receiving
 
 * Security:
   - Signalling encryption (TLS)
