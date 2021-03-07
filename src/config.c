@@ -1067,13 +1067,13 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			 "\n# HTTP request module\n"
-			 "#httpreq_ca\t\ttrusted1.pem\n"
-			 "#httpreq_ca\t\ttrusted2.pem\n"
-			 "#httpreq_dns\t\t1.1.1.1\n"
-			 "#httpreq_dns\t\t8.8.8.8\n"
-			 "#httpreq_hostname\tmyserver\n"
-			 "#httpreq_cert\t\tcert.pem\n"
-			 "#httpreq_key\t\tkey.pem\n");
+			 "# httpreq_ca\t\ttrusted1.pem\n"
+			 "# httpreq_ca\t\ttrusted2.pem\n"
+			 "# httpreq_dns\t\t1.1.1.1\n"
+			 "# httpreq_dns\t\t8.8.8.8\n"
+			 "# httpreq_hostname\tmyserver\n"
+			 "# httpreq_cert\t\tcert.pem\n"
+			 "# httpreq_key\t\tkey.pem\n");
 	(void)re_fprintf(f,
 			 "\n# multicast receivers (in priority order)"
 			 "- port number must be even\n"
