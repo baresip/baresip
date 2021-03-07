@@ -515,7 +515,7 @@ static int module_init(void)
 	err |= module_read_config();
 
 	if (!err)
-                info("multicast: enabled\n");
+		info("multicast: enabled\n");
 
 	return err;
 }
