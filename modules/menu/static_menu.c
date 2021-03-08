@@ -94,8 +94,10 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	int err;
 
-	if (!ua)
+	if (!ua) {
 		re_hprintf(pf, "no current User-Agent\n");
+		return EINVAL;
+	}
 
 	(void)re_hprintf(pf, "%s: Answering incoming call\n",
 			 account_aor(ua_account(ua)));
@@ -131,6 +133,11 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 			"/acceptdir <sendonly, recvonly, sendrecv>\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
+
+	if (!ua) {
+		re_hprintf(pf, "no current User-Agent\n");
+		return EINVAL;
+	}
 
 	err = re_regex(carg->prm, str_len(carg->prm),
 		"audio=[^ ]* video=[^ ]*", &argdir[0], &argdir[1]);
