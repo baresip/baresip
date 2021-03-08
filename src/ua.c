@@ -463,14 +463,14 @@ int uag_hold_others(struct call *call)
 {
 	int err = 0;
 	struct le *le = NULL;
-	struct ua *ua = NULL;
 	struct call *acall = NULL;
 
 	for (le = list_head(&uag.ual); le && !acall; le = le->next) {
-		ua = le->data;
+		struct ua *ua = le->data;
+		struct le *lec = NULL;
 
-		for (le = list_head(&ua->calls); le; le = le->next) {
-			struct call *ccall = le->data;
+		for (lec = list_head(&ua->calls); lec; lec = lec->next) {
+			struct call *ccall = lec->data;
 			if (ccall == call)
 				continue;
 
