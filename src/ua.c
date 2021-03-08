@@ -490,6 +490,31 @@ int uag_hold_others(struct call *call)
 }
 
 
+/**
+ * Find call with given id
+ *
+ * @param id  Call-id string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+struct call *uag_call_find(const char *id)
+{
+	struct le *le = NULL;
+	struct ua *ua = NULL;
+	struct call *call = NULL;
+
+	for (le = list_head(&uag.ual); le; le = le->next) {
+		ua = le->data;
+
+		call = call_find_id(ua_calls(ua), id);
+		if (call)
+			break;
+	}
+
+	return call;
+}
+
+
 static void call_event_handler(struct call *call, enum call_event ev,
 			       const char *str, void *arg)
 {
