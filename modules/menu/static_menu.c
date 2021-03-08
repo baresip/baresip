@@ -88,11 +88,32 @@ static int answer_call(struct ua *ua, struct call *call)
 }
 
 
+/**
+ * Answers active incoming call
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to an User-Agent
+ *             carg->prm is an optional call-id string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int cmd_answer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct call *call = ua_call(ua);
 	int err;
+
+	if (carg->prm) {
+		call = uag_call_find(carg->prm);
+		if (!call) {
+			re_hprintf(pf, "call %s not found\n", carg->prm);
+			return EINVAL;
+		}
+
+		ua = call_get_ua(call);
+	}
 
 	if (!ua) {
 		re_hprintf(pf, "no current User-Agent\n");
@@ -102,7 +123,7 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 	(void)re_hprintf(pf, "%s: Answering incoming call\n",
 			 account_aor(ua_account(ua)));
 
-	err = answer_call(ua, NULL);
+	err = answer_call(ua, call);
 	if (err)
 		re_hprintf(pf, "could not answer call (%m)\n", err);
 
