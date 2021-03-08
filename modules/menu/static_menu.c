@@ -138,14 +138,18 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	enum sdp_dir adir, vdir;
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
+	struct pl callid = PL_INIT;
+	char *cid = NULL;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
 	int err = 0;
+	bool ok = false;
 
 	const char *usage = "usage: /acceptdir"
 			" audio=<inactive, sendonly, recvonly, sendrecv>"
-			" video=<inactive, sendonly, recvonly, sendrecv>\n"
-			"/acceptdir <sendonly, recvonly, sendrecv>\n"
+			" video=<inactive, sendonly, recvonly, sendrecv>"
+			" [callid=id]\n"
+			"/acceptdir <sendonly, recvonly, sendrecv> [id]\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
@@ -154,13 +158,15 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	err = re_regex(carg->prm, str_len(carg->prm),
-		"audio=[^ ]* video=[^ ]*", &argdir[0], &argdir[1]);
-	if (err)
-		err = re_regex(carg->prm, str_len(carg->prm),
-			"[^ ]*", &argdir[0]);
+	ok |= 0 == menu_param_decode(carg->prm, "audio", &argdir[0]);
+	ok |= 0 == menu_param_decode(carg->prm, "video", &argdir[1]);
+	ok |= 0 == menu_param_decode(carg->prm, "callid", &callid);
+	if (!ok) {
+		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
+			"[^ ]*[ \t\r\n]*[^ ]*", &argdir[0], NULL, &callid);
+	}
 
-	if (err) {
+	if (!ok) {
 		(void) re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
@@ -177,6 +183,14 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	}
 
 	call = ua_call(ua);
+
+	(void)pl_strdup(&cid, &callid);
+	if (str_isset(cid)) {
+		call = uag_call_find(cid);
+		cid = mem_deref(cid);
+		ua = call_get_ua(call);
+	}
+
 	(void)call_set_media_direction(call, adir, vdir);
 	err = answer_call(ua, call);
 	if (err)
