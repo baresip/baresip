@@ -15,13 +15,10 @@
  *
  * @param pl  SDP direction as string
  *
- * @return sdp_dir SDP direction
+ * @return sdp_dir SDP direction, SDP_SENDRECV as fallback
  */
 static enum sdp_dir decode_sdp_enum(const struct pl *pl)
 {
-	if (!pl)
-		return SDP_INACTIVE;
-
 	if (!pl_strcmp(pl, "inactive")) {
 		return SDP_INACTIVE;
 	}
@@ -31,11 +28,8 @@ static enum sdp_dir decode_sdp_enum(const struct pl *pl)
 	else if (!pl_strcmp(pl, "recvonly")) {
 		return SDP_RECVONLY;
 	}
-	else if (!pl_strcmp(pl, "sendrecv")) {
-		return SDP_SENDRECV;
-	}
 
-	return SDP_INACTIVE;
+	return SDP_SENDRECV;
 }
 
 
