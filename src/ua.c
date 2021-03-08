@@ -2092,7 +2092,9 @@ int ua_print_calls(struct re_printf *pf, const struct ua *ua)
 
 	n = list_count(&ua->calls);
 
-	err |= re_hprintf(pf, "\n--- Active calls (%u) ---\n",
+	err |= re_hprintf(pf, "\nUser-Agent: %r@%r\n",
+			&ua->acc->luri.user, &ua->acc->luri.host);
+	err |= re_hprintf(pf, "--- Active calls (%u) ---\n",
 			  n);
 
 	for (linenum=CALL_LINENUM_MIN; linenum<CALL_LINENUM_MAX; linenum++) {
