@@ -590,6 +590,31 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_dnd(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+
+	if (!str_isset(carg->prm)) {
+		err = EINVAL;
+		goto out;
+	}
+
+	if (!str_cmp(carg->prm, "true"))
+		uag_set_dnd(true);
+	else if (!str_cmp(carg->prm, "false"))
+		uag_set_dnd(false);
+	else
+		err = EINVAL;
+
+ out:
+	if (err)
+		re_hprintf(pf, "usage: /dnd <true|false>\n");
+
+	return err;
+}
+
+
 static int cmd_hangup(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -1062,6 +1087,7 @@ static const struct cmd cmdv[] = {
 {"dial",      'd',  CMD_PRM, "Dial",                    dial_handler         },
 {"dialdir",   0,    CMD_PRM, "Dial with audio and video"
                              "direction.",              cmd_dialdir          },
+{"dnd",       0,    CMD_PRM, "Set Do not Disturb",      cmd_dnd              },
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"hangupall", 0,    CMD_PRM, "Hangup all calls with direction"
                                                        ,cmd_hangupall        },
