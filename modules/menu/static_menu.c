@@ -64,14 +64,8 @@ static int answer_call(struct ua *ua, struct call *call)
 	struct menu *menu = menu_get();
 	int err;
 
-	if (!ua)
+	if (!call)
 		return EINVAL;
-
-	if (!call)
-		call = ua_find_call_state(ua, CALL_STATE_INCOMING);
-
-	if (!call)
-		return ENOENT;
 
 	/* Stop any ongoing ring-tones */
 	menu->play = mem_deref(menu->play);
@@ -108,14 +102,10 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 
 		ua = call_get_ua(call);
 	}
-
-	if (!ua) {
-		re_hprintf(pf, "no active call\n");
-		return ENOENT;
+	else if (call_state(call) != CALL_STATE_INCOMING) {
+		call = uag_find_call_state(CALL_STATE_INCOMING);
+		ua = call_get_ua(call);
 	}
-
-	(void)re_hprintf(pf, "%s: Answering incoming call\n",
-			 account_aor(ua_account(ua)));
 
 	err = answer_call(ua, call);
 	if (err)
@@ -153,11 +143,6 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	if (!ua) {
-		re_hprintf(pf, "no active call\n");
-		return ENOENT;
-	}
-
 	ok |= 0 == menu_param_decode(carg->prm, "audio", &argdir[0]);
 	ok |= 0 == menu_param_decode(carg->prm, "video", &argdir[1]);
 	ok |= 0 == menu_param_decode(carg->prm, "callid", &callid);
@@ -190,13 +175,17 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		cid = mem_deref(cid);
 		ua = call_get_ua(call);
 	}
+	else if (call_state(call) != CALL_STATE_INCOMING) {
+		call = uag_find_call_state(CALL_STATE_INCOMING);
+		ua = call_get_ua(call);
+	}
 
 	(void)call_set_media_direction(call, adir, vdir);
 	err = answer_call(ua, call);
 	if (err)
 		re_hprintf(pf, "could not answer call (%m)\n", err);
 
-	return 0;
+	return err;
 }
 
 
