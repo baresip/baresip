@@ -379,6 +379,14 @@ static struct call *ua_find_call_onhold(const struct ua *ua)
 }
 
 
+/**
+ * Find call of a User-Agent with given call state
+ *
+ * @param ua  User-Agent
+ * @param st  Call-state
+ *
+ * @return The call if found, otherwise NULL.
+ */
 struct call *ua_find_call_state(const struct ua *ua, enum call_state st)
 {
 	struct le *le;
@@ -515,6 +523,13 @@ struct call *uag_call_find(const char *id)
 }
 
 
+/**
+ * Find call with given call state
+ *
+ * @param st  Call-state
+ *
+ * @return The call if found, otherwise NULL.
+ */
 struct call *uag_find_call_state(enum call_state st)
 {
 	struct le *le;
