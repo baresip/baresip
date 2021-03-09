@@ -52,6 +52,7 @@ struct uag {
 	bool delayed_close;            /**< Module will close SIP stack     */
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
+	bool dnd;                      /**< Do not Disturb flag             */
 	void *arg;                     /**< UA Exit handler argument        */
 	char *eprm;                    /**< Extra UA parameters             */
 #ifdef USE_TLS
@@ -72,6 +73,7 @@ static struct uag uag = {
 	false,
 	NULL,
 	NULL,
+	false,
 	NULL,
 	NULL,
 #ifdef USE_TLS
@@ -1705,6 +1707,12 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		return;
 	}
 
+	if (uag.dnd) {
+		(void)sip_treply(NULL, uag.sip, msg,
+			480,"Temporarily Unavailable");
+		return;
+	}
+
 	/* handle multiple calls */
 	if (config->call.max_calls &&
 	    uag_call_count() + 1 > config->call.max_calls) {
@@ -2717,6 +2725,28 @@ int uag_set_extra_params(const char *eprm)
 		return str_dup(&uag.eprm, eprm);
 
 	return 0;
+}
+
+
+/**
+ * Set global Do not Disturb flag
+ *
+ * @param dnd DnD flag
+ */
+void uag_set_dnd(bool dnd)
+{
+	uag.dnd = dnd;
+}
+
+
+/**
+ * Get DnD status of uag
+ *
+ * @return True if DnD is active, False if not
+ */
+bool uag_dnd(void)
+{
+	return uag.dnd;
 }
 
 

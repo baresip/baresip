@@ -835,6 +835,8 @@ void ua_stop_all(bool forced);
 int  uag_hold_resume(struct call *call);
 int  uag_hold_others(struct call *call);
 void uag_set_exit_handler(ua_exit_h *exith, void *arg);
+void uag_set_dnd(bool dnd);
+bool uag_dnd(void);
 void uag_enable_sip_trace(bool enable);
 int  uag_reset_transp(bool reg, bool reinvite);
 void uag_set_sub_handler(sip_msg_h *subh);
