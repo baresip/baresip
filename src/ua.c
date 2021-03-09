@@ -503,7 +503,7 @@ int uag_hold_others(struct call *call)
  *
  * @param id  Call-id string
  *
- * @return 0 if success, otherwise errorcode
+ * @return The call if found, otherwise NULL.
  */
 struct call *uag_call_find(const char *id)
 {
