@@ -515,6 +515,22 @@ struct call *uag_call_find(const char *id)
 }
 
 
+struct call *uag_find_call_state(enum call_state st)
+{
+	struct le *le;
+
+	for (le = list_head(&uag.ual); le; le = le->next) {
+		struct ua *ua = le->data;
+		struct call *call = ua_find_call_state(ua, st);
+
+		if (call)
+			return call;
+	}
+
+	return NULL;
+}
+
+
 static void call_event_handler(struct call *call, enum call_event ev,
 			       const char *str, void *arg)
 {
