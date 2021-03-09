@@ -141,9 +141,18 @@ static int cmd_call_resume(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct call *call = ua_call(ua);
 	(void)pf;
 
-	return uag_hold_resume(ua_call(ua));
+	if (carg->prm) {
+		call = uag_call_find(carg->prm);
+		if (!call) {
+			re_hprintf(pf, "call %s not found\n", carg->prm);
+			return EINVAL;
+		}
+	}
+
+	return uag_hold_resume(call);
 }
 
 
