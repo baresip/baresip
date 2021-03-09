@@ -74,6 +74,11 @@ static int cmd_call_hold(struct re_printf *pf, void *arg)
 		}
 	}
 
+	if (!call) {
+		re_hprintf(pf, "no active call\n");
+		return ENOENT;
+	}
+
 	return call_hold(call, true);
 }
 
@@ -150,6 +155,11 @@ static int cmd_call_resume(struct re_printf *pf, void *arg)
 			re_hprintf(pf, "call %s not found\n", carg->prm);
 			return EINVAL;
 		}
+	}
+
+	if (!call) {
+		re_hprintf(pf, "no active call\n");
+		return ENOENT;
 	}
 
 	return uag_hold_resume(call);

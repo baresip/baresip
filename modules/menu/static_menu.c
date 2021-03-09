@@ -110,8 +110,8 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 	}
 
 	if (!ua) {
-		re_hprintf(pf, "no current User-Agent\n");
-		return EINVAL;
+		re_hprintf(pf, "no active call\n");
+		return ENOENT;
 	}
 
 	(void)re_hprintf(pf, "%s: Answering incoming call\n",
@@ -154,8 +154,8 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 			" inactive at the same time\n";
 
 	if (!ua) {
-		re_hprintf(pf, "no current User-Agent\n");
-		return EINVAL;
+		re_hprintf(pf, "no active call\n");
+		return ENOENT;
 	}
 
 	ok |= 0 == menu_param_decode(carg->prm, "audio", &argdir[0]);
@@ -646,8 +646,8 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 	}
 
 	if (!ua) {
-		re_hprintf(pf, "no current User-Agent\n");
-		return EINVAL;
+		re_hprintf(pf, "no active call\n");
+		return ENOENT;
 	}
 
 	resume = call_state(call) == CALL_STATE_ESTABLISHED &&
