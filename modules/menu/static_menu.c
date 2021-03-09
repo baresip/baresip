@@ -635,6 +635,21 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
+	if (carg->prm) {
+		call = uag_call_find(carg->prm);
+		if (!call) {
+			re_hprintf(pf, "call %s not found\n", carg->prm);
+			return EINVAL;
+		}
+
+		ua = call_get_ua(call);
+	}
+
+	if (!ua) {
+		re_hprintf(pf, "no current User-Agent\n");
+		return EINVAL;
+	}
+
 	resume = call_state(call) == CALL_STATE_ESTABLISHED &&
 		 !call_is_onhold(call);
 	ua_hangup(ua, call, 0, NULL);
