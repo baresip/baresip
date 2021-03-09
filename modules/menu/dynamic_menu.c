@@ -58,6 +58,16 @@ static int cmd_find_call(struct re_printf *pf, void *arg)
 }
 
 
+/**
+ * Put the active call on-hold
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to a User-Agent
+ *             carg->prm is an optional call-id string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int cmd_call_hold(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
@@ -142,6 +152,16 @@ static int call_reinvite(struct re_printf *pf, void *arg)
 }
 
 
+/**
+ * Resume the active call
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to a User-Agent
+ *             carg->prm is an optional call-id string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int cmd_call_resume(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;

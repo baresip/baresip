@@ -81,7 +81,7 @@ static int answer_call(struct ua *ua, struct call *call)
  *
  * @param pf   Print handler
  * @param arg  Command arguments (carg)
- *             carg->data is an optional pointer to an User-Agent
+ *             carg->data is an optional pointer to a User-Agent
  *             carg->prm is an optional call-id string
  *
  * @return 0 if success, otherwise errorcode
@@ -615,6 +615,16 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 }
 
 
+/**
+ * Hangup the active call
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to a User-Agent
+ *             carg->prm is an optional call-id string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int cmd_hangup(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
