@@ -685,8 +685,6 @@ static void call_hangupalldir(bool outgoing)
 static int cmd_hangupall(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct le *le;
-	struct ua *ua = NULL;
 	struct pl pldir;
 	int err = 0;
 
@@ -703,12 +701,8 @@ static int cmd_hangupall(struct re_printf *pf, void *arg)
 	}
 
 	if (!pl_strcmp(&pldir, "all")) {
-		for (le = list_head(uag_list()); le; le = le->next) {
-			ua = le->data;
-
-			while (ua_call(ua))
-				ua_hangup(ua, NULL, 0, NULL);
-		}
+		call_hangupalldir(true);
+		call_hangupalldir(false);
 	}
 	else if (!pl_strcmp(&pldir, "out")) {
 		call_hangupalldir(true);
