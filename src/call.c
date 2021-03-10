@@ -403,7 +403,7 @@ static void audio_event_handler(int key, bool end, void *arg)
 	struct call *call = arg;
 	MAGIC_CHECK(call);
 
-	info("received event: '%c' (end=%d)\n", key, end);
+	info("received in-band DTMF event: '%c' (end=%d)\n", key, end);
 
 	if (call->dtmfh)
 		call->dtmfh(call, end ? KEYCODE_REL : key, call->arg);
@@ -1622,8 +1622,8 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 			char s = toupper(sig.p[0]);
 			uint32_t duration = pl_u32(&dur);
 
-			info("call: received DTMF: '%c' (duration=%r)\n",
-			     s, &dur);
+			info("call: received SIP INFO DTMF: '%c' "
+			     "(duration=%r)\n", s, &dur);
 
 			(void)sip_reply(sip, msg, 200, "OK");
 
