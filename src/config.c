@@ -296,7 +296,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	if (!conf_get(conf, "sip_trans_def", &tr))
 		cfg->sip.transp = sip_transp_decode(&tr);
 
-
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
 			   &cfg->call.local_timeout);
@@ -577,7 +576,6 @@ static const char *default_avcodec_hwaccel(void)
 #else
 	return "none";
 #endif
-
 }
 
 
@@ -875,7 +873,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "aufile" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "ausine" MOD_EXT "\n");
 
-
 	(void)re_fprintf(f, "\n# Video codec Modules (in order)\n");
 	(void)re_fprintf(f, "#module\t\t\t" "avcodec" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "vp8" MOD_EXT "\n");
@@ -1028,7 +1025,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#menu_clean_number\tno\n"
 			"#sip_autoanswer_beep\tyes\n"
 			"#sip_autoanswer_method\trfc5373 "
-				"# {rfc5373,call-info,alert-info}\n"
+			"# {rfc5373,call-info,alert-info}\n"
 			"#ring_aufile\t\tring.wav\n"
 			"#callwaiting_aufile\tcallwaiting.wav\n"
 			"#ringback_aufile\tringback.wav\n"
@@ -1067,13 +1064,14 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			 "\n# HTTP request module\n"
-			 "# httpreq_ca\t\ttrusted1.pem\n"
-			 "# httpreq_ca\t\ttrusted2.pem\n"
-			 "# httpreq_dns\t\t1.1.1.1\n"
-			 "# httpreq_dns\t\t8.8.8.8\n"
-			 "# httpreq_hostname\tmyserver\n"
-			 "# httpreq_cert\t\tcert.pem\n"
-			 "# httpreq_key\t\tkey.pem\n");
+			 "#httpreq_ca\t\ttrusted1.pem\n"
+			 "#httpreq_ca\t\ttrusted2.pem\n"
+			 "#httpreq_dns\t\t1.1.1.1\n"
+			 "#httpreq_dns\t\t8.8.8.8\n"
+			 "#httpreq_hostname\tmyserver\n"
+			 "#httpreq_cert\t\tcert.pem\n"
+			 "#httpreq_key\t\tkey.pem\n");
+
 	(void)re_fprintf(f,
 			 "\n# multicast receivers (in priority order)"
 			 "- port number must be even\n"
