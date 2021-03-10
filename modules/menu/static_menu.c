@@ -15,13 +15,10 @@
  *
  * @param pl  SDP direction as string
  *
- * @return sdp_dir SDP direction
+ * @return sdp_dir SDP direction, SDP_SENDRECV as fallback
  */
 static enum sdp_dir decode_sdp_enum(const struct pl *pl)
 {
-	if (!pl)
-		return SDP_INACTIVE;
-
 	if (!pl_strcmp(pl, "inactive")) {
 		return SDP_INACTIVE;
 	}
@@ -31,11 +28,8 @@ static enum sdp_dir decode_sdp_enum(const struct pl *pl)
 	else if (!pl_strcmp(pl, "recvonly")) {
 		return SDP_RECVONLY;
 	}
-	else if (!pl_strcmp(pl, "sendrecv")) {
-		return SDP_SENDRECV;
-	}
 
-	return SDP_INACTIVE;
+	return SDP_SENDRECV;
 }
 
 
@@ -70,14 +64,8 @@ static int answer_call(struct ua *ua, struct call *call)
 	struct menu *menu = menu_get();
 	int err;
 
-	if (!ua)
+	if (!call)
 		return EINVAL;
-
-	if (!call)
-		call = ua_find_call_state(ua, CALL_STATE_INCOMING);
-
-	if (!call)
-		return ENOENT;
 
 	/* Stop any ongoing ring-tones */
 	menu->play = mem_deref(menu->play);
@@ -88,19 +76,38 @@ static int answer_call(struct ua *ua, struct call *call)
 }
 
 
+/**
+ * Answers active incoming call
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to a User-Agent
+ *             carg->prm is an optional call-id string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int cmd_answer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct call *call = ua_call(ua);
 	int err;
 
-	if (!ua)
-		re_hprintf(pf, "no current User-Agent\n");
+	if (carg->prm) {
+		call = uag_call_find(carg->prm);
+		if (!call) {
+			re_hprintf(pf, "call %s not found\n", carg->prm);
+			return EINVAL;
+		}
 
-	(void)re_hprintf(pf, "%s: Answering incoming call\n",
-			 account_aor(ua_account(ua)));
+		ua = call_get_ua(call);
+	}
+	else if (call_state(call) != CALL_STATE_INCOMING) {
+		call = uag_find_call_state(CALL_STATE_INCOMING);
+		ua = call_get_ua(call);
+	}
 
-	err = answer_call(ua, NULL);
+	err = answer_call(ua, call);
 	if (err)
 		re_hprintf(pf, "could not answer call (%m)\n", err);
 
@@ -121,24 +128,30 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	enum sdp_dir adir, vdir;
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
+	struct pl callid = PL_INIT;
+	char *cid = NULL;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
 	int err = 0;
+	bool ok = false;
 
 	const char *usage = "usage: /acceptdir"
 			" audio=<inactive, sendonly, recvonly, sendrecv>"
-			" video=<inactive, sendonly, recvonly, sendrecv>\n"
-			"/acceptdir <sendonly, recvonly, sendrecv>\n"
+			" video=<inactive, sendonly, recvonly, sendrecv>"
+			" [callid=id]\n"
+			"/acceptdir <sendonly, recvonly, sendrecv> [id]\n"
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	err = re_regex(carg->prm, str_len(carg->prm),
-		"audio=[^ ]* video=[^ ]*", &argdir[0], &argdir[1]);
-	if (err)
-		err = re_regex(carg->prm, str_len(carg->prm),
-			"[^ ]*", &argdir[0]);
+	ok |= 0 == menu_param_decode(carg->prm, "audio", &argdir[0]);
+	ok |= 0 == menu_param_decode(carg->prm, "video", &argdir[1]);
+	ok |= 0 == menu_param_decode(carg->prm, "callid", &callid);
+	if (!ok) {
+		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
+			"[^ ]*[ \t\r\n]*[^ ]*", &argdir[0], NULL, &callid);
+	}
 
-	if (err) {
+	if (!ok) {
 		(void) re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
@@ -155,12 +168,24 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	}
 
 	call = ua_call(ua);
+
+	(void)pl_strdup(&cid, &callid);
+	if (str_isset(cid)) {
+		call = uag_call_find(cid);
+		cid = mem_deref(cid);
+		ua = call_get_ua(call);
+	}
+	else if (call_state(call) != CALL_STATE_INCOMING) {
+		call = uag_find_call_state(CALL_STATE_INCOMING);
+		ua = call_get_ua(call);
+	}
+
 	(void)call_set_media_direction(call, adir, vdir);
 	err = answer_call(ua, call);
 	if (err)
 		re_hprintf(pf, "could not answer call (%m)\n", err);
 
-	return 0;
+	return err;
 }
 
 
@@ -590,6 +615,16 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 }
 
 
+/**
+ * Hangup the active call
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to a User-Agent
+ *             carg->prm is an optional call-id string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int cmd_hangup(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -598,6 +633,21 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 	bool resume;
 
 	(void)pf;
+
+	if (carg->prm) {
+		call = uag_call_find(carg->prm);
+		if (!call) {
+			re_hprintf(pf, "call %s not found\n", carg->prm);
+			return EINVAL;
+		}
+
+		ua = call_get_ua(call);
+	}
+
+	if (!ua) {
+		re_hprintf(pf, "no active call\n");
+		return ENOENT;
+	}
 
 	resume = call_state(call) == CALL_STATE_ESTABLISHED &&
 		 !call_is_onhold(call);

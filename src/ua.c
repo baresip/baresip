@@ -379,6 +379,14 @@ static struct call *ua_find_call_onhold(const struct ua *ua)
 }
 
 
+/**
+ * Find call of a User-Agent with given call state
+ *
+ * @param ua  User-Agent
+ * @param st  Call-state
+ *
+ * @return The call if found, otherwise NULL.
+ */
 struct call *ua_find_call_state(const struct ua *ua, enum call_state st)
 {
 	struct le *le;
@@ -487,6 +495,54 @@ int uag_hold_others(struct call *call)
 
 	err = call_hold(acall, true);
 	return err;
+}
+
+
+/**
+ * Find call with given id
+ *
+ * @param id  Call-id string
+ *
+ * @return The call if found, otherwise NULL.
+ */
+struct call *uag_call_find(const char *id)
+{
+	struct le *le = NULL;
+	struct ua *ua = NULL;
+	struct call *call = NULL;
+
+	for (le = list_head(&uag.ual); le; le = le->next) {
+		ua = le->data;
+
+		call = call_find_id(ua_calls(ua), id);
+		if (call)
+			break;
+	}
+
+	return call;
+}
+
+
+/**
+ * Find call with given call state
+ *
+ * @param st  Call-state
+ *
+ * @return The call if found, otherwise NULL.
+ */
+struct call *uag_find_call_state(enum call_state st)
+{
+	struct le *le;
+
+	for (le = list_head(&uag.ual); le; le = le->next) {
+		struct ua *ua = le->data;
+		struct call *call = ua_find_call_state(ua, st);
+
+		if (call)
+			return call;
+	}
+
+	return NULL;
 }
 
 
@@ -2092,7 +2148,9 @@ int ua_print_calls(struct re_printf *pf, const struct ua *ua)
 
 	n = list_count(&ua->calls);
 
-	err |= re_hprintf(pf, "\n--- Active calls (%u) ---\n",
+	err |= re_hprintf(pf, "\nUser-Agent: %r@%r\n",
+			&ua->acc->luri.user, &ua->acc->luri.host);
+	err |= re_hprintf(pf, "--- Active calls (%u) ---\n",
 			  n);
 
 	for (linenum=CALL_LINENUM_MIN; linenum<CALL_LINENUM_MAX; linenum++) {

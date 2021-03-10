@@ -58,14 +58,38 @@ static int cmd_find_call(struct re_printf *pf, void *arg)
 }
 
 
+/**
+ * Put the active call on-hold
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to a User-Agent
+ *             carg->prm is an optional call-id string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int cmd_call_hold(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct call *call = ua_call(ua);
 
 	(void)pf;
 
-	return call_hold(ua_call(ua), true);
+	if (carg->prm) {
+		call = uag_call_find(carg->prm);
+		if (!call) {
+			re_hprintf(pf, "call %s not found\n", carg->prm);
+			return EINVAL;
+		}
+	}
+
+	if (!call) {
+		re_hprintf(pf, "no active call\n");
+		return ENOENT;
+	}
+
+	return call_hold(call, true);
 }
 
 
@@ -128,13 +152,37 @@ static int call_reinvite(struct re_printf *pf, void *arg)
 }
 
 
+/**
+ * Resume the active call
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to a User-Agent
+ *             carg->prm is an optional call-id string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int cmd_call_resume(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct call *call = ua_call(ua);
 	(void)pf;
 
-	return uag_hold_resume(ua_call(ua));
+	if (carg->prm) {
+		call = uag_call_find(carg->prm);
+		if (!call) {
+			re_hprintf(pf, "call %s not found\n", carg->prm);
+			return EINVAL;
+		}
+	}
+
+	if (!call) {
+		re_hprintf(pf, "no active call\n");
+		return ENOENT;
+	}
+
+	return uag_hold_resume(call);
 }
 
 

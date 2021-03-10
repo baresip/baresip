@@ -702,6 +702,36 @@ struct ua   *menu_ua_carg(struct re_printf *pf, const struct cmd_arg *carg,
 }
 
 
+/**
+ * Decode a command parameter
+ *
+ * @param prm  Command arguments parameter string
+ * @param name Parameter name
+ * @param val  Returned parameter value
+ *
+ * @return 0 for success, otherwise errorcode
+ */
+int menu_param_decode(const char *prm, const char *name, struct pl *val)
+{
+	char expr[128];
+	struct pl v;
+
+	if (!str_isset(prm) || !name || !val)
+		return EINVAL;
+
+	(void)re_snprintf(expr, sizeof(expr),
+			  "[ \t\r\n]*%s[ \t\r\n]*=[ \t\r\n]*[~ \t\r\n;]+",
+			  name);
+
+	if (re_regex(prm, strlen(prm), expr, NULL, NULL, NULL, &v))
+		return ENOENT;
+
+	*val = v;
+
+	return 0;
+}
+
+
 static int module_init(void)
 {
 	struct pl val;

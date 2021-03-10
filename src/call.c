@@ -1401,7 +1401,8 @@ int call_info(struct re_printf *pf, const struct call *call)
 	if (!call)
 		return 0;
 
-	return re_hprintf(pf, "[line %u]  %H  %9s  %s  %s", call->linenum,
+	return re_hprintf(pf, "[line %u, id %s]  %H  %9s  %s  %s",
+			  call->linenum, call->id,
 			  print_duration, call,
 			  state_name(call->state),
 			  call->on_hold ? "(on hold)" : "         ",
