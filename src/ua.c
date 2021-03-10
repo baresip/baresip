@@ -52,6 +52,7 @@ struct uag {
 	bool delayed_close;            /**< Module will close SIP stack     */
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
+	bool nodial;                   /**< Prevent outgoing calls          */
 	void *arg;                     /**< UA Exit handler argument        */
 	char *eprm;                    /**< Extra UA parameters             */
 #ifdef USE_TLS
@@ -72,6 +73,7 @@ static struct uag uag = {
 	false,
 	NULL,
 	NULL,
+	false,
 	NULL,
 	NULL,
 #ifdef USE_TLS
@@ -1185,6 +1187,11 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 
 	if (!ua || !str_isset(req_uri))
 		return EINVAL;
+
+	if (uag.nodial) {
+		info ("ua: currently no outgoing calls are allowed\n");
+		return EACCES;
+	}
 
 	dialbuf = mbuf_alloc(64);
 	if (!dialbuf)
@@ -2730,6 +2737,28 @@ struct tls *uag_tls(void)
 #else
 	return NULL;
 #endif
+}
+
+
+/**
+ * Setter UAG nodial flag
+ *
+ * @param nodial
+ */
+void uag_set_nodial(bool nodial)
+{
+	uag.nodial = nodial;
+}
+
+
+/**
+ * Getter UAG nodial flag
+ *
+ * @return uag.nodial
+ */
+bool uag_nodial(void)
+{
+	return uag.nodial;
 }
 
 
