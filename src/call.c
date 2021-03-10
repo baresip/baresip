@@ -71,6 +71,7 @@ struct call {
 
 
 static int send_invite(struct call *call);
+static int send_dtmf_info(struct call *call, char key);
 
 
 static const char *state_name(enum call_state st)
@@ -402,7 +403,7 @@ static void audio_event_handler(int key, bool end, void *arg)
 	struct call *call = arg;
 	MAGIC_CHECK(call);
 
-	info("received event: '%c' (end=%d)\n", key, end);
+	info("received in-band DTMF event: '%c' (end=%d)\n", key, end);
 
 	if (call->dtmfh)
 		call->dtmfh(call, end ? KEYCODE_REL : key, call->arg);
@@ -1420,10 +1421,20 @@ int call_info(struct re_printf *pf, const struct call *call)
  */
 int call_send_digit(struct call *call, char key)
 {
+	int err;
+
 	if (!call)
 		return EINVAL;
 
-	return audio_send_digit(call->audio, key);
+	if (call->acc->dtmfmode == DTMFMODE_SIP_INFO &&
+		key != KEYCODE_REL) {
+		err = send_dtmf_info(call, key);
+	}
+	else {
+		err = audio_send_digit(call->audio, key);
+	}
+
+	return err;
 }
 
 
@@ -1577,6 +1588,19 @@ static void dtmfend_handler(void *arg)
 }
 
 
+static void sipsess_send_info_handler(int err, const struct sip_msg *msg,
+				void *arg)
+{
+	(void)arg;
+
+	if (err)
+		warning("call: sending DTMF INFO failed (%m)", err);
+	else if (msg && msg->scode != 200)
+		warning("call: sending DTMF INFO failed (scode: %d)",
+				msg->scode);
+}
+
+
 static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 				 void *arg)
 {
@@ -1599,8 +1623,8 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 			char s = toupper(sig.p[0]);
 			uint32_t duration = pl_u32(&dur);
 
-			info("call: received DTMF: '%c' (duration=%r)\n",
-			     s, &dur);
+			info("call: received SIP INFO DTMF: '%c' "
+			     "(duration=%r)\n", s, &dur);
 
 			(void)sip_reply(sip, msg, 200, "OK");
 
@@ -1954,6 +1978,35 @@ static int send_invite(struct call *call)
 
  out:
 	mem_deref(desc);
+
+	return err;
+}
+
+
+static int send_dtmf_info(struct call *call, char key)
+{
+	struct mbuf *body;
+	int err;
+
+	if ((key < '0' || key > '9') &&
+	    (key < 'a' || key > 'd') &&
+	    (key != '*') &&
+	    (key != '#'))
+		return EINVAL;
+
+	body = mbuf_alloc(25);
+	mbuf_printf(body, "Signal=%c\r\nDuration=250\r\n", key);
+	mbuf_set_pos(body, 0);
+
+	err = sipsess_info(call->sess, "application/dtmf-relay", body,
+			   sipsess_send_info_handler, call);
+	if (err) {
+		warning("call: sipsess_info for DTMF failed (%m)\n", err);
+		goto out;
+	}
+
+ out:
+	mem_deref(body);
 
 	return err;
 }

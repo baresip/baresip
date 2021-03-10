@@ -200,6 +200,23 @@ static void autoanswer_allow_decode(struct account *prm, const struct pl *pl)
 }
 
 
+/* Decode dtmfmode parameter */
+static void dtmfmode_decode(struct account *prm, const struct pl *pl)
+{
+	struct pl dtmfmode;
+
+	if (0 == msg_param_decode(pl, "dtmfmode", &dtmfmode)) {
+
+		if (0 == pl_strcasecmp(&dtmfmode, "info")) {
+			prm->dtmfmode = DTMFMODE_SIP_INFO;
+		}
+		else {
+			prm->dtmfmode = DTMFMODE_RTP_EVENT;
+		}
+	}
+}
+
+
 static int csl_parse(struct pl *pl, char *str, size_t sz)
 {
 	struct pl ws = PL_INIT, val, ws2 = PL_INIT, cma = PL_INIT;
@@ -433,6 +450,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	err |= sip_params_decode(acc, &acc->laddr);
 	       answermode_decode(acc, &acc->laddr.params);
 	       autoanswer_allow_decode(acc, &acc->laddr.params);
+	       dtmfmode_decode(acc,&acc->laddr.params);
 	err |= audio_codecs_decode(acc, &acc->laddr.params);
 	err |= video_codecs_decode(acc, &acc->laddr.params);
 	err |= media_decode(acc, &acc->laddr.params);
@@ -1283,6 +1301,17 @@ static const char *answermode_str(enum answermode mode)
 }
 
 
+static const char *dtmfmode_str(enum dtmfmode mode)
+{
+	switch (mode) {
+
+	case DTMFMODE_RTP_EVENT: return "rtpevent";
+	case DTMFMODE_SIP_INFO:  return "info";
+	default: return "???";
+	}
+}
+
+
 /**
  * Get the media encryption of an account
  *
@@ -1381,6 +1410,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " answermode:   %s\n",
 			  answermode_str(acc->answermode));
 	err |= re_hprintf(pf, " sipans: %s\n", acc->sipans ? "yes" : "no");
+	err |= re_hprintf(pf, " dtmfmode:     %s\n",
+			  dtmfmode_str(acc->dtmfmode));
 	if (!list_isempty(&acc->aucodecl)) {
 		err |= re_hprintf(pf, " audio_codecs:");
 		for (le = list_head(&acc->aucodecl); le; le = le->next) {

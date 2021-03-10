@@ -55,6 +55,12 @@ enum answermode {
 	ANSWERMODE_AUTO
 };
 
+/** Defines the DTMF send type */
+enum dtmfmode {
+	DTMFMODE_RTP_EVENT = 0,
+	DTMFMODE_SIP_INFO
+};
+
 struct account;
 
 int account_alloc(struct account **accp, const char *sipaddr);
