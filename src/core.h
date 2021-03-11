@@ -18,17 +18,6 @@
 #endif
 
 
-/**
- * RFC 3551:
- *
- *    0 -  95  Static payload types
- *   96 - 127  Dynamic payload types
- */
-enum {
-	PT_CN       = 13,
-};
-
-
 /** Media constants */
 enum {
 	AUDIO_BANDWIDTH = 128000,  /**< Bandwidth for audio in bits/s      */

@@ -1097,10 +1097,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (!mb)
 		goto out;
 
-	/* Comfort Noise (CN) as of RFC 3389 */
-	if (PT_CN == hdr->pt)
-		return;
-
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	for (i=0; i<extc; i++) {
 
