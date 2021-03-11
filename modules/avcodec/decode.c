@@ -473,45 +473,6 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 }
 
 
-int avcodec_decode_mpeg4(struct viddec_state *st, struct vidframe *frame,
-		 bool *intra, bool marker, uint16_t seq, struct mbuf *src)
-{
-	int err;
-
-	if (!src)
-		return 0;
-
-	(void)seq;
-
-	*intra = false;
-
-	err = mbuf_write_mem(st->mb, mbuf_buf(src),
-			     mbuf_get_left(src));
-	if (err)
-		goto out;
-
-	if (!marker) {
-
-		if (st->mb->end > DECODE_MAXSZ) {
-			warning("avcodec: decode buffer size exceeded\n");
-			err = ENOMEM;
-			goto out;
-		}
-
-		return 0;
-	}
-
-	err = ffdecode(st, frame, intra);
-	if (err)
-		goto out;
-
- out:
-	mbuf_rewind(st->mb);
-
-	return err;
-}
-
-
 int avcodec_decode_h263(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
 {

@@ -369,30 +369,6 @@ static void param_handler(const struct pl *name, const struct pl *val,
 }
 
 
-static int general_packetize(uint64_t rtp_ts, struct mbuf *mb, size_t pktsize,
-			     videnc_packet_h *pkth, void *arg)
-{
-	int err = 0;
-
-	/* Assemble frame into smaller packets */
-	while (!err) {
-		size_t sz, left = mbuf_get_left(mb);
-		bool last = (left < pktsize);
-		if (!left)
-			break;
-
-		sz = last ? left : pktsize;
-
-		err = pkth(last, rtp_ts, NULL, 0, mbuf_buf(mb), sz,
-			   arg);
-
-		mbuf_advance(mb, sz);
-	}
-
-	return err;
-}
-
-
 static int h263_packetize(struct videnc_state *st,
 			  uint64_t rtp_ts, struct mbuf *mb,
 			  videnc_packet_h *pkth, void *arg)
@@ -659,11 +635,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		err = h264_packetize(ts, pkt->data, pkt->size,
 				     st->encprm.pktsize,
 				     st->pkth, st->arg);
-		break;
-
-	case AV_CODEC_ID_MPEG4:
-		err = general_packetize(ts, &mb, st->encprm.pktsize,
-					st->pkth, st->arg);
 		break;
 
 #ifdef AV_CODEC_ID_H265
