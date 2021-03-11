@@ -660,7 +660,7 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 }
 
 
-static void call_hangupalldir(bool outgoing)
+static void hangup_callstate(enum call_state state)
 {
 	struct ua *ua = NULL;
 	struct call *call = NULL;
@@ -675,13 +675,27 @@ static void call_hangupalldir(bool outgoing)
 			call = lecall->data;
 			lecall = lecall->next;
 
-			if (outgoing == call_is_outgoing(call))
+			if (call_state(call) == state ||
+					state == CALL_STATE_UNKNOWN)
 				ua_hangup(ua, call, 0, NULL);
 		}
 	}
 }
 
 
+/**
+ * Hangup all calls with optional filter for outgoing or incoming
+ *
+ * @param pf   Print handler for debug output
+ * @param arg  Command arguments (carg)
+ *             carg->prm Can optionally set to "out", "in", "all".
+ *             - out ... Hangup calls in state CALL_STATE_OUTGOING,
+ *                       CALL_STATE_RINGING, CALL_STATE_EARLY
+ *             - in  ... Hangup calls in state CALL_STATE_INCOMING
+ *             - all ... Hangup all calls (default).
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int cmd_hangupall(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -697,18 +711,23 @@ static int cmd_hangupall(struct re_printf *pf, void *arg)
 		err = re_regex(carg->prm, str_len(carg->prm),
 			"dir=[^ ]*", &pldir);
 		if (err)
+			err = re_regex(carg->prm, str_len(carg->prm),
+					"[^ ]*", &pldir);
+
+		if (err)
 			return err;
 	}
 
 	if (!pl_strcmp(&pldir, "all")) {
-		call_hangupalldir(true);
-		call_hangupalldir(false);
+		hangup_callstate(CALL_STATE_UNKNOWN);
 	}
 	else if (!pl_strcmp(&pldir, "out")) {
-		call_hangupalldir(true);
+		hangup_callstate(CALL_STATE_OUTGOING);
+		hangup_callstate(CALL_STATE_RINGING);
+		hangup_callstate(CALL_STATE_EARLY);
 	}
 	else if (!pl_strcmp(&pldir, "in")) {
-		call_hangupalldir(false);
+		hangup_callstate(CALL_STATE_INCOMING);
 	}
 	else {
 		err = EINVAL;
