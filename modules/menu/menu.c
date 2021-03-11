@@ -682,6 +682,8 @@ struct ua *menu_uacur(void)
  *
  * @param pf    Print backend
  * @param carg  Command argument
+ * @param word1 First word
+ * @param word2 Second word
  *
  * @return The UA if found, NULL otherwise.
  */
