@@ -1109,6 +1109,43 @@ int account_set_answermode(struct account *acc, enum answermode mode)
 
 
 /**
+ * Get the dtmfmode of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Dtmfmode
+ */
+enum dtmfmode account_dtmfmode(const struct account *acc)
+{
+	return acc ? acc->dtmfmode : DTMFMODE_RTP_EVENT;
+}
+
+
+/**
+ * Set the dtmfmode of an account
+ *
+ * @param acc  User-Agent account
+ * @param mode Dtmfmode
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_dtmfmode(struct account *acc, enum dtmfmode mode)
+{
+	if (!acc)
+		return EINVAL;
+
+	if ((mode != DTMFMODE_RTP_EVENT) && (mode != DTMFMODE_SIP_INFO)) {
+		warning("account: invalid dtmfmode : `%d'\n", mode);
+		return EINVAL;
+	}
+
+	acc->dtmfmode = mode;
+
+	return 0;
+}
+
+
+/**
  * Get the SIP Display Name of an account
  *
  * @param acc User-Agent account
