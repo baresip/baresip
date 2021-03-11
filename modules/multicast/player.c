@@ -1,5 +1,5 @@
 /**
- * @file player.c
+ * @file multicast/player.c
  *
  * Copyright (C) 2021 Commend.com - c.huber@commend.com
  */
