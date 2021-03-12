@@ -118,7 +118,6 @@ Distributed under BSD license
   - Linux V4L/V4L2 video-source
   - X11 grabber video-source
   - DirectFB video-output
-  - OpenGL video-output
   - SDL2 video-output
   - X11 video-output
 
@@ -266,7 +265,6 @@ mqtt          MQTT (Message Queue Telemetry Transport) module
 mwi           Message Waiting Indication
 natpmp        NAT Port Mapping Protocol (NAT-PMP) module
 omx           OpenMAX IL video display module
-opengl        OpenGL video output
 opensles      OpenSLES audio driver
 opus          OPUS Interactive audio codec
 oss           Open Sound System (OSS) audio driver

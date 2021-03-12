@@ -400,9 +400,6 @@ endif
 ifneq ($(USE_MQTT),)
 MODULES   += mqtt
 endif
-ifneq ($(USE_OPENGL),)
-MODULES   += opengl
-endif
 ifneq ($(USE_OPUS),)
 MODULES   += opus
 endif
