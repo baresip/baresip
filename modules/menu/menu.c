@@ -174,7 +174,7 @@ static void menu_play(const char *ckey, const char *fname, int repeat)
 }
 
 
-static void play_incoming(const struct ua *ua, bool waiting)
+static void play_incoming(const struct call *call)
 {
 	/* stop any ringtones */
 	menu_stop_play();
@@ -182,9 +182,9 @@ static void play_incoming(const struct ua *ua, bool waiting)
 	/* Only play the ringtones if answermode is "Manual".
 	 * If the answermode is "auto" then be silent.
 	 */
-	if (ANSWERMODE_MANUAL == account_answermode(ua_account(ua))) {
+	if (ANSWERMODE_MANUAL == account_answermode(call_account(call))) {
 
-		if (waiting) {
+		if (menu_find_call(active_call_test)) {
 			menu_play("callwaiting_aufile", "callwaiting.wav", 3);
 		}
 		else {
@@ -216,8 +216,7 @@ static void play_resume(void)
 
 	switch (call_state(call)) {
 	case CALL_STATE_INCOMING:
-		play_incoming(call_get_ua(call),
-				menu_find_call(active_call_test) != NULL);
+		play_incoming(call);
 		break;
 	case CALL_STATE_RINGING:
 		if (!menu.ringback && !menu_find_call(active_call_test))
@@ -316,14 +315,13 @@ static void menu_play_closed(struct call *call)
 static void auans_play_finished(struct play *play, void *arg)
 {
 	struct call *call = arg;
-	struct ua *ua = call_get_ua(call);
 	int32_t adelay = call_answer_delay(call);
 	(void) play;
 
 	if (call_state(call) == CALL_STATE_INCOMING) {
 		call_start_answtmr(call, adelay);
 		if (adelay >= MIN_RINGTIME)
-			play_incoming(ua, uag_call_count() > 1);
+			play_incoming(call);
 	}
 }
 
@@ -331,7 +329,6 @@ static void auans_play_finished(struct play *play, void *arg)
 static void start_sip_autoanswer(struct call *call)
 {
 	int32_t adelay = call_answer_delay(call);
-	struct ua *ua = call_get_ua(call);
 	bool beep = true;
 
 	if (adelay == -1)
@@ -345,7 +342,7 @@ static void start_sip_autoanswer(struct call *call)
 	else {
 		call_start_answtmr(call, adelay);
 		if (adelay >= MIN_RINGTIME)
-			play_incoming(ua, uag_call_count() > 1);
+			play_incoming(call);
 	}
 }
 
@@ -394,7 +391,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			adelay = call_answer_delay(call);
 
 		if (adelay == -1)
-			play_incoming(ua, count > 1);
+			play_incoming(call);
 		else
 			start_sip_autoanswer(call);
 
