@@ -445,10 +445,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_CLOSED:
-		menu_play_closed(call);
-
-		play_resume(call);
-
 		/* Activate the re-dialing if:
 		 *
 		 * - redial_attempts must be enabled in config
@@ -480,8 +476,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			}
 		}
 
-		if (!str_cmp(call_id(call), menu.callid))
+		if (!str_cmp(call_id(call), menu.callid)) {
+			menu_play_closed(call);
 			menu_selcall(NULL);
+			play_resume(call);
+		}
 
 		break;
 
