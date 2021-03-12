@@ -496,8 +496,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (!str_cmp(call_id(call), menu.callid))
 			menu_selcall(NULL);
 
-		if (call_state(call) == CALL_STATE_ESTABLISHED &&
-				!call_is_onhold(call))
+		if (call_is_established(call) || call_was_established(call))
 			uag_hold_resume(NULL);
 		break;
 
