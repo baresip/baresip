@@ -13,12 +13,10 @@ enum statmode {
 
 
 struct menu{
-	struct tmr tmr_alert;         /**< Incoming call alert timer      */
 	struct tmr tmr_stat;          /**< Call status timer              */
 	struct play *play;            /**< Current audio player state     */
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
 	char *callid;                 /**< Call-id of active call         */
-	bool bell;                    /**< ANSI Bell alert enabled        */
 	bool ringback_disabled;       /**< no ringback on sip 180 respons */
 	bool ringback;                /**< Ringback played currently      */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
