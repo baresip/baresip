@@ -443,7 +443,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (acc && account_sip_autoanswer(acc))
 			adelay = call_answer_delay(call);
 
-		if (adelay == -1 || count > 1)
+		if (adelay == -1)
 			play_incoming(ua, count > 1);
 		else
 			start_sip_autoanswer(call);
