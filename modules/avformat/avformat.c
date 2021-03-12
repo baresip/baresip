@@ -303,7 +303,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
-	if (strnlen(avformat_inputformat, sizeof avformat_inputformat)	> 0) {
+	if (str_isset(avformat_inputformat)) {
 		ret = av_dict_set(&format_opts, "input_format",
                                 avformat_inputformat, 0);
 		if (ret != 0) {
@@ -418,7 +418,7 @@ static int module_init(void)
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
 	conf_get_str(conf_cur(), "avformat_hwaccel", hwaccel, sizeof(hwaccel));
-	if (strnlen(hwaccel, sizeof(hwaccel)) > 0) {
+	if (str_isset(hwaccel)) {
 		avformat_hwdevice = av_hwdevice_find_type_by_name(hwaccel);
 		if (avformat_hwdevice == AV_HWDEVICE_TYPE_NONE) {
 			warning("avformat: hwdevice not found (%s)\n",
@@ -433,10 +433,12 @@ static int module_init(void)
 	conf_get_str(conf_cur(), "avformat_decoder", decoder,
 			sizeof(decoder));
 
-	avformat_decoder = avcodec_find_decoder_by_name(decoder);
-	if (!avformat_decoder) {
-		warning("avformat: decoder not found (%s)\n", decoder);
-		return ENOENT;
+	if (str_isset(decoder)) {
+		avformat_decoder = avcodec_find_decoder_by_name(decoder);
+		if (!avformat_decoder) {
+			warning("avformat: decoder not found (%s)\n", decoder);
+			return ENOENT;
+		}
 	}
 
 	avformat_network_init();
