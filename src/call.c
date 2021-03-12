@@ -53,6 +53,7 @@ struct call {
 	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
+	bool was_established;     /**< Established on call termination      */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -94,6 +95,10 @@ static const char *state_name(enum call_state st)
 
 static void set_state(struct call *call, enum call_state st)
 {
+	call->was_established =
+		st == CALL_STATE_TERMINATED &&
+		call_is_established(call);
+
 	call->state = st;
 }
 
@@ -2503,4 +2508,18 @@ void call_start_answtmr(struct call *call, uint32_t ms)
 		return;
 
 	tmr_start(&call->tmr_answ, ms, delayed_answer_handler, call);
+}
+
+
+bool call_is_established(struct call *call)
+{
+	return  call ?
+		call_state(call) == CALL_STATE_ESTABLISHED &&
+		!call_is_onhold(call) : false;
+}
+
+
+bool call_was_established(struct call *call)
+{
+	return call ? call->was_established : false;
 }
