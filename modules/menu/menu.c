@@ -47,31 +47,6 @@ static int menu_set_incall(bool incall)
 }
 
 
-static void alert_start(void *arg)
-{
-	(void)arg;
-
-	if (!menu.bell)
-		return;
-
-	ui_output(baresip_uis(), "\033[10;1000]\033[11;1000]\a");
-
-	tmr_start(&menu.tmr_alert, 1000, alert_start, NULL);
-}
-
-
-static void alert_stop(void)
-{
-	if (!menu.bell)
-		return;
-
-	if (tmr_isrunning(&menu.tmr_alert))
-		ui_output(baresip_uis(), "\r");
-
-	tmr_cancel(&menu.tmr_alert);
-}
-
-
 static void tmrstat_handler(void *arg)
 {
 	struct call *call;
@@ -216,9 +191,6 @@ static void play_incoming(const struct ua *ua, bool waiting)
 			/* Alert user */
 			menu_play("ring_aufile", "ring.wav", -1);
 		}
-
-		if (menu.bell)
-			alert_start(0);
 	}
 }
 
@@ -466,8 +438,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		/* stop any ringtones */
 		menu_stop_play();
 
-		alert_stop();
-
 		/* We must stop the re-dialing if the call was
 		   established */
 		redial_reset();
@@ -477,7 +447,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_CLOSED:
 		menu_play_closed(call);
 
-		alert_stop();
 		play_resume(call);
 
 		/* Activate the re-dialing if:
@@ -752,7 +721,6 @@ static int module_init(void)
 	int err;
 
 	memset(&menu, 0, sizeof(menu));
-	menu.bell = true;
 	menu.redial_attempts = 0;
 	menu.redial_delay = 5;
 	menu.ringback_disabled = false;
@@ -764,7 +732,6 @@ static int module_init(void)
 	/*
 	 * Read the config values
 	 */
-	conf_get_bool(conf_cur(), "menu_bell", &menu.bell);
 	conf_get_bool(conf_cur(), "ringback_disabled",
 		      &menu.ringback_disabled);
 	conf_get_bool(conf_cur(), "menu_clean_number", &menu.clean_number);
@@ -791,7 +758,6 @@ static int module_init(void)
 		return ENOMEM;
 
 	menu.start_ticks = tmr_jiffies();
-	tmr_init(&menu.tmr_alert);
 
 	if (0 == conf_get(conf_cur(), "statmode_default", &val) &&
 	    0 == pl_strcasecmp(&val, "off")) {
@@ -831,7 +797,6 @@ static int module_close(void)
 	dial_menu_unregister();
 	dynamic_menu_unregister();
 
-	tmr_cancel(&menu.tmr_alert);
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
 	menu.callid = mem_deref(menu.callid);
