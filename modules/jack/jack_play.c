@@ -9,7 +9,6 @@
 #include <jack/jack.h>
 #include "mod_jack.h"
 
-
 struct auplay_st {
 	const struct auplay *ap;  /* pointer to base-class (inheritance) */
 
@@ -19,6 +18,11 @@ struct auplay_st {
 	auplay_write_h *wh;
 	void *arg;
 	const char *device;
+
+	struct auresamp resamp;
+	int16_t *sampv_lin;
+	int16_t *sampv_rs;
+	size_t extra;
 
 	jack_client_t *client;
 	jack_port_t **portv;
@@ -41,13 +45,59 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 	struct auplay_st *st = arg;
 	size_t sampc = nframes * st->prm.ch;
 	size_t ch, j;
+	int err;
 
-	/* 1. read data from app (signed 16-bit) interleaved */
-	st->wh(st->sampv, sampc, st->arg);
+	if(st->prm.fmt == AUFMT_S16LE) {
+		size_t rs_sampc;
 
-	/* 2. convert from 16-bit to float and copy to Jack */
+		if(st->resamp.resample) {
+			size_t sampc2;
+			size_t ratio;
 
-	/* 3. de-interleave [LRLRLRLR] -> [LLLLL]+[RRRRR] */
+			ratio = st->resamp.orate / st->resamp.irate;
+			sampc2 = sampc / ratio;
+			if(sampc2 * ratio + st->extra < sampc) {
+				/* should read one extra sample */
+				sampc2++;
+			}
+
+			st->wh(st->sampv_rs, sampc2, st->arg);
+
+			err = auresamp(&st->resamp,
+                               st->sampv_lin + st->extra, &rs_sampc,
+                               st->sampv_rs, sampc2);
+
+			if(err) {
+				info("jack: auresamp err: %d\n", err);
+				return 0;
+			}
+		} else {
+			/* same sample rate */
+			st->wh(st->sampv_lin, sampc, st->arg);
+		}
+
+		/* convert from 16-bit to float */
+		auconv_from_s16(AUFMT_FLOAT, st->sampv, st->sampv_lin, sampc);
+
+		if(st->resamp.resample && rs_sampc + st->extra != sampc) {
+			int diff = rs_sampc + st->extra - sampc;
+
+			/* move remaing samples to start of sampv_lin buffer to be used next callback */
+			for(int i=0;i<diff;i++) {
+				st->sampv_lin[i] = st->sampv_lin[sampc+i];
+			}
+			
+			st->extra = diff;
+		} else {
+			st->extra = 0;
+		}
+
+	} else {
+		/* these should be floats */
+		st->wh(st->sampv, sampc, st->arg);
+	}
+
+	/* de-interleave floats [LRLRLRLR] -> [LLLLL]+[RRRRR] */
 	for (ch = 0; ch < st->prm.ch; ch++) {
 
 		jack_default_audio_sample_t *buffer;
@@ -75,6 +125,11 @@ static void auplay_destructor(void *arg)
 
 	mem_deref(st->sampv);
 	mem_deref(st->portv);
+
+	mem_deref(st->sampv_rs);
+	mem_deref(st->sampv_lin);
+
+	st->resamp.resample = 0;
 }
 
 static int start_jack(struct auplay_st *st)
@@ -87,14 +142,16 @@ static int start_jack(struct auplay_st *st)
 	jack_status_t status;
 	unsigned ch;
 	jack_nframes_t engine_srate;
+	size_t len;
+	char *conf_name;
 
 	bool jack_connect_ports = true;
 	(void)conf_get_bool(conf, "jack_connect_ports",
 				  &jack_connect_ports);
 
 	/* open a client connection to the JACK server */
-	size_t len = jack_client_name_size();
-	char *conf_name = mem_alloc(len+1, NULL);
+	len = jack_client_name_size();
+	conf_name = mem_alloc(len+1, NULL);
 
 	if (!conf_get_str(conf, "jack_client_name",
 			conf_name, len)) {
@@ -130,11 +187,41 @@ static int start_jack(struct auplay_st *st)
 	info("jack: engine sample rate: %" PRIu32 " max_frames=%u\n",
 	     engine_srate, st->nframes);
 
+	if(st->prm.fmt == AUFMT_S16LE) {
+		st->sampv_lin = mem_alloc(st->nframes * st->prm.ch * sizeof(int16_t), NULL);
+		if(!st->sampv_lin)
+			return ENOMEM;
+	}
+
 	/* currently the application must use the same sample-rate
 	   as the jack server backend */
 	if (engine_srate != st->prm.srate) {
-		warning("jack: samplerate %uHz expected\n", engine_srate);
-		return EINVAL;
+		if(st->prm.fmt == AUFMT_S16LE) {
+			int err;
+
+			info("jack: enable resampler:"
+                	     " %uHz/%uch --> %uHz/%uch\n",
+	                     st->prm.srate, st->prm.ch, engine_srate, st->prm.ch);
+
+			auresamp_init(&st->resamp);
+			err = auresamp_setup(&st->resamp,
+                                     st->prm.srate, st->prm.ch,
+                                     engine_srate, st->prm.ch);
+
+			if(err) {
+				warning("jack: could not setup resampler"
+                        	        " (%m)\n", err);
+				return EINVAL;
+			}
+
+			st->sampv_rs = mem_alloc(st->nframes * st->prm.ch * sizeof(int16_t), NULL);
+			if(!st->sampv_rs)
+				return ENOMEM;
+
+		} else {
+	               warning("jack: samplerate %uHz expected\n", engine_srate);
+        	       return EINVAL;
+		}
 	}
 
 	st->sampc = st->nframes * st->prm.ch;
@@ -236,11 +323,18 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	info("jack: play %uHz,%uch\n", prm->srate, prm->ch);
 
 	if (prm->fmt != AUFMT_FLOAT) {
-		warning("jack: playback: unsupported sample format (%s)\n",
-			aufmt_name(prm->fmt));
-		return ENOTSUP;
-	}
-
+		if(prm->fmt == AUFMT_S16LE) {
+			info("jack: NOTE: source sample conversion"
+                             " needed: %s  -->  %s\n",
+                             aufmt_name(prm->fmt), aufmt_name(AUFMT_FLOAT));
+		} else {
+			warning("jack: playback: unsupported sample format (%s)\n",
+				aufmt_name(prm->fmt));
+		
+			return ENOTSUP;
+		}
+	}	
+	
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
 		return ENOMEM;
