@@ -642,7 +642,7 @@ void menu_selcall(struct call *call)
 		call_set_current(ua_calls(call_get_ua(call)), call);
 	}
 	else {
-		for (i = ARRAY_SIZE(state)-1; i > 0; --i) {
+		for (i = ARRAY_SIZE(state)-1; i >= 0; --i) {
 			call = uag_find_call_state(state[i]);
 			if (call) {
 				menu_selcall(call);
