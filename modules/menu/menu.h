@@ -19,7 +19,8 @@ struct menu{
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
 	char *callid;                 /**< Call-id of active call         */
 	bool bell;                    /**< ANSI Bell alert enabled        */
-	bool ringback_disabled;	      /**< no ringback on sip 180 respons */
+	bool ringback_disabled;       /**< no ringback on sip 180 respons */
+	bool ringback;                /**< Ringback played currently      */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
 	uint32_t redial_delay;        /**< Redial delay in [seconds]      */
 	uint32_t redial_attempts;     /**< Number of re-dial attempts     */
