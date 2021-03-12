@@ -515,6 +515,9 @@ struct call *uag_call_find(const char *id)
 	struct ua *ua = NULL;
 	struct call *call = NULL;
 
+	if (!str_isset(id))
+		return NULL;
+
 	for (le = list_head(&uag.ual); le; le = le->next) {
 		ua = le->data;
 

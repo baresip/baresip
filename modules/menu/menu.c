@@ -210,43 +210,21 @@ static void play_ringback(void)
 }
 
 
-static void play_resume(const struct call *call)
+static void play_resume(void)
 {
-	struct le *lec;
-	struct le *leu;
-	struct ua *uain;
-	bool incoming = false;
-	bool ringing = false;
+	struct call *call = uag_call_find(menu.callid);
 
-	for (leu = uag_list()->head; leu; leu = leu->next) {
-		struct ua *ua = leu->data;
-
-		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
-			if (lec->data == call)
-				continue;
-
-			switch (call_state(lec->data)) {
-			case CALL_STATE_EARLY:
-			case CALL_STATE_ESTABLISHED:
-				return;
-			case CALL_STATE_INCOMING:
-				incoming = true;
-				uain = ua;
-				break;
-			case CALL_STATE_RINGING:
-				ringing = true;
-				break;
-			default:
-				break;
-			}
-		}
-	}
-
-	if (incoming) {
-		play_incoming(uain, uag_call_count() > 2);
-	}
-	else if (ringing) {
-		play_ringback();
+	switch (call_state(call)) {
+	case CALL_STATE_INCOMING:
+		play_incoming(call_get_ua(call),
+				menu_find_call(active_call_test) != NULL);
+		break;
+	case CALL_STATE_RINGING:
+		if (!menu.ringback && !menu_find_call(active_call_test))
+			play_ringback();
+		break;
+	default:
+		break;
 	}
 }
 
@@ -479,7 +457,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (!str_cmp(call_id(call), menu.callid)) {
 			menu_play_closed(call);
 			menu_selcall(NULL);
-			play_resume(call);
+			play_resume();
 		}
 
 		break;
