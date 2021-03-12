@@ -149,7 +149,7 @@ baresip is using GNU makefiles, and the following packages must be
 installed before building:
 
 * [libre](https://github.com/baresip/re)
-* [librem](https://github.com/creytiv/rem)
+* [librem](https://github.com/baresip/rem)
 * [openssl](https://www.openssl.org/)
 
 
@@ -427,8 +427,10 @@ zrtp          ZRTP media encryption module
 
 ## Related projects
 
-* [libre](https://github.com/creytiv/re)
 * [libre - baresip fork](https://github.com/baresip/re)
+* [librem - baresip fork](https://github.com/baresip/rem)
+* [retest - baresip fork](https://github.com/baresip/retest)
+* [libre](https://github.com/creytiv/re)
 * [librem](https://github.com/creytiv/rem)
 * [retest](https://github.com/creytiv/retest)
 
