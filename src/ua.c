@@ -473,6 +473,10 @@ int uag_hold_others(struct call *call)
 	struct le *le = NULL;
 	struct call *acall = NULL;
 
+	if (!conf_config()->call.hold_other_calls) {
+		return 0;
+	}
+
 	for (le = list_head(&uag.ual); le && !acall; le = le->next) {
 		struct ua *ua = le->data;
 		struct le *lec = NULL;
