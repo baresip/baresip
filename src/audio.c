@@ -1882,6 +1882,7 @@ void audio_stop(struct audio *a)
 
 	stop_tx(&a->tx, a);
 	stop_rx(&a->rx);
+	a->started = false;
 }
 
 
