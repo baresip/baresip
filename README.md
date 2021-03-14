@@ -261,7 +261,7 @@ jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
 menu          Interactive menu
 mpa           MPA Speech and Audio Codec
-multicast     Multicast send and receive
+multicast     Multicast RTP send and receive
 mqtt          MQTT (Message Queue Telemetry Transport) module
 mwi           Message Waiting Indication
 natpmp        NAT Port Mapping Protocol (NAT-PMP) module
