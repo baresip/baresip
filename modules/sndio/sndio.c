@@ -96,14 +96,18 @@ static void *read_thread(void *arg)
 static void *write_thread(void *arg)
 {
 	struct auplay_st *st = arg;
+	struct auframe af;
 
 	if (!sio_start(st->hdl)) {
 		warning("sndio: could not start playback\n");
 		goto out;
 	}
 
+	auframe_init(&af, AUFMT_S16LE, st->sampv, st->sampc);
+
 	while (st->run) {
-		st->wh(st->sampv, st->sampc, st->arg);
+		st->wh(&af, st->arg);
+
 		sio_write(st->hdl, st->sampv, st->sampc*2);
 	}
 

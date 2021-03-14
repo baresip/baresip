@@ -21,6 +21,7 @@ struct auplay_st {
 	void *sampv;
 	size_t sampc;
 	size_t sampsz;
+	enum aufmt fmt;
 	auplay_write_h *wh;
 	void *arg;
 };
@@ -55,12 +56,15 @@ static void auplay_destructor(void *arg)
 static void *write_thread(void *arg)
 {
 	struct auplay_st *st = arg;
+	struct auframe af;
 	const size_t num_bytes = st->sampc * st->sampsz;
 	int ret, pa_error = 0;
 
+	auframe_init(&af, st->fmt, st->sampv, st->sampc);
+
 	while (st->run) {
 
-		st->wh(st->sampv, st->sampc, st->arg);
+		st->wh(&af, st->arg);
 
 		ret = pa_simple_write(st->s, st->sampv, num_bytes, &pa_error);
 		if (ret < 0) {
@@ -106,6 +110,7 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
+	st->fmt = prm->fmt;
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	st->sampsz = aufmt_sample_size(prm->fmt);
