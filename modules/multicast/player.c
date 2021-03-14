@@ -82,7 +82,7 @@ static void mcplayer_destructor(void *arg)
 	pthread_mutex_destroy(&player->thr.mutex);
 	pthread_cond_destroy(&player->thr.cond);
 #else
-	tmr_cancel(&player_tmr);
+	tmr_cancel(&player->tmr);
 #endif
 
 	player->jbuf     = mem_deref(player->jbuf);
@@ -319,8 +319,6 @@ static void *rx_thread(void *arg)
  */
 static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 {
-	int err = 0;
-
 	(void) arg;
 
 	if (!player)
@@ -333,6 +331,8 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 #ifdef HAVE_PTHREAD
 	pthread_mutex_lock(&player->thr.mutex);
 	if (!player->thr.run) {
+		int err;
+
 		player->thr.run = true;
 		err = pthread_create(&player->thr.tid, NULL,
 			rx_thread, player);
