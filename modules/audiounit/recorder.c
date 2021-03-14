@@ -112,7 +112,7 @@ static OSStatus input_callback(void *inRefCon,
 		if (err)
 			return kAudioUnitErr_InvalidParameter;
 
-		/* Maximun number of resampled frames which can be delivered
+		/* Maximum number of resampled frames which can be delivered
 		   by the converter */
 		nb_frames_max = nb_frames * st->sampc_ratio;
 		if (inNumberFrames > nb_frames_max)
