@@ -159,9 +159,9 @@ module_app		menu.so
 #module_app		mqtt.so
 #module_app		ctrl_tcp.so
 module_app		vidloop.so
-# module_app		ctrl_dbus.so
-# ctrl_dbus_use		system       # system, session
-# module_app		httpreq.so
+#module_app		ctrl_dbus.so
+#ctrl_dbus_use		system       # system, session
+#module_app		httpreq.so
 
 
 #------------------------------------------------------------------------------
@@ -244,10 +244,10 @@ video_selfview		window # {window,pip}
 #ebuacip_jb_type     	fixed   # auto,fixed
 
 # HTTP request module
-# httpreq_ca		trusted1.pem
-# httpreq_ca		trusted2.pem
-# httpreq_dns		1.1.1.1
-# httpreq_dns		8.8.8.8
-# httpreq_hostname	myserver
-# httpreq_cert		cert.pem
-# httpreq_key		key.pem
+#httpreq_ca		trusted1.pem
+#httpreq_ca		trusted2.pem
+#httpreq_dns		1.1.1.1
+#httpreq_dns		8.8.8.8
+#httpreq_hostname	myserver
+#httpreq_cert		cert.pem
+#httpreq_key		key.pem
