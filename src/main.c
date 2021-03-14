@@ -1,7 +1,7 @@
 /**
  * @file src/main.c  Main application code
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2021 Creytiv.com
  */
 #ifdef SOLARIS
 #define __EXTENSIONS__ 1
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	setbuf(stdout, NULL);
 
 	(void)re_fprintf(stdout, "baresip v%s"
-			 " Copyright (C) 2010 - 2020"
+			 " Copyright (C) 2010 - 2021"
 			 " Alfred E. Heggestad et al.\n",
 			 BARESIP_VERSION);
 
