@@ -39,11 +39,14 @@ static void auplay_destructor(void *arg)
 static void tmr_handler(void *arg)
 {
 	struct auplay_st *st = arg;
+	struct auframe af;
 
 	tmr_start(&st->tmr, st->prm.ptime, tmr_handler, st);
 
+	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc);
+
 	if (st->wh)
-		st->wh(st->sampv, st->sampc, st->arg);
+		st->wh(&af, st->arg);
 
 	/* feed the audio-samples back to the test */
 	if (mock.sampleh)

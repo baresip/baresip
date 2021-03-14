@@ -54,7 +54,13 @@ static void *write_thread(void *arg)
 	t = tmr_jiffies();
 	st->run = true;
 	while (st->run) {
-		st->wh(st->sampv, st->sampc, st->arg);
+		struct auframe af;
+
+		auframe_init(&af, st->prm.fmt, st->sampv, st->sampc);
+
+		af.timestamp = t * 1000;
+
+		st->wh(&af, st->arg);
 
 		err = aufile_write(st->auf, st->sampv, st->num_bytes);
 		if (err)

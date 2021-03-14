@@ -530,7 +530,7 @@ struct auplay_prm {
 	int        fmt;         /**< Sample format (enum aufmt) */
 };
 
-typedef void (auplay_write_h)(void *sampv, size_t sampc, void *arg);
+typedef void (auplay_write_h)(struct auframe *af, void *arg);
 
 typedef int  (auplay_alloc_h)(struct auplay_st **stp, const struct auplay *ap,
 			      struct auplay_prm *prm, const char *device,
