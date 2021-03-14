@@ -37,7 +37,8 @@ static struct config core_config = {
 	/** Call config */
 	{
 		120,
-		4
+		4,
+		true
 	},
 
 	/** Audio */
@@ -301,6 +302,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   &cfg->call.local_timeout);
 	(void)conf_get_u32(conf, "call_max_calls",
 			   &cfg->call.max_calls);
+	(void)conf_get_bool(conf, "call_hold_other_calls",
+			   &cfg->call.hold_other_calls);
 
 	/* Audio */
 	(void)conf_get_str(conf, "audio_path", cfg->audio.audio_path,
@@ -430,6 +433,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
 			 "call_max_calls\t\t%u\n"
+			 "call_hold_other_calls\t%s\n"
 			 "\n"
 			 "# Audio\n"
 			 "audio_path\t\t%s\n"
@@ -474,6 +478,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
+			 cfg->call.hold_other_calls ? "yes" : "no",
 
 			 cfg->audio.audio_path,
 			 cfg->audio.play_mod,  cfg->audio.play_dev,
@@ -623,6 +628,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
 			  "call_max_calls\t\t%u\n"
+			  "call_hold_other_calls\tyes\n"
 			  "\n"
 			  "# Audio\n"
 #if defined (SHARE_PATH)
