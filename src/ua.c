@@ -406,7 +406,7 @@ struct call *ua_find_call_state(const struct ua *ua, enum call_state st)
 }
 
 
-static struct call *ua_find_established_call(struct ua *ua)
+static struct call *ua_find_active_call(struct ua *ua)
 {
 	struct le *le = NULL;
 
@@ -415,7 +415,7 @@ static struct call *ua_find_established_call(struct ua *ua)
 
 	for (le = list_head(&ua->calls); le; le = le->next) {
 		struct call *call = le->data;
-		if (call_is_established(call))
+		if (call_is_active(call))
 			return call;
 	}
 
@@ -449,7 +449,7 @@ int uag_hold_resume(struct call *call)
 
 	for (le = list_head(&uag.ual); le && !acall; le = le->next) {
 		ua = le->data;
-		acall = ua_find_established_call(ua);
+		acall = ua_find_active_call(ua);
 	}
 
 	err =  call_hold(acall, true);
@@ -481,7 +481,7 @@ int uag_hold_others(struct call *call)
 			if (ccall == call)
 				continue;
 
-			if (call_is_established(ccall)) {
+			if (call_is_active(ccall)) {
 				acall = ccall;
 				break;
 			}
