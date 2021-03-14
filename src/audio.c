@@ -788,7 +788,7 @@ static void auplay_write_handler2(struct auframe *af, void *arg)
 	struct aurx *rx = &a->rx;
 	rx->num_bytes = af->sampc * aufmt_sample_size(rx->play_fmt);
 
-	if (af->fmt != rx->play_fmt) {
+	if (af->fmt != (int)rx->play_fmt) {
 		warning("invalid format\n");
 	}
 

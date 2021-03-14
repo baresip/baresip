@@ -232,7 +232,7 @@ static void write_handler(struct auframe *af, void *arg)
 	size_t num_bytes = af->sampc * aufmt_sample_size(al->fmt);
 	struct stats *stats = &al->stats_play;
 
-	if (af->fmt != al->fmt) {
+	if (af->fmt != (int)al->fmt) {
 		warning("invalid format\n");
 	}
 
