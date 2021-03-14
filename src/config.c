@@ -444,6 +444,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 "# Video\n"
 			 "video_source\t\t%s,%s\n"
+			 "#video_source\t\tavformat,rtmp://127.0.0.1/app/foo\n"
 			 "video_display\t\t%s,%s\n"
 			 "video_size\t\t\"%ux%u\"\n"
 			 "video_bitrate\t\t%u\n"
