@@ -136,7 +136,8 @@ int alsa_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (err < 0) {
 		warning("alsa: could not open auplay device '%s' (%s)\n",
 			st->device, snd_strerror(err));
-		goto out;
+		info("consider using dmix as your default alsa device");
+		out;
 	}
 
 	pcmfmt = aufmt_to_alsaformat(prm->fmt);
