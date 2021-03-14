@@ -38,7 +38,7 @@ static struct config core_config = {
 	{
 		120,
 		4,
-		false
+		true
 	},
 
 	/** Audio */
@@ -627,7 +627,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
 			  "call_max_calls\t\t%u\n"
-			  "call_hold_other_calls\tno\n"
+			  "call_hold_other_calls\tyes\n"
 			  "\n"
 			  "# Audio\n"
 #if defined (SHARE_PATH)
