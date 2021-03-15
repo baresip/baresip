@@ -130,7 +130,6 @@ static void find_first_call(struct call *call, void *arg)
  *
  * @param matchh  Optional match handler. If NULL, the last call of the first
  *                  User-Agent is returned
- * @param arg     User argument
  *
  * @return  A call that matches
  */
