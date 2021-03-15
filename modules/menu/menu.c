@@ -134,6 +134,13 @@ static char *errorcode_key_aufile(uint16_t scode)
 }
 
 
+static bool active_call_test(const struct call* call)
+{
+	return call_state(call) == CALL_STATE_ESTABLISHED &&
+			!call_is_onhold(call);
+}
+
+
 static void find_first_call(struct call *call, void *arg)
 {
 	struct call **callp = arg;
