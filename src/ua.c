@@ -550,6 +550,34 @@ struct call *uag_find_call_state(enum call_state st)
 }
 
 
+/**
+ * Filters the calls of all User-Agents
+ *
+ * @param listh   Call list handler is called for each match
+ * @param matchh  Optional filter match handler (if NULL all calls are listed)
+ * @param arg     User argument passed to listh
+ */
+void uag_filter_calls(call_list_h *listh, call_match_h *matchh, void *arg)
+{
+	struct le *leu;
+
+	if (!listh)
+		return;
+
+	for (leu = list_head(uag_list()); leu; leu = leu->next) {
+		struct ua *ua = leu->data;
+		struct le *lec;
+
+		for (lec = list_tail(ua_calls(ua)); lec; lec = lec->prev) {
+			struct call *call = lec->data;
+
+			if (!matchh || matchh(call))
+				listh(call, arg);
+		}
+	}
+}
+
+
 static void call_event_handler(struct call *call, enum call_event ev,
 			       const char *str, void *arg)
 {
