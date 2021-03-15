@@ -1024,7 +1024,6 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			"\n# Menu\n"
-			"#menu_bell\t\tyes\n"
 			"#redial_attempts\t0 # Num or <inf>\n"
 			"#redial_delay\t\t5 # Delay in seconds\n"
 			"#ringback_disabled\tno\n"

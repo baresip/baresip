@@ -200,7 +200,6 @@ video_selfview		window # {window,pip}
 #zrtp_hash		no  # Disable SDP zrtp-hash (not recommended)
 
 # Menu
-#menu_bell		yes
 #redial_attempts	0 # Num or <inf>
 #redial_delay		5 # Delay in seconds
 #ringback_disabled	no
