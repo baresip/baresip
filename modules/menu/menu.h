@@ -35,7 +35,6 @@ struct menu{
 struct menu *menu_get(void);
 
 /* Active call and UA */
-struct call *menu_find_call(const char *id);
 void menu_selcall(struct call *call);
 struct call *menu_callcur(void);
 struct ua   *menu_uacur(void);
