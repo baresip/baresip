@@ -187,6 +187,9 @@ struct call;
 typedef void (call_event_h)(struct call *call, enum call_event ev,
 			    const char *str, void *arg);
 typedef void (call_dtmf_h)(struct call *call, char key, void *arg);
+typedef bool (call_match_h)(const struct call *call);
+typedef void (call_list_h)(struct call *call, void *arg);
+
 
 int  call_connect(struct call *call, const struct pl *paddr);
 int  call_answer(struct call *call, uint16_t scode, enum vidmode vmode);
@@ -861,6 +864,7 @@ struct sipsess_sock  *uag_sipsess_sock(void);
 struct sipevent_sock *uag_sipevent_sock(void);
 struct call *uag_call_find(const char *id);
 struct call *uag_find_call_state(enum call_state st);
+void uag_filter_calls(call_list_h *listh, call_match_h *matchh, void *arg);
 
 
 /*
