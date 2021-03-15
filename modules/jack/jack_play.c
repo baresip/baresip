@@ -210,7 +210,7 @@ static int start_jack(struct auplay_st *st)
 	}
 
 	/* currently the application must use the same sample-rate
-	   as the jack server backend */
+	   as the jack server backend for floats; for s16le we can do resampling + conv to floats */
 	if (engine_srate != st->prm.srate) {
 		if(st->prm.fmt == AUFMT_S16LE) {
 			int err;
