@@ -134,6 +134,34 @@ static char *errorcode_key_aufile(uint16_t scode)
 }
 
 
+static void find_first_call(struct call *call, void *arg)
+{
+	struct call **callp = arg;
+
+	if (!*callp)
+		*callp = call;
+}
+
+
+/**
+ * Search all User-Agents for a call that matches
+ *
+ * @param matchh  Optional match handler. If NULL, the last call of the first
+ *                  User-Agent is returned
+ * @param arg     User argument
+ *
+ * @return  A call that matches
+ */
+struct call *menu_find_call(call_match_h *matchh)
+{
+	struct call *call = NULL;
+
+	uag_filter_calls(find_first_call, matchh, &call);
+
+	return call;
+}
+
+
 static void menu_play(const char *ckey, const char *fname, int repeat)
 {
 	struct config *cfg = conf_config();
