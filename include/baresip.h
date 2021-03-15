@@ -220,7 +220,6 @@ struct ua    *call_get_ua(const struct call *call);
 bool          call_is_onhold(const struct call *call);
 bool          call_is_outgoing(const struct call *call);
 bool          call_is_active(const struct call *call);
-bool          call_was_active(const struct call *call);
 void          call_enable_rtp_timeout(struct call *call, uint32_t timeout_ms);
 uint32_t      call_linenum(const struct call *call);
 int32_t       call_answer_delay(const struct call *call);

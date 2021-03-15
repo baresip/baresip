@@ -53,7 +53,7 @@ struct call {
 	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
-	bool was_active;          /**< Was active flag                      */
+	bool active;              /**< Active call flag                     */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -1214,7 +1214,7 @@ int call_hold(struct call *call, bool hold)
 	info("call: %s %s\n", hold ? "hold" : "resume", call->peer_uri);
 
 	call->on_hold = hold;
-	call->was_active = call_is_active(call);
+	call->active = call_is_active(call);
 
 	FOREACH_STREAM
 		stream_hold(le->data, hold);
@@ -1567,7 +1567,7 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 		return;
 
 	set_state(call, CALL_STATE_ESTABLISHED);
-	call->was_active = !call_is_onhold(call);
+	call->active = !call_is_onhold(call);
 
 	call_stream_start(call, true);
 
@@ -2511,13 +2511,5 @@ void call_start_answtmr(struct call *call, uint32_t ms)
 
 bool call_is_active(const struct call *call)
 {
-	return  call ?
-		call_state(call) == CALL_STATE_ESTABLISHED &&
-		!call_is_onhold(call) : false;
-}
-
-
-bool call_was_active(const struct call *call)
-{
-	return call ? call->was_active : false;
+	return call ? call->active : false;
 }
