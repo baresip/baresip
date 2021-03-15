@@ -595,27 +595,6 @@ struct menu *menu_get(void)
 }
 
 
-struct call *menu_find_call(const char *id)
-{
-	struct le *le;
-	struct call *call;
-
-	if (!str_isset(id))
-		return NULL;
-
-	for (le = list_head(uag_list()); le; le = le->next) {
-		struct ua *ua = le->data;
-		struct list *calls = ua_calls(ua);
-
-		call = call_find_id(calls, id);
-		if (call)
-			return call;
-	}
-
-	return NULL;
-}
-
-
 /**
  * Selects the active call.
  *
@@ -657,7 +636,7 @@ void menu_selcall(struct call *call)
  */
 struct call *menu_callcur(void)
 {
-	return menu_find_call(menu.callid);
+	return uag_call_find(menu.callid);
 }
 
 

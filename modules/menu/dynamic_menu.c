@@ -44,7 +44,7 @@ static int cmd_find_call(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
 	const char *id = carg->prm;
-	struct call *call = menu_find_call(id);
+	struct call *call = uag_call_find(id);
 
 	if (call) {
 		(void)re_hprintf(pf, "setting current call: %s\n", id);
