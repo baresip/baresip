@@ -22,7 +22,7 @@ struct auplay_st {
 	struct auresamp resamp;
 	int16_t *sampv_lin;
 	int16_t *sampv_rs;
-	size_t extra;
+	size_t extra;		/* number of extra samples at beginning of sampv_lin */
 
 	jack_client_t *client;
 	jack_port_t **portv;
@@ -48,24 +48,41 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 	int err;
 
 	if(st->prm.fmt == AUFMT_S16LE) {
-		size_t rs_sampc;
+		size_t sampc_rs_out;
 
 		if(st->resamp.resample) {
-			size_t sampc2;
-			size_t ratio;
+			size_t sampc_rs;
+			size_t ratio_rs;
 
-			ratio = st->resamp.orate / st->resamp.irate;
-			sampc2 = sampc / ratio;
-			if(sampc2 * ratio + st->extra < sampc) {
-				/* should read one extra sample */
-				sampc2++;
+			if(st->resamp.orate > st->resamp.irate) {
+				/* upsampling */
+  				ratio_rs = st->resamp.orate / st->resamp.irate;
+				sampc_rs = (sampc / st->prm.ch) / ratio_rs;
+				if(sampc_rs * st->prm.ch * ratio_rs + st->extra < sampc) {
+					/* need to read extra samples */
+					sampc_rs++;
+				}
+				sampc_rs = sampc_rs * st->prm.ch;
+
+			} else {
+				/* downsampling */
+				ratio_rs = st->resamp.irate / st->resamp.orate;
+				sampc_rs = sampc * ratio_rs;
 			}
 
-			st->wh(st->sampv_rs, sampc2, st->arg);
+			if(!st->sampv_rs) {
+				st->sampv_rs = mem_alloc(sampc_rs * sizeof(int16_t), NULL);
+				if(!st->sampv_rs) {
+					warning("jack: could not alloc memory for resampler\n");
+					return 0;
+				}
+			}
+
+			st->wh(st->sampv_rs, sampc_rs, st->arg);
 
 			err = auresamp(&st->resamp,
-                               st->sampv_lin + st->extra, &rs_sampc,
-                               st->sampv_rs, sampc2);
+                               st->sampv_lin + st->extra, &sampc_rs_out,
+                               st->sampv_rs, sampc_rs);
 
 			if(err) {
 				info("jack: auresamp err: %d\n", err);
@@ -79,17 +96,16 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 		/* convert from 16-bit to float */
 		auconv_from_s16(AUFMT_FLOAT, st->sampv, st->sampv_lin, sampc);
 
-		if(st->resamp.resample && rs_sampc + st->extra != sampc) {
-			int diff = rs_sampc + st->extra - sampc;
+		if(st->resamp.resample && sampc_rs_out + st->extra >= sampc) {
+			/* only for upsampling where there are extra bytes left over, st->extra  */
+			size_t diff = sampc_rs_out + st->extra - sampc;
 
 			/* move remaing samples to start of sampv_lin buffer to be used next callback */
-			for(int i=0;i<diff;i++) {
+			for(size_t i=0;i<diff;i++) {
 				st->sampv_lin[i] = st->sampv_lin[sampc+i];
 			}
 			
 			st->extra = diff;
-		} else {
-			st->extra = 0;
 		}
 
 	} else {
@@ -128,8 +144,6 @@ static void auplay_destructor(void *arg)
 
 	mem_deref(st->sampv_rs);
 	mem_deref(st->sampv_lin);
-
-	st->resamp.resample = 0;
 }
 
 static int start_jack(struct auplay_st *st)
@@ -188,7 +202,9 @@ static int start_jack(struct auplay_st *st)
 	     engine_srate, st->nframes);
 
 	if(st->prm.fmt == AUFMT_S16LE) {
-		st->sampv_lin = mem_alloc(st->nframes * st->prm.ch * sizeof(int16_t), NULL);
+		/* this buffer could hold some extra samples when upsampling, therefore + 100 */
+
+		st->sampv_lin = mem_alloc(st->nframes * st->prm.ch * sizeof(int16_t) + 100, NULL);
 		if(!st->sampv_lin)
 			return ENOMEM;
 	}
@@ -214,9 +230,7 @@ static int start_jack(struct auplay_st *st)
 				return EINVAL;
 			}
 
-			st->sampv_rs = mem_alloc(st->nframes * st->prm.ch * sizeof(int16_t), NULL);
-			if(!st->sampv_rs)
-				return ENOMEM;
+			st->extra = 0;
 
 		} else {
 	               warning("jack: samplerate %uHz expected\n", engine_srate);
