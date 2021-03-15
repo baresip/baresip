@@ -630,7 +630,6 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call = ua_call(ua);
-	bool resume;
 
 	(void)pf;
 
@@ -649,12 +648,7 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 		return ENOENT;
 	}
 
-	resume = call_state(call) == CALL_STATE_ESTABLISHED &&
-		 !call_is_onhold(call);
 	ua_hangup(ua, call, 0, NULL);
-
-	if (resume)
-		uag_hold_resume(NULL);
 
 	return 0;
 }
