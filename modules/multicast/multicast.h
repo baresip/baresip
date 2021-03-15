@@ -18,6 +18,9 @@ enum {
 };
 
 
+uint8_t multicast_callprio(void);
+
+
 /* Sender */
 typedef int (mcsender_send_h)(size_t ext_len, bool marker, uint32_t rtp_ts,
 	struct mbuf *mb, void *arg);
