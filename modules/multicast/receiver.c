@@ -70,8 +70,8 @@ static void mcreceiver_destructor(void *arg)
 /**
  * Multicast address comparison
  *
- * @param le	List element (mcreceiver)
- * @param arg	Argument     (address)
+ * @param le  List element (mcreceiver)
+ * @param arg Argument     (address)
  *
  * @return true  if mcreceiver->addr == address
  * @return false if mcreceiver->addr != address
@@ -88,8 +88,9 @@ static bool mcreceiver_addr_cmp(struct le *le, void *arg)
 /**
  * Multicast receiver priority comparison
  *
- * @param le	List element (mcreceiver)
- * @param arg	Argument     (priority)
+ * @param le  List element (mcreceiver)
+ * @param arg Argument     (priority)
+ *
  * @return true if mcreceiver->prio == prio
  * @return false if mcreceiver->prio != prio
  */
@@ -105,8 +106,8 @@ static bool mcreceiver_prio_cmp(struct le *le, void *arg)
 /**
  * Get running multicast receiver
  *
- * @param le	multicast receiver list element
- * @param arg
+ * @param le  Multicast receiver list element
+ * @param arg Unused
  *
  * @return true if multicast receiver is running
  * @return false if multicast receiver is not running
@@ -123,7 +124,8 @@ static bool mcreceiver_running(struct le *le, void *arg)
 /**
  * Convert std rtp codec payload type to audio codec
  *
- * @param hdr
+ * @param hdr RTP header object
+ *
  * @return struct aucodec*
  */
 static const struct aucodec *pt2codec(const struct rtp_header *hdr)
@@ -156,8 +158,8 @@ static const struct aucodec *pt2codec(const struct rtp_header *hdr)
 /**
  * Multicast Priority handling
  *
- * @param mcreceiver	Multicast receiver object
- * @param ssrc		SSRC of received RTP packet
+ * @param mcreceiver Multicast receiver object
+ * @param ssrc       SSRC of received RTP packet
  *
  * @return int 0 if success, errorcode otherwise
  */
@@ -258,10 +260,10 @@ static void timeout_handler(void *arg)
 /**
  * Handle incoming RTP packages
  *
- * @param src	Source address
- * @param hdr	RTP headers
- * @param mb	RTP payload
- * @param arg	Multicast receiver object
+ * @param src Source address
+ * @param hdr RTP headers
+ * @param mb  RTP payload
+ * @param arg Multicast receiver object
  */
 static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	struct mbuf *mb, void *arg)
@@ -309,7 +311,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 
 /**
- * Enable / Disable all mcreceiver with prio > @prio
+ * Enable / Disable all mcreceiver with prio > (argument)prio
  *
  * @param prio Priority
  */
@@ -357,8 +359,8 @@ void mcreceiver_enable(bool enable)
 /**
  * Change the priority of a multicast receiver
  *
- * @param addr	Listen address
- * @param prio	Priority
+ * @param addr Listen address
+ * @param prio Priority
  *
  * @return int 0 if success, errorcode otherwise
  */
@@ -432,8 +434,8 @@ void mcreceiver_unreg(struct sa *addr){
 /**
  * Allocate a new multicast receiver object
  *
- * @param addr	Listen address
- * @param prio	Listener priority
+ * @param addr Listen address
+ * @param prio Listener priority
  *
  * @return int 0 if success, errorcode otherwise
  */
