@@ -30,6 +30,7 @@ static struct config core_config = {
 		"",
 		"",
 		"",
+		"",
 		SIP_TRANSP_UDP,
 		false,
 	},
@@ -285,10 +286,14 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   sizeof(cfg->sip.cert));
 	(void)conf_get_bool(conf, "sip_verify_server",
 			&cfg->sip.verify_server);
-	if (0 != conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
-			   sizeof(cfg->sip.cafile))) {
+
+	(void)conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
+			   sizeof(cfg->sip.cafile));
+	(void)conf_get_str(conf, "sip_capath", cfg->sip.capath,
+			   sizeof(cfg->sip.capath));
+	if (!str_isset(cfg->sip.cafile) && !str_isset(cfg->sip.capath)) {
 		if (cfg->sip.verify_server) {
-			warning("config: no sip_cafile defined "
+			warning("config: no sip_cafile/sip_capath defined "
 				"and sip_verify_server is enabled, "
 				"sip tls connections maybe won't work\n");
 		}
@@ -427,6 +432,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_listen\t\t%s\n"
 			 "sip_certificate\t%s\n"
 			 "sip_cafile\t\t%s\n"
+			 "sip_capath\t\t%s\n"
 			 "sip_trans_def\t%s\n"
 			 "sip_verify_server\t%s\n"
 			 "\n"
@@ -473,6 +479,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 ,
 
 			 cfg->sip.local, cfg->sip.cert, cfg->sip.cafile,
+			 cfg->sip.capath
 			 sip_transp_name(cfg->sip.transp),
 			 cfg->sip.verify_server ? "yes" : "no",
 
