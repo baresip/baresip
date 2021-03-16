@@ -10,6 +10,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <gst/gst.h>
+#include <unistd.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
