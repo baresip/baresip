@@ -1687,6 +1687,8 @@ static int add_transp_af(const struct sa *laddr)
 		/* Build our SSL context*/
 		if (!uag.tls) {
 			const char *cert = NULL;
+			const char *cafile = NULL;
+			const char *capath = NULL;
 
 			if (str_isset(uag.cfg->cert)) {
 				cert = uag.cfg->cert;
@@ -1700,12 +1702,17 @@ static int add_transp_af(const struct sa *laddr)
 				return err;
 			}
 
-			if (str_isset(uag.cfg->cafile)) {
-				const char *ca = uag.cfg->cafile;
+			if (str_isset(uag.cfg->cafile))
+				cafile = uag.cfg->cafile;
+			if (str_isset(uag.cfg->capath))
+				capath = uag.cfg->capath;
 
-				info("ua: adding SIP CA: %s\n", ca);
+			if (cafile || capath) {
+				info("ua: adding SIP CA file: %s\n", cafile);
+				info("ua: adding SIP CA path: %s\n", capath);
 
-				err = tls_add_ca(uag.tls, ca);
+				err = tls_add_cafile_path(uag.tls,
+					cafile, capath);
 				if (err) {
 					warning("ua: tls_add_ca() failed:"
 						" %m\n", err);
