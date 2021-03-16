@@ -571,20 +571,24 @@ void menu_selcall(struct call *call)
 		CALL_STATE_ESTABLISHED,
 	};
 
+	if (!call) {
+		/* select another call */
+		for (i = ARRAY_SIZE(state)-1; i >= 0; --i) {
+			call = uag_find_call_state(state[i]);
+
+			if (!str_cmp(call_id(call), menu.callid))
+				call = NULL;
+
+			if (call)
+				break;
+		}
+	}
+
 	menu.callid = mem_deref(menu.callid);
 
 	if (call) {
 		str_dup(&menu.callid, call_id(call));
 		call_set_current(ua_calls(call_get_ua(call)), call);
-	}
-	else {
-		for (i = ARRAY_SIZE(state)-1; i >= 0; --i) {
-			call = uag_find_call_state(state[i]);
-			if (call) {
-				menu_selcall(call);
-				break;
-			}
-		}
 	}
 }
 
