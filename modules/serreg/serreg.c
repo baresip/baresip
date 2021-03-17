@@ -251,7 +251,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			break;
 
 		next_account(ua);
-		(void)ua_fallback(ua);
+		if (account_fbregint(ua_account(ua)))
+			(void)ua_fallback(ua);
+		else
+			ua_unregister(ua);
 		break;
 
 	default:
