@@ -1527,6 +1527,7 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	debug("call: got SDP answer (%zu bytes)\n", mbuf_get_left(msg->mb));
 
 	call->got_offer = false;
+	call_event_handler(call, CALL_EVENT_ANSWERED, call->peer_uri);
 
 	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
 		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
