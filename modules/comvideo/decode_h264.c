@@ -40,8 +40,9 @@ static inline void fragment_rewind(struct viddec_state *vds) {
 }
 
 
-static int ffdecode(struct viddec_state *st, struct vidframe *frame) {
-
+static int ffdecode(struct viddec_state *st, struct vidframe *frame)
+{
+	(void) frame;
 	st->mb->pos = 0;
 
 	if (!st->got_keyframe) {
@@ -49,9 +50,11 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame) {
 		return 0;
 	}
 
-	gst_appsrc_h264_converter_send_frame(st->converter, st->mb->buf,
-					     st->mb->size,
-					     st->mb->pos, st->mb->end);
+	gst_appsrc_h264_converter_send_frame(
+		st->converter, st->mb->buf,
+		st->mb->size,
+		st->mb->pos, st->mb->end);
+
 	return 0;
 }
 
@@ -159,13 +162,11 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 	}
 
 	if (!marker) {
-
 		if (st->mb->end > DECODE_MAXSZ) {
 			warning("comvideo: decode buffer size exceeded\n");
 			err = ENOMEM;
 			goto out;
 		}
-
 		return 0;
 	}
 
@@ -201,9 +202,16 @@ static void dec_destructor(void *arg) {
 }
 
 
-int decode_h264_update(struct viddec_state **vdsp, const struct vidcodec *vc,
-		       const char *fmtp) {
+int decode_h264_update(
+	struct viddec_state **vdsp,
+	const struct vidcodec *vc,
+	const char *fmtp)
+{
+
 	struct viddec_state *st;
+	GstVideoClientStream *stream;
+	GstAppsrcH264Converter *converter;
+
 	int err = 0;
 
 	if (!vdsp || !vc)
@@ -223,9 +231,6 @@ int decode_h264_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		err = ENOMEM;
 		goto out;
 	}
-
-	GstVideoClientStream *stream;
-	GstAppsrcH264Converter *converter;
 
 	stream = gst_video_client_create_stream(
 		comvideo_codec.video_client,

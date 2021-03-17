@@ -85,22 +85,28 @@ encode_h264_sample(struct videnc_state *st, enc_data *encData) {
 
 
 void
-camera_h264_sample_received(GstCameraSrc *src,
-			    GstSample *sample,
-			    struct vidsrc_st *st) {
-
-	GstBuffer *buffer = gst_sample_get_buffer(sample);
+camera_h264_sample_received(
+	GstCameraSrc *src, GstSample *sample,
+	struct vidsrc_st *st)
+{
+	GstBuffer *buffer;
 	GstMapInfo info;
+	enc_data encData;
+
+	(void) src;
+	(void) st;
+
+	buffer = gst_sample_get_buffer(sample);
 	gst_buffer_map(buffer, &info, (GstMapFlags)(GST_MAP_READ));
 
-	enc_data encData;
 	encData.sample = info.data;
 	encData.size = info.size;
 	encData.ts = GST_BUFFER_DTS_OR_PTS(buffer);
 
-	g_list_foreach(comvideo_codec.encoders,
-		       (GFunc) encode_h264_sample,
-		       &encData);
+	g_list_foreach(
+		comvideo_codec.encoders,
+		(GFunc) encode_h264_sample,
+		&encData);
 
 	gst_buffer_unmap(buffer, &info);
 }

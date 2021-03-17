@@ -128,15 +128,21 @@ static int h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 }
 
 
-static void src_destructor(void *arg) {
+static void src_destructor(void *arg)
+{
+	struct vidsrc_st *st;
+	GstCameraSrc *src;
+
 	debug("comvideo: stopping video source..\n");
 
-	struct vidsrc_st *st = arg;
-
-	GstCameraSrc *src = st->camsrc;
+	st = arg;
+	src = st->camsrc;
 
 	if (src) {
-		gst_camera_src_set_sample_cb(src, NULL, NULL);
+		gst_camera_src_set_sample_cb(
+			src,
+			GST_CAMERA_SRC_CODEC_H264,
+			NULL, NULL);
 
 		if (comvideo_codec.camerad_client) {
 			camerad_client_remove_src(
@@ -153,14 +159,16 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		     struct media_ctx **ctx, struct vidsrc_prm *prm,
 		     const struct vidsz *size, const char *fmt,
 		     const char *dev, vidsrc_frame_h *frameh,
-		     vidsrc_error_h *errorh, void *arg) {
+		     vidsrc_error_h *errorh, void *arg)
+{
+	struct vidsrc_st *st;
+	GstCameraSrc *src;
+
+	(void) dev;
 	(void) ctx;
 	(void) prm;
 	(void) fmt;
 	(void) errorh;
-
-	struct vidsrc_st *st;
-	GstCameraSrc *src;
 
 	if (!stp || !size || !frameh)
 		return EINVAL;
@@ -176,13 +184,14 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->pixfmt = 1;
 
 	src = camerad_client_add_src(comvideo_codec.camerad_client,
-				     GST_CAMERA_SRC_CODEC_H264, st->sz.w,
+				     GST_CAMERA_COMPONENT_RTP, st->sz.w,
 				     st->sz.h,
 				     15);
 
 	if (src) {
 		gst_camera_src_set_sample_cb(
 			src,
+			GST_CAMERA_SRC_CODEC_H264,
 			(camera_new_sample) camera_h264_sample_received,
 			st);
 	}
@@ -195,6 +204,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 
 static void disp_destructor(void *arg) {
+	(void) arg;
 }
 
 
@@ -203,6 +213,9 @@ static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		      vidisp_resize_h *resizeh, void *arg) {
 	struct vidisp_st *st;
 	int err = 0;
+
+	(void) prm;
+	(void) vd;
 	(void) dev;
 	(void) resizeh;
 	(void) arg;
@@ -218,11 +231,14 @@ static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static int module_init(void) {
+
+	struct conf *conf;
+
 	if (!gst_is_initialized()) {
 		gst_init(NULL, NULL);
 	}
 
-	struct conf *conf = conf_cur();
+	conf = conf_cur();
 
 	if (conf_get_str(conf, PROPERTY_VIDEO_DBUS_NAME,
 			 comvideo_codec.video_dbus_name, DBUS_PROPERTY_SIZE)) {
