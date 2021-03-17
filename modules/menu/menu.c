@@ -47,31 +47,6 @@ static int menu_set_incall(bool incall)
 }
 
 
-static void alert_start(void *arg)
-{
-	(void)arg;
-
-	if (!menu.bell)
-		return;
-
-	ui_output(baresip_uis(), "\033[10;1000]\033[11;1000]\a");
-
-	tmr_start(&menu.tmr_alert, 1000, alert_start, NULL);
-}
-
-
-static void alert_stop(void)
-{
-	if (!menu.bell)
-		return;
-
-	if (tmr_isrunning(&menu.tmr_alert))
-		ui_output(baresip_uis(), "\r");
-
-	tmr_cancel(&menu.tmr_alert);
-}
-
-
 static void tmrstat_handler(void *arg)
 {
 	struct call *call;
@@ -134,6 +109,47 @@ static char *errorcode_key_aufile(uint16_t scode)
 }
 
 
+static bool active_call_test(const struct call* call)
+{
+	return call_state(call) == CALL_STATE_ESTABLISHED &&
+			!call_is_onhold(call);
+}
+
+
+static void find_first_call(struct call *call, void *arg)
+{
+	struct call **callp = arg;
+
+	if (!*callp)
+		*callp = call;
+}
+
+
+/**
+ * Search all User-Agents for a call that matches
+ *
+ * @param matchh  Optional match handler. If NULL, the last call of the first
+ *                  User-Agent is returned
+ *
+ * @return  A call that matches
+ */
+struct call *menu_find_call(call_match_h *matchh)
+{
+	struct call *call = NULL;
+
+	uag_filter_calls(find_first_call, matchh, &call);
+
+	return call;
+}
+
+
+static void menu_stop_play(void)
+{
+	menu.play = mem_deref(menu.play);
+	menu.ringback = false;
+}
+
+
 static void menu_play(const char *ckey, const char *fname, int repeat)
 {
 	struct config *cfg = conf_config();
@@ -149,7 +165,7 @@ static void menu_play(const char *ckey, const char *fname, int repeat)
 		return;
 
 	pl_strdup(&file, &pl);
-	menu.play = mem_deref(menu.play);
+	menu_stop_play();
 	(void)play_file(&menu.play, player, file, repeat,
 			cfg->audio.play_mod,
 			cfg->audio.play_dev);
@@ -157,26 +173,23 @@ static void menu_play(const char *ckey, const char *fname, int repeat)
 }
 
 
-static void play_incoming(const struct ua *ua, bool waiting)
+static void play_incoming(const struct call *call)
 {
 	/* stop any ringtones */
-	menu.play = mem_deref(menu.play);
+	menu_stop_play();
 
 	/* Only play the ringtones if answermode is "Manual".
 	 * If the answermode is "auto" then be silent.
 	 */
-	if (ANSWERMODE_MANUAL == account_answermode(ua_account(ua))) {
+	if (ANSWERMODE_MANUAL == account_answermode(call_account(call))) {
 
-		if (waiting) {
+		if (menu_find_call(active_call_test)) {
 			menu_play("callwaiting_aufile", "callwaiting.wav", 3);
 		}
 		else {
 			/* Alert user */
 			menu_play("ring_aufile", "ring.wav", -1);
 		}
-
-		if (menu.bell)
-			alert_start(0);
 	}
 }
 
@@ -184,81 +197,33 @@ static void play_incoming(const struct ua *ua, bool waiting)
 static void play_ringback(void)
 {
 	/* stop any ringtones */
-	menu.play = mem_deref(menu.play);
+	menu_stop_play();
 
 	if (menu.ringback_disabled) {
 		info("\nRingback disabled\n");
 	}
 	else {
 		menu_play("ringback_aufile", "ringback.wav", -1);
+		menu.ringback = true;
 	}
 }
 
 
-static void play_resume(const struct call *call)
+static void play_resume(void)
 {
-	struct le *lec;
-	struct le *leu;
-	struct ua *uain;
-	bool incoming = false;
-	bool ringing = false;
+	struct call *call = uag_call_find(menu.callid);
 
-	for (leu = uag_list()->head; leu; leu = leu->next) {
-		struct ua *ua = leu->data;
-
-		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
-			if (lec->data == call)
-				continue;
-
-			switch (call_state(lec->data)) {
-			case CALL_STATE_EARLY:
-			case CALL_STATE_ESTABLISHED:
-				return;
-			case CALL_STATE_INCOMING:
-				incoming = true;
-				uain = ua;
-				break;
-			case CALL_STATE_RINGING:
-				ringing = true;
-				break;
-			default:
-				break;
-			}
-		}
+	switch (call_state(call)) {
+	case CALL_STATE_INCOMING:
+		play_incoming(call);
+		break;
+	case CALL_STATE_RINGING:
+		if (!menu.ringback && !menu_find_call(active_call_test))
+			play_ringback();
+		break;
+	default:
+		break;
 	}
-
-	if (incoming) {
-		play_incoming(uain, uag_call_count() > 2);
-	}
-	else if (ringing) {
-		play_ringback();
-	}
-}
-
-
-static bool has_outgoing_call(void)
-{
-	struct le *lec;
-	struct le *leu;
-
-	for (leu = uag_list()->head; leu; leu = leu->next) {
-		struct ua *ua = leu->data;
-
-		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
-
-			switch (call_state(lec->data)) {
-			case CALL_STATE_OUTGOING:
-			case CALL_STATE_RINGING:
-			case CALL_STATE_EARLY:
-			case CALL_STATE_ESTABLISHED:
-				return true;
-			default:
-				break;
-			}
-		}
-	}
-
-	return false;
 }
 
 
@@ -334,7 +299,7 @@ static void menu_play_closed(struct call *call)
 	const char *fb;
 
 	/* stop any ringtones */
-	menu.play = mem_deref(menu.play);
+	menu_stop_play();
 
 	if (call_scode(call)) {
 		scode = call_scode(call);
@@ -349,14 +314,13 @@ static void menu_play_closed(struct call *call)
 static void auans_play_finished(struct play *play, void *arg)
 {
 	struct call *call = arg;
-	struct ua *ua = call_get_ua(call);
 	int32_t adelay = call_answer_delay(call);
 	(void) play;
 
 	if (call_state(call) == CALL_STATE_INCOMING) {
 		call_start_answtmr(call, adelay);
 		if (adelay >= MIN_RINGTIME)
-			play_incoming(ua, uag_call_count() > 1);
+			play_incoming(call);
 	}
 }
 
@@ -364,7 +328,6 @@ static void auans_play_finished(struct play *play, void *arg)
 static void start_sip_autoanswer(struct call *call)
 {
 	int32_t adelay = call_answer_delay(call);
-	struct ua *ua = call_get_ua(call);
 	bool beep = true;
 
 	if (adelay == -1)
@@ -378,7 +341,7 @@ static void start_sip_autoanswer(struct call *call)
 	else {
 		call_start_answtmr(call, adelay);
 		if (adelay >= MIN_RINGTIME)
-			play_incoming(ua, uag_call_count() > 1);
+			play_incoming(call);
 	}
 }
 
@@ -409,6 +372,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 		/* set the current User-Agent to the one with the call */
 		menu_selcall(call);
+		menu_stop_play();
 
 		ardir =sdp_media_rdir(
 			stream_sdpmedia(audio_strm(call_audio(call))));
@@ -425,8 +389,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (acc && account_sip_autoanswer(acc))
 			adelay = call_answer_delay(call);
 
-		if (adelay == -1 || count > 1)
-			play_incoming(ua, count > 1);
+		if (adelay == -1)
+			play_incoming(call);
 		else
 			start_sip_autoanswer(call);
 
@@ -434,21 +398,19 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_RINGING:
 		menu_selcall(call);
-		if (!has_outgoing_call())
+		if (!menu.ringback && !menu_find_call(active_call_test))
 			play_ringback();
 		break;
 
 	case UA_EVENT_CALL_PROGRESS:
 		menu_selcall(call);
-		menu.play = mem_deref(menu.play);
+		menu_stop_play();
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
 		menu_selcall(call);
 		/* stop any ringtones */
-		menu.play = mem_deref(menu.play);
-
-		alert_stop();
+		menu_stop_play();
 
 		/* We must stop the re-dialing if the call was
 		   established */
@@ -457,11 +419,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_CLOSED:
-		menu_play_closed(call);
-
-		alert_stop();
-		play_resume(call);
-
 		/* Activate the re-dialing if:
 		 *
 		 * - redial_attempts must be enabled in config
@@ -493,8 +450,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			}
 		}
 
-		if (!str_cmp(call_id(call), menu.callid))
+		if (!str_cmp(call_id(call), menu.callid)) {
+			menu_play_closed(call);
 			menu_selcall(NULL);
+			play_resume();
+		}
 
 		break;
 
@@ -595,27 +555,6 @@ struct menu *menu_get(void)
 }
 
 
-struct call *menu_find_call(const char *id)
-{
-	struct le *le;
-	struct call *call;
-
-	if (!str_isset(id))
-		return NULL;
-
-	for (le = list_head(uag_list()); le; le = le->next) {
-		struct ua *ua = le->data;
-		struct list *calls = ua_calls(ua);
-
-		call = call_find_id(calls, id);
-		if (call)
-			return call;
-	}
-
-	return NULL;
-}
-
-
 /**
  * Selects the active call.
  *
@@ -632,20 +571,24 @@ void menu_selcall(struct call *call)
 		CALL_STATE_ESTABLISHED,
 	};
 
+	if (!call) {
+		/* select another call */
+		for (i = ARRAY_SIZE(state)-1; i >= 0; --i) {
+			call = uag_find_call_state(state[i]);
+
+			if (!str_cmp(call_id(call), menu.callid))
+				call = NULL;
+
+			if (call)
+				break;
+		}
+	}
+
 	menu.callid = mem_deref(menu.callid);
 
 	if (call) {
 		str_dup(&menu.callid, call_id(call));
 		call_set_current(ua_calls(call_get_ua(call)), call);
-	}
-	else {
-		for (i = ARRAY_SIZE(state)-1; i >= 0; --i) {
-			call = uag_find_call_state(state[i]);
-			if (call) {
-				menu_selcall(call);
-				break;
-			}
-		}
 	}
 }
 
@@ -657,7 +600,7 @@ void menu_selcall(struct call *call)
  */
 struct call *menu_callcur(void)
 {
-	return menu_find_call(menu.callid);
+	return uag_call_find(menu.callid);
 }
 
 
@@ -755,7 +698,6 @@ static int module_init(void)
 	int err;
 
 	memset(&menu, 0, sizeof(menu));
-	menu.bell = true;
 	menu.redial_attempts = 0;
 	menu.redial_delay = 5;
 	menu.ringback_disabled = false;
@@ -767,7 +709,6 @@ static int module_init(void)
 	/*
 	 * Read the config values
 	 */
-	conf_get_bool(conf_cur(), "menu_bell", &menu.bell);
 	conf_get_bool(conf_cur(), "ringback_disabled",
 		      &menu.ringback_disabled);
 	conf_get_bool(conf_cur(), "menu_clean_number", &menu.clean_number);
@@ -794,7 +735,6 @@ static int module_init(void)
 		return ENOMEM;
 
 	menu.start_ticks = tmr_jiffies();
-	tmr_init(&menu.tmr_alert);
 
 	if (0 == conf_get(conf_cur(), "statmode_default", &val) &&
 	    0 == pl_strcasecmp(&val, "off")) {
@@ -834,11 +774,10 @@ static int module_close(void)
 	dial_menu_unregister();
 	dynamic_menu_unregister();
 
-	tmr_cancel(&menu.tmr_alert);
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
 	menu.callid = mem_deref(menu.callid);
-	menu.play = mem_deref(menu.play);
+	menu_stop_play();
 
 	tmr_cancel(&menu.tmr_redial);
 

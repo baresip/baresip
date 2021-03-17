@@ -208,6 +208,7 @@ int  call_notify_sipfrag(struct call *call, uint16_t scode,
 			 const char *reason, ...);
 void call_set_handlers(struct call *call, call_event_h *eh,
 		       call_dtmf_h *dtmfh, void *arg);
+struct account *call_account(const struct call *call);
 uint16_t      call_scode(const struct call *call);
 enum call_state call_state(const struct call *call);
 uint32_t      call_duration(const struct call *call);

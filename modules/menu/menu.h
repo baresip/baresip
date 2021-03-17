@@ -13,13 +13,12 @@ enum statmode {
 
 
 struct menu{
-	struct tmr tmr_alert;         /**< Incoming call alert timer      */
 	struct tmr tmr_stat;          /**< Call status timer              */
 	struct play *play;            /**< Current audio player state     */
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
 	char *callid;                 /**< Call-id of active call         */
-	bool bell;                    /**< ANSI Bell alert enabled        */
-	bool ringback_disabled;	      /**< no ringback on sip 180 respons */
+	bool ringback_disabled;       /**< no ringback on sip 180 respons */
+	bool ringback;                /**< Ringback played currently      */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
 	uint32_t redial_delay;        /**< Redial delay in [seconds]      */
 	uint32_t redial_attempts;     /**< Number of re-dial attempts     */
@@ -35,7 +34,6 @@ struct menu{
 struct menu *menu_get(void);
 
 /* Active call and UA */
-struct call *menu_find_call(const char *id);
 void menu_selcall(struct call *call);
 struct call *menu_callcur(void);
 struct ua   *menu_uacur(void);
@@ -59,3 +57,4 @@ void dial_menu_unregister(void);
 /*Generic menu funtions*/
 void menu_update_callstatus(bool incall);
 int  menu_param_decode(const char *prm, const char *name, struct pl *val);
+struct call *menu_find_call(call_match_h *matchh);
