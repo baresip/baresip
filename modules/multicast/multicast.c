@@ -16,6 +16,15 @@
 #include <re_dbg.h>
 
 
+struct mccfg {
+	uint32_t callprio;
+};
+
+static struct mccfg mccfg = {
+	0,
+};
+
+
 /**
  * Decode IP-address <IP>:<PORT>
  *
@@ -89,6 +98,17 @@ static int check_rtp_pt(struct aucodec *ac)
 		return EINVAL;
 
 	return ac->pt ? 0 : ENOTSUP;
+}
+
+
+/**
+ * Getter for the call priority
+ *
+ * @return uint8_t call priority
+ */
+uint8_t multicast_callprio(void)
+{
+	return mccfg.callprio;
 }
 
 
@@ -475,6 +495,8 @@ static int module_read_config(void)
 	int err = 0, prio = 1;
 	struct sa laddr;
 
+	(void)conf_get_u32(conf_cur(), "multicast_call_prio", &mccfg.callprio);
+
 	sa_init(&laddr, AF_INET);
 	err = conf_apply(conf_cur(), "multicast_listener",
 		module_read_config_handler, &prio);
@@ -508,8 +530,8 @@ static int module_init(void)
 {
 	int err = 0;
 
-	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
-	err |= module_read_config();
+	err = module_read_config();
+	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 
 	if (!err)
 		info("multicast: module init\n");

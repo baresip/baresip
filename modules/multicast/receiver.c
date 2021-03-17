@@ -61,6 +61,9 @@ static void mcreceiver_destructor(void *arg)
 	if (mcreceiver->running)
 		mcplayer_stop();
 
+	mcreceiver->ssrc = 0;
+	mcreceiver->running = false;
+
 	mcreceiver->rtp  = mem_deref(mcreceiver->rtp);
 	mcreceiver->jbuf = mem_deref(mcreceiver->jbuf);
 
@@ -156,6 +159,31 @@ static const struct aucodec *pt2codec(const struct rtp_header *hdr)
 
 
 /**
+ * Resume to the pre-multicast uag state if no other high priority
+ * multicasts are running
+ */
+static void resume_uag_state(void)
+{
+	uint8_t h = 255;
+	struct le *le= NULL;
+	struct mcreceiver *mcreceiver = NULL;
+
+	for (le = list_head(&mcreceivl); le; le = le->next) {
+		mcreceiver = le->data;
+
+		if (mcreceiver->ssrc && mcreceiver->prio < h)
+			h = mcreceiver->prio;
+	}
+
+	if (h > multicast_callprio()) {
+		uag_set_dnd(false);
+		uag_set_nodial(false);
+		uag_hold_resume(NULL);
+	}
+}
+
+
+/**
  * Multicast Priority handling
  *
  * @param mcreceiver Multicast receiver object
@@ -175,6 +203,11 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 	err = lock_write_try(mcreceivl_lock);
 	if (err)
 		return err;
+
+	if (mcreceiver->prio < multicast_callprio()) {
+		uag_set_dnd(true);
+		uag_set_nodial(true);
+	}
 
 	le = list_apply(&mcreceivl, true, mcreceiver_running, NULL);
 	if (!le) {
@@ -252,6 +285,8 @@ static void timeout_handler(void *arg)
 	mcreceiver->ssrc = 0;
 	mcreceiver->ac = NULL;
 
+	resume_uag_state();
+
 	lock_rel(mcreceivl_lock);
 	return;
 }
@@ -275,36 +310,49 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	(void) mb;
 
 	if (!mcreceiver->enable)
-		return;
+		goto out;
 
 	if (!mcreceiver->globenable)
-		return;
+		goto out;
 
-	if (uag_call_count())
-		return;
+	if (mcreceiver->prio >= multicast_callprio() && uag_call_count()) {
+		goto out;
+	}
+	else if (mcreceiver->prio < multicast_callprio() && uag_call_count()) {
+		struct le *leua;
+		struct ua *ua;
+
+		for (leua = list_head(uag_list()); leua; leua = leua->next) {
+			struct le *le;
+			ua = leua->data;
+			for (le = list_head(ua_calls(ua)); le; le = le->next) {
+				struct call *call = le->data;
+				if (!call_is_onhold(call))
+					call_hold(call, true);
+			}
+		}
+	}
 
 	mcreceiver->ac = pt2codec(hdr);
 	if (!mcreceiver->ac)
-		return;
+		goto out;
 
 	if (!mbuf_get_left(mb))
-		return;
-
-	if (err) {
-		warning ("multicast receiver: "
-			"Decoder update failed. (%m)\n", err);
-		return;
-	}
+		goto out;
 
 	err = prio_handling(mcreceiver, hdr->ssrc);
 	if (err)
-		return;
+		goto out;
 
-	tmr_start(&mcreceiver->timeout, TIMEOUT, timeout_handler, mcreceiver);
+	mcreceiver->ssrc = hdr->ssrc;
+
 
 	err = jbuf_put(mcreceiver->jbuf, hdr, mb);
 	if (err)
 		return;
+
+  out:
+	tmr_start(&mcreceiver->timeout, TIMEOUT, timeout_handler, mcreceiver);
 
 	return;
 }
@@ -400,6 +448,7 @@ void mcreceiver_unregall(void)
 {
 	lock_write_get(mcreceivl_lock);
 	list_flush(&mcreceivl);
+	resume_uag_state();
 	lock_rel(mcreceivl_lock);
 	mcreceivl_lock = mem_deref(mcreceivl_lock);
 }
@@ -423,6 +472,7 @@ void mcreceiver_unreg(struct sa *addr){
 	mcreceiver = le->data;
 	lock_write_get(mcreceivl_lock);
 	list_unlink(&mcreceiver->le);
+	resume_uag_state();
 	lock_rel(mcreceivl_lock);
 	mcreceiver = mem_deref(mcreceiver);
 

@@ -52,6 +52,8 @@ struct uag {
 	bool delayed_close;            /**< Module will close SIP stack     */
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
+	bool nodial;                   /**< Prevent outgoing calls          */
+	bool dnd;                      /**< Do not Disturb flag             */
 	void *arg;                     /**< UA Exit handler argument        */
 	char *eprm;                    /**< Extra UA parameters             */
 #ifdef USE_TLS
@@ -72,6 +74,8 @@ static struct uag uag = {
 	false,
 	NULL,
 	NULL,
+	false,
+	false,
 	NULL,
 	NULL,
 #ifdef USE_TLS
@@ -1217,6 +1221,11 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (!ua || !str_isset(req_uri))
 		return EINVAL;
 
+	if (uag.nodial) {
+		info ("ua: currently no outgoing calls are allowed\n");
+		return EACCES;
+	}
+
 	dialbuf = mbuf_alloc(64);
 	if (!dialbuf)
 		return ENOMEM;
@@ -1793,6 +1802,12 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		info("ua: %r: UA not found: %r\n",
 		     &msg->from.auri, &msg->uri.user);
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
+		return;
+	}
+
+	if (uag.dnd) {
+		(void)sip_treply(NULL, uag.sip, msg,
+			480,"Temporarily Unavailable");
 		return;
 	}
 
@@ -2765,6 +2780,28 @@ struct tls *uag_tls(void)
 
 
 /**
+ * Setter UAG nodial flag
+ *
+ * @param nodial
+ */
+void uag_set_nodial(bool nodial)
+{
+	uag.nodial = nodial;
+}
+
+
+/**
+ * Getter UAG nodial flag
+ *
+ * @return uag.nodial
+ */
+bool uag_nodial(void)
+{
+	return uag.nodial;
+}
+
+
+/**
  * Set the preferred address family for media
  *
  * @param ua       User-Agent
@@ -2810,6 +2847,28 @@ int uag_set_extra_params(const char *eprm)
 		return str_dup(&uag.eprm, eprm);
 
 	return 0;
+}
+
+
+/**
+ * Set global Do not Disturb flag
+ *
+ * @param dnd DnD flag
+ */
+void uag_set_dnd(bool dnd)
+{
+	uag.dnd = dnd;
+}
+
+
+/**
+ * Get DnD status of uag
+ *
+ * @return True if DnD is active, False if not
+ */
+bool uag_dnd(void)
+{
+	return uag.dnd;
 }
 
 
