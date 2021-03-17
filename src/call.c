@@ -46,7 +46,6 @@ struct call {
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
 	struct tmr tmr_answ;      /**< Timer for delayed answer             */
-	struct tmr tmr_strm;      /**< Timer for stream start               */
 	time_t time_start;        /**< Time when call started               */
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
@@ -165,10 +164,11 @@ static int start_audio(struct call *call)
 }
 
 
-static void timeout_stream_start(void *arg)
+static void call_stream_start(struct call *call, bool active)
 {
-	struct call *call = arg;
 	int err;
+
+	debug("call: stream start (active=%d)\n", active);
 
 	if (stream_is_ready(audio_strm(call->audio))) {
 		err = start_audio(call);
@@ -183,14 +183,6 @@ static void timeout_stream_start(void *arg)
 			warning("call: could not start video: %m\n", err);
 		}
 	}
-}
-
-
-static void call_stream_start(struct call *call, bool active)
-{
-	debug("call: stream start (active=%d)\n", active);
-
-	tmr_start(&call->tmr_strm, 0, timeout_stream_start, call);
 
 	if (active) {
 		struct le *le;
@@ -386,7 +378,6 @@ static void call_destructor(void *arg)
 	list_unlink(&call->le);
 	tmr_cancel(&call->tmr_dtmf);
 	tmr_cancel(&call->tmr_answ);
-	tmr_cancel(&call->tmr_strm);
 
 	mem_deref(call->sess);
 	mem_deref(call->id);
