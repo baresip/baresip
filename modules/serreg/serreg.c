@@ -221,6 +221,31 @@ static void fallback_ok(struct ua *ua)
 }
 
 
+static void restart(void)
+{
+	struct le *le;
+
+	for (le = list_head(uag_list()); le; le = le->next) {
+		struct ua *ua = le->data;
+		struct account *acc = ua_account(ua);
+		uint32_t prio = account_prio(acc);
+		uint32_t fbregint = account_fbregint(acc);
+
+		if (!account_regint(acc))
+			continue;
+
+		/* fbregint accounts don't need a restart */
+		if (prio || fbregint)
+			continue;
+
+		debug("serreg: restart %s prio 0.\n", account_aor(acc));
+		ua_register(ua);
+		sreg.prio = 0;
+		sreg.sprio = (uint32_t) -1;
+	}
+}
+
+
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
@@ -255,6 +280,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			(void)ua_fallback(ua);
 		else
 			ua_unregister(ua);
+
+		if (sreg.prio == (uint32_t) -1)
+			restart();
 		break;
 
 	default:
