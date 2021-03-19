@@ -16,11 +16,20 @@
 #include <re_dbg.h>
 
 
+struct mccfg {
+	uint32_t callprio;
+};
+
+static struct mccfg mccfg = {
+	0,
+};
+
+
 /**
  * Decode IP-address <IP>:<PORT>
  *
- * @param pladdr	Parameter string
- * @param addr		Address ptr
+ * @param pladdr Parameter string
+ * @param addr   Address ptr
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -44,10 +53,10 @@ static int decode_addr(struct pl *pladdr, struct sa *addr)
 
 
 /**
- * Decode Audiocodec <CODEC>
+ * Decode audiocodec <CODEC>
  *
- * @param plcodec	Parameter string
- * @param codecptr	Codec ptr
+ * @param plcodec  Parameter string
+ * @param codecptr Codec ptr
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -79,7 +88,7 @@ static int decode_codec(struct pl *plcodec, struct aucodec **codecptr)
 /**
  * Check audio encoder RTP payload type
  *
- * @param ac	Audiocodec object
+ * @param ac Audiocodec object
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -93,10 +102,21 @@ static int check_rtp_pt(struct aucodec *ac)
 
 
 /**
+ * Getter for the call priority
+ *
+ * @return uint8_t call priority
+ */
+uint8_t multicast_callprio(void)
+{
+	return mccfg.callprio;
+}
+
+
+/**
  * Create a new multicast sender
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -136,8 +156,8 @@ static int cmd_mcsend(struct re_printf *pf, void *arg)
 /**
  * Enable / Disable all multicast sender without removing it
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -167,8 +187,8 @@ static int cmd_mcsenden(struct re_printf *pf, void *arg)
 /**
  * Stop all multicast sender
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return always 0
  */
@@ -185,8 +205,8 @@ static int cmd_mcstopall(struct re_printf *pf, void *arg)
 /**
  * Stop a specified multicast sender
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -219,8 +239,8 @@ static int cmd_mcstop(struct re_printf *pf, void *arg)
 /**
  * Print all multicast information
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return alwasys 0
  */
@@ -239,8 +259,8 @@ static int cmd_mcinfo(struct re_printf *pf, void *arg)
 /**
  * Create a new multicast listener with prio
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -281,8 +301,8 @@ static int cmd_mcreg(struct re_printf *pf, void *arg)
 /**
  * Un-register a multicast listener
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -315,8 +335,8 @@ static int cmd_mcunreg(struct re_printf *pf, void *arg)
 /**
  * Un-register all multicast listener
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return always 0
  */
@@ -333,8 +353,8 @@ static int cmd_mcunregall(struct re_printf *pf, void *arg)
 /**
  * Change priority of existing multicast listener
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return  0 if success, otherwise errorcode
  */
@@ -372,8 +392,8 @@ static int cmd_mcchprio(struct re_printf *pf, void *arg)
  * Enables all multicast listener with prio <= given prio and
  * disables those with prio > given pri
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -403,8 +423,8 @@ static int cmd_mcprioen(struct re_printf *pf, void *arg)
 /**
  * Enable / Disable all multicast receiver without removing it
  *
- * @param pf	Printer
- * @param arg	Command arguments
+ * @param pf  Printer
+ * @param arg Command arguments
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -434,8 +454,8 @@ static int cmd_mcregen(struct re_printf *pf, void *arg)
 /**
  * config handler: call this handler foreach line given by @conf_apply function
  *
- * @param pl	pl containing the parameter of the config line
- * @param arg	(int*) external priority counter
+ * @param pl  PL containing the parameter of the config line
+ * @param arg (int*) external priority counter
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -475,6 +495,8 @@ static int module_read_config(void)
 	int err = 0, prio = 1;
 	struct sa laddr;
 
+	(void)conf_get_u32(conf_cur(), "multicast_call_prio", &mccfg.callprio);
+
 	sa_init(&laddr, AF_INET);
 	err = conf_apply(conf_cur(), "multicast_listener",
 		module_read_config_handler, &prio);
@@ -485,9 +507,6 @@ static int module_read_config(void)
 }
 
 
-/**
- * user callable methods via menue
- */
 static const struct cmd cmdv[] = {
 	{"mcinfo",    0, CMD_PRM, "Show multicast information", cmd_mcinfo   },
 
@@ -511,8 +530,8 @@ static int module_init(void)
 {
 	int err = 0;
 
-	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
-	err |= module_read_config();
+	err = module_read_config();
+	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 
 	if (!err)
 		info("multicast: module init\n");

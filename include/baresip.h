@@ -157,6 +157,7 @@ enum call_event {
 	CALL_EVENT_INCOMING,
 	CALL_EVENT_RINGING,
 	CALL_EVENT_PROGRESS,
+	CALL_EVENT_ANSWERED,
 	CALL_EVENT_ESTABLISHED,
 	CALL_EVENT_CLOSED,
 	CALL_EVENT_TRANSFER,
@@ -187,6 +188,9 @@ struct call;
 typedef void (call_event_h)(struct call *call, enum call_event ev,
 			    const char *str, void *arg);
 typedef void (call_dtmf_h)(struct call *call, char key, void *arg);
+typedef bool (call_match_h)(const struct call *call);
+typedef void (call_list_h)(struct call *call, void *arg);
+
 
 int  call_connect(struct call *call, const struct pl *paddr);
 int  call_answer(struct call *call, uint16_t scode, enum vidmode vmode);
@@ -205,6 +209,7 @@ int  call_notify_sipfrag(struct call *call, uint16_t scode,
 			 const char *reason, ...);
 void call_set_handlers(struct call *call, call_event_h *eh,
 		       call_dtmf_h *dtmfh, void *arg);
+struct account *call_account(const struct call *call);
 uint16_t      call_scode(const struct call *call);
 enum call_state call_state(const struct call *call);
 uint32_t      call_duration(const struct call *call);
@@ -292,6 +297,7 @@ struct config_sip {
 	char local[64];         /**< Local SIP Address              */
 	char cert[256];         /**< SIP Certificate                */
 	char cafile[256];       /**< SIP CA-file                    */
+	char capath[256];       /**< SIP CA-path                    */
 	enum sip_transp transp; /**< Default outgoing SIP transport protocol */
 	bool verify_server;     /**< Enable SIP TLS verify server   */
 };
@@ -749,6 +755,7 @@ enum ua_event {
 	UA_EVENT_CALL_INCOMING,
 	UA_EVENT_CALL_RINGING,
 	UA_EVENT_CALL_PROGRESS,
+	UA_EVENT_CALL_ANSWERED,
 	UA_EVENT_CALL_ESTABLISHED,
 	UA_EVENT_CALL_CLOSED,
 	UA_EVENT_CALL_TRANSFER,
@@ -843,7 +850,11 @@ void ua_close(void);
 void ua_stop_all(bool forced);
 int  uag_hold_resume(struct call *call);
 int  uag_hold_others(struct call *call);
+void uag_set_nodial(bool nodial);
+bool uag_nodial(void);
 void uag_set_exit_handler(ua_exit_h *exith, void *arg);
+void uag_set_dnd(bool dnd);
+bool uag_dnd(void);
 void uag_enable_sip_trace(bool enable);
 int  uag_reset_transp(bool reg, bool reinvite);
 void uag_set_sub_handler(sip_msg_h *subh);
@@ -861,6 +872,7 @@ struct sipsess_sock  *uag_sipsess_sock(void);
 struct sipevent_sock *uag_sipevent_sock(void);
 struct call *uag_call_find(const char *id);
 struct call *uag_find_call_state(enum call_state st);
+void uag_filter_calls(call_list_h *listh, call_match_h *matchh, void *arg);
 
 
 /*

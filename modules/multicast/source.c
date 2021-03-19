@@ -95,11 +95,11 @@ static void mcsource_destructor(void *arg)
 
 
 /**
- * Encode and send audio data via multicast send handler of @src
+ * Encode and send audio data via multicast send handler of src
  *
  * @note This function has REAL-TIME properties
  *
- * @param src	Multicast source object
+ * @param src   Multicast source object
  * @param sampv Samplebuffer
  * @param sampc Samplecounter
  */
@@ -261,8 +261,8 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
  *
  * @note This function has REAL-TIME properties
  *
- * @param af	Audio frame
- * @param arg	Multicast source object
+ * @param af  Audio frame
+ * @param arg Multicast source object
  */
 static void ausrc_read_handler(struct auframe *af, void *arg)
 {
@@ -295,7 +295,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 #ifdef HAVE_PTHREAD
 /**
- * Standalone trasmitter thread function
+ * Standalone transmitter thread function
  *
  * @param arg Multicast source object
  *
@@ -442,8 +442,8 @@ static int start_source(struct mcsource *src)
 /**
  * Setup all available audio filter for the encoder
  *
- * @param src		Multicast source object
- * @param aufiltl	List of audio filter
+ * @param src     Multicast source object
+ * @param aufiltl List of audio filter
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -496,10 +496,10 @@ static int aufilt_setup(struct mcsource *src, struct list *aufiltl)
 /**
  * Start multicast source
  *
- * @param srcp	Multicast source ptr
- * @param ac	Audio codec
- * @param sendh	Send handler ptr
- * @param arg	Send handler Argument
+ * @param srcp  Multicast source ptr
+ * @param ac    Audio codec
+ * @param sendh Send handler ptr
+ * @param arg   Send handler Argument
  *
  * @return 0 if success, otherwise errorcode
  */

@@ -285,14 +285,17 @@ static const char *print_scode(uint16_t scode)
 int reg_debug(struct re_printf *pf, const struct reg *reg)
 {
 	int err = 0;
+	bool fb = !sipreg_proxy_expires(reg->sipreg) && reg->scode;
 
 	if (!reg)
 		return 0;
 
 	err |= re_hprintf(pf, "\nRegister client:\n");
 	err |= re_hprintf(pf, " id:     %d\n", reg->id);
-	err |= re_hprintf(pf, " scode:  %u (%s)\n",
-			  reg->scode, print_scode(reg->scode));
+	err |= re_hprintf(pf, " scode:  %u (%s%s)\n",
+			  reg->scode,
+			   fb ? "fallback " : "",
+			  print_scode(reg->scode));
 	err |= re_hprintf(pf, " srv:    %s\n", reg->srv);
 	err |= re_hprintf(pf, " af:     %s\n", af_name(reg->af));
 
@@ -317,6 +320,8 @@ int reg_json_api(struct odict *od, const struct reg *reg)
 
 	err |= odict_entry_add(od, "id", ODICT_INT, (int64_t) reg->id);
 	err |= odict_entry_add(od, "state", ODICT_BOOL, reg_isok(reg));
+	err |= odict_entry_add(od, "expires", ODICT_INT,
+			       (int64_t) sipreg_proxy_expires(reg->sipreg));
 	err |= odict_entry_add(od, "code", ODICT_INT, (int64_t) reg->scode);
 	if (reg->srv)
 		err |= odict_entry_add(od, "srv", ODICT_STRING, reg->srv);
@@ -330,11 +335,20 @@ int reg_json_api(struct odict *od, const struct reg *reg)
 
 int reg_status(struct re_printf *pf, const struct reg *reg)
 {
+	uint32_t pexpires = sipreg_proxy_expires(reg->sipreg);
+	bool fb = !pexpires && reg->scode;
 	if (!reg)
 		return 0;
 
-	return re_hprintf(pf, " %s %s Expires %us", print_scode(reg->scode),
-			reg->srv, sipreg_proxy_expires(reg->sipreg));
+	if (pexpires) {
+		return re_hprintf(pf, " %s %s Expires %us",
+				print_scode(reg->scode), reg->srv, pexpires);
+	}
+	else {
+		return re_hprintf(pf, " %s%s %s",
+				fb ? "FB-" : "   ",
+				print_scode(reg->scode), reg->srv);
+	}
 }
 
 

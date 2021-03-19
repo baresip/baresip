@@ -54,8 +54,8 @@ static void mcsender_destructor(void *arg)
 /**
  * Multicast address comparison
  *
- * @param le	List element (mcsender)
- * @param arg	Argument     (address)
+ * @param le  List element (mcsender)
+ * @param arg Argument     (address)
  *
  * @return true  if mcsender->addr == address
  * @return false if mcsender->addr != address
@@ -72,9 +72,9 @@ static bool mcsender_addr_cmp(struct le *le, void *arg)
 /**
  * Multicast send handler
  *
- * @param ext_len	RTP extension header Length
- * @param marker	RTP marker
- * @param mb		Data to send
+ * @param ext_len RTP extension header Length
+ * @param marker  RTP marker
+ * @param mb      Data to send
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -129,7 +129,7 @@ void mcsender_stopall(void)
 
 
 /**
- * Stop the multicast sender with @addr
+ * Stop the multicast sender with addr
  *
  * @param addr Address
  */
@@ -153,8 +153,8 @@ void mcsender_stop(struct sa *addr)
 /**
  * Allocate a new multicast sender object
  *
- * @param addr	Destination address
- * @param codec	Used audio codec
+ * @param addr  Destination address
+ * @param codec Used audio codec
  *
  * @return 0 if success, otherwise errorcode
  */

@@ -52,6 +52,8 @@ struct uag {
 	bool delayed_close;            /**< Module will close SIP stack     */
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
+	bool nodial;                   /**< Prevent outgoing calls          */
+	bool dnd;                      /**< Do not Disturb flag             */
 	void *arg;                     /**< UA Exit handler argument        */
 	char *eprm;                    /**< Extra UA parameters             */
 #ifdef USE_TLS
@@ -72,6 +74,8 @@ static struct uag uag = {
 	false,
 	NULL,
 	NULL,
+	false,
+	false,
 	NULL,
 	NULL,
 #ifdef USE_TLS
@@ -515,6 +519,9 @@ struct call *uag_call_find(const char *id)
 	struct ua *ua = NULL;
 	struct call *call = NULL;
 
+	if (!str_isset(id))
+		return NULL;
+
 	for (le = list_head(&uag.ual); le; le = le->next) {
 		ua = le->data;
 
@@ -547,6 +554,34 @@ struct call *uag_find_call_state(enum call_state st)
 	}
 
 	return NULL;
+}
+
+
+/**
+ * Filters the calls of all User-Agents
+ *
+ * @param listh   Call list handler is called for each match
+ * @param matchh  Optional filter match handler (if NULL all calls are listed)
+ * @param arg     User argument passed to listh
+ */
+void uag_filter_calls(call_list_h *listh, call_match_h *matchh, void *arg)
+{
+	struct le *leu;
+
+	if (!listh)
+		return;
+
+	for (leu = list_head(uag_list()); leu; leu = leu->next) {
+		struct ua *ua = leu->data;
+		struct le *lec;
+
+		for (lec = list_tail(ua_calls(ua)); lec; lec = lec->prev) {
+			struct call *call = lec->data;
+
+			if (!matchh || matchh(call))
+				listh(call, arg);
+		}
+	}
 }
 
 
@@ -612,6 +647,11 @@ static void call_event_handler(struct call *call, enum call_event ev,
 	case CALL_EVENT_PROGRESS:
 		ua_printf(ua, "Call in-progress: %s\n", peeruri);
 		ua_event(ua, UA_EVENT_CALL_PROGRESS, call, peeruri);
+		break;
+
+	case CALL_EVENT_ANSWERED:
+		ua_printf(ua, "Call answered: %s\n", peeruri);
+		ua_event(ua, UA_EVENT_CALL_ANSWERED, call, peeruri);
 		break;
 
 	case CALL_EVENT_ESTABLISHED:
@@ -1186,6 +1226,11 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (!ua || !str_isset(req_uri))
 		return EINVAL;
 
+	if (uag.nodial) {
+		info ("ua: currently no outgoing calls are allowed\n");
+		return EACCES;
+	}
+
 	dialbuf = mbuf_alloc(64);
 	if (!dialbuf)
 		return ENOMEM;
@@ -1642,6 +1687,8 @@ static int add_transp_af(const struct sa *laddr)
 		/* Build our SSL context*/
 		if (!uag.tls) {
 			const char *cert = NULL;
+			const char *cafile = NULL;
+			const char *capath = NULL;
 
 			if (str_isset(uag.cfg->cert)) {
 				cert = uag.cfg->cert;
@@ -1655,12 +1702,17 @@ static int add_transp_af(const struct sa *laddr)
 				return err;
 			}
 
-			if (str_isset(uag.cfg->cafile)) {
-				const char *ca = uag.cfg->cafile;
+			if (str_isset(uag.cfg->cafile))
+				cafile = uag.cfg->cafile;
+			if (str_isset(uag.cfg->capath))
+				capath = uag.cfg->capath;
 
-				info("ua: adding SIP CA: %s\n", ca);
+			if (cafile || capath) {
+				info("ua: adding SIP CA file: %s\n", cafile);
+				info("ua: adding SIP CA path: %s\n", capath);
 
-				err = tls_add_ca(uag.tls, ca);
+				err = tls_add_cafile_path(uag.tls,
+					cafile, capath);
 				if (err) {
 					warning("ua: tls_add_ca() failed:"
 						" %m\n", err);
@@ -1762,6 +1814,12 @@ static void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		info("ua: %r: UA not found: %r\n",
 		     &msg->from.auri, &msg->uri.user);
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
+		return;
+	}
+
+	if (uag.dnd) {
+		(void)sip_treply(NULL, uag.sip, msg,
+			480,"Temporarily Unavailable");
 		return;
 	}
 
@@ -2734,6 +2792,28 @@ struct tls *uag_tls(void)
 
 
 /**
+ * Setter UAG nodial flag
+ *
+ * @param nodial
+ */
+void uag_set_nodial(bool nodial)
+{
+	uag.nodial = nodial;
+}
+
+
+/**
+ * Getter UAG nodial flag
+ *
+ * @return uag.nodial
+ */
+bool uag_nodial(void)
+{
+	return uag.nodial;
+}
+
+
+/**
  * Set the preferred address family for media
  *
  * @param ua       User-Agent
@@ -2779,6 +2859,28 @@ int uag_set_extra_params(const char *eprm)
 		return str_dup(&uag.eprm, eprm);
 
 	return 0;
+}
+
+
+/**
+ * Set global Do not Disturb flag
+ *
+ * @param dnd DnD flag
+ */
+void uag_set_dnd(bool dnd)
+{
+	uag.dnd = dnd;
+}
+
+
+/**
+ * Get DnD status of uag
+ *
+ * @return True if DnD is active, False if not
+ */
+bool uag_dnd(void)
+{
+	return uag.dnd;
 }
 
 

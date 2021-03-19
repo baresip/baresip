@@ -369,6 +369,8 @@ on_name_acquired(GDBusConnection *connection, const gchar *name, gpointer arg)
 	}
 
 	info("ctrl_dbus: dbus interface %s exported\n", name);
+	ua_event(NULL, UA_EVENT_CUSTOM, NULL, "ctrl_dbus: "
+			"dbus_interface %s exported", name);
 }
 
 

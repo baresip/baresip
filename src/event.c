@@ -49,6 +49,7 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_INCOMING:
 	case UA_EVENT_CALL_RINGING:
 	case UA_EVENT_CALL_PROGRESS:
+	case UA_EVENT_CALL_ANSWERED:
 	case UA_EVENT_CALL_ESTABLISHED:
 	case UA_EVENT_CALL_CLOSED:
 	case UA_EVENT_CALL_TRANSFER:
@@ -326,6 +327,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_INCOMING:        return "CALL_INCOMING";
 	case UA_EVENT_CALL_RINGING:         return "CALL_RINGING";
 	case UA_EVENT_CALL_PROGRESS:        return "CALL_PROGRESS";
+	case UA_EVENT_CALL_ANSWERED:        return "CALL_ANSWERED";
 	case UA_EVENT_CALL_ESTABLISHED:     return "CALL_ESTABLISHED";
 	case UA_EVENT_CALL_CLOSED:          return "CALL_CLOSED";
 	case UA_EVENT_CALL_TRANSFER:        return "TRANSFER";
