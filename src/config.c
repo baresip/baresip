@@ -629,7 +629,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 #else
 			 "#sip_cafile\t\t%s\n"
 #endif
-			  "#sip_trans_def\tudp\n"
+			  "#sip_trans_def\t\tudp\n"
 			  "sip_verify_server\tyes\n"
 			  "\n"
 			  "# Call\n"
@@ -967,10 +967,12 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "module_app\t\t"  "menu"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t"  "mwi"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "presence"MOD_EXT"\n");
+	(void)re_fprintf(f, "#module_app\t\t" "serreg"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "syslog"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "mqtt" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module_app\t\t" "ctrl_tcp" MOD_EXT "\n");
 	(void)re_fprintf(f, "module_app\t\t" "vidloop"MOD_EXT"\n");
+	(void)re_fprintf(f, "module_app\t\t" "ctrl_dbus"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "httpreq"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "multicast"MOD_EXT"\n");
 	(void)re_fprintf(f, "\n");
@@ -981,13 +983,16 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n");
 
 	(void)re_fprintf(f, "\n# UI Modules parameters\n");
-	(void)re_fprintf(f, "cons_listen\t\t0.0.0.0:5555 # cons\n");
+	(void)re_fprintf(f, "cons_listen\t\t0.0.0.0:5555 # cons - "
+				"Console UI UDP/TCP sockets\n");
 
 	(void)re_fprintf(f, "\n");
-	(void)re_fprintf(f, "http_listen\t\t0.0.0.0:8000 # httpd - server\n");
+	(void)re_fprintf(f, "http_listen\t\t0.0.0.0:8000 # httpd - "
+				"HTTP Server\n");
 
 	(void)re_fprintf(f, "\n");
-	(void)re_fprintf(f, "ctrl_tcp_listen\t\t0.0.0.0:4444 # ctrl_tcp\n");
+	(void)re_fprintf(f, "ctrl_tcp_listen\t\t0.0.0.0:4444 # ctrl_tcp - "
+				"TCP interface JSON\n");
 
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "evdev_device\t\t/dev/input/event0\n");
@@ -1003,13 +1008,14 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#opus_complexity\t10\n");
 	(void)re_fprintf(f, "#opus_application\taudio\t# {voip,audio}\n");
 	(void)re_fprintf(f, "#opus_samplerate\t48000\n");
-	(void)re_fprintf(f, "#opus_packet_loss\t10\t# 0-100 percent\n");
+	(void)re_fprintf(f, "#opus_packet_loss\t10\t# 0-100 percent "
+				"(expected packet loss)\n");
 
 	(void)re_fprintf(f, "\n# Opus Multistream codec parameters\n");
 	(void)re_fprintf(f,
 			 "#opus_ms_channels\t2\t#total channels (2 or 4)\n");
 	(void)re_fprintf(f,
-			 "#opus_ms_streams\t\t2\t#number of streams\n");
+			 "#opus_ms_streams\t2\t#number of streams\n");
 	(void)re_fprintf(f,
 			"#opus_ms_c_streams\t2\t#number of coupled streams\n");
 
@@ -1049,6 +1055,10 @@ int config_write_template(const char *file, const struct config *cfg)
 			);
 
 	(void)re_fprintf(f,
+			"\n# GTK\n"
+			"#gtk_clean_number\tno\n");
+
+	(void)re_fprintf(f,
 			"\n# avcodec\n"
 			"#avcodec_h264enc\tlibx264\n"
 			"#avcodec_h264dec\th264\n"
@@ -1058,11 +1068,17 @@ int config_write_template(const char *file, const struct config *cfg)
 			default_avcodec_hwaccel());
 
 	(void)re_fprintf(f,
+			"\n# ctrl_dbus\n"
+			"#ctrl_dbus_use\tsystem\t\t# system, session\n");
+
+	(void)re_fprintf(f,
 			 "\n# mqtt\n"
-			 "#mqtt_broker_host\t127.0.0.1\n"
+			 "#mqtt_broker_host\tsollentuna.example.com\n"
 			 "#mqtt_broker_port\t1883\n"
-			 "#mqtt_broker_cafile\t/path/to/broker-ca.crt\n"
-			 "#mqtt_broker_clientid\tbaresip01\n"
+			 "#mqtt_broker_cafile\t/path/to/broker-ca.crt\t"
+				"# set this to enforce TLS\n"
+			 "#mqtt_broker_clientid\tbaresip01\t"
+				"# has to be unique\n"
 			 "#mqtt_broker_user\tuser\n"
 			 "#mqtt_broker_password\tpass\n"
 			 "#mqtt_basetopic\t\tbaresip/01\n");
@@ -1089,8 +1105,8 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "\n# multicast receivers (in priority order)"
 			 "- port number must be even\n"
 			 "#multicast_call_prio\t0\n"
-			 "#multicast_listener\t\t224.0.2.21:50000\n"
-			 "#multicast_listener\t\t224.0.2.21:50002\n");
+			 "#multicast_listener\t224.0.2.21:50000\n"
+			 "#multicast_listener\t224.0.2.21:50002\n");
 	if (f)
 		(void)fclose(f);
 

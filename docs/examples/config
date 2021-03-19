@@ -10,16 +10,16 @@ poll_method		epoll		# poll, select, epoll ..
 # SIP
 #sip_listen		0.0.0.0:5060
 #sip_certificate	cert.pem
-#sip_cafile		ca.crt
+sip_cafile		/etc/ssl/certs/ca-certificates.crt
 #sip_trans_def		udp
 sip_verify_server	yes
 
 # Call
 call_local_timeout	120
 call_max_calls		4
+call_hold_other_calls	yes
 
 # Audio
-audio_buffer        	200     	# ms
 #audio_path		/usr/local/share/baresip
 audio_player		alsa,default
 audio_source		alsa,default
@@ -34,12 +34,13 @@ ausrc_format		s16		# s16, float, ..
 auplay_format		s16		# s16, float, ..
 auenc_format		s16		# s16, float, ..
 audec_format		s16		# s16, float, ..
+audio_buffer		20-160		# ms
 
 # Video
 #video_source		v4l2,/dev/video0
 #video_display		x11,nil
 video_size		352x288
-video_bitrate		512000
+video_bitrate		500000
 video_fps		25.00
 video_fullscreen	no
 videnc_format		yuv420p
@@ -58,8 +59,8 @@ rtp_stats		no
 # Network
 #dns_server		1.1.1.1:53
 #dns_server		1.0.0.1:53
-#net_interface		wlan1
-
+#dns_fallback		8.8.8.8:53
+#net_interface		eth0
 # Play tones
 #file_ausrc		aufile
 #file_srate		16000
@@ -68,7 +69,7 @@ rtp_stats		no
 #------------------------------------------------------------------------------
 # Modules
 
-#module_path		/usr/local/lib/baresip/modules
+module_path		/usr/local/lib/baresip/modules
 
 # UI Modules
 module			stdio.so
@@ -77,7 +78,7 @@ module			stdio.so
 #module			httpd.so
 
 # Audio codec Modules (in order)
-module			opus.so
+#module			opus.so
 #module			amr.so
 #module			g7221.so
 #module			g722.so
@@ -85,6 +86,9 @@ module			opus.so
 module			g711.so
 #module			gsm.so
 #module			l16.so
+#module			mpa.so
+#module			codec2.so
+#module			ilbc.so
 
 # Audio filter Modules (in encoding order)
 #module			vumeter.so
@@ -95,27 +99,40 @@ module			g711.so
 
 # Audio driver Modules
 module			alsa.so
+#module			pulse.so
+#module			jack.so
 #module			portaudio.so
+#module			aubridge.so
+#module			aufile.so
+#module			ausine.so
 
 # Video codec Modules (in order)
-module			avcodec.so
+#module			avcodec.so
 #module			vp8.so
 #module			vp9.so
 
 # Video filter Modules (in encoding order)
 #module			selfview.so
+#module			snapshot.so
+#module			swscale.so
+#module			vidinfo.so
+#module			avfilter.so
 
 # Video source modules
-module			v4l2.so
-#module			avformat.so
+#module			v4l2.so
+#module			v4l2_codec.so
 #module			x11grab.so
 #module			cairo.so
+#module			vidbridge.so
 
 # Video display modules
-module			x11.so
+#module			directfb.so
+#module			x11.so
 #module			sdl.so
+#module			fakevideo.so
 
 # Audio/Video source modules
+#module			avformat.so
 #module			rst.so
 #module			gst.so
 #module			gst_video.so
@@ -132,7 +149,8 @@ module			ice.so
 
 # Media encryption modules
 #module			srtp.so
-module			dtls_srtp.so
+#module			dtls_srtp.so
+#module			zrtp.so
 
 
 #------------------------------------------------------------------------------
@@ -159,9 +177,9 @@ module_app		menu.so
 #module_app		mqtt.so
 #module_app		ctrl_tcp.so
 module_app		vidloop.so
-#module_app		ctrl_dbus.so
-#ctrl_dbus_use		system       # system, session
+module_app		ctrl_dbus.so
 #module_app		httpreq.so
+#module_app		multicast.so
 
 
 #------------------------------------------------------------------------------
@@ -189,6 +207,13 @@ opus_bitrate		28000 # 6000-510000
 #opus_application	audio	# {voip,audio}
 #opus_samplerate	48000
 #opus_packet_loss	10	# 0-100 percent (expected packet loss)
+
+# Opus Multistream codec parameters
+#opus_ms_channels	2	#total channels (2 or 4)
+#opus_ms_streams	2	#number of streams
+#opus_ms_c_streams	2	#number of coupled streams
+
+vumeter_stderr		yes
 
 #jack_connect_ports	yes
 
@@ -223,24 +248,25 @@ video_selfview		window # {window,pip}
 #avcodec_h264dec	h264
 #avcodec_h265enc	libx265
 #avcodec_h265dec	hevc
-#avcodec_hwaccel	videotoolbox
+#avcodec_hwaccel	vaapi
 
-# MQTT
+# ctrl_dbus
+#ctrl_dbus_use	system		# system, session
+
+# mqtt
 #mqtt_broker_host	sollentuna.example.com
 #mqtt_broker_port	1883
-#mqtt_broker_cafile	/usr/share/ca-certificates/mozilla/Amazon_Root_CA_1.crt # set this to enforce TLS, default off
-#mqtt_broker_clientid	baresip01 # Has to be unique for each client, defaults to "baresip"
-#mqtt_broker_user	alfred
-#mqtt_broker_password	Crocus
-#mqtt_basetopic		baresip/01 # May be uniqe for each client you want to control. Defaults to "baresip"
-#mqtt_subscribetopic	/my/baresip/+/control # defaults to /${mqtt_basetopic}/command/+
-#mqtt_publishtopic		/my/baresip/123/event # defaults to /${mqtt_basetopic}/event
+#mqtt_broker_cafile	/path/to/broker-ca.crt	# set this to enforce TLS
+#mqtt_broker_clientid	baresip01	# has to be unique
+#mqtt_broker_user	user
+#mqtt_broker_password	pass
+#mqtt_basetopic		baresip/01
 
 # sndfile
 #snd_path		/tmp
 
 # EBU ACIP
-#ebuacip_jb_type     	fixed   # auto,fixed
+#ebuacip_jb_type	fixed	# auto,fixed
 
 # HTTP request module
 #httpreq_ca		trusted1.pem
@@ -250,3 +276,8 @@ video_selfview		window # {window,pip}
 #httpreq_hostname	myserver
 #httpreq_cert		cert.pem
 #httpreq_key		key.pem
+
+# multicast receivers (in priority order)- port number must be even
+#multicast_call_prio	0
+#multicast_listener	224.0.2.21:50000
+#multicast_listener	224.0.2.21:50002
