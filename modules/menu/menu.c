@@ -125,6 +125,21 @@ static void find_first_call(struct call *call, void *arg)
 }
 
 
+struct call *menu_find_call_state(enum call_state st)
+{
+	struct le *le;
+
+	for (le = list_head(uag_list()); le; le = le->next) {
+		struct ua *ua = le->data;
+		struct call *call = ua_find_call_state(ua, st);
+
+		if (call)
+			return call;
+	}
+
+	return NULL;
+}
+
 /**
  * Search all User-Agents for a call that matches
  *
@@ -578,7 +593,7 @@ void menu_selcall(struct call *call)
 	if (!call) {
 		/* select another call */
 		for (i = ARRAY_SIZE(state)-1; i >= 0; --i) {
-			call = uag_find_call_state(state[i]);
+			call = menu_find_call_state(state[i]);
 
 			if (!str_cmp(call_id(call), menu.callid))
 				call = NULL;

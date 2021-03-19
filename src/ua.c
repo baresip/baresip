@@ -535,29 +535,6 @@ struct call *uag_call_find(const char *id)
 
 
 /**
- * Find call with given call state
- *
- * @param st  Call-state
- *
- * @return The call if found, otherwise NULL.
- */
-struct call *uag_find_call_state(enum call_state st)
-{
-	struct le *le;
-
-	for (le = list_head(&uag.ual); le; le = le->next) {
-		struct ua *ua = le->data;
-		struct call *call = ua_find_call_state(ua, st);
-
-		if (call)
-			return call;
-	}
-
-	return NULL;
-}
-
-
-/**
  * Filters the calls of all User-Agents
  *
  * @param listh   Call list handler is called for each match

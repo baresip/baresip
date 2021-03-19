@@ -103,7 +103,7 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 		ua = call_get_ua(call);
 	}
 	else if (call_state(call) != CALL_STATE_INCOMING) {
-		call = uag_find_call_state(CALL_STATE_INCOMING);
+		call = menu_find_call_state(CALL_STATE_INCOMING);
 		ua = call_get_ua(call);
 	}
 
@@ -176,7 +176,7 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		ua = call_get_ua(call);
 	}
 	else if (call_state(call) != CALL_STATE_INCOMING) {
-		call = uag_find_call_state(CALL_STATE_INCOMING);
+		call = menu_find_call_state(CALL_STATE_INCOMING);
 		ua = call_get_ua(call);
 	}
 
