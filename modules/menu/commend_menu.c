@@ -223,100 +223,6 @@ static int com_set_line_by_id(struct re_printf *pf, void *arg)
 
 
 /**
- * Find next not established call
- *
- * @param p_ua_ne	Pointer to user agent with not established call
- * @param p_call_ne	Pointer to not established call
-
- * @return
- */
-static void find_not_established_call(struct ua **p_ua_ne,
-		struct call **p_call_ne)
-{
-	struct le *p_ua_le = NULL;
-	struct ua *p_ua = NULL;
-	struct le *p_call_le = NULL;
-	struct call *p_call = NULL;
-	const char *p_state = NULL;
-
-	*p_ua_ne = NULL;
-	*p_call_ne = NULL;
-
-	for (p_ua_le = list_head(uag_list()); p_ua_le;
-			p_ua_le = p_ua_le->next) {
-
-		p_ua = p_ua_le->data;
-
-		for (p_call_le = list_head(ua_calls(p_ua)); p_call_le;
-				p_call_le = p_call_le->next) {
-
-			p_call = p_call_le->data;
-			p_state = call_statename(p_call);
-
-			if (p_state && strcmp(p_state, "ESTABLISHED")) {
-				*p_ua_ne = p_ua;
-				*p_call_ne = p_call;
-			}
-
-			/* Caution: Don't change linked lists within
-			 * list-for-loop! Otherwise this will crash */
-		}
-	}
-}
-
-
-/**
- * Hangup all not established calls for all user agents
- *
- * @param pf		Print handler for debug output. unused
- * @param unused	unused parameter
-
- * @return	 0	allways successful
- */
-static int com_hangup_not_established(struct re_printf *pf, void *unused)
-{
-	struct ua *p_ua = NULL;
-	struct call *p_call = NULL;
-
-	(void)pf;
-	(void)unused;
-
-	while (find_not_established_call(&p_ua, &p_call), p_ua && p_call)
-		ua_hangup(p_ua, p_call, 0, NULL);
-
-	return 0;
-}
-
-
-/**
- * Hangup all calls for all user agents
- *
- * @param pf		Print handler for debug output. unused
- * @param unused	unused parameter
-
- * @return	 0	allways successful
- */
-static int com_hangup_all(struct re_printf *pf, void *unused)
-{
-	struct ua *ua = NULL;
-	struct le *le = NULL;
-
-	(void)unused;
-	(void)pf;
-
-	for (le = list_head(uag_list()); le; le = le->next) {
-
-		ua = le->data;
-
-		while (ua_call(ua))
-			ua_hangup(ua, NULL, 0, NULL);
-	}
-
-	return 0;
-}
-
-
-/**
  * Search for proxy server list element in
  * proxy server list.
  * If no number given the current proxy will be set.
@@ -906,9 +812,6 @@ static int com_print_calls(struct re_printf *pf, void *arg)
 static const struct cmd cmdv[] = {
 
 {"com_listcalls", 0, 0, "List active calls Commend format", com_print_calls},
-{"com_hangup_all", 0, 0, "Hangup all calls", com_hangup_all},
-{"com_hangup_not_est", 0, 0, "Hangup all calls which are not established",
-	com_hangup_not_established},
 {"com_set_line_by_id", 0, 0, "Set line by ID", com_set_line_by_id},
 {"com_memory", 0, 0, "Show used process memory", com_get_memory},
 {"com_mic_mute", 0, CMD_PRM, "Set microphone mute on/off", com_mic_mute},
