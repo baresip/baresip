@@ -65,9 +65,9 @@ static struct config core_config = {
 	{
 		"", "",
 		"", "",
-		352, 288,
-		500000,
-		25,
+		640, 480,
+		1000000,
+		30,
 		true,
 		VID_FMT_YUV420P,
 	},
