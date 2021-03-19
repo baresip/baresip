@@ -233,7 +233,8 @@ static void write_handler(struct auframe *af, void *arg)
 	struct stats *stats = &al->stats_play;
 
 	if (af->fmt != (int)al->fmt) {
-		warning("invalid format\n");
+		warning("auloop: write format mismatch: exp=%s, actual=%s\n",
+			aufmt_name(al->fmt), aufmt_name(af->fmt));
 	}
 
 	lock_write_get(al->lock);
