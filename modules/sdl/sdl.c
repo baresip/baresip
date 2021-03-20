@@ -262,6 +262,9 @@ static int display(struct vidisp_st *st, const char *title,
 		if (!SDL_GetRendererInfo(st->renderer, &rend_info)) {
 			info("sdl: created renderer '%s'\n", rend_info.name);
 		}
+
+		SDL_RenderSetLogicalSize(st->renderer,
+					 frame->size.w, frame->size.h);
 	}
 
 	if (!st->texture) {
