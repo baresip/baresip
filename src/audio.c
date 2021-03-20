@@ -678,7 +678,7 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
-	size_t num_bytes = af->sampc * aufmt_sample_size(rx->play_fmt);
+	size_t num_bytes = auframe_size(af);
 
 	if (af->fmt != (int)rx->play_fmt) {
 		warning("audio: write format mismatch: exp=%s, actual=%s\n",
@@ -791,7 +791,8 @@ static void auplay_write_handler2(struct auframe *af, void *arg)
 	int err = 0;
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
-	rx->num_bytes = af->sampc * aufmt_sample_size(rx->play_fmt);
+
+	rx->num_bytes = auframe_size(af);
 
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < rx->num_bytes) {
 
