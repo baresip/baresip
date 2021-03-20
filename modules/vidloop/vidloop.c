@@ -661,6 +661,7 @@ static void update_vidsrc(void *arg)
 
 static int video_loop_alloc(struct video_loop **vlp)
 {
+	struct vidisp_prm disp_prm;
 	struct video_loop *vl;
 	struct config *cfg;
 	struct le *le;
@@ -712,8 +713,10 @@ static int video_loop_alloc(struct video_loop **vlp)
 	info("vidloop: open video display (%s.%s)\n",
 	     vl->cfg.disp_mod, vl->cfg.disp_dev);
 
+	disp_prm.fullscreen = cfg->video.fullscreen;
+
 	err = vidisp_alloc(&vl->vidisp, baresip_vidispl(),
-			   vl->cfg.disp_mod, NULL,
+			   vl->cfg.disp_mod, &disp_prm,
 			   vl->cfg.disp_dev, NULL, vl);
 	if (err) {
 		warning("vidloop: video display failed: %m\n", err);
