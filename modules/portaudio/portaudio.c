@@ -42,6 +42,7 @@ struct auplay_st {
 	void *arg;
 	volatile bool ready;
 	unsigned ch;
+	enum aufmt fmt;
 };
 
 
@@ -89,6 +90,7 @@ static int write_callback(const void *inputBuffer, void *outputBuffer,
 			  PaStreamCallbackFlags statusFlags, void *userData)
 {
 	struct auplay_st *st = userData;
+	struct auframe af;
 	size_t sampc;
 
 	(void)inputBuffer;
@@ -100,7 +102,9 @@ static int write_callback(const void *inputBuffer, void *outputBuffer,
 
 	sampc = frameCount * st->ch;
 
-	st->wh(outputBuffer, sampc, st->arg);
+	auframe_init(&af, st->fmt, outputBuffer, sampc);
+
+	st->wh(&af, st->arg);
 
 	return paContinue;
 }
@@ -282,6 +286,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 	st->ch  = prm->ch;
+	st->fmt = prm->fmt;
 
 	st->ready = true;
 

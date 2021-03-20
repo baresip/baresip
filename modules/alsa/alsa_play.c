@@ -54,16 +54,19 @@ static void auplay_destructor(void *arg)
 static void *write_thread(void *arg)
 {
 	struct auplay_st *st = arg;
+	struct auframe af;
 	snd_pcm_sframes_t n;
 	int num_frames;
 
 	num_frames = st->prm.srate * st->prm.ptime / 1000;
 
+	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc);
+
 	while (st->run) {
 		const int samples = num_frames;
 		void *sampv;
 
-		st->wh(st->sampv, st->sampc, st->arg);
+		st->wh(&af, st->arg);
 
 		sampv = st->sampv;
 

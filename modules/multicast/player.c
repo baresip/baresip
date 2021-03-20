@@ -317,16 +317,16 @@ static void *rx_thread(void *arg)
  * @param sampc Sample counter
  * @param arg   Multicast player object (unused)
  */
-static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
+static void auplay_write_handler(struct auframe *af, void *arg)
 {
 	(void) arg;
 
 	if (!player)
 		return;
 
-	player->num_bytes = sampc * aufmt_sample_size(player->play_fmt);
+	player->num_bytes = af->sampc * aufmt_sample_size(player->play_fmt);
 
-	aubuf_read(player->aubuf, sampv, player->num_bytes);
+	aubuf_read(player->aubuf, af->sampv, player->num_bytes);
 
 #ifdef HAVE_PTHREAD
 	pthread_mutex_lock(&player->thr.mutex);

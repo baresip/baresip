@@ -39,11 +39,14 @@ struct auplay_st {
 static int process_handler(jack_nframes_t nframes, void *arg)
 {
 	struct auplay_st *st = arg;
+	struct auframe af;
 	size_t sampc = nframes * st->prm.ch;
 	size_t ch, j;
 
+	auframe_init(&af, st->prm.fmt, st->sampv, sampc);
+
 	/* 1. read data from app (signed 16-bit) interleaved */
-	st->wh(st->sampv, sampc, st->arg);
+	st->wh(&af, st->arg);
 
 	/* 2. convert from 16-bit to float and copy to Jack */
 

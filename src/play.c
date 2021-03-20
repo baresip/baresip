@@ -114,10 +114,10 @@ static bool check_restart(void *arg)
 /*
  * NOTE: DSP cannot be destroyed inside handler
  */
-static void write_handler(void *sampv, size_t sampc, void *arg)
+static void write_handler(struct auframe *af, void *arg)
 {
 	struct play *play = arg;
-	size_t sz = sampc * 2;
+	size_t sz = af->sampc * 2;
 	size_t pos = 0;
 	size_t left;
 	size_t count;
@@ -131,7 +131,8 @@ static void write_handler(void *sampv, size_t sampc, void *arg)
 		left = mbuf_get_left(play->mb);
 		count = (left > sz - pos) ? sz - pos : left;
 
-		(void)mbuf_read_mem(play->mb, (uint8_t *)sampv + pos, count);
+		(void)mbuf_read_mem(play->mb, (uint8_t *)af->sampv + pos,
+				    count);
 
 		pos += count;
 
@@ -145,7 +146,7 @@ static void write_handler(void *sampv, size_t sampc, void *arg)
 
  silence:
 	if (play->eof)
-		memset((uint8_t *)sampv + pos, 0, sz - pos);
+		memset((uint8_t *)af->sampv + pos, 0, sz - pos);
 
 	lock_rel(play->lock);
 }
@@ -328,13 +329,13 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 }
 
 
-static void aubuf_write_handler(void *sampv, size_t sampc, void *arg)
+static void aubuf_write_handler(struct auframe *af, void *arg)
 {
 	struct play *play = arg;
-	size_t sz = sampc * aufmt_sample_size(play->sprm.fmt);
+	size_t sz = af->sampc * aufmt_sample_size(play->sprm.fmt);
 	size_t left = aubuf_cur_size(play->aubuf);
 
-	aubuf_read(play->aubuf, sampv, sz);
+	aubuf_read(play->aubuf, af->sampv, sz);
 
 	lock_write_get(play->lock);
 	if (!play->trep && !play->ausrc_st && left < sz) {

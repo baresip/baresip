@@ -208,11 +208,14 @@ static void *record_thread(void *arg)
 static void *play_thread(void *arg)
 {
 	struct auplay_st *st = arg;
+	struct auframe af;
 	int n;
+
+	auframe_init(&af, AUFMT_S16LE, st->sampv, st->sampc);
 
 	while (st->run) {
 
-		st->wh(st->sampv, st->sampc, st->arg);
+		st->wh(&af, st->arg);
 
 		n = (int)write(st->fd, st->sampv, st->sampc*2);
 		if (n < 0) {

@@ -226,15 +226,20 @@ static void src_read_handler(struct auframe *af, void *arg)
 }
 
 
-static void write_handler(void *sampv, size_t sampc, void *arg)
+static void write_handler(struct auframe *af, void *arg)
 {
 	struct audio_loop *al = arg;
-	size_t num_bytes = sampc * aufmt_sample_size(al->fmt);
+	size_t num_bytes = af->sampc * aufmt_sample_size(al->fmt);
 	struct stats *stats = &al->stats_play;
+
+	if (af->fmt != (int)al->fmt) {
+		warning("auloop: write format mismatch: exp=%s, actual=%s\n",
+			aufmt_name(al->fmt), aufmt_name(af->fmt));
+	}
 
 	lock_write_get(al->lock);
 
-	stats->n_samp   += sampc;
+	stats->n_samp   += af->sampc;
 	stats->n_frames += 1;
 
 	if (stats->n_samp && aubuf_cur_size(al->aubuf) < num_bytes) {
@@ -244,7 +249,7 @@ static void write_handler(void *sampv, size_t sampc, void *arg)
 	lock_rel(al->lock);
 
 	/* read from beginning */
-	aubuf_read(al->aubuf, sampv, num_bytes);
+	aubuf_read(al->aubuf, af->sampv, num_bytes);
 }
 
 

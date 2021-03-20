@@ -674,11 +674,16 @@ static void check_telev(struct audio *a, struct autx *tx)
  *
  * @note The sample format is set in rx->play_fmt
  */
-static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
+static void auplay_write_handler(struct auframe *af, void *arg)
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
-	size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
+	size_t num_bytes = af->sampc * aufmt_sample_size(rx->play_fmt);
+
+	if (af->fmt != (int)rx->play_fmt) {
+		warning("audio: write format mismatch: exp=%s, actual=%s\n",
+			aufmt_name(rx->play_fmt), aufmt_name(af->fmt));
+	}
 
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
 
@@ -690,7 +695,7 @@ static void auplay_write_handler(void *sampv, size_t sampc, void *arg)
 #endif
 	}
 
-	aubuf_read(rx->aubuf, sampv, num_bytes);
+	aubuf_read(rx->aubuf, af->sampv, num_bytes);
 }
 
 
@@ -781,12 +786,12 @@ static void *rx_thread(void *arg)
  * @note See auplay_write_handler()!
  *
  */
-static void auplay_write_handler2(void *sampv, size_t sampc, void *arg)
+static void auplay_write_handler2(struct auframe *af, void *arg)
 {
 	int err = 0;
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
-	rx->num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
+	rx->num_bytes = af->sampc * aufmt_sample_size(rx->play_fmt);
 
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < rx->num_bytes) {
 
@@ -799,14 +804,15 @@ static void auplay_write_handler2(void *sampv, size_t sampc, void *arg)
 #endif
 	}
 
-	aubuf_read(rx->aubuf, sampv, rx->num_bytes);
+	aubuf_read(rx->aubuf, af->sampv, rx->num_bytes);
 
 	/* Reduce latency after EAGAIN? */
-	if (rx->again && (err || silence(sampv, sampc, rx->play_fmt))) {
+	if (rx->again &&
+	    (err || silence(af->sampv, af->sampc, rx->play_fmt))) {
 
 		rx->again--;
 		if (aubuf_cur_size(rx->aubuf) >= rx->aubuf_minsz) {
-			aubuf_read(rx->aubuf, sampv, rx->num_bytes);
+			aubuf_read(rx->aubuf, af->sampv, rx->num_bytes);
 			debug("Dropped a frame to reduce latency\n");
 		}
 	}
@@ -814,7 +820,7 @@ static void auplay_write_handler2(void *sampv, size_t sampc, void *arg)
 #ifdef USE_SILENCE_DETECTION
 	/* decide if we have silence */
 	stream_silence_on(a->strm, err ? true :
-			silence(sampv, sampc, rx->play_fmt));
+			silence(af->sampv, sampc, rx->play_fmt));
 #endif
 
 	rx->wcnt++;
