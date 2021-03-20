@@ -50,8 +50,11 @@ static void auplay_destructor(void *arg)
 static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct auplay_st *st = context;
+	struct auframe af;
 
-	st->wh(st->sampv[st->bufferId], st->sampc, st->arg);
+	auframe_init(&af, AUFMT_S16LE, st->sampv[st->bufferId], st->sampc);
+
+	st->wh(&af, st->arg);
 
 	(*st->BufferQueue)->Enqueue(bq /*st->BufferQueue*/,
 				    st->sampv[st->bufferId],
