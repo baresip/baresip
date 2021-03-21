@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Alfred E. Heggestad <aeh@db.org>
 Standards-Version: 3.9.5
 Build-Depends: debhelper (>= 9.20120311), librem-dev (>= 0.6.0), libre-dev (>= 0.6.0), libasound2-dev, libavformat-dev, libavdevice-dev, libswscale-dev
-Homepage: http://www.creytiv.com/
+Homepage: https://github.com/baresip/baresip
 
 Package: baresip
 Architecture: any
