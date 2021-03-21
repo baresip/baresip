@@ -43,7 +43,7 @@ static int decode_addr(struct pl *pladdr, struct sa *addr)
 
 
 	if (sa_port(addr) % 2) {
-		err = EINVAL;
+		/* err = EINVAL; -- issue warrning but allow */
 		warning("multicast: address port for RTP should be even"
 			" (%d)\n" , sa_port(addr));
 	}
