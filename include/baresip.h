@@ -871,7 +871,6 @@ struct tls  *uag_tls(void);
 struct sipsess_sock  *uag_sipsess_sock(void);
 struct sipevent_sock *uag_sipevent_sock(void);
 struct call *uag_call_find(const char *id);
-struct call *uag_find_call_state(enum call_state st);
 void uag_filter_calls(call_list_h *listh, call_match_h *matchh, void *arg);
 
 
