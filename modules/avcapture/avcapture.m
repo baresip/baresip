@@ -31,7 +31,6 @@ static struct vidsrc *vidsrc;
 
 
 struct vidsrc_st {
-	const struct vidsrc *vs;
 	avcap *cap;
 	vidsrc_frame_h *frameh;
 	void *arg;
@@ -315,6 +314,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)fmt;
 	(void)dev;
 	(void)errorh;
+	(void)vs;
 
 	if (!stp || !size)
 		return EINVAL;
@@ -325,7 +325,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 	pool = [NSAutoreleasePool new];
 
-	st->vs     = vs;
 	st->frameh = frameh;
 	st->arg    = arg;
 

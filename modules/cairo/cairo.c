@@ -36,8 +36,6 @@ enum {
 };
 
 struct vidsrc_st {
-	const struct vidsrc *vs;  /* inheritance */
-
 	struct vidsrc_prm prm;
 	struct vidsz size;
 	cairo_surface_t *surface;
@@ -263,6 +261,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)fmt;
 	(void)dev;
 	(void)errorh;
+	(void)vs;
 
 	if (!stp || !prm || !size || !frameh)
 		return EINVAL;
@@ -275,7 +274,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = vs;
 	st->frameh = frameh;
 	st->arg    = arg;
 	st->prm    = *prm;

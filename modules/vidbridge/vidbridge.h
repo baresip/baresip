@@ -6,8 +6,6 @@
 
 
 struct vidsrc_st {
-	const struct vidsrc *vs;  /* inheritance (1st) */
-
 	struct le le;
 	struct vidisp_st *vidisp;
 	double fps;

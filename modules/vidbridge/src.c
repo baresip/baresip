@@ -32,6 +32,7 @@ int vidbridge_src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)ctx;
 	(void)fmt;
 	(void)errorh;
+	(void)vs;
 
 	if (!stp || !prm || !size || !frameh)
 		return EINVAL;
@@ -40,7 +41,6 @@ int vidbridge_src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = vs;
 	st->frameh = frameh;
 	st->arg    = arg;
 	st->fps    = prm->fps;

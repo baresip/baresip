@@ -10,8 +10,6 @@
 
 
 struct vidsrc_st {
-	const struct vidsrc *vs;  /* inheritance */
-
 	struct vidframe *frame;
 	struct tmr tmr;
 	uint64_t timestamp;
@@ -55,6 +53,7 @@ static int mock_vidsrc_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)fmt;
 	(void)dev;
 	(void)errorh;
+	(void)vs;
 
 	if (!stp || !prm || !size || !frameh)
 		return EINVAL;
@@ -63,7 +62,6 @@ static int mock_vidsrc_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = vs;
 	st->fps    = prm->fps;
 	st->frameh = frameh;
 	st->arg    = arg;

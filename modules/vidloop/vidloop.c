@@ -58,6 +58,7 @@ struct video_loop {
 	struct videnc_state *enc;
 	struct viddec_state *dec;
 	struct vidisp_st *vidisp;
+	struct vidsrc *vs;
 	struct vidsrc_st *vsrc;
 	struct vidsrc_prm srcprm;
 	struct list filtencl;
@@ -371,7 +372,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 
 	/* Source */
 	if (vl->vsrc) {
-		struct vidsrc *vs = vidsrc_get(vl->vsrc);
+		struct vidsrc *vs = vl->vs;
 		double avg_fps = .0;
 
 		if (vl->stats.src_frames >= 2)
@@ -629,6 +630,9 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 		warning("vidloop: vidsrc '%s' failed: %m\n",
 			vl->cfg.src_dev, err);
 	}
+
+	vl->vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
+					      vl->cfg.src_mod);
 
 	return err;
 }

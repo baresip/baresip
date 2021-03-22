@@ -77,6 +77,7 @@ struct vtx {
 	struct videnc_state *enc;          /**< Video encoder state       */
 	struct vidsrc_prm vsrc_prm;        /**< Video source parameters   */
 	struct vidsz vsrc_size;            /**< Video source size         */
+	struct vidsrc *vs;
 	struct vidsrc_st *vsrc;            /**< Video source              */
 	struct lock *lock_enc;             /**< Lock for encoder          */
 	struct vidframe *frame;            /**< Source frame              */
@@ -797,7 +798,7 @@ static int vtx_print_pipeline(struct re_printf *pf, const struct vtx *vtx)
 	if (!vtx)
 		return 0;
 
-	vs = vidsrc_get(vtx->vsrc);
+	vs = vtx->vs;
 
 	err = re_hprintf(pf, "video tx pipeline: %10s",
 			 vs ? vs->name : "(src)");
@@ -1142,6 +1143,8 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 				" [%u x %u] %m\n",
 				size.w, size.h, err);
 		}
+
+		vtx->vs = vs;
 	}
 	else {
 		info("video: no video source\n");
@@ -1284,7 +1287,7 @@ int video_set_fullscreen(struct video *v, bool fs)
 
 static void vidsrc_update(struct vtx *vtx, const char *dev)
 {
-	struct vidsrc *vs = vidsrc_get(vtx->vsrc);
+	struct vidsrc *vs = vtx->vs;
 
 	if (vs && vs->updateh)
 		vs->updateh(vtx->vsrc, &vtx->vsrc_prm, dev);
@@ -1466,7 +1469,7 @@ static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
 			  vidfmt_name(vtx->fmt));
 	err |= re_hprintf(pf, "     source: %s %u x %u, fps=%.2f"
 			  " frames=%llu\n",
-			  vtx->vsrc ? vidsrc_get(vtx->vsrc)->name : "none",
+			  vtx->vs ? vtx->vs->name : "none",
 			  vtx->vsrc_size.w,
 			  vtx->vsrc_size.h, vtx->vsrc_prm.fps,
 			  vtx->stats.src_frames);
@@ -1576,6 +1579,7 @@ int video_set_source(struct video *v, const char *name, const char *dev)
 	struct vidsrc *vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
 							 name);
 	struct vtx *vtx;
+	int err;
 
 	if (!v)
 		return EINVAL;
@@ -1587,9 +1591,15 @@ int video_set_source(struct video *v, const char *name, const char *dev)
 
 	vtx->vsrc = mem_deref(vtx->vsrc);
 
-	return vs->alloch(&vtx->vsrc, vs, NULL, &vtx->vsrc_prm,
-			  &vtx->vsrc_size, NULL, dev,
-			  vidsrc_frame_handler, vidsrc_error_handler, vtx);
+	err = vs->alloch(&vtx->vsrc, vs, NULL, &vtx->vsrc_prm,
+			 &vtx->vsrc_size, NULL, dev,
+			 vidsrc_frame_handler, vidsrc_error_handler, vtx);
+	if (err)
+		return err;
+
+	vtx->vs = vs;
+
+	return 0;
 }
 
 

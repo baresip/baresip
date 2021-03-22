@@ -9,12 +9,6 @@
 #include "core.h"
 
 
-/** Video Source state */
-struct vidsrc_st {
-	struct vidsrc *vs;  /**< Video Source */
-};
-
-
 static void destructor(void *arg)
 {
 	struct vidsrc *vs = arg;
@@ -117,17 +111,4 @@ int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
 
 	return vs->alloch(stp, vs, ctx, prm, size, fmt, dev,
 			  frameh, errorh, arg);
-}
-
-
-/**
- * Get the video source module from a video source state
- *
- * @param st Video source state
- *
- * @return Video source module
- */
-struct vidsrc *vidsrc_get(struct vidsrc_st *st)
-{
-	return st ? st->vs : NULL;
 }

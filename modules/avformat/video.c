@@ -15,8 +15,6 @@
 
 
 struct vidsrc_st {
-	const struct vidsrc *vs;  /* base class */
-
 	struct shared *shared;
 	vidsrc_frame_h *frameh;
 	void *arg;
@@ -69,7 +67,6 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = vs;
 	st->frameh = frameh;
 	st->arg    = arg;
 
