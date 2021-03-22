@@ -1076,6 +1076,9 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 	struct sa sa_addr;
 	size_t len;
 	bool uri_is_ip;
+	char *uridup;
+	char *host;
+	char *p;
 	int err = 0;
 
 	if (!buf || !uri)
@@ -1099,7 +1102,21 @@ int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
 	/* Append domain if missing and uri is not IP address */
 
 	/* check if uri is valid IP address */
-	uri_is_ip = (0 == sa_set_str(&sa_addr, uri, 0));
+	err = str_dup(&uridup, uri);
+	if (err)
+		return err;
+
+	if (!strncmp(uridup, "sip:", 4))
+		host = uridup + 4;
+	else
+		host = uridup;
+
+	p = strchr(host, ':');
+	if (p)
+		*p = 0;
+
+	uri_is_ip = (0 == sa_set_str(&sa_addr, host, 0));
+	mem_deref(uridup);
 	acc = ua->acc;
 
 	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
