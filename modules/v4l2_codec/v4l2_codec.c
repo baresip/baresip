@@ -36,8 +36,6 @@
 
 
 struct vidsrc_st {
-	const struct vidsrc *vs;  /* inheritance */
-
 	uint8_t *buffer;
 	size_t buffer_len;
 	int fd;
@@ -544,6 +542,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	struct vidsrc_st *st;
 	int err = 0;
 
+	(void)vs;
 	(void)ctx;
 	(void)prm;
 	(void)fmt;
@@ -561,8 +560,6 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st = mem_zalloc(sizeof(*st), src_destructor);
 	if (!st)
 		return ENOMEM;
-
-	st->vs = vs;
 
 	err = open_encoder(st, dev, size->w, size->h);
 	if (err)
