@@ -608,6 +608,9 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 
 	*intra = false;
 
+	if (mbuf_get_left(mb) < H265_HDR_SIZE)
+		return EBADMSG;
+
 	err = h265_nal_decode(&hdr, mbuf_buf(mb));
 	if (err)
 		return err;
