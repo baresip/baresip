@@ -26,7 +26,6 @@
 
 
 struct vidsrc_st {
-	const struct vidsrc *vs;  /* inheritance */
 	Display *disp;
 	XImage *image;
 	pthread_t thread;
@@ -163,6 +162,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)ctx;
 	(void)fmt;
 	(void)errorh;
+	(void)vs;
 
 	if (!stp || !prm || !size || !frameh)
 		return EINVAL;
@@ -171,7 +171,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
-	st->vs     = vs;
 	st->size   = *size;
 	st->fps    = prm->fps;
 	st->frameh = frameh;
