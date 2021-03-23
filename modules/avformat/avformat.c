@@ -187,8 +187,7 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 	}
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
-	if (avformat_hwdevice != AV_HWDEVICE_TYPE_NONE)
-	{
+	if (avformat_hwdevice != AV_HWDEVICE_TYPE_NONE) {
 		AVBufferRef *hwctx;
 		ret = av_hwdevice_ctx_create(&hwctx, avformat_hwdevice,
 				NULL, NULL, 0);
