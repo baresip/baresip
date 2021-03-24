@@ -22,6 +22,7 @@ static void signal_handler(int sig)
 	static bool term = false;
 
 	if (term) {
+		module_app_unload();
 		mod_close();
 		exit(0);
 	}
