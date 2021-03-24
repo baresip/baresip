@@ -216,7 +216,7 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 
 
 int avformat_shared_alloc(struct shared **shp, const char *dev,
-			  const double fps, const struct vidsz *size,
+			  double fps, const struct vidsz *size,
 			  bool video)
 {
 	struct shared *st;
