@@ -48,6 +48,7 @@ static int cmd_find_call(struct re_printf *pf, void *arg)
 
 	if (call) {
 		(void)re_hprintf(pf, "setting current call: %s\n", id);
+		menu_selcall(call);
 	}
 	else {
 		(void)re_hprintf(pf, "call not found (id=%s)\n", id);
