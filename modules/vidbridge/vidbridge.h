@@ -16,8 +16,6 @@ struct vidsrc_st {
 
 
 struct vidisp_st {
-	const struct vidisp *vd;  /* inheritance (1st) */
-
 	struct le le;
 	struct vidsrc_st *vidsrc;
 	char *device;

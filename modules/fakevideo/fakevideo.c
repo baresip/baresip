@@ -43,7 +43,7 @@ struct vidsrc_st {
 };
 
 struct vidisp_st {
-	const struct vidisp *vd;  /* inheritance */
+	int dummy;
 };
 
 
@@ -203,8 +203,6 @@ static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 	st = mem_zalloc(sizeof(*st), disp_destructor);
 	if (!st)
 		return ENOMEM;
-
-	st->vd = vd;
 
 	*stp = st;
 

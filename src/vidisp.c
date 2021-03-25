@@ -8,12 +8,6 @@
 #include "core.h"
 
 
-/** Video Display state */
-struct vidisp_st {
-	struct vidisp *vd;  /**< Video Display */
-};
-
-
 static void destructor(void *arg)
 {
 	struct vidisp *vd = arg;
@@ -104,37 +98,4 @@ int vidisp_alloc(struct vidisp_st **stp, struct list *vidispl,
 		return ENOENT;
 
 	return vd->alloch(stp, vd, prm, dev, resizeh, arg);
-}
-
-
-/**
- * Display a video frame
- *
- * @param st        Video display state
- * @param title     Display title
- * @param frame     Video frame
- * @param timestamp Frame timestamp in VIDEO_TIMEBASE units
- *
- * @return 0 if success, otherwise errorcode
- */
-int vidisp_display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame, uint64_t timestamp)
-{
-	if (!st || !frame)
-		return EINVAL;
-
-	return st->vd->disph(st, title, frame, timestamp);
-}
-
-
-/**
- * Get the video display module from a video display state
- *
- * @param st Video display state
- *
- * @return Video display module
- */
-struct vidisp *vidisp_get(struct vidisp_st *st)
-{
-	return st ? st->vd : NULL;
 }

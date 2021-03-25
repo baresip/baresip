@@ -11,7 +11,6 @@
 
 
 struct vidisp_st {
-	const struct vidisp *vd;       /**< Inheritance (1st)     */
 	struct vidsz size;             /**< Current size          */
 	IDirectFBWindow *window;       /**< DirectFB Window       */
 	IDirectFBSurface *surface;     /**< Surface for pixels    */
@@ -52,8 +51,6 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
 		return ENOMEM;
-
-	st->vd = vd;
 
 	dfb->GetDisplayLayer(dfb, DLID_PRIMARY, &st->layer);
 

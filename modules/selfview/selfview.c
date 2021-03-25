@@ -31,6 +31,7 @@ struct selfview {
 struct selfview_enc {
 	struct vidfilt_enc_st vf;   /**< Inheritance           */
 	struct selfview *selfview;  /**< Ref. to shared state  */
+	const struct vidisp *vd;
 	struct vidisp_st *disp;     /**< Selfview display      */
 };
 
@@ -169,13 +170,17 @@ static int encode_win(struct vidfilt_enc_st *st, struct vidframe *frame,
 
 	if (!enc->disp) {
 
-		err = vidisp_alloc(&enc->disp, baresip_vidispl(),
+		struct list *lst = baresip_vidispl();
+
+		err = vidisp_alloc(&enc->disp, lst,
 				   NULL, NULL, NULL, NULL, NULL);
 		if (err)
 			return err;
+
+		enc->vd = vidisp_find(lst, NULL);
 	}
 
-	return vidisp_display(enc->disp, "Selfview", frame, *timestamp);
+	return enc->vd->disph(enc->disp, "Selfview", frame, *timestamp);
 }
 
 
