@@ -38,8 +38,6 @@ int vidbridge_disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = vd;
-
 	err = str_dup(&st->device, dev);
 	if (err)
 		goto out;

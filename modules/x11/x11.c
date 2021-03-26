@@ -34,7 +34,6 @@
 
 
 struct vidisp_st {
-	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	struct vidsz size;              /**< Current size          */
 
 	Display *disp;
@@ -275,6 +274,7 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 {
 	struct vidisp_st *st;
 	int err = 0;
+	(void)vd;
 	(void)prm;
 	(void)dev;
 	(void)resizeh;
@@ -284,7 +284,6 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = vd;
 	st->shm.shmaddr = (char *)-1;
 
 	st->disp = XOpenDisplay(NULL);

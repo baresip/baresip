@@ -123,6 +123,7 @@ struct vrx {
 	const struct vidcodec *vc;         /**< Current video decoder     */
 	struct viddec_state *dec;          /**< Video decoder state       */
 	struct vidisp_prm vidisp_prm;      /**< Video display parameters  */
+	struct vidisp *vd;
 	struct vidisp_st *vidisp;          /**< Video display             */
 	struct lock *lock;                 /**< Lock for decoder          */
 	struct list filtl;                 /**< Filters in decoding order */
@@ -687,7 +688,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 	++vrx->stats.disp_frames;
 
-	err = vidisp_display(vrx->vidisp, v->peer, frame, timestamp);
+	err = vrx->vd->disph(vrx->vidisp, v->peer, frame, timestamp);
 	frame_filt = mem_deref(frame_filt);
 	if (err == ENODEV) {
 		warning("video: video-display was closed\n");
@@ -826,7 +827,7 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 	if (!vrx)
 		return 0;
 
-	vd = vidisp_get(vrx->vidisp);
+	vd = vrx->vd;
 
 	err = re_hprintf(pf, "video rx pipeline: %10s",
 			 vd ? vd->name : "(disp)");
@@ -989,6 +990,7 @@ static void vidisp_resize_handler(const struct vidsz *sz, void *arg)
 static int set_vidisp(struct vrx *vrx)
 {
 	struct vidisp *vd;
+	int err;
 
 	vrx->vidisp = mem_deref(vrx->vidisp);
 
@@ -999,8 +1001,14 @@ static int set_vidisp(struct vrx *vrx)
 	if (!vd)
 		return ENOENT;
 
-	return vd->alloch(&vrx->vidisp, vd, &vrx->vidisp_prm, vrx->device,
-			  vidisp_resize_handler, vrx);
+	err = vd->alloch(&vrx->vidisp, vd, &vrx->vidisp_prm, vrx->device,
+			 vidisp_resize_handler, vrx);
+	if (err)
+		return err;
+
+	vrx->vd = vd;
+
+	return 0;
 }
 
 
@@ -1254,7 +1262,7 @@ void video_stop(struct video *v, struct media_ctx **ctx)
 
 static int vidisp_update(struct vrx *vrx)
 {
-	struct vidisp *vd = vidisp_get(vrx->vidisp);
+	struct vidisp *vd = vrx->vd;
 	int err = 0;
 
 	if (vd->updateh) {
@@ -1496,7 +1504,7 @@ static int vrx_debug(struct re_printf *pf, const struct vrx *vrx)
 			  vrx->vc ? vrx->vc->name : "none",
 			  vidfmt_name(vrx->fmt));
 	err |= re_hprintf(pf, "     vidisp: %s %u x %u frames=%llu\n",
-			  vrx->vidisp ? vidisp_get(vrx->vidisp)->name : "none",
+			  vrx->vd ? vrx->vd->name : "none",
 			  vrx->size.w, vrx->size.h,
 			  vrx->stats.disp_frames);
 	err |= re_hprintf(pf, "     n_keyframes=%u, n_picup=%u\n",
