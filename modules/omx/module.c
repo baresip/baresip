@@ -39,6 +39,7 @@ static int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp *vd,
 	struct vidisp_st *st;
 
 	/* Not used by OMX */
+	(void) vd;
 	(void) prm;
 	(void) dev;
 	(void) resizeh;
