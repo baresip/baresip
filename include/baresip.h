@@ -826,7 +826,6 @@ int  ua_rm_custom_hdr(struct ua *ua, struct pl *name);
 int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 		enum answer_method met);
 int  ua_disable_autoanswer(struct ua *ua, enum answer_method met);
-int  ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri);
 int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   enum vidmode vidmode, const struct sip_msg *msg,
 		   struct call *xcall, const char *local_uri,
