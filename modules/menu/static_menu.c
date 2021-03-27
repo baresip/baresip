@@ -488,6 +488,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	struct pl word[2] = {PL_INIT, PL_INIT};
 	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
 	char *uri = NULL;
+	struct mbuf *uribuf;
 	int err = 0;
 
 	(void)pf;
@@ -526,9 +527,27 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		goto out;
 	}
 
+	uribuf = mbuf_alloc(64);
+	if (!uribuf)
+		return ENOMEM;
+
+	err = account_uri_complete(ua_account(ua), uribuf, uri);
+	if (err) {
+		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
+		return EINVAL;
+	}
+
+	mem_deref(uri);
+
+	uribuf->pos = 0;
+	err = mbuf_strdup(uribuf, &uri, uribuf->end);
+	if (err)
+		goto out;
+
 	if (menu->adelay >= 0)
 		(void)ua_enable_autoanswer(ua, menu->adelay,
 				auto_answer_method(pf));
+
 
 	err = ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
 
@@ -818,6 +837,7 @@ static int options_command(struct re_printf *pf, void *arg)
 	struct pl word[2] = {PL_INIT, PL_INIT};
 	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
 	char *uri = NULL;
+	struct mbuf *uribuf;
 	int err = 0;
 
 	err = pl_strdup(&uri, &word[0]);
@@ -832,6 +852,24 @@ static int options_command(struct re_printf *pf, void *arg)
 		err = EINVAL;
 		goto out;
 	}
+
+	uribuf = mbuf_alloc(64);
+	if (!uribuf)
+		return ENOMEM;
+
+	err = account_uri_complete(ua_account(ua), uribuf, uri);
+	if (err) {
+		(void)re_hprintf(pf, "options_command failed to "
+				 "complete uri\n");
+		return EINVAL;
+	}
+
+	mem_deref(uri);
+
+	uribuf->pos = 0;
+	err = mbuf_strdup(uribuf, &uri, uribuf->end);
+	if (err)
+		goto out;
 
 	err = ua_options_send(ua, uri, options_resp_handler, NULL);
 

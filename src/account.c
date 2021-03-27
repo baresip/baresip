@@ -7,6 +7,7 @@
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
+#include <ctype.h>
 
 
 enum {
@@ -1417,6 +1418,91 @@ const char *account_call_transfer(const struct account *acc)
 const char *account_extra(const struct account *acc)
 {
 	return acc ? acc->extra : NULL;
+}
+
+
+/**
+ * Auto complete a SIP uri, add scheme and domain if missing
+ *
+ * @param acc User-Agent account
+ * @param buf Target buffer to print SIP uri
+ * @param uri Input SIP uri
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_uri_complete(const struct account *acc, struct mbuf *buf,
+			 const char *uri)
+{
+	struct sa sa_addr;
+	size_t len;
+	bool uri_is_ip;
+	char *uridup;
+	char *host;
+	char *p;
+	int err = 0;
+
+	if (!buf || !uri)
+		return EINVAL;
+
+	/* Skip initial whitespace */
+	while (isspace(*uri))
+		++uri;
+
+	len = str_len(uri);
+
+	/* Append sip: scheme if missing */
+	if (0 != re_regex(uri, len, "sip:"))
+		err |= mbuf_printf(buf, "sip:");
+
+	err |= mbuf_write_str(buf, uri);
+
+	if (!acc)
+		return 0;
+
+	/* Append domain if missing and uri is not IP address */
+
+	/* check if uri is valid IP address */
+	err = str_dup(&uridup, uri);
+	if (err)
+		return err;
+
+	if (!strncmp(uridup, "sip:", 4))
+		host = uridup + 4;
+	else
+		host = uridup;
+
+	p = strchr(host, ':');
+	if (p)
+		*p = 0;
+
+	uri_is_ip = (0 == sa_set_str(&sa_addr, host, 0));
+	mem_deref(uridup);
+
+	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
+		1 != uri_is_ip) {
+#if HAVE_INET6
+		if (AF_INET6 == acc->luri.af)
+			err |= mbuf_printf(buf, "@[%r]",
+					   &acc->luri.host);
+		else
+#endif
+			err |= mbuf_printf(buf, "@%r",
+					   &acc->luri.host);
+
+		/* Also append port if specified and not 5060 */
+		switch (acc->luri.port) {
+
+		case 0:
+		case SIP_PORT:
+			break;
+
+		default:
+			err |= mbuf_printf(buf, ":%u", acc->luri.port);
+			break;
+		}
+	}
+
+	return err;
 }
 
 

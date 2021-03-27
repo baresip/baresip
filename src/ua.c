@@ -7,7 +7,6 @@
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
-#include <ctype.h>
 
 
 /** Magic number */
@@ -1038,75 +1037,6 @@ int ua_update_account(struct ua *ua)
 }
 
 
-/**
- * Auto complete a SIP uri, add scheme and domain if missing
- *
- * @param ua  User-Agent
- * @param buf Target buffer to print SIP uri
- * @param uri Input SIP uri
- *
- * @return 0 if success, otherwise errorcode
- */
-int ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri)
-{
-	struct account *acc;
-	struct sa sa_addr;
-	size_t len;
-	bool uri_is_ip;
-	int err = 0;
-
-	if (!buf || !uri)
-		return EINVAL;
-
-	/* Skip initial whitespace */
-	while (isspace(*uri))
-		++uri;
-
-	len = str_len(uri);
-
-	/* Append sip: scheme if missing */
-	if (0 != re_regex(uri, len, "sip:"))
-		err |= mbuf_printf(buf, "sip:");
-
-	err |= mbuf_write_str(buf, uri);
-
-	if (!ua)
-		return 0;
-
-	/* Append domain if missing and uri is not IP address */
-
-	/* check if uri is valid IP address */
-	uri_is_ip = (0 == sa_set_str(&sa_addr, uri, 0));
-	acc = ua->acc;
-
-	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
-		1 != uri_is_ip) {
-#if HAVE_INET6
-		if (AF_INET6 == acc->luri.af)
-			err |= mbuf_printf(buf, "@[%r]",
-					   &acc->luri.host);
-		else
-#endif
-			err |= mbuf_printf(buf, "@%r",
-					   &acc->luri.host);
-
-		/* Also append port if specified and not 5060 */
-		switch (acc->luri.port) {
-
-		case 0:
-		case SIP_PORT:
-			break;
-
-		default:
-			err |= mbuf_printf(buf, ":%u", acc->luri.port);
-			break;
-		}
-	}
-
-	return err;
-}
-
-
 static bool uri_only_user(const struct uri *uri)
 {
 	bool ret;
@@ -1212,7 +1142,7 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (!dialbuf)
 		return ENOMEM;
 
-	err |= ua_uri_complete(ua, dialbuf, req_uri);
+	mbuf_write_str(dialbuf, req_uri);
 
 	/* Append any optional URI parameters */
 	err |= mbuf_write_pl(dialbuf, &ua->acc->luri.params);
@@ -1413,9 +1343,7 @@ int ua_options_send(struct ua *ua, const char *uri,
 	if (!dialbuf)
 		return ENOMEM;
 
-	err = ua_uri_complete(ua, dialbuf, uri);
-	if (err)
-		goto out;
+	mbuf_write_str(dialbuf, uri);
 
 	dialbuf->buf[dialbuf->end] = '\0';
 
@@ -1427,7 +1355,6 @@ int ua_options_send(struct ua *ua, const char *uri,
 		warning("ua: send options: (%m)\n", err);
 	}
 
- out:
 	mem_deref(dialbuf);
 
 	return err;
@@ -2501,16 +2428,14 @@ struct ua *uag_find_requri(const char *requri)
 	if (!mb)
 		return NULL;
 
-	err = ua_uri_complete(NULL, mb, requri);
-	if (err)
-		goto out;
+	account_uri_complete(NULL, mb, requri);
 
 	mbuf_set_pos(mb, 0);
 	pl_set_mbuf(&pl, mb);
 	err = sip_addr_decode(&addr, &pl);
 	if (err) {
 		warning("ua: address %r could not be parsed: %m\n",
-				&pl, err);
+			&pl, err);
 		goto out;
 	}
 
