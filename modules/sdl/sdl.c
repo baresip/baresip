@@ -18,7 +18,6 @@
 
 
 struct vidisp_st {
-	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	SDL_Window *window;             /**< SDL Window            */
 	SDL_Renderer *renderer;         /**< SDL Renderer          */
 	SDL_Texture *texture;           /**< Texture for pixels    */
@@ -162,7 +161,6 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = vd;
 	st->fullscreen = prm ? prm->fullscreen : false;
 
 	tmr_start(&st->tmr, 100, event_handler, st);

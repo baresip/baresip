@@ -16,7 +16,6 @@
 
 
 struct vidisp_st {
-	const struct vidisp *vd;  /* inheritance */
 	struct vidsz size;
 	struct omx_state* omx;
 };
@@ -40,6 +39,7 @@ static int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp *vd,
 	struct vidisp_st *st;
 
 	/* Not used by OMX */
+	(void) vd;
 	(void) prm;
 	(void) dev;
 	(void) resizeh;
@@ -51,7 +51,6 @@ static int omx_vidisp_alloc(struct vidisp_st **vp, const struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	st->vd = vd;
 	*vp = st;
 
 	st->omx = &omx;

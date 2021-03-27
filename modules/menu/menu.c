@@ -423,7 +423,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_ANSWERED:
-		menu.play = mem_deref(menu.play);
+		menu_stop_play();
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:

@@ -140,18 +140,6 @@ void   auframe_mute(struct auframe *af);
 
 
 /*
- * Audio-level
- */
-
-
-#define AULEVEL_MIN  (-96.0)
-#define AULEVEL_MAX    (0.0)
-
-
-double aulevel_calc_dbov(int fmt, const void *sampv, size_t sampc);
-
-
-/*
  * Call
  */
 
@@ -1051,10 +1039,7 @@ int vidisp_alloc(struct vidisp_st **stp, struct list *vidispl,
 		 const char *name,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg);
-int vidisp_display(struct vidisp_st *st, const char *title,
-		   const struct vidframe *frame, uint64_t timestamp);
 const struct vidisp *vidisp_find(const struct list *vidispl, const char *name);
-struct vidisp *vidisp_get(struct vidisp_st *st);
 
 
 /*

@@ -57,6 +57,7 @@ struct video_loop {
 	struct config_video cfg;
 	struct videnc_state *enc;
 	struct viddec_state *dec;
+	const struct vidisp *vd;
 	struct vidisp_st *vidisp;
 	struct vidsrc *vs;
 	struct vidsrc_st *vsrc;
@@ -144,7 +145,7 @@ static void display_handler(void *arg)
 		goto out;
 
 	/* display frame */
-	err = vidisp_display(vl->vidisp, "Video Loop",
+	err = vl->vd->disph(vl->vidisp, "Video Loop",
 			     vl->frame, vl->frame_timestamp);
 	vl->new_frame = false;
 
@@ -460,7 +461,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 
 	/* Display */
 	if (vl->vidisp) {
-		struct vidisp *vd = vidisp_get(vl->vidisp);
+		const struct vidisp *vd = vl->vd;
 
 		err |= re_hprintf(pf,
 				  "* Display\n"
@@ -726,6 +727,8 @@ static int video_loop_alloc(struct video_loop **vlp)
 		warning("vidloop: video display failed: %m\n", err);
 		goto out;
 	}
+
+	vl->vd = vidisp_find(baresip_vidispl(), vl->cfg.disp_mod);
 
 	tmr_start(&vl->tmr_bw, 1000, timeout_bw, vl);
 
