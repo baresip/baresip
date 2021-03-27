@@ -198,7 +198,7 @@ int test_ua_alloc(void)
 	ASSERT_TRUE(ua == uag_find_aor("sip:user@test.invalid"));
 
 	/* verify URI complete function */
-	err = ua_uri_complete(ua, mb, "bob");
+	err = account_uri_complete(ua_account(ua), mb, "bob");
 	ASSERT_EQ(0, err);
 	TEST_STRCMP("sip:bob@test.invalid", 20, mb->buf, mb->end);
 
