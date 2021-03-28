@@ -1441,7 +1441,7 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	char *p;
 	int err = 0;
 
-	if (!buf || !uri)
+	if (!buf || !uri || !acc)
 		return EINVAL;
 
 	/* Skip initial whitespace */

@@ -1142,11 +1142,12 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (!dialbuf)
 		return ENOMEM;
 
-	mbuf_write_str(dialbuf, req_uri);
+	err = mbuf_write_str(dialbuf, req_uri);
+	if (err)
+		goto out;
 
 	/* Append any optional URI parameters */
 	err |= mbuf_write_pl(dialbuf, &ua->acc->luri.params);
-
 	if (err)
 		goto out;
 
@@ -1333,29 +1334,18 @@ int ua_print_status(struct re_printf *pf, const struct ua *ua)
 int ua_options_send(struct ua *ua, const char *uri,
 		    options_resp_h *resph, void *arg)
 {
-	struct mbuf *dialbuf;
 	int err = 0;
 
 	if (!ua || !str_isset(uri))
 		return EINVAL;
 
-	dialbuf = mbuf_alloc(64);
-	if (!dialbuf)
-		return ENOMEM;
-
-	mbuf_write_str(dialbuf, uri);
-
-	dialbuf->buf[dialbuf->end] = '\0';
-
-	err = sip_req_send(ua, "OPTIONS", (char *)dialbuf->buf, resph, arg,
+	err = sip_req_send(ua, "OPTIONS", uri, resph, arg,
 			   "Accept: application/sdp\r\n"
 			   "Content-Length: 0\r\n"
 			   "\r\n");
 	if (err) {
 		warning("ua: send options: (%m)\n", err);
 	}
-
-	mem_deref(dialbuf);
 
 	return err;
 }
