@@ -958,7 +958,7 @@ int video_alloc(struct video **vp, struct list *streaml,
 
 		prmdec.width  = 0;
 		prmdec.height = 0;
-		prmdec.fmt    = (enum vidfmt)-1;
+		prmdec.fmt    = -1;
 		prmdec.fps    = .0;
 
 		err |= vidfilt_enc_append(&v->vtx.filtl, &ctx, vf, &prmenc, v);

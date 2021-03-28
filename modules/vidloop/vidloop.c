@@ -708,7 +708,7 @@ static int video_loop_alloc(struct video_loop **vlp)
 
 		prmdec.width  = 0;
 		prmdec.height = 0;
-		prmdec.fmt    = (enum vidfmt)-1;
+		prmdec.fmt    = -1;
 		prmdec.fps    = .0;
 
 		info("vidloop: added video-filter '%s'\n", vf->name);
