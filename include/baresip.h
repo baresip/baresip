@@ -115,6 +115,8 @@ const char *account_medianat(const struct account *acc);
 const char *account_mwi(const struct account *acc);
 const char *account_call_transfer(const struct account *acc);
 const char *account_extra(const struct account *acc);
+int account_uri_complete(const struct account *acc, struct mbuf *buf,
+			 const char *uri);
 bool account_sip_autoanswer(const struct account *acc);
 
 
@@ -824,7 +826,6 @@ int  ua_rm_custom_hdr(struct ua *ua, struct pl *name);
 int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 		enum answer_method met);
 int  ua_disable_autoanswer(struct ua *ua, enum answer_method met);
-int  ua_uri_complete(struct ua *ua, struct mbuf *buf, const char *uri);
 int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   enum vidmode vidmode, const struct sip_msg *msg,
 		   struct call *xcall, const char *local_uri,
