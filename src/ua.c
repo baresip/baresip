@@ -2418,7 +2418,11 @@ struct ua *uag_find_requri(const char *requri)
 	if (!mb)
 		return NULL;
 
-	account_uri_complete(NULL, mb, requri);
+	err = account_uri_complete(NULL, mb, requri);
+	if (err) {
+		warning("ua: failed to complete uri: %s", requri);
+		goto out;
+	}
 
 	mbuf_set_pos(mb, 0);
 	pl_set_mbuf(&pl, mb);
