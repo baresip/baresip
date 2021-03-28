@@ -1293,13 +1293,14 @@ void  video_vidsrc_set_device(struct video *v, const char *dev);
 int   video_set_source(struct video *v, const char *name, const char *dev);
 void  video_set_devicename(struct video *v, const char *src, const char *disp);
 int   video_debug(struct re_printf *pf, const struct video *v);
-uint64_t video_calc_rtp_timestamp_fix(uint64_t timestamp);
-double video_calc_seconds(uint64_t rtp_ts);
 struct stream *video_strm(const struct video *v);
-double video_timestamp_to_seconds(uint64_t timestamp);
-uint64_t video_calc_timebase_timestamp(uint64_t rtp_ts);
 const struct vidcodec *video_codec(const struct video *vid, bool tx);
 void video_sdp_attr_decode(struct video *v);
+
+double video_calc_seconds(uint64_t rtp_ts);
+double video_timestamp_to_seconds(uint64_t timestamp);
+uint64_t video_calc_rtp_timestamp_fix(uint64_t timestamp);
+uint64_t video_calc_timebase_timestamp(uint64_t rtp_ts);
 
 
 /*
