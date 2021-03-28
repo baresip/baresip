@@ -90,10 +90,11 @@ static int do_snapshot(struct re_printf *pf, void *arg)
 	return 0;
 }
 
+
 static int do_snapshot_recv(struct re_printf *pf, void *arg)
 {
-	(void)pf;
 	const struct cmd_arg *carg = arg;
+	(void)pf;
 
 	if (flag_dec)
 		return 0;
@@ -105,10 +106,11 @@ static int do_snapshot_recv(struct re_printf *pf, void *arg)
 	return 0;
 }
 
+
 static int do_snapshot_send(struct re_printf *pf, void *arg)
 {
-	(void)pf;
 	const struct cmd_arg *carg = arg;
+	(void)pf;
 
 	if (flag_enc)
 		return 0;
