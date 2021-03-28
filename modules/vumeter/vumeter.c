@@ -27,7 +27,6 @@ struct vumeter_enc {
 	const struct audio *au;
 	double avg_rec;
 	volatile bool started;
-	enum aufmt fmt;
 };
 
 struct vumeter_dec {
@@ -36,7 +35,6 @@ struct vumeter_dec {
 	const struct audio *au;
 	double avg_play;
 	volatile bool started;
-	enum aufmt fmt;
 };
 
 
@@ -145,7 +143,6 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 		return ENOMEM;
 
 	st->au = au;
-	st->fmt = prm->fmt;
 	tmr_start(&st->tmr, 100, enc_tmr_handler, st);
 
 	*stp = (struct aufilt_enc_st *)st;
@@ -173,7 +170,6 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 		return ENOMEM;
 
 	st->au = au;
-	st->fmt = prm->fmt;
 	tmr_start(&st->tmr, 100, dec_tmr_handler, st);
 
 	*stp = (struct aufilt_dec_st *)st;
@@ -189,7 +185,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	vu->avg_rec = aulevel_calc_dbov(vu->fmt, af->sampv, af->sampc);
+	vu->avg_rec = aulevel_calc_dbov(af->fmt, af->sampv, af->sampc);
 	vu->started = true;
 
 	return 0;
@@ -203,7 +199,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	vu->avg_play = aulevel_calc_dbov(vu->fmt, af->sampv, af->sampc);
+	vu->avg_play = aulevel_calc_dbov(af->fmt, af->sampv, af->sampc);
 	vu->started = true;
 
 	return 0;
