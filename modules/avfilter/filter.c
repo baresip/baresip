@@ -19,6 +19,10 @@
 int filter_init(struct avfilter_st *st, const char *filter_descr,
 		struct vidframe *frame)
 {
+	const AVFilter *buffersrc, *buffersink;
+	AVFilterInOut *outputs, *inputs;
+	enum AVPixelFormat src_format = vidfmt_to_avpixfmt(frame->fmt);
+	enum AVPixelFormat pix_fmts[] = { src_format, AV_PIX_FMT_NONE };
 	char args[512];
 	int err = 0;
 
@@ -27,13 +31,10 @@ int filter_init(struct avfilter_st *st, const char *filter_descr,
 		return 0;
 	}
 
-	const AVFilter *buffersrc = avfilter_get_by_name("buffer");
-	const AVFilter *buffersink = avfilter_get_by_name("buffersink");
-	AVFilterInOut *outputs = avfilter_inout_alloc();
-	AVFilterInOut *inputs = avfilter_inout_alloc();
-
-	enum AVPixelFormat src_format = vidfmt_to_avpixfmt(frame->fmt);
-	enum AVPixelFormat pix_fmts[] = { src_format, AV_PIX_FMT_NONE };
+	buffersrc = avfilter_get_by_name("buffer");
+	buffersink = avfilter_get_by_name("buffersink");
+	outputs = avfilter_inout_alloc();
+	inputs = avfilter_inout_alloc();
 
 	st->filter_graph = avfilter_graph_alloc();
 	st->vframe_in = av_frame_alloc();

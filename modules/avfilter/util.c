@@ -57,8 +57,10 @@ int avframe_ensure_topdown(AVFrame *frame)
 	case AV_PIX_FMT_YUV420P:
 		for (i=0; i<4; i++) {
 			int ls = frame->linesize[i];
-			if (ls >= 0) continue;
-			int h = i == 0 ? frame->height : frame->height/2;
+			int h;
+			if (ls >= 0)
+				continue;
+			h = i == 0 ? frame->height : frame->height/2;
 			reverse_lines(frame->data[i], ls, h);
 			frame->data[i]     = frame->data[i] + ls * (h - 1);
 			frame->linesize[i] = abs(ls);
