@@ -948,16 +948,21 @@ int video_alloc(struct video **vp, struct list *streaml,
 	/* Video filters */
 	for (le = list_head(vidfiltl); le; le = le->next) {
 		struct vidfilt *vf = le->data;
-		struct vidfilt_prm prm;
+		struct vidfilt_prm prmenc, prmdec;
 		void *ctx = NULL;
 
-		prm.width  = v->cfg.width;
-		prm.height = v->cfg.height;
-		prm.fmt    = v->cfg.enc_fmt;
-		prm.fps    = get_fps(v);
+		prmenc.width  = v->cfg.width;
+		prmenc.height = v->cfg.height;
+		prmenc.fmt    = v->cfg.enc_fmt;
+		prmenc.fps    = get_fps(v);
 
-		err |= vidfilt_enc_append(&v->vtx.filtl, &ctx, vf, &prm, v);
-		err |= vidfilt_dec_append(&v->vrx.filtl, &ctx, vf, &prm, v);
+		prmdec.width  = 0;
+		prmdec.height = 0;
+		prmdec.fmt    = (enum vidfmt)-1;
+		prmdec.fps    = .0;
+
+		err |= vidfilt_enc_append(&v->vtx.filtl, &ctx, vf, &prmenc, v);
+		err |= vidfilt_dec_append(&v->vrx.filtl, &ctx, vf, &prmdec, v);
 		if (err) {
 			warning("video: video-filter '%s' failed (%m)\n",
 				vf->name, err);
