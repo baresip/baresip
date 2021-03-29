@@ -688,7 +688,9 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 	++vrx->stats.disp_frames;
 
-	err = vrx->vd->disph(vrx->vidisp, v->peer, frame, timestamp);
+	if (vrx->vd)
+		err = vrx->vd->disph(vrx->vidisp, v->peer, frame, timestamp);
+
 	frame_filt = mem_deref(frame_filt);
 	if (err == ENODEV) {
 		warning("video: video-display was closed\n");
