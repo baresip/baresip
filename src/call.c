@@ -785,11 +785,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (err)
 		goto out;
 
-	err = sdp_session_set_lattr(call->sdp, true,
-				    "tool", "baresip " BARESIP_VERSION);
-	if (err)
-		goto out;
-
 	/* Check for incoming SDP Offer */
 	if (msg && mbuf_get_left(msg->mb))
 		got_offer = true;
