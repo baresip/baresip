@@ -1438,7 +1438,6 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	bool uri_is_ip;
 	char *uridup;
 	char *host;
-	char *p;
 	int err = 0;
 
 	if (!buf || !uri || !acc)
@@ -1471,11 +1470,9 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	else
 		host = uridup;
 
-	p = strchr(host, ':');
-	if (p)
-		*p = 0;
-
-	uri_is_ip = (0 == sa_set_str(&sa_addr, host, 0));
+	uri_is_ip =
+		!sa_decode(&sa_addr, host, strlen(host)) ||
+		!sa_set_str(&sa_addr, host, 0);
 	mem_deref(uridup);
 
 	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
