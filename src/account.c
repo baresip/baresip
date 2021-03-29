@@ -1440,7 +1440,7 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	char *host;
 	int err = 0;
 
-	if (!buf || !uri || !acc)
+	if (!buf || !uri)
 		return EINVAL;
 
 	/* Skip initial whitespace */
