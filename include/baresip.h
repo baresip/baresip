@@ -698,6 +698,7 @@ void net_force_change(struct network *net);
 bool net_check(struct network *net);
 bool net_af_enabled(const struct network *net, int af);
 int  net_set_af(struct network *net, int af);
+void net_dns_refresh(struct network *net);
 int  net_dns_debug(struct re_printf *pf, const struct network *net);
 int  net_debug(struct re_printf *pf, const struct network *net);
 const struct sa *net_laddr_af(const struct network *net, int af);
