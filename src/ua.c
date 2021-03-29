@@ -2420,7 +2420,7 @@ struct ua *uag_find_requri(const char *requri)
 
 	err = account_uri_complete(NULL, mb, requri);
 	if (err) {
-		warning("ua: failed to complete uri: %s", requri);
+		warning("ua: failed to complete uri: %s\n", requri);
 		goto out;
 	}
 

@@ -488,7 +488,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	struct pl word[2] = {PL_INIT, PL_INIT};
 	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
 	char *uri = NULL;
-	struct mbuf *uribuf;
+	struct mbuf *uribuf = NULL;
 	int err = 0;
 
 	(void)pf;
@@ -558,6 +558,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	}
 
 out:
+	mem_deref(uribuf);
 	mem_deref(uri);
 	return err;
 }
@@ -837,7 +838,7 @@ static int options_command(struct re_printf *pf, void *arg)
 	struct pl word[2] = {PL_INIT, PL_INIT};
 	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
 	char *uri = NULL;
-	struct mbuf *uribuf;
+	struct mbuf *uribuf = NULL;
 	int err = 0;
 
 	err = pl_strdup(&uri, &word[0]);
@@ -874,6 +875,7 @@ static int options_command(struct re_printf *pf, void *arg)
 	err = ua_options_send(ua, uri, options_resp_handler, NULL);
 
 out:
+	mem_deref(uribuf);
 	mem_deref(uri);
 	if (err) {
 		(void)re_hprintf(pf, "could not send options: %m\n", err);
