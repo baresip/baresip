@@ -189,7 +189,7 @@ static int net_dns_srv_get(const struct network *net,
 /*
  * Check for DNS Server updates
  */
-static void dns_refresh(struct network *net)
+void net_dns_refresh(struct network *net)
 {
 	struct sa nsv[NET_MAX_NS];
 	uint32_t nsn;
@@ -215,7 +215,7 @@ static void ipchange_handler(void *arg)
 
 	tmr_start(&net->tmr, net->interval * 1000, ipchange_handler, net);
 
-	dns_refresh(net);
+	net_dns_refresh(net);
 
 	change = net_check(net);
 	if (change && net->ch) {
@@ -546,7 +546,7 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
 		}
 	}
 
-	dns_refresh(net);
+	net_dns_refresh(net);
 
 	return 0;
 }
