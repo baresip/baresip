@@ -489,6 +489,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
 	char *uri = NULL;
 	struct mbuf *uribuf = NULL;
+	struct call *call;
 	int err = 0;
 
 	(void)pf;
@@ -549,13 +550,16 @@ static int dial_handler(struct re_printf *pf, void *arg)
 				auto_answer_method(pf));
 
 
-	err = ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
+	err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON);
 
 	if (menu->adelay >= 0)
 		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
 	if (err) {
 		(void)re_hprintf(pf, "ua_connect failed: %m\n", err);
+		goto out;
 	}
+
+	re_hprintf(pf, "call id: %s\n", call_id(call));
 
 out:
 	mem_deref(uribuf);
@@ -627,6 +631,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
 	if (err)
 		goto out;
+
+	re_hprintf(pf, "call id: %s\n", call_id(call));
 
  out:
 	mem_deref(uri);
