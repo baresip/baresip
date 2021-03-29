@@ -1455,13 +1455,13 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 
 	err |= mbuf_write_str(buf, uri);
 
-	if (!acc)
+	if (!acc || err)
 		return err;
 
 	/* Append domain if missing and uri is not IP address */
 
 	/* check if uri is valid IP address */
-	err |= str_dup(&uridup, uri);
+	err = str_dup(&uridup, uri);
 	if (err)
 		return err;
 
