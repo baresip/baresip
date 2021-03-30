@@ -659,3 +659,53 @@ int avcodec_encode(struct videnc_state *st, bool update,
 
 	return err;
 }
+
+int avcodec_copy(struct videnc_state *st, bool update,
+		   const struct vidpacket *packet, uint64_t timestamp)
+{
+	int err = 0;
+	uint64_t ts;
+	struct mbuf mb;
+
+	if (!st || !packet)
+		return EINVAL;
+
+	mb.buf = packet->buf;
+	mb.pos = 0;
+	mb.end = packet->size;
+	mb.size = packet->size;
+
+	ts = video_calc_rtp_timestamp_fix(timestamp);
+
+	switch (st->codec_id) {
+
+		case AV_CODEC_ID_H263:
+			err = h263_packetize(st, ts, &mb, st->pkth, st->arg);
+			break;
+
+		case AV_CODEC_ID_H264:
+			err = h264_packetize(ts, packet->buf, packet->size,
+								 st->encprm.pktsize,
+								 st->pkth, st->arg);
+			break;
+
+		case AV_CODEC_ID_MPEG4:
+			err = general_packetize(ts, &mb, st->encprm.pktsize,
+									st->pkth, st->arg);
+			break;
+
+#ifdef AV_CODEC_ID_H265
+			case AV_CODEC_ID_H265:
+		err = h265_packetize(ts, packet->buf, packet->size,
+					 st->encprm.pktsize,
+					 st->pkth, st->arg);
+		break;
+#endif
+
+		default:
+			err = EPROTO;
+			break;
+	}
+
+	return err;
+}

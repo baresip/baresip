@@ -284,7 +284,7 @@ static void read_frame(struct vidsrc_st *st)
 #endif
 
 	if (st->packeth)
-		st->packeth(&vp, st->arg);
+		st->packeth(&vp, timestamp, st->arg);
 	else {
 		warning("v4l2_codec: no packet handler\n");
 	}

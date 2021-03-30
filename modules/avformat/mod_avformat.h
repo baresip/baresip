@@ -15,6 +15,7 @@ struct shared {
 	pthread_t thread;
 	bool is_realtime;
 	bool run;
+	bool is_pass_through;
 
 	struct stream {
 		AVRational time_base;
@@ -45,3 +46,6 @@ int  avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			  vidsrc_packet_h *packeth,
 			  vidsrc_error_h *errorh, void *arg);
 void avformat_video_decode(struct shared *st, AVPacket *pkt);
+
+/*add avformat_video_copy function which passes packets to packet handler*/
+void avformat_video_copy(struct shared *st, AVPacket *pkt);

@@ -380,7 +380,7 @@ static int packet_handler(bool marker, uint64_t ts,
  * @param timestamp  Frame timestamp in VIDEO_TIMEBASE units
  */
 static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
-			    uint64_t timestamp)
+			    struct vidpacket *packet, uint64_t timestamp)
 {
 	struct le *le;
 	int err = 0;
@@ -388,6 +388,21 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 
 	if (!vtx->enc)
 		return;
+
+	if (packet) {
+		lock_write_get(vtx->lock_enc);
+
+		if (vtx->vc && vtx->vc->copyh) {
+			err = vtx->vc->copyh(vtx->enc, vtx->picup, packet, timestamp);
+			if (err)
+				goto out;
+
+			vtx->picup = false;
+		} else {
+			warning("video: Skipping Packet as Copy Handler not initialized ..\n");
+		}
+		goto out;
+	}
 
 	lock_write_get(vtx->lock_tx);
 	sendq_empty = (vtx->sendq.head == NULL);
@@ -468,7 +483,24 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 	++vtx->stats.src_frames;
 
 	/* Encode and send */
-	encode_rtp_send(vtx, frame, timestamp);
+	encode_rtp_send(vtx, frame, NULL, timestamp);
+}
+
+static void vidsrc_packet_handler(struct vidpacket *packet, uint64_t timestamp,
+				 void *arg)
+{
+	struct vtx *vtx = arg;
+
+	MAGIC_CHECK(vtx->video);
+
+	lock_write_get(vtx->lock_enc);
+	++vtx->frames;
+	lock_rel(vtx->lock_enc);
+
+	++vtx->stats.src_frames;
+
+	/* Encode and send */
+	encode_rtp_send(vtx, NULL, packet, timestamp);
 }
 
 
@@ -1146,7 +1178,8 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 
 		err = vs->alloch(&vtx->vsrc, vs, ctx, &vtx->vsrc_prm,
 				 &vtx->vsrc_size, NULL, v->vtx.device,
-				 vidsrc_frame_handler, NULL,
+				 vidsrc_frame_handler,
+				 vidsrc_packet_handler,
 				 vidsrc_error_handler, vtx);
 		if (err) {
 			warning("video: could not set source to"
@@ -1611,6 +1644,10 @@ int video_set_source(struct video *v, const char *name, const char *dev)
 	vtx->vs = vs;
 
 	return 0;
+	return vs->alloch(&vtx->vsrc, vs, NULL, &vtx->vsrc_prm,
+			  &vtx->vsrc_size, NULL, dev,
+			  vidsrc_frame_handler, vidsrc_packet_handler,
+			  vidsrc_error_handler, vtx);
 }
 
 

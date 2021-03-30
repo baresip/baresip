@@ -372,11 +372,14 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 }
 
 
-static void vidsrc_packet_handler(struct vidpacket *packet, void *arg)
+static void vidsrc_packet_handler(struct vidpacket *packet,
+		uint64_t timestamp, void *arg)
 {
 	struct video_loop *vl = arg;
 	uint64_t rtp_ts;
 
+	/* todo: not sure if here we need to use packet->timestamp
+	or the received timestamp */
 	rtp_ts = video_calc_rtp_timestamp_fix(packet->timestamp);
 
 	/* todo: hardcoded codecid, get from packet */

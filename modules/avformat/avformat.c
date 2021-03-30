@@ -48,6 +48,7 @@ static enum AVHWDeviceType avformat_hwdevice = AV_HWDEVICE_TYPE_NONE;
 #endif
 static char avformat_inputformat[64];
 static AVCodec *avformat_decoder;
+static char pass_through[256] = "";
 static char rtsp_transport[256] = "";
 
 
@@ -159,6 +160,11 @@ static void *read_thread(void *data)
 					av_q2d(st->vid.time_base);
 
 				avformat_video_decode(st, pkt);
+				if (st->is_pass_through) {
+					avformat_video_copy(st, &pkt);
+				} else {
+					avformat_video_decode(st, &pkt);
+				}
 			}
 
 			av_packet_unref(pkt);
@@ -250,6 +256,13 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	st->au.idx  = -1;
 	st->vid.idx = -1;
 
+	conf_get_str(conf_cur(), "avformat_pass_through",
+			  pass_through, sizeof(pass_through));
+
+	if (*pass_through != '\0' && 0==strcmp(pass_through, "yes")) {
+		st->is_pass_through = 1;
+	}
+
 	if (0 == re_regex(dev, str_len(dev), "[^,]+,[^]+", &pl_fmt, &pl_dev)) {
 
 		char format[32];
@@ -290,7 +303,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
-	if (video && fps) {
+	if (video && fps && !st->is_pass_through) {
 		re_snprintf(buf, sizeof(buf), "%2.f", fps);
 		ret = av_dict_set(&format_opts, "framerate", buf, 0);
 		if (ret != 0) {
@@ -317,6 +330,20 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		if (ret != 0) {
 			warning("avformat: av_dict_set(input_format) failed"
 					" (ret=%s)\n", av_err2str(ret));
+	conf_get_str(conf_cur(), "rtsp_transport",
+		rtsp_transport, sizeof(rtsp_transport));
+
+	if (*rtsp_transport != '\0') {
+		ret = -1;
+		if ((0==strcmp(rtsp_transport, "tcp")) || (0==strcmp(rtsp_transport, "udp")) ||
+			(0==strcmp(rtsp_transport, "udp_multicast")) || (0==strcmp(rtsp_transport, "http")) ||
+			(0==strcmp(rtsp_transport, "https"))) {
+			ret = av_dict_set(&format_opts, "rtsp_transport", rtsp_transport, 0);
+		}
+
+		if (ret != 0) {
+			warning("avformat: av_dict_set(rtsp_transport) failed"
+				" (ret=%s)\n", av_err2str(ret));
 			err = ENOENT;
 			goto out;
 		}

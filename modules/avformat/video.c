@@ -17,6 +17,7 @@
 struct vidsrc_st {
 	struct shared *shared;
 	vidsrc_frame_h *frameh;
+	vidsrc_packet_h *packeth;
 	void *arg;
 };
 
@@ -71,6 +72,10 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 	st->frameh = frameh;
 	st->arg    = arg;
+	st->vs      = vs;
+	st->frameh  = frameh;
+	st->packeth = packeth;
+	st->arg     = arg;
 
 	if (ctx && *ctx && (*ctx)->id && !strcmp((*ctx)->id, "avformat")) {
 		st->shared = mem_ref(*ctx);
@@ -102,6 +107,24 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	return err;
 }
 
+void avformat_video_copy(struct shared *st, AVPacket *pkt)
+{
+	struct vidpacket vp;
+	uint64_t timestamp;
+
+	vp.buf = pkt->data;
+	vp.size = pkt->size;
+	timestamp = pkt->pts;
+
+	lock_read_get(st->lock);
+
+	if (st->vidsrc_st && st->vidsrc_st->packeth) {
+		st->vidsrc_st->packeth(&vp, timestamp, st->vidsrc_st->arg);
+	}
+
+	lock_rel(st->lock);
+
+}
 
 void avformat_video_decode(struct shared *st, AVPacket *pkt)
 {
