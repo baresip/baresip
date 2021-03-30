@@ -576,6 +576,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct pl pluri;
 	struct call *call;
 	char *uri = NULL;
+	struct mbuf *uribuf = NULL;
 	struct ua *ua = carg->data;
 	int err = 0;
 
@@ -628,6 +629,20 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		goto out;
 	}
 
+	uribuf = mbuf_alloc(64);
+	if (!uribuf)
+		return ENOMEM;
+
+	err = account_uri_complete(ua_account(ua), uribuf, uri);
+	if (err) {
+		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
+		return EINVAL;
+	}
+
+	mem_deref(uri);
+
+	uribuf->pos = 0;
+	err = mbuf_strdup(uribuf, &uri, uribuf->end);
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
 	if (err)
 		goto out;
@@ -635,6 +650,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	re_hprintf(pf, "call id: %s\n", call_id(call));
 
  out:
+	mem_deref(uribuf);
 	mem_deref(uri);
 
 	return err;
