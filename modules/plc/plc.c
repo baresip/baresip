@@ -93,6 +93,9 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
+	if (af->fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	if (af->sampc) {
 		plc_rx(&plc->plc, af->sampv, (int)af->sampc);
 		plc->sampc = af->sampc;
