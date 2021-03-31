@@ -124,6 +124,9 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
+	if (af->fmt != AUFMT_S16LE)
+		return ENOTSUP;
+
 	if (!af->sampc)
 		return 0;
 
