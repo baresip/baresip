@@ -25,13 +25,11 @@
 struct sndfile_enc {
 	struct aufilt_enc_st af;  /* base class */
 	SNDFILE *enc;
-	enum aufmt fmt;
 };
 
 struct sndfile_dec {
 	struct aufilt_dec_st af;  /* base class */
 	SNDFILE *dec;
-	enum aufmt fmt;
 };
 
 static char file_path[256] = ".";
@@ -137,8 +135,6 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
-	st->fmt = prm->fmt;
-
 	st->enc = openfile(prm, true);
 	if (!st->enc)
 		err = ENOMEM;
@@ -169,8 +165,6 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
-	st->fmt = prm->fmt;
-
 	st->dec = openfile(prm, false);
 	if (!st->dec)
 		err = ENOMEM;
@@ -192,7 +186,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	num_bytes = af->sampc * aufmt_sample_size(sf->fmt);
+	num_bytes = auframe_size(af);
 
 	sf_write_raw(sf->enc, af->sampv, num_bytes);
 
@@ -208,7 +202,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	num_bytes = af->sampc * aufmt_sample_size(sf->fmt);
+	num_bytes = auframe_size(af);
 
 	sf_write_raw(sf->dec, af->sampv, num_bytes);
 
