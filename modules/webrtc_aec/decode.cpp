@@ -17,7 +17,6 @@ struct aec_dec {
 	struct aufilt_dec_st af;  /* inheritance */
 
 	struct aec *aec;
-	enum aufmt fmt;
 };
 
 
@@ -58,8 +57,6 @@ int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
 	st = (struct aec_dec *)mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
 		return ENOMEM;
-
-	st->fmt = (enum aufmt)prm->fmt;
 
 	err = webrtc_aec_alloc(&st->aec, ctx, prm);
 	if (err)
@@ -114,7 +111,7 @@ int webrtc_aec_decode(struct aufilt_dec_st *st, struct auframe *af)
 		return EINVAL;
 
 	/* convert samples to float if needed */
-	switch (dec->fmt) {
+	switch (af->fmt) {
 
 	case AUFMT_S16LE:
 		flt = (float *)mem_alloc(af->sampc * sizeof(float), NULL);

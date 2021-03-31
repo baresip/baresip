@@ -22,7 +22,6 @@ struct aec_enc {
 
 	struct aec *aec;
 	float buf[160];
-	enum aufmt fmt;
 };
 
 
@@ -63,8 +62,6 @@ int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
 	st = (struct aec_enc *)mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
 		return ENOMEM;
-
-	st->fmt = (enum aufmt)prm->fmt;
 
 	err = webrtc_aec_alloc(&st->aec, ctx, prm);
 	if (err)
@@ -128,7 +125,7 @@ int webrtc_aec_encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	switch (enc->fmt) {
+	switch (af->fmt) {
 
 	case AUFMT_S16LE:
 		/* convert from S16 to FLOAT */
