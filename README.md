@@ -93,7 +93,7 @@ Distributed under BSD license
   - Windows winwave audio-driver
 
 * Video:
-  - Support for H.265, H.264, H.263, VP8, VP9, MPEG-4 Video
+  - Support for H.265, H.264, H.263, VP8, VP9 Video
   - Configurable resolution/framerate/bitrate
   - Configurable video input/output
   - Support for asymmetric video
@@ -106,7 +106,6 @@ Distributed under BSD license
   - H.263
   - VP8
   - VP9
-  - MPEG-4
 
 * Video-drivers:
   - iOS avcapture video-source
@@ -353,9 +352,10 @@ zrtp          ZRTP media encryption module
 * RFC 7310  RTP Payload Format for Standard apt-X and Enhanced apt-X Codecs
 * RFC 7587  RTP Payload Format for the Opus Speech and Audio Codec
 * RFC 7741  RTP Payload Format for VP8 Video
+* RFC 7742  WebRTC Video Processing and Codec Requirements
 * RFC 7798  RTP Payload Format for High Efficiency Video Coding (HEVC)
 
-* draft-ietf-payload-vp9-07
+* draft-ietf-payload-vp9-11
 
 
 ## Architecture:
