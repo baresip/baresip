@@ -1416,34 +1416,6 @@ struct call *ua_call(const struct ua *ua)
 
 
 /**
- * Get the previous call
- *
- * @param ua User-Agent
- *
- * @return Previous call or NULL if none
- */
-struct call *ua_prev_call(const struct ua *ua)
-{
-	struct le *le;
-	int prev = 0;
-
-	if (!ua)
-		return NULL;
-
-	for (le = ua->calls.tail; le; le = le->prev) {
-		if ( prev == 1) {
-			struct call *call = le->data;
-			return call;
-		}
-		if ( prev == 0)
-			prev = 1;
-	}
-
-	return NULL;
-}
-
-
-/**
  * Print the user-agent debug information
  *
  * @param pf  Print function
