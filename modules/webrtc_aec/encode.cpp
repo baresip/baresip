@@ -21,7 +21,6 @@ struct aec_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 
 	struct aec *aec;
-	float buf[160];
 };
 
 
@@ -77,36 +76,52 @@ int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
 }
 
 
+static AudioProcessing::ChannelLayout get_layout(uint8_t ch)
+{
+	switch (ch) {
+
+	case 1: return AudioProcessing::kMono;
+	case 2: return AudioProcessing::kStereo;
+	default: return (AudioProcessing::ChannelLayout)-1;
+	}
+}
+
+
 static int encode_float(struct aec_enc *enc, float *sampv, size_t sampc)
 {
 	struct aec *aec = enc->aec;
-	const float *nearend = (const float *)sampv;
-	const float *in;
-	float *out;
-	float *rec = (float *)sampv;
 	size_t i;
 	int r;
 	int err = 0;
 
+	if (sampc % aec->blocksize)
+		return EINVAL;
+
 	pthread_mutex_lock(&aec->mutex);
 
-	for (i = 0; i < sampc; i += aec->subframe_len) {
+	for (i = 0; i < sampc; i += aec->blocksize) {
 
-		in  = &nearend[i];
-		out = enc->buf;
+		size_t samples_per_channel = aec->blocksize / aec->ch;
+		const float *src = &sampv[i];
+		float *dest = &sampv[i];
 
-		r = WebRtcAec_Process(aec->inst, &in, aec->num_bands,
-				      &out, aec->subframe_len,
-				      SOUND_CARD_BUF, 0);
+		// NOTE: important
+		aec->inst->set_stream_delay_ms(SOUND_CARD_BUF);
+
+		r = aec->inst->ProcessStream(&src,
+					     samples_per_channel,
+					     aec->srate,
+					     get_layout(aec->ch),
+					     aec->srate,
+					     get_layout(aec->ch),
+					     &dest);
 		if (r != 0) {
 			warning("webrtc_aec: encode:"
-				" WebRtcAec_Process error (%d)\n",
+				" ProcessStream error (%d)\n",
 				r);
 			err = EPROTO;
 			goto out;
 		}
-
-		memcpy(&rec[i], out, aec->subframe_len * sizeof(float));
 	}
 
  out:

@@ -4,24 +4,26 @@
  * Copyright (C) 2010 Creytiv.com
  */
 
-
 #include <pthread.h>
-#include "modules/audio_processing/aec/echo_cancellation.h"
+
+#define WEBRTC_POSIX 1
+#include <webrtc/modules/audio_processing/include/audio_processing.h>
+#include <webrtc/system_wrappers/include/trace.h>
 
 
 #define MAX_CHANNELS         1
+#define BLOCKSIZE           10  /* ms */
 
 
 using namespace webrtc;
 
 
 struct aec {
-	AecConfig config;
-	void *inst;
+	AudioProcessing *inst;
 	pthread_mutex_t mutex;
 	uint32_t srate;
-	uint32_t subframe_len;
-	int num_bands;
+	uint8_t ch;
+	uint32_t blocksize;
 };
 
 
