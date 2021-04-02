@@ -132,6 +132,12 @@ static double timestamp_state_duration(const struct timestamp_state *ts,
 }
 
 
+static void vidframe_clear(struct vidframe *frame)
+{
+	frame->data[0] = NULL;
+}
+
+
 static void display_handler(void *arg)
 {
 	struct video_loop *vl = arg;
@@ -262,7 +268,7 @@ static int packet_handler(bool marker, uint64_t rtp_ts,
 	vl->stat.bytes += mbuf_get_left(mb);
 
 	/* decode */
-	frame.data[0] = NULL;
+	vidframe_clear(&frame);
 	if (vl->vc_dec && vl->dec) {
 		err = vl->vc_dec->dech(vl->dec, &frame, &keyframe,
 				       marker, vl->seq++, mb);
