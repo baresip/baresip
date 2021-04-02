@@ -2415,6 +2415,8 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 				mod, device, err);
 			return err;
 		}
+
+		tx->as = ausrc_find(baresip_ausrcl(), mod);
 	}
 
 	return 0;
