@@ -12,8 +12,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;  /* pointer to base-class (inheritance) */
-
 	struct ausrc_prm prm;
 	float *sampv;
 	size_t sampc;             /* includes number of channels */
@@ -229,7 +227,6 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		return ENOMEM;
 
 	st->prm = *prm;
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 
