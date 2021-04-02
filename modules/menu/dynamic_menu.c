@@ -131,18 +131,6 @@ static int call_mute(struct re_printf *pf, void *arg)
 }
 
 
-static int hold_prev_call(struct re_printf *pf, void *arg)
-{
-	const struct cmd_arg *carg = arg;
-	(void)pf;
-
-	if (carg->key == 'H')
-		return call_hold(ua_prev_call(menu_uacur()), true);
-	else
-		return uag_hold_resume(ua_prev_call(menu_uacur()));
-}
-
-
 static int call_reinvite(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
@@ -295,8 +283,6 @@ static const struct cmd callcmdv[] = {
 {"hold",        'x',       0, "Call hold",            cmd_call_hold        },
 {"line",        '@', CMD_PRM, "Set current call <line>", set_current_call  },
 {"mute",        'm',       0, "Call mute/un-mute",    call_mute            },
-{"prevhold",    'H',       0, "Hold previous call",   hold_prev_call       },
-{"prevresume",  'L',       0, "Resume previous call", hold_prev_call       },
 {"reinvite",    'I',       0, "Send re-INVITE",       call_reinvite        },
 {"resume",      'X',       0, "Call resume",          cmd_call_resume      },
 {"sndcode",      0,  CMD_PRM, "Send Code",            send_code            },
