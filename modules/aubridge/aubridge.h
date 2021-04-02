@@ -8,7 +8,6 @@
 struct device;
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
 	struct device *dev;
 	struct ausrc_prm prm;
 	ausrc_read_h *rh;

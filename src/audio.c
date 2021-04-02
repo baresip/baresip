@@ -81,6 +81,7 @@ enum {
  *
  */
 struct autx {
+	const struct ausrc *as;
 	struct ausrc_st *ausrc;       /**< Audio Source                    */
 	struct ausrc_prm ausrc_prm;   /**< Audio Source parameters         */
 	const struct aucodec *ac;     /**< Current audio encoder           */
@@ -1460,7 +1461,7 @@ static int autx_print_pipeline(struct re_printf *pf, const struct autx *autx)
 		return 0;
 
 	err = re_hprintf(pf, "audio tx pipeline:  %10s",
-			 autx->ausrc ? autx->ausrc->as->name : "(src)");
+			 autx->as ? autx->as->name : "(src)");
 
 	for (le = list_head(&autx->filtl); le; le = le->next) {
 		struct aufilt_enc_st *st = le->data;
@@ -1755,6 +1756,8 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 				tx->module, tx->device, err);
 			return err;
 		}
+
+		tx->as = ausrc_find(ausrcl, tx->module);
 
 		switch (a->cfg.txmode) {
 
@@ -2301,7 +2304,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  tx->stats.aubuf_overrun,
 			  tx->stats.aubuf_underrun);
 	err |= re_hprintf(pf, "       source: %s,%s %s\n",
-			  tx->ausrc ? tx->ausrc->as->name : "none",
+			  tx->as ? tx->as->name : "none",
 			  tx->device,
 			  aufmt_name(tx->src_fmt));
 	err |= re_hprintf(pf, "       time = %.3f sec\n",
@@ -2412,6 +2415,8 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 				mod, device, err);
 			return err;
 		}
+
+		tx->as = ausrc_find(baresip_ausrcl(), mod);
 	}
 
 	return 0;

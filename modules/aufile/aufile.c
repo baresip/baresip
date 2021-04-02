@@ -26,8 +26,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;  /* base class */
-
 	struct tmr tmr;
 	struct aufile *aufile;
 	struct aubuf *aubuf;
@@ -224,7 +222,6 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as    = as;
 	st->rh    = rh;
 	st->errh  = errh;
 	st->arg   = arg;

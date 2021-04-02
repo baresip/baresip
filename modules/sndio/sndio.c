@@ -20,7 +20,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;  /* pointer to base-class */
 	struct sio_hdl *hdl;
 	pthread_t thread;
 	int16_t *sampv;
@@ -175,7 +174,6 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if ((st = mem_zalloc(sizeof(*st), ausrc_destructor)) == NULL)
 		return ENOMEM;
 
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 	st->hdl = sio_open(name, SIO_REC, 0);

@@ -26,7 +26,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
 	PaStream *stream_rd;
 	ausrc_read_h *rh;
 	void *arg;
@@ -238,7 +237,6 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 	st->ch  = prm->ch;

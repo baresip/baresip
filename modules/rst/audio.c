@@ -20,7 +20,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;  /* pointer to base-class (inheritance) */
 	pthread_t thread;
 	struct rst *rst;
 	mpg123_handle *mp3;
@@ -193,7 +192,6 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = as;
 	st->rh   = rh;
 	st->errh = errh;
 	st->arg  = arg;

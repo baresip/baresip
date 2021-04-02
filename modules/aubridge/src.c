@@ -36,7 +36,6 @@ int aubridge_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = as;
 	st->prm  = *prm;
 	st->rh   = rh;
 	st->arg  = arg;
