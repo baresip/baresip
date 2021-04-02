@@ -643,12 +643,13 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 	if (err) {
 		warning("vidloop: vidsrc '%s' failed: %m\n",
 			vl->cfg.src_dev, err);
+		return err;
 	}
 
 	vl->vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
 					      vl->cfg.src_mod);
 
-	return err;
+	return 0;
 }
 
 
