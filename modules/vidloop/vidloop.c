@@ -506,7 +506,7 @@ static void vidloop_destructor(void *arg)
 }
 
 
-static int enable_codec(struct video_loop *vl, const char *name)
+static int enable_encoder(struct video_loop *vl, const char *name)
 {
 	struct list *vidcodecl = baresip_vidcodecl();
 	struct videnc_param prm;
@@ -517,8 +517,6 @@ static int enable_codec(struct video_loop *vl, const char *name)
 	prm.bitrate = vl->cfg.bitrate;
 	prm.max_fs  = -1;
 
-	/* Use the first video codec */
-
 	vl->vc_enc = vidcodec_find_encoder(vidcodecl, name);
 	if (!vl->vc_enc) {
 		warning("vidloop: could not find encoder (%s)\n", name);
@@ -528,6 +526,22 @@ static int enable_codec(struct video_loop *vl, const char *name)
 	info("vidloop: enabled encoder %s (%.2f fps, %u bit/s)\n",
 	     vl->vc_enc->name, prm.fps, prm.bitrate);
 
+	err = vl->vc_enc->encupdh(&vl->enc, vl->vc_enc, &prm, NULL,
+				  packet_handler, vl);
+	if (err) {
+		warning("vidloop: update encoder failed: %m\n", err);
+		return err;
+	}
+
+	return 0;
+}
+
+
+static int enable_decoder(struct video_loop *vl, const char *name)
+{
+	struct list *vidcodecl = baresip_vidcodecl();
+	int err;
+
 	vl->vc_dec = vidcodec_find_decoder(vidcodecl, name);
 	if (!vl->vc_dec) {
 		warning("vidloop: could not find decoder (%s)\n", name);
@@ -535,13 +549,6 @@ static int enable_codec(struct video_loop *vl, const char *name)
 	}
 
 	info("vidloop: enabled decoder %s\n", vl->vc_dec->name);
-
-	err = vl->vc_enc->encupdh(&vl->enc, vl->vc_enc, &prm, NULL,
-				  packet_handler, vl);
-	if (err) {
-		warning("vidloop: update encoder failed: %m\n", err);
-		return err;
-	}
 
 	if (vl->vc_dec->decupdh) {
 		err = vl->vc_dec->decupdh(&vl->dec, vl->vc_dec, NULL);
@@ -782,7 +789,8 @@ static int vidloop_start(struct re_printf *pf, void *arg)
 
 	if (str_isset(codec_name)) {
 
-		err = enable_codec(gvl, codec_name);
+		err  = enable_encoder(gvl, codec_name);
+		err |= enable_decoder(gvl, codec_name);
 		if (err) {
 			gvl = mem_deref(gvl);
 			return err;
