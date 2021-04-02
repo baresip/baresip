@@ -10,8 +10,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
-
 	struct tmr tmr;
 	struct ausrc_prm prm;
 	void *sampv;
@@ -65,7 +63,6 @@ static int mock_ausrc_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = as;
 	st->prm  = *prm;
 	st->rh   = rh;
 	st->arg  = arg;

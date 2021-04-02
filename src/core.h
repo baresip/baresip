@@ -88,15 +88,6 @@ struct auplay_st {
 
 
 /*
- * Audio Source
- */
-
-struct ausrc_st {
-	const struct ausrc *as;
-};
-
-
-/*
  * Audio Stream
  */
 

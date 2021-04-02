@@ -33,6 +33,7 @@
 /** Audio Loop */
 struct audio_loop {
 	struct aubuf *aubuf;
+	const struct ausrc *as;
 	struct ausrc_st *ausrc;
 	struct auplay_st *auplay;
 	struct lock *lock;
@@ -74,7 +75,7 @@ static int print_summary(struct re_printf *pf, struct audio_loop *al)
 
 	/* Source */
 	if (al->ausrc) {
-		struct ausrc *as = ausrc_get(al->ausrc);
+		const struct ausrc *as = al->as;
 		const char *name = as->name;
 		const struct stats *stats = &al->stats_src;
 		double dur;
@@ -329,6 +330,8 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint8_t ch)
 			cfg->audio.src_dev, err);
 		return err;
 	}
+
+	al->as = ausrc_find(baresip_ausrcl(), cfg->audio.src_mod);
 
 	return err;
 }

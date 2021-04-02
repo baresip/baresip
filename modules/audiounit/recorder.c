@@ -14,7 +14,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
 	struct audiosess_st *sess;
 	AudioUnit au_in;
 	AudioUnit au_conv;
@@ -220,7 +219,6 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 	st->ch  = prm->ch;

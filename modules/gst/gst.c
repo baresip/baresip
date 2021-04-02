@@ -45,8 +45,6 @@
  * </pre>
  */
 struct ausrc_st {
-	const struct ausrc *as;     /**< Inheritance             */
-
 	pthread_t tid;              /**< Thread ID               */
 	bool run;                   /**< Running flag            */
 	bool eos;                   /**< Reached end of stream   */
@@ -450,7 +448,6 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = as;
 	st->rh   = rh;
 	st->errh = errh;
 	st->arg  = arg;

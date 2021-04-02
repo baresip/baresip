@@ -38,8 +38,6 @@ enum channels {
 };
 
 struct ausrc_st {
-	const struct ausrc *as;  /* base class */
-
 	uint32_t ptime;
 	size_t sampc;
 	bool run;
@@ -194,7 +192,6 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = as;
 	st->rh   = rh;
 	st->errh = errh;
 	st->arg  = arg;
