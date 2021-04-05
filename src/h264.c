@@ -126,6 +126,19 @@ int h264_nal_send(bool first, bool last,
 }
 
 
+/**
+ * Packetize an H.264 bitstream with one or more NAL units
+ * with Annex-B startcode (3-byte or 4-byte startcode)
+ *
+ * @param rtp_ts  RTP timestamp
+ * @param buf     Input buffer
+ * @param len     Buffer length
+ * @param pktsize Maximum RTP packet size
+ * @param pkth    Packet handler
+ * @param arg     Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 int h264_packetize(uint64_t rtp_ts, const uint8_t *buf, size_t len,
 		   size_t pktsize, videnc_packet_h *pkth, void *arg)
 {
