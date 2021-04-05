@@ -32,6 +32,11 @@
  */
 
 
+enum {
+	VIDEO_SRATE = 90000
+};
+
+
 /** Video Statistics */
 struct vstat {
 	uint64_t tsamp;
@@ -435,7 +440,7 @@ static int print_stats(struct re_printf *pf, const struct video_loop *vl)
 		double avg_pktrate;
 		double dur;
 
-		dur = timestamp_state_duration(&vl->ts_rtp, 90000);
+		dur = timestamp_state_duration(&vl->ts_rtp, VIDEO_SRATE);
 		avg_bitrate = 8.0 * (double)vl->stats.enc_bytes / dur;
 		avg_pktrate = (double)vl->stats.enc_packets / dur;
 
