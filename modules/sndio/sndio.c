@@ -30,7 +30,6 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	const struct auplay *ap;  /* pointer to base-class */
 	struct sio_hdl *hdl;
 	pthread_t thread;
 	int16_t *sampv;
@@ -247,7 +246,6 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if ((st = mem_zalloc(sizeof(*st), auplay_destructor)) == NULL)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 	st->hdl = sio_open(name, SIO_PLAY, 0);

@@ -13,8 +13,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
-
 	pa_simple *s;
 	pthread_t thread;
 	bool run;
@@ -107,7 +105,6 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 	st->fmt = prm->fmt;
