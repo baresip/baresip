@@ -17,7 +17,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;  /* pointer to base-class (inheritance) */
 	pthread_t thread;
 	bool run;
 	void *sampv;
@@ -121,7 +120,6 @@ int i2s_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		return ENOMEM;
 
 	st->prm = *prm;
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 

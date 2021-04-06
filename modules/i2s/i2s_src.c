@@ -17,7 +17,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;  /* pointer to base-class (inheritance) */
 	pthread_t thread;
 	bool run;
 	void *sampv;
@@ -132,7 +131,6 @@ int i2s_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		return ENOMEM;
 
 	st->prm = *prm;
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 

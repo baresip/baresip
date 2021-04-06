@@ -97,8 +97,6 @@ DEFINE_GUID(CLSID_SampleGrabber, 0xc1f400a0, 0x3f08, 0x11d3,
 class Grabber;
 
 struct vidsrc_st {
-	const struct vidsrc *vs;  /* inheritance */
-
 	ICaptureGraphBuilder2 *capture;
 	IBaseFilter *grabber_filter;
 	IBaseFilter *dev_filter;
@@ -500,8 +498,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	err = get_device(st, dev);
 	if (err)
 		goto out;
-
-	st->vs = vs;
 
 	st->size   = *size;
 	st->frameh = frameh;

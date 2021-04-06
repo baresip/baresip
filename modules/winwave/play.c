@@ -17,8 +17,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
-
 	struct dspbuf bufs[WRITE_BUFFERS];
 	int pos;
 	HWAVEOUT waveout;
@@ -238,7 +236,6 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 	st->fmt = prm->fmt;

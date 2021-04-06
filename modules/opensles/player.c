@@ -16,7 +16,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
 	auplay_write_h *wh;
 	void *arg;
 	int16_t *sampv[N_PLAY_QUEUE_BUFFERS];
@@ -171,7 +170,6 @@ int opensles_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 

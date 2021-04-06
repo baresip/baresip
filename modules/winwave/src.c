@@ -17,8 +17,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
-
 	struct dspbuf bufs[READ_BUFFERS];
 	int pos;
 	HWAVEIN wavein;
@@ -238,7 +236,6 @@ int winwave_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 

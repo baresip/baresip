@@ -17,8 +17,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
-
 	int16_t *sampv[N_REC_QUEUE_BUFFERS];
 	size_t   sampc;
 	uint8_t  bufferId;
@@ -185,7 +183,6 @@ int opensles_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 
