@@ -11,8 +11,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;  /* pointer to base-class (inheritance) */
-
 	struct auplay_prm prm;
 	float *sampv;
 	size_t sampc;             /* includes number of channels */
@@ -252,7 +250,6 @@ int jack_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		return ENOMEM;
 
 	st->prm = *prm;
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 

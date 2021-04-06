@@ -35,7 +35,6 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
 	PaStream *stream_wr;
 	auplay_write_h *wh;
 	void *arg;
@@ -280,7 +279,6 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 	st->ch  = prm->ch;

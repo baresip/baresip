@@ -36,7 +36,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
 	pthread_t thread;
 	bool run;
 	int fd;
@@ -49,7 +48,6 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
 	pthread_t thread;
 	bool run;
 	int fd;
@@ -273,8 +271,6 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	st->as = as;
-
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, record_thread, st);
 	if (err) {
@@ -330,8 +326,6 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	err = oss_reset(st->fd, prm->srate, prm->ch, (int)st->sampc, 0);
 	if (err)
 		goto out;
-
-	st->ap = ap;
 
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, play_thread, st);

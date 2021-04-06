@@ -79,15 +79,6 @@ struct account {
 
 
 /*
- * Audio Player
- */
-
-struct auplay_st {
-	struct auplay *ap;
-};
-
-
-/*
  * Audio Stream
  */
 

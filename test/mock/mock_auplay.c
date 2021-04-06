@@ -10,8 +10,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
-
 	struct tmr tmr;
 	struct auplay_prm prm;
 	void *sampv;
@@ -69,7 +67,6 @@ static int mock_auplay_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap   = ap;
 	st->prm  = *prm;
 	st->wh   = wh;
 	st->arg  = arg;

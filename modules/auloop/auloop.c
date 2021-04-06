@@ -35,6 +35,7 @@ struct audio_loop {
 	struct aubuf *aubuf;
 	const struct ausrc *as;
 	struct ausrc_st *ausrc;
+	const struct auplay *ap;
 	struct auplay_st *auplay;
 	struct lock *lock;
 	struct tmr tmr;
@@ -114,7 +115,7 @@ static int print_summary(struct re_printf *pf, struct audio_loop *al)
 
 	/* Player */
 	if (al->auplay) {
-		struct auplay *ap = auplay_get(al->auplay);
+		const struct auplay *ap = al->ap;
 		const char *name = ap->name;
 		const struct stats *stats = &al->stats_play;
 		double dur;
@@ -315,6 +316,8 @@ static int auloop_reset(struct audio_loop *al, uint32_t srate, uint8_t ch)
 			err);
 		return err;
 	}
+
+	al->ap = auplay_find(baresip_auplayl(), cfg->audio.play_mod);
 
 	ausrc_prm.srate      = al->srate;
 	ausrc_prm.ch         = al->ch;

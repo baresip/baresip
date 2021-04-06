@@ -33,7 +33,6 @@ int aubridge_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->prm = *prm;
 	st->wh  = wh;
 	st->arg = arg;
