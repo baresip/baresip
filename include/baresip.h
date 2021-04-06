@@ -546,7 +546,6 @@ int auplay_alloc(struct auplay_st **stp, struct list *auplayl,
 		 const char *name,
 		 struct auplay_prm *prm, const char *device,
 		 auplay_write_h *wh, void *arg);
-struct auplay *auplay_get(struct auplay_st *st);
 
 
 /*

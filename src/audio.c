@@ -139,6 +139,7 @@ struct autx {
  \endverbatim
  */
 struct aurx {
+	const struct auplay *ap;
 	struct auplay_st *auplay;     /**< Audio Player                    */
 	struct auplay_prm auplay_prm; /**< Audio Player parameters         */
 	const struct aucodec *ac;     /**< Current audio decoder           */
@@ -1486,7 +1487,7 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *aurx)
 		return 0;
 
 	err = re_hprintf(pf, "audio rx pipeline:  %10s",
-			 aurx->auplay ? aurx->auplay->ap->name : "(play)");
+			 aurx->ap ? aurx->ap->name : "(play)");
 
 	for (le = list_head(&aurx->filtl); le; le = le->next) {
 		struct aufilt_dec_st *st = le->data;
@@ -1667,6 +1668,8 @@ static int start_player(struct aurx *rx, struct audio *a,
 				rx->module, rx->device, err);
 			return err;
 		}
+
+		rx->ap = auplay_find(auplayl, rx->module);
 
 		rx->auplay_prm = prm;
 
@@ -2326,7 +2329,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  rx->stats.aubuf_underrun
 			  );
 	err |= re_hprintf(pf, "       player: %s,%s %s\n",
-			  rx->auplay ? rx->auplay->ap->name : "none",
+			  rx->ap ? rx->ap->name : "none",
 			  rx->device,
 			  aufmt_name(rx->play_fmt));
 	err |= re_hprintf(pf, "       n_discard:%llu\n",

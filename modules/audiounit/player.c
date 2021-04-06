@@ -13,7 +13,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
 	struct audiosess_st *sess;
 	struct auplay_prm prm;
 	AudioUnit au;
@@ -121,7 +120,6 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 

@@ -15,7 +15,6 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
 	struct device *dev;
 	struct auplay_prm prm;
 	auplay_write_h *wh;

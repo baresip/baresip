@@ -16,7 +16,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
 	pthread_mutex_t mutex;
@@ -93,7 +92,6 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 
