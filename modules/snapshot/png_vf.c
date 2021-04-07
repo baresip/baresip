@@ -121,7 +121,7 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 
 	info("png: wrote %s\n", path);
 
-	ua_event(NULL, UA_EVENT_SNAPSHOT, NULL, "%s", path);
+	ua_event(NULL, UA_EVENT_MODULE, NULL, "snapshot,wrote,%s", path);
 
  out:
 	/* Finish writing. */
