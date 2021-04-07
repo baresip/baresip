@@ -40,6 +40,7 @@ static void destructor(void *arg)
 	mem_deref(acc->ausrc_dev);
 	mem_deref(acc->auplay_mod);
 	mem_deref(acc->auplay_dev);
+	mem_deref(acc->cert);
 	mem_deref(acc->extra);
 }
 
@@ -119,6 +120,30 @@ static int media_decode(struct account *acc, const struct pl *prm)
 	err |= param_dstr(&acc->mencid,  prm, "mediaenc");
 	err |= param_dstr(&acc->mnatid,  prm, "medianat");
 	err |= param_u32(&acc->ptime,    prm, "ptime"   );
+
+	return err;
+}
+
+
+/* Decode cert parameter */
+static int cert_decode(struct account *acc, const struct pl *prm)
+{
+	int err = 0;
+
+	if (!acc || !prm)
+		return EINVAL;
+
+	err = param_dstr(&acc->cert, prm, "cert");
+	if (err)
+		return err;
+
+	if (!str_isset(acc->cert))
+		return 0;
+
+	if (!fs_isfile(acc->cert)) {
+		warning("account: certificate %s not found\n", acc->cert);
+		err = errno;
+	}
 
 	return err;
 }
@@ -494,6 +519,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		}
 	}
 
+	err |= cert_decode(acc, &acc->laddr.params);
 	err |= extra_decode(acc, &acc->laddr.params);
 
  out:
@@ -1574,6 +1600,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	}
 	err |= re_hprintf(pf, " call_transfer:%s\n",
 			  account_call_transfer(acc));
+	err |= re_hprintf(pf, " cert:         %s\n", acc->cert);
 	err |= re_hprintf(pf, " extra:        %s\n",
 			  acc->extra ? acc->extra : "none");
 
