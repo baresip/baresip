@@ -178,6 +178,7 @@ struct aurx {
 #ifdef HAVE_PTHREAD
 	struct {
 		pthread_t tid;
+		bool start;
 		bool run;
 		pthread_cond_t cond;
 		pthread_mutex_t mutex;
@@ -306,6 +307,7 @@ static void stop_rx(struct aurx *rx)
 
 	/* audio player must be stopped first */
 #ifdef HAVE_PTHREAD
+	rx->thr.start = false;
 	if (rx->thr.run) {
 		rx->thr.run = false;
 		pthread_cond_signal(&rx->thr.cond);
@@ -829,7 +831,7 @@ static void auplay_write_handler2(struct auframe *af, void *arg)
 	rx->wcnt++;
 #ifdef HAVE_PTHREAD
 	pthread_mutex_lock(&a->rx.thr.mutex);
-	if (!rx->thr.run) {
+	if (!rx->thr.run && rx->thr.start) {
 		rx->thr.run = true;
 		err = pthread_create(&rx->thr.tid, NULL, rx_thread, a);
 		if (err) {
@@ -1675,6 +1677,8 @@ static int start_player(struct aurx *rx, struct audio *a,
 
 		info("audio: player started with sample format %s\n",
 		     aufmt_name(rx->play_fmt));
+
+		rx->thr.start = rx->jbtype == JBUF_ADAPTIVE;
 	}
 
 	return 0;
@@ -2461,6 +2465,8 @@ int audio_set_player(struct audio *a, const char *mod, const char *device)
 				mod, device, err);
 			return err;
 		}
+
+		rx->thr.start = rx->jbtype == JBUF_ADAPTIVE;
 	}
 
 	return 0;
