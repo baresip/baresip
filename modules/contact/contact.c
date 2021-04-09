@@ -248,7 +248,6 @@ static const struct cmd cmdv[] = {
 
 static int write_template(const char *file)
 {
-	const char *user, *domain;
 	FILE *f = NULL;
 
 	info("contact: creating contacts template %s\n", file);
@@ -256,11 +255,6 @@ static int write_template(const char *file)
 	f = fopen(file, "w");
 	if (!f)
 		return errno;
-
-	user = sys_username();
-	if (!user)
-		user = "user";
-	domain = "domain";
 
 	(void)re_fprintf(f,
 			 "#\n"
@@ -275,14 +269,13 @@ static int write_template(const char *file)
 			 "\n"
 			 "\n"
 			 "\"Music Server\" <sip:music@iptel.org>\n"
-			 "\"%s\" <sip:%s@%s>;presence=p2p\n"
+			 "\"User\" <sip:user@domain>;presence=p2p\n"
 			 "\n"
 			 "# Access rules\n"
 			 "#\"Catch All\" <sip:*@*>;access=block\n"
 			 "\"Good Friend\" <sip:good@friend.com>;access=allow\n"
 			 "\n"
-			 ,
-			 user, user, domain);
+			 );
 
 	if (f)
 		(void)fclose(f);
