@@ -30,7 +30,6 @@
 static int account_write_template(const char *file)
 {
 	FILE *f = NULL;
-	const char *login, *pass, *domain;
 	int r, err = 0;
 
 	info("account: creating accounts template %s\n", file);
@@ -38,14 +37,6 @@ static int account_write_template(const char *file)
 	f = fopen(file, "w");
 	if (!f)
 		return errno;
-
-	login = sys_username();
-	if (!login) {
-		login = "user";
-	}
-
-	pass = "PASSWORD";
-	domain = "domain";
 
 	r = re_fprintf(f,
 			 "#\n"
@@ -93,7 +84,8 @@ static int account_write_template(const char *file)
 			 "[2001:df8:0:16:216:6fff:fe91:614c]:5070"
 			 ";transport=tcp>;auth_pass=secret\n"
 			 "#\n"
-		       "#<sip:%s@%s>;auth_pass=%s\n", login, domain, pass);
+		       "\n"
+		       "#<sip:user@domain>;auth_pass=PASSWORD\n");
 	if (r < 0)
 		err = ENOMEM;
 
