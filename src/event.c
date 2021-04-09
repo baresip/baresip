@@ -305,6 +305,49 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 
 
 /**
+ * Send a UA_EVENT_MODULE event with a general format for modules
+ *
+ * @param module Module name
+ * @param event  Event name
+ * @param ua     User-Agent object (optional)
+ * @param call   Call object (optional)
+ * @param fmt    Formatted arguments
+ * @param ...    Variable arguments
+ */
+void module_event(const char *module, const char *event, struct ua *ua,
+		struct call *call, const char *fmt, ...)
+{
+	struct le *le;
+	char buf[256];
+	char *p = buf;
+	size_t len = sizeof(buf);
+	va_list ap;
+
+	if (!module || !event)
+		return;
+
+	if (-1 == re_snprintf(buf, len, "%s,%s,", module, event))
+		return;
+
+	p = buf + str_len(buf);
+	len -= str_len(buf);
+
+	va_start(ap, fmt);
+	(void)re_vsnprintf(p, len, fmt, ap);
+	va_end(ap);
+
+	/* send event to all clients */
+	le = ehl.head;
+	while (le) {
+		struct ua_eh *eh = le->data;
+		le = le->next;
+
+		eh->h(ua, UA_EVENT_MODULE, call, buf, eh->arg);
+	}
+}
+
+
+/**
  * Get the name of the User-Agent event
  *
  * @param ev User-Agent event
