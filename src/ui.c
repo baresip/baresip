@@ -114,6 +114,8 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 	if (pl->l > 1 && ctx)
 		err |= cmd_process(commands, &ctx, '\n', pf, NULL);
 
+	mem_deref(ctx);
+
 	return err;
 }
 
