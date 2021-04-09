@@ -1484,6 +1484,8 @@ int  uag_event_register(ua_event_h *eh, void *arg);
 void uag_event_unregister(ua_event_h *eh);
 void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...);
+void module_event(const char *module, const char *event, struct ua *ua,
+		struct call *call, const char *fmt, ...);
 const char  *uag_event_str(enum ua_event ev);
 
 
