@@ -147,7 +147,7 @@ static void menu_on_dial_contact(GtkMenuItem *menuItem, gpointer arg)
 	struct gtk_mod *mod = arg;
 	const char *uri = gtk_menu_item_get_label(menuItem);
 	/* Queue dial from the main thread */
-	mqueue_push(mod->mq, MQ_CONNECT, (char *)uri);
+	gtk_mod_connect(mod, uri);
 }
 
 
