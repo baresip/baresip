@@ -22,7 +22,7 @@ struct vumeter_dec {
 };
 
 /* Main menu */
-void gtk_mod_connect(struct gtk_mod *, const char *uri);
+int gtk_mod_connect(struct gtk_mod *, const char *uri);
 void gtk_mod_call_window_closed(struct gtk_mod *, struct call_window *);
 
 /* Call Window */

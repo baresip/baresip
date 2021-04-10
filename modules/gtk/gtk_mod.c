@@ -641,13 +641,35 @@ static gboolean status_icon_on_button_press(GtkStatusIcon *status_icon,
 }
 
 
-void gtk_mod_connect(struct gtk_mod *mod, const char *uri)
+int gtk_mod_connect(struct gtk_mod *mod, const char *uri)
 {
-	if (!mod)
-		return;
+	struct mbuf *uribuf = NULL;
+	char *uri_copy = NULL;
+	int err = 0;
 
-	mqueue_push(mod->mq, MQ_CONNECT, (char *)uri);
+	if (!mod)
+		return ENOMEM;
+
+	uribuf = mbuf_alloc(64);
+	if (!uribuf)
+		return ENOMEM;
+
+	err = account_uri_complete(ua_account(mod->ua_cur), uribuf, uri);
+	if (err)
+		return EINVAL;
+
+	uribuf->pos = 0;
+	err = mbuf_strdup(uribuf, &uri_copy, uribuf->end);
+	if (err)
+		goto out;
+
+	err = mqueue_push(mod->mq, MQ_CONNECT, uri_copy);
+
+out:
+	mem_deref(uribuf);
+	return err;
 }
+
 
 bool gtk_mod_clean_number(struct gtk_mod *mod)
 {
@@ -711,6 +733,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 		if (err) {
 			ua_hangup(ua, call, 500, "Server Error");
 		}
+		mem_deref(data);
 		break;
 
 	case MQ_HANGUP:
@@ -764,7 +787,7 @@ static void *gtk_thread(void *arg)
 	gtk_init(0, NULL);
 
 	g_set_application_name("baresip");
-	mod->app = g_application_new("com.creytiv.baresip",
+	mod->app = g_application_new("com.baresip.baresip",
 				     G_APPLICATION_FLAGS_NONE);
 
 	g_application_register(G_APPLICATION (mod->app), NULL, &err);
