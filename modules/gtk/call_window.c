@@ -243,6 +243,7 @@ static gboolean call_on_key_press(GtkWidget *window, GdkEvent *ev,
 	case '1': case '2': case '3':
 	case '4': case '5': case '6':
 	case '7': case '8': case '9': case '0':
+	case 'a': case 'b': case 'c': case 'd':
 		re_snprintf(wavfile, sizeof wavfile, "sound%c.wav", key);
 		break;
 	case '*':
