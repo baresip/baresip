@@ -10,6 +10,7 @@
 #   USE_AMR           Adaptive Multi-Rate (AMR) audio codec
 #   USE_APTX          aptX audio codec
 #   USE_AUDIOUNIT     AudioUnit audio driver for OSX/iOS
+#   USE_AUTOTEST      Automatic test module
 #   USE_AVCAPTURE     AVFoundation video capture for OSX/iOS
 #   USE_AVCODEC       avcodec video codec module
 #   USE_AVFORMAT      avformat video source module
@@ -67,6 +68,7 @@ USE_G711  := 1
 USE_L16   := 1
 USE_DBUS  := 1
 USE_HTTPREQ  := 1
+USE_AUTOTEST := 1
 
 ifneq ($(OS),win32)
 
@@ -319,6 +321,9 @@ MODULES   += aptx
 endif
 ifneq ($(USE_AUDIOUNIT),)
 MODULES   += audiounit
+endif
+ifneq ($(USE_AUTOTEST),)
+MODULES   += autotest
 endif
 ifneq ($(USE_AVCAPTURE),)
 MODULES   += avcapture
