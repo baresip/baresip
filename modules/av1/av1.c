@@ -1,7 +1,7 @@
 /**
  * @file av1.c AV1 Video Codec
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>

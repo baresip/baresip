@@ -2,7 +2,7 @@
  * @file rtcpsummary.c RTCP summary module
  * Output RTCP stats at the end of a call if there are any
  *
- *  Copyright (C) 2010 - 2018 Creytiv.com
+ *  Copyright (C) 2010 - 2018 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>

@@ -1,7 +1,7 @@
 /**
  * @file amr.c Adaptive Multi-Rate (AMR) audio codec
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #ifdef AMR_NB

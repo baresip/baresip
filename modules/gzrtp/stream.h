@@ -1,7 +1,7 @@
 /**
  * @file stream.h  GNU ZRTP: Stream class
  *
- * Copyright (C) 2010 - 2017 Creytiv.com
+ * Copyright (C) 2010 - 2017 Alfred E. Heggestad
  */
 #ifndef __STREAM_H
 #define __STREAM_H

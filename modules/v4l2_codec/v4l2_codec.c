@@ -1,7 +1,7 @@
 /**
  * @file v4l2_codec.c  Video4Linux2 video-source and video-codec
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #include <unistd.h>

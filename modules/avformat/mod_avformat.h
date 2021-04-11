@@ -1,7 +1,7 @@
 /**
  * @file mod_avformat.h  libavformat media-source -- internal interface
  *
- * Copyright (C) 2010 - 2020 Creytiv.com
+ * Copyright (C) 2010 - 2020 Alfred E. Heggestad
  */
 
 

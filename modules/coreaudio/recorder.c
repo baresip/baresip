@@ -1,7 +1,7 @@
 /**
  * @file coreaudio/recorder.c  Apple Coreaudio sound driver - recorder
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <AudioToolbox/AudioQueue.h>
 #include <unistd.h>

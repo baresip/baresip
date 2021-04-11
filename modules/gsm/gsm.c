@@ -1,7 +1,7 @@
 /**
  * @file gsm.c  GSM Audio Codec
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #include <gsm.h> /* please report if you have problems finding this file */
 #include <re.h>

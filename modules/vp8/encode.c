@@ -1,7 +1,7 @@
 /**
  * @file vp8/encode.c VP8 Encode
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <string.h>

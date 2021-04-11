@@ -2,7 +2,7 @@
  * @file gtk/gtk_mod.c GTK+ UI module
  *
  * Copyright (C) 2015 Charles E. Lehner
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>

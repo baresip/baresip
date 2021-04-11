@@ -1,7 +1,7 @@
 /**
  * @file pulse/recorder.c  Pulseaudio sound driver - recorder
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <pulse/pulseaudio.h>
 #include <pulse/simple.h>

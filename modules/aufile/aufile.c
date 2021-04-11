@@ -1,7 +1,7 @@
 /**
  * @file aufile.c WAV Audio Source
  *
- * Copyright (C) 2015 Creytiv.com
+ * Copyright (C) 2015 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1

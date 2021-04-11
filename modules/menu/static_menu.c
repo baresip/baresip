@@ -1,7 +1,7 @@
 /**
  * @file static_menu.c Static menu related functions
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <re.h>

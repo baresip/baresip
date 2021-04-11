@@ -1,7 +1,7 @@
 /**
  * @file b2bua.c Back-to-Back User-Agent (B2BUA) module
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>

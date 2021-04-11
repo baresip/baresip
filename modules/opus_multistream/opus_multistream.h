@@ -1,7 +1,7 @@
 /**
  * @file opus_multistream.h Private Opus Multistream Interface
  *
- * Copyright (C) 2019 Creytiv.com
+ * Copyright (C) 2019 Alfred E. Heggestad
  */
 
 

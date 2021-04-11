@@ -1,7 +1,7 @@
 /**
  * @file menu.c  Interactive menu
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <time.h>

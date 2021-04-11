@@ -1,7 +1,7 @@
 /**
  * @file evdev.c Input event device UI module
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <unistd.h>
 #include <sys/ioctl.h>

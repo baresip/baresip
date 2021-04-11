@@ -1,7 +1,7 @@
 /**
  * @file sndio.c  SndIO sound driver
  *
- * Copyright (C) 2014 Creytiv.com
+ * Copyright (C) 2014 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <string.h>

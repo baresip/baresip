@@ -1,7 +1,7 @@
 /**
  * @file gst/gst.c  Gstreamer 1.0 playbin pipeline
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #define _POSIX_C_SOURCE 199309L

@@ -1,7 +1,7 @@
 /**
  * @file mqtt.c Message Queue Telemetry Transport (MQTT) client
  *
- * Copyright (C) 2017 Creytiv.com
+ * Copyright (C) 2017 Alfred E. Heggestad
  */
 
 #include <mosquitto.h>

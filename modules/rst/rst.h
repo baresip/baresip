@@ -1,7 +1,7 @@
 /**
  * @file rst.h MP3/ICY HTTP AV Source
  *
- * Copyright (C) 2011 Creytiv.com
+ * Copyright (C) 2011 Alfred E. Heggestad
  */
 
 

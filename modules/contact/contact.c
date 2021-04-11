@@ -1,7 +1,7 @@
 /**
  * @file modules/contact/contact.c  Contacts module
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>

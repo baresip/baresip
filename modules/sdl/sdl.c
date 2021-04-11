@@ -1,7 +1,7 @@
 /**
  * @file sdl/sdl.c  Simple DirectMedia Layer module for SDL v2.0
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <SDL2/SDL.h>

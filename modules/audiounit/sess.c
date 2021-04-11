@@ -1,7 +1,7 @@
 /**
  * @file sess.c  AudioUnit sound driver - session
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>

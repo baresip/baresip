@@ -1,7 +1,7 @@
 /**
  * @file gst_video/gst_video.h  Gstreamer video pipeline -- internal API
  *
- * Copyright (C) 2010 - 2014 Creytiv.com
+ * Copyright (C) 2010 - 2014 Alfred E. Heggestad
  * Copyright (C) 2014 Fadeev Alexander
  */
 

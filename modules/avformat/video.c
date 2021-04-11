@@ -1,7 +1,7 @@
 /**
  * @file avformat/video.c  libavformat media-source -- video
  *
- * Copyright (C) 2010 - 2020 Creytiv.com
+ * Copyright (C) 2010 - 2020 Alfred E. Heggestad
  */
 
 #include <re.h>

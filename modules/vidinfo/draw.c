@@ -1,7 +1,7 @@
 /**
  * @file draw.c  Video draw functions
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>

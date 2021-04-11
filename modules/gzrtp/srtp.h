@@ -1,7 +1,7 @@
 /**
  * @file srtp.h  GNU ZRTP: SRTP processing
  *
- * Copyright (C) 2010 - 2017 Creytiv.com
+ * Copyright (C) 2010 - 2017 Alfred E. Heggestad
  */
 #ifndef __SRTP_H
 #define __SRTP_H

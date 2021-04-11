@@ -1,7 +1,7 @@
 /**
  * @file gst_video/encode.c  Video codecs using Gstreamer video pipeline
  *
- * Copyright (C) 2010 - 2013 Creytiv.com
+ * Copyright (C) 2010 - 2013 Alfred E. Heggestad
  * Copyright (C) 2014 Fadeev Alexander
  * Copyright (C) 2015 Thomas Strobel
  */

@@ -1,7 +1,7 @@
 /**
  * @file opus_multistream/encode.c Opus Multistream Encode
  *
- * Copyright (C) 2019 Creytiv.com
+ * Copyright (C) 2019 Alfred E. Heggestad
  */
 
 #include <re.h>

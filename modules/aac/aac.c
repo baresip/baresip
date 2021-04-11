@@ -1,7 +1,7 @@
 /**
  * @file aac.c MPEG-4 AAC Audio Codec
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  * Copyright (C) 2019 Hessischer Rundfunk
  */
 

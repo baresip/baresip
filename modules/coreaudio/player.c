@@ -1,7 +1,7 @@
 /**
  * @file coreaudio/player.c  Apple Coreaudio sound driver - player
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <AudioToolbox/AudioQueue.h>
 #include <pthread.h>

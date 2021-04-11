@@ -1,7 +1,7 @@
 /**
  * @file opus_multistream.c Opus Multistream Audio Codec
  *
- * Copyright (C) 2019 Creytiv.com
+ * Copyright (C) 2019 Alfred E. Heggestad
  */
 
 #include <re.h>

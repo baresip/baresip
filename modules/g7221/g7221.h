@@ -1,7 +1,7 @@
 /**
  * @file g7221.h Private G.722.1 Interface
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 struct g7221_aucodec {

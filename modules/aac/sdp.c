@@ -1,7 +1,7 @@
 /**
  * @file aac/sdp.c MPEG-4 AAC SDP Functions
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  * Copyright (C) 2019 Hessischer Rundfunk
  */
 

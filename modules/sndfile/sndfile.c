@@ -1,7 +1,7 @@
 /**
  * @file sndfile.c  Audio dumper using libsndfile
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <sndfile.h>
 #include <time.h>

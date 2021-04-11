@@ -1,7 +1,7 @@
 /**
  * @file rst/video.c MP3/ICY HTTP Video Source
  *
- * Copyright (C) 2011 Creytiv.com
+ * Copyright (C) 2011 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1

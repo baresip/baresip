@@ -1,7 +1,7 @@
 /**
  * @file subscribe.c MQTT client -- subscribe
  *
- * Copyright (C) 2017 Creytiv.com
+ * Copyright (C) 2017 Alfred E. Heggestad
  */
 
 #include <mosquitto.h>

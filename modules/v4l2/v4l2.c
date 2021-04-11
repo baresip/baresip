@@ -1,7 +1,7 @@
 /**
  * @file v4l2.c  Video4Linux2 video-source
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1

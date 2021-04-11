@@ -1,7 +1,7 @@
 /**
  * @file xga_font_data.c  CGA Font
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 
 #include <stdint.h>
