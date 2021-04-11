@@ -20,11 +20,11 @@
  *
  \verbatim
  # With qdbus of Qt.
- qdbus com.creytiv.Baresip /baresip com.creytiv.Baresip.invoke reginfo
+ qdbus com.github.Baresip /baresip com.github.Baresip.invoke reginfo
 
  # With gdbus of GLib.
- gdbus call -e -d com.creytiv.Baresip -o /baresip \
-	-m com.creytiv.Baresip.invoke reginfo
+ gdbus call -e -d com.github.Baresip -o /baresip \
+	-m com.github.Baresip.invoke reginfo
  \endverbatim
  *
  *
