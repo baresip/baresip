@@ -787,7 +787,7 @@ static void *gtk_thread(void *arg)
 	gtk_init(0, NULL);
 
 	g_set_application_name("baresip");
-	mod->app = g_application_new("com.baresip.baresip",
+	mod->app = g_application_new("com.github.baresip",
 				     G_APPLICATION_FLAGS_NONE);
 
 	g_application_register(G_APPLICATION (mod->app), NULL, &err);
