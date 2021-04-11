@@ -1,7 +1,7 @@
 /**
  * @file gzrtp.cpp  GNU ZRTP: Media Path Key Agreement for Unicast Secure RTP
  *
- * Copyright (C) 2010 - 2017 Creytiv.com
+ * Copyright (C) 2010 - 2017 Alfred E. Heggestad
  */
 #include <stdint.h>
 
