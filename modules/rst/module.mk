@@ -1,7 +1,7 @@
 #
 # module.mk
 #
-# Copyright (C) 2011 Creytiv.com
+# Copyright (C) 2011 Alfred E. Heggestad
 #
 
 MOD		:= rst

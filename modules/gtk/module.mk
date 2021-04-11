@@ -1,7 +1,7 @@
 #
 # module.mk - GTK+ Menu-based UI
 #
-# Copyright (C) 2010 Creytiv.com
+# Copyright (C) 2010 Alfred E. Heggestad
 # Copyright (C) 2015 Charles E. Lehner
 #
 

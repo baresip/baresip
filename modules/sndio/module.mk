@@ -1,7 +1,7 @@
 #
 # module.mk
 #
-# Copyright (C) 2014 Creytiv.com
+# Copyright (C) 2014 Alfred E. Heggestad
 #
 
 MOD		:= sndio

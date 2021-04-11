@@ -1,7 +1,7 @@
 #
 # mod.mk
 #
-# Copyright (C) 2010 Creytiv.com
+# Copyright (C) 2010 Alfred E. Heggestad
 #
 
 $(MOD)_OBJS     := $(patsubst %.c,$(BUILD)/modules/$(MOD)/%.o,\
