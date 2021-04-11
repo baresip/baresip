@@ -751,14 +751,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (lostc)
 		request_picture_update(&v->vrx);
 
-	if (!mb)
-		goto out;
-
-	/* Video payload-type changed? */
-	if (hdr->pt == v->vrx.pt_rx)
-		goto out;
-
- out:
 	(void)video_stream_decode(&v->vrx, hdr, mb);
 }
 
