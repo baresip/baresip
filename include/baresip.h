@@ -1,7 +1,7 @@
 /**
  * @file baresip.h  Public Interface to Baresip
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #ifndef BARESIP_H__
