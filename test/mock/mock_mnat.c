@@ -1,7 +1,7 @@
 /**
  * @file mock/mock_mnat.c Mock media NAT-traversal
  *
- * Copyright (C) 2010 - 2018 Creytiv.com
+ * Copyright (C) 2010 - 2018 Alfred E. Heggestad
  */
 
 #include <re.h>

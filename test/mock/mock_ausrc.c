@@ -1,7 +1,7 @@
 /**
  * @file mock/mock_ausrc.c Mock audio source
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>

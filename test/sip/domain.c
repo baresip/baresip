@@ -1,7 +1,7 @@
 /**
  * @file sip/domain.c Mock SIP server -- domain handling
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <re.h>
 #include "sipsrv.h"

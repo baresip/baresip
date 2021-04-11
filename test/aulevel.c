@@ -1,7 +1,7 @@
 /**
  * @file test/aulevel.c  Baresip selftest -- audio levels
  *
- * Copyright (C) 2010 - 2017 Creytiv.com
+ * Copyright (C) 2010 - 2017 Alfred E. Heggestad
  */
 
 #include <re.h>

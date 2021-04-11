@@ -1,7 +1,7 @@
 /**
  * @file mock/mock_vidsrc.c Mock video source
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>

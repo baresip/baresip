@@ -1,7 +1,7 @@
 /**
  * @file sip/aor.c Mock SIP server -- SIP Address of Record
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>

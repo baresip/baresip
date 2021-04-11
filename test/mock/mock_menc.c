@@ -1,7 +1,7 @@
 /**
  * @file mock/mock_menc.c Mock media encryption
  *
- * Copyright (C) 2010 - 2018 Creytiv.com
+ * Copyright (C) 2010 - 2018 Alfred E. Heggestad
  */
 
 #include <string.h>

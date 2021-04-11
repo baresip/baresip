@@ -1,7 +1,7 @@
 /**
  * @file test/main.c  Selftest for Baresip core
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <getopt.h>
 #include <re.h>

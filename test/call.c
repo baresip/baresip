@@ -1,7 +1,7 @@
 /**
  * @file test/call.c  Baresip selftest -- call
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #include <string.h>
 #include <stdlib.h>

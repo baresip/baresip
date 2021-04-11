@@ -1,7 +1,7 @@
 /**
  * @file mock/dnssrv.c Mock DNS server
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>
