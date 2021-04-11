@@ -1,7 +1,7 @@
 /**
  * @file src/call.c  Call Control
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <stdio.h>
 #include <stdlib.h>

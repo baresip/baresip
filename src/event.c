@@ -1,7 +1,7 @@
 /**
  * @file src/event.c  Baresip event handling
  *
- * Copyright (C) 2017 Creytiv.com
+ * Copyright (C) 2017 Alfred E. Heggestad
  */
 
 #include <re.h>

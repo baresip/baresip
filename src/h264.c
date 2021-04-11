@@ -1,7 +1,7 @@
 /**
  * @file src/h264.c  H.264 video codec packetization (RFC 3984)
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>

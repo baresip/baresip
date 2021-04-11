@@ -1,7 +1,7 @@
 /**
  * @file mediadev.c  Media device
  *
- * Copyright (C) 2010 - 2018 Creytiv.com
+ * Copyright (C) 2010 - 2018 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>

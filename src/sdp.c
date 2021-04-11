@@ -1,7 +1,7 @@
 /**
  * @file src/sdp.c  SDP functions
  *
- * Copyright (C) 2011 Creytiv.com
+ * Copyright (C) 2011 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <re.h>

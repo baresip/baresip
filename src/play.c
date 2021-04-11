@@ -1,7 +1,7 @@
 /**
  * @file src/play.c  Audio-file player
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <string.h>
