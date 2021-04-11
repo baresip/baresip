@@ -44,6 +44,7 @@
 #   USE_PULSE         Pulseaudio audio driver
 #   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL           libSDL2 video output
+#   USE_SNAPSHOT      Snapshot video module
 #   USE_SNDFILE       sndfile wav dumper
 #   USE_SNDIO         sndio audo driver
 #   USE_SPEEX_PP      Speex preprocessor
@@ -156,6 +157,10 @@ USE_PULSE := $(shell pkg-config --exists libpulse && echo "yes")
 USE_SDL  := $(shell [ -f $(SYSROOT)/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT)/local/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT_ALT)/include/SDL2/SDl.h ] && echo "yes")
+USE_SNAPSHOT := $(shell [ -f $(SYSROOT)/include/png.h ] || \
+	[ -f $(SYSROOT)/local/include/png.h ] || \
+	[ -f $(SYSROOT_ALT)/include/png.h ] || \
+	[ -f $(SYSROOT_ALT)/usr/local/include/png.h ] && echo "yes")
 USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
 	[ -f $(SYSROOT)/local/include/sndfile.h ] || \
 	[ -f $(SYSROOT_ALT)/include/sndfile.h ] || \
@@ -280,6 +285,7 @@ MODULES   += menu
 MODULES   += mwi
 MODULES   += natpmp
 MODULES   += presence
+MODULES   += rtcpsummary
 MODULES   += selfview
 MODULES   += serreg
 MODULES   += srtp
@@ -417,6 +423,9 @@ MODULES   += pulse
 endif
 ifneq ($(USE_SDL),)
 MODULES   += sdl
+endif
+ifneq ($(USE_SNAPSHOT),)
+MODULES   += snapshot
 endif
 ifneq ($(USE_SNDFILE),)
 MODULES   += sndfile
