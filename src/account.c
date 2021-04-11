@@ -1529,7 +1529,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " dispname:     %s\n", acc->dispname);
 	err |= re_hprintf(pf, " answermode:   %s\n",
 			  answermode_str(acc->answermode));
-	err |= re_hprintf(pf, " sipans: %s\n", acc->sipans ? "yes" : "no");
+	err |= re_hprintf(pf, " sipans:       %s\n",
+			  acc->sipans ? "yes" : "no");
 	err |= re_hprintf(pf, " dtmfmode:     %s\n",
 			  dtmfmode_str(acc->dtmfmode));
 	if (!list_isempty(&acc->aucodecl)) {
