@@ -405,6 +405,7 @@ static void gst_destructor(void *arg)
 	mem_deref(st->aubuf);
 }
 
+
 static void timeout(void *arg)
 {
 	struct ausrc_st *st = arg;
@@ -422,6 +423,7 @@ static void timeout(void *arg)
 		}
 	}
 }
+
 
 static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct media_ctx **ctx,
