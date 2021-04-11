@@ -1,7 +1,7 @@
 #
 # Makefile
 #
-# Copyright (C) 2010 Creytiv.com
+# Copyright (C) 2010 Alfred E. Heggestad
 #
 #
 # Internal features:
@@ -249,7 +249,7 @@ libbaresip.pc:
 	@echo 'Name: libbaresip' >> libbaresip.pc
 	@echo 'Description: $(DESCR)' >> libbaresip.pc
 	@echo 'Version: '$(VERSION) >> libbaresip.pc
-	@echo 'URL: http://www.creytiv.com/baresip.html' >> libbaresip.pc
+	@echo 'URL: https://github.com/baresip/baresip' >> libbaresip.pc
 	@echo 'Libs: -L$${libdir} -lbaresip' >> libbaresip.pc
 	@echo 'Cflags: -I$${includedir}' >> libbaresip.pc
 
