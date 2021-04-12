@@ -4,6 +4,13 @@
  * Supports automatic repeated dialing and hangup via timers. The commands for
  * dialing and hangup can be specified by means of the registered commands.
  *
+ * E.g.:
+ * On host A:
+ * /autodial dial 10.1.0.215
+ *
+ * On host B with IP 10.1.0.215:
+ * /autohangupdelay 2000
+ *
  * Copyright (C) 2021 Commend.com - c.spielberger@commend.com
  */
 
