@@ -4,6 +4,11 @@
  * Copyright (C) 2015 Charles E. Lehner
  */
 
+#define CALL_INCOMING  0
+#define CALL_OUTGOING  1
+#define CALL_MISSED    2
+#define CALL_REJECTED  3
+
 struct gtk_mod;
 struct call_window;
 struct dial_dialog;
