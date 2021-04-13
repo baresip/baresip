@@ -199,7 +199,7 @@ static void add_history_menu_item(struct gtk_mod *mod, const char *uri,
 	re_snprintf(buf, sizeof buf,
 			"%s <%s>\n%04d-%02d-%02d %02d:%02d:%02d",
 			info, uri, ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday, ptm->tm_hour,
-                        ptm->tm_min, ptm->tm_sec);
+			ptm->tm_min, ptm->tm_sec);
 
 	item = gtk_image_menu_item_new_with_label(buf);
 	switch(call_type) {
@@ -207,32 +207,34 @@ static void add_history_menu_item(struct gtk_mod *mod, const char *uri,
 			gtk_image_menu_item_set_image(
 				GTK_IMAGE_MENU_ITEM(item),
 				gtk_image_new_from_icon_name(
-						"call-incoming", 32));
+//						"call-incoming", 32));
+						"go-next", 32));
 			break;
-                case CALL_OUTGOING:
-                        gtk_image_menu_item_set_image(
-                                GTK_IMAGE_MENU_ITEM(item),
-                                gtk_image_new_from_icon_name(
-                                                "call-outgoing", 32));
-                        break;
-                case CALL_MISSED:
-                        gtk_image_menu_item_set_image(
-                                GTK_IMAGE_MENU_ITEM(item),
-                                gtk_image_new_from_icon_name(
-                                                "call-missed", 32));
-                        break;
-                case CALL_REJECTED:
-                        gtk_image_menu_item_set_image(
-                                GTK_IMAGE_MENU_ITEM(item),
-                                gtk_image_new_from_icon_name(
-                                                "dialog-cancel", 32));
-                        break;
+		case CALL_OUTGOING:
+			gtk_image_menu_item_set_image(
+				GTK_IMAGE_MENU_ITEM(item),
+				gtk_image_new_from_icon_name(
+//						"call-outgoing", 32));
+						"go-previous", 32));
+			break;
+		case CALL_MISSED:
+			gtk_image_menu_item_set_image(
+				GTK_IMAGE_MENU_ITEM(item),
+				gtk_image_new_from_icon_name(
+						"call-stop", 32));
+			break;
+		case CALL_REJECTED:
+			gtk_image_menu_item_set_image(
+				GTK_IMAGE_MENU_ITEM(item),
+				gtk_image_new_from_icon_name(
+						"dialog-cancel", 32));
+			break;
 		default:
-                        gtk_image_menu_item_set_image(
-                                GTK_IMAGE_MENU_ITEM(item),
-                                gtk_image_new_from_icon_name(
-                                                "call-start", 32));
-                        break;
+			gtk_image_menu_item_set_image(
+				GTK_IMAGE_MENU_ITEM(item),
+				gtk_image_new_from_icon_name(
+						"call-start", 32));
+			break;
 	}
 	gtk_menu_shell_append(history_menu, item);
 	g_signal_connect(G_OBJECT(item), "activate",
@@ -602,7 +604,8 @@ static void ua_event_handler(struct ua *ua,
 		denotify_incoming_call(mod, call);
 		if (!call_is_outgoing(call) && call_state(call) != CALL_STATE_TERMINATED && call_state(call) != CALL_STATE_ESTABLISHED) {
 			add_history_menu_item(mod, call_peeruri(call), CALL_MISSED, call_peername(call));
-			gtk_status_icon_set_from_icon_name(mod->status_icon, "call-missed");
+//			gtk_status_icon_set_from_icon_name(mod->status_icon, "call-missed");
+			gtk_status_icon_set_from_icon_name(mod->status_icon, "call-stop");
 		}
 		break;
 
