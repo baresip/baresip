@@ -49,7 +49,7 @@ struct gtk_mod {
 	GtkWidget *app_menu;
 	GtkWidget *contacts_menu;
 	GtkWidget *accounts_menu;
-        GtkWidget *history_menu;
+	GtkWidget *history_menu;
 	GtkWidget *status_menu;
 	GSList *accounts_menu_group;
 	struct dial_dialog *dial_dialog;
@@ -154,18 +154,18 @@ static void menu_on_dial_contact(GtkMenuItem *menuItem, gpointer arg)
 
 static void menu_on_dial_history(GtkMenuItem *menuItem, gpointer arg)
 {
-        struct gtk_mod *mod = arg;
-        const char *label = gtk_menu_item_get_label(menuItem);
+	struct gtk_mod *mod = arg;
+	const char *label = gtk_menu_item_get_label(menuItem);
 	/* get the uri from the label */
 	char *label_1;
 	char *uri;
 
-	label_1 = strchr(label, '<');
+	label_1 = strchr(label, '[');
 	label_1[0] = ' ';
-	
-	uri = strtok(label_1, ">");
-        /* Queue dial from the main thread */
-        gtk_mod_connect(mod, uri);
+
+	uri = strtok(label_1, "]");
+	/* Queue dial from the main thread */
+	gtk_mod_connect(mod, uri);
 }
 
 
@@ -197,24 +197,24 @@ static void add_history_menu_item(struct gtk_mod *mod, const char *uri,
 	time_t rawtime = time(NULL);
 	struct tm *ptm = localtime(&rawtime);
 	re_snprintf(buf, sizeof buf,
-			"%s <%s>\n%04d-%02d-%02d %02d:%02d:%02d",
-			info, uri, ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday, ptm->tm_hour,
-			ptm->tm_min, ptm->tm_sec);
+			"%s [%s]\n%04d-%02d-%02d %02d:%02d:%02d",
+			info, uri, ptm->tm_year + 1900, ptm->tm_mon + 1,
+			ptm->tm_mday, ptm->tm_hour, ptm->tm_min, ptm->tm_sec);
 
 	item = gtk_image_menu_item_new_with_label(buf);
-	switch(call_type) {
+	switch (call_type) {
 		case CALL_INCOMING:
 			gtk_image_menu_item_set_image(
 				GTK_IMAGE_MENU_ITEM(item),
 				gtk_image_new_from_icon_name(
-//						"call-incoming", 32));
+						/* "call-incoming", 32)); */
 						"go-next", 32));
 			break;
 		case CALL_OUTGOING:
 			gtk_image_menu_item_set_image(
 				GTK_IMAGE_MENU_ITEM(item),
 				gtk_image_new_from_icon_name(
-//						"call-outgoing", 32));
+						/* "call-outgoing", 32)); */
 						"go-previous", 32));
 			break;
 		case CALL_MISSED:
@@ -279,6 +279,8 @@ static void menu_on_incoming_call_reject(GtkMenuItem *menuItem,
 		struct gtk_mod *mod)
 {
 	struct call *call = g_object_get_data(G_OBJECT(menuItem), "call");
+	add_history_menu_item(mod,call_peeruri(call), CALL_REJECTED,
+						call_peername(call));
 	denotify_incoming_call(mod, call);
 	mqueue_push(mod->mq, MQ_HANGUP, call);
 }
@@ -520,6 +522,8 @@ static void reject_activated(GSimpleAction *action, GVariant *parameter,
 
 	if (call) {
 		denotify_incoming_call(mod, call);
+		add_history_menu_item(mod,call_peeruri(call), CALL_REJECTED,
+					call_peername(call));
 		mqueue_push(mod->mq, MQ_HANGUP, call);
 	}
 }
@@ -602,10 +606,16 @@ static void ua_event_handler(struct ua *ua,
 		if (win)
 			call_window_closed(win, prm);
 		denotify_incoming_call(mod, call);
-		if (!call_is_outgoing(call) && call_state(call) != CALL_STATE_TERMINATED && call_state(call) != CALL_STATE_ESTABLISHED) {
-			add_history_menu_item(mod, call_peeruri(call), CALL_MISSED, call_peername(call));
-//			gtk_status_icon_set_from_icon_name(mod->status_icon, "call-missed");
-			gtk_status_icon_set_from_icon_name(mod->status_icon, "call-stop");
+		if (!call_is_outgoing(call)
+			&& call_state(call) != CALL_STATE_TERMINATED
+			&& call_state(call) != CALL_STATE_ESTABLISHED) {
+			add_history_menu_item(mod,
+				call_peeruri(call),
+				CALL_MISSED, call_peername(call));
+			/* gtk_status_icon_set_from_icon_name(
+				mod->status_icon, "call-missed"); */
+			gtk_status_icon_set_from_icon_name(
+				mod->status_icon, "call-stop");
 		}
 		break;
 
@@ -827,7 +837,8 @@ static void mqueue_handler(int id, void *data, void *arg)
 	case MQ_ANSWER:
 		call = data;
 		err = ua_answer(ua, call, VIDMODE_ON);
-		add_history_menu_item(mod, call_peeruri(call), CALL_INCOMING, call_peername(call));
+		add_history_menu_item(mod, call_peeruri(call),
+				CALL_INCOMING, call_peername(call));
 		if (err) {
 			gdk_threads_enter();
 			warning_dialog("Call failed",
