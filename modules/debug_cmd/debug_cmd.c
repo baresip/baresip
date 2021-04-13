@@ -199,18 +199,18 @@ static void fileinfo_timeout(void *arg)
 
 	if (st->finished) {
 		info("debug_cmd: length = %1.3lf seconds\n", s);
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			 "debug_cmd: length = %lf seconds", s);
+		module_event("debug_cmd", "aufileinfo", NULL, NULL,
+			 "length = %lf seconds", s);
 	}
 	else if (s > 0.) {
 		warning("debug_cmd: timeout, length > %1.3lf seconds\n", s);
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			 "debug_cmd: timeout, length > %1.3lf seconds", s);
+		module_event("debug_cmd", "aufileinfo", NULL, NULL,
+			 "timeout length = %lf seconds", s);
 	}
 	else {
 		info("debug_cmd: timeout\n");
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			 "debug_cmd: timeout");
+		module_event("debug_cmd", "aufileinfo", NULL, NULL,
+			 "timeout", s);
 	}
 
 	mem_deref(st);
