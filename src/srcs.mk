@@ -38,6 +38,7 @@ SRCS	+= stream.c
 SRCS	+= stunuri.c
 SRCS	+= timestamp.c
 SRCS	+= ua.c
+SRCS	+= uag.c
 SRCS	+= ui.c
 SRCS	+= vidcodec.c
 SRCS	+= video.c
