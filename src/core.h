@@ -342,6 +342,41 @@ struct ua;
 void         ua_printf(const struct ua *ua, const char *fmt, ...);
 
 int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
+struct call *ua_find_call_onhold(const struct ua *ua);
+struct call *ua_find_active_call(struct ua *ua);
+void ua_handle_options(struct ua *ua, const struct sip_msg *msg);
+void sipsess_conn_handler(const struct sip_msg *msg, void *arg);
+bool ua_catchall(struct ua *ua);
+
+/*
+ * User-Agent Group
+ */
+
+struct uag {
+	struct config_sip *cfg;        /**< SIP configuration               */
+	struct list ual;               /**< List of User-Agents (struct ua) */
+	struct sip *sip;               /**< SIP Stack                       */
+	struct sip_lsnr *lsnr;         /**< SIP Listener                    */
+	struct sipsess_sock *sock;     /**< SIP Session socket              */
+	struct sipevent_sock *evsock;  /**< SIP Event socket                */
+	bool use_udp;                  /**< Use UDP transport               */
+	bool use_tcp;                  /**< Use TCP transport               */
+	bool use_tls;                  /**< Use TLS transport               */
+	bool delayed_close;            /**< Module will close SIP stack     */
+	sip_msg_h *subh;               /**< Subscribe handler               */
+	ua_exit_h *exith;              /**< UA Exit handler                 */
+	bool nodial;                   /**< Prevent outgoing calls          */
+	bool dnd;                      /**< Do not Disturb flag             */
+	void *arg;                     /**< UA Exit handler argument        */
+	char *eprm;                    /**< Extra UA parameters             */
+#ifdef USE_TLS
+	struct tls *tls;               /**< TLS Context                     */
+#endif
+};
+
+struct config_sip *uag_cfg(void);
+const char *uag_eprm(void);
+bool uag_delayed_close(void);
 
 
 /*
