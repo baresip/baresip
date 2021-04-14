@@ -1354,6 +1354,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	else {
 		err  = str_dup(&tx->module, a->cfg.src_mod);
 		err |= str_dup(&tx->device, a->cfg.src_dev);
+		if (err)
+			goto out;
 	}
 
 	tx->ptime  = ptime;
@@ -1373,6 +1375,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	else {
 		err  = str_dup(&rx->module, a->cfg.play_mod);
 		err |= str_dup(&rx->device, a->cfg.play_dev);
+		if (err)
+			goto out;
 	}
 
 	rx->pt     = -1;
