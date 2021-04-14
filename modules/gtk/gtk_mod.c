@@ -201,7 +201,8 @@ static void add_history_menu_item(struct gtk_mod *mod, const char *uri,
 
 	if (mod->call_history_length < 20) {
 		mod->call_history_length++;
-	} else {
+	}
+	else {
 		/* Remove old call history */
 		list = gtk_container_get_children(GTK_CONTAINER(history_menu));
 		history_item = GTK_WIDGET(list->data);
