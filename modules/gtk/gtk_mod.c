@@ -44,6 +44,7 @@ struct gtk_mod {
 	bool run;
 	bool contacts_inited;
 	struct mqueue *mq;
+	int call_history_length;
 	GApplication *app;
 	GtkStatusIcon *status_icon;
 	GtkWidget *app_menu;
@@ -191,11 +192,23 @@ static void init_contacts_menu(struct gtk_mod *mod)
 static void add_history_menu_item(struct gtk_mod *mod, const char *uri,
 					int call_type, const char *info)
 {
-	GtkWidget *item;
+	GtkWidget *item, *history_item;
 	GtkMenuShell *history_menu = GTK_MENU_SHELL(mod->history_menu);
 	char buf[256];
 	time_t rawtime = time(NULL);
 	struct tm *ptm = localtime(&rawtime);
+	GList *list;
+
+	if (mod->call_history_length < 20) {
+		mod->call_history_length++;
+	} else {
+		/* Remove old call history */
+		list = gtk_container_get_children(GTK_CONTAINER(history_menu));
+		history_item = GTK_WIDGET(list->data);
+		gtk_widget_destroy(history_item);
+
+	}
+
 	re_snprintf(buf, sizeof buf,
 			"%s [%s]\n%04d-%02d-%02d %02d:%02d:%02d",
 			info, uri, ptm->tm_year + 1900, ptm->tm_mon + 1,
@@ -905,6 +918,7 @@ static void *gtk_thread(void *arg)
 	mod->dial_dialog = NULL;
 	mod->call_windows = NULL;
 	mod->incoming_call_menus = NULL;
+	mod->call_history_length = 0;
 
 	/* App menu */
 	mod->app_menu = gtk_menu_new();
@@ -964,7 +978,7 @@ static void *gtk_thread(void *arg)
 			mod->contacts_menu);
 
 	mod->history_menu = gtk_menu_new();
-	item = gtk_menu_item_new_with_mnemonic("Dial _history");
+	item = gtk_menu_item_new_with_mnemonic("Caller _history");
 	gtk_menu_shell_append(app_menu, item);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),
 			mod->history_menu);
