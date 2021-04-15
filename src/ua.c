@@ -1797,3 +1797,12 @@ int  ua_disable_autoanswer(struct ua *ua, enum answer_method met)
 	pl_set_str(&n, name);
 	return ua_rm_custom_hdr(ua, &n);
 }
+
+
+int ua_raise(struct ua *ua)
+{
+	if (!ua)
+		return EINVAL;
+
+	return uag_raise(ua, &ua->le);
+}
