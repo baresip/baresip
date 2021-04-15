@@ -2166,6 +2166,9 @@ static bool uri_match_af(const struct uri *accu, const struct uri *peeru)
 	struct sa sa1;
 	struct sa sa2;
 	int err;
+#else
+	(void)accu;
+	(void)peeru;
 #endif
 
 	/* we list cases where we know there is a mismatch in af */
