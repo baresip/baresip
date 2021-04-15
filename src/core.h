@@ -377,6 +377,7 @@ struct uag {
 struct config_sip *uag_cfg(void);
 const char *uag_eprm(void);
 bool uag_delayed_close(void);
+int uag_raise(struct ua *ua, struct le *le);
 
 
 /*
