@@ -1,0 +1,9 @@
+pipelines:
+  branches:
+    commend:
+      - step:
+        script:
+          - echo "Invoke build at jenkins for sipcore"
+          - curl --user bitbucket:11d2d19e44be241868c3111a8138e2bd94 "http://jenkinssipcore.commend.intern:8080/job/baresip-commend/build?token=jashdfg23746tasjhvg423678"
+
+
