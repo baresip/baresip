@@ -896,9 +896,7 @@ static void *gtk_thread(void *arg)
 	GtkWidget *item;
 	GError *err = NULL;
 	struct le *le;
-	GtkWidget *g_image;
-	GtkIconSize intval;
-	const gchar *strval;
+	GtkIconTheme *theme;
 
 
 	gdk_threads_init();
@@ -1000,20 +998,13 @@ static void *gtk_thread(void *arg)
 
 	gtk_menu_shell_append(app_menu, gtk_separator_menu_item_new());
 
-	g_image = gtk_image_new_from_icon_name(
-			"call-incoming-symbolic", GTK_ICON_SIZE_MENU);
-	gtk_image_get_icon_name(GTK_IMAGE(g_image), &strval, &intval);
-	mod->icon_call_incoming = str_cmp(strval, "image-missing");
-
-	g_image = gtk_image_new_from_icon_name(
-			"call-outgoing-symbolic", GTK_ICON_SIZE_MENU);
-	gtk_image_get_icon_name(GTK_IMAGE(g_image), &strval, &intval);
-	mod->icon_call_outgoing = str_cmp(strval, "image-missing");
-
-	g_image = gtk_image_new_from_icon_name(
-			"call-missed-symbolic", GTK_ICON_SIZE_MENU);
-	gtk_image_get_icon_name(GTK_IMAGE(g_image), &strval, &intval);
-	mod->icon_call_missed = str_cmp(strval, "image-missing");
+	theme = gtk_icon_theme_get_default();
+	mod->icon_call_incoming = gtk_icon_theme_has_icon(theme,
+						"call-incoming-symbolic");
+	mod->icon_call_outgoing = gtk_icon_theme_has_icon(theme,
+						"call-outgoing-symbolic");
+	mod->icon_call_missed = gtk_icon_theme_has_icon(theme,
+						"call-missed-symbolic");
 
 	/* About */
 	item = gtk_menu_item_new_with_mnemonic("A_bout");
