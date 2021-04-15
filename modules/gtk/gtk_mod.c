@@ -225,7 +225,7 @@ static void add_history_menu_item(struct gtk_mod *mod, const char *uri,
 				GTK_IMAGE_MENU_ITEM(item),
 				gtk_image_new_from_icon_name(
                                         (mod->icon_call_incoming) ?
-					"call-incoming" : "go-next",
+					"call-incoming-symbolic" : "go-next",
 					GTK_ICON_SIZE_MENU));
 			break;
 		case CALL_OUTGOING:
@@ -233,15 +233,16 @@ static void add_history_menu_item(struct gtk_mod *mod, const char *uri,
 				GTK_IMAGE_MENU_ITEM(item),
 				gtk_image_new_from_icon_name(
 					(mod->icon_call_outgoing) ?
-					"call-outgoing" : "go-previous",
-					GTK_ICON_SIZE_MENU));
+					"call-outgoing-symbolic"
+						 : "go-previous",
+				GTK_ICON_SIZE_MENU));
 			break;
 		case CALL_MISSED:
 			gtk_image_menu_item_set_image(
 				GTK_IMAGE_MENU_ITEM(item),
 				gtk_image_new_from_icon_name(
 					(mod->icon_call_missed) ?
-					"call-missed" : "call-stop",
+					"call-missed-symbolic" : "call-stop",
 					GTK_ICON_SIZE_MENU));
 			break;
 		case CALL_REJECTED:
@@ -1000,17 +1001,17 @@ static void *gtk_thread(void *arg)
 	gtk_menu_shell_append(app_menu, gtk_separator_menu_item_new());
 
 	g_image = gtk_image_new_from_icon_name(
-				"call-incoming", GTK_ICON_SIZE_MENU);
+			"call-incoming-symbolic", GTK_ICON_SIZE_MENU);
 	gtk_image_get_icon_name(GTK_IMAGE(g_image), &strval, &intval);
 	mod->icon_call_incoming = str_cmp(strval, "image-missing");
 
 	g_image = gtk_image_new_from_icon_name(
-				"call-outgoing", GTK_ICON_SIZE_MENU);
+			"call-outgoing-symbolic", GTK_ICON_SIZE_MENU);
 	gtk_image_get_icon_name(GTK_IMAGE(g_image), &strval, &intval);
 	mod->icon_call_outgoing = str_cmp(strval, "image-missing");
 
 	g_image = gtk_image_new_from_icon_name(
-				"call-missed", GTK_ICON_SIZE_MENU);
+			"call-missed-symbolic", GTK_ICON_SIZE_MENU);
 	gtk_image_get_icon_name(GTK_IMAGE(g_image), &strval, &intval);
 	mod->icon_call_missed = str_cmp(strval, "image-missing");
 
