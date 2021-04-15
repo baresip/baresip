@@ -1012,6 +1012,7 @@ static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
 static int cmd_ua_find(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct le *le;
 	struct ua *ua = NULL;
 
 	if (str_isset(carg->prm)) {
@@ -1025,6 +1026,12 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 	}
 
 	(void)re_hprintf(pf, "ua: %s\n", account_aor(ua_account(ua)));
+
+	ua_raise(ua);
+
+	le = list_tail(ua_calls(ua));
+	if (le)
+		menu_selcall(le->data);
 
 	menu_update_callstatus(uag_call_count());
 
