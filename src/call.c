@@ -1003,10 +1003,15 @@ int call_modify(struct call *call)
 	debug("call: modify\n");
 
 	err = call_sdp_get(call, &desc, true);
-	if (!err)
+	if (!err) {
 		err = sipsess_modify(call->sess, desc);
+		if (err)
+			goto out;
+	}
 
 	err = update_media(call);
+
+ out:
 	mem_deref(desc);
 
 	return err;
