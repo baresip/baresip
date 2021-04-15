@@ -2890,9 +2890,11 @@ int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 		break;
 	default:
 		err = EINVAL;
-		goto out;
 		break;
 	}
+
+	if (err)
+		goto out;
 
 	name = autoans_header_name(met);
 	pl_set_str(&n, name);
