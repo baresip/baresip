@@ -638,7 +638,7 @@ static void ua_event_handler(struct ua *ua,
 			gtk_status_icon_set_from_icon_name(
 				mod->status_icon,
 				(mod->icon_call_missed) ?
-					"call-missed" : "call-stop");
+					"call-missed-symbolic" : "call-stop");
 		}
 		break;
 
@@ -991,7 +991,7 @@ static void *gtk_thread(void *arg)
 
 	/* Caller history */
 	mod->history_menu = gtk_menu_new();
-	item = gtk_menu_item_new_with_mnemonic("Caller _history");
+	item = gtk_menu_item_new_with_mnemonic("Call _history");
 	gtk_menu_shell_append(app_menu, item);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item),
 			mod->history_menu);
