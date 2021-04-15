@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <pthread.h>
 #include <gst/gst.h>
 #include <unistd.h>
 #include <re.h>
@@ -45,7 +44,6 @@
  * </pre>
  */
 struct ausrc_st {
-	pthread_t tid;              /**< Thread ID               */
 	bool run;                   /**< Running flag            */
 	bool eos;                   /**< Reached end of stream   */
 	ausrc_read_h *rh;           /**< Read handler            */
@@ -62,35 +60,19 @@ struct ausrc_st {
 	/* Gstreamer */
 	char *uri;
 	GstElement *pipeline, *bin, *source, *capsfilt, *sink;
-	GMainLoop *loop;
 };
 
 
-typedef struct _GstFakeSink GstFakeSink;
 static struct ausrc *ausrc;
 
 static char *uri_regex = "([a-z][a-z0-9+.-]*):(?://).*";
 
 
-static void *thread(void *arg)
+static GstBusSyncReply
+sync_handler(
+	GstBus * bus, GstMessage * msg,
+	struct ausrc_st *st)
 {
-	struct ausrc_st *st = arg;
-
-	/* Now set to playing and iterate. */
-	gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
-
-	while (st->run) {
-		g_main_loop_run(st->loop);
-	}
-
-	return NULL;
-}
-
-
-static gboolean bus_watch_handler(GstBus *bus, GstMessage *msg, gpointer data)
-{
-	struct ausrc_st *st = data;
-	GMainLoop *loop = st->loop;
 	GstTagList *tag_list;
 	gchar *title;
 	GError *err;
@@ -100,44 +82,46 @@ static gboolean bus_watch_handler(GstBus *bus, GstMessage *msg, gpointer data)
 
 	switch (GST_MESSAGE_TYPE(msg)) {
 
-	case GST_MESSAGE_EOS:
-		st->run = false;
-		st->eos = true;
-		break;
+		case GST_MESSAGE_EOS:
+			st->run = false;
+			st->eos = true;
+			return GST_BUS_DROP;
 
-	case GST_MESSAGE_ERROR:
-		gst_message_parse_error(msg, &err, &d);
+		case GST_MESSAGE_ERROR:
+			gst_message_parse_error(msg, &err, &d);
 
-		warning("gst: Error: %d(%m) message=\"%s\"\n", err->code,
-			err->code, err->message);
-		warning("gst: Debug: %s\n", d);
+			warning("gst: Error: %d(%m) message=\"%s\"\n",
+				err->code,
+				err->code, err->message);
+			warning("gst: Debug: %s\n", d);
 
-		g_free(d);
+			g_free(d);
 
-		/* Call error handler */
-		if (st->errh)
-			st->errh(err->code, err->message, st->arg);
+			/* Call error handler */
+			if (st->errh)
+				st->errh(err->code, err->message, st->arg);
 
-		g_error_free(err);
+			g_error_free(err);
 
-		st->run = false;
-		g_main_loop_quit(loop);
-		break;
+			st->run = false;
+			return GST_BUS_DROP;
 
-	case GST_MESSAGE_TAG:
-		gst_message_parse_tag(msg, &tag_list);
+		case GST_MESSAGE_TAG:
+			gst_message_parse_tag(msg, &tag_list);
 
-		if (gst_tag_list_get_string(tag_list, GST_TAG_TITLE, &title)) {
-			info("gst: title: %s\n", title);
-			g_free(title);
-		}
-		break;
+			if (gst_tag_list_get_string(
+				tag_list,
+				GST_TAG_TITLE,
+				&title)) {
 
-	default:
-		break;
+				info("gst: title: %s\n", title);
+				g_free(title);
+			}
+			return GST_BUS_DROP;
+
+		default:
+			return GST_BUS_PASS;
 	}
-
-	return TRUE;
 }
 
 
@@ -234,12 +218,12 @@ static void packet_handler(struct ausrc_st *st, GstBuffer *buffer)
 }
 
 
-static void handoff_handler(GstFakeSink *fakesink, GstBuffer *buffer,
+static void handoff_handler(GstElement *sink, GstBuffer *buffer,
 			    GstPad *pad, gpointer user_data)
 {
 	struct ausrc_st *st = user_data;
 	GstCaps *caps;
-	(void)fakesink;
+	(void)sink;
 
 	caps = gst_pad_get_current_caps(pad);
 
@@ -293,8 +277,6 @@ static int gst_setup(struct ausrc_st *st)
 	GstBus *bus;
 	GstPad *pad;
 
-	st->loop = g_main_loop_new(NULL, FALSE);
-
 	st->pipeline = gst_pipeline_new("pipeline");
 	if (!st->pipeline) {
 		warning("gst: failed to create pipeline element\n");
@@ -327,6 +309,8 @@ static int gst_setup(struct ausrc_st *st)
 		return ENOMEM;
 	}
 
+	g_object_set(st->sink, "async", false, NULL);
+
 	gst_bin_add_many(GST_BIN(st->bin), st->capsfilt, st->sink, NULL);
 	gst_element_link_many(st->capsfilt, st->sink, NULL);
 
@@ -350,7 +334,12 @@ static int gst_setup(struct ausrc_st *st)
 
 	/* Bus watch */
 	bus = gst_pipeline_get_bus(GST_PIPELINE(st->pipeline));
-	gst_bus_add_watch(bus, bus_watch_handler, st);
+
+	gst_bus_enable_sync_message_emission(bus);
+	gst_bus_set_sync_handler(
+		bus, (GstBusSyncHandler) sync_handler,
+		st, NULL);
+
 	gst_object_unref(bus);
 
 	/* Set URI */
@@ -392,8 +381,6 @@ static void gst_destructor(void *arg)
 
 	if (st->run) {
 		st->run = false;
-		g_main_loop_quit(st->loop);
-		pthread_join(st->tid, NULL);
 	}
 
 	tmr_cancel(&st->tmr);
@@ -481,14 +468,9 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->run = true;
 	st->eos = false;
-	err = pthread_create(&st->tid, NULL, thread, st);
 
+	gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
 	tmr_start(&st->tmr, st->ptime, timeout, st);
-
-	if (err) {
-		st->run = false;
-		goto out;
-	}
 
  out:
 	if (err)
