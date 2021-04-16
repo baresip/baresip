@@ -26,7 +26,7 @@ static int clean_number(char* str)
 	/* only clean numeric numbers
 	 * In other cases trust the user input
 	 */
-	int err = re_regex(str, sizeof(str), "[A-Za-z]");
+	int err = re_regex(str, str_len(str), "[A-Za-z]");
 	if (err == 0)
 		return -1;
 
