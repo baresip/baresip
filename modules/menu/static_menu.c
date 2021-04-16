@@ -1154,11 +1154,20 @@ static int cmd_tls_issuer(struct re_printf *pf, void *unused)
 		return ENOMEM;
 
 	err = tls_get_issuer(uag_tls(), mb);
-	if (err){
-		(void)re_hprintf(pf, "unable to get certificate issuer (%m)\n",
-				 err);
-		goto out;
+	if (err == ENOENT) {
+		(void)re_hprintf(pf, "sip_certificate not configured\n");
 	}
+	else if (err == ENOTSUP) {
+		(void)re_hprintf(pf, "could not get issuer of configured "
+				"certificate (%m)\n", err);
+	}
+	else if (err) {
+		(void)re_hprintf(pf, "unable to print certificate issuer "
+				"(%m)\n", err);
+	}
+
+	if (err)
+		goto out;
 
 	(void)re_hprintf(pf, "TLS Cert Issuer: %b\n", mb->buf, mb->pos);
 
@@ -1179,11 +1188,20 @@ static int cmd_tls_subject(struct re_printf *pf, void *unused)
 		return ENOMEM;
 
 	err = tls_get_subject(uag_tls(), mb);
-	if (err) {
-		(void)re_hprintf(pf, "unable to get certificate subject"
-				 " (%m)\n", err);
-		goto out;
+	if (err == ENOENT) {
+		(void)re_hprintf(pf, "sip_certificate not configured\n");
 	}
+	else if (err == ENOTSUP) {
+		(void)re_hprintf(pf, "could not get subject of configured "
+				"certificate (%m)\n", err);
+	}
+	else if (err) {
+		(void)re_hprintf(pf, "unable to print certificate subject "
+				 " (%m)\n", err);
+	}
+
+	if (err)
+		goto out;
 
 	(void)re_hprintf(pf, "TLS Cert Subject: %b\n", mb->buf, mb->pos);
 
