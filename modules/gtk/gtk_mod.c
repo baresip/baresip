@@ -249,7 +249,7 @@ static void add_history_menu_item(struct gtk_mod *mod, const char *uri,
 			gtk_image_menu_item_set_image(
 				GTK_IMAGE_MENU_ITEM(item),
 				gtk_image_new_from_icon_name(
-					"dialog-cancel", GTK_ICON_SIZE_MENU));
+					"window-close", GTK_ICON_SIZE_MENU));
 			break;
 		default:
 			gtk_image_menu_item_set_image(
