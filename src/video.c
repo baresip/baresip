@@ -1050,6 +1050,9 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 	struct sdp_media *m = NULL;
 	int err = 0;
 
+	if (!v)
+		return EINVAL;
+
 	m = stream_sdpmedia(v->strm);
 
 	debug("video: update\n");
@@ -1088,7 +1091,7 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 		}
 
 	}
-	else if (v) {
+	else {
 		info("video: video stream is disabled..\n");
 		video_stop_source(v, ctx);
 		video_stop_display(v);
