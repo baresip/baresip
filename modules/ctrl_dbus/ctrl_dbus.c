@@ -106,10 +106,10 @@ static int print_handler(const char *p, size_t size, void *arg)
 static void command_handler(int flags, void *arg)
 {
 	struct ctrl_st *st = arg;
-	char buf[8];
+	char buf[1];
 
 	if (!st->command)
-		return;
+		goto out;
 
 	st->mb = mbuf_alloc(128);
 	struct re_printf pf = {print_handler, st->mb};
@@ -137,9 +137,10 @@ static void command_handler(int flags, void *arg)
 	mbuf_set_pos(st->mb, 0);
 	st->command = mem_deref(st->command);
 
+out:
 	pthread_mutex_lock(&st->wait.mutex);
 	pthread_cond_signal(&st->wait.cond);
-	read(st->fd[0], buf, sizeof(buf));
+	(void)read(st->fd[0], buf, sizeof(buf));
 	pthread_mutex_unlock(&st->wait.mutex);
 }
 
@@ -152,19 +153,29 @@ on_handle_invoke(DBusBaresip *interface,
 {
 	char *response;
 	struct ctrl_st *st = arg;
-	char buf[8] = {0,0,0,0,0,0,0,1};
+	char buf[1] = {1};
+	size_t n;
 
 	str_dup(&st->command, command);
 
 	pthread_mutex_lock(&st->wait.mutex);
-	write(st->fd[1], buf, sizeof(buf));
-	pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
+	n = write(st->fd[1], buf, sizeof(buf));
+	if (n == 1)
+		pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
+
 	pthread_mutex_unlock(&st->wait.mutex);
 
-	mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
-	dbus_baresip_complete_invoke(interface, invocation, response);
-	mem_deref(response);
-	st->mb = mem_deref(st->mb);
+	if (st->mb) {
+		mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
+		dbus_baresip_complete_invoke(interface, invocation, response);
+		mem_deref(response);
+		st->mb = mem_deref(st->mb);
+	}
+	else {
+		dbus_baresip_complete_invoke(interface, invocation,
+				n == 1 ? "" : "invoke failed");
+	}
+
 	return true;
 }
 
