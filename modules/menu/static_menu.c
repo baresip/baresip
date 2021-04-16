@@ -606,11 +606,6 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	adir = decode_sdp_enum(&argdir[0]);
 	vdir = decode_sdp_enum(&argdir[1]);
 
-	if (err) {
-		(void)re_hprintf(pf, "%s", usage);
-		return err;
-	}
-
 	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
 		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
