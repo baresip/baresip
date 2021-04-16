@@ -107,6 +107,7 @@ static void command_handler(int flags, void *arg)
 {
 	struct ctrl_st *st = arg;
 	char buf[1];
+	ssize_t n = 0;
 
 	if (!st->command)
 		goto out;
@@ -140,8 +141,16 @@ static void command_handler(int flags, void *arg)
 out:
 	pthread_mutex_lock(&st->wait.mutex);
 	pthread_cond_signal(&st->wait.cond);
-	(void)read(st->fd[0], buf, sizeof(buf));
+	n = read(st->fd[0], buf, sizeof(buf));
+
 	pthread_mutex_unlock(&st->wait.mutex);
+
+	if (n != 1) {
+		warning("ctrl_dbus: detected a pipe error during read\n");
+		info("ctrl_dbus: stopping here\n");
+		st->run = false;
+		g_main_loop_quit(st->loop);
+	}
 }
 
 
@@ -310,7 +319,6 @@ static void *thread(void *arg)
 	struct ctrl_st *st = arg;
 	int err;
 
-	st->run = true;
 	if (pipe(st->fd) == -1) {
 		warning("ctrl_dbus: could not create pipe (%m)\n", errno);
 		return NULL;
@@ -322,6 +330,7 @@ static void *thread(void *arg)
 		return NULL;
 	}
 
+	st->run = true;
 	while (st->run)
 		g_main_loop_run(st->loop);
 
