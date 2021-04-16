@@ -151,10 +151,11 @@ on_handle_invoke(DBusBaresip *interface,
 		const gchar *command,
 		gpointer arg)
 {
-	char *response;
+	char *response = "";
 	struct ctrl_st *st = arg;
 	char buf[1] = {1};
-	size_t n;
+	ssize_t n;
+	int err;
 
 	str_dup(&st->command, command);
 
@@ -166,7 +167,11 @@ on_handle_invoke(DBusBaresip *interface,
 	pthread_mutex_unlock(&st->wait.mutex);
 
 	if (st->mb) {
-		mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
+		err = mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
+		if (err)
+			warning("ctrl_dbus: could not allocate response (%m)",
+					err);
+
 		dbus_baresip_complete_invoke(interface, invocation, response);
 		mem_deref(response);
 		st->mb = mem_deref(st->mb);
