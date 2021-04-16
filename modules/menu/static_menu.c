@@ -638,6 +638,9 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 
 	uribuf->pos = 0;
 	err = mbuf_strdup(uribuf, &uri, uribuf->end);
+	if (err)
+		goto out;
+
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
 	if (err)
 		goto out;
