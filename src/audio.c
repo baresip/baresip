@@ -1682,7 +1682,9 @@ static int start_player(struct aurx *rx, struct audio *a,
 		info("audio: player started with sample format %s\n",
 		     aufmt_name(rx->play_fmt));
 
+#ifdef HAVE_PTHREAD
 		rx->thr.start = rx->jbtype == JBUF_ADAPTIVE;
+#endif
 	}
 
 	return 0;
@@ -2469,8 +2471,9 @@ int audio_set_player(struct audio *a, const char *mod, const char *device)
 				mod, device, err);
 			return err;
 		}
-
+#ifdef HAVE_PTHREAD
 		rx->thr.start = rx->jbtype == JBUF_ADAPTIVE;
+#endif
 	}
 
 	return 0;
