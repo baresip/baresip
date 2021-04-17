@@ -439,7 +439,7 @@ static int ctrl_init(void)
 	if (err)
 		return err;
 
-	conf_get(conf_cur(), "ctrl_dbus_use", &use);
+	(void)conf_get(conf_cur(), "ctrl_dbus_use", &use);
 	name = dbus_baresip_interface_info()->name;
 	m_st->bus_owner = g_bus_own_name(
 			!pl_strcmp(&use, "session") ?
