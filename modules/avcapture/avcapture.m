@@ -403,7 +403,7 @@ static int module_init(void)
 		AVCaptureDeviceDiscoverySession
 		discoverySessionWithDeviceTypes:
 			@[AVCaptureDeviceTypeBuiltInWideAngleCamera,
-				AVCaptureDeviceTypeExternalUnknown]
+			  AVCaptureDeviceTypeExternalUnknown]
 		mediaType:AVMediaTypeVideo
 		position:AVCaptureDevicePositionUnspecified
 	];
