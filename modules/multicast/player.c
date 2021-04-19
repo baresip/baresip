@@ -442,6 +442,9 @@ int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac)
 
 	err = str_dup(&player->module, cfg->play_mod);
 	err |= str_dup(&player->device, cfg->play_dev);
+	if (err)
+		goto out;
+
 	player->sampv = mem_zalloc(AUDIO_SAMPSZ *
 		aufmt_sample_size(player->dec_fmt), NULL);
 	if (!player->sampv) {
