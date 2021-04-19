@@ -426,6 +426,8 @@ static int stream_sock_alloc(struct stream *s, int af)
 	(void)udp_setsockopt(rtcp_sock(s->rtp), IPPROTO_IP, IP_TOS,
 			     &tos, sizeof(tos));
 
+	/*TODO: support vrtp_tos for video */
+
 	udp_rxsz_set(rtp_sock(s->rtp), RTP_RECV_SIZE);
 
 	udp_sockbuf_set(rtp_sock(s->rtp), 65536);

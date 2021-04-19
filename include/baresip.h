@@ -338,6 +338,7 @@ struct config_video {
 /** Audio/Video Transport */
 struct config_avt {
 	uint8_t rtp_tos;        /**< Type-of-Service for outg. RTP  */
+	uint8_t rtpv_tos;       /**< TOS for outg. video RTP        */
 	struct range rtp_ports; /**< RTP port range                 */
 	struct range rtp_bw;    /**< RTP Bandwidth range [bit/s]    */
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */

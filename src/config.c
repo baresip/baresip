@@ -75,6 +75,7 @@ static struct config core_config = {
 	/** Audio/Video Transport */
 	{
 		0xb8,
+		0x88,
 		{1024, 49152},
 		{0, 0},
 		false,
@@ -375,6 +376,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	/* AVT - Audio/Video Transport */
 	if (0 == conf_get_u32(conf, "rtp_tos", &v))
 		cfg->avt.rtp_tos = v;
+	if (0 == conf_get_u32(conf, "rtpv_tos", &v))
+		cfg->avt.rtpv_tos = v;
 	(void)conf_get_range(conf, "rtp_ports", &cfg->avt.rtp_ports);
 	if (0 == conf_get_range(conf, "rtp_bandwidth",
 				&cfg->avt.rtp_bw)) {
@@ -461,6 +464,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 "# AVT\n"
 			 "rtp_tos\t\t\t%u\n"
+			 "rtpv_tos\t\t\t%u\n"
 			 "rtp_ports\t\t%H\n"
 			 "rtp_bandwidth\t\t%H\n"
 			 "rtcp_mux\t\t%s\n"
@@ -500,6 +504,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 vidfmt_name(cfg->video.enc_fmt),
 
 			 cfg->avt.rtp_tos,
+			 cfg->avt.rtpv_tos,
 			 range_print, &cfg->avt.rtp_ports,
 			 range_print, &cfg->avt.rtp_bw,
 			 cfg->avt.rtcp_mux ? "yes" : "no",
@@ -686,6 +691,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 	err |= re_hprintf(pf,
 			  "\n# AVT - Audio/Video Transport\n"
 			  "rtp_tos\t\t\t184\n"
+			  "rtpv_tos\t\t\t136\n"
 			  "#rtp_ports\t\t10000-20000\n"
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
 			  "rtcp_mux\t\tno\n"
