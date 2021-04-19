@@ -77,10 +77,14 @@ static void *read_thread(void *data)
 	struct shared *st = data;
 	uint64_t now, offset = tmr_jiffies();
 	double auts = 0, vidts = 0;
+	AVPacket *pkt;
+
+	pkt = av_packet_alloc();
+	if (!pkt)
+		return NULL;
 
 	while (st->run) {
 
-		AVPacket pkt;
 		int ret;
 
 		sys_msleep(4);
@@ -106,9 +110,7 @@ static void *read_thread(void *data)
 				if (now < (offset + xts))
 					break;
 
-			av_init_packet(&pkt);
-
-			ret = av_read_frame(st->ic, &pkt);
+			ret = av_read_frame(st->ic, pkt);
 			if (ret == (int)AVERROR_EOF) {
 
 				debug("avformat: rewind stream\n");
@@ -131,34 +133,36 @@ static void *read_thread(void *data)
 				goto out;
 			}
 
-			if (pkt.stream_index == st->au.idx) {
+			if (pkt->stream_index == st->au.idx) {
 
-				if (pkt.pts == AV_NOPTS_VALUE) {
+				if (pkt->pts == AV_NOPTS_VALUE) {
 					warning("no audio pts\n");
 				}
 
-				auts = 1000 * pkt.pts *
+				auts = 1000 * pkt->pts *
 					av_q2d(st->au.time_base);
 
-				avformat_audio_decode(st, &pkt);
+				avformat_audio_decode(st, pkt);
 			}
-			else if (pkt.stream_index == st->vid.idx) {
+			else if (pkt->stream_index == st->vid.idx) {
 
-				if (pkt.pts == AV_NOPTS_VALUE) {
+				if (pkt->pts == AV_NOPTS_VALUE) {
 					warning("no video pts\n");
 				}
 
-				vidts = 1000 * pkt.pts *
+				vidts = 1000 * pkt->pts *
 					av_q2d(st->vid.time_base);
 
-				avformat_video_decode(st, &pkt);
+				avformat_video_decode(st, pkt);
 			}
 
-			av_packet_unref(&pkt);
+			av_packet_unref(pkt);
 		}
 	}
 
  out:
+	av_packet_free(&pkt);
+
 	return NULL;
 }
 
