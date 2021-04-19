@@ -185,6 +185,9 @@ static int read_file(struct ausrc_st *st)
 			err = ENOSYS;
 			break;
 		}
+
+		if (err)
+			break;
 	}
 
 	info("aufile: loaded %zu bytes\n", aubuf_cur_size(st->aubuf));
