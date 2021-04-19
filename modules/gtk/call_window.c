@@ -524,7 +524,7 @@ void call_window_closed(struct call_window *win, const char *reason)
 	win->transfer_dialog = mem_deref(win->transfer_dialog);
 	win->closed = true;
 
-	if (strncmp(reason, user_trigger_reason,
+	if (reason && strncmp(reason, user_trigger_reason,
 	    strlen(user_trigger_reason)) == 0) {
 		mqueue_push(win->mq, MQ_CLOSE, win);
 		return;
