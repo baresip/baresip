@@ -730,7 +730,6 @@ static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
 	pl_set_mbuf(&content, msg->mb);
 
 	ASSERT_EQ(0, re_regex(content.p, content.l, "v=0"));
-	ASSERT_EQ(0, re_regex(content.p, content.l, "a=tool:baresip"));
 	ASSERT_EQ(0, re_regex(content.p, content.l, "m=audio"));
 
  out:

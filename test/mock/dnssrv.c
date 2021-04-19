@@ -71,7 +71,6 @@ static void decode_dns_query(struct dns_server *srv,
 	}
 
 	if (mbuf_get_left(mb) < 4) {
-		err = EBADMSG;
 		DEBUG_WARNING("unable to decode query type/class\n");
 		goto out;
 	}

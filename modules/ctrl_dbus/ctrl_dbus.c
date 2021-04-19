@@ -106,10 +106,11 @@ static int print_handler(const char *p, size_t size, void *arg)
 static void command_handler(int flags, void *arg)
 {
 	struct ctrl_st *st = arg;
-	char buf[8];
+	char buf[1];
+	ssize_t n = 0;
 
 	if (!st->command)
-		return;
+		goto out;
 
 	st->mb = mbuf_alloc(128);
 	struct re_printf pf = {print_handler, st->mb};
@@ -137,10 +138,19 @@ static void command_handler(int flags, void *arg)
 	mbuf_set_pos(st->mb, 0);
 	st->command = mem_deref(st->command);
 
+out:
 	pthread_mutex_lock(&st->wait.mutex);
 	pthread_cond_signal(&st->wait.cond);
-	read(st->fd[0], buf, sizeof(buf));
+	n = read(st->fd[0], buf, sizeof(buf));
+
 	pthread_mutex_unlock(&st->wait.mutex);
+
+	if (n != 1) {
+		warning("ctrl_dbus: detected a pipe error during read\n");
+		info("ctrl_dbus: stopping here\n");
+		st->run = false;
+		g_main_loop_quit(st->loop);
+	}
 }
 
 
@@ -150,21 +160,36 @@ on_handle_invoke(DBusBaresip *interface,
 		const gchar *command,
 		gpointer arg)
 {
-	char *response;
+	char *response = "";
 	struct ctrl_st *st = arg;
-	char buf[8] = {0,0,0,0,0,0,0,1};
+	char buf[1] = {1};
+	ssize_t n;
+	int err;
 
 	str_dup(&st->command, command);
 
 	pthread_mutex_lock(&st->wait.mutex);
-	write(st->fd[1], buf, sizeof(buf));
-	pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
+	n = write(st->fd[1], buf, sizeof(buf));
+	if (n == 1)
+		pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
+
 	pthread_mutex_unlock(&st->wait.mutex);
 
-	mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
-	dbus_baresip_complete_invoke(interface, invocation, response);
-	mem_deref(response);
-	st->mb = mem_deref(st->mb);
+	if (st->mb) {
+		err = mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
+		if (err)
+			warning("ctrl_dbus: could not allocate response (%m)",
+					err);
+
+		dbus_baresip_complete_invoke(interface, invocation, response);
+		mem_deref(response);
+		st->mb = mem_deref(st->mb);
+	}
+	else {
+		dbus_baresip_complete_invoke(interface, invocation,
+				n == 1 ? "" : "invoke failed");
+	}
+
 	return true;
 }
 
@@ -294,7 +319,6 @@ static void *thread(void *arg)
 	struct ctrl_st *st = arg;
 	int err;
 
-	st->run = true;
 	if (pipe(st->fd) == -1) {
 		warning("ctrl_dbus: could not create pipe (%m)\n", errno);
 		return NULL;
@@ -306,6 +330,7 @@ static void *thread(void *arg)
 		return NULL;
 	}
 
+	st->run = true;
 	while (st->run)
 		g_main_loop_run(st->loop);
 
@@ -414,7 +439,7 @@ static int ctrl_init(void)
 	if (err)
 		return err;
 
-	conf_get(conf_cur(), "ctrl_dbus_use", &use);
+	(void)conf_get(conf_cur(), "ctrl_dbus_use", &use);
 	name = dbus_baresip_interface_info()->name;
 	m_st->bus_owner = g_bus_own_name(
 			!pl_strcmp(&use, "session") ?

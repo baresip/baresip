@@ -319,7 +319,7 @@ void module_event(const char *module, const char *event, struct ua *ua,
 {
 	struct le *le;
 	char buf[256];
-	char *p = buf;
+	char *p;
 	size_t len = sizeof(buf);
 	va_list ap;
 

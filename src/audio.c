@@ -1354,6 +1354,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	else {
 		err  = str_dup(&tx->module, a->cfg.src_mod);
 		err |= str_dup(&tx->device, a->cfg.src_dev);
+		if (err)
+			goto out;
 	}
 
 	tx->ptime  = ptime;
@@ -1373,6 +1375,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	else {
 		err  = str_dup(&rx->module, a->cfg.play_mod);
 		err |= str_dup(&rx->device, a->cfg.play_dev);
+		if (err)
+			goto out;
 	}
 
 	rx->pt     = -1;
@@ -1678,7 +1682,9 @@ static int start_player(struct aurx *rx, struct audio *a,
 		info("audio: player started with sample format %s\n",
 		     aufmt_name(rx->play_fmt));
 
+#ifdef HAVE_PTHREAD
 		rx->thr.start = rx->jbtype == JBUF_ADAPTIVE;
+#endif
 	}
 
 	return 0;
@@ -2465,8 +2471,9 @@ int audio_set_player(struct audio *a, const char *mod, const char *device)
 				mod, device, err);
 			return err;
 		}
-
+#ifdef HAVE_PTHREAD
 		rx->thr.start = rx->jbtype == JBUF_ADAPTIVE;
+#endif
 	}
 
 	return 0;

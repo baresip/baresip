@@ -6,7 +6,7 @@
 
 MOD		:= snapshot
 $(MOD)_SRCS	+= snapshot.c png_vf.c
-ifeq ($(findstring gcc, $(CC)), gcc)
+ifeq ($(CC_NAME), gcc)
 $(MOD)_CFLAGS	+= -Wno-clobbered
 endif
 $(MOD)_LFLAGS	+= -lpng

@@ -161,10 +161,13 @@ static int pl_set_arg(struct pl *pl, const struct cmd_arg *carg)
 
 static int pl_opt_arg(struct pl **plp, const struct cmd_arg *carg)
 {
-	struct pl *pl = *plp;
+	struct pl *pl;
 	int err;
+
 	if (!plp)
 		return EINVAL;
+
+	pl = *plp;
 
 	err = ensure_alloc();
 	if (err)

@@ -146,7 +146,7 @@ void mcsender_stop(struct sa *addr)
 
 	mcsender = le->data;
 	list_unlink(&mcsender->le);
-	mcsender = mem_deref(mcsender);
+	mem_deref(mcsender);
 }
 
 
@@ -189,7 +189,7 @@ int mcsender_alloc(struct sa *addr, const struct aucodec *codec)
 
  out:
 	if (err)
-		mcsender = mem_deref(mcsender);
+		mem_deref(mcsender);
 
 	return err;
 }

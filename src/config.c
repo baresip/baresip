@@ -702,6 +702,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#dns_server\t\t1.0.0.1:53\n"
 			  "#dns_fallback\t\t8.8.8.8:53\n"
 			  "#net_interface\t\t%H\n"
+			  "\n"
 			  "# Play tones\n"
 			  "#file_ausrc\t\taufile\n"
 			  "#file_srate\t\t16000\n"

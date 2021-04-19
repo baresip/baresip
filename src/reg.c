@@ -223,10 +223,10 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	if (err)
 		return err;
 
-	if (acc->rwait)
+	if (acc && acc->rwait)
 		err = sipreg_set_rwait(reg->sipreg, acc->rwait);
 
-	if (acc->fbregint)
+	if (acc && acc->fbregint)
 		err = sipreg_set_fbregint(reg->sipreg, acc->fbregint);
 
 	if (failed)
@@ -285,10 +285,12 @@ static const char *print_scode(uint16_t scode)
 int reg_debug(struct re_printf *pf, const struct reg *reg)
 {
 	int err = 0;
-	bool fb = !sipreg_proxy_expires(reg->sipreg) && reg->scode;
+	bool fb;
 
 	if (!reg)
 		return 0;
+
+	fb = !sipreg_proxy_expires(reg->sipreg) && reg->scode;
 
 	err |= re_hprintf(pf, "\nRegister client:\n");
 	err |= re_hprintf(pf, " id:     %d\n", reg->id);
@@ -335,10 +337,14 @@ int reg_json_api(struct odict *od, const struct reg *reg)
 
 int reg_status(struct re_printf *pf, const struct reg *reg)
 {
-	uint32_t pexpires = sipreg_proxy_expires(reg->sipreg);
-	bool fb = !pexpires && reg->scode;
+	uint32_t pexpires;
+	bool fb;
+
 	if (!reg)
 		return 0;
+
+	pexpires = sipreg_proxy_expires(reg->sipreg);
+	fb = !pexpires && reg->scode;
 
 	if (pexpires) {
 		return re_hprintf(pf, " %s %s Expires %us",

@@ -2166,6 +2166,9 @@ static bool uri_match_af(const struct uri *accu, const struct uri *peeru)
 	struct sa sa1;
 	struct sa sa2;
 	int err;
+#else
+	(void)accu;
+	(void)peeru;
 #endif
 
 	/* we list cases where we know there is a mismatch in af */
@@ -2890,9 +2893,11 @@ int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 		break;
 	default:
 		err = EINVAL;
-		goto out;
 		break;
 	}
+
+	if (err)
+		goto out;
 
 	name = autoans_header_name(met);
 	pl_set_str(&n, name);

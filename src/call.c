@@ -785,11 +785,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (err)
 		goto out;
 
-	err = sdp_session_set_lattr(call->sdp, true,
-				    "tool", "baresip " BARESIP_VERSION);
-	if (err)
-		goto out;
-
 	/* Check for incoming SDP Offer */
 	if (msg && mbuf_get_left(msg->mb))
 		got_offer = true;
@@ -1008,10 +1003,15 @@ int call_modify(struct call *call)
 	debug("call: modify\n");
 
 	err = call_sdp_get(call, &desc, true);
-	if (!err)
+	if (!err) {
 		err = sipsess_modify(call->sess, desc);
+		if (err)
+			goto out;
+	}
 
 	err = update_media(call);
+
+ out:
 	mem_deref(desc);
 
 	return err;

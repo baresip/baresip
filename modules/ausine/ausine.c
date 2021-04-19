@@ -148,11 +148,16 @@ static void *play_thread(void *arg)
 }
 
 
-static enum channels stereo_conf(const char *dev) {
+static enum channels stereo_conf(const char *dev)
+{
 	struct pl r, pl1, pl2 = pl_null;
+	int err;
 
 	pl_set_str(&r, dev);
-	re_regex(r.p, r.l, "[^,]+,[~]*", &pl1, &pl2);
+
+	err = re_regex(r.p, r.l, "[^,]+,[~]*", &pl1, &pl2);
+	if (err)
+		return STEREO;
 
 	if (pl_isset(&pl2)) {
 		if (!pl_strcmp(&pl2, "stereo_left"))
@@ -183,10 +188,9 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	}
 
 	if (prm->srate != 48000) {
-		warning("ausine: supports only 48kHz samplerate");
+		warning("ausine: supports only 48kHz samplerate\n");
 		return ENOTSUP;
 	}
-
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)

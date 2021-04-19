@@ -418,7 +418,7 @@ static void clean_number(char *str)
 	/* only clean numeric numbers
 	 * In other cases trust the user input
 	 */
-	int err = re_regex(str, sizeof(str), "[A-Za-z]");
+	int err = re_regex(str, str_len(str), "[A-Za-z]");
 	if (err == 0)
 		return;
 
@@ -606,11 +606,6 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	adir = decode_sdp_enum(&argdir[0]);
 	vdir = decode_sdp_enum(&argdir[1]);
 
-	if (err) {
-		(void)re_hprintf(pf, "%s", usage);
-		return err;
-	}
-
 	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
 		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
@@ -643,6 +638,9 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 
 	uribuf->pos = 0;
 	err = mbuf_strdup(uribuf, &uri, uribuf->end);
+	if (err)
+		goto out;
+
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
 	if (err)
 		goto out;
@@ -1154,11 +1152,20 @@ static int cmd_tls_issuer(struct re_printf *pf, void *unused)
 		return ENOMEM;
 
 	err = tls_get_issuer(uag_tls(), mb);
-	if (err){
-		(void)re_hprintf(pf, "unable to get certificate issuer (%m)\n",
-				 err);
-		goto out;
+	if (err == ENOENT) {
+		(void)re_hprintf(pf, "sip_certificate not configured\n");
 	}
+	else if (err == ENOTSUP) {
+		(void)re_hprintf(pf, "could not get issuer of configured "
+				"certificate (%m)\n", err);
+	}
+	else if (err) {
+		(void)re_hprintf(pf, "unable to print certificate issuer "
+				"(%m)\n", err);
+	}
+
+	if (err)
+		goto out;
 
 	(void)re_hprintf(pf, "TLS Cert Issuer: %b\n", mb->buf, mb->pos);
 
@@ -1179,11 +1186,20 @@ static int cmd_tls_subject(struct re_printf *pf, void *unused)
 		return ENOMEM;
 
 	err = tls_get_subject(uag_tls(), mb);
-	if (err) {
-		(void)re_hprintf(pf, "unable to get certificate subject"
-				 " (%m)\n", err);
-		goto out;
+	if (err == ENOENT) {
+		(void)re_hprintf(pf, "sip_certificate not configured\n");
 	}
+	else if (err == ENOTSUP) {
+		(void)re_hprintf(pf, "could not get subject of configured "
+				"certificate (%m)\n", err);
+	}
+	else if (err) {
+		(void)re_hprintf(pf, "unable to print certificate subject "
+				 " (%m)\n", err);
+	}
+
+	if (err)
+		goto out;
 
 	(void)re_hprintf(pf, "TLS Cert Subject: %b\n", mb->buf, mb->pos);
 

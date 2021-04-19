@@ -131,7 +131,7 @@ int png_save_vidframe(const struct vidframe *vf, const char *path)
 	if (fp)
 		fclose(fp);
 
-	return 0;
+	return err;
 }
 
 

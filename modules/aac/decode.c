@@ -232,7 +232,6 @@ int aac_decode_frm(struct audec_state *ads, int fmt, void *sampv,
 		}
 
 		nsamp += (info->frameSize * info->numChannels);
-		size -= (info->frameSize * info->numChannels);
 
 		pos += bufferSize - valid;
 		pBuffer += bufferSize - valid;

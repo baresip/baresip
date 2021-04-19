@@ -152,8 +152,6 @@ static int module_init(void)
 				";usedtx=%d", b);
 		if (n <= 0)
 			return ENOMEM;
-
-		p += n;
 	}
 
 	(void)conf_get_bool(conf, "opus_mirror", &opus_mirror);

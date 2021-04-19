@@ -182,25 +182,25 @@ static int display(struct video_loop *vl, struct vidframe *frame,
 	if (!vidframe_isvalid(frame))
 		return 0;
 
-	/* Process video frame through all Video Filters */
-	for (le = vl->filtdecl.head; le; le = le->next) {
-
-		struct vidfilt_dec_st *st = le->data;
+	if (!list_isempty(&vl->filtdecl)) {
 
 		/* Some video decoders keeps the displayed video frame
 		 * in memory and we should not write to that frame.
 		 */
-		if (!frame_filt) {
 
-			err = vidframe_alloc(&frame_filt, frame->fmt,
-					     &frame->size);
-			if (err)
-				return err;
+		err = vidframe_alloc(&frame_filt, frame->fmt, &frame->size);
+		if (err)
+			return err;
 
-			vidframe_copy(frame_filt, frame);
+		vidframe_copy(frame_filt, frame);
 
-			frame = frame_filt;
-		}
+		frame = frame_filt;
+	}
+
+	/* Process video frame through all Video Filters */
+	for (le = vl->filtdecl.head; le; le = le->next) {
+
+		struct vidfilt_dec_st *st = le->data;
 
 		if (st->vf->dech)
 			err |= st->vf->dech(st, frame, &timestamp);
