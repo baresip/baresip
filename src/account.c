@@ -1438,6 +1438,7 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	bool uri_is_ip;
 	char *uridup;
 	char *host;
+	char *param;
 	int err = 0;
 
 	if (!buf || !uri)
@@ -1469,6 +1470,10 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 		host = uridup + 4;
 	else
 		host = uridup;
+
+	param = strchr(host, ';');
+	if (param)
+		*param = 0;
 
 	uri_is_ip =
 		!sa_decode(&sa_addr, host, strlen(host)) ||
