@@ -565,7 +565,7 @@ int mcsource_start(struct mcsource **srcp, const struct aucodec *ac,
 
   out:
 	if (err)
-		src = mem_deref(src);
+		mem_deref(src);
 	else
 		*srcp = src;
 

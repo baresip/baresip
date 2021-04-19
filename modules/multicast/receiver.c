@@ -474,7 +474,7 @@ void mcreceiver_unreg(struct sa *addr){
 	list_unlink(&mcreceiver->le);
 	resume_uag_state();
 	lock_rel(mcreceivl_lock);
-	mcreceiver = mem_deref(mcreceiver);
+	mem_deref(mcreceiver);
 
 	if (list_isempty(&mcreceivl))
 		mcreceivl_lock = mem_deref(mcreceivl_lock);
@@ -552,7 +552,7 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 
   out:
 	if (err)
-		mcreceiver = mem_deref(mcreceiver);
+		mem_deref(mcreceiver);
 
 	return err;
 }

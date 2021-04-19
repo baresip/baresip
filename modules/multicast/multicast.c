@@ -64,7 +64,7 @@ static int decode_codec(struct pl *plcodec, struct aucodec **codecptr)
 {
 	int err = 0;
 	struct list *acodeclist = baresip_aucodecl();
-	struct aucodec *codec;
+	struct aucodec *codec = NULL;
 	struct le *le;
 
 	LIST_FOREACH(acodeclist, le) {
