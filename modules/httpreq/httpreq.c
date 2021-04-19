@@ -250,6 +250,9 @@ static int cmd_setauth(struct re_printf *pf, void *arg)
 		return err;
 	}
 
+	if (err)
+		return err;
+
 	return http_reqconn_set_auth(d->conn,
 			pl_isset(&user) ? &user : NULL,
 			pl_isset(&pass) ? &pass : NULL);
@@ -402,6 +405,9 @@ static int ca_handler(const struct pl *pl, void *arg)
 	mem_deref(mb);
 
 	/* ignore err, just print warning */
+	if (err)
+		warning("httpreq: could not add ca %s\n", parm);
+
 	return 0;
 }
 #endif
@@ -507,6 +513,8 @@ static int module_init(void)
 	}
 
 	err |= conf_apply(conf_cur(), "httpreq_ca", ca_handler, d->client);
+	if (err)
+		return err;
 #endif
 
 	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
