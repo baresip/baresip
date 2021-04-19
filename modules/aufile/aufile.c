@@ -127,7 +127,7 @@ static void timeout(void *arg)
 
 static int read_file(struct ausrc_st *st)
 {
-	struct mbuf *mb;
+	struct mbuf *mb = NULL;
 	int err;
 	size_t n;
 	struct mbuf *mb2 = NULL;
@@ -137,6 +137,7 @@ static int read_file(struct ausrc_st *st)
 		uint8_t *p;
 		size_t i;
 
+		mem_deref(mb);
 		mb = mbuf_alloc(4096);
 		if (!mb)
 			return ENOMEM;
@@ -164,7 +165,6 @@ static int read_file(struct ausrc_st *st)
 				sampv[i] = sys_ltohs(sampv[i]);
 
 			aubuf_append(st->aubuf, mb);
-			mb = mem_deref(mb);
 			break;
 		case AUFMT_PCMA:
 		case AUFMT_PCMU:
@@ -178,20 +178,20 @@ static int read_file(struct ausrc_st *st)
 
 			mbuf_set_pos(mb2, 0);
 			aubuf_append(st->aubuf, mb2);
-			mb = mem_deref(mb);
-			mb2 = mem_deref(mb2);
+			mem_deref(mb2);
 			break;
 
 		default:
 			err = ENOSYS;
 			break;
 		}
+
+		if (err)
+			break;
 	}
 
 	info("aufile: loaded %zu bytes\n", aubuf_cur_size(st->aubuf));
-
 	mem_deref(mb);
-	mem_deref(mb2);
 	return err;
 }
 
