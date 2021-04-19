@@ -33,6 +33,7 @@ static struct config core_config = {
 		"",
 		SIP_TRANSP_UDP,
 		false,
+		0x68,
 	},
 
 	/** Call config */
@@ -91,7 +92,7 @@ static struct config core_config = {
 		AF_UNSPEC,
 		"",
 		{ {"",0} },
-		0
+		0,
 	},
 };
 
@@ -300,6 +301,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	if (!conf_get(conf, "sip_trans_def", &tr))
 		cfg->sip.transp = sip_transp_decode(&tr);
 
+	if (0 == conf_get_u32(conf, "sip_tos", &v))
+		cfg->sip.tos = v;
+
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
 			   &cfg->call.local_timeout);
@@ -434,7 +438,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_cafile\t\t%s\n"
 			 "sip_capath\t\t%s\n"
 			 "sip_trans_def\t%s\n"
-			 "sip_verify_server\t%s\n"
+			 "sip_verify_server\t\t\t%s\n"
+			 "sip_tos\t%s\n"
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
@@ -483,6 +488,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->sip.capath,
 			 sip_transp_name(cfg->sip.transp),
 			 cfg->sip.verify_server ? "yes" : "no",
+			 cfg->sip.tos,
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
@@ -634,6 +640,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 #endif
 			  "#sip_trans_def\t\tudp\n"
 			  "#sip_verify_server\tyes\n"
+			  "sip_tos\t\t\t104\n"
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"

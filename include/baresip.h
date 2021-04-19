@@ -291,6 +291,7 @@ struct config_sip {
 	char capath[256];       /**< SIP CA-path                    */
 	enum sip_transp transp; /**< Default outgoing SIP transport protocol */
 	bool verify_server;     /**< Enable SIP TLS verify server   */
+	uint8_t tos;            /**< Type-of-Service for SIP        */
 };
 
 /** Call config */

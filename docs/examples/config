@@ -13,6 +13,7 @@ poll_method		epoll		# poll, select, epoll ..
 sip_cafile		/etc/ssl/certs/ca-certificates.crt
 #sip_trans_def		udp
 sip_verify_server	yes
+sip_tos			104
 
 # Call
 call_local_timeout	120
