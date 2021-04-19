@@ -1,0 +1,94 @@
+#!/usr/bin/python3
+#
+# Copyright (c) 2021, Robert Scheck <robert@fedoraproject.org>
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+"""Convert FRITZ!Box XML phone book into Baresip contacts"""
+
+import sys
+import xml.etree.ElementTree
+
+def fail(msg):
+    """Print failure message to STDERR and end with non-zero exit code"""
+    print(msg, file=sys.stderr)
+    sys.exit(1)
+
+def usage():
+    """Handle mandatory and optional command line arguments"""
+    if len(sys.argv) not in range(2, 5):
+        fail(f"Usage: {sys.argv[0]} <FRITZ!Box XML> [<Baresip contacts>] "
+             "[<FRITZ!Box IP>]")
+
+    return sys.argv[1], \
+           sys.argv[2] if len(sys.argv) >= 3 else None, \
+           f"@{sys.argv[3]}" if len(sys.argv) == 4 else "@fritz.box"
+
+def convert(entries, src, host="@fritz.box"):
+    """Convert FRITZ!Box XML phone book into Baresip contacts"""
+    try:
+        types = {'home': '\N{house building}',
+                 'work': '\N{briefcase}',
+                 'mobile': '\N{mobile phone}'}
+        tree = xml.etree.ElementTree.parse(src)
+        for contact in tree.iter('contact'):
+            realname = contact.findtext("./person/realName")
+            for ntype in [*types]:
+                number = contact.findtext("./telephony/number"
+                                          f"[@type='{ntype}']")
+                if number is not None:
+                    entries.append(f"{types[ntype]} {realname} <sip:{number}"
+                                   f"{'' if '@' in number else host}>")
+    except FileNotFoundError:
+        fail(f"Error: File '{src}' does not exist or can not be read!")
+    except xml.etree.ElementTree.ParseError:
+        fail(f"Error: File '{src}' is no FRITZ!Box XML phone book or damaged!")
+
+def write(entries, src=None, dst=None):
+    """Write Baresip contacts to file or STDOUT"""
+    try:
+        dst = None if dst == '-' else dst
+        sys.stdout.close = lambda: None
+        with (open(dst, 'w') if dst else sys.stdout) as contacts:
+            contacts.write("# SIP contacts\n")
+            contacts.write("# Source: "
+                           f"{'(unknown)' if src is None else src }\n")
+            contacts.write('\n'.join(entries) + '\n')
+    except PermissionError:
+        fail(f"Error: File '{dst}' can not be created or written to!")
+
+def main():
+    """Handle command line arguments, convert phone book and write result"""
+    entries = []
+    src, dst, host = usage()
+    convert(entries, src, host)
+    write(entries, src, dst)
+
+if __name__ == "__main__":
+    main()
