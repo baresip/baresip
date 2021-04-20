@@ -160,11 +160,12 @@ static void menu_on_dial_history(GtkMenuItem *menuItem, gpointer arg)
 {
 	struct gtk_mod *mod = arg;
 	const char *label = gtk_menu_item_get_label(menuItem);
-	/* get the uri from the label */
 	char *label_1;
+	char buf[256];
 	char *uri;
 
-	label_1 = strchr(label, '[');
+	str_ncpy(buf, label, sizeof(buf));
+	label_1 = strchr(buf, '[');
 	label_1[0] = ' ';
 
 	uri = strtok(label_1, "]");
