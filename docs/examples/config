@@ -185,6 +185,8 @@ module_app		ctrl_dbus.so
 #------------------------------------------------------------------------------
 # Module parameters
 
+# DTLS SRTP parameters
+#dtls_srtp_use_ec	prime256v1
 
 # UI Modules parameters
 cons_listen		0.0.0.0:5555 # cons - Console UI UDP/TCP sockets

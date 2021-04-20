@@ -983,6 +983,10 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "# Module parameters\n");
 	(void)re_fprintf(f, "\n");
 
+	(void)re_fprintf(f, "# DTLS SRTP parameters\n");
+	(void)re_fprintf(f, "#dtls_srtp_use_ec\tprime256v1\n");
+	(void)re_fprintf(f, "\n");
+
 	(void)re_fprintf(f, "\n# UI Modules parameters\n");
 	(void)re_fprintf(f, "cons_listen\t\t0.0.0.0:5555 # cons - "
 				"Console UI UDP/TCP sockets\n");
