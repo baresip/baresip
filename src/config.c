@@ -523,7 +523,7 @@ static const char *default_cafile(void)
 {
 #if defined (DEFAULT_CAFILE)
 	return DEFAULT_CAFILE;
-#elif defined (DARWIN)
+#elif defined (DARWIN) || defined (FREEBSD)
 	return "/etc/ssl/cert.pem";
 #else
 	return "/etc/ssl/certs/ca-certificates.crt";
@@ -624,7 +624,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n# SIP\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
-#if defined (DEFAULT_CAFILE) || defined (DARWIN) || defined (LINUX)
+#if defined (DEFAULT_CAFILE) || defined (DARWIN) || defined (LINUX) \
+	|| defined (FREEBSD)
 			 "sip_cafile\t\t%s\n"
 #else
 			 "#sip_cafile\t\t%s\n"
