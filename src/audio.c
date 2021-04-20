@@ -834,10 +834,8 @@ static void auplay_write_handler2(struct auframe *af, void *arg)
 	if (!rx->thr.run && rx->thr.start) {
 		rx->thr.run = true;
 		err = pthread_create(&rx->thr.tid, NULL, rx_thread, a);
-		if (err) {
+		if (err)
 			rx->thr.run = false;
-			return;
-		}
 	}
 
 	/* decode aubuf_minsz bytes in decoding thread */
