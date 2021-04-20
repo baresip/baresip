@@ -269,6 +269,13 @@ video_selfview		window # {window,pip}
 # ctrl_dbus
 #ctrl_dbus_use	system		# system, session
 
+# avformat
+#pass_through		yes
+#profile_level_id	42002a
+
+# rtsp
+#rtsp_transport		udp
+
 # mqtt
 #mqtt_broker_host	sollentuna.example.com
 #mqtt_broker_port	1883

@@ -2,6 +2,8 @@
  * @file avformat/video.c  libavformat media-source -- video
  *
  * Copyright (C) 2010 - 2020 Alfred E. Heggestad
+ * Copyright (C) 2010 - 2020 Creytiv.com
+ * Copyright (C) 2021 Media Magic Technologies <developer@mediamagictechnologies.com> and Divus GmbH <developer@divus.eu>
  */
 
 #include <re.h>

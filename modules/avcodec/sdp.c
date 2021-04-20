@@ -2,6 +2,8 @@
  * @file avcodec/sdp.c  Video codecs using libavcodec -- SDP functions
  *
  * Copyright (C) 2010 Alfred E. Heggestad
+ * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2021 Media Magic Technologies <developer@mediamagictechnologies.com> and Divus GmbH <developer@divus.eu>
  */
 
 #include <re.h>
