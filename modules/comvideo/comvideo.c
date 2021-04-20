@@ -72,6 +72,8 @@ struct vidsrc_st {
 	const struct vidsrc *vs;  /* inheritance */
 	struct vidsz sz;
 	u_int32_t pixfmt;
+	u_int32_t fps;
+	u_int32_t bitrate;
 
 	GstCameraSrc *camsrc;
 	GList *encoders;
@@ -141,6 +143,7 @@ static void src_destructor(void *arg)
 	if (src) {
 		gst_camera_src_set_sample_cb(
 			src,
+			st->bitrate,
 			GST_CAMERA_SRC_CODEC_H264,
 			NULL, NULL);
 
@@ -163,10 +166,10 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 {
 	struct vidsrc_st *st;
 	GstCameraSrc *src;
+	struct config *cfg;
 
 	(void) dev;
 	(void) ctx;
-	(void) prm;
 	(void) fmt;
 	(void) errorh;
 
@@ -177,21 +180,26 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
+	cfg = conf_config();
+
 	st->vs = vs;
 	st->sz = *size;
 	st->frameh = frameh;
 	st->arg = arg;
 	st->pixfmt = 1;
+	st->fps = (u_int32_t) prm->fps;
+	st->bitrate = cfg->video.bitrate;
 
 	src = camerad_client_add_src(comvideo_codec.camerad_client,
 				     GST_CAMERA_COMPONENT_RTP, st->sz.w,
 				     st->sz.h,
-				     15);
+				     st->fps);
 
 	if (src) {
 		gst_camera_src_set_sample_cb(
 			src,
 			GST_CAMERA_SRC_CODEC_H264,
+			st->bitrate,
 			(camera_new_sample) camera_h264_sample_received,
 			st);
 	}
