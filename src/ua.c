@@ -2380,7 +2380,6 @@ struct ua *uag_find_requri(const char *requri)
 	struct le *le;
 	struct ua *ret = NULL;
 	struct sip_addr addr;
-	struct sa sa;
 	int err;
 
 	if (!requri)
@@ -2444,13 +2443,10 @@ struct ua *uag_find_requri(const char *requri)
 			if (!uri_match_af(&acc->luri, uri))
 				continue;
 
-			if (!uri_only_user(uri) ||
-					!sa_set(&sa, &uri->host, 0)) {
-				/* Remember local account.
-				 * But we prefer registered UA. */
-				if (!ret)
-					ret = ua;
-			}
+			/* Remember local account.
+			 * But we prefer registered UA. */
+			if (!ret)
+				ret = ua;
 		}
 	}
 
