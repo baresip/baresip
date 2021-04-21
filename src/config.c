@@ -284,20 +284,17 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   sizeof(cfg->sip.local));
 	(void)conf_get_str(conf, "sip_certificate", cfg->sip.cert,
 			   sizeof(cfg->sip.cert));
-	(void)conf_get_bool(conf, "sip_verify_server",
-			&cfg->sip.verify_server);
 
+	cfg->sip.verify_server = true;
 	(void)conf_get_str(conf, "sip_cafile", cfg->sip.cafile,
 			   sizeof(cfg->sip.cafile));
 	(void)conf_get_str(conf, "sip_capath", cfg->sip.capath,
 			   sizeof(cfg->sip.capath));
-	if (!str_isset(cfg->sip.cafile) && !str_isset(cfg->sip.capath)) {
-		if (cfg->sip.verify_server) {
-			warning("config: no sip_cafile/sip_capath defined "
-				"and sip_verify_server is enabled, "
-				"sip tls connections maybe won't work\n");
-		}
-	}
+	if (!str_isset(cfg->sip.cafile) && !str_isset(cfg->sip.capath))
+		cfg->sip.verify_server = false;
+
+	(void)conf_get_bool(conf, "sip_verify_server",
+			&cfg->sip.verify_server);
 
 	if (!conf_get(conf, "sip_trans_def", &tr))
 		cfg->sip.transp = sip_transp_decode(&tr);
@@ -631,7 +628,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			 "#sip_cafile\t\t%s\n"
 #endif
 			  "#sip_trans_def\t\tudp\n"
-			  "sip_verify_server\tyes\n"
+			  "#sip_verify_server\tyes\n"
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
