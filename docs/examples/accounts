@@ -16,6 +16,7 @@
 #    ;auth_pass=password
 #    ;call_transfer=no
 #    ;cert=cert.pem
+#    ;mediaaf={ipv4,ipv6}
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}
 #    ;mwi=no
@@ -62,6 +63,11 @@
 # Force audio-codec 'opus' and video-codec 'vp8'
 #
 <sip:user@example.com>;audio_codecs=opus/48000/2;video_codecs=vp8;auth_pass=pass
+
+#
+# Force IPv6 for media
+#
+<sip:user@example.com>;mediaaf=ipv6
 
 
 # ... more examples can be added here ...

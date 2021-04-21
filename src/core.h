@@ -50,6 +50,7 @@ struct account {
 	struct list aucodecl;        /**< List of preferred audio-codecs     */
 	char *auth_user;             /**< Authentication username            */
 	char *auth_pass;             /**< Authentication password            */
+	int maf;                     /**< Media address family to force      */
 	char *mnatid;                /**< Media NAT handling                 */
 	char *mencid;                /**< Media encryption type              */
 	const struct mnat *mnat;     /**< MNAT module                        */

@@ -163,6 +163,24 @@ static int extra_decode(struct account *acc, const struct pl *prm)
 }
 
 
+/* Decode address family parameter */
+static int af_decode(struct account *acc, const struct pl *prm)
+{
+	struct pl pl;
+
+	if (!acc || !prm)
+		return EINVAL;
+
+	if (msg_param_decode(prm, "mediaaf", &pl))
+		return 0;
+
+	acc->maf = !pl_strcasecmp(&pl, "ipv6") ? AF_INET6 :
+		   !pl_strcasecmp(&pl, "ipv4") ? AF_INET : AF_UNSPEC;
+
+	return 0;
+}
+
+
 static int decode_pair(char **val1, char **val2,
 		       const struct pl *params, const char *name)
 {
@@ -525,6 +543,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 	err |= cert_decode(acc, &acc->laddr.params);
 	err |= extra_decode(acc, &acc->laddr.params);
+	err |= af_decode(acc,  &acc->laddr.params);
 
  out:
 	if (err)
@@ -1456,6 +1475,19 @@ const char *account_call_transfer(const struct account *acc)
 const char *account_extra(const struct account *acc)
 {
 	return acc ? acc->extra : NULL;
+}
+
+
+/**
+ * Get the preferred address for media of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return The address family
+ */
+int account_mediaaf(const struct account *acc)
+{
+	return acc ? acc->maf : 0;
 }
 
 

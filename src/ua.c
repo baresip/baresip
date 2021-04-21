@@ -988,6 +988,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	if (err)
 		goto out;
 
+	ua_set_media_af(ua, ua->acc->maf);
 	if (ua->acc->sipnat) {
 		ua_printf(ua, "Using sipnat: '%s'\n", ua->acc->sipnat);
 	}
