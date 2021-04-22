@@ -93,7 +93,7 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 	struct call *call = ua_call(ua);
 	int err;
 
-	if (carg->prm) {
+	if (str_isset(carg->prm)) {
 		call = uag_call_find(carg->prm);
 		if (!call) {
 			re_hprintf(pf, "call %s not found\n", carg->prm);
@@ -699,7 +699,7 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
-	if (carg->prm) {
+	if (str_isset(carg->prm)) {
 		call = uag_call_find(carg->prm);
 		if (!call) {
 			re_hprintf(pf, "call %s not found\n", carg->prm);
@@ -952,7 +952,7 @@ static int cmd_set_adelay(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 
-	if (!carg->prm) {
+	if (!str_isset(carg->prm)) {
 		menu_get()->adelay = -1;
 		return 0;
 	}

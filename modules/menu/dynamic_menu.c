@@ -77,7 +77,7 @@ static int cmd_call_hold(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
-	if (carg->prm) {
+	if (str_isset(carg->prm)) {
 		call = uag_call_find(carg->prm);
 		if (!call) {
 			re_hprintf(pf, "call %s not found\n", carg->prm);
@@ -158,7 +158,7 @@ static int cmd_call_resume(struct re_printf *pf, void *arg)
 	struct call *call = ua_call(ua);
 	(void)pf;
 
-	if (carg->prm) {
+	if (str_isset(carg->prm)) {
 		call = uag_call_find(carg->prm);
 		if (!call) {
 			re_hprintf(pf, "call %s not found\n", carg->prm);
