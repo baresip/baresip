@@ -1073,12 +1073,24 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 int call_progress(struct call *call)
 {
 	struct mbuf *desc;
+	enum answermode m = account_answermode(call->acc);
+	enum sdp_dir adir;
+	enum sdp_dir vdir;
 	int err;
 
 	if (!call)
 		return EINVAL;
 
 	tmr_cancel(&call->tmr_inv);
+
+	adir = m == ANSWERMODE_AUTO ? SDP_SENDRECV :
+			    m == ANSWERMODE_EARLY_AUDIO ? SDP_RECVONLY :
+			    SDP_INACTIVE;
+	vdir = m == ANSWERMODE_AUTO ? SDP_SENDRECV :
+			    m == ANSWERMODE_EARLY_VIDEO ? SDP_RECVONLY :
+			    SDP_INACTIVE;
+	if (adir != SDP_SENDRECV || vdir != SDP_SENDRECV)
+		call_set_media_direction(call, adir, vdir);
 
 	err = call_sdp_get(call, &desc, false);
 	if (err)

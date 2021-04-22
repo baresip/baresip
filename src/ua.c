@@ -590,6 +590,8 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		switch (ua->acc->answermode) {
 
 		case ANSWERMODE_EARLY:
+		case ANSWERMODE_EARLY_AUDIO:
+		case ANSWERMODE_EARLY_VIDEO:
 			ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
 			(void)call_progress(call);
 			if (ua->acc->adelay)
