@@ -176,6 +176,12 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 		else if (0 == pl_strcasecmp(&amode, "early")) {
 			prm->answermode = ANSWERMODE_EARLY;
 		}
+		else if (0 == pl_strcasecmp(&amode, "early-video")) {
+			prm->answermode = ANSWERMODE_EARLY_VIDEO;
+		}
+		else if (0 == pl_strcasecmp(&amode, "early-audio")) {
+			prm->answermode = ANSWERMODE_EARLY_AUDIO;
+		}
 		else if (0 == pl_strcasecmp(&amode, "auto")) {
 			prm->answermode = ANSWERMODE_AUTO;
 		}
@@ -1098,7 +1104,8 @@ int account_set_answermode(struct account *acc, enum answermode mode)
 		return EINVAL;
 
 	if ((mode != ANSWERMODE_MANUAL) && (mode != ANSWERMODE_EARLY) &&
-	    (mode != ANSWERMODE_AUTO)) {
+	    (mode != ANSWERMODE_AUTO) && (mode != ANSWERMODE_EARLY_VIDEO) &&
+	    (mode != ANSWERMODE_EARLY_AUDIO)) {
 		warning("account: invalid answermode : `%d'\n", mode);
 		return EINVAL;
 	}
@@ -1334,6 +1341,8 @@ static const char *answermode_str(enum answermode mode)
 	case ANSWERMODE_MANUAL: return "manual";
 	case ANSWERMODE_EARLY:  return "early";
 	case ANSWERMODE_AUTO:   return "auto";
+	case ANSWERMODE_EARLY_AUDIO:  return "early-audio";
+	case ANSWERMODE_EARLY_VIDEO:  return "early-video";
 	default: return "???";
 	}
 }
