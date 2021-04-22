@@ -787,6 +787,24 @@ int account_set_stun_pass(struct account *acc, const char *pass)
 
 
 /**
+ * Set the preferred media address family of a SIP account
+ *
+ * @param acc      User-Agent account
+ * @param mediaaf  Media address family
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_mediaaf(struct account *acc, int mediaaf)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->maf = mediaaf;
+	return 0;
+}
+
+
+/**
  * Set the media encryption for a SIP account
  *
  * @param acc     User-Agent account
@@ -1408,6 +1426,19 @@ static const char *dtmfmode_str(enum dtmfmode mode)
 
 
 /**
+ * Get the preferred address family for media of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return The address family
+ */
+int account_mediaaf(const struct account *acc)
+{
+	return acc ? acc->maf : 0;
+}
+
+
+/**
  * Get the media encryption of an account
  *
  * @param acc User-Agent account
@@ -1475,19 +1506,6 @@ const char *account_call_transfer(const struct account *acc)
 const char *account_extra(const struct account *acc)
 {
 	return acc ? acc->extra : NULL;
-}
-
-
-/**
- * Get the preferred address for media of an account
- *
- * @param acc User-Agent account
- *
- * @return The address family
- */
-int account_mediaaf(const struct account *acc)
-{
-	return acc ? acc->maf : 0;
 }
 
 
