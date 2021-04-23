@@ -193,18 +193,19 @@ static void play_incoming(const struct call *call)
 	/* stop any ringtones */
 	menu_stop_play();
 
-	/* Only play the ringtones if answermode is "Manual".
-	 * If the answermode is "auto" then be silent.
-	 */
-	if (ANSWERMODE_MANUAL == account_answermode(call_account(call))) {
+	if (ANSWERMODE_AUTO == account_answermode(call_account(call)))
+		return;
 
-		if (menu_find_call(active_call_test)) {
-			menu_play("callwaiting_aufile", "callwaiting.wav", 3);
-		}
-		else {
-			/* Alert user */
-			menu_play("ring_aufile", "ring.wav", -1);
-		}
+	if (SDP_INACTIVE == sdp_media_rdir(stream_sdpmedia(
+					audio_strm(call_audio(call)))))
+		return;
+
+	if (menu_find_call(active_call_test)) {
+		menu_play("callwaiting_aufile", "callwaiting.wav", 3);
+	}
+	else {
+		/* Alert user */
+		menu_play("ring_aufile", "ring.wav", -1);
 	}
 }
 
@@ -380,6 +381,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 #endif
 
 
+	ardir =sdp_media_rdir(
+			stream_sdpmedia(audio_strm(call_audio(call))));
 	count = uag_call_count();
 	switch (ev) {
 
@@ -389,8 +392,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		menu_selcall(call);
 		menu_stop_play();
 
-		ardir =sdp_media_rdir(
-			stream_sdpmedia(audio_strm(call_audio(call))));
 		vrdir = sdp_media_rdir(
 			stream_sdpmedia(video_strm(call_video(call))));
 		if (!call_has_video(call))
@@ -419,7 +420,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_PROGRESS:
 		menu_selcall(call);
-		menu_stop_play();
+		if (ardir != SDP_INACTIVE)
+			menu_stop_play();
 		break;
 
 	case UA_EVENT_CALL_ANSWERED:
