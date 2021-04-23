@@ -166,10 +166,12 @@ static void menu_on_dial_history(GtkMenuItem *menuItem, gpointer arg)
 
 	str_ncpy(buf, label, sizeof(buf));
 	label_1 = strchr(buf, '[');
+	if (!label_1)
+		return;
+
 	label_1[0] = ' ';
 
 	uri = strtok(label_1, "]");
-	/* Queue dial from the main thread */
 	gtk_mod_connect(mod, uri);
 }
 
