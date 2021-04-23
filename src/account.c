@@ -1430,7 +1430,7 @@ static const char *dtmfmode_str(enum dtmfmode mode)
  *
  * @param acc User-Agent account
  *
- * @return The address family
+ * @return Address family
  */
 int account_mediaaf(const struct account *acc)
 {

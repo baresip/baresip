@@ -65,7 +65,7 @@
 <sip:user@example.com>;audio_codecs=opus/48000/2;video_codecs=vp8;auth_pass=pass
 
 #
-# Force IPv6 for media
+# Prefer IPv6 for media
 #
 <sip:user@example.com>;mediaaf=ipv6
 
