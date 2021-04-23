@@ -67,6 +67,9 @@ struct call {
 	uint32_t rtp_timeout_ms;  /**< RTP Timeout in [ms]                  */
 	uint32_t linenum;         /**< Line number from 1 to N              */
 	struct list custom_hdrs;  /**< List of custom headers if any        */
+
+	enum sdp_dir ansadir;      /**< Answer audio direction              */
+	enum sdp_dir ansvdir;      /**< Answer video direction              */
 };
 
 
@@ -1083,6 +1086,8 @@ int call_progress(struct call *call)
 
 	tmr_cancel(&call->tmr_inv);
 
+	call->ansadir = audio_strm(call_audio(call))->ldir;
+	call->ansvdir = video_strm(call_video(call))->ldir;
 	adir = m == ANSWERMODE_AUTO ? SDP_SENDRECV :
 			    m == ANSWERMODE_EARLY_AUDIO ? SDP_RECVONLY :
 			    SDP_INACTIVE;
@@ -1100,9 +1105,18 @@ int call_progress(struct call *call)
 			       desc, "Allow: %H\r\n",
 			       ua_print_allowed, call->ua);
 
-	if (!err)
-		call_stream_start(call, false);
+	if (err)
+		goto out;
 
+	if (call->got_offer)
+		err = update_media(call);
+
+	if (err)
+		goto out;
+
+	call_stream_start(call, false);
+
+out:
 	mem_deref(desc);
 
 	return 0;
@@ -1145,6 +1159,10 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 		err = update_media(call);
 		if (err)
 			return err;
+
+		if (call->ansadir || call->ansvdir)
+			call_set_media_direction(call,
+					call->ansadir, call->ansvdir);
 	}
 
 	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call,
