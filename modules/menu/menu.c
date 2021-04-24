@@ -182,8 +182,8 @@ static void menu_play(const char *ckey, const char *fname, int repeat)
 	pl_strdup(&file, &pl);
 	menu_stop_play();
 	(void)play_file(&menu.play, player, file, repeat,
-			cfg->audio.play_mod,
-			cfg->audio.play_dev);
+			cfg->audio.alert_mod,
+			cfg->audio.alert_dev);
 	mem_deref(file);
 }
 
