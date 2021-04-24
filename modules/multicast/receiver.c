@@ -216,9 +216,8 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		jbuf_flush(mcreceiver->jbuf);
 		mcreceiver->running = true;
 		mcreceiver->ssrc = ssrc;
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			"multicast: receive start %J (%d)", &mcreceiver->addr,
-			mcreceiver->prio);
+		module_event("multicast", "receive start", NULL, NULL,
+			     "%J (%d)", &mcreceiver->addr, mcreceiver->prio);
 		err = mcplayer_start(mcreceiver->jbuf, mcreceiver->ac);
 		goto out;
 	}
@@ -233,9 +232,8 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		mcplayer_stop();
 		jbuf_flush(hprio->jbuf);
 		hprio->ssrc = ssrc;
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			"multicast: receive start %J (%d)", &hprio->addr,
-			hprio->prio);
+		module_event("multicast", "receive start", NULL, NULL,
+			     "%J (%d)", &hprio->addr, hprio->prio);
 		err = mcplayer_start(hprio->jbuf, hprio->ac);
 		goto out;
 	}
@@ -250,10 +248,8 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 	jbuf_flush(mcreceiver->jbuf);
 	mcreceiver->ssrc = ssrc;
 	mcreceiver->running = true;
-	ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-		"multicast: receive start %J (%d)", &mcreceiver->addr,
-		mcreceiver->prio);
-
+	module_event("multicast", "receive start", NULL, NULL,
+		     "%J (%d)", &mcreceiver->addr, mcreceiver->prio);
 	err = mcplayer_start(mcreceiver->jbuf, mcreceiver->ac);
 
   out:
@@ -276,8 +272,8 @@ static void timeout_handler(void *arg)
 	lock_write_get(mcreceivl_lock);
 
 	if (mcreceiver->running) {
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			"multicast: receive timeout %J", &mcreceiver->addr);
+		module_event("multicast", "receive timeout", NULL, NULL,
+			     "%J (%d)", &mcreceiver->addr, mcreceiver->prio);
 		mcplayer_stop();
 	}
 
