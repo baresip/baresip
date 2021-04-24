@@ -594,7 +594,8 @@ int account_set_sipnat(struct account *acc, const char *sipnat)
 		if (0 == str_casecmp(sipnat, "outbound")) {
 			acc->sipnat = mem_deref(acc->sipnat);
 			return str_dup(&acc->sipnat, sipnat);
-		} else {
+		}
+		else {
 			warning("account: unknown sipnat value: '%s'\n",
 				sipnat);
 			return EINVAL;
