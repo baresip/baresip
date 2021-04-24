@@ -981,6 +981,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	if (err)
 		goto out;
 
+
 	/* generate a unique contact-user, this is needed to route
 	   incoming requests when using multiple useragents */
 	err = re_sdprintf(&ua->cuser, "%r-%p", &ua->acc->luri.user, ua);
@@ -1002,6 +1003,18 @@ int ua_alloc(struct ua **uap, const char *aor)
 	if (ua->acc->menc) {
 		ua_printf(ua, "Using media encryption '%s'\n",
 			  ua->acc->menc->id);
+	}
+
+	if (ua->acc->cert) {
+		err = sip_transp_add_ccert(uag.sip,
+			&ua->acc->laddr.uri, ua->acc->cert);
+		if (err) {
+			warning("ua: SIP/TLS add client "
+				"certificate %s failed: %m\n",
+				ua->acc->cert, err);
+			return err;
+		}
+
 	}
 
 	err = create_register_clients(ua);
@@ -1512,6 +1525,33 @@ int ua_state_json_api(struct odict *od, const struct ua *ua)
 /* One instance */
 
 
+#ifdef USE_TLS
+static int add_transp_clientcert(void)
+{
+	struct le *le;
+	struct ua *ua;
+	int err = 0;
+
+	for (le = list_head(&uag.ual); le; le = le->next) {
+		ua = le->data;
+		if (ua->acc->cert) {
+			err = sip_transp_add_ccert(uag.sip,
+				&ua->acc->laddr.uri, ua->acc->cert);
+			if (err) {
+				warning("ua: SIP/TLS add client "
+					"certificate %s failed: %m\n",
+					ua->acc->cert, err);
+				return err;
+			}
+
+		}
+	}
+
+	return err;
+}
+#endif
+
+
 static int add_transp_af(const struct sa *laddr)
 {
 	struct sa local;
@@ -1601,6 +1641,11 @@ static int add_transp_af(const struct sa *laddr)
 			warning("ua: SIP/TLS transport failed: %m\n", err);
 			return err;
 		}
+
+		err = add_transp_clientcert();
+		if (err)
+			return err;
+
 	}
 #endif
 

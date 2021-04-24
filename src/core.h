@@ -70,6 +70,7 @@ struct account {
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
 	bool mwi;                    /**< MWI on/off                         */
 	bool refer;                  /**< REFER method on/off                */
+	char *cert;                  /**< SIP TLS client certificate+keyfile */
 	char *ausrc_mod;
 	char *ausrc_dev;
 	char *auplay_mod;
