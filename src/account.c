@@ -339,6 +339,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	struct pl auth_user, tmp;
 	size_t i;
 	int err = 0;
+	char *value;
 
 	if (!acc || !aor)
 		return EINVAL;
@@ -375,7 +376,10 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 				  "outbound");
 	}
 
-	err |= param_dstr(&acc->sipnat, &aor->params, "sipnat");
+	value = NULL;
+	err |= param_dstr(&value, &aor->params, "sipnat");
+	(void)account_set_sipnat(acc, value);
+	mem_deref(value);
 
 	if (0 == msg_param_decode(&aor->params, "auth_user", &auth_user))
 		err |= pl_strdup(&acc->auth_user, &auth_user);
@@ -586,10 +590,18 @@ int account_set_sipnat(struct account *acc, const char *sipnat)
 	if (!acc)
 		return EINVAL;
 
-	acc->sipnat = mem_deref(acc->sipnat);
-
 	if (sipnat)
-		return str_dup(&acc->sipnat, sipnat);
+		if (0 == str_casecmp(sipnat, "outbound")) {
+			acc->sipnat = mem_deref(acc->sipnat);
+			return str_dup(&acc->sipnat, sipnat);
+		}
+		else {
+			warning("account: unknown sipnat value: '%s'\n",
+				sipnat);
+			return EINVAL;
+		}
+	else
+		acc->sipnat = mem_deref(acc->sipnat);
 
 	return 0;
 }
