@@ -620,6 +620,10 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		ua_event(ua, UA_EVENT_CALL_RINGING, call, peeruri);
 		break;
 
+	case CALL_EVENT_OUTGOING:
+		ua_event(ua, UA_EVENT_CALL_OUTGOING, call, peeruri);
+		break;
+
 	case CALL_EVENT_PROGRESS:
 		ua_printf(ua, "Call in-progress: %s\n", peeruri);
 		ua_event(ua, UA_EVENT_CALL_PROGRESS, call, peeruri);

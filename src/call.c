@@ -975,6 +975,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 		return err;
 
 	set_state(call, CALL_STATE_OUTGOING);
+	call_event_handler(call, CALL_EVENT_OUTGOING, call->peer_uri);
 
 	/* If we are using asyncronous medianat like STUN/TURN, then
 	 * wait until completed before sending the INVITE */
