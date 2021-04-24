@@ -333,7 +333,6 @@ ifneq ($(USE_AVFILTER),)
 MODULES   += avfilter
 endif
 ifneq ($(USE_CAIRO),)
-MODULES   += cairo
 ifneq ($(USE_MPG123),)
 MODULES   += rst
 endif

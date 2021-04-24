@@ -122,7 +122,6 @@ module			alsa.so
 #module			v4l2.so
 #module			v4l2_codec.so
 #module			x11grab.so
-#module			cairo.so
 #module			vidbridge.so
 
 # Video display modules

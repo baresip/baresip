@@ -110,7 +110,6 @@ Distributed under BSD license
 * Video-drivers:
   - iOS avcapture video-source
   - FFmpeg/libav libavformat/avdevice input
-  - Cairo video-source test module
   - Direct Show video-source
   - MacOSX AVCapture video-source
   - RST media player
@@ -229,7 +228,6 @@ avcapture     Video source using iOS AVFoundation video capture
 avcodec       Video codec using FFmpeg/libav libavcodec
 avformat      Video source using FFmpeg/libav libavformat
 b2bua         Back-to-Back User-Agent (B2BUA) module
-cairo         Cairo video source
 codec2        Codec2 low bit rate speech codec
 cons          UDP/TCP console UI driver
 contact       Contacts module
