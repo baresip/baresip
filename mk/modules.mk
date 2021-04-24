@@ -38,7 +38,6 @@
 #   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
 #   USE_OPUS          Opus audio codec
 #   USE_OPUS_MS       Opus multistream audio codec
-#   USE_OSS           OSS audio driver
 #   USE_PLC           Packet Loss Concealment
 #   USE_PORTAUDIO     Portaudio audio driver
 #   USE_PULSE         Pulseaudio audio driver
@@ -144,9 +143,6 @@ USE_OPUS := $(shell [ -f $(SYSROOT)/include/opus/opus.h ] || \
 USE_OPUS_MS := $(shell [ -f $(SYSROOT)/include/opus/opus_multistream.h ] || \
 	[ -f $(SYSROOT_ALT)/include/opus/opus_multistream.h ] || \
 	[ -f $(SYSROOT)/local/include/opus/opus_multistream.h ] && echo "yes")
-USE_OSS := $(shell [ -f $(SYSROOT)/include/soundcard.h ] || \
-	[ -f $(SYSROOT)/include/linux/soundcard.h ] || \
-	[ -f $(SYSROOT)/include/sys/soundcard.h ] && echo "yes")
 USE_PLC := $(shell [ -f $(SYSROOT)/include/spandsp/plc.h ] || \
 	[ -f $(SYSROOT_ALT)/include/spandsp/plc.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/spandsp/plc.h ] && echo "yes")
@@ -407,9 +403,6 @@ MODULES   += mqtt
 endif
 ifneq ($(USE_OPUS),)
 MODULES   += opus
-endif
-ifneq ($(USE_OSS),)
-MODULES   += oss
 endif
 ifneq ($(USE_PLC),)
 MODULES   += plc

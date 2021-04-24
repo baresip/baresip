@@ -88,7 +88,6 @@ Distributed under BSD license
   - Gstreamer playbin input audio-driver
   - JACK Audio Connection Kit audio-driver
   - MacOSX/iOS coreaudio/audiounit audio-driver
-  - Open Sound System (OSS) audio-driver
   - Portaudio audio-driver
   - Windows winwave audio-driver
 
@@ -265,7 +264,6 @@ natpmp        NAT Port Mapping Protocol (NAT-PMP) module
 omx           OpenMAX IL video display module
 opensles      OpenSLES audio driver
 opus          OPUS Interactive audio codec
-oss           Open Sound System (OSS) audio driver
 pcp           Port Control Protocol (PCP) module
 plc           Packet Loss Concealment (PLC) using spandsp
 portaudio     Portaudio driver

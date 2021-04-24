@@ -542,7 +542,7 @@ static const char *default_audio_device(void)
 	return "coreaudio,default";
 	#endif
 #elif defined (FREEBSD)
-	return "oss,/dev/dsp";
+	return "alsa,default";
 #elif defined (OPENBSD)
 	return "sndio,default";
 #elif defined (WIN32)
@@ -865,7 +865,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "audiounit" MOD_EXT "\n");
 	#endif
 #elif defined (FREEBSD)
-	(void)re_fprintf(f, "module\t\t\t" "oss" MOD_EXT "\n");
+	(void)re_fprintf(f, "module\t\t\t" "alsa" MOD_EXT "\n");
 #elif defined (OPENBSD)
 	(void)re_fprintf(f, "module\t\t\t" "sndio" MOD_EXT "\n");
 #elif defined (WIN32)
