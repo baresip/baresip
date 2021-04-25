@@ -478,6 +478,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 const struct vidsz *size,
 		 const char *fmt, const char *dev,
 		 vidsrc_frame_h *frameh,
+		 vidsrc_packet_h  *packeth,
 		 vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;

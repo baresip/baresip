@@ -110,5 +110,5 @@ int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
 		return ENOENT;
 
 	return vs->alloch(stp, vs, ctx, prm, size, fmt, dev,
-			  frameh, errorh, arg);
+			  frameh, NULL, errorh, arg);
 }
