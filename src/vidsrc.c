@@ -94,6 +94,7 @@ const struct vidsrc *vidsrc_find(const struct list *vidsrcl, const char *name)
  * @param fmt     Format parameter
  * @param dev     Video device
  * @param frameh  Video frame handler
+ * @param packeth Video packet handler
  * @param errorh  Error handler (optional)
  * @param arg     Handler argument
  *
