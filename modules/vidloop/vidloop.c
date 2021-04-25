@@ -103,6 +103,9 @@ struct video_loop {
 static struct video_loop *gvl;
 
 
+static int enable_decoder(struct video_loop *vl, const char *name);
+
+
 static void timestamp_state_update(struct timestamp_state *st,
 				   uint64_t ts)
 {
@@ -366,6 +369,23 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 
  out:
 	mem_deref(f2);
+}
+
+
+static void vidsrc_packet_handler(struct vidpacket *packet, void *arg)
+{
+	struct video_loop *vl = arg;
+	uint64_t rtp_ts;
+
+	rtp_ts = video_calc_rtp_timestamp_fix(packet->timestamp);
+
+	/* todo: hardcoded codecid, get from packet */
+	if (!vl->vc_dec) {
+		enable_decoder(vl, "h264");
+	}
+
+	h264_packetize(rtp_ts, packet->buf, packet->size,
+		       1480, packet_handler, vl);
 }
 
 
@@ -644,6 +664,7 @@ static int vsrc_reopen(struct video_loop *vl, const struct vidsz *sz)
 	err = vidsrc_alloc(&vl->vsrc, baresip_vidsrcl(),
 			   vl->cfg.src_mod, NULL, &vl->srcprm, sz,
 			   NULL, vl->cfg.src_dev, vidsrc_frame_handler,
+			   vidsrc_packet_handler,
 			   NULL, vl);
 	if (err) {
 		warning("vidloop: vidsrc '%s' failed: %m\n",

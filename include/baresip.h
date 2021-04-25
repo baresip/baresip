@@ -1005,7 +1005,8 @@ int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
 		 const char *name,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt, const char *dev,
-		 vidsrc_frame_h *frameh, vidsrc_error_h *errorh, void *arg);
+		 vidsrc_frame_h *frameh, vidsrc_packet_h *packeth,
+		 vidsrc_error_h *errorh, void *arg);
 
 
 /*
