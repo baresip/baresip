@@ -1146,7 +1146,7 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 
 		err = vs->alloch(&vtx->vsrc, vs, ctx, &vtx->vsrc_prm,
 				 &vtx->vsrc_size, NULL, v->vtx.device,
-				 vidsrc_frame_handler,
+				 vidsrc_frame_handler, NULL,
 				 vidsrc_error_handler, vtx);
 		if (err) {
 			warning("video: could not set source to"
@@ -1603,7 +1603,8 @@ int video_set_source(struct video *v, const char *name, const char *dev)
 
 	err = vs->alloch(&vtx->vsrc, vs, NULL, &vtx->vsrc_prm,
 			 &vtx->vsrc_size, NULL, dev,
-			 vidsrc_frame_handler, vidsrc_error_handler, vtx);
+			 vidsrc_frame_handler, NULL,
+			 vidsrc_error_handler, vtx);
 	if (err)
 		return err;
 

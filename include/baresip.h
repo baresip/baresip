@@ -958,6 +958,15 @@ struct vidsrc_prm {
 	int fmt;          /**< Wanted pixel format (enum vidfmt)           */
 };
 
+struct vidpacket {
+	uint8_t *buf;        /**< Buffer memory                     */
+	size_t size;         /**< Size of buffer                    */
+	uint64_t timestamp;  /**< Timestamp in VIDEO_TIMEBASE units */
+};
+
+/* Declare function pointer */
+typedef void (vidsrc_packet_h)(struct vidpacket *packet, void *arg);
+
 /**
  * Provides video frames to the core
  *
@@ -974,6 +983,7 @@ typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, const struct vidsrc *vs,
 			      const struct vidsz *size,
 			      const char *fmt, const char *dev,
 			      vidsrc_frame_h *frameh,
+			      vidsrc_packet_h  *packeth,
 			      vidsrc_error_h *errorh, void *arg);
 
 typedef void (vidsrc_update_h)(struct vidsrc_st *st, struct vidsrc_prm *prm,
