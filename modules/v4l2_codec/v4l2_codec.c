@@ -41,12 +41,6 @@ struct vidsrc_st {
 	int fd;
 	pthread_t thread;
 	bool run;
-
-	struct {
-		unsigned n_key;
-		unsigned n_delta;
-	} stats;
-
 	vidsrc_packet_h *packeth;
 	void *arg;
 };
@@ -256,7 +250,6 @@ static void stop_capturing(int fd)
 static void read_frame(struct vidsrc_st *st)
 {
 	struct v4l2_buffer buf;
-	bool keyframe = false;
 	struct vidpacket vp;
 	struct timeval ts;
 	uint64_t timestamp;
@@ -274,29 +267,6 @@ static void read_frame(struct vidsrc_st *st)
 		return;
 	}
 
-
-	{
-		struct mbuf mb = {0,0,0,0};
-		struct h264_nal_header hdr;
-
-		mb.buf = st->buffer;
-		mb.pos = 4;
-		mb.end = buf.bytesused - 4;
-		mb.size = buf.bytesused;
-
-		err = h264_nal_header_decode(&hdr, &mb);
-		if (err) {
-			warning("could not decode H.264 header\n");
-		}
-		else {
-			keyframe = h264_is_keyframe(hdr.type);
-			if (keyframe) {
-				++st->stats.n_key;
-			}
-			else
-				++st->stats.n_delta;
-		}
-	}
 
 	ts = buf.timestamp;
 	timestamp = 1000000*ts.tv_sec + ts.tv_usec;
@@ -388,12 +358,6 @@ static void src_destructor(void *arg)
 	if (st->run) {
 		st->run = false;
 		pthread_join(st->thread, NULL);
-	}
-
-	if (st->fd >=0 ) {
-		info("v4l2_codec: encoder stats"
-		     " (keyframes:%u, deltaframes:%u)\n",
-		     st->stats.n_key, st->stats.n_delta);
 	}
 
 	stop_capturing(st->fd);
