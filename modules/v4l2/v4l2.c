@@ -494,6 +494,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)ctx;
 	(void)prm;
 	(void)fmt;
+	(void)packeth;
 	(void)errorh;
 
 	if (!stp || !size || !frameh)

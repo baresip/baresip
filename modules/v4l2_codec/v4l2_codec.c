@@ -548,6 +548,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)prm;
 	(void)fmt;
 	(void)errorh;
+	(void)packeth;
 	(void)arg;
 
 	if (!stp || !size || !frameh)
