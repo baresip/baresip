@@ -3,7 +3,9 @@
  *
  * Copyright (C) 2010 - 2013 Alfred E. Heggestad
  * Copyright (C) 2010 - 2013 Creytiv.com
- * Copyright (C) 2021 Media Magic Technologies <developer@mediamagictechnologies.com> and Divus GmbH <developer@divus.eu>
+ * Copyright (C) 2021 by:
+ *     Media Magic Technologies <developer@mediamagictechnologies.com>
+ *     and Divus GmbH <developer@divus.eu>
  */
 #include <re.h>
 #include <rem.h>
@@ -687,13 +689,13 @@ int avcodec_copy(struct videnc_state *st, bool update,
 
 		case AV_CODEC_ID_H264:
 			err = h264_packetize(ts, packet->buf, packet->size,
-								 st->encprm.pktsize,
-								 st->pkth, st->arg);
+							st->encprm.pktsize,
+							st->pkth, st->arg);
 			break;
 
 		case AV_CODEC_ID_MPEG4:
 			err = general_packetize(ts, &mb, st->encprm.pktsize,
-									st->pkth, st->arg);
+							st->pkth, st->arg);
 			break;
 
 #ifdef AV_CODEC_ID_H265

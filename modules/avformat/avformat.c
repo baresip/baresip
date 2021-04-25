@@ -2,6 +2,7 @@
  * @file avformat.c  libavformat media-source
  *
  * Copyright (C) 2010 - 2020 Alfred E. Heggestad
+ * Copyright (C) 2010 - 2020 Creytiv.com
  * Copyright (C) 2021 by:
  *     Media Magic Technologies <developer@mediamagictechnologies.com>
  *     and Divus GmbH <developer@divus.eu>
@@ -162,7 +163,8 @@ static void *read_thread(void *data)
 				avformat_video_decode(st, pkt);
 				if (st->is_pass_through) {
 					avformat_video_copy(st, &pkt);
-				} else {
+				}
+				else {
 					avformat_video_decode(st, &pkt);
 				}
 			}
@@ -335,10 +337,13 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 
 	if (*rtsp_transport != '\0') {
 		ret = -1;
-		if ((0==strcmp(rtsp_transport, "tcp")) || (0==strcmp(rtsp_transport, "udp")) ||
-			(0==strcmp(rtsp_transport, "udp_multicast")) || (0==strcmp(rtsp_transport, "http")) ||
+		if ((0==strcmp(rtsp_transport, "tcp")) ||
+			(0==strcmp(rtsp_transport, "udp")) ||
+			(0==strcmp(rtsp_transport, "udp_multicast")) ||
+			(0==strcmp(rtsp_transport, "http")) ||
 			(0==strcmp(rtsp_transport, "https"))) {
-			ret = av_dict_set(&format_opts, "rtsp_transport", rtsp_transport, 0);
+			ret = av_dict_set(&format_opts, "rtsp_transport",
+						rtsp_transport, 0);
 		}
 
 		if (ret != 0) {

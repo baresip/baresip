@@ -972,9 +972,8 @@ struct vidpacket {
 };
 
 /* Declare function pointer */
-typedef void (vidsrc_packet_h)(struct vidpacket *packet, uint64_t timestamp,
-			      void *arg);
-
+typedef void (vidsrc_packet_h)(struct vidpacket *packet,
+					uint64_t timestamp, void *arg);
 
 /**
  * Provides video frames to the core

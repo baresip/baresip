@@ -3,7 +3,9 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  * Copyright (C) 2010 Creytiv.com
- * Copyright (C) 2021 Media Magic Technologies <developer@mediamagictechnologies.com> and Divus GmbH <developer@divus.eu>
+ * Copyright (C) 2021 by:
+ *     Media Magic Technologies <developer@mediamagictechnologies.com>
+ *     and Divus GmbH <developer@divus.eu>
  *
  * \ref GenericVideoStream
  */
@@ -395,13 +397,16 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 		lock_write_get(vtx->lock_enc);
 
 		if (vtx->vc && vtx->vc->copyh) {
-			err = vtx->vc->copyh(vtx->enc, vtx->picup, packet, timestamp);
+			err = vtx->vc->copyh(vtx->enc, vtx->picup,
+							packet, timestamp);
 			if (err)
 				goto out;
 
 			vtx->picup = false;
-		} else {
-			warning("video: Skipping Packet as Copy Handler not initialized ..\n");
+		}
+		else {
+			warning("video: Skipping Packet as"
+				" Copy Handler not initialized ..\n");
 		}
 		goto out;
 	}

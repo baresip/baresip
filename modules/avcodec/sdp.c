@@ -3,7 +3,9 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  * Copyright (C) 2010 Creytiv.com
- * Copyright (C) 2021 Media Magic Technologies <developer@mediamagictechnologies.com> and Divus GmbH <developer@divus.eu>
+ * Copyright (C) 2021 by:
+ *     Media Magic Technologies <developer@mediamagictechnologies.com>
+ *     and Divus GmbH <developer@divus.eu>
  */
 
 #include <re.h>
@@ -49,13 +51,15 @@ int avcodec_h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 
 	if (*pass_through != '\0' && 0==strcmp(pass_through, "yes")) {
 		conf_get_str(conf_cur(), "profile_level_id",
-					 profile_level_id, sizeof(profile_level_id));
+					 profile_level_id,
+					 sizeof(profile_level_id));
 
 		if (*profile_level_id != '\0') {
 			struct pl prof;
 			pl_set_str(&prof, profile_level_id);
 			if (prof.l != 6) {
-				warning("avcodec: invalid profile_level_id (%r) using default\n",
+				warning("avcodec: invalid profile_level_id"
+						" (%r) using default\n",
 						profile_level_id);
 				goto out;
 			}
