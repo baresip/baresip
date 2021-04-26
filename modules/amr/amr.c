@@ -55,15 +55,13 @@ enum {
 
 
 struct auenc_state {
-	const struct aucodec *ac;
+	const struct amr_aucodec *ac;
 	void *enc;                  /**< Encoder state            */
-	bool aligned;
 };
 
 struct audec_state {
-	const struct aucodec *ac;
+	const struct amr_aucodec *ac;
 	void *dec;                  /**< Decoder state            */
-	bool aligned;
 };
 
 
@@ -71,7 +69,7 @@ static void encode_destructor(void *arg)
 {
 	struct auenc_state *st = arg;
 
-	switch (st->ac->srate) {
+	switch (st->ac->ac.srate) {
 
 #ifdef AMR_NB
 	case 8000:
@@ -92,7 +90,7 @@ static void decode_destructor(void *arg)
 {
 	struct audec_state *st = arg;
 
-	switch (st->ac->srate) {
+	switch (st->ac->ac.srate) {
 
 #ifdef AMR_NB
 	case 8000:
@@ -113,6 +111,7 @@ static int encode_update(struct auenc_state **aesp,
 			 const struct aucodec *ac,
 			 struct auenc_param *prm, const char *fmtp)
 {
+	struct amr_aucodec *amr_ac = (struct amr_aucodec *)ac;
 	struct auenc_state *st;
 	int err = 0;
 	(void)prm;
@@ -127,7 +126,8 @@ static int encode_update(struct auenc_state **aesp,
 	if (!st)
 		return ENOMEM;
 
-	st->ac = ac;
+	st->ac = amr_ac;
+	amr_ac->aligned = amr_octet_align(fmtp);
 
 	switch (ac->srate) {
 
@@ -147,8 +147,6 @@ static int encode_update(struct auenc_state **aesp,
 	if (!st->enc)
 		err = ENOMEM;
 
-	st->aligned = amr_octet_align(fmtp);
-
 	if (err)
 		mem_deref(st);
 	else
@@ -161,6 +159,7 @@ static int encode_update(struct auenc_state **aesp,
 static int decode_update(struct audec_state **adsp,
 			 const struct aucodec *ac, const char *fmtp)
 {
+	struct amr_aucodec *amr_ac = (struct amr_aucodec *)ac;
 	struct audec_state *st;
 	int err = 0;
 
@@ -174,7 +173,8 @@ static int decode_update(struct audec_state **adsp,
 	if (!st)
 		return ENOMEM;
 
-	st->ac = ac;
+	st->ac = amr_ac;
+	amr_ac->aligned = amr_octet_align(fmtp);
 
 	switch (ac->srate) {
 
@@ -193,8 +193,6 @@ static int decode_update(struct audec_state **adsp,
 
 	if (!st->dec)
 		err = ENOMEM;
-
-	st->aligned = amr_octet_align(fmtp);
 
 	if (err)
 		mem_deref(st);
@@ -248,6 +246,7 @@ static int encode_wb(struct auenc_state *st,
 		     bool *marker, uint8_t *buf, size_t *len,
 		     int fmt, const void *sampv, size_t sampc)
 {
+	const struct amr_aucodec *amr_ac = (struct amr_aucodec *)st->ac;
 	int n;
 	(void)marker;
 
@@ -264,7 +263,7 @@ static int encode_wb(struct auenc_state *st,
 	if (n <= 0)
 		return EPROTO;
 
-	if (st->aligned) {
+	if (amr_ac->aligned) {
 		/* CMR value 15 indicates that no mode request is present */
 		buf[0] = 15 << 4;
 		*len = (1 + n);
@@ -282,6 +281,7 @@ static int decode_wb(struct audec_state *st,
 		     int fmt, void *sampv, size_t *sampc,
 		     bool marker, const uint8_t *buf, size_t len)
 {
+	const struct amr_aucodec *amr_ac = (struct amr_aucodec *)st->ac;
 	(void)marker;
 
 	if (*sampc < L_FRAME16k)
@@ -292,14 +292,13 @@ static int decode_wb(struct audec_state *st,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	if (st->aligned) {
+	if (amr_ac->aligned) {
 		IF2D_IF_decode(st->dec, &buf[1], sampv, 0);
 	}
 	else {
 		uint8_t temp[len];
 
 		unpack_be(temp, buf, len);
-
 		IF2D_IF_decode(st->dec, temp, sampv, 0);
 	}
 
@@ -314,6 +313,7 @@ static int decode_wb(struct audec_state *st,
 static int encode_nb(struct auenc_state *st, bool *marker, uint8_t *buf,
 		     size_t *len, int fmt, const void *sampv, size_t sampc)
 {
+	const struct amr_aucodec *amr_ac = (struct amr_aucodec *)st->ac;
 	int r;
 	(void)marker;
 
@@ -329,7 +329,7 @@ static int encode_nb(struct auenc_state *st, bool *marker, uint8_t *buf,
 	if (r <= 0)
 		return EPROTO;
 
-	if (st->aligned) {
+	if (amr_ac->aligned) {
 		/* CMR value 15 indicates that no mode request is present */
 		buf[0] = 15 << 4;
 		*len = (1 + r);
@@ -347,6 +347,7 @@ static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 		     size_t *sampc,
 		     bool marker, const uint8_t *buf, size_t len)
 {
+	const struct amr_aucodec *amr_ac = (struct amr_aucodec *)st->ac;
 	(void)marker;
 
 	if (!st || !sampv || !sampc || !buf)
@@ -361,14 +362,13 @@ static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	if (st->aligned) {
+	if (amr_ac->aligned) {
 		Decoder_Interface_Decode(st->dec, &buf[1], sampv, 0);
 	}
 	else {
 		uint8_t temp[len];
 
 		unpack_be(temp, buf, len);
-
 		Decoder_Interface_Decode(st->dec, temp, sampv, 0);
 	}
 
@@ -380,31 +380,37 @@ static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 
 
 #ifdef AMR_WB
-static struct aucodec amr_wb = {
-	.name      = "AMR-WB",
-	.srate     = 16000,
-	.crate     = 16000,
-	.ch        = 1,
-	.pch       = 1,
-	.encupdh   = encode_update,
-	.ench      = encode_wb,
-	.decupdh   = decode_update,
-	.dech      = decode_wb,
-	.fmtp_ench = amr_fmtp_enc
+static struct amr_aucodec amr_wb = {
+	.ac = {
+		.name      = "AMR-WB",
+		.srate     = 16000,
+		.crate     = 16000,
+		.ch        = 1,
+		.pch       = 1,
+		.encupdh   = encode_update,
+		.ench      = encode_wb,
+		.decupdh   = decode_update,
+		.dech      = decode_wb,
+		.fmtp_ench = amr_fmtp_enc
+	},
+	.aligned = false
 };
 #endif
 #ifdef AMR_NB
-static struct aucodec amr_nb = {
-	.name      = "AMR",
-	.srate     = 8000,
-	.crate     = 8000,
-	.ch        = 1,
-	.pch       = 1,
-	.encupdh   = encode_update,
-	.ench      = encode_nb,
-	.decupdh   = decode_update,
-	.dech      = decode_nb,
-	.fmtp_ench = amr_fmtp_enc
+static struct amr_aucodec amr_nb = {
+	.ac = {
+		.name      = "AMR",
+		.srate     = 8000,
+		.crate     = 8000,
+		.ch        = 1,
+		.pch       = 1,
+		.encupdh   = encode_update,
+		.ench      = encode_nb,
+		.decupdh   = decode_update,
+		.dech      = decode_nb,
+		.fmtp_ench = amr_fmtp_enc
+	},
+	.aligned = false
 };
 #endif
 
@@ -414,10 +420,10 @@ static int module_init(void)
 	int err = 0;
 
 #ifdef AMR_WB
-	aucodec_register(baresip_aucodecl(), &amr_wb);
+	aucodec_register(baresip_aucodecl(), (struct aucodec *) &amr_wb);
 #endif
 #ifdef AMR_NB
-	aucodec_register(baresip_aucodecl(), &amr_nb);
+	aucodec_register(baresip_aucodecl(), (struct aucodec *) &amr_nb);
 #endif
 
 	return err;
@@ -427,10 +433,10 @@ static int module_init(void)
 static int module_close(void)
 {
 #ifdef AMR_WB
-	aucodec_unregister(&amr_wb);
+	aucodec_unregister((struct aucodec *) &amr_wb);
 #endif
 #ifdef AMR_NB
-	aucodec_unregister(&amr_nb);
+	aucodec_unregister((struct aucodec *) &amr_nb);
 #endif
 
 	return 0;

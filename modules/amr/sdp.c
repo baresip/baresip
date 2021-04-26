@@ -28,15 +28,16 @@ bool amr_octet_align(const char *fmtp)
 int amr_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 		 bool offer, void *arg)
 {
-	const struct aucodec *ac = arg;
+	const struct amr_aucodec *amr_ac = arg;
 	(void)offer;
 
-	if (!mb || !fmt || !ac)
+	if (!mb || !fmt || !amr_ac)
 		return 0;
 
-	return 0;
-
-	/* return mbuf_printf(mb, "a=fmtp:%s octet-align=0\r\n",
+	if (amr_ac->aligned) {
+		return mbuf_printf(mb, "a=fmtp:%s octet-align=1\r\n",
 			   fmt->id);
-	*/
+	}
+
+	return 0;
 }
