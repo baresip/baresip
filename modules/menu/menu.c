@@ -190,14 +190,12 @@ static void menu_play(const char *ckey, const char *fname, int repeat)
 
 static void play_incoming(const struct call *call)
 {
+	enum answermode am = account_answermode(call_account(call));
+
 	/* stop any ringtones */
 	menu_stop_play();
 
-	if (ANSWERMODE_AUTO == account_answermode(call_account(call)))
-		return;
-
-	if (SDP_INACTIVE == sdp_media_rdir(stream_sdpmedia(
-					audio_strm(call_audio(call)))))
+	if (am != ANSWERMODE_MANUAL && am != ANSWERMODE_EARLY_VIDEO)
 		return;
 
 	if (menu_find_call(active_call_test)) {
