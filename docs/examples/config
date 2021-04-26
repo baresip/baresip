@@ -48,7 +48,7 @@ videnc_format		yuv420p
 
 # AVT - Audio/Video Transport
 rtp_tos			184
-rtpv_tos		104
+rtp_video_tos		104
 #rtp_ports		10000-20000
 #rtp_bandwidth		512-1024 # [kbit/s]
 rtcp_mux		no
