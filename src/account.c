@@ -483,6 +483,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	if (!acc)
 		return ENOMEM;
 
+	acc->maf = AF_UNSPEC;
 	err = str_dup(&acc->buf, sipaddr);
 	if (err)
 		goto out;
