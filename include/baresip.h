@@ -52,7 +52,9 @@ struct vidsz;
 enum answermode {
 	ANSWERMODE_MANUAL = 0,
 	ANSWERMODE_EARLY,
-	ANSWERMODE_AUTO
+	ANSWERMODE_AUTO,
+	ANSWERMODE_EARLY_AUDIO,
+	ANSWERMODE_EARLY_VIDEO,
 };
 
 /** Defines the DTMF send type */
