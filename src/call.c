@@ -1088,10 +1088,10 @@ int call_progress(struct call *call)
 
 	call->ansadir = stream_ldir(audio_strm(call_audio(call)));
 	call->ansvdir = stream_ldir(video_strm(call_video(call)));
-	adir = m == ANSWERMODE_AUTO ? SDP_SENDRECV :
+	adir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
 			    m == ANSWERMODE_EARLY_AUDIO ? SDP_RECVONLY :
 			    SDP_INACTIVE;
-	vdir = m == ANSWERMODE_AUTO ? SDP_SENDRECV :
+	vdir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
 			    m == ANSWERMODE_EARLY_VIDEO ? SDP_RECVONLY :
 			    SDP_INACTIVE;
 	if (adir != SDP_SENDRECV || vdir != SDP_SENDRECV)
