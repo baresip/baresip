@@ -420,7 +420,7 @@ static int stream_sock_alloc(struct stream *s, int af)
 		return err;
 	}
 
-	tos = s->cfg.rtp_tos;
+	tos = s->type == MEDIA_AUDIO ? s->cfg.rtp_tos : s->cfg.rtpv_tos;
 	(void)udp_setsockopt(rtp_sock(s->rtp), IPPROTO_IP, IP_TOS,
 			     &tos, sizeof(tos));
 	(void)udp_setsockopt(rtcp_sock(s->rtp), IPPROTO_IP, IP_TOS,

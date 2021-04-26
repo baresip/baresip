@@ -33,6 +33,7 @@ static struct config core_config = {
 		"",
 		SIP_TRANSP_UDP,
 		false,
+		0xa0,
 	},
 
 	/** Call config */
@@ -75,6 +76,7 @@ static struct config core_config = {
 	/** Audio/Video Transport */
 	{
 		0xb8,
+		0x88,
 		{1024, 49152},
 		{0, 0},
 		false,
@@ -90,7 +92,7 @@ static struct config core_config = {
 		AF_UNSPEC,
 		"",
 		{ {"",0} },
-		0
+		0,
 	},
 };
 
@@ -299,6 +301,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	if (!conf_get(conf, "sip_trans_def", &tr))
 		cfg->sip.transp = sip_transp_decode(&tr);
 
+	if (0 == conf_get_u32(conf, "sip_tos", &v))
+		cfg->sip.tos = v;
+
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
 			   &cfg->call.local_timeout);
@@ -375,6 +380,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	/* AVT - Audio/Video Transport */
 	if (0 == conf_get_u32(conf, "rtp_tos", &v))
 		cfg->avt.rtp_tos = v;
+	if (0 == conf_get_u32(conf, "rtp_video_tos", &v))
+		cfg->avt.rtpv_tos = v;
 	(void)conf_get_range(conf, "rtp_ports", &cfg->avt.rtp_ports);
 	if (0 == conf_get_range(conf, "rtp_bandwidth",
 				&cfg->avt.rtp_bw)) {
@@ -431,7 +438,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_cafile\t\t%s\n"
 			 "sip_capath\t\t%s\n"
 			 "sip_trans_def\t%s\n"
-			 "sip_verify_server\t%s\n"
+			 "sip_verify_server\t\t\t%s\n"
+			 "sip_tos\t%s\n"
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
@@ -461,6 +469,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 "# AVT\n"
 			 "rtp_tos\t\t\t%u\n"
+			 "rtp_video_tos\t\t%u\n"
 			 "rtp_ports\t\t%H\n"
 			 "rtp_bandwidth\t\t%H\n"
 			 "rtcp_mux\t\t%s\n"
@@ -479,6 +488,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->sip.capath,
 			 sip_transp_name(cfg->sip.transp),
 			 cfg->sip.verify_server ? "yes" : "no",
+			 cfg->sip.tos,
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
@@ -500,6 +510,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 vidfmt_name(cfg->video.enc_fmt),
 
 			 cfg->avt.rtp_tos,
+			 cfg->avt.rtpv_tos,
 			 range_print, &cfg->avt.rtp_ports,
 			 range_print, &cfg->avt.rtp_bw,
 			 cfg->avt.rtcp_mux ? "yes" : "no",
@@ -629,6 +640,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 #endif
 			  "#sip_trans_def\t\tudp\n"
 			  "#sip_verify_server\tyes\n"
+			  "sip_tos\t\t\t160\n"
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
@@ -686,6 +698,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 	err |= re_hprintf(pf,
 			  "\n# AVT - Audio/Video Transport\n"
 			  "rtp_tos\t\t\t184\n"
+			  "rtp_video_tos\t\t136\n"
 			  "#rtp_ports\t\t10000-20000\n"
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
 			  "rtcp_mux\t\tno\n"

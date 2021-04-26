@@ -1666,6 +1666,7 @@ static int add_transp_af(const struct sa *laddr)
 	}
 #endif
 
+	sip_settos(uag.sip, uag.cfg->tos);
 	return err;
 }
 
