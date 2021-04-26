@@ -204,7 +204,7 @@ static int decode_update(struct audec_state **adsp,
 
 static void pack_be(uint8_t *buf, size_t len)
 {
-	/* basic bandwidth effiecient pack and unpack. see
+	/* basic bandwidth efficient pack and unpack. see
 	https://github.com/traud/asterisk-amr/blob/master/codecs/codec_amr.c */
 
 	const int another = ((buf[1] >> 7) & 0x01);
