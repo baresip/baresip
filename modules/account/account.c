@@ -56,6 +56,7 @@ static int account_write_template(const char *file)
 			 "#    ;auth_user=username\n"
 			 "#    ;auth_pass=password\n"
 			 "#    ;call_transfer=no\n"
+			 "#    ;mediaaf={ipv4,ipv6}\n"
 			 "#    ;mediaenc={srtp,srtp-mand,srtp-mandf"
 			 ",dtls_srtp,zrtp}\n"
 			 "#    ;medianat={stun,turn,ice}\n"

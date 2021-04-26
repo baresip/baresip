@@ -25,7 +25,6 @@ struct ua {
 	size_t    extensionc;        /**< Number of SIP extensions           */
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
-	int af_media;                /**< Preferred Address Family for media */
 	enum presence_status pstat;  /**< Presence Status                    */
 	bool catchall;               /**< Catch all inbound requests         */
 	struct list hdr_filter;      /**< Filter for incoming headers        */
@@ -756,11 +755,11 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		     net_af2name(af_sdp));
 		af = af_sdp;
 	}
-	else if (ua->af_media &&
-		   sa_isset(net_laddr_af(net, ua->af_media), SA_ADDR)) {
+	else if (ua->acc->maf &&
+		   sa_isset(net_laddr_af(net, ua->acc->maf), SA_ADDR)) {
 		info("ua: using ua's preferred AF: af=%s\n",
-		     net_af2name(ua->af_media));
-		af = ua->af_media;
+		     net_af2name(ua->acc->maf));
+		af = ua->acc->maf;
 	}
 	else {
 		af = best_effort_af(ua, net);
@@ -966,8 +965,6 @@ int ua_alloc(struct ua **uap, const char *aor)
 	MAGIC_INIT(ua);
 
 	list_init(&ua->calls);
-
-	ua->af_media = AF_UNSPEC;
 
 	/* Decode SIP address */
 	if (uag.eprm) {
@@ -1452,7 +1449,6 @@ int ua_debug(struct re_printf *pf, const struct ua *ua)
 	err |= re_hprintf(pf, " nrefs:     %u\n", mem_nrefs(ua));
 	err |= re_hprintf(pf, " cuser:     %s\n", ua->cuser);
 	err |= re_hprintf(pf, " pub-gruu:  %s\n", ua->pub_gruu);
-	err |= re_hprintf(pf, " af_media:  %s\n", net_af2name(ua->af_media));
 	err |= re_hprintf(pf, " %H", ua_print_supported, ua);
 
 	err |= account_debug(pf, ua->acc);
@@ -2727,21 +2723,6 @@ void uag_set_nodial(bool nodial)
 bool uag_nodial(void)
 {
 	return uag.nodial;
-}
-
-
-/**
- * Set the preferred address family for media
- *
- * @param ua       User-Agent
- * @param af_media Address family (e.g. AF_INET, AF_INET6)
- */
-void ua_set_media_af(struct ua *ua, int af_media)
-{
-	if (!ua)
-		return;
-
-	ua->af_media = af_media;
 }
 
 
