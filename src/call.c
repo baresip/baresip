@@ -1086,8 +1086,8 @@ int call_progress(struct call *call)
 
 	tmr_cancel(&call->tmr_inv);
 
-	call->ansadir = audio_strm(call_audio(call))->ldir;
-	call->ansvdir = video_strm(call_video(call))->ldir;
+	call->ansadir = stream_ldir(audio_strm(call_audio(call)));
+	call->ansvdir = stream_ldir(video_strm(call_video(call)));
 	adir = m == ANSWERMODE_AUTO ? SDP_SENDRECV :
 			    m == ANSWERMODE_EARLY_AUDIO ? SDP_RECVONLY :
 			    SDP_INACTIVE;

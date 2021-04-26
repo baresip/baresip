@@ -821,6 +821,12 @@ void stream_set_ldir(struct stream *s, enum sdp_dir dir)
 }
 
 
+enum sdp_dir stream_ldir(struct stream *s)
+{
+	return s ? s->ldir : SDP_INACTIVE;
+}
+
+
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx)
 {
 	if (!s)
