@@ -167,6 +167,7 @@ static int extra_decode(struct account *acc, const struct pl *prm)
 static int af_decode(struct account *acc, const struct pl *prm)
 {
 	struct pl pl;
+	int maf;
 
 	if (!acc || !prm)
 		return EINVAL;
@@ -174,14 +175,16 @@ static int af_decode(struct account *acc, const struct pl *prm)
 	if (msg_param_decode(prm, "mediaaf", &pl))
 		return 0;
 
-	acc->maf = !pl_strcasecmp(&pl, "ipv6") ? AF_INET6 :
-		   !pl_strcasecmp(&pl, "ipv4") ? AF_INET : AF_UNSPEC;
+	maf = !pl_strcasecmp(&pl, "ipv6") ? AF_INET6 :
+	      !pl_strcasecmp(&pl, "ipv4") ? AF_INET :
+	      !pl_strcasecmp(&pl, "auto") ? AF_UNSPEC : -1;
 
-	if (acc->maf == AF_UNSPEC) {
+	if (maf == -1) {
 		warning("account: invalid address family '%r'\n", &pl);
 		return EINVAL;
 	}
 
+	acc->maf = maf;
 	return 0;
 }
 

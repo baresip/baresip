@@ -16,7 +16,7 @@
 #    ;auth_pass=password
 #    ;call_transfer=no
 #    ;cert=cert.pem
-#    ;mediaaf={ipv4,ipv6}
+#    ;mediaaf={ipv4,ipv6,auto}
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}
 #    ;mwi=no
@@ -68,6 +68,12 @@
 # Prefer IPv6 for media
 #
 <sip:user@example.com>;mediaaf=ipv6
+
+#
+# Use same address family as SIP registration. This is the default for
+# registered accounts
+#
+<sip:user@example.com>;regint=3600;mediaaf=auto
 
 
 # ... more examples can be added here ...
