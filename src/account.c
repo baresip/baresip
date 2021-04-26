@@ -177,6 +177,11 @@ static int af_decode(struct account *acc, const struct pl *prm)
 	acc->maf = !pl_strcasecmp(&pl, "ipv6") ? AF_INET6 :
 		   !pl_strcasecmp(&pl, "ipv4") ? AF_INET : AF_UNSPEC;
 
+	if (acc->maf == AF_UNSPEC) {
+		warning("account: invalid address family '%r'\n", &pl);
+		return EINVAL;
+	}
+
 	return 0;
 }
 
