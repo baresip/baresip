@@ -9,7 +9,7 @@
 #include "amr.h"
 
 
-static bool amr_octet_align(const char *fmtp)
+bool amr_octet_align(const char *fmtp)
 {
 	struct pl pl, oa;
 
@@ -34,23 +34,9 @@ int amr_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 	if (!mb || !fmt || !ac)
 		return 0;
 
-	return mbuf_printf(mb, "a=fmtp:%s octet-align=1\r\n",
+	return 0;
+
+	/* return mbuf_printf(mb, "a=fmtp:%s octet-align=0\r\n",
 			   fmt->id);
-}
-
-
-bool amr_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg)
-{
-	const struct aucodec *ac = arg;
-	(void)lfmtp;
-
-	if (!ac)
-		return false;
-
-	if (!amr_octet_align(rfmtp)) {
-		info("amr: octet-align mode is required\n");
-		return false;
-	}
-
-	return true;
+	*/
 }

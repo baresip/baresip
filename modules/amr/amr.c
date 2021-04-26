@@ -33,9 +33,6 @@
  * This module supports both AMR Narrowband (8000 Hz) and
  * AMR Wideband (16000 Hz) audio codecs.
  *
- * NOTE: only octet-align mode is supported.
- *
- *
  * Reference:
  *
  *     http://tools.ietf.org/html/rfc4867
@@ -60,11 +57,13 @@ enum {
 struct auenc_state {
 	const struct aucodec *ac;
 	void *enc;                  /**< Encoder state            */
+	bool aligned;
 };
 
 struct audec_state {
 	const struct aucodec *ac;
 	void *dec;                  /**< Decoder state            */
+	bool aligned;
 };
 
 
@@ -117,7 +116,6 @@ static int encode_update(struct auenc_state **aesp,
 	struct auenc_state *st;
 	int err = 0;
 	(void)prm;
-	(void)fmtp;
 
 	if (!aesp || !ac)
 		return EINVAL;
@@ -149,6 +147,8 @@ static int encode_update(struct auenc_state **aesp,
 	if (!st->enc)
 		err = ENOMEM;
 
+	st->aligned = amr_octet_align(fmtp);
+
 	if (err)
 		mem_deref(st);
 	else
@@ -163,7 +163,6 @@ static int decode_update(struct audec_state **adsp,
 {
 	struct audec_state *st;
 	int err = 0;
-	(void)fmtp;
 
 	if (!adsp || !ac)
 		return EINVAL;
@@ -195,6 +194,8 @@ static int decode_update(struct audec_state **adsp,
 	if (!st->dec)
 		err = ENOMEM;
 
+	st->aligned = amr_octet_align(fmtp);
+
 	if (err)
 		mem_deref(st);
 	else
@@ -203,6 +204,44 @@ static int decode_update(struct audec_state **adsp,
 	return err;
 }
 
+static void pack_be(uint8_t *buf, size_t len)
+{
+	/* basic bandwidth effiecient pack and unpack. see
+	https://github.com/traud/asterisk-amr/blob/master/codecs/codec_amr.c */
+
+	const int another = ((buf[1] >> 7) & 0x01);
+	const int type    = ((buf[1] >> 3) & 0x0f);
+	const int quality = ((buf[1] >> 2) & 0x01);
+	unsigned int i;
+
+	/* to shift in place, clear bits beyond end and at start */
+	buf[0] = 0;
+	buf[1] = 0;
+	buf[len+1] = 0;
+	/* shift in place, 6 bits */
+	for (i = 1; i <= len; i++) {
+		buf[i] = ((buf[i] << 6) | (buf[i + 1] >> 2));
+	}
+	/* restore first two bytes: [ CMR |F| FT |Q] */
+	buf[1] |= ((type << 7) | (quality << 6));
+	buf[0] = ((15 << 4) | (another << 3) | (type >> 1)); /* CMR: no */
+}
+
+static void unpack_be(uint8_t *temp, const uint8_t *buf, size_t len)
+{
+	const int another = ((buf[0] >> 3) & 0x01);
+	const int type    = ((buf[0] << 1 | buf[1] >> 7) & 0x0f);
+	const int quality = ((buf[1] >> 6) & 0x01);
+	unsigned int i;
+
+	/* shift in place, 2 bits */
+	for (i = 1; i < (len - 1); i++) {
+		temp[i] = ((buf[i] << 2) | (buf[i + 1] >> 6));
+	}
+	temp[len - 1] = buf[len - 1] << 2;
+	/* restore first byte: [F| FT |Q] */
+	temp[0] = ((another << 7) | (type << 3) | (quality << 2));
+}
 
 #ifdef AMR_WB
 static int encode_wb(struct auenc_state *st,
@@ -221,14 +260,19 @@ static int encode_wb(struct auenc_state *st,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	/* CMR value 15 indicates that no mode request is present */
-	buf[0] = 15 << 4;
-
 	n = IF2E_IF_encode(st->enc, 8, sampv, &buf[1], 0);
 	if (n <= 0)
 		return EPROTO;
 
-	*len = (1 + n);
+	if (st->aligned) {
+		/* CMR value 15 indicates that no mode request is present */
+		buf[0] = 15 << 4;
+		*len = (1 + n);
+	}
+	else {
+		pack_be(buf, n);
+		*len = n;
+	}
 
 	return 0;
 }
@@ -248,7 +292,16 @@ static int decode_wb(struct audec_state *st,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	IF2D_IF_decode(st->dec, &buf[1], sampv, 0);
+	if (st->aligned) {
+		IF2D_IF_decode(st->dec, &buf[1], sampv, 0);
+	}
+	else {
+		uint8_t temp[len];
+
+		unpack_be(temp, buf, len);
+
+		IF2D_IF_decode(st->dec, temp, sampv, 0);
+	}
 
 	*sampc = L_FRAME16k;
 
@@ -272,14 +325,19 @@ static int encode_nb(struct auenc_state *st, bool *marker, uint8_t *buf,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	/* CMR value 15 indicates that no mode request is present */
-	buf[0] = 15 << 4;
-
 	r = Encoder_Interface_Encode(st->enc, MR122, sampv, &buf[1], 0);
 	if (r <= 0)
 		return EPROTO;
 
-	*len = (1 + r);
+	if (st->aligned) {
+		/* CMR value 15 indicates that no mode request is present */
+		buf[0] = 15 << 4;
+		*len = (1 + r);
+	}
+	else {
+		pack_be(buf, r);
+		*len = r;
+	}
 
 	return 0;
 }
@@ -303,7 +361,16 @@ static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 	if (fmt != AUFMT_S16LE)
 		return ENOTSUP;
 
-	Decoder_Interface_Decode(st->dec, &buf[1], sampv, 0);
+	if (st->aligned) {
+		Decoder_Interface_Decode(st->dec, &buf[1], sampv, 0);
+	}
+	else {
+		uint8_t temp[len];
+
+		unpack_be(temp, buf, len);
+
+		Decoder_Interface_Decode(st->dec, temp, sampv, 0);
+	}
 
 	*sampc = FRAMESIZE_NB;
 
@@ -323,8 +390,7 @@ static struct aucodec amr_wb = {
 	.ench      = encode_wb,
 	.decupdh   = decode_update,
 	.dech      = decode_wb,
-	.fmtp_ench = amr_fmtp_enc,
-	.fmtp_cmph = amr_fmtp_cmp
+	.fmtp_ench = amr_fmtp_enc
 };
 #endif
 #ifdef AMR_NB
@@ -338,8 +404,7 @@ static struct aucodec amr_nb = {
 	.ench      = encode_nb,
 	.decupdh   = decode_update,
 	.dech      = decode_nb,
-	.fmtp_ench = amr_fmtp_enc,
-	.fmtp_cmph = amr_fmtp_cmp
+	.fmtp_ench = amr_fmtp_enc
 };
 #endif
 
