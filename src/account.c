@@ -806,13 +806,19 @@ int account_set_stun_pass(struct account *acc, const char *pass)
  *
  * @param acc      User-Agent account
  * @param mediaaf  Media address family
+ *
+ * @return 0 if success, otherwise errorcode
  */
-void account_set_mediaaf(struct account *acc, int mediaaf)
+int account_set_mediaaf(struct account *acc, int mediaaf)
 {
 	if (!acc)
-		return;
+		return EINVAL;
+
+	if (mediaaf != AF_INET && mediaaf != AF_INET6)
+		return EINVAL;
 
 	acc->maf = mediaaf;
+	return 0;
 }
 
 
