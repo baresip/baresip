@@ -814,7 +814,7 @@ int account_set_mediaaf(struct account *acc, int mediaaf)
 	if (!acc)
 		return EINVAL;
 
-	if (mediaaf != AF_INET && mediaaf != AF_INET6)
+	if (mediaaf != AF_INET && mediaaf != AF_INET6 && mediaaf != AF_UNSPEC)
 		return EINVAL;
 
 	acc->maf = mediaaf;
