@@ -7,7 +7,7 @@
 #    ;transport={udp,tcp,tls}
 #
 #  addr-params:
-#    ;answermode={manual,early,auto,early-video,early-audio}
+#    ;answermode={manual,early,auto,early-audio,early-video}
 #    ;answerdelay=0
 #    ;audio_codecs=opus/48000/2,pcma,...
 #    ;sip_autoanswer={yes, no}
