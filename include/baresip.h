@@ -82,7 +82,7 @@ int account_set_stun_host(struct account *acc, const char *host);
 int account_set_stun_port(struct account *acc, uint16_t port);
 int account_set_stun_user(struct account *acc, const char *user);
 int account_set_stun_pass(struct account *acc, const char *pass);
-void account_set_mediaaf(struct account *acc, int mediaaf);
+int account_set_mediaaf(struct account *acc, int mediaaf);
 int account_set_mediaenc(struct account *acc, const char *mediaenc);
 int account_set_medianat(struct account *acc, const char *medianat);
 int account_set_audio_codecs(struct account *acc, const char *codecs);
