@@ -1075,6 +1075,17 @@ uint32_t uag_call_count(void)
 }
 
 
+int uag_raise(struct ua *ua, struct le *le)
+{
+	if (!ua || !le)
+		return EINVAL;
+
+	list_unlink(le);
+	list_prepend(&uag.ual, le, ua);
+	return 0;
+}
+
+
 /**
  * Set the handler to receive incoming SIP SUBSCRIBE messages
  *
