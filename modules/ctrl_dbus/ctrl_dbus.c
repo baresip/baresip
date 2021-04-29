@@ -437,7 +437,7 @@ static int ctrl_init(void)
 
 	err = message_listen(baresip_message(), message_handler, m_st);
 	if (err)
-		return err;
+		goto outerr;
 
 	(void)conf_get(conf_cur(), "ctrl_dbus_use", &use);
 	name = dbus_baresip_interface_info()->name;
