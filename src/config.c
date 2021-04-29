@@ -1127,7 +1127,8 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "\n# avformat\n"
 			 "#avformat_hwaccel\tvaapi\n"
 			 "#avformat_inputformat\tmjpeg\n"
-			 "#avformat_decoder\tmjpeg\n");
+			 "#avformat_decoder\tmjpeg\n"
+			 "#avformat_rtsp_transport\tudp\n");
 
 	if (f)
 		(void)fclose(f);

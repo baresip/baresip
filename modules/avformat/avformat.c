@@ -2,6 +2,9 @@
  * @file avformat.c  libavformat media-source
  *
  * Copyright (C) 2010 - 2020 Alfred E. Heggestad
+ * Copyright (C) 2021 by:
+ *     Media Magic Technologies <developer@mediamagictechnologies.com>
+ *     and Divus GmbH <developer@divus.eu>
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
@@ -45,6 +48,7 @@ static enum AVHWDeviceType avformat_hwdevice = AV_HWDEVICE_TYPE_NONE;
 #endif
 static char avformat_inputformat[64];
 static AVCodec *avformat_decoder;
+static char rtsp_transport[256] = "";
 
 
 static void shared_destructor(void *arg)
@@ -318,6 +322,27 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
+	if (str_isset(rtsp_transport)) {
+		ret = -1;
+
+		if ((0==strcmp(rtsp_transport, "tcp")) ||
+		    (0==strcmp(rtsp_transport, "udp")) ||
+		    (0==strcmp(rtsp_transport, "udp_multicast")) ||
+		    (0==strcmp(rtsp_transport, "http")) ||
+		    (0==strcmp(rtsp_transport, "https"))) {
+
+			ret = av_dict_set(&format_opts, "rtsp_transport",
+					  rtsp_transport, 0);
+		}
+
+		if (ret != 0) {
+			warning("avformat: av_dict_set(rtsp_transport) failed"
+				" (ret=%s)\n", av_err2str(ret));
+			err = ENOENT;
+			goto out;
+		}
+	}
+
 	ret = avformat_open_input(&st->ic, dev, input_format, &format_opts);
 	if (ret < 0) {
 		warning("avformat: avformat_open_input(%s) failed (ret=%s)\n",
@@ -435,6 +460,9 @@ static int module_init(void)
 
 	conf_get_str(conf_cur(), "avformat_decoder", decoder,
 			sizeof(decoder));
+
+	conf_get_str(conf_cur(), "avformat_rtsp_transport",
+		     rtsp_transport, sizeof(rtsp_transport));
 
 	if (str_isset(decoder)) {
 		avformat_decoder = avcodec_find_decoder_by_name(decoder);
