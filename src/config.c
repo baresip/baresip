@@ -1122,6 +1122,13 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "#multicast_call_prio\t0\n"
 			 "#multicast_listener\t224.0.2.21:50000\n"
 			 "#multicast_listener\t224.0.2.21:50002\n");
+
+	(void)re_fprintf(f,
+			 "\n# avformat\n"
+			 "#avformat_hwaccel\tvaapi\n"
+			 "#avformat_inputformat\tmjpeg\n"
+			 "#avformat_decoder\tmjpeg\n");
+
 	if (f)
 		(void)fclose(f);
 
