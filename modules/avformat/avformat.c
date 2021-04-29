@@ -46,6 +46,7 @@ static enum AVHWDeviceType avformat_hwdevice = AV_HWDEVICE_TYPE_NONE;
 static char avformat_inputformat[64];
 static AVCodec *avformat_decoder;
 
+
 static void shared_destructor(void *arg)
 {
 	struct shared *st = arg;
