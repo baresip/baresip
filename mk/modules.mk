@@ -296,6 +296,7 @@ MODULES   += vidinfo
 MODULES   += vidloop
 MODULES   += vumeter
 MODULES   += mixausrc
+MODULES   += mixminus
 MODULES   += multicast
 
 ifneq ($(HAVE_PTHREAD),)

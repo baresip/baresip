@@ -34,6 +34,7 @@ Distributed under BSD license
   - Repeat last call (redial)
   - Message Waiting Indication (MWI)
   - Address book with presence
+  - Conferencing
 
 * Signaling:
   - SIP protocol support
