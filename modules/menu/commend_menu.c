@@ -555,20 +555,15 @@ static int com_reginfo(struct re_printf *pf, void *unused)
 			}
 		}
 
-		isreachable = ua_isregistered(p_ua) &&
-				   reg_duration == 0 && ua_regint(p_ua) == 0;
-		isregistered  = ua_isregistered(p_ua) &&
-				     ua_regint(p_ua) > 0;
-		pexpire = 0;
-		/* server expire time is only valid for registered servers */
-		if (ua_regint(p_ua)!=0)
-			pexpire = account_regint(ua_account(p_ua));
+		isreachable = !ua_regfailed(ua) && regint;
+		isregistered  = ua_isregistered(ua);
+		pexpire = ua_proxy_expires(ua);
 
 		if (isregistered)
 			reg_status = STATUS_REGISTERED;
 		else if (isreachable)
 			reg_status = STATUS_REACHABLE;
-		else if (ua_isdisabled(p_ua))
+		else if (!regint)
 			reg_status = STATUS_DISABLED;
 
 		res |= re_hprintf(pf, "%s %s %u %u %u\n",
