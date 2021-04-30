@@ -35,7 +35,7 @@ enum reg_status_t {
 struct ua_time {
 	struct le le;
 	uint64_t reg_time;
-	struct ua *p_ua;
+	struct ua *ua;
 };
 
 struct sip_log_t sip_log;
@@ -174,7 +174,7 @@ static int com_set_line_by_id(struct re_printf *pf, void *arg)
 	const char *p_call_id_arg = NULL;
 	const char *p_call_id = NULL;
 	struct le *p_ua_le = NULL;
-	struct ua *p_ua = NULL;
+	struct ua *ua = NULL;
 	struct le *p_call_le = NULL;
 	struct call *p_call = NULL;
 	struct ua *p_line_ua = NULL;
@@ -193,16 +193,16 @@ static int com_set_line_by_id(struct re_printf *pf, void *arg)
 	for (p_ua_le = list_head(uag_list()); p_ua_le;
 			p_ua_le = p_ua_le->next) {
 
-		p_ua = p_ua_le->data;
+		ua = p_ua_le->data;
 
-		for (p_call_le = list_head(ua_calls(p_ua)); p_call_le;
+		for (p_call_le = list_head(ua_calls(ua)); p_call_le;
 				p_call_le = p_call_le->next) {
 
 			p_call = p_call_le->data;
 			p_call_id = call_id(p_call);
 
 			if (p_call_id && !strcmp(p_call_id, p_call_id_arg)) {
-				p_line_ua = p_ua;
+				p_line_ua = ua;
 				p_line_call = p_call;
 				break;
 			}
@@ -414,12 +414,12 @@ static void ua_time_destructor(void *arg)
 /**
  * Update user agent time entry
  *
- * @param p_ua		User Agent
+ * @param ua		User Agent
  * @param ev		Event
  *
  * @return		None
  */
-static void update_ua_reg_time_entry(struct ua *p_ua)
+static void update_ua_reg_time_entry(struct ua *ua)
 {
 	struct le *time_elem;
 
@@ -430,7 +430,7 @@ static void update_ua_reg_time_entry(struct ua *p_ua)
 			time_elem = time_elem->next) {
 		p_time = time_elem->data;
 
-		if (p_time && p_time->p_ua == p_ua) {
+		if (p_time && p_time->ua == ua) {
 			p_time->reg_time = reg_time;
 
 			return;
@@ -441,7 +441,7 @@ static void update_ua_reg_time_entry(struct ua *p_ua)
 	p_time = mem_zalloc(sizeof(*p_time), ua_time_destructor);
 
 	if (p_time) {
-		p_time->p_ua = p_ua;
+		p_time->ua = ua;
 		p_time->reg_time = reg_time;
 
 		list_append(&ua_reg_times, &p_time->le, p_time);
@@ -452,12 +452,12 @@ static void update_ua_reg_time_entry(struct ua *p_ua)
 /**
  * Remove user agent time entry from list
  *
- * @param p_ua		User Agent
+ * @param ua		User Agent
  * @param ev		Event
  *
  * @return		None
  */
-static void remove_ua_reg_time_entry(struct ua *p_ua)
+static void remove_ua_reg_time_entry(struct ua *ua)
 {
 	struct le *time_elem;
 
@@ -465,7 +465,7 @@ static void remove_ua_reg_time_entry(struct ua *p_ua)
 			time_elem = time_elem->next) {
 		struct ua_time *p_time = time_elem->data;
 
-		if (p_time && p_time->p_ua == p_ua) {
+		if (p_time && p_time->ua == ua) {
 			mem_deref(p_time);
 
 			break;
@@ -526,16 +526,17 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
  */
 static int com_reginfo(struct re_printf *pf, void *unused)
 {
-	struct list *p_uag = uag_list();
-	struct le *ua_elem;
+	struct le *le;
 	int res = 0;
 
 	(void)unused;
 
-	res |= re_hprintf(pf, "--- Commend UAs: %u ---\n", list_count(p_uag));
+	res |= re_hprintf(pf, "--- Commend UAs: %u ---\n",
+			list_count(uag_list()));
 
-	for (ua_elem = list_head(p_uag); ua_elem; ua_elem = ua_elem->next) {
-		struct ua *p_ua = ua_elem->data;
+	for (le = list_head(uag_list()); le; le = le->next) {
+		struct ua *ua = le->data;
+		int32_t regint = account_regint(ua_account(ua));
 		struct le *time_elem;
 		uint32_t reg_duration = 0;
 		enum reg_status_t reg_status = STATUS_NOT_REGISTERED;
@@ -547,7 +548,7 @@ static int com_reginfo(struct re_printf *pf, void *unused)
 				time_elem = time_elem->next) {
 			struct ua_time *p_time = time_elem->data;
 
-			if (p_time && p_time->p_ua == p_ua) {
+			if (p_time && p_time->ua == ua) {
 				reg_duration = (uint32_t)((tmr_jiffies() -
 						p_time->reg_time) / 1000);
 				break;
@@ -571,8 +572,8 @@ static int com_reginfo(struct re_printf *pf, void *unused)
 			reg_status = STATUS_DISABLED;
 
 		res |= re_hprintf(pf, "%s %s %u %u %u\n",
-					p_ua == menu_uacur() ? ">" : " ",
-					account_aor(ua_account(p_ua)),
+					ua == menu_uacur() ? ">" : " ",
+					account_aor(ua_account(ua)),
 					reg_status,
 					pexpire,
 					reg_duration);
