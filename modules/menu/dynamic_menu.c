@@ -233,6 +233,55 @@ static int call_video_debug(struct re_printf *pf, void *arg)
 }
 
 
+static int set_media_ldir(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct call *call = menu_callcur();
+	struct pl argdir[2] = {PL_INIT, PL_INIT};
+	enum sdp_dir adir, vdir;
+	struct pl callid = PL_INIT;
+	char *cid = NULL;
+	bool ok = false;
+
+	const char *usage = "usage: /medialdir"
+			" audio=<inactive, sendonly, recvonly, sendrecv>"
+			" video=<inactive, sendonly, recvonly, sendrecv>"
+			" [callid=id]\n"
+			"/medialdir <sendonly, recvonly, sendrecv> [id]\n"
+			"Audio & video must not be"
+			" inactive at the same time\n";
+
+	ok |= 0 == menu_param_decode(carg->prm, "audio", &argdir[0]);
+	ok |= 0 == menu_param_decode(carg->prm, "video", &argdir[1]);
+	ok |= 0 == menu_param_decode(carg->prm, "callid", &callid);
+	if (!ok) {
+		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
+			"[^ ]*[ \t\r\n]*[^ ]*", &argdir[0], NULL, &callid);
+	}
+
+	if (!ok) {
+		(void) re_hprintf(pf, "%s", usage);
+		return EINVAL;
+	}
+
+	if (!pl_isset(&argdir[1]))
+		argdir[1] = argdir[0];
+
+	adir = decode_sdp_enum(&argdir[0]);
+	vdir = decode_sdp_enum(&argdir[1]);
+
+	(void)pl_strdup(&cid, &callid);
+	if (str_isset(cid))
+		call = uag_call_find(cid);
+
+	cid = mem_deref(cid);
+	if (!call)
+		return EINVAL;
+
+	return call_set_media_direction(call, adir, vdir);
+}
+
+
 static int set_video_dir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -290,6 +339,7 @@ static const struct cmd callcmdv[] = {
 {"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
 {"videodir",      0, CMD_PRM, "Set video direction",  set_video_dir        },
+{"medialdir",     0, CMD_PRM, "Set local media direction",  set_media_ldir },
 
 /* Numeric keypad for DTMF events: */
 {NULL, '#',         0, NULL,                  digit_handler         },
