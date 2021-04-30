@@ -571,6 +571,7 @@ out:
 static int cmd_dialdir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct menu *menu = menu_get();
 	enum sdp_dir adir, vdir;
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
 	struct pl pluri;
@@ -641,7 +642,13 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	if (err)
 		goto out;
 
+	if (menu->adelay >= 0)
+		(void)ua_enable_autoanswer(ua, menu->adelay,
+				auto_answer_method(pf));
+
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
+	if (menu->adelay >= 0)
+		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
 	if (err)
 		goto out;
 
