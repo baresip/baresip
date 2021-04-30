@@ -56,6 +56,7 @@ int avcodec_encode_update(struct videnc_state **vesp,
 			  videnc_packet_h *pkth, void *arg);
 int avcodec_encode(struct videnc_state *st, bool update,
 		   const struct vidframe *frame, uint64_t timestamp);
+int avcodec_packetize(struct videnc_state *st, const struct vidpacket *packet);
 
 
 /*

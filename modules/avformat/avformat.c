@@ -48,6 +48,7 @@ static enum AVHWDeviceType avformat_hwdevice = AV_HWDEVICE_TYPE_NONE;
 #endif
 static char avformat_inputformat[64];
 static AVCodec *avformat_decoder;
+static char pass_through[256] = "";
 static char rtsp_transport[256] = "";
 
 
@@ -158,7 +159,12 @@ static void *read_thread(void *data)
 				vidts = 1000 * pkt->pts *
 					av_q2d(st->vid.time_base);
 
-				avformat_video_decode(st, pkt);
+				if (st->is_pass_through) {
+					avformat_video_copy(st, pkt);
+				}
+				else {
+					avformat_video_decode(st, pkt);
+				}
 			}
 
 			av_packet_unref(pkt);
@@ -250,6 +256,13 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	st->au.idx  = -1;
 	st->vid.idx = -1;
 
+	conf_get_str(conf_cur(), "avformat_pass_through",
+			  pass_through, sizeof(pass_through));
+
+	if (*pass_through != '\0' && 0==strcmp(pass_through, "yes")) {
+		st->is_pass_through = 1;
+	}
+
 	if (0 == re_regex(dev, str_len(dev), "[^,]+,[^]+", &pl_fmt, &pl_dev)) {
 
 		char format[32];
@@ -290,7 +303,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
-	if (video && fps) {
+	if (video && fps && !st->is_pass_through) {
 		re_snprintf(buf, sizeof(buf), "%2.f", fps);
 		ret = av_dict_set(&format_opts, "framerate", buf, 0);
 		if (ret != 0) {
