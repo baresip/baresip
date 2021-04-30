@@ -10,6 +10,8 @@
 #    ;answermode={manual,early,auto,early-audio,early-video}
 #    ;answerdelay=0
 #    ;audio_codecs=opus/48000/2,pcma,...
+#    ;audio_source=alsa,default
+#    ;audio_player=alsa,default
 #    ;sip_autoanswer={yes, no}
 #    ;dtmfmode={rtpevent, info}
 #    ;auth_user=username
@@ -30,6 +32,8 @@
 #    ;pubint=0 (publishing off)
 #    ;regq=0.5
 #    ;sipnat={outbound}
+#    ;stunuser=STUN/TURN/ICE-username
+#    ;stunpass=STUN/TURN/ICE-password
 #    ;stunserver=stun:[user:pass]@host[:port]
 #    ;video_codecs=h264,h263,...
 #
