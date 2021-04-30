@@ -1966,8 +1966,6 @@ static int send_invite(struct call *call)
 
 	routev[0] = account_outbound(call->acc, 0);
 
-	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
-
 	err = call_sdp_get(call, &desc, true);
 	if (err)
 		return err;
@@ -2007,6 +2005,8 @@ static int send_invite(struct call *call)
 
 	/* save call setup timer */
 	call->time_conn = time(NULL);
+
+	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
  out:
 	mem_deref(desc);

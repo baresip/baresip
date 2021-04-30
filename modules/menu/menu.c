@@ -410,6 +410,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 		break;
 
+	case UA_EVENT_CALL_LOCAL_SDP:
+		if (call_state(call) == CALL_STATE_OUTGOING)
+			menu_selcall(call);
+		break;
+
 	case UA_EVENT_CALL_RINGING:
 		menu_selcall(call);
 		if (!menu.ringback && !menu_find_call(active_call_test))
