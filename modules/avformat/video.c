@@ -2,6 +2,9 @@
  * @file avformat/video.c  libavformat media-source -- video
  *
  * Copyright (C) 2010 - 2020 Alfred E. Heggestad
+ * Copyright (C) 2021 by:
+ *     Media Magic Technologies <developer@mediamagictechnologies.com>
+ *     and Divus GmbH <developer@divus.eu>
  */
 
 #include <re.h>
@@ -17,6 +20,7 @@
 struct vidsrc_st {
 	struct shared *shared;
 	vidsrc_frame_h *frameh;
+	vidsrc_packet_h *packeth;
 	void *arg;
 };
 
@@ -70,6 +74,7 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		return ENOMEM;
 
 	st->frameh = frameh;
+	st->packeth = packeth;
 	st->arg    = arg;
 
 	if (ctx && *ctx && (*ctx)->id && !strcmp((*ctx)->id, "avformat")) {
@@ -100,6 +105,30 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		*stp = st;
 
 	return err;
+}
+
+
+void avformat_video_copy(struct shared *st, AVPacket *pkt)
+{
+	struct vidpacket vp;
+	AVRational tb;
+
+	if (!st || !pkt)
+		return;
+
+	tb = st->vid.time_base;
+
+	vp.buf = pkt->data;
+	vp.size = pkt->size;
+	vp.timestamp = pkt->pts * VIDEO_TIMEBASE * tb.num / tb.den;
+
+	lock_read_get(st->lock);
+
+	if (st->vidsrc_st && st->vidsrc_st->packeth) {
+		st->vidsrc_st->packeth(&vp, st->vidsrc_st->arg);
+	}
+
+	lock_rel(st->lock);
 }
 
 

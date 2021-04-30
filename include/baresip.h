@@ -1145,6 +1145,9 @@ typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
 			      const struct vidframe *frame,
 			      uint64_t timestamp);
 
+typedef int (videnc_packetize_h)(struct videnc_state *ves,
+				 const struct vidpacket *packet);
+
 typedef int (viddec_update_h)(struct viddec_state **vdsp,
 			      const struct vidcodec *vc, const char *fmtp);
 typedef int (viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
@@ -1163,6 +1166,7 @@ struct vidcodec {
 	viddec_decode_h *dech;
 	sdp_fmtp_enc_h *fmtp_ench;
 	sdp_fmtp_cmp_h *fmtp_cmph;
+	videnc_packetize_h *packetizeh;
 };
 
 void vidcodec_register(struct list *vidcodecl, struct vidcodec *vc);

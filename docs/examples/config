@@ -265,6 +265,7 @@ video_selfview		window # {window,pip}
 #avcodec_h265enc	libx265
 #avcodec_h265dec	hevc
 #avcodec_hwaccel	vaapi
+#avcodec_profile_level_id 42002a
 
 # ctrl_dbus
 #ctrl_dbus_use	system		# system, session
@@ -297,3 +298,6 @@ video_selfview		window # {window,pip}
 #multicast_call_prio	0
 #multicast_listener	224.0.2.21:50000
 #multicast_listener	224.0.2.21:50002
+
+# avformat
+#avformat_pass_through	yes
