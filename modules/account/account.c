@@ -79,16 +79,19 @@ static int account_write_template(const char *file)
 			 "#\n"
 			 "# Examples:\n"
 			 "#\n"
+			 "#  <sip:user@domain.com>"
+		         ";auth_pass=secret;regint=3600\n"
 			 "#  <sip:user@domain.com;transport=tcp>"
-		         ";auth_pass=secret\n"
+		         ";auth_pass=secret;regint=3600\n"
 			 "#  <sip:user@1.2.3.4;transport=tcp>"
-		         ";auth_pass=secret\n"
+		         ";auth_pass=secret;regint=3600\n"
 			 "#  <sip:user@"
 			 "[2001:df8:0:16:216:6fff:fe91:614c]:5070"
-			 ";transport=tcp>;auth_pass=secret\n"
+			 ";transport=tcp>;auth_pass=secret;regint=3600\n"
 			 "#\n"
 		       "\n"
-		       "#<sip:user@domain>;auth_pass=PASSWORD\n");
+		       "# A registrar-less account"
+		       "#<sip:alice@office>\n");
 	if (r < 0)
 		err = ENOMEM;
 
