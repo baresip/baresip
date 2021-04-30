@@ -1584,6 +1584,19 @@ const char *call_alerturi(const struct call *call)
 
 
 /**
+ * Get the state as string
+ *
+ * @param call  Call object
+ *
+ * @return State name
+ */
+const char *call_statename(const struct call *call)
+{
+	return call ? state_name(call->state) : NULL;
+}
+
+
+/**
  * Print the call debug information
  *
  * @param pf   Print function
