@@ -439,7 +439,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_capath\t\t%s\n"
 			 "sip_trans_def\t%s\n"
 			 "sip_verify_server\t\t\t%s\n"
-			 "sip_tos\t%s\n"
+			 "sip_tos\t%u\n"
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
