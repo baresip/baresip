@@ -662,7 +662,7 @@ struct ua   *menu_ua_carg(struct re_printf *pf, const struct cmd_arg *carg,
 	if (ua)
 		return ua;
 
-	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [^ ]+", word1,
+	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [0-9]+", word1,
 			word2);
 	if (err)
 		return NULL;
