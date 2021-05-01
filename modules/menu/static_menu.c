@@ -1054,6 +1054,43 @@ static int create_ua(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_uareg(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl word[2] = {PL_INIT, PL_INIT};
+	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
+	struct account *acc;
+	uint32_t regint;
+	int err;
+
+	if (!ua) {
+		warning("uareg: ua not found (%s)\n", carg->prm);
+		return 0;
+	}
+
+	acc = ua_account(ua);
+	regint = pl_u32(&word[0]);
+
+	err = account_set_regint(acc, regint);
+	if (err)
+		return err;
+
+	if (regint) {
+		re_hprintf(pf, "registering %s with interval %u seconds\n",
+			   account_aor(acc), regint);
+		err = ua_register(ua);
+		if (err)
+			return err;
+	}
+	else {
+		re_hprintf(pf, "unregistering %s\n", account_aor(acc));
+		ua_unregister(ua);
+	}
+
+	return 0;
+}
+
+
 static int switch_video_source(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -1227,6 +1264,7 @@ static const struct cmd cmdv[] = {
 {"uadelall",  0,    CMD_PRM, "Delete all User-Agents",  cmd_ua_delete_all    },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
+{"uareg",     0,    CMD_PRM, "UA register <regint> [index]", cmd_uareg       },
 {"vidsrc",    0,    CMD_PRM, "Switch video source",     switch_video_source  },
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 

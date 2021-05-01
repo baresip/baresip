@@ -655,23 +655,34 @@ struct ua   *menu_ua_carg(struct re_printf *pf, const struct cmd_arg *carg,
 		struct pl *word1, struct pl *word2)
 {
 	int err;
-	struct le *le;
+	struct le *le = NULL;
 	uint32_t i;
 	struct ua *ua = carg->data;
 
 	if (ua)
 		return ua;
 
-	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [^ ]+", word1,
-			word2);
+	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+[ ]*[0-9]*",
+		       word1, NULL, word2);
 	if (err)
 		return NULL;
 
-	i = pl_u32(word2);
+	if (pl_isset(word2)) {
+		i = pl_u32(word2);
 
-	le = uag_list()->head;
-	while (le && i--)
-		le = le->next;
+		le = uag_list()->head;
+		while (le && i--)
+			le = le->next;
+	}
+	else {
+		if (list_count(uag_list()) == 1) {
+			info(">> SINGLE UA <<\n");
+			le = list_head(uag_list());
+		}
+		else {
+			info("ambiguous result.\n");
+		}
+	}
 
 	if (le) {
 		ua = le->data;
