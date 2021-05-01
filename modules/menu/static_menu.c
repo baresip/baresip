@@ -979,8 +979,7 @@ static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
 
 	(void)unused;
 
-	while (list_head(uag_list()))
-	{
+	while (list_head(uag_list())) {
 		ua = list_head(uag_list())->data;
 		mem_deref(ua);
 	}
