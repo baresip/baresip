@@ -3,7 +3,7 @@ name: Tools
 on: [push, pull_request]
 
 jobs:
-  build:
+  tools:
     runs-on: ubuntu-latest
 
     steps:

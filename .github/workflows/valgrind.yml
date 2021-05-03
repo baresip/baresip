@@ -3,7 +3,7 @@ name: valgrind leak check
 on: [push, pull_request]
 
 jobs:
-  build:
+  valgrind:
     runs-on: ubuntu-latest 
 
     steps:
