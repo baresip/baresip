@@ -46,6 +46,7 @@ static void mcsender_destructor(void *arg)
 {
 	struct mcsender *mcsender = arg;
 
+	mcsource_stop(mcsender->src);
 	mcsender->src = mem_deref(mcsender->src);
 	mcsender->rtp = mem_deref(mcsender->rtp);
 }

@@ -571,3 +571,35 @@ int mcsource_start(struct mcsource **srcp, const struct aucodec *ac,
 
 	return err;
 }
+
+
+/**
+ * Stop one multicast source.
+ *
+ * @param src Multicast audio source object
+ */
+void mcsource_stop(struct mcsource *unused)
+{
+	(void) unused;
+}
+
+
+/**
+ * Initialize everything needed for the source beforhand
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int mcsource_init(void)
+{
+	return 0;
+}
+
+
+/**
+ * Terminate everything needed for the source afterwards
+ *
+ */
+void mcsource_terminate(void)
+{
+	return;
+}
