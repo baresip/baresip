@@ -34,7 +34,9 @@ jobs:
                             libsndfile1-dev \
                             libspandsp-dev \
                             libssl-dev \
-                            libglib2.0-dev
+                            libglib2.0-dev \
+                            libopencore-amrnb-dev \
+                            libopencore-amrwb-dev
 
     - name: install aac
       if: ${{ matrix.os == 'ubuntu-20.04' }}
