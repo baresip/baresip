@@ -1063,10 +1063,8 @@ static int cmd_uareg(struct re_printf *pf, void *arg)
 	uint32_t regint;
 	int err;
 
-	if (!ua) {
-		warning("uareg: ua not found (%s)\n", carg->prm);
+	if (!ua)
 		return 0;
-	}
 
 	acc = ua_account(ua);
 	regint = pl_u32(&word[0]);
