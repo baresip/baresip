@@ -527,6 +527,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 				auto_answer_method(pf));
 
 
+	re_hprintf(pf, "call uri: %s\n", uri);
 	err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON);
 
 	if (menu->adelay >= 0)
@@ -623,6 +624,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		(void)ua_enable_autoanswer(ua, menu->adelay,
 				auto_answer_method(pf));
 
+	re_hprintf(pf, "call uri: %s\n", uri);
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
 	if (menu->adelay >= 0)
 		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
