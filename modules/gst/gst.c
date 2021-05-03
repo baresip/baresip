@@ -54,6 +54,7 @@ struct ausrc_st {
 	size_t psize;               /**< Packet size in bytes    */
 	size_t sampc;
 	uint32_t ptime;
+	int16_t *buf;
 
 	struct tmr tmr;
 
@@ -157,21 +158,20 @@ static void format_check(struct ausrc_st *st, GstStructure *s)
 
 static void play_packet(struct ausrc_st *st)
 {
-	int16_t buf[st->sampc];
 	struct auframe af = {
 		.fmt   = AUFMT_S16LE,
-		.sampv = buf,
+		.sampv = st->buf,
 		.sampc = st->sampc
 	};
 
 	/* timed read from audio-buffer */
-	if (st->prm.ptime && aubuf_get_samp(st->aubuf, st->prm.ptime, buf,
+	if (st->prm.ptime && aubuf_get_samp(st->aubuf, st->prm.ptime, st->buf,
 				st->sampc))
 		return;
 
 	/* immediate read from audio-buffer */
 	if (!st->prm.ptime)
-		aubuf_read_samp(st->aubuf, buf, st->sampc);
+		aubuf_read_samp(st->aubuf, st->buf, st->sampc);
 
 	/* call read handler */
 	if (st->rh)
@@ -390,6 +390,7 @@ static void gst_destructor(void *arg)
 
 	mem_deref(st->uri);
 	mem_deref(st->aubuf);
+	mem_deref(st->buf);
 }
 
 
@@ -457,6 +458,12 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->prm   = *prm;
 	st->sampc = prm->srate * prm->ch * st->ptime / 1000;
 	st->psize = 2 * st->sampc;
+
+	st->buf = mem_zalloc(st->psize, NULL);
+	if (!st->buf) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	err = aubuf_alloc(&st->aubuf, st->psize, 0);
 	if (err)
