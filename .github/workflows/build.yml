@@ -37,7 +37,9 @@ jobs:
                             libglib2.0-dev \
                             libopencore-amrnb-dev \
                             libopencore-amrwb-dev \
-                            libgstreamer1.0-dev
+                            libgstreamer1.0-dev \
+                            libsdl2-dev \
+                            libvpx-dev
 
     - name: install aac
       if: ${{ matrix.os == 'ubuntu-20.04' }}
