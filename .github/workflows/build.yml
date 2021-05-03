@@ -38,7 +38,6 @@ jobs:
                             libopencore-amrnb-dev \
                             libopencore-amrwb-dev \
                             libgstreamer1.0-dev \
-                            libsdl2-dev \
                             libvpx-dev
 
     - name: install aac
