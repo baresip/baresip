@@ -595,7 +595,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		goto out;
 
 	if (!ua)
-		ua = uag_find_requri(carg->prm);
+		ua = uag_find_requri(uri);
 
 	if (!ua) {
 		(void)re_hprintf(pf, "could not find UA for %s\n", carg->prm);
