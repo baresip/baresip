@@ -560,3 +560,23 @@ void mcplayer_stop(void)
 {
 	player = mem_deref(player);
 }
+
+
+/**
+ * Initialize everything needed for the player beforhand
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int mcplayer_init(void)
+{
+	return 0;
+}
+
+/**
+ * Terminate everything needed for the player afterwards
+ *
+ */
+void mcplayer_terminate(void)
+{
+	return;
+}

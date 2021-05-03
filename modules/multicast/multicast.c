@@ -533,6 +533,9 @@ static int module_init(void)
 	err = module_read_config();
 	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 
+	err |= mcsource_init();
+	err |= mcplayer_init();
+
 	if (!err)
 		info("multicast: module init\n");
 
@@ -546,6 +549,9 @@ static int module_close(void)
 	mcreceiver_unregall();
 
 	cmd_unregister(baresip_commands(), cmdv);
+
+	mcsource_terminate();
+	mcplayer_terminate();
 
 	return 0;
 }
