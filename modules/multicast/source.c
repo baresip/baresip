@@ -587,10 +587,11 @@ void mcsource_stop(struct mcsource *unused)
 /**
  * Initialize everything needed for the source beforhand
  *
+ * @return 0 if success, otherwise errorcode
  */
-void mcsource_init(void)
+int mcsource_init(void)
 {
-	return;
+	return 0;
 }
 
 

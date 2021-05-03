@@ -46,7 +46,7 @@ void mcreceiver_print(struct re_printf *pf);
 int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac);
 void mcplayer_stop(void);
 
-void mcplayer_init(void);
+int  mcplayer_init(void);
 void mcplayer_terminate(void);
 
 /* Source <exchangable source> */
@@ -55,5 +55,5 @@ int mcsource_start(struct mcsource **srcp, const struct aucodec *ac,
 	mcsender_send_h *sendh, void *arg);
 void mcsource_stop(struct mcsource *src);
 
-void mcsource_init(void);
+int  mcsource_init(void);
 void mcsource_terminate(void);

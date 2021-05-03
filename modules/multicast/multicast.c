@@ -533,8 +533,8 @@ static int module_init(void)
 	err = module_read_config();
 	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 
-	mcsource_init();
-	mcplayer_init();
+	err |= mcsource_init();
+	err |= mcplayer_init();
 
 	if (!err)
 		info("multicast: module init\n");

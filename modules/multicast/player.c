@@ -565,10 +565,11 @@ void mcplayer_stop(void)
 /**
  * Initialize everything needed for the player beforhand
  *
+ * @return 0 if success, otherwise errorcode
  */
-void mcplayer_init(void)
+int mcplayer_init(void)
 {
-	return;
+	return 0;
 }
 
 /**
