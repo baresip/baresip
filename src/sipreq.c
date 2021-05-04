@@ -150,7 +150,8 @@ int sip_req_send(struct ua *ua, const char *method, const char *uri,
 	if (err)
 		goto out;
 
-	err = sip_auth_alloc(&sr->auth, auth_handler, ua_account(ua), true);
+	err = sip_auth_alloc(&sr->auth, uag_sip(), auth_handler,
+		ua_account(ua), true);
 	if (err)
 		goto out;
 
