@@ -506,13 +506,15 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	}
 
 	uribuf = mbuf_alloc(64);
-	if (!uribuf)
-		return ENOMEM;
+	if (!uribuf) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	err = account_uri_complete(ua_account(ua), uribuf, uri);
 	if (err) {
 		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
-		return EINVAL;
+		goto out;
 	}
 
 	mem_deref(uri);
@@ -604,13 +606,15 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	}
 
 	uribuf = mbuf_alloc(64);
-	if (!uribuf)
-		return ENOMEM;
+	if (!uribuf) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	err = account_uri_complete(ua_account(ua), uribuf, uri);
 	if (err) {
 		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
-		return EINVAL;
+		goto out;
 	}
 
 	mem_deref(uri);
