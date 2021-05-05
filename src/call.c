@@ -2430,6 +2430,24 @@ int32_t call_answer_delay(const struct call *call)
 
 
 /**
+ * Set/override the answer delay of call
+ *
+ * @param call    Call object
+ * @param adelay  Answer delay in ms. A value of -1 means auto answer is
+ *                disabled
+ *
+ * @return answer delay in ms
+ */
+void call_set_answer_delay(struct call *call, int32_t adelay)
+{
+	if (!call)
+		return;
+
+	call->adelay = adelay;
+}
+
+
+/**
  * Find the call with a given line number
  *
  * @param calls   List of calls
