@@ -785,7 +785,7 @@ struct ua *uag_find(const struct pl *cuser)
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 
-		if (0 == pl_strcasecmp(cuser, ua_cuser(ua)))
+		if (0 == pl_strcasecmp(cuser, ua_local_cuser(ua)))
 			return ua;
 	}
 
@@ -830,7 +830,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 
-		if (0 == pl_strcasecmp(cuser, ua_cuser(ua))) {
+		if (0 == pl_strcasecmp(cuser, ua_local_cuser(ua))) {
 			ua_printf(ua, "selected for %r\n", cuser);
 			return ua;
 		}
