@@ -474,31 +474,23 @@ struct call_window *call_window_new(struct call *call, struct gtk_mod *mod,
 					GTK_ICON_SIZE_BUTTON);
 	gtk_button_set_image(GTK_BUTTON(button), image);
 
-
+	/* Attended Transfer */
+	button = gtk_button_new_with_label("Att. Transfer");
+	win->buttons.attended_transfer = button;
+	gtk_box_pack_end(GTK_BOX(button_box), button, FALSE, TRUE, 0);
 	if (!attended_call) {
-		/* Attended Transfer */
-		button = gtk_button_new_with_label("Att. Transfer");
-		win->buttons.attended_transfer = button;
-		gtk_box_pack_end(GTK_BOX(button_box), button, FALSE, TRUE, 0);
 		g_signal_connect(button, "clicked",
 				G_CALLBACK(call_on_attended_transfer), win);
-		image = gtk_image_new_from_icon_name("forward",
-						GTK_ICON_SIZE_BUTTON);
-		gtk_button_set_image(GTK_BUTTON(button), image);
-		gtk_widget_set_sensitive (button, FALSE);
 	}
 	else {
-		/* Attended Transfer */
-		button = gtk_button_new_with_label("Att. Transfer");
-		win->buttons.attended_transfer = button;
-		gtk_box_pack_end(GTK_BOX(button_box), button, FALSE, TRUE, 0);
 		g_signal_connect(button, "clicked",
 			G_CALLBACK(call_window_transfer_attended_call), win);
-		image = gtk_image_new_from_icon_name("forward",
-					GTK_ICON_SIZE_BUTTON);
-		gtk_button_set_image(GTK_BUTTON(button), image);
-		gtk_widget_set_sensitive (button, FALSE);
 	}
+	image = gtk_image_new_from_icon_name("forward", GTK_ICON_SIZE_BUTTON);
+	gtk_button_set_image(GTK_BUTTON(button), image);
+	gtk_widget_set_sensitive (button, FALSE);
+	gtk_widget_set_tooltip_text(button,
+		"Please put the call on 'Hold' to enable attended transfer");
 
 	/* Hold */
 	button = gtk_toggle_button_new_with_label("Hold");
