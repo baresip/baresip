@@ -47,24 +47,26 @@ struct comvideo_data  comvideo_codec;
 static struct vidsrc *vid_src;
 static struct vidisp *vid_disp;
 
-static bool h264_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data);
+static struct vidcodec h264_0 = {
+	.name      = "H264",
+	.variant   = "packetization-mode=0",
+	.encupdh   = encode_h264_update,
+	.ench      = encode_h264,
+	.decupdh   = decode_h264_update,
+	.dech      = decode_h264,
+	.fmtp_ench = comvideo_fmtp_enc,
+	.fmtp_cmph = comvideo_fmtp_cmp
+};
 
-static int h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
-			 bool offer, void *arg);
-
-
-static struct vidcodec h264 = {
-	LE_INIT,
-	NULL,
-	"H264",
-	"packetization-mode=0",
-	NULL,
-	encode_h264_update,
-	encode_h264,
-	decode_h264_update,
-	decode_h264,
-	h264_fmtp_enc,
-	h264_fmtp_cmp,
+static struct vidcodec h264_1 = {
+	.name      = "H264",
+	.variant   = "packetization-mode=1",
+	.encupdh   = encode_h264_update,
+	.ench      = encode_h264,
+	.decupdh   = decode_h264_update,
+	.dech      = decode_h264,
+	.fmtp_ench = comvideo_fmtp_enc,
+	.fmtp_cmph = comvideo_fmtp_cmp
 };
 
 
@@ -74,9 +76,7 @@ struct vidsrc_st {
 	u_int32_t pixfmt;
 	u_int32_t fps;
 	u_int32_t bitrate;
-
 	GstCameraSrc *camsrc;
-	GList *encoders;
 
 	struct buffer *buffers;
 	vidsrc_frame_h *frameh;
@@ -88,46 +88,6 @@ struct vidisp_st {
 	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	struct vidsz size;              /**< Current size          */
 };
-
-
-static uint32_t packetization_mode(const char *fmtp) {
-	struct pl pl, mode;
-
-	if (!fmtp)
-		return 0;
-
-	pl_set_str(&pl, fmtp);
-
-	if (fmt_param_get(&pl, "packetization-mode", &mode))
-		return pl_u32(&mode);
-
-	return 0;
-}
-
-
-static bool h264_fmtp_cmp(const char *fmtp1, const char *fmtp2, void *data) {
-	(void) data;
-	return packetization_mode(fmtp1) == packetization_mode(fmtp2);
-}
-
-
-static int h264_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
-			 bool offer, void *arg) {
-	struct vidcodec *vc = arg;
-	const uint8_t profile_idc = 0x42; /* baseline profile */
-	const uint8_t profile_iop = 0x80;
-	static const uint8_t h264_level_idc = 0x0c;
-	(void) offer;
-
-	if (!mb || !fmt || !vc)
-		return 0;
-
-	return mbuf_printf(mb, "a=fmtp:%s"
-			       " packetization-mode=0"
-			       ";profile-level-id=%02x%02x%02x"
-			       "\r\n",
-			   fmt->id, profile_idc, profile_iop, h264_level_idc);
-}
 
 
 static void src_destructor(void *arg)
@@ -143,8 +103,8 @@ static void src_destructor(void *arg)
 	if (src) {
 		gst_camera_src_set_sample_cb(
 			src,
-			st->bitrate,
 			GST_CAMERA_SRC_CODEC_H264,
+			st->bitrate,
 			NULL, NULL);
 
 		if (comvideo_codec.camerad_client) {
@@ -291,22 +251,22 @@ static int module_init(void) {
 			comvideo_codec.camerad_dbus_name,
 			comvideo_codec.camerad_dbus_path);
 
-	vidcodec_register(baresip_vidcodecl(), &h264);
+	vidcodec_register(baresip_vidcodecl(), &h264_0);
+	vidcodec_register(baresip_vidcodecl(), &h264_1);
 
 	vidisp_register(&vid_disp, baresip_vidispl(),
 			MODULE_NAME, disp_alloc, NULL, NULL, NULL);
 
 	return vidsrc_register(&vid_src, baresip_vidsrcl(),
 			       MODULE_NAME, src_alloc, NULL);
-
-	info(MODULE_NAME" inited\n");
 }
 
 
 static int module_close(void) {
 	vid_src = mem_deref(vid_src);
 	vid_disp = mem_deref(vid_disp);
-	vidcodec_unregister(&h264);
+	vidcodec_unregister(&h264_0);
+	vidcodec_unregister(&h264_1);
 
 	g_object_unref(comvideo_codec.camerad_client);
 	g_object_unref(comvideo_codec.video_client);

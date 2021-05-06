@@ -64,4 +64,15 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 int decode_h264_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		       const char *fmtp);
 
+/*
+ * SDP
+ */
+
+bool comvideo_fmtp_cmp(const char *lfmtp, const char *rfmtp, void *arg);
+
+
+int comvideo_fmtp_enc(
+	struct mbuf *mb, const struct sdp_format *fmt,
+	bool offer, void *arg);
+
 #endif //BARESIP_COMVIDEO_SRC_H

@@ -11,6 +11,7 @@ struct videnc_state {
 	videnc_packet_h *pkth;
 	void *arg;
 	unsigned pktsize;
+	uint32_t packetization_mode;
 };
 
 
@@ -23,20 +24,37 @@ typedef struct {
 
 /* note: dummy function, the input is unused */
 int encode_h264(struct videnc_state *st, bool update,
-		const struct vidframe *frame, uint64_t timestamp) {
+		const struct vidframe *frame, uint64_t timestamp)
+{
 	(void) st;
 	(void) update;
 	(void) frame;
 	(void) timestamp;
-
 	return 0;
 }
 
 
-static void enc_destructor(void *arg) {
+static void enc_destructor(void *arg)
+{
+	struct videnc_state *st = arg;
+	comvideo_codec.encoders = g_list_remove(comvideo_codec.encoders, st);
+}
+
+
+static void param_handler(const struct pl *name, const struct pl *val,
+			  void *arg)
+{
 	struct videnc_state *st = arg;
 
-	comvideo_codec.encoders = g_list_remove(comvideo_codec.encoders, st);
+	if (0 == pl_strcasecmp(name, "packetization-mode")) {
+		st->packetization_mode = pl_u32(val);
+
+		if (st->packetization_mode != 0 &&
+		    st->packetization_mode != 1 ) {
+			warning("comvideo: illegal packetization-mode %u\n",
+				st->packetization_mode);
+		}
+	}
 }
 
 
@@ -63,6 +81,12 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	st->pktsize = prm->pktsize;
 
 	comvideo_codec.encoders = g_list_append(comvideo_codec.encoders, st);
+
+	if (str_isset(fmtp)) {
+		struct pl sdp_fmtp;
+		pl_set_str(&sdp_fmtp, fmtp);
+		fmt_param_apply(&sdp_fmtp, param_handler, st);
+	}
 
 	info("comvideo: video encoder %s: %.2f fps, %d bit/s, pktsize=%u\n",
 	     vc->name, prm->fps, prm->bitrate, prm->pktsize);
