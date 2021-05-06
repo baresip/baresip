@@ -68,6 +68,7 @@ static struct gtk_mod mod_obj;
 enum gtk_mod_events {
 	MQ_POPUP,
 	MQ_CONNECT,
+	MQ_CONNECTATTENDED,
 	MQ_QUIT,
 	MQ_ANSWER,
 	MQ_HANGUP,
@@ -143,7 +144,7 @@ static void menu_on_dial(GtkMenuItem *menuItem, gpointer arg)
 	struct gtk_mod *mod = arg;
 	(void)menuItem;
 	if (!mod->dial_dialog)
-		 mod->dial_dialog = dial_dialog_alloc(mod);
+		 mod->dial_dialog = dial_dialog_alloc(mod, NULL);
 	dial_dialog_show(mod->dial_dialog);
 }
 
@@ -557,7 +558,19 @@ static void reject_activated(GSimpleAction *action, GVariant *parameter,
 static struct call_window *new_call_window(struct gtk_mod *mod,
 					   struct call *call)
 {
-	struct call_window *win = call_window_new(call, mod);
+	struct call_window *win = call_window_new(call, mod, NULL);
+	if (call) {
+		mod->call_windows = g_slist_append(mod->call_windows, win);
+	}
+	return win;
+}
+
+
+static struct call_window *new_call_transfer_window(struct gtk_mod *mod,
+					   struct call *call,
+					   struct call *attended_call)
+{
+	struct call_window *win = call_window_new(call, mod, attended_call);
 	if (call) {
 		mod->call_windows = g_slist_append(mod->call_windows, win);
 	}
@@ -785,6 +798,42 @@ out:
 }
 
 
+int gtk_mod_connect_attended(struct gtk_mod *mod, const char *uri,
+					struct call *attended_call)
+{
+	struct attended_transfer_store *ats;
+	struct mbuf *uribuf = NULL;
+	char *uri_copy = NULL;
+	int err = 0;
+
+	if (!mod)
+		return ENOMEM;
+
+	uribuf = mbuf_alloc(64);
+	ats = mem_zalloc(sizeof(struct attended_transfer_store), NULL);
+	if (!uribuf)
+		return ENOMEM;
+
+	err = account_uri_complete(ua_account(mod->ua_cur), uribuf, uri);
+	if (err)
+		return EINVAL;
+
+	uribuf->pos = 0;
+	err = mbuf_strdup(uribuf, &uri_copy, uribuf->end);
+	if (err)
+		goto out;
+
+	ats->uri = (char *)uri_copy;
+	ats->attended_call = attended_call;
+
+	err = mqueue_push(mod->mq, MQ_CONNECTATTENDED, ats);
+
+out:
+	mem_deref(uribuf);
+	return err;
+}
+
+
 bool gtk_mod_clean_number(struct gtk_mod *mod)
 {
 	if (!mod)
@@ -819,6 +868,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 	struct gtk_mod *mod = arg;
 	const char *uri;
 	struct call *call;
+	struct attended_transfer_store *ats;
 	int err;
 	struct ua *ua = gtk_current_ua();
 
@@ -848,6 +898,29 @@ static void mqueue_handler(int id, void *data, void *arg)
 		if (err) {
 			ua_hangup(ua, call, 500, "Server Error");
 		}
+		mem_deref(data);
+		break;
+
+	case MQ_CONNECTATTENDED:
+		ats = data;
+		err = ua_connect(ua, &call, NULL, ats->uri, VIDMODE_ON);
+		add_history_menu_item(mod, ats->uri, CALL_OUTGOING, "");
+		if (err) {
+			gdk_threads_enter();
+			warning_dialog("Call failed",
+				       "Connecting to \"%s\" failed.\n"
+				       "Error: %m", ats->uri, err);
+			gdk_threads_leave();
+			break;
+		}
+		gdk_threads_enter();
+		err = new_call_transfer_window(mod, call,
+						ats->attended_call) == NULL;
+		gdk_threads_leave();
+		if (err) {
+			ua_hangup(ua, call, 500, "Server Error");
+		}
+		mem_deref(ats->uri);
 		mem_deref(data);
 		break;
 
