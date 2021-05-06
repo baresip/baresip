@@ -157,6 +157,7 @@ static void menu_on_dial_contact(GtkMenuItem *menuItem, gpointer arg)
 	gtk_mod_connect(mod, uri);
 }
 
+
 static void menu_on_dial_history(GtkMenuItem *menuItem, gpointer arg)
 {
 	struct gtk_mod *mod = arg;

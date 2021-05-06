@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <gtk/gtk.h>
 #include "gtk_mod.h"
+#include <ctype.h>
 
 
 struct dial_dialog {
@@ -27,9 +28,14 @@ static int clean_number(char* str)
 	/* only clean numeric numbers
 	 * In other cases trust the user input
 	 */
-	int err = re_regex(str, str_len(str), "[A-Za-z]");
-	if (err == 0)
-		return -1;
+	while (str[i]) {
+		if (isalpha(str[i] != 0))
+			return -1;
+		else if (str[i] == '@')
+			return -1;
+		++i;
+	}
+	i = 0;
 
 	/* remove (0) which is in some mal-formated numbers
 	 * but only if trailed by another character

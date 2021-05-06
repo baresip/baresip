@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <re.h>
 #include <baresip.h>
+#include <ctype.h>
 
 #include "menu.h"
 
@@ -395,9 +396,14 @@ static void clean_number(char *str)
 	/* only clean numeric numbers
 	 * In other cases trust the user input
 	 */
-	int err = re_regex(str, str_len(str), "[A-Za-z]");
-	if (err == 0)
-		return;
+	while (str[i]) {
+		if (isalpha(str[i] != 0))
+			return;
+		else if (str[i] == '@')
+			return;
+		++i;
+	}
+	i = 0;
 
 	/* remove (0) which is in some mal-formated numbers
 	 * but only if trailed by another character
