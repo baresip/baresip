@@ -19,22 +19,11 @@ enum {
 };
 
 
-/* NOTE: re-using VP9 header format for now.. */
 struct hdr {
-	unsigned x:1;
-	unsigned noref:1;
-	unsigned start:1;
-	unsigned partid:4;
-	/* extension fields */
-	unsigned i:1;
-	unsigned l:1;
-	unsigned t:1;
-	unsigned k:1;
-	uint16_t picid;
-	uint8_t tl0picidx;
-	unsigned tid:2;
+	unsigned z:1;
 	unsigned y:1;
-	unsigned keyidx:5;
+	unsigned w:2;
+	unsigned n:1;
 };
 
 struct viddec_state {
@@ -116,63 +105,10 @@ static inline int hdr_decode(struct hdr *hdr, struct mbuf *mb)
 
 	v = mbuf_read_u8(mb);
 
-	hdr->x      = v>>7 & 0x1;
-	hdr->noref  = v>>5 & 0x1;
-	hdr->start  = v>>4 & 0x1;
-	hdr->partid = v    & 0x07;
-
-	if (hdr->x) {
-
-		if (mbuf_get_left(mb) < 1)
-			return EBADMSG;
-
-		v = mbuf_read_u8(mb);
-
-		hdr->i = v>>7 & 0x1;
-		hdr->l = v>>6 & 0x1;
-		hdr->t = v>>5 & 0x1;
-		hdr->k = v>>4 & 0x1;
-	}
-
-	if (hdr->i) {
-
-		if (mbuf_get_left(mb) < 1)
-			return EBADMSG;
-
-		v = mbuf_read_u8(mb);
-
-		if (v>>7 & 0x1) {
-
-			if (mbuf_get_left(mb) < 1)
-				return EBADMSG;
-
-			hdr->picid  = (v & 0x7f)<<8;
-			hdr->picid += mbuf_read_u8(mb);
-		}
-		else {
-			hdr->picid = v & 0x7f;
-		}
-	}
-
-	if (hdr->l) {
-
-		if (mbuf_get_left(mb) < 1)
-			return EBADMSG;
-
-		hdr->tl0picidx = mbuf_read_u8(mb);
-	}
-
-	if (hdr->t || hdr->k) {
-
-		if (mbuf_get_left(mb) < 1)
-			return EBADMSG;
-
-		v = mbuf_read_u8(mb);
-
-		hdr->tid    = v>>6 & 0x3;
-		hdr->y      = v>>5 & 0x1;
-		hdr->keyidx = v    & 0x1f;
-	}
+	hdr->z = v>>7 & 0x1;
+	hdr->y = v>>6 & 0x1;
+	hdr->w = v>>4 & 0x3;
+	hdr->n = v>>3 & 0x1;
 
 	return 0;
 }
@@ -220,15 +156,11 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		return err;
 
 #if 1
-	debug("av1: header: x=%u noref=%u start=%u partid=%u "
-	      "i=%u l=%u t=%u k=%u "
-	      "picid=%u tl0picidx=%u tid=%u y=%u keyidx=%u\n",
-	      hdr.x, hdr.noref, hdr.start, hdr.partid,
-	      hdr.i, hdr.l, hdr.t, hdr.k,
-	      hdr.picid, hdr.tl0picidx, hdr.tid, hdr.y, hdr.keyidx);
+	debug("av1: header: z=%u y=%u w=%u n=%u\n",
+	      hdr.z, hdr.y, hdr.w, hdr.n);
 #endif
 
-	if (hdr.start && hdr.partid == 0) {
+	if (!hdr.z) {
 
 		if (is_keyframe(mb))
 			*intra = true;
