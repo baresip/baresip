@@ -411,6 +411,19 @@ static void start_sip_autoanswer(struct call *call)
 }
 
 
+static bool ovaufile_del(struct le *le, void *arg)
+{
+	struct odict_entry *oe = le->data;
+	struct call *call = arg;
+	const char *id = call_id(call);
+
+	if (!strncmp(oe->key, id, str_len(id)))
+		mem_deref(oe);
+
+	return false;
+}
+
+
 static void process_module_event(struct call *call, const char *prm)
 {
 	int err;
@@ -558,6 +571,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			play_resume();
 		}
 
+		hash_apply(menu.ovaufile->ht, ovaufile_del, call);
 		break;
 
 	case UA_EVENT_CALL_REMOTE_SDP:
