@@ -2291,6 +2291,35 @@ int call_transfer(struct call *call, const char *uri)
 }
 
 
+/**
+ * Transfer the call to a target SIP uri and replace the source call
+ *
+ * @param call  Call object
+ * @param uri   Target SIP uri
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_replace_transfer(struct call *call, struct call *source_call)
+{
+	int err;
+
+	info("transferring call to %s\n", source_call->peer_uri);
+
+	call->sub = mem_deref(call->sub);
+	err = sipevent_drefer(&call->sub, uag_sipevent_sock(),
+			      sipsess_dialog(call->sess), ua_cuser(call->ua),
+			      auth_handler, call->acc, true,
+			      sipsub_notify_handler, sipsub_close_handler,
+			      call, "Refer-To: %s?Replaces=%s\r\n",
+			      source_call->peer_uri, source_call->id);
+	if (err) {
+		warning("call: sipevent_drefer: %m\n", err);
+	}
+
+	return err;
+}
+
+
 int call_af(const struct call *call)
 {
 	return call ? call->af : AF_UNSPEC;

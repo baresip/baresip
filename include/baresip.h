@@ -198,6 +198,7 @@ int  call_send_digit(struct call *call, char key);
 bool call_has_audio(const struct call *call);
 bool call_has_video(const struct call *call);
 int  call_transfer(struct call *call, const char *uri);
+int  call_replace_transfer(struct call *target_call, struct call *source_call);
 int  call_status(struct re_printf *pf, const struct call *call);
 int  call_debug(struct re_printf *pf, const struct call *call);
 int  call_notify_sipfrag(struct call *call, uint16_t scode,

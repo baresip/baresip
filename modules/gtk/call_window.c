@@ -23,11 +23,12 @@ struct call_window {
 		struct vumeter_enc *enc;
 	} vu;
 	struct transfer_dialog *transfer_dialog;
+	struct dial_dialog *attended_transfer_dial;
 	GtkWidget *window;
 	GtkLabel *status;
 	GtkLabel *duration;
 	struct {
-		GtkWidget *hangup, *transfer, *hold, *mute;
+		GtkWidget *hangup, *transfer, *hold, *mute, *attended_transfer;
 	} buttons;
 	struct {
 		GtkProgressBar *enc, *dec;
@@ -37,6 +38,7 @@ struct call_window {
 	bool closed;
 	int cur_key;
 	struct play *play_dtmf_tone;
+	struct call *attended_call;
 };
 
 enum call_window_events {
@@ -45,6 +47,7 @@ enum call_window_events {
 	MQ_HOLD,
 	MQ_MUTE,
 	MQ_TRANSFER,
+	MQ_ATTTRANSFER,
 };
 
 static pthread_mutex_t last_data_mut = PTHREAD_MUTEX_INITIALIZER;
@@ -196,10 +199,17 @@ static void call_on_hangup(GtkToggleButton *btn, struct call_window *win)
 static void call_on_hold_toggle(GtkToggleButton *btn, struct call_window *win)
 {
 	bool hold = gtk_toggle_button_get_active(btn);
-	if (hold)
+	if (hold) {
+		gtk_widget_set_sensitive(win->buttons.attended_transfer,
+								TRUE);
 		vumeter_timer_stop(win);
+	}
 	else
+	{
+		gtk_widget_set_sensitive(win->buttons.attended_transfer,
+								FALSE);
 		vumeter_timer_start(win);
+	}
 	mqueue_push(win->mq, MQ_HOLD, (void *)(size_t)hold);
 }
 
@@ -218,6 +228,25 @@ static void call_on_transfer(GtkToggleButton *btn, struct call_window *win)
 		win->transfer_dialog = transfer_dialog_alloc(win);
 	else
 		transfer_dialog_show(win->transfer_dialog);
+}
+
+
+static void call_window_transfer_attended_call(GtkToggleButton *btn,
+						struct call_window *win)
+{
+	(void)btn;
+	mqueue_push(win->mq, MQ_ATTTRANSFER, win);
+}
+
+
+static void call_on_attended_transfer(GtkToggleButton *btn,
+						struct call_window *win)
+{
+	(void)btn;
+	if (!win->attended_transfer_dial)
+		win->attended_transfer_dial =
+					dial_dialog_alloc(win->mod, win->call);
+	dial_dialog_show(win->attended_transfer_dial);
 }
 
 
@@ -319,6 +348,10 @@ static void mqueue_handler(int id, void *data, void *arg)
 	case MQ_TRANSFER:
 		call_transfer(win->call, data);
 		break;
+
+	case MQ_ATTTRANSFER:
+		call_replace_transfer(win->attended_call, win->call);
+		break;
 	}
 }
 
@@ -331,12 +364,14 @@ static void call_window_destructor(void *arg)
 	gtk_mod_call_window_closed(window->mod, window);
 	gtk_widget_destroy(window->window);
 	mem_deref(window->transfer_dialog);
+	mem_deref(window->attended_transfer_dial);
 	gdk_threads_leave();
 
 	mem_deref(window->call);
 	mem_deref(window->mq);
 	mem_deref(window->vu.enc);
 	mem_deref(window->vu.dec);
+	mem_deref(window->attended_call);
 
 	if (window->duration_timer_tag)
 		g_source_remove(window->duration_timer_tag);
@@ -349,7 +384,8 @@ static void call_window_destructor(void *arg)
 }
 
 
-struct call_window *call_window_new(struct call *call, struct gtk_mod *mod)
+struct call_window *call_window_new(struct call *call, struct gtk_mod *mod,
+						struct call *attended_call)
 {
 	struct call_window *win;
 	GtkWidget *window, *label, *status, *button, *progress, *image;
@@ -428,13 +464,33 @@ struct call_window *call_window_new(struct call *call, struct gtk_mod *mod)
 			GTK_ICON_SIZE_BUTTON);
 	gtk_button_set_image(GTK_BUTTON(button), image);
 
-	/* Transfer */
+	/* Blind Transfer */
 	button = gtk_button_new_with_label("Transfer");
 	win->buttons.transfer = button;
 	gtk_box_pack_end(GTK_BOX(button_box), button, FALSE, TRUE, 0);
-	g_signal_connect(button, "clicked", G_CALLBACK(call_on_transfer), win);
+	g_signal_connect(button, "clicked",
+					G_CALLBACK(call_on_transfer), win);
+	image = gtk_image_new_from_icon_name("forward",
+					GTK_ICON_SIZE_BUTTON);
+	gtk_button_set_image(GTK_BUTTON(button), image);
+
+	/* Attended Transfer */
+	button = gtk_button_new_with_label("Att. Transfer");
+	win->buttons.attended_transfer = button;
+	gtk_box_pack_end(GTK_BOX(button_box), button, FALSE, TRUE, 0);
+	if (!attended_call) {
+		g_signal_connect(button, "clicked",
+				G_CALLBACK(call_on_attended_transfer), win);
+	}
+	else {
+		g_signal_connect(button, "clicked",
+			G_CALLBACK(call_window_transfer_attended_call), win);
+	}
 	image = gtk_image_new_from_icon_name("forward", GTK_ICON_SIZE_BUTTON);
 	gtk_button_set_image(GTK_BUTTON(button), image);
+	gtk_widget_set_sensitive (button, FALSE);
+	gtk_widget_set_tooltip_text(button,
+		"Please put the call on 'Hold' to enable attended transfer");
 
 	/* Hold */
 	button = gtk_toggle_button_new_with_label("Hold");
@@ -467,9 +523,11 @@ struct call_window *call_window_new(struct call *call, struct gtk_mod *mod)
 			G_CALLBACK(call_on_key_release), win);
 
 	win->call = mem_ref(call);
+	win->attended_call = mem_ref(attended_call);
 	win->mod = mod;
 	win->window = window;
 	win->transfer_dialog = NULL;
+	win->attended_transfer_dial = NULL;
 	win->status = GTK_LABEL(status);
 	win->duration = GTK_LABEL(duration);
 	win->closed = false;
@@ -509,6 +567,7 @@ void call_window_closed(struct call_window *win, const char *reason)
 		win->duration_timer_tag = 0;
 	}
 	gtk_widget_set_sensitive(win->buttons.transfer, FALSE);
+	gtk_widget_set_sensitive(win->buttons.attended_transfer, FALSE);
 	gtk_widget_set_sensitive(win->buttons.hold, FALSE);
 	gtk_widget_set_sensitive(win->buttons.mute, FALSE);
 
@@ -522,6 +581,7 @@ void call_window_closed(struct call_window *win, const char *reason)
 
 	call_window_set_status(win, status);
 	win->transfer_dialog = mem_deref(win->transfer_dialog);
+	win->attended_transfer_dial = mem_deref(win->attended_transfer_dial);
 	win->closed = true;
 
 	if (reason && strncmp(reason, user_trigger_reason,
@@ -588,3 +648,4 @@ bool call_window_is_for_call(struct call_window *win, struct call *call)
 
 	return win->call == call;
 }
+
