@@ -165,19 +165,65 @@ static void menu_stop_play(void)
 }
 
 
-static void menu_play(const char *ckey, const char *fname, int repeat)
+static int menu_ovkey(char **key, const struct call *call, struct pl *suffix)
+{
+	int err;
+	struct mbuf *mb = mbuf_alloc(32);
+	if (!mb)
+		return ENOMEM;
+
+	err = mbuf_printf(mb, "%s-%r", call_id(call), suffix);
+	if (err)
+		goto out;
+
+	mb->pos = 0;
+	err = mbuf_strdup(mb, key, mb->end);
+out:
+	mem_deref(mb);
+	return err;
+}
+
+
+static int menu_ovkey_str(char **key, const struct call *call,
+			  const char *suffix)
+{
+	struct pl pl;
+	pl_set_str(&pl, suffix);
+	return menu_ovkey(key, call, &pl);
+}
+
+
+static bool menu_play(const struct call *call,
+		const char *ckey, const char *fname, int repeat)
 {
 	struct config *cfg = conf_config();
 	struct player *player = baresip_player();
-
+	char *ovkey;
+	const char *ovaukey = NULL;
 	struct pl pl = PL_INIT;
 	char *file = NULL;
+	int err;
 
-	if (conf_get(conf_cur(), ckey, &pl))
+	err = menu_ovkey_str(&ovkey, call, ckey);
+	if (!err) {
+		ovaukey = odict_string(menu.ovaufile, ovkey);
+		mem_deref(ovkey);
+	}
+
+	if (ovaukey && !strcmp(ovaukey, "none"))
+		return false;
+
+	if (ovaukey)
+		(void)conf_get(conf_cur(), ovaukey, &pl);
+
+	if (!pl_isset(&pl))
+		(void)conf_get(conf_cur(), ckey, &pl);
+
+	if (!pl_isset(&pl))
 		pl_set_str(&pl, fname);
 
 	if (!pl_isset(&pl))
-		return;
+		return false;
 
 	pl_strdup(&file, &pl);
 	menu_stop_play();
@@ -185,6 +231,7 @@ static void menu_play(const char *ckey, const char *fname, int repeat)
 			cfg->audio.alert_mod,
 			cfg->audio.alert_dev);
 	mem_deref(file);
+	return true;
 }
 
 
@@ -199,16 +246,16 @@ static void play_incoming(const struct call *call)
 		return;
 
 	if (menu_find_call(active_call_test)) {
-		menu_play("callwaiting_aufile", "callwaiting.wav", 3);
+		menu_play(call, "callwaiting_aufile", "callwaiting.wav", 3);
 	}
 	else {
 		/* Alert user */
-		menu_play("ring_aufile", "ring.wav", -1);
+		menu_play(call, "ring_aufile", "ring.wav", -1);
 	}
 }
 
 
-static void play_ringback(void)
+static void play_ringback(const struct call *call)
 {
 	/* stop any ringtones */
 	menu_stop_play();
@@ -217,7 +264,7 @@ static void play_ringback(void)
 		info("\nRingback disabled\n");
 	}
 	else {
-		menu_play("ringback_aufile", "ringback.wav", -1);
+		menu_play(call, "ringback_aufile", "ringback.wav", -1);
 		menu.ringback = true;
 	}
 }
@@ -233,7 +280,7 @@ static void play_resume(void)
 		break;
 	case CALL_STATE_RINGING:
 		if (!menu.ringback && !menu_find_call(active_call_test))
-			play_ringback();
+			play_ringback(call);
 		break;
 	default:
 		break;
@@ -320,7 +367,7 @@ static void menu_play_closed(struct call *call)
 		key = errorcode_key_aufile(scode);
 		fb = errorcode_fb_aufile(scode);
 
-		menu_play(key, fb, 1);
+		menu_play(call, key, fb, 1);
 	}
 }
 
@@ -349,13 +396,44 @@ static void start_sip_autoanswer(struct call *call)
 
 	conf_get_bool(conf_cur(), "sip_autoanswer_beep", &beep);
 	if (beep) {
-		menu_play("sip_autoanswer_aufile", "autoanswer.wav", 1);
+		beep = menu_play(call,
+				 "sip_autoanswer_aufile", "autoanswer.wav", 1);
+	}
+
+	if (beep) {
 		play_set_finish_handler(menu.play, auans_play_finished, call);
 	}
 	else {
 		call_start_answtmr(call, adelay);
 		if (adelay >= MIN_RINGTIME)
 			play_incoming(call);
+	}
+}
+
+
+static void process_module_event(struct call *call, const char *prm)
+{
+	int err;
+	struct pl module, event, data;
+	struct pl from, to;
+	char *ovkey;
+
+	err = re_regex(prm, strlen(prm), "[^,]*,[^,]*,[~]*",
+					 &module, &event, &data);
+	if (err)
+		return;
+
+	if (!pl_strcmp(&event, "override-aufile")) {
+		err = re_regex(data.p, data.l, "[^:]*:[~]*", &from, &to);
+		if (err)
+			return;
+
+		err = menu_ovkey(&ovkey, call, &from);
+		if (err)
+			return;
+
+		odict_entry_add(menu.ovaufile, ovkey, ODICT_STRING, to.p);
+		mem_deref(ovkey);
 	}
 }
 
@@ -418,7 +496,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_RINGING:
 		menu_selcall(call);
 		if (!menu.ringback && !menu_find_call(active_call_test))
-			play_ringback();
+			play_ringback(call);
 		break;
 
 	case UA_EVENT_CALL_PROGRESS:
@@ -537,6 +615,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_AUDIO_ERROR:
 		info("menu: audio error (%s)\n", prm);
+		break;
+
+	case UA_EVENT_MODULE:
+		process_module_event(call, prm);
 		break;
 
 	default:
@@ -752,6 +834,9 @@ static int module_init(void)
 	menu.clean_number = false;
 	menu.play = NULL;
 	menu.adelay = -1;
+	err = odict_alloc(&menu.ovaufile, 8);
+	if (err)
+		return err;
 
 	/*
 	 * Read the config values
@@ -824,6 +909,7 @@ static int module_close(void)
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
 	menu.callid = mem_deref(menu.callid);
+	menu.ovaufile = mem_deref(menu.ovaufile);
 	menu_stop_play();
 
 	tmr_cancel(&menu.tmr_redial);
