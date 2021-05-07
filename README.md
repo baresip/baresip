@@ -187,7 +187,7 @@ the first time you run baresip.
 Configuration examples are available from the
 [examples](https://github.com/baresip/baresip/tree/master/docs/examples)
 directory.
-
+Documentatin on configuring baresip can be found [here](https://github.com/baresip/baresip/wiki/Configuration)
 
 ## License
 
