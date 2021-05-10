@@ -39,13 +39,18 @@
 #
 # Examples:
 #
-#  <sip:user@domain.com>;auth_pass=secret;regint=3600
-#  <sip:user@domain.com;transport=tcp>;auth_pass=secret;regint=3600
-#  <sip:user@1.2.3.4;transport=tcp>;auth_pass=secret;regint=3600
-#  <sip:user@[2001:df8:0:16:216:6fff:fe91:614c]:5070;transport=tcp>;auth_pass=secret;regint=3600
+#  <sip:user@domain.com>;auth_pass=secret
+#  <sip:user@domain.com;transport=tcp>;auth_pass=secret
+#  <sip:user@1.2.3.4;transport=tcp>;auth_pass=secret
+#  <sip:user@[2001:df8:0:16:216:6fff:fe91:614c]:5070;transport=tcp>;auth_pass=secret
 #
+#
+# A very basic example
+#
+<sip:user@iptel.org>;auth_pass=PASSWORD
+
 # A registrar-less account
-<sip:alice@office>
+<sip:alice@office>;regint=0
 
 #
 # Use SIP Outbound over TCP, with ICE for Media NAT Traversal, and DTLS-SRTP for encryption
@@ -73,7 +78,7 @@
 # Use same address family as SIP registration. This is the default for
 # registered accounts
 #
-<sip:user@example.com>;regint=3600;mediaaf=auto
+<sip:user@example.com>;mediaaf=auto
 
 
 # ... more examples can be added here ...
