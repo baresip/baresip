@@ -71,11 +71,11 @@ enum {
 
  Processing encoder pipeline:
 
- .    .-------.   .-------.   .--------.   .--------.   .--------.
- |    |       |   |       |   |        |   |        |   |        |
- |O-->| ausrc |-->| aubuf |-->| resamp |-->| aufilt |-->| encode |---> RTP
- |    |       |   |       |   |        |   |        |   |        |
- '    '-------'   '-------'   '--------'   '--------'   '--------'
+ .   .-------.  .--------.  .-------.  .--------.  .--------.  .--------.
+ |   |       |  |        |  |       |  |        |  |        |  |        |
+ |O->| ausrc |->|pre_filt|->| aubuf |->| resamp |->| aufilt |->| encode |->RTP
+ |   |       |  |        |  |       |  |        |  |        |  |        |
+ '   '-------'  '--------'  '-------'  '--------'  '--------'  '--------'
 
  \endverbatim
  *
@@ -90,6 +90,7 @@ struct autx {
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
 	volatile bool aubuf_started;  /**< Aubuf was started flag          */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
+	struct list pre_filtl;        /**< Audio filters in encoding order */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
 	struct media_ctx **ctx;       /**< Shared A/V source media context */
@@ -130,11 +131,11 @@ struct autx {
 
  Processing decoder pipeline:
 
-       .--------.   .-------.   .--------.   .--------.   .--------.
- |\    |        |   |       |   |        |   |        |   |        |
- | |<--| auplay |<--| aubuf |<--| resamp |<--| aufilt |<--| decode |<--- RTP
- |/    |        |   |       |   |        |   |        |   |        |
-       '--------'   '-------'   '--------'   '--------'   '--------'
+     .--------.  .--------.  .-------.  .--------.  .--------.  .--------.
+|\   |        |  |        |  |       |  |        |  |        |  |        |
+| |<-| auplay |<-|pre_filt|<-| aubuf |<-| resamp |<-| aufilt |<-| decode |<-RTP
+|/   |        |  |        |  |       |  |        |  |        |  |        |
+     '--------'  '--------'  '-------'  '--------'  '--------'  '--------'
 
  \endverbatim
  */
@@ -150,6 +151,7 @@ struct aurx {
 	size_t num_bytes;             /**< Size of one frame in [bytes]    */
 	volatile bool aubuf_started;  /**< Aubuf was started flag          */
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
+	struct list pre_filtl;        /**< Audio filters in decoding order */
 	struct list filtl;            /**< Audio filters in decoding order */
 	char *module;                 /**< Audio player module name        */
 	char *device;                 /**< Audio player device name        */
@@ -683,6 +685,7 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
 	size_t num_bytes = auframe_size(af);
+	struct le *le;
 
 	if (af->fmt != (int)rx->play_fmt) {
 		warning("audio: write format mismatch: exp=%s, actual=%s\n",
@@ -700,6 +703,14 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 	}
 
 	aubuf_read(rx->aubuf, af->sampv, num_bytes);
+
+	/* Process exactly one audio-frame in reverse list order */
+	for (le = rx->pre_filtl.tail; le; le = le->prev) {
+		struct aufilt_dec_st *st = le->data;
+
+		if (st->af && st->af->dech)
+			st->af->dech(st, af);
+	}
 }
 
 
@@ -795,6 +806,7 @@ static void auplay_write_handler2(struct auframe *af, void *arg)
 	int err = 0;
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
+	struct le *le;
 
 	rx->num_bytes = auframe_size(af);
 
@@ -810,6 +822,14 @@ static void auplay_write_handler2(struct auframe *af, void *arg)
 	}
 
 	aubuf_read(rx->aubuf, af->sampv, rx->num_bytes);
+
+	/* Process exactly one audio-frame in reverse list order */
+	for (le = rx->pre_filtl.tail; le; le = le->prev) {
+		struct aufilt_dec_st *st = le->data;
+
+		if (st->af && st->af->dech)
+			st->af->dech(st, af);
+	}
 
 	/* Reduce latency after EAGAIN? */
 	if (rx->again &&
@@ -860,6 +880,8 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
 	size_t num_bytes = auframe_size(af);
+	struct le *le;
+	int err = 0;
 
 	if ((int)tx->src_fmt != af->fmt) {
 		warning("audio: ausrc format mismatch:"
@@ -871,6 +893,17 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 	if (tx->muted)
 		auframe_mute(af);
+
+	for (le = tx->pre_filtl.head; le; le = le->next) {
+		struct aufilt_enc_st *st = le->data;
+
+		if (st->af && st->af->ench)
+			err |= st->af->ench(st, af);
+	}
+	if (err) {
+		warning("audio/ausrc_read_handler: aufilter encode: %m\n",
+			err);
+	}
 
 	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
 
@@ -1512,11 +1545,13 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *aurx)
  *
  * must be called before auplay/ausrc-alloc
  *
- * @param a Audio object
+ * @param a       Audio object
+ * @param aufiltl Filter list
+ * @param pre     Pre audio filter (true for yes)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int aufilt_setup(struct audio *a, struct list *aufiltl)
+static int aufilt_setup(struct audio *a, struct list *aufiltl, bool pre)
 {
 	struct aufilt_prm encprm, decprm;
 	struct autx *tx = &a->tx;
@@ -1528,8 +1563,16 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 	if (!tx->ac || !rx->ac)
 		return 0;
 
-	if (!list_isempty(&tx->filtl) || !list_isempty(&rx->filtl))
-		return 0;
+	if (pre) {
+		if (!list_isempty(&tx->pre_filtl) ||
+		    !list_isempty(&rx->pre_filtl))
+			return 0;
+	}
+	else {
+		if (!list_isempty(&tx->filtl) ||
+		    !list_isempty(&rx->filtl))
+			return 0;
+	}
 
 	aufilt_param_set(&encprm, tx->ac, tx->enc_fmt);
 	aufilt_param_set(&decprm, rx->ac, rx->dec_fmt);
@@ -1549,7 +1592,12 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 			}
 			else {
 				encst->af = af;
-				list_append(&tx->filtl, &encst->le, encst);
+				if (pre)
+					list_append(&tx->pre_filtl, &encst->le,
+						    encst);
+				else
+					list_append(&tx->filtl, &encst->le,
+						    encst);
 			}
 		}
 
@@ -1561,7 +1609,12 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 			}
 			else {
 				decst->af = af;
-				list_append(&rx->filtl, &decst->le, decst);
+				if (pre)
+					list_append(&rx->pre_filtl, &decst->le,
+						    decst);
+				else
+					list_append(&rx->filtl, &decst->le,
+						    decst);
 			}
 		}
 
@@ -1814,6 +1867,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
  */
 int audio_start(struct audio *a)
 {
+	struct list *au_pre_filtl = baresip_au_pre_filtl();
 	struct list *aufiltl = baresip_aufiltl();
 	int err;
 
@@ -1822,10 +1876,18 @@ int audio_start(struct audio *a)
 
 	debug("audio: start\n");
 
+	/* Audio pre-filter */
+	if (!list_isempty(au_pre_filtl)) {
+
+		err = aufilt_setup(a, au_pre_filtl, true);
+		if (err)
+			return err;
+	}
+
 	/* Audio filter */
 	if (!list_isempty(aufiltl)) {
 
-		err = aufilt_setup(a, aufiltl);
+		err = aufilt_setup(a, aufiltl, false);
 		if (err)
 			return err;
 	}
@@ -1876,7 +1938,7 @@ int audio_start_source(struct audio *a, struct list *ausrcl,
 	/* Audio filter */
 	if (!list_isempty(aufiltl)) {
 
-		err = aufilt_setup(a, aufiltl);
+		err = aufilt_setup(a, aufiltl, false);
 		if (err)
 			return err;
 	}

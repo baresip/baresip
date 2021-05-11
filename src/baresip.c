@@ -24,6 +24,7 @@ static struct baresip {
 	struct list ausrcl;
 	struct list auplayl;
 	struct list aufiltl;
+	struct list au_pre_filtl;
 	struct list vidcodecl;
 	struct list vidsrcl;
 	struct list vidispl;
@@ -267,6 +268,17 @@ struct list *baresip_ausrcl(void)
 struct list *baresip_auplayl(void)
 {
 	return &baresip.auplayl;
+}
+
+
+/**
+ * Get the list of Audio Pre-Filters
+ *
+ * @return List of audio-pre-filters
+ */
+struct list *baresip_au_pre_filtl(void)
+{
+	return &baresip.au_pre_filtl;
 }
 
 

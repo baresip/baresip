@@ -1530,6 +1530,7 @@ struct list   *baresip_mencl(void);
 struct list   *baresip_aucodecl(void);
 struct list   *baresip_ausrcl(void);
 struct list   *baresip_auplayl(void);
+struct list   *baresip_au_pre_filtl(void);
 struct list   *baresip_aufiltl(void);
 struct list   *baresip_vidcodecl(void);
 struct list   *baresip_vidsrcl(void);
