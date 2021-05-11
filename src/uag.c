@@ -832,7 +832,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 
 		if (0 == pl_strcasecmp(cuser, ua_local_cuser(ua))) {
 			ua_printf(ua, "selected for %r\n", cuser);
-			return ua;
+			return ua_p2p_check(ua, msg);
 		}
 	}
 
@@ -858,7 +858,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 
 		if (0 == pl_casecmp(cuser, &acc->luri.user)) {
 			ua_printf(ua, "account match for %r\n", cuser);
-			return ua;
+			return ua_p2p_check(ua, msg);
 		}
 	}
 
@@ -868,14 +868,14 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 
 		if (ua_catchall(ua)) {
 			ua_printf(ua, "use catch-all account for %r\n", cuser);
-			return ua;
+			return ua_p2p_check(ua, msg);
 		}
 	}
 
 	if (uaf)
 		ua_printf(uaf, "selected\n");
 
-	return uaf;
+	return ua_p2p_check(uaf, msg);
 }
 
 
