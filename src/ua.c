@@ -1806,3 +1806,48 @@ int ua_raise(struct ua *ua)
 
 	return uag_raise(ua, &ua->le);
 }
+
+
+/**
+ * Verify the received SIP msg IP address against the registrar of the UA.
+ * This check only has to be done if the transport protocol is UDP.
+ *
+ * @param ua  UA object
+ * @param msg SIP message
+ *
+ * @return UA, or NULL
+ */
+struct ua *ua_p2p_check(struct ua *ua, const struct sip_msg *msg)
+{
+	struct le *le;
+	const struct reg *reg;
+
+	if (!ua || !msg)
+		return NULL;
+
+	if (msg->tp != SIP_TRANSP_UDP)
+		return ua;
+
+	if (!ua->acc->regint) {
+		if (str_isset(ua->acc->auth_pass)) {
+			warning("ua: prevent leak of digest for %r\n",
+				&ua->acc->luri.user);
+			info("ua: auth_pass for a non registered " \
+				"account should not be set\n");
+			return NULL;
+		}
+
+		return ua;
+	}
+
+	for (le = list_head(&ua->regl); le; le = le->next) {
+		reg = le->data;
+
+		if (sa_cmp(sipreg_paddr(reg_sipreg(reg)),
+			&msg->src, SA_ALL)) {
+			return ua;
+		}
+	}
+
+	return NULL;
+}

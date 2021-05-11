@@ -351,6 +351,7 @@ struct call *ua_find_active_call(struct ua *ua);
 void ua_handle_options(struct ua *ua, const struct sip_msg *msg);
 void sipsess_conn_handler(const struct sip_msg *msg, void *arg);
 bool ua_catchall(struct ua *ua);
+struct ua *ua_p2p_check(struct ua *ua, const struct sip_msg *msg);
 
 /*
  * User-Agent Group
