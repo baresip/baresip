@@ -194,6 +194,7 @@ int  reg_debug(struct re_printf *pf, const struct reg *reg);
 int  reg_json_api(struct odict *od, const struct reg *reg);
 int  reg_status(struct re_printf *pf, const struct reg *reg);
 int  reg_af(const struct reg *reg);
+struct sipreg *reg_sipreg(const struct reg *reg);
 
 
 /*

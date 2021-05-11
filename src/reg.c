@@ -365,3 +365,16 @@ int reg_af(const struct reg *reg)
 
 	return reg->af;
 }
+
+
+/**
+ * Get the SIP register client of the register client
+ *
+ * @param reg register client object
+ *
+ * @return sip register client object
+ */
+struct sipreg *reg_sipreg(const struct reg *reg)
+{
+	return reg ? reg->sipreg : NULL;
+}
