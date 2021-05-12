@@ -34,12 +34,16 @@
  *     switches to the UA with the lower prio.
  */
 
+enum {
+	MIN_RESTART_DELAY = 31,
+};
 
 static struct {
 	uint32_t prio;            /**< Current account prio           */
 	uint32_t maxprio;         /**< Maximum account prio           */
 	bool ready;               /**< All UA registered flag         */
 	uint32_t sprio;           /**< Prev successful prio           */
+	struct tmr tmr;           /**< Restart timer                  */
 } sreg;
 
 
@@ -221,10 +225,13 @@ static void fallback_ok(struct ua *ua)
 }
 
 
-static void restart(void)
+static void restart(void *arg)
 {
 	struct le *le;
+	(void) arg;
 
+	sreg.prio = 0;
+	sreg.sprio = (uint32_t) -1;
 	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
@@ -240,9 +247,36 @@ static void restart(void)
 
 		debug("serreg: restart %s prio 0.\n", account_aor(acc));
 		ua_register(ua);
-		sreg.prio = 0;
-		sreg.sprio = (uint32_t) -1;
 	}
+}
+
+
+static uint32_t min_regint(void)
+{
+	struct le *le;
+	uint32_t m = 0;
+
+	for (le = list_head(uag_list()); le; le = le->next) {
+		struct ua *ua = le->data;
+		struct account *acc = ua_account(ua);
+		uint32_t prio = account_prio(acc);
+		uint32_t regint = account_regint(acc);
+		uint32_t fbregint = account_fbregint(acc);
+
+		if (!account_regint(acc))
+			continue;
+
+		if (prio || fbregint)
+			continue;
+
+		if (!m || regint < m)
+			m = regint;
+	}
+
+	if (m < MIN_RESTART_DELAY)
+		m = MIN_RESTART_DELAY;
+
+	return m;
 }
 
 
@@ -282,7 +316,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			ua_unregister(ua);
 
 		if (sreg.prio == (uint32_t) -1)
-			restart();
+			tmr_start(&sreg.tmr, min_regint()*1000, restart, NULL);
 		break;
 
 	default:
@@ -308,6 +342,7 @@ static int module_init(void)
 static int module_close(void)
 {
 	uag_event_unregister(ua_event_handler);
+	tmr_cancel(&sreg.tmr);
 
 	return 0;
 }
