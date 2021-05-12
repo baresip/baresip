@@ -128,16 +128,13 @@ sync_handler(
 
 static void format_check(struct ausrc_st *st, GstStructure *s)
 {
-	int rate, channels, width;
-	gboolean sign;
+	int rate, channels;
 
 	if (!st || !s)
 		return;
 
 	gst_structure_get_int(s, "rate", &rate);
 	gst_structure_get_int(s, "channels", &channels);
-	gst_structure_get_int(s, "width", &width);
-	gst_structure_get_boolean(s, "signed", &sign);
 
 	if ((int)st->prm.srate != rate) {
 		warning("gst: expected %u Hz (got %u Hz)\n", st->prm.srate,
@@ -146,12 +143,6 @@ static void format_check(struct ausrc_st *st, GstStructure *s)
 	if (st->prm.ch != channels) {
 		warning("gst: expected %d channels (got %d)\n",
 			st->prm.ch, channels);
-	}
-	if (16 != width) {
-		warning("gst: expected 16-bit width (got %d)\n", width);
-	}
-	if (!sign) {
-		warning("gst: expected signed 16-bit format\n");
 	}
 }
 
@@ -226,9 +217,7 @@ static void handoff_handler(GstElement *sink, GstBuffer *buffer,
 	(void)sink;
 
 	caps = gst_pad_get_current_caps(pad);
-
 	format_check(st, gst_caps_get_structure(caps, 0));
-
 	gst_caps_unref(caps);
 
 	packet_handler(st, buffer);
@@ -240,11 +229,11 @@ static void set_caps(struct ausrc_st *st)
 	GstCaps *caps;
 
 	/* Set the capabilities we want */
+
 	caps = gst_caps_new_simple("audio/x-raw",
+				   "format", G_TYPE_STRING, "S16LE",
 				   "rate",     G_TYPE_INT,    st->prm.srate,
 				   "channels", G_TYPE_INT,    st->prm.ch,
-				   "width",    G_TYPE_INT,    16,
-				   "signed",   G_TYPE_BOOLEAN,true,
 				   NULL);
 
 	g_object_set(G_OBJECT(st->capsfilt), "caps", caps, NULL);
