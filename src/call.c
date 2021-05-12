@@ -775,6 +775,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->eh     = eh;
 	call->arg    = arg;
 	call->af     = prm->af;
+	call->ansadir = SDP_SENDRECV;
+	call->ansvdir = SDP_SENDRECV;
 	call_decode_sip_autoanswer(call, msg);
 
 	err = str_dup(&call->local_uri, local_uri);
@@ -1080,6 +1082,8 @@ int call_progress(struct call *call)
 	enum answermode m = account_answermode(call->acc);
 	enum sdp_dir adir;
 	enum sdp_dir vdir;
+	enum sdp_dir ansadir;
+	enum sdp_dir ansvdir;
 	int err;
 
 	if (!call)
@@ -1087,16 +1091,19 @@ int call_progress(struct call *call)
 
 	tmr_cancel(&call->tmr_inv);
 
-	call->ansadir = stream_ldir(audio_strm(call_audio(call)));
-	call->ansvdir = stream_ldir(video_strm(call_video(call)));
+	ansadir = stream_ldir(audio_strm(call_audio(call)));
+	ansvdir = stream_ldir(video_strm(call_video(call)));
 	adir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
 			    m == ANSWERMODE_EARLY_AUDIO ? SDP_RECVONLY :
 			    SDP_INACTIVE;
 	vdir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
 			    m == ANSWERMODE_EARLY_VIDEO ? SDP_RECVONLY :
 			    SDP_INACTIVE;
-	if (adir != SDP_SENDRECV || vdir != SDP_SENDRECV)
+	if (adir != ansadir || vdir != ansvdir)
 		call_set_media_direction(call, adir, vdir);
+
+	call->ansadir = ansadir;
+	call->ansvdir = ansvdir;
 
 	err = call_sdp_get(call, &desc, false);
 	if (err)
@@ -1157,13 +1164,10 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	if (call->got_offer) {
 
+		call_set_media_direction(call, call->ansadir, call->ansvdir);
 		err = update_media(call);
 		if (err)
 			return err;
-
-		if (call->ansadir || call->ansvdir)
-			call_set_media_direction(call,
-					call->ansadir, call->ansvdir);
 	}
 
 	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call,
@@ -2552,6 +2556,8 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 	if (!call)
 		return EINVAL;
 
+	call->ansadir = a;
+	call->ansvdir = v;
 	stream_set_ldir(audio_strm(call_audio(call)), a);
 
 	if (video_strm(call_video(call))) {
