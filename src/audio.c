@@ -298,6 +298,7 @@ static void stop_tx(struct autx *tx, struct audio *a)
 	tx->ausrc = mem_deref(tx->ausrc);
 	tx->aubuf = mem_deref(tx->aubuf);
 
+	list_flush(&tx->pre_filtl);
 	list_flush(&tx->filtl);
 }
 
@@ -322,6 +323,7 @@ static void stop_rx(struct aurx *rx)
 
 	rx->auplay = mem_deref(rx->auplay);
 	rx->aubuf  = mem_deref(rx->aubuf);
+	list_flush(&rx->pre_filtl);
 	list_flush(&rx->filtl);
 }
 
@@ -353,6 +355,9 @@ static void audio_destructor(void *arg)
 	pthread_mutex_destroy(&a->rx.thr.mutex);
 	pthread_cond_destroy(&a->rx.thr.cond);
 #endif
+
+	list_flush(&a->tx.pre_filtl);
+	list_flush(&a->rx.pre_filtl);
 
 	list_flush(&a->tx.filtl);
 	list_flush(&a->rx.filtl);
