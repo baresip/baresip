@@ -28,6 +28,7 @@ struct menu{
 	bool clean_number;            /**< Remove -/() from diald numbers */
 	char redial_aor[128];
 	int32_t adelay;               /**< Outgoing auto answer delay     */
+	struct odict *ovaufile;       /**< Override aufile dictionary     */
 };
 
 /*Get menu object*/
