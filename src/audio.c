@@ -1572,15 +1572,24 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl, bool pre)
 		if (!list_isempty(&tx->pre_filtl) ||
 		    !list_isempty(&rx->pre_filtl))
 			return 0;
+
+		encprm.srate = a->cfg.srate_src;
+		encprm.ch = a->cfg.channels_src;
+		encprm.fmt = a->cfg.src_fmt;
+
+		decprm.srate = a->cfg.srate_play;
+		decprm.ch = a->cfg.channels_play;
+		decprm.fmt = a->cfg.play_fmt;
 	}
 	else {
 		if (!list_isempty(&tx->filtl) ||
 		    !list_isempty(&rx->filtl))
 			return 0;
+
+		aufilt_param_set(&encprm, tx->ac, tx->enc_fmt);
+		aufilt_param_set(&decprm, rx->ac, rx->dec_fmt);
 	}
 
-	aufilt_param_set(&encprm, tx->ac, tx->enc_fmt);
-	aufilt_param_set(&decprm, rx->ac, rx->dec_fmt);
 
 	/* Audio filters */
 	for (le = list_head(aufiltl); le; le = le->next) {
