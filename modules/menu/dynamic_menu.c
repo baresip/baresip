@@ -273,6 +273,10 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 
 	adir = decode_sdp_enum(&argdir[0]);
 	vdir = decode_sdp_enum(&argdir[1]);
+	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
+		(void) re_hprintf(pf, "%s", usage);
+		return EINVAL;
+	}
 
 	(void)pl_strdup(&cid, &callid);
 	if (str_isset(cid))
