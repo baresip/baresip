@@ -461,7 +461,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	enum sdp_dir ardir, vrdir;
 	uint32_t count;
 	int err;
-	(void)prm;
 	(void)arg;
 
 #if 0
@@ -473,6 +472,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	ardir =sdp_media_rdir(
 			stream_sdpmedia(audio_strm(call_audio(call))));
 	count = uag_call_count();
+
 	switch (ev) {
 
 	case UA_EVENT_CALL_INCOMING:
