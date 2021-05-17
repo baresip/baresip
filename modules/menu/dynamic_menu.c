@@ -100,8 +100,8 @@ static int set_current_call(struct re_printf *pf, void *arg)
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
 	uint32_t linenum = 0;
-	
-	if (str_len(carg->prm)!=0) {
+
+	if (str_isset(carg->prm)) {
 		linenum = atoi(carg->prm);
 	}
 
