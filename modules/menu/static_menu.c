@@ -582,7 +582,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		err = re_regex(carg->prm, str_len(carg->prm),
 			"[^ ]* [^ ]*",&pluri, &argdir[0]);
 
-	if (err) {
+	if (err || !re_regex(argdir[0].p, argdir[0].l, "=")) {
 		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
