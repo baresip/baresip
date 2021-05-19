@@ -477,6 +477,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_INCOMING:
 
+		if (call_state(call) != CALL_STATE_INCOMING)
+			return;
+
 		/* set the current User-Agent to the one with the call */
 		menu_selcall(call);
 		menu_stop_play();
