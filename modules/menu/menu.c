@@ -388,6 +388,7 @@ static void auans_play_finished(struct play *play, void *arg)
 
 static void start_sip_autoanswer(struct call *call)
 {
+	struct account *acc = call_account(call);
 	int32_t adelay = call_answer_delay(call);
 	bool beep = true;
 
@@ -395,6 +396,7 @@ static void start_sip_autoanswer(struct call *call)
 		return;
 
 	conf_get_bool(conf_cur(), "sip_autoanswer_beep", &beep);
+	beep = account_sipansbeep(acc) != SIPANSBEEP_OFF;
 	if (beep) {
 		beep = menu_play(call,
 				 "sip_autoanswer_aufile", "autoanswer.wav", 1);
