@@ -395,7 +395,6 @@ static void start_sip_autoanswer(struct call *call)
 	if (adelay == -1)
 		return;
 
-	conf_get_bool(conf_cur(), "sip_autoanswer_beep", &beep);
 	beep = account_sipansbeep(acc) != SIPANSBEEP_OFF;
 	if (beep) {
 		beep = menu_play(call,

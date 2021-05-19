@@ -1057,7 +1057,6 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#ringback_disabled\tno\n"
 			"#statmode_default\toff\n"
 			"#menu_clean_number\tno\n"
-			"#sip_autoanswer_beep\tyes\n"
 			"#sip_autoanswer_method\trfc5373 "
 			"# {rfc5373,call-info,alert-info}\n"
 			"#ring_aufile\t\tring.wav\n"
