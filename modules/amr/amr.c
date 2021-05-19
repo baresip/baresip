@@ -89,18 +89,25 @@ static void encode_destructor(void *arg)
 static void decode_destructor(void *arg)
 {
 	struct audec_state *st = arg;
+	struct amr_aucodec *amr_ac = (struct amr_aucodec *)st->ac;
 
 	switch (st->ac->ac.srate) {
 
 #ifdef AMR_NB
 	case 8000:
 		Decoder_Interface_exit(st->dec);
+
+		mem_deref(amr_ac->be_dec_arr);
+
 		break;
 #endif
 
 #ifdef AMR_WB
 	case 16000:
 		D_IF_exit(st->dec);
+
+		mem_deref(amr_ac->be_dec_arr);
+
 		break;
 #endif
 	}
@@ -181,12 +188,26 @@ static int decode_update(struct audec_state **adsp,
 #ifdef AMR_NB
 	case 8000:
 		st->dec = Decoder_Interface_init();
+
+		if (!amr_ac->aligned) {
+			amr_ac->be_dec_arr = mem_zalloc(NB_SERIAL_MAX, NULL);
+
+			if (!amr_ac->be_dec_arr)
+				err = ENOMEM;
+		}
 		break;
 #endif
 
 #ifdef AMR_WB
 	case 16000:
 		st->dec = D_IF_init();
+
+		if (!amr_ac->aligned) {
+			amr_ac->be_dec_arr = mem_zalloc(1+NB_SERIAL_MAX, NULL);
+
+			if (!amr_ac->be_dec_arr)
+				err = ENOMEM;
+		}
 		break;
 #endif
 	}
@@ -296,10 +317,8 @@ static int decode_wb(struct audec_state *st,
 		IF2D_IF_decode(st->dec, &buf[1], sampv, 0);
 	}
 	else {
-		uint8_t temp[len];
-
-		unpack_be(temp, buf, len);
-		IF2D_IF_decode(st->dec, temp, sampv, 0);
+		unpack_be(amr_ac->be_dec_arr, buf, len);
+		IF2D_IF_decode(st->dec, amr_ac->be_dec_arr, sampv, 0);
 	}
 
 	*sampc = L_FRAME16k;
@@ -366,10 +385,9 @@ static int decode_nb(struct audec_state *st, int fmt, void *sampv,
 		Decoder_Interface_Decode(st->dec, &buf[1], sampv, 0);
 	}
 	else {
-		uint8_t temp[len];
-
-		unpack_be(temp, buf, len);
-		Decoder_Interface_Decode(st->dec, temp, sampv, 0);
+		unpack_be(amr_ac->be_dec_arr, buf, len);
+		Decoder_Interface_Decode(
+			st->dec, amr_ac->be_dec_arr, sampv, 0);
 	}
 
 	*sampc = FRAMESIZE_NB;
@@ -393,7 +411,8 @@ static struct amr_aucodec amr_wb = {
 		.dech      = decode_wb,
 		.fmtp_ench = amr_fmtp_enc
 	},
-	.aligned = false
+	.aligned = false,
+	.be_dec_arr = NULL
 };
 #endif
 #ifdef AMR_NB
@@ -410,7 +429,8 @@ static struct amr_aucodec amr_nb = {
 		.dech      = decode_nb,
 		.fmtp_ench = amr_fmtp_enc
 	},
-	.aligned = false
+	.aligned = false,
+	.be_dec_arr = NULL
 };
 #endif
 
