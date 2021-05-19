@@ -224,7 +224,8 @@ static void poll_aubuf_tx(struct mcsource *src)
 		sampc = sampc_rs;
 	}
 
-	auframe_init (&af, src->enc_fmt, sampv, sampc);
+	auframe_init(&af, src->enc_fmt, sampv, sampc, src->resamp.orate,
+		     src->resamp.och);
 
 	/* process exactly one audio-frame in list order */
 	for (le = src->filtl.head; le; le = le->next) {

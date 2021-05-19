@@ -30,8 +30,7 @@ struct ausrc_st {
 	ausrc_read_h *rh;
 	void *arg;
 	volatile bool ready;
-	unsigned ch;
-	enum aufmt fmt;
+	struct ausrc_prm prm;
 };
 
 struct auplay_st {
@@ -39,8 +38,7 @@ struct auplay_st {
 	auplay_write_h *wh;
 	void *arg;
 	volatile bool ready;
-	unsigned ch;
-	enum aufmt fmt;
+	struct auplay_prm prm;
 };
 
 
@@ -69,9 +67,9 @@ static int read_callback(const void *inputBuffer, void *outputBuffer,
 	if (!st->ready)
 		return paAbort;
 
-	sampc = frameCount * st->ch;
+	sampc = frameCount * st->prm.ch;
 
-	af.fmt   = st->fmt;
+	af.fmt   = st->prm.fmt;
 	af.sampv = (void *)inputBuffer;
 	af.sampc = sampc;
 	af.timestamp = Pa_GetStreamTime(st->stream_rd) * AUDIO_TIMEBASE;
@@ -98,9 +96,10 @@ static int write_callback(const void *inputBuffer, void *outputBuffer,
 	if (!st->ready)
 		return paAbort;
 
-	sampc = frameCount * st->ch;
+	sampc = frameCount * st->prm.ch;
 
-	auframe_init(&af, st->fmt, outputBuffer, sampc);
+	auframe_init(&af, st->prm.fmt, outputBuffer, sampc, st->prm.srate,
+		     st->prm.ch);
 
 	st->wh(&af, st->arg);
 
@@ -238,8 +237,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->rh  = rh;
 	st->arg = arg;
-	st->ch  = prm->ch;
-	st->fmt = prm->fmt;
+	st->prm = *prm;
 
 	st->ready = true;
 
@@ -281,8 +279,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	st->wh  = wh;
 	st->arg = arg;
-	st->ch  = prm->ch;
-	st->fmt = prm->fmt;
+	st->prm  = *prm;
 
 	st->ready = true;
 

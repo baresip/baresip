@@ -59,7 +59,8 @@ static void *write_thread(void *arg)
 
 	num_frames = st->prm.srate * st->prm.ptime / 1000;
 
-	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc);
+	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc, st->prm.srate,
+		     st->prm.ch);
 
 	while (st->run) {
 		const int samples = num_frames;

@@ -20,7 +20,7 @@ struct auplay_st {
 	AudioQueueBufferRef buf[BUFC];
 	pthread_mutex_t mutex;
 	uint32_t sampsz;
-	int fmt;
+	struct auplay_prm prm;
 	auplay_write_h *wh;
 	void *arg;
 };
@@ -66,8 +66,9 @@ static void play_handler(void *userData, AudioQueueRef outQ,
 	if (!wh)
 		return;
 
-	auframe_init(&af, st->fmt, outQB->mAudioData,
-		     outQB->mAudioDataByteSize/st->sampsz);
+	auframe_init(&af, st->prm.fmt, outQB->mAudioData,
+		     outQB->mAudioDataByteSize / st->sampsz, st->prm.srate,
+		     st->prm.ch);
 
 	wh(&af, arg);
 
@@ -101,7 +102,7 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
-	st->fmt = prm->fmt;
+	st->prm = *prm;
 
 	err = pthread_mutex_init(&st->mutex, NULL);
 	if (err)

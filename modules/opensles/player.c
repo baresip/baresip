@@ -21,6 +21,7 @@ struct auplay_st {
 	int16_t *sampv[N_PLAY_QUEUE_BUFFERS];
 	size_t   sampc;
 	uint8_t  bufferId;
+	struct auplay_prm prm;
 
 	SLObjectItf outputMixObject;
 	SLObjectItf bqPlayerObject;
@@ -51,7 +52,8 @@ static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 	struct auplay_st *st = context;
 	struct auframe af;
 
-	auframe_init(&af, AUFMT_S16LE, st->sampv[st->bufferId], st->sampc);
+	auframe_init(&af, AUFMT_S16LE, st->sampv[st->bufferId], st->sampc,
+		     st->prm.srate, st->prm.ch);
 
 	st->wh(&af, st->arg);
 
@@ -172,6 +174,7 @@ int opensles_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	st->wh  = wh;
 	st->arg = arg;
+	st->prm = *prm;
 
 	st->sampc = prm->srate * prm->ch * PTIME / 1000;
 

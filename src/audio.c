@@ -612,7 +612,8 @@ static void poll_aubuf_tx(struct audio *a)
 		sampc = sampc_rs;
 	}
 
-	auframe_init(&af, tx->enc_fmt, sampv, sampc);
+	auframe_init(&af, tx->enc_fmt, sampv, sampc, tx->resamp.orate,
+		     tx->resamp.och);
 
 	/* Process exactly one audio-frame in list order */
 	for (le = tx->filtl.head; le; le = le->next) {
@@ -995,7 +996,8 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 		sampc = 0;
 	}
 
-	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc);
+	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc, rx->resamp.irate,
+		     rx->resamp.ich);
 
 	/* Process exactly one audio-frame in reverse list order */
 	for (le = rx->filtl.tail; le; le = le->prev) {

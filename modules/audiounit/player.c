@@ -72,8 +72,9 @@ static OSStatus output_callback(void *inRefCon,
 		struct auframe af;
 		uint64_t ts;
 
-		auframe_init(&af, st->prm.fmt,
-			     ab->mData, ab->mDataByteSize/st->sampsz);
+		auframe_init(&af, st->prm.fmt, ab->mData,
+			     ab->mDataByteSize / st->sampsz, st->prm.srate,
+			     st->prm.ch);
 
 		ts = AUDIO_TIMEBASE * inTimeStamp->mSampleTime / st->prm.srate;
 

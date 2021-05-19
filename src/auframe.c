@@ -13,12 +13,15 @@
 /**
  * Initialize an audio frame
  *
- * @param af    Audio frame
- * @param fmt   Sample format (enum aufmt)
- * @param sampv Audio samples
- * @param sampc Total number of audio samples
+ * @param af       Audio frame
+ * @param fmt      Sample format (enum aufmt)
+ * @param sampv    Audio samples
+ * @param sampc    Total number of audio samples
+ * @param srate    Samplerate
+ * @param ch       Channels
  */
-void auframe_init(struct auframe *af, int fmt, void *sampv, size_t sampc)
+void auframe_init(struct auframe *af, int fmt, void *sampv, size_t sampc,
+		  uint32_t srate, uint8_t ch)
 {
 	if (!af)
 		return;
@@ -33,6 +36,8 @@ void auframe_init(struct auframe *af, int fmt, void *sampv, size_t sampc)
 	af->fmt = fmt;
 	af->sampv = sampv;
 	af->sampc = sampc;
+	af->srate = srate;
+	af->ch = ch;
 }
 
 

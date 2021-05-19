@@ -173,7 +173,8 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 		}
 
 		auframe_init(&af, st->ausrc_st->prm.fmt, frame2.data[0],
-			     frame2.nb_samples * frame2.channels);
+			     frame2.nb_samples * frame2.channels,
+			     st->ausrc_st->prm.srate, st->ausrc_st->prm.ch);
 		af.timestamp = frame.pts * AUDIO_TIMEBASE * tb.num / tb.den;
 
 		st->ausrc_st->readh(&af, st->ausrc_st->arg);

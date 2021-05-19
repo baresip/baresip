@@ -84,7 +84,8 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 				}
 			}
 
-			auframe_init(&af, st->prm.fmt, st->sampv_rs, sampc_rs);
+			auframe_init(&af, st->prm.fmt, st->sampv_rs, sampc_rs,
+				     st->prm.srate, st->prm.ch);
 
 			/* 1. read data from app (signed 16-bit) interleaved,
 				other sample rate */
@@ -103,7 +104,8 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 		else {
 			/* 1. read data from app (signed 16-bit) interleaved,
 				same sample rate */
-			auframe_init(&af, st->prm.fmt, st->sampv_lin, sampc);
+			auframe_init(&af, st->prm.fmt, st->sampv_lin, sampc,
+				     st->prm.srate, st->prm.ch);
 			st->wh(&af, st->arg);
 		}
 
@@ -128,7 +130,8 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 	}
 	else {
 		/* 1. read data from app (floats) interleaved */
-		auframe_init(&af, st->prm.fmt, st->sampv, sampc);
+		auframe_init(&af, st->prm.fmt, st->sampv, sampc, st->prm.srate,
+			     st->prm.ch);
 		st->wh(&af, st->arg);
 	}
 
