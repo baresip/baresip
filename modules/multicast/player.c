@@ -140,7 +140,8 @@ static int stream_recv_handler(const struct rtp_header *hdr, struct mbuf *mb)
 		sampc = 0;
 	}
 
-	auframe_init(&af, player->dec_fmt, player->sampv, sampc);
+	auframe_init(&af, player->dec_fmt, player->sampv, sampc,
+		     player->resamp.irate, player->resamp.ich);
 
 	for (le = player->filterl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;

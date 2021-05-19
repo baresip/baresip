@@ -22,6 +22,7 @@ struct ausrc_st {
 	uint8_t  bufferId;
 	ausrc_read_h *rh;
 	void *arg;
+	struct ausrc_prm prm;
 
 	SLObjectItf recObject;
 	SLRecordItf recRecord;
@@ -53,13 +54,12 @@ static void ausrc_destructor(void *arg)
 static void bqRecorderCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
 	struct ausrc_st *st = context;
-	struct auframe af = {
-		.fmt   = AUFMT_S16LE,
-		.sampv = st->sampv[st->bufferId],
-		.sampc = st->sampc,
-		.timestamp = tmr_jiffies_usec()
-	};
+	struct auframe af;
 	(void)bq;
+
+	auframe_init(&af, AUFMT_S16LE, st->sampv[st->bufferId], st->sampc,
+		     st->prm.srate, st->prm.ch);
+	af.timestamp = tmr_jiffies_usec();
 
 	st->rh(&af, st->arg);
 
@@ -185,6 +185,7 @@ int opensles_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->rh  = rh;
 	st->arg = arg;
+	st->prm = *prm;
 
 	st->sampc = prm->srate * prm->ch * PTIME / 1000;
 	st->bufferId   = 0;

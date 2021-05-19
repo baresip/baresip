@@ -31,12 +31,11 @@ static void ausrc_destructor(void *arg)
 static void tmr_handler(void *arg)
 {
 	struct ausrc_st *st = arg;
-	struct auframe af = {
-		.fmt   = st->prm.fmt,
-		.sampv = st->sampv,
-		.sampc = st->sampc,
-		.timestamp = tmr_jiffies_usec()
-	};
+	struct auframe af;
+
+	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc, st->prm.srate,
+		     st->prm.ch);
+	af.timestamp = tmr_jiffies_usec();
 
 	tmr_start(&st->tmr, st->prm.ptime, tmr_handler, st);
 

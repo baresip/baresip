@@ -23,7 +23,7 @@ struct auplay_st {
 	volatile bool rdy;
 	size_t inuse;
 	size_t sampsz;
-	enum aufmt fmt;
+	struct auplay_prm prm;
 	auplay_write_h *wh;
 	void *arg;
 };
@@ -73,7 +73,8 @@ static int dsp_write(struct auplay_st *st)
 	mb = st->bufs[st->pos].mb;
 	wh->lpData = (LPSTR)mb->buf;
 
-	auframe_init(&af, st->fmt, mb->buf, mb->size/st->sampsz);
+	auframe_init(&af, st->prm.fmt, mb->buf, mb->size / st->sampsz,
+		     st->prm.srate, st->prm.ch);
 
 	if (st->wh) {
 		st->wh(&af, st->arg);
@@ -238,7 +239,7 @@ int winwave_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	st->wh  = wh;
 	st->arg = arg;
-	st->fmt = prm->fmt;
+	st->prm = *prm;
 
 	err = write_stream_open(st, prm, dev);
 	if (err)

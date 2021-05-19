@@ -136,9 +136,9 @@ static OSStatus input_callback(void *inRefCon,
 		ts  = AUDIO_TIMEBASE*inTimeStamp->mSampleTime / st->prm.srate;
 		ts *= st->sampc_ratio;
 
-		af.fmt   = st->fmt;
-		af.sampv = abl_conv.mBuffers[0].mData;
-		af.sampc = abl_conv.mBuffers[0].mDataByteSize/st->sampsz;
+		auframe_init(&af, st->prm.fmt, abl_conv.mBuffers[0].mData,
+			     abl_conv.mBuffers[0].mDataByteSize / st->sampsz,
+			     st->prm.srate, st->prm.ch);
 		af.timestamp = ts;
 
 		rh(&af, arg);

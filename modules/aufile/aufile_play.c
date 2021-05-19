@@ -55,7 +55,8 @@ static void *write_thread(void *arg)
 	while (st->run) {
 		struct auframe af;
 
-		auframe_init(&af, st->prm.fmt, st->sampv, st->sampc);
+		auframe_init(&af, st->prm.fmt, st->sampv, st->sampc,
+			     st->prm.srate, st->prm.ch);
 
 		af.timestamp = t * 1000;
 

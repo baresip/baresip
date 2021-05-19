@@ -41,7 +41,8 @@ static void tmr_handler(void *arg)
 
 	tmr_start(&st->tmr, st->prm.ptime, tmr_handler, st);
 
-	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc);
+	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc, st->prm.srate,
+		     st->prm.ch);
 
 	if (st->wh)
 		st->wh(&af, st->arg);

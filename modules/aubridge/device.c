@@ -99,8 +99,9 @@ static void *device_thread(void *arg)
 		if (dev->auplay->wh) {
 			struct auframe af;
 
-			auframe_init(&af, dev->auplay->prm.fmt,
-				     sampv_in, sampc_in);
+			auframe_init(&af, dev->auplay->prm.fmt, sampv_in,
+				     sampc_in, dev->auplay->prm.srate,
+				     dev->auplay->prm.ch);
 
 			af.timestamp = ts * 1000;
 
