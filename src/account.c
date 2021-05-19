@@ -1434,6 +1434,15 @@ bool account_sip_autoanswer(const struct account *acc)
 }
 
 
+void account_set_sip_autoanswer(struct account *acc, bool allow)
+{
+	if (!acc)
+		return;
+
+	acc->sipans = allow;
+}
+
+
 /**
  * Returns the beep mode for a SIP auto answer call
  *
