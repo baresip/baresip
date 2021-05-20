@@ -50,9 +50,8 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 		}
 	}
 
-	af.fmt   = st->prm.fmt;
-	af.sampv = st->sampv;
-	af.sampc = sampc;
+	auframe_init(&af, st->prm.fmt, st->sampv, sampc, st->prm.srate,
+		     st->prm.ch);
 	af.timestamp = ts;
 
 	/* 1. read data from app (signed 16-bit) interleaved */
