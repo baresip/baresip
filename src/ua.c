@@ -1732,7 +1732,7 @@ int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 	struct pl n;
 	struct pl v;
 	struct mbuf *mb = NULL;
-	struct pl url = PL("<http://www.notused.com>");
+	struct pl url = PL("<>");
 	int err = 0;
 	const char *name;
 
