@@ -38,6 +38,7 @@ struct call {
 	struct media_ctx *ctx;    /**< Shared A/V source media context      */
 	enum call_state state;    /**< Call state                           */
 	int32_t adelay;           /**< Auto answer delay in ms              */
+	char *aluri;              /**< Alert-Info URI                       */
 	char *local_uri;          /**< Local SIP uri                        */
 	char *local_name;         /**< Local display name                   */
 	char *peer_uri;           /**< Peer SIP Address                     */
@@ -388,6 +389,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->local_name);
 	mem_deref(call->peer_uri);
 	mem_deref(call->peer_name);
+	mem_deref(call->aluri);
 	mem_deref(call->audio);
 	mem_deref(call->video);
 	mem_deref(call->sdp);
@@ -694,6 +696,8 @@ static void call_decode_sip_autoanswer(struct call *call,
 		const struct sip_msg *msg)
 {
 	const struct sip_hdr *hdr;
+	struct pl v;
+	int err = 0;
 
 	call->adelay = -1;
 
@@ -703,8 +707,17 @@ static void call_decode_sip_autoanswer(struct call *call,
 		return;
 
 	hdr = sip_msg_hdr(msg, SIP_HDR_ALERT_INFO);
-	if (call_hdr_dec_sip_autoanswer(call, hdr))
+	if (call_hdr_dec_sip_autoanswer(call, hdr)) {
+		if (!re_regex(hdr->val.p, hdr->val.l, "<[^<>]*>", &v))
+			err = pl_strdup(&call->aluri, &v);
+
+		if (err) {
+			warning("call: could not extract Alert-Info URI\n");
+			return;
+		}
+
 		return;
+	}
 
 	/* RFC 5373 */
 	call_rfc5373_autoanswer(call, msg, "Answer-Mode");
@@ -1323,6 +1336,19 @@ const char *call_localuri(const struct call *call)
 const char *call_peername(const struct call *call)
 {
 	return call ? call->peer_name : NULL;
+}
+
+
+/**
+ * Get the Alert-Info URI of the call
+ *
+ * @param call  Call object
+ *
+ * @return Alert-Info URI
+ */
+const char *call_alerturi(const struct call *call)
+{
+	return call ? call->aluri : NULL;
 }
 
 
