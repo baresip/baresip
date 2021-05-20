@@ -530,10 +530,11 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	if (err)
 		goto out;
 
-	if (menu->adelay >= 0)
+	if (menu->adelay >= 0) {
+		ua_set_autoanswer_value(ua, menu->ansval);
 		(void)ua_enable_autoanswer(ua, menu->adelay,
 				auto_answer_method(pf));
-
+	}
 
 	re_hprintf(pf, "call uri: %s\n", uri);
 	err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON);
@@ -630,9 +631,11 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	if (err)
 		goto out;
 
-	if (menu->adelay >= 0)
+	if (menu->adelay >= 0) {
+		ua_set_autoanswer_value(ua, menu->ansval);
 		(void)ua_enable_autoanswer(ua, menu->adelay,
 				auto_answer_method(pf));
+	}
 
 	re_hprintf(pf, "call uri: %s\n", uri);
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
@@ -964,6 +967,35 @@ static int cmd_set_adelay(struct re_printf *pf, void *arg)
 }
 
 
+/**
+ * Set SIP auto answer Call-Info/Alert-Info value for outgoing calls
+ *
+ * @param pf     Print handler for debug output
+ * @param arg    Optional string that should be used as value for Call-Info/
+ *               Alert-Info header.
+ *               If no argument is specified, then the value is cleared.
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_set_ansval(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+
+	menu_get()->ansval = mem_deref(menu_get()->ansval);
+	if (!str_isset(carg->prm))
+		return 0;
+
+	str_dup(&menu_get()->ansval, carg->prm);
+	if (menu_get()->ansval)
+		(void)re_hprintf(pf, "SIP auto answer value changed to %s\n",
+				 menu_get()->ansval);
+	else
+		(void)re_hprintf(pf, "SIP auto answer value cleared\n");
+
+	return 0;
+}
+
+
 static int cmd_ua_delete(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -1270,6 +1302,8 @@ static const struct cmd cmdv[] = {
 {"reginfo",   'r',        0, "Registration info",       ua_print_reg_status  },
 {"setadelay", 0,    CMD_PRM, "Set answer delay for outgoing call",
                                                         cmd_set_adelay       },
+{"setansval", 0,    CMD_PRM, "Set value for Call-Info/Alert-Info",
+                                                        cmd_set_ansval       },
 {"uadel",     0,    CMD_PRM, "Delete User-Agent",       cmd_ua_delete        },
 {"uadelall",  0,    CMD_PRM, "Delete all User-Agents",  cmd_ua_delete_all    },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },

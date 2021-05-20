@@ -952,6 +952,7 @@ static int module_close(void)
 	menu.dialbuf = mem_deref(menu.dialbuf);
 	menu.callid = mem_deref(menu.callid);
 	menu.ovaufile = mem_deref(menu.ovaufile);
+	menu.ansval = mem_deref(menu.ansval);
 	menu_stop_play();
 
 	tmr_cancel(&menu.tmr_redial);
