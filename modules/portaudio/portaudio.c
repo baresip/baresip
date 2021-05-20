@@ -69,9 +69,8 @@ static int read_callback(const void *inputBuffer, void *outputBuffer,
 
 	sampc = frameCount * st->prm.ch;
 
-	af.fmt   = st->prm.fmt;
-	af.sampv = (void *)inputBuffer;
-	af.sampc = sampc;
+	auframe_init(&af, st->prm.fmt, (void *)inputBuffer, sampc,
+		     st->prm.srate, st->prm.ch);
 	af.timestamp = Pa_GetStreamTime(st->stream_rd) * AUDIO_TIMEBASE;
 
 	st->rh(&af, st->arg);
