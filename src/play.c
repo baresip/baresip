@@ -528,7 +528,10 @@ int play_file(struct play **playp, struct player *player,
 	parse_play_settings(file, &repeat, &delay);
 
 	/* absolute path? */
-	if (file[0] == '/') {
+	if (file[0] == '/' ||
+	    !re_regex(file, strlen(file), "https://") ||
+	    !re_regex(file, strlen(file), "http://") ||
+	    !re_regex(file, strlen(file), "file://")) {
 		if (re_snprintf(path, sizeof(path), "%s",
 				file) < 0)
 			return ENOMEM;
