@@ -96,7 +96,7 @@ static int account_write_template(const char *file)
 			 "#\n"
 			 "#\n"
 			 "# A very basic example\n"
-			 "<sip:user@iptel.org>;auth_pass=PASSWORD\n"
+			 "#<sip:user@iptel.org>;auth_pass=PASSWORD\n"
 			 "#\n"
 			 "# A registrar-less account\n"
 			 "#<sip:alice@office>;regint=0\n");
