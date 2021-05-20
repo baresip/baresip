@@ -79,9 +79,8 @@ static void *read_thread(void *arg)
 			continue;
 		}
 
-		af.fmt   = st->prm.fmt;
-		af.sampv = st->sampv;
-		af.sampc = n * st->prm.ch;
+		auframe_init(&af, st->prm.fmt, st->sampv, n * st->prm.ch,
+			     st->prm.srate, st->prm.ch);
 		af.timestamp = frames * AUDIO_TIMEBASE / st->prm.srate;
 
 		frames += n;
