@@ -53,7 +53,8 @@ jobs:
                         ffmpeg \
                         jack \
                         mpg123 \
-                        spandsp
+                        spandsp \
+                        openssl
 
     - uses: sreimers/pr-dependency-action@v0.3
       with:
