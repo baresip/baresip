@@ -116,8 +116,12 @@ static int register_curprio(void)
 		if (!account_regint(ua_account(ua)))
 			continue;
 
-		if (prio != sreg.prio)
+		if (prio != sreg.prio) {
+			if (!fbregint)
+				ua_unregister(ua);
+
 			continue;
+		}
 
 		if (!fbregint || !ua_regfailed(ua))
 			err = ua_register(ua);
@@ -312,8 +316,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		next_account(ua);
 		if (account_fbregint(ua_account(ua)))
 			(void)ua_fallback(ua);
-		else
-			ua_unregister(ua);
 
 		if (sreg.prio == (uint32_t) -1)
 			tmr_start(&sreg.tmr, min_regint()*1000, restart, NULL);
