@@ -82,6 +82,9 @@ USE_AMR   := $(shell [ -d $(SYSROOT)/include/opencore-amrnb ] || \
 USE_APTX  := $(shell [ -f $(SYSROOT)/include/openaptx.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/openaptx.h ] || \
 	[ -f $(SYSROOT_ALT)/include/openaptx.h ] && echo "yes")
+USE_AV1  := $(shell [ -f $(SYSROOT)/include/aom/aom.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/aom/aom.h ] || \
+	[ -f $(SYSROOT_ALT)/include/aom/aom.h ] && echo "yes")
 USE_AVCODEC := $(shell [ -f $(SYSROOT)/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT)/local/include/libavcodec/avcodec.h ] || \
@@ -312,6 +315,9 @@ MODULES   += amr
 endif
 ifneq ($(USE_APTX),)
 MODULES   += aptx
+endif
+ifneq ($(USE_AV1),)
+MODULES   += av1
 endif
 ifneq ($(USE_AUDIOUNIT),)
 MODULES   += audiounit
