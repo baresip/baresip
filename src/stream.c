@@ -140,7 +140,8 @@ static void check_rtp_handler(void *arg)
 		}
 	}
 	else {
-		re_printf("check_rtp: not checking (dir=%s)\n",
+		debug("check_rtp: not checking \"%s\" RTP (dir=%s)\n",
+			  sdp_media_name(strm->sdp),
 			  sdp_dir_name(sdp_media_dir(strm->sdp)));
 	}
 }
