@@ -246,13 +246,25 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 }
 
 
-static void autoanswer_allow_decode(struct account *prm, const struct pl *pl)
+static void autoanswer_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl v;
 
 	if (0 == msg_param_decode(pl, "sip_autoanswer", &v)) {
 		if (0 == pl_strcasecmp(&v, "yes")) {
 			prm->sipans = true;
+		}
+	}
+
+	if (0 == msg_param_decode(pl, "sip_autoanswer_beep", &v)) {
+		if (0 == pl_strcasecmp(&v, "on")) {
+			prm->sipansbeep = SIPANSBEEP_ON;
+		}
+		else if (0 == pl_strcasecmp(&v, "off")) {
+			prm->sipansbeep = SIPANSBEEP_OFF;
+		}
+		else if (0 == pl_strcasecmp(&v, "local")) {
+			prm->sipansbeep = SIPANSBEEP_LOCAL;
 		}
 	}
 }
@@ -490,6 +502,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		return ENOMEM;
 
 	acc->maf = AF_UNSPEC;
+	acc->sipansbeep = SIPANSBEEP_ON;
 	err = str_dup(&acc->buf, sipaddr);
 	if (err)
 		goto out;
@@ -512,7 +525,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	acc->ptime = 20;
 	err |= sip_params_decode(acc, &acc->laddr);
 	       answermode_decode(acc, &acc->laddr.params);
-	       autoanswer_allow_decode(acc, &acc->laddr.params);
+	       autoanswer_decode(acc, &acc->laddr.params);
 	       dtmfmode_decode(acc,&acc->laddr.params);
 	err |= audio_codecs_decode(acc, &acc->laddr.params);
 	err |= video_codecs_decode(acc, &acc->laddr.params);
@@ -1421,6 +1434,45 @@ bool account_sip_autoanswer(const struct account *acc)
 }
 
 
+void account_set_sip_autoanswer(struct account *acc, bool allow)
+{
+	if (!acc)
+		return;
+
+	acc->sipans = allow;
+}
+
+
+/**
+ * Returns the beep mode for a SIP auto answer call
+ *
+ * - SIPANSBEEP_ON    ... The beep is played before the call is answered
+ *                         automatically. The locally configured audio file can
+ *                         be overwritten with the Alert-Info header URL.
+ *                         This is the default value.
+ *
+ * - SIPANSBEEP_OFF   ... No beep is played.
+ *
+ * - SIPANSBEEP_LOCAL ... The local configured beep tone is played.
+ *
+ * @param acc User-Agent account
+ * @return Beep mode
+ */
+enum sipansbeep account_sipansbeep(const struct account *acc)
+{
+	return acc ? acc->sipansbeep : SIPANSBEEP_ON;
+}
+
+
+void account_set_sipansbeep(struct account *acc, enum sipansbeep beep)
+{
+	if (!acc)
+		return;
+
+	acc->sipansbeep = beep;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
@@ -1441,6 +1493,18 @@ static const char *dtmfmode_str(enum dtmfmode mode)
 
 	case DTMFMODE_RTP_EVENT: return "rtpevent";
 	case DTMFMODE_SIP_INFO:  return "info";
+	default: return "???";
+	}
+}
+
+
+static const char *sipansbeep_str(enum sipansbeep beep)
+{
+	switch (beep) {
+
+	case SIPANSBEEP_OFF:   return "off";
+	case SIPANSBEEP_ON:    return "on";
+	case SIPANSBEEP_LOCAL: return "local";
 	default: return "???";
 	}
 }
@@ -1645,6 +1709,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  answermode_str(acc->answermode));
 	err |= re_hprintf(pf, " sipans:       %s\n",
 			  acc->sipans ? "yes" : "no");
+	err |= re_hprintf(pf, " sipansbeep:  %s\n",
+			  sipansbeep_str(acc->sipansbeep));
 	err |= re_hprintf(pf, " dtmfmode:     %s\n",
 			  dtmfmode_str(acc->dtmfmode));
 	if (!list_isempty(&acc->aucodecl)) {

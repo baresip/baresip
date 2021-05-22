@@ -13,6 +13,7 @@
 #    ;audio_source=alsa,default
 #    ;audio_player=alsa,default
 #    ;sip_autoanswer={yes, no}
+#    ;sip_autoanswer_beep={off, on, local}
 #    ;dtmfmode={rtpevent, info}
 #    ;auth_user=username
 #    ;auth_pass=password

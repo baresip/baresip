@@ -63,6 +63,13 @@ enum dtmfmode {
 	DTMFMODE_SIP_INFO
 };
 
+/** SIP auto answer beep modes */
+enum sipansbeep {
+	SIPANSBEEP_OFF,
+	SIPANSBEEP_ON,
+	SIPANSBEEP_LOCAL,
+};
+
 struct account;
 
 int account_alloc(struct account **accp, const char *sipaddr);
@@ -122,6 +129,9 @@ const char *account_extra(const struct account *acc);
 int account_uri_complete(const struct account *acc, struct mbuf *buf,
 			 const char *uri);
 bool account_sip_autoanswer(const struct account *acc);
+void account_set_sip_autoanswer(struct account *acc, bool allow);
+enum sipansbeep account_sipansbeep(const struct account *acc);
+void account_set_sipansbeep(struct account *acc, enum sipansbeep beep);
 
 
 /*
