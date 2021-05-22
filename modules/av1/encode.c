@@ -14,6 +14,11 @@
 #include "av1.h"
 
 
+#ifndef AOM_USAGE_REALTIME
+#define AOM_USAGE_REALTIME (1)
+#endif
+
+
 enum {
 	HDR_SIZE = 1,
 };
