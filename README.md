@@ -92,7 +92,7 @@ Distributed under BSD license
   - Windows winwave audio-driver
 
 * Video:
-  - Support for H.265, H.264, H.263, VP8, VP9 Video
+  - Support for H.263, H.264, H.265, VP8, VP9, AV1 Video
   - Configurable resolution/framerate/bitrate
   - Configurable video input/output
   - Support for asymmetric video
@@ -100,9 +100,10 @@ Distributed under BSD license
   - Hardware acceleration for video encoder/decoder
 
 * Video-codecs:
-  - H.265
-  - H.264
+  - AV1
   - H.263
+  - H.264
+  - H.265
   - VP8
   - VP9
 
@@ -223,6 +224,7 @@ audiounit     AudioUnit audio driver for MacOSX/iOS
 aufile        Audio module for using a WAV-file as audio input
 auloop        Audio-loop test module
 ausine        Audio sine wave input module
+av1           AV1 video codec
 avcapture     Video source using iOS AVFoundation video capture
 avcodec       Video codec using FFmpeg/libav libavcodec
 avformat      Video source using FFmpeg/libav libavformat
