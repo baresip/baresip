@@ -219,9 +219,8 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	++ves->picid;
 
 	for (;;) {
-		bool keyframe = false, marker = true;
+		bool marker = true;
 		const aom_codec_cx_pkt_t *pkt;
-		uint8_t partid = 0;
 		uint64_t ts;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
@@ -230,12 +229,6 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 
 		if (pkt->kind != AOM_CODEC_CX_FRAME_PKT)
 			continue;
-
-		if (pkt->data.frame.flags & AOM_FRAME_IS_KEY)
-			keyframe = true;
-
-		if (pkt->data.frame.partition_id >= 0)
-			partid = pkt->data.frame.partition_id;
 
 		ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
