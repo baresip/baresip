@@ -356,37 +356,6 @@ zrtp          ZRTP media encryption module
 * draft-ietf-payload-vp9-11
 
 
-## Architecture:
-(note: out of date, needs updating)
-
-```
-                   .------.
-                   |Video |
-                 _ |Stream|\
-                 /|'------' \ 1
-                /            \
-               /             _\|
- .--. N  .----. M  .------. 1  .-------. 1  .-----.
- |UA|--->|Call|--->|Audio |--->|Generic|--->|Media|
- '--'    '----'    |Stream|    |Stream |    | NAT |
-            |1     '------'    '-------'    '-----'
-            |         C|       1|   |
-           \|/      .-----.  .----. |
-        .-------.   |Codec|  |Jbuf| |1
-        | SIP   |   '-----'  '----' |
-        |Session|     1|       /|\  |
-        '-------'    .---.      |  \|/
-                     |DSP|    .--------.
-                     '---'    |RTP/RTCP|
-                              '--------'
-                              |  SRTP  |
-                              '--------'
-```
-
-   A User-Agent (UA) has 0-N SIP Calls
-   A SIP Call has 0-M Media Streams
-
-
 ## Supported platforms:
 
 * Android (5.0 or later)
