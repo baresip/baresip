@@ -1417,21 +1417,6 @@ int call_status(struct re_printf *pf, const struct call *call)
 }
 
 
-int call_jbuf_stat(struct re_printf *pf, const struct call *call)
-{
-	struct le *le;
-	int err = 0;
-
-	if (!call)
-		return EINVAL;
-
-	FOREACH_STREAM
-		err |= stream_jbuf_stat(pf, le->data);
-
-	return err;
-}
-
-
 int call_info(struct re_printf *pf, const struct call *call)
 {
 	if (!call)
