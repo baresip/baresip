@@ -366,6 +366,9 @@ int stream_decode(struct stream *s)
 
 void stream_silence_on(struct stream *s, bool on)
 {
+	if (!s)
+		return;
+
 	jbuf_silence(s->jbuf, on);
 }
 
