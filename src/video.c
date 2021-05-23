@@ -1458,14 +1458,6 @@ struct stream *video_strm(const struct video *v)
 }
 
 
-void video_update_picture(struct video *v)
-{
-	if (!v)
-		return;
-	v->vtx.picup = true;
-}
-
-
 /**
  * Set the current Video Source device name
  *

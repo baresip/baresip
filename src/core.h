@@ -392,7 +392,6 @@ struct video;
 
 int  video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		       const char *fmtp);
-void video_update_picture(struct video *v);
 int  video_print(struct re_printf *pf, const struct video *v);
 
 
