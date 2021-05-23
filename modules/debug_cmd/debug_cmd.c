@@ -362,6 +362,8 @@ static int print_uuid(struct re_printf *pf, void *arg)
 
 
 static const struct cmd debugcmdv[] = {
+{"apistate",    0,       0, "User Agent state",       cmd_api_uastate     },
+{"aufileinfo",  0, CMD_PRM, "Audio file info",        cmd_aufileinfo      },
 {"conf_reload", 0,       0, "Reload config file",     reload_config       },
 {"config",      0,       0, "Print configuration",    cmd_config_print    },
 {"loglevel",   'v',      0, "Log level toggle",       cmd_log_level       },
@@ -370,13 +372,11 @@ static const struct cmd debugcmdv[] = {
 {"modules",     0,       0, "Module debug",           mod_debug           },
 {"netstat",    'n',      0, "Network debug",          cmd_net_debug       },
 {"play",        0, CMD_PRM, "Play audio file",        cmd_play_file       },
-{"aufileinfo",  0, CMD_PRM, "Audio file info",        cmd_aufileinfo      },
 {"sipstat",    'i',      0, "SIP debug",              cmd_sip_debug       },
 {"sysinfo",    's',      0, "System info",            print_system_info   },
 {"timers",      0,       0, "Timer debug",            tmr_status          },
 {"uastat",     'u',      0, "UA debug",               cmd_ua_debug        },
 {"uuid",        0,       0, "Print UUID",             print_uuid          },
-{"apistate",    0,       0, "User Agent state",       cmd_api_uastate     },
 };
 
 
