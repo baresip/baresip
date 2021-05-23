@@ -16,7 +16,10 @@ $(MOD)_CFLAGS	+= -Wno-unused-parameter -Wno-declaration-after-statement \
 
 $(MOD)_CCHECK_OPT	= -e baresipbus.h -e baresipbus.c
 
-modules/ctrl_dbus/baresipbus.h modules/ctrl_dbus/baresipbus.c: \
+modules/$(MOD)/baresipbus.o :	modules/$(MOD)/baresipbus.h
+modules/$(MOD)/ctrl_dbus.o :	modules/$(MOD)/baresipbus.h
+
+modules/$(MOD)/baresipbus.h modules/$(MOD)/baresipbus.c: \
 	modules/ctrl_dbus/com.github.Baresip.xml
 	@cd $(dir $@) && ./gen.sh
 
