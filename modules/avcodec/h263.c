@@ -107,27 +107,6 @@ int h263_hdr_decode(struct h263_hdr *hdr, struct mbuf *mb)
 }
 
 
-/**
- * Find PSC (Picture Start Code) in bit-stream
- *
- * @param p     Input bit-stream
- * @param size  Number of bytes in bit-stream
- *
- * @return Pointer to PSC if found, otherwise NULL
- */
-const uint8_t *h263_strm_find_psc(const uint8_t *p, uint32_t size)
-{
-	const uint8_t *end = p + size - 1;
-
-	for (; p < end; p++) {
-		if (p[0] == 0x00 && p[1] == 0x00)
-			return p;
-	}
-
-	return NULL;
-}
-
-
 int h263_strm_decode(struct h263_strm *s, struct mbuf *mb)
 {
 	const uint8_t *p;
