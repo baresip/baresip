@@ -572,7 +572,7 @@ int play_file(struct play **playp, struct player *player,
 	if (err) {
 		mem_deref(play);
 	}
-	else if (playp) {
+	else if (play && playp) {
 		play->playp = playp;
 		*playp = play;
 	}
