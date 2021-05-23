@@ -176,6 +176,8 @@ static void poll_aubuf_tx(struct mcsource *src)
 	size_t sz;
 	size_t num_bytes;
 	struct le *le;
+	uint32_t srate;
+	uint8_t ch;
 	int err = 0;
 
 	sz = aufmt_sample_size(src->src_fmt);
@@ -224,8 +226,16 @@ static void poll_aubuf_tx(struct mcsource *src)
 		sampc = sampc_rs;
 	}
 
-	auframe_init(&af, src->enc_fmt, sampv, sampc, src->resamp.orate,
-		     src->resamp.och);
+	if (src->resamp.resample) {
+		srate = src->resamp.irate;
+		ch = src->resamp.ich;
+	}
+	else {
+		srate = src->ausrc_prm.srate;
+		ch = src->ausrc_prm.ch;
+	}
+
+	auframe_init(&af, src->enc_fmt, sampv, sampc, srate, ch);
 
 	/* process exactly one audio-frame in list order */
 	for (le = src->filtl.head; le; le = le->next) {

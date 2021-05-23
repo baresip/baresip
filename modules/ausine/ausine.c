@@ -48,6 +48,7 @@ struct ausrc_st {
 	int freq;
 	double sec_offset;
 	enum channels ch;
+	struct ausrc_prm prm;
 };
 
 
@@ -81,14 +82,12 @@ static void *play_thread(void *arg)
 		return NULL;
 
 	while (st->run) {
-
-		struct auframe af = {
-			.fmt   = AUFMT_S16LE,
-			.sampv = sampv,
-			.sampc = st->sampc,
-			.timestamp = ts * 1000
-		};
+		struct auframe af;
 		size_t frame;
+
+		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc, st->prm.srate,
+		             st->prm.ch);
+		af.timestamp = ts * 1000;
 
 		sys_msleep(4);
 
@@ -200,6 +199,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	st->errh = errh;
 	st->arg  = arg;
 	st->sec_offset = 0.0;
+	st->prm = *prm;
 
 	st->freq = atoi(dev);
 
