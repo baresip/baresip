@@ -1247,7 +1247,7 @@ enum presence_status ua_presence_status(const struct ua *ua)
  * @param ua     User-Agent object
  * @param status Presence status
  */
-void ua_presence_status_set(struct ua *ua, const enum presence_status status)
+void ua_presence_status_set(struct ua *ua, enum presence_status status)
 {
 	if (!ua)
 		return;
