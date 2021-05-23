@@ -885,6 +885,9 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 	if (!strm)
 		return;
 
+	if (!sdp_media_has_media(stream_sdpmedia(strm)))
+		return;
+
 	strm->rtp_timeout_ms = timeout_ms;
 
 	tmr_cancel(&strm->tmr_rtp);
