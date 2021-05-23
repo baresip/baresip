@@ -20,7 +20,10 @@ modules/$(MOD)/baresipbus.o :	modules/$(MOD)/baresipbus.h
 modules/$(MOD)/ctrl_dbus.o :	modules/$(MOD)/baresipbus.h
 
 modules/$(MOD)/baresipbus.h modules/$(MOD)/baresipbus.c: \
-	modules/ctrl_dbus/com.github.Baresip.xml
-	@cd $(dir $@) && ./gen.sh
+	modules/$(MOD)/com.github.Baresip.xml
+	@echo "GEN $<"
+	@gdbus-codegen --output-directory $(dir $@) \
+		--generate-c-code baresipbus --c-namespace DBus \
+		--interface-prefix com.github. $<
 
 include mk/mod.mk
