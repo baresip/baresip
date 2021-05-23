@@ -19,7 +19,6 @@ SRCS	+= config.c
 SRCS	+= contact.c
 SRCS	+= custom_hdrs.c
 SRCS	+= event.c
-SRCS	+= h264.c
 SRCS	+= log.c
 SRCS	+= mediadev.c
 SRCS	+= menc.c
