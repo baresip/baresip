@@ -16,11 +16,28 @@ $(MOD)_CFLAGS	+= -Wno-unused-parameter -Wno-declaration-after-statement \
 
 $(MOD)_CCHECK_OPT	= -e baresipbus.h -e baresipbus.c
 
-modules/$(MOD)/baresipbus.o :	modules/$(MOD)/baresipbus.h
-modules/$(MOD)/ctrl_dbus.o :	modules/$(MOD)/baresipbus.h
+PANDOC		:= $(shell pandoc -v dot 2> /dev/null)
+
+modules/$(MOD)/baresipbus.c :	modules/$(MOD)/baresipbus.h
+modules/$(MOD)/ctrl_dbus.c :	modules/$(MOD)/baresipbus.h
 
 modules/$(MOD)/baresipbus.h modules/$(MOD)/baresipbus.c: \
-	modules/ctrl_dbus/com.github.Baresip.xml
-	@cd $(dir $@) && ./gen.sh
+	modules/$(MOD)/com.github.Baresip.xml
+	@echo "GEN $<"
+	@gdbus-codegen --output-directory $(dir $@) \
+		--generate-c-code baresipbus --c-namespace DBus \
+		--interface-prefix com.github. $<
+
+ifdef PANDOC
+$(MOD).html:	modules/$(MOD)/com.github.Baresip.xml
+	@echo "DOC $<"
+	@gdbus-codegen --output-directory modules/ctrl_dbus \
+		--generate-docbook doc $<
+	@pandoc --from docbook --to html \
+		--output modules/ctrl_dbus/ctrl_dbus.html \
+		modules/ctrl_dbus/doc-com.github.Baresip.xml
+	@rm modules/ctrl_dbus/doc-com.github.Baresip.xml
+endif
+
 
 include mk/mod.mk
