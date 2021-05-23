@@ -18,8 +18,8 @@ $(MOD)_CCHECK_OPT	= -e baresipbus.h -e baresipbus.c
 
 PANDOC		:= $(shell pandoc -v dot 2> /dev/null)
 
-modules/$(MOD)/baresipbus.o :	modules/$(MOD)/baresipbus.h
-modules/$(MOD)/ctrl_dbus.o :	modules/$(MOD)/baresipbus.h
+modules/$(MOD)/baresipbus.c :	modules/$(MOD)/baresipbus.h
+modules/$(MOD)/ctrl_dbus.c :	modules/$(MOD)/baresipbus.h
 
 modules/$(MOD)/baresipbus.h modules/$(MOD)/baresipbus.c: \
 	modules/$(MOD)/com.github.Baresip.xml
