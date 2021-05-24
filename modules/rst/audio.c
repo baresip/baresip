@@ -31,7 +31,7 @@ struct ausrc_st {
 	uint32_t ptime;
 	size_t sampc;
 	size_t sampsz;
-	enum aufmt fmt;
+	struct ausrc_prm prm;
 };
 
 
@@ -71,13 +71,11 @@ static void *play_thread(void *arg)
 		return NULL;
 
 	while (st->run) {
+		struct auframe af;
 
-		struct auframe af = {
-			.fmt   = st->fmt,
-			.sampv = sampv,
-			.sampc = st->sampc,
-			.timestamp = ts * 1000
-		};
+		auframe_init(&af, st->prm.fmt, sampv, st->sampc, st->prm.srate,
+		             st->prm.ch);
+		af.timestamp = ts * 1000;
 
 		sys_msleep(4);
 
@@ -226,7 +224,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->sampc = prm->srate * prm->ch * st->ptime / 1000;
 	st->sampsz = aufmt_sample_size(prm->fmt);
-	st->fmt = prm->fmt;
+	st->prm = *prm;
 
 
 	info("rst: audio ptime=%u sampc=%zu aubuf=[%u:%u]\n",

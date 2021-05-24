@@ -64,14 +64,13 @@ static void *read_thread(void *arg)
 	last_read = tmr_jiffies();
 
 	while (st->run) {
+		struct auframe af;
 
-		struct auframe af = {
-			.fmt   = st->fmt,
-			.sampv = st->sampv,
-			.sampc = st->sampc,
-			.timestamp = sampc * AUDIO_TIMEBASE
-			             / (st->prm.srate * st->prm.ch)
-		};
+		auframe_init(&af, st->fmt, st->sampv, st->sampc, st->prm.srate,
+		             st->prm.ch);
+
+		af.timestamp = sampc * AUDIO_TIMEBASE
+		               / (st->prm.srate * st->prm.ch);
 
 		ret = pa_simple_read(st->s, st->sampv, num_bytes, &pa_error);
 		if (ret < 0) {

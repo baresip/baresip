@@ -547,6 +547,8 @@ static void poll_aubuf_tx(struct audio *a)
 	size_t sz;
 	size_t num_bytes;
 	struct le *le;
+	uint32_t srate;
+	uint8_t ch;
 	int err = 0;
 
 	sz = aufmt_sample_size(tx->src_fmt);
@@ -612,8 +614,16 @@ static void poll_aubuf_tx(struct audio *a)
 		sampc = sampc_rs;
 	}
 
-	auframe_init(&af, tx->enc_fmt, sampv, sampc, tx->resamp.orate,
-		     tx->resamp.och);
+	if (tx->resamp.resample) {
+		srate = tx->resamp.orate;
+		ch = tx->resamp.och;
+	}
+	else {
+		srate = tx->ausrc_prm.srate;
+		ch = tx->ausrc_prm.ch;
+	}
+
+	auframe_init(&af, tx->enc_fmt, sampv, sampc, srate, ch);
 
 	/* Process exactly one audio-frame in list order */
 	for (le = tx->filtl.head; le; le = le->next) {
@@ -961,6 +971,8 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 	size_t sampc = AUDIO_SAMPSZ;
 	void *sampv;
 	struct le *le;
+	uint32_t srate;
+	uint8_t ch;
 	int err = 0;
 
 	/* No decoder set */
@@ -996,8 +1008,16 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 		sampc = 0;
 	}
 
-	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc, rx->resamp.irate,
-		     rx->resamp.ich);
+	if (rx->resamp.resample) {
+		srate = rx->resamp.irate;
+		ch = rx->resamp.ich;
+	}
+	else {
+		srate = rx->auplay_prm.srate;
+		ch = rx->auplay_prm.ch;
+	}
+
+	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc, srate, ch);
 
 	/* Process exactly one audio-frame in reverse list order */
 	for (le = rx->filtl.tail; le; le = le->prev) {

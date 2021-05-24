@@ -111,6 +111,8 @@ static int stream_recv_handler(const struct rtp_header *hdr, struct mbuf *mb)
 	size_t sampc = AUDIO_SAMPSZ;
 	bool marker = hdr->m;
 	void *sampv;
+	uint32_t srate;
+	uint8_t ch;
 	int err = 0;
 
 	if (!player)
@@ -140,8 +142,16 @@ static int stream_recv_handler(const struct rtp_header *hdr, struct mbuf *mb)
 		sampc = 0;
 	}
 
-	auframe_init(&af, player->dec_fmt, player->sampv, sampc,
-		     player->resamp.irate, player->resamp.ich);
+	if (player->resamp.resample) {
+		srate = player->resamp.irate;
+		ch = player->resamp.ich;
+	}
+	else {
+		srate = player->auplay_prm.srate;
+		ch = player->auplay_prm.ch;
+	}
+
+	auframe_init(&af, player->dec_fmt, player->sampv, sampc, srate, ch);
 
 	for (le = player->filterl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;

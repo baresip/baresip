@@ -109,12 +109,14 @@ static void *device_thread(void *arg)
 		}
 
 		if (dev->ausrc->rh) {
-			struct auframe af = {
-				.fmt   = dev->ausrc->prm.fmt,
-				.sampv = sampv_in,
-				.sampc = sampc_in,
-				.timestamp = ts * 1000
-			};
+			struct auframe af;
+
+			auframe_init(&af, dev->ausrc->prm.fmt, sampv_in,
+			             sampc_in, dev->auplay->prm.srate,
+			             dev->auplay->prm.ch);
+
+			af.timestamp = ts * 1000;
+
 			dev->ausrc->rh(&af, dev->ausrc->arg);
 		}
 

@@ -76,13 +76,11 @@ static void *play_thread(void *arg)
 		return NULL;
 
 	while (st->run) {
+		struct auframe af;
 
-		struct auframe af = {
-			.fmt   = AUFMT_S16LE,
-			.sampv = sampv,
-			.sampc = st->sampc,
-			.timestamp = ts * 1000
-		};
+		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc,
+		             st->prm->srate, st->prm->ch);
+		af.timestamp = ts * 1000;
 
 		sys_msleep(ms);
 

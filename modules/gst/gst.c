@@ -149,11 +149,10 @@ static void format_check(struct ausrc_st *st, GstStructure *s)
 
 static void play_packet(struct ausrc_st *st)
 {
-	struct auframe af = {
-		.fmt   = AUFMT_S16LE,
-		.sampv = st->buf,
-		.sampc = st->sampc
-	};
+	struct auframe af;
+
+	auframe_init(&af, AUFMT_S16LE, st->buf, st->sampc, st->prm.srate,
+	             st->prm.ch);
 
 	/* timed read from audio-buffer */
 	if (st->prm.ptime && aubuf_get_samp(st->aubuf, st->prm.ptime, st->buf,
