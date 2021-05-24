@@ -755,7 +755,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	struct le *le;
 	struct stream_param stream_prm;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
-	bool use_video = true, got_offer = false;
+	bool use_video, got_offer = false;
 	int label = 0;
 	int err = 0;
 
