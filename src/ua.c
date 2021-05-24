@@ -29,6 +29,7 @@ struct ua {
 	bool catchall;               /**< Catch all inbound requests         */
 	struct list hdr_filter;      /**< Filter for incoming headers        */
 	struct list custom_hdrs;     /**< List of outgoing headers           */
+	char *ansval;                /**< SIP auto answer value              */
 };
 
 struct ua_xhdr_filter {
@@ -50,6 +51,7 @@ static void ua_destructor(void *arg)
 	list_flush(&ua->regl);
 	mem_deref(ua->cuser);
 	mem_deref(ua->pub_gruu);
+	mem_deref(ua->ansval);
 	mem_deref(ua->acc);
 
 	if (uag_delayed_close() && list_isempty(uag_list())) {
@@ -1732,7 +1734,7 @@ int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 	struct pl n;
 	struct pl v;
 	struct mbuf *mb = NULL;
-	struct pl url = PL("<http://www.notused.com>");
+	struct pl val = PL("<>");
 	int err = 0;
 	const char *name;
 
@@ -1745,17 +1747,20 @@ int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 			return ENOMEM;
 	}
 
+	if (ua->ansval)
+		pl_set_str(&val, ua->ansval);
+
 	switch (met) {
 
 	case ANSM_RFC5373:
 		err = mbuf_printf(mb, "Auto");
 		break;
 	case ANSM_CALLINFO:
-		err = mbuf_printf(mb, "%r;answer-after=%d", &url, adelay);
+		err = mbuf_printf(mb, "%r;answer-after=%d", &val, adelay);
 		break;
 	case ANSM_ALERTINFO:
 		err = mbuf_printf(mb, "%r;info=alert-autoanswer;delay=%d",
-				&url, adelay);
+				&val, adelay);
 		break;
 	default:
 		err = EINVAL;
@@ -1805,4 +1810,17 @@ int ua_raise(struct ua *ua)
 		return EINVAL;
 
 	return uag_raise(ua, &ua->le);
+}
+
+
+int ua_set_autoanswer_value(struct ua *ua, const char *value)
+{
+	if (!ua)
+		return EINVAL;
+
+	ua->ansval = mem_deref(ua->ansval);
+	if (!value)
+		return 0;
+
+	return str_dup(&ua->ansval, value);
 }

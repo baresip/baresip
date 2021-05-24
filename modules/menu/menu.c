@@ -204,20 +204,22 @@ static bool menu_play(const struct call *call,
 	char *file = NULL;
 	int err;
 
-	err = menu_ovkey_str(&ovkey, call, ckey);
-	if (!err) {
-		ovaukey = odict_string(menu.ovaufile, ovkey);
-		mem_deref(ovkey);
+	if (ckey) {
+		err = menu_ovkey_str(&ovkey, call, ckey);
+		if (!err) {
+			ovaukey = odict_string(menu.ovaufile, ovkey);
+			mem_deref(ovkey);
+		}
+
+		if (ovaukey && !strcmp(ovaukey, "none"))
+			return false;
+
+		if (ovaukey)
+			(void)conf_get(conf_cur(), ovaukey, &pl);
+
+		if (!pl_isset(&pl))
+			(void)conf_get(conf_cur(), ckey, &pl);
 	}
-
-	if (ovaukey && !strcmp(ovaukey, "none"))
-		return false;
-
-	if (ovaukey)
-		(void)conf_get(conf_cur(), ovaukey, &pl);
-
-	if (!pl_isset(&pl))
-		(void)conf_get(conf_cur(), ckey, &pl);
 
 	if (!pl_isset(&pl))
 		pl_set_str(&pl, fname);
@@ -227,11 +229,12 @@ static bool menu_play(const struct call *call,
 
 	pl_strdup(&file, &pl);
 	menu_stop_play();
-	(void)play_file(&menu.play, player, file, repeat,
+	err = play_file(&menu.play, player, file, repeat,
 			cfg->audio.alert_mod,
 			cfg->audio.alert_dev);
 	mem_deref(file);
-	return true;
+
+	return err == 0;
 }
 
 
@@ -386,19 +389,40 @@ static void auans_play_finished(struct play *play, void *arg)
 }
 
 
+static bool alert_uri_supported(const char *uri)
+{
+	if (!re_regex(uri, strlen(uri), "https://"))
+		return true;
+
+	if (!re_regex(uri, strlen(uri), "http://"))
+		return true;
+
+	if (!re_regex(uri, strlen(uri), "file://") && fs_isfile(uri + 7))
+		return true;
+
+	return false;
+}
+
+
 static void start_sip_autoanswer(struct call *call)
 {
 	struct account *acc = call_account(call);
 	int32_t adelay = call_answer_delay(call);
-	bool beep = true;
+	const char *aluri = call_alerturi(call);
+	enum sipansbeep bmet = account_sipansbeep(acc);
+	bool beep = false;
 
 	if (adelay == -1)
 		return;
 
-	beep = account_sipansbeep(acc) != SIPANSBEEP_OFF;
-	if (beep) {
-		beep = menu_play(call,
-				 "sip_autoanswer_aufile", "autoanswer.wav", 1);
+	if (bmet) {
+		if (bmet != SIPANSBEEP_LOCAL && aluri &&
+				alert_uri_supported(aluri))
+			beep = menu_play(call, NULL, aluri, 1);
+
+		if (!beep)
+			beep = menu_play(call, "sip_autoanswer_aufile",
+					 "autoanswer.wav", 1);
 	}
 
 	if (beep) {
@@ -928,6 +952,7 @@ static int module_close(void)
 	menu.dialbuf = mem_deref(menu.dialbuf);
 	menu.callid = mem_deref(menu.callid);
 	menu.ovaufile = mem_deref(menu.ovaufile);
+	menu.ansval = mem_deref(menu.ansval);
 	menu_stop_play();
 
 	tmr_cancel(&menu.tmr_redial);

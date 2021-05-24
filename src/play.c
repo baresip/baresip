@@ -527,10 +527,18 @@ int play_file(struct play **playp, struct player *player,
 	str_ncpy(file, filename, sizeof(file));
 	parse_play_settings(file, &repeat, &delay);
 
-	if (re_snprintf(path, sizeof(path), "%s/%s",
+	/* absolute path? */
+	if (file[0] == '/' ||
+	    !re_regex(file, strlen(file), "https://") ||
+	    !re_regex(file, strlen(file), "http://") ||
+	    !re_regex(file, strlen(file), "file://")) {
+		if (re_snprintf(path, sizeof(path), "%s",
+				file) < 0)
+			return ENOMEM;
+	}
+	else if (re_snprintf(path, sizeof(path), "%s/%s",
 			player->play_path, file) < 0)
 		return ENOMEM;
-
 
 	if (!conf_get_str(conf_cur(), "file_ausrc", srcn, sizeof(srcn))) {
 		ausrc = ausrc_find(baresip_ausrcl(), srcn);
@@ -564,7 +572,7 @@ int play_file(struct play **playp, struct player *player,
 	if (err) {
 		mem_deref(play);
 	}
-	else if (playp) {
+	else if (play && playp) {
 		play->playp = playp;
 		*playp = play;
 	}

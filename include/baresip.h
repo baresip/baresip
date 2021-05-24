@@ -227,6 +227,7 @@ const char   *call_id(const struct call *call);
 const char   *call_peeruri(const struct call *call);
 const char   *call_peername(const struct call *call);
 const char   *call_localuri(const struct call *call);
+const char   *call_alerturi(const struct call *call);
 struct audio *call_audio(const struct call *call);
 struct video *call_video(const struct call *call);
 struct list  *call_streaml(const struct call *call);
@@ -853,6 +854,7 @@ int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   bool use_rtp);
 struct call *ua_find_call_state(const struct ua *ua, enum call_state st);
 int ua_raise(struct ua *ua);
+int ua_set_autoanswer_value(struct ua *ua, const char *value);
 
 
 /* One instance */
