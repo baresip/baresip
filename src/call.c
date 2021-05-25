@@ -1973,6 +1973,20 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 }
 
 
+static void redirect_handler(const struct sip_msg *msg, const char *uri,
+	void *arg)
+{
+	struct call *call = arg;
+
+	(void) msg;
+	(void) call;
+
+	info ("call: redirect call to %s\n", uri);
+
+	return;
+}
+
+
 static int send_invite(struct call *call)
 {
 	const char *routev[1];
@@ -2014,6 +2028,10 @@ static int send_invite(struct call *call)
 		warning("call: sipsess_connect: %m\n", err);
 		goto out;
 	}
+
+	err = sipsess_set_redirect_handler(call->sess, redirect_handler);
+	if (err)
+		goto out;
 
 	err = str_dup(&call->id,
 		      sip_dialog_callid(sipsess_dialog(call->sess)));
