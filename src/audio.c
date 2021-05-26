@@ -200,6 +200,7 @@ struct audio {
 	bool started;                 /**< Stream is started flag          */
 	bool level_enabled;           /**< Audio level RTP ext. enabled    */
 	bool hold;                    /**< Local hold flag                 */
+	bool conference;              /**< Local conference flag           */
 	unsigned extmap_aulevel;      /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_level_h *levelh;        /**< Audio level handler             */
@@ -2581,6 +2582,38 @@ void audio_set_hold(struct audio *au, bool hold)
 		return;
 
 	au->hold = hold;
+}
+
+
+/**
+ * Set the audio stream on conference
+ *
+ * @param au          Audio object
+ * @param conference  True for conference, false for not
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int audio_set_conference(struct audio *au, bool conference)
+{
+	if (!au)
+		return EINVAL;
+
+	au->conference = conference;
+
+	return 0;
+}
+
+
+/**
+ * Is audio on conference?
+ *
+ * @param au    Audio object
+ *
+ * @return true if on conference, false if not
+ */
+bool audio_is_conference(const struct audio *au)
+{
+	return au ? au->conference : false;
 }
 
 
