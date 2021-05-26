@@ -10,6 +10,7 @@
 #include <openssl/crypto.h>
 #endif
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 
