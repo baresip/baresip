@@ -726,6 +726,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	if (err == ENODEV) {
 		warning("video: video-display was closed\n");
 		vrx->vidisp = mem_deref(vrx->vidisp);
+		vrx->vd = NULL;
 
 		lock_rel(vrx->lock);
 
@@ -1023,6 +1024,7 @@ static int set_vidisp(struct vrx *vrx)
 	int err;
 
 	vrx->vidisp = mem_deref(vrx->vidisp);
+	vrx->vd = NULL;
 
 	vrx->vidisp_prm.fullscreen = vrx->video->cfg.fullscreen;
 
