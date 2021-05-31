@@ -1422,6 +1422,21 @@ uint16_t account_stun_port(const struct account *acc)
 }
 
 
+int account_adelay(const struct account *acc)
+{
+	return acc ? acc->adelay : 0;
+}
+
+
+void account_set_adelay(struct account *acc, int adelay)
+{
+	if (!acc)
+		return;
+
+	acc->adelay = adelay;
+}
+
+
 /**
  * Returns if SIP auto answer is allowed for the account
  *

@@ -404,7 +404,7 @@ static bool alert_uri_supported(const char *uri)
 }
 
 
-static void start_sip_autoanswer(struct call *call)
+static void start_autoanswer(struct call *call)
 {
 	struct account *acc = call_account(call);
 	int32_t adelay = call_answer_delay(call);
@@ -519,13 +519,15 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		     account_aor(acc), call_peername(call), call_peeruri(call),
 		     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
-		if (acc && account_sip_autoanswer(acc))
+		if (account_sip_autoanswer(acc))
 			adelay = call_answer_delay(call);
+		else if (account_adelay(acc))
+			adelay = account_adelay(acc);
 
 		if (adelay == -1)
 			play_incoming(call);
 		else
-			start_sip_autoanswer(call);
+			start_autoanswer(call);
 
 		break;
 
