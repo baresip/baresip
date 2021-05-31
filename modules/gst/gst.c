@@ -86,7 +86,7 @@ sync_handler(
 		case GST_MESSAGE_EOS:
 			st->run = false;
 			st->eos = true;
-			return GST_BUS_DROP;
+			break;
 
 		case GST_MESSAGE_ERROR:
 			gst_message_parse_error(msg, &err, &d);
@@ -105,7 +105,7 @@ sync_handler(
 			g_error_free(err);
 
 			st->run = false;
-			return GST_BUS_DROP;
+			break;
 
 		case GST_MESSAGE_TAG:
 			gst_message_parse_tag(msg, &tag_list);
@@ -118,11 +118,15 @@ sync_handler(
 				info("gst: title: %s\n", title);
 				g_free(title);
 			}
-			return GST_BUS_DROP;
+			gst_tag_list_unref(tag_list);
+			break;
 
 		default:
-			return GST_BUS_PASS;
+			break;
 	}
+
+	gst_message_unref(msg);
+	return GST_BUS_DROP;
 }
 
 
@@ -236,6 +240,7 @@ static void set_caps(struct ausrc_st *st)
 				   NULL);
 
 	g_object_set(G_OBJECT(st->capsfilt), "caps", caps, NULL);
+	gst_caps_unref(caps);
 }
 
 
