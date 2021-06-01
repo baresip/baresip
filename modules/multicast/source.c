@@ -280,7 +280,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	struct mcsource *src = arg;
 	size_t num_bytes = auframe_size(af);
 
-	if ((int)src->src_fmt != af->fmt) {
+	if (src->src_fmt != af->fmt) {
 		warning ("multicast source: ausrc format mismatch: "
 			"expected=%d(%s), actual=%d(%s)\n",
 			src->src_fmt, aufmt_name(src->src_fmt),

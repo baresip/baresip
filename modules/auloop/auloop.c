@@ -204,7 +204,7 @@ static void src_read_handler(struct auframe *af, void *arg)
 	struct stats *stats = &al->stats_src;
 	int err;
 
-	if (af->fmt != (int)al->fmt) {
+	if (af->fmt != al->fmt) {
 		warning("auloop: format mismatch: exp=%d, actual=%d\n",
 			al->fmt, af->fmt);
 		return;
@@ -234,7 +234,7 @@ static void write_handler(struct auframe *af, void *arg)
 	size_t num_bytes = auframe_size(af);
 	struct stats *stats = &al->stats_play;
 
-	if (af->fmt != (int)al->fmt) {
+	if (af->fmt != al->fmt) {
 		warning("auloop: write format mismatch: exp=%s, actual=%s\n",
 			aufmt_name(al->fmt), aufmt_name(af->fmt));
 	}
