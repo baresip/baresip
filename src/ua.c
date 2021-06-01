@@ -402,26 +402,14 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		case ANSWERMODE_EARLY_VIDEO:
 			ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
 			(void)call_progress(call);
-			if (ua->acc->adelay)
-				call_start_answtmr(call, ua->acc->adelay);
-
-			break;
-
-		case ANSWERMODE_AUTO:
-			if (ua->acc->adelay) {
-				ua_event(ua, UA_EVENT_CALL_INCOMING, call,
-						peeruri);
-				call_start_answtmr(call, ua->acc->adelay);
-			}
-			else {
-				(void)call_answer(call, 200, VIDMODE_ON);
-			}
 			break;
 
 		case ANSWERMODE_MANUAL:
 			ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
-			if (ua->acc->adelay)
-				call_start_answtmr(call, ua->acc->adelay);
+			break;
+
+		case ANSWERMODE_AUTO:
+			(void)call_answer(call, 200, VIDMODE_ON);
 			break;
 		}
 		break;
