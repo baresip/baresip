@@ -1422,13 +1422,13 @@ uint16_t account_stun_port(const struct account *acc)
 }
 
 
-int32_t account_adelay(const struct account *acc)
+int32_t account_answerdelay(const struct account *acc)
 {
 	return acc ? acc->adelay : 0;
 }
 
 
-void account_set_adelay(struct account *acc, int32_t adelay)
+void account_set_answerdelay(struct account *acc, int32_t adelay)
 {
 	if (!acc)
 		return;
