@@ -72,7 +72,7 @@ static void *play_thread(void *arg)
 	struct ausrc_st *st = arg;
 	int16_t *sampv;
 	double sample, rad_per_sec;
-	double sec_per_frame = 1.0 / 48000;
+	double sec_per_frame = 1.0 / (double)st->prm.srate;
 	int inc;
 	size_t frames;
 	int16_t f;
@@ -183,11 +183,6 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (prm->fmt != AUFMT_S16LE) {
 		warning("ausine: unsupported sample format (%s)\n",
 			aufmt_name(prm->fmt));
-		return ENOTSUP;
-	}
-
-	if (prm->srate != 48000) {
-		warning("ausine: supports only 48kHz samplerate\n");
 		return ENOTSUP;
 	}
 
