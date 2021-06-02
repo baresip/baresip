@@ -395,21 +395,16 @@ static void call_event_handler(struct call *call, enum call_event ev,
 			break;
 		}
 
+		ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
 		switch (ua->acc->answermode) {
 
 		case ANSWERMODE_EARLY:
 		case ANSWERMODE_EARLY_AUDIO:
 		case ANSWERMODE_EARLY_VIDEO:
-			ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
 			(void)call_progress(call);
 			break;
 
-		case ANSWERMODE_MANUAL:
-			ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
-			break;
-
-		case ANSWERMODE_AUTO:
-			(void)call_answer(call, 200, VIDMODE_ON);
+		default:
 			break;
 		}
 		break;

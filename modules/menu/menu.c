@@ -505,6 +505,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (call_state(call) != CALL_STATE_INCOMING)
 			return;
 
+		if (account_answermode(acc) == ANSWERMODE_AUTO) {
+			(void)call_answer(call, 200, VIDMODE_ON);
+			return;
+		}
+
 		/* set the current User-Agent to the one with the call */
 		menu_selcall(call);
 		menu_stop_play();
