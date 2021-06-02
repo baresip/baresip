@@ -43,6 +43,16 @@
 		goto out;						\
 	}
 
+#define ASSERT_PLEQ(expected, actual)					\
+	if (0 != pl_cmp((expected), (actual))) {			\
+		warning("selftest: ASSERT_PLEQ: %s:%u:"			\
+			" expected = '%r', actual = '%r'\n",		\
+			__FILE__, __LINE__,				\
+			(expected), (actual));				\
+		err = EBADMSG;						\
+		goto out;						\
+	}
+
 #define TEST_ERR(err)							\
 	if ((err)) {							\
 		(void)re_fprintf(stderr, "\n");				\
@@ -50,6 +60,16 @@
 			      " (%m)\n",				\
 			      __FILE__, __LINE__,			\
 			      (err));					\
+		goto out;						\
+	}
+
+#define TEST_ERR_TXT(err,txt)						\
+	if ((err)) {							\
+		(void)re_fprintf(stderr, "\n");				\
+		warning("TEST_ERR: %s:%u: %s"				\
+			      " (%m)\n",				\
+			      __FILE__, __LINE__,			\
+			      (txt), (err));				\
 		goto out;						\
 	}
 
@@ -204,6 +224,7 @@ int mock_vidisp_register(struct vidisp **vidispp,
 /* test cases */
 
 int test_account(void);
+int test_account_uri_complete(void);
 int test_aulevel(void);
 int test_call_answer(void);
 int test_call_answer_hangup_a(void);

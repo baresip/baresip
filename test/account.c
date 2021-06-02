@@ -75,3 +75,112 @@ int test_account(void)
 	mem_deref(acc);
 	return err;
 }
+
+
+static int sip_addr_check(const struct sip_addr *a1, const struct sip_addr *a2,
+		const char *uri)
+{
+	int err;
+	char *uri1 = NULL;
+	char *uri2 = NULL;
+
+	ASSERT_PLEQ(&a2->dname,  &a1->dname);
+	ASSERT_PLEQ(&a2->auri,   &a1->auri);
+	ASSERT_PLEQ(&a2->params, &a1->params);
+
+	err = re_sdprintf(&uri1, "%H", uri_encode, &a1->uri);
+	TEST_ERR(err);
+
+	err = re_sdprintf(&uri2, "%H", uri_encode, &a2->uri);
+	TEST_ERR(err);
+
+	ASSERT_STREQ(uri2, uri1);
+	ASSERT_STREQ(uri, uri1);
+out:
+	mem_deref(uri1);
+	mem_deref(uri2);
+	return err;
+}
+
+
+int test_account_uri_complete(void)
+{
+	/* compare odd URIs with even URIs */
+	const char *uri[] = {
+		"192.168.1.2",
+		"sip:192.168.1.2",
+
+		"192.168.1.2:5677",
+		"sip:192.168.1.2:5677",
+
+		"[2113:1470:1f1b:24b::2]",
+		"sip:[2113:1470:1f1b:24b::2]",
+
+		"[fe80::b62e:99ff:feee:268f]",
+		"sip:[fe80::b62e:99ff:feee:268f]",
+
+		"x@[2113:1470:1f1b:24b::2]",
+		"sip:x@[2113:1470:1f1b:24b::2]",
+
+		"[2113:1470:1f1b:24b::2]:5677",
+		"sip:[2113:1470:1f1b:24b::2]:5677",
+
+		"x@[2113:1470:1f1b:24b::2]:5677",
+		"sip:x@[2113:1470:1f1b:24b::2]:5677",
+
+		"user",
+		"sip:user@proxy.com",
+
+		"user@domain.com",
+		"sip:user@domain.com",
+
+		"user@domain.com:5677",
+		"sip:user@domain.com:5677",
+
+		"sip:user",
+		"sip:user@proxy.com",
+
+		"sip:user@domain.com",
+		"sip:user@domain.com",
+
+		NULL
+	};
+
+	struct sip_addr addr[2];
+	struct pl pl;
+	struct mbuf *mb[2];
+	struct account *acc = NULL;
+	int err = 0;
+	int i, j;
+
+	err = account_alloc(&acc, "\"A\" <sip:A@proxy.com>");
+	TEST_ERR(err);
+	ASSERT_TRUE(acc != NULL);
+
+	mb[0] = mbuf_alloc(1);
+	ASSERT_TRUE(mb[0] != NULL);
+	mb[1] = mbuf_alloc(1);
+	ASSERT_TRUE(mb[1] != NULL);
+
+	for (i = 0; uri[i]; ++i) {
+		j = i % 2;
+		mbuf_reset(mb[j]);
+		err = account_uri_complete(acc, mb[j], uri[i]);
+		TEST_ERR_TXT(err, uri[i]);
+
+		mbuf_set_pos(mb[j], 0);
+		pl_set_mbuf(&pl, mb[j]);
+		err = sip_addr_decode(&addr[j], &pl);
+		TEST_ERR_TXT(err, uri[i]);
+
+		if (i % 2 == 1) {
+			err = sip_addr_check(&addr[0], &addr[1], uri[i]);
+			TEST_ERR_TXT(err, uri[i - 1]);
+		}
+	}
+out:
+	mem_deref(mb[0]);
+	mem_deref(mb[1]);
+	mem_deref(acc);
+	return err;
+}
