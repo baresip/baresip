@@ -215,7 +215,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		goto out;
 	}
 
-	for (i=0; i<4; i++) {
+	for (i=0; i<3; i++) {
 		frame->data[i]     = img->planes[i];
 		frame->linesize[i] = img->stride[i];
 	}
