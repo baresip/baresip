@@ -77,7 +77,6 @@ Distributed under BSD license
   - G.722
   - G.726
   - GSM
-  - iLBC
   - L16
   - MPA
   - Opus
@@ -255,7 +254,6 @@ gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module
 i2s           I2S (Inter-IC Sound) audio driver
 ice           ICE protocol for NAT Traversal
-ilbc          iLBC audio codec
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
 menu          Interactive menu
@@ -315,8 +313,6 @@ zrtp          ZRTP media encryption module
 * RFC 3640  RTP Payload Format for Transport of MPEG-4 Elementary Streams
 * RFC 3856  A Presence Event Package for SIP
 * RFC 3863  Presence Information Data Format (PIDF)
-* RFC 3951  Internet Low Bit Rate Codec (iLBC)
-* RFC 3952  RTP Payload Format for iLBC Speech
 * RFC 4145  TCP-Based Media Transport in SDP
 * RFC 4240  Basic Network Media Services with SIP (partly)
 * RFC 4347  Datagram Transport Layer Security
