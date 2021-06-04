@@ -18,6 +18,9 @@ ifeq ($(V),)
 HIDE=@
 endif
 
+LIBRE_MIN	:= 2.0.1-dev
+LIBREM_MIN	:= 1.0.0-dev
+
 ifndef LIBRE_MK
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \
 	echo "../re/mk/re.mk")
@@ -37,6 +40,28 @@ endif
 
 
 include $(LIBRE_MK)
+
+# Dependency Checks
+LIBRE_PKG_PATH  := $(shell [ -f ../re/libre.pc ] && echo "../re/")
+LIBREM_PKG_PATH  := $(shell [ -f ../rem/librem.pc ] && echo "../rem/")
+
+ifneq ($(PKG_CONFIG),)
+LIBRE_PKG := $(shell PKG_CONFIG_PATH=$(LIBRE_PKG_PATH) \
+	pkg-config --exists "libre >= $(LIBRE_MIN)" && echo "yes")
+
+ifeq ($(LIBRE_PKG),)
+$(error bad libre version, required version is ">= $(LIBRE_MIN)". \
+	LIBRE_MK: $(LIBRE_MK))
+endif
+
+LIBREM_PKG := $(shell PKG_CONFIG_PATH=$(LIBREM_PKG_PATH) \
+	pkg-config --exists "librem >= $(LIBREM_MIN)" && echo "yes")
+
+ifeq ($(LIBREM_PKG),)
+$(error bad librem version, required version is ">= $(LIBREM_MIN)".)
+endif
+endif
+
 include mk/modules.mk
 
 ifeq ($(SYSROOT_LOCAL),)
