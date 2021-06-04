@@ -130,7 +130,7 @@ void log_enable_stdout(bool enable)
  */
 void vlog(enum log_level level, const char *fmt, va_list ap)
 {
-	char buf[4096];
+	char buf[8192];
 	struct le *le;
 
 	if (level < lg.level)
