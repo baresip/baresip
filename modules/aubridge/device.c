@@ -54,9 +54,8 @@ static void *device_thread(void *arg)
 {
 	uint64_t now, ts = tmr_jiffies();
 	struct device *dev = arg;
-	int16_t *sampv_in, *sampv_out;
-	size_t sampc_in;
-	size_t sampc_out;
+	int16_t *sampv;
+	size_t sampc;
 	size_t sampsz;
 
 	if (!dev->run)
@@ -74,14 +73,12 @@ static void *device_thread(void *arg)
 	     dev->auplay->prm.srate, dev->auplay->prm.ch,
 	     aufmt_name(dev->auplay->prm.fmt));
 
-	sampc_in = dev->auplay->prm.srate * dev->auplay->prm.ch * PTIME/1000;
-	sampc_out = dev->ausrc->prm.srate * dev->ausrc->prm.ch * PTIME/1000;
+	sampc = dev->auplay->prm.srate * dev->auplay->prm.ch * PTIME/1000;
 
 	sampsz = aufmt_sample_size(dev->auplay->prm.fmt);
 
-	sampv_in  = mem_alloc(sampsz * sampc_in, NULL);
-	sampv_out = mem_alloc(sampsz * sampc_out, NULL);
-	if (!sampv_in || !sampv_out)
+	sampv  = mem_alloc(sampsz * sampc, NULL);
+	if (!sampv)
 		goto out;
 
 	while (dev->run) {
@@ -99,8 +96,8 @@ static void *device_thread(void *arg)
 		if (dev->auplay->wh) {
 			struct auframe af;
 
-			auframe_init(&af, dev->auplay->prm.fmt, sampv_in,
-				     sampc_in, dev->auplay->prm.srate,
+			auframe_init(&af, dev->auplay->prm.fmt, sampv,
+				     sampc, dev->auplay->prm.srate,
 				     dev->auplay->prm.ch);
 
 			af.timestamp = ts * 1000;
@@ -111,8 +108,8 @@ static void *device_thread(void *arg)
 		if (dev->ausrc->rh) {
 			struct auframe af;
 
-			auframe_init(&af, dev->ausrc->prm.fmt, sampv_in,
-			             sampc_in, dev->ausrc->prm.srate,
+			auframe_init(&af, dev->ausrc->prm.fmt, sampv,
+			             sampc, dev->ausrc->prm.srate,
 			             dev->ausrc->prm.ch);
 
 			af.timestamp = ts * 1000;
@@ -124,8 +121,7 @@ static void *device_thread(void *arg)
 	}
 
  out:
-	mem_deref(sampv_in);
-	mem_deref(sampv_out);
+	mem_deref(sampv);
 
 	return NULL;
 }
