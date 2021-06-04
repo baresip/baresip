@@ -555,7 +555,7 @@ int mcsource_start(struct mcsource **srcp, const struct aucodec *ac,
 	src->ac = ac;
 	if (src->ac->encupdh) {
 		struct auenc_param prm;
-		prm.ptime = src->ptime;
+
 		prm.bitrate = 0;
 
 		err = src->ac->encupdh(&src->enc, src->ac, &prm, NULL);

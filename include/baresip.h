@@ -1063,7 +1063,6 @@ const struct vidisp *vidisp_find(const struct list *vidispl, const char *name);
 
 /** Audio Codec parameters */
 struct auenc_param {
-	uint32_t ptime;    /**< Packet time in [ms]       */
 	uint32_t bitrate;  /**< Wanted bitrate in [bit/s] */
 };
 

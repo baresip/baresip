@@ -1987,7 +1987,6 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 	if (ac->encupdh) {
 		struct auenc_param prm;
 
-		prm.ptime = tx->ptime;
 		prm.bitrate = 0;        /* auto */
 
 		err = ac->encupdh(&tx->enc, ac, &prm, params);
@@ -2531,7 +2530,6 @@ int audio_set_bitrate(struct audio *au, uint32_t bitrate)
 		if (ac->encupdh) {
 			struct auenc_param prm;
 
-			prm.ptime = tx->ptime;
 			prm.bitrate = bitrate;
 
 			err = ac->encupdh(&tx->enc, ac, &prm, NULL);
