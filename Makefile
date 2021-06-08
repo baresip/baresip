@@ -41,26 +41,29 @@ endif
 
 include $(LIBRE_MK)
 
-# Dependency Checks
+ifeq ($(LIBRE_PKG_PATH),)
+LIBRE_PKG_PATH  := $(shell [ -f $(PKG_CONFIG_PATH)/libre.pc ] && \
+	echo "$(PKG_CONFIG_PATH)")
+endif
+
+ifeq ($(LIBRE_PKG_PATH),)
+ifeq ($(LIBRE_SO),)
+LIBRE_SO	:= $(patsubst %/share/re/re.mk,%/lib,$(LIBRE_MK))
+endif
+LIBRE_PKG_PATH  := $(shell [ -f $(LIBRE_SO)/pkgconfig/libre.pc ] && \
+	echo "$(LIBRE_SO)/pkgconfig")
+endif
+
+ifeq ($(LIBRE_PKG_PATH),)
 LIBRE_PKG_PATH  := $(shell [ -f ../re/libre.pc ] && echo "../re/")
-LIBREM_PKG_PATH  := $(shell [ -f ../rem/librem.pc ] && echo "../rem/")
-
-ifneq ($(PKG_CONFIG),)
-LIBRE_PKG := $(shell PKG_CONFIG_PATH=$(LIBRE_PKG_PATH) \
-	pkg-config --exists "libre >= $(LIBRE_MIN)" && echo "yes")
-
-ifeq ($(LIBRE_PKG),)
-$(error bad libre version, required version is ">= $(LIBRE_MIN)". \
-	LIBRE_MK: $(LIBRE_MK))
 endif
 
-LIBREM_PKG := $(shell PKG_CONFIG_PATH=$(LIBREM_PKG_PATH) \
-	pkg-config --exists "librem >= $(LIBREM_MIN)" && echo "yes")
 
-ifeq ($(LIBREM_PKG),)
-$(error bad librem version, required version is ">= $(LIBREM_MIN)".)
+ifeq ($(LIBREM_PKG_PATH),)
+LIBREM_PKG_PATH  := $(shell [ -f $(PKG_CONFIG_PATH)/librem.pc ] && \
+	echo "$(PKG_CONFIG_PATH)")
 endif
-endif
+
 
 include mk/modules.mk
 
@@ -127,6 +130,32 @@ LIBREM_SO  := $(shell [ -f /usr/lib64/librem$(LIB_SUFFIX) ] && \
 	echo "/usr/lib64")
 endif
 
+ifeq ($(LIBREM_PKG_PATH),)
+LIBREM_PKG_PATH  := $(shell [ -f $(LIBREM_SO)/pkgconfig/librem.pc ] && \
+	echo "$(LIBREM_SO)/pkgconfig")
+endif
+
+ifeq ($(LIBREM_PKG_PATH),)
+LIBREM_PKG_PATH  := $(shell [ -f ../rem/librem.pc ] && echo "../rem/")
+endif
+
+# Dependency Checks
+ifneq ($(PKG_CONFIG),)
+LIBRE_PKG := $(shell PKG_CONFIG_PATH=$(LIBRE_PKG_PATH) \
+	pkg-config --exists "libre >= $(LIBRE_MIN)" && echo "yes")
+
+ifeq ($(LIBRE_PKG),)
+$(error bad libre version, required version is ">= $(LIBRE_MIN)". \
+	LIBRE_MK: $(LIBRE_MK))
+endif
+
+LIBREM_PKG := $(shell PKG_CONFIG_PATH=$(LIBREM_PKG_PATH) \
+	pkg-config --exists "librem >= $(LIBREM_MIN)" && echo "yes")
+
+ifeq ($(LIBREM_PKG),)
+$(error bad librem version, required version is ">= $(LIBREM_MIN)".)
+endif
+endif
 
 CFLAGS    += -I. -Iinclude -I$(LIBRE_INC)
 CFLAGS    += -I$(LIBREM_INC)
