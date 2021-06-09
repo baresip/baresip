@@ -59,12 +59,6 @@ LIBRE_PKG_PATH  := $(shell [ -f ../re/libre.pc ] && echo "../re/")
 endif
 
 
-ifeq ($(LIBREM_PKG_PATH),)
-LIBREM_PKG_PATH  := $(shell [ -f $(PKG_CONFIG_PATH)/librem.pc ] && \
-	echo "$(PKG_CONFIG_PATH)")
-endif
-
-
 include mk/modules.mk
 
 ifeq ($(SYSROOT_LOCAL),)
@@ -128,6 +122,12 @@ endif
 ifeq ($(LIBREM_SO),)
 LIBREM_SO  := $(shell [ -f /usr/lib64/librem$(LIB_SUFFIX) ] && \
 	echo "/usr/lib64")
+endif
+
+
+ifeq ($(LIBREM_PKG_PATH),)
+LIBREM_PKG_PATH  := $(shell [ -f $(PKG_CONFIG_PATH)/librem.pc ] && \
+	echo "$(PKG_CONFIG_PATH)")
 endif
 
 ifeq ($(LIBREM_PKG_PATH),)
