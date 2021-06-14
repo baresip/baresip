@@ -964,6 +964,8 @@ static void stream_remote_set(struct stream *s)
 	}
 
 
+	net_set_dst_scopeid(baresip_network(), &s->tx.raddr_rtp);
+	net_set_dst_scopeid(baresip_network(), &s->tx.raddr_rtcp);
 }
 
 
