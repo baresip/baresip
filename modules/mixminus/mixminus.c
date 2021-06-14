@@ -273,6 +273,9 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 			continue;
 		}
 
+		if (!mix->prm.srate || !mix->prm.ch)
+			continue;
+
 		err = auresamp_setup(&enc->resamp, mix->prm.srate, mix->prm.ch,
 				     enc->prm.srate, enc->prm.ch);
 		if (err) {
