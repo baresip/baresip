@@ -1211,3 +1211,12 @@ const char *stream_name(const struct stream *strm)
 
 	return media_name(strm->type);
 }
+
+
+const struct sa *stream_raddr(const struct stream *strm)
+{
+	if (!strm)
+		return NULL;
+
+	return &strm->raddr_rtp;
+}
