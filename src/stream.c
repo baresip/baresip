@@ -717,6 +717,8 @@ static void stream_remote_set(struct stream *s)
 	else
 		sdp_media_raddr_rtcp(s->sdp, &s->raddr_rtcp);
 
+	net_set_dst_scopeid(baresip_network(), &s->raddr_rtp);
+	net_set_dst_scopeid(baresip_network(), &s->raddr_rtcp);
 	if (stream_is_ready(s)) {
 
 		stream_start(s);
