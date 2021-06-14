@@ -240,8 +240,6 @@ static bool uri_host_local(const struct uri *uri)
 		"127.0.0.1",
 		"::1"
 	};
-	int afv[2] = {AF_INET, AF_INET6};
-	const struct sa *sal;
 	struct sa sap;
 	size_t i;
 	int err;
@@ -255,17 +253,12 @@ static bool uri_host_local(const struct uri *uri)
 			return true;
 	}
 
-	for (i=0; i<ARRAY_SIZE(afv); i++) {
+	err = sa_set(&sap, &uri->host, 0);
+	if (err)
+		return false;
 
-		sal = net_laddr_af(baresip_network(), afv[i]);
-
-		err = sa_set(&sap, &uri->host, 0);
-		if (err)
-			continue;
-
-		if (sa_cmp(sal, &sap, SA_ADDR))
-			return true;
-	}
+	if (net_is_laddr(baresip_network(), &sap))
+		return true;
 
 	return false;
 }
@@ -444,17 +437,7 @@ static int add_transp_af(const struct sa *laddr)
 
 static int ua_add_transp(struct network *net)
 {
-	int err = 0;
-
-	if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
-		err |= add_transp_af(net_laddr_af(net, AF_INET));
-
-#if HAVE_INET6
-	if (sa_isset(net_laddr_af(net, AF_INET6), SA_ADDR))
-		err |= add_transp_af(net_laddr_af(net, AF_INET6));
-#endif
-
-	return err;
+	return net_laddr_apply(net, add_transp_af);
 }
 
 
@@ -668,6 +651,7 @@ int uag_reset_transp(bool reg, bool reinvite)
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
+		struct le *lec;
 
 		if (reg && account_regint(acc) && !account_prio(acc)) {
 			err |= ua_register(ua);
@@ -677,17 +661,18 @@ int uag_reset_transp(bool reg, bool reinvite)
 		}
 
 		/* update all active calls */
-		if (reinvite) {
-			struct le *lec;
+		if (!reinvite)
+			continue;
 
-			for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
-				struct call *call = lec->data;
-				const struct sa *laddr;
+		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
+			struct call *call = lec->data;
+			struct sa laddr;
 
-				laddr = net_laddr_af(net, call_af(call));
+			if (net_dst_source_addr_get(stream_raddr(audio_strm(
+						call_audio(call))), &laddr))
+				continue;
 
-				err |= call_reset_transp(call, laddr);
-			}
+			err = call_reset_transp(call, &laddr);
 		}
 	}
 
