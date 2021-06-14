@@ -689,6 +689,7 @@ const char *menc_event_name(enum menc_event event);
 struct network;
 
 typedef void (net_change_h)(void *arg);
+typedef int (net_laddr_h)(const struct sa *sa);
 
 int  net_alloc(struct network **netp, const struct config_net *cfg);
 int  net_use_nameserver(struct network *net,
@@ -704,6 +705,8 @@ void net_dns_refresh(struct network *net);
 int  net_dns_debug(struct re_printf *pf, const struct network *net);
 int  net_debug(struct re_printf *pf, const struct network *net);
 const struct sa *net_laddr_af(const struct network *net, int af);
+int net_laddr_apply(const struct network *net, net_laddr_h *laddrh);
+bool net_is_laddr(const struct network *net, struct sa *sa);
 struct dnsc     *net_dnsc(const struct network *net);
 
 
