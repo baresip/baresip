@@ -238,8 +238,6 @@ static bool uri_host_local(const struct uri *uri)
 		"127.0.0.1",
 		"::1"
 	};
-	int afv[2] = {AF_INET, AF_INET6};
-	const struct sa *sal;
 	struct sa sap;
 	size_t i;
 	int err;
@@ -253,17 +251,12 @@ static bool uri_host_local(const struct uri *uri)
 			return true;
 	}
 
-	for (i=0; i<ARRAY_SIZE(afv); i++) {
+	err = sa_set(&sap, &uri->host, 0);
+	if (err)
+		return false;
 
-		sal = net_laddr_af(baresip_network(), afv[i]);
-
-		err = sa_set(&sap, &uri->host, 0);
-		if (err)
-			continue;
-
-		if (sa_cmp(sal, &sap, SA_ADDR))
-			return true;
-	}
+	if (net_is_laddr(baresip_network(), &sap))
+		return true;
 
 	return false;
 }
@@ -294,7 +287,8 @@ static int add_transp_clientcert(void)
 #endif
 
 
-static int add_transp_af(const struct sa *laddr)
+static bool add_transp_af(const char *ifname, const struct sa *laddr,
+			  void *arg)
 {
 	struct sa local;
 #ifdef USE_TLS
@@ -303,6 +297,8 @@ static int add_transp_af(const struct sa *laddr)
 	const char *capath = NULL;
 #endif
 	int err = 0;
+	(void) ifname;
+	(void) arg;
 
 	if (str_isset(uag.cfg->local)) {
 		err = sa_decode(&local, uag.cfg->local,
@@ -312,7 +308,7 @@ static int add_transp_af(const struct sa *laddr)
 			if (err) {
 				warning("ua: decode failed: '%s'\n",
 					uag.cfg->local);
-				return err;
+				return false;
 			}
 		}
 
@@ -323,7 +319,7 @@ static int add_transp_af(const struct sa *laddr)
 		}
 
 		if (sa_af(laddr) != sa_af(&local))
-			return 0;
+			return false;
 	}
 	else {
 		sa_cpy(&local, laddr);
@@ -336,7 +332,7 @@ static int add_transp_af(const struct sa *laddr)
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_TCP, &local);
 	if (err) {
 		warning("ua: SIP Transport failed: %m\n", err);
-		return err;
+		return false;
 	}
 
 #ifdef USE_TLS
@@ -352,7 +348,7 @@ static int add_transp_af(const struct sa *laddr)
 					cert, NULL);
 			if (err) {
 				warning("ua: tls_alloc() failed: %m\n", err);
-				return err;
+				return false;
 			}
 
 			if (str_isset(uag.cfg->cafile))
@@ -382,12 +378,12 @@ static int add_transp_af(const struct sa *laddr)
 		err = sip_transp_add(uag.sip, SIP_TRANSP_TLS, &local, uag.tls);
 		if (err) {
 			warning("ua: SIP/TLS transport failed: %m\n", err);
-			return err;
+			return false;
 		}
 
 		err = add_transp_clientcert();
 		if (err)
-			return err;
+			return false;
 	}
 #endif
 
@@ -397,7 +393,7 @@ static int add_transp_af(const struct sa *laddr)
 		if (err) {
 			warning("ua: could not add Websock transport (%m)\n",
 					err);
-			return err;
+			return false;
 		}
 	}
 
@@ -409,14 +405,14 @@ static int add_transp_af(const struct sa *laddr)
 			if (err) {
 				warning("ua: wss tls_alloc() failed: %m\n",
 					err);
-				return err;
+				return false;
 			}
 
 			err = tls_set_verify_purpose(uag.wss_tls, "sslserver");
 			if (err) {
 				warning("ua: wss tls_set_verify_purpose() "
 					"failed: %m\n", err);
-				return err;
+				return false;
 			}
 
 			if (cafile || capath) {
@@ -436,29 +432,20 @@ static int add_transp_af(const struct sa *laddr)
 		if (err) {
 			warning("ua: could not add secure Websock transport "
 				"(%m)\n", err);
-			return err;
+			return false;
 		}
 	}
 #endif
 
 	sip_settos(uag.sip, uag.cfg->tos);
-	return err;
+	return false;
 }
 
 
 static int ua_add_transp(struct network *net)
 {
-	int err = 0;
-
-	if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
-		err |= add_transp_af(net_laddr_af(net, AF_INET));
-
-#if HAVE_INET6
-	if (sa_isset(net_laddr_af(net, AF_INET6), SA_ADDR))
-		err |= add_transp_af(net_laddr_af(net, AF_INET6));
-#endif
-
-	return err;
+	net_laddr_apply(net, add_transp_af, NULL);
+	return 0;
 }
 
 
@@ -679,6 +666,7 @@ int uag_reset_transp(bool reg, bool reinvite)
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
+		struct le *lec;
 
 		if (reg && account_regint(acc) && !account_prio(acc)) {
 			err |= ua_register(ua);
@@ -688,17 +676,18 @@ int uag_reset_transp(bool reg, bool reinvite)
 		}
 
 		/* update all active calls */
-		if (reinvite) {
-			struct le *lec;
+		if (!reinvite)
+			continue;
 
-			for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
-				struct call *call = lec->data;
-				const struct sa *laddr;
+		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
+			struct call *call = lec->data;
+			struct sa laddr;
 
-				laddr = net_laddr_af(net, call_af(call));
+			if (net_dst_source_addr_get(stream_raddr(audio_strm(
+						call_audio(call))), &laddr))
+				continue;
 
-				err |= call_reset_transp(call, laddr);
-			}
+			err = call_reset_transp(call, &laddr);
 		}
 	}
 
