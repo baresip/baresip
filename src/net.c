@@ -687,6 +687,22 @@ static bool laddr_cmp(struct le *le, void *arg)
 }
 
 
+static int net_dst_is_source_addr(const struct sa *dst, const struct sa *ip)
+{
+	struct sa src;
+	int err;
+
+	err = net_dst_source_addr_get(dst, &src);
+	if (err)
+		return err;
+
+	if (!sa_cmp(ip, &src, SA_ADDR))
+		return ECONNREFUSED;
+
+	return 0;
+}
+
+
 /**
  * Checks if given IP address is a local address.
  *
@@ -698,6 +714,30 @@ static bool laddr_cmp(struct le *le, void *arg)
 bool net_is_laddr(const struct network *net, struct sa *sa)
 {
 	return NULL != list_apply(&net->laddrs, true, laddr_cmp, sa);
+}
+
+
+int net_set_dst_scopeid(const struct network *net, struct sa *dst)
+{
+	struct le *le;
+	if (!net || !dst)
+		return EINVAL;
+
+	if (sa_af(dst) != AF_INET6 || !sa_is_linklocal(dst))
+		return 0;
+
+	LIST_FOREACH(&net->laddrs, le) {
+		struct laddr *laddr = le->data;
+		struct sa *sa = &laddr->sa;
+		if (sa_af(sa) != AF_INET6 || !sa_is_linklocal(sa))
+			continue;
+
+		sa_set_scopeid(dst, sa_scopeid(&laddr->sa));
+		if (!net_dst_is_source_addr(dst, &laddr->sa))
+			return 0;
+	}
+
+	return ECONNREFUSED;
 }
 
 
