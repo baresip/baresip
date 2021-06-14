@@ -494,23 +494,31 @@ static bool require_handler(const struct sip_hdr *hdr,
 }
 
 
-static int sdp_af_hint(struct mbuf *mb)
+static int sdp_originator(struct mbuf *mb, int *af, struct sa *sa)
 {
-	struct pl af;
+	struct pl pl1, pl2;
+	char *addr;
 	int err;
 
+	*af = AF_UNSPEC;
 	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
-		       "IN IP[46]+", &af);
+		       "o=[^ ]* [^ ]* [^ ]* IN IP[46]+ [^ \r\n]+",
+		       NULL, NULL, NULL, &pl1, &pl2);
 	if (err)
-		return AF_UNSPEC;
+		return EINVAL;
 
-	switch (af.p[0]) {
+	switch (pl1.p[0]) {
 
-	case '4': return AF_INET;
-	case '6': return AF_INET6;
+	case '4': *af = AF_INET;
+		  break;
+	case '6': *af = AF_INET6;
+		  break;
 	}
 
-	return AF_UNSPEC;
+	pl_strdup(&addr, &pl2);
+	err = sa_set_str(sa, addr, 0);
+	mem_deref(addr);
+	return err;
 }
 
 
@@ -520,10 +528,12 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	struct config *config = conf_config();
 	const struct network *net = baresip_network();
 	const struct sip_hdr *hdr;
-	int af_sdp;
+	int af_sdp = AF_UNSPEC;
 	struct ua *ua;
 	struct call *call = NULL;
 	char to_uri[256];
+	struct sa oaddr;
+	struct sa ip;
 	int err;
 
 	(void)arg;
@@ -573,16 +583,15 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	/* Check if offered media AF is supported and available */
-	af_sdp = sdp_af_hint(msg->mb);
-	if (af_sdp) {
+	if (!sdp_originator(msg->mb, &af_sdp, &oaddr)) {
 		if (!net_af_enabled(net, af_sdp)) {
 			warning("ua: SDP offer AF not supported (%s)\n",
 				net_af2name(af_sdp));
 			af_sdp = 0;
 		}
-		else if (!sa_isset(net_laddr_af(net, af_sdp), SA_ADDR)) {
-			warning("ua: SDP offer AF not available (%s)\n",
-				net_af2name(af_sdp));
+		else if (net_dst_source_addr_get(&oaddr, &ip)) {
+			warning("ua: SDP offer origin address %j not"
+				" reachable\n", &oaddr);
 			af_sdp = 0;
 		}
 		if (!af_sdp) {
@@ -691,9 +700,9 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (!callp || !ua)
 		return EINVAL;
 
-	if (msg && (af_sdp = sdp_af_hint(msg->mb))) {
-		info("ua: using AF from sdp offer: af=%s\n",
-		     net_af2name(af_sdp));
+	if (msg && !sdp_originator(msg->mb, &af_sdp, &ua->dst)) {
+		info("ua: using origin address %j of SDP offer: af=%s\n",
+		     &ua->dst, net_af2name(af_sdp));
 		af = af_sdp;
 	}
 	else if (sa_isset(&ua->dst, SA_ADDR)) {
@@ -717,7 +726,6 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	memset(&cprm, 0, sizeof(cprm));
 
 	if (sa_isset(&ua->dst, SA_ADDR)) {
-		err  = net_set_dst_scopeid(net, &ua->dst);
 		err |= net_dst_source_addr_get(&ua->dst, &cprm.laddr);
 	}
 	else {
