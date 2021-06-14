@@ -1978,10 +1978,9 @@ static void redirect_handler(const struct sip_msg *msg, const char *uri,
 {
 	struct call *call = arg;
 
-	(void) msg;
-	(void) call;
-
-	info ("call: redirect call to %s\n", uri);
+	info ("call: blind transfer to %s\n", uri);
+	ua_event(call->ua, UA_EVENT_CALL_BLIND_TRANSFER, call,
+		"%d - %s", msg->scode, uri);
 
 	return;
 }
