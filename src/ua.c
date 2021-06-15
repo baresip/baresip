@@ -516,7 +516,7 @@ static int sdp_originator(struct mbuf *mb, int *af, struct sa *sa)
 	}
 
 	pl_strdup(&addr, &pl2);
-	err = sa_set_str(sa, addr, 0);
+	err = sa_set_str(sa, addr, 5060);
 	mem_deref(addr);
 	return err;
 }
@@ -893,7 +893,11 @@ static int ua_check_dst_ip(struct ua *ua, struct pl *pl)
 
 	sa_init(&ua->dst, AF_UNSPEC);
 	err = sip_addr_decode(&addr, pl);
-	err |= sa_set(&ua->dst, &addr.uri.host, 0);
+	err |= sa_set(&ua->dst, &addr.uri.host, addr.uri.port);
+
+	if (!sa_isset(&ua->dst, SA_PORT))
+		sa_set_port(&ua->dst, 5060);
+
 	return err;
 }
 
