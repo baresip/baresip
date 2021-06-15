@@ -372,8 +372,8 @@ static int add_transp_af(const struct sa *laddr)
 				}
 			}
 
-			if (!uag.cfg->verify_server)
-				tls_disable_verify_server(uag.tls);
+			if (uag.cfg->verify_server)
+				tls_enable_verify_server(uag.tls);
 		}
 
 		if (sa_isset(&local, SA_PORT))
