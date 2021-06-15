@@ -1545,14 +1545,18 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 	struct autx *tx = &a->tx;
 	struct aurx *rx = &a->rx;
 	struct le *le;
+	bool update_enc = false, update_dec = false;
 	int err = 0;
 
 	/* wait until we have both Encoder and Decoder */
 	if (!tx->ac || !rx->ac)
 		return 0;
 
-	if (!list_isempty(&tx->filtl) || !list_isempty(&rx->filtl))
-		return 0;
+	if (list_isempty(&tx->filtl))
+		update_enc = true;
+
+	if (list_isempty(&rx->filtl))
+		update_dec = true;
 
 	aufilt_param_set(&encprm, tx->ac, tx->enc_fmt);
 	aufilt_param_set(&decprm, rx->ac, rx->dec_fmt);
@@ -1564,7 +1568,7 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 		struct aufilt_dec_st *decst = NULL;
 		void *ctx = NULL;
 
-		if (af->encupdh) {
+		if (af->encupdh && update_enc) {
 			err = af->encupdh(&encst, &ctx, af, &encprm, a);
 			if (err) {
 				warning("audio: error in encode audio-filter"
@@ -1576,7 +1580,7 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 			}
 		}
 
-		if (af->decupdh) {
+		if (af->decupdh && update_dec) {
 			err = af->decupdh(&decst, &ctx, af, &decprm, a);
 			if (err) {
 				warning("audio: error in decode audio-filter"
