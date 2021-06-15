@@ -584,6 +584,7 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 	/* Check if offered media AF is supported and available */
 	if (!sdp_originator(msg->mb, &af_sdp, &oaddr)) {
+		sa_set_port(&oaddr, 5060);
 		if (!net_af_enabled(net, af_sdp)) {
 			warning("ua: SDP offer AF not supported (%s)\n",
 				net_af2name(af_sdp));
@@ -726,6 +727,9 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	memset(&cprm, 0, sizeof(cprm));
 
 	if (sa_isset(&ua->dst, SA_ADDR)) {
+		if (!sa_isset(&ua->dst, SA_PORT))
+			sa_set_port(&ua->dst, 5060);
+
 		err |= net_dst_source_addr_get(&ua->dst, &cprm.laddr);
 	}
 	else {
