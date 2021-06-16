@@ -29,6 +29,7 @@ static struct uag uag = {
 	NULL,
 #ifdef USE_TLS
 	NULL,
+	NULL
 #endif
 };
 
@@ -298,6 +299,11 @@ static int add_transp_clientcert(void)
 static int add_transp_af(const struct sa *laddr)
 {
 	struct sa local;
+#ifdef USE_TLS
+	const char *cert = NULL;
+	const char *cafile = NULL;
+	const char *capath = NULL;
+#endif
 	int err = 0;
 
 	if (str_isset(uag.cfg->local)) {
@@ -339,10 +345,6 @@ static int add_transp_af(const struct sa *laddr)
 	if (uag.use_tls) {
 		/* Build our SSL context*/
 		if (!uag.tls) {
-			const char *cert = NULL;
-			const char *cafile = NULL;
-			const char *capath = NULL;
-
 			if (str_isset(uag.cfg->cert)) {
 				cert = uag.cfg->cert;
 				info("SIP Certificate: %s\n", cert);
@@ -392,15 +394,42 @@ static int add_transp_af(const struct sa *laddr)
 #endif
 
 	err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WS, &local,
-				     false, NULL);
+				     false, NULL, NULL);
 	if (err) {
 		warning("ua: could not add Websock transport (%m)\n", err);
 		return err;
 	}
 
 #ifdef USE_TLS
+	if (!uag.wss_tls) {
+		err = tls_alloc(&uag.wss_tls, TLS_METHOD_SSLV23,
+				NULL, NULL);
+		if (err) {
+			warning("ua: wss tls_alloc() failed: %m\n", err);
+			return err;
+		}
+
+		err = tls_set_verify_purpose(uag.wss_tls, "sslserver");
+		if (err) {
+			warning("ua: wss tls_set_verify_purpose() failed: "
+				"%m\n",
+				err);
+			return err;
+		}
+
+		if (cafile || capath) {
+			err = tls_add_cafile_path(uag.wss_tls, cafile, capath);
+			if (err) {
+				warning("ua: wss tls_add_ca() failed:"
+					" %m\n", err);
+			}
+		}
+
+		if (!uag.cfg->verify_server)
+			tls_disable_verify_server(uag.wss_tls);
+	}
 	err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WSS, &local,
-				     false, uag.cfg->cert);
+				     false, uag.cfg->cert, uag.wss_tls);
 	if (err) {
 		warning("ua: could not add secure Websock transport (%m)\n",
 			err);
@@ -544,6 +573,7 @@ void ua_close(void)
 
 #ifdef USE_TLS
 	uag.tls = mem_deref(uag.tls);
+	uag.wss_tls = mem_deref(uag.wss_tls);
 #endif
 
 	list_flush(&uag.ual);
