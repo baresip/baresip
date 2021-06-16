@@ -21,7 +21,6 @@ struct network {
 	struct sa nsvf[NET_MAX_NS];/**< Configured fallback name servers */
 	uint32_t nsnf;       /**< Number of configured fallback name servers */
 	uint32_t interval;
-	char domain[64];     /**< DNS domain from network                */
 	net_change_h *ch;
 	void *arg;
 };
@@ -508,7 +507,7 @@ print_network_data:
 	}
 #endif
 
-	(void)dns_srv_get(net->domain, sizeof(net->domain), nsv, &nsn);
+	(void)dns_srv_get(NULL, 0, nsv, &nsn);
 
 	info("Local network address: %s %s\n", buf4, buf6);
 
