@@ -531,6 +531,7 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 {
 	struct pl pl1, pl2;
 	char *addr = NULL;
+	const struct network *net = baresip_network();
 	int err;
 
 	*af = AF_UNSPEC;
@@ -559,6 +560,7 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 		return EINVAL;
 
 	err = sa_set_str(sa, addr, pl_u32(&pl1));
+	err |= net_set_dst_scopeid(net, sa);
 	mem_deref(addr);
 	return err;
 }
