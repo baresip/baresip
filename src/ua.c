@@ -498,6 +498,7 @@ static int sdp_originator(struct mbuf *mb, int *af, struct sa *sa)
 {
 	struct pl pl1, pl2;
 	char *addr;
+	const struct network *net = baresip_network();
 	int err;
 
 	*af = AF_UNSPEC;
@@ -516,7 +517,8 @@ static int sdp_originator(struct mbuf *mb, int *af, struct sa *sa)
 	}
 
 	pl_strdup(&addr, &pl2);
-	err = sa_set_str(sa, addr, 5060);
+	err  = sa_set_str(sa, addr, 5060);
+	err |= net_set_dst_scopeid(net, sa);
 	mem_deref(addr);
 	return err;
 }
@@ -893,6 +895,7 @@ static const char *autoans_header_name(enum answer_method met)
 static int ua_check_dst_ip(struct ua *ua, struct pl *pl)
 {
 	struct sip_addr addr;
+	const struct network *net = baresip_network();
 	int err;
 
 	sa_init(&ua->dst, AF_UNSPEC);
@@ -902,6 +905,7 @@ static int ua_check_dst_ip(struct ua *ua, struct pl *pl)
 	if (!sa_isset(&ua->dst, SA_PORT))
 		sa_set_port(&ua->dst, 5060);
 
+	err |= net_set_dst_scopeid(net, &ua->dst);
 	return err;
 }
 
