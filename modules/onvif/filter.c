@@ -27,7 +27,6 @@
 
 enum {
 	AUDIO_SAMPSZ   = 3 * 1920,
-	UA_EVENT_ONVIF = UA_EVENT_MAX + 4,
 };
 
 
@@ -40,7 +39,7 @@ static void onvif_ua_event_handler(struct ua *ua, enum ua_event ev,
 
 static void send_event(const char *obj, const char *ev, const char *detail)
 {
-	ua_event(NULL, UA_EVENT_ONVIF, NULL, "%s:%s:%s", obj, ev, detail);
+	ua_event(NULL, UA_EVENT_CUSTOM, NULL, "%s:%s:%s", obj, ev, detail);
 }
 
 
@@ -984,7 +983,6 @@ int onvif_aufilter_audio_recv_start(struct onvif_filter_stream *fs,
 	list_append(&incoming_st->streams, &fs->le, fs);
 	lock_rel(incoming_st->lock);
 	send_event("onvif", "start announcement", "Start incoming stream");
-	send_event("ge_hp_running", "start", "");
 
   out:
 	return err;
@@ -1006,7 +1004,6 @@ void onvif_aufilter_audio_recv_stop(struct onvif_filter_stream *fs)
 	lock_rel(incoming_st->lock);
 	fs->rtpsock = mem_deref(fs->rtpsock);
 	send_event("onvif", "finished announcement", "Stop incoming stream");
-	send_event("ge_hp_running", "stop", "");
 }
 
 
