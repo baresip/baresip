@@ -14,14 +14,9 @@
 #include <baresip.h>
 
 
-enum {
-	UA_EVENT_AC = UA_EVENT_MAX + 5,
-};
-
-
 
 #define send_event(A, B, C, ...) \
-	ua_event(NULL, UA_EVENT_AC, NULL, A " " B " " C, __VA_ARGS__)
+	ua_event(NULL, UA_EVENT_CUSTOM, NULL, A " " B " " C, __VA_ARGS__)
 
 
 /**
