@@ -313,6 +313,7 @@ bool net_check(struct network *net)
 	if (!net)
 		return false;
 
+	list_init(&net->laddrs_tmp);
 	if (str_isset(cfg->ifname) && 0 == sa_set_str(&sa, cfg->ifname, 0)) {
 
 		info("Binding to IP address '%j'\n", &sa);
@@ -330,6 +331,7 @@ bool net_check(struct network *net)
 		return true;
 	}
 
+	list_flush(&net->laddrs_tmp);
 	return false;
 }
 
