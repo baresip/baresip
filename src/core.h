@@ -374,6 +374,7 @@ struct uag {
 	char *eprm;                    /**< Extra UA parameters             */
 #ifdef USE_TLS
 	struct tls *tls;               /**< TLS Context                     */
+	struct tls *wss_tls;           /**< Secure websocket TLS Context    */
 #endif
 };
 
