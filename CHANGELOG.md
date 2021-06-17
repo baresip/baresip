@@ -7,6 +7,242 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### mk
+- bump libre required dev version
+- support more locations for libre.pc and librem.pc [#1486](https://github.com/baresip/baresip/pull/1486)
+- add libre/librem version check [#1481](https://github.com/baresip/baresip/pull/1481)
+- enable auto-detect of av1 module [#1463](https://github.com/baresip/baresip/pull/1463)
+
+### uag
+- add secure websocket (wss) tls context [#1499](https://github.com/baresip/baresip/pull/1499)
+- use local cuser for selecting user-agent (#1433) [#1434](https://github.com/baresip/baresip/pull/1434)
+
+### default
+- SIP redirect callbackfunction [#1495](https://github.com/baresip/baresip/pull/1495)
+- auto answer beep per alert info URI [#1466](https://github.com/baresip/baresip/pull/1466)
+- Account auto answer beep [#1461](https://github.com/baresip/baresip/pull/1461)
+- call answer media dir [#1449](https://github.com/baresip/baresip/pull/1449)
+- AMR Bandwidth Efficient mode support [#1423](https://github.com/baresip/baresip/pull/1423)
+- Use line number 0 if user did not provide any line number [#1451](https://github.com/baresip/baresip/pull/1451)
+- Working on intercom (ringtone override) [#1436](https://github.com/baresip/baresip/pull/1436)
+- Accounts examples and template [#1441](https://github.com/baresip/baresip/pull/1441)
+- README fixes [#1440](https://github.com/baresip/baresip/pull/1440)
+- Update README.md with configuration suggestion [#1438](https://github.com/baresip/baresip/pull/1438)
+- Attended Transfer on GTK [#1435](https://github.com/baresip/baresip/pull/1435)
+- Accounts example cleanup [#1415](https://github.com/baresip/baresip/pull/1415)
+- Accounts addr params [#1414](https://github.com/baresip/baresip/pull/1414)
+- video passthrough [#1418](https://github.com/baresip/baresip/pull/1418)
+- Account media af template [#1406](https://github.com/baresip/baresip/pull/1406)
+- Selective early media [#1398](https://github.com/baresip/baresip/pull/1398)
+- ToS for video and sip [#1393](https://github.com/baresip/baresip/pull/1393)
+- Vidsrc add packet handler [#1402](https://github.com/baresip/baresip/pull/1402)
+- Tls sipcert per acc [#1376](https://github.com/baresip/baresip/pull/1376)
+- Check that account ;sipnat param has valid value [#1401](https://github.com/baresip/baresip/pull/1401)
+- Support for s16 in jack. Needed for play tones [#1399](https://github.com/baresip/baresip/pull/1399)
+- Convert FRITZ!Box XML phone book into Baresip contacts [#1382](https://github.com/baresip/baresip/pull/1382)
+- GTK caller history [#1350](https://github.com/baresip/baresip/pull/1350)
+
+### audio
+- fix aufilt_setup update handling [#1498](https://github.com/baresip/baresip/pull/1498)
+
+### net
+- remove unused domain [#1489](https://github.com/baresip/baresip/pull/1489)
+
+### mixminus
+- fix race condition with coreaudio (too fast retry)
+- add conference feature [#1411](https://github.com/baresip/baresip/pull/1411)
+
+### aucodec
+- remove unused ptime from auenc_param
+
+### log
+- increase buffer to 8k
+
+### aubridge/device
+- remove unused sampv_out (old resample code) [#1484](https://github.com/baresip/baresip/pull/1484)
+
+### ilbc
+- remove deprecated module [#1483](https://github.com/baresip/baresip/pull/1483)
+
+### account
+- fix IPv6 only URI for account_uri_complete() [#1472](https://github.com/baresip/baresip/pull/1472)
+- comment out very basic example in template [#1458](https://github.com/baresip/baresip/pull/1458)
+- update answermode values in template [#1405](https://github.com/baresip/baresip/pull/1405)
+- add missing client certificate parameter to template [#1408](https://github.com/baresip/baresip/pull/1408)
+- add accounts parameter to force media address family [#1395](https://github.com/baresip/baresip/pull/1395)
+
+### aubdrige
+- fix ausrc auframe srate/ch
+
+### av1/mk
+- cleanup
+
+### av1
+- aom_image has 3 planes
+- add compat wrapper for AOM_USAGE_REALTIME
+- remove unused variables
+- experimental packetization
+
+### ausine
+- support for multiple samplerates [#1479](https://github.com/baresip/baresip/pull/1479)
+
+### ua,menu
+- move handling of ANSWERMODE_AUTO to menu (#1477) [#1478](https://github.com/baresip/baresip/pull/1478)
+
+### auloop/multicast/audio
+- fix aufmt enum warnings
+
+### ua, menu
+- move auto answer delay handling to menu (#1474) [#1475](https://github.com/baresip/baresip/pull/1475)
+
+### gst
+- fixed some memory leaks [#1476](https://github.com/baresip/baresip/pull/1476)
+- audio playback too fast for some WAV files. [#1442](https://github.com/baresip/baresip/pull/1442)
+- replace variable length array (buf) with mem_zalloc [#1426](https://github.com/baresip/baresip/pull/1426)
+
+### video
+- clear vidisp when state is destroyed
+- remove unused function
+
+### vidbridge
+- check vidbridge_disp_display args fixes #1467 [#1471](https://github.com/baresip/baresip/pull/1471)
+
+### auframe
+- move to rem [#1470](https://github.com/baresip/baresip/pull/1470)
+- always set srate and ch [#1468](https://github.com/baresip/baresip/pull/1468)
+- add samplerate and channels [#1452](https://github.com/baresip/baresip/pull/1452)
+
+### call
+- use_video is set later
+- remove unused function
+- add a setter function for answer delay [#1432](https://github.com/baresip/baresip/pull/1432)
+
+### h264
+- move code to librem
+
+### ctrl_dbus
+- align GEN echo
+- generate dbus code and documentation in makefile [#1456](https://github.com/baresip/baresip/pull/1456)
+- add dependency to baresipbus.h (#1447) [#1457](https://github.com/baresip/baresip/pull/1457)
+- fix possible memleak on failed initialization [#1410](https://github.com/baresip/baresip/pull/1410)
+- use module_event() to send exported event [#1347](https://github.com/baresip/baresip/pull/1347)
+
+### debug_cmd
+- commands in alphabetical order
+- use module_event() for aufileinfo events [#1345](https://github.com/baresip/baresip/pull/1345)
+
+### ua
+- no need for const on parameters
+
+### stream
+- check argument to stream_silence_on
+- remove unused code
+- check if media is present before enabling the RTP timeout [#1465](https://github.com/baresip/baresip/pull/1465)
+
+### ctrl_tcp
+- remove unused function
+
+### avcodec
+- remove unused function
+
+### docs
+- remove old architecture ascii art
+- add AV1 codec
+- update THANKS
+
+### serreg
+- unregister correct User-Agents on registration failure [#1462](https://github.com/baresip/baresip/pull/1462)
+- use a timer for registration restart [#1445](https://github.com/baresip/baresip/pull/1445)
+
+### ci/build
+- add openssl on macos
+- remove sdl2 (breaks builds randomly)
+- add vp8/vp9 and sdl2
+- add gstreamer
+- add AMR dev pkgs
+
+### portaudio/read
+- auframe_init srate/ch
+
+### alsa/src
+- auframe_init srate/ch
+
+### jack/src
+- auframe_init srate/ch
+
+### menu
+- allow other modules to reject an incoming call [#1437](https://github.com/baresip/baresip/pull/1437)
+- fix formatting
+- avoid possible memleaks for dial/dialdir commands [#1430](https://github.com/baresip/baresip/pull/1430)
+- in command dialdir call uag_find_requri() with uri [#1425](https://github.com/baresip/baresip/pull/1425)
+- return complete URI for commands dial,dialdir [#1424](https://github.com/baresip/baresip/pull/1424)
+- add command /uareg [#1421](https://github.com/baresip/baresip/pull/1421)
+- fix formatting
+- add command for settings media local direction [#1413](https://github.com/baresip/baresip/pull/1413)
+- enable auto answer calls also for command dialdir [#1412](https://github.com/baresip/baresip/pull/1412)
+- command uafind raises UA to head [#1407](https://github.com/baresip/baresip/pull/1407)
+- use str_isset() for command parameter [#1397](https://github.com/baresip/baresip/pull/1397)
+- play ringtone on audio_alert device [#1396](https://github.com/baresip/baresip/pull/1396)
+
+### ci
+- rename jobs tools/valgrind
+
+### multicast
+- add source and player API calls [#1403](https://github.com/baresip/baresip/pull/1403)
+- use module_event() for sending events [#1346](https://github.com/baresip/baresip/pull/1346)
+
+### config
+- print tos using %u -- ref #1419
+- add template for avformat
+
+### menu,call
+- fix hangup for outgoing call [#1417](https://github.com/baresip/baresip/pull/1417)
+
+### avformat
+- add support for rtsp_transport
+- fix formatting
+
+### ua,uag
+- split ua.c and uag.c [#1349](https://github.com/baresip/baresip/pull/1349)
+
+### v4l2_codec
+- remove stats
+- use packet handler from vidsrc api
+
+### vidsrc
+- update doxygen
+
+### oss
+- remove deprecated module
+
+### dtls_srtp
+- use elliptic curve cryptography if configured in the config file [#1385](https://github.com/baresip/baresip/pull/1385)
+
+### cairo
+- remove deprecated module
+
+### ua,call
+- add CALL_EVENT_OUTGOING [#1348](https://github.com/baresip/baresip/pull/1348)
+
+### Contributors (many thanks)
+
+- [sreimers](https://github.com/sreimers)
+- [cHuberCoffee](https://github.com/cHuberCoffee)
+- [alfredh](https://github.com/alfredh)
+- [cspiel1](https://github.com/cspiel1)
+- [RobertMi21](https://github.com/RobertMi21)
+- [janh](https://github.com/janh)
+- [srperens](https://github.com/srperens)
+- [negbie](https://github.com/negbie)
+- [juha-h](https://github.com/juha-h)
+- [webstean](https://github.com/webstean)
+- [mbattista](https://github.com/mbattista)
+- [robert-scheck](https://github.com/robert-scheck)
+
+---
+
+## [1.1.0] - 2021-04-24
+
 - cons: emulate key-release -- ref #1329
 - Correct reverse domain name notation (#1342) [#1342]
 - gtk with account_uri_complete (#1339) [#1339]
@@ -384,6 +620,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [nanguantong](https://github.com/nanguantong)
 - [johnjuuljensen](https://github.com/johnjuuljensen)
 
+---
 
 ## [1.0.0] - 2020-09-11
 
@@ -698,5 +935,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1342]: https://github.com/baresip/baresip/pull/1342
 
 
-[Unreleased]: https://github.com/baresip/baresip/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/baresip/baresip/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/baresip/baresip/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/baresip/baresip/compare/v0.6.6...v1.0.0
