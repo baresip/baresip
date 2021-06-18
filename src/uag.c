@@ -1216,6 +1216,56 @@ bool uag_dnd(void)
 
 
 /**
+ * Enable/Disable UDP transport
+ *
+ * @param en  UDP enable flag
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int uag_enable_udp(bool en)
+{
+	if (en == uag.use_udp)
+		return 0;
+
+	uag.use_udp = en;
+
+	return uag_reset_transp(true, true);
+}
+
+
+/**
+ * Enable/Disable TCP transport
+ *
+ * @param en  UDP enable flag
+ */
+int uag_enable_tcp(bool en)
+{
+	if (en == uag.use_tcp)
+		return 0;
+
+	uag.use_tcp = en;
+
+	return uag_reset_transp(true, true);
+}
+
+
+/**
+ * Enable/Disable TLS transport
+ *
+ * @param en  TLS enable flag
+ */
+int uag_enable_tls(bool en)
+{
+	if (en == uag.use_tls)
+		return 0;
+
+	uag.use_tls = en;
+
+	return uag_reset_transp(true, true);
+}
+
+
+/**
  * Get the global delayed close flag
  *
  * @return Delayed close flag
