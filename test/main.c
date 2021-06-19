@@ -51,6 +51,7 @@ static const struct test tests[] = {
 	TEST(test_message),
 	TEST(test_network),
 	TEST(test_play),
+	TEST(test_stunuri),
 	TEST(test_ua_alloc),
 	TEST(test_ua_options),
 	TEST(test_ua_register),
