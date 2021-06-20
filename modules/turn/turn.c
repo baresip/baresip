@@ -15,6 +15,7 @@
 
 
 enum {LAYER = 0};
+enum {COMPC = 2};
 
 
 struct mnat_sess {
@@ -31,14 +32,16 @@ struct mnat_sess {
 
 struct mnat_media {
 	struct le le;
-	struct sa addr1;
-	struct sa addr2;
 	struct mnat_sess *sess;
 	struct sdp_media *sdpm;
-	struct turnc *turnc1;
-	struct turnc *turnc2;
-	void *sock1;
-	void *sock2;
+
+	struct comp {
+		struct mnat_media *m;         /* pointer to parent */
+		struct sa addr;
+		struct turnc *turnc;
+		struct udp_sock *sock;
+		unsigned ix;
+	} compv[COMPC];
 };
 
 
@@ -56,60 +59,41 @@ static void session_destructor(void *arg)
 static void media_destructor(void *arg)
 {
 	struct mnat_media *m = arg;
+	unsigned i;
 
 	list_unlink(&m->le);
 	mem_deref(m->sdpm);
-	mem_deref(m->turnc1);
-	mem_deref(m->turnc2);
-	mem_deref(m->sock1);
-	mem_deref(m->sock2);
-}
 
-
-static void turn_handler1(int err, uint16_t scode, const char *reason,
-			  const struct sa *relay_addr,
-			  const struct sa *mapped_addr,
-			  const struct stun_msg *msg,
-			  void *arg)
-{
-	struct mnat_media *m = arg;
-	(void)mapped_addr;
-	(void)msg;
-
-	if (!err && !scode) {
-
-		sdp_media_set_laddr(m->sdpm, relay_addr);
-
-		m->addr1 = *relay_addr;
-
-		if (m->turnc2 && !sa_isset(&m->addr2, SA_ALL))
-			return;
-
-		if (--m->sess->mediac)
-			return;
+	for (i=0; i<COMPC; i++) {
+		mem_deref(m->compv[i].turnc);
+		mem_deref(m->compv[i].sock);
 	}
-
-	m->sess->estabh(err, scode, reason, m->sess->arg);
 }
 
 
-static void turn_handler2(int err, uint16_t scode, const char *reason,
-			  const struct sa *relay_addr,
-			  const struct sa *mapped_addr,
-			  const struct stun_msg *msg,
-			  void *arg)
+static void turn_handler(int err, uint16_t scode, const char *reason,
+			 const struct sa *relay_addr,
+			 const struct sa *mapped_addr,
+			 const struct stun_msg *msg,
+			 void *arg)
 {
-	struct mnat_media *m = arg;
+	struct comp *comp = arg;
+	struct mnat_media *m = comp->m;
 	(void)mapped_addr;
 	(void)msg;
 
 	if (!err && !scode) {
 
-		sdp_media_set_laddr_rtcp(m->sdpm, relay_addr);
+		const struct comp *other = &m->compv[comp->ix ^ 1];
 
-		m->addr2 = *relay_addr;
+		if (comp->ix == 0)
+			sdp_media_set_laddr(m->sdpm, relay_addr);
+		else
+			sdp_media_set_laddr_rtcp(m->sdpm, relay_addr);
 
-		if (m->turnc1 && !sa_isset(&m->addr1, SA_ALL))
+		comp->addr = *relay_addr;
+
+		if (other->turnc && !sa_isset(&other->addr, SA_ALL))
 			return;
 
 		if (--m->sess->mediac)
@@ -122,21 +106,20 @@ static void turn_handler2(int err, uint16_t scode, const char *reason,
 
 static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 {
+	unsigned i;
 	int err = 0;
 
-	if (m->sock1) {
-		err |= turnc_alloc(&m->turnc1, NULL,
-				   IPPROTO_UDP, m->sock1, LAYER,
-				   &sess->srv, sess->user, sess->pass,
-				   TURN_DEFAULT_LIFETIME,
-				   turn_handler1, m);
-	}
-	if (m->sock2) {
-		err |= turnc_alloc(&m->turnc2, NULL,
-				   IPPROTO_UDP, m->sock2, LAYER,
-				   &sess->srv, sess->user, sess->pass,
-				   TURN_DEFAULT_LIFETIME,
-				   turn_handler2, m);
+	for (i=0; i<COMPC; i++) {
+
+		struct comp *comp = &m->compv[i];
+
+		if (comp->sock) {
+			err |= turnc_alloc(&comp->turnc, NULL,
+					   IPPROTO_UDP, comp->sock, LAYER,
+					   &sess->srv, sess->user, sess->pass,
+					   TURN_DEFAULT_LIFETIME,
+					   turn_handler, comp);
+		}
 	}
 
 	return err;
@@ -221,6 +204,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 		       mnat_connected_h *connh, void *arg)
 {
 	struct mnat_media *m;
+	unsigned i;
 	int err = 0;
 	(void)connh;
 	(void)arg;
@@ -235,8 +219,13 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	list_append(&sess->medial, &m->le, m);
 	m->sdpm  = mem_ref(sdpm);
 	m->sess  = sess;
-	m->sock1 = mem_ref(sock1);
-	m->sock2 = mem_ref(sock2);
+	m->compv[0].sock = mem_ref(sock1);
+	m->compv[1].sock = mem_ref(sock2);
+
+	for (i=0; i<COMPC; i++) {
+		m->compv[i].m = m;
+		m->compv[i].ix = i;
+	}
 
 	if (sa_isset(&sess->srv, SA_ALL))
 		err = media_start(sess, m);
@@ -263,16 +252,19 @@ static int update(struct mnat_sess *sess)
 	for (le=sess->medial.head; le; le=le->next) {
 
 		struct mnat_media *m = le->data;
-		struct sa raddr1, raddr2;
+		struct sa raddr[2];
+		unsigned i;
 
-		raddr1 = *sdp_media_raddr(m->sdpm);
-		sdp_media_raddr_rtcp(m->sdpm, &raddr2);
+		raddr[0] = *sdp_media_raddr(m->sdpm);
+		sdp_media_raddr_rtcp(m->sdpm, &raddr[1]);
 
-		if (m->turnc1 && sa_isset(&raddr1, SA_ALL))
-			err |= turnc_add_chan(m->turnc1, &raddr1, NULL, NULL);
+		for (i=0; i<COMPC; i++) {
+			struct comp *comp = &m->compv[i];
 
-		if (m->turnc2 && sa_isset(&raddr2, SA_ALL))
-			err |= turnc_add_chan(m->turnc2, &raddr2, NULL, NULL);
+			if (comp->turnc && sa_isset(&raddr[i], SA_ALL))
+				err |= turnc_add_chan(comp->turnc, &raddr[i],
+						      NULL, NULL);
+		}
 	}
 
 	return err;
