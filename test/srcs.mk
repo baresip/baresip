@@ -18,6 +18,7 @@ TEST_SRCS	+= h264.c
 TEST_SRCS	+= message.c
 TEST_SRCS	+= net.c
 TEST_SRCS	+= play.c
+TEST_SRCS	+= stunuri.c
 TEST_SRCS	+= ua.c
 TEST_SRCS	+= video.c
 
