@@ -605,7 +605,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 		if (!str_cmp(call_id(call), menu.callid)) {
 			mem_deref(menu.attended_callid);
-			menu.attended_callid = NULL;	
+			menu.attended_callid = NULL;
 			menu_play_closed(call);
 			menu_selcall(NULL);
 			play_resume();

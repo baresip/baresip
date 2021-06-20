@@ -236,7 +236,8 @@ static int call_att_xfer(struct re_printf *pf, void *arg)
 	if (menu->attended_callid) {
 		re_hprintf(pf, "attended transfer already in process\n");
 		return ENOENT;
-	} else {
+	}
+	else {
 		if (!call_is_onhold(call)) {
 			re_hprintf(pf, "please hold your active call\n");
 			return ENOENT;
@@ -265,7 +266,8 @@ static int transfer_att_xfer(struct re_printf *pf, void *unused)
 		mem_deref(menu->attended_callid);
 		menu->attended_callid = NULL;
 		call_replace_transfer(attended_call, call);
-	} else {
+	}
+	else {
 		re_hprintf(pf, "no attended to transfer call\n");
 		return ENOENT;
 	}
