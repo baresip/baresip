@@ -58,6 +58,8 @@ int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
 	struct stun_uri *su;
 	struct uri uri;
 	enum stun_scheme scheme;
+	struct pl tp;
+	int proto = IPPROTO_UDP;
 	int err;
 
 	if (!sup || !pl)
@@ -82,6 +84,19 @@ int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
 		return ENOTSUP;
 	}
 
+	if (0 == re_regex(uri.headers.p, uri.headers.l,
+			  "transport=[a-z]+", &tp)) {
+
+		if (0 == pl_strcasecmp(&tp, "udp"))
+			proto = IPPROTO_UDP;
+		else if (0 == pl_strcasecmp(&tp, "tcp"))
+			proto = IPPROTO_TCP;
+		else {
+			warning("stunuri: unsupported transport '%r'\n", &tp);
+			return EPROTONOSUPPORT;
+		}
+	}
+
 	su = mem_zalloc(sizeof(*su), destructor);
 	if (!su)
 		return ENOMEM;
@@ -89,6 +104,7 @@ int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
 	su->scheme = scheme;
 	err = pl_strdup(&su->host, &uri.host);
 	su->port = uri.port;
+	su->proto = proto;
 
 	if (err)
 		mem_deref(su);

@@ -1382,6 +1382,7 @@ struct stun_uri {
 	enum stun_scheme scheme;  /**< STUN Scheme            */
 	char *host;               /**< Hostname or IP-address */
 	uint16_t port;            /**< Port number            */
+	int proto;                /**< Transport protocol     */
 };
 
 int stunuri_decode(struct stun_uri **sup, const struct pl *pl);

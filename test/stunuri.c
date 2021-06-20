@@ -21,30 +21,39 @@ int test_stunuri(void)
 		enum stun_scheme scheme;
 		const char *host;
 		uint16_t port;
+		int proto;
 	} testv[] = {
 		{
 			"stun:example.org",
-			STUN_SCHEME_STUN, "example.org", 0
+			STUN_SCHEME_STUN, "example.org", 0, IPPROTO_UDP
 		},
 		{
 			"stuns:example.org",
-			STUN_SCHEME_STUNS, "example.org", 0
+			STUN_SCHEME_STUNS, "example.org", 0, IPPROTO_UDP
 		},
 		{
 			"stun:example.org:8000",
-			STUN_SCHEME_STUN, "example.org", 8000
+			STUN_SCHEME_STUN, "example.org", 8000, IPPROTO_UDP
 		},
 		{
 			"turn:example.org",
-			STUN_SCHEME_TURN, "example.org", 0
+			STUN_SCHEME_TURN, "example.org", 0, IPPROTO_UDP
 		},
 		{
 			"turns:example.org",
-			STUN_SCHEME_TURNS, "example.org", 0
+			STUN_SCHEME_TURNS, "example.org", 0, IPPROTO_UDP
 		},
 		{
 			"turn:example.org:8000",
-			STUN_SCHEME_TURN, "example.org", 8000
+			STUN_SCHEME_TURN, "example.org", 8000, IPPROTO_UDP
+		},
+		{
+			"turn:example.org?transport=udp",
+			STUN_SCHEME_TURN, "example.org", 0, IPPROTO_UDP
+		},
+		{
+			"turn:example.org?transport=tcp",
+			STUN_SCHEME_TURN, "example.org", 0, IPPROTO_TCP
 		}
 	};
 	struct stun_uri *su = NULL;
@@ -65,6 +74,7 @@ int test_stunuri(void)
 		ASSERT_EQ(test->scheme, su->scheme);
 		ASSERT_STREQ(test->host, su->host);
 		ASSERT_EQ(test->port, su->port);
+		ASSERT_EQ(test->proto, su->proto);
 
 		su = mem_deref(su);
 	}
