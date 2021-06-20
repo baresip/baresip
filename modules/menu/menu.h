@@ -17,6 +17,7 @@ struct menu{
 	struct play *play;            /**< Current audio player state     */
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
 	char *callid;                 /**< Call-id of active call         */
+	char *attended_callid;        /**< Call-id of attended call       */
 	bool ringback_disabled;       /**< no ringback on sip 180 respons */
 	bool ringback;                /**< Ringback played currently      */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
@@ -54,6 +55,8 @@ void static_menu_unregister(void);
 
 int dial_menu_register(void);
 void dial_menu_unregister(void);
+
+int dial_handler(struct re_printf *pf, void *arg);
 
 
 /*Generic menu funtions*/

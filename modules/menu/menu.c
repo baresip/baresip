@@ -604,6 +604,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		}
 
 		if (!str_cmp(call_id(call), menu.callid)) {
+			mem_deref(menu.attended_callid);
+			menu.attended_callid = NULL;	
 			menu_play_closed(call);
 			menu_selcall(NULL);
 			play_resume();
@@ -961,6 +963,7 @@ static int module_close(void)
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
 	menu.callid = mem_deref(menu.callid);
+	menu.attended_callid = mem_deref(menu.attended_callid);
 	menu.ovaufile = mem_deref(menu.ovaufile);
 	menu.ansval = mem_deref(menu.ansval);
 	menu_stop_play();
