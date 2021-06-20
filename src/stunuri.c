@@ -171,6 +171,7 @@ int stunuri_print(struct re_printf *pf, const struct stun_uri *su)
 	err |= re_hprintf(pf, "scheme=%s", stunuri_scheme_name(su->scheme));
 	err |= re_hprintf(pf, " host='%s'", su->host);
 	err |= re_hprintf(pf, " port=%u", su->port);
+	err |= re_hprintf(pf, " proto=%s", net_proto2name(su->proto));
 
 	return err;
 }
