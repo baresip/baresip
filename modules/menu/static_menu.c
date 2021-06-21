@@ -658,22 +658,17 @@ static int cmd_dnd(struct re_printf *pf, void *arg)
 {
 	int err = 0;
 	const struct cmd_arg *carg = arg;
+	bool en = false;
 
-	if (!str_isset(carg->prm)) {
-		err = EINVAL;
+	err = str_bool(&en, carg->prm);
+	if (err)
 		goto out;
-	}
 
-	if (!str_cmp(carg->prm, "true"))
-		uag_set_dnd(true);
-	else if (!str_cmp(carg->prm, "false"))
-		uag_set_dnd(false);
-	else
-		err = EINVAL;
+	uag_set_dnd(en);
 
  out:
 	if (err)
-		re_hprintf(pf, "usage: /dnd <true|false>\n");
+		re_hprintf(pf, "usage: /dnd <yes|no>\n");
 
 	return err;
 }
