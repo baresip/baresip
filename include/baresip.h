@@ -322,6 +322,7 @@ struct config_audio {
 	int enc_fmt;            /**< Audio encoder sample format    */
 	int dec_fmt;            /**< Audio decoder sample format    */
 	struct range buffer;    /**< Audio receive buffer in [ms]   */
+	uint32_t telev_pt;      /**< Payload type for tel.-event    */
 };
 
 /** Video */

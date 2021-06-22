@@ -60,6 +60,7 @@ static struct config core_config = {
 		AUFMT_S16LE,
 		AUFMT_S16LE,
 		{20, 160},
+		101
 	},
 
 	/** Video */
@@ -360,6 +361,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		return EINVAL;
 	}
 
+	(void)conf_get_u32(conf, "audio_telev_pt", &cfg->audio.telev_pt);
+
 	/* Video */
 	(void)conf_get_csv(conf, "video_source",
 			   cfg->video.src_mod, sizeof(cfg->video.src_mod),
@@ -456,6 +459,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "auplay_channels\t\t%u\n"
 			 "ausrc_channels\t\t%u\n"
 			 "audio_level\t\t%s\n"
+			 "audio_telev_pt\t\t%u\n"
 			 "\n"
 			 "# Video\n"
 			 "video_source\t\t%s,%s\n"
@@ -501,6 +505,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->audio.srate_play, cfg->audio.srate_src,
 			 cfg->audio.channels_play, cfg->audio.channels_src,
 			 cfg->audio.level ? "yes" : "no",
+			 cfg->audio.telev_pt,
 
 			 cfg->video.src_mod, cfg->video.src_dev,
 			 cfg->video.disp_mod, cfg->video.disp_dev,
@@ -669,6 +674,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "auenc_format\t\ts16\t\t# s16, float, ..\n"
 			  "audec_format\t\ts16\t\t# s16, float, ..\n"
 			  "audio_buffer\t\t%H\t\t# ms\n"
+			  "audio_telev_pt\t\t%u\t\t"
+			  "# payload type for telephone-event\n"
 			  ,
 			  poll_method_name(poll_method_best()),
 			  default_cafile(),
@@ -677,7 +684,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  default_audio_device(),
 			  default_audio_device(),
 			  default_audio_device(),
-			  range_print, &cfg->audio.buffer);
+			  range_print, &cfg->audio.buffer,
+			  cfg->audio.telev_pt);
 
 	err |= re_hprintf(pf,
 			  "\n# Video\n"
