@@ -253,7 +253,7 @@ bool reg_isok(const struct reg *reg)
 	if (!reg || !reg->sipreg)
 		return false;
 
-	return sipreg_registered(reg->sipreg);
+	return sipreg_registered(reg->sipreg) && reg->scode==200;
 }
 
 
