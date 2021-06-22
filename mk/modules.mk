@@ -163,7 +163,7 @@ USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
 USE_SNDIO := $(shell [ -f $(SYSROOT)/include/sndio.h ] || \
 	[ -f $(SYSROOT)/local/include/sndio.h ] && echo "yes")
 USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
-HAVE_GLIB := $(shell pkg-config --exists glib-2.0 && echo "yes")
+HAVE_GLIB := $(shell pkg-config --exists "glib-2.0 >= 2.56" && echo "yes")
 HAVE_SPEEXDSP := $(shell \
 	[ -f $(SYSROOT)/local/lib/libspeexdsp$(LIB_SUFFIX) ] || \
 	[ -f $(SYSROOT)/lib64/libspeexdsp$(LIB_SUFFIX) ] || \
