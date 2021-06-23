@@ -86,8 +86,12 @@ static void *read_thread(void *arg)
 			convert_pcm(st, i, n / 4);
 			i += (n / 4);
 		}
-
-		st->rh(st->sampv, st->sampc, st->arg);
+		
+		struct auframe af = {
+           .sampc = st->sampc,
+           .sampv = st->sampv
+		   };
+		st->rh(&af, st->arg);
 	}
 
 	i2s_stop_bus(I2O_RECO);
