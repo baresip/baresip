@@ -68,7 +68,14 @@ static void *write_thread(void *arg)
 	struct auframe af;
 
 	i2s_set_clk(I2S_PORT, st->prm.srate, 32, st->prm.ch);
-	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc, st->prm.srate, st->prm.ch);
+
+	auframe_init(&af,
+		st->prm.fmt,
+		st->sampv,
+		st->sampc,
+		st->prm.srate,
+		st->prm.c
+		);
 
 	while (st->run) {
 		size_t i;
