@@ -674,6 +674,66 @@ static int cmd_dnd(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_enudp(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	bool en = true;
+
+	err = str_bool(&en, carg->prm);
+	if (err) {
+		re_hprintf(pf, "usage: /enudp <yes|no>\n");
+		goto out;
+	}
+
+	err = uag_enable_udp(en);
+
+ out:
+
+	return err;
+}
+
+
+static int cmd_entcp(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	bool en = true;
+
+	err = str_bool(&en, carg->prm);
+	if (err) {
+		re_hprintf(pf, "usage: /entcp <yes|no>\n");
+		goto out;
+	}
+
+	err = uag_enable_tcp(en);
+
+ out:
+
+	return err;
+}
+
+
+static int cmd_entls(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	bool en = true;
+
+	err = str_bool(&en, carg->prm);
+	if (err) {
+		re_hprintf(pf, "usage: /entls <yes|no>\n");
+		goto out;
+	}
+
+	err = uag_enable_tls(en);
+
+ out:
+
+	return err;
+}
+
+
 /**
  * Hangup the active call
  *
@@ -1288,6 +1348,9 @@ static const struct cmd cmdv[] = {
 {"dialdir",   0,    CMD_PRM, "Dial with audio and video"
                              "direction.",              cmd_dialdir          },
 {"dnd",       0,    CMD_PRM, "Set Do not Disturb",      cmd_dnd              },
+{"enudp",     0,    CMD_PRM, "Enable/Disable UDP transport", cmd_enudp       },
+{"entcp",     0,    CMD_PRM, "Enable/Disable TCP transport", cmd_entcp       },
+{"entls",     0,    CMD_PRM, "Enable/Disable TLS transport", cmd_entls       },
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"hangupall", 0,    CMD_PRM, "Hangup all calls with direction"
                                                        ,cmd_hangupall        },

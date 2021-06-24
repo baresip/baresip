@@ -253,7 +253,7 @@ bool reg_isok(const struct reg *reg)
 	if (!reg || !reg->sipreg)
 		return false;
 
-	return sipreg_registered(reg->sipreg);
+	return sipreg_registered(reg->sipreg) && reg->scode==200;
 }
 
 
@@ -344,7 +344,7 @@ int reg_status(struct re_printf *pf, const struct reg *reg)
 		return 0;
 
 	pexpires = sipreg_proxy_expires(reg->sipreg);
-	fb = !pexpires && reg->scode;
+	fb = !pexpires && reg->scode && account_fbregint(ua_account(reg->ua));
 
 	if (pexpires) {
 		return re_hprintf(pf, " %s %s Expires %us",
