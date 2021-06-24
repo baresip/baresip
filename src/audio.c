@@ -1218,11 +1218,15 @@ static int add_telev_codec(struct audio *a)
 {
 	struct sdp_media *m = stream_sdpmedia(audio_strm(a));
 	struct sdp_format *sf;
+	uint32_t pt = a->cfg.telev_pt;
+	char pts[11];
 	int err;
+
+	(void)re_snprintf(pts, sizeof(pts), "%u", pt);
 
 	/* Use payload-type 101 if available, for CiscoGW interop */
 	err = sdp_format_add(&sf, m, false,
-			     (!sdp_media_lformat(m, 101)) ? "101" : NULL,
+			     (!sdp_media_lformat(m, pt)) ? pts : NULL,
 			     telev_rtpfmt, TELEV_SRATE, 1, NULL,
 			     NULL, NULL, false, "0-15");
 	if (err)
