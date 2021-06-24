@@ -74,7 +74,7 @@ static void *write_thread(void *arg)
 		st->sampv,
 		st->sampc,
 		st->prm.srate,
-		st->prm.c
+		st->prm.ch
 		);
 
 	while (st->run) {

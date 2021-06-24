@@ -88,11 +88,11 @@ static void *read_thread(void *arg)
 			i += (n / 4);
 		}
 
-		auframe_init(&af, 
-			st->prm.fmt, 
-			st->sampv, 
-			st->sampc, 
-			st->prm.srate, 
+		auframe_init(&af,
+			st->prm.fmt,
+			st->sampv,
+			st->sampc,
+			st->prm.srate,
 			st->prm.ch
 			);
 
