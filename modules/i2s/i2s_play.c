@@ -65,12 +65,22 @@ static void convert_sampv(struct auplay_st *st, size_t i, size_t n)
 static void *write_thread(void *arg)
 {
 	struct auplay_st *st = arg;
+	struct auframe af;
 
 	i2s_set_clk(I2S_PORT, st->prm.srate, 32, st->prm.ch);
+
+	auframe_init(&af,
+		st->prm.fmt,
+		st->sampv,
+		st->sampc,
+		st->prm.srate,
+		st->prm.ch
+		);
+
 	while (st->run) {
 		size_t i;
 
-		st->wh(st->sampv, st->sampc, st->arg);
+		st->wh(&af, st->arg);
 		for (i = 0; i + DMA_SIZE / 4 <= st->sampc;) {
 			size_t n;
 			convert_sampv(st, i, DMA_SIZE / 4);

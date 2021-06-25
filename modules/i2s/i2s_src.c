@@ -70,6 +70,7 @@ static void convert_pcm(struct ausrc_st *st, size_t i, size_t n)
 static void *read_thread(void *arg)
 {
 	struct ausrc_st *st = arg;
+	struct auframe af;
 
 	while (st->run) {
 		size_t i;
@@ -87,7 +88,15 @@ static void *read_thread(void *arg)
 			i += (n / 4);
 		}
 
-		st->rh(st->sampv, st->sampc, st->arg);
+		auframe_init(&af,
+			st->prm.fmt,
+			st->sampv,
+			st->sampc,
+			st->prm.srate,
+			st->prm.ch
+			);
+
+		st->rh(&af, st->arg);
 	}
 
 	i2s_stop_bus(I2O_RECO);
