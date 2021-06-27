@@ -53,6 +53,7 @@ struct call {
 	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
+	bool support_replaces;    /**< True if call supported replaces      */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -758,6 +759,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	bool use_video, got_offer = false;
 	int label = 0;
 	int err = 0;
+	const struct sip_hdr *hdr;
+	struct pl v;
 
 	if (!cfg || !local_uri || !acc || !ua || !prm)
 		return EINVAL;
@@ -790,7 +793,17 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->af     = prm->af;
 	call->ansadir = SDP_SENDRECV;
 	call->ansvdir = SDP_SENDRECV;
+	call->support_replaces = false;
 	call_decode_sip_autoanswer(call, msg);
+
+	/* check if replaces is supported on incoming calls */
+	hdr = sip_msg_hdr(msg, SIP_HDR_SUPPORTED);
+	if (hdr) {
+		if (!re_regex(hdr->val.p, hdr->val.l, "replaces", &v)) {
+			info("call %s supports attended transfer\n", call->id);
+			call->support_replaces = true;
+		}
+	}
 
 	err = str_dup(&call->local_uri, local_uri);
 	if (local_name)
@@ -1595,7 +1608,8 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
-	(void)msg;
+	const struct sip_hdr *hdr;
+	struct pl v;
 
 	MAGIC_CHECK(call);
 
@@ -1605,6 +1619,15 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	set_state(call, CALL_STATE_ESTABLISHED);
 
 	call_stream_start(call, true);
+
+	/* check if replaces is supported on outgoing call */
+	hdr = sip_msg_hdr(msg, SIP_HDR_SUPPORTED);
+	if (hdr) {
+		if (!re_regex(hdr->val.p, hdr->val.l, "replaces", &v)) {
+			info("call %s supports attended transfer\n", call->id);
+			call->support_replaces = true;
+		}
+	}
 
 	if (call->rtp_timeout_ms) {
 
@@ -2334,6 +2357,16 @@ int call_transfer(struct call *call, const char *uri)
 int call_replace_transfer(struct call *call, struct call *source_call)
 {
 	int err;
+
+	if (!call->support_replaces || !source_call->support_replaces) {
+		warning("attended transfer not supported on both calls\n");
+		return EINVAL;
+	}
+	if (call_state(call) != CALL_STATE_ESTABLISHED ||
+			call_state(source_call) != CALL_STATE_ESTABLISHED) {
+		warning("both calls to be in state established\n");
+		return EINVAL;
+	}
 
 	info("transferring call to %s\n", source_call->peer_uri);
 

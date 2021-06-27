@@ -464,7 +464,7 @@ static enum answer_method auto_answer_method(struct re_printf *pf)
 }
 
 
-int dial_handler(struct re_printf *pf, void *arg)
+static int dial_handler(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct menu *menu = menu_get();
@@ -695,7 +695,6 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call = ua_call(ua);
-	struct menu *menu = menu_get();
 
 	(void)pf;
 
@@ -713,9 +712,6 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 		re_hprintf(pf, "no active call\n");
 		return ENOENT;
 	}
-
-	mem_deref(menu->attended_callid);
-	menu->attended_callid = NULL;
 
 	ua_hangup(ua, call, 0, NULL);
 

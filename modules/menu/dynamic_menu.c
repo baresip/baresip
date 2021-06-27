@@ -228,51 +228,60 @@ static int call_xfer(struct re_printf *pf, void *arg)
 }
 
 
-static int call_att_xfer(struct re_printf *pf, void *arg)
+static int call_attended_xfer(struct re_printf *pf, void *arg)
 {
-	struct menu *menu = menu_get();
-	struct call *call = uag_call_find(menu->callid);
-
-	if (menu->attended_callid) {
-		re_hprintf(pf, "attended transfer already in process\n");
-		return ENOENT;
-	}
-	else {
-		if (!call_is_onhold(call)) {
-			re_hprintf(pf, "please hold your active call\n");
-			return ENOENT;
-		}
-		str_dup(&menu->attended_callid, menu->callid);
-		dial_handler(pf, arg);
-	}
-
-	return 0;
-}
-
-
-static int transfer_att_xfer(struct re_printf *pf, void *unused)
-{
-	struct menu *menu = menu_get();
-	struct call *call = uag_call_find(menu->callid);
+	const struct cmd_arg *carg = arg;
+	struct call *call = menu_callcur();
 	struct call *attended_call;
-	(void)unused;
+	struct pl callid = PL_INIT;
+	struct pl attended_callid = PL_INIT;
+	char attended_call_string[140], call_string[140];
+	bool ok = false;
 
-	if (menu->attended_callid) {
-		attended_call = uag_call_find(menu->attended_callid);
-		if (!call_is_onhold(call)) {
-			re_hprintf(pf, "please hold your active call\n");
-			return ENOENT;
-		}
-		mem_deref(menu->attended_callid);
-		menu->attended_callid = NULL;
-		call_replace_transfer(attended_call, call);
+	const char *usage = "usage: /transfercall"
+			" from=<from-id>"
+			" [to=to-id]\n"
+			"/transfercall <from-id> [to-id]\n";
+
+	(void)pf;
+
+	ok |= 0 == menu_param_decode(carg->prm, "from", &attended_callid);
+	ok |= 0 == menu_param_decode(carg->prm, "to", &callid);
+	if (!ok) {
+		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
+			"[^ ]*[ \t\r\n]*[^ ]*", &attended_callid, NULL,
+								&callid);
 	}
-	else {
-		re_hprintf(pf, "no attended to transfer call\n");
+
+	if (!ok) {
+		(void) re_hprintf(pf, "%s\n", usage);
+		return EINVAL;
+	}
+	pl_strcpy(&attended_callid, attended_call_string,
+					sizeof(attended_call_string));
+
+	if (callid.l > 1) {
+		pl_strcpy(&callid, call_string, sizeof(call_string));
+		call = uag_call_find(call_string);
+		if (!call) {
+			warning("no call with call-id %s found\n",
+							call_string);
+		}
+	}
+
+	if (!call_is_onhold(call)) {
+		warning("please hold your active call\n");
 		return ENOENT;
 	}
 
-	return 0;
+	attended_call = uag_call_find(attended_call_string);
+	if (!attended_call) {
+		warning("no call with call-id %s found\n",
+						attended_call_string);
+		return ENOENT;
+	}
+
+	return call_replace_transfer(attended_call, call);
 }
 
 
@@ -382,22 +391,22 @@ static int digit_handler(struct re_printf *pf, void *arg)
 /*Dynamic call menu*/
 static const struct cmd callcmdv[] = {
 
-{"aubitrate",      0, CMD_PRM, "Set audio bitrate",        set_audio_bitrate },
-{"audio_debug",  'A',       0, "Audio stream",             call_audio_debug  },
-{"callfind",       0, CMD_PRM, "Find call <callid>",       cmd_find_call     },
-{"hold",         'x',       0, "Call hold",                cmd_call_hold     },
-{"line",         '@', CMD_PRM, "Set current call <line>",  set_current_call  },
-{"mute",         'm',       0, "Call mute/un-mute",        call_mute         },
-{"reinvite",     'I',       0, "Send re-INVITE",           call_reinvite     },
-{"resume",       'X',       0, "Call resume",              cmd_call_resume   },
-{"sndcode",        0, CMD_PRM, "Send Code",                send_code         },
-{"statmode",     'S',       0, "Statusmode toggle",        toggle_statmode   },
-{"transfer",     't', CMD_PRM, "Transfer call",            call_xfer         },
-{"att_transfer", 'T', CMD_PRM, "Attended call transfer",   call_att_xfer     },
-{"forw_transfer",'F',       0, "Forward attended call",    transfer_att_xfer },
-{"video_debug",  'V',       0, "Video stream",             call_video_debug  },
-{"videodir",       0, CMD_PRM, "Set video direction",      set_video_dir     },
-{"medialdir",      0, CMD_PRM, "Set local media direction", set_media_ldir   },
+{"aubitrate",    0,  CMD_PRM, "Set audio bitrate",    set_audio_bitrate    },
+{"audio_debug", 'A',       0, "Audio stream",         call_audio_debug     },
+{"callfind",     0,  CMD_PRM, "Find call <callid>",   cmd_find_call        },
+{"hold",        'x',       0, "Call hold",            cmd_call_hold        },
+{"line",        '@', CMD_PRM, "Set current call <line>", set_current_call  },
+{"mute",        'm',       0, "Call mute/un-mute",    call_mute            },
+{"reinvite",    'I',       0, "Send re-INVITE",       call_reinvite        },
+{"resume",      'X',       0, "Call resume",          cmd_call_resume      },
+{"sndcode",      0,  CMD_PRM, "Send Code",            send_code            },
+{"statmode",    'S',       0, "Statusmode toggle",    toggle_statmode      },
+{"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
+{"transfercall", 'T', CMD_PRM, "Transfers <call-id> to ative call",
+						      call_attended_xfer   },
+{"video_debug", 'V',       0, "Video stream",         call_video_debug     },
+{"videodir",      0, CMD_PRM, "Set video direction",  set_video_dir        },
+{"medialdir",     0, CMD_PRM, "Set local media direction",  set_media_ldir },
 
 /* Numeric keypad for DTMF events: */
 {NULL, '#',         0, NULL,                  digit_handler         },
