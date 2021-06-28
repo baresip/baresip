@@ -409,6 +409,7 @@ static int mixer_resize(struct filter_mixer *mixer, struct auframe *af)
 	size_t aubuf_maxsz = 0;
 	const struct config *cfg = conf_config();
 	size_t num_bytes;
+	uint32_t maxsz;
 	int err;
 
 	if (!mixer || !af)
@@ -418,7 +419,8 @@ static int mixer_resize(struct filter_mixer *mixer, struct auframe *af)
 		return 0;
 
 	num_bytes = auframe_size(af);
-	aubuf_maxsz = max(cfg->audio.buffer.max, cfg->audio.txaubuf_maxsz);
+	conf_get_u32(conf_cur(), "audio_aubufmaxsize_tx", &maxsz);
+	aubuf_maxsz = max(cfg->audio.buffer.max, maxsz);
 	mixer->aubuf_maxsz = num_bytes * aubuf_maxsz;
 
 	err = aubuf_alloc(&mixer->aubuf, num_bytes * 1, mixer->aubuf_maxsz);
@@ -1020,6 +1022,7 @@ static int filter_stream_reset(struct onvif_filter_stream *fs,
 	uint32_t srate, uint32_t ch, const char *codec)
 {
 	const struct config *cfg = conf_config();
+	uint32_t maxsz;
 	int err = 0;
 
 	if (!fs || !codec)
@@ -1038,8 +1041,10 @@ static int filter_stream_reset(struct onvif_filter_stream *fs,
 	if (!fs->audec_state && fs->codec->decupdh)
 		err = fs->codec->decupdh(&fs->audec_state, fs->codec, NULL);
 
+	conf_get_u32(conf_cur(), "audio_aubufmaxsize_tx", &maxsz);
+
 	fs->active = true;
-	fs->aubuf_maxsz = max(cfg->audio.buffer.max, cfg->audio.txaubuf_maxsz);
+	fs->aubuf_maxsz = max(cfg->audio.buffer.max, maxsz);
 	fs->ssrc = 0;
 	fs->timestamp = 0;
 
