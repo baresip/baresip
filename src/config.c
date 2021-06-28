@@ -34,6 +34,7 @@ static struct config core_config = {
 		SIP_TRANSP_UDP,
 		false,
 		0xa0,
+		false
 	},
 
 	/** Call config */
@@ -304,6 +305,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	if (0 == conf_get_u32(conf, "sip_tos", &v))
 		cfg->sip.tos = v;
 
+	(void)conf_get_bool(conf, "sip_replaces_hdr",
+						&cfg->sip.sip_replaces_hdr);
+
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
 			   &cfg->call.local_timeout);
@@ -440,6 +444,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_trans_def\t%s\n"
 			 "sip_verify_server\t\t\t%s\n"
 			 "sip_tos\t%u\n"
+			 "sip_replaces_hdr\t%s\n"
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
@@ -489,6 +494,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 sip_transp_name(cfg->sip.transp),
 			 cfg->sip.verify_server ? "yes" : "no",
 			 cfg->sip.tos,
+			 cfg->sip.sip_replaces_hdr ? "yes" : "no",
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
@@ -641,6 +647,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#sip_trans_def\t\tudp\n"
 			  "#sip_verify_server\tyes\n"
 			  "sip_tos\t\t\t160\n"
+			  "sip_replaces_hdr\tyes\n"
 			  "\n"
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"

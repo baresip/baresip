@@ -233,10 +233,10 @@ static int call_attended_xfer(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct call *call = menu_callcur();
 	struct call *attended_call;
-	struct pl callid = PL_INIT;
-	struct pl attended_callid = PL_INIT;
-	char attended_call_string[140], call_string[140];
+	struct pl topl = PL_INIT, frompl = PL_INIT;
+	char *to, *from;
 	bool ok = false;
+	int err;
 
 	const char *usage = "usage: /transfercall"
 			" from=<from-id>"
@@ -245,43 +245,43 @@ static int call_attended_xfer(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
-	ok |= 0 == menu_param_decode(carg->prm, "from", &attended_callid);
-	ok |= 0 == menu_param_decode(carg->prm, "to", &callid);
+	ok |= 0 == menu_param_decode(carg->prm, "from", &frompl);
+	ok |= 0 == menu_param_decode(carg->prm, "to", &topl);
 	if (!ok) {
 		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
-			"[^ ]*[ \t\r\n]*[^ ]*", &attended_callid, NULL,
-								&callid);
+			"[^ ]*[ \t\r\n]*[^ ]*", &frompl, NULL, &topl);
 	}
 
 	if (!ok) {
 		(void) re_hprintf(pf, "%s\n", usage);
 		return EINVAL;
 	}
-	pl_strcpy(&attended_callid, attended_call_string,
-					sizeof(attended_call_string));
+	pl_strdup(&from, &frompl);
 
-	if (callid.l > 1) {
-		pl_strcpy(&callid, call_string, sizeof(call_string));
-		call = uag_call_find(call_string);
+	if (pl_isset(&topl)) {
+		pl_strdup(&to, &topl);
+		call = uag_call_find(to);
 		if (!call) {
-			warning("no call with call-id %s found\n",
-							call_string);
+			warning("menu: no call with call-id %s found\n", to);
 		}
 	}
 
 	if (!call_is_onhold(call)) {
-		warning("please hold your active call\n");
+		warning("menu: please hold call %s\n", call_id(call));
 		return ENOENT;
 	}
 
-	attended_call = uag_call_find(attended_call_string);
+	attended_call = uag_call_find(from);
 	if (!attended_call) {
-		warning("no call with call-id %s found\n",
-						attended_call_string);
+		warning("menu: no call with call-id %s found\n", from);
 		return ENOENT;
 	}
 
-	return call_replace_transfer(attended_call, call);
+	err = call_replace_transfer(attended_call, call);
+
+	mem_deref(from);
+	mem_deref(to);
+	return err;
 }
 
 
@@ -402,7 +402,7 @@ static const struct cmd callcmdv[] = {
 {"sndcode",      0,  CMD_PRM, "Send Code",            send_code            },
 {"statmode",    'S',       0, "Statusmode toggle",    toggle_statmode      },
 {"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
-{"transfercall", 'T', CMD_PRM, "Transfers <call-id> to ative call",
+{"transferatt", 'T', CMD_PRM, "Transfers <call-id> to ative call",
 						      call_attended_xfer   },
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
 {"videodir",      0, CMD_PRM, "Set video direction",  set_video_dir        },

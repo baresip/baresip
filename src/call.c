@@ -756,11 +756,9 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	struct le *le;
 	struct stream_param stream_prm;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
-	bool use_video, got_offer = false;
+	bool use_video, got_offer = false, support_replaces_hdr = false;
 	int label = 0;
 	int err = 0;
-	const struct sip_hdr *hdr;
-	struct pl v;
 
 	if (!cfg || !local_uri || !acc || !ua || !prm)
 		return EINVAL;
@@ -797,12 +795,10 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call_decode_sip_autoanswer(call, msg);
 
 	/* check if replaces is supported on incoming calls */
-	hdr = sip_msg_hdr(msg, SIP_HDR_SUPPORTED);
-	if (hdr) {
-		if (!re_regex(hdr->val.p, hdr->val.l, "replaces", &v)) {
-			info("call %s supports attended transfer\n", call->id);
-			call->support_replaces = true;
-		}
+	support_replaces_hdr = sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED,
+								"replaces");
+	if (support_replaces_hdr) {
+		call->support_replaces = true;
 	}
 
 	err = str_dup(&call->local_uri, local_uri);
@@ -1608,8 +1604,7 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
-	const struct sip_hdr *hdr;
-	struct pl v;
+	bool support_replaces_hdr;
 
 	MAGIC_CHECK(call);
 
@@ -1621,12 +1616,10 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	call_stream_start(call, true);
 
 	/* check if replaces is supported on outgoing call */
-	hdr = sip_msg_hdr(msg, SIP_HDR_SUPPORTED);
-	if (hdr) {
-		if (!re_regex(hdr->val.p, hdr->val.l, "replaces", &v)) {
-			info("call %s supports attended transfer\n", call->id);
-			call->support_replaces = true;
-		}
+	support_replaces_hdr = sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED,
+								"replaces");
+	if (support_replaces_hdr) {
+		call->support_replaces = true;
 	}
 
 	if (call->rtp_timeout_ms) {
@@ -2349,8 +2342,8 @@ int call_transfer(struct call *call, const char *uri)
 /**
  * Transfer the call to a target SIP uri and replace the source call
  *
- * @param call  Call object
- * @param uri   Target SIP uri
+ * @param call  Call object target
+ * @param call  Call object source
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -2358,13 +2351,27 @@ int call_replace_transfer(struct call *call, struct call *source_call)
 {
 	int err;
 
-	if (!call->support_replaces || !source_call->support_replaces) {
-		warning("attended transfer not supported on both calls\n");
+	if (!call->support_replaces) {
+		warning("call: attended transfer not supported on call %s\n",
+							call_id(call));
 		return EINVAL;
 	}
-	if (call_state(call) != CALL_STATE_ESTABLISHED ||
-			call_state(source_call) != CALL_STATE_ESTABLISHED) {
-		warning("both calls to be in state established\n");
+
+	if (!source_call->support_replaces) {
+		warning("call: attended transfer not supported on call %s\n",
+							call_id(source_call));
+		return EINVAL;
+	}
+
+	if (call_state(source_call) != CALL_STATE_ESTABLISHED) {
+		warning("call: call %s needs to be in state established\n",
+							call_id(source_call));
+		return EINVAL;
+	}
+
+	if (call_state(call) != CALL_STATE_ESTABLISHED) {
+		warning("call: call %s needs to be in state established\n",
+							call_id(call));
 		return EINVAL;
 	}
 

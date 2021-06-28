@@ -816,6 +816,9 @@ static int create_register_clients(struct ua *ua)
 	if (uag_cfg() && str_isset(uag_cfg()->uuid))
 		add_extension(ua, "gruu");
 
+	if (uag_cfg() && uag_cfg()->sip_replaces_hdr)
+		add_extension(ua, "replaces");
+
 	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
 
 		size_t i;
