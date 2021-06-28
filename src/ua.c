@@ -494,7 +494,7 @@ static bool require_handler(const struct sip_hdr *hdr,
 }
 
 
-static int sdp_originator(struct mbuf *mb, int *af, struct sa *sa)
+static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 {
 	struct pl pl1, pl2;
 	char *addr;
@@ -502,8 +502,7 @@ static int sdp_originator(struct mbuf *mb, int *af, struct sa *sa)
 
 	*af = AF_UNSPEC;
 	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
-		       "o=[^ ]* [^ ]* [^ ]* IN IP[46]+ [^ \r\n]+",
-		       NULL, NULL, NULL, &pl1, &pl2);
+		       "IN IP[46]+ [^ \r\n]+", &pl1, &pl2);
 	if (err)
 		return EINVAL;
 
@@ -515,6 +514,7 @@ static int sdp_originator(struct mbuf *mb, int *af, struct sa *sa)
 		  break;
 	}
 
+	/* OSX/iOS needs a dummy port number for udp_connect() */
 	pl_strdup(&addr, &pl2);
 	err = sa_set_str(sa, addr, 5060);
 	mem_deref(addr);
@@ -532,7 +532,7 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	struct ua *ua;
 	struct call *call = NULL;
 	char to_uri[256];
-	struct sa oaddr;
+	struct sa caddr;
 	struct sa ip;
 	int err;
 
@@ -583,15 +583,15 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	/* Check if offered media AF is supported and available */
-	if (!sdp_originator(msg->mb, &af_sdp, &oaddr)) {
+	if (!sdp_connection(msg->mb, &af_sdp, &caddr)) {
 		if (!net_af_enabled(net, af_sdp)) {
 			warning("ua: SDP offer AF not supported (%s)\n",
 				net_af2name(af_sdp));
 			af_sdp = 0;
 		}
-		else if (net_dst_source_addr_get(&oaddr, &ip)) {
+		else if (net_dst_source_addr_get(&caddr, &ip)) {
 			warning("ua: SDP offer origin address %j not"
-				" reachable\n", &oaddr);
+				" reachable\n", &caddr);
 			af_sdp = 0;
 		}
 		if (!af_sdp) {
@@ -700,7 +700,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (!callp || !ua)
 		return EINVAL;
 
-	if (msg && !sdp_originator(msg->mb, &af_sdp, &ua->dst)) {
+	if (msg && !sdp_connection(msg->mb, &af_sdp, &ua->dst)) {
 		info("ua: using origin address %j of SDP offer: af=%s\n",
 		     &ua->dst, net_af2name(af_sdp));
 		af = af_sdp;
