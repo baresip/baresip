@@ -333,6 +333,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 bool stream_is_ready(const struct stream *strm);
 int  stream_decode(struct stream *s);
 void stream_silence_on(struct stream *s, bool on);
+const struct sa *stream_raddr(const struct stream *strm);
 
 
 /*
