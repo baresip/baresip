@@ -366,6 +366,8 @@ struct uag {
 	bool use_udp;                  /**< Use UDP transport               */
 	bool use_tcp;                  /**< Use TCP transport               */
 	bool use_tls;                  /**< Use TLS transport               */
+	bool use_ws;                   /**< Use WS  transport               */
+	bool use_wss;                  /**< Use WSS transport               */
 	bool delayed_close;            /**< Module will close SIP stack     */
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
