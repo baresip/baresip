@@ -886,22 +886,6 @@ static const char *autoans_header_name(enum answer_method met)
 }
 
 
-static int ua_check_dst_ip(struct ua *ua, struct pl *pl)
-{
-	struct sip_addr addr;
-	int err;
-
-	sa_init(&ua->dst, AF_UNSPEC);
-	err = sip_addr_decode(&addr, pl);
-	err |= sa_set(&ua->dst, &addr.uri.host, addr.uri.port);
-
-	if (!sa_isset(&ua->dst, SA_PORT))
-		sa_set_port(&ua->dst, 5060);
-
-	return err;
-}
-
-
 /**
  * Allocate a SIP User-Agent
  *
@@ -1031,6 +1015,7 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 {
 	struct call *call = NULL;
 	struct mbuf *dialbuf;
+	struct sip_addr addr;
 	struct pl pl;
 	int err = 0;
 
@@ -1058,7 +1043,12 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	pl.p = (char *)dialbuf->buf;
 	pl.l = dialbuf->end;
 
-	(void)ua_check_dst_ip(ua, &pl);
+	sa_init(&ua->dst, AF_UNSPEC);
+	err = sip_addr_decode(&addr, &pl);
+	err |= sa_set(&ua->dst, &addr.uri.host, addr.uri.port);
+	if (!err && !sa_isset(&ua->dst, SA_PORT))
+		sa_set_port(&ua->dst, 5060);
+
 	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)
 		goto out;
