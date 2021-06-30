@@ -284,7 +284,7 @@ static bool device_cmp_service_type(struct le *le, void *arg)
 static int get_macaddr(uint64_t *addr)
 {
 	struct ifaddrs *ifa, *ifaddr;
-	const char *bs_ifname = net_ifname(baresip_network());
+	const char *bs_ifname = conf_config()->net.ifname;
 	struct sockaddr_ll *s;
 
 	if (!addr)
@@ -1861,7 +1861,7 @@ int device_GetNWI_h (const struct soap_msg *msg, struct soap_msg **prtresp)
 	struct soap_msg *resp;
 	struct soap_child *b, *c, *cc, *netic, *addrc, *ipc, *confc;
 
-	const char *bs_ifname = net_ifname(baresip_network());
+	const char *bs_ifname = conf_config()->net.ifname;
 	bool isipv4 = net_af_enabled(baresip_network() , AF_INET);
 	bool isdhcpenabled;
 	int mac_str_len = 18;
