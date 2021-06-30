@@ -497,7 +497,7 @@ static bool require_handler(const struct sip_hdr *hdr,
 static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 {
 	struct pl pl1, pl2;
-	char *addr;
+	char *addr = NULL;
 	int err;
 
 	*af = AF_UNSPEC;
@@ -506,6 +506,7 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 	if (err)
 		return EINVAL;
 
+	pl_strdup(&addr, &pl2);
 	switch (pl1.p[0]) {
 
 	case '4': *af = AF_INET;
@@ -514,9 +515,13 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 		  break;
 	}
 
-	/* OSX/iOS needs a dummy port number for udp_connect() */
-	pl_strdup(&addr, &pl2);
-	err = sa_set_str(sa, addr, 5060);
+	/* OSX/iOS needs a port number for udp_connect() */
+	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
+		       "m=audio [0-9]+ ", &pl1);
+	if (err)
+		return EINVAL;
+
+	err = sa_set_str(sa, addr, pl_u32(&pl1));
 	mem_deref(addr);
 	return err;
 }
