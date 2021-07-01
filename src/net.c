@@ -44,45 +44,6 @@ static void net_destructor(void *data)
 }
 
 
-static bool if_getname_handler(const char *ifname, const struct sa *sa,
-			       void *arg)
-{
-	struct ifentry *ife = arg;
-
-	if (ife->af != sa_af(sa))
-		return false;
-
-	if (sa_cmp(sa, ife->ip, SA_ADDR)) {
-		str_ncpy(ife->ifname, ifname, ife->sz);
-		ife->found = true;
-		return true;
-	}
-
-	return false;
-}
-
-
-static int network_if_getname(char *ifname, size_t sz,
-			      int af, const struct sa *ip)
-{
-	struct ifentry ife;
-	int err;
-
-	if (!ifname || !sz || !ip)
-		return EINVAL;
-
-	ife.af     = af;
-	ife.ifname = ifname;
-	ife.ip     = (struct sa *)ip;
-	ife.sz     = sz;
-	ife.found  = false;
-
-	err = net_if_apply(if_getname_handler, &ife);
-
-	return ife.found ? err : ENODEV;
-}
-
-
 static int print_addr(struct re_printf *pf, const struct sa *ip)
 {
 	if (!ip)
@@ -92,7 +53,7 @@ static int print_addr(struct re_printf *pf, const struct sa *ip)
 
 		char ifname[256] = "???";
 
-		network_if_getname(ifname, sizeof(ifname), sa_af(ip), ip);
+		net_if_getname(ifname, sizeof(ifname), sa_af(ip), ip);
 
 		return re_hprintf(pf, "%s|%j", ifname, ip);
 	}
