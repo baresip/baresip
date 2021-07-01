@@ -458,7 +458,13 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "ausrc_srate\t\t%u\n"
 			 "auplay_channels\t\t%u\n"
 			 "ausrc_channels\t\t%u\n"
+			 "audio_txmode\t\t%s\n"
 			 "audio_level\t\t%s\n"
+			 "ausrc_format\t\t%s\n"
+			 "auplay_format\t\t%s\n"
+			 "auenc_format\t\t%s\n"
+			 "audec_format\t\t%s\n"
+			 "audio_buffer\t\t%H\t\t# ms\n"
 			 "audio_telev_pt\t\t%u\n"
 			 "\n"
 			 "# Video\n"
@@ -504,7 +510,14 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->audio.alert_mod, cfg->audio.alert_dev,
 			 cfg->audio.srate_play, cfg->audio.srate_src,
 			 cfg->audio.channels_play, cfg->audio.channels_src,
+			 cfg->audio.txmode == AUDIO_MODE_POLL ?
+						"poll" : "thread",
 			 cfg->audio.level ? "yes" : "no",
+			 aufmt_name(cfg->audio.src_fmt),
+			 aufmt_name(cfg->audio.play_fmt),
+			 aufmt_name(cfg->audio.enc_fmt),
+			 aufmt_name(cfg->audio.dec_fmt),
+			 range_print, &cfg->audio.buffer,
 			 cfg->audio.telev_pt,
 
 			 cfg->video.src_mod, cfg->video.src_dev,
