@@ -17,12 +17,8 @@ static struct uag uag = {
 	NULL,
 	NULL,
 	NULL,
-	true,
-	true,
-	true,
-	true,
-	true,
 	false,
+	0,
 	NULL,
 	NULL,
 	false,
@@ -334,9 +330,9 @@ static int add_transp_af(const struct sa *laddr)
 		sa_set_port(&local, 0);
 	}
 
-	if (uag.use_udp)
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_UDP))
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_UDP, &local);
-	if (uag.use_tcp)
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_TCP))
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_TCP, &local);
 	if (err) {
 		warning("ua: SIP Transport failed: %m\n", err);
@@ -344,7 +340,7 @@ static int add_transp_af(const struct sa *laddr)
 	}
 
 #ifdef USE_TLS
-	if (uag.use_tls) {
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_TLS)) {
 		/* Build our SSL context*/
 		if (!uag.tls) {
 			if (str_isset(uag.cfg->cert)) {
@@ -395,7 +391,7 @@ static int add_transp_af(const struct sa *laddr)
 	}
 #endif
 
-	if (uag.use_ws) {
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_WS)) {
 		err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WS, &local,
 				false, NULL, NULL);
 		if (err) {
@@ -406,7 +402,7 @@ static int add_transp_af(const struct sa *laddr)
 	}
 
 #ifdef USE_TLS
-	if (uag.use_wss) {
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_WSS)) {
 		if (!uag.wss_tls) {
 			err = tls_alloc(&uag.wss_tls, TLS_METHOD_SSLV23,
 					NULL, NULL);
@@ -528,11 +524,16 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls)
 	uag.cfg = &cfg->sip;
 	bsize = 16;
 
-	uag.use_udp = udp;
-	uag.use_tcp = tcp;
-	uag.use_tls = tls;
-	uag.use_ws  = true;
-	uag.use_wss = true;
+	if (cfg->sip.transports) {
+		uag.transports = cfg->sip.transports;
+	}
+	else {
+		u32mask_enable(&uag.transports, SIP_TRANSP_UDP, udp);
+		u32mask_enable(&uag.transports, SIP_TRANSP_TCP, tcp);
+		u32mask_enable(&uag.transports, SIP_TRANSP_TLS, tls);
+		u32mask_enable(&uag.transports, SIP_TRANSP_WS,  true);
+		u32mask_enable(&uag.transports, SIP_TRANSP_WSS, true);
+	}
 
 	list_init(&uag.ual);
 
@@ -1235,19 +1236,8 @@ bool uag_dnd(void)
  */
 int uag_enable_transport(enum sip_transp tp, bool en)
 {
-	bool *use = tp == SIP_TRANSP_UDP ? &uag.use_udp :
-		    tp == SIP_TRANSP_TCP ? &uag.use_tcp :
-		    tp == SIP_TRANSP_TLS ? &uag.use_tls :
-		    tp == SIP_TRANSP_WS  ? &uag.use_ws  :
-		    tp == SIP_TRANSP_WSS ? &uag.use_wss : NULL;
 
-	if (!use)
-		return EINVAL;
-
-	if (*use == en)
-		return 0;
-
-	*use = en;
+	u32mask_enable(&uag.transports, tp, en);
 	return uag_reset_transp(true, true);
 }
 

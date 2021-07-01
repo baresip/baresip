@@ -363,11 +363,7 @@ struct uag {
 	struct sip_lsnr *lsnr;         /**< SIP Listener                    */
 	struct sipsess_sock *sock;     /**< SIP Session socket              */
 	struct sipevent_sock *evsock;  /**< SIP Event socket                */
-	bool use_udp;                  /**< Use UDP transport               */
-	bool use_tcp;                  /**< Use TCP transport               */
-	bool use_tls;                  /**< Use TLS transport               */
-	bool use_ws;                   /**< Use WS  transport               */
-	bool use_wss;                  /**< Use WSS transport               */
+	uint32_t transports;           /**< Supported transports mask       */
 	bool delayed_close;            /**< Module will close SIP stack     */
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
@@ -385,6 +381,9 @@ struct config_sip *uag_cfg(void);
 const char *uag_eprm(void);
 bool uag_delayed_close(void);
 int uag_raise(struct ua *ua, struct le *le);
+
+void u32mask_enable(uint32_t *mask, uint8_t bit, bool enable);
+bool u32mask_enabled(uint32_t *mask, uint8_t bit);
 
 
 /*
