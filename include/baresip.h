@@ -135,6 +135,8 @@ bool account_sip_autoanswer(const struct account *acc);
 void account_set_sip_autoanswer(struct account *acc, bool allow);
 enum sipansbeep account_sipansbeep(const struct account *acc);
 void account_set_sipansbeep(struct account *acc, enum sipansbeep beep);
+void account_set_autelev_pt(struct account *acc, uint32_t pt);
+uint32_t account_autelev_pt(struct account *acc);
 
 
 /*
