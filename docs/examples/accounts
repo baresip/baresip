@@ -12,6 +12,7 @@
 #    ;audio_codecs=opus/48000/2,pcma,...
 #    ;audio_source=alsa,default
 #    ;audio_player=alsa,default
+#    ;autelev_pt=101
 #    ;sip_autoanswer={yes, no}
 #    ;sip_autoanswer_beep={off, on, local}
 #    ;dtmfmode={rtpevent, info}

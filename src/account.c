@@ -533,6 +533,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	if (err)
 		goto out;
 
+	param_u32(&acc->autelev_pt, &acc->laddr.params, "autelev_pt");
 	err  = decode_pair(&acc->ausrc_mod, &acc->ausrc_dev,
 			   &acc->laddr.params, "audio_source");
 	err |= decode_pair(&acc->auplay_mod, &acc->auplay_dev,
@@ -1488,6 +1489,34 @@ void account_set_sipansbeep(struct account *acc, enum sipansbeep beep)
 }
 
 
+/**
+ * Sets the audio payload type for telephone-events
+ *
+ * @param acc User-Agent account
+ * @param pt  Payload type
+ */
+void account_set_autelev_pt(struct account *acc, uint32_t pt)
+{
+	if (!acc)
+		return;
+
+	acc->autelev_pt = pt;
+}
+
+
+/**
+ * Returns the audio payload type for telephone-events
+ *
+ * @param acc User-Agent account
+ *
+ * @return Telephone-event payload type
+ */
+uint32_t account_autelev_pt(struct account *acc)
+{
+	return acc ? acc->autelev_pt : 0;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
@@ -1742,6 +1771,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 		}
 		err |= re_hprintf(pf, "\n");
 	}
+	err |= re_hprintf(pf, " autelev_pt:   %u\n", acc->autelev_pt);
 	err |= re_hprintf(pf, " auth_user:    %s\n", acc->auth_user);
 	err |= re_hprintf(pf, " mediaenc:     %s\n",
 			  acc->mencid ? acc->mencid : "none");

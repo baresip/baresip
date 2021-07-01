@@ -1404,6 +1404,9 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 			goto out;
 	}
 
+	if (acc && acc->autelev_pt)
+		a->cfg.telev_pt = acc->autelev_pt;
+
 	rx->pt     = -1;
 	rx->ptime  = ptime;
 #ifdef HAVE_PTHREAD
