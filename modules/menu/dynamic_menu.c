@@ -247,6 +247,7 @@ static int call_attended_xfer(struct re_printf *pf, void *arg)
 
 	ok |= 0 == menu_param_decode(carg->prm, "from", &frompl);
 	ok |= 0 == menu_param_decode(carg->prm, "to", &topl);
+	info("check ok? %s\n", ok ? "true" : "false");
 	if (!ok) {
 		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
 			"[^ ]*[ \t\r\n]*[^ ]*", &frompl, NULL, &topl);

@@ -293,7 +293,6 @@ struct config_sip {
 	enum sip_transp transp; /**< Default outgoing SIP transport protocol */
 	bool verify_server;     /**< Enable SIP TLS verify server   */
 	uint8_t tos;            /**< Type-of-Service for SIP        */
-	bool sip_replaces_hdr;  /**< Send replaces in supported header */
 };
 
 /** Call config */

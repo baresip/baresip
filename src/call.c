@@ -1604,7 +1604,7 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
-	bool support_replaces_hdr;
+	(void)msg;
 
 	MAGIC_CHECK(call);
 
@@ -1615,10 +1615,7 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 
 	call_stream_start(call, true);
 
-	/* check if replaces is supported on outgoing call */
-	support_replaces_hdr = sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED,
-								"replaces");
-	if (support_replaces_hdr) {
+	if (call_is_outgoing(call)) {
 		call->support_replaces = true;
 	}
 
@@ -2342,8 +2339,8 @@ int call_transfer(struct call *call, const char *uri)
 /**
  * Transfer the call to a target SIP uri and replace the source call
  *
- * @param call  Call object target
- * @param call  Call object source
+ * @param call         Call object target
+ * @param source_call  Call object source
  *
  * @return 0 if success, otherwise errorcode
  */
