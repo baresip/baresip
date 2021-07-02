@@ -3,7 +3,7 @@ name: ccheck
 on: [push, pull_request]
 
 jobs:
-  build:
+  ccheck:
 
     runs-on: ubuntu-latest
 
