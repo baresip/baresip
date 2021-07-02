@@ -31,6 +31,7 @@ static struct config core_config = {
 		"",
 		"",
 		"",
+		0,
 		SIP_TRANSP_UDP,
 		false,
 		0xa0,
@@ -246,6 +247,25 @@ static enum jbuf_type resolve_jbuf_type(const struct pl *pl)
 }
 
 
+static void decode_sip_transports(struct config_sip *cfg,
+				      const struct pl *pl)
+{
+	uint8_t i;
+	const char *tr[] = {
+		"udp",
+		"tcp",
+		"tls",
+		"ws",
+		"wss"
+	};
+
+	for (i = 0; i < ARRAY_SIZE(tr); ++i) {
+		bool en = 0 == re_regex(pl->p, pl->l, tr[i]);
+	      u32mask_enable(&cfg->transports, i, en);
+	}
+}
+
+
 /**
  * Parse the core configuration file and update baresip core config
  *
@@ -262,6 +282,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	struct pl txmode;
 	struct pl jbtype;
 	struct pl tr;
+	struct pl pl;
 	uint32_t v;
 	int err = 0;
 
@@ -293,6 +314,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   sizeof(cfg->sip.cafile));
 	(void)conf_get_str(conf, "sip_capath", cfg->sip.capath,
 			   sizeof(cfg->sip.capath));
+	if (0 == conf_get(conf, "sip_transports", &pl))
+		decode_sip_transports(&cfg->sip, &pl);
 	if (!str_isset(cfg->sip.cafile) && !str_isset(cfg->sip.capath))
 		cfg->sip.verify_server = false;
 
@@ -807,6 +830,27 @@ static const char *detect_module_path(bool *valid)
 		*valid = true;
 
 	return current;
+}
+
+
+void u32mask_enable(uint32_t *mask, uint8_t bit, bool enable)
+{
+	if (!mask)
+		return;
+
+	if (enable)
+		*mask |=  (1u << bit);
+	else
+		*mask &= ~(1u << bit);
+}
+
+
+bool u32mask_enabled(uint32_t *mask, uint8_t bit)
+{
+	if (!mask)
+		return false;
+
+	return 0 != (*mask & (1u << bit));
 }
 
 

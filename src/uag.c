@@ -17,10 +17,8 @@ static struct uag uag = {
 	NULL,
 	NULL,
 	NULL,
-	true,
-	true,
-	true,
 	false,
+	0,
 	NULL,
 	NULL,
 	false,
@@ -332,9 +330,9 @@ static int add_transp_af(const struct sa *laddr)
 		sa_set_port(&local, 0);
 	}
 
-	if (uag.use_udp)
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_UDP))
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_UDP, &local);
-	if (uag.use_tcp)
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_TCP))
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_TCP, &local);
 	if (err) {
 		warning("ua: SIP Transport failed: %m\n", err);
@@ -342,7 +340,7 @@ static int add_transp_af(const struct sa *laddr)
 	}
 
 #ifdef USE_TLS
-	if (uag.use_tls) {
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_TLS)) {
 		/* Build our SSL context*/
 		if (!uag.tls) {
 			if (str_isset(uag.cfg->cert)) {
@@ -393,47 +391,53 @@ static int add_transp_af(const struct sa *laddr)
 	}
 #endif
 
-	err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WS, &local,
-				     false, NULL, NULL);
-	if (err) {
-		warning("ua: could not add Websock transport (%m)\n", err);
-		return err;
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_WS)) {
+		err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WS, &local,
+				false, NULL, NULL);
+		if (err) {
+			warning("ua: could not add Websock transport (%m)\n",
+					err);
+			return err;
+		}
 	}
 
 #ifdef USE_TLS
-	if (!uag.wss_tls) {
-		err = tls_alloc(&uag.wss_tls, TLS_METHOD_SSLV23,
-				NULL, NULL);
-		if (err) {
-			warning("ua: wss tls_alloc() failed: %m\n", err);
-			return err;
-		}
-
-		err = tls_set_verify_purpose(uag.wss_tls, "sslserver");
-		if (err) {
-			warning("ua: wss tls_set_verify_purpose() failed: "
-				"%m\n",
-				err);
-			return err;
-		}
-
-		if (cafile || capath) {
-			err = tls_add_cafile_path(uag.wss_tls, cafile, capath);
+	if (u32mask_enabled(&uag.transports, SIP_TRANSP_WSS)) {
+		if (!uag.wss_tls) {
+			err = tls_alloc(&uag.wss_tls, TLS_METHOD_SSLV23,
+					NULL, NULL);
 			if (err) {
-				warning("ua: wss tls_add_ca() failed:"
-					" %m\n", err);
+				warning("ua: wss tls_alloc() failed: %m\n",
+					err);
+				return err;
 			}
-		}
 
-		if (!uag.cfg->verify_server)
-			tls_disable_verify_server(uag.wss_tls);
-	}
-	err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WSS, &local,
-				     false, uag.cfg->cert, uag.wss_tls);
-	if (err) {
-		warning("ua: could not add secure Websock transport (%m)\n",
-			err);
-		return err;
+			err = tls_set_verify_purpose(uag.wss_tls, "sslserver");
+			if (err) {
+				warning("ua: wss tls_set_verify_purpose() "
+					"failed: %m\n", err);
+				return err;
+			}
+
+			if (cafile || capath) {
+				err = tls_add_cafile_path(uag.wss_tls, cafile,
+							  capath);
+				if (err) {
+					warning("ua: wss tls_add_ca() failed:"
+							" %m\n", err);
+				}
+			}
+
+			if (!uag.cfg->verify_server)
+				tls_disable_verify_server(uag.wss_tls);
+		}
+		err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WSS, &local,
+				false, uag.cfg->cert, uag.wss_tls);
+		if (err) {
+			warning("ua: could not add secure Websock transport "
+				"(%m)\n", err);
+			return err;
+		}
 	}
 #endif
 
@@ -520,9 +524,16 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls)
 	uag.cfg = &cfg->sip;
 	bsize = 16;
 
-	uag.use_udp = udp;
-	uag.use_tcp = tcp;
-	uag.use_tls = tls;
+	if (cfg->sip.transports) {
+		uag.transports = cfg->sip.transports;
+	}
+	else {
+		u32mask_enable(&uag.transports, SIP_TRANSP_UDP, udp);
+		u32mask_enable(&uag.transports, SIP_TRANSP_TCP, tcp);
+		u32mask_enable(&uag.transports, SIP_TRANSP_TLS, tls);
+		u32mask_enable(&uag.transports, SIP_TRANSP_WS,  true);
+		u32mask_enable(&uag.transports, SIP_TRANSP_WSS, true);
+	}
 
 	list_init(&uag.ual);
 
@@ -1216,51 +1227,17 @@ bool uag_dnd(void)
 
 
 /**
- * Enable/Disable UDP transport
+ * Enable/Disable a transport protocol
  *
- * @param en  UDP enable flag
+ * @param tp  Transport protocol
+ * @param en  true enables the protocol, false disables
  *
  * @return 0 if success, otherwise errorcode
  */
-int uag_enable_udp(bool en)
+int uag_enable_transport(enum sip_transp tp, bool en)
 {
-	if (en == uag.use_udp)
-		return 0;
 
-	uag.use_udp = en;
-
-	return uag_reset_transp(true, true);
-}
-
-
-/**
- * Enable/Disable TCP transport
- *
- * @param en  UDP enable flag
- */
-int uag_enable_tcp(bool en)
-{
-	if (en == uag.use_tcp)
-		return 0;
-
-	uag.use_tcp = en;
-
-	return uag_reset_transp(true, true);
-}
-
-
-/**
- * Enable/Disable TLS transport
- *
- * @param en  TLS enable flag
- */
-int uag_enable_tls(bool en)
-{
-	if (en == uag.use_tls)
-		return 0;
-
-	uag.use_tls = en;
-
+	u32mask_enable(&uag.transports, tp, en);
 	return uag_reset_transp(true, true);
 }
 

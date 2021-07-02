@@ -11,6 +11,7 @@ poll_method		epoll		# poll, select, epoll ..
 #sip_listen		0.0.0.0:5060
 #sip_certificate	cert.pem
 sip_cafile		/etc/ssl/certs/ca-certificates.crt
+#sip_transports		udp,tcp,tls,ws,wss
 #sip_trans_def		udp
 sip_verify_server	yes
 sip_tos			160 # See TOS fields!

@@ -674,62 +674,43 @@ static int cmd_dnd(struct re_printf *pf, void *arg)
 }
 
 
-static int cmd_enudp(struct re_printf *pf, void *arg)
+static int cmd_enable_transp(struct re_printf *pf, void *arg)
 {
+	struct pl word1, word2;
 	int err = 0;
 	const struct cmd_arg *carg = arg;
 	bool en = true;
+	enum sip_transp tp;
+	char *buf = NULL;
+	const char *usage = "usage: /entransp <udp|tcp|tls|ws|wss> <yes|no>\n";
 
-	err = str_bool(&en, carg->prm);
+	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [^ ]+", &word1,
+			&word2);
 	if (err) {
-		re_hprintf(pf, "usage: /enudp <yes|no>\n");
+		re_hprintf(pf, "%s", usage);
+		return EINVAL;
+	}
+
+	tp = sip_transp_decode(&word1);
+	if (tp == SIP_TRANSP_NONE) {
+		re_hprintf(pf, "%s", usage);
+		return EINVAL;
+	}
+
+	err = pl_strdup(&buf, &word2);
+	if (err)
+		return err;
+
+	err = str_bool(&en, buf);
+	if (err) {
+		re_hprintf(pf, "%s", usage);
 		goto out;
 	}
 
-	err = uag_enable_udp(en);
+	err = uag_enable_transport(tp, en);
 
  out:
-
-	return err;
-}
-
-
-static int cmd_entcp(struct re_printf *pf, void *arg)
-{
-	int err = 0;
-	const struct cmd_arg *carg = arg;
-	bool en = true;
-
-	err = str_bool(&en, carg->prm);
-	if (err) {
-		re_hprintf(pf, "usage: /entcp <yes|no>\n");
-		goto out;
-	}
-
-	err = uag_enable_tcp(en);
-
- out:
-
-	return err;
-}
-
-
-static int cmd_entls(struct re_printf *pf, void *arg)
-{
-	int err = 0;
-	const struct cmd_arg *carg = arg;
-	bool en = true;
-
-	err = str_bool(&en, carg->prm);
-	if (err) {
-		re_hprintf(pf, "usage: /entls <yes|no>\n");
-		goto out;
-	}
-
-	err = uag_enable_tls(en);
-
- out:
-
+	mem_deref(buf);
 	return err;
 }
 
@@ -1348,9 +1329,7 @@ static const struct cmd cmdv[] = {
 {"dialdir",   0,    CMD_PRM, "Dial with audio and video"
                              "direction.",              cmd_dialdir          },
 {"dnd",       0,    CMD_PRM, "Set Do not Disturb",      cmd_dnd              },
-{"enudp",     0,    CMD_PRM, "Enable/Disable UDP transport", cmd_enudp       },
-{"entcp",     0,    CMD_PRM, "Enable/Disable TCP transport", cmd_entcp       },
-{"entls",     0,    CMD_PRM, "Enable/Disable TLS transport", cmd_entls       },
+{"entransp",  0,    CMD_PRM, "Enable/Disable transport", cmd_enable_transp   },
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"hangupall", 0,    CMD_PRM, "Hangup all calls with direction"
                                                        ,cmd_hangupall        },

@@ -292,6 +292,7 @@ struct config_sip {
 	char cert[256];         /**< SIP Certificate                */
 	char cafile[256];       /**< SIP CA-file                    */
 	char capath[256];       /**< SIP CA-path                    */
+	uint32_t transports;    /**< Supported transports mask      */
 	enum sip_transp transp; /**< Default outgoing SIP transport protocol */
 	bool verify_server;     /**< Enable SIP TLS verify server   */
 	uint8_t tos;            /**< Type-of-Service for SIP        */
@@ -857,9 +858,7 @@ void uag_enable_sip_trace(bool enable);
 int  uag_reset_transp(bool reg, bool reinvite);
 void uag_set_sub_handler(sip_msg_h *subh);
 int  uag_set_extra_params(const char *eprm);
-int  uag_enable_udp(bool en);
-int  uag_enable_tcp(bool en);
-int  uag_enable_tls(bool en);
+int  uag_enable_transport(enum sip_transp tp, bool en);
 struct ua   *uag_find(const struct pl *cuser);
 struct ua   *uag_find_msg(const struct sip_msg *msg);
 struct ua   *uag_find_aor(const char *aor);
