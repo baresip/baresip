@@ -1,6 +1,14 @@
 name: Tools
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tools'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'tools'
 
 jobs:
   tools:
