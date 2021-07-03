@@ -679,6 +679,29 @@ struct dnsc *net_dnsc(const struct network *net)
 }
 
 
+static void handle_addr(const struct sa *ip, net_ifaddr_h *ifh, void *arg)
+{
+	if (sa_isset(ip, SA_ADDR)) {
+
+		char ifname[256] = "???";
+
+		net_if_getname(ifname, sizeof(ifname), sa_af(ip), ip);
+
+		ifh(ifname, ip, arg);
+	}
+}
+
+
+void net_laddr_apply(const struct network *net, net_ifaddr_h *ifh, void *arg)
+{
+	if (!net || !ifh)
+		return;
+
+	handle_addr(&net->laddr,  ifh, arg);
+	handle_addr(&net->laddr6, ifh, arg);
+}
+
+
 /**
  * Print networking debug information
  *

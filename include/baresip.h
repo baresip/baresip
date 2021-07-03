@@ -707,6 +707,7 @@ int  net_set_af(struct network *net, int af);
 void net_dns_refresh(struct network *net);
 int  net_dns_debug(struct re_printf *pf, const struct network *net);
 int  net_debug(struct re_printf *pf, const struct network *net);
+void net_laddr_apply(const struct network *net, net_ifaddr_h *ifh, void *arg);
 const struct sa *net_laddr_af(const struct network *net, int af);
 struct dnsc     *net_dnsc(const struct network *net);
 
