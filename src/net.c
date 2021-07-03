@@ -26,15 +26,6 @@ struct network {
 };
 
 
-struct ifentry {
-	int af;
-	char *ifname;
-	struct sa *ip;
-	size_t sz;
-	bool found;
-};
-
-
 static void net_destructor(void *data)
 {
 	struct network *net = data;
