@@ -112,7 +112,6 @@ Distributed under BSD license
   - FFmpeg/libav libavformat/avdevice input
   - Direct Show video-source
   - MacOSX AVCapture video-source
-  - RST media player
   - Linux V4L/V4L2 video-source
   - X11 grabber video-source
   - DirectFB video-output
@@ -271,7 +270,6 @@ portaudio     Portaudio driver
 pulse         Pulseaudio driver
 presence      Presence module
 rtcpsummary   RTCP summary module
-rst           Radio streamer using mpg123
 sdl           Simple DirectMedia Layer 2.0 (SDL) video output driver
 selfview      Video selfview module
 snapshot      Save video-stream as PNG images

@@ -13,7 +13,6 @@
 #   USE_AVCAPTURE     AVFoundation video capture for OSX/iOS
 #   USE_AVCODEC       avcodec video codec module
 #   USE_AVFORMAT      avformat video source module
-#   USE_CAIRO         Cairo module
 #   USE_CODEC2        CODEC2 low-bitrate speech audio codec
 #   USE_CONS          Console input driver
 #   USE_COREAUDIO     MacOSX Coreaudio audio driver
@@ -99,9 +98,6 @@ USE_AVFORMAT := $(shell ([ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/local/include/libavdevice/avdevice.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavdevice/avdevice.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavdevice/avdevice.h ]) && echo "yes")
-USE_CAIRO  := $(shell [ -f $(SYSROOT)/include/cairo/cairo.h ] || \
-	[ -f $(SYSROOT)/local/include/cairo/cairo.h ] || \
-	[ -f $(SYSROOT_ALT)/include/cairo/cairo.h ] && echo "yes")
 USE_CODEC2  := $(shell [ -f $(SYSROOT)/include/codec2/codec2.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/codec2/codec2.h ] || \
 	[ -f $(SYSROOT_ALT)/include/codec2/codec2.h ] && echo "yes")
@@ -330,11 +326,6 @@ endif
 endif
 ifneq ($(USE_AVFILTER),)
 MODULES   += avfilter
-endif
-ifneq ($(USE_CAIRO),)
-ifneq ($(USE_MPG123),)
-MODULES   += rst
-endif
 endif
 ifneq ($(USE_CODEC2),)
 MODULES   += codec2
