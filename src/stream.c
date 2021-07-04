@@ -111,7 +111,7 @@ static void check_rtp_handler(void *arg)
 		  check_rtp_handler, strm);
 
 	/* If no RTP was received at all, check later */
-	if (!strm->ts_last)
+	if (!strm->rx.ts_last)
 		return;
 
 	/* We are in sendrecv mode, check when the last RTP packet
@@ -119,14 +119,14 @@ static void check_rtp_handler(void *arg)
 	 */
 	if (sdp_media_dir(strm->sdp) == SDP_SENDRECV) {
 
-		diff_ms = (int)(now - strm->ts_last);
+		diff_ms = (int)(now - strm->rx.ts_last);
 
 		debug("stream: last \"%s\" RTP packet: %d milliseconds\n",
 		      sdp_media_name(strm->sdp), diff_ms);
 
 		/* check for large jumps in time */
 		if (diff_ms > (3600 * 1000)) {
-			strm->ts_last = 0;
+			strm->rx.ts_last = 0;
 			return;
 		}
 
@@ -255,7 +255,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		return;
 	}
 
-	s->ts_last = tmr_jiffies();
+	s->rx.ts_last = tmr_jiffies();
 
 	if (!mbuf_get_left(mb))
 		return;
@@ -377,7 +377,7 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 
 	MAGIC_CHECK(s);
 
-	s->ts_last = tmr_jiffies();
+	s->rx.ts_last = tmr_jiffies();
 
 	switch (msg->hdr.pt) {
 
@@ -890,7 +890,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 		info("stream: Enable RTP timeout (%u milliseconds)\n",
 		     timeout_ms);
 
-		strm->ts_last = tmr_jiffies();
+		strm->rx.ts_last = tmr_jiffies();
 		tmr_start(&strm->tmr_rtp, 10, check_rtp_handler, strm);
 	}
 }

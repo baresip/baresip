@@ -285,7 +285,6 @@ struct stream {
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	stream_pt_h *pth;        /**< Stream payload type handler           */
 	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
-	uint64_t ts_last;        /**< Timestamp of last received RTP pkt    */
 	bool terminated;         /**< Stream is terminated flag             */
 	uint32_t rtp_timeout_ms; /**< RTP Timeout value in [ms]             */
 	bool rtp_estab;          /**< True if RTP stream is established     */
@@ -312,6 +311,7 @@ struct stream {
 		struct metric metric; /**< Metrics for receiving            */
 		struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
 		bool jbuf_started;    /**< True if jitter-buffer was started*/
+		uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
 		uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
 	} rx;
 };
