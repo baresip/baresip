@@ -571,6 +571,24 @@ static void picup_tmr_handler(void *arg)
 }
 
 
+static void send_fir(struct stream *s, bool pli)
+{
+	int err;
+
+	if (pli)
+		err = rtcp_send_pli(s->rtp, s->rx.ssrc_rx);
+	else
+		err = rtcp_send_fir(s->rtp, rtp_sess_ssrc(s->rtp));
+
+	if (err) {
+		s->tx.metric.n_err++;
+
+		warning("video: failed to send RTCP %s: %m\n",
+			pli ? "PLI" : "FIR", err);
+	}
+}
+
+
 static void request_picture_update(struct vrx *vrx)
 {
 	struct video *v = vrx->video;
@@ -581,7 +599,7 @@ static void request_picture_update(struct vrx *vrx)
 	tmr_start(&vrx->tmr_picup, PICUP_INTERVAL, picup_tmr_handler, vrx);
 
 	/* send RTCP FIR to peer */
-	stream_send_fir(v->strm, v->nack_pli);
+	send_fir(v->strm, v->nack_pli);
 
 	++vrx->n_picup;
 }

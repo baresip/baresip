@@ -334,7 +334,6 @@ void stream_hold(struct stream *s, bool hold);
 void stream_set_ldir(struct stream *s, enum sdp_dir dir);
 enum sdp_dir stream_ldir(struct stream *s);
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
-void stream_send_fir(struct stream *s, bool pli);
 void stream_reset(struct stream *s);
 void stream_set_bw(struct stream *s, uint32_t bps);
 int  stream_print(struct re_printf *pf, const struct stream *s);

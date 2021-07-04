@@ -833,27 +833,6 @@ void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx)
 }
 
 
-void stream_send_fir(struct stream *s, bool pli)
-{
-	int err;
-
-	if (!s)
-		return;
-
-	if (pli)
-		err = rtcp_send_pli(s->rtp, s->rx.ssrc_rx);
-	else
-		err = rtcp_send_fir(s->rtp, rtp_sess_ssrc(s->rtp));
-
-	if (err) {
-		s->tx.metric.n_err++;
-
-		warning("stream: failed to send RTCP %s: %m\n",
-			pli ? "PLI" : "FIR", err);
-	}
-}
-
-
 void stream_reset(struct stream *s)
 {
 	if (!s)
