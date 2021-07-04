@@ -149,10 +149,10 @@ static void check_rtp_handler(void *arg)
 
 static inline int lostcalc(struct stream *s, uint16_t seq)
 {
-	const uint16_t delta = seq - s->pseq;
+	const uint16_t delta = seq - s->rx.pseq;
 	int lostc;
 
-	if (s->pseq == (uint32_t)-1)
+	if (s->rx.pseq == (uint32_t)-1)
 		lostc = 0;
 	else if (delta == 0)
 		return -1;
@@ -163,7 +163,7 @@ static inline int lostcalc(struct stream *s, uint16_t seq)
 	else
 		return -2;
 
-	s->pseq = seq;
+	s->rx.pseq = seq;
 
 	return lostc;
 }
@@ -275,10 +275,10 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			s->rtpestabh(s, s->sess_arg);
 	}
 
-	if (!s->pseq_set) {
+	if (!s->rx.pseq_set) {
 		s->rx.ssrc_rx = hdr->ssrc;
-		s->pseq = hdr->seq - 1;
-		s->pseq_set = true;
+		s->rx.pseq = hdr->seq - 1;
+		s->rx.pseq_set = true;
 	}
 	else if (hdr->ssrc != s->rx.ssrc_rx) {
 
@@ -288,7 +288,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		     mbuf_get_left(mb), src);
 
 		s->rx.ssrc_rx = hdr->ssrc;
-		s->pseq = hdr->seq - 1;
+		s->rx.pseq = hdr->seq - 1;
 		flush = true;
 	}
 
@@ -521,8 +521,9 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->pth    = pth;
 	s->rtcph  = rtcph;
 	s->arg    = arg;
-	s->pseq   = -1;
 	s->ldir   = SDP_SENDRECV;
+
+	s->rx.pseq = -1;
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);

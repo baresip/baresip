@@ -280,8 +280,6 @@ struct stream {
 	struct sa raddr_rtcp;    /**< Remote RTCP address                   */
 	enum media_type type;    /**< Media type, e.g. audio/video          */
 	char *cname;             /**< RTCP Canonical end-point identifier   */
-	uint32_t pseq;           /**< Sequence number for incoming RTP      */
-	bool pseq_set;           /**< True if sequence number is set        */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	stream_pt_h *pth;        /**< Stream payload type handler           */
 	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
@@ -313,6 +311,8 @@ struct stream {
 		bool jbuf_started;    /**< True if jitter-buffer was started*/
 		uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
 		uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
+		uint32_t pseq;        /**< Sequence number for incoming RTP */
+		bool pseq_set;        /**< True if sequence number is set   */
 	} rx;
 };
 
