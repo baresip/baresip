@@ -70,7 +70,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->mes);
 	mem_deref(s->mencs);
 	mem_deref(s->mns);
-	mem_deref(s->jbuf);
+	mem_deref(s->rx.jbuf);
 	mem_deref(s->rtp);
 	mem_deref(s->cname);
 }
@@ -91,8 +91,8 @@ static void stream_close(struct stream *strm, int err)
 
 	strm->terminated = true;
 	strm->errorh = NULL;
-	strm->jbuf_started = false;
-	jbuf_flush(strm->jbuf);
+	strm->rx.jbuf_started = false;
+	jbuf_flush(strm->rx.jbuf);
 
 	if (errorh)
 		errorh(strm, err, strm->sess_arg);
@@ -297,15 +297,15 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (err)
 		return;
 
-	if (s->jbuf) {
+	if (s->rx.jbuf) {
 
 		/* Put frame in Jitter Buffer */
 		if (flush) {
-			jbuf_flush(s->jbuf);
-			s->jbuf_started = false;
+			jbuf_flush(s->rx.jbuf);
+			s->rx.jbuf_started = false;
 		}
 
-		err = jbuf_put(s->jbuf, hdr, mb);
+		err = jbuf_put(s->rx.jbuf, hdr, mb);
 		if (err) {
 			info("stream: %s: dropping %u bytes from %J"
 			     " [seq=%u, ts=%u] (%m)\n",
@@ -344,15 +344,15 @@ int stream_decode(struct stream *s)
 	int lostc;
 	int err;
 
-	if (!s->jbuf)
+	if (!s->rx.jbuf)
 		return ENOENT;
 
-	err = jbuf_get(s->jbuf, &hdr, &mb);
+	err = jbuf_get(s->rx.jbuf, &hdr, &mb);
 	if (err && err != EAGAIN)
 		return ENOENT;
 
 	lostc = lostcalc(s, hdr.seq);
-	s->jbuf_started = true;
+	s->rx.jbuf_started = true;
 
 	handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0);
 	mem_deref(mb);
@@ -366,7 +366,7 @@ void stream_silence_on(struct stream *s, bool on)
 	if (!s)
 		return;
 
-	jbuf_silence(s->jbuf, on);
+	jbuf_silence(s->rx.jbuf, on);
 }
 
 
@@ -542,10 +542,10 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	if (cfg->jbtype != JBUF_OFF &&
 			cfg->jbuf_del.min && cfg->jbuf_del.max) {
 
-		err  = jbuf_alloc(&s->jbuf, cfg->jbuf_del.min,
+		err  = jbuf_alloc(&s->rx.jbuf, cfg->jbuf_del.min,
 				cfg->jbuf_del.max);
-		err |= jbuf_set_type(s->jbuf, cfg->jbtype);
-		err |= jbuf_set_wish(s->jbuf, cfg->jbuf_wish);
+		err |= jbuf_set_type(s->rx.jbuf, cfg->jbtype);
+		err |= jbuf_set_wish(s->rx.jbuf, cfg->jbuf_wish);
 		if (err)
 			goto out;
 	}
@@ -772,7 +772,7 @@ int stream_jbuf_stat(struct re_printf *pf, const struct stream *s)
 
 	err  = re_hprintf(pf, " %s:", sdp_media_name(s->sdp));
 
-	err |= jbuf_stats(s->jbuf, &stat);
+	err |= jbuf_stats(s->rx.jbuf, &stat);
 	if (err) {
 		err = re_hprintf(pf, "Jbuf stat: (not available)");
 	}
@@ -859,8 +859,8 @@ void stream_reset(struct stream *s)
 	if (!s)
 		return;
 
-	if (s->jbuf && s->jbuf_started)
-		jbuf_flush(s->jbuf);
+	if (s->rx.jbuf && s->rx.jbuf_started)
+		jbuf_flush(s->rx.jbuf);
 }
 
 
@@ -955,7 +955,7 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 			  s->menc_secure ? "yes" : "no");
 
 	err |= rtp_debug(pf, s->rtp);
-	err |= jbuf_debug(pf, s->jbuf);
+	err |= jbuf_debug(pf, s->rx.jbuf);
 
 	return err;
 }

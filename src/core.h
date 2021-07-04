@@ -271,7 +271,6 @@ struct stream {
 	enum sdp_dir ldir;       /**< SDP direction of the stream           */
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
-	struct jbuf *jbuf;       /**< Jitter Buffer for incoming RTP        */
 	const struct mnat *mnat; /**< Media NAT traversal module            */
 	struct mnat_media *mns;  /**< Media NAT traversal state             */
 	const struct menc *menc; /**< Media encryption module               */
@@ -284,7 +283,6 @@ struct stream {
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
 	bool pseq_set;           /**< True if sequence number is set        */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
-	bool jbuf_started;       /**< True if jitter-buffer was started     */
 	stream_pt_h *pth;        /**< Stream payload type handler           */
 	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
 	uint64_t ts_last;        /**< Timestamp of last received RTP pkt    */
@@ -312,6 +310,8 @@ struct stream {
 	/* Receive */
 	struct {
 		struct metric metric; /**< Metrics for receiving            */
+		struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
+		bool jbuf_started;    /**< True if jitter-buffer was started*/
 		uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
 	} rx;
 };
