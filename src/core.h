@@ -277,12 +277,10 @@ struct stream {
 	const struct menc *menc; /**< Media encryption module               */
 	struct menc_sess *mencs; /**< Media encryption session state        */
 	struct menc_media *mes;  /**< Media Encryption media state          */
-	struct metric metric_rx; /**< Metrics for receiving                 */
 	struct sa raddr_rtp;     /**< Remote RTP address                    */
 	struct sa raddr_rtcp;    /**< Remote RTCP address                   */
 	enum media_type type;    /**< Media type, e.g. audio/video          */
 	char *cname;             /**< RTCP Canonical end-point identifier   */
-	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
 	bool pseq_set;           /**< True if sequence number is set        */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
@@ -310,6 +308,12 @@ struct stream {
 		struct metric metric;  /**< Metrics for transmit            */
 		int pt_enc;            /**< Payload type for encoding       */
 	} tx;
+
+	/* Receive */
+	struct {
+		struct metric metric; /**< Metrics for receiving            */
+		uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
+	} rx;
 };
 
 int  stream_alloc(struct stream **sp, struct list *streaml,

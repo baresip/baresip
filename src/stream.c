@@ -24,7 +24,7 @@ enum {
 
 static void print_rtp_stats(const struct stream *s)
 {
-	bool started = s->tx.metric.n_packets>0 || s->metric_rx.n_packets>0;
+	bool started = s->tx.metric.n_packets>0 || s->rx.metric.n_packets>0;
 
 	if (!started)
 		return;
@@ -35,10 +35,10 @@ static void print_rtp_stats(const struct stream *s)
 	     "errors:         %7d      %7d\n"
 	     ,
 	     sdp_media_name(s->sdp),
-	     s->tx.metric.n_packets, s->metric_rx.n_packets,
+	     s->tx.metric.n_packets, s->rx.metric.n_packets,
 	     1.0*metric_avg_bitrate(&s->tx.metric)/1000.0,
-	     1.0*metric_avg_bitrate(&s->metric_rx)/1000.0,
-	     s->tx.metric.n_err, s->metric_rx.n_err
+	     1.0*metric_avg_bitrate(&s->rx.metric)/1000.0,
+	     s->tx.metric.n_err, s->rx.metric.n_err
 	     );
 
 	if (s->rtcp_stats.tx.sent || s->rtcp_stats.rx.sent) {
@@ -62,7 +62,7 @@ static void stream_destructor(void *arg)
 		print_rtp_stats(s);
 
 	metric_reset(&s->tx.metric);
-	metric_reset(&s->metric_rx);
+	metric_reset(&s->rx.metric);
 
 	tmr_cancel(&s->tmr_rtp);
 	list_unlink(&s->le);
@@ -263,7 +263,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (!(sdp_media_ldir(s->sdp) & SDP_RECVONLY))
 		return;
 
-	metric_add_packet(&s->metric_rx, mbuf_get_left(mb));
+	metric_add_packet(&s->rx.metric, mbuf_get_left(mb));
 
 	if (!s->rtp_estab) {
 		info("stream: incoming rtp for '%s' established"
@@ -276,18 +276,18 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	}
 
 	if (!s->pseq_set) {
-		s->ssrc_rx = hdr->ssrc;
+		s->rx.ssrc_rx = hdr->ssrc;
 		s->pseq = hdr->seq - 1;
 		s->pseq_set = true;
 	}
-	else if (hdr->ssrc != s->ssrc_rx) {
+	else if (hdr->ssrc != s->rx.ssrc_rx) {
 
 		info("stream: %s: SSRC changed 0x%x -> 0x%x"
 		     " (%u bytes from %J)\n",
-		     sdp_media_name(s->sdp), s->ssrc_rx, hdr->ssrc,
+		     sdp_media_name(s->sdp), s->rx.ssrc_rx, hdr->ssrc,
 		     mbuf_get_left(mb), src);
 
-		s->ssrc_rx = hdr->ssrc;
+		s->rx.ssrc_rx = hdr->ssrc;
 		s->pseq = hdr->seq - 1;
 		flush = true;
 	}
@@ -311,7 +311,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			     " [seq=%u, ts=%u] (%m)\n",
 			     sdp_media_name(s->sdp), mb->end,
 			     src, hdr->seq, hdr->ts, err);
-			s->metric_rx.n_err++;
+			s->rx.metric.n_err++;
 		}
 
 		if (s->type == MEDIA_VIDEO ||
@@ -603,7 +603,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->tx.pt_enc = -1;
 
 	err  = metric_init(&s->tx.metric);
-	err |= metric_init(&s->metric_rx);
+	err |= metric_init(&s->rx.metric);
 	if (err)
 		goto out;
 
@@ -841,7 +841,7 @@ void stream_send_fir(struct stream *s, bool pli)
 		return;
 
 	if (pli)
-		err = rtcp_send_pli(s->rtp, s->ssrc_rx);
+		err = rtcp_send_pli(s->rtp, s->rx.ssrc_rx);
 	else
 		err = rtcp_send_fir(s->rtp, rtp_sess_ssrc(s->rtp));
 
@@ -968,7 +968,7 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 
 	return re_hprintf(pf, " %s=%u/%u", sdp_media_name(s->sdp),
 			  s->tx.metric.cur_bitrate,
-			  s->metric_rx.cur_bitrate);
+			  s->rx.metric.cur_bitrate);
 }
 
 
@@ -1033,7 +1033,7 @@ uint32_t stream_metric_get_tx_n_err(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_n_packets(const struct stream *strm)
 {
-	return strm ? strm->metric_rx.n_packets : 0;
+	return strm ? strm->rx.metric.n_packets : 0;
 }
 
 
@@ -1046,7 +1046,7 @@ uint32_t stream_metric_get_rx_n_packets(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
 {
-	return strm ? strm->metric_rx.n_bytes : 0;
+	return strm ? strm->rx.metric.n_bytes : 0;
 }
 
 
@@ -1059,7 +1059,7 @@ uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
 {
-	return strm ? strm->metric_rx.n_err : 0;
+	return strm ? strm->rx.metric.n_err : 0;
 }
 
 
