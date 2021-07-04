@@ -359,7 +359,7 @@ static int packet_handler(bool marker, uint64_t ts,
 	/* add random timestamp offset */
 	rtp_ts = vtx->ts_offset + (ts & 0xffffffff);
 
-	err = vidqent_alloc(&qent, marker, strm->pt_enc, rtp_ts,
+	err = vidqent_alloc(&qent, marker, strm->tx.pt_enc, rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
 	if (err)
 		return err;

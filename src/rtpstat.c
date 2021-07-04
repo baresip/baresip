@@ -55,11 +55,12 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 			 call_duration(call),
 
 			 s->metric_rx.n_packets,
-			 s->metric_tx.n_packets,
+			 stream_metric_get_tx_n_packets(s),
 
 			 rtcp->rx.lost, rtcp->tx.lost,
 
-			 s->metric_rx.n_err, s->metric_tx.n_err,
+			 s->metric_rx.n_err,
+			 stream_metric_get_tx_n_err(s),
 
 			 /* timestamp units (ie: 8 ts units = 1 ms @ 8KHZ) */
 			 1.0 * rtcp->rx.jit/1000 * (srate_rx/1000),

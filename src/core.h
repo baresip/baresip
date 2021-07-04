@@ -277,7 +277,6 @@ struct stream {
 	const struct menc *menc; /**< Media encryption module               */
 	struct menc_sess *mencs; /**< Media encryption session state        */
 	struct menc_media *mes;  /**< Media Encryption media state          */
-	struct metric metric_tx; /**< Metrics for transmit                  */
 	struct metric metric_rx; /**< Metrics for receiving                 */
 	struct sa raddr_rtp;     /**< Remote RTP address                    */
 	struct sa raddr_rtcp;    /**< Remote RTCP address                   */
@@ -286,7 +285,6 @@ struct stream {
 	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
 	uint32_t pseq;           /**< Sequence number for incoming RTP      */
 	bool pseq_set;           /**< True if sequence number is set        */
-	int pt_enc;              /**< Payload type for encoding             */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool jbuf_started;       /**< True if jitter-buffer was started     */
 	stream_pt_h *pth;        /**< Stream payload type handler           */
@@ -306,6 +304,12 @@ struct stream {
 	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
 	stream_error_h *errorh;  /**< Stream error handler                  */
 	void *sess_arg;          /**< Session handlers argument             */
+
+	/* Transmit */
+	struct {
+		struct metric metric;  /**< Metrics for transmit            */
+		int pt_enc;            /**< Payload type for encoding       */
+	} tx;
 };
 
 int  stream_alloc(struct stream **sp, struct list *streaml,
