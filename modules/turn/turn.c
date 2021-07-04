@@ -14,7 +14,7 @@
  */
 
 
-enum {LAYER = 0};
+enum {LAYER = 0, LAYER_APP = 10};
 enum {COMPC = 2};
 
 
@@ -27,6 +27,8 @@ struct mnat_sess {
 	mnat_estab_h *estabh;
 	void *arg;
 	int mediac;
+	int proto;
+	bool secure;
 };
 
 
@@ -40,6 +42,10 @@ struct mnat_media {
 		struct sa addr;
 		struct turnc *turnc;
 		struct udp_sock *sock;
+		struct udp_helper *uh_app;
+		struct tcp_conn *tc;
+		struct tls_conn *tlsc;
+		struct mbuf *mb;
 		unsigned ix;
 	} compv[COMPC];
 };
@@ -65,8 +71,118 @@ static void media_destructor(void *arg)
 	mem_deref(m->sdpm);
 
 	for (i=0; i<COMPC; i++) {
-		mem_deref(m->compv[i].turnc);
-		mem_deref(m->compv[i].sock);
+		struct comp *comp = &m->compv[i];
+
+		mem_deref(comp->uh_app);
+		mem_deref(comp->turnc);
+		mem_deref(comp->sock);
+		mem_deref(comp->tlsc);
+		mem_deref(comp->tc);
+		mem_deref(comp->mb);
+	}
+}
+
+
+static void data_handler(struct comp *comp, const struct sa *src,
+			 struct mbuf *mb_pkt)
+{
+       struct mbuf *mb = mbuf_alloc(mbuf_get_left(mb_pkt));
+       if (!mb)
+               return;
+
+       /* mbuf cloning is needed due to jitter buffer */
+
+       mbuf_write_mem(mb, mbuf_buf(mb_pkt), mbuf_get_left(mb_pkt));
+       mb->pos = 0;
+
+       /* inject packet into UDP socket */
+       udp_recv_helper(comp->sock, src, mb, comp->uh_app);
+
+       mem_deref(mb);
+}
+
+
+static void tcp_recv_handler(struct mbuf *mb_pkt, void *arg)
+{
+	struct comp *comp = arg;
+	struct mnat_media *m = comp->m;
+	int err = 0;
+
+	/* re-assembly of fragments */
+	if (comp->mb) {
+		size_t pos;
+
+		pos = comp->mb->pos;
+
+		comp->mb->pos = comp->mb->end;
+
+		err = mbuf_write_mem(comp->mb,
+				     mbuf_buf(mb_pkt), mbuf_get_left(mb_pkt));
+		if (err)
+			goto out;
+
+		comp->mb->pos = pos;
+	}
+	else {
+		comp->mb = mem_ref(mb_pkt);
+	}
+
+	for (;;) {
+
+		size_t len, pos, end;
+		struct sa src;
+		uint16_t typ;
+
+		if (mbuf_get_left(comp->mb) < 4)
+			break;
+
+		typ = ntohs(mbuf_read_u16(comp->mb));
+		len = ntohs(mbuf_read_u16(comp->mb));
+
+		if (typ < 0x4000)
+			len += STUN_HEADER_SIZE;
+		else if (typ < 0x8000)
+			len += 4;
+		else {
+			err = EBADMSG;
+			goto out;
+		}
+
+		comp->mb->pos -= 4;
+
+		if (mbuf_get_left(comp->mb) < len)
+			break;
+
+		pos = comp->mb->pos;
+		end = comp->mb->end;
+
+		comp->mb->end = pos + len;
+
+		/* forward packet to TURN client */
+		err = turnc_recv(comp->turnc, &src, comp->mb);
+		if (err)
+			goto out;
+
+		if (mbuf_get_left(comp->mb)) {
+			data_handler(comp, &src, comp->mb);
+		}
+
+		/* 4 byte alignment */
+		while (len & 0x03)
+			++len;
+
+		comp->mb->pos = pos + len;
+		comp->mb->end = end;
+
+		if (comp->mb->pos >= comp->mb->end) {
+			comp->mb = mem_deref(comp->mb);
+			break;
+		}
+	}
+
+ out:
+	if (err) {
+		m->sess->estabh(err, 0, NULL, m->sess->arg);
 	}
 }
 
@@ -104,6 +220,35 @@ static void turn_handler(int err, uint16_t scode, const char *reason,
 }
 
 
+static void tcp_estab_handler(void *arg)
+{
+	struct comp *comp = arg;
+	struct mnat_media *m = comp->m;
+	int err;
+
+	info("turn: [%u] %s established for '%s'\n", comp->ix,
+	     m->sess->secure ? "TLS" : "TCP",
+	     sdp_media_name(m->sdpm));
+
+	err = turnc_alloc(&comp->turnc, NULL, IPPROTO_TCP, comp->tc, 0,
+			  &m->sess->srv,
+			  m->sess->user, m->sess->pass,
+			  TURN_DEFAULT_LIFETIME, turn_handler, comp);
+	if (err) {
+		m->sess->estabh(err, 0, NULL, m->sess->arg);
+	}
+}
+
+
+static void tcp_close_handler(int err, void *arg)
+{
+	struct comp *comp = arg;
+	struct mnat_media *m = comp->m;
+
+	m->sess->estabh(err ? err : ECONNRESET, 0, NULL, m->sess->arg);
+}
+
+
 static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 {
 	unsigned i;
@@ -113,12 +258,38 @@ static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 
 		struct comp *comp = &m->compv[i];
 
-		if (comp->sock) {
+		if (!comp->sock)
+			continue;
+
+		switch (sess->proto) {
+
+		case IPPROTO_UDP:
 			err |= turnc_alloc(&comp->turnc, NULL,
 					   IPPROTO_UDP, comp->sock, LAYER,
 					   &sess->srv, sess->user, sess->pass,
 					   TURN_DEFAULT_LIFETIME,
 					   turn_handler, comp);
+			break;
+
+		case IPPROTO_TCP:
+			err = tcp_connect(&comp->tc, &sess->srv,
+					  tcp_estab_handler, tcp_recv_handler,
+					  tcp_close_handler, comp);
+			if (err)
+				break;
+
+			if (sess->secure) {
+				struct tls *tls = uag_tls();
+
+				err = tls_start_tcp(&comp->tlsc, tls,
+						    comp->tc, 0);
+				if (err)
+					break;
+			}
+			break;
+
+		default:
+			return EPROTONOSUPPORT;
 		}
 	}
 
@@ -152,6 +323,18 @@ static void dns_handler(int err, const struct sa *srv, void *arg)
 }
 
 
+/* dst contains RTP packet -- [RTP Hdr].[Payload] */
+static bool send_handler(int *err, struct sa *dst, struct mbuf *mb, void *arg)
+{
+       struct comp *comp = arg;
+
+       /* relay packet via TURN over TCP */
+       *err = turnc_send(comp->turnc, dst, mb);
+
+       return true;
+}
+
+
 static int session_alloc(struct mnat_sess **sessp,
 			 const struct mnat *mnat, struct dnsc *dnsc,
 			 int af, const struct stun_uri *srv,
@@ -159,6 +342,7 @@ static int session_alloc(struct mnat_sess **sessp,
 			 struct sdp_session *ss, bool offerer,
 			 mnat_estab_h *estabh, void *arg)
 {
+	const char *stun_proto, *stun_usage;
 	struct mnat_sess *sess;
 	int err;
 	(void)mnat;
@@ -168,8 +352,35 @@ static int session_alloc(struct mnat_sess **sessp,
 	if (!sessp || !dnsc || !srv || !user || !pass || !ss || !estabh)
 		return EINVAL;
 
-	if (srv->scheme != STUN_SCHEME_TURN)
+	debug("turn: session: %H\n", stunuri_print, srv);
+
+	switch (srv->scheme) {
+
+	case STUN_SCHEME_TURN:
+		stun_usage = stun_usage_relay;
+		break;
+
+	case STUN_SCHEME_TURNS:
+		stun_usage = stuns_usage_relay;
+		break;
+
+	default:
 		return ENOTSUP;
+	}
+
+	switch (srv->proto) {
+
+	case IPPROTO_UDP:
+		stun_proto = stun_proto_udp;
+		break;
+
+	case IPPROTO_TCP:
+		stun_proto = stun_proto_tcp;
+		break;
+
+	default:
+		return EPROTONOSUPPORT;
+	}
 
 	sess = mem_zalloc(sizeof(*sess), session_destructor);
 	if (!sess)
@@ -180,11 +391,13 @@ static int session_alloc(struct mnat_sess **sessp,
 	if (err)
 		goto out;
 
+	sess->proto  = srv->proto;
+	sess->secure = srv->scheme == STUN_SCHEME_TURNS;
 	sess->estabh = estabh;
 	sess->arg    = arg;
 
 	err = stun_server_discover(&sess->dnsq, dnsc,
-				   stun_usage_relay, stun_proto_udp,
+				   stun_usage, stun_proto,
 				   af, srv->host, srv->port,
 				   dns_handler, sess);
 
@@ -223,13 +436,25 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->compv[1].sock = mem_ref(sock2);
 
 	for (i=0; i<COMPC; i++) {
+		struct comp *comp = &m->compv[i];
+
 		m->compv[i].m = m;
 		m->compv[i].ix = i;
+
+		if (comp->sock && sess->proto == IPPROTO_TCP) {
+
+			err = udp_register_helper(&comp->uh_app, comp->sock,
+						  LAYER_APP,
+						  send_handler, NULL, comp);
+			if (err)
+				goto out;
+		}
 	}
 
 	if (sa_isset(&sess->srv, SA_ALL))
 		err = media_start(sess, m);
 
+ out:
 	if (err)
 		mem_deref(m);
 	else {
