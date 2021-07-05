@@ -130,7 +130,7 @@ static void check_rtp_handler(void *arg)
 			return;
 		}
 
-		if (diff_ms > (int)strm->rtp_timeout_ms) {
+		if (diff_ms > (int)strm->rx.rtp_timeout) {
 
 			info("stream: no %s RTP packets received for"
 			     " %d milliseconds\n",
@@ -265,11 +265,11 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 	metric_add_packet(&s->rx.metric, mbuf_get_left(mb));
 
-	if (!s->rtp_estab) {
+	if (!s->rx.rtp_estab) {
 		info("stream: incoming rtp for '%s' established"
 		     ", receiving from %J\n",
 		     sdp_media_name(s->sdp), src);
-		s->rtp_estab = true;
+		s->rx.rtp_estab = true;
 
 		if (s->rtpestabh)
 			s->rtpestabh(s, s->sess_arg);
@@ -861,7 +861,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 	if (!sdp_media_has_media(stream_sdpmedia(strm)))
 		return;
 
-	strm->rtp_timeout_ms = timeout_ms;
+	strm->rx.rtp_timeout = timeout_ms;
 
 	tmr_cancel(&strm->tmr_rtp);
 

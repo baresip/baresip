@@ -284,8 +284,6 @@ struct stream {
 	stream_pt_h *pth;        /**< Stream payload type handler           */
 	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
 	bool terminated;         /**< Stream is terminated flag             */
-	uint32_t rtp_timeout_ms; /**< RTP Timeout value in [ms]             */
-	bool rtp_estab;          /**< True if RTP stream is established     */
 	bool hold;               /**< Stream is on-hold (local)             */
 	bool mnat_connected;     /**< Media NAT is connected                */
 	bool menc_secure;        /**< Media stream is secure                */
@@ -310,9 +308,11 @@ struct stream {
 		struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
 		bool jbuf_started;    /**< True if jitter-buffer was started*/
 		uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
+		uint32_t rtp_timeout; /**< RTP Timeout value in [ms]        */
 		uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
 		uint32_t pseq;        /**< Sequence number for incoming RTP */
 		bool pseq_set;        /**< True if sequence number is set   */
+		bool rtp_estab;       /**< True if RTP stream established   */
 	} rx;
 };
 
