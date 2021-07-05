@@ -388,6 +388,8 @@ struct config_sip *uag_cfg(void);
 const char *uag_eprm(void);
 bool uag_delayed_close(void);
 int uag_raise(struct ua *ua, struct le *le);
+bool uag_transp_isladdr(const struct sa *sa);
+bool uag_transp_obsolete(void);
 
 void u32mask_enable(uint32_t *mask, uint8_t bit, bool enable);
 bool u32mask_enabled(uint32_t *mask, uint8_t bit);

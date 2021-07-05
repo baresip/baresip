@@ -658,6 +658,7 @@ static int best_effort_af(struct ua *ua, const struct network *net)
 {
 	struct le *le;
 	const int afv[2] = { AF_INET, AF_INET6 };
+	struct sa laddr;
 	size_t i;
 
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
@@ -669,8 +670,7 @@ static int best_effort_af(struct ua *ua, const struct network *net)
 	for (i=0; i<ARRAY_SIZE(afv); i++) {
 		int af = afv[i];
 
-		if (net_af_enabled(net, af) &&
-		    sa_isset(net_laddr_af(net, af), SA_ADDR))
+		if (net_af_enabled(net, af) && !net_laddr_af(net, af, &laddr))
 			return af;
 	}
 
@@ -698,6 +698,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 {
 	const struct network *net = baresip_network();
 	struct call_prm cprm;
+	struct sa laddr;
 	int af;
 	int af_sdp;
 	int err = 0;
@@ -716,8 +717,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	else if (msg) {
 		af = sa_af(&msg->src);
 	}
-	else if (ua->acc->maf &&
-		   sa_isset(net_laddr_af(net, ua->acc->maf), SA_ADDR)) {
+	else if (ua->acc->maf && !net_laddr_af(net, ua->acc->maf, &laddr)) {
 		info("ua: using ua's preferred AF: af=%s\n",
 		     net_af2name(ua->acc->maf));
 		af = ua->acc->maf;
@@ -734,12 +734,14 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		err |= net_dst_source_addr_get(&ua->dst, &cprm.laddr);
 	}
 	else {
-		sa_cpy(&cprm.laddr, net_laddr_af(net, af));
+		err |= net_laddr_af(net, af, &cprm.laddr);
 	}
 
 	sa_init(&ua->dst, AF_UNSPEC);
-	if (err)
+	if (err) {
+		warning("ua: could not find a suitable local address\n");
 		return err;
+	}
 
 	cprm.vidmode = vmode;
 	cprm.af      = af;

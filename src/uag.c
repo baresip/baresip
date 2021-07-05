@@ -255,7 +255,7 @@ static bool uri_host_local(const struct uri *uri)
 	if (err)
 		return false;
 
-	if (net_is_laddr(baresip_network(), &sap))
+	if (uag_transp_isladdr(&sap))
 		return true;
 
 	return false;
@@ -535,6 +535,8 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls)
 	if (err)
 		goto out;
 
+	uag_transp_print_laddr();
+
 	err = sip_listen(&uag.lsnr, uag.sip, true, request_handler, NULL);
 	if (err)
 		goto out;
@@ -657,7 +659,6 @@ int uag_reset_transp(bool reg, bool reinvite)
 	/* Update SIP transports */
 	sip_transp_flush(uag.sip);
 
-	(void)net_check(net);
 	err = ua_add_transp(net);
 	if (err)
 		return err;
@@ -1113,6 +1114,73 @@ int uag_raise(struct ua *ua, struct le *le)
 	list_unlink(le);
 	list_prepend(&uag.ual, le, ua);
 	return 0;
+}
+
+
+static bool laddr_find(enum sip_transp tp, const struct sa *laddr,
+			   void *arg)
+{
+	struct sa *sa = arg;
+	if (!u32mask_enabled(&uag.transports, tp))
+		return false;
+
+	return sa_cmp(sa, laddr, SA_ADDR);
+}
+
+
+bool uag_transp_isladdr(const struct sa *sa)
+{
+	struct sa sac;
+
+	sa_cpy(&sac, sa);
+	return sip_transp_list(uag.sip, laddr_find, &sac);
+}
+
+
+static bool laddr_obsolete(enum sip_transp tp, const struct sa *laddr,
+			   void *arg)
+{
+	bool *obsolete = arg;
+	char ifname[256] = "???";
+	int err;
+	(void) tp;
+
+	err = net_if_getname(ifname, sizeof(ifname), sa_af(laddr), laddr);
+	*obsolete = err == ENODEV;
+	return *obsolete;
+}
+
+
+bool uag_transp_obsolete(void)
+{
+	bool obsolete;
+	sip_transp_list(uag.sip, laddr_obsolete, &obsolete);
+	return obsolete;
+}
+
+
+static bool print_addr(enum sip_transp tp, const struct sa *sa, void *arg)
+{
+	(void) tp;
+
+	if (sa_isset(sa, SA_ADDR)) {
+		char ifname[256] = "???";
+		(void) arg;
+		net_if_getname(ifname, sizeof(ifname), sa_af(sa), sa);
+		info("  %-3s|%s|%j\n", sip_transp_name(tp), ifname, sa);
+	}
+	else {
+		info("  (not set)\n");
+	}
+
+	return false;
+}
+
+
+void uag_transp_print_laddr(void)
+{
+	info("Transport Protocols:\n");
+	sip_transp_list(uag.sip, print_addr, NULL);
 }
 
 

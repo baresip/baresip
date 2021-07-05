@@ -708,8 +708,7 @@ void net_dns_refresh(struct network *net);
 int  net_dns_debug(struct re_printf *pf, const struct network *net);
 int  net_debug(struct re_printf *pf, const struct network *net);
 void net_laddr_apply(const struct network *net, net_ifaddr_h *ifh, void *arg);
-const struct sa *net_laddr_af(const struct network *net, int af);
-bool net_is_laddr(const struct network *net, struct sa *sa);
+int  net_laddr_af(const struct network *net, int af, struct sa *laddr);
 struct dnsc     *net_dnsc(const struct network *net);
 
 
@@ -861,6 +860,7 @@ int  uag_reset_transp(bool reg, bool reinvite);
 void uag_set_sub_handler(sip_msg_h *subh);
 int  uag_set_extra_params(const char *eprm);
 int  uag_enable_transport(enum sip_transp tp, bool en);
+void uag_transp_print_laddr(void);
 struct ua   *uag_find(const struct pl *cuser);
 struct ua   *uag_find_msg(const struct sip_msg *msg);
 struct ua   *uag_find_aor(const char *aor);

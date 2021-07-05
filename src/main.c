@@ -35,21 +35,13 @@ static void signal_handler(int sig)
 }
 
 
-static bool laddr_print(const char *ifname, const struct sa *sa, void *arg)
-{
-	(void) arg;
-	info("  %s|%j\n", ifname, sa);
-	return false;
-}
-
-
 static void net_change_handler(void *arg)
 {
+	(void) arg;
 
 	info("Local network addresses changed:\n");
-	net_laddr_apply(baresip_network(), laddr_print, arg);
-
 	(void)uag_reset_transp(true, true);
+	uag_transp_print_laddr();
 }
 
 
