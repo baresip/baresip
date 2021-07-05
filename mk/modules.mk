@@ -44,7 +44,6 @@
 #   USE_SNAPSHOT      Snapshot video module
 #   USE_SNDFILE       sndfile wav dumper
 #   USE_SNDIO         sndio audo driver
-#   USE_SPEEX_PP      Speex preprocessor
 #   USE_SRTP          Secure RTP module using libre
 #   USE_STDIO         stdio input driver
 #   USE_SYSLOG        Syslog module
@@ -179,11 +178,6 @@ USE_MPA  := $(shell ([ -f $(SYSROOT)/include/twolame.h ] || \
 	[ -f $(SYSROOT_ALT)/include/lame/lame.h ]) && echo "yes")
 endif
 endif
-USE_SPEEX_PP := $(shell [ -f $(SYSROOT)/include/speex_preprocess.h ] || \
-	[ -f $(SYSROOT)/local/include/speex_preprocess.h ] || \
-	[ -f $(SYSROOT)/local/include/speex/speex_preprocess.h ] || \
-	[ -f $(SYSROOT_ALT)/include/speex/speex_preprocess.h ] || \
-	[ -f $(SYSROOT)/include/speex/speex_preprocess.h ] && echo "yes")
 USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
 	[ -f $(SYSROOT_ALT)/include/syslog.h ] || \
 	[ -f $(SYSROOT)/local/include/syslog.h ] && echo "yes")
@@ -412,9 +406,6 @@ MODULES   += snapshot
 endif
 ifneq ($(USE_SNDFILE),)
 MODULES   += sndfile
-endif
-ifneq ($(USE_SPEEX_PP),)
-MODULES   += speex_pp
 endif
 ifneq ($(USE_STDIO),)
 MODULES   += stdio

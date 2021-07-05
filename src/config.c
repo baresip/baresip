@@ -925,7 +925,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n# Audio filter Modules (in encoding order)\n");
 	(void)re_fprintf(f, "#module\t\t\t" "vumeter" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "sndfile" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" "speex_pp" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "plc" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "webrtc_aec" MOD_EXT "\n");
 

@@ -110,7 +110,6 @@ module			g711.so
 # Audio filter Modules (in encoding order)
 #module			vumeter.so
 #module			sndfile.so
-#module			speex_pp.so
 #module			plc.so
 #module			webrtc_aec.so
 
