@@ -21,7 +21,9 @@ struct comvideo_data {
 	GstVideoClient *video_client;
 	CameradClient *camerad_client;
 	GstCameraSrc *camera_src;
+
 	GList *encoders;
+	GList *sources;
 
 	char camerad_dbus_name[DBUS_PROPERTY_SIZE];
 	char camerad_dbus_path[DBUS_PROPERTY_SIZE];

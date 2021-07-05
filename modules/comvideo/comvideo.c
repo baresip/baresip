@@ -76,9 +76,7 @@ struct vidsrc_st {
 	u_int32_t pixfmt;
 	u_int32_t fps;
 	u_int32_t bitrate;
-//	GstCameraSrc *camsrc;
 
-	struct buffer *buffers;
 	vidsrc_frame_h *frameh;
 	void *arg;
 };
@@ -92,8 +90,39 @@ struct vidisp_st {
 
 static void src_destructor(void *arg)
 {
+	struct vidsrc_st *st;
+	GstCameraSrc *src;
+
 	(void) arg;
-	debug("comvideo: stopping video source..\n");
+
+	st = arg;
+	src = comvideo_codec.camera_src;
+
+	info("comvideo: begin destructor video source: %p source list: %p\n",
+	     st, comvideo_codec.sources);
+
+	comvideo_codec.sources = g_list_remove(comvideo_codec.sources, st);
+
+	if (!comvideo_codec.sources && src) {
+		gst_camera_src_set_sample_cb(
+			src,
+			GST_CAMERA_SRC_CODEC_H264,
+			0,
+			NULL, NULL);
+
+		if (comvideo_codec.camerad_client) {
+			camerad_client_remove_src(
+				comvideo_codec.camerad_client,
+				src);
+		}
+
+		g_object_unref(src);
+
+		comvideo_codec.camera_src = NULL;
+	}
+
+	info("comvideo: end destructor video source: %p source list: %p\n",
+	     st, comvideo_codec.sources);
 }
 
 
@@ -122,6 +151,9 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (!st)
 		return ENOMEM;
 
+	info("comvideo: begin allocate src: %p source list: %p\n",
+	     st, comvideo_codec.sources);
+
 	cfg = conf_config();
 
 	st->vs = vs;
@@ -149,8 +181,12 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 		comvideo_codec.camera_src = src;
 	}
+
+	comvideo_codec.sources = g_list_append(comvideo_codec.sources, st);
 	*stp = st;
 
+	info("comvideo: end allocate src: %p  source list: %p\n",
+	     st, comvideo_codec.sources);
 	return 0;
 }
 
@@ -228,6 +264,8 @@ static int module_init(void) {
 	}
 
 	comvideo_codec.camera_src = NULL;
+	comvideo_codec.sources = NULL;
+	comvideo_codec.encoders = NULL;
 
 	comvideo_codec.camerad_client =
 		camerad_client_new(
