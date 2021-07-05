@@ -36,8 +36,31 @@ int encode_h264(struct videnc_state *st, bool update,
 
 static void enc_destructor(void *arg)
 {
+	GstCameraSrc *src;
 	struct videnc_state *st = arg;
 	comvideo_codec.encoders = g_list_remove(comvideo_codec.encoders, st);
+
+	src = comvideo_codec.camera_src;
+
+	if (src) {
+		if(comvideo_codec.encoders == NULL) {
+			gst_camera_src_set_sample_cb(
+				src,
+				GST_CAMERA_SRC_CODEC_H264,
+				0,
+				NULL, NULL);
+
+			if (comvideo_codec.camerad_client) {
+				camerad_client_remove_src(
+					comvideo_codec.camerad_client,
+					src);
+			}
+
+			g_object_unref(src);
+
+			comvideo_codec.camera_src = NULL;
+		}
+	}
 }
 
 
@@ -79,6 +102,7 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	st->pkth = pkth;
 	st->arg = arg;
 	st->pktsize = prm->pktsize;
+
 
 	comvideo_codec.encoders = g_list_append(comvideo_codec.encoders, st);
 

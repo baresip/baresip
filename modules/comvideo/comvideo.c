@@ -76,7 +76,7 @@ struct vidsrc_st {
 	u_int32_t pixfmt;
 	u_int32_t fps;
 	u_int32_t bitrate;
-	GstCameraSrc *camsrc;
+//	GstCameraSrc *camsrc;
 
 	struct buffer *buffers;
 	vidsrc_frame_h *frameh;
@@ -92,29 +92,8 @@ struct vidisp_st {
 
 static void src_destructor(void *arg)
 {
-	struct vidsrc_st *st;
-	GstCameraSrc *src;
-
+	(void) arg;
 	debug("comvideo: stopping video source..\n");
-
-	st = arg;
-	src = st->camsrc;
-
-	if (src) {
-		gst_camera_src_set_sample_cb(
-			src,
-			GST_CAMERA_SRC_CODEC_H264,
-			st->bitrate,
-			NULL, NULL);
-
-		if (comvideo_codec.camerad_client) {
-			camerad_client_remove_src(
-				comvideo_codec.camerad_client,
-				src);
-		}
-
-		g_object_unref(src);
-	}
 }
 
 
@@ -153,21 +132,23 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->fps = (u_int32_t) prm->fps;
 	st->bitrate = cfg->video.bitrate;
 
-	src = camerad_client_add_src(comvideo_codec.camerad_client,
-				     GST_CAMERA_COMPONENT_RTP, st->sz.w,
-				     st->sz.h,
-				     st->fps);
+	if(!comvideo_codec.camera_src) {
+		src = camerad_client_add_src(comvideo_codec.camerad_client,
+					     GST_CAMERA_COMPONENT_RTP, st->sz.w,
+					     st->sz.h,
+					     st->fps);
 
-	if (src) {
-		gst_camera_src_set_sample_cb(
-			src,
-			GST_CAMERA_SRC_CODEC_H264,
-			st->bitrate,
-			(camera_new_sample) camera_h264_sample_received,
-			st);
+		if (src) {
+			gst_camera_src_set_sample_cb(
+				src,
+				GST_CAMERA_SRC_CODEC_H264,
+				st->bitrate,
+				(camera_new_sample) camera_h264_sample_received,
+				st);
+		}
+
+		comvideo_codec.camera_src = src;
 	}
-
-	st->camsrc = src;
 	*stp = st;
 
 	return 0;
@@ -245,6 +226,8 @@ static int module_init(void) {
 			  DEFAULT_CAMERAD_DBUS_PATH,
 			  DBUS_PROPERTY_SIZE);
 	}
+
+	comvideo_codec.camera_src = NULL;
 
 	comvideo_codec.camerad_client =
 		camerad_client_new(
