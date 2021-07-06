@@ -542,6 +542,16 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 		goto out;
 	}
 
+	if (IN_MULTICAST(sa_in(&mcreceiver->addr))) {
+		err = udp_multicast_join((struct udp_sock *)
+			rtp_sock(mcreceiver->rtp), &mcreceiver->addr);
+		if (err) {
+		warning ("multicast recevier: join multicast group "
+		"failed %J (%m)\n", &mcreceiver->addr, err);
+		goto out;
+		}
+	}
+
 	lock_write_get(mcreceivl_lock);
 	list_append(&mcreceivl, &mcreceiver->le, mcreceiver);
 	lock_rel(mcreceivl_lock);
