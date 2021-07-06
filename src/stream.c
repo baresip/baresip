@@ -43,12 +43,11 @@ struct stream {
 	enum media_type type;    /**< Media type, e.g. audio/video          */
 	char *cname;             /**< RTCP Canonical end-point identifier   */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
-	stream_pt_h *pth;        /**< Stream payload type handler           */
-	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
 	bool terminated;         /**< Stream is terminated flag             */
 	bool hold;               /**< Stream is on-hold (local)             */
 	bool mnat_connected;     /**< Media NAT is connected                */
 	bool menc_secure;        /**< Media stream is secure                */
+	stream_pt_h *pth;        /**< Stream payload type handler           */
 	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
 	void *arg;               /**< Handler argument                      */
@@ -67,6 +66,7 @@ struct stream {
 	/* Receive */
 	struct {
 		struct metric metric; /**< Metrics for receiving            */
+		struct tmr tmr_rtp;   /**< Timer for detecting RTP timeout  */
 		struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
 		bool jbuf_started;    /**< True if jitter-buffer was started*/
 		uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
@@ -121,7 +121,7 @@ static void stream_destructor(void *arg)
 	metric_reset(&s->tx.metric);
 	metric_reset(&s->rx.metric);
 
-	tmr_cancel(&s->tmr_rtp);
+	tmr_cancel(&s->rx.tmr_rtp);
 	list_unlink(&s->le);
 	mem_deref(s->sdp);
 	mem_deref(s->mes);
@@ -164,7 +164,7 @@ static void check_rtp_handler(void *arg)
 
 	MAGIC_CHECK(strm);
 
-	tmr_start(&strm->tmr_rtp, RTP_CHECK_INTERVAL,
+	tmr_start(&strm->rx.tmr_rtp, RTP_CHECK_INTERVAL,
 		  check_rtp_handler, strm);
 
 	/* If no RTP was received at all, check later */
@@ -920,7 +920,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 
 	strm->rx.rtp_timeout = timeout_ms;
 
-	tmr_cancel(&strm->tmr_rtp);
+	tmr_cancel(&strm->rx.tmr_rtp);
 
 	if (timeout_ms) {
 
@@ -928,7 +928,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 		     timeout_ms);
 
 		strm->rx.ts_last = tmr_jiffies();
-		tmr_start(&strm->tmr_rtp, 10, check_rtp_handler, strm);
+		tmr_start(&strm->rx.tmr_rtp, 10, check_rtp_handler, strm);
 	}
 }
 
