@@ -1797,6 +1797,21 @@ static bool have_common_audio_codecs(const struct call *call)
 }
 
 
+static bool have_common_video_codecs(const struct call *call)
+{
+	const struct sdp_format *sc;
+	struct vidcodec *vc;
+
+	sc = sdp_media_rcodec(stream_sdpmedia(video_strm(call->video)));
+	if (!sc)
+		return false;
+
+	vc = sc->data;
+
+	return vc != NULL;
+}
+
+
 int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		const struct sip_msg *msg)
 {
@@ -1854,17 +1869,20 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			return 0;
 		}
 
-		/* Check if we have any common audio codecs, after
+		/* Check if we have any common audio or video codecs, after
 		 * the SDP offer has been parsed
 		 */
-		if (!have_common_audio_codecs(call)) {
-			info("call: no common audio codecs - rejected\n");
+
+		if (!have_common_audio_codecs(call) &&
+			!have_common_video_codecs(call)) {
+			info("call: no common audio or video codecs "
+				"- rejected\n");
 
 			sip_treply(NULL, uag_sip(), msg,
 				   488, "Not Acceptable Here");
 
 			call_event_handler(call, CALL_EVENT_CLOSED,
-					   "No audio codecs");
+					   "No audio or video codecs");
 
 			return 0;
 		}
