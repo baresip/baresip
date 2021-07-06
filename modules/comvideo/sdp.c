@@ -9,7 +9,7 @@
 #include "comvideo.h"
 
 
-static const uint8_t h264_level_idc = 0x0c;
+static const uint8_t h264_level_idc = 0x1F;
 
 uint32_t comvideo_packetization_mode(const char *fmtp);
 
