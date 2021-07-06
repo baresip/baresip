@@ -520,7 +520,7 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 	int err;
 	MAGIC_CHECK(call);
 
-	if (strm->mencs) {
+	if (call->mencs) {
 		err = stream_start_mediaenc(strm);
 		if (err) {
 			call_event_handler(call, CALL_EVENT_CLOSED,
@@ -529,7 +529,7 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 	}
 	else if (stream_is_ready(strm)) {
 
-		switch (strm->type) {
+		switch (stream_type(strm)) {
 
 		case MEDIA_AUDIO:
 			err = start_audio(call);
@@ -572,7 +572,7 @@ static void stream_rtcp_handler(struct stream *strm,
 	switch (msg->hdr.pt) {
 
 	case RTCP_SR:
-		if (strm->cfg.rtp_stats)
+		if (call->config_avt.rtp_stats)
 			call_set_xrtpstat(call);
 
 		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,

@@ -28,7 +28,7 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 		return 0;
 
 	s = audio_strm(a);
-	rtcp = &s->rtcp_stats;
+	rtcp = stream_rtcp_stats(s);
 
 	if (!rtcp->tx.sent)
 		return 1;
@@ -66,8 +66,8 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 			 1.0 * rtcp->rx.jit/1000 * (srate_rx/1000),
 			 1.0 * rtcp->tx.jit/1000 * (srate_tx/1000),
 
-			 sdp_media_laddr(s->sdp),
-			 sdp_media_raddr(s->sdp)
+			 sdp_media_laddr(stream_sdpmedia(s)),
+			 sdp_media_raddr(stream_sdpmedia(s))
 			 );
 
 	if (ac_tx)

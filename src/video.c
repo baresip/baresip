@@ -359,13 +359,13 @@ static int packet_handler(bool marker, uint64_t ts,
 	/* add random timestamp offset */
 	rtp_ts = vtx->ts_offset + (ts & 0xffffffff);
 
-	err = vidqent_alloc(&qent, marker, strm->tx.pt_enc, rtp_ts,
+	err = vidqent_alloc(&qent, marker, stream_pt_enc(strm), rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
 	if (err)
 		return err;
 
 	lock_write_get(vtx->lock_tx);
-	qent->dst = *sdp_media_raddr(strm->sdp);
+	qent->dst = *sdp_media_raddr(stream_sdpmedia(strm));
 	list_append(&vtx->sendq, &qent->le, qent);
 	lock_rel(vtx->lock_tx);
 
@@ -576,13 +576,12 @@ static void send_fir(struct stream *s, bool pli)
 	int err;
 
 	if (pli)
-		err = rtcp_send_pli(s->rtp, s->rx.ssrc_rx);
+		err = rtcp_send_pli(stream_rtp_sock(s), stream_ssrc_rx(s));
 	else
-		err = rtcp_send_fir(s->rtp, rtp_sess_ssrc(s->rtp));
+		err = rtcp_send_fir(stream_rtp_sock(s),
+				    rtp_sess_ssrc(stream_rtp_sock(s)));
 
 	if (err) {
-		s->tx.metric.n_err++;
-
 		warning("video: failed to send RTCP %s: %m\n",
 			pli ? "PLI" : "FIR", err);
 	}
@@ -1508,7 +1507,8 @@ void video_sdp_attr_decode(struct video *v)
 		return;
 
 	/* RFC 4585 */
-	if (sdp_media_rattr_apply(v->strm->sdp, "rtcp-fb", nack_handler, 0))
+	if (sdp_media_rattr_apply(stream_sdpmedia(v->strm), "rtcp-fb",
+				  nack_handler, 0))
 		v->nack_pli = true;
 }
 

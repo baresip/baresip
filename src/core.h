@@ -260,61 +260,7 @@ typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 typedef int (stream_pt_h)(uint8_t pt, struct mbuf *mb, void *arg);
 
 
-/** Defines a generic media stream */
-struct stream {
-#ifndef RELEASE
-	uint32_t magic;          /**< Magic number for debugging            */
-#endif
-	struct le le;            /**< Linked list element                   */
-	struct config_avt cfg;   /**< Stream configuration                  */
-	struct sdp_media *sdp;   /**< SDP Media line                        */
-	enum sdp_dir ldir;       /**< SDP direction of the stream           */
-	struct rtp_sock *rtp;    /**< RTP Socket                            */
-	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
-	const struct mnat *mnat; /**< Media NAT traversal module            */
-	struct mnat_media *mns;  /**< Media NAT traversal state             */
-	const struct menc *menc; /**< Media encryption module               */
-	struct menc_sess *mencs; /**< Media encryption session state        */
-	struct menc_media *mes;  /**< Media Encryption media state          */
-	struct sa raddr_rtp;     /**< Remote RTP address                    */
-	struct sa raddr_rtcp;    /**< Remote RTCP address                   */
-	enum media_type type;    /**< Media type, e.g. audio/video          */
-	char *cname;             /**< RTCP Canonical end-point identifier   */
-	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
-	stream_pt_h *pth;        /**< Stream payload type handler           */
-	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
-	bool terminated;         /**< Stream is terminated flag             */
-	bool hold;               /**< Stream is on-hold (local)             */
-	bool mnat_connected;     /**< Media NAT is connected                */
-	bool menc_secure;        /**< Media stream is secure                */
-	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
-	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
-	void *arg;               /**< Handler argument                      */
-	stream_mnatconn_h *mnatconnh;/**< Medianat connected handler        */
-	stream_rtpestab_h *rtpestabh;/**< RTP established handler           */
-	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
-	stream_error_h *errorh;  /**< Stream error handler                  */
-	void *sess_arg;          /**< Session handlers argument             */
-
-	/* Transmit */
-	struct {
-		struct metric metric;  /**< Metrics for transmit            */
-		int pt_enc;            /**< Payload type for encoding       */
-	} tx;
-
-	/* Receive */
-	struct {
-		struct metric metric; /**< Metrics for receiving            */
-		struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
-		bool jbuf_started;    /**< True if jitter-buffer was started*/
-		uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
-		uint32_t rtp_timeout; /**< RTP Timeout value in [ms]        */
-		uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
-		uint32_t pseq;        /**< Sequence number for incoming RTP */
-		bool pseq_set;        /**< True if sequence number is set   */
-		bool rtp_estab;       /**< True if RTP stream established   */
-	} rx;
-};
+struct stream;
 
 int  stream_alloc(struct stream **sp, struct list *streaml,
 		  const struct stream_param *prm,
@@ -342,6 +288,10 @@ bool stream_is_ready(const struct stream *strm);
 int  stream_decode(struct stream *s);
 void stream_silence_on(struct stream *s, bool on);
 const struct sa *stream_raddr(const struct stream *strm);
+enum media_type stream_type(const struct stream *strm);
+int stream_pt_enc(const struct stream *strm);
+struct rtp_sock *stream_rtp_sock(const struct stream *strm);
+uint32_t stream_ssrc_rx(const struct stream *strm);
 
 
 /*
