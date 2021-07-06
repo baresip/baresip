@@ -1257,7 +1257,7 @@ const struct sa *stream_raddr(const struct stream *strm)
 
 enum media_type stream_type(const struct stream *strm)
 {
-	return strm ? strm->type : -1;
+	return strm ? strm->type : (enum media_type)-1;
 }
 
 
