@@ -251,18 +251,38 @@ static void decode_sip_transports(struct config_sip *cfg,
 				      const struct pl *pl)
 {
 	uint8_t i;
-	const char *tr[] = {
-		"udp",
-		"tcp",
-		"tls",
-		"ws",
-		"wss"
-	};
 
-	for (i = 0; i < ARRAY_SIZE(tr); ++i) {
-		bool en = 0 == re_regex(pl->p, pl->l, tr[i]);
-	      u32mask_enable(&cfg->transports, i, en);
+	for (i = 0; i < SIP_TRANSPC; ++i) {
+		bool en;
+		char buf[9];
+		struct pl e=PL_INIT;
+
+		strcpy(buf, sip_transp_name(i));
+		strcat(buf, "[^,]+");
+		en = 0 == re_regex(pl->p, pl->l, sip_transp_name(i)) &&
+		     0 != re_regex(pl->p, pl->l, buf, &e);
+		u32mask_enable(&cfg->transports, i, en);
 	}
+}
+
+
+static int sip_transports_print(struct re_printf *pf, uint32_t *mask)
+{
+	uint8_t i;
+	int err = 0;
+	bool first = true;
+
+	for (i = 0; i < SIP_TRANSPC; ++i) {
+		if (*mask==0 || u32mask_enabled(*mask, i)) {
+			if (!first)
+				err = re_hprintf(pf, ",");
+
+			err |= re_hprintf(pf, "%s", sip_transp_name(i));
+			first = false;
+		}
+	}
+
+	return err;
 }
 
 
@@ -463,6 +483,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_certificate\t%s\n"
 			 "sip_cafile\t\t%s\n"
 			 "sip_capath\t\t%s\n"
+			 "sip_transports\t\t%H\n"
 			 "sip_trans_def\t%s\n"
 			 "sip_verify_server\t\t\t%s\n"
 			 "sip_tos\t%u\n"
@@ -519,6 +540,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 			 cfg->sip.local, cfg->sip.cert, cfg->sip.cafile,
 			 cfg->sip.capath,
+			 sip_transports_print, &cfg->sip.transports,
 			 sip_transp_name(cfg->sip.transp),
 			 cfg->sip.verify_server ? "yes" : "no",
 			 cfg->sip.tos,
@@ -679,6 +701,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 #else
 			 "#sip_cafile\t\t%s\n"
 #endif
+			  "#sip_transports\t\tudp,tcp,tls,ws,wss\n"
 			  "#sip_trans_def\t\tudp\n"
 			  "#sip_verify_server\tyes\n"
 			  "sip_tos\t\t\t160\n"
@@ -845,12 +868,9 @@ void u32mask_enable(uint32_t *mask, uint8_t bit, bool enable)
 }
 
 
-bool u32mask_enabled(uint32_t *mask, uint8_t bit)
+bool u32mask_enabled(uint32_t mask, uint8_t bit)
 {
-	if (!mask)
-		return false;
-
-	return 0 != (*mask & (1u << bit));
+	return 0 != (mask & (1u << bit));
 }
 
 
