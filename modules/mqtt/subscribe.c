@@ -33,7 +33,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	if (err) {
 		warning("mqtt: failed to decode JSON with %zu bytes (%m)\n",
 			msg->l, err);
-		return;
+		goto out;
 	}
 
 	oe_cmd = odict_lookup(od, "command");
