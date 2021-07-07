@@ -256,6 +256,7 @@ ice           ICE protocol for NAT Traversal
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
 menu          Interactive menu
+mixminus      Mixes N-1 audio streams for conferencing
 mpa           MPA Speech and Audio Codec
 multicast     Multicast RTP send and receive
 mqtt          MQTT (Message Queue Telemetry Transport) module
