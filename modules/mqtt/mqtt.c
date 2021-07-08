@@ -80,6 +80,43 @@ static void connect_callback(struct mosquitto *mosq, void *obj, int result)
 }
 
 
+static void tmr_reconnect(void *data)
+{
+	struct mqtt *mqtt = data;
+	int err;
+
+	err = mosquitto_reconnect(mqtt->mosq);
+	if (err == MOSQ_ERR_SUCCESS) {
+		mqtt->fd = mosquitto_socket(mqtt->mosq);
+		err = fd_listen(mqtt->fd, FD_READ, fd_handler, mqtt);
+		if (err) {
+			warning("mqtt: reconnect fd_listen failed\n");
+			return;
+		}
+		tmr_start(&mqtt->tmr, 500, tmr_handler, mqtt);
+		info("mqtt: reconnected\n");
+	}
+	else {
+		warning("mqtt: reconnect failed, will retry in 2 seconds\n");
+		tmr_start(&mqtt->tmr, 2000, tmr_reconnect, mqtt);
+	}
+}
+
+
+static void disconnect_callback(struct mosquitto *mosq, void *obj, int rc)
+{
+	struct mqtt *mqtt = obj;
+	(void) mosq;
+
+	if (rc == MOSQ_ERR_NO_CONN) {
+		warning("mqtt: connection lost\n");
+		tmr_cancel(&mqtt->tmr);
+		fd_close(mqtt->fd);
+		tmr_start(&mqtt->tmr, 1000, tmr_reconnect, mqtt);
+	}
+}
+
+
 static int module_init(void)
 {
 	const int keepalive = 60;
@@ -140,6 +177,7 @@ static int module_init(void)
 		return err;
 
 	mosquitto_connect_callback_set(s_mqtt.mosq, connect_callback);
+	mosquitto_disconnect_callback_set(s_mqtt.mosq, disconnect_callback);
 
 	if (*mqttusername != '\0') {
 		ret = mosquitto_username_pw_set(s_mqtt.mosq, mqttusername,
