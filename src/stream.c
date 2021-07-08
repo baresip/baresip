@@ -38,8 +38,6 @@ struct stream {
 	const struct menc *menc; /**< Media encryption module               */
 	struct menc_sess *mencs; /**< Media encryption session state        */
 	struct menc_media *mes;  /**< Media Encryption media state          */
-	struct sa raddr_rtp;     /**< Remote RTP address                    */
-	struct sa raddr_rtcp;    /**< Remote RTCP address                   */
 	enum media_type type;    /**< Media type, e.g. audio/video          */
 	char *cname;             /**< RTCP Canonical end-point identifier   */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
@@ -60,6 +58,8 @@ struct stream {
 	/* Transmit */
 	struct {
 		struct metric metric;  /**< Metrics for transmit            */
+		struct sa raddr_rtp;   /**< Remote RTP address              */
+		struct sa raddr_rtcp;  /**< Remote RTCP address             */
 		int pt_enc;            /**< Payload type for encoding       */
 	} tx;
 
@@ -512,8 +512,8 @@ int stream_start_mediaenc(struct stream *strm)
 		err = strm->menc->mediah(&strm->mes, strm->mencs, strm->rtp,
 				 rtp_sock(strm->rtp),
 				 strm->rtcp_mux ? NULL : rtcp_sock(strm->rtp),
-				 &strm->raddr_rtp,
-				 strm->rtcp_mux ? NULL : &strm->raddr_rtcp,
+				 &strm->tx.raddr_rtp,
+				 strm->rtcp_mux ? NULL : &strm->tx.raddr_rtcp,
 					 strm->sdp, strm);
 		if (err) {
 			warning("stream: start mediaenc error: %m\n", err);
@@ -533,12 +533,12 @@ static void mnat_connected_handler(const struct sa *raddr1,
 	info("stream: mnat '%s' connected: raddr %J %J\n",
 	     strm->mnat->id, raddr1, raddr2);
 
-	strm->raddr_rtp = *raddr1;
+	strm->tx.raddr_rtp = *raddr1;
 
 	if (strm->rtcp_mux)
-		strm->raddr_rtcp = *raddr1;
+		strm->tx.raddr_rtcp = *raddr1;
 	else if (raddr2)
-		strm->raddr_rtcp = *raddr2;
+		strm->tx.raddr_rtcp = *raddr2;
 
 	strm->mnat_connected = true;
 
@@ -713,7 +713,7 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 	if (!s)
 		return EINVAL;
 
-	if (!sa_isset(&s->raddr_rtp, SA_ALL))
+	if (!sa_isset(&s->tx.raddr_rtp, SA_ALL))
 		return 0;
 
 	if (!(sdp_media_rdir(s->sdp) & SDP_SENDONLY))
@@ -739,7 +739,7 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		pt = s->tx.pt_enc;
 
 	if (pt >= 0) {
-		err = rtp_send(s->rtp, &s->raddr_rtp, ext,
+		err = rtp_send(s->rtp, &s->tx.raddr_rtp, ext,
 			       marker, pt, ts, mb);
 		if (err)
 			s->tx.metric.n_err++;
@@ -767,12 +767,12 @@ static void stream_remote_set(struct stream *s)
 
 	rtcp_enable_mux(s->rtp, s->rtcp_mux);
 
-	sa_cpy(&s->raddr_rtp, sdp_media_raddr(s->sdp));
+	sa_cpy(&s->tx.raddr_rtp, sdp_media_raddr(s->sdp));
 
 	if (s->rtcp_mux)
-		s->raddr_rtcp = s->raddr_rtp;
+		s->tx.raddr_rtcp = s->tx.raddr_rtp;
 	else
-		sdp_media_raddr_rtcp(s->sdp, &s->raddr_rtcp);
+		sdp_media_raddr_rtcp(s->sdp, &s->tx.raddr_rtcp);
 
 	if (stream_is_ready(s)) {
 
@@ -984,7 +984,7 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 
 	err |= re_hprintf(pf, " local: %J, remote: %J/%J\n",
 			  sdp_media_laddr(s->sdp),
-			  &s->raddr_rtp, &s->raddr_rtcp);
+			  &s->tx.raddr_rtp, &s->tx.raddr_rtcp);
 
 	err |= re_hprintf(pf, " mnat: %s (connected=%s)\n",
 			  s->mnat ? s->mnat->id : "(none)",
@@ -1121,7 +1121,7 @@ bool stream_is_ready(const struct stream *strm)
 			return false;
 	}
 
-	if (!sa_isset(&strm->raddr_rtp, SA_ALL))
+	if (!sa_isset(&strm->tx.raddr_rtp, SA_ALL))
 		return false;
 
 	return !strm->terminated;
@@ -1171,9 +1171,9 @@ int stream_start(const struct stream *strm)
 		return EINVAL;
 
 	debug("stream: %s: starting RTCP with remote %J\n",
-	      media_name(strm->type), &strm->raddr_rtcp);
+	      media_name(strm->type), &strm->tx.raddr_rtcp);
 
-	rtcp_start(strm->rtp, strm->cname, &strm->raddr_rtcp);
+	rtcp_start(strm->rtp, strm->cname, &strm->tx.raddr_rtcp);
 
 	if (!strm->mnat) {
 		/* Send a dummy RTCP packet to open NAT pinhole */
@@ -1218,7 +1218,7 @@ int stream_open_natpinhole(const struct stream *strm)
 		mbuf_advance(mb, RTP_HEADER_SIZE);
 
 		/* Send a dummy RTP packet to open NAT pinhole */
-		err = rtp_send(strm->rtp, &strm->raddr_rtp, false, false,
+		err = rtp_send(strm->rtp, &strm->tx.raddr_rtp, false, false,
 			sc->pt, 0, mb);
 		if (err) {
 			warning("stream: rtp_send to open natpinhole"
@@ -1254,7 +1254,7 @@ const struct sa *stream_raddr(const struct stream *strm)
 	if (!strm)
 		return NULL;
 
-	return &strm->raddr_rtp;
+	return &strm->tx.raddr_rtp;
 }
 
 
