@@ -330,9 +330,9 @@ static int add_transp_af(const struct sa *laddr)
 		sa_set_port(&local, 0);
 	}
 
-	if (u32mask_enabled(&uag.transports, SIP_TRANSP_UDP))
+	if (u32mask_enabled(uag.transports, SIP_TRANSP_UDP))
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_UDP, &local);
-	if (u32mask_enabled(&uag.transports, SIP_TRANSP_TCP))
+	if (u32mask_enabled(uag.transports, SIP_TRANSP_TCP))
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_TCP, &local);
 	if (err) {
 		warning("ua: SIP Transport failed: %m\n", err);
@@ -340,7 +340,7 @@ static int add_transp_af(const struct sa *laddr)
 	}
 
 #ifdef USE_TLS
-	if (u32mask_enabled(&uag.transports, SIP_TRANSP_TLS)) {
+	if (u32mask_enabled(uag.transports, SIP_TRANSP_TLS)) {
 		/* Build our SSL context*/
 		if (!uag.tls) {
 			if (str_isset(uag.cfg->cert)) {
@@ -391,7 +391,7 @@ static int add_transp_af(const struct sa *laddr)
 	}
 #endif
 
-	if (u32mask_enabled(&uag.transports, SIP_TRANSP_WS)) {
+	if (u32mask_enabled(uag.transports, SIP_TRANSP_WS)) {
 		err = sip_transp_add_websock(uag.sip, SIP_TRANSP_WS, &local,
 				false, NULL, NULL);
 		if (err) {
@@ -402,7 +402,7 @@ static int add_transp_af(const struct sa *laddr)
 	}
 
 #ifdef USE_TLS
-	if (u32mask_enabled(&uag.transports, SIP_TRANSP_WSS)) {
+	if (u32mask_enabled(uag.transports, SIP_TRANSP_WSS)) {
 		if (!uag.wss_tls) {
 			err = tls_alloc(&uag.wss_tls, TLS_METHOD_SSLV23,
 					NULL, NULL);

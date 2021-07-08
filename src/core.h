@@ -340,7 +340,7 @@ bool uag_delayed_close(void);
 int uag_raise(struct ua *ua, struct le *le);
 
 void u32mask_enable(uint32_t *mask, uint8_t bit, bool enable);
-bool u32mask_enabled(uint32_t *mask, uint8_t bit);
+bool u32mask_enabled(uint32_t mask, uint8_t bit);
 
 
 /*
