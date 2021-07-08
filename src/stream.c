@@ -73,6 +73,7 @@ struct stream {
 		uint32_t rtp_timeout; /**< RTP Timeout value in [ms]        */
 		uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
 		uint32_t pseq;        /**< Sequence number for incoming RTP */
+		bool ssrc_set;        /**< Incoming SSRC is set             */
 		bool pseq_set;        /**< True if sequence number is set   */
 		bool rtp_estab;       /**< True if RTP stream established   */
 	} rx;
@@ -334,6 +335,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 	if (!s->rx.pseq_set) {
 		s->rx.ssrc_rx = hdr->ssrc;
+		s->rx.ssrc_set = true;
 		s->rx.pseq = hdr->seq - 1;
 		s->rx.pseq_set = true;
 	}
@@ -1276,7 +1278,15 @@ struct rtp_sock *stream_rtp_sock(const struct stream *strm)
 }
 
 
-uint32_t stream_ssrc_rx(const struct stream *strm)
+int stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc)
 {
-	return strm ? strm->rx.ssrc_rx : 0;
+	if (!strm || !ssrc)
+		return EINVAL;
+
+	if (strm->rx.ssrc_set) {
+		*ssrc = strm->rx.ssrc_rx;
+		return 0;
+	}
+	else
+		return ENOENT;
 }

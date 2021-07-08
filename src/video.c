@@ -575,8 +575,13 @@ static void send_fir(struct stream *s, bool pli)
 {
 	int err;
 
-	if (pli)
-		err = rtcp_send_pli(stream_rtp_sock(s), stream_ssrc_rx(s));
+	if (pli) {
+		uint32_t ssrc;
+
+		err = stream_ssrc_rx(s, &ssrc);
+		if (!err)
+			err = rtcp_send_pli(stream_rtp_sock(s), ssrc);
+	}
 	else
 		err = rtcp_send_fir(stream_rtp_sock(s),
 				    rtp_sess_ssrc(stream_rtp_sock(s)));

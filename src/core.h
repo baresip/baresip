@@ -291,7 +291,7 @@ const struct sa *stream_raddr(const struct stream *strm);
 enum media_type stream_type(const struct stream *strm);
 int stream_pt_enc(const struct stream *strm);
 struct rtp_sock *stream_rtp_sock(const struct stream *strm);
-uint32_t stream_ssrc_rx(const struct stream *strm);
+int stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);
 
 
 /*
