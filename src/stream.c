@@ -401,6 +401,9 @@ int stream_decode(struct stream *s)
 	int lostc;
 	int err;
 
+	if (!s)
+		return EINVAL;
+
 	if (!s->rx.jbuf)
 		return ENOENT;
 
