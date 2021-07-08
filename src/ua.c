@@ -400,7 +400,16 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 		case ANSWERMODE_EARLY:
 		case ANSWERMODE_EARLY_AUDIO:
+			(void)call_progress(call);
+			break;
+
 		case ANSWERMODE_EARLY_VIDEO:
+			if (!call_early_video_available(call)) {
+				info ("ua: peer is not capable of early "
+					"video. proceed as normal call\n");
+				break;
+			}
+
 			(void)call_progress(call);
 			break;
 
