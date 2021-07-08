@@ -20,14 +20,19 @@ static int print_handler(const char *p, size_t size, void *arg)
 
 static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 {
-	struct mbuf *resp = mbuf_alloc(1024);
+	struct mbuf *resp = mbuf_alloc(2048);
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL, *od_resp = NULL;
 	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
-	char buf[256], resp_topic[256];
+	char *cmd_buf = NULL;
+	char resp_topic[256];
 	const char *aor, *callid;
 	struct ua *ua = NULL;
 	int err;
+
+	cmd_buf = mem_zalloc(msg->l, NULL);
+	if (!cmd_buf)
+		goto out;
 
 	err = json_decode_odict(&od, 32, msg->p, msg->l, 16);
 	if (err) {
@@ -71,15 +76,15 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	      oe_cmd->u.str,
 	      oe_tok ? oe_tok->u.str : "");
 
-	re_snprintf(buf, sizeof(buf), "%s%s%s",
+	re_snprintf(cmd_buf, msg->l, "%s%s%s",
 		    oe_cmd->u.str,
 		    oe_prm ? " " : "",
 		    oe_prm ? oe_prm->u.str : "");
 
 	/* Relay message to long commands */
 	err = cmd_process_long(baresip_commands(),
-			       buf,
-			       str_len(buf),
+			       cmd_buf,
+			       str_len(cmd_buf),
 			       &pf, ua);
 	if (err) {
 		warning("mqtt: error processing command (%m)\n", err);
@@ -119,6 +124,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	}
 
  out:
+	mem_deref(cmd_buf);
 	mem_deref(resp);
 	mem_deref(od_resp);
 	mem_deref(od);
