@@ -245,7 +245,8 @@ static void play_incoming(const struct call *call)
 	/* stop any ringtones */
 	menu_stop_play();
 
-	if (am != ANSWERMODE_MANUAL && am != ANSWERMODE_EARLY_VIDEO)
+	if (am != ANSWERMODE_MANUAL && (am != ANSWERMODE_EARLY_VIDEO &&
+		call_early_video_available(call)))
 		return;
 
 	if (menu_find_call(active_call_test)) {
