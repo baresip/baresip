@@ -2095,6 +2095,34 @@ static int send_dtmf_info(struct call *call, char key)
 
 
 /**
+ * Find the peer capabilites of early video in the remote SDP
+ *
+ * @param call Call object
+ *
+ * @return True if peer accepts early video, otherwise false
+ */
+bool call_early_video_available(const struct call *call)
+{
+	enum answermode m = account_answermode(call->acc);
+
+	if (m == ANSWERMODE_EARLY_VIDEO) {
+		struct le *le;
+		struct sdp_media *v;
+
+		LIST_FOREACH(sdp_session_medial(call->sdp, false), le) {
+			v = le->data;
+			if (0 == str_cmp(sdp_media_name(v), "video") &&
+				(sdp_media_rdir(v) == SDP_SENDONLY ||
+				 sdp_media_rdir(v) == SDP_SENDRECV))
+				return true;
+		}
+	}
+
+	return false;
+}
+
+
+/**
  * Get the current call duration in seconds
  *
  * @param call  Call object
