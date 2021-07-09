@@ -144,18 +144,22 @@ endif
 ifneq ($(PKG_CONFIG),)
 ifneq ($(MAKECMDGOALS),clean)
 LIBRE_PKG := $(shell PKG_CONFIG_PATH=$(LIBRE_PKG_PATH) \
-	pkg-config --exists "libre >= $(LIBRE_MIN)" && echo "yes")
+	pkg-config --exists "libre >= $(LIBRE_MIN)" --modversion && \
+	echo "yes")
 
 ifeq ($(LIBRE_PKG),)
-$(error bad libre version, required version is ">= $(LIBRE_MIN)". \
-	LIBRE_MK: $(LIBRE_MK))
+$(error bad libre version, required version is ">= $(LIBRE_MIN)" \
+	LIBRE_MK: "$(LIBRE_MK)" \
+	LIBRE_PKG_PATH: "$(LIBRE_PKG_PATH)")
 endif
 
 LIBREM_PKG := $(shell PKG_CONFIG_PATH=$(LIBREM_PKG_PATH) \
-	pkg-config --exists "librem >= $(LIBREM_MIN)" && echo "yes")
+	pkg-config --exists "librem >= $(LIBREM_MIN)" --modversion && \
+	echo "yes")
 
 ifeq ($(LIBREM_PKG),)
-$(error bad librem version, required version is ">= $(LIBREM_MIN)".)
+$(error bad librem version, required version is ">= $(LIBREM_MIN)" \
+	LIBREM_PKG_PATH: "$(LIBREM_PKG_PATH)")
 endif
 endif
 endif
