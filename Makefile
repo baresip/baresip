@@ -141,6 +141,7 @@ endif
 
 # Dependency Checks
 ifneq ($(PKG_CONFIG),)
+ifneq ($(MAKECMDGOALS),clean)
 LIBRE_PKG := $(shell PKG_CONFIG_PATH=$(LIBRE_PKG_PATH) \
 	pkg-config --exists "libre >= $(LIBRE_MIN)" && echo "yes")
 
@@ -154,6 +155,7 @@ LIBREM_PKG := $(shell PKG_CONFIG_PATH=$(LIBREM_PKG_PATH) \
 
 ifeq ($(LIBREM_PKG),)
 $(error bad librem version, required version is ">= $(LIBREM_MIN)".)
+endif
 endif
 endif
 
