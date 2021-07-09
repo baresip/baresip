@@ -42,6 +42,10 @@ endif
 include $(LIBRE_MK)
 
 ifeq ($(LIBRE_PKG_PATH),)
+LIBRE_PKG_PATH  := $(shell [ -f ../re/libre.pc ] && echo "../re/")
+endif
+
+ifeq ($(LIBRE_PKG_PATH),)
 LIBRE_PKG_PATH  := $(shell [ -f $(PKG_CONFIG_PATH)/libre.pc ] && \
 	echo "$(PKG_CONFIG_PATH)")
 endif
@@ -52,10 +56,6 @@ LIBRE_SO	:= $(patsubst %/share/re/re.mk,%/lib,$(LIBRE_MK))
 endif
 LIBRE_PKG_PATH  := $(shell [ -f $(LIBRE_SO)/pkgconfig/libre.pc ] && \
 	echo "$(LIBRE_SO)/pkgconfig")
-endif
-
-ifeq ($(LIBRE_PKG_PATH),)
-LIBRE_PKG_PATH  := $(shell [ -f ../re/libre.pc ] && echo "../re/")
 endif
 
 
@@ -126,6 +126,10 @@ endif
 
 
 ifeq ($(LIBREM_PKG_PATH),)
+LIBREM_PKG_PATH  := $(shell [ -f ../rem/librem.pc ] && echo "../rem/")
+endif
+
+ifeq ($(LIBREM_PKG_PATH),)
 LIBREM_PKG_PATH  := $(shell [ -f $(PKG_CONFIG_PATH)/librem.pc ] && \
 	echo "$(PKG_CONFIG_PATH)")
 endif
@@ -135,9 +139,6 @@ LIBREM_PKG_PATH  := $(shell [ -f $(LIBREM_SO)/pkgconfig/librem.pc ] && \
 	echo "$(LIBREM_SO)/pkgconfig")
 endif
 
-ifeq ($(LIBREM_PKG_PATH),)
-LIBREM_PKG_PATH  := $(shell [ -f ../rem/librem.pc ] && echo "../rem/")
-endif
 
 # Dependency Checks
 ifneq ($(PKG_CONFIG),)
