@@ -9,6 +9,11 @@
 #include "core.h"
 
 
+enum {
+	EVENT_MAXSZ = 4096,
+};
+
+
 struct ua_eh {
 	struct le le;
 	ua_event_h *h;
@@ -320,16 +325,20 @@ void module_event(const char *module, const char *event, struct ua *ua,
 		struct call *call, const char *fmt, ...)
 {
 	struct le *le;
-	char buf[256];
+	char *buf;
 	char *p;
-	size_t len = sizeof(buf);
+	size_t len = EVENT_MAXSZ;
 	va_list ap;
 
 	if (!module || !event)
 		return;
 
-	if (-1 == re_snprintf(buf, len, "%s,%s,", module, event))
+	buf = mem_zalloc(EVENT_MAXSZ, NULL);
+	if (!buf)
 		return;
+
+	if (-1 == re_snprintf(buf, len, "%s,%s,", module, event))
+		goto out;
 
 	p = buf + str_len(buf);
 	len -= str_len(buf);
@@ -346,6 +355,9 @@ void module_event(const char *module, const char *event, struct ua *ua,
 
 		eh->h(ua, UA_EVENT_MODULE, call, buf, eh->arg);
 	}
+
+out:
+	mem_deref(buf);
 }
 
 
