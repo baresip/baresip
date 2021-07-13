@@ -47,26 +47,15 @@ struct comvideo_data  comvideo_codec;
 static struct vidsrc *vid_src;
 static struct vidisp *vid_disp;
 
-static struct vidcodec h264_0 = {
+static struct vidcodec h264 = {
 	.name      = "H264",
-	.variant   = "packetization-mode=0",
+	.variant   = NULL,
 	.encupdh   = encode_h264_update,
 	.ench      = encode_h264,
 	.decupdh   = decode_h264_update,
 	.dech      = decode_h264,
 	.fmtp_ench = comvideo_fmtp_enc,
-	.fmtp_cmph = comvideo_fmtp_cmp
-};
-
-static struct vidcodec h264_1 = {
-	.name      = "H264",
-	.variant   = "packetization-mode=1",
-	.encupdh   = encode_h264_update,
-	.ench      = encode_h264,
-	.decupdh   = decode_h264_update,
-	.dech      = decode_h264,
-	.fmtp_ench = comvideo_fmtp_enc,
-	.fmtp_cmph = comvideo_fmtp_cmp
+	.fmtp_cmph = NULL
 };
 
 
@@ -272,8 +261,7 @@ static int module_init(void) {
 			comvideo_codec.camerad_dbus_name,
 			comvideo_codec.camerad_dbus_path);
 
-	vidcodec_register(baresip_vidcodecl(), &h264_0);
-	vidcodec_register(baresip_vidcodecl(), &h264_1);
+	vidcodec_register(baresip_vidcodecl(), &h264);
 
 	vidisp_register(&vid_disp, baresip_vidispl(),
 			MODULE_NAME, disp_alloc, NULL, NULL, NULL);
@@ -286,14 +274,14 @@ static int module_init(void) {
 static int module_close(void) {
 	vid_src = mem_deref(vid_src);
 	vid_disp = mem_deref(vid_disp);
-	vidcodec_unregister(&h264_0);
-	vidcodec_unregister(&h264_1);
+	vidcodec_unregister(&h264);
 
 	g_object_unref(comvideo_codec.camerad_client);
 	g_object_unref(comvideo_codec.video_client);
 
 	return 0;
 }
+
 
 EXPORT_SYM const struct mod_export DECL_EXPORTS(comvideo) = {
 	MODULE_NAME,
