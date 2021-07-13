@@ -30,6 +30,7 @@ struct ua {
 	struct list hdr_filter;      /**< Filter for incoming headers        */
 	struct list custom_hdrs;     /**< List of outgoing headers           */
 	char *ansval;                /**< SIP auto answer value              */
+	struct sa dst;               /**< Current destination address        */
 };
 
 struct ua_xhdr_filter {
@@ -502,23 +503,36 @@ static bool require_handler(const struct sip_hdr *hdr,
 }
 
 
-static int sdp_af_hint(struct mbuf *mb)
+static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 {
-	struct pl af;
+	struct pl pl1, pl2;
+	char *addr = NULL;
 	int err;
 
+	*af = AF_UNSPEC;
 	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
-		       "IN IP[46]+", &af);
+		       "IN IP[46]+ [^ \r\n]+", &pl1, &pl2);
 	if (err)
-		return AF_UNSPEC;
+		return EINVAL;
 
-	switch (af.p[0]) {
+	pl_strdup(&addr, &pl2);
+	switch (pl1.p[0]) {
 
-	case '4': return AF_INET;
-	case '6': return AF_INET6;
+	case '4': *af = AF_INET;
+		  break;
+	case '6': *af = AF_INET6;
+		  break;
 	}
 
-	return AF_UNSPEC;
+	/* OSX/iOS needs a port number for udp_connect() */
+	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
+		       "m=audio [0-9]+ ", &pl1);
+	if (err)
+		return EINVAL;
+
+	err = sa_set_str(sa, addr, pl_u32(&pl1));
+	mem_deref(addr);
+	return err;
 }
 
 
@@ -528,10 +542,12 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	struct config *config = conf_config();
 	const struct network *net = baresip_network();
 	const struct sip_hdr *hdr;
-	int af_sdp;
+	int af_sdp = AF_UNSPEC;
 	struct ua *ua;
 	struct call *call = NULL;
 	char to_uri[256];
+	struct sa caddr;
+	struct sa ip;
 	int err;
 
 	(void)arg;
@@ -581,16 +597,15 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	/* Check if offered media AF is supported and available */
-	af_sdp = sdp_af_hint(msg->mb);
-	if (af_sdp) {
+	if (!sdp_connection(msg->mb, &af_sdp, &caddr)) {
 		if (!net_af_enabled(net, af_sdp)) {
 			warning("ua: SDP offer AF not supported (%s)\n",
 				net_af2name(af_sdp));
 			af_sdp = 0;
 		}
-		else if (!sa_isset(net_laddr_af(net, af_sdp), SA_ADDR)) {
-			warning("ua: SDP offer AF not available (%s)\n",
-				net_af2name(af_sdp));
+		else if (net_dst_source_addr_get(&caddr, &ip)) {
+			warning("ua: SDP offer origin address %j not"
+				" reachable\n", &caddr);
 			af_sdp = 0;
 		}
 		if (!af_sdp) {
@@ -694,15 +709,21 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	struct call_prm cprm;
 	int af;
 	int af_sdp;
-	int err;
+	int err = 0;
 
 	if (!callp || !ua)
 		return EINVAL;
 
-	if (msg && (af_sdp = sdp_af_hint(msg->mb))) {
-		info("ua: using AF from sdp offer: af=%s\n",
-		     net_af2name(af_sdp));
+	if (msg && !sdp_connection(msg->mb, &af_sdp, &ua->dst)) {
+		info("ua: using origin address %j of SDP offer: af=%s\n",
+		     &ua->dst, net_af2name(af_sdp));
 		af = af_sdp;
+	}
+	else if (sa_isset(&ua->dst, SA_ADDR)) {
+		af = sa_af(&ua->dst);
+	}
+	else if (msg) {
+		af = sa_af(&msg->src);
 	}
 	else if (ua->acc->maf &&
 		   sa_isset(net_laddr_af(net, ua->acc->maf), SA_ADDR)) {
@@ -718,7 +739,17 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 
 	memset(&cprm, 0, sizeof(cprm));
 
-	sa_cpy(&cprm.laddr, net_laddr_af(net, af));
+	if (sa_isset(&ua->dst, SA_ADDR)) {
+		err |= net_dst_source_addr_get(&ua->dst, &cprm.laddr);
+	}
+	else {
+		sa_cpy(&cprm.laddr, net_laddr_af(net, af));
+	}
+
+	sa_init(&ua->dst, AF_UNSPEC);
+	if (err)
+		return err;
+
 	cprm.vidmode = vmode;
 	cprm.af      = af;
 	cprm.use_rtp = use_rtp;
@@ -998,6 +1029,7 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 {
 	struct call *call = NULL;
 	struct mbuf *dialbuf;
+	struct sip_addr addr;
 	struct pl pl;
 	int err = 0;
 
@@ -1022,12 +1054,18 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (err)
 		goto out;
 
+	pl.p = (char *)dialbuf->buf;
+	pl.l = dialbuf->end;
+
+	sa_init(&ua->dst, AF_UNSPEC);
+	err = sip_addr_decode(&addr, &pl);
+	err |= sa_set(&ua->dst, &addr.uri.host, addr.uri.port);
+	if (!err && !sa_isset(&ua->dst, SA_PORT))
+		sa_set_port(&ua->dst, 5060);
+
 	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)
 		goto out;
-
-	pl.p = (char *)dialbuf->buf;
-	pl.l = dialbuf->end;
 
 	if (!list_isempty(&ua->custom_hdrs))
 		call_set_custom_hdrs(call, &ua->custom_hdrs);
