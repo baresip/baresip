@@ -1,3 +1,4 @@
+
 /**
  * @file encode_h264.c  Commend specific video source
  *
@@ -105,7 +106,10 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 
 
 static void
-encode_h264_sample(struct videnc_state *st, enc_data *encData) {
+encode_h264_sample(struct videnc_state *st, enc_data *encData)
+{
+	debug("encode sample ts: %d", encData->ts);
+
 	h264_packetize(
 		encData->ts,
 		encData->sample,
@@ -124,6 +128,8 @@ camera_h264_sample_received(
 	GstBuffer *buffer;
 	GstMapInfo info;
 	enc_data encData;
+	GstClockTime gst_ts;
+	uint64_t rtp_ts;
 
 	(void) src;
 	(void) st;
@@ -131,9 +137,20 @@ camera_h264_sample_received(
 	buffer = gst_sample_get_buffer(sample);
 	gst_buffer_map(buffer, &info, (GstMapFlags)(GST_MAP_READ));
 
+	gst_ts = GST_BUFFER_PTS(buffer);
+
+	if (gst_ts == GST_CLOCK_TIME_NONE) {
+		warning("comvideo: Gst timestamp not available\n");
+		rtp_ts = 0;
+	}
+	else {
+		rtp_ts = (uint64_t)((90000ULL * gst_ts) / 1000000000UL);
+	}
+
+
 	encData.sample = info.data;
 	encData.size = info.size;
-	encData.ts = GST_BUFFER_DTS_OR_PTS(buffer);
+	encData.ts = rtp_ts;
 
 	g_list_foreach(
 		comvideo_codec.encoders,
