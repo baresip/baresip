@@ -108,7 +108,7 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 static void
 encode_h264_sample(struct videnc_state *st, enc_data *encData)
 {
-	debug("encode sample ts: %d", encData->ts);
+	debug("encode sample ts: %d\n", encData->ts);
 
 	h264_packetize(
 		encData->ts,
