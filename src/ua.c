@@ -825,6 +825,9 @@ static int create_register_clients(struct ua *ua)
 	if (uag_cfg() && str_isset(uag_cfg()->uuid))
 		add_extension(ua, "gruu");
 
+	/* Replace is always supported */
+	add_extension(ua, "replaces");
+
 	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
 
 		size_t i;

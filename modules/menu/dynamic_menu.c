@@ -228,6 +228,64 @@ static int call_xfer(struct re_printf *pf, void *arg)
 }
 
 
+static int call_attended_xfer(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct call *call = menu_callcur();
+	struct call *attended_call;
+	struct pl topl = PL_INIT, frompl = PL_INIT;
+	char *to, *from;
+	bool ok = false;
+	int err;
+
+	const char *usage = "usage: /transfercall"
+			" from=<from-id>"
+			" [to=to-id]\n"
+			"/transfercall <from-id> [to-id]\n";
+
+	(void)pf;
+
+	ok |= 0 == menu_param_decode(carg->prm, "from", &frompl);
+	ok |= 0 == menu_param_decode(carg->prm, "to", &topl);
+	info("check ok? %s\n", ok ? "true" : "false");
+	if (!ok) {
+		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
+			"[^ ]*[ \t\r\n]*[^ ]*", &frompl, NULL, &topl);
+	}
+
+	if (!ok) {
+		(void) re_hprintf(pf, "%s\n", usage);
+		return EINVAL;
+	}
+	pl_strdup(&from, &frompl);
+
+	if (pl_isset(&topl)) {
+		pl_strdup(&to, &topl);
+		call = uag_call_find(to);
+		if (!call) {
+			warning("menu: no call with call-id %s found\n", to);
+		}
+	}
+
+	if (!call_is_onhold(call)) {
+		warning("menu: please hold call %s\n", call_id(call));
+		return ENOENT;
+	}
+
+	attended_call = uag_call_find(from);
+	if (!attended_call) {
+		warning("menu: no call with call-id %s found\n", from);
+		return ENOENT;
+	}
+
+	err = call_replace_transfer(attended_call, call);
+
+	mem_deref(from);
+	mem_deref(to);
+	return err;
+}
+
+
 static int call_video_debug(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -345,6 +403,8 @@ static const struct cmd callcmdv[] = {
 {"sndcode",      0,  CMD_PRM, "Send Code",            send_code            },
 {"statmode",    'S',       0, "Statusmode toggle",    toggle_statmode      },
 {"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
+{"transferatt", 'T', CMD_PRM, "Transfers <call-id> to ative call",
+						      call_attended_xfer   },
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
 {"videodir",      0, CMD_PRM, "Set video direction",  set_video_dir        },
 {"medialdir",     0, CMD_PRM, "Set local media direction",  set_media_ldir },
