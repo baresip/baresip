@@ -21,6 +21,9 @@ struct comvideo_data {
 	GstVideoClient *video_client;
 	CameradClient *camerad_client;
 	GstCameraSrc *camera_src;
+	GstVideoClientStream *client_stream;
+
+	gboolean disp_enabled;
 
 	GList *encoders;
 	GList *sources;

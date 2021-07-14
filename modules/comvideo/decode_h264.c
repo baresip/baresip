@@ -19,7 +19,6 @@ struct viddec_state {
 	bool got_keyframe;
 
 	GstAppsrcH264Converter *converter;
-	GstVideoClientStream *stream;
 
 	struct {
 		unsigned n_key;
@@ -187,15 +186,18 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 }
 
 
-static void dec_destructor(void *arg) {
+static void dec_destructor(void *arg)
+{
 	struct viddec_state *st = arg;
 
 	mem_deref(st->mb);
 
-	if (st->stream) {
-		gst_video_client_stream_stop(st->stream);
-		g_object_unref(st->stream);
+	if (comvideo_codec.client_stream) {
+		gst_video_client_stream_stop(comvideo_codec.client_stream);
+		g_object_unref(comvideo_codec.client_stream);
+		comvideo_codec.client_stream = NULL;
 	}
+
 	if (st->converter) {
 		gst_object_unref(st->converter);
 	}
@@ -240,7 +242,12 @@ int decode_h264_update(
 	converter = gst_appsrc_h264_converter_new(stream);
 
 	st->converter = converter;
-	st->stream = stream;
+	comvideo_codec.client_stream = stream;
+
+	g_object_set(
+		stream,
+		"enabled", comvideo_codec.disp_enabled,
+		NULL);
 
 	out:
 	if (err)

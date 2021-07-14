@@ -180,14 +180,31 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 }
 
 
-static void disp_destructor(void *arg) {
+static void
+update_client_stream(gboolean disp_enabled)
+{
+	comvideo_codec.disp_enabled = disp_enabled;
+
+	if(comvideo_codec.client_stream) {
+		g_object_set(
+			comvideo_codec.client_stream,
+			"enabled", disp_enabled,
+			NULL);
+	}
+}
+
+
+static void disp_destructor(void *arg)
+{
+	update_client_stream(FALSE);
 	(void) arg;
 }
 
 
 static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		      struct vidisp_prm *prm, const char *dev,
-		      vidisp_resize_h *resizeh, void *arg) {
+		      vidisp_resize_h *resizeh, void *arg)
+{
 	struct vidisp_st *st;
 	int err = 0;
 
@@ -202,6 +219,8 @@ static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		return ENOMEM;
 
 	*stp = st;
+
+	update_client_stream(TRUE);
 
 	return err;
 }
@@ -252,9 +271,11 @@ static int module_init(void) {
 			  DBUS_PROPERTY_SIZE);
 	}
 
+	comvideo_codec.disp_enabled = FALSE;
 	comvideo_codec.camera_src = NULL;
 	comvideo_codec.sources = NULL;
 	comvideo_codec.encoders = NULL;
+	comvideo_codec.client_stream = NULL;
 
 	comvideo_codec.camerad_client =
 		camerad_client_new(

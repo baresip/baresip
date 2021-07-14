@@ -38,13 +38,7 @@ int encode_h264(struct videnc_state *st, bool update,
 static void enc_destructor(void *arg)
 {
 	struct videnc_state *st = arg;
-
-	info("comvideo: begin enc_destructor: encoders_list: %p\n",
-	     comvideo_codec.encoders);
 	comvideo_codec.encoders = g_list_remove(comvideo_codec.encoders, st);
-
-	info("comvideo: after enc_destructor: encoders_list: %p\n",
-	     comvideo_codec.encoders);
 }
 
 
@@ -88,8 +82,6 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	st->pktsize = prm->pktsize;
 
 	comvideo_codec.encoders = g_list_append(comvideo_codec.encoders, st);
-	info("comvideo: adding encoder: %p encoders_list: %p\n",
-	      st, comvideo_codec.encoders);
 
 	if (str_isset(fmtp)) {
 		struct pl sdp_fmtp;
