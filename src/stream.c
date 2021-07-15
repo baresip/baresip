@@ -1087,7 +1087,7 @@ void stream_hold(struct stream *s, bool hold)
 	}
 
 	sdp_media_set_ldir(s->sdp, dir);
-	stream_flush_jbuf(s);
+	stream_flush(s);
 }
 
 
@@ -1105,7 +1105,7 @@ void stream_set_ldir(struct stream *s, enum sdp_dir dir)
 
 	sdp_media_set_ldir(s->sdp, dir);
 
-	stream_flush_jbuf(s);
+	stream_flush(s);
 }
 
 
@@ -1127,13 +1127,15 @@ void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx)
 }
 
 
-void stream_flush_jbuf(struct stream *s)
+void stream_flush(struct stream *s)
 {
 	if (!s)
 		return;
 
 	if (s->rx.jbuf)
 		jbuf_flush(s->rx.jbuf);
+
+	rtp_clear(s->rtp);
 }
 
 
