@@ -89,24 +89,6 @@ static void http_resph(int err, const struct http_msg *msg, void *arg)
 }
 
 
-static void net_handler(void *arg)
-{
-	const struct sa *sa;
-	(void) arg;
-
-	sa = net_laddr_af(d->net, AF_INET);
-	if (sa)
-		http_client_set_laddr(d->client, sa);
-	info("httpreq: network changed %j", sa);
-#ifdef HAVE_INET6
-	sa = net_laddr_af(d->net, AF_INET6);
-	if (sa)
-		http_client_set_laddr6(d->client, sa);
-	info("httpreq: network changed %j", sa);
-#endif
-}
-
-
 static int ensure_alloc(void)
 {
 	int err = 0;
@@ -118,7 +100,6 @@ static int ensure_alloc(void)
 		return err;
 	}
 
-	net_change(d->net, 60, net_handler, NULL);
 	if (!d->client)
 		err = http_client_alloc(&d->client, net_dnsc(d->net));
 

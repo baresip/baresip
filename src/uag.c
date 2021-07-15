@@ -670,7 +670,6 @@ int uag_reset_transp(bool reg, bool reinvite)
 	/* Update SIP transports */
 	sip_transp_flush(uag.sip);
 
-	(void)net_check(net);
 	err = ua_add_transp(net);
 	if (err)
 		return err;

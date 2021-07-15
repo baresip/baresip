@@ -699,10 +699,6 @@ int  net_alloc(struct network **netp, const struct config_net *cfg);
 int  net_use_nameserver(struct network *net,
 			const struct sa *srvv, size_t srvc);
 int  net_set_address(struct network *net, const struct sa *ip);
-void net_change(struct network *net, uint32_t interval,
-		net_change_h *ch, void *arg);
-void net_force_change(struct network *net);
-bool net_check(struct network *net);
 bool net_af_enabled(const struct network *net, int af);
 int  net_set_af(struct network *net, int af);
 void net_dns_refresh(struct network *net);
