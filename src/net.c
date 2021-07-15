@@ -14,15 +14,11 @@ struct network {
 #ifdef HAVE_INET6
 	struct sa laddr6;
 #endif
-	struct tmr tmr;
 	struct dnsc *dnsc;
 	struct sa nsv[NET_MAX_NS];/**< Configured name servers           */
 	uint32_t nsn;        /**< Number of configured name servers      */
 	struct sa nsvf[NET_MAX_NS];/**< Configured fallback name servers */
 	uint32_t nsnf;       /**< Number of configured fallback name servers */
-	uint32_t interval;
-	net_change_h *ch;
-	void *arg;
 };
 
 
@@ -30,7 +26,6 @@ static void net_destructor(void *data)
 {
 	struct network *net = data;
 
-	tmr_cancel(&net->tmr);
 	mem_deref(net->dnsc);
 }
 
@@ -156,89 +151,6 @@ void net_dns_refresh(struct network *net)
 }
 
 
-/*
- * Detect changes in IP address(es)
- */
-static void ipchange_handler(void *arg)
-{
-	struct network *net = arg;
-	bool change;
-
-	tmr_start(&net->tmr, net->interval * 1000, ipchange_handler, net);
-
-	net_dns_refresh(net);
-
-	change = net_check(net);
-	if (change && net->ch) {
-		net->ch(net->arg);
-	}
-}
-
-
-/**
- * Check if local IP address(es) changed
- *
- * @param net Network instance
- *
- * @return True if changed, otherwise false
- */
-bool net_check(struct network *net)
-{
-	struct sa laddr;
-#ifdef HAVE_INET6
-	struct sa laddr6;
-#endif
-	bool change = false;
-
-	if (!net)
-		return false;
-
-	laddr = net->laddr;
-#ifdef HAVE_INET6
-	laddr6 = net->laddr6;
-#endif
-
-	if (str_isset(net->cfg.ifname)) {
-
-		if (net_af_enabled(net, AF_INET))
-			net_if_getaddr(net->cfg.ifname, AF_INET, &net->laddr);
-
-#ifdef HAVE_INET6
-		if (net_af_enabled(net, AF_INET6))
-			net_if_getaddr(net->cfg.ifname, AF_INET6,
-				       &net->laddr6);
-#endif
-	}
-	else {
-		if (net_af_enabled(net, AF_INET))
-			net_default_source_addr_get(AF_INET, &net->laddr);
-
-#ifdef HAVE_INET6
-		if (net_af_enabled(net, AF_INET6))
-			net_default_source_addr_get(AF_INET6, &net->laddr6);
-#endif
-	}
-
-	if (sa_isset(&net->laddr, SA_ADDR) &&
-	    !sa_cmp(&laddr, &net->laddr, SA_ADDR)) {
-		change = true;
-		info("net: local IPv4 address changed: %j -> %j\n",
-		     &laddr, &net->laddr);
-	}
-
-#ifdef HAVE_INET6
-	if (sa_isset(&net->laddr6, SA_ADDR) &&
-	    !sa_cmp(&laddr6, &net->laddr6, SA_ADDR)) {
-		change = true;
-		info("net: local IPv6 address changed: %j -> %j\n",
-		     &laddr6, &net->laddr6);
-	}
-#endif
-
-	return change;
-}
-
-
 /**
  * Check if address family is enabled
  *
@@ -331,8 +243,6 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		return ENOMEM;
 
 	net->cfg = *cfg;
-
-	tmr_init(&net->tmr);
 
 	if (cfg->nsc) {
 		size_t i;
@@ -532,44 +442,6 @@ int net_set_address(struct network *net, const struct sa *ip)
 	}
 
 	return 0;
-}
-
-
-/**
- * Check for networking changes with a regular interval
- *
- * @param net       Network instance
- * @param interval  Interval in seconds
- * @param ch        Handler called when a change was detected
- * @param arg       Handler argument
- */
-void net_change(struct network *net, uint32_t interval,
-		net_change_h *ch, void *arg)
-{
-	if (!net)
-		return;
-
-	net->interval = interval;
-	net->ch = ch;
-	net->arg = arg;
-
-	if (interval)
-		tmr_start(&net->tmr, interval * 1000, ipchange_handler, net);
-	else
-		tmr_cancel(&net->tmr);
-}
-
-
-/**
- * Force a change in the network interfaces
- *
- * @param net Network instance
- */
-void net_force_change(struct network *net)
-{
-	if (net && net->ch) {
-		net->ch(net->arg);
-	}
 }
 
 
