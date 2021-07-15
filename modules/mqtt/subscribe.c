@@ -23,10 +23,9 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	struct mbuf *resp = mbuf_alloc(2048);
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL, *od_resp = NULL;
-	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
 	char *cmd_buf = NULL;
 	char resp_topic[256];
-	const char *aor, *callid;
+	const char *aor, *callid, *cmd, *prm, *tok;
 	struct ua *ua = NULL;
 	int err;
 
@@ -41,11 +40,11 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 		goto out;
 	}
 
-	oe_cmd = odict_lookup(od, "command");
-	oe_prm = odict_lookup(od, "params");
-	oe_tok = odict_lookup(od, "token");
-	if (!oe_cmd) {
-		warning("mqtt: missing json entries\n");
+	cmd = odict_string(od, "command");
+	prm = odict_string(od, "params");
+	tok = odict_string(od, "token");
+	if (!cmd) {
+		warning("mqtt: command is missing in json\n");
 		goto out;
 	}
 
@@ -72,14 +71,9 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 		}
 	}
 
-	debug("mqtt: handle_command:  cmd='%s', token='%s'\n",
-	      oe_cmd->u.str,
-	      oe_tok ? oe_tok->u.str : "");
+	debug("mqtt: handle_command:  cmd='%s', token='%s'\n", cmd, tok);
 
-	re_snprintf(cmd_buf, msg->l, "%s%s%s",
-		    oe_cmd->u.str,
-		    oe_prm ? " " : "",
-		    oe_prm ? oe_prm->u.str : "");
+	re_snprintf(cmd_buf, msg->l, "%s%s%s", cmd, prm ? " " : "", prm);
 
 	/* Relay message to long commands */
 	err = cmd_process_long(baresip_commands(),
@@ -99,7 +93,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 
 	re_snprintf(resp_topic, sizeof(resp_topic),
 		    "/%s/command_resp/%s", mqtt->basetopic,
-		    oe_tok ? oe_tok->u.str : "nil");
+		    tok ? tok : "nil");
 
 	err = odict_alloc(&od_resp, 8);
 	if (err)
@@ -108,9 +102,9 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 	err  = odict_entry_add(od_resp, "response", ODICT_BOOL, true);
 	err |= odict_entry_add(od_resp, "ok", ODICT_BOOL, (bool)err==0);
 	err |= odict_entry_add(od_resp, "data", ODICT_STRING, resp->buf);
-	if (oe_tok) {
+	if (tok) {
 		err |= odict_entry_add(od_resp, "token",
-				       ODICT_STRING, oe_tok->u.str);
+				       ODICT_STRING, tok);
 	}
 	if (err)
 		goto out;
