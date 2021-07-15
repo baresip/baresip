@@ -56,7 +56,7 @@ struct stream {
 	void *sess_arg;          /**< Session handlers argument             */
 
 	/* Transmit */
-	struct {
+	struct sender {
 		struct metric metric;  /**< Metrics for transmit            */
 		struct sa raddr_rtp;   /**< Remote RTP address              */
 		struct sa raddr_rtcp;  /**< Remote RTCP address             */
@@ -64,7 +64,7 @@ struct stream {
 	} tx;
 
 	/* Receive */
-	struct {
+	struct receiver {
 		struct metric metric; /**< Metrics for receiving            */
 		struct tmr tmr_rtp;   /**< Timer for detecting RTP timeout  */
 		struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
@@ -205,12 +205,12 @@ static void check_rtp_handler(void *arg)
 }
 
 
-static inline int lostcalc(struct stream *s, uint16_t seq)
+static inline int lostcalc(struct receiver *rx, uint16_t seq)
 {
-	const uint16_t delta = seq - s->rx.pseq;
+	const uint16_t delta = seq - rx->pseq;
 	int lostc;
 
-	if (s->rx.pseq == (uint32_t)-1)
+	if (rx->pseq == (uint32_t)-1)
 		lostc = 0;
 	else if (delta == 0)
 		return -1;
@@ -221,7 +221,7 @@ static inline int lostcalc(struct stream *s, uint16_t seq)
 	else
 		return -2;
 
-	s->rx.pseq = seq;
+	rx->pseq = seq;
 
 	return lostc;
 }
@@ -413,7 +413,7 @@ int stream_decode(struct stream *s)
 	if (err && err != EAGAIN)
 		return ENOENT;
 
-	lostc = lostcalc(s, hdr.seq);
+	lostc = lostcalc(&s->rx, hdr.seq);
 	s->rx.jbuf_started = true;
 
 	handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0);
@@ -878,7 +878,7 @@ void stream_set_ldir(struct stream *s, enum sdp_dir dir)
 }
 
 
-enum sdp_dir stream_ldir(struct stream *s)
+enum sdp_dir stream_ldir(const struct stream *s)
 {
 	return s ? s->ldir : SDP_INACTIVE;
 }
