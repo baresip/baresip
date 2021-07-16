@@ -174,6 +174,7 @@ static int start_audio(struct call *call)
 static void call_stream_start(struct call *call, bool active)
 {
 	int err;
+	struct le *le;
 
 	debug("call: stream start (active=%d)\n", active);
 
@@ -192,7 +193,6 @@ static void call_stream_start(struct call *call, bool active)
 	}
 
 	if (active) {
-		struct le *le;
 
 		tmr_cancel(&call->tmr_inv);
 		call->time_start = time(NULL);
@@ -200,6 +200,10 @@ static void call_stream_start(struct call *call, bool active)
 		FOREACH_STREAM {
 			stream_flush(le->data);
 		}
+	}
+
+	FOREACH_STREAM {
+		stream_enable(le->data, true);
 	}
 }
 

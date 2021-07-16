@@ -43,6 +43,7 @@ struct receiver {
 	bool ssrc_set;        /**< Incoming SSRC is set             */
 	bool pseq_set;        /**< True if sequence number is set   */
 	bool rtp_estab;       /**< True if RTP stream established   */
+	bool enabled;         /**< True if enabled                  */
 };
 
 
@@ -342,6 +343,9 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	int err;
 
 	MAGIC_CHECK(s);
+
+	if (!s->rx.enabled && s->type == MEDIA_AUDIO)
+		return;
 
 	if (rtp_pt_is_rtcp(hdr->pt)) {
 		info("stream: drop incoming RTCP packet on RTP port"
@@ -1385,6 +1389,26 @@ int stream_start_rtcp(const struct stream *strm)
 		}
 	}
 
+	return 0;
+}
+
+
+/**
+ * Enable stream
+ *
+ * @param strm   Stream object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int stream_enable(struct stream *strm, bool enable)
+{
+	if (!strm)
+		return EINVAL;
+
+	debug("stream: %s: %s RTP from remote\n", media_name(strm->type),
+			enable ? "enable":"disable");
+
+	strm->rx.enabled = enable;
 	return 0;
 }
 
