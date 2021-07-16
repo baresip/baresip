@@ -275,7 +275,6 @@ int  stream_alloc(struct stream **sp, struct list *streaml,
 int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
 void stream_update_encoder(struct stream *s, int pt_enc);
-int  stream_jbuf_stat(struct re_printf *pf, const struct stream *s);
 void stream_hold(struct stream *s, bool hold);
 void stream_set_ldir(struct stream *s, enum sdp_dir dir);
 enum sdp_dir stream_ldir(const struct stream *s);

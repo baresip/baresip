@@ -825,30 +825,6 @@ void stream_update_encoder(struct stream *s, int pt_enc)
 }
 
 
-int stream_jbuf_stat(struct re_printf *pf, const struct stream *s)
-{
-	struct jbuf_stat stat;
-	int err;
-
-	if (!s)
-		return EINVAL;
-
-	err  = re_hprintf(pf, " %s:", sdp_media_name(s->sdp));
-
-	err |= jbuf_stats(s->rx.jbuf, &stat);
-	if (err) {
-		err = re_hprintf(pf, "Jbuf stat: (not available)");
-	}
-	else {
-		err = re_hprintf(pf, "Jbuf stat: put=%u get=%u or=%u ur=%u",
-				  stat.n_put, stat.n_get,
-				  stat.n_overflow, stat.n_underflow);
-	}
-
-	return err;
-}
-
-
 void stream_hold(struct stream *s, bool hold)
 {
 	if (!s)
