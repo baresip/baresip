@@ -377,6 +377,7 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 		char cname[64];
 		unsigned i = 0;
 
+		acc->videoen = false;
 		if (msg_param_decode(prm, "video_codecs", &vcs))
 			return 0;
 
@@ -393,6 +394,7 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 				list_append(&acc->vidcodecl, &acc->vcv[i++],
 						vc);
 
+				acc->videoen = true;
 				if (i >= ARRAY_SIZE(acc->vcv))
 					return 0;
 			}
@@ -503,6 +505,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 	acc->maf = AF_UNSPEC;
 	acc->sipansbeep = SIPANSBEEP_ON;
+	acc->videoen = true;
 	err = str_dup(&acc->buf, sipaddr);
 	if (err)
 		goto out;
@@ -1091,10 +1094,13 @@ struct list *account_aucodecl(const struct account *acc)
  *
  * @param acc User-Agent account
  *
- * @return List of video codecs (struct vidcodec)
+ * @return List of video codecs (struct vidcodec), NULL if video is disabled
  */
 struct list *account_vidcodecl(const struct account *acc)
 {
+	if (acc && !acc->videoen)
+		return NULL;
+
 	return (acc && !list_isempty(&acc->vidcodecl))
 		? (struct list *)&acc->vidcodecl : baresip_vidcodecl();
 }
@@ -1635,6 +1641,35 @@ const char *account_call_transfer(const struct account *acc)
 const char *account_extra(const struct account *acc)
 {
 	return acc ? acc->extra : NULL;
+}
+
+
+/**
+ * Enables/Disables video for an account
+ *
+ * @param acc    User-Agent account
+ * @param enable True to enable, false to disable
+ */
+void account_enable_video(struct account *acc, bool enable)
+{
+	if (!acc)
+		return;
+
+	acc->videoen = enable;
+}
+
+
+/**
+ * Returns if video is enabled
+ *
+ * @param acc User-Agent account
+ *
+ * @return True if video is enabled, otherwise false
+ */
+bool account_video_enabled(struct account *acc)
+{
+
+	return acc ? acc->videoen : false;
 }
 
 
