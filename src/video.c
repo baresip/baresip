@@ -902,7 +902,6 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
  * @param stream_prm Stream parameters
  * @param cfg        Global configuration
  * @param sdp_sess   SDP Session
- * @param label      SDP label
  * @param mnat       Media NAT (optional)
  * @param mnat_sess  Media NAT session (optional)
  * @param menc       Media Encryption (optional)
@@ -919,7 +918,7 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 int video_alloc(struct video **vp, struct list *streaml,
 		const struct stream_param *stream_prm,
 		const struct config *cfg,
-		struct sdp_session *sdp_sess, int label,
+		struct sdp_session *sdp_sess,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		const char *content, const struct list *vidcodecl,
@@ -944,7 +943,7 @@ int video_alloc(struct video **vp, struct list *streaml,
 	tmr_init(&v->tmr);
 
 	err = stream_alloc(&v->strm, streaml, stream_prm,
-			   &cfg->avt, sdp_sess, MEDIA_VIDEO, label,
+			   &cfg->avt, sdp_sess, MEDIA_VIDEO,
 			   mnat, mnat_sess, menc, menc_sess, offerer,
 			   stream_recv_handler, rtcp_handler,
 			   stream_pt_handler, v);

@@ -838,7 +838,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	/* Audio stream */
 	err = audio_alloc(&call->audio, &call->streaml, &stream_prm, cfg, acc,
-			  call->sdp, ++label,
+			  call->sdp,
 			  acc->mnat, call->mnats, acc->menc, call->mencs,
 			  acc->ptime, account_aucodecl(call->acc), !got_offer,
 			  audio_event_handler, audio_level_handler,
@@ -861,7 +861,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (use_video) {
 		err = video_alloc(&call->video, &call->streaml,
 				  &stream_prm, cfg,
-				  call->sdp, ++label,
+				  call->sdp,
 				  acc->mnat, call->mnats,
 				  acc->menc, call->mencs,
 				  "main",
@@ -879,6 +879,9 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
+
+		stream_set_label(strm, ++label);
+
 		stream_set_session_handlers(strm, stream_mnatconn_handler,
 					    stream_rtpestab_handler,
 					    stream_rtcp_handler,

@@ -558,7 +558,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		 const struct stream_param *prm,
 		 const struct config_avt *cfg,
 		 struct sdp_session *sdp_sess,
-		 enum media_type type, int label,
+		 enum media_type type,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,
 		 bool offerer,
@@ -620,11 +620,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	if (err)
 		goto out;
 
-	if (label) {
-		err |= sdp_media_set_lattr(s->sdp, true,
-					   "label", "%d", label);
-	}
-
 	/* RFC 5506 */
 	if (offerer || sdp_media_rattr(s->sdp, "rtcp-rsize"))
 		err |= sdp_media_set_lattr(s->sdp, true, "rtcp-rsize", NULL);
@@ -679,6 +674,15 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		*sp = s;
 
 	return err;
+}
+
+
+int stream_set_label(struct stream *strm, int label)
+{
+	if (!strm)
+		return EINVAL;
+
+	return sdp_media_set_lattr(strm->sdp, true, "label", "%d", label);
 }
 
 

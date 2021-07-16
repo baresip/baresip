@@ -1245,7 +1245,6 @@ static int add_telev_codec(struct audio *a)
  * @param cfg        Global configuration
  * @param acc        User-Agent account
  * @param sdp_sess   SDP Session
- * @param label      SDP label
  * @param mnat       Media NAT (optional)
  * @param mnat_sess  Media NAT session (optional)
  * @param menc       Media Encryption (optional)
@@ -1263,7 +1262,7 @@ static int add_telev_codec(struct audio *a)
 int audio_alloc(struct audio **ap, struct list *streaml,
 		const struct stream_param *stream_prm,
 		const struct config *cfg,
-		struct account *acc, struct sdp_session *sdp_sess, int label,
+		struct account *acc, struct sdp_session *sdp_sess,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		uint32_t ptime, const struct list *aucodecl, bool offerer,
@@ -1305,7 +1304,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	err = stream_alloc(&a->strm, streaml,
 			   stream_prm, &cfg->avt, sdp_sess,
-			   MEDIA_AUDIO, label,
+			   MEDIA_AUDIO,
 			   mnat, mnat_sess, menc, menc_sess, offerer,
 			   stream_recv_handler, NULL, stream_pt_handler, a);
 	if (err)
