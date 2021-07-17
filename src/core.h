@@ -266,12 +266,13 @@ int  stream_alloc(struct stream **sp, struct list *streaml,
 		  const struct stream_param *prm,
 		  const struct config_avt *cfg,
 		  struct sdp_session *sdp_sess,
-		  enum media_type type, int label,
+		  enum media_type type,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
 		  bool offerer,
 		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, stream_pt_h *pth,
 		  void *arg);
+int  stream_set_label(struct stream *strm, int label);
 int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
 void stream_update_encoder(struct stream *s, int pt_enc);
