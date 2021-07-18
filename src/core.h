@@ -281,8 +281,6 @@ void stream_set_ldir(struct stream *s, enum sdp_dir dir);
 enum sdp_dir stream_ldir(const struct stream *s);
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
 void stream_reset(struct stream *s);
-void stream_set_bw(struct stream *s, uint32_t bps);
-int  stream_print(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 bool stream_is_ready(const struct stream *strm);
 int  stream_decode(struct stream *s);
@@ -292,6 +290,7 @@ enum media_type stream_type(const struct stream *strm);
 int stream_pt_enc(const struct stream *strm);
 struct rtp_sock *stream_rtp_sock(const struct stream *strm);
 int stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);
+int  stream_print(struct re_printf *pf, const struct stream *s);
 
 
 /*

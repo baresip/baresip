@@ -1311,7 +1311,9 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		goto out;
 
 	if (cfg->avt.rtp_bw.max) {
-		stream_set_bw(a->strm, AUDIO_BANDWIDTH);
+		sdp_media_set_lbandwidth(stream_sdpmedia(a->strm),
+					 SDP_BANDWIDTH_AS,
+					 AUDIO_BANDWIDTH / 1000);
 	}
 
 	/* Audio codecs */

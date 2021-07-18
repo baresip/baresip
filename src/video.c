@@ -956,7 +956,10 @@ int video_alloc(struct video **vp, struct list *streaml,
 	stream_set_srate(v->strm, VIDEO_SRATE, VIDEO_SRATE);
 
 	if (cfg->avt.rtp_bw.max >= AUDIO_BANDWIDTH) {
-		stream_set_bw(v->strm, cfg->avt.rtp_bw.max - AUDIO_BANDWIDTH);
+		uint32_t bps = cfg->avt.rtp_bw.max - AUDIO_BANDWIDTH;
+
+		sdp_media_set_lbandwidth(stream_sdpmedia(v->strm),
+					 SDP_BANDWIDTH_AS, bps / 1000);
 	}
 
 	err |= sdp_media_set_lattr(stream_sdpmedia(v->strm), true,

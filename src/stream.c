@@ -886,15 +886,6 @@ void stream_reset(struct stream *s)
 }
 
 
-void stream_set_bw(struct stream *s, uint32_t bps)
-{
-	if (!s)
-		return;
-
-	sdp_media_set_lbandwidth(s->sdp, SDP_BANDWIDTH_AS, bps / 1000);
-}
-
-
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 {
 	if (!strm)
@@ -1130,9 +1121,9 @@ int stream_start(const struct stream *strm)
  */
 int stream_open_natpinhole(const struct stream *strm)
 {
-	int err = 0;
-	struct mbuf *mb = NULL;
 	const struct sdp_format *sc = NULL;
+	struct mbuf *mb = NULL;
+	int err = 0;
 
 	if (!strm)
 		return EINVAL;
