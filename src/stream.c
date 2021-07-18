@@ -677,15 +677,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 }
 
 
-int stream_set_label(struct stream *strm, int label)
-{
-	if (!strm)
-		return EINVAL;
-
-	return sdp_media_set_lattr(strm->sdp, true, "label", "%d", label);
-}
-
-
 /**
  * Get the sdp object from the stream
  *

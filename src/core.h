@@ -272,7 +272,6 @@ int  stream_alloc(struct stream **sp, struct list *streaml,
 		  bool offerer,
 		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, stream_pt_h *pth,
 		  void *arg);
-int  stream_set_label(struct stream *strm, int label);
 int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
 void stream_update_encoder(struct stream *s, int pt_enc);

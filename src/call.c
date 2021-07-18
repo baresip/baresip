@@ -880,7 +880,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
 
-		stream_set_label(strm, ++label);
+		sdp_media_set_lattr(stream_sdpmedia(strm), true,
+				    "label", "%d", ++label);
 
 		stream_set_session_handlers(strm, stream_mnatconn_handler,
 					    stream_rtpestab_handler,
