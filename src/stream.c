@@ -946,55 +946,6 @@ void stream_set_session_handlers(struct stream *strm,
 
 
 /**
- * Print stream debug info
- *
- * @param pf Print function
- * @param s  Stream object
- *
- * @return 0 if success, otherwise errorcode
- */
-int stream_debug(struct re_printf *pf, const struct stream *s)
-{
-	int err;
-
-	if (!s)
-		return 0;
-
-	err  = re_hprintf(pf, " %s dir=%s pt_enc=%d\n", sdp_media_name(s->sdp),
-			  sdp_dir_name(sdp_media_dir(s->sdp)),
-			  s->tx.pt_enc);
-
-	err |= re_hprintf(pf, " local: %J, remote: %J/%J\n",
-			  sdp_media_laddr(s->sdp),
-			  &s->tx.raddr_rtp, &s->tx.raddr_rtcp);
-
-	err |= re_hprintf(pf, " mnat: %s (connected=%s)\n",
-			  s->mnat ? s->mnat->id : "(none)",
-			  s->mnat_connected ? "yes" : "no");
-
-	err |= re_hprintf(pf, " menc: %s (secure=%s)\n",
-			  s->menc ? s->menc->id : "(none)",
-			  s->menc_secure ? "yes" : "no");
-
-	err |= rtp_debug(pf, s->rtp);
-	err |= jbuf_debug(pf, s->rx.jbuf);
-
-	return err;
-}
-
-
-int stream_print(struct re_printf *pf, const struct stream *s)
-{
-	if (!s)
-		return 0;
-
-	return re_hprintf(pf, " %s=%u/%u", sdp_media_name(s->sdp),
-			  s->tx.metric.cur_bitrate,
-			  s->rx.metric.cur_bitrate);
-}
-
-
-/**
  * Get the RTCP Statistics from a media stream
  *
  * @param strm Stream object
@@ -1269,4 +1220,53 @@ int stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc)
 	}
 	else
 		return ENOENT;
+}
+
+
+/**
+ * Print stream debug info
+ *
+ * @param pf Print function
+ * @param s  Stream object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int stream_debug(struct re_printf *pf, const struct stream *s)
+{
+	int err;
+
+	if (!s)
+		return 0;
+
+	err  = re_hprintf(pf, " %s dir=%s pt_enc=%d\n", sdp_media_name(s->sdp),
+			  sdp_dir_name(sdp_media_dir(s->sdp)),
+			  s->tx.pt_enc);
+
+	err |= re_hprintf(pf, " local: %J, remote: %J/%J\n",
+			  sdp_media_laddr(s->sdp),
+			  &s->tx.raddr_rtp, &s->tx.raddr_rtcp);
+
+	err |= re_hprintf(pf, " mnat: %s (connected=%s)\n",
+			  s->mnat ? s->mnat->id : "(none)",
+			  s->mnat_connected ? "yes" : "no");
+
+	err |= re_hprintf(pf, " menc: %s (secure=%s)\n",
+			  s->menc ? s->menc->id : "(none)",
+			  s->menc_secure ? "yes" : "no");
+
+	err |= rtp_debug(pf, s->rtp);
+	err |= jbuf_debug(pf, s->rx.jbuf);
+
+	return err;
+}
+
+
+int stream_print(struct re_printf *pf, const struct stream *s)
+{
+	if (!s)
+		return 0;
+
+	return re_hprintf(pf, " %s=%u/%u", sdp_media_name(s->sdp),
+			  s->tx.metric.cur_bitrate,
+			  s->rx.metric.cur_bitrate);
 }
