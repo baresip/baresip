@@ -827,7 +827,7 @@ void stream_hold(struct stream *s, bool hold)
 
 	s->hold = hold;
 	sdp_media_set_ldir(s->sdp, hold ? SDP_SENDONLY : s->ldir);
-	stream_reset(s);
+	stream_flush_jbuf(s);
 }
 
 
@@ -845,7 +845,7 @@ void stream_set_ldir(struct stream *s, enum sdp_dir dir)
 
 	sdp_media_set_ldir(s->sdp, dir);
 
-	stream_reset(s);
+	stream_flush_jbuf(s);
 }
 
 
@@ -867,7 +867,7 @@ void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx)
 }
 
 
-void stream_reset(struct stream *s)
+void stream_flush_jbuf(struct stream *s)
 {
 	if (!s)
 		return;

@@ -195,7 +195,7 @@ static void call_stream_start(struct call *call, bool active)
 		call->time_start = time(NULL);
 
 		FOREACH_STREAM {
-			stream_reset(le->data);
+			stream_flush_jbuf(le->data);
 		}
 	}
 }

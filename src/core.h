@@ -279,7 +279,7 @@ void stream_hold(struct stream *s, bool hold);
 void stream_set_ldir(struct stream *s, enum sdp_dir dir);
 enum sdp_dir stream_ldir(const struct stream *s);
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
-void stream_reset(struct stream *s);
+void stream_flush_jbuf(struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 bool stream_is_ready(const struct stream *strm);
 int  stream_decode(struct stream *s);
