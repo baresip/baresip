@@ -1666,7 +1666,7 @@ void account_enable_video(struct account *acc, bool enable)
  *
  * @return True if video is enabled, otherwise false
  */
-bool account_video_enabled(struct account *acc)
+bool account_video_enabled(const struct account *acc)
 {
 
 	return acc ? acc->videoen : false;
