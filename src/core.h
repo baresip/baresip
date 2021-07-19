@@ -70,6 +70,7 @@ struct account {
 	struct stun_uri *stun_host;  /**< STUN Server                        */
 	struct le vcv[4];            /**< List elements for vidcodecl        */
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
+	bool videoen;                /**< Video enabled flag                 */
 	bool mwi;                    /**< MWI on/off                         */
 	bool refer;                  /**< REFER method on/off                */
 	char *cert;                  /**< SIP TLS client certificate+keyfile */
