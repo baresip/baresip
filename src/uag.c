@@ -449,6 +449,7 @@ static int add_transp_af(const struct sa *laddr)
 static int ua_add_transp(struct network *net)
 {
 	int err = 0;
+	struct config_sip *cfg = &conf_config()->sip;
 
 	if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
 		err |= add_transp_af(net_laddr_af(net, AF_INET));
@@ -458,6 +459,7 @@ static int ua_add_transp(struct network *net)
 		err |= add_transp_af(net_laddr_af(net, AF_INET6));
 #endif
 
+	sip_transp_set_default(uag.sip, cfg->transp);
 	return err;
 }
 
