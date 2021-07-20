@@ -698,7 +698,9 @@ void net_laddr_apply(const struct network *net, net_ifaddr_h *ifh, void *arg)
 		return;
 
 	handle_addr(&net->laddr,  ifh, arg);
+#ifdef HAVE_INET6
 	handle_addr(&net->laddr6, ifh, arg);
+#endif
 }
 
 
