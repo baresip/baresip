@@ -1645,35 +1645,6 @@ const char *account_extra(const struct account *acc)
 
 
 /**
- * Enables/Disables video for an account
- *
- * @param acc    User-Agent account
- * @param enable True to enable, false to disable
- */
-void account_enable_video(struct account *acc, bool enable)
-{
-	if (!acc)
-		return;
-
-	acc->videoen = enable;
-}
-
-
-/**
- * Returns if video is enabled
- *
- * @param acc User-Agent account
- *
- * @return True if video is enabled, otherwise false
- */
-bool account_video_enabled(const struct account *acc)
-{
-
-	return acc ? acc->videoen : false;
-}
-
-
-/**
  * Auto complete a SIP uri, add scheme and domain if missing
  *
  * @param acc User-Agent account
