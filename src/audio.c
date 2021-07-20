@@ -1359,6 +1359,9 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		goto out;
 	}
 
+	if (acc && acc->autelev_pt)
+		a->cfg.telev_pt = acc->autelev_pt;
+
 	err = telev_alloc(&a->telev, ptime);
 	if (err)
 		goto out;
@@ -1404,9 +1407,6 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		if (err)
 			goto out;
 	}
-
-	if (acc && acc->autelev_pt)
-		a->cfg.telev_pt = acc->autelev_pt;
 
 	rx->pt     = -1;
 	rx->ptime  = ptime;
