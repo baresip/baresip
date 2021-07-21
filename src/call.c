@@ -976,6 +976,9 @@ int call_connect(struct call *call, const struct pl *paddr)
 	info("call: connecting to '%r'..\n", paddr);
 
 	call->outgoing = true;
+	err = str_x64dup(&call->id, rand_u64());
+	if (err)
+		return err;
 
 	/* if the peer-address is a full SIP address then we need
 	 * to parse it and extract the SIP uri part.
@@ -2036,6 +2039,7 @@ static int send_invite(struct call *call)
 			      routev[0] ? 1 : 0,
 			      "application/sdp", desc,
 			      auth_handler, call->acc, true,
+			      call->id,
 			      sipsess_offer_handler, sipsess_answer_handler,
 			      sipsess_progr_handler, sipsess_estab_handler,
 			      sipsess_info_handler,
@@ -2053,9 +2057,6 @@ static int send_invite(struct call *call)
 	err = sipsess_set_redirect_handler(call->sess, redirect_handler);
 	if (err)
 		goto out;
-
-	err = str_dup(&call->id,
-		      sip_dialog_callid(sipsess_dialog(call->sess)));
 
 	/* save call setup timer */
 	call->time_conn = time(NULL);
