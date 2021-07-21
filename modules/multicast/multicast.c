@@ -18,10 +18,12 @@
 
 struct mccfg {
 	uint32_t callprio;
+	uint32_t ttl;
 };
 
 static struct mccfg mccfg = {
 	0,
+	1,
 };
 
 
@@ -109,6 +111,17 @@ static int check_rtp_pt(struct aucodec *ac)
 uint8_t multicast_callprio(void)
 {
 	return mccfg.callprio;
+}
+
+
+/**
+ * Getter for configurable multicast TTL
+ *
+ * @return uint8_t multicast TTL
+ */
+uint8_t multicast_ttl(void)
+{
+	return mccfg.ttl;
 }
 
 
@@ -496,6 +509,12 @@ static int module_read_config(void)
 	struct sa laddr;
 
 	(void)conf_get_u32(conf_cur(), "multicast_call_prio", &mccfg.callprio);
+	if (mccfg.callprio > 255)
+		mccfg.callprio = 255;
+
+	(void)conf_get_u32(conf_cur(), "multicast_ttl", &mccfg.ttl);
+	if (mccfg.ttl > 255)
+		mccfg.ttl = 255;
 
 	sa_init(&laddr, AF_INET);
 	err = conf_apply(conf_cur(), "multicast_listener",

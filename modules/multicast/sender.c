@@ -163,6 +163,7 @@ int mcsender_alloc(struct sa *addr, const struct aucodec *codec)
 {
 	int err = 0;
 	struct mcsender *mcsender = NULL;
+	uint8_t ttl = multicast_ttl();
 
 	if (!addr || !codec)
 		return EINVAL;
@@ -182,6 +183,14 @@ int mcsender_alloc(struct sa *addr, const struct aucodec *codec)
 	err = rtp_open(&mcsender->rtp, sa_af(&mcsender->addr));
 	if (err)
 		goto out;
+
+	if (ttl > 1) {
+		struct udp_sock *sock;
+
+		sock = (struct udp_sock *) rtp_sock(mcsender->rtp);
+		udp_setsockopt(sock, IPPROTO_IP,
+			IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+	}
 
 	err = mcsource_start(&mcsender->src, mcsender->ac,
 		mcsender_send_handler, mcsender);

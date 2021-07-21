@@ -1202,6 +1202,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "\n# multicast receivers (in priority order)"
 			 "- port number must be even\n"
 			 "#multicast_call_prio\t0\n"
+			 "#multicast_ttl\t1\n"
 			 "#multicast_listener\t224.0.2.21:50000\n"
 			 "#multicast_listener\t224.0.2.21:50002\n");
 
