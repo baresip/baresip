@@ -2107,19 +2107,14 @@ static int send_dtmf_info(struct call *call, char key)
  */
 bool call_early_video_available(const struct call *call)
 {
-	enum answermode m = account_answermode(call->acc);
+	struct le *le;
+	struct sdp_media *v;
 
-	if (m == ANSWERMODE_EARLY_VIDEO) {
-		struct le *le;
-		struct sdp_media *v;
-
-		LIST_FOREACH(sdp_session_medial(call->sdp, false), le) {
-			v = le->data;
-			if (0 == str_cmp(sdp_media_name(v), "video") &&
-				(sdp_media_rdir(v) == SDP_SENDONLY ||
-				 sdp_media_rdir(v) == SDP_SENDRECV))
-				return true;
-		}
+	LIST_FOREACH(sdp_session_medial(call->sdp, false), le) {
+		v = le->data;
+		if (0 == str_cmp(sdp_media_name(v), "video") &&
+			(sdp_media_rdir(v) & SDP_RECVONLY))
+			return true;
 	}
 
 	return false;
