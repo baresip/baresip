@@ -19,6 +19,7 @@ enum {
 
 
 uint8_t multicast_callprio(void);
+uint8_t multicast_ttl(void);
 
 
 /* Sender */
