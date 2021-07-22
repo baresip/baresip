@@ -502,23 +502,40 @@ static bool require_handler(const struct sip_hdr *hdr,
 }
 
 
-static int sdp_af_hint(struct mbuf *mb)
+static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 {
-	struct pl af;
+	struct pl pl1, pl2;
+	char *addr = NULL;
 	int err;
 
+	*af = AF_UNSPEC;
 	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
-		       "IN IP[46]+", &af);
+		       "IN IP[46]+ [^ \r\n]+", &pl1, &pl2);
 	if (err)
-		return AF_UNSPEC;
+		return EINVAL;
 
-	switch (af.p[0]) {
+	pl_strdup(&addr, &pl2);
+	switch (pl1.p[0]) {
 
-	case '4': return AF_INET;
-	case '6': return AF_INET6;
+	case '4': *af = AF_INET;
+		  break;
+	case '6': *af = AF_INET6;
+		  break;
 	}
 
-	return AF_UNSPEC;
+	/* OSX/iOS needs a port number for udp_connect() */
+	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
+		       "m=audio [0-9]+ ", &pl1);
+	if (err)
+		err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
+				"m=video [0-9]+ ", &pl1);
+
+	if (err)
+		return EINVAL;
+
+	err = sa_set_str(sa, addr, pl_u32(&pl1));
+	mem_deref(addr);
+	return err;
 }
 
 
@@ -526,9 +543,7 @@ static int sdp_af_hint(struct mbuf *mb)
 void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 {
 	struct config *config = conf_config();
-	const struct network *net = baresip_network();
 	const struct sip_hdr *hdr;
-	int af_sdp;
 	struct ua *ua;
 	struct call *call = NULL;
 	char to_uri[256];
@@ -578,26 +593,6 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 				  "Content-Length: 0\r\n\r\n",
 				  &hdr->val);
 		return;
-	}
-
-	/* Check if offered media AF is supported and available */
-	af_sdp = sdp_af_hint(msg->mb);
-	if (af_sdp) {
-		if (!net_af_enabled(net, af_sdp)) {
-			warning("ua: SDP offer AF not supported (%s)\n",
-				net_af2name(af_sdp));
-			af_sdp = 0;
-		}
-		else if (!sa_isset(net_laddr_af(net, af_sdp), SA_ADDR)) {
-			warning("ua: SDP offer AF not available (%s)\n",
-				net_af2name(af_sdp));
-			af_sdp = 0;
-		}
-		if (!af_sdp) {
-			(void)sip_treply(NULL, uag_sip(), msg, 488,
-					 "Not Acceptable Here");
-			return;
-		}
 	}
 
 	(void)pl_strcpy(&msg->to.auri, to_uri, sizeof(to_uri));
@@ -693,16 +688,21 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	const struct network *net = baresip_network();
 	struct call_prm cprm;
 	int af;
-	int af_sdp;
+	struct sa dst;
 	int err;
 
 	if (!callp || !ua)
 		return EINVAL;
 
-	if (msg && (af_sdp = sdp_af_hint(msg->mb))) {
-		info("ua: using AF from sdp offer: af=%s\n",
-		     net_af2name(af_sdp));
-		af = af_sdp;
+	if (msg && !sdp_connection(msg->mb, &af, &dst)) {
+		if (!net_af_enabled(net, af)) {
+			warning("ua: SDP offer AF not supported (%s)\n",
+					net_af2name(af));
+			af = AF_UNSPEC;
+		} else {
+			info("ua: using origin address %j of SDP offer\n",
+			     &dst);
+		}
 	}
 	else if (ua->acc->maf &&
 		   sa_isset(net_laddr_af(net, ua->acc->maf), SA_ADDR)) {
@@ -716,7 +716,24 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		     net_af2name(af));
 	}
 
+	if (af == AF_UNSPEC) {
+		(void)sip_treply(NULL, uag_sip(), msg, 488,
+				 "Not Acceptable Here");
+		return EINVAL;
+	}
+
 	memset(&cprm, 0, sizeof(cprm));
+
+	if (sa_isset(&dst, SA_ADDR)) {
+		err = net_dst_source_addr_get(&dst, &cprm.laddr);
+		if (err) {
+			warning("ua: no laddr for %j (%m)\n", &dst, err);
+			return err;
+		}
+	}
+	else {
+		sa_cpy(&cprm.laddr, net_laddr_af(net, af));
+	}
 
 	sa_cpy(&cprm.laddr, net_laddr_af(net, af));
 	cprm.vidmode = vmode;
