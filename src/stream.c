@@ -68,7 +68,6 @@ struct stream {
 		struct metric metric; /**< Metrics for receiving            */
 		struct tmr tmr_rtp;   /**< Timer for detecting RTP timeout  */
 		struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
-		bool jbuf_started;    /**< True if jitter-buffer was started*/
 		uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
 		uint32_t rtp_timeout; /**< RTP Timeout value in [ms]        */
 		uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
@@ -149,7 +148,6 @@ static void stream_close(struct stream *strm, int err)
 
 	strm->terminated = true;
 	strm->errorh = NULL;
-	strm->rx.jbuf_started = false;
 	jbuf_flush(strm->rx.jbuf);
 
 	if (errorh)
@@ -359,10 +357,8 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (s->rx.jbuf) {
 
 		/* Put frame in Jitter Buffer */
-		if (flush) {
+		if (flush)
 			jbuf_flush(s->rx.jbuf);
-			s->rx.jbuf_started = false;
-		}
 
 		err = jbuf_put(s->rx.jbuf, hdr, mb);
 		if (err) {
@@ -414,7 +410,6 @@ int stream_decode(struct stream *s)
 		return ENOENT;
 
 	lostc = lostcalc(&s->rx, hdr.seq);
-	s->rx.jbuf_started = true;
 
 	handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0);
 	mem_deref(mb);
@@ -872,7 +867,7 @@ void stream_flush_jbuf(struct stream *s)
 	if (!s)
 		return;
 
-	if (s->rx.jbuf && s->rx.jbuf_started)
+	if (s->rx.jbuf)
 		jbuf_flush(s->rx.jbuf);
 }
 
