@@ -712,7 +712,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	}
 	else {
 		af = best_effort_af(ua, net);
-		info("ua: using best effort AF: af=%s\n",
+		debug("ua: using best effort AF: af=%s\n",
 		     net_af2name(af));
 	}
 
