@@ -290,6 +290,26 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 }
 
 
+static int stop_ringing(struct re_printf *pf, void *arg)
+{
+	struct menu *menu;
+	struct play *p;
+
+	(void)pf;
+	(void)arg;
+
+	menu = menu_get();
+	p = menu->play;
+	menu->play = NULL;
+
+	if (p) {
+		mem_deref(p);
+	}
+
+	return 0;
+}
+
+
 static int set_video_dir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -348,6 +368,7 @@ static const struct cmd callcmdv[] = {
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
 {"videodir",      0, CMD_PRM, "Set video direction",  set_video_dir        },
 {"medialdir",     0, CMD_PRM, "Set local media direction",  set_media_ldir },
+{"stopringing",   0,       0, "Stop ring tones",      stop_ringing         },
 
 /* Numeric keypad for DTMF events: */
 {NULL, '#',         0, NULL,                  digit_handler         },
