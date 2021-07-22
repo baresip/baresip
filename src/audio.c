@@ -918,8 +918,13 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 	struct audio *a = arg;
 	MAGIC_CHECK(a);
 
-	if (a->errh)
-		a->errh(err, str, a->arg);
+	if (!err) {
+		warning("audio: ausrc warning (%s)\n", str);
+	}
+	else {
+		if (a->errh)
+			a->errh(err, str, a->arg);
+	}
 }
 
 
