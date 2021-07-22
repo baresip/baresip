@@ -397,7 +397,7 @@ static void timeout(void *arg)
 		tmr_cancel(&st->tmr);
 
 		if (st->eos) {
-			info("gst: end of file\n");
+			debug("gst: end of file\n");
 			/* error handler must be called from re_main thread */
 			if (st->errh)
 				st->errh(0, "end of file", st->arg);
