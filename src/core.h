@@ -251,6 +251,7 @@ enum media_type {
 	MEDIA_VIDEO,
 };
 
+struct stream;
 struct rtp_header;
 
 enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
@@ -260,8 +261,6 @@ typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct mbuf *mb, unsigned lostc, void *arg);
 typedef int (stream_pt_h)(uint8_t pt, struct mbuf *mb, void *arg);
 
-
-struct stream;
 
 int  stream_alloc(struct stream **sp, struct list *streaml,
 		  const struct stream_param *prm,
@@ -273,24 +272,28 @@ int  stream_alloc(struct stream **sp, struct list *streaml,
 		  bool offerer,
 		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, stream_pt_h *pth,
 		  void *arg);
-int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
-		 struct mbuf *mb);
-void stream_update_encoder(struct stream *s, int pt_enc);
 void stream_hold(struct stream *s, bool hold);
 void stream_set_ldir(struct stream *s, enum sdp_dir dir);
-enum sdp_dir stream_ldir(const struct stream *s);
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
-void stream_flush_jbuf(struct stream *s);
-void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 bool stream_is_ready(const struct stream *strm);
-int  stream_decode(struct stream *s);
-void stream_silence_on(struct stream *s, bool on);
-const struct sa *stream_raddr(const struct stream *strm);
-enum media_type stream_type(const struct stream *strm);
-int stream_pt_enc(const struct stream *strm);
-struct rtp_sock *stream_rtp_sock(const struct stream *strm);
-int stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);
 int  stream_print(struct re_printf *pf, const struct stream *s);
+enum media_type stream_type(const struct stream *strm);
+enum sdp_dir stream_ldir(const struct stream *s);
+struct rtp_sock *stream_rtp_sock(const struct stream *strm);
+const struct sa *stream_raddr(const struct stream *strm);
+
+/* Send */
+void stream_update_encoder(struct stream *s, int pt_enc);
+int  stream_pt_enc(const struct stream *strm);
+int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
+		 struct mbuf *mb);
+
+/* Receive */
+void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
+void stream_flush_jbuf(struct stream *s);
+void stream_silence_on(struct stream *s, bool on);
+int  stream_decode(struct stream *s);
+int  stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);
 
 
 /*
