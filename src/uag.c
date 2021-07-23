@@ -304,6 +304,9 @@ int uag_transp_add(const struct sa *laddr)
 #endif
 	int err = 0;
 
+	if (!sa_isset(laddr, SA_ADDR))
+		return EINVAL;
+
 	if (str_isset(uag.cfg->local)) {
 		err = sa_decode(&local, uag.cfg->local,
 				str_len(uag.cfg->local));
