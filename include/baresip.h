@@ -862,6 +862,7 @@ void uag_set_sub_handler(sip_msg_h *subh);
 int  uag_set_extra_params(const char *eprm);
 int  uag_enable_transport(enum sip_transp tp, bool en);
 int  uag_transp_add(const struct sa *laddr);
+int  uag_transp_rm(const struct sa *laddr);
 struct ua   *uag_find(const struct pl *cuser);
 struct ua   *uag_find_msg(const struct sip_msg *msg);
 struct ua   *uag_find_aor(const char *aor);

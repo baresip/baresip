@@ -446,6 +446,64 @@ int uag_transp_add(const struct sa *laddr)
 }
 
 
+int  uag_transp_rm(const struct sa *laddr)
+{
+	struct le *le;
+	struct stream *s;
+	const struct sa *raddr;
+	struct sa laddrn;
+	int err = 0;
+
+	if (!laddr)
+		return EINVAL;
+
+	sip_transp_rmladdr(uag_sip(), laddr);
+
+	for (le = uag.ual.head; le; le = le->next) {
+		struct ua *ua = le->data;
+		struct account *acc = ua_account(ua);
+
+		/* Update any active calls? */
+		struct le *lec;
+
+		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
+			struct call *call = lec->data;
+
+			if (!sa_cmp(call_laddr(call), laddr, SA_ADDR))
+				continue;
+
+			s = audio_strm(call_audio(call));
+			if (!s)
+				s = video_strm(call_video(call));
+
+			if (!s)
+				continue;
+
+			raddr = sdp_media_raddr(stream_sdpmedia(s));
+			err |= net_dst_source_addr_get(raddr, &laddrn);
+				continue;
+
+			if (sa_isset(&laddrn, SA_ADDR))
+				err |= call_reset_transp(call, &laddrn);
+		}
+
+		/* Re-REGISTER the User-Agent? */
+		if (!account_regint(acc))
+			continue;
+
+		if (!ua_reghasladdr(ua, laddr))
+			continue;
+
+		if (!account_prio(acc))
+			err |= ua_register(ua);
+		else if (account_regint(acc))
+			err |= ua_fallback(ua);
+	}
+
+	return err;
+}
+
+
 static int ua_transp_addall(struct network *net)
 {
 	int err = 0;
