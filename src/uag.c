@@ -457,7 +457,7 @@ int  uag_transp_rm(const struct sa *laddr)
 	struct sa laddrn;
 	int err = 0;
 
-	if (!laddr)
+	if (!sa_isset(laddr, SA_ADDR))
 		return EINVAL;
 
 	sip_transp_rmladdr(uag_sip(), laddr);
