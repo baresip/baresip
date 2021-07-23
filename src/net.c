@@ -511,6 +511,27 @@ static bool if_debug_handler(const char *ifname, const struct sa *sa,
 }
 
 
+bool net_ifaddr_filter(const struct network *net, const char *ifname,
+			      const struct sa *sa)
+{
+	const struct config_net *cfg = &net->cfg;
+
+	if (!sa_isset(sa, SA_ADDR))
+		return false;
+
+	if (str_isset(cfg->ifname) && str_cmp(cfg->ifname, ifname))
+		return false;
+
+	if (!net_af_enabled(net, sa_af(sa)))
+		return false;
+
+	if (sa_is_loopback(sa))
+		return false;
+
+	return true;
+}
+
+
 /**
  * Get the local IP Address for a specific Address Family (AF)
  *
