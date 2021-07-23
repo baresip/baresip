@@ -365,3 +365,12 @@ int reg_af(const struct reg *reg)
 
 	return reg->af;
 }
+
+
+const struct sa *reg_laddr(const struct reg *reg)
+{
+	if (!reg)
+		return NULL;
+
+	return sipreg_laddr(reg->sipreg);
+}

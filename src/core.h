@@ -197,6 +197,7 @@ int  reg_debug(struct re_printf *pf, const struct reg *reg);
 int  reg_json_api(struct odict *od, const struct reg *reg);
 int  reg_status(struct re_printf *pf, const struct reg *reg);
 int  reg_af(const struct reg *reg);
+const struct sa *reg_laddr(const struct reg *reg);
 
 
 /*
@@ -311,6 +312,7 @@ struct call *ua_find_active_call(struct ua *ua);
 void ua_handle_options(struct ua *ua, const struct sip_msg *msg);
 void sipsess_conn_handler(const struct sip_msg *msg, void *arg);
 bool ua_catchall(struct ua *ua);
+bool ua_reghasladdr(const struct ua *ua, const struct sa *laddr);
 
 /*
  * User-Agent Group
