@@ -919,7 +919,7 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 	MAGIC_CHECK(a);
 
 	if (!err) {
-		warning("audio: ausrc warning (%s)\n", str);
+		info("audio: ausrc - %s\n", str);
 	}
 	else {
 		if (a->errh)
