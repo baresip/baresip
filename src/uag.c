@@ -294,7 +294,7 @@ static int add_transp_clientcert(void)
 #endif
 
 
-static int add_transp_af(const struct sa *laddr)
+int uag_transp_add(const struct sa *laddr)
 {
 	struct sa local;
 #ifdef USE_TLS
@@ -446,17 +446,17 @@ static int add_transp_af(const struct sa *laddr)
 }
 
 
-static int ua_add_transp(struct network *net)
+static int ua_transp_addall(struct network *net)
 {
 	int err = 0;
 	struct config_sip *cfg = &conf_config()->sip;
 
 	if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
-		err |= add_transp_af(net_laddr_af(net, AF_INET));
+		err |= uag_transp_add(net_laddr_af(net, AF_INET));
 
 #if HAVE_INET6
 	if (sa_isset(net_laddr_af(net, AF_INET6), SA_ADDR))
-		err |= add_transp_af(net_laddr_af(net, AF_INET6));
+		err |= uag_transp_add(net_laddr_af(net, AF_INET6));
 #endif
 
 	sip_transp_set_default(uag.sip, cfg->transp);
@@ -546,7 +546,7 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls)
 		goto out;
 	}
 
-	err = ua_add_transp(net);
+	err = ua_transp_addall(net);
 	if (err)
 		goto out;
 
@@ -672,7 +672,7 @@ int uag_reset_transp(bool reg, bool reinvite)
 	/* Update SIP transports */
 	sip_transp_flush(uag.sip);
 
-	err = ua_add_transp(net);
+	err = ua_transp_addall(net);
 	if (err)
 		return err;
 
