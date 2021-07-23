@@ -2204,6 +2204,12 @@ int call_reset_transp(struct call *call, const struct sa *laddr)
 }
 
 
+const struct sa *call_laddr(const struct call *call)
+{
+	return sdp_session_laddr(call->sdp);
+}
+
+
 /**
  * Send a SIP NOTIFY with a SIP message fragment
  *
