@@ -127,6 +127,7 @@ int  call_reset_transp(struct call *call, const struct sa *laddr);
 int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs);
+const struct sa *call_laddr(const struct call *call);
 
 /*
 * Custom headers
