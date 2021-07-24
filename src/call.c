@@ -467,7 +467,7 @@ static void menc_event_handler(enum menc_event event,
 	case MENC_EVENT_SECURE:
 		if (strstr(prm, "audio")) {
 			stream_set_secure(audio_strm(call->audio), true);
-			stream_start(audio_strm(call->audio));
+			stream_start_rtcp(audio_strm(call->audio));
 			err = start_audio(call);
 			if (err) {
 				warning("call: secure: could not"
@@ -476,7 +476,7 @@ static void menc_event_handler(enum menc_event event,
 		}
 		else if (strstr(prm, "video")) {
 			stream_set_secure(video_strm(call->video), true);
-			stream_start(video_strm(call->video));
+			stream_start_rtcp(video_strm(call->video));
 			err = video_update(call->video, &call->ctx,
 				call->peer_uri);
 			if (err) {

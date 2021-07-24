@@ -541,7 +541,7 @@ static void mnat_connected_handler(const struct sa *raddr1,
 
 	if (stream_is_ready(strm)) {
 
-		stream_start(strm);
+		stream_start_rtcp(strm);
 	}
 
 	if (strm->mnatconnh)
@@ -768,7 +768,7 @@ static void stream_remote_set(struct stream *s)
 
 	if (stream_is_ready(s)) {
 
-		stream_start(s);
+		stream_start_rtcp(s);
 	}
 }
 
@@ -1070,13 +1070,13 @@ bool stream_is_secure(const struct stream *strm)
 
 
 /**
- * Start the media stream
+ * Start the media stream RTCP
  *
  * @param strm   Stream object
  *
  * @return 0 if success, otherwise errorcode
  */
-int stream_start(const struct stream *strm)
+int stream_start_rtcp(const struct stream *strm)
 {
 	int err;
 
