@@ -1349,7 +1349,7 @@ typedef void (stream_rtcp_h)(struct stream *strm,
 			     struct rtcp_msg *msg, void *arg);
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
-void stream_update(struct stream *s);
+int stream_update(struct stream *s);
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
 struct sdp_media *stream_sdpmedia(const struct stream *s);
 uint32_t stream_metric_get_tx_n_packets(const struct stream *strm);

@@ -778,13 +778,13 @@ static void stream_remote_set(struct stream *s)
  *
  * @param s Stream object
  */
-void stream_update(struct stream *s)
+int stream_update(struct stream *s)
 {
 	const struct sdp_format *fmt;
 	int err = 0;
 
 	if (!s)
-		return;
+		return EINVAL;
 
 	info("stream: update '%s'\n", media_name(s->type));
 
@@ -800,8 +800,11 @@ void stream_update(struct stream *s)
 		err = stream_start_mediaenc(s);
 		if (err) {
 			warning("stream: mediaenc update: %m\n", err);
+			return err;
 		}
 	}
+
+	return 0;
 }
 
 
