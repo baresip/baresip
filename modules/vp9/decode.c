@@ -288,8 +288,10 @@ int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 		return err;
 
 #if 0
-	debug("vp9: [%c] header: i=%u start=%u end=%u picid=%u \n",
-	      marker ? 'M' : ' ', hdr.i, hdr.b, hdr.e, hdr.picid);
+	debug("vp9: [%c] header:"
+	      " i=%u p=%u l=%u f=%u start=%u end=%u picid=%u\n",
+	      marker ? 'M' : ' ',
+	      hdr.i, hdr.p, hdr.l, hdr.f, hdr.b, hdr.e, hdr.picid);
 #endif
 
 	if (hdr.b) {
