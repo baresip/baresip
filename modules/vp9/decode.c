@@ -218,7 +218,7 @@ static inline int hdr_decode(struct hdr *hdr, struct mbuf *mb)
 		}
 	}
 
-	if (hdr->p) {
+	if (hdr->f && hdr->p) {
 		uint8_t p_diff;
 
 		if (mbuf_get_left(mb) < 1)
