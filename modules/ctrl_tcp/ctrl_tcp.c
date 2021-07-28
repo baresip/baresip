@@ -457,7 +457,7 @@ static int ctrl_init(void)
 	if (err)
 		return err;
 
-	err = message_listen(baresip_message(), message_handler, ctrl);
+	err = message_listen(baresip_message(), message_handler, evnt);
 	if (err)
 		return err;
 
