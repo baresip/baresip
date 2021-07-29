@@ -241,10 +241,10 @@ static void soap_parameters_print(struct list *l_parameters, int indent)
 		indent = 16;
 
 	pl_set_n_str(&spaces, str_spaces, indent);
-	info("%rparameters:", &spaces);
+	info("%rparameters: ", &spaces);
 	LIST_FOREACH(l_parameters, le) {
 		struct soap_parameter *p = le->data;
-		info("%r param %r (ns=%r) = %r", &spaces, &p->key,
+		info("%r param %r (ns=%r) = %r\n", &spaces, &p->key,
 			p->ns ? &p->ns->prefix : &p->xmlns, &p->value);
 	}
 }
@@ -268,10 +268,10 @@ static void soap_namespaces_print(struct list *l_namespaces, int indent)
 		indent = 16;
 
 	pl_set_n_str(&spaces, str_spaces, indent);
-	info("%rnamespaces:", &spaces);
+	info("%rnamespaces: ", &spaces);
 	LIST_FOREACH(l_namespaces, le) {
 		struct soap_namespace *ns = le->data;
-		info ("%r namespace %r = %r", &spaces, &ns->prefix, &ns->uri);
+		info ("%r namespace %r = %r \n", &spaces, &ns->prefix, &ns->uri);
 	}
 }
 
@@ -293,13 +293,13 @@ static void soap_child_print(struct soap_child *c, int indent)
 		indent = 16;
 
 	pl_set_n_str(&spaces, str_spaces, indent);
-	info("%rsoap_child: key=%r ns=%r value=%r", &spaces, &c->key,
+	info("%rsoap_child: key=%r ns=%r value=%r \n", &spaces, &c->key,
 		c->ns ? &c->ns->prefix : &nil, &c->value);
 	soap_parameters_print(&c->l_parameters, indent + 1);
 	if (!list_head(&c->l_childs))
 		return;
 
-	info("%r childs:", &spaces);
+	info("%r childs: \n", &spaces);
 	LIST_FOREACH(&c->l_childs, le) {
 		struct soap_child *cc = le->data;
 		soap_child_print(cc, indent + 2);
@@ -1601,8 +1601,8 @@ int soap_msg_encode(struct soap_msg *msg)
  */
 void soap_msg_print(struct soap_msg *m)
 {
-	info("soap msg size:    %d", soap_msg_bufsize(m));
-	info("soap_msg: prolog=%r", &m->prolog);
+	info("soap msg size:    %d\n", soap_msg_bufsize(m));
+	info("soap_msg: prolog=%r\n", &m->prolog);
 	soap_namespaces_print(&m->l_namespaces, 1);
 	soap_child_print(m->envelope, 1);
 }
@@ -2272,7 +2272,7 @@ static int soap_request_handler(const struct soap_msg *msg,
 		goto out;
 	}
 
-	info (" ######## SOAP RESPONSE ########");
+	info ("\n######## SOAP RESPONSE ########\n");
 	if (!response)
 		goto out;
 
@@ -2292,7 +2292,7 @@ static int soap_request_handler(const struct soap_msg *msg,
 	}
 
   noresponse:
-	info (" ######## SOAP RESPONSE DONE ########");
+	info ("\n######## SOAP RESPONSE DONE ########\n");
 	return err;
 }
 
@@ -2328,7 +2328,7 @@ void soap_udp_recv_handler(const struct sa *src, struct mbuf *mb,
 	if (!msg->envelope)
 		goto out;
 
-	info (" ######## UDP Request ########");
+	info ("\n######## UDP Request ########\n");
 	soap_msg_print(msg);
 
 	err = soap_request_handler(msg, &res);
@@ -2375,7 +2375,7 @@ void http_req_handler(struct http_conn *conn,
 		goto out;
 	}
 
-	info (" ######## HTTP Request ########");
+	info ("\n######## HTTP Request ########\n");
 	soap_msg_print(msg);
 
 	err = soap_request_handler(msg, &res);
