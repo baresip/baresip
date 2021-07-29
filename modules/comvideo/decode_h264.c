@@ -59,7 +59,8 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 
 
 int decode_h264(struct viddec_state *st, struct vidframe *frame,
-		bool *intra, bool marker, uint16_t seq, struct mbuf *src) {
+		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
+{
 	struct h264_nal_header h264_hdr;
 	const uint8_t nal_seq[3] = {0, 0, 1};
 	int err;
@@ -150,7 +151,31 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 			st->frag = false;
 
 		st->frag_seq = seq;
-	} else {
+	} else if (H264_NALU_STAP_A == h264_hdr.type) {
+
+		while (mbuf_get_left(src) >= 2) {
+
+			const uint16_t len = ntohs(mbuf_read_u16(src));
+			struct h264_nal_header lhdr;
+
+			if (mbuf_get_left(src) < len)
+				return EBADMSG;
+
+			err = h264_nal_header_decode(&lhdr, src);
+			if (err)
+				return err;
+
+			--src->pos;
+
+			err = mbuf_write_mem(st->mb, nal_seq, 3);
+			err |= mbuf_write_mem(st->mb, mbuf_buf(src), len);
+			if (err)
+				goto out;
+
+			src->pos += len;
+		}
+	}
+ 	else {
 		warning("comvideo: unknown NAL type %u\n", h264_hdr.type);
 		return EBADMSG;
 	}
