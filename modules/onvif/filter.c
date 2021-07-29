@@ -349,6 +349,15 @@ static int handle_rtp(struct onvif_filter_stream *fs,
 	sampv_s = fs->sampv;
 	if (aresamp->resamp.ratio) {
 		new_sampc = sampc * aresamp->resamp.ratio;
+		if (!aresamp->sampvre) {
+			int tmp_num_bytes = new_sampc * aufmt_sample_size(fs->fmt) * 2;
+			aresamp->sampvre = mem_zalloc(tmp_num_bytes, NULL);
+			if (!aresamp->sampvre) {
+				err = ENOMEM;
+				return err;
+			}
+		}
+
 		err = auresamp(&aresamp->resamp, aresamp->sampvre, &new_sampc,
 			fs->sampv, sampc);
 		if (err) {
@@ -492,6 +501,13 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 			s1 = (int16_t *)sp->mixer->sampvre;
 		}
 	} else if (sp->aresamp->resamp.ratio && !list_isempty(&sp->streams)) {
+		if (!sp->aresamp->sampvre) {
+			sp->aresamp->sampvre = mem_zalloc(num_bytes, NULL);
+			if (!sp->aresamp->sampvre) {
+				err = ENOMEM;
+				goto out;
+			}
+		}
 		err = auresamp(&sp->aresamp->resamp,
 			sp->aresamp->sampvre, &new_sampc,
 			af->sampv, n);
