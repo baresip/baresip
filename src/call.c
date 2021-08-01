@@ -1099,7 +1099,7 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 int call_progress(struct call *call)
 {
 	struct mbuf *desc;
-	enum answermode m = account_answermode(call->acc);
+	enum answermode m;
 	enum sdp_dir adir;
 	enum sdp_dir vdir;
 	enum sdp_dir ansadir;
@@ -1108,6 +1108,8 @@ int call_progress(struct call *call)
 
 	if (!call)
 		return EINVAL;
+
+	m = account_answermode(call->acc);
 
 	tmr_cancel(&call->tmr_inv);
 
