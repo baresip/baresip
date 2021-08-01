@@ -777,6 +777,8 @@ static void stream_remote_set(struct stream *s)
  * Update the media stream
  *
  * @param s Stream object
+ *
+ * @return 0 if success, otherwise errorcode
  */
 int stream_update(struct stream *s)
 {

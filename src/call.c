@@ -2372,8 +2372,8 @@ int call_transfer(struct call *call, const char *uri)
 /**
  * Transfer the call to a target SIP uri and replace the source call
  *
- * @param call  Call object
- * @param uri   Target SIP uri
+ * @param call        Call object
+ * @param source_call Source call object
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -2543,7 +2543,6 @@ int32_t call_answer_delay(const struct call *call)
  * @param adelay  Answer delay in ms. A value of -1 means auto answer is
  *                disabled
  *
- * @return answer delay in ms
  */
 void call_set_answer_delay(struct call *call, int32_t adelay)
 {

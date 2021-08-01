@@ -587,7 +587,7 @@ int mcsource_start(struct mcsource **srcp, const struct aucodec *ac,
 /**
  * Stop one multicast source.
  *
- * @param src Multicast audio source object
+ * @param unused Multicast audio source object
  */
 void mcsource_stop(struct mcsource *unused)
 {
