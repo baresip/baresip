@@ -349,7 +349,6 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 			rx_thread, player);
 		if (err) {
 			player->thr.run = false;
-			return;
 		}
 	}
 
