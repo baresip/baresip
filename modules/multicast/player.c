@@ -347,10 +347,8 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 		player->thr.run = true;
 		err = pthread_create(&player->thr.tid, NULL,
 			rx_thread, player);
-		if (err) {
+		if (err)
 			player->thr.run = false;
-			return;
-		}
 	}
 
 	pthread_cond_signal(&player->thr.cond);
