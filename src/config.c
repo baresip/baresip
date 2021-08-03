@@ -254,11 +254,13 @@ static void decode_sip_transports(struct config_sip *cfg,
 
 	for (i = 0; i < SIP_TRANSPC; ++i) {
 		bool en;
-		char buf[9];
+		char buf[16];
 		struct pl e=PL_INIT;
 
-		strcpy(buf, sip_transp_name(i));
-		strcat(buf, "[^,]+");
+		if (re_snprintf(buf, sizeof(buf), "%s[^,]+",
+					sip_transp_name(i)) <= 0)
+			break;
+
 		en = 0 == re_regex(pl->p, pl->l, sip_transp_name(i)) &&
 		     0 != re_regex(pl->p, pl->l, buf, &e);
 		u32mask_enable(&cfg->transports, i, en);
