@@ -213,7 +213,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	struct re_printf pf;
 	struct odict *od = NULL;
 	int err = 0;
-	const struct odict_entry *eclass = NULL;
+	const char *class;
 	const char *etype = uag_event_str(ev);
 
 	if (!st->interface)
@@ -230,7 +230,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	if (err)
 		goto out;
 
-	eclass = odict_lookup(od, "class");
+	class = odict_string(od, "class");
 	err = json_encode_odict(&pf, od);
 	if (err) {
 		warning("ctrl_dbus: failed to encode json (%m)\n", err);
@@ -239,7 +239,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	mbuf_write_u8(buf, 0);
 	mbuf_set_pos(buf, 0);
-	send_event(st, eclass ? eclass->u.str : "other", etype,
+	send_event(st, class ? class : "other", etype,
 			(const char *) mbuf_buf(buf));
 
  out:
