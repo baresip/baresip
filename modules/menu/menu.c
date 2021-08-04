@@ -443,7 +443,7 @@ static bool ovaufile_del(struct le *le, void *arg)
 	struct call *call = arg;
 	const char *id = call_id(call);
 
-	if (!strncmp(oe->key, id, str_len(id)))
+	if (!strncmp(odict_entry_key(oe), id, str_len(id)))
 		mem_deref(oe);
 
 	return false;

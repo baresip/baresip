@@ -170,7 +170,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 	struct mbuf *resp = mbuf_alloc(2048);
 	struct re_printf pf = {print_handler, resp};
 	struct odict *od = NULL;
-	const struct odict_entry *oe_cmd, *oe_prm, *oe_tok;
+	const char *cmd, *prm, *tok;
 	char buf[1024];
 	int err;
 
@@ -180,23 +180,18 @@ static bool command_handler(struct mbuf *mb, void *arg)
 		goto out;
 	}
 
-	oe_cmd = odict_lookup(od, "command");
-	oe_prm = odict_lookup(od, "params");
-	oe_tok = odict_lookup(od, "token");
-	if (!oe_cmd) {
+	cmd = odict_string(od, "command");
+	prm = odict_string(od, "params");
+	tok = odict_string(od, "token");
+	if (!cmd) {
 		warning("ctrl_tcp: missing json entries\n");
 		goto out;
 	}
 
 	debug("ctrl_tcp: handle_command:  cmd='%s', params:'%s', token='%s'\n",
-	      oe_cmd->u.str,
-	      oe_prm ? oe_prm->u.str : "",
-	      oe_tok ? oe_tok->u.str : "");
+	      cmd, prm, tok);
 
-	re_snprintf(buf, sizeof(buf), "%s%s%s",
-		    oe_cmd->u.str,
-		    oe_prm ? " " : "",
-		    oe_prm ? oe_prm->u.str : "");
+	re_snprintf(buf, sizeof(buf), "%s%s%s", cmd, prm ? " " : "", prm);
 
 	resp->pos = NETSTRING_HEADER_SIZE;
 
@@ -209,7 +204,7 @@ static bool command_handler(struct mbuf *mb, void *arg)
 		warning("ctrl_tcp: error processing command (%m)\n", err);
 	}
 
-	err = encode_response(err, resp, oe_tok ? oe_tok->u.str : NULL);
+	err = encode_response(err, resp, tok ? tok : NULL);
 	if (err) {
 		warning("ctrl_tcp: failed to encode response (%m)\n", err);
 		goto out;
