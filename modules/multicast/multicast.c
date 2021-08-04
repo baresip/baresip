@@ -475,7 +475,7 @@ static int cmd_mcregen(struct re_printf *pf, void *arg)
 static int module_read_config_handler(const struct pl *pl, void *arg)
 {
 	struct cmd_arg cmd_arg;
-	char buf[48 + 5 + 10];
+	char buf[64];
 	int err = 0;
 	int n = 0;
 	int *prio = (int *) arg;
@@ -483,8 +483,8 @@ static int module_read_config_handler(const struct pl *pl, void *arg)
 	if (pl_strchr(pl, '-'))
 		goto out;
 
-	n = re_snprintf(buf, 48 + 4, "addr=%r prio=%d", pl, *prio);
-	if (n < 0 && n > 48 + 5)
+	n = re_snprintf(buf, sizeof(buf), "addr=%r prio=%d", pl, *prio);
+	if (n < 0)
 		goto out;
 
 	cmd_arg.prm = buf;
