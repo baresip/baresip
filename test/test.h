@@ -15,10 +15,11 @@
 
 #define ASSERT_EQ(expected, actual)				\
 	if ((expected) != (actual)) {				\
-		warning("selftest: ASSERT_EQ: %s:%u:"		\
-			" expected=%d, actual=%d\n",		\
-			__FILE__, __LINE__,			\
-			(int)(expected), (int)(actual));	\
+		warning("selftest: ASSERT_EQ: %s:%u: %s():"	\
+			" expected=%d(0x%x), actual=%d(0x%x)\n",\
+			__FILE__, __LINE__, __func__,		\
+			(expected), (expected),			\
+			(actual), (actual));			\
 		err = EINVAL;					\
 		goto out;					\
 	}
