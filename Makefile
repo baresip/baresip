@@ -18,7 +18,7 @@ ifeq ($(V),)
 HIDE=@
 endif
 
-LIBRE_MIN	:= 2.0.1-dev5
+LIBRE_MIN	:= 2.0.1-dev6
 LIBREM_MIN	:= 1.0.0-dev
 
 ifndef LIBRE_MK
