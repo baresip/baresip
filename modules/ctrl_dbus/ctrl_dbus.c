@@ -84,7 +84,7 @@ struct ctrl_st {
 	DBusBaresip *interface;     /**< dbus interface          */
 
 	char *command;              /**< Current command                     */
-	int fd[2];                  /**< Pipe file descriptors for wake-up   */
+	struct mqueue *mqueue;      /**< Command queue                       */
 	struct mbuf *mb;            /**< Command response buffer             */
 
 	struct {
@@ -103,12 +103,11 @@ static int print_handler(const char *p, size_t size, void *arg)
 }
 
 
-static void command_handler(int flags, void *arg)
+static void command_handler(int id, void *data, void *arg)
 {
 	struct ctrl_st *st = arg;
-	char buf[1];
-	ssize_t n = 0;
 
+	(void) data;
 	if (!st->command)
 		goto out;
 
@@ -136,21 +135,12 @@ static void command_handler(int flags, void *arg)
 		warning("ctrl_dbus: error processing command (%m)\n", err);
 
 	mbuf_set_pos(st->mb, 0);
-	st->command = mem_deref(st->command);
 
 out:
 	pthread_mutex_lock(&st->wait.mutex);
+	st->command = mem_deref(st->command);
 	pthread_cond_signal(&st->wait.cond);
-	n = read(st->fd[0], buf, sizeof(buf));
-
 	pthread_mutex_unlock(&st->wait.mutex);
-
-	if (n != 1) {
-		warning("ctrl_dbus: detected a pipe error during read\n");
-		info("ctrl_dbus: stopping here\n");
-		st->run = false;
-		g_main_loop_quit(st->loop);
-	}
 }
 
 
@@ -162,20 +152,18 @@ on_handle_invoke(DBusBaresip *interface,
 {
 	char *response = "";
 	struct ctrl_st *st = arg;
-	char buf[1] = {1};
-	ssize_t n;
 	int err;
 
 	str_dup(&st->command, command);
 
 	pthread_mutex_lock(&st->wait.mutex);
-	n = write(st->fd[1], buf, sizeof(buf));
-	if (n == 1)
+	err = mqueue_push(st->mqueue, 0, NULL);
+	if (!err)
 		pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
 
 	pthread_mutex_unlock(&st->wait.mutex);
 
-	if (st->mb) {
+	if (!err && st->mb) {
 		err = mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
 		if (err)
 			warning("ctrl_dbus: could not allocate response (%m)",
@@ -187,7 +175,7 @@ on_handle_invoke(DBusBaresip *interface,
 	}
 	else {
 		dbus_baresip_complete_invoke(interface, invocation,
-				n == 1 ? "" : "invoke failed");
+				err ? "invoke failed" : "");
 	}
 
 	return true;
@@ -311,32 +299,18 @@ static void ctrl_destructor(void *arg)
 
 	pthread_mutex_destroy(&st->wait.mutex);
 	pthread_cond_destroy(&st->wait.cond);
+	mem_deref(st->mqueue);
 }
 
 
 static void *thread(void *arg)
 {
 	struct ctrl_st *st = arg;
-	int err;
-
-	if (pipe(st->fd) == -1) {
-		warning("ctrl_dbus: could not create pipe (%m)\n", errno);
-		return NULL;
-	}
-
-	err = fd_listen(st->fd[0], FD_READ, command_handler, st);
-	if (err) {
-		warning("ctrl_dbus: can not listen on pipe (%m)\n", err);
-		return NULL;
-	}
 
 	st->run = true;
 	while (st->run)
 		g_main_loop_run(st->loop);
 
-	fd_close(st->fd[0]);
-	close(st->fd[0]);
-	close(st->fd[1]);
 	return NULL;
 }
 
@@ -361,6 +335,10 @@ static int ctrl_alloc(struct ctrl_st **stp)
 		err = ENOMEM;
 		goto out;
 	}
+
+	err = mqueue_alloc(&st->mqueue, command_handler, st);
+	if (err)
+		goto out;
 
 	err = pthread_create(&st->tid, NULL, thread, st);
 	if (err)
