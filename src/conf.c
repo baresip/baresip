@@ -325,6 +325,17 @@ int conf_get_float(const struct conf *conf, const char *name, double *val)
 }
 
 
+enum jbuf_type conf_get_jbuf_type(const struct pl *pl)
+{
+	if (0 == pl_strcasecmp(pl, "off"))      return JBUF_OFF;
+	if (0 == pl_strcasecmp(pl, "fixed"))    return JBUF_FIXED;
+	if (0 == pl_strcasecmp(pl, "adaptive")) return JBUF_ADAPTIVE;
+
+	warning("unsupported jitter buffer type (%r)\n", pl);
+	return JBUF_FIXED;
+}
+
+
 /**
  * Configure the system with default settings
  *
