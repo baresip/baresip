@@ -41,11 +41,17 @@ struct ua_xhdr_filter {
 static void ua_destructor(void *arg)
 {
 	struct ua *ua = arg;
+	struct le *le;
 
 	list_unlink(&ua->le);
 
 	if (!list_isempty(&ua->regl))
 		ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
+
+	LIST_FOREACH(&ua->calls, le) {
+		struct call *call = le->data;
+		ua_event(ua, UA_EVENT_CALL_CLOSED, call, "User-Agent deleted");
+	}
 
 	list_flush(&ua->calls);
 	list_flush(&ua->regl);
