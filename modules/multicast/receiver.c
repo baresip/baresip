@@ -491,6 +491,10 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	uint16_t port;
 	struct mcreceiver *mcreceiver = NULL;
 	struct config_avt *cfg = &conf_config()->avt;
+	struct range jbuf_del;
+	uint32_t jbuf_wish;
+	enum jbuf_type jbtype;
+	struct pl pl;
 
 	if (!addr || !prio)
 		return EINVAL;
@@ -525,10 +529,17 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	mcreceiver->enable = true;
 	mcreceiver->globenable = true;
 
-	err = jbuf_alloc(&mcreceiver->jbuf,
-		cfg->jbuf_del.min, cfg->jbuf_del.max);
-	err |= jbuf_set_type(mcreceiver->jbuf, cfg->jbtype);
-	err |= jbuf_set_wish(mcreceiver->jbuf, cfg->jbuf_wish);
+	jbuf_del  = cfg->jbuf_del;
+	jbuf_wish = cfg->jbuf_wish;
+	jbtype = cfg->jbtype;
+	(void)conf_get_range(conf_cur(), "multicast_jbuf_delay", &jbuf_del);
+	if (0 == conf_get(conf_cur(), "multicast_jbuf_type", &pl))
+		jbtype = conf_get_jbuf_type(&pl);
+	(void)conf_get_u32(conf_cur(), "multicast_jbuf_wish", &jbuf_wish);
+
+	err = jbuf_alloc(&mcreceiver->jbuf, jbuf_del.min, jbuf_del.max);
+	err |= jbuf_set_type(mcreceiver->jbuf, jbtype);
+	err |= jbuf_set_wish(mcreceiver->jbuf, jbuf_wish);
 	if (err)
 		goto out;
 

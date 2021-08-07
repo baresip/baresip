@@ -246,6 +246,12 @@ int custom_hdrs_apply(const struct list *hdrs, custom_hdrs_h *h, void *arg);
  * Conf (utils)
  */
 
+/** A range of numbers */
+struct range {
+	uint32_t min;  /**< Minimum number */
+	uint32_t max;  /**< Maximum number */
+};
+
 
 /** Defines the configuration line handler */
 typedef int (confline_h)(const struct pl *addr, void *arg);
@@ -256,9 +262,12 @@ int  conf_modules(void);
 void conf_path_set(const char *path);
 int  conf_path_get(char *path, size_t sz);
 int  conf_parse(const char *filename, confline_h *ch, void *arg);
+int  conf_get_range(const struct conf *conf, const char *name,
+		    struct range *rng);
 int  conf_get_vidsz(const struct conf *conf, const char *name,
 		    struct vidsz *sz);
 int  conf_get_sa(const struct conf *conf, const char *name, struct sa *sa);
+enum jbuf_type conf_get_jbuf_type(const struct pl *pl);
 bool conf_fileexist(const char *path);
 void conf_close(void);
 struct conf *conf_cur(void);
@@ -267,12 +276,6 @@ struct conf *conf_cur(void);
 /*
  * Config (core configuration)
  */
-
-/** A range of numbers */
-struct range {
-	uint32_t min;  /**< Minimum number */
-	uint32_t max;  /**< Maximum number */
-};
 
 static inline bool in_range(const struct range *rng, uint32_t val)
 {

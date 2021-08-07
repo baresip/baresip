@@ -236,17 +236,6 @@ static const char *jbuf_type_str(enum jbuf_type jbtype)
 }
 
 
-static enum jbuf_type resolve_jbuf_type(const struct pl *pl)
-{
-	if (0 == pl_strcasecmp(pl, "off"))      return JBUF_OFF;
-	if (0 == pl_strcasecmp(pl, "fixed"))    return JBUF_FIXED;
-	if (0 == pl_strcasecmp(pl, "adaptive")) return JBUF_ADAPTIVE;
-
-	warning("unsupported jitter buffer type (%r)\n", pl);
-	return JBUF_FIXED;
-}
-
-
 static void decode_sip_transports(struct config_sip *cfg,
 				      const struct pl *pl)
 {
@@ -439,7 +428,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);
 	if (0 == conf_get(conf, "jitter_buffer_type", &jbtype))
-		cfg->avt.jbtype = resolve_jbuf_type(&jbtype);
+		cfg->avt.jbtype = conf_get_jbuf_type(&jbtype);
 
 	(void)conf_get_range(conf, "jitter_buffer_delay",
 			     &cfg->avt.jbuf_del);
@@ -1205,6 +1194,10 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "- port number must be even\n"
 			 "#multicast_call_prio\t0\n"
 			 "#multicast_ttl\t1\n"
+			 "#multicast_jbuf_type\tfixed\t\t"
+				"# off, fixed, adaptive\n"
+			 "#multicast_jbuf_delay\t5-10\t\t# frames\n"
+			 "#multicast_jbuf_wish\t6\t\t# frames for start\n"
 			 "#multicast_listener\t224.0.2.21:50000\n"
 			 "#multicast_listener\t224.0.2.21:50002\n");
 
