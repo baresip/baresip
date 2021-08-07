@@ -115,7 +115,7 @@ sync_handler(
 				GST_TAG_TITLE,
 				&title)) {
 
-				info("gst: title: %s\n", title);
+				info("gst: title: '%s'\n", title);
 				g_free(title);
 			}
 			gst_tag_list_unref(tag_list);
