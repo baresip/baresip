@@ -889,7 +889,7 @@ static int tx_thread(void *arg)
 		else {
 			++tx->stats.aubuf_underrun;
 
-			debug("audio: thread: tx aubuf underrun"
+			info("audio: thread: tx aubuf underrun"
 			      " (total %llu)\n", tx->stats.aubuf_underrun);
 		}
 
