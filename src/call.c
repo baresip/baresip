@@ -203,9 +203,7 @@ static void call_stream_start(struct call *call, bool active)
 		tmr_cancel(&call->tmr_inv);
 		call->time_start = time(NULL);
 
-		FOREACH_STREAM {
-			stream_flush(le->data);
-		}
+		stream_flush(audio_strm(call->audio));
 	}
 
 	FOREACH_STREAM {
