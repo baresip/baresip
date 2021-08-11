@@ -85,7 +85,7 @@ struct autx {
 	const struct aucodec *ac;     /**< Current audio encoder           */
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
 	struct aubuf *aubuf;          /**< Packetize outgoing stream       */
-	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
+	struct range aubufsz;         /**< Aubuf range in [bytes]          */
 	volatile bool aubuf_started;  /**< Aubuf was started flag          */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
@@ -540,7 +540,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	if (tx->muted)
 		auframe_mute(af);
 
-	if (aubuf_cur_size(tx->aubuf) >= tx->aubuf_maxsz) {
+	if (aubuf_cur_size(tx->aubuf) >= tx->aubufsz.max) {
 
 		++tx->stats.aubuf_overrun;
 
@@ -1046,7 +1046,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		struct ausrc_prm prm;
 		size_t sz;
 		size_t psize_alloc;
-		uint32_t maxsz = 30;
+		struct range txsize;
 
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
@@ -1057,13 +1057,18 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 
 		sz = aufmt_sample_size(tx->src_fmt);
 
+		txsize.min = prm.ptime;
+		txsize.max = 6 * prm.ptime;
+		conf_get_range(conf_cur(), "audio_buffer_tx", &txsize);
 		psize_alloc = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
-		tx->psize = psize_alloc;
-		tx->aubuf_maxsz = tx->psize * 30;
+		tx->aubufsz.min = sz * calc_nsamp(prm.srate, prm.ch,
+						  txsize.min);
+		tx->aubufsz.max = sz * calc_nsamp(prm.srate, prm.ch,
+						  txsize.max);
 
 		if (!tx->aubuf) {
-			err = aubuf_alloc(&tx->aubuf, tx->psize,
-					  tx->aubuf_maxsz);
+			err = aubuf_alloc(&tx->aubuf, tx->aubufsz.min,
+					  tx->aubufsz.max);
 			if (err)
 				return err;
 		}
@@ -1085,10 +1090,12 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		tx->psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 		if (psize_alloc != tx->psize) {
 			tx->ausrc_prm = prm;
-			conf_get_u32(conf_cur(), "audio_aubufmaxsize_tx", &maxsz);
-			tx->aubuf_maxsz = tx->psize * maxsz;
-			err = aubuf_resize(tx->aubuf, tx->psize,
-					   tx->aubuf_maxsz);
+			tx->aubufsz.min = sz * calc_nsamp(prm.srate, prm.ch,
+							  txsize.min);
+			tx->aubufsz.max = sz * calc_nsamp(prm.srate, prm.ch,
+							  txsize.max);
+			err = aubuf_resize(tx->aubuf, tx->aubufsz.min,
+					   tx->aubufsz.max);
 			if (err) {
 				mtx_unlock(tx->mtx);
 				return err;
@@ -1710,7 +1717,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  calc_ptime(aubuf_cur_size(tx->aubuf)/sztx,
 				     tx->ausrc_prm.srate,
 				     tx->ausrc_prm.ch),
-			  calc_ptime(tx->aubuf_maxsz/sztx,
+			  calc_ptime(tx->aubufsz.max/sztx,
 				     tx->ausrc_prm.srate,
 				     tx->ausrc_prm.ch),
 			  tx->stats.aubuf_overrun,
