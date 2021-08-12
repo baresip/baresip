@@ -40,6 +40,7 @@ struct stream {
 	struct menc_media *mes;  /**< Media Encryption media state          */
 	enum media_type type;    /**< Media type, e.g. audio/video          */
 	char *cname;             /**< RTCP Canonical end-point identifier   */
+	char *mid;               /**< Media stream identification           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool terminated;         /**< Stream is terminated flag             */
 	bool hold;               /**< Stream is on-hold (local)             */
@@ -130,6 +131,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->rx.jbuf);
 	mem_deref(s->rtp);
 	mem_deref(s->cname);
+	mem_deref(s->mid);
 }
 
 
@@ -631,6 +633,11 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		err |= sdp_media_set_lattr(s->sdp, true, "rtcp-mux", NULL);
 	}
 
+	if (offerer) {
+		err |= sdp_media_set_lattr(s->sdp, true, "mid", "%u",
+					   list_count(streaml));
+	}
+
 	if (err)
 		goto out;
 
@@ -743,6 +750,8 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 
 static void stream_remote_set(struct stream *s)
 {
+	const char *rmid;
+
 	if (!s)
 		return;
 
@@ -755,6 +764,16 @@ static void stream_remote_set(struct stream *s)
 		s->rtcp_mux = true;
 
 		sdp_media_set_lattr(s->sdp, true, "rtcp-mux", NULL);
+	}
+
+	/* RFC 5888 */
+	rmid = sdp_media_rattr(s->sdp, "mid");
+	if (rmid) {
+		s->mid = mem_deref(s->mid);
+
+		str_dup(&s->mid, rmid);
+
+		sdp_media_set_lattr(s->sdp, true, "mid", "%s", rmid);
 	}
 
 	rtcp_enable_mux(s->rtp, s->rtcp_mux);
@@ -1188,6 +1207,23 @@ int stream_pt_enc(const struct stream *strm)
 struct rtp_sock *stream_rtp_sock(const struct stream *strm)
 {
 	return strm ? strm->rtp : NULL;
+}
+
+
+struct stream *stream_lookup_mid(const struct list *streaml,
+				 const char *mid, size_t len)
+{
+	struct le *le;
+
+	for (le = list_head(streaml); le; le = le->next) {
+		struct stream *strm = le->data;
+
+		if (len == str_len(strm->mid) &&
+		    0 == memcmp(strm->mid, mid, len))
+			return strm;
+	}
+
+	return NULL;
 }
 
 
