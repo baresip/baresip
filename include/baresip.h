@@ -1366,6 +1366,8 @@ bool stream_is_secure(const struct stream *strm);
 int  stream_start_mediaenc(struct stream *strm);
 int  stream_start_rtcp(const struct stream *strm);
 int stream_open_natpinhole(const struct stream *strm);
+void stream_mnat_attr(struct stream *strm, const char *name,
+		      const char *value);
 void stream_set_session_handlers(struct stream *strm,
 				 stream_mnatconn_h *mnatconnh,
 				 stream_rtpestab_h *rtpestabh,
@@ -1434,6 +1436,9 @@ typedef int (mnat_media_h)(struct mnat_media **mp, struct mnat_sess *sess,
 
 typedef int (mnat_update_h)(struct mnat_sess *sess);
 
+typedef void (mnat_attr_h)(struct mnat_media *mm,
+			   const char *name, const char *value);
+
 struct mnat {
 	struct le le;
 	const char *id;
@@ -1442,6 +1447,7 @@ struct mnat {
 	mnat_sess_h *sessh;
 	mnat_media_h *mediah;
 	mnat_update_h *updateh;
+	mnat_attr_h *attrh;
 };
 
 void mnat_register(struct list *mnatl, struct mnat *mnat);

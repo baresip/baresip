@@ -568,6 +568,7 @@ static bool verify_peer_ice(struct mnat_sess *ms)
 
 		for (i=0; i<2; i++) {
 			if (m->compv[i].sock &&
+			    sa_isset(&raddr[i], SA_ADDR) &&
 			    !icem_verify_support(m->icem, i+1, &raddr[i])) {
 				warning("ice: %s.%u: no remote candidates"
 					" found (address = %J)\n",
@@ -951,6 +952,22 @@ static int update(struct mnat_sess *sess)
 }
 
 
+static void attr_handler(struct mnat_media *mm,
+			 const char *name, const char *value)
+{
+	if (!mm)
+		return;
+
+	icem_sdp_decode(mm->icem, name, value);
+
+	/* start ice if we have local candidates */
+	if (!list_isempty(icem_lcandl(mm->icem))) {
+
+		icem_conncheck_start(mm->icem);
+	}
+}
+
+
 static struct mnat mnat_ice = {
 	.id      = "ice",
 	.ftag    = "+sip.ice",
@@ -958,6 +975,7 @@ static struct mnat mnat_ice = {
 	.sessh   = session_alloc,
 	.mediah  = media_alloc,
 	.updateh = update,
+	.attrh   = attr_handler,
 };
 
 

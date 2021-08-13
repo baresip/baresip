@@ -1241,6 +1241,16 @@ int stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc)
 }
 
 
+void stream_mnat_attr(struct stream *strm, const char *name, const char *value)
+{
+	if (!strm)
+		return;
+
+	if (strm->mnat && strm->mnat->attrh)
+		strm->mnat->attrh(strm->mns, name, value);
+}
+
+
 /**
  * Print stream debug info
  *
