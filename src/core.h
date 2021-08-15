@@ -221,7 +221,7 @@ struct rtpext {
 
 
 int rtpext_hdr_encode(struct mbuf *mb, size_t num_bytes);
-int rtpext_encode(struct mbuf *mb, unsigned id, unsigned len,
+int rtpext_encode(struct mbuf *mb, unsigned id, size_t len,
 		  const uint8_t *data);
 int rtpext_decode(struct rtpext *ext, struct mbuf *mb);
 
