@@ -167,6 +167,7 @@ struct video {
 struct vidqent {
 	struct le le;
 	struct sa dst;
+	bool ext;
 	bool marker;
 	uint8_t pt;
 	uint32_t ts;
@@ -176,6 +177,7 @@ struct vidqent {
 
 static void request_picture_update(struct vrx *vrx);
 static void video_stop_source(struct video *v, struct media_ctx **ctx);
+
 
 static void vidqent_destructor(void *arg)
 {
@@ -201,6 +203,7 @@ static int vidqent_alloc(struct vidqent **qentp,
 	if (!qent)
 		return ENOMEM;
 
+	qent->ext    = false;
 	qent->marker = marker;
 	qent->pt     = pt;
 	qent->ts     = ts;
@@ -260,8 +263,8 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 
 		sent += mbuf_get_left(qent->mb);
 
-		stream_send(vtx->video->strm, false, qent->marker, qent->pt,
-			    qent->ts, qent->mb);
+		stream_send(vtx->video->strm, qent->ext, qent->marker,
+			    qent->pt, qent->ts, qent->mb);
 
 		le = le->next;
 		mem_deref(qent);
