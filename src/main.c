@@ -73,6 +73,7 @@ static void usage(void)
 #if HAVE_INET6
 			 "\t-6               Force IPv6 only\n"
 #endif
+			 "\t-a <software>    Specify SIP User-Agent string\n"
 			 "\t-d               Daemon\n"
 			 "\t-e <commands>    Execute commands (repeat)\n"
 			 "\t-f <path>        Config path\n"
@@ -92,6 +93,8 @@ int main(int argc, char *argv[])
 {
 	int af = AF_UNSPEC, run_daemon = false;
 	const char *ua_eprm = NULL;
+	const char *software =
+		"baresip v" BARESIP_VERSION " (" ARCH "/" OS ")";
 	const char *execmdv[16];
 	const char *net_interface = NULL;
 	const char *audio_path = NULL;
@@ -124,7 +127,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "46de:f:p:hu:n:vst:m:");
+		const int c = getopt(argc, argv, "46a:de:f:p:hu:n:vst:m:");
 		if (0 > c)
 			break;
 
@@ -134,6 +137,10 @@ int main(int argc, char *argv[])
 		case 'h':
 			usage();
 			return -2;
+
+		case 'a':
+			software = optarg;
+			break;
 
 		case '4':
 			af = AF_INET;
@@ -263,8 +270,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Initialise User Agents */
-	err = ua_init("baresip v" BARESIP_VERSION " (" ARCH "/" OS ")",
-		      true, true, true);
+	err = ua_init(software, true, true, true);
 	if (err)
 		goto out;
 
