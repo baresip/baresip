@@ -179,7 +179,7 @@ struct call;
 typedef void (call_event_h)(struct call *call, enum call_event ev,
 			    const char *str, void *arg);
 typedef void (call_dtmf_h)(struct call *call, char key, void *arg);
-typedef bool (call_match_h)(const struct call *call);
+typedef bool (call_match_h)(const struct call *call, void *arg);
 typedef void (call_list_h)(struct call *call, void *arg);
 
 

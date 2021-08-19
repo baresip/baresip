@@ -173,7 +173,7 @@ void uag_filter_calls(call_list_h *listh, call_match_h *matchh, void *arg)
 		for (lec = list_tail(ua_calls(ua)); lec; lec = lec->prev) {
 			struct call *call = lec->data;
 
-			if (!matchh || matchh(call))
+			if (!matchh || matchh(call, arg))
 				listh(call, arg);
 		}
 	}
