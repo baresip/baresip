@@ -135,6 +135,22 @@ static void stream_destructor(void *arg)
 }
 
 
+static void recv_set_ssrc(struct receiver *rx, uint32_t ssrc)
+{
+	if (rx->ssrc_set) {
+		if (ssrc != rx->ssrc_rx)
+			info("stream: receive: SSRC changed: %x -> %x\n",
+			     rx->ssrc_rx, ssrc);
+		rx->ssrc_rx = ssrc;
+	}
+	else {
+		info("stream: receive: setting SSRC: %x\n", ssrc);
+		rx->ssrc_rx = ssrc;
+		rx->ssrc_set = true;
+	}
+}
+
+
 static bool mnat_ready(const struct stream *strm)
 {
 	if (strm->mnat && strm->mnat->wait_connected)
@@ -750,10 +766,19 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 
 static void stream_remote_set(struct stream *s)
 {
-	const char *rmid;
+	const char *rmid, *rssrc;
 
 	if (!s)
 		return;
+
+	/* RFC 5576 */
+	rssrc = sdp_media_rattr(s->sdp, "ssrc");
+	if (rssrc) {
+		struct pl num;
+
+		if (0 == re_regex(rssrc, str_len(rssrc), "[0-9]+", &num))
+			recv_set_ssrc(&s->rx, pl_u32(&num));
+	}
 
 	/* RFC 5761 */
 	if (s->cfg.rtcp_mux && sdp_media_rattr(s->sdp, "rtcp-mux")) {
