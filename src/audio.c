@@ -1142,10 +1142,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 			a->rx.level_last = -(double)(extv[i].data[0] & 0x7f);
 			a->rx.level_set = true;
 		}
-		else {
-			debug("audio: rtp header ext ignored (id=%u)\n",
-			     extv[i].id);
-		}
 	}
 
 	/* Save timestamp for incoming RTP packets */
