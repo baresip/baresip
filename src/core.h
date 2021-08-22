@@ -279,6 +279,7 @@ enum media_type stream_type(const struct stream *strm);
 enum sdp_dir stream_ldir(const struct stream *s);
 struct rtp_sock *stream_rtp_sock(const struct stream *strm);
 const struct sa *stream_raddr(const struct stream *strm);
+const char *stream_mid(const struct stream *strm);
 
 /* Send */
 void stream_update_encoder(struct stream *s, int pt_enc);

@@ -1276,6 +1276,12 @@ void stream_mnat_attr(struct stream *strm, const char *name, const char *value)
 }
 
 
+const char *stream_mid(const struct stream *strm)
+{
+	return strm ? strm->mid : NULL;
+}
+
+
 /**
  * Print stream debug info
  *
