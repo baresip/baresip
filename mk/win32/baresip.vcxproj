@@ -165,7 +165,6 @@
     <ClCompile Include="..\..\src\aucodec.c" />
     <ClCompile Include="..\..\src\audio.c" />
     <ClCompile Include="..\..\src\aufilt.c" />
-    <ClCompile Include="..\..\src\auframe.c" />
     <ClCompile Include="..\..\src\auplay.c" />
     <ClCompile Include="..\..\src\ausrc.c" />
     <ClCompile Include="..\..\src\baresip.c" />
@@ -175,7 +174,6 @@
     <ClCompile Include="..\..\src\config.c" />
     <ClCompile Include="..\..\src\contact.c" />
     <ClCompile Include="..\..\src\custom_hdrs.c" />
-    <ClCompile Include="..\..\src\h264.c" />
     <ClCompile Include="..\..\src\log.c" />
     <ClCompile Include="..\..\src\main.c" />
     <ClCompile Include="..\..\src\mediadev.c" />
@@ -202,7 +200,6 @@
     <ClCompile Include="static.c" />
     <ClCompile Include="..\..\src\rtpext.c" />
     <ClCompile Include="..\..\src\timestamp.c" />
-    <ClCompile Include="..\..\src\aulevel.c" />
     <ClCompile Include="..\..\src\vidutil.c" />
     <ClCompile Include="..\..\src\event.c" />
   </ItemGroup>
