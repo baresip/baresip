@@ -64,6 +64,7 @@
       <DisableSpecificWarnings>4142;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename).obj</ObjectFileName>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalOptions>winmm.lib ..\..\..\re\$(Platform)\$(Configuration)\bin\re-win32.lib ..\..\..\rem\$(Platform)\$(Configuration)\bin\rem-win32.lib %(AdditionalOptions)</AdditionalOptions>
