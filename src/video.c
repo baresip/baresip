@@ -1171,7 +1171,6 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
  */
 int video_start_source(struct video *v, struct media_ctx **ctx)
 {
-	struct vtx *vtx = &v->vtx;
 	struct vidsz size;
 	int err;
 
@@ -1185,6 +1184,7 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 
 	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
 
+		struct vtx* vtx = &v->vtx;
 		struct vidsrc *vs;
 
 		vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),

@@ -343,8 +343,8 @@ static int config_pin(struct vidsrc_st *st, IPin *pin)
 	IAMStreamConfig *stream_conf = NULL;
 	VIDEOINFOHEADER *vih;
 	HRESULT hr;
-	int h = st->size.h;
-	int w = st->size.w;
+	int h;
+	int w;
 	int rh, rw;
 	int wh, rwrh;
 	int best_match = 0;
@@ -356,7 +356,8 @@ static int config_pin(struct vidsrc_st *st, IPin *pin)
 	hr = pin->EnumMediaTypes(&media_enum);
 	if (FAILED(hr))
 		return ENODATA;
-
+	h = st->size.h;
+	w = st->size.w;
 	while ((hr = media_enum->Next(1, &mt, NULL)) == S_OK) {
 		if (mt->formattype != FORMAT_VideoInfo)
 			continue;
