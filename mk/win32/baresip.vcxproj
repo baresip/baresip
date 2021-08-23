@@ -138,7 +138,9 @@
     <ClCompile Include="..\..\modules\httpd\httpd.c" />
     <ClCompile Include="..\..\modules\ice\ice.c" />
     <ClCompile Include="..\..\modules\l16\l16.c" />
+    <ClCompile Include="..\..\modules\menu\dynamic_menu.c" />
     <ClCompile Include="..\..\modules\menu\menu.c" />
+    <ClCompile Include="..\..\modules\menu\static_menu.c" />
     <ClCompile Include="..\..\modules\mwi\mwi.c" />
     <ClCompile Include="..\..\modules\natpmp\libnatpmp.c" />
     <ClCompile Include="..\..\modules\natpmp\natpmp.c" />
@@ -191,6 +193,7 @@
     <ClCompile Include="..\..\src\stream.c" />
     <ClCompile Include="..\..\src\stunuri.c" />
     <ClCompile Include="..\..\src\ua.c" />
+    <ClCompile Include="..\..\src\uag.c" />
     <ClCompile Include="..\..\src\ui.c" />
     <ClCompile Include="..\..\src\vidcodec.c" />
     <ClCompile Include="..\..\src\video.c" />
