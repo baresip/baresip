@@ -28,7 +28,9 @@ struct mnat_sess {
 	void *arg;
 	int mediac;
 	int proto;
+#ifdef USE_TLS
 	bool secure;
+#endif
 };
 
 
@@ -227,7 +229,10 @@ static void tcp_estab_handler(void *arg)
 	int err;
 
 	info("turn: [%u] %s established for '%s'\n", comp->ix,
-	     m->sess->secure ? "TLS" : "TCP",
+#ifdef USE_TLS
+	     m->sess->secure ? "TLS" :
+#endif
+		"TCP",
 	     sdp_media_name(m->sdpm));
 
 	err = turnc_alloc(&comp->turnc, NULL, IPPROTO_TCP, comp->tc, 0,
@@ -276,8 +281,8 @@ static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 					  tcp_estab_handler, tcp_recv_handler,
 					  tcp_close_handler, comp);
 			if (err)
-				break;
-
+				break; 
+#ifdef USE_TLS
 			if (sess->secure) {
 				struct tls *tls = uag_tls();
 
@@ -286,6 +291,7 @@ static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 				if (err)
 					break;
 			}
+#endif
 			break;
 
 		default:
@@ -392,7 +398,9 @@ static int session_alloc(struct mnat_sess **sessp,
 		goto out;
 
 	sess->proto  = srv->proto;
+#ifdef USE_TLS
 	sess->secure = srv->scheme == STUN_SCHEME_TURNS;
+#endif
 	sess->estabh = estabh;
 	sess->arg    = arg;
 
