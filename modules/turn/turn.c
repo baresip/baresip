@@ -281,7 +281,7 @@ static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 					  tcp_estab_handler, tcp_recv_handler,
 					  tcp_close_handler, comp);
 			if (err)
-				break; 
+				break;
 #ifdef USE_TLS
 			if (sess->secure) {
 				struct tls *tls = uag_tls();
