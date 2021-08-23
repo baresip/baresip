@@ -348,7 +348,7 @@
     <ClCompile Include="..\..\src\timestamp.c" />
     <ClCompile Include="..\..\src\aulevel.c" />
     <ClCompile Include="..\..\src\vidutil.c" />
-    <ClCompile Include="..\..\src\event.c" />
+    <ClCompile Include="..\..\src\event.c" >
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\custom_hdrs.c">
