@@ -906,6 +906,10 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 	cuser = &msg->uri.user;
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
+		struct account *acc = ua_account(ua);
+
+		if (!acc->regint && !acc->cuser_ua)
+			continue;
 
 		if (0 == pl_strcasecmp(cuser, ua_local_cuser(ua))) {
 			ua_printf(ua, "selected for %r\n", cuser);
