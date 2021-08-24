@@ -112,7 +112,7 @@ int test_account_uri_complete(void)
 
 		"192.168.1.2:5677",
 		"sip:192.168.1.2:5677",
-
+#if HAVE_INET6
 		"[2113:1470:1f1b:24b::2]",
 		"sip:[2113:1470:1f1b:24b::2]",
 
@@ -127,7 +127,7 @@ int test_account_uri_complete(void)
 
 		"x@[2113:1470:1f1b:24b::2]:5677",
 		"sip:x@[2113:1470:1f1b:24b::2]:5677",
-
+#endif
 		"user",
 		"sip:user@proxy.com",
 
