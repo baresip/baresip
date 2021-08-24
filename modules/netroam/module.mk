@@ -4,7 +4,7 @@
 # Copyright (C) 2021 Commend.com - Christian Spielberger
 #
 
-MOD		:= netcheck
-$(MOD)_SRCS	+= netcheck.c
+MOD		:= netroam
+$(MOD)_SRCS	+= netroam.c
 
 include mk/mod.mk

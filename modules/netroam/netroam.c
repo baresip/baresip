@@ -1,5 +1,7 @@
 /**
- * @file net.c Network change detection module
+ * @file netroam.c Network roaming module
+ *
+ * Detects and applies changes of the local network addresses
  *
  * Copyright (C) 2021 Commend.com - c.spielberger@commend.com
  */
@@ -11,13 +13,13 @@
 
 
 /**
- * @defgroup netcheck netcheck
+ * @defgroup netroam netroam
  *
  * The network check structure
  *
  */
 
-struct netcheck {
+struct netroam {
 	const struct config_net *cfg;
 	struct network *net;
 	uint32_t interval;
@@ -26,13 +28,13 @@ struct netcheck {
 };
 
 
-static struct netcheck d;
+static struct netroam d;
 
 
 static bool laddr_obsolete(enum sip_transp tp, const struct sa *laddr,
 			   void *arg)
 {
-	struct netcheck *n = arg;
+	struct netroam *n = arg;
 	char ifname[256] = "???";
 	int err;
 	(void) tp;
@@ -56,7 +58,7 @@ static bool laddr_find(enum sip_transp tp, const struct sa *laddr, void *arg)
 }
 
 
-static bool netcheck_find_obsolete(struct netcheck *n)
+static bool netroam_find_obsolete(struct netroam *n)
 {
 	sip_transp_list(uag_sip(), laddr_obsolete, n);
 	return sa_isset(&n->laddr, SA_ADDR);
@@ -66,7 +68,7 @@ static bool netcheck_find_obsolete(struct netcheck *n)
 static bool sip_transp_misses_laddr(const char *ifname, const struct sa *sa,
 			     void *arg)
 {
-	struct netcheck *n = arg;
+	struct netroam *n = arg;
 
 	if (!net_ifaddr_filter(baresip_network(), ifname, sa))
 		return false;
@@ -82,7 +84,7 @@ static bool sip_transp_misses_laddr(const char *ifname, const struct sa *sa,
 
 static void poll_changes(void *arg)
 {
-	struct netcheck *n = arg;
+	struct netroam *n = arg;
 	bool changed = false;
 	net_dns_refresh(baresip_network());
 
@@ -90,15 +92,15 @@ static void poll_changes(void *arg)
 	sa_init(&n->laddr, AF_UNSPEC);
 	net_if_apply(sip_transp_misses_laddr, n);
 	if (sa_isset(&n->laddr, SA_ADDR)) {
-		debug("netcheck: new IP address %j\n", &n->laddr);
+		debug("netroam: new IP address %j\n", &n->laddr);
 		uag_transp_add(&n->laddr);
 		changed = true;
 	}
 
 	/* was a local IP removed? */
 	sa_init(&n->laddr, AF_UNSPEC);
-	if (netcheck_find_obsolete(n)) {
-		debug("netcheck: IP address %j was removed\n", &n->laddr);
+	if (netroam_find_obsolete(n)) {
+		debug("netroam: IP address %j was removed\n", &n->laddr);
 		uag_transp_rm(&n->laddr);
 		changed = true;
 	}
@@ -127,8 +129,8 @@ static int module_close(void)
 }
 
 
-const struct mod_export DECL_EXPORTS(netcheck) = {
-	"netcheck",
+const struct mod_export DECL_EXPORTS(netroam) = {
+	"netroam",
 	"application",
 	module_init,
 	module_close

@@ -32,7 +32,7 @@
 #   USE_L16           L16 audio codec
 #   USE_MPA           MPA audio codec
 #   USE_MPG123        Use mpg123
-#   USE_NETCHECK      Network change check
+#   USE_NETROAM       Network roaming
 #   USE_OMX_RPI       RaspberryPi VideoCore display driver
 #   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
 #   USE_OPUS          Opus audio codec
@@ -64,7 +64,7 @@ USE_G711  := 1
 USE_L16   := 1
 USE_DBUS  := 1
 USE_HTTPREQ  := 1
-USE_NETCHECK := 1
+USE_NETROAM  := 1
 
 ifneq ($(OS),win32)
 
@@ -388,8 +388,8 @@ endif
 ifneq ($(USE_MQTT),)
 MODULES   += mqtt
 endif
-ifneq ($(USE_NETCHECK),)
-MODULES   += netcheck
+ifneq ($(USE_NETROAM),)
+MODULES   += netroam
 endif
 ifneq ($(USE_OPUS),)
 MODULES   += opus
