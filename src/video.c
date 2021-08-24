@@ -794,7 +794,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 
 
 /* Handle incoming stream data from the network */
-static void stream_recv_handler(const struct rtp_header *hdr,
+static int stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
 				struct mbuf *mb, unsigned lostc, void *arg)
 {
@@ -808,7 +808,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (lostc)
 		request_picture_update(&v->vrx);
 
-	(void)video_stream_decode(&v->vrx, hdr, mb);
+	return video_stream_decode(&v->vrx, hdr, mb);
 }
 
 

@@ -942,6 +942,15 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 }
 
 
+static bool audio_is_telev(struct audio *a, int pt)
+{
+	const struct sdp_format *lc;
+
+	lc = sdp_media_lformat(stream_sdpmedia(a->strm), pt);
+	return  lc && !str_casecmp(lc->name, "telephone-event");
+}
+
+
 static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 {
 	struct audio *a = arg;
@@ -956,7 +965,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 	/* Telephone event? */
 	if (lc && !str_casecmp(lc->name, "telephone-event")) {
 		handle_telev(a, mb);
-		return ENOENT;
+		return ENODATA;
 	}
 
 	if (!lc)
@@ -1119,7 +1128,7 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 
 
 /* Handle incoming stream data from the network */
-static void stream_recv_handler(const struct rtp_header *hdr,
+static int stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
 				struct mbuf *mb, unsigned lostc, void *arg)
 {
@@ -1133,6 +1142,9 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
 	if (!mb)
 		goto out;
+
+	if (audio_is_telev(a, hdr->pt))
+			return EAGAIN;
 
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	for (i=0; i<extc; i++) {
@@ -1204,14 +1216,14 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
 	if (discard) {
 		++rx->stats.n_discard;
-		return;
+		return 0;
 	}
 
  out:
 	if (lostc)
-		aurx_stream_decode(&a->rx, hdr->m, mb, lostc);
+		(void)aurx_stream_decode(&a->rx, hdr->m, mb, lostc);
 
-	(void)aurx_stream_decode(&a->rx, hdr->m, mb, 0);
+	return aurx_stream_decode(&a->rx, hdr->m, mb, 0);
 }
 
 
