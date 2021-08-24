@@ -397,7 +397,7 @@ static void clean_number(char *str)
 	 * In other cases trust the user input
 	 */
 	while (str[i]) {
-		if (isalpha(str[i] != 0))
+		if (isalpha(str[i]) != 0)
 			return;
 		else if (str[i] == '@')
 			return;
