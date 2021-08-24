@@ -212,9 +212,6 @@
     <ClCompile Include="..\..\src\ui.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\h264.c">
-      <Filter>src\video</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\vidcodec.c">
       <Filter>src\video</Filter>
     </ClCompile>
@@ -344,11 +341,7 @@
     <ClCompile Include="..\..\modules\winwave\winwave.c">
       <Filter>modules\winwave</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\rtpext.c" />
-    <ClCompile Include="..\..\src\timestamp.c" />
-    <ClCompile Include="..\..\src\aulevel.c" />
-    <ClCompile Include="..\..\src\vidutil.c" />
-    <ClCompile Include="..\..\src\event.c" />
+    <ClCompile Include="..\..\src\event.c">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\custom_hdrs.c">
@@ -360,7 +353,22 @@
     <ClCompile Include="..\..\src\rtpstat.c">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\auframe.c">
+    <ClCompile Include="..\..\src\uag.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\menu\dynamic_menu.c">
+      <Filter>modules\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\modules\menu\static_menu.c">
+      <Filter>modules\menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vidutil.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\timestamp.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtpext.c">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

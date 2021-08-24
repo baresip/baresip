@@ -64,6 +64,7 @@
       <DisableSpecificWarnings>4142;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename).obj</ObjectFileName>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalOptions>winmm.lib ..\..\..\re\$(Platform)\$(Configuration)\bin\re-win32.lib ..\..\..\rem\$(Platform)\$(Configuration)\bin\rem-win32.lib %(AdditionalOptions)</AdditionalOptions>
@@ -137,7 +138,9 @@
     <ClCompile Include="..\..\modules\httpd\httpd.c" />
     <ClCompile Include="..\..\modules\ice\ice.c" />
     <ClCompile Include="..\..\modules\l16\l16.c" />
+    <ClCompile Include="..\..\modules\menu\dynamic_menu.c" />
     <ClCompile Include="..\..\modules\menu\menu.c" />
+    <ClCompile Include="..\..\modules\menu\static_menu.c" />
     <ClCompile Include="..\..\modules\mwi\mwi.c" />
     <ClCompile Include="..\..\modules\natpmp\libnatpmp.c" />
     <ClCompile Include="..\..\modules\natpmp\natpmp.c" />
@@ -164,7 +167,6 @@
     <ClCompile Include="..\..\src\aucodec.c" />
     <ClCompile Include="..\..\src\audio.c" />
     <ClCompile Include="..\..\src\aufilt.c" />
-    <ClCompile Include="..\..\src\auframe.c" />
     <ClCompile Include="..\..\src\auplay.c" />
     <ClCompile Include="..\..\src\ausrc.c" />
     <ClCompile Include="..\..\src\baresip.c" />
@@ -174,7 +176,6 @@
     <ClCompile Include="..\..\src\config.c" />
     <ClCompile Include="..\..\src\contact.c" />
     <ClCompile Include="..\..\src\custom_hdrs.c" />
-    <ClCompile Include="..\..\src\h264.c" />
     <ClCompile Include="..\..\src\log.c" />
     <ClCompile Include="..\..\src\main.c" />
     <ClCompile Include="..\..\src\mediadev.c" />
@@ -192,6 +193,7 @@
     <ClCompile Include="..\..\src\stream.c" />
     <ClCompile Include="..\..\src\stunuri.c" />
     <ClCompile Include="..\..\src\ua.c" />
+    <ClCompile Include="..\..\src\uag.c" />
     <ClCompile Include="..\..\src\ui.c" />
     <ClCompile Include="..\..\src\vidcodec.c" />
     <ClCompile Include="..\..\src\video.c" />
@@ -201,7 +203,6 @@
     <ClCompile Include="static.c" />
     <ClCompile Include="..\..\src\rtpext.c" />
     <ClCompile Include="..\..\src\timestamp.c" />
-    <ClCompile Include="..\..\src\aulevel.c" />
     <ClCompile Include="..\..\src\vidutil.c" />
     <ClCompile Include="..\..\src\event.c" />
   </ItemGroup>
