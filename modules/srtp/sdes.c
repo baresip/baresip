@@ -14,8 +14,13 @@ const char sdp_attr_crypto[] = "crypto";
 int sdes_encode_crypto(struct sdp_media *m, uint32_t tag, const char *suite,
 		       const char *key, size_t key_len)
 {
-	return sdp_media_set_lattr(m, true, sdp_attr_crypto, "%u %s inline:%b",
-				   tag, suite, key, key_len);
+	bool lifetime = false;
+	(void) conf_get_bool(conf_cur(), "srtp_keylifetime", &lifetime);
+
+	return sdp_media_set_lattr(m, true, sdp_attr_crypto,
+				   "%u %s inline:%b%s",
+				   tag, suite, key, key_len,
+				   lifetime ? "|2^48" : "");
 }
 
 
