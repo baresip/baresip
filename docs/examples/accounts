@@ -15,7 +15,7 @@
 #    ;autelev_pt=101
 #    ;sip_autoanswer={yes, no}
 #    ;sip_autoanswer_beep={off, on, local}
-#    ;dtmfmode={rtpevent, info}
+#    ;dtmfmode={rtpevent, info, auto}
 #    ;auth_user=username
 #    ;auth_pass=password
 #    ;call_transfer=no

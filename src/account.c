@@ -280,6 +280,9 @@ static void dtmfmode_decode(struct account *prm, const struct pl *pl)
 		if (0 == pl_strcasecmp(&dtmfmode, "info")) {
 			prm->dtmfmode = DTMFMODE_SIP_INFO;
 		}
+		else if (0 == pl_strcasecmp(&dtmfmode, "auto")) {
+			prm->dtmfmode = DTMFMODE_AUTO;
+		}
 		else {
 			prm->dtmfmode = DTMFMODE_RTP_EVENT;
 		}
@@ -1249,7 +1252,9 @@ int account_set_dtmfmode(struct account *acc, enum dtmfmode mode)
 	if (!acc)
 		return EINVAL;
 
-	if ((mode != DTMFMODE_RTP_EVENT) && (mode != DTMFMODE_SIP_INFO)) {
+	if ((mode != DTMFMODE_RTP_EVENT) &&
+	    (mode != DTMFMODE_SIP_INFO) &&
+	    (mode != DTMFMODE_AUTO)) {
 		warning("account: invalid dtmfmode : `%d'\n", mode);
 		return EINVAL;
 	}
@@ -1543,6 +1548,7 @@ static const char *dtmfmode_str(enum dtmfmode mode)
 
 	case DTMFMODE_RTP_EVENT: return "rtpevent";
 	case DTMFMODE_SIP_INFO:  return "info";
+	case DTMFMODE_AUTO: 	 return "auto";
 	default: return "???";
 	}
 }

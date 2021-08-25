@@ -1476,14 +1476,33 @@ int call_info(struct re_printf *pf, const struct call *call)
  */
 int call_send_digit(struct call *call, char key)
 {
-	int err;
+	int err = 0;
+	const struct sdp_format *fmt;
+	bool info = true;
 
 	if (!call)
 		return EINVAL;
 
-	if (call->acc->dtmfmode == DTMFMODE_SIP_INFO &&
-		key != KEYCODE_REL) {
-		err = send_dtmf_info(call, key);
+	switch (account_dtmfmode(call->acc)) {
+		case DTMFMODE_SIP_INFO:
+			info = true;
+			break;
+		case DTMFMODE_AUTO:
+			fmt = sdp_media_rformat(
+				stream_sdpmedia(audio_strm(call->audio)),
+				telev_rtpfmt);
+			info = fmt == NULL;
+			break;
+		case DTMFMODE_RTP_EVENT:
+		default:
+			info = false;
+			break;
+	}
+
+	if (info) {
+		if (key != KEYCODE_REL) {
+			err = send_dtmf_info(call, key);
+		}
 	}
 	else {
 		err = audio_send_digit(call->audio, key);
