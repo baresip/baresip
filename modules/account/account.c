@@ -57,7 +57,7 @@ static int account_write_template(const char *file)
 			 "#    ;audio_player=alsa,default\n"
 			 "#    ;sip_autoanswer={yes, no}\n"
 			 "#    ;sip_autoanswer_beep={off, on, local}\n"
-			 "#    ;dtmfmode={rtpevent, info}\n"
+			 "#    ;dtmfmode={rtpevent, info, auto}\n"
 			 "#    ;auth_user=username\n"
 			 "#    ;auth_pass=password\n"
 			 "#    ;call_transfer=no\n"

@@ -61,7 +61,8 @@ enum answermode {
 /** Defines the DTMF send type */
 enum dtmfmode {
 	DTMFMODE_RTP_EVENT = 0,
-	DTMFMODE_SIP_INFO
+	DTMFMODE_SIP_INFO,
+	DTMFMODE_AUTO
 };
 
 /** SIP auto answer beep modes */
