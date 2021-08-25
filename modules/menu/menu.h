@@ -55,6 +55,7 @@ void static_menu_unregister(void);
 int dial_menu_register(void);
 void dial_menu_unregister(void);
 
+void clean_number(char* str);
 
 /*Generic menu funtions*/
 void menu_update_callstatus(bool incall);

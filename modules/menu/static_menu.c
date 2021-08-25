@@ -389,7 +389,7 @@ static int ua_print_call_status(struct re_printf *pf, void *arg)
 }
 
 
-static void clean_number(char *str)
+void clean_number(char *str)
 {
 	int i = 0, k = 0;
 
