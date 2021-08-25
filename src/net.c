@@ -10,15 +10,26 @@
 
 struct network {
 	struct config_net cfg;
-	struct sa laddr;
-#ifdef HAVE_INET6
-	struct sa laddr6;
-#endif
+	struct list laddrs;       /**< List of local addresses           */
+
 	struct dnsc *dnsc;
 	struct sa nsv[NET_MAX_NS];/**< Configured name servers           */
 	uint32_t nsn;        /**< Number of configured name servers      */
 	struct sa nsvf[NET_MAX_NS];/**< Configured fallback name servers */
 	uint32_t nsnf;       /**< Number of configured fallback name servers */
+
+	net_ifaddr_h *addh;  /**< Local address added handler            */
+	void *addh_arg;
+	net_ifaddr_h *rmh;   /**< Local address removed handler          */
+	void *rmh_arg;
+};
+
+
+struct laddr {
+	struct le le;
+
+	char *ifname;
+	struct sa sa;
 };
 
 
@@ -27,25 +38,16 @@ static void net_destructor(void *data)
 	struct network *net = data;
 
 	mem_deref(net->dnsc);
+	list_flush(&net->laddrs);
 }
 
 
-static int print_addr(struct re_printf *pf, const struct sa *ip)
+static void laddr_destructor(void *data)
 {
-	if (!ip)
-		return 0;
+	struct laddr *laddr = data;
 
-	if (sa_isset(ip, SA_ADDR)) {
-
-		char ifname[256] = "???";
-
-		net_if_getname(ifname, sizeof(ifname), sa_af(ip), ip);
-
-		return re_hprintf(pf, "%s|%j", ifname, ip);
-	}
-	else {
-		return re_hprintf(pf, "(not set)");
-	}
+	list_unlink(&laddr->le);
+	mem_deref(laddr->ifname);
 }
 
 
@@ -200,6 +202,128 @@ static bool check_ipv6(void)
 }
 
 
+static int net_add_laddr(struct network *net, const char *ifname,
+			 const struct sa *sa)
+{
+	struct laddr *laddr;
+	int err;
+
+	if (!net || !str_isset(ifname) || !sa)
+		return EINVAL;
+
+	laddr = mem_zalloc(sizeof(*laddr), laddr_destructor);
+	if (!laddr)
+		return ENOMEM;
+
+	laddr->sa = *sa;
+	err = str_dup(&laddr->ifname, ifname);
+	if (err)
+		goto out;
+
+	list_append(&net->laddrs, &laddr->le, laddr);
+	if (net->addh)
+		net->addh(laddr->ifname, &laddr->sa, net->addh_arg);
+
+out:
+	if (err)
+		mem_deref(laddr);
+
+	return err;
+}
+
+
+static bool add_laddr_filter(const char *ifname, const struct sa *sa,
+			     void *arg)
+{
+	struct network *net = arg;
+
+	if (!net_ifaddr_filter(net, ifname, sa))
+		return false;
+
+	(void)net_add_laddr(net, ifname, sa);
+	return false;
+}
+
+
+static bool if_debug_handler(const char *ifname, const struct sa *sa,
+			     void *arg)
+{
+	void **argv = arg;
+	struct re_printf *pf = argv[0];
+	struct network *net = argv[1];
+	int err = 0;
+
+	if (net_af_enabled(net, sa_af(sa)))
+		err = re_hprintf(pf, " %10s:  %j\n", ifname, sa);
+
+	return err != 0;
+}
+
+
+static int check_route(const struct sa *src, const struct sa *dst)
+{
+	struct sa ip;
+	int err;
+
+	err = net_dst_source_addr_get(dst, &ip);
+	if (err)
+		return err;
+
+	if (!sa_cmp(src, &ip, SA_ADDR))
+		return ECONNREFUSED;
+
+	return 0;
+}
+
+
+enum laddr_check {
+	LADDR_NOLINKLOCAL = 1,
+	LADDR_INTERNET = 2
+};
+
+
+static const struct sa *find_laddr_af(const struct network *net, int af,
+		enum laddr_check lc)
+{
+	struct le *le;
+	struct sa dst;
+
+	if (!net)
+		return NULL;
+
+	sa_init(&dst, af);
+	if (af == AF_INET6)
+		sa_set_str(&dst, "1::1", 53);
+	else
+		sa_set_str(&dst, "1.1.1.1", 53);
+
+	LIST_FOREACH(&net->laddrs, le) {
+		struct laddr *laddr = le->data;
+		if (sa_af(&laddr->sa) != af)
+			continue;
+
+		if ((lc & LADDR_NOLINKLOCAL) && sa_is_linklocal(&laddr->sa))
+			continue;
+
+		if ((lc & LADDR_INTERNET) && check_route(&laddr->sa, &dst))
+			continue;
+
+		return &laddr->sa;
+	}
+
+	return NULL;
+}
+
+
+static bool print_addr(const char *ifname, const struct sa *sa, void *arg)
+{
+	(void) arg;
+
+	re_printf(" %10s:  %j\n", ifname, sa);
+	return false;
+}
+
+
 /**
  * Initialise networking
  *
@@ -213,7 +337,6 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	struct network *net;
 	struct sa nsv[NET_MAX_NS];
 	uint32_t nsn = ARRAY_SIZE(nsv);
-	char buf4[128] = "", buf6[128] = "";
 	int err;
 
 	if (!netp || !cfg)
@@ -276,102 +399,18 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		goto out;
 	}
 
-	sa_init(&net->laddr, AF_INET);
-
-	if (str_isset(cfg->ifname)) {
-
-		struct sa temp_sa;
-		bool got_it = false;
-
-		info("Binding to interface or IP address '%s'\n", cfg->ifname);
-
-		/* check for valid IP-address */
-		if (0 == sa_set_str(&temp_sa, cfg->ifname, 0)) {
-
-			switch (sa_af(&temp_sa)) {
-
-			case AF_INET:
-				net->laddr = temp_sa;
-				break;
-
-#ifdef HAVE_INET6
-			case AF_INET6:
-				net->laddr6 = temp_sa;
-				break;
-#endif
-
-			default:
-				err = EAFNOSUPPORT;
-				goto out;
-			}
-
-			goto print_network_data;
-		}
-
-		if (net_af_enabled(net, AF_INET)) {
-
-			err = net_if_getaddr(cfg->ifname, AF_INET,
-					     &net->laddr);
-			if (err) {
-				info("net: %s: could not get IPv4 address"
-				     " (%m)\n",
-				     cfg->ifname, err);
-			}
-			else
-				got_it = true;
-		}
-
-#ifdef HAVE_INET6
-		if (net_af_enabled(net, AF_INET6)) {
-
-			err = net_if_getaddr(cfg->ifname, AF_INET6,
-					     &net->laddr6);
-			if (err) {
-				info("net: %s: could not get IPv6 address"
-				     " (%m)\n",
-				     cfg->ifname, err);
-			}
-			else
-				got_it = true;
-		}
-#endif
-		if (got_it)
-			err = 0;
-		else {
-			warning("net: %s: could not get network address\n",
-				cfg->ifname);
-			err = EADDRNOTAVAIL;
-			goto out;
-		}
+	net_if_apply(add_laddr_filter, net);
+	if (!list_count(&net->laddrs)) {
+		warning("net: %s: could not get network address\n",
+			cfg->ifname);
+		err = EADDRNOTAVAIL;
 	}
 	else {
-		if (net_af_enabled(net, AF_INET))
-			net_default_source_addr_get(AF_INET, &net->laddr);
-
-#ifdef HAVE_INET6
-		sa_init(&net->laddr6, AF_INET6);
-
-		if (net_af_enabled(net, AF_INET6))
-			net_default_source_addr_get(AF_INET6, &net->laddr6);
-#endif
+		info("Local network addresses:\n");
+		net_laddr_apply(net, print_addr, NULL);
 	}
-
-print_network_data:
-
-	if (sa_isset(&net->laddr, SA_ADDR)) {
-		re_snprintf(buf4, sizeof(buf4), " IPv4=%H",
-			    print_addr, &net->laddr);
-	}
-#ifdef HAVE_INET6
-	if (sa_isset(&net->laddr6, SA_ADDR)) {
-		re_snprintf(buf6, sizeof(buf6), " IPv6=%H",
-			    print_addr, &net->laddr6);
-	}
-#endif
 
 	(void)dns_srv_get(NULL, 0, nsv, &nsn);
-
-	info("Local network address: %s %s\n", buf4, buf6);
 
  out:
 	if (err)
@@ -423,25 +462,120 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
  */
 int net_set_address(struct network *net, const struct sa *ip)
 {
+	struct config_net *cfg = &net->cfg;
+
 	if (!net)
 		return EINVAL;
 
-	switch (sa_af(ip)) {
+	re_snprintf(cfg->ifname, sizeof(cfg->ifname), "%j", ip);
 
-	case AF_INET:
-		sa_cpy(&net->laddr, ip);
-		break;
+	net_flush_addresses(net);
+	net_if_apply(add_laddr_filter, net);
+	return 0;
+}
 
-#ifdef HAVE_INET6
-	case AF_INET6:
-		sa_cpy(&net->laddr6, ip);
-		break;
-#endif
-	default:
-		return EAFNOSUPPORT;
+
+/**
+ * Add a local IP address
+ *
+ * @param net  Network instance
+ * @param ip   IP address
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int net_add_address(struct network *net, const struct sa *ip)
+{
+	char ifname[256] = "???";
+	int err;
+
+	if (!net || !sa_isset(ip, SA_ADDR))
+		return EINVAL;
+
+	err = net_if_getname(ifname, sizeof(ifname), sa_af(ip), ip);
+	if (err)
+		goto out;
+
+	err = net_add_laddr(net, ifname, ip);
+
+out:
+	mem_deref(ifname);
+	return err;
+}
+
+
+/**
+ * Remove a local IP address
+ *
+ * @param net  Network instance
+ * @param ip   IP address
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int net_rm_address(struct network *net, const struct sa *ip)
+{
+	struct le *le;
+	if (!net)
+		return EINVAL;
+
+	LIST_FOREACH(&net->laddrs, le) {
+		struct laddr *laddr = le->data;
+		if (!sa_cmp(&laddr->sa, ip, SA_ADDR)) {
+			if (net->rmh)
+				net->rmh(laddr->ifname, &laddr->sa,
+					 net->rmh_arg);
+			mem_deref(laddr);
+			break;
+		}
 	}
 
 	return 0;
+}
+
+
+/**
+ * Remove all local IP addresses
+ *
+ * @param net  Network instance
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int net_flush_addresses(struct network *net)
+{
+	struct le *le;
+	if (!net)
+		return EINVAL;
+
+	le = list_head(&net->laddrs);
+	while (le) {
+		struct laddr *laddr = le->data;
+		le = le->next;
+		if (net->rmh)
+			net->rmh(laddr->ifname, &laddr->sa, net->rmh_arg);
+
+		mem_deref(laddr);
+	}
+
+	return 0;
+}
+
+
+void net_set_add_handler(struct network *net, net_ifaddr_h *ifh, void *arg)
+{
+	if (!net)
+		return;
+
+	net->addh = ifh;
+	net->addh_arg = arg;
+}
+
+
+void net_set_rm_handler(struct network *net, net_ifaddr_h *ifh, void *arg)
+{
+	if (!net)
+		return;
+
+	net->rmh = ifh;
+	net->rmh_arg = arg;
 }
 
 
@@ -496,28 +630,18 @@ int net_set_af(struct network *net, int af)
 }
 
 
-static bool if_debug_handler(const char *ifname, const struct sa *sa,
-			     void *arg)
-{
-	void **argv = arg;
-	struct re_printf *pf = argv[0];
-	struct network *net = argv[1];
-	int err = 0;
-
-	if (net_af_enabled(net, sa_af(sa)))
-		err = re_hprintf(pf, " %10s:  %j\n", ifname, sa);
-
-	return err != 0;
-}
-
-
 bool net_ifaddr_filter(const struct network *net, const char *ifname,
 			      const struct sa *sa)
 {
 	const struct config_net *cfg = &net->cfg;
+	struct sa ip;
 
 	if (!sa_isset(sa, SA_ADDR))
 		return false;
+
+	if (str_isset(cfg->ifname) && 0 == sa_set_str(&ip, cfg->ifname, 0) &&
+			sa_cmp(&ip, sa, SA_ADDR))
+		return true;
 
 	if (str_isset(cfg->ifname) && str_cmp(cfg->ifname, ifname))
 		return false;
@@ -542,17 +666,18 @@ bool net_ifaddr_filter(const struct network *net, const char *ifname,
  */
 const struct sa *net_laddr_af(const struct network *net, int af)
 {
-	if (!net)
-		return NULL;
+	const struct sa *sa;
 
-	switch (af) {
+	sa = find_laddr_af(net, af, LADDR_NOLINKLOCAL | LADDR_INTERNET);
+	if (sa)
+		return sa;
 
-	case AF_INET:  return &net->laddr;
-#ifdef HAVE_INET6
-	case AF_INET6: return &net->laddr6;
-#endif
-	default:       return NULL;
-	}
+	sa = find_laddr_af(net, af, LADDR_NOLINKLOCAL);
+	if (sa)
+		return sa;
+
+	sa = find_laddr_af(net, af, 0);
+	return sa;
 }
 
 
@@ -572,28 +697,19 @@ struct dnsc *net_dnsc(const struct network *net)
 }
 
 
-static void handle_addr(const struct sa *ip, net_ifaddr_h *ifh, void *arg)
+bool net_laddr_apply(const struct network *net, net_ifaddr_h *ifh, void *arg)
 {
-	if (sa_isset(ip, SA_ADDR)) {
-
-		char ifname[256] = "???";
-
-		net_if_getname(ifname, sizeof(ifname), sa_af(ip), ip);
-
-		ifh(ifname, ip, arg);
-	}
-}
-
-
-void net_laddr_apply(const struct network *net, net_ifaddr_h *ifh, void *arg)
-{
+	struct le *le;
 	if (!net || !ifh)
-		return;
+		return true;
 
-	handle_addr(&net->laddr,  ifh, arg);
-#ifdef HAVE_INET6
-	handle_addr(&net->laddr6, ifh, arg);
-#endif
+	LIST_FOREACH(&net->laddrs, le) {
+		struct laddr *laddr = le->data;
+		if (ifh(laddr->ifname, &laddr->sa, arg))
+			return true;
+	}
+
+	return false;
 }
 
 
@@ -614,17 +730,11 @@ int net_debug(struct re_printf *pf, const struct network *net)
 		return 0;
 
 	err  = re_hprintf(pf, "--- Network debug ---\n");
-	err |= re_hprintf(pf, " Local IPv4:  [%s] %H\n",
-			  net_af_enabled(net, AF_INET) ? "E" : ".",
-			  print_addr, &net->laddr);
-#ifdef HAVE_INET6
-	err |= re_hprintf(pf, " Local IPv6:  [%s] %H\n",
-			  net_af_enabled(net, AF_INET6) ? "E" : ".",
-			  print_addr, &net->laddr6);
-#endif
+	err |= re_hprintf(pf, "enabled interfaces:\n");
+	net_laddr_apply(net, if_debug_handler, argv);
 
-	err |= re_hprintf(pf, "net interfaces:\n");
-	err |= net_if_apply(if_debug_handler, argv);
+	err |= re_hprintf(pf, "network interfaces:\n");
+	err |= net_if_apply( if_debug_handler, argv);
 
 	err |= net_dns_debug(pf, net);
 

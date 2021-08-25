@@ -294,6 +294,27 @@ static int add_transp_clientcert(void)
 #endif
 
 
+static bool transp_add_laddr(const char *ifname, const struct sa *sa,
+			     void *arg)
+{
+	(void) ifname;
+	(void) arg;
+
+	(void)uag_transp_add(sa);
+	return false;
+}
+
+
+static bool transp_rm_laddr(const char *ifname, const struct sa *sa, void *arg)
+{
+	(void) ifname;
+	(void) arg;
+
+	(void)uag_transp_rm(sa);
+	return false;
+}
+
+
 int uag_transp_add(const struct sa *laddr)
 {
 	struct sa local;
@@ -512,14 +533,7 @@ static int ua_transp_addall(struct network *net)
 	int err = 0;
 	struct config_sip *cfg = &conf_config()->sip;
 
-	if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
-		err |= uag_transp_add(net_laddr_af(net, AF_INET));
-
-#if HAVE_INET6
-	if (sa_isset(net_laddr_af(net, AF_INET6), SA_ADDR))
-		err |= uag_transp_add(net_laddr_af(net, AF_INET6));
-#endif
-
+	net_laddr_apply(net, transp_add_laddr, NULL);
 	sip_transp_set_default(uag.sip, cfg->transp);
 	return err;
 }
@@ -607,6 +621,8 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls)
 		goto out;
 	}
 
+	net_set_add_handler(net, transp_add_laddr, NULL);
+	net_set_rm_handler(net, transp_rm_laddr, NULL);
 	err = ua_transp_addall(net);
 	if (err)
 		goto out;

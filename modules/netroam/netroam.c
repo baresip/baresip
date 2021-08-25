@@ -31,15 +31,15 @@ struct netroam {
 static struct netroam d;
 
 
-static bool laddr_obsolete(enum sip_transp tp, const struct sa *laddr,
+static bool laddr_obsolete(const char *ifname, const struct sa *laddr,
 			   void *arg)
 {
 	struct netroam *n = arg;
-	char ifname[256] = "???";
+	char ifn[2] = "?";
 	int err;
-	(void) tp;
+	(void) ifname;
 
-	err = net_if_getname(ifname, sizeof(ifname), sa_af(laddr), laddr);
+	err = net_if_getname(ifn, sizeof(ifn), sa_af(laddr), laddr);
 	if (err == ENODEV) {
 		sa_cpy(&n->laddr, laddr);
 		return true;
@@ -49,10 +49,10 @@ static bool laddr_obsolete(enum sip_transp tp, const struct sa *laddr,
 }
 
 
-static bool laddr_find(enum sip_transp tp, const struct sa *laddr, void *arg)
+static bool laddr_find(const char *ifname, const struct sa *laddr, void *arg)
 {
 	const struct sa *sa = arg;
-	(void) tp;
+	(void) ifname;
 
 	return sa_cmp(sa, laddr, SA_ADDR);
 }
@@ -60,12 +60,12 @@ static bool laddr_find(enum sip_transp tp, const struct sa *laddr, void *arg)
 
 static bool netroam_find_obsolete(struct netroam *n)
 {
-	sip_transp_list(uag_sip(), laddr_obsolete, n);
+	net_laddr_apply(n->net, laddr_obsolete, n);
 	return sa_isset(&n->laddr, SA_ADDR);
 }
 
 
-static bool sip_transp_misses_laddr(const char *ifname, const struct sa *sa,
+static bool net_misses_laddr(const char *ifname, const struct sa *sa,
 			     void *arg)
 {
 	struct netroam *n = arg;
@@ -73,7 +73,7 @@ static bool sip_transp_misses_laddr(const char *ifname, const struct sa *sa,
 	if (!net_ifaddr_filter(baresip_network(), ifname, sa))
 		return false;
 
-	if (!sip_transp_list(uag_sip(), laddr_find, (void*) sa)) {
+	if (!net_laddr_apply(n->net, laddr_find, (void *) sa)) {
 		sa_cpy(&n->laddr, sa);
 		return true;
 	}
@@ -90,10 +90,10 @@ static void poll_changes(void *arg)
 
 	/* was a local IP added? */
 	sa_init(&n->laddr, AF_UNSPEC);
-	net_if_apply(sip_transp_misses_laddr, n);
+	net_if_apply(net_misses_laddr, n);
 	if (sa_isset(&n->laddr, SA_ADDR)) {
 		debug("netroam: new IP address %j\n", &n->laddr);
-		uag_transp_add(&n->laddr);
+		net_add_address(n->net, &n->laddr);
 		changed = true;
 	}
 
@@ -101,7 +101,7 @@ static void poll_changes(void *arg)
 	sa_init(&n->laddr, AF_UNSPEC);
 	if (netroam_find_obsolete(n)) {
 		debug("netroam: IP address %j was removed\n", &n->laddr);
-		uag_transp_rm(&n->laddr);
+		net_rm_address(n->net, &n->laddr);
 		changed = true;
 	}
 
@@ -115,6 +115,8 @@ static int module_init(void)
 	int err = 0;
 	d.cfg = &conf_config()->net;
 	d.net = baresip_network();
+	/* TODO: a config setting for the interval */
+	/* TODO++: Use AF_NETLINK socket to be notified! (man 7 netlink) */
 	d.interval = 2;
 	tmr_start(&d.tmr, d.interval * 1000, poll_changes, &d);
 
