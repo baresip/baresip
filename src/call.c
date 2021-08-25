@@ -1476,7 +1476,7 @@ int call_info(struct re_printf *pf, const struct call *call)
  */
 int call_send_digit(struct call *call, char key)
 {
-	int err;
+	int err = 0;
 	const struct sdp_format *fmt;
 	bool info = true;
 
@@ -1485,7 +1485,7 @@ int call_send_digit(struct call *call, char key)
 
 	switch (account_dtmfmode(call->acc)) {
 		case DTMFMODE_SIP_INFO:
-			info = key != KEYCODE_REL;
+			info = true;
 			break;
 		case DTMFMODE_AUTO:
 			fmt = sdp_media_rformat(
@@ -1500,7 +1500,9 @@ int call_send_digit(struct call *call, char key)
 	}
 
 	if (info) {
-		err = send_dtmf_info(call, key);
+		if (key != KEYCODE_REL) {
+			err = send_dtmf_info(call, key);
+		}
 	}
 	else {
 		err = audio_send_digit(call->audio, key);
