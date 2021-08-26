@@ -259,6 +259,7 @@ static int handle_rtp(struct stream *s, const struct rtp_header *hdr,
 {
 	struct rtpext extv[8];
 	size_t extc = 0;
+	bool ignore = false;
 
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	if (hdr->ext && hdr->x.len && mb) {
@@ -304,7 +305,11 @@ static int handle_rtp(struct stream *s, const struct rtp_header *hdr,
 	}
 
  handler:
-	return s->rtph(hdr, extv, extc, mb, lostc, s->arg);
+	s->rtph(hdr, extv, extc, mb, lostc, &ignore, s->arg);
+	if (ignore)
+		return EAGAIN;
+
+	return 0;
 }
 
 

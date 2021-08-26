@@ -254,9 +254,10 @@ struct rtp_header;
 
 enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 
-typedef int (stream_rtp_h)(const struct rtp_header *hdr,
+typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct rtpext *extv, size_t extc,
-			    struct mbuf *mb, unsigned lostc, void *arg);
+			    struct mbuf *mb, unsigned lostc, bool *ignore,
+			    void *arg);
 typedef int (stream_pt_h)(uint8_t pt, struct mbuf *mb, void *arg);
 
 

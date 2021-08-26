@@ -1128,9 +1128,10 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 
 
 /* Handle incoming stream data from the network */
-static int stream_recv_handler(const struct rtp_header *hdr,
+static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
-				struct mbuf *mb, unsigned lostc, void *arg)
+				struct mbuf *mb, unsigned lostc, bool *ignore,
+				void *arg)
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
@@ -1143,8 +1144,10 @@ static int stream_recv_handler(const struct rtp_header *hdr,
 	if (!mb)
 		goto out;
 
-	if (audio_is_telev(a, hdr->pt))
-			return EAGAIN;
+	if (audio_is_telev(a, hdr->pt)) {
+		*ignore = true;
+		return;
+	}
 
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	for (i=0; i<extc; i++) {
@@ -1216,14 +1219,14 @@ static int stream_recv_handler(const struct rtp_header *hdr,
 
 	if (discard) {
 		++rx->stats.n_discard;
-		return 0;
+		return;
 	}
 
  out:
 	if (lostc)
 		(void)aurx_stream_decode(&a->rx, hdr->m, mb, lostc);
 
-	return aurx_stream_decode(&a->rx, hdr->m, mb, 0);
+	(void)aurx_stream_decode(&a->rx, hdr->m, mb, 0);
 }
 
 
