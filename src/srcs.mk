@@ -44,6 +44,7 @@ SRCS	+= vidfilt.c
 SRCS	+= vidisp.c
 SRCS	+= vidsrc.c
 SRCS	+= vidutil.c
+SRCS	+= dial_number.c
 
 ifneq ($(STATIC),)
 SRCS	+= static.c

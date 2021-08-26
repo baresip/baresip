@@ -1529,6 +1529,13 @@ struct list   *baresip_vidfiltl(void);
 struct ui_sub *baresip_uis(void);
 
 
+/*
+ * Dialing numbers helpers
+ */
+
+void clean_number(char* str);
+
+
 #ifdef __cplusplus
 }
 #endif

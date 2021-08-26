@@ -305,6 +305,9 @@
       <Filter>modules\winwave</Filter>
     </ClCompile>
     <ClCompile Include="..\..\test\menu.c" />
+    <ClCompile Include="..\..\src\dial_number.c">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sip">

@@ -179,6 +179,7 @@
     <ClCompile Include="..\..\src\config.c" />
     <ClCompile Include="..\..\src\contact.c" />
     <ClCompile Include="..\..\src\custom_hdrs.c" />
+    <ClCompile Include="..\..\src\dial_number.c" />
     <ClCompile Include="..\..\src\log.c" />
     <ClCompile Include="..\..\src\main.c" />
     <ClCompile Include="..\..\src\mediadev.c" />
