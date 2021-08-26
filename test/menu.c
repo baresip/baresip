@@ -23,39 +23,39 @@ int test_clean_number(void)
 
 	strcpy(dial_number, "1234567");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "1234567");
+	ASSERT_STREQ("1234567", dial_number);
 
 	strcpy(dial_number, "+12 34 56 78");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "+12345678");
+	ASSERT_STREQ("+12345678", dial_number);
 
 	strcpy(dial_number, "(100) 500123");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "100500123");
+	ASSERT_STREQ("100500123", dial_number);
 
 	strcpy(dial_number, "0412/34 56 78");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "0412345678");
+	ASSERT_STREQ("0412345678", dial_number);
 
 	strcpy(dial_number, "012/34.56.78");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "012345678");
+	ASSERT_STREQ("012345678", dial_number);
 
 	strcpy(dial_number, "+64-1-234-5678");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "+6412345678");
+	ASSERT_STREQ("+6412345678", dial_number);
 
 	strcpy(dial_number, "005(0)12345");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "00512345");
+	ASSERT_STREQ("00512345", dial_number);
 
 	strcpy(dial_number, "+5(0)12345");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "+512345");
+	ASSERT_STREQ("+512345", dial_number);
 
 	strcpy(dial_number, "05(0)12345");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "05012345");
+	ASSERT_STREQ("05012345", dial_number);
 
 out:
 	return err;
@@ -69,11 +69,11 @@ int test_clean_number_only_numeric(void)
 
 	strcpy(dial_number, "(100)test500123");
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "(100)test500123");
+	ASSERT_STREQ("(100)test500123", dial_number);
 
-	strcpy(dial_number, "@(100)500123");
+	strcpy(dial_number, "@(100)500123", dial_number);
 	clean_number(dial_number);
-	ASSERT_STREQ(dial_number, "@(100)500123");
+	ASSERT_STREQ("@(100)500123", dial_number);
 
 out:
 	return err;
