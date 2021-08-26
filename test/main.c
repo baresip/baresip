@@ -3,7 +3,9 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
+#ifdef HAVE_GETOPT
 #include <getopt.h>
+#endif
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
@@ -173,6 +175,7 @@ int main(int argc, char *argv[])
 
 	log_enable_info(false);
 
+#ifdef HAVE_GETOPT
 	for (;;) {
 		const int c = getopt(argc, argv, "hlv");
 		if (0 > c)
@@ -206,6 +209,11 @@ int main(int argc, char *argv[])
 		ntests = argc - optind;
 	else
 		ntests = ARRAY_SIZE(tests);
+#else
+	(void)argc;
+	(void)argv;
+	ntests = ARRAY_SIZE(tests);
+#endif
 
 	re_printf("running baresip selftest version %s with %zu tests\n",
 		  BARESIP_VERSION, ntests);
@@ -228,6 +236,7 @@ int main(int argc, char *argv[])
 
 	uag_set_exit_handler(ua_exit_handler, NULL);
 
+#ifdef HAVE_GETOPT
 	if (argc >= (optind + 1)) {
 
 		for (i=0; i<ntests; i++) {
@@ -254,6 +263,11 @@ int main(int argc, char *argv[])
 		if (err)
 			goto out;
 	}
+#else
+	err = run_tests();
+	if(err)
+		goto out;
+#endif
 
 #if 1
 	ua_stop_all(true);
