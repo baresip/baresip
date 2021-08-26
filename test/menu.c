@@ -8,6 +8,7 @@
 #include <baresip.h>
 #include "test.h"
 #include "../modules/menu/menu.h"
+#include "string.h"
 
 
 #define DEBUG_MODULE "menu"
@@ -71,7 +72,7 @@ int test_clean_number_only_numeric(void)
 	clean_number(dial_number);
 	ASSERT_STREQ("(100)test500123", dial_number);
 
-	strcpy(dial_number, "@(100)500123", dial_number);
+	strcpy(dial_number, "@(100)500123");
 	clean_number(dial_number);
 	ASSERT_STREQ("@(100)500123", dial_number);
 

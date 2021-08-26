@@ -21,6 +21,7 @@ TEST_SRCS	+= play.c
 TEST_SRCS	+= stunuri.c
 TEST_SRCS	+= ua.c
 TEST_SRCS	+= video.c
+TEST_SRCS	+= menu.c
 
 
 #
