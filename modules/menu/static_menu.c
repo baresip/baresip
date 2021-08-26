@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <re.h>
 #include <baresip.h>
-#include <ctype.h>
 
 #include "menu.h"
 

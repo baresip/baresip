@@ -7,6 +7,7 @@
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
+#include <ctype.h>
 
 
 void clean_number(char* str)
