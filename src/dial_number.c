@@ -17,10 +17,10 @@ void clean_number(char* str)
 	/* only clean numeric numbers
 	 * In other cases trust the user input
 	 */
-	while(str[i]) {
-		if(isalpha(str[i]) != 0)
+	while (str[i]) {
+		if (isalpha(str[i]) != 0)
 			return;
-		else if(str[i] == '@')
+		else if (str[i] == '@')
 			return;
 		++i;
 	}
@@ -29,13 +29,14 @@ void clean_number(char* str)
 	/* remove (0) which is in some mal-formated numbers
 	 * but only if trailed by another character
 	 */
-	if(str[0] == '+' || (str[0] == '0' && str[1] == '0'))
-		while(str[i]) {
-			if(str[i] == '('
+	if (str[0] == '+' || (str[0] == '0' && str[1] == '0'))
+		while (str[i]) {
+			if (str[i] == '('
 				&& str[i + 1] == '0'
 				&& str[i + 2] == ')'
 				&& (str[i + 3] == ' '
-					|| (str[i + 3] >= '0' && str[i + 3] <= '9')
+					|| (str[i + 3] >= '0'
+						&& str[i + 3] <= '9')
 					)
 				) {
 				str[i + 1] = ' ';
@@ -44,8 +45,8 @@ void clean_number(char* str)
 			++i;
 		}
 	i = 0;
-	while(str[i]) {
-		if(str[i] == ' '
+	while (str[i]) {
+		if (str[i] == ' '
 			|| str[i] == '.'
 			|| str[i] == '-'
 			|| str[i] == '/'
