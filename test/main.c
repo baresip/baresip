@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
 	}
 #else
 	err = run_tests();
-	if(err)
+	if (err)
 		goto out;
 #endif
 
