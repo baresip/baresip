@@ -60,6 +60,8 @@ static const struct test tests[] = {
 	TEST(test_ua_register_dns),
 	TEST(test_uag_find_param),
 	TEST(test_video),
+	TEST(test_clean_number),
+	TEST(test_clean_number_only_numeric),
 };
 
 
