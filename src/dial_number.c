@@ -10,7 +10,7 @@
 #include <ctype.h>
 
 
-void clean_number(char* str)
+int clean_number(char* str)
 {
 	int i = 0, k = 0;
 
@@ -19,9 +19,9 @@ void clean_number(char* str)
 	 */
 	while (str[i]) {
 		if (isalpha(str[i]) != 0)
-			return;
+			return -1;
 		else if (str[i] == '@')
-			return;
+			return -1;
 		++i;
 	}
 	i = 0;
@@ -57,4 +57,5 @@ void clean_number(char* str)
 			str[k++] = str[i++];
 	}
 	str[k] = '\0';
+	return k;
 }

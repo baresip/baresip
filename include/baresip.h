@@ -1533,7 +1533,7 @@ struct ui_sub *baresip_uis(void);
  * Dialing numbers helpers
  */
 
-void clean_number(char* str);
+int clean_number(char* str);
 
 
 #ifdef __cplusplus
