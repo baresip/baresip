@@ -265,3 +265,5 @@ int test_ua_register_auth_dns(void);
 int test_ua_register_dns(void);
 int test_uag_find_param(void);
 int test_video(void);
+int test_clean_number(void);
+int test_clean_number_only_numeric(void);

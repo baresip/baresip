@@ -49,11 +49,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <CodeAnalysisRuleSet>BasicDesignGuidelineRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\misc;..\..\..\dirent\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=2048;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=2048;SHARE_PATH="/usr/share/baresip";HAVE_INET6;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
@@ -80,7 +83,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\misc;..\..\..\dirent\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;STATIC;HAVE_GETOPT;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=2048;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_GETOPT;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=2048;SHARE_PATH="/usr/share/baresip";HAVE_INET6;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -176,6 +179,7 @@
     <ClCompile Include="..\..\src\config.c" />
     <ClCompile Include="..\..\src\contact.c" />
     <ClCompile Include="..\..\src\custom_hdrs.c" />
+    <ClCompile Include="..\..\src\dial_number.c" />
     <ClCompile Include="..\..\src\log.c" />
     <ClCompile Include="..\..\src\main.c" />
     <ClCompile Include="..\..\src\mediadev.c" />
