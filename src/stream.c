@@ -254,11 +254,12 @@ static const char *media_name(enum media_type type)
 }
 
 
-static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
+static int handle_rtp(struct stream *s, const struct rtp_header *hdr,
 		       struct mbuf *mb, unsigned lostc)
 {
 	struct rtpext extv[8];
 	size_t extc = 0;
+	bool ignore = false;
 
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	if (hdr->ext && hdr->x.len && mb) {
@@ -281,7 +282,7 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 			warning("stream: corrupt rtp packet,"
 				" not enough space for rtpext of %zu bytes\n",
 				ext_len);
-			return;
+			return 0;
 		}
 
 		mb->pos = mb->pos - ext_len;
@@ -293,7 +294,7 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 			if (err) {
 				warning("stream: rtpext_decode failed (%m)\n",
 					err);
-				return;
+				return 0;
 			}
 		}
 
@@ -304,7 +305,11 @@ static void handle_rtp(struct stream *s, const struct rtp_header *hdr,
 	}
 
  handler:
-	s->rtph(hdr, extv, extc, mb, lostc, s->arg);
+	s->rtph(hdr, extv, extc, mb, lostc, &ignore, s->arg);
+	if (ignore)
+		return EAGAIN;
+
+	return 0;
 }
 
 
@@ -313,6 +318,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 {
 	struct stream *s = arg;
 	bool flush = false;
+	bool first = false;
 	int err;
 
 	MAGIC_CHECK(s);
@@ -348,6 +354,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		s->rx.ssrc_set = true;
 		s->rx.pseq = hdr->seq - 1;
 		s->rx.pseq_set = true;
+		first = true;
 	}
 	else if (hdr->ssrc != s->rx.ssrc_rx) {
 
@@ -363,7 +370,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 	/* payload-type changed? */
 	err = s->pth(hdr->pt, mb, s->arg);
-	if (err)
+	if (err && err != ENODATA)
 		return;
 
 	if (s->rx.jbuf) {
@@ -371,6 +378,9 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		/* Put frame in Jitter Buffer */
 		if (flush)
 			jbuf_flush(s->rx.jbuf);
+
+		if (first && err == ENODATA)
+			return;
 
 		err = jbuf_put(s->rx.jbuf, hdr, mb);
 		if (err) {
@@ -389,7 +399,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		}
 	}
 	else {
-		handle_rtp(s, hdr, mb, 0);
+		(void)handle_rtp(s, hdr, mb, 0);
 	}
 }
 
@@ -410,6 +420,7 @@ int stream_decode(struct stream *s)
 	void *mb;
 	int lostc;
 	int err;
+	int err2;
 
 	if (!s)
 		return EINVAL;
@@ -423,8 +434,11 @@ int stream_decode(struct stream *s)
 
 	lostc = lostcalc(&s->rx, hdr.seq);
 
-	handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0);
+	err2 = handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0);
 	mem_deref(mb);
+
+	if (err2 == EAGAIN)
+		return err2;
 
 	return err;
 }
