@@ -48,7 +48,7 @@ static inline bool is_rtcp_packet(const struct mbuf *mb)
 
 	pt = mbuf_buf(mb)[1] & 0x7f;
 
-	return 64 <= pt && pt <= 95;
+	return rtp_pt_is_rtcp(pt);
 }
 
 
