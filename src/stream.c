@@ -150,11 +150,10 @@ static const char *media_name(enum media_type type)
 }
 
 
-static void set_raddr(struct stream *strm,
-		      const struct sa *raddr)
+static void send_set_raddr(struct stream *strm, const struct sa *raddr)
 {
-	re_printf(".... set remote addr for '%s': %J\n",
-		  media_name(strm->type), raddr);
+	debug("stream: set remote addr for '%s': %J\n",
+	     media_name(strm->type), raddr);
 
 	strm->tx.raddr_rtp  = *raddr;
 	strm->tx.raddr_rtcp = *raddr;
@@ -575,7 +574,7 @@ static void update_all_remote_addr(struct list *streaml,
 
 		if (bundle_state(stream_bundle(strm)) == BUNDLE_MUX) {
 
-			set_raddr(strm, raddr);
+			send_set_raddr(strm, raddr);
 		}
 	}
 }
@@ -589,9 +588,6 @@ static void mnat_connected_handler(const struct sa *raddr1,
 	info("stream: '%s' mnat '%s' connected: raddr %J %J\n",
 	     media_name(strm->type),
 	     strm->mnat->id, raddr1, raddr2);
-
-	info(".... bundle state: %s\n",
-	     bundle_state_name(bundle_state(stream_bundle(strm))));
 
 	if (bundle_state(stream_bundle(strm)) == BUNDLE_MUX) {
 		warning("stream: unexpected mnat connected"
@@ -887,7 +883,7 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 
 static void disable_mnat(struct stream *s)
 {
-	re_printf(".... stream: disable MNAT (%s)\n", media_name(s->type));
+	info("stream: disable MNAT (%s)\n", media_name(s->type));
 
 	s->mns = mem_deref(s->mns);
 	s->mnat = NULL;
@@ -896,7 +892,7 @@ static void disable_mnat(struct stream *s)
 
 static void disable_menc(struct stream *strm)
 {
-	re_printf(".... stream: disable MENC (%s)\n", media_name(strm->type));
+	info("stream: disable MENC (%s)\n", media_name(strm->type));
 
 	strm->mencs = mem_deref(strm->mencs);
 	strm->menc = NULL;
@@ -912,10 +908,7 @@ static void update_remotes(struct list *streaml, const struct sa *raddr)
 
 		if (bundle_state(stream_bundle(strm)) == BUNDLE_MUX) {
 
-			re_printf(".... update remotes: raddr=%J\n", raddr);
-
-			strm->tx.raddr_rtp = *raddr;
-			strm->tx.raddr_rtcp = *raddr;
+			send_set_raddr(strm, raddr);
 		}
 	}
 }
@@ -1266,7 +1259,7 @@ bool stream_is_ready(const struct stream *strm)
 }
 
 
-static void update_muxed(struct list *streaml, bool secure)
+static void update_menc_muxed(struct list *streaml, bool secure)
 {
 	struct le *le;
 
@@ -1275,7 +1268,7 @@ static void update_muxed(struct list *streaml, bool secure)
 
 		if (bundle_state(stream_bundle(strm)) == BUNDLE_MUX) {
 
-			re_printf(".... update muxed: secure=%d\n", secure);
+			debug("stream: update muxed: secure=%d\n", secure);
 			strm->menc_secure = secure;
 		}
 	}
@@ -1297,7 +1290,7 @@ void stream_set_secure(struct stream *strm, bool secure)
 
 	if (bundle_state(stream_bundle(strm)) == BUNDLE_BASE) {
 
-		update_muxed(strm->le.list, secure);
+		update_menc_muxed(strm->le.list, secure);
 	}
 }
 
@@ -1571,8 +1564,8 @@ void stream_enable_bundle(struct stream *strm, enum bundle_state st)
 	if (!strm)
 		return;
 
-	re_printf(".... stream: '%s' enable bundle (%s)\n",
-		  media_name(strm->type), bundle_state_name(st));
+	info("stream: '%s' enable bundle (%s)\n",
+	     media_name(strm->type), bundle_state_name(st));
 
 	bundle_set_state(strm->bundle, st);
 
@@ -1584,6 +1577,5 @@ void stream_enable_bundle(struct stream *strm, enum bundle_state st)
 			disable_menc(strm);
 	}
 
-	bundle_start_socket(strm->bundle, rtp_sock(strm->rtp),
-			    strm->le.list);
+	bundle_start_socket(strm->bundle, rtp_sock(strm->rtp), strm->le.list);
 }

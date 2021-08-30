@@ -1459,7 +1459,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	unsigned i;
 	int err;
 
-	conf_config()->call.bundle = true;
+	conf_config()->avt.bundle = true;
 	conf_config()->avt.rtcp_mux = true;  /* MUST enable RTP/RTCP mux */
 	conf_config()->video.fps = 100;
 
@@ -1582,7 +1582,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	mock_mnat_unregister();
 	mock_menc_unregister();
 
-	conf_config()->call.bundle = false;
+	conf_config()->avt.bundle = false;
 	conf_config()->avt.rtcp_mux = false;
 
 	if (fix.err)

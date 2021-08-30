@@ -889,7 +889,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 					    stream_error_handler, call);
 	}
 
-	if (cfg->call.bundle) {
+	if (cfg->avt.bundle) {
 
 		FOREACH_STREAM {
 			struct stream *strm = le->data;
@@ -1628,7 +1628,7 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	/* note: before update_media */
-	if (call->config_call.bundle) {
+	if (call->config_avt.bundle) {
 
 		bundle_sdp_decode(call->sdp, &call->streaml);
 	}
@@ -1936,7 +1936,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			return 0;
 		}
 
-		if (call->config_call.bundle) {
+		if (call->config_avt.bundle) {
 
 			bundle_sdp_decode(call->sdp, &call->streaml);
 		}
