@@ -11,6 +11,9 @@
 #include <re.h>
 #include <baresip.h>
 
+#ifdef ADD_NETLINK
+#include "netlink.h"
+#endif
 
 /**
  * @defgroup netroam netroam
@@ -83,6 +86,22 @@ static bool net_misses_laddr(const char *ifname, const struct sa *sa,
 }
 
 
+static bool print_addr(const char *ifname, const struct sa *sa, void *arg)
+{
+	(void) arg;
+
+	re_printf(" %10s:  %j\n", ifname, sa);
+	return false;
+}
+
+
+static void print_changes(struct netroam *n)
+{
+	info("Network changed:\n");
+	net_laddr_apply(n->net, print_addr, NULL);
+}
+
+
 static void poll_changes(void *arg)
 {
 	struct netroam *n = arg;
@@ -107,7 +126,20 @@ static void poll_changes(void *arg)
 	if (n->interval)
 		tmr_start(&n->tmr, changed ? 1000 : n->interval * 1000,
 			  poll_changes, n);
+
+	if (changed)
+		print_changes(n);
 }
+
+
+#ifdef ADD_NETLINK
+static void netlink_handler(void *arg)
+{
+	struct netroam *n = arg;
+
+	tmr_start(&n->tmr, 1000, poll_changes, n);
+}
+#endif
 
 
 static int cmd_netchange(struct re_printf *pf, void *unused)
@@ -129,14 +161,22 @@ static const struct cmd cmdv[] = {
 
 static int module_init(void)
 {
+#ifdef ADD_NETLINK
+	int err;
+#endif
+
 	d.cfg = &conf_config()->net;
 	d.net = baresip_network();
-	/* TODO++: Use AF_NETLINK socket to be notified! (man 7 netlink) */
 	d.interval = 60;
 	conf_get_u32(conf_cur(), "netroam_interval", &d.interval);
 	if (d.interval)
 		tmr_start(&d.tmr, d.interval * 1000, poll_changes, &d);
 
+#ifdef ADD_NETLINK
+	err = open_netlink(netlink_handler, &d);
+	if (err)
+		return err;
+#endif
 	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 }
 
@@ -145,6 +185,9 @@ static int module_close(void)
 {
 	tmr_cancel(&d.tmr);
 	cmd_unregister(baresip_commands(), cmdv);
+#ifdef ADD_NETLINK
+	close_netlink();
+#endif
 	return 0;
 }
 
