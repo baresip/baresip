@@ -114,9 +114,9 @@ static int module_init(void)
 	int err = 0;
 	d.cfg = &conf_config()->net;
 	d.net = baresip_network();
-	/* TODO: a config setting for the interval */
 	/* TODO++: Use AF_NETLINK socket to be notified! (man 7 netlink) */
-	d.interval = 2;
+	d.interval = 60;
+	conf_get_u32(conf_cur(), "netroam_interval", &d.interval);
 	tmr_start(&d.tmr, d.interval * 1000, poll_changes, &d);
 
 	return err;
