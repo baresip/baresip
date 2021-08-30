@@ -188,11 +188,12 @@ static void vidqent_destructor(void *arg)
 }
 
 
-static int vidqent_alloc(struct vidqent **qentp,
+static int vidqent_alloc(struct vidqent **qentp, struct stream *strm,
 			 bool marker, uint8_t pt, uint32_t ts,
 			 const uint8_t *hdr, size_t hdr_len,
 			 const uint8_t *pld, size_t pld_len)
 {
+	struct bundle *bun = stream_bundle(strm);
 	struct vidqent *qent;
 	int err = 0;
 
@@ -215,6 +216,36 @@ static int vidqent_alloc(struct vidqent **qentp,
 	}
 
 	qent->mb->pos = qent->mb->end = RTP_PRESZ;
+
+	if (bundle_state(bun) != BUNDLE_NONE) {
+
+		const char *mid = stream_mid(strm);
+		size_t ext_len = 0;
+		size_t start = qent->mb->pos;
+		size_t pos;
+
+		/* skip the extension header */
+		qent->mb->pos = start + RTPEXT_HDR_SIZE;
+
+		pos = qent->mb->pos;
+
+		rtpext_encode(qent->mb, bundle_extmap_mid(bun),
+			      str_len(mid), (void *)mid);
+
+		ext_len = qent->mb->pos - pos;
+
+		/* write the Extension header at the beginning */
+		qent->mb->pos = start;
+
+		err = rtpext_hdr_encode(qent->mb, ext_len);
+		if (err)
+			goto out;
+
+		qent->mb->pos = start + RTPEXT_HDR_SIZE + ext_len;
+		qent->mb->end = start + RTPEXT_HDR_SIZE + ext_len;
+
+		qent->ext = true;
+	}
 
 	if (hdr)
 		(void)mbuf_write_mem(qent->mb, hdr, hdr_len);
@@ -362,7 +393,7 @@ static int packet_handler(bool marker, uint64_t ts,
 	/* add random timestamp offset */
 	rtp_ts = vtx->ts_offset + (ts & 0xffffffff);
 
-	err = vidqent_alloc(&qent, marker, stream_pt_enc(strm), rtp_ts,
+	err = vidqent_alloc(&qent, strm, marker, stream_pt_enc(strm), rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
 	if (err)
 		return err;

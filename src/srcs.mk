@@ -11,6 +11,7 @@ SRCS	+= aufilt.c
 SRCS	+= auplay.c
 SRCS	+= ausrc.c
 SRCS	+= baresip.c
+SRCS	+= bundle.c
 SRCS	+= call.c
 SRCS	+= cmd.c
 SRCS	+= conf.c

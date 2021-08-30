@@ -308,6 +308,7 @@ struct config_call {
 	uint32_t local_timeout; /**< Incoming call timeout [sec] 0=off    */
 	uint32_t max_calls;     /**< Maximum number of calls, 0=unlimited */
 	bool hold_other_calls;  /**< Hold other calls */
+	bool bundle;
 };
 
 /** Audio */
@@ -1379,6 +1380,7 @@ struct stream *stream_lookup_mid(const struct list *streaml,
 const char *stream_name(const struct stream *strm);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
+int     stream_bundle_init(struct stream *strm, bool offerer);
 
 
 /*
@@ -1535,6 +1537,12 @@ struct ui_sub *baresip_uis(void);
  */
 
 int clean_number(char* str);
+
+
+/* bundle */
+
+int  bundle_sdp_encode(struct sdp_session *sdp, const struct list *streaml);
+int  bundle_sdp_decode(struct sdp_session *sdp, struct list *streaml);
 
 
 #ifdef __cplusplus

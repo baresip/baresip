@@ -446,6 +446,8 @@ static int append_rtpext(struct audio *au, struct mbuf *mb,
 static void encode_rtp_send(struct audio *a, struct autx *tx,
 			    int16_t *sampv, size_t sampc)
 {
+	struct bundle *bun = stream_bundle(a->strm);
+	bool bundled = bundle_state(bun) != BUNDLE_NONE;
 	size_t frame_size;  /* number of samples per channel */
 	size_t sampc_rtp;
 	size_t len;
@@ -459,14 +461,24 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 	tx->mb->pos = tx->mb->end = STREAM_PRESZ;
 
-	if (a->level_enabled) {
+	if (a->level_enabled || bundled) {
 
 		/* skip the extension header */
 		tx->mb->pos += RTPEXT_HDR_SIZE;
 
-		err = append_rtpext(a, tx->mb, tx->enc_fmt, sampv, sampc);
-		if (err)
-			return;
+		if (a->level_enabled) {
+			err = append_rtpext(a, tx->mb, tx->enc_fmt,
+					    sampv, sampc);
+			if (err)
+				return;
+		}
+
+		if (bundled) {
+			const char *mid = stream_mid(a->strm);
+
+			rtpext_encode(tx->mb, bundle_extmap_mid(bun),
+				      str_len(mid), (void *)mid);
+		}
 
 		ext_len = tx->mb->pos - STREAM_PRESZ;
 
@@ -1354,7 +1366,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	if (cfg->audio.level && offerer) {
 
-		a->extmap_aulevel = 1;
+		a->extmap_aulevel = stream_generate_extmap_id(a->strm);
 
 		err = sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
 					  "extmap",
