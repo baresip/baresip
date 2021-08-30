@@ -874,11 +874,28 @@ void stream_update_encoder(struct stream *s, int pt_enc)
 
 void stream_hold(struct stream *s, bool hold)
 {
+	enum sdp_dir dir;
+
 	if (!s)
 		return;
 
 	s->hold = hold;
-	sdp_media_set_ldir(s->sdp, hold ? SDP_SENDONLY : s->ldir);
+	dir = s->ldir;
+
+	if (hold) {
+		switch (s->ldir) {
+			case SDP_RECVONLY:
+				dir = SDP_INACTIVE;
+				break;
+			case SDP_SENDRECV:
+				dir = SDP_SENDONLY;
+				break;
+			default:
+				break;
+		}
+	}
+
+	sdp_media_set_ldir(s->sdp, dir);
 	stream_flush_jbuf(s);
 }
 
