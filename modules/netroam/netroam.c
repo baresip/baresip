@@ -60,6 +60,7 @@ static bool laddr_find(const char *ifname, const struct sa *laddr, void *arg)
 
 static bool netroam_find_obsolete(struct netroam *n)
 {
+	sa_init(&n->laddr, AF_UNSPEC);
 	net_laddr_apply(n->net, laddr_obsolete, n);
 	return sa_isset(&n->laddr, SA_ADDR);
 }
@@ -92,7 +93,6 @@ static void poll_changes(void *arg)
 	sa_init(&n->laddr, AF_UNSPEC);
 	net_if_apply(net_misses_laddr, n);
 	if (sa_isset(&n->laddr, SA_ADDR)) {
-		debug("netroam: new IP address %j\n", &n->laddr);
 		net_add_address(n->net, &n->laddr);
 		changed = true;
 	}
@@ -100,7 +100,6 @@ static void poll_changes(void *arg)
 	/* was a local IP removed? */
 	sa_init(&n->laddr, AF_UNSPEC);
 	if (netroam_find_obsolete(n)) {
-		debug("netroam: IP address %j was removed\n", &n->laddr);
 		net_rm_address(n->net, &n->laddr);
 		changed = true;
 	}

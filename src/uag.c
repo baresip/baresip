@@ -328,6 +328,7 @@ int uag_transp_add(const struct sa *laddr)
 	if (!sa_isset(laddr, SA_ADDR))
 		return EINVAL;
 
+	debug("uag: add local address %j\n", laddr);
 	if (str_isset(uag.cfg->local)) {
 		err = sa_decode(&local, uag.cfg->local,
 				str_len(uag.cfg->local));
@@ -481,6 +482,7 @@ int  uag_transp_rm(const struct sa *laddr)
 	if (!sa_isset(laddr, SA_ADDR))
 		return EINVAL;
 
+	debug("uag: remove local address %j\n", laddr);
 	sip_transp_rmladdr(uag_sip(), laddr);
 
 	for (le = uag.ual.head; le; le = le->next) {

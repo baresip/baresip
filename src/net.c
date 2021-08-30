@@ -498,7 +498,6 @@ int net_add_address(struct network *net, const struct sa *ip)
 	err = net_add_laddr(net, ifname, ip);
 
 out:
-	mem_deref(ifname);
 	return err;
 }
 
@@ -519,7 +518,7 @@ int net_rm_address(struct network *net, const struct sa *ip)
 
 	LIST_FOREACH(&net->laddrs, le) {
 		struct laddr *laddr = le->data;
-		if (!sa_cmp(&laddr->sa, ip, SA_ADDR)) {
+		if (sa_cmp(&laddr->sa, ip, SA_ADDR)) {
 			if (net->rmh)
 				net->rmh(laddr->ifname, &laddr->sa,
 					 net->rmh_arg);
