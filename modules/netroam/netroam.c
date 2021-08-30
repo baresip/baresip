@@ -104,22 +104,40 @@ static void poll_changes(void *arg)
 		changed = true;
 	}
 
-	tmr_start(&n->tmr, changed ? 1000 : n->interval * 1000,
-		  poll_changes, n);
+	if (n->interval)
+		tmr_start(&n->tmr, changed ? 1000 : n->interval * 1000,
+			  poll_changes, n);
 }
+
+
+static int cmd_netchange(struct re_printf *pf, void *unused)
+{
+	(void)unused;
+
+	re_hprintf(pf, "netroam: network change\n");
+	poll_changes(&d);
+	return 0;
+}
+
+
+static const struct cmd cmdv[] = {
+
+{"netchange",     0, 0, "Inform netroam about a network change",
+				cmd_netchange                                },
+};
 
 
 static int module_init(void)
 {
-	int err = 0;
 	d.cfg = &conf_config()->net;
 	d.net = baresip_network();
 	/* TODO++: Use AF_NETLINK socket to be notified! (man 7 netlink) */
 	d.interval = 60;
 	conf_get_u32(conf_cur(), "netroam_interval", &d.interval);
-	tmr_start(&d.tmr, d.interval * 1000, poll_changes, &d);
+	if (d.interval)
+		tmr_start(&d.tmr, d.interval * 1000, poll_changes, &d);
 
-	return err;
+	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 }
 
 
