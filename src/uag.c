@@ -506,11 +506,11 @@ int  uag_transp_rm(const struct sa *laddr)
 				continue;
 
 			raddr = sdp_media_raddr(stream_sdpmedia(s));
-			err |= net_dst_source_addr_get(raddr, &laddrn);
+			if (net_dst_source_addr_get(raddr, &laddrn))
 				continue;
 
 			if (sa_isset(&laddrn, SA_ADDR))
-				err |= call_reset_transp(call, &laddrn);
+				err = call_reset_transp(call, &laddrn);
 		}
 
 		/* Re-REGISTER the User-Agent? */
