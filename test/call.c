@@ -1520,7 +1520,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 		err = re_regex((char *)sdp->buf, sdp->end,
 			       "a=group:BUNDLE 0 1");
 		if (err) {
-			warning("BUNDLE missing in SDP\n");
+			warning("test: BUNDLE missing in SDP\n");
 			re_printf("%b\n", sdp->buf, sdp->end);
 			goto out;
 		}
@@ -1597,27 +1597,17 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
  *
  * audio: yes
  * video: yes
- * mnat:  no
- * menc:  no
+ * mnat:  optional
+ * menc:  optional
  */
 int test_call_bundle(void)
 {
 	int err = 0;
 
-#if 1
-	err |= test_call_bundle_base(0, 0);
-	err |= test_call_bundle_base(1, 0);
-	err |= test_call_bundle_base(0, 1);
-	err |= test_call_bundle_base(1, 1);
-	if (err)
-		return err;
-#endif
+	err |= test_call_bundle_base(false, false);
+	err |= test_call_bundle_base(true,  false);
+	err |= test_call_bundle_base(false, true);
+	err |= test_call_bundle_base(true,  true);
 
-#if 0
-	err = test_call_bundle_base(1, 1);
-	if (err)
-		return err;
-#endif
-
-	return 0;
+	return err;
 }

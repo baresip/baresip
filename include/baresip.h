@@ -1378,9 +1378,9 @@ void stream_set_session_handlers(struct stream *strm,
 struct stream *stream_lookup_mid(const struct list *streaml,
 				 const char *mid, size_t len);
 const char *stream_name(const struct stream *strm);
+int  stream_bundle_init(struct stream *strm, bool offerer);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
-int     stream_bundle_init(struct stream *strm, bool offerer);
 
 
 /*
@@ -1541,8 +1541,8 @@ int clean_number(char* str);
 
 /* bundle */
 
-int  bundle_sdp_encode(struct sdp_session *sdp, const struct list *streaml);
-int  bundle_sdp_decode(struct sdp_session *sdp, struct list *streaml);
+int bundle_sdp_encode(struct sdp_session *sdp, const struct list *streaml);
+int bundle_sdp_decode(struct sdp_session *sdp, struct list *streaml);
 
 
 #ifdef __cplusplus
