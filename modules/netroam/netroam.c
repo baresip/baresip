@@ -144,6 +144,7 @@ static int module_init(void)
 static int module_close(void)
 {
 	tmr_cancel(&d.tmr);
+	cmd_unregister(baresip_commands(), cmdv);
 	return 0;
 }
 
