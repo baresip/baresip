@@ -718,6 +718,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (!callp || !ua)
 		return EINVAL;
 
+	sa_init(&dst, AF_UNSPEC);
 	if (msg && !sdp_connection(msg->mb, &af, &dst)) {
 		info("ua: using origin address %j of SDP offer\n", &dst);
 	}
