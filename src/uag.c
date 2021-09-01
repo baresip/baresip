@@ -294,7 +294,7 @@ static int add_transp_clientcert(void)
 #endif
 
 
-static int add_transp_af(const struct sa *laddr)
+static int uag_transp_add(const struct sa *laddr)
 {
 	struct sa local;
 #ifdef USE_TLS
@@ -304,6 +304,10 @@ static int add_transp_af(const struct sa *laddr)
 #endif
 	int err = 0;
 
+	if (!sa_isset(laddr, SA_ADDR))
+		return EINVAL;
+
+	debug("uag: add local address %j\n", laddr);
 	if (str_isset(uag.cfg->local)) {
 		err = sa_decode(&local, uag.cfg->local,
 				str_len(uag.cfg->local));
@@ -446,19 +450,92 @@ static int add_transp_af(const struct sa *laddr)
 }
 
 
-static int ua_add_transp(struct network *net)
+static int  uag_transp_rm(const struct sa *laddr)
+{
+	struct le *le;
+	struct stream *s;
+	const struct sa *raddr;
+	struct sa laddrn;
+	int err = 0;
+
+	if (!sa_isset(laddr, SA_ADDR))
+		return EINVAL;
+
+	debug("uag: remove local address %j\n", laddr);
+	sip_transp_rmladdr(uag_sip(), laddr);
+
+	for (le = uag.ual.head; le; le = le->next) {
+		struct ua *ua = le->data;
+		struct account *acc = ua_account(ua);
+
+		/* Update any active calls? */
+		struct le *lec;
+
+		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
+			struct call *call = lec->data;
+
+			if (!sa_cmp(call_laddr(call), laddr, SA_ADDR))
+				continue;
+
+			s = audio_strm(call_audio(call));
+			if (!s)
+				s = video_strm(call_video(call));
+
+			if (!s)
+				continue;
+
+			raddr = sdp_media_raddr(stream_sdpmedia(s));
+			if (net_dst_source_addr_get(raddr, &laddrn))
+				continue;
+
+			if (sa_isset(&laddrn, SA_ADDR))
+				err = call_reset_transp(call, &laddrn);
+		}
+
+		/* Re-REGISTER the User-Agent? */
+		if (!account_regint(acc))
+			continue;
+
+		if (!ua_reghasladdr(ua, laddr))
+			continue;
+
+		if (!account_prio(acc))
+			err |= ua_register(ua);
+		else if (account_regint(acc))
+			err |= ua_fallback(ua);
+	}
+
+	return err;
+}
+
+
+static bool transp_add_laddr(const char *ifname, const struct sa *sa,
+			     void *arg)
+{
+	(void) ifname;
+	(void) arg;
+
+	(void)uag_transp_add(sa);
+	return false;
+}
+
+
+static bool transp_rm_laddr(const char *ifname, const struct sa *sa, void *arg)
+{
+	(void) ifname;
+	(void) arg;
+
+	(void)uag_transp_rm(sa);
+	return false;
+}
+
+
+static int ua_transp_addall(struct network *net)
 {
 	int err = 0;
 	struct config_sip *cfg = &conf_config()->sip;
 
-	if (sa_isset(net_laddr_af(net, AF_INET), SA_ADDR))
-		err |= add_transp_af(net_laddr_af(net, AF_INET));
-
-#if HAVE_INET6
-	if (sa_isset(net_laddr_af(net, AF_INET6), SA_ADDR))
-		err |= add_transp_af(net_laddr_af(net, AF_INET6));
-#endif
-
+	net_laddr_apply(net, transp_add_laddr, NULL);
 	sip_transp_set_default(uag.sip, cfg->transp);
 	return err;
 }
@@ -546,7 +623,9 @@ int ua_init(const char *software, bool udp, bool tcp, bool tls)
 		goto out;
 	}
 
-	err = ua_add_transp(net);
+	net_set_add_handler(net, transp_add_laddr, NULL);
+	net_set_rm_handler(net, transp_rm_laddr, NULL);
+	err = ua_transp_addall(net);
 	if (err)
 		goto out;
 
@@ -672,8 +751,7 @@ int uag_reset_transp(bool reg, bool reinvite)
 	/* Update SIP transports */
 	sip_transp_flush(uag.sip);
 
-	(void)net_check(net);
-	err = ua_add_transp(net);
+	err = ua_transp_addall(net);
 	if (err)
 		return err;
 
