@@ -294,28 +294,7 @@ static int add_transp_clientcert(void)
 #endif
 
 
-static bool transp_add_laddr(const char *ifname, const struct sa *sa,
-			     void *arg)
-{
-	(void) ifname;
-	(void) arg;
-
-	(void)uag_transp_add(sa);
-	return false;
-}
-
-
-static bool transp_rm_laddr(const char *ifname, const struct sa *sa, void *arg)
-{
-	(void) ifname;
-	(void) arg;
-
-	(void)uag_transp_rm(sa);
-	return false;
-}
-
-
-int uag_transp_add(const struct sa *laddr)
+static int uag_transp_add(const struct sa *laddr)
 {
 	struct sa local;
 #ifdef USE_TLS
@@ -471,7 +450,7 @@ int uag_transp_add(const struct sa *laddr)
 }
 
 
-int  uag_transp_rm(const struct sa *laddr)
+static int  uag_transp_rm(const struct sa *laddr)
 {
 	struct le *le;
 	struct stream *s;
@@ -527,6 +506,27 @@ int  uag_transp_rm(const struct sa *laddr)
 	}
 
 	return err;
+}
+
+
+static bool transp_add_laddr(const char *ifname, const struct sa *sa,
+			     void *arg)
+{
+	(void) ifname;
+	(void) arg;
+
+	(void)uag_transp_add(sa);
+	return false;
+}
+
+
+static bool transp_rm_laddr(const char *ifname, const struct sa *sa, void *arg)
+{
+	(void) ifname;
+	(void) arg;
+
+	(void)uag_transp_rm(sa);
+	return false;
 }
 
 
