@@ -45,7 +45,17 @@ static struct {
 	bool ready;               /**< All UA registered flag         */
 	uint32_t sprio;           /**< Prev successful prio           */
 	struct tmr tmr;           /**< Restart timer                  */
+	int failc;                /**< Fail count                     */
 } sreg;
+
+
+static uint32_t failwait(uint32_t failc)
+{
+	uint32_t w;
+
+	w = min(1800, (30 * (1<<min(failc, 6)))) * (500 + rand_u16() % 501);
+	return w;
+}
 
 
 /**
@@ -242,6 +252,7 @@ static void restart(void *arg)
 		struct account *acc = ua_account(ua);
 		uint32_t prio = account_prio(acc);
 		uint32_t fbregint = account_fbregint(acc);
+		int err;
 
 		if (!account_regint(acc))
 			continue;
@@ -251,7 +262,15 @@ static void restart(void *arg)
 			continue;
 
 		debug("serreg: restart %s prio 0.\n", account_aor(acc));
-		ua_register(ua);
+		err = ua_register(ua);
+		if (err) {
+			tmr_start(&sreg.tmr, failwait(++sreg.failc),
+				  restart, NULL);
+			break;
+		}
+		else {
+			sreg.failc = 0;
+		}
 	}
 }
 
