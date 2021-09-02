@@ -248,6 +248,7 @@ int test_call_deny_udp(void);
 int test_call_transfer(void);
 int test_call_video(void);
 int test_call_webrtc(void);
+int test_call_bundle(void);
 int test_cmd(void);
 int test_cmd_long(void);
 int test_contact(void);

@@ -889,6 +889,21 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 					    stream_error_handler, call);
 	}
 
+	if (cfg->avt.bundle) {
+
+		FOREACH_STREAM {
+			struct stream *strm = le->data;
+
+			err = stream_bundle_init(strm, !got_offer);
+			if (err)
+				goto out;
+		}
+
+		err = bundle_sdp_encode(call->sdp, &call->streaml);
+		if (err)
+			goto out;
+	}
+
 	if (cfg->avt.rtp_timeout) {
 		call_enable_rtp_timeout(call, cfg->avt.rtp_timeout*1000);
 	}
@@ -1612,6 +1627,12 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 		return err;
 	}
 
+	/* note: before update_media */
+	if (call->config_avt.bundle) {
+
+		bundle_sdp_decode(call->sdp, &call->streaml);
+	}
+
 	err = update_media(call);
 	if (err)
 		return err;
@@ -1913,6 +1934,11 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 					   "No audio or video codecs");
 
 			return 0;
+		}
+
+		if (call->config_avt.bundle) {
+
+			bundle_sdp_decode(call->sdp, &call->streaml);
 		}
 	}
 

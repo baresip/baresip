@@ -242,6 +242,32 @@ int rtpstat_print(struct re_printf *pf, const struct call *call);
 int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb);
 
 
+/* bundle (per media stream) */
+
+
+enum bundle_state {
+	BUNDLE_NONE = 0,
+	BUNDLE_BASE,
+	BUNDLE_MUX
+};
+
+struct bundle;
+
+int  bundle_alloc(struct bundle **bunp);
+void bundle_handle_extmap(struct bundle *bun, struct sdp_media *sdp);
+int  bundle_start_socket(struct bundle *bun, struct udp_sock *us,
+			 struct list *streaml);
+enum bundle_state bundle_state(const struct bundle *bun);
+uint8_t bundle_extmap_mid(const struct bundle *bun);
+int bundle_set_extmap(struct bundle *bun, struct sdp_media *sdp,
+		      uint8_t extmap_mid);
+void bundle_set_state(struct bundle *bun, enum bundle_state st);
+int  bundle_debug(struct re_printf *pf, const struct bundle *bun);
+
+
+const char *bundle_state_name(enum bundle_state st);
+
+
 /*
  * Stream
  */
@@ -283,6 +309,7 @@ enum sdp_dir stream_ldir(const struct stream *s);
 struct rtp_sock *stream_rtp_sock(const struct stream *strm);
 const struct sa *stream_raddr(const struct stream *strm);
 const char *stream_mid(const struct stream *strm);
+uint8_t stream_generate_extmap_id(struct stream *strm);
 
 /* Send */
 void stream_update_encoder(struct stream *s, int pt_enc);
@@ -295,6 +322,11 @@ void stream_flush_jbuf(struct stream *s);
 void stream_silence_on(struct stream *s, bool on);
 int  stream_decode(struct stream *s);
 int  stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);
+
+
+struct bundle *stream_bundle(const struct stream *strm);
+void stream_parse_mid(struct stream *strm);
+void stream_enable_bundle(struct stream *strm, enum bundle_state st);
 
 
 /*

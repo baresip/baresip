@@ -86,7 +86,8 @@ static struct config core_config = {
 		{5, 10},
 		0,
 		false,
-		0
+		0,
+		false
 	},
 
 	/* Network */
@@ -436,6 +437,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			     &cfg->avt.jbuf_wish);
 	(void)conf_get_bool(conf, "rtp_stats", &cfg->avt.rtp_stats);
 	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
+
+	(void)conf_get_bool(conf, "avt_bundle", &cfg->avt.bundle);
 
 	if (err) {
 		warning("config: configure parse error (%m)\n", err);
