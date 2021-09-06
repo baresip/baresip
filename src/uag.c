@@ -759,6 +759,7 @@ int uag_reset_transp(bool reg, bool reinvite)
 	for (le = uag.ual.head; le; le = le->next) {
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
+		struct le *lec;
 
 		if (reg && account_regint(acc) && !account_prio(acc)) {
 			err |= ua_register(ua);
@@ -768,17 +769,29 @@ int uag_reset_transp(bool reg, bool reinvite)
 		}
 
 		/* update all active calls */
-		if (reinvite) {
-			struct le *lec;
+		if (!reinvite)
+			continue;
 
-			for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
-				struct call *call = lec->data;
-				const struct sa *laddr;
 
-				laddr = net_laddr_af(net, call_af(call));
+		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
+			struct call *call = lec->data;
+			struct stream *s;
+			const struct sa *raddr;
+			struct sa laddr;
 
-				err |= call_reset_transp(call, laddr);
-			}
+			s = audio_strm(call_audio(call));
+			if (!s)
+				s = video_strm(call_video(call));
+
+			if (!s)
+				continue;
+
+			raddr = sdp_media_raddr(stream_sdpmedia(s));
+			if (net_dst_source_addr_get(raddr, &laddr))
+				continue;
+
+			if (sa_isset(&laddr, SA_ADDR))
+				err = call_reset_transp(call, &laddr);
 		}
 	}
 
