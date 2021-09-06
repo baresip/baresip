@@ -238,8 +238,6 @@ static bool uri_host_local(const struct uri *uri)
 		"127.0.0.1",
 		"::1"
 	};
-	int afv[2] = {AF_INET, AF_INET6};
-	const struct sa *sal;
 	struct sa sap;
 	size_t i;
 	int err;
@@ -253,17 +251,12 @@ static bool uri_host_local(const struct uri *uri)
 			return true;
 	}
 
-	for (i=0; i<ARRAY_SIZE(afv); i++) {
+	err = sa_set(&sap, &uri->host, 0);
+	if (err)
+		return true;
 
-		sal = net_laddr_af(baresip_network(), afv[i]);
-
-		err = sa_set(&sap, &uri->host, 0);
-		if (err)
-			continue;
-
-		if (sa_cmp(sal, &sap, SA_ADDR))
-			return true;
-	}
+	if (net_is_laddr(baresip_network(), &sap))
+		return true;
 
 	return false;
 }
