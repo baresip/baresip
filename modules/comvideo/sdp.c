@@ -17,15 +17,15 @@ int comvideo_fmtp_enc(
 {
 	struct vidcodec *vc = arg;
 	const uint8_t profile_idc = 0x42; /* baseline profile */
-	const uint8_t profile_iop = 0xe0;
+	const uint8_t profile_iop = 0x80;
 	(void)offer;
 
 	if (!mb || !fmt || !vc)
 		return 0;
 
 	return mbuf_printf(
-		mb, "a=fmtp:%s "
-		";profile-level-id=%02x%02x%02x\r\n",
+		mb, "a=fmtp:%s"
+		";profile-level-id=%02X%02X%02X\r\n",
 		fmt->id,
 		profile_idc, profile_iop, h264_level_idc);
 }
