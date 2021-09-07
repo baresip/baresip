@@ -753,7 +753,6 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 
 	if (sa_isset(&dst, SA_ADDR)) {
 		err = net_dst_source_addr_get(&dst, &cprm.laddr);
-		info("ua: laddr=%j\n", &cprm.laddr);
 		if (err) {
 			warning("ua: no laddr for %j (%m)\n", &dst, err);
 			return err;
@@ -763,7 +762,6 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		sa_cpy(&cprm.laddr, net_laddr_af(net, af));
 	}
 
-	sa_cpy(&cprm.laddr, net_laddr_af(net, af));
 	cprm.vidmode = vmode;
 	cprm.af      = af;
 	cprm.use_rtp = use_rtp;
