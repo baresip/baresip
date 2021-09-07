@@ -752,8 +752,8 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	memset(&cprm, 0, sizeof(cprm));
 
 	if (sa_isset(&dst, SA_ADDR)) {
-		sa_set_port(&dst, 53);
 		err = net_dst_source_addr_get(&dst, &cprm.laddr);
+		info("ua: laddr=%j\n", &cprm.laddr);
 		if (err) {
 			warning("ua: no laddr for %j (%m)\n", &dst, err);
 			return err;
