@@ -350,7 +350,7 @@ zrtp          ZRTP media encryption module
 * RFC 7798  RTP Payload Format for High Efficiency Video Coding (HEVC)
 * RFC 8843  Negotiating Media Multiplexing Using SDP
 
-* draft-ietf-payload-vp9-11
+* draft-ietf-payload-vp9-16
 
 
 ## Supported platforms:
