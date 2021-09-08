@@ -191,11 +191,11 @@ static size_t get_master_keylen(enum srtp_suite suite)
 {
 	switch (suite) {
 
-		case SRTP_AES_CM_128_HMAC_SHA1_32: return 16+14;
-		case SRTP_AES_CM_128_HMAC_SHA1_80: return 16+14;
-		case SRTP_AES_128_GCM:             return 16+12;
-		case SRTP_AES_256_GCM:             return 32+12;
-		default: return 0;
+	case SRTP_AES_CM_128_HMAC_SHA1_32: return 16+14;
+	case SRTP_AES_CM_128_HMAC_SHA1_80: return 16+14;
+	case SRTP_AES_128_GCM:             return 16+12;
+	case SRTP_AES_256_GCM:             return 32+12;
+	default: return 0;
 	}
 }
 
