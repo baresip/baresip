@@ -624,10 +624,11 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 	mbuf_advance(mb, H265_HDR_SIZE);
 
 #if 0
-	debug("h265: decode: %s type=%2d  %s\n",
-		  h265_is_keyframe(hdr.nal_unit_type) ? "<KEY>" : "     ",
-		  hdr.nal_unit_type,
-		  h265_nalunit_name(hdr.nal_unit_type));
+	debug("avcodec: h265: decode:  [%s]  %s  type=%2d  %s\n",
+	      marker ? "M" : " ",
+	      h265_is_keyframe(hdr.nal_unit_type) ? "<KEY>" : "     ",
+	      hdr.nal_unit_type,
+	      h265_nalunit_name(hdr.nal_unit_type));
 #endif
 
 	if (vds->frag && hdr.nal_unit_type != H265_NAL_FU) {
