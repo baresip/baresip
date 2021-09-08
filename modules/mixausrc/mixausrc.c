@@ -482,6 +482,8 @@ static int process(struct mixstatus *st, struct auframe *af)
 		warning("mixausrc: sampc changed %lu --> %lu.\n",
 				st->sampc, n);
 		stop_ausrc(st);
+		st->nextmode = FM_FADEIN;
+		st->sampc = 0;
 		return EINVAL;
 	}
 
