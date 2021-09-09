@@ -2600,6 +2600,7 @@ static int audiocore_init(struct audiocore_st* st)
 
 	info("audiocore: audiocore_init\n");
 
+	st->bypass = true;
 	if (st->samplerate != st->samplerate_prev) {
 		destroyAudioCore(st->audiocore);
 		info("audiocore: create audiocore with samplerate=%d\n",
@@ -2693,6 +2694,7 @@ static int audiocore_init(struct audiocore_st* st)
 	/*Set IVC because it is not in the init function */
 	setIVC(st->audiocore, st->ivc_enabled);
 
+	st->bypass = false;
 	return 0;
 }
 
