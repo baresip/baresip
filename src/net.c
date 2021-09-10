@@ -680,6 +680,29 @@ const struct sa *net_laddr_af(const struct network *net, int af)
 }
 
 
+static bool laddr_cmp(struct le *le, void *arg)
+{
+	struct laddr *laddr = le->data;
+	struct sa *sa = arg;
+
+	return sa_cmp(&laddr->sa, sa, SA_ADDR);
+}
+
+
+/**
+ * Checks if given IP address is a local address.
+ *
+ * @param net Network instance
+ * @param sa  IP address to check
+ *
+ * @return true if sa is a local address, false if not
+ */
+bool net_is_laddr(const struct network *net, struct sa *sa)
+{
+	return NULL != list_apply(&net->laddrs, true, laddr_cmp, sa);
+}
+
+
 /**
  * Get the DNS Client
  *

@@ -718,6 +718,7 @@ void net_set_rm_handler(struct network *net, net_ifaddr_h *ifh, void *arg);
 bool net_ifaddr_filter(const struct network *net, const char *ifname,
 		       const struct sa *sa);
 const struct sa *net_laddr_af(const struct network *net, int af);
+bool net_is_laddr(const struct network *net, struct sa *sa);
 struct dnsc     *net_dnsc(const struct network *net);
 
 
