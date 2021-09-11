@@ -505,10 +505,18 @@ static int  uag_transp_rm(const struct sa *laddr)
 static bool transp_add_laddr(const char *ifname, const struct sa *sa,
 			     void *arg)
 {
+	int err;
+	int *errp = arg;
 	(void) ifname;
-	(void) arg;
 
-	(void)uag_transp_add(sa);
+	err = uag_transp_add(sa);
+	if (err) {
+		if (errp)
+			*errp = err;
+
+		return true;
+	}
+
 	return false;
 }
 
@@ -528,7 +536,7 @@ static int ua_transp_addall(struct network *net)
 	int err = 0;
 	struct config_sip *cfg = &conf_config()->sip;
 
-	net_laddr_apply(net, transp_add_laddr, NULL);
+	net_laddr_apply(net, transp_add_laddr, &err);
 	sip_transp_set_default(uag.sip, cfg->transp);
 	return err;
 }
