@@ -24,8 +24,6 @@ int comvideo_fmtp_enc(
 		return 0;
 
 	return mbuf_printf(
-		mb, "a=fmtp:%s "
-		";profile-level-id=%02X%02X%02X\r\n",
-		fmt->id,
-		profile_idc, profile_iop, h264_level_idc);
+		mb, "a=fmtp:%s profile-level-id=%02X%02X%02X\r\n",
+		fmt->id, profile_idc, profile_iop, h264_level_idc);
 }
