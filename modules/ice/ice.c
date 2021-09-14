@@ -776,9 +776,13 @@ static int ice_start(struct mnat_sess *sess)
 		if (sdp_media_has_media(m->sdpm)) {
 			m->complete = false;
 
-			err = icem_conncheck_start(m->icem);
-			if (err)
-				return err;
+			/* start ice if we have remote candidates */
+			if (!list_isempty(icem_rcandl(m->icem))) {
+
+				err = icem_conncheck_start(m->icem);
+				if (err)
+					return err;
+			}
 
 			/* set the pair states
 			   -- first media stream only */
@@ -957,6 +961,9 @@ static void attr_handler(struct mnat_media *mm,
 {
 	if (!mm)
 		return;
+
+	/* NOTE: this must be done before starting conncheck */
+	sdp_media_rattr_apply(mm->sdpm, NULL, media_attr_handler, mm);
 
 	icem_sdp_decode(mm->icem, name, value);
 
