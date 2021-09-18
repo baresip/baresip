@@ -29,7 +29,7 @@ struct picsz {
 
 
 struct videnc_state {
-	AVCodec *codec;
+	const AVCodec *codec;
 	AVCodecContext *ctx;
 	struct mbuf *mb_frag;
 	struct videnc_param encprm;
