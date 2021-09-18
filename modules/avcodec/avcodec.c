@@ -39,10 +39,10 @@
  */
 
 
-AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
-AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
-AVCodec *avcodec_h265enc;
-AVCodec *avcodec_h265dec;
+const AVCodec *avcodec_h264enc;      /* optional; specified H.264 encoder */
+const AVCodec *avcodec_h264dec;      /* optional; specified H.264 decoder */
+const AVCodec *avcodec_h265enc;
+const AVCodec *avcodec_h265dec;
 
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56

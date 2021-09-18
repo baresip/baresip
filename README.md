@@ -221,7 +221,6 @@ aptx          Audio Processing Technology codec (aptX)
 aubridge      Audio bridge module
 audiounit     AudioUnit audio driver for MacOSX/iOS
 aufile        Audio module for using a WAV-file as audio input
-auloop        Audio-loop test module
 ausine        Audio sine wave input module
 av1           AV1 video codec
 avcapture     Video source using iOS AVFoundation video capture
@@ -287,7 +286,6 @@ v4l2          Video4Linux2 video source
 v4l2_codec    Video4Linux2 video codec module (H264 hardware encoding)
 vidbridge     Video bridge module
 vidinfo       Video info overlay module
-vidloop       Video-loop test module
 vp8           VP8 video codec
 vp9           VP9 video codec
 vumeter       Display audio levels in console

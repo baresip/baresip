@@ -25,7 +25,7 @@ enum {
 
 
 struct viddec_state {
-	AVCodec *codec;
+	const AVCodec *codec;
 	AVCodecContext *ctx;
 	AVFrame *pict;
 	struct mbuf *mb;

@@ -1040,7 +1040,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "# Application Modules\n");
 	(void)re_fprintf(f, "\n");
 	(void)re_fprintf(f, "module_app\t\t" "account" MOD_EXT "\n");
-	(void)re_fprintf(f, "module_app\t\t" "auloop"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "b2bua"MOD_EXT"\n");
 	(void)re_fprintf(f, "module_app\t\t"  "contact"MOD_EXT"\n");
 	(void)re_fprintf(f, "module_app\t\t"  "debug_cmd"MOD_EXT"\n");
@@ -1053,7 +1052,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module_app\t\t" "syslog"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "mqtt" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module_app\t\t" "ctrl_tcp" MOD_EXT "\n");
-	(void)re_fprintf(f, "module_app\t\t" "vidloop"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "ctrl_dbus"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "httpreq"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "multicast"MOD_EXT"\n");

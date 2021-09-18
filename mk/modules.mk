@@ -258,7 +258,6 @@ endif
 
 ifneq ($(BASIC_MODULES),no)
 MODULES   += account
-MODULES   += auloop
 MODULES   += b2bua
 MODULES   += contact
 MODULES   += ctrl_tcp
@@ -281,7 +280,6 @@ MODULES   += turn
 MODULES   += uuid
 MODULES   += vidbridge
 MODULES   += vidinfo
-MODULES   += vidloop
 MODULES   += vumeter
 MODULES   += mixausrc
 MODULES   += mixminus
