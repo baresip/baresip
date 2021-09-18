@@ -326,7 +326,7 @@ $(BIN):	$(APP_OBJS)
 ifneq ($(STATIC),)
 TEST_MODULES :=
 else
-TEST_MODULES := g711.so
+TEST_MODULES := g711.so ausine.so
 endif
 
 .PHONY: test

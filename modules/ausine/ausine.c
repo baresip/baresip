@@ -196,7 +196,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	st->sec_offset = 0.0;
 	st->prm = *prm;
 
-	st->freq = atoi(dev);
+	st->freq = str_isset(dev) ? atoi(dev) : 440;
 
 	st->ch = stereo_conf(dev);
 	if (prm->ch == 1) {
