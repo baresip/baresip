@@ -26,11 +26,11 @@
 #endif
 
 
-extern AVCodec *avcodec_h264enc;
-extern AVCodec *avcodec_h264dec;
+extern const AVCodec *avcodec_h264enc;
+extern const AVCodec *avcodec_h264dec;
 
-extern AVCodec *avcodec_h265enc;
-extern AVCodec *avcodec_h265dec;
+extern const AVCodec *avcodec_h265enc;
+extern const AVCodec *avcodec_h265dec;
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
 extern AVBufferRef *avcodec_hw_device_ctx;
