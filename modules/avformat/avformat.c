@@ -47,7 +47,7 @@ static struct vidsrc *mod_avf;
 static enum AVHWDeviceType avformat_hwdevice = AV_HWDEVICE_TYPE_NONE;
 #endif
 static char avformat_inputformat[64];
-static AVCodec *avformat_decoder;
+static const AVCodec *avformat_decoder;
 static char pass_through[256] = "";
 static char rtsp_transport[256] = "";
 
@@ -181,7 +181,7 @@ static void *read_thread(void *data)
 static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 		      AVCodecContext *ctx)
 {
-	AVCodec *codec = avformat_decoder;
+	const AVCodec *codec = avformat_decoder;
 	int ret;
 
 	if (s->idx >= 0 || s->ctx)
