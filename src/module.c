@@ -107,9 +107,12 @@ static int module_handler(const struct pl *val, void *arg)
 }
 
 
+/* XXX: remove this after a grace period */
 static int module_tmp_handler(const struct pl *val, void *arg)
 {
 	struct mod *mod = NULL;
+	warning("module_tmp %r is deprecated,"
+		" use 'module' or 'module_app' instead\n", val);
 	(void)load_module(&mod, arg, val);
 	mem_deref(mod);
 	return 0;
