@@ -18,6 +18,7 @@ SRCS	+= conf.c
 SRCS	+= config.c
 SRCS	+= contact.c
 SRCS	+= custom_hdrs.c
+SRCS	+= dial_number.c
 SRCS	+= event.c
 SRCS	+= log.c
 SRCS	+= mediadev.c
@@ -45,7 +46,6 @@ SRCS	+= vidfilt.c
 SRCS	+= vidisp.c
 SRCS	+= vidsrc.c
 SRCS	+= vidutil.c
-SRCS	+= dial_number.c
 
 ifneq ($(STATIC),)
 SRCS	+= static.c
