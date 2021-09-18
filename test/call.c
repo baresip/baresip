@@ -1372,6 +1372,8 @@ int test_call_webrtc(void)
 	struct sdp_media *sdp_a, *sdp_b;
 	int err;
 
+	conf_config()->avt.rtcp_mux = true;
+
 	mock_mnat_register(baresip_mnatl());
 	mock_menc_register();
 
@@ -1438,6 +1440,8 @@ int test_call_webrtc(void)
 	mock_vidcodec_unregister();
 	mock_menc_unregister();
 	mock_mnat_unregister();
+
+	conf_config()->avt.rtcp_mux = false;
 
 	if (fix.err)
 		return fix.err;
