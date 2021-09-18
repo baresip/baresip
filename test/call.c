@@ -683,7 +683,6 @@ int test_call_max(void)
 int test_call_dtmf(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	size_t i, n = str_len(dtmf_digits);
 	int err = 0;
 
@@ -691,7 +690,7 @@ int test_call_dtmf(void)
 	fixture_init_prm(f, ";ptime=1");
 
 	/* audio-source is needed for dtmf/telev to work */
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -721,7 +720,7 @@ int test_call_dtmf(void)
 
  out:
 	fixture_close(f);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	return err;
 }

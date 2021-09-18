@@ -40,6 +40,7 @@ enum channels {
 struct ausrc_st {
 	uint32_t ptime;
 	size_t sampc;
+	pthread_mutex_t mutex;
 	bool run;
 	pthread_t thread;
 	ausrc_read_h *rh;
@@ -58,11 +59,22 @@ static struct ausrc *ausrc;
 static void destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
+	bool run;
 
-	if (st->run) {
+	pthread_mutex_lock(&st->mutex);
+	run = st->run;
+	pthread_mutex_unlock(&st->mutex);
+
+	if (run) {
+
+		pthread_mutex_lock(&st->mutex);
 		st->run = false;
+		pthread_mutex_unlock(&st->mutex);
+
 		pthread_join(st->thread, NULL);
 	}
+
+	pthread_mutex_destroy(&st->mutex);
 }
 
 
@@ -81,9 +93,17 @@ static void *play_thread(void *arg)
 	if (!sampv)
 		return NULL;
 
-	while (st->run) {
+	while (1) {
 		struct auframe af;
 		size_t frame;
+		bool run;
+
+		pthread_mutex_lock(&st->mutex);
+		run = st->run;
+		pthread_mutex_unlock(&st->mutex);
+
+		if (!run)
+			break;
 
 		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc, st->prm.srate,
 		             st->prm.ch);
@@ -196,7 +216,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	st->sec_offset = 0.0;
 	st->prm = *prm;
 
-	st->freq = atoi(dev);
+	st->freq = str_isset(dev) ? atoi(dev) : 440;
 
 	st->ch = stereo_conf(dev);
 	if (prm->ch == 1) {
@@ -219,6 +239,10 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	info("ausine: audio ptime=%u sampc=%zu\n",
 	     st->ptime, st->sampc);
+
+	err = pthread_mutex_init(&st->mutex, NULL);
+	if (err)
+		goto out;
 
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, play_thread, st);
