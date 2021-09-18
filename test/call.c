@@ -751,7 +751,6 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 int test_call_video(void)
 {
 	struct fixture fix, *f = &fix;
-	struct vidsrc *vidsrc = NULL;
 	struct vidisp *vidisp = NULL;
 	int err = 0;
 
@@ -762,9 +761,11 @@ int test_call_video(void)
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
-	err = mock_vidsrc_register(&vidsrc);
-	TEST_ERR(err);
+
 	err = mock_vidisp_register(&vidisp, mock_vidisp_handler, f);
+	TEST_ERR(err);
+
+	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -789,7 +790,7 @@ int test_call_video(void)
  out:
 	fixture_close(f);
 	mem_deref(vidisp);
-	mem_deref(vidsrc);
+	module_unload("fakevideo");
 	mock_vidcodec_unregister();
 
 	return err;
