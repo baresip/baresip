@@ -926,7 +926,6 @@ static void audio_sample_handler(const void *sampv, size_t sampc, void *arg)
 static int test_media_base(enum audio_mode txmode)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
 	int err = 0;
 
@@ -934,10 +933,10 @@ static int test_media_base(enum audio_mode txmode)
 
 	conf_config()->audio.txmode = txmode;
 
-	conf_config()->audio.src_fmt = AUFMT_FLOAT;
-	conf_config()->audio.play_fmt = AUFMT_FLOAT;
+	conf_config()->audio.src_fmt = AUFMT_S16LE;
+	conf_config()->audio.play_fmt = AUFMT_S16LE;
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, baresip_auplayl(),
 				   audio_sample_handler, f);
@@ -971,7 +970,7 @@ static int test_media_base(enum audio_mode txmode)
 
 	fixture_close(f);
 	mem_deref(auplay);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	if (fix.err)
 		return fix.err;
