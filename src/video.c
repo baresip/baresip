@@ -859,8 +859,14 @@ static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 		break;
 
 	case RTCP_PSFB:
-		if (msg->hdr.count == RTCP_PSFB_PLI)
+		if (msg->hdr.count == RTCP_PSFB_PLI) {
+
+			lock_write_get(v->vtx.lock_enc);
+
 			v->vtx.picup = true;
+
+			lock_rel(v->vtx.lock_enc);
+		}
 		break;
 
 	case RTCP_RTPFB:
