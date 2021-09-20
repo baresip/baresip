@@ -205,11 +205,19 @@ static bool check_ipv6(void)
 static int net_add_laddr(struct network *net, const char *ifname,
 			 const struct sa *sa)
 {
+
+	struct le *le;
 	struct laddr *laddr;
-	int err;
+	int err = 0;
 
 	if (!net || !str_isset(ifname) || !sa)
 		return EINVAL;
+
+	LIST_FOREACH(&net->laddrs, le) {
+		laddr = le->data;
+		if (sa_cmp(&laddr->sa, sa, SA_ADDR))
+			goto out;
+	}
 
 	laddr = mem_zalloc(sizeof(*laddr), laddr_destructor);
 	if (!laddr)
