@@ -38,7 +38,7 @@ struct mcreceiver {
 	struct sa addr;
 	uint8_t prio;
 
-	struct rtp_sock *rtp;
+	struct udp_sock *rtp;
 	uint32_t ssrc;
 	struct jbuf *jbuf;
 
@@ -355,6 +355,34 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 
 /**
+ * udp receive handler
+ *
+ * @note This is a wrapper function for the RTP receive handler to allow an
+ * any port number as receiving port.
+ * RTP socket pointer of 0xdeadbeef is a dummy address. The function rtp_decode
+ * does nothing on the socket pointer.
+ *
+ * @param src	src address
+ * @param mb	payload buffer
+ * @param arg	rtp_handler argument
+ */
+static void rtp_handler_wrapper(const struct sa *src,
+	struct mbuf *mb, void *arg)
+{
+	int err = 0;
+	struct rtp_header hdr;
+
+	err = rtp_decode((struct rtp_sock*)0xdeadbeef, mb, &hdr);
+	if (err) {
+		warning("multicast receiver: Decoding of rtp (%m)\n", err);
+		return;
+	}
+
+	rtp_handler(src, &hdr, mb, arg);
+}
+
+
+/**
  * Enable / Disable all mcreceiver with prio > (argument)prio
  *
  * @param prio Priority
@@ -543,11 +571,10 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	if (err)
 		goto out;
 
-
-	err = rtp_listen(&mcreceiver->rtp, IPPROTO_UDP, &mcreceiver->addr,
-		port, port + 1, false, rtp_handler, NULL, mcreceiver);
+	err = udp_listen(&mcreceiver->rtp, &mcreceiver->addr,
+		rtp_handler_wrapper, mcreceiver);
 	if (err) {
-		warning("multicast receiver: rtp listen failed:"
+		warning("multicast receiver: udp listen failed:"
 			"af=%s port=%u-&u (%m)\n", net_af2name(sa_af(addr)),
 			port, port + 1, err);
 		goto out;
@@ -555,11 +582,11 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 
 	if (IN_MULTICAST(sa_in(&mcreceiver->addr))) {
 		err = udp_multicast_join((struct udp_sock *)
-			rtp_sock(mcreceiver->rtp), &mcreceiver->addr);
+			mcreceiver->rtp, &mcreceiver->addr);
 		if (err) {
-		warning ("multicast recevier: join multicast group "
-		"failed %J (%m)\n", &mcreceiver->addr, err);
-		goto out;
+			warning ("multicast recevier: join multicast group "
+				"failed %J (%m)\n", &mcreceiver->addr, err);
+			goto out;
 		}
 	}
 
