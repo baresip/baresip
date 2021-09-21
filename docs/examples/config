@@ -188,6 +188,7 @@ module_app		menu.so
 module_app		ctrl_dbus.so
 #module_app		httpreq.so
 #module_app		multicast.so
+module_app		netroam.so
 
 
 #------------------------------------------------------------------------------
