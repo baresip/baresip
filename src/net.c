@@ -205,7 +205,6 @@ static bool check_ipv6(void)
 static int net_add_laddr(struct network *net, const char *ifname,
 			 const struct sa *sa)
 {
-
 	struct le *le;
 	struct laddr *laddr;
 	int err = 0;
