@@ -407,15 +407,12 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	}
 
 	net_if_apply(add_laddr_filter, net);
-	if (!list_count(&net->laddrs)) {
-		warning("net: %s: could not get network address\n",
-			cfg->ifname);
-		err = EADDRNOTAVAIL;
-	}
-	else {
-		info("Local network addresses:\n");
+	info("Local network addresses:\n");
+	if (!list_count(&net->laddrs))
+		warning("  None for net_interface: %s\n",
+				str_isset(cfg->ifname) ? cfg->ifname : "-");
+	else
 		net_laddr_apply(net, print_addr, NULL);
-	}
 
 	(void)dns_srv_get(NULL, 0, nsv, &nsn);
 
