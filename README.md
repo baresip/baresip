@@ -261,6 +261,7 @@ multicast     Multicast RTP send and receive
 mqtt          MQTT (Message Queue Telemetry Transport) module
 mwi           Message Waiting Indication
 natpmp        NAT Port Mapping Protocol (NAT-PMP) module
+netroam       Detects and applies changes of the local network addresses
 omx           OpenMAX IL video display module
 opensles      OpenSLES audio driver
 opus          OPUS Interactive audio codec
