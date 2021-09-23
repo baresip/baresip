@@ -23,6 +23,7 @@ struct netroam {
 	const struct config_net *cfg;
 	struct network *net;
 	uint32_t interval;
+	bool roam_dns;
 	struct tmr tmr;
 	struct sa laddr;
 };
@@ -87,7 +88,9 @@ static void poll_changes(void *arg)
 {
 	struct netroam *n = arg;
 	bool changed = false;
-	net_dns_refresh(baresip_network());
+	if (n->roam_dns) {
+		net_dns_refresh(baresip_network());
+	}
 
 	/* was a local IP added? */
 	sa_init(&n->laddr, AF_UNSPEC);
@@ -134,6 +137,8 @@ static int module_init(void)
 	/* TODO++: Use AF_NETLINK socket to be notified! (man 7 netlink) */
 	d.interval = 60;
 	conf_get_u32(conf_cur(), "netroam_interval", &d.interval);
+	d.roam_dns = true;
+	conf_get_bool(conf_cur(), "netroam_dns", &d.roam_dns);
 	if (d.interval)
 		tmr_start(&d.tmr, d.interval * 1000, poll_changes, &d);
 
