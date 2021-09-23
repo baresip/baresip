@@ -81,11 +81,6 @@ static int net_dns_srv_get(const struct network *net,
 	uint32_t limit = *n;
 	int err;
 
-	err = dns_srv_get(NULL, 0, nsv, &nsn);
-	if (err) {
-		nsn = 0;
-	}
-
 	if (net->nsn) {
 
 		if (net->nsn > limit)
@@ -102,6 +97,10 @@ static int net_dns_srv_get(const struct network *net,
 			*from_sys = false;
 	}
 	else {
+		err = dns_srv_get(NULL, 0, nsv, &nsn);
+		if (err)
+			nsn = 0;
+
 		if (nsn > limit)
 			return E2BIG;
 
