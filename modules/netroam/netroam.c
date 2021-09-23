@@ -87,7 +87,9 @@ static void poll_changes(void *arg)
 {
 	struct netroam *n = arg;
 	bool changed = false;
-	net_dns_refresh(baresip_network());
+
+	if (!n->cfg->nsc)
+		net_dns_refresh(baresip_network());
 
 	/* was a local IP added? */
 	sa_init(&n->laddr, AF_UNSPEC);
