@@ -17,11 +17,6 @@ struct network {
 	uint32_t nsn;        /**< Number of configured name servers      */
 	struct sa nsvf[NET_MAX_NS];/**< Configured fallback name servers */
 	uint32_t nsnf;       /**< Number of configured fallback name servers */
-
-	net_ifaddr_h *addh;  /**< Local address added handler            */
-	void *addh_arg;
-	net_ifaddr_h *rmh;   /**< Local address removed handler          */
-	void *rmh_arg;
 };
 
 
@@ -202,8 +197,16 @@ static bool check_ipv6(void)
 }
 
 
-static int net_add_laddr(struct network *net, const char *ifname,
-			 const struct sa *sa)
+/**
+ * Add a local IP address with given interface name
+ *
+ * @param net  Network instance
+ * @param ip   IP address
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int  net_add_address_ifname(struct network *net, const struct sa *sa,
+			    const char *ifname)
 {
 	struct le *le;
 	struct laddr *laddr;
@@ -228,8 +231,6 @@ static int net_add_laddr(struct network *net, const char *ifname,
 		goto out;
 
 	list_append(&net->laddrs, &laddr->le, laddr);
-	if (net->addh)
-		net->addh(laddr->ifname, &laddr->sa, net->addh_arg);
 
 out:
 	if (err)
@@ -247,7 +248,7 @@ static bool add_laddr_filter(const char *ifname, const struct sa *sa,
 	if (!net_ifaddr_filter(net, ifname, sa))
 		return false;
 
-	(void)net_add_laddr(net, ifname, sa);
+	(void)net_add_address_ifname(net, sa, ifname);
 	return false;
 }
 
@@ -499,7 +500,7 @@ int net_add_address(struct network *net, const struct sa *ip)
 	if (err)
 		goto out;
 
-	err = net_add_laddr(net, ifname, ip);
+	err = net_add_address_ifname(net, ip, ifname);
 
 out:
 	return err;
@@ -523,9 +524,6 @@ int net_rm_address(struct network *net, const struct sa *ip)
 	LIST_FOREACH(&net->laddrs, le) {
 		struct laddr *laddr = le->data;
 		if (sa_cmp(&laddr->sa, ip, SA_ADDR)) {
-			if (net->rmh)
-				net->rmh(laddr->ifname, &laddr->sa,
-					 net->rmh_arg);
 			mem_deref(laddr);
 			break;
 		}
@@ -552,33 +550,11 @@ int net_flush_addresses(struct network *net)
 	while (le) {
 		struct laddr *laddr = le->data;
 		le = le->next;
-		if (net->rmh)
-			net->rmh(laddr->ifname, &laddr->sa, net->rmh_arg);
 
 		mem_deref(laddr);
 	}
 
 	return 0;
-}
-
-
-void net_set_add_handler(struct network *net, net_ifaddr_h *ifh, void *arg)
-{
-	if (!net)
-		return;
-
-	net->addh = ifh;
-	net->addh_arg = arg;
-}
-
-
-void net_set_rm_handler(struct network *net, net_ifaddr_h *ifh, void *arg)
-{
-	if (!net)
-		return;
-
-	net->rmh = ifh;
-	net->rmh_arg = arg;
 }
 
 

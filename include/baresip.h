@@ -705,6 +705,8 @@ int  net_use_nameserver(struct network *net,
 			const struct sa *srvv, size_t srvc);
 int  net_set_address(struct network *net, const struct sa *ip);
 int  net_add_address(struct network *net, const struct sa *ip);
+int  net_add_address_ifname(struct network *net, const struct sa *sa,
+			    const char *ifname);
 int  net_flush_addresses(struct network *net);
 int  net_rm_address(struct network *net, const struct sa *ip);
 bool net_af_enabled(const struct network *net, int af);
@@ -713,8 +715,6 @@ void net_dns_refresh(struct network *net);
 int  net_dns_debug(struct re_printf *pf, const struct network *net);
 int  net_debug(struct re_printf *pf, const struct network *net);
 bool net_laddr_apply(const struct network *net, net_ifaddr_h *ifh, void *arg);
-void net_set_add_handler(struct network *net, net_ifaddr_h *ifh, void *arg);
-void net_set_rm_handler(struct network *net, net_ifaddr_h *ifh, void *arg);
 bool net_ifaddr_filter(const struct network *net, const char *ifname,
 		       const struct sa *sa);
 const struct sa *net_laddr_af(const struct network *net, int af);
