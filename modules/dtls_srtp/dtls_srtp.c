@@ -281,11 +281,17 @@ static void dtls_conn_handler(const struct sa *peer, void *arg)
 	int err;
 	(void)peer;
 
-	info("dtls_srtp: incoming DTLS connect from %J\n", peer);
+	info("dtls_srtp: %s: incoming DTLS connect from %J\n",
+	     sdp_media_name(comp->ds->sdpm), peer);
 
 	if (comp->tls_conn) {
-		warning("dtls_srtp: dtls already accepted (peer = %J)\n",
+		warning("dtls_srtp: '%s' dtls already accepted (peer = %J)\n",
+			sdp_media_name(comp->ds->sdpm),
 			dtls_peer(comp->tls_conn));
+
+		if (comp->ds->sess->errorh)
+			comp->ds->sess->errorh(EPROTO, comp->ds->sess->arg);
+
 		return;
 	}
 
