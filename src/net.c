@@ -407,7 +407,9 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		goto out;
 	}
 
+#if !defined(ANDROID)
 	net_if_apply(add_laddr_filter, net);
+#endif
 	info("Local network addresses:\n");
 	if (!list_count(&net->laddrs))
 		warning("  None for net_interface: %s\n",
@@ -735,8 +737,10 @@ int net_debug(struct re_printf *pf, const struct network *net)
 	err |= re_hprintf(pf, "enabled interfaces:\n");
 	net_laddr_apply(net, if_debug_handler, argv);
 
+#if !defined(ANDROID)
 	err |= re_hprintf(pf, "network interfaces:\n");
 	err |= net_if_apply( if_debug_handler, argv);
+#endif
 
 	err |= net_dns_debug(pf, net);
 
