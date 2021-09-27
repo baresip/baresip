@@ -412,7 +412,7 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 #endif
 	info("Local network addresses:\n");
 	if (!list_count(&net->laddrs))
-		warning("  None for net_interface: %s\n",
+		info("  None for net_interface: %s\n",
 				str_isset(cfg->ifname) ? cfg->ifname : "-");
 	else
 		net_laddr_apply(net, print_addr, NULL);
