@@ -737,11 +737,6 @@ int net_debug(struct re_printf *pf, const struct network *net)
 	err |= re_hprintf(pf, "enabled interfaces:\n");
 	net_laddr_apply(net, if_debug_handler, argv);
 
-#if !defined(ANDROID)
-	err |= re_hprintf(pf, "network interfaces:\n");
-	err |= net_if_apply( if_debug_handler, argv);
-#endif
-
 	err |= net_dns_debug(pf, net);
 
 	return err;
