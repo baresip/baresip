@@ -19,7 +19,6 @@ struct videnc_state {
 typedef struct {
 	guint8 *sample;
 	gsize size;
-	GstClockTime ts;
 } enc_data;
 
 
@@ -100,14 +99,24 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 static void
 encode_h264_sample(struct videnc_state *st, enc_data *encData)
 {
+	guint8 *sample = encData->sample;
+	gsize  size = encData->size;
 
-	h264_packetize(
-		encData->ts,
-		encData->sample,
-		encData->size,
-		st->pktsize,
-		st->pkth,
-		st->arg);
+	uint8_t *hdr = sample;
+	uint8_t *pld = sample + RTP_HEADER_SIZE;
+	size_t pld_len = size - RTP_HEADER_SIZE;
+
+	guint32 ts = 0;
+	bool marker;
+
+	ts |= hdr[4] << 24;
+	ts |= hdr[5] << 16;
+	ts |= hdr[6] << 8;
+	ts |= hdr[7];
+
+	marker = hdr[1] >> 7;
+
+	st->pkth(marker, ts, hdr, 0, pld, pld_len, st->arg);
 }
 
 
@@ -117,37 +126,24 @@ camera_h264_sample_received(
 	struct vidsrc_st *st)
 {
 	GstBuffer *buffer;
-	GstMapInfo info;
+	GstMapInfo map_info;
 	enc_data encData;
-	GstClockTime gst_ts;
-	uint64_t rtp_ts;
 
 	(void) src;
 	(void) st;
 
 	buffer = gst_sample_get_buffer(sample);
-	gst_buffer_map(buffer, &info, (GstMapFlags)(GST_MAP_READ));
+	gst_buffer_map(buffer, &map_info, (GstMapFlags)(GST_MAP_READ));
 
-	gst_ts = GST_BUFFER_PTS(buffer);
+	if(map_info.size >= RTP_HEADER_SIZE && map_info.data) {
+		encData.sample = map_info.data;
+		encData.size = map_info.size;
 
-	if (gst_ts == GST_CLOCK_TIME_NONE) {
-		warning("comvideo: Gst timestamp not available\n");
-		rtp_ts = 0;
+		g_list_foreach(
+			comvideo_codec.encoders,
+			(GFunc) encode_h264_sample,
+			&encData);
 	}
-	else {
-		rtp_ts = (uint64_t)((90000ULL * gst_ts) / 1000000000UL);
-	}
-
-
-	encData.sample = info.data;
-	encData.size = info.size;
-	encData.ts = rtp_ts;
-
-	g_list_foreach(
-		comvideo_codec.encoders,
-		(GFunc) encode_h264_sample,
-		&encData);
-
-	gst_buffer_unmap(buffer, &info);
+	gst_buffer_unmap(buffer, &map_info);
 }
 
