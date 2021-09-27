@@ -407,9 +407,7 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		goto out;
 	}
 
-#if !defined(ANDROID)
 	net_if_apply(add_laddr_filter, net);
-#endif
 	info("Local network addresses:\n");
 	if (!list_count(&net->laddrs))
 		info("  None available for net_interface: %s\n",
