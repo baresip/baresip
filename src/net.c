@@ -76,11 +76,6 @@ static int net_dns_srv_get(const struct network *net,
 	uint32_t limit = *n;
 	int err;
 
-	err = dns_srv_get(NULL, 0, nsv, &nsn);
-	if (err) {
-		nsn = 0;
-	}
-
 	if (net->nsn) {
 
 		if (net->nsn > limit)
@@ -97,6 +92,10 @@ static int net_dns_srv_get(const struct network *net,
 			*from_sys = false;
 	}
 	else {
+		err = dns_srv_get(NULL, 0, nsv, &nsn);
+		if (err)
+			nsn = 0;
+
 		if (nsn > limit)
 			return E2BIG;
 
@@ -343,8 +342,6 @@ static bool print_addr(const char *ifname, const struct sa *sa, void *arg)
 int net_alloc(struct network **netp, const struct config_net *cfg)
 {
 	struct network *net;
-	struct sa nsv[NET_MAX_NS];
-	uint32_t nsn = ARRAY_SIZE(nsv);
 	int err;
 
 	if (!netp || !cfg)
@@ -414,8 +411,6 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 				str_isset(cfg->ifname) ? cfg->ifname : "-");
 	else
 		net_laddr_apply(net, print_addr, NULL);
-
-	(void)dns_srv_get(NULL, 0, nsv, &nsn);
 
  out:
 	if (err)
