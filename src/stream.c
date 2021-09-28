@@ -610,11 +610,6 @@ static void mnat_connected_handler(const struct sa *raddr1,
 		update_all_remote_addr(strm->le.list, raddr1);
 	}
 
-	if (stream_is_ready(strm)) {
-
-		stream_start_rtcp(strm);
-	}
-
 	if (strm->mnatconnh)
 		strm->mnatconnh(strm, strm->sess_arg);
 
@@ -969,10 +964,6 @@ static void stream_remote_set(struct stream *s)
 	}
 
 
-	if (stream_is_ready(s)) {
-
-		stream_start_rtcp(s);
-	}
 }
 
 

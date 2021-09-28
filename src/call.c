@@ -342,7 +342,14 @@ static int update_media(struct call *call)
 
 	/* Update each stream */
 	FOREACH_STREAM {
-		stream_update(le->data);
+		struct stream *strm = le->data;
+
+		stream_update(strm);
+
+		if (stream_is_ready(strm)) {
+
+			stream_start_rtcp(strm);
+		}
 	}
 
 	if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
@@ -528,6 +535,8 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 		}
 	}
 	else if (stream_is_ready(strm)) {
+
+		stream_start_rtcp(strm);
 
 		switch (stream_type(strm)) {
 
