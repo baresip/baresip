@@ -668,27 +668,34 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 }
 
 
-static int best_effort_af(struct ua *ua, const struct network *net)
+static const struct sa *best_effort_laddr(struct ua *ua,
+		const struct network *net)
 {
 	struct le *le;
 	const int afv[2] = { AF_INET, AF_INET6 };
+	const struct sa *sa;
 	size_t i;
 
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
 		const struct reg *reg = le->data;
 		if (reg_isok(reg))
-			return reg_af(reg);
+			return reg_laddr(reg);
 	}
 
 	for (i=0; i<ARRAY_SIZE(afv); i++) {
 		int af = afv[i];
 
-		if (net_af_enabled(net, af) &&
-		    sa_isset(net_laddr_af(net, af), SA_ADDR))
-			return af;
+		if (!net_af_enabled(net, af))
+			continue;
+
+		sa = net_laddr_af(net, af);
+		if (!sa_isset(sa, SA_ADDR))
+			continue;
+
+		return sa;
 	}
 
-	return AF_UNSPEC;
+	return NULL;
 }
 
 
@@ -714,6 +721,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	struct call_prm cprm;
 	int af;
 	struct sa dst;
+	const struct sa *laddr = NULL;
 	int err;
 
 	if (!callp || !ua)
@@ -737,9 +745,10 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		af = ua->acc->maf;
 	}
 	else {
-		af = best_effort_af(ua, net);
-		debug("ua: using best effort AF: af=%s\n",
-		     net_af2name(af));
+		laddr = best_effort_laddr(ua, net);
+		af = sa_af(laddr);
+		if (af != AF_UNSPEC)
+			info("ua: using best effort laddr %j\n", laddr);
 	}
 
 	if (!net_af_enabled(net, af)) {
@@ -756,7 +765,10 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 
 	memset(&cprm, 0, sizeof(cprm));
 
-	if (sa_isset(&ua->dst, SA_ADDR)) {
+	if (sa_isset(laddr, SA_ADDR)) {
+		sa_cpy(&cprm.laddr, laddr);
+	}
+	else if (sa_isset(&ua->dst, SA_ADDR)) {
 		err = net_dst_source_addr_get(&ua->dst, &cprm.laddr);
 		sa_init(&ua->dst, AF_UNSPEC);
 		if (err) {
