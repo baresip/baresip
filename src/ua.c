@@ -30,6 +30,7 @@ struct ua {
 	struct list hdr_filter;      /**< Filter for incoming headers        */
 	struct list custom_hdrs;     /**< List of outgoing headers           */
 	char *ansval;                /**< SIP auto answer value              */
+	struct sa dst;               /**< Current destination address        */
 };
 
 struct ua_xhdr_filter {
@@ -721,6 +722,10 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	sa_init(&dst, AF_UNSPEC);
 	if (msg && !sdp_connection(msg->mb, &af, &dst)) {
 		info("ua: using origin address %j of SDP offer\n", &dst);
+		sa_cpy(&ua->dst, &dst);
+	}
+	else if (sa_isset(&ua->dst, SA_ADDR)) {
+		af = sa_af(&ua->dst);
 	}
 	else if (msg) {
 		af = sa_af(&msg->src);
@@ -751,10 +756,11 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 
 	memset(&cprm, 0, sizeof(cprm));
 
-	if (sa_isset(&dst, SA_ADDR)) {
-		err = net_dst_source_addr_get(&dst, &cprm.laddr);
+	if (sa_isset(&ua->dst, SA_ADDR)) {
+		err = net_dst_source_addr_get(&ua->dst, &cprm.laddr);
+		sa_init(&ua->dst, AF_UNSPEC);
 		if (err) {
-			warning("ua: no laddr for %j (%m)\n", &dst, err);
+			warning("ua: no laddr for %j (%m)\n", &ua->dst, err);
 			return err;
 		}
 	}
@@ -1041,6 +1047,7 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 {
 	struct call *call = NULL;
 	struct mbuf *dialbuf;
+	struct sip_addr addr;
 	struct pl pl;
 	int err = 0;
 
@@ -1065,12 +1072,18 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (err)
 		goto out;
 
+	pl.p = (char *)dialbuf->buf;
+	pl.l = dialbuf->end;
+	sa_init(&ua->dst, AF_UNSPEC);
+	if (!sip_addr_decode(&addr, &pl))
+		(void)sa_set(&ua->dst, &addr.uri.host, addr.uri.port);
+
+	if (sa_isset(&ua->dst, SA_ADDR) && !sa_isset(&ua->dst, SA_PORT))
+		sa_set_port(&ua->dst, SIP_PORT);
+
 	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)
 		goto out;
-
-	pl.p = (char *)dialbuf->buf;
-	pl.l = dialbuf->end;
 
 	if (!list_isempty(&ua->custom_hdrs))
 		call_set_custom_hdrs(call, &ua->custom_hdrs);
