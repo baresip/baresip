@@ -28,6 +28,7 @@ struct netroam {
 	uint32_t interval;
 	struct tmr tmr;
 	struct sa laddr;
+	bool reset;
 };
 
 
@@ -123,12 +124,19 @@ static void poll_changes(void *arg)
 		changed = true;
 	}
 
-	if (n->interval)
-		tmr_start(&n->tmr, changed ? 1000 : n->interval * 1000,
-			  poll_changes, n);
-
-	if (changed)
+	if (n->reset) {
+		uag_reset_transp(true, true);
+		n->reset = false;
 		print_changes(n);
+	}
+
+	if (changed) {
+		n->reset = true;
+		tmr_start(&n->tmr, 1000, poll_changes, n);
+	}
+	else if (n->interval) {
+		tmr_start(&n->tmr, n->interval * 1000, poll_changes, n);
+	}
 }
 
 
