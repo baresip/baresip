@@ -54,7 +54,7 @@ jobs:
                         jack \
                         mpg123 \
                         spandsp \
-                        openssl
+                        openssl@1.1
 
     - uses: sreimers/pr-dependency-action@v0.3
       with:
