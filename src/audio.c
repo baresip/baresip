@@ -120,6 +120,8 @@ struct autx {
 		bool run;     /**< Audio transmit thread running   */
 	} thr;
 #endif
+
+	struct lock *lock;
 };
 
 
@@ -358,6 +360,8 @@ static void audio_destructor(void *arg)
 
 	mem_deref(a->strm);
 	mem_deref(a->telev);
+
+	mem_deref(a->tx.lock);
 }
 
 
@@ -667,7 +671,9 @@ static void check_telev(struct audio *a, struct autx *tx)
 
 	mb->pos = mb->end = STREAM_PRESZ;
 
+	lock_write_get(tx->lock);
 	err = telev_poll(a->telev, &marker, mb);
+	lock_rel(tx->lock);
 	if (err)
 		goto out;
 
@@ -1438,6 +1444,11 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	rx->pt     = -1;
 	rx->ptime  = ptime;
+
+	err = lock_alloc(&tx->lock);
+	if (err)
+		goto out;
+
 #ifdef HAVE_PTHREAD
 	err  = pthread_mutex_init(&rx->thr.mutex, NULL);
 	err |= pthread_cond_init(&rx->thr.cond, NULL);
@@ -2149,7 +2160,10 @@ int audio_send_digit(struct audio *a, char key)
 			return EINVAL;
 		}
 
+		lock_write_get(a->tx.lock);
 		err = telev_send(a->telev, event, false);
+		lock_rel(a->tx.lock);
+
 	}
 	else if (a->tx.cur_key && a->tx.cur_key != KEYCODE_REL) {
 		/* Key release */
