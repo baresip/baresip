@@ -523,8 +523,10 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		uint32_t rtp_ts = tx->ts_ext & 0xffffffff;
 
 		if (len) {
+			lock_write_get(a->tx.lock);
 			err = stream_send(a->strm, ext_len!=0, marker, -1,
 					  rtp_ts, tx->mb);
+			lock_rel(a->tx.lock);
 			if (err)
 				goto out;
 		}
@@ -2048,7 +2050,10 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 	}
 
 	stream_set_srate(a->strm, ac->crate, 0);
+
+	lock_write_get(a->tx.lock);
 	stream_update_encoder(a->strm, pt_tx);
+	lock_rel(a->tx.lock);
 
 	telev_set_srate(a->telev, ac->crate);
 
