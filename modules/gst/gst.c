@@ -55,6 +55,7 @@ struct ausrc_st {
 	size_t sampc;
 	uint32_t ptime;
 	int16_t *buf;
+	int err;
 
 	struct tmr tmr;
 
@@ -97,6 +98,8 @@ sync_handler(
 			warning("gst: Debug: %s\n", d);
 
 			g_free(d);
+
+			st->err = err->code;
 
 			/* Call error handler */
 			if (st->errh)
@@ -432,7 +435,6 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		return ENOMEM;
 
 	st->rh   = rh;
-	st->errh = errh;
 	st->arg  = arg;
 
 	err = setup_uri(st, device);
@@ -470,6 +472,14 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->eos = false;
 
 	gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
+
+	if (!st->run) {
+		err = st->err;
+		goto out;
+	}
+
+	st->errh = errh;
+
 	tmr_start(&st->tmr, st->ptime, timeout, st);
 
  out:
