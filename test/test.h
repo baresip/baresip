@@ -146,15 +146,6 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
 
 
 /*
- * Mock Audio-source
- */
-
-struct ausrc;
-
-int mock_ausrc_register(struct ausrc **ausrcp, struct list *ausrcl);
-
-
-/*
  * Mock Audio-player
  */
 

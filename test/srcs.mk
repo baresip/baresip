@@ -42,7 +42,6 @@ endif
 
 TEST_SRCS	+= mock/mock_aufilt.c
 TEST_SRCS	+= mock/mock_auplay.c
-TEST_SRCS	+= mock/mock_ausrc.c
 TEST_SRCS	+= mock/mock_mnat.c
 TEST_SRCS	+= mock/mock_menc.c
 TEST_SRCS	+= mock/mock_vidsrc.c
