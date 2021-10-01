@@ -1052,7 +1052,6 @@ int test_call_mediaenc(void)
 int test_call_medianat(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
 	int err;
 
@@ -1063,7 +1062,7 @@ int test_call_medianat(void)
 
 	ASSERT_STREQ("XNAT", account_medianat(ua_account(f->a.ua)));
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, baresip_auplayl(),
 				   audio_sample_handler, f);
@@ -1091,7 +1090,7 @@ int test_call_medianat(void)
  out:
 	fixture_close(f);
 	mem_deref(auplay);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	mock_mnat_unregister();
 
@@ -1364,7 +1363,6 @@ int test_call_aufilt(void)
 int test_call_webrtc(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct vidsrc *vidsrc = NULL;
 	struct sdp_media *sdp_a, *sdp_b;
 	int err;
@@ -1374,7 +1372,7 @@ int test_call_webrtc(void)
 	mock_mnat_register(baresip_mnatl());
 	mock_menc_register();
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 
 	/* to enable video, we need one vidsrc and vidcodec */
@@ -1433,7 +1431,7 @@ int test_call_webrtc(void)
 	fixture_close(f);
 
 	mem_deref(vidsrc);
-	mem_deref(ausrc);
+	module_unload("ausine");
 	mock_vidcodec_unregister();
 	mock_menc_unregister();
 	mock_mnat_unregister();
