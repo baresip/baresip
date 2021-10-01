@@ -816,7 +816,6 @@ static void mock_sample_handler(const void *sampv, size_t sampc, void *arg)
 int test_call_aulevel(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
 	double lvl;
 	int err = 0;
@@ -826,7 +825,7 @@ int test_call_aulevel(void)
 
 	conf_config()->audio.level = true;
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, baresip_auplayl(),
 				   mock_sample_handler, f);
@@ -847,17 +846,17 @@ int test_call_aulevel(void)
 	/* verify audio silence */
 	err = audio_level_get(call_audio(ua_call(f->a.ua)), &lvl);
 	TEST_ERR(err);
-	ASSERT_EQ(-96, lvl);
+	ASSERT_TRUE(lvl > -96.0f && lvl < 0.0f);
 	err = audio_level_get(call_audio(ua_call(f->b.ua)), &lvl);
 	TEST_ERR(err);
-	ASSERT_EQ(-96, lvl);
+	ASSERT_TRUE(lvl > -96.0f && lvl < 0.0f);
 
  out:
 	conf_config()->audio.level = false;
 
 	fixture_close(f);
 	mem_deref(auplay);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	return err;
 }
@@ -997,7 +996,6 @@ int test_call_format_float(void)
 int test_call_mediaenc(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
 	int err = 0;
 
@@ -1008,7 +1006,7 @@ int test_call_mediaenc(void)
 
 	ASSERT_STREQ("xrtp", account_mediaenc(ua_account(f->a.ua)));
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, baresip_auplayl(),
 				   audio_sample_handler, f);
@@ -1040,7 +1038,7 @@ int test_call_mediaenc(void)
  out:
 	fixture_close(f);
 	mem_deref(auplay);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	mock_menc_unregister();
 
