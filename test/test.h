@@ -183,15 +183,6 @@ void mock_mnat_unregister(void);
 
 
 /*
- * Mock Video-source
- */
-
-struct vidsrc;
-
-int mock_vidsrc_register(struct vidsrc **vidsrcp);
-
-
-/*
  * Mock Video-codec
  */
 

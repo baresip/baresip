@@ -44,7 +44,6 @@ TEST_SRCS	+= mock/mock_aufilt.c
 TEST_SRCS	+= mock/mock_auplay.c
 TEST_SRCS	+= mock/mock_mnat.c
 TEST_SRCS	+= mock/mock_menc.c
-TEST_SRCS	+= mock/mock_vidsrc.c
 TEST_SRCS	+= mock/mock_vidcodec.c
 TEST_SRCS	+= mock/mock_vidisp.c
 
