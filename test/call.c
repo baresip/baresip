@@ -1363,7 +1363,6 @@ int test_call_aufilt(void)
 int test_call_webrtc(void)
 {
 	struct fixture fix, *f = &fix;
-	struct vidsrc *vidsrc = NULL;
 	struct sdp_media *sdp_a, *sdp_b;
 	int err;
 
@@ -1377,7 +1376,7 @@ int test_call_webrtc(void)
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
-	err = mock_vidsrc_register(&vidsrc);
+	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
 	fixture_init_prm(f, ";medianat=XNAT;mediaenc=xrtp");
@@ -1430,7 +1429,7 @@ int test_call_webrtc(void)
  out:
 	fixture_close(f);
 
-	mem_deref(vidsrc);
+	module_unload("fakevideo");
 	module_unload("ausine");
 	mock_vidcodec_unregister();
 	mock_menc_unregister();
@@ -1449,7 +1448,6 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 {
 	struct fixture fix, *f = &fix;
 	struct ausrc *ausrc = NULL;
-	struct vidsrc *vidsrc = NULL;
 	struct vidisp *vidisp = NULL;
 	struct mbuf *sdp = NULL;
 	struct call *callv[2];
@@ -1471,8 +1469,10 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
-	err  = mock_vidsrc_register(&vidsrc);
-	err |= mock_vidisp_register(&vidisp, mock_vidisp_handler, f);
+	err = mock_vidisp_register(&vidisp, mock_vidisp_handler, f);
+	TEST_ERR(err);
+
+	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
 	if (use_mnat && use_menc) {
@@ -1574,7 +1574,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 
 	mem_deref(sdp);
 	mem_deref(vidisp);
-	mem_deref(vidsrc);
+	module_unload("fakevideo");
 	mem_deref(ausrc);
 	mock_vidcodec_unregister();
 
