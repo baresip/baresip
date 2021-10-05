@@ -1063,6 +1063,7 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	       enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir)
 {
 	struct call *call = NULL;
+	const struct network *net = baresip_network();
 	struct mbuf *dialbuf;
 	struct sip_addr addr;
 	struct pl pl;
@@ -1097,6 +1098,8 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 
 	if (sa_isset(&ua->dst, SA_ADDR) && !sa_isset(&ua->dst, SA_PORT))
 		sa_set_port(&ua->dst, SIP_PORT);
+
+	(void)net_set_dst_scopeid(net, &ua->dst);
 
 	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)
