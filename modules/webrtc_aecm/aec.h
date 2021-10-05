@@ -27,21 +27,20 @@ struct aec {
 
 /* Encoder */
 
-int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
+int webrtc_aecm_encode_update(struct aufilt_enc_st **stp, void **ctx,
 			     const struct aufilt *af, struct aufilt_prm *prm,
 			     const struct audio *au);
-int webrtc_aec_encode(struct aufilt_enc_st *st, struct auframe *af);
+int webrtc_aecm_encode(struct aufilt_enc_st *st, struct auframe *af);
 
 
 /* Decoder */
 
-int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
+int webrtc_aecm_decode_update(struct aufilt_dec_st **stp, void **ctx,
 			     const struct aufilt *af, struct aufilt_prm *prm,
 			     const struct audio *au);
-int webrtc_aec_decode(struct aufilt_dec_st *st, struct auframe *af);
+int webrtc_aecm_decode(struct aufilt_dec_st *st, struct auframe *af);
 
 
 /* Common */
 
-int  webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm);
-void webrtc_aec_debug(const struct aec *aec);
+int  webrtc_aecm_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm);

@@ -18,6 +18,8 @@
  *
  * Acoustic Echo Cancellation (AEC) Mobile Mode using WebRTC SDK.
  *
+ * This code is experimental.
+ *
  * Reference:
  *
  *     https://webrtc.org/native-code/
@@ -36,9 +38,10 @@ static void aec_destructor(void *arg)
 }
 
 
-int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
+int webrtc_aecm_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 {
 	struct conf *conf = conf_cur();
+	bool extended_filter = false;
 	struct aec *aec;
 	int err = 0;
 	int r;
@@ -124,10 +127,10 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 static struct aufilt webrtc_aec = {
 	.le      = LE_INIT,
 	.name    = "webrtc_aecm",
-	.encupdh = webrtc_aec_encode_update,
-	.ench    = webrtc_aec_encode,
-	.decupdh = webrtc_aec_decode_update,
-	.dech    = webrtc_aec_decode
+	.encupdh = webrtc_aecm_encode_update,
+	.ench    = webrtc_aecm_encode,
+	.decupdh = webrtc_aecm_decode_update,
+	.dech    = webrtc_aecm_decode
 };
 
 

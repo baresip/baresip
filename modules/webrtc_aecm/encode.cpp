@@ -34,9 +34,9 @@ static void enc_destructor(void *arg)
 }
 
 
-int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
-			     const struct aufilt *af, struct aufilt_prm *prm,
-			     const struct audio *au)
+int webrtc_aecm_encode_update(struct aufilt_enc_st **stp, void **ctx,
+			      const struct aufilt *af, struct aufilt_prm *prm,
+			      const struct audio *au)
 {
 	struct aec_enc *st;
 	int err;
@@ -63,7 +63,7 @@ int webrtc_aec_encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
-	err = webrtc_aec_alloc(&st->aec, ctx, prm);
+	err = webrtc_aecm_alloc(&st->aec, ctx, prm);
 	if (err)
 		goto out;
 
@@ -117,7 +117,7 @@ static int encode_s16(struct aec_enc *enc, int16_t *sampv, size_t sampc)
 }
 
 
-int webrtc_aec_encode(struct aufilt_enc_st *st, struct auframe *af)
+int webrtc_aecm_encode(struct aufilt_enc_st *st, struct auframe *af)
 {
 	struct aec_enc *enc = (struct aec_enc *)st;
 	int16_t *s16;

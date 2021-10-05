@@ -29,9 +29,9 @@ static void dec_destructor(void *arg)
 }
 
 
-int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
-			     const struct aufilt *af, struct aufilt_prm *prm,
-			     const struct audio *au)
+int webrtc_aecm_decode_update(struct aufilt_dec_st **stp, void **ctx,
+			      const struct aufilt *af, struct aufilt_prm *prm,
+			      const struct audio *au)
 {
 	struct aec_dec *st;
 	int err;
@@ -58,7 +58,7 @@ int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
-	err = webrtc_aec_alloc(&st->aec, ctx, prm);
+	err = webrtc_aecm_alloc(&st->aec, ctx, prm);
 	if (err)
 		goto out;
 
@@ -101,7 +101,7 @@ static int decode_s16(struct aec_dec *dec, const int16_t *sampv, size_t sampc)
 }
 
 
-int webrtc_aec_decode(struct aufilt_dec_st *st, struct auframe *af)
+int webrtc_aecm_decode(struct aufilt_dec_st *st, struct auframe *af)
 {
 	struct aec_dec *dec = (struct aec_dec *)st;
 	int16_t *s16;
