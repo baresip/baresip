@@ -274,7 +274,7 @@ static void play_ringback(const struct call *call)
 	menu_stop_play();
 
 	if (menu.ringback_disabled) {
-		info("\nRingback disabled\n");
+		info("menu: ringback disabled\n");
 	}
 	else {
 		menu_play(call, "ringback_aufile", "ringback.wav", -1);
@@ -564,6 +564,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		menu_selcall(call);
 		if (ardir != SDP_INACTIVE)
 			menu_stop_play();
+		else if (!menu.ringback && !menu_find_call(active_call_test))
+			play_ringback(call);
 		break;
 
 	case UA_EVENT_CALL_ANSWERED:
