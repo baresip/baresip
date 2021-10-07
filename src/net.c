@@ -720,18 +720,22 @@ bool net_is_laddr(const struct network *net, struct sa *sa)
 int net_set_dst_scopeid(const struct network *net, struct sa *dst)
 {
 	struct le *le;
+	struct sa dstc;
 	if (!net || !dst)
 		return EINVAL;
 
+	sa_cpy(&dstc, dst);
 	LIST_FOREACH(&net->laddrs, le) {
 		struct laddr *laddr = le->data;
 		struct sa *sa = &laddr->sa;
 		if (sa_af(sa) != AF_INET6 || !sa_is_linklocal(sa))
 			continue;
 
-		sa_set_scopeid(dst, sa_scopeid(&laddr->sa));
-		if (!net_dst_is_source_addr(dst, &laddr->sa))
+		sa_set_scopeid(&dstc, sa_scopeid(&laddr->sa));
+		if (!net_dst_is_source_addr(&dstc, &laddr->sa)) {
+			sa_cpy(dst, &dstc);
 			return 0;
+		}
 	}
 
 	return ECONNREFUSED;
