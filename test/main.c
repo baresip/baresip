@@ -167,6 +167,7 @@ int main(int argc, char *argv[])
 {
 	struct config *config;
 	size_t i, ntests;
+	struct sa sa;
 	bool verbose = false;
 	int err;
 
@@ -226,13 +227,13 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
-	str_ncpy(config->net.ifname, "127.0.0.1", sizeof(config->net.ifname));
-
 	err = baresip_init(config);
+	err = sa_set_str(&sa, "127.0.0.1", 0);
+	err |= net_add_address(baresip_network(), &sa);
 	if (err)
 		goto out;
 
-	str_ncpy(config->sip.local, "127.0.0.1:0", sizeof(config->sip.local));
+	str_ncpy(config->sip.local, "0.0.0.0:0", sizeof(config->sip.local));
 	config->sip.verify_server = false;
 
 	uag_set_exit_handler(ua_exit_handler, NULL);
