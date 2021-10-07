@@ -723,9 +723,6 @@ int net_set_dst_scopeid(const struct network *net, struct sa *dst)
 	if (!net || !dst)
 		return EINVAL;
 
-	if (sa_af(dst) != AF_INET6 || !sa_is_linklocal(dst))
-		return 0;
-
 	LIST_FOREACH(&net->laddrs, le) {
 		struct laddr *laddr = le->data;
 		struct sa *sa = &laddr->sa;

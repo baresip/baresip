@@ -560,7 +560,9 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 		return EINVAL;
 
 	err = sa_set_str(sa, addr, pl_u32(&pl1));
-	err |= net_set_dst_scopeid(net, sa);
+	if (sa_af(sa) == AF_INET6 && sa_is_linklocal(sa))
+		err |= net_set_dst_scopeid(net, sa);
+
 	mem_deref(addr);
 	return err;
 }
@@ -1099,7 +1101,11 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (sa_isset(&ua->dst, SA_ADDR) && !sa_isset(&ua->dst, SA_PORT))
 		sa_set_port(&ua->dst, SIP_PORT);
 
-	(void)net_set_dst_scopeid(net, &ua->dst);
+	if (sa_af(&ua->dst) == AF_INET6 && sa_is_linklocal(&ua->dst)) {
+		err = net_set_dst_scopeid(net, &ua->dst);
+		if (err)
+			goto out;
+	}
 
 	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)
