@@ -21,7 +21,7 @@ struct aec_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 
 	struct aec *aec;
-	float buf[160];
+	int16_t buf[160];
 };
 
 
@@ -93,8 +93,7 @@ static int encode_s16(struct aec_enc *enc, int16_t *sampv, size_t sampc)
 	for (i = 0; i < sampc; i += aec->subframe_len) {
 
 		in  = &nearend[i];
-		/* is this cast OK? */
-		out = (int16_t *)(&enc->buf[0]);
+		out = enc->buf;
 
 		r = WebRtcAecm_Process(aec->inst, in, NULL, out,
 				       aec->subframe_len,
