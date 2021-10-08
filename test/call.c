@@ -1613,10 +1613,11 @@ int test_call_bundle(void)
 }
 
 
-static bool if_find_ipv6ll(const char *ifname, const struct sa *sa,
-			     void *arg)
+static bool find_ipv6ll(const char *ifname, const struct sa *sa, void *arg)
 {
 	struct sa *ipv6ll = arg;
+	(void) ifname;
+
 	if (sa_af(sa) == AF_INET6 && sa_is_linklocal(sa)) {
 		sa_cpy(ipv6ll, sa);
 		return true;
@@ -1644,14 +1645,14 @@ int test_call_ipv6ll(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
 	f->stop_on_rtp = true;
-	found = net_laddr_apply(net, if_find_ipv6ll, &ipv6ll);
+	found = net_laddr_apply(net, find_ipv6ll, &ipv6ll);
 	ASSERT_TRUE(found);
 
 	err = sip_transp_laddr(uag_sip(), &dst, SIP_TRANSP_UDP, &ipv6ll);
 	TEST_ERR(err);
 
 	/* Make a call from A to B */
-	re_snprintf(&uri, sizeof(uri), "sip:b@%J", &dst);
+	re_snprintf(uri, sizeof(uri), "sip:b@%J", &dst);
 	err  = ua_alloc(&f->a.ua, "A <sip:a@kitchen>;regint=0");
 	err |= ua_alloc(&f->b.ua, "B <sip:b@office>;regint=0");
 	err |= ua_connect(f->a.ua, 0, NULL, uri, VIDMODE_OFF);
