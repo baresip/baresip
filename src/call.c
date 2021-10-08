@@ -1865,6 +1865,27 @@ static bool have_common_video_codecs(const struct call *call)
 }
 
 
+static bool valid_addressfamily(struct call *call, const struct stream *strm)
+{
+	struct sdp_media *m;
+	const struct sa *raddr;
+	m = stream_sdpmedia(strm);
+	raddr = sdp_media_raddr(m);
+
+	if (sa_isset(raddr, SA_ADDR) &&  sa_af(raddr) != call->af) {
+		info("call: incompatible address-family for %s"
+				" (local=%s, remote=%s)\n",
+				sdp_media_name(m),
+				net_af2name(call->af),
+				net_af2name(sa_af(raddr)));
+
+		return false;
+	}
+
+	return true;
+}
+
+
 int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		const struct sip_msg *msg)
 {
@@ -1889,8 +1910,6 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	}
 
 	if (got_offer) {
-		struct sdp_media *m;
-		const struct sa *raddr;
 
 		err = sdp_decode(call->sdp, msg->mb, true);
 		if (err)
@@ -1905,17 +1924,10 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 *
 		 * See RFC 6157
 		 */
-		m = stream_sdpmedia(audio_strm(call->audio));
-		raddr = sdp_media_raddr(m);
-
-		if (sa_af(raddr) != call->af) {
-			info("call: incompatible address-family"
-			     " (local=%s, remote=%s)\n",
-			     net_af2name(call->af),
-			     net_af2name(sa_af(raddr)));
-
-			sip_treply(NULL, uag_sip(), msg,
-				   488, "Not Acceptable Here");
+		if (!valid_addressfamily(call, audio_strm(call->audio)) ||
+		    !valid_addressfamily(call, video_strm(call->video))) {
+			sip_treply(NULL, uag_sip(), msg, 488,
+				   "Not Acceptable Here");
 
 			call_event_handler(call, CALL_EVENT_CLOSED,
 					   "Wrong address family");
