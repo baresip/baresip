@@ -743,6 +743,7 @@ static int test_ua_options_base(enum sip_transp transp)
 {
 	struct test t;
 	struct sa laddr;
+	struct sa dst;
 	char uri[256];
 	int n, err = 0;
 
@@ -754,7 +755,10 @@ static int test_ua_options_base(enum sip_transp transp)
 		      false);
 	TEST_ERR(err);
 
-	err = sip_transp_laddr(uag_sip(), &laddr, transp, NULL);
+	err = sa_set_str(&dst, "127.0.0.1", 5060);
+	TEST_ERR(err);
+
+	err = sip_transp_laddr(uag_sip(), &laddr, transp, &dst);
 	TEST_ERR(err);
 
 	err = ua_alloc(&t.ua, "Foo <sip:user@127.0.0.1>;regint=0");

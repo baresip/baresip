@@ -51,6 +51,7 @@ struct agent {
 struct fixture {
 	uint32_t magic;
 	struct agent a, b, c;
+	struct sa dst;
 	struct sa laddr_udp;
 	struct sa laddr_tcp;
 	enum behaviour behaviour;
@@ -71,6 +72,8 @@ struct fixture {
 	f->a.fix = f;							\
 	f->b.fix = f;							\
 	f->c.fix = f;							\
+	err = sa_set_str(&f->dst, "127.0.0.1", 5060);			\
+	TEST_ERR(err);							\
 									\
 	err = ua_init("test", true, true, false);			\
 	TEST_ERR(err);							\
@@ -97,11 +100,11 @@ struct fixture {
 	TEST_ERR(err);							\
 									\
 	err = sip_transp_laddr(uag_sip(), &f->laddr_udp,		\
-			       SIP_TRANSP_UDP, NULL);			\
+			       SIP_TRANSP_UDP, &f->dst);		\
 	TEST_ERR(err);							\
 									\
 	err = sip_transp_laddr(uag_sip(), &f->laddr_tcp,		\
-			       SIP_TRANSP_TCP, NULL);			\
+			       SIP_TRANSP_TCP, &f->dst);		\
 	TEST_ERR(err);							\
 									\
 	debug("test: local SIP transp: UDP=%J, TCP=%J\n",		\
