@@ -420,7 +420,7 @@ ifneq ($(USE_SYSLOG),)
 MODULES   += syslog
 endif
 ifneq ($(USE_V4L2),)
-MODULES   += v4l2 v4l2_codec
+MODULES   += v4l2
 endif
 ifneq ($(USE_OMX_RPI),)
 MODULES   += omx

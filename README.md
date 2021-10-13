@@ -284,7 +284,6 @@ syslog        Syslog module
 turn          Obtaining Relay Addresses from STUN (TURN) module
 uuid          UUID generator and loader
 v4l2          Video4Linux2 video source
-v4l2_codec    Video4Linux2 video codec module (H264 hardware encoding)
 vidbridge     Video bridge module
 vidinfo       Video info overlay module
 vp8           VP8 video codec
