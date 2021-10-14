@@ -319,7 +319,7 @@ static int uag_transp_add(const struct sa *laddr)
 			sa_set_port(&local, port);
 		}
 
-		if (sa_af(laddr) != sa_af(&local))
+		if (!sa_cmp(laddr, &local, SA_ADDR))
 			return 0;
 	}
 	else {
