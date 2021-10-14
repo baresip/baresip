@@ -52,6 +52,19 @@ static inline bool is_rtcp_packet(const struct mbuf *mb)
 }
 
 
+static bool is_dtls_packet(const struct mbuf *mb)
+{
+	uint8_t b;
+
+	if (mbuf_get_left(mb) < 13)
+		return false;
+
+	b = mbuf_buf(mb)[0];
+
+	return 19 < b && b < 64;
+}
+
+
 static void destructor(void *arg)
 {
 	struct srtp_stream *s = arg;
@@ -91,6 +104,10 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	struct comp *comp = arg;
 	int err;
 	(void)src;
+
+	if (is_dtls_packet(mb)) {
+		info("srtp: received DTLS packet on SRTP socket\n");
+	}
 
 	if (!is_rtp_or_rtcp(mb))
 		return false;
