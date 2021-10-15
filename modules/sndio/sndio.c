@@ -149,7 +149,6 @@ static void auplay_destructor(void *arg)
 
 
 static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
-		     struct media_ctx **ctx,
 		     struct ausrc_prm *prm, const char *device,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
@@ -158,7 +157,6 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	int err;
 	const char *name;
 
-	(void)ctx;
 	(void)errh;
 
 	if (!stp || !as || !prm)

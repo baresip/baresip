@@ -92,7 +92,6 @@ struct autx {
 	struct auresamp resamp;       /**< Optional resampler for DSP      */
 	struct list filtl;            /**< Audio filters in encoding order */
 	struct mbuf *mb;              /**< Buffer for outgoing RTP packets */
-	struct media_ctx **ctx;       /**< Shared A/V source media context */
 	char *module;                 /**< Audio source module name        */
 	char *device;                 /**< Audio source device name        */
 	void *sampv;                  /**< Sample buffer                   */
@@ -1835,7 +1834,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		}
 
 		err = ausrc_alloc(&tx->ausrc, ausrcl,
-				  tx->ctx, tx->module,
+				  tx->module,
 				  &prm, tx->device,
 				  ausrc_read_handler, ausrc_error_handler, a);
 		if (err) {
@@ -2500,7 +2499,7 @@ int audio_set_source(struct audio *au, const char *mod, const char *device)
 	if (str_isset(mod)) {
 
 		err = ausrc_alloc(&tx->ausrc, baresip_ausrcl(),
-				  NULL, mod, &tx->ausrc_prm, device,
+				  mod, &tx->ausrc_prm, device,
 				  ausrc_read_handler, ausrc_error_handler, au);
 		if (err) {
 			warning("audio: set_source failed (%s.%s): %m\n",
@@ -2701,19 +2700,4 @@ const struct aucodec *audio_codec(const struct audio *au, bool tx)
 struct config_audio *audio_config(struct audio *au)
 {
 	return au ? &au->cfg : NULL;
-}
-
-
-/**
- * Set the media context
- *
- * @param au  Audio object
- * @param ctx Media context
- */
-void audio_set_media_context(struct audio *au, struct media_ctx **ctx)
-{
-	if (!au)
-		return;
-
-	au->tx.ctx = ctx;
 }

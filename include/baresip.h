@@ -437,16 +437,6 @@ struct contact *contacts_current(const struct contacts *contacts);
 
 
 /*
- * Media Context
- */
-
-/** Media Context */
-struct media_ctx {
-	const char *id;  /**< Media Context identifier */
-};
-
-
-/*
  * Media Device
  */
 
@@ -502,7 +492,6 @@ typedef void (ausrc_read_h)(struct auframe *af, void *arg);
 typedef void (ausrc_error_h)(int err, const char *str, void *arg);
 
 typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, const struct ausrc *ausrc,
-			     struct media_ctx **ctx,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
 
@@ -518,7 +507,6 @@ int ausrc_register(struct ausrc **asp, struct list *ausrcl, const char *name,
 		   ausrc_alloc_h *alloch);
 const struct ausrc *ausrc_find(const struct list *ausrcl, const char *name);
 int ausrc_alloc(struct ausrc_st **stp, struct list *ausrcl,
-		struct media_ctx **ctx,
 		const char *name,
 		struct ausrc_prm *prm, const char *device,
 		ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
@@ -1000,7 +988,7 @@ typedef void (vidsrc_frame_h)(struct vidframe *frame, uint64_t timestamp,
 typedef void (vidsrc_error_h)(int err, void *arg);
 
 typedef int  (vidsrc_alloc_h)(struct vidsrc_st **vsp, const struct vidsrc *vs,
-			      struct media_ctx **ctx, struct vidsrc_prm *prm,
+			      struct vidsrc_prm *prm,
 			      const struct vidsz *size,
 			      const char *fmt, const char *dev,
 			      vidsrc_frame_h *frameh,
@@ -1024,7 +1012,7 @@ int vidsrc_register(struct vidsrc **vp, struct list *vidsrcl, const char *name,
 const struct vidsrc *vidsrc_find(const struct list *vidsrcl, const char *name);
 int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
 		 const char *name,
-		 struct media_ctx **ctx, struct vidsrc_prm *prm,
+		 struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt, const char *dev,
 		 vidsrc_frame_h *frameh, vidsrc_packet_h *packeth,
 		 vidsrc_error_h *errorh, void *arg);
@@ -1299,7 +1287,6 @@ int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		       int pt_rx, const char *params);
 const struct aucodec *audio_codec(const struct audio *au, bool tx);
 struct config_audio *audio_config(struct audio *au);
-void audio_set_media_context(struct audio *au, struct media_ctx **ctx);
 
 
 /*
@@ -1321,11 +1308,11 @@ int  video_alloc(struct video **vp, struct list *streaml,
 		 video_err_h *errh, void *arg);
 int  video_encoder_set(struct video *v, struct vidcodec *vc,
 		       int pt_tx, const char *params);
-int  video_update(struct video *v, struct media_ctx **ctx, const char *peer);
-int  video_start_source(struct video *v, struct media_ctx **ctx);
+int  video_update(struct video *v, const char *peer);
+int  video_start_source(struct video *v);
 int  video_start_display(struct video *v, const char *peer);
 void video_stop_display(struct video *v);
-void video_stop(struct video *v, struct media_ctx **ctx);
+void video_stop(struct video *v);
 int   video_set_fullscreen(struct video *v, bool fs);
 void  video_vidsrc_set_device(struct video *v, const char *dev);
 int   video_set_source(struct video *v, const char *name, const char *dev);

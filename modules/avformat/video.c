@@ -51,13 +51,14 @@ static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
 
 
 int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
-			 struct media_ctx **ctx, struct vidsrc_prm *prm,
+			 struct vidsrc_prm *prm,
 			 const struct vidsz *size, const char *fmt,
 			 const char *dev, vidsrc_frame_h *frameh,
 			 vidsrc_packet_h *packeth,
 			 vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;
+	struct shared *sh;
 	int err = 0;
 
 	(void)fmt;
@@ -77,17 +78,15 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->packeth = packeth;
 	st->arg    = arg;
 
-	if (ctx && *ctx && (*ctx)->id && !strcmp((*ctx)->id, "avformat")) {
-		st->shared = mem_ref(*ctx);
+	sh = avformat_shared_lookup(dev);
+	if (sh) {
+		st->shared = mem_ref(sh);
 	}
 	else {
 		err = avformat_shared_alloc(&st->shared, dev,
 					    prm->fps, size, true);
 		if (err)
 			goto out;
-
-		if (ctx)
-			*ctx = (struct media_ctx *)st->shared;
 	}
 
 	if (st->shared->vid.idx < 0 || !st->shared->vid.ctx) {
