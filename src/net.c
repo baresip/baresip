@@ -655,6 +655,29 @@ const struct sa *net_laddr_af(const struct network *net, int af)
 }
 
 
+const struct sa *net_laddr_for(const struct network *net,
+			       const struct sa *dst)
+{
+	struct le *le;
+
+	if (!net || !sa_isset(dst, SA_ADDR))
+		return NULL;
+
+	LIST_FOREACH(&net->laddrs, le) {
+		struct laddr *laddr = le->data;
+		if (sa_af(&laddr->sa) != sa_af(dst))
+			continue;
+
+		if (check_route(&laddr->sa, dst))
+			continue;
+
+		return &laddr->sa;
+	}
+
+	return NULL;
+}
+
+
 static bool laddr_cmp(struct le *le, void *arg)
 {
 	struct laddr *laddr = le->data;
