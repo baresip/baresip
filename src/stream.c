@@ -1263,6 +1263,9 @@ bool stream_is_ready(const struct stream *strm)
 	if (!sa_isset(&strm->tx.raddr_rtp, SA_ALL))
 		return false;
 
+	if (sdp_media_dir(stream_sdpmedia(strm)) == SDP_INACTIVE)
+		return false;
+
 	return !strm->terminated;
 }
 
