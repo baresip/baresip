@@ -394,7 +394,7 @@ uninstall:
 .PHONY: clean
 clean:
 	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD) $(TEST_BIN) \
-		$(STATICLIB) libbaresip.pc
+		$(STATICLIB) libbaresip.pc .cache/baresip
 	@rm -f *stamp \
 	`find . -name "*.[od]"` \
 	`find . -name "*~"` \
