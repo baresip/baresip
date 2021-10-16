@@ -13,4 +13,3 @@ typedef bool (netstring_frame_h)(struct mbuf *mb, void *arg);
 
 int netstring_insert(struct netstring **netstringp, struct tcp_conn *tc,
 		int layer, netstring_frame_h *frameh, void *arg);
-int netstring_debug(struct re_printf *pf, const struct netstring *netstring);

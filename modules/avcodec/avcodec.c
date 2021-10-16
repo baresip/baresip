@@ -1,7 +1,7 @@
 /**
  * @file avcodec.c  Video codecs using libavcodec
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>
@@ -39,10 +39,10 @@
  */
 
 
-AVCodec *avcodec_h264enc;             /* optional; specified H.264 encoder */
-AVCodec *avcodec_h264dec;             /* optional; specified H.264 decoder */
-AVCodec *avcodec_h265enc;
-AVCodec *avcodec_h265dec;
+const AVCodec *avcodec_h264enc;      /* optional; specified H.264 encoder */
+const AVCodec *avcodec_h264dec;      /* optional; specified H.264 decoder */
+const AVCodec *avcodec_h265enc;
+const AVCodec *avcodec_h265dec;
 
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
@@ -89,6 +89,7 @@ static struct vidcodec h264 = {
 	.dech      = avcodec_decode_h264,
 	.fmtp_ench = avcodec_h264_fmtp_enc,
 	.fmtp_cmph = avcodec_h264_fmtp_cmp,
+	.packetizeh= avcodec_packetize,
 };
 
 static struct vidcodec h264_1 = {

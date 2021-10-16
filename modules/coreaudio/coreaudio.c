@@ -1,7 +1,7 @@
 /**
  * @file coreaudio.c  Apple Coreaudio sound driver
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <AudioToolbox/AudioToolbox.h>
 #include <re.h>
@@ -101,7 +101,7 @@ int coreaudio_enum_devices(const char *name, struct list *dev_list,
 							0,
 							NULL,
 							&dataSize);
-		if (dataSize == 0)
+		if (kAudioHardwareNoError != status || dataSize == 0)
 			continue;
 
 		dataSize = sizeof(deviceUID);

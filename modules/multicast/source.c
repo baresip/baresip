@@ -176,6 +176,8 @@ static void poll_aubuf_tx(struct mcsource *src)
 	size_t sz;
 	size_t num_bytes;
 	struct le *le;
+	uint32_t srate;
+	uint8_t ch;
 	int err = 0;
 
 	sz = aufmt_sample_size(src->src_fmt);
@@ -224,7 +226,16 @@ static void poll_aubuf_tx(struct mcsource *src)
 		sampc = sampc_rs;
 	}
 
-	auframe_init (&af, src->enc_fmt, sampv, sampc);
+	if (src->resamp.resample) {
+		srate = src->resamp.irate;
+		ch = src->resamp.ich;
+	}
+	else {
+		srate = src->ausrc_prm.srate;
+		ch = src->ausrc_prm.ch;
+	}
+
+	auframe_init(&af, src->enc_fmt, sampv, sampc, srate, ch);
 
 	/* process exactly one audio-frame in list order */
 	for (le = src->filtl.head; le; le = le->next) {
@@ -269,7 +280,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	struct mcsource *src = arg;
 	size_t num_bytes = auframe_size(af);
 
-	if ((int)src->src_fmt != af->fmt) {
+	if (src->src_fmt != af->fmt) {
 		warning ("multicast source: ausrc format mismatch: "
 			"expected=%d(%s), actual=%d(%s)\n",
 			src->src_fmt, aufmt_name(src->src_fmt),
@@ -544,7 +555,7 @@ int mcsource_start(struct mcsource **srcp, const struct aucodec *ac,
 	src->ac = ac;
 	if (src->ac->encupdh) {
 		struct auenc_param prm;
-		prm.ptime = src->ptime;
+
 		prm.bitrate = 0;
 
 		err = src->ac->encupdh(&src->enc, src->ac, &prm, NULL);
@@ -565,9 +576,41 @@ int mcsource_start(struct mcsource **srcp, const struct aucodec *ac,
 
   out:
 	if (err)
-		src = mem_deref(src);
+		mem_deref(src);
 	else
 		*srcp = src;
 
 	return err;
+}
+
+
+/**
+ * Stop one multicast source.
+ *
+ * @param unused Multicast audio source object
+ */
+void mcsource_stop(struct mcsource *unused)
+{
+	(void) unused;
+}
+
+
+/**
+ * Initialize everything needed for the source beforhand
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int mcsource_init(void)
+{
+	return 0;
+}
+
+
+/**
+ * Terminate everything needed for the source afterwards
+ *
+ */
+void mcsource_terminate(void)
+{
+	return;
 }

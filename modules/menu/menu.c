@@ -1,7 +1,7 @@
 /**
  * @file menu.c  Interactive menu
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <time.h>
@@ -23,6 +23,13 @@ static struct menu menu;
 
 enum {
 	MIN_RINGTIME = 1000,
+};
+
+
+struct filter_arg {
+	enum call_state state;
+	const char *callid_old;
+	struct call *call;
 };
 
 
@@ -109,8 +116,10 @@ static char *errorcode_key_aufile(uint16_t scode)
 }
 
 
-static bool active_call_test(const struct call* call)
+static bool active_call_test(const struct call* call, void *arg)
 {
+	(void) arg;
+
 	return call_state(call) == CALL_STATE_ESTABLISHED &&
 			!call_is_onhold(call);
 }
@@ -118,10 +127,10 @@ static bool active_call_test(const struct call* call)
 
 static void find_first_call(struct call *call, void *arg)
 {
-	struct call **callp = arg;
+	struct filter_arg *fa = arg;
 
-	if (!*callp)
-		*callp = call;
+	if (!fa->call)
+		fa->call = call;
 }
 
 
@@ -140,6 +149,7 @@ struct call *menu_find_call_state(enum call_state st)
 	return NULL;
 }
 
+
 /**
  * Search all User-Agents for a call that matches
  *
@@ -150,11 +160,10 @@ struct call *menu_find_call_state(enum call_state st)
  */
 struct call *menu_find_call(call_match_h *matchh)
 {
-	struct call *call = NULL;
+	struct filter_arg fa = {CALL_STATE_UNKNOWN, NULL, NULL};
 
-	uag_filter_calls(find_first_call, matchh, &call);
-
-	return call;
+	uag_filter_calls(find_first_call, matchh, &fa);
+	return fa.call;
 }
 
 
@@ -165,60 +174,110 @@ static void menu_stop_play(void)
 }
 
 
-static void menu_play(const char *ckey, const char *fname, int repeat)
+static int menu_ovkey(char **key, const struct call *call, struct pl *suffix)
+{
+	int err;
+	struct mbuf *mb = mbuf_alloc(32);
+	if (!mb)
+		return ENOMEM;
+
+	err = mbuf_printf(mb, "%s-%r", call_id(call), suffix);
+	if (err)
+		goto out;
+
+	mb->pos = 0;
+	err = mbuf_strdup(mb, key, mb->end);
+out:
+	mem_deref(mb);
+	return err;
+}
+
+
+static int menu_ovkey_str(char **key, const struct call *call,
+			  const char *suffix)
+{
+	struct pl pl;
+	pl_set_str(&pl, suffix);
+	return menu_ovkey(key, call, &pl);
+}
+
+
+static bool menu_play(const struct call *call,
+		const char *ckey, const char *fname, int repeat)
 {
 	struct config *cfg = conf_config();
 	struct player *player = baresip_player();
-
+	char *ovkey;
+	const char *ovaukey = NULL;
 	struct pl pl = PL_INIT;
 	char *file = NULL;
+	int err;
 
-	if (conf_get(conf_cur(), ckey, &pl))
+	if (ckey) {
+		err = menu_ovkey_str(&ovkey, call, ckey);
+		if (!err) {
+			ovaukey = odict_string(menu.ovaufile, ovkey);
+			mem_deref(ovkey);
+		}
+
+		if (ovaukey && !strcmp(ovaukey, "none"))
+			return false;
+
+		if (ovaukey)
+			(void)conf_get(conf_cur(), ovaukey, &pl);
+
+		if (!pl_isset(&pl))
+			(void)conf_get(conf_cur(), ckey, &pl);
+	}
+
+	if (!pl_isset(&pl))
 		pl_set_str(&pl, fname);
 
 	if (!pl_isset(&pl))
-		return;
+		return false;
 
 	pl_strdup(&file, &pl);
 	menu_stop_play();
-	(void)play_file(&menu.play, player, file, repeat,
-			cfg->audio.play_mod,
-			cfg->audio.play_dev);
+	err = play_file(&menu.play, player, file, repeat,
+			cfg->audio.alert_mod,
+			cfg->audio.alert_dev);
 	mem_deref(file);
+
+	return err == 0;
 }
 
 
 static void play_incoming(const struct call *call)
 {
+	enum answermode am = account_answermode(call_account(call));
+
 	/* stop any ringtones */
 	menu_stop_play();
 
-	/* Only play the ringtones if answermode is "Manual".
-	 * If the answermode is "auto" then be silent.
-	 */
-	if (ANSWERMODE_MANUAL == account_answermode(call_account(call))) {
+	if (am != ANSWERMODE_MANUAL && (am != ANSWERMODE_EARLY_VIDEO &&
+		call_early_video_available(call)))
+		return;
 
-		if (menu_find_call(active_call_test)) {
-			menu_play("callwaiting_aufile", "callwaiting.wav", 3);
-		}
-		else {
-			/* Alert user */
-			menu_play("ring_aufile", "ring.wav", -1);
-		}
+	if (menu_find_call(active_call_test)) {
+		menu_play(call, "callwaiting_aufile", "callwaiting.wav", 3);
+	}
+	else {
+		/* Alert user */
+		menu_play(call, "ring_aufile", "ring.wav", -1);
 	}
 }
 
 
-static void play_ringback(void)
+static void play_ringback(const struct call *call)
 {
 	/* stop any ringtones */
 	menu_stop_play();
 
 	if (menu.ringback_disabled) {
-		info("\nRingback disabled\n");
+		info("menu: ringback disabled\n");
 	}
 	else {
-		menu_play("ringback_aufile", "ringback.wav", -1);
+		menu_play(call, "ringback_aufile", "ringback.wav", -1);
 		menu.ringback = true;
 	}
 }
@@ -234,7 +293,7 @@ static void play_resume(void)
 		break;
 	case CALL_STATE_RINGING:
 		if (!menu.ringback && !menu_find_call(active_call_test))
-			play_ringback();
+			play_ringback(call);
 		break;
 	default:
 		break;
@@ -321,7 +380,7 @@ static void menu_play_closed(struct call *call)
 		key = errorcode_key_aufile(scode);
 		fb = errorcode_fb_aufile(scode);
 
-		menu_play(key, fb, 1);
+		menu_play(call, key, fb, 1);
 	}
 }
 
@@ -340,23 +399,89 @@ static void auans_play_finished(struct play *play, void *arg)
 }
 
 
-static void start_sip_autoanswer(struct call *call)
+static bool alert_uri_supported(const char *uri)
 {
+	if (!re_regex(uri, strlen(uri), "https://"))
+		return true;
+
+	if (!re_regex(uri, strlen(uri), "http://"))
+		return true;
+
+	if (!re_regex(uri, strlen(uri), "file://") && fs_isfile(uri + 7))
+		return true;
+
+	return false;
+}
+
+
+static void start_autoanswer(struct call *call)
+{
+	struct account *acc = call_account(call);
 	int32_t adelay = call_answer_delay(call);
-	bool beep = true;
+	const char *aluri = call_alerturi(call);
+	enum sipansbeep bmet = account_sipansbeep(acc);
+	bool beep = false;
 
 	if (adelay == -1)
 		return;
 
-	conf_get_bool(conf_cur(), "sip_autoanswer_beep", &beep);
+	if (bmet) {
+		if (bmet != SIPANSBEEP_LOCAL && aluri &&
+				alert_uri_supported(aluri))
+			beep = menu_play(call, NULL, aluri, 1);
+
+		if (!beep)
+			beep = menu_play(call, "sip_autoanswer_aufile",
+					 "autoanswer.wav", 1);
+	}
+
 	if (beep) {
-		menu_play("sip_autoanswer_aufile", "autoanswer.wav", 1);
 		play_set_finish_handler(menu.play, auans_play_finished, call);
 	}
 	else {
 		call_start_answtmr(call, adelay);
 		if (adelay >= MIN_RINGTIME)
 			play_incoming(call);
+	}
+}
+
+
+static bool ovaufile_del(struct le *le, void *arg)
+{
+	struct odict_entry *oe = le->data;
+	struct call *call = arg;
+	const char *id = call_id(call);
+
+	if (!strncmp(odict_entry_key(oe), id, str_len(id)))
+		mem_deref(oe);
+
+	return false;
+}
+
+
+static void process_module_event(struct call *call, const char *prm)
+{
+	int err;
+	struct pl module, event, data;
+	struct pl from, to;
+	char *ovkey;
+
+	err = re_regex(prm, strlen(prm), "[^,]*,[^,]*,[~]*",
+					 &module, &event, &data);
+	if (err)
+		return;
+
+	if (!pl_strcmp(&event, "override-aufile")) {
+		err = re_regex(data.p, data.l, "[^:]*:[~]*", &from, &to);
+		if (err)
+			return;
+
+		err = menu_ovkey(&ovkey, call, &from);
+		if (err)
+			return;
+
+		odict_entry_add(menu.ovaufile, ovkey, ODICT_STRING, to.p);
+		mem_deref(ovkey);
 	}
 }
 
@@ -371,7 +496,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	enum sdp_dir ardir, vrdir;
 	uint32_t count;
 	int err;
-	(void)prm;
 	(void)arg;
 
 #if 0
@@ -380,17 +504,26 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 #endif
 
 
+	ardir =sdp_media_rdir(
+			stream_sdpmedia(audio_strm(call_audio(call))));
 	count = uag_call_count();
+
 	switch (ev) {
 
 	case UA_EVENT_CALL_INCOMING:
+
+		if (call_state(call) != CALL_STATE_INCOMING)
+			return;
+
+		if (account_answermode(acc) == ANSWERMODE_AUTO) {
+			(void)call_answer(call, 200, VIDMODE_ON);
+			return;
+		}
 
 		/* set the current User-Agent to the one with the call */
 		menu_selcall(call);
 		menu_stop_play();
 
-		ardir =sdp_media_rdir(
-			stream_sdpmedia(audio_strm(call_audio(call))));
 		vrdir = sdp_media_rdir(
 			stream_sdpmedia(video_strm(call_video(call))));
 		if (!call_has_video(call))
@@ -401,25 +534,38 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		     account_aor(acc), call_peername(call), call_peeruri(call),
 		     sdp_dir_name(ardir), sdp_dir_name(vrdir));
 
-		if (acc && account_sip_autoanswer(acc))
+		if (account_sip_autoanswer(acc)) {
 			adelay = call_answer_delay(call);
+		}
+		else if (account_answerdelay(acc)) {
+			adelay = account_answerdelay(acc);
+			call_set_answer_delay(call, adelay);
+		}
 
 		if (adelay == -1)
 			play_incoming(call);
 		else
-			start_sip_autoanswer(call);
+			start_autoanswer(call);
 
+		break;
+
+	case UA_EVENT_CALL_LOCAL_SDP:
+		if (call_state(call) == CALL_STATE_OUTGOING)
+			menu_selcall(call);
 		break;
 
 	case UA_EVENT_CALL_RINGING:
 		menu_selcall(call);
 		if (!menu.ringback && !menu_find_call(active_call_test))
-			play_ringback();
+			play_ringback(call);
 		break;
 
 	case UA_EVENT_CALL_PROGRESS:
 		menu_selcall(call);
-		menu_stop_play();
+		if (ardir != SDP_INACTIVE)
+			menu_stop_play();
+		else if (!menu.ringback && !menu_find_call(active_call_test))
+			play_ringback(call);
 		break;
 
 	case UA_EVENT_CALL_ANSWERED:
@@ -470,11 +616,14 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		}
 
 		if (!str_cmp(call_id(call), menu.callid)) {
-			menu_play_closed(call);
+			if (count==1)
+				menu_play_closed(call);
+
 			menu_selcall(NULL);
 			play_resume();
 		}
 
+		hash_apply(menu.ovaufile->ht, ovaufile_del, call);
 		break;
 
 	case UA_EVENT_CALL_REMOTE_SDP:
@@ -534,6 +683,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		info("menu: audio error (%s)\n", prm);
 		break;
 
+	case UA_EVENT_MODULE:
+		process_module_event(call, prm);
+		break;
+
 	default:
 		break;
 	}
@@ -574,14 +727,30 @@ struct menu *menu_get(void)
 }
 
 
+static bool filter_call(const struct call *call, void *arg)
+{
+	struct filter_arg *fa = arg;
+
+	if (call_state(call) != fa->state)
+		return false;
+
+	if (!str_cmp(call_id(call), fa->callid_old))
+		return false;
+
+	return true;
+}
+
+
 /**
- * Selects the active call.
+ * Selects the active call. If parameter call is NULL, then choose a call.
+ * Prefer call state established before early, ringing, outgoing and incoming
  *
  * @param call The call
  */
 void menu_selcall(struct call *call)
 {
 	int i;
+	struct filter_arg fa = {CALL_STATE_UNKNOWN, menu.callid, call};
 	enum call_state state[] = {
 		CALL_STATE_INCOMING,
 		CALL_STATE_OUTGOING,
@@ -593,21 +762,19 @@ void menu_selcall(struct call *call)
 	if (!call) {
 		/* select another call */
 		for (i = ARRAY_SIZE(state)-1; i >= 0; --i) {
-			call = menu_find_call_state(state[i]);
+			fa.state = i;
+			uag_filter_calls(find_first_call, filter_call, &fa);
 
-			if (!str_cmp(call_id(call), menu.callid))
-				call = NULL;
-
-			if (call)
+			if (fa.call)
 				break;
 		}
 	}
 
 	menu.callid = mem_deref(menu.callid);
 
-	if (call) {
-		str_dup(&menu.callid, call_id(call));
-		call_set_current(ua_calls(call_get_ua(call)), call);
+	if (fa.call) {
+		str_dup(&menu.callid, call_id(fa.call));
+		call_set_current(ua_calls(call_get_ua(call)), fa.call);
 	}
 }
 
@@ -711,6 +878,29 @@ int menu_param_decode(const char *prm, const char *name, struct pl *val)
 }
 
 
+/**
+ * Decode an SDP direction
+ *
+ * @param pl  SDP direction as string
+ *
+ * @return sdp_dir SDP direction, SDP_SENDRECV as fallback
+ */
+enum sdp_dir decode_sdp_enum(const struct pl *pl)
+{
+	if (!pl_strcmp(pl, "inactive")) {
+		return SDP_INACTIVE;
+	}
+	else if (!pl_strcmp(pl, "sendonly")) {
+		return  SDP_SENDONLY;
+	}
+	else if (!pl_strcmp(pl, "recvonly")) {
+		return SDP_RECVONLY;
+	}
+
+	return SDP_SENDRECV;
+}
+
+
 static int module_init(void)
 {
 	struct pl val;
@@ -724,6 +914,9 @@ static int module_init(void)
 	menu.clean_number = false;
 	menu.play = NULL;
 	menu.adelay = -1;
+	err = odict_alloc(&menu.ovaufile, 8);
+	if (err)
+		return err;
 
 	/*
 	 * Read the config values
@@ -796,6 +989,8 @@ static int module_close(void)
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
 	menu.callid = mem_deref(menu.callid);
+	menu.ovaufile = mem_deref(menu.ovaufile);
+	menu.ansval = mem_deref(menu.ansval);
 	menu_stop_play();
 
 	tmr_cancel(&menu.tmr_redial);

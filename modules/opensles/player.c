@@ -1,7 +1,7 @@
 /**
  * @file opensles/player.c  OpenSLES audio driver -- playback
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>
@@ -16,12 +16,12 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
 	auplay_write_h *wh;
 	void *arg;
 	int16_t *sampv[N_PLAY_QUEUE_BUFFERS];
 	size_t   sampc;
 	uint8_t  bufferId;
+	struct auplay_prm prm;
 
 	SLObjectItf outputMixObject;
 	SLObjectItf bqPlayerObject;
@@ -52,7 +52,8 @@ static void bqPlayerCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 	struct auplay_st *st = context;
 	struct auframe af;
 
-	auframe_init(&af, AUFMT_S16LE, st->sampv[st->bufferId], st->sampc);
+	auframe_init(&af, AUFMT_S16LE, st->sampv[st->bufferId], st->sampc,
+		     st->prm.srate, st->prm.ch);
 
 	st->wh(&af, st->arg);
 
@@ -171,9 +172,9 @@ int opensles_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
+	st->prm = *prm;
 
 	st->sampc = prm->srate * prm->ch * PTIME / 1000;
 

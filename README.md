@@ -34,6 +34,7 @@ Distributed under BSD license
   - Repeat last call (redial)
   - Message Waiting Indication (MWI)
   - Address book with presence
+  - Conferencing
 
 * Signaling:
   - SIP protocol support
@@ -76,7 +77,6 @@ Distributed under BSD license
   - G.722
   - G.726
   - GSM
-  - iLBC
   - L16
   - MPA
   - Opus
@@ -88,12 +88,11 @@ Distributed under BSD license
   - Gstreamer playbin input audio-driver
   - JACK Audio Connection Kit audio-driver
   - MacOSX/iOS coreaudio/audiounit audio-driver
-  - Open Sound System (OSS) audio-driver
   - Portaudio audio-driver
   - Windows winwave audio-driver
 
 * Video:
-  - Support for H.265, H.264, H.263, VP8, VP9 Video
+  - Support for H.263, H.264, H.265, VP8, VP9, AV1 Video
   - Configurable resolution/framerate/bitrate
   - Configurable video input/output
   - Support for asymmetric video
@@ -101,19 +100,18 @@ Distributed under BSD license
   - Hardware acceleration for video encoder/decoder
 
 * Video-codecs:
-  - H.265
-  - H.264
+  - AV1
   - H.263
+  - H.264
+  - H.265
   - VP8
   - VP9
 
 * Video-drivers:
   - iOS avcapture video-source
   - FFmpeg/libav libavformat/avdevice input
-  - Cairo video-source test module
   - Direct Show video-source
   - MacOSX AVCapture video-source
-  - RST media player
   - Linux V4L/V4L2 video-source
   - X11 grabber video-source
   - DirectFB video-output
@@ -186,10 +184,10 @@ the first time you run baresip.
 
 ### Examples
 
-Configuration examples are available from the
+* Configuration examples are available in the
 [examples](https://github.com/baresip/baresip/tree/master/docs/examples)
 directory.
-
+* Documentation on configuring baresip can be found in the [Wiki](https://github.com/baresip/baresip/wiki/Configuration).
 
 ## License
 
@@ -223,13 +221,12 @@ aptx          Audio Processing Technology codec (aptX)
 aubridge      Audio bridge module
 audiounit     AudioUnit audio driver for MacOSX/iOS
 aufile        Audio module for using a WAV-file as audio input
-auloop        Audio-loop test module
 ausine        Audio sine wave input module
+av1           AV1 video codec
 avcapture     Video source using iOS AVFoundation video capture
 avcodec       Video codec using FFmpeg/libav libavcodec
 avformat      Video source using FFmpeg/libav libavformat
 b2bua         Back-to-Back User-Agent (B2BUA) module
-cairo         Cairo video source
 codec2        Codec2 low bit rate speech codec
 cons          UDP/TCP console UI driver
 contact       Contacts module
@@ -255,32 +252,30 @@ gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module
 i2s           I2S (Inter-IC Sound) audio driver
 ice           ICE protocol for NAT Traversal
-ilbc          iLBC audio codec
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
 menu          Interactive menu
+mixminus      Mixes N-1 audio streams for conferencing
 mpa           MPA Speech and Audio Codec
 multicast     Multicast RTP send and receive
 mqtt          MQTT (Message Queue Telemetry Transport) module
 mwi           Message Waiting Indication
 natpmp        NAT Port Mapping Protocol (NAT-PMP) module
+netroam       Detects and applies changes of the local network addresses
 omx           OpenMAX IL video display module
 opensles      OpenSLES audio driver
 opus          OPUS Interactive audio codec
-oss           Open Sound System (OSS) audio driver
 pcp           Port Control Protocol (PCP) module
 plc           Packet Loss Concealment (PLC) using spandsp
 portaudio     Portaudio driver
 pulse         Pulseaudio driver
 presence      Presence module
 rtcpsummary   RTCP summary module
-rst           Radio streamer using mpg123
 sdl           Simple DirectMedia Layer 2.0 (SDL) video output driver
 selfview      Video selfview module
 snapshot      Save video-stream as PNG images
 sndfile       Audio dumper using libsndfile
 sndio         Audio driver for OpenBSD
-speex_pp      Audio pre-processor using libspeexdsp
 srtp          Secure RTP encryption (SDES) using libre SRTP-stack
 stdio         Standard input/output UI driver
 stun          Session Traversal Utilities for NAT (STUN) module
@@ -289,10 +284,8 @@ syslog        Syslog module
 turn          Obtaining Relay Addresses from STUN (TURN) module
 uuid          UUID generator and loader
 v4l2          Video4Linux2 video source
-v4l2_codec    Video4Linux2 video codec module (H264 hardware encoding)
 vidbridge     Video bridge module
 vidinfo       Video info overlay module
-vidloop       Video-loop test module
 vp8           VP8 video codec
 vp9           VP9 video codec
 vumeter       Display audio levels in console
@@ -316,8 +309,6 @@ zrtp          ZRTP media encryption module
 * RFC 3640  RTP Payload Format for Transport of MPEG-4 Elementary Streams
 * RFC 3856  A Presence Event Package for SIP
 * RFC 3863  Presence Information Data Format (PIDF)
-* RFC 3951  Internet Low Bit Rate Codec (iLBC)
-* RFC 3952  RTP Payload Format for iLBC Speech
 * RFC 4145  TCP-Based Media Transport in SDP
 * RFC 4240  Basic Network Media Services with SIP (partly)
 * RFC 4347  Datagram Transport Layer Security
@@ -340,6 +331,7 @@ zrtp          ZRTP media encryption module
 * RFC 5761  Multiplexing RTP Data and Control Packets on a Single Port
 * RFC 5763  Framework for Establishing a SRTP Security Context Using DTLS
 * RFC 5764  DTLS Extension to Establish Keys for SRTP
+* RFC 5888  The SDP Grouping Framework
 * RFC 6157  IPv6 Transition in SIP
 * RFC 6184  RTP Payload Format for H.264 Video
 * RFC 6263  App. Mechanism for Keeping Alive NAT Associated with RTP / RTCP
@@ -354,39 +346,9 @@ zrtp          ZRTP media encryption module
 * RFC 7741  RTP Payload Format for VP8 Video
 * RFC 7742  WebRTC Video Processing and Codec Requirements
 * RFC 7798  RTP Payload Format for High Efficiency Video Coding (HEVC)
+* RFC 8843  Negotiating Media Multiplexing Using SDP
 
-* draft-ietf-payload-vp9-11
-
-
-## Architecture:
-(note: out of date, needs updating)
-
-```
-                   .------.
-                   |Video |
-                 _ |Stream|\
-                 /|'------' \ 1
-                /            \
-               /             _\|
- .--. N  .----. M  .------. 1  .-------. 1  .-----.
- |UA|--->|Call|--->|Audio |--->|Generic|--->|Media|
- '--'    '----'    |Stream|    |Stream |    | NAT |
-            |1     '------'    '-------'    '-----'
-            |         C|       1|   |
-           \|/      .-----.  .----. |
-        .-------.   |Codec|  |Jbuf| |1
-        | SIP   |   '-----'  '----' |
-        |Session|     1|       /|\  |
-        '-------'    .---.      |  \|/
-                     |DSP|    .--------.
-                     '---'    |RTP/RTCP|
-                              '--------'
-                              |  SRTP  |
-                              '--------'
-```
-
-   A User-Agent (UA) has 0-N SIP Calls
-   A SIP Call has 0-M Media Streams
+* draft-ietf-payload-vp9-16
 
 
 ## Supported platforms:
@@ -419,9 +381,8 @@ zrtp          ZRTP media encryption module
 
 ### Supported versions of OpenSSL
 
-* OpenSSL version 1.0.1
-* OpenSSL version 1.0.2
 * OpenSSL version 1.1.0
+* OpenSSL version 1.1.1
 * LibreSSL version 2.x
 * LibreSSL version 3.x
 

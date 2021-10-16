@@ -1,7 +1,7 @@
 /**
  * @file evdev.c Input event device UI module
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <linux/input.h>
+#include <string.h>
 #include <re.h>
 #include <baresip.h>
 #include "print.h"
@@ -270,6 +271,8 @@ static int buzz(const struct ui_st *st, int value)
 {
 	struct input_event ev;
 	ssize_t n;
+
+	memset(&ev, 0, sizeof(ev));
 
 	ev.type  = EV_SND;
 	ev.code  = SND_BELL;

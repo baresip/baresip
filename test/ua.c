@@ -1,7 +1,7 @@
 /**
  * @file test/ua.c  Baresip selftest -- User-Agent (UA)
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>
@@ -730,7 +730,6 @@ static void options_resp_handler(int err, const struct sip_msg *msg, void *arg)
 	pl_set_mbuf(&content, msg->mb);
 
 	ASSERT_EQ(0, re_regex(content.p, content.l, "v=0"));
-	ASSERT_EQ(0, re_regex(content.p, content.l, "a=tool:baresip"));
 	ASSERT_EQ(0, re_regex(content.p, content.l, "m=audio"));
 
  out:

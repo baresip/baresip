@@ -1,7 +1,7 @@
 /**
  * @file src/module.c Module loading
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>
@@ -107,9 +107,12 @@ static int module_handler(const struct pl *val, void *arg)
 }
 
 
+/* XXX: remove this after a grace period */
 static int module_tmp_handler(const struct pl *val, void *arg)
 {
 	struct mod *mod = NULL;
+	warning("module_tmp %r is deprecated,"
+		" use 'module' or 'module_app' instead\n", val);
 	(void)load_module(&mod, arg, val);
 	mem_deref(mod);
 	return 0;

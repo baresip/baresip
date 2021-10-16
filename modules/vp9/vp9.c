@@ -1,7 +1,7 @@
 /**
  * @file vp9.c  VP9 video codec
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>
@@ -25,7 +25,7 @@
  *
  *     http://www.webmproject.org/
  *
- *     draft-ietf-payload-vp9-07
+ *     draft-ietf-payload-vp9-16
  */
 
 

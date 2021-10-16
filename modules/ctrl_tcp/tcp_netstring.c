@@ -210,13 +210,3 @@ int netstring_insert(struct netstring **netstringp, struct tcp_conn *tc,
 
 	return err;
 }
-
-
-int netstring_debug(struct re_printf *pf, const struct netstring *netstring)
-{
-	if (!netstring)
-		return 0;
-
-	return re_hprintf(pf, "tx=%llu, rx=%llu",
-			              netstring->n_tx, netstring->n_rx);
-}

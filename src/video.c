@@ -1,7 +1,10 @@
 /**
  * @file src/video.c  Video stream
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
+ * Copyright (C) 2021 by:
+ *     Media Magic Technologies <developer@mediamagictechnologies.com>
+ *     and Divus GmbH <developer@divus.eu>
  *
  * \ref GenericVideoStream
  */
@@ -164,6 +167,7 @@ struct video {
 struct vidqent {
 	struct le le;
 	struct sa dst;
+	bool ext;
 	bool marker;
 	uint8_t pt;
 	uint32_t ts;
@@ -174,6 +178,7 @@ struct vidqent {
 static void request_picture_update(struct vrx *vrx);
 static void video_stop_source(struct video *v, struct media_ctx **ctx);
 
+
 static void vidqent_destructor(void *arg)
 {
 	struct vidqent *qent = arg;
@@ -183,11 +188,12 @@ static void vidqent_destructor(void *arg)
 }
 
 
-static int vidqent_alloc(struct vidqent **qentp,
+static int vidqent_alloc(struct vidqent **qentp, struct stream *strm,
 			 bool marker, uint8_t pt, uint32_t ts,
 			 const uint8_t *hdr, size_t hdr_len,
 			 const uint8_t *pld, size_t pld_len)
 {
+	struct bundle *bun = stream_bundle(strm);
 	struct vidqent *qent;
 	int err = 0;
 
@@ -198,6 +204,7 @@ static int vidqent_alloc(struct vidqent **qentp,
 	if (!qent)
 		return ENOMEM;
 
+	qent->ext    = false;
 	qent->marker = marker;
 	qent->pt     = pt;
 	qent->ts     = ts;
@@ -209,6 +216,36 @@ static int vidqent_alloc(struct vidqent **qentp,
 	}
 
 	qent->mb->pos = qent->mb->end = RTP_PRESZ;
+
+	if (bundle_state(bun) != BUNDLE_NONE) {
+
+		const char *mid = stream_mid(strm);
+		size_t ext_len = 0;
+		size_t start = qent->mb->pos;
+		size_t pos;
+
+		/* skip the extension header */
+		qent->mb->pos = start + RTPEXT_HDR_SIZE;
+
+		pos = qent->mb->pos;
+
+		rtpext_encode(qent->mb, bundle_extmap_mid(bun),
+			      str_len(mid), (void *)mid);
+
+		ext_len = qent->mb->pos - pos;
+
+		/* write the Extension header at the beginning */
+		qent->mb->pos = start;
+
+		err = rtpext_hdr_encode(qent->mb, ext_len);
+		if (err)
+			goto out;
+
+		qent->mb->pos = start + RTPEXT_HDR_SIZE + ext_len;
+		qent->mb->end = start + RTPEXT_HDR_SIZE + ext_len;
+
+		qent->ext = true;
+	}
 
 	if (hdr)
 		(void)mbuf_write_mem(qent->mb, hdr, hdr_len);
@@ -257,8 +294,8 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 
 		sent += mbuf_get_left(qent->mb);
 
-		stream_send(vtx->video->strm, false, qent->marker, qent->pt,
-			    qent->ts, qent->mb);
+		stream_send(vtx->video->strm, qent->ext, qent->marker,
+			    qent->pt, qent->ts, qent->mb);
 
 		le = le->next;
 		mem_deref(qent);
@@ -356,13 +393,13 @@ static int packet_handler(bool marker, uint64_t ts,
 	/* add random timestamp offset */
 	rtp_ts = vtx->ts_offset + (ts & 0xffffffff);
 
-	err = vidqent_alloc(&qent, marker, strm->pt_enc, rtp_ts,
+	err = vidqent_alloc(&qent, strm, marker, stream_pt_enc(strm), rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
 	if (err)
 		return err;
 
 	lock_write_get(vtx->lock_tx);
-	qent->dst = *sdp_media_raddr(strm->sdp);
+	qent->dst = *sdp_media_raddr(stream_sdpmedia(strm));
 	list_append(&vtx->sendq, &qent->le, qent);
 	lock_rel(vtx->lock_tx);
 
@@ -380,7 +417,7 @@ static int packet_handler(bool marker, uint64_t ts,
  * @param timestamp  Frame timestamp in VIDEO_TIMEBASE units
  */
 static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
-			    uint64_t timestamp)
+			    struct vidpacket *packet, uint64_t timestamp)
 {
 	struct le *le;
 	int err = 0;
@@ -388,6 +425,23 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 
 	if (!vtx->enc)
 		return;
+
+	if (packet) {
+		lock_write_get(vtx->lock_enc);
+
+		if (vtx->vc && vtx->vc->packetizeh) {
+			err = vtx->vc->packetizeh(vtx->enc, packet);
+			if (err)
+				goto out;
+
+			vtx->picup = false;
+		}
+		else {
+			warning("video: Skipping Packet as"
+				" Copy Handler not initialized ..\n");
+		}
+		goto out;
+	}
 
 	lock_write_get(vtx->lock_tx);
 	sendq_empty = (vtx->sendq.head == NULL);
@@ -468,7 +522,18 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 	++vtx->stats.src_frames;
 
 	/* Encode and send */
-	encode_rtp_send(vtx, frame, timestamp);
+	encode_rtp_send(vtx, frame, NULL, timestamp);
+}
+
+
+static void vidsrc_packet_handler(struct vidpacket *packet, void *arg)
+{
+	struct vtx *vtx = arg;
+
+	MAGIC_CHECK(vtx->video);
+
+	/* Encode and send */
+	encode_rtp_send(vtx, NULL, packet, packet->timestamp);
 }
 
 
@@ -540,6 +605,28 @@ static void picup_tmr_handler(void *arg)
 }
 
 
+static void send_fir(struct stream *s, bool pli)
+{
+	int err;
+
+	if (pli) {
+		uint32_t ssrc;
+
+		err = stream_ssrc_rx(s, &ssrc);
+		if (!err)
+			err = rtcp_send_pli(stream_rtp_sock(s), ssrc);
+	}
+	else
+		err = rtcp_send_fir(stream_rtp_sock(s),
+				    rtp_sess_ssrc(stream_rtp_sock(s)));
+
+	if (err) {
+		warning("video: failed to send RTCP %s: %m\n",
+			pli ? "PLI" : "FIR", err);
+	}
+}
+
+
 static void request_picture_update(struct vrx *vrx)
 {
 	struct video *v = vrx->video;
@@ -550,7 +637,7 @@ static void request_picture_update(struct vrx *vrx)
 	tmr_start(&vrx->tmr_picup, PICUP_INTERVAL, picup_tmr_handler, vrx);
 
 	/* send RTCP FIR to peer */
-	stream_send_fir(v->strm, v->nack_pli);
+	send_fir(v->strm, v->nack_pli);
 
 	++vrx->n_picup;
 }
@@ -688,13 +775,14 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 	++vrx->stats.disp_frames;
 
-	if (vrx->vd)
+	if (vrx->vd && vrx->vd->disph)
 		err = vrx->vd->disph(vrx->vidisp, v->peer, frame, timestamp);
 
 	frame_filt = mem_deref(frame_filt);
 	if (err == ENODEV) {
 		warning("video: video-display was closed\n");
 		vrx->vidisp = mem_deref(vrx->vidisp);
+		vrx->vd = NULL;
 
 		lock_rel(vrx->lock);
 
@@ -739,11 +827,13 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
-				struct mbuf *mb, unsigned lostc, void *arg)
+				struct mbuf *mb, unsigned lostc, bool *ignore,
+				void *arg)
 {
 	struct video *v = arg;
 	(void)extv;
 	(void)extc;
+	(void)ignore;
 
 	MAGIC_CHECK(v);
 
@@ -751,14 +841,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (lostc)
 		request_picture_update(&v->vrx);
 
-	if (!mb)
-		goto out;
-
-	/* Video payload-type changed? */
-	if (hdr->pt == v->vrx.pt_rx)
-		goto out;
-
- out:
 	(void)video_stream_decode(&v->vrx, hdr, mb);
 }
 
@@ -777,8 +859,14 @@ static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 		break;
 
 	case RTCP_PSFB:
-		if (msg->hdr.count == RTCP_PSFB_PLI)
+		if (msg->hdr.count == RTCP_PSFB_PLI) {
+
+			lock_write_get(v->vtx.lock_enc);
+
 			v->vtx.picup = true;
+
+			lock_rel(v->vtx.lock_enc);
+		}
 		break;
 
 	case RTCP_RTPFB:
@@ -856,7 +944,6 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
  * @param stream_prm Stream parameters
  * @param cfg        Global configuration
  * @param sdp_sess   SDP Session
- * @param label      SDP label
  * @param mnat       Media NAT (optional)
  * @param mnat_sess  Media NAT session (optional)
  * @param menc       Media Encryption (optional)
@@ -873,7 +960,7 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 int video_alloc(struct video **vp, struct list *streaml,
 		const struct stream_param *stream_prm,
 		const struct config *cfg,
-		struct sdp_session *sdp_sess, int label,
+		struct sdp_session *sdp_sess,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		const char *content, const struct list *vidcodecl,
@@ -898,7 +985,7 @@ int video_alloc(struct video **vp, struct list *streaml,
 	tmr_init(&v->tmr);
 
 	err = stream_alloc(&v->strm, streaml, stream_prm,
-			   &cfg->avt, sdp_sess, MEDIA_VIDEO, label,
+			   &cfg->avt, sdp_sess, MEDIA_VIDEO,
 			   mnat, mnat_sess, menc, menc_sess, offerer,
 			   stream_recv_handler, rtcp_handler,
 			   stream_pt_handler, v);
@@ -911,7 +998,10 @@ int video_alloc(struct video **vp, struct list *streaml,
 	stream_set_srate(v->strm, VIDEO_SRATE, VIDEO_SRATE);
 
 	if (cfg->avt.rtp_bw.max >= AUDIO_BANDWIDTH) {
-		stream_set_bw(v->strm, cfg->avt.rtp_bw.max - AUDIO_BANDWIDTH);
+		uint32_t bps = cfg->avt.rtp_bw.max - AUDIO_BANDWIDTH;
+
+		sdp_media_set_lbandwidth(stream_sdpmedia(v->strm),
+					 SDP_BANDWIDTH_AS, bps / 1000);
 	}
 
 	err |= sdp_media_set_lattr(stream_sdpmedia(v->strm), true,
@@ -1000,6 +1090,7 @@ static int set_vidisp(struct vrx *vrx)
 	int err;
 
 	vrx->vidisp = mem_deref(vrx->vidisp);
+	vrx->vd = NULL;
 
 	vrx->vidisp_prm.fullscreen = vrx->video->cfg.fullscreen;
 
@@ -1058,6 +1149,9 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 	struct sdp_media *m = NULL;
 	int err = 0;
 
+	if (!v)
+		return EINVAL;
+
 	m = stream_sdpmedia(v->strm);
 
 	debug("video: update\n");
@@ -1096,7 +1190,7 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 		}
 
 	}
-	else if (v) {
+	else {
 		info("video: video stream is disabled..\n");
 		video_stop_source(v, ctx);
 		video_stop_display(v);
@@ -1116,7 +1210,6 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
  */
 int video_start_source(struct video *v, struct media_ctx **ctx)
 {
-	struct vtx *vtx = &v->vtx;
 	struct vidsz size;
 	int err;
 
@@ -1130,6 +1223,7 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 
 	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
 
+		struct vtx* vtx = &v->vtx;
 		struct vidsrc *vs;
 
 		vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
@@ -1151,7 +1245,7 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 
 		err = vs->alloch(&vtx->vsrc, vs, ctx, &vtx->vsrc_prm,
 				 &vtx->vsrc_size, NULL, v->vtx.device,
-				 vidsrc_frame_handler,
+				 vidsrc_frame_handler, vidsrc_packet_handler,
 				 vidsrc_error_handler, vtx);
 		if (err) {
 			warning("video: could not set source to"
@@ -1432,14 +1526,6 @@ struct stream *video_strm(const struct video *v)
 }
 
 
-void video_update_picture(struct video *v)
-{
-	if (!v)
-		return;
-	v->vtx.picup = true;
-}
-
-
 /**
  * Set the current Video Source device name
  *
@@ -1470,7 +1556,8 @@ void video_sdp_attr_decode(struct video *v)
 		return;
 
 	/* RFC 4585 */
-	if (sdp_media_rattr_apply(v->strm->sdp, "rtcp-fb", nack_handler, 0))
+	if (sdp_media_rattr_apply(stream_sdpmedia(v->strm), "rtcp-fb",
+				  nack_handler, 0))
 		v->nack_pli = true;
 }
 
@@ -1608,7 +1695,8 @@ int video_set_source(struct video *v, const char *name, const char *dev)
 
 	err = vs->alloch(&vtx->vsrc, vs, NULL, &vtx->vsrc_prm,
 			 &vtx->vsrc_size, NULL, dev,
-			 vidsrc_frame_handler, vidsrc_error_handler, vtx);
+			 vidsrc_frame_handler, vidsrc_packet_handler,
+			 vidsrc_error_handler, vtx);
 	if (err)
 		return err;
 

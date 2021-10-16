@@ -1,7 +1,7 @@
 /**
  * @file src/account.c  User-Agent account
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>
@@ -40,6 +40,7 @@ static void destructor(void *arg)
 	mem_deref(acc->ausrc_dev);
 	mem_deref(acc->auplay_mod);
 	mem_deref(acc->auplay_dev);
+	mem_deref(acc->cert);
 	mem_deref(acc->extra);
 }
 
@@ -124,6 +125,30 @@ static int media_decode(struct account *acc, const struct pl *prm)
 }
 
 
+/* Decode cert parameter */
+static int cert_decode(struct account *acc, const struct pl *prm)
+{
+	int err = 0;
+
+	if (!acc || !prm)
+		return EINVAL;
+
+	err = param_dstr(&acc->cert, prm, "cert");
+	if (err)
+		return err;
+
+	if (!str_isset(acc->cert))
+		return 0;
+
+	if (!fs_isfile(acc->cert)) {
+		warning("account: certificate %s not found\n", acc->cert);
+		err = errno;
+	}
+
+	return err;
+}
+
+
 /* Decode extra parameter */
 static int extra_decode(struct account *acc, const struct pl *prm)
 {
@@ -135,6 +160,32 @@ static int extra_decode(struct account *acc, const struct pl *prm)
 	err |= param_dstr(&acc->extra, prm, "extra");
 
 	return err;
+}
+
+
+/* Decode address family parameter */
+static int af_decode(struct account *acc, const struct pl *prm)
+{
+	struct pl pl;
+	int maf;
+
+	if (!acc || !prm)
+		return EINVAL;
+
+	if (msg_param_decode(prm, "mediaaf", &pl))
+		return 0;
+
+	maf = !pl_strcasecmp(&pl, "ipv6") ? AF_INET6 :
+	      !pl_strcasecmp(&pl, "ipv4") ? AF_INET :
+	      !pl_strcasecmp(&pl, "auto") ? AF_UNSPEC : -1;
+
+	if (maf == -1) {
+		warning("account: invalid address family '%r'\n", &pl);
+		return EINVAL;
+	}
+
+	acc->maf = maf;
+	return 0;
 }
 
 
@@ -176,6 +227,12 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 		else if (0 == pl_strcasecmp(&amode, "early")) {
 			prm->answermode = ANSWERMODE_EARLY;
 		}
+		else if (0 == pl_strcasecmp(&amode, "early-video")) {
+			prm->answermode = ANSWERMODE_EARLY_VIDEO;
+		}
+		else if (0 == pl_strcasecmp(&amode, "early-audio")) {
+			prm->answermode = ANSWERMODE_EARLY_AUDIO;
+		}
 		else if (0 == pl_strcasecmp(&amode, "auto")) {
 			prm->answermode = ANSWERMODE_AUTO;
 		}
@@ -189,13 +246,25 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 }
 
 
-static void autoanswer_allow_decode(struct account *prm, const struct pl *pl)
+static void autoanswer_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl v;
 
 	if (0 == msg_param_decode(pl, "sip_autoanswer", &v)) {
 		if (0 == pl_strcasecmp(&v, "yes")) {
 			prm->sipans = true;
+		}
+	}
+
+	if (0 == msg_param_decode(pl, "sip_autoanswer_beep", &v)) {
+		if (0 == pl_strcasecmp(&v, "on")) {
+			prm->sipansbeep = SIPANSBEEP_ON;
+		}
+		else if (0 == pl_strcasecmp(&v, "off")) {
+			prm->sipansbeep = SIPANSBEEP_OFF;
+		}
+		else if (0 == pl_strcasecmp(&v, "local")) {
+			prm->sipansbeep = SIPANSBEEP_LOCAL;
 		}
 	}
 }
@@ -210,6 +279,9 @@ static void dtmfmode_decode(struct account *prm, const struct pl *pl)
 
 		if (0 == pl_strcasecmp(&dtmfmode, "info")) {
 			prm->dtmfmode = DTMFMODE_SIP_INFO;
+		}
+		else if (0 == pl_strcasecmp(&dtmfmode, "auto")) {
+			prm->dtmfmode = DTMFMODE_AUTO;
 		}
 		else {
 			prm->dtmfmode = DTMFMODE_RTP_EVENT;
@@ -308,6 +380,7 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 		char cname[64];
 		unsigned i = 0;
 
+		acc->videoen = false;
 		if (msg_param_decode(prm, "video_codecs", &vcs))
 			return 0;
 
@@ -324,6 +397,7 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 				list_append(&acc->vidcodecl, &acc->vcv[i++],
 						vc);
 
+				acc->videoen = true;
 				if (i >= ARRAY_SIZE(acc->vcv))
 					return 0;
 			}
@@ -339,6 +413,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	struct pl auth_user, tmp;
 	size_t i;
 	int err = 0;
+	char *value;
 
 	if (!acc || !aor)
 		return EINVAL;
@@ -375,7 +450,10 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 				  "outbound");
 	}
 
-	err |= param_dstr(&acc->sipnat, &aor->params, "sipnat");
+	value = NULL;
+	err |= param_dstr(&value, &aor->params, "sipnat");
+	(void)account_set_sipnat(acc, value);
+	mem_deref(value);
 
 	if (0 == msg_param_decode(&aor->params, "auth_user", &auth_user))
 		err |= pl_strdup(&acc->auth_user, &auth_user);
@@ -428,6 +506,9 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	if (!acc)
 		return ENOMEM;
 
+	acc->maf = AF_UNSPEC;
+	acc->sipansbeep = SIPANSBEEP_ON;
+	acc->videoen = true;
 	err = str_dup(&acc->buf, sipaddr);
 	if (err)
 		goto out;
@@ -450,7 +531,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	acc->ptime = 20;
 	err |= sip_params_decode(acc, &acc->laddr);
 	       answermode_decode(acc, &acc->laddr.params);
-	       autoanswer_allow_decode(acc, &acc->laddr.params);
+	       autoanswer_decode(acc, &acc->laddr.params);
 	       dtmfmode_decode(acc,&acc->laddr.params);
 	err |= audio_codecs_decode(acc, &acc->laddr.params);
 	err |= video_codecs_decode(acc, &acc->laddr.params);
@@ -458,6 +539,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	if (err)
 		goto out;
 
+	param_u32(&acc->autelev_pt, &acc->laddr.params, "autelev_pt");
 	err  = decode_pair(&acc->ausrc_mod, &acc->ausrc_dev,
 			   &acc->laddr.params, "audio_source");
 	err |= decode_pair(&acc->auplay_mod, &acc->auplay_dev,
@@ -494,7 +576,9 @@ int account_alloc(struct account **accp, const char *sipaddr)
 		}
 	}
 
+	err |= cert_decode(acc, &acc->laddr.params);
 	err |= extra_decode(acc, &acc->laddr.params);
+	err |= af_decode(acc,  &acc->laddr.params);
 
  out:
 	if (err)
@@ -586,10 +670,18 @@ int account_set_sipnat(struct account *acc, const char *sipnat)
 	if (!acc)
 		return EINVAL;
 
-	acc->sipnat = mem_deref(acc->sipnat);
-
 	if (sipnat)
-		return str_dup(&acc->sipnat, sipnat);
+		if (0 == str_casecmp(sipnat, "outbound")) {
+			acc->sipnat = mem_deref(acc->sipnat);
+			return str_dup(&acc->sipnat, sipnat);
+		}
+		else {
+			warning("account: unknown sipnat value: '%s'\n",
+				sipnat);
+			return EINVAL;
+		}
+	else
+		acc->sipnat = mem_deref(acc->sipnat);
 
 	return 0;
 }
@@ -725,6 +817,27 @@ int account_set_stun_pass(struct account *acc, const char *pass)
 	if (pass)
 		return str_dup(&acc->stun_pass, pass);
 
+	return 0;
+}
+
+
+/**
+ * Set the preferred media address family of a SIP account
+ *
+ * @param acc      User-Agent account
+ * @param mediaaf  Media address family
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_mediaaf(struct account *acc, int mediaaf)
+{
+	if (!acc)
+		return EINVAL;
+
+	if (mediaaf != AF_INET && mediaaf != AF_INET6 && mediaaf != AF_UNSPEC)
+		return EINVAL;
+
+	acc->maf = mediaaf;
 	return 0;
 }
 
@@ -984,10 +1097,13 @@ struct list *account_aucodecl(const struct account *acc)
  *
  * @param acc User-Agent account
  *
- * @return List of video codecs (struct vidcodec)
+ * @return List of video codecs (struct vidcodec), NULL if video is disabled
  */
 struct list *account_vidcodecl(const struct account *acc)
 {
+	if (acc && !acc->videoen)
+		return NULL;
+
 	return (acc && !list_isempty(&acc->vidcodecl))
 		? (struct list *)&acc->vidcodecl : baresip_vidcodecl();
 }
@@ -1098,7 +1214,8 @@ int account_set_answermode(struct account *acc, enum answermode mode)
 		return EINVAL;
 
 	if ((mode != ANSWERMODE_MANUAL) && (mode != ANSWERMODE_EARLY) &&
-	    (mode != ANSWERMODE_AUTO)) {
+	    (mode != ANSWERMODE_AUTO) && (mode != ANSWERMODE_EARLY_VIDEO) &&
+	    (mode != ANSWERMODE_EARLY_AUDIO)) {
 		warning("account: invalid answermode : `%d'\n", mode);
 		return EINVAL;
 	}
@@ -1135,7 +1252,9 @@ int account_set_dtmfmode(struct account *acc, enum dtmfmode mode)
 	if (!acc)
 		return EINVAL;
 
-	if ((mode != DTMFMODE_RTP_EVENT) && (mode != DTMFMODE_SIP_INFO)) {
+	if ((mode != DTMFMODE_RTP_EVENT) &&
+	    (mode != DTMFMODE_SIP_INFO) &&
+	    (mode != DTMFMODE_AUTO)) {
 		warning("account: invalid dtmfmode : `%d'\n", mode);
 		return EINVAL;
 	}
@@ -1315,6 +1434,21 @@ uint16_t account_stun_port(const struct account *acc)
 }
 
 
+int32_t account_answerdelay(const struct account *acc)
+{
+	return acc ? acc->adelay : 0;
+}
+
+
+void account_set_answerdelay(struct account *acc, int32_t adelay)
+{
+	if (!acc)
+		return;
+
+	acc->adelay = adelay;
+}
+
+
 /**
  * Returns if SIP auto answer is allowed for the account
  *
@@ -1327,6 +1461,73 @@ bool account_sip_autoanswer(const struct account *acc)
 }
 
 
+void account_set_sip_autoanswer(struct account *acc, bool allow)
+{
+	if (!acc)
+		return;
+
+	acc->sipans = allow;
+}
+
+
+/**
+ * Returns the beep mode for a SIP auto answer call
+ *
+ * - SIPANSBEEP_ON    ... The beep is played before the call is answered
+ *                         automatically. The locally configured audio file can
+ *                         be overwritten with the Alert-Info header URL.
+ *                         This is the default value.
+ *
+ * - SIPANSBEEP_OFF   ... No beep is played.
+ *
+ * - SIPANSBEEP_LOCAL ... The local configured beep tone is played.
+ *
+ * @param acc User-Agent account
+ * @return Beep mode
+ */
+enum sipansbeep account_sipansbeep(const struct account *acc)
+{
+	return acc ? acc->sipansbeep : SIPANSBEEP_ON;
+}
+
+
+void account_set_sipansbeep(struct account *acc, enum sipansbeep beep)
+{
+	if (!acc)
+		return;
+
+	acc->sipansbeep = beep;
+}
+
+
+/**
+ * Sets the audio payload type for telephone-events
+ *
+ * @param acc User-Agent account
+ * @param pt  Payload type
+ */
+void account_set_autelev_pt(struct account *acc, uint32_t pt)
+{
+	if (!acc)
+		return;
+
+	acc->autelev_pt = pt;
+}
+
+
+/**
+ * Returns the audio payload type for telephone-events
+ *
+ * @param acc User-Agent account
+ *
+ * @return Telephone-event payload type
+ */
+uint32_t account_autelev_pt(struct account *acc)
+{
+	return acc ? acc->autelev_pt : 0;
+}
+
+
 static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
@@ -1334,6 +1535,8 @@ static const char *answermode_str(enum answermode mode)
 	case ANSWERMODE_MANUAL: return "manual";
 	case ANSWERMODE_EARLY:  return "early";
 	case ANSWERMODE_AUTO:   return "auto";
+	case ANSWERMODE_EARLY_AUDIO:  return "early-audio";
+	case ANSWERMODE_EARLY_VIDEO:  return "early-video";
 	default: return "???";
 	}
 }
@@ -1345,8 +1548,34 @@ static const char *dtmfmode_str(enum dtmfmode mode)
 
 	case DTMFMODE_RTP_EVENT: return "rtpevent";
 	case DTMFMODE_SIP_INFO:  return "info";
+	case DTMFMODE_AUTO: 	 return "auto";
 	default: return "???";
 	}
+}
+
+
+static const char *sipansbeep_str(enum sipansbeep beep)
+{
+	switch (beep) {
+
+	case SIPANSBEEP_OFF:   return "off";
+	case SIPANSBEEP_ON:    return "on";
+	case SIPANSBEEP_LOCAL: return "local";
+	default: return "???";
+	}
+}
+
+
+/**
+ * Get the preferred address family for media of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return Address family
+ */
+int account_mediaaf(const struct account *acc)
+{
+	return acc ? acc->maf : 0;
 }
 
 
@@ -1438,6 +1667,7 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	bool uri_is_ip;
 	char *uridup;
 	char *host;
+	char *c;
 	int err = 0;
 
 	if (!buf || !uri)
@@ -1470,9 +1700,18 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	else
 		host = uridup;
 
+	c = strchr(host, ';');
+	if (c)
+		*c = 0;
+
 	uri_is_ip =
 		!sa_decode(&sa_addr, host, strlen(host)) ||
 		!sa_set_str(&sa_addr, host, 0);
+	if (!uri_is_ip && host[0] == '[' && (c = strchr(host, ']'))) {
+		*c = 0;
+		uri_is_ip = !sa_set_str(&sa_addr, host+1, 0);
+	}
+
 	mem_deref(uridup);
 
 	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
@@ -1529,7 +1768,10 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " dispname:     %s\n", acc->dispname);
 	err |= re_hprintf(pf, " answermode:   %s\n",
 			  answermode_str(acc->answermode));
-	err |= re_hprintf(pf, " sipans: %s\n", acc->sipans ? "yes" : "no");
+	err |= re_hprintf(pf, " sipans:       %s\n",
+			  acc->sipans ? "yes" : "no");
+	err |= re_hprintf(pf, " sipansbeep:  %s\n",
+			  sipansbeep_str(acc->sipansbeep));
 	err |= re_hprintf(pf, " dtmfmode:     %s\n",
 			  dtmfmode_str(acc->dtmfmode));
 	if (!list_isempty(&acc->aucodecl)) {
@@ -1541,6 +1783,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 		}
 		err |= re_hprintf(pf, "\n");
 	}
+	err |= re_hprintf(pf, " autelev_pt:   %u\n", acc->autelev_pt);
 	err |= re_hprintf(pf, " auth_user:    %s\n", acc->auth_user);
 	err |= re_hprintf(pf, " mediaenc:     %s\n",
 			  acc->mencid ? acc->mencid : "none");
@@ -1573,6 +1816,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	}
 	err |= re_hprintf(pf, " call_transfer:%s\n",
 			  account_call_transfer(acc));
+	err |= re_hprintf(pf, " cert:         %s\n", acc->cert);
 	err |= re_hprintf(pf, " extra:        %s\n",
 			  acc->extra ? acc->extra : "none");
 

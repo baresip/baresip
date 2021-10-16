@@ -1,7 +1,10 @@
 /**
  * @file avformat.c  libavformat media-source
  *
- * Copyright (C) 2010 - 2020 Creytiv.com
+ * Copyright (C) 2010 - 2020 Alfred E. Heggestad
+ * Copyright (C) 2021 by:
+ *     Media Magic Technologies <developer@mediamagictechnologies.com>
+ *     and Divus GmbH <developer@divus.eu>
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
@@ -44,7 +47,10 @@ static struct vidsrc *mod_avf;
 static enum AVHWDeviceType avformat_hwdevice = AV_HWDEVICE_TYPE_NONE;
 #endif
 static char avformat_inputformat[64];
-static AVCodec *avformat_decoder;
+static const AVCodec *avformat_decoder;
+static char pass_through[256] = "";
+static char rtsp_transport[256] = "";
+
 
 static void shared_destructor(void *arg)
 {
@@ -77,10 +83,14 @@ static void *read_thread(void *data)
 	struct shared *st = data;
 	uint64_t now, offset = tmr_jiffies();
 	double auts = 0, vidts = 0;
+	AVPacket *pkt;
+
+	pkt = av_packet_alloc();
+	if (!pkt)
+		return NULL;
 
 	while (st->run) {
 
-		AVPacket pkt;
 		int ret;
 
 		sys_msleep(4);
@@ -106,9 +116,7 @@ static void *read_thread(void *data)
 				if (now < (offset + xts))
 					break;
 
-			av_init_packet(&pkt);
-
-			ret = av_read_frame(st->ic, &pkt);
+			ret = av_read_frame(st->ic, pkt);
 			if (ret == (int)AVERROR_EOF) {
 
 				debug("avformat: rewind stream\n");
@@ -131,34 +139,41 @@ static void *read_thread(void *data)
 				goto out;
 			}
 
-			if (pkt.stream_index == st->au.idx) {
+			if (pkt->stream_index == st->au.idx) {
 
-				if (pkt.pts == AV_NOPTS_VALUE) {
+				if (pkt->pts == AV_NOPTS_VALUE) {
 					warning("no audio pts\n");
 				}
 
-				auts = 1000 * pkt.pts *
+				auts = 1000 * pkt->pts *
 					av_q2d(st->au.time_base);
 
-				avformat_audio_decode(st, &pkt);
+				avformat_audio_decode(st, pkt);
 			}
-			else if (pkt.stream_index == st->vid.idx) {
+			else if (pkt->stream_index == st->vid.idx) {
 
-				if (pkt.pts == AV_NOPTS_VALUE) {
+				if (pkt->pts == AV_NOPTS_VALUE) {
 					warning("no video pts\n");
 				}
 
-				vidts = 1000 * pkt.pts *
+				vidts = 1000 * pkt->pts *
 					av_q2d(st->vid.time_base);
 
-				avformat_video_decode(st, &pkt);
+				if (st->is_pass_through) {
+					avformat_video_copy(st, pkt);
+				}
+				else {
+					avformat_video_decode(st, pkt);
+				}
 			}
 
-			av_packet_unref(&pkt);
+			av_packet_unref(pkt);
 		}
 	}
 
  out:
+	av_packet_free(&pkt);
+
 	return NULL;
 }
 
@@ -166,7 +181,7 @@ static void *read_thread(void *data)
 static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 		      AVCodecContext *ctx)
 {
-	AVCodec *codec = avformat_decoder;
+	const AVCodec *codec = avformat_decoder;
 	int ret;
 
 	if (s->idx >= 0 || s->ctx)
@@ -241,6 +256,13 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	st->au.idx  = -1;
 	st->vid.idx = -1;
 
+	conf_get_str(conf_cur(), "avformat_pass_through",
+			  pass_through, sizeof(pass_through));
+
+	if (*pass_through != '\0' && 0==strcmp(pass_through, "yes")) {
+		st->is_pass_through = 1;
+	}
+
 	if (0 == re_regex(dev, str_len(dev), "[^,]+,[^]+", &pl_fmt, &pl_dev)) {
 
 		char format[32];
@@ -281,7 +303,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
-	if (video && fps) {
+	if (video && fps && !st->is_pass_through) {
 		re_snprintf(buf, sizeof(buf), "%2.f", fps);
 		ret = av_dict_set(&format_opts, "framerate", buf, 0);
 		if (ret != 0) {
@@ -308,6 +330,27 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		if (ret != 0) {
 			warning("avformat: av_dict_set(input_format) failed"
 					" (ret=%s)\n", av_err2str(ret));
+			err = ENOENT;
+			goto out;
+		}
+	}
+
+	if (str_isset(rtsp_transport)) {
+		ret = -1;
+
+		if ((0==strcmp(rtsp_transport, "tcp")) ||
+		    (0==strcmp(rtsp_transport, "udp")) ||
+		    (0==strcmp(rtsp_transport, "udp_multicast")) ||
+		    (0==strcmp(rtsp_transport, "http")) ||
+		    (0==strcmp(rtsp_transport, "https"))) {
+
+			ret = av_dict_set(&format_opts, "rtsp_transport",
+					  rtsp_transport, 0);
+		}
+
+		if (ret != 0) {
+			warning("avformat: av_dict_set(rtsp_transport) failed"
+				" (ret=%s)\n", av_err2str(ret));
 			err = ENOENT;
 			goto out;
 		}
@@ -410,6 +453,10 @@ static int module_init(void)
 #endif
 	char decoder[64] = "";
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
+	avcodec_register_all();
+#endif
+
 #if LIBAVUTIL_VERSION_MAJOR >= 56
 	conf_get_str(conf_cur(), "avformat_hwaccel", hwaccel, sizeof(hwaccel));
 	if (str_isset(hwaccel)) {
@@ -426,6 +473,9 @@ static int module_init(void)
 
 	conf_get_str(conf_cur(), "avformat_decoder", decoder,
 			sizeof(decoder));
+
+	conf_get_str(conf_cur(), "avformat_rtsp_transport",
+		     rtsp_transport, sizeof(rtsp_transport));
 
 	if (str_isset(decoder)) {
 		avformat_decoder = avcodec_find_decoder_by_name(decoder);

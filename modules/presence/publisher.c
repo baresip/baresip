@@ -1,7 +1,7 @@
 /**
  * @file publisher.c Presence Publisher (RFC 3903)
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  * Copyright (C) 2014 Juha Heinanen
  */
 

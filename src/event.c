@@ -1,12 +1,17 @@
 /**
  * @file src/event.c  Baresip event handling
  *
- * Copyright (C) 2017 Creytiv.com
+ * Copyright (C) 2017 Alfred E. Heggestad
  */
 
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
+
+
+enum {
+	EVENT_MAXSZ = 4096,
+};
 
 
 struct ua_eh {
@@ -47,12 +52,14 @@ static const char *event_class_name(enum ua_event ev)
 		return "application";
 
 	case UA_EVENT_CALL_INCOMING:
+	case UA_EVENT_CALL_OUTGOING:
 	case UA_EVENT_CALL_RINGING:
 	case UA_EVENT_CALL_PROGRESS:
 	case UA_EVENT_CALL_ANSWERED:
 	case UA_EVENT_CALL_ESTABLISHED:
 	case UA_EVENT_CALL_CLOSED:
 	case UA_EVENT_CALL_TRANSFER:
+	case UA_EVENT_CALL_BLIND_TRANSFER:
 	case UA_EVENT_CALL_TRANSFER_FAILED:
 	case UA_EVENT_CALL_DTMF_START:
 	case UA_EVENT_CALL_DTMF_END:
@@ -305,6 +312,56 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 
 
 /**
+ * Send a UA_EVENT_MODULE event with a general format for modules
+ *
+ * @param module Module name
+ * @param event  Event name
+ * @param ua     User-Agent object (optional)
+ * @param call   Call object (optional)
+ * @param fmt    Formatted arguments
+ * @param ...    Variable arguments
+ */
+void module_event(const char *module, const char *event, struct ua *ua,
+		struct call *call, const char *fmt, ...)
+{
+	struct le *le;
+	char *buf;
+	char *p;
+	size_t len = EVENT_MAXSZ;
+	va_list ap;
+
+	if (!module || !event)
+		return;
+
+	buf = mem_zalloc(EVENT_MAXSZ, NULL);
+	if (!buf)
+		return;
+
+	if (-1 == re_snprintf(buf, len, "%s,%s,", module, event))
+		goto out;
+
+	p = buf + str_len(buf);
+	len -= str_len(buf);
+
+	va_start(ap, fmt);
+	(void)re_vsnprintf(p, len, fmt, ap);
+	va_end(ap);
+
+	/* send event to all clients */
+	le = ehl.head;
+	while (le) {
+		struct ua_eh *eh = le->data;
+		le = le->next;
+
+		eh->h(ua, UA_EVENT_MODULE, call, buf, eh->arg);
+	}
+
+out:
+	mem_deref(buf);
+}
+
+
+/**
  * Get the name of the User-Agent event
  *
  * @param ev User-Agent event
@@ -325,12 +382,14 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_SHUTDOWN:             return "SHUTDOWN";
 	case UA_EVENT_EXIT:                 return "EXIT";
 	case UA_EVENT_CALL_INCOMING:        return "CALL_INCOMING";
+	case UA_EVENT_CALL_OUTGOING:        return "CALL_OUTGOING";
 	case UA_EVENT_CALL_RINGING:         return "CALL_RINGING";
 	case UA_EVENT_CALL_PROGRESS:        return "CALL_PROGRESS";
 	case UA_EVENT_CALL_ANSWERED:        return "CALL_ANSWERED";
 	case UA_EVENT_CALL_ESTABLISHED:     return "CALL_ESTABLISHED";
 	case UA_EVENT_CALL_CLOSED:          return "CALL_CLOSED";
 	case UA_EVENT_CALL_TRANSFER:        return "TRANSFER";
+	case UA_EVENT_CALL_BLIND_TRANSFER:  return "BLIND_TRANSFER";
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
 	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
@@ -342,6 +401,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_AUDIO_ERROR:          return "AUDIO_ERROR";
 	case UA_EVENT_CALL_LOCAL_SDP:       return "CALL_LOCAL_SDP";
 	case UA_EVENT_CALL_REMOTE_SDP:      return "CALL_REMOTE_SDP";
+	case UA_EVENT_MODULE:               return "MODULE";
 	case UA_EVENT_CUSTOM:               return "CUSTOM";
 	default: return "?";
 	}

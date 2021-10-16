@@ -49,11 +49,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <CodeAnalysisRuleSet>BasicDesignGuidelineRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(SolutionDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\misc;..\..\..\dirent\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=2048;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=2048;SHARE_PATH="/usr/share/baresip";HAVE_INET6;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
@@ -64,6 +67,7 @@
       <DisableSpecificWarnings>4142;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ObjectFileName>$(IntDir)%(RelativeDir)%(Filename).obj</ObjectFileName>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalOptions>winmm.lib ..\..\..\re\$(Platform)\$(Configuration)\bin\re-win32.lib ..\..\..\rem\$(Platform)\$(Configuration)\bin\rem-win32.lib %(AdditionalOptions)</AdditionalOptions>
@@ -79,7 +83,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>include;..\..\include;..\..\..\re\include;..\..\..\rem\include;..\..\..\misc;..\..\..\dirent\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;STATIC;HAVE_GETOPT;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=2048;SHARE_PATH="/usr/share/baresip";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;STATIC;HAVE_GETOPT;HAVE_IO_H;HAVE_SELECT;_CRT_SECURE_NO_DEPRECATE;FD_SETSIZE=2048;SHARE_PATH="/usr/share/baresip";HAVE_INET6;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -137,7 +141,9 @@
     <ClCompile Include="..\..\modules\httpd\httpd.c" />
     <ClCompile Include="..\..\modules\ice\ice.c" />
     <ClCompile Include="..\..\modules\l16\l16.c" />
+    <ClCompile Include="..\..\modules\menu\dynamic_menu.c" />
     <ClCompile Include="..\..\modules\menu\menu.c" />
+    <ClCompile Include="..\..\modules\menu\static_menu.c" />
     <ClCompile Include="..\..\modules\mwi\mwi.c" />
     <ClCompile Include="..\..\modules\natpmp\libnatpmp.c" />
     <ClCompile Include="..\..\modules\natpmp\natpmp.c" />
@@ -164,7 +170,6 @@
     <ClCompile Include="..\..\src\aucodec.c" />
     <ClCompile Include="..\..\src\audio.c" />
     <ClCompile Include="..\..\src\aufilt.c" />
-    <ClCompile Include="..\..\src\auframe.c" />
     <ClCompile Include="..\..\src\auplay.c" />
     <ClCompile Include="..\..\src\ausrc.c" />
     <ClCompile Include="..\..\src\baresip.c" />
@@ -174,7 +179,7 @@
     <ClCompile Include="..\..\src\config.c" />
     <ClCompile Include="..\..\src\contact.c" />
     <ClCompile Include="..\..\src\custom_hdrs.c" />
-    <ClCompile Include="..\..\src\h264.c" />
+    <ClCompile Include="..\..\src\dial_number.c" />
     <ClCompile Include="..\..\src\log.c" />
     <ClCompile Include="..\..\src\main.c" />
     <ClCompile Include="..\..\src\mediadev.c" />
@@ -192,6 +197,7 @@
     <ClCompile Include="..\..\src\stream.c" />
     <ClCompile Include="..\..\src\stunuri.c" />
     <ClCompile Include="..\..\src\ua.c" />
+    <ClCompile Include="..\..\src\uag.c" />
     <ClCompile Include="..\..\src\ui.c" />
     <ClCompile Include="..\..\src\vidcodec.c" />
     <ClCompile Include="..\..\src\video.c" />
@@ -201,7 +207,6 @@
     <ClCompile Include="static.c" />
     <ClCompile Include="..\..\src\rtpext.c" />
     <ClCompile Include="..\..\src\timestamp.c" />
-    <ClCompile Include="..\..\src\aulevel.c" />
     <ClCompile Include="..\..\src\vidutil.c" />
     <ClCompile Include="..\..\src\event.c" />
   </ItemGroup>

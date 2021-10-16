@@ -1,7 +1,7 @@
 /**
  * @file print.c Input event device info
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <string.h>
 #include <unistd.h>

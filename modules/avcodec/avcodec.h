@@ -1,13 +1,8 @@
 /**
  * @file avcodec.h  Video codecs using libavcodec -- internal API
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
-
-
-#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(52, 20, 100)
-#define av_frame_alloc avcodec_alloc_frame
-#endif
 
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 63, 100)
@@ -31,11 +26,11 @@
 #endif
 
 
-extern AVCodec *avcodec_h264enc;
-extern AVCodec *avcodec_h264dec;
+extern const AVCodec *avcodec_h264enc;
+extern const AVCodec *avcodec_h264dec;
 
-extern AVCodec *avcodec_h265enc;
-extern AVCodec *avcodec_h265dec;
+extern const AVCodec *avcodec_h265enc;
+extern const AVCodec *avcodec_h265dec;
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
 extern AVBufferRef *avcodec_hw_device_ctx;
@@ -56,6 +51,7 @@ int avcodec_encode_update(struct videnc_state **vesp,
 			  videnc_packet_h *pkth, void *arg);
 int avcodec_encode(struct videnc_state *st, bool update,
 		   const struct vidframe *frame, uint64_t timestamp);
+int avcodec_packetize(struct videnc_state *st, const struct vidpacket *packet);
 
 
 /*

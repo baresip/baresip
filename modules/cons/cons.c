@@ -1,7 +1,7 @@
 /**
  * @file cons.c  Socket-based command-line console
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>
@@ -33,11 +33,16 @@
 
 enum {CONS_PORT = 5555};
 
+enum {
+	RELEASE_VAL = 250  /**< Key release value in [ms] */
+};
+
 struct ui_st {
 	struct udp_sock *us;
 	struct tcp_sock *ts;
 	struct tcp_conn *tc;
 	struct sa udp_peer;
+	struct tmr tmr;
 };
 
 
@@ -47,6 +52,16 @@ static struct ui_st *cons = NULL;  /* allow only one instance */
 static int print_handler(const char *p, size_t size, void *arg)
 {
 	return mbuf_write_mem(arg, (uint8_t *)p, size);
+}
+
+
+static void timeout(void *arg)
+{
+	struct ui_st *st = arg;
+	(void)st;
+
+	/* Emulate key-release */
+	ui_input_key(baresip_uis(), KEYCODE_REL, NULL);
 }
 
 
@@ -75,6 +90,8 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 		(void)udp_send(st->us, src, mbr);
 	}
 
+	tmr_start(&st->tmr, RELEASE_VAL, timeout, st);
+
 	mem_deref(mbr);
 }
 
@@ -82,6 +99,8 @@ static void udp_recv(const struct sa *src, struct mbuf *mb, void *arg)
 static void cons_destructor(void *arg)
 {
 	struct ui_st *st = arg;
+
+	tmr_cancel(&st->tmr);
 
 	mem_deref(st->us);
 	mem_deref(st->tc);
@@ -118,6 +137,8 @@ static void tcp_recv_handler(struct mbuf *mb, void *arg)
 
 		ui_input_key(baresip_uis(), ch, &pf);
 	}
+
+	tmr_start(&st->tmr, RELEASE_VAL, timeout, st);
 }
 
 

@@ -1,7 +1,7 @@
 #
 # module.mk
 #
-# Copyright (C) 2019 Creytiv.com
+# Copyright (C) 2019 Alfred E. Heggestad
 #
 
 MOD		:= opus_multistream

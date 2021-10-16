@@ -4,6 +4,11 @@
  * Copyright (C) 2015 Charles E. Lehner
  */
 
+#define CALL_INCOMING  0
+#define CALL_OUTGOING  1
+#define CALL_MISSED    2
+#define CALL_REJECTED  3
+
 struct gtk_mod;
 struct call_window;
 struct dial_dialog;
@@ -21,15 +26,27 @@ struct vumeter_dec {
 	volatile bool started;
 };
 
+struct attended_transfer_store {
+	struct call *attended_call;
+	char *uri;
+};
+
+
 /* Main menu */
-void gtk_mod_connect(struct gtk_mod *, const char *uri);
+int gtk_mod_connect(struct gtk_mod *, const char *uri);
+int gtk_mod_connect_attended(struct gtk_mod *, const char *uri,
+						struct call *attended_call);
+int gtk_mod_transfer(struct gtk_mod *, const char *uri,
+						struct call *attended_call);
 void gtk_mod_call_window_closed(struct gtk_mod *, struct call_window *);
 
 /* Call Window */
-struct call_window *call_window_new(struct call *call, struct gtk_mod *mod);
+struct call_window *call_window_new(struct call *call, struct gtk_mod *mod,
+						struct call *attended_call);
 void call_window_got_vu_dec(struct vumeter_dec *);
 void call_window_got_vu_enc(struct vumeter_enc *);
 void call_window_transfer(struct call_window *, const char *uri);
+void call_window_atttransfer(struct call_window *, const char *uri);
 void call_window_closed(struct call_window *, const char *reason);
 void call_window_ringing(struct call_window *);
 void call_window_progress(struct call_window *);
@@ -38,7 +55,8 @@ void call_window_transfer_failed(struct call_window *, const char *reason);
 bool call_window_is_for_call(struct call_window *, struct call *);
 
 /* Dial Dialog */
-struct dial_dialog *dial_dialog_alloc(struct gtk_mod *);
+struct dial_dialog *dial_dialog_alloc(struct gtk_mod *,
+					struct call *attended_call);
 void dial_dialog_show(struct dial_dialog *);
 
 /* Call transfer dialog */

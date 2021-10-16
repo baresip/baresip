@@ -1,9 +1,11 @@
 /**
  * @file test/main.c  Selftest for Baresip core
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
+#ifdef HAVE_GETOPT
 #include <getopt.h>
+#endif
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
@@ -20,6 +22,7 @@ struct test {
 
 static const struct test tests[] = {
 	TEST(test_account),
+	TEST(test_account_uri_complete),
 	TEST(test_aulevel),
 	TEST(test_call_answer),
 	TEST(test_call_answer_hangup_a),
@@ -42,6 +45,7 @@ static const struct test tests[] = {
 	TEST(test_call_transfer),
 	TEST(test_call_video),
 	TEST(test_call_webrtc),
+	TEST(test_call_bundle),
 	TEST(test_cmd),
 	TEST(test_cmd_long),
 	TEST(test_contact),
@@ -50,6 +54,7 @@ static const struct test tests[] = {
 	TEST(test_message),
 	TEST(test_network),
 	TEST(test_play),
+	TEST(test_stunuri),
 	TEST(test_ua_alloc),
 	TEST(test_ua_options),
 	TEST(test_ua_register),
@@ -58,6 +63,8 @@ static const struct test tests[] = {
 	TEST(test_ua_register_dns),
 	TEST(test_uag_find_param),
 	TEST(test_video),
+	TEST(test_clean_number),
+	TEST(test_clean_number_only_numeric),
 };
 
 
@@ -169,6 +176,7 @@ int main(int argc, char *argv[])
 
 	log_enable_info(false);
 
+#ifdef HAVE_GETOPT
 	for (;;) {
 		const int c = getopt(argc, argv, "hlv");
 		if (0 > c)
@@ -202,6 +210,11 @@ int main(int argc, char *argv[])
 		ntests = argc - optind;
 	else
 		ntests = ARRAY_SIZE(tests);
+#else
+	(void)argc;
+	(void)argv;
+	ntests = ARRAY_SIZE(tests);
+#endif
 
 	re_printf("running baresip selftest version %s with %zu tests\n",
 		  BARESIP_VERSION, ntests);
@@ -224,6 +237,7 @@ int main(int argc, char *argv[])
 
 	uag_set_exit_handler(ua_exit_handler, NULL);
 
+#ifdef HAVE_GETOPT
 	if (argc >= (optind + 1)) {
 
 		for (i=0; i<ntests; i++) {
@@ -250,6 +264,11 @@ int main(int argc, char *argv[])
 		if (err)
 			goto out;
 	}
+#else
+	err = run_tests();
+	if (err)
+		goto out;
+#endif
 
 #if 1
 	ua_stop_all(true);

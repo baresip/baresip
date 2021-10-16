@@ -34,7 +34,11 @@ jobs:
                             libsndfile1-dev \
                             libspandsp-dev \
                             libssl-dev \
-                            libglib2.0-dev
+                            libglib2.0-dev \
+                            libopencore-amrnb-dev \
+                            libopencore-amrwb-dev \
+                            libgstreamer1.0-dev \
+                            libvpx-dev
 
     - name: install aac
       if: ${{ matrix.os == 'ubuntu-20.04' }}
@@ -49,7 +53,8 @@ jobs:
                         ffmpeg \
                         jack \
                         mpg123 \
-                        spandsp
+                        spandsp \
+                        openssl@1.1
 
     - uses: sreimers/pr-dependency-action@v0.3
       with:

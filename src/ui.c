@@ -1,7 +1,7 @@
 /**
  * @file ui.c  User Interface
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>
@@ -114,6 +114,8 @@ int ui_input_pl(struct re_printf *pf, const struct pl *pl)
 	if (pl->l > 1 && ctx)
 		err |= cmd_process(commands, &ctx, '\n', pf, NULL);
 
+	mem_deref(ctx);
+
 	return err;
 }
 
@@ -224,6 +226,7 @@ bool ui_isediting(const struct ui_sub *uis)
 int ui_password_prompt(char **passwordp)
 {
 	char pwd[64];
+	const char *p;
 	char *nl;
 	int err;
 
@@ -231,11 +234,12 @@ int ui_password_prompt(char **passwordp)
 		return EINVAL;
 
 	/* note: blocking UI call */
-	fgets(pwd, sizeof(pwd), stdin);
+	memset(pwd, 0, sizeof(pwd));
+	p = fgets(pwd, sizeof(pwd), stdin);
 	pwd[sizeof(pwd) - 1] = '\0';
 
 	nl = strchr(pwd, '\n');
-	if (nl == NULL) {
+	if (!p || nl == NULL) {
 		(void)re_printf("Invalid password (0 - 63 characters"
 				" followed by newline)\n");
 		return EINVAL;

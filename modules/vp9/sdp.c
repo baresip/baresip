@@ -1,7 +1,7 @@
 /**
  * @file vp9/sdp.c VP9 SDP Functions
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 
 #include <re.h>
@@ -34,6 +34,6 @@ int vp9_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
 	if (!mb || !fmt || !vp9 || !vp9->max_fs)
 		return 0;
 
-	return mbuf_printf(mb, "a=fmtp:%s max-fs=%u\r\n",
+	return mbuf_printf(mb, "a=fmtp:%s max-fs=%u;profile-id=0\r\n",
 			   fmt->id, vp9->max_fs);
 }

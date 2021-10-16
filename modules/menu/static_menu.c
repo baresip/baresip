@@ -1,36 +1,13 @@
 /**
  * @file static_menu.c Static menu related functions
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <re.h>
 #include <baresip.h>
 
 #include "menu.h"
-
-
-/**
- * Decode a SDP direction
- *
- * @param pl  SDP direction as string
- *
- * @return sdp_dir SDP direction, SDP_SENDRECV as fallback
- */
-static enum sdp_dir decode_sdp_enum(const struct pl *pl)
-{
-	if (!pl_strcmp(pl, "inactive")) {
-		return SDP_INACTIVE;
-	}
-	else if (!pl_strcmp(pl, "sendonly")) {
-		return  SDP_SENDONLY;
-	}
-	else if (!pl_strcmp(pl, "recvonly")) {
-		return SDP_RECVONLY;
-	}
-
-	return SDP_SENDRECV;
-}
 
 
 static const char about_fmt[] =
@@ -93,7 +70,7 @@ static int cmd_answer(struct re_printf *pf, void *arg)
 	struct call *call = ua_call(ua);
 	int err;
 
-	if (carg->prm) {
+	if (str_isset(carg->prm)) {
 		call = uag_call_find(carg->prm);
 		if (!call) {
 			re_hprintf(pf, "call %s not found\n", carg->prm);
@@ -411,50 +388,6 @@ static int ua_print_call_status(struct re_printf *pf, void *arg)
 }
 
 
-static void clean_number(char *str)
-{
-	int i = 0, k = 0;
-
-	/* only clean numeric numbers
-	 * In other cases trust the user input
-	 */
-	int err = re_regex(str, sizeof(str), "[A-Za-z]");
-	if (err == 0)
-		return;
-
-	/* remove (0) which is in some mal-formated numbers
-	 * but only if trailed by another character
-	 */
-	if (str[0] == '+' || (str[0] == '0' && str[1] == '0'))
-		while (str[i]) {
-			if (str[i] == '('
-			 && str[i+1] == '0'
-			 && str[i+2] == ')'
-			 && (str[i+3] == ' '
-				 || (str[i+3] >= '0' && str[i+3] <= '9')
-			    )
-			) {
-				str[i+1] = ' ';
-				break;
-			}
-			++i;
-		}
-	i = 0;
-	while (str[i]) {
-		if (str[i] == ' '
-		 || str[i] == '.'
-		 || str[i] == '-'
-		 || str[i] == '/'
-		 || str[i] == '('
-		 || str[i] == ')')
-			++i;
-		else
-			str[k++] = str[i++];
-	}
-	str[k] = '\0';
-}
-
-
 static enum answer_method auto_answer_method(struct re_printf *pf)
 {
 	struct pl met;
@@ -529,13 +462,15 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	}
 
 	uribuf = mbuf_alloc(64);
-	if (!uribuf)
-		return ENOMEM;
+	if (!uribuf) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	err = account_uri_complete(ua_account(ua), uribuf, uri);
 	if (err) {
 		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
-		return EINVAL;
+		goto out;
 	}
 
 	mem_deref(uri);
@@ -545,11 +480,13 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	if (err)
 		goto out;
 
-	if (menu->adelay >= 0)
+	if (menu->adelay >= 0) {
+		ua_set_autoanswer_value(ua, menu->ansval);
 		(void)ua_enable_autoanswer(ua, menu->adelay,
 				auto_answer_method(pf));
+	}
 
-
+	re_hprintf(pf, "call uri: %s\n", uri);
 	err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON);
 
 	if (menu->adelay >= 0)
@@ -571,6 +508,7 @@ out:
 static int cmd_dialdir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct menu *menu = menu_get();
 	enum sdp_dir adir, vdir;
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
 	struct pl pluri;
@@ -595,7 +533,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		err = re_regex(carg->prm, str_len(carg->prm),
 			"[^ ]* [^ ]*",&pluri, &argdir[0]);
 
-	if (err) {
+	if (err || !re_regex(argdir[0].p, argdir[0].l, "=")) {
 		(void)re_hprintf(pf, "%s", usage);
 		return EINVAL;
 	}
@@ -605,11 +543,6 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 
 	adir = decode_sdp_enum(&argdir[0]);
 	vdir = decode_sdp_enum(&argdir[1]);
-
-	if (err) {
-		(void)re_hprintf(pf, "%s", usage);
-		return err;
-	}
 
 	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
 		(void)re_hprintf(pf, "%s", usage);
@@ -621,7 +554,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		goto out;
 
 	if (!ua)
-		ua = uag_find_requri(carg->prm);
+		ua = uag_find_requri(uri);
 
 	if (!ua) {
 		(void)re_hprintf(pf, "could not find UA for %s\n", carg->prm);
@@ -630,20 +563,34 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	}
 
 	uribuf = mbuf_alloc(64);
-	if (!uribuf)
-		return ENOMEM;
+	if (!uribuf) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	err = account_uri_complete(ua_account(ua), uribuf, uri);
 	if (err) {
 		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
-		return EINVAL;
+		goto out;
 	}
 
 	mem_deref(uri);
 
 	uribuf->pos = 0;
 	err = mbuf_strdup(uribuf, &uri, uribuf->end);
+	if (err)
+		goto out;
+
+	if (menu->adelay >= 0) {
+		ua_set_autoanswer_value(ua, menu->ansval);
+		(void)ua_enable_autoanswer(ua, menu->adelay,
+				auto_answer_method(pf));
+	}
+
+	re_hprintf(pf, "call uri: %s\n", uri);
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
+	if (menu->adelay >= 0)
+		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
 	if (err)
 		goto out;
 
@@ -661,23 +608,59 @@ static int cmd_dnd(struct re_printf *pf, void *arg)
 {
 	int err = 0;
 	const struct cmd_arg *carg = arg;
+	bool en = false;
 
-	if (!str_isset(carg->prm)) {
-		err = EINVAL;
+	err = str_bool(&en, carg->prm);
+	if (err)
 		goto out;
-	}
 
-	if (!str_cmp(carg->prm, "true"))
-		uag_set_dnd(true);
-	else if (!str_cmp(carg->prm, "false"))
-		uag_set_dnd(false);
-	else
-		err = EINVAL;
+	uag_set_dnd(en);
 
  out:
 	if (err)
-		re_hprintf(pf, "usage: /dnd <true|false>\n");
+		re_hprintf(pf, "usage: /dnd <yes|no>\n");
 
+	return err;
+}
+
+
+static int cmd_enable_transp(struct re_printf *pf, void *arg)
+{
+	struct pl word1, word2;
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	bool en = true;
+	enum sip_transp tp;
+	char *buf = NULL;
+	const char *usage = "usage: /entransp <udp|tcp|tls|ws|wss> <yes|no>\n";
+
+	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [^ ]+", &word1,
+			&word2);
+	if (err) {
+		re_hprintf(pf, "%s", usage);
+		return EINVAL;
+	}
+
+	tp = sip_transp_decode(&word1);
+	if (tp == SIP_TRANSP_NONE) {
+		re_hprintf(pf, "%s", usage);
+		return EINVAL;
+	}
+
+	err = pl_strdup(&buf, &word2);
+	if (err)
+		return err;
+
+	err = str_bool(&en, buf);
+	if (err) {
+		re_hprintf(pf, "%s", usage);
+		goto out;
+	}
+
+	err = uag_enable_transport(tp, en);
+
+ out:
+	mem_deref(buf);
 	return err;
 }
 
@@ -701,7 +684,7 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
-	if (carg->prm) {
+	if (str_isset(carg->prm)) {
 		call = uag_call_find(carg->prm);
 		if (!call) {
 			re_hprintf(pf, "call %s not found\n", carg->prm);
@@ -954,7 +937,7 @@ static int cmd_set_adelay(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 
-	if (!carg->prm) {
+	if (!str_isset(carg->prm)) {
 		menu_get()->adelay = -1;
 		return 0;
 	}
@@ -965,6 +948,35 @@ static int cmd_set_adelay(struct re_printf *pf, void *arg)
 				 menu_get()->adelay);
 	else
 		(void)re_hprintf(pf, "SIP auto answer delay disabled\n");
+
+	return 0;
+}
+
+
+/**
+ * Set SIP auto answer Call-Info/Alert-Info value for outgoing calls
+ *
+ * @param pf     Print handler for debug output
+ * @param arg    Optional string that should be used as value for Call-Info/
+ *               Alert-Info header.
+ *               If no argument is specified, then the value is cleared.
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_set_ansval(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+
+	menu_get()->ansval = mem_deref(menu_get()->ansval);
+	if (!str_isset(carg->prm))
+		return 0;
+
+	str_dup(&menu_get()->ansval, carg->prm);
+	if (menu_get()->ansval)
+		(void)re_hprintf(pf, "SIP auto answer value changed to %s\n",
+				 menu_get()->ansval);
+	else
+		(void)re_hprintf(pf, "SIP auto answer value cleared\n");
 
 	return 0;
 }
@@ -997,8 +1009,7 @@ static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
 
 	(void)unused;
 
-	while (list_head(uag_list()))
-	{
+	while (list_head(uag_list())) {
 		ua = list_head(uag_list())->data;
 		mem_deref(ua);
 	}
@@ -1012,6 +1023,7 @@ static int cmd_ua_delete_all(struct re_printf *pf, void *unused)
 static int cmd_ua_find(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
+	struct le *le;
 	struct ua *ua = NULL;
 
 	if (str_isset(carg->prm)) {
@@ -1025,6 +1037,12 @@ static int cmd_ua_find(struct re_printf *pf, void *arg)
 	}
 
 	(void)re_hprintf(pf, "ua: %s\n", account_aor(ua_account(ua)));
+
+	ua_raise(ua);
+
+	le = list_tail(ua_calls(ua));
+	if (le)
+		menu_selcall(le->data);
 
 	menu_update_callstatus(uag_call_count());
 
@@ -1063,6 +1081,41 @@ static int create_ua(struct re_printf *pf, void *arg)
 	}
 
 	return err;
+}
+
+
+static int cmd_uareg(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl word[2] = {PL_INIT, PL_INIT};
+	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
+	struct account *acc;
+	uint32_t regint;
+	int err;
+
+	if (!ua)
+		return 0;
+
+	acc = ua_account(ua);
+	regint = pl_u32(&word[0]);
+
+	err = account_set_regint(acc, regint);
+	if (err)
+		return err;
+
+	if (regint) {
+		re_hprintf(pf, "registering %s with interval %u seconds\n",
+			   account_aor(acc), regint);
+		err = ua_register(ua);
+		if (err)
+			return err;
+	}
+	else {
+		re_hprintf(pf, "unregistering %s\n", account_aor(acc));
+		ua_unregister(ua);
+	}
+
+	return 0;
 }
 
 
@@ -1154,11 +1207,20 @@ static int cmd_tls_issuer(struct re_printf *pf, void *unused)
 		return ENOMEM;
 
 	err = tls_get_issuer(uag_tls(), mb);
-	if (err){
-		(void)re_hprintf(pf, "unable to get certificate issuer (%m)\n",
-				 err);
-		goto out;
+	if (err == ENOENT) {
+		(void)re_hprintf(pf, "sip_certificate not configured\n");
 	}
+	else if (err == ENOTSUP) {
+		(void)re_hprintf(pf, "could not get issuer of configured "
+				"certificate (%m)\n", err);
+	}
+	else if (err) {
+		(void)re_hprintf(pf, "unable to print certificate issuer "
+				"(%m)\n", err);
+	}
+
+	if (err)
+		goto out;
 
 	(void)re_hprintf(pf, "TLS Cert Issuer: %b\n", mb->buf, mb->pos);
 
@@ -1179,11 +1241,20 @@ static int cmd_tls_subject(struct re_printf *pf, void *unused)
 		return ENOMEM;
 
 	err = tls_get_subject(uag_tls(), mb);
-	if (err) {
-		(void)re_hprintf(pf, "unable to get certificate subject"
-				 " (%m)\n", err);
-		goto out;
+	if (err == ENOENT) {
+		(void)re_hprintf(pf, "sip_certificate not configured\n");
 	}
+	else if (err == ENOTSUP) {
+		(void)re_hprintf(pf, "could not get subject of configured "
+				"certificate (%m)\n", err);
+	}
+	else if (err) {
+		(void)re_hprintf(pf, "unable to print certificate subject "
+				 " (%m)\n", err);
+	}
+
+	if (err)
+		goto out;
 
 	(void)re_hprintf(pf, "TLS Cert Subject: %b\n", mb->buf, mb->pos);
 
@@ -1208,6 +1279,7 @@ static const struct cmd cmdv[] = {
 {"dialdir",   0,    CMD_PRM, "Dial with audio and video"
                              "direction.",              cmd_dialdir          },
 {"dnd",       0,    CMD_PRM, "Set Do not Disturb",      cmd_dnd              },
+{"entransp",  0,    CMD_PRM, "Enable/Disable transport", cmd_enable_transp   },
 {"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"hangupall", 0,    CMD_PRM, "Hangup all calls with direction"
                                                        ,cmd_hangupall        },
@@ -1217,10 +1289,13 @@ static const struct cmd cmdv[] = {
 {"reginfo",   'r',        0, "Registration info",       ua_print_reg_status  },
 {"setadelay", 0,    CMD_PRM, "Set answer delay for outgoing call",
                                                         cmd_set_adelay       },
+{"setansval", 0,    CMD_PRM, "Set value for Call-Info/Alert-Info",
+                                                        cmd_set_ansval       },
 {"uadel",     0,    CMD_PRM, "Delete User-Agent",       cmd_ua_delete        },
 {"uadelall",  0,    CMD_PRM, "Delete all User-Agents",  cmd_ua_delete_all    },
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
+{"uareg",     0,    CMD_PRM, "UA register <regint> [index]", cmd_uareg       },
 {"vidsrc",    0,    CMD_PRM, "Switch video source",     switch_video_source  },
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 

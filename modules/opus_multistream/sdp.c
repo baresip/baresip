@@ -1,7 +1,7 @@
 /**
  * @file opus_multistream/sdp.c Opus Multistream SDP Functions
  *
- * Copyright (C) 2019 Creytiv.com
+ * Copyright (C) 2019 Alfred E. Heggestad
  */
 
 #include <re.h>

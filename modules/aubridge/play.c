@@ -1,7 +1,7 @@
 /**
  * @file aubridge/play.c Audio bridge -- playback
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>
@@ -33,7 +33,6 @@ int aubridge_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->prm = *prm;
 	st->wh  = wh;
 	st->arg = arg;

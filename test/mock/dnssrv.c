@@ -1,7 +1,7 @@
 /**
  * @file mock/dnssrv.c Mock DNS server
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>
@@ -71,7 +71,6 @@ static void decode_dns_query(struct dns_server *srv,
 	}
 
 	if (mbuf_get_left(mb) < 4) {
-		err = EBADMSG;
 		DEBUG_WARNING("unable to decode query type/class\n");
 		goto out;
 	}

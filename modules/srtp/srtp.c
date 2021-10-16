@@ -1,7 +1,7 @@
 /**
  * @file modules/srtp/srtp.c Secure Real-time Transport Protocol (RFC 3711)
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>
@@ -122,7 +122,7 @@ static bool is_rtcp_packet(const struct mbuf *mb)
 
 	pt = mbuf_buf(mb)[1] & 0x7f;
 
-	return 64 <= pt && pt <= 95;
+	return rtp_pt_is_rtcp(pt);
 }
 
 

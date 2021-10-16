@@ -1,7 +1,7 @@
 /**
  * @file rtpext.c  RTP Header Extensions
  *
- * Copyright (C) 2017 Creytiv.com
+ * Copyright (C) 2017 Alfred E. Heggestad
  */
 
 #include <string.h>
@@ -38,7 +38,7 @@ int rtpext_hdr_encode(struct mbuf *mb, size_t num_bytes)
 }
 
 
-int rtpext_encode(struct mbuf *mb, unsigned id, unsigned len,
+int rtpext_encode(struct mbuf *mb, unsigned id, size_t len,
 		  const uint8_t *data)
 {
 	size_t start;

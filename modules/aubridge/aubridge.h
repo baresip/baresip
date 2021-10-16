@@ -1,14 +1,13 @@
 /**
  * @file aubridge.h Audio bridge -- internal interface
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 
 struct device;
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
 	struct device *dev;
 	struct ausrc_prm prm;
 	ausrc_read_h *rh;
@@ -16,7 +15,6 @@ struct ausrc_st {
 };
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
 	struct device *dev;
 	struct auplay_prm prm;
 	auplay_write_h *wh;

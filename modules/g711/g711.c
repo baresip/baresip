@@ -1,7 +1,7 @@
 /**
  * @file g711.c G.711 Audio Codec
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 
 #include <re.h>

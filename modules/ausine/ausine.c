@@ -1,7 +1,7 @@
 /**
  * @file ausine.c sine Audio Source
  *
- * Copyright (C) 2020 Creytiv.com
+ * Copyright (C) 2020 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
@@ -38,10 +38,9 @@ enum channels {
 };
 
 struct ausrc_st {
-	const struct ausrc *as;  /* base class */
-
 	uint32_t ptime;
 	size_t sampc;
+	pthread_mutex_t mutex;
 	bool run;
 	pthread_t thread;
 	ausrc_read_h *rh;
@@ -50,6 +49,7 @@ struct ausrc_st {
 	int freq;
 	double sec_offset;
 	enum channels ch;
+	struct ausrc_prm prm;
 };
 
 
@@ -59,11 +59,22 @@ static struct ausrc *ausrc;
 static void destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
+	bool run;
 
-	if (st->run) {
+	pthread_mutex_lock(&st->mutex);
+	run = st->run;
+	pthread_mutex_unlock(&st->mutex);
+
+	if (run) {
+
+		pthread_mutex_lock(&st->mutex);
 		st->run = false;
+		pthread_mutex_unlock(&st->mutex);
+
 		pthread_join(st->thread, NULL);
 	}
+
+	pthread_mutex_destroy(&st->mutex);
 }
 
 
@@ -73,7 +84,7 @@ static void *play_thread(void *arg)
 	struct ausrc_st *st = arg;
 	int16_t *sampv;
 	double sample, rad_per_sec;
-	double sec_per_frame = 1.0 / 48000;
+	double sec_per_frame = 1.0 / (double)st->prm.srate;
 	int inc;
 	size_t frames;
 	int16_t f;
@@ -82,15 +93,21 @@ static void *play_thread(void *arg)
 	if (!sampv)
 		return NULL;
 
-	while (st->run) {
-
-		struct auframe af = {
-			.fmt   = AUFMT_S16LE,
-			.sampv = sampv,
-			.sampc = st->sampc,
-			.timestamp = ts * 1000
-		};
+	while (1) {
+		struct auframe af;
 		size_t frame;
+		bool run;
+
+		pthread_mutex_lock(&st->mutex);
+		run = st->run;
+		pthread_mutex_unlock(&st->mutex);
+
+		if (!run)
+			break;
+
+		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc, st->prm.srate,
+		             st->prm.ch);
+		af.timestamp = ts * 1000;
 
 		sys_msleep(4);
 
@@ -150,11 +167,16 @@ static void *play_thread(void *arg)
 }
 
 
-static enum channels stereo_conf(const char *dev) {
+static enum channels stereo_conf(const char *dev)
+{
 	struct pl r, pl1, pl2 = pl_null;
+	int err;
 
 	pl_set_str(&r, dev);
-	re_regex(r.p, r.l, "[^,]+,[~]*", &pl1, &pl2);
+
+	err = re_regex(r.p, r.l, "[^,]+,[~]*", &pl1, &pl2);
+	if (err)
+		return STEREO;
 
 	if (pl_isset(&pl2)) {
 		if (!pl_strcmp(&pl2, "stereo_left"))
@@ -184,23 +206,17 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 		return ENOTSUP;
 	}
 
-	if (prm->srate != 48000) {
-		warning("ausine: supports only 48kHz samplerate");
-		return ENOTSUP;
-	}
-
-
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
 		return ENOMEM;
 
-	st->as   = as;
 	st->rh   = rh;
 	st->errh = errh;
 	st->arg  = arg;
 	st->sec_offset = 0.0;
+	st->prm = *prm;
 
-	st->freq = atoi(dev);
+	st->freq = str_isset(dev) ? atoi(dev) : 440;
 
 	st->ch = stereo_conf(dev);
 	if (prm->ch == 1) {
@@ -223,6 +239,10 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	info("ausine: audio ptime=%u sampc=%zu\n",
 	     st->ptime, st->sampc);
+
+	err = pthread_mutex_init(&st->mutex, NULL);
+	if (err)
+		goto out;
 
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, play_thread, st);

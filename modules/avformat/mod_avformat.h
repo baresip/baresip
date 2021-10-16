@@ -1,7 +1,7 @@
 /**
  * @file mod_avformat.h  libavformat media-source -- internal interface
  *
- * Copyright (C) 2010 - 2020 Creytiv.com
+ * Copyright (C) 2010 - 2020 Alfred E. Heggestad
  */
 
 
@@ -15,6 +15,7 @@ struct shared {
 	pthread_t thread;
 	bool is_realtime;
 	bool run;
+	bool is_pass_through;
 
 	struct stream {
 		AVRational time_base;
@@ -42,5 +43,9 @@ int  avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 			  struct media_ctx **ctx, struct vidsrc_prm *prm,
 			  const struct vidsz *size, const char *fmt,
 			  const char *dev, vidsrc_frame_h *frameh,
+			  vidsrc_packet_h *packeth,
 			  vidsrc_error_h *errorh, void *arg);
 void avformat_video_decode(struct shared *st, AVPacket *pkt);
+
+/*add avformat_video_copy function which passes packets to packet handler*/
+void avformat_video_copy(struct shared *st, AVPacket *pkt);

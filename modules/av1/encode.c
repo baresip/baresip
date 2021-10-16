@@ -1,7 +1,7 @@
 /**
  * @file av1/encode.c AV1 Encode
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 
 #include <string.h>
@@ -14,8 +14,13 @@
 #include "av1.h"
 
 
+#ifndef AOM_USAGE_REALTIME
+#define AOM_USAGE_REALTIME (1)
+#endif
+
+
 enum {
-	HDR_SIZE = 4,
+	HDR_SIZE = 1,
 };
 
 
@@ -87,7 +92,8 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	aom_codec_enc_cfg_t cfg;
 	aom_codec_err_t res;
 
-	res = aom_codec_enc_config_default(&aom_codec_av1_cx_algo, &cfg, 0);
+	res = aom_codec_enc_config_default(&aom_codec_av1_cx_algo, &cfg,
+					   AOM_USAGE_REALTIME);
 	if (res)
 		return EPROTO;
 
@@ -129,20 +135,17 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 }
 
 
-static inline void hdr_encode(uint8_t hdr[HDR_SIZE], bool noref, bool start,
-			      uint8_t partid, uint16_t picid)
+static inline void hdr_encode(uint8_t hdr[HDR_SIZE],
+			      bool z, bool y, uint8_t w, bool n)
 {
-	hdr[0] = 1<<7 | noref<<5 | start<<4 | (partid & 0x7);
-	hdr[1] = 1<<7;
-	hdr[2] = 1<<7 | (picid>>8 & 0x7f);
-	hdr[3] = picid & 0xff;
+	hdr[0] = z<<7 | y<<6 | w<<4 | n<<3;
 }
 
 
 static inline int packetize(bool marker, uint64_t rtp_ts,
 			    const uint8_t *buf, size_t len,
-			    size_t maxlen, bool noref, uint8_t partid,
-			    uint16_t picid, videnc_packet_h *pkth, void *arg)
+			    size_t maxlen,
+			    videnc_packet_h *pkth, void *arg)
 {
 	uint8_t hdr[HDR_SIZE];
 	bool start = true;
@@ -152,7 +155,7 @@ static inline int packetize(bool marker, uint64_t rtp_ts,
 
 	while (len > maxlen) {
 
-		hdr_encode(hdr, noref, start, partid, picid);
+		hdr_encode(hdr, !start, true, 1, 0);
 
 		err |= pkth(false, rtp_ts, hdr, sizeof(hdr), buf, maxlen, arg);
 
@@ -161,7 +164,7 @@ static inline int packetize(bool marker, uint64_t rtp_ts,
 		start = false;
 	}
 
-	hdr_encode(hdr, noref, start, partid, picid);
+	hdr_encode(hdr, !start, false, 1, 0);
 
 	err |= pkth(marker, rtp_ts, hdr, sizeof(hdr), buf, len, arg);
 
@@ -221,9 +224,8 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	++ves->picid;
 
 	for (;;) {
-		bool keyframe = false, marker = true;
+		bool marker = true;
 		const aom_codec_cx_pkt_t *pkt;
-		uint8_t partid = 0;
 		uint64_t ts;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
@@ -233,18 +235,12 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		if (pkt->kind != AOM_CODEC_CX_FRAME_PKT)
 			continue;
 
-		if (pkt->data.frame.flags & AOM_FRAME_IS_KEY)
-			keyframe = true;
-
-		if (pkt->data.frame.partition_id >= 0)
-			partid = pkt->data.frame.partition_id;
-
 		ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
 		err = packetize(marker, ts,
 				pkt->data.frame.buf,
 				pkt->data.frame.sz,
-				ves->pktsize, !keyframe, partid, ves->picid,
+				ves->pktsize,
 				ves->pkth, ves->arg);
 		if (err)
 			return err;

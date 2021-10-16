@@ -18,10 +18,12 @@
 
 struct mccfg {
 	uint32_t callprio;
+	uint32_t ttl;
 };
 
 static struct mccfg mccfg = {
 	0,
+	1,
 };
 
 
@@ -42,11 +44,9 @@ static int decode_addr(struct pl *pladdr, struct sa *addr)
 		warning ("multicast: address decode (%m)\n", err);
 
 
-	if (sa_port(addr) % 2) {
-		err = EINVAL;
+	if (sa_port(addr) % 2)
 		warning("multicast: address port for RTP should be even"
 			" (%d)\n" , sa_port(addr));
-	}
 
 	return err;
 }
@@ -64,7 +64,7 @@ static int decode_codec(struct pl *plcodec, struct aucodec **codecptr)
 {
 	int err = 0;
 	struct list *acodeclist = baresip_aucodecl();
-	struct aucodec *codec;
+	struct aucodec *codec = NULL;
 	struct le *le;
 
 	LIST_FOREACH(acodeclist, le) {
@@ -109,6 +109,17 @@ static int check_rtp_pt(struct aucodec *ac)
 uint8_t multicast_callprio(void)
 {
 	return mccfg.callprio;
+}
+
+
+/**
+ * Getter for configurable multicast TTL
+ *
+ * @return uint8_t multicast TTL
+ */
+uint8_t multicast_ttl(void)
+{
+	return mccfg.ttl;
 }
 
 
@@ -462,7 +473,7 @@ static int cmd_mcregen(struct re_printf *pf, void *arg)
 static int module_read_config_handler(const struct pl *pl, void *arg)
 {
 	struct cmd_arg cmd_arg;
-	char buf[48 + 5 + 10];
+	char buf[64];
 	int err = 0;
 	int n = 0;
 	int *prio = (int *) arg;
@@ -470,8 +481,8 @@ static int module_read_config_handler(const struct pl *pl, void *arg)
 	if (pl_strchr(pl, '-'))
 		goto out;
 
-	n = re_snprintf(buf, 48 + 4, "addr=%r prio=%d", pl, *prio);
-	if (n < 0 && n > 48 + 5)
+	n = re_snprintf(buf, sizeof(buf), "addr=%r prio=%d", pl, *prio);
+	if (n < 0)
 		goto out;
 
 	cmd_arg.prm = buf;
@@ -496,6 +507,12 @@ static int module_read_config(void)
 	struct sa laddr;
 
 	(void)conf_get_u32(conf_cur(), "multicast_call_prio", &mccfg.callprio);
+	if (mccfg.callprio > 255)
+		mccfg.callprio = 255;
+
+	(void)conf_get_u32(conf_cur(), "multicast_ttl", &mccfg.ttl);
+	if (mccfg.ttl > 255)
+		mccfg.ttl = 255;
 
 	sa_init(&laddr, AF_INET);
 	err = conf_apply(conf_cur(), "multicast_listener",
@@ -533,6 +550,9 @@ static int module_init(void)
 	err = module_read_config();
 	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 
+	err |= mcsource_init();
+	err |= mcplayer_init();
+
 	if (!err)
 		info("multicast: module init\n");
 
@@ -546,6 +566,9 @@ static int module_close(void)
 	mcreceiver_unregall();
 
 	cmd_unregister(baresip_commands(), cmdv);
+
+	mcsource_terminate();
+	mcplayer_terminate();
 
 	return 0;
 }

@@ -1,7 +1,7 @@
 /**
  * @file test/call.c  Baresip selftest -- call
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #include <string.h>
 #include <stdlib.h>
@@ -9,6 +9,7 @@
 #include <rem.h>
 #include <baresip.h>
 #include "test.h"
+#include "../src/core.h"  /* NOTE: temp */
 
 
 #define MAGIC 0x7004ca11
@@ -682,7 +683,6 @@ int test_call_max(void)
 int test_call_dtmf(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	size_t i, n = str_len(dtmf_digits);
 	int err = 0;
 
@@ -690,7 +690,7 @@ int test_call_dtmf(void)
 	fixture_init_prm(f, ";ptime=1");
 
 	/* audio-source is needed for dtmf/telev to work */
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -720,7 +720,7 @@ int test_call_dtmf(void)
 
  out:
 	fixture_close(f);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	return err;
 }
@@ -751,7 +751,6 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 int test_call_video(void)
 {
 	struct fixture fix, *f = &fix;
-	struct vidsrc *vidsrc = NULL;
 	struct vidisp *vidisp = NULL;
 	int err = 0;
 
@@ -762,9 +761,11 @@ int test_call_video(void)
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
-	err = mock_vidsrc_register(&vidsrc);
-	TEST_ERR(err);
+
 	err = mock_vidisp_register(&vidisp, mock_vidisp_handler, f);
+	TEST_ERR(err);
+
+	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -789,7 +790,7 @@ int test_call_video(void)
  out:
 	fixture_close(f);
 	mem_deref(vidisp);
-	mem_deref(vidsrc);
+	module_unload("fakevideo");
 	mock_vidcodec_unregister();
 
 	return err;
@@ -815,7 +816,6 @@ static void mock_sample_handler(const void *sampv, size_t sampc, void *arg)
 int test_call_aulevel(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
 	double lvl;
 	int err = 0;
@@ -825,7 +825,7 @@ int test_call_aulevel(void)
 
 	conf_config()->audio.level = true;
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, baresip_auplayl(),
 				   mock_sample_handler, f);
@@ -846,17 +846,17 @@ int test_call_aulevel(void)
 	/* verify audio silence */
 	err = audio_level_get(call_audio(ua_call(f->a.ua)), &lvl);
 	TEST_ERR(err);
-	ASSERT_EQ(-96, lvl);
+	ASSERT_TRUE(lvl > -96.0f && lvl < 0.0f);
 	err = audio_level_get(call_audio(ua_call(f->b.ua)), &lvl);
 	TEST_ERR(err);
-	ASSERT_EQ(-96, lvl);
+	ASSERT_TRUE(lvl > -96.0f && lvl < 0.0f);
 
  out:
 	conf_config()->audio.level = false;
 
 	fixture_close(f);
 	mem_deref(auplay);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	return err;
 }
@@ -926,7 +926,6 @@ static void audio_sample_handler(const void *sampv, size_t sampc, void *arg)
 static int test_media_base(enum audio_mode txmode)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
 	int err = 0;
 
@@ -934,10 +933,10 @@ static int test_media_base(enum audio_mode txmode)
 
 	conf_config()->audio.txmode = txmode;
 
-	conf_config()->audio.src_fmt = AUFMT_FLOAT;
-	conf_config()->audio.play_fmt = AUFMT_FLOAT;
+	conf_config()->audio.src_fmt = AUFMT_S16LE;
+	conf_config()->audio.play_fmt = AUFMT_S16LE;
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, baresip_auplayl(),
 				   audio_sample_handler, f);
@@ -971,7 +970,7 @@ static int test_media_base(enum audio_mode txmode)
 
 	fixture_close(f);
 	mem_deref(auplay);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	if (fix.err)
 		return fix.err;
@@ -997,7 +996,6 @@ int test_call_format_float(void)
 int test_call_mediaenc(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
 	int err = 0;
 
@@ -1008,7 +1006,7 @@ int test_call_mediaenc(void)
 
 	ASSERT_STREQ("xrtp", account_mediaenc(ua_account(f->a.ua)));
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, baresip_auplayl(),
 				   audio_sample_handler, f);
@@ -1040,7 +1038,7 @@ int test_call_mediaenc(void)
  out:
 	fixture_close(f);
 	mem_deref(auplay);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	mock_menc_unregister();
 
@@ -1054,7 +1052,6 @@ int test_call_mediaenc(void)
 int test_call_medianat(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct auplay *auplay = NULL;
 	int err;
 
@@ -1065,7 +1062,7 @@ int test_call_medianat(void)
 
 	ASSERT_STREQ("XNAT", account_medianat(ua_account(f->a.ua)));
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 	err = mock_auplay_register(&auplay, baresip_auplayl(),
 				   audio_sample_handler, f);
@@ -1093,7 +1090,7 @@ int test_call_medianat(void)
  out:
 	fixture_close(f);
 	mem_deref(auplay);
-	mem_deref(ausrc);
+	module_unload("ausine");
 
 	mock_mnat_unregister();
 
@@ -1366,20 +1363,20 @@ int test_call_aufilt(void)
 int test_call_webrtc(void)
 {
 	struct fixture fix, *f = &fix;
-	struct ausrc *ausrc = NULL;
-	struct vidsrc *vidsrc = NULL;
 	struct sdp_media *sdp_a, *sdp_b;
 	int err;
+
+	conf_config()->avt.rtcp_mux = true;
 
 	mock_mnat_register(baresip_mnatl());
 	mock_menc_register();
 
-	err = mock_ausrc_register(&ausrc, baresip_ausrcl());
+	err = module_load(".", "ausine");
 	TEST_ERR(err);
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
-	err = mock_vidsrc_register(&vidsrc);
+	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
 	fixture_init_prm(f, ";medianat=XNAT;mediaenc=xrtp");
@@ -1432,14 +1429,184 @@ int test_call_webrtc(void)
  out:
 	fixture_close(f);
 
-	mem_deref(vidsrc);
-	mem_deref(ausrc);
+	module_unload("fakevideo");
+	module_unload("ausine");
 	mock_vidcodec_unregister();
 	mock_menc_unregister();
 	mock_mnat_unregister();
 
+	conf_config()->avt.rtcp_mux = false;
+
 	if (fix.err)
 		return fix.err;
+
+	return err;
+}
+
+
+static int test_call_bundle_base(bool use_mnat, bool use_menc)
+{
+	struct fixture fix, *f = &fix;
+	struct ausrc *ausrc = NULL;
+	struct vidisp *vidisp = NULL;
+	struct mbuf *sdp = NULL;
+	struct call *callv[2];
+	struct audio *audiov[2];
+	struct video *videov[2];
+	unsigned i;
+	int err;
+
+	conf_config()->avt.bundle = true;
+	conf_config()->avt.rtcp_mux = true;  /* MUST enable RTP/RTCP mux */
+	conf_config()->video.fps = 100;
+
+	if (use_mnat) {
+		mock_mnat_register(baresip_mnatl());
+	}
+	if (use_menc) {
+		mock_menc_register();
+	}
+
+	/* to enable video, we need one vidsrc and vidcodec */
+	mock_vidcodec_register();
+	err = mock_vidisp_register(&vidisp, mock_vidisp_handler, f);
+	TEST_ERR(err);
+
+	err = module_load(".", "fakevideo");
+	TEST_ERR(err);
+
+	if (use_mnat && use_menc) {
+		fixture_init_prm(f, ";medianat=XNAT;mediaenc=xrtp");
+	}
+	else if (use_mnat) {
+		fixture_init_prm(f, ";medianat=XNAT");
+	}
+	else if (use_menc) {
+		fixture_init_prm(f, ";mediaenc=xrtp");
+	}
+	else {
+		fixture_init_prm(f, "");
+	}
+
+	f->estab_action = ACTION_NOTHING;
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	f->stop_on_rtp = true;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(15000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	callv[0] = ua_call(f->a.ua);
+	callv[1] = ua_call(f->b.ua);
+
+	/* Verify SDP attributes */
+	for (i=0; i<2; i++) {
+
+		audiov[i] = call_audio(callv[i]);
+		videov[i] = call_video(callv[i]);
+
+		ASSERT_TRUE(call_has_video(callv[i]));
+
+		err = call_sdp_get(callv[i], &sdp, true);
+		TEST_ERR(err);
+
+		err = re_regex((char *)sdp->buf, sdp->end,
+			       "a=group:BUNDLE 0 1");
+		if (err) {
+			warning("test: BUNDLE missing in SDP\n");
+			re_printf("%b\n", sdp->buf, sdp->end);
+			goto out;
+		}
+
+		err = re_regex((char *)sdp->buf, sdp->end,
+			       "urn:ietf:params:rtp-hdrext:sdes:mid");
+		TEST_ERR(err);
+
+		sdp = mem_deref(sdp);
+	}
+
+	for (i=0; i<2; i++) {
+		struct sdp_media *sdp_a, *sdp_v;
+
+		sdp_a = stream_sdpmedia(audio_strm(audiov[i]));
+		sdp_v = stream_sdpmedia(video_strm(videov[i]));
+
+		ASSERT_STREQ("0", sdp_media_rattr(sdp_a, "mid"));
+		ASSERT_STREQ("1", sdp_media_rattr(sdp_v, "mid"));
+	}
+
+	/* verify that remote addr au/vid is the same */
+	for (i=0; i<2; i++) {
+		const struct sa *saa, *sav;
+
+		saa = stream_raddr(audio_strm(audiov[i]));
+		sav = stream_raddr(video_strm(videov[i]));
+
+		ASSERT_TRUE(sa_cmp(saa, sav, SA_ALL));
+
+		ASSERT_TRUE(stream_is_ready(audio_strm(audiov[i])));
+		ASSERT_TRUE(stream_is_ready(video_strm(videov[i])));
+	}
+
+	/* verify media */
+
+	/* verify that one or more RTP packets were received */
+	ASSERT_TRUE(fix.a.n_rtpestab > 0);
+	ASSERT_TRUE(fix.b.n_rtpestab > 0);
+
+	if (use_menc) {
+
+		ASSERT_TRUE(stream_is_secure(audio_strm(audiov[0])));
+		ASSERT_TRUE(stream_is_secure(audio_strm(audiov[1])));
+
+		ASSERT_TRUE(stream_is_secure(video_strm(videov[0])));
+		ASSERT_TRUE(stream_is_secure(video_strm(videov[1])));
+	}
+
+ out:
+	fixture_close(f);
+
+	mem_deref(sdp);
+	mem_deref(vidisp);
+	module_unload("fakevideo");
+	mem_deref(ausrc);
+	mock_vidcodec_unregister();
+
+	mock_mnat_unregister();
+	mock_menc_unregister();
+
+	conf_config()->avt.bundle = false;
+	conf_config()->avt.rtcp_mux = false;
+
+	if (fix.err)
+		return fix.err;
+
+	return err;
+}
+
+
+/*
+ * Simple testcase for SDP Bundle
+ *
+ * audio: yes
+ * video: yes
+ * mnat:  optional
+ * menc:  optional
+ */
+int test_call_bundle(void)
+{
+	int err = 0;
+
+	err |= test_call_bundle_base(false, false);
+	err |= test_call_bundle_base(true,  false);
+	err |= test_call_bundle_base(false, true);
+	err |= test_call_bundle_base(true,  true);
 
 	return err;
 }

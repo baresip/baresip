@@ -1,7 +1,7 @@
 /**
  * @file sndio.c  SndIO sound driver
  *
- * Copyright (C) 2014 Creytiv.com
+ * Copyright (C) 2014 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +20,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;  /* pointer to base-class */
 	struct sio_hdl *hdl;
 	pthread_t thread;
 	int16_t *sampv;
@@ -28,10 +27,10 @@ struct ausrc_st {
 	int run;
 	ausrc_read_h *rh;
 	void *arg;
+	struct ausrc_prm prm;
 };
 
 struct auplay_st {
-	const struct auplay *ap;  /* pointer to base-class */
 	struct sio_hdl *hdl;
 	pthread_t thread;
 	int16_t *sampv;
@@ -39,6 +38,7 @@ struct auplay_st {
 	int run;
 	auplay_write_h *wh;
 	void *arg;
+	struct auplay_prm prm;
 };
 
 static struct ausrc *ausrc;
@@ -81,9 +81,8 @@ static void *read_thread(void *arg)
 		struct auframe af;
 		size_t n = sio_read(st->hdl, st->sampv, st->sampc*2);
 
-		af.fmt   = AUFMT_S16LE;
-		af.sampv = st->sampv;
-		af.sampc = n/2;
+		auframe_init(&af, AUFMT_S16LE, st->sampv, n/2,
+			     st->prm.srate, st->prm.ch);
 
 		st->rh(&af, st->arg);
 	}
@@ -103,7 +102,8 @@ static void *write_thread(void *arg)
 		goto out;
 	}
 
-	auframe_init(&af, AUFMT_S16LE, st->sampv, st->sampc);
+	auframe_init(&af, AUFMT_S16LE, st->sampv, st->sampc, st->prm.srate,
+		     st->prm.ch);
 
 	while (st->run) {
 		st->wh(&af, st->arg);
@@ -175,9 +175,9 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if ((st = mem_zalloc(sizeof(*st), ausrc_destructor)) == NULL)
 		return ENOMEM;
 
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
+	st->prm = *prm;
 	st->hdl = sio_open(name, SIO_REC, 0);
 
 	if (!st->hdl) {
@@ -249,9 +249,9 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if ((st = mem_zalloc(sizeof(*st), auplay_destructor)) == NULL)
 		return ENOMEM;
 
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
+	st->prm = *prm;
 	st->hdl = sio_open(name, SIO_PLAY, 0);
 
 	if (!st->hdl) {

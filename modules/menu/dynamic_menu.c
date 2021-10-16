@@ -1,7 +1,7 @@
 /**
  * @file dynamic_menu.c  dynamic menu related functions
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <re.h>
@@ -77,7 +77,7 @@ static int cmd_call_hold(struct re_printf *pf, void *arg)
 
 	(void)pf;
 
-	if (carg->prm) {
+	if (str_isset(carg->prm)) {
 		call = uag_call_find(carg->prm);
 		if (!call) {
 			re_hprintf(pf, "call %s not found\n", carg->prm);
@@ -99,7 +99,11 @@ static int set_current_call(struct re_printf *pf, void *arg)
 	struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct call *call;
-	uint32_t linenum = atoi(carg->prm);
+	uint32_t linenum = 0;
+
+	if (str_isset(carg->prm)) {
+		linenum = atoi(carg->prm);
+	}
 
 	call = call_find_linenum(ua_calls(ua), linenum);
 	if (call) {
@@ -131,18 +135,6 @@ static int call_mute(struct re_printf *pf, void *arg)
 }
 
 
-static int hold_prev_call(struct re_printf *pf, void *arg)
-{
-	const struct cmd_arg *carg = arg;
-	(void)pf;
-
-	if (carg->key == 'H')
-		return call_hold(ua_prev_call(menu_uacur()), true);
-	else
-		return uag_hold_resume(ua_prev_call(menu_uacur()));
-}
-
-
 static int call_reinvite(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
@@ -170,7 +162,7 @@ static int cmd_call_resume(struct re_printf *pf, void *arg)
 	struct call *call = ua_call(ua);
 	(void)pf;
 
-	if (carg->prm) {
+	if (str_isset(carg->prm)) {
 		call = uag_call_find(carg->prm);
 		if (!call) {
 			re_hprintf(pf, "call %s not found\n", carg->prm);
@@ -245,6 +237,79 @@ static int call_video_debug(struct re_printf *pf, void *arg)
 }
 
 
+static int set_media_ldir(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct call *call = menu_callcur();
+	struct pl argdir[2] = {PL_INIT, PL_INIT};
+	enum sdp_dir adir, vdir;
+	struct pl callid = PL_INIT;
+	char *cid = NULL;
+	bool ok = false;
+
+	const char *usage = "usage: /medialdir"
+			" audio=<inactive, sendonly, recvonly, sendrecv>"
+			" video=<inactive, sendonly, recvonly, sendrecv>"
+			" [callid=id]\n"
+			"/medialdir <sendonly, recvonly, sendrecv> [id]\n"
+			"Audio & video must not be"
+			" inactive at the same time\n";
+
+	ok |= 0 == menu_param_decode(carg->prm, "audio", &argdir[0]);
+	ok |= 0 == menu_param_decode(carg->prm, "video", &argdir[1]);
+	ok |= 0 == menu_param_decode(carg->prm, "callid", &callid);
+	if (!ok) {
+		ok = 0 == re_regex(carg->prm, str_len(carg->prm),
+			"[^ ]*[ \t\r\n]*[^ ]*", &argdir[0], NULL, &callid);
+	}
+
+	if (!ok) {
+		(void) re_hprintf(pf, "%s", usage);
+		return EINVAL;
+	}
+
+	if (!pl_isset(&argdir[1]))
+		argdir[1] = argdir[0];
+
+	adir = decode_sdp_enum(&argdir[0]);
+	vdir = decode_sdp_enum(&argdir[1]);
+	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
+		(void) re_hprintf(pf, "%s", usage);
+		return EINVAL;
+	}
+
+	(void)pl_strdup(&cid, &callid);
+	if (str_isset(cid))
+		call = uag_call_find(cid);
+
+	cid = mem_deref(cid);
+	if (!call)
+		return EINVAL;
+
+	return call_set_media_direction(call, adir, vdir);
+}
+
+
+static int stop_ringing(struct re_printf *pf, void *arg)
+{
+	struct menu *menu;
+	struct play *p;
+
+	(void)pf;
+	(void)arg;
+
+	menu = menu_get();
+	p = menu->play;
+	menu->play = NULL;
+
+	if (p) {
+		mem_deref(p);
+	}
+
+	return 0;
+}
+
+
 static int set_video_dir(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -295,8 +360,6 @@ static const struct cmd callcmdv[] = {
 {"hold",        'x',       0, "Call hold",            cmd_call_hold        },
 {"line",        '@', CMD_PRM, "Set current call <line>", set_current_call  },
 {"mute",        'm',       0, "Call mute/un-mute",    call_mute            },
-{"prevhold",    'H',       0, "Hold previous call",   hold_prev_call       },
-{"prevresume",  'L',       0, "Resume previous call", hold_prev_call       },
 {"reinvite",    'I',       0, "Send re-INVITE",       call_reinvite        },
 {"resume",      'X',       0, "Call resume",          cmd_call_resume      },
 {"sndcode",      0,  CMD_PRM, "Send Code",            send_code            },
@@ -304,6 +367,8 @@ static const struct cmd callcmdv[] = {
 {"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
 {"videodir",      0, CMD_PRM, "Set video direction",  set_video_dir        },
+{"medialdir",     0, CMD_PRM, "Set local media direction",  set_media_ldir },
+{"stopringing",   0,       0, "Stop ring tones",      stop_ringing         },
 
 /* Numeric keypad for DTMF events: */
 {NULL, '#',         0, NULL,                  digit_handler         },

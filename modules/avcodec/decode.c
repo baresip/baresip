@@ -1,7 +1,7 @@
 /**
  * @file avcodec/decode.c  Video codecs using libavcodec -- decoder
  *
- * Copyright (C) 2010 - 2013 Creytiv.com
+ * Copyright (C) 2010 - 2013 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>
@@ -25,7 +25,7 @@ enum {
 
 
 struct viddec_state {
-	AVCodec *codec;
+	const AVCodec *codec;
 	AVCodecContext *ctx;
 	AVFrame *pict;
 	struct mbuf *mb;
@@ -209,7 +209,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		    bool *intra)
 {
 	AVFrame *hw_frame = NULL;
-	AVPacket avpkt;
+	AVPacket *avpkt;
 	int i, got_picture, ret;
 	int err = 0;
 
@@ -226,14 +226,18 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		return err;
 	st->mb->end -= AV_INPUT_BUFFER_PADDING_SIZE;
 
-	av_init_packet(&avpkt);
+	avpkt = av_packet_alloc();
+	if (!avpkt) {
+		err = ENOMEM;
+		goto out;
+	}
 
-	avpkt.data = st->mb->buf;
-	avpkt.size = (int)st->mb->end;
+	avpkt->data = st->mb->buf;
+	avpkt->size = (int)st->mb->end;
 
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
-	ret = avcodec_send_packet(st->ctx, &avpkt);
+	ret = avcodec_send_packet(st->ctx, avpkt);
 	if (ret < 0) {
 		warning("avcodec: decode: avcodec_send_packet error,"
 			" packet=%zu bytes, ret=%d (%s)\n",
@@ -254,7 +258,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 	got_picture = true;
 #else
-	ret = avcodec_decode_video2(st->ctx, st->pict, &got_picture, &avpkt);
+	ret = avcodec_decode_video2(st->ctx, st->pict, &got_picture, avpkt);
 	if (ret < 0) {
 		err = EBADMSG;
 		goto out;
@@ -303,6 +307,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
  out:
 	av_frame_free(&hw_frame);
+	av_packet_free(&avpkt);
 	return err;
 }
 
@@ -619,10 +624,11 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 	mbuf_advance(mb, H265_HDR_SIZE);
 
 #if 0
-	debug("h265: decode: %s type=%2d  %s\n",
-		  h265_is_keyframe(hdr.nal_unit_type) ? "<KEY>" : "     ",
-		  hdr.nal_unit_type,
-		  h265_nalunit_name(hdr.nal_unit_type));
+	debug("avcodec: h265: decode:  [%s]  %s  type=%2d  %s\n",
+	      marker ? "M" : " ",
+	      h265_is_keyframe(hdr.nal_unit_type) ? "<KEY>" : "     ",
+	      hdr.nal_unit_type,
+	      h265_nalunit_name(hdr.nal_unit_type));
 #endif
 
 	if (vds->frag && hdr.nal_unit_type != H265_NAL_FU) {

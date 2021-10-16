@@ -1,7 +1,7 @@
 /**
  * @file avcapture.m AVFoundation video capture
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>
@@ -150,8 +150,22 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 + (AVCaptureDevice *)get_device:(AVCaptureDevicePosition)pos
 {
 	AVCaptureDevice *dev;
+#if (__IPHONE_OS_VERSION_MIN_REQUIRED >= 100000 || \
+     __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500)
+	AVCaptureDeviceDiscoverySession *discoverySession;
 
+	discoverySession = [
+		AVCaptureDeviceDiscoverySession
+		discoverySessionWithDeviceTypes:
+			@[AVCaptureDeviceTypeBuiltInWideAngleCamera,
+			  AVCaptureDeviceTypeExternalUnknown]
+		mediaType:AVMediaTypeVideo
+		position:pos
+	];
+	for (dev in discoverySession.devices) {
+#else
 	for (dev in [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]) {
+#endif
 		if (dev.position == pos)
 			return dev;
 	}
@@ -303,6 +317,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt,
 		 const char *dev, vidsrc_frame_h *frameh,
+		 vidsrc_packet_h *packeth,
 		 vidsrc_error_h *errorh, void *arg)
 {
 	NSAutoreleasePool *pool;
@@ -313,6 +328,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)prm;
 	(void)fmt;
 	(void)dev;
+	(void)packeth;
 	(void)errorh;
 	(void)vs;
 
@@ -365,6 +381,11 @@ static int module_init(void)
 {
 	AVCaptureDevice *dev = nil;
 	NSAutoreleasePool *pool;
+#if (__IPHONE_OS_VERSION_MIN_REQUIRED >= 100000 || \
+     __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500)
+	AVCaptureDeviceDiscoverySession *discoverySession;
+#endif
+
 	Class cls = NSClassFromString(@"AVCaptureDevice");
 	int err = 0;
 	if (!cls)
@@ -378,8 +399,21 @@ static int module_init(void)
 		goto out;
 
 	/* populate devices */
-	for (dev in [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]) {
+#if (__IPHONE_OS_VERSION_MIN_REQUIRED >= 100000 || \
+     __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500)
+	discoverySession = [
+		AVCaptureDeviceDiscoverySession
+		discoverySessionWithDeviceTypes:
+			@[AVCaptureDeviceTypeBuiltInWideAngleCamera,
+			  AVCaptureDeviceTypeExternalUnknown]
+		mediaType:AVMediaTypeVideo
+		position:AVCaptureDevicePositionUnspecified
+	];
 
+	for (dev in discoverySession.devices) {
+#else
+	for (dev in [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]) {
+#endif
 		const char *name = [[dev localizedName] UTF8String];
 
 		debug("avcapture: found video device '%s'\n", name);

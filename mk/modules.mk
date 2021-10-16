@@ -1,7 +1,7 @@
 #
 # modules.mk
 #
-# Copyright (C) 2010 - 2017 Creytiv.com
+# Copyright (C) 2010 - 2017 Alfred E. Heggestad
 #
 # External libraries:
 #
@@ -13,7 +13,6 @@
 #   USE_AVCAPTURE     AVFoundation video capture for OSX/iOS
 #   USE_AVCODEC       avcodec video codec module
 #   USE_AVFORMAT      avformat video source module
-#   USE_CAIRO         Cairo module
 #   USE_CODEC2        CODEC2 low-bitrate speech audio codec
 #   USE_CONS          Console input driver
 #   USE_COREAUDIO     MacOSX Coreaudio audio driver
@@ -29,24 +28,23 @@
 #   USE_GST_VIDEO     Gstreamer video module
 #   USE_GTK           GTK+ user interface
 #   USE_HTTPREQ       HTTP request module
-#   USE_ILBC          iLBC audio codec
 #   USE_JACK          JACK Audio Connection Kit audio driver
 #   USE_L16           L16 audio codec
 #   USE_MPA           MPA audio codec
 #   USE_MPG123        Use mpg123
+#   USE_NETROAM       Network roaming
 #   USE_OMX_RPI       RaspberryPi VideoCore display driver
 #   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
 #   USE_OPUS          Opus audio codec
 #   USE_OPUS_MS       Opus multistream audio codec
-#   USE_OSS           OSS audio driver
 #   USE_PLC           Packet Loss Concealment
 #   USE_PORTAUDIO     Portaudio audio driver
 #   USE_PULSE         Pulseaudio audio driver
 #   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL           libSDL2 video output
+#   USE_SNAPSHOT      Snapshot video module
 #   USE_SNDFILE       sndfile wav dumper
 #   USE_SNDIO         sndio audo driver
-#   USE_SPEEX_PP      Speex preprocessor
 #   USE_SRTP          Secure RTP module using libre
 #   USE_STDIO         stdio input driver
 #   USE_SYSLOG        Syslog module
@@ -66,6 +64,7 @@ USE_G711  := 1
 USE_L16   := 1
 USE_DBUS  := 1
 USE_HTTPREQ  := 1
+USE_NETROAM  := 1
 
 ifneq ($(OS),win32)
 
@@ -82,6 +81,9 @@ USE_AMR   := $(shell [ -d $(SYSROOT)/include/opencore-amrnb ] || \
 USE_APTX  := $(shell [ -f $(SYSROOT)/include/openaptx.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/openaptx.h ] || \
 	[ -f $(SYSROOT_ALT)/include/openaptx.h ] && echo "yes")
+USE_AV1  := $(shell [ -f $(SYSROOT)/include/aom/aom.h ] || \
+	[ -f $(SYSROOT_LOCAL)/include/aom/aom.h ] || \
+	[ -f $(SYSROOT_ALT)/include/aom/aom.h ] && echo "yes")
 USE_AVCODEC := $(shell [ -f $(SYSROOT)/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/libavcodec/avcodec.h ] || \
 	[ -f $(SYSROOT)/local/include/libavcodec/avcodec.h ] || \
@@ -97,9 +99,6 @@ USE_AVFORMAT := $(shell ([ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
 	[ -f $(SYSROOT)/local/include/libavdevice/avdevice.h ] || \
 	[ -f $(SYSROOT)/include/$(MACHINE)/libavdevice/avdevice.h ] || \
 	[ -f $(SYSROOT_ALT)/include/libavdevice/avdevice.h ]) && echo "yes")
-USE_CAIRO  := $(shell [ -f $(SYSROOT)/include/cairo/cairo.h ] || \
-	[ -f $(SYSROOT)/local/include/cairo/cairo.h ] || \
-	[ -f $(SYSROOT_ALT)/include/cairo/cairo.h ] && echo "yes")
 USE_CODEC2  := $(shell [ -f $(SYSROOT)/include/codec2/codec2.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/codec2/codec2.h ] || \
 	[ -f $(SYSROOT_ALT)/include/codec2/codec2.h ] && echo "yes")
@@ -129,9 +128,6 @@ USE_GST_VIDEO := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
 		&& echo "yes")
 USE_GTK := $(shell pkg-config 'gtk+-3.0 >= 3.0' && \
 		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
-USE_ILBC := $(shell [ -f $(SYSROOT)/include/iLBC_define.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/iLBC_define.h ] || \
-	[ -f $(SYSROOT)/local/include/iLBC_define.h ] && echo "yes")
 USE_JACK := $(shell [ -f $(SYSROOT)/include/jack/jack.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/jack/jack.h ] && echo "yes")
 USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
@@ -143,9 +139,6 @@ USE_OPUS := $(shell [ -f $(SYSROOT)/include/opus/opus.h ] || \
 USE_OPUS_MS := $(shell [ -f $(SYSROOT)/include/opus/opus_multistream.h ] || \
 	[ -f $(SYSROOT_ALT)/include/opus/opus_multistream.h ] || \
 	[ -f $(SYSROOT)/local/include/opus/opus_multistream.h ] && echo "yes")
-USE_OSS := $(shell [ -f $(SYSROOT)/include/soundcard.h ] || \
-	[ -f $(SYSROOT)/include/linux/soundcard.h ] || \
-	[ -f $(SYSROOT)/include/sys/soundcard.h ] && echo "yes")
 USE_PLC := $(shell [ -f $(SYSROOT)/include/spandsp/plc.h ] || \
 	[ -f $(SYSROOT_ALT)/include/spandsp/plc.h ] || \
 	[ -f $(SYSROOT_LOCAL)/include/spandsp/plc.h ] && echo "yes")
@@ -156,6 +149,10 @@ USE_PULSE := $(shell pkg-config --exists libpulse && echo "yes")
 USE_SDL  := $(shell [ -f $(SYSROOT)/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT)/local/include/SDL2/SDL.h ] || \
 	[ -f $(SYSROOT_ALT)/include/SDL2/SDl.h ] && echo "yes")
+USE_SNAPSHOT := $(shell [ -f $(SYSROOT)/include/png.h ] || \
+	[ -f $(SYSROOT)/local/include/png.h ] || \
+	[ -f $(SYSROOT_ALT)/include/png.h ] || \
+	[ -f $(SYSROOT_ALT)/usr/local/include/png.h ] && echo "yes")
 USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
 	[ -f $(SYSROOT)/local/include/sndfile.h ] || \
 	[ -f $(SYSROOT_ALT)/include/sndfile.h ] || \
@@ -163,7 +160,7 @@ USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
 USE_SNDIO := $(shell [ -f $(SYSROOT)/include/sndio.h ] || \
 	[ -f $(SYSROOT)/local/include/sndio.h ] && echo "yes")
 USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
-HAVE_GLIB := $(shell pkg-config --exists glib-2.0 && echo "yes")
+HAVE_GLIB := $(shell pkg-config --exists "glib-2.0 >= 2.56" && echo "yes")
 HAVE_SPEEXDSP := $(shell \
 	[ -f $(SYSROOT)/local/lib/libspeexdsp$(LIB_SUFFIX) ] || \
 	[ -f $(SYSROOT)/lib64/libspeexdsp$(LIB_SUFFIX) ] || \
@@ -183,11 +180,6 @@ USE_MPA  := $(shell ([ -f $(SYSROOT)/include/twolame.h ] || \
 	[ -f $(SYSROOT_ALT)/include/lame/lame.h ]) && echo "yes")
 endif
 endif
-USE_SPEEX_PP := $(shell [ -f $(SYSROOT)/include/speex_preprocess.h ] || \
-	[ -f $(SYSROOT)/local/include/speex_preprocess.h ] || \
-	[ -f $(SYSROOT)/local/include/speex/speex_preprocess.h ] || \
-	[ -f $(SYSROOT_ALT)/include/speex/speex_preprocess.h ] || \
-	[ -f $(SYSROOT)/include/speex/speex_preprocess.h ] && echo "yes")
 USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
 	[ -f $(SYSROOT_ALT)/include/syslog.h ] || \
 	[ -f $(SYSROOT)/local/include/syslog.h ] && echo "yes")
@@ -266,7 +258,6 @@ endif
 
 ifneq ($(BASIC_MODULES),no)
 MODULES   += account
-MODULES   += auloop
 MODULES   += b2bua
 MODULES   += contact
 MODULES   += ctrl_tcp
@@ -280,6 +271,7 @@ MODULES   += menu
 MODULES   += mwi
 MODULES   += natpmp
 MODULES   += presence
+MODULES   += rtcpsummary
 MODULES   += selfview
 MODULES   += serreg
 MODULES   += srtp
@@ -288,9 +280,9 @@ MODULES   += turn
 MODULES   += uuid
 MODULES   += vidbridge
 MODULES   += vidinfo
-MODULES   += vidloop
 MODULES   += vumeter
 MODULES   += mixausrc
+MODULES   += mixminus
 MODULES   += multicast
 
 ifneq ($(HAVE_PTHREAD),)
@@ -311,6 +303,9 @@ endif
 ifneq ($(USE_APTX),)
 MODULES   += aptx
 endif
+ifneq ($(USE_AV1),)
+MODULES   += av1
+endif
 ifneq ($(USE_AUDIOUNIT),)
 MODULES   += audiounit
 endif
@@ -325,12 +320,6 @@ endif
 endif
 ifneq ($(USE_AVFILTER),)
 MODULES   += avfilter
-endif
-ifneq ($(USE_CAIRO),)
-MODULES   += cairo
-ifneq ($(USE_MPG123),)
-MODULES   += rst
-endif
 endif
 ifneq ($(USE_CODEC2),)
 MODULES   += codec2
@@ -382,9 +371,6 @@ endif
 ifneq ($(USE_HTTPREQ),)
 MODULES   += httpreq
 endif
-ifneq ($(USE_ILBC),)
-MODULES   += ilbc
-endif
 ifneq ($(USE_JACK),)
 MODULES   += jack
 endif
@@ -400,11 +386,11 @@ endif
 ifneq ($(USE_MQTT),)
 MODULES   += mqtt
 endif
+ifneq ($(USE_NETROAM),)
+MODULES   += netroam
+endif
 ifneq ($(USE_OPUS),)
 MODULES   += opus
-endif
-ifneq ($(USE_OSS),)
-MODULES   += oss
 endif
 ifneq ($(USE_PLC),)
 MODULES   += plc
@@ -418,11 +404,11 @@ endif
 ifneq ($(USE_SDL),)
 MODULES   += sdl
 endif
+ifneq ($(USE_SNAPSHOT),)
+MODULES   += snapshot
+endif
 ifneq ($(USE_SNDFILE),)
 MODULES   += sndfile
-endif
-ifneq ($(USE_SPEEX_PP),)
-MODULES   += speex_pp
 endif
 ifneq ($(USE_STDIO),)
 MODULES   += stdio
@@ -434,7 +420,7 @@ ifneq ($(USE_SYSLOG),)
 MODULES   += syslog
 endif
 ifneq ($(USE_V4L2),)
-MODULES   += v4l2 v4l2_codec
+MODULES   += v4l2
 endif
 ifneq ($(USE_OMX_RPI),)
 MODULES   += omx

@@ -1,7 +1,7 @@
 /**
  * @file h26x.h  Interface to H.26x video codecs
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 
@@ -92,7 +92,6 @@ int h263_hdr_encode(const struct h263_hdr *hdr, struct mbuf *mb);
 int h263_hdr_decode(struct h263_hdr *hdr, struct mbuf *mb);
 enum h263_mode h263_hdr_mode(const struct h263_hdr *hdr);
 
-const uint8_t *h263_strm_find_psc(const uint8_t *p, uint32_t size);
 int  h263_strm_decode(struct h263_strm *s, struct mbuf *mb);
 void h263_hdr_copy_strm(struct h263_hdr *hdr, const struct h263_strm *s);
 

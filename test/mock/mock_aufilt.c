@@ -1,7 +1,7 @@
 /**
  * @file mock/mock_aufilt.c Mock audio filter
  *
- * Copyright (C) 2019 Creytiv.com
+ * Copyright (C) 2019 Alfred E. Heggestad
  */
 
 #include <string.h>

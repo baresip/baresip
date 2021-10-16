@@ -1,7 +1,7 @@
 /**
  * @file notifier.c Presence notifier
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>

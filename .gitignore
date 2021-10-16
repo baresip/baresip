@@ -46,3 +46,6 @@ mk/win32/baresip.vcxproj.user
 # clangd
 .cache
 compile_commands.json
+*.obj
+mk/win32/Debug/
+*.vcxproj.user

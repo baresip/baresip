@@ -1,7 +1,7 @@
 /**
  * @file coreaudio/recorder.c  Apple Coreaudio sound driver - recorder
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <AudioToolbox/AudioQueue.h>
 #include <unistd.h>
@@ -16,8 +16,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
-
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
 	pthread_mutex_t mutex;
@@ -75,8 +73,9 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	if (!rh)
 		return;
 
-	auframe_init(&af, st->fmt, inQB->mAudioData,
-		     inQB->mAudioDataByteSize/st->sampsz);
+	auframe_init(&af, st->prm.fmt, inQB->mAudioData,
+		     inQB->mAudioDataByteSize / st->sampsz, st->prm.srate,
+		     st->prm.ch);
 
 	af.timestamp = AUDIO_TIMEBASE*inStartTime->mSampleTime / st->prm.srate;
 
@@ -107,7 +106,6 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 

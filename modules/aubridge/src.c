@@ -1,7 +1,7 @@
 /**
  * @file aubridge/src.c Audio bridge -- source
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>
@@ -36,7 +36,6 @@ int aubridge_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as   = as;
 	st->prm  = *prm;
 	st->rh   = rh;
 	st->arg  = arg;

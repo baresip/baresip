@@ -1,7 +1,7 @@
 /**
  * @file reg.c  Register Client
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>
@@ -223,10 +223,10 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	if (err)
 		return err;
 
-	if (acc->rwait)
+	if (acc && acc->rwait)
 		err = sipreg_set_rwait(reg->sipreg, acc->rwait);
 
-	if (acc->fbregint)
+	if (acc && acc->fbregint)
 		err = sipreg_set_fbregint(reg->sipreg, acc->fbregint);
 
 	if (failed)
@@ -253,7 +253,7 @@ bool reg_isok(const struct reg *reg)
 	if (!reg || !reg->sipreg)
 		return false;
 
-	return sipreg_registered(reg->sipreg);
+	return sipreg_registered(reg->sipreg) && reg->scode==200;
 }
 
 
@@ -285,10 +285,12 @@ static const char *print_scode(uint16_t scode)
 int reg_debug(struct re_printf *pf, const struct reg *reg)
 {
 	int err = 0;
-	bool fb = !sipreg_proxy_expires(reg->sipreg) && reg->scode;
+	bool fb;
 
 	if (!reg)
 		return 0;
+
+	fb = !sipreg_proxy_expires(reg->sipreg) && reg->scode;
 
 	err |= re_hprintf(pf, "\nRegister client:\n");
 	err |= re_hprintf(pf, " id:     %d\n", reg->id);
@@ -335,10 +337,14 @@ int reg_json_api(struct odict *od, const struct reg *reg)
 
 int reg_status(struct re_printf *pf, const struct reg *reg)
 {
-	uint32_t pexpires = sipreg_proxy_expires(reg->sipreg);
-	bool fb = !pexpires && reg->scode;
+	uint32_t pexpires;
+	bool fb;
+
 	if (!reg)
 		return 0;
+
+	pexpires = sipreg_proxy_expires(reg->sipreg);
+	fb = !pexpires && reg->scode && account_fbregint(ua_account(reg->ua));
 
 	if (pexpires) {
 		return re_hprintf(pf, " %s %s Expires %us",
@@ -358,4 +364,13 @@ int reg_af(const struct reg *reg)
 		return 0;
 
 	return reg->af;
+}
+
+
+const struct sa *reg_laddr(const struct reg *reg)
+{
+	if (!reg)
+		return NULL;
+
+	return sipreg_laddr(reg->sipreg);
 }

@@ -1,7 +1,7 @@
 /**
  * @file rtpstat.c  RTP Statistics
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <re.h>
@@ -28,7 +28,7 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 		return 0;
 
 	s = audio_strm(a);
-	rtcp = &s->rtcp_stats;
+	rtcp = stream_rtcp_stats(s);
 
 	if (!rtcp->tx.sent)
 		return 1;
@@ -54,19 +54,20 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 			 call_setup_duration(call) * 1000,
 			 call_duration(call),
 
-			 s->metric_rx.n_packets,
-			 s->metric_tx.n_packets,
+			 stream_metric_get_rx_n_packets(s),
+			 stream_metric_get_tx_n_packets(s),
 
 			 rtcp->rx.lost, rtcp->tx.lost,
 
-			 s->metric_rx.n_err, s->metric_tx.n_err,
+			 stream_metric_get_rx_n_err,
+			 stream_metric_get_tx_n_err(s),
 
 			 /* timestamp units (ie: 8 ts units = 1 ms @ 8KHZ) */
 			 1.0 * rtcp->rx.jit/1000 * (srate_rx/1000),
 			 1.0 * rtcp->tx.jit/1000 * (srate_tx/1000),
 
-			 sdp_media_laddr(s->sdp),
-			 sdp_media_raddr(s->sdp)
+			 sdp_media_laddr(stream_sdpmedia(s)),
+			 sdp_media_raddr(stream_sdpmedia(s))
 			 );
 
 	if (ac_tx)

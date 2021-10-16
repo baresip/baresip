@@ -1,7 +1,7 @@
 /**
  * @file auplay.c  Audio Player
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <re.h>
@@ -107,17 +107,4 @@ int auplay_alloc(struct auplay_st **stp, struct list *auplayl,
 		return EINVAL;
 
 	return ap->alloch(stp, ap, prm, device, wh, arg);
-}
-
-
-/**
- * Get the audio player module from a audio player state
- *
- * @param st Audio player state
- *
- * @return Audio player module
- */
-struct auplay *auplay_get(struct auplay_st *st)
-{
-	return st ? st->ap : NULL;
 }

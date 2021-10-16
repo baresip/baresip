@@ -1,7 +1,7 @@
 /**
  * @file av1.h Private AV1 Interface
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 
 

@@ -89,24 +89,6 @@ static void http_resph(int err, const struct http_msg *msg, void *arg)
 }
 
 
-static void net_handler(void *arg)
-{
-	const struct sa *sa;
-	(void) arg;
-
-	sa = net_laddr_af(d->net, AF_INET);
-	if (sa)
-		http_client_set_laddr(d->client, sa);
-	info("httpreq: network changed %j", sa);
-#ifdef HAVE_INET6
-	sa = net_laddr_af(d->net, AF_INET6);
-	if (sa)
-		http_client_set_laddr6(d->client, sa);
-	info("httpreq: network changed %j", sa);
-#endif
-}
-
-
 static int ensure_alloc(void)
 {
 	int err = 0;
@@ -118,7 +100,6 @@ static int ensure_alloc(void)
 		return err;
 	}
 
-	net_change(d->net, 60, net_handler, NULL);
 	if (!d->client)
 		err = http_client_alloc(&d->client, net_dnsc(d->net));
 
@@ -161,10 +142,13 @@ static int pl_set_arg(struct pl *pl, const struct cmd_arg *carg)
 
 static int pl_opt_arg(struct pl **plp, const struct cmd_arg *carg)
 {
-	struct pl *pl = *plp;
+	struct pl *pl;
 	int err;
+
 	if (!plp)
 		return EINVAL;
+
+	pl = *plp;
 
 	err = ensure_alloc();
 	if (err)
@@ -246,6 +230,9 @@ static int cmd_setauth(struct re_printf *pf, void *arg)
 		re_hprintf(pf, "Usage:\nhttp_setauth <user> [pass]\n");
 		return err;
 	}
+
+	if (err)
+		return err;
 
 	return http_reqconn_set_auth(d->conn,
 			pl_isset(&user) ? &user : NULL,
@@ -399,6 +386,9 @@ static int ca_handler(const struct pl *pl, void *arg)
 	mem_deref(mb);
 
 	/* ignore err, just print warning */
+	if (err)
+		warning("httpreq: could not add ca %s\n", parm);
+
 	return 0;
 }
 #endif
@@ -504,6 +494,8 @@ static int module_init(void)
 	}
 
 	err |= conf_apply(conf_cur(), "httpreq_ca", ca_handler, d->client);
+	if (err)
+		return err;
 #endif
 
 	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));

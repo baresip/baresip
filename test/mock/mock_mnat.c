@@ -1,7 +1,7 @@
 /**
  * @file mock/mock_mnat.c Mock media NAT-traversal
  *
- * Copyright (C) 2010 - 2018 Creytiv.com
+ * Copyright (C) 2010 - 2018 Alfred E. Heggestad
  */
 
 #include <re.h>
@@ -20,6 +20,7 @@ struct mnat_sess {
 struct mnat_media {
 	struct le le;
 	struct sdp_media *sdpm;
+	struct tmr tmr;
 	mnat_connected_h *connh;
 	void *arg;
 };
@@ -39,6 +40,7 @@ static void media_destructor(void *arg)
 	struct mnat_media *m = arg;
 
 	list_unlink(&m->le);
+	tmr_cancel(&m->tmr);
 	mem_deref(m->sdpm);
 }
 
@@ -130,6 +132,22 @@ static int mnat_media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 }
 
 
+static void update_handler(void *data)
+{
+	struct mnat_media *m = data;
+	struct sa rtp, rtcp;
+
+	rtp = *sdp_media_raddr(m->sdpm);
+	sdp_media_raddr_rtcp(m->sdpm, &rtcp);
+
+	if (sa_isset(&rtp, SA_ALL) && sa_isset(&rtcp, SA_ALL)) {
+
+		if (m->connh)
+			m->connh(&rtp, &rtcp, m->arg);
+	}
+}
+
+
 static int mnat_session_update(struct mnat_sess *sess)
 {
 	struct le *le;
@@ -139,17 +157,8 @@ static int mnat_session_update(struct mnat_sess *sess)
 
 	for (le = sess->medial.head; le; le = le->next) {
 		struct mnat_media *m = le->data;
-		struct sa rtp, rtcp;
 
-		rtp = *sdp_media_raddr(m->sdpm);
-		sdp_media_raddr_rtcp(m->sdpm, &rtcp);
-
-		if (sa_isset(&rtp, SA_ALL) &&
-		    sa_isset(&rtcp, SA_ALL)) {
-
-			if (m->connh)
-				m->connh(&rtp, &rtcp, m->arg);
-		}
+		tmr_start(&m->tmr, 0, update_handler, m);
 	}
 
 	return 0;

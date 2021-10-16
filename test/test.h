@@ -1,7 +1,7 @@
 /**
  * @file test.h  Selftest for Baresip core -- internal API
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 
@@ -15,10 +15,11 @@
 
 #define ASSERT_EQ(expected, actual)				\
 	if ((expected) != (actual)) {				\
-		warning("selftest: ASSERT_EQ: %s:%u:"		\
-			" expected=%d, actual=%d\n",		\
-			__FILE__, __LINE__,			\
-			(int)(expected), (int)(actual));	\
+		warning("selftest: ASSERT_EQ: %s:%u: %s():"	\
+			" expected=%d(0x%x), actual=%d(0x%x)\n",\
+			__FILE__, __LINE__, __func__,		\
+			(expected), (expected),			\
+			(actual), (actual));			\
 		err = EINVAL;					\
 		goto out;					\
 	}
@@ -43,6 +44,16 @@
 		goto out;						\
 	}
 
+#define ASSERT_PLEQ(expected, actual)					\
+	if (0 != pl_cmp((expected), (actual))) {			\
+		warning("selftest: ASSERT_PLEQ: %s:%u:"			\
+			" expected = '%r', actual = '%r'\n",		\
+			__FILE__, __LINE__,				\
+			(expected), (actual));				\
+		err = EBADMSG;						\
+		goto out;						\
+	}
+
 #define TEST_ERR(err)							\
 	if ((err)) {							\
 		(void)re_fprintf(stderr, "\n");				\
@@ -50,6 +61,16 @@
 			      " (%m)\n",				\
 			      __FILE__, __LINE__,			\
 			      (err));					\
+		goto out;						\
+	}
+
+#define TEST_ERR_TXT(err,txt)						\
+	if ((err)) {							\
+		(void)re_fprintf(stderr, "\n");				\
+		warning("TEST_ERR: %s:%u: %s"				\
+			      " (%m)\n",				\
+			      __FILE__, __LINE__,			\
+			      (txt), (err));				\
 		goto out;						\
 	}
 
@@ -125,15 +146,6 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
 
 
 /*
- * Mock Audio-source
- */
-
-struct ausrc;
-
-int mock_ausrc_register(struct ausrc **ausrcp, struct list *ausrcl);
-
-
-/*
  * Mock Audio-player
  */
 
@@ -171,15 +183,6 @@ void mock_mnat_unregister(void);
 
 
 /*
- * Mock Video-source
- */
-
-struct vidsrc;
-
-int mock_vidsrc_register(struct vidsrc **vidsrcp);
-
-
-/*
  * Mock Video-codec
  */
 
@@ -204,6 +207,7 @@ int mock_vidisp_register(struct vidisp **vidispp,
 /* test cases */
 
 int test_account(void);
+int test_account_uri_complete(void);
 int test_aulevel(void);
 int test_call_answer(void);
 int test_call_answer_hangup_a(void);
@@ -226,6 +230,7 @@ int test_call_deny_udp(void);
 int test_call_transfer(void);
 int test_call_video(void);
 int test_call_webrtc(void);
+int test_call_bundle(void);
 int test_cmd(void);
 int test_cmd_long(void);
 int test_contact(void);
@@ -234,6 +239,7 @@ int test_h264(void);
 int test_message(void);
 int test_network(void);
 int test_play(void);
+int test_stunuri(void);
 int test_ua_alloc(void);
 int test_ua_options(void);
 int test_ua_register(void);
@@ -242,3 +248,5 @@ int test_ua_register_auth_dns(void);
 int test_ua_register_dns(void);
 int test_uag_find_param(void);
 int test_video(void);
+int test_clean_number(void);
+int test_clean_number_only_numeric(void);

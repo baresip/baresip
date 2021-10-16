@@ -1,7 +1,7 @@
 /**
  * @file x11.c Video driver for X11
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #ifndef SOLARIS

@@ -1,7 +1,7 @@
 /**
  * @file src/call.c  Call Control
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +38,7 @@ struct call {
 	struct media_ctx *ctx;    /**< Shared A/V source media context      */
 	enum call_state state;    /**< Call state                           */
 	int32_t adelay;           /**< Auto answer delay in ms              */
+	char *aluri;              /**< Alert-Info URI                       */
 	char *local_uri;          /**< Local SIP uri                        */
 	char *local_name;         /**< Local display name                   */
 	char *peer_uri;           /**< Peer SIP Address                     */
@@ -67,6 +68,9 @@ struct call {
 	uint32_t rtp_timeout_ms;  /**< RTP Timeout in [ms]                  */
 	uint32_t linenum;         /**< Line number from 1 to N              */
 	struct list custom_hdrs;  /**< List of custom headers if any        */
+
+	enum sdp_dir ansadir;      /**< Answer audio direction              */
+	enum sdp_dir ansvdir;      /**< Answer video direction              */
 };
 
 
@@ -191,7 +195,7 @@ static void call_stream_start(struct call *call, bool active)
 		call->time_start = time(NULL);
 
 		FOREACH_STREAM {
-			stream_reset(le->data);
+			stream_flush_jbuf(le->data);
 		}
 	}
 }
@@ -338,7 +342,14 @@ static int update_media(struct call *call)
 
 	/* Update each stream */
 	FOREACH_STREAM {
-		stream_update(le->data);
+		struct stream *strm = le->data;
+
+		stream_update(strm);
+
+		if (stream_is_ready(strm)) {
+
+			stream_start_rtcp(strm);
+		}
 	}
 
 	if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
@@ -385,6 +396,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->local_name);
 	mem_deref(call->peer_uri);
 	mem_deref(call->peer_name);
+	mem_deref(call->aluri);
 	mem_deref(call->audio);
 	mem_deref(call->video);
 	mem_deref(call->sdp);
@@ -462,7 +474,7 @@ static void menc_event_handler(enum menc_event event,
 	case MENC_EVENT_SECURE:
 		if (strstr(prm, "audio")) {
 			stream_set_secure(audio_strm(call->audio), true);
-			stream_start(audio_strm(call->audio));
+			stream_start_rtcp(audio_strm(call->audio));
 			err = start_audio(call);
 			if (err) {
 				warning("call: secure: could not"
@@ -471,7 +483,7 @@ static void menc_event_handler(enum menc_event event,
 		}
 		else if (strstr(prm, "video")) {
 			stream_set_secure(video_strm(call->video), true);
-			stream_start(video_strm(call->video));
+			stream_start_rtcp(video_strm(call->video));
 			err = video_update(call->video, &call->ctx,
 				call->peer_uri);
 			if (err) {
@@ -515,7 +527,7 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 	int err;
 	MAGIC_CHECK(call);
 
-	if (strm->mencs) {
+	if (call->mencs) {
 		err = stream_start_mediaenc(strm);
 		if (err) {
 			call_event_handler(call, CALL_EVENT_CLOSED,
@@ -524,7 +536,9 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 	}
 	else if (stream_is_ready(strm)) {
 
-		switch (strm->type) {
+		stream_start_rtcp(strm);
+
+		switch (stream_type(strm)) {
 
 		case MEDIA_AUDIO:
 			err = start_audio(call);
@@ -567,7 +581,7 @@ static void stream_rtcp_handler(struct stream *strm,
 	switch (msg->hdr.pt) {
 
 	case RTCP_SR:
-		if (strm->cfg.rtp_stats)
+		if (call->config_avt.rtp_stats)
 			call_set_xrtpstat(call);
 
 		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,
@@ -691,6 +705,8 @@ static void call_decode_sip_autoanswer(struct call *call,
 		const struct sip_msg *msg)
 {
 	const struct sip_hdr *hdr;
+	struct pl v;
+	int err = 0;
 
 	call->adelay = -1;
 
@@ -700,8 +716,17 @@ static void call_decode_sip_autoanswer(struct call *call,
 		return;
 
 	hdr = sip_msg_hdr(msg, SIP_HDR_ALERT_INFO);
-	if (call_hdr_dec_sip_autoanswer(call, hdr))
+	if (call_hdr_dec_sip_autoanswer(call, hdr)) {
+		if (!re_regex(hdr->val.p, hdr->val.l, "<[^<>]*>", &v))
+			err = pl_strdup(&call->aluri, &v);
+
+		if (err) {
+			warning("call: could not extract Alert-Info URI\n");
+			return;
+		}
+
 		return;
+	}
 
 	/* RFC 5373 */
 	call_rfc5373_autoanswer(call, msg, "Answer-Mode");
@@ -739,7 +764,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	struct le *le;
 	struct stream_param stream_prm;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
-	bool use_video = true, got_offer = false;
+	bool use_video, got_offer = false;
 	int label = 0;
 	int err = 0;
 
@@ -772,6 +797,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->eh     = eh;
 	call->arg    = arg;
 	call->af     = prm->af;
+	call->ansadir = SDP_SENDRECV;
+	call->ansvdir = SDP_SENDRECV;
 	call_decode_sip_autoanswer(call, msg);
 
 	err = str_dup(&call->local_uri, local_uri);
@@ -782,11 +809,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	/* Init SDP info */
 	err = sdp_session_alloc(&call->sdp, &prm->laddr);
-	if (err)
-		goto out;
-
-	err = sdp_session_set_lattr(call->sdp, true,
-				    "tool", "baresip " BARESIP_VERSION);
 	if (err)
 		goto out;
 
@@ -825,7 +847,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	/* Audio stream */
 	err = audio_alloc(&call->audio, &call->streaml, &stream_prm, cfg, acc,
-			  call->sdp, ++label,
+			  call->sdp,
 			  acc->mnat, call->mnats, acc->menc, call->mencs,
 			  acc->ptime, account_aucodecl(call->acc), !got_offer,
 			  audio_event_handler, audio_level_handler,
@@ -848,7 +870,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (use_video) {
 		err = video_alloc(&call->video, &call->streaml,
 				  &stream_prm, cfg,
-				  call->sdp, ++label,
+				  call->sdp,
 				  acc->mnat, call->mnats,
 				  acc->menc, call->mencs,
 				  "main",
@@ -866,10 +888,29 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	FOREACH_STREAM {
 		struct stream *strm = le->data;
+
+		sdp_media_set_lattr(stream_sdpmedia(strm), true,
+				    "label", "%d", ++label);
+
 		stream_set_session_handlers(strm, stream_mnatconn_handler,
 					    stream_rtpestab_handler,
 					    stream_rtcp_handler,
 					    stream_error_handler, call);
+	}
+
+	if (cfg->avt.bundle) {
+
+		FOREACH_STREAM {
+			struct stream *strm = le->data;
+
+			err = stream_bundle_init(strm, !got_offer);
+			if (err)
+				goto out;
+		}
+
+		err = bundle_sdp_encode(call->sdp, &call->streaml);
+		if (err)
+			goto out;
 	}
 
 	if (cfg->avt.rtp_timeout) {
@@ -959,6 +1000,9 @@ int call_connect(struct call *call, const struct pl *paddr)
 	info("call: connecting to '%r'..\n", paddr);
 
 	call->outgoing = true;
+	err = str_x64dup(&call->id, rand_u64());
+	if (err)
+		return err;
 
 	/* if the peer-address is a full SIP address then we need
 	 * to parse it and extract the SIP uri part.
@@ -980,6 +1024,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 		return err;
 
 	set_state(call, CALL_STATE_OUTGOING);
+	call_event_handler(call, CALL_EVENT_OUTGOING, call->peer_uri);
 
 	/* If we are using asyncronous medianat like STUN/TURN, then
 	 * wait until completed before sending the INVITE */
@@ -1008,10 +1053,15 @@ int call_modify(struct call *call)
 	debug("call: modify\n");
 
 	err = call_sdp_get(call, &desc, true);
-	if (!err)
+	if (!err) {
 		err = sipsess_modify(call->sess, desc);
+		if (err)
+			goto out;
+	}
 
 	err = update_media(call);
+
+ out:
 	mem_deref(desc);
 
 	return err;
@@ -1073,12 +1123,33 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 int call_progress(struct call *call)
 {
 	struct mbuf *desc;
+	enum answermode m;
+	enum sdp_dir adir;
+	enum sdp_dir vdir;
+	enum sdp_dir ansadir;
+	enum sdp_dir ansvdir;
 	int err;
 
 	if (!call)
 		return EINVAL;
 
+	m = account_answermode(call->acc);
+
 	tmr_cancel(&call->tmr_inv);
+
+	ansadir = stream_ldir(audio_strm(call_audio(call)));
+	ansvdir = stream_ldir(video_strm(call_video(call)));
+	adir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
+			    m == ANSWERMODE_EARLY_AUDIO ? SDP_RECVONLY :
+			    SDP_INACTIVE;
+	vdir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
+			    m == ANSWERMODE_EARLY_VIDEO ? SDP_RECVONLY :
+			    SDP_INACTIVE;
+	if (adir != ansadir || vdir != ansvdir)
+		call_set_media_direction(call, adir, vdir);
+
+	call->ansadir = ansadir;
+	call->ansvdir = ansvdir;
 
 	err = call_sdp_get(call, &desc, false);
 	if (err)
@@ -1088,9 +1159,18 @@ int call_progress(struct call *call)
 			       desc, "Allow: %H\r\n",
 			       ua_print_allowed, call->ua);
 
-	if (!err)
-		call_stream_start(call, false);
+	if (err)
+		goto out;
 
+	if (call->got_offer)
+		err = update_media(call);
+
+	if (err)
+		goto out;
+
+	call_stream_start(call, false);
+
+out:
 	mem_deref(desc);
 
 	return 0;
@@ -1130,6 +1210,7 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	if (call->got_offer) {
 
+		call_set_media_direction(call, call->ansadir, call->ansvdir);
 		err = update_media(call);
 		if (err)
 			return err;
@@ -1292,6 +1373,19 @@ const char *call_peername(const struct call *call)
 
 
 /**
+ * Get the Alert-Info URI of the call
+ *
+ * @param call  Call object
+ *
+ * @return Alert-Info URI
+ */
+const char *call_alerturi(const struct call *call)
+{
+	return call ? call->aluri : NULL;
+}
+
+
+/**
  * Print the call debug information
  *
  * @param pf   Print function
@@ -1382,21 +1476,6 @@ int call_status(struct re_printf *pf, const struct call *call)
 }
 
 
-int call_jbuf_stat(struct re_printf *pf, const struct call *call)
-{
-	struct le *le;
-	int err = 0;
-
-	if (!call)
-		return EINVAL;
-
-	FOREACH_STREAM
-		err |= stream_jbuf_stat(pf, le->data);
-
-	return err;
-}
-
-
 int call_info(struct re_printf *pf, const struct call *call)
 {
 	if (!call)
@@ -1421,14 +1500,33 @@ int call_info(struct re_printf *pf, const struct call *call)
  */
 int call_send_digit(struct call *call, char key)
 {
-	int err;
+	int err = 0;
+	const struct sdp_format *fmt;
+	bool info = true;
 
 	if (!call)
 		return EINVAL;
 
-	if (call->acc->dtmfmode == DTMFMODE_SIP_INFO &&
-		key != KEYCODE_REL) {
-		err = send_dtmf_info(call, key);
+	switch (account_dtmfmode(call->acc)) {
+		case DTMFMODE_SIP_INFO:
+			info = true;
+			break;
+		case DTMFMODE_AUTO:
+			fmt = sdp_media_rformat(
+				stream_sdpmedia(audio_strm(call->audio)),
+				telev_rtpfmt);
+			info = fmt == NULL;
+			break;
+		case DTMFMODE_RTP_EVENT:
+		default:
+			info = false;
+			break;
+	}
+
+	if (info) {
+		if (key != KEYCODE_REL) {
+			err = send_dtmf_info(call, key);
+		}
 	}
 	else {
 		err = audio_send_digit(call->audio, key);
@@ -1536,6 +1634,12 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	if (err) {
 		warning("call: could not decode SDP answer: %m\n", err);
 		return err;
+	}
+
+	/* note: before update_media */
+	if (call->config_avt.bundle) {
+
+		bundle_sdp_decode(call->sdp, &call->streaml);
 	}
 
 	err = update_media(call);
@@ -1751,6 +1855,21 @@ static bool have_common_audio_codecs(const struct call *call)
 }
 
 
+static bool have_common_video_codecs(const struct call *call)
+{
+	const struct sdp_format *sc;
+	struct vidcodec *vc;
+
+	sc = sdp_media_rcodec(stream_sdpmedia(video_strm(call->video)));
+	if (!sc)
+		return false;
+
+	vc = sc->data;
+
+	return vc != NULL;
+}
+
+
 int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		const struct sip_msg *msg)
 {
@@ -1808,19 +1927,27 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			return 0;
 		}
 
-		/* Check if we have any common audio codecs, after
+		/* Check if we have any common audio or video codecs, after
 		 * the SDP offer has been parsed
 		 */
-		if (!have_common_audio_codecs(call)) {
-			info("call: no common audio codecs - rejected\n");
+
+		if (!have_common_audio_codecs(call) &&
+			!have_common_video_codecs(call)) {
+			info("call: no common audio or video codecs "
+				"- rejected\n");
 
 			sip_treply(NULL, uag_sip(), msg,
 				   488, "Not Acceptable Here");
 
 			call_event_handler(call, CALL_EVENT_CLOSED,
-					   "No audio codecs");
+					   "No audio or video codecs");
 
 			return 0;
+		}
+
+		if (call->config_avt.bundle) {
+
+			bundle_sdp_decode(call->sdp, &call->streaml);
 		}
 	}
 
@@ -1927,6 +2054,19 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 }
 
 
+static void redirect_handler(const struct sip_msg *msg, const char *uri,
+	void *arg)
+{
+	struct call *call = arg;
+
+	info ("call: blind transfer to %s\n", uri);
+	ua_event(call->ua, UA_EVENT_CALL_BLIND_TRANSFER, call,
+		"%d - %s", msg->scode, uri);
+
+	return;
+}
+
+
 static int send_invite(struct call *call)
 {
 	const char *routev[1];
@@ -1934,8 +2074,6 @@ static int send_invite(struct call *call)
 	int err;
 
 	routev[0] = account_outbound(call->acc, 0);
-
-	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
 	err = call_sdp_get(call, &desc, true);
 	if (err)
@@ -1957,6 +2095,7 @@ static int send_invite(struct call *call)
 			      routev[0] ? 1 : 0,
 			      "application/sdp", desc,
 			      auth_handler, call->acc, true,
+			      call->id,
 			      sipsess_offer_handler, sipsess_answer_handler,
 			      sipsess_progr_handler, sipsess_estab_handler,
 			      sipsess_info_handler,
@@ -1971,11 +2110,14 @@ static int send_invite(struct call *call)
 		goto out;
 	}
 
-	err = str_dup(&call->id,
-		      sip_dialog_callid(sipsess_dialog(call->sess)));
+	err = sipsess_set_redirect_handler(call->sess, redirect_handler);
+	if (err)
+		goto out;
 
 	/* save call setup timer */
 	call->time_conn = time(NULL);
+
+	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
  out:
 	mem_deref(desc);
@@ -2010,6 +2152,29 @@ static int send_dtmf_info(struct call *call, char key)
 	mem_deref(body);
 
 	return err;
+}
+
+
+/**
+ * Find the peer capabilites of early video in the remote SDP
+ *
+ * @param call Call object
+ *
+ * @return True if peer accepts early video, otherwise false
+ */
+bool call_early_video_available(const struct call *call)
+{
+	struct le *le;
+	struct sdp_media *v;
+
+	LIST_FOREACH(sdp_session_medial(call->sdp, false), le) {
+		v = le->data;
+		if (0 == str_cmp(sdp_media_name(v), "video") &&
+			(sdp_media_rdir(v) & SDP_RECVONLY))
+			return true;
+	}
+
+	return false;
 }
 
 
@@ -2092,6 +2257,12 @@ int call_reset_transp(struct call *call, const struct sa *laddr)
 	sdp_session_set_laddr(call->sdp, laddr);
 
 	return call_modify(call);
+}
+
+
+const struct sa *call_laddr(const struct call *call)
+{
+	return sdp_session_laddr(call->sdp);
 }
 
 
@@ -2260,6 +2431,35 @@ int call_transfer(struct call *call, const char *uri)
 }
 
 
+/**
+ * Transfer the call to a target SIP uri and replace the source call
+ *
+ * @param call        Call object
+ * @param source_call Source call object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_replace_transfer(struct call *call, struct call *source_call)
+{
+	int err;
+
+	info("transferring call to %s\n", source_call->peer_uri);
+
+	call->sub = mem_deref(call->sub);
+	err = sipevent_drefer(&call->sub, uag_sipevent_sock(),
+			      sipsess_dialog(call->sess), ua_cuser(call->ua),
+			      auth_handler, call->acc, true,
+			      sipsub_notify_handler, sipsub_close_handler,
+			      call, "Refer-To: %s?Replaces=%s\r\n",
+			      source_call->peer_uri, source_call->id);
+	if (err) {
+		warning("call: sipevent_drefer: %m\n", err);
+	}
+
+	return err;
+}
+
+
 int call_af(const struct call *call)
 {
 	return call ? call->af : AF_UNSPEC;
@@ -2399,6 +2599,23 @@ int32_t call_answer_delay(const struct call *call)
 
 
 /**
+ * Set/override the answer delay of call
+ *
+ * @param call    Call object
+ * @param adelay  Answer delay in ms. A value of -1 means auto answer is
+ *                disabled
+ *
+ */
+void call_set_answer_delay(struct call *call, int32_t adelay)
+{
+	if (!call)
+		return;
+
+	call->adelay = adelay;
+}
+
+
+/**
  * Find the call with a given line number
  *
  * @param calls   List of calls
@@ -2474,6 +2691,8 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 	if (!call)
 		return EINVAL;
 
+	call->ansadir = a;
+	call->ansvdir = v;
 	stream_set_ldir(audio_strm(call_audio(call)), a);
 
 	if (video_strm(call_video(call))) {

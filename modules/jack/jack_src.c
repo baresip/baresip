@@ -1,7 +1,7 @@
 /**
  * @file jack_src.c  JACK audio driver -- source
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>
@@ -12,8 +12,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;  /* pointer to base-class (inheritance) */
-
 	struct ausrc_prm prm;
 	float *sampv;
 	size_t sampc;             /* includes number of channels */
@@ -52,9 +50,8 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 		}
 	}
 
-	af.fmt   = st->prm.fmt;
-	af.sampv = st->sampv;
-	af.sampc = sampc;
+	auframe_init(&af, st->prm.fmt, st->sampv, sampc, st->prm.srate,
+		     st->prm.ch);
 	af.timestamp = ts;
 
 	/* 1. read data from app (signed 16-bit) interleaved */
@@ -229,7 +226,6 @@ int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		return ENOMEM;
 
 	st->prm = *prm;
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 

@@ -38,7 +38,7 @@ struct mcreceiver {
 	struct sa addr;
 	uint8_t prio;
 
-	struct rtp_sock *rtp;
+	struct udp_sock *rtp;
 	uint32_t ssrc;
 	struct jbuf *jbuf;
 
@@ -216,9 +216,8 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		jbuf_flush(mcreceiver->jbuf);
 		mcreceiver->running = true;
 		mcreceiver->ssrc = ssrc;
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			"multicast: receive start %J (%d)", &mcreceiver->addr,
-			mcreceiver->prio);
+		module_event("multicast", "receive start", NULL, NULL,
+			     "%J (%d)", &mcreceiver->addr, mcreceiver->prio);
 		err = mcplayer_start(mcreceiver->jbuf, mcreceiver->ac);
 		goto out;
 	}
@@ -233,9 +232,8 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		mcplayer_stop();
 		jbuf_flush(hprio->jbuf);
 		hprio->ssrc = ssrc;
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			"multicast: receive start %J (%d)", &hprio->addr,
-			hprio->prio);
+		module_event("multicast", "receive start", NULL, NULL,
+			     "%J (%d)", &hprio->addr, hprio->prio);
 		err = mcplayer_start(hprio->jbuf, hprio->ac);
 		goto out;
 	}
@@ -250,10 +248,8 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 	jbuf_flush(mcreceiver->jbuf);
 	mcreceiver->ssrc = ssrc;
 	mcreceiver->running = true;
-	ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-		"multicast: receive start %J (%d)", &mcreceiver->addr,
-		mcreceiver->prio);
-
+	module_event("multicast", "receive start", NULL, NULL,
+		     "%J (%d)", &mcreceiver->addr, mcreceiver->prio);
 	err = mcplayer_start(mcreceiver->jbuf, mcreceiver->ac);
 
   out:
@@ -276,8 +272,8 @@ static void timeout_handler(void *arg)
 	lock_write_get(mcreceivl_lock);
 
 	if (mcreceiver->running) {
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			"multicast: receive timeout %J", &mcreceiver->addr);
+		module_event("multicast", "receive timeout", NULL, NULL,
+			     "%J (%d)", &mcreceiver->addr, mcreceiver->prio);
 		mcplayer_stop();
 	}
 
@@ -355,6 +351,34 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	tmr_start(&mcreceiver->timeout, TIMEOUT, timeout_handler, mcreceiver);
 
 	return;
+}
+
+
+/**
+ * udp receive handler
+ *
+ * @note This is a wrapper function for the RTP receive handler to allow an
+ * any port number as receiving port.
+ * RTP socket pointer of 0xdeadbeef is a dummy address. The function rtp_decode
+ * does nothing on the socket pointer.
+ *
+ * @param src	src address
+ * @param mb	payload buffer
+ * @param arg	rtp_handler argument
+ */
+static void rtp_handler_wrapper(const struct sa *src,
+	struct mbuf *mb, void *arg)
+{
+	int err = 0;
+	struct rtp_header hdr;
+
+	err = rtp_decode((struct rtp_sock*)0xdeadbeef, mb, &hdr);
+	if (err) {
+		warning("multicast receiver: Decoding of rtp (%m)\n", err);
+		return;
+	}
+
+	rtp_handler(src, &hdr, mb, arg);
 }
 
 
@@ -474,7 +498,7 @@ void mcreceiver_unreg(struct sa *addr){
 	list_unlink(&mcreceiver->le);
 	resume_uag_state();
 	lock_rel(mcreceivl_lock);
-	mcreceiver = mem_deref(mcreceiver);
+	mem_deref(mcreceiver);
 
 	if (list_isempty(&mcreceivl))
 		mcreceivl_lock = mem_deref(mcreceivl_lock);
@@ -495,6 +519,10 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	uint16_t port;
 	struct mcreceiver *mcreceiver = NULL;
 	struct config_avt *cfg = &conf_config()->avt;
+	struct range jbuf_del;
+	uint32_t jbuf_wish;
+	enum jbuf_type jbtype;
+	struct pl pl;
 
 	if (!addr || !prio)
 		return EINVAL;
@@ -529,21 +557,37 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	mcreceiver->enable = true;
 	mcreceiver->globenable = true;
 
-	err = jbuf_alloc(&mcreceiver->jbuf,
-		cfg->jbuf_del.min, cfg->jbuf_del.max);
-	err |= jbuf_set_type(mcreceiver->jbuf, cfg->jbtype);
-	err |= jbuf_set_wish(mcreceiver->jbuf, cfg->jbuf_wish);
+	jbuf_del  = cfg->jbuf_del;
+	jbuf_wish = cfg->jbuf_wish;
+	jbtype = cfg->jbtype;
+	(void)conf_get_range(conf_cur(), "multicast_jbuf_delay", &jbuf_del);
+	if (0 == conf_get(conf_cur(), "multicast_jbuf_type", &pl))
+		jbtype = conf_get_jbuf_type(&pl);
+	(void)conf_get_u32(conf_cur(), "multicast_jbuf_wish", &jbuf_wish);
+
+	err = jbuf_alloc(&mcreceiver->jbuf, jbuf_del.min, jbuf_del.max);
+	err |= jbuf_set_type(mcreceiver->jbuf, jbtype);
+	err |= jbuf_set_wish(mcreceiver->jbuf, jbuf_wish);
 	if (err)
 		goto out;
 
-
-	err = rtp_listen(&mcreceiver->rtp, IPPROTO_UDP, &mcreceiver->addr,
-		port, port + 1, false, rtp_handler, NULL, mcreceiver);
+	err = udp_listen(&mcreceiver->rtp, &mcreceiver->addr,
+		rtp_handler_wrapper, mcreceiver);
 	if (err) {
-		warning("multicast receiver: rtp listen failed:"
+		warning("multicast receiver: udp listen failed:"
 			"af=%s port=%u-&u (%m)\n", net_af2name(sa_af(addr)),
 			port, port + 1, err);
 		goto out;
+	}
+
+	if (IN_MULTICAST(sa_in(&mcreceiver->addr))) {
+		err = udp_multicast_join((struct udp_sock *)
+			mcreceiver->rtp, &mcreceiver->addr);
+		if (err) {
+			warning ("multicast recevier: join multicast group "
+				"failed %J (%m)\n", &mcreceiver->addr, err);
+			goto out;
+		}
 	}
 
 	lock_write_get(mcreceivl_lock);
@@ -552,7 +596,7 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 
   out:
 	if (err)
-		mcreceiver = mem_deref(mcreceiver);
+		mem_deref(mcreceiver);
 
 	return err;
 }

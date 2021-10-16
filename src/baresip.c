@@ -1,7 +1,7 @@
 /**
  * @file baresip.c Top-level baresip struct
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>
@@ -112,7 +112,7 @@ int baresip_init(struct config *cfg)
 	/* Initialise Network */
 	err = net_alloc(&baresip.net, &cfg->net);
 	if (err) {
-		warning("ua: network init failed: %m\n", err);
+		warning("baresip: network init failed: %m\n", err);
 		return err;
 	}
 

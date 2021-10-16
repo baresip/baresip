@@ -1,7 +1,7 @@
 /**
  * @file core.h  Internal API
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 
@@ -43,13 +43,15 @@ struct account {
 
 	/* parameters: */
 	bool sipans;                 /**< Allow SIP header auto answer mode  */
+	enum sipansbeep sipansbeep;  /**< Beep mode for SIP auto answer      */
 	enum answermode answermode;  /**< Answermode for incoming calls      */
-	uint32_t adelay;             /**< Delay for delayed auto answer [ms] */
+	int32_t adelay;              /**< Delay for delayed auto answer [ms] */
 	enum dtmfmode dtmfmode;      /**< Send type for DTMF tones           */
 	struct le acv[16];           /**< List elements for aucodecl         */
 	struct list aucodecl;        /**< List of preferred audio-codecs     */
 	char *auth_user;             /**< Authentication username            */
 	char *auth_pass;             /**< Authentication password            */
+	int maf;                     /**< Media address family to force      */
 	char *mnatid;                /**< Media NAT handling                 */
 	char *mencid;                /**< Media encryption type              */
 	const struct mnat *mnat;     /**< MNAT module                        */
@@ -68,31 +70,16 @@ struct account {
 	struct stun_uri *stun_host;  /**< STUN Server                        */
 	struct le vcv[4];            /**< List elements for vidcodecl        */
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
+	bool videoen;                /**< Video enabled flag                 */
 	bool mwi;                    /**< MWI on/off                         */
 	bool refer;                  /**< REFER method on/off                */
+	char *cert;                  /**< SIP TLS client certificate+keyfile */
 	char *ausrc_mod;
 	char *ausrc_dev;
 	char *auplay_mod;
 	char *auplay_dev;
+	uint32_t autelev_pt;         /**< Payload type for telephone-events  */
 	char *extra;                 /**< Extra parameters                   */
-};
-
-
-/*
- * Audio Player
- */
-
-struct auplay_st {
-	struct auplay *ap;
-};
-
-
-/*
- * Audio Source
- */
-
-struct ausrc_st {
-	const struct ausrc *as;
 };
 
 
@@ -135,12 +122,12 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
 int  call_sdp_get(const struct call *call, struct mbuf **descp, bool offer);
-int  call_jbuf_stat(struct re_printf *pf, const struct call *call);
 int  call_info(struct re_printf *pf, const struct call *call);
 int  call_reset_transp(struct call *call, const struct sa *laddr);
 int  call_af(const struct call *call);
 void call_set_xrtpstat(struct call *call);
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs);
+const struct sa *call_laddr(const struct call *call);
 
 /*
 * Custom headers
@@ -152,8 +139,6 @@ int custom_hdrs_print(struct re_printf *pf,
  * Conf
  */
 
-int conf_get_range(const struct conf *conf, const char *name,
-		   struct range *rng);
 int conf_get_csv(const struct conf *conf, const char *name,
 		 char *str1, size_t sz1, char *str2, size_t sz2);
 int conf_get_float(const struct conf *conf, const char *name, double *val);
@@ -210,6 +195,7 @@ int  reg_debug(struct re_printf *pf, const struct reg *reg);
 int  reg_json_api(struct odict *od, const struct reg *reg);
 int  reg_status(struct re_printf *pf, const struct reg *reg);
 int  reg_af(const struct reg *reg);
+const struct sa *reg_laddr(const struct reg *reg);
 
 
 /*
@@ -237,7 +223,7 @@ struct rtpext {
 
 
 int rtpext_hdr_encode(struct mbuf *mb, size_t num_bytes);
-int rtpext_encode(struct mbuf *mb, unsigned id, unsigned len,
+int rtpext_encode(struct mbuf *mb, unsigned id, size_t len,
 		  const uint8_t *data);
 int rtpext_decode(struct rtpext *ext, struct mbuf *mb);
 
@@ -256,6 +242,32 @@ int rtpstat_print(struct re_printf *pf, const struct call *call);
 int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb);
 
 
+/* bundle (per media stream) */
+
+
+enum bundle_state {
+	BUNDLE_NONE = 0,
+	BUNDLE_BASE,
+	BUNDLE_MUX
+};
+
+struct bundle;
+
+int  bundle_alloc(struct bundle **bunp);
+void bundle_handle_extmap(struct bundle *bun, struct sdp_media *sdp);
+int  bundle_start_socket(struct bundle *bun, struct udp_sock *us,
+			 struct list *streaml);
+enum bundle_state bundle_state(const struct bundle *bun);
+uint8_t bundle_extmap_mid(const struct bundle *bun);
+int bundle_set_extmap(struct bundle *bun, struct sdp_media *sdp,
+		      uint8_t extmap_mid);
+void bundle_set_state(struct bundle *bun, enum bundle_state st);
+int  bundle_debug(struct re_printf *pf, const struct bundle *bun);
+
+
+const char *bundle_state_name(enum bundle_state st);
+
+
 /*
  * Stream
  */
@@ -265,90 +277,56 @@ enum media_type {
 	MEDIA_VIDEO,
 };
 
+struct stream;
 struct rtp_header;
 
 enum {STREAM_PRESZ = 4+12}; /* same as RTP_HEADER_SIZE */
 
 typedef void (stream_rtp_h)(const struct rtp_header *hdr,
 			    struct rtpext *extv, size_t extc,
-			    struct mbuf *mb, unsigned lostc, void *arg);
+			    struct mbuf *mb, unsigned lostc, bool *ignore,
+			    void *arg);
 typedef int (stream_pt_h)(uint8_t pt, struct mbuf *mb, void *arg);
 
-
-/** Defines a generic media stream */
-struct stream {
-#ifndef RELEASE
-	uint32_t magic;          /**< Magic number for debugging            */
-#endif
-	struct le le;            /**< Linked list element                   */
-	struct config_avt cfg;   /**< Stream configuration                  */
-	struct sdp_media *sdp;   /**< SDP Media line                        */
-	enum sdp_dir ldir;       /**< SDP direction of the stream           */
-	struct rtp_sock *rtp;    /**< RTP Socket                            */
-	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
-	struct jbuf *jbuf;       /**< Jitter Buffer for incoming RTP        */
-	const struct mnat *mnat; /**< Media NAT traversal module            */
-	struct mnat_media *mns;  /**< Media NAT traversal state             */
-	const struct menc *menc; /**< Media encryption module               */
-	struct menc_sess *mencs; /**< Media encryption session state        */
-	struct menc_media *mes;  /**< Media Encryption media state          */
-	struct metric metric_tx; /**< Metrics for transmit                  */
-	struct metric metric_rx; /**< Metrics for receiving                 */
-	struct sa raddr_rtp;     /**< Remote RTP address                    */
-	struct sa raddr_rtcp;    /**< Remote RTCP address                   */
-	enum media_type type;    /**< Media type, e.g. audio/video          */
-	char *cname;             /**< RTCP Canonical end-point identifier   */
-	uint32_t ssrc_rx;        /**< Incoming syncronizing source          */
-	uint32_t pseq;           /**< Sequence number for incoming RTP      */
-	bool pseq_set;           /**< True if sequence number is set        */
-	int pt_enc;              /**< Payload type for encoding             */
-	int pt_dec;              /**< Payload type for decoding             */
-	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
-	bool jbuf_started;       /**< True if jitter-buffer was started     */
-	stream_pt_h *pth;        /**< Stream payload type handler           */
-	struct tmr tmr_rtp;      /**< Timer for detecting RTP timeout       */
-	uint64_t ts_last;        /**< Timestamp of last received RTP pkt    */
-	bool terminated;         /**< Stream is terminated flag             */
-	uint32_t rtp_timeout_ms; /**< RTP Timeout value in [ms]             */
-	bool rtp_estab;          /**< True if RTP stream is established     */
-	bool hold;               /**< Stream is on-hold (local)             */
-	bool mnat_connected;     /**< Media NAT is connected                */
-	bool menc_secure;        /**< Media stream is secure                */
-	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
-	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
-	void *arg;               /**< Handler argument                      */
-	stream_mnatconn_h *mnatconnh;/**< Medianat connected handler        */
-	stream_rtpestab_h *rtpestabh;/**< RTP established handler           */
-	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
-	stream_error_h *errorh;  /**< Stream error handler                  */
-	void *sess_arg;          /**< Session handlers argument             */
-};
 
 int  stream_alloc(struct stream **sp, struct list *streaml,
 		  const struct stream_param *prm,
 		  const struct config_avt *cfg,
 		  struct sdp_session *sdp_sess,
-		  enum media_type type, int label,
+		  enum media_type type,
 		  const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		  const struct menc *menc, struct menc_sess *menc_sess,
 		  bool offerer,
 		  stream_rtp_h *rtph, stream_rtcp_h *rtcph, stream_pt_h *pth,
 		  void *arg);
-int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
-		 struct mbuf *mb);
-void stream_update_encoder(struct stream *s, int pt_enc);
-int  stream_jbuf_stat(struct re_printf *pf, const struct stream *s);
 void stream_hold(struct stream *s, bool hold);
 void stream_set_ldir(struct stream *s, enum sdp_dir dir);
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
-void stream_send_fir(struct stream *s, bool pli);
-void stream_reset(struct stream *s);
-void stream_set_bw(struct stream *s, uint32_t bps);
-int  stream_print(struct re_printf *pf, const struct stream *s);
-void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 bool stream_is_ready(const struct stream *strm);
-int  stream_decode(struct stream *s);
+int  stream_print(struct re_printf *pf, const struct stream *s);
+enum media_type stream_type(const struct stream *strm);
+enum sdp_dir stream_ldir(const struct stream *s);
+struct rtp_sock *stream_rtp_sock(const struct stream *strm);
+const struct sa *stream_raddr(const struct stream *strm);
+const char *stream_mid(const struct stream *strm);
+uint8_t stream_generate_extmap_id(struct stream *strm);
+
+/* Send */
+void stream_update_encoder(struct stream *s, int pt_enc);
+int  stream_pt_enc(const struct stream *strm);
+int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
+		 struct mbuf *mb);
+
+/* Receive */
+void stream_flush_jbuf(struct stream *s);
 void stream_silence_on(struct stream *s, bool on);
+int  stream_decode(struct stream *s);
+int  stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);
+
+
+struct bundle *stream_bundle(const struct stream *strm);
+void stream_parse_mid(struct stream *strm);
+void stream_enable_bundle(struct stream *strm, enum bundle_state st);
 
 
 /*
@@ -360,6 +338,45 @@ struct ua;
 void         ua_printf(const struct ua *ua, const char *fmt, ...);
 
 int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
+struct call *ua_find_call_onhold(const struct ua *ua);
+struct call *ua_find_active_call(struct ua *ua);
+void ua_handle_options(struct ua *ua, const struct sip_msg *msg);
+void sipsess_conn_handler(const struct sip_msg *msg, void *arg);
+bool ua_catchall(struct ua *ua);
+bool ua_reghasladdr(const struct ua *ua, const struct sa *laddr);
+
+/*
+ * User-Agent Group
+ */
+
+struct uag {
+	struct config_sip *cfg;        /**< SIP configuration               */
+	struct list ual;               /**< List of User-Agents (struct ua) */
+	struct sip *sip;               /**< SIP Stack                       */
+	struct sip_lsnr *lsnr;         /**< SIP Listener                    */
+	struct sipsess_sock *sock;     /**< SIP Session socket              */
+	struct sipevent_sock *evsock;  /**< SIP Event socket                */
+	uint32_t transports;           /**< Supported transports mask       */
+	bool delayed_close;            /**< Module will close SIP stack     */
+	sip_msg_h *subh;               /**< Subscribe handler               */
+	ua_exit_h *exith;              /**< UA Exit handler                 */
+	bool nodial;                   /**< Prevent outgoing calls          */
+	bool dnd;                      /**< Do not Disturb flag             */
+	void *arg;                     /**< UA Exit handler argument        */
+	char *eprm;                    /**< Extra UA parameters             */
+#ifdef USE_TLS
+	struct tls *tls;               /**< TLS Context                     */
+	struct tls *wss_tls;           /**< Secure websocket TLS Context    */
+#endif
+};
+
+struct config_sip *uag_cfg(void);
+const char *uag_eprm(void);
+bool uag_delayed_close(void);
+int uag_raise(struct ua *ua, struct le *le);
+
+void u32mask_enable(uint32_t *mask, uint8_t bit, bool enable);
+bool u32mask_enabled(uint32_t mask, uint8_t bit);
 
 
 /*
@@ -370,7 +387,6 @@ struct video;
 
 int  video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		       const char *fmtp);
-void video_update_picture(struct video *v);
 int  video_print(struct re_printf *pf, const struct video *v);
 
 

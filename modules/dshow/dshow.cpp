@@ -1,7 +1,7 @@
 /**
  * @file dshow.cpp Windows DirectShow video-source
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  * Copyright (C) 2010 Dusan Stevanovic
  */
 
@@ -97,8 +97,6 @@ DEFINE_GUID(CLSID_SampleGrabber, 0xc1f400a0, 0x3f08, 0x11d3,
 class Grabber;
 
 struct vidsrc_st {
-	const struct vidsrc *vs;  /* inheritance */
-
 	ICaptureGraphBuilder2 *capture;
 	IBaseFilter *grabber_filter;
 	IBaseFilter *dev_filter;
@@ -345,8 +343,8 @@ static int config_pin(struct vidsrc_st *st, IPin *pin)
 	IAMStreamConfig *stream_conf = NULL;
 	VIDEOINFOHEADER *vih;
 	HRESULT hr;
-	int h = st->size.h;
-	int w = st->size.w;
+	int h;
+	int w;
 	int rh, rw;
 	int wh, rwrh;
 	int best_match = 0;
@@ -358,7 +356,8 @@ static int config_pin(struct vidsrc_st *st, IPin *pin)
 	hr = pin->EnumMediaTypes(&media_enum);
 	if (FAILED(hr))
 		return ENODATA;
-
+	h = st->size.h;
+	w = st->size.w;
 	while ((hr = media_enum->Next(1, &mt, NULL)) == S_OK) {
 		if (mt->formattype != FORMAT_VideoInfo)
 			continue;
@@ -480,6 +479,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 const struct vidsz *size,
 		 const char *fmt, const char *dev,
 		 vidsrc_frame_h *frameh,
+		 vidsrc_packet_h  *packeth,
 		 vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;
@@ -500,8 +500,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	err = get_device(st, dev);
 	if (err)
 		goto out;
-
-	st->vs = vs;
 
 	st->size   = *size;
 	st->frameh = frameh;

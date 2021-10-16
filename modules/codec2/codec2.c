@@ -1,7 +1,7 @@
 /**
  * @file codec2.c  CODEC2 audio codec
  *
- * Copyright (C) 2015 Creytiv.com
+ * Copyright (C) 2015 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>

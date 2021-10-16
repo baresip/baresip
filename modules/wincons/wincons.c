@@ -1,7 +1,7 @@
 /**
  * @file wincons.c  Windows console input
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <winsock2.h>

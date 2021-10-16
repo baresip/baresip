@@ -1,7 +1,7 @@
 /**
  * @file plc.c  PLC -- Packet Loss Concealment
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
@@ -9,6 +9,7 @@
 #include <spandsp.h>
 #include <re.h>
 #include <rem_au.h>
+#include <rem_auframe.h>
 #include <baresip.h>
 
 

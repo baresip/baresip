@@ -1,7 +1,7 @@
 /**
  * @file alsa_play.c  ALSA sound driver - player
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #define _POSIX_SOURCE 1
@@ -18,7 +18,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;  /* pointer to base-class (inheritance) */
 	pthread_t thread;
 	volatile bool run;
 	snd_pcm_t *write;
@@ -60,7 +59,8 @@ static void *write_thread(void *arg)
 
 	num_frames = st->prm.srate * st->prm.ptime / 1000;
 
-	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc);
+	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc, st->prm.srate,
+		     st->prm.ch);
 
 	while (st->run) {
 		const int samples = num_frames;
@@ -122,7 +122,6 @@ int alsa_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 
 	st->prm = *prm;
-	st->ap  = ap;
 	st->wh  = wh;
 	st->arg = arg;
 

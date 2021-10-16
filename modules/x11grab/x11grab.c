@@ -1,7 +1,7 @@
 /**
  * @file x11grab.c X11 grabbing video-source
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
@@ -154,6 +154,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt,
 		 const char *dev, vidsrc_frame_h *frameh,
+		 vidsrc_packet_h  *packeth,
 		 vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;
@@ -161,6 +162,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 
 	(void)ctx;
 	(void)fmt;
+	(void)packeth;
 	(void)errorh;
 	(void)vs;
 

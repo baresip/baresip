@@ -28,6 +28,8 @@ struct menu{
 	bool clean_number;            /**< Remove -/() from diald numbers */
 	char redial_aor[128];
 	int32_t adelay;               /**< Outgoing auto answer delay     */
+	char *ansval;                 /**< Call-Info/Alert-Info value     */
+	struct odict *ovaufile;       /**< Override aufile dictionary     */
 };
 
 /*Get menu object*/
@@ -59,3 +61,4 @@ void menu_update_callstatus(bool incall);
 int  menu_param_decode(const char *prm, const char *name, struct pl *val);
 struct call *menu_find_call(call_match_h *matchh);
 struct call *menu_find_call_state(enum call_state st);
+enum sdp_dir decode_sdp_enum(const struct pl *pl);

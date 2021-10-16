@@ -14,7 +14,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;  /* pointer to base-class (inheritance) */
 	struct aufile *auf;
 	struct auplay_prm prm;
 
@@ -56,7 +55,8 @@ static void *write_thread(void *arg)
 	while (st->run) {
 		struct auframe af;
 
-		auframe_init(&af, st->prm.fmt, st->sampv, st->sampc);
+		auframe_init(&af, st->prm.fmt, st->sampv, st->sampc,
+			     st->prm.srate, st->prm.ch);
 
 		af.timestamp = t * 1000;
 
@@ -87,6 +87,7 @@ int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	const char *file;
 	struct aufile_prm aufprm;
 	int err;
+	(void)ap;
 
 	if (!prm || !wh)
 		return EINVAL;
@@ -111,7 +112,6 @@ int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		return err;
 	}
 
-	st->ap  = ap;
 	st->wh = wh;
 	st->arg = arg;
 	st->prm = *prm;

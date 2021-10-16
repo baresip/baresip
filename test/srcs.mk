@@ -1,7 +1,7 @@
 #
 # srcs.mk All application source files.
 #
-# Copyright (C) 2010 Creytiv.com
+# Copyright (C) 2010 Alfred E. Heggestad
 #
 
 
@@ -18,8 +18,10 @@ TEST_SRCS	+= h264.c
 TEST_SRCS	+= message.c
 TEST_SRCS	+= net.c
 TEST_SRCS	+= play.c
+TEST_SRCS	+= stunuri.c
 TEST_SRCS	+= ua.c
 TEST_SRCS	+= video.c
+TEST_SRCS	+= menu.c
 
 
 #
@@ -40,10 +42,8 @@ endif
 
 TEST_SRCS	+= mock/mock_aufilt.c
 TEST_SRCS	+= mock/mock_auplay.c
-TEST_SRCS	+= mock/mock_ausrc.c
 TEST_SRCS	+= mock/mock_mnat.c
 TEST_SRCS	+= mock/mock_menc.c
-TEST_SRCS	+= mock/mock_vidsrc.c
 TEST_SRCS	+= mock/mock_vidcodec.c
 TEST_SRCS	+= mock/mock_vidisp.c
 

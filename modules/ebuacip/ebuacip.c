@@ -1,7 +1,7 @@
 /**
  * @file ebuacip.c  EBU ACIP (Audio Contribution over IP) Profile
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <re.h>

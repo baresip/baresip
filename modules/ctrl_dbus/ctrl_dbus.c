@@ -20,11 +20,11 @@
  *
  \verbatim
  # With qdbus of Qt.
- qdbus com.creytiv.Baresip /baresip com.creytiv.Baresip.invoke reginfo
+ qdbus com.github.Baresip /baresip com.github.Baresip.invoke reginfo
 
  # With gdbus of GLib.
- gdbus call -e -d com.creytiv.Baresip -o /baresip \
-	-m com.creytiv.Baresip.invoke reginfo
+ gdbus call -e -d com.github.Baresip -o /baresip \
+	-m com.github.Baresip.invoke reginfo
  \endverbatim
  *
  *
@@ -84,7 +84,7 @@ struct ctrl_st {
 	DBusBaresip *interface;     /**< dbus interface          */
 
 	char *command;              /**< Current command                     */
-	int fd[2];                  /**< Pipe file descriptors for wake-up   */
+	struct mqueue *mqueue;      /**< Command queue                       */
 	struct mbuf *mb;            /**< Command response buffer             */
 
 	struct {
@@ -103,13 +103,13 @@ static int print_handler(const char *p, size_t size, void *arg)
 }
 
 
-static void command_handler(int flags, void *arg)
+static void command_handler(int id, void *data, void *arg)
 {
 	struct ctrl_st *st = arg;
-	char buf[8];
 
+	(void) data;
 	if (!st->command)
-		return;
+		goto out;
 
 	st->mb = mbuf_alloc(128);
 	struct re_printf pf = {print_handler, st->mb};
@@ -135,11 +135,11 @@ static void command_handler(int flags, void *arg)
 		warning("ctrl_dbus: error processing command (%m)\n", err);
 
 	mbuf_set_pos(st->mb, 0);
-	st->command = mem_deref(st->command);
 
+out:
 	pthread_mutex_lock(&st->wait.mutex);
+	st->command = mem_deref(st->command);
 	pthread_cond_signal(&st->wait.cond);
-	read(st->fd[0], buf, sizeof(buf));
 	pthread_mutex_unlock(&st->wait.mutex);
 }
 
@@ -150,21 +150,34 @@ on_handle_invoke(DBusBaresip *interface,
 		const gchar *command,
 		gpointer arg)
 {
-	char *response;
+	char *response = "";
 	struct ctrl_st *st = arg;
-	char buf[8] = {0,0,0,0,0,0,0,1};
+	int err;
 
 	str_dup(&st->command, command);
 
 	pthread_mutex_lock(&st->wait.mutex);
-	write(st->fd[1], buf, sizeof(buf));
-	pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
+	err = mqueue_push(st->mqueue, 0, NULL);
+	if (!err)
+		pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
+
 	pthread_mutex_unlock(&st->wait.mutex);
 
-	mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
-	dbus_baresip_complete_invoke(interface, invocation, response);
-	mem_deref(response);
-	st->mb = mem_deref(st->mb);
+	if (!err && st->mb) {
+		err = mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
+		if (err)
+			warning("ctrl_dbus: could not allocate response (%m)",
+					err);
+
+		dbus_baresip_complete_invoke(interface, invocation, response);
+		mem_deref(response);
+		st->mb = mem_deref(st->mb);
+	}
+	else {
+		dbus_baresip_complete_invoke(interface, invocation,
+				err ? "invoke failed" : "");
+	}
+
 	return true;
 }
 
@@ -188,7 +201,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	struct re_printf pf;
 	struct odict *od = NULL;
 	int err = 0;
-	const struct odict_entry *eclass = NULL;
+	const char *class;
 	const char *etype = uag_event_str(ev);
 
 	if (!st->interface)
@@ -205,7 +218,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	if (err)
 		goto out;
 
-	eclass = odict_lookup(od, "class");
+	class = odict_string(od, "class");
 	err = json_encode_odict(&pf, od);
 	if (err) {
 		warning("ctrl_dbus: failed to encode json (%m)\n", err);
@@ -214,7 +227,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	mbuf_write_u8(buf, 0);
 	mbuf_set_pos(buf, 0);
-	send_event(st, eclass ? eclass->u.str : "other", etype,
+	send_event(st, class ? class : "other", etype,
 			(const char *) mbuf_buf(buf));
 
  out:
@@ -286,32 +299,18 @@ static void ctrl_destructor(void *arg)
 
 	pthread_mutex_destroy(&st->wait.mutex);
 	pthread_cond_destroy(&st->wait.cond);
+	mem_deref(st->mqueue);
 }
 
 
 static void *thread(void *arg)
 {
 	struct ctrl_st *st = arg;
-	int err;
 
 	st->run = true;
-	if (pipe(st->fd) == -1) {
-		warning("ctrl_dbus: could not create pipe (%m)\n", errno);
-		return NULL;
-	}
-
-	err = fd_listen(st->fd[0], FD_READ, command_handler, st);
-	if (err) {
-		warning("ctrl_dbus: can not listen on pipe (%m)\n", err);
-		return NULL;
-	}
-
 	while (st->run)
 		g_main_loop_run(st->loop);
 
-	fd_close(st->fd[0]);
-	close(st->fd[0]);
-	close(st->fd[1]);
 	return NULL;
 }
 
@@ -336,6 +335,10 @@ static int ctrl_alloc(struct ctrl_st **stp)
 		err = ENOMEM;
 		goto out;
 	}
+
+	err = mqueue_alloc(&st->mqueue, command_handler, st);
+	if (err)
+		goto out;
 
 	err = pthread_create(&st->tid, NULL, thread, st);
 	if (err)
@@ -369,8 +372,8 @@ on_name_acquired(GDBusConnection *connection, const gchar *name, gpointer arg)
 	}
 
 	info("ctrl_dbus: dbus interface %s exported\n", name);
-	ua_event(NULL, UA_EVENT_CUSTOM, NULL, "ctrl_dbus: "
-			"dbus_interface %s exported", name);
+	module_event("ctrl_dbus", "exported", NULL, NULL,
+			"dbus interface %s exported", name);
 }
 
 
@@ -412,9 +415,9 @@ static int ctrl_init(void)
 
 	err = message_listen(baresip_message(), message_handler, m_st);
 	if (err)
-		return err;
+		goto outerr;
 
-	conf_get(conf_cur(), "ctrl_dbus_use", &use);
+	(void)conf_get(conf_cur(), "ctrl_dbus_use", &use);
 	name = dbus_baresip_interface_info()->name;
 	m_st->bus_owner = g_bus_own_name(
 			!pl_strcmp(&use, "session") ?

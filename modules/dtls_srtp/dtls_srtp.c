@@ -1,7 +1,7 @@
 /**
  * @file dtls_srtp.c DTLS-SRTP media encryption
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <re.h>
@@ -191,11 +191,11 @@ static size_t get_master_keylen(enum srtp_suite suite)
 {
 	switch (suite) {
 
-		case SRTP_AES_CM_128_HMAC_SHA1_32: return 16+14;
-		case SRTP_AES_CM_128_HMAC_SHA1_80: return 16+14;
-		case SRTP_AES_128_GCM:             return 16+12;
-		case SRTP_AES_256_GCM:             return 32+12;
-		default: return 0;
+	case SRTP_AES_CM_128_HMAC_SHA1_32: return 16+14;
+	case SRTP_AES_CM_128_HMAC_SHA1_80: return 16+14;
+	case SRTP_AES_128_GCM:             return 16+12;
+	case SRTP_AES_256_GCM:             return 32+12;
+	default: return 0;
 	}
 }
 
@@ -281,11 +281,17 @@ static void dtls_conn_handler(const struct sa *peer, void *arg)
 	int err;
 	(void)peer;
 
-	info("dtls_srtp: incoming DTLS connect from %J\n", peer);
+	info("dtls_srtp: %s: incoming DTLS connect from %J\n",
+	     sdp_media_name(comp->ds->sdpm), peer);
 
 	if (comp->tls_conn) {
-		warning("dtls_srtp: dtls already accepted (peer = %J)\n",
+		warning("dtls_srtp: '%s' dtls already accepted (peer = %J)\n",
+			sdp_media_name(comp->ds->sdpm),
 			dtls_peer(comp->tls_conn));
+
+		if (comp->ds->sess->errorh)
+			comp->ds->sess->errorh(EPROTO, comp->ds->sess->arg);
+
 		return;
 	}
 
@@ -463,17 +469,21 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 
 
 static struct menc dtls_srtp = {
-	.id        = "dtls_srtp",
-	.sdp_proto = "UDP/TLS/RTP/SAVPF",
+	.id          = "dtls_srtp",
+	.sdp_proto   = "UDP/TLS/RTP/SAVPF",
 	.wait_secure = true,
-	.sessh     = session_alloc,
-	.mediah    = media_alloc
+	.sessh       = session_alloc,
+	.mediah      = media_alloc
 };
 
 
 static int module_init(void)
 {
 	struct list *mencl = baresip_mencl();
+	struct pl plec = PL("");
+	char *ec = NULL;
+	const char *cn = "dtls@baresip";
+
 	int err;
 
 	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, NULL, NULL);
@@ -483,11 +493,31 @@ static int module_init(void)
 		return err;
 	}
 
-	err = tls_set_selfsigned_rsa(tls, "dtls@baresip", 2048);
-	if (err) {
-		warning("dtls_srtp: failed to self-sign certificate (%m)\n",
-			err);
-		return err;
+	(void)conf_get(conf_cur(), "dtls_srtp_use_ec", &plec);
+	if (pl_isset(&plec)) {
+		info ("dtls_srtp: use %r for elliptic curve cryptography\n",
+			&plec);
+		err = pl_strdup(&ec, &plec);
+		if (err)
+			return err;
+
+		err = tls_set_selfsigned_ec(tls, cn, ec);
+		if (err) {
+			warning("dtls_srtp: failed to self-sign "
+				"ec-certificate (%m)\n", err);
+			mem_deref(ec);
+			return err;
+		}
+
+		mem_deref(ec);
+	}
+	else {
+		err = tls_set_selfsigned_rsa(tls, cn, 2048);
+		if (err) {
+			warning("dtls_srtp: failed to self-sign"
+				"certificate (%m)\n", err);
+			return err;
+		}
 	}
 
 	tls_set_verify_client(tls);

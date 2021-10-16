@@ -1,7 +1,7 @@
 /**
  * @file vp8.h Private VP8 Interface
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 struct vp8_vidcodec {

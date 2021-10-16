@@ -1,7 +1,7 @@
 /**
  * @file vidinfo.h  Video-info filter
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 
 

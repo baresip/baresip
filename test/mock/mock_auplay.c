@@ -1,7 +1,7 @@
 /**
  * @file mock/mock_auplay.c Mock audio player
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <re.h>
 #include <rem.h>
@@ -10,8 +10,6 @@
 
 
 struct auplay_st {
-	const struct auplay *ap;      /* inheritance */
-
 	struct tmr tmr;
 	struct auplay_prm prm;
 	void *sampv;
@@ -43,7 +41,8 @@ static void tmr_handler(void *arg)
 
 	tmr_start(&st->tmr, st->prm.ptime, tmr_handler, st);
 
-	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc);
+	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc, st->prm.srate,
+		     st->prm.ch);
 
 	if (st->wh)
 		st->wh(&af, st->arg);
@@ -69,7 +68,6 @@ static int mock_auplay_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->ap   = ap;
 	st->prm  = *prm;
 	st->wh   = wh;
 	st->arg  = arg;

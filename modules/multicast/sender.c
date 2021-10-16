@@ -46,6 +46,7 @@ static void mcsender_destructor(void *arg)
 {
 	struct mcsender *mcsender = arg;
 
+	mcsource_stop(mcsender->src);
 	mcsender->src = mem_deref(mcsender->src);
 	mcsender->rtp = mem_deref(mcsender->rtp);
 }
@@ -146,7 +147,7 @@ void mcsender_stop(struct sa *addr)
 
 	mcsender = le->data;
 	list_unlink(&mcsender->le);
-	mcsender = mem_deref(mcsender);
+	mem_deref(mcsender);
 }
 
 
@@ -162,6 +163,7 @@ int mcsender_alloc(struct sa *addr, const struct aucodec *codec)
 {
 	int err = 0;
 	struct mcsender *mcsender = NULL;
+	uint8_t ttl = multicast_ttl();
 
 	if (!addr || !codec)
 		return EINVAL;
@@ -182,6 +184,14 @@ int mcsender_alloc(struct sa *addr, const struct aucodec *codec)
 	if (err)
 		goto out;
 
+	if (ttl > 1) {
+		struct udp_sock *sock;
+
+		sock = (struct udp_sock *) rtp_sock(mcsender->rtp);
+		udp_setsockopt(sock, IPPROTO_IP,
+			IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+	}
+
 	err = mcsource_start(&mcsender->src, mcsender->ac,
 		mcsender_send_handler, mcsender);
 
@@ -189,7 +199,7 @@ int mcsender_alloc(struct sa *addr, const struct aucodec *codec)
 
  out:
 	if (err)
-		mcsender = mem_deref(mcsender);
+		mem_deref(mcsender);
 
 	return err;
 }

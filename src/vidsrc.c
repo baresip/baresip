@@ -1,7 +1,7 @@
 /**
  * @file vidsrc.c Video Source
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <re.h>
@@ -94,6 +94,7 @@ const struct vidsrc *vidsrc_find(const struct list *vidsrcl, const char *name)
  * @param fmt     Format parameter
  * @param dev     Video device
  * @param frameh  Video frame handler
+ * @param packeth Video packet handler
  * @param errorh  Error handler (optional)
  * @param arg     Handler argument
  *
@@ -103,12 +104,13 @@ int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
 		 const char *name,
 		 struct media_ctx **ctx, struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt, const char *dev,
-		 vidsrc_frame_h *frameh, vidsrc_error_h *errorh, void *arg)
+		 vidsrc_frame_h *frameh, vidsrc_packet_h *packeth,
+		 vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc *vs = (struct vidsrc *)vidsrc_find(vidsrcl, name);
 	if (!vs)
 		return ENOENT;
 
 	return vs->alloch(stp, vs, ctx, prm, size, fmt, dev,
-			  frameh, errorh, arg);
+			  frameh, packeth, errorh, arg);
 }

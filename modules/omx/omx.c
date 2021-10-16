@@ -1,7 +1,7 @@
 /**
  * @file omx.c     Raspberry Pi VideoCoreIV OpenMAX interface
  *
- * Copyright (C) 2016 - 2017 Creytiv.com
+ * Copyright (C) 2016 - 2017 Alfred E. Heggestad
  * Copyright (C) 2016 - 2017 Jonathan Sieber
  */
 

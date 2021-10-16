@@ -1,7 +1,7 @@
 /**
  * @file audiounit/recorder.c  AudioUnit input recorder
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
@@ -14,7 +14,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;      /* inheritance */
 	struct audiosess_st *sess;
 	AudioUnit au_in;
 	AudioUnit au_conv;
@@ -137,9 +136,9 @@ static OSStatus input_callback(void *inRefCon,
 		ts  = AUDIO_TIMEBASE*inTimeStamp->mSampleTime / st->prm.srate;
 		ts *= st->sampc_ratio;
 
-		af.fmt   = st->fmt;
-		af.sampv = abl_conv.mBuffers[0].mData;
-		af.sampc = abl_conv.mBuffers[0].mDataByteSize/st->sampsz;
+		auframe_init(&af, st->prm.fmt, abl_conv.mBuffers[0].mData,
+			     abl_conv.mBuffers[0].mDataByteSize / st->sampsz,
+			     st->prm.srate, st->prm.ch);
 		af.timestamp = ts;
 
 		rh(&af, arg);
@@ -220,7 +219,6 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as  = as;
 	st->rh  = rh;
 	st->arg = arg;
 	st->ch  = prm->ch;

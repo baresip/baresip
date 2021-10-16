@@ -1,7 +1,7 @@
 /**
  * @file vp9/decode.c VP9 Decode
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 
 #include <string.h>
@@ -218,7 +218,7 @@ static inline int hdr_decode(struct hdr *hdr, struct mbuf *mb)
 		}
 	}
 
-	if (hdr->p) {
+	if (hdr->f && hdr->p) {
 		uint8_t p_diff;
 
 		if (mbuf_get_left(mb) < 1)
@@ -288,8 +288,10 @@ int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 		return err;
 
 #if 0
-	debug("vp9: [%c] header: i=%u start=%u end=%u picid=%u \n",
-	      marker ? 'M' : ' ', hdr.i, hdr.b, hdr.e, hdr.picid);
+	debug("vp9: [%c] header:"
+	      " i=%u p=%u l=%u f=%u start=%u end=%u picid=%u\n",
+	      marker ? 'M' : ' ',
+	      hdr.i, hdr.p, hdr.l, hdr.f, hdr.b, hdr.e, hdr.picid);
 #endif
 
 	if (hdr.b) {

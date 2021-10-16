@@ -1,7 +1,7 @@
 /**
  * @file test/net.c  Baresip selftest -- networking
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <string.h>
 #include <re.h>
@@ -14,18 +14,9 @@ static struct config_net default_config = {
 };
 
 
-static void net_change_handler(void *arg)
-{
-	unsigned *count = arg;
-	++*count;
-	info("network changed\n");
-}
-
-
 int test_network(void)
 {
 	struct network *net = NULL;
-	unsigned change_count = 0;
 	int err;
 
 	err = net_alloc(&net, &default_config);
@@ -34,14 +25,6 @@ int test_network(void)
 
 	ASSERT_TRUE( net_af_enabled(net, AF_INET));
 	ASSERT_TRUE(!net_af_enabled(net, AF_INET6));
-
-	net_change(net, 1, net_change_handler, &change_count);
-
-	ASSERT_EQ(0, change_count);
-
-	net_force_change(net);
-
-	ASSERT_EQ(1, change_count);
 
  out:
 	mem_deref(net);

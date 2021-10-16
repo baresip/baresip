@@ -1,7 +1,7 @@
 /**
  * @file print.h Interface to Input event device info
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 

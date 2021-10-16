@@ -1,7 +1,7 @@
 #
 # Makefile
 #
-# Copyright (C) 2010 Creytiv.com
+# Copyright (C) 2010 Alfred E. Heggestad
 #
 #
 # Internal features:
@@ -10,13 +10,16 @@
 #
 
 PROJECT	  := baresip
-VERSION   := 1.0.0
+VERSION   := 1.1.0
 DESCR     := "Baresip is a modular SIP User-Agent with audio and video support"
 
 # Verbose and silent build modes
 ifeq ($(V),)
 HIDE=@
 endif
+
+LIBRE_MIN	:= 2.0.1-dev8
+LIBREM_MIN	:= 1.0.0-dev
 
 ifndef LIBRE_MK
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \
@@ -37,6 +40,25 @@ endif
 
 
 include $(LIBRE_MK)
+
+ifeq ($(LIBRE_PKG_PATH),)
+LIBRE_PKG_PATH  := $(shell [ -f ../re/libre.pc ] && echo "../re/")
+endif
+
+ifeq ($(LIBRE_PKG_PATH),)
+LIBRE_PKG_PATH  := $(shell [ -f $(PKG_CONFIG_PATH)/libre.pc ] && \
+	echo "$(PKG_CONFIG_PATH)")
+endif
+
+ifeq ($(LIBRE_PKG_PATH),)
+ifeq ($(LIBRE_SO),)
+LIBRE_SO	:= $(patsubst %/share/re/re.mk,%/lib,$(LIBRE_MK))
+endif
+LIBRE_PKG_PATH  := $(shell [ -f $(LIBRE_SO)/pkgconfig/libre.pc ] && \
+	echo "$(LIBRE_SO)/pkgconfig")
+endif
+
+
 include mk/modules.mk
 
 ifeq ($(SYSROOT_LOCAL),)
@@ -102,6 +124,45 @@ LIBREM_SO  := $(shell [ -f /usr/lib64/librem$(LIB_SUFFIX) ] && \
 	echo "/usr/lib64")
 endif
 
+
+ifeq ($(LIBREM_PKG_PATH),)
+LIBREM_PKG_PATH  := $(shell [ -f ../rem/librem.pc ] && echo "../rem/")
+endif
+
+ifeq ($(LIBREM_PKG_PATH),)
+LIBREM_PKG_PATH  := $(shell [ -f $(PKG_CONFIG_PATH)/librem.pc ] && \
+	echo "$(PKG_CONFIG_PATH)")
+endif
+
+ifeq ($(LIBREM_PKG_PATH),)
+LIBREM_PKG_PATH  := $(shell [ -f $(LIBREM_SO)/pkgconfig/librem.pc ] && \
+	echo "$(LIBREM_SO)/pkgconfig")
+endif
+
+
+# Dependency Checks
+ifneq ($(PKG_CONFIG),)
+ifeq ($(findstring $(MAKECMDGOALS), clean distclean),)
+LIBRE_PKG := $(shell PKG_CONFIG_PATH=$(LIBRE_PKG_PATH) \
+	pkg-config --exists "libre >= $(LIBRE_MIN)" --print-errors && \
+	echo "yes")
+
+ifeq ($(LIBRE_PKG),)
+$(error bad libre version, required version is ">= $(LIBRE_MIN)" \
+	LIBRE_MK: "$(LIBRE_MK)" \
+	LIBRE_PKG_PATH: "$(LIBRE_PKG_PATH)")
+endif
+
+LIBREM_PKG := $(shell PKG_CONFIG_PATH=$(LIBREM_PKG_PATH) \
+	pkg-config --exists "librem >= $(LIBREM_MIN)" --print-errors && \
+	echo "yes")
+
+ifeq ($(LIBREM_PKG),)
+$(error bad librem version, required version is ">= $(LIBREM_MIN)" \
+	LIBREM_PKG_PATH: "$(LIBREM_PKG_PATH)")
+endif
+endif
+endif
 
 CFLAGS    += -I. -Iinclude -I$(LIBRE_INC)
 CFLAGS    += -I$(LIBREM_INC)
@@ -249,7 +310,7 @@ libbaresip.pc:
 	@echo 'Name: libbaresip' >> libbaresip.pc
 	@echo 'Description: $(DESCR)' >> libbaresip.pc
 	@echo 'Version: '$(VERSION) >> libbaresip.pc
-	@echo 'URL: http://www.creytiv.com/baresip.html' >> libbaresip.pc
+	@echo 'URL: https://github.com/baresip/baresip' >> libbaresip.pc
 	@echo 'Libs: -L$${libdir} -lbaresip' >> libbaresip.pc
 	@echo 'Cflags: -I$${includedir}' >> libbaresip.pc
 
@@ -265,7 +326,7 @@ $(BIN):	$(APP_OBJS)
 ifneq ($(STATIC),)
 TEST_MODULES :=
 else
-TEST_MODULES := g711.so
+TEST_MODULES := g711.so ausine.so fakevideo.so
 endif
 
 .PHONY: test
@@ -333,7 +394,7 @@ uninstall:
 .PHONY: clean
 clean:
 	@rm -rf $(BIN) $(MOD_BINS) $(SHARED) $(BUILD) $(TEST_BIN) \
-		$(STATICLIB) libbaresip.pc
+		$(STATICLIB) libbaresip.pc .cache/baresip
 	@rm -f *stamp \
 	`find . -name "*.[od]"` \
 	`find . -name "*~"` \

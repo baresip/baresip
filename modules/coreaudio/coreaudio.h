@@ -1,7 +1,7 @@
 /**
  * @file coreaudio.h  Apple Coreaudio sound driver -- internal API
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 

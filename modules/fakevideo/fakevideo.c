@@ -1,7 +1,7 @@
 /**
  * @file fakevideo.c Fake video source and video display
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
@@ -32,6 +32,7 @@ struct vidsrc_st {
 	struct vidframe *frame;
 #ifdef HAVE_PTHREAD
 	pthread_t thread;
+	pthread_mutex_t mutex;
 	bool run;
 #else
 	struct tmr tmr;
@@ -66,7 +67,15 @@ static void *read_thread(void *arg)
 
 	st->ts = tmr_jiffies_usec();
 
-	while (st->run) {
+	while (1) {
+		bool run;
+
+		pthread_mutex_lock(&st->mutex);
+		run = st->run;
+		pthread_mutex_unlock(&st->mutex);
+
+		if (!run)
+			break;
 
 		if (tmr_jiffies_usec() < st->ts) {
 			sys_msleep(4);
@@ -101,10 +110,22 @@ static void src_destructor(void *arg)
 	struct vidsrc_st *st = arg;
 
 #ifdef HAVE_PTHREAD
-	if (st->run) {
+
+	bool run;
+
+	pthread_mutex_lock(&st->mutex);
+	run = st->run;
+	pthread_mutex_unlock(&st->mutex);
+
+	if (run) {
+		pthread_mutex_lock(&st->mutex);
 		st->run = false;
+		pthread_mutex_unlock(&st->mutex);
+
 		pthread_join(st->thread, NULL);
 	}
+
+	pthread_mutex_destroy(&st->mutex);
 #else
 	tmr_cancel(&st->tmr);
 #endif
@@ -124,6 +145,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		     struct media_ctx **ctx, struct vidsrc_prm *prm,
 		     const struct vidsz *size, const char *fmt,
 		     const char *dev, vidsrc_frame_h *frameh,
+		     vidsrc_packet_h *packeth,
 		     vidsrc_error_h *errorh, void *arg)
 {
 	struct vidsrc_st *st;
@@ -133,6 +155,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	(void)ctx;
 	(void)fmt;
 	(void)dev;
+	(void)packeth;
 	(void)errorh;
 	(void)vs;
 
@@ -167,6 +190,10 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	}
 
 #ifdef HAVE_PTHREAD
+	err = pthread_mutex_init(&st->mutex, NULL);
+	if (err)
+		goto out;
+
 	st->run = true;
 	err = pthread_create(&st->thread, NULL, read_thread, st);
 	if (err) {

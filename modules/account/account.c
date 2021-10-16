@@ -1,7 +1,7 @@
 /**
  * @file account/account.c  Load SIP accounts from file
  *
- * Copyright (C) 2010 - 2015 Creytiv.com
+ * Copyright (C) 2010 - 2015 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>
@@ -30,7 +30,6 @@
 static int account_write_template(const char *file)
 {
 	FILE *f = NULL;
-	const char *login, *pass, *domain;
 	int r, err = 0;
 
 	info("account: creating accounts template %s\n", file);
@@ -38,14 +37,6 @@ static int account_write_template(const char *file)
 	f = fopen(file, "w");
 	if (!f)
 		return errno;
-
-	login = sys_username();
-	if (!login) {
-		login = "user";
-	}
-
-	pass = "PASSWORD";
-	domain = "domain";
 
 	r = re_fprintf(f,
 			 "#\n"
@@ -58,13 +49,20 @@ static int account_write_template(const char *file)
 			 "#    ;transport={udp,tcp,tls}\n"
 			 "#\n"
 			 "#  addr-params:\n"
-			 "#    ;answermode={manual,early,auto}\n"
+			 "#    ;answermode={manual,early,auto,"
+					   "early-audio,early-video}\n"
+			 "#    ;answerdelay=0\n"
 			 "#    ;audio_codecs=opus/48000/2,pcma,...\n"
 			 "#    ;audio_source=alsa,default\n"
 			 "#    ;audio_player=alsa,default\n"
+			 "#    ;sip_autoanswer={yes, no}\n"
+			 "#    ;sip_autoanswer_beep={off, on, local}\n"
+			 "#    ;dtmfmode={rtpevent, info, auto}\n"
 			 "#    ;auth_user=username\n"
 			 "#    ;auth_pass=password\n"
 			 "#    ;call_transfer=no\n"
+			 "#    ;cert=cert.pem\n"
+			 "#    ;mediaaf={ipv4,ipv6,auto}\n"
 			 "#    ;mediaenc={srtp,srtp-mand,srtp-mandf"
 			 ",dtls_srtp,zrtp}\n"
 			 "#    ;medianat={stun,turn,ice}\n"
@@ -74,7 +72,9 @@ static int account_write_template(const char *file)
 			 "#    ;outbound2=sip:secondary.example.com\n"
 			 "#    ;ptime={10,20,30,40,...}\n"
 			 "#    ;regint=3600\n"
+			 "#    ;fbregint=120\n"
 			 "#    ;prio={0,1,2,3,...}\n"
+			 "#    ;rwait=90\n"
 			 "#    ;pubint=0 (publishing off)\n"
 			 "#    ;regq=0.5\n"
 			 "#    ;sipnat={outbound}\n"
@@ -85,6 +85,8 @@ static int account_write_template(const char *file)
 			 "#\n"
 			 "# Examples:\n"
 			 "#\n"
+			 "#  <sip:user@domain.com>"
+		         ";auth_pass=secret\n"
 			 "#  <sip:user@domain.com;transport=tcp>"
 		         ";auth_pass=secret\n"
 			 "#  <sip:user@1.2.3.4;transport=tcp>"
@@ -93,7 +95,12 @@ static int account_write_template(const char *file)
 			 "[2001:df8:0:16:216:6fff:fe91:614c]:5070"
 			 ";transport=tcp>;auth_pass=secret\n"
 			 "#\n"
-		       "#<sip:%s@%s>;auth_pass=%s\n", login, domain, pass);
+			 "#\n"
+			 "# A very basic example\n"
+			 "#<sip:user@iptel.org>;auth_pass=PASSWORD\n"
+			 "#\n"
+			 "# A registrar-less account\n"
+			 "#<sip:alice@office>;regint=0\n");
 	if (r < 0)
 		err = ENOMEM;
 

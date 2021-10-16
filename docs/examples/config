@@ -11,8 +11,23 @@ poll_method		epoll		# poll, select, epoll ..
 #sip_listen		0.0.0.0:5060
 #sip_certificate	cert.pem
 sip_cafile		/etc/ssl/certs/ca-certificates.crt
+#sip_transports		udp,tcp,tls,ws,wss
 #sip_trans_def		udp
 sip_verify_server	yes
+sip_tos			160 # See TOS fields!
+
+## TOS fields ##
+#    7     6     5     4     3     2     1     0
+# +-----+-----+-----+-----+-----+-----+-----+-----+
+# |   PRECEDENCE    |          TOS          | MBZ |
+# +-----+-----+-----+-----+-----+-----+-----+-----+
+# TOS:
+# bit 4 - low delay
+# bit 3 - high throughput
+# bit 2 - high reliability
+# bit 1 - low cost
+# MBZ:
+# bit 0 - zero
 
 # Call
 call_local_timeout	120
@@ -35,6 +50,7 @@ auplay_format		s16		# s16, float, ..
 auenc_format		s16		# s16, float, ..
 audec_format		s16		# s16, float, ..
 audio_buffer		20-160		# ms
+audio_telev_pt		101		# payload type for telephone-event
 
 # Video
 #video_source		v4l2,/dev/video0
@@ -47,6 +63,7 @@ videnc_format		yuv420p
 
 # AVT - Audio/Video Transport
 rtp_tos			184
+rtp_video_tos		136
 #rtp_ports		10000-20000
 #rtp_bandwidth		512-1024 # [kbit/s]
 rtcp_mux		no
@@ -93,7 +110,6 @@ module			g711.so
 # Audio filter Modules (in encoding order)
 #module			vumeter.so
 #module			sndfile.so
-#module			speex_pp.so
 #module			plc.so
 #module			webrtc_aec.so
 
@@ -120,9 +136,7 @@ module			alsa.so
 
 # Video source modules
 #module			v4l2.so
-#module			v4l2_codec.so
 #module			x11grab.so
-#module			cairo.so
 #module			vidbridge.so
 
 # Video display modules
@@ -139,6 +153,7 @@ module			alsa.so
 
 # Compatibility modules
 #module			ebuacip.so
+module			uuid.so
 
 # Media NAT modules
 module			stun.so
@@ -154,16 +169,9 @@ module			ice.so
 
 
 #------------------------------------------------------------------------------
-# Temporary Modules (loaded then unloaded)
-
-module_tmp		uuid.so
-module_tmp		account.so
-
-
-#------------------------------------------------------------------------------
 # Application Modules
 
-module_app		auloop.so
+module_app		account.so
 #module_app		b2bua.so
 module_app		contact.so
 module_app		debug_cmd.so
@@ -176,15 +184,17 @@ module_app		menu.so
 #module_app		syslog.so
 #module_app		mqtt.so
 #module_app		ctrl_tcp.so
-module_app		vidloop.so
 module_app		ctrl_dbus.so
 #module_app		httpreq.so
 #module_app		multicast.so
+module_app		netroam.so
 
 
 #------------------------------------------------------------------------------
 # Module parameters
 
+# DTLS SRTP parameters
+#dtls_srtp_use_ec	prime256v1
 
 # UI Modules parameters
 cons_listen		0.0.0.0:5555 # cons - Console UI UDP/TCP sockets
@@ -230,7 +240,6 @@ video_selfview		window # {window,pip}
 #ringback_disabled	no
 #statmode_default	off
 #menu_clean_number	no
-#sip_autoanswer_beep	yes
 #sip_autoanswer_method	rfc5373 # {rfc5373,call-info,alert-info}
 #ring_aufile		ring.wav
 #callwaiting_aufile	callwaiting.wav
@@ -249,6 +258,7 @@ video_selfview		window # {window,pip}
 #avcodec_h265enc	libx265
 #avcodec_h265dec	hevc
 #avcodec_hwaccel	vaapi
+#avcodec_profile_level_id 42002a
 
 # ctrl_dbus
 #ctrl_dbus_use	system		# system, session
@@ -279,5 +289,12 @@ video_selfview		window # {window,pip}
 
 # multicast receivers (in priority order)- port number must be even
 #multicast_call_prio	0
+#multicast_ttl		1
+#multicast_jbuf_type	fixed		# off, fixed, adaptive
+#multicast_jbuf_delay	5-10		# frames
+#multicast_jbuf_wish	6		# frames for start
 #multicast_listener	224.0.2.21:50000
 #multicast_listener	224.0.2.21:50002
+
+# avformat
+#avformat_pass_through	yes

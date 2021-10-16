@@ -1,7 +1,7 @@
 /**
  * @file opus.c Opus Audio Codec
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <re.h>
@@ -164,8 +164,6 @@ static int module_init(void)
 				";usedtx=%d", b);
 		if (n <= 0)
 			return ENOMEM;
-
-		p += n;
 	}
 
 	(void)conf_get_bool(conf, "opus_mirror", &opus_mirror);

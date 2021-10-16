@@ -1,7 +1,7 @@
 /**
  * @file test/video.c  Baresip selftest -- video
  *
- * Copyright (C) 2010 - 2017 Creytiv.com
+ * Copyright (C) 2010 - 2017 Alfred E. Heggestad
  */
 
 #include <re.h>

@@ -1,7 +1,7 @@
 /**
  * @file debug_cmd.c  Debug commands
  *
- * Copyright (C) 2010 - 2016 Creytiv.com
+ * Copyright (C) 2010 - 2016 Alfred E. Heggestad
  */
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +10,7 @@
 #include <openssl/crypto.h>
 #endif
 #include <re.h>
+#include <rem.h>
 #include <baresip.h>
 
 
@@ -199,18 +200,18 @@ static void fileinfo_timeout(void *arg)
 
 	if (st->finished) {
 		info("debug_cmd: length = %1.3lf seconds\n", s);
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			 "debug_cmd: length = %lf seconds", s);
+		module_event("debug_cmd", "aufileinfo", NULL, NULL,
+			 "length = %lf seconds", s);
 	}
 	else if (s > 0.) {
 		warning("debug_cmd: timeout, length > %1.3lf seconds\n", s);
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			 "debug_cmd: timeout, length > %1.3lf seconds", s);
+		module_event("debug_cmd", "aufileinfo", NULL, NULL,
+			 "timeout length = %lf seconds", s);
 	}
 	else {
 		info("debug_cmd: timeout\n");
-		ua_event(NULL, UA_EVENT_CUSTOM, NULL,
-			 "debug_cmd: timeout");
+		module_event("debug_cmd", "aufileinfo", NULL, NULL,
+			 "timeout", s);
 	}
 
 	mem_deref(st);
@@ -362,6 +363,8 @@ static int print_uuid(struct re_printf *pf, void *arg)
 
 
 static const struct cmd debugcmdv[] = {
+{"apistate",    0,       0, "User Agent state",       cmd_api_uastate     },
+{"aufileinfo",  0, CMD_PRM, "Audio file info",        cmd_aufileinfo      },
 {"conf_reload", 0,       0, "Reload config file",     reload_config       },
 {"config",      0,       0, "Print configuration",    cmd_config_print    },
 {"loglevel",   'v',      0, "Log level toggle",       cmd_log_level       },
@@ -370,13 +373,11 @@ static const struct cmd debugcmdv[] = {
 {"modules",     0,       0, "Module debug",           mod_debug           },
 {"netstat",    'n',      0, "Network debug",          cmd_net_debug       },
 {"play",        0, CMD_PRM, "Play audio file",        cmd_play_file       },
-{"aufileinfo",  0, CMD_PRM, "Audio file info",        cmd_aufileinfo      },
 {"sipstat",    'i',      0, "SIP debug",              cmd_sip_debug       },
 {"sysinfo",    's',      0, "System info",            print_system_info   },
 {"timers",      0,       0, "Timer debug",            tmr_status          },
 {"uastat",     'u',      0, "UA debug",               cmd_ua_debug        },
 {"uuid",        0,       0, "Print UUID",             print_uuid          },
-{"apistate",    0,       0, "User Agent state",       cmd_api_uastate     },
 };
 
 

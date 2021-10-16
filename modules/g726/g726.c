@@ -1,7 +1,7 @@
 /**
  * @file g726.c G.726 Audio Codec
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <re.h>

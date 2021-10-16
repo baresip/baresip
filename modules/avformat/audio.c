@@ -1,7 +1,7 @@
 /**
  * @file avformat/audio.c  libavformat media-source -- audio
  *
- * Copyright (C) 2010 - 2020 Creytiv.com
+ * Copyright (C) 2010 - 2020 Alfred E. Heggestad
  */
 
 #include <re.h>
@@ -16,8 +16,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;  /* base class */
-
 	struct shared *shared;
 	struct ausrc_prm prm;
 	SwrContext *swr;
@@ -68,7 +66,6 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as    = as;
 	st->readh = readh;
 	st->errh  = errh;
 	st->arg   = arg;
@@ -176,7 +173,8 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 		}
 
 		auframe_init(&af, st->ausrc_st->prm.fmt, frame2.data[0],
-			     frame2.nb_samples * frame2.channels);
+			     frame2.nb_samples * frame2.channels,
+			     st->ausrc_st->prm.srate, st->ausrc_st->prm.ch);
 		af.timestamp = frame.pts * AUDIO_TIMEBASE * tb.num / tb.den;
 
 		st->ausrc_st->readh(&af, st->ausrc_st->arg);

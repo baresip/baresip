@@ -1,7 +1,7 @@
 /**
  * @file dtls_srtp/srtp.c Secure RTP
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <re.h>
@@ -48,7 +48,20 @@ static inline bool is_rtcp_packet(const struct mbuf *mb)
 
 	pt = mbuf_buf(mb)[1] & 0x7f;
 
-	return 64 <= pt && pt <= 95;
+	return rtp_pt_is_rtcp(pt);
+}
+
+
+static bool is_dtls_packet(const struct mbuf *mb)
+{
+	uint8_t b;
+
+	if (mbuf_get_left(mb) < 13)
+		return false;
+
+	b = mbuf_buf(mb)[0];
+
+	return 19 < b && b < 64;
 }
 
 
@@ -91,6 +104,10 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	struct comp *comp = arg;
 	int err;
 	(void)src;
+
+	if (is_dtls_packet(mb)) {
+		info("srtp: received DTLS packet on SRTP socket\n");
+	}
 
 	if (!is_rtp_or_rtcp(mb))
 		return false;

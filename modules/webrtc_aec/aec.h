@@ -1,7 +1,7 @@
 /**
  * @file aec.h  WebRTC Acoustic Echo Cancellation (AEC) -- internal API
  *
- * Copyright (C) 2010 Creytiv.com
+ * Copyright (C) 2010 Alfred E. Heggestad
  */
 
 #include <pthread.h>

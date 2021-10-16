@@ -111,6 +111,8 @@ static int stream_recv_handler(const struct rtp_header *hdr, struct mbuf *mb)
 	size_t sampc = AUDIO_SAMPSZ;
 	bool marker = hdr->m;
 	void *sampv;
+	uint32_t srate;
+	uint8_t ch;
 	int err = 0;
 
 	if (!player)
@@ -140,7 +142,16 @@ static int stream_recv_handler(const struct rtp_header *hdr, struct mbuf *mb)
 		sampc = 0;
 	}
 
-	auframe_init(&af, player->dec_fmt, player->sampv, sampc);
+	if (player->resamp.resample) {
+		srate = player->resamp.irate;
+		ch = player->resamp.ich;
+	}
+	else {
+		srate = player->auplay_prm.srate;
+		ch = player->auplay_prm.ch;
+	}
+
+	auframe_init(&af, player->dec_fmt, player->sampv, sampc, srate, ch);
 
 	for (le = player->filterl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;
@@ -336,10 +347,8 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 		player->thr.run = true;
 		err = pthread_create(&player->thr.tid, NULL,
 			rx_thread, player);
-		if (err) {
+		if (err)
 			player->thr.run = false;
-			return;
-		}
 	}
 
 	pthread_cond_signal(&player->thr.cond);
@@ -442,6 +451,9 @@ int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac)
 
 	err = str_dup(&player->module, cfg->play_mod);
 	err |= str_dup(&player->device, cfg->play_dev);
+	if (err)
+		goto out;
+
 	player->sampv = mem_zalloc(AUDIO_SAMPSZ *
 		aufmt_sample_size(player->dec_fmt), NULL);
 	if (!player->sampv) {
@@ -556,4 +568,24 @@ int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac)
 void mcplayer_stop(void)
 {
 	player = mem_deref(player);
+}
+
+
+/**
+ * Initialize everything needed for the player beforhand
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int mcplayer_init(void)
+{
+	return 0;
+}
+
+/**
+ * Terminate everything needed for the player afterwards
+ *
+ */
+void mcplayer_terminate(void)
+{
+	return;
 }

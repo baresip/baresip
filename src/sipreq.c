@@ -1,7 +1,7 @@
 /**
  * @file sipreq.c  SIP Authenticated Request
  *
- * Copyright (C) 2011 Creytiv.com
+ * Copyright (C) 2011 Alfred E. Heggestad
  */
 #include <re.h>
 #include <baresip.h>

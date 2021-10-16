@@ -1,7 +1,7 @@
 /**
  * @file aufile.c WAV Audio Source
  *
- * Copyright (C) 2015 Creytiv.com
+ * Copyright (C) 2015 Alfred E. Heggestad
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
@@ -26,8 +26,6 @@
 
 
 struct ausrc_st {
-	const struct ausrc *as;  /* base class */
-
 	struct tmr tmr;
 	struct aufile *aufile;
 	struct aubuf *aubuf;
@@ -78,13 +76,11 @@ static void *play_thread(void *arg)
 		return NULL;
 
 	while (st->run) {
+		struct auframe af;
 
-		struct auframe af = {
-			.fmt   = AUFMT_S16LE,
-			.sampv = sampv,
-			.sampc = st->sampc,
-			.timestamp = ts * 1000
-		};
+		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc,
+		             st->prm->srate, st->prm->ch);
+		af.timestamp = ts * 1000;
 
 		sys_msleep(ms);
 
@@ -129,7 +125,7 @@ static void timeout(void *arg)
 
 static int read_file(struct ausrc_st *st)
 {
-	struct mbuf *mb;
+	struct mbuf *mb = NULL;
 	int err;
 	size_t n;
 	struct mbuf *mb2 = NULL;
@@ -139,6 +135,7 @@ static int read_file(struct ausrc_st *st)
 		uint8_t *p;
 		size_t i;
 
+		mem_deref(mb);
 		mb = mbuf_alloc(4096);
 		if (!mb)
 			return ENOMEM;
@@ -166,7 +163,6 @@ static int read_file(struct ausrc_st *st)
 				sampv[i] = sys_ltohs(sampv[i]);
 
 			aubuf_append(st->aubuf, mb);
-			mb = mem_deref(mb);
 			break;
 		case AUFMT_PCMA:
 		case AUFMT_PCMU:
@@ -180,20 +176,20 @@ static int read_file(struct ausrc_st *st)
 
 			mbuf_set_pos(mb2, 0);
 			aubuf_append(st->aubuf, mb2);
-			mb = mem_deref(mb);
-			mb2 = mem_deref(mb2);
+			mem_deref(mb2);
 			break;
 
 		default:
 			err = ENOSYS;
 			break;
 		}
+
+		if (err)
+			break;
 	}
 
 	info("aufile: loaded %zu bytes\n", aubuf_cur_size(st->aubuf));
-
 	mem_deref(mb);
-	mem_deref(mb2);
 	return err;
 }
 
@@ -224,7 +220,6 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->as    = as;
 	st->rh    = rh;
 	st->errh  = errh;
 	st->arg   = arg;

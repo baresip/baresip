@@ -1,7 +1,10 @@
 /**
  * @file avcodec/encode.c  Video codecs using libavcodec -- encoder
  *
- * Copyright (C) 2010 - 2013 Creytiv.com
+ * Copyright (C) 2010 - 2013 Alfred E. Heggestad
+ * Copyright (C) 2021 by:
+ *     Media Magic Technologies <developer@mediamagictechnologies.com>
+ *     and Divus GmbH <developer@divus.eu>
  */
 #include <re.h>
 #include <rem.h>
@@ -26,7 +29,7 @@ struct picsz {
 
 
 struct videnc_state {
-	AVCodec *codec;
+	const AVCodec *codec;
 	AVCodecContext *ctx;
 	struct mbuf *mb_frag;
 	struct videnc_param encprm;
@@ -656,6 +659,51 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	if (pkt)
 		av_packet_free(&pkt);
 	av_frame_free(&hw_frame);
+
+	return err;
+}
+
+
+int avcodec_packetize(struct videnc_state *st, const struct vidpacket *packet)
+{
+	int err = 0;
+	uint64_t ts;
+	struct mbuf mb;
+
+	if (!st || !packet)
+		return EINVAL;
+
+	mb.buf = packet->buf;
+	mb.pos = 0;
+	mb.end = packet->size;
+	mb.size = packet->size;
+
+	ts = video_calc_rtp_timestamp_fix(packet->timestamp);
+
+	switch (st->codec_id) {
+
+	case AV_CODEC_ID_H263:
+		err = h263_packetize(st, ts, &mb, st->pkth, st->arg);
+		break;
+
+	case AV_CODEC_ID_H264:
+		err = h264_packetize(ts, packet->buf, packet->size,
+				     st->encprm.pktsize,
+				     st->pkth, st->arg);
+		break;
+
+#ifdef AV_CODEC_ID_H265
+	case AV_CODEC_ID_H265:
+		err = h265_packetize(ts, packet->buf, packet->size,
+				     st->encprm.pktsize,
+				     st->pkth, st->arg);
+		break;
+#endif
+
+	default:
+		err = EPROTO;
+		break;
+	}
 
 	return err;
 }
