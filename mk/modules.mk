@@ -212,8 +212,10 @@ USE_OMX_BELLAGIO := $(shell [ -f /usr/include/OMX_Core.h ] \
 	|| [ -f $(SYSROOT)/include/OMX_Core.h ] \
 	|| [ -f $(SYSROOT_ALT)/include/OMX_Core.h ] \
 	&& echo "yes")
+ifneq ($(CC), clang)
 USE_WEBRTC_AEC := $(shell \
 	pkg-config --exists "webrtc-audio-processing >= 0.3" && echo "yes")
+endif
 else
 # Windows.
 # Accounts for mingw with Windows SDK (formerly known as Platform SDK)
