@@ -251,9 +251,9 @@ static int start_ausrc(struct mixstatus *st)
 		goto out;
 
 	auresamp_init(&st->resamp);
-	err = ausrc_alloc(&st->ausrc, baresip_ausrcl(), NULL, st->module,
-			&st->ausrc_prm, st->param, ausrc_read_handler,
-			ausrc_error_handler, st);
+	err = ausrc_alloc(&st->ausrc, baresip_ausrcl(), st->module,
+			  &st->ausrc_prm, st->param, ausrc_read_handler,
+			  ausrc_error_handler, st);
 
 	if (!st->ausrc) {
 		warning("mixausrc: Could not start audio source %s with "

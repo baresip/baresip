@@ -481,7 +481,7 @@ static void *read_thread(void *arg)
 
 
 static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
-		 struct media_ctx **ctx, struct vidsrc_prm *prm,
+		 struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt,
 		 const char *dev, vidsrc_frame_h *frameh,
 		 vidsrc_packet_h  *packeth,
@@ -491,7 +491,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	struct mediadev *md;
 	int err;
 
-	(void)ctx;
 	(void)prm;
 	(void)fmt;
 	(void)packeth;

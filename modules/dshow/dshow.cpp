@@ -475,7 +475,7 @@ static void destructor(void *arg)
 
 
 static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
-		 struct media_ctx **ctx, struct vidsrc_prm *prm,
+		 struct vidsrc_prm *prm,
 		 const struct vidsz *size,
 		 const char *fmt, const char *dev,
 		 vidsrc_frame_h *frameh,
@@ -487,7 +487,6 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	IPin *pin = NULL;
 	HRESULT hr;
 	int err;
-	(void)ctx;
 	(void)errorh;
 
 	if (!stp || !vs || !prm || !size)

@@ -195,7 +195,6 @@ static int read_file(struct ausrc_st *st)
 
 
 static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
-			 struct media_ctx **ctx,
 			 struct ausrc_prm *prm, const char *dev,
 			 ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
@@ -203,7 +202,6 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	struct aufile_prm fprm;
 	uint32_t   ptime;
 	int err;
-	(void)ctx;
 
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;

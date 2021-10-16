@@ -94,7 +94,6 @@ static void *read_thread(void *arg)
 
 
 int alsa_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
-		   struct media_ctx **ctx,
 		   struct ausrc_prm *prm, const char *device,
 		   ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
@@ -102,7 +101,6 @@ int alsa_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	snd_pcm_format_t pcmfmt;
 	int num_frames;
 	int err;
-	(void)ctx;
 	(void)errh;
 
 	if (!stp || !as || !prm || !rh)

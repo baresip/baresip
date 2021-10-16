@@ -102,7 +102,7 @@ const struct vidsrc *vidsrc_find(const struct list *vidsrcl, const char *name)
  */
 int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
 		 const char *name,
-		 struct media_ctx **ctx, struct vidsrc_prm *prm,
+		 struct vidsrc_prm *prm,
 		 const struct vidsz *size, const char *fmt, const char *dev,
 		 vidsrc_frame_h *frameh, vidsrc_packet_h *packeth,
 		 vidsrc_error_h *errorh, void *arg)
@@ -111,6 +111,6 @@ int vidsrc_alloc(struct vidsrc_st **stp, struct list *vidsrcl,
 	if (!vs)
 		return ENOENT;
 
-	return vs->alloch(stp, vs, ctx, prm, size, fmt, dev,
+	return vs->alloch(stp, vs, prm, size, fmt, dev,
 			  frameh, packeth, errorh, arg);
 }

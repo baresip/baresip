@@ -182,7 +182,6 @@ static void interrupt_handler(bool interrupted, void *arg)
 
 
 int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
-			     struct media_ctx **ctx,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
@@ -208,7 +207,6 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	OSStatus ret = 0;
 	int err;
 
-	(void)ctx;
 	(void)device;
 	(void)errh;
 
