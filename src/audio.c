@@ -447,7 +447,7 @@ static int append_rtpext(struct audio *au, struct mbuf *mb,
  * @note This function has REAL-TIME properties
  */
 static void encode_rtp_send(struct audio *a, struct autx *tx,
-			    int16_t *sampv, size_t sampc)
+			    int16_t *sampv, size_t sampc, enum aufmt fmt)
 {
 	struct bundle *bun = stream_bundle(a->strm);
 	bool bundled = bundle_state(bun) != BUNDLE_NONE;
@@ -470,7 +470,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		tx->mb->pos += RTPEXT_HDR_SIZE;
 
 		if (a->level_enabled) {
-			err = append_rtpext(a, tx->mb, tx->enc_fmt,
+			err = append_rtpext(a, tx->mb, fmt,
 					    sampv, sampc);
 			if (err)
 				return;
@@ -499,7 +499,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	len = mbuf_get_space(tx->mb);
 
 	err = tx->ac->ench(tx->enc, &marker, mbuf_buf(tx->mb), &len,
-			   tx->enc_fmt, sampv, sampc);
+			   fmt, sampv, sampc);
 
 	if ((err & 0xffff0000) == 0x00010000) {
 
@@ -655,7 +655,7 @@ static void poll_aubuf_tx(struct audio *a)
 	}
 
 	/* Encode and send */
-	encode_rtp_send(a, tx, af.sampv, af.sampc);
+	encode_rtp_send(a, tx, af.sampv, af.sampc, af.fmt);
 }
 
 
