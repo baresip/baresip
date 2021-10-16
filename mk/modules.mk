@@ -258,6 +258,7 @@ endif
 
 ifneq ($(BASIC_MODULES),no)
 MODULES   += account
+MODULES   += auconv
 MODULES   += b2bua
 MODULES   += contact
 MODULES   += ctrl_tcp
