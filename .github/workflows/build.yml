@@ -77,10 +77,16 @@ jobs:
       if: ${{ runner.os == 'Linux' }}
       run: sudo ldconfig
 
-    - name: make baresip linux
-      if: ${{ runner.os == 'Linux' }}
+    - name: make baresip linux (gcc)
+      if: ${{ runner.os == 'Linux' && matrix.compiler == 'gcc' }}
       run: |
         make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
+        make clean; make CCACHE= STATIC=yes
+
+    - name: make baresip linux (clang)
+      if: ${{ runner.os == 'Linux' && matrix.compiler == 'clang' }}
+      run: |
+        make CXX=clang++ V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
         make clean; make CCACHE= STATIC=yes
 
     - name: make baresip macOS
