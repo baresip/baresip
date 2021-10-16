@@ -72,22 +72,28 @@ int webrtc_aec_decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-static int decode_float(struct aec_dec *dec, const float *sampv, size_t sampc)
+static int decode_float(struct aec_dec *dec, float *sampv, size_t sampc)
 {
 	struct aec *aec = dec->aec;
-	const float *farend = (const float *)sampv;
+	webrtc::StreamConfig config(aec->srate, aec->ch, false);
 	size_t i;
 	int r;
 	int err = 0;
 
+	if (sampc % aec->blocksize)
+		return EINVAL;
+
 	pthread_mutex_lock(&aec->mutex);
 
-	for (i = 0; i < sampc; i += aec->subframe_len) {
+	for (i = 0; i < sampc; i += aec->blocksize) {
 
-		r = WebRtcAec_BufferFarend(aec->inst, farend + i,
-					   aec->subframe_len);
+		const float *src = &sampv[i];
+		float *dest = &sampv[i];
+
+		r = aec->inst->ProcessReverseStream(&src, config, config,
+						    &dest);
 		if (r != 0) {
-			warning("webrtc_aec: decode: WebRtcAec_BufferFarend"
+			warning("webrtc_aec: decode: ProcessReverseStream"
 				" error (%d)\n", r);
 			err = EPROTO;
 			goto out;
