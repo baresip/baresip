@@ -408,7 +408,7 @@ static int start_source(struct mcsource *src)
 				return err;
 		}
 
-		err = ausrc_alloc(&src->ausrc, baresip_ausrcl(), NULL/*ctx*/,
+		err = ausrc_alloc(&src->ausrc, baresip_ausrcl(),
 			src->module, &prm, src->device,
 			ausrc_read_handler, ausrc_error_handler, src);
 		if (err) {

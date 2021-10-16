@@ -52,6 +52,9 @@ static char pass_through[256] = "";
 static char rtsp_transport[256] = "";
 
 
+static struct list sharedl;
+
+
 static void shared_destructor(void *arg)
 {
 	struct shared *st = arg;
@@ -75,6 +78,7 @@ static void shared_destructor(void *arg)
 		avformat_close_input(&st->ic);
 
 	mem_deref(st->lock);
+	mem_deref(st->dev);
 }
 
 
@@ -251,10 +255,12 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	if (!st)
 		return ENOMEM;
 
-	st->id = "avformat";
-
 	st->au.idx  = -1;
 	st->vid.idx = -1;
+
+	err = str_dup(&st->dev, dev);
+	if (err)
+		goto out;
 
 	conf_get_str(conf_cur(), "avformat_pass_through",
 			  pass_through, sizeof(pass_through));
@@ -408,6 +414,8 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		goto out;
 	}
 
+	list_append(&sharedl, &st->le, st);
+
  out:
 
 	if (err)
@@ -420,6 +428,22 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	av_dict_free(&format_opts);
 
 	return err;
+}
+
+
+struct shared *avformat_shared_lookup(const char *dev)
+{
+	struct le *le;
+
+	for (le = sharedl.head; le; le = le->next) {
+
+		struct shared *sh = le->data;
+
+		if (0 == str_casecmp(sh->dev, dev))
+			return sh;
+	}
+
+	return NULL;
 }
 
 

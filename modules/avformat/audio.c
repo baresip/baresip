@@ -49,7 +49,6 @@ static enum AVSampleFormat aufmt_to_avsampleformat(enum aufmt fmt)
 
 
 int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
-			 struct media_ctx **ctx,
 			 struct ausrc_prm *prm, const char *dev,
 			 ausrc_read_h *readh, ausrc_error_h *errh, void *arg)
 {
@@ -71,17 +70,15 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->arg   = arg;
 	st->prm   = *prm;
 
-	if (ctx && *ctx && (*ctx)->id && !strcmp((*ctx)->id, "avformat")) {
-		st->shared = mem_ref(*ctx);
+	sh = avformat_shared_lookup(dev);
+	if (sh) {
+		st->shared = mem_ref(sh);
 	}
 	else {
 		err = avformat_shared_alloc(&st->shared, dev,
 					    0.0, NULL, false);
 		if (err)
 			goto out;
-
-		if (ctx)
-			*ctx = (struct media_ctx *)st->shared;
 	}
 
 	sh = st->shared;

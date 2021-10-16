@@ -202,14 +202,12 @@ static int start_jack(struct ausrc_st *st)
 
 
 int jack_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
-		   struct media_ctx **ctx,
 		   struct ausrc_prm *prm, const char *device,
 		   ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
 	int err = 0;
 
-	(void)ctx;
 	(void)errh;
 
 	if (!stp || !as || !prm || !rh)

@@ -769,12 +769,15 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		sa_cpy(&cprm.laddr, laddr);
 	}
 	else if (sa_isset(&ua->dst, SA_ADDR)) {
-		err = net_dst_source_addr_get(&ua->dst, &cprm.laddr);
-		sa_init(&ua->dst, AF_UNSPEC);
-		if (err) {
-			warning("ua: no laddr for %j (%m)\n", &ua->dst, err);
-			return err;
+		laddr = net_laddr_for(net, &ua->dst);
+		if (!sa_isset(laddr, SA_ADDR)) {
+			warning("ua: no laddr for %j\n", &ua->dst);
+			sa_init(&ua->dst, AF_UNSPEC);
+			return EINVAL;
 		}
+
+		sa_init(&ua->dst, AF_UNSPEC);
+		sa_cpy(&cprm.laddr, laddr);
 	}
 	else {
 		sa_cpy(&cprm.laddr, net_laddr_af(net, af));

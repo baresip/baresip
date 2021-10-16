@@ -95,7 +95,6 @@ const struct ausrc *ausrc_find(const struct list *ausrcl, const char *name)
  * @return 0 if success, otherwise errorcode
  */
 int ausrc_alloc(struct ausrc_st **stp, struct list *ausrcl,
-		struct media_ctx **ctx,
 		const char *name, struct ausrc_prm *prm, const char *device,
 		ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
@@ -105,5 +104,5 @@ int ausrc_alloc(struct ausrc_st **stp, struct list *ausrcl,
 	if (!as)
 		return ENOENT;
 
-	return as->alloch(stp, as, ctx, prm, device, rh, errh, arg);
+	return as->alloch(stp, as, prm, device, rh, errh, arg);
 }

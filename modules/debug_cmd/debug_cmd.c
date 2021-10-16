@@ -285,9 +285,9 @@ static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 	}
 
 	err = ausrc_alloc(&st->ausrc, baresip_ausrcl(),
-			NULL, aumod,
-			&st->prm, path,
-			fileinfo_read_handler, fileinfo_err_handler, st);
+			  aumod,
+			  &st->prm, path,
+			  fileinfo_read_handler, fileinfo_err_handler, st);
 	if (err) {
 		warning("debug_cmd: %s - ausrc %s does not support zero ptime "
 				"or reading source %s failed. (%m)\n",

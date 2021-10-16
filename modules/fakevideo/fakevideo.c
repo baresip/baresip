@@ -142,7 +142,7 @@ static void disp_destructor(void *arg)
 
 
 static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
-		     struct media_ctx **ctx, struct vidsrc_prm *prm,
+		     struct vidsrc_prm *prm,
 		     const struct vidsz *size, const char *fmt,
 		     const char *dev, vidsrc_frame_h *frameh,
 		     vidsrc_packet_h *packeth,
@@ -152,7 +152,6 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	unsigned x;
 	int err;
 
-	(void)ctx;
 	(void)fmt;
 	(void)dev;
 	(void)packeth;

@@ -176,7 +176,7 @@ struct vidqent {
 
 
 static void request_picture_update(struct vrx *vrx);
-static void video_stop_source(struct video *v, struct media_ctx **ctx);
+static void video_stop_source(struct video *v);
 
 
 static void vidqent_destructor(void *arg)
@@ -1142,7 +1142,7 @@ static void tmr_handler(void *arg)
  *
  * @return int 0 if success, otherwise errorcode
  */
-int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
+int video_update(struct video *v, const char *peer)
 {
 	const struct sdp_format *sc = NULL;
 	enum sdp_dir dir;
@@ -1172,9 +1172,9 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 
 		/* Stop / Start source & display*/
 		if (dir & SDP_SENDONLY)
-			err |= video_start_source(v, ctx);
+			err |= video_start_source(v);
 		else
-			video_stop_source(v, ctx);
+			video_stop_source(v);
 
 		if (dir & SDP_RECVONLY) {
 			err |= stream_open_natpinhole(v->strm);
@@ -1192,7 +1192,7 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
 	}
 	else {
 		info("video: video stream is disabled..\n");
-		video_stop_source(v, ctx);
+		video_stop_source(v);
 		video_stop_display(v);
 	}
 
@@ -1208,7 +1208,7 @@ int video_update(struct video *v, struct media_ctx **ctx, const char *peer)
  *
  * @return 0 if success, otherwise errorcode
  */
-int video_start_source(struct video *v, struct media_ctx **ctx)
+int video_start_source(struct video *v)
 {
 	struct vidsz size;
 	int err;
@@ -1243,7 +1243,7 @@ int video_start_source(struct video *v, struct media_ctx **ctx)
 
 		vtx->vsrc = mem_deref(vtx->vsrc);
 
-		err = vs->alloch(&vtx->vsrc, vs, ctx, &vtx->vsrc_prm,
+		err = vs->alloch(&vtx->vsrc, vs, &vtx->vsrc_prm,
 				 &vtx->vsrc_size, NULL, v->vtx.device,
 				 vidsrc_frame_handler, vidsrc_packet_handler,
 				 vidsrc_error_handler, vtx);
@@ -1319,7 +1319,7 @@ int video_start_display(struct video *v, const char *peer)
  *
  * @param v   Video object
  */
-static void video_stop_source(struct video *v, struct media_ctx **ctx)
+static void video_stop_source(struct video *v)
 {
 	if (!v)
 		return;
@@ -1327,8 +1327,6 @@ static void video_stop_source(struct video *v, struct media_ctx **ctx)
 	debug("video: stopping video source ..\n");
 
 	v->vtx.vsrc = mem_deref(v->vtx.vsrc);
-	if (ctx)
-		*ctx = NULL;
 }
 
 
@@ -1354,9 +1352,9 @@ void video_stop_display(struct video *v)
  * @param v   Video object
  * @param ctx Media context
  */
-void video_stop(struct video *v, struct media_ctx **ctx)
+void video_stop(struct video *v)
 {
-	video_stop_source(v, ctx);
+	video_stop_source(v);
 	video_stop_display(v);
 }
 
@@ -1693,7 +1691,7 @@ int video_set_source(struct video *v, const char *name, const char *dev)
 
 	vtx->vsrc = mem_deref(vtx->vsrc);
 
-	err = vs->alloch(&vtx->vsrc, vs, NULL, &vtx->vsrc_prm,
+	err = vs->alloch(&vtx->vsrc, vs, &vtx->vsrc_prm,
 			 &vtx->vsrc_size, NULL, dev,
 			 vidsrc_frame_handler, vidsrc_packet_handler,
 			 vidsrc_error_handler, vtx);

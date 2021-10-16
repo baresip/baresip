@@ -35,7 +35,6 @@ struct call {
 	struct list streaml;      /**< List of mediastreams (struct stream) */
 	struct audio *audio;      /**< Audio stream                         */
 	struct video *video;      /**< Video stream                         */
-	struct media_ctx *ctx;    /**< Shared A/V source media context      */
 	enum call_state state;    /**< Call state                           */
 	int32_t adelay;           /**< Auto answer delay in ms              */
 	char *aluri;              /**< Alert-Info URI                       */
@@ -182,7 +181,7 @@ static void call_stream_start(struct call *call, bool active)
 	}
 
 	if (stream_is_ready(video_strm(call->video))) {
-		err = video_update(call->video, &call->ctx, call->peer_uri);
+		err = video_update(call->video, call->peer_uri);
 		if (err) {
 			warning("call: could not start video: %m\n", err);
 		}
@@ -212,7 +211,7 @@ static void call_stream_stop(struct call *call)
 	audio_stop(call->audio);
 
 	/* Video */
-	video_stop(call->video, &call->ctx);
+	video_stop(call->video);
 
 	tmr_cancel(&call->tmr_inv);
 }
@@ -360,7 +359,7 @@ static int update_media(struct call *call)
 	}
 
 	if (stream_is_ready(video_strm(call->video))) {
-		err |= video_update(call->video, &call->ctx, call->peer_uri);
+		err |= video_update(call->video, call->peer_uri);
 	}
 
 	return err;
@@ -484,8 +483,7 @@ static void menc_event_handler(enum menc_event event,
 		else if (strstr(prm, "video")) {
 			stream_set_secure(video_strm(call->video), true);
 			stream_start_rtcp(video_strm(call->video));
-			err = video_update(call->video, &call->ctx,
-				call->peer_uri);
+			err = video_update(call->video, call->peer_uri);
 			if (err) {
 				warning("call: secure: could not"
 					" start video: %m\n", err);
@@ -549,8 +547,7 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 			break;
 
 		case MEDIA_VIDEO:
-			err = video_update(call->video, &call->ctx,
-				call->peer_uri);
+			err = video_update(call->video, call->peer_uri);
 			if (err) {
 				warning("call: mnatconn: could not"
 					" start video: %m\n", err);
@@ -854,8 +851,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 			  audio_error_handler, call);
 	if (err)
 		goto out;
-
-	audio_set_media_context(call->audio, &call->ctx);
 
 	/* We require at least one video codec, and at least one
 	   video source or video display */
