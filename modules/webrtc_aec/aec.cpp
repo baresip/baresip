@@ -117,26 +117,6 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 }
 
 
-void webrtc_aec_debug(const struct aec *aec)
-{
-	int median, std;
-	int r;
-
-	if (!aec)
-		return;
-
-	EchoCancellation *ec = aec->inst->echo_cancellation();
-
-	r = ec->GetDelayMetrics(&median, &std);
-	if (r != 0) {
-		warning("GetDelayMetrics r=%d\n", r);
-	}
-
-	info("webrtc_aec: delay metrics: median=%d, std=%d\n",
-	     median, std);
-}
-
-
 static struct aufilt webrtc_aec = {
 	.le      = LE_INIT,
 	.name    = "webrtc_aec",

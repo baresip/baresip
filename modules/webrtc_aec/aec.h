@@ -46,4 +46,3 @@ int webrtc_aec_decode(struct aufilt_dec_st *st, struct auframe *af);
 /* Common */
 
 int  webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm);
-void webrtc_aec_debug(const struct aec *aec);
