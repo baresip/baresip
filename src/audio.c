@@ -1071,10 +1071,10 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 	if (rx->resamp.resample) {
 		size_t sampc_rs = AUDIO_SAMPSZ;
 
-		if (rx->dec_fmt != AUFMT_S16LE) {
+		if (af.fmt != AUFMT_S16LE) {
 			warning("audio: skipping resampler due to"
 				" incompatible format (%s)\n",
-				aufmt_name(rx->dec_fmt));
+				aufmt_name(af.fmt));
 			return ENOTSUP;
 		}
 
@@ -1098,7 +1098,7 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 #endif
 	}
 
-	if (rx->play_fmt == rx->dec_fmt) {
+	if (rx->play_fmt == af.fmt) {
 
 		size_t num_bytes = sampc * aufmt_sample_size(rx->play_fmt);
 
@@ -1106,7 +1106,7 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 		if (err)
 			goto out;
 	}
-	else if (rx->dec_fmt == AUFMT_S16LE) {
+	else if (af.fmt == AUFMT_S16LE) {
 
 		/* Convert from 16-bit to auplay format */
 		void *tmp_sampv;
@@ -1135,7 +1135,7 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 	}
 	else {
 		warning("audio: decode: invalid sample formats (%s -> %s)\n",
-			aufmt_name(rx->dec_fmt),
+			aufmt_name(af.fmt),
 			aufmt_name(rx->play_fmt));
 	}
 
