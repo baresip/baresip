@@ -13,7 +13,7 @@ $(MOD)_SRCS	+= aec.cpp
 $(MOD)_SRCS	+= encode.cpp
 $(MOD)_SRCS	+= decode.cpp
 
-CPPFLAGS	+= -isystem $(WEBRTC_PATH)
+CPPFLAGS	+= -isystem $(WEBRTC_PATH) -fPIC
 
 $(MOD)_LFLAGS	+= \
 	-lwebrtc_audio_processing \
