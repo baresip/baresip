@@ -64,9 +64,6 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 	st->target_fmt = conf_config()->audio.enc_fmt;
 
-	re_printf(".... auconv: ## encode update: fmt=%s\n",
-		  aufmt_name(st->target_fmt));
-
 	if (err)
 		mem_deref(st);
 	else
@@ -94,9 +91,6 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 		return EINVAL;
 
 	st->target_fmt = conf_config()->audio.play_fmt;
-
-	re_printf(".... auconv: ## decode update: fmt=%s\n",
-		  aufmt_name(st->target_fmt));
 
 	if (err)
 		mem_deref(st);
@@ -139,10 +133,6 @@ static int encode_frame(struct aufilt_enc_st *st, struct auframe *af)
 
 	if (af->fmt != ac->target_fmt) {
 
-		re_printf(".... auconv enc: %s -> %s\n",
-			  aufmt_name(af->fmt),
-			  aufmt_name(ac->target_fmt));
-
 		if (!ac->buf || af->sampc != ac->sampc) {
 
 			size_t sz = aufmt_sample_size(ac->target_fmt);
@@ -171,10 +161,6 @@ static int decode_frame(struct aufilt_dec_st *st, struct auframe *af)
 		return EINVAL;
 
 	if (af->fmt != ac->target_fmt) {
-
-		re_printf(".... auconv dec: %s -> %s\n",
-			  aufmt_name(af->fmt),
-			  aufmt_name(ac->target_fmt));
 
 		if (!ac->buf || af->sampc != ac->sampc) {
 

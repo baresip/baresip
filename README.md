@@ -219,6 +219,7 @@ alsa          ALSA audio driver
 amr           Adaptive Multi-Rate (AMR) audio codec
 aptx          Audio Processing Technology codec (aptX)
 aubridge      Audio bridge module
+auconv        Audio sample format converter
 audiounit     AudioUnit audio driver for MacOSX/iOS
 aufile        Audio module for using a WAV-file as audio input
 ausine        Audio sine wave input module
