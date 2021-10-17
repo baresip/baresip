@@ -16,7 +16,6 @@ $(MOD)_SRCS	+= decode.cpp
 CPPFLAGS	+= -isystem $(WEBRTC_PATH)
 
 $(MOD)_LFLAGS	+= \
-	-L$(WEBRTC_PATH)/lib/x64/Debug \
 	-lwebrtc_audio_processing \
 	-lstdc++
 
