@@ -1678,6 +1678,12 @@ int test_call_ipv6ll(void)
 
 	ASSERT_TRUE(fix.a.n_rtpestab > 0);
 	ASSERT_TRUE(fix.b.n_rtpestab > 0);
+	sa_cpy(&ipv6ll,
+	       stream_raddr(audio_strm(call_audio(ua_call(fix.a.ua)))));
+	ASSERT_TRUE(sa_is_linklocal(&ipv6ll) && sa_af(&ipv6ll) == AF_INET6);
+	sa_cpy(&ipv6ll,
+	       stream_raddr(audio_strm(call_audio(ua_call(fix.b.ua)))));
+	ASSERT_TRUE(sa_is_linklocal(&ipv6ll) && sa_af(&ipv6ll) == AF_INET6);
 
  out:
 	fixture_close(f);
