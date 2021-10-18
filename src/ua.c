@@ -531,6 +531,7 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 {
 	struct pl pl1, pl2;
 	char *addr = NULL;
+	const struct network *net = baresip_network();
 	int err;
 
 	*af = AF_UNSPEC;
@@ -559,6 +560,9 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 		return EINVAL;
 
 	err = sa_set_str(sa, addr, pl_u32(&pl1));
+	if (sa_af(sa) == AF_INET6 && sa_is_linklocal(sa))
+		err |= net_set_dst_scopeid(net, sa);
+
 	mem_deref(addr);
 	return err;
 }
@@ -1061,6 +1065,7 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	       enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir)
 {
 	struct call *call = NULL;
+	const struct network *net = baresip_network();
 	struct mbuf *dialbuf;
 	struct sip_addr addr;
 	struct pl pl;
@@ -1095,6 +1100,12 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 
 	if (sa_isset(&ua->dst, SA_ADDR) && !sa_isset(&ua->dst, SA_PORT))
 		sa_set_port(&ua->dst, SIP_PORT);
+
+	if (sa_af(&ua->dst) == AF_INET6 && sa_is_linklocal(&ua->dst)) {
+		err = net_set_dst_scopeid(net, &ua->dst);
+		if (err)
+			goto out;
+	}
 
 	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)

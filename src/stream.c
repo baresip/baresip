@@ -912,6 +912,7 @@ static void update_remotes(struct list *streaml, const struct sa *raddr)
 static void stream_remote_set(struct stream *s)
 {
 	const char *rmid, *rssrc;
+	const struct network *net = baresip_network();
 
 	if (!s)
 		return;
@@ -964,6 +965,13 @@ static void stream_remote_set(struct stream *s)
 	}
 
 
+	if (sa_af(&s->tx.raddr_rtp) == AF_INET6 &&
+			sa_is_linklocal(&s->tx.raddr_rtp))
+		net_set_dst_scopeid(net, &s->tx.raddr_rtp);
+
+	if (sa_af(&s->tx.raddr_rtcp) == AF_INET6 &&
+			sa_is_linklocal(&s->tx.raddr_rtcp))
+		net_set_dst_scopeid(net, &s->tx.raddr_rtcp);
 }
 
 

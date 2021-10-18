@@ -51,6 +51,7 @@ struct agent {
 struct fixture {
 	uint32_t magic;
 	struct agent a, b, c;
+	struct sa dst;
 	struct sa laddr_udp;
 	struct sa laddr_tcp;
 	enum behaviour behaviour;
@@ -71,6 +72,8 @@ struct fixture {
 	f->a.fix = f;							\
 	f->b.fix = f;							\
 	f->c.fix = f;							\
+	err = sa_set_str(&f->dst, "127.0.0.1", 5060);			\
+	TEST_ERR(err);							\
 									\
 	err = ua_init("test", true, true, false);			\
 	TEST_ERR(err);							\
@@ -97,11 +100,11 @@ struct fixture {
 	TEST_ERR(err);							\
 									\
 	err = sip_transp_laddr(uag_sip(), &f->laddr_udp,		\
-			       SIP_TRANSP_UDP, NULL);			\
+			       SIP_TRANSP_UDP, &f->dst);		\
 	TEST_ERR(err);							\
 									\
 	err = sip_transp_laddr(uag_sip(), &f->laddr_tcp,		\
-			       SIP_TRANSP_TCP, NULL);			\
+			       SIP_TRANSP_TCP, &f->dst);		\
 	TEST_ERR(err);							\
 									\
 	debug("test: local SIP transp: UDP=%J, TCP=%J\n",		\
@@ -1608,6 +1611,83 @@ int test_call_bundle(void)
 	err |= test_call_bundle_base(true,  false);
 	err |= test_call_bundle_base(false, true);
 	err |= test_call_bundle_base(true,  true);
+
+	return err;
+}
+
+
+static bool find_ipv6ll(const char *ifname, const struct sa *sa, void *arg)
+{
+	struct sa *ipv6ll = arg;
+	(void) ifname;
+
+	if (sa_af(sa) == AF_INET6 && sa_is_linklocal(sa)) {
+		sa_cpy(ipv6ll, sa);
+		return true;
+	}
+
+	return false;
+}
+
+
+int test_call_ipv6ll(void)
+{
+	struct fixture fix, *f = &fix;
+	struct network *net = baresip_network();
+	struct sa ipv6ll;
+	bool found;
+	struct sa dst;
+	char uri[50];
+	int err = 0;
+
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+	f->stop_on_rtp = true;
+	found = net_laddr_apply(net, find_ipv6ll, &ipv6ll);
+	ASSERT_TRUE(found);
+
+	err = sip_transp_laddr(uag_sip(), &dst, SIP_TRANSP_UDP, &ipv6ll);
+	TEST_ERR(err);
+
+	/* Make a call from A to B */
+	re_snprintf(uri, sizeof(uri), "sip:b@%J", &dst);
+	err  = ua_alloc(&f->a.ua, "A <sip:a@kitchen>;regint=0");
+	err |= ua_alloc(&f->b.ua, "B <sip:b@office>;regint=0");
+	err |= ua_connect(f->a.ua, 0, NULL, uri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(0, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(0, fix.b.n_closed);
+	ASSERT_EQ(0, fix.b.close_scode);
+
+	ASSERT_TRUE(fix.a.n_rtpestab > 0);
+	ASSERT_TRUE(fix.b.n_rtpestab > 0);
+	sa_cpy(&ipv6ll,
+	       stream_raddr(audio_strm(call_audio(ua_call(fix.a.ua)))));
+	ASSERT_TRUE(sa_is_linklocal(&ipv6ll) && sa_af(&ipv6ll) == AF_INET6);
+	sa_cpy(&ipv6ll,
+	       stream_raddr(audio_strm(call_audio(ua_call(fix.b.ua)))));
+	ASSERT_TRUE(sa_is_linklocal(&ipv6ll) && sa_af(&ipv6ll) == AF_INET6);
+
+ out:
+	fixture_close(f);
+	module_unload("ausine");
 
 	return err;
 }
