@@ -2065,20 +2065,22 @@ static void redirect_handler(const struct sip_msg *msg, const char *uri,
 static int send_invite(struct call *call)
 {
 	const char *routev[1];
-	struct mbuf *desc;
 	int err;
 
 	routev[0] = account_outbound(call->acc, 0);
 
+#if 0
+	struct mbuf *desc;
 	err = call_sdp_get(call, &desc, true);
 	if (err)
 		return err;
 
-#if 0
 	info("- - - - - S D P - O f f e r - - - - -\n"
 	     "%b"
 	     "- - - - - - - - - - - - - - - - - - -\n",
 	     desc->buf, desc->end);
+
+	mem_deref(desc);
 #endif
 
 	err = sipsess_connect(&call->sess, uag_sipsess_sock(),
@@ -2088,8 +2090,7 @@ static int send_invite(struct call *call)
 			      ua_cuser(call->ua),
 			      routev[0] ? routev : NULL,
 			      routev[0] ? 1 : 0,
-			      /* Is desc needed anymore, when call->sdp is added? */
-			      "application/sdp", desc, call->sdp,
+			      "application/sdp", NULL, call->sdp,
 			      auth_handler, call->acc, true,
 			      call->id,
 			      sipsess_offer_handler, sipsess_answer_handler,
@@ -2116,8 +2117,6 @@ static int send_invite(struct call *call)
 	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
  out:
-	mem_deref(desc);
-
 	return err;
 }
 
