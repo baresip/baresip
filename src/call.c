@@ -2088,7 +2088,8 @@ static int send_invite(struct call *call)
 			      ua_cuser(call->ua),
 			      routev[0] ? routev : NULL,
 			      routev[0] ? 1 : 0,
-			      "application/sdp", desc,
+			      /* Is desc needed anymore, when call->sdp is added? */
+			      "application/sdp", desc, call->sdp,
 			      auth_handler, call->acc, true,
 			      call->id,
 			      sipsess_offer_handler, sipsess_answer_handler,
