@@ -78,11 +78,7 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->packeth = packeth;
 	st->arg    = arg;
 
-	sh = avformat_shared_lookup(dev);
-	if (sh) {
-		st->shared = mem_ref(sh);
-	}
-	else {
+	{
 		err = avformat_shared_alloc(&st->shared, dev,
 					    prm->fps, size, true);
 		if (err)

@@ -52,9 +52,6 @@ static char pass_through[256] = "";
 static char rtsp_transport[256] = "";
 
 
-static struct list sharedl;
-
-
 static void shared_destructor(void *arg)
 {
 	struct shared *st = arg;
@@ -414,8 +411,6 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		goto out;
 	}
 
-	list_append(&sharedl, &st->le, st);
-
  out:
 
 	if (err)
@@ -428,22 +423,6 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	av_dict_free(&format_opts);
 
 	return err;
-}
-
-
-struct shared *avformat_shared_lookup(const char *dev)
-{
-	struct le *le;
-
-	for (le = sharedl.head; le; le = le->next) {
-
-		struct shared *sh = le->data;
-
-		if (0 == str_casecmp(sh->dev, dev))
-			return sh;
-	}
-
-	return NULL;
 }
 
 

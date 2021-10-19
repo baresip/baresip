@@ -6,7 +6,6 @@
 
 
 struct shared {
-	struct le le;
 	struct ausrc_st *ausrc_st;    /* pointer */
 	struct vidsrc_st *vidsrc_st;  /* pointer */
 	struct lock *lock;
@@ -28,7 +27,6 @@ struct shared {
 int avformat_shared_alloc(struct shared **shp, const char *dev,
 			  double fps, const struct vidsz *size,
 			  bool video);
-struct shared *avformat_shared_lookup(const char *dev);
 void avformat_shared_set_audio(struct shared *sh, struct ausrc_st *st);
 void avformat_shared_set_video(struct shared *sh, struct vidsrc_st *st);
 

@@ -70,11 +70,7 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->arg   = arg;
 	st->prm   = *prm;
 
-	sh = avformat_shared_lookup(dev);
-	if (sh) {
-		st->shared = mem_ref(sh);
-	}
-	else {
+	{
 		err = avformat_shared_alloc(&st->shared, dev,
 					    0.0, NULL, false);
 		if (err)
