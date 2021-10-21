@@ -655,6 +655,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				warning("ua: transfer: connect error: %m\n",
 					err);
 			}
+			else {
+				module_event("menu", "transfer", ua, call,
+					     "target %s", call_id(call2));
+			}
 		}
 
 		if (err) {
