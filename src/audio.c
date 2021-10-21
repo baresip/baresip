@@ -1833,9 +1833,10 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 				return err;
 		}
 
+		tx->ausrc_prm = prm;
 		err = ausrc_alloc(&tx->ausrc, ausrcl,
 				  tx->module,
-				  &prm, tx->device,
+				  &tx->ausrc_prm, tx->device,
 				  ausrc_read_handler, ausrc_error_handler, a);
 		if (err) {
 			warning("audio: start_source failed (%s.%s): %m\n",
@@ -1869,8 +1870,6 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 				a->cfg.txmode);
 			return ENOTSUP;
 		}
-
-		tx->ausrc_prm = prm;
 
 		info("audio: source started with sample format %s\n",
 		     aufmt_name(tx->src_fmt));
