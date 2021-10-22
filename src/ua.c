@@ -740,7 +740,8 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		af = sa_af(&ua->dst);
 	}
 	else if (msg) {
-		af = sa_af(&msg->src);
+		laddr = &msg->dst;
+		af = sa_af(laddr);
 	}
 	else if (ua->acc->maf &&
 		   sa_isset(net_laddr_af(net, ua->acc->maf), SA_ADDR)) {
@@ -828,7 +829,7 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 
 	if (accept_sdp) {
 
-		err = ua_call_alloc(&call, ua, VIDMODE_ON, NULL, NULL, NULL,
+		err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, NULL,
 				    false);
 		if (err) {
 			(void)sip_treply(NULL, uag_sip(), msg,
