@@ -107,6 +107,7 @@ static void poll_changes(void *arg)
 {
 	struct netroam *n = arg;
 	bool changed = false;
+	int err;
 
 	if (!n->cfg->nsc)
 		net_dns_refresh(baresip_network());
@@ -126,10 +127,15 @@ static void poll_changes(void *arg)
 		changed = true;
 	}
 
-	if (n->reset) {
-		uag_reset_transp(true, true);
-		n->reset = false;
+	if (!changed && n->reset) {
 		print_changes(n);
+		err = uag_reset_transp(true, true);
+		if (err) {
+			warning("netroam: could not reset transport\n");
+			tmr_start(&n->tmr, 1000, poll_changes, n);
+		}
+		else
+			n->reset = false;
 	}
 
 	if (changed) {
