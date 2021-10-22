@@ -2074,24 +2074,33 @@ static void redirect_handler(const struct sip_msg *msg, const char *uri,
 }
 
 
-static int send_invite(struct call *call)
+static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
+				const struct sa *dst, void *arg)
 {
-	const char *routev[1];
-	struct mbuf *desc;
+	struct call *call = arg;
 	int err;
+	(void) dst;
 
-	routev[0] = account_outbound(call->acc, 0);
-
-	err = call_sdp_get(call, &desc, true);
+	sdp_session_set_laddr(call->sdp, src);
+	err = call_sdp_get(call, descp, true);
 	if (err)
 		return err;
-
-#if 0
+/*#if 0*/
 	info("- - - - - S D P - O f f e r - - - - -\n"
 	     "%b"
 	     "- - - - - - - - - - - - - - - - - - -\n",
-	     desc->buf, desc->end);
-#endif
+	     (*descp)->buf, (*descp)->end);
+/*#endif*/
+	return 0;
+}
+
+
+static int send_invite(struct call *call)
+{
+	const char *routev[1];
+	int err;
+
+	routev[0] = account_outbound(call->acc, 0);
 
 	err = sipsess_connect(&call->sess, uag_sipsess_sock(),
 			      call->peer_uri,
@@ -2100,9 +2109,10 @@ static int send_invite(struct call *call)
 			      ua_cuser(call->ua),
 			      routev[0] ? routev : NULL,
 			      routev[0] ? 1 : 0,
-			      "application/sdp", desc,
+			      "application/sdp",
 			      auth_handler, call->acc, true,
 			      call->id,
+			      sipsess_desc_handler,
 			      sipsess_offer_handler, sipsess_answer_handler,
 			      sipsess_progr_handler, sipsess_estab_handler,
 			      sipsess_info_handler,
@@ -2114,22 +2124,19 @@ static int send_invite(struct call *call)
 			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {
 		warning("call: sipsess_connect: %m\n", err);
-		goto out;
+		return err;
 	}
 
 	err = sipsess_set_redirect_handler(call->sess, redirect_handler);
 	if (err)
-		goto out;
+		return err;
 
 	/* save call setup timer */
 	call->time_conn = time(NULL);
 
 	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
- out:
-	mem_deref(desc);
-
-	return err;
+	return 0;
 }
 
 
