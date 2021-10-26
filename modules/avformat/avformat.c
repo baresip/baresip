@@ -77,6 +77,7 @@ static void shared_destructor(void *arg)
 	if (st->ic)
 		avformat_close_input(&st->ic);
 
+	list_unlink(&st->le);
 	mem_deref(st->lock);
 	mem_deref(st->dev);
 }
