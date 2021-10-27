@@ -1373,7 +1373,9 @@ int test_call_webrtc(void)
 	conf_config()->avt.rtcp_mux = true;
 
 	mock_mnat_register(baresip_mnatl());
-	mock_menc_register();
+
+	err = module_load(".", "dtls_srtp");
+	TEST_ERR(err);
 
 	err = module_load(".", "ausine");
 	TEST_ERR(err);
@@ -1383,7 +1385,7 @@ int test_call_webrtc(void)
 	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
-	fixture_init_prm(f, ";medianat=XNAT;mediaenc=xrtp");
+	fixture_init_prm(f, ";medianat=XNAT;mediaenc=dtls_srtp");
 
 	f->estab_action = ACTION_NOTHING;
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -1436,7 +1438,7 @@ int test_call_webrtc(void)
 	module_unload("fakevideo");
 	module_unload("ausine");
 	mock_vidcodec_unregister();
-	mock_menc_unregister();
+	module_unload("dtls_srtp");
 	mock_mnat_unregister();
 
 	conf_config()->avt.rtcp_mux = false;
