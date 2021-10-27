@@ -164,6 +164,10 @@ static void usage(void)
 }
 
 
+static const char *modconfig =
+	"ausrc_format    s16\n";
+
+
 int main(int argc, char *argv[])
 {
 	struct config *config;
@@ -220,6 +224,12 @@ int main(int argc, char *argv[])
 
 	re_printf("running baresip selftest version %s with %zu tests\n",
 		  BARESIP_VERSION, ntests);
+
+	err = conf_configure_buf((uint8_t *)modconfig, str_len(modconfig));
+	if (err) {
+		warning("main: configure failed: %m\n", err);
+		goto out;
+	}
 
 	/* note: run SIP-traffic on localhost */
 	config = conf_config();
@@ -286,6 +296,7 @@ int main(int argc, char *argv[])
 	}
 	ua_stop_all(true);
 	ua_close();
+	conf_close();
 
 	baresip_close();
 
