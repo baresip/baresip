@@ -680,7 +680,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		goto out;
 
 	/* Jitter buffer */
-	if (cfg->jbtype != JBUF_OFF &&
+	if (prm->use_rtp && cfg->jbtype != JBUF_OFF &&
 			cfg->jbuf_del.min && cfg->jbuf_del.max) {
 
 		err  = jbuf_alloc(&s->rx.jbuf, cfg->jbuf_del.min,
