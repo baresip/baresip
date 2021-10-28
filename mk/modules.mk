@@ -70,7 +70,10 @@ ifneq ($(OS),win32)
 
 USE_AAC       := $(shell $(call CC_TEST,fdk-aac/FDK_audio.h))
 USE_ALSA      := $(shell $(call CC_TEST,alsa/asoundlib.h))
-USE_AMR       := $(shell $(call CC_TEST,amr/amr.h))
+USE_AMR       := $(shell $(call CC_TEST,opencore-amrnb/interf_dec.h))
+ifeq ($(USE_AMR),)
+USE_AMR       := $(shell $(call CC_TEST,opencore-amrwb/dec_if.h))
+endif
 USE_APTX      := $(shell $(call CC_TEST,openaptx.h))
 USE_AV1       := $(shell $(call CC_TEST,aom/aom.h))
 USE_AVCODEC   := $(shell $(call CC_TEST,libavcodec/avcodec.h))
