@@ -113,7 +113,7 @@ endif
 USE_SYSLOG   := $(shell $(call CC_TEST,syslog.h))
 USE_MQTT     := $(shell $(call CC_TEST,mosquitto.h))
 HAVE_LIBV4L2 := $(shell $(call CC_TEST,libv4l2.h))
-USE_V4L2     := $(shell $(call CC_TEST,videodev2.h))
+USE_V4L2     := $(shell $(call CC_TEST,linux/videodev2.h))
 ifeq ($(USE_V4L2),)
 USE_V4L2     := $(shell $(call CC_TEST,sys/videoio.h))
 endif
