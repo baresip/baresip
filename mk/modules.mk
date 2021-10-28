@@ -59,160 +59,75 @@ MOD_AUTODETECT := 1
 
 ifneq ($(MOD_AUTODETECT),)
 
-USE_CONS  := 1
-USE_G711  := 1
-USE_L16   := 1
-USE_DBUS  := 1
-USE_HTTPREQ  := 1
-USE_NETROAM  := 1
+USE_CONS    := 1
+USE_G711    := 1
+USE_L16     := 1
+USE_DBUS    := 1
+USE_HTTPREQ := 1
+USE_NETROAM := 1
 
 ifneq ($(OS),win32)
 
-USE_AAC  := $(shell [ -f $(SYSROOT)/include/fdk-aac/FDK_audio.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/fdk-aac/FDK_audio.h ] || \
-	[ -f $(SYSROOT_ALT)/include/fdk-aac/FDK_audio.h ] && echo "yes")
-USE_ALSA  := $(shell [ -f $(SYSROOT)/include/alsa/asoundlib.h ] || \
-	[ -f $(SYSROOT_ALT)/include/alsa/asoundlib.h ] && echo "yes")
-USE_AMR   := $(shell [ -d $(SYSROOT)/include/opencore-amrnb ] || \
+USE_AAC       := $(shell $(call CC_TEST,fdk-aac/FDK_audio.h))
+USE_ALSA      := $(shell $(call CC_TEST,alsa/asoundlib.h))
+USE_AMR       := $(shell [ -d $(SYSROOT)/include/opencore-amrnb ] || \
 	[ -d $(SYSROOT_LOCAL)/include/opencore-amrnb ] || \
 	[ -d $(SYSROOT_ALT)/include/opencore-amrnb ] || \
 	[ -d $(SYSROOT)/local/include/amrnb ] || \
 	[ -d $(SYSROOT)/include/amrnb ] && echo "yes")
-USE_APTX  := $(shell [ -f $(SYSROOT)/include/openaptx.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/openaptx.h ] || \
-	[ -f $(SYSROOT_ALT)/include/openaptx.h ] && echo "yes")
-USE_AV1  := $(shell [ -f $(SYSROOT)/include/aom/aom.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/aom/aom.h ] || \
-	[ -f $(SYSROOT_ALT)/include/aom/aom.h ] && echo "yes")
-USE_AVCODEC := $(shell [ -f $(SYSROOT)/include/libavcodec/avcodec.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/libavcodec/avcodec.h ] || \
-	[ -f $(SYSROOT)/local/include/libavcodec/avcodec.h ] || \
-	[ -f $(SYSROOT)/include/$(MACHINE)/libavcodec/avcodec.h ] || \
-	[ -f $(SYSROOT_ALT)/include/libavcodec/avcodec.h ] && echo "yes")
-USE_AVFORMAT := $(shell ([ -f $(SYSROOT)/include/libavformat/avformat.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/libavformat/avformat.h ] || \
-	[ -f $(SYSROOT)/local/include/libavformat/avformat.h ] || \
-	[ -f $(SYSROOT)/include/$(MACHINE)/libavformat/avformat.h ] || \
-	[ -f $(SYSROOT_ALT)/include/libavformat/avformat.h ]) && \
-	([ -f $(SYSROOT)/include/libavdevice/avdevice.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/libavdevice/avdevice.h ] || \
-	[ -f $(SYSROOT)/local/include/libavdevice/avdevice.h ] || \
-	[ -f $(SYSROOT)/include/$(MACHINE)/libavdevice/avdevice.h ] || \
-	[ -f $(SYSROOT_ALT)/include/libavdevice/avdevice.h ]) && echo "yes")
-USE_CODEC2  := $(shell [ -f $(SYSROOT)/include/codec2/codec2.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/codec2/codec2.h ] || \
-	[ -f $(SYSROOT_ALT)/include/codec2/codec2.h ] && echo "yes")
-USE_DTLS := $(shell [ -f $(SYSROOT)/include/openssl/dtls1.h ] || \
-	[ -f $(SYSROOT)/local/include/openssl/dtls1.h ] || \
-	[ -f $(SYSROOT_ALT)/include/openssl/dtls1.h ] && echo "yes")
-USE_DTLS_SRTP := $(shell [ -f $(SYSROOT)/include/openssl/srtp.h ] || \
-	[ -f $(SYSROOT)/local/include/openssl/srtp.h ] || \
-	[ -f $(SYSROOT_ALT)/include/openssl/srtp.h ] && echo "yes")
-USE_G722 := $(shell [ -f $(SYSROOT)/include/spandsp/g722.h ] || \
-	[ -f $(SYSROOT_ALT)/include/spandsp/g722.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/spandsp/g722.h ] && echo "yes")
-USE_G722_1 := $(shell [ -f $(SYSROOT)/include/g722_1.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/g722_1.h ] || \
-	[ -f $(SYSROOT_ALT)/include/g722_1.h ] || \
-	[ -f $(SYSROOT)/local/include/g722_1.h ] && echo "yes")
-USE_G726 := $(shell [ -f $(SYSROOT)/include/spandsp/g726.h ] || \
-	[ -f $(SYSROOT_ALT)/include/spandsp/g726.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/spandsp/g726.h ] && echo "yes")
-USE_GSM := $(shell [ -f $(SYSROOT)/include/gsm.h ] || \
-	[ -f $(SYSROOT_ALT)/include/gsm.h ] || \
-	[ -f $(SYSROOT)/include/gsm/gsm.h ] || \
-	[ -f $(SYSROOT)/local/include/gsm.h ] || \
-	[ -f $(SYSROOT)/local/include/gsm/gsm.h ] && echo "yes")
-USE_GST := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
-USE_GST_VIDEO := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
-		&& echo "yes")
-USE_GTK := $(shell pkg-config 'gtk+-3.0 >= 3.0' && \
-		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
-USE_JACK := $(shell [ -f $(SYSROOT)/include/jack/jack.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/jack/jack.h ] && echo "yes")
-USE_MPG123  := $(shell [ -f $(SYSROOT)/include/mpg123.h ] || \
-	[ -f $(SYSROOT)/local/include/mpg123.h ] || \
-	[ -f $(SYSROOT_ALT)/include/mpg123.h ] && echo "yes")
-USE_OPUS := $(shell [ -f $(SYSROOT)/include/opus/opus.h ] || \
-	[ -f $(SYSROOT_ALT)/include/opus/opus.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/opus/opus.h ] && echo "yes")
-USE_OPUS_MS := $(shell [ -f $(SYSROOT)/include/opus/opus_multistream.h ] || \
-	[ -f $(SYSROOT_ALT)/include/opus/opus_multistream.h ] || \
-	[ -f $(SYSROOT)/local/include/opus/opus_multistream.h ] && echo "yes")
-USE_PLC := $(shell [ -f $(SYSROOT)/include/spandsp/plc.h ] || \
-	[ -f $(SYSROOT_ALT)/include/spandsp/plc.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/spandsp/plc.h ] && echo "yes")
-USE_PORTAUDIO := $(shell [ -f $(SYSROOT_LOCAL)/include/portaudio.h ] || \
-		[ -f $(SYSROOT)/include/portaudio.h ] || \
-		[ -f $(SYSROOT_ALT)/include/portaudio.h ] && echo "yes")
-USE_PULSE := $(shell pkg-config --exists libpulse && echo "yes")
-USE_SDL  := $(shell [ -f $(SYSROOT)/include/SDL2/SDL.h ] || \
-	[ -f $(SYSROOT)/local/include/SDL2/SDL.h ] || \
-	[ -f $(SYSROOT_ALT)/include/SDL2/SDl.h ] && echo "yes")
-USE_SNAPSHOT := $(shell [ -f $(SYSROOT)/include/png.h ] || \
-	[ -f $(SYSROOT)/local/include/png.h ] || \
-	[ -f $(SYSROOT_ALT)/include/png.h ] || \
-	[ -f $(SYSROOT_ALT)/usr/local/include/png.h ] && echo "yes")
-USE_SNDFILE := $(shell [ -f $(SYSROOT)/include/sndfile.h ] || \
-	[ -f $(SYSROOT)/local/include/sndfile.h ] || \
-	[ -f $(SYSROOT_ALT)/include/sndfile.h ] || \
-	[ -f $(SYSROOT_ALT)/usr/local/include/sndfile.h ] && echo "yes")
-USE_SNDIO := $(shell [ -f $(SYSROOT)/include/sndio.h ] || \
-	[ -f $(SYSROOT)/local/include/sndio.h ] && echo "yes")
-USE_STDIO := $(shell [ -f $(SYSROOT)/include/termios.h ] && echo "yes")
-HAVE_GLIB := $(shell pkg-config --exists "glib-2.0 >= 2.56" && echo "yes")
-HAVE_SPEEXDSP := $(shell \
-	[ -f $(SYSROOT)/local/lib/libspeexdsp$(LIB_SUFFIX) ] || \
-	[ -f $(SYSROOT)/lib64/libspeexdsp$(LIB_SUFFIX) ] || \
-	[ -f $(SYSROOT)/lib/libspeexdsp$(LIB_SUFFIX) ] || \
-	[ -f $(SYSROOT_ALT)/lib/libspeexdsp$(LIB_SUFFIX) ] && echo "yes")
-ifeq ($(HAVE_SPEEXDSP),)
-HAVE_SPEEXDSP := \
-	$(shell find $(SYSROOT)/lib -name libspeexdsp$(LIB_SUFFIX) 2>/dev/null)
+USE_APTX      := $(shell $(call CC_TEST,openaptx.h))
+USE_AV1       := $(shell $(call CC_TEST,aom/aom.h))
+USE_AVCODEC   := $(shell $(call CC_TEST,libavcodec/avcodec.h))
+USE_AVFORMAT  := $(shell \
+	$(call CC_TEST_AND,libavformat/avformat.h,libavdevice/avdevice.h))
+USE_CODEC2    := $(shell $(call CC_TEST,codec2/codec2.h))
+USE_DTLS      := $(shell $(call CC_TEST,openssl/dtls1.h))
+USE_DTLS_SRTP := $(shell $(call CC_TEST,openssl/srtp.h))
+USE_G722      := $(shell $(call CC_TEST,spandsp/g722.h))
+USE_G722_1    := $(shell $(call CC_TEST,g722_1.h))
+USE_G726      := $(shell $(call CC_TEST,spandsp/g726.h))
+USE_GSM       := $(shell $(call CC_TEST,gsm.h))
+ifeq ($(USE_GSM),)
+USE_GSM       := $(shell $(call CC_TEST,gsm/gsm.h))
 endif
+USE_GST       := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
+USE_GST_VIDEO := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
+		   && echo "yes")
+USE_GTK       := $(shell pkg-config 'gtk+-3.0 >= 3.0' && \
+		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
+USE_JACK      := $(shell $(call CC_TEST,jack/jack.h))
+USE_MPG123    := $(shell $(call CC_TEST,mpg123.h))
+USE_OPUS      := $(shell $(call CC_TEST,opus/opus.h))
+USE_OPUS_MS   := $(shell $(call CC_TEST,opus/opus_multistream.h))
+USE_PLC       := $(shell $(call CC_TEST,spandsp/plc.h))
+USE_PORTAUDIO := $(shell $(call CC_TEST,portaudio.h))
+USE_PULSE     := $(shell pkg-config --exists libpulse && echo "yes")
+USE_SDL       := $(shell $(call CC_TEST,SDL2/SDL.h))
+USE_SNAPSHOT  := $(shell $(call CC_TEST,png.h))
+USE_SNDFILE   := $(shell $(call CC_TEST,sndfile.h))
+USE_SNDIO     := $(shell $(call CC_TEST,sndio.h))
+USE_STDIO     := $(shell $(call CC_TEST,termios.h))
+HAVE_GLIB     := $(shell pkg-config --exists "glib-2.0 >= 2.56" && echo "yes")
+HAVE_SPEEXDSP := $(shell pkg-config --exists "speexdsp" && echo "yes")
 ifneq ($(USE_MPG123),)
 ifneq ($(HAVE_SPEEXDSP),)
-USE_MPA  := $(shell ([ -f $(SYSROOT)/include/twolame.h ] || \
-	[ -f $(SYSROOT)/local/include/twolame.h ] || \
-	[ -f $(SYSROOT_ALT)/include/twolame.h ]) && \
-	([ -f $(SYSROOT)/include/lame/lame.h ] || \
-	[ -f $(SYSROOT)/local/include/lame/lame.h ] || \
-	[ -f $(SYSROOT_ALT)/include/lame/lame.h ]) && echo "yes")
+USE_MPA  := $(shell $(call CC_TEST_AND,twolame.h,lame/lame.h))
 endif
 endif
-USE_SYSLOG := $(shell [ -f $(SYSROOT)/include/syslog.h ] || \
-	[ -f $(SYSROOT_ALT)/include/syslog.h ] || \
-	[ -f $(SYSROOT)/local/include/syslog.h ] && echo "yes")
-USE_MQTT := $(shell [ -f $(SYSROOT)/include/mosquitto.h ] || \
-	[ -f $(SYSROOT_ALT)/include/mosquitto.h ] || \
-	[ -f $(SYSROOT_LOCAL)/include/mosquitto.h ] \
-	&& echo "yes")
-HAVE_LIBV4L2 := $(shell [ -f $(SYSROOT)/include/libv4l2.h ] || \
-	[ -f $(SYSROOT)/local/include/libv4l2.h ] \
-	&& echo "yes")
-USE_V4L2 := $(shell [ -f $(SYSROOT)/include/linux/videodev2.h ] || \
-	[ -f $(SYSROOT)/local/include/linux/videodev2.h ] || \
-	[ -f $(SYSROOT)/include/sys/videoio.h ] \
-	&& echo "yes")
-USE_X11 := $(shell [ -f $(SYSROOT)/include/X11/Xlib.h ] || \
-	[ -f $(SYSROOT)/local/include/X11/Xlib.h ] || \
-	[ -f $(SYSROOT_ALT)/include/X11/Xlib.h ] && echo "yes")
-USE_ZRTP := $(shell [ -f $(SYSROOT)/include/libzrtp/zrtp.h ] || \
-	[ -f $(SYSROOT)/local/include/libzrtp/zrtp.h ] || \
-	[ -f $(SYSROOT_ALT)/include/libzrtp/zrtp.h ] && echo "yes")
-USE_VPX  := $(shell [ -f $(SYSROOT)/include/vpx/vp8.h ] \
-	|| [ -f $(SYSROOT)/local/include/vpx/vp8.h ] \
-	|| [ -f $(SYSROOT_ALT)/include/vpx/vp8.h ] \
-	&& echo "yes")
-USE_OMX_RPI := $(shell [ -f /opt/vc/include/bcm_host.h ] || \
-	[ -f $(SYSROOT)/include/bcm_host.h ] \
-	|| [ -f $(SYSROOT_ALT)/include/bcm_host.h ] \
-	&& echo "yes")
-USE_OMX_BELLAGIO := $(shell [ -f /usr/include/OMX_Core.h ] \
-	|| [ -f $(SYSROOT)/include/OMX_Core.h ] \
-	|| [ -f $(SYSROOT_ALT)/include/OMX_Core.h ] \
-	&& echo "yes")
-USE_WEBRTC_AEC := $(shell \
+USE_SYSLOG   := $(shell $(call CC_TEST,syslog.h))
+USE_MQTT     := $(shell $(call CC_TEST,mosquitto.h))
+HAVE_LIBV4L2 := $(shell $(call CC_TEST,libv4l2.h))
+USE_V4L2     := $(shell $(call CC_TEST,linux/videodev2.h))
+ifeq ($(USE_V4L2),)
+USE_V4L2     := $(shell $(call CC_TEST,sys/videoio.h))
+endif
+USE_X11      := $(shell $(call CC_TEST,X11/Xlib.h))
+USE_ZRTP     := $(shell $(call CC_TEST,libzrtp/zrtp.h))
+USE_VPX      := $(shell $(call CC_TEST,vpx/vp8.h))
+USE_OMX_RPI  := $(shell $(call CC_TEST,bcm_host.h))
+
+USE_OMX_BELLAGIO := $(shell $(call CC_TEST,OMX_Core.h))
+USE_WEBRTC_AEC   := $(shell \
 	pkg-config --exists "webrtc-audio-processing >= 0.3" && echo "yes")
 else
 # Windows.
@@ -239,12 +154,12 @@ USE_COREAUDIO := \
 ifneq ($(USE_AVFOUNDATION),)
 USE_AVCAPTURE := yes
 endif
+endif # darwin
 
-
-endif
 ifeq ($(OS),linux)
-USE_EVDEV := $(shell [ -f $(SYSROOT)/include/linux/input.h ] && echo "yes")
+USE_EVDEV := $(shell $(call CC_TEST,linux/input.h))
 endif
+
 ifeq ($(OS),win32)
 USE_WINWAVE := yes
 MODULES   += wincons
@@ -254,7 +169,7 @@ ifneq ($(USE_GTK),)
 USE_LIBNOTIFY := $(shell pkg-config 'libnotify glib-2.0 < 2.40' && echo "yes")
 endif
 
-endif
+endif # MOD_AUTODETECT
 
 # ------------------------------------------------------------------------- #
 
