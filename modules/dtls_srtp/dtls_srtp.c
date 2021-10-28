@@ -63,12 +63,29 @@ struct dtls_srtp {
 	bool mux;
 };
 
+/* RFC 4145 */
+enum setup {
+	SETUP_ACTIVE = 0,
+	SETUP_PASSIVE,
+	SETUP_ACTPASS,
+};
+
 static struct tls *tls;
 static const char* srtp_profiles =
 	"SRTP_AES128_CM_SHA1_80:"
 	"SRTP_AES128_CM_SHA1_32:"
 	"SRTP_AEAD_AES_128_GCM:"
 	"SRTP_AEAD_AES_256_GCM";
+
+
+static enum setup setup_decode(const char *setup)
+{
+	if (0 == str_casecmp(setup, "active")) return SETUP_ACTIVE;
+	if (0 == str_casecmp(setup, "passive")) return SETUP_PASSIVE;
+	if (0 == str_casecmp(setup, "actpass")) return SETUP_ACTPASS;
+
+	return (enum setup)-1;
+}
 
 
 static void sess_destructor(void *arg)
@@ -433,7 +450,9 @@ static int media_alloc(struct menc_media **mp, struct menc_sess *sess,
 
 	setup = sdp_media_session_rattr(st->sdpm, st->sess->sdp, "setup");
 	if (setup) {
-		st->active = !(0 == str_casecmp(setup, "active"));
+		enum setup rsetup = setup_decode(setup);
+
+		st->active = rsetup != SETUP_ACTIVE;
 
 		err = media_start(st, st->sdpm, raddr_rtp, raddr_rtcp);
 		if (err)
