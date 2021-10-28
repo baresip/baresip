@@ -74,7 +74,7 @@ USE_AMR       := $(shell $(call CC_TEST,amr/amr.h))
 USE_APTX      := $(shell $(call CC_TEST,openaptx.h))
 USE_AV1       := $(shell $(call CC_TEST,aom/aom.h))
 USE_AVCODEC   := $(shell $(call CC_TEST,libavcodec/avcodec.h))
-USE_AVFORMAT  := $(shell
+USE_AVFORMAT  := $(shell \
 	$(call CC_TEST_AND,libavformat/avformat.h,libavdevice/avdevice.h))
 USE_CODEC2    := $(shell $(call CC_TEST,codec2/codec2.h))
 USE_DTLS      := $(shell $(call CC_TEST,openssl/dtls1.h))
