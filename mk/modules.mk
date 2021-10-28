@@ -59,59 +59,59 @@ MOD_AUTODETECT := 1
 
 ifneq ($(MOD_AUTODETECT),)
 
-USE_CONS  := 1
-USE_G711  := 1
-USE_L16   := 1
-USE_DBUS  := 1
-USE_HTTPREQ  := 1
-USE_NETROAM  := 1
+USE_CONS    := 1
+USE_G711    := 1
+USE_L16     := 1
+USE_DBUS    := 1
+USE_HTTPREQ := 1
+USE_NETROAM := 1
 
 ifneq ($(OS),win32)
 
-USE_AAC   := $(shell $(call CC_TEST,fdk-aac/FDK_audio.h))
-USE_ALSA  := $(shell $(call CC_TEST,alsa/asoundlib.h))
-USE_AMR   := $(shell $(call CC_TEST,amr/amr.h))
-USE_APTX  := $(shell $(call CC_TEST,openaptx.h))
-USE_AV1   := $(shell $(call CC_TEST,aom/aom.h))
-USE_AVCODEC  := $(shell $(call CC_TEST,libavcodec/avcodec.h))
-USE_AVFORMAT := $(shell $(call CC_TEST,libavformat/avformat.h))
-USE_AVDEVICE := $(shell $(call CC_TEST,libavdevice/avdevice.h))
-USE_CODEC2 := $(shell $(call CC_TEST,codec2/codec2.h))
-USE_DTLS := $(shell $(call CC_TEST,openssl/dtls1.h))
+USE_AAC       := $(shell $(call CC_TEST,fdk-aac/FDK_audio.h))
+USE_ALSA      := $(shell $(call CC_TEST,alsa/asoundlib.h))
+USE_AMR       := $(shell $(call CC_TEST,amr/amr.h))
+USE_APTX      := $(shell $(call CC_TEST,openaptx.h))
+USE_AV1       := $(shell $(call CC_TEST,aom/aom.h))
+USE_AVCODEC   := $(shell $(call CC_TEST,libavcodec/avcodec.h))
+USE_AVFORMAT  := $(shell
+	$(call CC_TEST_AND,libavformat/avformat.h,libavdevice/avdevice.h))
+USE_CODEC2    := $(shell $(call CC_TEST,codec2/codec2.h))
+USE_DTLS      := $(shell $(call CC_TEST,openssl/dtls1.h))
 USE_DTLS_SRTP := $(shell $(call CC_TEST,openssl/srtp.h))
-USE_G722 := $(shell $(call CC_TEST,spandsp/g722.h))
-USE_G722_1 := $(shell $(call CC_TEST,g722_1.h))
-USE_G726 := $(shell $(call CC_TEST,spandsp/g726.h))
-USE_GSM  := $(shell $(call CC_TEST,gsm.h))
+USE_G722      := $(shell $(call CC_TEST,spandsp/g722.h))
+USE_G722_1    := $(shell $(call CC_TEST,g722_1.h))
+USE_G726      := $(shell $(call CC_TEST,spandsp/g726.h))
+USE_GSM       := $(shell $(call CC_TEST,gsm.h))
 ifeq ($(USE_GSM),)
-USE_GSM  := $(shell $(call CC_TEST,gsm/gsm.h))
+USE_GSM       := $(shell $(call CC_TEST,gsm/gsm.h))
 endif
-USE_GST := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
+USE_GST       := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
 USE_GST_VIDEO := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
-		&& echo "yes")
-USE_GTK := $(shell pkg-config 'gtk+-3.0 >= 3.0' && \
+		   && echo "yes")
+USE_GTK       := $(shell pkg-config 'gtk+-3.0 >= 3.0' && \
 		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
-USE_JACK := $(shell $(call CC_TEST,jack/jack.h))
-USE_MPG123 := $(shell $(call CC_TEST,mpg123.h))
-USE_OPUS := $(shell $(call CC_TEST,opus/opus.h))
-USE_OPUS_MS := $(shell $(call CC_TEST,opus/opus_multistream.h))
-USE_PLC := $(shell $(call CC_TEST,spandsp/plc.h))
+USE_JACK      := $(shell $(call CC_TEST,jack/jack.h))
+USE_MPG123    := $(shell $(call CC_TEST,mpg123.h))
+USE_OPUS      := $(shell $(call CC_TEST,opus/opus.h))
+USE_OPUS_MS   := $(shell $(call CC_TEST,opus/opus_multistream.h))
+USE_PLC       := $(shell $(call CC_TEST,spandsp/plc.h))
 USE_PORTAUDIO := $(shell $(call CC_TEST,portaudio.h))
-USE_PULSE := $(shell pkg-config --exists libpulse && echo "yes")
-USE_SDL  := $(shell $(call CC_TEST,SDL2/SDL.h))
-USE_SNAPSHOT := $(shell $(call CC_TEST,png.h))
-USE_SNDFILE := $(shell $(call CC_TEST,sndfile.h))
-USE_SNDIO := $(shell $(call CC_TEST,sndio.h))
-USE_STDIO := $(shell $(call CC_TEST,termios.h))
-HAVE_GLIB := $(shell pkg-config --exists "glib-2.0 >= 2.56" && echo "yes")
+USE_PULSE     := $(shell pkg-config --exists libpulse && echo "yes")
+USE_SDL       := $(shell $(call CC_TEST,SDL2/SDL.h))
+USE_SNAPSHOT  := $(shell $(call CC_TEST,png.h))
+USE_SNDFILE   := $(shell $(call CC_TEST,sndfile.h))
+USE_SNDIO     := $(shell $(call CC_TEST,sndio.h))
+USE_STDIO     := $(shell $(call CC_TEST,termios.h))
+HAVE_GLIB     := $(shell pkg-config --exists "glib-2.0 >= 2.56" && echo "yes")
 HAVE_SPEEXDSP := $(shell pkg-config --exists "speexdsp" && echo "yes")
 ifneq ($(USE_MPG123),)
 ifneq ($(HAVE_SPEEXDSP),)
 USE_MPA  := $(shell $(call CC_TEST_AND,twolame.h,lame/lame.h))
 endif
 endif
-USE_SYSLOG := $(shell $(call CC_TEST,syslog.h))
-USE_MQTT := $(shell $(call CC_TEST,mosquitto.h))
+USE_SYSLOG   := $(shell $(call CC_TEST,syslog.h))
+USE_MQTT     := $(shell $(call CC_TEST,mosquitto.h))
 HAVE_LIBV4L2 := $(shell $(call CC_TEST,libv4l2.h))
 USE_V4L2     := $(shell $(call CC_TEST,videodev2.h))
 ifeq ($(USE_V4L2),)
@@ -123,7 +123,7 @@ USE_VPX      := $(shell $(call CC_TEST,vpx/vp8.h))
 USE_OMX_RPI  := $(shell $(call CC_TEST,bcm_host.h))
 
 USE_OMX_BELLAGIO := $(shell $(call CC_TEST,OMX_Core.h))
-USE_WEBRTC_AEC := $(shell \
+USE_WEBRTC_AEC   := $(shell \
 	pkg-config --exists "webrtc-audio-processing >= 0.3" && echo "yes")
 else
 # Windows.
