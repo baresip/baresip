@@ -163,32 +163,6 @@ static int extra_decode(struct account *acc, const struct pl *prm)
 }
 
 
-/* Decode address family parameter */
-static int af_decode(struct account *acc, const struct pl *prm)
-{
-	struct pl pl;
-	int maf;
-
-	if (!acc || !prm)
-		return EINVAL;
-
-	if (msg_param_decode(prm, "mediaaf", &pl))
-		return 0;
-
-	maf = !pl_strcasecmp(&pl, "ipv6") ? AF_INET6 :
-	      !pl_strcasecmp(&pl, "ipv4") ? AF_INET :
-	      !pl_strcasecmp(&pl, "auto") ? AF_UNSPEC : -1;
-
-	if (maf == -1) {
-		warning("account: invalid address family '%r'\n", &pl);
-		return EINVAL;
-	}
-
-	acc->maf = maf;
-	return 0;
-}
-
-
 static int decode_pair(char **val1, char **val2,
 		       const struct pl *params, const char *name)
 {
@@ -506,7 +480,6 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	if (!acc)
 		return ENOMEM;
 
-	acc->maf = AF_UNSPEC;
 	acc->sipansbeep = SIPANSBEEP_ON;
 	acc->videoen = true;
 	err = str_dup(&acc->buf, sipaddr);
@@ -578,7 +551,6 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 	err |= cert_decode(acc, &acc->laddr.params);
 	err |= extra_decode(acc, &acc->laddr.params);
-	err |= af_decode(acc,  &acc->laddr.params);
 
  out:
 	if (err)
@@ -817,27 +789,6 @@ int account_set_stun_pass(struct account *acc, const char *pass)
 	if (pass)
 		return str_dup(&acc->stun_pass, pass);
 
-	return 0;
-}
-
-
-/**
- * Set the preferred media address family of a SIP account
- *
- * @param acc      User-Agent account
- * @param mediaaf  Media address family
- *
- * @return 0 if success, otherwise errorcode
- */
-int account_set_mediaaf(struct account *acc, int mediaaf)
-{
-	if (!acc)
-		return EINVAL;
-
-	if (mediaaf != AF_INET && mediaaf != AF_INET6 && mediaaf != AF_UNSPEC)
-		return EINVAL;
-
-	acc->maf = mediaaf;
 	return 0;
 }
 
@@ -1563,19 +1514,6 @@ static const char *sipansbeep_str(enum sipansbeep beep)
 	case SIPANSBEEP_LOCAL: return "local";
 	default: return "???";
 	}
-}
-
-
-/**
- * Get the preferred address family for media of an account
- *
- * @param acc User-Agent account
- *
- * @return Address family
- */
-int account_mediaaf(const struct account *acc)
-{
-	return acc ? acc->maf : 0;
 }
 
 

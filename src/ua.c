@@ -727,12 +727,6 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		laddr = &msg->dst;
 		af = sa_af(laddr);
 	}
-	else if (ua->acc->maf &&
-		   sa_isset(net_laddr_af(net, ua->acc->maf), SA_ADDR)) {
-		info("ua: using ua's preferred AF: af=%s\n",
-		     net_af2name(ua->acc->maf));
-		af = ua->acc->maf;
-	}
 	else if (ua->acc->regint) {
 		laddr = ua_regladdr(ua);
 		af = sa_af(laddr);
