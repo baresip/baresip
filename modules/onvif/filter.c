@@ -204,12 +204,12 @@ static void onvif_ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	switch (ev) {
 		case UA_EVENT_CALL_INCOMING:
-		case UA_EVENT_CALL_RINGING:
-		case UA_EVENT_CALL_PROGRESS:
 			if (!list_isempty(&incoming_st->streams)) {
 				call_hangup(call, 486, "Rejected");
 				break;
 			}
+		case UA_EVENT_CALL_RINGING:
+		case UA_EVENT_CALL_PROGRESS:
 		case UA_EVENT_CALL_OUTGOING:
 		case UA_EVENT_CALL_ESTABLISHED:
 		case UA_EVENT_VU_TX:
