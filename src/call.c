@@ -2112,12 +2112,12 @@ static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
 	err = call_sdp_get(call, descp, true);
 	if (err)
 		return err;
-/*#if 0*/
+#if 0
 	info("- - - - - S D P - O f f e r - - - - -\n"
 	     "%b"
 	     "- - - - - - - - - - - - - - - - - - -\n",
 	     (*descp)->buf, (*descp)->end);
-/*#endif*/
+#endif
 
 	return err;
 }
