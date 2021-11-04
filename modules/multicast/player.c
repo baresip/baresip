@@ -71,7 +71,7 @@ static void mcplayer_destructor(void *arg)
 {
 	(void) arg;
 
-	player->auplay = mem_deref(player->auplay);
+	mem_deref(player->auplay);
 
 #ifdef HAVE_PTHREAD
 	if (player->thr.run) {
@@ -85,14 +85,15 @@ static void mcplayer_destructor(void *arg)
 	tmr_cancel(&player->tmr);
 #endif
 
-	player->jbuf     = mem_deref(player->jbuf);
-	player->module   = mem_deref(player->module);
-	player->device   = mem_deref(player->device);
-	player->dec      = mem_deref(player->dec);
+	mem_deref(player->jbuf);
+	mem_deref(player->module);
+	mem_deref(player->device);
+	mem_deref(player->dec);
 
-	player->sampv    = mem_deref(player->sampv);
-	player->sampv_rs = mem_deref(player->sampv_rs);
-	player->aubuf    = mem_deref(player->aubuf);
+	mem_deref(player->sampv);
+	mem_deref(player->sampv_rs);
+	mem_deref(player->aubuf);
+	list_flush(&player->filterl);
 }
 
 
