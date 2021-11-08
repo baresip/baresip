@@ -277,6 +277,8 @@ enum media_type {
 	MEDIA_VIDEO,
 };
 
+struct sender;
+struct receiver;
 struct stream;
 struct rtp_header;
 

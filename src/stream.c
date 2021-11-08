@@ -22,6 +22,30 @@ enum {
 };
 
 
+/* Transmit */
+struct sender {
+	struct metric metric;  /**< Metrics for transmit            */
+	struct sa raddr_rtp;   /**< Remote RTP address              */
+	struct sa raddr_rtcp;  /**< Remote RTCP address             */
+	int pt_enc;            /**< Payload type for encoding       */
+};
+
+
+/* Receive */
+struct receiver {
+	struct metric metric; /**< Metrics for receiving            */
+	struct tmr tmr_rtp;   /**< Timer for detecting RTP timeout  */
+	struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
+	uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
+	uint32_t rtp_timeout; /**< RTP Timeout value in [ms]        */
+	uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
+	uint32_t pseq;        /**< Sequence number for incoming RTP */
+	bool ssrc_set;        /**< Incoming SSRC is set             */
+	bool pseq_set;        /**< True if sequence number is set   */
+	bool rtp_estab;       /**< True if RTP stream established   */
+};
+
+
 /** Defines a generic media stream */
 struct stream {
 #ifndef RELEASE
@@ -59,27 +83,9 @@ struct stream {
 	struct bundle *bundle;
 	uint8_t extmap_counter;
 
-	/* Transmit */
-	struct sender {
-		struct metric metric;  /**< Metrics for transmit            */
-		struct sa raddr_rtp;   /**< Remote RTP address              */
-		struct sa raddr_rtcp;  /**< Remote RTCP address             */
-		int pt_enc;            /**< Payload type for encoding       */
-	} tx;
+	struct sender tx;
 
-	/* Receive */
-	struct receiver {
-		struct metric metric; /**< Metrics for receiving            */
-		struct tmr tmr_rtp;   /**< Timer for detecting RTP timeout  */
-		struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
-		uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
-		uint32_t rtp_timeout; /**< RTP Timeout value in [ms]        */
-		uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
-		uint32_t pseq;        /**< Sequence number for incoming RTP */
-		bool ssrc_set;        /**< Incoming SSRC is set             */
-		bool pseq_set;        /**< True if sequence number is set   */
-		bool rtp_estab;       /**< True if RTP stream established   */
-	} rx;
+	struct receiver rx;
 };
 
 
@@ -632,6 +638,32 @@ static void mnat_connected_handler(const struct sa *raddr1,
 }
 
 
+static int sender_init(struct sender *tx)
+{
+	int err;
+
+	err = metric_init(&tx->metric);
+
+	tx->pt_enc = -1;
+
+	return err;
+}
+
+
+static int receiver_init(struct receiver *rx)
+{
+	int err;
+
+	err = metric_init(&rx->metric);
+
+	tmr_init(&rx->tmr_rtp);
+
+	rx->pseq = -1;
+
+	return err;
+}
+
+
 int stream_alloc(struct stream **sp, struct list *streaml,
 		 const struct stream_param *prm,
 		 const struct config_avt *cfg,
@@ -655,6 +687,11 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 
 	MAGIC_INIT(s);
 
+	err  = sender_init(&s->tx);
+	err |= receiver_init(&s->rx);
+	if (err)
+		goto out;
+
 	s->cfg    = *cfg;
 	s->type   = type;
 	s->rtph   = rtph;
@@ -662,8 +699,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->rtcph  = rtcph;
 	s->arg    = arg;
 	s->ldir   = SDP_SENDRECV;
-
-	s->rx.pseq = -1;
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);
@@ -744,13 +779,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		if (err)
 			goto out;
 	}
-
-	s->tx.pt_enc = -1;
-
-	err  = metric_init(&s->tx.metric);
-	err |= metric_init(&s->rx.metric);
-	if (err)
-		goto out;
 
 	list_append(streaml, &s->le, s);
 
