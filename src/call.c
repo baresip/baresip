@@ -26,6 +26,7 @@
 struct call {
 	MAGIC_DECL                /**< Magic number for debugging           */
 	struct le le;             /**< Linked list element                  */
+	const struct config *cfg; /**< Global configuration                 */
 	struct ua *ua;            /**< SIP User-agent                       */
 	struct account *acc;      /**< Account (ref.)                       */
 	struct sipsess *sess;     /**< SIP Session                          */
@@ -70,6 +71,8 @@ struct call {
 
 	enum sdp_dir ansadir;      /**< Answer audio direction              */
 	enum sdp_dir ansvdir;      /**< Answer video direction              */
+	bool use_video;
+	bool use_rtp;
 };
 
 
@@ -731,6 +734,74 @@ static void call_decode_sip_autoanswer(struct call *call,
 }
 
 
+static int call_streams_alloc(struct call *call, bool got_offer)
+{
+	struct account *acc = call->acc;
+	struct stream_param strm_prm;
+	struct le *le;
+	int label = 0;
+	int err;
+
+	memset(&strm_prm, 0, sizeof(strm_prm));
+	strm_prm.use_rtp = call->use_rtp;
+	strm_prm.af      = call->af;
+	strm_prm.cname   = call->local_uri;
+
+	/* Audio stream */
+	err = audio_alloc(&call->audio, &call->streaml, &strm_prm,
+			  call->cfg, acc, call->sdp,
+			  acc->mnat, call->mnats, acc->menc, call->mencs,
+			  acc->ptime, account_aucodecl(call->acc), !got_offer,
+			  audio_event_handler, audio_level_handler,
+			  audio_error_handler, call);
+	if (err)
+		return err;
+
+	/* Video stream */
+	if (call->use_video) {
+		err = video_alloc(&call->video, &call->streaml, &strm_prm,
+				  call->cfg, call->sdp,
+				  acc->mnat, call->mnats,
+				  acc->menc, call->mencs,
+				  "main",
+				  account_vidcodecl(call->acc),
+				  baresip_vidfiltl(), !got_offer,
+				  video_error_handler, call);
+		if (err)
+			return err;
+	}
+
+	FOREACH_STREAM {
+		struct stream *strm = le->data;
+
+		sdp_media_set_lattr(stream_sdpmedia(strm), true,
+				    "label", "%d", ++label);
+
+		stream_set_session_handlers(strm, stream_mnatconn_handler,
+					    stream_rtpestab_handler,
+					    stream_rtcp_handler,
+					    stream_error_handler, call);
+	}
+
+	if (call->cfg->avt.bundle) {
+
+		FOREACH_STREAM {
+			struct stream *strm = le->data;
+
+			err = stream_bundle_init(strm, !got_offer);
+			if (err)
+				return err;
+		}
+
+		err = bundle_sdp_encode(call->sdp, &call->streaml);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+
 /**
  * Allocate a new Call state object
  *
@@ -758,11 +829,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	       call_event_h *eh, void *arg)
 {
 	struct call *call;
-	struct le *le;
-	struct stream_param stream_prm;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
-	bool use_video, got_offer = false;
-	int label = 0;
+	bool got_offer = false;
 	int err = 0;
 
 	if (!cfg || !local_uri || !acc || !ua || !prm)
@@ -770,11 +838,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	debug("call: alloc with params laddr=%j, af=%s, use_rtp=%d\n",
 	      &prm->laddr, net_af2name(prm->af), prm->use_rtp);
-
-	memset(&stream_prm, 0, sizeof(stream_prm));
-	stream_prm.use_rtp = prm->use_rtp;
-	stream_prm.af      = prm->af;
-	stream_prm.cname   = local_uri;
 
 	call = mem_zalloc(sizeof(*call), call_destructor);
 	if (!call)
@@ -788,6 +851,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	tmr_init(&call->tmr_inv);
 	tmr_init(&call->tmr_answ);
 
+	call->cfg    = cfg;
 	call->acc    = mem_ref(acc);
 	call->ua     = ua;
 	call->state  = CALL_STATE_IDLE;
@@ -796,6 +860,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->af     = prm->af;
 	call->ansadir = SDP_SENDRECV;
 	call->ansvdir = SDP_SENDRECV;
+	call->use_rtp = prm->use_rtp;
 	call_decode_sip_autoanswer(call, msg);
 
 	err = str_dup(&call->local_uri, local_uri);
@@ -842,71 +907,22 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		}
 	}
 
-	/* Audio stream */
-	err = audio_alloc(&call->audio, &call->streaml, &stream_prm, cfg, acc,
-			  call->sdp,
-			  acc->mnat, call->mnats, acc->menc, call->mencs,
-			  acc->ptime, account_aucodecl(call->acc), !got_offer,
-			  audio_event_handler, audio_level_handler,
-			  audio_error_handler, call);
-	if (err)
-		goto out;
-
 	/* We require at least one video codec, and at least one
 	   video source or video display */
-	use_video = (vidmode != VIDMODE_OFF)
+	call->use_video = (vidmode != VIDMODE_OFF)
 		&& (list_head(account_vidcodecl(call->acc)) != NULL)
 		&& (NULL != vidsrc_find(baresip_vidsrcl(), NULL)
 		    || NULL != vidisp_find(baresip_vidispl(), NULL));
 
-	debug("call: use_video=%d\n", use_video);
-
-	/* Video stream */
-	if (use_video) {
-		err = video_alloc(&call->video, &call->streaml,
-				  &stream_prm, cfg,
-				  call->sdp,
-				  acc->mnat, call->mnats,
-				  acc->menc, call->mencs,
-				  "main",
-				  account_vidcodecl(call->acc),
-				  baresip_vidfiltl(), !got_offer,
-				  video_error_handler, call);
-		if (err)
-			goto out;
-	}
+	debug("call: use_video=%d\n", call->use_video);
 
 	/* inherit certain properties from original call */
 	if (xcall) {
 		call->not = mem_ref(xcall->not);
 	}
 
-	FOREACH_STREAM {
-		struct stream *strm = le->data;
-
-		sdp_media_set_lattr(stream_sdpmedia(strm), true,
-				    "label", "%d", ++label);
-
-		stream_set_session_handlers(strm, stream_mnatconn_handler,
-					    stream_rtpestab_handler,
-					    stream_rtcp_handler,
-					    stream_error_handler, call);
-	}
-
-	if (cfg->avt.bundle) {
-
-		FOREACH_STREAM {
-			struct stream *strm = le->data;
-
-			err = stream_bundle_init(strm, !got_offer);
-			if (err)
-				goto out;
-		}
-
-		err = bundle_sdp_encode(call->sdp, &call->streaml);
-		if (err)
-			goto out;
-	}
+	if (call->af != AF_UNSPEC)
+		call_streams_alloc(call, got_offer);
 
 	if (cfg->avt.rtp_timeout) {
 		call_enable_rtp_timeout(call, cfg->avt.rtp_timeout*1000);
@@ -2074,24 +2090,45 @@ static void redirect_handler(const struct sip_msg *msg, const char *uri,
 }
 
 
-static int send_invite(struct call *call)
+static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
+				const struct sa *dst, void *arg)
 {
-	const char *routev[1];
-	struct mbuf *desc;
+	struct call *call = arg;
 	int err;
+	(void) dst;
 
-	routev[0] = account_outbound(call->acc, 0);
+	call->af     = sa_af(src);
+	if (!call->acc->mnat)
+		sdp_session_set_laddr(call->sdp, src);
 
-	err = call_sdp_get(call, &desc, true);
+	if (list_isempty(&call->streaml)) {
+		err  = call_streams_alloc(call, false);
+		err |= call_set_media_direction(call,
+						call->ansadir, call->ansvdir);
+		if (err)
+			return err;
+	}
+
+	err = call_sdp_get(call, descp, true);
 	if (err)
 		return err;
-
 #if 0
 	info("- - - - - S D P - O f f e r - - - - -\n"
 	     "%b"
 	     "- - - - - - - - - - - - - - - - - - -\n",
-	     desc->buf, desc->end);
+	     (*descp)->buf, (*descp)->end);
 #endif
+
+	return err;
+}
+
+
+static int send_invite(struct call *call)
+{
+	const char *routev[1];
+	int err;
+
+	routev[0] = account_outbound(call->acc, 0);
 
 	err = sipsess_connect(&call->sess, uag_sipsess_sock(),
 			      call->peer_uri,
@@ -2100,9 +2137,10 @@ static int send_invite(struct call *call)
 			      ua_cuser(call->ua),
 			      routev[0] ? routev : NULL,
 			      routev[0] ? 1 : 0,
-			      "application/sdp", desc,
+			      "application/sdp",
 			      auth_handler, call->acc, true,
 			      call->id,
+			      sipsess_desc_handler,
 			      sipsess_offer_handler, sipsess_answer_handler,
 			      sipsess_progr_handler, sipsess_estab_handler,
 			      sipsess_info_handler,
@@ -2114,22 +2152,19 @@ static int send_invite(struct call *call)
 			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {
 		warning("call: sipsess_connect: %m\n", err);
-		goto out;
+		return err;
 	}
 
 	err = sipsess_set_redirect_handler(call->sess, redirect_handler);
 	if (err)
-		goto out;
+		return err;
 
 	/* save call setup timer */
 	call->time_conn = time(NULL);
 
 	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
- out:
-	mem_deref(desc);
-
-	return err;
+	return 0;
 }
 
 

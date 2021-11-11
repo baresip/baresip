@@ -672,31 +672,15 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 }
 
 
-static const struct sa *best_effort_laddr(struct ua *ua,
-		const struct network *net)
+static const struct sa *ua_regladdr(struct ua *ua)
 {
 	struct le *le;
-	const int afv[2] = { AF_INET, AF_INET6 };
-	const struct sa *sa;
 	size_t i;
 
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
 		const struct reg *reg = le->data;
 		if (reg_isok(reg))
 			return reg_laddr(reg);
-	}
-
-	for (i=0; i<ARRAY_SIZE(afv); i++) {
-		int af = afv[i];
-
-		if (!net_af_enabled(net, af))
-			continue;
-
-		sa = net_laddr_af(net, af);
-		if (!sa_isset(sa, SA_ADDR))
-			continue;
-
-		return sa;
 	}
 
 	return NULL;
@@ -723,7 +707,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 {
 	const struct network *net = baresip_network();
 	struct call_prm cprm;
-	int af;
+	int af = AF_UNSPEC;
 	struct sa dst;
 	const struct sa *laddr = NULL;
 	int err;
@@ -740,28 +724,17 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 		af = sa_af(&ua->dst);
 	}
 	else if (msg) {
-		af = sa_af(&msg->src);
-	}
-	else if (ua->acc->maf &&
-		   sa_isset(net_laddr_af(net, ua->acc->maf), SA_ADDR)) {
-		info("ua: using ua's preferred AF: af=%s\n",
-		     net_af2name(ua->acc->maf));
-		af = ua->acc->maf;
-	}
-	else {
-		laddr = best_effort_laddr(ua, net);
+		laddr = &msg->dst;
 		af = sa_af(laddr);
-		if (af != AF_UNSPEC)
-			info("ua: using best effort laddr %j\n", laddr);
+	}
+	else if (ua->acc->regint) {
+		laddr = ua_regladdr(ua);
+		af = sa_af(laddr);
 	}
 
-	if (!net_af_enabled(net, af)) {
+	if (af != AF_UNSPEC && !net_af_enabled(net, af)) {
 		warning("ua: address family %s not supported\n",
 				net_af2name(af));
-		af = AF_UNSPEC;
-	}
-
-	if (af == AF_UNSPEC) {
 		(void)sip_treply(NULL, uag_sip(), msg, 488,
 				 "Not Acceptable Here");
 		return EINVAL;
@@ -782,9 +755,6 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 
 		sa_init(&ua->dst, AF_UNSPEC);
 		sa_cpy(&cprm.laddr, laddr);
-	}
-	else {
-		sa_cpy(&cprm.laddr, net_laddr_af(net, af));
 	}
 
 	cprm.vidmode = vmode;
@@ -828,7 +798,7 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 
 	if (accept_sdp) {
 
-		err = ua_call_alloc(&call, ua, VIDMODE_ON, NULL, NULL, NULL,
+		err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, NULL,
 				    false);
 		if (err) {
 			(void)sip_treply(NULL, uag_sip(), msg,
