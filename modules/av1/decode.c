@@ -114,23 +114,6 @@ static inline int hdr_decode(struct hdr *hdr, struct mbuf *mb)
 }
 
 
-static inline bool is_keyframe(struct mbuf *mb)
-{
-	aom_codec_stream_info_t si;
-	aom_codec_err_t ret;
-
-	memset(&si, 0, sizeof(si));
-
-	ret = aom_codec_peek_stream_info(&aom_codec_av1_dx_algo,
-					 mbuf_buf(mb),
-					 (unsigned int)mbuf_get_left(mb), &si);
-	if (ret != AOM_CODEC_OK)
-		return false;
-
-	return si.is_kf;
-}
-
-
 static inline int16_t seq_diff(uint16_t x, uint16_t y)
 {
 	return (int16_t)(y - x);
@@ -140,6 +123,7 @@ static inline int16_t seq_diff(uint16_t x, uint16_t y)
 int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
 {
+	aom_codec_frame_flags_t flags;
 	aom_codec_iter_t iter = NULL;
 	aom_codec_err_t res;
 	aom_image_t *img;
@@ -161,9 +145,6 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 #endif
 
 	if (!hdr.z) {
-
-		if (is_keyframe(mb))
-			*intra = true;
 
 		mbuf_rewind(vds->mb);
 		vds->started = true;
@@ -208,6 +189,12 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	if (!img) {
 		debug("av1: no picture\n");
 		goto out;
+	}
+
+	res = aom_codec_control(&vds->ctx, AOMD_GET_FRAME_FLAGS, &flags);
+	if (res == AOM_CODEC_OK) {
+		if (flags & AOM_FRAME_IS_KEY)
+			*intra = true;
 	}
 
 	if (img->fmt != AOM_IMG_FMT_I420) {
