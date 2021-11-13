@@ -34,6 +34,7 @@ struct videnc_state {
 	uint16_t picid;
 	videnc_packet_h *pkth;
 	void *arg;
+	bool new;
 };
 
 
@@ -65,6 +66,7 @@ int av1_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 			return ENOMEM;
 
 		ves->picid = rand_u16();
+		ves->new = true;
 
 		*vesp = ves;
 	}
@@ -138,24 +140,32 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 static inline void hdr_encode(uint8_t hdr[HDR_SIZE],
 			      bool z, bool y, uint8_t w, bool n)
 {
+	info("\n ---- av1: encode: header:  z=%u  y=%u  w=%u  n=%u\n",
+	      z, y, w, n);
+
 	hdr[0] = z<<7 | y<<6 | w<<4 | n<<3;
 }
 
 
-static inline int packetize(bool marker, uint64_t rtp_ts,
-			    const uint8_t *buf, size_t len,
-			    size_t maxlen,
-			    videnc_packet_h *pkth, void *arg)
+static int packetize(struct videnc_state *ves, bool marker, uint64_t rtp_ts,
+		     const uint8_t *buf, size_t len,
+		     size_t maxlen,
+		     videnc_packet_h *pkth, void *arg,
+		     uint8_t obuc)
 {
 	uint8_t hdr[HDR_SIZE];
 	bool start = true;
+	uint8_t w = obuc;
 	int err = 0;
+
+	info(".... av1: packetize:  obuc=%u  len=%zu\n", obuc, len);
 
 	maxlen -= sizeof(hdr);
 
 	while (len > maxlen) {
 
-		hdr_encode(hdr, !start, true, 1, 0);
+		hdr_encode(hdr, !start, true, w, ves->new);
+		ves->new = false;
 
 		err |= pkth(false, rtp_ts, hdr, sizeof(hdr), buf, maxlen, arg);
 
@@ -164,7 +174,8 @@ static inline int packetize(bool marker, uint64_t rtp_ts,
 		start = false;
 	}
 
-	hdr_encode(hdr, !start, false, 1, 0);
+	hdr_encode(hdr, !start, false, w, ves->new);
+	ves->new = false;
 
 	err |= pkth(marker, rtp_ts, hdr, sizeof(hdr), buf, len, arg);
 
@@ -181,9 +192,15 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	aom_image_t *img;
 	aom_img_fmt_t img_fmt;
 	int err = 0, i;
+	struct mbuf *mb_pkt = NULL;
 
 	if (!ves || !frame || frame->fmt != VID_FMT_YUV420P)
 		return EINVAL;
+
+#if 0
+	/* ignore packet -- for testing */
+	return 0;
+#endif
 
 	if (!ves->ctxup || !vidsz_cmp(&ves->size, &frame->size)) {
 
@@ -227,6 +244,7 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		bool marker = true;
 		const aom_codec_cx_pkt_t *pkt;
 		uint64_t ts;
+		unsigned obuc = 0;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)
@@ -237,16 +255,74 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 
 		ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
-		err = packetize(marker, ts,
-				pkt->data.frame.buf,
-				pkt->data.frame.sz,
-				ves->pktsize,
-				ves->pkth, ves->arg);
+		struct mbuf wrap = {
+			.pos = 0,
+			.end = pkt->data.frame.sz,
+			.size = pkt->data.frame.sz,
+			.buf = pkt->data.frame.buf,
+		};
+
+		while (mbuf_get_left(&wrap) >= 2) {
+
+			struct obu_hdr hdr;
+			size_t start = wrap.pos;
+			size_t hdr_size;
+			size_t total_len;
+
+			if (!mb_pkt)
+				mb_pkt = mbuf_alloc(1024);
+
+			err = av1_obu_decode(&hdr, &wrap);
+			if (err) {
+				warning("encode: hdr dec error (%m)\n", err);
+				break;
+			}
+			hdr_size = wrap.pos - start;
+			total_len = hdr_size + hdr.size;
+
+			switch (hdr.type) {
+
+			case OBU_TEMPORAL_DELIMITER:
+			case OBU_TILE_GROUP:
+			case OBU_PADDING:
+				/* skip */
+				mbuf_advance(&wrap, hdr.size);
+				break;
+
+			default:
+				++obuc;
+
+				if (hdr.type == OBU_SEQUENCE_HEADER) {
+					err = av1_leb128_encode(mb_pkt,
+								hdr.size);
+					if (err)
+						goto out;
+				}
+
+				mbuf_write_mem(mb_pkt, &wrap.buf[start],
+					       total_len);
+
+				mbuf_advance(&wrap, hdr.size);
+				break;
+			}
+		}
+
 		if (err)
-			return err;
+			goto out;
+
+		err = packetize(ves, marker, ts,
+				mb_pkt->buf,
+				mb_pkt->end,
+				ves->pktsize,
+				ves->pkth, ves->arg, 1);
+		if (err)
+			goto out;
+
+		mb_pkt = mem_deref(mb_pkt);
 	}
 
  out:
+	mem_deref(mb_pkt);
 	if (img)
 		aom_img_free(img);
 

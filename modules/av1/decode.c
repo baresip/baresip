@@ -19,16 +19,18 @@ enum {
 };
 
 
+/** AV1 Aggregation Header */
 struct hdr {
-	unsigned z:1;
-	unsigned y:1;
-	unsigned w:2;
-	unsigned n:1;
+	unsigned z:1;  /* continuation of an OBU fragment from prev packet  */
+	unsigned y:1;  /* last OBU element will continue in the next packet */
+	unsigned w:2;  /* number of OBU elements in the packet              */
+	unsigned n:1;  /* first packet of a coded video sequence            */
 };
 
 struct viddec_state {
 	aom_codec_ctx_t ctx;
 	struct mbuf *mb;
+	struct mbuf *mb_dec;
 	bool ctxup;
 	bool started;
 	uint16_t seq;
@@ -120,6 +122,46 @@ static inline int16_t seq_diff(uint16_t x, uint16_t y)
 }
 
 
+static int handle_obu_fragment(struct viddec_state *vds,
+			       const uint8_t *frag, size_t len,
+			       bool first)
+{
+	struct mbuf mbf = {
+		.pos  = 0,
+		.end  = len,
+		.size = len,
+		.buf  = (uint8_t *)frag
+	};
+	struct obu_hdr hdr;
+	int err;
+
+	if (!vds->mb_dec)
+		vds->mb_dec = mbuf_alloc(1024);
+
+	if (first) {
+		/* prepend Temporal Delimiter */
+		err = av1_obu_encode(vds->mb_dec, OBU_TEMPORAL_DELIMITER,
+				     true, 0, NULL);
+		if (err)
+			goto out;
+	}
+
+	err = av1_obu_decode(&hdr, &mbf);
+	if (err) {
+		warning("av1: could not decode OBU: %m\n", err);
+		goto out;
+	}
+
+	err = av1_obu_encode(vds->mb_dec, hdr.type, true,
+			     hdr.size, mbuf_buf(&mbf));
+	if (err)
+		goto out;
+
+ out:
+	return err;
+}
+
+
 int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
 {
@@ -135,14 +177,20 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	*intra = false;
 
+#if 0
+	return 0;
+#endif
+
 	err = hdr_decode(&hdr, mb);
 	if (err)
 		return err;
 
 #if 1
-	debug("av1: header: z=%u y=%u w=%u n=%u\n",
+	debug("\n\n ---- av1: decode: header:  [%s]  z=%u  y=%u  w=%u  n=%u\n",
+	      marker ? "M" : " ",
 	      hdr.z, hdr.y, hdr.w, hdr.n);
 #endif
+
 
 	if (!hdr.z) {
 
@@ -177,10 +225,90 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		return 0;
 	}
 
-	res = aom_codec_decode(&vds->ctx, vds->mb->buf,
-			       (unsigned int)vds->mb->end, NULL);
+	vds->mb->pos = 0;
+
+	bool first = true;
+	bool last;
+	size_t size;
+
+	switch (hdr.w) {
+
+	case 0:
+
+		while (mbuf_get_left(vds->mb) >= 2) {
+
+			size = av1_leb128_decode(vds->mb);
+
+			info(".... decode: leb128: size = %zu\n", size);
+
+			if (size > mbuf_get_left(vds->mb)) {
+				warning("short packet (%zu > %zu)\n",
+					size, mbuf_get_left(vds->mb));
+				err = EPROTO;
+				goto out;
+			}
+
+			info(".... left=%zu\n", mbuf_get_left(vds->mb));
+
+			mbuf_advance(vds->mb, size);
+
+			last = (mbuf_get_left(vds->mb) <= 1);
+
+			err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size,
+						  first);
+			if (err)
+				goto out;
+
+			first = false;
+		}
+		break;
+
+	case 1:
+
+		size = vds->mb->end - vds->mb->pos;
+
+		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size,
+					  true);
+		if (err)
+			goto out;
+		break;
+
+	case 2:
+
+		size = av1_leb128_decode(vds->mb);
+
+		info(".... decode: leb128: size = %zu\n", size);
+
+		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size,
+					  true);
+		if (err)
+			goto out;
+
+		mbuf_advance(vds->mb, size);
+
+		size = vds->mb->end - vds->mb->pos;
+
+		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size,
+					  false);
+		if (err)
+			goto out;
+		break;
+
+	case 3:
+		warning("av1: todo: w=%u\n", hdr.w);
+		err = ENOTSUP;
+		goto out;
+		break;
+	}
+
+	res = aom_codec_decode(&vds->ctx, vds->mb_dec->buf,
+			       (unsigned int)vds->mb_dec->end, NULL);
 	if (res) {
-		debug("av1: decode error: %s\n", aom_codec_err_to_string(res));
+		const char *detail = aom_codec_error_detail(&vds->ctx);
+
+		warning("av1: decode error: %s\n",
+			aom_codec_err_to_string(res));
+		warning("     %s\n", detail);
 		err = EPROTO;
 		goto out;
 	}
@@ -214,6 +342,8 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
  out:
 	mbuf_rewind(vds->mb);
 	vds->started = false;
+
+	vds->mb_dec = mem_deref(vds->mb_dec);
 
 	return err;
 }
