@@ -40,7 +40,6 @@ enum {
 
 static struct {
 	uint32_t prio;            /**< Current account prio           */
-	bool registered;          /**< Currently registered flag      */
 	uint32_t maxprio;         /**< Maximum account prio           */
 	bool ready;               /**< All UA registered flag         */
 	uint32_t sprio;           /**< Prev successful prio           */
@@ -229,7 +228,7 @@ static void fallback_ok(struct ua *ua)
 
 	debug("serreg: fallback prio %u ok %s.\n", prio, account_aor(acc));
 
-	if (prio <= sreg.prio || !sreg.registered) {
+	if (prio <= sreg.prio) {
 		info("serreg: Fallback %s ok -> prio %u.\n",
 		     account_aor(acc), prio);
 		sreg.prio = prio;
@@ -323,7 +322,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_REGISTER_OK:
-		sreg.registered = true;
 		sreg.prio = account_prio(ua_account(ua));
 		check_registrations();
 		sreg.sprio = sreg.prio;
@@ -331,7 +329,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_REGISTER_FAIL:
 		/* did we already increment? */
-		sreg.registered = false;
 		if (account_prio(ua_account(ua)) != sreg.prio)
 			break;
 
