@@ -200,9 +200,6 @@ static void next_account(struct ua *ua)
 {
 	uint32_t prio = sreg.prio;
 
-	if (sreg.sprio == (uint32_t) -1)
-		sreg.sprio = prio;
-
 	while (check_registrations()) {
 		inc_account_prio();
 
@@ -222,6 +219,9 @@ static void next_account(struct ua *ua)
 			sreg.prio = (uint32_t) -1;
 			break;
 		}
+
+		if (prio == (uint32_t) -1)
+			prio = sreg.prio;
 	}
 }
 
