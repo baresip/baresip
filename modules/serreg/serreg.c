@@ -117,6 +117,7 @@ static bool check_registrations(void)
 static int register_curprio(void)
 {
 	int err = EINVAL;
+	int erc;
 	struct le *le;
 	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
@@ -133,8 +134,12 @@ static int register_curprio(void)
 			continue;
 		}
 
-		if (!fbregint || !ua_regfailed(ua))
-			err = ua_register(ua);
+		if (!fbregint || !ua_regfailed(ua)) {
+			erc = ua_register(ua);
+
+			if (err)
+				err = erc;
+		}
 	}
 
 	return err;
