@@ -249,7 +249,6 @@ static void restart(void *arg)
 	struct le *le;
 	(void) arg;
 
-	sreg.prio = 0;
 	sreg.sprio = (uint32_t) -1;
 	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
@@ -266,6 +265,7 @@ static void restart(void *arg)
 			continue;
 
 		debug("serreg: restart %s prio 0.\n", account_aor(acc));
+		sreg.prio = 0;
 		err = ua_register(ua);
 		if (err) {
 			tmr_start(&sreg.tmr, failwait(++sreg.failc),
