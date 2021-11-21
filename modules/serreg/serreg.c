@@ -42,7 +42,7 @@ static struct {
 	uint32_t prio;            /**< Current account prio           */
 	uint32_t maxprio;         /**< Maximum account prio           */
 	bool ready;               /**< All UA registered flag         */
-	uint32_t sprio;           /**< Prev successful prio           */
+	uint32_t sprio;           /**< Prio where we need a restart   */
 	struct tmr tmr;           /**< Restart timer                  */
 	int failc;                /**< Fail count                     */
 } sreg;
@@ -199,6 +199,9 @@ static void inc_account_prio(void)
 static void next_account(struct ua *ua)
 {
 	uint32_t prio = sreg.prio;
+
+	if (sreg.sprio == (uint32_t) -1)
+		sreg.sprio = prio;
 
 	while (check_registrations()) {
 		inc_account_prio();
