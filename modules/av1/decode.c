@@ -19,11 +19,12 @@ enum {
 };
 
 
+/** AV1 Aggregation Header */
 struct hdr {
-	unsigned z:1;
-	unsigned y:1;
-	unsigned w:2;
-	unsigned n:1;
+	unsigned z:1;  /* continuation of an OBU fragment from prev packet  */
+	unsigned y:1;  /* last OBU element will continue in the next packet */
+	unsigned w:2;  /* number of OBU elements in the packet              */
+	unsigned n:1;  /* first packet of a coded video sequence            */
 };
 
 struct viddec_state {
