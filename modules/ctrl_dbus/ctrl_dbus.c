@@ -108,7 +108,7 @@ static void command_handler(int id, void *data, void *arg)
 	struct ctrl_st *st = arg;
 
 	(void) data;
-	if (!st->command)
+	if (!str_isset(st->command))
 		goto out;
 
 	st->mb = mbuf_alloc(128);
@@ -132,7 +132,8 @@ static void command_handler(int id, void *data, void *arg)
 	}
 
 	if (err)
-		warning("ctrl_dbus: error processing command (%m)\n", err);
+		warning("ctrl_dbus: error processing command \"%s\" (%m)\n",
+			st->command, err);
 
 	mbuf_set_pos(st->mb, 0);
 

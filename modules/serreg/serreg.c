@@ -40,10 +40,9 @@ enum {
 
 static struct {
 	uint32_t prio;            /**< Current account prio           */
-	bool registered;          /**< Currently registered flag      */
 	uint32_t maxprio;         /**< Maximum account prio           */
 	bool ready;               /**< All UA registered flag         */
-	uint32_t sprio;           /**< Prev successful prio           */
+	uint32_t sprio;           /**< Prio where we need a restart   */
 	struct tmr tmr;           /**< Restart timer                  */
 	int failc;                /**< Fail count                     */
 } sreg;
@@ -118,6 +117,7 @@ static bool check_registrations(void)
 static int register_curprio(void)
 {
 	int err = EINVAL;
+	int erc;
 	struct le *le;
 	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
@@ -134,8 +134,12 @@ static int register_curprio(void)
 			continue;
 		}
 
-		if (!fbregint || !ua_regfailed(ua))
-			err = ua_register(ua);
+		if (!fbregint || !ua_regfailed(ua)) {
+			erc = ua_register(ua);
+
+			if (err)
+				err = erc;
+		}
 	}
 
 	return err;
@@ -218,6 +222,9 @@ static void next_account(struct ua *ua)
 			sreg.prio = (uint32_t) -1;
 			break;
 		}
+
+		if (prio == (uint32_t) -1)
+			prio = sreg.prio;
 	}
 }
 
@@ -229,7 +236,7 @@ static void fallback_ok(struct ua *ua)
 
 	debug("serreg: fallback prio %u ok %s.\n", prio, account_aor(acc));
 
-	if (prio <= sreg.prio || !sreg.registered) {
+	if (prio <= sreg.prio) {
 		info("serreg: Fallback %s ok -> prio %u.\n",
 		     account_aor(acc), prio);
 		sreg.prio = prio;
@@ -245,7 +252,6 @@ static void restart(void *arg)
 	struct le *le;
 	(void) arg;
 
-	sreg.prio = 0;
 	sreg.sprio = (uint32_t) -1;
 	for (le = list_head(uag_list()); le; le = le->next) {
 		struct ua *ua = le->data;
@@ -262,6 +268,7 @@ static void restart(void *arg)
 			continue;
 
 		debug("serreg: restart %s prio 0.\n", account_aor(acc));
+		sreg.prio = 0;
 		err = ua_register(ua);
 		if (err) {
 			tmr_start(&sreg.tmr, failwait(++sreg.failc),
@@ -323,18 +330,12 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_REGISTER_OK:
-		sreg.registered = true;
 		sreg.prio = account_prio(ua_account(ua));
 		check_registrations();
 		sreg.sprio = sreg.prio;
 		break;
 
 	case UA_EVENT_REGISTER_FAIL:
-		/* did we already increment? */
-		sreg.registered = false;
-		if (account_prio(ua_account(ua)) != sreg.prio)
-			break;
-
 		next_account(ua);
 		if (account_fbregint(ua_account(ua)))
 			(void)ua_fallback(ua);

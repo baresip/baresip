@@ -116,7 +116,7 @@ int uag_hold_others(struct call *call)
 		}
 	}
 
-	if (!acall)
+	if (!acall || call_state(acall) == CALL_STATE_TRANSFER)
 		return 0;
 
 	err = call_hold(acall, true);

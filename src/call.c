@@ -91,6 +91,7 @@ static const char *state_name(enum call_state st)
 	case CALL_STATE_EARLY:       return "EARLY";
 	case CALL_STATE_ESTABLISHED: return "ESTABLISHED";
 	case CALL_STATE_TERMINATED:  return "TERMINATED";
+	case CALL_STATE_TRANSFER:    return "TRANSFER";
 	case CALL_STATE_UNKNOWN:     return "UNKNOWN";
 	default:                return "???";
 	}
@@ -1806,6 +1807,7 @@ static void sipsess_refer_handler(struct sip *sip, const struct sip_msg *msg,
 
 	(void)call_notify_sipfrag(call, 100, "Trying");
 
+	set_state(call, CALL_STATE_TRANSFER);
 	call_event_handler(call, CALL_EVENT_TRANSFER, "%r", &hdr->val);
 }
 
