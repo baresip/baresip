@@ -229,7 +229,6 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	switch (hdr.w) {
 
 	case 0:
-
 		while (mbuf_get_left(vds->mb) >= 2) {
 
 			size = av1_leb128_decode(vds->mb);
@@ -259,7 +258,6 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		break;
 
 	case 1:
-
 		size = vds->mb->end - vds->mb->pos;
 
 		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size,
@@ -269,7 +267,6 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		break;
 
 	case 2:
-
 		size = av1_leb128_decode(vds->mb);
 
 		info(".... decode: leb128: size = %zu\n", size);
