@@ -14,46 +14,42 @@
 
 int av1_leb128_encode(struct mbuf *mb, size_t value)
 {
-	size_t start;
-	size_t value_copy = value;
 	int err = 0;
 
 	if (!mb)
 		return EINVAL;
 
-	start = mb->pos;
-
 	while (value >= 0x80) {
 
-		uint8_t u8 = 0x80 | (value & 0x7F);
+		uint8_t u8 = 0x80 | (value & 0x7f);
 
 		err |= mbuf_write_u8(mb, u8);
 
 		value >>= 7;
 	}
 
-	/* Last byte will have MSB=0 */
 	err |= mbuf_write_u8(mb, value);
-
-	info(".... LEB encode [%zu] -> [ 0x%w ]\n",
-	     value_copy, &mb->buf[start], mb->pos - start);
 
 	return err;
 }
 
 
-size_t av1_leb128_decode(struct mbuf *mb)
+int av1_leb128_decode(struct mbuf *mb, size_t *value)
 {
 	size_t ret = 0;
-	size_t start = mb->pos;
-	int i;
+	unsigned i;
 
-	if (!mb)
-		return 0;
+	if (!mb || !value)
+		return EINVAL;
 
 	for (i = 0; i < 8; i++) {
 
-		size_t byte = mbuf_read_u8(mb);
+		size_t byte;
+
+		if (mbuf_get_left(mb) < 1)
+			return EBADMSG;
+
+		byte = mbuf_read_u8(mb);
 
 		ret |= (size_t)(byte & 0x7f) << (i * 7);
 
@@ -61,10 +57,9 @@ size_t av1_leb128_decode(struct mbuf *mb)
 			break;
 	}
 
-	info(".... LEB decode [%zu] <- [ 0x%w ]\n",
-	     ret, &mb->buf[start], mb->pos - start);
+	*value = ret;
 
-	return ret;
+	return 0;
 }
 
 
@@ -100,6 +95,7 @@ int av1_obu_encode(struct mbuf *mb, uint8_t type, bool has_size,
 int av1_obu_decode(struct obu_hdr *hdr, struct mbuf *mb)
 {
 	uint8_t val;
+	int err;
 
 	if (!hdr || !mb)
 		return EINVAL;
@@ -136,7 +132,9 @@ int av1_obu_decode(struct obu_hdr *hdr, struct mbuf *mb)
 	}
 
 	if (hdr->s) {
-		hdr->size = av1_leb128_decode(mb);
+		err = av1_leb128_decode(mb, &hdr->size);
+		if (err)
+			return err;
 
 		if (hdr->size > mbuf_get_left(mb)) {
 			warning("short packet: %zu > %zu\n",
