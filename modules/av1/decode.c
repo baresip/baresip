@@ -123,8 +123,7 @@ static inline int16_t seq_diff(uint16_t x, uint16_t y)
 
 
 static int handle_obu_fragment(struct viddec_state *vds,
-			       const uint8_t *frag, size_t len,
-			       bool first)
+			       const uint8_t *frag, size_t len)
 {
 	struct mbuf mbf = {
 		.pos  = 0,
@@ -134,17 +133,6 @@ static int handle_obu_fragment(struct viddec_state *vds,
 	};
 	struct obu_hdr hdr;
 	int err;
-
-	if (!vds->mb_dec)
-		vds->mb_dec = mbuf_alloc(1024);
-
-	if (first) {
-		/* prepend Temporal Delimiter */
-		err = av1_obu_encode(vds->mb_dec, OBU_TEMPORAL_DELIMITER,
-				     true, 0, NULL);
-		if (err)
-			goto out;
-	}
 
 	err = av1_obu_decode(&hdr, &mbf);
 	if (err) {
@@ -170,6 +158,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	aom_codec_err_t res;
 	aom_image_t *img;
 	struct hdr hdr;
+	size_t size;
 	int err, i;
 
 	if (!vds || !frame || !intra || !mb)
@@ -222,11 +211,50 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	vds->mb->pos = 0;
 
-	bool first = true;
-	bool last;
-	size_t size;
+	if (!vds->mb_dec)
+		vds->mb_dec = mbuf_alloc(1024);
+
+	/* prepend Temporal Delimiter */
+	err = av1_obu_encode(vds->mb_dec, OBU_TEMPORAL_DELIMITER,
+			     true, 0, NULL);
+	if (err)
+		goto out;
 
 	switch (hdr.w) {
+
+	case 3:
+		err = av1_leb128_decode(vds->mb, &size);
+		if (err)
+			goto out;
+
+		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size);
+		if (err)
+			goto out;
+
+		mbuf_advance(vds->mb, size);
+
+		/*passthrough*/;
+
+	case 2:
+		err = av1_leb128_decode(vds->mb, &size);
+		if (err)
+			goto out;
+
+		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size);
+		if (err)
+			goto out;
+
+		mbuf_advance(vds->mb, size);
+
+		/*passthrough*/;
+
+	case 1:
+		size = vds->mb->end - vds->mb->pos;
+
+		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size);
+		if (err)
+			goto out;
+		break;
 
 	case 0:
 		while (mbuf_get_left(vds->mb) >= 2) {
@@ -235,65 +263,20 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 			if (err)
 				goto out;
 
-			info(".... decode: leb128: size = %zu\n", size);
-
 			if (size > mbuf_get_left(vds->mb)) {
-				warning("short packet (%zu > %zu)\n",
+				warning("av1: short packet (%zu > %zu)\n",
 					size, mbuf_get_left(vds->mb));
 				err = EPROTO;
 				goto out;
 			}
 
-			info(".... left=%zu\n", mbuf_get_left(vds->mb));
-
 			mbuf_advance(vds->mb, size);
 
-			last = (mbuf_get_left(vds->mb) <= 1);
-
-			err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size,
-						  first);
+			err = handle_obu_fragment(vds, mbuf_buf(vds->mb),
+						  size);
 			if (err)
 				goto out;
-
-			first = false;
 		}
-		break;
-
-	case 1:
-		size = vds->mb->end - vds->mb->pos;
-
-		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size,
-					  true);
-		if (err)
-			goto out;
-		break;
-
-	case 2:
-		err = av1_leb128_decode(vds->mb, &size);
-		if (err)
-			goto out;
-
-		info(".... decode: leb128: size = %zu\n", size);
-
-		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size,
-					  true);
-		if (err)
-			goto out;
-
-		mbuf_advance(vds->mb, size);
-
-		size = vds->mb->end - vds->mb->pos;
-
-		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size,
-					  false);
-		if (err)
-			goto out;
-		break;
-
-	case 3:
-		warning("av1: todo: w=%u\n", hdr.w);
-		err = ENOTSUP;
-		goto out;
 		break;
 	}
 
