@@ -177,10 +177,6 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	*intra = false;
 
-#if 0
-	return 0;
-#endif
-
 	err = hdr_decode(&hdr, mb);
 	if (err)
 		return err;
@@ -190,7 +186,6 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	      marker ? "M" : " ",
 	      hdr.z, hdr.y, hdr.w, hdr.n);
 #endif
-
 
 	if (!hdr.z) {
 

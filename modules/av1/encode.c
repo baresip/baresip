@@ -197,11 +197,6 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	if (!ves || !frame || frame->fmt != VID_FMT_YUV420P)
 		return EINVAL;
 
-#if 0
-	/* ignore packet -- for testing */
-	return 0;
-#endif
-
 	if (!ves->ctxup || !vidsz_cmp(&ves->size, &frame->size)) {
 
 		err = open_encoder(ves, &frame->size);
@@ -244,7 +239,7 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		bool marker = true;
 		const aom_codec_cx_pkt_t *pkt;
 		uint64_t ts;
-		unsigned obuc = 0;
+		uint8_t obuc = 0;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)
