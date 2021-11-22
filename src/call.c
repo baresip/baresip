@@ -2099,6 +2099,7 @@ static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
 	int err;
 	(void) dst;
 
+	MAGIC_CHECK(call);
 	call->af     = sa_af(src);
 	if (!call->acc->mnat)
 		sdp_session_set_laddr(call->sdp, src);
