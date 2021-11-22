@@ -122,31 +122,24 @@ static inline int16_t seq_diff(uint16_t x, uint16_t y)
 }
 
 
-static int handle_obu_fragment(struct viddec_state *vds,
-			       const uint8_t *frag, size_t len)
+static int copy_obu(struct mbuf *mb, const uint8_t *frag, size_t len)
 {
-	struct mbuf mbf = {
-		.pos  = 0,
-		.end  = len,
-		.size = len,
-		.buf  = (uint8_t *)frag
-	};
+	struct mbuf mbf = { (uint8_t *)frag, len, 0, len };
 	struct obu_hdr hdr;
 	int err;
 
 	err = av1_obu_decode(&hdr, &mbf);
 	if (err) {
 		warning("av1: could not decode OBU: %m\n", err);
-		goto out;
+		return err;
 	}
 
-	err = av1_obu_encode(vds->mb_dec, hdr.type, true,
+	err = av1_obu_encode(mb, hdr.type, true,
 			     hdr.size, mbuf_buf(&mbf));
 	if (err)
-		goto out;
+		return err;
 
- out:
-	return err;
+	return 0;
 }
 
 
@@ -227,7 +220,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		if (err)
 			goto out;
 
-		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size);
+		err = copy_obu(vds->mb_dec, mbuf_buf(vds->mb), size);
 		if (err)
 			goto out;
 
@@ -240,7 +233,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		if (err)
 			goto out;
 
-		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size);
+		err = copy_obu(vds->mb_dec, mbuf_buf(vds->mb), size);
 		if (err)
 			goto out;
 
@@ -251,7 +244,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	case 1:
 		size = vds->mb->end - vds->mb->pos;
 
-		err = handle_obu_fragment(vds, mbuf_buf(vds->mb), size);
+		err = copy_obu(vds->mb_dec, mbuf_buf(vds->mb), size);
 		if (err)
 			goto out;
 		break;
@@ -272,8 +265,8 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 			mbuf_advance(vds->mb, size);
 
-			err = handle_obu_fragment(vds, mbuf_buf(vds->mb),
-						  size);
+			err = copy_obu(vds->mb_dec, mbuf_buf(vds->mb),
+				       size);
 			if (err)
 				goto out;
 		}
