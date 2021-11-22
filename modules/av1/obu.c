@@ -68,7 +68,7 @@ size_t av1_leb128_decode(struct mbuf *mb)
 }
 
 
-int av1_obu_encode(struct mbuf *mb, unsigned type, bool has_size,
+int av1_obu_encode(struct mbuf *mb, uint8_t type, bool has_size,
 		   size_t len, const uint8_t *payload)
 {
 	uint8_t val;
