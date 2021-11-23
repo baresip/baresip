@@ -8,6 +8,7 @@ MOD		:= av1
 $(MOD)_SRCS	+= av1.c
 $(MOD)_SRCS	+= decode.c
 $(MOD)_SRCS	+= encode.c
+$(MOD)_SRCS	+= obu.c
 $(MOD)_LFLAGS	+= -laom
 
 include mk/mod.mk
