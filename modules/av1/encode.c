@@ -140,9 +140,6 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 static inline void hdr_encode(uint8_t hdr[HDR_SIZE],
 			      bool z, bool y, uint8_t w, bool n)
 {
-	info("\n ---- av1: encode: header:  z=%u  y=%u  w=%u  n=%u\n",
-	      z, y, w, n);
-
 	hdr[0] = z<<7 | y<<6 | w<<4 | n<<3;
 }
 
@@ -157,8 +154,6 @@ static int packetize(struct videnc_state *ves, bool marker, uint64_t rtp_ts,
 	bool start = true;
 	uint8_t w = obuc;
 	int err = 0;
-
-	info(".... av1: packetize:  obuc=%u  len=%zu\n", obuc, len);
 
 	maxlen -= sizeof(hdr);
 
@@ -294,8 +289,11 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 						goto out;
 				}
 
-				mbuf_write_mem(mb_pkt, &wrap.buf[start],
-					       total_len);
+				err = av1_obu_encode(mb_pkt, hdr.type,
+						     false, hdr.size,
+						     mbuf_buf(&wrap));
+				if (err)
+					goto out;
 
 				mbuf_advance(&wrap, hdr.size);
 				break;
@@ -309,7 +307,7 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 				mb_pkt->buf,
 				mb_pkt->end,
 				ves->pktsize,
-				ves->pkth, ves->arg, 1);
+				ves->pkth, ves->arg, obuc);
 		if (err)
 			goto out;
 

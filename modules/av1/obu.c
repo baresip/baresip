@@ -72,11 +72,6 @@ int av1_obu_encode(struct mbuf *mb, uint8_t type, bool has_size,
 	if (!mb || type==0)
 		return EINVAL;
 
-#if 0
-	info(".... av1: obu: encode:  type=%-24s  len=%zu\n",
-	     aom_obu_type_to_string(type), len);
-#endif
-
 	val  = (type&0xf) << 3;
 	val |= (unsigned)has_size << 1;
 
@@ -137,7 +132,7 @@ int av1_obu_decode(struct obu_hdr *hdr, struct mbuf *mb)
 			return err;
 
 		if (hdr->size > mbuf_get_left(mb)) {
-			warning("short packet: %zu > %zu\n",
+			warning("av1: obu decode: short packet: %zu > %zu\n",
 				hdr->size, mbuf_get_left(mb));
 			return EBADMSG;
 		}
