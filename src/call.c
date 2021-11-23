@@ -33,6 +33,7 @@ struct call {
 	struct sdp_session *sdp;  /**< SDP Session                          */
 	struct sipsub *sub;       /**< Call transfer REFER subscription     */
 	struct sipnot *not;       /**< REFER/NOTIFY client                  */
+	struct call *xcall;       /**< Cross ref Transfer call              */
 	struct list streaml;      /**< List of mediastreams (struct stream) */
 	struct audio *audio;      /**< Audio stream                         */
 	struct video *video;      /**< Video stream                         */
@@ -920,6 +921,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	/* inherit certain properties from original call */
 	if (xcall) {
 		call->not = mem_ref(xcall->not);
+		call->xcall = xcall;
 	}
 
 	if (call->af != AF_UNSPEC)
@@ -941,10 +943,14 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	list_append(lst, &call->le, call);
 
  out:
-	if (err)
+	if (err) {
 		mem_deref(call);
-	else if (callp)
+	}
+	else if (callp) {
 		*callp = call;
+		if (xcall)
+			xcall->xcall = call;
+	}
 
 	return err;
 }
@@ -1812,6 +1818,18 @@ static void sipsess_refer_handler(struct sip *sip, const struct sip_msg *msg,
 }
 
 
+static void xfer_cleanup(struct call *call, char *reason)
+{
+	if (call->xcall->state == CALL_STATE_TRANSFER) {
+		set_state(call->xcall, CALL_STATE_ESTABLISHED);
+		call_event_handler(call->xcall, CALL_EVENT_TRANSFER_FAILED,
+			reason);
+	}
+
+	call->xcall->xcall = NULL;
+}
+
+
 static void sipsess_close_handler(int err, const struct sip_msg *msg,
 				  void *arg)
 {
@@ -1847,6 +1865,9 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 	else {
 		info("%s: session closed\n", call->peer_uri);
 	}
+
+	if (call->xcall)
+		xfer_cleanup(call, reason);
 
 	call_stream_stop(call);
 	call_event_handler(call, CALL_EVENT_CLOSED, reason);
