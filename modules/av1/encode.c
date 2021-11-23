@@ -235,6 +235,7 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		const aom_codec_cx_pkt_t *pkt;
 		uint64_t ts;
 		uint8_t obuc = 0;
+		struct mbuf wrap;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)
@@ -245,19 +246,14 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 
 		ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
-		struct mbuf wrap = {
-			.pos = 0,
-			.end = pkt->data.frame.sz,
-			.size = pkt->data.frame.sz,
-			.buf = pkt->data.frame.buf,
-		};
+		wrap.pos = 0;
+		wrap.end = pkt->data.frame.sz;
+		wrap.size = pkt->data.frame.sz;
+		wrap.buf = pkt->data.frame.buf;
 
 		while (mbuf_get_left(&wrap) >= 2) {
 
 			struct obu_hdr hdr;
-			size_t start = wrap.pos;
-			size_t hdr_size;
-			size_t total_len;
 
 			if (!mb_pkt)
 				mb_pkt = mbuf_alloc(1024);
@@ -267,8 +263,6 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 				warning("encode: hdr dec error (%m)\n", err);
 				break;
 			}
-			hdr_size = wrap.pos - start;
-			total_len = hdr_size + hdr.size;
 
 			switch (hdr.type) {
 

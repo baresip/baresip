@@ -226,8 +226,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 		mbuf_advance(vds->mb, size);
 
-		/*passthrough*/;
-
+		/*@fallthrough@*/
 	case 2:
 		err = av1_leb128_decode(vds->mb, &size);
 		if (err)
@@ -239,8 +238,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 		mbuf_advance(vds->mb, size);
 
-		/*passthrough*/;
-
+		/*@fallthrough@*/
 	case 1:
 		size = vds->mb->end - vds->mb->pos;
 
