@@ -403,6 +403,10 @@ int conf_configure_buf(const uint8_t *buf, size_t sz)
 	if (err)
 		return err;
 
+	err = config_parse_conf(conf_config(), conf_obj);
+	if (err)
+		return err;
+
 	return 0;
 }
 
