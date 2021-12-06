@@ -319,7 +319,7 @@ int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
 
 /* Receive */
-void stream_flush_jbuf(struct stream *s);
+void stream_flush(struct stream *s);
 void stream_silence_on(struct stream *s, bool on);
 int  stream_decode(struct stream *s);
 int  stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);

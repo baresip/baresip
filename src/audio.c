@@ -2101,7 +2101,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	if (reset || ac != rx->ac) {
 		rx->auplay = mem_deref(rx->auplay);
 		aubuf_flush(rx->aubuf);
-		stream_flush_jbuf(a->strm);
+		stream_flush(a->strm);
 
 		/* Reset audio filter chain */
 		list_flush(&rx->filtl);
