@@ -582,6 +582,8 @@ void call_window_closed(struct call_window *win, const char *reason)
 	call_window_set_status(win, status);
 	win->transfer_dialog = mem_deref(win->transfer_dialog);
 	win->attended_transfer_dial = mem_deref(win->attended_transfer_dial);
+	win->call = mem_deref(win->call);
+	win->attended_call = mem_deref(win->attended_call);
 	win->closed = true;
 
 	if (reason && strncmp(reason, user_trigger_reason,
