@@ -222,7 +222,12 @@ static int call_xfer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	int err = 0;
 	(void)pf;
+
+	err = call_hold(ua_call(ua), true);
+	if (err)
+		return err;
 
 	return call_transfer(ua_call(ua), carg->prm);
 }
