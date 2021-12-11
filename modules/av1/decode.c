@@ -163,7 +163,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	if (err)
 		return err;
 
-#if 1
+#if 0
 	debug("av1: decode: header:  [%s]  z=%u  y=%u  w=%u  n=%u\n",
 	      marker ? "M" : " ",
 	      hdr.z, hdr.y, hdr.w, hdr.n);
