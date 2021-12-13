@@ -306,10 +306,10 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	(void) mb;
 
 	if (!mcreceiver->enable)
-		goto out;
+		return;
 
 	if (!mcreceiver->globenable)
-		goto out;
+		return;
 
 	if (mcreceiver->prio >= multicast_callprio() && uag_call_count()) {
 		goto out;
@@ -403,6 +403,33 @@ void mcreceiver_enprio(uint32_t prio)
 			mcreceiver->enable = true;
 		else
 			mcreceiver->enable = false;
+	}
+
+	lock_rel(mcreceivl_lock);
+}
+
+
+/**
+ * Enable / Disable a certain priority range
+ *
+ * @param priol Lower priority boundary
+ * @param prioh Higher priority boundary
+ * @param en    Enable / Disable flag
+ */
+void mcreceiver_enrangeprio(uint32_t priol, uint32_t prioh, bool en)
+{
+	struct le *le;
+	struct mcreceiver *mcreceiver;
+
+	if (!priol || !prioh)
+		return;
+
+	lock_write_get(mcreceivl_lock);
+	LIST_FOREACH(&mcreceivl, le) {
+		mcreceiver = le->data;
+
+		if (mcreceiver->prio >=priol && mcreceiver->prio <= prioh)
+			mcreceiver->enable = en;
 	}
 
 	lock_rel(mcreceivl_lock);

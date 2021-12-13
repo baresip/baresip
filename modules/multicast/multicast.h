@@ -39,6 +39,7 @@ void mcreceiver_unregall(void);
 void mcreceiver_unreg(struct sa *addr);
 int mcreceiver_chprio(struct sa *addr, uint32_t prio);
 void mcreceiver_enprio(uint32_t prio);
+void mcreceiver_enrangeprio(uint32_t priol, uint32_t prioh, bool en);
 void mcreceiver_enable(bool enable);
 
 void mcreceiver_print(struct re_printf *pf);
