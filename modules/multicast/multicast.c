@@ -432,6 +432,49 @@ static int cmd_mcprioen(struct re_printf *pf, void *arg)
 
 
 /**
+ * Enable / Disable a certain range of priorities
+ *
+ * @param pf  Printer
+ * @param arg Command arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_mcprioren(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	struct pl plpriol, plprioh, plenable;
+	uint32_t priol = 0, prioh = 0;
+	bool enable = false;
+
+	err = re_regex(carg->prm, str_len(carg->prm),
+		"range=[0-9]*-[0-9]* enable=[0-1]1", &plpriol, &plprioh,
+		&plenable);
+	if (err)
+		goto out;
+
+	priol = pl_u32(&plpriol);
+	prioh = pl_u32(&plprioh);
+	enable = pl_u32(&plenable);
+
+	if (priol > prioh) {
+		err = EINVAL;
+		goto out;
+	}
+
+	mcreceiver_enrangeprio(priol, prioh, enable);
+
+  out:
+	if (err)
+		re_hprintf(pf, "usage: /mcprioren range=<1-255>-<1-255>"
+			" enable=<0,1>\n");
+
+	return err;
+}
+
+
+
+/**
  * Enable / Disable all multicast receiver without removing it
  *
  * @param pf  Printer
@@ -538,6 +581,7 @@ static const struct cmd cmdv[] = {
 		cmd_mcunregall},
 	{"mcchprio"  ,0, CMD_PRM, "Change priority"           , cmd_mcchprio },
 	{"mcprioen"  ,0, CMD_PRM, "Enable Listener Prio >="   , cmd_mcprioen },
+	{"mcprioren", 0, CMD_PRM, "Enable Listener Prio range", cmd_mcprioren},
 	{"mcregen"   ,0, CMD_PRM, "Enable / Disable all listener",
 		cmd_mcregen},
 };
