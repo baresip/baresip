@@ -29,10 +29,21 @@ struct netroam {
 	struct tmr tmr;
 	struct sa laddr;
 	bool reset;
+	uint32_t failc;                  /**< Fail count                     */
 };
 
 
 static struct netroam d;
+
+
+static uint32_t failwait(uint32_t failc)
+{
+	uint32_t maxw = d.interval ? d.interval : 60;
+	uint32_t w;
+
+	w = min(maxw, (uint32_t) (1 << min(failc, 6))) * 1000;
+	return w;
+}
 
 
 static bool laddr_obsolete(const char *ifname, const struct sa *laddr,
@@ -132,12 +143,18 @@ static void poll_changes(void *arg)
 		err = uag_reset_transp(true, true);
 		if (err) {
 			warning("netroam: could not reset transport\n");
-			tmr_start(&n->tmr, 1000, poll_changes, n);
+			module_event("netroam", "could not reset transport",
+				     NULL, NULL, "failc=%u (%m)", d.failc,
+				     err);
+			tmr_start(&n->tmr, failwait(++d.failc), poll_changes,
+				  n);
+			return;
 		}
 		else
 			n->reset = false;
 	}
 
+	d.failc = 0;
 	if (changed) {
 		n->reset = true;
 		tmr_start(&n->tmr, 1000, poll_changes, n);
