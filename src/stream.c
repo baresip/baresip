@@ -1259,6 +1259,19 @@ uint32_t stream_metric_get_tx_bitrate(const struct stream *strm)
 
 
 /**
+ * Get average transmitted RTP bitrate
+ *
+ * @param strm Stream object
+ *
+ * @return Average transmitted RTP bitrate
+ */
+double stream_metric_get_tx_avg_bitrate(const struct stream *strm)
+{
+	return strm ? metric_avg_bitrate(&strm->tx.metric) : 0.0;
+}
+
+
+/**
  * Get the number of received RTP packets
  *
  * @param strm Stream object
@@ -1307,6 +1320,19 @@ uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
 uint32_t stream_metric_get_rx_bitrate(const struct stream *strm)
 {
 	return strm ? strm->rx.metric.cur_bitrate : 0;
+}
+
+
+/**
+ * Get average received RTP bitrate
+ *
+ * @param strm Stream object
+ *
+ * @return Average received RTP bitrate
+ */
+double stream_metric_get_rx_avg_bitrate(const struct stream *strm)
+{
+	return strm ? metric_avg_bitrate(&strm->rx.metric) : 0.0;
 }
 
 
