@@ -1246,6 +1246,19 @@ uint32_t stream_metric_get_tx_n_err(const struct stream *strm)
 
 
 /**
+ * Get current transmitted RTP bitrate
+ *
+ * @param strm Stream object
+ *
+ * @return Current transmitted RTP bitrate
+ */
+uint32_t stream_metric_get_tx_bitrate(const struct stream *strm)
+{
+	return strm ? strm->tx.metric.cur_bitrate : 0;
+}
+
+
+/**
  * Get the number of received RTP packets
  *
  * @param strm Stream object
@@ -1281,6 +1294,19 @@ uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
 uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
 {
 	return strm ? strm->rx.metric.n_err : 0;
+}
+
+
+/**
+ * Get current received RTP bitrate
+ *
+ * @param strm Stream object
+ *
+ * @return Current received RTP bitrate
+ */
+uint32_t stream_metric_get_rx_bitrate(const struct stream *strm)
+{
+	return strm ? strm->rx.metric.cur_bitrate : 0;
 }
 
 
