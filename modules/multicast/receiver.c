@@ -25,7 +25,7 @@ struct lock *mcreceivl_lock = NULL;
 
 
 enum {
-	TIMEOUT = 500,
+	TIMEOUT = 1000,
 };
 
 /**
@@ -49,6 +49,7 @@ struct mcreceiver {
 	bool running;
 	bool enable;
 	bool globenable;
+	bool ignore;
 };
 
 
@@ -209,6 +210,16 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		uag_set_nodial(true);
 	}
 
+	if (mcreceiver->ignore) {
+		/*if receiver is ignored stop possible run and do nothing*/
+		if (mcreceiver->running) {
+			mcreceiver->running = false;
+			mcplayer_stop();
+		}
+
+		goto out;
+	}
+
 	le = list_apply(&mcreceivl, true, mcreceiver_running, NULL);
 	if (!le) {
 		/* start the player now */
@@ -278,6 +289,7 @@ static void timeout_handler(void *arg)
 	}
 
 	mcreceiver->running = false;
+	mcreceiver->ignore = false;
 	mcreceiver->ssrc = 0;
 	mcreceiver->ac = NULL;
 
@@ -341,7 +353,6 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		goto out;
 
 	mcreceiver->ssrc = hdr->ssrc;
-
 
 	err = jbuf_put(mcreceiver->jbuf, hdr, mb);
 	if (err)
@@ -493,6 +504,47 @@ int mcreceiver_chprio(struct sa *addr, uint32_t prio)
 
 
 /**
+ * Search and set the ignore flag of the given priority multicast receiver
+ *
+ * @param prio Priority
+ *
+ * @return int 0 if success, errorcode otherwise
+ */
+int mcreceiver_prioignore(uint32_t prio)
+{
+	struct le *le;
+	struct mcreceiver *mcreceiver;
+	int err = 0;
+
+	if (!prio)
+		return EINVAL;
+
+	le = list_apply(&mcreceivl, true, mcreceiver_prio_cmp, &prio);
+	if (!le) {
+		warning ("multicast receiver: priority %d not found\n", prio);
+		return EINVAL;
+	}
+
+	mcreceiver = le->data;
+	if (mcreceiver->ignore)
+		return 0;
+
+	lock_write_get(mcreceivl_lock);
+	if (mcreceiver->ssrc) {
+		mcreceiver->ignore = true;
+	}
+	else {
+		err = EPERM;
+		warning ("multicast receiver: priority %d not receiving "
+			"(%m)\n", prio, err);
+	}
+
+	lock_rel(mcreceivl_lock);
+	return err;
+}
+
+
+/**
  * Un-register all multicast listener
  */
 void mcreceiver_unregall(void)
@@ -583,6 +635,7 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	mcreceiver->running = false;
 	mcreceiver->enable = true;
 	mcreceiver->globenable = true;
+	mcreceiver->ignore = false;
 
 	jbuf_del  = cfg->jbuf_del;
 	jbuf_wish = cfg->jbuf_wish;
@@ -642,10 +695,12 @@ void mcreceiver_print(struct re_printf *pf)
 	re_hprintf(pf, "Multicast Receiver List:\n");
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
-		re_hprintf(pf, "   %J - %d%s%s\n", &mcreceiver->addr,
+		re_hprintf(pf, "   %J - %d%s%s%s%s\n", &mcreceiver->addr,
 			mcreceiver->prio,
 			mcreceiver->enable  && mcreceiver->globenable ?
 			" (enable)" : "",
-			mcreceiver->running ? " (active)" : "");
+			mcreceiver->running ? " (active)" : "",
+			mcreceiver->ignore ? " (ignored)" : "",
+			mcreceiver->ssrc ? " (receiving)" : "");
 	}
 }
