@@ -3,6 +3,8 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
+#include <time.h>
+#include <sys/time.h>
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
@@ -499,15 +501,26 @@ static void sip_trace_handler(bool tx, enum sip_transp tp,
 			      const struct sa *src, const struct sa *dst,
 			      const uint8_t *pkt, size_t len, void *arg)
 {
+	time_t now;
+	struct tm *local;
+	struct timeval curTime;
+	int msecs;
 	(void)tx;
 	(void)arg;
 
+	time(&now);
+	local = localtime(&now);
+
+	gettimeofday(&curTime, NULL);
+	msecs = (int) (curTime.tv_usec / 1000);
+
 	re_printf("\x1b[36;1m"
-		  "#\n"
+		  "%02d:%02d:%02d.%03d#\n"
 		  "%s %J -> %J\n"
 		  "%b"
 		  "\x1b[;m\n"
 		  ,
+		  local->tm_hour, local->tm_min, local->tm_sec, msecs,
 		  sip_transp_name(tp), src, dst, pkt, len);
 }
 
