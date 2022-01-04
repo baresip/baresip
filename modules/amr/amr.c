@@ -27,7 +27,6 @@
 #define IF2D_IF_decode D_IF_decode
 #endif
 
-
 /**
  * @defgroup amr amr
  *
@@ -59,10 +58,12 @@ static const int frame_size_nb[16] = {
 	40,  -1,  -1,  -1,  -1,  -1,  -1,   0
 };
 
+#ifdef AMR_WB
 static const int frame_size_wb[16] = {
 	132, 177, 253, 285, 317, 365, 397, 461,
 	477,  40,  -1,  -1,  -1,  -1,  -1,   0
 };
+#endif
 
 /* Samples per 20ms speech frame */
 enum {
