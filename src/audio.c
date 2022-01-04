@@ -55,7 +55,7 @@
 enum {
 	MAX_SRATE       = 48000,  /* Maximum sample rate in [Hz] */
 	MAX_CHANNELS    =     2,  /* Maximum number of channels  */
-	MAX_PTIME       =    60,  /* Maximum packet time in [ms] */
+	MAX_PTIME       =   120,  /* Maximum packet time in [ms] */
 
 	AUDIO_SAMPSZ    = MAX_SRATE * MAX_CHANNELS * MAX_PTIME / 1000,
 
@@ -1368,6 +1368,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 				   "minptime", "%u", minptime);
 	err |= sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
 				   "ptime", "%u", ptime);
+	err |= sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
+				   "maxptime", "%u", MAX_PTIME);
 	if (err)
 		goto out;
 
