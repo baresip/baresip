@@ -7,7 +7,9 @@
 struct amr_aucodec {
 	struct aucodec ac;
 	bool aligned;
-	uint8_t *be_dec_arr;
+	uint8_t *dec_arr;
+	uint8_t *enc_arr;
+
 };
 
 bool amr_octet_align(const char *fmtp);
