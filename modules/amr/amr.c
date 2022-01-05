@@ -518,7 +518,7 @@ static int encode_handler(struct auenc_state *st, bool *marker, uint8_t *buf,
 	if (!samps_per_frame || sampc % samps_per_frame)
 		return EINVAL;
 
-	num_frames = sampc / samps_per_frame;
+	num_frames = (uint32_t)sampc / samps_per_frame;
 	frame_idx = 0;
 
 	if (amr_ac->aligned) {
