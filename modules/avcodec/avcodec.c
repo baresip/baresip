@@ -101,6 +101,7 @@ static struct vidcodec h264_1 = {
 	.dech      = avcodec_decode_h264,
 	.fmtp_ench = avcodec_h264_fmtp_enc,
 	.fmtp_cmph = avcodec_h264_fmtp_cmp,
+	.packetizeh= avcodec_packetize,
 };
 
 static struct vidcodec h263 = {
@@ -111,6 +112,7 @@ static struct vidcodec h263 = {
 	.decupdh   = avcodec_decode_update,
 	.dech      = avcodec_decode_h263,
 	.fmtp_ench = h263_fmtp_enc,
+	.packetizeh= avcodec_packetize,
 };
 
 static struct vidcodec h265 = {
@@ -120,6 +122,7 @@ static struct vidcodec h265 = {
 	.ench      = avcodec_encode,
 	.decupdh   = avcodec_decode_update,
 	.dech      = avcodec_decode_h265,
+	.packetizeh= avcodec_packetize,
 };
 
 
