@@ -769,7 +769,7 @@ void menu_selcall(struct call *call)
 	if (!call) {
 		/* select another call */
 		for (i = ARRAY_SIZE(state)-1; i >= 0; --i) {
-			fa.state = i;
+			fa.state = state[i];
 			uag_filter_calls(find_first_call, filter_call, &fa);
 
 			if (fa.call)
