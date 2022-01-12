@@ -148,7 +148,7 @@ int test_account_uri_complete(void)
 
 	struct sip_addr addr[2];
 	struct pl pl;
-	struct mbuf *mb[2];
+	struct mbuf *mb[2] = {NULL, NULL};
 	struct account *acc = NULL;
 	int err = 0;
 	int i, j;
