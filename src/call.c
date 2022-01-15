@@ -2401,7 +2401,7 @@ static void sipsub_notify_handler(struct sip *sip, const struct sip_msg *msg,
 	sc = pl_u32(&scode);
 
 	if (sc >= 300) {
-		warning("call: transfer failed: %u %r\n", sc, &reason);
+		info("call: transfer failed: %u %r\n", sc, &reason);
 		call_event_handler(call, CALL_EVENT_TRANSFER_FAILED,
 				   "%u %r", sc, &reason);
 	}
