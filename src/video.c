@@ -856,7 +856,9 @@ static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 	switch (msg->hdr.pt) {
 
 	case RTCP_FIR:
+		lock_write_get(vtx->lock_enc);
 		vtx->picup = true;
+		lock_rel(vtx->lock_enc);
 		break;
 
 	case RTCP_PSFB:
@@ -871,8 +873,11 @@ static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 		break;
 
 	case RTCP_RTPFB:
-		if (msg->hdr.count == RTCP_RTPFB_GNACK)
+		if (msg->hdr.count == RTCP_RTPFB_GNACK) {
+			lock_write_get(vtx->lock_enc);
 			vtx->picup = true;
+			lock_rel(vtx->lock_enc);
+		}
 		break;
 
 	default:
