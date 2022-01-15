@@ -848,6 +848,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 {
 	struct video *v = arg;
+	struct vtx *vtx = &v->vtx;
 	(void)strm;
 
 	MAGIC_CHECK(v);
@@ -855,23 +856,23 @@ static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 	switch (msg->hdr.pt) {
 
 	case RTCP_FIR:
-		v->vtx.picup = true;
+		vtx->picup = true;
 		break;
 
 	case RTCP_PSFB:
 		if (msg->hdr.count == RTCP_PSFB_PLI) {
 
-			lock_write_get(v->vtx.lock_enc);
+			lock_write_get(vtx->lock_enc);
 
-			v->vtx.picup = true;
+			vtx->picup = true;
 
-			lock_rel(v->vtx.lock_enc);
+			lock_rel(vtx->lock_enc);
 		}
 		break;
 
 	case RTCP_RTPFB:
 		if (msg->hdr.count == RTCP_RTPFB_GNACK)
-			v->vtx.picup = true;
+			vtx->picup = true;
 		break;
 
 	default:
