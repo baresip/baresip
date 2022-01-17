@@ -36,6 +36,7 @@
 #    ;stunuser=STUN/TURN/ICE-username
 #    ;stunpass=STUN/TURN/ICE-password
 #    ;stunserver=stun:[user:pass]@host[:port]
+#    ;tcpsrcport=6060
 #    ;video_codecs=h264,h263,...
 #
 # Examples:
