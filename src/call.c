@@ -45,6 +45,7 @@ struct call {
 	char *peer_uri;           /**< Peer SIP Address                     */
 	char *peer_name;          /**< Peer display name                    */
 	char *id;                 /**< Cached session call-id               */
+	char *replaces;           /**< Replaces parameter                   */
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
 	struct tmr tmr_answ;      /**< Timer for delayed answer             */
@@ -404,6 +405,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->local_name);
 	mem_deref(call->peer_uri);
 	mem_deref(call->peer_name);
+	mem_deref(call->replaces);
 	mem_deref(call->aluri);
 	mem_deref(call->audio);
 	mem_deref(call->video);
@@ -1014,6 +1016,8 @@ const struct list *call_get_custom_hdrs(const struct call *call)
 int call_connect(struct call *call, const struct pl *paddr)
 {
 	struct sip_addr addr;
+	struct pl rname = PL("Replaces");
+	struct pl rval = PL_INIT;
 	int err;
 
 	if (!call || !paddr)
@@ -1038,6 +1042,11 @@ int call_connect(struct call *call, const struct pl *paddr)
 		else {
 			err = pl_strdup(&call->peer_uri, &addr.auri);
 		}
+
+		uri_header_get(&addr.uri.headers, &rname, &rval);
+		if (pl_isset(&rval))
+			err = re_sdprintf(&call->replaces, "%r",&rval);
+
 	}
 	else {
 		err = pl_strdup(&call->peer_uri, paddr);
@@ -1933,6 +1942,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		const struct sip_msg *msg)
 {
 	bool got_offer;
+	const struct sip_hdr *hdr;
 	int err;
 
 	if (!call || !msg)
@@ -1999,6 +2009,21 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 			bundle_sdp_decode(call->sdp, &call->streaml);
 		}
+	}
+
+	hdr = sip_msg_hdr(msg, SIP_HDR_REPLACES);
+	if (hdr && pl_isset(&hdr->val)) {
+		char *rid = NULL;
+		struct call *rcall;
+		err = pl_strdup(&rid, &hdr->val);
+		if (err)
+			return err;
+
+		rcall = call_find_id(ua_calls(call->ua), rid);
+		call_stream_stop(rcall);
+		call_event_handler(rcall, CALL_EVENT_CLOSED,
+			"%s replaced", rid);
+		mem_deref(rid);
 	}
 
 	err = sipsess_accept(&call->sess, sess_sock, msg, 180, "Ringing",
@@ -2151,6 +2176,18 @@ static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
 }
 
 
+static int call_print_replaces(struct re_printf *pf, const struct call *call) {
+	int err = 0;
+
+	if (!call || !call->replaces)
+		return 0;
+
+	err = re_hprintf(pf, "Replaces: %s\r\n", call->replaces);
+
+	return err;
+}
+
+
 static int send_invite(struct call *call)
 {
 	const char *routev[1];
@@ -2174,9 +2211,10 @@ static int send_invite(struct call *call)
 			      sipsess_info_handler,
 			      call->acc->refer ? sipsess_refer_handler : NULL,
 			      sipsess_close_handler, call,
-			      "Allow: %H\r\n%H%H",
+			      "Allow: %H\r\n%H%H%H",
 			      ua_print_allowed, call->ua,
 			      ua_print_supported, call->ua,
+			      call_print_replaces, call,
 			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {
 		warning("call: sipsess_connect: %m\n", err);
@@ -2516,6 +2554,7 @@ int call_replace_transfer(struct call *call, struct call *source_call)
 	info("transferring call to %s\n", source_call->peer_uri);
 
 	call->sub = mem_deref(call->sub);
+
 	err = sipevent_drefer(&call->sub, uag_sipevent_sock(),
 			      sipsess_dialog(call->sess), ua_cuser(call->ua),
 			      auth_handler, call->acc, true,
