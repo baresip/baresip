@@ -16,6 +16,8 @@ struct menu{
 	struct tmr tmr_stat;          /**< Call status timer              */
 	struct play *play;            /**< Current audio player state     */
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
+	struct call *xfer_call;       /**< Attended transfer call         */
+	struct call *xfer_targ;       /**< Transfer target call           */
 	char *callid;                 /**< Call-id of active call         */
 	bool ringback_disabled;       /**< no ringback on sip 180 respons */
 	bool ringback;                /**< Ringback played currently      */

@@ -631,6 +631,12 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			}
 		}
 
+		if (menu.xfer_call == call || menu.xfer_targ == call) {
+			call_hold(menu.xfer_call, false);
+			menu.xfer_call = NULL;
+			menu.xfer_targ = NULL;
+		}
+
 		if (!str_cmp(call_id(call), menu.callid)) {
 			if (count==1)
 				menu_play_closed(call);

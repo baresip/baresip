@@ -233,6 +233,79 @@ static int call_xfer(struct re_printf *pf, void *arg)
 }
 
 
+static int attended_xfer(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	struct menu *menu = menu_get();
+	int err = 0;
+
+	(void)pf;
+
+	if (!str_len(carg->prm)) {
+		info ("menu: no transfer target specified\n");
+		goto out;
+	}
+
+	menu->xfer_call = ua_call(ua);
+	err = call_hold(ua_call(ua), true);
+	if (err)
+		goto out;
+
+	err = ua_connect(ua, &menu->xfer_targ, NULL, carg->prm,
+		VIDMODE_ON);
+	if (err)
+		goto out;
+
+ out:
+	return err;
+
+}
+
+
+static int exec_att_xfer(struct re_printf *pf, void *arg)
+{
+	struct menu *menu = menu_get();
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data ? carg->data : menu_uacur();
+	int err = 0;
+
+	(void) pf;
+
+	if (menu->xfer_call) {
+		err = call_hold(ua_call(ua), true);
+		if (err)
+			goto out;
+
+		err = call_replace_transfer(menu->xfer_call, ua_call(ua));
+	}
+	else {
+		info ("menu: no pending attended call transfer available\n");
+		err = ECANCELED;
+	}
+
+ out:
+	menu->xfer_call = NULL;
+	menu->xfer_targ = NULL;
+
+	return err;
+}
+
+
+static int abort_att_xfer(struct re_printf *pf, void *arg)
+{
+	struct menu *menu = menu_get();
+
+	(void) pf;
+	(void) arg;
+
+	menu->xfer_call = NULL;
+	menu->xfer_targ = NULL;
+
+	return 0;
+}
+
+
 static int call_video_debug(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -370,6 +443,9 @@ static const struct cmd callcmdv[] = {
 {"sndcode",      0,  CMD_PRM, "Send Code",            send_code            },
 {"statmode",    'S',       0, "Statusmode toggle",    toggle_statmode      },
 {"transfer",    't', CMD_PRM, "Transfer call",        call_xfer            },
+{"atransferstart", 'T', CMD_PRM, "Start attended transfer", attended_xfer  },
+{"atransferexec",   0,    0, "Execute attended transfer",   exec_att_xfer  },
+{"atransferabort",  0,    0, "Abort attended transfer",     abort_att_xfer },
 {"video_debug", 'V',       0, "Video stream",         call_video_debug     },
 {"videodir",      0, CMD_PRM, "Set video direction",  set_video_dir        },
 {"medialdir",     0, CMD_PRM, "Set local media direction",  set_media_ldir },
