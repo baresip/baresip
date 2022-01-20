@@ -409,7 +409,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	u32  = 0;
 	err |= param_u32(&u32, &aor->params, "tcpsrcport");
 	if (u32) {
-		if (u32 <= 0xffff)
+		if (u32 <= 65535)
 			acc->tcpsrcport = u32;
 		else
 			warning("account: invalid tcpsrcport\n");
