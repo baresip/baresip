@@ -230,7 +230,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 		err = sipreg_set_fbregint(reg->sipreg, acc->fbregint);
 
 	if (acc && acc->tcpsrcport)
-		err = sipreg_set_srcport(reg->sipreg, acc->tcpsrcport);
+		sipreg_set_srcport(reg->sipreg, acc->tcpsrcport);
 
 	if (failed)
 		sipreg_incfailc(reg->sipreg);
