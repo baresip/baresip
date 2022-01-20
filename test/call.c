@@ -1469,7 +1469,7 @@ int test_call_webrtc(void)
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5000);
+	err = re_main_timeout(15000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
