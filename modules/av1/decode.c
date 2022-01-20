@@ -34,6 +34,7 @@ struct viddec_state {
 	bool ctxup;
 	bool started;
 	uint16_t seq;
+	unsigned w;
 };
 
 
@@ -134,6 +135,19 @@ static int copy_obu(struct mbuf *mb, const uint8_t *frag, size_t len)
 		return err;
 	}
 
+	switch (hdr.type) {
+
+	case OBU_TEMPORAL_DELIMITER:
+	case OBU_TILE_GROUP:
+	case OBU_PADDING:
+		/* MUST be ignored by receivers. */
+		warning("av1: decode: unexpected obu type %u\n", hdr.type);
+		return EPROTO;
+
+	default:
+		break;
+	}
+
 	err = av1_obu_encode(mb, hdr.type, true,
 			     hdr.size, mbuf_buf(&mbf));
 	if (err)
@@ -163,13 +177,18 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	if (err)
 		return err;
 
-#if 0
-	debug("av1: decode: header:  [%s]  z=%u  y=%u  w=%u  n=%u\n",
+#if 1
+	debug("av1: decode: header:  [%s]  [seq=%u, %zu bytes]"
+	      "  z=%u  y=%u  w=%u  n=%u\n",
 	      marker ? "M" : " ",
+	      seq, mbuf_get_left(mb),
 	      hdr.z, hdr.y, hdr.w, hdr.n);
 #endif
 
 	if (!hdr.z) {
+
+		/* save the W obu count */
+		vds->w = hdr.w;
 
 		mbuf_rewind(vds->mb);
 		vds->started = true;
@@ -213,7 +232,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	if (err)
 		goto out;
 
-	switch (hdr.w) {
+	switch (vds->w) {
 
 	case 3:
 		err = av1_leb128_decode(vds->mb, &size);
@@ -274,11 +293,11 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	res = aom_codec_decode(&vds->ctx, vds->mb_dec->buf,
 			       (unsigned int)vds->mb_dec->end, NULL);
 	if (res) {
-		const char *detail = aom_codec_error_detail(&vds->ctx);
-
-		warning("av1: decode error: %s\n",
-			aom_codec_err_to_string(res));
-		warning("     %s\n", detail);
+		warning("av1: decode error [w=%u, %zu bytes]: %s (%s)\n",
+			hdr.w,
+			vds->mb_dec->end,
+			aom_codec_err_to_string(res),
+			aom_codec_error_detail(&vds->ctx));
 		err = EPROTO;
 		goto out;
 	}

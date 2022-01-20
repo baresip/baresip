@@ -178,6 +178,54 @@ static int packetize(struct videnc_state *ves, bool marker, uint64_t rtp_ts,
 }
 
 
+static int copy_obus(struct mbuf *mb_pkt,
+		     const uint8_t *buf, size_t sz, uint8_t *obuc)
+{
+	struct mbuf wrap = { (uint8_t *)buf, sz, 0, sz };
+	int err = 0;
+
+	while (mbuf_get_left(&wrap) >= 2) {
+
+		struct obu_hdr hdr;
+
+		err = av1_obu_decode(&hdr, &wrap);
+		if (err) {
+			warning("av1: encode: hdr dec error (%m)\n", err);
+			break;
+		}
+
+		switch (hdr.type) {
+
+		case OBU_TEMPORAL_DELIMITER:
+		case OBU_TILE_GROUP:
+		case OBU_PADDING:
+			/* skip */
+			mbuf_advance(&wrap, hdr.size);
+			break;
+
+		default:
+			/* note: workaround */
+			if (hdr.type == OBU_SEQUENCE_HEADER) {
+				err = av1_leb128_encode(mb_pkt, hdr.size);
+				if (err)
+					return err;
+			}
+
+			err = av1_obu_encode(mb_pkt, hdr.type, false,
+					     hdr.size, mbuf_buf(&wrap));
+			if (err)
+				return err;
+
+			mbuf_advance(&wrap, hdr.size);
+			++(*obuc);
+			break;
+		}
+	}
+
+	return err;
+}
+
+
 int av1_encode_packet(struct videnc_state *ves, bool update,
 		      const struct vidframe *frame, uint64_t timestamp)
 {
@@ -235,7 +283,6 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		const aom_codec_cx_pkt_t *pkt;
 		uint64_t ts;
 		uint8_t obuc = 0;
-		struct mbuf wrap;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)
@@ -246,54 +293,12 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 
 		ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
-		wrap.pos = 0;
-		wrap.end = pkt->data.frame.sz;
-		wrap.size = pkt->data.frame.sz;
-		wrap.buf = pkt->data.frame.buf;
+		if (!mb_pkt)
+			mb_pkt = mbuf_alloc(1024);
 
-		while (mbuf_get_left(&wrap) >= 2) {
-
-			struct obu_hdr hdr;
-
-			if (!mb_pkt)
-				mb_pkt = mbuf_alloc(1024);
-
-			err = av1_obu_decode(&hdr, &wrap);
-			if (err) {
-				warning("encode: hdr dec error (%m)\n", err);
-				break;
-			}
-
-			switch (hdr.type) {
-
-			case OBU_TEMPORAL_DELIMITER:
-			case OBU_TILE_GROUP:
-			case OBU_PADDING:
-				/* skip */
-				mbuf_advance(&wrap, hdr.size);
-				break;
-
-			default:
-				++obuc;
-
-				if (hdr.type == OBU_SEQUENCE_HEADER) {
-					err = av1_leb128_encode(mb_pkt,
-								hdr.size);
-					if (err)
-						goto out;
-				}
-
-				err = av1_obu_encode(mb_pkt, hdr.type,
-						     false, hdr.size,
-						     mbuf_buf(&wrap));
-				if (err)
-					goto out;
-
-				mbuf_advance(&wrap, hdr.size);
-				break;
-			}
-		}
-
+		err = copy_obus(mb_pkt,
+				pkt->data.frame.buf, pkt->data.frame.sz,
+				&obuc);
 		if (err)
 			goto out;
 
