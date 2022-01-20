@@ -201,9 +201,16 @@ static int menu_ovkey_str(char **key, const struct call *call,
 	return menu_ovkey(key, call, &pl);
 }
 
+enum Device {
+	DEVICE_ALERT,
+	DEVICE_PLAYER
+};
 
 static bool menu_play(const struct call *call,
-		const char *ckey, const char *fname, int repeat)
+		      const char *ckey,
+		      const char *fname,
+		      int repeat,
+		      enum Device device)
 {
 	struct config *cfg = conf_config();
 	struct player *player = baresip_player();
@@ -212,6 +219,13 @@ static bool menu_play(const struct call *call,
 	struct pl pl = PL_INIT;
 	char *file = NULL;
 	int err;
+	const char *play_mod = cfg->audio.alert_mod;
+	const char *play_dev = cfg->audio.alert_dev;
+
+	if (device == DEVICE_PLAYER) {
+		play_mod = cfg->audio.play_mod;
+		play_dev = cfg->audio.play_dev;
+	}
 
 	if (ckey) {
 		err = menu_ovkey_str(&ovkey, call, ckey);
@@ -239,8 +253,8 @@ static bool menu_play(const struct call *call,
 	pl_strdup(&file, &pl);
 	menu_stop_play();
 	err = play_file(&menu.play, player, file, repeat,
-			cfg->audio.alert_mod,
-			cfg->audio.alert_dev);
+			play_mod,
+			play_dev);
 	mem_deref(file);
 
 	return err == 0;
@@ -259,11 +273,12 @@ static void play_incoming(const struct call *call)
 		return;
 
 	if (menu_find_call(active_call_test)) {
-		menu_play(call, "callwaiting_aufile", "callwaiting.wav", 3);
+		menu_play(call, "callwaiting_aufile", "callwaiting.wav", 3,
+			  DEVICE_ALERT);
 	}
 	else {
 		/* Alert user */
-		menu_play(call, "ring_aufile", "ring.wav", -1);
+		menu_play(call, "ring_aufile", "ring.wav", -1, DEVICE_ALERT);
 	}
 }
 
@@ -277,7 +292,8 @@ static void play_ringback(const struct call *call)
 		info("menu: ringback disabled\n");
 	}
 	else {
-		menu_play(call, "ringback_aufile", "ringback.wav", -1);
+		menu_play(call, "ringback_aufile", "ringback.wav", -1,
+			  DEVICE_PLAYER);
 		menu.ringback = true;
 	}
 }
@@ -380,7 +396,7 @@ static void menu_play_closed(struct call *call)
 		key = errorcode_key_aufile(scode);
 		fb = errorcode_fb_aufile(scode);
 
-		menu_play(call, key, fb, 1);
+		menu_play(call, key, fb, 1, DEVICE_ALERT);
 	}
 }
 
@@ -428,11 +444,11 @@ static void start_autoanswer(struct call *call)
 	if (bmet) {
 		if (bmet != SIPANSBEEP_LOCAL && aluri &&
 				alert_uri_supported(aluri))
-			beep = menu_play(call, NULL, aluri, 1);
+			beep = menu_play(call, NULL, aluri, 1, DEVICE_ALERT);
 
 		if (!beep)
 			beep = menu_play(call, "sip_autoanswer_aufile",
-					 "autoanswer.wav", 1);
+					 "autoanswer.wav", 1, DEVICE_ALERT);
 	}
 
 	if (beep) {
