@@ -1,0 +1,51 @@
+name: MinGW-w64 Test
+
+on: [push, pull_request]
+
+jobs:
+  MinGW-w64:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: "install packages"
+      run: |
+        sudo apt-get update && sudo apt-get install -y mingw-w64
+
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: rem
+        repo: https://github.com/baresip/rem
+        secret: ${{ secrets.GITHUB_TOKEN }}
+    
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: retest
+        repo: https://github.com/baresip/retest
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: "clone baresip-win32 repo"
+      run: |
+        git clone https://github.com/baresip/baresip-win32.git
+        mv re baresip-win32/
+        mv rem baresip-win32/
+        mv retest baresip-win32/
+    
+    - uses: actions/checkout@v2
+      with:
+        path: baresip-win32/baresip
+
+    - name: "build openssl"
+      run: |
+        wget https://www.openssl.org/source/openssl-1.1.1m.tar.gz
+        tar -xzf openssl-1.1.1m.tar.gz
+        mv openssl-1.1.1m baresip-win32/openssl
+        make -C baresip-win32 openssl 
+    
+    - name: "build"
+      run: make -C baresip-win32 
