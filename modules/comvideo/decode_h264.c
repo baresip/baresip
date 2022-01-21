@@ -18,6 +18,9 @@ struct viddec_state {
 	uint16_t frag_seq;
 	bool got_keyframe;
 
+	unsigned int width;
+	unsigned int height;
+
 	GstAppsrcH264Converter *converter;
 
 	struct {
@@ -39,7 +42,7 @@ static inline void fragment_rewind(struct viddec_state *vds) {
 }
 
 
-static int ffdecode(struct viddec_state *st, struct vidframe *frame)
+static int h264_convert(struct viddec_state *st, struct vidframe *frame)
 {
 	(void) frame;
 	st->mb->pos = 0;
@@ -51,16 +54,39 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame)
 
 	gst_appsrc_h264_converter_send_frame(
 		st->converter, st->mb->buf,
-		st->mb->size,
-		st->mb->pos, st->mb->end);
+		st->mb->end, st->width, st->height);
 
 	return 0;
+}
+
+
+static void
+handle_h264_size(struct viddec_state *st, struct mbuf *src)
+{
+	struct h264_sps sps;
+	struct vidsz sz;
+	int res;
+
+	res = h264_sps_decode(&sps, src->buf + src->pos, src->end - src->pos);
+	if(res) {
+		warning("comvideo: Could not decode SPS");
+		return;
+	}
+
+	debug("idc: %x%x \n", sps.profile_idc, sps.level_idc);
+
+	h264_sps_resolution(&sps, &sz);
+	debug("size %d x %d \n", sz.w, sz.h);
+
+	st->width = sz.w;
+	st->height = sz.h;
 }
 
 
 int decode_h264(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
 {
+
 	struct h264_nal_header h264_hdr;
 	const uint8_t nal_seq[3] = {0, 0, 1};
 	int err;
@@ -84,6 +110,12 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 	}
 
 	/* handle NAL types */
+
+	if(H264_NALU_SPS == h264_hdr.type) {
+		handle_h264_size(st, src);
+
+	}
+
 	if (1 <= h264_hdr.type && h264_hdr.type <= 23) {
 
 		if (h264_is_keyframe(h264_hdr.type))
@@ -98,7 +130,8 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 				      mbuf_get_left(src));
 		if (err)
 			goto out;
-	} else if (H264_NALU_FU_A == h264_hdr.type) {
+	}
+	else if (H264_NALU_FU_A == h264_hdr.type) {
 		struct h264_fu fu;
 
 		err = h264_fu_hdr_decode(&fu, src);
@@ -151,7 +184,8 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 			st->frag = false;
 
 		st->frag_seq = seq;
-	} else if (H264_NALU_STAP_A == h264_hdr.type) {
+	}
+	else if (H264_NALU_STAP_A == h264_hdr.type) {
 
 		while (mbuf_get_left(src) >= 2) {
 
@@ -199,9 +233,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 		goto out;
 	}
 
-	err = ffdecode(st, frame);
-	if (err)
-		goto out;
+	err = h264_convert(st, frame);
 
 	out:
 	mbuf_rewind(st->mb);
@@ -253,6 +285,8 @@ int decode_h264_update(
 	if (!st)
 		return ENOMEM;
 
+	st->width = 0;
+	st->height = 0;
 	st->mb = mbuf_alloc(1024);
 	if (!st->mb) {
 		err = ENOMEM;
