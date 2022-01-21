@@ -38,7 +38,7 @@ int rtpext_hdr_encode(struct mbuf *mb, size_t num_bytes)
 }
 
 
-int rtpext_encode(struct mbuf *mb, unsigned id, size_t len,
+int rtpext_encode(struct mbuf *mb, uint8_t id, size_t len,
 		  const uint8_t *data)
 {
 	size_t start;
