@@ -202,7 +202,7 @@ struct audio {
 	bool level_enabled;           /**< Audio level RTP ext. enabled    */
 	bool hold;                    /**< Local hold flag                 */
 	bool conference;              /**< Local conference flag           */
-	unsigned extmap_aulevel;      /**< ID Range 1-14 inclusive         */
+	uint8_t extmap_aulevel;       /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_level_h *levelh;        /**< Audio level handler             */
 	audio_err_h *errh;            /**< Audio error handler             */
