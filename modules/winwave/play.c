@@ -171,7 +171,7 @@ static int write_stream_open(struct auplay_st *st,
 	wfmt.nChannels       = prm->ch;
 	wfmt.nSamplesPerSec  = prm->srate;
 	wfmt.wBitsPerSample  = (WORD)(st->sampsz * 8);
-	wfmt.nBlockAlign     = prm->ch * st->sampsz;
+	wfmt.nBlockAlign     = (WORD)(prm->ch * st->sampsz);
 	wfmt.nAvgBytesPerSec = wfmt.nSamplesPerSec * wfmt.nBlockAlign;
 	wfmt.cbSize          = 0;
 
