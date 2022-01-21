@@ -209,7 +209,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 
 	failed = sipreg_failed(reg->sipreg);
 	reg->sipreg = mem_deref(reg->sipreg);
-	err = sipreg_register(&reg->sipreg, uag_sip(), reg_uri,
+	err = sipreg_alloc(&reg->sipreg, uag_sip(), reg_uri,
 			      account_aor(acc),
 			      acc ? acc->dispname : NULL, account_aor(acc),
 			      regint, ua_local_cuser(reg->ua),
@@ -229,10 +229,18 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 	if (acc && acc->fbregint)
 		err = sipreg_set_fbregint(reg->sipreg, acc->fbregint);
 
+	if (acc && acc->tcpsrcport)
+		sipreg_set_srcport(reg->sipreg, acc->tcpsrcport);
+
 	if (failed)
 		sipreg_incfailc(reg->sipreg);
 
-	return err;
+	if (err) {
+		reg->sipreg = mem_deref(reg->sipreg);
+		return err;
+	}
+
+	return sipreg_send(reg->sipreg);
 }
 
 

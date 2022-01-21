@@ -386,6 +386,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 {
 	struct pl auth_user, tmp;
 	size_t i;
+	uint32_t u32;
 	int err = 0;
 	char *value;
 
@@ -405,6 +406,14 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	err |= param_u32(&acc->fbregint, &aor->params, "fbregint");
 	acc->pubint = 0;
 	err |= param_u32(&acc->pubint, &aor->params, "pubint");
+	u32  = 0;
+	err |= param_u32(&u32, &aor->params, "tcpsrcport");
+	if (u32) {
+		if (u32 <= 65535)
+			acc->tcpsrcport = u32;
+		else
+			warning("account: invalid tcpsrcport\n");
+	}
 
 	err |= param_dstr(&acc->regq, &aor->params, "regq");
 
