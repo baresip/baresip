@@ -23,18 +23,11 @@ jobs:
         repo: https://github.com/baresip/rem
         secret: ${{ secrets.GITHUB_TOKEN }}
     
-    - uses: sreimers/pr-dependency-action@v0.3
-      with:
-        name: retest
-        repo: https://github.com/baresip/retest
-        secret: ${{ secrets.GITHUB_TOKEN }}
-
     - name: "clone baresip-win32 repo"
       run: |
         git clone https://github.com/baresip/baresip-win32.git -b mingw-w64
         mv re baresip-win32/
         mv rem baresip-win32/
-        mv retest baresip-win32/
     
     - uses: actions/checkout@v2
       with:
@@ -44,7 +37,7 @@ jobs:
       id: openssl
       with:
         path: baresip-win32/openssl
-        key: ${{ runner.os }}-openssl-1.1.1m
+        key: ${{ runner.os }}-mingw-openssl-1.1.1m
 
     - name: "build openssl"
       if: steps.openssl.outputs.cache-hit != 'true'
@@ -63,12 +56,6 @@ jobs:
         path: baresip-win32/baresip/selftest.exe
         retention-days: 1
     
-    - uses: actions/upload-artifact@v2
-      with:
-        name: retest-exe
-        path: baresip-win32/retest/retest.exe
-        retention-days: 1
-
   wintest:
     runs-on: windows-2019
     needs: MinGW-w64-build
@@ -78,16 +65,6 @@ jobs:
     - uses: actions/checkout@v2
       with:
         path: baresip
-    
-    - uses: sreimers/pr-dependency-action@v0.3
-      with:
-        name: retest
-        repo: https://github.com/baresip/retest
-        secret: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: "run retest.exe"
-      run: mv retest-exe/retest.exe retest/ && cd retest && ./retest.exe
-      shell: bash
     
     - name: "run selftest.exe"
       run: mv selftest-exe/selftest.exe baresip/ && cd baresip && ./selftest.exe
