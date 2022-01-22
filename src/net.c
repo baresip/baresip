@@ -326,7 +326,7 @@ static bool print_addr(const char *ifname, const struct sa *sa, void *arg)
 {
 	(void) arg;
 
-	re_printf(" %10s:  %j\n", ifname, sa);
+	info(" %10s:  %j\n", ifname, sa);
 	return false;
 }
 
