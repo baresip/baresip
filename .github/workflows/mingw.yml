@@ -3,7 +3,7 @@ name: MinGW-w64 Test
 on: [push, pull_request]
 
 jobs:
-  MinGW-w64:
+  MinGW-w64-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -45,10 +45,10 @@ jobs:
         wget https://www.openssl.org/source/openssl-1.1.1m.tar.gz
         tar -xzf openssl-1.1.1m.tar.gz
         mv openssl-1.1.1m baresip-win32/openssl
-        make -C baresip-win32 openssl 
+        make -j$(nproc) -C baresip-win32 openssl
     
     - name: "build"
-      run: make -C baresip-win32
+      run: make -j$(nproc) -C baresip-win32
     
     - uses: actions/upload-artifact@v2
       with:
@@ -67,3 +67,18 @@ jobs:
         name: retest.exe
         path: baresip-win32/retest/retest.exe
         retention-days: 1
+
+  wintest:
+    runs-on: windows-2016
+    needs: MinGW-w64-build
+
+    - uses: actions/download-artifact@v2
+
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: retest
+        repo: https://github.com/baresip/retest
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: "run retest.exe"
+      run: retest.exe -av -d retest/data
