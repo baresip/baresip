@@ -85,9 +85,8 @@ jobs:
     - name: "Clone retest"
       run: git clone https://github.com/baresip/retest retest-git
 
-    - name: "show path"
-      run: ls -lha retest
-      shell: bash
-
     - name: "run retest.exe"
-      run: .\retest/retest.exe -r -d retest-git/data
+      run: .\retest/retest.exe -a -d retest-git/data
+    
+    - name: "run selftest.exe"
+      run: .\retest/selftest.exe
