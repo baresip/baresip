@@ -40,7 +40,14 @@ jobs:
       with:
         path: baresip-win32/baresip
 
+    - uses: actions/cache@v2
+      id: openssl
+      with:
+        path: baresip-win32/openssl
+        key: ${{ runner.os }}-openssl-1.1.1m
+
     - name: "build openssl"
+      if: steps.openssl.outputs.cache-hit != 'true'
       run: |
         wget https://www.openssl.org/source/openssl-1.1.1m.tar.gz
         tar -xzf openssl-1.1.1m.tar.gz
@@ -69,7 +76,7 @@ jobs:
         retention-days: 1
 
   wintest:
-    runs-on: windows-2016
+    runs-on: windows-2019
     needs: MinGW-w64-build
 
     steps:
@@ -81,8 +88,5 @@ jobs:
         repo: https://github.com/baresip/retest
         secret: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: "show dir"
-      run: ls
-
     - name: "run retest.exe"
-      run: ./retest.exe -av -d retest/data
+      run: .\retest.exe -av -d retest/data
