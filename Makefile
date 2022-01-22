@@ -19,7 +19,7 @@ HIDE=@
 endif
 
 LIBRE_MIN	:= 2.0.1-dev12
-LIBREM_MIN	:= 1.0.0-dev
+LIBREM_MIN	:= 1.0.0-dev3
 
 ifndef LIBRE_MK
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \
