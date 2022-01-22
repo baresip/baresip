@@ -1,0 +1,71 @@
+name: MinGW-w64 Test
+
+on: [push, pull_request]
+
+jobs:
+  MinGW-w64-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: "install packages"
+      run: |
+        sudo apt-get update && sudo apt-get install -y mingw-w64
+
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: rem
+        repo: https://github.com/baresip/rem
+        secret: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: "clone baresip-win32 repo"
+      run: |
+        git clone https://github.com/baresip/baresip-win32.git -b mingw-w64
+        mv re baresip-win32/
+        mv rem baresip-win32/
+    
+    - uses: actions/checkout@v2
+      with:
+        path: baresip-win32/baresip
+
+    - uses: actions/cache@v2
+      id: openssl
+      with:
+        path: baresip-win32/openssl
+        key: ${{ runner.os }}-mingw-openssl-1.1.1m
+
+    - name: "build openssl"
+      if: steps.openssl.outputs.cache-hit != 'true'
+      run: |
+        wget https://www.openssl.org/source/openssl-1.1.1m.tar.gz
+        tar -xzf openssl-1.1.1m.tar.gz
+        mv openssl-1.1.1m baresip-win32/openssl
+        make -j$(nproc) -C baresip-win32 openssl
+    
+    - name: "build"
+      run: make -j$(nproc) -C baresip-win32 baresip
+    
+    - uses: actions/upload-artifact@v2
+      with:
+        name: selftest-exe
+        path: baresip-win32/baresip/selftest.exe
+        retention-days: 1
+    
+  wintest:
+    runs-on: windows-2019
+    needs: MinGW-w64-build
+
+    steps:
+    - uses: actions/download-artifact@v2
+    - uses: actions/checkout@v2
+      with:
+        path: baresip
+    
+    - name: "run selftest.exe"
+      run: mv selftest-exe/selftest.exe baresip/ && cd baresip && ./selftest.exe
+      shell: bash
