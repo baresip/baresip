@@ -89,5 +89,4 @@ jobs:
         secret: ${{ secrets.GITHUB_TOKEN }}
 
     - name: "run retest.exe"
-      run: retest.exe -av -d retest/data
-      shell: cmd
+      run: D:\a\baresip\baresip\retest.exe -av -d retest/data
