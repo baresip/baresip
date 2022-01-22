@@ -59,14 +59,14 @@ jobs:
     
     - uses: actions/upload-artifact@v2
       with:
-        name: baresip
-        path: baresip-win32/baresip/
+        name: selftest-exe
+        path: baresip-win32/baresip/selftest.exe
         retention-days: 1
     
     - uses: actions/upload-artifact@v2
       with:
-        name: retest
-        path: baresip-win32/retest/
+        name: retest-exe
+        path: baresip-win32/retest/retest.exe
         retention-days: 1
 
   wintest:
@@ -75,11 +75,20 @@ jobs:
 
     steps:
     - uses: actions/download-artifact@v2
+    - uses: actions/checkout@v2
+      with:
+        path: baresip
+    
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: retest
+        repo: https://github.com/baresip/retest
+        secret: ${{ secrets.GITHUB_TOKEN }}
 
     - name: "run retest.exe"
-      run: cd retest && ./retest.exe
+      run: mv retest-exe/retest.exe retest/ && cd retest && ./retest.exe
       shell: bash
     
     - name: "run selftest.exe"
-      run: cd baresip && ./selftest.exe
+      run: mv selftest-exe/selftest.exe baresip/ && cd baresip && ./selftest.exe
       shell: bash
