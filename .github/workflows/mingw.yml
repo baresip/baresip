@@ -72,6 +72,7 @@ jobs:
     runs-on: windows-2016
     needs: MinGW-w64-build
 
+    steps:
     - uses: actions/download-artifact@v2
 
     - uses: sreimers/pr-dependency-action@v0.3
