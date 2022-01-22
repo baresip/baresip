@@ -88,5 +88,10 @@ jobs:
         repo: https://github.com/baresip/retest
         secret: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: "show path"
+      run: ls -lha
+      shell: bash
+
     - name: "run retest.exe"
-      run: D:\a\baresip\baresip\retest.exe -av -d retest/data
+      run: ./retest.exe -r -d retest/data
+      shell: bash
