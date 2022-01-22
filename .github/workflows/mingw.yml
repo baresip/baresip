@@ -31,8 +31,7 @@ jobs:
 
     - name: "clone baresip-win32 repo"
       run: |
-        git clone https://github.com/baresip/baresip-win32.git
-        git checkout mingw-w64
+        git clone https://github.com/baresip/baresip-win32.git -b mingw-w64
         mv re baresip-win32/
         mv rem baresip-win32/
         mv retest baresip-win32/
@@ -49,4 +48,22 @@ jobs:
         make -C baresip-win32 openssl 
     
     - name: "build"
-      run: make -C baresip-win32 
+      run: make -C baresip-win32
+    
+    - uses: actions/upload-artifact@v2
+      with:
+        name: baresip.exe
+        path: baresip-win32/baresip/baresip.exe
+        retention-days: 1
+    
+    - uses: actions/upload-artifact@v2
+      with:
+        name: selftest.exe
+        path: baresip-win32/baresip/selftest.exe
+        retention-days: 1
+    
+    - uses: actions/upload-artifact@v2
+      with:
+        name: retest.exe
+        path: baresip-win32/retest/retest.exe
+        retention-days: 1
