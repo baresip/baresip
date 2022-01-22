@@ -60,19 +60,13 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: baresip
-        path: baresip-win32/baresip/baresip.exe
-        retention-days: 1
-    
-    - uses: actions/upload-artifact@v2
-      with:
-        name: selftest
-        path: baresip-win32/baresip/selftest.exe
+        path: baresip-win32/baresip/
         retention-days: 1
     
     - uses: actions/upload-artifact@v2
       with:
         name: retest
-        path: baresip-win32/retest/retest.exe
+        path: baresip-win32/retest/
         retention-days: 1
 
   wintest:
@@ -82,11 +76,10 @@ jobs:
     steps:
     - uses: actions/download-artifact@v2
 
-    - name: "Clone retest"
-      run: git clone https://github.com/baresip/retest retest-git
-
     - name: "run retest.exe"
-      run: .\retest/retest.exe -a -d retest-git/data
+      run: cd retest && ./retest.exe
+      shell: bash
     
     - name: "run selftest.exe"
-      run: .\retest/selftest.exe
+      run: cd baresip && ./selftest.exe
+      shell: bash
