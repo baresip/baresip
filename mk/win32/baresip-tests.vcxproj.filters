@@ -199,9 +199,6 @@
     <ClCompile Include="..\..\modules\auloop\auloop.c">
       <Filter>modules\auloop</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\modules\b2bua\b2bua.c">
-      <Filter>modules\b2bua</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\modules\cons\cons.c">
       <Filter>modules\cons</Filter>
     </ClCompile>
@@ -333,9 +330,6 @@
     </Filter>
     <Filter Include="modules\auloop">
       <UniqueIdentifier>{a363e099-b4d2-4573-9fd6-e606e26a0954}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="modules\b2bua">
-      <UniqueIdentifier>{d225a8b8-1d69-4ba3-b0f7-6439ae060f4e}</UniqueIdentifier>
     </Filter>
     <Filter Include="modules\cons">
       <UniqueIdentifier>{368937d5-04c1-41f7-a8b8-89180f228647}</UniqueIdentifier>

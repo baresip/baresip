@@ -168,7 +168,6 @@
     <ClCompile Include="..\..\modules\amr\amr.c" />
     <ClCompile Include="..\..\modules\amr\sdp.c" />
     <ClCompile Include="..\..\modules\auloop\auloop.c" />
-    <ClCompile Include="..\..\modules\b2bua\b2bua.c" />
     <ClCompile Include="..\..\modules\cons\cons.c" />
     <ClCompile Include="..\..\modules\contact\contact.c" />
     <ClCompile Include="..\..\modules\debug_cmd\debug_cmd.c" />

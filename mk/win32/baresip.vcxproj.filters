@@ -25,9 +25,6 @@
     <Filter Include="modules\auloop">
       <UniqueIdentifier>{0e11ace7-27c2-4ad3-8b5e-b3bf772f0b4d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="modules\b2bua">
-      <UniqueIdentifier>{f44d6650-15a0-4fb3-8fe3-d91f522be831}</UniqueIdentifier>
-    </Filter>
     <Filter Include="modules\cons">
       <UniqueIdentifier>{6606d763-a0be-4bcc-a689-a9e5e38df7f5}</UniqueIdentifier>
     </Filter>
@@ -241,9 +238,6 @@
     </ClCompile>
     <ClCompile Include="..\..\modules\auloop\auloop.c">
       <Filter>modules\auloop</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\modules\b2bua\b2bua.c">
-      <Filter>modules\b2bua</Filter>
     </ClCompile>
     <ClCompile Include="..\..\modules\cons\cons.c">
       <Filter>modules\cons</Filter>

@@ -172,7 +172,6 @@ module			ice.so
 # Application Modules
 
 module_app		account.so
-#module_app		b2bua.so
 module_app		contact.so
 module_app		debug_cmd.so
 #module_app		echo.so
