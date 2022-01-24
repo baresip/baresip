@@ -143,3 +143,14 @@ int av1_obu_decode(struct obu_hdr *hdr, struct mbuf *mb)
 
 	return 0;
 }
+
+
+int av1_obu_print(struct re_printf *pf, const struct obu_hdr *hdr)
+{
+	if (!hdr)
+		return 0;
+
+	return re_hprintf(pf, "type=%u (%s) x=%d s=%d size=%zu",
+			  hdr->type, aom_obu_type_to_string(hdr->type),
+			  hdr->x, hdr->s, hdr->size);
+}
