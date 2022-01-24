@@ -178,7 +178,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		return err;
 
 #if 1
-	debug("av1: decode: header:  [%s]  [seq=%u, %zu bytes]"
+	debug("av1: decode: header:  [%s]  [seq=%u, %4zu bytes]"
 	      "  z=%u  y=%u  w=%u  n=%u\n",
 	      marker ? "M" : " ",
 	      seq, mbuf_get_left(mb),
