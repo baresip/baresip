@@ -1020,12 +1020,13 @@ int test_call_mediaenc(void)
 	struct auplay *auplay = NULL;
 	int err = 0;
 
-	mock_menc_register();
+	err = module_load(".", "srtp");
+	TEST_ERR(err);
 
 	/* Enable a dummy media encryption protocol */
-	fixture_init_prm(f, ";mediaenc=xrtp;ptime=1");
+	fixture_init_prm(f, ";mediaenc=srtp;ptime=1");
 
-	ASSERT_STREQ("xrtp", account_mediaenc(ua_account(f->a.ua)));
+	ASSERT_STREQ("srtp", account_mediaenc(ua_account(f->a.ua)));
 
 	err = module_load(".", "ausine");
 	TEST_ERR(err);
@@ -1061,7 +1062,7 @@ int test_call_mediaenc(void)
 	mem_deref(auplay);
 	module_unload("ausine");
 
-	mock_menc_unregister();
+	module_unload("srtp");
 
 	if (fix.err)
 		return fix.err;
