@@ -1440,7 +1440,7 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 		struct videnc_param prm;
 
 		prm.bitrate = v->cfg.bitrate;
-		prm.pktsize = 1024;
+		prm.pktsize = 1280;
 		prm.fps     = get_fps(v);
 		prm.max_fs  = -1;
 
