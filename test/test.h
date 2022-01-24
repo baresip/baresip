@@ -167,14 +167,6 @@ void mock_aufilt_unregister(void);
 
 
 /*
- * Mock Media encryption
- */
-
-void mock_menc_register(void);
-void mock_menc_unregister(void);
-
-
-/*
  * Mock Media NAT-traversal
  */
 

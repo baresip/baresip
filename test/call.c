@@ -1544,7 +1544,8 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 		mock_mnat_register(baresip_mnatl());
 	}
 	if (use_menc) {
-		mock_menc_register();
+		err = module_load(".", "srtp");
+		TEST_ERR(err);
 	}
 
 	/* to enable video, we need one vidsrc and vidcodec */
@@ -1556,13 +1557,13 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	TEST_ERR(err);
 
 	if (use_mnat && use_menc) {
-		fixture_init_prm(f, ";medianat=XNAT;mediaenc=xrtp");
+		fixture_init_prm(f, ";medianat=XNAT;mediaenc=srtp");
 	}
 	else if (use_mnat) {
 		fixture_init_prm(f, ";medianat=XNAT");
 	}
 	else if (use_menc) {
-		fixture_init_prm(f, ";mediaenc=xrtp");
+		fixture_init_prm(f, ";mediaenc=srtp");
 	}
 	else {
 		fixture_init_prm(f, "");
@@ -1659,7 +1660,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	mock_vidcodec_unregister();
 
 	mock_mnat_unregister();
-	mock_menc_unregister();
+	module_unload("srtp");
 
 	conf_config()->avt.bundle = false;
 	conf_config()->avt.rtcp_mux = false;
