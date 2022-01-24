@@ -30,7 +30,6 @@ struct hdr {
 struct viddec_state {
 	aom_codec_ctx_t ctx;
 	struct mbuf *mb;
-	struct mbuf *mb_dec;
 	bool ctxup;
 	bool started;
 	uint16_t seq;
@@ -123,35 +122,44 @@ static inline int16_t seq_diff(uint16_t x, uint16_t y)
 }
 
 
-static int copy_obu(struct mbuf *mb, const uint8_t *frag, size_t len)
+static int copy_obu(struct mbuf *mb2, struct mbuf *mb)
 {
-	struct mbuf mbf = { (uint8_t *)frag, len, 0, len };
 	struct obu_hdr hdr;
 	int err;
 
-	err = av1_obu_decode(&hdr, &mbf);
+	err = av1_obu_decode(&hdr, mb);
 	if (err) {
-		warning("av1: could not decode OBU: %m\n", err);
+		warning("av1: decode: could not decode OBU: %m\n", err);
 		return err;
 	}
+
+#if 1
+	debug("av1: decode: copy [%H]\n", av1_obu_print, &hdr);
+#endif
 
 	switch (hdr.type) {
 
-	case OBU_TEMPORAL_DELIMITER:
-	case OBU_TILE_GROUP:
-	case OBU_PADDING:
-		/* MUST be ignored by receivers. */
-		warning("av1: decode: unexpected obu type %u\n", hdr.type);
-		return EPROTO;
+	case OBU_SEQUENCE_HEADER:
+	case OBU_FRAME_HEADER:
+	case OBU_METADATA:
+	case OBU_FRAME:
+	case OBU_REDUNDANT_FRAME_HEADER:
+		break;
 
 	default:
-		break;
+		/* MUST be ignored by receivers. */
+		warning("av1: decode: copy: unexpected obu type %u (%s)"
+			" [x=%d, s=%d, size=%zu]\n",
+			hdr.type, aom_obu_type_to_string(hdr.type),
+			hdr.x, hdr.s, hdr.size);
+		return EPROTO;
 	}
 
-	err = av1_obu_encode(mb, hdr.type, true,
-			     hdr.size, mbuf_buf(&mbf));
+	err = av1_obu_encode(mb2, hdr.type, true, hdr.size, mbuf_buf(mb));
 	if (err)
 		return err;
+
+	mbuf_advance(mb, hdr.size);
 
 	return 0;
 }
@@ -167,6 +175,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	struct hdr hdr;
 	size_t size;
 	int err, i;
+	struct mbuf *mb2 = NULL;
 
 	if (!vds || !frame || !intra || !mb)
 		return EINVAL;
@@ -223,11 +232,10 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	vds->mb->pos = 0;
 
-	if (!vds->mb_dec)
-		vds->mb_dec = mbuf_alloc(1024);
+	mb2 = mbuf_alloc(1024);
 
 	/* prepend Temporal Delimiter */
-	err = av1_obu_encode(vds->mb_dec, OBU_TEMPORAL_DELIMITER,
+	err = av1_obu_encode(mb2, OBU_TEMPORAL_DELIMITER,
 			     true, 0, NULL);
 	if (err)
 		goto out;
@@ -239,7 +247,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		if (err)
 			goto out;
 
-		err = copy_obu(vds->mb_dec, mbuf_buf(vds->mb), size);
+		err = copy_obu(mb2, vds->mb);
 		if (err)
 			goto out;
 
@@ -251,7 +259,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		if (err)
 			goto out;
 
-		err = copy_obu(vds->mb_dec, mbuf_buf(vds->mb), size);
+		err = copy_obu(mb2, vds->mb);
 		if (err)
 			goto out;
 
@@ -261,7 +269,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	case 1:
 		size = vds->mb->end - vds->mb->pos;
 
-		err = copy_obu(vds->mb_dec, mbuf_buf(vds->mb), size);
+		err = copy_obu(mb2, vds->mb);
 		if (err)
 			goto out;
 		break;
@@ -269,33 +277,19 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	case 0:
 		while (mbuf_get_left(vds->mb) >= 2) {
 
-			err = av1_leb128_decode(vds->mb, &size);
-			if (err)
-				goto out;
-
-			if (size > mbuf_get_left(vds->mb)) {
-				warning("av1: short packet (%zu > %zu)\n",
-					size, mbuf_get_left(vds->mb));
-				err = EPROTO;
-				goto out;
-			}
-
-			mbuf_advance(vds->mb, size);
-
-			err = copy_obu(vds->mb_dec, mbuf_buf(vds->mb),
-				       size);
+			err = copy_obu(mb2, vds->mb);
 			if (err)
 				goto out;
 		}
 		break;
 	}
 
-	res = aom_codec_decode(&vds->ctx, vds->mb_dec->buf,
-			       (unsigned int)vds->mb_dec->end, NULL);
+	res = aom_codec_decode(&vds->ctx, mb2->buf,
+			       (unsigned int)mb2->end, NULL);
 	if (res) {
 		warning("av1: decode error [w=%u, %zu bytes]: %s (%s)\n",
 			hdr.w,
-			vds->mb_dec->end,
+			mb2->end,
 			aom_codec_err_to_string(res),
 			aom_codec_error_detail(&vds->ctx));
 		err = EPROTO;
@@ -332,7 +326,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	mbuf_rewind(vds->mb);
 	vds->started = false;
 
-	vds->mb_dec = mem_deref(vds->mb_dec);
+	mem_deref(mb2);
 
 	return err;
 }

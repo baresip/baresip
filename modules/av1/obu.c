@@ -109,9 +109,10 @@ int av1_obu_decode(struct obu_hdr *hdr, struct mbuf *mb)
 
 	if (hdr->f) {
 		warning("av1: header: obu forbidden bit!"
-			" [type=%s, x=%d, s=%d]\n",
-			aom_obu_type_to_string(hdr->type),
-			hdr->x, hdr->s);
+			" [type=%u/%s, x=%d, s=%d, left=%zu bytes]\n",
+			hdr->type, aom_obu_type_to_string(hdr->type),
+			hdr->x, hdr->s,
+			mbuf_get_left(mb));
 		return EBADMSG;
 	}
 

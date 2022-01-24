@@ -147,12 +147,11 @@ static inline void hdr_encode(uint8_t hdr[HDR_SIZE],
 static int packetize(struct videnc_state *ves, bool marker, uint64_t rtp_ts,
 		     const uint8_t *buf, size_t len,
 		     size_t maxlen,
-		     videnc_packet_h *pkth, void *arg,
-		     uint8_t obuc)
+		     videnc_packet_h *pkth, void *arg)
 {
 	uint8_t hdr[HDR_SIZE];
 	bool start = true;
-	uint8_t w = obuc;
+	uint8_t w = 0;  /* variable OBU count */
 	int err = 0;
 
 	maxlen -= sizeof(hdr);
@@ -179,7 +178,7 @@ static int packetize(struct videnc_state *ves, bool marker, uint64_t rtp_ts,
 
 
 static int copy_obus(struct mbuf *mb_pkt,
-		     const uint8_t *buf, size_t sz, uint8_t *obuc)
+		     const uint8_t *buf, size_t sz)
 {
 	struct mbuf wrap = { (uint8_t *)buf, sz, 0, sz };
 	int err = 0;
@@ -187,6 +186,7 @@ static int copy_obus(struct mbuf *mb_pkt,
 	while (mbuf_get_left(&wrap) >= 2) {
 
 		struct obu_hdr hdr;
+		const bool has_size = true;  /* NOTE */
 
 		err = av1_obu_decode(&hdr, &wrap);
 		if (err) {
@@ -200,26 +200,22 @@ static int copy_obus(struct mbuf *mb_pkt,
 		case OBU_TILE_GROUP:
 		case OBU_PADDING:
 			/* skip */
-			mbuf_advance(&wrap, hdr.size);
 			break;
 
 		default:
-			/* note: workaround */
-			if (hdr.type == OBU_SEQUENCE_HEADER) {
-				err = av1_leb128_encode(mb_pkt, hdr.size);
-				if (err)
-					return err;
-			}
+#if 1
+			debug("av1: encode: copy [%H]\n", av1_obu_print, &hdr);
+#endif
 
-			err = av1_obu_encode(mb_pkt, hdr.type, false,
+			err = av1_obu_encode(mb_pkt, hdr.type, has_size,
 					     hdr.size, mbuf_buf(&wrap));
 			if (err)
 				return err;
 
-			mbuf_advance(&wrap, hdr.size);
-			++(*obuc);
 			break;
 		}
+
+		mbuf_advance(&wrap, hdr.size);
 	}
 
 	return err;
@@ -282,7 +278,6 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		bool marker = true;
 		const aom_codec_cx_pkt_t *pkt;
 		uint64_t ts;
-		uint8_t obuc = 0;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)
@@ -297,8 +292,7 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 			mb_pkt = mbuf_alloc(1024);
 
 		err = copy_obus(mb_pkt,
-				pkt->data.frame.buf, pkt->data.frame.sz,
-				&obuc);
+				pkt->data.frame.buf, pkt->data.frame.sz);
 		if (err)
 			goto out;
 
@@ -306,7 +300,7 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 				mb_pkt->buf,
 				mb_pkt->end,
 				ves->pktsize,
-				ves->pkth, ves->arg, obuc);
+				ves->pkth, ves->arg);
 		if (err)
 			goto out;
 
