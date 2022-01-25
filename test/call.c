@@ -27,7 +27,8 @@ enum action {
 	ACTION_HANGUP_A,
 	ACTION_HANGUP_B,
 	ACTION_NOTHING,
-	ACTION_TRANSFER
+	ACTION_TRANSFER,
+	ACTION_ATT_TRANSFER,
 };
 
 struct agent {
@@ -60,6 +61,7 @@ struct fixture {
 	char buri[256];
 	char buri_tcp[256];
 	int err;
+	struct call *xfer;
 	unsigned exp_estab;
 	unsigned exp_closed;
 	bool fail_transfer;
@@ -269,6 +271,39 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 				if (err)
 					goto out;
 				break;
+
+			case ACTION_ATT_TRANSFER:
+				re_snprintf(curi, sizeof(curi), "sip:c@%J",
+					&f->laddr_udp);
+
+				if (f->xfer) {
+					err = call_hold(ua_call(ua), true);
+					if (err)
+						goto out;
+
+					err = call_replace_transfer(f->xfer,
+						ua_call(ua));
+					if (err)
+						goto out;
+
+					f->xfer = NULL;
+					f->estab_action = ACTION_NOTHING;
+					break;
+				}
+
+				err = call_hold(ua_call(ua), true);
+				if (err)
+					goto out;
+
+				err = ua_connect(ua, NULL, NULL,
+					curi, VIDMODE_ON);
+				if (err)
+					goto out;
+
+				f->xfer = call;
+
+				break;
+
 			}
 		}
 		break;
@@ -1378,6 +1413,57 @@ int test_call_transfer_fail(void)
 	ASSERT_EQ(1, list_count(ua_calls(f->a.ua)));
 	ASSERT_EQ(1, list_count(ua_calls(f->b.ua)));
 	ASSERT_EQ(0, list_count(ua_calls(f->c.ua)));
+
+out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_attended_transfer(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+
+	fixture_init(f);
+
+	err = ua_alloc(&f->c.ua, "C <sip:c@127.0.0.1>;regint=0");
+	TEST_ERR(err);
+
+	f->c.peer = &f->a;
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_ATT_TRANSFER;
+	f->fail_transfer = false;
+
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(2, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+	ASSERT_EQ(1, fix.a.n_transfer);
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(ua_call(f->a.ua)));
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(2, fix.b.n_established);
+	ASSERT_EQ(2, fix.b.n_closed);
+	ASSERT_EQ(0, fix.b.n_transfer);
+
+	ASSERT_EQ(2, fix.c.n_incoming);
+	ASSERT_EQ(2, fix.c.n_established);
+	ASSERT_EQ(1, fix.c.n_closed);
+	ASSERT_EQ(0, fix.c.n_transfer);
+	ASSERT_EQ(CALL_STATE_ESTABLISHED, call_state(ua_call(f->c.ua)));
+
+	ASSERT_EQ(1, list_count(ua_calls(f->a.ua)));
+	ASSERT_EQ(0, list_count(ua_calls(f->b.ua)));
+	ASSERT_EQ(1, list_count(ua_calls(f->c.ua)));
 
 out:
 	fixture_close(f);
