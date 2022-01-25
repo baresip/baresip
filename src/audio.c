@@ -81,8 +81,8 @@ enum {
  *
  */
 struct autx {
-	const struct ausrc *as;
-	struct ausrc_st *ausrc;       /**< Audio Source                    */
+	const struct ausrc *as;       /**< Audio Source module             */
+	struct ausrc_st *ausrc;       /**< Audio Source state              */
 	struct ausrc_prm ausrc_prm;   /**< Audio Source parameters         */
 	const struct aucodec *ac;     /**< Current audio encoder           */
 	struct auenc_state *enc;      /**< Audio encoder state (optional)  */
