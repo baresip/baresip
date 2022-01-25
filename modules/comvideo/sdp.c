@@ -17,7 +17,7 @@ int comvideo_fmtp_enc(
 {
 	struct vidcodec *vc = arg;
 	const uint8_t profile_idc = 0x42; /* baseline profile */
-	const uint8_t profile_iop = 0x80;
+	const uint8_t profile_iop = 0xE0;
 	(void)offer;
 
 	if (!mb || !fmt || !vc)
