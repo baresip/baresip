@@ -1543,6 +1543,40 @@ int bundle_sdp_encode(struct sdp_session *sdp, const struct list *streaml);
 int bundle_sdp_decode(struct sdp_session *sdp, struct list *streaml);
 
 
+/*
+ * Session Description
+ */
+
+/* RTCSdpType */
+enum sdp_type {
+	SDP_OFFER,
+	SDP_ANSWER,
+	SDP_ROLLBACK  /* special type */
+};
+
+/*
+ * https://developer.mozilla.org/en-US/docs/Web/API/RTCSessionDescription
+ *
+ * format:
+ *
+ * {
+ *   "type" : "answer",
+ *   "sdp" : "v=0\r\ns=-\r\n..."
+ * }
+ */
+struct session_description {
+	enum sdp_type type;
+	struct mbuf *sdp;
+};
+
+int session_description_encode(struct odict **odp,
+			       enum sdp_type type, struct mbuf *sdp);
+int session_description_decode(struct session_description *sd,
+			       struct mbuf *mb);
+void session_description_reset(struct session_description *sd);
+const char *sdptype_name(enum sdp_type type);
+
+
 #ifdef __cplusplus
 }
 #endif
