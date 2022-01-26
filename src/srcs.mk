@@ -18,6 +18,7 @@ SRCS	+= conf.c
 SRCS	+= config.c
 SRCS	+= contact.c
 SRCS	+= custom_hdrs.c
+SRCS	+= descr.c
 SRCS	+= dial_number.c
 SRCS	+= event.c
 SRCS	+= log.c
