@@ -43,30 +43,6 @@ static const char *conf_path = NULL;
 static struct conf *conf_obj;
 
 
-/**
- * Check if a file exists
- *
- * @param path Filename
- *
- * @return True if exist, False if not
- */
-bool conf_fileexist(const char *path)
-{
-	struct stat st;
-
-	if (!path)
-		 return false;
-
-	if (stat(path, &st) < 0)
-		 return false;
-
-	if ((st.st_mode & S_IFMT) != S_IFREG)
-		 return false;
-
-	return true;
-}
-
-
 static void print_populated(const char *what, uint32_t n)
 {
 	info("Populated %u %s%s\n", n, what, 1==n ? "" : "s");
@@ -359,7 +335,7 @@ int conf_configure(void)
 	if (re_snprintf(file, sizeof(file), "%s/config", path) < 0)
 		return ENOMEM;
 
-	if (!conf_fileexist(file)) {
+	if (!fs_isfile(file)) {
 
 		(void)fs_mkdir(path, 0700);
 

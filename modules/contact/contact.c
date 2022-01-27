@@ -142,7 +142,7 @@ static int load_current_contact(struct contacts *contacts, const char *path)
 	if (re_snprintf(file, sizeof(file), "%s/current_contact", path) < 0)
 		return ENOMEM;
 
-	if (conf_fileexist(file)) {
+	if (fs_isfile(file)) {
 
 		f = fopen(file, "r");
 		if (!f)
@@ -297,7 +297,7 @@ static int module_init(void)
 	if (re_snprintf(file, sizeof(file), "%s/contacts", path) < 0)
 		return ENOMEM;
 
-	if (!conf_fileexist(file)) {
+	if (!fs_isfile(file)) {
 
 		(void)fs_mkdir(path, 0700);
 

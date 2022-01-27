@@ -268,7 +268,6 @@ int  conf_get_vidsz(const struct conf *conf, const char *name,
 		    struct vidsz *sz);
 int  conf_get_sa(const struct conf *conf, const char *name, struct sa *sa);
 enum jbuf_type conf_get_jbuf_type(const struct pl *pl);
-bool conf_fileexist(const char *path);
 void conf_close(void);
 struct conf *conf_cur(void);
 
