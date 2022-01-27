@@ -194,7 +194,7 @@ static int account_read_file(void)
 	if (re_snprintf(file, sizeof(file), "%s/accounts", path) < 0)
 		return ENOMEM;
 
-	if (!conf_fileexist(file)) {
+	if (!fs_isfile(file)) {
 
 		(void)fs_mkdir(path, 0700);
 
