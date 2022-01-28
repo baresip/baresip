@@ -177,8 +177,23 @@ static int packetize(struct videnc_state *ves, bool marker, uint64_t rtp_ts,
 }
 
 
-static int copy_obus(struct mbuf *mb_pkt,
-		     const uint8_t *buf, size_t sz)
+static struct mbuf *encode_obu(uint8_t type, const uint8_t *p, size_t len)
+{
+	struct mbuf *mb = mbuf_alloc(1024);
+	const bool has_size = false;  /* NOTE */
+	int err;
+
+	err = av1_obu_encode(mb, type, has_size, len, p);
+	if (err)
+		return NULL;
+
+	mb->pos = 0;
+
+	return mb;
+}
+
+
+static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t sz)
 {
 	struct mbuf wrap = { (uint8_t *)buf, sz, 0, sz };
 	int err = 0;
@@ -186,7 +201,7 @@ static int copy_obus(struct mbuf *mb_pkt,
 	while (mbuf_get_left(&wrap) >= 2) {
 
 		struct obu_hdr hdr;
-		const bool has_size = true;  /* NOTE */
+		struct mbuf *mb_obu = NULL;
 
 		err = av1_obu_decode(&hdr, &wrap);
 		if (err) {
@@ -207,15 +222,19 @@ static int copy_obus(struct mbuf *mb_pkt,
 			debug("av1: encode: copy [%H]\n", av1_obu_print, &hdr);
 #endif
 
-			err = av1_obu_encode(mb_pkt, hdr.type, has_size,
-					     hdr.size, mbuf_buf(&wrap));
+			mb_obu = encode_obu(hdr.type, mbuf_buf(&wrap),
+					    hdr.size);
+
+			err = av1_leb128_encode(mb_pkt, mb_obu->end);
 			if (err)
 				return err;
 
+			mbuf_write_mem(mb_pkt, mb_obu->buf, mb_obu->end);
 			break;
 		}
 
 		mbuf_advance(&wrap, hdr.size);
+		mem_deref(mb_obu);
 	}
 
 	return err;

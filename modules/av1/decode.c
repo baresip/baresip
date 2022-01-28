@@ -122,14 +122,18 @@ static inline int16_t seq_diff(uint16_t x, uint16_t y)
 }
 
 
-static int copy_obu(struct mbuf *mb2, struct mbuf *mb)
+static int copy_obu(struct mbuf *mb2, struct mbuf *mb, size_t size)
 {
 	struct obu_hdr hdr;
+	size_t end = mb->end;
 	int err;
+
+	mb->end = mb->pos + size;
 
 	err = av1_obu_decode(&hdr, mb);
 	if (err) {
-		warning("av1: decode: could not decode OBU: %m\n", err);
+		warning("av1: decode: could not decode OBU"
+			" [%zu bytes]: %m\n", size, err);
 		return err;
 	}
 
@@ -161,6 +165,8 @@ static int copy_obu(struct mbuf *mb2, struct mbuf *mb)
 
 	mbuf_advance(mb, hdr.size);
 
+	mb->end = end;
+
 	return 0;
 }
 
@@ -173,9 +179,10 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	aom_codec_err_t res;
 	aom_image_t *img;
 	struct hdr hdr;
-	size_t size;
-	int err, i;
 	struct mbuf *mb2 = NULL;
+	size_t size;
+	unsigned i;
+	int err;
 
 	if (!vds || !frame || !intra || !mb)
 		return EINVAL;
@@ -235,53 +242,42 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	mb2 = mbuf_alloc(1024);
 
 	/* prepend Temporal Delimiter */
-	err = av1_obu_encode(mb2, OBU_TEMPORAL_DELIMITER,
-			     true, 0, NULL);
+	err = av1_obu_encode(mb2, OBU_TEMPORAL_DELIMITER, true, 0, NULL);
 	if (err)
 		goto out;
 
-	switch (vds->w) {
+	if (vds->w) {
 
-	case 3:
-		err = av1_leb128_decode(vds->mb, &size);
-		if (err)
-			goto out;
+		for (i=0; i<(vds->w-1); i++) {
 
-		err = copy_obu(mb2, vds->mb);
-		if (err)
-			goto out;
+			err = av1_leb128_decode(vds->mb, &size);
+			if (err)
+				goto out;
 
-		mbuf_advance(vds->mb, size);
-
-		/*@fallthrough@*/
-	case 2:
-		err = av1_leb128_decode(vds->mb, &size);
-		if (err)
-			goto out;
-
-		err = copy_obu(mb2, vds->mb);
-		if (err)
-			goto out;
-
-		mbuf_advance(vds->mb, size);
-
-		/*@fallthrough@*/
-	case 1:
-		size = vds->mb->end - vds->mb->pos;
-
-		err = copy_obu(mb2, vds->mb);
-		if (err)
-			goto out;
-		break;
-
-	case 0:
-		while (mbuf_get_left(vds->mb) >= 2) {
-
-			err = copy_obu(mb2, vds->mb);
+			err = copy_obu(mb2, vds->mb, size);
 			if (err)
 				goto out;
 		}
-		break;
+
+		/* last OBU element MUST NOT be preceded by a length field */
+		size = vds->mb->end - vds->mb->pos;
+
+		err = copy_obu(mb2, vds->mb, size);
+		if (err)
+			goto out;
+	}
+	else {
+		while (mbuf_get_left(vds->mb) >= 2) {
+
+			/* each OBU element MUST be preceded by length field */
+			err = av1_leb128_decode(vds->mb, &size);
+			if (err)
+				goto out;
+
+			err = copy_obu(mb2, vds->mb, size);
+			if (err)
+				goto out;
+		}
 	}
 
 	res = aom_codec_decode(&vds->ctx, mb2->buf,

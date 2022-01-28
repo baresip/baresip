@@ -117,7 +117,8 @@ int av1_obu_decode(struct obu_hdr *hdr, struct mbuf *mb)
 	}
 
 	if (hdr->type == 0) {
-		warning("av1: header: obu type 0 is reserved\n");
+		warning("av1: header: obu type 0 is reserved [%H]\n",
+			av1_obu_print, hdr);
 		return EBADMSG;
 	}
 
