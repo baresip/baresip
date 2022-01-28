@@ -88,6 +88,8 @@ static void call_window_update_vumeters(struct call_window *win)
 static gboolean call_timer(gpointer arg)
 {
 	struct call_window *win = arg;
+	if (!win || !win->call)
+		return false;
 	call_window_update_duration(win);
 	return G_SOURCE_CONTINUE;
 }
@@ -96,6 +98,8 @@ static gboolean call_timer(gpointer arg)
 static gboolean vumeter_timer(gpointer arg)
 {
 	struct call_window *win = arg;
+	if (!win || !win->call)
+		return false;
 	call_window_update_vumeters(win);
 	return G_SOURCE_CONTINUE;
 }
@@ -367,16 +371,16 @@ static void call_window_destructor(void *arg)
 	mem_deref(window->attended_transfer_dial);
 	gdk_threads_leave();
 
+	if (window->duration_timer_tag)
+		g_source_remove(window->duration_timer_tag);
+	if (window->vumeter_timer_tag)
+		g_source_remove(window->vumeter_timer_tag);
+
 	mem_deref(window->call);
 	mem_deref(window->mq);
 	mem_deref(window->vu.enc);
 	mem_deref(window->vu.dec);
 	mem_deref(window->attended_call);
-
-	if (window->duration_timer_tag)
-		g_source_remove(window->duration_timer_tag);
-	if (window->vumeter_timer_tag)
-		g_source_remove(window->vumeter_timer_tag);
 
 	pthread_mutex_lock(&last_data_mut);
 	last_call_win = NULL;
