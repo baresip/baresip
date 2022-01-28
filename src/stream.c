@@ -1139,7 +1139,8 @@ void stream_flush(struct stream *s)
 	if (s->rx.jbuf)
 		jbuf_flush(s->rx.jbuf);
 
-	rtp_clear(s->rtp);
+	if (s->type == MEDIA_AUDIO)
+		rtp_clear(s->rtp);
 }
 
 
