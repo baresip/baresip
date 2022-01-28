@@ -147,7 +147,6 @@ module			alsa.so
 
 # Audio/Video source modules
 #module			avformat.so
-#module			rst.so
 #module			gst.so
 #module			gst_video.so
 
