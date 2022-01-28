@@ -1492,9 +1492,9 @@ static const char *answermode_str(enum answermode mode)
 {
 	switch (mode) {
 
-	case ANSWERMODE_MANUAL: return "manual";
-	case ANSWERMODE_EARLY:  return "early";
-	case ANSWERMODE_AUTO:   return "auto";
+	case ANSWERMODE_MANUAL:       return "manual";
+	case ANSWERMODE_EARLY:        return "early";
+	case ANSWERMODE_AUTO:         return "auto";
 	case ANSWERMODE_EARLY_AUDIO:  return "early-audio";
 	case ANSWERMODE_EARLY_VIDEO:  return "early-video";
 	default: return "???";
