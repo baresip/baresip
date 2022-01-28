@@ -1717,7 +1717,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  answermode_str(acc->answermode));
 	err |= re_hprintf(pf, " sipans:       %s\n",
 			  acc->sipans ? "yes" : "no");
-	err |= re_hprintf(pf, " sipansbeep:  %s\n",
+	err |= re_hprintf(pf, " sipansbeep:   %s\n",
 			  sipansbeep_str(acc->sipansbeep));
 	err |= re_hprintf(pf, " dtmfmode:     %s\n",
 			  dtmfmode_str(acc->dtmfmode));
