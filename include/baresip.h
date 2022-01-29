@@ -270,6 +270,7 @@ int  conf_get_sa(const struct conf *conf, const char *name, struct sa *sa);
 enum jbuf_type conf_get_jbuf_type(const struct pl *pl);
 void conf_close(void);
 struct conf *conf_cur(void);
+int conf_loadfile(struct mbuf **mbp, const char *filename);
 
 
 /*
