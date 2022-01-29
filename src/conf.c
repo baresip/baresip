@@ -49,20 +49,15 @@ static void print_populated(const char *what, uint32_t n)
 }
 
 
-/**
- * Parse a config file, calling handler for each line
- *
- * @param filename Config file
- * @param ch       Line handler
- * @param arg      Handler argument
- *
- * @return 0 if success, otherwise errorcode
- */
-int conf_parse(const char *filename, confline_h *ch, void *arg)
+int conf_loadfile(struct mbuf **mbp, const char *filename)
 {
-	struct pl pl, val;
 	struct mbuf *mb;
-	int err = 0, fd = open(filename, O_RDONLY);
+	int fd, err = 0;
+
+	if (!mbp || !filename)
+		return EINVAL;
+
+	fd = open(filename, O_RDONLY);
 	if (fd < 0)
 		return errno;
 
@@ -86,6 +81,38 @@ int conf_parse(const char *filename, confline_h *ch, void *arg)
 		err |= mbuf_write_mem(mb, buf, n);
 	}
 
+	mb->pos = 0;
+
+ out:
+	close(fd);
+	if (err)
+		mem_deref(mb);
+	else
+		*mbp = mb;
+
+	return err;
+}
+
+
+/**
+ * Parse a config file, calling handler for each line
+ *
+ * @param filename Config file
+ * @param ch       Line handler
+ * @param arg      Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int conf_parse(const char *filename, confline_h *ch, void *arg)
+{
+	struct pl pl, val;
+	struct mbuf *mb;
+	int err;
+
+	err = conf_loadfile(&mb, filename);
+	if (err)
+		return err;
+
 	pl.p = (const char *)mb->buf;
 	pl.l = mb->end;
 
@@ -102,9 +129,7 @@ int conf_parse(const char *filename, confline_h *ch, void *arg)
 		err = ch(&val, arg);
 	}
 
- out:
 	mem_deref(mb);
-	(void)close(fd);
 
 	return err;
 }
