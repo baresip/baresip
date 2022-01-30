@@ -447,7 +447,7 @@ static int append_rtpext(struct audio *au, struct mbuf *mb,
  * @note This function has REAL-TIME properties
  */
 static void encode_rtp_send(struct audio *a, struct autx *tx,
-			    int16_t *sampv, size_t sampc, enum aufmt fmt)
+			    struct auframe *af)
 {
 	struct bundle *bun = stream_bundle(a->strm);
 	bool bundled = bundle_state(bun) != BUNDLE_NONE;
@@ -470,8 +470,8 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		tx->mb->pos += RTPEXT_HDR_SIZE;
 
 		if (a->level_enabled) {
-			err = append_rtpext(a, tx->mb, fmt,
-					    sampv, sampc);
+			err = append_rtpext(a, tx->mb, af->fmt,
+					    af->sampv, af->sampc);
 			if (err)
 				return;
 		}
@@ -499,18 +499,18 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	len = mbuf_get_space(tx->mb);
 
 	err = tx->ac->ench(tx->enc, &marker, mbuf_buf(tx->mb), &len,
-			   fmt, sampv, sampc);
+			   af->fmt, af->sampv, af->sampc);
 
 	if ((err & 0xffff0000) == 0x00010000) {
 
 		/* MPA needs some special treatment here */
 
 		ts_delta = err & 0xffff;
-		sampc = 0;
+		af->sampc = 0;
 	}
 	else if (err) {
 		warning("audio: %s encode error: %d samples (%m)\n",
-			tx->ac->name, sampc, err);
+			tx->ac->name, af->sampc, err);
 		goto out;
 	}
 
@@ -537,7 +537,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	}
 
 	/* Convert from audio samplerate to RTP clockrate */
-	sampc_rtp = sampc * tx->ac->crate / tx->ac->srate;
+	sampc_rtp = af->sampc * tx->ac->crate / tx->ac->srate;
 
 	/* The RTP clock rate used for generating the RTP timestamp is
 	 * independent of the number of channels and the encoding
@@ -655,7 +655,7 @@ static void poll_aubuf_tx(struct audio *a)
 	}
 
 	/* Encode and send */
-	encode_rtp_send(a, tx, af.sampv, af.sampc, af.fmt);
+	encode_rtp_send(a, tx, &af);
 }
 
 
