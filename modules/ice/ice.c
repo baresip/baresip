@@ -829,8 +829,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	else
 		role = ICE_ROLE_CONTROLLED;
 
-	err = icem_alloc(&m->icem, ICE_MODE_FULL, role,
-			 IPPROTO_UDP, ICE_LAYER,
+	err = icem_alloc(&m->icem, role, IPPROTO_UDP, ICE_LAYER,
 			 sess->tiebrk, sess->lufrag, sess->lpwd,
 			 conncheck_handler, m);
 	if (err)
