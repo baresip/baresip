@@ -68,7 +68,7 @@ struct account {
 	char *stun_user;             /**< STUN Username                      */
 	char *stun_pass;             /**< STUN Password                      */
 	struct stun_uri *stun_host;  /**< STUN Server                        */
-	struct le vcv[4];            /**< List elements for vidcodecl        */
+	struct le vcv[8];            /**< List elements for vidcodecl        */
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
 	bool videoen;                /**< Video enabled flag                 */
 	bool mwi;                    /**< MWI on/off                         */
