@@ -1622,7 +1622,8 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 	if (!s)
 		return 0;
 
-	err  = re_hprintf(pf, " %s dir=%s pt_enc=%d\n", sdp_media_name(s->sdp),
+	err  = re_hprintf(pf, "--- Stream debug ---\n");
+	err |= re_hprintf(pf, " %s dir=%s pt_enc=%d\n", sdp_media_name(s->sdp),
 			  sdp_dir_name(sdp_media_dir(s->sdp)),
 			  s->tx.pt_enc);
 
@@ -1637,6 +1638,9 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 	err |= re_hprintf(pf, " menc: %s (secure=%s)\n",
 			  s->menc ? s->menc->id : "(none)",
 			  s->menc_secure ? "yes" : "no");
+
+	err |= re_hprintf(pf, " rx.enabled: %s\n",
+			  s->rx.enabled ? "yes" : "no");
 
 	err |= rtp_debug(pf, s->rtp);
 	err |= jbuf_debug(pf, s->rx.jbuf);
