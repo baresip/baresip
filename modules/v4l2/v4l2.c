@@ -73,8 +73,6 @@ static enum vidfmt match_fmt(u_int32_t fmt)
 	case V4L2_PIX_FMT_YUYV:   return VID_FMT_YUYV422;
 	case V4L2_PIX_FMT_UYVY:   return VID_FMT_UYVY422;
 	case V4L2_PIX_FMT_RGB32:  return VID_FMT_RGB32;
-	case V4L2_PIX_FMT_RGB565: return VID_FMT_RGB565;
-	case V4L2_PIX_FMT_RGB555: return VID_FMT_RGB555;
 	case V4L2_PIX_FMT_NV12:   return VID_FMT_NV12;
 	case V4L2_PIX_FMT_NV21:   return VID_FMT_NV21;
 	default:                  return VID_FMT_N;
