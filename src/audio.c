@@ -456,6 +456,12 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	if (!tx->ac || !tx->ac->ench)
 		return;
 
+	if (tx->ac->srate != af->srate || tx->ac->ch != af->ch) {
+		warning("audio: srate/ch does not match. Use module auresamp"
+			"\n");
+		return;
+	}
+
 	tx->mb->pos = tx->mb->end = STREAM_PRESZ;
 
 	if (a->level_enabled || bundled) {
