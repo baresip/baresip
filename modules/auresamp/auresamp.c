@@ -43,12 +43,30 @@ struct auresamp_st {
 };
 
 
-static void destructor(void *arg)
+static void common_destructor(void *arg)
 {
 	struct auresamp_st *st = arg;
 
 	mem_deref(st->rsampv);
 	mem_deref(st->sampv);
+}
+
+
+static void enc_destructor(void *arg)
+{
+	struct auresamp_st *st = arg;
+
+	list_unlink(&st->eaf.le);
+	common_destructor(st);
+}
+
+
+static void dec_destructor(void *arg)
+{
+	struct auresamp_st *st = arg;
+
+	list_unlink(&st->daf.le);
+	common_destructor(st);
 }
 
 
@@ -89,7 +107,8 @@ static int resamp_setup(struct auresamp_st *st, struct auframe *af)
 }
 
 
-static int common_update(struct auresamp_st **stp, struct aufilt_prm *oprm)
+static int common_update(struct auresamp_st **stp, struct aufilt_prm *oprm,
+			 mem_destroy_h *dh)
 {
 	struct auresamp_st *st;
 	if (!stp || !oprm)
@@ -98,7 +117,7 @@ static int common_update(struct auresamp_st **stp, struct aufilt_prm *oprm)
 	if (*stp)
 		return 0;
 
-	st = mem_zalloc(sizeof(*st), destructor);
+	st = mem_zalloc(sizeof(*st), dh);
 	if (!st)
 		return ENOMEM;
 
@@ -116,8 +135,11 @@ static int common_resample(struct auresamp_st *st, struct auframe *af)
 	int16_t *sampv = af->sampv;
 	int err = 0;
 
-	if (st->oprm.srate == af->srate && st->oprm.ch == af->ch)
+	if (st->oprm.srate == af->srate && st->oprm.ch == af->ch) {
+		st->rsampv = mem_deref(st->rsampv);
+		st->sampv  = mem_deref(st->sampv);
 		return 0;
+	}
 
 	if (af->fmt != AUFMT_S16LE) {
 		if (!st->sampv)
@@ -166,7 +188,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	(void)ctx;
 	(void)au;
 
-	err = common_update(cstp, oprm);
+	err = common_update(cstp, oprm, enc_destructor);
 	if (err)
 		return err;
 
@@ -184,7 +206,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	(void)ctx;
 	(void)au;
 
-	err = common_update(cstp, oprm);
+	err = common_update(cstp, oprm, dec_destructor);
 	if (err)
 		return err;
 
