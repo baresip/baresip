@@ -457,8 +457,9 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		return;
 
 	if (tx->ac->srate != af->srate || tx->ac->ch != af->ch) {
-		warning("audio: srate/ch does not match. Use module auresamp"
-			"\n");
+		warning("audio: srate/ch does not match %u/%u vs %u/%u. Use "
+			"module auresamp\n",
+			af->srate, af->ch, tx->ac->srate, tx->ac->ch);
 		return;
 	}
 
@@ -1522,7 +1523,7 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *aurx)
  */
 static int aufilt_setup(struct audio *a, struct list *aufiltl)
 {
-	struct aufilt_prm encprm, decprm;
+	struct aufilt_prm encprm, plprm;
 	struct autx *tx = &a->tx;
 	struct aurx *rx = &a->rx;
 	struct le *le;
@@ -1540,13 +1541,13 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 		update_dec = true;
 
 	aufilt_param_set(&encprm, tx->ac, tx->enc_fmt);
-	aufilt_param_set(&decprm, rx->ac, rx->dec_fmt);
-	if (a->cfg.srate_play && a->cfg.srate_play != decprm.srate) {
-		decprm.srate = a->cfg.srate_play;
+	aufilt_param_set(&plprm, rx->ac, rx->dec_fmt);
+	if (a->cfg.srate_play && a->cfg.srate_play != plprm.srate) {
+		plprm.srate = a->cfg.srate_play;
 	}
 
-	if (a->cfg.channels_play && a->cfg.channels_play != decprm.ch) {
-		decprm.ch = a->cfg.channels_play;
+	if (a->cfg.channels_play && a->cfg.channels_play != plprm.ch) {
+		plprm.ch = a->cfg.channels_play;
 	}
 
 	/* Audio filters */
@@ -1569,7 +1570,7 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 		}
 
 		if (af->decupdh && update_dec) {
-			err = af->decupdh(&decst, &ctx, af, &decprm, a);
+			err = af->decupdh(&decst, &ctx, af, &plprm, a);
 			if (err) {
 				warning("audio: error in decode audio-filter"
 					" '%s' (%m)\n", af->name, err);
