@@ -457,8 +457,8 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		return;
 
 	if (tx->ac->srate != af->srate || tx->ac->ch != af->ch) {
-		warning("audio: srate/ch does not match %u/%u vs %u/%u. Use "
-			"module auresamp\n",
+		warning("audio: srate/ch of frame %u/%u vs audio codec %u/%u. "
+			"Use module auresamp!\n",
 			af->srate, af->ch, tx->ac->srate, tx->ac->ch);
 		return;
 	}
@@ -691,6 +691,13 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 	if (af->fmt != rx->play_fmt) {
 		warning("audio: write format mismatch: exp=%s, actual=%s\n",
 			aufmt_name(rx->play_fmt), aufmt_name(af->fmt));
+	}
+
+	if (rx->auplay_prm.srate != af->srate || rx->auplay_prm.ch != af->ch) {
+		warning("audio: srate/ch of frame %u/%u vs player %u/%u. Use "
+			"module auresamp!\n",
+			af->srate, af->ch,
+			rx->auplay_prm.srate, rx->auplay_prm.ch);
 	}
 
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
@@ -1652,6 +1659,7 @@ static int start_player(struct aurx *rx, struct audio *a,
 			rx->aubuf_maxsz = max_sz;
 		}
 
+		rx->auplay_prm = prm;
 		err = auplay_alloc(&rx->auplay, auplayl,
 				   rx->module,
 				   &prm, rx->device,
@@ -1665,8 +1673,6 @@ static int start_player(struct aurx *rx, struct audio *a,
 		}
 
 		rx->ap = auplay_find(auplayl, rx->module);
-
-		rx->auplay_prm = prm;
 
 		info("audio: player started with sample format %s\n",
 		     aufmt_name(rx->play_fmt));
