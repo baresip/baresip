@@ -18,15 +18,15 @@ enum {
  *  is specified by the order in the config file.
  *
  *  .    .-------.   .----------.   .-------.   .---------.
- *  |    |       |   |          |   |       |   |         |
- *  |O-->| ausrc |-->| auresamp |-->| aubuf |-->| encoder |--> RTP
- *  |    |       |   |          |   |       |   |         |
+ *  |    |       |   | filters  |   |       |   |         |
+ *  |O-->| ausrc |-->|   e.g.   |-->| aubuf |-->| encoder |--> RTP
+ *  |    |       |   | auresamp |   |       |   |         |
  *  '    '-------'   '----------'   '-------'   '---------'
  *
  *       .--------.   .-------.   .----------.   .--------.
- * |\    |        |   |       |   |          |   |        |
- * | |<--| auplay |<--| aubuf |<--| auresamp |<--| decode |<-- RTP
- * |/    |        |   |       |   |          |   |        |
+ * |\    |        |   |       |   | filters  |   |        |
+ * | |<--| auplay |<--| aubuf |<--|   e.g.   |<--| decode |<-- RTP
+ * |/    |        |   |       |   | auresamp |   |        |
  *       '--------'   '-------'   '----------'   '--------'
  */
 
@@ -34,12 +34,14 @@ struct auresamp_st {
 	union {
 		struct aufilt_enc_st eaf;
 		struct aufilt_dec_st daf;
-	};                       /* inheritance              */
+	};                       /* inheritance                              */
 
-	int16_t *sampv;          /* s16le audio data buffer  */
-	int16_t *rsampv;         /* resampled data           */
-	struct auresamp resamp;  /* resampler                */
-	struct aufilt_prm oprm;  /* filter output parameters */
+	int16_t *sampv;          /* s16le audio data buffer                  */
+	int16_t *rsampv;         /* resampled data                           */
+	size_t rsampc;           /* size of rsampv buffer                    */
+	struct auresamp resamp;  /* resampler                                */
+	struct aufilt_prm oprm;  /* filter output parameters                 */
+	const char *dbg;         /* debugging "encoder"/"decoder"            */
 };
 
 
@@ -98,11 +100,13 @@ static int resamp_setup(struct auresamp_st *st, struct auframe *af)
 
 	psize = MAX_PTIME * st->oprm.srate * st->oprm.ch * 2 / 1000;
 
+	st->rsampc = 0;
 	st->rsampv = mem_deref(st->rsampv);
 	st->rsampv = mem_zalloc(psize, NULL);
 	if (!st->rsampv)
 		return ENOMEM;
 
+	st->rsampc = psize;
 	return 0;
 }
 
@@ -131,16 +135,24 @@ static int common_update(struct auresamp_st **stp, struct aufilt_prm *oprm,
 
 static int common_resample(struct auresamp_st *st, struct auframe *af)
 {
-	size_t outc;
-	int16_t *sampv = af->sampv;
+	size_t rsampc;
+	int16_t *sampv;
 	int err = 0;
 
+	if (st->dbg) {
+		debug("auresam: resample %s %u/%u --> %u/%u\n", st->dbg,
+		      af->srate, af->ch, st->oprm.srate, st->oprm.ch);
+		st->dbg = NULL;
+	}
+
 	if (st->oprm.srate == af->srate && st->oprm.ch == af->ch) {
+		st->rsampc = 0;
 		st->rsampv = mem_deref(st->rsampv);
 		st->sampv  = mem_deref(st->sampv);
 		return 0;
 	}
 
+	sampv  = af->sampv;
 	if (af->fmt != AUFMT_S16LE) {
 		if (!st->sampv)
 			err = sampv_alloc(st, af);
@@ -158,16 +170,19 @@ static int common_resample(struct auresamp_st *st, struct auframe *af)
 	if (err)
 		return err;
 
-	err = auresamp(&st->resamp, st->rsampv, &outc, sampv, af->sampc);
+	rsampc = st->rsampc;
+	err = auresamp(&st->resamp, st->rsampv, &rsampc, sampv, af->sampc);
 	if (err) {
 		warning("resample: auresamp error (%m)\n", err);
 		return err;
 	}
 
-	af->sampc = outc;
-	af->fmt = st->oprm.fmt;
+	af->sampc = rsampc;
+	af->fmt   = st->oprm.fmt;
+	af->srate = st->oprm.srate;
+	af->ch    = st->oprm.ch;
 	if (st->oprm.fmt != AUFMT_S16LE) {
-		auconv_from_s16(st->oprm.fmt, st->sampv, st->rsampv, outc);
+		auconv_from_s16(st->oprm.fmt, st->sampv, st->rsampv, rsampc);
 		af->sampv = st->sampv;
 	}
 	else {
@@ -192,6 +207,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (err)
 		return err;
 
+	(*cstp)->dbg = "encoder";
 	return 0;
 }
 
@@ -210,6 +226,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (err)
 		return err;
 
+	(*cstp)->dbg = "decoder";
 	return 0;
 }
 
