@@ -603,13 +603,20 @@ void call_window_ringing(struct call_window *win)
 	call_window_set_status(win, "ringing");
 }
 
+static void register_call_timer(struct call_window *win)
+{
+	if (!win->duration_timer_tag) {
+		win->duration_timer_tag = g_timeout_add_seconds(
+			1, call_timer, win);
+	}
+}
 
 void call_window_progress(struct call_window *win)
 {
 	if (!win)
 		return;
 
-	win->duration_timer_tag = g_timeout_add_seconds(1, call_timer, win);
+	register_call_timer(win);
 	pthread_mutex_lock(&last_data_mut);
 	last_call_win = win;
 	pthread_mutex_unlock(&last_data_mut);
@@ -624,10 +631,7 @@ void call_window_established(struct call_window *win)
 
 	call_window_update_duration(win);
 
-	if (!win->duration_timer_tag) {
-		win->duration_timer_tag = g_timeout_add_seconds(1, call_timer,
-								win);
-	}
+	register_call_timer(win);
 
 	pthread_mutex_lock(&last_data_mut);
 	last_call_win = win;
