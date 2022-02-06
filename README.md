@@ -149,6 +149,8 @@ installed before building:
 * [librem](https://github.com/baresip/rem)
 * [openssl](https://www.openssl.org/)
 
+See [Wiki: Install GIT Version](https://github.com/baresip/baresip/wiki/Install:-GIT-Version)
+for a full guide.
 
 ### Build with debug enabled
 
