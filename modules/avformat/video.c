@@ -62,7 +62,6 @@ int avformat_video_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	int err = 0;
 
 	(void)fmt;
-	(void)packeth;
 	(void)errorh;
 
 	if (!stp || !vs || !prm || !size || !frameh)
