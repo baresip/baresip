@@ -118,7 +118,10 @@ static char *errorcode_key_aufile(uint16_t scode)
 
 static bool active_call_test(const struct call* call, void *arg)
 {
-	(void) arg;
+	struct filter_arg *fa = arg;
+
+	if (!str_cmp(call_id(call), fa->callid_old))
+		return false;
 
 	return call_state(call) == CALL_STATE_ESTABLISHED &&
 			!call_is_onhold(call);
@@ -158,9 +161,9 @@ struct call *menu_find_call_state(enum call_state st)
  *
  * @return  A call that matches
  */
-struct call *menu_find_call(call_match_h *matchh)
+struct call *menu_find_call(call_match_h *matchh, const struct call *exclude)
 {
-	struct filter_arg fa = {CALL_STATE_UNKNOWN, NULL, NULL};
+	struct filter_arg fa = {CALL_STATE_UNKNOWN, call_id(exclude), NULL};
 
 	uag_filter_calls(find_first_call, matchh, &fa);
 	return fa.call;
@@ -272,7 +275,7 @@ static void play_incoming(const struct call *call)
 		call_early_video_available(call)))
 		return;
 
-	if (menu_find_call(active_call_test)) {
+	if (menu_find_call(active_call_test, call)) {
 		menu_play(call, "callwaiting_aufile", "callwaiting.wav", 3,
 			  DEVICE_ALERT);
 	}
@@ -299,7 +302,7 @@ static void play_ringback(const struct call *call)
 }
 
 
-static void play_resume(void)
+static void play_resume(const struct call *closed)
 {
 	struct call *call = uag_call_find(menu.callid);
 
@@ -308,7 +311,8 @@ static void play_resume(void)
 		play_incoming(call);
 		break;
 	case CALL_STATE_RINGING:
-		if (!menu.ringback && !menu_find_call(active_call_test))
+		if (!menu.ringback && !menu_find_call(active_call_test,
+						      closed))
 			play_ringback(call);
 		break;
 	default:
@@ -572,7 +576,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_RINGING:
 		menu_selcall(call);
-		if (!menu.ringback && !menu_find_call(active_call_test))
+		if (!menu.ringback && !menu_find_call(active_call_test, call))
 			play_ringback(call);
 		break;
 
@@ -580,7 +584,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		menu_selcall(call);
 		if (ardir != SDP_INACTIVE)
 			menu_stop_play();
-		else if (!menu.ringback && !menu_find_call(active_call_test))
+		else if (!menu.ringback && !menu_find_call(active_call_test,
+							   call))
 			play_ringback(call);
 		break;
 
@@ -636,7 +641,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				menu_play_closed(call);
 
 			menu_selcall(NULL);
-			play_resume();
+			play_resume(call);
 		}
 
 		hash_apply(menu.ovaufile->ht, ovaufile_del, call);
