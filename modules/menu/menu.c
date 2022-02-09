@@ -274,7 +274,7 @@ static void play_incoming(const struct call *call)
 
 	if (menu_find_call(active_call_test)) {
 		menu_play(call, "callwaiting_aufile", "callwaiting.wav", 3,
-			  DEVICE_ALERT);
+			  DEVICE_PLAYER);
 	}
 	else {
 		/* Alert user */
