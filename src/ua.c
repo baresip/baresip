@@ -889,6 +889,8 @@ static int create_register_clients(struct ua *ua)
 		err = reg_add(&ua->regl, ua, 0);
 	}
 
+	add_extension(ua, "replaces");
+
  out:
 	return err;
 }
