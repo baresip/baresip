@@ -176,6 +176,7 @@ endif # MOD_AUTODETECT
 ifneq ($(BASIC_MODULES),no)
 MODULES   += account
 MODULES   += auconv
+MODULES   += auresamp
 MODULES   += contact
 MODULES   += ctrl_tcp
 MODULES   += debug_cmd
