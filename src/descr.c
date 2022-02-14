@@ -15,7 +15,7 @@ enum { HASH_SIZE = 4 };
 int session_description_encode(struct odict **odp,
 			       enum sdp_type type, struct mbuf *sdp)
 {
-	struct odict *od;
+	struct odict *od = NULL;
 	char *str = NULL;
 	int err;
 
