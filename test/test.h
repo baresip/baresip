@@ -230,7 +230,6 @@ int test_cmd(void);
 int test_cmd_long(void);
 int test_contact(void);
 int test_event(void);
-int test_h264(void);
 int test_message(void);
 int test_network(void);
 int test_play(void);

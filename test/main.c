@@ -53,7 +53,6 @@ static const struct test tests[] = {
 	TEST(test_cmd_long),
 	TEST(test_contact),
 	TEST(test_event),
-	TEST(test_h264),
 	TEST(test_message),
 	TEST(test_network),
 	TEST(test_play),

@@ -14,7 +14,6 @@ TEST_SRCS	+= call.c
 TEST_SRCS	+= cmd.c
 TEST_SRCS	+= contact.c
 TEST_SRCS	+= event.c
-TEST_SRCS	+= h264.c
 TEST_SRCS	+= message.c
 TEST_SRCS	+= net.c
 TEST_SRCS	+= play.c
