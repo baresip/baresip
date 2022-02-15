@@ -13,29 +13,7 @@
 #include "avcodec.h"
 
 
-/*
-1.1.4 NAL Unit Header
-
-   HEVC maintains the NAL unit concept of H.264 with modifications.
-   HEVC uses a two-byte NAL unit header, as shown in Figure 1.  The
-   payload of a NAL unit refers to the NAL unit excluding the NAL unit
-   header.
-
-                     +---------------+---------------+
-                     |0|1|2|3|4|5|6|7|0|1|2|3|4|5|6|7|
-                     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-                     |F|   Type    |  LayerId  | TID |
-                     +-------------+-----------------+
-
-              Figure 1 The structure of HEVC NAL unit header
-*/
-
-
-static const uint8_t sc3[3] = {0, 0, 1};
-static const uint8_t sc4[4] = {0, 0, 0, 1};
-
-
-const uint8_t *h265_find_startcode(const uint8_t *p, const uint8_t *end)
+static const uint8_t *h265_find_startcode(const uint8_t *p, const uint8_t *end)
 {
 	const uint8_t *a = p + 4 - ((long)p & 3);
 
@@ -68,31 +46,6 @@ const uint8_t *h265_find_startcode(const uint8_t *p, const uint8_t *end)
 	}
 
 	return end + 3;
-}
-
-
-void h265_skip_startcode(uint8_t **p, size_t *n)
-{
-	if (*n < 4)
-		return;
-
-	if (0 == memcmp(*p, sc4, 4)) {
-		(*p) += 4;
-		*n -= 4;
-	}
-	else if (0 == memcmp(*p, sc3, 3)) {
-		(*p) += 3;
-		*n -= 3;
-	}
-}
-
-
-bool h265_have_startcode(const uint8_t *p, size_t len)
-{
-	if (len >= 4 && 0 == memcmp(p, sc4, 4)) return true;
-	if (len >= 3 && 0 == memcmp(p, sc3, 3)) return true;
-
-	return false;
 }
 
 
