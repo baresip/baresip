@@ -96,24 +96,6 @@ bool h265_have_startcode(const uint8_t *p, size_t len)
 }
 
 
-bool h265_is_keyframe(enum h265_naltype type)
-{
-	/* between 16 and 21 (inclusive) */
-	switch (type) {
-
-	case H265_NAL_BLA_W_LP:
-	case H265_NAL_BLA_W_RADL:
-	case H265_NAL_BLA_N_LP:
-	case H265_NAL_IDR_W_RADL:
-	case H265_NAL_IDR_N_LP:
-	case H265_NAL_CRA_NUT:
-		return true;
-	default:
-		return false;
-	}
-}
-
-
 static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 			    size_t maxlen, uint64_t rtp_ts,
 			    videnc_packet_h *pkth, void *arg)

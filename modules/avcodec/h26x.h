@@ -104,6 +104,5 @@ void h263_hdr_copy_strm(struct h263_hdr *hdr, const struct h263_strm *s);
 const uint8_t *h265_find_startcode(const uint8_t *p, const uint8_t *end);
 bool h265_have_startcode(const uint8_t *p, size_t len);
 void h265_skip_startcode(uint8_t **p, size_t *n);
-bool h265_is_keyframe(enum h265_naltype type);
 int h265_packetize(uint64_t rtp_ts, const uint8_t *buf, size_t len,
 		   size_t pktsize, videnc_packet_h *pkth, void *arg);
