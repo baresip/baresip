@@ -183,6 +183,7 @@ struct aurx {
 #else
 	struct tmr tmr;       /**< Timer for audio decoding        */
 #endif
+	struct lock *lock;
 };
 
 
@@ -355,6 +356,7 @@ static void audio_destructor(void *arg)
 	mem_deref(a->telev);
 
 	mem_deref(a->tx.lock);
+	mem_deref(a->rx.lock);
 }
 
 
@@ -700,6 +702,7 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 			rx->auplay_prm.srate, rx->auplay_prm.ch);
 	}
 
+	lock_read_get(rx->lock);
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
 
 		++rx->stats.aubuf_underrun;
@@ -709,6 +712,7 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 			rx->stats.aubuf_underrun);
 #endif
 	}
+	lock_rel(rx->lock);
 
 	aubuf_read(rx->aubuf, af->sampv, num_bytes);
 }
@@ -1086,7 +1090,9 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 			aufmt_name(rx->play_fmt));
 	}
 
+	lock_write_get(rx->lock);
 	rx->aubuf_started = true;
+	lock_rel(rx->lock);
 
  out:
 	return err;
@@ -1390,6 +1396,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	rx->ptime  = ptime;
 
 	err = lock_alloc(&tx->lock);
+	err |= lock_alloc(&rx->lock);
 	if (err)
 		goto out;
 
