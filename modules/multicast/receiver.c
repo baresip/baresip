@@ -277,14 +277,18 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 static void timeout_handler(void *arg)
 {
 	struct mcreceiver *mcreceiver = arg;
-	info ("multicast receiver: timeout of %J (prio=%d)\n",
-		&mcreceiver->addr, mcreceiver->prio);
+	info ("multicast receiver: timeout of %J (prio=%d) (state=%s)\n",
+		&mcreceiver->addr, mcreceiver->prio,
+		mcreceiver->enable && mcreceiver->globenable ?
+		"enabled" : "disabled");
 
 	lock_write_get(mcreceivl_lock);
 
 	if (mcreceiver->running) {
 		module_event("multicast", "receive timeout", NULL, NULL,
-			     "%J (%d)", &mcreceiver->addr, mcreceiver->prio);
+			     "%J (%d) (%d)", &mcreceiver->addr,
+			     mcreceiver->prio,
+			     mcreceiver->enable && mcreceiver->globenable);
 		mcplayer_stop();
 	}
 
