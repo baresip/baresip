@@ -893,7 +893,9 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 	(void)aubuf_write(tx->aubuf, af->sampv, num_bytes);
 
+	lock_write_get(tx->lock);
 	tx->aubuf_started = true;
+	lock_rel(tx->lock);
 
 	if (a->cfg.txmode == AUDIO_MODE_POLL) {
 		unsigned i;
@@ -1426,8 +1428,12 @@ static void *tx_thread(void *arg)
 
 		sys_msleep(4);
 
-		if (!tx->aubuf_started)
+		lock_read_get(tx->lock);
+		if (!tx->aubuf_started) {
+			lock_rel(tx->lock);
 			continue;
+		}
+		lock_rel(tx->lock);
 
 		if (!tx->thr.run)
 			break;
