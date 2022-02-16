@@ -277,19 +277,14 @@ static void stop_tx(struct autx *tx, struct audio *a)
 	if (!tx || !a)
 		return;
 
-	switch (a->cfg.txmode) {
-
 #ifdef HAVE_PTHREAD
-	case AUDIO_MODE_THREAD:
-		if (tx->thr.run) {
-			tx->thr.run = false;
-			pthread_join(tx->thr.tid, NULL);
-		}
-		break;
-#endif
-	default:
-		break;
+	if (a->cfg.txmode == AUDIO_MODE_THREAD && tx->thr.run) {
+		lock_write_get(tx->lock);
+		tx->thr.run = false;
+		lock_rel(tx->lock);
+		pthread_join(tx->thr.tid, NULL);
 	}
+#endif
 
 	/* audio source must be stopped first */
 	tx->ausrc = mem_deref(tx->ausrc);
@@ -875,6 +870,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
 	size_t num_bytes = auframe_size(af);
+	unsigned i;
 
 	if (tx->src_fmt != af->fmt) {
 		warning("audio: ausrc format mismatch:"
@@ -901,16 +897,14 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	tx->aubuf_started = true;
 	lock_rel(tx->lock);
 
-	if (a->cfg.txmode == AUDIO_MODE_POLL) {
-		unsigned i;
+	if (a->cfg.txmode != AUDIO_MODE_POLL)
+		return;
 
-		for (i=0; i<16; i++) {
+	for (i=0; i<16; i++) {
+		if (aubuf_cur_size(tx->aubuf) < tx->psize)
+			break;
 
-			if (aubuf_cur_size(tx->aubuf) < tx->psize)
-				break;
-
-			poll_aubuf_tx(a);
-		}
+		poll_aubuf_tx(a);
 	}
 
 	/* Exact timing: send Telephony-Events from here */
@@ -1429,28 +1423,30 @@ static void *tx_thread(void *arg)
 	struct autx *tx = &a->tx;
 	uint64_t ts = 0;
 
+	lock_read_get(tx->lock);
 	while (tx->thr.run) {
-
 		uint64_t now;
 
+		lock_rel(tx->lock);
 		sys_msleep(4);
-
 		lock_read_get(tx->lock);
+
 		if (!tx->aubuf_started) {
 			lock_rel(tx->lock);
-			continue;
+			goto loop;
 		}
-		lock_rel(tx->lock);
 
 		if (!tx->thr.run)
 			break;
+
+		lock_rel(tx->lock);
 
 		now = tmr_jiffies();
 		if (!ts)
 			ts = now;
 
 		if (ts > now)
-			continue;
+			goto loop;
 
 		/* Now is the time to send */
 
@@ -1466,7 +1462,16 @@ static void *tx_thread(void *arg)
 		}
 
 		ts += tx->ptime;
+
+		/* Exact timing: send Telephony-Events from here.
+		 * Be aware check_telev sets tx->lock, so it must released!
+		 */
+		check_telev(a, tx);
+
+loop:
+		lock_read_get(tx->lock);
 	}
+	lock_rel(tx->lock);
 
 	return NULL;
 }
