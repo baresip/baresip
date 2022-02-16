@@ -94,12 +94,3 @@ enum h263_mode h263_hdr_mode(const struct h263_hdr *hdr);
 
 int  h263_strm_decode(struct h263_strm *s, struct mbuf *mb);
 void h263_hdr_copy_strm(struct h263_hdr *hdr, const struct h263_strm *s);
-
-
-/*
- * H.265 format
- */
-
-
-int h265_packetize(uint64_t rtp_ts, const uint8_t *buf, size_t len,
-		   size_t pktsize, videnc_packet_h *pkth, void *arg);
