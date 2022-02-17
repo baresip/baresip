@@ -34,7 +34,7 @@ struct auresamp_st {
 	union {
 		struct aufilt_enc_st eaf;
 		struct aufilt_dec_st daf;
-	};                       /* inheritance                              */
+	} u;                     /* inheritance                              */
 
 	int16_t *sampv;          /* s16le audio data buffer                  */
 	int16_t *rsampv;         /* resampled data                           */
@@ -58,7 +58,7 @@ static void enc_destructor(void *arg)
 {
 	struct auresamp_st *st = arg;
 
-	list_unlink(&st->eaf.le);
+	list_unlink(&st->u.eaf.le);
 	common_destructor(st);
 }
 
@@ -67,7 +67,7 @@ static void dec_destructor(void *arg)
 {
 	struct auresamp_st *st = arg;
 
-	list_unlink(&st->daf.le);
+	list_unlink(&st->u.daf.le);
 	common_destructor(st);
 }
 
