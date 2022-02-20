@@ -51,11 +51,10 @@ jobs:
       run: |
         brew install codec2 \
                         fdk-aac \
-                        ffmpeg@4 \
+                        ffmpeg \
                         jack \
                         mpg123 \
                         spandsp
-        brew link ffmpeg@4
 
     - uses: sreimers/pr-dependency-action@v0.3
       with:
