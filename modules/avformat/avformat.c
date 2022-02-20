@@ -242,7 +242,11 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	struct shared *st;
 	struct pl pl_fmt, pl_dev;
 	char *device = NULL;
+#if LIBAVUTIL_VERSION_MAJOR >= 57
 	const AVInputFormat *input_format = NULL;
+#else
+	AVInputFormat *input_format = NULL;
+#endif
 	AVDictionary *format_opts = NULL;
 	char buf[16];
 	unsigned i;
