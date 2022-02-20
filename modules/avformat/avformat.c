@@ -242,7 +242,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	struct shared *st;
 	struct pl pl_fmt, pl_dev;
 	char *device = NULL;
-	AVInputFormat *input_format = NULL;
+	const AVInputFormat *input_format = NULL;
 	AVDictionary *format_opts = NULL;
 	char buf[16];
 	unsigned i;
