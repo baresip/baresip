@@ -28,6 +28,13 @@ enum {
 	TIMEOUT = 1000,
 };
 
+enum state {
+	LISTENING,
+	RECEIVING,
+	RUNNING,
+	IGNORED,
+};
+
 /**
  * Multicast receiver struct
  *
@@ -46,11 +53,28 @@ struct mcreceiver {
 
 	struct tmr timeout;
 
-	bool running;
+	enum state state;
 	bool enable;
-	bool globenable;
-	bool ignore;
 };
+
+
+static void resume_uag_state(void);
+
+
+static char* state_str(enum state s) {
+	switch (s) {
+		case LISTENING:
+			return "listening";
+		case RECEIVING:
+			return "receiving";
+		case RUNNING:
+			return "running";
+		case IGNORED:
+			return "ignored";
+		default:
+			return "???";
+	}
+}
 
 
 static void mcreceiver_destructor(void *arg)
@@ -59,15 +83,13 @@ static void mcreceiver_destructor(void *arg)
 
 	tmr_cancel(&mcreceiver->timeout);
 
-	if (mcreceiver->running)
+	if (mcreceiver->state == RUNNING)
 		mcplayer_stop();
 
 	mcreceiver->ssrc = 0;
-	mcreceiver->running = false;
 
 	mcreceiver->rtp  = mem_deref(mcreceiver->rtp);
 	mcreceiver->jbuf = mem_deref(mcreceiver->jbuf);
-
 }
 
 
@@ -121,7 +143,7 @@ static bool mcreceiver_running(struct le *le, void *arg)
 	struct mcreceiver *mcreceiver = le->data;
 	(void) arg;
 
-	return mcreceiver->running;
+	return mcreceiver->state == RUNNING;
 }
 
 
@@ -172,7 +194,7 @@ static void resume_uag_state(void)
 	for (le = list_head(&mcreceivl); le; le = le->next) {
 		mcreceiver = le->data;
 
-		if (mcreceiver->ssrc && mcreceiver->prio < h)
+		if (mcreceiver->state == RUNNING && mcreceiver->prio < h)
 			h = mcreceiver->prio;
 	}
 
@@ -181,6 +203,21 @@ static void resume_uag_state(void)
 		uag_set_nodial(false);
 		uag_hold_resume(NULL);
 	}
+}
+
+
+/**
+ * Stops, flush, start player
+ *
+ * @param mcreceiver Multicast receiver object
+ *
+ * @return int 0 if success, errorcode otherwise
+ */
+static int player_stop_start(struct mcreceiver *mcreceiver)
+{
+	mcplayer_stop();
+	jbuf_flush(mcreceiver->jbuf);
+	return mcplayer_start(mcreceiver->jbuf, mcreceiver->ac);
 }
 
 
@@ -205,63 +242,114 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 	if (err)
 		return err;
 
-	if (mcreceiver->prio < multicast_callprio()) {
-		uag_set_dnd(true);
-		uag_set_nodial(true);
+	if (mcreceiver->state == LISTENING) {
+		mcreceiver->state = RECEIVING;
+
+		info ("multicast receiver: start addr=%J prio=%d enabled=%d "
+			"state=%s\n", &mcreceiver->addr, mcreceiver->prio,
+			mcreceiver->enable, state_str(mcreceiver->state));
+
+		module_event("multicast", "receiver start", NULL, NULL,
+			"addr=%J prio=%d enabled=%d state=%s",
+			&mcreceiver->addr, mcreceiver->prio,
+			mcreceiver->enable, state_str(mcreceiver->state));
+
 	}
 
-	if (mcreceiver->ignore) {
-		/*if receiver is ignored stop possible run and do nothing*/
-		if (mcreceiver->running) {
-			mcreceiver->running = false;
-			mcplayer_stop();
-		}
-
+	if (!mcreceiver->enable) {
+		mcreceiver->state = RECEIVING;
+		err = ECANCELED;
 		goto out;
+	}
+
+	if (mcreceiver->state == IGNORED) {
+		err = ECANCELED;
+		goto out;
+	}
+
+	if (mcreceiver->prio >= multicast_callprio() && uag_call_count()) {
+		mcreceiver->state = RECEIVING;
+		mcplayer_stop();
+		goto out;
+	}
+	else if (mcreceiver->prio < multicast_callprio()) {
+		struct le *leua;
+		struct ua *ua;
+
+		uag_set_dnd(true);
+		uag_set_nodial(true);
+
+		for (leua = list_head(uag_list()); leua; leua = leua->next) {
+			struct le *lecall;
+			ua = leua->data;
+			for (lecall = list_head(ua_calls(ua)); lecall;
+				lecall = lecall->next) {
+				struct call *call = lecall->data;
+				if (!call_is_onhold(call))
+					call_hold(call, true);
+			}
+		}
 	}
 
 	le = list_apply(&mcreceivl, true, mcreceiver_running, NULL);
 	if (!le) {
-		/* start the player now */
-		mcplayer_stop();
-		jbuf_flush(mcreceiver->jbuf);
-		mcreceiver->running = true;
+		mcreceiver->state = RUNNING;
 		mcreceiver->ssrc = ssrc;
-		module_event("multicast", "receive start", NULL, NULL,
-			     "%J (%d)", &mcreceiver->addr, mcreceiver->prio);
-		err = mcplayer_start(mcreceiver->jbuf, mcreceiver->ac);
+		err = player_stop_start(mcreceiver);
+
+		info ("multicast receiver: start addr=%J prio=%d enabled=%d "
+			"state=%s\n", &mcreceiver->addr, mcreceiver->prio,
+			mcreceiver->enable, state_str(mcreceiver->state));
+
+		module_event("multicast", "receiver start", NULL, NULL,
+			"addr=%J prio=%d enabled=%d state=%s",
+			&mcreceiver->addr, mcreceiver->prio,
+			mcreceiver->enable, state_str(mcreceiver->state));
+
 		goto out;
 	}
 
 	hprio = le->data;
-	if (hprio->prio < mcreceiver->prio)
-		/*received lower prio -> noting todo*/
+	if (hprio->prio < mcreceiver->prio) {
 		goto out;
+	}
 
 	if (hprio->prio == mcreceiver->prio && mcreceiver->ssrc != ssrc) {
-		/*SSRC changed -> restart player*/
-		mcplayer_stop();
-		jbuf_flush(hprio->jbuf);
-		hprio->ssrc = ssrc;
-		module_event("multicast", "receive start", NULL, NULL,
-			     "%J (%d)", &hprio->addr, hprio->prio);
-		err = mcplayer_start(hprio->jbuf, hprio->ac);
+		if (hprio->state == IGNORED)
+			hprio->state = RUNNING;
+
+		mcreceiver->ssrc = ssrc;
+		err = player_stop_start(mcreceiver);
+
+		info ("multicast receiver: restart addr=%J prio=%d enabled=%d "
+			"state=%s\n", &mcreceiver->addr, mcreceiver->prio,
+			mcreceiver->enable, state_str(mcreceiver->state));
+
+		module_event("multicast", "receiver restart", NULL, NULL,
+			"addr=%J prio=%d enabled=%d state=%s",
+			&mcreceiver->addr, mcreceiver->prio,
+			mcreceiver->enable, state_str(mcreceiver->state));
+
 		goto out;
 	}
 	else if (hprio->prio == mcreceiver->prio) {
-		/*same prio but no new stream -> nothing todo*/
 		goto out;
 	}
 
-	/*higher prio -> stop old player and start new one*/
-	mcplayer_stop();
-	hprio->running = false;
-	jbuf_flush(mcreceiver->jbuf);
+	hprio->state = RECEIVING;
+	mcreceiver->state = RUNNING;
 	mcreceiver->ssrc = ssrc;
-	mcreceiver->running = true;
-	module_event("multicast", "receive start", NULL, NULL,
-		     "%J (%d)", &mcreceiver->addr, mcreceiver->prio);
-	err = mcplayer_start(mcreceiver->jbuf, mcreceiver->ac);
+
+	err = player_stop_start(mcreceiver);
+
+	info ("multicast receiver: start addr=%J prio=%d enabled=%d "
+		"state=%s\n", &mcreceiver->addr, mcreceiver->prio,
+		mcreceiver->enable, state_str(mcreceiver->state));
+
+	module_event("multicast", "receiver start", NULL, NULL,
+		"addr=%J prio=%d enabled=%d state=%s",
+		&mcreceiver->addr, mcreceiver->prio, mcreceiver->enable,
+		state_str(mcreceiver->state));
 
   out:
 	lock_rel(mcreceivl_lock);
@@ -277,26 +365,22 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 static void timeout_handler(void *arg)
 {
 	struct mcreceiver *mcreceiver = arg;
-	info ("multicast receiver: timeout of %J (prio=%d) (state=%s)\n",
-		&mcreceiver->addr, mcreceiver->prio,
-		mcreceiver->enable && mcreceiver->globenable ?
-		"enabled" : "disabled");
+	info ("multicast receiver: EOS addr=%J prio=%d enabled=%d state=%s\n",
+		&mcreceiver->addr, mcreceiver->prio, mcreceiver->enable,
+		state_str(mcreceiver->state));
+
+	module_event("multicast", "receiver EOS", NULL, NULL,
+		"addr=%J prio=%d enabled=%d state=%s",
+		&mcreceiver->addr, mcreceiver->prio, mcreceiver->enable,
+		state_str(mcreceiver->state));
 
 	lock_write_get(mcreceivl_lock);
-
-	if (mcreceiver->running) {
-		module_event("multicast", "receive timeout", NULL, NULL,
-			     "%J (%d) (%d)", &mcreceiver->addr,
-			     mcreceiver->prio,
-			     mcreceiver->enable && mcreceiver->globenable);
+	if (mcreceiver->state == RUNNING)
 		mcplayer_stop();
-	}
 
-	mcreceiver->running = false;
-	mcreceiver->ignore = false;
+	mcreceiver->state = LISTENING;
 	mcreceiver->ssrc = 0;
-	mcreceiver->ac = NULL;
-
+	mcreceiver->ac   = 0;
 	resume_uag_state();
 
 	lock_rel(mcreceivl_lock);
@@ -321,30 +405,6 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	(void) src;
 	(void) mb;
 
-	if (!mcreceiver->enable)
-		return;
-
-	if (!mcreceiver->globenable)
-		return;
-
-	if (mcreceiver->prio >= multicast_callprio() && uag_call_count()) {
-		goto out;
-	}
-	else if (mcreceiver->prio < multicast_callprio() && uag_call_count()) {
-		struct le *leua;
-		struct ua *ua;
-
-		for (leua = list_head(uag_list()); leua; leua = leua->next) {
-			struct le *le;
-			ua = leua->data;
-			for (le = list_head(ua_calls(ua)); le; le = le->next) {
-				struct call *call = le->data;
-				if (!call_is_onhold(call))
-					call_hold(call, true);
-			}
-		}
-	}
-
 	mcreceiver->ac = pt2codec(hdr);
 	if (!mcreceiver->ac)
 		goto out;
@@ -355,8 +415,6 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	err = prio_handling(mcreceiver, hdr->ssrc);
 	if (err)
 		goto out;
-
-	mcreceiver->ssrc = hdr->ssrc;
 
 	err = jbuf_put(mcreceiver->jbuf, hdr, mb);
 	if (err)
@@ -414,13 +472,21 @@ void mcreceiver_enprio(uint32_t prio)
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
 
-		if (mcreceiver->prio <= prio)
+		if (mcreceiver->prio <= prio) {
 			mcreceiver->enable = true;
-		else
+		}
+		else {
 			mcreceiver->enable = false;
+
+			if (mcreceiver->state == RUNNING) {
+				mcreceiver->state = RECEIVING;
+				mcplayer_stop();
+			}
+		}
 	}
 
 	lock_rel(mcreceivl_lock);
+	resume_uag_state();
 }
 
 
@@ -443,11 +509,18 @@ void mcreceiver_enrangeprio(uint32_t priol, uint32_t prioh, bool en)
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
 
-		if (mcreceiver->prio >=priol && mcreceiver->prio <= prioh)
+		if (mcreceiver->prio >=priol && mcreceiver->prio <= prioh) {
 			mcreceiver->enable = en;
+
+			if (mcreceiver->state == RUNNING) {
+				mcreceiver->state = RECEIVING;
+				mcplayer_stop();
+			}
+		}
 	}
 
 	lock_rel(mcreceivl_lock);
+	resume_uag_state();
 }
 
 
@@ -464,9 +537,11 @@ void mcreceiver_enable(bool enable)
 	lock_write_get(mcreceivl_lock);
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
-		mcreceiver->globenable = enable;
+		mcreceiver->enable = enable;
 	}
 	lock_rel(mcreceivl_lock);
+	mcplayer_stop();
+	resume_uag_state();
 }
 
 
@@ -502,7 +577,7 @@ int mcreceiver_chprio(struct sa *addr, uint32_t prio)
 	lock_write_get(mcreceivl_lock);
 	mcreceiver->prio = prio;
 	lock_rel(mcreceivl_lock);
-
+	resume_uag_state();
 	return 0;
 }
 
@@ -530,20 +605,27 @@ int mcreceiver_prioignore(uint32_t prio)
 	}
 
 	mcreceiver = le->data;
-	if (mcreceiver->ignore)
+	if (mcreceiver->state == IGNORED)
 		return 0;
 
 	lock_write_get(mcreceivl_lock);
-	if (mcreceiver->ssrc) {
-		mcreceiver->ignore = true;
-	}
-	else {
-		err = EPERM;
-		warning ("multicast receiver: priority %d not receiving "
-			"(%m)\n", prio, err);
+	switch (mcreceiver->state) {
+		case RUNNING:
+			mcreceiver->state = IGNORED;
+			mcplayer_stop();
+			break;
+		case RECEIVING:
+			mcreceiver->state = IGNORED;
+			break;
+		default:
+			err = EPERM;
+			warning ("multicast receiver: priority %d not"
+				" running or receiving(%m)\n", prio, err);
+			break;
 	}
 
 	lock_rel(mcreceivl_lock);
+	resume_uag_state();
 	return err;
 }
 
@@ -555,8 +637,8 @@ void mcreceiver_unregall(void)
 {
 	lock_write_get(mcreceivl_lock);
 	list_flush(&mcreceivl);
-	resume_uag_state();
 	lock_rel(mcreceivl_lock);
+	resume_uag_state();
 	mcreceivl_lock = mem_deref(mcreceivl_lock);
 }
 
@@ -579,9 +661,9 @@ void mcreceiver_unreg(struct sa *addr){
 	mcreceiver = le->data;
 	lock_write_get(mcreceivl_lock);
 	list_unlink(&mcreceiver->le);
-	resume_uag_state();
 	lock_rel(mcreceivl_lock);
 	mem_deref(mcreceiver);
+	resume_uag_state();
 
 	if (list_isempty(&mcreceivl))
 		mcreceivl_lock = mem_deref(mcreceivl_lock);
@@ -636,10 +718,8 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	port = sa_port(&mcreceiver->addr);
 	mcreceiver->prio = prio;
 
-	mcreceiver->running = false;
 	mcreceiver->enable = true;
-	mcreceiver->globenable = true;
-	mcreceiver->ignore = false;
+	mcreceiver->state = LISTENING;
 
 	jbuf_del  = cfg->jbuf_del;
 	jbuf_wish = cfg->jbuf_wish;
@@ -699,12 +779,8 @@ void mcreceiver_print(struct re_printf *pf)
 	re_hprintf(pf, "Multicast Receiver List:\n");
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
-		re_hprintf(pf, "   %J - %d%s%s%s%s\n", &mcreceiver->addr,
-			mcreceiver->prio,
-			mcreceiver->enable  && mcreceiver->globenable ?
-			" (enable)" : "",
-			mcreceiver->running ? " (active)" : "",
-			mcreceiver->ignore ? " (ignored)" : "",
-			mcreceiver->ssrc ? " (receiving)" : "");
+		re_hprintf(pf, "   addr=%J prio=%d enabled=%d state=%s\n",
+			&mcreceiver->addr, mcreceiver->prio,
+			mcreceiver->enable, state_str(mcreceiver->state));
 	}
 }
