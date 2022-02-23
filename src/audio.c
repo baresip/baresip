@@ -104,7 +104,6 @@ struct autx {
 	int cur_key;                  /**< Currently transmitted event     */
 	enum aufmt src_fmt;           /**< Sample format for audio source  */
 	enum aufmt enc_fmt;           /**< Sample format for encoder       */
-	bool need_conv;               /**< Sample format conversion needed */
 
 	struct {
 		uint64_t aubuf_overrun;
@@ -561,7 +560,6 @@ static void poll_aubuf_tx(struct audio *a)
 	int16_t *sampv = tx->sampv;
 	size_t sampc;
 	size_t sz;
-	size_t num_bytes;
 	struct le *le;
 	uint32_t srate;
 	uint8_t ch;
@@ -571,47 +569,13 @@ static void poll_aubuf_tx(struct audio *a)
 	if (!sz)
 		return;
 
-	num_bytes = tx->psize;
 	sampc = tx->psize / sz;
-
-	/* timed read from audio-buffer */
-
-	if (tx->src_fmt == tx->enc_fmt) {
-
-		aubuf_read(tx->aubuf, (uint8_t *)tx->sampv, num_bytes);
-	}
-	else if (tx->enc_fmt == AUFMT_S16LE) {
-
-		/* Convert from ausrc format to 16-bit format */
-
-		void *tmp_sampv;
-
-		if (!tx->need_conv) {
-			info("audio: NOTE: source sample conversion"
-			     " needed: %s  -->  %s\n",
-			     aufmt_name(tx->src_fmt), aufmt_name(AUFMT_S16LE));
-			tx->need_conv = true;
-		}
-
-		tmp_sampv = mem_zalloc(num_bytes, NULL);
-		if (!tmp_sampv)
-			return;
-
-		aubuf_read(tx->aubuf, tmp_sampv, num_bytes);
-
-		auconv_to_s16(sampv, tx->src_fmt, tmp_sampv, sampc);
-
-		mem_deref(tmp_sampv);
-	}
-	else {
-		warning("audio: tx: invalid sample formats (%s -> %s)\n",
-			aufmt_name(tx->src_fmt),
-			aufmt_name(tx->enc_fmt));
-	}
-
 	srate = tx->ausrc_prm.srate;
 	ch = tx->ausrc_prm.ch;
-	auframe_init(&af, tx->enc_fmt, sampv, sampc, srate, ch);
+
+	/* timed read from audio-buffer */
+	aubuf_read(tx->aubuf, (uint8_t *)sampv, tx->psize);
+	auframe_init(&af, tx->src_fmt, sampv, sampc, srate, ch);
 
 	/* Process exactly one audio-frame in list order */
 	for (le = tx->filtl.head; le; le = le->next) {
@@ -622,6 +586,13 @@ static void poll_aubuf_tx(struct audio *a)
 	}
 	if (err) {
 		warning("audio: aufilter encode: %m\n", err);
+	}
+
+	if (af.fmt != tx->enc_fmt) {
+		warning("audio: tx: invalid sample formats (%s -> %s). %s\n",
+			aufmt_name(af.fmt), aufmt_name(tx->enc_fmt),
+			tx->enc_fmt == AUFMT_S16LE ? "Use module auconv!" : ""
+			);
 	}
 
 	/* Encode and send */
