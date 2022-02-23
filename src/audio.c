@@ -157,7 +157,6 @@ struct aurx {
 	bool level_set;               /**< True if level_last is set       */
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
-	bool need_conv;               /**< Sample format conversion needed */
 	uint32_t again;               /**< Stream decode EAGAIN counter    */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
 	size_t last_sampc;
@@ -954,6 +953,7 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 {
 	struct auframe af;
 	size_t sampc = AUDIO_SAMPSZ;
+	size_t num_bytes;
 	struct le *le;
 	int err = 0;
 
@@ -1014,46 +1014,17 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 #endif
 	}
 
-	if (rx->play_fmt == af.fmt) {
-
-		size_t num_bytes = af.sampc * aufmt_sample_size(rx->play_fmt);
-
-		err = aubuf_write(rx->aubuf, af.sampv, num_bytes);
-		if (err)
-			goto out;
+	if (af.fmt != rx->play_fmt) {
+		warning("audio: rx: invalid sample formats (%s -> %s). %s\n",
+			aufmt_name(af.fmt), aufmt_name(rx->play_fmt),
+			rx->play_fmt == AUFMT_S16LE ? "Use module auconv!" : ""
+			);
 	}
-	else if (af.fmt == AUFMT_S16LE) {
 
-		/* Convert from 16-bit to auplay format */
-		void *tmp_sampv;
-		size_t num_bytes = af.sampc * aufmt_sample_size(rx->play_fmt);
-
-		if (!rx->need_conv) {
-			info("audio: NOTE: playback sample conversion"
-			     " needed: %s  -->  %s\n",
-			     aufmt_name(AUFMT_S16LE),
-			     aufmt_name(rx->play_fmt));
-			rx->need_conv = true;
-		}
-
-		tmp_sampv = mem_zalloc(num_bytes, NULL);
-		if (!tmp_sampv)
-			return ENOMEM;
-
-		auconv_from_s16(rx->play_fmt, tmp_sampv, af.sampv, af.sampc);
-
-		err = aubuf_write(rx->aubuf, tmp_sampv, num_bytes);
-
-		mem_deref(tmp_sampv);
-
-		if (err)
-			goto out;
-	}
-	else {
-		warning("audio: decode: invalid sample formats (%s -> %s)\n",
-			aufmt_name(af.fmt),
-			aufmt_name(rx->play_fmt));
-	}
+	num_bytes = auframe_size(&af);
+	err = aubuf_write(rx->aubuf, af.sampv, num_bytes);
+	if (err)
+		goto out;
 
 	lock_write_get(rx->lock);
 	rx->aubuf_started = true;
