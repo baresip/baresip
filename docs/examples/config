@@ -108,6 +108,7 @@ module			g711.so
 #module			ilbc.so
 
 # Audio filter Modules (in encoding order)
+module			auconv.so
 module			auresamp.so
 #module			vumeter.so
 #module			sndfile.so
