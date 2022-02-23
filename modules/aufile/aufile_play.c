@@ -79,9 +79,9 @@ static void *write_thread(void *arg)
 }
 
 
-int play_alloc(struct auplay_st **stp, const struct auplay *ap,
-		    struct auplay_prm *prm, const char *device,
-		    auplay_write_h *wh, void *arg)
+int aufile_play_alloc(struct auplay_st **stp, const struct auplay *ap,
+		      struct auplay_prm *prm, const char *device,
+		      auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
 	const char *file;
