@@ -1737,6 +1737,17 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 
 		sz = aufmt_sample_size(tx->src_fmt);
 
+		err = ausrc_alloc(&tx->ausrc, ausrcl,
+				  tx->module,
+				  &prm, tx->device,
+				  ausrc_read_handler, ausrc_error_handler, a);
+		if (err) {
+			warning("audio: start_source failed (%s.%s): %m\n",
+				tx->module, tx->device, err);
+			return err;
+		}
+
+		tx->ausrc_prm = prm;
 		tx->psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 
 		tx->aubuf_maxsz = tx->psize * 30;
@@ -1746,17 +1757,6 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 					  tx->aubuf_maxsz);
 			if (err)
 				return err;
-		}
-
-		tx->ausrc_prm = prm;
-		err = ausrc_alloc(&tx->ausrc, ausrcl,
-				  tx->module,
-				  &tx->ausrc_prm, tx->device,
-				  ausrc_read_handler, ausrc_error_handler, a);
-		if (err) {
-			warning("audio: start_source failed (%s.%s): %m\n",
-				tx->module, tx->device, err);
-			return err;
 		}
 
 		tx->as = ausrc_find(ausrcl, tx->module);

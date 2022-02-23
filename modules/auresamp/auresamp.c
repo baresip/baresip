@@ -9,19 +9,16 @@
 #include <rem.h>
 #include <baresip.h>
 
-enum {
-	MAX_PTIME       =    60,  /* Maximum packet time in [ms] */
-};
 
 /**
  *  The auresamp module is one of the audio filters. The order of the filters
  *  is specified by the order in the config file.
  *
- *  .    .-------.   .----------.   .-------.   .---------.
- *  |    |       |   | filters  |   |       |   |         |
- *  |O-->| ausrc |-->|   e.g.   |-->| aubuf |-->| encoder |--> RTP
- *  |    |       |   | auresamp |   |       |   |         |
- *  '    '-------'   '----------'   '-------'   '---------'
+ *  .    .--------.   .-------.   .----------.   .--------.
+ *  |    |        |   |       |   | filters  |   |        |
+ *  |O-->| ausrc  |-->| aubuf |-->|   e.g.   |-->| encode |--> RTP
+ *  |    |        |   |       |   | auresamp |   |        |
+ *  '    '---- ---'   '-------'   '----------'   '--------'
  *
  *       .--------.   .-------.   .----------.   .--------.
  * |\    |        |   |       |   | filters  |   |        |
@@ -38,7 +35,7 @@ struct auresamp_st {
 
 	int16_t *sampv;          /* s16le audio data buffer                  */
 	int16_t *rsampv;         /* resampled data                           */
-	size_t rsampc;           /* size of rsampv buffer                    */
+	size_t rsampsz;          /* size of rsampv buffer                    */
 	struct auresamp resamp;  /* resampler                                */
 	struct aufilt_prm oprm;  /* filter output parameters                 */
 	const char *dbg;         /* debugging "encoder"/"decoder"            */
@@ -76,7 +73,7 @@ static int sampv_alloc(struct auresamp_st *st, struct auframe *af)
 {
 	size_t psize;
 
-	psize = MAX_PTIME * af->srate * af->ch * sizeof(int16_t) / 1000;
+	psize = af->sampc * af->ch * 2;
 	st->sampv = mem_zalloc(psize, NULL);
 
 	if (!st->sampv)
@@ -86,10 +83,34 @@ static int sampv_alloc(struct auresamp_st *st, struct auframe *af)
 }
 
 
+static int rsampv_check_size(struct auresamp_st *st, struct auframe *af)
+{
+	uint64_t ptime;
+	size_t psize;
+
+	ptime = af->sampc * 1000 / af->srate;
+	psize = ptime * st->oprm.srate * st->oprm.ch *
+		aufmt_sample_size(af->fmt) / 1000;
+
+	/* auresamp minimum output size is the input size */
+	psize = max(psize, auframe_size(af));
+	if (st->rsampsz < psize) {
+		st->rsampsz = 0;
+		st->rsampv = mem_deref(st->rsampv);
+		st->rsampv = mem_zalloc(psize, NULL);
+	}
+
+	if (!st->rsampv)
+		return ENOMEM;
+
+	st->rsampsz = psize;
+	return 0;
+}
+
+
 static int resamp_setup(struct auresamp_st *st, struct auframe *af)
 {
 	int err = 0;
-	size_t psize;
 
 	err = auresamp_setup(&st->resamp, af->srate, af->ch,
 			     st->oprm.srate, st->oprm.ch);
@@ -98,16 +119,7 @@ static int resamp_setup(struct auresamp_st *st, struct auframe *af)
 		return err;
 	}
 
-	psize = MAX_PTIME * st->oprm.srate * st->oprm.ch * 2 / 1000;
-
-	st->rsampc = 0;
-	st->rsampv = mem_deref(st->rsampv);
-	st->rsampv = mem_zalloc(psize, NULL);
-	if (!st->rsampv)
-		return ENOMEM;
-
-	st->rsampc = psize;
-	return 0;
+	return rsampv_check_size(st, af);
 }
 
 
@@ -146,7 +158,7 @@ static int common_resample(struct auresamp_st *st, struct auframe *af)
 	}
 
 	if (st->oprm.srate == af->srate && st->oprm.ch == af->ch) {
-		st->rsampc = 0;
+		st->rsampsz = 0;
 		st->rsampv = mem_deref(st->rsampv);
 		st->sampv  = mem_deref(st->sampv);
 		return 0;
@@ -166,11 +178,13 @@ static int common_resample(struct auresamp_st *st, struct auframe *af)
 
 	if (st->resamp.irate != af->srate || st->resamp.ich != af->ch)
 		err = resamp_setup(st, af);
+	else
+		err = rsampv_check_size(st, af);
 
 	if (err)
 		return err;
 
-	rsampc = st->rsampc;
+	rsampc = st->rsampsz / 2;
 	err = auresamp(&st->resamp, st->rsampv, &rsampc, sampv, af->sampc);
 	if (err) {
 		warning("resample: auresamp error (%m)\n", err);
