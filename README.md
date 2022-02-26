@@ -363,7 +363,6 @@ zrtp          ZRTP media encryption module
 * Linux
 * NetBSD
 * OpenBSD
-* Solaris
 * Windows (mingw and VS2015)
 
 
