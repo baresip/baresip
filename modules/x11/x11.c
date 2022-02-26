@@ -4,9 +4,7 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  */
 
-#ifndef SOLARIS
 #define _XOPEN_SOURCE 1
-#endif
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <sys/ipc.h>

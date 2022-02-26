@@ -3,9 +3,6 @@
  *
  * Copyright (C) 2010 - 2021 Alfred E. Heggestad
  */
-#ifdef SOLARIS
-#define __EXTENSIONS__ 1
-#endif
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

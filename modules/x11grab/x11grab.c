@@ -6,9 +6,7 @@
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <unistd.h>
-#ifndef SOLARIS
 #define _XOPEN_SOURCE 1
-#endif
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <pthread.h>
