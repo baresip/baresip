@@ -53,6 +53,7 @@ struct call {
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
 	bool outgoing;            /**< True if outgoing, false if incoming  */
+	bool answered;            /**< True if call has been answered       */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
@@ -1114,19 +1115,22 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 	if (call->config_avt.rtp_stats)
 		call_set_xrtpstat(call);
 
-	switch (call->state) {
-
-	case CALL_STATE_INCOMING:
-		if (scode < 400) {
-			scode = 486;
-			reason = "Rejected";
+	if (call->state == CALL_STATE_INCOMING) {
+		if (call->answered) {
+			info("call: abort call '%s' with %s\n",
+			     sip_dialog_callid(sipsess_dialog(call->sess)),
+			     call->peer_uri);
+			sipsess_abort(call->sess);
+		} else {
+			if (scode < 400) {
+				scode = 486;
+				reason = "Rejected";
+			}
+			info("call: rejecting incoming call from %s (%u %s)\n",
+			     call->peer_uri, scode, reason);
+			(void)sipsess_reject(call->sess, scode, reason, NULL);
 		}
-		info("call: rejecting incoming call from %s (%u %s)\n",
-		     call->peer_uri, scode, reason);
-		(void)sipsess_reject(call->sess, scode, reason, NULL);
-		break;
-
-	default:
+	} else {
 		info("call: terminate call '%s' with %s\n",
 		     sip_dialog_callid(sipsess_dialog(call->sess)),
 		     call->peer_uri);
@@ -1135,7 +1139,6 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 			call_notify_sipfrag(call, 487, "Request Terminated");
 
 		call->sess = mem_deref(call->sess);
-		break;
 	}
 
 	set_state(call, CALL_STATE_TERMINATED);
@@ -1256,6 +1259,8 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	err = sipsess_answer(call->sess, scode, "Answering", desc,
 			     "Allow: %H\r\n", ua_print_allowed, call->ua);
+
+	call->answered = true;
 
 	mem_deref(desc);
 
