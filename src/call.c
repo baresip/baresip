@@ -1121,7 +1121,8 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 			     sip_dialog_callid(sipsess_dialog(call->sess)),
 			     call->peer_uri);
 			sipsess_abort(call->sess);
-		} else {
+		}
+		else {
 			if (scode < 400) {
 				scode = 486;
 				reason = "Rejected";
@@ -1130,7 +1131,8 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 			     call->peer_uri, scode, reason);
 			(void)sipsess_reject(call->sess, scode, reason, NULL);
 		}
-	} else {
+	}
+	else {
 		info("call: terminate call '%s' with %s\n",
 		     sip_dialog_callid(sipsess_dialog(call->sess)),
 		     call->peer_uri);
