@@ -1440,6 +1440,7 @@ static int autx_print_pipeline(struct re_printf *pf, const struct autx *autx)
 	err = re_hprintf(pf, "audio tx pipeline:  %10s",
 			 autx->as ? autx->as->name : "(src)");
 
+	err |= re_hprintf(pf, " ---> aubuf");
 	for (le = list_head(&autx->filtl); le; le = le->next) {
 		struct aufilt_enc_st *st = le->data;
 
@@ -1465,6 +1466,7 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *aurx)
 	err = re_hprintf(pf, "audio rx pipeline:  %10s",
 			 aurx->ap ? aurx->ap->name : "(play)");
 
+	err |= re_hprintf(pf, " <--- aubuf");
 	for (le = list_head(&aurx->filtl); le; le = le->next) {
 		struct aufilt_dec_st *st = le->data;
 
