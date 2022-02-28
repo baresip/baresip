@@ -288,6 +288,9 @@ static void soap_child_print(struct soap_child *c, int indent)
 	struct le *le;
 	struct pl nil;
 
+	if (!c)
+		return;
+
 	pl_set_str(&nil, "nil");
 	if (indent > 16)
 		indent = 16;
