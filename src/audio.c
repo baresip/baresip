@@ -1736,6 +1736,8 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		prm.ptime      = tx->ptime;
 		prm.fmt        = tx->src_fmt;
 
+		tx->ausrc_prm = prm;
+
 		sz = aufmt_sample_size(tx->src_fmt);
 
 		psize_alloc = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
@@ -1759,11 +1761,10 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 			return err;
 		}
 
-		tx->ausrc_prm = prm;
-
 		/* recalculate and resize aubuf if ausrc_alloc changes prm */
 		tx->psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 		if (psize_alloc != tx->psize) {
+			tx->ausrc_prm = prm;
 			tx->aubuf_maxsz = tx->psize * 30;
 			err = aubuf_resize(tx->aubuf, tx->psize,
 					   tx->aubuf_maxsz);
