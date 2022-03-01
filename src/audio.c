@@ -1762,6 +1762,8 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		}
 
 		/* recalculate and resize aubuf if ausrc_alloc changes prm */
+		tx->src_fmt = prm.fmt;
+		sz = aufmt_sample_size(tx->src_fmt);
 		tx->psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
 		if (psize_alloc != tx->psize) {
 			tx->ausrc_prm = prm;
