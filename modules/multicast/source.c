@@ -187,7 +187,7 @@ static void poll_aubuf_tx(struct mcsource *src)
 	num_bytes = src->psize;
 	sampc = num_bytes / sz;
 
-	if (src->enc_fmt == AUFMT_S16LE) {
+	if (src->src_fmt == AUFMT_S16LE) {
 		aubuf_read(src->aubuf, (uint8_t *)sampv, num_bytes);
 	}
 	else if (src->enc_fmt == AUFMT_S16LE) {
