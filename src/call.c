@@ -1260,7 +1260,9 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 		return err;
 
 	err = sipsess_answer(call->sess, scode, "Answering", desc,
-			     "Allow: %H\r\n", ua_print_allowed, call->ua);
+			     "Allow: %H\r\n"
+			     "%H", ua_print_allowed, call->ua,
+			     ua_print_supported, call->ua);
 
 	call->answered = true;
 
