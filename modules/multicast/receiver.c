@@ -173,7 +173,7 @@ static const struct aucodec *pt2codec(const struct rtp_header *hdr)
 
 		default:
 			warning ("multicast receiver: RTP Payload "
-				"Type %d not found.\n");
+				"Type %d not found.\n", hdr->pt);
 			break;
 	}
 
