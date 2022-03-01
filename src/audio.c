@@ -1772,7 +1772,6 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 				return err;
 		}
 
-
 		tx->as = ausrc_find(ausrcl, tx->module);
 
 		switch (a->cfg.txmode) {
