@@ -18,8 +18,8 @@ ifeq ($(V),)
 HIDE=@
 endif
 
-LIBRE_MIN	:= 2.0.1-dev13
-LIBREM_MIN	:= 1.0.0-dev3
+LIBRE_MIN	:= 2.0.1-dev16
+LIBREM_MIN	:= 1.0.0-dev4
 
 ifndef LIBRE_MK
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \
