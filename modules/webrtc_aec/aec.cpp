@@ -49,7 +49,6 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	struct conf *conf = conf_cur();
 	struct aec *aec;
 	int err = 0;
-	int r;
 
 	if (!stp || !ctx || !prm)
 		return EINVAL;
