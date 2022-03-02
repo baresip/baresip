@@ -1729,13 +1729,27 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 
 		struct ausrc_prm prm;
 		size_t sz;
+		size_t psize_alloc;
 
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
 		prm.ptime      = tx->ptime;
 		prm.fmt        = tx->src_fmt;
 
+		tx->ausrc_prm = prm;
+
 		sz = aufmt_sample_size(tx->src_fmt);
+
+		psize_alloc = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
+		tx->psize = psize_alloc;
+		tx->aubuf_maxsz = tx->psize * 30;
+
+		if (!tx->aubuf) {
+			err = aubuf_alloc(&tx->aubuf, tx->psize,
+					  tx->aubuf_maxsz);
+			if (err)
+				return err;
+		}
 
 		err = ausrc_alloc(&tx->ausrc, ausrcl,
 				  tx->module,
@@ -1747,14 +1761,15 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 			return err;
 		}
 
-		tx->ausrc_prm = prm;
+		/* recalculate and resize aubuf if ausrc_alloc changes prm */
+		tx->src_fmt = prm.fmt;
+		sz = aufmt_sample_size(tx->src_fmt);
 		tx->psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
-
-		tx->aubuf_maxsz = tx->psize * 30;
-
-		if (!tx->aubuf) {
-			err = aubuf_alloc(&tx->aubuf, tx->psize,
-					  tx->aubuf_maxsz);
+		if (psize_alloc != tx->psize) {
+			tx->ausrc_prm = prm;
+			tx->aubuf_maxsz = tx->psize * 30;
+			err = aubuf_resize(tx->aubuf, tx->psize,
+					   tx->aubuf_maxsz);
 			if (err)
 				return err;
 		}
