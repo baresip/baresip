@@ -104,7 +104,6 @@ struct autx {
 	int cur_key;                  /**< Currently transmitted event     */
 	enum aufmt src_fmt;           /**< Sample format for audio source  */
 	enum aufmt enc_fmt;           /**< Sample format for encoder       */
-	bool need_conv;               /**< Sample format conversion needed */
 
 	struct {
 		uint64_t aubuf_overrun;
@@ -158,7 +157,6 @@ struct aurx {
 	bool level_set;               /**< True if level_last is set       */
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
-	bool need_conv;               /**< Sample format conversion needed */
 	uint32_t again;               /**< Stream decode EAGAIN counter    */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
 	size_t last_sampc;
@@ -561,7 +559,6 @@ static void poll_aubuf_tx(struct audio *a)
 	int16_t *sampv = tx->sampv;
 	size_t sampc;
 	size_t sz;
-	size_t num_bytes;
 	struct le *le;
 	uint32_t srate;
 	uint8_t ch;
@@ -571,47 +568,13 @@ static void poll_aubuf_tx(struct audio *a)
 	if (!sz)
 		return;
 
-	num_bytes = tx->psize;
 	sampc = tx->psize / sz;
-
-	/* timed read from audio-buffer */
-
-	if (tx->src_fmt == tx->enc_fmt) {
-
-		aubuf_read(tx->aubuf, (uint8_t *)tx->sampv, num_bytes);
-	}
-	else if (tx->enc_fmt == AUFMT_S16LE) {
-
-		/* Convert from ausrc format to 16-bit format */
-
-		void *tmp_sampv;
-
-		if (!tx->need_conv) {
-			info("audio: NOTE: source sample conversion"
-			     " needed: %s  -->  %s\n",
-			     aufmt_name(tx->src_fmt), aufmt_name(AUFMT_S16LE));
-			tx->need_conv = true;
-		}
-
-		tmp_sampv = mem_zalloc(num_bytes, NULL);
-		if (!tmp_sampv)
-			return;
-
-		aubuf_read(tx->aubuf, tmp_sampv, num_bytes);
-
-		auconv_to_s16(sampv, tx->src_fmt, tmp_sampv, sampc);
-
-		mem_deref(tmp_sampv);
-	}
-	else {
-		warning("audio: tx: invalid sample formats (%s -> %s)\n",
-			aufmt_name(tx->src_fmt),
-			aufmt_name(tx->enc_fmt));
-	}
-
 	srate = tx->ausrc_prm.srate;
 	ch = tx->ausrc_prm.ch;
-	auframe_init(&af, tx->enc_fmt, sampv, sampc, srate, ch);
+
+	/* timed read from audio-buffer */
+	aubuf_read(tx->aubuf, (uint8_t *)sampv, tx->psize);
+	auframe_init(&af, tx->src_fmt, sampv, sampc, srate, ch);
 
 	/* Process exactly one audio-frame in list order */
 	for (le = tx->filtl.head; le; le = le->next) {
@@ -622,6 +585,13 @@ static void poll_aubuf_tx(struct audio *a)
 	}
 	if (err) {
 		warning("audio: aufilter encode: %m\n", err);
+	}
+
+	if (af.fmt != tx->enc_fmt) {
+		warning("audio: tx: invalid sample formats (%s -> %s). %s\n",
+			aufmt_name(af.fmt), aufmt_name(tx->enc_fmt),
+			tx->enc_fmt == AUFMT_S16LE ? "Use module auconv!" : ""
+			);
 	}
 
 	/* Encode and send */
@@ -983,6 +953,7 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 {
 	struct auframe af;
 	size_t sampc = AUDIO_SAMPSZ;
+	size_t num_bytes;
 	struct le *le;
 	int err = 0;
 
@@ -1043,46 +1014,17 @@ static int aurx_stream_decode(struct aurx *rx, bool marker,
 #endif
 	}
 
-	if (rx->play_fmt == af.fmt) {
-
-		size_t num_bytes = af.sampc * aufmt_sample_size(rx->play_fmt);
-
-		err = aubuf_write(rx->aubuf, af.sampv, num_bytes);
-		if (err)
-			goto out;
+	if (af.fmt != rx->play_fmt) {
+		warning("audio: rx: invalid sample formats (%s -> %s). %s\n",
+			aufmt_name(af.fmt), aufmt_name(rx->play_fmt),
+			rx->play_fmt == AUFMT_S16LE ? "Use module auconv!" : ""
+			);
 	}
-	else if (af.fmt == AUFMT_S16LE) {
 
-		/* Convert from 16-bit to auplay format */
-		void *tmp_sampv;
-		size_t num_bytes = af.sampc * aufmt_sample_size(rx->play_fmt);
-
-		if (!rx->need_conv) {
-			info("audio: NOTE: playback sample conversion"
-			     " needed: %s  -->  %s\n",
-			     aufmt_name(AUFMT_S16LE),
-			     aufmt_name(rx->play_fmt));
-			rx->need_conv = true;
-		}
-
-		tmp_sampv = mem_zalloc(num_bytes, NULL);
-		if (!tmp_sampv)
-			return ENOMEM;
-
-		auconv_from_s16(rx->play_fmt, tmp_sampv, af.sampv, af.sampc);
-
-		err = aubuf_write(rx->aubuf, tmp_sampv, num_bytes);
-
-		mem_deref(tmp_sampv);
-
-		if (err)
-			goto out;
-	}
-	else {
-		warning("audio: decode: invalid sample formats (%s -> %s)\n",
-			aufmt_name(af.fmt),
-			aufmt_name(rx->play_fmt));
-	}
+	num_bytes = auframe_size(&af);
+	err = aubuf_write(rx->aubuf, af.sampv, num_bytes);
+	if (err)
+		goto out;
 
 	lock_write_get(rx->lock);
 	rx->aubuf_started = true;
@@ -1498,6 +1440,7 @@ static int autx_print_pipeline(struct re_printf *pf, const struct autx *autx)
 	err = re_hprintf(pf, "audio tx pipeline:  %10s",
 			 autx->as ? autx->as->name : "(src)");
 
+	err |= re_hprintf(pf, " ---> aubuf");
 	for (le = list_head(&autx->filtl); le; le = le->next) {
 		struct aufilt_enc_st *st = le->data;
 
@@ -1523,6 +1466,7 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *aurx)
 	err = re_hprintf(pf, "audio rx pipeline:  %10s",
 			 aurx->ap ? aurx->ap->name : "(play)");
 
+	err |= re_hprintf(pf, " <--- aubuf");
 	for (le = list_head(&aurx->filtl); le; le = le->next) {
 		struct aufilt_dec_st *st = le->data;
 
