@@ -1052,7 +1052,6 @@ int test_call_format_float(void)
 int test_call_mediaenc(void)
 {
 	struct fixture fix, *f = &fix;
-	struct auplay *auplay = NULL;
 	int err = 0;
 
 	err = module_load(".", "srtp");
@@ -1065,13 +1064,13 @@ int test_call_mediaenc(void)
 
 	err = module_load(".", "ausine");
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, baresip_auplayl(),
-				   audio_sample_handler, f);
+	err = module_load(".", "aufile");
 	TEST_ERR(err);
 
 	f->estab_action = ACTION_NOTHING;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
+	f->stop_on_rtp = true;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
@@ -1092,9 +1091,12 @@ int test_call_mediaenc(void)
 	ASSERT_EQ(1, fix.a.n_mediaenc);
 	ASSERT_EQ(1, fix.b.n_mediaenc);
 
+	ASSERT_TRUE(fix.a.n_rtpestab > 0);
+	ASSERT_TRUE(fix.b.n_rtpestab > 0);
+
  out:
 	fixture_close(f);
-	mem_deref(auplay);
+	module_unload("aufile");
 	module_unload("ausine");
 
 	module_unload("srtp");

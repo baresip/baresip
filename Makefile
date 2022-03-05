@@ -327,7 +327,7 @@ ifneq ($(STATIC),)
 TEST_MODULES :=
 else
 TEST_MODULES := g711.so ausine.so fakevideo.so auconv.so dtls_srtp.so
-TEST_MODULES += srtp.so
+TEST_MODULES += srtp.so aufile.so
 endif
 
 .PHONY: test
