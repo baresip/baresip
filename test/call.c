@@ -1111,7 +1111,6 @@ int test_call_mediaenc(void)
 int test_call_medianat(void)
 {
 	struct fixture fix, *f = &fix;
-	struct auplay *auplay = NULL;
 	int err;
 
 	mock_mnat_register(baresip_mnatl());
@@ -1123,13 +1122,11 @@ int test_call_medianat(void)
 
 	err = module_load(".", "ausine");
 	TEST_ERR(err);
-	err = mock_auplay_register(&auplay, baresip_auplayl(),
-				   audio_sample_handler, f);
-	TEST_ERR(err);
 
 	f->estab_action = ACTION_NOTHING;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
+	f->stop_on_rtp = true;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
@@ -1148,7 +1145,6 @@ int test_call_medianat(void)
 
  out:
 	fixture_close(f);
-	mem_deref(auplay);
 	module_unload("ausine");
 
 	mock_mnat_unregister();
