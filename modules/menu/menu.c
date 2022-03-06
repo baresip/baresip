@@ -650,6 +650,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			play_resume(call);
 		}
 
+		menu_stop_play();
 		hash_apply(menu.ovaufile->ht, ovaufile_del, call);
 		break;
 
