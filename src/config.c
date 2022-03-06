@@ -1001,7 +1001,6 @@ int config_write_template(const char *file, const struct config *cfg)
 #else
 	(void)re_fprintf(f, "#module\t\t\t" "v4l2" MOD_EXT "\n");
 #endif
-	(void)re_fprintf(f, "#module\t\t\t" "x11grab" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "vidbridge" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Video display modules\n");
