@@ -687,14 +687,13 @@ static bool silence(const void *sampv, size_t sampc, int fmt)
 {
 	const int16_t *v;
 	int32_t sum = 0;
-	size_t i;
 
 	if (fmt != AUFMT_S16LE)
 		return true;
 
 	v = sampv;
 
-	for (i = 0; i < sampc; i++) {
+	for (size_t i = 0; i < sampc; i++) {
 		sum += v[i]*v[i];
 
 		if (sum > (int32_t) (i + 1) * SILENCE_Q)
