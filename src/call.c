@@ -46,6 +46,7 @@ struct call {
 	char *peer_name;          /**< Peer display name                    */
 	char *id;                 /**< Cached session call-id               */
 	char *replaces;           /**< Replaces parameter                   */
+	uint16_t supported;       /**< Supported header tags                */
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
 	struct tmr tmr_answ;      /**< Timer for delayed answer             */
@@ -878,6 +879,9 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (err)
 		goto out;
 
+	if (sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED, "replaces"))
+		call->supported |= REPLACES;
+
 	/* Init SDP info */
 	err = sdp_session_alloc(&call->sdp, &prm->laddr);
 	if (err)
@@ -1669,6 +1673,9 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	MAGIC_CHECK(call);
 
 	debug("call: got SDP answer (%zu bytes)\n", mbuf_get_left(msg->mb));
+
+	if (sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED, "replaces"))
+		call->supported |= REPLACES;
 
 	call->got_offer = false;
 	call_event_handler(call, CALL_EVENT_ANSWERED, call->peer_uri);
@@ -2838,4 +2845,21 @@ void call_start_answtmr(struct call *call, uint32_t ms)
 		return;
 
 	tmr_start(&call->tmr_answ, ms, delayed_answer_handler, call);
+}
+
+
+/**
+ * Checks if given Supported header tags are supported in the call
+ *
+ * @param call Call object
+ * @param tags tags
+ *
+ * @return true if check succeeds, false otherwise
+ */
+bool call_supported(struct call *call, uint16_t tags)
+{
+	if (!call)
+		return false;
+
+	return (call->supported & tags) == tags;
 }
