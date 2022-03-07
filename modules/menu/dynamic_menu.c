@@ -248,6 +248,12 @@ static int attended_xfer(struct re_printf *pf, void *arg)
 	}
 
 	menu->xfer_call = ua_call(ua);
+
+	if (!call_supported(menu->xfer_call, REPLACES)) {
+		info ("menu: peer does not support Replaces header\n");
+		goto out;
+	}
+
 	err = call_hold(ua_call(ua), true);
 	if (err)
 		goto out;
