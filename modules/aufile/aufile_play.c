@@ -51,7 +51,6 @@ static void *write_thread(void *arg)
 	uint32_t ptime = st->prm.ptime;
 
 	t = tmr_jiffies();
-	st->run = true;
 	while (st->run) {
 		struct auframe af;
 
@@ -120,6 +119,7 @@ int aufile_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->sampv = mem_alloc(st->num_bytes, NULL);
 
 	info("aufile: writing speaker audio to %s\n", file);
+	st->run = true;
 	err = pthread_create(&st->thread, NULL, write_thread, st);
 	if (err) {
 		st->run = false;
