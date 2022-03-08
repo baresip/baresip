@@ -308,7 +308,6 @@ static void *thread(void *arg)
 {
 	struct ctrl_st *st = arg;
 
-	st->run = true;
 	while (st->run)
 		g_main_loop_run(st->loop);
 
@@ -341,6 +340,7 @@ static int ctrl_alloc(struct ctrl_st **stp)
 	if (err)
 		goto out;
 
+	st->run = true;
 	err = pthread_create(&st->tid, NULL, thread, st);
 	if (err)
 		st->run = false;
