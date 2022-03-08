@@ -566,6 +566,14 @@ void mcreceiver_enrangeprio(uint32_t priol, uint32_t prioh, bool en)
 
 			if (mcreceiver->state == RUNNING) {
 				mcreceiver->state = RECEIVING;
+
+				module_event("multicast",
+					"receiver stopped playing", NULL, NULL,
+					"addr=%J prio=%d enabled=%d state=%s",
+					&mcreceiver->addr, mcreceiver->prio,
+					mcreceiver->enable,
+					state_str(mcreceiver->state));
+
 				mcplayer_stop();
 				jbuf_flush(mcreceiver->jbuf);
 			}
