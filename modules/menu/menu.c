@@ -29,6 +29,7 @@ enum {
 struct filter_arg {
 	enum call_state state;
 	const struct call *exclude;
+	const struct call *match;
 	struct call *call;
 };
 
@@ -165,7 +166,7 @@ struct call *menu_find_call_state(enum call_state st)
  */
 struct call *menu_find_call(call_match_h *matchh, const struct call *exclude)
 {
-	struct filter_arg fa = {CALL_STATE_UNKNOWN, exclude, NULL};
+	struct filter_arg fa = {CALL_STATE_UNKNOWN, exclude, NULL, NULL};
 
 	uag_filter_calls(find_first_call, matchh, &fa);
 	return fa.call;
@@ -773,6 +774,9 @@ static bool filter_call(const struct call *call, void *arg)
 	if (call == fa->exclude)
 		return false;
 
+	if (fa->match && call != fa->match)
+		return false;
+
 	return true;
 }
 
@@ -800,7 +804,7 @@ void menu_selcall(struct call *call)
 static void menu_sel_other(struct call *exclude)
 {
 	int i;
-	struct filter_arg fa = {CALL_STATE_UNKNOWN, exclude, NULL};
+	struct filter_arg fa = {CALL_STATE_UNKNOWN, exclude, NULL, NULL};
 	enum call_state state[] = {
 		CALL_STATE_INCOMING,
 		CALL_STATE_OUTGOING,
