@@ -59,12 +59,10 @@ static int menu_set_incall(bool incall)
 
 static void tmrstat_handler(void *arg)
 {
-	struct call *call;
 	(void)arg;
 
-	/* the UI will only show the current active call */
-	call = menu_callcur();
-	if (!call)
+	/* the UI will only show the current current call */
+	if (!menu.curcall)
 		return;
 
 	tmr_start(&menu.tmr_stat, 100, tmrstat_handler, 0);
@@ -73,7 +71,7 @@ static void tmrstat_handler(void *arg)
 		return;
 
 	if (STATMODE_OFF != menu.statmode) {
-		(void)re_fprintf(stderr, "%H\r", call_status, call);
+		(void)re_fprintf(stderr, "%H\r", call_status, menu.curcall);
 	}
 }
 
@@ -81,7 +79,7 @@ static void tmrstat_handler(void *arg)
 void menu_update_callstatus(bool incall)
 {
 	/* if there are any active calls, enable the call status view */
-	if (incall)
+	if (incall && menu_callcur())
 		tmr_start(&menu.tmr_stat, 100, tmrstat_handler, 0);
 	else
 		tmr_cancel(&menu.tmr_stat);
@@ -307,7 +305,7 @@ static void play_ringback(const struct call *call)
 
 static void play_resume(const struct call *closed)
 {
-	struct call *call = uag_call_find(menu.callid);
+	struct call *call = menu_callcur();
 
 	switch (call_state(call)) {
 	case CALL_STATE_INCOMING:
@@ -645,7 +643,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			menu.xfer_targ = NULL;
 		}
 
-		if (!str_cmp(call_id(call), menu.callid)) {
+		if (call == menu.curcall) {
+			menu.curcall = NULL;
 			if (count==1)
 				menu_play_closed(call);
 
@@ -768,7 +767,7 @@ static bool filter_call(const struct call *call, void *arg)
 {
 	struct filter_arg *fa = arg;
 
-	if (call_state(call) != fa->state)
+	if (fa->state != CALL_STATE_UNKNOWN && call_state(call) != fa->state)
 		return false;
 
 	if (call == fa->exclude)
@@ -782,23 +781,19 @@ static bool filter_call(const struct call *call, void *arg)
 
 
 /**
- * Selects the given call to be the active call.
+ * Selects the given call to be the current call.
  *
  * @param call The call
  */
 void menu_selcall(struct call *call)
 {
-	menu.callid = mem_deref(menu.callid);
-
-	if (call) {
-		str_dup(&menu.callid, call_id(call));
-		call_set_current(ua_calls(call_get_ua(call)), call);
-	}
+	menu.curcall = call;
+	call_set_current(ua_calls(call_get_ua(call)), call);
 }
 
 
 /**
- * Chooses a new active call.
+ * Chooses a new current call.
  * Prefer call state established before early, ringing, outgoing and incoming
  */
 static void menu_sel_other(struct call *exclude)
@@ -833,7 +828,13 @@ static void menu_sel_other(struct call *exclude)
  */
 struct call *menu_callcur(void)
 {
-	return uag_call_find(menu.callid);
+	struct filter_arg fa = {CALL_STATE_UNKNOWN, NULL, menu.curcall, NULL};
+
+	if (!menu.curcall)
+		return NULL;
+
+	uag_filter_calls(find_first_call, filter_call, &fa);
+	return fa.call;
 }
 
 
@@ -1035,7 +1036,6 @@ static int module_close(void)
 
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
-	menu.callid = mem_deref(menu.callid);
 	menu.ovaufile = mem_deref(menu.ovaufile);
 	menu.ansval = mem_deref(menu.ansval);
 	menu_stop_play();
