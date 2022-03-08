@@ -1,5 +1,5 @@
 /**
- * @file aufile.c WAV Audio Player
+ * @file aufile_play.c WAV Audio Player
  *
  * Copyright (C) 2020 commend.com - Christian Spielberger
  */
@@ -27,7 +27,7 @@ struct auplay_st {
 };
 
 
-static void auplay_destructor(void *arg)
+static void destructor(void *arg)
 {
 	struct auplay_st *st = arg;
 	/* Wait for termination of other thread */
@@ -94,7 +94,7 @@ int aufile_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!prm->ch || !prm->srate || !prm->ptime)
 		return EINVAL;
 
-	st = mem_zalloc(sizeof(*st), auplay_destructor);
+	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
 		return ENOMEM;
 
