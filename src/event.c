@@ -139,8 +139,6 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 	const char *event_str = uag_event_str(ev);
 	struct sdp_media *amedia;
 	struct sdp_media *vmedia;
-	enum sdp_dir ardir;
-	enum sdp_dir vrdir;
 	int err = 0;
 
 	if (!od)
@@ -164,6 +162,10 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		const char *dir;
 		const char *call_identifier;
 		const char *peerdisplayname;
+		enum sdp_dir ardir;
+		enum sdp_dir vrdir;
+		enum sdp_dir adir;
+		enum sdp_dir vdir;
 
 		dir = call_is_outgoing(call) ? "outgoing" : "incoming";
 
@@ -183,18 +185,24 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 
 		amedia = stream_sdpmedia(audio_strm(call_audio(call)));
 		ardir = sdp_media_rdir(amedia);
+		adir  = sdp_media_dir(amedia);
 		if (!sa_isset(sdp_media_raddr(amedia), SA_ADDR))
-			ardir = SDP_INACTIVE;
+			ardir = adir = SDP_INACTIVE;
 
 		vmedia = stream_sdpmedia(video_strm(call_video(call)));
 		vrdir = sdp_media_rdir(vmedia);
+		vdir  = sdp_media_dir(vmedia);
 		if (!sa_isset(sdp_media_raddr(vmedia), SA_ADDR))
-			vrdir = SDP_INACTIVE;
+			vrdir = vdir = SDP_INACTIVE;
 
 		err |= odict_entry_add(od, "remoteaudiodir", ODICT_STRING,
 				sdp_dir_name(ardir));
 		err |= odict_entry_add(od, "remotevideodir", ODICT_STRING,
 				sdp_dir_name(vrdir));
+		err |= odict_entry_add(od, "audiodir", ODICT_STRING,
+				sdp_dir_name(adir));
+		err |= odict_entry_add(od, "videodir", ODICT_STRING,
+				sdp_dir_name(vdir));
 
 		if (err)
 			goto out;
