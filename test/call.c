@@ -397,8 +397,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
  out:
 	if (err) {
 		warning("error in event-handler (%m)\n", err);
-		f->err = err;
-		re_cancel();
+		fixture_abort(f, err);
 	}
 }
 
