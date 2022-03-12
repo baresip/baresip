@@ -14,6 +14,9 @@
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
+#if defined(HAVE_PTHREAD) && defined(WIN32)
+#include <pthread_time.h> /* needs mingw-w64 winpthreads */
+#endif
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
