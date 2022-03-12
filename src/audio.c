@@ -735,14 +735,17 @@ static void *rx_thread(void *arg)
 {
 	struct audio *a = arg;
 	struct timespec ts;
-	uint64_t ms;
+	static const uint16_t ms = 500;
 	int err = 0;
 
 	while (a->rx.thr.run) {
-
-		ms = tmr_jiffies() + 500;
-		ts.tv_sec = (time_t)(ms / 1000);
-		ts.tv_nsec = (ms % 1000) * 1000000UL;
+		clock_gettime(CLOCK_REALTIME, &ts);
+		ts.tv_sec += ms / 1000;
+		ts.tv_nsec += (ms % 1000) * 1000000;
+		if (ts.tv_nsec >= 1000000000L) {
+			ts.tv_sec++;
+			ts.tv_nsec -= 1000000000L;
+		}
 
 		err = pthread_mutex_lock(&a->rx.thr.mutex);
 		if (err)
