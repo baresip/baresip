@@ -178,6 +178,8 @@ static int encode_win(struct vidfilt_enc_st *st, struct vidframe *frame,
 			return err;
 
 		enc->vd = vidisp_find(lst, NULL);
+		if (!enc->vd)
+			return ENOENT;
 	}
 
 	return enc->vd->disph(enc->disp, "Selfview", frame, *timestamp);
