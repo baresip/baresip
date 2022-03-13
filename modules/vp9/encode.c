@@ -220,7 +220,7 @@ int vp9_encode(struct videnc_state *ves, bool update,
 	vpx_codec_err_t res;
 	vpx_image_t *img = NULL;
 	vpx_img_fmt_t img_fmt;
-	int err, i;
+	int err = 0, i;
 
 	if (!ves || !frame)
 		return EINVAL;
