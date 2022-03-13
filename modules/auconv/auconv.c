@@ -50,7 +50,6 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct auconv_enc *st;
-	int err = 0;
 	(void)ctx;
 	(void)af;
 	(void)au;
@@ -64,12 +63,9 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 	st->target_fmt = conf_config()->audio.enc_fmt;
 
-	if (err)
-		mem_deref(st);
-	else
-		*stp = (struct aufilt_enc_st *)st;
+	*stp = (struct aufilt_enc_st *)st;
 
-	return err;
+	return 0;
 }
 
 
@@ -78,7 +74,6 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct auconv_dec *st;
-	int err = 0;
 	(void)ctx;
 	(void)af;
 	(void)au;
@@ -92,12 +87,9 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 	st->target_fmt = conf_config()->audio.play_fmt;
 
-	if (err)
-		mem_deref(st);
-	else
-		*stp = (struct aufilt_dec_st *)st;
+	*stp = (struct aufilt_dec_st *)st;
 
-	return err;
+	return 0;
 }
 
 
