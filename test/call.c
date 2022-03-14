@@ -1523,7 +1523,7 @@ int test_call_aufilt(void)
  */
 int test_call_webrtc(void)
 {
-	struct fixture fix, *f = &fix;
+	struct fixture fix = {0}, *f = &fix;
 	struct sdp_media *sdp_a, *sdp_b;
 	int err;
 
