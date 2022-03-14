@@ -294,15 +294,19 @@ static const struct sa *find_laddr_af(const struct network *net, int af,
 {
 	struct le *le;
 	struct sa dst;
+	int err;
 
 	if (!net)
 		return NULL;
 
 	sa_init(&dst, af);
 	if (af == AF_INET6)
-		sa_set_str(&dst, "1::1", 53);
+		err = sa_set_str(&dst, "1::1", 53);
 	else
-		sa_set_str(&dst, "1.1.1.1", 53);
+		err = sa_set_str(&dst, "1.1.1.1", 53);
+
+	if (err)
+		return NULL;
 
 	LIST_FOREACH(&net->laddrs, le) {
 		struct laddr *laddr = le->data;
