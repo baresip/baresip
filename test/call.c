@@ -1612,7 +1612,7 @@ int test_call_webrtc(void)
 
 static int test_call_bundle_base(bool use_mnat, bool use_menc)
 {
-	struct fixture fix, *f = &fix;
+	struct fixture fix = {0}, *f = &fix;
 	struct ausrc *ausrc = NULL;
 	struct vidisp *vidisp = NULL;
 	struct mbuf *sdp = NULL;
