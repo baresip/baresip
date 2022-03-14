@@ -154,6 +154,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	struct fixture *f = arg;
 	struct call *call2 = NULL;
 	struct agent *ag;
+	struct audio *au;
 	char curi[256];
 	int err = 0;
 	(void)prm;
@@ -303,7 +304,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 				f->xfer = call;
 
 				break;
-
 			}
 		}
 		break;
@@ -357,7 +357,10 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_MENC:
 		++ag->n_mediaenc;
-		ASSERT_TRUE(stream_is_secure(audio_strm(call_audio(call))));
+		au = call_audio(call);
+		if (au) {
+			ASSERT_TRUE(stream_is_secure(audio_strm(au)));
+		}
 		break;
 
 	case UA_EVENT_CALL_DTMF_START:
