@@ -1053,7 +1053,7 @@ int test_call_format_float(void)
 
 int test_call_mediaenc(void)
 {
-	struct fixture fix, *f = &fix;
+	struct fixture fix = {0}, *f = &fix;
 	int err = 0;
 
 	err = module_load(".", "srtp");
@@ -1795,7 +1795,7 @@ static bool find_ipv6ll(const char *ifname, const struct sa *sa, void *arg)
 
 int test_call_ipv6ll(void)
 {
-	struct fixture fix, *f = &fix;
+	struct fixture fix = {0}, *f = &fix;
 	struct network *net = baresip_network();
 	struct sa ipv6ll;
 	bool found;
