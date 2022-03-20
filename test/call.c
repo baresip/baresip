@@ -1803,6 +1803,11 @@ int test_call_ipv6ll(void)
 	char uri[50];
 	int err = 0;
 
+	if (!net_laddr_af(net, AF_INET6)) {
+		info("no IPv6 address -- skipping test %s\n", __func__);
+		return 0;
+	}
+
 	err = module_load(".", "ausine");
 	TEST_ERR(err);
 
