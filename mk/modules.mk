@@ -121,7 +121,7 @@ USE_V4L2     := $(shell $(call CC_TEST,linux/videodev2.h))
 ifeq ($(USE_V4L2),)
 USE_V4L2     := $(shell $(call CC_TEST,sys/videoio.h))
 endif
-USE_X11      := $(shell $(call CC_TEST,X11/Xlib.h))
+USE_X11      := $(shell $(call CC_TEST_AND,X11/Xlib.h,X11/extensions/XShm.h))
 USE_ZRTP     := $(shell $(call CC_TEST,libzrtp/zrtp.h))
 USE_VPX      := $(shell $(call CC_TEST,vpx/vp8.h))
 USE_OMX_RPI  := $(shell $(call CC_TEST,bcm_host.h))
