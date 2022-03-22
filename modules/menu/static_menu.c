@@ -1119,6 +1119,56 @@ static int cmd_uareg(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_addheader(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl w1, w2;
+	struct ua *ua = menu_ua_carg(pf, carg, &w1, &w2);
+	const char *usage = "usage: /uaaddheader <key>=<value> <ua-idx>\n";
+	struct pl n, v;
+	int err;
+
+	if (!ua) {
+		re_hprintf(pf, usage);
+		return EINVAL;
+	}
+
+	err = re_regex(w1.p, w1.l, "[^=]+=[~]+", &n, &v);
+	if (err) {
+		re_hprintf(pf, "invalid key value pair %r\n", &w1);
+		re_hprintf(pf, usage);
+		return EINVAL;
+	}
+
+	return ua_add_custom_hdr(ua, &n, &v);
+}
+
+
+static int cmd_rmheader(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl w1, w2;
+	struct ua *ua = menu_ua_carg(pf, carg, &w1, &w2);
+	const char *usage = "usage: /uarmheader <key> <ua-idx>\n";
+	struct pl n;
+	int err;
+
+	if (!ua) {
+		re_hprintf(pf, usage);
+		return EINVAL;
+	}
+
+	err = re_regex(w1.p, w1.l, "[^ ]*", &n);
+	if (err) {
+		re_hprintf(pf, "invalid key %r\n", &w1);
+		re_hprintf(pf, usage);
+		return EINVAL;
+	}
+
+	return ua_rm_custom_hdr(ua, &n);
+}
+
+
 static int switch_video_source(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -1296,6 +1346,8 @@ static const struct cmd cmdv[] = {
 {"uafind",    0,    CMD_PRM, "Find User-Agent <aor>",   cmd_ua_find          },
 {"uanew",     0,    CMD_PRM, "Create User-Agent",       create_ua            },
 {"uareg",     0,    CMD_PRM, "UA register <regint> [index]", cmd_uareg       },
+{"uaaddheader", 0,  CMD_PRM, "Add custom header to UA",      cmd_addheader   },
+{"uarmheader",  0,  CMD_PRM, "Remove custom header from UA", cmd_rmheader    },
 {"vidsrc",    0,    CMD_PRM, "Switch video source",     switch_video_source  },
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 
