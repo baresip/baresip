@@ -510,6 +510,42 @@ static int cmd_mcignore(struct re_printf *pf, void *arg)
 
 
 /**
+ * Toggle mute of multicast
+ *
+ * @param pf  Printer
+ * @param arg Command arguments
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int cmd_mcmute(struct re_printf *pf, void *arg)
+{
+	int err = 0;
+	const struct cmd_arg *carg = arg;
+	struct pl plprio;
+	uint32_t prio = 0;
+
+	err = re_regex(carg->prm, str_len(carg->prm), "prio=[^ ]*", &plprio);
+	if (err)
+		goto out;
+
+	prio = pl_u32(&plprio);
+
+	if (!prio) {
+		err = EINVAL;
+		goto out;
+	}
+
+	err = mcreceiver_mute(prio);
+
+  out:
+	if (err)
+		re_hprintf(pf, "usage: /mcmute prio<1-255>\n");
+
+	return err;
+}
+
+
+/**
  * Enable / Disable all multicast receiver without removing it
  *
  * @param pf  Printer
@@ -618,6 +654,7 @@ static const struct cmd cmdv[] = {
 	{"mcprioen"  ,0, CMD_PRM, "Enable Listener Prio >="   , cmd_mcprioen },
 	{"mcprioren", 0, CMD_PRM, "Enable Listener Prio range", cmd_mcprioren},
 	{"mcignore",  0, CMD_PRM, "Ignore stream priority"    , cmd_mcignore },
+	{"mcmute",    0, CMD_PRM, "Mute stream priority"      , cmd_mcmute   },
 	{"mcregen"   ,0, CMD_PRM, "Enable / Disable all listener",
 		cmd_mcregen},
 };

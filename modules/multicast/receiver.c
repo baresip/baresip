@@ -49,6 +49,7 @@ struct mcreceiver {
 	struct tmr timeout;
 
 	enum state state;
+	bool muted;
 	bool enable;
 };
 
@@ -374,6 +375,7 @@ static void timeout_handler(void *arg)
 		mcplayer_stop();
 
 	mcreceiver->state = LISTENING;
+	mcreceiver->muted = false;
 	mcreceiver->ssrc = 0;
 	mcreceiver->ac   = 0;
 	resume_uag_state();
@@ -433,9 +435,11 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (err)
 		goto out;
 
-	err = jbuf_put(mcreceiver->jbuf, hdr, mb);
-	if (err)
-		return;
+	if (!mcreceiver->muted) {
+		err = jbuf_put(mcreceiver->jbuf, hdr, mb);
+		if (err)
+			return;
+	}
 
 	if (mcreceiver->state == RUNNING) {
 		if (player_decode(mcreceiver) == EAGAIN) {
@@ -654,6 +658,36 @@ int mcreceiver_prioignore(uint32_t prio)
 
 
 /**
+ * Toggle mute flag of the given priority multicast receiver
+ *
+ * @param prio Priority
+ *
+ * @return int 0 if success, errorcode otherwise
+ */
+int mcreceiver_mute(uint32_t prio)
+{
+	struct le *le;
+	struct mcreceiver *mcreceiver;
+	int err = 0;
+
+	if (!prio)
+		return EINVAL;
+
+	le = list_apply(&mcreceivl, true, mcreceiver_prio_cmp, &prio);
+	if (!le) {
+		warning ("multicast receiver: priority %d not found\n", prio);
+		return EINVAL;
+	}
+
+	mcreceiver = le->data;
+	lock_write_get(mcreceivl_lock);
+	mcreceiver->muted = !mcreceiver->muted;
+	lock_rel(mcreceivl_lock);
+	return err;
+}
+
+
+/**
  * Un-register all multicast listener
  */
 void mcreceiver_unregall(void)
@@ -741,6 +775,7 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	mcreceiver->prio = prio;
 
 	mcreceiver->enable = true;
+	mcreceiver->muted = false;
 	mcreceiver->state = LISTENING;
 
 	jbuf_del  = cfg->jbuf_del;
@@ -798,8 +833,9 @@ void mcreceiver_print(struct re_printf *pf)
 	re_hprintf(pf, "Multicast Receiver List:\n");
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
-		re_hprintf(pf, "   addr=%J prio=%d enabled=%d state=%s\n",
-			&mcreceiver->addr, mcreceiver->prio,
-			mcreceiver->enable, state_str(mcreceiver->state));
+		re_hprintf(pf, "   addr=%J prio=%d enabled=%d muted=%d "
+			"state=%s\n", &mcreceiver->addr, mcreceiver->prio,
+			mcreceiver->enable, mcreceiver->muted,
+			state_str(mcreceiver->state));
 	}
 }
