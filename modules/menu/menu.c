@@ -928,29 +928,6 @@ int menu_param_decode(const char *prm, const char *name, struct pl *val)
 }
 
 
-/**
- * Decode an SDP direction
- *
- * @param pl  SDP direction as string
- *
- * @return sdp_dir SDP direction, SDP_SENDRECV as fallback
- */
-enum sdp_dir decode_sdp_enum(const struct pl *pl)
-{
-	if (!pl_strcmp(pl, "inactive")) {
-		return SDP_INACTIVE;
-	}
-	else if (!pl_strcmp(pl, "sendonly")) {
-		return  SDP_SENDONLY;
-	}
-	else if (!pl_strcmp(pl, "recvonly")) {
-		return SDP_RECVONLY;
-	}
-
-	return SDP_SENDRECV;
-}
-
-
 static int module_init(void)
 {
 	struct pl val;
