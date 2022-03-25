@@ -501,6 +501,7 @@ static void process_module_event(struct call *call, const char *prm)
 		if (err)
 			return;
 
+		odict_entry_del(menu.ovaufile, ovkey);
 		odict_entry_add(menu.ovaufile, ovkey, ODICT_STRING, to.p);
 		mem_deref(ovkey);
 	}
