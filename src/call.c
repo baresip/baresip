@@ -1154,7 +1154,7 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 
 
 /**
- * Answer an incoming call with early media
+ * Send a SIP 183 Session Progress with configured media
  *
  * @param call Call to answer
  *
@@ -1162,10 +1162,38 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
  */
 int call_progress(struct call *call)
 {
-	struct mbuf *desc;
 	enum answermode m;
 	enum sdp_dir adir;
 	enum sdp_dir vdir;
+
+	if (!call)
+		return EINVAL;
+
+	m = account_answermode(call->acc);
+
+	adir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
+			    m == ANSWERMODE_EARLY_AUDIO ? SDP_RECVONLY :
+			    SDP_INACTIVE;
+	vdir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
+			    m == ANSWERMODE_EARLY_VIDEO ? SDP_RECVONLY :
+			    SDP_INACTIVE;
+
+	return call_progress_dir(call, adir, vdir);
+}
+
+
+/**
+ * Send a SIP 183 Session Progress with given audio/video direction
+ *
+ * @param call Call to answer
+ * @param adir Audio direction
+ * @param vdir Video direction
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
+{
+	struct mbuf *desc;
 	enum sdp_dir ansadir;
 	enum sdp_dir ansvdir;
 	int err;
@@ -1173,24 +1201,15 @@ int call_progress(struct call *call)
 	if (!call)
 		return EINVAL;
 
-	m = account_answermode(call->acc);
-
 	tmr_cancel(&call->tmr_inv);
 
 	ansadir = stream_ldir(audio_strm(call_audio(call)));
 	ansvdir = stream_ldir(video_strm(call_video(call)));
-	adir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
-			    m == ANSWERMODE_EARLY_AUDIO ? SDP_RECVONLY :
-			    SDP_INACTIVE;
-	vdir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
-			    m == ANSWERMODE_EARLY_VIDEO ? SDP_RECVONLY :
-			    SDP_INACTIVE;
 	if (adir != ansadir || vdir != ansvdir)
 		call_set_media_direction(call, adir, vdir);
 
 	call->ansadir = ansadir;
 	call->ansvdir = ansvdir;
-
 	err = call_sdp_get(call, &desc, false);
 	if (err)
 		return err;
