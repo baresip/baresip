@@ -44,6 +44,7 @@ struct call {
 	char *local_name;         /**< Local display name                   */
 	char *peer_uri;           /**< Peer SIP Address                     */
 	char *peer_name;          /**< Peer display name                    */
+	char *diverter_uri;       /**< Diverter SIP Address                 */
 	char *id;                 /**< Cached session call-id               */
 	char *replaces;           /**< Replaces parameter                   */
 	uint16_t supported;       /**< Supported header tags                */
@@ -409,6 +410,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->peer_name);
 	mem_deref(call->replaces);
 	mem_deref(call->aluri);
+	mem_deref(call->diverter_uri);
 	mem_deref(call->audio);
 	mem_deref(call->video);
 	mem_deref(call->sdp);
@@ -705,6 +707,36 @@ static bool call_hdr_dec_sip_autoanswer(struct call *call,
 }
 
 
+static void call_decode_diverter(struct call *call, const struct sip_msg *msg)
+{
+	const struct sip_hdr *hdr;
+	struct sip_addr addr;
+	int err;
+
+	if (!call || !msg)
+		return;
+
+	hdr = sip_msg_hdr(msg, SIP_HDR_HISTORY_INFO);
+	if (!hdr)
+		hdr = sip_msg_xhdr(msg, "Diversion");
+	if (!hdr)
+		return;
+
+	err = sip_addr_decode(&addr, &hdr->val);
+	if (err) {
+		warning("call: error parsing diverter address: %r\n", &hdr->val);
+		return;
+	}
+
+	err = pl_strdup(&call->diverter_uri, &addr.auri);
+
+	if (err) {
+		warning("call: could not extract diverter uri");
+		return;
+	}
+}
+
+
 /**
  * Decode the SIP message for auto answer options of incoming call
  *
@@ -872,6 +904,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->ansvdir = SDP_SENDRECV;
 	call->use_rtp = prm->use_rtp;
 	call_decode_sip_autoanswer(call, msg);
+	call_decode_diverter(call, msg);
 
 	err = str_dup(&call->local_uri, local_uri);
 	if (local_name)
@@ -1419,6 +1452,19 @@ const char *call_localuri(const struct call *call)
 const char *call_peername(const struct call *call)
 {
 	return call ? call->peer_name : NULL;
+}
+
+
+/**
+ * Get the diverter URI of the call
+ *
+ * @param call  Call object
+ *
+ * @return Diverter URI
+ */
+const char *call_diverteruri(const struct call *call)
+{
+	return call ? call->diverter_uri : NULL;
 }
 
 
