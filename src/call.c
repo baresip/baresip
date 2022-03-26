@@ -724,7 +724,8 @@ static void call_decode_diverter(struct call *call, const struct sip_msg *msg)
 
 	err = sip_addr_decode(&addr, &hdr->val);
 	if (err) {
-		warning("call: error parsing diverter address: %r\n", &hdr->val);
+		warning("call: error parsing diverter address: %r\n",
+			&hdr->val);
 		return;
 	}
 
