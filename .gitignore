@@ -49,3 +49,5 @@ compile_commands.json
 *.obj
 mk/win32/Debug/
 *.vcxproj.user
+
+speaker.wav
