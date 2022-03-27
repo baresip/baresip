@@ -136,8 +136,8 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 	if (!pl_isset(&argdir[1]))
 		argdir[1] = argdir[0];
 
-	adir = decode_sdp_enum(&argdir[0]);
-	vdir = decode_sdp_enum(&argdir[1]);
+	adir = sdp_dir_decode(&argdir[0]);
+	vdir = sdp_dir_decode(&argdir[1]);
 
 	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
 		(void) re_hprintf(pf, "%s", usage);
@@ -541,8 +541,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	if (!pl_isset(&argdir[1]))
 		argdir[1] = argdir[0];
 
-	adir = decode_sdp_enum(&argdir[0]);
-	vdir = decode_sdp_enum(&argdir[1]);
+	adir = sdp_dir_decode(&argdir[0]);
+	vdir = sdp_dir_decode(&argdir[1]);
 
 	if (adir == SDP_INACTIVE && vdir == SDP_INACTIVE) {
 		(void)re_hprintf(pf, "%s", usage);
