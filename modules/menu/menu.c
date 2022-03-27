@@ -251,7 +251,7 @@ static bool menu_play(const struct call *call,
 	if (!pl_isset(&pl))
 		pl_set_str(&pl, fname);
 
-	if (!pl_isset(&pl))
+	if (!pl_isset(&pl) || !pl_strcmp(&pl, "none"))
 		return false;
 
 	pl_strdup(&file, &pl);
