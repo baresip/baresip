@@ -898,32 +898,8 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
 	/* Save timestamp for incoming RTP packets */
 
-	if (rx->ts_recv.is_set) {
-
-		uint64_t ext_last, ext_now;
-
-		ext_last = timestamp_calc_extended(rx->ts_recv.num_wraps,
-						   rx->ts_recv.last);
-
-		ext_now = timestamp_calc_extended(rx->ts_recv.num_wraps,
-						  hdr->ts);
-
-		if (ext_now <= ext_last) {
-			uint64_t delta;
-
-			delta = ext_last - ext_now;
-
-			warning("audio: [time=%.3f]"
-				" discard old frame (%.3f seconds old)\n",
-				aurx_calc_seconds(rx),
-				timestamp_calc_seconds(delta, rx->ac->crate));
-
-			discard = true;
-		}
-	}
-	else {
+	if (!rx->ts_recv.is_set)
 		timestamp_set(&rx->ts_recv, hdr->ts);
-	}
 
 	wrap = timestamp_wrap(hdr->ts, rx->ts_recv.last);
 
