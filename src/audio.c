@@ -6,6 +6,7 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
+#define _POSIX_C_SOURCE 199309L
 #include <string.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H
@@ -17,6 +18,7 @@
 #if defined(HAVE_PTHREAD) && defined(WIN32)
 #include <pthread_time.h> /* needs mingw-w64 winpthreads */
 #endif
+#include <time.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
