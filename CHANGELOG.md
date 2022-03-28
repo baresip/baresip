@@ -7,10 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2022-03-27
+
+### What's Changed
+* audio: fix rx_thread (adaptive jitter buffer) by @sreimers in https://github.com/baresip/baresip/pull/1769
+* test: init fixture by @alfredh in https://github.com/baresip/baresip/pull/1772
+* test: refactoring of test_account_uri_complete by @alfredh in https://github.com/baresip/baresip/pull/1773
+* mk: check also if extensions/XShm.h is present by @cspiel1 in https://github.com/baresip/baresip/pull/1774
+* menu: support custom SIP headers by @cspiel1 in https://github.com/baresip/baresip/pull/1775
+* menu: use new sdp_dir_decode by @cspiel1 in https://github.com/baresip/baresip/pull/1776
+* menu: avoid multiple hash entries with same key by @cspiel1 in https://github.com/baresip/baresip/pull/1777
+* menu: support audio file config value "none" by @cspiel1 in https://github.com/baresip/baresip/pull/1778
+* intercom: add video preview call by @cspiel1 in https://github.com/baresip/baresip/pull/1779
+
+---
 
 ## [2.0.0] - 2022-03-11
 
-## What's Changed
+### What's Changed
 * debug_cmd: use module_event() for aufileinfo events by @cspiel1 in https://github.com/baresip/baresip/pull/1345
 * multicast: use module_event() for sending events by @cspiel1 in https://github.com/baresip/baresip/pull/1346
 * ctrl_dbus: use module_event() to send exported event by @cspiel1 in https://github.com/baresip/baresip/pull/1347
@@ -960,6 +974,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 [Unreleased]: https://github.com/baresip/baresip/compare/v2.0.0...HEAD
+[2.0.1]: https://github.com/baresip/baresip/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/baresip/baresip/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/baresip/baresip/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/baresip/baresip/compare/v0.6.6...v1.0.0
