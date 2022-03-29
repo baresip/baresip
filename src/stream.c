@@ -416,7 +416,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		}
 
 		if (s->type == MEDIA_VIDEO ||
-			s->cfg.jbtype == JBUF_FIXED) {
+			s->cfg.jbtype != JBUF_ADAPTIVE) {
 
 			if (stream_decode(s) == EAGAIN)
 				(void) stream_decode(s);
@@ -719,8 +719,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		goto out;
 
 	/* Jitter buffer */
-	if (prm->use_rtp && cfg->jbtype != JBUF_OFF &&
-			cfg->jbuf_del.min && cfg->jbuf_del.max) {
+	if (prm->use_rtp && cfg->jbtype != JBUF_OFF && cfg->jbuf_del.max) {
 
 		err  = jbuf_alloc(&s->rx.jbuf, cfg->jbuf_del.min,
 				cfg->jbuf_del.max);

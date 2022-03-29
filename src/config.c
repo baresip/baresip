@@ -231,6 +231,8 @@ static const char *jbuf_type_str(enum jbuf_type jbtype)
 		return "fixed";
 	case JBUF_ADAPTIVE:
 		return "adaptive";
+	case JBUF_MINIMIZE:
+		return "minimize";
 	}
 
 	return "?";
@@ -764,7 +766,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
 			  "rtcp_mux\t\tno\n"
 			  "jitter_buffer_type\tfixed\t\t# off, fixed,"
-				" adaptive\n"
+				" adaptive, minimize\n"
 			  "jitter_buffer_delay\t%u-%u\t\t# frames\n"
 			  "#jitter_buffer_wish\t%u\t\t# frames for start\n"
 			  "rtp_stats\t\tno\n"
@@ -1189,7 +1191,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "#multicast_call_prio\t0\n"
 			 "#multicast_ttl\t1\n"
 			 "#multicast_jbuf_type\tfixed\t\t"
-				"# off, fixed, adaptive\n"
+				"# off, fixed, adaptive, minimize\n"
 			 "#multicast_jbuf_delay\t5-10\t\t# frames\n"
 			 "#multicast_jbuf_wish\t6\t\t# frames for start\n"
 			 "#multicast_listener\t224.0.2.21:50000\n"
