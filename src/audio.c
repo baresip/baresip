@@ -806,9 +806,6 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 		sampc = 0;
 	}
 
-	if (drop)
-		goto out;
-
 	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc,
 		     rx->ac->srate, rx->ac->ch);
 	af.timestamp = hdr->ts;
@@ -846,6 +843,11 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 			aufmt_name(af.fmt), aufmt_name(rx->play_fmt),
 			rx->play_fmt == AUFMT_S16LE ? "Use module auconv!" : ""
 			);
+	}
+
+	if (drop) {
+		aubuf_drop_auframe(rx->aubuf, &af);
+		goto out;
 	}
 
 	err = aubuf_write_auframe(rx->aubuf, &af);
