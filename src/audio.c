@@ -160,7 +160,6 @@ struct aurx {
 	bool level_set;               /**< True if level_last is set       */
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
-	uint32_t again;               /**< Stream decode EAGAIN counter    */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
 	size_t last_sampc;
 
@@ -766,7 +765,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 
 
 static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
-			      struct mbuf *mb, unsigned lostc)
+			      struct mbuf *mb, unsigned lostc, bool drop)
 {
 	struct auframe af;
 	size_t sampc = AUDIO_SAMPSZ;
@@ -806,6 +805,9 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 		/* no PLC in the codec, might be done in filters below */
 		sampc = 0;
 	}
+
+	if (drop)
+		goto out;
 
 	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc,
 		     rx->ac->srate, rx->ac->ch);
@@ -868,6 +870,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
 	bool discard = false;
+	bool drop = *ignore;
 	size_t i;
 	int wrap;
 
@@ -881,6 +884,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 		return;
 	}
 
+	*ignore = false;
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	for (i=0; i<extc; i++) {
 
@@ -932,9 +936,9 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 
  out:
 	if (lostc)
-		(void)aurx_stream_decode(&a->rx, hdr, mb, lostc);
+		(void)aurx_stream_decode(&a->rx, hdr, mb, lostc, drop);
 
-	(void)aurx_stream_decode(&a->rx, hdr, mb, 0);
+	(void)aurx_stream_decode(&a->rx, hdr, mb, 0, drop);
 }
 
 

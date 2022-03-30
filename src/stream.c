@@ -276,11 +276,11 @@ static inline int lostcalc(struct receiver *rx, uint16_t seq)
 
 
 static int handle_rtp(struct stream *s, const struct rtp_header *hdr,
-		       struct mbuf *mb, unsigned lostc)
+		       struct mbuf *mb, unsigned lostc, bool drop)
 {
 	struct rtpext extv[8];
 	size_t extc = 0;
-	bool ignore = false;
+	bool ignore = drop;
 
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
 	if (hdr->ext && hdr->x.len && mb) {
@@ -420,7 +420,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			(void) stream_decode(s);
 	}
 	else {
-		(void)handle_rtp(s, hdr, mb, 0);
+		(void)handle_rtp(s, hdr, mb, 0, false);
 	}
 }
 
@@ -455,7 +455,7 @@ int stream_decode(struct stream *s)
 
 	lostc = lostcalc(&s->rx, hdr.seq);
 
-	err2 = handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0);
+	err2 = handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0, err == EAGAIN);
 	mem_deref(mb);
 
 	if (err2 == EAGAIN)
