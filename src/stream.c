@@ -415,12 +415,9 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			s->rx.metric.n_err++;
 		}
 
-		if (s->type == MEDIA_VIDEO ||
-			s->cfg.jbtype != JBUF_ADAPTIVE) {
 
-			if (stream_decode(s) == EAGAIN)
-				(void) stream_decode(s);
-		}
+		if (stream_decode(s) == EAGAIN)
+			(void) stream_decode(s);
 	}
 	else {
 		(void)handle_rtp(s, hdr, mb, 0);
