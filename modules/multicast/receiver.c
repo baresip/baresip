@@ -8,11 +8,6 @@
 #include <rem.h>
 #include <baresip.h>
 
-#include <stdlib.h>
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-#endif
-
 #include "multicast.h"
 
 #define DEBUG_MODULE "mcreceiver"
@@ -419,6 +414,10 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	err = jbuf_put(mcreceiver->jbuf, hdr, mb);
 	if (err)
 		return;
+
+	if (mcplayer_decode() == EAGAIN) {
+		(void) mcplayer_decode();
+	}
 
   out:
 	tmr_start(&mcreceiver->timeout, TIMEOUT, timeout_handler, mcreceiver);

@@ -49,6 +49,7 @@ void mcreceiver_print(struct re_printf *pf);
 int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac);
 void mcplayer_stop(void);
 
+int mcplayer_decode(void);
 int  mcplayer_init(void);
 void mcplayer_terminate(void);
 
