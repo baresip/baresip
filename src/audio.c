@@ -630,18 +630,6 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 	struct aurx *rx = &a->rx;
 	size_t num_bytes = auframe_size(af);
 
-	if (af->fmt != rx->play_fmt) {
-		warning("audio: write format mismatch: exp=%s, actual=%s\n",
-			aufmt_name(rx->play_fmt), aufmt_name(af->fmt));
-	}
-
-	if (rx->auplay_prm.srate != af->srate || rx->auplay_prm.ch != af->ch) {
-		warning("audio: srate/ch of frame %u/%u vs player %u/%u. Use "
-			"module auresamp!\n",
-			af->srate, af->ch,
-			rx->auplay_prm.srate, rx->auplay_prm.ch);
-	}
-
 	lock_read_get(rx->lock);
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
 
@@ -842,6 +830,13 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 		debug("audio: rx aubuf overrun (total %llu)\n",
 		      rx->stats.aubuf_overrun);
 #endif
+	}
+
+	if (rx->auplay_prm.srate != af.srate || rx->auplay_prm.ch != af.ch) {
+		warning("audio: srate/ch of frame %u/%u vs player %u/%u. Use "
+			"module auresamp!\n",
+			af.srate, af.ch,
+			rx->auplay_prm.srate, rx->auplay_prm.ch);
 	}
 
 	if (af.fmt != rx->play_fmt) {
