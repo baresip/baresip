@@ -9,6 +9,7 @@
 #include <spandsp.h>
 #include <re.h>
 #include <rem_au.h>
+#include <rem_aulevel.h>
 #include <rem_auframe.h>
 #include <baresip.h>
 
