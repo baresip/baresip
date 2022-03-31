@@ -277,6 +277,7 @@ int  conf_get_vidsz(const struct conf *conf, const char *name,
 		    struct vidsz *sz);
 int  conf_get_sa(const struct conf *conf, const char *name, struct sa *sa);
 enum jbuf_type conf_get_jbuf_type(const struct pl *pl);
+bool conf_aubuf_adaptive(const struct pl *pl);
 void conf_close(void);
 struct conf *conf_cur(void);
 int conf_loadfile(struct mbuf **mbp, const char *filename);
@@ -338,6 +339,7 @@ struct config_audio {
 	int enc_fmt;            /**< Audio encoder sample format    */
 	int dec_fmt;            /**< Audio decoder sample format    */
 	struct range buffer;    /**< Audio receive buffer in [ms]   */
+	bool adaptive;          /**< Enable adaptive audio buffer   */
 	uint32_t telev_pt;      /**< Payload type for tel.-event    */
 };
 
