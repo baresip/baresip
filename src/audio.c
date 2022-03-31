@@ -777,6 +777,7 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 	if (!rx->ac)
 		return 0;
 
+	/* TODO: PLC */
 	if (lostc && rx->ac->plch) {
 
 		err = rx->ac->plch(rx->dec,
@@ -877,6 +878,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	bool drop = *ignore;
 	size_t i;
 	int wrap;
+	(void) lostc;
 
 	MAGIC_CHECK(a);
 
@@ -939,8 +941,12 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	}
 
  out:
-	if (lostc)
-		(void)aurx_stream_decode(&a->rx, hdr, mb, lostc, drop);
+	/* TODO:  what if lostc > 1 ?*/
+	/* PLC should generate lostc frames here. Not only one.
+	 * aubuf should replace PLC frames with late arriving real frames.
+	 * It should use timestamp to decide if a frame should be replaced. */
+/*        if (lostc)*/
+/*                (void)aurx_stream_decode(&a->rx, hdr, mb, lostc, drop);*/
 
 	(void)aurx_stream_decode(&a->rx, hdr, mb, 0, drop);
 }
