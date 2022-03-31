@@ -855,7 +855,9 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 		goto out;
 
 	lock_write_get(rx->lock);
-	rx->aubuf_started = true;
+	if (!rx->aubuf_started &&
+	    (rx->aubuf_minsz >= aubuf_cur_size(rx->aubuf)))
+		rx->aubuf_started = true;
 	lock_rel(rx->lock);
 
  out:
