@@ -465,15 +465,6 @@ int stream_decode(struct stream *s)
 }
 
 
-void stream_silence_on(struct stream *s, bool on)
-{
-	if (!s)
-		return;
-
-	jbuf_silence(s->rx.jbuf, on);
-}
-
-
 static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 {
 	struct stream *s = arg;
@@ -721,7 +712,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		err  = jbuf_alloc(&s->rx.jbuf, cfg->jbuf_del.min,
 				cfg->jbuf_del.max);
 		err |= jbuf_set_type(s->rx.jbuf, cfg->jbtype);
-		err |= jbuf_set_wish(s->rx.jbuf, cfg->jbuf_wish);
 		if (err)
 			goto out;
 	}
