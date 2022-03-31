@@ -337,6 +337,16 @@ enum jbuf_type conf_get_jbuf_type(const struct pl *pl)
 }
 
 
+bool conf_aubuf_adaptive(const struct pl *pl)
+{
+	if (0 == pl_strcasecmp(pl, "fixed"))    return false;
+	if (0 == pl_strcasecmp(pl, "adaptive")) return true;
+
+	warning("unsupported audio buffer mode (%r)\n", pl);
+	return false;
+}
+
+
 /**
  * Configure the system with default settings
  *

@@ -50,6 +50,7 @@ auplay_format		s16		# s16, float, ..
 auenc_format		s16		# s16, float, ..
 audec_format		s16		# s16, float, ..
 audio_buffer		20-160		# ms
+audio_buffer_mode	fixed		# fixed, adaptive
 audio_telev_pt		101		# payload type for telephone-event
 
 # Video
