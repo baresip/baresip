@@ -363,7 +363,6 @@ struct config_avt {
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
 	enum jbuf_type jbtype;  /**< Jitter buffer type             */
 	struct range jbuf_del;  /**< Delay, number of frames        */
-	uint32_t jbuf_wish;     /**< Startup wish delay of frames   */
 	bool rtp_stats;         /**< Enable RTP statistics          */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 	bool bundle;            /**< Media Multiplexing (BUNDLE)    */

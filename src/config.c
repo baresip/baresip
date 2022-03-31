@@ -84,7 +84,6 @@ static struct config core_config = {
 		false,
 		JBUF_FIXED,
 		{5, 10},
-		0,
 		false,
 		0,
 		false
@@ -231,8 +230,6 @@ static const char *jbuf_type_str(enum jbuf_type jbtype)
 		return "fixed";
 	case JBUF_ADAPTIVE:
 		return "adaptive";
-	case JBUF_MINIMIZE:
-		return "minimize";
 	}
 
 	return "?";
@@ -435,8 +432,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	(void)conf_get_range(conf, "jitter_buffer_delay",
 			     &cfg->avt.jbuf_del);
-	(void)conf_get_u32(conf, "jitter_buffer_wish",
-			     &cfg->avt.jbuf_wish);
 	(void)conf_get_bool(conf, "rtp_stats", &cfg->avt.rtp_stats);
 	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
 
@@ -525,7 +520,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtcp_mux\t\t%s\n"
 			 "jitter_buffer_type\t%s\n"
 			 "jitter_buffer_delay\t%H\n"
-			 "jitter_buffer_wish\t%u\n"
 			 "rtp_stats\t\t%s\n"
 			 "rtp_timeout\t\t%u # in seconds\n"
 			 "\n"
@@ -575,7 +569,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtcp_mux ? "yes" : "no",
 			 jbuf_type_str(cfg->avt.jbtype),
 			 range_print, &cfg->avt.jbuf_del,
-			 cfg->avt.jbuf_wish,
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 
@@ -766,9 +759,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
 			  "rtcp_mux\t\tno\n"
 			  "jitter_buffer_type\tfixed\t\t# off, fixed,"
-				" adaptive, minimize\n"
+				" adaptive\n"
 			  "jitter_buffer_delay\t%u-%u\t\t# frames\n"
-			  "#jitter_buffer_wish\t%u\t\t# frames for start\n"
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
 			  "\n# Network\n"
@@ -1191,9 +1183,8 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "#multicast_call_prio\t0\n"
 			 "#multicast_ttl\t1\n"
 			 "#multicast_jbuf_type\tfixed\t\t"
-				"# off, fixed, adaptive, minimize\n"
+				"# off, fixed, adaptive\n"
 			 "#multicast_jbuf_delay\t5-10\t\t# frames\n"
-			 "#multicast_jbuf_wish\t6\t\t# frames for start\n"
 			 "#multicast_listener\t224.0.2.21:50000\n"
 			 "#multicast_listener\t224.0.2.21:50002\n");
 

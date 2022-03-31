@@ -685,7 +685,6 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	struct mcreceiver *mcreceiver = NULL;
 	struct config_avt *cfg = &conf_config()->avt;
 	struct range jbuf_del;
-	uint32_t jbuf_wish;
 	enum jbuf_type jbtype;
 	struct pl pl;
 
@@ -722,16 +721,13 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	mcreceiver->state = LISTENING;
 
 	jbuf_del  = cfg->jbuf_del;
-	jbuf_wish = cfg->jbuf_wish;
 	jbtype = cfg->jbtype;
 	(void)conf_get_range(conf_cur(), "multicast_jbuf_delay", &jbuf_del);
 	if (0 == conf_get(conf_cur(), "multicast_jbuf_type", &pl))
 		jbtype = conf_get_jbuf_type(&pl);
-	(void)conf_get_u32(conf_cur(), "multicast_jbuf_wish", &jbuf_wish);
 
 	err = jbuf_alloc(&mcreceiver->jbuf, jbuf_del.min, jbuf_del.max);
 	err |= jbuf_set_type(mcreceiver->jbuf, jbtype);
-	err |= jbuf_set_wish(mcreceiver->jbuf, jbuf_wish);
 	if (err)
 		goto out;
 
