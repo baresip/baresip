@@ -46,10 +46,10 @@ void mcreceiver_enable(bool enable);
 void mcreceiver_print(struct re_printf *pf);
 
 /* Player <exchangable player> */
-int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac);
+int mcplayer_start(const struct aucodec *ac);
 void mcplayer_stop(void);
+int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb);
 
-int mcplayer_decode(void);
 int  mcplayer_init(void);
 void mcplayer_terminate(void);
 

@@ -212,7 +212,7 @@ static int player_stop_start(struct mcreceiver *mcreceiver)
 {
 	mcplayer_stop();
 	jbuf_flush(mcreceiver->jbuf);
-	return mcplayer_start(mcreceiver->jbuf, mcreceiver->ac);
+	return mcplayer_start(mcreceiver->ac);
 }
 
 
@@ -384,6 +384,28 @@ static void timeout_handler(void *arg)
 
 
 /**
+ * Decode RTP packet
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int player_decode(struct mcreceiver *mcreceiver)
+{
+	void *mb = NULL;
+	struct rtp_header hdr;
+	int err = 0;
+
+	err = jbuf_get(mcreceiver->jbuf, &hdr, &mb);
+	if (err && err != EAGAIN)
+		return err;
+
+	err = mcplayer_decode(&hdr, mb);
+	mb = mem_deref(mb);
+
+	return err;
+}
+
+
+/**
  * Handle incoming RTP packages
  *
  * @param src Source address
@@ -415,8 +437,8 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (err)
 		return;
 
-	if (mcplayer_decode() == EAGAIN) {
-		(void) mcplayer_decode();
+	if (player_decode(mcreceiver) == EAGAIN) {
+		(void) player_decode(mcreceiver);
 	}
 
   out:

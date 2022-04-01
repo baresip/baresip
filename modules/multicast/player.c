@@ -21,18 +21,14 @@
  *
  * Contains configuration of the audio player and buffer for the audio data
  */
-struct mcplayer{
+struct mcplayer {
 	struct config_audio *cfg;
-	struct jbuf *jbuf;
 
 	struct auplay_st *auplay;
 	struct auplay_prm auplay_prm;
 	const struct aucodec *ac;
 	struct audec_state *dec;
 	struct aubuf *aubuf;
-	size_t aubuf_minsz;
-	size_t aubuf_maxsz;
-	size_t num_bytes;
 
 	struct list filterl;
 	char *module;
@@ -41,7 +37,6 @@ struct mcplayer{
 	uint32_t ptime;
 	enum aufmt play_fmt;
 	enum aufmt dec_fmt;
-	uint32_t again;
 };
 
 
@@ -54,7 +49,6 @@ static void mcplayer_destructor(void *arg)
 
 	mem_deref(player->auplay);
 
-	mem_deref(player->jbuf);
 	mem_deref(player->module);
 	mem_deref(player->device);
 	mem_deref(player->dec);
@@ -73,7 +67,7 @@ static void mcplayer_destructor(void *arg)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int stream_recv_handler(const struct rtp_header *hdr, struct mbuf *mb)
+int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb)
 {
 	struct auframe af;
 	struct le *le;
@@ -110,7 +104,7 @@ static int stream_recv_handler(const struct rtp_header *hdr, struct mbuf *mb)
 	}
 
 	auframe_init(&af, player->dec_fmt, player->sampv, sampc,
-		     player->auplay_prm.srate, player->auplay_prm.ch);
+		     player->ac->srate, player->ac->ch);
 	af.timestamp = hdr->ts;
 
 	for (le = player->filterl.tail; le; le = le->prev) {
@@ -149,34 +143,6 @@ static int stream_recv_handler(const struct rtp_header *hdr, struct mbuf *mb)
 
 
 /**
- * Decode RTP packet
- *
- * @return 0 if success, otherwise errorcode
- */
-int mcplayer_decode(void)
-{
-	void *mb = NULL;
-	struct rtp_header hdr;
-	int err = 0;
-
-	if (!player)
-		return EINVAL;
-
-	if (!player->jbuf)
-		return ENOENT;
-
-	err = jbuf_get(player->jbuf, &hdr, &mb);
-	if (err && err != EAGAIN)
-		return err;
-
-	err = stream_recv_handler(&hdr, mb);
-	mb = mem_deref(mb);
-
-	return err;
-}
-
-
-/**
  * Audio player write handler
  *
  * @param sampv Sample buffer
@@ -189,8 +155,6 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 
 	if (!player)
 		return;
-
-	player->num_bytes = auframe_size(af);
 
 	aubuf_read_auframe(player->aubuf, af);
 }
@@ -254,12 +218,11 @@ static int aufilt_setup(struct list *aufiltl)
  *
  * @note singleton
  *
- * @param jbuf Jitter buffer containing the RTP stream
  * @param ac   Audio codec
  *
  * @return 0 if success, otherwise errorcode
  */
-int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac)
+int mcplayer_start(const struct aucodec *ac)
 {
 	int err = 0;
 	struct config_audio *cfg = &conf_config()->audio;
@@ -267,7 +230,7 @@ int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac)
 	uint32_t channels_dsp;
 	struct auplay_prm prm;
 
-	if (!jbuf || !ac)
+	if (!ac)
 		return EINVAL;
 
 	if (player) {
@@ -281,7 +244,6 @@ int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac)
 
 	player->cfg = cfg;
 	player->ac = ac;
-	player->jbuf = mem_ref(jbuf);
 	player->play_fmt = cfg->play_fmt;
 	player->dec_fmt = cfg->dec_fmt;
 

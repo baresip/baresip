@@ -189,7 +189,7 @@ static int cmd_mcsenden(struct re_printf *pf, void *arg)
 
   out:
 	if (err)
-		re_hprintf(pf, "usage: /mcsenden enable=<0,1>");
+		re_hprintf(pf, "usage: /mcsenden enable=<0,1>\n");
 
 	return err;
 }
@@ -297,13 +297,11 @@ static int cmd_mcreg(struct re_printf *pf, void *arg)
 	}
 
 	err = mcreceiver_alloc(&addr, prio);
-	if (err)
-		goto out;
 
   out:
 	if (err)
-		re_hprintf(pf, "usage: /mcreg addr=<IP>:<PORT>"
-			"prio=<1-255>\n");
+		re_hprintf(pf, "usage: /mcreg addr=<IP>:<PORT> "
+			   "prio=<1-255>\n");
 
 	return err;
 }
@@ -392,7 +390,7 @@ static int cmd_mcchprio(struct re_printf *pf, void *arg)
 
   out:
 	if (err)
-		re_hprintf(pf, "usage: /mcchprio addr=<IP>:<PORT>"
+		re_hprintf(pf, "usage: /mcchprio addr=<IP>:<PORT> "
 			"prio=<1-255>\n");
 
 	return err;
