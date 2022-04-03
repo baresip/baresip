@@ -2052,8 +2052,10 @@ int audio_send_digit(struct audio *a, char key)
 	else if (a->tx.cur_key && a->tx.cur_key != KEYCODE_REL) {
 		/* Key release */
 		info("audio: send DTMF digit end: '%c'\n", a->tx.cur_key);
+		lock_write_get(a->tx.lock);
 		err = telev_send(a->telev,
 				 telev_digit2code(a->tx.cur_key), true);
+		lock_rel(a->tx.lock);
 	}
 
 	a->tx.cur_key = key;
