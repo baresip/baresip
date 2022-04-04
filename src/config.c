@@ -774,7 +774,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#file_srate\t\t16000\n"
 			  "#file_channels\t\t1\n",
 			  cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max,
-			  cfg->avt.jbuf_del.min + 1,
 			  default_interface_print, NULL);
 
 	return err;
