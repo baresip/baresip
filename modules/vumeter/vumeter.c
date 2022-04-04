@@ -185,7 +185,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	vu->avg_rec = aulevel_calc_dbov(af->fmt, af->sampv, af->sampc);
+	vu->avg_rec = auframe_level(af);
 	vu->started = true;
 
 	return 0;
@@ -199,7 +199,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	vu->avg_play = aulevel_calc_dbov(af->fmt, af->sampv, af->sampc);
+	vu->avg_play = auframe_level(af);
 	vu->started = true;
 
 	return 0;
