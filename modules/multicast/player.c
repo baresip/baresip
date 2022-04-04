@@ -536,6 +536,8 @@ int mcplayer_start(struct jbuf *jbuf, const struct aucodec *ac)
 				err);
 			goto out;
 		}
+
+		aubuf_set_mode(player->aubuf, AUBUF_ADAPTIVE);
 	}
 
 	err = aufilt_setup(baresip_aufiltl());
