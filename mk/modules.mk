@@ -40,6 +40,7 @@
 #   USE_PLC           Packet Loss Concealment
 #   USE_PORTAUDIO     Portaudio audio driver
 #   USE_PULSE         Pulseaudio audio driver
+#   USE_PULSE_ASYNC   Pulseaudio async audio driver
 #   USE_RTCPSUMMARY   RTCP summary output after calls
 #   USE_SDL           libSDL2 video output
 #   USE_SNAPSHOT      Snapshot video module
@@ -102,6 +103,7 @@ USE_OPUS_MS   := $(shell $(call CC_TEST,opus/opus_multistream.h))
 USE_PLC       := $(shell $(call CC_TEST,spandsp/plc.h))
 USE_PORTAUDIO := $(shell $(call CC_TEST,portaudio.h))
 USE_PULSE     := $(shell pkg-config --exists libpulse && echo "yes")
+USE_PULSE_ASYNC := $(shell pkg-config --exists libpulse && echo "yes")
 USE_SDL       := $(shell $(call CC_TEST,SDL2/SDL.h))
 USE_SNAPSHOT  := $(shell $(call CC_TEST,png.h))
 USE_SNDFILE   := $(shell $(call CC_TEST,sndfile.h))
@@ -318,6 +320,9 @@ MODULES   += portaudio
 endif
 ifneq ($(USE_PULSE),)
 MODULES   += pulse
+endif
+ifneq ($(USE_PULSE_ASYNC),)
+MODULES   += pulse_async
 endif
 ifneq ($(USE_SDL),)
 MODULES   += sdl
