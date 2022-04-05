@@ -1426,6 +1426,7 @@ static int start_player(struct aurx *rx, struct audio *a,
 
 			aubuf_set_mode(rx->aubuf, a->cfg.adaptive ?
 				       AUBUF_ADAPTIVE : AUBUF_FIXED);
+			aubuf_set_silence(rx->aubuf, a->cfg.silence);
 			rx->aubuf_minsz = min_sz;
 			rx->aubuf_maxsz = max_sz;
 		}

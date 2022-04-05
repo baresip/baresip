@@ -340,6 +340,7 @@ struct config_audio {
 	int dec_fmt;            /**< Audio decoder sample format    */
 	struct range buffer;    /**< Audio receive buffer in [ms]   */
 	bool adaptive;          /**< Enable adaptive audio buffer   */
+	double silence;         /**< Silence volume in [dB]         */
 	uint32_t telev_pt;      /**< Payload type for tel.-event    */
 };
 
