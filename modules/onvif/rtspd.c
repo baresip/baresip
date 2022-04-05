@@ -58,12 +58,12 @@ static void rtsp_stream_destructor(void *arg)
 			return;
 	}
 
-	mem_deref(stream->fs); // check here for memory problem !!!!!
+	mem_deref(stream->fs); /* check here for memory problem !!!!! */
 	list_unlink(&stream->le);
 }
 
 
-/*UTILITY FUNCTIONS-----------------------------------------------------------*/
+/*UTILITY FUNCTIONS----------------------------------------------------------*/
 /**
  * Decode the requested media resource
  * (only supported backchannel, trackID=0, trackID=1)
@@ -78,11 +78,14 @@ static int decode_resource(const struct rtsp_msg *msg,
 {
 	if (pl_strstr(&msg->path, uri_audioplay)) {
 		stream->type = STREAMT_AUDIO;
-	} else if (pl_strstr(&msg->path, uri_videoplay)) {
+	}
+	else if (pl_strstr(&msg->path, uri_videoplay)) {
 		stream->type = STREAMT_VIDEO;
-	} else if (pl_strstr(&msg->path, uri_audioback)) {
+	}
+	else if (pl_strstr(&msg->path, uri_audioback)) {
 		stream->type = STREAMT_ABACK;
-	} else {
+	}
+	else {
 		stream->type = STREAMT_MAX;
 		return EINVAL;
 	}
@@ -143,11 +146,11 @@ static int decode_transport_hdr(const struct rtsp_msg *msg,
 {
 	int err;
 	uint32_t hdr_count;
-	uint16_t port1, port2;
+	uint16_t port1 = 0, port2 = 0;
 	const struct rtsp_hdr *hdr;
 
 	hdr_count = rtsp_msg_hdr_count(msg, RTSP_HDR_TRANSPORT);
-	while(hdr_count) {
+	while (hdr_count) {
 		const char *pos;
 		hdr = rtsp_msg_hdr(msg, RTSP_HDR_TRANSPORT);
 		if (!hdr)
@@ -157,8 +160,9 @@ static int decode_transport_hdr(const struct rtsp_msg *msg,
 		if (pos) {
 			/*TCP*/
 			pos += 11 + 1;
-			err = decode_transport_ports(pos, hdr->val.p + hdr->val.l,
-				&port1, &port2);
+			err = decode_transport_ports(pos, hdr->val.p +
+						     hdr->val.l,
+						     &port1, &port2);
 			if (err)
 				return err;
 
@@ -170,8 +174,9 @@ static int decode_transport_hdr(const struct rtsp_msg *msg,
 		if (pos) {
 			/*UDP*/
 			pos += 11 + 1;
-			err = decode_transport_ports(pos, hdr->val.p + hdr->val.l,
-				&port1, &port2);
+			err = decode_transport_ports(pos, hdr->val.p +
+						     hdr->val.l,
+						     &port1, &port2);
 			if (err)
 				return err;
 
@@ -179,9 +184,10 @@ static int decode_transport_hdr(const struct rtsp_msg *msg,
 			break;
 		}
 
-		hdr_count--;
+		--hdr_count;
 		hdr = hdr->le.next->data;
 	}
+
 	stream->rtp_port = port1;
 	stream->rtcp_port = port2;
 	return 0;
@@ -268,7 +274,8 @@ static struct rtsp_session *get_session_from_hdr(const struct rtsp_msg *msg)
 	if (!hdr)
 		return NULL;
 
-	le = list_apply(&rtsp_session_l, true, session_cmp, (void *)hdr->val.p);
+	le = list_apply(&rtsp_session_l, true, session_cmp,
+			(void *)hdr->val.p);
 	if (!le)
 		return NULL;
 
@@ -309,7 +316,7 @@ static void timeout_renewer(const struct rtsp_msg *msg)
 		sess_timeout_handler, session);
 	return;
 }
-/*REQUEST HANDLER-------------------------------------------------------------*/
+/*REQUEST HANDLER------------------------------------------------------------*/
 /**
  * handle RTSP Options Request messages
  *
@@ -329,10 +336,12 @@ static int rtsp_req_options_h(const struct rtsp_conn *conn,
 
 	err = rtsp_reply(conn, ver, 200, "OK",
 		"CSeq: %u\r\n"
-		"Public: OPTIONS, DESCRIBE, SETUP, PLAY, PAUSE, TEARDOWN, GET_PARAMETER, "
+		"Public: OPTIONS, DESCRIBE, SETUP, PLAY, PAUSE, TEARDOWN,"
+		" GET_PARAMETER, "
 		"SET_PARAMETER, REDIRECT, %s\r\n"
 		"Server: baresip_onvif module /0.1\r\n"
-		"\r\n", msg->cseq, (ver == 1 ? "ANNOUNCE, RECORD" : "PLAY_NOTIFY"));
+		"\r\n", msg->cseq, (ver == 1 ? "ANNOUNCE, RECORD" :
+					       "PLAY_NOTIFY"));
 
 	return err;
 }
@@ -363,8 +372,8 @@ static int rtsp_req_announce_h(const struct rtsp_conn *conn,
 
 	is_sdp = msg_ctype_cmp(&msg->ctype, "application", "sdp");
 	if (!is_sdp) {
-		warning("RTSPD: %s announce request contains not application/sdp",
-			__func__);
+		warning("RTSPD: %s announce request contains not "
+			"application/sdp\n", __func__);
 		return EINVAL;
 	}
 
@@ -397,8 +406,9 @@ static int rtsp_req_announce_h(const struct rtsp_conn *conn,
 			strlen("RTP/AVP")) && sdp_media_rport(sdpmedia) == 0) {
 			err = 0;
 			goto out;
-		} else {
-			warning("RTSPD %s %s not supported", __func__,
+		}
+		else {
+			warning("RTSPD %s %s not supported\n", __func__,
 				sdp_media_name(sdpmedia));
 			err = ENOTSUP;
 			goto out;
@@ -411,7 +421,8 @@ static int rtsp_req_announce_h(const struct rtsp_conn *conn,
 			"CSeq: %u\r\n"
 			"Server: baresip_onvif module /0.1\r\n"
 			"\r\n", msg->cseq);
-	} else {
+	}
+	else {
 		err = rtsp_reply(conn, ver, 200, "OK",
 			"CSeq: %u\r\n"
 			"Server: baresip_onvif module /0.1\r\n"
@@ -442,7 +453,7 @@ static int rtsp_req_describe_h(const struct rtsp_conn *conn,
 	struct sdp_session  *sdpsession = NULL;
 	struct sdp_media    *media = NULL;
 	struct sdp_format   *format = NULL;
-	struct mbuf         *sdppackage;
+	struct mbuf         *sdppackage = NULL;
 	const struct sa     *laddr;
 	bool fake_video_enabled = true;
 
@@ -455,8 +466,8 @@ static int rtsp_req_describe_h(const struct rtsp_conn *conn,
 	}
 
 	if (!rtsp_msg_hdr_has_value(msg, RTSP_HDR_ACCEPT, "application/sdp")) {
-		warning ("%s Accept Header not found or not \"application/sdp\"\n",
-			__func__);
+		warning ("%s Accept Header not found or not "
+			 "\"application/sdp\"\n", __func__);
 		return EINVAL;
 	}
 
@@ -465,36 +476,37 @@ static int rtsp_req_describe_h(const struct rtsp_conn *conn,
 	if (err)
 		goto out;
 
-	// Disable and Enable of the Fake Videosource
+	/* Disable and Enable of the Fake Videosource */
 	if (fake_video_enabled) {
-		// RTSP VIDEO Session element
+		/* RTSP VIDEO Session element */
 		err = sdp_media_add(&media, sdpsession, sdp_media_video, 0,
 			sdp_proto_rtpavp);
 		sdp_media_set_ldir(media, SDP_RECVONLY);
-		err |= sdp_media_set_lattr(media, true, "control", uri_videoplay);
-		err |= sdp_format_add(&format, media, false, "26", "JPEG", 90000, 1,
-			NULL, NULL, NULL, NULL, NULL);
+		err |= sdp_media_set_lattr(media, true, "control",
+					   uri_videoplay);
+		err |= sdp_format_add(&format, media, false, "26", "JPEG",
+				      90000, 1, NULL, NULL, NULL, false, NULL);
 	}
 
-	// RTSP AUDIO PLAY
+	/* RTSP AUDIO PLAY */
 	err = sdp_media_add(&media, sdpsession, sdp_media_audio, 0,
 		sdp_proto_rtpavp);
 	sdp_media_set_ldir(media, SDP_RECVONLY);
 	err |= sdp_media_set_lattr(media, true, "control",
 		uri_audioplay);
-	err |= sdp_format_add(&format, media, false, "0", "PCMU", 8000, 1, NULL,
-		NULL, NULL, NULL, NULL);
+	err |= sdp_format_add(&format, media, false, "0", "PCMU", 8000, 1,
+			      NULL, NULL, NULL, false, NULL);
 	if (err)
 		goto out;
 
-	// RTSP RECORD FUNCTION
+	/* RTSP RECORD FUNCTION */
 	err = sdp_media_add(&media, sdpsession, sdp_media_audio, 0,
 		sdp_proto_rtpavp);
 	sdp_media_set_ldir(media, SDP_SENDONLY);
 	err |= sdp_media_set_lattr(media, true, "control",
 		uri_audioback);
-	err |= sdp_format_add(&format, media, false, "0", "PCMU", 8000, 1, NULL,
-		NULL, NULL, NULL, NULL);
+	err |= sdp_format_add(&format, media, false, "0", "PCMU", 8000, 1,
+			      NULL, NULL, NULL, false, NULL);
 	if (err)
 		goto out;
 
@@ -503,8 +515,8 @@ static int rtsp_req_describe_h(const struct rtsp_conn *conn,
 		goto out;
 
 	err = rtsp_creply(conn, ver, 200, "OK", "application/sdp", sdppackage,
-		"CSeq: %u\r\n"
-		"Date: %H\r\n", msg->cseq, fmt_gmtime, NULL);
+			  "CSeq: %u\r\n"
+			  "Date: %H\r\n", msg->cseq, fmt_gmtime, NULL);
 
  out:
 	mem_deref(sdpsession);
@@ -570,17 +582,19 @@ static int rtsp_req_setup_h(const struct rtsp_conn *conn,
 	if (err)
 		goto out;
 
-	switch(stream->type) {
+	switch (stream->type) {
 		case STREAMT_AUDIO:
 			sa_cpy(&stream->tar, rtsp_conn_peer(conn));
 			sa_set_port(&stream->tar, stream->rtp_port);
-			err = onvif_aufilter_stream_alloc(&stream->fs, 8000, 1, "PCMU");
+			err = onvif_aufilter_stream_alloc(&stream->fs, 8000, 1,
+							  "PCMU");
 			break;
 
 		case STREAMT_ABACK:
 			sa_cpy(&stream->tar, rtsp_conn_peer(conn));
 			sa_set_port(&stream->tar, stream->rtp_port);
-			err = onvif_aufilter_stream_alloc(&stream->fs, 8000, 1, "PCMU");
+			err = onvif_aufilter_stream_alloc(&stream->fs, 8000, 1,
+							  "PCMU");
 			break;
 
 		case STREAMT_VIDEO:
@@ -595,15 +609,16 @@ static int rtsp_req_setup_h(const struct rtsp_conn *conn,
 	}
 
 	if (err) {
-		warning ("%s: Type (%d), Can not allocate filter stream info(%m)",
-			DEBUG_MODULE, err);
+		warning ("%s: Type (%d), Can not allocate filter stream "
+			 "info(%m)\n", DEBUG_MODULE, err);
 		goto out;
 	}
 
 	if (conf_get_u32(conf_cur(), "rtsp_SessTimeout", &sess->timeout))
 		sess->timeout = 60;
 
-	tmr_start(&sess->timer, (sess->timeout * 1000), sess_timeout_handler, sess);
+	tmr_start(&sess->timer, (sess->timeout * 1000), sess_timeout_handler,
+		  sess);
 	list_append(&sess->rtsp_stream_l, &stream->le, stream);
 	if (!list_contains(&rtsp_session_l, &sess->le)) {
 		rand_str(sess->session, SESSBYTES);
@@ -616,9 +631,10 @@ static int rtsp_req_setup_h(const struct rtsp_conn *conn,
 		"Date: %H\r\n"
 		"Session: %b;timeout=%u\r\n"
 		"Transport: %s;%s;%s=%d-%d\r\n"
-		"\r\n", msg->cseq, fmt_gmtime, NULL, sess->session, (SESSBYTES - 1),
-		sess->timeout,
-		stream->proto == IPPROTO_TCP ? "RTP/AVP/TCP" : "RTP/AVP", "unicast",
+		"\r\n", msg->cseq, fmt_gmtime, NULL, sess->session,
+		(SESSBYTES - 1), sess->timeout,
+		stream->proto == IPPROTO_TCP ? "RTP/AVP/TCP" : "RTP/AVP",
+		"unicast",
 		stream->proto == IPPROTO_TCP? "interleaved" : "client_port",
 		stream->rtp_port, stream->rtcp_port);
 
@@ -663,17 +679,20 @@ static int rtsp_req_play_h(const struct rtsp_conn *conn,
 		stream = le->data;
 		switch (stream->type) {
 			case STREAMT_AUDIO:
-				err = onvif_aufilter_audio_send_start(stream->fs,
+				err = onvif_aufilter_audio_send_start(
+					stream->fs,
 					&stream->tar, conn, stream->proto);
 				break;
 
 			case STREAMT_ABACK:
-				err = onvif_aufilter_audio_recv_start(stream->fs, &stream->tar,
+				err = onvif_aufilter_audio_recv_start(
+					stream->fs, &stream->tar,
 					stream->proto);
 				break;
 
 			case STREAMT_VIDEO:
-				err = onvif_fakevideo_start(stream->fvs, stream->proto,
+				err = onvif_fakevideo_start(stream->fvs,
+					stream->proto,
 					&stream->tar, conn);
 				break;
 
@@ -686,7 +705,8 @@ static int rtsp_req_play_h(const struct rtsp_conn *conn,
 		"CSeq: %u\r\n"
 		"Date: %H\r\n"
 		"Session: %b\r\n"
-		"\r\n", msg->cseq, fmt_gmtime, NULL, sess->session, (SESSBYTES - 1));
+		"\r\n", msg->cseq, fmt_gmtime, NULL, sess->session,
+		(SESSBYTES - 1));
 
 	return err;
 }
@@ -743,7 +763,8 @@ static int rtsp_req_pause_h(const struct rtsp_conn *conn,
 		"CSeq: %u\r\n"
 		"Date: %H\r\n"
 		"Session: %b\r\n"
-		"\r\n", msg->cseq, fmt_gmtime, NULL, sess->session, (SESSBYTES - 1));
+		"\r\n", msg->cseq, fmt_gmtime, NULL, sess->session,
+		(SESSBYTES - 1));
 
 	return err;
 }
@@ -810,7 +831,8 @@ static int rtsp_req_gparam_h(const struct rtsp_conn *conn,
 		"CSeq: %u\r\n"
 		"Date: %H\r\n"
 		"Session: %b\r\n"
-		"\r\n", msg->cseq, fmt_gmtime, NULL, sess->session, (SESSBYTES - 1));
+		"\r\n", msg->cseq, fmt_gmtime, NULL, sess->session,
+		(SESSBYTES - 1));
 
 	return err;
 }
@@ -840,7 +862,7 @@ static int rtsp_record_h(const struct rtsp_conn *conn,
 
 
 /**
- * REQUEST HANDLER--------------------------------------------------------------
+ * REQUEST HANDLER-------------------------------------------------------------
  * Splits the Request into its different methods
  *
  * @param conn          rtsp connection struct
@@ -888,43 +910,57 @@ static int rtsp_req_handler(const struct rtsp_conn *conn,
 
 	if (!pl_strcmp(&msg->met, "OPTIONS")) {
 		err = rtsp_req_options_h(conn, msg, ver, arg);
-	} else if (!pl_strcmp(&msg->met, "DESCRIBE")) {
+	}
+	else if (!pl_strcmp(&msg->met, "DESCRIBE")) {
 		err = rtsp_req_describe_h(conn, msg, ver, arg);
-	} else if (!pl_strcmp(&msg->met, "ANNOUNCE")) {						/*1.0*/
+	}
+	else if (!pl_strcmp(&msg->met, "ANNOUNCE")) { /*1.0*/
 		err = rtsp_req_announce_h(conn, msg, ver, arg);
-	} else if (!pl_strcmp(&msg->met, "SETUP")) {
+	}
+	else if (!pl_strcmp(&msg->met, "SETUP")) {
 		err = rtsp_req_setup_h(conn, msg, ver, arg);
-	} else if (!pl_strcmp(&msg->met, "PLAY")) {
+	}
+	else if (!pl_strcmp(&msg->met, "PLAY")) {
 		err = rtsp_req_play_h(conn, msg, ver, arg);
-	} else if (!pl_strcmp(&msg->met, "PLAY_NOTIFY")) {					/*2.0*/
+	}
+	else if (!pl_strcmp(&msg->met, "PLAY_NOTIFY")) { /*2.0*/
 
-	} else if (!pl_strcmp(&msg->met, "PAUSE")) {
+	}
+	else if (!pl_strcmp(&msg->met, "PAUSE")) {
 		err = rtsp_req_pause_h(conn, msg, ver, arg);
-	} else if (!pl_strcmp(&msg->met, "TEARDOWN")) {
+	}
+	else if (!pl_strcmp(&msg->met, "TEARDOWN")) {
 		err = rtsp_req_teardown_h(conn, msg, ver, arg);
-	} else if (!pl_strcmp(&msg->met, "GET_PARAMETER")) {
+	}
+	else if (!pl_strcmp(&msg->met, "GET_PARAMETER")) {
 		err = rtsp_req_gparam_h(conn, msg, ver, arg);
-	} else if (!pl_strcmp(&msg->met, "SET_PARAMETER")) {
+	}
+	else if (!pl_strcmp(&msg->met, "SET_PARAMETER")) {
 
-	} else if (!pl_strcmp(&msg->met, "REDIRECT")) {
+	}
+	else if (!pl_strcmp(&msg->met, "REDIRECT")) {
 
-	} else if (!pl_strcmp(&msg->met, "RECORD")) {						/*1.0*/
+	}
+	else if (!pl_strcmp(&msg->met, "RECORD")) { /*1.0*/
 		err = rtsp_record_h(conn, msg, ver, arg);
-	} else {
+	}
+	else {
 		err = ENOTSUP;
 	}
 
   out:
 	if (err == EACCES) {
-		DEBUG_NOTICE("Create A Response with WWW-Authenticate Header\n");
+		DEBUG_NOTICE("Create A Response with WWW-Authenticate "
+			     "Header\n");
 		err = rtsp_digest_auth_chall(conn, &chall);
 		err = rtsp_reply(conn, ver, 401, "Unauthorized",
 			"CSeq: %u\r\n"
 			"WWW-Authenticate: Digest realm=\"%j/%r\","
 			"nonce=\"%r\",opaque=\"%r\",algorithm=\"%r\","
 			"qop=\"%r\"\r\n\r\n",
-			msg->cseq, laddr, &chall->param.realm, &chall->param.nonce,
-			&chall->param.opaque, &chall->param.algorithm, &chall->param.qop);
+			msg->cseq, laddr, &chall->param.realm,
+			&chall->param.nonce, &chall->param.opaque,
+			&chall->param.algorithm, &chall->param.qop);
 
 		mem_deref(chall);
 	}
@@ -935,7 +971,7 @@ static int rtsp_req_handler(const struct rtsp_conn *conn,
 
 
 /**
- * RESPONSE HANDLER-------------------------------------------------------------
+ * RESPONSE HANDLER------------------------------------------------------------
  * A response handler is currently not implmented
  *
  * @param conn          rtsp connection struct
@@ -960,7 +996,7 @@ static int rtsp_res_handler(struct rtsp_conn *conn, const struct rtsp_msg *msg,
 
 
 /**
- * ILD HANDLER------------------------------------------------------------------
+ * ILD HANDLER-----------------------------------------------------------------
  *
  * @param conn          rtsp connection struct
  * @param msg           received rtsp message (interleaved data package)
@@ -1005,7 +1041,7 @@ static int rtsp_ild_handler(struct rtsp_conn *conn, const struct rtsp_msg *msg,
 
 
 /**
- * MSG HANDLER------------------------------------------------------------------
+ * MSG HANDLER-----------------------------------------------------------------
  * Decodes the msg type of the rtsp package
  *
  * @param conn          rtsp connection struct
@@ -1049,7 +1085,6 @@ void rtsp_msg_handler(struct rtsp_conn *conn, const struct rtsp_msg *msg,
  */
 void rtsp_init(void)
 {
-	lock_alloc(&onvif_fvlock);
 }
 
 
@@ -1059,5 +1094,4 @@ void rtsp_init(void)
 void rtsp_session_deinit(void)
 {
 	list_flush(&rtsp_session_l);
-	mem_deref(onvif_fvlock);
 }

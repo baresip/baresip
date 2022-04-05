@@ -68,7 +68,8 @@ static int com_onvif_play_en(struct re_printf *pf, void *arg)
 	if (str_isset(carg->prm)) {
 		if (!str_bool(&value, carg->prm)) {
 			onvif_set_aufilter_play_en(value);
-			info ("Onvif Play: %s", value ? "Enabled" : "Disabled");
+			info ("Onvif Play: %s", value ?
+			      "Enabled" : "Disabled");
 		}
 	}
 
@@ -78,9 +79,11 @@ static int com_onvif_play_en(struct re_printf *pf, void *arg)
 
 static const struct cmd cmdv[] = {
 	{"onvif_rec_enable", 0, CMD_PRM,
-		"Enable the Audio Source in the Onvif Pipeline", com_onvif_src_en},
+		"Enable the Audio Source in the Onvif Pipeline",
+		com_onvif_src_en},
 	{"onvif_play_enable", 0, CMD_PRM,
-		"Enable the Audio Play in the Onvif Pipeline", com_onvif_play_en},
+		"Enable the Audio Play in the Onvif Pipeline",
+		com_onvif_play_en},
 };
 
 
@@ -94,14 +97,15 @@ static int module_init(void)
 
 	err = conf_get(conf_cur(), "onvif_ConfigPath", &onvif_config_path);
 	if (err) {
-		warning ("onvif: %s Could not find onvif config path\n", __func__);
+		warning ("onvif: %s Could not find onvif config path\n",
+			 __func__);
 		return err;
 	}
 
 	err = media_init();
 	if (err) {
-		warning ("onvif: %s Could not load standard Media Profile (%m)\n",
-			__func__, err);
+		warning ("onvif: %s Could not load standard Media Profile"
+			 " (%m)\n", __func__, err);
 		return err;
 	}
 

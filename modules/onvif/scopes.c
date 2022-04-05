@@ -64,9 +64,9 @@ static int scope_parse(struct mbuf *mb)
 	struct pl pls;
 
 	mbuf_set_pos(mb, 0);
-	while(mbuf_get_left(mb)) {
+	while (mbuf_get_left(mb)) {
 		pls.p = (char *)mbuf_buf(mb);
-		while(mbuf_get_left(mb) && mbuf_read_u8(mb) != '|') {
+		while (mbuf_get_left(mb) && mbuf_read_u8(mb) != '|') {
 				pls.l = ((char *)mbuf_buf(mb) - pls.p);
 		}
 
@@ -95,6 +95,27 @@ static int scope_parse(struct mbuf *mb)
 }
 
 
+static char *dynscope_path(void)
+{
+	int n;
+	size_t len = onvif_config_path.l + strlen("/scopes") + 1;
+	char *path = NULL;
+
+	path = mem_zalloc(len, NULL);
+	if (!path)
+		return NULL;
+
+	n = re_snprintf(path, sizeof(path), "%r%s",
+			  &onvif_config_path, "/scopes");
+	if (n != ((int) len) - 1) {
+		warning ("%s Can not concat string here -.-\n", __func__);
+		path = mem_deref(path);
+	}
+
+	return path;
+}
+
+
 /**
  * Load dynamic scopes from config file
  *
@@ -106,14 +127,7 @@ static int scope_read_dynscopes(void)
 {
 	int err = 0;
 	struct mbuf *mb = NULL;
-	char dynscopepath [onvif_config_path.l + strlen("/scopes") + 1];
-
-	err = re_snprintf(dynscopepath, sizeof(dynscopepath), "%r%s",
-	&onvif_config_path, "/scopes");
-	if (err != (int)sizeof(dynscopepath) - 1) {
-		warning ("Can not concat string here -.-");
-		goto out;
-	}
+	char *path = dynscope_path();
 
 	mb = mbuf_alloc(512);
 	if (!mb) {
@@ -121,7 +135,7 @@ static int scope_read_dynscopes(void)
 		goto out;
 	}
 
-	err = load_file(mb, dynscopepath);
+	err = load_file(mb, path);
 	if (err)
 		goto out;
 
@@ -129,6 +143,7 @@ static int scope_read_dynscopes(void)
 
   out:
 	mem_deref(mb);
+	mem_deref(path);
 	return err;
 }
 
@@ -147,17 +162,9 @@ static int soap_write_dynscopes(void)
 	struct le *le;
 	struct scope *s;
 	struct mbuf *mb = NULL;
+	char *path = dynscope_path();
 
-	char dynscopepath [onvif_config_path.l + strlen("/scopes") + 1];
-
-	err = re_snprintf(dynscopepath, sizeof(dynscopepath), "%r%s",
-	&onvif_config_path, "/scopes");
-	if (err != (int)sizeof(dynscopepath) - 1) {
-		warning ("Can not concat string here -.-");
-		goto out;
-	}
-
-	LIST_FOREACH(&dynscope_l, le){
+	LIST_FOREACH(&dynscope_l, le) {
 		s = le->data;
 		bufsize += strlen(s->scope_str) + 1;
 	}
@@ -168,17 +175,18 @@ static int soap_write_dynscopes(void)
 		goto out;
 	}
 
-	LIST_FOREACH(&dynscope_l, le){
+	LIST_FOREACH(&dynscope_l, le) {
 		s = le->data;
 		mbuf_write_str(mb, s->scope_str);
 		mbuf_write_u8(mb, '|');
 	}
 
 	mbuf_set_pos(mb, 0);
-	err = save_file(mb, dynscopepath);
+	err = save_file(mb, path);
 
   out:
 	mem_deref(mb);
+	mem_deref(path);
 	return err;
 }
 
@@ -357,13 +365,15 @@ static int scope_add_scope_onvif(struct soap_child *c, const char *str_scope)
 	if (err)
 		return err;
 
-	cscope = soap_add_child(c->msg, c, str_pf_device_wsdl, str_scope_scopes);
+	cscope = soap_add_child(c->msg, c, str_pf_device_wsdl,
+				str_scope_scopes);
 	LAST_CHILD(cscope);
 
 	cc = soap_add_child(c->msg, cscope, str_pf_schema, str_scope_scopedef);
 	err |= soap_set_value_fmt(cc, str_scope_fixed);
 
-	cc = soap_add_child(c->msg, cscope, str_pf_schema, str_scope_scopeitem);
+	cc = soap_add_child(c->msg, cscope, str_pf_schema,
+			    str_scope_scopeitem);
 	err |= soap_set_value_fmt(cc, "%r", &value);
 
 	return err;
@@ -643,7 +653,8 @@ int scope_add_all_scopes(const struct soap_msg *req, struct soap_msg *response,
 		err |= scope_add_scope_onvif(c, str_scope_profstreaming);
 		err |= scope_add_scope_onvifdyn(c);
 
-	} else {
+	}
+	else {
 		scope_sizes = scope_total_mbufsize();
 		if (!scope_sizes) {
 			err = EINVAL;
@@ -890,8 +901,9 @@ int scope_RemoveScopes_h(const struct soap_msg *msg, struct soap_msg **ptrresp,
 	LIST_FOREACH(&rsc->l_childs, le) {
 		sic = le->data;
 		if (scope_req_validity_fixed(sic)) {
-			fault_set(f, FC_Sender, FS_OperationProhibited, FS_FixedScope,
-				str_fault_delfixedscope);
+			fault_set(f, FC_Sender, FS_OperationProhibited,
+				  FS_FixedScope,
+				  str_fault_delfixedscope);
 			return EINVAL;
 		}
 

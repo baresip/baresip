@@ -112,7 +112,11 @@ static void soap_parameter_destructor(void *arg)
 	mem_deref(param->str_value);
 	list_unlink(&param->le);
 }
-//------------------------------------------------------------------------------
+
+
+/*-------------------------------------------------------------------------- */
+
+
 /**
  * Compares the child key element with a string
  * (list compare function)
@@ -169,8 +173,10 @@ struct soap_child *soap_child_has_child(const struct soap_child *c,
 		return NULL;
 
 	if (!last) {
-		le = list_apply(&c->l_childs, true, soap_child_key_equals, (void*)key);
-	} else {
+		le = list_apply(&c->l_childs, true, soap_child_key_equals,
+				(void*)key);
+	}
+	else {
 		le = list_head(&c->l_childs);
 		while (le) {
 			if (le->data != last) {
@@ -220,7 +226,7 @@ struct soap_parameter *soap_child_has_parameter(const struct soap_child *c,
 	return le ? le->data : NULL;
 }
 
-// PRITTY PRINT FUNCTIONS-------------------------------------------------------
+/* PRITTY PRINT FUNCTIONS--------------------------------------------------- */
 const char str_spaces[] = "                ";
 
 /**
@@ -271,15 +277,16 @@ static void soap_namespaces_print(struct list *l_namespaces, int indent)
 	info("%rnamespaces: ", &spaces);
 	LIST_FOREACH(l_namespaces, le) {
 		struct soap_namespace *ns = le->data;
-		info ("%r namespace %r = %r \n", &spaces, &ns->prefix, &ns->uri);
+		info ("%r namespace %r = %r \n", &spaces, &ns->prefix,
+		      &ns->uri);
 	}
 }
 
 
 /**
- * Pritty-print child
+ * Pretty print child
  *
- * @param c						pointer to a child
+ * @param c    pointer to a child
  * @param indent
  */
 static void soap_child_print(struct soap_child *c, int indent)
@@ -308,9 +315,14 @@ static void soap_child_print(struct soap_child *c, int indent)
 		soap_child_print(cc, indent + 2);
 	}
 }
-//------------------------------------------------------------------------------
 
-// NAMESPACE FUNCITONS----------------------------------------------------------
+
+/*-------------------------------------------------------------------------- */
+
+
+/* NAMESPACE FUNCITONS------------------------------------------------------ */
+
+
 /**
  * calculates the number of digites of a uint32_t
  *
@@ -326,7 +338,7 @@ static size_t num_digits(const uint32_t num)
 	while (v) {
 		v /= 10;
 		if (v)
-			n++;
+			++n;
 	}
 
 	return n;
@@ -357,7 +369,8 @@ static struct soap_namespace *soap_msg_add_ns(struct soap_msg *msg,
 	ns->numbered_ns = NULL;
 	if (!pl_isset(pf)) {
 		ns_number_len = num_digits(msg->nsnum) + 2 + 1;
-		ns->numbered_ns = mem_zalloc(sizeof(char) * ns_number_len, NULL);
+		ns->numbered_ns = mem_zalloc(sizeof(char) * ns_number_len,
+					     NULL);
 		if (!ns->numbered_ns) {
 			mem_deref(ns);
 			return NULL;
@@ -365,15 +378,17 @@ static struct soap_namespace *soap_msg_add_ns(struct soap_msg *msg,
 
 		if (-1 == re_snprintf(ns->numbered_ns, ns_number_len, "ns%u",
 			msg->nsnum)) {
-			warning("onvif: %s Could not convert uint32 %u to string.",
-				__func__, msg->nsnum);
+			warning("onvif: %s Could not convert uint32 %u to"
+				" string.", __func__, msg->nsnum);
 			mem_deref(ns);
 			return NULL;
 		}
 
 		msg->nsnum++;
-		pl_set_n_str(&ns->prefix, ns->numbered_ns, (ns_number_len - 1));
-	} else {
+		pl_set_n_str(&ns->prefix, ns->numbered_ns,
+			     (ns_number_len - 1));
+	}
+	else {
 		pl_set_n_str(&ns->prefix, pf->p, pf->l);
 	}
 
@@ -390,7 +405,7 @@ static struct soap_namespace *soap_msg_add_ns(struct soap_msg *msg,
  * @param pf				pointer to pl prefix struct
  * @param uri				pointer to pl uri struct
  *
- * @return 					if success: pointer to the namespace element
+ * @return   if success: pointer to the namespace element
  *                          NULL otherwise
  */
 struct soap_namespace *soap_msg_add_ns_pl(struct soap_msg *msg,
@@ -417,7 +432,7 @@ struct soap_namespace *soap_msg_add_ns_pl(struct soap_msg *msg,
  * @param pf				pointer to pl prefix struct
  * @param uri				pointer to pl uri struct
  *
- * @return 					if success: pointer to the namespace element
+ * @return    if success: pointer to the namespace element
  *                          NULL otherwise
  */
 struct soap_namespace *soap_msg_add_ns_str(struct soap_msg *msg,
@@ -445,7 +460,7 @@ struct soap_namespace *soap_msg_add_ns_str(struct soap_msg *msg,
  * @param pf				pointer to pl prefix struct
  * @param uri				pointer to pl uri struct
  *
- * @return 					0 if success, errorcode otherwise
+ * @return   0 if success, errorcode otherwise
  */
 int soap_msg_add_ns_str_param(struct soap_msg *msg,
 	const char *prefix, const char *uri)
@@ -467,7 +482,7 @@ int soap_msg_add_ns_str_param(struct soap_msg *msg,
  * @param msg				pointer to the soap msg
  * @param pf				pointer to prefix string
  *
- * @return 					if success: pointer to the namespace element
+ * @return   if success: pointer to the namespace element
  *                          NULL otherwise
  */
 struct soap_namespace* soap_msg_has_ns_prefix(struct soap_msg *msg,
@@ -491,7 +506,7 @@ struct soap_namespace* soap_msg_has_ns_prefix(struct soap_msg *msg,
  * @param msg				pointer to the soap msg
  * @param uri				pointer to uri string
  *
- * @return 					if success: pointer to the namespace element
+ * @return   if success: pointer to the namespace element
  *                          NULL otherwise
  */
 struct soap_namespace *soap_msg_has_ns_uri(const struct soap_msg *msg,
@@ -511,18 +526,23 @@ struct soap_namespace *soap_msg_has_ns_uri(const struct soap_msg *msg,
 
 	return NULL;
 }
-//------------------------------------------------------------------------------
 
-// CHILD SET VALUE FUNCITONS----------------------------------------------------
+
+/*-------------------------------------------------------------------------- */
+
+
+/* CHILD SET VALUE FUNCITONS------------------------------------------------ */
+
+
 /**
  * set a string with given length as value of a child
  * ! use this function only for persistent strings in memory !
  *
- * @param c 				pointer to child
- * @param v 				pointer to string
- * @param len               lenght if the string
+ * @param c    pointer to child
+ * @param v    pointer to string
+ * @param len  length of v
  *
- * @return 					0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 static int soap_set_value_str(struct soap_child *c, const char *v, int len)
 {
@@ -540,11 +560,11 @@ static int soap_set_value_str(struct soap_child *c, const char *v, int len)
  * this function will allocate memory and write the string
  * the unused memory in mbuf will be trimmed and freed
  *
- * @param c 				pointer to child
- * @param fmt				pointer to fmt string
- * @param ap                variable argument list
+ * @param c     pointer to child
+ * @param fmt   pointer to fmt string
+ * @param ap    variable argument list
  *
- * @return 					0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 static int soap_vset_value(struct soap_child *c, const char *fmt, va_list ap)
 {
@@ -575,11 +595,11 @@ static int soap_vset_value(struct soap_child *c, const char *fmt, va_list ap)
 /**
  * write a fmt string with arguments as value for a child object
  *
- * @param c 				pointer to child
- * @param fmt				pointer to fmt string
+ * @param c    pointer to child
+ * @param fmt  pointer to fmt string
  * @param ...
  *
- * @return 					0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 int soap_set_value_fmt(struct soap_child *c, const char *fmt, ...)
 {
@@ -600,10 +620,10 @@ int soap_set_value_fmt(struct soap_child *c, const char *fmt, ...)
 /**
  * set the value of a child to a given string in the heap
  *
- * @param c 				pointer to child
- * @param fmt				pointer to string
+ * @param c    pointer to child
+ * @param fmt  pointer to string
  *
- * @return 					0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 int soap_set_value_strref(struct soap_child *c, char *v)
 {
@@ -616,19 +636,22 @@ int soap_set_value_strref(struct soap_child *c, char *v)
 }
 
 
-//------------------------------------------------------------------------------
+/*-------------------------------------------------------------------------- */
 
-// DECODE FUNCTIONS-------------------------------------------------------------
+
+/* DECODE FUNCTIONS--------------------------------------------------------- */
+
+
 /**
  * detect current parameter type
- * SAT_NS_DECL_SIMPLE,         // TYPE 0: xmlns
- * SAT_NS_DECL,                // TYPE 1: xmlns:[Name]
- * SAT_NS_ATTR,                // TYPE 2: [Namespace]:[Name]
- * SAT_ATTR,                   // TYPE 3: [Name]
+ * SAT_NS_DECL_SIMPLE  ... TYPE 0: xmlns
+ * SAT_NS_DECL         ... TYPE 1: xmlns:[Name]
+ * SAT_NS_ATTR         ... TYPE 2: [Namespace]:[Name]
+ * SAT_ATTR            ... TYPE 3: [Name]
  *
- * @param param					pointer length object to the current parameter
+ * @param param  pointer length object to the current parameter
  *
- * @return						type if success, SAT_MAX otherwise
+ * @return type if success, SAT_MAX otherwise
  */
 static enum soap_attr_type soap_decode_attr_type(struct pl *param)
 {
@@ -641,7 +664,8 @@ static enum soap_attr_type soap_decode_attr_type(struct pl *param)
 			return SAT_NS_DECL;
 		else
 			return SAT_NS_ATTR;
-	} else {
+	}
+	else {
 		if (0 == pl_strncmp(param, str_new_ns,
 				strlen(str_new_ns)))
 			return SAT_NS_DECL_SIMPLE;
@@ -685,9 +709,9 @@ static int soap_is_endkey(struct soap_msg *msg, bool *endkey)
  * SOAP parameter decode function
  * split all parameter in an element and append it as soap_child's parameter
  * list.
- * @param child	    pointer to soap_child struct
+ * @param child pointer to soap_child struct
  *
- * @return			0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 static int soap_child_parameter_decode(struct soap_child *child)
 {
@@ -734,7 +758,8 @@ static int soap_child_parameter_decode(struct soap_child *child)
 
 		tpos = msg->mb->pos - 1;
 		mbuf_set_pos(msg->mb, bpos);
-		pl_set_n_str(&param, (const char*)mbuf_buf(msg->mb), (tpos - bpos));
+		pl_set_n_str(&param, (const char*)mbuf_buf(msg->mb),
+			     (tpos - bpos));
 		mbuf_set_pos(msg->mb, tpos + 2);
 		bpos = msg->mb->pos;
 		err = xml_goto_value_end(msg->mb);
@@ -743,7 +768,8 @@ static int soap_child_parameter_decode(struct soap_child *child)
 
 		tpos = msg->mb->pos;
 		mbuf_set_pos(msg->mb, bpos);
-		pl_set_n_str(&value, (const char*)mbuf_buf(msg->mb), (tpos - bpos));
+		pl_set_n_str(&value, (const char*)mbuf_buf(msg->mb),
+			     (tpos - bpos));
 		mbuf_set_pos(msg->mb, bpos - 1);
 		err = xml_skip_to_ws(msg->mb);
 		if (err) {
@@ -755,14 +781,17 @@ static int soap_child_parameter_decode(struct soap_child *child)
 
 		err = 0;
 		attr_type = soap_decode_attr_type(&param);
-		switch(attr_type) {
+		switch (attr_type) {
 			case SAT_NS_DECL_SIMPLE:
 				child->ns =
-					mem_ref(soap_msg_add_ns_pl(child->msg, NULL, &value));
+					mem_ref(soap_msg_add_ns_pl(
+						child->msg,
+						NULL, &value));
 				break;
 
 			case SAT_NS_DECL:
-				pl_set_n_str(&ns, (param.p + strlen(str_new_ns) + 1),
+				pl_set_n_str(&ns, (param.p +
+						   strlen(str_new_ns) + 1),
 					(param.l - strlen(str_new_ns) - 1));
 				soap_msg_add_ns_pl(child->msg, &ns, &value);
 				break;
@@ -780,13 +809,17 @@ static int soap_child_parameter_decode(struct soap_child *child)
 				}
 
 				strncpy(ns_prefix, param.p, (colon - param.p));
-				parameter->ns = mem_ref(soap_msg_has_ns_prefix(child->msg,
+				parameter->ns = mem_ref(
+					soap_msg_has_ns_prefix(child->msg,
 					ns_prefix));
 				pl_advance(&param, (colon - param.p));
-				pl_set_n_str(&parameter->key, param.p, param.l);
-				pl_set_n_str(&parameter->value, value.p, value.l);
+				pl_set_n_str(&parameter->key, param.p,
+					     param.l);
+				pl_set_n_str(&parameter->value, value.p,
+					     value.l);
 
-				list_append(&child->l_parameters, &parameter->le, parameter);
+				list_append(&child->l_parameters,
+					    &parameter->le, parameter);
 				break;
 
 			case SAT_ATTR:
@@ -795,9 +828,12 @@ static int soap_child_parameter_decode(struct soap_child *child)
 				if (!parameter)
 					return ENOMEM;
 
-				pl_set_n_str(&parameter->key, param.p, param.l);
-				pl_set_n_str(&parameter->value, value.p, value.l);
-				list_append(&child->l_parameters, &parameter->le, parameter);
+				pl_set_n_str(&parameter->key,
+					     param.p, param.l);
+				pl_set_n_str(&parameter->value,
+					     value.p, value.l);
+				list_append(&child->l_parameters,
+					    &parameter->le, parameter);
 				break;
 
 			default:
@@ -817,15 +853,15 @@ static int soap_child_parameter_decode(struct soap_child *child)
 
 /**
  * detect current child type
- * SCT_NORMAL_NOPARAM,         // TYPE 0: <ns:Key>
- * SCT_NORMAL_PARAM,           // TYPE 1: <ns:Key [param]>
- * SCT_END_NORMAL,             // TYPE 2: </ns:Key>
- * SCT_IEND_NOPARAM,           // TYPE 3: <ns:Key />
- * SCT_IEND_PARAM,             // TYPE 4: <ns:Key [param] />
+ * SCT_NORMAL_NOPARAM,          TYPE 0: <ns:Key>
+ * SCT_NORMAL_PARAM,            TYPE 1: <ns:Key [param]>
+ * SCT_END_NORMAL,              TYPE 2: </ns:Key>
+ * SCT_IEND_NOPARAM,            TYPE 3: <ns:Key />
+ * SCT_IEND_PARAM,              TYPE 4: <ns:Key [param] />
  *
- * @param child					pointer to the soap message
+ * @param child  pointer to the soap message
  *
- * @return						type if success, SCT_MAX otherwise
+ * @return type if success, SCT_MAX otherwise
  */
 static enum soap_childtype soap_decode_child_type(struct soap_msg *msg)
 {
@@ -847,7 +883,7 @@ static enum soap_childtype soap_decode_child_type(struct soap_msg *msg)
 	}
 
 	if (!endkey) {
-		// possible NORMAL TYPES
+		/* possible NORMAL TYPES */
 		err = xml_skip_to_ws(msg->mb);
 		if (err == EOF)
 			type = SCT_NORMAL_NOPARAM;
@@ -856,8 +892,9 @@ static enum soap_childtype soap_decode_child_type(struct soap_msg *msg)
 		else
 			type = SCT_NORMAL_PARAM;
 
-	} else {
-		// possible [I]END TYPES
+	}
+	else {
+		/* possible [I]END TYPES */
 		err = xml_is_close_key(msg->mb, &endkey);
 		if (err) {
 			type = SCT_MAX;
@@ -892,12 +929,13 @@ static enum soap_childtype soap_decode_child_type(struct soap_msg *msg)
 	return type;
 }
 
+
 /**
  * decode the namespace key combination of the child
  *
- * @param child					pointer to the soap message
+ * @param child pointer to the soap message
  *
- * @return						0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 static int soap_child_nskey_decode(struct soap_child *c,
 	enum soap_childtype t)
@@ -911,7 +949,7 @@ static int soap_child_nskey_decode(struct soap_child *c,
 	if (!c)
 		return EINVAL;
 
-	switch(t) {
+	switch (t) {
 		case SCT_NORMAL_NOPARAM:
 			err = xml_skip_to_end(c->msg->mb);
 			break;
@@ -931,7 +969,8 @@ static int soap_child_nskey_decode(struct soap_child *c,
 
 	epos = c->msg->mb->pos;
 	mbuf_set_pos(c->msg->mb, bpos);
-	pl_set_n_str(&nskey, (const char *)mbuf_buf(c->msg->mb), (epos - bpos - 1));
+	pl_set_n_str(&nskey, (const char *)mbuf_buf(c->msg->mb),
+		     (epos - bpos - 1));
 	mbuf_set_pos(c->msg->mb, epos);
 
 	ctmp = pl_strchr(&nskey, ':');
@@ -939,19 +978,21 @@ static int soap_child_nskey_decode(struct soap_child *c,
 		pl_set_n_str(&nsprefix, nskey.p, (ctmp++) - nskey.p);
 		pl_set_n_str(&c->key, ctmp, nskey.l - (ctmp - nskey.p));
 		c->ns = mem_ref(soap_msg_has_ns_prefix(c->msg, nsprefix.p));
-	} else {
+	}
+	else {
 		pl_set_n_str(&c->key, nskey.p, nskey.l);
 	}
 
 	return 0;
 }
 
+
 /**
  * detect and decode a possible value
  *
- * @param child					pointer to the soap message
+ * @param child  pointer to the soap message
  *
- * @return						0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 static int soap_child_value_decode(struct soap_child *c) {
 	int err = 0;
@@ -968,7 +1009,8 @@ static int soap_child_value_decode(struct soap_child *c) {
 		soap_set_value_str(c,
 			(const char*)mbuf_buf(c->msg->mb), (epos - bpos));
 		mbuf_set_pos(c->msg->mb, epos);
-	} else {
+	}
+	else {
 		mbuf_set_pos(c->msg->mb, bpos);
 	}
 
@@ -980,11 +1022,11 @@ static int soap_child_value_decode(struct soap_child *c) {
  * SOAP child decode function
  * use a iterative approach to decode the soap message
  *
- * @param msg			pointer to soap message struct
- * @param stack			stack to keep track of the current soap layer
- * @param maxstacksize	max number of soap children on the stack
+ * @param msg    pointer to soap message struct
+ * @param stack  stack to keep track of the current soap layer
+ * @param maxstacksize  max number of soap children on the stack
  *
- * @return				0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 static int soap_child_decode(struct soap_msg *msg,
 	struct soap_child **stack, const size_t maxstacksize)
@@ -994,7 +1036,7 @@ static int soap_child_decode(struct soap_msg *msg,
 	struct soap_child *c = NULL;
 	enum soap_childtype type;
 
-	while(mbuf_get_left(msg->mb)) {
+	while (mbuf_get_left(msg->mb)) {
 		type = soap_decode_child_type(msg);
 		if (type == SCT_MAX) {
 			err = EINVAL;
@@ -1013,9 +1055,10 @@ static int soap_child_decode(struct soap_msg *msg,
 				err = EOVERFLOW;
 				goto out;
 			}
-		} else {
+		}
+		else {
 			if (curstack == 1) {
-				curstack--;
+				--curstack;
 				err = 0;
 				goto out;
 			}
@@ -1023,7 +1066,7 @@ static int soap_child_decode(struct soap_msg *msg,
 			if (err)
 				goto out;
 
-			curstack--;
+			--curstack;
 			continue;
 		}
 
@@ -1032,7 +1075,8 @@ static int soap_child_decode(struct soap_msg *msg,
 			err = xml_skip_to_ws(msg->mb);
 			err |= soap_child_parameter_decode(c);
 			if (err) {
-				warning ("%s Could not decode parameter (%m)", __func__, err);
+				warning ("%s Could not decode parameter (%m)",
+					 __func__, err);
 				goto out;
 			}
 
@@ -1050,8 +1094,8 @@ static int soap_child_decode(struct soap_msg *msg,
 		if (type == SCT_NORMAL_PARAM || type == SCT_IEND_PARAM) {
 			err |= xml_skip_to_end(msg->mb);
 			if (err) {
-				warning ("%s Could not decode namespace and key (%m)",
-					__func__, err);
+				warning ("%s Could not decode namespace and"
+					 " key (%m)", __func__, err);
 				goto out;
 			}
 		}
@@ -1070,7 +1114,7 @@ static int soap_child_decode(struct soap_msg *msg,
 			if (err)
 				goto out;
 
-			curstack++;
+			++curstack;
 		}
 
 		err = xml_next_key(msg->mb);
@@ -1094,9 +1138,9 @@ static int soap_child_decode(struct soap_msg *msg,
 
 /**
  * SOAP message decode function
- * @param msg				pointer to soap message struct
+ * @param msg  pointer to soap message struct
  *
- * @return					0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 static int soap_msg_decode(struct soap_msg *msg)
 {
@@ -1114,7 +1158,8 @@ static int soap_msg_decode(struct soap_msg *msg)
 
 	mbuf_advance(msg->mb, 1);
 
-	stack = mem_zalloc(sizeof(*stack) * SOAP_MAX_STACKSIZE, NULL);
+	stack = mem_zalloc(sizeof(struct soap_child) * SOAP_MAX_STACKSIZE,
+			   NULL);
 	if (!stack)
 		return ENOMEM;
 
@@ -1126,9 +1171,13 @@ static int soap_msg_decode(struct soap_msg *msg)
 	mbuf_set_pos(msg->mb, 0);
 	return err;
 }
-//------------------------------------------------------------------------------
 
-// GENERATOR FUNCTIONS----------------------------------------------------------
+
+/*-------------------------------------------------------------------------- */
+
+
+/* GENERATOR FUNCTIONS------------------------------------------------------ */
+
 
 /**
  * add a parameter object to a @child
@@ -1140,10 +1189,11 @@ static int soap_msg_decode(struct soap_msg *msg)
  * @param value         value of the parameter
  * @param v_len         size of the value string
  *
- * @return				0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 int soap_add_parameter_str(struct soap_child *c, const char *ns_prefix,
-	const char *key, const size_t k_len, const char *value, const size_t v_len)
+	const char *key, const size_t k_len, const char *value,
+	const size_t v_len)
 {
 	int err = 0;
 	struct soap_namespace *ns = NULL;
@@ -1166,11 +1216,13 @@ int soap_add_parameter_str(struct soap_child *c, const char *ns_prefix,
 		pl_set_n_str(&param->key, key, k_len);
 		memcpy(param->str_value, value, v_len);
 		pl_set_n_str(&param->value, param->str_value, v_len);
-	} else if(0 == strncmp(ns_prefix, str_new_ns, strlen(str_new_ns))) {
+	}
+	else if (0 == strncmp(ns_prefix, str_new_ns, strlen(str_new_ns))) {
 		pl_set_n_str(&param->xmlns, str_new_ns, strlen(str_new_ns));
 		pl_set_n_str(&param->key, key, k_len);
 		pl_set_n_str(&param->value, value, v_len);
-	} else {
+	}
+	else {
 		ns = soap_msg_has_ns_prefix(c->msg, ns_prefix);
 		if (!ns) {
 			err = EINVAL;
@@ -1193,7 +1245,8 @@ int soap_add_parameter_str(struct soap_child *c, const char *ns_prefix,
 	if (err) {
 		mem_deref(ns);
 		mem_deref(param);
-	} else {
+	}
+	else {
 		list_append(&c->l_parameters, &param->le, param);
 	}
 
@@ -1252,7 +1305,8 @@ int soap_add_parameter_uint(struct soap_child *c, const char* ns_prefix,
   out:
 	if (err) {
 		mem_deref(param);
-	} else {
+	}
+	else {
 		list_append(&c->l_parameters, &param->le, param);
 	}
 
@@ -1313,9 +1367,9 @@ struct soap_child *soap_add_child(struct soap_msg *msg,
  * a soap response message. This generates the envelope child and
  * add the necessary envelope namespace
  *
- * @param prtmsg			pointer for the message as return value
+ * @param prtmsg  pointer for the message as return value
  *
- * @return					0 if success, error otherwise
+ * @return 0 if success, error otherwise
  */
 int soap_alloc_msg(struct soap_msg **ptrmsg)
 {
@@ -1336,13 +1390,15 @@ int soap_alloc_msg(struct soap_msg **ptrmsg)
 		goto out;
 	}
 
-	// if (!soap_msg_add_ns_str(msg, str_pf_xml_schema, str_uri_xml_schema)) {
-	//     warning ("%s: Could not add XML Schema");
-	//     err = EINVAL;
-	//     goto out;
-	// }
+	/* if (!soap_msg_add_ns_str(msg, str_pf_xml_schema, */
+	/*     str_uri_xml_schema)) { */
+	/*     warning ("%s: Could not add XML Schema"); */
+	/*     err = EINVAL; */
+	/*     goto out; */
+	/* } */
 
-	msg->envelope = soap_add_child(msg, NULL, str_pf_envelope, str_envelope);
+	msg->envelope = soap_add_child(msg, NULL, str_pf_envelope,
+				       str_envelope);
 	if (!msg->envelope){
 		warning ("%s: Could not add envelope child");
 		goto out;
@@ -1351,9 +1407,9 @@ int soap_alloc_msg(struct soap_msg **ptrmsg)
 	err = soap_add_parameter_str(msg->envelope, str_new_ns,
 		str_pf_envelope, strlen(str_pf_envelope),
 		str_uri_envelope, strlen(str_uri_envelope));
-	// err |= soap_add_parameter_str(msg->envelope, str_new_ns,
-	//     str_pf_xml_schema, strlen(str_pf_xml_schema),
-	//     str_uri_xml_schema, strlen(str_uri_xml_schema));
+	/* err |= soap_add_parameter_str(msg->envelope, str_new_ns, */
+	/*     str_pf_xml_schema, strlen(str_pf_xml_schema), */
+	/*     str_uri_xml_schema, strlen(str_uri_xml_schema)); */
 
   out:
 	if (err)
@@ -1363,17 +1419,21 @@ int soap_alloc_msg(struct soap_msg **ptrmsg)
 
 	return err;
 }
-//------------------------------------------------------------------------------
 
-//ENCODE FUNCTIONS--------------------------------------------------------------
+
+/*-------------------------------------------------------------------------- */
+
+
+/*ENCODE FUNCTIONS---------------------------------------------------------- */
+
 
 /**
  * calculate the size of a parameter
  * namespace/xmlns + key + value + static symbols
  *
- * @param param	    		pointer to parameter
+ * @param param  pointer to parameter
  *
- * @return					size of the parameter
+ * @return size of the parameter
  */
 static size_t soap_param_bufsize(struct soap_parameter *param)
 {
@@ -1401,9 +1461,9 @@ static size_t soap_param_bufsize(struct soap_parameter *param)
  * calculate the size of a child
  * namespace + key + value + parameter + children + static symbols
  *
- * @param param	    		pointer to child
+ * @param param  pointer to child
  *
- * @return					size of the child
+ * @return size of the child
  */
 static size_t soap_child_bufsize(struct soap_child *c)
 {
@@ -1424,7 +1484,8 @@ static size_t soap_child_bufsize(struct soap_child *c)
 	size += c->key.l;
 	if (list_isempty(&c->l_childs) && !pl_isset(&c->value)) {
 		size += 1;
-	} else {
+	}
+	else {
 		size += pl_isset(&c->value) ? c->value.l : 0;
 		size += 3;
 		size += c->ns ? c->ns->prefix.l + 1 : 0;
@@ -1446,9 +1507,9 @@ static size_t soap_child_bufsize(struct soap_child *c)
  * calculate the size of the soap message
  * prolog of the xml + envelope
  *
- * @param param	    		pointer to message
+ * @param param  pointer to message
  *
- * @return					size of the message
+ * @return size of the message
  */
 static size_t soap_msg_bufsize(const struct soap_msg *msg)
 {
@@ -1463,10 +1524,10 @@ static size_t soap_msg_bufsize(const struct soap_msg *msg)
 /**
  * encode the parameter into the message buffer
  *
- * @param msg               pointer to parameter
- * @param param	    		pointer to message
+ * @param msg    pointer to parameter
+ * @param param  pointer to message
  *
- * @return					0 if success, error code otherwise
+ * @return 0 if success, error code otherwise
  */
 static int soap_param_encode(const struct soap_msg *msg,
 	const struct soap_parameter *param)
@@ -1480,7 +1541,8 @@ static int soap_param_encode(const struct soap_msg *msg,
 	if (param->ns) {
 		err |= mbuf_write_pl(msg->mb, &param->ns->prefix);
 		err |= mbuf_write_u8(msg->mb, ':');
-	} else if (pl_isset(&param->xmlns)) {
+	}
+	else if (pl_isset(&param->xmlns)) {
 		err |= mbuf_write_pl(msg->mb, &param->xmlns);
 		err |= mbuf_write_u8(msg->mb, ':');
 	}
@@ -1497,9 +1559,9 @@ static int soap_param_encode(const struct soap_msg *msg,
 /**
  * encode the child into the message buffer
  *
- * @param c                 pointer to child
+ * @param c  pointer to child
  *
- * @return					0 if success, error code otherwise
+ * @return 0 if success, error code otherwise
  */
 static int soap_child_encode(const struct soap_child *c)
 {
@@ -1528,7 +1590,8 @@ static int soap_child_encode(const struct soap_child *c)
 	if (list_isempty(&c->l_childs) && !pl_isset(&c->value)) {
 		err |= mbuf_write_str(c->msg->mb, "/>");
 		goto out;
-	} else {
+	}
+	else {
 		err |= mbuf_write_u8(c->msg->mb, '>');
 	}
 
@@ -1561,9 +1624,9 @@ static int soap_child_encode(const struct soap_child *c)
  * calculate the size of the message and encode the hole
  * datastructure into the message buffer
  *
- * @param msg                pointer to message
+ * @param msg  pointer to message
  *
- * @return					0 if success, error code otherwise
+ * @return 0 if success, error code otherwise
  */
 int soap_msg_encode(struct soap_msg *msg)
 {
@@ -1587,7 +1650,8 @@ int soap_msg_encode(struct soap_msg *msg)
 	err = mbuf_write_pl(msg->mb, &msg->prolog);
 	err = soap_child_encode(msg->envelope);
 	if (err) {
-		warning ("%s: soap message does not fit in buffer\n", __func__);
+		warning ("%s: soap message does not fit in buffer\n",
+			 __func__);
 		goto out;
 	}
 
@@ -1596,11 +1660,15 @@ int soap_msg_encode(struct soap_msg *msg)
    out:
 	return err;
 }
-/*----------------------------------------------------------------------------*/
+
+
+/*-------------------------------------------------------------------------- */
+
+
 /**
  * Pritty-print soap message
  *
- * @param m					pointer to soap msg
+ * @param m  pointer to soap msg
  */
 void soap_msg_print(struct soap_msg *m)
 {
@@ -1631,12 +1699,15 @@ static int soap_request_handler(const struct soap_msg *msg,
 	if (soap_child_has_child(body, NULL, str_wsd_probe)) {
 		err = wsd_probe(msg, &response);
 		goto make_fault;
-	} else if (soap_child_has_child(body, NULL, str_wsd_resolve)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_wsd_resolve)) {
 		err = wsd_resolve(msg, &response);
 		goto make_fault;
-	} else if (soap_child_has_child(body, NULL, str_wsd_hello)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_wsd_hello)) {
 		goto noresponse;
-	} else if (soap_child_has_child(body, NULL, str_wsd_bye)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_wsd_bye)) {
 		goto noresponse;
 	}
 
@@ -1645,7 +1716,7 @@ static int soap_request_handler(const struct soap_msg *msg,
 			"Use default: Auth Enabled.\n", DEBUG_MODULE);
 	}
 
-	// /*Called Methods IF-Else ladder*/
+	/*Called Methods IF-Else ladder*/
 	if (auth_enabled)
 		ul = wss_auth(msg);
 	else
@@ -1684,26 +1755,30 @@ static int soap_request_handler(const struct soap_msg *msg,
 			err = scope_SetScopes_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_add_scopes)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_add_scopes)) {
 	/*AddScopes*/
 		if (ul == UADMIN)
 			err = scope_AddScopes_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_remove_scopes)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_remove_scopes)) {
 	/*RemoveScopes*/
 		if (ul == UADMIN)
 			err = scope_RemoveScopes_h(msg, &response, &f);
 		else
 			unauthorized = true;
 	}
-	// } else if (soap_child_has_child(body, NULL, str_method_set_discoverymode)){
-	// /*SetDiscoverable*/
-	// 	if (ul == UADMIN)
-	// 		err = wsd_SetDiscoverable(msg, &response);
-	// 	else
-	// 		unauthorized = true;
-	// }
+	/* }
+	 * else if (soap_child_has_child(body, NULL, */
+	/* str_method_set_discoverymode)){ */
+	/* SetDiscoverable */
+	/*	if (ul == UADMIN) */
+	/*		err = wsd_SetDiscoverable(msg, &response); */
+	/*	else */
+	/*		unauthorized = true; */
+	/* } */
 	/*SetGeoLocation*/
 	/*DeleteGeoLocation*/
 	/*SetAccessPolicy*/
@@ -1754,28 +1829,36 @@ static int soap_request_handler(const struct soap_msg *msg,
 			err = media_CreateProfile_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_add_vsc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_add_vsc)) {
 	/*AddVideoSourceConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_AddVideoSourceConfiguration_h(msg, &response, &f);
+			err = media_AddVideoSourceConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_add_vec)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_add_vec)) {
 	/*AddVideoEncoderConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_AddVideoEncoderConfiguration_h(msg, &response, &f);
+			err = media_AddVideoEncoderConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_add_asc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_add_asc)) {
 	/*AddAudioSourceConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_AddAudioSourceConfiguration_h(msg, &response, &f);
+			err = media_AddAudioSourceConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_add_aec)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_add_aec)) {
 	/*AddAudioEncoderConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_AddAudioEncoderConfiguration_h(msg, &response, &f);
+			err = media_AddAudioEncoderConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
 	}
@@ -1785,37 +1868,48 @@ static int soap_request_handler(const struct soap_msg *msg,
 	else if (soap_child_has_child(body, NULL, str_method_add_aoc)) {
 	/*AddAudioOutputConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_AddAudioOutputConfiguration_h(msg, &response, &f);
+			err = media_AddAudioOutputConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_add_adc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_add_adc)) {
 	/*AddAudioDecoderConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_AddAudioDecoderConfiguration_h(msg, &response, &f);
+			err = media_AddAudioDecoderConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_remove_vsc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_remove_vsc)) {
 	/*RemoveVideoSourceConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_RemoveVideoSourceConfiguration_h(msg, &response, &f);
+			err = media_RemoveVideoSourceConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_remove_vec)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_remove_vec)) {
 	/*RemoveVideoEncoderConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_RemoveVideoEncoderConfiguration_h(msg, &response, &f);
+			err = media_RemoveVideoEncoderConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_remove_asc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_remove_asc)) {
 	/*RemoveAudioSourceConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_RemoveAudioSourceConfiguration_h(msg, &response, &f);
+			err = media_RemoveAudioSourceConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_remove_aec)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_remove_aec)) {
 	/*RemoveAudioEncoderConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_RemoveAudioEncoderConfiguration_h(msg, &response, &f);
+			err = media_RemoveAudioEncoderConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
 	}
@@ -1825,52 +1919,71 @@ static int soap_request_handler(const struct soap_msg *msg,
 	else if (soap_child_has_child(body, NULL, str_method_remove_aoc)) {
 	/*RemoveAudioOutputConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_RemoveAudioOutputConfiguration_h(msg, &response, &f);
+			err = media_RemoveAudioOutputConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_remove_adc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_remove_adc)) {
 	/*RemoveAudioDecoderConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_RemoveAudioDecoderConfiguration_h(msg, &response, &f);
+			err = media_RemoveAudioDecoderConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_delete_profile)) {
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_delete_profile)) {
 	/*DeleteProfile*/
 		if (ul <= UOPERATOR)
 			err = media_DeleteProfile_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_set_videosource)) {
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_set_videosource)) {
 	/*SetVidoeSourceConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_SetVideoSourceConfiguration_h(msg, &response, &f);
+			err = media_SetVideoSourceConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_set_videoecnoder)) {
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_set_videoecnoder)) {
 	/*SetVidoeEncoderConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_SetVideoEncoderConfiguration_h(msg, &response, &f);
+			err = media_SetVideoEncoderConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_set_audiosource)) {
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_set_audiosource)) {
 	/*SetAudioSourceConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_SetAudioSourceConfiguration_h(msg, &response, &f);
+			err = media_SetAudioSourceConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_set_audioecnoder)) {
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_set_audioecnoder)) {
 	/*SetAudioEncoderConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_SetAudioEncoderConfiguration_h(msg, &response, &f);
+			err = media_SetAudioEncoderConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
 	}
 	/*SetVidoeVnalyticsConfiguration*/
 	/*SetMetadataConfiguration*/
-	else if (soap_child_has_child(body, NULL, str_method_set_audiooutput)) {
+	else if (soap_child_has_child(body, NULL,
+				      str_method_set_audiooutput)) {
 	/*SetAudioOutputConfiguration*/
 		if (ul <= UOPERATOR)
-			err = media_SetAudioOutputConfiguration_h(msg, &response, &f);
+			err = media_SetAudioOutputConfiguration_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
 	}
@@ -1887,19 +2000,24 @@ static int soap_request_handler(const struct soap_msg *msg,
 	/*GetDNS*/
 	/*GetNTP*/
 	/*GetDynamicDNS*/
-	else if (soap_child_has_child(body, NULL, str_method_get_netinterfaces)) {
+	else if (soap_child_has_child(body, NULL,
+				      str_method_get_netinterfaces)) {
 	/*GetNetworkInterfaces*/
 		if (ul <= UUSER)
 			err = device_GetNWI_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_ndg)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_ndg)) {
 	/*GetNetworkDefaultGateway*/
 		if (ul <= UUSER)
-			err = device_GetNetworkDefaultGateway_h(msg, &response);
+			err = device_GetNetworkDefaultGateway_h(msg,
+								&response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_nprotos)) {
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_get_nprotos)) {
 	/*GetNetworkProtocols*/
 		if (ul <= UUSER)
 			err = device_GetNetworkProtocols_h(msg, &response);
@@ -1911,7 +2029,8 @@ static int soap_request_handler(const struct soap_msg *msg,
 	/*GetDot11Capabilities*/
 	/*GetDot11Status*/
 	/*ScanAvailableDot11Networks*/
-	else if (soap_child_has_child(body, NULL, str_method_get_device_info)) {
+	else if (soap_child_has_child(body, NULL,
+				      str_method_get_device_info)) {
 	/*GetDeviceInformation*/
 		if (ul <= UUSER)
 			err = device_GetDeviceInfo_h(msg, &response);
@@ -1925,7 +2044,9 @@ static int soap_request_handler(const struct soap_msg *msg,
 			err = scope_GetScopes_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_discoverymode)) {
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_get_discoverymode)) {
 	/*GetDiscoveryMode*/
 		if (ul <= UUSER)
 			err = wsd_GetDiscoverable(msg, &response);
@@ -1953,32 +2074,38 @@ static int soap_request_handler(const struct soap_msg *msg,
 	/*Renew*/
 	/*Unsubscribe*/
 	/*Seek*/
-	// else if (soap_child_has_child(body, NULL, str_method_get_eventprop)) {
-	// /*GetEventProperties*/
-	//     if (ul <= UUSER)
-	//         err = event_GetEventProperties_h(msg, &response);
-	//     else
-	//         unauthorized = true;
-	// }
+	/* else if (soap_child_has_child(body, NULL, */
+	/* str_method_get_eventprop)) { */
+	/* GetEventProperties */
+	/*     if (ul <= UUSER) */
+	/*         err = event_GetEventProperties_h(msg, &response); */
+	/*     else */
+	/*         unauthorized = true; */
+	/* } */
 
 	/*READ_MEDIA - DEVICE-IO*/
 	/*GetVideoOutputs*/
 	/*GetVideoOutputOptions*/
-	else if (soap_child_has_child(body, NULL, str_method_get_videosources) &&
+	else if (soap_child_has_child(body, NULL,
+				      str_method_get_videosources) &&
 		soap_msg_has_ns_uri(msg, str_uri_deviceio_wsdl)) {
 	/*GetVideoSources*/
 		if (ul <= UUSER)
 			err = deviceio_GetVideoSources_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_audiooutputs) &&
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_get_audiooutputs) &&
 		soap_msg_has_ns_uri(msg, str_uri_deviceio_wsdl)) {
 	/*GetAudioOuputs*/
 		if (ul <= UUSER)
 			err = deviceio_GetAudioOutputs_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_audiosources) &&
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_get_audiosources) &&
 		soap_msg_has_ns_uri(msg, str_uri_deviceio_wsdl)) {
 	/*GetAudioSources*/
 		if (ul <= UUSER)
@@ -1995,129 +2122,153 @@ static int soap_request_handler(const struct soap_msg *msg,
 			err = media_GetProfiles_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_profile)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_profile)) {
 	/*GetProfile*/
 		if (ul <= UUSER)
 			err = media_GetProfile_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_videosources) &&
-		(soap_msg_has_ns_uri(msg, str_uri_media_wsdl) ||
-		soap_msg_has_ns_uri(msg, str_uri_media2_wsdl))) {
+	}
+	else if (soap_child_has_child(body, NULL,
+			str_method_get_videosources) &&
+			soap_msg_has_ns_uri(msg, str_uri_media_wsdl)) {
 	/*GetVideoSources*/
 		if (ul <= UUSER)
 			err = media_GetVideoSources_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_vscs)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_vscs)) {
 	/*GetVideoSourceConfigurations*/
 		if (ul <= UUSER)
 			err = media_GetVSCS_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_vsc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_vsc)) {
 	/*GetVideoSourceConfiguration*/
 		if (ul <= UUSER)
 			err = media_GetVSC_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_cvsc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_cvsc)) {
 	/*GetCompatibleVideoSourceConfigurations*/
 		if (ul <= UUSER)
-			err = media_GetCompVideoSourceConfigs_h(msg, &response, &f);
+			err = media_GetCompVideoSourceConfigs_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_vscos)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_vscos)) {
 	/*GetVideoSourceConfigurationOptions*/
 		if (ul <= UUSER)
 			err = media_GetVideoSourceConfigurationOptions_h(msg,
 				&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_vecs)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_vecs)) {
 	/*GetVideoEncoderConfigurations*/
 		if (ul <= UUSER)
 			err = media_GetVECS_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_vec)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_vec)) {
 	/*GetVideoEncoderConfiguration*/
 		if (ul <= UUSER)
 			err = media_GetVEC_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_cvec)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_cvec)) {
 	/*GetCompatibleVideoEncoderConfigurations*/
 		if (ul <= UUSER)
 			err = media_GetCompVideoEncoderConfigs_h(msg,
 				&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_vecos)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_vecos)) {
 	/*GetVideoEncoderConfigurationOptions*/
 		if (ul <= UUSER)
 			err = media_GetVideoEncoderConfigurationOptions_h(msg,
 				&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_ggnovei)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_ggnovei)) {
 	/*GetGuaranteedNumberOfVideoEncoderInstances*/
 		if (ul <= UUSER)
-			err = media_GetGuaranteedNumberOfVEInstances_h(msg, &response, &f);
+			err = media_GetGuaranteedNumberOfVEInstances_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_audiosources) &&
-		(soap_msg_has_ns_uri(msg, str_uri_media_wsdl) ||
-		soap_msg_has_ns_uri(msg, str_uri_media2_wsdl))) {
+	}
+	else if (soap_child_has_child(body, NULL,
+			str_method_get_audiosources) &&
+			soap_msg_has_ns_uri(msg, str_uri_media_wsdl)) {
 	/*GetAudioSources*/
 		if (ul <= UUSER)
 			err = media_GetAudioSources_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_ascs)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_ascs)) {
 	/*GetAudioSourceConfigurations*/
 		if (ul <= UUSER)
 			err = media_GetASCS_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_asc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_asc)) {
 	/*GetAudioSourceConfiguratio*/
 		if (ul <= UUSER)
 			err = media_GetASC_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_casc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_casc)) {
 	/*GetCompatibleAudioSourceConfigurations*/
 		if (ul <= UUSER)
-			err = media_GetCompAudioSourceConfigs_h(msg, &response, &f);
+			err = media_GetCompAudioSourceConfigs_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_ascos)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_ascos)) {
 	/*GetAudioSourceConfigurationOptions*/
 		if (ul <= UUSER)
 			err = media_GetAudioSourceConfigurationOptions_h(msg,
 				&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_aecs)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_aecs)) {
 	/*GetAudioEncoderConfigurations*/
 		if (ul <= UUSER)
 			err = media_GetAECS_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_aec)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_aec)) {
 	/*GetAudioEncoderConfiguration*/
 		if (ul <= UUSER)
 			err = media_GetAEC_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_caec)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_caec)) {
 	/*GetCompatibleAudioEncoderConfigurations*/
 		if (ul <= UUSER)
-			err = media_GetCompAudioEncoderConfigs_h(msg, &response, &f);
+			err = media_GetCompAudioEncoderConfigs_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_aecos)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_aecos)) {
 	/*GetAudioEncoderConfigurationOptions*/
 		if (ul <= UUSER)
 			err = media_GetAudioEncoderConfigurationOptions_h(msg,
@@ -2131,72 +2282,84 @@ static int soap_request_handler(const struct soap_msg *msg,
 	else if (soap_child_has_child(body, NULL, str_method_get_mdconfigs)) {
 	/*GetMetadataConfigurations*/
 		if (ul <= UUSER)
-			err = media_GetMetadataConfigurations_h(msg, &response);
+			err = media_GetMetadataConfigurations_h(msg,
+								&response);
 		else
 			unauthorized = true;
 	}
 	/*GetMetadataConfiguration*/
 	/*GetCompatibleMetadataConfigurations*/
 	/*GetMetadataConfigurationOptions*/
-	else if (soap_child_has_child(body, NULL, str_method_get_audiooutputs) &&
-		(soap_msg_has_ns_uri(msg, str_uri_media_wsdl) ||
-		soap_msg_has_ns_uri(msg, str_uri_media2_wsdl))) {
+	else if (soap_child_has_child(body, NULL,
+			str_method_get_audiooutputs) &&
+			soap_msg_has_ns_uri(msg, str_uri_media_wsdl)) {
 	/*GetAudioOutputs*/
 		if (ul <= UUSER)
 			err = media_GetAudioOutputs_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_aocs)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_aocs)) {
 	/*GetAudioOutputConfigurations*/
 		if (ul <= UUSER)
 			err = media_GetAOCS_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_aoc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_aoc)) {
 	/*GetAudioOutputConfiguration*/
 		if (ul <= UUSER)
 			err = media_GetAOC_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_caoc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_caoc)) {
 	/*GetCompatibleAudioOutputConfiguration*/
 		if (ul <= UUSER)
-			err = media_GetCompAudioOutputConfigs_h(msg, &response, &f);
+			err = media_GetCompAudioOutputConfigs_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_aocos)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_aocos)) {
 	/*GetAudioOutputConfigurationOptions*/
 		if (ul <= UUSER)
 			err = media_GetAudioOutputConfigurationOptions_h(msg,
 				&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_adcs)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_adcs)) {
 	/*GetAudioDecoderConfigurations*/
 		if (ul <= UUSER)
 			err = media_GetADCS_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_adc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_adc)) {
 	/*GetAudioDecoderConfiguration*/
 		if (ul <= UUSER)
 			err = media_GetADC_h(msg, &response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_cadc)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_cadc)) {
 	/*GetCompatibleAudioDecoderConfigurations*/
 		if (ul <= UUSER)
-			err = media_GetCompAudioDecoderConfigs_h(msg, &response, &f);
+			err = media_GetCompAudioDecoderConfigs_h(msg,
+							&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_adcos))  {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_adcos))  {
 	/*GetAudioDecoderConfigurationOptions*/
 		if (ul <= UUSER)
 			err = media_GetAudioDecoderConfigurationOptions_h(msg,
 				&response, &f);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL, str_method_get_suri)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_suri)) {
 	/*GetStreamUri*/
 		if (ul <= UUSER)
 			err = media_GetStreamUri_h(msg, &response, &f);
@@ -2215,7 +2378,8 @@ static int soap_request_handler(const struct soap_msg *msg,
 			err = ptz_GetNodes_h(msg, &response);
 		else
 			unauthorized = true;
-	} else if (soap_child_has_child(body, NULL,
+	}
+	else if (soap_child_has_child(body, NULL,
 		str_method_get_configurations)) {
 	/*GetConfigurations*/
 		if (ul <= UUSER)
@@ -2230,19 +2394,26 @@ static int soap_request_handler(const struct soap_msg *msg,
 	else if (soap_child_has_child(body, NULL, str_method_get_wsdlurl)) {
 	/*GetWsdlUrl*/
 		err = device_GetWsdlUrl_h(msg, &response);
-	} else if (soap_child_has_child(body, NULL, str_method_get_services)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_services)) {
 	/*GetServices*/
 		err = device_GetServices_h(msg, &response);
-	} else if (soap_child_has_child(body, NULL, str_method_get_service_cap)) {
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_get_service_cap)) {
 	/*GetServiceCapabilities*/
 		err = device_GetServiceCapabilities_h(msg, &response);
-	} else if (soap_child_has_child(body, NULL, str_method_get_capabilities)) {
+	}
+	else if (soap_child_has_child(body, NULL,
+					str_method_get_capabilities)) {
 	/*GetCapabilities*/
 		err = device_GetCapabilities_h(msg, &response, &f);
-	} else if (soap_child_has_child(body, NULL, str_method_get_hostname)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_hostname)) {
 	/*GetHostname*/
 		err = device_GetHostname_h(msg, &response);
-	} else if (soap_child_has_child(body, NULL, str_method_get_systime)) {
+	}
+	else if (soap_child_has_child(body, NULL, str_method_get_systime)) {
 	/*GetSystemDateAndTime*/
 		err = device_GetSystemDateAndTime_h(msg, &response);
 	}
@@ -2267,11 +2438,12 @@ static int soap_request_handler(const struct soap_msg *msg,
 
   make_fault:
 	if (f.is_set) {
-		// create fault msg
+		/* create fault msg */
 		err = fault_create(msg, &response, &f);
 		fault_clear(&f);
-	} else if (err) {
-		// program error
+	}
+	else if (err) {
+		/* program error */
 		goto out;
 	}
 
@@ -2287,10 +2459,12 @@ static int soap_request_handler(const struct soap_msg *msg,
 
   out:
 	if (err) {
-		DEBUG_WARNING("Here should stand your personal SOAP error message :P - "
+		DEBUG_WARNING("Here should stand your personal SOAP error"
+			      " message :P - "
 			"(%m)\n", err);
-		//build error message
-	} else {
+		/*build error message */
+	}
+	else {
 		*ptr_res = response;
 	}
 
@@ -2313,7 +2487,8 @@ void soap_udp_recv_handler(const struct sa *src, struct mbuf *mb,
 	(void) arg;
 	DEBUG_INFO("%s Connection from %J\n", __func__, src);
 
-	msg = (struct soap_msg *) mem_zalloc(sizeof(*msg), soap_msg_destructor);
+	msg = (struct soap_msg *) mem_zalloc(sizeof(*msg),
+					     soap_msg_destructor);
 	if (!msg)
 		return;
 
@@ -2335,8 +2510,9 @@ void soap_udp_recv_handler(const struct sa *src, struct mbuf *mb,
 	soap_msg_print(msg);
 
 	err = soap_request_handler(msg, &res);
-	if (!err && res)
+	if (!err && res) {
 		udp_send(udps, src, res->mb);
+	}
 
   out:
 	mem_deref(msg);
@@ -2355,7 +2531,7 @@ void http_req_handler(struct http_conn *conn,
 	int err = 0;
 	struct soap_msg *msg = NULL;
 	struct soap_msg *res = NULL;
-	
+
 	(void) arg;
 	if (pl_strcmp(&http_msg->ctyp.type, "application") ||
 			pl_strcmp(&http_msg->ctyp.subtype, "soap+xml"))
@@ -2363,7 +2539,8 @@ void http_req_handler(struct http_conn *conn,
 
 	DEBUG_INFO("%s Connection from %J\n", __func__, http_conn_peer(conn));
 
-	msg = (struct soap_msg *) mem_zalloc(sizeof(*msg), soap_msg_destructor);
+	msg = (struct soap_msg *) mem_zalloc(sizeof(*msg),
+					     soap_msg_destructor);
 	if (!msg)
 		return;
 
@@ -2386,7 +2563,8 @@ void http_req_handler(struct http_conn *conn,
 	if (!err && res && soap_msg_has_ns_prefix(res, str_pf_error)) {
 		http_creply(conn, 400, "Bad Request", str_http_ctype, "%b",
 			mbuf_buf(res->mb), mbuf_get_left(res->mb));
-	} else if (!err && res) {
+	}
+	else if (!err && res) {
 		http_creply(conn, 200, "OK", str_http_ctype, "%b",
 			mbuf_buf(res->mb), mbuf_get_left(res->mb));
 	}

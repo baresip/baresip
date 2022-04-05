@@ -17,7 +17,6 @@ enum servicetype{
 	S_ALL,
 	S_DEVICE,
 	S_MEDIA1,
-	S_MEDIA2,
 	S_EVENT,
 	S_PTZ,
 	S_IO,
@@ -37,8 +36,8 @@ struct capabilities {
 				bool dot11config   : 1;
 				bool hostnamefdhcp : 1;
 				bool dhcp6         : 1;
-				uint8_t ntp              ;
-				uint8_t dot1xconfigs     ;
+				uint8_t ntp;
+				uint8_t dot1xconfigs;
 			} network;
 			struct {
 				bool discoveryresolve     : 1;
@@ -52,10 +51,10 @@ struct capabilities {
 				bool httpsystemlogging    : 1;
 				bool httpsupportinfo      : 1;
 				bool storageconfig        : 1;
-				uint8_t maxstorageconfigs       ;
-				uint8_t geolocationentries      ;
-				char * autogeo                  ;
-				char * storagetypssupported     ;
+				uint8_t maxstorageconfigs;
+				uint8_t geolocationentries;
+				char * autogeo;
+				char * storagetypssupported;
 			} system;
 			struct {
 				bool tls10               : 1;
@@ -72,10 +71,10 @@ struct capabilities {
 				bool usertoken           : 1;
 				bool httpdigest          : 1;
 				bool reltoken            : 1;
-				char *supportedeapmethods      ;
-				uint8_t maxusers               ;
-				uint8_t maxusernamelen         ;
-				uint8_t maxpasswdlen           ;
+				char *supportedeapmethods;
+				uint8_t maxusers;
+				uint8_t maxusernamelen;
+				uint8_t maxpasswdlen;
 			} security;
 
 			struct {
@@ -104,35 +103,17 @@ struct capabilities {
 			bool rtprtsptcp          : 1;
 			bool nonaggregatecontrol : 1;
 			bool nortspstreaming     : 1;
-			uint8_t maxnumberofprofile     ;
+			uint8_t maxnumberofprofile;
 		} media1;
 
 		struct {
-			bool snapshoturi         : 1;
-			bool rotation            : 1;
-			bool videosourcemode     : 1;
-			bool osd                 : 1;
-			bool temporaryosdtext    : 1;
-			bool mask                : 1;
-			bool sourcemask          : 1;
-			bool rtpmcast            : 1;
-			bool rtptcp              : 1;
-			bool rtprtsptcp          : 1;
-			bool nonaggregatecontrol : 1;
-			bool autostartmulticast  : 1;
-			uint8_t maxnumberofprofile     ;
-			char *rtspwebsocketuri         ;
-			char *conigurationsupported    ;
-		} media2;
-
-		struct {
-			uint8_t videosources        ;
-			uint8_t videooutputs        ;
-			uint8_t audiosources        ;
-			uint8_t audiooutputs        ;
-			uint8_t relayoutputs        ;
-			uint8_t serialports         ;
-			uint8_t digitalinputs       ;
+			uint8_t videosources;
+			uint8_t videooutputs;
+			uint8_t audiosources;
+			uint8_t audiooutputs;
+			uint8_t relayoutputs;
+			uint8_t serialports;
+			uint8_t digitalinputs;
 			uint8_t digitalintputoptions;
 		}io;
 
@@ -162,28 +143,31 @@ int services_init(void);
 void services_deinit(void);
 
 int generate_timebased_uuid(char *uuid, size_t len);
-int get_mac_addr_fmt(char *mac, size_t len, bool dp, const char c);
 
-int device_GetServices_h(const struct soap_msg *msg, struct soap_msg **ptrresp);
+int device_GetServices_h(const struct soap_msg *msg,
+			 struct soap_msg **ptrresp);
 int device_GetDeviceInfo_h(const struct soap_msg *msg,
-	struct soap_msg **prtresp);
+			   struct soap_msg **prtresp);
 int device_GetCapabilities_h(const struct soap_msg *msg,
-	struct soap_msg **ptrresp, struct soap_fault *f);
-int device_GetNWI_h(const struct soap_msg *msg, struct soap_msg **prtresp);
+			     struct soap_msg **ptrresp, struct soap_fault *f);
+int device_GetNWI_h(const struct soap_msg *msg,
+		    struct soap_msg **prtresp);
 int device_GetSystemDateAndTime_h(const struct soap_msg *msg,
-	struct soap_msg **prtresp);
+				  struct soap_msg **prtresp);
 int device_GetNetworkDefaultGateway_h(const struct soap_msg *msg,
-	struct soap_msg **prtresp);
+				      struct soap_msg **prtresp);
 int device_GetNetworkProtocols_h(const struct soap_msg *msg,
-	struct soap_msg **prtresp);
+				 struct soap_msg **prtresp);
 int device_GetServiceCapabilities_h(const struct soap_msg *msg,
-	struct soap_msg **prtresp);
+				    struct soap_msg **prtresp);
 int ptz_GetConfigurations_h(const struct soap_msg *msg,
-	struct soap_msg **prtresp);
-int device_GetWsdlUrl_h(const struct soap_msg *msg, struct soap_msg **prtresp);
-int device_GetHostname_h(const struct soap_msg *msg, struct soap_msg **prtresp);
+			    struct soap_msg **prtresp);
+int device_GetWsdlUrl_h(const struct soap_msg *msg,
+			struct soap_msg **prtresp);
+int device_GetHostname_h(const struct soap_msg *msg,
+			 struct soap_msg **prtresp);
 int device_SystemReboot_h(const struct soap_msg *msg,
-	struct soap_msg **prtresp);
+			  struct soap_msg **prtresp);
 
 #endif /* _ONVIF_DEVICE_H */
 

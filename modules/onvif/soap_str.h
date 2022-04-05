@@ -6,661 +6,665 @@
 #ifndef _ONVIF_SOAP_STR_H_
 #define _ONVIF_SOAP_STR_H_
 
-/*SOAP.c Strings -------------------------------------------------------------*/
-const char *str_uri_schema;
-const char *str_pf_schema;
-const char *str_uri_device_wsdl;
-const char *str_pf_device_wsdl;
-const char *str_uri_media_wsdl;
-const char *str_pf_media_wsdl;
-const char *str_uri_media2_wsdl;
-const char *str_pf_media2_wsdl;
-const char *str_uri_events_wsdl;
-const char *str_pf_events_wsdl;
-const char *str_uri_error;
-const char *str_pf_error;
-const char *str_uri_network_wsdl;
-const char *str_pf_network_wsdl;
-const char *str_uri_ptz_wsdl;
-const char *str_pf_ptz_wsdl;
-const char *str_uri_topics;
-const char *str_pf_topics;
-const char *str_uri_deviceio_wsdl;
-const char *str_pf_deviceio_wsdl;
-const char *str_uri_wsdl;
-const char *str_pf_wsdl;
-const char *str_uri_wsdl_soap12;
-const char *str_pf_wsdl_soap12;
-const char *str_uri_wsdl_http;
-const char *str_pf_wsdl_http;
-const char *str_uri_encoding;
-const char *str_pf_encoding;
-const char *str_uri_envelope;
-const char *str_pf_envelope;
-const char *str_uri_xml_schema;
-const char *str_pf_xml_schema;
-const char *str_uri_xml_schema_instance;
-const char *str_pf_xml_schema_instance;
-const char *str_uri_discovery;
-const char *str_pf_discovery;
-const char *str_uri_xml_soap_addressing;
-const char *str_pf_xml_soap_addressing;
-const char *str_uri_addressing;
-const char *str_pf_addressing;
-const char *str_uri_wsn_t1;
-const char *str_pf_wsn_t1;
-const char *str_uri_wsn_b2;
-const char *str_pf_wsn_b2;
-const char *str_uri_xop_include;
-const char *str_pf_xop_include;
+/*SOAP.c Strings ------------------------------------------------------------*/
+extern const char str_uri_schema[];
+extern const char str_pf_schema[];
+extern const char str_uri_device_wsdl[];
+extern const char str_pf_device_wsdl[];
+extern const char str_uri_media_wsdl[];
+extern const char str_pf_media_wsdl[];
+extern const char str_uri_events_wsdl[];
+extern const char str_pf_events_wsdl[];
+extern const char str_uri_error[];
+extern const char str_pf_error[];
+extern const char str_uri_network_wsdl[];
+extern const char str_pf_network_wsdl[];
+extern const char str_uri_ptz_wsdl[];
+extern const char str_pf_ptz_wsdl[];
+extern const char str_uri_topics[];
+extern const char str_pf_topics[];
+extern const char str_uri_deviceio_wsdl[];
+extern const char str_pf_deviceio_wsdl[];
+extern const char str_uri_wsdl[];
+extern const char str_pf_wsdl[];
+extern const char str_uri_wsdl_soap12[];
+extern const char str_pf_wsdl_soap12[];
+extern const char str_uri_wsdl_http[];
+extern const char str_pf_wsdl_http[];
+extern const char str_uri_encoding[];
+extern const char str_pf_encoding[];
+extern const char str_uri_envelope[];
+extern const char str_pf_envelope[];
+extern const char str_uri_xml_schema[];
+extern const char str_pf_xml_schema[];
+extern const char str_uri_xml_schema_instance[];
+extern const char str_pf_xml_schema_instance[];
+extern const char str_uri_discovery[];
+extern const char str_pf_discovery[];
+extern const char str_uri_xml_soap_addressing[];
+extern const char str_pf_xml_soap_addressing[];
+extern const char str_uri_addressing[];
+extern const char str_pf_addressing[];
+extern const char str_uri_wsn_t1[];
+extern const char str_pf_wsn_t1[];
+extern const char str_uri_wsn_b2[];
+extern const char str_pf_wsn_b2[];
+extern const char str_uri_xop_include[];
+extern const char str_pf_xop_include[];
 
-const char *str_uri_topic_expression_concrete;
-const char *str_uri_topic_expression_concrete_set;
-const char *str_uri_item_filter;
+extern const char str_uri_topic_expression_concrete[];
+extern const char str_uri_topic_expression_concrete_set[];
+extern const char str_uri_item_filter[];
 
-const char *str_uri_passwd_type;
+extern const char str_uri_passwd_type[];
 
-const char *str_http_ctype;
-const char *str_xmlprolog;
-const char *str_new_ns;
-const char *str_envelope;
-const char *str_header;
-const char *str_body;
-const char *str_fault;
-const char *str_true;
-const char *str_false;
-const char *str_enabled;
-const char *str_token;
-const char *str_uctoken;
-const char *str_info;
-const char *str_name;
-const char *str_config;
-const char *str_height;
-const char *str_width;
-const char *str_ucheight;
-const char *str_ucwidth;
-const char *str_jpeg;
-const char *str_h264;
-const char *str_mpeg4;
-const char *str_pcmu;
-const char *str_ipv4;
-const char *str_ipv6;
-const char *str_port;
-const char *str_ttl;
-const char *str_http;
-const char *str_https;
-const char *str_rtsp ;
-const char *str_configurations;
-const char *str_configuration;
-const char *str_options;
-const char *str_items;
-const char *str_min;
-const char *str_max;
-const char *str_extension;
-const char *str_totalnumb;
-const char *str_uctype;
+extern const char str_http_ctype[];
+extern const char str_xmlprolog[];
+extern const char str_new_ns[];
+extern const char str_envelope[];
+extern const char str_header[];
+extern const char str_body[];
+extern const char str_fault[];
+extern const char str_true[];
+extern const char str_false[];
+extern const char str_enabled[];
+extern const char str_token[];
+extern const char str_uctoken[];
+extern const char str_info[];
+extern const char str_name[];
+extern const char str_config[];
+extern const char str_height[];
+extern const char str_width[];
+extern const char str_ucheight[];
+extern const char str_ucwidth[];
+extern const char str_jpeg[];
+extern const char str_h264[];
+extern const char str_mpeg4[];
+extern const char str_pcmu[];
+extern const char str_ipv4[];
+extern const char str_ipv6[];
+extern const char str_port[];
+extern const char str_ttl[];
+extern const char str_http[];
+extern const char str_https[];
+extern const char str_rtsp [];
+extern const char str_configurations[];
+extern const char str_configuration[];
+extern const char str_options[];
+extern const char str_items[];
+extern const char str_min[];
+extern const char str_max[];
+extern const char str_extension[];
+extern const char str_totalnumb[];
+extern const char str_uctype[];
 
 
-/*WSD.c Strings --------------------------------------------------------------*/
-const char *str_wsd_action;
-const char *str_wsd_action_url;
-const char *str_wsd_messageid;
-const char *str_wsd_relates_to;
-const char *str_wsd_reply_to;
-const char *str_wsd_addressing_role_anon;
-const char *str_wsd_to;
-const char *str_wsd_to_value;
-const char *str_wsd_appsequence;
-const char *str_wsd_instanceid;
-const char *str_wsd_messagenumber;
-const char *str_wsd_hello;
-const char *str_wsd_bye;
-const char *str_wsd_probe;
-const char *str_wsd_probe_match;
-const char *str_wsd_probe_matches;
-const char *str_wsd_resolve;
-const char *str_wsd_resolve_match;
-const char *str_wsd_resolve_matches;
-const char *str_wsd_endpointreference;
-const char *str_wsd_address;
-const char *str_wsd_types;
-const char *str_wsd_scopes;
-const char *str_wsd_xaddrs;
-const char *str_wsd_meadataversion;
-const char *str_wsd_discoverymode;
-const char *str_wsd_discoverable;
-const char *str_wsd_discoverableconf;
-const char *str_wsd_nondiscoverable;
+/*WSD.c Strings -------------------------------------------------------------*/
+extern const char str_wsd_action[];
+extern const char str_wsd_action_url[];
+extern const char str_wsd_messageid[];
+extern const char str_wsd_relates_to[];
+extern const char str_wsd_reply_to[];
+extern const char str_wsd_addressing_role_anon[];
+extern const char str_wsd_to[];
+extern const char str_wsd_to_value[];
+extern const char str_wsd_appsequence[];
+extern const char str_wsd_instanceid[];
+extern const char str_wsd_messagenumber[];
+extern const char str_wsd_hello[];
+extern const char str_wsd_bye[];
+extern const char str_wsd_probe[];
+extern const char str_wsd_probe_match[];
+extern const char str_wsd_probe_matches[];
+extern const char str_wsd_resolve[];
+extern const char str_wsd_resolve_match[];
+extern const char str_wsd_resolve_matches[];
+extern const char str_wsd_endpointreference[];
+extern const char str_wsd_address[];
+extern const char str_wsd_types[];
+extern const char str_wsd_scopes[];
+extern const char str_wsd_xaddrs[];
+extern const char str_wsd_meadataversion[];
+extern const char str_wsd_discoverymode[];
+extern const char str_wsd_discoverable[];
+extern const char str_wsd_discoverableconf[];
+extern const char str_wsd_nondiscoverable[];
 
 
-/*METHOD STRINGS -------------------------------------------------------------*/
-// DEVICE.c
-const char *str_method_get_scopes;
-const char *str_method_get_scopes_r;
-const char *str_method_set_scopes;
-const char *str_method_set_scopes_r;
-const char *str_method_add_scopes;
-const char *str_method_add_scopes_r;
-const char *str_method_remove_scopes;
-const char *str_method_remove_scopes_r;
-const char *str_method_get_device_info;
-const char *str_method_get_device_info_r;
-const char *str_method_get_services;
-const char *str_method_get_services_r;
-const char *str_method_get_service_cap;
-const char *str_method_get_service_cap_r;
-const char *str_method_get_netinterfaces;
-const char *str_method_get_netinterfaces_r;
-const char *str_method_get_capabilities;
-const char *str_method_get_capabilities_r;
-const char *str_method_get_systime;
-const char *str_method_get_systime_r;
-const char *str_method_get_ndg;
-const char *str_method_get_ndg_r;
-const char *str_method_get_nprotos;
-const char *str_method_get_nprotos_r;
-const char *str_method_get_wsdlurl;
-const char *str_method_get_wsdlurl_r;
-const char *str_method_get_hostname;
-const char *str_method_get_hostname_r;
-const char *str_method_get_users;
-const char *str_method_get_users_r;
-const char *str_method_systemreboot;
-const char *str_method_systemreboot_r;
+/*
+ * for the reponse create a new member in childs which states a response
+ * child (bool)
+ * if true ... encode it as <METHOD>Response
+ */
+
+/*METHOD STRINGS ------------------------------------------------------------*/
+/* DEVICE.c */
+extern const char str_method_get_scopes[];
+extern const char str_method_get_scopes_r[];
+extern const char str_method_set_scopes[];
+extern const char str_method_set_scopes_r[];
+extern const char str_method_add_scopes[];
+extern const char str_method_add_scopes_r[];
+extern const char str_method_remove_scopes[];
+extern const char str_method_remove_scopes_r[];
+extern const char str_method_get_device_info[];
+extern const char str_method_get_device_info_r[];
+extern const char str_method_get_services[];
+extern const char str_method_get_services_r[];
+extern const char str_method_get_service_cap[];
+extern const char str_method_get_service_cap_r[];
+extern const char str_method_get_netinterfaces[];
+extern const char str_method_get_netinterfaces_r[];
+extern const char str_method_get_capabilities[];
+extern const char str_method_get_capabilities_r[];
+extern const char str_method_get_systime[];
+extern const char str_method_get_systime_r[];
+extern const char str_method_get_ndg[];
+extern const char str_method_get_ndg_r[];
+extern const char str_method_get_nprotos[];
+extern const char str_method_get_nprotos_r[];
+extern const char str_method_get_wsdlurl[];
+extern const char str_method_get_wsdlurl_r[];
+extern const char str_method_get_hostname[];
+extern const char str_method_get_hostname_r[];
+extern const char str_method_get_users[];
+extern const char str_method_get_users_r[];
+extern const char str_method_systemreboot[];
+extern const char str_method_systemreboot_r[];
 
 
 // WSD.c
-const char *str_method_get_discoverymode;
-const char *str_method_get_discoverymode_r;
-const char *str_method_set_discoverymode;
-const char *str_method_set_discoverymode_r;
+extern const char str_method_get_discoverymode[];
+extern const char str_method_get_discoverymode_r[];
+extern const char str_method_set_discoverymode[];
+extern const char str_method_set_discoverymode_r[];
 
 //MEDIA.c
-const char *str_method_get_profiles;
-const char *str_method_get_profiles_r;
-const char *str_method_get_profile;
-const char *str_method_get_profile_r;
-const char *str_method_get_vscs;
-const char *str_method_get_vscs_r;
-const char *str_method_get_vsc;
-const char *str_method_get_vsc_r;
-const char *str_method_get_vecs;
-const char *str_method_get_vecs_r;
-const char *str_method_get_vec;
-const char *str_method_get_vec_r;
-const char *str_method_get_ascs;
-const char *str_method_get_ascs_r;
-const char *str_method_get_asc;
-const char *str_method_get_asc_r;
-const char *str_method_get_aecs;
-const char *str_method_get_aecs_r;
-const char *str_method_get_aec;
-const char *str_method_get_aec_r;
-const char *str_method_get_aocs;
-const char *str_method_get_aocs_r;
-const char *str_method_get_aoc;
-const char *str_method_get_aoc_r;
-const char *str_method_get_adcs;
-const char *str_method_get_adcs_r;
-const char *str_method_get_adc;
-const char *str_method_get_adc_r;
-const char *str_method_get_suri;
-const char *str_method_get_suri_r;
-const char *str_method_get_videosources;
-const char *str_method_get_videosources_r;
-const char *str_method_get_audiosources;
-const char *str_method_get_audiosources_r;
-const char *str_method_get_aecos;
-const char *str_method_get_aecos_r;
-const char *str_method_get_vecos;
-const char *str_method_get_vecos_r;
-const char *str_method_get_adcos;
-const char *str_method_get_adcos_r;
-const char *str_method_get_mdconfigs;
-const char *str_method_get_mdconfigs_r;
-const char *str_method_create_profile;
-const char *str_method_create_profile_r;
-const char *str_method_delete_profile;
-const char *str_method_delete_profile_r;
-const char *str_method_add_vsc;
-const char *str_method_add_vsc_r;
-const char *str_method_add_asc;
-const char *str_method_add_asc_r;
-const char *str_method_add_vec;
-const char *str_method_add_vec_r;
-const char *str_method_add_aec;
-const char *str_method_add_aec_r;
-const char *str_method_add_aoc;
-const char *str_method_add_aoc_r;
-const char *str_method_add_adc;
-const char *str_method_add_adc_r;
-const char *str_method_remove_vsc;
-const char *str_method_remove_vsc_r;
-const char *str_method_remove_asc;
-const char *str_method_remove_asc_r;
-const char *str_method_remove_vec;
-const char *str_method_remove_vec_r;
-const char *str_method_remove_aec;
-const char *str_method_remove_aec_r;
-const char *str_method_remove_aoc;
-const char *str_method_remove_aoc_r;
-const char *str_method_remove_adc;
-const char *str_method_remove_adc_r;
-const char *str_method_get_audiooutputs;
-const char *str_method_get_audiooutputs_r;
-const char *str_method_get_aocos;
-const char *str_method_get_aocos_r;
-const char *str_method_get_cvec;
-const char *str_method_get_cvec_r;
-const char *str_method_get_caec;
-const char *str_method_get_caec_r;
-const char *str_method_get_caoc;
-const char *str_method_get_caoc_r;
-const char *str_method_get_cadc;
-const char *str_method_get_cadc_r;
-const char *str_method_get_ggnovei;
-const char *str_method_get_ggnovei_r;
-const char *str_method_get_cvsc;
-const char *str_method_get_cvsc_r;
-const char *str_method_get_casc;
-const char *str_method_get_casc_r;
-const char *str_method_get_vscos;
-const char *str_method_get_vscos_r;
-const char *str_method_set_videosource;
-const char *str_method_set_videosource_r;
-const char *str_method_set_audiosource;
-const char *str_method_set_audiosource_r;
-const char *str_method_set_videoecnoder;
-const char *str_method_set_videoencoder_r;
-const char *str_method_set_audioecnoder;
-const char *str_method_set_audioencoder_r;
-const char *str_method_get_ascos;
-const char *str_method_get_ascos_r;
-const char *str_method_set_audiooutput;
-const char *str_method_set_audiooutput_r;
-
-/*PTZ.c Strings --------------------------------------------------------------*/
-const char *str_method_get_nodes;
-const char *str_method_get_nodes_r;
-const char *str_method_get_configurations;
-const char *str_method_get_configurations_r;
+extern const char str_method_get_profiles[];
+extern const char str_method_get_profiles_r[];
+extern const char str_method_get_profile[];
+extern const char str_method_get_profile_r[];
+extern const char str_method_get_vscs[];
+extern const char str_method_get_vscs_r[];
+extern const char str_method_get_vsc[];
+extern const char str_method_get_vsc_r[];
+extern const char str_method_get_vecs[];
+extern const char str_method_get_vecs_r[];
+extern const char str_method_get_vec[];
+extern const char str_method_get_vec_r[];
+extern const char str_method_get_ascs[];
+extern const char str_method_get_ascs_r[];
+extern const char str_method_get_asc[];
+extern const char str_method_get_asc_r[];
+extern const char str_method_get_aecs[];
+extern const char str_method_get_aecs_r[];
+extern const char str_method_get_aec[];
+extern const char str_method_get_aec_r[];
+extern const char str_method_get_aocs[];
+extern const char str_method_get_aocs_r[];
+extern const char str_method_get_aoc[];
+extern const char str_method_get_aoc_r[];
+extern const char str_method_get_adcs[];
+extern const char str_method_get_adcs_r[];
+extern const char str_method_get_adc[];
+extern const char str_method_get_adc_r[];
+extern const char str_method_get_suri[];
+extern const char str_method_get_suri_r[];
+extern const char str_method_get_videosources[];
+extern const char str_method_get_videosources_r[];
+extern const char str_method_get_audiosources[];
+extern const char str_method_get_audiosources_r[];
+extern const char str_method_get_aecos[];
+extern const char str_method_get_aecos_r[];
+extern const char str_method_get_vecos[];
+extern const char str_method_get_vecos_r[];
+extern const char str_method_get_adcos[];
+extern const char str_method_get_adcos_r[];
+extern const char str_method_get_mdconfigs[];
+extern const char str_method_get_mdconfigs_r[];
+extern const char str_method_create_profile[];
+extern const char str_method_create_profile_r[];
+extern const char str_method_delete_profile[];
+extern const char str_method_delete_profile_r[];
+extern const char str_method_add_vsc[];
+extern const char str_method_add_vsc_r[];
+extern const char str_method_add_asc[];
+extern const char str_method_add_asc_r[];
+extern const char str_method_add_vec[];
+extern const char str_method_add_vec_r[];
+extern const char str_method_add_aec[];
+extern const char str_method_add_aec_r[];
+extern const char str_method_add_aoc[];
+extern const char str_method_add_aoc_r[];
+extern const char str_method_add_adc[];
+extern const char str_method_add_adc_r[];
+extern const char str_method_remove_vsc[];
+extern const char str_method_remove_vsc_r[];
+extern const char str_method_remove_asc[];
+extern const char str_method_remove_asc_r[];
+extern const char str_method_remove_vec[];
+extern const char str_method_remove_vec_r[];
+extern const char str_method_remove_aec[];
+extern const char str_method_remove_aec_r[];
+extern const char str_method_remove_aoc[];
+extern const char str_method_remove_aoc_r[];
+extern const char str_method_remove_adc[];
+extern const char str_method_remove_adc_r[];
+extern const char str_method_get_audiooutputs[];
+extern const char str_method_get_audiooutputs_r[];
+extern const char str_method_get_aocos[];
+extern const char str_method_get_aocos_r[];
+extern const char str_method_get_cvec[];
+extern const char str_method_get_cvec_r[];
+extern const char str_method_get_caec[];
+extern const char str_method_get_caec_r[];
+extern const char str_method_get_ggnovei[];
+extern const char str_method_get_ggnovei_r[];
+extern const char str_method_get_cvsc[];
+extern const char str_method_get_cvsc_r[];
+extern const char str_method_get_casc[];
+extern const char str_method_get_casc_r[];
+extern const char str_method_get_caoc[];
+extern const char str_method_get_caoc_r[];
+extern const char str_method_get_cadc[];
+extern const char str_method_get_cadc_r[];
+extern const char str_method_get_vscos[];
+extern const char str_method_get_vscos_r[];
+extern const char str_method_set_videosource[];
+extern const char str_method_set_videosource_r[];
+extern const char str_method_set_audiosource[];
+extern const char str_method_set_audiosource_r[];
+extern const char str_method_set_videoecnoder[];
+extern const char str_method_set_videoencoder_r[];
+extern const char str_method_get_ascos[];
+extern const char str_method_get_ascos_r[];
+extern const char str_method_set_audioecnoder[];
+extern const char str_method_set_audioencoder_r[];
+extern const char str_method_set_audiooutput[];
+extern const char str_method_set_audiooutput_r[];
 
 
-/*EVENT.c --------------------------------------------------------------------*/
-// const char *str_method_get_eventprop = "GetEventProperties";
-// const char *str_method_get_eventprop_r = "GetEventPropertiesResponse";
+/*PTZ.c Strings -------------------------------------------------------------*/
+extern const char str_method_get_nodes[];
+extern const char str_method_get_nodes_r[];
+extern const char str_method_get_configurations[];
+extern const char str_method_get_configurations_r[];
 
 
-/*SCOPE.c Strings ------------------------------------------------------------*/
-const char *str_scope_preemble;
-const char *str_scope_scopes;
-const char *str_scope_scopedef;
-const char *str_scope_scopeitem;
-const char *str_scope_fixed;
-const char *str_scope_configurable;
-
-const char *str_scope_manufacturer;
-const char *str_scope_profstreaming;
-const char *str_scope_name;
-const char *str_scope_hardware;
+/*EVENT.c -------------------------------------------------------------------*/
+// const char str_method_get_eventprop[];
+// const char str_method_get_eventprop_r[];
 
 
-/*TYPES Strings --------------------------------------------------------------*/
-const char *str_type_nvt;
-const char *str_type_dev;
+/*SCOPE.c Strings -----------------------------------------------------------*/
+extern const char str_scope_preemble[];
+extern const char str_scope_scopes[];
+extern const char str_scope_scopedef[];
+extern const char str_scope_scopeitem[];
+extern const char str_scope_fixed[];
+extern const char str_scope_configurable[];
+
+extern const char str_scope_manufacturer[];
+extern const char str_scope_profstreaming[];
+extern const char str_scope_name[];
+extern const char str_scope_hardware[];
 
 
-/*DEVICE.c Strings -----------------------------------------------------------*/
-const char *str_device_uri;
-const char *str_media1_uri;
-const char *str_media2_uri;
-const char *str_deviceio_uri;
-const char *str_event_uri;
-const char *str_ptz_uri;
+/*TYPES Strings -------------------------------------------------------------*/
+extern const char str_type_nvt[];
+extern const char str_type_dev[];
 
-const char *str_device_include_capability;
+
+/*DEVICE.c Strings ----------------------------------------------------------*/
+extern const char str_device_uri[];
+extern const char str_media1_uri[];
+extern const char str_deviceio_uri[];
+extern const char str_event_uri[];
+extern const char str_ptz_uri[];
+
+extern const char str_device_include_capability[];
 
 // GetDeviceInformation - Strings
-const char *str_device_hardware;
-const char *str_device_model;
-const char *str_device_firmware;
-const char *str_device_manufacturer;
-const char *str_device_serialnumber;
+extern const char str_device_hardware[];
+extern const char str_device_model[];
+extern const char str_device_firmware[];
+extern const char str_device_manufacturer[];
+extern const char str_device_serialnumber[];
 
 // GetCapablities - Strings
-const char *str_device_category;
-const char *str_device_cat_device;
-const char *str_device_cat_media;
-const char *str_device_cat_events;
-const char *str_device_cat_imaging;
-const char *str_device_cat_analytics;
-const char *str_device_cat_ptz;
-const char *str_device_cat_io;
-const char *str_device_cat_all;
+extern const char str_device_category[];
+extern const char str_device_cat_device[];
+extern const char str_device_cat_media[];
+extern const char str_device_cat_events[];
+extern const char str_device_cat_imaging[];
+extern const char str_device_cat_analytics[];
+extern const char str_device_cat_ptz[];
+extern const char str_device_cat_io[];
+extern const char str_device_cat_all[];
 
 // GetServices - Strings
-const char *str_device_service;
-const char *str_device_capabilities;
-const char *str_device_namespace;
-const char *str_device_xaddr;
-const char *str_device_ver;
-const char *str_device_major;
-const char *str_device_minor;
+extern const char str_device_service[];
+extern const char str_device_capabilities[];
+extern const char str_device_namespace[];
+extern const char str_device_xaddr[];
+extern const char str_device_ver[];
+extern const char str_device_major[];
+extern const char str_device_minor[];
 // device
-const char *str_device_network;
-const char *str_device_netipfilter;
-const char *str_device_netzconfig;
-const char *str_device_netipv6;
-const char *str_device_netdyndns;
-const char *str_device_netdot11config;
-const char *str_device_netdot1xconfigs;
-const char *str_device_nethostnamefdhcp;
-const char *str_device_netntp;
-const char *str_device_netdhcp6;
-const char *str_device_security;
-const char *str_device_sectls10;
-const char *str_device_sectls11;
-const char *str_device_sectls12;
-const char *str_device_seconboardkg;
-const char *str_device_secaccesspolicyconfig;
-const char *str_device_secdefaultaccesspolicy;
-const char *str_device_secdot1x;
-const char *str_device_secremoteuserhandling;
-const char *str_device_secx509token;
-const char *str_device_secsamltoken;
-const char *str_device_seckerberostoken;
-const char *str_device_secusertoken;
-const char *str_device_sechttpdigest;
-const char *str_device_secreltoken;
-const char *str_device_secsupportedeapmethods;
-const char *str_device_secsupportedeapmethod;
-const char *str_device_secmaxusers;
-const char *str_device_secmaxusernamelen;
-const char *str_device_secmaxpasswdlen;
-const char *str_device_system;
-const char *str_device_sysdiscoveryresolve;
-const char *str_device_sysdiscoverybye;
-const char *str_device_sysremotediscovery;
-const char *str_device_syssystembackup;
-const char *str_device_syssystemlogging;
-const char *str_device_sysfirmwareupgrae;
-const char *str_device_syssupportedversion;
-const char *str_device_syshttpfirmwareupgrade;
-const char *str_device_syshttpsystembackup;
-const char *str_device_syshttpsystemlogging;
-const char *str_device_syshttpsupportinfo;
-const char *str_device_sysstorageconfig;
-const char *str_device_sysmaxstorageconfigs;
-const char *str_device_sysgeolocationentries;
-const char *str_device_sysautogeo;
-const char *str_device_sysstoragetypssupported;
-const char *str_device_misc;
-const char *str_device_miscauxcommands;
+extern const char str_device_network[];
+extern const char str_device_netipfilter[];
+extern const char str_device_netzconfig[];
+extern const char str_device_netipv6[];
+extern const char str_device_netdyndns[];
+extern const char str_device_netdot11config[];
+extern const char str_device_netdot1xconfigs[];
+extern const char str_device_nethostnamefdhcp[];
+extern const char str_device_netntp[];
+extern const char str_device_netdhcp6[];
+extern const char str_device_security[];
+extern const char str_device_sectls10[];
+extern const char str_device_sectls11[];
+extern const char str_device_sectls12[];
+extern const char str_device_seconboardkg [];
+extern const char str_device_secaccesspolicyconfig[];
+extern const char str_device_secdefaultaccesspolicy[];
+extern const char str_device_secdot1x[];
+extern const char str_device_secremoteuserhandling[];
+extern const char str_device_secx509token[];
+extern const char str_device_secsamltoken[];
+extern const char str_device_seckerberostoken[];
+extern const char str_device_secusertoken[];
+extern const char str_device_sechttpdigest[];
+extern const char str_device_secreltoken[];
+extern const char str_device_secsupportedeapmethods[];
+extern const char str_device_secsupportedeapmethod[];
+extern const char str_device_secmaxusers[];
+extern const char str_device_secmaxusernamelen[];
+extern const char str_device_secmaxpasswdlen[];
+extern const char str_device_system[];
+extern const char str_device_sysdiscoveryresolve[];
+extern const char str_device_sysdiscoverybye[];
+extern const char str_device_sysremotediscovery[];
+extern const char str_device_syssystembackup[];
+extern const char str_device_syssystemlogging[];
+extern const char str_device_sysfirmwareupgrae[];
+extern const char str_device_syssupportedversion[];
+extern const char str_device_syshttpfirmwareupgrade[];
+extern const char str_device_syshttpsystembackup[];
+extern const char str_device_syshttpsystemlogging[];
+extern const char str_device_syshttpsupportinfo[];
+extern const char str_device_sysstorageconfig[];
+extern const char str_device_sysmaxstorageconfigs[];
+extern const char str_device_sysgeolocationentries[];
+extern const char str_device_sysautogeo[];
+extern const char str_device_sysstoragetypssupported[];
+extern const char str_device_misc[];
+extern const char str_device_miscauxcommands[];
 // media
-const char *str_device_med1snapshoturi;
-const char *str_device_med1rotation;
-const char *str_device_med1videosourcemode;
-const char *str_device_med1osd;
-const char *str_device_med1temporaryosdtext;
-const char *str_device_med1exicompression;
-const char *str_device_med2mask;
-const char *str_device_med2sourcemask;
-const char *str_device_med1profcap;
-const char *str_device_med1maxnumberofprofile;
-const char *str_device_med2conigurationsupported;
-const char *str_device_med1streamcap;
-const char *str_device_med1rtpmcast;
-const char *str_device_med1rtptcp;
-const char *str_device_med1rtprtsptcp;
-const char *str_device_med1nonaggregatecontrol;
-const char *str_device_med1nortspstreaming;
-const char *str_device_med2rtspwebsocketuri;
-const char *str_device_med2autostartmulticast;
+extern const char str_device_med1snapshoturi[];
+extern const char str_device_med1rotation[];
+extern const char str_device_med1videosourcemode[];
+extern const char str_device_med1osd[];
+extern const char str_device_med1temporaryosdtext[];
+extern const char str_device_med1exicompression[];
+extern const char str_device_med2mask[];
+extern const char str_device_med2sourcemask[];
+extern const char str_device_med1profcap[];
+extern const char str_device_med1maxnumberofprofile[];
+extern const char str_device_med2conigurationsupported[];
+extern const char str_device_med1streamcap[];
+extern const char str_device_med1rtpmcast[];
+extern const char str_device_med1rtptcp[];
+extern const char str_device_med1rtprtsptcp[];
+extern const char str_device_med1nonaggregatecontrol[];
+extern const char str_device_med1nortspstreaming[];
+extern const char str_device_med2rtspwebsocketuri[];
+extern const char str_device_med2autostartmulticast[];
 // deviceio
-const char *str_device_iovideosources;
-const char *str_device_iovideooutputs;
-const char *str_device_ioaudiosources;
-const char *str_device_ioaudiooutputs;
-const char *str_device_iorelayoutputs;
-const char *str_device_ioserialports;
-const char *str_device_iodigitalinputs;
-const char *str_device_iodigitalintputoptions;
+extern const char str_device_iovideosources[];
+extern const char str_device_iovideooutputs[];
+extern const char str_device_ioaudiosources[];
+extern const char str_device_ioaudiooutputs[];
+extern const char str_device_iorelayoutputs[];
+extern const char str_device_ioserialports[];
+extern const char str_device_iodigitalinputs[];
+extern const char str_device_iodigitalintputoptions[];
 // events
-const char *str_device_eventgetcapaddr;
-const char *str_device_eventwssps;
-const char *str_device_eventwspps;
-const char *str_device_eventwspsmis;
-const char *str_device_eventmaxnotificationprodecures;
-const char *str_device_eventmaxpullpoints;
-const char *str_device_eventpersistentnotificationstorage;
+extern const char str_device_eventgetcapaddr[];
+extern const char str_device_eventwssps[];
+extern const char str_device_eventwspps[];
+extern const char str_device_eventwspsmis[];
+extern const char str_device_eventmaxnotificationprodecures[];
+extern const char str_device_eventmaxpullpoints[];
+extern const char str_device_eventpersistentnotificationstorage[];
 // ptz
-const char *str_device_ptzeflip;
-const char *str_device_ptzreverse;
-const char *str_device_ptzgetcompconfig;
-const char *str_device_ptzmovestatus;
-const char *str_device_ptzstatuspos;
+extern const char str_device_ptzeflip[];
+extern const char str_device_ptzreverse[];
+extern const char str_device_ptzgetcompconfig[];
+extern const char str_device_ptzmovestatus[];
+extern const char str_device_ptzstatuspos[];
 
 
 // GetNetworkInterface - Strings
-const char *str_device_config_dhcp;
-const char *str_device_netinterfaces;
-const char *str_device_hwaddress;
-const char *str_device_ipv4;
-const char *str_device_config;
-const char *str_device_prefixlen;
-const char *str_device_fromdhcp;
-const char *str_device_dhcp;
-const char *str_device_manual;
+extern const char str_device_config_dhcp[];
+extern const char str_device_netinterfaces[];
+extern const char str_device_hwaddress[];
+extern const char str_device_ipv4[];
+extern const char str_device_config[];
+extern const char str_device_prefixlen[];
+extern const char str_device_fromdhcp[];
+extern const char str_device_dhcp[];
+extern const char str_device_manual[];
+
 
 // GetSysytemDateAndTime
-const char *str_sysdate;
-const char *str_sysdate_dtt;
-const char *str_sysdate_dls;
-const char *str_sysdate_timezone;
-const char *str_sysdate_utc;
-const char *str_sysdate_local;
-const char *str_sysdate_time;
-const char *str_sysdate_date;
-const char *str_sysdate_hour;
-const char *str_sysdate_min;
-const char *str_sysdate_sec;
-const char *str_sysdate_year;
-const char *str_sysdate_month;
-const char *str_sysdate_day;
+extern const char str_sysdate[];
+extern const char str_sysdate_dtt[];
+extern const char str_sysdate_dls[];
+extern const char str_sysdate_timezone[];
+extern const char str_sysdate_utc[];
+extern const char str_sysdate_local[];
+extern const char str_sysdate_time[];
+extern const char str_sysdate_date[];
+extern const char str_sysdate_hour[];
+extern const char str_sysdate_min[];
+extern const char str_sysdate_sec[];
+extern const char str_sysdate_year[];
+extern const char str_sysdate_month[];
+extern const char str_sysdate_day[];
 
 
 // GetNetworkDefaultGateway
-const char *str_ndg_ng;
+extern const char str_ndg_ng[];
 
 
 // GetNetworkProtocols
-const char *str_nprotos_np;
+extern const char str_nprotos_np[];
 
 
 // GetWsdlUrl
-const char *str_gwu_wsdlurl;
-const char *str_gwu_onvif_docuurl;
+extern const char str_gwu_wsdlurl[];
+extern const char str_gwu_onvif_docuurl[];
 
 
 // GetHostname
-const char *str_gh_hi;
+extern const char str_gh_hi[];
 
 
 // GetUsers
-const char *str_gu_user;
-const char *str_gu_username;
-const char *str_gu_userlevel;
+extern const char str_gu_user[];
+extern const char str_gu_username[];
+extern const char str_gu_userlevel[];
 
 
 // SystemReboot
-const char *str_sr_msg;
+extern const char str_sr_msg[];
 
 
-/*MEDIA.c Strings ------------------------------------------------------------*/
+/*MEDIA.c Strings -----------------------------------------------------------*/
 // GetProfiels - Strings
-const char *str_profile_fixed;
-const char *str_profile_profiles;
-const char *str_profile_profile;
-const char *str_profile_profiletoken;
-const char *str_profile_configtoken;
-const char *str_profile_token;
-const char *str_profile_name;
-const char *str_profile_vsc_token;
-const char *str_profile_vs_token;
-const char *str_profile_vs_name;
-const char *str_profile_ve_token;
-const char *str_profile_ve_name;
-const char *str_profile_asc_token;
-const char *str_profile_as_token;
-const char *str_profile_as_name;
-const char *str_profile_ae_token;
-const char *str_profile_ae_name;
-const char *str_profile_aoc_token;
-const char *str_profile_ao_token;
-const char *str_profile_ao_name;
-const char *str_profile_ad_token;
-const char *str_profile_ad_name;
-const char *str_profile_vsc;
-const char *str_profile_asc;
-const char *str_profile_vec;
-const char *str_profile_aec;
-const char *str_profile_aoc;
-const char *str_profile_adc;
-const char *str_profile_usecount;
-const char *str_profile_source_token;
-const char *str_profile_output_token;
-const char *str_profile_sendprimacy;
-const char *str_profile_sp_hds;
-const char *str_profile_sp_hdc;
-const char *str_profile_sp_hda;
-const char *str_profile_outputlevel;
-const char *str_profile_bounds;
-const char *str_profile_encoding;
-const char *str_profile_resolution;
-const char *str_profile_quality;
-const char *str_profile_ratecontrol;
-const char *str_profile_frl;
-const char *str_profile_ei;
-const char *str_profile_brl;
-const char *str_profile_multicast;
-const char *str_profile_address;
-const char *str_profile_type;
-const char *str_profile_autostart;
-const char *str_profile_sess_timeout;
-const char *str_profile_bitrate;
-const char *str_profile_samplerate;
-const char *str_profile_configuration;
-const char *str_profile_ipv4addr;
+extern const char str_profile_fixed[];
+extern const char str_profile_profiles[];
+extern const char str_profile_profile[];
+extern const char str_profile_profiletoken[];
+extern const char str_profile_configtoken[];
+extern const char str_profile_token[];
+extern const char str_profile_name[];
+extern const char str_profile_vsc_token[];
+extern const char str_profile_vs_token[];
+extern const char str_profile_vs_name[];
+extern const char str_profile_ve_token[];
+extern const char str_profile_ve_name[];
+extern const char str_profile_asc_token[];
+extern const char str_profile_as_token[];
+extern const char str_profile_as_name[];
+extern const char str_profile_ae_token[];
+extern const char str_profile_ae_name[];
+extern const char str_profile_aoc_token[];
+extern const char str_profile_ao_token[];
+extern const char str_profile_ao_name[];
+extern const char str_profile_ad_token[];
+extern const char str_profile_ad_name[];
+extern const char str_profile_vsc[];
+extern const char str_profile_asc[];
+extern const char str_profile_vec[];
+extern const char str_profile_aec[];
+extern const char str_profile_aoc[];
+extern const char str_profile_adc[];
+extern const char str_profile_usecount[];
+extern const char str_profile_source_token[];
+extern const char str_profile_output_token[];
+extern const char str_profile_sendprimacy[];
+extern const char str_profile_sp_hds[];
+extern const char str_profile_sp_hdc[];
+extern const char str_profile_sp_hda[];
+extern const char str_profile_outputlevel[];
+extern const char str_profile_bounds[];
+extern const char str_profile_encoding[];
+extern const char str_profile_resolution[];
+extern const char str_profile_quality[];
+extern const char str_profile_ratecontrol[];
+extern const char str_profile_frl[];
+extern const char str_profile_ei[];
+extern const char str_profile_brl[];
+extern const char str_profile_multicast[];
+extern const char str_profile_address[];
+extern const char str_profile_type[];
+extern const char str_profile_autostart[];
+extern const char str_profile_sess_timeout[];
+extern const char str_profile_bitrate[];
+extern const char str_profile_samplerate[];
+extern const char str_profile_configuration[];
+extern const char str_profile_ipv4addr[];
 
 
 // GetStreamUri - Strings
-const char *str_streamuri_streamsetup;
-const char *str_streamuri_stream;
-const char *str_streamuri_transport;
-const char *str_streamuri_proto;
-const char *str_streamuri_profiletok;
+extern const char str_streamuri_streamsetup[];
+extern const char str_streamuri_stream[];
+extern const char str_streamuri_transport[];
+extern const char str_streamuri_proto[];
+extern const char str_streamuri_profiletok[];
 
-const char *str_streamuri_mediauri;
-const char *str_streamuri_uri;
-const char *str_streamuri_invalafterconnect;
-const char *str_streamuri_invalafterreboot;
-const char *str_streamuri_timeout;
+extern const char str_streamuri_mediauri[];
+extern const char str_streamuri_uri[];
+extern const char str_streamuri_invalafterconnect[];
+extern const char str_streamuri_invalafterreboot[];
+extern const char str_streamuri_timeout[];
 
 
 // GetVideoSources
-const char *str_vsources_vss;
-const char *str_vsources_fr;
-const char *str_vsources_res;
+extern const char str_vsources_vss[];
+extern const char str_vsources_fr[];
+extern const char str_vsources_res[];
 
 
 // GetAudioSources
-const char *str_asources_ass;
-const char *str_asources_ch;
+extern const char str_asources_ass[];
+extern const char str_asources_ch[];
 
 
 // GetAudioEncodingConfigurationOptions
-const char *str_aecos_encoding;
-const char *str_aecos_bitratelist;
-const char *str_aecos_sampleratelist;
-const char *str_aecos_configtok;
+extern const char str_aecos_encoding[];
+extern const char str_aecos_bitratelist[];
+extern const char str_aecos_sampleratelist[];
+extern const char str_aecos_configtok[];
 
 
-// GetAudioEncodingConfigurationOptions
-const char *str_vecos_gfrs;
-const char *str_vecos_qualityrange;
-const char *str_vecos_resavailable;
-const char *str_vecos_frramge;
-const char *str_vecos_eirange;
-const char *str_vecos_brrange;
-const char *str_vecos_configtoken;
+// GetVideoEncodingConfigurationOptions
+extern const char str_vecos_gfrs[];
+extern const char str_vecos_qualityrange[];
+extern const char str_vecos_resavailable[];
+extern const char str_vecos_frramge[];
+extern const char str_vecos_eirange[];
+extern const char str_vecos_brrange[];
+extern const char str_vecos_configtoken[];
 
 
 // GetAudioDecoderConfigurationOptions
-const char *str_adcos_G711DecOptions;
-const char *str_adcos_configtok;
-const char *str_adcos_bitrate;
-const char *str_adcos_srr;
+extern const char str_adcos_G711DecOptions[];
+extern const char str_adcos_configtok[];
+extern const char str_adcos_bitrate[];
+extern const char str_adcos_srr[];
 
 
 // GetAudioOutputConfigurationOptions
-const char *str_aocos_optokensavail;
-const char *str_aocos_sendprimacyoptions;
-const char *str_aocos_outputlevelrange;
+extern const char str_aocos_optokensavail[];
+extern const char str_aocos_sendprimacyoptions[];
+extern const char str_aocos_outputlevelrange[];
 
 
 // GetVideoSourceConfigurationOptions
-const char *str_vscos_maxprofiles;
-const char *str_vscos_boundsrange;
-const char *str_vscos_xrange;
-const char *str_vscos_yrange;
-const char *str_vscos_wrange;
-const char *str_vscos_hrange;
-const char *str_vscos_vstokensavail;
+extern const char str_vscos_maxprofiles[];
+extern const char str_vscos_boundsrange[];
+extern const char str_vscos_xrange[];
+extern const char str_vscos_yrange[];
+extern const char str_vscos_wrange[];
+extern const char str_vscos_hrange[];
+extern const char str_vscos_vstokensavail[];
 
 
 // GetVideoSourceConfigurationOptions
-const char *str_ascos_astokensavail;
+extern const char str_ascos_astokensavail[];
 
 
-/*FAULT.c Strings ------------------------------------------------------------*/
-const char *str_fault_code;
-const char *str_fault_value;
-const char *str_fault_subcode;
-const char *str_fault_reason;
-const char *str_fault_text;
-const char *str_fault_lang;
-const char *str_fault_lang_en;
+/*FAULT.c Strings -----------------------------------------------------------*/
+extern const char str_fault_code[];
+extern const char str_fault_value[];
+extern const char str_fault_subcode[];
+extern const char str_fault_reason[];
+extern const char str_fault_text[];
+extern const char str_fault_lang[];
+extern const char str_fault_lang_en[];
 
-const char *str_fault_noprofile;
-const char *str_fault_audionotsupported;
-const char *str_fault_audiooutputnotsupported;
-const char *str_fault_streamsetupnotsupported;
-const char *str_fault_wsdlnotsupported;
-const char *str_fault_noconfig;
-const char *str_fault_configparamnotset;
-const char *str_fault_vsnotexist;
-const char *str_fault_asnotexist;
-const char *str_fault_scopeempty;
-const char *str_fault_toomanyscopes;
-const char *str_fault_profileexists;
-const char *str_fault_maxprofile;
-const char *str_fault_delfixedprofile;
-const char *str_fault_delfixedscope;
-const char *str_fault_noscope;
+extern const char str_fault_noprofile[];
+extern const char str_fault_audionotsupported[];
+extern const char str_fault_audiooutputnotsupported[];
+extern const char str_fault_streamsetupnotsupported[];
+extern const char str_fault_wsdlnotsupported[];
+extern const char str_fault_noconfig[];
+extern const char str_fault_configparamnotset[];
+extern const char str_fault_vsnotexist[];
+extern const char str_fault_asnotexist[];
+extern const char str_fault_scopeempty[];
+extern const char str_fault_toomanyscopes[];
+extern const char str_fault_profileexists[];
+extern const char str_fault_maxprofile[];
+extern const char str_fault_delfixedprofile[];
+extern const char str_fault_delfixedscope[];
+extern const char str_fault_noscope[];
+
+/*ONVIF_AUTH.c Strings ------------------------------------------------------*/
+extern const char str_wss_security[];
+extern const char str_wss_usernametoken[];
+extern const char str_wss_username[];
+extern const char str_wss_password[];
+extern const char str_wss_nonce[];
+extern const char str_wss_created[];
 
 
-/*ONVIF_AUTH.c Strings -------------------------------------------------------*/
-const char *str_wss_security;
-const char *str_wss_usernametoken;
-const char *str_wss_username;
-const char *str_wss_password;
-const char *str_wss_nonce;
-const char *str_wss_created;
-
-
-/*RTSP DIGEST AUTH -----------------------------------------------------------*/
-const char *str_digest_realm;
-const char *str_digest_qop;
-const char *str_digest_md5sess;
+/*RTSP DIGEST AUTH ----------------------------------------------------------*/
+extern const char str_digest_realm[];
+extern const char str_digest_qop[];
+extern const char str_digest_md5sess[];
 
 #endif /* _ONVIF_SOAP_STR_H_ */

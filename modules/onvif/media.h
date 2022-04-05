@@ -13,10 +13,10 @@
 
 #define MAXMEDIAPROFILE 10
 
-// Only if this is a null ptr
+/* Only if this is a null ptr */
 extern struct profile *std_profile;
 
-// List which hold all the existing configurations
+/* List which hold all the existing configurations */
 extern struct list profile_l;
 extern struct list vs_l;
 extern struct list ve_l;
@@ -27,74 +27,86 @@ extern struct list ad_l;
 
 struct soap_fault;
 
-// TODO 1: we should save the configuration made by the init_media function.
-// VMS (atleast XProtect) works with the config and source/ouput tokens
-// currently they are random generated and will change after each restart
-// generate it only once and save it in a file.
-// later: write config files -> pars config files
-// -> generate tokens -> write back
+/* TODO 1: we should save the configuration made by the init_media function.
+ * VMS (atleast XProtect) works with the config and source/ouput tokens
+ * currently they are random generated and will change after each restart
+ * generate it only once and save it in a file.
+ * later: write config files -> pars config files
+ * -> generate tokens -> write back
+ **/
 
-// #__attribute__ ((aligned (8))) depending on the target
+/* #__attribute__ ((aligned (8))) depending on the target */
 struct media_config {
 	struct le le;
 
-	char token [65];            // unique identifier <max 64 chars + '\0'>
-	char name  [65];            // readable name <max 64 char + '\0'>
-	uint8_t  usecount;          // use count
+	char token [65];          /* unique identifier <max 64 chars + '\0'> */
+	char name  [65];          /* readable name <max 64 char + '\0'>      */
+	uint8_t  usecount;        /* use count                               */
 
 	union {
 		struct {
-			int8_t maxprofile;      // Maximal number of profiles
-			char *viewmodes;        // RO viewmode as defined in tt:viewModes
-			char sourcetoken [64];  // reference to the physical input
-			float framerate;        // framerate of the source
+			int8_t maxprofile;      /* Maximal number of profiles*/
+			char *viewmodes;        /* RO viewmode as defined in
+						tt:viewModes */
+			char sourcetoken [64];  /* reference to the physical
+						   input */
+			float framerate;        /* framerate of the source */
 			struct instances {
-				uint8_t jpeg_i;      // Guaranteed JPEG Encoder of this source
-				uint8_t h264_i;      // Guaranteed H264 Encoder of this source
-				uint8_t mpeg4_i;     // Guaranteed MPEG4 Encoder of this source
+				uint8_t jpeg_i;      /* Guaranteed JPEG Encoder
+							of this source */
+				uint8_t h264_i;      /* Guaranteed H264 Encoder
+							of this source */
+				uint8_t mpeg4_i;     /* Guaranteed MPEG4 Enc.
+							of this source */
 			} i;
 			struct bounds {
 				int x;
 				int y;
 				int w;
 				int h;
-			} b;                    // bounds
+			} b;                    /* bounds */
 		} vs;
 
 		struct {
-			bool gfr;               // guaranteed frame rate
-			int govlen;             // group of video frame length
+			bool gfr;               /* guaranteed frame rate */
+			int govlen;             /* group of video frame len */
 			enum venc {
 				JPEG,
 				MPEG4,
 				H264,
-			} enc;                  // video encoding enum
-			char *encstring;        // encoder string
+			} enc;                  /* video encoding enum */
+			char *encstring;        /* encoder string */
 			struct resolution {
 				int w;
 				int h;
-			} res;                  // resolution
-			float quality;          // video quantizers high -> high quality
+			} res;                  /* resolution */
+			float quality;          /* video quantizers high ->
+						   high quality */
 			struct ratecontrol {
-				bool cbr;           // enforce constant bit rate
-				int frl;            // framerate limit
-				int ei;             // encoding interval
-				int brl;            // bitrate limit
-			} ratec;                // rate control
+				bool cbr;       /* enforce constant bit
+						   rate */
+				int frl;        /* framerate limit */
+				int ei;         /* encoding interval */
+				int brl;        /* bitrate limit */
+			} ratec;                /* rate control */
 			struct {
 				struct {
-					int type;       // address type
-					struct sa addr; // ipv4address
-				} addr;             // multicast address
-				int      ttl;       // multicast ttl
-				bool     autostart; // RO signal if streaming is persistant
-			} multicast;            // multicast information (must be present)
-			uint8_t st;             // session timeout number <'PT%dS'>
+					int type;       /* address type */
+					struct sa addr; /* ipv4address */
+				} addr;             /* multicast address */
+				int      ttl;       /* multicast ttl */
+				bool     autostart; /* RO signal if streaming
+						       is persistant */
+			} multicast;            /* multicast information
+						   (must be present) */
+			uint8_t st;             /* session timeout number
+						   <'PT%dS'> */
 		} ve;
 
 		struct {
-			char sourcetoken [64];  // reference to the physical input
-			uint8_t ch;             // channels
+			char sourcetoken [64];  /* reference to the physical
+						   input */
+			uint8_t ch;             /* channels */
 		} as;
 
 		struct {
@@ -102,19 +114,22 @@ struct media_config {
 				G711,
 				G726,
 				AAC,
-			} enc;                  // audio encoding enum
-			char *encstring;        // encoder string
-			int br;                 // bitrate
-			int sr;                 // samplerate
+			} enc;                  /* audio encoding enum */
+			char *encstring;        /* encoder string */
+			int br;                 /* bitrate */
+			int sr;                 /* samplerate */
 			struct {
 				struct {
-					int type;       // address type
-					struct sa addr; // ipv4address
-				} addr;             // multicast address
-				int      ttl;       // multicast ttl
-				bool     autostart; // RO signal if streaming is persistant
-			} multicast;            // multicast information (must be present)
-			uint8_t st;             // session timeout number <'PT%dS'>
+					int type;       /* address type */
+					struct sa addr; /* ipv4address */
+				} addr;             /* multicast address */
+				int      ttl;       /* multicast ttl */
+				bool     autostart; /* RO signal if streaming
+						       is persistant */
+			} multicast;            /* multicast information
+						   (must be present) */
+			uint8_t st;             /* session timeout number
+						   <'PT%dS'> */
 		} ae;
 
 		struct {
@@ -122,16 +137,17 @@ struct media_config {
 				HALF_DUPLEX_CLIENT,
 				HALF_DUPLEX_SERVER,
 				HALF_DUPLEX_AUTO,
-			} sp;                   // send primacy enum
-			char outputtoken [64];  // reference to the physical output
-			int outputlevel;        // output volume
+			} sp;                   /* send primacy enum */
+			char outputtoken [64];  /* reference to the physical
+						   output */
+			int outputlevel;        /* output volume */
 		} ao;
 
 		struct {
 			enum aenc dec;
-			int br;                 // bitrate
-			int sr;                 // samplerate
-			uint8_t ch;             // channels
+			int br;                 /* bitrate */
+			int sr;                 /* samplerate */
+			uint8_t ch;             /* channels */
 		} ad;
 	} t;
 };
@@ -140,22 +156,23 @@ struct media_config {
 struct profile {
 	struct le le;
 
-	char             token [65];    // unique identifier of the profile <0-255>
-	char             name  [65];    // name of the profile
-	bool             fixed;         // fixed profile
+	char             token [65];    /* unique identifier of the profile
+					   <0-255> */
+	char             name  [65];    /* name of the profile */
+	bool             fixed;         /* fixed profile */
 
-	struct media_config *vsc;    // videosource config
-	struct media_config *vec;    // videoencoder config
+	struct media_config *vsc;    /* videosource config */
+	struct media_config *vec;    /* videoencoder config */
 
-	struct media_config *asc;    // audiosource config
-	struct media_config *aec;    // audioencoder config
+	struct media_config *asc;    /* audiosource config */
+	struct media_config *aec;    /* audioencoder config */
 
-	struct media_config *aoc;    // audiooutput config
-	struct media_config *adc;    // audiodecoder config
+	struct media_config *aoc;    /* audiooutput config */
+	struct media_config *adc;    /* audiodecoder config */
 
-	// analytics config
-	// ptz config
-	// metadata config
+	/* analytics config */
+	/* ptz config */
+	/* metadata config */
 };
 
 
@@ -257,7 +274,6 @@ int media_SetAudioEncoderConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f);
 int media_SetAudioOutputConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f);
-
 
 
 #endif /* _ONVIF_MEDIA_H */

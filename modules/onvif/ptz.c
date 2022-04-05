@@ -26,7 +26,6 @@
 #include <re_dbg.h>
 
 
-
 /**
  * handle GetConfigurations requests
  *
@@ -60,7 +59,8 @@ int ptz_GetConfigurations_h(const struct soap_msg *msg,
 
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	soap_add_child(resp, b, str_pf_ptz_wsdl, str_method_get_configurations_r);
+	soap_add_child(resp, b, str_pf_ptz_wsdl,
+		       str_method_get_configurations_r);
 
   out:
 	if (err)
@@ -68,7 +68,7 @@ int ptz_GetConfigurations_h(const struct soap_msg *msg,
 	else
 		*prtresp = resp;
 
-	return err; 
+	return err;
 }
 
 
@@ -112,5 +112,5 @@ int ptz_GetNodes_h(const struct soap_msg *msg, struct soap_msg **prtresp)
 	else
 		*prtresp = resp;
 
-	return err;  
+	return err;
 }

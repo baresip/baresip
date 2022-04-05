@@ -34,6 +34,11 @@
 #define DEBUG_LEVEL 6
 #include <re_dbg.h>
 
+
+enum {
+	MAC_LEN =     18,
+};
+
 static struct tmr shutdown_timer;
 struct list services_l;
 
@@ -89,7 +94,7 @@ int services_init(void)
 		return EINVAL;
 	}
 
-	// DEVICE SERVICE ALLOC
+	/* DEVICE SERVICE ALLOC */
 	s = NULL;
 	s = mem_zalloc(sizeof(struct service), service_destructor);
 	if (!s)
@@ -114,7 +119,7 @@ int services_init(void)
 	s->c->cap.device.security.tls12 = true;
 	s->c->cap.device.security.onboardkg = true;
 	s->c->cap.device.security.usertoken = true;
-	// s->c->cap.device.security.httpdigest = true;
+	/* s->c->cap.device.security.httpdigest = true; */
 	s->c->cap.device.security.supportedeapmethods = "";
 	s->c->cap.device.security.maxusers = 5;
 	s->c->cap.device.security.maxusernamelen = MAXUSERLEN;
@@ -130,8 +135,7 @@ int services_init(void)
 
 	s->c->cap.device.misc.auxcommands = "";
 
-  #ifndef MEDIA2
-	// MEDIA1 SERVICE ALLOC
+	/* MEDIA1 SERVICE ALLOC */
 	s = NULL;
 	s = mem_zalloc(sizeof(struct service), service_destructor);
 	if (!s)
@@ -155,36 +159,7 @@ int services_init(void)
 	s->c->cap.media1.maxnumberofprofile = MAXMEDIAPROFILE;
 	s->c->cap.media1.rtprtsptcp = true;
 
-  #else
-	// MEDIA2 SERVICE ALLOC
-	s = NULL;
-	s = mem_zalloc(sizeof(struct service), service_destructor);
-	if (!s)
-		return ENOMEM;
-
-	list_append(&services_l, &s->le, s);
-
-	s->c = mem_zalloc(sizeof(struct capabilities), NULL);
-	if (!s->c)
-		return ENOMEM;
-
-	s->namespace = str_uri_media2_wsdl;
-	s->type = S_MEDIA2;
-	s->vmajor = 2;
-	s->vminor = 2;
-	if (-1 == re_snprintf(s->c->xaddr, CAP_MAX_XADDR , "http://%j:%u%s",
-		laddr, DEFAULT_ONVIF_PORT, str_media2_uri))
-		return EINVAL;
-
-	s->c->cap.media2.snapshoturi = true;
-	s->c->cap.media2.maxnumberofprofile = MAXMEDIAPROFILE;
-	s->c->cap.media2.conigurationsupported =
-		"VideoSource AudioSource AudioOutput";
-	s->c->cap.media2.rtprtsptcp = true;
-	s->c->cap.media2.rtspwebsocketuri = "";
-  #endif
-
-	// EVENT SERVICE ALLOC
+	/* EVENT SERVICE ALLOC */
 	s = NULL;
 	s = mem_zalloc(sizeof(struct service), service_destructor);
 	if (!s)
@@ -207,7 +182,7 @@ int services_init(void)
 	s->c->cap.events.wssps = 1;
 	s->c->cap.events.wspps = 1;
 
-	// PTZ SERVICE ALLOC
+	/* PTZ SERVICE ALLOC */
 	s = NULL;
 	s = mem_zalloc(sizeof(struct service), service_destructor);
 	if (!s)
@@ -227,7 +202,7 @@ int services_init(void)
 		laddr, DEFAULT_ONVIF_PORT, str_ptz_uri))
 		return EINVAL;
 
-	// DEVICE-IO SERVICE ALLOC
+	/* DEVICE-IO SERVICE ALLOC */
 	s = NULL;
 	s = mem_zalloc(sizeof(struct service), service_destructor);
 	if (!s)
@@ -288,23 +263,21 @@ static int get_macaddr(uint64_t *addr)
 	struct sockaddr_ll *s;
 
 	if (!addr)
-		return -1;
+		return EINVAL;
 
-	if (0 == getifaddrs(&ifaddr)) {
-		for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-			if (0 == str_cmp(ifa->ifa_name, bs_ifname) &&
-				ifa->ifa_addr->sa_family == AF_PACKET) {
-					s = (struct sockaddr_ll *) ((void *)ifa->ifa_addr);
-					memcpy(addr, s->sll_addr, 8);
-					break;
-				}
+	if (getifaddrs(&ifaddr))
+		return errno;
+
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+		if (0 == str_cmp(ifa->ifa_name, bs_ifname) &&
+		    ifa->ifa_addr->sa_family == AF_PACKET) {
+			s = (struct sockaddr_ll *) ((void *)ifa->ifa_addr);
+			memcpy(addr, s->sll_addr, 8);
+			break;
 		}
-
-		freeifaddrs(ifaddr);
-	} else {
-		return -1;
 	}
 
+	freeifaddrs(ifaddr);
 	return 0;
 }
 
@@ -312,14 +285,14 @@ static int get_macaddr(uint64_t *addr)
 /**
  * write the mac address as string with and without double points
  *
- * @param mac       location for the mac address as string
- * @param len       max lenght of the string
+ * @param mac       buffer to return the mac address as string
+ * @param len       max length of the buffer mac
  * @param dp        defines the output format of the mac address
  *
  * @return          number of written chars if success, -1 otherwise
  *
  */
-int get_mac_addr_fmt(char *mac, size_t len, bool dp, const char c)
+static int get_mac_addr_fmt(char *mac, size_t len, bool dp, const char c)
 {
 	int err;
 	uint64_t addr;
@@ -334,12 +307,18 @@ int get_mac_addr_fmt(char *mac, size_t len, bool dp, const char c)
 
 	ptr = (unsigned char *)&addr;
 	if (dp)
-		return re_snprintf(mac, len, "%02X%c%02X%c%02X%c%02X%c%02X%c%02X",
-			*ptr, c, *(ptr+1), c, *(ptr+2), c, *(ptr+3), c, *(ptr+4), c,
-			*(ptr+5));
+		return re_snprintf(mac, len,
+				   "%02X%c%02X%c%02X%c%02X%c%02X%c%02X",
+				    *ptr,    c,
+				   *(ptr+1), c,
+				   *(ptr+2), c,
+				   *(ptr+3), c,
+				   *(ptr+4), c,
+				   *(ptr+5)   );
 	else
 		return re_snprintf(mac, len, "%02x%02x%02x%02x%02x%02x",
-			*ptr, *(ptr+1), *(ptr+2), *(ptr+3), *(ptr+4), *(ptr+5));
+				   *ptr, *(ptr+1), *(ptr+2), *(ptr+3),
+				   *(ptr+4), *(ptr+5));
 
 	return 0;
 }
@@ -372,28 +351,26 @@ static uint16_t clk_seq = 0;
 int generate_timebased_uuid(char *uuid, size_t len)
 {
 	int err;
-	int mac_str_len = 13;
-	char mac[mac_str_len];
+	char mac[MAC_LEN];
 	uint64_t timestamp = tmr_jiffies();
 	uint32_t time_low = timestamp & 0xffffffff;
 	uint16_t time_mid = timestamp >> 32;
 	uint16_t time_hi = timestamp >> 48;
 	uint8_t clk_seq_hi_res, clk_seq_low;
 
-	if(!uuid) {
+	if (!uuid)
 		return EINVAL;
-	}
 
 	time_hi |= 0x1 >> 12;
 	if (!clk_seq)
 		clk_seq = rand_u16();
 	else
-		clk_seq++;
+		++clk_seq;
 
 	clk_seq_low = clk_seq;
 	clk_seq_hi_res = clk_seq >> 8;
-	err = get_mac_addr_fmt(mac, mac_str_len, false, ':');
-	if (err != (mac_str_len - 1))
+	err = get_mac_addr_fmt(mac, MAC_LEN, false, ':');
+	if (err != (MAC_LEN - 1))
 		return EINVAL;
 
 	err = re_snprintf(uuid, len, "%08x-%04x-%04x-%02x%02x-%s",
@@ -447,17 +424,19 @@ static int device_add_capabilities_device(struct soap_child *root,
 {
 	int err = 0;
 	const char *val;
-	struct soap_child *devicec, *tmpc, *netc, *sysc, *secc, *extc, *mmc, *ioc;
+	struct soap_child *devicec, *tmpc, *netc, *sysc, *secc, *extc, *mmc,
+			  *ioc;
 
 	if (!root || !s || s->type != S_DEVICE)
 		return EINVAL;
 
 	devicec = soap_add_child(root->msg, root, str_pf_schema,
 		str_device_cat_device);
-	tmpc = soap_add_child(root->msg, devicec, str_pf_schema, str_device_xaddr);
+	tmpc = soap_add_child(root->msg, devicec, str_pf_schema,
+			      str_device_xaddr);
 	err |= soap_set_value_fmt(tmpc, "%s", s->c->xaddr);
 
-	// NETWORK
+	/* NETWORK */
 	netc = soap_add_child(root->msg, devicec, str_pf_schema,
 		str_device_network);
 	val = s->c->cap.device.network.ipfilter ? str_true : str_false;
@@ -482,7 +461,7 @@ static int device_add_capabilities_device(struct soap_child *root,
 		str_device_netdot11config);
 	err |= soap_set_value_fmt(tmpc, "%s", val);
 
-	// SYSTEM
+	/* SYSTEM */
 	sysc = soap_add_child(root->msg, devicec, str_pf_schema,
 		str_device_system);
 	val = s->c->cap.device.system.discoveryresolve ? str_true : str_false;
@@ -501,7 +480,7 @@ static int device_add_capabilities_device(struct soap_child *root,
 	tmpc = soap_add_child(root->msg, sysc, str_pf_schema,
 		str_device_syssystembackup);
 	err |= soap_set_value_fmt(tmpc, "%s", val);
-		val = s->c->cap.device.system.systemlogging ? str_true : str_false;
+	val = s->c->cap.device.system.systemlogging ? str_true : str_false;
 	tmpc = soap_add_child(root->msg, sysc, str_pf_schema,
 		str_device_syssystemlogging);
 	err |= soap_set_value_fmt(tmpc, "%s", val);
@@ -516,7 +495,8 @@ static int device_add_capabilities_device(struct soap_child *root,
 	mmc = soap_add_child(root->msg, tmpc, str_pf_schema, str_device_minor);
 	err |= soap_set_value_fmt(mmc, "%d", s->vminor);
 	extc = soap_add_child(root->msg, sysc, str_pf_schema, str_extension);
-	val = s->c->cap.device.system.httpfirmwareupgrade ? str_true : str_false;
+	val = s->c->cap.device.system.httpfirmwareupgrade ?
+		str_true : str_false;
 	tmpc = soap_add_child(root->msg, extc, str_pf_schema,
 		str_device_syshttpfirmwareupgrade);
 	err |= soap_set_value_fmt(tmpc, "%s", val);
@@ -533,19 +513,21 @@ static int device_add_capabilities_device(struct soap_child *root,
 		str_device_syshttpsupportinfo);
 	err |= soap_set_value_fmt(tmpc, "%s", val);
 
-	// IO dummy (optional but fails if not included, let it empty)
+	/* IO dummy (optional but fails if not included, let it empty) */
 	ioc = soap_add_child(root->msg, devicec, str_pf_schema, "IO");
-	tmpc = soap_add_child(root->msg, ioc, str_pf_schema, "InputConnectors");
+	tmpc = soap_add_child(root->msg, ioc, str_pf_schema,
+			      "InputConnectors");
 	err |= soap_set_value_fmt(tmpc, "%d", 0);
 	tmpc = soap_add_child(root->msg, ioc, str_pf_schema, "RelayOutputs");
 	err |= soap_set_value_fmt(tmpc, "%d", 0);
 	extc = soap_add_child(root->msg, ioc, str_pf_schema, "Extension");
 	tmpc = soap_add_child(root->msg, extc, str_pf_schema, "Auxiliary");
 	err |= soap_set_value_fmt(tmpc, "%s", str_false);
-	tmpc = soap_add_child(root->msg, extc, str_pf_schema, "AuxiliaryCommands");
+	tmpc = soap_add_child(root->msg, extc, str_pf_schema,
+			      "AuxiliaryCommands");
 	tmpc = soap_add_child(root->msg, extc, str_pf_schema, "Extension");
 
-	// SECURITY
+	/* SECURITY */
 	secc = soap_add_child(root->msg, devicec, str_pf_schema,
 		str_device_security);
 	val = s->c->cap.device.security.tls11 ? str_true : str_false;
@@ -560,7 +542,8 @@ static int device_add_capabilities_device(struct soap_child *root,
 	tmpc = soap_add_child(root->msg, secc, str_pf_schema,
 		str_device_seconboardkg);
 	err |= soap_set_value_fmt(tmpc, "%s", val);
-	val = s->c->cap.device.security.accesspolicyconfig ? str_true : str_false;
+	val = s->c->cap.device.security.accesspolicyconfig ?
+		str_true : str_false;
 	tmpc = soap_add_child(root->msg, secc, str_pf_schema,
 		str_device_secaccesspolicyconfig);
 	err |= soap_set_value_fmt(tmpc, "%s", val);
@@ -590,11 +573,12 @@ static int device_add_capabilities_device(struct soap_child *root,
 	tmpc = soap_add_child(root->msg, extc, str_pf_schema,
 		str_device_secdot1x);
 	err |= soap_set_value_fmt(tmpc, "%s", val);
-	// tmpc = soap_add_child(root->msg, extc, str_pf_schema,
-	//     str_device_secsupportedeapmethod);
-	// err |= soap_set_value_fmt(tmpc, "%s",
-	//     s->c->cap.device.security.supportedeapmethods);
-	val = s->c->cap.device.security.remoteuserhandling ? str_true : str_false;
+	/* tmpc = soap_add_child(root->msg, extc, str_pf_schema, */
+	/*     str_device_secsupportedeapmethod); */
+	/* err |= soap_set_value_fmt(tmpc, "%s", */
+	/*     s->c->cap.device.security.supportedeapmethods); */
+	val = s->c->cap.device.security.remoteuserhandling ?
+		str_true : str_false;
 	tmpc = soap_add_child(root->msg, extc, str_pf_schema,
 		str_device_secremoteuserhandling);
 	err |= soap_set_value_fmt(tmpc, "%s", val);
@@ -623,7 +607,8 @@ static int device_add_capabilities_events(struct soap_child *root,
 
 	eventc = soap_add_child(root->msg, root, str_pf_schema,
 		str_device_cat_events);
-	tmpc = soap_add_child(root->msg, eventc, str_pf_schema, str_device_xaddr);
+	tmpc = soap_add_child(root->msg, eventc, str_pf_schema,
+			      str_device_xaddr);
 	err |= soap_set_value_fmt(tmpc, "%s", s->c->xaddr);
 	val = s->c->cap.events.wssps ? str_true : str_false;
 	tmpc = soap_add_child(root->msg, eventc, str_pf_schema,
@@ -662,7 +647,8 @@ static int device_add_capabilities_media(struct soap_child *root,
 
 	mediac = soap_add_child(root->msg, root, str_pf_schema,
 		str_device_cat_media);
-	tmpc = soap_add_child(root->msg, mediac, str_pf_schema, str_device_xaddr);
+	tmpc = soap_add_child(root->msg, mediac, str_pf_schema,
+			      str_device_xaddr);
 	err |= soap_set_value_fmt(tmpc, "%s", s->c->xaddr);
 	scc = soap_add_child(root->msg, mediac, str_pf_schema,
 		str_device_med1streamcap);
@@ -683,7 +669,8 @@ static int device_add_capabilities_media(struct soap_child *root,
 		str_pf_schema, str_device_med1profcap);
 	tmpc = soap_add_child(root->msg, pcc, str_pf_schema,
 		str_device_med1maxnumberofprofile);
-	err |= soap_set_value_fmt(tmpc, "%d", s->c->cap.media1.maxnumberofprofile);
+	err |= soap_set_value_fmt(tmpc, "%d",
+				  s->c->cap.media1.maxnumberofprofile);
 
 	return err;
 }
@@ -708,7 +695,8 @@ static int device_add_capabilities_ptz(struct soap_child *root,
 
 	ptzc = soap_add_child(root->msg, root, str_pf_schema,
 		str_device_cat_ptz);
-	tmpc = soap_add_child(root->msg, ptzc, str_pf_schema, str_device_xaddr);
+	tmpc = soap_add_child(root->msg, ptzc, str_pf_schema,
+			      str_device_xaddr);
 	err |= soap_set_value_fmt(tmpc, "%s", s->c->xaddr);
 
 	return err;
@@ -733,7 +721,8 @@ static int device_add_capabilities_deviceio(struct soap_child *root,
 		return EINVAL;
 
 	extc = soap_add_child(root->msg, root, str_pf_schema, str_extension);
-	ioc = soap_add_child(root->msg, extc, str_pf_schema, str_device_cat_io);
+	ioc = soap_add_child(root->msg, extc, str_pf_schema,
+			     str_device_cat_io);
 	tmpc = soap_add_child(root->msg, ioc, str_pf_schema,
 		str_device_xaddr);
 	err |= soap_set_value_fmt(tmpc, "%s", s->c->xaddr);
@@ -778,7 +767,7 @@ static int device_add_servicecap_device(struct soap_child *root,
 	capc = soap_add_child(root->msg, root,
 		str_pf_device_wsdl, str_device_capabilities);
 
-	// NETWORK
+	/* NETWORK */
 	nwc = soap_add_child(root->msg, capc,
 		str_pf_device_wsdl, str_device_network);
 	val = s->c->cap.device.network.ipfilter ? str_true : str_false;
@@ -806,8 +795,8 @@ static int device_add_servicecap_device(struct soap_child *root,
 		s->c->cap.device.network.dot1xconfigs);
 	val = s->c->cap.device.network.hostnamefdhcp ? str_true : str_false;
 	err |= soap_add_parameter_str(nwc, NULL,
-		str_device_nethostnamefdhcp, strlen(str_device_nethostnamefdhcp),
-		val, strlen(val));
+		str_device_nethostnamefdhcp,
+		strlen(str_device_nethostnamefdhcp), val, strlen(val));
 	err |= soap_add_parameter_uint(nwc, NULL,
 		str_device_netntp, strlen(str_device_netntp),
 		s->c->cap.device.network.ntp);
@@ -816,7 +805,7 @@ static int device_add_servicecap_device(struct soap_child *root,
 		str_device_netdhcp6, strlen(str_device_netdhcp6),
 		val, strlen(val));
 
-	// SECURITY
+	/* SECURITY */
 	secc = soap_add_child(root->msg, capc,
 		str_pf_device_wsdl, str_device_security);
 	val = s->c->cap.device.security.tls10 ? str_true : str_false;
@@ -835,11 +824,13 @@ static int device_add_servicecap_device(struct soap_child *root,
 	err |= soap_add_parameter_str(secc, NULL,
 		str_device_seconboardkg, strlen(str_device_seconboardkg),
 		val, strlen(val));
-	val = s->c->cap.device.security.accesspolicyconfig ? str_true : str_false;
+	val = s->c->cap.device.security.accesspolicyconfig ?
+		str_true : str_false;
 	err |= soap_add_parameter_str(secc, NULL,
 		str_device_secaccesspolicyconfig,
 		strlen(str_device_secaccesspolicyconfig), val, strlen(val));
-	val = s->c->cap.device.security.defaultaccesspolicy ? str_true : str_false;
+	val = s->c->cap.device.security.defaultaccesspolicy ?
+		str_true : str_false;
 	err |= soap_add_parameter_str(secc, NULL,
 		str_device_secdefaultaccesspolicy,
 		strlen(str_device_secdefaultaccesspolicy), val, strlen(val));
@@ -847,8 +838,10 @@ static int device_add_servicecap_device(struct soap_child *root,
 	err |= soap_add_parameter_str(secc, NULL,
 		str_device_secdot1x, strlen(str_device_secdot1x),
 		val, strlen(val));
-	val = s->c->cap.device.security.remoteuserhandling ? str_true : str_false;
-	err |= soap_add_parameter_str(secc, NULL, str_device_secremoteuserhandling,
+	val = s->c->cap.device.security.remoteuserhandling ?
+		str_true : str_false;
+	err |= soap_add_parameter_str(secc, NULL,
+				      str_device_secremoteuserhandling,
 		strlen(str_device_secremoteuserhandling), val, strlen(val));
 	val = s->c->cap.device.security.x509token ? str_true : str_false;
 	err |= soap_add_parameter_str(secc, NULL,
@@ -860,7 +853,8 @@ static int device_add_servicecap_device(struct soap_child *root,
 		val, strlen(val));
 	val = s->c->cap.device.security.kerberostoken ? str_true : str_false;
 	err |= soap_add_parameter_str(secc, NULL,
-		str_device_seckerberostoken, strlen(str_device_seckerberostoken),
+		str_device_seckerberostoken,
+		strlen(str_device_seckerberostoken),
 		val, strlen(val));
 	val = s->c->cap.device.security.usertoken ? str_true : str_false;
 	err |= soap_add_parameter_str(secc, NULL,
@@ -874,7 +868,8 @@ static int device_add_servicecap_device(struct soap_child *root,
 	err |= soap_add_parameter_str(secc, NULL,
 		str_device_secreltoken, strlen(str_device_secreltoken),
 		val, strlen(val));
-	err |= soap_add_parameter_str(secc, NULL, str_device_secsupportedeapmethods,
+	err |= soap_add_parameter_str(secc, NULL,
+				      str_device_secsupportedeapmethods,
 		strlen(str_device_secsupportedeapmethods),
 		s->c->cap.device.security.supportedeapmethods,
 		strlen(s->c->cap.device.security.supportedeapmethods));
@@ -882,18 +877,20 @@ static int device_add_servicecap_device(struct soap_child *root,
 		str_device_secmaxusers, strlen(str_device_secmaxusers),
 		s->c->cap.device.security.maxusers);
 	err |= soap_add_parameter_uint(secc, NULL,
-		str_device_secmaxusernamelen, strlen(str_device_secmaxusernamelen),
+		str_device_secmaxusernamelen,
+		strlen(str_device_secmaxusernamelen),
 		s->c->cap.device.security.maxusernamelen);
 	err |= soap_add_parameter_uint(secc, NULL,
 		str_device_secmaxpasswdlen, strlen(str_device_secmaxpasswdlen),
 		s->c->cap.device.security.maxpasswdlen);
 
-	// SYSTEM
+	/* SYSTEM */
 	sysc = soap_add_child(root->msg, capc,
 		str_pf_device_wsdl, str_device_system);
 	val = s->c->cap.device.system.discoveryresolve ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
-		str_device_sysdiscoveryresolve, strlen(str_device_sysdiscoveryresolve),
+		str_device_sysdiscoveryresolve,
+		strlen(str_device_sysdiscoveryresolve),
 		val, strlen(val));
 	val = s->c->cap.device.system.discoverybye ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
@@ -901,40 +898,49 @@ static int device_add_servicecap_device(struct soap_child *root,
 		val, strlen(val));
 	val = s->c->cap.device.system.remotediscovery ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
-		str_device_sysremotediscovery, strlen(str_device_sysremotediscovery),
-		val, strlen(val));
+		str_device_sysremotediscovery,
+		strlen(str_device_sysremotediscovery), val, strlen(val));
 	val = s->c->cap.device.system.systembackup ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
 		str_device_syssystembackup, strlen(str_device_syssystembackup),
 		val, strlen(val));
 	val = s->c->cap.device.system.systemlogging ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
-		str_device_syssystemlogging, strlen(str_device_syssystemlogging),
+		str_device_syssystemlogging,
+		strlen(str_device_syssystemlogging),
 		val, strlen(val));
 	val = s->c->cap.device.system.firmwareupgrae ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
-		str_device_sysfirmwareupgrae, strlen(str_device_sysfirmwareupgrae),
+		str_device_sysfirmwareupgrae,
+		strlen(str_device_sysfirmwareupgrae),
 		val, strlen(val));
-	val = s->c->cap.device.system.httpfirmwareupgrade ? str_true : str_false;
-	err |= soap_add_parameter_str(sysc, NULL, str_device_syshttpfirmwareupgrade,
+	val = s->c->cap.device.system.httpfirmwareupgrade ?
+		str_true : str_false;
+	err |= soap_add_parameter_str(sysc, NULL,
+				      str_device_syshttpfirmwareupgrade,
 		strlen(str_device_syshttpfirmwareupgrade), val, strlen(val));
 	val = s->c->cap.device.system.httpsystembackup ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
-		str_device_syshttpsystembackup, strlen(str_device_syshttpsystembackup),
+		str_device_syshttpsystembackup,
+		strlen(str_device_syshttpsystembackup),
 		val, strlen(val));
 	val = s->c->cap.device.system.httpsystemlogging ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
-		str_device_syshttpsystemlogging, strlen(str_device_syshttpsystemlogging),
+		str_device_syshttpsystemlogging,
+		strlen(str_device_syshttpsystemlogging),
 		val, strlen(val));
 	val = s->c->cap.device.system.httpsupportinfo ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
-		str_device_syshttpsupportinfo, strlen(str_device_syshttpsupportinfo),
+		str_device_syshttpsupportinfo,
+		strlen(str_device_syshttpsupportinfo),
 		val, strlen(val));
 	val = s->c->cap.device.system.storageconfig ? str_true : str_false;
 	err |= soap_add_parameter_str(sysc, NULL,
-		str_device_sysstorageconfig, strlen(str_device_sysstorageconfig),
+		str_device_sysstorageconfig,
+		strlen(str_device_sysstorageconfig),
 		val, strlen(val));
-	err |= soap_add_parameter_uint(sysc, NULL, str_device_sysgeolocationentries,
+	err |= soap_add_parameter_uint(sysc, NULL,
+				       str_device_sysgeolocationentries,
 		strlen(str_device_sysgeolocationentries),
 		s->c->cap.device.system.geolocationentries);
 	err |= soap_add_parameter_str(sysc, NULL,
@@ -947,7 +953,7 @@ static int device_add_servicecap_device(struct soap_child *root,
 		s->c->cap.device.system.storagetypssupported,
 		strlen(s->c->cap.device.system.storagetypssupported));
 
-	// MISC
+	/* MISC */
 	miscc = soap_add_child(root->msg, capc,
 		str_pf_device_wsdl, str_device_misc);
 	err |= soap_add_parameter_str(miscc, NULL,
@@ -990,7 +996,8 @@ static int device_add_servicecap_media1(struct soap_child *root,
 		val, strlen(val));
 	val = s->c->cap.media1.videosourcemode ? str_true : str_false;
 	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med1videosourcemode, strlen(str_device_med1videosourcemode),
+		str_device_med1videosourcemode,
+		strlen(str_device_med1videosourcemode),
 		val, strlen(val));
 	val = s->c->cap.media1.osd ? str_true : str_false;
 	err |= soap_add_parameter_str(capc, NULL,
@@ -998,16 +1005,19 @@ static int device_add_servicecap_media1(struct soap_child *root,
 		val, strlen(val));
 	val = s->c->cap.media1.temporaryosdtext ? str_true : str_false;
 	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med1temporaryosdtext, strlen(str_device_med1temporaryosdtext),
+		str_device_med1temporaryosdtext,
+		strlen(str_device_med1temporaryosdtext),
 		val, strlen(val));
 	val = s->c->cap.media1.exicompression ? str_true : str_false;
 	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med1exicompression, strlen(str_device_med1exicompression),
+		str_device_med1exicompression,
+		strlen(str_device_med1exicompression),
 		val, strlen(val));
 
 	pcc = soap_add_child(root->msg, capc,
 		str_pf_media_wsdl, str_device_med1profcap);
-	err |= soap_add_parameter_uint(pcc, NULL, str_device_med1maxnumberofprofile,
+	err |= soap_add_parameter_uint(pcc, NULL,
+				       str_device_med1maxnumberofprofile,
 		strlen(str_device_med1maxnumberofprofile),
 		s->c->cap.media1.maxnumberofprofile);
 	scc = soap_add_child(root->msg, capc,
@@ -1025,104 +1035,14 @@ static int device_add_servicecap_media1(struct soap_child *root,
 		str_device_med1rtprtsptcp, strlen(str_device_med1rtprtsptcp),
 		val, strlen(val));
 	val = s->c->cap.media1.nonaggregatecontrol ? str_true : str_false;
-	err |= soap_add_parameter_str(scc, NULL, str_device_med1nonaggregatecontrol,
+	err |= soap_add_parameter_str(scc, NULL,
+				      str_device_med1nonaggregatecontrol,
 		strlen(str_device_med1nonaggregatecontrol), val, strlen(val));
 	val = s->c->cap.media1.nortspstreaming ? str_true : str_false;
 	err |= soap_add_parameter_str(scc, NULL,
-		str_device_med1nortspstreaming, strlen(str_device_med1nortspstreaming),
+		str_device_med1nortspstreaming,
+		strlen(str_device_med1nortspstreaming),
 		val, strlen(val));
-
-	return err;
-}
-
-
-/**
- * add the media2 service capabilities to @root
- *
- * @param root          root element to add service
- * @param s             service to add
- *
- * @return          0 if success, errorcode otherwise
- */
-
-static int device_add_servicecap_media2(struct soap_child *root,
-	struct service *s)
-{
-	int err = 0;
-	struct soap_child *capc, *pcc, *scc;
-	const char *val;
-
-	if (!root || !s || s->type != S_MEDIA2)
-		return EINVAL;
-
-	capc = soap_add_child(root->msg, root,
-		str_pf_media2_wsdl, str_device_capabilities);
-
-	val = s->c->cap.media2.snapshoturi ? str_true : str_false;
-	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med1snapshoturi, strlen(str_device_med1snapshoturi),
-		val, strlen(val));
-	val = s->c->cap.media2.rotation ? str_true : str_false;
-	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med1rotation, strlen(str_device_med1rotation),
-		val, strlen(val));
-	val = s->c->cap.media2.videosourcemode ? str_true : str_false;
-	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med1videosourcemode, strlen(str_device_med1videosourcemode),
-		val, strlen(val));
-	val = s->c->cap.media2.osd ? str_true : str_false;
-	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med1osd, strlen(str_device_med1osd),
-		val, strlen(val));
-	val = s->c->cap.media2.temporaryosdtext ? str_true : str_false;
-	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med1temporaryosdtext, strlen(str_device_med1temporaryosdtext),
-		val, strlen(val));
-	val = s->c->cap.media2.mask ? str_true : str_false;
-	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med2mask, strlen(str_device_med2mask),
-		val, strlen(val));
-	val = s->c->cap.media2.sourcemask ? str_true : str_false;
-	err |= soap_add_parameter_str(capc, NULL,
-		str_device_med2sourcemask, strlen(str_device_med2sourcemask),
-		val, strlen(val));
-
-	pcc = soap_add_child(root->msg, capc,
-		str_pf_media2_wsdl, str_device_med1profcap);
-	err |= soap_add_parameter_uint(pcc, NULL, str_device_med1maxnumberofprofile,
-		strlen(str_device_med1maxnumberofprofile),
-		s->c->cap.media2.maxnumberofprofile);
-	err |= soap_add_parameter_str(pcc, NULL,
-		str_device_med2conigurationsupported,
-		strlen(str_device_med2conigurationsupported),
-		s->c->cap.media2.conigurationsupported,
-		strlen(s->c->cap.media2.conigurationsupported));
-
-	scc = soap_add_child(root->msg, capc,
-		str_pf_media2_wsdl, str_device_med1streamcap);
-	val = s->c->cap.media2.rtpmcast ? str_true : str_false;
-	err |= soap_add_parameter_str(scc, NULL,
-		str_device_med1rtpmcast, strlen(str_device_med1rtpmcast),
-		val, strlen(val));
-	val = s->c->cap.media2.rtptcp ? str_true : str_false;
-	err |= soap_add_parameter_str(scc, NULL,
-		str_device_med1rtptcp, strlen(str_device_med1rtptcp),
-		val, strlen(val));
-	val = s->c->cap.media2.rtprtsptcp ? str_true : str_false;
-	err |= soap_add_parameter_str(scc, NULL,
-		str_device_med1rtprtsptcp, strlen(str_device_med1rtprtsptcp),
-		val, strlen(val));
-	val = s->c->cap.media2.nonaggregatecontrol ? str_true : str_false;
-	err |= soap_add_parameter_str(scc, NULL, str_device_med1nonaggregatecontrol,
-		strlen(str_device_med1nonaggregatecontrol), val, strlen(val));
-	if (s->c->cap.media2.rtspwebsocketuri)
-		err |= soap_add_parameter_str(scc, NULL, str_device_med2rtspwebsocketuri,
-			strlen(str_device_med2rtspwebsocketuri),
-			s->c->cap.media2.rtspwebsocketuri,
-			strlen(s->c->cap.media2.rtspwebsocketuri));
-	val = s->c->cap.media2.autostartmulticast ? str_true : str_false;
-	err |= soap_add_parameter_str(scc, NULL, str_device_med2autostartmulticast,
-		strlen(str_device_med2autostartmulticast), val, strlen(val));
 
 	return err;
 }
@@ -1147,7 +1067,8 @@ static int device_add_servicecap_event(struct soap_child *root,
 		return EINVAL;
 
 	h = soap_child_has_child(root->msg->envelope, NULL, str_header);
-	actionc = soap_add_child(root->msg, h, str_pf_addressing, str_wsd_action);
+	actionc = soap_add_child(root->msg, h, str_pf_addressing,
+				 str_wsd_action);
 	err |= soap_set_value_fmt(actionc, "%s", str_device_eventgetcapaddr);
 
 	capc = soap_add_child(root->msg, root,
@@ -1170,7 +1091,8 @@ static int device_add_servicecap_event(struct soap_child *root,
 		str_device_eventmaxpullpoints,
 		strlen(str_device_eventmaxpullpoints),
 		s->c->cap.events.maxpullpoints);
-	val = s->c->cap.events.persistentnotificationstorage ? str_true : str_false;
+	val = s->c->cap.events.persistentnotificationstorage ?
+		str_true : str_false;
 	err |= soap_add_parameter_str(capc, NULL,
 		str_device_eventpersistentnotificationstorage,
 		strlen(str_device_eventpersistentnotificationstorage),
@@ -1255,9 +1177,11 @@ static int device_add_servicecap_deviceio(struct soap_child *root,
 	err |= soap_add_parameter_uint(capc, NULL, str_device_ioserialports,
 		strlen(str_device_ioserialports), s->c->cap.io.serialports);
 	err |= soap_add_parameter_uint(capc, NULL, str_device_iodigitalinputs,
-		strlen(str_device_iodigitalinputs), s->c->cap.io.digitalinputs);
+		strlen(str_device_iodigitalinputs),
+		s->c->cap.io.digitalinputs);
 	val = s->c->cap.io.digitalintputoptions ? str_true : str_false;
-	err |= soap_add_parameter_str(capc, NULL, str_device_iodigitalintputoptions,
+	err |= soap_add_parameter_str(capc, NULL,
+		str_device_iodigitalintputoptions,
 		strlen(str_device_iodigitalintputoptions), val, strlen(val));
 
 	return err;
@@ -1287,13 +1211,14 @@ static int device_add_service(struct soap_child *root, struct service *s,
 	if (!ns)
 		return EINVAL;
 
-	sc = soap_add_child(root->msg, root, str_pf_device_wsdl, str_device_service);
+	sc = soap_add_child(root->msg, root, str_pf_device_wsdl,
+			    str_device_service);
 	tmpc = soap_add_child(root->msg, sc, str_pf_device_wsdl,
-		str_device_namespace);
+			      str_device_namespace);
 	err |= soap_set_value_fmt(tmpc, "%s", s->namespace);
-	tmpc = soap_add_child(root->msg, sc, str_pf_device_wsdl, str_device_xaddr);
+	tmpc = soap_add_child(root->msg, sc, str_pf_device_wsdl,
+			      str_device_xaddr);
 	err |= soap_set_value_fmt(tmpc, "%s", s->c->xaddr);
-
 
 	if (include_cap) {
 		capc = soap_add_child(root->msg, sc, str_pf_device_wsdl,
@@ -1305,10 +1230,6 @@ static int device_add_service(struct soap_child *root, struct service *s,
 
 			case S_MEDIA1:
 				err |= device_add_servicecap_media1(capc, s);
-				break;
-
-			case S_MEDIA2:
-				err |= device_add_servicecap_media2(capc, s);
 				break;
 
 			case S_EVENT:
@@ -1328,7 +1249,8 @@ static int device_add_service(struct soap_child *root, struct service *s,
 		}
 	}
 
-	verc = soap_add_child(root->msg, sc, str_pf_device_wsdl, str_device_ver);
+	verc = soap_add_child(root->msg, sc, str_pf_device_wsdl,
+			      str_device_ver);
 	mmc = soap_add_child(root->msg, verc, str_pf_schema, str_device_major);
 	err |= soap_set_value_fmt(mmc, "%d", s->vmajor);
 	mmc = soap_add_child(root->msg, verc, str_pf_schema, str_device_minor);
@@ -1347,7 +1269,8 @@ static int device_add_service(struct soap_child *root, struct service *s,
  * @return          0 if success, errorcode otherwise
  *
  */
-int device_GetServices_h (const struct soap_msg *msg, struct soap_msg **prtresp)
+int device_GetServices_h (const struct soap_msg *msg,
+			  struct soap_msg **prtresp)
 {
 	int err = 0;
 	struct soap_msg *resp;
@@ -1375,8 +1298,6 @@ int device_GetServices_h (const struct soap_msg *msg, struct soap_msg **prtresp)
 		soap_msg_add_ns_str_param(
 		resp, str_pf_events_wsdl, str_uri_events_wsdl) ||
 		soap_msg_add_ns_str_param(
-		resp, str_pf_media2_wsdl, str_uri_media2_wsdl) ||
-		soap_msg_add_ns_str_param(
 		resp, str_pf_deviceio_wsdl, str_uri_deviceio_wsdl) ||
 		soap_msg_add_ns_str_param(
 		resp, str_pf_ptz_wsdl, str_uri_ptz_wsdl) ||
@@ -1394,7 +1315,7 @@ int device_GetServices_h (const struct soap_msg *msg, struct soap_msg **prtresp)
 		str_method_get_services_r);
 
 	le = services_l.head;
-	while(le) {
+	while (le) {
 		s = le->data;
 		err |= device_add_service(gsrc, s, include_cap);
 		le = le->next;
@@ -1436,7 +1357,8 @@ int device_GetServiceCapabilities_h(const struct soap_msg *msg,
 
 	b = soap_child_has_child(msg->envelope, NULL, str_body);
 	gscc = soap_child_has_child(b, NULL, str_method_get_service_cap);
-	le = list_apply(&services_l, true, device_cmp_service_ns, &gscc->ns->uri);
+	le = list_apply(&services_l, true, device_cmp_service_ns,
+			&gscc->ns->uri);
 	if (!le)
 		return EINVAL;
 
@@ -1453,8 +1375,6 @@ int device_GetServiceCapabilities_h(const struct soap_msg *msg,
 		resp, str_pf_events_wsdl, str_uri_events_wsdl) ||
 		soap_msg_add_ns_str_param(
 		resp, str_pf_ptz_wsdl, str_uri_ptz_wsdl) ||
-		soap_msg_add_ns_str_param(
-		resp, str_pf_media2_wsdl, str_uri_media2_wsdl) ||
 		soap_msg_add_ns_str_param(
 		resp, str_pf_deviceio_wsdl, str_uri_deviceio_wsdl) ||
 		soap_msg_add_ns_str_param(
@@ -1479,10 +1399,6 @@ int device_GetServiceCapabilities_h(const struct soap_msg *msg,
 
 		case S_MEDIA1:
 			err |= device_add_servicecap_media1(gsrc, s);
-			break;
-
-		case S_MEDIA2:
-			err |= device_add_servicecap_media2(gsrc, s);
 			break;
 
 		case S_EVENT:
@@ -1541,21 +1457,28 @@ int device_GetCapabilities_h (const struct soap_msg *msg,
 	if (capc) {
 		if (0 == pl_strcmp(&capc->value, str_device_cat_all)) {
 			t = S_ALL;
-		} else if (0 == pl_strcmp(&capc->value, str_device_cat_device)) {
+		}
+		else if (0 == pl_strcmp(&capc->value, str_device_cat_device)) {
 			t = S_DEVICE;
-		} else if (0 == pl_strcmp(&capc->value, str_device_cat_media)) {
+		}
+		else if (0 == pl_strcmp(&capc->value, str_device_cat_media)) {
 			t = S_MEDIA1;
-		} else if (0 == pl_strcmp(&capc->value, str_device_cat_events)) {
+		}
+		else if (0 == pl_strcmp(&capc->value, str_device_cat_events)) {
 			t = S_EVENT;
-		} else if (0 == pl_strcmp(&capc->value, str_device_cat_ptz)) {
+		}
+		else if (0 == pl_strcmp(&capc->value, str_device_cat_ptz)) {
 			t = S_PTZ;
-		} else {
-			fault_set(f, FC_Receiver, FS_ActionNotSupported, FS_NoSuchService,
-				str_fault_wsdlnotsupported);
+		}
+		else {
+			fault_set(f, FC_Receiver, FS_ActionNotSupported,
+				  FS_NoSuchService,
+				  str_fault_wsdlnotsupported);
 			return EINVAL;
 		}
 
-	} else {
+	}
+	else {
 		t = S_ALL;
 	}
 
@@ -1578,98 +1501,107 @@ int device_GetCapabilities_h (const struct soap_msg *msg,
 		str_pf_device_wsdl, str_device_capabilities);
 
 	switch (t) {
-		case S_ALL:
-			t = S_DEVICE;
-			le = list_apply(&services_l, true, device_cmp_service_type, &t);
-			if (!le) {
-				err = EINVAL;
-				goto out;
-			}
-			s = le->data;
-			err |= device_add_capabilities_device(caprc, s);
-
-			t = S_EVENT;
-			le = list_apply(&services_l, true, device_cmp_service_type, &t);
-			if (!le) {
-				err = EINVAL;
-				goto out;
-			}
-			s = le->data;
-			err |= device_add_capabilities_events(caprc, s);
-
-			t = S_MEDIA1;
-			le = list_apply(&services_l, true, device_cmp_service_type, &t);
-			if (!le) {
-				err = EINVAL;
-				goto out;
-			}
-			s = le->data;
-			err |= device_add_capabilities_media(caprc, s);
-
-			t = S_PTZ;
-			le = list_apply(&services_l, true, device_cmp_service_type, &t);
-			if (!le) {
-				err = EINVAL;
-				goto out;
-			}
-			s = le->data;
-			err |= device_add_capabilities_ptz(caprc, s);
-
-			t = S_IO;
-			le = list_apply(&services_l, true, device_cmp_service_type, &t);
-			if (!le) {
-				err = EINVAL;
-				goto out;
-			}
-			s = le->data;
-			err |= device_add_capabilities_deviceio(caprc, s);
-			break;
-
-
-		case S_DEVICE:
-			le = list_apply(&services_l, true, device_cmp_service_type, &t);
-			if (!le) {
-				err = EINVAL;
-				goto out;
-			}
-			s = le->data;
-			err |= device_add_capabilities_device(caprc, s);
-			break;
-
-		case S_EVENT:
-			le = list_apply(&services_l, true, device_cmp_service_type, &t);
-			if (!le) {
-				err = EINVAL;
-				goto out;
-			}
-			s = le->data;
-			err |= device_add_capabilities_events(caprc, s);
-			break;
-
-		case S_MEDIA1:
-			le = list_apply(&services_l, true, device_cmp_service_type, &t);
-			if (!le) {
-				err = EINVAL;
-				goto out;
-			}
-			s = le->data;
-			err |= device_add_capabilities_media(caprc, s);
-			break;
-
-		case S_PTZ:
-			le = list_apply(&services_l, true, device_cmp_service_type, &t);
-			if (!le) {
-				err = EINVAL;
-				goto out;
-			}
-			s = le->data;
-			err |= device_add_capabilities_ptz(caprc, s);
-			break;
-
-
-		default:
-			err = ENOTSUP;
+	case S_ALL:
+		t = S_DEVICE;
+		le = list_apply(&services_l, true, device_cmp_service_type,
+				&t);
+		if (!le) {
+			err = EINVAL;
 			goto out;
+		}
+		s = le->data;
+		err |= device_add_capabilities_device(caprc, s);
+
+		t = S_EVENT;
+		le = list_apply(&services_l, true, device_cmp_service_type,
+				&t);
+		if (!le) {
+			err = EINVAL;
+			goto out;
+		}
+		s = le->data;
+		err |= device_add_capabilities_events(caprc, s);
+
+		t = S_MEDIA1;
+		le = list_apply(&services_l, true, device_cmp_service_type,
+				&t);
+		if (!le) {
+			err = EINVAL;
+			goto out;
+		}
+		s = le->data;
+		err |= device_add_capabilities_media(caprc, s);
+
+		t = S_PTZ;
+		le = list_apply(&services_l, true, device_cmp_service_type,
+				&t);
+		if (!le) {
+			err = EINVAL;
+			goto out;
+		}
+		s = le->data;
+		err |= device_add_capabilities_ptz(caprc, s);
+
+		t = S_IO;
+		le = list_apply(&services_l, true, device_cmp_service_type,
+				&t);
+		if (!le) {
+			err = EINVAL;
+			goto out;
+		}
+		s = le->data;
+		err |= device_add_capabilities_deviceio(caprc, s);
+		break;
+
+
+	case S_DEVICE:
+		le = list_apply(&services_l, true, device_cmp_service_type,
+				&t);
+		if (!le) {
+			err = EINVAL;
+			goto out;
+		}
+		s = le->data;
+		err |= device_add_capabilities_device(caprc, s);
+		break;
+
+	case S_EVENT:
+		le = list_apply(&services_l, true, device_cmp_service_type,
+				&t);
+		if (!le) {
+			err = EINVAL;
+			goto out;
+		}
+		s = le->data;
+		err |= device_add_capabilities_events(caprc, s);
+		break;
+
+	case S_MEDIA1:
+		le = list_apply(&services_l, true, device_cmp_service_type,
+				&t);
+		if (!le) {
+			err = EINVAL;
+			goto out;
+		}
+		s = le->data;
+		err |= device_add_capabilities_media(caprc, s);
+		break;
+
+	case S_PTZ:
+		le = list_apply(&services_l, true, device_cmp_service_type,
+				&t);
+		if (!le) {
+			err = EINVAL;
+			goto out;
+		}
+		s = le->data;
+		err |= device_add_capabilities_ptz(caprc, s);
+		break;
+
+
+	default:
+		err = ENOTSUP;
+		goto out;
 	}
 
   out:
@@ -1703,8 +1635,7 @@ int device_GetDeviceInfo_h (const struct soap_msg *msg,
 	struct pl value;
 	const char *device_info;
 	char *tmp;
-	int mac_str_len = 18;
-	char mac[mac_str_len];
+	char mac[MAC_LEN];
 
 	if (!msg || !prtresp)
 		return EINVAL;
@@ -1731,7 +1662,7 @@ int device_GetDeviceInfo_h (const struct soap_msg *msg,
 	if (0 == conf_get(conf_cur(), str_device_manufacturer, &value)) {
 		err |= soap_set_value_fmt(c, "%r", &value);
 		tmp = strchr(c->str_value, '-');
-		while(tmp) {
+		while (tmp) {
 			*tmp = ' ';
 			tmp = strchr(c->str_value, '-');
 		}
@@ -1754,7 +1685,7 @@ int device_GetDeviceInfo_h (const struct soap_msg *msg,
 
 	device_info = strchr(str_device_hardware, '_') + 1;
 	c = soap_add_child(resp, gdir, str_pf_device_wsdl, device_info);
-	if ((mac_str_len - 1) != get_mac_addr_fmt(mac, mac_str_len, true, '-')) {
+	if ((MAC_LEN - 1) != get_mac_addr_fmt(mac, MAC_LEN, true, '-')) {
 		err = EINVAL;
 		goto out;
 	}
@@ -1798,7 +1729,8 @@ static int device_add_systime(struct soap_child *dtc, const struct tm *tm)
 
 	tmp = soap_add_child(dtc->msg, datec, str_pf_schema, str_sysdate_year);
 	err |= soap_set_value_fmt(tmp, "%u", tm->tm_year + 1900);
-	tmp = soap_add_child(dtc->msg, datec, str_pf_schema, str_sysdate_month);
+	tmp = soap_add_child(dtc->msg, datec, str_pf_schema,
+			     str_sysdate_month);
 	err |= soap_set_value_fmt(tmp, "%u", tm->tm_mon + 1);
 	tmp = soap_add_child(dtc->msg, datec, str_pf_schema, str_sysdate_day);
 	err |= soap_set_value_fmt(tmp, "%u", tm->tm_mday);
@@ -1828,7 +1760,8 @@ static int device_add_networkprotocol(struct soap_child *gnpr,
 	if (!gnpr || !proto || (port < 0))
 		return EINVAL;
 
-	npc = soap_add_child(gnpr->msg, gnpr, str_pf_device_wsdl, str_nprotos_np);
+	npc = soap_add_child(gnpr->msg, gnpr, str_pf_device_wsdl,
+			     str_nprotos_np);
 
 	LAST_CHILD(npc);
 	tmp = soap_add_child(gnpr->msg, npc, str_pf_schema, str_name);
@@ -1864,8 +1797,7 @@ int device_GetNWI_h (const struct soap_msg *msg, struct soap_msg **prtresp)
 	const char *bs_ifname = conf_config()->net.ifname;
 	bool isipv4 = net_af_enabled(baresip_network() , AF_INET);
 	bool isdhcpenabled;
-	int mac_str_len = 18;
-	char mac[mac_str_len];
+	char mac[MAC_LEN];
 
 	if (!msg || !prtresp)
 		return EINVAL;
@@ -1890,8 +1822,9 @@ int device_GetNWI_h (const struct soap_msg *msg, struct soap_msg **prtresp)
 	netic = soap_add_child(resp, c, str_pf_device_wsdl,
 		str_device_netinterfaces);
 
-	err |= soap_add_parameter_str(netic, NULL, str_token, strlen(str_token),
-		bs_ifname, strlen(bs_ifname));
+	err |= soap_add_parameter_str(netic, NULL, str_token,
+				      strlen(str_token), bs_ifname,
+				      strlen(bs_ifname));
 	c = soap_add_child(resp, netic, str_pf_schema, str_enabled);
 	err |= soap_set_value_fmt(c, "%s", str_true);
 
@@ -1900,7 +1833,7 @@ int device_GetNWI_h (const struct soap_msg *msg, struct soap_msg **prtresp)
 	err |= soap_set_value_fmt(cc, "%s", bs_ifname);
 	cc = soap_add_child(resp, c, str_pf_schema, str_device_hwaddress);
 
-	if ((mac_str_len - 1) != get_mac_addr_fmt(mac, mac_str_len, true, '-')) {
+	if ((MAC_LEN - 1) != get_mac_addr_fmt(mac, MAC_LEN, true, '-')) {
 		err = EINVAL;
 		goto out;
 	}
@@ -1908,11 +1841,13 @@ int device_GetNWI_h (const struct soap_msg *msg, struct soap_msg **prtresp)
 	err |= soap_set_value_fmt(cc, "%s", mac);
 
 	if (isipv4) {
-		ipc = soap_add_child(resp, netic, str_pf_schema, str_device_ipv4);
+		ipc = soap_add_child(resp, netic, str_pf_schema,
+				     str_device_ipv4);
 		cc = soap_add_child(resp, ipc, str_pf_schema, str_enabled);
 		err |= soap_set_value_fmt(cc, "%s", str_true);
 
-		confc = soap_add_child(resp, ipc, str_pf_schema, str_device_config);
+		confc = soap_add_child(resp, ipc, str_pf_schema,
+				       str_device_config);
 
 		if (isdhcpenabled)
 			addrc = soap_add_child(resp,
@@ -1921,17 +1856,21 @@ int device_GetNWI_h (const struct soap_msg *msg, struct soap_msg **prtresp)
 			addrc = soap_add_child(resp,
 				confc, str_pf_schema, str_device_manual);
 
-		cc = soap_add_child(resp, addrc, str_pf_schema, str_wsd_address);
+		cc = soap_add_child(resp, addrc, str_pf_schema,
+				    str_wsd_address);
 		err |= soap_set_value_fmt(cc, "%j",
 			net_laddr_af(baresip_network(), AF_INET));
 
-		cc = soap_add_child(resp, addrc, str_pf_schema, str_device_prefixlen);
-		err |= soap_set_value_fmt(cc, "%d", 24); // TODO 1
+		cc = soap_add_child(resp, addrc, str_pf_schema,
+				    str_device_prefixlen);
+		err |= soap_set_value_fmt(cc, "%d", 24); /* TODO 1 */
 
-		cc = soap_add_child(resp, confc, str_pf_schema, str_device_dhcp);
+		cc = soap_add_child(resp, confc, str_pf_schema,
+				    str_device_dhcp);
 		err |= soap_set_value_fmt(cc, "%s",
 			isdhcpenabled ? str_true : str_false);
-	} else {
+	}
+	else {
 		return ENOTSUP;
 	}
 
@@ -1991,7 +1930,7 @@ int device_GetSystemDateAndTime_h(const struct soap_msg *msg,
 	sdatc = soap_add_child(resp, sdatc, str_pf_device_wsdl, str_sysdate);
 
 	tmp = soap_add_child(resp, sdatc, str_pf_schema, str_sysdate_dtt);
-	// TODO 1
+	/* TODO 1 */
 	err |= soap_set_value_fmt(tmp, "%s", "Manual");
 
 	timeinfo = localtime(&rawtime);
@@ -2058,7 +1997,8 @@ int device_GetNetworkDefaultGateway_h(const struct soap_msg *msg,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	ngc = soap_add_child(resp, b, str_pf_device_wsdl, str_method_get_ndg_r);
+	ngc = soap_add_child(resp, b, str_pf_device_wsdl,
+			     str_method_get_ndg_r);
 	ngc = soap_add_child(resp, ngc, str_pf_device_wsdl, str_ndg_ng);
 	ngc = soap_add_child(resp, ngc, str_pf_schema, str_profile_ipv4addr);
 	err |= net_default_gateway_get(AF_INET, &gw);
@@ -2110,10 +2050,12 @@ int device_GetNetworkProtocols_h(const struct soap_msg *msg,
 	gnpc = soap_add_child(resp, b, str_pf_device_wsdl,
 		str_method_get_nprotos_r);
 
-	err |= device_add_networkprotocol(gnpc, "HTTP", DEFAULT_ONVIF_PORT, true);
-	// TODO 1
+	err |= device_add_networkprotocol(gnpc, "HTTP", DEFAULT_ONVIF_PORT,
+					  true);
+	/* TODO 1 */
 	err |= device_add_networkprotocol(gnpc, "HTTPS", 0, false);
-	err |= device_add_networkprotocol(gnpc, "RTSP", DEFAULT_RTSP_PORT, true);
+	err |= device_add_networkprotocol(gnpc, "RTSP", DEFAULT_RTSP_PORT,
+					  true);
 
   out:
 	if (err)
@@ -2262,7 +2204,8 @@ int device_SystemReboot_h(const struct soap_msg *msg,
 		str_method_systemreboot_r);
 	msgc = soap_add_child(resp, srrc, str_pf_device_wsdl, str_sr_msg);
 
-	err |= soap_set_value_fmt(msgc, "System Reboots in %d s\n", REBOOTDELAY);
+	err |= soap_set_value_fmt(msgc, "System Reboots in %d s\n",
+				  REBOOTDELAY);
 
   out:
 	if (err)

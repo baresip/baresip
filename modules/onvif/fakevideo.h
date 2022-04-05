@@ -9,7 +9,6 @@
 #include "filter.h"
 #include "rtspd.h"
 
-struct lock *onvif_fvlock;
 struct onvif_fakevideo_stream;
 
 int onvif_fakevideo_alloc(struct onvif_fakevideo_stream **fvsp,

@@ -16,10 +16,14 @@ gstreamer1.0-plugins-bad
 gstreamer1.0-plugins-ugly
 
 Sink:
-gst-launch-1.0 udpsrc port=5200 ! application/x-rtp,encoding-name=JPEG,payload=26 ! rtpjpegdepay ! jpegdec ! autovideosink
+gst-launch-1.0 udpsrc port=5200 !
+  application/x-rtp,encoding-name=JPEG,payload=26 ! rtpjpegdepay ! jpegdec !
+  autovideosink
 
 Source;
-gst-launch-1.0 -v multifilesrc location="<JPEG FILE>" caps="image/jpeg,framerate="1/1"" ! jpegdec ! jpegenc ! rtpjpegpay ! udpsink host=127.0.0.1 port=5200
+gst-launch-1.0 -v multifilesrc location="<JPEG FILE>"
+  caps="image/jpeg,framerate="1/1"" ! jpegdec ! jpegenc ! rtpjpegpay !
+  udpsink host=127.0.0.1 port=5200
 
 Get the network packages via Wireshark on the loopback interface.
 Decode UDP packages as RTP.
@@ -50,8 +54,8 @@ struct onvif_fakevideo_stream {
 };
 
 
-struct lock *onvif_fvlock;
 static struct list fv_send_stream_list;
+static struct lock *fvlock = NULL;
 
 
 static unsigned char sample_jpeg_dat[] = {
@@ -165,10 +169,12 @@ static struct tmr fakevideo_tmr;
 
 static void onvif_fakevideo_stream_destructor(void *arg)
 {
-  struct onvif_fakevideo_stream *fvs = (struct onvif_fakevideo_stream *) arg;
+	struct onvif_fakevideo_stream *fvs = arg;
 
-  list_unlink(&fvs->le);
-  fvs->rtpsock = mem_deref(fvs->rtpsock);
+	list_unlink(&fvs->le);
+	fvs->rtpsock = mem_deref(fvs->rtpsock);
+	if (!list_count(&fv_send_stream_list))
+		fvlock = mem_deref(fvlock);
 }
 
 
@@ -181,7 +187,7 @@ static void fakevideo_tmr_h(void *arg)
 
 	(void)arg;
 
-	err = lock_read_try(onvif_fvlock);
+	err = lock_read_try(fvlock);
 	if (err)
 		return;
 
@@ -190,7 +196,8 @@ static void fakevideo_tmr_h(void *arg)
 
 		buf = mbuf_alloc(sample_jpeg_dat_len + RTP_HEADER_SIZE);
 		if (!buf) {
-			warning("%s: out f memory for fakevideo encoding", DEBUG_MODULE);
+			warning("%s: out f memory for fakevideo encoding",
+				DEBUG_MODULE);
 			err = ENOMEM;
 			goto out;
 		}
@@ -211,7 +218,7 @@ static void fakevideo_tmr_h(void *arg)
 	}
 
   out:
-	lock_rel(onvif_fvlock);
+	lock_rel(fvlock);
 	mem_deref(buf);
 
 	tmr_start(&fakevideo_tmr, (1000 / 1), fakevideo_tmr_h, NULL);
@@ -238,10 +245,16 @@ int onvif_fakevideo_alloc(struct onvif_fakevideo_stream **fvsp,
 		return EINVAL;
 
 	fvs = mem_zalloc(sizeof(*fvs), onvif_fakevideo_stream_destructor);
-	if(!fvs) {
+	if (!fvs) {
 		err = ENOMEM;
 		goto out;
 	}
+
+	if (!fvlock)
+		err = lock_alloc(&fvlock);
+
+	if (err)
+		goto out;
 
 	fvs->active = true;
 
@@ -272,7 +285,7 @@ int onvif_fakevideo_start(struct onvif_fakevideo_stream *fvs, int proto,
 	if (!fvs || !tar)
 		return EINVAL;
 
-	lock_read_get(onvif_fvlock);
+	lock_read_get(fvlock);
 	sa_cpy(&fvs->addr, tar);
 
 	switch (proto) {
@@ -306,7 +319,7 @@ int onvif_fakevideo_start(struct onvif_fakevideo_stream *fvs, int proto,
 	}
 
   out:
-	lock_rel(onvif_fvlock);
+	lock_rel(fvlock);
 	return err;
 }
 
@@ -318,9 +331,9 @@ int onvif_fakevideo_start(struct onvif_fakevideo_stream *fvs, int proto,
  */
 void onvif_fakevideo_stop(struct onvif_fakevideo_stream *fvs)
 {
-	lock_read_get(onvif_fvlock);
+	lock_read_get(fvlock);
 	mem_deref(fvs);
-	lock_rel(onvif_fvlock);
+	lock_rel(fvlock);
 
 	if (list_isempty(&fv_send_stream_list))
 		tmr_cancel(&fakevideo_tmr);

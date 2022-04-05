@@ -106,15 +106,19 @@ int fault_create(const struct soap_msg *msg, struct soap_msg **ptrresp,
 	f = soap_add_child(resp, b, str_pf_envelope, str_fault);
 	c = soap_add_child(resp, f, str_pf_envelope, str_fault_code);
 	val = soap_add_child(resp, c, str_pf_envelope, str_fault_value);
-	err |= soap_set_value_fmt(val, "%s:%s", str_pf_envelope, fc_str[sf->c]);
+	err |= soap_set_value_fmt(val, "%s:%s", str_pf_envelope,
+				  fc_str[sf->c]);
 
 	sc = soap_add_child(resp, c, str_pf_envelope, str_fault_subcode);
 	val = soap_add_child(resp, sc, str_pf_envelope, str_fault_value);
 	err |= soap_set_value_fmt(val, "%s:%s", str_pf_error, fs_str[sf->sc]);
 	if (sf->sc2 != FS_MAX) {
-		sc2 = soap_add_child(resp, sc, str_pf_envelope, str_fault_subcode);
-		val = soap_add_child(resp, sc2, str_pf_envelope, str_fault_value);
-		err |= soap_set_value_fmt(val, "%s:%s", str_pf_error, fs_str[sf->sc2]);
+		sc2 = soap_add_child(resp, sc, str_pf_envelope,
+				     str_fault_subcode);
+		val = soap_add_child(resp, sc2, str_pf_envelope,
+				     str_fault_value);
+		err |= soap_set_value_fmt(val, "%s:%s", str_pf_error,
+					  fs_str[sf->sc2]);
 	}
 
 	r = soap_add_child(resp, f, str_pf_envelope, str_fault_reason);

@@ -31,7 +31,7 @@ static uint32_t metadata_version = 0;
  *
  * @param type              pointer to the type child of the message
  *
- * @return 					if success: pointer to the string with the type
+ * @return   if success: pointer to the string with the type
  *                          NULL otherwise
  */
 static const char *wsd_decode_type(struct soap_child *type)
@@ -62,10 +62,10 @@ static const char *wsd_decode_type(struct soap_child *type)
 /**
  * create a webservice discovery hello or bye message
  *
- * @param ptrmsg            pointer as return value of the soap message
- * @param action            string defining a hello or bye message (hello / bye)
+ * @param ptrmsg        pointer as return value of the soap message
+ * @param action        string defining a hello or bye message (hello / bye)
  *
- * @return 					if success: pointer to the namespace element
+ * @return   if success: pointer to the namespace element
  *                          NULL otherwise
  */
 static int wsd_send_hello_bye(struct soap_msg **ptrmsg, const char *action)
@@ -118,14 +118,17 @@ static int wsd_send_hello_bye(struct soap_msg **ptrmsg, const char *action)
 		strlen(str_wsd_messagenumber), message_number++);
 
 	c = soap_add_child(msg, b, str_pf_discovery, action);
-	eprc = soap_add_child(msg, c, str_pf_addressing, str_wsd_endpointreference);
+	eprc = soap_add_child(msg, c, str_pf_addressing,
+			      str_wsd_endpointreference);
 	tc = soap_add_child(msg, c, str_pf_discovery, str_wsd_types);
 	sc = soap_add_child(msg, c, str_pf_discovery, str_wsd_scopes);
 	xaddrc = soap_add_child(msg, c, str_pf_discovery, str_wsd_xaddrs);
-	mdvc = soap_add_child(msg, c, str_pf_discovery, str_wsd_meadataversion);
+	mdvc = soap_add_child(msg, c, str_pf_discovery,
+			      str_wsd_meadataversion);
 
 	err |= soap_set_value_fmt(tc, "%s:%s %s:%s",
-		str_pf_network_wsdl, str_type_nvt, str_pf_device_wsdl, str_type_dev);
+		str_pf_network_wsdl, str_type_nvt, str_pf_device_wsdl,
+		str_type_dev);
 
 	cc = soap_add_child(msg, eprc, str_pf_addressing, str_wsd_address);
 	err |= soap_set_value_fmt(cc, "urn:uuid:%s", conf_config()->sip.uuid);
@@ -159,7 +162,7 @@ static int wsd_send_hello_bye(struct soap_msg **ptrmsg, const char *action)
  * @param ptrmsg            pointer as return value of the soap message
  * @param action            string defining a probe match or
  *                          resolve match message (ProbeMatch, ResolveMatch)
- * @return 					if success: pointer to the namespace element
+ * @return   if success: pointer to the namespace element
  *                          NULL otherwise
  */
 static int wsd_answer_probe_resolve(const struct soap_msg *msg,
@@ -176,7 +179,7 @@ static int wsd_answer_probe_resolve(const struct soap_msg *msg,
 	if (!msg || !presponse || !action)
 		return EINVAL;
 
-	// check if the request searchs for a NetworkVideoTransmitter
+	/* check if the request searchs for a NetworkVideoTransmitter */
 	typec = soap_child_has_child(soap_child_has_child(
 			soap_child_has_child(msg->envelope, NULL, str_body),
 			NULL, str_wsd_probe), NULL, str_wsd_types);
@@ -188,7 +191,8 @@ static int wsd_answer_probe_resolve(const struct soap_msg *msg,
 	}
 
 	c_msg_reply = soap_child_has_child(msg->envelope,NULL, str_header);
-	c_msg_reply = soap_child_has_child(c_msg_reply, NULL, str_wsd_reply_to);
+	c_msg_reply = soap_child_has_child(c_msg_reply, NULL,
+					   str_wsd_reply_to);
 	c_msg_reply = soap_child_has_child(c_msg_reply, NULL, str_wsd_address);
 
 	err = generate_timebased_uuid(tb_uuid, UUID_TB_SIZE);
@@ -234,16 +238,20 @@ static int wsd_answer_probe_resolve(const struct soap_msg *msg,
 	cc = soap_add_child(response, h, str_pf_addressing, str_wsd_messageid);
 	err |= soap_set_value_fmt(cc, "uuid:%s", tb_uuid);
 
-	cc = soap_add_child(response, h, str_pf_addressing, str_wsd_relates_to);
+	cc = soap_add_child(response, h, str_pf_addressing,
+			    str_wsd_relates_to);
 	err |= soap_set_value_fmt(cc, "%r", &c_msg_id->value);
 
 	if (!c_msg_reply || (c_msg_reply && 0 == pl_strcmp(&c_msg_reply->value,
 		str_wsd_addressing_role_anon))) {
-		cc = soap_add_child(response, h, str_pf_addressing, str_wsd_to);
-		err |= soap_set_value_fmt(cc, "%s", str_wsd_addressing_role_anon);
+		cc = soap_add_child(response, h, str_pf_addressing,
+				    str_wsd_to);
+		err |= soap_set_value_fmt(cc, "%s",
+					  str_wsd_addressing_role_anon);
 	}
 
-	cc = soap_add_child(response, h, str_pf_discovery, str_wsd_appsequence);
+	cc = soap_add_child(response, h, str_pf_discovery,
+			    str_wsd_appsequence);
 	err |= soap_add_parameter_uint(cc, NULL, str_wsd_instanceid,
 		strlen(str_wsd_instanceid), instance_id);
 	err |= soap_add_parameter_uint(cc, NULL, str_wsd_messagenumber,
@@ -256,7 +264,9 @@ static int wsd_answer_probe_resolve(const struct soap_msg *msg,
 			str_pf_discovery, str_wsd_probe_matches);
 		c = soap_add_child(response, c,
 			str_pf_discovery, str_wsd_probe_match);
-	} else if (0 == strncmp(action, str_wsd_resolve_match, strlen(action))) {
+	}
+	else if (0 == strncmp(action, str_wsd_resolve_match,
+				strlen(action))) {
 		c = soap_add_child(response, b,
 			str_pf_discovery, str_wsd_resolve_matches);
 		c = soap_add_child(response, c,
@@ -265,12 +275,14 @@ static int wsd_answer_probe_resolve(const struct soap_msg *msg,
 
 	eprc = soap_add_child(response, c, str_pf_addressing,
 		str_wsd_endpointreference);
-	cc = soap_add_child(response, eprc, str_pf_addressing, str_wsd_address);
+	cc = soap_add_child(response, eprc, str_pf_addressing,
+			    str_wsd_address);
 	err = soap_set_value_fmt(cc, "urn:uuid:%s", conf_config()->sip.uuid);
 
 	cc = soap_add_child(response, c, str_pf_discovery, str_wsd_types);
 	err |= soap_set_value_fmt(cc, "%s:%s %s:%s",
-		str_pf_network_wsdl, str_type_nvt, str_pf_device_wsdl, str_type_dev);
+		str_pf_network_wsdl, str_type_nvt, str_pf_device_wsdl,
+		str_type_dev);
 
 	cc = soap_add_child(response, c, str_pf_discovery, str_wsd_scopes);
 	err |= scope_add_all_scopes(msg, response, cc, false);
@@ -301,11 +313,10 @@ static int wsd_answer_probe_resolve(const struct soap_msg *msg,
 }
 
 
-
 /**
  * initialize the webservice discovery service.
  *
- * @return 					if success 0, otherwise errorcode
+ * @return   if success 0, otherwise errorcode
  */
 int wsd_init(void)
 {
@@ -346,7 +357,7 @@ int wsd_init(void)
 /**
  * deinitialize the webservice discovery service.
  *
- * @return 					if success 0, otherwise errorcode
+ * @return   if success 0, otherwise errorcode
  */
 int wsd_deinit(void)
 {
@@ -384,7 +395,7 @@ int wsd_deinit(void)
  * @param msg               request message
  * @param presponse         pointer to the response message struct
  *
- * @return 					if success 0, otherwise errorcode
+ * @return   if success 0, otherwise errorcode
  */
 int wsd_probe(const struct soap_msg *msg, struct soap_msg **presponse)
 {
@@ -404,7 +415,7 @@ int wsd_probe(const struct soap_msg *msg, struct soap_msg **presponse)
  * @param msg               request message
  * @param presponse         pointer to the response message struct
  *
- * @return 					if success 0, otherwise errorcode
+ * @return   if success 0, otherwise errorcode
  */
 int wsd_resolve(const struct soap_msg *msg, struct soap_msg **presponse)
 {
@@ -424,9 +435,10 @@ int wsd_resolve(const struct soap_msg *msg, struct soap_msg **presponse)
  * @param msg               request message
  * @param presponse         pointer to the response message struct
  *
- * @return 					if success 0, otherwise errorcode
+ * @return   if success 0, otherwise errorcode
  */
-int wsd_GetDiscoverable(const struct soap_msg *msg, struct soap_msg **presponse)
+int wsd_GetDiscoverable(const struct soap_msg *msg,
+			struct soap_msg **presponse)
 {
 	int err = 0;
 	struct soap_msg *resp;
@@ -474,9 +486,10 @@ int wsd_GetDiscoverable(const struct soap_msg *msg, struct soap_msg **presponse)
  * @param msg               request message
  * @param presponse         pointer to the response message struct
  *
- * @return 					if success 0, otherwise errorcode
+ * @return   if success 0, otherwise errorcode
  */
-int wsd_SetDiscoverable(const struct soap_msg *msg, struct soap_msg **presponse)
+int wsd_SetDiscoverable(const struct soap_msg *msg,
+			struct soap_msg **presponse)
 {
 	int err = 0;
 	struct soap_msg *resp;
@@ -491,12 +504,12 @@ int wsd_SetDiscoverable(const struct soap_msg *msg, struct soap_msg **presponse)
 	if (!c)
 		return EINVAL;
 
-	// if (0 == pl_strcmp(&c->value, str_wsd_discoverable))
-	// 	discoverable = true;
-	// else if (0 == pl_strcmp(&c->value, str_wsd_nondiscoverable))
-	// 	discoverable = false;
-	// else
-	// 	return EINVAL;
+	/* if (0 == pl_strcmp(&c->value, str_wsd_discoverable)) */
+	/*	discoverable = true; */
+	/* else if (0 == pl_strcmp(&c->value, str_wsd_nondiscoverable)) */
+	/*	discoverable = false; */
+	/* else */
+	/*	return EINVAL; */
 
 	err = soap_alloc_msg(&resp);
 	if (err)

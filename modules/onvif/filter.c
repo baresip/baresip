@@ -44,17 +44,17 @@ static void send_event(const char *obj, const char *ev, const char *detail)
 
 
 struct filter_mixer {
-	bool is_call_running;             /**< call flag                          */
+	bool is_call_running;           /**< call flag                       */
 
-	struct aubuf *aubuf;              /**< audiobuffer shared between dec-enc */
-	size_t aubuf_maxsz;               /**< maximal audio buffer               */
-	const struct aucodec *incodec;    /**< incoming codec                     */
+	struct aubuf *aubuf;            /**< aubuf shared between dec-enc    */
+	size_t aubuf_maxsz;             /**< maximal audio buffer            */
+	const struct aucodec *incodec;  /**< incoming codec                  */
 
-	struct auresamp resamp;           /**< resampler                          */
-	uint32_t orate;                   /**< output sample rate                 */
-	unsigned och;                     /**< output channel count               */
-	void *sampv;                      /**< resampler buffer                   */
-	void *sampvre;                    /**< resampler buffer                   */
+	struct auresamp resamp;         /**< resampler                       */
+	uint32_t orate;                 /**< output sample rate              */
+	unsigned och;                   /**< output channel count            */
+	void *sampv;                    /**< resampler buffer                */
+	void *sampvre;                  /**< resampler buffer                */
 };
 
 
@@ -67,22 +67,22 @@ struct filter_resamp {
 struct onvif_filter_stream {
 	struct le le;
 
-	bool active;                        /**< stream active flag               */
-	const struct aucodec *codec;        /**< stream codec (onvif usually G711)*/
-	struct auenc_state *auenc_state;    /**< encoder status struct            */
-	struct audec_state *audec_state;    /**< decoder status struct            */
-	enum aufmt fmt;                     /**< stream sample format             */
+	bool active;                        /**< stream active flag          */
+	const struct aucodec *codec;        /**< stream codec (usually G711) */
+	struct auenc_state *auenc_state;    /**< encoder status struct       */
+	struct audec_state *audec_state;    /**< decoder status struct       */
+	enum aufmt fmt;                     /**< stream sample format        */
 
-	struct jbuf *jbuf;                  /**< jbufer for incoming streams      */
-	struct aubuf *aubuf;                /**< audio buffer for decoded data    */
-	size_t aubuf_maxsz;                 /**< max size of aubuf                */
-	void *sampv;                        /**< sample buffer                    */
+	struct jbuf *jbuf;                  /**< jbufer for incoming streams */
+	struct aubuf *aubuf;                /**< aubuf for decoded data      */
+	size_t aubuf_maxsz;                 /**< max size of aubuf           */
+	void *sampv;                        /**< sample buffer               */
 
-	struct rtp_sock *rtpsock;           /**< rtp socket struct for sending    */
-	struct sa addr;                     /**< address to send                  */
+	struct rtp_sock *rtpsock;           /**< RTP send socket             */
+	struct sa addr;                     /**< address to send             */
 
-	uint32_t ssrc;                      /**< rtp ssrc field                   */
-	uint32_t timestamp;                 /**< timestamp counter                */
+	uint32_t ssrc;                      /**< RTP ssrc field              */
+	uint32_t timestamp;                 /**< timestamp counter           */
 };
 
 
@@ -100,9 +100,9 @@ static struct filter_st *outgoing_st = NULL;    /*Ref. for the enc. status*/
 
 
 struct enc_st {
-	struct aufilt_enc_st af;    /**< base class            */
-	struct filter_st *st;       /**< onvif filter extension*/
-	bool marker;                        /**< marker bit                       */
+	struct aufilt_enc_st af;    /**< base class                          */
+	struct filter_st *st;       /**< onvif filter extension              */
+	bool marker;                /**< marker bit                          */
 };
 
 
@@ -112,7 +112,7 @@ struct dec_st {
 };
 
 
-//------------------------------------------------------------------------------
+/*-------------------------------------------------------------------------- */
 static void enc_destructor(void *arg) {
 	struct enc_st *st = arg;
 
@@ -170,7 +170,7 @@ static void filter_resamp_destructor(void *arg) {
 }
 
 
-//------------------------------------------------------------------------------
+/*-------------------------------------------------------------------------- */
 
 /**
  * user agent event handler. detects established and closed calles
@@ -198,7 +198,8 @@ static void onvif_ua_event_handler(struct ua *ua, enum ua_event ev,
 			mixer->incodec->ch, mixer->orate, mixer->och);
 
 	if (err) {
-		warning("%s: could't setup the resampler (%m)\n", DEBUG_MODULE, err);
+		warning("%s: could't setup the resampler (%m)\n", DEBUG_MODULE,
+			err);
 		return;
 	}
 
@@ -208,6 +209,7 @@ static void onvif_ua_event_handler(struct ua *ua, enum ua_event ev,
 				call_hangup(call, 486, "Rejected");
 				break;
 			}
+		/*fallthrough*/
 		case UA_EVENT_CALL_RINGING:
 		case UA_EVENT_CALL_PROGRESS:
 		case UA_EVENT_CALL_OUTGOING:
@@ -252,12 +254,12 @@ void onvif_set_aufilter_play_en(bool a)
 }
 
 
-//------------------------------------------------------------------------------
+/*-------------------------------------------------------------------------- */
 /**
- * rtp receive handler.
+ * RTP receive handler.
  *
  * @param src		source address
- * @param hdr		rtp header
+ * @param hdr		RTP header
  * @param mb		memory buffer containing the data
  * @param arg		handler argument (filter stream info struct)
  *
@@ -282,14 +284,14 @@ static void rtp_recvhandler(const struct sa *src, const struct rtp_header *hdr,
 
 
 /**
- * rtsp receiver handler wrapper for rtp packages
- * read from rtsp IL -> rtp receivehandler
+ * rtsp receiver handler wrapper for RTP packages
+ * read from rtsp IL -> RTP receivehandler
  *
  * the rtp_decode function needs a rtp_sock struct in form of a pointer.
  * however, the function only makes a nullptr check and will do nothing else
- * with this struct. So use a dummy ptr (0xDEADBEEF) to nothing meaningfull.
+ * with this struct. So use a dummy ptr (0xdeadbeef) to nothing meaning full.
  *
- * @param mb            memory buffer to the rtp package
+ * @param mb            memory buffer to the RTP package
  * @param arg           handler argument
  *
  * @return              0 if success, error code otherwise
@@ -299,9 +301,9 @@ void onvif_aufilter_rtsp_wrapper(struct mbuf *mb, void *arg)
 	struct rtp_header hdr;
 	int err = 0;
 
-	err = rtp_decode((struct rtp_sock*)0xDEADBEEF, mb, &hdr);
+	err = rtp_decode((struct rtp_sock*)0xdeadbeef, mb, &hdr);
 	if (err) {
-		warning("%s: Not able to decode the rtp package (%m)\n",
+		warning("%s: Not able to decode the RTP package (%m)\n",
 			DEBUG_MODULE, err);
 		return;
 	}
@@ -311,11 +313,11 @@ void onvif_aufilter_rtsp_wrapper(struct mbuf *mb, void *arg)
 
 
 /**
- * decode one rtp packge out of a jbuffer
+ * decode one RTP packge out of a jbuffer
  *
  * @param fs	onvif filter steam element
- * @param hdr	rtp header
- * @param mb	rtp payload
+ * @param hdr	RTP header
+ * @param mb	RTP payload
  * @param wsampc   wish sample count
  * @return int	0 if success, errorcode otherwise
  */
@@ -333,20 +335,23 @@ static int handle_rtp(struct onvif_filter_stream *fs,
 
 	(void) hdr;
 
-	if(!fs->sampv) {
-		fs->sampv = mem_zalloc(sampc * aufmt_sample_size(fs->fmt), NULL);
-		if(!fs->sampv)
+	if (!fs->sampv) {
+		fs->sampv = mem_zalloc(sampc * aufmt_sample_size(fs->fmt),
+				       NULL);
+		if (!fs->sampv)
 			return ENOMEM;
 	}
 
 	if (bufsize) {
-		err = fs->codec->dech(fs->audec_state, fs->fmt, fs->sampv, &sampc,
-			hdr->m, mbuf_buf(mb), bufsize);
-	} else if (fs->codec->plch && fs->fmt == AUFMT_S16LE) {
+		err = fs->codec->dech(fs->audec_state, fs->fmt, fs->sampv,
+				      &sampc, hdr->m, mbuf_buf(mb), bufsize);
+	}
+	else if (fs->codec->plch && fs->fmt == AUFMT_S16LE) {
 		sampc = wsampc;
-		err = fs->codec->plch(fs->audec_state, fs->fmt, fs->sampv, &sampc,
-				mbuf_buf(mb), bufsize);
-	} else {
+		err = fs->codec->plch(fs->audec_state, fs->fmt, fs->sampv,
+				      &sampc, mbuf_buf(mb), bufsize);
+	}
+	else {
 		sampc = 0;
 	}
 
@@ -357,7 +362,8 @@ static int handle_rtp(struct onvif_filter_stream *fs,
 	if (aresamp->resamp.ratio) {
 		new_sampc = sampc * aresamp->resamp.ratio;
 		if (!aresamp->sampvre) {
-			int tmp_num_bytes = new_sampc * aufmt_sample_size(fs->fmt) * 2;
+			int tmp_num_bytes = new_sampc *
+				aufmt_sample_size(fs->fmt) * 2;
 			aresamp->sampvre = mem_zalloc(tmp_num_bytes, NULL);
 			if (!aresamp->sampvre) {
 				err = ENOMEM;
@@ -368,7 +374,8 @@ static int handle_rtp(struct onvif_filter_stream *fs,
 		err = auresamp(&aresamp->resamp, aresamp->sampvre, &new_sampc,
 			fs->sampv, sampc);
 		if (err) {
-			warning("%s: announcement resampling (%m)", DEBUG_MODULE, err);
+			warning("%s: announcement resampling (%m)",
+				DEBUG_MODULE, err);
 			return err;
 		}
 
@@ -390,7 +397,7 @@ static int handle_rtp(struct onvif_filter_stream *fs,
 	err = aubuf_write(fs->aubuf, sampv_s, num_bytes);
 	if (err)
 		warning ("%s: could not write %d into %p (%m)\n", DEBUG_MODULE,
-			sampc, fs->aubuf, err);
+			 sampc, fs->aubuf, err);
 
 	return err;
 }
@@ -461,7 +468,7 @@ static int mixer_resize(struct filter_mixer *mixer, struct auframe *af)
 }
 
 
-//------------------------------------------------------------------------------
+/*-------------------------------------------------------------------------- */
 /**
  * encoding handler
  * View of this filter:
@@ -511,7 +518,8 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 
 			s1 = (int16_t *)sp->mixer->sampvre;
 		}
-	} else if (sp->aresamp->resamp.ratio && !list_isempty(&sp->streams)) {
+	}
+	else if (sp->aresamp->resamp.ratio && !list_isempty(&sp->streams)) {
 		if (!sp->aresamp->sampvre) {
 			sp->aresamp->sampvre = mem_zalloc(num_bytes, NULL);
 			if (!sp->aresamp->sampvre) {
@@ -526,7 +534,8 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 			goto out;
 
 		s1 = (int16_t *)sp->aresamp->sampvre;
-	} else {
+	}
+	else {
 		s1 = (int16_t *)af->sampv;
 	}
 
@@ -537,7 +546,8 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 			continue;
 
 		if (!fs->auenc_state && fs->codec->encupdh)
-			err = fs->codec->encupdh(&fs->auenc_state, fs->codec, NULL, NULL);
+			err = fs->codec->encupdh(&fs->auenc_state, fs->codec,
+						 NULL, NULL);
 
 		if (err)
 			goto out;
@@ -556,14 +566,15 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 
 		if (!onvif_aupipe_src_en) {
 			memset(mbuf_buf(buf), 0, mbuf_get_left(buf));
-		} else {
+		}
+		else {
 			err = fs->codec->ench(fs->auenc_state,
 				&marker, mbuf_buf(buf),
 				&buf_len, sp->fmt, s1, new_sampc);
 
 			if (err) {
-				warning("%s: Error while encoding the data. (%m)",
-					DEBUG_MODULE, err);
+				warning("%s: Error while encoding the data."
+					" (%m)", DEBUG_MODULE, err);
 				goto out;
 			}
 		}
@@ -571,8 +582,8 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 		err = rtp_send(fs->rtpsock, &fs->addr, false, false, 0,
 			fs->timestamp, buf);
 		if (err) {
-			warning("%s: Could not send audio stream via rtp. (%m)",
-				DEBUG_MODULE, err);
+			warning("%s: Could not send audio stream via RTP."
+				" (%m)", DEBUG_MODULE, err);
 			goto out;
 		}
 
@@ -623,7 +634,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 		return 0;
 
 	if (onvif_aupipe_play_en) {
-		while(!err && aubuf_cur_size(fs->aubuf) < num_bytes)
+		while (!err && aubuf_cur_size(fs->aubuf) < num_bytes)
 			err = stream_decode(fs, af->sampc);
 
 		aubuf_read(fs->aubuf, (uint8_t *) af->sampv, num_bytes);
@@ -633,7 +644,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 }
 
 
-//------------------------------------------------------------------------------#
+/*-------------------------------------------------------------------------- */
 /**
  * allocate a mixer struct
  *
@@ -697,8 +708,6 @@ static int filter_resamp_alloc(struct filter_resamp **frp, uint32_t irate,
 	}
 
 	err = auresamp_setup(&aresamp->resamp, irate, ich, orate, och);
-	if (err)
-		goto out;
 
   out:
 	if (err)
@@ -749,7 +758,8 @@ static int filter_alloc(struct filter_st **stp, void **ctx,
 
 	if (*ctx) {
 		st->mixer = mem_ref(*ctx);
-	} else if (!st->mixer){
+	}
+	else if (!st->mixer){
 		err = filter_mixer_alloc(&st->mixer, prm, st->fmt);
 		if (err)
 			goto out;
@@ -757,7 +767,8 @@ static int filter_alloc(struct filter_st **stp, void **ctx,
 		err = uag_event_register(onvif_ua_event_handler, st->mixer);
 		if (err)
 			goto out;
-	} else {
+	}
+	else {
 		warning("%s: mixer is set but the controlstruct is missung."
 			"This is not possilbe");
 		err = EINVAL;
@@ -765,20 +776,24 @@ static int filter_alloc(struct filter_st **stp, void **ctx,
 	}
 
 	if (!st->aresamp && !is_encoder) {
-		/*hardcoded 8kHz as input for the resampler (onvif supports only G711)*/
+		/*hardcoded 8kHz as input for the resampler
+		 * (onvif supports only G711)*/
 		err = filter_resamp_alloc(&st->aresamp, 8000, 1,
 			st->prm.srate, st->prm.ch, st->fmt);
 		if (err)
 			goto out;
 
-	} else if (!st->aresamp && is_encoder) {
-		/*hardcoded 8kHz as input for the resampler (onvif supports only G711)*/
-		err = filter_resamp_alloc(&st->aresamp, st->prm.srate, st->prm.ch,
-			8000, 1, st->fmt);
+	}
+	else if (!st->aresamp && is_encoder) {
+		/*hardcoded 8kHz as input for the resampler
+		 * (onvif supports only G711)*/
+		err = filter_resamp_alloc(&st->aresamp, st->prm.srate,
+					  st->prm.ch, 8000, 1, st->fmt);
 		if (err)
 			goto out;
 
-	} else {
+	}
+	else {
 		err = EINVAL;
 		goto out;
 	}
@@ -786,7 +801,8 @@ static int filter_alloc(struct filter_st **stp, void **ctx,
   out:
 	if (err) {
 		st = mem_deref(st);
-	} else {
+	}
+	else {
 		*stp = st;
 		*ctx = st->mixer;
 	}
@@ -807,7 +823,8 @@ static int filter_alloc(struct filter_st **stp, void **ctx,
  * @return			0 if success, error code otherwise
  */
 static int encode_update(struct aufilt_enc_st **stp, void **ctx,
-	const struct aufilt *af, struct aufilt_prm *prm, const struct audio *au)
+	const struct aufilt *af, struct aufilt_prm *prm,
+	const struct audio *au)
 {
 	struct enc_st *st = NULL;
 	int err = 0;
@@ -831,7 +848,8 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 	if (err) {
 		st = mem_deref(st);
-	} else {
+	}
+	else {
 		*stp = (struct aufilt_enc_st *)st;
 		if (!outgoing_st)
 			outgoing_st = mem_ref(st->st);
@@ -853,7 +871,8 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
  * @return			0 if success, error code otherwise
  */
 static int decode_update(struct aufilt_dec_st **stp, void **ctx,
-	const struct aufilt *af, struct aufilt_prm *prm, const struct audio *au)
+	const struct aufilt *af, struct aufilt_prm *prm,
+	const struct audio *au)
 {
 	struct dec_st *st;
 	int err = 0;
@@ -877,7 +896,8 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 	if (err) {
 		st = mem_deref(st);
-	} else {
+	}
+	else {
 		*stp = (struct aufilt_dec_st *)st;
 		if (!incoming_st)
 			incoming_st = mem_ref(st->st);
@@ -887,7 +907,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-//------------------------------------------------------------------------------
+/*-------------------------------------------------------------------------- */
 /**
  * create outgoing stream
  *
@@ -941,7 +961,7 @@ int onvif_aufilter_audio_send_start(struct onvif_filter_stream *fs,
 
 
 /**
- * remove rtp-socket from onvif filter stream and unlink
+ * remove RTP-socket from onvif filter stream and unlink
  *
  * @param fs	onvif filter stream element
  */
@@ -960,7 +980,7 @@ void onvif_aufilter_audio_send_stop(struct onvif_filter_stream *fs)
 
 
 /**
- * start rtp listener on @sa via @proto
+ * start RTP listener on @sa via @proto
  *
  * @param fs		filter stream element
  * @param sa		ip address + port to listen on
@@ -996,8 +1016,10 @@ int onvif_aufilter_audio_recv_start(struct onvif_filter_stream *fs,
 
 		case IPPROTO_UDP:
 			err = rtp_listen(&fs->rtpsock, proto, sa,
-				sa_port(sa), sa_port(sa) +1, false, rtp_recvhandler, NULL, fs);
-			DEBUG_INFO("What port do i use %d (%m)\n", sa_port(sa), err);
+					 sa_port(sa), sa_port(sa) +1, false,
+					 rtp_recvhandler, NULL, fs);
+			DEBUG_INFO("What port do i use %d (%m)\n", sa_port(sa),
+				   err);
 			if (err)
 				goto out;
 			break;
@@ -1019,7 +1041,7 @@ int onvif_aufilter_audio_recv_start(struct onvif_filter_stream *fs,
 
 
 /**
- * remove rtp listener of onvif filter stream and unlink
+ * remove RTP listener of onvif filter stream and unlink
  *
  * @param fs	onvif filter stream element
  */
@@ -1099,10 +1121,7 @@ int onvif_aufilter_stream_alloc(struct onvif_filter_stream **fsp,
 		return ENOMEM;
 
 	err = filter_stream_reset(fs, srate, ch, codec);
-	if (err)
-		goto out;
 
-  out:
 	if (err)
 		fs = mem_deref(fs);
 	else
@@ -1112,8 +1131,6 @@ int onvif_aufilter_stream_alloc(struct onvif_filter_stream **fsp,
 }
 
 
-//------------------------------------------------------------------------------
-/*Filter Struct which holds all the information as well as the handler pointer*/
 static struct aufilt onvif_filter = {
 	LE_INIT, "onviffilter", encode_update, encode, decode_update, decode
 };

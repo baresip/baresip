@@ -81,9 +81,6 @@ struct soap_msg {             //56 bytes
 };
 
 
-const char *str_response_has_no_body;
-const char *str_response_has_no_header;
-
 void soap_udp_recv_handler(const struct sa *src, struct mbuf *mb, void *arg);
 void http_req_handler(struct http_conn *conn,
 	const struct http_msg *http_msg, void *arg);
@@ -110,7 +107,8 @@ int soap_set_value_strref(struct soap_child *c, char *v);
 int soap_set_value_fmt(struct soap_child *c, const char *fmt, ...);
 
 int soap_add_parameter_str(struct soap_child *c, const char *ns_prefix,
-	const char *key, const size_t k_len, const char *value, const size_t v_len);
+	const char *key, const size_t k_len, const char *value,
+	const size_t v_len);
 int soap_add_parameter_uint(struct soap_child *c, const char* ns_prefix,
 	const char *key, const size_t k_len, const uint32_t n);
 struct soap_child *soap_add_child(struct soap_msg *msg,

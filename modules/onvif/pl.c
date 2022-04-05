@@ -26,15 +26,14 @@ void pl_set_n_str(struct pl *pl, const char *str, int n)
 }
 
 
-
 /**
  * Locate string in pointer-length string
  *
  * @param pl		Pointer-length string
  * @param str		String to locate
  *
- * @return			Pointer to the fist char of @str in @pl
- *							if found, otherwise NULL
+ * @return	Pointer to the fist char of @str in @pl
+ *		if found, otherwise NULL
  */
 
 const char *pl_strstr(const struct pl *pl, const char *str)

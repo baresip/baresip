@@ -15,18 +15,22 @@
 #define DEBUG_LEVEL 6
 #include <re_dbg.h>
 
-/*
-	Writting its own file read function could lead to the following pros + cons:
-	+ reading the file line by line would allow us to read the line as a
-	stack variable, since the max length is known by
-	MAXUSERLEN + MAXPASSWDLEN + 1 Char USERLEVEL + 2 * ';' + 1 * '\n'
-	this can save us from fragmentation, but just in case where we do not
-	cache the passwords. If the password is not cached, each time a
-	authentification is requested, we have to read the hole file into the heap.
-	- the acutal file read should be a part of the libre since its a very
-	lowlevel operation on the host filesystem. Depending on the OS we have
-	to handle different ways to read the file.
-*/
+enum {
+	B64DIGEST_LEN = 4 * ((SHA_DIGEST_LENGTH / 3) + 1),
+};
+
+/**
+ * Writing its own file read function could lead to the following pros + cons:
+ * + reading the file line by line would allow us to read the line as a
+ * stack variable, since the max length is known by
+ * MAXUSERLEN + MAXPASSWDLEN + 1 Char USERLEVEL + 2 * ';' + 1 * '\n'
+ * this can save us from fragmentation, but just in case where we do not
+ * cache the passwords. If the password is not cached, each time a
+ * authentification is requested, we have to read the hole file into the heap.
+ * - the acutal file read should be a part of the libre since its a very
+ *   lowlevel operation on the host filesystem. Depending on the OS we have
+ *   to handle different ways to read the file.
+ **/
 
 /*USER LEVEL STRINGS*/
 static const char *ul_str[] = {
@@ -37,9 +41,11 @@ static const char *ul_str[] = {
 };
 
 /* USER Information struct */
-// i donno, seems pretty stupid to load and hold the password over the hole time
-// 1) load the users + group
-// 2) load file again on demand (caching is not the best idea for passwords -.-)
+/* i donno, seems pretty stupid to load and hold the password over the hole
+ * time */
+/* 1) load the users + group */
+/* 2) load file again on demand (caching is not the best idea for
+ * passwords -.-) */
 struct user {
 	struct le le;
 
@@ -61,6 +67,27 @@ static bool username_cmp(struct le *le, void *arg)
 }
 
 
+static char *dynusers_path(void)
+{
+	int n;
+	size_t len = onvif_config_path.l + strlen("/users") + 1;
+	char *path = NULL;
+
+	path = mem_zalloc(len, NULL);
+	if (!path)
+		return NULL;
+
+	n = re_snprintf(path, sizeof(path), "%r%s",
+			  &onvif_config_path, "/users");
+	if (n != ((int) len) - 1) {
+		warning ("%s Can not concat string here -.-\n", __func__);
+		path = mem_deref(path);
+	}
+
+	return path;
+}
+
+
 /**
  * reads the userfile into a memory buffer
  *
@@ -76,17 +103,15 @@ static bool username_cmp(struct le *le, void *arg)
 static int onvif_auth_read_userfile(struct mbuf **ptruserfile)
 {
 	int err = 0;
-	char userpath [onvif_config_path.l + strlen("/users") + 1];
+	char *userpath;
 	struct mbuf *userfile = NULL;
 
 	if (!ptruserfile)
 		return EINVAL;
 
-	err = re_snprintf(userpath, sizeof(userpath), "%r%s", &onvif_config_path,
-		"/users");
-	if (err != (int)sizeof(userpath) - 1) {
+	userpath = dynusers_path();
+	if (!userpath)
 		goto out;
-	}
 
 	userfile = mbuf_alloc(512);
 	if (!userfile) {
@@ -106,6 +131,7 @@ static int onvif_auth_read_userfile(struct mbuf **ptruserfile)
 	else
 		*ptruserfile = userfile;
 
+	mem_deref(userpath);
 	return err;
 }
 
@@ -231,7 +257,7 @@ static int onvif_auth_parse_users(struct mbuf *mb)
 	struct user *u = NULL;
 	size_t len = 123;
 
-	while(mbuf_get_left(mb)) {
+	while (mbuf_get_left(mb)) {
 		err = onvif_auth_getuserentryfromfile(mb, &b, &len);
 		if (err && err == EOVERFLOW) {
 			err = 0;
@@ -279,8 +305,10 @@ static int onvif_auth_adduser_to_child(struct soap_child *gurc)
 		u = le->data;
 		userc = soap_add_child(gurc->msg, gurc,
 			str_pf_device_wsdl, str_gu_user);
-		usc = soap_add_child(gurc->msg, userc, str_pf_schema, str_gu_username);
-		ulc = soap_add_child(gurc->msg, userc, str_pf_schema, str_gu_userlevel);
+		usc = soap_add_child(gurc->msg, userc, str_pf_schema,
+				     str_gu_username);
+		ulc = soap_add_child(gurc->msg, userc, str_pf_schema,
+				     str_gu_userlevel);
 
 		err |= soap_set_value_fmt(usc, "%s", u->name);
 		err |= soap_set_value_fmt(ulc, "%s", ul_str[u->userlevel]);
@@ -307,7 +335,7 @@ static void onvif_auth_getuserpasswd(struct user *u, char *passwd)
 	if (onvif_auth_read_userfile(&userfile))
 		return;
 
-	while(mbuf_get_left(userfile)) {
+	while (mbuf_get_left(userfile)) {
 		if (onvif_auth_getuserentryfromfile(userfile, &line, &linelen))
 			break;
 
@@ -341,7 +369,8 @@ static void onvif_auth_getuserpasswd(struct user *u, char *passwd)
  * @return          returns the userlevel, if the user is authenticated
  *
  */
-static int create_server_nonce(uint8_t *ptrnonce, const struct sa *peer_address)
+static int create_server_nonce(uint8_t *ptrnonce,
+			       const struct sa *peer_address)
 {
 	int err = 0;
 	char timestamp[30];
@@ -416,7 +445,8 @@ void onvif_auth_deinit_users(void)
  *
  * @return              0 if success, error code otherwise
  */
-int onvif_auth_GetUsers_h(const struct soap_msg *msg, struct soap_msg **ptrresp)
+int onvif_auth_GetUsers_h(const struct soap_msg *msg,
+			  struct soap_msg **ptrresp)
 {
 	int err = 0;
 	struct soap_msg *resp;
@@ -439,7 +469,8 @@ int onvif_auth_GetUsers_h(const struct soap_msg *msg, struct soap_msg **ptrresp)
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	gurc = soap_add_child(resp, b, str_pf_device_wsdl, str_method_get_users_r);
+	gurc = soap_add_child(resp, b, str_pf_device_wsdl,
+			      str_method_get_users_r);
 
 	err |= onvif_auth_adduser_to_child(gurc);
 
@@ -475,8 +506,8 @@ enum userlevel wss_auth(const struct soap_msg *msg)
 	uint8_t *nonce;
 	size_t noncelen = 0;
 
-	size_t b64digestlen = 4 * ((SHA_DIGEST_LENGTH / 3) + 1);
-	char b64digest[b64digestlen];
+	size_t blen = B64DIGEST_LEN;
+	char b64digest[B64DIGEST_LEN];
 
 	if (!msg)
 		return UANONYM;
@@ -534,7 +565,7 @@ enum userlevel wss_auth(const struct soap_msg *msg)
 	SHA1_Update(&sha1, passwd, strlen(passwd));
 	memset(passwd, 0, sizeof(passwd));
 	SHA1_Final(digest, &sha1);
-	err = base64_encode(digest, SHA_DIGEST_LENGTH, b64digest, &b64digestlen);
+	err = base64_encode(digest, SHA_DIGEST_LENGTH, b64digest, &blen);
 	if (err) {
 		mem_deref(nonce);
 		return UMAX;
@@ -576,7 +607,8 @@ int rtsp_digest_auth_chall(const struct rtsp_conn *conn,
 	if (err)
 		goto out;
 
-	re_snprintf(chall->nonce, sizeof(chall->nonce), "%w", nonce, sizeof(nonce));
+	re_snprintf(chall->nonce, sizeof(chall->nonce), "%w", nonce,
+		    sizeof(nonce));
 	rand_str(chall->opaque, 64);
 	pl_set_str(&chall->param.realm, str_digest_realm);
 	pl_set_str(&chall->param.nonce, chall->nonce);
@@ -651,8 +683,7 @@ enum userlevel rtsp_digest_auth(const struct rtsp_msg *msg)
 	}
 
 	err = httpauth_digest_response_auth(resp, &msg->met, ha1);
-	if (err)
-		goto out;
+
   out:
 	mem_deref(resp);
 	if (err)

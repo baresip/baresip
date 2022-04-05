@@ -26,17 +26,17 @@
 #include <re_dbg.h>
 
 
-// Only if this is a null ptr
-struct profile *std_profile;
+/* Only if this is a null ptr */
+struct profile *std_profile = NULL;
 
-// List which hold all the existing configurations
-struct list profile_l;
-struct list vs_l;
-struct list ve_l;
-struct list as_l;
-struct list ae_l;
-struct list ao_l;
-struct list ad_l;
+/* List which hold all the existing configurations */
+struct list profile_l = LIST_INIT;
+struct list vs_l = LIST_INIT;
+struct list ve_l = LIST_INIT;
+struct list as_l = LIST_INIT;
+struct list ae_l = LIST_INIT;
+struct list ao_l = LIST_INIT;
+struct list ad_l = LIST_INIT;
 
 
 static void profile_destructor(void *arg)
@@ -167,19 +167,20 @@ int media_init(void)
 		return ENOMEM;
 
 	std_profile->fixed = true;
-	// rand_str(std_profile->token, 64);
-	strncpy(std_profile->token, str_profile_token, strlen(str_profile_token));
+	/* rand_str(std_profile->token, 64); */
+	strncpy(std_profile->token, str_profile_token,
+		sizeof(std_profile->token));
 	strncpy(std_profile->name, str_profile_name,
-		strlen(str_profile_name) > 64 ? 64 : strlen(str_profile_name));
+		sizeof(std_profile->name));
 
-	// rand_str(std_profile->vsc->token, 64);
+	/* rand_str(std_profile->vsc->token, 64); */
 	strncpy(std_profile->vsc->token, str_profile_vsc_token,
-		strlen(str_profile_vsc_token));
-	// rand_str(std_profile->vsc->t.vs.sourcetoken, 64);
+		sizeof(std_profile->vsc->token));
+	/* rand_str(std_profile->vsc->t.vs.sourcetoken, 64); */
 	strncpy(std_profile->vsc->t.vs.sourcetoken, str_profile_vs_token,
-		strlen(str_profile_vs_token));
+		sizeof(std_profile->vsc->t.vs.sourcetoken));
 	strncpy(std_profile->vsc->name, str_profile_vs_name,
-		strlen(str_profile_vs_name) > 64 ? 64 : strlen(str_profile_vs_name));
+		sizeof(std_profile->vsc->name));
 	std_profile->vsc->usecount = 1;
 	std_profile->vsc->t.vs.maxprofile = 12;
 	std_profile->vsc->t.vs.viewmodes = NULL;
@@ -187,27 +188,27 @@ int media_init(void)
 	std_profile->vsc->t.vs.i.h264_i = 0;
 	std_profile->vsc->t.vs.i.mpeg4_i = 0;
 	std_profile->vsc->t.vs.b.x = std_profile->vsc->t.vs.b.y = 1;
-	// std_profile->vsc->t.vs.b.w = 640;
-	// std_profile->vsc->t.vs.b.h = 480;
+	/* std_profile->vsc->t.vs.b.w = 640; */
+	/* std_profile->vsc->t.vs.b.h = 480; */
 	std_profile->vsc->t.vs.b.w = 128;
 	std_profile->vsc->t.vs.b.h = 128;
-	// std_profile->vsc->t.vs.framerate = 15.f;
+	/* std_profile->vsc->t.vs.framerate = 15.f; */
 	std_profile->vsc->t.vs.framerate = 1.f;
 
-	// rand_str(std_profile->vec->token, 64);
+	/* rand_str(std_profile->vec->token, 64); */
 	strncpy(std_profile->vec->token, str_profile_ve_token,
-		strlen(str_profile_ve_token));
+		sizeof(std_profile->vec->token));
 	strncpy(std_profile->vec->name, str_profile_ve_name,
-		strlen(str_profile_ve_name) > 64 ? 64 : strlen(str_profile_ve_name));
+		sizeof(std_profile->vec->name));
 	std_profile->vec->usecount = 1;
 	std_profile->vec->t.ve.gfr = false;
 	std_profile->vec->t.ve.enc = JPEG;
-	// std_profile->vec->t.ve.res.w   = 640;
-	// std_profile->vec->t.ve.res.h   = 480;
+	/* std_profile->vec->t.ve.res.w   = 640; */
+	/* std_profile->vec->t.ve.res.h   = 480; */
 	std_profile->vec->t.ve.res.w   = 128;
 	std_profile->vec->t.ve.res.h   = 128;
 	std_profile->vec->t.ve.quality = 8.f;
-	// std_profile->vec->t.ve.ratec.frl = 15;
+	/* std_profile->vec->t.ve.ratec.frl = 15; */
 	std_profile->vec->t.ve.ratec.frl = 1;
 	std_profile->vec->t.ve.ratec.ei  = 1;
 	std_profile->vec->t.ve.ratec.brl = 2048;
@@ -217,22 +218,22 @@ int media_init(void)
 	std_profile->vec->t.ve.multicast.autostart = false;
 	std_profile->vec->t.ve.st = 60;
 
-	// rand_str(std_profile->asc->token, 64);
+	/* rand_str(std_profile->asc->token, 64); */
 	strncpy(std_profile->asc->token, str_profile_asc_token,
-		strlen(str_profile_asc_token));
-	// rand_str(std_profile->asc->t.as.sourcetoken, 64);
+		sizeof(std_profile->asc->token));
+	/* rand_str(std_profile->asc->t.as.sourcetoken, 64); */
 	strncpy(std_profile->asc->t.as.sourcetoken, str_profile_as_token,
-		strlen(str_profile_as_token));
+		sizeof(std_profile->asc->t.as.sourcetoken));
 	strncpy(std_profile->asc->name, str_profile_as_name,
-		strlen(str_profile_as_name) > 64 ? 64 : strlen(str_profile_as_name));
+		sizeof(std_profile->asc->name));
 	std_profile->asc->usecount = 1;
 	std_profile->asc->t.as.ch = 1;
 
-	// rand_str(std_profile->aec->token, 64);
+	/* rand_str(std_profile->aec->token, 64); */
 	strncpy(std_profile->aec->token, str_profile_ae_token,
-		strlen(str_profile_ae_token));
+		sizeof(std_profile->asc->token));
 	strncpy(std_profile->aec->name, str_profile_ae_name,
-		strlen(str_profile_ae_name) > 64 ? 64 : strlen(str_profile_ae_name));
+		sizeof(std_profile->asc->name));
 	std_profile->aec->usecount = 1;
 	std_profile->aec->t.ae.enc = G711;
 	std_profile->aec->t.ae.br = 64;
@@ -243,23 +244,23 @@ int media_init(void)
 	std_profile->aec->t.ae.multicast.autostart = false;
 	std_profile->aec->t.ae.st = 60;
 
-	// rand_str(std_profile->aoc->token, 64);
+	/* rand_str(std_profile->aoc->token, 64); */
 	strncpy(std_profile->aoc->token, str_profile_aoc_token,
-		strlen(str_profile_aoc_token));
-	// rand_str(std_profile->aoc->t.ao.outputtoken, 64);
+		sizeof(std_profile->aoc->token));
+	/* rand_str(std_profile->aoc->t.ao.outputtoken, 64); */
 	strncpy(std_profile->aoc->t.ao.outputtoken, str_profile_ao_token,
-		strlen(str_profile_ao_token));
+		sizeof(std_profile->aoc->t.ao.outputtoken));
 	strncpy(std_profile->aoc->name, str_profile_ao_name,
-		strlen(str_profile_ao_name) > 64 ? 64 : strlen(str_profile_ao_name));
+		sizeof(std_profile->aoc->name));
 	std_profile->aoc->usecount = 1;
 	std_profile->aoc->t.ao.sp = HALF_DUPLEX_AUTO;
 	std_profile->aoc->t.ao.outputlevel = 8;
 
-	// rand_str(std_profile->adc->token, 64);
+	/* rand_str(std_profile->adc->token, 64); */
 	strncpy(std_profile->adc->token, str_profile_ad_token,
-		strlen(str_profile_ad_token));
+		sizeof(std_profile->adc->token));
 	strncpy(std_profile->adc->name, str_profile_ad_name,
-		strlen(str_profile_ad_name) > 64 ? 64 : strlen(str_profile_ad_name));
+		sizeof(std_profile->adc->name));
 	std_profile->adc->usecount = 1;
 	std_profile->adc->t.ad.dec = G711;
 	std_profile->adc->t.ad.br = 64;
@@ -356,15 +357,16 @@ static int media_add_video_source_config(struct soap_child *pc,
 		return 0;
 
 	if (profiles) {
-		vscc = soap_add_child(pc->msg, pc, str_pf_schema, str_profile_vsc);
-	} else {
-		if (configs) {
-			vscc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configurations);
-		} else {
-			vscc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configuration);
-		}
+		vscc = soap_add_child(pc->msg, pc, str_pf_schema,
+				      str_profile_vsc);
+	}
+	else if (configs) {
+		vscc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configurations);
+	}
+	else {
+		vscc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configuration);
 	}
 
 	err |= soap_add_parameter_str(vscc, NULL, str_token, strlen(str_token),
@@ -373,14 +375,16 @@ static int media_add_video_source_config(struct soap_child *pc,
 	tmpc = soap_add_child(pc->msg, vscc, str_pf_schema, str_name);
 	err |= soap_set_value_fmt(tmpc, "%s", cfg->name);
 
-	tmpc = soap_add_child(pc->msg, vscc, str_pf_schema, str_profile_usecount);
+	tmpc = soap_add_child(pc->msg, vscc, str_pf_schema,
+			      str_profile_usecount);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->usecount);
 
 	tmpc = soap_add_child(pc->msg, vscc, str_pf_schema,
 		str_profile_source_token);
 	err |= soap_set_value_fmt(tmpc, "%s", cfg->t.vs.sourcetoken);
 
-	tmpc = soap_add_child(pc->msg, vscc, str_pf_schema, str_profile_bounds);
+	tmpc = soap_add_child(pc->msg, vscc, str_pf_schema,
+			      str_profile_bounds);
 	err |= soap_add_parameter_uint(tmpc, NULL,
 		str_height, strlen(str_height), cfg->t.vs.b.h);
 	err |= soap_add_parameter_uint(tmpc, NULL,
@@ -417,25 +421,27 @@ static int media_add_audio_source_config(struct soap_child *pc,
 		return 0;
 
 	if (profile) {
-		ascc = soap_add_child(pc->msg, pc, str_pf_schema, str_profile_asc);
+		ascc = soap_add_child(pc->msg, pc, str_pf_schema,
+				      str_profile_asc);
+	}
+	else if (configs) {
+		ascc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configurations);
 	}
 	else {
-		if (configs) {
-			ascc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configurations);
-		} else {
-			ascc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configuration);
-		}
+		ascc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configuration);
 	}
 
-	err |= soap_add_parameter_str(ascc, NULL, str_token, strlen(str_token),
-		cfg->token, strlen(cfg->token));
+	err |= soap_add_parameter_str(ascc, NULL, str_token,
+				      strlen(str_token), cfg->token,
+				      strlen(cfg->token));
 
 	tmpc = soap_add_child(pc->msg, ascc, str_pf_schema, str_name);
 	err |= soap_set_value_fmt(tmpc, "%s", cfg->name);
 
-	tmpc = soap_add_child(pc->msg, ascc, str_pf_schema, str_profile_usecount);
+	tmpc = soap_add_child(pc->msg, ascc, str_pf_schema,
+			      str_profile_usecount);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->usecount);
 
 	tmpc = soap_add_child(pc->msg, ascc, str_pf_schema,
@@ -466,11 +472,13 @@ static int media_add_multicastinfo(struct soap_child *mc,
 	if (!mc || !cfg)
 		return EINVAL;
 
-	addrc = soap_add_child(mc->msg, mc, str_pf_schema, str_profile_address);
+	addrc = soap_add_child(mc->msg, mc, str_pf_schema,
+			       str_profile_address);
 	tmpc = soap_add_child(mc->msg, addrc, str_pf_schema, str_profile_type);
 	err |= soap_set_value_fmt(tmpc, "%s", str_ipv4);
 
-	tmpc = soap_add_child(mc->msg, addrc, str_pf_schema, str_profile_ipv4addr);
+	tmpc = soap_add_child(mc->msg, addrc, str_pf_schema,
+			      str_profile_ipv4addr);
 	err |= soap_set_value_fmt(tmpc, "%j",
 		is_ve ? &cfg->t.ve.multicast.addr.addr :
 		&cfg->t.ae.multicast.addr.addr);
@@ -482,10 +490,11 @@ static int media_add_multicastinfo(struct soap_child *mc,
 	tmpc = soap_add_child(mc->msg, mc, str_pf_schema, str_ttl);
 	err |= soap_set_value_fmt(tmpc, "%d",
 		is_ve ? cfg->t.ve.multicast.ttl : cfg->t.ae.multicast.ttl);
-	tmpc = soap_add_child(mc->msg, mc, str_pf_schema, str_profile_autostart);
+	tmpc = soap_add_child(mc->msg, mc, str_pf_schema,
+			      str_profile_autostart);
 
 	autostart = is_ve ? cfg->t.ve.multicast.autostart :
-		cfg->t.ae.multicast.autostart;
+		    cfg->t.ae.multicast.autostart;
 	if (autostart)
 		err |= soap_set_value_fmt(tmpc, "%s", str_true);
 	else
@@ -518,48 +527,53 @@ static int media_add_video_enc_config(struct soap_child *pc,
 		return 0;
 
 	if (profile) {
-		vecc = soap_add_child(pc->msg, pc, str_pf_schema, str_profile_vec);
-	} else {
-		if (configs) {
-			vecc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configurations);
-		} else {
-			vecc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configuration);
-		}
+		vecc = soap_add_child(pc->msg, pc, str_pf_schema,
+				      str_profile_vec);
+	}
+	else if (configs) {
+		vecc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configurations);
+	}
+	else {
+		vecc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configuration);
 	}
 
 	err |= soap_add_parameter_str(vecc, NULL, str_token, strlen(str_token),
-		cfg->token, strlen(cfg->token));
+				      cfg->token, strlen(cfg->token));
 
 	tmpc = soap_add_child(pc->msg, vecc, str_pf_schema, str_name);
 	err |= soap_set_value_fmt(tmpc, "%s", cfg->name);
 
-	tmpc = soap_add_child(pc->msg, vecc, str_pf_schema, str_profile_usecount);
+	tmpc = soap_add_child(pc->msg, vecc, str_pf_schema,
+			      str_profile_usecount);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->usecount);
 
 	tmpc = soap_add_child(pc->msg, vecc, str_pf_schema,
 		str_profile_encoding);
 	switch (cfg->t.ve.enc) {
-		case JPEG:
-			err |= soap_set_value_fmt(tmpc, "%s", str_jpeg);
-			break;
+	case JPEG:
+		err |= soap_set_value_fmt(tmpc, "%s", str_jpeg);
+		break;
 
-		case MPEG4:
-		case H264:
-			return ENOTSUP;
+	case MPEG4:
+	case H264:
+		return ENOTSUP;
 	}
 
-	rc = soap_add_child(pc->msg, vecc, str_pf_schema, str_profile_resolution);
+	rc = soap_add_child(pc->msg, vecc, str_pf_schema,
+			    str_profile_resolution);
 	tmpc = soap_add_child(pc->msg, rc, str_pf_schema, str_ucwidth);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->t.ve.res.w);
 	tmpc = soap_add_child(pc->msg, rc, str_pf_schema, str_ucheight);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->t.ve.res.h);
 
-	tmpc = soap_add_child(pc->msg, vecc, str_pf_schema, str_profile_quality);
+	tmpc = soap_add_child(pc->msg, vecc, str_pf_schema,
+			      str_profile_quality);
 	err |= soap_set_value_fmt(tmpc, "%d", (int)cfg->t.ve.quality);
 
-	rcc = soap_add_child(pc->msg, vecc, str_pf_schema, str_profile_ratecontrol);
+	rcc = soap_add_child(pc->msg, vecc, str_pf_schema,
+			     str_profile_ratecontrol);
 	tmpc = soap_add_child(pc->msg, rcc, str_pf_schema, str_profile_frl);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->t.ve.ratec.frl);
 	tmpc = soap_add_child(pc->msg, rcc, str_pf_schema, str_profile_ei);
@@ -567,11 +581,12 @@ static int media_add_video_enc_config(struct soap_child *pc,
 	tmpc = soap_add_child(pc->msg, rcc, str_pf_schema, str_profile_brl);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->t.ve.ratec.brl);
 
-	// multicast information ... how does it look like if no multicast is
-	// supported
-	mcastc= soap_add_child(pc->msg, vecc, str_pf_schema, str_profile_multicast);
+	/* multicast information ... how does it look like if no multicast
+	 * is */
+	/* supported */
+	mcastc= soap_add_child(pc->msg, vecc, str_pf_schema,
+			       str_profile_multicast);
 	err |= media_add_multicastinfo(mcastc, cfg, true);
-
 
 	tmpc = soap_add_child(pc->msg, vecc, str_pf_schema,
 		str_profile_sess_timeout);
@@ -604,26 +619,26 @@ static int media_add_audio_enc_config(struct soap_child *pc,
 		return 0;
 
 	if (profile) {
-		aecc = soap_add_child(pc->msg, pc, str_pf_schema, str_profile_aec);
+		aecc = soap_add_child(pc->msg, pc, str_pf_schema,
+				      str_profile_aec);
+	}
+	else if (configs) {
+		aecc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configurations);
 	}
 	else {
-		if (configs) {
-			aecc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configurations);
-		} else {
-			aecc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configuration);
-		}
+		aecc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configuration);
 	}
 
-
 	err |= soap_add_parameter_str(aecc, NULL, str_token, strlen(str_token),
-		cfg->token, strlen(cfg->token));
+				      cfg->token, strlen(cfg->token));
 
 	tmpc = soap_add_child(pc->msg, aecc, str_pf_schema, str_name);
 	err |= soap_set_value_fmt(tmpc, "%s", cfg->name);
 
-	tmpc = soap_add_child(pc->msg, aecc, str_pf_schema, str_profile_usecount);
+	tmpc = soap_add_child(pc->msg, aecc, str_pf_schema,
+			      str_profile_usecount);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->usecount);
 
 	tmpc = soap_add_child(pc->msg, aecc, str_pf_schema,
@@ -638,15 +653,19 @@ static int media_add_audio_enc_config(struct soap_child *pc,
 			return ENOTSUP;
 	}
 
-	tmpc = soap_add_child(pc->msg, aecc, str_pf_schema, str_profile_bitrate);
+	tmpc = soap_add_child(pc->msg, aecc, str_pf_schema,
+			      str_profile_bitrate);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->t.ae.br);
 
-	tmpc = soap_add_child(pc->msg, aecc, str_pf_schema, str_profile_samplerate);
+	tmpc = soap_add_child(pc->msg, aecc, str_pf_schema,
+			      str_profile_samplerate);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->t.ae.sr);
 
-	// multicast information ... how does it look like if no multicast is
-	// supported
-	mcastc = soap_add_child(pc->msg, aecc, str_pf_schema, str_profile_multicast);
+	/* multicast information ... how does it look like if no multicast
+	 * is */
+	/* supported */
+	mcastc = soap_add_child(pc->msg, aecc, str_pf_schema,
+				str_profile_multicast);
 	err |= media_add_multicastinfo(mcastc, cfg, false);
 
 	tmpc = soap_add_child(pc->msg, aecc, str_pf_schema,
@@ -665,13 +684,13 @@ static int media_add_audio_enc_config(struct soap_child *pc,
  * @param configs   defines if configuration or configurations should be used
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 static int media_add_audio_dec_config(struct soap_child *pc,
 	struct media_config *cfg, bool profile, bool configs)
 {
 	int err = 0;
-	struct soap_child *adcc, *tmpc;
+	struct soap_child *adcc;
+	struct soap_child *tmpc;
 
 	if (!pc)
 		return EINVAL;
@@ -680,18 +699,17 @@ static int media_add_audio_dec_config(struct soap_child *pc,
 		return 0;
 
 	if (profile) {
-		adcc = soap_add_child(pc->msg, pc, str_pf_schema, str_profile_adc);
+		adcc = soap_add_child(pc->msg, pc, str_pf_schema,
+				      str_profile_adc);
+	}
+	else if (configs) {
+		adcc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configurations);
 	}
 	else {
-		if (configs) {
-			adcc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configurations);
-		} else {
-			adcc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configuration);
-		}
+		adcc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configuration);
 	}
-
 
 	err |= soap_add_parameter_str(adcc, NULL, str_token, strlen(str_token),
 		cfg->token, strlen(cfg->token));
@@ -699,7 +717,8 @@ static int media_add_audio_dec_config(struct soap_child *pc,
 	tmpc = soap_add_child(pc->msg, adcc, str_pf_schema, str_name);
 	err |= soap_set_value_fmt(tmpc, "%s", cfg->name);
 
-	tmpc = soap_add_child(pc->msg, adcc, str_pf_schema, str_profile_usecount);
+	tmpc = soap_add_child(pc->msg, adcc, str_pf_schema,
+			      str_profile_usecount);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->usecount);
 
 	return err;
@@ -713,7 +732,6 @@ static int media_add_audio_dec_config(struct soap_child *pc,
  * @param profile   defines the style of the config entry
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 static int media_add_audio_output_config(struct soap_child *pc,
 	struct media_config *cfg, bool profile, bool configs)
@@ -728,16 +746,16 @@ static int media_add_audio_output_config(struct soap_child *pc,
 		return 0;
 
 	if (profile) {
-		aocc = soap_add_child(pc->msg, pc, str_pf_schema, str_profile_aoc);
+		aocc = soap_add_child(pc->msg, pc, str_pf_schema,
+				      str_profile_aoc);
+	}
+	else if (configs) {
+		aocc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configurations);
 	}
 	else {
-		if (configs) {
-			aocc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configurations);
-		} else {
-			aocc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-				str_configuration);
-		}
+		aocc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
+				      str_configuration);
 	}
 
 	err |= soap_add_parameter_str(aocc, NULL, str_token, strlen(str_token),
@@ -746,7 +764,8 @@ static int media_add_audio_output_config(struct soap_child *pc,
 	tmpc = soap_add_child(pc->msg, aocc, str_pf_schema, str_name);
 	err |= soap_set_value_fmt(tmpc, "%s", cfg->name);
 
-	tmpc = soap_add_child(pc->msg, aocc, str_pf_schema, str_profile_usecount);
+	tmpc = soap_add_child(pc->msg, aocc, str_pf_schema,
+			      str_profile_usecount);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->usecount);
 
 	tmpc = soap_add_child(pc->msg, aocc, str_pf_schema,
@@ -757,15 +776,18 @@ static int media_add_audio_output_config(struct soap_child *pc,
 		str_profile_sendprimacy);
 	switch (cfg->t.ao.sp) {
 		case HALF_DUPLEX_SERVER:
-			err |= soap_set_value_fmt(tmpc, "%s", str_profile_sp_hds);
+			err |= soap_set_value_fmt(tmpc, "%s",
+						  str_profile_sp_hds);
 			break;
 
 		case HALF_DUPLEX_CLIENT:
-			err |= soap_set_value_fmt(tmpc, "%s", str_profile_sp_hdc);
+			err |= soap_set_value_fmt(tmpc, "%s",
+						  str_profile_sp_hdc);
 			break;
 
 		case HALF_DUPLEX_AUTO:
-			err |= soap_set_value_fmt(tmpc, "%s", str_profile_sp_hda);
+			err |= soap_set_value_fmt(tmpc, "%s",
+						  str_profile_sp_hda);
 			break;
 	}
 
@@ -784,7 +806,6 @@ static int media_add_audio_output_config(struct soap_child *pc,
  * @param profile   defines the style of the config entry
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 static int media_add_audio_decoder_config(struct soap_child *pc,
 	struct media_config *cfg, bool profile)
@@ -799,18 +820,20 @@ static int media_add_audio_decoder_config(struct soap_child *pc,
 		return 0;
 
 	if (profile)
-		adcc = soap_add_child(pc->msg, pc, str_pf_schema, str_profile_adc);
+		adcc = soap_add_child(pc->msg, pc, str_pf_schema,
+				      str_profile_adc);
 	else
 		adcc = soap_add_child(pc->msg, pc, str_pf_media_wsdl,
-			str_configurations);
+				      str_configurations);
 
 	err |= soap_add_parameter_str(adcc, NULL, str_token, strlen(str_token),
-		cfg->token, strlen(cfg->token));
+				      cfg->token, strlen(cfg->token));
 
 	tmpc = soap_add_child(pc->msg, adcc, str_pf_schema, str_name);
 	err |= soap_set_value_fmt(tmpc, "%s", cfg->name);
 
-	tmpc = soap_add_child(pc->msg, adcc, str_pf_schema, str_profile_usecount);
+	tmpc = soap_add_child(pc->msg, adcc, str_pf_schema,
+			      str_profile_usecount);
 	err |= soap_set_value_fmt(tmpc, "%d", cfg->usecount);
 
 	return err;
@@ -826,7 +849,6 @@ static int media_add_audio_decoder_config(struct soap_child *pc,
  * @param single    do we report a single profile like in CreateProfile
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 static int media_add_profile(struct soap_child *gpc, struct profile *p,
 	bool single)
@@ -860,26 +882,25 @@ static int media_add_profile(struct soap_child *gpc, struct profile *p,
 	tmpc = soap_add_child(gpc->msg, pc, str_pf_schema, str_name);
 	err |= soap_set_value_fmt(tmpc, "%s", p->name);
 
-	//VideoSourceConfig
+	/*VideoSourceConfig */
 	err |= media_add_video_source_config(pc, p->vsc, true, false);
 
-	//AudioSourceConfig
+	/*AudioSourceConfig */
 	err |= media_add_audio_source_config(pc, p->asc, true, false);
 
-	//VideoEncoderConfig
+	/*VideoEncoderConfig */
 	err |= media_add_video_enc_config(pc, p->vec, true, false);
 
-	//AudioEncoderConfig
+	/*AudioEncoderConfig */
 	err |= media_add_audio_enc_config(pc, p->aec, true, false);
 
-	extensionc = soap_add_child(gpc->msg, pc, str_pf_schema, str_extension);
-	//AudioOutputConfig
+	extensionc = soap_add_child(gpc->msg, pc, str_pf_schema,
+				    str_extension);
+	/*AudioOutputConfig */
 	err |= media_add_audio_output_config(extensionc, p->aoc, true, false);
 
-	//AudioDecoderConfig
+	/*AudioDecoderConfig */
 	err |= media_add_audio_decoder_config(extensionc, p->adc, true);
-
-
 	return err;
 }
 
@@ -908,7 +929,8 @@ static int media_add_video_source(struct soap_child *gvsrc,
 	tmp = soap_add_child(gvsrc->msg, vsc, str_pf_schema, str_vsources_fr);
 	err |= soap_set_value_fmt(tmp, "%d", (int)cfg->t.vs.framerate);
 
-	resc = soap_add_child(gvsrc->msg, vsc, str_pf_schema, str_vsources_res);
+	resc = soap_add_child(gvsrc->msg, vsc, str_pf_schema,
+			      str_vsources_res);
 
 	tmp = soap_add_child(gvsrc->msg, resc, str_pf_schema, str_ucwidth);
 	err |= soap_set_value_fmt(tmp, "%d", cfg->t.vs.b.w);
@@ -926,7 +948,6 @@ static int media_add_video_source(struct soap_child *gvsrc,
  * @param cfg         Media Config (AS) to add
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 static int media_add_audio_source(struct soap_child *gasrc,
 	struct media_config *cfg)
@@ -954,7 +975,6 @@ static int media_add_audio_source(struct soap_child *gasrc,
  * @param cfg         Media Config (VE) to add
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 static int media_add_video_enc_config_opt(struct soap_child *gvecorc,
 	struct media_config *cfg)
@@ -962,10 +982,11 @@ static int media_add_video_enc_config_opt(struct soap_child *gvecorc,
 	int err = 0;
 	struct soap_child *oc, *tmp, *minmax, *jpegc, *resav, *extc;
 
-	oc = soap_add_child(gvecorc->msg, gvecorc, str_pf_media_wsdl, str_options);
+	oc = soap_add_child(gvecorc->msg, gvecorc, str_pf_media_wsdl,
+			    str_options);
 	err |= soap_add_parameter_str(oc, NULL,
-		str_vecos_gfrs, strlen(str_vecos_gfrs), str_false, strlen(str_false));
-
+		str_vecos_gfrs, strlen(str_vecos_gfrs), str_false,
+		strlen(str_false));
 
 	tmp = soap_add_child(gvecorc->msg, oc,
 		str_pf_schema, str_vecos_qualityrange);
@@ -975,77 +996,88 @@ static int media_add_video_enc_config_opt(struct soap_child *gvecorc,
 	err |= soap_set_value_fmt(minmax, "%d", (int)cfg->t.ve.quality);
 
 	switch (cfg->t.ve.enc) {
-		case JPEG:
-			jpegc = soap_add_child(gvecorc->msg, oc, str_pf_schema, str_jpeg);
-			resav = soap_add_child(gvecorc->msg, jpegc,
-				str_pf_schema, str_vecos_resavailable);
-			tmp = soap_add_child(gvecorc->msg, resav,
-				str_pf_schema, str_ucwidth);
-			err |= soap_set_value_fmt(tmp, "%d", cfg->t.ve.res.w);
-			tmp = soap_add_child(gvecorc->msg, resav,
-				str_pf_schema, str_ucheight);
-			err |= soap_set_value_fmt(tmp, "%d", cfg->t.ve.res.h);
+	case JPEG:
+		jpegc = soap_add_child(gvecorc->msg, oc, str_pf_schema,
+				       str_jpeg);
+		resav = soap_add_child(gvecorc->msg, jpegc,
+			str_pf_schema, str_vecos_resavailable);
+		tmp = soap_add_child(gvecorc->msg, resav,
+			str_pf_schema, str_ucwidth);
+		err |= soap_set_value_fmt(tmp, "%d", cfg->t.ve.res.w);
+		tmp = soap_add_child(gvecorc->msg, resav,
+			str_pf_schema, str_ucheight);
+		err |= soap_set_value_fmt(tmp, "%d", cfg->t.ve.res.h);
 
-			tmp = soap_add_child(gvecorc->msg, jpegc,
-				str_pf_schema, str_vecos_frramge);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_min);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.frl);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_max);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.frl);
+		tmp = soap_add_child(gvecorc->msg, jpegc,
+			str_pf_schema, str_vecos_frramge);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_min);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.frl);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_max);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.frl);
 
-			tmp = soap_add_child(gvecorc->msg, jpegc,
-				str_pf_schema, str_vecos_eirange);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_min);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.ei);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_max);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.ei);
-			break;
+		tmp = soap_add_child(gvecorc->msg, jpegc,
+			str_pf_schema, str_vecos_eirange);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_min);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.ei);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_max);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.ei);
+		break;
 
-		case MPEG4:
-		case H264:
-			return ENOTSUP;
+	case MPEG4:
+	case H264:
+		return ENOTSUP;
 	}
 
 	extc = soap_add_child(gvecorc->msg, oc, str_pf_schema, str_extension);
 	switch (cfg->t.ve.enc) {
-		case JPEG:
-			jpegc = soap_add_child(gvecorc->msg, extc, str_pf_schema, str_jpeg);
-			resav = soap_add_child(gvecorc->msg, jpegc,
-				str_pf_schema, str_vecos_resavailable);
-			tmp = soap_add_child(gvecorc->msg, resav,
-				str_pf_schema, str_ucwidth);
-			err |= soap_set_value_fmt(tmp, "%d", cfg->t.ve.res.w);
-			tmp = soap_add_child(gvecorc->msg, resav,
-				str_pf_schema, str_ucheight);
-			err |= soap_set_value_fmt(tmp, "%d", cfg->t.ve.res.h);
+	case JPEG:
+		jpegc = soap_add_child(gvecorc->msg, extc, str_pf_schema,
+				       str_jpeg);
+		resav = soap_add_child(gvecorc->msg, jpegc,
+			str_pf_schema, str_vecos_resavailable);
+		tmp = soap_add_child(gvecorc->msg, resav,
+			str_pf_schema, str_ucwidth);
+		err |= soap_set_value_fmt(tmp, "%d", cfg->t.ve.res.w);
+		tmp = soap_add_child(gvecorc->msg, resav,
+			str_pf_schema, str_ucheight);
+		err |= soap_set_value_fmt(tmp, "%d", cfg->t.ve.res.h);
 
-			tmp = soap_add_child(gvecorc->msg, jpegc,
-				str_pf_schema, str_vecos_frramge);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_min);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.frl);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_max);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.frl);
+		tmp = soap_add_child(gvecorc->msg, jpegc,
+			str_pf_schema, str_vecos_frramge);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_min);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.frl);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_max);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.frl);
 
-			tmp = soap_add_child(gvecorc->msg, jpegc,
-				str_pf_schema, str_vecos_eirange);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_min);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.ei);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_max);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.ei);
+		tmp = soap_add_child(gvecorc->msg, jpegc,
+			str_pf_schema, str_vecos_eirange);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_min);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.ei);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_max);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.ei);
 
-			tmp = soap_add_child(gvecorc->msg, jpegc,
-				str_pf_schema, str_vecos_brrange);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_min);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.brl);
-			minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema, str_max);
-			err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.brl);
-			break;
+		tmp = soap_add_child(gvecorc->msg, jpegc,
+			str_pf_schema, str_vecos_brrange);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_min);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.brl);
+		minmax = soap_add_child(gvecorc->msg, tmp, str_pf_schema,
+					str_max);
+		err |= soap_set_value_fmt(minmax, "%d", cfg->t.ve.ratec.brl);
+		break;
 
-		case MPEG4:
-		case H264:
-			return ENOTSUP;
+	case MPEG4:
+	case H264:
+		return ENOTSUP;
 	}
-
 
 	return err;
 }
@@ -1059,7 +1091,6 @@ static int media_add_video_enc_config_opt(struct soap_child *gvecorc,
  * @param cfg         Media Config (VE) to add
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 static int media_add_audio_enc_config_opt(struct soap_child *gaecorc,
 	struct media_config *cfg)
@@ -1067,18 +1098,20 @@ static int media_add_audio_enc_config_opt(struct soap_child *gaecorc,
 	int err = 0;
 	struct soap_child *oc, *occ, *tmp;
 
-	oc = soap_add_child(gaecorc->msg, gaecorc, str_pf_media_wsdl, str_options);
+	oc = soap_add_child(gaecorc->msg, gaecorc, str_pf_media_wsdl,
+			    str_options);
 
 	occ = soap_add_child(gaecorc->msg, oc, str_pf_schema, str_options);
-	tmp = soap_add_child(gaecorc->msg, occ, str_pf_schema, str_aecos_encoding);
+	tmp = soap_add_child(gaecorc->msg, occ, str_pf_schema,
+			     str_aecos_encoding);
 	switch (cfg->t.ae.enc) {
-		case G711:
-			err |= soap_set_value_fmt(tmp, "%s", str_pcmu);
-			break;
+	case G711:
+		err |= soap_set_value_fmt(tmp, "%s", str_pcmu);
+		break;
 
-		case G726:
-		case AAC:
-			return ENOTSUP;
+	case G726:
+	case AAC:
+		return ENOTSUP;
 	}
 
 	tmp = soap_add_child(gaecorc->msg, occ,
@@ -1103,7 +1136,6 @@ static int media_add_audio_enc_config_opt(struct soap_child *gaecorc,
  * @param cfg         Media Config (AD) to add
  *
  * @return           0 if success, errorcode otherwise
- *
  */
 static int media_add_audio_dec_config_opt(struct soap_child *gadcorc,
 	struct media_config *cfg)
@@ -1111,7 +1143,8 @@ static int media_add_audio_dec_config_opt(struct soap_child *gadcorc,
 	int err = 0;
 	struct soap_child *oc, *decc = NULL, *brlc, *srrc, *tmp;
 
-	oc = soap_add_child(gadcorc->msg, gadcorc, str_pf_media_wsdl, str_options);
+	oc = soap_add_child(gadcorc->msg, gadcorc, str_pf_media_wsdl,
+			    str_options);
 
 	switch (cfg->t.ad.dec) {
 		case G711:
@@ -1124,17 +1157,19 @@ static int media_add_audio_dec_config_opt(struct soap_child *gadcorc,
 			return ENOTSUP;
 	}
 
-	brlc = soap_add_child(gadcorc->msg, decc, str_pf_schema, str_adcos_bitrate);
+	brlc = soap_add_child(gadcorc->msg, decc, str_pf_schema,
+			      str_adcos_bitrate);
 	tmp = soap_add_child(gadcorc->msg, brlc, str_pf_schema, str_items);
 	err |= soap_set_value_fmt(tmp, "%d", cfg->t.ad.br);
-	// tmp = soap_add_child(gadcorc->msg, brlc, str_pf_schema, str_max);
-	// err |= soap_set_value_fmt(tmp, "%d", cfg->t.ad.br);
+	/* tmp = soap_add_child(gadcorc->msg, brlc, str_pf_schema, str_max); */
+	/* err |= soap_set_value_fmt(tmp, "%d", cfg->t.ad.br); */
 
-	srrc = soap_add_child(gadcorc->msg, decc, str_pf_schema, str_adcos_srr);
+	srrc = soap_add_child(gadcorc->msg, decc, str_pf_schema,
+			      str_adcos_srr);
 	tmp = soap_add_child(gadcorc->msg, srrc, str_pf_schema, str_items);
 	err |= soap_set_value_fmt(tmp, "%d", cfg->t.ad.sr);
-	// tmp = soap_add_child(gadcorc->msg, srrc, str_pf_schema, str_max);
-	// err |= soap_set_value_fmt(tmp, "%d", cfg->t.ad.sr);
+	/* tmp = soap_add_child(gadcorc->msg, srrc, str_pf_schema, str_max); */
+	/* err |= soap_set_value_fmt(tmp, "%d", cfg->t.ad.sr); */
 
 	return err;
 }
@@ -1148,7 +1183,6 @@ static int media_add_audio_dec_config_opt(struct soap_child *gadcorc,
  * @param cfg         Media Config (AO) to add
  *
  * @return           0 if success, errorcode otherwise
- *
  */
 static int media_add_audio_ouput_config_opt(struct soap_child *gaocorc,
 	struct media_config *cfg)
@@ -1156,25 +1190,29 @@ static int media_add_audio_ouput_config_opt(struct soap_child *gaocorc,
 	int err = 0;
 	struct soap_child *oc, *otac, *spoc, *olrc, *minmax;
 
-	oc = soap_add_child(gaocorc->msg, gaocorc, str_pf_media_wsdl, str_options);
+	oc = soap_add_child(gaocorc->msg, gaocorc, str_pf_media_wsdl,
+			    str_options);
 	otac = soap_add_child(gaocorc->msg, oc, str_pf_schema,
 		str_aocos_optokensavail);
 	err |= soap_set_value_fmt(otac, "%s", cfg->t.ao.outputtoken);
 	spoc = soap_add_child(gaocorc->msg, oc, str_pf_schema,
 		str_aocos_sendprimacyoptions);
 
-	switch(cfg->t.ao.sp) {
-		case HALF_DUPLEX_CLIENT:
-			err |= soap_set_value_fmt(spoc, "%s", str_profile_sp_hdc);
-			break;
+	switch (cfg->t.ao.sp) {
+	case HALF_DUPLEX_CLIENT:
+		err |= soap_set_value_fmt(spoc, "%s",
+					  str_profile_sp_hdc);
+		break;
 
-		case HALF_DUPLEX_SERVER:
-			err |= soap_set_value_fmt(spoc, "%s", str_profile_sp_hds);
-			break;
+	case HALF_DUPLEX_SERVER:
+		err |= soap_set_value_fmt(spoc, "%s",
+					  str_profile_sp_hds);
+		break;
 
-		case HALF_DUPLEX_AUTO:
-			err |= soap_set_value_fmt(spoc, "%s", str_profile_sp_hda);
-			break;
+	case HALF_DUPLEX_AUTO:
+		err |= soap_set_value_fmt(spoc, "%s",
+					  str_profile_sp_hda);
+		break;
 	}
 
 	olrc = soap_add_child(gaocorc->msg, oc, str_pf_schema,
@@ -1196,7 +1234,6 @@ static int media_add_audio_ouput_config_opt(struct soap_child *gaocorc,
  * @param cfg         Media Config (VS) to add
  *
  * @return           0 if success, errorcode otherwise
- *
  */
 static int media_add_video_source_config_opt(struct soap_child *gaocorc,
 	struct media_config *cfg)
@@ -1204,12 +1241,14 @@ static int media_add_video_source_config_opt(struct soap_child *gaocorc,
 	int err = 0;
 	struct soap_child *oc, *brc, *tmpc, *minmax;
 
-	oc = soap_add_child(gaocorc->msg, gaocorc, str_pf_media_wsdl, str_options);
+	oc = soap_add_child(gaocorc->msg, gaocorc, str_pf_media_wsdl,
+			    str_options);
 	err |= soap_add_parameter_uint(oc, NULL,
 		str_vscos_maxprofiles, strlen(str_vscos_maxprofiles),
 		cfg->t.vs.maxprofile);
 
-	brc = soap_add_child(oc->msg, oc, str_pf_schema, str_vscos_boundsrange);
+	brc = soap_add_child(oc->msg, oc, str_pf_schema,
+			     str_vscos_boundsrange);
 	tmpc = soap_add_child(oc->msg, brc, str_pf_schema, str_vscos_xrange);
 	minmax = soap_add_child(oc->msg, tmpc, str_pf_schema, str_min);
 	err |= soap_set_value_fmt(minmax, "%d", cfg->t.vs.b.x);
@@ -1245,7 +1284,6 @@ static int media_add_video_source_config_opt(struct soap_child *gaocorc,
  *
  * @param gvscorc     GetAudioSourceConfigurationOptionsResponse child
  * @param cfg         Media Config (VS) to add
- *
  * @return           0 if success, errorcode otherwise
  *
  */
@@ -1255,7 +1293,8 @@ static int media_add_audio_source_config_opt(struct soap_child *gascorc,
 	int err = 0;
 	struct soap_child *oc, *itac;
 
-	oc = soap_add_child(gascorc->msg, gascorc, str_pf_media_wsdl, str_options);
+	oc = soap_add_child(gascorc->msg, gascorc, str_pf_media_wsdl,
+			    str_options);
 
 	itac = soap_add_child(oc->msg, oc, str_pf_schema,
 		str_ascos_astokensavail);
@@ -1272,7 +1311,6 @@ static int media_add_audio_source_config_opt(struct soap_child *gascorc,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 static int media_set_video_source_config(const struct soap_child *configc,
 	struct soap_fault *f)
@@ -1328,10 +1366,12 @@ static int media_set_video_source_config(const struct soap_child *configc,
 		return err;
 	}
 
-	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r", &namec->value))
+	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r",
+			      &namec->value))
 		return EINVAL;
 
-	if (-1 == re_snprintf(cfg->t.vs.sourcetoken, sizeof(cfg->t.vs.sourcetoken),
+	if (-1 == re_snprintf(cfg->t.vs.sourcetoken,
+			      sizeof(cfg->t.vs.sourcetoken),
 		"%r", &st->value))
 		return EINVAL;
 
@@ -1382,7 +1422,6 @@ static int media_set_audio_source_config(const struct soap_child *configc,
 	if (!namec || !st)
 		return EINVAL;
 
-
 	le = list_apply(&as_l, true, media_cmp_assourctoken, &st->value);
 	if (!le) {
 		fault_set(f, FC_Sender, FS_InvalidArgVal, FS_ConfigModify,
@@ -1390,10 +1429,12 @@ static int media_set_audio_source_config(const struct soap_child *configc,
 		return err;
 	}
 
-	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r", &namec->value))
+	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r",
+			      &namec->value))
 		return EINVAL;
 
-	if (-1 == re_snprintf(cfg->t.as.sourcetoken, sizeof(cfg->t.as.sourcetoken),
+	if (-1 == re_snprintf(cfg->t.as.sourcetoken,
+			      sizeof(cfg->t.as.sourcetoken),
 		"%r", &st->value))
 		return EINVAL;
 
@@ -1456,20 +1497,25 @@ static int media_set_audio_output_config(const struct soap_child *configc,
 		return err;
 	}
 
-	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r", &namec->value))
+	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r",
+			      &namec->value))
 		return EINVAL;
 
-	if (-1 == re_snprintf(cfg->t.ao.outputtoken, sizeof(cfg->t.ao.outputtoken),
+	if (-1 == re_snprintf(cfg->t.ao.outputtoken,
+			      sizeof(cfg->t.ao.outputtoken),
 		"%r", &ot->value))
 		return EINVAL;
 
 	if (0 == pl_strcmp(&spc->value, str_profile_sp_hds)) {
 		cfg->t.ao.sp = HALF_DUPLEX_SERVER;
-	} else if (0 == pl_strcmp(&spc->value, str_profile_sp_hdc)) {
+	}
+	else if (0 == pl_strcmp(&spc->value, str_profile_sp_hdc)) {
 		cfg->t.ao.sp = HALF_DUPLEX_CLIENT;
-	} else if (0 == pl_strcmp(&spc->value, str_profile_sp_hda)) {
+	}
+	else if (0 == pl_strcmp(&spc->value, str_profile_sp_hda)) {
 		cfg->t.ao.sp = HALF_DUPLEX_AUTO;
-	} else {
+	}
+	else {
 		return EINVAL;
 	}
 
@@ -1554,7 +1600,8 @@ static int media_set_video_encoder_config(struct soap_child *configc,
 		return EINVAL;
 	}
 
-	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r", &namec->value))
+	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r",
+			      &namec->value))
 		return EINVAL;
 
 	if (re_regex(sesst->value.p, sesst->value.l, "[0-9]+", &sesstreg))
@@ -1574,11 +1621,9 @@ static int media_set_video_encoder_config(struct soap_child *configc,
 	cfg->t.ve.ratec.ei = enci;
 	cfg->t.ve.ratec.brl = brl;
 
-
 	cfg->t.ve.st = pl_u32(&sesstreg);
 
-	// multicast not supported!!!
-
+	/* multicast not supported */
 	return err;
 }
 
@@ -1602,7 +1647,6 @@ static int media_set_audio_encoder_config(struct soap_child *configc,
 	struct pl sesstreg;
 	struct le *le = NULL;
 	struct media_config *cfg = NULL;
-
 
 	tokenp = soap_child_has_parameter(configc, str_token);
 
@@ -1646,15 +1690,15 @@ static int media_set_audio_encoder_config(struct soap_child *configc,
 	if (re_regex(stc->value.p, stc->value.l, "[0-9]+", &sesstreg))
 		return EINVAL;
 
-	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r", &namec->value))
+	if (-1 == re_snprintf(cfg->name, sizeof(cfg->name), "%r",
+			      &namec->value))
 		return EINVAL;
 
 	cfg->t.ae.br = br;
 	cfg->t.ae.sr = sr;
 	cfg->t.ae.st = pl_u32(&sesstreg);
 
-	// multicast not supported!!!
-
+	/* multicast not supported */
 	return err;
 }
 
@@ -1696,7 +1740,7 @@ int media_GetProfiles_h(const struct soap_msg *msg, struct soap_msg **prtresp)
 		str_method_get_profiles_r);
 
 	le = profile_l.head;
-	while(le) {
+	while (le) {
 		p = le->data;
 		err |= media_add_profile(gpc, p, false);
 		le = le->next;
@@ -1777,7 +1821,6 @@ int media_GetProfile_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 
 	return err;
 }
-
 
 
 /**
@@ -2072,7 +2115,8 @@ int media_GetAOC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	ctc = soap_child_has_child(gaocc, NULL, str_profile_configtoken);
 
 	if (ctc) {
-		le = list_apply(&ao_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&ao_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
@@ -2096,7 +2140,8 @@ int media_GetAOC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	gaocrc = soap_add_child(resp, b, str_pf_media_wsdl, str_method_get_aoc_r);
+	gaocrc = soap_add_child(resp, b, str_pf_media_wsdl,
+				str_method_get_aoc_r);
 	err |= media_add_audio_output_config(gaocrc, cfg, false, false);
 
   out:
@@ -2190,9 +2235,12 @@ int media_GetStreamUri_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 		soap_child_has_child(msg->envelope, NULL, str_body),
 		NULL, str_method_get_suri);
 
-	streamsetupc = soap_child_has_child(gsurc, NULL, str_streamuri_streamsetup);
-	streamc = soap_child_has_child(streamsetupc, NULL, str_streamuri_stream);
-	protoc = soap_child_has_child(streamsetupc, NULL, str_streamuri_transport);
+	streamsetupc = soap_child_has_child(gsurc, NULL,
+					    str_streamuri_streamsetup);
+	streamc = soap_child_has_child(streamsetupc, NULL,
+				       str_streamuri_stream);
+	protoc = soap_child_has_child(streamsetupc, NULL,
+				      str_streamuri_transport);
 	protoc = soap_child_has_child(protoc, NULL, str_streamuri_proto);
 	ptc = soap_child_has_child(gsurc, NULL, str_profile_profiletoken);
 
@@ -2212,8 +2260,9 @@ int media_GetStreamUri_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	if (0 == pl_strcmp(&streamc->value, "RTP-Multicast") ||
 		(0 == pl_strcmp(&protoc->value, "TCP")) ||
 		(0 == pl_strcmp(&streamc->value, "HTTP"))) {
-		fault_set(f, FC_Sender, FS_InvalidArgVal, FS_InvalidStreamSetup,
-			str_fault_streamsetupnotsupported);
+		fault_set(f, FC_Sender, FS_InvalidArgVal,
+			  FS_InvalidStreamSetup,
+			  str_fault_streamsetupnotsupported);
 		return ENOTSUP;
 	}
 
@@ -2266,13 +2315,13 @@ int media_GetVideoSources_h(const struct soap_msg *msg,
 	if (!msg || !prtresp)
 		return EINVAL;
 
-	// in case call the deviceIO version
+	/* in case call the deviceIO version */
 	b = soap_child_has_child(msg->envelope, NULL, str_body);
 	b = soap_child_has_child(b, NULL, str_method_get_videosources);
-	// if (0 == pl_strcmp(&b->ns->uri, str_uri_deviceio_wsdl)) {
-	//     err = deviceio_GetVideoSources_h (msg, &resp);
-	//     goto out;
-	// }
+	/* if (0 == pl_strcmp(&b->ns->uri, str_uri_deviceio_wsdl)) { */
+	/*     err = deviceio_GetVideoSources_h (msg, &resp); */
+	/*     goto out; */
+	/* } */
 
 	err = soap_alloc_msg(&resp);
 	if (err)
@@ -2357,7 +2406,7 @@ int media_GetAudioSources_h(const struct soap_msg *msg,
 	}
 
 	le = as_l.head;
-	while(le) {
+	while (le) {
 		cfg = le->data;
 		err |= media_add_audio_source(gasrc, cfg);
 		le = le->next;
@@ -2408,7 +2457,7 @@ int media_GetMetadataConfigurations_h(const struct soap_msg *msg,
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
 	soap_add_child(resp, b, str_pf_media_wsdl,
 		str_method_get_mdconfigs_r);
-	// TODO1
+	/* TODO1 */
 
   out:
 	if (err)
@@ -2450,13 +2499,15 @@ int media_GetAudioEncoderConfigurationOptions_h(const struct soap_msg *msg,
 
 
 	if (ctc) {
-		le = list_apply(&ae_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&ae_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
 
 	if (ptc) {
-		le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+		le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+				&ptc->value);
 		if (le)
 			p = le->data;
 	}
@@ -2500,7 +2551,8 @@ int media_GetAudioEncoderConfigurationOptions_h(const struct soap_msg *msg,
 			err |= media_add_audio_enc_config_opt(gaecorc, cfg);
 			le = le->next;
 		}
-	} else {
+	}
+	else {
 		err |= media_add_audio_enc_config_opt(gaecorc, cfg);
 	}
 
@@ -2543,13 +2595,15 @@ int media_GetVideoEncoderConfigurationOptions_h(const struct soap_msg *msg,
 	ptc = soap_child_has_child(gvecoc, NULL, str_profile_profiletoken);
 
 	if (ctc) {
-		le = list_apply(&ve_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&ve_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
 
 	if (ptc) {
-		le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+		le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+				&ptc->value);
 		if (le)
 			p = le->data;
 	}
@@ -2592,7 +2646,8 @@ int media_GetVideoEncoderConfigurationOptions_h(const struct soap_msg *msg,
 			err |= media_add_video_enc_config_opt(gvecorc, cfg);
 			le = le->next;
 		}
-	} else {
+	}
+	else {
 		err |= media_add_video_enc_config_opt(gvecorc, cfg);
 	}
 
@@ -2636,7 +2691,8 @@ int media_GetAudioDecoderConfigurationOptions_h(const struct soap_msg *msg,
 	ptc = soap_child_has_child(gadcoc, NULL, str_profile_profiletoken);
 
 	if (ctc) {
-		le = list_apply(&ad_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&ad_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
@@ -2687,7 +2743,8 @@ int media_GetAudioDecoderConfigurationOptions_h(const struct soap_msg *msg,
 			err |= media_add_audio_dec_config_opt(gadcorc, cfg);
 			le = le->next;
 		}
-	} else {
+	}
+	else {
 		err |= media_add_audio_dec_config_opt(gadcorc, cfg);
 	}
 
@@ -2711,8 +2768,8 @@ int media_GetAudioDecoderConfigurationOptions_h(const struct soap_msg *msg,
  * @return          0 if success, errorcode otherwise
  *
  */
-int media_CreateProfile_h(const struct soap_msg *msg, struct soap_msg **prtresp,
-	struct soap_fault *f)
+int media_CreateProfile_h(const struct soap_msg *msg,
+			  struct soap_msg **prtresp, struct soap_fault *f)
 {
 	int err = 0;
 	struct soap_msg *resp;
@@ -2733,8 +2790,8 @@ int media_CreateProfile_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	if (tokenc) {
 		if (list_apply(&profile_l, true, media_cmp_profilreftoken,
 			&tokenc->value)) {
-			fault_set(f, FC_Sender, FS_InvalidArgVal, FS_ProfilExists,
-				str_fault_profileexists);
+			fault_set(f, FC_Sender, FS_InvalidArgVal,
+				  FS_ProfilExists, str_fault_profileexists);
 			return EINVAL;
 		}
 	}
@@ -2798,8 +2855,8 @@ int media_CreateProfile_h(const struct soap_msg *msg, struct soap_msg **prtresp,
  * @return          0 if success, errorcode otherwise
  *
  */
-int media_DeleteProfile_h(const struct soap_msg *msg, struct soap_msg **prtresp,
-	struct soap_fault *f)
+int media_DeleteProfile_h(const struct soap_msg *msg,
+			  struct soap_msg **prtresp, struct soap_fault *f)
 {
 	int err = 0;
 	struct soap_msg *resp;
@@ -2817,7 +2874,8 @@ int media_DeleteProfile_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	if (!ptc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -2848,7 +2906,8 @@ int media_DeleteProfile_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	soap_add_child(resp, b, str_pf_media_wsdl, str_method_delete_profile_r);
+	soap_add_child(resp, b, str_pf_media_wsdl,
+		       str_method_delete_profile_r);
 
   out:
 	if (err)
@@ -2888,7 +2947,8 @@ int media_AddVideoSourceConfiguration_h(const struct soap_msg *msg,
 	ptc = soap_child_has_child(avscc, NULL, str_profile_profiletoken);
 	ctc = soap_child_has_child(avscc, NULL, str_profile_configtoken);
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -2972,7 +3032,8 @@ int media_AddVideoEncoderConfiguration_h(const struct soap_msg *msg,
 	if (!ptc || !ctc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -3054,7 +3115,8 @@ int media_RemoveVideoSourceConfiguration_h(const struct soap_msg *msg,
 	if (!ptc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -3123,7 +3185,8 @@ int media_RemoveVideoEncoderConfiguration_h(const struct soap_msg *msg,
 	if (!ptc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -3188,10 +3251,10 @@ int media_GetAudioOutputs_h(const struct soap_msg *msg,
 
 	b = soap_child_has_child(msg->envelope, NULL, str_body);
 	b = soap_child_has_child(b, NULL, str_method_get_audiooutputs);
-	// if (0 == pl_strcmp(&b->ns->uri, str_uri_deviceio_wsdl)) {
-	//     err = deviceio_GetAudioOutputs_h (msg, &resp);
-	//     goto out;
-	// }
+	/* if (0 == pl_strcmp(&b->ns->uri, str_uri_deviceio_wsdl)) { */
+	/*     err = deviceio_GetAudioOutputs_h (msg, &resp); */
+	/*     goto out; */
+	/* } */
 
 	err = soap_alloc_msg(&resp);
 	if (err)
@@ -3211,7 +3274,8 @@ int media_GetAudioOutputs_h(const struct soap_msg *msg,
 
 	if (list_isempty(&ao_l)) {
 		fault_set(f, FC_Receiver, FS_ActionNotSupported,
-			FS_AudioOutputNotSupported, str_fault_audiooutputnotsupported);
+			  FS_AudioOutputNotSupported,
+			  str_fault_audiooutputnotsupported);
 		err = EINVAL;
 		goto out;
 	}
@@ -3220,9 +3284,11 @@ int media_GetAudioOutputs_h(const struct soap_msg *msg,
 	while (le) {
 		cfg = le->data;
 		auc = soap_add_child(resp, gaosc, str_pf_media_wsdl,
-			str_device_ioaudiooutputs);
-		err |= soap_add_parameter_str(auc, NULL, str_token, strlen(str_token),
-			cfg->t.ao.outputtoken, strlen(cfg->t.ao.outputtoken));
+				     str_device_ioaudiooutputs);
+		err |= soap_add_parameter_str(auc, NULL, str_token,
+					      strlen(str_token),
+					      cfg->t.ao.outputtoken,
+					      strlen(cfg->t.ao.outputtoken));
 		le = le->next;
 	}
 
@@ -3265,13 +3331,15 @@ int media_GetAudioOutputConfigurationOptions_h(const struct soap_msg *msg,
 	ptc = soap_child_has_child(gaococ, NULL, str_profile_profiletoken);
 
 	if (ctc) {
-		le = list_apply(&ao_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&ao_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
 
 	if (ptc) {
-		le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+		le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+				&ptc->value);
 		if (le)
 			p = le->data;
 	}
@@ -3314,7 +3382,8 @@ int media_GetAudioOutputConfigurationOptions_h(const struct soap_msg *msg,
 			err |= media_add_audio_ouput_config_opt(gaocorc, cfg);
 			le = le->next;
 		}
-	} else {
+	}
+	else {
 		err |= media_add_audio_ouput_config_opt(gaocorc, cfg);
 	}
 
@@ -3385,7 +3454,7 @@ int media_GetCompVideoEncoderConfigs_h(const struct soap_msg *msg,
 		str_method_get_cvec_r);
 
 	le = ve_l.head;
-	while(le) {
+	while (le) {
 		cfg = le->data;
 		err |= media_add_video_enc_config(gcvecrc, cfg, false, true);
 		le = le->next;
@@ -3456,22 +3525,27 @@ int media_GetGuaranteedNumberOfVEInstances_h(const struct soap_msg *msg,
 	ggnoveir= soap_add_child(resp, b, str_pf_media_wsdl,
 		str_method_get_ggnovei_r);
 
-	tmpc = soap_add_child(resp, ggnoveir, str_pf_media_wsdl, str_totalnumb);
+	tmpc = soap_add_child(resp, ggnoveir, str_pf_media_wsdl,
+			      str_totalnumb);
 	err |= soap_set_value_fmt(tmpc, "%d",
-		(cfg->t.vs.i.jpeg_i + cfg->t.vs.i.h264_i + cfg->t.vs.i.mpeg4_i));
+		(cfg->t.vs.i.jpeg_i + cfg->t.vs.i.h264_i +
+		 cfg->t.vs.i.mpeg4_i));
 
 	if (cfg->t.vs.i.jpeg_i > 0) {
-		tmpc = soap_add_child(resp, ggnoveir, str_pf_media_wsdl, str_jpeg);
+		tmpc = soap_add_child(resp, ggnoveir, str_pf_media_wsdl,
+				      str_jpeg);
 		err |= soap_set_value_fmt(tmpc, "%d", cfg->t.vs.i.jpeg_i);
 	}
 
 	if (cfg->t.vs.i.h264_i > 0) {
-		tmpc = soap_add_child(resp, ggnoveir, str_pf_media_wsdl, str_jpeg);
+		tmpc = soap_add_child(resp, ggnoveir, str_pf_media_wsdl,
+				      str_jpeg);
 		err |= soap_set_value_fmt(tmpc, "%d", cfg->t.vs.i.h264_i);
 	}
 
 	if (cfg->t.vs.i.mpeg4_i > 0) {
-		tmpc = soap_add_child(resp, ggnoveir, str_pf_media_wsdl, str_jpeg);
+		tmpc = soap_add_child(resp, ggnoveir, str_pf_media_wsdl,
+				      str_jpeg);
 		err |= soap_set_value_fmt(tmpc, "%d", cfg->t.vs.i.mpeg4_i);
 	}
 
@@ -3542,9 +3616,10 @@ int media_GetCompVideoSourceConfigs_h(const struct soap_msg *msg,
 		str_method_get_cvsc_r);
 
 	le = vs_l.head;
-	while(le) {
+	while (le) {
 		cfg = le->data;
-		err |= media_add_video_source_config(gcvscrc, cfg, false, true);
+		err |= media_add_video_source_config(gcvscrc, cfg, false,
+						     true);
 		le = le->next;
 	}
 
@@ -3587,13 +3662,15 @@ int media_GetVideoSourceConfigurationOptions_h(const struct soap_msg *msg,
 	ptc = soap_child_has_child(gvscoc, NULL, str_profile_profiletoken);
 
 	if (ctc) {
-		le = list_apply(&vs_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&vs_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
 
 	if (ptc) {
-		le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+		le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+				&ptc->value);
 		if (le)
 			p = le->data;
 	}
@@ -3630,7 +3707,8 @@ int media_GetVideoSourceConfigurationOptions_h(const struct soap_msg *msg,
 			err |= media_add_video_source_config_opt(gvscors, cfg);
 			le = le->next;
 		}
-	} else {
+	}
+	else {
 		err |= media_add_video_source_config_opt(gvscors, cfg);
 	}
 
@@ -3665,7 +3743,8 @@ int media_SetVideoSourceConfiguration_h(const struct soap_msg *msg,
 		return EINVAL;
 
 	config = soap_child_has_child(msg->envelope, NULL, str_body);
-	config = soap_child_has_child(config, NULL, str_method_set_videosource);
+	config = soap_child_has_child(config, NULL,
+				      str_method_set_videosource);
 	config = soap_child_has_child(config, NULL, str_configuration);
 
 	err |= media_set_video_source_config(config, f);
@@ -3685,7 +3764,8 @@ int media_SetVideoSourceConfiguration_h(const struct soap_msg *msg,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	soap_add_child(resp, b, str_pf_media_wsdl, str_method_set_videosource_r);
+	soap_add_child(resp, b, str_pf_media_wsdl,
+		       str_method_set_videosource_r);
 
   out:
 	if (err)
@@ -3724,7 +3804,8 @@ int media_GetVSC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	ctc = soap_child_has_child(gvscc, NULL, str_profile_configtoken);
 
 	if (ctc) {
-		le = list_apply(&vs_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&vs_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
@@ -3748,7 +3829,8 @@ int media_GetVSC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	gvscrc = soap_add_child(resp, b, str_pf_media_wsdl, str_method_get_vsc_r);
+	gvscrc = soap_add_child(resp, b, str_pf_media_wsdl,
+				str_method_get_vsc_r);
 	err |= media_add_video_source_config(gvscrc, cfg, false, false);
 
   out:
@@ -3782,7 +3864,8 @@ int media_SetVideoEncoderConfiguration_h(const struct soap_msg *msg,
 		return EINVAL;
 
 	config = soap_child_has_child(msg->envelope, NULL, str_body);
-	config = soap_child_has_child(config, NULL, str_method_set_videoecnoder);
+	config = soap_child_has_child(config, NULL,
+				      str_method_set_videoecnoder);
 	config = soap_child_has_child(config, NULL, str_configuration);
 
 	err |= media_set_video_encoder_config(config, f);
@@ -3802,7 +3885,8 @@ int media_SetVideoEncoderConfiguration_h(const struct soap_msg *msg,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	soap_add_child(resp, b, str_pf_media_wsdl, str_method_set_videoencoder_r);
+	soap_add_child(resp, b, str_pf_media_wsdl,
+		       str_method_set_videoencoder_r);
 
   out:
 	if (err)
@@ -3841,7 +3925,8 @@ int media_GetVEC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	ctc = soap_child_has_child(gvecc, NULL, str_profile_configtoken);
 
 	if (ctc) {
-		le = list_apply(&ve_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&ve_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
@@ -3865,7 +3950,8 @@ int media_GetVEC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	gvecrc = soap_add_child(resp, b, str_pf_media_wsdl, str_method_get_vec_r);
+	gvecrc = soap_add_child(resp, b, str_pf_media_wsdl,
+				str_method_get_vec_r);
 	err |= media_add_video_enc_config(gvecrc, cfg, false, false);
 
   out:
@@ -3907,13 +3993,15 @@ int media_GetAudioSourceConfigurationOptions_h(const struct soap_msg *msg,
 	ptc = soap_child_has_child(gascoc, NULL, str_profile_profiletoken);
 
 	if (ctc) {
-		le = list_apply(&as_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&as_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
 
 	if (ptc) {
-		le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+		le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+				&ptc->value);
 		if (le)
 			p = le->data;
 	}
@@ -3956,7 +4044,8 @@ int media_GetAudioSourceConfigurationOptions_h(const struct soap_msg *msg,
 			err |= media_add_audio_source_config_opt(gascors, cfg);
 			le = le->next;
 		}
-	} else {
+	}
+	else {
 		err |= media_add_audio_source_config_opt(gascors, cfg);
 	}
 
@@ -3991,7 +4080,8 @@ int media_SetAudioEncoderConfiguration_h(const struct soap_msg *msg,
 		return EINVAL;
 
 	config = soap_child_has_child(msg->envelope, NULL, str_body);
-	config = soap_child_has_child(config, NULL, str_method_set_audioecnoder);
+	config = soap_child_has_child(config, NULL,
+				      str_method_set_audioecnoder);
 	config = soap_child_has_child(config, NULL, str_configuration);
 
 	err |= media_set_audio_encoder_config(config, f);
@@ -4011,7 +4101,8 @@ int media_SetAudioEncoderConfiguration_h(const struct soap_msg *msg,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	soap_add_child(resp, b, str_pf_media_wsdl, str_method_set_audioencoder_r);
+	soap_add_child(resp, b, str_pf_media_wsdl,
+		       str_method_set_audioencoder_r);
 
   out:
 	if (err)
@@ -4050,7 +4141,8 @@ int media_GetAEC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	ctc = soap_child_has_child(gaecc, NULL, str_profile_configtoken);
 
 	if (ctc) {
-		le = list_apply(&ae_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&ae_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
@@ -4074,7 +4166,8 @@ int media_GetAEC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	gaecrc = soap_add_child(resp, b, str_pf_media_wsdl, str_method_get_aec_r);
+	gaecrc = soap_add_child(resp, b, str_pf_media_wsdl,
+				str_method_get_aec_r);
 	err |= media_add_audio_enc_config(gaecrc, cfg, false, false);
 
   out:
@@ -4144,9 +4237,10 @@ int media_GetCompAudioSourceConfigs_h(const struct soap_msg *msg,
 		str_method_get_casc_r);
 
 	le = as_l.head;
-	while(le) {
+	while (le) {
 		cfg = le->data;
-		err |= media_add_audio_source_config(gcascrc, cfg, false, true);
+		err |= media_add_audio_source_config(gcascrc, cfg, false,
+						     true);
 		le = le->next;
 	}
 
@@ -4191,7 +4285,8 @@ int media_AddAudioSourceConfiguration_h(const struct soap_msg *msg,
 	if (!ptc || !ctc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -4301,7 +4396,7 @@ int media_GetCompAudioEncoderConfigs_h(const struct soap_msg *msg,
 		str_method_get_caec_r);
 
 	le = ae_l.head;
-	while(le) {
+	while (le) {
 		cfg = le->data;
 		err |= media_add_audio_enc_config(gcaecrc, cfg, false, true);
 		le = le->next;
@@ -4325,7 +4420,6 @@ int media_GetCompAudioEncoderConfigs_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_AddAudioEncoderConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -4348,7 +4442,8 @@ int media_AddAudioEncoderConfiguration_h(const struct soap_msg *msg,
 	if (!ptc || !ctc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -4409,7 +4504,6 @@ int media_AddAudioEncoderConfiguration_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_SetAudioSourceConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -4422,7 +4516,8 @@ int media_SetAudioSourceConfiguration_h(const struct soap_msg *msg,
 		return EINVAL;
 
 	config = soap_child_has_child(msg->envelope, NULL, str_body);
-	config = soap_child_has_child(config, NULL, str_method_set_audiosource);
+	config = soap_child_has_child(config, NULL,
+				      str_method_set_audiosource);
 	config = soap_child_has_child(config, NULL, str_configuration);
 
 	err |= media_set_audio_source_config(config, f);
@@ -4442,7 +4537,8 @@ int media_SetAudioSourceConfiguration_h(const struct soap_msg *msg,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	soap_add_child(resp, b, str_pf_media_wsdl, str_method_set_audiosource_r);
+	soap_add_child(resp, b, str_pf_media_wsdl,
+		       str_method_set_audiosource_r);
 
   out:
 	if (err)
@@ -4462,7 +4558,6 @@ int media_SetAudioSourceConfiguration_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_GetASC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	struct soap_fault *f)
@@ -4481,7 +4576,8 @@ int media_GetASC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	ctc = soap_child_has_child(gascc, NULL, str_profile_configtoken);
 
 	if (ctc) {
-		le = list_apply(&as_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&as_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
@@ -4505,7 +4601,8 @@ int media_GetASC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	gascrc = soap_add_child(resp, b, str_pf_media_wsdl, str_method_get_asc_r);
+	gascrc = soap_add_child(resp, b, str_pf_media_wsdl,
+				str_method_get_asc_r);
 	err |= media_add_audio_source_config(gascrc, cfg, false, false);
 
   out:
@@ -4526,7 +4623,6 @@ int media_GetASC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_RemoveAudioSourceConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -4547,7 +4643,8 @@ int media_RemoveAudioSourceConfiguration_h(const struct soap_msg *msg,
 	if (!ptc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -4595,7 +4692,6 @@ int media_RemoveAudioSourceConfiguration_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_RemoveAudioEncoderConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -4616,7 +4712,8 @@ int media_RemoveAudioEncoderConfiguration_h(const struct soap_msg *msg,
 	if (!ptc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -4664,7 +4761,6 @@ int media_RemoveAudioEncoderConfiguration_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_RemoveAudioOutputConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -4685,7 +4781,8 @@ int media_RemoveAudioOutputConfiguration_h(const struct soap_msg *msg,
 	if (!ptc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -4725,7 +4822,6 @@ int media_RemoveAudioOutputConfiguration_h(const struct soap_msg *msg,
 }
 
 
-
 /**
  * handle SetAudioOutputConfiguration requests
  *
@@ -4734,7 +4830,6 @@ int media_RemoveAudioOutputConfiguration_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_SetAudioOutputConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -4747,7 +4842,8 @@ int media_SetAudioOutputConfiguration_h(const struct soap_msg *msg,
 		return EINVAL;
 
 	config = soap_child_has_child(msg->envelope, NULL, str_body);
-	config = soap_child_has_child(config, NULL, str_method_set_audiooutput);
+	config = soap_child_has_child(config, NULL,
+				      str_method_set_audiooutput);
 	config = soap_child_has_child(config, NULL, str_configuration);
 
 	err |= media_set_audio_output_config(config, f);
@@ -4767,7 +4863,8 @@ int media_SetAudioOutputConfiguration_h(const struct soap_msg *msg,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	soap_add_child(resp, b, str_pf_media_wsdl, str_method_set_audiooutput_r);
+	soap_add_child(resp, b, str_pf_media_wsdl,
+		       str_method_set_audiooutput_r);
 
   out:
 	if (err)
@@ -4787,7 +4884,6 @@ int media_SetAudioOutputConfiguration_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_GetCompAudioOutputConfigs_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -4836,9 +4932,10 @@ int media_GetCompAudioOutputConfigs_h(const struct soap_msg *msg,
 		str_method_get_caoc_r);
 
 	le = ao_l.head;
-	while(le) {
+	while (le) {
 		cfg = le->data;
-		err |= media_add_audio_output_config(gcaocrc, cfg, false, true);
+		err |= media_add_audio_output_config(gcaocrc, cfg, false,
+						     true);
 		le = le->next;
 	}
 
@@ -4860,7 +4957,6 @@ int media_GetCompAudioOutputConfigs_h(const struct soap_msg *msg,
  * @param f         soap fault message
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_AddAudioOutputConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -4883,7 +4979,8 @@ int media_AddAudioOutputConfiguration_h(const struct soap_msg *msg,
 	if (!ptc || !ctc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -4943,7 +5040,6 @@ int media_AddAudioOutputConfiguration_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_GetCompAudioDecoderConfigs_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -4992,7 +5088,7 @@ int media_GetCompAudioDecoderConfigs_h(const struct soap_msg *msg,
 		str_method_get_cadc_r);
 
 	le = ad_l.head;
-	while(le) {
+	while (le) {
 		cfg = le->data;
 		err |= media_add_audio_dec_config(gcadcrc, cfg, false, true);
 		le = le->next;
@@ -5016,7 +5112,6 @@ int media_GetCompAudioDecoderConfigs_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_AddAudioDecoderConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -5039,7 +5134,8 @@ int media_AddAudioDecoderConfiguration_h(const struct soap_msg *msg,
 	if (!ptc || !ctc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -5100,7 +5196,6 @@ int media_AddAudioDecoderConfiguration_h(const struct soap_msg *msg,
  * @param f         soap fault
  *
  * @return          0 if success, errorcode otherwise
- *
  */
 int media_RemoveAudioDecoderConfiguration_h(const struct soap_msg *msg,
 	struct soap_msg **prtresp, struct soap_fault *f)
@@ -5121,7 +5216,8 @@ int media_RemoveAudioDecoderConfiguration_h(const struct soap_msg *msg,
 	if (!ptc)
 		return EINVAL;
 
-	le = list_apply(&profile_l, true, media_cmp_profilreftoken, &ptc->value);
+	le = list_apply(&profile_l, true, media_cmp_profilreftoken,
+			&ptc->value);
 	if (le)
 		p = le->data;
 
@@ -5188,7 +5284,8 @@ int media_GetADC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	ctc = soap_child_has_child(gadcc, NULL, str_profile_configtoken);
 
 	if (ctc) {
-		le = list_apply(&ad_l, true, media_cmp_mediareftoken, &ctc->value);
+		le = list_apply(&ad_l, true, media_cmp_mediareftoken,
+				&ctc->value);
 		if (le)
 			cfg = le->data;
 	}
@@ -5212,7 +5309,8 @@ int media_GetADC_h(const struct soap_msg *msg, struct soap_msg **prtresp,
 	}
 
 	b = soap_add_child(resp, resp->envelope, str_pf_envelope, str_body);
-	gadcrc = soap_add_child(resp, b, str_pf_media_wsdl, str_method_get_adc_r);
+	gadcrc = soap_add_child(resp, b, str_pf_media_wsdl,
+				str_method_get_adc_r);
 	err |= media_add_audio_dec_config(gadcrc, cfg, false, false);
 
   out:

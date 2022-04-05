@@ -71,7 +71,8 @@ int deviceio_GetVideoSources_h(const struct soap_msg *msg,
 	le = vs_l.head;
 	while (le) {
 		cfg = le->data;
-		tokenc = soap_add_child(resp, gvsrc, str_pf_deviceio_wsdl, str_uctoken);
+		tokenc = soap_add_child(resp, gvsrc, str_pf_deviceio_wsdl,
+					str_uctoken);
 		err |= soap_set_value_fmt(tokenc, "%s", cfg->t.vs.sourcetoken);
 		le = le->next;
 	}
@@ -130,7 +131,8 @@ int deviceio_GetAudioSources_h(const struct soap_msg *msg,
 	le = as_l.head;
 	while (le) {
 		cfg = le->data;
-		tokenc = soap_add_child(resp, gvsrc, str_pf_deviceio_wsdl, str_uctoken);
+		tokenc = soap_add_child(resp, gvsrc, str_pf_deviceio_wsdl,
+					str_uctoken);
 		err |= soap_set_value_fmt(tokenc, "%s", cfg->t.as.sourcetoken);
 		le = le->next;
 	}
@@ -189,7 +191,8 @@ int deviceio_GetAudioOutputs_h(const struct soap_msg *msg,
 	le = ao_l.head;
 	while (le) {
 		cfg = le->data;
-		tokenc = soap_add_child(resp, gaosc, str_pf_deviceio_wsdl, str_uctoken);
+		tokenc = soap_add_child(resp, gaosc,
+					str_pf_deviceio_wsdl, str_uctoken);
 		err |= soap_set_value_fmt(tokenc, "%s", cfg->t.ao.outputtoken);
 		le = le->next;
 	}
