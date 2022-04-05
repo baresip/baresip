@@ -329,6 +329,7 @@ static int handle_rtp(struct onvif_filter_stream *fs,
 	size_t new_sampc = 0;
 	size_t sampc = AUDIO_SAMPSZ / 2;
 	void *sampv_s = NULL;
+	const struct config *cfg = conf_config();
 
 	(void) hdr;
 
@@ -379,6 +380,10 @@ static int handle_rtp(struct onvif_filter_stream *fs,
 	if (!fs->aubuf) {
 		err = aubuf_alloc(&fs->aubuf,
 				num_bytes, num_bytes * fs->aubuf_maxsz);
+
+		aubuf_set_mode(fs->aubuf, cfg->audio.adaptive ?
+			       AUBUF_ADAPTIVE : AUBUF_FIXED);
+		aubuf_set_silence(fs->aubuf, cfg->audio.silence);
 		return err;
 	}
 
@@ -982,7 +987,7 @@ int onvif_aufilter_audio_recv_start(struct onvif_filter_stream *fs,
 		if (err)
 			goto out;
 
-		jbuf_set_wish(fs->jbuf, cfg->avt.jbuf_wish);
+		jbuf_set_type(fs->jbuf, cfg->avt.jbtype);
 	}
 
 	switch (proto) {
