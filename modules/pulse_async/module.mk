@@ -5,7 +5,7 @@
 #
 
 MOD		:= pulse_async
-$(MOD)_SRCS	+= pulse.c player.c recorder.c
+$(MOD)_SRCS	+= pulse.c player.c recorder.c pastream.c
 
 $(MOD)_LFLAGS	+= $(shell pkg-config --libs libpulse)
 $(MOD)_CFLAGS	+= $(shell pkg-config --cflags libpulse)

@@ -44,18 +44,12 @@ static struct auplay *auplay;
 static struct ausrc *ausrc;
 
 
-struct paconn {
-	pa_threaded_mainloop *mainloop;
-	pa_context *context;
-};
-
-
 struct pa {
 	struct tmr *rc;
 	struct mqueue *q;
 	uint8_t retry;
-	
-	struct paconn *paconn;
+
+	struct paconn_st *paconn;
 };
 
 
@@ -67,7 +61,7 @@ static struct pa pa = {
 };
 
 
-static int paconn_start(struct paconn **ppaconn);
+static int paconn_start(struct paconn_st **ppaconn);
 
 
 static void reconnth(void *arg)
@@ -111,7 +105,7 @@ static void qh(int id, void *data, void *arg)
  */
 static void context_state_cb(pa_context *context, void *arg)
 {
-	struct paconn *c = arg;
+	struct paconn_st *c = arg;
 
 	switch (pa_context_get_state(context)) {
 		case PA_CONTEXT_FAILED:
@@ -145,7 +139,7 @@ static void context_state_cb(pa_context *context, void *arg)
  */
 static void paconn_destructor(void *arg)
 {
-	struct paconn *paconn = arg;
+	struct paconn_st *paconn = arg;
 
 	if (paconn->mainloop)
 		pa_threaded_mainloop_stop(paconn->mainloop);
@@ -172,14 +166,14 @@ static void paconn_destructor(void *arg)
 /**
  * Init Pulseaudio connection object
  *
- * @param ppaconn paconn pointer
+ * @param ppaconn_st paconn pointer
  *
  * @return int 0 if success, errorcode otherwise
  */
-static int paconn_start(struct paconn **ppaconn)
+static int paconn_start(struct paconn_st **ppaconn)
 {
 	int err = 0;
-	struct paconn *c;
+	struct paconn_st *c;
 
 	if (!ppaconn)
 		return EINVAL;
@@ -247,6 +241,17 @@ static int pa_start(void)
 }
 
 
+/**
+ * Getter for pulseaudio connection struct
+ *
+ * @return struct paconn_st* pulseaudio connection object
+ */
+struct paconn_st *paconn_get(void)
+{
+	return pa.paconn ? pa.paconn : NULL;
+}
+
+
 static void dev_info_notify_cb(pa_operation *op, void *arg)
 {
 	(void) arg;
@@ -285,9 +290,11 @@ static int module_init(void)
 		return err;
 
 	err  = auplay_register(&auplay, baresip_auplayl(),
-			       "pulse_async",NULL/*pulse_async_player_alloc*/);
+			       "pulse_async",NULL
+			       /*pulse_async_player_alloc*/);
 	err |= ausrc_register(&ausrc, baresip_ausrcl(),
-			      "pulse_async", NULL/*pulse_async_recorder_alloc*/);
+			      "pulse_async", NULL
+			      /*pulse_async_recorder_alloc*/);
 
 	return err;
 }
