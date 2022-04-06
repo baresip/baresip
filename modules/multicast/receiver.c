@@ -437,8 +437,10 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (err)
 		return;
 
-	if (player_decode(mcreceiver) == EAGAIN) {
-		(void) player_decode(mcreceiver);
+	if (mcreceiver->state == RUNNING) {
+		if (player_decode(mcreceiver) == EAGAIN) {
+			(void) player_decode(mcreceiver);
+		}
 	}
 
   out:
