@@ -317,11 +317,11 @@ class ccheck:
 
         self.cur_filename = filename
 
+        self.cur_lineno = 0
         while 1:
             lines = f.readlines(100000)
             if not lines:
                 break
-            self.cur_lineno = 0
             for line in lines:
                 self.cur_lineno += 1
                 self.process_line(line, funcs, ext)
