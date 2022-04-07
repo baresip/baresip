@@ -154,7 +154,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	struct fixture *f = arg;
 	struct call *call2 = NULL;
 	struct agent *ag;
-	struct audio *au;
+	struct stream *strm = NULL;
 	char curi[256];
 	int err = 0;
 	(void)prm;
@@ -357,9 +357,14 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_MENC:
 		++ag->n_mediaenc;
-		au = call_audio(call);
-		if (au) {
-			ASSERT_TRUE(stream_is_secure(audio_strm(au)));
+
+		if (strstr(prm, "audio"))
+			strm = audio_strm(call_audio(call));
+		else if (strstr(prm, "video"))
+			strm = video_strm(call_video(call));
+
+		if (strm) {
+			ASSERT_TRUE(stream_is_secure(strm));
 		}
 		break;
 
