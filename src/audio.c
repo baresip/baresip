@@ -600,7 +600,9 @@ static void check_telev(struct audio *a, struct autx *tx)
 		goto out;
 
 	mb->pos = STREAM_PRESZ;
+	lock_write_get(a->tx.lock);
 	err = stream_send(a->strm, false, marker, fmt->pt, tx->ts_tel, mb);
+	lock_rel(a->tx.lock);
 	if (err) {
 		warning("audio: telev: stream_send %m\n", err);
 	}
