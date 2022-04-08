@@ -355,9 +355,6 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 	s->rx.ts_last = tmr_jiffies();
 
-	if (!mbuf_get_left(mb))
-		return;
-
 	if (!(sdp_media_ldir(s->sdp) & SDP_RECVONLY))
 		return;
 
