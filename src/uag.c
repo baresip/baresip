@@ -75,7 +75,9 @@ int uag_hold_resume(struct call *call)
 		acall = ua_find_active_call(ua);
 	}
 
-	err =  call_hold(acall, true);
+	if (acall)
+		err =  call_hold(acall, true);
+
 	err |= call_hold(toresume, false);
 
 	return err;
