@@ -71,7 +71,6 @@ rtp_video_tos		136
 rtcp_mux		no
 jitter_buffer_type	fixed		# off, fixed, adaptive
 jitter_buffer_delay	5-10		# frames
-#jitter_buffer_wish	6		# frames for start
 rtp_stats		no
 #rtp_timeout		60
 
