@@ -8,11 +8,6 @@
 #include <rem.h>
 #include <baresip.h>
 
-#include <stdlib.h>
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-#endif
-
 #include "multicast.h"
 
 #define DEBUG_MODULE "mcreceiver"
@@ -217,7 +212,7 @@ static int player_stop_start(struct mcreceiver *mcreceiver)
 {
 	mcplayer_stop();
 	jbuf_flush(mcreceiver->jbuf);
-	return mcplayer_start(mcreceiver->jbuf, mcreceiver->ac);
+	return mcplayer_start(mcreceiver->ac);
 }
 
 
@@ -389,6 +384,28 @@ static void timeout_handler(void *arg)
 
 
 /**
+ * Decode RTP packet
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+static int player_decode(struct mcreceiver *mcreceiver)
+{
+	void *mb = NULL;
+	struct rtp_header hdr;
+	int err = 0;
+
+	err = jbuf_get(mcreceiver->jbuf, &hdr, &mb);
+	if (err && err != EAGAIN)
+		return err;
+
+	err = mcplayer_decode(&hdr, mb);
+	mb = mem_deref(mb);
+
+	return err;
+}
+
+
+/**
  * Handle incoming RTP packages
  *
  * @param src Source address
@@ -419,6 +436,12 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	err = jbuf_put(mcreceiver->jbuf, hdr, mb);
 	if (err)
 		return;
+
+	if (mcreceiver->state == RUNNING) {
+		if (player_decode(mcreceiver) == EAGAIN) {
+			(void) player_decode(mcreceiver);
+		}
+	}
 
   out:
 	tmr_start(&mcreceiver->timeout, TIMEOUT, timeout_handler, mcreceiver);
