@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2022-04-09
+
+## What's Changed
+* Added API function call_diverteruri by @juha-h in https://github.com/baresip/baresip/pull/1780
+* Avoid undeclared 'CLOCK_REALTIME' on RHEL/CentOS 7 (fixes #1781) by @robert-scheck in https://github.com/baresip/baresip/pull/1782
+* audio: add lock in audio_send_digit by @GGGO in https://github.com/baresip/baresip/pull/1786
+* vumeter: use new auframe_level() by @sreimers in https://github.com/baresip/baresip/pull/1788
+* reg.c: use already declared acc by @GGGO in https://github.com/baresip/baresip/pull/1789
+* aubuf adaptive jitter buffer by @cspiel1 in https://github.com/baresip/baresip/pull/1784
+* multicast set aubuf silence by @cspiel1 in https://github.com/baresip/baresip/pull/1791
+* ccheck: fix line number in error print by @cspiel1 in https://github.com/baresip/baresip/pull/1793
+* test: check the correct stream in UA_EVENT_CALL_MENC by @alfredh in https://github.com/baresip/baresip/pull/1794
+* audio: missing lock around stream_send by @GGGO in https://github.com/baresip/baresip/pull/1796
+* docs: remove obsolete jitter_buffer_wish from config example by @cspiel1 in https://github.com/baresip/baresip/pull/1798
+* Multicast jbuf and aubuf changes by @cHuberCoffee in https://github.com/baresip/baresip/pull/1797
+* uag: uag_hold_resume() should not return err if there is no call to hold by @cspiel1 in https://github.com/baresip/baresip/pull/1799
+* stream: remove mbuf_get_left check in rtp_handler by @GGGO in https://github.com/baresip/baresip/pull/1801
+* cmake: preliminary support by @alfredh in https://github.com/baresip/baresip/pull/1800
+
+## New Contributors
+* @GGGO made their first contribution in https://github.com/baresip/baresip/pull/1786
+
+---
+
 ## [2.0.1] - 2022-03-27
 
 ### What's Changed
@@ -973,7 +997,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1342]: https://github.com/baresip/baresip/pull/1342
 
 
-[Unreleased]: https://github.com/baresip/baresip/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/baresip/baresip/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/baresip/baresip/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/baresip/baresip/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/baresip/baresip/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/baresip/baresip/compare/v1.0.0...v1.1.0
