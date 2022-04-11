@@ -20,6 +20,7 @@ enum {
 
 uint8_t multicast_callprio(void);
 uint8_t multicast_ttl(void);
+uint32_t multicast_fade_time(void);
 
 
 /* Sender */
@@ -49,6 +50,7 @@ void mcreceiver_print(struct re_printf *pf);
 /* Player <exchangable player> */
 int mcplayer_start(const struct aucodec *ac);
 void mcplayer_stop(void);
+void mcplayer_fadeout(void);
 int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb);
 
 int  mcplayer_init(void);

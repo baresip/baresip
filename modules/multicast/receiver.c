@@ -211,7 +211,7 @@ static void resume_uag_state(void)
  */
 static int player_stop_start(struct mcreceiver *mcreceiver)
 {
-	mcplayer_stop();
+	mcplayer_fadeout();
 	jbuf_flush(mcreceiver->jbuf);
 	return mcplayer_start(mcreceiver->ac);
 }
@@ -297,9 +297,12 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 
 	le = list_apply(&mcreceivl, true, mcreceiver_running, NULL);
 	if (!le) {
+		err = player_stop_start(mcreceiver);
+		if (err)
+			goto out;
+
 		mcreceiver->state = RUNNING;
 		mcreceiver->ssrc = ssrc;
-		err = player_stop_start(mcreceiver);
 
 		info ("multicast receiver: start addr=%J prio=%d enabled=%d "
 			"state=%s\n", &mcreceiver->addr, mcreceiver->prio,
@@ -319,11 +322,14 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 	}
 
 	if (hprio->prio == mcreceiver->prio && mcreceiver->ssrc != ssrc) {
+		err = player_stop_start(mcreceiver);
+		if (err)
+			goto out;
+
 		if (hprio->state == IGNORED)
 			hprio->state = RUNNING;
 
 		mcreceiver->ssrc = ssrc;
-		err = player_stop_start(mcreceiver);
 
 		info ("multicast receiver: restart addr=%J prio=%d enabled=%d "
 			"state=%s\n", &mcreceiver->addr, mcreceiver->prio,
@@ -340,11 +346,14 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		goto out;
 	}
 
+	err = player_stop_start(mcreceiver);
+	if (err)
+		goto out;
+
 	hprio->state = RECEIVING;
 	mcreceiver->state = RUNNING;
 	mcreceiver->ssrc = ssrc;
 
-	err = player_stop_start(mcreceiver);
 
 	info ("multicast receiver: start addr=%J prio=%d enabled=%d "
 		"state=%s\n", &mcreceiver->addr, mcreceiver->prio,

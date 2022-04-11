@@ -19,11 +19,13 @@
 struct mccfg {
 	uint32_t callprio;
 	uint32_t ttl;
+	uint32_t tfade;
 };
 
 static struct mccfg mccfg = {
 	0,
 	1,
+	125,
 };
 
 
@@ -120,6 +122,17 @@ uint8_t multicast_callprio(void)
 uint8_t multicast_ttl(void)
 {
 	return mccfg.ttl;
+}
+
+
+/**
+ * Getter for configurable multicast fade in/out time
+ *
+ * @return uint32_t multicast fade time
+ */
+uint32_t multicast_fade_time(void)
+{
+	return mccfg.tfade;
 }
 
 
@@ -627,6 +640,10 @@ static int module_read_config(void)
 	(void)conf_get_u32(conf_cur(), "multicast_ttl", &mccfg.ttl);
 	if (mccfg.ttl > 255)
 		mccfg.ttl = 255;
+
+	(void)conf_get_u32(conf_cur(), "multicast_fade_time", &mccfg.tfade);
+	if (mccfg.tfade > 2000)
+		mccfg.tfade = 2000;
 
 	sa_init(&laddr, AF_INET);
 	err = conf_apply(conf_cur(), "multicast_listener",
