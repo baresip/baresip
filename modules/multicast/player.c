@@ -16,6 +16,15 @@
 #include <re_dbg.h>
 
 
+enum fade_state {
+	FM_IDLE,
+	FM_FADEIN,
+	FM_FADEINDONE,
+	FM_FADEOUT,
+	FM_FADEOUTDONE,
+};
+
+
 /**
  * Multicast player struct
  *
@@ -37,6 +46,12 @@ struct mcplayer {
 	uint32_t ptime;
 	enum aufmt play_fmt;
 	enum aufmt dec_fmt;
+
+	enum fade_state fades;
+	uint32_t fade_cmax;
+	uint32_t fade_c;
+	float fade_dbstart;
+	float fade_delta;
 };
 
 
@@ -56,6 +71,75 @@ static void mcplayer_destructor(void *arg)
 	mem_deref(player->sampv);
 	mem_deref(player->aubuf);
 	list_flush(&player->filterl);
+}
+
+
+static void fade_process(struct auframe *af)
+{
+	size_t i;
+	int16_t *sampv_ptr = af->sampv;
+	float db_value;
+
+	if (af->fmt != AUFMT_S16LE)
+		return;
+
+	switch (player->fades) {
+		case FM_FADEIN:
+			if (player->fade_c == player->fade_cmax) {
+				player->fade_c = 1;
+				player->fades = FM_FADEINDONE;
+				return;
+			}
+
+			for (i = 0; i < af->sampc; i++) {
+				if (player->fade_c == player->fade_cmax)
+					break;
+
+				db_value = player->fade_dbstart +
+					(player->fade_c * player->fade_delta);
+				*(sampv_ptr) = *(sampv_ptr) * db_value;
+				++sampv_ptr;
+				++player->fade_c;
+			}
+
+			break;
+
+		case FM_FADEOUT:
+			for (i = 0; i < af->sampc; i++) {
+				if (player->fade_c == player->fade_cmax)
+					break;
+
+				db_value = 1. -
+					(player->fade_c * player->fade_delta);
+				*(sampv_ptr) = *(sampv_ptr) * db_value;
+				++sampv_ptr;
+				++player->fade_c;
+			}
+
+			if (player->fade_c == player->fade_cmax) {
+				player->fade_c = 1;
+				player->fades = FM_FADEOUTDONE;
+				return;
+			}
+
+			break;
+
+		case FM_FADEOUTDONE:
+			for (i = 0; i < af->sampc; i++) {
+				db_value = 1. - ((player->fade_cmax - 1) *
+					player->fade_delta);
+				*(sampv_ptr) = *(sampv_ptr) * db_value;
+				++sampv_ptr;
+			}
+
+			break;
+
+		default:
+			break;
+
+	}
+
+	return;
 }
 
 
@@ -134,6 +218,7 @@ int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb)
 			player->auplay_prm.srate, player->auplay_prm.ch);
 	}
 
+	fade_process(&af);
 	err = aubuf_write_auframe(player->aubuf, &af);
 
   out:
@@ -233,11 +318,11 @@ int mcplayer_start(const struct aucodec *ac)
 	if (!ac)
 		return EINVAL;
 
-	if (player) {
-		warning ("multicast player: already started\n");
+	if (player &&
+		(player->fades == FM_FADEOUT || player->fades == FM_FADEIN))
 		return EINPROGRESS;
-	}
 
+	player = mem_deref(player);
 	player = mem_zalloc(sizeof(*player), mcplayer_destructor);
 	if (!player)
 		return ENOMEM;
@@ -276,6 +361,16 @@ int mcplayer_start(const struct aucodec *ac)
 	prm.ch = channels_dsp;
 	prm.ptime = player->ptime;
 	prm.fmt = player->play_fmt;
+
+	if (multicast_fade_time()) {
+		player->fade_c = 1;
+		player->fade_cmax = (multicast_fade_time() * prm.srate) / 1000;
+		player->fade_dbstart = 0.001; /*-60dB*/
+		player->fade_delta = (1. - player->fade_dbstart) /
+			player->fade_cmax;
+		player->fades = FM_FADEIN;
+	}
+
 	if (!player->aubuf) {
 		const size_t sz = aufmt_sample_size(player->play_fmt);
 		const size_t ptime_min = cfg->buffer.min;
@@ -334,6 +429,23 @@ int mcplayer_start(const struct aucodec *ac)
 void mcplayer_stop(void)
 {
 	player = mem_deref(player);
+}
+
+
+/**
+ * Fadeout active player
+ *
+ */
+void mcplayer_fadeout(void)
+{
+	if (!player)
+		return;
+
+	if (player->fades == FM_FADEOUT || player->fades == FM_FADEIN ||
+		player->fades == FM_FADEOUTDONE)
+		return;
+
+	player->fades = FM_FADEOUT;
 }
 
 
