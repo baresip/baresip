@@ -277,9 +277,17 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		for (leua = list_head(uag_list()); leua; leua = leua->next) {
 			struct le *lecall;
 			ua = leua->data;
-			for (lecall = list_head(ua_calls(ua)); lecall;
-				lecall = lecall->next) {
+			lecall = list_head(ua_calls(ua));
+			while (lecall) {
 				struct call *call = lecall->data;
+				lecall = lecall->next;
+
+				if (call_state(call) !=
+					CALL_STATE_ESTABLISHED) {
+					ua_hangup(ua, call, 0, NULL);
+					continue;
+				}
+
 				if (!call_is_onhold(call))
 					call_hold(call, true);
 			}
