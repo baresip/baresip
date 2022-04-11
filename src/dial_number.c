@@ -46,7 +46,8 @@ int clean_number(char* str)
 		}
 	i = 0;
 	while (str[i]) {
-		// keep only '+' as first digit.
+		/* keep only '+' as first digit.
+		 */
 		if ((str[i] == '+' && k == 0)
 			|| isdigit(str[i]) > 0
 		)
