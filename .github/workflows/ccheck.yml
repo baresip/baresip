@@ -11,3 +11,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: ccheck
         run: make ccheck
+      - name: CMakeLint
+        run: |
+          pip install cmakelint
+          ~/.local/bin/cmakelint
