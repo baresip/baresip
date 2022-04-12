@@ -16,6 +16,7 @@ struct paconn_st {
 	pa_context *context;
 };
 
+
 /**
  * Pulseaudio stream struct
  *
@@ -27,19 +28,27 @@ struct pastream_st {
 
 	struct ausrc_prm src_prm;
 	struct auplay_prm play_prm;
+	auplay_write_h *wh;
+	ausrc_read_h *rh;
 
 	bool shutdown;
 
 	pa_stream *stream;
 	pa_sample_spec ss;
 	pa_buffer_attr attr;
+	size_t sampsz;
+	size_t sz;
 	pa_stream_direction_t direction;
+
+	void *arg;
 };
 
 
 /*player.c*/
 int pulse_async_player_init(struct auplay *ap);
-
+int pulse_async_player_alloc(struct auplay_st **stp, const struct auplay *ap,
+	struct auplay_prm *prm, const char *device,
+	auplay_write_h *wh, void *arg);
 
 /*recorder.c*/
 int pulse_async_recorder_init(struct ausrc *as);
@@ -52,5 +61,13 @@ int pulse_async_set_available_devices(struct list *dev_list,
 	pa_operation *(get_dev_info_cb)(pa_context *, struct list*));
 
 
-// void stream_write_cb(pa_stream *s, size_t len, void *arg);
+/*pastream.c*/
+int pastream_alloc(struct pastream_st **bptr, struct auplay_prm *prm,
+	const char *dev, const char *pname, const char *sname,
+	pa_stream_direction_t dir, void *arg);
+int pastream_start(struct pastream_st *st);
+void pastream_set_writehandler(struct pastream_st *st, auplay_write_h *wh);
+
+
+void stream_write_cb(pa_stream *s, size_t len, void *arg);
 // void stream_read_cb(pa_stream *s, size_t len, void *arg);

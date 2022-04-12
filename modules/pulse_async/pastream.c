@@ -9,9 +9,14 @@
 #include <rem.h>
 #include <baresip.h>
 #include <string.h>
-
+#include <stdint.h>
 
 #include "pulse.h"
+
+
+#define DEBUG_MODULE "pulse_async/pastream"
+#define DEBUG_LEVEL 6
+#include <re_dbg.h>
 
 
 static void success_cb(pa_stream *s, int success, void *arg)
@@ -47,8 +52,9 @@ static int stream_flush(struct pastream_st *st)
 }
 
 
-void pastream_cleanup(struct pastream_st *st)
+static void pastream_destructor(void *arg)
 {
+	struct pastream_st *st = arg;
 	struct paconn_st *c = paconn_get();
 
 	pa_threaded_mainloop_lock(c->mainloop);
@@ -68,6 +74,7 @@ void pastream_cleanup(struct pastream_st *st)
 	}
 
 	pa_threaded_mainloop_unlock(c->mainloop);
+
 }
 
 
@@ -135,8 +142,8 @@ int pastream_start(struct pastream_st* st)
 		goto out;
 	}
 
-	// pa_stream_set_read_callback(st->stream, stream_read_cb, st);
-	// pa_stream_set_write_callback(st->stream, stream_write_cb, st);
+	/* pa_stream_set_read_callback(st->stream, stream_read_cb, st); */
+	pa_stream_set_write_callback(st->stream, stream_write_cb, st);
 	pa_stream_set_latency_update_callback(st->stream,
 					      stream_latency_update_cb, st);
 	pa_stream_set_underflow_callback(st->stream,
@@ -145,6 +152,7 @@ int pastream_start(struct pastream_st* st)
 					stream_overflow_cb, st);
 
 	if (st->direction == PA_STREAM_PLAYBACK) {
+		DEBUG_INFO("Connect to stream \n");
 		pa_err = pa_stream_connect_playback(st->stream,
 				strlen(st->device) == 0 ? NULL :
 				st->device, &st->attr,
@@ -179,12 +187,57 @@ out:
 }
 
 
-int aufmt_to_pulse_format(enum aufmt fmt)
+static int aufmt_to_pulse_format(enum aufmt fmt)
 {
 	switch (fmt) {
-
-	case AUFMT_S16LE:  return PA_SAMPLE_S16NE;
-	case AUFMT_FLOAT:  return PA_SAMPLE_FLOAT32NE;
-	default: return 0;
+		case AUFMT_S16LE:  return PA_SAMPLE_S16NE;
+		case AUFMT_FLOAT:  return PA_SAMPLE_FLOAT32NE;
+		default: return 0;
 	}
+}
+
+
+int pastream_alloc(struct pastream_st **bptr, struct auplay_prm *prm,
+	const char *dev, const char *pname, const char *sname,
+	pa_stream_direction_t dir, void *arg)
+{
+	struct pastream_st *st;
+
+	if (!bptr || !prm)
+		return EINVAL;
+
+	st = mem_zalloc(sizeof(*st), pastream_destructor);
+	if (!st)
+		return ENOMEM;
+
+	st->arg = arg;
+	st->play_prm = *prm;
+	st->sampsz = aufmt_sample_size(prm->fmt);
+	st->ss.format = aufmt_to_pulse_format(prm->fmt);
+	st->ss.channels = prm->ch;
+	st->ss.rate = prm->srate;
+	st->sz = prm->ptime * prm->ch * st->sampsz * prm->srate / 1000;
+
+
+	st->attr.maxlength = UINT32_MAX;
+	st->attr.tlength = (uint32_t)pa_usec_to_bytes(
+		prm->ptime * PA_USEC_PER_MSEC, &st->ss);
+	st->attr.prebuf = -1;
+	st->attr.fragsize = (uint32_t)pa_usec_to_bytes(
+		prm->ptime / 3 * PA_USEC_PER_MSEC, &st->ss);
+	st->direction = dir;
+
+	strcpy(st->pname, pname);
+	strcpy(st->sname, sname);
+	str_ncpy(st->device, dev, sizeof(st->device));
+
+	*bptr = st;
+
+	return 0;
+}
+
+
+void pastream_set_writehandler(struct pastream_st *st, auplay_write_h *wh)
+{
+	st->wh = wh;
 }

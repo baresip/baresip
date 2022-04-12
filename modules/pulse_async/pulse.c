@@ -290,8 +290,7 @@ static int module_init(void)
 		return err;
 
 	err  = auplay_register(&auplay, baresip_auplayl(),
-			       "pulse_async",NULL
-			       /*pulse_async_player_alloc*/);
+			       "pulse_async", pulse_async_player_alloc);
 	err |= ausrc_register(&ausrc, baresip_ausrcl(),
 			      "pulse_async", NULL
 			      /*pulse_async_recorder_alloc*/);
