@@ -46,15 +46,14 @@ int clean_number(char* str)
 		}
 	i = 0;
 	while (str[i]) {
-		if (str[i] == ' '
-			|| str[i] == '.'
-			|| str[i] == '-'
-			|| str[i] == '/'
-			|| str[i] == '('
-			|| str[i] == ')')
-			++i;
-		else
+		/* keep only '+' as first digit.
+		 */
+		if ((str[i] == '+' && k == 0)
+			|| isdigit(str[i]) > 0
+		)
 			str[k++] = str[i++];
+		else
+			++i;
 	}
 	str[k] = '\0';
 	return k;
