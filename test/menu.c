@@ -66,6 +66,11 @@ int test_clean_number(void)
 	ASSERT_STREQ("05012345", dial_number);
 	ASSERT_EQ(8, res);
 
+	strcpy(dial_number, "05(0)12345\t\n");
+	res = clean_number(dial_number);
+	ASSERT_STREQ("05012345", dial_number);
+	ASSERT_EQ(8, res);
+
 out:
 	return err;
 }
