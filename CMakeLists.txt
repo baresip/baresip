@@ -2,6 +2,7 @@
 # CMakeLists.txt
 #
 # Copyright (C) 2010 - 2022 Alfred E. Heggestad
+# Copyright (C) 2022 Sebastian Reimers
 #
 
 ##############################################################################
@@ -28,10 +29,13 @@ find_package(OpenSSL)
 #
 
 option(USE_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
+option(STATIC "Build static" OFF)
 
 include_directories(
   include
   src
+  ../re/include
+  ../rem/include
   /usr/local/include
   /usr/local/include/re
   /usr/local/include/rem
@@ -61,6 +65,9 @@ if(USE_OPENSSL)
   )
 endif()
 
+if(STATIC)
+  add_definitions(-DSTATIC)
+endif()
 
 ##############################################################################
 #
@@ -86,7 +93,6 @@ set(SRCS
   src/dial_number.c
   src/event.c
   src/log.c
-  src/main.c
   src/mediadev.c
   src/menc.c
   src/message.c
@@ -112,12 +118,54 @@ set(SRCS
   src/vidisp.c
   src/vidsrc.c
   src/vidutil.c
-
-  src/main.c
 )
 
 
-add_executable(${PROJECT_NAME}
-  ${SRCS}
-)
-target_link_libraries(${PROJECT_NAME} -lrem -lre -lz -lpthread)
+##############################################################################
+#
+# Modules
+#
+
+set(MODULES "")
+add_subdirectory(modules/echo)
+
+
+if(STATIC)
+  foreach(mod IN LISTS MODULES)
+    set(MOD_EXPORTS
+      "${MOD_EXPORTS}extern const struct mod_export exports_${mod};\n")
+    set(MOD_EXPORT_TABLE
+      "${MOD_EXPORT_TABLE}  &exports_${mod},\n")
+  endforeach()
+
+  configure_file(src/static.c.in src/static.c)
+  list(APPEND SRCS ${CMAKE_CURRENT_BINARY_DIR}/src/static.c)
+endif()
+
+
+##############################################################################
+#
+# Main target library
+#
+
+if(STATIC)
+  add_library(baresip STATIC ${SRCS})
+  target_link_libraries(baresip PUBLIC ${MODULES} rem re -lm)
+else()
+  add_library(baresip SHARED ${SRCS})
+  target_link_libraries(baresip PRIVATE rem re -lm)
+endif()
+
+set_target_properties(baresip PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+
+##############################################################################
+#
+# Target baresip executable
+#
+
+add_executable(baresip_exe src/main.c)
+
+set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
+
+target_link_libraries(baresip_exe baresip rem re -lz -lm -lpthread)
