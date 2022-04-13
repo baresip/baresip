@@ -81,7 +81,6 @@ static void pastream_destructor(void *arg)
 static void stream_latency_update_cb(pa_stream *s, void *arg)
 {
 	struct pastream_st *st = arg;
-	struct paconn_st *c = paconn_get();
 	pa_usec_t usec;
 	int neg;
 	int pa_err;
@@ -91,31 +90,35 @@ static void stream_latency_update_cb(pa_stream *s, void *arg)
 	if (!pa_err)
 		debug("pulse_async: stream %s latency update "
 				"usec=%lu, neg=%d\n", st->sname, usec, neg);
-
-	pa_threaded_mainloop_signal(c->mainloop, 0);
 }
 
 
 static void stream_underflow_cb(pa_stream *s, void *arg)
 {
 	struct pastream_st *st = arg;
-	struct paconn_st *c = paconn_get();
 	(void)s;
 
 	if (!st->shutdown)
 		warning("pulse_async: stream %s underrun\n",  st->sname);
-
-	pa_threaded_mainloop_signal(c->mainloop, 0);
 }
 
 
 static void stream_overflow_cb(pa_stream *s, void *arg)
 {
 	struct pastream_st *st = arg;
-	struct paconn_st *c = paconn_get();
 	(void)s;
 
 	warning("pulse_async: stream %s overrun\n", st->sname);
+}
+
+
+static void stream_state_cb(pa_stream *s, void *arg)
+{
+	struct paconn_str *c = paconn_get();
+	(void)s;
+	(void)arg;
+
+	debug("pulse_async: stream state %d\n", pa_stream_get_state(s));
 	pa_threaded_mainloop_signal(c->mainloop, 0);
 }
 
@@ -150,6 +153,7 @@ int pastream_start(struct pastream_st* st)
 					 stream_underflow_cb, st);
 	pa_stream_set_overflow_callback(st->stream,
 					stream_overflow_cb, st);
+	pa_stream_set_state_callback(st->stream, stream_state_cb, st);
 
 	if (st->direction == PA_STREAM_PLAYBACK) {
 		DEBUG_INFO("Connect to stream \n");
@@ -222,7 +226,10 @@ int pastream_alloc(struct pastream_st **bptr, struct auplay_prm *prm,
 	st->attr.maxlength = UINT32_MAX;
 	st->attr.tlength = (uint32_t)pa_usec_to_bytes(
 		prm->ptime * PA_USEC_PER_MSEC, &st->ss);
-	st->attr.prebuf = -1;
+
+	st->attr.prebuf = UINT32_MAX;
+	st->attr.minreq = st->attr.tlength / 4;
+
 	st->attr.fragsize = (uint32_t)pa_usec_to_bytes(
 		prm->ptime / 3 * PA_USEC_PER_MSEC, &st->ss);
 	st->direction = dir;
