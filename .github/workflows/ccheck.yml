@@ -14,4 +14,4 @@ jobs:
       - name: CMakeLint
         run: |
           pip install cmakelint
-          ~/.local/bin/cmakelint
+          find . -name "CMakeLists.txt" -exec ~/.local/bin/cmakelint {} +
