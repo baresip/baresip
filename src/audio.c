@@ -777,29 +777,29 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 	const struct aucodec *ac = rx->ac;
 
 	/* No decoder set */
-	if (!rx->ac)
+	if (!ac)
 		return 0;
 
 	/* TODO: PLC */
-	if (lostc && rx->ac->plch) {
+	if (lostc && ac->plch) {
 
-		err = rx->ac->plch(rx->dec,
+		err = ac->plch(rx->dec,
 				   rx->dec_fmt, rx->sampv, &sampc,
 				   mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
 			warning("audio: %s codec decode %u bytes: %m\n",
-				rx->ac->name, mbuf_get_left(mb), err);
+				ac->name, mbuf_get_left(mb), err);
 			goto out;
 		}
 	}
 	else if (mbuf_get_left(mb)) {
 
-		err = rx->ac->dech(rx->dec,
+		err = ac->dech(rx->dec,
 				   rx->dec_fmt, rx->sampv, &sampc,
 				   marker, mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
 			warning("audio: %s codec decode %u bytes: %m\n",
-				rx->ac->name, mbuf_get_left(mb), err);
+				ac->name, mbuf_get_left(mb), err);
 			goto out;
 		}
 
