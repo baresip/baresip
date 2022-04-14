@@ -128,6 +128,7 @@ set(SRCS
 
 set(MODULES "")
 add_subdirectory(modules/echo)
+add_subdirectory(modules/menu)
 
 
 if(STATIC)
