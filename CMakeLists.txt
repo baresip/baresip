@@ -14,6 +14,7 @@ cmake_minimum_required(VERSION 3.7)
 
 project(baresip)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 ##############################################################################
 #
@@ -21,6 +22,7 @@ project(baresip)
 #
 
 find_package(OpenSSL)
+find_package(OPUS)
 
 
 ##############################################################################
@@ -127,9 +129,14 @@ set(SRCS
 #
 
 set(MODULES "")
+
 add_subdirectory(modules/echo)
 add_subdirectory(modules/menu)
 add_subdirectory(modules/stdio)
+
+if(OPUS_FOUND)
+add_subdirectory(modules/opus)
+endif()
 
 
 if(STATIC)
