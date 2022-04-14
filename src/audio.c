@@ -774,31 +774,32 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 	bool marker = hdr->m;
 	struct le *le;
 	int err = 0;
+	const struct aucodec *ac = rx->ac;
 
 	/* No decoder set */
-	if (!rx->ac)
+	if (!ac)
 		return 0;
 
 	/* TODO: PLC */
-	if (lostc && rx->ac->plch) {
+	if (lostc && ac->plch) {
 
-		err = rx->ac->plch(rx->dec,
+		err = ac->plch(rx->dec,
 				   rx->dec_fmt, rx->sampv, &sampc,
 				   mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
 			warning("audio: %s codec decode %u bytes: %m\n",
-				rx->ac->name, mbuf_get_left(mb), err);
+				ac->name, mbuf_get_left(mb), err);
 			goto out;
 		}
 	}
 	else if (mbuf_get_left(mb)) {
 
-		err = rx->ac->dech(rx->dec,
+		err = ac->dech(rx->dec,
 				   rx->dec_fmt, rx->sampv, &sampc,
 				   marker, mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
 			warning("audio: %s codec decode %u bytes: %m\n",
-				rx->ac->name, mbuf_get_left(mb), err);
+				ac->name, mbuf_get_left(mb), err);
 			goto out;
 		}
 
@@ -809,9 +810,9 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 		sampc = 0;
 	}
 
-	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc,
-		     rx->ac->srate, rx->ac->ch);
-	af.timestamp = hdr->ts;
+	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc, ac->srate, ac->ch);
+	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE /
+		(ac->srate * ac->ch);
 
 	/* Process exactly one audio-frame in reverse list order */
 	for (le = rx->filtl.tail; le; le = le->prev) {
