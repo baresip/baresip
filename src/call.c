@@ -1837,9 +1837,9 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 
 		pl_set_mbuf(&body, msg->mb);
 
-		err  = re_regex(body.p, body.l, 
+		err  = re_regex(body.p, body.l,
 		       "Signal=[ ]*[0-9*#a-d]+", NULL, &sig);
-		err |= re_regex(body.p, body.l, 
+		err |= re_regex(body.p, body.l,
 		       "Duration=[ ]*[0-9]+", NULL, &dur);
 
 		if (err || !pl_isset(&sig) || sig.l == 0) {
