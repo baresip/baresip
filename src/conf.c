@@ -14,6 +14,7 @@
 #ifdef HAVE_IO_H
 #include <io.h>
 #endif
+#include <string.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -471,4 +472,19 @@ struct conf *conf_cur(void)
 void conf_close(void)
 {
 	conf_obj = mem_deref(conf_obj);
+}
+
+
+const char *fs_file_extension(const char *filename)
+{
+	const char *p;
+
+	if (!filename)
+		return NULL;
+
+	p = strrchr(filename, '.');
+	if (!p)
+		return NULL;
+
+	return p + 1;
 }

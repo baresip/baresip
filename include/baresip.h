@@ -281,6 +281,7 @@ bool conf_aubuf_adaptive(const struct pl *pl);
 void conf_close(void);
 struct conf *conf_cur(void);
 int conf_loadfile(struct mbuf **mbp, const char *filename);
+const char *fs_file_extension(const char *filename);
 
 
 /*
