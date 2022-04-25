@@ -1,3 +1,9 @@
+baresip (2.0.2) unstable; urgency=medium
+
+  * version 2.0.2
+
+ -- Juha Heinanen <jh@tutpro.com>  Mon, 25 Apr 2022 11:54:35 +0300
+
 baresip (1.0.0) unstable; urgency=medium
 
   * version 1.0.0
