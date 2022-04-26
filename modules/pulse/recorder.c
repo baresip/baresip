@@ -54,7 +54,7 @@ static void *read_thread(void *arg)
 	uint64_t now, last_read, diff;
 	unsigned dropped = 0;
 	bool init = true;
-	size_t sampc = 0;
+	uint64_t sampc = 0;
 
 	if (pa_simple_flush(st->s, &pa_error)) {
 		warning("pulse: pa_simple_flush error (%s)\n",
