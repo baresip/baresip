@@ -151,7 +151,7 @@ static void fade_process(struct auframe *af)
  *
  * @return 0 if success, otherwise errorcode
  */
-int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb)
+int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb, bool drop)
 {
 	struct auframe af;
 	struct le *le;
@@ -189,7 +189,8 @@ int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb)
 
 	auframe_init(&af, player->dec_fmt, player->sampv, sampc,
 		     player->ac->srate, player->ac->ch);
-	af.timestamp = hdr->ts;
+	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE /
+		(player->ac->srate * player->ac->ch);
 
 	for (le = player->filterl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;
@@ -216,6 +217,11 @@ int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb)
 			"player %u/%u. Use module auresamp!\n",
 			af.srate, af.ch,
 			player->auplay_prm.srate, player->auplay_prm.ch);
+	}
+
+	if (drop) {
+		aubuf_drop_auframe(player->aubuf, &af);
+		goto out;
 	}
 
 	fade_process(&af);
@@ -383,10 +389,10 @@ int mcplayer_start(const struct aucodec *ac)
 			goto out;
 		}
 
-		min_sz = sz * ((prm.srate * prm.ch * ptime_min) / 10000);
-		max_sz = sz * ((prm.srate * prm.ch * ptime_max) / 10000);
+		min_sz = sz * calc_nsamp(prm.srate, prm.ch, ptime_min);
+		max_sz = sz * calc_nsamp(prm.srate, prm.ch, ptime_max);
 
-		err = aubuf_alloc(&player->aubuf, min_sz, max_sz * 2);
+		err = aubuf_alloc(&player->aubuf, min_sz, max_sz);
 		if (err) {
 			warning("multicast player: aubuf alloc error (%m)\n",
 				err);
