@@ -417,7 +417,7 @@ static int player_decode(struct mcreceiver *mcreceiver)
 	if (err && err != EAGAIN)
 		return err;
 
-	err = mcplayer_decode(&hdr, mb);
+	err = mcplayer_decode(&hdr, mb, err == EAGAIN);
 	mb = mem_deref(mb);
 
 	return err;

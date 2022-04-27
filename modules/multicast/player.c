@@ -151,7 +151,7 @@ static void fade_process(struct auframe *af)
  *
  * @return 0 if success, otherwise errorcode
  */
-int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb)
+int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb, bool drop)
 {
 	struct auframe af;
 	struct le *le;
@@ -217,6 +217,11 @@ int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb)
 			"player %u/%u. Use module auresamp!\n",
 			af.srate, af.ch,
 			player->auplay_prm.srate, player->auplay_prm.ch);
+	}
+
+	if (drop) {
+		aubuf_drop_auframe(player->aubuf, &af);
+		goto out;
 	}
 
 	fade_process(&af);
