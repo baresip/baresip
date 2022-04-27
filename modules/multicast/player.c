@@ -384,10 +384,10 @@ int mcplayer_start(const struct aucodec *ac)
 			goto out;
 		}
 
-		min_sz = sz * ((prm.srate * prm.ch * ptime_min) / 10000);
-		max_sz = sz * ((prm.srate * prm.ch * ptime_max) / 10000);
+		min_sz = sz * calc_nsamp(prm.srate, prm.ch, ptime_min);
+		max_sz = sz * calc_nsamp(prm.srate, prm.ch, ptime_max);
 
-		err = aubuf_alloc(&player->aubuf, min_sz, max_sz * 2);
+		err = aubuf_alloc(&player->aubuf, min_sz, max_sz);
 		if (err) {
 			warning("multicast player: aubuf alloc error (%m)\n",
 				err);

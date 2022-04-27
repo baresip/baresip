@@ -327,22 +327,6 @@ static void audio_destructor(void *arg)
 }
 
 
-/**
- * Calculate number of samples from sample rate, channels and packet time
- *
- * @param srate    Sample rate in [Hz]
- * @param channels Number of channels
- * @param ptime    Packet time in [ms]
- *
- * @return Number of samples
- */
-static inline uint32_t calc_nsamp(uint32_t srate, uint8_t channels,
-				  uint16_t ptime)
-{
-	return srate * channels * ptime / 1000;
-}
-
-
 static inline double calc_ptime(size_t nsamp, uint32_t srate, uint8_t channels)
 {
 	double ptime;
