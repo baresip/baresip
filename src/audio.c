@@ -146,7 +146,7 @@ struct aurx {
 	const struct aucodec *ac;     /**< Current audio decoder           */
 	struct audec_state *dec;      /**< Audio decoder state (optional)  */
 	struct aubuf *aubuf;          /**< Incoming audio buffer           */
-	uint32_t ssrc;                /**< Incoming syncronizing source     */
+	uint32_t ssrc;                /**< Incoming synchronization source */
 	size_t aubuf_minsz;           /**< Minimum aubuf size in [bytes]   */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
 	size_t num_bytes;             /**< Size of one frame in [bytes]    */
