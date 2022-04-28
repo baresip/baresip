@@ -212,7 +212,6 @@ static void resume_uag_state(void)
 static int player_stop_start(struct mcreceiver *mcreceiver)
 {
 	mcplayer_fadeout();
-	jbuf_flush(mcreceiver->jbuf);
 	return mcplayer_start(mcreceiver->ac);
 }
 
@@ -323,13 +322,10 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 	}
 
 	if (hprio->prio == mcreceiver->prio && mcreceiver->ssrc != ssrc) {
-		err = player_stop_start(mcreceiver);
-		if (err)
-			goto out;
-
 		if (hprio->state == IGNORED)
 			hprio->state = RUNNING;
 
+		mcplayer_fadein(true);
 		mcreceiver->ssrc = ssrc;
 
 		info ("multicast receiver: restart addr=%J prio=%d enabled=%d "
@@ -716,7 +712,7 @@ int mcreceiver_mute(uint32_t prio)
 			mcplayer_fadeout();
 		}
 		else {
-			mcplayer_fadein();
+			mcplayer_fadein(false);
 			err = mcplayer_start(mcreceiver->ac);
 			if (err == EINPROGRESS)
 				err = 0;

@@ -38,6 +38,7 @@ struct mcplayer {
 	const struct aucodec *ac;
 	struct audec_state *dec;
 	struct aubuf *aubuf;
+	uint32_t ssrc;
 
 	struct list filterl;
 	char *module;
@@ -166,6 +167,10 @@ int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb, bool drop)
 	if (hdr->ext && hdr->x.len && mb)
 		return ENOTSUP;
 
+	if (player->ssrc != hdr->ssrc)
+		aubuf_flush(player->aubuf);
+
+	player->ssrc = hdr->ssrc;
 	if (mbuf_get_left(mb)) {
 		err = player->ac->dech(player->dec, player->dec_fmt,
 			player->sampv, &sampc, marker,
@@ -464,13 +469,16 @@ bool mcplayer_fadeout_done(void)
  * Fadeout active player
  *
  */
-void mcplayer_fadein(void)
+void mcplayer_fadein(bool restart)
 {
 	if (!player)
 		return;
 
-	if (player->fades == FM_FADEIN ||
-		player->fades == FM_FADEINDONE)
+	if (restart) {
+		player->fade_c = 0;
+		player->fades = FM_FADEIN;
+	}
+	else if (player->fades == FM_FADEINDONE)
 		return;
 
 	player->fades = FM_FADEIN;
