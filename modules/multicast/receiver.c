@@ -699,6 +699,15 @@ int mcreceiver_mute(uint32_t prio)
 	mcreceiver = le->data;
 	lock_write_get(mcreceivl_lock);
 	mcreceiver->muted = !mcreceiver->muted;
+	if (mcreceiver->state == RUNNING) {
+		if (mcreceiver->muted) {
+			jbuf_flush(mcreceiver->jbuf);
+			mcplayer_stop();
+		}
+		else {
+			err = mcplayer_start(mcreceiver->ac);
+		}
+	}
 	lock_rel(mcreceivl_lock);
 	return err;
 }
