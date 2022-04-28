@@ -552,7 +552,7 @@ static int cmd_mcmute(struct re_printf *pf, void *arg)
 
   out:
 	if (err)
-		re_hprintf(pf, "usage: /mcmute prio<1-255>\n");
+		re_hprintf(pf, "usage: /mcmute prio=<1-255>\n");
 
 	return err;
 }
