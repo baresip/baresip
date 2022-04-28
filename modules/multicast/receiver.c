@@ -348,6 +348,7 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		goto out;
 
 	hprio->state = RECEIVING;
+	jbuf_flush(hprio->jbuf);
 	mcreceiver->state = RUNNING;
 	mcreceiver->ssrc = ssrc;
 
