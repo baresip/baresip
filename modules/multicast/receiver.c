@@ -266,6 +266,7 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 	if (mcreceiver->prio >= multicast_callprio() && uag_call_count()) {
 		mcreceiver->state = RECEIVING;
 		mcplayer_stop();
+		jbuf_flush(mcreceiver->jbuf);
 		goto out;
 	}
 	else if (mcreceiver->prio < multicast_callprio()) {
@@ -388,8 +389,10 @@ static void timeout_handler(void *arg)
 		state_str(mcreceiver->state));
 
 	lock_write_get(mcreceivl_lock);
-	if (mcreceiver->state == RUNNING)
+	if (mcreceiver->state == RUNNING) {
 		mcplayer_stop();
+		jbuf_flush(mcreceiver->jbuf);
+	}
 
 	mcreceiver->state = LISTENING;
 	mcreceiver->muted = false;
@@ -452,13 +455,17 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (err)
 		goto out;
 
-	if (!mcreceiver->muted) {
+	if (mcreceiver->state == RUNNING) {
+		if (mcreceiver->muted && mcplayer_fadeout_done()) {
+			mcplayer_stop();
+			jbuf_flush(mcreceiver->jbuf);
+			goto out;
+		}
+
 		err = jbuf_put(mcreceiver->jbuf, hdr, mb);
 		if (err)
 			return;
-	}
 
-	if (mcreceiver->state == RUNNING) {
 		if (player_decode(mcreceiver) == EAGAIN) {
 			(void) player_decode(mcreceiver);
 		}
@@ -525,6 +532,7 @@ void mcreceiver_enprio(uint32_t prio)
 			if (mcreceiver->state == RUNNING) {
 				mcreceiver->state = RECEIVING;
 				mcplayer_stop();
+				jbuf_flush(mcreceiver->jbuf);
 			}
 		}
 	}
@@ -559,6 +567,7 @@ void mcreceiver_enrangeprio(uint32_t priol, uint32_t prioh, bool en)
 			if (mcreceiver->state == RUNNING) {
 				mcreceiver->state = RECEIVING;
 				mcplayer_stop();
+				jbuf_flush(mcreceiver->jbuf);
 			}
 		}
 	}
@@ -582,7 +591,9 @@ void mcreceiver_enable(bool enable)
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
 		mcreceiver->enable = enable;
+		jbuf_flush(mcreceiver->jbuf);
 	}
+
 	lock_rel(mcreceivl_lock);
 	mcplayer_stop();
 	resume_uag_state();
@@ -657,6 +668,7 @@ int mcreceiver_prioignore(uint32_t prio)
 		case RUNNING:
 			mcreceiver->state = IGNORED;
 			mcplayer_stop();
+			jbuf_flush(mcreceiver->jbuf);
 			break;
 		case RECEIVING:
 			mcreceiver->state = IGNORED;
@@ -701,11 +713,13 @@ int mcreceiver_mute(uint32_t prio)
 	mcreceiver->muted = !mcreceiver->muted;
 	if (mcreceiver->state == RUNNING) {
 		if (mcreceiver->muted) {
-			jbuf_flush(mcreceiver->jbuf);
-			mcplayer_stop();
+			mcplayer_fadeout();
 		}
 		else {
+			mcplayer_fadein();
 			err = mcplayer_start(mcreceiver->ac);
+			if (err == EINPROGRESS)
+				err = 0;
 		}
 	}
 	lock_rel(mcreceivl_lock);

@@ -86,7 +86,6 @@ static void fade_process(struct auframe *af)
 	switch (player->fades) {
 		case FM_FADEIN:
 			if (player->fade_c == player->fade_cmax) {
-				player->fade_c = 1;
 				player->fades = FM_FADEINDONE;
 				return;
 			}
@@ -106,18 +105,17 @@ static void fade_process(struct auframe *af)
 
 		case FM_FADEOUT:
 			for (i = 0; i < af->sampc; i++) {
-				if (player->fade_c == player->fade_cmax)
+				if (!player->fade_c)
 					break;
 
-				db_value = 1. -
+				db_value = player->fade_dbstart +
 					(player->fade_c * player->fade_delta);
 				*(sampv_ptr) = *(sampv_ptr) * db_value;
 				++sampv_ptr;
-				++player->fade_c;
+				--player->fade_c;
 			}
 
-			if (player->fade_c == player->fade_cmax) {
-				player->fade_c = 1;
+			if (!player->fade_c) {
 				player->fades = FM_FADEOUTDONE;
 				return;
 			}
@@ -369,7 +367,6 @@ int mcplayer_start(const struct aucodec *ac)
 	prm.fmt = player->play_fmt;
 
 	if (multicast_fade_time()) {
-		player->fade_c = 1;
 		player->fade_cmax = (multicast_fade_time() * prm.srate) / 1000;
 		player->fade_dbstart = 0.001; /*-60dB*/
 		player->fade_delta = (1. - player->fade_dbstart) /
@@ -447,13 +444,37 @@ void mcplayer_fadeout(void)
 	if (!player)
 		return;
 
-	if (player->fades == FM_FADEOUT || player->fades == FM_FADEIN ||
-		player->fades == FM_FADEOUTDONE)
+	if (player->fades == FM_FADEOUT || player->fades == FM_FADEOUTDONE)
 		return;
 
 	player->fades = FM_FADEOUT;
 }
 
+
+bool mcplayer_fadeout_done(void)
+{
+	if (!player)
+		return false;
+
+	return player->fades == FM_FADEOUTDONE;
+}
+
+
+/**
+ * Fadeout active player
+ *
+ */
+void mcplayer_fadein(void)
+{
+	if (!player)
+		return;
+
+	if (player->fades == FM_FADEIN ||
+		player->fades == FM_FADEINDONE)
+		return;
+
+	player->fades = FM_FADEIN;
+}
 
 /**
  * Initialize everything needed for the player beforhand
