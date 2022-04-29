@@ -146,6 +146,7 @@ struct aurx {
 	const struct aucodec *ac;     /**< Current audio decoder           */
 	struct audec_state *dec;      /**< Audio decoder state (optional)  */
 	struct aubuf *aubuf;          /**< Incoming audio buffer           */
+	uint32_t ssrc;                /**< Incoming synchronization source */
 	size_t aubuf_minsz;           /**< Minimum aubuf size in [bytes]   */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
 	size_t num_bytes;             /**< Size of one frame in [bytes]    */
@@ -836,6 +837,13 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 	if (drop) {
 		aubuf_drop_auframe(rx->aubuf, &af);
 		goto out;
+	}
+
+	if (rx->ssrc != hdr->ssrc) {
+		if (rx->ssrc)
+			aubuf_flush(rx->aubuf);
+
+		rx->ssrc = hdr->ssrc;
 	}
 
 	err = aubuf_write_auframe(rx->aubuf, &af);

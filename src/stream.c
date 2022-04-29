@@ -38,7 +38,7 @@ struct receiver {
 	struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
 	uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
 	uint32_t rtp_timeout; /**< RTP Timeout value in [ms]        */
-	uint32_t ssrc_rx;     /**< Incoming syncronizing source     */
+	uint32_t ssrc;        /**< Incoming synchronization source  */
 	uint32_t pseq;        /**< Sequence number for incoming RTP */
 	bool ssrc_set;        /**< Incoming SSRC is set             */
 	bool pseq_set;        /**< True if sequence number is set   */
@@ -170,14 +170,14 @@ static void send_set_raddr(struct stream *strm, const struct sa *raddr)
 static void recv_set_ssrc(struct receiver *rx, uint32_t ssrc)
 {
 	if (rx->ssrc_set) {
-		if (ssrc != rx->ssrc_rx)
+		if (ssrc != rx->ssrc)
 			info("stream: receive: SSRC changed: %x -> %x\n",
-			     rx->ssrc_rx, ssrc);
-		rx->ssrc_rx = ssrc;
+			     rx->ssrc, ssrc);
+		rx->ssrc = ssrc;
 	}
 	else {
 		info("stream: receive: setting SSRC: %x\n", ssrc);
-		rx->ssrc_rx = ssrc;
+		rx->ssrc = ssrc;
 		rx->ssrc_set = true;
 	}
 }
@@ -371,20 +371,20 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	}
 
 	if (!s->rx.pseq_set) {
-		s->rx.ssrc_rx = hdr->ssrc;
+		s->rx.ssrc = hdr->ssrc;
 		s->rx.ssrc_set = true;
 		s->rx.pseq = hdr->seq - 1;
 		s->rx.pseq_set = true;
 		first = true;
 	}
-	else if (hdr->ssrc != s->rx.ssrc_rx) {
+	else if (hdr->ssrc != s->rx.ssrc) {
 
 		info("stream: %s: SSRC changed 0x%x -> 0x%x"
 		     " (%u bytes from %J)\n",
-		     sdp_media_name(s->sdp), s->rx.ssrc_rx, hdr->ssrc,
+		     sdp_media_name(s->sdp), s->rx.ssrc, hdr->ssrc,
 		     mbuf_get_left(mb), src);
 
-		s->rx.ssrc_rx = hdr->ssrc;
+		s->rx.ssrc = hdr->ssrc;
 		s->rx.pseq = hdr->seq - 1;
 		flush = true;
 	}
@@ -1560,7 +1560,7 @@ int stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc)
 		return EINVAL;
 
 	if (strm->rx.ssrc_set) {
-		*ssrc = strm->rx.ssrc_rx;
+		*ssrc = strm->rx.ssrc;
 		return 0;
 	}
 	else
