@@ -14,6 +14,8 @@
 
 struct auplay_st {
 	pa_simple *s;
+	char *device;
+	struct tmr tmr;
 	pthread_t thread;
 	bool run;
 	void *sampv;
@@ -33,6 +35,7 @@ static void auplay_destructor(void *arg)
 
 	/* Wait for termination of other thread */
 	if (st->run) {
+		tmr_cancel(&st->tmr);
 		debug("pulse: stopping playback thread\n");
 		st->run = false;
 		(void)pthread_join(st->thread, NULL);
@@ -48,6 +51,7 @@ static void auplay_destructor(void *arg)
 	}
 
 	mem_deref(st->sampv);
+	mem_deref(st->device);
 }
 
 
@@ -69,6 +73,8 @@ static void *write_thread(void *arg)
 		if (ret < 0) {
 			warning("pulse: pa_simple_write error (%s)\n",
 				pa_strerror(pa_error));
+
+			st->run = false;
 		}
 	}
 
@@ -87,14 +93,68 @@ static int aufmt_to_pulse_format(enum aufmt fmt)
 }
 
 
+static int pulse_init(struct auplay_st *st)
+{
+	struct auplay_prm *prm = &st->prm;
+	pa_sample_spec ss;
+	pa_buffer_attr attr;
+	int err = 0, pa_error = 0;
+
+	ss.format   = aufmt_to_pulse_format(prm->fmt);
+	ss.channels = prm->ch;
+	ss.rate     = prm->srate;
+
+	attr.maxlength = (uint32_t)-1;
+	attr.tlength   = (uint32_t)pa_usec_to_bytes(prm->ptime * 1000, &ss);
+	attr.prebuf    = (uint32_t)-1;
+	attr.minreq    = (uint32_t)-1;
+	attr.fragsize  = (uint32_t)-1;
+
+	if (st->s)
+		pa_simple_free(st->s);
+
+	st->s = pa_simple_new(NULL,
+			      "Baresip",
+			      PA_STREAM_PLAYBACK,
+			      str_isset(st->device) ? st->device : NULL,
+			      "VoIP Playback",
+			      &ss,
+			      NULL,
+			      &attr,
+			      &pa_error);
+	if (!st->s) {
+		warning("pulse: could not connect to server (%s)\n",
+			pa_strerror(pa_error));
+		return ENODEV;
+	}
+
+	st->run = true;
+	err = pthread_create(&st->thread, NULL, write_thread, st);
+	if (err) {
+		st->run = false;
+		return err;
+	}
+
+	return 0;
+}
+
+
+static void timeout(void *arg)
+{
+	struct auplay_st *st = arg;
+
+	tmr_start(&st->tmr, 1000, timeout, st);
+	if (!st->run)
+		pulse_init(st);
+}
+
+
 int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		       struct auplay_prm *prm, const char *device,
 		       auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
-	pa_sample_spec ss;
-	pa_buffer_attr attr;
-	int err = 0, pa_error = 0;
+	int err = 0;
 
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
@@ -109,6 +169,7 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->wh  = wh;
 	st->arg = arg;
 	st->prm = *prm;
+	str_dup(&st->device, device);
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	st->sampsz = aufmt_sample_size(prm->fmt);
@@ -119,39 +180,11 @@ int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
-	ss.format   = aufmt_to_pulse_format(prm->fmt);
-	ss.channels = prm->ch;
-	ss.rate     = prm->srate;
-
-	attr.maxlength = (uint32_t)-1;
-	attr.tlength   = (uint32_t)pa_usec_to_bytes(prm->ptime * 1000, &ss);
-	attr.prebuf    = (uint32_t)-1;
-	attr.minreq    = (uint32_t)-1;
-	attr.fragsize  = (uint32_t)-1;
-
-	st->s = pa_simple_new(NULL,
-			      "Baresip",
-			      PA_STREAM_PLAYBACK,
-			      str_isset(device) ? device : NULL,
-			      "VoIP Playback",
-			      &ss,
-			      NULL,
-			      &attr,
-			      &pa_error);
-	if (!st->s) {
-		warning("pulse: could not connect to server (%s)\n",
-			pa_strerror(pa_error));
-		err = ENODEV;
+	err = pulse_init(st);
+	if (err)
 		goto out;
-	}
 
-	st->run = true;
-	err = pthread_create(&st->thread, NULL, write_thread, st);
-	if (err) {
-		st->run = false;
-		goto out;
-	}
-
+	tmr_start(&st->tmr, 1000, timeout, st);
 	debug("pulse: playback started\n");
 
  out:

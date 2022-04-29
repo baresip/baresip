@@ -16,6 +16,8 @@
 struct ausrc_st {
 	struct ausrc_prm prm;
 	pa_simple *s;
+	char *device;
+	struct tmr tmr;
 	pthread_t thread;
 	bool run;
 	void *sampv;
@@ -34,6 +36,7 @@ static void ausrc_destructor(void *arg)
 
 	/* Wait for termination of other thread */
 	if (st->run) {
+		tmr_cancel(&st->tmr);
 		debug("pulse: stopping record thread\n");
 		st->run = false;
 		(void)pthread_join(st->thread, NULL);
@@ -43,6 +46,7 @@ static void ausrc_destructor(void *arg)
 		pa_simple_free(st->s);
 
 	mem_deref(st->sampv);
+	mem_deref(st->device);
 }
 
 
@@ -76,7 +80,9 @@ static void *read_thread(void *arg)
 		if (ret < 0) {
 			warning("pulse: pa_simple_read error (%s)\n",
 				pa_strerror(pa_error));
-			continue;
+
+			st->run = false;
+			break;
 		}
 
 		/* Some devices might send a burst of samples right after the
@@ -120,14 +126,67 @@ static int aufmt_to_pulse_format(enum aufmt fmt)
 }
 
 
+static int pulse_init(struct ausrc_st *st)
+{
+	struct ausrc_prm *prm = &st->prm;
+	pa_sample_spec ss;
+	pa_buffer_attr attr;
+	int err = 0, pa_error = 0;
+
+	ss.format   = aufmt_to_pulse_format(prm->fmt);
+	ss.channels = prm->ch;
+	ss.rate     = prm->srate;
+
+	attr.maxlength = (uint32_t)-1;
+	attr.tlength   = (uint32_t)-1;
+	attr.prebuf    = (uint32_t)-1;
+	attr.minreq    = (uint32_t)-1;
+	attr.fragsize  = (uint32_t)pa_usec_to_bytes(prm->ptime * 1000, &ss);
+
+	if (st->s)
+		pa_simple_free(st->s);
+
+	st->s = pa_simple_new(NULL,
+			      "Baresip",
+			      PA_STREAM_RECORD,
+			      str_isset(st->device) ? st->device : NULL,
+			      "VoIP Record",
+			      &ss,
+			      NULL,
+			      &attr,
+			      &pa_error);
+	if (!st->s) {
+		warning("pulse: could not connect to server (%s)\n",
+			pa_strerror(pa_error));
+		return ENODEV;
+	}
+
+	st->run = true;
+	err = pthread_create(&st->thread, NULL, read_thread, st);
+	if (err) {
+		st->run = false;
+		return err;
+	}
+
+	return 0;
+}
+
+
+static void timeout(void *arg)
+{
+	struct ausrc_st *st = arg;
+
+	tmr_start(&st->tmr, 1000, timeout, st);
+	if (!st->run)
+		pulse_init(st);
+}
+
+
 int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 			 struct ausrc_prm *prm, const char *device,
 			 ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
-	pa_sample_spec ss;
-	pa_buffer_attr attr;
-	int pa_error;
 	int err;
 
 	(void)device;
@@ -151,6 +210,7 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->ptime = prm->ptime;
 	st->fmt = prm->fmt;
 	st->prm = *prm;
+	str_dup(&st->device, device);
 
 	st->sampv = mem_alloc(st->sampsz * st->sampc, NULL);
 	if (!st->sampv) {
@@ -158,39 +218,11 @@ int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	ss.format   = aufmt_to_pulse_format(prm->fmt);
-	ss.channels = prm->ch;
-	ss.rate     = prm->srate;
-
-	attr.maxlength = (uint32_t)-1;
-	attr.tlength   = (uint32_t)-1;
-	attr.prebuf    = (uint32_t)-1;
-	attr.minreq    = (uint32_t)-1;
-	attr.fragsize  = (uint32_t)pa_usec_to_bytes(prm->ptime * 1000, &ss);
-
-	st->s = pa_simple_new(NULL,
-			      "Baresip",
-			      PA_STREAM_RECORD,
-			      str_isset(device) ? device : NULL,
-			      "VoIP Record",
-			      &ss,
-			      NULL,
-			      &attr,
-			      &pa_error);
-	if (!st->s) {
-		warning("pulse: could not connect to server (%s)\n",
-			pa_strerror(pa_error));
-		err = ENODEV;
+	err = pulse_init(st);
+	if (err)
 		goto out;
-	}
 
-	st->run = true;
-	err = pthread_create(&st->thread, NULL, read_thread, st);
-	if (err) {
-		st->run = false;
-		goto out;
-	}
-
+	tmr_start(&st->tmr, 1000, timeout, st);
 	debug("pulse: recording started\n");
 
  out:
