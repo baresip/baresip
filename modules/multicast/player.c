@@ -92,28 +92,25 @@ static void fade_process(struct auframe *af)
 			}
 
 			for (i = 0; i < af->sampc; i++) {
-				if (player->fade_c == player->fade_cmax)
-					break;
-
 				db_value = player->fade_dbstart +
 					(player->fade_c * player->fade_delta);
 				*(sampv_ptr) = *(sampv_ptr) * db_value;
 				++sampv_ptr;
-				++player->fade_c;
+				if (player->fade_c < player->fade_cmax)
+					++player->fade_c;
 			}
 
 			break;
 
 		case FM_FADEOUT:
 			for (i = 0; i < af->sampc; i++) {
-				if (!player->fade_c)
-					break;
-
 				db_value = player->fade_dbstart +
 					(player->fade_c * player->fade_delta);
 				*(sampv_ptr) = *(sampv_ptr) * db_value;
 				++sampv_ptr;
-				--player->fade_c;
+
+				if (player->fade_c > 0)
+					--player->fade_c;
 			}
 
 			if (!player->fade_c) {
