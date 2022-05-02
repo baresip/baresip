@@ -142,8 +142,9 @@ static void fade_process(struct auframe *af)
 /**
  * Decode the payload of the RTP packet
  *
- * @param hdr RTP header
- * @param mb  RTP payload
+ * @param hdr   RTP header
+ * @param mb    RTP payload
+ * @param drop  True if the jbuf returned EAGAIN
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -236,9 +237,8 @@ int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb, bool drop)
 /**
  * Audio player write handler
  *
- * @param sampv Sample buffer
- * @param sampc Sample counter
- * @param arg   Multicast player object (unused)
+ * @param af   Audio frame (af.sampv, af.sampc and af.fmt needed)
+ * @param arg  unused
  */
 static void auplay_write_handler(struct auframe *af, void *arg)
 {
@@ -438,7 +438,7 @@ void mcplayer_stop(void)
 
 
 /**
- * Fadeout active player
+ * Fade-out active player
  *
  */
 void mcplayer_fadeout(void)
@@ -453,6 +453,9 @@ void mcplayer_fadeout(void)
 }
 
 
+/**
+ * @return True if the fade-out finished
+ */
 bool mcplayer_fadeout_done(void)
 {
 	if (!player)
@@ -463,18 +466,17 @@ bool mcplayer_fadeout_done(void)
 
 
 /**
- * Fadeout active player
+ * Fade-in active player
  *
+ * @param restart  If true the fade-in restarts with silence level
  */
 void mcplayer_fadein(bool restart)
 {
 	if (!player)
 		return;
 
-	if (restart) {
+	if (restart)
 		player->fade_c = 0;
-		player->fades = FM_FADEIN;
-	}
 	else if (player->fades == FM_FADEINDONE)
 		return;
 
