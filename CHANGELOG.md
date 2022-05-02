@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2022-05-01
+
+## What's Changed
+* mc: multicast mute function by @cHuberCoffee in https://github.com/baresip/baresip/pull/1805
+* mc: reject incoming call if high prio multicast is received by @cHuberCoffee in https://github.com/baresip/baresip/pull/1804
+* mc: mcplayer stream fade-out and fade-in by @cHuberCoffee in https://github.com/baresip/baresip/pull/1802
+* clean_number now will remove all non-digit chars by @mbattista in https://github.com/baresip/baresip/pull/1806
+* Workflows cmakelint by @alfredh in https://github.com/baresip/baresip/pull/1808
+* ccheck: check all CMakeLists.txt files by @sreimers in https://github.com/baresip/baresip/pull/1810
+* mk: remove win32 MSVC project files by @alfredh in https://github.com/baresip/baresip/pull/1811
+* cmake: add modules by @sreimers in https://github.com/baresip/baresip/pull/1812
+* ajb,aubuf: timestamp is given in [us] by @cspiel1 in https://github.com/baresip/baresip/pull/1809
+* call: allow optional leading space in SIP INFO for dtmf-relay by @thomas-karl in https://github.com/baresip/baresip/pull/1814
+* conf: add fs_file_extension() by @alfredh in https://github.com/baresip/baresip/pull/1816
+* Updated debian version by @juha-h in https://github.com/baresip/baresip/pull/1817
+* pulse: fix timestamp integer overrun for arm by @cspiel1 in https://github.com/baresip/baresip/pull/1818
+* fix audio multicast artefacts by @cspiel1 in https://github.com/baresip/baresip/pull/1819
+* audio: flush aubuf if ssrc changes by @cspiel1 in https://github.com/baresip/baresip/pull/1822
+* Debian control dependency update by @juha-h in https://github.com/baresip/baresip/pull/1823
+* pulse: support restart of pulseaudio during stream by @cspiel1 in https://github.com/baresip/baresip/pull/1824
+* version 2.3.0 by @alfredh in https://github.com/baresip/baresip/pull/1826
+
+## New Contributors
+* @thomas-karl made their first contribution in https://github.com/baresip/baresip/pull/1814
+
+---
+
 ## [2.0.2] - 2022-04-09
 
 ## What's Changed
@@ -997,7 +1024,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1342]: https://github.com/baresip/baresip/pull/1342
 
 
-[Unreleased]: https://github.com/baresip/baresip/compare/v2.0.2...HEAD
+[Unreleased]: https://github.com/baresip/baresip/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/baresip/baresip/compare/v2.0.2...v2.3.0
 [2.0.2]: https://github.com/baresip/baresip/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/baresip/baresip/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/baresip/baresip/compare/v1.1.0...v2.0.0
