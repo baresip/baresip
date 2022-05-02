@@ -51,6 +51,8 @@ void mcreceiver_print(struct re_printf *pf);
 int mcplayer_start(const struct aucodec *ac);
 void mcplayer_stop(void);
 void mcplayer_fadeout(void);
+void mcplayer_fadein(bool restart);
+bool mcplayer_fadeout_done(void);
 int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb, bool drop);
 
 int  mcplayer_init(void);

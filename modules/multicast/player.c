@@ -38,6 +38,7 @@ struct mcplayer {
 	const struct aucodec *ac;
 	struct audec_state *dec;
 	struct aubuf *aubuf;
+	uint32_t ssrc;
 
 	struct list filterl;
 	char *module;
@@ -86,38 +87,33 @@ static void fade_process(struct auframe *af)
 	switch (player->fades) {
 		case FM_FADEIN:
 			if (player->fade_c == player->fade_cmax) {
-				player->fade_c = 1;
 				player->fades = FM_FADEINDONE;
 				return;
 			}
 
 			for (i = 0; i < af->sampc; i++) {
-				if (player->fade_c == player->fade_cmax)
-					break;
-
 				db_value = player->fade_dbstart +
 					(player->fade_c * player->fade_delta);
 				*(sampv_ptr) = *(sampv_ptr) * db_value;
 				++sampv_ptr;
-				++player->fade_c;
+				if (player->fade_c < player->fade_cmax)
+					++player->fade_c;
 			}
 
 			break;
 
 		case FM_FADEOUT:
 			for (i = 0; i < af->sampc; i++) {
-				if (player->fade_c == player->fade_cmax)
-					break;
-
-				db_value = 1. -
+				db_value = player->fade_dbstart +
 					(player->fade_c * player->fade_delta);
 				*(sampv_ptr) = *(sampv_ptr) * db_value;
 				++sampv_ptr;
-				++player->fade_c;
+
+				if (player->fade_c > 0)
+					--player->fade_c;
 			}
 
-			if (player->fade_c == player->fade_cmax) {
-				player->fade_c = 1;
+			if (!player->fade_c) {
 				player->fades = FM_FADEOUTDONE;
 				return;
 			}
@@ -146,8 +142,9 @@ static void fade_process(struct auframe *af)
 /**
  * Decode the payload of the RTP packet
  *
- * @param hdr RTP header
- * @param mb  RTP payload
+ * @param hdr   RTP header
+ * @param mb    RTP payload
+ * @param drop  True if the jbuf returned EAGAIN
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -168,6 +165,10 @@ int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb, bool drop)
 	if (hdr->ext && hdr->x.len && mb)
 		return ENOTSUP;
 
+	if (player->ssrc != hdr->ssrc)
+		aubuf_flush(player->aubuf);
+
+	player->ssrc = hdr->ssrc;
 	if (mbuf_get_left(mb)) {
 		err = player->ac->dech(player->dec, player->dec_fmt,
 			player->sampv, &sampc, marker,
@@ -236,9 +237,8 @@ int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb, bool drop)
 /**
  * Audio player write handler
  *
- * @param sampv Sample buffer
- * @param sampc Sample counter
- * @param arg   Multicast player object (unused)
+ * @param af   Audio frame (af.sampv, af.sampc and af.fmt needed)
+ * @param arg  unused
  */
 static void auplay_write_handler(struct auframe *af, void *arg)
 {
@@ -369,7 +369,6 @@ int mcplayer_start(const struct aucodec *ac)
 	prm.fmt = player->play_fmt;
 
 	if (multicast_fade_time()) {
-		player->fade_c = 1;
 		player->fade_cmax = (multicast_fade_time() * prm.srate) / 1000;
 		player->fade_dbstart = 0.001; /*-60dB*/
 		player->fade_delta = (1. - player->fade_dbstart) /
@@ -439,7 +438,7 @@ void mcplayer_stop(void)
 
 
 /**
- * Fadeout active player
+ * Fade-out active player
  *
  */
 void mcplayer_fadeout(void)
@@ -447,13 +446,42 @@ void mcplayer_fadeout(void)
 	if (!player)
 		return;
 
-	if (player->fades == FM_FADEOUT || player->fades == FM_FADEIN ||
-		player->fades == FM_FADEOUTDONE)
+	if (player->fades == FM_FADEOUT || player->fades == FM_FADEOUTDONE)
 		return;
 
 	player->fades = FM_FADEOUT;
 }
 
+
+/**
+ * @return True if the fade-out finished
+ */
+bool mcplayer_fadeout_done(void)
+{
+	if (!player)
+		return false;
+
+	return player->fades == FM_FADEOUTDONE;
+}
+
+
+/**
+ * Fade-in active player
+ *
+ * @param restart  If true the fade-in restarts with silence level
+ */
+void mcplayer_fadein(bool restart)
+{
+	if (!player)
+		return;
+
+	if (restart)
+		player->fade_c = 0;
+	else if (player->fades == FM_FADEINDONE)
+		return;
+
+	player->fades = FM_FADEIN;
+}
 
 /**
  * Initialize everything needed for the player beforhand
