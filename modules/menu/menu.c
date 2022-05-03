@@ -647,13 +647,16 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 		if (call == menu.curcall) {
 			menu.curcall = NULL;
-			if (count==1)
+			if (count == 1) {
 				menu_play_closed(call);
-			else
-				menu_stop_play();
-
-			menu_sel_other(call);
-			play_resume(call);
+			}
+			else {
+				menu_sel_other(call);
+				if (menu.ringback)
+					play_resume(call);
+				else
+					menu_stop_play();
+			}
 		}
 
 		hash_apply(menu.ovaufile->ht, ovaufile_del, call);
