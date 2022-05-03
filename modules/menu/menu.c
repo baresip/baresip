@@ -312,6 +312,7 @@ static void play_resume(const struct call *closed)
 		play_incoming(call);
 		break;
 	case CALL_STATE_RINGING:
+	case CALL_STATE_EARLY:
 		if (!menu.ringback && !menu_find_call(active_call_test,
 						      closed))
 			play_ringback(call);
