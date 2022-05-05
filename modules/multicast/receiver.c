@@ -411,19 +411,19 @@ static int player_decode(struct mcreceiver *mcreceiver)
 {
 	void *mb = NULL;
 	struct rtp_header hdr;
-	int err1;
-	int err = 0;
+	int jerr;
+	int err;
 
-	err1 = jbuf_get(mcreceiver->jbuf, &hdr, &mb);
-	if (err1 && err1 != EAGAIN)
-		return err1;
+	jerr = jbuf_get(mcreceiver->jbuf, &hdr, &mb);
+	if (jerr && jerr != EAGAIN)
+		return jerr;
 
-	err = mcplayer_decode(&hdr, mb, err1 == EAGAIN);
+	err = mcplayer_decode(&hdr, mb, jerr == EAGAIN);
 	mb = mem_deref(mb);
 	if (err)
 		return err;
 
-	return err1;
+	return jerr;
 }
 
 
