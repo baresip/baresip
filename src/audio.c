@@ -796,8 +796,7 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 	}
 
 	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc, ac->srate, ac->ch);
-	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE /
-		(ac->srate * ac->ch);
+	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE / ac->crate;
 
 	/* Process exactly one audio-frame in reverse list order */
 	for (le = rx->filtl.tail; le; le = le->prev) {
