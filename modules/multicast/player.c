@@ -191,7 +191,7 @@ int mcplayer_decode(const struct rtp_header *hdr, struct mbuf *mb, bool drop)
 	auframe_init(&af, player->dec_fmt, player->sampv, sampc,
 		     player->ac->srate, player->ac->ch);
 	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE /
-		(player->ac->srate * player->ac->ch);
+		       player->ac->crate;
 
 	for (le = player->filterl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;
