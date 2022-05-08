@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <re.h>
+#include <re_av1.h>
 #include <rem.h>
 #include <baresip.h>
 #include <aom/aom.h>
@@ -124,7 +125,7 @@ static inline int16_t seq_diff(uint16_t x, uint16_t y)
 
 static int copy_obu(struct mbuf *mb2, struct mbuf *mb, size_t size)
 {
-	struct obu_hdr hdr;
+	struct av1_obu_hdr hdr;
 	size_t end = mb->end;
 	int err;
 

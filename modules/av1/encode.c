@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <re.h>
+#include <re_av1.h>
 #include <rem.h>
 #include <baresip.h>
 #include <aom/aom.h>
@@ -200,7 +201,7 @@ static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t sz)
 
 	while (mbuf_get_left(&wrap) >= 2) {
 
-		struct obu_hdr hdr;
+		struct av1_obu_hdr hdr;
 		struct mbuf *mb_obu = NULL;
 
 		err = av1_obu_decode(&hdr, &wrap);
