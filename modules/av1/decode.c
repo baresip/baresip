@@ -20,14 +20,6 @@ enum {
 };
 
 
-/** AV1 Aggregation Header */
-struct hdr {
-	unsigned z:1;  /* continuation of an OBU fragment from prev packet  */
-	unsigned y:1;  /* last OBU element will continue in the next packet */
-	unsigned w:2;  /* number of OBU elements in the packet              */
-	unsigned n:1;  /* first packet of a coded video sequence            */
-};
-
 struct viddec_state {
 	aom_codec_ctx_t ctx;
 	struct mbuf *mb;
@@ -97,26 +89,6 @@ int av1_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 }
 
 
-static inline int hdr_decode(struct hdr *hdr, struct mbuf *mb)
-{
-	uint8_t v;
-
-	memset(hdr, 0, sizeof(*hdr));
-
-	if (mbuf_get_left(mb) < 1)
-		return EBADMSG;
-
-	v = mbuf_read_u8(mb);
-
-	hdr->z = v>>7 & 0x1;
-	hdr->y = v>>6 & 0x1;
-	hdr->w = v>>4 & 0x3;
-	hdr->n = v>>3 & 0x1;
-
-	return 0;
-}
-
-
 static inline int16_t seq_diff(uint16_t x, uint16_t y)
 {
 	return (int16_t)(y - x);
@@ -179,7 +151,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	aom_codec_iter_t iter = NULL;
 	aom_codec_err_t res;
 	aom_image_t *img;
-	struct hdr hdr;
+	struct av1_aggr_hdr hdr;
 	struct mbuf *mb2 = NULL;
 	size_t size;
 	unsigned i;
@@ -190,7 +162,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	*intra = false;
 
-	err = hdr_decode(&hdr, mb);
+	err = av1_aggr_hdr_decode(&hdr, mb);
 	if (err)
 		return err;
 
