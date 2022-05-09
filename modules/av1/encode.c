@@ -138,46 +138,6 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 }
 
 
-static inline void hdr_encode(uint8_t hdr[HDR_SIZE],
-			      bool z, bool y, uint8_t w, bool n)
-{
-	hdr[0] = z<<7 | y<<6 | w<<4 | n<<3;
-}
-
-
-static int packetize(struct videnc_state *ves, bool marker, uint64_t rtp_ts,
-		     const uint8_t *buf, size_t len,
-		     size_t maxlen,
-		     videnc_packet_h *pkth, void *arg)
-{
-	uint8_t hdr[HDR_SIZE];
-	bool start = true;
-	uint8_t w = 0;  /* variable OBU count */
-	int err = 0;
-
-	maxlen -= sizeof(hdr);
-
-	while (len > maxlen) {
-
-		hdr_encode(hdr, !start, true, w, ves->new);
-		ves->new = false;
-
-		err |= pkth(false, rtp_ts, hdr, sizeof(hdr), buf, maxlen, arg);
-
-		buf  += maxlen;
-		len  -= maxlen;
-		start = false;
-	}
-
-	hdr_encode(hdr, !start, false, w, ves->new);
-	ves->new = false;
-
-	err |= pkth(marker, rtp_ts, hdr, sizeof(hdr), buf, len, arg);
-
-	return err;
-}
-
-
 static struct mbuf *encode_obu(uint8_t type, const uint8_t *p, size_t len)
 {
 	struct mbuf *mb = mbuf_alloc(1024);
@@ -316,11 +276,11 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		if (err)
 			goto out;
 
-		err = packetize(ves, marker, ts,
-				mb_pkt->buf,
-				mb_pkt->end,
-				ves->pktsize,
-				ves->pkth, ves->arg);
+		err = av1_packetize(&ves->new, marker, ts,
+				    mb_pkt->buf,
+				    mb_pkt->end,
+				    ves->pktsize,
+				    ves->pkth, ves->arg);
 		if (err)
 			goto out;
 
