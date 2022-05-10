@@ -110,7 +110,7 @@ static int copy_obu(struct mbuf *mb2, struct mbuf *mb, size_t size)
 		return err;
 	}
 
-#if 1
+#if 0
 	debug("av1: decode: copy [%H]\n", av1_obu_print, &hdr);
 #endif
 
