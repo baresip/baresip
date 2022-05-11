@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <re.h>
+#include <re_h264.h>
 #include <rem.h>
 #include <baresip.h>
 #include <gst/gst.h>
