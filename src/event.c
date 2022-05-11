@@ -47,6 +47,7 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_MWI_NOTIFY:
 		return "mwi";
 
+	case UA_EVENT_CREATE:
 	case UA_EVENT_SHUTDOWN:
 	case UA_EVENT_EXIT:
 		return "application";
@@ -400,6 +401,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_FALLBACK_FAIL:        return "FALLBACK_FAIL";
 	case UA_EVENT_UNREGISTERING:        return "UNREGISTERING";
 	case UA_EVENT_MWI_NOTIFY:           return "MWI_NOTIFY";
+	case UA_EVENT_CREATE:               return "CREATE";
 	case UA_EVENT_SHUTDOWN:             return "SHUTDOWN";
 	case UA_EVENT_EXIT:                 return "EXIT";
 	case UA_EVENT_CALL_INCOMING:        return "CALL_INCOMING";

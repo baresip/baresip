@@ -986,6 +986,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 	list_append(uag_list(), &ua->le, ua);
+	ua_event(ua, UA_EVENT_CREATE, NULL, aor);
 
  out:
 	mem_deref(buf);
