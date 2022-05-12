@@ -137,6 +137,16 @@ struct autx {
  |/    |        |   |       |   |        |   |        |
        '--------'   '-------'   '--------'   '--------'
 
+       If an AEC is in the filter list aufilt, then the aubuf should be
+       constant and small. A second audio buffer aubufdec should be added via
+       config if network jitter is expected.
+
+       .--------.   .-------.   .--------.   .----------.   .--------.
+ |\    |        |   |       |   |        |   |  opt.    |   |        |
+ | |<--| auplay |<--| aubuf |<--| aufilt |<--| aubufdec |<--| decode |<--- RTP
+ |/    |        |   |       |   |        |   |          |   |        |
+       '--------'   '-------'   '--------'   '----------'   '--------'
+
  \endverbatim
  */
 struct aurx {
@@ -145,7 +155,8 @@ struct aurx {
 	struct auplay_prm auplay_prm; /**< Audio Player parameters         */
 	const struct aucodec *ac;     /**< Current audio decoder           */
 	struct audec_state *dec;      /**< Audio decoder state (optional)  */
-	struct aubuf *aubuf;          /**< Incoming audio buffer           */
+	struct aubuf *aubuf;          /**< Audio buffer before auplay      */
+	struct aubuf *aubufdec;       /**< Audio buffer after decoder      */
 	uint32_t ssrc;                /**< Incoming synchronization source */
 	size_t aubuf_minsz;           /**< Minimum aubuf size in [bytes]   */
 	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]   */
@@ -292,6 +303,7 @@ static void stop_rx(struct aurx *rx)
 	/* audio player must be stopped first */
 	rx->auplay = mem_deref(rx->auplay);
 	rx->aubuf  = mem_deref(rx->aubuf);
+	rx->aubufdec  = mem_deref(rx->aubufdec);
 	list_flush(&rx->filtl);
 }
 
@@ -760,10 +772,13 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 	struct le *le;
 	int err = 0;
 	const struct aucodec *ac = rx->ac;
+	bool flush = rx->ssrc != hdr->ssrc && rx->ssrc;
 
 	/* No decoder set */
 	if (!ac)
 		return 0;
+
+	rx->ssrc = hdr->ssrc;
 
 	/* TODO: PLC */
 	if (lostc && ac->plch) {
@@ -797,6 +812,23 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 
 	auframe_init(&af, rx->dec_fmt, rx->sampv, sampc, ac->srate, ac->ch);
 	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE / ac->crate;
+
+	if (drop) {
+		aubuf_drop_auframe(rx->aubufdec, &af);
+		aubuf_drop_auframe(rx->aubuf, &af);
+		goto out;
+	}
+
+	if (rx->aubufdec) {
+		if (flush)
+			aubuf_flush(rx->aubufdec);
+
+		err = aubuf_write_auframe(rx->aubufdec, &af);
+		if (err)
+			goto out;
+
+		aubuf_read_auframe(rx->aubufdec, &af);
+	}
 
 	/* Process exactly one audio-frame in reverse list order */
 	for (le = rx->filtl.tail; le; le = le->prev) {
@@ -833,17 +865,8 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 			);
 	}
 
-	if (drop) {
-		aubuf_drop_auframe(rx->aubuf, &af);
-		goto out;
-	}
-
-	if (rx->ssrc != hdr->ssrc) {
-		if (rx->ssrc)
-			aubuf_flush(rx->aubuf);
-
-		rx->ssrc = hdr->ssrc;
-	}
+	if (flush)
+		aubuf_flush(rx->aubuf);
 
 	err = aubuf_write_auframe(rx->aubuf, &af);
 	if (err)
@@ -1368,6 +1391,9 @@ static int start_player(struct aurx *rx, struct audio *a,
 	const struct aucodec *ac = rx->ac;
 	uint32_t srate_dsp;
 	uint32_t channels_dsp;
+	size_t sz;
+	size_t min_sz;
+	size_t max_sz;
 	int err;
 
 	if (!ac)
@@ -1387,6 +1413,7 @@ static int start_player(struct aurx *rx, struct audio *a,
 	if (!rx->auplay && auplay_find(auplayl, NULL)) {
 
 		struct auplay_prm prm;
+		struct pl pl;
 
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
@@ -1394,11 +1421,9 @@ static int start_player(struct aurx *rx, struct audio *a,
 		prm.fmt        = rx->play_fmt;
 
 		if (!rx->aubuf) {
-			const size_t sz = aufmt_sample_size(rx->play_fmt);
 			const size_t ptime_min = a->cfg.buffer.min;
 			const size_t ptime_max = a->cfg.buffer.max;
-			size_t min_sz;
-			size_t max_sz;
+			sz = aufmt_sample_size(rx->play_fmt);
 
 			if (!ptime_min || !ptime_max)
 				return EINVAL;
@@ -1406,7 +1431,7 @@ static int start_player(struct aurx *rx, struct audio *a,
 			min_sz = sz*calc_nsamp(prm.srate, prm.ch, ptime_min);
 			max_sz = sz*calc_nsamp(prm.srate, prm.ch, ptime_max);
 
-			debug("audio: create recv buffer"
+			debug("audio: create auplay buffer"
 			      " [%zu - %zu ms]"
 			      " [%zu - %zu bytes]\n",
 			      ptime_min, ptime_max, min_sz, max_sz);
@@ -1423,6 +1448,35 @@ static int start_player(struct aurx *rx, struct audio *a,
 			aubuf_set_silence(rx->aubuf, a->cfg.silence);
 			rx->aubuf_minsz = min_sz;
 			rx->aubuf_maxsz = max_sz;
+		}
+
+		if (0 == conf_get(conf_cur(), "decode_buffer_mode", &pl) &&
+		    pl_strcasecmp(&pl, "off")) {
+			struct range decbuf = {20, 160};
+			sz = aufmt_sample_size(rx->dec_fmt);
+			conf_get_range(conf_cur(), "decode_buffer", &decbuf);
+
+			if (!decbuf.min || !decbuf.max)
+				return EINVAL;
+
+			min_sz = sz*calc_nsamp(ac->srate, ac->ch, decbuf.min);
+			max_sz = sz*calc_nsamp(ac->srate, ac->ch, decbuf.max);
+
+			debug("audio: create decode buffer"
+			      " [%zu - %zu ms]"
+			      " [%zu - %zu bytes]\n",
+			      decbuf.min, decbuf.max, min_sz, max_sz);
+
+			err = aubuf_alloc(&rx->aubufdec, min_sz, max_sz);
+			if (err) {
+				warning("audio: aubuf alloc error (%m)\n",
+					err);
+				return err;
+			}
+
+			aubuf_set_mode(rx->aubufdec, conf_aubuf_adaptive(&pl) ?
+				       AUBUF_ADAPTIVE : AUBUF_FIXED);
+			aubuf_set_silence(rx->aubuf, a->cfg.silence);
 		}
 
 		rx->auplay_prm = prm;
@@ -1774,6 +1828,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	if (reset || ac != rx->ac) {
 		rx->auplay = mem_deref(rx->auplay);
 		aubuf_flush(rx->aubuf);
+		aubuf_flush(rx->aubufdec);
 		stream_flush(a->strm);
 
 		/* Reset audio filter chain */
