@@ -844,6 +844,9 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 
 		rx->ssrc = hdr->ssrc;
 	}
+	else if (hdr->m) {
+		aubuf_flush(rx->aubuf);
+	}
 
 	err = aubuf_write_auframe(rx->aubuf, &af);
 	if (err)

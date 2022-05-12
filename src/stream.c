@@ -388,6 +388,10 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		s->rx.pseq = hdr->seq - 1;
 		flush = true;
 	}
+	else if (hdr->m && s->type == MEDIA_AUDIO) {
+		/* The marker bit indicates the beginning of a talkspurt. */
+		flush = true;
+	}
 
 	/* payload-type changed? */
 	err = s->pth(hdr->pt, mb, s->arg);
