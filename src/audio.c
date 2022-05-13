@@ -1385,6 +1385,47 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 }
 
 
+static int config_aubufdec(struct aurx *rx)
+{
+	const struct aucodec *ac = rx->ac;
+	size_t sz;
+	struct pl pl;
+	size_t min_sz;
+	size_t max_sz;
+	int err = 0;
+
+	if (0 == conf_get(conf_cur(), "decode_buffer_mode", &pl) &&
+	    pl_strcasecmp(&pl, "off")) {
+		struct range decbuf = {20, 160};
+		sz = aufmt_sample_size(rx->dec_fmt);
+		conf_get_range(conf_cur(), "decode_buffer", &decbuf);
+
+		if (!decbuf.min || !decbuf.max)
+			return EINVAL;
+
+		min_sz = sz*calc_nsamp(ac->srate, ac->ch, decbuf.min);
+		max_sz = sz*calc_nsamp(ac->srate, ac->ch, decbuf.max);
+
+		debug("audio: create decode buffer"
+		      " [%zu - %zu ms]"
+		      " [%zu - %zu bytes]\n",
+		      decbuf.min, decbuf.max, min_sz, max_sz);
+
+		err = aubuf_alloc(&rx->aubufdec, min_sz, max_sz);
+		if (err) {
+			warning("audio: aubuf alloc error (%m)\n",
+				err);
+			return err;
+		}
+
+		aubuf_set_mode(rx->aubufdec, conf_aubuf_adaptive(&pl) ?
+			       AUBUF_ADAPTIVE : AUBUF_FIXED);
+	}
+
+	return err;
+}
+
+
 static int start_player(struct aurx *rx, struct audio *a,
 			struct list *auplayl)
 {
@@ -1394,7 +1435,7 @@ static int start_player(struct aurx *rx, struct audio *a,
 	size_t sz;
 	size_t min_sz;
 	size_t max_sz;
-	int err;
+	int err = 0;
 
 	if (!ac)
 		return 0;
@@ -1413,7 +1454,6 @@ static int start_player(struct aurx *rx, struct audio *a,
 	if (!rx->auplay && auplay_find(auplayl, NULL)) {
 
 		struct auplay_prm prm;
-		struct pl pl;
 
 		prm.srate      = srate_dsp;
 		prm.ch         = channels_dsp;
@@ -1450,33 +1490,12 @@ static int start_player(struct aurx *rx, struct audio *a,
 			rx->aubuf_maxsz = max_sz;
 		}
 
-		if (0 == conf_get(conf_cur(), "decode_buffer_mode", &pl) &&
-		    pl_strcasecmp(&pl, "off")) {
-			struct range decbuf = {20, 160};
-			sz = aufmt_sample_size(rx->dec_fmt);
-			conf_get_range(conf_cur(), "decode_buffer", &decbuf);
+		if (!rx->aubufdec) {
+			err = config_aubufdec(rx);
+			if (err)
+				goto out;
 
-			if (!decbuf.min || !decbuf.max)
-				return EINVAL;
-
-			min_sz = sz*calc_nsamp(ac->srate, ac->ch, decbuf.min);
-			max_sz = sz*calc_nsamp(ac->srate, ac->ch, decbuf.max);
-
-			debug("audio: create decode buffer"
-			      " [%zu - %zu ms]"
-			      " [%zu - %zu bytes]\n",
-			      decbuf.min, decbuf.max, min_sz, max_sz);
-
-			err = aubuf_alloc(&rx->aubufdec, min_sz, max_sz);
-			if (err) {
-				warning("audio: aubuf alloc error (%m)\n",
-					err);
-				return err;
-			}
-
-			aubuf_set_mode(rx->aubufdec, conf_aubuf_adaptive(&pl) ?
-				       AUBUF_ADAPTIVE : AUBUF_FIXED);
-			aubuf_set_silence(rx->aubuf, a->cfg.silence);
+			aubuf_set_silence(rx->aubufdec, a->cfg.silence);
 		}
 
 		rx->auplay_prm = prm;
@@ -1487,7 +1506,7 @@ static int start_player(struct aurx *rx, struct audio *a,
 		if (err) {
 			warning("audio: start_player failed (%s.%s): %m\n",
 				rx->module, rx->device, err);
-			return err;
+			goto out;
 		}
 
 		rx->ap = auplay_find(auplayl, rx->module);
@@ -1495,6 +1514,12 @@ static int start_player(struct aurx *rx, struct audio *a,
 		info("audio: player started with sample format %s\n",
 		     aufmt_name(rx->play_fmt));
 
+	}
+
+out:
+	if (err) {
+		rx->aubuf    = mem_deref(rx->aubuf);
+		rx->aubufdec = mem_deref(rx->aubufdec);
 	}
 
 	return 0;
