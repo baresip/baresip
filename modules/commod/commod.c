@@ -105,8 +105,6 @@ static int com_ua_print_calls(struct re_printf *pf, const struct ua *ua)
 }
 
 
-
-
 /**
  * Print all calls with Commend specific informations
  *
@@ -132,10 +130,123 @@ static int com_print_calls(struct re_printf *pf, void *arg)
 }
 
 
+static int menu_param_decode(const char *prm, const char *name, struct pl *val)
+{
+	char expr[128];
+	struct pl v;
+
+	if (!str_isset(prm) || !name || !val)
+		return EINVAL;
+
+	(void)re_snprintf(expr, sizeof(expr),
+			  "[ \t\r\n]*%s[ \t\r\n]*=[ \t\r\n]*[~ \t\r\n;]+",
+			  name);
+
+	if (re_regex(prm, str_len(prm), expr, NULL, NULL, NULL, &v))
+		return ENOENT;
+
+	*val = v;
+
+	return 0;
+}
+
+
+const char *playmod_usage = "/com_playmod"
+			    " source=<audiofile>"
+			    " [player=<player_mod>,<player_dev>]\n";
+static struct play *cur_play;
+
+
+static int cmd_playmod_file(struct re_printf *pf, void *arg)
+{
+	struct cmd_arg *carg = arg;
+
+	struct pl src_param = PL_INIT;
+	struct pl player_param = PL_INIT;
+
+	struct pl mod_param = PL_INIT;
+	struct pl dev_param = PL_INIT;
+
+	struct config *cfg;
+
+	char *alert_mod = NULL;
+	char *alert_dev = NULL;
+	char *filename = NULL;
+
+	int err;
+
+	cfg = conf_config();
+
+	err = menu_param_decode(
+		carg->prm, "source", &src_param);
+
+	if(err)
+	{
+		re_hprintf(pf, "No source defined.\n");
+		goto error;
+	}
+
+	pl_strdup(&filename, &src_param);
+
+	err = menu_param_decode(
+		carg->prm, "player", &player_param);
+
+	if(!err)
+	{
+		if(!re_regex(player_param.p,
+			     player_param.l, "[^,]+,[~]*",
+			     &mod_param, &dev_param))
+		{
+			pl_strdup(&alert_mod, &mod_param);
+
+			if (pl_isset(&dev_param)) {
+				pl_strdup(&alert_dev, &dev_param);
+			}
+		}
+	}
+	else
+	{
+		str_dup(&alert_mod, cfg->audio.alert_mod);
+		str_dup(&alert_dev, cfg->audio.alert_dev);
+	}
+
+	/* Stop the current tone, if any */
+	cur_play = mem_deref(cur_play);
+
+	if (str_isset(filename))
+	{
+		re_hprintf(pf, "playing audio file \"%s\" ..\n",
+			   filename);
+
+		err = play_file(
+			&cur_play, baresip_player(),
+			filename, 0,  alert_mod, alert_dev);
+
+		if (err)
+		{
+			warning("playmod: play_file(%s) failed (%m)\n",
+				filename, err);
+			goto error;
+		}
+	}
+
+	error:
+
+	if(err) {
+		(void) re_hprintf(pf, "usage: %s", playmod_usage);
+	}
+
+	mem_deref(alert_mod);
+	mem_deref( alert_dev);
+	mem_deref(filename);
+
+	return err;
+}
+
 static const struct cmd cmdv[] = {
 
-{"com_listcalls", 0, 0, "List active calls Commend format", com_print_calls},
-
+{"com_listcalls", 0, 0, 	"List active calls Commend format", com_print_calls},
+{"com_playmod",   0, CMD_PRM, 	"Play audio file on audio player",  cmd_playmod_file}
 };
 
 
