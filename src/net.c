@@ -199,8 +199,9 @@ static bool check_ipv6(void)
 /**
  * Add a local IP address with given interface name
  *
- * @param net  Network instance
- * @param ip   IP address
+ * @param net    Network instance
+ * @param sa     IP address
+ * @param ifname Interface name
  *
  * @return 0 if success, otherwise errorcode
  */
