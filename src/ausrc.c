@@ -84,7 +84,6 @@ const struct ausrc *ausrc_find(const struct list *ausrcl, const char *name)
  *
  * @param stp    Pointer to allocated Audio Source state
  * @param ausrcl List of Audio Sources
- * @param ctx    Media context (optional)
  * @param name   Name of Audio Source
  * @param prm    Audio Source parameters
  * @param device Name of Audio Source device (driver specific)
