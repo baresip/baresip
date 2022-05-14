@@ -88,7 +88,6 @@ const struct vidsrc *vidsrc_find(const struct list *vidsrcl, const char *name)
  * @param stp     Pointer to allocated state
  * @param vidsrcl List of Video Sources
  * @param name    Name of the video source
- * @param ctx     Optional media context
  * @param prm     Video source parameters
  * @param size    Wanted video size of the source
  * @param fmt     Format parameter

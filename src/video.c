@@ -1143,7 +1143,6 @@ static void tmr_handler(void *arg)
  * Update video object and start/stop according to media direction
  *
  * @param v    Video object
- * @param ctx  Media context
  * @param peer Peer-URI as string
  *
  * @return int 0 if success, otherwise errorcode
@@ -1210,7 +1209,6 @@ int video_update(struct video *v, const char *peer)
  * Start the video source
  *
  * @param v   Video object
- * @param ctx Media context
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -1356,7 +1354,6 @@ void video_stop_display(struct video *v)
  * Stop video sourc & display
  *
  * @param v   Video object
- * @param ctx Media context
  */
 void video_stop(struct video *v)
 {
