@@ -14,7 +14,7 @@
 
 
 /**
- * @defgroup webrtc_aec webrtc_aecm
+ * @defgroup webrtc_aecm webrtc_aecm
  *
  * Acoustic Echo Cancellation (AEC) Mobile Mode using WebRTC SDK.
  *
