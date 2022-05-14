@@ -1433,6 +1433,7 @@ int stream_start_rtcp(const struct stream *strm)
  * Enable stream
  *
  * @param strm   Stream object
+ * @param enable True to enable, false to disable
  *
  * @return 0 if success, otherwise errorcode
  */
