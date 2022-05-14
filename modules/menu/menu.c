@@ -159,6 +159,7 @@ struct call *menu_find_call_state(enum call_state st)
  *
  * @param matchh  Optional match handler. If NULL, the last call of the first
  *                  User-Agent is returned
+ * @param exclude Call to exclude
  *
  * @return  A call that matches
  */
