@@ -226,7 +226,7 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	}
 
 	if (update) {
-		/* debug("av1: picture update\n"); */
+		debug("av1: picture update\n");
 		flags |= AOM_EFLAG_FORCE_KF;
 	}
 
