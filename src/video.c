@@ -864,6 +864,8 @@ static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 	case RTCP_PSFB:
 		if (msg->hdr.count == RTCP_PSFB_PLI) {
 
+			debug("video: recv Picture Loss Indication (PLI)\n");
+
 			lock_write_get(vtx->lock_enc);
 
 			vtx->picup = true;
