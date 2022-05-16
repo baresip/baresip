@@ -42,11 +42,11 @@ void print_name(int fd)
  */
 void print_events(int fd)
 {
-	uint8_t evtype_bitmask[EV_MAX/8 + 1];
+	uint8_t evbitmask[EV_MAX/8 + 1];
 	int i;
 
-	memset(evtype_bitmask, 0, sizeof(evtype_bitmask));
-	if (ioctl(fd, EVIOCGBIT(0, EV_MAX), evtype_bitmask) < 0) {
+	memset(evbitmask, 0, sizeof(evbitmask));
+	if (ioctl(fd, EVIOCGBIT(0, sizeof(evbitmask)), evbitmask) < 0) {
 		warning("evdev: ioctl EVIOCGBIT (%m)\n", errno);
 		return;
 	}
@@ -54,7 +54,7 @@ void print_events(int fd)
 	printf("Supported event types:\n");
 
 	for (i = 0; i < EV_MAX; i++) {
-		if (!test_bit(i, evtype_bitmask))
+		if (!test_bit(i, evbitmask))
 			continue;
 
 		printf("  Event type 0x%02x ", i);
