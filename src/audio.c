@@ -2220,7 +2220,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 {
 	const struct autx *tx;
 	const struct aurx *rx;
-	size_t sztx, szrx;
+	size_t sztx, szrx, szrxdec;
 	int err;
 
 	if (!a)
@@ -2231,6 +2231,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 
 	sztx = aufmt_sample_size(tx->src_fmt);
 	szrx = aufmt_sample_size(rx->play_fmt);
+	szrxdec = aufmt_sample_size(rx->dec_fmt);
 
 	err  = re_hprintf(pf, "\n--- Audio stream ---\n");
 
@@ -2271,6 +2272,13 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  rx->stats.aubuf_overrun,
 			  rx->stats.aubuf_underrun
 			  );
+	if (rx->aubufdec)
+		err |= re_hprintf(pf, "       aubufdec: %H"
+			  " (cur %.2fms)\n",
+			  aubuf_debug, rx->aubufdec,
+			  calc_ptime(aubuf_cur_size(rx->aubufdec)/szrxdec,
+				     rx->ac->srate,
+				     rx->ac->ch));
 	err |= re_hprintf(pf, "       player: %s,%s %s\n",
 			  rx->ap ? rx->ap->name : "none",
 			  rx->device,
