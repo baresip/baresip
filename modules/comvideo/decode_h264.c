@@ -5,6 +5,7 @@
  */
 
 #include "comvideo.h"
+#include <re_h264.h>
 
 enum {
 	DECODE_MAXSZ = 524288,
@@ -75,7 +76,7 @@ handle_h264_size(struct viddec_state *st, struct mbuf *src)
 
 	debug("idc: %x%x \n", sps.profile_idc, sps.level_idc);
 
-	h264_sps_resolution(&sps, &sz);
+	h264_sps_resolution(&sps, &sz.w, &sz.h);
 	debug("size %d x %d \n", sz.w, sz.h);
 
 	st->width = sz.w;
