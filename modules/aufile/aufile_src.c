@@ -30,7 +30,7 @@ struct ausrc_st {
 	struct aufile *aufile;
 	struct aubuf *aubuf;
 	enum aufmt fmt;                 /**< Wav file sample format          */
-	struct ausrc_prm *prm;          /**< Audio src parameter             */
+	struct ausrc_prm prm;           /**< Audio src parameter             */
 	uint32_t ptime;
 	size_t sampc;
 	bool run;
@@ -74,16 +74,14 @@ static void *src_thread(void *arg)
 	while (st->run) {
 		struct auframe af;
 
-		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc,
-		             st->prm->srate, st->prm->ch);
-		af.timestamp = ts * 1000;
-
 		sys_msleep(ms);
-
 		now = tmr_jiffies();
-
 		if (ts > now)
 			continue;
+
+		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc,
+		             st->prm.srate, st->prm.ch);
+		af.timestamp = ts * 1000;
 
 		aubuf_read_samp(st->aubuf, sampv, st->sampc);
 
@@ -217,7 +215,6 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh    = rh;
 	st->errh  = errh;
 	st->arg   = arg;
-	st->prm   = prm;
 	st->ptime = prm->ptime;
 
 	ptime = st->ptime;
@@ -236,6 +233,7 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	/* return wav format to caller */
 	prm->srate = fprm.srate;
 	prm->ch    = fprm.channels;
+	st->prm   = *prm;
 
 	st->fmt    = fprm.fmt;
 	st->sampc  = prm->srate * prm->ch * ptime / 1000;
