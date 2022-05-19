@@ -130,7 +130,7 @@ static int com_print_calls(struct re_printf *pf, void *arg)
 }
 
 
-static int menu_param_decode(const char *prm, const char *name, struct pl *val)
+static int param_decode(const char *prm, const char *name, struct pl *val)
 {
 	char expr[128];
 	struct pl v;
@@ -177,64 +177,51 @@ static int cmd_playmod_file(struct re_printf *pf, void *arg)
 
 	cfg = conf_config();
 
-	err = menu_param_decode(
-		carg->prm, "source", &src_param);
-
-	if(err)
-	{
+	err = param_decode(carg->prm, "source", &src_param);
+	if (err) {
 		re_hprintf(pf, "No source defined.\n");
-		goto error;
+		goto out;
 	}
 
 	pl_strdup(&filename, &src_param);
 
-	err = menu_param_decode(
-		carg->prm, "player", &player_param);
-
-	if(!err)
-	{
-		if(!re_regex(player_param.p,
+	err = param_decode(carg->prm, "player", &player_param);
+	if (!err) {
+		if (!re_regex(player_param.p,
 			     player_param.l, "[^,]+,[~]*",
-			     &mod_param, &dev_param))
-		{
+			     &mod_param, &dev_param)) {
+
 			pl_strdup(&alert_mod, &mod_param);
 
-			if (pl_isset(&dev_param)) {
+			if (pl_isset(&dev_param))
 				pl_strdup(&alert_dev, &dev_param);
-			}
 		}
 	}
-	else
-	{
+	else {
 		str_dup(&alert_mod, cfg->audio.alert_mod);
 		str_dup(&alert_dev, cfg->audio.alert_dev);
 	}
 
 	/* Stop the current tone, if any */
 	cur_play = mem_deref(cur_play);
-
-	if (str_isset(filename))
-	{
-		re_hprintf(pf, "playing audio file \"%s\" ..\n",
-			   filename);
+	if (str_isset(filename)) {
+		re_hprintf(pf, "playing audio file \"%s\" ..\n", filename);
 
 		err = play_file(
 			&cur_play, baresip_player(),
 			filename, 0,  alert_mod, alert_dev);
 
-		if (err)
-		{
+		if (err) {
 			warning("playmod: play_file(%s) failed (%m)\n",
 				filename, err);
-			goto error;
+			goto out;
 		}
 	}
 
-	error:
+out:
 
-	if(err) {
+	if (err)
 		(void) re_hprintf(pf, "usage: %s", playmod_usage);
-	}
 
 	mem_deref(alert_mod);
 	mem_deref( alert_dev);
@@ -243,10 +230,64 @@ static int cmd_playmod_file(struct re_printf *pf, void *arg)
 	return err;
 }
 
+
+static void find_first_call(struct call *call, void *arg)
+{
+	struct call **ret = arg;
+
+	*ret = call;
+}
+
+
+static struct call *current_call(void)
+{
+	struct call *call = NULL;
+
+	uag_filter_calls(find_first_call, NULL, &call);
+	return call;
+}
+
+
+/**
+ * Removes the current audio codec from local SDP
+ *
+ * @param pf		Print handler for debug output
+ * @param unused	unused parameter
+ *
+ * @return	0 if success, otherwise errorcode
+ */
+static int com_rm_aucodec(struct re_printf *pf, void *arg)
+{
+	struct call *call = current_call();
+	struct stream *stream;
+	struct sdp_media *m;
+	struct sdp_format *f;
+	(void) arg;
+
+	if (!call)
+		return EINVAL;
+
+	stream = audio_strm(call_audio(call));
+	m = stream_sdpmedia(stream);
+	f = sdp_media_format(m, true, NULL, -1, NULL, -1, -1);
+
+	if (f)
+		re_hprintf(pf, "Removing SDP format:\n%H\n", sdp_format_debug,
+			   f);
+	else
+		re_hprintf(pf, "No SDP format found\n");
+
+	mem_deref(f);
+	return 0;
+}
+
+
 static const struct cmd cmdv[] = {
 
-{"com_listcalls", 0, 0, 	"List active calls Commend format", com_print_calls},
-{"com_playmod",   0, CMD_PRM, 	"Play audio file on audio player",  cmd_playmod_file}
+{"com_listcalls", 0, 0,	"List active calls Commend format", com_print_calls},
+{"com_playmod",   0, CMD_PRM,	"Play audio file on audio player",
+	cmd_playmod_file},
+{"com_rmaucodec", 0, 0, "Remove current audio codec", com_rm_aucodec},
 };
 
 
