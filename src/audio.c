@@ -1320,27 +1320,30 @@ static int autx_print_pipeline(struct re_printf *pf, const struct autx *autx)
 }
 
 
-static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *aurx)
+static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *rx)
 {
 	struct le *le;
 	int err;
 
-	if (!aurx)
+	if (!rx)
 		return 0;
 
 	err = re_hprintf(pf, "audio rx pipeline:  %10s",
-			 aurx->ap ? aurx->ap->name : "(play)");
+			 rx->ap ? rx->ap->name : "(play)");
 
 	err |= re_hprintf(pf, " <--- aubuf");
-	for (le = list_head(&aurx->filtl); le; le = le->next) {
+	for (le = list_head(&rx->filtl); le; le = le->next) {
 		struct aufilt_dec_st *st = le->data;
 
 		if (st->af->dech)
 			err |= re_hprintf(pf, " <--- %s", st->af->name);
 	}
 
+	if (rx->aubufdec)
+		err |= re_hprintf(pf, " <--- aubufdec");
+
 	err |= re_hprintf(pf, " <--- %s\n",
-			  aurx->ac ? aurx->ac->name : "(decoder)");
+			  rx->ac ? rx->ac->name : "(decoder)");
 
 	return err;
 }
