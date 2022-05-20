@@ -107,12 +107,15 @@ int conf_loadfile(struct mbuf **mbp, const char *filename)
 int conf_parse(const char *filename, confline_h *ch, void *arg)
 {
 	struct pl pl, val;
-	struct mbuf *mb;
+	struct mbuf *mb = NULL;
 	int err;
 
 	err = conf_loadfile(&mb, filename);
 	if (err)
 		return err;
+
+	if (!mb)
+		return EINVAL;
 
 	pl.p = (const char *)mb->buf;
 	pl.l = mb->end;
