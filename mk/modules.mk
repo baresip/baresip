@@ -124,7 +124,7 @@ endif
 USE_X11      := $(shell $(call CC_TEST_AND,X11/Xlib.h,X11/extensions/XShm.h))
 USE_ZRTP     := $(shell $(call CC_TEST,libzrtp/zrtp.h))
 USE_VPX      := $(shell $(call CC_TEST,vpx/vp8.h))
-USE_OMX_RPI  := $(shell $(call CC_TEST,bcm_host.h))
+USE_OMX_RPI  := $(shell $(call CC_TEST_AND,bcm_host.h,IL/OMX_Core.h))
 
 USE_OMX_BELLAGIO := $(shell $(call CC_TEST,OMX_Core.h))
 USE_WEBRTC_AEC   := $(shell \
