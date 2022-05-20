@@ -524,6 +524,8 @@ static int reg_auth_dns(enum sip_transp tp)
 
 	memset(&t, 0, sizeof(t));
 
+	dnsc_set_cache(net_dnsc(net), false);
+
 	/*
 	 * Setup server-side mocks:
 	 */
