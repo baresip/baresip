@@ -102,6 +102,10 @@ static int process_frame(void *buf, enum aufmt target_fmt,
 		auconv_to_s16(buf, af->fmt, af->sampv, af->sampc);
 		break;
 
+	case AUFMT_FLOAT:
+		auconv_to_float(buf, af->fmt, af->sampv, af->sampc);
+		break;
+
 	default:
 		warning("auconv: format not supported (%s)\n",
 			aufmt_name(target_fmt));
