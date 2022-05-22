@@ -17,7 +17,7 @@ static void tmr_handler(void *arg)
 
 	tmr_start(&metric->tmr, TMR_INTERVAL * 1000, tmr_handler, metric);
 
-	lock_write_get(metric->lock);
+	mtx_lock(&metric->lock);
 
 	if (!metric->started)
 		goto out;
@@ -36,7 +36,7 @@ static void tmr_handler(void *arg)
 	metric->n_bytes_last = metric->n_bytes;
 
 out:
-	lock_rel(metric->lock);
+	mtx_unlock(&metric->lock);
 }
 
 
@@ -58,7 +58,7 @@ int metric_init(struct metric *metric)
 	if (!metric)
 		return EINVAL;
 
-	err = lock_alloc(&metric->lock);
+	err = mtx_init(&metric->lock, mtx_plain);
 	if (err)
 		return err;
 
@@ -74,7 +74,7 @@ void metric_reset(struct metric *metric)
 		return;
 
 	tmr_cancel(&metric->tmr);
-	metric->lock = mem_deref(metric->lock);
+	mtx_destroy(&metric->lock);
 }
 
 
@@ -86,7 +86,7 @@ void metric_add_packet(struct metric *metric, size_t packetsize)
 	if (!metric)
 		return;
 
-	lock_write_get(metric->lock);
+	mtx_lock(&metric->lock);
 
 	if (!metric->started)
 		metric_start(metric);
@@ -94,7 +94,7 @@ void metric_add_packet(struct metric *metric, size_t packetsize)
 	metric->n_bytes += (uint32_t)packetsize;
 	metric->n_packets++;
 
-	lock_rel(metric->lock);
+	mtx_unlock(&metric->lock);
 }
 
 
