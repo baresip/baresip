@@ -151,7 +151,7 @@ int conf_get_float(const struct conf *conf, const char *name, double *val);
 struct metric {
 	/* internal stuff: */
 	struct tmr tmr;
-	struct lock *lock;
+	mtx_t lock;
 	uint64_t ts_start;
 	bool started;
 
