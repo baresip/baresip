@@ -120,7 +120,7 @@ struct autx {
 	} thr;
 #endif
 
-	struct lock *lock;
+	mtx_t lock;
 };
 
 
@@ -173,7 +173,7 @@ struct aurx {
 	enum jbuf_type jbtype;       /**< Jitter buffer type               */
 	volatile int32_t wcnt;       /**< Write handler call count         */
 
-	struct lock *lock;
+	mtx_t lock;
 };
 
 
@@ -269,9 +269,9 @@ static void stop_tx(struct autx *tx, struct audio *a)
 
 #ifdef HAVE_PTHREAD
 	if (a->cfg.txmode == AUDIO_MODE_THREAD && tx->thr.run) {
-		lock_write_get(tx->lock);
+		mtx_lock(&tx->lock);
 		tx->thr.run = false;
-		lock_rel(tx->lock);
+		mtx_unlock(&tx->lock);
 		pthread_join(tx->thr.tid, NULL);
 	}
 #endif
@@ -323,8 +323,8 @@ static void audio_destructor(void *arg)
 	mem_deref(a->strm);
 	mem_deref(a->telev);
 
-	mem_deref(a->tx.lock);
-	mem_deref(a->rx.lock);
+	mtx_destroy(&a->tx.lock);
+	mtx_destroy(&a->rx.lock);
 }
 
 
@@ -477,10 +477,10 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		uint32_t rtp_ts = tx->ts_ext & 0xffffffff;
 
 		if (len) {
-			lock_write_get(a->tx.lock);
+			mtx_lock(&a->tx.lock);
 			err = stream_send(a->strm, ext_len!=0, marker, -1,
 					  rtp_ts, tx->mb);
-			lock_rel(a->tx.lock);
+			mtx_unlock(&a->tx.lock);
 			if (err)
 				goto out;
 		}
@@ -571,9 +571,9 @@ static void check_telev(struct audio *a, struct autx *tx)
 
 	mb->pos = mb->end = STREAM_PRESZ;
 
-	lock_write_get(tx->lock);
+	mtx_lock(&tx->lock);
 	err = telev_poll(a->telev, &marker, mb);
-	lock_rel(tx->lock);
+	mtx_unlock(&tx->lock);
 	if (err)
 		goto out;
 
@@ -585,9 +585,9 @@ static void check_telev(struct audio *a, struct autx *tx)
 		goto out;
 
 	mb->pos = STREAM_PRESZ;
-	lock_write_get(a->tx.lock);
+	mtx_lock(&a->tx.lock);
 	err = stream_send(a->strm, false, marker, fmt->pt, tx->ts_tel, mb);
-	lock_rel(a->tx.lock);
+	mtx_unlock(&a->tx.lock);
 	if (err) {
 		warning("audio: telev: stream_send %m\n", err);
 	}
@@ -616,7 +616,7 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 	struct aurx *rx = &a->rx;
 	size_t num_bytes = auframe_size(af);
 
-	lock_read_get(rx->lock);
+	mtx_lock(&rx->lock);
 	if (rx->aubuf_started && aubuf_cur_size(rx->aubuf) < num_bytes) {
 
 		++rx->stats.aubuf_underrun;
@@ -626,7 +626,7 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 			rx->stats.aubuf_underrun);
 #endif
 	}
-	lock_rel(rx->lock);
+	mtx_unlock(&rx->lock);
 
 	aubuf_read_auframe(rx->aubuf, af);
 }
@@ -666,9 +666,9 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 
 	(void)aubuf_write_auframe(tx->aubuf, af);
 
-	lock_write_get(tx->lock);
+	mtx_lock(&tx->lock);
 	tx->aubuf_started = true;
-	lock_rel(tx->lock);
+	mtx_unlock(&tx->lock);
 
 	if (a->cfg.txmode != AUDIO_MODE_POLL)
 		return;
@@ -849,11 +849,11 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 	if (err)
 		goto out;
 
-	lock_write_get(rx->lock);
+	mtx_lock(&rx->lock);
 	if (!rx->aubuf_started &&
 	    (rx->aubuf_minsz >= aubuf_cur_size(rx->aubuf)))
 		rx->aubuf_started = true;
-	lock_rel(rx->lock);
+	mtx_unlock(&rx->lock);
 
  out:
 	return err;
@@ -1139,8 +1139,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	rx->pt     = -1;
 	rx->ptime  = ptime;
 
-	err = lock_alloc(&tx->lock);
-	err |= lock_alloc(&rx->lock);
+	err  = mtx_init(&tx->lock, mtx_plain);
+	err |= mtx_init(&rx->lock, mtx_plain);
 	if (err)
 		goto out;
 
@@ -1166,23 +1166,23 @@ static void *tx_thread(void *arg)
 	struct autx *tx = &a->tx;
 	uint64_t ts = 0;
 
-	lock_read_get(tx->lock);
+	mtx_lock(&tx->lock);
 	while (tx->thr.run) {
 		uint64_t now;
 
-		lock_rel(tx->lock);
+		mtx_unlock(&tx->lock);
 		sys_msleep(4);
-		lock_read_get(tx->lock);
+		mtx_lock(&tx->lock);
 
 		if (!tx->aubuf_started) {
-			lock_rel(tx->lock);
+			mtx_unlock(&tx->lock);
 			goto loop;
 		}
 
 		if (!tx->thr.run)
 			break;
 
-		lock_rel(tx->lock);
+		mtx_unlock(&tx->lock);
 
 		now = tmr_jiffies();
 		if (!ts)
@@ -1212,9 +1212,9 @@ static void *tx_thread(void *arg)
 		check_telev(a, tx);
 
 loop:
-		lock_read_get(tx->lock);
+		mtx_lock(&tx->lock);
 	}
-	lock_rel(tx->lock);
+	mtx_unlock(&tx->lock);
 
 	return NULL;
 }
@@ -1722,9 +1722,9 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 
 	stream_set_srate(a->strm, ac->crate, 0);
 
-	lock_write_get(a->tx.lock);
+	mtx_lock(&a->tx.lock);
 	stream_update_encoder(a->strm, pt_tx);
-	lock_rel(a->tx.lock);
+	mtx_unlock(&a->tx.lock);
 
 	telev_set_srate(a->telev, ac->crate);
 
@@ -1836,18 +1836,18 @@ int audio_send_digit(struct audio *a, char key)
 			return EINVAL;
 		}
 
-		lock_write_get(a->tx.lock);
+		mtx_lock(&a->tx.lock);
 		err = telev_send(a->telev, event, false);
-		lock_rel(a->tx.lock);
+		mtx_unlock(&a->tx.lock);
 
 	}
 	else if (a->tx.cur_key && a->tx.cur_key != KEYCODE_REL) {
 		/* Key release */
 		info("audio: send DTMF digit end: '%c'\n", a->tx.cur_key);
-		lock_write_get(a->tx.lock);
+		mtx_lock(&a->tx.lock);
 		err = telev_send(a->telev,
 				 telev_digit2code(a->tx.cur_key), true);
-		lock_rel(a->tx.lock);
+		mtx_unlock(&a->tx.lock);
 	}
 
 	a->tx.cur_key = key;
