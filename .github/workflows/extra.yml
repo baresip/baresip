@@ -50,11 +50,6 @@ jobs:
         make V=1 CCACHE= EXTRA_CFLAGS=-Werror clang
         make clean
 
-    - name: make HAVE_PTHREAD= baresip
-      run: |
-        make V=1 CCACHE= EXTRA_CFLAGS=-Werror HAVE_PTHREAD=
-        make clean
-
     - name: make RELEASE=1 baresip
       run: |
         make V=1 CCACHE= EXTRA_CFLAGS=-Werror RELEASE=1
