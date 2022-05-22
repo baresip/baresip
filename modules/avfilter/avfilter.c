@@ -41,7 +41,7 @@
  *
  */
 
-static struct lock *lock;
+static mtx_t lock;
 static char filter_descr[MAX_DESCR] = "";
 static bool filter_updated = false;
 
@@ -88,13 +88,13 @@ static int encode(struct vidfilt_enc_st *enc_st, struct vidframe *frame,
 	if (!frame)
 		return 0;
 
-	lock_write_get(lock);
+	mtx_lock(&lock);
 	if (filter_updated || !filter_valid(st, frame)) {
 		filter_reset(st);
 		filter_init(st, filter_descr, frame);
 	}
 	filter_updated = false;
-	lock_rel(lock);
+	mtx_unlock(&lock);
 
 	err = filter_encode(st, frame, timestamp);
 
@@ -107,7 +107,7 @@ static int avfilter_command(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	(void)pf;
 
-	lock_write_get(lock);
+	mtx_lock(&lock);
 
 	if (str_isset(carg->prm)) {
 		str_ncpy(filter_descr, carg->prm, sizeof(filter_descr));
@@ -120,7 +120,7 @@ static int avfilter_command(struct re_printf *pf, void *arg)
 
 	filter_updated = true;
 
-	lock_rel(lock);
+	mtx_unlock(&lock);
 	return 0;
 }
 
@@ -140,7 +140,8 @@ static const struct cmd cmdv[] = {
 static int module_init(void)
 {
 	int err;
-	err = lock_alloc(&lock);
+
+	err = mtx_init(&lock, mtx_plain);
 	if (err)
 		return err;
 
@@ -151,7 +152,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	lock = mem_deref(lock);
+	mtx_destroy(&lock);
 	vidfilt_unregister(&avfilter);
 	cmd_unregister(baresip_commands(), cmdv);
 	return 0;
