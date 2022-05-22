@@ -211,7 +211,7 @@ Patches can be sent via Github
 * IPv4 and IPv6 support
 * RFC-compliancy
 * Robust, fast, low footprint
-* Portable C89 and C99 source code
+* Portable C99 and C11 source code
 
 
 ## Modular Plugin Architecture:
