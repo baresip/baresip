@@ -152,7 +152,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	/* todo: mutex destroy ? */
+	mtx_destroy(&lock);
 	vidfilt_unregister(&avfilter);
 	cmd_unregister(baresip_commands(), cmdv);
 	return 0;
