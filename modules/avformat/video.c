@@ -121,13 +121,13 @@ void avformat_video_copy(struct shared *st, AVPacket *pkt)
 	vp.size = pkt->size;
 	vp.timestamp = pkt->pts * VIDEO_TIMEBASE * tb.num / tb.den;
 
-	lock_read_get(st->lock);
+	mtx_lock(&st->lock);
 
 	if (st->vidsrc_st && st->vidsrc_st->packeth) {
 		st->vidsrc_st->packeth(&vp, st->vidsrc_st->arg);
 	}
 
-	lock_rel(st->lock);
+	mtx_unlock(&st->lock);
 }
 
 
@@ -215,12 +215,12 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	/* convert timestamp */
 	timestamp = frame->pts * VIDEO_TIMEBASE * tb.num / tb.den;
 
-	lock_read_get(st->lock);
+	mtx_lock(&st->lock);
 
 	if (st->vidsrc_st && st->vidsrc_st->frameh)
 		st->vidsrc_st->frameh(&vf, timestamp, st->vidsrc_st->arg);
 
-	lock_rel(st->lock);
+	mtx_unlock(&st->lock);
 
  out:
 	if (frame)
