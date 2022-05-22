@@ -78,7 +78,7 @@ static void shared_destructor(void *arg)
 		avformat_close_input(&st->ic);
 
 	list_unlink(&st->le);
-	mem_deref(st->lock);
+	mtx_destroy(&st->lock);
 	mem_deref(st->dev);
 }
 
@@ -299,7 +299,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
-	err = lock_alloc(&st->lock);
+	err = mtx_init(&st->lock, mtx_plain);
 	if (err)
 		goto out;
 
@@ -457,9 +457,9 @@ void avformat_shared_set_audio(struct shared *sh, struct ausrc_st *st)
 	if (!sh)
 		return;
 
-	lock_write_get(sh->lock);
+	mtx_lock(&sh->lock);
 	sh->ausrc_st = st;
-	lock_rel(sh->lock);
+	mtx_unlock(&sh->lock);
 }
 
 
@@ -468,9 +468,9 @@ void avformat_shared_set_video(struct shared *sh, struct vidsrc_st *st)
 	if (!sh)
 		return;
 
-	lock_write_get(sh->lock);
+	mtx_lock(&sh->lock);
 	sh->vidsrc_st = st;
-	lock_rel(sh->lock);
+	mtx_unlock(&sh->lock);
 }
 
 

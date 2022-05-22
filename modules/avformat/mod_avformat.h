@@ -9,7 +9,7 @@ struct shared {
 	struct le le;
 	struct ausrc_st *ausrc_st;    /* pointer */
 	struct vidsrc_st *vidsrc_st;  /* pointer */
-	struct lock *lock;
+	mtx_t lock;
 	AVFormatContext *ic;
 	pthread_t thread;
 	char *dev;

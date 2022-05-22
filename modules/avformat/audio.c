@@ -145,7 +145,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 
 	/* NOTE: pass timestamp to application */
 
-	lock_read_get(st->lock);
+	mtx_lock(&st->lock);
 
 	if (st->ausrc_st && st->ausrc_st->readh) {
 
@@ -178,7 +178,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 	}
 
  unlock:
-	lock_rel(st->lock);
+	mtx_unlock(&st->lock);
 
 	av_frame_unref(&frame2);
 	av_frame_unref(&frame);
