@@ -20,6 +20,7 @@
 #endif
 #include <time.h>
 #include <re.h>
+#include <re_atomic.h>
 #include <rem.h>
 #include <baresip.h>
 #include "core.h"
@@ -185,13 +186,10 @@ struct aurx {
 	volatile int32_t wcnt;       /**< Write handler call count         */
 
 	mtx_t lock;
-#ifdef HAVE_PTHREAD
 	struct {
 		thrd_t thrd;         /**< Audio RX filter thread           */
-		mtx_t mtx;           /**< Mutex for stopping thread        */
-		bool run;            /**< Audio RX filter thread running   */
+		RE_ATOMIC bool run;  /**< Audio RX filter thread running   */
 	} thr;
-#endif
 
 };
 
@@ -307,14 +305,11 @@ static void stop_rx(struct aurx *rx)
 {
 	if (!rx)
 		return;
-#ifdef HAVE_PTHREAD
+
 	if (rx->thr.run) {
-		mtx_lock(&rx->thr.mtx);
 		rx->thr.run = false;
-		mtx_unlock(&rx->thr.mtx);
 		thrd_join(rx->thr.thrd, NULL);
 	}
-#endif
 
 	/* audio player must be stopped first */
 	rx->auplay = mem_deref(rx->auplay);
@@ -781,10 +776,8 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 
 static int process_decfilt(struct aurx *rx, struct auframe *af)
 {
-	struct le *le;
-
 	/* Process exactly one audio-frame in reverse list order */
-	for (le = rx->filtl.tail; le; le = le->prev) {
+	for (struct le *le = rx->filtl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;
 		int err = 0;
 
@@ -799,7 +792,7 @@ static int process_decfilt(struct aurx *rx, struct auframe *af)
 }
 
 
-static int rx_push_aubuf(struct aurx *rx, struct auframe *af)
+static int rx_push_aubuf(struct aurx *rx, const struct auframe *af)
 {
 	int err;
 
@@ -850,7 +843,7 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 	bool marker = hdr->m;
 	int err = 0;
 	const struct aucodec *ac = rx->ac;
-	bool flush = rx->ssrc != hdr->ssrc && rx->ssrc;
+	bool flush = rx->ssrc != hdr->ssrc;
 
 	/* No decoder set */
 	if (!ac)
@@ -1429,7 +1422,6 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 }
 
 
-#ifdef HAVE_PTHREAD
 static int rx_filter_thread(void *arg)
 {
 	struct audio *a = arg;
@@ -1441,14 +1433,7 @@ static int rx_filter_thread(void *arg)
 	size_t sampc = ac->srate * ac->ch * ptime / 1000;
 
 	while (rx->thr.run) {
-		bool run;
 		int err;
-
-		mtx_lock(&rx->thr.mtx);
-		run = rx->thr.run;
-		mtx_unlock(&rx->thr.mtx);
-		if (!run)
-			break;
 
 		now = tmr_jiffies();
 		if (ts > now)
@@ -1475,7 +1460,6 @@ static int rx_filter_thread(void *arg)
 
 	return 0;
 }
-#endif
 
 
 static int config_aubufdec(struct audio *a)
@@ -1516,16 +1500,13 @@ static int config_aubufdec(struct audio *a)
 			       AUBUF_ADAPTIVE : AUBUF_FIXED);
 		aubuf_set_silence(rx->aubufdec, a->cfg.silence);
 
-#ifdef HAVE_PTHREAD
 		if (!rx->thr.run) {
 			rx->thr.run = true;
-			mtx_init(&rx->thr.mtx, mtx_plain);
 			err = thrd_create_name(&rx->thr.thrd, "RX filter",
 					       rx_filter_thread, a);
 			if (err)
 				rx->thr.run = false;
 		}
-#endif
 	}
 
 	return err;
