@@ -17,7 +17,7 @@ enum {PTIME = 40};
 struct play {
 	struct le le;
 	struct play **playp;
-	struct lock *lock;
+	mtx_t lock;
 	struct mbuf *mb;
 	struct auplay_st *auplay;
 	char *mod;
@@ -68,7 +68,7 @@ static void tmr_polling(void *arg)
 {
 	struct play *play = arg;
 
-	lock_write_get(play->lock);
+	mtx_lock(&play->lock);
 
 	tmr_start(&play->tmr, PTIME, tmr_polling, play);
 
@@ -83,7 +83,7 @@ static void tmr_polling(void *arg)
 		tmr_start(&play->tmr, 4, tmr_polling, play);
 	}
 
-	lock_rel(play->lock);
+	mtx_unlock(&play->lock);
 }
 
 
@@ -122,7 +122,7 @@ static void write_handler(struct auframe *af, void *arg)
 	size_t left;
 	size_t count;
 
-	lock_write_get(play->lock);
+	mtx_lock(&play->lock);
 
 	if (play->eof)
 		goto silence;
@@ -148,7 +148,7 @@ static void write_handler(struct auframe *af, void *arg)
 	if (play->eof)
 		memset((uint8_t *)af->sampv + pos, 0, sz - pos);
 
-	lock_rel(play->lock);
+	mtx_unlock(&play->lock);
 }
 
 
@@ -159,16 +159,16 @@ static void destructor(void *arg)
 	list_unlink(&play->le);
 	tmr_cancel(&play->tmr);
 
-	lock_write_get(play->lock);
+	mtx_lock(&play->lock);
 	play->eof = true;
-	lock_rel(play->lock);
+	mtx_unlock(&play->lock);
 
 	mem_deref(play->ausrc_st);
 	mem_deref(play->auplay);
 	mem_deref(play->mod);
 	mem_deref(play->dev);
 	mem_deref(play->mb);
-	mem_deref(play->lock);
+	mtx_destroy(&play->lock);
 	mem_deref(play->aubuf);
 	mem_deref(play->filename);
 
@@ -282,7 +282,7 @@ int play_tone(struct play **playp, struct player *player,
 	play->repeat = repeat ? repeat : 1;
 	play->mb     = mem_ref(tone);
 
-	err = lock_alloc(&play->lock);
+	err = mtx_init(&play->lock, mtx_plain);
 	if (err)
 		goto out;
 
@@ -337,7 +337,7 @@ static void aubuf_write_handler(struct auframe *af, void *arg)
 
 	aubuf_read(play->aubuf, af->sampv, sz);
 
-	lock_write_get(play->lock);
+	mtx_lock(&play->lock);
 	if (!play->trep && !play->ausrc_st && left < sz) {
 		check_restart(play);
 	}
@@ -345,7 +345,7 @@ static void aubuf_write_handler(struct auframe *af, void *arg)
 		start_ausrc(play);
 	}
 
-	lock_rel(play->lock);
+	mtx_unlock(&play->lock);
 }
 
 
@@ -355,9 +355,9 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 	(void)str;
 
 	if (err == 0) {
-		lock_write_get(play->lock);
+		mtx_lock(&play->lock);
 		play->ausrc_st = mem_deref(play->ausrc_st);
-		lock_rel(play->lock);
+		mtx_unlock(&play->lock);
 	}
 }
 
@@ -417,7 +417,7 @@ static int play_file_ausrc(struct play **playp,
 	if (!channels)
 		channels = 1;
 
-	err = lock_alloc(&play->lock);
+	err = mtx_init(&play->lock, mtx_plain);
 	if (err)
 		goto out;
 
