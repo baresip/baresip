@@ -6,6 +6,7 @@
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
 #include <string.h>
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -17,7 +18,7 @@ struct auplay_st {
 	struct auplay_prm prm;
 
 	thrd_t thread;
-	volatile bool run;
+	RE_ATOMIC bool run;
 	void *sampv;
 	size_t sampc;
 	size_t num_bytes;
