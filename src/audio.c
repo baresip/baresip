@@ -643,12 +643,17 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 {
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
+	enum aufmt fmt;
 	unsigned i;
 
-	if (tx->src_fmt != af->fmt) {
+	mtx_lock(&tx->lock);
+	fmt = tx->src_fmt;
+	mtx_unlock(&tx->lock);
+
+	if (fmt != af->fmt) {
 		warning("audio: ausrc format mismatch:"
 			" expected=%d(%s), actual=%d(%s)\n",
-			tx->src_fmt, aufmt_name(tx->src_fmt),
+			fmt, aufmt_name(tx->src_fmt),
 			af->fmt, aufmt_name(af->fmt));
 		return;
 	}
@@ -1504,6 +1509,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 			return err;
 		}
 
+		mtx_lock(&tx->lock);
 		/* recalculate and resize aubuf if ausrc_alloc changes prm */
 		tx->src_fmt = prm.fmt;
 		sz = aufmt_sample_size(tx->src_fmt);
@@ -1513,9 +1519,12 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 			tx->aubuf_maxsz = tx->psize * 30;
 			err = aubuf_resize(tx->aubuf, tx->psize,
 					   tx->aubuf_maxsz);
-			if (err)
+			if (err) {
+				mtx_unlock(&tx->lock);
 				return err;
+			}
 		}
+		mtx_unlock(&tx->lock);
 
 		tx->as = ausrc_find(ausrcl, tx->module);
 
