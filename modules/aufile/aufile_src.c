@@ -5,7 +5,6 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -34,7 +33,7 @@ struct ausrc_st {
 	uint32_t ptime;
 	size_t sampc;
 	bool run;
-	pthread_t thread;
+	thrd_t thread;
 	ausrc_read_h *rh;
 	ausrc_error_h *errh;
 	void *arg;
@@ -47,7 +46,7 @@ static void destructor(void *arg)
 
 	if (st->run) {
 		st->run = false;
-		pthread_join(st->thread, NULL);
+		thrd_join(st->thread, NULL);
 	}
 
 	tmr_cancel(&st->tmr);
@@ -57,7 +56,7 @@ static void destructor(void *arg)
 }
 
 
-static void *src_thread(void *arg)
+static int src_thread(void *arg)
 {
 	uint64_t now, ts = tmr_jiffies();
 	struct ausrc_st *st = arg;
@@ -69,7 +68,7 @@ static void *src_thread(void *arg)
 
 	sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
 	if (!sampv)
-		return NULL;
+		return ENOMEM;
 
 	while (st->run) {
 		struct auframe af;
@@ -95,7 +94,7 @@ static void *src_thread(void *arg)
 
 	mem_deref(sampv);
 
-	return NULL;
+	return 0;
 }
 
 
@@ -254,7 +253,7 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	tmr_start(&st->tmr, ptime, timeout, st);
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, src_thread, st);
+	err = thrd_create(&st->thread, src_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;
