@@ -12,14 +12,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-#endif
-#if defined(HAVE_PTHREAD) && defined(WIN32)
-#include <pthread_time.h> /* needs mingw-w64 winpthreads */
-#endif
 #include <time.h>
 #include <re.h>
+#include <re_atomic.h>
 #include <rem.h>
 #include <baresip.h>
 #include "core.h"
@@ -113,12 +108,10 @@ struct autx {
 		uint64_t aubuf_underrun;
 	} stats;
 
-#ifdef HAVE_PTHREAD
 	struct {
-		pthread_t tid;/**< Audio transmit thread           */
-		bool run;     /**< Audio transmit thread running   */
+		thrd_t tid;           /**< Audio transmit thread           */
+		RE_ATOMIC bool run;   /**< Audio transmit thread running   */
 	} thr;
-#endif
 
 	mtx_t lock;
 };
@@ -267,14 +260,10 @@ static void stop_tx(struct autx *tx, struct audio *a)
 	if (!tx || !a)
 		return;
 
-#ifdef HAVE_PTHREAD
 	if (a->cfg.txmode == AUDIO_MODE_THREAD && tx->thr.run) {
-		mtx_lock(&tx->lock);
 		tx->thr.run = false;
-		mtx_unlock(&tx->lock);
-		pthread_join(tx->thr.tid, NULL);
+		thrd_join(tx->thr.tid, NULL);
 	}
-#endif
 
 	/* audio source must be stopped first */
 	tx->ausrc = mem_deref(tx->ausrc);
@@ -1164,8 +1153,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 }
 
 
-#ifdef HAVE_PTHREAD
-static void *tx_thread(void *arg)
+static int tx_thread(void *arg)
 {
 	struct audio *a = arg;
 	struct autx *tx = &a->tx;
@@ -1221,9 +1209,8 @@ loop:
 	}
 	mtx_unlock(&tx->lock);
 
-	return NULL;
+	return 0;
 }
-#endif
 
 
 static void aufilt_param_set(struct aufilt_prm *prm,
@@ -1533,19 +1520,17 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		case AUDIO_MODE_POLL:
 			break;
 
-#ifdef HAVE_PTHREAD
 		case AUDIO_MODE_THREAD:
 			if (!tx->thr.run) {
 				tx->thr.run = true;
-				err = pthread_create(&tx->thr.tid, NULL,
-						     tx_thread, a);
+				err = thrd_create(&tx->thr.tid,
+						  tx_thread, a);
 				if (err) {
 					tx->thr.run = false;
 					return err;
 				}
 			}
 			break;
-#endif
 
 		default:
 			warning("audio: tx mode not supported (%d)\n",
