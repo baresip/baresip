@@ -591,6 +591,8 @@ void mcreceiver_enable(bool enable)
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
 		mcreceiver->enable = enable;
+		if (mcreceiver->state == RUNNING)
+			mcreceiver->state = RECEIVING;
 		jbuf_flush(mcreceiver->jbuf);
 	}
 
