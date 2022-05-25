@@ -261,9 +261,7 @@ static void stop_tx(struct autx *tx, struct audio *a)
 		return;
 
 	if (a->cfg.txmode == AUDIO_MODE_THREAD && tx->thr.run) {
-		mtx_lock(&tx->lock);
 		tx->thr.run = false;
-		mtx_unlock(&tx->lock);
 		thrd_join(tx->thr.tid, NULL);
 	}
 
