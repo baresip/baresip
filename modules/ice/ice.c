@@ -19,7 +19,8 @@
 
 
 enum {
-	ICE_LAYER = 0
+	ICE_LAYER = 0,
+	LPRIO_INIT = UINT16_MAX / 2
 };
 
 
@@ -54,6 +55,7 @@ struct mnat_media {
 	struct mnat_sess *sess;
 	struct sdp_media *sdpm;
 	struct icem *icem;
+	uint16_t lprio;
 	bool gathered;
 	bool complete;
 	bool terminated;
@@ -373,6 +375,7 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 {
 	struct mnat_media *m = arg;
 	uint16_t lprio;
+	const struct sa *default4, *default6;
 	unsigned i;
 	int err = 0;
 
@@ -383,7 +386,16 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 	if (!net_af_enabled(baresip_network(), sa_af(sa)))
 		return false;
 
-	lprio = 0;
+	lprio = m->lprio;
+
+	/* Check for default routes */
+	default6 = net_laddr_af(baresip_network(), AF_INET6);
+	if (sa_cmp(default6, sa, SA_ADDR))
+		lprio = UINT16_MAX;
+
+	default4 = net_laddr_af(baresip_network(), AF_INET);
+	if (sa_cmp(default4, sa, SA_ADDR))
+		lprio = UINT16_MAX - 1;
 
 	ice_printf(m, "added interface: %s:%j (local prio %u)\n",
 		   ifname, sa, lprio);
@@ -397,6 +409,9 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 		warning("ice: %s:%j: icem_cand_add: %m\n", ifname, sa, err);
 	}
 
+	/* Ensure every local prio is unique */
+	--m->lprio;
+
 	return false;
 }
 
@@ -405,7 +420,7 @@ static int media_start(struct mnat_sess *sess, struct mnat_media *m)
 {
 	int err = 0;
 
-	net_if_apply(if_handler, m);
+	net_laddr_apply(baresip_network(), if_handler, m);
 
 	if (sess->turn) {
 		err = icem_gather_relay(m,
@@ -457,7 +472,7 @@ static void tmr_async_handler(void *arg)
 
 		struct mnat_media *m = le->data;
 
-		net_if_apply(if_handler, m);
+		net_laddr_apply(baresip_network(), if_handler, m);
 
 		call_gather_handler(0, m, 0, "");
 	}
@@ -823,6 +838,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->sess  = sess;
 	m->compv[0].sock = mem_ref(sock1);
 	m->compv[1].sock = mem_ref(sock2);
+	m->lprio = LPRIO_INIT;
 
 	if (sess->offerer)
 		role = ICE_ROLE_CONTROLLING;
