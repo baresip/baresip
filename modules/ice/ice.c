@@ -20,7 +20,7 @@
 
 enum {
 	ICE_LAYER = 0,
-	LPRIO_INIT = UINT16_MAX / 2
+	LPREF_INIT = UINT16_MAX / 2
 };
 
 
@@ -55,7 +55,7 @@ struct mnat_media {
 	struct mnat_sess *sess;
 	struct sdp_media *sdpm;
 	struct icem *icem;
-	uint16_t lprio;
+	uint16_t lpref;
 	bool gathered;
 	bool complete;
 	bool terminated;
@@ -374,8 +374,8 @@ static int set_media_attributes(struct mnat_media *m)
 static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 {
 	struct mnat_media *m = arg;
-	uint16_t lprio;
-	const struct sa *default4, *default6;
+	uint16_t lpref;
+	const struct sa *def;
 	unsigned i;
 	int err = 0;
 
@@ -386,23 +386,23 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 	if (!net_af_enabled(baresip_network(), sa_af(sa)))
 		return false;
 
-	lprio = m->lprio;
+	lpref = m->lpref;
 
 	/* Check for default routes */
-	default6 = net_laddr_af(baresip_network(), AF_INET6);
-	if (sa_cmp(default6, sa, SA_ADDR))
-		lprio = UINT16_MAX;
-
-	default4 = net_laddr_af(baresip_network(), AF_INET);
-	if (sa_cmp(default4, sa, SA_ADDR))
-		lprio = UINT16_MAX - 1;
+	def = net_laddr_af(baresip_network(), sa_af(sa));
+	if (sa_cmp(def, sa, SA_ADDR)) {
+		if (sa_af(sa) == AF_INET6)
+			lpref = UINT16_MAX;
+		else if (sa_af(sa) == AF_INET)
+			lpref = UINT16_MAX - 1;
+	}
 
 	ice_printf(m, "added interface: %s:%j (local prio %u)\n",
-		   ifname, sa, lprio);
+		   ifname, sa, lpref);
 
 	for (i=0; i<2; i++) {
 		if (m->compv[i].sock)
-			err |= icem_cand_add(m->icem, i+1, lprio, ifname, sa);
+			err |= icem_cand_add(m->icem, i+1, lpref, ifname, sa);
 	}
 
 	if (err) {
@@ -410,7 +410,7 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 	}
 
 	/* Ensure every local prio is unique */
-	--m->lprio;
+	--m->lpref;
 
 	return false;
 }
@@ -838,7 +838,7 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	m->sess  = sess;
 	m->compv[0].sock = mem_ref(sock1);
 	m->compv[1].sock = mem_ref(sock2);
-	m->lprio = LPRIO_INIT;
+	m->lpref = LPREF_INIT;
 
 	if (sess->offerer)
 		role = ICE_ROLE_CONTROLLING;
