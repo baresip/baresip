@@ -438,7 +438,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 		}
 		else {
 			warning("video: Skipping Packet as"
-				" Copy Handler not initialized ..\n");
+				" Packetize Handler not initialized ..\n");
 		}
 		goto out;
 	}
