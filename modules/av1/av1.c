@@ -26,6 +26,7 @@ static struct vidcodec av1 = {
 	.ench      = av1_encode_packet,
 	.decupdh   = av1_decode_update,
 	.dech      = av1_decode,
+	.packetizeh = av1_encode_packetize,
 };
 
 

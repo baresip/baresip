@@ -11,6 +11,8 @@ int av1_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		      videnc_packet_h *pkth, void *arg);
 int av1_encode_packet(struct videnc_state *ves, bool update,
 		      const struct vidframe *frame, uint64_t timestamp);
+int av1_encode_packetize(struct videnc_state *ves,
+			 const struct vidpacket *packet);
 
 
 /* Decode */
