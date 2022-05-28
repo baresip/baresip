@@ -397,7 +397,7 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 			lpref = UINT16_MAX - 1;
 	}
 
-	ice_printf(m, "added interface: %s:%j (local prio %u)\n",
+	ice_printf(m, "added interface: %s:%j (local pref %u)\n",
 		   ifname, sa, lpref);
 
 	for (i=0; i<2; i++) {
@@ -409,7 +409,7 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 		warning("ice: %s:%j: icem_cand_add: %m\n", ifname, sa, err);
 	}
 
-	/* Ensure every local prio is unique */
+	/* Ensure every local preference is unique */
 	--m->lpref;
 
 	return false;
