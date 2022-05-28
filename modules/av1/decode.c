@@ -174,6 +174,16 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	      hdr.z, hdr.y, hdr.w, hdr.n);
 #endif
 
+	if (hdr.n) {
+		info("av1: new coded video sequence\n");
+
+		/* Note: if N equals 1 then Z must equal 0. */
+		if (hdr.z) {
+			warning("av1: Note: if N equals 1 then"
+				" Z must equal 0.\n");
+		}
+	}
+
 	if (!hdr.z) {
 
 		/* save the W obu count */
