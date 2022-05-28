@@ -393,7 +393,7 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 	if (sa_cmp(def, sa, SA_ADDR)) {
 		if (sa_af(sa) == AF_INET6)
 			lpref = UINT16_MAX;
-		else if (sa_af(sa) == AF_INET)
+		else
 			lpref = UINT16_MAX - 1;
 	}
 
