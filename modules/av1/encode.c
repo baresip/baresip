@@ -32,7 +32,6 @@ struct videnc_state {
 	unsigned bitrate;
 	unsigned pktsize;
 	bool ctxup;
-	uint16_t picid;
 	videnc_packet_h *pkth;
 	void *arg;
 	bool new;
@@ -66,7 +65,6 @@ int av1_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		if (!ves)
 			return ENOMEM;
 
-		ves->picid = rand_u16();
 		ves->new = true;
 
 		*vesp = ves;
@@ -251,8 +249,6 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		warning("av1: enc error: %s\n", aom_codec_err_to_string(res));
 		return ENOMEM;
 	}
-
-	++ves->picid;
 
 	for (;;) {
 		bool marker = true;
