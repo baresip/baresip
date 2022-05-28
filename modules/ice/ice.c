@@ -409,7 +409,7 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 		warning("ice: %s:%j: icem_cand_add: %m\n", ifname, sa, err);
 	}
 
-	/* Ensure every local preference is unique */
+	/* Ensure each local preference is unique */
 	--m->lpref;
 
 	return false;
