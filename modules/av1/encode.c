@@ -290,3 +290,36 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 
 	return err;
 }
+
+
+int av1_encode_packetize(struct videnc_state *ves,
+			 const struct vidpacket *packet)
+{
+	struct mbuf *mb2;
+	uint64_t rtp_ts;
+	int err;
+
+	if (!ves || !packet)
+		return EINVAL;
+
+	mb2 = mbuf_alloc(packet->size);
+	if (!mb2)
+		return ENOMEM;
+
+	err = copy_obus(mb2, packet->buf, packet->size);
+	if (err)
+		goto out;
+
+	rtp_ts = video_calc_rtp_timestamp_fix(packet->timestamp);
+
+	err = av1_packetize(&ves->new, true, rtp_ts,
+			    mb2->buf, mb2->end, ves->pktsize,
+			    ves->pkth, ves->arg);
+	if (err)
+		goto out;
+
+ out:
+	mem_deref(mb2);
+
+	return err;
+}
