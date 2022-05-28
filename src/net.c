@@ -259,10 +259,14 @@ static bool if_debug_handler(const char *ifname, const struct sa *sa,
 	void **argv = arg;
 	struct re_printf *pf = argv[0];
 	struct network *net = argv[1];
+	bool def;
 	int err = 0;
 
+	def = sa_cmp(net_laddr_af(baresip_network(), sa_af(sa)), sa, SA_ADDR);
+
 	if (net_af_enabled(net, sa_af(sa)))
-		err = re_hprintf(pf, " %10s:  %j\n", ifname, sa);
+		err = re_hprintf(pf, " %10s:  %j %s\n", ifname, sa,
+				 def ? "(default)" : "");
 
 	return err != 0;
 }
