@@ -272,3 +272,65 @@ int vp8_encode(struct videnc_state *ves, bool update,
 
 	return 0;
 }
+
+
+static int peek_vp8_bitstream(bool *key_frame,
+			      const uint8_t *buf, size_t size)
+{
+	if (size < 3)
+		return EBADMSG;
+
+	uint8_t frame_type = buf[0] & 1;
+	uint8_t profile    = (buf[0] >> 1) & 7;
+
+	if (profile > 3) {
+		warning("vp8: Invalid profile %u.\n", profile);
+		return EPROTO;
+	}
+
+	if (frame_type == 0) {
+
+		if (size < 10)
+			return EBADMSG;
+
+		const uint8_t *c = buf + 3;
+
+		if (c[0] != 0x9d || c[1] != 0x01 || c[2] != 0x2a) {
+
+			warning("vp8: Invalid sync code %w.\n", c, 3);
+			return EPROTO;
+		}
+	}
+
+	*key_frame = frame_type == 0;
+
+	return 0;
+}
+
+
+int vp8_encode_packetize(struct videnc_state *ves,
+			 const struct vidpacket *pkt)
+{
+	bool key_frame = false;
+	uint64_t rtp_ts;
+	int err;
+
+	if (!ves || !pkt)
+		return EINVAL;
+
+	++ves->picid;
+
+	err = peek_vp8_bitstream(&key_frame, pkt->buf, pkt->size);
+	if (err)
+		return err;
+
+	rtp_ts = video_calc_rtp_timestamp_fix(pkt->timestamp);
+
+	err = packetize(true, pkt->buf, pkt->size,
+			ves->pktsize, !key_frame, 0,
+			ves->picid, rtp_ts, ves->pkth, ves->arg);
+	if (err)
+		return err;
+
+	return 0;
+}
