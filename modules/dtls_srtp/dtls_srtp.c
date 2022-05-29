@@ -533,7 +533,7 @@ static int module_init(void)
 	else {
 		err = tls_set_selfsigned_rsa(tls, cn, 2048);
 		if (err) {
-			warning("dtls_srtp: failed to self-sign"
+			warning("dtls_srtp: failed to self-sign "
 				"certificate (%m)\n", err);
 			return err;
 		}
