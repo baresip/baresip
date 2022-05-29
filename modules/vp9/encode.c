@@ -314,3 +314,25 @@ int vp9_encode(struct videnc_state *ves, bool update,
 
 	return err;
 }
+
+
+int vp9_encode_packetize(struct videnc_state *ves,
+			 const struct vidpacket *pkt)
+{
+	uint64_t rtp_ts;
+	int err;
+
+	if (!ves || !pkt)
+		return EINVAL;
+
+	++ves->picid;
+
+	rtp_ts = video_calc_rtp_timestamp_fix(pkt->timestamp);
+
+	err = packetize(ves, true, pkt->buf, pkt->size,
+			ves->pktsize, ves->picid, rtp_ts);
+	if (err)
+		return err;
+
+	return 0;
+}

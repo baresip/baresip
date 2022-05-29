@@ -37,6 +37,7 @@ static struct vp9_vidcodec vp9 = {
 		.decupdh   = vp9_decode_update,
 		.dech      = vp9_decode,
 		.fmtp_ench = vp9_fmtp_enc,
+		.packetizeh = vp9_encode_packetize,
 	},
 	.max_fs = 3600
 };
