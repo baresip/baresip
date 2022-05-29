@@ -184,7 +184,7 @@ static void *read_thread(void *data)
 
 
 static int open_codec(struct stream *s, const struct AVStream *strm, int i,
-		      AVCodecContext *ctx)
+		      AVCodecContext *ctx, bool use_codec)
 {
 	const AVCodec *codec = avformat_decoder;
 	int ret;
@@ -200,10 +200,13 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 		}
 	}
 
-	ret = avcodec_open2(ctx, codec, NULL);
-	if (ret < 0) {
-		warning("avformat: error opening codec (%i)\n", ret);
-		return ENOMEM;
+	if (use_codec) {
+
+		ret = avcodec_open2(ctx, codec, NULL);
+		if (ret < 0) {
+			warning("avformat: error opening codec (%i)\n", ret);
+			return ENOMEM;
+		}
 	}
 
 #if LIBAVUTIL_VERSION_MAJOR >= 56
@@ -396,13 +399,14 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		switch (ctx->codec_type) {
 
 		case AVMEDIA_TYPE_AUDIO:
-			err = open_codec(&st->au, strm, i, ctx);
+			err = open_codec(&st->au, strm, i, ctx, true);
 			if (err)
 				goto out;
 			break;
 
 		case AVMEDIA_TYPE_VIDEO:
-			err = open_codec(&st->vid, strm, i, ctx);
+			err = open_codec(&st->vid, strm, i, ctx,
+					 !st->is_pass_through);
 			if (err)
 				goto out;
 			break;
