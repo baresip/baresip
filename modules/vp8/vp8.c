@@ -33,6 +33,7 @@ static struct vp8_vidcodec vp8 = {
 		.decupdh   = vp8_decode_update,
 		.dech      = vp8_decode,
 		.fmtp_ench = vp8_fmtp_enc,
+		.packetizeh = vp8_encode_packetize,
 	},
 	.max_fs   = 3600,
 };
