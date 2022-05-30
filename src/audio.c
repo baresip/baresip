@@ -1449,7 +1449,7 @@ static int rx_filter_thread(void *arg)
 
 		if (af.sampc && sampc != af.sampc) {
 			sampc = af.sampc;
-			ptime = sampc * 1000 / (ac->srate * ac->ch);
+			ptime = (uint32_t) (sampc*1000 / (ac->srate * ac->ch));
 		}
 
 		(void)rx_push_aubuf(rx, &af);
