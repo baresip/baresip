@@ -304,7 +304,10 @@ static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 		goto out;
 	}
 
-	tmr_start(&st->tmr, 5000, fileinfo_timeout, st);
+	if (st->finished)
+		fileinfo_timeout(st);
+	else
+		tmr_start(&st->tmr, 5000, fileinfo_timeout, st);
 out:
 	if (err)
 		mem_deref(st);
