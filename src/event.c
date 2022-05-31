@@ -204,6 +204,9 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 				sdp_dir_name(adir));
 		err |= odict_entry_add(od, "videodir", ODICT_STRING,
 				sdp_dir_name(vdir));
+		if (call_diverteruri(call))
+			err |= odict_entry_add(od, "diverteruri", ODICT_STRING,
+					       call_diverteruri(call));
 
 		if (err)
 			goto out;
