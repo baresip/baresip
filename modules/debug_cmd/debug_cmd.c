@@ -260,9 +260,10 @@ static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 	int err = 0;
 	char *path;
 	char aumod[16];
+	const char *file = carg->prm;
 	struct fileinfo_st *st = NULL;
 
-	if (!str_isset(carg->prm)) {
+	if (!str_isset(file)) {
 		re_hprintf(pf, "fileplay: filename not specified\n");
 		return EINVAL;
 	}
@@ -273,9 +274,17 @@ static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	re_sdprintf(&path, "%s/%s",
-			conf_config()->audio.audio_path,
-			carg->prm);
+	/* absolute path? */
+	if (file[0] == '/' ||
+	    !re_regex(file, strlen(file), "https://") ||
+	    !re_regex(file, strlen(file), "http://") ||
+	    !re_regex(file, strlen(file), "file://")) {
+		if (re_sdprintf(&path, "%s", file) < 0)
+			return ENOMEM;
+	}
+	else if (re_sdprintf(&path, "%s/%s",
+			conf_config()->audio.audio_path, file) < 0)
+		return ENOMEM;
 
 	/* prm->ptime == 0 means blocking mode for ausrc */
 	st = mem_zalloc(sizeof(*st), fileinfo_destruct);
