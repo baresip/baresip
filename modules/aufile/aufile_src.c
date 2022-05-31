@@ -194,6 +194,7 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	struct ausrc_st *st;
 	struct aufile_prm fprm;
 	uint32_t   ptime;
+	bool join = false;
 	int err;
 
 	if (!stp || !as || !prm || !rh)
@@ -216,6 +217,8 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->arg   = arg;
 	st->ptime = prm->ptime;
 
+	/* ptime == 0 means blocking mode */
+	join = st->ptime == 0;
 	ptime = st->ptime;
 	if (!ptime)
 		ptime = 40;
@@ -257,6 +260,11 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (err) {
 		st->run = false;
 		goto out;
+	}
+
+	if (join) {
+		thrd_join(st->thread, NULL);
+		st->errh(0, NULL, st->arg);
 	}
 
  out:
