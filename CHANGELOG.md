@@ -5,7 +5,53 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+
+## 2.4.0 - 2022-06-01
+
+## What's Changed
+* mulitcast unmute bad quality by @cspiel1 in https://github.com/baresip/baresip/pull/1821
+* menu ringback for parallel call by @cspiel1 in https://github.com/baresip/baresip/pull/1827
+* multicast: support error code EAGAIN of jbuf_get() by @cspiel1 in https://github.com/baresip/baresip/pull/1832
+* use RTP clock rate for timestamp calculation by @cspiel1 in https://github.com/baresip/baresip/pull/1834
+* av1 obu by @alfredh in https://github.com/baresip/baresip/pull/1835
+* av1 packetizer by @alfredh in https://github.com/baresip/baresip/pull/1836
+* av1: depacketizer by @alfredh in https://github.com/baresip/baresip/pull/1837
+* Disabled debug statement by @juha-h in https://github.com/baresip/baresip/pull/1838
+* h264: move from rem to re by @sreimers in https://github.com/baresip/baresip/pull/1839
+* ua: send new event UA_EVENT_CREATE at successful ua allocation by @cHuberCoffee in https://github.com/baresip/baresip/pull/1840
+* evdev: fix wrong ioctl size by @sreimers in https://github.com/baresip/baresip/pull/1843
+* aufile: ausrc_prm has to be copied when source is allocated by @cspiel1 in https://github.com/baresip/baresip/pull/1844
+* conf: missing pointer initialization found by clang analyzer by @cspiel1 in https://github.com/baresip/baresip/pull/1845
+* mk/modules: fix omx RPI detection by @sreimers in https://github.com/baresip/baresip/pull/1847
+* auconv: add auconv_to_float (fixes #1833) by @alfredh in https://github.com/baresip/baresip/pull/1849
+* avfilter: migrate to C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/1850
+* avformat: C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/1851
+* selfview: C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/1852
+* audio: C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/1853
+* metric: C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/1854
+* play: C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/1855
+* dns: add query cache by @sreimers in https://github.com/baresip/baresip/pull/1848
+* video: C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/1856
+* aufile: C11 threads by @alfredh in https://github.com/baresip/baresip/pull/1858
+* audio: add more locking by @alfredh in https://github.com/baresip/baresip/pull/1857
+* aufile/play: fix run data race by @sreimers in https://github.com/baresip/baresip/pull/1859
+* mc: multicast receiver enable state fix by @cHuberCoffee in https://github.com/baresip/baresip/pull/1861
+* audio: C11 thread by @alfredh in https://github.com/baresip/baresip/pull/1860
+* av1: add packetize handler by @alfredh in https://github.com/baresip/baresip/pull/1865
+* net/net_debug: add default route hint by @sreimers in https://github.com/baresip/baresip/pull/1864
+* ice: fix local prio calculation by @sreimers in https://github.com/baresip/baresip/pull/1863
+* avformat: open codec if not passthrough by @alfredh in https://github.com/baresip/baresip/pull/1866
+* dtls_srtp: Minor whitespace fix by @robert-scheck in https://github.com/baresip/baresip/pull/1870
+* vp8: add packetize handler by @alfredh in https://github.com/baresip/baresip/pull/1868
+* vp9: add packetizer by @alfredh in https://github.com/baresip/baresip/pull/1871
+* debug_cmd: support absolute path for command aufileinfo by @cspiel1 in https://github.com/baresip/baresip/pull/1875
+* event: add diverter URI to UA event by @cspiel1 in https://github.com/baresip/baresip/pull/1876
+* aufileinfo with synchronous response by @cspiel1 in https://github.com/baresip/baresip/pull/1877
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v2.3.0...v2.4.0
+
+---
 
 ## [2.3.0] - 2022-05-01
 
