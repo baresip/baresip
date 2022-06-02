@@ -1422,6 +1422,7 @@ static int rx_filter_thread(void *arg)
 	uint64_t now, ts = tmr_jiffies();
 	uint32_t ptime = rx->ptime;
 	size_t sampc = ac->srate * ac->ch * ptime / 1000;
+	void *sampv = mem_zalloc(sampc * aufmt_sample_size(rx->dec_fmt), NULL);
 
 	while (rx->thr.run) {
 		int err;
@@ -1430,7 +1431,7 @@ static int rx_filter_thread(void *arg)
 		if (ts > now)
 			continue;
 
-		auframe_init(&af, rx->dec_fmt, rx->sampv, sampc, ac->srate,
+		auframe_init(&af, rx->dec_fmt, sampv, sampc, ac->srate,
 			     ac->ch);
 		aubuf_read_auframe(rx->aubufdec, &af);
 
@@ -1449,6 +1450,7 @@ static int rx_filter_thread(void *arg)
 		ts += ptime;
 	}
 
+	mem_deref(sampv);
 	return 0;
 }
 
