@@ -199,7 +199,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	AudioObjectPropertyAddress auAddress = {
 		kAudioHardwarePropertyDefaultInputDevice,
 		kAudioObjectPropertyScopeGlobal,
-		kAudioObjectPropertyElementMaster };
+		kAudioObjectPropertyElementMain };
 #endif
 	Float64 hw_srate = 0.0;
 	UInt32 hw_size = sizeof(hw_srate);
