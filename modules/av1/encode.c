@@ -110,6 +110,8 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	cfg.rc_end_usage      = AOM_VBR;
 	cfg.rc_target_bitrate = ves->bitrate / 1000;
 	cfg.kf_mode           = AOM_KF_AUTO;
+	cfg.kf_min_dist       = ves->fps * 10;
+	cfg.kf_max_dist       = ves->fps * 10;
 
 	if (ves->ctxup) {
 		debug("av1: re-opening encoder\n");
