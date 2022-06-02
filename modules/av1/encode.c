@@ -217,6 +217,32 @@ static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t size)
 }
 
 
+static int packetize_rtp(struct videnc_state *ves, uint64_t rtp_ts,
+			 const uint8_t *buf, size_t size)
+{
+	struct mbuf *mb_pkt;
+	int err;
+
+	mb_pkt = mbuf_alloc(size);
+	if (!mb_pkt)
+		return ENOMEM;
+
+	err = copy_obus(mb_pkt, buf, size);
+	if (err)
+		goto out;
+
+	err = av1_packetize(&ves->new, true, rtp_ts,
+			    mb_pkt->buf, mb_pkt->end, ves->pktsize,
+			    ves->pkth, ves->arg);
+	if (err)
+		goto out;
+
+ out:
+	mem_deref(mb_pkt);
+	return err;
+}
+
+
 int av1_encode_packet(struct videnc_state *ves, bool update,
 		      const struct vidframe *frame, uint64_t timestamp)
 {
@@ -225,7 +251,6 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	aom_codec_err_t res;
 	aom_image_t *img;
 	aom_img_fmt_t img_fmt;
-	struct mbuf *mb_pkt = NULL;
 	int err = 0;
 
 	if (!ves || !frame || frame->fmt != VID_FMT_YUV420P)
@@ -263,13 +288,13 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	res = aom_codec_encode(&ves->ctx, img, timestamp, 1, flags);
 	if (res) {
 		warning("av1: enc error: %s\n", aom_codec_err_to_string(res));
-		return ENOMEM;
+		err = ENOMEM;
+		goto out;
 	}
 
 	for (;;) {
-		bool marker = true;
 		const aom_codec_cx_pkt_t *pkt;
-		uint64_t ts;
+		uint64_t rtp_ts;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)
@@ -278,29 +303,15 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		if (pkt->kind != AOM_CODEC_CX_FRAME_PKT)
 			continue;
 
-		ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
+		rtp_ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
-		if (!mb_pkt)
-			mb_pkt = mbuf_alloc(1024);
-
-		err = copy_obus(mb_pkt,
-				pkt->data.frame.buf, pkt->data.frame.sz);
+		err = packetize_rtp(ves, rtp_ts,
+				    pkt->data.frame.buf, pkt->data.frame.sz);
 		if (err)
-			goto out;
-
-		err = av1_packetize(&ves->new, marker, ts,
-				    mb_pkt->buf,
-				    mb_pkt->end,
-				    ves->pktsize,
-				    ves->pkth, ves->arg);
-		if (err)
-			goto out;
-
-		mb_pkt = mem_deref(mb_pkt);
+			break;
 	}
 
  out:
-	mem_deref(mb_pkt);
 	if (img)
 		aom_img_free(img);
 
@@ -311,31 +322,15 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 int av1_encode_packetize(struct videnc_state *ves,
 			 const struct vidpacket *packet)
 {
-	struct mbuf *mb_pkt;
 	uint64_t rtp_ts;
 	int err;
 
 	if (!ves || !packet)
 		return EINVAL;
 
-	mb_pkt = mbuf_alloc(packet->size);
-	if (!mb_pkt)
-		return ENOMEM;
-
-	err = copy_obus(mb_pkt, packet->buf, packet->size);
-	if (err)
-		goto out;
-
 	rtp_ts = video_calc_rtp_timestamp_fix(packet->timestamp);
 
-	err = av1_packetize(&ves->new, true, rtp_ts,
-			    mb_pkt->buf, mb_pkt->end, ves->pktsize,
-			    ves->pkth, ves->arg);
-	if (err)
-		goto out;
-
- out:
-	mem_deref(mb_pkt);
+	err = packetize_rtp(ves, rtp_ts, packet->buf, packet->size);
 
 	return err;
 }
