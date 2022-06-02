@@ -4,6 +4,9 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  */
 
+#if __MAC_OS_X_VERSION_MAX_ALLOWED < 120000
+#define kAudioObjectPropertyElementMain (kAudioObjectPropertyElementMaster)
+#endif
 
 AudioComponent audiounit_comp_io;
 AudioComponent audiounit_comp_conv;
