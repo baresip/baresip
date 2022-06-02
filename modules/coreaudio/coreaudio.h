@@ -4,6 +4,9 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  */
 
+#if __MAC_OS_X_VERSION_MAX_ALLOWED < 120000
+#define kAudioObjectPropertyElementMain (kAudioObjectPropertyElementMaster)
+#endif
 
 int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			   struct auplay_prm *prm, const char *device,
