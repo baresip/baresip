@@ -121,11 +121,21 @@ static int copy_obu(struct mbuf *mb2, struct mbuf *mb, size_t size)
 	case OBU_METADATA:
 	case OBU_FRAME:
 	case OBU_REDUNDANT_FRAME_HEADER:
+	case OBU_TILE_LIST:
 		break;
 
-	default:
+	case OBU_TEMPORAL_DELIMITER:
+	case OBU_TILE_GROUP:
+	case OBU_PADDING:
 		/* MUST be ignored by receivers. */
 		warning("av1: decode: copy: unexpected obu type %u (%s)"
+			" [x=%d, s=%d, size=%zu]\n",
+			hdr.type, aom_obu_type_to_string(hdr.type),
+			hdr.x, hdr.s, hdr.size);
+		return EPROTO;
+
+	default:
+		warning("av1: decode: copy: unknown obu type %u (%s)"
 			" [x=%d, s=%d, size=%zu]\n",
 			hdr.type, aom_obu_type_to_string(hdr.type),
 			hdr.x, hdr.s, hdr.size);
