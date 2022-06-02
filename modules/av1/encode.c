@@ -155,10 +155,15 @@ static struct mbuf *encode_obu(uint8_t type, const uint8_t *p, size_t len)
 }
 
 
-static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t sz)
+static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t size)
 {
-	struct mbuf wrap = { (uint8_t *)buf, sz, 0, sz };
-	int err = 0;
+	struct mbuf wrap = {
+		.buf  = (uint8_t *)buf,
+		.size = size,
+		.pos  = 0,
+		.end  = size
+	};
+	int err;
 
 	while (mbuf_get_left(&wrap) >= 2) {
 
@@ -168,7 +173,7 @@ static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t sz)
 		err = av1_obu_decode(&hdr, &wrap);
 		if (err) {
 			warning("av1: encode: hdr dec error (%m)\n", err);
-			break;
+			return err;
 		}
 
 		switch (hdr.type) {
@@ -199,7 +204,7 @@ static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t sz)
 		mem_deref(mb_obu);
 	}
 
-	return err;
+	return 0;
 }
 
 
@@ -211,8 +216,8 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	aom_codec_err_t res;
 	aom_image_t *img;
 	aom_img_fmt_t img_fmt;
-	int err = 0;
 	struct mbuf *mb_pkt = NULL;
+	int err = 0;
 
 	if (!ves || !frame || frame->fmt != VID_FMT_YUV420P)
 		return EINVAL;
