@@ -5,6 +5,7 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -32,7 +33,7 @@ struct ausrc_st {
 	struct ausrc_prm prm;           /**< Audio src parameter             */
 	uint32_t ptime;
 	size_t sampc;
-	bool run;
+	RE_ATOMIC bool run;
 	thrd_t thread;
 	ausrc_read_h *rh;
 	ausrc_error_h *errh;
