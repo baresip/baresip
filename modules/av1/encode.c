@@ -32,9 +32,9 @@ struct videnc_state {
 	unsigned bitrate;
 	unsigned pktsize;
 	bool ctxup;
+	bool new;
 	videnc_packet_h *pkth;
 	void *arg;
-	bool new;
 };
 
 
@@ -138,9 +138,12 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 
 static struct mbuf *encode_obu(uint8_t type, const uint8_t *p, size_t len)
 {
-	struct mbuf *mb = mbuf_alloc(1024);
+	struct mbuf *mb = mbuf_alloc(len);
 	const bool has_size = false;  /* NOTE */
 	int err;
+
+	if (!mb)
+		return NULL;
 
 	err = av1_obu_encode(mb, type, has_size, len, p);
 	if (err)
