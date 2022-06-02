@@ -178,13 +178,12 @@ static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t size)
 
 		switch (hdr.type) {
 
-		case OBU_TEMPORAL_DELIMITER:
-		case OBU_TILE_GROUP:
-		case OBU_PADDING:
-			/* skip */
-			break;
-
-		default:
+		case OBU_SEQUENCE_HEADER:
+		case OBU_FRAME_HEADER:
+		case OBU_METADATA:
+		case OBU_FRAME:
+		case OBU_REDUNDANT_FRAME_HEADER:
+		case OBU_TILE_LIST:
 #if 1
 			debug("av1: encode: copy [%H]\n", av1_obu_print, &hdr);
 #endif
@@ -197,6 +196,16 @@ static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t size)
 				return err;
 
 			mbuf_write_mem(mb_pkt, mb_obu->buf, mb_obu->end);
+			break;
+
+		case OBU_TEMPORAL_DELIMITER:
+		case OBU_TILE_GROUP:
+		case OBU_PADDING:
+			/* skip */
+			break;
+
+		default:
+			warning("av1: unknown obu type %u\n", hdr.type);
 			break;
 		}
 
