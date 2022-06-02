@@ -15,7 +15,7 @@ jobs:
              compiler: gcc
     env:
       CC: ${{ matrix.compiler }}
-      MACOSX_DEPLOYMENT_TARGET: "10.10"
+      MACOSX_DEPLOYMENT_TARGET: "10.12"
 
     steps:
     - uses: actions/checkout@v2
