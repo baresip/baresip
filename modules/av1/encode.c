@@ -211,7 +211,7 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	aom_codec_err_t res;
 	aom_image_t *img;
 	aom_img_fmt_t img_fmt;
-	int err = 0, i;
+	int err = 0;
 	struct mbuf *mb_pkt = NULL;
 
 	if (!ves || !frame || frame->fmt != VID_FMT_YUV420P)
@@ -241,13 +241,12 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		goto out;
 	}
 
-	for (i=0; i<3; i++) {
+	for (unsigned i=0; i<3; i++) {
 		img->stride[i] = frame->linesize[i];
 		img->planes[i] = frame->data[i];
 	}
 
-	res = aom_codec_encode(&ves->ctx, img, timestamp, 1,
-			       flags);
+	res = aom_codec_encode(&ves->ctx, img, timestamp, 1, flags);
 	if (res) {
 		warning("av1: enc error: %s\n", aom_codec_err_to_string(res));
 		return ENOMEM;
