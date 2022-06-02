@@ -21,7 +21,7 @@
 
 
 enum {
-	HDR_SIZE = 1,
+	AGGR_HDR_SIZE = 1,
 };
 
 
@@ -54,7 +54,7 @@ int av1_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	struct videnc_state *ves;
 	(void)fmtp;
 
-	if (!vesp || !vc || !prm || prm->pktsize < (HDR_SIZE + 1))
+	if (!vesp || !vc || !prm || prm->pktsize < (AGGR_HDR_SIZE + 1))
 		return EINVAL;
 
 	ves = *vesp;
