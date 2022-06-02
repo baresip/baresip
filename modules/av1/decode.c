@@ -164,7 +164,6 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	struct av1_aggr_hdr hdr;
 	struct mbuf *mb2 = NULL;
 	size_t size;
-	unsigned i;
 	int err;
 
 	if (!vds || !frame || !intra || !mb)
@@ -241,7 +240,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	if (vds->w) {
 
-		for (i=0; i<(vds->w-1); i++) {
+		for (unsigned i=0; i<(vds->w-1); i++) {
 
 			err = av1_leb128_decode(vds->mb, &size);
 			if (err)
@@ -302,7 +301,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		goto out;
 	}
 
-	for (i=0; i<3; i++) {
+	for (unsigned i=0; i<3; i++) {
 		frame->data[i]     = img->planes[i];
 		frame->linesize[i] = img->stride[i];
 	}
