@@ -27,7 +27,7 @@ int coreaudio_enum_devices(const char *name, struct list *dev_list,
 	AudioObjectPropertyAddress propertyAddress = {
 		kAudioHardwarePropertyDevices,
 		kAudioObjectPropertyScopeGlobal,
-		kAudioObjectPropertyElementMaster
+		kAudioObjectPropertyElementMain
 	};
 
 	AudioDeviceID *audioDevices = NULL;
