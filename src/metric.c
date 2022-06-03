@@ -7,6 +7,27 @@
 #include <baresip.h>
 #include "core.h"
 
+/*
+ * Metric
+ */
+
+struct metric {
+	/* internal stuff: */
+	struct tmr tmr;
+	mtx_t lock;
+	uint64_t ts_start;
+	bool started;
+
+	/* counters: */
+	uint32_t n_packets;
+	uint32_t n_bytes;
+	uint32_t n_err;
+
+	/* bitrate calculation */
+	uint32_t cur_bitrate;
+	uint64_t ts_last;
+	uint32_t n_bytes_last;
+};
 
 enum {TMR_INTERVAL = 3};
 static void tmr_handler(void *arg)
@@ -22,7 +43,7 @@ static void tmr_handler(void *arg)
 	if (!metric->started)
 		goto out;
 
- 	if (now <= metric->ts_last)
+	if (now <= metric->ts_last)
 		goto out;
 
 	if (metric->ts_last) {
@@ -78,6 +99,21 @@ void metric_reset(struct metric *metric)
 }
 
 
+static void destructor(void *arg)
+{
+	metric_reset(arg);
+}
+
+
+struct metric *metric_alloc(void)
+{
+	struct metric *m;
+
+	m = mem_zalloc(sizeof(*m), destructor);
+	return m;
+}
+
+
 /*
  * NOTE: may be called from any thread
  */
@@ -108,4 +144,67 @@ double metric_avg_bitrate(const struct metric *metric)
 	diff = (int)(tmr_jiffies() - metric->ts_start);
 
 	return 1000.0 * 8 * (double)metric->n_bytes / (double)diff;
+}
+
+
+uint32_t metric_n_packets(struct metric *metric)
+{
+	uint32_t n;
+	if (!metric)
+		return 0;
+
+	mtx_lock(&metric->lock);
+	n = metric->n_packets;
+	mtx_unlock(&metric->lock);
+	return n;
+}
+
+
+uint32_t metric_n_bytes(struct metric *metric)
+{
+	uint32_t n;
+	if (!metric)
+		return 0;
+
+	mtx_lock(&metric->lock);
+	n = metric->n_bytes;
+	mtx_unlock(&metric->lock);
+	return n;
+}
+
+
+uint32_t metric_n_err(struct metric *metric)
+{
+	uint32_t n;
+	if (!metric)
+		return 0;
+
+	mtx_lock(&metric->lock);
+	n = metric->n_err;
+	mtx_unlock(&metric->lock);
+	return n;
+}
+
+
+uint32_t metric_bitrate(struct metric *metric)
+{
+	uint32_t n;
+	if (!metric)
+		return 0;
+
+	mtx_lock(&metric->lock);
+	n = metric->cur_bitrate;
+	mtx_unlock(&metric->lock);
+	return n;
+}
+
+
+void     metric_inc_err(struct metric *metric)
+{
+	if (!metric)
+		return;
+
+	mtx_lock(&metric->lock);
+	++metric->n_err;
+	mtx_unlock(&metric->lock);
 }

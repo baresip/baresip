@@ -24,7 +24,7 @@ enum {
 
 /* Transmit */
 struct sender {
-	struct metric metric;  /**< Metrics for transmit            */
+	struct metric *metric; /**< Metrics for transmit            */
 	struct sa raddr_rtp;   /**< Remote RTP address              */
 	struct sa raddr_rtcp;  /**< Remote RTCP address             */
 	int pt_enc;            /**< Payload type for encoding       */
@@ -33,7 +33,7 @@ struct sender {
 
 /* Receive */
 struct receiver {
-	struct metric metric; /**< Metrics for receiving            */
+	struct metric *metric; /**< Metrics for receiving            */
 	struct tmr tmr_rtp;   /**< Timer for detecting RTP timeout  */
 	struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
 	uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
@@ -92,7 +92,9 @@ struct stream {
 
 static void print_rtp_stats(const struct stream *s)
 {
-	bool started = s->tx.metric.n_packets>0 || s->rx.metric.n_packets>0;
+	uint32_t tx_n_packets = metric_n_packets(s->tx.metric);
+	uint32_t rx_n_packets = metric_n_packets(s->rx.metric);
+	bool started = tx_n_packets > 0 || rx_n_packets > 0;
 
 	if (!started)
 		return;
@@ -103,10 +105,11 @@ static void print_rtp_stats(const struct stream *s)
 	     "errors:         %7d      %7d\n"
 	     ,
 	     sdp_media_name(s->sdp),
-	     s->tx.metric.n_packets, s->rx.metric.n_packets,
-	     1.0*metric_avg_bitrate(&s->tx.metric)/1000.0,
-	     1.0*metric_avg_bitrate(&s->rx.metric)/1000.0,
-	     s->tx.metric.n_err, s->rx.metric.n_err
+	     tx_n_packets, rx_n_packets,
+	     1.0*metric_avg_bitrate(s->tx.metric)/1000.0,
+	     1.0*metric_avg_bitrate(s->rx.metric)/1000.0,
+	     metric_n_err(s->tx.metric),
+	     metric_n_err(s->rx.metric)
 	     );
 
 	if (s->rtcp_stats.tx.sent || s->rtcp_stats.rx.sent) {
@@ -129,8 +132,8 @@ static void stream_destructor(void *arg)
 	if (s->cfg.rtp_stats)
 		print_rtp_stats(s);
 
-	metric_reset(&s->tx.metric);
-	metric_reset(&s->rx.metric);
+	metric_reset(s->tx.metric);
+	metric_reset(s->rx.metric);
 
 	tmr_cancel(&s->rx.tmr_rtp);
 	list_unlink(&s->le);
@@ -358,7 +361,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 	if (!(sdp_media_ldir(s->sdp) & SDP_RECVONLY))
 		return;
 
-	metric_add_packet(&s->rx.metric, mbuf_get_left(mb));
+	metric_add_packet(s->rx.metric, mbuf_get_left(mb));
 
 	if (!s->rx.rtp_estab) {
 		info("stream: incoming rtp for '%s' established"
@@ -409,7 +412,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			     " [seq=%u, ts=%u] (%m)\n",
 			     sdp_media_name(s->sdp), mb->end,
 			     src, hdr->seq, hdr->ts, err);
-			s->rx.metric.n_err++;
+			metric_inc_err(s->rx.metric);
 		}
 
 
@@ -631,7 +634,11 @@ static int sender_init(struct sender *tx)
 {
 	int err;
 
-	err = metric_init(&tx->metric);
+	tx->metric = metric_alloc();
+	if (!tx->metric)
+		return ENOMEM;
+
+	err = metric_init(tx->metric);
 
 	tx->pt_enc = -1;
 
@@ -643,7 +650,11 @@ static int receiver_init(struct receiver *rx)
 {
 	int err;
 
-	err = metric_init(&rx->metric);
+	rx->metric = metric_alloc();
+	if (!rx->metric)
+		return ENOMEM;
+
+	err = metric_init(rx->metric);
 
 	tmr_init(&rx->tmr_rtp);
 
@@ -875,7 +886,7 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		return EINTR;
 	}
 
-	metric_add_packet(&s->tx.metric, mbuf_get_left(mb));
+	metric_add_packet(s->tx.metric, mbuf_get_left(mb));
 
 	if (pt < 0)
 		pt = s->tx.pt_enc;
@@ -884,7 +895,7 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		err = rtp_send(s->rtp, &s->tx.raddr_rtp, ext,
 			       marker, pt, ts, mb);
 		if (err)
-			s->tx.metric.n_err++;
+			metric_inc_err(s->tx.metric);
 	}
 
 	return err;
@@ -1199,7 +1210,7 @@ const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
  */
 uint32_t stream_metric_get_tx_n_packets(const struct stream *strm)
 {
-	return strm ? strm->tx.metric.n_packets : 0;
+	return strm ? metric_n_packets(strm->tx.metric) : 0;
 }
 
 
@@ -1212,7 +1223,7 @@ uint32_t stream_metric_get_tx_n_packets(const struct stream *strm)
  */
 uint32_t stream_metric_get_tx_n_bytes(const struct stream *strm)
 {
-	return strm ? strm->tx.metric.n_bytes : 0;
+	return strm ? metric_n_bytes(strm->tx.metric) : 0;
 }
 
 
@@ -1225,7 +1236,7 @@ uint32_t stream_metric_get_tx_n_bytes(const struct stream *strm)
  */
 uint32_t stream_metric_get_tx_n_err(const struct stream *strm)
 {
-	return strm ? strm->tx.metric.n_err : 0;
+	return strm ? metric_n_err(strm->tx.metric) : 0;
 }
 
 
@@ -1238,7 +1249,7 @@ uint32_t stream_metric_get_tx_n_err(const struct stream *strm)
  */
 uint32_t stream_metric_get_tx_bitrate(const struct stream *strm)
 {
-	return strm ? strm->tx.metric.cur_bitrate : 0;
+	return strm ? metric_bitrate(strm->tx.metric) : 0;
 }
 
 
@@ -1251,7 +1262,7 @@ uint32_t stream_metric_get_tx_bitrate(const struct stream *strm)
  */
 double stream_metric_get_tx_avg_bitrate(const struct stream *strm)
 {
-	return strm ? metric_avg_bitrate(&strm->tx.metric) : 0.0;
+	return strm ? metric_avg_bitrate(strm->tx.metric) : 0.0;
 }
 
 
@@ -1264,7 +1275,7 @@ double stream_metric_get_tx_avg_bitrate(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_n_packets(const struct stream *strm)
 {
-	return strm ? strm->rx.metric.n_packets : 0;
+	return strm ? metric_n_packets(strm->rx.metric) : 0;
 }
 
 
@@ -1277,7 +1288,7 @@ uint32_t stream_metric_get_rx_n_packets(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
 {
-	return strm ? strm->rx.metric.n_bytes : 0;
+	return strm ? metric_n_bytes(strm->rx.metric) : 0;
 }
 
 
@@ -1290,7 +1301,7 @@ uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
 {
-	return strm ? strm->rx.metric.n_err : 0;
+	return strm ? metric_n_err(strm->rx.metric) : 0;
 }
 
 
@@ -1303,7 +1314,7 @@ uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_bitrate(const struct stream *strm)
 {
-	return strm ? strm->rx.metric.cur_bitrate : 0;
+	return strm ? metric_bitrate(strm->rx.metric) : 0;
 }
 
 
@@ -1316,7 +1327,7 @@ uint32_t stream_metric_get_rx_bitrate(const struct stream *strm)
  */
 double stream_metric_get_rx_avg_bitrate(const struct stream *strm)
 {
-	return strm ? metric_avg_bitrate(&strm->rx.metric) : 0.0;
+	return strm ? metric_avg_bitrate(strm->rx.metric) : 0.0;
 }
 
 
@@ -1642,8 +1653,8 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 		return 0;
 
 	return re_hprintf(pf, " %s=%u/%u", sdp_media_name(s->sdp),
-			  s->tx.metric.cur_bitrate,
-			  s->rx.metric.cur_bitrate);
+			  metric_bitrate(s->tx.metric),
+			  metric_bitrate(s->rx.metric));
 }
 
 
