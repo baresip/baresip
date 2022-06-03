@@ -44,6 +44,13 @@ struct receiver {
 	bool pseq_set;        /**< True if sequence number is set   */
 	bool rtp_estab;       /**< True if RTP stream established   */
 	bool enabled;         /**< True if enabled                  */
+	mtx_t mtx;            /**< Receiver mutex                   */
+	struct {
+		thrd_t thrd;  /**< RTP receive thread               */
+		bool run;     /**< Thread run flag                  */
+		cnd_t cnd;    /**< Wait condition for RX setup      */
+		bool setup;   /**< Setup RX socket done             */
+	} thr;
 };
 
 
@@ -64,6 +71,7 @@ struct stream {
 	struct menc_sess *mencs; /**< Media encryption session state        */
 	struct menc_media *mes;  /**< Media Encryption media state          */
 	enum media_type type;    /**< Media type, e.g. audio/video          */
+	int af;                  /**< Address family                        */
 	char *cname;             /**< RTCP Canonical end-point identifier   */
 	char *mid;               /**< Media stream identification           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
@@ -128,6 +136,14 @@ static void print_rtp_stats(const struct stream *s)
 static void stream_destructor(void *arg)
 {
 	struct stream *s = arg;
+
+	if (s->rx.thr.run) {
+		s->rx.thr.run = false;
+		thrd_join(s->rx.thr.thrd, NULL);
+	}
+
+	mtx_destroy(&s->rx.mtx);
+	cnd_destroy(&s->rx.thr.cnd);
 
 	if (s->cfg.rtp_stats)
 		print_rtp_stats(s);
@@ -524,6 +540,39 @@ static int stream_sock_alloc(struct stream *s, int af)
 }
 
 
+static int rx_thread(void *arg)
+{
+	struct stream *s = arg;
+	struct receiver *rx = &s->rx;
+	int err;
+
+	err = re_thread_init();
+	if (err) {
+		warning("stream: %s: could not start rx thread\n",
+			media_name(s->type));
+		return err;
+	}
+
+	mtx_lock(&rx->mtx);
+	err = stream_sock_alloc(s, s->af);
+	if (err) {
+		warning("stream: failed to create socket"
+			" for media '%s' (%m)\n",
+			media_name(s->type), err);
+	}
+	
+	rx->thr.setup = true;
+	cnd_signal(&rx->thr.cnd);
+	mtx_unlock(&rx->mtx);
+	if (err)
+		return err;
+
+	err = re_main(NULL);
+	re_thread_close();
+	return err;
+}
+
+
 /**
  * Start media encryption
  *
@@ -657,6 +706,8 @@ static int receiver_init(struct receiver *rx)
 	tmr_init(&rx->tmr_rtp);
 
 	rx->pseq = -1;
+	mtx_init(&rx->mtx, mtx_plain);
+	cnd_init(&rx->thr.cnd);
 
 	return err;
 }
@@ -674,6 +725,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		 void *arg)
 {
 	struct stream *s;
+	struct receiver *rx;
 	int err;
 
 	if (!sp || !prm || !cfg || !rtph || !pth)
@@ -697,14 +749,24 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->rtcph  = rtcph;
 	s->arg    = arg;
 	s->ldir   = SDP_SENDRECV;
+	s->af     = prm->af;
+	rx        = &s->rx;
 
 	if (prm->use_rtp) {
-		err = stream_sock_alloc(s, prm->af);
-		if (err) {
-			warning("stream: failed to create socket"
-				" for media '%s' (%m)\n",
-				media_name(type), err);
-			goto out;
+		if (!rx->thr.run) {
+			rx->thr.run = true;
+			err = thrd_create_name(&rx->thr.thrd, "RX receive",
+					       rx_thread, s);
+			if (err) {
+				rx->thr.run = false;
+				goto out;
+			}
+			else {
+				mtx_lock(&rx->mtx);
+				while (!rx->thr.setup)
+					cnd_wait(&rx->thr.cnd, &rx->mtx);
+				mtx_unlock(&rx->mtx);
+			}
 		}
 	}
 
