@@ -1,6 +1,12 @@
 name: MinGW-w64 Test
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
 
 jobs:
   MinGW-w64-build:
