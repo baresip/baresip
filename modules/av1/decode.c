@@ -89,12 +89,6 @@ int av1_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 }
 
 
-static inline int16_t seq_diff(uint16_t x, uint16_t y)
-{
-	return (int16_t)(y - x);
-}
-
-
 static int copy_obu(struct mbuf *mb2, struct mbuf *mb, size_t size)
 {
 	struct av1_obu_hdr hdr;
@@ -205,7 +199,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		if (!vds->started)
 			return 0;
 
-		if (seq_diff(vds->seq, seq) != 1) {
+		if (rtp_seq_diff(vds->seq, seq) != 1) {
 			mbuf_rewind(vds->mb);
 			vds->started = false;
 			return 0;
