@@ -50,16 +50,23 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y libfdk-aac-dev
 
+    - name: Get brew path
+      if: ${{ runner.os == 'macOS' }}
+      id: brew-path
+      run: |
+        echo "::set-output name=brew::$(brew --cellar)"
+      shell: bash
+
     - name: Cache Homebrew Packages
+      if: ${{ runner.os == 'macOS' }}
       id: cache-homebrew-packages
       uses: actions/cache@v3
       env:
         cache-name: homebrew-packages
-        brew-path: $(brew --cellar)
+        brew-path: ${{ steps.brew-path.outputs.brew }}
       with:
-        path: $(brew --cellar)
+        path: ${{ steps.brew-path.outputs.brew }}
         key: ${{ matrix.os }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/build.yml') }}
-      if: ${{ runner.os == 'macOS' }}
 
     - name: install packages
       if: ${{ runner.os == 'macOS' }}
