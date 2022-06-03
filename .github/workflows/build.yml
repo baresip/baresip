@@ -56,6 +56,10 @@ jobs:
       run: |
         echo "::set-output name=brew::$(brew --cache)"
       shell: bash
+    
+    - name: Cleanup cache folder
+      if: ${{ runner.os == 'macOS' }}
+      run: rm -Rf $(brew --cache)
 
     - name: Cache Homebrew Packages
       if: ${{ runner.os == 'macOS' }}
