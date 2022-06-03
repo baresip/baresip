@@ -57,7 +57,7 @@ jobs:
         cache-name: homebrew-packages
       with:
         path: $(brew --prefix)
-        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ hashFiles('.config/brew/Brewfile') }}
+        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/build.yml') }}
       if: ${{ runner.os == 'macOS' }}
 
     - name: install packages
