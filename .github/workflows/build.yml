@@ -55,8 +55,9 @@ jobs:
       uses: actions/cache@v3
       env:
         cache-name: homebrew-packages
+        brew-path: $(brew --cellar)
       with:
-        path: $(brew --prefix)
+        path: $(brew --cellar)
         key: ${{ matrix.os }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/build.yml') }}
       if: ${{ runner.os == 'macOS' }}
 
