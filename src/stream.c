@@ -758,7 +758,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	rx        = &s->rx;
 
 	if (prm->use_rtp) {
-		if (!rx->thr.run) {
+		if (s->type == MEDIA_AUDIO && !rx->thr.run) {
 			rx->thr.run = true;
 			err = thrd_create_name(&rx->thr.thrd, "RX receive",
 					       rx_thread, s);
@@ -771,6 +771,15 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 				while (!rx->thr.setup)
 					cnd_wait(&rx->thr.cnd, &rx->mtx);
 				mtx_unlock(&rx->mtx);
+			}
+		}
+		else {
+			err = stream_sock_alloc(s, prm->af);
+			if (err) {
+				warning("stream: failed to create socket"
+					" for media '%s' (%m)\n",
+					media_name(type), err);
+				goto out;
 			}
 		}
 	}
