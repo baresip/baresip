@@ -5,6 +5,7 @@
  */
 #include <string.h>
 #include <time.h>
+#include <re_atomic.h>
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
@@ -36,14 +37,14 @@ struct receiver {
 	struct metric *metric; /**< Metrics for receiving            */
 	struct tmr tmr_rtp;   /**< Timer for detecting RTP timeout  */
 	struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
-	uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
+	RE_ATOMIC uint64_t ts_last;  /**< Timestamp of last recv RTP pkt   */
 	uint32_t rtp_timeout; /**< RTP Timeout value in [ms]        */
-	uint32_t ssrc;        /**< Incoming synchronization source  */
+	RE_ATOMIC uint32_t ssrc;     /**< Incoming synchronization source  */
 	uint32_t pseq;        /**< Sequence number for incoming RTP */
-	bool ssrc_set;        /**< Incoming SSRC is set             */
+	RE_ATOMIC bool ssrc_set;    /**< Incoming SSRC is set              */
 	bool pseq_set;        /**< True if sequence number is set   */
 	bool rtp_estab;       /**< True if RTP stream established   */
-	bool enabled;         /**< True if enabled                  */
+	RE_ATOMIC bool enabled;      /**< True if enabled           */
 	mtx_t mtx;            /**< Receiver mutex                   */
 	struct {
 		thrd_t thrd;  /**< RTP receive thread               */
@@ -64,6 +65,7 @@ struct stream {
 	struct sdp_media *sdp;   /**< SDP Media line                        */
 	enum sdp_dir ldir;       /**< SDP direction of the stream           */
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
+	/*TODO: thread-safe */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
 	const struct mnat *mnat; /**< Media NAT traversal module            */
 	struct mnat_media *mns;  /**< Media NAT traversal state             */
@@ -493,13 +495,16 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 	switch (msg->hdr.pt) {
 
 	case RTCP_SR:
+		/* TODO: thread safe --> s->rtcp_stats */
 		(void)rtcp_stats(s->rtp, msg->r.sr.ssrc, &s->rtcp_stats);
 		break;
 	}
 
+	/* TODO: thread safe --> audio.c does not have an rtcph */
 	if (s->rtcph)
 		s->rtcph(s, msg, s->arg);
 
+	/* TODO: thread safe? */
 	if (s->sessrtcph)
 		s->sessrtcph(s, msg, s->sess_arg);
 }
@@ -560,7 +565,7 @@ static int rx_thread(void *arg)
 			" for media '%s' (%m)\n",
 			media_name(s->type), err);
 	}
-	
+
 	rx->thr.setup = true;
 	cnd_signal(&rx->thr.cnd);
 	mtx_unlock(&rx->mtx);
@@ -706,8 +711,8 @@ static int receiver_init(struct receiver *rx)
 	tmr_init(&rx->tmr_rtp);
 
 	rx->pseq = -1;
-	mtx_init(&rx->mtx, mtx_plain);
-	cnd_init(&rx->thr.cnd);
+	err  = mtx_init(&rx->mtx, mtx_plain);
+	err |= cnd_init(&rx->thr.cnd);
 
 	return err;
 }
