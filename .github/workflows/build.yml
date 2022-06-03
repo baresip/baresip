@@ -54,19 +54,16 @@ jobs:
       if: ${{ runner.os == 'macOS' }}
       id: brew-path
       run: |
-        echo "::set-output name=brew::$(brew --cellar)"
+        echo "::set-output name=brew::$(brew --cache)"
       shell: bash
 
     - name: Cache Homebrew Packages
       if: ${{ runner.os == 'macOS' }}
       id: cache-homebrew-packages
       uses: actions/cache@v3
-      env:
-        cache-name: homebrew-packages
-        brew-path: ${{ steps.brew-path.outputs.brew }}
       with:
         path: ${{ steps.brew-path.outputs.brew }}
-        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ hashFiles('.github/workflows/build.yml') }}
+        key: ${{ matrix.os }}-homebrew--${{ hashFiles('.github/workflows/build.yml') }}
 
     - name: install packages
       if: ${{ runner.os == 'macOS' }}
