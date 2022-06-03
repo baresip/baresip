@@ -50,6 +50,16 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y libfdk-aac-dev
 
+    - name: Cache Homebrew Packages
+      id: cache-homebrew-packages
+      uses: actions/cache@v3
+      env:
+        cache-name: homebrew-packages
+      with:
+        path: $(brew --prefix)
+        key: ${{ matrix.os }}-${{ env.cache-name }}-${{ hashFiles('.config/brew/Brewfile') }}
+      if: ${{ runner.os == 'macOS' }}
+
     - name: install packages
       if: ${{ runner.os == 'macOS' }}
       run: |
