@@ -16,7 +16,7 @@
 
 
 struct list mcreceivl = LIST_INIT;
-struct lock *mcreceivl_lock = NULL;
+static mtx_t mcreceivl_lock;
 
 
 enum {
@@ -233,7 +233,7 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 	if (!mcreceiver)
 		return EINVAL;
 
-	err = lock_write_try(mcreceivl_lock);
+	err = mtx_trylock(&mcreceivl_lock);
 	if (err)
 		return err;
 
@@ -363,7 +363,7 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		state_str(mcreceiver->state));
 
   out:
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	return err;
 }
 
@@ -385,7 +385,7 @@ static void timeout_handler(void *arg)
 		&mcreceiver->addr, mcreceiver->prio, mcreceiver->enable,
 		state_str(mcreceiver->state));
 
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	if (mcreceiver->state == RUNNING) {
 		mcplayer_stop();
 		jbuf_flush(mcreceiver->jbuf);
@@ -397,7 +397,7 @@ static void timeout_handler(void *arg)
 	mcreceiver->ac   = 0;
 	resume_uag_state();
 
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	return;
 }
 
@@ -519,7 +519,7 @@ void mcreceiver_enprio(uint32_t prio)
 	if (!prio)
 		return;
 
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
 
@@ -537,7 +537,7 @@ void mcreceiver_enprio(uint32_t prio)
 		}
 	}
 
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	resume_uag_state();
 }
 
@@ -557,7 +557,7 @@ void mcreceiver_enrangeprio(uint32_t priol, uint32_t prioh, bool en)
 	if (!priol || !prioh)
 		return;
 
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
 
@@ -572,7 +572,7 @@ void mcreceiver_enrangeprio(uint32_t priol, uint32_t prioh, bool en)
 		}
 	}
 
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	resume_uag_state();
 }
 
@@ -587,7 +587,7 @@ void mcreceiver_enable(bool enable)
 	struct le *le;
 	struct mcreceiver *mcreceiver;
 
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
 		mcreceiver->enable = enable;
@@ -596,7 +596,7 @@ void mcreceiver_enable(bool enable)
 		jbuf_flush(mcreceiver->jbuf);
 	}
 
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	mcplayer_stop();
 	resume_uag_state();
 }
@@ -631,9 +631,9 @@ int mcreceiver_chprio(struct sa *addr, uint32_t prio)
 	}
 
 	mcreceiver = le->data;
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	mcreceiver->prio = prio;
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	resume_uag_state();
 	return 0;
 }
@@ -665,7 +665,7 @@ int mcreceiver_prioignore(uint32_t prio)
 	if (mcreceiver->state == IGNORED)
 		return 0;
 
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	switch (mcreceiver->state) {
 		case RUNNING:
 			mcreceiver->state = IGNORED;
@@ -682,7 +682,7 @@ int mcreceiver_prioignore(uint32_t prio)
 			break;
 	}
 
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	resume_uag_state();
 	return err;
 }
@@ -711,7 +711,7 @@ int mcreceiver_mute(uint32_t prio)
 	}
 
 	mcreceiver = le->data;
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	mcreceiver->muted = !mcreceiver->muted;
 	if (mcreceiver->state == RUNNING) {
 		if (mcreceiver->muted) {
@@ -724,7 +724,7 @@ int mcreceiver_mute(uint32_t prio)
 				err = 0;
 		}
 	}
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	return err;
 }
 
@@ -734,11 +734,11 @@ int mcreceiver_mute(uint32_t prio)
  */
 void mcreceiver_unregall(void)
 {
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	list_flush(&mcreceivl);
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	resume_uag_state();
-	mcreceivl_lock = mem_deref(mcreceivl_lock);
+	mtx_destroy(&mcreceivl_lock);
 }
 
 
@@ -758,14 +758,14 @@ void mcreceiver_unreg(struct sa *addr){
 	}
 
 	mcreceiver = le->data;
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	list_unlink(&mcreceiver->le);
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 	mem_deref(mcreceiver);
 	resume_uag_state();
 
 	if (list_isempty(&mcreceivl))
-		mcreceivl_lock = mem_deref(mcreceivl_lock);
+		mtx_destroy(&mcreceivl_lock);
 }
 
 
@@ -806,8 +806,8 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	if (!mcreceiver)
 		return ENOMEM;
 
-	if (!mcreceivl_lock) {
-		err = lock_alloc(&mcreceivl_lock);
+	if (list_isempty(&mcreceivl)) {
+		err = mtx_init(&mcreceivl_lock, mtx_plain);
 		if (err)
 			goto out;
 	}
@@ -850,9 +850,9 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 		}
 	}
 
-	lock_write_get(mcreceivl_lock);
+	mtx_lock(&mcreceivl_lock);
 	list_append(&mcreceivl, &mcreceiver->le, mcreceiver);
-	lock_rel(mcreceivl_lock);
+	mtx_unlock(&mcreceivl_lock);
 
   out:
 	if (err)
