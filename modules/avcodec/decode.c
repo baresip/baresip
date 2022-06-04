@@ -75,12 +75,6 @@ static enum vidfmt avpixfmt_to_vidfmt(enum AVPixelFormat pix_fmt)
 }
 
 
-static inline int16_t seq_diff(uint16_t x, uint16_t y)
-{
-	return (int16_t)(y - x);
-}
-
-
 static inline void fragment_rewind(struct viddec_state *vds)
 {
 	vds->mb->pos = vds->frag_start;
@@ -404,7 +398,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 				return 0;
 			}
 
-			if (seq_diff(st->frag_seq, seq) != 1) {
+			if (rtp_seq_diff(st->frag_seq, seq) != 1) {
 				debug("avcodec: lost fragments detected\n");
 				fragment_rewind(st);
 				st->frag = false;
@@ -679,7 +673,7 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 				return 0;
 			}
 
-			if (seq_diff(vds->frag_seq, seq) != 1) {
+			if (rtp_seq_diff(vds->frag_seq, seq) != 1) {
 				debug("h265: lost fragments detected\n");
 				fragment_rewind(vds);
 				vds->frag = false;

@@ -261,12 +261,6 @@ static inline bool is_keyframe(const struct mbuf *mb)
 }
 
 
-static inline int16_t seq_diff(uint16_t x, uint16_t y)
-{
-	return (int16_t)(y - x);
-}
-
-
 int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
 {
@@ -306,7 +300,7 @@ int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 		if (!vds->started)
 			return 0;
 
-		if (seq_diff(vds->seq, seq) != 1) {
+		if (rtp_seq_diff(vds->seq, seq) != 1) {
 			mbuf_rewind(vds->mb);
 			vds->started = false;
 			return 0;
