@@ -499,10 +499,8 @@ static struct menc dtls_srtp = {
 static int module_init(void)
 {
 	struct list *mencl = baresip_mencl();
-	struct pl plec = PL("");
-	char *ec = NULL;
+	char ec[64] = "prime256v1";
 	const char *cn = "dtls@baresip";
-
 	int err;
 
 	err = tls_alloc(&tls, TLS_METHOD_DTLSV1, NULL, NULL);
@@ -512,31 +510,15 @@ static int module_init(void)
 		return err;
 	}
 
-	(void)conf_get(conf_cur(), "dtls_srtp_use_ec", &plec);
-	if (pl_isset(&plec)) {
-		info ("dtls_srtp: use %r for elliptic curve cryptography\n",
-			&plec);
-		err = pl_strdup(&ec, &plec);
-		if (err)
-			return err;
+	(void)conf_get_str(conf_cur(), "dtls_srtp_use_ec", ec, sizeof(ec));
 
-		err = tls_set_selfsigned_ec(tls, cn, ec);
-		if (err) {
-			warning("dtls_srtp: failed to self-sign "
-				"ec-certificate (%m)\n", err);
-			mem_deref(ec);
-			return err;
-		}
+	info ("dtls_srtp: use %s for elliptic curve cryptography\n", ec);
 
-		mem_deref(ec);
-	}
-	else {
-		err = tls_set_selfsigned_rsa(tls, cn, 2048);
-		if (err) {
-			warning("dtls_srtp: failed to self-sign "
-				"certificate (%m)\n", err);
-			return err;
-		}
+	err = tls_set_selfsigned_ec(tls, cn, ec);
+	if (err) {
+		warning("dtls_srtp: failed to self-sign "
+			"ec-certificate (%m)\n", err);
+		return err;
 	}
 
 	tls_set_verify_client(tls);
