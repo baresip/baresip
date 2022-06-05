@@ -21,6 +21,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 # Module/Package Includes
 #
 
+find_package(re REQUIRED)
+find_package(rem REQUIRED)
 find_package(OpenSSL)
 find_package(OPUS)
 
@@ -39,8 +41,8 @@ include_directories(
   ../re/include
   ../rem/include
   /usr/local/include
-  /usr/local/include/re
-  /usr/local/include/rem
+  ${RE_INCLUDE_DIRS}
+  ${REM_INCLUDE_DIRS}
 )
 
 link_directories(/usr/local/lib)
@@ -48,7 +50,6 @@ link_directories(/usr/local/lib)
 add_definitions(
   -DHAVE_GETOPT
   -DHAVE_INET6
-  -DHAVE_PTHREAD
   -DHAVE_SIGNAL
   -DHAVE_UNISTD_H
   -DUSE_ZLIB
@@ -135,7 +136,7 @@ add_subdirectory(modules/menu)
 add_subdirectory(modules/stdio)
 
 if(OPUS_FOUND)
-add_subdirectory(modules/opus)
+  add_subdirectory(modules/opus)
 endif()
 
 
@@ -159,10 +160,10 @@ endif()
 
 if(STATIC)
   add_library(baresip STATIC ${SRCS})
-  target_link_libraries(baresip PUBLIC ${MODULES} rem re -lm)
+  target_link_libraries(baresip PUBLIC ${MODULES} ${REM_LIBRARIES} ${RE_LIBRARIES} -lm)
 else()
   add_library(baresip SHARED ${SRCS})
-  target_link_libraries(baresip PRIVATE rem re -lm)
+  target_link_libraries(baresip PRIVATE ${REM_LIBRARIES} ${RE_LIBRARIES} -lm)
 endif()
 
 set_target_properties(baresip PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -177,4 +178,4 @@ add_executable(baresip_exe src/main.c)
 
 set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
-target_link_libraries(baresip_exe baresip rem re -lz -lm -lpthread)
+target_link_libraries(baresip_exe baresip ${REM_LIBRARIES} ${RE_LIBRARIES} -lz -lm -lpthread)
