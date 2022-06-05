@@ -160,7 +160,8 @@ endif()
 
 if(STATIC)
   add_library(baresip STATIC ${SRCS})
-  target_link_libraries(baresip PUBLIC ${MODULES} ${REM_LIBRARIES} ${RE_LIBRARIES} -lm)
+  target_link_libraries(baresip PUBLIC
+      ${MODULES} ${REM_LIBRARIES} ${RE_LIBRARIES} -lm)
 else()
   add_library(baresip SHARED ${SRCS})
   target_link_libraries(baresip PRIVATE ${REM_LIBRARIES} ${RE_LIBRARIES} -lm)
@@ -178,4 +179,5 @@ add_executable(baresip_exe src/main.c)
 
 set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
-target_link_libraries(baresip_exe baresip ${REM_LIBRARIES} ${RE_LIBRARIES} -lz -lm -lpthread)
+target_link_libraries(baresip_exe baresip
+    ${REM_LIBRARIES} ${RE_LIBRARIES} -lz -lm -lpthread)
