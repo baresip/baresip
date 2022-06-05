@@ -8,7 +8,7 @@ find_library(RE_LIBRARY NAMES re libre
   HINTS ../re ../re/build ${PC_LIBRE_LIBDIR} ${PC_LIBRE_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(re DEFAULT_MSG RE_LIBRARY RE_INCLUDE_DIR)
+find_package_handle_standard_args(RE DEFAULT_MSG RE_LIBRARY RE_INCLUDE_DIR)
 
 mark_as_advanced(RE_INCLUDE_DIR RE_LIBRARY)
 

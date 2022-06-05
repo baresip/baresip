@@ -8,7 +8,7 @@ find_library(REM_LIBRARY NAMES rem librem
   HINTS ../rem ../rem/build ${PC_LIBREM_LIBDIR} ${PC_LIBREM_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(rem DEFAULT_MSG REM_LIBRARY REM_INCLUDE_DIR)
+find_package_handle_standard_args(REM DEFAULT_MSG REM_LIBRARY REM_INCLUDE_DIR)
 
 mark_as_advanced(REM_INCLUDE_DIR REM_LIBRARY)
 
