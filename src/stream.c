@@ -132,8 +132,8 @@ static void stream_destructor(void *arg)
 	if (s->cfg.rtp_stats)
 		print_rtp_stats(s);
 
-	metric_reset(s->tx.metric);
-	metric_reset(s->rx.metric);
+	mem_deref(s->tx.metric);
+	mem_deref(s->rx.metric);
 
 	tmr_cancel(&s->rx.tmr_rtp);
 	list_unlink(&s->le);
