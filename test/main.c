@@ -170,6 +170,7 @@ static const char *modconfig =
 
 int main(int argc, char *argv[])
 {
+	struct memstat mstat;
 	struct config *config;
 	size_t i, ntests;
 	struct sa sa;
@@ -304,6 +305,11 @@ int main(int argc, char *argv[])
 
 	tmr_debug();
 	mem_debug();
+
+	if (0 == mem_get_stat(&mstat)) {
+		if (mstat.bytes_cur || mstat.blocks_cur)
+			return 2;
+	}
 
 	return err;
 }
