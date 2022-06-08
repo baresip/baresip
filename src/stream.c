@@ -47,10 +47,11 @@ struct receiver {
 	RE_ATOMIC bool enabled;      /**< True if enabled           */
 	mtx_t mtx;            /**< Receiver mutex                   */
 	struct {
-		thrd_t thrd;  /**< RTP receive thread               */
-		bool run;     /**< Thread run flag                  */
-		cnd_t cnd;    /**< Wait condition for RX setup      */
-		bool setup;   /**< Setup RX socket done             */
+		thrd_t thrd;     /**< RTP receive thread                     */
+		bool run;        /**< Thread run flag                        */
+		cnd_t cnd;       /**< Wait condition for RX setup            */
+		bool setup;      /**< Setup RX socket done                   */
+		struct tmr tmr;  /**< Timer for cancel the thread            */
 	} thr;
 };
 
@@ -545,6 +546,19 @@ static int stream_sock_alloc(struct stream *s, int af)
 }
 
 
+static void rx_check_cancel(void *arg)
+{
+	struct receiver *rx = arg;
+
+	if (!rx->thr.run) {
+		re_cancel();
+	}
+	else {
+		tmr_start(&rx->thr.tmr, 10, rx_check_cancel, rx);
+	}
+}
+
+
 static int rx_thread(void *arg)
 {
 	struct stream *s = arg;
@@ -572,6 +586,7 @@ static int rx_thread(void *arg)
 	if (err)
 		return err;
 
+	tmr_start(&rx->thr.tmr, 10, rx_check_cancel, rx);
 	err = re_main(NULL);
 	re_thread_close();
 	return err;
