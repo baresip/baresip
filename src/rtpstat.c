@@ -18,8 +18,8 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 {
 	struct audio *a = call_audio(call);
 	const struct aucodec *ac_tx, *ac_rx;
-	const struct rtcp_stats *rtcp;
-	const struct stream *s;
+	struct rtcp_stats rtcp;
+	struct stream *s;
 	int srate_tx = 8000;
 	int srate_rx = 8000;
 	int err;
@@ -28,9 +28,11 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 		return 0;
 
 	s = audio_strm(a);
-	rtcp = stream_rtcp_stats(s);
+	err = stream_rtcp_stats(s, &rtcp);
+	if (err)
+		return err;
 
-	if (!rtcp->tx.sent)
+	if (!rtcp.tx.sent)
 		return 1;
 
 	ac_tx = audio_codec(a, true);
@@ -57,14 +59,14 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 			 stream_metric_get_rx_n_packets(s),
 			 stream_metric_get_tx_n_packets(s),
 
-			 rtcp->rx.lost, rtcp->tx.lost,
+			 rtcp.rx.lost, rtcp.tx.lost,
 
 			 stream_metric_get_rx_n_err,
 			 stream_metric_get_tx_n_err(s),
 
 			 /* timestamp units (ie: 8 ts units = 1 ms @ 8KHZ) */
-			 1.0 * rtcp->rx.jit/1000 * (srate_rx/1000),
-			 1.0 * rtcp->tx.jit/1000 * (srate_tx/1000),
+			 1.0 * rtcp.rx.jit/1000 * (srate_rx/1000),
+			 1.0 * rtcp.tx.jit/1000 * (srate_tx/1000),
 
 			 sdp_media_laddr(stream_sdpmedia(s)),
 			 sdp_media_raddr(stream_sdpmedia(s))

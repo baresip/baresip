@@ -220,13 +220,18 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 
 	if (ev == UA_EVENT_CALL_RTCP) {
 		struct stream *strm = NULL;
+		struct rtcp_stats stats;
 
 		if (0 == str_casecmp(prm, "audio"))
 			strm = audio_strm(call_audio(call));
 		else if (0 == str_casecmp(prm, "video"))
 			strm = video_strm(call_video(call));
 
-		err = add_rtcp_stats(od, stream_rtcp_stats(strm));
+		err = stream_rtcp_stats(strm, &stats);
+		if (err)
+			goto out;
+
+		err = add_rtcp_stats(od, &stats);
 		if (err)
 			goto out;
 	}

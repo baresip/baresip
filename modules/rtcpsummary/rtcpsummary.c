@@ -9,12 +9,15 @@
 
 
 static void print_rtcp_summary_line(const struct call *call,
-				    const struct stream *s)
+				    struct stream *s)
 {
-	const struct rtcp_stats *rtcp;
-	rtcp = stream_rtcp_stats(s);
+	struct rtcp_stats rtcp;
+	int err = stream_rtcp_stats(s, &rtcp);
 
-	if (rtcp && (rtcp->tx.sent || rtcp->rx.sent)) {
+	if (err)
+		return;
+
+	if (rtcp.tx.sent || rtcp.rx.sent) {
 		info("\n");
 		/*
 		 * Add a stats line to make it easier to parse result
@@ -36,15 +39,15 @@ static void print_rtcp_summary_line(const struct call *call,
 			,
 			 call_setup_duration(call) * 1000,
 			 call_duration(call),
-			 rtcp->rx.sent,
-			 rtcp->tx.sent,
-			 rtcp->rx.lost,
-			 rtcp->tx.lost,
+			 rtcp.rx.sent,
+			 rtcp.tx.sent,
+			 rtcp.rx.lost,
+			 rtcp.tx.lost,
 			 stream_metric_get_rx_n_err(s),
 			 stream_metric_get_tx_n_err(s),
-			 1.0 * rtcp->rx.jit/1000,
-			 1.0 * rtcp->tx.jit/1000,
-			 1.0 * rtcp->rtt/1000,
+			 1.0 * rtcp.rx.jit/1000,
+			 1.0 * rtcp.tx.jit/1000,
+			 1.0 * rtcp.rtt/1000,
 			 sdp_media_laddr(stream_sdpmedia(s)),
 			 sdp_media_raddr(stream_sdpmedia(s)));
 	}
@@ -65,7 +68,7 @@ static void ua_event_handler(struct ua *ua,
 			     const char *prm,
 			     void *arg)
 {
-	const struct stream *s;
+	struct stream *s;
 	struct le *le;
 	(void)ua;
 	(void)prm;

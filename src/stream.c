@@ -66,7 +66,6 @@ struct stream {
 	struct sdp_media *sdp;   /**< SDP Media line                        */
 	enum sdp_dir ldir;       /**< SDP direction of the stream           */
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
-	/*TODO: thread-safe */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
 	const struct mnat *mnat; /**< Media NAT traversal module            */
 	struct mnat_media *mns;  /**< Media NAT traversal state             */
@@ -496,12 +495,12 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 	switch (msg->hdr.pt) {
 
 	case RTCP_SR:
-		/* TODO: thread safe --> s->rtcp_stats */
+		mtx_lock(&s->rx.mtx);
 		(void)rtcp_stats(s->rtp, msg->r.sr.ssrc, &s->rtcp_stats);
+		mtx_unlock(&s->rx.mtx);
 		break;
 	}
 
-	/* TODO: thread safe --> audio.c does not have an rtcph */
 	if (s->rtcph)
 		s->rtcph(s, msg, s->arg);
 
@@ -1279,12 +1278,19 @@ void stream_set_session_handlers(struct stream *strm,
  * Get the RTCP Statistics from a media stream
  *
  * @param strm Stream object
+ * @param stats Returns RTCP statistics
  *
- * @return RTCP Statistics
+ * @return 0 if success, otherwise errorcode
  */
-const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
+int stream_rtcp_stats(struct stream *strm, struct rtcp_stats *stats)
 {
-	return strm ? &strm->rtcp_stats : NULL;
+	if (!strm || !stats)
+		return EINVAL;
+
+	mtx_lock(&strm->rx.mtx);
+	*stats = strm->rtcp_stats;
+	mtx_unlock(&strm->rx.mtx);
+	return 0;
 }
 
 
