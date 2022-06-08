@@ -144,33 +144,19 @@ int conf_get_csv(const struct conf *conf, const char *name,
 int conf_get_float(const struct conf *conf, const char *name, double *val);
 
 
-/*
- * Metric
- */
-
-struct metric {
-	/* internal stuff: */
-	struct tmr tmr;
-	mtx_t lock;
-	uint64_t ts_start;
-	bool started;
-
-	/* counters: */
-	uint32_t n_packets;
-	uint32_t n_bytes;
-	uint32_t n_err;
-
-	/* bitrate calculation */
-	uint32_t cur_bitrate;
-	uint64_t ts_last;
-	uint32_t n_bytes_last;
-};
+struct metric;
 
 int      metric_init(struct metric *metric);
 void     metric_reset(struct metric *metric);
 void     metric_add_packet(struct metric *metric, size_t packetsize);
 double   metric_avg_bitrate(const struct metric *metric);
+uint32_t metric_n_packets(struct metric *metric);
+uint32_t metric_n_bytes(struct metric *metric);
+uint32_t metric_n_err(struct metric *metric);
+uint32_t metric_bitrate(struct metric *metric);
+void     metric_inc_err(struct metric *metric);
 
+struct metric *metric_alloc(void);
 
 /*
  * Module
