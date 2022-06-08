@@ -20,11 +20,6 @@
 #endif
 
 
-enum {
-	AGGR_HDR_SIZE = 1,
-};
-
-
 struct videnc_state {
 	aom_codec_ctx_t ctx;
 	struct vidsz size;
@@ -54,7 +49,7 @@ int av1_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	struct videnc_state *ves;
 	(void)fmtp;
 
-	if (!vesp || !vc || !prm || prm->pktsize < (AGGR_HDR_SIZE + 1))
+	if (!vesp || !vc || !prm || prm->pktsize < (AV1_AGGR_HDR_SIZE + 1))
 		return EINVAL;
 
 	ves = *vesp;
