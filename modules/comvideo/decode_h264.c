@@ -53,9 +53,11 @@ static int h264_convert(struct viddec_state *st, struct vidframe *frame)
 		return 0;
 	}
 
-	gst_appsrc_h264_converter_send_frame(
-		st->converter, st->mb->buf,
-		st->mb->end, st->width, st->height);
+	frame->data[0] = st->mb->buf;
+	frame->linesize[0] = st->mb->end;
+	frame->fmt = VID_FMT_N;
+	frame->size.h = st->height;
+	frame->size.w = st->width;
 
 	return 0;
 }
@@ -87,7 +89,6 @@ handle_h264_size(struct viddec_state *st, struct mbuf *src)
 int decode_h264(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
 {
-
 	struct h264_nal_header h264_hdr;
 	const uint8_t nal_seq[3] = {0, 0, 1};
 	int err;
@@ -247,18 +248,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 static void dec_destructor(void *arg)
 {
 	struct viddec_state *st = arg;
-
 	mem_deref(st->mb);
-
-	if (comvideo_codec.client_stream) {
-		gst_video_client_stream_stop(comvideo_codec.client_stream);
-		g_object_unref(comvideo_codec.client_stream);
-		comvideo_codec.client_stream = NULL;
-	}
-
-	if (st->converter) {
-		gst_object_unref(st->converter);
-	}
 }
 
 
@@ -267,10 +257,7 @@ int decode_h264_update(
 	const struct vidcodec *vc,
 	const char *fmtp)
 {
-
 	struct viddec_state *st;
-	GstVideoClientStream *stream;
-	GstAppsrcH264Converter *converter;
 
 	int err = 0;
 
@@ -293,21 +280,6 @@ int decode_h264_update(
 		err = ENOMEM;
 		goto out;
 	}
-
-	stream = gst_video_client_create_stream(
-		comvideo_codec.video_client,
-		10,
-		"sip");
-
-	converter = gst_appsrc_h264_converter_new(stream);
-
-	st->converter = converter;
-	comvideo_codec.client_stream = stream;
-
-	g_object_set(
-		stream,
-		"enabled", comvideo_codec.disp_enabled,
-		NULL);
 
 	out:
 	if (err)

@@ -23,7 +23,6 @@
  */
 
 #include <re.h>
-#include <re_h264.h>
 #include <rem.h>
 #include <baresip.h>
 #include <glib.h>
@@ -75,6 +74,11 @@ struct vidsrc_st {
 struct vidisp_st {
 	const struct vidisp *vd;        /**< Inheritance (1st)     */
 	struct vidsz size;              /**< Current size          */
+
+	GstVideoClientStream *client_stream;
+	GstAppsrcH264Converter *converter;
+	char *peer;
+	char *identifier;
 };
 
 
@@ -82,8 +86,6 @@ static void src_destructor(void *arg)
 {
 	struct vidsrc_st *st;
 	GstCameraSrc *src;
-
-	(void) arg;
 
 	st = arg;
 	src = comvideo_codec.camera_src;
@@ -179,15 +181,24 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	return 0;
 }
 
+static void
+disp_identifier_set(struct vidisp_st *st, const char *identifier)
+{
+	if(st->client_stream) {
+		g_object_set(
+			st->client_stream,
+			"identifier", identifier,
+			NULL);
+	}
+}
 
 static void
-update_client_stream(gboolean disp_enabled)
+disp_enable(struct vidisp_st *st, bool disp_enabled)
 {
-	comvideo_codec.disp_enabled = disp_enabled;
 
-	if(comvideo_codec.client_stream) {
+	if(st->client_stream) {
 		g_object_set(
-			comvideo_codec.client_stream,
+			st->client_stream,
 			"enabled", disp_enabled,
 			NULL);
 	}
@@ -196,8 +207,22 @@ update_client_stream(gboolean disp_enabled)
 
 static void disp_destructor(void *arg)
 {
-	update_client_stream(FALSE);
-	(void) arg;
+	struct vidisp_st *st = arg;
+
+	disp_enable(st, FALSE);
+
+	if (st->client_stream) {
+		gst_video_client_stream_stop(st->client_stream);
+		g_object_unref(st->client_stream);
+		st->client_stream = NULL;
+	}
+
+	if (st->converter) {
+		gst_object_unref(st->converter);
+	}
+
+	mem_deref(st->peer);
+	mem_deref(st->identifier);
 }
 
 
@@ -218,16 +243,92 @@ static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 	if (!st)
 		return ENOMEM;
 
-	*stp = st;
+	st->peer = NULL;
+	st->identifier = NULL;
 
-	update_client_stream(TRUE);
+	*stp = st;
 
 	return err;
 }
 
 
-static int module_init(void) {
+static void
+disp_map_call_id(struct call *call, struct vidisp_st *st)
+{
+	if(!st->identifier) {
+		const char *peer_uri = call_peeruri(call);
+		if(!str_cmp(peer_uri, st->peer)) {
+			const char *id = call_id(call);
+			str_dup(&st->identifier, id);
+		}
+	}
+}
 
+
+static int
+disp_find_identifier(struct vidisp_st *st, const char *peer)
+{
+	int err = 0;
+
+	if(!st->identifier) {
+		if(!st->peer) {
+			err = str_dup(&st->peer, peer);
+			if (err) {
+				return err;
+			}
+		}
+
+		uag_filter_calls((call_list_h *) disp_map_call_id, NULL, st);
+	}
+
+	return err;
+}
+
+
+static void
+disp_create_client_stream(struct vidisp_st *st)
+{
+	st->client_stream = gst_video_client_create_stream(
+		comvideo_codec.video_client,
+		10,
+		"sip");
+
+	disp_enable(st,TRUE);
+	disp_identifier_set(st, st->identifier);
+
+	st->converter = gst_appsrc_h264_converter_new(st->client_stream);
+}
+
+
+static int
+disp_frame(struct vidisp_st *st, const char *peer,
+		     const struct vidframe *frame, uint64_t timestamp)
+{
+	(void) timestamp;
+
+	debug("received frame width:%d, height:%d, size:%d",
+	      frame->size.w, frame->size.h, frame->size);
+
+	if (!st->identifier) {
+		disp_find_identifier(st, peer);
+	}
+
+	if (!st->client_stream) {
+		disp_create_client_stream(st);
+	}
+
+	if (frame->data[0] != NULL && frame->linesize[0] > 0) {
+		gst_appsrc_h264_converter_send_frame(
+			st->converter, frame->data[0],
+			frame->linesize[0], frame->size.w, frame->size.h);
+	}
+
+	return 0;
+}
+
+
+static int module_init(void)
+{
 	struct conf *conf;
 
 	if (!gst_is_initialized()) {
@@ -271,11 +372,9 @@ static int module_init(void) {
 			  DBUS_PROPERTY_SIZE);
 	}
 
-	comvideo_codec.disp_enabled = FALSE;
 	comvideo_codec.camera_src = NULL;
 	comvideo_codec.sources = NULL;
 	comvideo_codec.encoders = NULL;
-	comvideo_codec.client_stream = NULL;
 
 	comvideo_codec.camerad_client =
 		camerad_client_new(
@@ -285,7 +384,7 @@ static int module_init(void) {
 	vidcodec_register(baresip_vidcodecl(), &h264);
 
 	vidisp_register(&vid_disp, baresip_vidispl(),
-			MODULE_NAME, disp_alloc, NULL, NULL, NULL);
+			MODULE_NAME, disp_alloc, NULL, disp_frame, NULL);
 
 	return vidsrc_register(&vid_src, baresip_vidsrcl(),
 			       MODULE_NAME, src_alloc, NULL);

@@ -21,9 +21,6 @@ struct comvideo_data {
 	GstVideoClient *video_client;
 	CameradClient *camerad_client;
 	GstCameraSrc *camera_src;
-	GstVideoClientStream *client_stream;
-
-	gboolean disp_enabled;
 
 	GList *encoders;
 	GList *sources;
@@ -69,6 +66,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 
 int decode_h264_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		       const char *fmtp);
+
 
 /*
  * SDP
