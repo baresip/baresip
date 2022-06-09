@@ -187,15 +187,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		}
 	}
 
-	if (!hdr.z) {
-
-		/* save the W obu count */
-		vds->w = hdr.w;
-
-		mbuf_rewind(vds->mb);
-		vds->started = true;
-	}
-	else {
+	if (hdr.z) {
 		if (!vds->started)
 			return 0;
 
@@ -204,6 +196,13 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 			vds->started = false;
 			return 0;
 		}
+	}
+	else {
+		/* save the W obu count */
+		vds->w = hdr.w;
+
+		mbuf_rewind(vds->mb);
+		vds->started = true;
 	}
 
 	vds->seq = seq;
