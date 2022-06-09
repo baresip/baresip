@@ -303,7 +303,9 @@ static void stop_rx(struct aurx *rx)
 	rx->auplay = mem_deref(rx->auplay);
 	rx->aubuf  = mem_deref(rx->aubuf);
 	rx->aubufdec  = mem_deref(rx->aubufdec);
+	mtx_lock(rx->mtx);
 	list_flush(&rx->filtl);
+	mtx_unlock(rx->mtx);
 }
 
 
@@ -769,19 +771,22 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 
 static int process_decfilt(struct aurx *rx, struct auframe *af)
 {
+	int err = 0;
+
 	/* Process exactly one audio-frame in reverse list order */
+	mtx_lock(rx->mtx);
 	for (struct le *le = rx->filtl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;
-		int err = 0;
 
 		if (st->af && st->af->dech)
 			err = st->af->dech(st, af);
 
 		if (err)
-			return err;
+			break;
 	}
 
-	return 0;
+	mtx_unlock(rx->mtx);
+	return err;
 }
 
 
@@ -1316,6 +1321,7 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *rx)
 			 rx->ap ? rx->ap->name : "(play)");
 
 	err |= re_hprintf(pf, " <--- aubuf");
+	mtx_lock(rx->mtx);
 	for (le = list_head(&rx->filtl); le; le = le->next) {
 		struct aufilt_dec_st *st = le->data;
 
@@ -1323,6 +1329,7 @@ static int aurx_print_pipeline(struct re_printf *pf, const struct aurx *rx)
 			err |= re_hprintf(pf, " <--- %s", st->af->name);
 	}
 
+	mtx_unlock(rx->mtx);
 	if (rx->aubufdec)
 		err |= re_hprintf(pf, " <--- aubufdec");
 
@@ -1358,9 +1365,11 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 	if (list_isempty(&tx->filtl))
 		update_enc = true;
 
+	mtx_lock(rx->mtx);
 	if (list_isempty(&rx->filtl))
 		update_dec = true;
 
+	mtx_unlock(rx->mtx);
 	aufilt_param_set(&encprm, tx->ac, tx->enc_fmt);
 	aufilt_param_set(&plprm, rx->ac, rx->dec_fmt);
 	if (a->cfg.srate_play && a->cfg.srate_play != plprm.srate) {
@@ -1398,7 +1407,9 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 			}
 			else {
 				decst->af = af;
+				mtx_lock(rx->mtx);
 				list_append(&rx->filtl, &decst->le, decst);
+				mtx_unlock(rx->mtx);
 			}
 		}
 
@@ -1937,7 +1948,9 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		stream_flush(a->strm);
 
 		/* Reset audio filter chain */
+		mtx_lock(rx->mtx);
 		list_flush(&rx->filtl);
+		mtx_unlock(rx->mtx);
 	}
 
 	if (ac != rx->ac) {
