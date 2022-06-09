@@ -89,23 +89,29 @@ int av1_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 }
 
 
-static int copy_obu(struct mbuf *mb2, struct mbuf *mb, size_t size)
+static int copy_obu(struct mbuf *mb_bs, const uint8_t *buf, size_t size)
 {
 	struct av1_obu_hdr hdr;
-	size_t end = mb->end;
-	int err;
+	struct mbuf wrap = {
+		.buf = (uint8_t *)buf,
+		.size = size,
+		.pos = 0,
+		.end = size
+	};
+	bool has_size = true;
 
-	mb->end = mb->pos + size;
-
-	err = av1_obu_decode(&hdr, mb);
+	int err = av1_obu_decode(&hdr, &wrap);
 	if (err) {
 		warning("av1: decode: could not decode OBU"
 			" [%zu bytes]: %m\n", size, err);
 		return err;
 	}
 
-#if 0
-	debug("av1: decode: copy [%H]\n", av1_obu_print, &hdr);
+#if 1
+	debug("av1: decode: copy: size=%4zu  %-20s  [%H]\n",
+	      size,
+	      aom_obu_type_to_string(hdr.type),
+	      av1_obu_print, &hdr);
 #endif
 
 	switch (hdr.type) {
@@ -116,6 +122,11 @@ static int copy_obu(struct mbuf *mb2, struct mbuf *mb, size_t size)
 	case OBU_FRAME:
 	case OBU_REDUNDANT_FRAME_HEADER:
 	case OBU_TILE_LIST:
+
+		err = av1_obu_encode(mb_bs, hdr.type, has_size,
+				     hdr.size, mbuf_buf(&wrap));
+		if (err)
+			return err;
 		break;
 
 	case OBU_TEMPORAL_DELIMITER:
@@ -135,14 +146,6 @@ static int copy_obu(struct mbuf *mb2, struct mbuf *mb, size_t size)
 			hdr.x, hdr.s, hdr.size);
 		return EPROTO;
 	}
-
-	err = av1_obu_encode(mb2, hdr.type, true, hdr.size, mbuf_buf(mb));
-	if (err)
-		return err;
-
-	mbuf_advance(mb, hdr.size);
-
-	mb->end = end;
 
 	return 0;
 }
@@ -243,17 +246,21 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 			if (err)
 				goto out;
 
-			err = copy_obu(mb2, vds->mb, size);
+			err = copy_obu(mb2, mbuf_buf(vds->mb), size);
 			if (err)
 				goto out;
+
+			mbuf_advance(vds->mb, size);
 		}
 
 		/* last OBU element MUST NOT be preceded by a length field */
 		size = vds->mb->end - vds->mb->pos;
 
-		err = copy_obu(mb2, vds->mb, size);
+		err = copy_obu(mb2, mbuf_buf(vds->mb), size);
 		if (err)
 			goto out;
+
+		mbuf_advance(vds->mb, size);
 	}
 	else {
 		while (mbuf_get_left(vds->mb) >= 2) {
@@ -263,9 +270,11 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 			if (err)
 				goto out;
 
-			err = copy_obu(mb2, vds->mb, size);
+			err = copy_obu(mb2, mbuf_buf(vds->mb), size);
 			if (err)
 				goto out;
+
+			mbuf_advance(vds->mb, size);
 		}
 	}
 
