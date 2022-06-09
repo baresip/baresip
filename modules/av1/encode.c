@@ -98,7 +98,6 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	cfg.g_timebase.num    = 1;
 	cfg.g_timebase.den    = VIDEO_TIMEBASE;
 	cfg.g_threads         = 8;
-	cfg.g_usage           = AOM_USAGE_REALTIME;
 	cfg.g_error_resilient = AOM_ERROR_RESILIENT_DEFAULT;
 	cfg.g_pass            = AOM_RC_ONE_PASS;
 	cfg.g_lag_in_frames   = 0;
