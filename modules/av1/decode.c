@@ -225,7 +225,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	vds->mb->pos = 0;
 
 	mb2 = mbuf_alloc(vds->mb->end);
-	if (!mb) {
+	if (!mb2) {
 		err = ENOMEM;
 		goto out;
 	}
