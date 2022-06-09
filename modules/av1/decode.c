@@ -224,7 +224,11 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 
 	vds->mb->pos = 0;
 
-	mb2 = mbuf_alloc(1024);
+	mb2 = mbuf_alloc(vds->mb->end);
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	/* prepend Temporal Delimiter */
 	err = av1_obu_encode(mb2, OBU_TEMPORAL_DELIMITER, true, 0, NULL);
