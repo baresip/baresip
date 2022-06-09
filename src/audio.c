@@ -196,6 +196,7 @@ struct audio {
 	struct aurx rx;               /**< Receive                         */
 	struct stream *strm;          /**< Generic media stream            */
 	struct telev *telev;          /**< Telephony events                */
+	struct mqueue *mqueue;        /**< Queue for telephony events      */
 	struct config_audio cfg;      /**< Audio configuration             */
 	bool started;                 /**< Stream is started flag          */
 	bool level_enabled;           /**< Audio level RTP ext. enabled    */
@@ -338,6 +339,7 @@ static void audio_destructor(void *arg)
 
 	mem_deref(a->strm);
 	mem_deref(a->telev);
+	mem_deref(a->mqueue);
 
 	mem_deref(a->tx.mtx);
 	mem_deref(a->rx.mtx);
@@ -721,17 +723,50 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 }
 
 
+struct dtmf_event {
+	int digit;
+	bool end;
+};
+
+
+static void dtmf_event(int id, void *data, void *arg)
+{
+	struct audio *a = arg;
+	struct dtmf_event *e = data;
+	(void)id;
+
+	if (a->eventh)
+		a->eventh(e->digit, e->end, a->arg);
+
+	mem_deref(e);
+}
+
+
 static void handle_telev(struct audio *a, struct mbuf *mb)
 {
 	int event, digit;
 	bool end;
+	int err;
 
-	if (telev_recv(a->telev, mb, &event, &end))
+	mtx_lock(a->rx.mtx);
+	err = telev_recv(a->telev, mb, &event, &end);
+	mtx_unlock(a->rx.mtx);
+	if (err)
 		return;
 
 	digit = telev_code2digit(event);
-	if (digit >= 0 && a->eventh)
-		a->eventh(digit, end, a->arg);
+	if (digit >= 0) {
+		struct dtmf_event *e;
+		e = mem_zalloc(sizeof(*e), NULL);
+		if (!e)
+			return;
+
+		e->digit = digit;
+		e->end   = end;
+		err = mqueue_push(a->mqueue, 0, e);
+		if (err)
+			mem_deref(e);
+	}
 }
 
 
@@ -1152,7 +1187,10 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	if (acc && acc->autelev_pt)
 		a->cfg.telev_pt = acc->autelev_pt;
 
-	err = telev_alloc(&a->telev, ptime);
+	mtx_lock(a->rx.mtx);
+	err  = telev_alloc(&a->telev, ptime);
+	err |= mqueue_alloc(&a->mqueue, dtmf_event, a);
+	mtx_unlock(a->rx.mtx);
 	if (err)
 		goto out;
 
@@ -1199,6 +1237,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	err  = mtx_alloc(&tx->mtx);
 	err |= mtx_alloc(&rx->mtx);
+	err |= mtx_init(rx->mtx, mtx_recursive);
 	if (err)
 		goto out;
 
@@ -1777,17 +1816,18 @@ int audio_start(struct audio *a)
 	debug("audio: start\n");
 
 	/* Audio filter */
+	mtx_lock(a->rx.mtx);
 	if (!list_isempty(aufiltl)) {
 
 		err = aufilt_setup(a, aufiltl);
 		if (err)
-			return err;
+			goto out;
 	}
 
 	err  = start_player(&a->rx, a, baresip_auplayl());
 	err |= start_source(&a->tx, a, baresip_ausrcl());
 	if (err)
-		return err;
+		goto out;
 
 	if (a->tx.ac && a->rx.ac) {
 
@@ -1800,6 +1840,8 @@ int audio_start(struct audio *a)
 		a->started = true;
 	}
 
+out:
+	mtx_unlock(a->rx.mtx);
 	return err;
 }
 
@@ -1967,7 +2009,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	struct aurx *rx;
 	struct sdp_media *m;
 	bool reset = false;
-	int err = 0;
+	int err;
 
 	if (!a || !ac)
 		return EINVAL;
@@ -1978,6 +2020,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	m = stream_sdpmedia(audio_strm(a));
 	reset |= sdp_media_dir(m)!=SDP_SENDRECV;
 
+	mtx_lock(rx->mtx);
 	if (reset || ac != rx->ac) {
 		rx->auplay = mem_deref(rx->auplay);
 		aubuf_flush(rx->aubuf);
@@ -1985,9 +2028,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		stream_flush(a->strm);
 
 		/* Reset audio filter chain */
-		mtx_lock(rx->mtx);
 		list_flush(&rx->filtl);
-		mtx_unlock(rx->mtx);
 	}
 
 	if (ac != rx->ac) {
@@ -2004,16 +2045,20 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		err = ac->decupdh(&rx->dec, ac, params);
 		if (err) {
 			warning("audio: alloc decoder: %m\n", err);
+			mtx_unlock(rx->mtx);
 			return err;
 		}
 	}
 
 	stream_set_srate(a->strm, 0, ac->crate);
 
-	if (!rx->auplay)
-		err |= audio_start(a);
+	if (!rx->auplay) {
+		mtx_unlock(rx->mtx);
+		return audio_start(a);
+	}
 
-	return err;
+	mtx_unlock(rx->mtx);
+	return 0;
 }
 
 
