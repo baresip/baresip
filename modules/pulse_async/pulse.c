@@ -40,6 +40,13 @@
  */
 
 
+/*
+ * @note: the current implementation is far away of best practice.
+ * a lot of information are packed into the pastream_st struct which does not
+ * belong there!
+*/
+
+
 static struct auplay *auplay;
 static struct ausrc *ausrc;
 
@@ -269,6 +276,7 @@ int pulse_async_set_available_devices(struct list *dev_list,
 {
 	pa_operation *op = NULL;
 
+	DEBUG_INFO("%s: setup pa_operation\n", __func__);
 	if (pa_context_get_state(pa.paconn->context) != PA_CONTEXT_READY)
 		return EINVAL;
 
@@ -292,8 +300,7 @@ static int module_init(void)
 	err  = auplay_register(&auplay, baresip_auplayl(),
 			       "pulse_async", pulse_async_player_alloc);
 	err |= ausrc_register(&ausrc, baresip_ausrcl(),
-			      "pulse_async", NULL
-			      /*pulse_async_recorder_alloc*/);
+			      "pulse_async", pulse_async_recorder_alloc);
 
 	return err;
 }

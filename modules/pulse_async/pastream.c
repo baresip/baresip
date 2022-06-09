@@ -73,8 +73,11 @@ static void pastream_destructor(void *arg)
 		st->stream = NULL;
 	}
 
-	pa_threaded_mainloop_unlock(c->mainloop);
+	if (st->sampv) {
+		st->sampv = mem_deref(st->sampv);
+	}
 
+	pa_threaded_mainloop_unlock(c->mainloop);
 }
 
 
@@ -114,7 +117,7 @@ static void stream_overflow_cb(pa_stream *s, void *arg)
 
 static void stream_state_cb(pa_stream *s, void *arg)
 {
-	struct paconn_str *c = paconn_get();
+	struct paconn_st *c = paconn_get();
 	(void)s;
 	(void)arg;
 
@@ -145,7 +148,7 @@ int pastream_start(struct pastream_st* st)
 		goto out;
 	}
 
-	/* pa_stream_set_read_callback(st->stream, stream_read_cb, st); */
+	pa_stream_set_read_callback(st->stream, stream_read_cb, st);
 	pa_stream_set_write_callback(st->stream, stream_write_cb, st);
 	pa_stream_set_latency_update_callback(st->stream,
 					      stream_latency_update_cb, st);
@@ -234,6 +237,15 @@ int pastream_alloc(struct pastream_st **bptr, struct auplay_prm *prm,
 		prm->ptime / 3 * PA_USEC_PER_MSEC, &st->ss);
 	st->direction = dir;
 
+	if (st->direction == PA_STREAM_RECORD) {
+		st->sampc = prm->ptime * prm->ch * prm->srate / 1000;
+		st->sampv = mem_zalloc(st->sampsz * st->sampc, NULL);
+		if (!st->sampv) {
+			mem_deref(st);
+			return ENOMEM;
+		}
+	}
+
 	strcpy(st->pname, pname);
 	strcpy(st->sname, sname);
 	str_ncpy(st->device, dev, sizeof(st->device));
@@ -247,4 +259,10 @@ int pastream_alloc(struct pastream_st **bptr, struct auplay_prm *prm,
 void pastream_set_writehandler(struct pastream_st *st, auplay_write_h *wh)
 {
 	st->wh = wh;
+}
+
+
+void pastream_set_readhandler(struct pastream_st *st, ausrc_read_h *rh)
+{
+	st->rh = rh;
 }

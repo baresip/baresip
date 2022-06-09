@@ -36,8 +36,13 @@ struct pastream_st {
 	pa_stream *stream;
 	pa_sample_spec ss;
 	pa_buffer_attr attr;
+
 	size_t sampsz;
 	size_t sz;
+	size_t sampc;
+	size_t samps;
+	void *sampv;
+
 	pa_stream_direction_t direction;
 
 	void *arg;
@@ -52,7 +57,9 @@ int pulse_async_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 /*recorder.c*/
 int pulse_async_recorder_init(struct ausrc *as);
-
+int pulse_async_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
+	struct ausrc_prm *prm, const char *dev, ausrc_read_h *rh,
+	ausrc_error_h *errh, void *arg);
 
 /*pulse.c*/
 struct paconn_st *paconn_get(void);
@@ -67,7 +74,7 @@ int pastream_alloc(struct pastream_st **bptr, struct auplay_prm *prm,
 	pa_stream_direction_t dir, void *arg);
 int pastream_start(struct pastream_st *st);
 void pastream_set_writehandler(struct pastream_st *st, auplay_write_h *wh);
-
+void pastream_set_readhandler(struct pastream_st *st, ausrc_read_h *rh);
 
 void stream_write_cb(pa_stream *s, size_t len, void *arg);
-// void stream_read_cb(pa_stream *s, size_t len, void *arg);
+void stream_read_cb(pa_stream *s, size_t len, void *arg);
