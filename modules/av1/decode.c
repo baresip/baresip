@@ -160,7 +160,6 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	aom_image_t *img;
 	struct av1_aggr_hdr hdr;
 	struct mbuf *mb2 = NULL;
-	size_t size;
 	int err;
 
 	if (!vds || !frame || !intra || !mb)
@@ -239,6 +238,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		goto out;
 
 	if (vds->w) {
+		size_t size;
 
 		for (unsigned i=0; i<(vds->w-1); i++) {
 
@@ -254,7 +254,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		}
 
 		/* last OBU element MUST NOT be preceded by a length field */
-		size = vds->mb->end - vds->mb->pos;
+		size = mbuf_get_left(vds->mb);
 
 		err = copy_obu(mb2, mbuf_buf(vds->mb), size);
 		if (err)
@@ -264,6 +264,8 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	}
 	else {
 		while (mbuf_get_left(vds->mb) >= 2) {
+
+			size_t size;
 
 			/* each OBU element MUST be preceded by length field */
 			err = av1_leb128_decode(vds->mb, &size);
