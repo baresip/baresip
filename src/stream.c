@@ -984,12 +984,10 @@ static void stream_remote_set(struct stream *s)
 			sdp_media_raddr_rtcp(s->sdp, &s->tx.raddr_rtcp);
 	}
 
-
 	if (bundle_state(stream_bundle(s)) == BUNDLE_BASE) {
 
 		update_remotes(s->le.list, &s->tx.raddr_rtp);
 	}
-
 
 	if (sa_af(&s->tx.raddr_rtp) == AF_INET6 &&
 			sa_is_linklocal(&s->tx.raddr_rtp))
