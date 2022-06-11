@@ -560,7 +560,6 @@ int stream_start_mediaenc(struct stream *strm)
 }
 
 
-/* todo: move to user of stream.c ? */
 static void update_all_remote_addr(struct list *streaml,
 				   const struct sa *raddr)
 {
@@ -602,7 +601,6 @@ static void mnat_connected_handler(const struct sa *raddr1,
 
 	strm->mnat_connected = true;
 
-	/* todo: move one level up ? */
 	if (bundle_state(stream_bundle(strm)) == BUNDLE_BASE) {
 
 		update_all_remote_addr(strm->le.list, raddr1);
