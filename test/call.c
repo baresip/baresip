@@ -48,6 +48,8 @@ struct agent {
 	unsigned n_mediaenc;
 	unsigned n_rtpestab;
 	unsigned n_rtcp;
+	unsigned n_audio_estab;
+	unsigned n_video_estab;
 };
 
 struct fixture {
@@ -67,6 +69,7 @@ struct fixture {
 	bool fail_transfer;
 	bool stop_on_rtp;
 	bool stop_on_rtcp;
+	bool stop_on_audio_video;
 };
 
 
@@ -146,6 +149,12 @@ static const struct list *hdrs;
 
 
 static const char dtmf_digits[] = "123";
+
+
+static bool agent_audio_video_estab(const struct agent *ag)
+{
+	return ag->n_audio_estab > 0 && ag->n_video_estab > 0;
+}
 
 
 static void event_handler(struct ua *ua, enum ua_event ev,
@@ -381,8 +390,22 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_RTPESTAB:
 		++ag->n_rtpestab;
 
+		if (strstr(prm, "audio"))
+			++ag->n_audio_estab;
+		else if (strstr(prm, "video"))
+			++ag->n_video_estab;
+
 		if (f->stop_on_rtp && ag->peer->n_rtpestab > 0)
 			re_cancel();
+
+		if (f->stop_on_audio_video) {
+
+			if (agent_audio_video_estab(ag) &&
+			    agent_audio_video_estab(ag->peer)) {
+
+				re_cancel();
+			}
+		}
 		break;
 
 	case UA_EVENT_CALL_RTCP:
@@ -1554,7 +1577,7 @@ int test_call_webrtc(void)
 
 	f->estab_action = ACTION_NOTHING;
 	f->behaviour = BEHAVIOUR_ANSWER;
-	f->stop_on_rtp = true;
+	f->stop_on_audio_video = true;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
@@ -1569,8 +1592,6 @@ int test_call_webrtc(void)
 
 	/* verify that MENC is secure */
 #if 0
-	/* todo: wait until both audio+video are established */
-
 	ASSERT_TRUE(
 	  stream_is_secure(audio_strm(call_audio(ua_call(f->a.ua)))));
 	ASSERT_TRUE(
