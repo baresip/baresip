@@ -15,10 +15,6 @@
 #    Sebastian Reimers
 #
 #
-# TODO:
-# - optimize regex functions
-# - count max y lines
-#
 
 import sys, os, re, fnmatch, getopt
 
@@ -53,7 +49,6 @@ class ccheck:
         for e in self.extensions:
             self.files[e] = []
 
-        # todo: global config
         self.common_checks = [self.check_whitespace, self.check_termination,
                               self.check_hex_lowercase, self.check_pre_incr,
                               self.check_file_unix]
@@ -228,10 +223,6 @@ class ccheck:
             self.error("line is too wide (" + str(l) + " - max " \
                        + str(max_x) + ")");
 
-        #    TODO:
-        #    if ($line > $max_y) {
-        #      self.error("is too big ($lines lines - max $max_y)\n");
-
 
     #
     # check that hexadecimal numbers are lowercase
@@ -248,7 +239,7 @@ class ccheck:
     #
     # check for correct brackets usage in C/C++
     #
-    # TODO: this is too slow, optimize
+    # XXX: this is too slow, optimize
     #
     def check_brackets(self, line, len):
 
