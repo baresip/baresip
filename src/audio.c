@@ -819,7 +819,7 @@ static int rx_push_aubuf(struct aurx *rx, const struct auframe *af)
 
 	mtx_lock(&rx->lock);
 	if (!rx->aubuf_started &&
-	    (rx->aubuf_minsz >= aubuf_cur_size(rx->aubuf)))
+	    (aubuf_cur_size(rx->aubuf) >= rx->aubuf_minsz))
 		rx->aubuf_started = true;
 
 	mtx_unlock(&rx->lock);
