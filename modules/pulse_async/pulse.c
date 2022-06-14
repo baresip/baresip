@@ -10,12 +10,8 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+
 #include "pulse.h"
-
-
-#define DEBUG_MODULE "pulse_async/pulse"
-#define DEBUG_LEVEL 6
-#include <re_dbg.h>
 
 
 /**
@@ -26,25 +22,6 @@
  * This module is experimental and work-in-progress. It is using
  * the pulseaudio async interface.
  */
-
-
-/**
- * @note: current state and thoughts:
- * 1) timer got replaced by mqueue -> works directly with FD -> is good
- * 2) timer is started by the mainthread in the mqueue with timeout 1s
- *    and 10 retries
- * 3) replacing the context and mainloop via a mqueue & timer looks fine for
- *    the current state
- * 4) the auplay & ausrc->dev_list must be flushed each time!
- *
- */
-
-
-/*
- * @note: the current implementation is far away of best practice.
- * a lot of information are packed into the pastream_st struct which does not
- * belong there!
-*/
 
 
 static struct auplay *auplay;
@@ -276,7 +253,6 @@ int pulse_async_set_available_devices(struct list *dev_list,
 {
 	pa_operation *op = NULL;
 
-	DEBUG_INFO("%s: setup pa_operation\n", __func__);
 	if (pa_context_get_state(pa.paconn->context) != PA_CONTEXT_READY)
 		return EINVAL;
 

@@ -3,21 +3,27 @@
  *
  * Copyright (C) 2021 Commend.com - h.ramoser@commend.com,
  *                                  c.spielberger@commend.com
+ *                                  c.huber@commend.com
  */
+
+#include <pulse/pulseaudio.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
 #include <string.h>
-#include <pulse/pulseaudio.h>
-#include "pulse.h"
 
-#define DEBUG_MODULE "pulse_async/player"
-#define DEBUG_LEVEL 6
-#include <re_dbg.h>
+#include "pulse.h"
 
 
 struct auplay_st {
 	struct pastream_st *b;
+
+	struct auplay_prm play_prm;
+	auplay_write_h *wh;
+
+	size_t sampsz;
+
+	void *arg;
 };
 
 
@@ -26,6 +32,7 @@ static void auplay_destructor(void *arg)
 	struct auplay_st *st = arg;
 
 	mem_deref(st->b);
+	st->wh = NULL;
 }
 
 
@@ -45,14 +52,22 @@ int pulse_async_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	err = pastream_alloc(&st->b, prm, dev, "Baresip", "VoIP Player",
-		PA_STREAM_PLAYBACK, arg);
+	st->play_prm.srate = prm->srate;
+	st->play_prm.ch = prm->ch;
+	st->play_prm.ptime = prm->ptime;
+	st->play_prm.fmt = prm->fmt;
+
+	st->sampsz = aufmt_sample_size(prm->fmt);
+
+	st->wh = wh;
+	st->arg = arg;
+
+	err = pastream_alloc(&st->b, dev, "Baresip", "VoIP Player",
+		PA_STREAM_PLAYBACK, prm->srate, prm->ch, prm->ptime, prm->fmt);
 	if (err)
 		goto out;
 
-
-	pastream_set_writehandler(st->b, wh);
-	err = pastream_start(st->b);
+	err = pastream_start(st->b, st);
 	if (err) {
 		warning("pulse_async: could not connect playback stream %s "
 			"(%m)\n", st->b->sname, err);
@@ -105,9 +120,16 @@ int pulse_async_player_init(struct auplay *ap)
 }
 
 
+/**
+ * Player write callback function which gets called by pulseaudio
+ *
+ * @param s   Pulseaudio stream object
+ * @param len Number of bytes to write
+ * @param arg Argument (auplay_st object)
+ */
 void stream_write_cb(pa_stream *s, size_t len, void *arg)
 {
-	struct pastream_st *st = arg;
+	struct auplay_st *st = arg;
 	struct paconn_st *c = paconn_get();
 	struct auframe af;
 	void *sampv;
@@ -116,7 +138,7 @@ void stream_write_cb(pa_stream *s, size_t len, void *arg)
 	static uint64_t t0 = 0;
 	uint64_t t;
 
-	if (st->shutdown)
+	if (st->b->shutdown)
 		goto out;
 
 	t = tmr_jiffies_usec();
@@ -130,9 +152,8 @@ void stream_write_cb(pa_stream *s, size_t len, void *arg)
 		goto out;
 	}
 
-	auframe_init(&af, st->play_prm.fmt, sampv,
-		     sz / st->sampsz,
-		     st->play_prm.srate, st->play_prm.ch);
+	auframe_init(&af, st->play_prm.fmt, sampv, sz / st->sampsz,
+		st->play_prm.srate, st->play_prm.ch);
 
 	st->wh(&af, st->arg);
 

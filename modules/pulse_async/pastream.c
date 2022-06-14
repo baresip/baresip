@@ -3,20 +3,26 @@
  *
  * Copyright (C) 2021 Commend.com - h.ramoser@commend.com,
  *                                  c.spielberger@commend.com
+ *                                  c.huber@commend.com
  */
+
 #include <pulse/pulseaudio.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
 #include <string.h>
-#include <stdint.h>
 
 #include "pulse.h"
 
 
-#define DEBUG_MODULE "pulse_async/pastream"
-#define DEBUG_LEVEL 6
-#include <re_dbg.h>
+static int aufmt_to_pulse_format(enum aufmt fmt)
+{
+	switch (fmt) {
+		case AUFMT_S16LE:  return PA_SAMPLE_S16NE;
+		case AUFMT_FLOAT:  return PA_SAMPLE_FLOAT32NE;
+		default: return 0;
+	}
+}
 
 
 static void success_cb(pa_stream *s, int success, void *arg)
@@ -73,10 +79,6 @@ static void pastream_destructor(void *arg)
 		st->stream = NULL;
 	}
 
-	if (st->sampv) {
-		st->sampv = mem_deref(st->sampv);
-	}
-
 	pa_threaded_mainloop_unlock(c->mainloop);
 }
 
@@ -121,12 +123,19 @@ static void stream_state_cb(pa_stream *s, void *arg)
 	(void)s;
 	(void)arg;
 
-	debug("pulse_async: stream state %d\n", pa_stream_get_state(s));
 	pa_threaded_mainloop_signal(c->mainloop, 0);
 }
 
 
-int pastream_start(struct pastream_st* st)
+/**
+ * Start pulseaudio stream
+ *
+ * @param st  PA_Stream object
+ * @param arg Argument for the read and write handlers
+ *
+ * @return int 0 if success, errorcode otherwise
+ */
+int pastream_start(struct pastream_st* st, void *arg)
 {
 	struct paconn_st *c = paconn_get();
 	int pa_err = 0;
@@ -148,8 +157,8 @@ int pastream_start(struct pastream_st* st)
 		goto out;
 	}
 
-	pa_stream_set_read_callback(st->stream, stream_read_cb, st);
-	pa_stream_set_write_callback(st->stream, stream_write_cb, st);
+	pa_stream_set_read_callback(st->stream, stream_read_cb, arg);
+	pa_stream_set_write_callback(st->stream, stream_write_cb, arg);
 	pa_stream_set_latency_update_callback(st->stream,
 					      stream_latency_update_cb, st);
 	pa_stream_set_underflow_callback(st->stream,
@@ -159,7 +168,6 @@ int pastream_start(struct pastream_st* st)
 	pa_stream_set_state_callback(st->stream, stream_state_cb, st);
 
 	if (st->direction == PA_STREAM_PLAYBACK) {
-		DEBUG_INFO("Connect to stream \n");
 		pa_err = pa_stream_connect_playback(st->stream,
 				strlen(st->device) == 0 ? NULL :
 				st->device, &st->attr,
@@ -194,75 +202,52 @@ out:
 }
 
 
-static int aufmt_to_pulse_format(enum aufmt fmt)
-{
-	switch (fmt) {
-		case AUFMT_S16LE:  return PA_SAMPLE_S16NE;
-		case AUFMT_FLOAT:  return PA_SAMPLE_FLOAT32NE;
-		default: return 0;
-	}
-}
-
-
-int pastream_alloc(struct pastream_st **bptr, struct auplay_prm *prm,
-	const char *dev, const char *pname, const char *sname,
-	pa_stream_direction_t dir, void *arg)
+/**
+ * Allocate internal PA_STREAM object
+ *
+ * @param bptr  Base pointer to a pastream_st object
+ * @param dev   Device name
+ * @param pname Program name
+ * @param sname Stream name
+ * @param dir   Stream direction
+ * @param srate Stream sample rate
+ * @param ch    Stream channel number
+ * @param ptime Stream ptime
+ * @param fmt   Stream format
+ *
+ * @return int 0 if success, errorcode otherwise
+ */
+int pastream_alloc(struct pastream_st **bptr, const char *dev,
+	const char *pname, const char *sname, pa_stream_direction_t dir,
+	uint32_t srate, uint8_t ch, uint32_t ptime, int fmt)
 {
 	struct pastream_st *st;
 
-	if (!bptr || !prm)
+	if (!bptr)
 		return EINVAL;
 
 	st = mem_zalloc(sizeof(*st), pastream_destructor);
 	if (!st)
 		return ENOMEM;
 
-	st->arg = arg;
-	st->play_prm = *prm;
-	st->sampsz = aufmt_sample_size(prm->fmt);
-	st->ss.format = aufmt_to_pulse_format(prm->fmt);
-	st->ss.channels = prm->ch;
-	st->ss.rate = prm->srate;
-	st->sz = prm->ptime * prm->ch * st->sampsz * prm->srate / 1000;
-
+	st->ss.format = aufmt_to_pulse_format(fmt);
+	st->ss.channels = ch;
+	st->ss.rate = srate;
 
 	st->attr.maxlength = UINT32_MAX;
-	st->attr.tlength = (uint32_t)pa_usec_to_bytes(
-		prm->ptime * PA_USEC_PER_MSEC, &st->ss);
-
+	st->attr.tlength = (uint32_t) pa_usec_to_bytes(
+		ptime * PA_USEC_PER_MSEC, &st->ss);
 	st->attr.prebuf = UINT32_MAX;
 	st->attr.minreq = st->attr.tlength / 4;
+	st->attr.fragsize = (uint32_t) pa_usec_to_bytes(
+		ptime / 3 * PA_USEC_PER_MSEC, &st->ss);
 
-	st->attr.fragsize = (uint32_t)pa_usec_to_bytes(
-		prm->ptime / 3 * PA_USEC_PER_MSEC, &st->ss);
 	st->direction = dir;
-
-	if (st->direction == PA_STREAM_RECORD) {
-		st->sampc = prm->ptime * prm->ch * prm->srate / 1000;
-		st->sampv = mem_zalloc(st->sampsz * st->sampc, NULL);
-		if (!st->sampv) {
-			mem_deref(st);
-			return ENOMEM;
-		}
-	}
 
 	strcpy(st->pname, pname);
 	strcpy(st->sname, sname);
 	str_ncpy(st->device, dev, sizeof(st->device));
 
 	*bptr = st;
-
 	return 0;
-}
-
-
-void pastream_set_writehandler(struct pastream_st *st, auplay_write_h *wh)
-{
-	st->wh = wh;
-}
-
-
-void pastream_set_readhandler(struct pastream_st *st, ausrc_read_h *rh)
-{
-	st->rh = rh;
 }

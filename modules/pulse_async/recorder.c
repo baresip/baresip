@@ -3,21 +3,31 @@
  *
  * Copyright (C) 2021 Commend.com - h.ramoser@commend.com,
  *                                  c.spielberger@commend.com
+ *                                  c.huber@commend.com
  */
+
+#include <pulse/pulseaudio.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
 #include <string.h>
-#include <pulse/pulseaudio.h>
-#include "pulse.h"
 
-#define DEBUG_MODULE "pulse_async/recorder"
-#define DEBUG_LEVEL 6
-#include <re_dbg.h>
+#include "pulse.h"
 
 
 struct ausrc_st {
 	struct pastream_st *b;
+
+	struct ausrc_prm src_prm;
+	ausrc_read_h *rh;
+	ausrc_error_h *errh;
+
+	void   *sampv;
+	size_t  sampsz;
+	size_t  sampc;
+	size_t  samps;
+
+	void *arg;
 };
 
 
@@ -26,6 +36,9 @@ static void ausrc_destructor(void *arg)
 	struct ausrc_st *st = arg;
 
 	mem_deref(st->b);
+	mem_deref(st->sampv);
+	st->rh = NULL;
+	st->errh = NULL;
 }
 
 
@@ -35,7 +48,6 @@ int pulse_async_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	int err = 0;
-	(void) errh;
 
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
@@ -47,14 +59,30 @@ int pulse_async_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	err = pastream_alloc(&st->b, (struct auplay_prm *)prm,
-		dev, "Baresip", "VoIP Recorder",
-		PA_STREAM_RECORD, arg);
+	st->src_prm.srate = prm->srate;
+	st->src_prm.ch = prm->ch;
+	st->src_prm.ptime = prm->ptime;
+	st->src_prm.fmt = prm->fmt;
+
+	st->sampsz = aufmt_sample_size(prm->fmt);
+	st->sampc = prm->ptime * prm->ch * prm->srate / 1000;
+	st->samps = 0;
+	st->sampv = mem_zalloc(st->sampsz * st->sampc, NULL);
+	if (!st->sampv) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	st->rh = rh;
+	st->errh = errh;
+	st->arg = arg;
+
+	err = pastream_alloc(&st->b, dev, "Baresip", "VoIP Recorder",
+		PA_STREAM_RECORD, prm->srate, prm->ch, prm->ptime, prm->fmt);
 	if (err)
 		goto out;
 
-	pastream_set_readhandler(st->b, rh);
-	err = pastream_start(st->b);
+	err = pastream_start(st->b, st);
 	if (err) {
 		warning("pulse_async: could not connect record stream %s "
 			"(%m)\n", st->b->sname, err);
@@ -110,9 +138,17 @@ int pulse_async_recorder_init(struct ausrc *as)
 }
 
 
+/**
+ * Source read callback function which gets called by pulseaudio
+ *
+ * @param s   Pulseaudio stream object
+ * @param len Number of bytes to read (not used)
+ * @param arg Argument (ausrc_st object)
+ */
 void stream_read_cb(pa_stream *s, size_t len, void *arg)
 {
-	struct pastream_st *st = arg;
+	struct ausrc_st *st = arg;
+	struct paconn_st *c = paconn_get();
 	struct auframe af;
 
 	int pa_err = 0;
@@ -123,26 +159,25 @@ void stream_read_cb(pa_stream *s, size_t len, void *arg)
 
 	(void) len;
 
-	if (st->shutdown)
-		return;
+	if (st->b->shutdown)
+		goto out;
 
 	while (pa_stream_readable_size(s) > 0) {
 		pa_err = pa_stream_peek(s, &pabuf, &rlen);
 		if (pa_err < 0) {
 			warning ("pulse_async: %s pa_stream_peek error (%s)\n",
-				st->sname, pa_strerror(pa_err));
-			return;
+				st->b->sname, pa_strerror(pa_err));
+			goto out;
 		}
 
 		if (!rlen)
-			return;
+			goto out;
 
 		sampc += rlen / st->sampsz;
 		if (sampc > st->sampc) {
 			st->sampv = mem_realloc(st->sampv, st->sampsz * sampc);
 			st->sampc = sampc;
 		}
-
 
 		if (!st->sampv) {
 			pa_stream_drop(s);
@@ -159,11 +194,14 @@ void stream_read_cb(pa_stream *s, size_t len, void *arg)
 
 	}
 
-	auframe_init(&af, st->play_prm.fmt, st->sampv, sampc,
-		st->play_prm.srate, st->play_prm.ch);
+	auframe_init(&af, st->src_prm.fmt, st->sampv, sampc,
+		st->src_prm.srate, st->src_prm.ch);
 
 	af.timestamp = st->samps * AUDIO_TIMEBASE
-		/ (st->play_prm.srate * st->play_prm.ch);
+		/ (st->src_prm.srate * st->src_prm.ch);
 	st->samps += sampc;
 	st->rh(&af, st->arg);
+
+out:
+	pa_threaded_mainloop_signal(c->mainloop, 0);
 }
