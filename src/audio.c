@@ -1187,10 +1187,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	if (acc && acc->autelev_pt)
 		a->cfg.telev_pt = acc->autelev_pt;
 
-	mtx_lock(a->rx.mtx);
 	err  = telev_alloc(&a->telev, ptime);
 	err |= mqueue_alloc(&a->mqueue, dtmf_event, a);
-	mtx_unlock(a->rx.mtx);
 	if (err)
 		goto out;
 
@@ -1815,18 +1813,17 @@ int audio_start(struct audio *a)
 	debug("audio: start\n");
 
 	/* Audio filter */
-	mtx_lock(a->rx.mtx);
 	if (!list_isempty(aufiltl)) {
 
 		err = aufilt_setup(a, aufiltl);
 		if (err)
-			goto out;
+			return err;
 	}
 
 	err  = start_player(&a->rx, a, baresip_auplayl());
 	err |= start_source(&a->tx, a, baresip_ausrcl());
 	if (err)
-		goto out;
+		return err;
 
 	if (a->tx.ac && a->rx.ac) {
 
@@ -1839,8 +1836,6 @@ int audio_start(struct audio *a)
 		a->started = true;
 	}
 
-out:
-	mtx_unlock(a->rx.mtx);
 	return err;
 }
 
