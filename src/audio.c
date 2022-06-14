@@ -1467,6 +1467,10 @@ static int rx_filter_thread(void *arg)
 	while (rx->thr.run) {
 		int err;
 
+		sys_msleep(4);
+		if (!rx->thr.run)
+			break;
+
 		now = tmr_jiffies();
 		if (ts > now)
 			continue;
@@ -1492,7 +1496,6 @@ static int rx_filter_thread(void *arg)
 		}
 
 wait:
-		sys_msleep(4);
 		ts += ptime;
 	}
 
