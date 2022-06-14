@@ -331,7 +331,6 @@ static void audio_destructor(void *arg)
 	mem_deref(a->rx.device);
 
 	list_flush(&a->tx.filtl);
-	list_flush(&a->rx.filtl);
 
 	mem_deref(a->strm);
 	mem_deref(a->telev);
