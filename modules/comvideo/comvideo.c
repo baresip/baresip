@@ -184,24 +184,27 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 static void
 disp_identifier_set(struct vidisp_st *st, const char *identifier)
 {
-	if(st->client_stream) {
-		g_object_set(
-			st->client_stream,
-			"identifier", identifier,
-			NULL);
-	}
+	if (!st->client_stream)
+		return;
+
+	g_object_set(
+		st->client_stream,
+		"identifier", identifier,
+		NULL);
+
 }
 
 static void
 disp_enable(struct vidisp_st *st, bool disp_enabled)
 {
+	if (!st->client_stream)
+		return;
 
-	if(st->client_stream) {
-		g_object_set(
-			st->client_stream,
-			"enabled", disp_enabled,
-			NULL);
-	}
+	g_object_set(
+		st->client_stream,
+		"enabled", disp_enabled,
+		NULL);
+
 }
 
 
@@ -253,15 +256,17 @@ static int disp_alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 
 static void
-disp_map_call_id(struct call *call, struct vidisp_st *st)
+disp_map_call_id(struct call *call, void *arg)
 {
-	if(!st->identifier) {
-		const char *peer_uri = call_peeruri(call);
-		if(!str_cmp(peer_uri, st->peer)) {
-			const char *id = call_id(call);
-			str_dup(&st->identifier, id);
-		}
-	}
+	struct vidisp_st *st = arg;
+	const char *id = call_id(call);
+	const char *peer_uri = call_peeruri(call);
+
+	if (st->identifier)
+		return;
+
+	if (!str_cmp(peer_uri, st->peer))
+		str_dup(&st->identifier, id);
 }
 
 
@@ -270,17 +275,16 @@ disp_find_identifier(struct vidisp_st *st, const char *peer)
 {
 	int err = 0;
 
-	if(!st->identifier) {
-		if(!st->peer) {
-			err = str_dup(&st->peer, peer);
-			if (err) {
-				return err;
-			}
-		}
+	if (st->identifier)
+		return 0;
 
-		uag_filter_calls((call_list_h *) disp_map_call_id, NULL, st);
+	if (!st->peer) {
+		err = str_dup(&st->peer, peer);
+		if (err)
+			return err;
 	}
 
+	uag_filter_calls(disp_map_call_id, NULL, st);
 	return err;
 }
 
