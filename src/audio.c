@@ -1237,7 +1237,6 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	err  = mtx_alloc(&tx->mtx);
 	err |= mtx_alloc(&rx->mtx);
-	err |= mtx_init(rx->mtx, mtx_recursive);
 	if (err)
 		goto out;
 
