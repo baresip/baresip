@@ -155,18 +155,19 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->fps = (u_int32_t) prm->fps;
 	st->bitrate = cfg->video.bitrate;
 
-	if(!comvideo_codec.camera_src) {
-		src = camerad_client_add_src(comvideo_codec.camerad_client,
-					     GST_CAMERA_COMPONENT_RTP, st->sz.w,
-					     st->sz.h,
-					     st->fps);
+	if (!comvideo_codec.camera_src) {
+		src = camerad_client_add_src(
+			comvideo_codec.camerad_client,
+			GST_CAMERA_COMPONENT_RTP, st->sz.w,
+			st->sz.h, st->fps);
 
 		if (src) {
 			gst_camera_src_set_sample_cb(
 				src,
 				GST_CAMERA_SRC_CODEC_H264,
 				st->bitrate,
-				(camera_new_sample) camera_h264_sample_received,
+				(camera_new_sample)
+					camera_h264_sample_received,
 				st);
 		}
 
@@ -180,6 +181,7 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	     st, comvideo_codec.sources);
 	return 0;
 }
+
 
 static void
 disp_identifier_set(struct vidisp_st *st, const char *identifier)

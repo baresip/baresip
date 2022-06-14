@@ -9,7 +9,7 @@
 #include "comvideo.h"
 
 
-static const uint8_t h264_level_idc = 0x1F;
+static const uint8_t h264_level_idc = 0x1f;
 
 
 int comvideo_fmtp_enc(
@@ -17,7 +17,7 @@ int comvideo_fmtp_enc(
 {
 	struct vidcodec *vc = arg;
 	const uint8_t profile_idc = 0x42; /* baseline profile */
-	const uint8_t profile_iop = 0xE0;
+	const uint8_t profile_iop = 0xe0;
 	(void)offer;
 
 	if (!mb || !fmt || !vc)

@@ -134,9 +134,9 @@ camera_h264_sample_received(
 	(void) st;
 
 	buffer = gst_sample_get_buffer(sample);
-	gst_buffer_map(buffer, &map_info, (GstMapFlags)(GST_MAP_READ));
+	gst_buffer_map(buffer, &map_info, (GstMapFlags) (GST_MAP_READ));
 
-	if(map_info.size >= RTP_HEADER_SIZE && map_info.data) {
+	if (map_info.size >= RTP_HEADER_SIZE && map_info.data) {
 		encData.sample = map_info.data;
 		encData.size = map_info.size;
 

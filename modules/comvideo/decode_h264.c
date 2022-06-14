@@ -71,7 +71,7 @@ handle_h264_size(struct viddec_state *st, struct mbuf *src)
 	int res;
 
 	res = h264_sps_decode(&sps, src->buf + src->pos, src->end - src->pos);
-	if(res) {
+	if (res) {
 		warning("comvideo: Could not decode SPS");
 		return;
 	}
@@ -113,7 +113,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 
 	/* handle NAL types */
 
-	if(H264_NALU_SPS == h264_hdr.type) {
+	if (H264_NALU_SPS == h264_hdr.type) {
 		handle_h264_size(st, src);
 
 	}
@@ -160,7 +160,8 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 
 			/* encode NAL header back to buffer */
 			err = h264_nal_header_encode(st->mb, &h264_hdr);
-		} else {
+		}
+		else {
 			if (!st->frag) {
 				debug("comvideo: ignoring fragment"
 				      " (nal=%u)\n", fu.type);
@@ -211,7 +212,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 			src->pos += len;
 		}
 	}
- 	else {
+	else {
 		warning("comvideo: unknown NAL type %u\n", h264_hdr.type);
 		return EBADMSG;
 	}
