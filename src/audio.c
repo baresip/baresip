@@ -1492,7 +1492,7 @@ static int rx_filter_thread(void *arg)
 
 		if (af.sampc && sampc != af.sampc) {
 			sampc = af.sampc;
-			ptime = af.sampc * 1000 / (af.srate * af.ch);
+			ptime = (uint32_t) af.sampc*1000 / (af.srate * af.ch);
 		}
 
 wait:
