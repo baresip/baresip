@@ -166,6 +166,9 @@ struct aurx {
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
+
+	void *sampvf;                 /**< Sample buffer for filter thread */
+	size_t fsize;                 /**< Size of sampvf                  */
 	size_t last_sampc;
 
 	struct {
@@ -324,6 +327,7 @@ static void audio_destructor(void *arg)
 	mem_deref(a->tx.mb);
 	mem_deref(a->tx.sampv);
 	mem_deref(a->rx.sampv);
+	mem_deref(a->rx.sampvf);
 	mem_deref(a->rx.aubuf);
 	mem_deref(a->tx.module);
 	mem_deref(a->tx.device);
@@ -1423,44 +1427,78 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 }
 
 
+static int rx_frame_read(struct aurx *rx, struct auframe *af)
+{
+	const struct aucodec *ac = rx->ac;
+	size_t size = rx->last_sampc * aufmt_sample_size(rx->dec_fmt);
+
+	if (!size)
+		return EINVAL;
+
+	if (size != rx->fsize) {
+		rx->sampvf = mem_deref(rx->sampvf);
+		rx->sampvf = mem_zalloc(size, NULL);
+		if (rx->sampvf)
+			rx->fsize = size;
+		else
+			rx->fsize = 0;
+	}
+
+	if (!rx->sampvf)
+		return ENOMEM;
+
+	auframe_init(af, rx->dec_fmt, rx->sampvf, rx->last_sampc,
+		     ac->srate, ac->ch);
+	aubuf_read_auframe(rx->aubufdec, af);
+	return 0;
+}
+
+
 static int rx_filter_thread(void *arg)
 {
 	struct audio *a = arg;
 	struct aurx *rx = &a->rx;
-	const struct aucodec *ac = rx->ac;
+	struct autx *tx = &a->tx;
 	struct auframe af;
 	uint64_t now, ts = tmr_jiffies();
 	uint32_t ptime = rx->ptime;
-	size_t sampc = ac->srate * ac->ch * ptime / 1000;
-	void *sampv = mem_zalloc(sampc * aufmt_sample_size(rx->dec_fmt), NULL);
+	size_t sampc = 0;
 
 	while (rx->thr.run) {
 		int err;
+
+		sys_msleep(4);
+		if (!rx->thr.run)
+			break;
 
 		now = tmr_jiffies();
 		if (ts > now)
 			continue;
 
-		auframe_init(&af, rx->dec_fmt, sampv, sampc, ac->srate,
-			     ac->ch);
-		aubuf_read_auframe(rx->aubufdec, &af);
+		if (!tx->ac || !rx->ac)
+			goto wait;
+
+		if (!rx->last_sampc)
+			goto wait;
+
+		if (rx_frame_read(rx, &af))
+			goto wait;
 
 		err = process_decfilt(rx, &af);
 		if (err)
 			continue;
 
-		if (af.sampc && sampc != af.sampc) {
-			sampc = af.sampc;
-			ptime = (uint32_t) (sampc*1000 / (ac->srate * ac->ch));
-		}
-
 		(void)rx_push_aubuf(rx, &af);
 
-		sys_msleep(4);
+		if (af.sampc && sampc != af.sampc) {
+			sampc = af.sampc;
+			ptime = (uint32_t) af.sampc*1000 / (af.srate * af.ch);
+		}
+
+wait:
 		ts += ptime;
 	}
 
-	mem_deref(sampv);
 	return 0;
 }
 
