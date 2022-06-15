@@ -2,6 +2,8 @@
 # module.mk
 #
 # Copyright (C) 2021 Commend.com - h.ramoser@commend.com
+#                                  c.spielberger@commend.com
+#                                  c.huber@commend.com
 #
 
 MOD		:= pulse_async

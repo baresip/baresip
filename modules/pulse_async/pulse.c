@@ -1,11 +1,12 @@
 /**
  * @file pulse.c  Pulseaudio sound driver (asynchronous API)
  *
- * Copyright (C) 2021 Commend.com - h.ramoser@commend.com,
+ * Copyright (C) 2021 Commend.com - h.ramoser@commend.com
  *                                  c.spielberger@commend.com
  *                                  c.huber@commend.com
  */
 
+#include <string.h>
 #include <pulse/pulseaudio.h>
 #include <re.h>
 #include <rem.h>
@@ -29,7 +30,7 @@ static struct ausrc *ausrc;
 
 
 struct pa {
-	struct tmr *rc;
+	struct tmr rc;
 	struct mqueue *q;
 	uint8_t retry;
 
@@ -37,12 +38,7 @@ struct pa {
 };
 
 
-static struct pa pa = {
-	NULL,
-	NULL,
-	0,
-	NULL,
-};
+static struct pa pa;
 
 
 static int paconn_start(struct paconn_st **ppaconn);
@@ -61,7 +57,7 @@ static void reconnth(void *arg)
 		return;
 
 	if (pa.retry < 10)
-		tmr_start(pa.rc, 1000, reconnth, NULL);
+		tmr_start(&pa.rc, 1000, reconnth, NULL);
 	else
 		warning ("pulse_async: could not connect to pulseaudio\n");
 }
@@ -77,7 +73,7 @@ static void qh(int id, void *data, void *arg)
 		pa.paconn = mem_deref(pa.paconn);
 
 	if (paconn_start(&pa.paconn))
-		tmr_start(pa.rc, 1000, reconnth, NULL);
+		tmr_start(&pa.rc, 1000, reconnth, NULL);
 }
 
 
@@ -215,12 +211,7 @@ static int pa_start(void)
 	if (err)
 		return err;
 
-	pa.rc = mem_zalloc(sizeof(*pa.rc), NULL);
-	if (!pa.rc) {
-		pa.q = mem_deref(pa.q);
-		return err;
-	}
-
+	tmr_init(&pa.rc);
 	return paconn_start(&pa.paconn);
 }
 
@@ -269,6 +260,7 @@ static int module_init(void)
 {
 	int err = 0;
 
+	memset(&pa, 0, sizeof(pa));
 	err = pa_start();
 	if (err)
 		return err;
@@ -286,8 +278,7 @@ static int module_close(void)
 {
 	mem_deref(pa.paconn);
 	mem_deref(pa.q);
-	tmr_cancel(pa.rc);
-	mem_deref(pa.rc);
+	tmr_cancel(&pa.rc);
 
 	auplay = mem_deref(auplay);
 	ausrc  = mem_deref(ausrc);

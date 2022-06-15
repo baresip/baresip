@@ -1,7 +1,7 @@
 /**
  * @file recorder.c  Pulseaudio sound driver - recorder (asynchronous API)
  *
- * Copyright (C) 2021 Commend.com - h.ramoser@commend.com,
+ * Copyright (C) 2021 Commend.com - h.ramoser@commend.com
  *                                  c.spielberger@commend.com
  *                                  c.huber@commend.com
  */
@@ -53,29 +53,29 @@ int pulse_async_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		return EINVAL;
 
 	info ("pulse_async: opening recorder(%u Hz, %d channels,"
-		"device '%s')\n", prm->srate, prm->ch, dev);
+	      "device '%s')\n", prm->srate, prm->ch, dev);
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
 		return ENOMEM;
 
 	st->src_prm.srate = prm->srate;
-	st->src_prm.ch = prm->ch;
+	st->src_prm.ch    = prm->ch;
 	st->src_prm.ptime = prm->ptime;
-	st->src_prm.fmt = prm->fmt;
+	st->src_prm.fmt   = prm->fmt;
 
 	st->sampsz = aufmt_sample_size(prm->fmt);
-	st->sampc = prm->ptime * prm->ch * prm->srate / 1000;
-	st->samps = 0;
-	st->sampv = mem_zalloc(st->sampsz * st->sampc, NULL);
+	st->sampc  = prm->ptime * prm->ch * prm->srate / 1000;
+	st->samps  = 0;
+	st->sampv  = mem_zalloc(st->sampsz * st->sampc, NULL);
 	if (!st->sampv) {
 		err = ENOMEM;
 		goto out;
 	}
 
-	st->rh = rh;
+	st->rh   = rh;
 	st->errh = errh;
-	st->arg = arg;
+	st->arg  = arg;
 
 	err = pastream_alloc(&st->b, dev, "Baresip", "VoIP Recorder",
 		PA_STREAM_RECORD, prm->srate, prm->ch, prm->ptime, prm->fmt);
@@ -197,8 +197,8 @@ void stream_read_cb(pa_stream *s, size_t len, void *arg)
 	auframe_init(&af, st->src_prm.fmt, st->sampv, sampc,
 		st->src_prm.srate, st->src_prm.ch);
 
-	af.timestamp = st->samps * AUDIO_TIMEBASE
-		/ (st->src_prm.srate * st->src_prm.ch);
+	af.timestamp = st->samps * AUDIO_TIMEBASE /
+		       (st->src_prm.srate * st->src_prm.ch);
 	st->samps += sampc;
 	st->rh(&af, st->arg);
 

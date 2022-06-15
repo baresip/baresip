@@ -230,17 +230,17 @@ int pastream_alloc(struct pastream_st **bptr, const char *dev,
 	if (!st)
 		return ENOMEM;
 
-	st->ss.format = aufmt_to_pulse_format(fmt);
+	st->ss.format   = aufmt_to_pulse_format(fmt);
 	st->ss.channels = ch;
-	st->ss.rate = srate;
+	st->ss.rate     = srate;
 
 	st->attr.maxlength = UINT32_MAX;
-	st->attr.tlength = (uint32_t) pa_usec_to_bytes(
-		ptime * PA_USEC_PER_MSEC, &st->ss);
-	st->attr.prebuf = UINT32_MAX;
-	st->attr.minreq = st->attr.tlength / 4;
-	st->attr.fragsize = (uint32_t) pa_usec_to_bytes(
-		ptime / 3 * PA_USEC_PER_MSEC, &st->ss);
+	st->attr.tlength   = (uint32_t) pa_usec_to_bytes(
+			     ptime * PA_USEC_PER_MSEC, &st->ss);
+	st->attr.prebuf    = UINT32_MAX;
+	st->attr.minreq    = st->attr.tlength / 4;
+	st->attr.fragsize  = (uint32_t) pa_usec_to_bytes(
+			     ptime / 3 * PA_USEC_PER_MSEC, &st->ss);
 
 	st->direction = dir;
 

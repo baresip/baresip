@@ -1,7 +1,7 @@
 /**
  * @file player.c  Pulseaudio sound driver - player (asynchronous API)
  *
- * Copyright (C) 2021 Commend.com - h.ramoser@commend.com,
+ * Copyright (C) 2021 Commend.com - h.ramoser@commend.com
  *                                  c.spielberger@commend.com
  *                                  c.huber@commend.com
  */
@@ -53,13 +53,13 @@ int pulse_async_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		return ENOMEM;
 
 	st->play_prm.srate = prm->srate;
-	st->play_prm.ch = prm->ch;
+	st->play_prm.ch    = prm->ch;
 	st->play_prm.ptime = prm->ptime;
-	st->play_prm.fmt = prm->fmt;
+	st->play_prm.fmt   = prm->fmt;
 
 	st->sampsz = aufmt_sample_size(prm->fmt);
 
-	st->wh = wh;
+	st->wh  = wh;
 	st->arg = arg;
 
 	err = pastream_alloc(&st->b, dev, "Baresip", "VoIP Player",
@@ -130,7 +130,7 @@ int pulse_async_player_init(struct auplay *ap)
 void stream_write_cb(pa_stream *s, size_t len, void *arg)
 {
 	struct auplay_st *st = arg;
-	struct paconn_st *c = paconn_get();
+	struct paconn_st *c  = paconn_get();
 	struct auframe af;
 	void *sampv;
 	int pa_err = 0;
@@ -153,7 +153,7 @@ void stream_write_cb(pa_stream *s, size_t len, void *arg)
 	}
 
 	auframe_init(&af, st->play_prm.fmt, sampv, sz / st->sampsz,
-		st->play_prm.srate, st->play_prm.ch);
+		     st->play_prm.srate, st->play_prm.ch);
 
 	st->wh(&af, st->arg);
 

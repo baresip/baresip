@@ -1,7 +1,7 @@
 /**
- * @file player.c  Pulseaudio sound driver - player (asynchronous API)
+ * @file pulse.h  Pulseaudio sound driver (asynchronous API)
  *
- * Copyright (C) 2021 Commend.com - h.ramoser@commend.com,
+ * Copyright (C) 2021 Commend.com - h.ramoser@commend.com
  *                                  c.spielberger@commend.com
  *                                  c.huber@commend.com
  */
