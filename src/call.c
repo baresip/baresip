@@ -78,6 +78,9 @@ struct call {
 	enum sdp_dir ansvdir;      /**< Answer video direction              */
 	bool use_video;
 	bool use_rtp;
+
+	struct mqueue *mq_rtpestab;  /**< Queue for RTP establish events     */
+	struct mqueue *mq_rtcp;      /**< Queue for RTCP events              */
 };
 
 
@@ -419,6 +422,8 @@ static void call_destructor(void *arg)
 	mem_deref(call->sub);
 	mem_deref(call->not);
 	mem_deref(call->acc);
+	mem_deref(call->mq_rtpestab);
+	mem_deref(call->mq_rtcp);
 
 	list_flush(&call->custom_hdrs);
 }
@@ -573,13 +578,81 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 }
 
 
+struct stream_event {
+	struct call *call;
+	char *media_name;
+	int pt;
+};
+
+
+static void stream_event_destructor(void *arg)
+{
+	struct stream_event *e = arg;
+
+	mem_deref(e->media_name);
+}
+
+
+static void rtpestab_event(int id, void *data, void *arg)
+{
+	struct call *call = arg;
+	struct stream_event *e = data;
+	(void)id;
+	MAGIC_CHECK(call);
+
+	ua_event(call->ua, UA_EVENT_CALL_RTPESTAB, call, "%s", e->media_name);
+
+	mem_deref(e);
+	mem_deref(call);
+}
+
+
 static void stream_rtpestab_handler(struct stream *strm, void *arg)
 {
 	struct call *call = arg;
+	struct stream_event *e;
+	int err;
+
+	MAGIC_CHECK(call);
+	e = mem_zalloc(sizeof(*e), stream_event_destructor);
+	if (!e)
+		return;
+
+	e->call = call;
+	err = str_dup(&e->media_name, sdp_media_name(stream_sdpmedia(strm)));
+	if (err)
+		return;
+
+	mem_ref(call);
+	mqueue_push(call->mq_rtpestab, 0, e);
+}
+
+
+static void rtcp_event(int id, void *data, void *arg)
+{
+	struct call *call = arg;
+	struct stream_event *e = data;
+	(void)id;
 	MAGIC_CHECK(call);
 
-	ua_event(call->ua, UA_EVENT_CALL_RTPESTAB, call,
-		 "%s", sdp_media_name(stream_sdpmedia(strm)));
+	switch (e->pt) {
+
+	case RTCP_SR:
+		if (call->config_avt.rtp_stats)
+			call_set_xrtpstat(call);
+
+		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,
+			 "%s", e->media_name);
+		break;
+
+	case RTCP_APP:
+		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,
+			 "%s", e->media_name);
+		break;
+	}
+
+	mem_deref(e);
+	mem_deref(call);
 }
 
 
@@ -587,24 +660,23 @@ static void stream_rtcp_handler(struct stream *strm,
 				struct rtcp_msg *msg, void *arg)
 {
 	struct call *call = arg;
+	struct stream_event *e;
+	int err;
 
 	MAGIC_CHECK(call);
 
-	switch (msg->hdr.pt) {
+	e = mem_zalloc(sizeof(*e), stream_event_destructor);
+	if (!e)
+		return;
 
-	case RTCP_SR:
-		if (call->config_avt.rtp_stats)
-			call_set_xrtpstat(call);
+	e->call = call;
+	e->pt   = msg->hdr.pt;
+	err = str_dup(&e->media_name, sdp_media_name(stream_sdpmedia(strm)));
+	if (err)
+		return;
 
-		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,
-			 "%s", sdp_media_name(stream_sdpmedia(strm)));
-		break;
-
-	case RTCP_APP:
-		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,
-			 "%s", sdp_media_name(stream_sdpmedia(strm)));
-		break;
-	}
+	mem_ref(call);
+	mqueue_push(call->mq_rtcp, 0, e);
 }
 
 
@@ -906,6 +978,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call->use_rtp = prm->use_rtp;
 	call_decode_sip_autoanswer(call, msg);
 	call_decode_diverter(call, msg);
+	err |= mqueue_alloc(&call->mq_rtpestab, rtpestab_event, call);
+	err |= mqueue_alloc(&call->mq_rtcp, rtcp_event, call);
 
 	err = str_dup(&call->local_uri, local_uri);
 	if (local_name)
