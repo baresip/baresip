@@ -134,109 +134,18 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 }
 
 
-static struct mbuf *encode_obu(uint8_t type, const uint8_t *p, size_t len)
-{
-	struct mbuf *mb = mbuf_alloc(len);
-	const bool has_size = false;  /* NOTE */
-	int err;
-
-	if (!mb)
-		return NULL;
-
-	err = av1_obu_encode(mb, type, has_size, len, p);
-	if (err)
-		return NULL;
-
-	mb->pos = 0;
-
-	return mb;
-}
-
-
-static int copy_obus(struct mbuf *mb_pkt, const uint8_t *buf, size_t size)
-{
-	struct mbuf wrap = {
-		.buf  = (uint8_t *)buf,
-		.size = size,
-		.pos  = 0,
-		.end  = size
-	};
-	int err;
-
-	while (mbuf_get_left(&wrap) >= 2) {
-
-		struct av1_obu_hdr hdr;
-		struct mbuf *mb_obu = NULL;
-
-		err = av1_obu_decode(&hdr, &wrap);
-		if (err) {
-			warning("av1: encode: hdr dec error (%m)\n", err);
-			return err;
-		}
-
-		switch (hdr.type) {
-
-		case OBU_SEQUENCE_HEADER:
-		case OBU_FRAME_HEADER:
-		case OBU_METADATA:
-		case OBU_FRAME:
-		case OBU_REDUNDANT_FRAME_HEADER:
-		case OBU_TILE_LIST:
-#if 1
-			debug("av1: encode: copy [%H]\n", av1_obu_print, &hdr);
-#endif
-
-			mb_obu = encode_obu(hdr.type, mbuf_buf(&wrap),
-					    hdr.size);
-
-			err = av1_leb128_encode(mb_pkt, mb_obu->end);
-			if (err)
-				return err;
-
-			mbuf_write_mem(mb_pkt, mb_obu->buf, mb_obu->end);
-			break;
-
-		case OBU_TEMPORAL_DELIMITER:
-		case OBU_TILE_GROUP:
-		case OBU_PADDING:
-			/* skip */
-			break;
-
-		default:
-			warning("av1: unknown obu type %u\n", hdr.type);
-			break;
-		}
-
-		mbuf_advance(&wrap, hdr.size);
-		mem_deref(mb_obu);
-	}
-
-	return 0;
-}
-
-
 static int packetize_rtp(struct videnc_state *ves, uint64_t rtp_ts,
 			 const uint8_t *buf, size_t size)
 {
-	struct mbuf *mb_pkt;
 	int err;
 
-	mb_pkt = mbuf_alloc(size);
-	if (!mb_pkt)
-		return ENOMEM;
-
-	err = copy_obus(mb_pkt, buf, size);
-	if (err)
-		goto out;
-
-	err = av1_packetize(&ves->new, true, rtp_ts,
-			    mb_pkt->buf, mb_pkt->end, ves->pktsize,
-			    ves->pkth, ves->arg);
+	err = av1_packetize_high(&ves->new, true, rtp_ts,
+				 buf, size, ves->pktsize,
+				 ves->pkth, ves->arg);
 	if (err)
 		goto out;
 
  out:
-	mem_deref(mb_pkt);
 	return err;
 }
 
@@ -300,6 +209,9 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 
 		if (pkt->kind != AOM_CODEC_CX_FRAME_PKT)
 			continue;
+
+		if (pkt->data.frame.flags & AOM_FRAME_IS_KEY)
+			debug("av1: encode: keyframe\n");
 
 		rtp_ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
