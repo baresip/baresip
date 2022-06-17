@@ -135,15 +135,9 @@ void stream_write_cb(pa_stream *s, size_t len, void *arg)
 	void *sampv;
 	int pa_err = 0;
 	size_t sz = len;
-	static uint64_t t0 = 0;
-	uint64_t t;
 
 	if (st->b->shutdown)
 		goto out;
-
-	t = tmr_jiffies_usec();
-	if (!t0)
-		t0 = t;
 
 	pa_err = pa_stream_begin_write(s, &sampv, &sz);
 	if (pa_err || !sampv) {
