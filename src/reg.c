@@ -249,10 +249,7 @@ void reg_unregister(struct reg *reg)
 	if (!reg)
 		return;
 
-	reg->scode = 0;
-	reg->af    = 0;
-
-	reg->sipreg = mem_deref(reg->sipreg);
+	sipreg_unregister(reg->sipreg);
 }
 
 
