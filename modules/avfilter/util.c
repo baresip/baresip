@@ -25,7 +25,7 @@ static int swap_lines(uint8_t *a, uint8_t *b, uint8_t *tmp, size_t size)
 static int reverse_lines(uint8_t *data, int linesize, int count)
 {
 	size_t size = abs(linesize) * sizeof(uint8_t);
-	uint8_t *tmp = malloc(size);
+	uint8_t *tmp = mem_alloc(size, NULL);
 	if (!tmp)
 		return ENOMEM;
 
@@ -35,7 +35,7 @@ static int reverse_lines(uint8_t *data, int linesize, int count)
 			   tmp,
 			   size);
 
-	free(tmp);
+	mem_deref(tmp);
 	return 0;
 }
 
@@ -68,7 +68,7 @@ int avframe_ensure_topdown(AVFrame *frame)
 		break;
 
 	default:
-		/* TODO support more formats */
+		/* XXX support more formats */
 		for (i=0; i<4; i++) {
 
 			if (frame->linesize[i] <0) {
