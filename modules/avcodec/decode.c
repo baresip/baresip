@@ -128,7 +128,7 @@ static int init_decoder(struct viddec_state *st, const char *name)
 
 	st->ctx = avcodec_alloc_context3(st->codec);
 
-	/* TODO: If avcodec_h264dec is h264_mediacodec, extradata needs to
+	/* XXX: If avcodec_h264dec is h264_mediacodec, extradata needs to
            added to context that contains Sequence Parameter Set (SPS) and
 	   Picture Parameter Set (PPS), before avcodec_open2() is called.
 	*/
