@@ -83,6 +83,64 @@ void ua_printf(const struct ua *ua, const char *fmt, ...)
 }
 
 
+static void add_extension(struct ua *ua, const char *extension)
+{
+	struct pl e;
+
+	if (ua->extensionc >= ARRAY_SIZE(ua->extensionv)) {
+		warning("ua: maximum %zu number of SIP extensions\n",
+			ARRAY_SIZE(ua->extensionv));
+		return;
+	}
+
+	pl_set_str(&e, extension);
+
+	ua->extensionv[ua->extensionc++] = e;
+}
+
+
+static int create_register_clients(struct ua *ua)
+{
+	int err = 0;
+
+	/* Register clients */
+	if (uag_cfg() && str_isset(uag_cfg()->uuid))
+		add_extension(ua, "gruu");
+
+	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
+
+		size_t i;
+
+		add_extension(ua, "path");
+		add_extension(ua, "outbound");
+
+		if (!str_isset(uag_cfg()->uuid)) {
+
+			warning("ua: outbound requires valid UUID!\n");
+			err = ENOSYS;
+			goto out;
+		}
+
+		for (i=0; i<ARRAY_SIZE(ua->acc->outboundv); i++) {
+
+			if (ua->acc->outboundv[i] && ua->acc->regint) {
+				err = reg_add(&ua->regl, ua, (int)i+1);
+				if (err)
+					break;
+			}
+		}
+	}
+	else if (ua->acc->regint) {
+		err = reg_add(&ua->regl, ua, 0);
+	}
+
+	add_extension(ua, "replaces");
+
+ out:
+	return err;
+}
+
+
 static int start_register(struct ua *ua, bool fallback)
 {
 	struct account *acc;
@@ -137,6 +195,9 @@ static int start_register(struct ua *ua, bool fallback)
 
 	if (!fallback)
 		ua_event(ua, UA_EVENT_REGISTERING, NULL, NULL);
+
+	if (list_isempty(&ua->regl))
+		create_register_clients(ua);
 
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
 		struct reg *reg = le->data;
@@ -835,64 +896,6 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
  out:
 	mem_deref(desc);
 	mem_deref(call);
-}
-
-
-static void add_extension(struct ua *ua, const char *extension)
-{
-	struct pl e;
-
-	if (ua->extensionc >= ARRAY_SIZE(ua->extensionv)) {
-		warning("ua: maximum %zu number of SIP extensions\n",
-			ARRAY_SIZE(ua->extensionv));
-		return;
-	}
-
-	pl_set_str(&e, extension);
-
-	ua->extensionv[ua->extensionc++] = e;
-}
-
-
-static int create_register_clients(struct ua *ua)
-{
-	int err = 0;
-
-	/* Register clients */
-	if (uag_cfg() && str_isset(uag_cfg()->uuid))
-		add_extension(ua, "gruu");
-
-	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
-
-		size_t i;
-
-		add_extension(ua, "path");
-		add_extension(ua, "outbound");
-
-		if (!str_isset(uag_cfg()->uuid)) {
-
-			warning("ua: outbound requires valid UUID!\n");
-			err = ENOSYS;
-			goto out;
-		}
-
-		for (i=0; i<ARRAY_SIZE(ua->acc->outboundv); i++) {
-
-			if (ua->acc->outboundv[i] && ua->acc->regint) {
-				err = reg_add(&ua->regl, ua, (int)i+1);
-				if (err)
-					break;
-			}
-		}
-	}
-	else if (ua->acc->regint) {
-		err = reg_add(&ua->regl, ua, 0);
-	}
-
-	add_extension(ua, "replaces");
-
- out:
-	return err;
 }
 
 
