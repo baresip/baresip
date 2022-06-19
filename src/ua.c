@@ -193,11 +193,11 @@ static int start_register(struct ua *ua, bool fallback)
 		}
 	}
 
-	if (!fallback)
-		ua_event(ua, UA_EVENT_REGISTERING, NULL, NULL);
-
 	if (list_isempty(&ua->regl))
 		create_register_clients(ua);
+
+	if (!fallback && !list_isempty(&ua->regl))
+		ua_event(ua, UA_EVENT_REGISTERING, NULL, NULL);
 
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
 		struct reg *reg = le->data;
