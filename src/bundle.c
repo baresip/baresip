@@ -50,20 +50,6 @@ void bundle_set_state(struct bundle *bun, enum bundle_state st)
 }
 
 
-/* todo: move to re */
-static inline bool is_rtcp_packet(const struct mbuf *mb)
-{
-	uint8_t pt;
-
-	if (mbuf_get_left(mb) < 2)
-		return false;
-
-	pt = mbuf_buf(mb)[1] & 0x7f;
-
-	return rtp_pt_is_rtcp(pt);
-}
-
-
 int bundle_alloc(struct bundle **bunp)
 {
 	struct bundle *bun;
@@ -367,7 +353,7 @@ static bool udp_helper_recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	}
 #endif
 
-	if (!is_rtcp_packet(mb)) {
+	if (!rtp_is_rtcp_packet(mb)) {
 
 		struct rtp_header hdr;
 
