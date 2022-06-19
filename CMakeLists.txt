@@ -24,6 +24,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 find_package(RE REQUIRED)
 find_package(REM REQUIRED)
 find_package(OpenSSL)
+
+find_package(ALSA)
 find_package(OPUS)
 
 
@@ -135,6 +137,9 @@ add_subdirectory(modules/echo)
 add_subdirectory(modules/menu)
 add_subdirectory(modules/stdio)
 
+if(ALSA_FOUND)
+  add_subdirectory(modules/alsa)
+endif()
 if(OPUS_FOUND)
   add_subdirectory(modules/opus)
 endif()
