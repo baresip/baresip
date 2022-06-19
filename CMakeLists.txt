@@ -24,6 +24,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 find_package(RE REQUIRED)
 find_package(REM REQUIRED)
 find_package(OpenSSL)
+find_package(Threads REQUIRED)
 
 find_package(ALSA)
 find_package(OPUS)
@@ -166,10 +167,13 @@ endif()
 if(STATIC)
   add_library(baresip STATIC ${SRCS})
   target_link_libraries(baresip PUBLIC
-      ${MODULES} ${REM_LIBRARIES} ${RE_LIBRARIES} -lm)
+      ${MODULES} ${REM_LIBRARIES} ${RE_LIBRARIES}
+      ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -lz -lm)
 else()
   add_library(baresip SHARED ${SRCS})
-  target_link_libraries(baresip PRIVATE ${REM_LIBRARIES} ${RE_LIBRARIES} -lm)
+  target_link_libraries(baresip PRIVATE
+      ${REM_LIBRARIES} ${RE_LIBRARIES}
+      ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -lz -lm)
 endif()
 
 set_target_properties(baresip PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -185,4 +189,5 @@ add_executable(baresip_exe src/main.c)
 set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
 target_link_libraries(baresip_exe baresip
-    ${REM_LIBRARIES} ${RE_LIBRARIES} -lz -lm -lpthread)
+    ${REM_LIBRARIES} ${RE_LIBRARIES}
+    ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -lz -lm)
