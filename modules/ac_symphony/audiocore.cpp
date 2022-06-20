@@ -138,7 +138,8 @@ static int aec_resize(struct audiocore_st *st)
 		return 0;
 	}
 
-	st->est->started = true;
+	if (st->est)
+		st->est->started = true;
 
 	if (st->est && st->dst &&
 			( (st->est->prm.srate != st->dst->prm.srate) ||
