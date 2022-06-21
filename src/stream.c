@@ -504,6 +504,7 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 	if (s->rtcph)
 		s->rtcph(s, msg, s->arg);
 
+	/* TODO: thread safe? */
 	if (s->sessrtcph)
 		s->sessrtcph(s, msg, s->sess_arg);
 }
