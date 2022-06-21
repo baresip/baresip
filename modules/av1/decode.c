@@ -107,13 +107,6 @@ static int copy_obu(struct mbuf *mb_bs, const uint8_t *buf, size_t size)
 		return err;
 	}
 
-#if 1
-	debug("av1: decode: copy: size=%4zu  %-20s  [%H]\n",
-	      size,
-	      aom_obu_type_to_string(hdr.type),
-	      av1_obu_print, &hdr);
-#endif
-
 	switch (hdr.type) {
 
 	case OBU_SEQUENCE_HEADER:
