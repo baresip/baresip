@@ -17,6 +17,8 @@ enum {
 struct ua_eh {
 	struct le le;
 	ua_event_h *h;
+	thrd_t thrd;
+	struct mqueue *mqueue;        /**< Message queue for events        */
 	void *arg;
 };
 
@@ -29,6 +31,7 @@ static void eh_destructor(void *arg)
 	struct ua_eh *eh = arg;
 
 	list_unlink(&eh->le);
+	mem_deref(eh->mqueue);
 }
 
 
@@ -254,6 +257,35 @@ int event_add_au_jb_stat(struct odict *od_parent, const struct call *call)
 }
 
 
+struct ua_event_data {
+	struct ua_eh *eh;
+	struct ua *ua;
+	struct call *call;
+	enum ua_event ev;
+	char *body;
+};
+
+
+static void ua_event_data_destructor(void *arg)
+{
+	struct ua_event_data *d = arg;
+
+	mem_deref(d->body);
+}
+
+
+static void send_event(int id, void *data, void *arg)
+{
+	struct ua_event_data *d = data;
+	(void) arg;
+	(void) id;
+
+	d->eh->h(d->ua, d->ev, d->call, d->body, d->eh->arg);
+
+	mem_deref(d);
+}
+
+
 /**
  * Register a User-Agent event handler
  *
@@ -277,6 +309,8 @@ int uag_event_register(ua_event_h *h, void *arg)
 
 	eh->h = h;
 	eh->arg = arg;
+	eh->thrd = thrd_current();
+	mqueue_alloc(&eh->mqueue, send_event, NULL);
 
 	list_append(&ehl, &eh->le, eh);
 
@@ -305,6 +339,29 @@ void uag_event_unregister(ua_event_h *h)
 }
 
 
+static struct ua_event_data *ua_event_data_alloc(struct ua_eh *eh,
+		struct ua *ua, enum ua_event ev, struct call *call,
+		const char *body)
+{
+	struct ua_event_data *ed;
+	int err;
+
+	ed = mem_zalloc(sizeof(*ed), ua_event_data_destructor);
+	if (!ed)
+		return NULL;
+
+	ed->ua   = ua;
+	ed->call = call;
+	ed->ev   = ev;
+	ed->eh   = eh;
+	err = str_dup(&ed->body, body);
+	if (err)
+		return NULL;
+
+	return ed;
+}
+
+
 /**
  * Send a User-Agent event to all UA event handlers
  *
@@ -329,9 +386,20 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	le = ehl.head;
 	while (le) {
 		struct ua_eh *eh = le->data;
+		struct ua_event_data *ed;
 		le = le->next;
 
-		eh->h(ua, ev, call, buf, eh->arg);
+		if (thrd_current() != eh->thrd) {
+			if (!eh->mqueue)
+				continue;
+
+			ed = ua_event_data_alloc(eh, ua, ev, call, buf);
+			if (ed)
+				mqueue_push(eh->mqueue, 0, ed);
+		}
+		else {
+			eh->h(ua, ev, call, buf, eh->arg);
+		}
 	}
 }
 
@@ -376,9 +444,21 @@ void module_event(const char *module, const char *event, struct ua *ua,
 	le = ehl.head;
 	while (le) {
 		struct ua_eh *eh = le->data;
+		struct ua_event_data *ed;
+		enum ua_event ev = UA_EVENT_MODULE;
 		le = le->next;
 
-		eh->h(ua, UA_EVENT_MODULE, call, buf, eh->arg);
+		if (thrd_current() != eh->thrd) {
+			if (!eh->mqueue)
+				continue;
+
+			ed = ua_event_data_alloc(eh, ua, ev, call, buf);
+			if (ed)
+				mqueue_push(eh->mqueue, 0, ed);
+		}
+		else {
+			eh->h(ua, ev, call, buf, eh->arg);
+		}
 	}
 
 out:
