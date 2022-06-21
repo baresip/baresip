@@ -137,6 +137,7 @@ static void *read_thread(void *data)
 				}
 
 				offset = tmr_jiffies();
+				auts = vidts = 0;
 				break;
 			}
 			else if (ret < 0) {
