@@ -61,7 +61,6 @@
  * Copyright (C) 2020 commend.com - Christian Spielberger
  */
 
-#include <pthread.h>
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
