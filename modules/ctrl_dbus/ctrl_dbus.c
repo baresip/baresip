@@ -65,6 +65,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <re.h>
+#include <re_atomic.h>
 #include <baresip.h>
 #include "baresipbus.h"
 
@@ -76,9 +77,9 @@
 
 
 struct ctrl_st {
-	pthread_t tid;              /**< Thread ID of main loop  */
+	thrd_t thrd;                /**< Thread for GMainLoop    */
 	GMainLoop *loop;            /**< Main loop               */
-	bool run;                   /**< Main loop run flag      */
+	RE_ATOMIC bool run;         /**< Main loop run flag      */
 
 	guint bus_owner;            /**< Handle of dbus owner    */
 	DBusBaresip *interface;     /**< dbus interface          */
@@ -88,8 +89,8 @@ struct ctrl_st {
 	struct mbuf *mb;            /**< Command response buffer             */
 
 	struct {
-		pthread_mutex_t mutex;
-		pthread_cond_t cond;
+		mtx_t mtx;
+		cnd_t cnd;
 	} wait;
 };
 
@@ -138,10 +139,10 @@ static void command_handler(int id, void *data, void *arg)
 	mbuf_set_pos(st->mb, 0);
 
 out:
-	pthread_mutex_lock(&st->wait.mutex);
+	mtx_lock(&st->wait.mtx);
 	st->command = mem_deref(st->command);
-	pthread_cond_signal(&st->wait.cond);
-	pthread_mutex_unlock(&st->wait.mutex);
+	cnd_signal(&st->wait.cnd);
+	mtx_unlock(&st->wait.mtx);
 }
 
 
@@ -157,12 +158,12 @@ on_handle_invoke(DBusBaresip *interface,
 
 	str_dup(&st->command, command);
 
-	pthread_mutex_lock(&st->wait.mutex);
+	mtx_lock(&st->wait.mtx);
 	err = mqueue_push(st->mqueue, 0, NULL);
 	if (!err)
-		pthread_cond_wait(&st->wait.cond, &st->wait.mutex);
+		cnd_wait(&st->wait.cnd, &st->wait.mtx);
 
-	pthread_mutex_unlock(&st->wait.mutex);
+	mtx_unlock(&st->wait.mtx);
 
 	if (!err && st->mb) {
 		err = mbuf_strdup(st->mb, &response, mbuf_get_left(st->mb));
@@ -283,7 +284,7 @@ static void ctrl_destructor(void *arg)
 	if (st->run) {
 		st->run = false;
 		g_main_loop_quit(st->loop);
-		pthread_join(st->tid, NULL);
+		thrd_join(st->thrd, NULL);
 	}
 
 	if (st == m_st)
@@ -298,20 +299,20 @@ static void ctrl_destructor(void *arg)
 
 	g_main_loop_unref(st->loop);
 
-	pthread_mutex_destroy(&st->wait.mutex);
-	pthread_cond_destroy(&st->wait.cond);
+	mtx_destroy(&st->wait.mtx);
+	cnd_destroy(&st->wait.cnd);
 	mem_deref(st->mqueue);
 }
 
 
-static void *thread(void *arg)
+static int thread(void *arg)
 {
 	struct ctrl_st *st = arg;
 
 	while (st->run)
 		g_main_loop_run(st->loop);
 
-	return NULL;
+	return 0;
 }
 
 
@@ -327,8 +328,8 @@ static int ctrl_alloc(struct ctrl_st **stp)
 	if (!st)
 		return ENOMEM;
 
-	pthread_mutex_init(&st->wait.mutex, NULL);
-	pthread_cond_init(&st->wait.cond, NULL);
+	mtx_init(&st->wait.mtx, mtx_plain);
+	cnd_init(&st->wait.cnd);
 
 	st->loop = g_main_loop_new(NULL, false);
 	if (!st->loop) {
@@ -341,7 +342,7 @@ static int ctrl_alloc(struct ctrl_st **stp)
 		goto out;
 
 	st->run = true;
-	err = pthread_create(&st->tid, NULL, thread, st);
+	err = thrd_create(&st->thrd, thread, st);
 	if (err)
 		st->run = false;
 
