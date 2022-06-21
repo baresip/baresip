@@ -1472,8 +1472,7 @@ static int rx_frame_read(struct aurx *rx, struct auframe *af)
 		return EINVAL;
 
 	if (size != rx->fsize) {
-		rx->sampvf = mem_deref(rx->sampvf);
-		rx->sampvf = mem_zalloc(size, NULL);
+		rx->sampvf = mem_realloc(rx->sampvf, size);
 		if (rx->sampvf)
 			rx->fsize = size;
 		else
