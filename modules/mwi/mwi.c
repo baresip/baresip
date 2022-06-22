@@ -155,13 +155,14 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		    (str_casecmp(account_mwi(acc), "yes") == 0))
 			mwi_subscribe(ua);
 	}
-	else if (ev == UA_EVENT_SHUTDOWN) {
+	else if (ev == UA_EVENT_SHUTDOWN || ev == UA_EVENT_UNREGISTERING) {
 
 		struct mwi *mwi = mwi_find(ua);
 
 		if (mwi) {
 
 			info("mwi: shutdown of %s\n", account_aor(acc));
+
 			mwi->shutdown = true;
 
 			if (mwi->sub) {
