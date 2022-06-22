@@ -210,8 +210,10 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 		if (pkt->kind != AOM_CODEC_CX_FRAME_PKT)
 			continue;
 
-		if (pkt->data.frame.flags & AOM_FRAME_IS_KEY)
+		if (pkt->data.frame.flags & AOM_FRAME_IS_KEY) {
+			ves->new = true;
 			debug("av1: encode: keyframe\n");
+		}
 
 		rtp_ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
