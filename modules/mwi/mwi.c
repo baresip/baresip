@@ -155,7 +155,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		    (str_casecmp(account_mwi(acc), "yes") == 0))
 			mwi_subscribe(ua);
 	}
-	else if (ev == UA_EVENT_SHUTDOWN || ev == UA_EVENT_UNREGISTERING) {
+	else if (ev == UA_EVENT_SHUTDOWN ||
+		 (ev == UA_EVENT_UNREGISTERING &&
+		  str_cmp(account_sipnat(acc), "outbound") == 0)) {
 
 		struct mwi *mwi = mwi_find(ua);
 
