@@ -28,6 +28,7 @@ find_package(Threads REQUIRED)
 
 find_package(ALSA)
 find_package(OPUS)
+find_package(PULSE)
 
 
 ##############################################################################
@@ -143,6 +144,10 @@ if(ALSA_FOUND)
 endif()
 if(OPUS_FOUND)
   add_subdirectory(modules/opus)
+endif()
+if(PULSE_FOUND)
+  add_subdirectory(modules/pulse)
+  add_subdirectory(modules/pulse_async)
 endif()
 
 
