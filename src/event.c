@@ -389,16 +389,16 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 		struct ua_event_data *ed;
 		le = le->next;
 
-		if (thrd_current() != eh->thrd) {
+		if (thrd_equal(thrd_current(), eh->thrd)) {
+			eh->h(ua, ev, call, buf, eh->arg);
+		}
+		else {
 			if (!eh->mqueue)
 				continue;
 
 			ed = ua_event_data_alloc(eh, ua, ev, call, buf);
 			if (ed)
 				mqueue_push(eh->mqueue, 0, ed);
-		}
-		else {
-			eh->h(ua, ev, call, buf, eh->arg);
 		}
 	}
 }
@@ -448,16 +448,16 @@ void module_event(const char *module, const char *event, struct ua *ua,
 		enum ua_event ev = UA_EVENT_MODULE;
 		le = le->next;
 
-		if (thrd_current() != eh->thrd) {
+		if (thrd_equal(thrd_current(), eh->thrd)) {
+			eh->h(ua, ev, call, buf, eh->arg);
+		}
+		else {
 			if (!eh->mqueue)
 				continue;
 
 			ed = ua_event_data_alloc(eh, ua, ev, call, buf);
 			if (ed)
 				mqueue_push(eh->mqueue, 0, ed);
-		}
-		else {
-			eh->h(ua, ev, call, buf, eh->arg);
 		}
 	}
 
