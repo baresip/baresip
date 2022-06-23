@@ -86,6 +86,7 @@ struct ctrl_st {
 
 	char *command;              /**< Current command                     */
 	struct mqueue *mqueue;      /**< Command queue                       */
+	struct mqueue *mqev;        /**< Module event sender queue           */
 	struct mbuf *mb;            /**< Command response buffer             */
 
 	struct {
@@ -146,6 +147,31 @@ out:
 }
 
 
+struct modev {
+	char *event;
+	char *txt;
+};
+
+
+static void modev_destructor(void *arg)
+{
+	struct modev *d = arg;
+
+	mem_deref(d->event);
+	mem_deref(d->txt);
+}
+
+
+static void send_event(int id, void *data, void *arg)
+{
+	struct modev *modev = data;
+	(void)arg;
+
+	module_event("ctrl_dbus", modev->event, NULL, NULL, modev->txt);
+	mem_deref(modev);
+}
+
+
 static gboolean
 on_handle_invoke(DBusBaresip *interface,
 		GDBusMethodInvocation *invocation,
@@ -181,14 +207,6 @@ on_handle_invoke(DBusBaresip *interface,
 	}
 
 	return true;
-}
-
-
-static int send_event(struct ctrl_st *st, const char *eclass,
-		const char *etype, const char *param) {
-
-	dbus_baresip_emit_event(st->interface, eclass, etype, param);
-	return 0;
 }
 
 
@@ -229,7 +247,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	mbuf_write_u8(buf, 0);
 	mbuf_set_pos(buf, 0);
-	send_event(st, class ? class : "other", etype,
+	dbus_baresip_emit_event(st->interface, class ? class : "other", etype,
 			(const char *) mbuf_buf(buf));
 
  out:
@@ -302,6 +320,7 @@ static void ctrl_destructor(void *arg)
 	mtx_destroy(&st->wait.mtx);
 	cnd_destroy(&st->wait.cnd);
 	mem_deref(st->mqueue);
+	mem_deref(st->mqev);
 }
 
 
@@ -337,7 +356,8 @@ static int ctrl_alloc(struct ctrl_st **stp)
 		goto out;
 	}
 
-	err = mqueue_alloc(&st->mqueue, command_handler, st);
+	err  = mqueue_alloc(&st->mqueue, command_handler, st);
+	err |= mqueue_alloc(&st->mqev, send_event, st);
 	if (err)
 		goto out;
 
@@ -361,6 +381,9 @@ on_name_acquired(GDBusConnection *connection, const gchar *name, gpointer arg)
 {
 	GError *error;
 	struct ctrl_st *st = arg;
+	struct modev *modev;
+	const char fmt[] = "dbus interface %s exported";
+	size_t s;
 
 	st->interface = dbus_baresip_skeleton_new();
 	g_signal_connect (st->interface, "handle-invoke",
@@ -374,8 +397,14 @@ on_name_acquired(GDBusConnection *connection, const gchar *name, gpointer arg)
 	}
 
 	info("ctrl_dbus: dbus interface %s exported\n", name);
-	module_event("ctrl_dbus", "exported", NULL, NULL,
-			"dbus interface %s exported", name);
+
+	s = str_len(name) + sizeof(fmt);
+	modev = mem_zalloc(sizeof(*modev), modev_destructor);
+	modev->txt = mem_zalloc(s, NULL);
+	str_dup(&modev->event, "exported");
+	re_snprintf(modev->txt, s, fmt, name);
+
+	(void)mqueue_push(st->mqev, 0, modev);
 }
 
 
