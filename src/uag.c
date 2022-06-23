@@ -3,10 +3,6 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
-#ifdef HAVE_SYS_TIME_H
-#define _POSIX_C_SOURCE 200809L
-#include <time.h>
-#endif
 
 #include <string.h>
 #include <re.h>
@@ -504,38 +500,16 @@ static void sip_trace_handler(bool tx, enum sip_transp tp,
 			      const struct sa *src, const struct sa *dst,
 			      const uint8_t *pkt, size_t len, void *arg)
 {
-	int h, m, s;
-	uint64_t ms;
-
-#ifdef WIN32
-	SYSTEMTIME st;
-	GetSystemTime(&st);
-	ms = st.wMilliseconds;
-	h  = st.wHour;
-	m  = st.wMinute;
-	s  = st.wSecond;
-#else
-	struct timespec ts;
-	struct tm* local;
-
-	(void)clock_gettime(CLOCK_REALTIME, &ts);
-	ms = ts.tv_nsec / 1000000;
-	local = localtime(&ts.tv_sec);
-	h = local->tm_hour;
-	m = local->tm_min;
-	s = local->tm_sec;
-#endif
-
 	(void)tx;
 	(void)arg;
 
 	re_printf("\x1b[36;1m"
-		  "%02d:%02d:%02d.%03d#\n"
+		  "%H#\n"
 		  "%s %J -> %J\n"
 		  "%b"
 		  "\x1b[;m\n"
 		  ,
-		  h, m, s, ms,
+		  fmt_timestamp, NULL,
 		  sip_transp_name(tp), src, dst, pkt, len);
 }
 
