@@ -160,7 +160,7 @@ on_handle_invoke(DBusBaresip *interface,
 
 	mtx_lock(&st->wait.mtx);
 	err = mqueue_push(st->mqueue, 0, NULL);
-	if (!err)
+	while (!err && st->command)
 		cnd_wait(&st->wait.cnd, &st->wait.mtx);
 
 	mtx_unlock(&st->wait.mtx);
