@@ -85,8 +85,7 @@ struct ctrl_st {
 	DBusBaresip *interface;     /**< dbus interface          */
 
 	char *command;              /**< Current command                     */
-	struct mqueue *mqueue;      /**< Command queue                       */
-	struct mqueue *mqev;        /**< Module event sender queue           */
+	struct mqueue *mqueue;      /**< Queue processed in main thread      */
 	struct mbuf *mb;            /**< Command response buffer             */
 
 	struct {
@@ -105,7 +104,7 @@ static int print_handler(const char *p, size_t size, void *arg)
 }
 
 
-static void command_handler(int id, void *data, void *arg)
+static void command_handler(void *data, void *arg)
 {
 	struct ctrl_st *st = arg;
 
@@ -162,13 +161,28 @@ static void modev_destructor(void *arg)
 }
 
 
-static void send_event(int id, void *data, void *arg)
+static void send_event(void *data, void *arg)
 {
 	struct modev *modev = data;
 	(void)arg;
 
 	module_event("ctrl_dbus", modev->event, NULL, NULL, modev->txt);
 	mem_deref(modev);
+}
+
+
+static void queue_handler(int id, void *data, void *arg)
+{
+	switch (id) {
+		case 0:
+			command_handler(data, arg);
+			break;
+		case 1:
+			send_event(data, arg);
+			break;
+		default:
+			break;
+	}
 }
 
 
@@ -320,7 +334,6 @@ static void ctrl_destructor(void *arg)
 	mtx_destroy(&st->wait.mtx);
 	cnd_destroy(&st->wait.cnd);
 	mem_deref(st->mqueue);
-	mem_deref(st->mqev);
 }
 
 
@@ -356,8 +369,7 @@ static int ctrl_alloc(struct ctrl_st **stp)
 		goto out;
 	}
 
-	err  = mqueue_alloc(&st->mqueue, command_handler, st);
-	err |= mqueue_alloc(&st->mqev, send_event, st);
+	err  = mqueue_alloc(&st->mqueue, queue_handler, st);
 	if (err)
 		goto out;
 
@@ -404,7 +416,7 @@ on_name_acquired(GDBusConnection *connection, const gchar *name, gpointer arg)
 	str_dup(&modev->event, "exported");
 	re_snprintf(modev->txt, s, fmt, name);
 
-	(void)mqueue_push(st->mqev, 0, modev);
+	(void)mqueue_push(st->mqueue, 1, modev);
 }
 
 
