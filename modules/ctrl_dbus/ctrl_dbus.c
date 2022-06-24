@@ -395,7 +395,7 @@ on_name_acquired(GDBusConnection *connection, const gchar *name, gpointer arg)
 	struct ctrl_st *st = arg;
 	struct modev *modev;
 	const char fmt[] = "dbus interface %s exported";
-	size_t s;
+	int err;
 
 	st->interface = dbus_baresip_skeleton_new();
 	g_signal_connect (st->interface, "handle-invoke",
@@ -410,11 +410,14 @@ on_name_acquired(GDBusConnection *connection, const gchar *name, gpointer arg)
 
 	info("ctrl_dbus: dbus interface %s exported\n", name);
 
-	s = str_len(name) + sizeof(fmt);
 	modev = mem_zalloc(sizeof(*modev), modev_destructor);
-	modev->txt = mem_zalloc(s, NULL);
-	str_dup(&modev->event, "exported");
-	re_snprintf(modev->txt, s, fmt, name);
+	if (!modev)
+		return;
+
+	err  = str_dup(&modev->event, "exported");
+	err |= re_sdprintf(&modev->txt, fmt, name);
+	if (err)
+		return;
 
 	(void)mqueue_push(st->mqueue, 1, modev);
 }
