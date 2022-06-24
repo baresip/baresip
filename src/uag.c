@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
+
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
@@ -503,11 +504,12 @@ static void sip_trace_handler(bool tx, enum sip_transp tp,
 	(void)arg;
 
 	re_printf("\x1b[36;1m"
-		  "#\n"
+		  "%H#\n"
 		  "%s %J -> %J\n"
 		  "%b"
 		  "\x1b[;m\n"
 		  ,
+		  fmt_timestamp, NULL,
 		  sip_transp_name(tp), src, dst, pkt, len);
 }
 
