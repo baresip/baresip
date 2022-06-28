@@ -3,10 +3,15 @@ if(PKG_CONFIG_FOUND)
   pkg_check_modules(PC_AOM aom QUIET)
 endif()
 
-find_path(AOM_INCLUDE_DIR NAMES aom/aom.h
-          PATHS ${PC_AOM_INCLUDEDIR})
-find_library(AOM_LIBRARY NAMES aom libaomf
-             PATHS ${PC_AOM_LIBDIR})
+find_path(AOM_INCLUDE_DIR
+  NAMES aom/aom.h
+  PATHS ${PC_AOM_INCLUDEDIR}
+)
+
+find_library(AOM_LIBRARY
+  NAMES aom libaomf
+  PATHS ${PC_AOM_LIBDIR}
+)
 
 set(AOM_VERSION ${PC_AOM_VERSION})
 
