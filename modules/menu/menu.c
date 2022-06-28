@@ -606,6 +606,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		   established */
 		redial_reset();
 		uag_hold_others(call);
+
+		if (call_need_reinvite(call))
+			call_modify(call);
 		break;
 
 	case UA_EVENT_CALL_CLOSED:

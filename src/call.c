@@ -1270,6 +1270,20 @@ out:
 }
 
 
+bool call_need_reinvite(const struct call *call)
+{
+	enum sdp_dir adir;
+	enum sdp_dir vdir;
+
+	if (!call)
+		return false;
+
+	adir = stream_ldir(audio_strm(call_audio(call)));
+	vdir = stream_ldir(video_strm(call_video(call)));
+	return adir != call->ansadir || vdir != call->ansvdir;
+}
+
+
 /**
  * Answer an incoming call
  *
@@ -1303,7 +1317,6 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	if (call->got_offer) {
 
-		call_set_media_direction(call, call->ansadir, call->ansvdir);
 		err = update_media(call);
 		if (err)
 			return err;
