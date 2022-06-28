@@ -1,23 +1,23 @@
 /**
  * @file audiocore.c  Commend Acoustic Echo Cancellation and Noise Reduction
  *
- * Copyright (C) 2018 Commend International
+ * Copyright (C) 2022 Commend.com - h.ramoser@commend.com
  */
-#include "audiocore.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <alsa/asoundlib.h>
 #include <audiocore_cwrapper.h>
-#include <re/re.h>
-#include <rem/rem.h>
+#include <re.h>
+#include <rem.h>
 #include <baresip.h>
-
+#include <pthread.h>
+#include "alsa_audiocore.h"
 
 
 #define send_event(A, B, C, ...) \
 	ua_event(NULL, UA_EVENT_CUSTOM, NULL, A " " B " " C, __VA_ARGS__)
-
 
 /**
  * @defgroup commend_audiocore_aec commend_audiocore_aec
@@ -30,6 +30,34 @@ enum eqFilter {
 	EQ_FILTER_HIGH_SHELV,
 	EQ_FILTER_LOW_SHELV,
 };
+
+typedef struct {
+	float	release_time;
+	float	attack_time;
+	float	hold_time;
+	float	closed_gain;
+	float	open_threshold;
+	float	close_threshold;
+} noisegate_parameter;
+
+typedef struct {
+	float	release_time;
+	float	attack_time;
+	float	hold_open_time;
+	float	hold_closed_time;
+	float	closed_gain;
+	float	open_threshold;
+	float	close_threshold;
+	float	tau;
+} postgain_parameter;
+
+typedef struct {
+	float gain;
+	float thresh_lo;
+	float thresh_hi;
+	float noise_gain;
+	bool use_noise_gain;
+} compressor_parameter;
 
 struct audiocore_st {
 	int size_delay;
@@ -50,6 +78,7 @@ struct audiocore_st {
 	int out;
 	int delay_ms;
 	int tail_length_ms;
+	int tail_offset_ms;
 	int startup;
 	int skipcount;
 	compressor_parameter ls_compressor;
@@ -74,6 +103,7 @@ struct audiocore_st {
 	int idleAudio_enabled;
 
 	bool ws_filter_enabled;
+	bool mic480_filter_enabled;
 	bool et962_filter_enabled;
 	eq_config_handle mic_eq_config;
 	eq_config_handle ls_eq_config;
@@ -91,18 +121,7 @@ struct audiocore_st {
 	uint32_t call_count;
 };
 
-struct enc_st {
-	struct aufilt_enc_st af;  /* base class */
-	struct audiocore_st *st;
-};
-
-struct dec_st {
-	struct aufilt_dec_st af;  /* base class */
-	struct audiocore_st *st;
-};
-
 struct audiocore_st *d = NULL;
-static int audiocore_init(struct audiocore_st* st);
 
 /**
  * @defgroup commend_commands commend_commands
@@ -192,11 +211,11 @@ static int com_set_echo_cancellation(struct re_printf *pf, void *arg)
 				d->echo_cancellation);
 
 	if (err) {
-		warning("audiocore: setting echo cancellation failed: %m\n",
-				err);
+		warning("alsa_audiocore: setting echo cancellation "
+				"failed: %m\n",	err);
 	}
 	else {
-		debug("audiocore: echo cancellation set to %d\n",
+		debug("alsa_audiocore: echo cancellation set to %d\n",
 				d->echo_cancellation);
 	}
 
@@ -240,11 +259,11 @@ static int com_en_noise_suppression(struct re_printf *pf, void *arg)
 				d->noise_suppression_enabled);
 
 	if (err) {
-		warning("audiocore: enabling noise suppression failed: %m\n",
-				err);
+		warning("alsa_audiocore: enabling noise suppression "
+				"failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: noise suppression enabled set to %d\n",
+		debug("alsa_audiocore: noise suppression enabled set to %d\n",
 				d->noise_suppression_enabled);
 	}
 
@@ -286,10 +305,10 @@ static int com_set_ivc(struct re_printf *pf, void *arg)
 		setIVC(d->audiocore, d->ivc_enabled);
 
 	if (err) {
-		warning("audiocore: setting IVC failed: %m\n", err);
+		warning("alsa_audiocore: setting IVC failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: IVC set to %d\n",
+		debug("alsa_audiocore: IVC set to %d\n",
 				d->ivc_enabled);
 	}
 
@@ -333,10 +352,11 @@ static int com_en_noise_gate(struct re_printf *pf, void *arg)
 				d->noise_gate_enabled);
 
 	if (err) {
-		warning("audiocore: enabling noise gate failed: %m\n", err);
+		warning("alsa_audiocore: enabling noise gate "
+				"failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: noise gate enabled set to %d\n",
+		debug("alsa_audiocore: noise gate enabled set to %d\n",
 				d->noise_gate_enabled);
 	}
 
@@ -380,10 +400,10 @@ static int com_en_postgain(struct re_printf *pf, void *arg)
 				d->postgain_enabled);
 
 	if (err) {
-		warning("audiocore: enabling postgain failed: %m\n", err);
+		warning("alsa_audiocore: enabling postgain failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: postgain enabled set to %d\n",
+		debug("alsa_audiocore: postgain enabled set to %d\n",
 				d->postgain_enabled);
 	}
 
@@ -417,10 +437,10 @@ static int com_en_rec(struct re_printf *pf, void *arg)
 				d->rec_enabled);
 
 	if (err) {
-		warning("audiocore: enabling rec failed: %m\n", err);
+		warning("alsa_audiocore: enabling rec failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: rec enabled set to %d\n",
+		debug("alsa_audiocore: rec enabled set to %d\n",
 				d->rec_enabled);
 	}
 
@@ -464,10 +484,11 @@ static int com_set_debug_mode(struct re_printf *pf, void *arg)
 				d->debug_enable);
 
 	if (err) {
-		warning("audiocore: enabling debug mode failed: %m\n", err);
+		warning("alsa_audiocore: enabling debug mode "
+				"failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: debug mode set to %d\n",
+		debug("alsa_audiocore: debug mode set to %d\n",
 				d->debug_enable);
 	}
 
@@ -512,10 +533,11 @@ static int com_set_volume_level(struct re_printf *pf, void *arg)
 				d->volume_level);
 
 	if (err) {
-		warning("audiocore: setting volume level failed: %m\n", err);
+		warning("alsa_audiocore: setting volume level "
+				"failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: volume level set to %d\n",
+		debug("alsa_audiocore: volume level set to %d\n",
 				d->volume_level);
 	}
 
@@ -560,11 +582,11 @@ static int com_set_noise_suppression(struct re_printf *pf, void *arg)
 				d->noise_suppression);
 
 	if (err) {
-		warning("audiocore: setting noise suppression failed: %m\n",
-				err);
+		warning("alsa_audiocore: setting noise suppression "
+				"failed: %m\n",	err);
 	}
 	else {
-		debug("audiocore: noise suppression set to %d\n",
+		debug("alsa_audiocore: noise suppression set to %d\n",
 				d->noise_suppression);
 	}
 
@@ -609,12 +631,12 @@ static int com_set_noise_suppression_rec_scale(struct re_printf *pf, void *arg)
 				d->noise_suppression_rec_scale);
 
 	if (err) {
-		warning("audiocore: setting noise suppression failed: %m\n",
-				err);
+		warning("alsa_audiocore: setting noise suppression "
+				"failed: %m\n",	err);
 	}
 	else {
-		debug("audiocore: noise suppression rec scale set to %f\n",
-				d->noise_suppression_rec_scale);
+		debug("alsa_audiocore: noise suppression rec scale "
+				"set to %f\n", d->noise_suppression_rec_scale);
 	}
 
 	return err;
@@ -658,11 +680,11 @@ static int com_set_microphone_compressor_gain(struct re_printf *pf, void *arg)
 				d->mic_compressor.gain);
 
 	if (err) {
-		warning("audiocore: setting microphone compressor gain failed "
-				"(%m)\n", err);
+		warning("alsa_audiocore: setting microphone compressor "
+				"gain failed (%m)\n", err);
 	}
 	else {
-		debug("audiocore: microphone compressor gain set to %d\n",
+		debug("alsa_audiocore: microphone compressor gain set to %d\n",
 				d->mic_compressor.gain);
 	}
 
@@ -737,11 +759,12 @@ static int com_set_microphone_compressor(struct re_printf *pf, void *arg)
 				audiocoreMC->noise_gain);
 
 	if (err) {
-		warning("audiocore: setting microphone compressor failed "
+		warning("alsa_audiocore: setting microphone compressor failed "
 				"(%m)\n", err);
 	}
 	else {
-		debug("audiocore: microphone compressor set to mc_gain is %f "
+		debug("alsa_audiocore: microphone compressor set to mc_gain is"
+				" %f "
 				"mc_thresh_lo is %f "
 				"mc_thresh_hi is %f mc_noise_gain is %f "
 				"mc_use_noise_gain is %d\n",
@@ -793,11 +816,11 @@ static int com_set_microphone_post_gain(struct re_printf *pf, void *arg)
 				d->mic_post_gain);
 
 	if (err) {
-		warning("audiocore: setting microphone post gain failed: %m\n",
-				err);
+		warning("alsa_audiocore: setting microphone post gain "
+				"failed: %m\n",	err);
 	}
 	else {
-		debug("audiocore: microphone post gain set to %d\n",
+		debug("alsa_audiocore: microphone post gain set to %d\n",
 				d->mic_post_gain);
 	}
 
@@ -841,12 +864,12 @@ static int com_set_loudspeaker_compressor_gain(struct re_printf *pf, void *arg)
 				d->ls_compressor.gain);
 
 	if (err) {
-		warning("audiocore: setting loudspeaker compressor gain failed"
-				" (%m)\n", err);
+		warning("alsa_audiocore: setting loudspeaker compressor gain "
+				"failed (%m)\n", err);
 	}
 	else {
-		debug("audiocore: loudspeaker compressor gain set to %d\n",
-				d->ls_compressor.gain);
+		debug("alsa_audiocore: loudspeaker compressor gain set "
+				"to %d\n", d->ls_compressor.gain);
 	}
 
 	return err;
@@ -920,11 +943,12 @@ static int com_set_set_loudspeaker_compressor(struct re_printf *pf, void *arg)
 				audiocoreLC->noise_gain);
 
 	if (err) {
-		warning("audiocore: setting loudspeaker compressor failed "
-				"(%m)\n", err);
+		warning("alsa_audiocore: setting loudspeaker compressor "
+				"failed (%m)\n", err);
 	}
 	else {
-		debug("audiocore: loudspeaker compressor set to lc_gain is %f "
+		debug("alsa_audiocore: loudspeaker compressor set to lc_gain "
+				"is %f "
 				"lc_thresh_lo is %f "
 				"lc_thresh_hi is %f lc_noise_gain is %f "
 				"lc_use_noise_gain is %d\n",
@@ -1005,11 +1029,12 @@ static int com_set_noise_gate(struct re_printf *pf, void *arg)
 				audiocoreNG->close_threshold);
 
 	if (err) {
-		warning("audiocore: setting noise gate failed: %m\n",
+		warning("alsa_audiocore: setting noise gate failed: %m\n",
 				err);
 	}
 	else {
-		debug("audiocore: noise gate set to ng_release_time is %f "
+		debug("alsa_audiocore: noise gate set to ng_release_time "
+				"is %f "
 				"ng_attack_time is %f "
 				"ng_hold_time is %f ng_closed_gain is %f "
 				"ng_open_threshold is %f "
@@ -1102,11 +1127,11 @@ static int com_set_postgain(struct re_printf *pf, void *arg)
 				audiocorePG->tau);
 
 	if (err) {
-		warning("audiocore: setting noise gate failed: %m\n",
+		warning("alsa_audiocore: setting noise gate failed: %m\n",
 				err);
 	}
 	else {
-		debug("audiocore: postgain set to pg_release_time is %f "
+		debug("alsa_audiocore: postgain set to pg_release_time is %f "
 				"pg_attack_time is %f "
 				"pg_hold_open_time is %f "
 				"hold_closed_time is %f "
@@ -1278,12 +1303,61 @@ static int com_set_ws_filter(struct re_printf *pf, void *arg)
 				d->ws_filter_enabled);
 
 	if (err) {
-		warning("audiocore: setting WS microphone filter failed: %m\n",
-				err);
+		warning("alsa_audiocore: setting WS microphone filter "
+				"failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: WS microphone filter set to %d\n",
+		debug("alsa_audiocore: WS microphone filter set to %d\n",
 				d->ws_filter_enabled);
+	}
+
+	return err;
+}
+
+/**
+ * Set audiocore microphone filter for MIC480 microphones
+ *
+ * @param pf           Print handler for debug output
+ * @param arg          Command argument
+ *
+ * @return      0              if success
+ *                     -1              failed to cast given arguments
+ *                     EINVAL  audiocore not initialized
+*/
+static int com_set_mic480_filter(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	bool value;
+	int err = 0;
+
+	if (d == NULL)
+		return EINVAL;
+
+	if (str_isset(carg->prm)) {
+		if (str_bool(&value, carg->prm) == 0) {
+			d->mic480_filter_enabled = value;
+		}
+		else {
+			err = -1;
+		}
+	}
+	else {
+		re_hprintf(pf, "MIC480 microphone filter is %d",
+					d->mic480_filter_enabled);
+	}
+
+	/*Set value on the fly if audiocore is active */
+	if (!err && d->audiocore)
+		err = enableMic480Equalizer(d->audiocore,
+				d->mic480_filter_enabled);
+
+	if (err) {
+		warning("audiocore: setting MIC480 microphone filter "
+				"failed: %m\n", err);
+	}
+	else {
+		debug("audiocore: MIC480 microphone filter set to %d\n",
+				d->mic480_filter_enabled);
 	}
 
 	return err;
@@ -1291,7 +1365,7 @@ static int com_set_ws_filter(struct re_printf *pf, void *arg)
 
 
 /**
- * Set audiocore microphone filter for ET962/ET970 devices
+ * Set audiocore loudspeaker filter for ET962/ET970 devices
  *
  * @param pf		Print handler for debug output
  * @param arg		Command argument
@@ -1318,7 +1392,7 @@ static int com_set_et962_filter(struct re_printf *pf, void *arg)
 		}
 	}
 	else {
-		re_hprintf(pf, "ET962 microphone filter is %d",
+		re_hprintf(pf, "ET962 loudspeaker filter is %d",
 				d->et962_filter_enabled);
 	}
 
@@ -1328,11 +1402,11 @@ static int com_set_et962_filter(struct re_printf *pf, void *arg)
 				d->et962_filter_enabled);
 
 	if (err) {
-		warning("audiocore: setting ET962 microphone filter failed "
-				"(%m)\n", err);
+		warning("alsa_audiocore: setting ET962 loudspeaker filter "
+				"failed (%m)\n", err);
 	}
 	else {
-		debug("audiocore: ET962 microphone filter set to %d\n",
+		debug("alsa_audiocore: ET962 loudspeaker filter set to %d\n",
 				d->et962_filter_enabled);
 	}
 
@@ -1379,7 +1453,7 @@ static int com_set_mic_equalizer(struct re_printf *pf, void *arg)
 			enableMicEqualizer(d->audiocore, false);
 		destroyEqualizerConfiguration(d->mic_eq_config);
 		d->mic_eq_config = 0;
-		info("audiocore: disable microphone equalizer\n");
+		info("alsa_audiocore: disable microphone equalizer\n");
 		return 1;
 	}
 
@@ -1393,11 +1467,11 @@ static int com_set_mic_equalizer(struct re_printf *pf, void *arg)
 	}
 
 	if (err) {
-		warning("audiocore: setting microphone equalizer failed: %m\n",
-				err);
+		warning("alsa_audiocore: setting microphone equalizer "
+				"failed: %m\n",	err);
 	}
 	else {
-		debug("audiocore: microphone equalizer set\n");
+		debug("alsa_audiocore: microphone equalizer set\n");
 	}
 
 	return err;
@@ -1443,7 +1517,7 @@ static int com_set_ls_equalizer(struct re_printf *pf, void *arg)
 			enableLsEqualizer(d->audiocore, false);
 		destroyEqualizerConfiguration(d->ls_eq_config);
 		d->ls_eq_config = 0;
-		info("audiocore: disable loudspeaker equalizer\n");
+		info("alsa_audiocore: disable loudspeaker equalizer\n");
 		return 1;
 	}
 
@@ -1457,11 +1531,11 @@ static int com_set_ls_equalizer(struct re_printf *pf, void *arg)
 	}
 
 	if (err) {
-		warning("audiocore: setting loudspeaker equalizer failed "
+		warning("alsa_audiocore: setting loudspeaker equalizer failed "
 				"(%m)\n", err);
 	}
 	else {
-		debug("audiocore: loudspeaker equalizer set\n");
+		debug("alsa_audiocore: loudspeaker equalizer set\n");
 	}
 
 	return err;
@@ -1754,16 +1828,16 @@ static int com_en_lsmic(struct re_printf *pf, void *arg)
 		return -1;
 
 	if (value && !d->call_count) {
-		info("enable lsmic\n");
+		info("alsa_audiocore: enable lsmic\n");
 		err = enableLSMic(d->audiocore, true);
 	}
 	else if (!value) {
-		info("disable lsmic\n");
+		info("alsa_audiocore: disable lsmic\n");
 		err = enableLSMic(d->audiocore, false);
 	}
 
 	if (err)
-		warning("audiocore: %s lsmic surveillance failed: %m\n",
+		warning("alsa_audiocore: %s lsmic surveillance failed: %m\n",
 				value ? "enable" : "disable", err);
 
 	return err;
@@ -1792,7 +1866,7 @@ static int com_set_lsmic_retryinterval(struct re_printf *pf, void *arg)
 
 	if (str_isset(carg->prm)) {
 		if (sscanf(carg->prm, "%u", &value) != 1) {
-			warning("audiocore: setting lsmic retry interval "
+			warning("alsa_audiocore: setting lsmic retry interval "
 					"failed\n");
 			return EINVAL;
 		}
@@ -1804,7 +1878,7 @@ static int com_set_lsmic_retryinterval(struct re_printf *pf, void *arg)
 					d->ls_mic_retryinterval);
 
 		if (err)
-			warning("audiocore: setting lsmic retry interval "
+			warning("alsa_audiocore: setting lsmic retry interval "
 					"failed (%m)\n", err);
 	}
 
@@ -1834,8 +1908,8 @@ static int com_set_lsmic_noise_volume(struct re_printf *pf, void *arg)
 
 	if (str_isset(carg->prm)) {
 		if (sscanf(carg->prm, "%i", &value) != 1) {
-			warning("audiocore: setting lsmic surveillance noise"
-					" volume failed\n");
+			warning("alsa_audiocore: setting lsmic surveillance "
+					"noise volume failed\n");
 			return EINVAL;
 		}
 
@@ -1846,8 +1920,8 @@ static int com_set_lsmic_noise_volume(struct re_printf *pf, void *arg)
 					d->ls_mic_noise_volume);
 
 		if (err)
-			warning("audiocore: setting lsmic surveillance noise"
-					" volume failed: %m\n", err);
+			warning("alsa_audiocore: setting lsmic surveillance "
+					"noise volume failed: %m\n", err);
 	}
 
 	return err;
@@ -1891,10 +1965,11 @@ static int com_set_line_monitoring(struct re_printf *pf, void *arg)
 				d->lm_enabled);
 
 	if (err) {
-		warning("audiocore: enable line monitoring failed: %m\n", err);
+		warning("alsa_audiocore: enable line monitoring "
+				"failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: line monitoring set to %d\n",
+		debug("alsa_audiocore: line monitoring set to %d\n",
 				d->lm_enabled);
 	}
 
@@ -2017,12 +2092,12 @@ static int com_set_line_monitoring_measurement_interval(struct re_printf *pf,
 				d->lm_measurement_interval);
 
 	if (err) {
-		warning("audiocore: setting line monitoring measurement "
+		warning("alsa_audiocore: setting line monitoring measurement "
 				"interval failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: line monitoring measurement interval set "
-				"to %u\n",
+		debug("alsa_audiocore: line monitoring measurement interval "
+				"set to %u\n",
 				d->lm_measurement_interval);
 	}
 
@@ -2092,11 +2167,11 @@ static int com_set_line_monitoring_station(struct re_printf *pf,
 				d->lm_station, d->lm_use100V);
 
 	if (err) {
-		warning("audiocore: setting line monitoring station failed "
-				"(%m)\n", err);
+		warning("alsa_audiocore: setting line monitoring station "
+				"failed (%m)\n", err);
 	}
 	else {
-		debug("audiocore: line monitoring station set to %u "
+		debug("alsa_audiocore: line monitoring station set to %u "
 				"use100V %d\n",
 				d->lm_station, d->lm_use100V);
 	}
@@ -2150,11 +2225,11 @@ static int com_set_line_monitoring_input(struct re_printf *pf, void *arg)
 				d->lm_input);
 
 	if (err) {
-		warning("audiocore: setting line monitoring input failed "
+		warning("alsa_audiocore: setting line monitoring input failed "
 				"(%m)\n", err);
 	}
 	else {
-		debug("audiocore: line monitoring input set to %u\n",
+		debug("alsa_audiocore: line monitoring input set to %u\n",
 				d->lm_input);
 	}
 
@@ -2195,11 +2270,11 @@ static int com_set_line_monitoring_reference_impedance(struct re_printf *pf,
 				d->lm_reference_impedance);
 
 	if (err) {
-		warning("audiocore: setting line monitoring reference "
+		warning("alsa_audiocore: setting line monitoring reference "
 				"impedance failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: line monitoring reference impedance "
+		debug("alsa_audiocore: line monitoring reference impedance "
 				"set to %u\n",
 				d->lm_reference_impedance);
 	}
@@ -2242,11 +2317,11 @@ static int com_set_line_monitoring_impedance_tolerance(struct re_printf *pf,
 				d->lm_impedance_tolerance);
 
 	if (err) {
-		warning("audiocore: setting line monitoring impedance "
+		warning("alsa_audiocore: setting line monitoring impedance "
 				"tolerance failed: %m\n", err);
 	}
 	else {
-		debug("audiocore: line monitoring impedance tolerance "
+		debug("alsa_audiocore: line monitoring impedance tolerance "
 				"set to %u\n",
 				d->lm_impedance_tolerance);
 	}
@@ -2394,7 +2469,9 @@ static const struct cmd cmdv[] = {
 		com_set_postgain},
 	{"com_ac_ws_filter", 0, CMD_PRM,"Set the WS microphone filter",
 		com_set_ws_filter},
-	{"com_ac_et962_filter", 0, CMD_PRM,"Set the ET962 microphone filter",
+	{"com_ac_mic480_filter", 0, CMD_PRM,"Set the MIC480 microphone filter",
+		com_set_mic480_filter},
+	{"com_ac_et962_filter", 0, CMD_PRM,"Set the ET962 loudspeaker filter",
 		com_set_et962_filter},
 	{"com_ac_set_mic_eq", 0, CMD_PRM,"Set the microphone equalizer",
 		com_set_mic_equalizer},
@@ -2444,8 +2521,6 @@ static const struct cmd cmdv[] = {
 		com_get_line_monitoring_ground_fault_resistance},
 	{"com_ac_get_lm_rin", 0, 0,  "Get LM requested input",
 		com_get_line_monitoring_requested_input},
-
-
 };
 
 
@@ -2503,36 +2578,12 @@ static void lm_cb(AC_LINEMONITORING_ERROR error)
 	}
 }
 
-static void enc_destructor(void *arg)
-{
-	struct enc_st *st = (struct enc_st *)arg;
-
-	info("audiocore: enc_destructor\n");
-
-	if (st->st && st->st->audiocore)
-		stopAudiocore(st->st->audiocore);
-
-	list_unlink(&st->af.le);
-}
-
-
-static void dec_destructor(void *arg)
-{
-	struct dec_st *st = (struct dec_st *)arg;
-
-	info("audiocore: dec_destructor\n");
-
-	if (st->st && st->st->audiocore)
-		stopAudiocore(st->st->audiocore);
-	list_unlink(&st->af.le);
-}
-
 
 static void audiocore_st_destructor(void *arg)
 {
 	struct audiocore_st *st = (struct audiocore_st *)arg;
 
-	info("audiocore: audiocore_st_destructor\n");
+	info("alsa_audiocore: audiocore_st_destructor\n");
 	st->size_delay = 0;
 
 	destroyAudioCore(st->audiocore);
@@ -2554,8 +2605,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	switch (ev) {
 	case UA_EVENT_CALL_CLOSED:
 		if (cnt == 1) {
-			/* clear JitterBuffers */
-			jbReset(state->audiocore);
 			/* start audio monitoring */
 			if (state->am_enabled && state->audiocore)
 				enableAudioMonitoringAlarm(
@@ -2571,13 +2620,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_INCOMING:
 	case UA_EVENT_CALL_OUTGOING:
 	case UA_EVENT_CALL_RINGING:
-		if (!state->call_count && state->audiocore)
-			jbReset(state->audiocore);
 		break;
 	case UA_EVENT_CALL_PROGRESS:
 	case UA_EVENT_CALL_ESTABLISHED:
-		if (!state->call_count && state->audiocore)
-			jbReset(state->audiocore);
 		if (cnt > 0 && !state->call_count && state->audiocore) {
 			/* stop idle audio monitoring */
 			enableLSMic(state->audiocore, false);
@@ -2594,21 +2639,22 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
-static int audiocore_init(struct audiocore_st* st)
+static int audiocore_create(struct audiocore_st* st)
 {
 	int err;
 
-	info("audiocore: audiocore_init\n");
+	info("alsa_audiocore: audiocore_init\n");
 
 	st->bypass = true;
 	if (st->samplerate != st->samplerate_prev) {
 		destroyAudioCore(st->audiocore);
-		info("audiocore: create audiocore with samplerate=%d\n",
+		info("alsa_audiocore: create audiocore with samplerate=%d\n",
 				st->samplerate);
 		st->audiocore =
 			createAudioCore(st->samplerate, st->samplerate / 2,
 				(float)st->framesize / (float)st->samplerate,
 				(float)st->tail_length_ms / 1000.0f,
+				(float)st->tail_offset_ms / 1000.0f,
 				st->noise_suppression,
 				st->echo_cancellation,
 				st->noise_suppression_enabled,
@@ -2656,7 +2702,7 @@ static int audiocore_init(struct audiocore_st* st)
 			st->lm_impedance_tolerance);
 
 	if (err)
-		warning("audiocore: could not set callback handler\n");
+		warning("alsa_audiocore: could not set callback handler\n");
 
 	setNoiseSuppressionParameter(d->audiocore,
 			d->noise_suppression);
@@ -2685,11 +2731,11 @@ static int audiocore_init(struct audiocore_st* st)
 	enableDebugMode(d->audiocore, d->debug_enable);
 	notifyVolumeLevel(d->audiocore, d->volume_level);
 	enableWsMicEqualizer(d->audiocore, st->ws_filter_enabled);
+	enableMic480Equalizer(d->audiocore, st->mic480_filter_enabled);
 	enableET962HLsEqualizer(d->audiocore, st->et962_filter_enabled);
 	enableMicEqualizer(st->audiocore, (st->mic_eq_config != 0));
 	enableLsEqualizer(st->audiocore, (st->ls_eq_config != 0));
-	enableREC(d->audiocore,
-			d->rec_enabled);
+	enableREC(d->audiocore, d->rec_enabled);
 
 	/*Set IVC because it is not in the init function */
 	setIVC(st->audiocore, st->ivc_enabled);
@@ -2698,171 +2744,58 @@ static int audiocore_init(struct audiocore_st* st)
 	return 0;
 }
 
-
-static int aec_alloc(struct audiocore_st *st, struct aufilt_prm *prm)
+void audiocore_process_bx(void *sampv, size_t sampc)
 {
-	int err = 0;
-
-	if (!prm)
-		return EINVAL;
-
-	if (!st)
-		return EINVAL;
-
-	info("audiocore: aec_alloc\n");
-
-	st->samplerate = prm->srate;
-	err = audiocore_init(st);
-	if (err)
-		return err;
-
-	return startAudiocore(st->audiocore);
+	if (d && d->audiocore)
+		jbProcessBx(d->audiocore, sampv, sampc);
 }
 
 
-static int encode_update(struct aufilt_enc_st **stp, void **ctx,
-		const struct aufilt *af, struct aufilt_prm *prm,
-		const struct audio *au)
+void audiocore_process_bz(void *sampv, size_t sampc)
 {
-	struct enc_st *st;
-	int err;
-	(void)au;
+	if (d && d->audiocore)
+		jbProcessBz(d->audiocore, sampv, sampc);
+}
 
-	if (!stp || !ctx || !af || !prm)
-		return EINVAL;
+void audiocore_enable(bool enable)
+{
+	if (d && d->audiocore)
+		enableAudioCore(d->audiocore, enable);
+}
 
-	if (*stp)
-		return 0;
-
-	if (!d)
-		return EINVAL;
-
-	info("audiocore: encode_update\n");
-
-	st = mem_zalloc(sizeof(*st), enc_destructor);
-	if (!st)
-		return ENOMEM;
-
-	err = aec_alloc(d, prm);
-	if (err) {
-		mem_deref(st);
-	}
-	else {
-		st->st = d;
-		*stp = (struct aufilt_enc_st *)st;
-	}
-	return err;
+void audiocore_start(void)
+{
+	if (d && d->audiocore)
+		startAudiocore(d->audiocore);
 }
 
 
-static int decode_update(struct aufilt_dec_st **stp, void **ctx,
-		const struct aufilt *af, struct aufilt_prm *prm,
-		const struct audio *au)
+void audiocore_stop(void)
 {
-	struct dec_st *st;
-	int err;
-	(void)au;
-
-	if (!stp || !ctx || !af || !prm)
-		return EINVAL;
-
-	if (*stp)
-		return 0;
-
-	if (!d)
-		return EINVAL;
-
-	info("audiocore: decode_update\n");
-
-	st = mem_zalloc(sizeof(*st), dec_destructor);
-	if (!st)
-		return ENOMEM;
-
-	err = aec_alloc(d, prm);
-	if (err) {
-		mem_deref(st);
-	}
-	else {
-		st->st = d;
-		*stp = (struct aufilt_dec_st *)st;
-	}
-
-	return err;
+	if (d && d->audiocore)
+		stopAudiocore(d->audiocore);
 }
 
 
-static int encode(struct aufilt_enc_st *st, struct auframe *af)
+int audiocore_init(void)
 {
-	struct enc_st *est = (struct enc_st *)st;
-	struct audiocore_st *state = est->st;
-
-	if (!st || !af)
-		return EINVAL;
-
-	/*Bypass mode: Just feed audio through */
-	if (state->bypass)
-		return 0;
-
-	if (!state->audiocore)
-		return 0;
-
-
-	if (af->sampc)
-		jbProcessBz(state->audiocore, af->sampv, af->sampc);
-
-	return 0;
-}
-
-
-static int decode(struct aufilt_dec_st *st,  struct auframe *af)
-{
-	struct dec_st *dst = (struct dec_st *)st;
-	struct audiocore_st *state = dst->st;
-
-	if (!st || !af)
-		return EINVAL;
-
-	/*Bypass mode: Just feed audio through */
-	if (state->bypass)
-		return 0;
-
-	if (!state->audiocore)
-		return 0;
-
-	if (af->sampc)
-		jbProcessBx(state->audiocore, af->sampv, af->sampc);
-
-	return 0;
-}
-
-
-static struct aufilt audiocore_aec = {
-	LE_INIT, "audiocore_aec", encode_update, encode, decode_update, decode
-};
-
-
-static int module_init(void)
-{
-	struct aufilt_prm prm;
 	int err;
 
-	info("audiocore: module_init\n");
-	prm.srate = 16000;
-	prm.ch = 2;
-
 	if (!d)
-		d = mem_zalloc(sizeof(*d),
-				audiocore_st_destructor);
+		d = mem_zalloc(sizeof(*d), audiocore_st_destructor);
 
 	/* Set default values for audiocore */
 	if (!d) {
-		warning("audiocore: could not allocate audiocore state\n");
-		return ENOMEM;
+		warning("alsa_audiocore: could not allocate audiocore "
+				"state\n");
+		err = ENOMEM;
+		goto out;
 	}
 
-	d->samplerate=prm.srate;
+	d->samplerate=16000;
 	d->framesize=256;
-	d->tail_length_ms=200;
+	d->tail_length_ms=160;
+	d->tail_offset_ms=16;
 	d->echo_cancellation = true;
 	d->noise_suppression = 4;
 	d->noise_gate_enabled = false;
@@ -2885,12 +2818,14 @@ static int module_init(void)
 	d->volume_level = 8;
 	d->audiocore = 0;
 	d->ws_filter_enabled = false;
+	d->mic480_filter_enabled = false;
 	d->et962_filter_enabled = false;
 	d->mic_eq_config = 0;
 	d->ls_eq_config = 0;
 	d->call_count = uag_call_count();
 	d->am_enabled = 0;
-	d->am_spl_threshold = 0;
+	/* initally set a very high audio monitoring threshold */
+	d->am_spl_threshold = 120;
 	d->am_spl_threshold_time = 0;
 	d->am_mic_sensitivity = 0;
 	d->lspl_enabled = 0;
@@ -2904,39 +2839,35 @@ static int module_init(void)
 	d->lm_station = AC_LM_AF50;
 	d->lm_input = AC_LM_INPUT_DEFAULT;
 
+	/* start AudioCore */
+	err = audiocore_create(d);
+	if (!err)
+		err = startAudiocore(d->audiocore);
+
+	if (err)
+		goto out;
+
 	uag_event_register(ua_event_handler, d);
 
-	/* register audio filter */
-	aufilt_register(baresip_aufiltl(), &audiocore_aec);
-
 	/* register commands */
-	err  = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
-	if (!err)
-		err = audiocore_init(d);
+	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 
+out:
+	if (err) {
+		d = mem_deref(d);
+	}
 	return err;
 }
 
 
-static int module_close(void)
+void audiocore_close(void)
 {
-	info("audiocore: module_close\n");
 	cmd_unregister(baresip_commands(), cmdv);
-	aufilt_unregister(&audiocore_aec);
 	uag_event_unregister(ua_event_handler);
+
 	if (d) {
 		destroyEqualizerConfiguration(d->mic_eq_config);
 		destroyEqualizerConfiguration(d->ls_eq_config);
-		mem_deref(d);
+		d = mem_deref(d);
 	}
-
-	return 0;
 }
-
-
-EXPORT_SYM const struct mod_export DECL_EXPORTS(audiocore) = {
-	"audiocore",
-	"filter",
-	module_init,
-	module_close
-};
