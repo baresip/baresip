@@ -137,16 +137,8 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 static int packetize_rtp(struct videnc_state *ves, uint64_t rtp_ts,
 			 const uint8_t *buf, size_t size)
 {
-	int err;
-
-	err = av1_packetize_high(&ves->new, true, rtp_ts,
-				 buf, size, ves->pktsize,
-				 ves->pkth, ves->arg);
-	if (err)
-		goto out;
-
- out:
-	return err;
+	return av1_packetize_high(&ves->new, true, rtp_ts, buf, size,
+				  ves->pktsize, ves->pkth, ves->arg);
 }
 
 
