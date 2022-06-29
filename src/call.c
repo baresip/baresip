@@ -1195,6 +1195,26 @@ int call_modify(struct call *call)
 }
 
 
+static void call_reject_moved(struct call *call, uint16_t scode,
+			      const char *reason)
+{
+	struct ua *ua = call_get_ua(call);
+	char *estr = NULL;
+
+	uint64_t expiry = ua_moved_expires(ua);
+	if (expiry)
+		re_sdprintf(&estr, ";expires=%lu", expiry);
+
+	(void)sipsess_reject(call->sess, scode, reason,
+			     "Contact: <%s>%s\r\n"
+			     "Content-Length: 0\r\n\r\n"
+			     ,
+			     ua_moved(ua), estr ? estr : "");
+
+	mem_deref(estr);
+}
+
+
 /**
  * Hangup the call
  *
@@ -1224,6 +1244,10 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 			if (!str_isset(reason))
 				reason = "Busy Here";
 
+			if (scode < 400) {
+				call_reject_moved(call, scode, reason);
+				return;
+			}
 			info("call: rejecting incoming call from %s (%u %s)\n",
 			     call->peer_uri, scode, reason);
 			(void)sipsess_reject(call->sess, scode, reason, NULL);

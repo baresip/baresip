@@ -31,6 +31,8 @@ struct ua {
 	struct list custom_hdrs;     /**< List of outgoing headers           */
 	char *ansval;                /**< SIP auto answer value              */
 	struct sa dst;               /**< Current destination address        */
+	char *moved;                 /**< Moved to contact                   */
+	struct tmr moved_expiry;     /**< Moved Temporarily expiry timer     */
 };
 
 struct ua_xhdr_filter {
@@ -60,6 +62,8 @@ static void ua_destructor(void *arg)
 	mem_deref(ua->pub_gruu);
 	mem_deref(ua->ansval);
 	mem_deref(ua->acc);
+	tmr_cancel(&ua->moved_expiry);
+	mem_deref(ua->moved);
 
 	if (uag_delayed_close() && list_isempty(uag_list())) {
 		sip_close(uag_sip(), false);
@@ -2144,4 +2148,58 @@ int ua_set_autoanswer_value(struct ua *ua, const char *value)
 		return 0;
 
 	return str_dup(&ua->ansval, value);
+}
+
+
+static void moved_clear(void *arg)
+{
+	struct ua *ua = arg;
+
+	tmr_cancel(&ua->moved_expiry);
+	ua->moved = mem_deref(ua->moved);
+}
+
+
+int ua_set_moved(struct ua *ua, const struct pl *contact, uint32_t expiry)
+{
+	int err = 0;
+
+	if (!ua)
+		return EINVAL;
+
+	if (pl_isset(contact)) {
+		mem_deref(ua->moved);
+		tmr_cancel(&ua->moved_expiry);
+		err = pl_strdup(&ua->moved, contact);
+		if (err)
+			return err;
+
+		if (expiry)
+			tmr_start(&ua->moved_expiry, expiry * 1000,
+				  moved_clear, ua);
+
+	}
+	else {
+		moved_clear(ua);
+	}
+
+	return err;
+}
+
+
+const char *ua_moved(const struct ua *ua)
+{
+	if (!ua)
+		return NULL;
+
+	return ua->moved;
+}
+
+
+uint64_t ua_moved_expires(const struct ua *ua)
+{
+	if (!ua)
+		return 0;
+
+	return tmr_get_expire(&ua->moved_expiry) / 1000;
 }

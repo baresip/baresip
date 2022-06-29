@@ -897,6 +897,9 @@ int  ua_call_alloc(struct call **callp, struct ua *ua,
 struct call *ua_find_call_state(const struct ua *ua, enum call_state st);
 int ua_raise(struct ua *ua);
 int ua_set_autoanswer_value(struct ua *ua, const char *value);
+int ua_set_moved(struct ua *ua, const struct pl *contact, uint32_t expiry);
+const char *ua_moved(const struct ua *ua);
+uint64_t ua_moved_expires(const struct ua *ua);
 
 
 /* One instance */
