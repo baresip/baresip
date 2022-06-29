@@ -962,6 +962,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		    || NULL != vidisp_find(baresip_vidispl(), NULL));
 
 	debug("call: use_video=%d\n", call->use_video);
+	if (!call->use_video)
+		call->ansvdir = SDP_INACTIVE;
 
 	/* inherit certain properties from original call */
 	if (xcall) {
@@ -1812,10 +1814,11 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 		(void)call_notify_sipfrag(call, 200, "OK");
 	}
 
-	/* must be done last, the handler might deref this call */
-	call_event_handler(call, CALL_EVENT_ESTABLISHED, call->peer_uri);
 	if (call_need_modify(call))
 		call_modify(call);
+
+	/* must be done last, the handler might deref this call */
+	call_event_handler(call, CALL_EVENT_ESTABLISHED, call->peer_uri);
 }
 
 
