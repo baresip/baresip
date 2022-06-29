@@ -1271,7 +1271,7 @@ out:
 }
 
 
-bool call_need_modify(const struct call *call)
+static bool call_need_modify(const struct call *call)
 {
 	enum sdp_dir adir;
 	enum sdp_dir vdir;
@@ -1814,6 +1814,8 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 
 	/* must be done last, the handler might deref this call */
 	call_event_handler(call, CALL_EVENT_ESTABLISHED, call->peer_uri);
+	if (call_need_modify(call))
+		call_modify(call);
 }
 
 
