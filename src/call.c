@@ -1270,7 +1270,7 @@ out:
 }
 
 
-bool call_need_reinvite(const struct call *call)
+bool call_need_modify(const struct call *call)
 {
 	enum sdp_dir adir;
 	enum sdp_dir vdir;
