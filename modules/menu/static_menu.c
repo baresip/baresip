@@ -1295,6 +1295,71 @@ static int cmd_rmheader(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_moved(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl w1, w2, w3;
+	struct ua *ua = menu_ua_carg(pf, carg, &w1, &w2);
+	const char *usage = "usage: "
+			    "/uamoved <contact> <ua-idx> [expiry/[s]]\n";
+	uint32_t expiry = 0;
+	int err;
+
+	if (!ua) {
+		re_hprintf(pf, usage);
+		return EINVAL;
+	}
+
+	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [^ ]+ [^ ]+",
+		       NULL, NULL, &w3);
+	if (!err) {
+		expiry = pl_u32(&w3);
+	}
+
+	err = ua_set_moved(ua, &w1, expiry);
+	if (!err)
+		re_hprintf(pf, "User-Agent %s Moved Temporarily\n",
+			   account_aor(ua_account(ua)));
+	return err;
+}
+
+
+static int cmd_avail(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl pl;
+	struct ua *ua = carg->data;
+	const char *usage = "usage: "
+			    "/uaavail <ua-idx>\n";
+	uint32_t i;
+	struct le *le;
+	int err;
+
+	if (!ua) {
+		pl_set_str(&pl, carg->prm);
+		i = pl_u32(&pl);
+
+		le = uag_list()->head;
+		while (le && i--)
+			le = le->next;
+
+		if (le)
+			ua = le->data;
+	}
+
+	if (!ua) {
+		re_hprintf(pf, usage);
+		return EINVAL;
+	}
+
+	err = ua_set_moved(ua, NULL, 0);
+	if (!err)
+		re_hprintf(pf, "User-Agent %s available again\n",
+			   account_aor(ua_account(ua)));
+	return err;
+}
+
+
 static int switch_video_source(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -1476,6 +1541,8 @@ static const struct cmd cmdv[] = {
 {"uareg",     0,    CMD_PRM, "UA register <regint> [index]", cmd_uareg       },
 {"uaaddheader", 0,  CMD_PRM, "Add custom header to UA",      cmd_addheader   },
 {"uarmheader",  0,  CMD_PRM, "Remove custom header from UA", cmd_rmheader    },
+{"uamoved",   0,    CMD_PRM, "User moved temporarily",  cmd_moved            },
+{"uaavail",   0,    CMD_PRM, "User available again",    cmd_avail            },
 {"vidsrc",    0,    CMD_PRM, "Switch video source",     switch_video_source  },
 {NULL,        KEYCODE_ESC,0, "Hangup call",             cmd_hangup           },
 
