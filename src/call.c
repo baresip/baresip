@@ -1122,7 +1122,8 @@ int call_modify(struct call *call)
 
 	debug("call: modify\n");
 
-	err = call_sdp_get(call, &desc, true);
+	err  = call_set_media_direction(call, call->ansadir, call->ansvdir);
+	err |= call_sdp_get(call, &desc, true);
 	if (!err) {
 		err = sipsess_modify(call->sess, desc);
 		if (err)
