@@ -136,6 +136,9 @@ static int create_register_clients(struct ua *ua)
 
 	add_extension(ua, "replaces");
 
+	if (ua->acc->rel100_mode)
+		add_extension(ua, "100rel");
+
  out:
 	return err;
 }
@@ -681,6 +684,20 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 				  "Unsupported: %r\r\n"
 				  "Content-Length: 0\r\n\r\n",
 				  &hdr->val);
+		return;
+	}
+
+	if (ua->acc->rel100_mode == REL100_REQUIRED &&
+			!(sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED, "100rel") ||
+			sip_msg_hdr_has_value(msg, SIP_HDR_REQUIRE, "100rel"))) {
+
+		info("ua: call from %r rejected with 421"
+			     " -- option-tag '%s' not supported by remote\n",
+			     &msg->from.auri, "100rel");
+		(void)sip_treplyf(NULL, NULL, uag_sip(), msg, false,
+				  421, "Extension required",
+				  "Require: 100rel\r\n"
+				  "Content-Length: 0\r\n\r\n");
 		return;
 	}
 
@@ -1602,6 +1619,9 @@ int ua_print_allowed(struct re_printf *pf, const struct ua *ua)
 			 "INVITE,ACK,BYE,CANCEL,OPTIONS,"
 			 "NOTIFY,SUBSCRIBE,INFO,MESSAGE");
 
+	if (ua->acc->rel100_mode)
+		err |= re_hprintf(pf, ",PRACK");
+
 	if (ua->acc->refer)
 		err |= re_hprintf(pf, ",REFER");
 
@@ -1633,6 +1653,29 @@ int ua_print_supported(struct re_printf *pf, const struct ua *ua)
 	}
 
 	err |= re_hprintf(pf, "\r\n");
+
+	return err;
+}
+
+
+/**
+ * Print the required extensions
+ *
+ * @param pf  Print function
+ * @param ua  User-Agent object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_print_require(struct re_printf *pf, const struct ua *ua)
+{
+	int err = 0;
+
+	if (!ua)
+		return 0;
+
+	if (ua->acc->rel100_mode == REL100_REQUIRED) {
+		err = re_hprintf(pf, "Require: 100rel\r\n");
+	}
 
 	return err;
 }

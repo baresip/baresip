@@ -208,6 +208,48 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_set_100rel_mode(struct re_printf *pf, void *arg)
+{
+	enum rel100_mode mode;
+	const struct cmd_arg *carg = arg;
+	struct ua *ua = carg->data;
+	struct le *le;
+	int err;
+
+	if (0 == str_cmp(carg->prm, "no")) {
+		mode = REL100_DISABLED;
+	}
+	else if (0 == str_cmp(carg->prm, "yes")) {
+		mode = REL100_ENABLED;
+	}
+	else if (0 == str_cmp(carg->prm, "required")) {
+		mode = REL100_REQUIRED;
+	}
+	else {
+		(void)re_hprintf(pf, "Invalid answer mode: %s\n", carg->prm);
+		return EINVAL;
+	}
+
+	if (ua) {
+		err = account_set_rel100_mode(ua_account(ua), mode);
+		if (err)
+			return err;
+	}
+	else {
+		for (le = list_head(uag_list()); le; le = le->next) {
+			ua = le->data;
+			err = account_set_rel100_mode(ua_account(ua), mode);
+			if (err)
+				return err;
+		}
+	}
+
+	(void)re_hprintf(pf, "100rel mode changed to: %s\n", carg->prm);
+
+	return 0;
+}
+
+
 static int switch_audio_player(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
@@ -1317,6 +1359,7 @@ static int cmd_tls_subject(struct re_printf *pf, void *unused)
 /*Static call menu*/
 static const struct cmd cmdv[] = {
 
+{"100relmode",0,    CMD_PRM, "Set 100rel mode",         cmd_set_100rel_mode  },
 {"about",     0,          0, "About box",               about_box            },
 {"accept",    'a',        0, "Accept incoming call",    cmd_answer           },
 {"acceptdir", 0,    CMD_PRM, "Accept incoming call with audio and video"

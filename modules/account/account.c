@@ -49,6 +49,7 @@ static int account_write_template(const char *file)
 			 "#    ;transport={udp,tcp,tls}\n"
 			 "#\n"
 			 "#  addr-params:\n"
+			 "#    ;100rel={yes,no,required}\n"
 			 "#    ;answermode={manual,early,auto,"
 					   "early-audio,early-video}\n"
 			 "#    ;answerdelay=0\n"

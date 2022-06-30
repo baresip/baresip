@@ -220,6 +220,30 @@ static void answermode_decode(struct account *prm, const struct pl *pl)
 }
 
 
+static void rel100_decode(struct account *prm, const struct pl *pl)
+{
+	struct pl rmode;
+
+	prm->rel100_mode = REL100_ENABLED;
+
+	if (0 == msg_param_decode(pl, "100rel", &rmode)) {
+
+		if (0 == pl_strcasecmp(&rmode, "no")) {
+			prm->rel100_mode = REL100_DISABLED;
+		}
+		else if (0 == pl_strcasecmp(&rmode, "yes")) {
+			prm->rel100_mode = REL100_ENABLED;
+		}
+		else if (0 == pl_strcasecmp(&rmode, "required")) {
+			prm->rel100_mode = REL100_REQUIRED;
+		}
+		else {
+			warning("account: 100rel mode unknown (%r)\n", &rmode);
+		}
+	}
+}
+
+
 static void autoanswer_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl v;
@@ -512,6 +536,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	/* Decode parameters */
 	acc->ptime = 20;
 	err |= sip_params_decode(acc, &acc->laddr);
+	       rel100_decode(acc, &acc->laddr.params);
 	       answermode_decode(acc, &acc->laddr.params);
 	       autoanswer_decode(acc, &acc->laddr.params);
 	       dtmfmode_decode(acc,&acc->laddr.params);
@@ -1187,6 +1212,44 @@ int account_set_answermode(struct account *acc, enum answermode mode)
 
 
 /**
+ * Get the 100rel mode of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return 100rel mode
+ */
+enum rel100_mode account_rel100_mode(const struct account *acc)
+{
+	return acc ? acc->rel100_mode : REL100_ENABLED;
+}
+
+
+/**
+ * Set the 100rel mode of an account
+ *
+ * @param acc  User-Agent account
+ * @param mode 100rel mode
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_rel100_mode(struct account *acc, enum rel100_mode mode)
+{
+	if (!acc)
+		return EINVAL;
+
+	if ((mode != REL100_DISABLED) && (mode != REL100_ENABLED) &&
+	    (mode != REL100_REQUIRED)) {
+		warning("account: invalid 100rel mode : `%d'\n", mode);
+		return EINVAL;
+	}
+
+	acc->rel100_mode = mode;
+
+	return 0;
+}
+
+
+/**
  * Get the dtmfmode of an account
  *
  * @param acc User-Agent account
@@ -1502,6 +1565,18 @@ static const char *answermode_str(enum answermode mode)
 }
 
 
+static const char *rel100_mode_str(enum rel100_mode mode)
+{
+	switch (mode) {
+
+	case REL100_ENABLED:	return "yes";
+	case REL100_DISABLED:	return "no";
+	case REL100_REQUIRED:	return "required";
+	default: return "???";
+	}
+}
+
+
 static const char *dtmfmode_str(enum dtmfmode mode)
 {
 	switch (mode) {
@@ -1713,6 +1788,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  uri_encode, &acc->luri);
 	err |= re_hprintf(pf, " aor:          %s\n", acc->aor);
 	err |= re_hprintf(pf, " dispname:     %s\n", acc->dispname);
+	err |= re_hprintf(pf, " 100rel:   %s\n",
+			  rel100_mode_str(acc->rel100_mode));
 	err |= re_hprintf(pf, " answermode:   %s\n",
 			  answermode_str(acc->answermode));
 	err |= re_hprintf(pf, " sipans:       %s\n",
@@ -1822,6 +1899,8 @@ int account_json_api(struct odict *od, struct odict *odcfg,
 				acc->stun_user);
 	}
 
+	err |= odict_entry_add(odcfg, "rel100_mode", ODICT_STRING,
+			rel100_mode_str(acc->rel100_mode));
 	err |= odict_entry_add(odcfg, "answer_mode", ODICT_STRING,
 			answermode_str(acc->answermode));
 	err |= odict_entry_add(odcfg, "call_transfer", ODICT_BOOL, acc->refer);

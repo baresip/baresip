@@ -1245,8 +1245,10 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 		return err;
 
 	err = sipsess_progress(call->sess, 183, "Session Progress",
-			       desc, "Allow: %H\r\n",
-			       ua_print_allowed, call->ua);
+				   account_rel100_mode(call->acc),
+			       desc, "Allow: %H\r\n%H",
+			       ua_print_allowed, call->ua,
+				   ua_print_require, call->ua);
 
 	if (err)
 		goto out;
@@ -2131,14 +2133,16 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	}
 
 	err = sipsess_accept(&call->sess, sess_sock, msg, 180, "Ringing",
+				 account_rel100_mode(call->acc),
 			     ua_cuser(call->ua), "application/sdp", NULL,
 			     auth_handler, call->acc, true,
 			     sipsess_offer_handler, sipsess_answer_handler,
 			     sipsess_estab_handler, sipsess_info_handler,
 			     call->acc->refer ? sipsess_refer_handler : NULL,
 			     sipsess_close_handler,
-			     call, "Allow: %H\r\n",
-			     ua_print_allowed, call->ua);
+			     call, "Allow: %H\r\n%H",
+			     ua_print_allowed, call->ua,
+				 ua_print_require, call->ua);
 
 	if (err) {
 		warning("call: sipsess_accept: %m\n", err);
@@ -2313,9 +2317,10 @@ static int send_invite(struct call *call)
 			      sipsess_info_handler,
 			      call->acc->refer ? sipsess_refer_handler : NULL,
 			      sipsess_close_handler, call,
-			      "Allow: %H\r\n%H%H%H",
+			      "Allow: %H\r\n%H%H%H%H",
 			      ua_print_allowed, call->ua,
 			      ua_print_supported, call->ua,
+			      ua_print_require, call->ua,
 			      call_print_replaces, call,
 			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {
