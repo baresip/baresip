@@ -330,6 +330,7 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 	struct pl callid = PL_INIT;
 	char *cid = NULL;
 	bool ok = false;
+	int err;
 
 	const char *usage = "usage: /medialdir"
 			" audio=<inactive, sendonly, recvonly, sendrecv>"
@@ -370,7 +371,9 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 	if (!call)
 		return EINVAL;
 
-	return call_set_media_direction(call, adir, vdir);
+	err  = call_set_media_ansdir(call, adir, vdir);
+	err |= call_set_media_direction(call, adir, vdir);
+	return err;
 }
 
 
