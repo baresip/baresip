@@ -262,6 +262,9 @@ int conf_get_vidsz(const struct conf *conf, const char *name, struct vidsz *sz)
 	struct pl r, w, h;
 	int err;
 
+	if (!sz)
+		return EINVAL;
+
 	err = conf_get(conf, name, &r);
 	if (err)
 		return err;
