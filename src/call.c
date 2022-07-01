@@ -1124,8 +1124,7 @@ int call_modify(struct call *call)
 
 	debug("call: modify\n");
 
-	err  = call_set_media_direction(call, call->ansadir, call->ansvdir);
-	err |= call_sdp_get(call, &desc, true);
+	err = call_sdp_get(call, &desc, true);
 	if (!err) {
 		err = sipsess_modify(call->sess, desc);
 		if (err)
@@ -1808,8 +1807,10 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 		(void)call_notify_sipfrag(call, 200, "OK");
 	}
 
-	if (call_need_modify(call))
+	if (call_need_modify(call)) {
+		call_set_media_direction(call, call->ansadir, call->ansvdir);
 		call_modify(call);
+	}
 
 	/* must be done last, the handler might deref this call */
 	call_event_handler(call, CALL_EVENT_ESTABLISHED, call->peer_uri);
