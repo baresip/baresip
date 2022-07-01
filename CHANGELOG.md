@@ -6,6 +6,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## 2.5.0 - 2022-07-01
+
+## What's Changed
+* audio: add optional decoding buffer by @cspiel1 in https://github.com/baresip/baresip/pull/1842
+* audio: RX filter thread needs separate sampv buffer by @cspiel1 in https://github.com/baresip/baresip/pull/1879
+* aufile: fix possible data race warning by @cspiel1 in https://github.com/baresip/baresip/pull/1880
+* audiounit,coreaudio: fix kAudioObjectPropertyElementMaster deprecation by @sreimers in https://github.com/baresip/baresip/pull/1881
+* av1: explicitly check for supported OBU types by @alfredh in https://github.com/baresip/baresip/pull/1882
+* audiounit/coreaudio: fix kAudioObjectPropertyElementMain by @sreimers in https://github.com/baresip/baresip/pull/1885
+* ci/build: bump macos min. sdk to 10.12 by @sreimers in https://github.com/baresip/baresip/pull/1883
+* ci: run only for pull requests and main branch by @sreimers in https://github.com/baresip/baresip/pull/1887
+* multicast: C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/1892
+* dtls_srtp: enable ECC by default, remove RSA by @alfredh in https://github.com/baresip/baresip/pull/1891
+* ci/build: add ubuntu 22.04 by @sreimers in https://github.com/baresip/baresip/pull/1890
+* test: add check for memory leaks by @sreimers in https://github.com/baresip/baresip/pull/1896
+* stream,metric: RX real-time - make metric thread-safe by @cspiel1 in https://github.com/baresip/baresip/pull/1895
+* Cmake findre by @alfredh in https://github.com/baresip/baresip/pull/1893
+* test: wait for both audio and video to be established by @alfredh in https://github.com/baresip/baresip/pull/1903
+* docs: remove old TODO file by @alfredh in https://github.com/baresip/baresip/pull/1902
+* audio: fixed check for aubuf started flag by @cspiel1 in https://github.com/baresip/baresip/pull/1904
+* use new mutex interface by @cspiel1 in https://github.com/baresip/baresip/pull/1905
+* audio: make rx.filtl thread-safe by @cspiel1 in https://github.com/baresip/baresip/pull/1897
+* audio: allocate correct buffer size for static auplay srate by @cspiel1 in https://github.com/baresip/baresip/pull/1906
+* Pulseaudio Async Interface Module by @cHuberCoffee in https://github.com/baresip/baresip/pull/1907
+* Do not destroy register client when it is unregistered by @juha-h in https://github.com/baresip/baresip/pull/1908
+* Two spaces are required after email address by @juha-h in https://github.com/baresip/baresip/pull/1909
+* cmake: add alsa module by @alfredh in https://github.com/baresip/baresip/pull/1910
+* cmake: fix static openssl and thread linking by @sreimers in https://github.com/baresip/baresip/pull/1911
+* In start_registering, create register clients if reg list is empty by @juha-h in https://github.com/baresip/baresip/pull/1913
+* ctrl_dbus: use new thread and mtx interface by @cspiel1 in https://github.com/baresip/baresip/pull/1916
+* cmake: add pulse and pulse_async module by @cHuberCoffee in https://github.com/baresip/baresip/pull/1919
+* Un-subscribe mwi at un-register by @juha-h in https://github.com/baresip/baresip/pull/1918
+* call: update media on session progress. by @RobertMi21 in https://github.com/baresip/baresip/pull/1922
+* ctrl_dbus send event in main thread by @cspiel1 in https://github.com/baresip/baresip/pull/1921
+* uag: add timestamps to SIP trace by @cspiel1 in https://github.com/baresip/baresip/pull/1914
+* main: fix open timers check by @sreimers in https://github.com/baresip/baresip/pull/1925
+* cmake: add account module by @alfredh in https://github.com/baresip/baresip/pull/1926
+
+
+---
+
 ## 2.4.0 - 2022-06-01
 
 ## What's Changed
