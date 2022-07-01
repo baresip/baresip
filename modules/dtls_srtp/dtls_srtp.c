@@ -227,6 +227,9 @@ static void dtls_estab_handler(void *arg)
 	size_t keylen;
 	int err;
 
+	debug("dtls_srtp: established: cipher=%s\n",
+	      tls_cipher_name(comp->tls_conn));
+
 	if (!verify_fingerprint(ds->sess->sdp, ds->sdpm, comp->tls_conn)) {
 		warning("dtls_srtp: could not verify remote fingerprint\n");
 		if (ds->sess->errorh)
