@@ -210,43 +210,70 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 
 static int cmd_set_100rel_mode(struct re_printf *pf, void *arg)
 {
-	enum rel100_mode mode;
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data;
+	struct pl w1 = PL_INIT;
+	struct pl w2 = PL_INIT;
+	struct ua *ua = menu_ua_carg(pf, carg, &w1, &w2);
+	char *acc_nr = NULL;
+	char *mode_str = NULL;
+	enum rel100_mode mode;
 	struct le *le;
 	int err;
 
-	if (0 == str_cmp(carg->prm, "no")) {
+	if (pl_isset(&w2)) {
+		err = pl_strdup(&acc_nr, &w2);
+		if (err)
+			return err;
+	}
+	err = pl_strdup(&mode_str, &w1);
+	if (err) {
+		(void)re_hprintf(pf, "usage: /100rel <yes|no|required>"
+				 " [ua-idx]\n");
+		err = EINVAL;
+		goto out;
+	}
+
+	if (0 == str_cmp(mode_str, "no")) {
 		mode = REL100_DISABLED;
 	}
-	else if (0 == str_cmp(carg->prm, "yes")) {
+	else if (0 == str_cmp(mode_str, "yes")) {
 		mode = REL100_ENABLED;
 	}
-	else if (0 == str_cmp(carg->prm, "required")) {
+	else if (0 == str_cmp(mode_str, "required")) {
 		mode = REL100_REQUIRED;
 	}
 	else {
-		(void)re_hprintf(pf, "Invalid answer mode: %s\n", carg->prm);
-		return EINVAL;
+		(void)re_hprintf(pf, "Invalid 100rel mode: %s\n", mode_str);
+		err = EINVAL;
+		goto out;
 	}
+
+	if (!ua)
+		ua = uag_find_requri(acc_nr);
 
 	if (ua) {
 		err = account_set_rel100_mode(ua_account(ua), mode);
 		if (err)
-			return err;
+			goto out;
+		(void)re_hprintf(pf, "100rel mode of account %s changed to: "
+				 "%s\n", account_aor(ua_account(ua)),
+				 mode_str);
 	}
 	else {
 		for (le = list_head(uag_list()); le; le = le->next) {
 			ua = le->data;
 			err = account_set_rel100_mode(ua_account(ua), mode);
 			if (err)
-				return err;
+				goto out;
 		}
+		(void)re_hprintf(pf, "100rel mode of all accounts changed to: "
+				 "%s\n", mode_str);
 	}
 
-	(void)re_hprintf(pf, "100rel mode changed to: %s\n", carg->prm);
-
-	return 0;
+out:
+	mem_deref(acc_nr);
+	mem_deref(mode_str);
+	return err;
 }
 
 
