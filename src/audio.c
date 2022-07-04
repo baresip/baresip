@@ -1908,6 +1908,9 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 		/* Audio source must be stopped first */
 		if (reset) {
 			tx->ausrc = mem_deref(tx->ausrc);
+			mtx_lock(a->tx.mtx);
+			list_flush(&tx->filtl);
+			mtx_unlock(a->tx.mtx);
 			aubuf_flush(tx->aubuf);
 		}
 
