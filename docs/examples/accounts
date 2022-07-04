@@ -7,6 +7,7 @@
 #    ;transport={udp,tcp,tls}
 #
 #  addr-params:
+#    ;100rel={yes,no,required}
 #    ;answermode={manual,early,auto,early-audio,early-video}
 #    ;answerdelay=0
 #    ;audio_codecs=opus/48000/2,pcma,...
