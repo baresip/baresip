@@ -2239,7 +2239,7 @@ static int com_set_line_monitoring_impedance_tolerance(struct re_printf *pf,
 	/*Set value on the fly if audiocore is active */
 	if (!err && d->audiocore)
 		setLineMonitoringImpedanceTolerance(d->audiocore,
-				d->lm_impedance_tolerance != 0);
+				d->lm_impedance_tolerance);
 
 	if (err) {
 		warning("audiocore: setting line monitoring impedance "
