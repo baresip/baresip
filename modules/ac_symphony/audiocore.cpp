@@ -127,7 +127,10 @@ static int aec_resize(struct audiocore_st *st)
 	if (!st)
 		return EINVAL;
 
-	if (st->est && st->dst && st->est->sampc != st->dst->sampc) {
+	if (!st->est || !st->dst)
+		return 0;
+
+	if (st->est->sampc != st->dst->sampc) {
 		if (st->est->started)
 			debug("ac_symphony: sampc differ between enc and "
 				"dec.  %lu vs %lu samples.\n",
