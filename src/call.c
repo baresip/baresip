@@ -962,6 +962,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		    || NULL != vidisp_find(baresip_vidispl(), NULL));
 
 	debug("call: use_video=%d\n", call->use_video);
+	if (!call->use_video)
+		call->ansvdir = SDP_INACTIVE;
 
 	/* inherit certain properties from original call */
 	if (xcall) {
@@ -1228,8 +1230,6 @@ int call_progress(struct call *call)
 int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 {
 	struct mbuf *desc;
-	enum sdp_dir ansadir;
-	enum sdp_dir ansvdir;
 	int err;
 
 	if (!call)
@@ -1237,13 +1237,9 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 
 	tmr_cancel(&call->tmr_inv);
 
-	ansadir = stream_ldir(audio_strm(call_audio(call)));
-	ansvdir = stream_ldir(video_strm(call_video(call)));
-	if (adir != ansadir || vdir != ansvdir)
+	if (adir != call->ansadir || vdir != call->ansvdir)
 		call_set_media_direction(call, adir, vdir);
 
-	call->ansadir = ansadir;
-	call->ansvdir = ansvdir;
 	err = call_sdp_get(call, &desc, false);
 	if (err)
 		return err;
@@ -1267,6 +1263,20 @@ out:
 	mem_deref(desc);
 
 	return 0;
+}
+
+
+static bool call_need_modify(const struct call *call)
+{
+	enum sdp_dir adir;
+	enum sdp_dir vdir;
+
+	if (!call)
+		return false;
+
+	adir = stream_ldir(audio_strm(call_audio(call)));
+	vdir = stream_ldir(video_strm(call_video(call)));
+	return adir != call->ansadir || vdir != call->ansvdir;
 }
 
 
@@ -1303,7 +1313,6 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	if (call->got_offer) {
 
-		call_set_media_direction(call, call->ansadir, call->ansvdir);
 		err = update_media(call);
 		if (err)
 			return err;
@@ -1798,6 +1807,11 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 		(void)call_notify_sipfrag(call, 200, "OK");
 	}
 
+	if (call_need_modify(call)) {
+		call_set_media_direction(call, call->ansadir, call->ansvdir);
+		call_modify(call);
+	}
+
 	/* must be done last, the handler might deref this call */
 	call_event_handler(call, CALL_EVENT_ESTABLISHED, call->peer_uri);
 }
@@ -2144,6 +2158,8 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			  invite_timeout, call);
 	}
 
+	call->ansadir = stream_ldir(audio_strm(call_audio(call)));
+	call->ansvdir = stream_ldir(video_strm(call_video(call)));
 	if (!call->acc->mnat)
 		call_event_handler(call, CALL_EVENT_INCOMING, call->peer_uri);
 
@@ -2886,8 +2902,6 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 	if (!call)
 		return EINVAL;
 
-	call->ansadir = a;
-	call->ansvdir = v;
 	stream_set_ldir(audio_strm(call_audio(call)), a);
 
 	if (video_strm(call_video(call))) {
@@ -2898,6 +2912,27 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 			stream_set_ldir(video_strm(call_video(call)), v);
 
 	}
+
+	return 0;
+}
+
+
+/**
+ * Set stream sdp media line direction attribute for call answer
+ *
+ * @param call Call object
+ * @param a    Audio SDP direction
+ * @param v    Video SDP direction if video available
+ *
+ * @return int	0 if success, errorcode otherwise
+ */
+int call_set_media_ansdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
+{
+	if (!call)
+		return EINVAL;
+
+	call->ansadir = a;
+	call->ansvdir = v;
 
 	return 0;
 }
