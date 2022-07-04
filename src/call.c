@@ -1245,10 +1245,10 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 		return err;
 
 	err = sipsess_progress(call->sess, 183, "Session Progress",
-				   account_rel100_mode(call->acc),
+			       account_rel100_mode(call->acc),
 			       desc, "Allow: %H\r\n%H",
 			       ua_print_allowed, call->ua,
-				   ua_print_require, call->ua);
+			       ua_print_require, call->ua);
 
 	if (err)
 		goto out;
@@ -2133,7 +2133,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	}
 
 	err = sipsess_accept(&call->sess, sess_sock, msg, 180, "Ringing",
-				 account_rel100_mode(call->acc),
+			     account_rel100_mode(call->acc),
 			     ua_cuser(call->ua), "application/sdp", NULL,
 			     auth_handler, call->acc, true,
 			     sipsess_offer_handler, sipsess_answer_handler,
@@ -2142,7 +2142,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			     sipsess_close_handler,
 			     call, "Allow: %H\r\n%H",
 			     ua_print_allowed, call->ua,
-				 ua_print_require, call->ua);
+			     ua_print_require, call->ua);
 
 	if (err) {
 		warning("call: sipsess_accept: %m\n", err);

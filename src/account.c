@@ -1569,9 +1569,9 @@ static const char *rel100_mode_str(enum rel100_mode mode)
 {
 	switch (mode) {
 
-	case REL100_ENABLED:	return "yes";
-	case REL100_DISABLED:	return "no";
-	case REL100_REQUIRED:	return "required";
+	case REL100_ENABLED:    return "yes";
+	case REL100_DISABLED:   return "no";
+	case REL100_REQUIRED:   return "required";
 	default: return "???";
 	}
 }
@@ -1788,7 +1788,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  uri_encode, &acc->luri);
 	err |= re_hprintf(pf, " aor:          %s\n", acc->aor);
 	err |= re_hprintf(pf, " dispname:     %s\n", acc->dispname);
-	err |= re_hprintf(pf, " 100rel:   %s\n",
+	err |= re_hprintf(pf, " 100rel:       %s\n",
 			  rel100_mode_str(acc->rel100_mode));
 	err |= re_hprintf(pf, " answermode:   %s\n",
 			  answermode_str(acc->answermode));

@@ -1359,7 +1359,7 @@ static int cmd_tls_subject(struct re_printf *pf, void *unused)
 /*Static call menu*/
 static const struct cmd cmdv[] = {
 
-{"100relmode",0,    CMD_PRM, "Set 100rel mode",         cmd_set_100rel_mode  },
+{"100rel"    ,0,    CMD_PRM, "Set 100rel mode",         cmd_set_100rel_mode  },
 {"about",     0,          0, "About box",               about_box            },
 {"accept",    'a',        0, "Accept incoming call",    cmd_answer           },
 {"acceptdir", 0,    CMD_PRM, "Accept incoming call with audio and video"

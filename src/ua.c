@@ -1673,9 +1673,8 @@ int ua_print_require(struct re_printf *pf, const struct ua *ua)
 	if (!ua)
 		return 0;
 
-	if (ua->acc->rel100_mode == REL100_REQUIRED) {
+	if (ua->acc->rel100_mode == REL100_REQUIRED)
 		err = re_hprintf(pf, "Require: 100rel\r\n");
-	}
 
 	return err;
 }

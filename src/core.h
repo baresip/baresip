@@ -44,7 +44,7 @@ struct account {
 	/* parameters: */
 	bool sipans;                 /**< Allow SIP header auto answer mode  */
 	enum sipansbeep sipansbeep;  /**< Beep mode for SIP auto answer      */
-	enum rel100_mode rel100_mode;/**< 100rel mode for incoming calls     */
+	enum rel100_mode rel100_mode;  /**< 100rel mode for incoming calls   */
 	enum answermode answermode;  /**< Answermode for incoming calls      */
 	int32_t adelay;              /**< Delay for delayed auto answer [ms] */
 	enum dtmfmode dtmfmode;      /**< Send type for DTMF tones           */
