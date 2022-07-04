@@ -382,6 +382,7 @@ struct config_net {
 		bool fallback;
 	} nsv[NET_MAX_NS];      /**< Configured DNS nameservers     */
 	size_t nsc;             /**< Number of DNS nameservers      */
+	bool use_linklocal;     /**< Use v4/v6 link-local addresses */
 };
 
 

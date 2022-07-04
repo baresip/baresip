@@ -97,6 +97,7 @@ static struct config core_config = {
 		"",
 		{ {"",0} },
 		0,
+		true,
 	},
 };
 

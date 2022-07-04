@@ -622,6 +622,9 @@ bool net_ifaddr_filter(const struct network *net, const char *ifname,
 	if (!sa_isset(sa, SA_ADDR))
 		return false;
 
+	if (sa_is_linklocal(sa) && !cfg->use_linklocal)
+		return false;
+
 	if (str_isset(cfg->ifname) && 0 == sa_set_str(&ip, cfg->ifname, 0) &&
 			sa_cmp(&ip, sa, SA_ADDR))
 		return true;
