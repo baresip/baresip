@@ -372,7 +372,9 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 		return EINVAL;
 
 	err  = call_set_media_ansdir(call, adir, vdir);
-	err |= call_set_media_direction(call, adir, vdir);
+	if (call_state(call) == CALL_STATE_ESTABLISHED)
+		err |= call_set_media_direction(call, adir, vdir);
+
 	return err;
 }
 
