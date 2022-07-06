@@ -306,6 +306,7 @@ zrtp          ZRTP media encryption module
 * RFC 2250  RTP Payload Format for the mpa Speech and Audio Codec
 * RFC 2429  RTP Payload Format for 1998 ver of ITU-T Rec. H.263 Video (H.263+)
 * RFC 3016  RTP Payload Format for MPEG-4 Audio/Visual Streams
+* RFC 3262  Reliability of Provisional Responses for SIP
 * RFC 3428  SIP Extension for Instant Messaging
 * RFC 3711  The Secure Real-time Transport Protocol (SRTP)
 * RFC 3640  RTP Payload Format for Transport of MPEG-4 Elementary Streams
