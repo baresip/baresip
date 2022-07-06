@@ -44,6 +44,7 @@ struct account {
 	/* parameters: */
 	bool sipans;                 /**< Allow SIP header auto answer mode  */
 	enum sipansbeep sipansbeep;  /**< Beep mode for SIP auto answer      */
+	enum rel100_mode rel100_mode;  /**< 100rel mode for incoming calls   */
 	enum answermode answermode;  /**< Answermode for incoming calls      */
 	int32_t adelay;              /**< Delay for delayed auto answer [ms] */
 	enum dtmfmode dtmfmode;      /**< Send type for DTMF tones           */
@@ -325,6 +326,7 @@ struct ua;
 void         ua_printf(const struct ua *ua, const char *fmt, ...);
 
 int ua_print_allowed(struct re_printf *pf, const struct ua *ua);
+int ua_print_require(struct re_printf *pf, const struct ua *ua);
 struct call *ua_find_call_onhold(const struct ua *ua);
 struct call *ua_find_active_call(struct ua *ua);
 void ua_handle_options(struct ua *ua, const struct sip_msg *msg);
