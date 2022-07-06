@@ -688,8 +688,8 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	if (ua->acc->rel100_mode == REL100_REQUIRED &&
-		!(sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED, "100rel") ||
-		sip_msg_hdr_has_value(msg, SIP_HDR_REQUIRE, "100rel"))) {
+	    !(sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED, "100rel") ||
+	      sip_msg_hdr_has_value(msg, SIP_HDR_REQUIRE, "100rel"))) {
 
 		info("ua: call from %r rejected with 421"
 			     " -- option-tag '%s' not supported by remote\n",
