@@ -54,13 +54,16 @@ include_directories(
 
 link_directories(/usr/local/lib)
 
+include(GNUInstallDirs)
+set(SHARE_PATH ${CMAKE_INSTALL_FULL_DATAROOTDIR}/baresip)
+
 add_definitions(
   -DHAVE_GETOPT
   -DHAVE_INET6
   -DHAVE_SIGNAL
   -DHAVE_UNISTD_H
   -DUSE_ZLIB
-  -DSHARE_PATH="/usr/share/baresip"
+  -DSHARE_PATH="${SHARE_PATH}"
   )
 
 if(USE_OPENSSL)
@@ -130,6 +133,9 @@ set(SRCS
   src/vidutil.c
 )
 
+set(HEADERS
+  include/baresip.h
+)
 
 ##############################################################################
 #
@@ -176,6 +182,10 @@ if(STATIC)
 
   configure_file(src/static.c.in src/static.c)
   list(APPEND SRCS ${CMAKE_CURRENT_BINARY_DIR}/src/static.c)
+else()
+  foreach(mod IN LISTS MODULES)
+    install(TARGETS ${mod} LIBRARY DESTINATION ${SHARE_PATH})
+  endforeach()
 endif()
 
 
@@ -190,15 +200,17 @@ if(USE_OPENSSL)
 endif()
 
 if(STATIC)
-  add_library(baresip STATIC ${SRCS})
+  add_library(baresip STATIC ${SRCS} ${HEADERS})
   target_link_libraries(baresip PUBLIC ${LINKLIBS} ${MODULES})
 else()
-  add_library(baresip SHARED ${SRCS})
+  add_library(baresip SHARED ${SRCS} ${HEADERS})
   target_link_libraries(baresip PRIVATE ${LINKLIBS})
 endif()
 
 set_target_properties(baresip PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+set_target_properties(baresip PROPERTIES PUBLIC_HEADER "${HEADERS}")
+install(TARGETS baresip LIBRARY)
 
 ##############################################################################
 #
@@ -210,3 +222,4 @@ add_executable(baresip_exe src/main.c)
 set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
 target_link_libraries(baresip_exe baresip ${LINKLIBS})
+install(TARGETS baresip_exe)
