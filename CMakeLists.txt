@@ -184,16 +184,17 @@ endif()
 # Main target library
 #
 
+set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads -lz -lm)
+if(USE_OPENSSL)
+  list(APPEND LIBS OpenSSL::SSL OpenSSL::Crypto)
+endif()
+
 if(STATIC)
   add_library(baresip STATIC ${SRCS})
-  target_link_libraries(baresip PUBLIC
-      ${MODULES} ${REM_LIBRARIES} ${RE_LIBRARIES}
-      ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -lz -lm)
+  target_link_libraries(baresip PUBLIC ${LINKLIBS} ${MODULES})
 else()
   add_library(baresip SHARED ${SRCS})
-  target_link_libraries(baresip PRIVATE
-      ${REM_LIBRARIES} ${RE_LIBRARIES}
-      ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -lz -lm)
+  target_link_libraries(baresip PRIVATE ${LINKLIBS})
 endif()
 
 set_target_properties(baresip PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -208,6 +209,4 @@ add_executable(baresip_exe src/main.c)
 
 set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
-target_link_libraries(baresip_exe baresip
-    ${REM_LIBRARIES} ${RE_LIBRARIES}
-    ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -lz -lm)
+target_link_libraries(baresip_exe baresip ${LINKLIBS})
