@@ -408,8 +408,10 @@ static int set_video_dir(struct re_printf *pf, void *arg)
 	if (!call)
 		return EINVAL;
 
-	if (call_state(call) != CALL_STATE_ESTABLISHED)
+	if (!call_target_refresh_allowed(call)) {
+		(void)re_hprintf(pf, "video update not allowed currently");
 		return EINVAL;
+	}
 
 	if (0 == str_cmp(carg->prm, sdp_dir_name(SDP_INACTIVE))) {
 		err = call_set_video_dir(call, SDP_INACTIVE);
