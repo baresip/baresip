@@ -306,9 +306,12 @@ static void stop_rx(struct aurx *rx)
 	rx->auplay = mem_deref(rx->auplay);
 	rx->aubuf  = mem_deref(rx->aubuf);
 	rx->aubufdec  = mem_deref(rx->aubufdec);
-	mtx_lock(rx->mtx);
+	if (rx->mtx)
+		mtx_lock(rx->mtx);
+
 	list_flush(&rx->filtl);
-	mtx_unlock(rx->mtx);
+	if (rx->mtx)
+		mtx_unlock(rx->mtx);
 }
 
 
