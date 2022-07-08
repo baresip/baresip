@@ -25,7 +25,6 @@
 #   USE_G726          G.726 audio codec
 #   USE_GSM           GSM audio codec
 #   USE_GST           Gstreamer audio module
-#   USE_GST_VIDEO     Gstreamer video module
 #   USE_GTK           GTK+ user interface
 #   USE_HTTPREQ       HTTP request module
 #   USE_JACK          JACK Audio Connection Kit audio driver
@@ -92,8 +91,6 @@ ifeq ($(USE_GSM),)
 USE_GSM       := $(shell $(call CC_TEST,gsm/gsm.h))
 endif
 USE_GST       := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
-USE_GST_VIDEO := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
-		   && echo "yes")
 USE_GTK       := $(shell pkg-config 'gtk+-3.0 >= 3.0' && \
 		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
 USE_JACK      := $(shell $(call CC_TEST,jack/jack.h))
@@ -281,9 +278,6 @@ endif
 endif
 ifneq ($(USE_GST),)
 MODULES   += gst
-endif
-ifneq ($(USE_GST_VIDEO),)
-MODULES   += gst_video
 endif
 ifneq ($(USE_GTK),)
 MODULES   += gtk

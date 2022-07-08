@@ -249,7 +249,6 @@ g7221         G.722.1 audio codec
 g726          G.726 audio codec
 gsm           GSM audio codec
 gst           Gstreamer audio source
-gst_video     Gstreamer video codec
 gtk           GTK+ 2.0 UI
 gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module

@@ -150,7 +150,6 @@ module			alsa.so
 # Audio/Video source modules
 #module			avformat.so
 #module			gst.so
-#module			gst_video.so
 
 # Compatibility modules
 #module			ebuacip.so
