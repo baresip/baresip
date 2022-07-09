@@ -1,0 +1,37 @@
+name: Cmake
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: sreimers/pr-dependency-action@v0.3
+      with:
+        name: rem
+        repo: https://github.com/baresip/rem
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: make re/rem
+      run: |
+        for p in re rem; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
+        sudo ldconfig
+
+    - name: baresip
+      run: |
+        cmake -DCMAKE_C_FLAGS="-Werror" . && make
