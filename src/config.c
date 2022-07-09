@@ -1023,7 +1023,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n# Audio/Video source modules\n");
 	(void)re_fprintf(f, "#module\t\t\t" "avformat" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "gst" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" "gst_video" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Compatibility modules\n");
 	(void)re_fprintf(f, "#module\t\t\t" "ebuacip" MOD_EXT "\n");
