@@ -15,6 +15,19 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: install packages
+      run: |
+        sudo apt-get update && sudo apt-get install -y \
+                            libssl-dev \
+                            \
+                            libasound2-dev \
+                            libfdk-aac-dev \
+                            libopencore-amrnb-dev \
+                            libopencore-amrwb-dev \
+                            libopus-dev \
+                            libpulse-dev \
+                            libx11-dev
+
     - uses: sreimers/pr-dependency-action@v0.3
       with:
         name: re
@@ -34,4 +47,4 @@ jobs:
 
     - name: baresip
       run: |
-        cmake -DCMAKE_C_FLAGS="-Werror" . && make
+        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build --parallel
