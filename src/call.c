@@ -78,6 +78,7 @@ struct call {
 	enum sdp_dir ansvdir;      /**< Answer video direction              */
 	bool use_video;
 	bool use_rtp;
+	char *user_data;           /**< User data related to the call       */
 };
 
 
@@ -419,6 +420,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->sub);
 	mem_deref(call->not);
 	mem_deref(call->acc);
+	mem_deref(call->user_data);
 
 	list_flush(&call->custom_hdrs);
 }
@@ -869,7 +871,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	       struct account *acc, struct ua *ua, const struct call_prm *prm,
 	       const struct sip_msg *msg, struct call *xcall,
 	       struct dnsc *dnsc,
-	       call_event_h *eh, void *arg)
+	       call_event_h *eh, void *arg, const char *user_data)
 {
 	struct call *call;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
@@ -982,6 +984,12 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (err) {
 		warning("call: could not assign linenumber\n");
 		goto out;
+	}
+
+	if (user_data) {
+		err |= str_dup(&call->user_data, user_data);
+		if (err)
+			goto out;
 	}
 
 	/* NOTE: The new call must always be added to the tail of list,
@@ -2966,4 +2974,34 @@ bool call_supported(struct call *call, uint16_t tags)
 		return false;
 
 	return (call->supported & tags) == tags;
+}
+
+/**
+ * Get the user data for the call
+ *
+ * @param call Call object
+ *
+ * @return Call's user data
+ */
+const char *call_user_data(const struct call *call)
+{
+	return call ? call->user_data : NULL;
+}
+
+/**
+ * Set the user data of the call
+ *
+ * @param call Call object
+ * @param user_data User data to be set
+ * @return int
+ */
+
+int call_set_user_data(struct call *call, char *user_data)
+{
+	if (!call)
+		return EINVAL;
+
+	str_dup(&call->user_data, user_data);
+
+	return 0;
 }

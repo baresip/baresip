@@ -259,7 +259,7 @@ static int attended_xfer(struct re_printf *pf, void *arg)
 		goto out;
 
 	err = ua_connect(ua, &menu->xfer_targ, NULL, carg->prm,
-		VIDMODE_ON);
+		VIDMODE_ON, call_user_data(menu->xfer_call));
 	if (err)
 		goto out;
 

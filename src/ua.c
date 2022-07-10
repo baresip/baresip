@@ -703,7 +703,8 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 	(void)pl_strcpy(&msg->to.auri, to_uri, sizeof(to_uri));
 
-	err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, to_uri, true);
+	err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, to_uri,
+		true, NULL);
 	if (err) {
 		warning("ua: call_alloc: %m\n", err);
 		goto error;
@@ -780,7 +781,7 @@ static const struct sa *ua_regladdr(struct ua *ua)
 int ua_call_alloc(struct call **callp, struct ua *ua,
 		  enum vidmode vmode, const struct sip_msg *msg,
 		  struct call *xcall, const char *local_uri,
-		  bool use_rtp)
+		  bool use_rtp, const char *user_data)
 {
 	const struct network *net = baresip_network();
 	struct call_prm cprm;
@@ -844,7 +845,8 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 			 ua->acc, ua, &cprm,
 			 msg, xcall,
 			 net_dnsc(net),
-			 call_event_handler, ua);
+			 call_event_handler, ua,
+			 user_data);
 	if (err)
 		return err;
 
@@ -876,7 +878,7 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 	if (accept_sdp) {
 
 		err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, NULL,
-				    false);
+				    false, NULL);
 		if (err) {
 			(void)sip_treply(NULL, uag_sip(), msg,
 					 500, "Call Error");
@@ -1049,12 +1051,14 @@ int ua_update_account(struct ua *ua)
  * @param vmode     Video mode
  * @param adir      Audio media direction
  * @param vdir      Video media direction
+ * @param user_data Custom user data
  *
  * @return 0 if success, otherwise errorcode
  */
 int ua_connect_dir(struct ua *ua, struct call **callp,
 	       const char *from_uri, const char *req_uri,
-	       enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir)
+	       enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir,
+		   const char *user_data)
 {
 	struct call *call = NULL;
 	const struct network *net = baresip_network();
@@ -1099,7 +1103,8 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 			goto out;
 	}
 
-	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
+	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri,
+		true, user_data);
 	if (err)
 		goto out;
 
@@ -1142,10 +1147,10 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
  */
 int ua_connect(struct ua *ua, struct call **callp,
 	       const char *from_uri, const char *req_uri,
-	       enum vidmode vmode)
+	       enum vidmode vmode, const char *user_data)
 {
 	return ua_connect_dir(ua, callp, from_uri, req_uri, vmode,
-		SDP_SENDRECV, SDP_SENDRECV);
+		SDP_SENDRECV, SDP_SENDRECV, user_data);
 }
 
 

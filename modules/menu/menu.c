@@ -380,7 +380,7 @@ static void redial_handler(void *arg)
 		return;
 
 	err = ua_connect(uag_find_aor(menu.redial_aor), NULL, NULL,
-			 uri, VIDMODE_ON);
+			 uri, VIDMODE_ON, NULL);
 	if (err) {
 		warning("menu: redial: ua_connect failed (%m)\n", err);
 	}
@@ -681,7 +681,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		     call_id(call), prm);
 
 		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
-				    call_localuri(call), true);
+		    call_localuri(call), true,
+			call_user_data(call));
 		if (!err) {
 			struct pl pl;
 

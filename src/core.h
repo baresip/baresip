@@ -119,7 +119,7 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		struct account *acc, struct ua *ua, const struct call_prm *prm,
 		const struct sip_msg *msg, struct call *xcall,
 		struct dnsc *dnsc,
-		call_event_h *eh, void *arg);
+		call_event_h *eh, void *arg, const char *user_data);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
 int  call_sdp_get(const struct call *call, struct mbuf **descp, bool offer);
