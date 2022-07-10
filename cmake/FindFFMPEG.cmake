@@ -31,7 +31,7 @@ function(find_ffmpeg_library component header)
   set(FFMPEG_${component_u}_FOUND
       FALSE
       PARENT_SCOPE)
-  set(FFmpeg_${component}_FOUND
+  set(FFMPEG_${component}_FOUND
       FALSE
       PARENT_SCOPE)
 
@@ -80,7 +80,7 @@ function(find_ffmpeg_library component header)
     set(FFMPEG_${component_u}_FOUND
         TRUE
         PARENT_SCOPE)
-    set(FFmpeg_${component}_FOUND
+    set(FFMPEG_${component}_FOUND
         TRUE
         PARENT_SCOPE)
 
@@ -125,7 +125,7 @@ function(find_ffmpeg_library component header)
           "${_major}.${_minor}.${_micro}"
           PARENT_SCOPE)
     else()
-      message(STATUS "Failed parsing FFmpeg ${component} version")
+      message(STATUS "Failed parsing FFMPEG ${component} version")
     endif()
   endif()
 endfunction()
@@ -133,14 +133,14 @@ endfunction()
 set(FFMPEG_INCLUDE_DIRS)
 set(FFMPEG_LIBRARIES)
 
-if(NOT FFmpeg_FIND_COMPONENTS)
-  message(FATAL_ERROR "No FFmpeg components requested")
+if(NOT FFMPEG_FIND_COMPONENTS)
+  message(FATAL_ERROR "No FFMPEG components requested")
 endif()
 
-list(GET FFmpeg_FIND_COMPONENTS 0 _first_comp)
+list(GET FFMPEG_FIND_COMPONENTS 0 _first_comp)
 string(TOUPPER "${_first_comp}" _first_comp)
 
-foreach(component ${FFmpeg_FIND_COMPONENTS})
+foreach(component ${FFMPEG_FIND_COMPONENTS})
   if(component STREQUAL "avcodec")
     find_ffmpeg_library("${component}" "avcodec.h")
   elseif(component STREQUAL "avdevice")
@@ -160,13 +160,13 @@ foreach(component ${FFmpeg_FIND_COMPONENTS})
   elseif(component STREQUAL "swscale")
     find_ffmpeg_library("${component}" "swscale.h")
   else()
-    message(FATAL_ERROR "Unknown FFmpeg component requested: ${component}")
+    message(FATAL_ERROR "Unknown FFMPEG component requested: ${component}")
   endif()
 endforeach()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
-  FFmpeg
+  FFMPEG
   FOUND_VAR FFMPEG_FOUND
   REQUIRED_VARS FFMPEG_${_first_comp}_LIBRARIES
                 FFMPEG_${_first_comp}_INCLUDE_DIRS
@@ -174,24 +174,24 @@ find_package_handle_standard_args(
   HANDLE_COMPONENTS)
 
 if(FFMPEG_FOUND)
-  foreach(component ${FFmpeg_FIND_COMPONENTS})
-    if(NOT TARGET FFmpeg::${component})
+  foreach(component ${FFMPEG_FIND_COMPONENTS})
+    if(NOT TARGET FFMPEG::${component})
       string(TOUPPER ${component} component_u)
       if(FFMPEG_${component_u}_FOUND)
         if(IS_ABSOLUTE "${FFMPEG_${component_u}_LIBRARIES}")
-          add_library(FFmpeg::${component} UNKNOWN IMPORTED)
+          add_library(FFMPEG::${component} UNKNOWN IMPORTED)
           set_target_properties(
-            FFmpeg::${component}
+            FFMPEG::${component}
             PROPERTIES IMPORTED_LOCATION "${FFMPEG_${component_u}_LIBRARIES}")
         else()
-          add_library(FFmpeg::${component} INTERFACE IMPORTED)
+          add_library(FFMPEG::${component} INTERFACE IMPORTED)
           set_target_properties(
-            FFmpeg::${component}
+            FFMPEG::${component}
             PROPERTIES IMPORTED_LIBNAME "${FFMPEG_${component_u}_LIBRARIES}")
         endif()
 
         set_target_properties(
-          FFmpeg::${component}
+          FFMPEG::${component}
           PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
             "${FFMPEG_${component_u}_INCLUDE_DIRS}")
       endif()
