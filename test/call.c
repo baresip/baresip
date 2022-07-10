@@ -306,7 +306,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 					goto out;
 
 				err = ua_connect(ua, NULL, NULL,
-					curi, VIDMODE_ON);
+					curi, VIDMODE_ON, NULL);
 				if (err)
 					goto out;
 
@@ -444,7 +444,7 @@ int test_call_answer(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -478,7 +478,7 @@ int test_call_reject(void)
 	f->behaviour = BEHAVIOUR_REJECT;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -511,7 +511,7 @@ int test_call_answer_hangup_a(void)
 	f->estab_action = ACTION_HANGUP_A;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -549,7 +549,7 @@ int test_call_answer_hangup_b(void)
 	re_snprintf(uri, sizeof(uri), "<%s>", f->buri);
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, uri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, uri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -585,7 +585,7 @@ int test_call_rtp_timeout(void)
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	call = ua_call(f->a.ua);
@@ -648,7 +648,7 @@ int test_call_multiple(void)
 	 * Step 1 -- make 4 calls from A to B
 	 */
 	for (i=0; i<4; i++) {
-		err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+		err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 		TEST_ERR(err);
 	}
 
@@ -704,7 +704,7 @@ int test_call_multiple(void)
 	f->b.n_established = 0;
 	f->exp_estab = 2;
 	for (i=0; i<2; i++) {
-		err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+		err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 		TEST_ERR(err);
 	}
 
@@ -739,7 +739,7 @@ int test_call_max(void)
 
 	/* Make 2 calls, one should work and one should fail */
 	for (i=0; i<2; i++) {
-		err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+		err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 		TEST_ERR(err);
 	}
 
@@ -783,7 +783,7 @@ int test_call_dtmf(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -859,7 +859,7 @@ int test_call_video(void)
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -922,7 +922,7 @@ int test_call_aulevel(void)
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -959,7 +959,7 @@ int test_call_progress(void)
 	f->behaviour = BEHAVIOUR_PROGRESS;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1034,7 +1034,7 @@ static int test_media_base(enum audio_mode txmode)
 	f->behaviour = BEHAVIOUR_ANSWER;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1104,7 +1104,7 @@ int test_call_mediaenc(void)
 	f->stop_on_rtp = true;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1160,7 +1160,7 @@ int test_call_medianat(void)
 	f->stop_on_rtp = true;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1213,7 +1213,7 @@ int test_call_custom_headers(void)
 	err = ua_set_custom_hdrs(f->a.ua, &custom_hdrs);
 	TEST_ERR(err);
 
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	list_flush(&custom_hdrs);
@@ -1275,7 +1275,7 @@ int test_call_tcp(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 
 	/* Make a call using TCP-transport */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri_tcp, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri_tcp, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1317,7 +1317,7 @@ int test_call_deny_udp(void)
 	/* Make a call using UDP-transport */
 	re_snprintf(curi, sizeof(curi), "sip:b@%J;transport=udp",
 			&f->laddr_udp);
-	err = ua_connect(f->a.ua, 0, NULL, curi, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, curi, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1361,7 +1361,7 @@ int test_call_transfer(void)
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_TRANSFER;
 
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1412,7 +1412,7 @@ int test_call_transfer_fail(void)
 	f->estab_action = ACTION_TRANSFER;
 	f->fail_transfer = true;
 
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1466,7 +1466,7 @@ int test_call_attended_transfer(void)
 	f->estab_action = ACTION_ATT_TRANSFER;
 	f->fail_transfer = false;
 
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	err = re_main_timeout(5000);
@@ -1514,7 +1514,7 @@ int test_call_rtcp(void)
 	f->stop_on_rtcp = true;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1581,7 +1581,7 @@ int test_call_webrtc(void)
 	f->stop_on_audio_video = true;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1691,7 +1691,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	f->stop_on_rtp = true;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -1856,7 +1856,7 @@ int test_call_ipv6ll(void)
 	re_snprintf(uri, sizeof(uri), "sip:b@%J", &dst);
 	err  = ua_alloc(&f->a.ua, "A <sip:a@kitchen>;regint=0");
 	err |= ua_alloc(&f->b.ua, "B <sip:b@office>;regint=0");
-	err |= ua_connect(f->a.ua, 0, NULL, uri, VIDMODE_OFF);
+	err |= ua_connect(f->a.ua, 0, NULL, uri, VIDMODE_OFF, NULL);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
