@@ -3,9 +3,9 @@ project(avformat)
 set(SRCS avformat.c audio.c video.c)
 
 if(STATIC)
-    add_library(${PROJECT_NAME} STATIC ${SRCS})
+  add_library(${PROJECT_NAME} STATIC ${SRCS})
 else()
-    add_library(${PROJECT_NAME} MODULE ${SRCS})
+  add_library(${PROJECT_NAME} MODULE ${SRCS})
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${FFMPEG_INCLUDE_DIRS})

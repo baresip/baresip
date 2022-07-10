@@ -103,13 +103,13 @@ function(find_ffmpeg_library component header)
 
     if(EXISTS "${_vfile}")
       file(STRINGS "${_vfile}" _version_parse
-           REGEX "^.*VERSION_(MAJOR|MINOR|MICRO)[ \t]+[0-9]+[ \t]*$")
+        REGEX "^.*VERSION_(MAJOR|MINOR|MICRO)[ \t]+[0-9]+[ \t]*$")
       string(REGEX REPLACE ".*VERSION_MAJOR[ \t]+([0-9]+).*" "\\1" _major
-                           "${_version_parse}")
+        "${_version_parse}")
       string(REGEX REPLACE ".*VERSION_MINOR[ \t]+([0-9]+).*" "\\1" _minor
-                           "${_version_parse}")
+        "${_version_parse}")
       string(REGEX REPLACE ".*VERSION_MICRO[ \t]+([0-9]+).*" "\\1" _micro
-                           "${_version_parse}")
+        "${_version_parse}")
 
       set(FFMPEG_${component_u}_VERSION_MAJOR
           "${_major}"
@@ -193,7 +193,7 @@ if(FFMPEG_FOUND)
         set_target_properties(
           FFmpeg::${component}
           PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
-                     "${FFMPEG_${component_u}_INCLUDE_DIRS}")
+            "${FFMPEG_${component_u}_INCLUDE_DIRS}")
       endif()
     endif()
   endforeach()
