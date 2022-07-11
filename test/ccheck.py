@@ -35,6 +35,7 @@ class ccheck:
         self.cur_lineno = 0
         self.empty_lines_count = 0
         self.cc_count = 0
+        self.c11 = False
         self.files = {}
         self.extensions = ['c', 'cpp', 'h', 'mk', 'm4', 'py', 'm', 's', 'java',
                            'php']
@@ -54,7 +55,7 @@ class ccheck:
                               self.check_file_unix]
         self.funcmap = {
             'c':    [self.check_brackets, self.check_c_preprocessor,
-                     self.check_indent_tab],
+                     self.check_indent_tab, self.check_c11_err_handling],
             'h':    [self.check_brackets, self.check_indent_tab],
             'cpp':  [self.check_brackets, self.check_indent_tab],
             'mk':   [self.check_indent_tab],
@@ -187,6 +188,27 @@ class ccheck:
         if index != -1 and line[index-1] != ':':
             if not re.search('["]+.*//.*["]+', line):
                 self.error("C++ comment, use C comments /* ... */ instead")
+
+
+    #
+    # check for wrong C11 return checks
+    #
+    def check_c11_err_handling(self, line, len):
+        if self.cur_lineno == 1:
+            self.c11 = False
+
+        if re.search('err.*=.*(mtx_|thrd_|cnd_|tss_)', line):
+            if line.find('if') == -1:
+                if re.search('(success|busy|error|nomem|timedout)', line):
+                    return
+                self.c11 = True
+                return
+
+        if line.find('if') != -1:
+            if self.c11 and line.find('thrd_') == -1:
+                self.error("Wrong C11 return check,"
+                        " use e.g. 'if (err != thrd_success)'")
+            self.c11 = False
 
 
     #
