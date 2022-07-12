@@ -257,7 +257,7 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	tmr_start(&st->tmr, ptime, timeout, st);
 
 	st->run = true;
-	err = thrd_create(&st->thread, src_thread, st);
+	err = thread_create_name(&st->thread, "aufile_src", src_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;

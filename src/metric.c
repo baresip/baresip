@@ -80,8 +80,8 @@ int metric_init(struct metric *metric)
 		return EINVAL;
 
 	err = mtx_init(&metric->lock, mtx_plain);
-	if (err)
-		return err;
+	if (err != thrd_success)
+		return ENOMEM;
 
 	tmr_start(&metric->tmr, 100, tmr_handler, metric);
 

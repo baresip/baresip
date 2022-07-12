@@ -374,7 +374,7 @@ static int ctrl_alloc(struct ctrl_st **stp)
 		goto out;
 
 	st->run = true;
-	err = thrd_create(&st->thrd, thread, st);
+	err = thread_create_name(&st->thrd, "ctrl_dbus", thread, st);
 	if (err)
 		st->run = false;
 
