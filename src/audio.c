@@ -1200,8 +1200,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	rx->pt     = -1;
 	rx->ptime  = ptime;
 
-	err  = mtx_alloc(&tx->mtx);
-	err |= mtx_alloc(&rx->mtx);
+	err  = mutex_alloc(&tx->mtx);
+	err |= mutex_alloc(&rx->mtx);
 	if (err)
 		goto out;
 
@@ -1546,7 +1546,7 @@ static int config_aubufdec(struct audio *a)
 
 		if (!rx->thr.run) {
 			rx->thr.run = true;
-			err = thrd_create_name(&rx->thr.thrd, "RX filter",
+			err = thread_create_name(&rx->thr.thrd, "RX filter",
 					       rx_filter_thread, a);
 			if (err)
 				rx->thr.run = false;
@@ -1739,8 +1739,9 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		case AUDIO_MODE_THREAD:
 			if (!tx->thr.run) {
 				tx->thr.run = true;
-				err = thrd_create(&tx->thr.tid,
-						  tx_thread, a);
+				err = thread_create_name(&tx->thr.tid,
+							 "Audio Source",
+							 tx_thread, a);
 				if (err) {
 					tx->thr.run = false;
 					return err;

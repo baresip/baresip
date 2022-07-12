@@ -234,8 +234,8 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		return EINVAL;
 
 	err = mtx_trylock(&mcreceivl_lock);
-	if (err)
-		return err;
+	if (err != thrd_success)
+		return ENOMEM;
 
 	if (mcreceiver->state == LISTENING) {
 		mcreceiver->state = RECEIVING;
@@ -808,8 +808,10 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 
 	if (list_isempty(&mcreceivl)) {
 		err = mtx_init(&mcreceivl_lock, mtx_plain);
-		if (err)
+		if (err != thrd_success) {
+			err = ENOMEM;
 			goto out;
+		}
 	}
 
 	sa_cpy(&mcreceiver->addr, addr);

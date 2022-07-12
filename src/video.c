@@ -555,8 +555,8 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 
 	err  = mtx_init(&vtx->lock_enc, mtx_plain);
 	err |= mtx_init(&vtx->lock_tx, mtx_plain);
-	if (err)
-		return err;
+	if (err != thrd_success)
+		return ENOMEM;
 
 	tmr_init(&vtx->tmr_rtp);
 
@@ -580,8 +580,8 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 	int err;
 
 	err = mtx_init(&vrx->lock, mtx_plain);
-	if (err)
-		return err;
+	if (err != thrd_success)
+		return ENOMEM;
 
 	vrx->video  = video;
 	vrx->pt_rx  = -1;

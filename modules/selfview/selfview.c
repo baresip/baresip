@@ -91,8 +91,8 @@ static int selfview_alloc(struct selfview **selfviewp, void **ctx)
 			return ENOMEM;
 
 		err = mtx_init(&selfview->lock, mtx_plain);
-		if (err)
-			return err;
+		if (err != thrd_success)
+			return ENOMEM;
 
 		*ctx = selfview;
 		*selfviewp = selfview;

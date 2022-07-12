@@ -121,7 +121,7 @@ int aufile_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	info("aufile: writing speaker audio to %s\n", file);
 	st->run = true;
-	err = thrd_create(&st->thread, write_thread, st);
+	err = thread_create_name(&st->thread, "aufile_play", write_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;
