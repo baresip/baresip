@@ -163,7 +163,7 @@ int test_account_stun_uri_complete(void)
 		";stunuser=bob@bob.com"
 		";stunpass=taj:aa"
 		";stunserver=\"stun:42:19@stunserver.org\"");
-	TEST_ERR(err);	
+	TEST_ERR(err);
 	ASSERT_TRUE(acc != NULL);
 
 	addr = account_laddr(acc);
@@ -178,7 +178,7 @@ int test_account_stun_uri_complete(void)
 	err = account_alloc(&acc, "\"A\" <sip:A@proxy.com>"
 		";stunpass=taj:aa"
 		";stunserver=\"stun:42:19@stunserver.org\"");
-	TEST_ERR(err);	
+	TEST_ERR(err);
 	ASSERT_TRUE(acc != NULL);
 
 	addr = account_laddr(acc);
@@ -192,7 +192,7 @@ int test_account_stun_uri_complete(void)
 	mem_deref(acc);
 	err = account_alloc(&acc, "\"A\" <sip:A@proxy.com>"
 		";stunserver=\"stun:42:19@stunserver.org\"");
-	TEST_ERR(err);	
+	TEST_ERR(err);
 	ASSERT_TRUE(acc != NULL);
 
 	addr = account_laddr(acc);
@@ -205,7 +205,7 @@ int test_account_stun_uri_complete(void)
 
 	mem_deref(acc);
 	err = account_alloc(&acc, "\"A\" <sip:A@proxy.com>");
-	TEST_ERR(err);	
+	TEST_ERR(err);
 	ASSERT_TRUE(acc != NULL);
 
 	addr = account_laddr(acc);
@@ -220,17 +220,18 @@ int test_account_stun_uri_complete(void)
 	err = account_alloc(&acc, "\"A\" <sip:A@proxy.com>"
 		";stunuser=bob@bob.com"
 		";stunpass=taj:aa");
-	TEST_ERR(err);	
+	TEST_ERR(err);
 	ASSERT_TRUE(acc != NULL);
 
 	addr = account_laddr(acc);
 	ASSERT_TRUE(addr != NULL);
 
-	/* check STUN credentials taken from params regardless of stunserver parameter */
+	/* check STUN credentials taken from params
+					regardless of stunserver parameter */
 	ASSERT_STREQ("bob@bob.com", account_stun_user(acc));
 	ASSERT_STREQ("taj:aa", account_stun_pass(acc));
 	ASSERT_EQ(NULL, account_stun_host(acc));
-	
+
  out:
 	mem_deref(acc);
 

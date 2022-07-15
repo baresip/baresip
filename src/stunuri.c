@@ -81,7 +81,7 @@ int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
  * @return 0 if success, otherwise errorcode
  */
 int stunuri_decode_uri(struct stun_uri **sup, const struct uri *uri) {
-	struct stun_uri *su;	
+	struct stun_uri *su;
 	enum stun_scheme scheme;
 	struct pl tp;
 	int proto = IPPROTO_UDP;
@@ -103,7 +103,7 @@ int stunuri_decode_uri(struct stun_uri **sup, const struct uri *uri) {
 		return ENOTSUP;
 	}
 
-	if (0 == re_regex(uri->headers.p, uri->headers.l, 
+	if (0 == re_regex(uri->headers.p, uri->headers.l,
 		"transport=[a-z]+", &tp)) {
 
 		if (0 == pl_strcasecmp(&tp, "udp"))
