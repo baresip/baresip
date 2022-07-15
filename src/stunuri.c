@@ -73,7 +73,7 @@ int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
 }
 
 /**
- * Decode a STUN uri from a string
+ * Decode a STUN uri from URI object
  *
  * @param sup Pointer to allocated STUN uri
  * @param uri URI object
