@@ -340,7 +340,9 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		if (!err) {
 			struct pl pl;
 
-			// unsure about this one, would probably be best to allow the user to set something new on user_data
+			/* unsure about this one, would probably be best
+			to allow the user to set something new
+			on user_data */
 			call_set_user_data(call2, call_user_data(call));
 			pl_set_str(&pl, prm);
 
