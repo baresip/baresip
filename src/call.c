@@ -871,7 +871,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	       struct account *acc, struct ua *ua, const struct call_prm *prm,
 	       const struct sip_msg *msg, struct call *xcall,
 	       struct dnsc *dnsc,
-	       call_event_h *eh, void *arg, const char *user_data)
+	       call_event_h *eh, void *arg)
 {
 	struct call *call;
 	enum vidmode vidmode = prm ? prm->vidmode : VIDMODE_OFF;
@@ -984,12 +984,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	if (err) {
 		warning("call: could not assign linenumber\n");
 		goto out;
-	}
-
-	if (user_data) {
-		err |= str_dup(&call->user_data, user_data);
-		if (err)
-			goto out;
 	}
 
 	/* NOTE: The new call must always be added to the tail of list,
@@ -2996,7 +2990,7 @@ const char *call_user_data(const struct call *call)
  * @return int
  */
 
-int call_set_user_data(struct call *call, char *user_data)
+int call_set_user_data(struct call *call, const char *user_data)
 {
 	if (!call)
 		return EINVAL;

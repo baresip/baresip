@@ -336,11 +336,12 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		++ag->n_transfer;
 
 		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
-				call_localuri(call), true,
-				call_user_data(call));
+				call_localuri(call), true);
 		if (!err) {
 			struct pl pl;
 
+			// unsure about this one, would probably be best to allow the user to set something new on user_data
+			call_set_user_data(call2, call_user_data(call));
 			pl_set_str(&pl, prm);
 
 			err = call_connect(call2, &pl);

@@ -242,7 +242,7 @@ int call_set_media_ansdir(struct call *call, enum sdp_dir a, enum sdp_dir v);
 void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
 const char   *call_user_data(const struct call *call);
-int call_set_user_data(struct call *call, char *user_data);
+int call_set_user_data(struct call *call, const char *user_data);
 
 /*
  * Custom headers
@@ -813,11 +813,10 @@ typedef void (ua_exit_h)(void *arg);
 int  ua_alloc(struct ua **uap, const char *aor);
 int  ua_connect(struct ua *ua, struct call **callp,
 		const char *from_uri, const char *req_uri,
-		enum vidmode vmode, const char *user_data);
+		enum vidmode vmode);
 int  ua_connect_dir(struct ua *ua, struct call **callp,
 		    const char *from_uri, const char *req_uri,
-		    enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir,
-			const char *user_data);
+		    enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir);
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason);
 int  ua_answer(struct ua *ua, struct call *call, enum vidmode vmode);
@@ -857,7 +856,7 @@ int  ua_disable_autoanswer(struct ua *ua, enum answer_method met);
 int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   enum vidmode vidmode, const struct sip_msg *msg,
 		   struct call *xcall, const char *local_uri,
-		   bool use_rtp, const char *user_data);
+		   bool use_rtp);
 struct call *ua_find_call_state(const struct ua *ua, enum call_state st);
 int ua_raise(struct ua *ua);
 int ua_set_autoanswer_value(struct ua *ua, const char *value);

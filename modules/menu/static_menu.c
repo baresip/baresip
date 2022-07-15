@@ -558,20 +558,21 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 	re_hprintf(pf, "call uri: %s\n", uri);
 
-	const char ud_sentinel[] = "userdata=";
-	char *ud_pos = strstr(carg->prm, ud_sentinel);
-	char *user_data = NULL;
-	if (ud_pos != NULL) {
-		user_data = ud_pos + strlen(ud_sentinel);
-	}
-
-	err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON, user_data);
+	err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON);
 
 	if (menu->adelay >= 0)
 		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
 	if (err) {
 		(void)re_hprintf(pf, "ua_connect failed: %m\n", err);
 		goto out;
+	}
+
+	const char ud_sentinel[] = "userdata=";
+	char *ud_pos = strstr(carg->prm, ud_sentinel);
+	char *user_data = NULL;
+	if (ud_pos != NULL) {
+		user_data = ud_pos + strlen(ud_sentinel);
+		call_set_user_data(call, user_data);
 	}
 
 	re_hprintf(pf, "call id: %s\n", call_id(call));
@@ -667,19 +668,20 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 
 	re_hprintf(pf, "call uri: %s\n", uri);
 
+	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
+
+	if (menu->adelay >= 0)
+		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
+	if (err)
+		goto out;
+
 	const char ud_sentinel[] = "userdata=";
 	char *ud_pos = strstr(carg->prm, ud_sentinel);
 	char *user_data = NULL;
 	if (ud_pos != NULL) {
 		user_data = ud_pos + strlen(ud_sentinel);
+		call_set_user_data(call, user_data);
 	}
-
-	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir,
-		user_data);
-	if (menu->adelay >= 0)
-		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
-	if (err)
-		goto out;
 
 	re_hprintf(pf, "call id: %s\n", call_id(call));
 
