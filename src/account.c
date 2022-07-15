@@ -81,29 +81,37 @@ static int param_u32(uint32_t *v, const struct pl *params, const char *name)
 static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 {
 	struct pl srv, tmp;
+	struct uri uri;
 	int err;
 
 	if (!acc || !aor)
 		return EINVAL;
-
+	
+	memset(&uri, 0, sizeof(uri));
 	if (0 == msg_param_decode(&aor->params, "stunserver", &srv)) {
 
 		info("using stunserver: '%r'\n", &srv);
 
-		err = stunuri_decode(&acc->stun_host, &srv);
+		err = uri_decode(&uri, &srv);
 		if (err) {
-			warning("account: decode '%r' failed: %m\n",
-				&srv, err);
+			warning("account: decode '%r' failed (%m)\n", &srv, err);
+			return err;
 		}
+		
+		stunuri_decode_uri(&acc->stun_host, &uri);
 	}
 
 	err = 0;
 
 	if (0 == msg_param_exists(&aor->params, "stunuser", &tmp))
 		err |= param_dstr(&acc->stun_user, &aor->params, "stunuser");
+	else if (pl_isset(&uri.user))
+		err |= re_sdprintf(&acc->stun_user, "%H", uri_user_unescape, &uri.user);
 
 	if (0 == msg_param_exists(&aor->params, "stunpass", &tmp))
 		err |= param_dstr(&acc->stun_pass, &aor->params, "stunpass");
+	else if (pl_isset(&uri.password))
+		err |= re_sdprintf(&acc->stun_pass, "%H", uri_password_unescape, &uri.password);
 
 	return err;
 }

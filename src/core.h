@@ -220,6 +220,12 @@ int rtpext_decode(struct rtpext *ext, struct mbuf *mb);
 
 int rtpstat_print(struct re_printf *pf, const struct call *call);
 
+/*
+ * STUN URI
+ */
+
+int stunuri_decode_uri(struct stun_uri **sup, const struct uri *uri);
+
 
 /*
  * SDP
