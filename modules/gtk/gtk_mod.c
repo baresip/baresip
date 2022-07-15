@@ -883,7 +883,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 
 	case MQ_CONNECT:
 		uri = data;
-		err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON, NULL);
+		err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON);
 		add_history_menu_item(mod, uri, CALL_OUTGOING, "");
 		if (err) {
 			gdk_threads_enter();
@@ -904,7 +904,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 
 	case MQ_CONNECTATTENDED:
 		ats = data;
-		err = ua_connect(ua, &call, NULL, ats->uri, VIDMODE_ON, NULL);
+		err = ua_connect(ua, &call, NULL, ats->uri, VIDMODE_ON);
 		add_history_menu_item(mod, ats->uri, CALL_OUTGOING, "");
 		if (err) {
 			gdk_threads_enter();

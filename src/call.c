@@ -2987,3 +2987,21 @@ const char *call_user_data(const struct call *call)
 {
 	return call ? call->user_data : NULL;
 }
+
+/**
+ * Set the user data of the call
+ *
+ * @param call Call object
+ * @param user_data User data to be set
+ * @return int
+ */
+
+int call_set_user_data(struct call *call, char *user_data)
+{
+	if (!call)
+		return EINVAL;
+
+	str_dup(&call->user_data, user_data);
+
+	return 0;
+}
