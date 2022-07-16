@@ -2204,14 +2204,18 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 		break;
 	}
 
-	if (media) {
+	call_stream_stop(call);
+
+	if (media)
+		call_stream_start(call, false);
+
+	if (media)
 		call_event_handler(call, CALL_EVENT_PROGRESS, call->peer_uri);
-		update_media(call);
-	}
-	else {
-		call_stream_stop(call);
+	else
 		call_event_handler(call, CALL_EVENT_RINGING, call->peer_uri);
-	}
+
+	if (media)
+		update_media(call);
 }
 
 
