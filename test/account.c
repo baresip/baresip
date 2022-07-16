@@ -232,6 +232,20 @@ int test_account_stun_uri_complete(void)
 	ASSERT_STREQ("taj:aa", account_stun_pass(acc));
 	ASSERT_EQ(NULL, account_stun_host(acc));
 
+	mem_deref(acc);
+	err = account_alloc(&acc, "\"A\" <sip:A@proxy.com>"
+		";stunserver=\"stun:stunserver.org\"");
+	TEST_ERR(err);
+	ASSERT_TRUE(acc != NULL);
+
+	addr = account_laddr(acc);
+	ASSERT_TRUE(addr != NULL);
+
+	/* verify the STUN uri without user/pass in it */
+	ASSERT_EQ(NULL, account_stun_user(acc));
+	ASSERT_EQ(NULL, account_stun_pass(acc));
+	ASSERT_STREQ("stunserver.org", account_stun_host(acc));
+
  out:
 	mem_deref(acc);
 
