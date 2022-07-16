@@ -1617,7 +1617,7 @@ int ua_print_allowed(struct re_printf *pf, const struct ua *ua)
 
 	err = re_hprintf(pf,
 			 "INVITE,ACK,BYE,CANCEL,OPTIONS,"
-			 "NOTIFY,SUBSCRIBE,INFO,MESSAGE");
+			 "NOTIFY,SUBSCRIBE,INFO,MESSAGE,UPDATE");
 
 	if (ua->acc->rel100_mode)
 		err |= re_hprintf(pf, ",PRACK");
