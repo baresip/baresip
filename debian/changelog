@@ -1,3 +1,9 @@
+baresip (2.5.1) unstable; urgency=medium
+
+  * version 2.5.1
+
+ -- Sebastian Reimers <sebastian.reimers@gmail.com>  Wed, 17 Jul 2022 08:48:35 +0200
+
 baresip (2.5.0) unstable; urgency=medium
 
   * version 2.5.0
