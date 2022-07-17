@@ -79,6 +79,7 @@ struct call {
 	enum sdp_dir ansvdir;      /**< Answer video direction              */
 	bool use_video;
 	bool use_rtp;
+	char *user_data;           /**< User data related to the call       */
 };
 
 
@@ -421,6 +422,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->sub);
 	mem_deref(call->not);
 	mem_deref(call->acc);
+	mem_deref(call->user_data);
 
 	list_flush(&call->custom_hdrs);
 }
@@ -3004,4 +3006,39 @@ bool call_supported(struct call *call, uint16_t tags)
 		return false;
 
 	return (call->supported & tags) == tags;
+}
+
+/**
+ * Get the user data for the call
+ *
+ * @param call Call object
+ *
+ * @return Call's user data
+ */
+const char *call_user_data(const struct call *call)
+{
+	return call ? call->user_data : NULL;
+}
+
+/**
+ * Set the user data of the call
+ *
+ * @param call Call object
+ * @param user_data User data to be set
+ * @return int
+ */
+
+int call_set_user_data(struct call *call, const char *user_data)
+{
+	if (!call)
+		return EINVAL;
+
+	call->user_data = mem_deref(call->user_data);
+
+	int err = str_dup(&call->user_data, user_data);
+
+	if (err)
+		return err;
+
+	return 0;
 }
