@@ -195,6 +195,10 @@ if(X11_FOUND)
   add_subdirectory(modules/x11)
 endif()
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  add_subdirectory(modules/audiounit)
+endif()
+
 
 if(STATIC)
   foreach(mod IN LISTS MODULES)
