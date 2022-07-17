@@ -19,13 +19,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - uses: sreimers/pr-dependency-action@v0.3
+    - uses: sreimers/pr-dependency-action@v0.5
       with:
         name: re
         repo: https://github.com/baresip/re
         secret: ${{ secrets.GITHUB_TOKEN }}
 
-    - uses: sreimers/pr-dependency-action@v0.3
+    - uses: sreimers/pr-dependency-action@v0.5
       with:
         name: rem
         repo: https://github.com/baresip/rem
