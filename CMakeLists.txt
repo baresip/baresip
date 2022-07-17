@@ -208,6 +208,12 @@ if(STATIC)
   list(APPEND SRCS ${CMAKE_CURRENT_BINARY_DIR}/src/static.c)
 else()
   foreach(mod IN LISTS MODULES)
+
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+      set_target_properties(${mod} PROPERTIES
+                            LINK_FLAGS "-undefined dynamic_lookup")
+    endif()
+
     install(TARGETS ${mod} LIBRARY DESTINATION ${SHARE_PATH})
   endforeach()
 endif()
