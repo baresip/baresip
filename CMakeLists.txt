@@ -197,6 +197,7 @@ endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   add_subdirectory(modules/audiounit)
+  add_subdirectory(modules/avcapture)
 endif()
 
 
