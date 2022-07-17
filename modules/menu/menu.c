@@ -313,6 +313,7 @@ static void play_resume(const struct call *closed)
 		play_incoming(call);
 		break;
 	case CALL_STATE_RINGING:
+	case CALL_STATE_EARLY_CONFIRMED:
 	case CALL_STATE_EARLY:
 		if (!menu.ringback && !menu_find_call(active_call_test,
 						      closed))
@@ -813,6 +814,7 @@ static void menu_sel_other(struct call *exclude)
 		CALL_STATE_INCOMING,
 		CALL_STATE_OUTGOING,
 		CALL_STATE_RINGING,
+		CALL_STATE_EARLY_CONFIRMED,
 		CALL_STATE_EARLY,
 		CALL_STATE_ESTABLISHED,
 	};

@@ -824,7 +824,8 @@ static void hangup_callstate(enum call_state state)
  * @param arg  Command arguments (carg)
  *             carg->prm Can optionally set to "out", "in", "all".
  *             - out ... Hangup calls in state CALL_STATE_OUTGOING,
- *                       CALL_STATE_RINGING, CALL_STATE_EARLY
+ *                       CALL_STATE_RINGING, CALL_STATE_EARLY_CONFIRMED,
+ *                       CALL_STATE_EARLY
  *             - in  ... Hangup calls in state CALL_STATE_INCOMING
  *             - all ... Hangup all calls (default).
  *
@@ -858,6 +859,7 @@ static int cmd_hangupall(struct re_printf *pf, void *arg)
 	else if (!pl_strcmp(&pldir, "out")) {
 		hangup_callstate(CALL_STATE_OUTGOING);
 		hangup_callstate(CALL_STATE_RINGING);
+		hangup_callstate(CALL_STATE_EARLY_CONFIRMED);
 		hangup_callstate(CALL_STATE_EARLY);
 	}
 	else if (!pl_strcmp(&pldir, "in")) {

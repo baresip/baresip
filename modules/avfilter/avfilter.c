@@ -142,8 +142,8 @@ static int module_init(void)
 	int err;
 
 	err = mtx_init(&lock, mtx_plain);
-	if (err)
-		return err;
+	if (err != thrd_success)
+		return ENOMEM;
 
 	vidfilt_register(baresip_vidfiltl(), &avfilter);
 	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));

@@ -58,6 +58,7 @@ struct call {
 	bool answered;            /**< True if call has been answered       */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
+	bool peer_100rel;         /**< True if peer supports RFC 3262       */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -90,16 +91,17 @@ static const char *state_name(enum call_state st)
 {
 	switch (st) {
 
-	case CALL_STATE_IDLE:        return "IDLE";
-	case CALL_STATE_INCOMING:    return "INCOMING";
-	case CALL_STATE_OUTGOING:    return "OUTGOING";
-	case CALL_STATE_RINGING:     return "RINGING";
-	case CALL_STATE_EARLY:       return "EARLY";
-	case CALL_STATE_ESTABLISHED: return "ESTABLISHED";
-	case CALL_STATE_TERMINATED:  return "TERMINATED";
-	case CALL_STATE_TRANSFER:    return "TRANSFER";
-	case CALL_STATE_UNKNOWN:     return "UNKNOWN";
-	default:                return "???";
+	case CALL_STATE_IDLE:		 return "IDLE";
+	case CALL_STATE_INCOMING:	 return "INCOMING";
+	case CALL_STATE_OUTGOING:	 return "OUTGOING";
+	case CALL_STATE_RINGING:	 return "RINGING";
+	case CALL_STATE_EARLY_CONFIRMED: return "EARLY_CONFIRMED";
+	case CALL_STATE_EARLY:		 return "EARLY";
+	case CALL_STATE_ESTABLISHED:	 return "ESTABLISHED";
+	case CALL_STATE_TERMINATED:	 return "TERMINATED";
+	case CALL_STATE_TRANSFER:	 return "TRANSFER";
+	case CALL_STATE_UNKNOWN:	 return "UNKNOWN";
+	default:			 return "???";
 	}
 }
 
@@ -1437,6 +1439,25 @@ int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 
 
 /**
+ * Check if a target refresh (re-INVITE or UPDATE) is currently allowed
+ *
+ * @param call  Call object
+ *
+ * @return True if a target refresh is currently allowed, otherwise false
+ */
+bool call_target_refresh_allowed(const struct call *call)
+{
+	if (!call)
+		return false;
+
+	return call_state(call) == CALL_STATE_ESTABLISHED
+	       || call_state(call) == CALL_STATE_EARLY_CONFIRMED
+	       || (call_state(call) == CALL_STATE_INCOMING
+		   && call->peer_100rel && account_rel100_mode(call->acc));
+}
+
+
+/**
  * Get the session call-id for the call
  *
  * @param call Call object
@@ -1581,6 +1602,7 @@ int call_status(struct re_printf *pf, const struct call *call)
 
 	switch (call->state) {
 
+	case CALL_STATE_EARLY_CONFIRMED:
 	case CALL_STATE_EARLY:
 	case CALL_STATE_ESTABLISHED:
 		break;
@@ -1735,9 +1757,9 @@ static int sipsess_offer_handler(struct mbuf **descp,
 		vrdir = sdp_media_rdir(vmedia);
 	}
 
-	info("call: got re-INVITE%s audio-video: %s-%s\n"
-		, got_offer ? " (SDP Offer)" : "",
-		sdp_dir_name(ardir), sdp_dir_name(vrdir));
+	info("call: got %r%s audio-video: %s-%s\n", &msg->met,
+	     got_offer ? " (SDP Offer)" : "", sdp_dir_name(ardir),
+	     sdp_dir_name(vrdir));
 
 	/* Encode SDP Answer */
 	return sdp_encode(descp, call->sdp, !got_offer);
@@ -1757,7 +1779,8 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 		call->supported |= REPLACES;
 
 	call->got_offer = false;
-	call_event_handler(call, CALL_EVENT_ANSWERED, call->peer_uri);
+	if (!pl_strcmp(&msg->cseq.met, "INVITE"))
+		call_event_handler(call, CALL_EVENT_ANSWERED, call->peer_uri);
 
 	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
 		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
@@ -2157,6 +2180,9 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		return err;
 
 	set_state(call, CALL_STATE_INCOMING);
+	call->peer_100rel =
+		sip_msg_hdr_has_value(msg, SIP_HDR_SUPPORTED, "100rel")
+		|| sip_msg_hdr_has_value(msg, SIP_HDR_REQUIRE, "100rel");
 
 	/* New call */
 	if (call->config_call.local_timeout) {
@@ -2184,6 +2210,7 @@ static void delayed_answer_handler(void *arg)
 static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
+	bool rel100;
 	bool media;
 
 	MAGIC_CHECK(call);
@@ -2215,6 +2242,9 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	else
 		media = false;
 
+	rel100 = sip_msg_hdr_has_value(msg, SIP_HDR_REQUIRE, "100rel")
+		 && account_rel100_mode(call->acc);
+
 	switch (msg->scode) {
 
 	case 180:
@@ -2222,18 +2252,26 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 		break;
 
 	case 183:
-		set_state(call, CALL_STATE_EARLY);
+		if (rel100)
+			set_state(call, CALL_STATE_EARLY_CONFIRMED);
+		else
+			set_state(call, CALL_STATE_EARLY);
+
 		break;
 	}
 
-	if (media) {
+	call_stream_stop(call);
+
+	if (media)
+		call_stream_start(call, false);
+
+	if (media)
 		call_event_handler(call, CALL_EVENT_PROGRESS, call->peer_uri);
-		update_media(call);
-	}
-	else {
-		call_stream_stop(call);
+	else
 		call_event_handler(call, CALL_EVENT_RINGING, call->peer_uri);
-	}
+
+	if (media)
+		update_media(call);
 }
 
 

@@ -21,6 +21,7 @@ jobs:
                             libssl-dev \
                             \
                             libasound2-dev \
+                            libcodec2-dev \
                             libfdk-aac-dev \
                             libopencore-amrnb-dev \
                             libopencore-amrwb-dev \

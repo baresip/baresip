@@ -164,6 +164,7 @@ enum call_state {
 	CALL_STATE_OUTGOING,
 	CALL_STATE_RINGING,
 	CALL_STATE_EARLY,
+	CALL_STATE_EARLY_CONFIRMED,
 	CALL_STATE_ESTABLISHED,
 	CALL_STATE_TERMINATED,
 	CALL_STATE_TRANSFER,
@@ -203,6 +204,7 @@ int  call_send_digit(struct call *call, char key);
 bool call_has_audio(const struct call *call);
 bool call_has_video(const struct call *call);
 bool call_early_video_available(const struct call *call);
+bool call_target_refresh_allowed(const struct call *call);
 int  call_transfer(struct call *call, const char *uri);
 int  call_replace_transfer(struct call *target_call, struct call *source_call);
 int  call_status(struct re_printf *pf, const struct call *call);
