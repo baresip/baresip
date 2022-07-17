@@ -3033,7 +3033,12 @@ int call_set_user_data(struct call *call, const char *user_data)
 	if (!call)
 		return EINVAL;
 
-	str_dup(&call->user_data, user_data);
+	call->user_data = mem_deref(call->user_data);
+
+	int err = str_dup(&call->user_data, user_data);
+
+	if (err)
+		return err;
 
 	return 0;
 }
