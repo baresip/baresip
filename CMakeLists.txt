@@ -158,6 +158,7 @@ add_subdirectory(modules/cons)
 add_subdirectory(modules/contact)
 add_subdirectory(modules/debug_cmd)
 add_subdirectory(modules/echo)
+add_subdirectory(modules/fakevideo)
 add_subdirectory(modules/menu)
 add_subdirectory(modules/stdio)
 
