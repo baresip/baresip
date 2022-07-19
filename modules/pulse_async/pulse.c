@@ -50,6 +50,7 @@ static void reconnth(void *arg)
 
 	++pa.retry;
 
+	tmr_cancel(&pa.rc);
 	if (pa.paconn)
 		pa.paconn = mem_deref(pa.paconn);
 
@@ -72,8 +73,8 @@ static void qh(int id, void *data, void *arg)
 	if (pa.paconn)
 		pa.paconn = mem_deref(pa.paconn);
 
-	if (paconn_start(&pa.paconn))
-		tmr_start(&pa.rc, 1000, reconnth, NULL);
+	pa.retry = 0;
+	tmr_start(&pa.rc, 1000, reconnth, NULL);
 }
 
 
