@@ -100,5 +100,5 @@ jobs:
     - name: make baresip macOS
       if: ${{ runner.os == 'macOS' }}
       run: |
-        make V=1 CCACHE= EXTRA_CFLAGS=-Werror bareinfo test modules
-        make clean; make CCACHE= STATIC=yes
+        make V=1 CCACHE= EXTRA_CFLAGS=-Werror USE_DBUS= bareinfo test modules
+        make clean; make CCACHE= STATIC=yes USE_DBUS=
