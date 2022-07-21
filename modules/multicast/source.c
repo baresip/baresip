@@ -295,10 +295,11 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 		unsigned i;
 
 		for (i = 0; i < 16; i++) {
+			poll_aubuf_tx(src);
+
 			if (aubuf_cur_size(src->aubuf) < src->psize)
 				break;
 
-			poll_aubuf_tx(src);
 		}
 	}
 }
@@ -334,9 +335,7 @@ static void *tx_thread(void *arg)
 		if (ts > now)
 			continue;
 
-		if (aubuf_cur_size(src->aubuf) >= src->psize)
-			poll_aubuf_tx(src);
-
+		poll_aubuf_tx(src);
 		ts += src->ptime;
 	}
 
