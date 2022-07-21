@@ -313,8 +313,8 @@ out:
 static void ctrl_destructor(void *arg)
 {
 	struct ctrl_st *st = arg;
-	if (st->run) {
-		st->run = false;
+	if (re_atomic_rlx(&st->run)) {
+		re_atomic_rlx_set(&st->run, false);
 		g_main_loop_quit(st->loop);
 		thrd_join(st->thrd, NULL);
 	}
@@ -341,7 +341,7 @@ static int thread(void *arg)
 {
 	struct ctrl_st *st = arg;
 
-	while (st->run)
+	while (re_atomic_rlx(&st->run))
 		g_main_loop_run(st->loop);
 
 	return 0;
@@ -373,10 +373,10 @@ static int ctrl_alloc(struct ctrl_st **stp)
 	if (err)
 		goto out;
 
-	st->run = true;
+	re_atomic_rlx_set(&st->run, true);
 	err = thread_create_name(&st->thrd, "ctrl_dbus", thread, st);
 	if (err)
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 
 out:
 	if (err)
