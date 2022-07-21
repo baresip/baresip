@@ -24,6 +24,9 @@
  * the pulseaudio async interface.
  */
 
+enum {
+	RECONN_DELAY = 1500,
+};
 
 static struct auplay *auplay;
 static struct ausrc *ausrc;
@@ -33,7 +36,6 @@ struct pa {
 	struct tmr rc;
 	struct mqueue *q;
 	uint8_t retry;
-
 	struct paconn_st *paconn;
 };
 
@@ -50,6 +52,7 @@ static void reconnth(void *arg)
 
 	++pa.retry;
 
+	tmr_cancel(&pa.rc);
 	if (pa.paconn)
 		pa.paconn = mem_deref(pa.paconn);
 
@@ -57,7 +60,7 @@ static void reconnth(void *arg)
 		return;
 
 	if (pa.retry < 10)
-		tmr_start(&pa.rc, 1000, reconnth, NULL);
+		tmr_start(&pa.rc, RECONN_DELAY, reconnth, NULL);
 	else
 		warning ("pulse_async: could not connect to pulseaudio\n");
 }
@@ -72,8 +75,8 @@ static void qh(int id, void *data, void *arg)
 	if (pa.paconn)
 		pa.paconn = mem_deref(pa.paconn);
 
-	if (paconn_start(&pa.paconn))
-		tmr_start(&pa.rc, 1000, reconnth, NULL);
+	pa.retry = 0;
+	tmr_start(&pa.rc, RECONN_DELAY, reconnth, NULL);
 }
 
 
@@ -205,8 +208,9 @@ static int paconn_start(struct paconn_st **ppaconn)
  */
 static int pa_start(void)
 {
-	int err = 0;
+	int err;
 
+	pa.retry = 0;
 	err = mqueue_alloc(&pa.q, qh, NULL);
 	if (err)
 		return err;
@@ -258,7 +262,7 @@ int pulse_async_set_available_devices(struct list *dev_list,
 
 static int module_init(void)
 {
-	int err = 0;
+	int err;
 
 	memset(&pa, 0, sizeof(pa));
 	err = pa_start();
