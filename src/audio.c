@@ -686,10 +686,10 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 		return;
 
 	for (i=0; i<16; i++) {
+		poll_aubuf_tx(a);
+
 		if (aubuf_cur_size(tx->aubuf) < tx->psize)
 			break;
-
-		poll_aubuf_tx(a);
 	}
 
 	/* Exact timing: send Telephony-Events from here */
