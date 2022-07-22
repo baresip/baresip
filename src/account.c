@@ -99,7 +99,10 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 			return err;
 		}
 
-		stunuri_decode_uri(&acc->stun_host, &uri);
+		err = stunuri_decode_uri(&acc->stun_host, &uri);
+		if (err) {
+			return err;
+		}
 	}
 
 	err = 0;
