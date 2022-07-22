@@ -516,7 +516,6 @@ static void poll_aubuf_tx(struct audio *a)
 	struct le *le;
 	uint32_t srate;
 	uint8_t ch;
-	bool underrun = false;
 	int err = 0;
 
 	sz = aufmt_sample_size(tx->src_fmt);
@@ -527,20 +526,9 @@ static void poll_aubuf_tx(struct audio *a)
 	srate = tx->ausrc_prm.srate;
 	ch = tx->ausrc_prm.ch;
 
-	if (aubuf_cur_size(tx->aubuf) < tx->psize) {
-		++tx->stats.aubuf_underrun;
-		underrun = true;
-
-		debug("audio: thread: tx aubuf underrun"
-		      " (total %llu)\n", tx->stats.aubuf_underrun);
-	}
-
 	/* timed read from audio-buffer */
 	auframe_init(&af, tx->src_fmt, sampv, sampc, srate, ch);
 	aubuf_read_auframe(tx->aubuf, &af);
-
-	if (underrun)
-		return;
 
 	/* Process exactly one audio-frame in list order */
 	for (le = tx->filtl.head; le; le = le->next) {
@@ -1228,7 +1216,18 @@ static int tx_thread(void *arg)
 			goto loop;
 
 		/* Now is the time to send */
-		poll_aubuf_tx(a);
+
+		if (aubuf_cur_size(tx->aubuf) >= tx->psize) {
+
+			poll_aubuf_tx(a);
+		}
+		else {
+			++tx->stats.aubuf_underrun;
+
+			debug("audio: thread: tx aubuf underrun"
+			      " (total %llu)\n", tx->stats.aubuf_underrun);
+		}
+
 		ts += tx->ptime;
 
 		/* Exact timing: send Telephony-Events from here.
