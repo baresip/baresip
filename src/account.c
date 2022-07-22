@@ -119,7 +119,7 @@ static int stunsrv_decode(struct account *acc, const struct sip_addr *aor)
 		err |= re_sdprintf(&acc->stun_pass, "%H",
 					uri_password_unescape, &uri.password);
 		warning("The \"user:password\" format in the stunserver"
-			" userinfo field is deprecated.\n");	
+			" userinfo field is deprecated.\n");
 	}
 
 	return err;
