@@ -117,6 +117,11 @@ int stunuri_decode_uri(struct stun_uri **sup, const struct uri *uri)
 		}
 	}
 
+	if (pl_isset(&uri->password)) {
+		warning("The \"user:password\" format in the stunserver"
+			" userinfo field is deprecated.\n");
+	}
+
 	su = mem_zalloc(sizeof(*su), destructor);
 	if (!su)
 		return ENOMEM;
