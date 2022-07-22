@@ -80,7 +80,8 @@ int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
  *
  * @return 0 if success, otherwise errorcode
  */
-int stunuri_decode_uri(struct stun_uri **sup, const struct uri *uri) {
+int stunuri_decode_uri(struct stun_uri **sup, const struct uri *uri) 
+{
 	struct stun_uri *su;
 	enum stun_scheme scheme;
 	struct pl tp;
