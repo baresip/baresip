@@ -2020,6 +2020,9 @@ static void prack_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
 
+	if (!msg || !call)
+		return;
+
 	if (msg->req || (msg->scode >= 200 && msg->scode < 300))
 		call->early_confirmed = true;
 
