@@ -208,13 +208,17 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 			err |= odict_entry_add(od, "diverteruri", ODICT_STRING,
 					       call_diverteruri(call));
 
+		err |= odict_entry_add(od, "onhold", ODICT_BOOL, 
+				call_is_onhold(call));
+
 		const char *user_data = call_user_data(call);
 		if (user_data) {
 			err |= odict_entry_add(od, "userdata", ODICT_STRING,
 				user_data);
-			if (err)
-				goto out;
 		}
+
+		if (err)
+			goto out;
 	}
 
 	if (str_isset(prm)) {
