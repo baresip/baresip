@@ -244,9 +244,7 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	info("aufile: audio ptime=%u sampc=%zu\n", st->ptime, st->sampc);
 
 	/* 1 - inf seconds of audio */
-	err = aubuf_alloc(&st->aubuf,
-			  st->sampc * 2,
-			  0);
+	err = aubuf_alloc(&st->aubuf, 0, 0);
 	if (err)
 		goto out;
 
