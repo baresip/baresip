@@ -51,6 +51,8 @@ jobs:
         for p in re rem; do
           cmake -S $p -B $p/build
           cmake --build $p/build
+        done
+        for p in re rem; do
           mv $p ../.
         done
 
