@@ -45,8 +45,8 @@ static void destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	if (st->run) {
-		st->run = false;
+	if (re_atomic_rlx(&st->run)) {
+		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
 
@@ -71,7 +71,7 @@ static int src_thread(void *arg)
 	if (!sampv)
 		return ENOMEM;
 
-	while (st->run) {
+	while (re_atomic_rlx(&st->run)) {
 		struct auframe af;
 
 		sys_msleep(ms);
@@ -90,7 +90,7 @@ static int src_thread(void *arg)
 		ts += st->ptime;
 
 		if (aubuf_cur_size(st->aubuf) == 0)
-			st->run = false;
+			re_atomic_rlx_set(&st->run, false);
 	}
 
 	mem_deref(sampv);
@@ -105,7 +105,7 @@ static void timeout(void *arg)
 	tmr_start(&st->tmr, st->ptime ? st->ptime : 40, timeout, st);
 
 	/* check if audio buffer is empty */
-	if (!st->run) {
+	if (!re_atomic_rlx(&st->run)) {
 		tmr_cancel(&st->tmr);
 
 		info("aufile: end of file\n");
@@ -254,10 +254,10 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	tmr_start(&st->tmr, ptime, timeout, st);
 
-	st->run = true;
+	re_atomic_rlx_set(&st->run, true);
 	err = thread_create_name(&st->thread, "aufile_src", src_thread, st);
 	if (err) {
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		goto out;
 	}
 
