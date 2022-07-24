@@ -55,11 +55,7 @@ static void destructor(void *arg)
  */
 int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
 {
-	struct stun_uri *su;
 	struct uri uri;
-	enum stun_scheme scheme;
-	struct pl tp;
-	int proto = IPPROTO_UDP;
 	int err;
 
 	if (!sup || !pl)
@@ -71,21 +67,45 @@ int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
 		return err;
 	}
 
-	if (0 == pl_strcasecmp(&uri.scheme, "stun"))
+	err = stunuri_decode_uri(sup, &uri);
+
+	return err;
+}
+
+/**
+ * Decode a STUN uri from URI object
+ *
+ * @param sup Pointer to allocated STUN uri
+ * @param uri URI object
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int stunuri_decode_uri(struct stun_uri **sup, const struct uri *uri)
+{
+	struct stun_uri *su;
+	enum stun_scheme scheme;
+	struct pl tp;
+	int proto = IPPROTO_UDP;
+	int err;
+
+	if (!sup || !uri)
+		return EINVAL;
+
+	if (0 == pl_strcasecmp(&uri->scheme, "stun"))
 		scheme = STUN_SCHEME_STUN;
-	else if (0 == pl_strcasecmp(&uri.scheme, "stuns"))
+	else if (0 == pl_strcasecmp(&uri->scheme, "stuns"))
 		scheme = STUN_SCHEME_STUNS;
-	else if (0 == pl_strcasecmp(&uri.scheme, "turn"))
+	else if (0 == pl_strcasecmp(&uri->scheme, "turn"))
 		scheme = STUN_SCHEME_TURN;
-	else if (0 == pl_strcasecmp(&uri.scheme, "turns"))
+	else if (0 == pl_strcasecmp(&uri->scheme, "turns"))
 		scheme = STUN_SCHEME_TURNS;
 	else {
-		warning("stunuri: scheme not supported (%r)\n", &uri.scheme);
+		warning("stunuri: scheme not supported (%r)\n", &uri->scheme);
 		return ENOTSUP;
 	}
 
-	if (0 == re_regex(uri.headers.p, uri.headers.l,
-			  "transport=[a-z]+", &tp)) {
+	if (0 == re_regex(uri->headers.p, uri->headers.l,
+		"transport=[a-z]+", &tp)) {
 
 		if (0 == pl_strcasecmp(&tp, "udp"))
 			proto = IPPROTO_UDP;
@@ -97,13 +117,18 @@ int stunuri_decode(struct stun_uri **sup, const struct pl *pl)
 		}
 	}
 
+	if (pl_isset(&uri->password)) {
+		warning("The \"user:password\" format in the stunserver"
+			" userinfo field is deprecated.\n");
+	}
+
 	su = mem_zalloc(sizeof(*su), destructor);
 	if (!su)
 		return ENOMEM;
 
 	su->scheme = scheme;
-	err = pl_strdup(&su->host, &uri.host);
-	su->port = uri.port;
+	err = pl_strdup(&su->host, &uri->host);
+	su->port = uri->port;
 	su->proto = proto;
 
 	if (err)

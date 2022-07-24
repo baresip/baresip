@@ -36,7 +36,7 @@
 #    ;sipnat={outbound}
 #    ;stunuser=STUN/TURN/ICE-username
 #    ;stunpass=STUN/TURN/ICE-password
-#    ;stunserver=stun:[user:pass]@host[:port]
+#    ;stunserver=stun:[user:pass]@host[:port]  # see RFC 3986: Use of the format "user:password" in the userinfo field is deprecated.
 #    ;tcpsrcport=6060
 #    ;video_codecs=h264,h263,...
 #
@@ -63,6 +63,7 @@
 
 #
 # Use ICE for Media NAT Traversal, using a specific STUN-server
+# See RFC 3986: use of the format "user:password" in the userinfo field is deprecated.
 #
 <sip:user@example.com>;medianat=ice;stunserver="stun:username:password@stunserver.org";auth_pass=pass
 
