@@ -20,9 +20,9 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: openssl path macos
-        if: ${{ runner.os == 'macOS' }}
-        run: |
-          echo "OPENSSL_ROOT_DIR=/usr/local/opt/openssl" >> $GITHUB_ENV
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        echo "OPENSSL_ROOT_DIR=/usr/local/opt/openssl" >> $GITHUB_ENV
 
     - name: install packages
       if: ${{ runner.os == 'Linux' }}
