@@ -2023,8 +2023,10 @@ static void prack_handler(const struct sip_msg *msg, void *arg)
 	if (!msg || !call)
 		return;
 
+#if 0 /* TODO: fix heap-buffer-overflow on hangup */
 	if (msg->req || (msg->scode >= 200 && msg->scode < 300))
 		call->early_confirmed = true;
+#endif
 
 	return;
 }
