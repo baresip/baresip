@@ -48,7 +48,11 @@ jobs:
 
     - name: make re/rem
       run: |
-        for p in re rem; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
+        for p in re rem; do
+          cmake -S $p -B $p/build
+          cmake --build $p/build
+          mv $p ../.
+        done
 
     - name: ldconfig
       if: ${{ runner.os == 'Linux' }}
