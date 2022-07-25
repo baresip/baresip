@@ -51,3 +51,4 @@ mk/win32/Debug/
 *.vcxproj.user
 
 speaker.wav
+CMakeFiles
