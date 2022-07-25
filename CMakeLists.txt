@@ -80,6 +80,7 @@ if(USE_OPENSSL)
     -DUSE_OPENSSL_SRTP
     -DUSE_TLS
   )
+  include_directories( ${OPENSSL_INCLUDE_DIR} )
 endif()
 
 if(STATIC)
