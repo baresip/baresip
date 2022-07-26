@@ -36,6 +36,7 @@ find_package(FFMPEG COMPONENTS avcodec avfilter avformat swscale)
 find_package(OPUS)
 find_package(PULSE)
 find_package(X11)
+find_package(ZRTP)
 
 
 ##############################################################################
@@ -205,6 +206,9 @@ if(PULSE_FOUND)
 endif()
 if(X11_FOUND)
   add_subdirectory(modules/x11)
+endif()
+if(ZRTP_FOUND)
+  add_subdirectory(modules/zrtp)
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
