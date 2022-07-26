@@ -231,6 +231,11 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!audiocoreState)
 		return EINVAL;
 
+	if (audiocoreState->est) {
+		warning("ac_symphony: supports only one call.\n");
+		return EINVAL;
+	}
+
 	info("ac_symphony: encode_update\n");
 
 	st = (struct enc_st*) mem_zalloc(sizeof(*st), enc_destructor);
@@ -259,6 +264,11 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 	if (!audiocoreState)
 		return EINVAL;
+
+	if (audiocoreState->dst) {
+		warning("ac_symphony: supports only one call.\n");
+		return EINVAL;
+	}
 
 	info("ac_symphony: decode_update\n");
 
