@@ -3,7 +3,6 @@
 #  ZRTP_INCLUDE_DIRS - where to find zrtp.h
 #  ZRTP_LIBRARIES    - List of libraries when using zrtp
 #  ZRTP_FOUND        - True if zrtp lib found
-#  BN_FOUND          - True if bn lib found
 
 if(NOT WIN32)
     find_package(PkgConfig)
@@ -38,10 +37,11 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ZRTP DEFAULT_MSG ZRTP_LIBRARY
     ZRTP_INCLUDE_DIR)
 
-if(ZRTP_FOUND)
+if(ZRTP_FOUND AND DEFINED BN_LIBRARY)
     set( ZRTP_INCLUDE_DIRS ${ZRTP_INCLUDE_DIR}/libzrtp )
     set( ZRTP_LIBRARIES ${ZRTP_LIBRARY} ${BN_LIBRARY} )
-else()
+  else()
+    unset( ZRTP_FOUND )
     set( ZRTP_INCLUDE_DIRS )
     set( ZRTP_LIBRARIES )
 endif()
