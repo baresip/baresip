@@ -169,6 +169,7 @@ add_subdirectory(modules/mwi)
 add_subdirectory(modules/stdio)
 add_subdirectory(modules/stun)
 add_subdirectory(modules/turn)
+add_subdirectory(modules/uuid)
 
 if(AAC_FOUND)
   add_subdirectory(modules/aac)
