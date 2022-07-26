@@ -22,7 +22,15 @@ find_library(PULSE_LIBRARY
     HINTS
         "${PULSE_LIBRARY_DIRS}"
         "${PULSE_HINTS}/lib"
-    PATHS /usr/loca/lib usr/lib
+    PATHS /usr/local/lib /usr/lib
+)
+
+find_library(PULSE_SIMPLE_LIBRARY
+    NAME pulse-simple
+    HINTS
+        "${PULSE_LIBRARY_DIRS}"
+        "${PULSE_HINTS}/lib"
+    PATHS /usr/local/lib /usr/lib
 )
 
 include(FindPackageHandleStandardArgs)
@@ -31,7 +39,11 @@ find_package_handle_standard_args(PULSE DEFAULT_MSG PULSE_LIBRARY
 
 if(PULSE_FOUND)
     set( PULSE_INCLUDE_DIRS ${PULSE_INCLUDE_DIR} )
-    set( PULSE_LIBRARIES ${PULSE_LIBRARY} )
+    if (DEFINED PULSE_SIMPLE_LIBRARY)
+      set( PULSE_LIBRARIES ${PULSE_LIBRARY} ${PULSE_SIMPLE_LIBRARY} )
+    else()
+      set( PULSE_LIBRARIES ${PULSE_LIBRARY} )
+    endif()
 else()
     set( PULSE_INCLUDE_DIRS )
     set( PULSE_LIBRARIES )
