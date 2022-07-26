@@ -249,7 +249,7 @@ endif()
 
 set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads -lz -lm)
 if(USE_OPENSSL)
-  list(APPEND LIBS OpenSSL::SSL OpenSSL::Crypto)
+  list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
 endif()
 
 if(STATIC)
