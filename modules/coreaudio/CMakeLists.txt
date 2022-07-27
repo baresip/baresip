@@ -9,6 +9,7 @@ else()
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE baresip
+  "-framework CoreFoundation"
   "-framework CoreAudio"
   "-framework AudioToolbox"
 )
