@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
     - main
+    - stable
 
 jobs:
   build:
@@ -29,7 +30,6 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y \
                             libssl-dev \
-                            \
                             libasound2-dev \
                             libcodec2-dev \
                             libfdk-aac-dev \
@@ -37,7 +37,11 @@ jobs:
                             libopencore-amrwb-dev \
                             libopus-dev \
                             libpulse-dev \
-                            libx11-dev
+                            libx11-dev \
+                            libavcodec-dev \
+                            libavdevice-dev \
+                            libavformat-dev \
+                            libglib2.0-dev
 
     - uses: sreimers/pr-dependency-action@v0.5
       with:
@@ -55,7 +59,7 @@ jobs:
       run: |
         for p in re rem; do
           cmake -S $p -B $p/build
-          cmake --build $p/build
+          cmake --build $p/build -j
         done
         for p in re rem; do
           mv $p ../.
@@ -67,4 +71,9 @@ jobs:
 
     - name: baresip
       run: |
-        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build --parallel
+        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
+ 
+    - name: baresip static
+      run: |
+        rm -Rf build
+        cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
