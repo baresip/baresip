@@ -36,7 +36,7 @@ find_package(FFMPEG COMPONENTS
     avutil avcodec avfilter avformat swscale swresample avdevice)
 find_package(OPUS)
 find_package(PULSE)
-find_package(VPX COMPONENTS vp8 vp9)
+find_package(VPX)
 find_package(X11)
 find_package(ZRTP)
 
