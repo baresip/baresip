@@ -9,6 +9,8 @@ else()
 endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE baresip
+  "-framework CoreMedia"
+  "-framework CoreVideo"
   "-framework AVFoundation"
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
