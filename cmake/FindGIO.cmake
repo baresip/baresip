@@ -49,10 +49,15 @@ find_library(GOBJ_LIBRARY
   PATHS /usr/local/lib /usr/lib
 )
 
+find_program(GDBUS_CODEGEN
+  NAMES gdbus-codegen
+)
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(GIO DEFAULT_MSG
   GLIB_LIBRARY GIO_LIBRARY GOBJ_LIBRARY
-  GIO_INCLUDE_DIR GLIB_INCLUDE_DIR GIO_UNIX_INCLUDE_DIR)
+  GIO_INCLUDE_DIR GLIB_INCLUDE_DIR GIO_UNIX_INCLUDE_DIR
+  GDBUS_CODEGEN)
 
 if(GIO_FOUND)
   set( GIO_INCLUDE_DIRS ${GIO_INCLUDE_DIR} ${GLIB_INCLUDE_DIR}
