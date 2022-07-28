@@ -11,12 +11,12 @@ else()
 endif()
 
 target_link_directories(${PROJECT_NAME} PRIVATE
-  ${GLIB_LIBRARY_DIRS}
+  ${GIO_LIBRARY_DIRS}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${GLIB_INCLUDE_DIRS}
+  ${GIO_INCLUDE_DIRS}
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE
