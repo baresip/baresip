@@ -5,19 +5,17 @@ set(SRCS ctrl_dbus.c baresipbus.c)
 
 if(STATIC)
   add_library(${PROJECT_NAME} STATIC ${SRCS})
-  target_link_libraries(${PROJECT_NAME} PRIVATE baresip)
 else()
   add_library(${PROJECT_NAME} MODULE ${SRCS})
 endif()
 
-target_link_directories(${PROJECT_NAME} PRIVATE
-  ${GIO_LIBRARY_DIRS}
-)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}
   ${GIO_INCLUDE_DIRS}
 )
+
+target_link_libraries(${PROJECT_NAME} PRIVATE baresip ${GIO_LIBRARIES})
 
 target_compile_options(${PROJECT_NAME} PRIVATE
   -Wno-unused-parameter
