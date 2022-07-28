@@ -96,3 +96,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   list(APPEND MODULES avcapture)
   list(APPEND MODULES coreaudio)
 endif()
+
+if(DEFINED EXTRA_MODULES)
+  list(APPEND MODULES ${EXTRA_MODULES})
+endif()
