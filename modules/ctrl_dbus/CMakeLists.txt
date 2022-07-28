@@ -32,8 +32,3 @@ add_custom_target(baresipbus.c ALL
     ${CMAKE_SOURCE_DIR}/modules/${PROJECT_NAME}/com.github.Baresip.xml
   DEPENDS com.github.Baresip.xml
   BYPRODUCTS baresipbus.c baresipbus.h)
-
-set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-
-list(APPEND MODULES ${PROJECT_NAME})
-set(MODULES ${MODULES} PARENT_SCOPE)
