@@ -11,6 +11,3 @@ endif()
 target_include_directories(${PROJECT_NAME} PRIVATE ${ZRTP_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE baresip ${ZRTP_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-
-list(APPEND MODULES ${PROJECT_NAME})
-set(MODULES ${MODULES} PARENT_SCOPE)
