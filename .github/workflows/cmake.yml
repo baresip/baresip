@@ -43,6 +43,17 @@ jobs:
                             libavformat-dev \
                             libglib2.0-dev
 
+    - name: install packages
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        brew install codec2 \
+                        fdk-aac \
+                        ffmpeg \
+                        jack \
+                        mpg123 \
+                        spandsp \
+                        glib-utils
+
     - uses: sreimers/pr-dependency-action@v0.5
       with:
         name: re

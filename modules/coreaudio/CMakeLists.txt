@@ -13,4 +13,3 @@ target_link_libraries(${PROJECT_NAME} PRIVATE baresip
   "-framework CoreAudio"
   "-framework AudioToolbox"
 )
-set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")

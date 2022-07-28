@@ -69,7 +69,8 @@ jobs:
                         ffmpeg \
                         jack \
                         mpg123 \
-                        spandsp
+                        spandsp \
+                        glib-utils
 
     - uses: sreimers/pr-dependency-action@v0.5
       with:

@@ -10,4 +10,3 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${OPUS_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE baresip ${OPUS_LIBRARIES})
-set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")

@@ -10,4 +10,3 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${PULSE_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE baresip ${PULSE_LIBRARIES})
-set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
