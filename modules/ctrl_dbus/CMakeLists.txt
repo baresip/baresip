@@ -2,10 +2,6 @@ project(ctrl_dbus)
 
 set(SRCS ctrl_dbus.c baresipbus.c)
 
-find_package(PkgConfig REQUIRED)
-
-pkg_check_modules(GLIB REQUIRED glib-2.0>=0.29.1)
-pkg_check_modules(GIO  REQUIRED gio-unix-2.0>=0.29.1)
 
 if(STATIC)
   add_library(${PROJECT_NAME} STATIC ${SRCS})
@@ -16,13 +12,11 @@ endif()
 
 target_link_directories(${PROJECT_NAME} PRIVATE
   ${GLIB_LIBRARY_DIRS}
-  ${GIO_LIBRARY_DIRS}
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}
   ${GLIB_INCLUDE_DIRS}
-  ${GIO_INCLUDE_DIRS}
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE
