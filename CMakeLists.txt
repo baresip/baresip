@@ -139,6 +139,7 @@ include(modules)
 
 foreach(mod IN LISTS MODULES)
   add_subdirectory(modules/${mod})
+  set_target_properties(${mod} PROPERTIES PREFIX "")
 endforeach()
 
 if(STATIC)
