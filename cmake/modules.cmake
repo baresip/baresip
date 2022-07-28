@@ -1,3 +1,18 @@
+find_package(AAC)
+find_package(ALSA)
+find_package(AMR)
+find_package(APTX)
+find_package(AOM)
+find_package(CODEC2)
+find_package(FFMPEG COMPONENTS
+    avutil avcodec avfilter avformat swscale swresample avdevice)
+find_package(OPUS)
+find_package(PULSE)
+find_package(SPANDSP)
+find_package(VPX)
+find_package(X11)
+find_package(ZRTP)
+
 if(DEFINED MODULES)
   return()
 endif()
