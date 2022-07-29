@@ -75,6 +75,10 @@ if(STATIC)
   add_definitions(-DSTATIC)
 endif()
 
+if(WIN32)
+  add_definitions(-DWIN32 -D_WIN32_WINNT=0x0600)
+endif()
+
 ##############################################################################
 #
 # Source section
