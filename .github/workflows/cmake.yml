@@ -54,6 +54,11 @@ jobs:
                         spandsp \
                         glib-utils
 
+    - name: install packages
+      if: ${{ runner.os == 'Windows' }}
+      run: |
+        choco install openssl
+
     - uses: sreimers/pr-dependency-action@v0.5
       with:
         name: re
