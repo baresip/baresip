@@ -67,6 +67,7 @@ jobs:
         secret: ${{ secrets.GITHUB_TOKEN }}
 
     - name: make re/rem
+      shell: bash
       run: |
         for p in re rem; do
           cmake -S $p -B $p/build
