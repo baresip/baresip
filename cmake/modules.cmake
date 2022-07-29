@@ -31,7 +31,6 @@ set(MODULES
   ctrl_tcp
   debug_cmd
   echo
-  fakevideo
   g711
   ice
   menu
