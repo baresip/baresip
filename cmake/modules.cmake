@@ -28,6 +28,7 @@ set(MODULES
   ausine
   cons
   contact
+  ctrl_tcp
   debug_cmd
   echo
   fakevideo
