@@ -53,8 +53,6 @@ add_definitions(
   -DHAVE_GETOPT
   -DHAVE_INET6
   -DHAVE_SIGNAL
-  -DHAVE_UNISTD_H
-  -DUSE_ZLIB
   -DSHARE_PATH="${SHARE_PATH}"
   )
 

@@ -40,7 +40,6 @@ set(MODULES
   presence
   selfview
   srtp
-  stdio
   stun
   turn
   uuid
