@@ -86,11 +86,7 @@ jobs:
       if: ${{ runner.os == 'Linux' }}
       run: sudo ldconfig
 
-    - name: baresip
-      run: |
-        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
- 
     - name: baresip static
+      if: ${{ runner.os == 'Windows' }}
       run: |
-        rm -Rf build
-        cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
+        cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="/WX" && cmake --build build
