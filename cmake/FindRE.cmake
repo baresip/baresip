@@ -5,7 +5,8 @@ find_path(RE_INCLUDE_DIR re.h
   HINTS ../re/include ${PC_LIBRE_INCLUDEDIR} ${PC_LIBRE_INCLUDE_DIRS})
 
 find_library(RE_LIBRARY NAMES re libre re-static
-  HINTS ../re ../re/build ${PC_LIBRE_LIBDIR} ${PC_LIBRE_LIBRARY_DIRS})
+  HINTS ../re ../re/build ../re/build/Debug
+  ${PC_LIBRE_LIBDIR} ${PC_LIBRE_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(RE DEFAULT_MSG RE_LIBRARY RE_INCLUDE_DIR)
