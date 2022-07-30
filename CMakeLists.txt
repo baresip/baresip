@@ -21,6 +21,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 # Module/Package Includes
 #
 
+include(CheckIncludeFile)
 find_package(RE REQUIRED)
 find_package(REM REQUIRED)
 find_package(OpenSSL)
@@ -58,6 +59,11 @@ add_definitions(
   -DHAVE_SIGNAL
   -DSHARE_PATH="${SHARE_PATH}"
   )
+
+check_include_file(unistd.h HAVE_UNISTD_H)
+if(HAVE_UNISTD_H)
+  add_definitions(-DHAVE_UNISTD_H)
+endif()
 
 if(USE_OPENSSL)
   add_definitions(
