@@ -25,6 +25,7 @@ set(MODULES
   auconv
   aufile
   auresamp
+  ausine
   cons
   contact
   ctrl_tcp
@@ -110,6 +111,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 if(WIN32)
   list(APPEND MODULES dshow)
+else()
+  list(APPEND MODULES stdio)
 endif()
 
 if(DEFINED EXTRA_MODULES)
