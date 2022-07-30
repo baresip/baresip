@@ -76,6 +76,13 @@ if(STATIC)
   add_definitions(-DSTATIC)
 endif()
 
+if(MSVC)
+  add_definitions(
+    -DHAVE_IO_H
+    -D_CRT_SECURE_NO_WARNINGS
+  )
+endif()
+
 if(WIN32)
   add_definitions(-DWIN32 -D_WIN32_WINNT=0x0600)
 endif()
