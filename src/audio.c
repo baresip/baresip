@@ -1427,8 +1427,8 @@ static int start_player(struct aurx *rx, struct audio *a,
 		prm.fmt        = rx->play_fmt;
 
 		if (!rx->aubuf) {
-			const size_t ptime_min = a->cfg.buffer.min;
-			const size_t ptime_max = a->cfg.buffer.max;
+			const uint16_t ptime_min = (uint16_t)a->cfg.buffer.min;
+			const uint16_t ptime_max = (uint16_t)a->cfg.buffer.max;
 			sz = aufmt_sample_size(rx->play_fmt);
 
 			if (!ptime_min || !ptime_max)
@@ -1438,7 +1438,7 @@ static int start_player(struct aurx *rx, struct audio *a,
 			max_sz = sz*calc_nsamp(prm.srate, prm.ch, ptime_max);
 
 			debug("audio: create auplay buffer"
-			      " [%zu - %zu ms]"
+			      " [%u - %u ms]"
 			      " [%zu - %zu bytes]\n",
 			      ptime_min, ptime_max, min_sz, max_sz);
 
