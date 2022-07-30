@@ -25,7 +25,6 @@ set(MODULES
   auconv
   aufile
   auresamp
-  ausine
   cons
   contact
   ctrl_tcp
