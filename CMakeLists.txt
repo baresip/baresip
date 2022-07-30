@@ -184,7 +184,7 @@ endif()
 # Main target library
 #
 
-set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads -lz -lm)
+set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads)
 if(USE_OPENSSL)
   list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
 endif()
