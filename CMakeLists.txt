@@ -34,6 +34,9 @@ find_package(Threads REQUIRED)
 option(USE_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
 option(STATIC "Build static" OFF)
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
+
 include_directories(
   include
   src
