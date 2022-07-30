@@ -41,7 +41,6 @@ set(MODULES
   presence
   selfview
   srtp
-  stdio
   stun
   turn
   uuid
@@ -112,6 +111,8 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 endif()
 if(WIN32)
   list(APPEND MODULES dshow)
+else()
+  list(APPEND MODULES stdio)
 endif()
 
 if(DEFINED EXTRA_MODULES)
