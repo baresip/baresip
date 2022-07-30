@@ -21,6 +21,7 @@ endif()
 
 set(MODULES
   account
+  aubridge
   auconv
   aufile
   auresamp
