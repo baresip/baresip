@@ -34,6 +34,7 @@ set(MODULES
   echo
   fakevideo
   g711
+  httpd
   ice
   menu
   mixminus
