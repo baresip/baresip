@@ -28,6 +28,7 @@ set(MODULES
   contact
   ctrl_tcp
   debug_cmd
+  ebuacip
   echo
   g711
   ice
@@ -97,6 +98,9 @@ if(ZRTP_FOUND)
   list(APPEND MODULES zrtp)
 endif()
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  list(APPEND MODULES evdev)
+endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   list(APPEND MODULES audiounit)
   list(APPEND MODULES avcapture)

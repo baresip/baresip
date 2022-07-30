@@ -8,7 +8,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -32,13 +31,9 @@
 
 struct vidsrc_st {
 	struct vidframe *frame;
-#ifdef HAVE_PTHREAD
-	pthread_t thread;
-	pthread_mutex_t mutex;
+	thrd_t thread;
+	mtx_t mutex;
 	bool run;
-#else
-	struct tmr tmr;
-#endif
 	uint64_t ts;
 	double fps;
 	vidsrc_frame_h *frameh;
@@ -62,8 +57,7 @@ static void process_frame(struct vidsrc_st *st)
 }
 
 
-#ifdef HAVE_PTHREAD
-static void *read_thread(void *arg)
+static int read_thread(void *arg)
 {
 	struct vidsrc_st *st = arg;
 
@@ -72,9 +66,9 @@ static void *read_thread(void *arg)
 	while (1) {
 		bool run;
 
-		pthread_mutex_lock(&st->mutex);
+		mtx_lock(&st->mutex);
 		run = st->run;
-		pthread_mutex_unlock(&st->mutex);
+		mtx_unlock(&st->mutex);
 
 		if (!run)
 			break;
@@ -87,50 +81,28 @@ static void *read_thread(void *arg)
 		process_frame(st);
 	}
 
-	return NULL;
+	return 0;
 }
-#else
-static void tmr_handler(void *arg)
-{
-	struct vidsrc_st *st = arg;
-	const uint64_t now = tmr_jiffies_usec();
-
-	tmr_start(&st->tmr, 4, tmr_handler, st);
-
-	if (!st->ts)
-		st->ts = now;
-
-	if (now >= st->ts) {
-		process_frame(st);
-	}
-}
-#endif
 
 
 static void src_destructor(void *arg)
 {
 	struct vidsrc_st *st = arg;
-
-#ifdef HAVE_PTHREAD
-
 	bool run;
 
-	pthread_mutex_lock(&st->mutex);
+	mtx_lock(&st->mutex);
 	run = st->run;
-	pthread_mutex_unlock(&st->mutex);
+	mtx_unlock(&st->mutex);
 
 	if (run) {
-		pthread_mutex_lock(&st->mutex);
+		mtx_lock(&st->mutex);
 		st->run = false;
-		pthread_mutex_unlock(&st->mutex);
+		mtx_unlock(&st->mutex);
 
-		pthread_join(st->thread, NULL);
+		thrd_join(st->thread, NULL);
 	}
 
-	pthread_mutex_destroy(&st->mutex);
-#else
-	tmr_cancel(&st->tmr);
-#endif
+	mtx_destroy(&st->mutex);
 
 	mem_deref(st->frame);
 }
@@ -190,20 +162,18 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		vidframe_draw_vline(st->frame, x, 0, size->h, r, g, b);
 	}
 
-#ifdef HAVE_PTHREAD
-	err = pthread_mutex_init(&st->mutex, NULL);
-	if (err)
+	err = mtx_init(&st->mutex, mtx_plain);
+	if (err != thrd_success) {
+		err = ENOMEM;
 		goto out;
+	}
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, read_thread, st);
+	err = thread_create_name(&st->thread, "fakevideo", read_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;
 	}
-#else
-	tmr_start(&st->tmr, 1, tmr_handler, st);
-#endif
 
  out:
 	if (err)
