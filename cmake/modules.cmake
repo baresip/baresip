@@ -31,6 +31,7 @@ set(MODULES
   debug_cmd
   ebuacip
   echo
+  fakevideo
   g711
   ice
   menu
