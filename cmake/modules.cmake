@@ -30,6 +30,7 @@ set(MODULES
   contact
   ctrl_tcp
   debug_cmd
+  ebuacip
   echo
   fakevideo
   g711
