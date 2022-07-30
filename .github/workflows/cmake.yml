@@ -57,7 +57,7 @@ jobs:
     - name: install packages
       if: ${{ runner.os == 'Windows' }}
       run: |
-        choco install openssl wget
+        choco install --no-progress openssl wget
 
     - uses: sreimers/pr-dependency-action@v0.5
       with:

@@ -51,7 +51,6 @@ include(GNUInstallDirs)
 set(SHARE_PATH ${CMAKE_INSTALL_FULL_DATAROOTDIR}/baresip)
 
 add_definitions(
-  -DHAVE_GETOPT
   -DHAVE_INET6
   -DHAVE_SIGNAL
   -DSHARE_PATH="${SHARE_PATH}"
