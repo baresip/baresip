@@ -57,7 +57,7 @@ jobs:
     - name: install packages
       if: ${{ runner.os == 'Windows' }}
       run: |
-        choco install openssl
+        choco install openssl wget
 
     - uses: sreimers/pr-dependency-action@v0.5
       with:
@@ -89,4 +89,5 @@ jobs:
     - name: baresip static
       if: ${{ runner.os == 'Windows' }}
       run: |
+        wget -P include https://raw.githubusercontent.com/tronkko/dirent/master/include/dirent.h
         cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="/WX" && cmake --build build
