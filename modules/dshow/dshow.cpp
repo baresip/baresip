@@ -7,7 +7,9 @@
 
 #include <stdio.h>
 #include <re.h>
-#include <rem_video.h>
+extern "C" {
+  #include <rem_video.h>
+}
 #include <baresip.h>
 #include <commctrl.h>
 #include <dshow.h>
