@@ -6,7 +6,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <pthread.h>
 #include "aubridge.h"
 
 
@@ -19,7 +18,7 @@ struct device {
 	const struct ausrc_st *ausrc;
 	const struct auplay_st *auplay;
 	char name[64];
-	pthread_t thread;
+	thrd_t thread;
 	volatile bool run;
 };
 
@@ -50,7 +49,7 @@ static struct device *find_device(const char *device)
 }
 
 
-static void *device_thread(void *arg)
+static int device_thread(void *arg)
 {
 	uint64_t now, ts = tmr_jiffies();
 	struct device *dev = arg;
@@ -59,14 +58,14 @@ static void *device_thread(void *arg)
 	size_t sampsz;
 
 	if (!dev->run)
-		return NULL;
+		return 0;
 
 	if (dev->auplay->prm.srate != dev->ausrc->prm.srate ||
 	    dev->auplay->prm.ch != dev->ausrc->prm.ch ||
 	    dev->auplay->prm.fmt != dev->ausrc->prm.fmt) {
 
 		warning("aubridge: incompatible ausrc/auplay parameters\n");
-		return NULL;
+		return EINVAL;
 	}
 
 	info("aubridge: thread start: %u Hz, %u channels, format=%s\n",
@@ -123,7 +122,7 @@ static void *device_thread(void *arg)
  out:
 	mem_deref(sampv);
 
-	return NULL;
+	return 0;
 }
 
 
@@ -166,7 +165,8 @@ int aubridge_device_connect(struct device **devp, const char *device,
 	if (dev->ausrc && dev->auplay && !dev->run) {
 
 		dev->run = true;
-		err = pthread_create(&dev->thread, NULL, device_thread, dev);
+		err = thread_create_name(&dev->thread, "aubridge",
+					 device_thread, dev);
 		if (err) {
 			dev->run = false;
 		}
@@ -183,7 +183,7 @@ void aubridge_device_stop(struct device *dev)
 
 	if (dev->run) {
 		dev->run = false;
-		pthread_join(dev->thread, NULL);
+		thrd_join(dev->thread, NULL);
 	}
 
 	dev->auplay = NULL;
