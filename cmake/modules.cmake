@@ -35,6 +35,7 @@ set(MODULES
   fakevideo
   g711
   httpd
+  httpreq
   ice
   menu
   mixminus
