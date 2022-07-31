@@ -102,7 +102,6 @@ module			stdio.so
 #module			g722.so
 #module			g726.so
 module			g711.so
-#module			gsm.so
 #module			l16.so
 #module			mpa.so
 #module			codec2.so
