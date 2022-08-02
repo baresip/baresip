@@ -81,9 +81,8 @@ static int src_thread(void *arg)
 
 		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc,
 		             st->prm.srate, st->prm.ch);
-		af.timestamp = ts * 1000;
 
-		aubuf_read_samp(st->aubuf, sampv, st->sampc);
+		aubuf_read_auframe(st->aubuf, &af);
 
 		st->rh(&af, st->arg);
 
