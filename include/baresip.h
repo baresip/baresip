@@ -13,7 +13,7 @@ extern "C" {
 
 
 /** Defines the Baresip version string */
-#define BARESIP_VERSION "2.5.1"
+#define BARESIP_VERSION "2.6.0"
 
 
 #ifndef NET_MAX_NS
@@ -83,6 +83,7 @@ int account_set_auth_pass(struct account *acc, const char *pass);
 int account_set_outbound(struct account *acc, const char *ob, unsigned ix);
 int account_set_sipnat(struct account *acc, const char *sipnat);
 int account_set_answermode(struct account *acc, enum answermode mode);
+int account_set_rel100_mode(struct account *acc, enum rel100_mode mode);
 int account_set_dtmfmode(struct account *acc, enum dtmfmode mode);
 int account_set_display_name(struct account *acc, const char *dname);
 int account_set_regint(struct account *acc, uint32_t regint);
@@ -109,6 +110,7 @@ uint32_t account_pubint(const struct account *acc);
 uint32_t account_ptime(const struct account *acc);
 uint32_t account_prio(const struct account *acc);
 enum answermode account_answermode(const struct account *acc);
+enum rel100_mode account_rel100_mode(const struct account *acc);
 enum dtmfmode account_dtmfmode(const struct account *acc);
 const char *account_display_name(const struct account *acc);
 const char *account_aor(const struct account *acc);
@@ -201,6 +203,7 @@ int  call_send_digit(struct call *call, char key);
 bool call_has_audio(const struct call *call);
 bool call_has_video(const struct call *call);
 bool call_early_video_available(const struct call *call);
+bool call_target_refresh_allowed(const struct call *call);
 int  call_transfer(struct call *call, const char *uri);
 int  call_replace_transfer(struct call *target_call, struct call *source_call);
 int  call_status(struct re_printf *pf, const struct call *call);
@@ -236,9 +239,11 @@ void call_set_current(struct list *calls, struct call *call);
 const struct list *call_get_custom_hdrs(const struct call *call);
 int call_set_media_direction(struct call *call, enum sdp_dir a,
 			     enum sdp_dir v);
+int call_set_media_ansdir(struct call *call, enum sdp_dir a, enum sdp_dir v);
 void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
-
+const char   *call_user_data(const struct call *call);
+int call_set_user_data(struct call *call, const char *user_data);
 
 /*
  * Custom headers
@@ -381,6 +386,7 @@ struct config_net {
 		bool fallback;
 	} nsv[NET_MAX_NS];      /**< Configured DNS nameservers     */
 	size_t nsc;             /**< Number of DNS nameservers      */
+	bool use_linklocal;     /**< Use v4/v6 link-local addresses */
 };
 
 

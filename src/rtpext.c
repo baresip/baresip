@@ -54,7 +54,7 @@ int rtpext_encode(struct mbuf *mb, uint8_t id, size_t len,
 
 	start = mb->pos;
 
-	err  = mbuf_write_u8(mb, id << 4 | (len-1));
+	err  = mbuf_write_u8(mb, (uint8_t)(id << 4 | (len-1)));
 	err |= mbuf_write_mem(mb, data, len);
 	if (err)
 		return err;

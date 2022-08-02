@@ -137,10 +137,6 @@ static int module_init(void)
 	char hwaccel[64];
 #endif
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53, 10, 0)
-	avcodec_init();
-#endif
-
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
 	avcodec_register_all();
 #endif

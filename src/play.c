@@ -283,8 +283,10 @@ int play_tone(struct play **playp, struct player *player,
 	play->mb     = mem_ref(tone);
 
 	err = mtx_init(&play->lock, mtx_plain);
-	if (err)
+	if (err != thrd_success) {
+		err = ENOMEM;
 		goto out;
+	}
 
 	wprm.ch         = ch;
 	wprm.srate      = srate;
@@ -418,8 +420,10 @@ static int play_file_ausrc(struct play **playp,
 		channels = 1;
 
 	err = mtx_init(&play->lock, mtx_plain);
-	if (err)
+	if (err != thrd_success) {
+		err = ENOMEM;
 		goto out;
+	}
 
 	str_dup(&play->mod, play_mod);
 	str_dup(&play->dev, play_dev);

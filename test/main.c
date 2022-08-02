@@ -301,9 +301,10 @@ int main(int argc, char *argv[])
 
 	baresip_close();
 
+	tmr_debug();
+
 	libre_close();
 
-	tmr_debug();
 	mem_debug();
 
 	if (0 == mem_get_stat(&mstat)) {

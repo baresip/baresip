@@ -76,7 +76,6 @@ Distributed under BSD license
   - G.711
   - G.722
   - G.726
-  - GSM
   - L16
   - MPA
   - Opus
@@ -247,9 +246,7 @@ g711          G.711 audio codec
 g722          G.722 audio codec
 g7221         G.722.1 audio codec
 g726          G.726 audio codec
-gsm           GSM audio codec
 gst           Gstreamer audio source
-gst_video     Gstreamer video codec
 gtk           GTK+ 2.0 UI
 gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module
@@ -306,6 +303,8 @@ zrtp          ZRTP media encryption module
 * RFC 2250  RTP Payload Format for the mpa Speech and Audio Codec
 * RFC 2429  RTP Payload Format for 1998 ver of ITU-T Rec. H.263 Video (H.263+)
 * RFC 3016  RTP Payload Format for MPEG-4 Audio/Visual Streams
+* RFC 3262  Reliability of Provisional Responses for SIP
+* RFC 3311  SIP UPDATE Method
 * RFC 3428  SIP Extension for Instant Messaging
 * RFC 3711  The Secure Real-time Transport Protocol (SRTP)
 * RFC 3640  RTP Payload Format for Transport of MPEG-4 Elementary Streams

@@ -5,7 +5,6 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -40,9 +39,9 @@ enum channels {
 struct ausrc_st {
 	uint32_t ptime;
 	size_t sampc;
-	pthread_mutex_t mutex;
+	mtx_t mutex;
 	bool run;
-	pthread_t thread;
+	thrd_t thread;
 	ausrc_read_h *rh;
 	ausrc_error_h *errh;
 	void *arg;
@@ -61,24 +60,24 @@ static void destructor(void *arg)
 	struct ausrc_st *st = arg;
 	bool run;
 
-	pthread_mutex_lock(&st->mutex);
+	mtx_lock(&st->mutex);
 	run = st->run;
-	pthread_mutex_unlock(&st->mutex);
+	mtx_unlock(&st->mutex);
 
 	if (run) {
 
-		pthread_mutex_lock(&st->mutex);
+		mtx_lock(&st->mutex);
 		st->run = false;
-		pthread_mutex_unlock(&st->mutex);
+		mtx_unlock(&st->mutex);
 
-		pthread_join(st->thread, NULL);
+		thrd_join(st->thread, NULL);
 	}
 
-	pthread_mutex_destroy(&st->mutex);
+	mtx_destroy(&st->mutex);
 }
 
 
-static void *play_thread(void *arg)
+static int play_thread(void *arg)
 {
 	uint64_t now, ts = tmr_jiffies();
 	struct ausrc_st *st = arg;
@@ -91,16 +90,16 @@ static void *play_thread(void *arg)
 
 	sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
 	if (!sampv)
-		return NULL;
+		return ENOMEM;
 
 	while (1) {
 		struct auframe af;
 		size_t frame;
 		bool run;
 
-		pthread_mutex_lock(&st->mutex);
+		mtx_lock(&st->mutex);
 		run = st->run;
-		pthread_mutex_unlock(&st->mutex);
+		mtx_unlock(&st->mutex);
 
 		if (!run)
 			break;
@@ -163,7 +162,7 @@ static void *play_thread(void *arg)
 
 	mem_deref(sampv);
 
-	return NULL;
+	return 0;
 }
 
 
@@ -237,12 +236,14 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	info("ausine: audio ptime=%u sampc=%zu\n",
 	     st->ptime, st->sampc);
 
-	err = pthread_mutex_init(&st->mutex, NULL);
-	if (err)
+	err = mtx_init(&st->mutex, mtx_plain);
+	if (err != thrd_success) {
+		err = ENOMEM;
 		goto out;
+	}
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, play_thread, st);
+	err = thread_create_name(&st->thread, "ausine", play_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;

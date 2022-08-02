@@ -12,7 +12,7 @@
 
 cmake_minimum_required(VERSION 3.7)
 
-project(baresip VERSION 2.5.1)
+project(baresip VERSION 2.6.0)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
@@ -21,17 +21,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 # Module/Package Includes
 #
 
+include(CheckIncludeFile)
 find_package(RE REQUIRED)
 find_package(REM REQUIRED)
 find_package(OpenSSL)
 find_package(Threads REQUIRED)
-
-find_package(ALSA)
-find_package(AOM)
-find_package(OPUS)
-find_package(PULSE)
-find_package(X11)
-
 
 ##############################################################################
 #
@@ -53,14 +47,21 @@ include_directories(
 
 link_directories(/usr/local/lib)
 
+include(GNUInstallDirs)
+set(SHARE_PATH ${CMAKE_INSTALL_FULL_DATAROOTDIR}/baresip)
+
 add_definitions(
   -DHAVE_GETOPT
   -DHAVE_INET6
   -DHAVE_SIGNAL
-  -DHAVE_UNISTD_H
   -DUSE_ZLIB
-  -DSHARE_PATH="/usr/share/baresip"
+  -DSHARE_PATH="${SHARE_PATH}"
   )
+
+check_include_file(unistd.h HAVE_UNISTD_H)
+if(HAVE_UNISTD_H)
+  add_definitions(-DHAVE_UNISTD_H)
+endif()
 
 if(USE_OPENSSL)
   add_definitions(
@@ -72,6 +73,7 @@ if(USE_OPENSSL)
     -DUSE_OPENSSL_SRTP
     -DUSE_TLS
   )
+  include_directories( ${OPENSSL_INCLUDE_DIR} )
 endif()
 
 if(STATIC)
@@ -129,36 +131,21 @@ set(SRCS
   src/vidutil.c
 )
 
+set(HEADERS
+  include/baresip.h
+)
 
 ##############################################################################
 #
 # Modules
 #
 
-set(MODULES "")
+include(modules)
 
-add_subdirectory(modules/account)
-add_subdirectory(modules/echo)
-add_subdirectory(modules/menu)
-add_subdirectory(modules/stdio)
-
-if(ALSA_FOUND)
-  add_subdirectory(modules/alsa)
-endif()
-if(AOM_FOUND)
-  add_subdirectory(modules/av1)
-endif()
-if(OPUS_FOUND)
-  add_subdirectory(modules/opus)
-endif()
-if(PULSE_FOUND)
-  add_subdirectory(modules/pulse)
-  add_subdirectory(modules/pulse_async)
-endif()
-if(X11_FOUND)
-  add_subdirectory(modules/x11)
-endif()
-
+foreach(mod IN LISTS MODULES)
+  add_subdirectory(modules/${mod})
+  set_target_properties(${mod} PROPERTIES PREFIX "")
+endforeach()
 
 if(STATIC)
   foreach(mod IN LISTS MODULES)
@@ -170,6 +157,16 @@ if(STATIC)
 
   configure_file(src/static.c.in src/static.c)
   list(APPEND SRCS ${CMAKE_CURRENT_BINARY_DIR}/src/static.c)
+else()
+  foreach(mod IN LISTS MODULES)
+
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+      set_target_properties(${mod} PROPERTIES
+                            LINK_FLAGS "-undefined dynamic_lookup")
+    endif()
+
+    install(TARGETS ${mod} LIBRARY DESTINATION ${SHARE_PATH})
+  endforeach()
 endif()
 
 
@@ -178,20 +175,23 @@ endif()
 # Main target library
 #
 
+set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads -lz -lm)
+if(USE_OPENSSL)
+  list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
+endif()
+
 if(STATIC)
-  add_library(baresip STATIC ${SRCS})
-  target_link_libraries(baresip PUBLIC
-      ${MODULES} ${REM_LIBRARIES} ${RE_LIBRARIES}
-      ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -lz -lm)
+  add_library(baresip STATIC ${SRCS} ${HEADERS})
+  target_link_libraries(baresip PUBLIC ${LINKLIBS} ${MODULES})
 else()
-  add_library(baresip SHARED ${SRCS})
-  target_link_libraries(baresip PRIVATE
-      ${REM_LIBRARIES} ${RE_LIBRARIES}
-      ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -lz -lm)
+  add_library(baresip SHARED ${SRCS} ${HEADERS})
+  target_link_libraries(baresip PRIVATE ${LINKLIBS})
 endif()
 
 set_target_properties(baresip PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+set_target_properties(baresip PROPERTIES PUBLIC_HEADER "${HEADERS}")
+install(TARGETS baresip LIBRARY)
 
 ##############################################################################
 #
@@ -202,6 +202,5 @@ add_executable(baresip_exe src/main.c)
 
 set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
-target_link_libraries(baresip_exe baresip
-    ${REM_LIBRARIES} ${RE_LIBRARIES}
-    ${OPENSSL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} -lz -lm)
+target_link_libraries(baresip_exe baresip ${LINKLIBS})
+install(TARGETS baresip_exe)

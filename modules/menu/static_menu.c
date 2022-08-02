@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <re.h>
 #include <baresip.h>
+#include <string.h>
 
 #include "menu.h"
 
@@ -157,7 +158,7 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		ua = call_get_ua(call);
 	}
 
-	(void)call_set_media_direction(call, adir, vdir);
+	(void)call_set_media_ansdir(call, adir, vdir);
 	err = answer_call(ua, call);
 	if (err)
 		re_hprintf(pf, "could not answer call (%m)\n", err);
@@ -205,6 +206,75 @@ static int cmd_set_answermode(struct re_printf *pf, void *arg)
 	(void)re_hprintf(pf, "Answer mode changed to: %s\n", carg->prm);
 
 	return 0;
+}
+
+
+static int cmd_set_100rel_mode(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl w1 = PL_INIT;
+	struct pl w2 = PL_INIT;
+	struct ua *ua = menu_ua_carg(pf, carg, &w1, &w2);
+	char *acc_nr = NULL;
+	char *mode_str = NULL;
+	enum rel100_mode mode;
+	struct le *le;
+	int err;
+
+	if (pl_isset(&w2)) {
+		err = pl_strdup(&acc_nr, &w2);
+		if (err)
+			return err;
+	}
+	err = pl_strdup(&mode_str, &w1);
+	if (err) {
+		(void)re_hprintf(pf, "usage: /100rel <yes|no|required>"
+				 " [ua-idx]\n");
+		err = EINVAL;
+		goto out;
+	}
+
+	if (0 == str_cmp(mode_str, "no")) {
+		mode = REL100_DISABLED;
+	}
+	else if (0 == str_cmp(mode_str, "yes")) {
+		mode = REL100_ENABLED;
+	}
+	else if (0 == str_cmp(mode_str, "required")) {
+		mode = REL100_REQUIRED;
+	}
+	else {
+		(void)re_hprintf(pf, "Invalid 100rel mode: %s\n", mode_str);
+		err = EINVAL;
+		goto out;
+	}
+
+	if (!ua)
+		ua = uag_find_requri(acc_nr);
+
+	if (ua) {
+		err = account_set_rel100_mode(ua_account(ua), mode);
+		if (err)
+			goto out;
+		(void)re_hprintf(pf, "100rel mode of account %s changed to: "
+				 "%s\n", account_aor(ua_account(ua)),
+				 mode_str);
+	}
+	else {
+		for (le = list_head(uag_list()); le; le = le->next) {
+			ua = le->data;
+			err = account_set_rel100_mode(ua_account(ua), mode);
+			if (err)
+				goto out;
+		}
+		(void)re_hprintf(pf, "100rel mode of all accounts changed to: "
+				 "%s\n", mode_str);
+	}
+
+out:
+	mem_deref(acc_nr);
+	mem_deref(mode_str);
+	return err;
 }
 
 
@@ -487,6 +557,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	}
 
 	re_hprintf(pf, "call uri: %s\n", uri);
+
 	err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON);
 
 	if (menu->adelay >= 0)
@@ -494,6 +565,14 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	if (err) {
 		(void)re_hprintf(pf, "ua_connect failed: %m\n", err);
 		goto out;
+	}
+
+	const char ud_sentinel[] = "userdata=";
+	char *ud_pos = strstr(carg->prm, ud_sentinel);
+	char *user_data = NULL;
+	if (ud_pos != NULL) {
+		user_data = ud_pos + strlen(ud_sentinel);
+		call_set_user_data(call, user_data);
 	}
 
 	re_hprintf(pf, "call id: %s\n", call_id(call));
@@ -588,11 +667,21 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	}
 
 	re_hprintf(pf, "call uri: %s\n", uri);
+
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
+
 	if (menu->adelay >= 0)
 		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
 	if (err)
 		goto out;
+
+	const char ud_sentinel[] = "userdata=";
+	char *ud_pos = strstr(carg->prm, ud_sentinel);
+	char *user_data = NULL;
+	if (ud_pos != NULL) {
+		user_data = ud_pos + strlen(ud_sentinel);
+		call_set_user_data(call, user_data);
+	}
 
 	re_hprintf(pf, "call id: %s\n", call_id(call));
 
@@ -1317,6 +1406,7 @@ static int cmd_tls_subject(struct re_printf *pf, void *unused)
 /*Static call menu*/
 static const struct cmd cmdv[] = {
 
+{"100rel"    ,0,    CMD_PRM, "Set 100rel mode",         cmd_set_100rel_mode  },
 {"about",     0,          0, "About box",               about_box            },
 {"accept",    'a',        0, "Accept incoming call",    cmd_answer           },
 {"acceptdir", 0,    CMD_PRM, "Accept incoming call with audio and video"

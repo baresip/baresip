@@ -102,7 +102,6 @@ module			stdio.so
 #module			g722.so
 #module			g726.so
 module			g711.so
-#module			gsm.so
 #module			l16.so
 #module			mpa.so
 #module			codec2.so
@@ -150,7 +149,6 @@ module			alsa.so
 # Audio/Video source modules
 #module			avformat.so
 #module			gst.so
-#module			gst_video.so
 
 # Compatibility modules
 #module			ebuacip.so

@@ -31,9 +31,9 @@ static void destructor(void *arg)
 {
 	struct auplay_st *st = arg;
 	/* Wait for termination of other thread */
-	if (st->run) {
+	if (re_atomic_rlx(&st->run)) {
 		debug("aufile: stopping playback thread\n");
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
 
@@ -51,7 +51,7 @@ static int write_thread(void *arg)
 	uint32_t ptime = st->prm.ptime;
 
 	t = tmr_jiffies();
-	while (st->run) {
+	while (re_atomic_rlx(&st->run)) {
 		struct auframe af;
 
 		auframe_init(&af, st->prm.fmt, st->sampv, st->sampc,
@@ -73,7 +73,7 @@ static int write_thread(void *arg)
 		sys_msleep(dt);
 	}
 
-	st->run = false;
+	re_atomic_rlx_set(&st->run, false);
 
 	return 0;
 }
@@ -120,10 +120,10 @@ int aufile_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->sampv = mem_alloc(st->num_bytes, NULL);
 
 	info("aufile: writing speaker audio to %s\n", file);
-	st->run = true;
-	err = thrd_create(&st->thread, write_thread, st);
+	re_atomic_rlx_set(&st->run, true);
+	err = thread_create_name(&st->thread, "aufile_play", write_thread, st);
 	if (err) {
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		goto out;
 	}
 

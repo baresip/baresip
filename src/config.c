@@ -97,6 +97,7 @@ static struct config core_config = {
 		"",
 		{ {"",0} },
 		0,
+		true,
 	},
 };
 
@@ -938,7 +939,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module\t\t\t" "g722" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "g726" MOD_EXT "\n");
 	(void)re_fprintf(f, "module\t\t\t" "g711" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" "gsm" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "l16" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "mpa" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "codec2" MOD_EXT "\n");
@@ -1022,7 +1022,6 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n# Audio/Video source modules\n");
 	(void)re_fprintf(f, "#module\t\t\t" "avformat" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "gst" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" "gst_video" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Compatibility modules\n");
 	(void)re_fprintf(f, "#module\t\t\t" "ebuacip" MOD_EXT "\n");

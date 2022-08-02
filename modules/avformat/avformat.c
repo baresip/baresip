@@ -304,8 +304,10 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	}
 
 	err = mtx_init(&st->lock, mtx_plain);
-	if (err)
+	if (err != thrd_success) {
+		err = ENOMEM;
 		goto out;
+	}
 
 	if (video && size->w) {
 		re_snprintf(buf, sizeof(buf), "%ux%u", size->w, size->h);

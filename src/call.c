@@ -58,6 +58,7 @@ struct call {
 	bool answered;            /**< True if call has been answered       */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
+	bool early_confirmed;     /**< Early media confirmed by PRACK       */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -78,6 +79,7 @@ struct call {
 	enum sdp_dir ansvdir;      /**< Answer video direction              */
 	bool use_video;
 	bool use_rtp;
+	char *user_data;           /**< User data related to the call       */
 };
 
 
@@ -89,16 +91,16 @@ static const char *state_name(enum call_state st)
 {
 	switch (st) {
 
-	case CALL_STATE_IDLE:        return "IDLE";
-	case CALL_STATE_INCOMING:    return "INCOMING";
-	case CALL_STATE_OUTGOING:    return "OUTGOING";
-	case CALL_STATE_RINGING:     return "RINGING";
-	case CALL_STATE_EARLY:       return "EARLY";
-	case CALL_STATE_ESTABLISHED: return "ESTABLISHED";
-	case CALL_STATE_TERMINATED:  return "TERMINATED";
-	case CALL_STATE_TRANSFER:    return "TRANSFER";
-	case CALL_STATE_UNKNOWN:     return "UNKNOWN";
-	default:                return "???";
+	case CALL_STATE_IDLE:		 return "IDLE";
+	case CALL_STATE_INCOMING:	 return "INCOMING";
+	case CALL_STATE_OUTGOING:	 return "OUTGOING";
+	case CALL_STATE_RINGING:	 return "RINGING";
+	case CALL_STATE_EARLY:		 return "EARLY";
+	case CALL_STATE_ESTABLISHED:	 return "ESTABLISHED";
+	case CALL_STATE_TERMINATED:	 return "TERMINATED";
+	case CALL_STATE_TRANSFER:	 return "TRANSFER";
+	case CALL_STATE_UNKNOWN:	 return "UNKNOWN";
+	default:			 return "???";
 	}
 }
 
@@ -419,6 +421,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->sub);
 	mem_deref(call->not);
 	mem_deref(call->acc);
+	mem_deref(call->user_data);
 
 	list_flush(&call->custom_hdrs);
 }
@@ -962,6 +965,8 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		    || NULL != vidisp_find(baresip_vidispl(), NULL));
 
 	debug("call: use_video=%d\n", call->use_video);
+	if (!call->use_video)
+		call->ansvdir = SDP_INACTIVE;
 
 	/* inherit certain properties from original call */
 	if (xcall) {
@@ -1228,8 +1233,6 @@ int call_progress(struct call *call)
 int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 {
 	struct mbuf *desc;
-	enum sdp_dir ansadir;
-	enum sdp_dir ansvdir;
 	int err;
 
 	if (!call)
@@ -1237,20 +1240,18 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 
 	tmr_cancel(&call->tmr_inv);
 
-	ansadir = stream_ldir(audio_strm(call_audio(call)));
-	ansvdir = stream_ldir(video_strm(call_video(call)));
-	if (adir != ansadir || vdir != ansvdir)
+	if (adir != call->ansadir || vdir != call->ansvdir)
 		call_set_media_direction(call, adir, vdir);
 
-	call->ansadir = ansadir;
-	call->ansvdir = ansvdir;
 	err = call_sdp_get(call, &desc, false);
 	if (err)
 		return err;
 
 	err = sipsess_progress(call->sess, 183, "Session Progress",
-			       desc, "Allow: %H\r\n",
-			       ua_print_allowed, call->ua);
+			       account_rel100_mode(call->acc),
+			       desc, "Allow: %H\r\n%H",
+			       ua_print_allowed, call->ua,
+			       ua_print_require, call->ua);
 
 	if (err)
 		goto out;
@@ -1267,6 +1268,20 @@ out:
 	mem_deref(desc);
 
 	return 0;
+}
+
+
+static bool call_need_modify(const struct call *call)
+{
+	enum sdp_dir adir;
+	enum sdp_dir vdir;
+
+	if (!call)
+		return false;
+
+	adir = stream_ldir(audio_strm(call_audio(call)));
+	vdir = stream_ldir(video_strm(call_video(call)));
+	return adir != call->ansadir || vdir != call->ansvdir;
 }
 
 
@@ -1303,7 +1318,6 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	if (call->got_offer) {
 
-		call_set_media_direction(call, call->ansadir, call->ansvdir);
 		err = update_media(call);
 		if (err)
 			return err;
@@ -1420,6 +1434,25 @@ int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
 		return EINVAL;
 
 	return sdp_encode(descp, call->sdp, offer);
+}
+
+
+/**
+ * Check if a target refresh (re-INVITE or UPDATE) is currently allowed
+ *
+ * @param call  Call object
+ *
+ * @return True if a target refresh is currently allowed, otherwise false
+ */
+bool call_target_refresh_allowed(const struct call *call)
+{
+	if (!call)
+		return false;
+
+	return call_state(call) == CALL_STATE_ESTABLISHED ||
+		    (call->early_confirmed &&
+			(call_state(call) == CALL_STATE_EARLY ||
+			 call_state(call) == CALL_STATE_INCOMING));
 }
 
 
@@ -1722,9 +1755,9 @@ static int sipsess_offer_handler(struct mbuf **descp,
 		vrdir = sdp_media_rdir(vmedia);
 	}
 
-	info("call: got re-INVITE%s audio-video: %s-%s\n"
-		, got_offer ? " (SDP Offer)" : "",
-		sdp_dir_name(ardir), sdp_dir_name(vrdir));
+	info("call: got %r%s audio-video: %s-%s\n", &msg->met,
+	     got_offer ? " (SDP Offer)" : "", sdp_dir_name(ardir),
+	     sdp_dir_name(vrdir));
 
 	/* Encode SDP Answer */
 	return sdp_encode(descp, call->sdp, !got_offer);
@@ -1744,7 +1777,8 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 		call->supported |= REPLACES;
 
 	call->got_offer = false;
-	call_event_handler(call, CALL_EVENT_ANSWERED, call->peer_uri);
+	if (!pl_strcmp(&msg->cseq.met, "INVITE"))
+		call_event_handler(call, CALL_EVENT_ANSWERED, call->peer_uri);
 
 	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
 		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
@@ -1796,6 +1830,11 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	/* the transferor will hangup this call */
 	if (call->not) {
 		(void)call_notify_sipfrag(call, 200, "OK");
+	}
+
+	if (call_need_modify(call)) {
+		call_set_media_direction(call, call->ansadir, call->ansvdir);
+		call_modify(call);
 	}
 
 	/* must be done last, the handler might deref this call */
@@ -1977,6 +2016,20 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 }
 
 
+static void prack_handler(const struct sip_msg *msg, void *arg)
+{
+	struct call *call = arg;
+
+	if (!msg || !call)
+		return;
+
+	if (msg->req || (msg->scode >= 200 && msg->scode < 300))
+		call->early_confirmed = true;
+
+	return;
+}
+
+
 static bool have_common_audio_codecs(const struct call *call)
 {
 	const struct sdp_format *sc;
@@ -2117,14 +2170,16 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	}
 
 	err = sipsess_accept(&call->sess, sess_sock, msg, 180, "Ringing",
+			     account_rel100_mode(call->acc),
 			     ua_cuser(call->ua), "application/sdp", NULL,
 			     auth_handler, call->acc, true,
 			     sipsess_offer_handler, sipsess_answer_handler,
 			     sipsess_estab_handler, sipsess_info_handler,
 			     call->acc->refer ? sipsess_refer_handler : NULL,
 			     sipsess_close_handler,
-			     call, "Allow: %H\r\n",
-			     ua_print_allowed, call->ua);
+			     call, "Allow: %H\r\n%H",
+			     ua_print_allowed, call->ua,
+			     ua_print_require, call->ua);
 
 	if (err) {
 		warning("call: sipsess_accept: %m\n", err);
@@ -2138,12 +2193,18 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 	set_state(call, CALL_STATE_INCOMING);
 
+	err = sipsess_set_prack_handler(call->sess, prack_handler);
+	if (err)
+		return err;
+
 	/* New call */
 	if (call->config_call.local_timeout) {
 		tmr_start(&call->tmr_inv, call->config_call.local_timeout*1000,
 			  invite_timeout, call);
 	}
 
+	call->ansadir = stream_ldir(audio_strm(call_audio(call)));
+	call->ansvdir = stream_ldir(video_strm(call_video(call)));
 	if (!call->acc->mnat)
 		call_event_handler(call, CALL_EVENT_INCOMING, call->peer_uri);
 
@@ -2201,17 +2262,17 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 
 	case 183:
 		set_state(call, CALL_STATE_EARLY);
+
 		break;
 	}
 
-	call_stream_stop(call);
-
-	if (media)
+	if (media) {
+		update_media(call);
 		call_stream_start(call, false);
-
-	if (media)
 		call_event_handler(call, CALL_EVENT_PROGRESS, call->peer_uri);
-	else
+	}
+	else {
+		call_stream_stop(call);
 		call_event_handler(call, CALL_EVENT_RINGING, call->peer_uri);
 
 	if (media)
@@ -2301,9 +2362,10 @@ static int send_invite(struct call *call)
 			      sipsess_info_handler,
 			      call->acc->refer ? sipsess_refer_handler : NULL,
 			      sipsess_close_handler, call,
-			      "Allow: %H\r\n%H%H%H",
+			      "Allow: %H\r\n%H%H%H%H",
 			      ua_print_allowed, call->ua,
 			      ua_print_supported, call->ua,
+			      ua_print_require, call->ua,
 			      call_print_replaces, call,
 			      custom_hdrs_print, &call->custom_hdrs);
 	if (err) {
@@ -2312,6 +2374,10 @@ static int send_invite(struct call *call)
 	}
 
 	err = sipsess_set_redirect_handler(call->sess, redirect_handler);
+	if (err)
+		return err;
+
+	err = sipsess_set_prack_handler(call->sess, prack_handler);
 	if (err)
 		return err;
 
@@ -2890,8 +2956,6 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 	if (!call)
 		return EINVAL;
 
-	call->ansadir = a;
-	call->ansvdir = v;
 	stream_set_ldir(audio_strm(call_audio(call)), a);
 
 	if (video_strm(call_video(call))) {
@@ -2902,6 +2966,27 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 			stream_set_ldir(video_strm(call_video(call)), v);
 
 	}
+
+	return 0;
+}
+
+
+/**
+ * Set stream sdp media line direction attribute for call answer
+ *
+ * @param call Call object
+ * @param a    Audio SDP direction
+ * @param v    Video SDP direction if video available
+ *
+ * @return int	0 if success, errorcode otherwise
+ */
+int call_set_media_ansdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
+{
+	if (!call)
+		return EINVAL;
+
+	call->ansadir = a;
+	call->ansvdir = v;
 
 	return 0;
 }
@@ -2930,4 +3015,39 @@ bool call_supported(struct call *call, uint16_t tags)
 		return false;
 
 	return (call->supported & tags) == tags;
+}
+
+/**
+ * Get the user data for the call
+ *
+ * @param call Call object
+ *
+ * @return Call's user data
+ */
+const char *call_user_data(const struct call *call)
+{
+	return call ? call->user_data : NULL;
+}
+
+/**
+ * Set the user data of the call
+ *
+ * @param call Call object
+ * @param user_data User data to be set
+ * @return int
+ */
+
+int call_set_user_data(struct call *call, const char *user_data)
+{
+	if (!call)
+		return EINVAL;
+
+	call->user_data = mem_deref(call->user_data);
+
+	int err = str_dup(&call->user_data, user_data);
+
+	if (err)
+		return err;
+
+	return 0;
 }

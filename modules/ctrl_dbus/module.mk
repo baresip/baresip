@@ -12,7 +12,7 @@ $(MOD)_CFLAGS	+= \
 	$(shell pkg-config --cflags glib-2.0 gio-unix-2.0 | \
 		sed -e 's/-I/-isystem/g' )
 $(MOD)_CFLAGS	+= -Wno-unused-parameter -Wno-declaration-after-statement \
-	-Wno-pedantic -Wno-shorten-64-to-32
+	-Wno-pedantic -Wno-shorten-64-to-32 -Wno-atomic-implicit-seq-cst
 
 $(MOD)_CCHECK_OPT	= -e baresipbus.h -e baresipbus.c
 

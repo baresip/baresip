@@ -23,9 +23,7 @@
 #   USE_G722          G.722 audio codec
 #   USE_G722_1        G.722.1 audio codec
 #   USE_G726          G.726 audio codec
-#   USE_GSM           GSM audio codec
 #   USE_GST           Gstreamer audio module
-#   USE_GST_VIDEO     Gstreamer video module
 #   USE_GTK           GTK+ user interface
 #   USE_HTTPREQ       HTTP request module
 #   USE_JACK          JACK Audio Connection Kit audio driver
@@ -87,13 +85,7 @@ USE_DTLS_SRTP := $(shell $(call CC_TEST,openssl/srtp.h))
 USE_G722      := $(shell $(call CC_TEST,spandsp/g722.h))
 USE_G722_1    := $(shell $(call CC_TEST,g722_1.h))
 USE_G726      := $(shell $(call CC_TEST,spandsp/g726.h))
-USE_GSM       := $(shell $(call CC_TEST,gsm.h))
-ifeq ($(USE_GSM),)
-USE_GSM       := $(shell $(call CC_TEST,gsm/gsm.h))
-endif
 USE_GST       := $(shell pkg-config --exists gstreamer-1.0 && echo "yes")
-USE_GST_VIDEO := $(shell pkg-config --exists gstreamer-1.0 gstreamer-app-1.0 \
-		   && echo "yes")
 USE_GTK       := $(shell pkg-config 'gtk+-3.0 >= 3.0' && \
 		   pkg-config 'glib-2.0 >= 2.32' && echo "yes")
 USE_JACK      := $(shell $(call CC_TEST,jack/jack.h))
@@ -271,9 +263,6 @@ endif
 ifneq ($(USE_G726),)
 MODULES   += g726
 endif
-ifneq ($(USE_GSM),)
-MODULES   += gsm
-endif
 ifneq ($(HAVE_GLIB),)
 ifneq ($(USE_DBUS),)
 MODULES   += ctrl_dbus
@@ -281,9 +270,6 @@ endif
 endif
 ifneq ($(USE_GST),)
 MODULES   += gst
-endif
-ifneq ($(USE_GST_VIDEO),)
-MODULES   += gst_video
 endif
 ifneq ($(USE_GTK),)
 MODULES   += gtk

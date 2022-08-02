@@ -685,6 +685,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (!err) {
 			struct pl pl;
 
+			call_set_user_data(call2, call_user_data(call));
 			pl_set_str(&pl, prm);
 
 			err = call_connect(call2, &pl);

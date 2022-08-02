@@ -15,9 +15,9 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc, clang]
-        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, macos-10.15, macos-12]
+        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, macos-11, macos-12]
         exclude:
-          - os: macos-10.15
+          - os: macos-11
             compiler: gcc
           - os: macos-12
             compiler: gcc
@@ -69,15 +69,16 @@ jobs:
                         ffmpeg \
                         jack \
                         mpg123 \
-                        spandsp
+                        spandsp \
+                        glib-utils
 
-    - uses: sreimers/pr-dependency-action@v0.3
+    - uses: sreimers/pr-dependency-action@v0.5
       with:
         name: re
         repo: https://github.com/baresip/re
         secret: ${{ secrets.GITHUB_TOKEN }}
 
-    - uses: sreimers/pr-dependency-action@v0.3
+    - uses: sreimers/pr-dependency-action@v0.5
       with:
         name: rem
         repo: https://github.com/baresip/rem
@@ -100,5 +101,5 @@ jobs:
     - name: make baresip macOS
       if: ${{ runner.os == 'macOS' }}
       run: |
-        make V=1 CCACHE= EXTRA_CFLAGS=-Werror bareinfo test modules
-        make clean; make CCACHE= STATIC=yes
+        make V=1 CCACHE= EXTRA_CFLAGS=-Werror USE_DBUS= bareinfo test modules
+        make clean; make CCACHE= STATIC=yes USE_DBUS=
