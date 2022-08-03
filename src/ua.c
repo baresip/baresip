@@ -1107,8 +1107,7 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 		call_set_custom_hdrs(call, &ua->custom_hdrs);
 
 	if (adir != SDP_SENDRECV || vdir != SDP_SENDRECV) {
-		err  = call_set_media_ansdir(call, adir, vdir);
-		err |= call_set_media_direction(call, adir, vdir);
+		err = call_set_media_direction(call, adir, vdir);
 		if (err) {
 			mem_deref(call);
 			goto out;
