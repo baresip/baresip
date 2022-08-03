@@ -97,8 +97,14 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	avformat_shared_set_audio(st->shared, st);
 
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 37, 100)
+	int channels = sh->au.ctx->ch_layout.nb_channels;
+#else
+	int channels = sh->au.ctx->channels;
+#endif
+
 	info("avformat: audio: converting %u/%u %s -> %u/%u %s\n",
-	     sh->au.ctx->sample_rate, sh->au.ctx->channels,
+	     sh->au.ctx->sample_rate, channels,
 	     av_get_sample_fmt_name(sh->au.ctx->sample_fmt),
 	     prm->srate, prm->ch, aufmt_name(prm->fmt));
 
@@ -151,13 +157,18 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 
 		const AVRational tb = st->au.time_base;
 		struct auframe af;
+		int channels = st->ausrc_st->prm.ch;
 
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(59, 37, 100)
+		av_channel_layout_default(&frame2.ch_layout, channels);
+#else
 		frame.channel_layout =
 			av_get_default_channel_layout(frame.channels);
 
-		frame2.channels       = st->ausrc_st->prm.ch;
+		frame2.channels       = channels;
 		frame2.channel_layout =
 			av_get_default_channel_layout(st->ausrc_st->prm.ch);
+#endif
 		frame2.sample_rate    = st->ausrc_st->prm.srate;
 		frame2.format         =
 			aufmt_to_avsampleformat(st->ausrc_st->prm.fmt);
@@ -170,7 +181,7 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 		}
 
 		auframe_init(&af, st->ausrc_st->prm.fmt, frame2.data[0],
-			     frame2.nb_samples * frame2.channels,
+			     frame2.nb_samples * channels,
 			     st->ausrc_st->prm.srate, st->ausrc_st->prm.ch);
 		af.timestamp = frame.pts * AUDIO_TIMEBASE * tb.num / tb.den;
 
