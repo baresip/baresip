@@ -40,6 +40,7 @@ set(MODULES
   ice
   menu
   mixminus
+  multicast
   mwi
   presence
   selfview
