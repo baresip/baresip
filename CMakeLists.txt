@@ -105,12 +105,14 @@ set(SRCS
   src/event.c
   src/log.c
   src/mediadev.c
+  src/mediatrack.c
   src/menc.c
   src/message.c
   src/metric.c
   src/mnat.c
   src/module.c
   src/net.c
+  src/peerconn.c
   src/play.c
   src/reg.c
   src/rtpext.c

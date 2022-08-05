@@ -407,3 +407,51 @@ void     timestamp_set(struct timestamp_recv *ts, uint32_t rtp_ts);
 uint64_t timestamp_duration(const struct timestamp_recv *ts);
 uint64_t timestamp_calc_extended(uint32_t num_wraps, uint32_t ts);
 double   timestamp_calc_seconds(uint64_t ts, uint32_t clock_rate);
+
+
+/*
+ * WebRTC Media Track
+ */
+
+
+typedef void (mediatrack_close_h)(int err, void *arg);
+
+/*
+ * https://developer.mozilla.org/en-US/docs/Web/API/MediaStreamTrack
+ *
+ * The MediaStreamTrack interface represents a single media track within
+ * a stream; typically, these are audio or video tracks, but other
+ * track types may exist as well.
+ *
+ * NOTE: one-to-one mapping with 'struct stream'
+ */
+struct media_track {
+	struct le le;
+	enum media_kind kind;
+	union {
+		struct audio *au;
+		struct video *vid;
+		void *p;
+	} u;
+
+	bool ice_conn;
+	bool dtls_ok;
+	bool rtp;
+	bool rtcp;
+
+	mediatrack_close_h *closeh;
+	void *arg;
+};
+
+
+struct media_track *media_track_add(struct list *lst,
+				    enum media_kind kind,
+				    mediatrack_close_h *closeh, void *arg);
+void mediatrack_stop(struct media_track *media);
+void mediatrack_set_handlers(struct media_track *media);
+void mediatrack_summary(const struct media_track *media);
+int  mediatrack_debug(struct re_printf *pf, const struct media_track *media);
+struct media_track *mediatrack_lookup_media(const struct list *medial,
+					    struct stream *strm);
+void mediatrack_close(struct media_track *media, int err);
+void mediatrack_sdp_attr_decode(struct media_track *media);
