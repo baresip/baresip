@@ -980,7 +980,11 @@ static void attr_handler(struct mnat_media *mm,
 	/* NOTE: this must be done before starting conncheck */
 	sdp_media_rattr_apply(mm->sdpm, NULL, media_attr_handler, mm);
 
-	icem_sdp_decode(mm->icem, name, value);
+	int err = icem_sdp_decode(mm->icem, name, value);
+	if (err) {
+		warning("ice: sdp decode failed (%m)\n", err);
+		return;
+	}
 
 	/* start ice if we have local candidates */
 	if (!list_isempty(icem_lcandl(mm->icem))) {
