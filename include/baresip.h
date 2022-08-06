@@ -1670,6 +1670,13 @@ void peerconnection_add_ice_candidate(struct peer_connection *pc,
 enum signaling_st peerconnection_signaling(const struct peer_connection *pc);
 
 
+/*
+ * HTTP functions
+ */
+
+const char *http_extension_to_mimetype(const char *ext);
+
+
 #ifdef __cplusplus
 }
 #endif
