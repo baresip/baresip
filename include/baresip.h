@@ -1675,6 +1675,8 @@ enum signaling_st peerconnection_signaling(const struct peer_connection *pc);
  */
 
 const char *http_extension_to_mimetype(const char *ext);
+int http_reply_json(struct http_conn *conn, const char *sessid,
+		    const struct odict *od);
 
 
 #ifdef __cplusplus
