@@ -1236,7 +1236,7 @@ int video_start_source(struct video *v)
 
 	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
 
-		struct vtx* vtx = &v->vtx;
+		struct vtx *vtx = &v->vtx;
 		struct vidsrc *vs;
 
 		vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
