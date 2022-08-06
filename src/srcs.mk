@@ -21,6 +21,7 @@ SRCS	+= custom_hdrs.c
 SRCS	+= descr.c
 SRCS	+= dial_number.c
 SRCS	+= event.c
+SRCS	+= http.c
 SRCS	+= log.c
 SRCS	+= mediadev.c
 SRCS	+= mediatrack.c

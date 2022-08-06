@@ -103,6 +103,7 @@ set(SRCS
   src/descr.c
   src/dial_number.c
   src/event.c
+  src/http.c
   src/log.c
   src/mediadev.c
   src/mediatrack.c
