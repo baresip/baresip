@@ -319,6 +319,8 @@ int main(int argc, char *argv[])
 	debug("main: unloading modules..\n");
 	mod_close();
 
+	re_thread_async_close();
+
 	/* Check for open timers */
 	tmr_debug();
 
