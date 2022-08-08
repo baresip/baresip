@@ -86,7 +86,7 @@ static void tmr_polling(void *arg)
 		tmr_start(&play->tmr, 4, tmr_polling, play);
 	}
 
-	if (play->trep && play->trep <= tmr_jiffies()) {
+	if (play->ausrc && play->trep && play->trep <= tmr_jiffies()) {
 		play->trep = 0;
 		start_ausrc(play);
 		play->restarted = true;
