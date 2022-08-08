@@ -383,6 +383,9 @@ static int start_ausrc(struct play *play)
 	int err;
 	const struct ausrc *ausrc = play->ausrc;
 
+	if (!ausrc)
+		return EINVAL;
+
 	err = ausrc->alloch(&play->ausrc_st, ausrc, &play->sprm,
 			play->filename,
 			ausrc_read_handler, ausrc_error_handler, play);
