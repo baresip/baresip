@@ -10,4 +10,3 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
   strmiids ole32 oleaut32 stdc++)
-set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
