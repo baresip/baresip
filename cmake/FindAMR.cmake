@@ -62,7 +62,7 @@ if(AMR_FOUND)
   endif()
   if( WB_INCLUDE_DIR )
     set( AMR_INCLUDE_DIRS ${AMR_INCLUDE_DIRS} ${WB_INCLUDE_DIR}/opencore-amrwb
-	  ${WB_INCLUDE_DIR}/amrwb )
+      ${WB_INCLUDE_DIR}/amrwb )
     set( AMR_LIBRARIES ${AMR_LIBRARIES} ${WB_LIBRARY} )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAMR_WB" )
   endif()
