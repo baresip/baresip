@@ -52,7 +52,8 @@ find_package_handle_standard_args(AMR DEFAULT_MSG AMR_LIBRARY
 
 if(AMR_FOUND)
   if( NB_INCLUDE_DIR )
-    set( AMR_INCLUDE_DIRS ${NB_INCLUDE_DIR}/opencore-amrnb ${NB_INCLUDE_DIR}/amrnb )
+    set( AMR_INCLUDE_DIRS ${NB_INCLUDE_DIR}/opencore-amrnb
+      ${NB_INCLUDE_DIR}/amrnb )
     set( AMR_LIBRARIES ${NB_LIBRARY} )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAMR_NB" )
   else()
@@ -60,7 +61,8 @@ if(AMR_FOUND)
     set( AMR_LIBRARIES "" )
   endif()
   if( WB_INCLUDE_DIR )
-    set( AMR_INCLUDE_DIRS ${AMR_INCLUDE_DIRS} ${WB_INCLUDE_DIR}/opencore-amrwb ${WB_INCLUDE_DIR}/amrwb )
+    set( AMR_INCLUDE_DIRS ${AMR_INCLUDE_DIRS} ${WB_INCLUDE_DIR}/opencore-amrwb
+	  ${WB_INCLUDE_DIR}/amrwb )
     set( AMR_LIBRARIES ${AMR_LIBRARIES} ${WB_LIBRARY} )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAMR_WB" )
   endif()
