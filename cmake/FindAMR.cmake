@@ -15,7 +15,7 @@ find_library(AMR_LIBRARY
 )
 
 find_path(NB_INCLUDE_DIR
-  NAME opencore-amrnb/interf_enc.h
+  NAME opencore-amrnb/interf_enc.h amrnb/interf_enc.h
   HINTS
     "${AMR_INCLUDE_DIRS}"
     "${AMR_HINTS}/include"
@@ -23,7 +23,7 @@ find_path(NB_INCLUDE_DIR
 )
 
 find_path(WB_INCLUDE_DIR
-  NAME opencore-amrwb/dec_if.h
+  NAMES opencore-amrwb/enc_if.h amrwb/enc_if.h
   HINTS
     "${AMR_INCLUDE_DIRS}"
     "${AMR_HINTS}/include"
@@ -52,7 +52,7 @@ find_package_handle_standard_args(AMR DEFAULT_MSG AMR_LIBRARY
 
 if(AMR_FOUND)
   if( NB_INCLUDE_DIR )
-    set( AMR_INCLUDE_DIRS ${NB_INCLUDE_DIR}/opencore-amrnb )
+    set( AMR_INCLUDE_DIRS ${NB_INCLUDE_DIR}/opencore-amrnb ${NB_INCLUDE_DIR}/amrnb )
     set( AMR_LIBRARIES ${NB_LIBRARY} )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAMR_NB" )
   else()
@@ -60,7 +60,7 @@ if(AMR_FOUND)
     set( AMR_LIBRARIES "" )
   endif()
   if( WB_INCLUDE_DIR )
-    set( AMR_INCLUDE_DIRS ${AMR_INCLUDE_DIRS} ${WB_INCLUDE_DIR}/opencore-amrwb )
+    set( AMR_INCLUDE_DIRS ${AMR_INCLUDE_DIRS} ${WB_INCLUDE_DIR}/opencore-amrwb ${WB_INCLUDE_DIR}/amrwb )
     set( AMR_LIBRARIES ${AMR_LIBRARIES} ${WB_LIBRARY} )
     set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAMR_WB" )
   endif()
