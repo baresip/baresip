@@ -17,9 +17,9 @@
 #include <re_dbg.h>
 
 
-static const char *modpath = "/usr/local/lib/baresip/modules";
+static const char *modpath = "/usr/local/share/baresip";
 static const char *server_cert = "/etc/demo.pem";
-static const char *www_path = "www";
+static const char *www_path = "webrtc/www";
 
 
 static const char *modv[] = {
@@ -37,7 +37,6 @@ static const char *modv[] = {
 	"avcodec",
 	"vp9",
 	"avformat",
-	"sdl",
 	"fakevideo"
 };
 

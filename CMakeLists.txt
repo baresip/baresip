@@ -207,3 +207,10 @@ set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
 target_link_libraries(baresip_exe baresip ${LINKLIBS})
 install(TARGETS baresip_exe)
+
+
+##############################################################################
+#
+#
+
+add_subdirectory(webrtc)
