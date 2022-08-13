@@ -216,3 +216,10 @@ install(TARGETS baresip_exe)
 
 file(GLOB SHARE_FILES "${PROJECT_SOURCE_DIR}/share/*")
 install(FILES ${SHARE_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip)
+
+
+##############################################################################
+#
+#
+
+add_subdirectory(webrtc)
