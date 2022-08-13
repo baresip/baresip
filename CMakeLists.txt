@@ -48,7 +48,6 @@ include_directories(
 link_directories(/usr/local/lib)
 
 include(GNUInstallDirs)
-set(SHARE_PATH ${CMAKE_INSTALL_FULL_DATAROOTDIR}/baresip)
 
 add_definitions(
   -DHAVE_GETOPT
@@ -168,7 +167,8 @@ else()
                             LINK_FLAGS "-undefined dynamic_lookup")
     endif()
 
-    install(TARGETS ${mod} LIBRARY DESTINATION ${SHARE_PATH})
+    install(TARGETS ${mod} LIBRARY DESTINATION
+        ${CMAKE_INSTALL_LIBDIR}/baresip/modules)
   endforeach()
 endif()
 
@@ -207,3 +207,12 @@ set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
 target_link_libraries(baresip_exe baresip ${LINKLIBS})
 install(TARGETS baresip_exe)
+
+
+##############################################################################
+#
+# Install share
+#
+
+file(GLOB SHARE_FILES "${PROJECT_SOURCE_DIR}/share/*")
+install(FILES ${SHARE_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip)
