@@ -52,6 +52,7 @@ set(MODULES
   syslog
   turn
   uuid
+  vidbridge
   vidinfo
   vumeter
 )
