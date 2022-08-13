@@ -327,7 +327,6 @@ endif
 ifneq ($(USE_V4L2),)
 MODULES   += v4l2
 endif
-endif
 ifneq ($(USE_VPX),)
 MODULES   += vp8
 MODULES   += $(shell pkg-config 'vpx >= 1.3.0' && echo "vp9")
