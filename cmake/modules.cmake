@@ -46,6 +46,7 @@ set(MODULES
   natpmp
   pcp
   presence
+  rtcpsummary
   selfview
   serreg
   srtp
