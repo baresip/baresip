@@ -450,8 +450,9 @@ struct shared *avformat_shared_lookup(const char *dev)
 	for (le = sharedl.head; le; le = le->next) {
 
 		struct shared *sh = le->data;
+		bool have_av = sh->au.ctx != NULL && sh->vid.ctx != NULL;
 
-		if (0 == str_casecmp(sh->dev, dev))
+		if (have_av && 0 == str_casecmp(sh->dev, dev))
 			return sh;
 	}
 
