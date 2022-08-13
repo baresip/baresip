@@ -53,6 +53,7 @@ set(MODULES
   turn
   uuid
   vidinfo
+  vumeter
 )
 
 if(AAC_FOUND)
