@@ -47,6 +47,7 @@ set(MODULES
   pcp
   presence
   selfview
+  serreg
   srtp
   stun
   syslog
