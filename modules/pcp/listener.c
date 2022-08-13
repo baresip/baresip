@@ -5,7 +5,6 @@
  */
 
 #include <re.h>
-#include <rew.h>
 #include <baresip.h>
 #include "pcp.h"
 

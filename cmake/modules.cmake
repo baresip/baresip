@@ -38,16 +38,21 @@ set(MODULES
   httpd
   httpreq
   ice
+  l16
   menu
   mixminus
   multicast
   mwi
+  natpmp
+  pcp
   presence
   selfview
   srtp
   stun
+  syslog
   turn
   uuid
+  vidinfo
 )
 
 if(AAC_FOUND)
