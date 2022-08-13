@@ -17,7 +17,7 @@
 #include <re_dbg.h>
 
 
-static const char *modpath = "/usr/local/share/baresip";
+static const char *modpath = "/usr/local/lib/baresip/modules";
 static const char *server_cert = "/etc/demo.pem";
 static const char *www_path = "webrtc/www";
 
