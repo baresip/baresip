@@ -31,8 +31,6 @@
 #   USE_MPA           MPA audio codec
 #   USE_MPG123        Use mpg123
 #   USE_NETROAM       Network roaming
-#   USE_OMX_RPI       RaspberryPi VideoCore display driver
-#   USE_OMX_BELLAGIO  libomxil-bellagio xvideosink driver
 #   USE_OPUS          Opus audio codec
 #   USE_OPUS_MS       Opus multistream audio codec
 #   USE_PLC           Packet Loss Concealment
@@ -118,9 +116,7 @@ endif
 USE_X11      := $(shell $(call CC_TEST_AND,X11/Xlib.h,X11/extensions/XShm.h))
 USE_ZRTP     := $(shell $(call CC_TEST,libzrtp/zrtp.h))
 USE_VPX      := $(shell $(call CC_TEST,vpx/vp8.h))
-USE_OMX_RPI  := $(shell $(call CC_TEST_AND,bcm_host.h,IL/OMX_Core.h))
 
-USE_OMX_BELLAGIO := $(shell $(call CC_TEST,OMX_Core.h))
 USE_WEBRTC_AEC   := $(shell \
 	pkg-config --exists "webrtc-audio-processing >= 0.3" && echo "yes")
 else
@@ -330,12 +326,6 @@ MODULES   += syslog
 endif
 ifneq ($(USE_V4L2),)
 MODULES   += v4l2
-endif
-ifneq ($(USE_OMX_RPI),)
-MODULES   += omx
-else
-ifneq ($(USE_OMX_BELLAGIO),)
-MODULES   += omx
 endif
 endif
 ifneq ($(USE_VPX),)
