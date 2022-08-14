@@ -41,6 +41,7 @@ set(MODULES
   ice
   l16
   menu
+  mixausrc
   mixminus
   multicast
   mwi
