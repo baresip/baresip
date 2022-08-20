@@ -16,6 +16,7 @@
 #define DEBUG_LEVEL 6
 #include <re_dbg.h>
 
+enum { ASYNC_WORKERS = 4 };
 
 static const char *modpath = "/usr/local/lib/baresip/modules";
 static const char *server_cert = "/etc/demo.pem";
@@ -148,6 +149,8 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
+	re_thread_async_init(ASYNC_WORKERS);
+
 	sys_coredump_set(true);
 
 	err = conf_configure_buf((uint8_t *)modconfig, str_len(modconfig));
@@ -229,6 +232,8 @@ int main(int argc, char *argv[])
 	 */
 	debug("main: unloading modules..\n");
 	mod_close();
+
+	re_thread_async_close();
 
 	tmr_debug();
 
