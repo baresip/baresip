@@ -247,7 +247,7 @@ g722          G.722 audio codec
 g7221         G.722.1 audio codec
 g726          G.726 audio codec
 gst           Gstreamer audio source
-gtk           GTK+ 2.0 UI
+gtk           GTK+ 3 menu-based UI
 gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module
 i2s           I2S (Inter-IC Sound) audio driver
