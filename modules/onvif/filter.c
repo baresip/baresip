@@ -87,14 +87,15 @@ struct onvif_filter_stream {
 
 
 struct filter_st {
-	struct lock *lock;             /**< streams list lock */
-	struct list streams;           /**< streams list      */
-	struct aufilt_prm prm;         /**< streams parameter */
-	enum aufmt fmt;                /**< used format       */
+	mtx_t *mtx;                    /**< streams list mutex               */
+	struct list streams;           /**< streams list                     */
+	struct aufilt_prm prm;         /**< streams parameter                */
+	enum aufmt fmt;                /**< used format                      */
 
-	struct filter_mixer *mixer;    /**< enc<->dec mixer   */
-	struct filter_resamp *aresamp; /**< announcement mixer*/
+	struct filter_mixer *mixer;    /**< enc<->dec mixer                  */
+	struct filter_resamp *aresamp; /**< announcement mixer               */
 };
+
 static struct filter_st *incoming_st = NULL;    /*Ref. for the dec. status*/
 static struct filter_st *outgoing_st = NULL;    /*Ref. for the enc. status*/
 
@@ -132,11 +133,11 @@ static void dec_destructor(void *arg) {
 static void filter_st_destructor(void *arg) {
 	struct filter_st *st = arg;
 
-	lock_write_get(st->lock);
+	mtx_lock(st->mtx);
 	list_flush(&st->streams);
-	lock_rel(st->lock);
+	mtx_unlock(st->mtx);
 
-	st->lock = mem_deref(st->lock);
+	st->mtx = mem_deref(st->mtx);
 	st->mixer = mem_deref(st->mixer);
 	st->aresamp = mem_deref(st->aresamp);
 }
@@ -618,7 +619,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	size_t num_bytes = auframe_size(af);
 	int err = 0;
 
-	err = lock_read_try(sp->lock);
+	err = mtx_lock(sp->mtx);
 	if (err) {
 		memset(af->sampv, 0, num_bytes);
 		return 0;
@@ -628,7 +629,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 		aubuf_write(sp->mixer->aubuf,(uint8_t *) af->sampv, num_bytes);
 
 	fs = list_ledata(list_head(&sp->streams));
-	lock_rel(sp->lock);
+	mtx_unlock(sp->mtx);
 
 	if (!fs)
 		return 0;
@@ -723,7 +724,7 @@ static int filter_resamp_alloc(struct filter_resamp **frp, uint32_t irate,
  * allocate the filter lists and locks
  * if not allocated -> allocate filter_mixer
  *
- * @param stp	filter list&lock struct
+ * @param stp	filter list&mtx struct
  * @param ctx	filter mixer struct
  * @param prm	filter parameter
  * @param is_encoder
@@ -743,7 +744,7 @@ static int filter_alloc(struct filter_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
-	err = lock_alloc(&st->lock);
+	err = mutex_alloc(&st->mtx);
 	if (err)
 		goto out;
 
@@ -948,10 +949,10 @@ int onvif_aufilter_audio_send_start(struct onvif_filter_stream *fs,
 			goto out;
 	}
 
-	lock_write_get(outgoing_st->lock);
+	mtx_lock(outgoing_st->mtx);
 	fs->fmt = outgoing_st->fmt;
 	list_append(&outgoing_st->streams, &fs->le, fs);
-	lock_rel(outgoing_st->lock);
+	mtx_unlock(outgoing_st->mtx);
 
 	send_event("onvif", "start recording", "Start outgoing stream");
 
@@ -970,9 +971,9 @@ void onvif_aufilter_audio_send_stop(struct onvif_filter_stream *fs)
 	if (!outgoing_st)
 		return;
 
-	lock_write_get(outgoing_st->lock);
+	mtx_lock(outgoing_st->mtx);
 	list_unlink(&fs->le);
-	lock_rel(outgoing_st->lock);
+	mtx_unlock(outgoing_st->mtx);
 	fs->rtpsock = mem_deref(fs->rtpsock);
 
 	send_event("onvif", "finished recording", "Stop outgoing stream");
@@ -1029,10 +1030,10 @@ int onvif_aufilter_audio_recv_start(struct onvif_filter_stream *fs,
 			goto out;
 	}
 
-	lock_write_get(incoming_st->lock);
+	mtx_lock(incoming_st->mtx);
 	fs->fmt = incoming_st->fmt;
 	list_append(&incoming_st->streams, &fs->le, fs);
-	lock_rel(incoming_st->lock);
+	mtx_unlock(incoming_st->mtx);
 	send_event("onvif", "start announcement", "Start incoming stream");
 
   out:
@@ -1050,9 +1051,9 @@ void onvif_aufilter_audio_recv_stop(struct onvif_filter_stream *fs)
 	if (!incoming_st)
 		return;
 
-	lock_write_get(incoming_st->lock);
+	mtx_lock(incoming_st->mtx);
 	list_unlink(&fs->le);
-	lock_rel(incoming_st->lock);
+	mtx_unlock(incoming_st->mtx);
 	fs->rtpsock = mem_deref(fs->rtpsock);
 	send_event("onvif", "finished announcement", "Stop incoming stream");
 }

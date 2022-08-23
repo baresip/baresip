@@ -55,7 +55,7 @@ struct onvif_fakevideo_stream {
 
 
 static struct list fv_send_stream_list;
-static struct lock *fvlock = NULL;
+static mtx_t *fvmtx = NULL;
 
 
 static unsigned char sample_jpeg_dat[] = {
@@ -174,7 +174,7 @@ static void onvif_fakevideo_stream_destructor(void *arg)
 	list_unlink(&fvs->le);
 	fvs->rtpsock = mem_deref(fvs->rtpsock);
 	if (!list_count(&fv_send_stream_list))
-		fvlock = mem_deref(fvlock);
+		fvmtx = mem_deref(fvmtx);
 }
 
 
@@ -187,7 +187,7 @@ static void fakevideo_tmr_h(void *arg)
 
 	(void)arg;
 
-	err = lock_read_try(fvlock);
+	err = mtx_lock(fvmtx);
 	if (err)
 		return;
 
@@ -218,7 +218,7 @@ static void fakevideo_tmr_h(void *arg)
 	}
 
   out:
-	lock_rel(fvlock);
+	mtx_unlock(fvmtx);
 	mem_deref(buf);
 
 	tmr_start(&fakevideo_tmr, (1000 / 1), fakevideo_tmr_h, NULL);
@@ -250,8 +250,8 @@ int onvif_fakevideo_alloc(struct onvif_fakevideo_stream **fvsp,
 		goto out;
 	}
 
-	if (!fvlock)
-		err = lock_alloc(&fvlock);
+	if (!fvmtx)
+		err = mutex_alloc(&fvmtx);
 
 	if (err)
 		goto out;
@@ -285,7 +285,7 @@ int onvif_fakevideo_start(struct onvif_fakevideo_stream *fvs, int proto,
 	if (!fvs || !tar)
 		return EINVAL;
 
-	lock_read_get(fvlock);
+	mtx_lock(fvmtx);
 	sa_cpy(&fvs->addr, tar);
 
 	switch (proto) {
@@ -319,7 +319,7 @@ int onvif_fakevideo_start(struct onvif_fakevideo_stream *fvs, int proto,
 	}
 
   out:
-	lock_rel(fvlock);
+	mtx_unlock(fvmtx);
 	return err;
 }
 
@@ -331,9 +331,9 @@ int onvif_fakevideo_start(struct onvif_fakevideo_stream *fvs, int proto,
  */
 void onvif_fakevideo_stop(struct onvif_fakevideo_stream *fvs)
 {
-	lock_read_get(fvlock);
+	mtx_lock(fvmtx);
 	mem_deref(fvs);
-	lock_rel(fvlock);
+	mtx_unlock(fvmtx);
 
 	if (list_isempty(&fv_send_stream_list))
 		tmr_cancel(&fakevideo_tmr);
