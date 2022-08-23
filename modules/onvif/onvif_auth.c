@@ -674,13 +674,14 @@ enum userlevel rtsp_digest_auth(const struct rtsp_msg *msg)
 	memset(passwd, 0, sizeof(passwd));
 	if (err)
 		goto out;
-	if (pl_isset(&resp->algorithm) &&
-		(0 == pl_strcmp(&resp->algorithm, str_digest_md5sess))) {
-		err = md5_printf(ha1, "%b:%r:%r", ha1, sizeof(ha1),
-			&resp->nonce, &resp->cnonce);
-		if (err)
-			goto out;
-	}
+
+/*        if (pl_isset(&resp->algorithm) &&*/
+/*                (0 == pl_strcmp(&resp->algorithm, str_digest_md5sess))) {*/
+/*                err = md5_printf(ha1, "%b:%r:%r", ha1, sizeof(ha1),*/
+/*                        &resp->nonce, &resp->cnonce);*/
+/*                if (err)*/
+/*                        goto out;*/
+/*        }*/
 
 	err = httpauth_digest_response_auth(resp, &msg->met, ha1);
 
