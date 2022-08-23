@@ -639,6 +639,7 @@ void Stream::srtpSecretsOn(std::string c, std::string s, bool verified)
 {
 	m_sas = s;
 	m_ciphers = c;
+	char buf[128] = "";
 
 	if (s.empty()) {
 		info("zrtp: Stream <%s> is encrypted (%s)\n",
@@ -649,10 +650,24 @@ void Stream::srtpSecretsOn(std::string c, std::string s, bool verified)
 		     "SAS is [%s] (%s)\n",
 		     media_name(), c.c_str(), s.c_str(),
 		     (verified)? "verified" : "NOT VERIFIED");
-		if (!verified)
+		if (!verified) {
 			warning("zrtp: SAS is not verified, type "
 			        "'/zrtp_verify %d' to verify\n",
 			        m_session->id());
+			if (m_session->eventh) {
+				if (re_snprintf(buf, sizeof(buf), "%s,%d",
+						c.c_str(),
+						m_session->id()))
+					(m_session->eventh)
+						(MENC_EVENT_VERIFY_REQUEST,
+						 buf,
+						 NULL,
+						 m_session->arg);
+				else
+					warning("zrtp: failed to print verify "
+						" arguments\n");
+			}
+		}
 	}
 }
 
