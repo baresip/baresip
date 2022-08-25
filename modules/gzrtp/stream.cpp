@@ -668,20 +668,6 @@ void Stream::srtpSecretsOn(std::string c, std::string s, bool verified)
 						" arguments\n");
 			}
 		}
-		else {
-			if (m_session->eventh) {
-				if (re_snprintf(buf, sizeof(buf), "%d",
-						m_session->id()))
-					(m_session->eventh)
-						(MENC_EVENT_PEER_VERIFIED,
-						 buf,
-						 NULL,
-						 m_session->arg);
-				else
-					warning("zrtp: failed to print"
-						" verified argument\n");
-			}
-		}
 	}
 }
 

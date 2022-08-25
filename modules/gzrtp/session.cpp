@@ -132,6 +132,8 @@ bool Session::request_master(Stream *stream)
 
 void Session::on_secure(Stream *stream)
 {
+	char buf[128] = "";
+
 	++m_encrypted;
 
 	if (m_encrypted == m_streams.size() && m_master) {
@@ -140,6 +142,18 @@ void Session::on_secure(Stream *stream)
 		     m_master->get_ciphers(),
 		     m_master->get_sas(),
 		     (m_master->sas_verified())? "verified" : "NOT VERIFIED");
+		if (m_master->sas_verified() && m_master->session()->eventh) {
+			if (re_snprintf(buf, sizeof(buf), "%d",
+					m_master->session()->id()))
+				(m_master->session()->eventh)
+					(MENC_EVENT_PEER_VERIFIED,
+					 buf,
+					 NULL,
+					 m_master->session()->arg);
+			else
+				warning("zrtp: failed to print"
+					" verified argument\n");
+			}
 		return;
 	}
 
