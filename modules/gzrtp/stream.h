@@ -78,6 +78,8 @@ public:
 	bool sas_verified();
 	void verify_sas(bool verify);
 
+	Session *session() { return m_session; }
+
 private:
 	static void zrtp_timer_cb(void *arg);
 	static bool udp_helper_send_cb(int *err, struct sa *src,
