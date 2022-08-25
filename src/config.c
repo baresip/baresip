@@ -98,6 +98,7 @@ static struct config core_config = {
 		{ {"",0} },
 		0,
 		true,
+		false,
 	},
 };
 
@@ -452,6 +453,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_apply(conf, "dns_server", dns_server_handler, &cfg->net);
 	(void)conf_apply(conf, "dns_fallback",
 			   dns_fallback_handler, &cfg->net);
+	(void)conf_get_bool(conf, "dns_getaddrinfo",
+			    &cfg->net.use_getaddrinfo);
 	(void)conf_get_str(conf, "net_interface",
 			   cfg->net.ifname, sizeof(cfg->net.ifname));
 
@@ -782,6 +785,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#dns_server\t\t1.1.1.1:53\n"
 			  "#dns_server\t\t1.0.0.1:53\n"
 			  "#dns_fallback\t\t8.8.8.8:53\n"
+			  "#dns_getaddrinfo\t\tno\n"
 			  "#net_interface\t\t%H\n"
 			  "\n"
 			  "# Play tones\n"
