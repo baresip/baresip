@@ -656,7 +656,7 @@ void Stream::srtpSecretsOn(std::string c, std::string s, bool verified)
 			        m_session->id());
 			if (m_session->eventh) {
 				if (re_snprintf(buf, sizeof(buf), "%s,%d",
-						c.c_str(),
+						s.c_str(),
 						m_session->id()))
 					(m_session->eventh)
 						(MENC_EVENT_VERIFY_REQUEST,
@@ -664,8 +664,22 @@ void Stream::srtpSecretsOn(std::string c, std::string s, bool verified)
 						 NULL,
 						 m_session->arg);
 				else
-					warning("zrtp: failed to print verify "
+					warning("zrtp: failed to print verify"
 						" arguments\n");
+			}
+		}
+		else {
+			if (m_session->eventh) {
+				if (re_snprintf(buf, sizeof(buf), "%d",
+						m_session->id()))
+					(m_session->eventh)
+						(MENC_EVENT_PEER_VERIFIED,
+						 buf,
+						 NULL,
+						 m_session->arg);
+				else
+					warning("zrtp: failed to print"
+						" verified argument\n");
 			}
 		}
 	}
