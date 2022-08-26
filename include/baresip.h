@@ -809,6 +809,7 @@ enum answer_method {
 typedef void (ua_event_h)(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg);
 typedef void (options_resp_h)(int err, const struct sip_msg *msg, void *arg);
+typedef void (refer_resp_h)(int err, const struct sip_msg *msg, void *arg);
 
 typedef void (ua_exit_h)(void *arg);
 
@@ -826,6 +827,8 @@ int  ua_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_hold_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_options_send(struct ua *ua, const char *uri,
 		     options_resp_h *resph, void *arg);
+int  ua_refer_send(struct ua *ua, const char *uri, const struct pl *referto,
+		    refer_resp_h *resph, void *arg);
 int  ua_debug(struct re_printf *pf, const struct ua *ua);
 int  ua_state_json_api(struct odict *od, const struct ua *ua);
 int  ua_print_calls(struct re_printf *pf, const struct ua *ua);

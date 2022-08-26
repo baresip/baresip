@@ -1348,6 +1348,39 @@ int ua_options_send(struct ua *ua, const char *uri,
 
 
 /**
+ * Send SIP REFER message to a peer
+ *
+ * @param ua       User-Agent object
+ * @param uri      Peer SIP Address
+ * @param referto  Refer-To value
+ * @param resph    Response handler
+ * @param arg      Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_refer_send(struct ua *ua, const char *uri, const struct pl *referto,
+		    refer_resp_h *resph, void *arg)
+{
+	int err = 0;
+
+	if (!ua || !str_isset(uri))
+		return EINVAL;
+
+	err = sip_req_send(ua, "REFER", uri, resph, arg,
+			   "Refer-To: %r\r\n"
+			   "Refer-Sub: false\r\n"
+			   "Content-Length: 0\r\n"
+			   "\r\n",
+			   referto);
+	if (err) {
+		warning("ua: send options: (%m)\n", err);
+	}
+
+	return err;
+}
+
+
+/**
  * Get presence status of a User-Agent
  *
  * @param ua User-Agent object
