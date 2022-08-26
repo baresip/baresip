@@ -336,6 +336,7 @@ int ua_print_require(struct re_printf *pf, const struct ua *ua);
 struct call *ua_find_call_onhold(const struct ua *ua);
 struct call *ua_find_active_call(struct ua *ua);
 void ua_handle_options(struct ua *ua, const struct sip_msg *msg);
+bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg);
 void sipsess_conn_handler(const struct sip_msg *msg, void *arg);
 bool ua_catchall(struct ua *ua);
 bool ua_reghasladdr(const struct ua *ua, const struct sa *laddr);

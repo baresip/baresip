@@ -907,12 +907,60 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 			  desc ? mbuf_buf(desc) : NULL,
 			  desc ? mbuf_get_left(desc) : (size_t)0);
 	if (err) {
-		warning("ua: options: sip_treplyf: %m\n", err);
+		warning("ua: reply to OPTIONS failed (%m)\n", err);
 	}
 
  out:
 	mem_deref(desc);
 	mem_deref(call);
+}
+
+
+bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
+{
+	struct sip_contact contact;
+	const struct sip_hdr *hdr;
+	bool sub = false;
+	int err;
+
+	debug("ua: incoming REFER message from %r (%J)\n",
+	      &msg->from.auri, &msg->src);
+
+	/* application/sdp is the default if the
+	   Accept header field is not present */
+	hdr = sip_msg_hdr(msg, SIP_HDR_REFER_SUB);
+	if (hdr)
+		pl_bool(&sub, &hdr->val);
+
+	if (sub) {
+		warning("ua: out of dialog REFER with subscription not "
+			"supported\n");
+		return false;
+	}
+
+	/* get the transfer target */
+	hdr = sip_msg_hdr(msg, SIP_HDR_REFER_TO);
+	if (!hdr) {
+		warning("call: bad REFER request from %r\n", &msg->from.auri);
+		(void)sip_reply(uag_sip(), msg, 400,
+				"Missing Refer-To header");
+		return true;
+	}
+
+	/* TODO: white list check --> prop. reply with 406 Not Acceptable */
+
+	sip_contact_set(&contact, ua_cuser(ua), &msg->dst, msg->tp);
+	err = sip_treplyf(NULL, NULL, uag_sip(),
+			  msg, true, 202, "Accepted",
+			  "%H"
+			  "%s"
+			  "Content-Length: 0\r\n"
+			  "\r\n",
+			  sip_contact_print, &contact);
+	if (err)
+		warning("ua: reply to REFER failed (%m)\n", err);
+
+	return err;
 }
 
 
