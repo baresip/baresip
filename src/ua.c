@@ -960,6 +960,8 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 	if (err)
 		warning("ua: reply to REFER failed (%m)\n", err);
 
+	debug("ua: REFER to %r\n", &hdr->val);
+	ua_event(ua, UA_EVENT_REFER, NULL, "%r", &hdr->val);
 	return err;
 }
 
