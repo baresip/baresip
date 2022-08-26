@@ -954,6 +954,7 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 			  msg, true, 202, "Accepted",
 			  "%H"
 			  "%s"
+			  "Refer-Sub: false\r\n"
 			  "Content-Length: 0\r\n"
 			  "\r\n",
 			  sip_contact_print, &contact);
