@@ -154,7 +154,7 @@ static int param_decode(const char *prm, const char *name, struct pl *val)
 const char *playmod_usage = "/com_playmod"
 			    " source=<audiofile>"
 			    " [player=<player_mod>,<player_dev>]\n";
-static struct play *cur_play;
+static struct play *cur_play = NULL;
 
 
 static int cmd_playmod_file(struct re_printf *pf, void *arg)
@@ -176,6 +176,9 @@ static int cmd_playmod_file(struct re_printf *pf, void *arg)
 	int err;
 
 	cfg = conf_config();
+
+	/* Stop the current tone, if any */
+	cur_play = mem_deref(cur_play);
 
 	err = param_decode(carg->prm, "source", &src_param);
 	if (err) {
@@ -202,8 +205,7 @@ static int cmd_playmod_file(struct re_printf *pf, void *arg)
 		str_dup(&alert_dev, cfg->audio.alert_dev);
 	}
 
-	/* Stop the current tone, if any */
-	cur_play = mem_deref(cur_play);
+
 	if (str_isset(filename)) {
 		re_hprintf(pf, "playing audio file \"%s\" ..\n", filename);
 
@@ -229,6 +231,27 @@ out:
 
 	return err;
 }
+
+
+static void ua_event_handler(struct ua *ua, enum ua_event ev,
+			     struct call *call, const char *prm, void *arg)
+{
+	struct account *acc = ua_account(ua);
+	(void) arg;
+
+	info("menu: [ ua=%s call=%s ] event: %s (%s)\n",
+	     account_aor(acc), call_id(call), uag_event_str(ev), prm);
+
+	switch (ev) {
+		case UA_EVENT_CALL_OUTGOING:
+		case UA_EVENT_CALL_INCOMING:
+			cur_play = mem_deref(cur_play);
+			break;
+		default:
+			break;
+	}
+}
+
 
 
 static void find_first_call(struct call *call, void *arg)
@@ -295,7 +318,8 @@ static int module_init(void)
 {
 	int err;
 
-	err  = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err = uag_event_register(ua_event_handler, NULL);
+	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
 
 	return err;
 }
@@ -303,7 +327,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-
+	uag_event_unregister(ua_event_handler);
 	cmd_unregister(baresip_commands(), cmdv);
 
 	return 0;
