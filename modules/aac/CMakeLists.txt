@@ -10,3 +10,4 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${AAC_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${AAC_LIBRARIES})
+target_compile_options(${PROJECT_NAME} PRIVATE -Wno-unused-function)
