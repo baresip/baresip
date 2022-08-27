@@ -55,7 +55,6 @@ set(MODULES
   serreg
   srtp
   stun
-  syslog
   turn
   uuid
   vidbridge
@@ -108,6 +107,9 @@ if(PULSE_FOUND)
 endif()
 if(SNDFILE_FOUND)
   list(APPEND MODULES sndfile)
+endif()
+if(HAVE_SYSLOG_H)
+  list(APPEND MODULES syslog)
 endif()
 if(SPANDSP_FOUND)
   list(APPEND MODULES g722)
