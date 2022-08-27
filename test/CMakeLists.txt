@@ -4,26 +4,9 @@
 # Copyright (C) 2022 Sebastian Reimers
 #
 
-##############################################################################
-#
-# Versioning
-#
-
 project(selftest)
 
-
-##############################################################################
-#
-# Compile options
-#
-
 include_directories(${RE_INCLUDE_DIRS} ${BARESIP_INCLUDE_DIRS})
-
-
-##############################################################################
-#
-# Source/Header section
-#
 
 add_executable(${PROJECT_NAME}
   account.c
