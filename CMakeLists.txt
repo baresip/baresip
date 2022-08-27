@@ -228,3 +228,4 @@ install(FILES ${SHARE_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip)
 #
 
 add_subdirectory(webrtc)
+add_subdirectory(test)
