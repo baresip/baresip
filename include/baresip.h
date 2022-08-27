@@ -384,9 +384,10 @@ struct config_net {
 	struct {
 		char addr[64];
 		bool fallback;
-	} nsv[NET_MAX_NS];      /**< Configured DNS nameservers     */
-	size_t nsc;             /**< Number of DNS nameservers      */
-	bool use_linklocal;     /**< Use v4/v6 link-local addresses */
+	} nsv[NET_MAX_NS];      /**< Configured DNS nameservers         */
+	size_t nsc;             /**< Number of DNS nameservers          */
+	bool use_linklocal;     /**< Use v4/v6 link-local addresses     */
+	bool use_getaddrinfo;   /**< Use getaddrinfo for A/AAAA records */
 };
 
 
