@@ -9,7 +9,7 @@ find_package(FFMPEG COMPONENTS
     avutil avcodec avfilter avformat swscale swresample avdevice)
 find_package(GIO)
 find_package(G7221)
-find_package(Mosquitto)
+find_package(MOSQUITTO)
 find_package(OPUS)
 find_package(PNG)
 find_package(PULSE)
