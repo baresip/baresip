@@ -61,7 +61,7 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: selftest-exe
-        path: baresip-win32/baresip/selftest.exe
+        path: baresip-win32/baresip/build/test/selftest.exe
         retention-days: 1
 
   wintest:
