@@ -25,6 +25,8 @@ include(GNUInstallDirs)
 include(CheckIncludeFile)
 find_package(RE REQUIRED)
 find_package(REM REQUIRED)
+find_package(Threads REQUIRED)
+find_package(ZLIB REQUIRED)
 
 ##############################################################################
 #
@@ -183,7 +185,7 @@ endif()
 # Main target library
 #
 
-set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads -lz -lm)
+set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads ZLIB::ZLIB -lm)
 if(USE_OPENSSL)
   list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
 endif()
