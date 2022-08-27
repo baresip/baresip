@@ -21,59 +21,64 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 # Module/Package Includes
 #
 
+include(GNUInstallDirs)
 include(CheckIncludeFile)
 find_package(RE REQUIRED)
 find_package(REM REQUIRED)
-find_package(OpenSSL)
-find_package(Threads REQUIRED)
 
 ##############################################################################
 #
 # Compile options
 #
 
-option(USE_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
 option(STATIC "Build static" OFF)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_EXTENSIONS OFF)
+
+if(MSVC)
+  add_compile_options("/W3")
+else()
+  add_compile_options(
+    -pedantic
+    -Wall
+    -Wbad-function-cast
+    -Wcast-align
+    -Wextra
+    -Wmissing-declarations
+    -Wmissing-prototypes
+    -Wnested-externs
+    -Wno-strict-aliasing
+    -Wold-style-definition
+    -Wshadow -Waggregate-return
+    -Wstrict-prototypes
+    -Wuninitialized
+    -Wvla
+  )
+endif()
+
+if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wshorten-64-to-32 -Watomic-implicit-seq-cst)
+endif()
+
+find_package(re CONFIG REQUIRED HINTS ../re/cmake)
+add_definitions(${RE_DEFINITIONS})
 
 include_directories(
   include
   src
-  ../re/include
-  ../rem/include
   /usr/local/include
   ${RE_INCLUDE_DIRS}
   ${REM_INCLUDE_DIRS}
+  ${OPENSSL_INCLUDE_DIR}
 )
 
 link_directories(/usr/local/lib)
 
-include(GNUInstallDirs)
-
 add_definitions(
-  -DHAVE_GETOPT
-  -DHAVE_INET6
-  -DHAVE_SIGNAL
-  -DUSE_ZLIB
   -DSHARE_PATH="${SHARE_PATH}"
-  )
-
-check_include_file(unistd.h HAVE_UNISTD_H)
-if(HAVE_UNISTD_H)
-  add_definitions(-DHAVE_UNISTD_H)
-endif()
-
-if(USE_OPENSSL)
-  add_definitions(
-    -DUSE_DTLS
-    -DUSE_OPENSSL
-    -DUSE_OPENSSL_AES
-    -DUSE_OPENSSL_DTLS
-    -DUSE_OPENSSL_HMAC
-    -DUSE_OPENSSL_SRTP
-    -DUSE_TLS
-  )
-  include_directories( ${OPENSSL_INCLUDE_DIR} )
-endif()
+)
 
 if(STATIC)
   add_definitions(-DSTATIC)
