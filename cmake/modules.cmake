@@ -38,7 +38,6 @@ set(MODULES
   echo
   fakevideo
   g711
-  hisilicon
   httpd
   httpreq
   ice
@@ -92,6 +91,9 @@ if(FFMPEG_FOUND)
 endif()
 if(GIO_FOUND)
   list(APPEND MODULES ctrl_dbus)
+endif()
+if(HISI_SDK_DIR)
+    list(APPEND MODULES hisilicon)
 endif()
 if(USE_OPENSSL)
   list(APPEND MODULES dtls_srtp)
