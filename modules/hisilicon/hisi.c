@@ -27,21 +27,15 @@ static int init_hw() {
 }
 
 unsigned audio_frame_size(unsigned srate) {
-#define ASSOC(srate)                                                           \
-	case (srate):                                                              \
-										   return (srate) / 50;
-
 	switch (srate) {
-		ASSOC(8000);
-		ASSOC(12000);
-		ASSOC(16000);
-		ASSOC(24000);
-		ASSOC(48000);
+		case 8000: return 8000 / 50;
+		case 12000: return 12000 / 50;
+		case 16000: return 16000 / 50;
+		case 24000: return 24000 / 50;
+		case 48000: return 48000 / 50;
 		default:
-		return 320;
+			    return 320;
 	}
-
-#undef ASSOC
 }
 
 static int hisi_init(void)
