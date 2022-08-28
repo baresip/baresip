@@ -55,8 +55,7 @@ static void *read_thread(void *arg)
 {
 	AEC_FRAME_S stAecFrm;
 	AUDIO_FRAME_S stFrame;
-
-	int s32Ret;
+	int ret;
 	int AiDev = 0;
 	int AiChn = 0;
 
@@ -64,18 +63,18 @@ static void *read_thread(void *arg)
 
 	while (st->run) {
 		memset(&stAecFrm, 0, sizeof(AEC_FRAME_S));
-		s32Ret = HI_MPI_AI_GetFrame(AiDev, AiChn, &stFrame, &stAecFrm, -1);
-		if (HI_SUCCESS != s32Ret) {
-			printf("%s: HI_MPI_AI_GetFrame(%d, %d), failed with %#x!\n", __FUNCTION__, AiDev, AiChn, s32Ret);
+		ret = HI_MPI_AI_GetFrame(AiDev, AiChn, &stFrame, &stAecFrm, -1);
+		if (HI_SUCCESS != ret) {
+			printf("HI_MPI_AI_GetFrame(%d, %d), failed with %#x!\n", AiDev, AiChn, ret);
 			continue;
 		}
 
 		struct auframe af;
 
 		memcpy(st->sampv, stFrame.u64VirAddr[0], stFrame.u32Len);
-		s32Ret = HI_MPI_AI_ReleaseFrame(AiDev, AiChn, &stFrame, &stAecFrm);
-		if (HI_SUCCESS != s32Ret) {
-			printf("%s: HI_MPI_AI_ReleaseFrame(%d, %d), failed with %#x!\n", __FUNCTION__, AiDev, AiChn, s32Ret);
+		ret = HI_MPI_AI_ReleaseFrame(AiDev, AiChn, &stFrame, &stAecFrm);
+		if (HI_SUCCESS != ret) {
+			printf("HI_MPI_AI_ReleaseFrame(%d, %d), failed with %#x!\n", AiDev, AiChn, ret);
 			continue;
 		}
 
@@ -95,12 +94,8 @@ static HI_S32 audio_cfg_codec(AUDIO_SAMPLE_RATE_E enSample) {
 	HI_S32 fdAcodec = -1;
 	HI_S32 ret = HI_SUCCESS;
 	ACODEC_FS_E i2s_fs_sel = 0;
-	int iAcodecInputVol = 0;
+	int iAcodecInputVol = 50;
 	ACODEC_MIXER_E input_mode = 0;
-
-	// override default value to make it great for XM boards
-	if (iAcodecInputVol == 0)
-		iAcodecInputVol = 50;
 
 	fdAcodec = open(ACODEC_FILE, O_RDWR);
 	if (fdAcodec < 0) {
@@ -202,6 +197,7 @@ int hisi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	int err;
+	(void)device;
 	(void)errh;
 
 	if (!stp || !as || !prm || !rh)

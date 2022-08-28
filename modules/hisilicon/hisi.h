@@ -5,9 +5,6 @@
  */
 
 
-extern char alsa_dev[64];
-
-
 unsigned audio_frame_size(unsigned srate);
 int hisi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		   struct ausrc_prm *prm, const char *device,

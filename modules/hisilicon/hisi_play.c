@@ -83,6 +83,7 @@ int hisi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 {
 	struct auplay_st *st;
 	int err;
+	(void)device;
 
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
