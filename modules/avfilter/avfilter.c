@@ -141,8 +141,8 @@ static int module_init(void)
 {
 	int err;
 
-	err = mtx_init(&lock, mtx_plain);
-	if (err != thrd_success)
+	err = mtx_init(&lock, mtx_plain) != thrd_success;
+	if (err)
 		return ENOMEM;
 
 	vidfilt_register(baresip_vidfiltl(), &avfilter);
