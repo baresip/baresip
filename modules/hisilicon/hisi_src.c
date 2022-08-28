@@ -56,29 +56,32 @@ static void *read_thread(void *arg)
 	AEC_FRAME_S stAecFrm;
 	AUDIO_FRAME_S stFrame;
 	int ret;
-	int AiDev = 0;
-	int AiChn = 0;
+	int dev = 0;
+	int chn = 0;
 
 	struct ausrc_st *st = arg;
 
 	while (st->run) {
 		memset(&stAecFrm, 0, sizeof(AEC_FRAME_S));
-		ret = HI_MPI_AI_GetFrame(AiDev, AiChn, &stFrame, &stAecFrm, -1);
+		ret = HI_MPI_AI_GetFrame(dev, chn, &stFrame, &stAecFrm, -1);
 		if (HI_SUCCESS != ret) {
-			printf("HI_MPI_AI_GetFrame(%d, %d), failed with %#x!\n", AiDev, AiChn, ret);
+			printf("HI_MPI_AI_GetFrame(%d, %d),"
+				" failed with %#x!\n", dev, chn, ret);
 			continue;
 		}
 
 		struct auframe af;
 
 		memcpy(st->sampv, stFrame.u64VirAddr[0], stFrame.u32Len);
-		ret = HI_MPI_AI_ReleaseFrame(AiDev, AiChn, &stFrame, &stAecFrm);
+		ret = HI_MPI_AI_ReleaseFrame(dev, chn, &stFrame, &stAecFrm);
 		if (HI_SUCCESS != ret) {
-			printf("HI_MPI_AI_ReleaseFrame(%d, %d), failed with %#x!\n", AiDev, AiChn, ret);
+			printf("HI_MPI_AI_ReleaseFrame(%d, %d),"
+				" failed with %#x!\n", dev, chn, ret);
 			continue;
 		}
 
-		auframe_init(&af, AUFMT_S16LE, st->sampv, stFrame.u32Len / 2, st->prm.srate, 1);
+		auframe_init(&af, AUFMT_S16LE, st->sampv,
+				stFrame.u32Len / 2, st->prm.srate, 1);
 		af.timestamp = stFrame.u64TimeStamp;
 
 		st->rh(&af, st->arg);
@@ -170,16 +173,6 @@ static HI_S32 audio_cfg_codec(AUDIO_SAMPLE_RATE_E enSample) {
 
 	if (iAcodecInputVol != 0) /* should be 1 when micin */
 	{
-		/******************************************************************************************
-		  The input volume range is [-87, +86]. Both the analog gain and digital
-		  gain are adjusted. A larger value indicates higher volume. For example,
-		  the value 86 indicates the maximum volume of 86 dB, and the value -87
-		  indicates the minimum volume (muted status). The volume adjustment takes
-		  effect simultaneously in the audio-left and audio-right channels. The
-		  recommended volume range is [+10, +56]. Within this range, the noises
-		  are lowest because only the analog gain is adjusted, and the voice
-		  quality can be guaranteed.
-		 *******************************************************************************************/
 		if (ioctl(fdAcodec, ACODEC_SET_INPUT_VOL, &iAcodecInputVol)) {
 			printf("set acodec micin volume failed\n");
 			return HI_FAILURE;

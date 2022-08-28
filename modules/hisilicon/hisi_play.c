@@ -112,7 +112,7 @@ int hisi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		.enWorkmode = AIO_MODE_I2S_MASTER,
 		.enSoundmode = AUDIO_SOUND_MODE_MONO,
 		.u32EXFlag = 0,
-		.u32FrmNum = 2, // keep it small for low latency
+		.u32FrmNum = 2, /* keep it small for low latency */
 		.u32PtNumPerFrm = st->sampc,
 		.u32ChnCnt = 1,
 		.u32ClkSel = 0,
