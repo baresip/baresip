@@ -32,4 +32,4 @@ foreach(LIB ${LIBS_NAMES})
       REQUIRED
   )
   target_link_libraries(${PROJECT_NAME} PRIVATE ${FOUND_LIB_${LIB}})
-endforeach(LIB)
+endforeach()
