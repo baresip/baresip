@@ -236,8 +236,8 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	info("ausine: audio ptime=%u sampc=%zu\n",
 	     st->ptime, st->sampc);
 
-	err = mtx_init(&st->mutex, mtx_plain);
-	if (err != thrd_success) {
+	err = mtx_init(&st->mutex, mtx_plain) != thrd_success;
+	if (err) {
 		err = ENOMEM;
 		goto out;
 	}
