@@ -1,7 +1,7 @@
 /**
- * @file alsa_src.c  ALSA sound driver - recorder
+ * @file hisi.c  HiSilicon sound driver - recorder
  *
- * Copyright (C) 2010 Alfred E. Heggestad
+ * Copyright (C) 2022 Dmitry Ilyin
  */
 #include "hi_type.h"
 #define _DEFAULT_SOURCE 1
@@ -87,10 +87,6 @@ static void *read_thread(void *arg)
 
 		auframe_init(&af, AUFMT_S16LE, st->sampv, stFrame.u32Len / 2, st->prm.srate, 1);
 		af.timestamp = stFrame.u64TimeStamp;
-#if 0
-		printf("[%llu] auframe_init(%d, %d, %d)\n", af.timestamp, stFrame.u32Len, st->prm.srate,
-		             st->prm.ch);
-#endif
 
 		st->rh(&af, st->arg);
 	}
