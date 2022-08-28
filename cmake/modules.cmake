@@ -38,6 +38,7 @@ set(MODULES
   echo
   fakevideo
   g711
+  hisilicon
   httpd
   httpreq
   ice
