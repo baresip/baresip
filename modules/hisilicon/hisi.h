@@ -1,7 +1,7 @@
 /**
- * @file alsa.h  ALSA sound driver -- internal interface
+ * @file hisi.c  HiSilicon sound driver
  *
- * Copyright (C) 2010 Alfred E. Heggestad
+ * Copyright (C) 2022 Dmitry Ilyin
  */
 
 
@@ -9,9 +9,6 @@ extern char alsa_dev[64];
 
 
 unsigned audio_frame_size(unsigned srate);
-//int alsa_reset(snd_pcm_t *pcm, uint32_t srate, uint32_t ch,
-//	       uint32_t num_frames, snd_pcm_format_t pcmfmt);
-//snd_pcm_format_t aufmt_to_alsaformat(enum aufmt fmt);
 int hisi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		   struct ausrc_prm *prm, const char *device,
 		   ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
