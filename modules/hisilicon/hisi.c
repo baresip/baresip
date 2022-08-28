@@ -15,7 +15,7 @@
 static struct ausrc *ausrc;
 static struct auplay *auplay;
 
-static int init_hw() {
+static int init_hw(void) {
 	int ret = HI_MPI_SYS_Init();
 
 	if (HI_SUCCESS != ret)
