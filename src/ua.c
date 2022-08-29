@@ -1056,6 +1056,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	if (err)
 		goto out;
 
+	add_extension(ua, "norefersub");
 	list_append(uag_list(), &ua->le, ua);
 	ua_event(ua, UA_EVENT_CREATE, NULL, aor);
 
@@ -1367,10 +1368,14 @@ int ua_refer_send(struct ua *ua, const char *uri, const struct pl *referto,
 		return EINVAL;
 
 	err = sip_req_send(ua, "REFER", uri, resph, arg,
+			   "Contact: <%s>\r\n"
+			   "%H"
 			   "Refer-To: %r\r\n"
 			   "Refer-Sub: false\r\n"
 			   "Content-Length: 0\r\n"
 			   "\r\n",
+			   account_aor(ua_account(ua)),
+			   ua_print_supported, ua,
 			   referto);
 	if (err) {
 		warning("ua: send options: (%m)\n", err);
