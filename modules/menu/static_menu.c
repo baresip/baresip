@@ -996,13 +996,24 @@ out:
 static int cmd_refer(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
-	struct pl word[2] = {PL_INIT, PL_INIT};
-	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
+	struct pl to;
+	struct pl referto;
+	struct ua *ua = carg->data;
 	char *uri = NULL;
+	char *touri = NULL;
 	struct mbuf *uribuf = NULL;
+	const char *usage = "usage: /refer <uri> <referto>\n";
 	int err = 0;
 
-	err = pl_strdup(&uri, &word[0]);
+	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [^ ]+",
+		       &to, &referto);
+	if (err) {
+		re_hprintf(pf, usage);
+		return err;
+	}
+
+	err  = pl_strdup(&uri, &to);
+	err |= pl_strdup(&touri, &referto);
 	if (err)
 		goto out;
 
@@ -1032,11 +1043,26 @@ static int cmd_refer(struct re_printf *pf, void *arg)
 	if (err)
 		goto out;
 
-	err = ua_refer_send(ua, uri, &word[1], refer_resp_handler, NULL);
+	mbuf_rewind(uribuf);
+	err = account_uri_complete(ua_account(ua), uribuf, touri);
+	if (err) {
+		(void)re_hprintf(pf, "invalid URI\n");
+		return EINVAL;
+	}
+
+	mem_deref(touri);
+
+	uribuf->pos = 0;
+	err = mbuf_strdup(uribuf, &touri, uribuf->end);
+	if (err)
+		goto out;
+
+	err = ua_refer_send(ua, uri, touri, refer_resp_handler, NULL);
 
 out:
 	mem_deref(uribuf);
 	mem_deref(uri);
+	mem_deref(touri);
 	if (err) {
 		(void)re_hprintf(pf, "could not send REFER (%m)\n", err);
 	}

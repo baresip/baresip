@@ -1359,7 +1359,7 @@ int ua_options_send(struct ua *ua, const char *uri,
  *
  * @return 0 if success, otherwise errorcode
  */
-int ua_refer_send(struct ua *ua, const char *uri, const struct pl *referto,
+int ua_refer_send(struct ua *ua, const char *uri, const char *referto,
 		    refer_resp_h *resph, void *arg)
 {
 	int err = 0;
@@ -1370,7 +1370,7 @@ int ua_refer_send(struct ua *ua, const char *uri, const struct pl *referto,
 	err = sip_req_send(ua, "REFER", uri, resph, arg,
 			   "Contact: <%s>\r\n"
 			   "%H"
-			   "Refer-To: %r\r\n"
+			   "Refer-To: %s\r\n"
 			   "Refer-Sub: false\r\n"
 			   "Content-Length: 0\r\n"
 			   "\r\n",

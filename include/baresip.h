@@ -827,7 +827,7 @@ int  ua_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_hold_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_options_send(struct ua *ua, const char *uri,
 		     options_resp_h *resph, void *arg);
-int  ua_refer_send(struct ua *ua, const char *uri, const struct pl *referto,
+int  ua_refer_send(struct ua *ua, const char *uri, const char *referto,
 		    refer_resp_h *resph, void *arg);
 int  ua_debug(struct re_printf *pf, const struct ua *ua);
 int  ua_state_json_api(struct odict *od, const struct ua *ua);
