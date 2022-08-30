@@ -1316,6 +1316,8 @@ struct config_audio *audio_config(struct audio *au);
  */
 
 struct video;
+struct vtx;
+struct vrx;
 
 typedef void (video_err_h)(int err, const char *str, void *arg);
 
@@ -1342,6 +1344,8 @@ void  video_set_devicename(struct video *v, const char *src, const char *disp);
 int   video_debug(struct re_printf *pf, const struct video *v);
 struct stream *video_strm(const struct video *v);
 const struct vidcodec *video_codec(const struct video *vid, bool tx);
+const struct video *vtx_video(const struct vtx *vtx);
+const struct video *vrx_video(const struct vrx *vrx);
 void video_sdp_attr_decode(struct video *v);
 
 double video_calc_seconds(uint64_t rtp_ts);

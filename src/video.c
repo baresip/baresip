@@ -1748,3 +1748,32 @@ const struct vidcodec *video_codec(const struct video *vid, bool tx)
 
 	return tx ? vid->vtx.vc : vid->vrx.vc;
 }
+
+/**
+ * Get video stream of video transmitter/encoder
+ *
+ * @param vtx Video transmitter/encoder
+ *
+ * @return Video stream if success, otherwise NULL
+ */
+const struct video *vtx_video(const struct vtx *vtx)
+{
+	if (!vtx)
+		return NULL;
+
+	return vtx->video;
+}
+
+/**
+ * Get video stream of video receiver/decoder
+ *
+ * @param vrx Video receiver/decoder
+ *
+ * @return Video stream if success, otherwise NULL
+ */
+const struct video *vrx_video(const struct vrx *vrx) {
+	if (!vrx)
+		return NULL;
+
+	return vrx->video;
+}
