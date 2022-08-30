@@ -1408,7 +1408,7 @@ int ua_options_send(struct ua *ua, const char *uri,
  * @return 0 if success, otherwise errorcode
  */
 int ua_refer_send(struct ua *ua, const char *uri, const char *referto,
-		    refer_resp_h *resph, void *arg)
+		  refer_resp_h *resph, void *arg)
 {
 	int err = 0;
 
