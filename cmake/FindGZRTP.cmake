@@ -3,7 +3,7 @@ find_path(GZRTP_INCLUDE_DIR
     HINTS
         "${GZRTP_INCLUDE_DIRS}"
         "${GZRTP_HINTS}/include"
-    PATHS ../../ZRTPCPP
+    PATHS ../ZRTPCPP
 )
 
 find_library(GZRTP_LIBRARY
