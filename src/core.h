@@ -33,6 +33,13 @@ struct stream_param;
  * Account
  */
 
+struct uasauth {
+	struct le he;
+
+	char *met;
+	bool deny;
+};
+
 
 struct account {
 	char *buf;                   /**< Buffer for the SIP address         */
@@ -81,6 +88,8 @@ struct account {
 	char *auplay_dev;
 	uint32_t autelev_pt;         /**< Payload type for telephone-events  */
 	char *extra;                 /**< Extra parameters                   */
+	char *uas_user;              /**< UAS authentication username        */
+	char *uas_pass;              /**< UAS authentication password        */
 };
 
 

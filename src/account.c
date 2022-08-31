@@ -42,6 +42,8 @@ static void destructor(void *arg)
 	mem_deref(acc->auplay_dev);
 	mem_deref(acc->cert);
 	mem_deref(acc->extra);
+	mem_deref(acc->uas_user);
+	mem_deref(acc->uas_pass);
 }
 
 
@@ -420,6 +422,25 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 }
 
 
+static void uasauth_decode(struct account *acc, const struct pl *prm)
+{
+	struct pl val;
+
+	if (!acc || !prm)
+		return;
+
+	if (msg_param_decode(prm, "uas_user", &val))
+		return;
+
+	(void)pl_strdup(&acc->uas_user, &val);
+
+	if (msg_param_decode(prm, "uas_pass", &val))
+		return;
+
+	(void)pl_strdup(&acc->uas_pass, &val);
+}
+
+
 static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 {
 	struct pl auth_user, tmp;
@@ -553,7 +574,8 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	       rel100_decode(acc, &acc->laddr.params);
 	       answermode_decode(acc, &acc->laddr.params);
 	       autoanswer_decode(acc, &acc->laddr.params);
-	       dtmfmode_decode(acc,&acc->laddr.params);
+	       dtmfmode_decode(acc, &acc->laddr.params);
+	       uasauth_decode(acc, &acc->laddr.params);
 	err |= audio_codecs_decode(acc, &acc->laddr.params);
 	err |= video_codecs_decode(acc, &acc->laddr.params);
 	err |= media_decode(acc, &acc->laddr.params);
@@ -1924,4 +1946,22 @@ int account_json_api(struct odict *od, struct odict *odcfg,
 
 	mem_deref(obn);
 	return err;
+}
+
+
+const char* account_uas_user(const struct account *acc)
+{
+	if (!acc)
+		return NULL;
+
+	return acc->uas_user;
+}
+
+
+const char* account_uas_pass(const struct account *acc)
+{
+	if (!acc)
+		return NULL;
+
+	return acc->uas_pass;
 }
