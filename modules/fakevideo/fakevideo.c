@@ -162,8 +162,8 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		vidframe_draw_vline(st->frame, x, 0, size->h, r, g, b);
 	}
 
-	err = mtx_init(&st->mutex, mtx_plain);
-	if (err != thrd_success) {
+	err = mtx_init(&st->mutex, mtx_plain) != thrd_success;
+	if (err) {
 		err = ENOMEM;
 		goto out;
 	}

@@ -303,8 +303,8 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
-	err = mtx_init(&st->lock, mtx_plain);
-	if (err != thrd_success) {
+	err = mtx_init(&st->lock, mtx_plain) != thrd_success;
+	if (err) {
 		err = ENOMEM;
 		goto out;
 	}

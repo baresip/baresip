@@ -291,8 +291,8 @@ int play_tone(struct play **playp, struct player *player,
 	play->repeat = repeat ? repeat : 1;
 	play->mb     = mem_ref(tone);
 
-	err = mtx_init(&play->lock, mtx_plain);
-	if (err != thrd_success) {
+	err = mtx_init(&play->lock, mtx_plain) != thrd_success;
+	if (err) {
 		err = ENOMEM;
 		goto out;
 	}
@@ -436,8 +436,8 @@ static int play_file_ausrc(struct play **playp,
 	if (!channels)
 		channels = 1;
 
-	err = mtx_init(&play->lock, mtx_plain);
-	if (err != thrd_success) {
+	err = mtx_init(&play->lock, mtx_plain) != thrd_success;
+	if (err) {
 		err = ENOMEM;
 		goto out;
 	}
