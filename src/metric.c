@@ -79,8 +79,8 @@ int metric_init(struct metric *metric)
 	if (!metric)
 		return EINVAL;
 
-	err = mtx_init(&metric->lock, mtx_plain);
-	if (err != thrd_success)
+	err = mtx_init(&metric->lock, mtx_plain) != thrd_success;
+	if (err)
 		return ENOMEM;
 
 	tmr_start(&metric->tmr, 100, tmr_handler, metric);
