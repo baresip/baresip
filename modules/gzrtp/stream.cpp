@@ -321,6 +321,8 @@ void Stream::stop()
 
 int Stream::sdp_encode(struct sdp_media *sdpm)
 {
+	(void)sdpm;
+
 	// NOTE: signaling hash
 	return 0;
 }
@@ -355,6 +357,7 @@ bool Stream::udp_helper_send(int *err, struct sa *src, struct mbuf *mb)
 	enum pkt_type ptype = get_packet_type(mb);
 	size_t len = mbuf_get_left(mb);
 	int rerr = 0;
+	(void)src;
 
 	pthread_mutex_lock(&m_send_mutex);
 
@@ -400,6 +403,8 @@ bool Stream::udp_helper_recv_cb(struct sa *src, struct mbuf *mb, void *arg)
 
 bool Stream::udp_helper_recv(struct sa *src, struct mbuf *mb)
 {
+	(void)src;
+
 	if (!started())
 		return false;
 
@@ -680,6 +685,8 @@ void Stream::handleGoClear()
 void Stream::zrtpNegotiationFailed(GnuZrtpCodes::MessageSeverity severity,
                                    int32_t subCode)
 {
+	(void)severity;
+	(void)subCode;
 }
 
 
@@ -702,21 +709,26 @@ void Stream::synchLeave()
 
 void Stream::zrtpAskEnrollment(GnuZrtpCodes::InfoEnrollment info)
 {
+	(void)info;
 }
 
 
 void Stream::zrtpInformEnrollment(GnuZrtpCodes::InfoEnrollment info)
 {
+	(void)info;
 }
 
 
 void Stream::signSAS(uint8_t* sasHash)
 {
+	(void)sasHash;
 }
 
 
 bool Stream::checkSASSignature(uint8_t* sasHash)
 {
+	(void)sasHash;
+
 	return true;
 }
 
