@@ -2,7 +2,7 @@ set( TOOLCHAIN "${CMAKE_ANDROID_STANDALONE_TOOLCHAIN}" )
 
 find_path(OPENSLES_INCLUDE_DIR
     NAMES SLES/OpenSLES.h
-    HINTS "${TOOLCHAIN}/sysroot/usr/include}"
+    PATHS "${TOOLCHAIN}/sysroot/usr/include"
 )
 
 # TARGET examples: aarch64-linux-android, arm-linux-androideabi,
