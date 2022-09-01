@@ -6,9 +6,140 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## 2.5.0 - 2022-07-01
 
-## What's Changed
+## [2.7.0] - 2022-09-01
+
+* menu: fix menu_ua_carg data preference by @sreimers in https://github.com/baresip/baresip/pull/2045
+* call: remember media dir for established state by @cspiel1 in https://github.com/baresip/baresip/pull/2046
+* avformat: fix ffmpeg channel_layout deprecation by @sreimers in https://github.com/baresip/baresip/pull/2048
+* cmake: add multicast module by @cHuberCoffee in https://github.com/baresip/baresip/pull/2049
+* play: ring tone fixes if file_ausrc is set by @cspiel1 in https://github.com/baresip/baresip/pull/2050
+* add peerconnection and mediatrack by @alfredh in https://github.com/baresip/baresip/pull/2054
+* main,test: close re async before tmr_debug by @sreimers in https://github.com/baresip/baresip/pull/2055
+* http: new file for HTTP functions by @alfredh in https://github.com/baresip/baresip/pull/2056
+* http: add http_reply_json() by @alfredh in https://github.com/baresip/baresip/pull/2057
+* play: tmr_polling has to check if ausrc is used by @cspiel1 in https://github.com/baresip/baresip/pull/2061
+* cmake: use object instead of static for modules by @sreimers in https://github.com/baresip/baresip/pull/2064
+* [WIP] import baresip-webrtc by @alfredh in https://github.com/baresip/baresip/pull/2059
+* FindAMR.cmake fixes/improvements by @juha-h in https://github.com/baresip/baresip/pull/2066
+* cmake: fix modules install path and install share files by @sreimers in https://github.com/baresip/baresip/pull/2068
+* hook up webrtc to main cmake file by @alfredh in https://github.com/baresip/baresip/pull/2067
+* avformat: check shared for both audio+video by @alfredh in https://github.com/baresip/baresip/pull/2069
+* cmake: add V4L2 module by @alfredh in https://github.com/baresip/baresip/pull/2071
+* Omx remove by @alfredh in https://github.com/baresip/baresip/pull/2070
+* cmake: add directfb module by @alfredh in https://github.com/baresip/baresip/pull/2072
+* main,webrtc/main: add re_thread_async_init by @sreimers in https://github.com/baresip/baresip/pull/2076
+* cmake: add wincons and winwave modules by @alfredh in https://github.com/baresip/baresip/pull/2077
+* cmake: add sndfile module by @alfredh in https://github.com/baresip/baresip/pull/2078
+* Mention actual GTK+ 3 usage (instead of 2) in README.md by @robert-scheck in https://github.com/baresip/baresip/pull/2079
+* ctrl_tcp: change unsafe operations on an mbuf to the safe mbuf interface by @cHuberCoffee in https://github.com/baresip/baresip/pull/2082
+* gzrtp: Call event hander when SAS needs to be verified by @juha-h in https://github.com/baresip/baresip/pull/2081
+* Generate also MENC_EVENT_PEER_VERIFIED event by @juha-h in https://github.com/baresip/baresip/pull/2084
+* gzrtp: Generate only one MENC_EVENT_PEER_VERIFIED event when all streams are verified by @juha-h in https://github.com/baresip/baresip/pull/2086
+* config,net: add use_getaddrinfo/dns_getaddrinfo option by @sreimers in https://github.com/baresip/baresip/pull/2087
+* cmake: add_compile_options and use re config by @sreimers in https://github.com/baresip/baresip/pull/2089
+* cmake/modules: build syslog only if available by @sreimers in https://github.com/baresip/baresip/pull/2090
+* cmake: add selftest by @sreimers in https://github.com/baresip/baresip/pull/2093
+* cmake: add win32 linklibs by @sreimers in https://github.com/baresip/baresip/pull/2091
+* cmake: add mqtt by @sreimers in https://github.com/baresip/baresip/pull/2094
+* Improve C11 cchecks by @sreimers in https://github.com/baresip/baresip/pull/2096
+* Added cmake of gzrtp module by @juha-h in https://github.com/baresip/baresip/pull/2095
+* Gzrtp cmake by @juha-h in https://github.com/baresip/baresip/pull/2102
+* Added cmake of webrtc_aecm module by @juha-h in https://github.com/baresip/baresip/pull/2104
+* Suppressed unused var warnings in webrtc_aecm module by @juha-h in https://github.com/baresip/baresip/pull/2105
+* call: do not set call state to answered, if session progress (PRACK) by @RobertMi21 in https://github.com/baresip/baresip/pull/2106
+
+---
+
+## [2.6.0] - 2022-08-01
+
+* conf: check input arguments by @alfredh in https://github.com/baresip/baresip/pull/1932
+* dtls_srtp: print TLS cipher name by @alfredh in https://github.com/baresip/baresip/pull/1933
+* cmake: add AAC module by @alfredh in https://github.com/baresip/baresip/pull/1935
+* call, menu: make selective early media RFC-3261 conform by @cspiel1 in https://github.com/baresip/baresip/pull/1929
+* config: add flag to enable/disable linklocal by @alfredh in https://github.com/baresip/baresip/pull/1934
+* audio: update filters if codec changes by @cspiel1 in https://github.com/baresip/baresip/pull/1937
+* Fix CMake fails when OpenSSL is not present by @widgetii in https://github.com/baresip/baresip/pull/1939
+* sip: add RFC 3262 support by @maximilianfridrich in https://github.com/baresip/baresip/pull/1930
+* Add CMake target to install baresip executable, library and modules by @widgetii in https://github.com/baresip/baresip/pull/1940
+* audio: fix SEGV if stream_alloc() fails by @cspiel1 in https://github.com/baresip/baresip/pull/1942
+* gst_video: remove deprecated module by @alfredh in https://github.com/baresip/baresip/pull/1943
+* ci: test cmake by @alfredh in https://github.com/baresip/baresip/pull/1944
+* cmake: add aptx module by @alfredh in https://github.com/baresip/baresip/pull/1945
+* avcodec: remove avcodec_free_context wrapper by @alfredh in https://github.com/baresip/baresip/pull/1947
+* avcodec: remove old call to avcodec_init() by @alfredh in https://github.com/baresip/baresip/pull/1948
+* cmake: add ffmpeg modules by @alfredh in https://github.com/baresip/baresip/pull/1949
+* cmake: add codec2 module by @alfredh in https://github.com/baresip/baresip/pull/1950
+* thread: thrd_error fixes by @sreimers in https://github.com/baresip/baresip/pull/1955
+* Revert PR #1922 by @juha-h in https://github.com/baresip/baresip/pull/1964
+* sip: add RFC 3311 support by @maximilianfridrich in https://github.com/baresip/baresip/pull/1941
+* cmake: add amr module by @alfredh in https://github.com/baresip/baresip/pull/1962
+* ci/misc: bump pr-dependency-action@v0.5 by @sreimers in https://github.com/baresip/baresip/pull/1968
+* ci: add cmake/macos by @alfredh in https://github.com/baresip/baresip/pull/1961
+* Feature: add user data to call by @copiltembel in https://github.com/baresip/baresip/pull/1951
+* cmake: add audiounit module by @alfredh in https://github.com/baresip/baresip/pull/1969
+* cmake: add avcapture module by @alfredh in https://github.com/baresip/baresip/pull/1970
+* cmake: add coreaudio module by @alfredh in https://github.com/baresip/baresip/pull/1972
+* audio: remove unused aubuf for decoding by @cspiel1 in https://github.com/baresip/baresip/pull/1974
+* Modules cmake by @viordash in https://github.com/baresip/baresip/pull/1975
+* Modules cmake by @viordash in https://github.com/baresip/baresip/pull/1978
+* audio: always start reading in TX thread by @cspiel1 in https://github.com/baresip/baresip/pull/1979
+* audio: always start reading in TX poll mode by @cspiel1 in https://github.com/baresip/baresip/pull/1980
+* multicast: always start reading of TX aubuf by @cspiel1 in https://github.com/baresip/baresip/pull/1981
+* pulse_async: reduce number of reconnect attempts by @RobertMi21 in https://github.com/baresip/baresip/pull/1977
+* ci/build: replace deprecated macos-10.15 by @sreimers in https://github.com/baresip/baresip/pull/1984
+* ci/build/macos: disable dbus by @sreimers in https://github.com/baresip/baresip/pull/1985
+* Improve RFC 3262 by @maximilianfridrich in https://github.com/baresip/baresip/pull/1973
+* call: do not stop streams on session progress by @cspiel1 in https://github.com/baresip/baresip/pull/1986
+* audio: revert some TX commits and fix TX poll mode by @cspiel1 in https://github.com/baresip/baresip/pull/1987
+* call: fix heap-buffer-overflow in prack_handler by @sreimers in https://github.com/baresip/baresip/pull/1988
+* Improve re_atomic handling by @sreimers in https://github.com/baresip/baresip/pull/1982
+* mk/ctrl_dbus: fix atomic implicit warnings by @sreimers in https://github.com/baresip/baresip/pull/1991
+* cmake: add mixminus module by @sreimers in https://github.com/baresip/baresip/pull/1994
+* cmake: add dtls_srtp module by @alfredh in https://github.com/baresip/baresip/pull/1993
+* Stun uri cred by @viordash in https://github.com/baresip/baresip/pull/1960
+* event: fix wrong place of the err check by @copiltembel in https://github.com/baresip/baresip/pull/1992
+* Added mwi module cmake build by @juha-h in https://github.com/baresip/baresip/pull/1995
+* call: disable prack_handler temporarily by @sreimers in https://github.com/baresip/baresip/pull/1998
+* Fix prack handling by @maximilianfridrich in https://github.com/baresip/baresip/pull/1999
+* ci: test re/rem with cmake by @alfredh in https://github.com/baresip/baresip/pull/1997
+* Added cmake of zrtp module by @juha-h in https://github.com/baresip/baresip/pull/2005
+* Added cmake of zrtp module by @juha-h in https://github.com/baresip/baresip/pull/2006
+* Added cmake of uuid module by @juha-h in https://github.com/baresip/baresip/pull/2007
+* cmake: fix openssl linking by @sreimers in https://github.com/baresip/baresip/pull/2008
+* Load also pulse-simple library if exists by @juha-h in https://github.com/baresip/baresip/pull/2010
+* Added cmake of presence module by @juha-h in https://github.com/baresip/baresip/pull/2011
+* cmake: add more libs, stable branch and static build by @sreimers in https://github.com/baresip/baresip/pull/2012
+* Added cmake of selfview module by @juha-h in https://github.com/baresip/baresip/pull/2014
+* Added cmake of vp8 and vp9 modules by @juha-h in https://github.com/baresip/baresip/pull/2016
+* Added cmake of g722 module by @juha-h in https://github.com/baresip/baresip/pull/2015
+* Added cmake of srtp module by @juha-h in https://github.com/baresip/baresip/pull/2017
+* cmake: add module override option by @sreimers in https://github.com/baresip/baresip/pull/2020
+* cmake: add EXTRA_MODULES option by @sreimers in https://github.com/baresip/baresip/pull/2021
+* ci/cmake: add brew packages by @sreimers in https://github.com/baresip/baresip/pull/2023
+* Added cmake of g726 module by @juha-h in https://github.com/baresip/baresip/pull/2022
+* cmake: add ctrl_dbus module by @cspiel1 in https://github.com/baresip/baresip/pull/2000
+* cmake: refactor module prefix by @sreimers in https://github.com/baresip/baresip/pull/2024
+* Added cmake of snapshot module by @juha-h in https://github.com/baresip/baresip/pull/2026
+* Cmake add dshow by @alfredh in https://github.com/baresip/baresip/pull/2031
+* fakevideo: use C11 threads by @alfredh in https://github.com/baresip/baresip/pull/2032
+* cmake: add evdev module by @alfredh in https://github.com/baresip/baresip/pull/2033
+* aubridge: use C11 threads by @alfredh in https://github.com/baresip/baresip/pull/2035
+* ausine: use C11 threads by @alfredh in https://github.com/baresip/baresip/pull/2036
+* cmake: check for HAVE_UNISTD_H by @alfredh in https://github.com/baresip/baresip/pull/2039
+* cmake,mk: prepare main version for release by @sreimers in https://github.com/baresip/baresip/pull/2040
+* gsm: remove deprecated module by @alfredh in https://github.com/baresip/baresip/pull/2034
+* cmake: add g7221 module by @alfredh in https://github.com/baresip/baresip/pull/2041
+
+### New Contributors
+* @widgetii made their first contribution in https://github.com/baresip/baresip/pull/1939
+* @maximilianfridrich made their first contribution in https://github.com/baresip/baresip/pull/1930
+* @copiltembel made their first contribution in https://github.com/baresip/baresip/pull/1951
+
+---
+
+## [2.5.0] - 2022-07-01
+
 * audio: add optional decoding buffer by @cspiel1 in https://github.com/baresip/baresip/pull/1842
 * audio: RX filter thread needs separate sampv buffer by @cspiel1 in https://github.com/baresip/baresip/pull/1879
 * aufile: fix possible data race warning by @cspiel1 in https://github.com/baresip/baresip/pull/1880
@@ -47,9 +178,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## 2.4.0 - 2022-06-01
+## [2.4.0] - 2022-06-01
 
-## What's Changed
 * mulitcast unmute bad quality by @cspiel1 in https://github.com/baresip/baresip/pull/1821
 * menu ringback for parallel call by @cspiel1 in https://github.com/baresip/baresip/pull/1827
 * multicast: support error code EAGAIN of jbuf_get() by @cspiel1 in https://github.com/baresip/baresip/pull/1832
@@ -89,14 +219,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * event: add diverter URI to UA event by @cspiel1 in https://github.com/baresip/baresip/pull/1876
 * aufileinfo with synchronous response by @cspiel1 in https://github.com/baresip/baresip/pull/1877
 
-
-**Full Changelog**: https://github.com/baresip/baresip/compare/v2.3.0...v2.4.0
-
 ---
 
 ## [2.3.0] - 2022-05-01
 
-## What's Changed
 * mc: multicast mute function by @cHuberCoffee in https://github.com/baresip/baresip/pull/1805
 * mc: reject incoming call if high prio multicast is received by @cHuberCoffee in https://github.com/baresip/baresip/pull/1804
 * mc: mcplayer stream fade-out and fade-in by @cHuberCoffee in https://github.com/baresip/baresip/pull/1802
@@ -116,14 +242,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * pulse: support restart of pulseaudio during stream by @cspiel1 in https://github.com/baresip/baresip/pull/1824
 * version 2.3.0 by @alfredh in https://github.com/baresip/baresip/pull/1826
 
-## New Contributors
+### New Contributors
 * @thomas-karl made their first contribution in https://github.com/baresip/baresip/pull/1814
 
 ---
 
 ## [2.0.2] - 2022-04-09
 
-## What's Changed
 * Added API function call_diverteruri by @juha-h in https://github.com/baresip/baresip/pull/1780
 * Avoid undeclared 'CLOCK_REALTIME' on RHEL/CentOS 7 (fixes #1781) by @robert-scheck in https://github.com/baresip/baresip/pull/1782
 * audio: add lock in audio_send_digit by @GGGO in https://github.com/baresip/baresip/pull/1786
@@ -140,7 +265,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * stream: remove mbuf_get_left check in rtp_handler by @GGGO in https://github.com/baresip/baresip/pull/1801
 * cmake: preliminary support by @alfredh in https://github.com/baresip/baresip/pull/1800
 
-## New Contributors
+### New Contributors
 * @GGGO made their first contribution in https://github.com/baresip/baresip/pull/1786
 
 ---
@@ -1111,7 +1236,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1342]: https://github.com/baresip/baresip/pull/1342
 
 
-[Unreleased]: https://github.com/baresip/baresip/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/baresip/baresip/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/baresip/baresip/compare/v2.6.0...v2.7.0
+[2.6.0]: https://github.com/baresip/baresip/compare/v2.5.0...v2.6.0
+[2.5.0]: https://github.com/baresip/baresip/compare/v2.4.0...v2.5.0
+[2.4.0]: https://github.com/baresip/baresip/compare/v2.3.0...v2.4.0
 [2.3.0]: https://github.com/baresip/baresip/compare/v2.0.2...v2.3.0
 [2.0.2]: https://github.com/baresip/baresip/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/baresip/baresip/compare/v2.0.0...v2.0.1
