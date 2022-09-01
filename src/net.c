@@ -413,6 +413,11 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 		goto out;
 	}
 
+	if (cfg->use_getaddrinfo)
+		dnsc_getaddrinfo(net->dnsc, true);
+	else
+		dnsc_getaddrinfo(net->dnsc, false);
+
 	net_if_apply(add_laddr_filter, net);
 	info("Local network addresses:\n");
 	if (!list_count(&net->laddrs))
@@ -584,8 +589,10 @@ int net_dns_debug(struct re_printf *pf, const struct network *net)
 	if (err)
 		nsn = 0;
 
-	err = re_hprintf(pf, " DNS Servers from %s: (%u)\n",
-			 from_sys ? "System" : "Config", nsn);
+	err = re_hprintf(pf, " DNS Servers from %s%s: (%u)\n",
+			 from_sys ? "System" : "Config",
+			 net->cfg.use_getaddrinfo ? "(+getaddrinfo)" : "",
+			 nsn);
 	for (i=0; i<nsn; i++)
 		err |= re_hprintf(pf, "   %u: %J\n", i, &nsv[i]);
 

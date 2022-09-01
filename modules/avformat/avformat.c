@@ -303,8 +303,8 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
-	err = mtx_init(&st->lock, mtx_plain);
-	if (err != thrd_success) {
+	err = mtx_init(&st->lock, mtx_plain) != thrd_success;
+	if (err) {
 		err = ENOMEM;
 		goto out;
 	}
@@ -450,8 +450,9 @@ struct shared *avformat_shared_lookup(const char *dev)
 	for (le = sharedl.head; le; le = le->next) {
 
 		struct shared *sh = le->data;
+		bool have_av = sh->au.ctx != NULL && sh->vid.ctx != NULL;
 
-		if (0 == str_casecmp(sh->dev, dev))
+		if (have_av && 0 == str_casecmp(sh->dev, dev))
 			return sh;
 	}
 

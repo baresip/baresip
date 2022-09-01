@@ -553,9 +553,9 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 {
 	int err;
 
-	err  = mtx_init(&vtx->lock_enc, mtx_plain);
-	err |= mtx_init(&vtx->lock_tx, mtx_plain);
-	if (err != thrd_success)
+	err  = mtx_init(&vtx->lock_enc, mtx_plain) != thrd_success;
+	err |= mtx_init(&vtx->lock_tx, mtx_plain) != thrd_success;
+	if (err)
 		return ENOMEM;
 
 	tmr_init(&vtx->tmr_rtp);
@@ -579,8 +579,8 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 {
 	int err;
 
-	err = mtx_init(&vrx->lock, mtx_plain);
-	if (err != thrd_success)
+	err = mtx_init(&vrx->lock, mtx_plain) != thrd_success;
+	if (err)
 		return ENOMEM;
 
 	vrx->video  = video;
@@ -1236,7 +1236,7 @@ int video_start_source(struct video *v)
 
 	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
 
-		struct vtx* vtx = &v->vtx;
+		struct vtx *vtx = &v->vtx;
 		struct vidsrc *vs;
 
 		vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),

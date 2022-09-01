@@ -40,6 +40,7 @@ int webrtc_aecm_encode_update(struct aufilt_enc_st **stp, void **ctx,
 {
 	struct aec_enc *st;
 	int err;
+	(void)au;
 
 	if (!stp || !af || !prm)
 		return EINVAL;

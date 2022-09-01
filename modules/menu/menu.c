@@ -878,8 +878,10 @@ struct ua   *menu_ua_carg(struct re_printf *pf, const struct cmd_arg *carg,
 	uint32_t i;
 	struct ua *ua = carg->data;
 
-	if (ua)
+	if (ua) {
+		pl_set_str(word1, carg->prm);
 		return ua;
+	}
 
 	err = re_regex(carg->prm, str_len(carg->prm), "[^ ]+ [^ ]+", word1,
 			word2);

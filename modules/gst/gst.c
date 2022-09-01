@@ -458,7 +458,7 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	err = aubuf_alloc(&st->aubuf, st->psize, 0);
+	err = aubuf_alloc(&st->aubuf, 0, 0);
 	if (err)
 		goto out;
 

@@ -75,9 +75,6 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 {
 	struct menc_sess *st;
 	(void)offerer;
-	(void)eventh;
-	(void)errorh;
-	(void)arg;
 	int err = 0;
 
 	if (!sessp || !sdp)
@@ -91,10 +88,15 @@ static int session_alloc(struct menc_sess **sessp, struct sdp_session *sdp,
 	if (!st->session)
 		err = ENOMEM;
 
-	if (err)
+	if (err) {
 		mem_deref(st);
-	else
+	}
+	else {
+		st->session->eventh = eventh;
+		st->session->errorh = errorh;
+		st->session->arg = arg;
 		*sessp = st;
+	}
 
 	return err;
 }

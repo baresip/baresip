@@ -13,7 +13,7 @@ extern "C" {
 
 
 /** Defines the Baresip version string */
-#define BARESIP_VERSION "2.6.0"
+#define BARESIP_VERSION "2.7.0"
 
 
 #ifndef NET_MAX_NS
@@ -239,7 +239,7 @@ void call_set_current(struct list *calls, struct call *call);
 const struct list *call_get_custom_hdrs(const struct call *call);
 int call_set_media_direction(struct call *call, enum sdp_dir a,
 			     enum sdp_dir v);
-int call_set_media_ansdir(struct call *call, enum sdp_dir a, enum sdp_dir v);
+int call_set_media_estdir(struct call *call, enum sdp_dir a, enum sdp_dir v);
 void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
 const char   *call_user_data(const struct call *call);
@@ -384,9 +384,10 @@ struct config_net {
 	struct {
 		char addr[64];
 		bool fallback;
-	} nsv[NET_MAX_NS];      /**< Configured DNS nameservers     */
-	size_t nsc;             /**< Number of DNS nameservers      */
-	bool use_linklocal;     /**< Use v4/v6 link-local addresses */
+	} nsv[NET_MAX_NS];      /**< Configured DNS nameservers         */
+	size_t nsc;             /**< Number of DNS nameservers          */
+	bool use_linklocal;     /**< Use v4/v6 link-local addresses     */
+	bool use_getaddrinfo;   /**< Use getaddrinfo for A/AAAA records */
 };
 
 
@@ -1594,6 +1595,89 @@ int session_description_decode(struct session_description *sd,
 			       struct mbuf *mb);
 void session_description_reset(struct session_description *sd);
 const char *sdptype_name(enum sdp_type type);
+
+
+/*
+ * WebRTC Media Track
+ */
+
+enum media_kind {
+	MEDIA_KIND_AUDIO,
+	MEDIA_KIND_VIDEO,
+};
+
+struct media_track;
+
+int  mediatrack_start_audio(struct media_track *media,
+			    struct list *ausrcl, struct list *aufiltl);
+int  mediatrack_start_video(struct media_track *media);
+struct stream *media_get_stream(const struct media_track *media);
+enum media_kind mediatrack_kind(const struct media_track *media);
+const char *media_kind_name(enum media_kind kind);
+
+
+/*
+ * WebRTC RTCPeerConnection
+ *
+ * https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection
+ */
+
+
+/* RTCPeerConnection.signalingState */
+enum signaling_st {
+	SS_STABLE,
+	SS_HAVE_LOCAL_OFFER,
+	SS_HAVE_REMOTE_OFFER
+};
+
+
+/* RTCConfiguration */
+struct rtc_configuration {
+	struct stun_uri *ice_server;
+	const char *stun_user;
+	const char *credential;
+	bool offerer;
+};
+
+struct peer_connection;
+
+typedef void (peerconnection_gather_h)(void *arg);
+typedef void (peerconnection_estab_h)(struct media_track *media,
+				      void *arg);
+typedef void (peerconnection_close_h)(int err, void *arg);
+
+int  peerconnection_new(struct peer_connection **pcp,
+		        const struct rtc_configuration *config,
+		        const struct mnat *mnat, const struct menc *menc,
+		        peerconnection_gather_h *gatherh,
+		        peerconnection_estab_h,
+		        peerconnection_close_h *closeh, void *arg);
+int  peerconnection_add_audio_track(struct peer_connection *pc,
+			 const struct config *cfg,
+			 struct list *aucodecl);
+int  peerconnection_add_video_track(struct peer_connection *pc,
+			 const struct config *cfg,
+			 struct list *vidcodecl);
+int  peerconnection_set_remote_descr(struct peer_connection *pc,
+				    const struct session_description *sd);
+int  peerconnection_create_offer(struct peer_connection *sess,
+				struct mbuf **mb);
+int  peerconnection_create_answer(struct peer_connection *sess,
+				 struct mbuf **mb);
+int  peerconnection_start_ice(struct peer_connection *pc);
+void peerconnection_close(struct peer_connection *pc);
+void peerconnection_add_ice_candidate(struct peer_connection *pc,
+				      const char *cand, const char *mid);
+enum signaling_st peerconnection_signaling(const struct peer_connection *pc);
+
+
+/*
+ * HTTP functions
+ */
+
+const char *http_extension_to_mimetype(const char *ext);
+int http_reply_json(struct http_conn *conn, const char *sessid,
+		    const struct odict *od);
 
 
 #ifdef __cplusplus

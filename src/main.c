@@ -13,6 +13,7 @@
 #include <re.h>
 #include <baresip.h>
 
+enum { ASYNC_WORKERS = 4 };
 
 static void signal_handler(int sig)
 {
@@ -108,6 +109,8 @@ int main(int argc, char *argv[])
 	err = libre_init();
 	if (err)
 		goto out;
+
+	re_thread_async_init(ASYNC_WORKERS);
 
 	tmr_init(&tmr_quit);
 
@@ -318,6 +321,8 @@ int main(int argc, char *argv[])
 	 */
 	debug("main: unloading modules..\n");
 	mod_close();
+
+	re_thread_async_close();
 
 	/* Check for open timers */
 	tmr_debug();

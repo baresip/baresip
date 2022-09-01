@@ -301,6 +301,8 @@ int main(int argc, char *argv[])
 
 	baresip_close();
 
+	re_thread_async_close();
+
 	tmr_debug();
 
 	libre_close();

@@ -12,7 +12,7 @@
 
 cmake_minimum_required(VERSION 3.7)
 
-project(baresip VERSION 2.6.0)
+project(baresip VERSION 2.7.0)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
@@ -21,60 +21,64 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 # Module/Package Includes
 #
 
+include(GNUInstallDirs)
 include(CheckIncludeFile)
 find_package(RE REQUIRED)
 find_package(REM REQUIRED)
-find_package(OpenSSL)
-find_package(Threads REQUIRED)
 
 ##############################################################################
 #
 # Compile options
 #
 
-option(USE_OPENSSL "Enable OpenSSL" ${OPENSSL_FOUND})
 option(STATIC "Build static" OFF)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_EXTENSIONS OFF)
+
+if(MSVC)
+  add_compile_options("/W3")
+else()
+  add_compile_options(
+    -pedantic
+    -Wall
+    -Wbad-function-cast
+    -Wcast-align
+    -Wextra
+    -Wmissing-declarations
+    -Wmissing-prototypes
+    -Wnested-externs
+    -Wno-strict-aliasing
+    -Wold-style-definition
+    -Wshadow -Waggregate-return
+    -Wstrict-prototypes
+    -Wuninitialized
+    -Wvla
+  )
+endif()
+
+if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wshorten-64-to-32 -Watomic-implicit-seq-cst)
+endif()
+
+find_package(re CONFIG REQUIRED HINTS ../re/cmake)
+add_definitions(${RE_DEFINITIONS})
 
 include_directories(
   include
   src
-  ../re/include
-  ../rem/include
   /usr/local/include
   ${RE_INCLUDE_DIRS}
   ${REM_INCLUDE_DIRS}
+  ${OPENSSL_INCLUDE_DIR}
 )
 
 link_directories(/usr/local/lib)
 
-include(GNUInstallDirs)
-set(SHARE_PATH ${CMAKE_INSTALL_FULL_DATAROOTDIR}/baresip)
-
 add_definitions(
-  -DHAVE_GETOPT
-  -DHAVE_INET6
-  -DHAVE_SIGNAL
-  -DUSE_ZLIB
   -DSHARE_PATH="${SHARE_PATH}"
-  )
-
-check_include_file(unistd.h HAVE_UNISTD_H)
-if(HAVE_UNISTD_H)
-  add_definitions(-DHAVE_UNISTD_H)
-endif()
-
-if(USE_OPENSSL)
-  add_definitions(
-    -DUSE_DTLS
-    -DUSE_OPENSSL
-    -DUSE_OPENSSL_AES
-    -DUSE_OPENSSL_DTLS
-    -DUSE_OPENSSL_HMAC
-    -DUSE_OPENSSL_SRTP
-    -DUSE_TLS
-  )
-  include_directories( ${OPENSSL_INCLUDE_DIR} )
-endif()
+)
 
 if(STATIC)
   add_definitions(-DSTATIC)
@@ -103,14 +107,17 @@ set(SRCS
   src/descr.c
   src/dial_number.c
   src/event.c
+  src/http.c
   src/log.c
   src/mediadev.c
+  src/mediatrack.c
   src/menc.c
   src/message.c
   src/metric.c
   src/mnat.c
   src/module.c
   src/net.c
+  src/peerconn.c
   src/play.c
   src/reg.c
   src/rtpext.c
@@ -165,7 +172,8 @@ else()
                             LINK_FLAGS "-undefined dynamic_lookup")
     endif()
 
-    install(TARGETS ${mod} LIBRARY DESTINATION ${SHARE_PATH})
+    install(TARGETS ${mod} LIBRARY DESTINATION
+        ${CMAKE_INSTALL_LIBDIR}/baresip/modules)
   endforeach()
 endif()
 
@@ -175,9 +183,19 @@ endif()
 # Main target library
 #
 
-set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads -lz -lm)
+set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads)
+if(ZLIB_FOUND)
+  list(APPEND LINKLIBS ZLIB::ZLIB)
+endif()
 if(USE_OPENSSL)
   list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
+endif()
+
+if(WIN32)
+  list(APPEND LINKLIBS ws2_32 iphlpapi winmm gdi32 crypt32 strmiids
+      ole32 oleaut32 qwave)
+else()
+  list(APPEND LINKLIBS -lm)
 endif()
 
 if(STATIC)
@@ -204,3 +222,20 @@ set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
 target_link_libraries(baresip_exe baresip ${LINKLIBS})
 install(TARGETS baresip_exe)
+
+
+##############################################################################
+#
+# Install share
+#
+
+file(GLOB SHARE_FILES "${PROJECT_SOURCE_DIR}/share/*")
+install(FILES ${SHARE_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip)
+
+
+##############################################################################
+#
+#
+
+add_subdirectory(webrtc)
+add_subdirectory(test)

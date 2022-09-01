@@ -5,7 +5,8 @@ find_path(REM_INCLUDE_DIR rem.h
   HINTS ../rem/include ${PC_LIBREM_INCLUDEDIR} ${PC_LIBREM_INCLUDE_DIRS})
 
 find_library(REM_LIBRARY NAMES rem librem
-  HINTS ../rem ../rem/build ${PC_LIBREM_LIBDIR} ${PC_LIBREM_LIBRARY_DIRS})
+  HINTS ../rem ../rem/build ../rem/build/Debug
+  ${PC_LIBREM_LIBDIR} ${PC_LIBREM_LIBRARY_DIRS})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(REM DEFAULT_MSG REM_LIBRARY REM_INCLUDE_DIR)
