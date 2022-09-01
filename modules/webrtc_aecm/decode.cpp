@@ -35,6 +35,7 @@ int webrtc_aecm_decode_update(struct aufilt_dec_st **stp, void **ctx,
 {
 	struct aec_dec *st;
 	int err;
+	(void)au;
 
 	if (!stp || !af || !prm)
 		return EINVAL;
