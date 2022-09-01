@@ -1802,7 +1802,8 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 		call->supported |= REPLACES;
 
 	call->got_offer = false;
-	if (!pl_strcmp(&msg->cseq.met, "INVITE"))
+	if (!pl_strcmp(&msg->cseq.met, "INVITE") &&
+	    msg->scode >= 200 && msg->scode < 300)
 		call_event_handler(call, CALL_EVENT_ANSWERED, call->peer_uri);
 
 	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
