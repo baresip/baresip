@@ -8,8 +8,8 @@ find_path(WEBRTC_AECM_INCLUDE_DIR
 find_library(WEBRTC_AECM_LIBRARY
     NAME webrtc
     HINTS
+        "../webrtc/obj/local/${CMAKE_ANDROID_ARCH_ABI}"
         "${WEBRTC_AECM_LIBRARY_DIRS}"
-    PATHS ../webrtc/obj/local/x86_64
 )
 
 include(FindPackageHandleStandardArgs)
