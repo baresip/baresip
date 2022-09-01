@@ -6,7 +6,7 @@ find_path(OPENSLES_INCLUDE_DIR
 )
 
 # TARGET examples: aarch64-linux-android, arm-linux-androideabi,
-#  x86_64-linux-android
+# x86_64-linux-android
 
 find_library(OPENSLES_LIBRARY
     NAME OpenSLES
