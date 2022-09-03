@@ -38,12 +38,12 @@ static void auplay_destructor(void *arg)
 
 	int ret = HI_MPI_AO_DisableChn(0, 0);
 	if (HI_SUCCESS != ret) {
-		printf("error %d\n", ret);
+		warning("hisi: error %d\n", ret);
 	}
 
 	ret = HI_MPI_AO_Disable(0);
 	if (HI_SUCCESS != ret) {
-		printf("error %d\n", ret);
+		warning("hisi: error %d\n", ret);
 	}
 
 	mem_deref(st->sampv);
@@ -69,7 +69,7 @@ static int write_thread(void *arg)
 		};
 		int ret = HI_MPI_AO_SendFrame(0, 0, &stData, -1);
 		if (ret != HI_SUCCESS) {
-			printf("error %d\n", ret);
+			warning("hisi: error %d\n", ret);
 		}
 
 	}
@@ -122,19 +122,19 @@ int hisi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	ret = HI_MPI_AO_Enable(AoDevId);
 	if (HI_SUCCESS != ret) {
-		printf("error %d\n", ret);
+		warning("hisi: error %d\n", ret);
 		return EINVAL;
 	}
 
 	ret = HI_MPI_AO_EnableChn(AoDevId, 0);
 	if (HI_SUCCESS != ret) {
-		printf("error %d\n", ret);
+		warning("hisi: error %d\n", ret);
 		return EINVAL;
 	}
 
 	ret = HI_MPI_AO_SetVolume(AoDevId, -10);
 	if (HI_SUCCESS != ret) {
-		printf("error %d\n", ret);
+		warning("hisi: error %d\n", ret);
 		return EINVAL;
 	}
 

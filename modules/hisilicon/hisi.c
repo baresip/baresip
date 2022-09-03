@@ -20,7 +20,7 @@ static int init_hw(void) {
 
 	if (HI_SUCCESS != ret)
 	{
-		printf("HI_MPI_SYS_Init failed with %d\n", ret);
+		warning("hisi: HI_MPI_SYS_Init failed with %d\n", ret);
 		HI_MPI_VB_Exit();
 	}
 	return ret;

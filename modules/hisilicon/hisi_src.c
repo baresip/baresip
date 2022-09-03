@@ -40,12 +40,12 @@ static void ausrc_destructor(void *arg)
 
 	int ret = HI_MPI_AI_DisableChn(0, 0);
 	if (HI_SUCCESS != ret) {
-		printf("error %d\n", ret);
+		warning("hisi: error %d\n", ret);
 	}
 
 	ret = HI_MPI_AI_Disable(0);
 	if (HI_SUCCESS != ret) {
-		printf("error %d\n", ret);
+		warning("hisi: error %d\n", ret);
 	}
 
 	mem_deref(st->sampv);
@@ -65,7 +65,7 @@ static int read_thread(void *arg)
 		memset(&stAecFrm, 0, sizeof(AEC_FRAME_S));
 		ret = HI_MPI_AI_GetFrame(dev, chn, &stFrame, &stAecFrm, -1);
 		if (HI_SUCCESS != ret) {
-			printf("HI_MPI_AI_GetFrame(%d, %d),"
+			warning("hisi: HI_MPI_AI_GetFrame(%d, %d),"
 				" failed with %#x!\n", dev, chn, ret);
 			continue;
 		}
@@ -75,7 +75,7 @@ static int read_thread(void *arg)
 		memcpy(st->sampv, stFrame.u64VirAddr[0], stFrame.u32Len);
 		ret = HI_MPI_AI_ReleaseFrame(dev, chn, &stFrame, &stAecFrm);
 		if (HI_SUCCESS != ret) {
-			printf("HI_MPI_AI_ReleaseFrame(%d, %d),"
+			warning("hisi: HI_MPI_AI_ReleaseFrame(%d, %d),"
 				" failed with %#x!\n", dev, chn, ret);
 			continue;
 		}
@@ -102,11 +102,11 @@ static HI_S32 audio_cfg_codec(AUDIO_SAMPLE_RATE_E enSample) {
 
 	fdAcodec = open(ACODEC_FILE, O_RDWR);
 	if (fdAcodec < 0) {
-		printf("Can't open Acodec: %s\n", ACODEC_FILE);
+		warning("hisi: Can't open Acodec: %s\n", ACODEC_FILE);
 		return HI_FAILURE;
 	}
 	if (ioctl(fdAcodec, ACODEC_SOFT_RESET_CTRL)) {
-		printf("Reset audio codec error\n");
+		warning("hisi: Reset audio codec error\n");
 	}
 
 	switch (enSample) {
@@ -155,26 +155,26 @@ static HI_S32 audio_cfg_codec(AUDIO_SAMPLE_RATE_E enSample) {
 			break;
 
 		default:
-			printf("not support enSample: %d\n", enSample);
+			warning("hisi: not support enSample: %d\n", enSample);
 			ret = HI_FAILURE;
 			break;
 	}
 
 	if (ioctl(fdAcodec, ACODEC_SET_I2S1_FS, &i2s_fs_sel)) {
-		printf("set acodec sample rate failed\n");
+		warning("hisi: set acodec sample rate failed\n");
 		ret = HI_FAILURE;
 	}
 
 	input_mode = ACODEC_MIXER_IN1;
 	if (ioctl(fdAcodec, ACODEC_SET_MIXER_MIC, &input_mode)) {
-		printf("select acodec input_mode failed\n");
+		warning("hisi: select acodec input_mode failed\n");
 		ret = HI_FAILURE;
 	}
 
 	if (iAcodecInputVol != 0) /* should be 1 when micin */
 	{
 		if (ioctl(fdAcodec, ACODEC_SET_INPUT_VOL, &iAcodecInputVol)) {
-			printf("set acodec micin volume failed\n");
+			warning("hisi: set acodec micin volume failed\n");
 			return HI_FAILURE;
 		}
 	}
@@ -231,13 +231,13 @@ int hisi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	ret = HI_MPI_AI_Enable(AiDevId);
 	if (HI_SUCCESS != ret) {
-		printf("error %d\n", ret);
+		warning("hisi: error %d\n", ret);
 		return EINVAL;
 	}
 
 	ret = HI_MPI_AI_EnableChn(AiDevId, 0);
 	if (HI_SUCCESS != ret) {
-		printf("error %d\n", ret);
+		warning("hisi: error %d\n", ret);
 		return EINVAL;
 	}
 
