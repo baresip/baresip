@@ -29,13 +29,15 @@ static int init_hw(void)
 unsigned audio_frame_size(unsigned srate)
 {
 	switch (srate) {
-		case 8000: return 8000 / 50;
-		case 12000: return 12000 / 50;
-		case 16000: return 16000 / 50;
-		case 24000: return 24000 / 50;
-		case 48000: return 48000 / 50;
+		case 8000:
+		case 12000:
+		case 16000:
+		case 24000:
+		case 48000:
+			return srate / 50;
+			break;
 		default:
-			    return 320;
+			return 320;
 	}
 }
 
