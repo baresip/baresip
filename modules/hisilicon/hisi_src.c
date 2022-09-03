@@ -20,7 +20,7 @@
 struct ausrc_st {
 	thrd_t thread;
 	volatile bool run;
-	void *sampv;
+	int16_t *sampv;
 	size_t sampc;
 	ausrc_read_h *rh;
 	void *arg;

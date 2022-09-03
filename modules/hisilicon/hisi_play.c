@@ -17,7 +17,7 @@
 struct auplay_st {
 	thrd_t thread;
 	volatile bool run;
-	void *sampv;
+	int16_t *sampv;
 	size_t sampc;
 	auplay_write_h *wh;
 	void *arg;
@@ -65,7 +65,7 @@ static int write_thread(void *arg)
 			.enBitwidth = AUDIO_BIT_WIDTH_16,
 			.enSoundmode = AUDIO_SOUND_MODE_MONO,
 			.u32Len = st->sampc * 2,
-			.u64VirAddr[0] = st->sampv,
+			.u64VirAddr[0] = (uint8_t*)st->sampv,
 		};
 		int ret = HI_MPI_AO_SendFrame(0, 0, &stData, -1);
 		if (ret != HI_SUCCESS) {
