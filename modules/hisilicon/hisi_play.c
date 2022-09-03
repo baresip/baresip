@@ -133,14 +133,13 @@ int hisi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	}
 
 	ret = HI_MPI_AO_SetVolume(AoDevId, -10);
-	if (ret != HI_SUCCESS) {
+	if (HI_SUCCESS != ret) {
 		printf("error %d\n", ret);
 		return EINVAL;
 	}
 
 	st->run = true;
-	err = thrd_create(&st->thread, write_thread, st);
-	if (err) {
+	if (thrd_success != thrd_create(&st->thread, write_thread, st)) {
 		st->run = false;
 		goto out;
 	}

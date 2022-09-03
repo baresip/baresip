@@ -242,8 +242,7 @@ int hisi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	}
 
 	st->run = true;
-	err = thrd_create(&st->thread, read_thread, st);
-	if (err) {
+	if (thrd_success != thrd_create(&st->thread, read_thread, st)) {
 		st->run = false;
 		goto out;
 	}
