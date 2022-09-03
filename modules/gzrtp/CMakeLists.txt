@@ -13,4 +13,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${GZRTP_LIBRARIES})
 
 target_compile_options(${PROJECT_NAME} PRIVATE
     -Wno-unknown-pragmas
+    -Wno-shadow
+    -Wno-ignored-qualifiers
+    -Wno-aggregate-return
+    -Wno-pedantic
+    -Wno-missing-field-initializers
 )
