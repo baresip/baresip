@@ -189,7 +189,7 @@ int hisi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
-	int err;
+	int err = 0;
 	(void)device;
 	(void)errh;
 
@@ -243,6 +243,7 @@ int hisi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->run = true;
 	if (thrd_success != thrd_create(&st->thread, read_thread, st)) {
+		err = EAGAIN;
 		st->run = false;
 		goto out;
 	}

@@ -82,7 +82,7 @@ int hisi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
-	int err;
+	int err = 0;
 	(void)device;
 
 	if (!stp || !ap || !prm || !wh)
@@ -140,6 +140,7 @@ int hisi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	st->run = true;
 	if (thrd_success != thrd_create(&st->thread, write_thread, st)) {
+		err = EAGAIN;
 		st->run = false;
 		goto out;
 	}
