@@ -4,7 +4,7 @@
  * Copyright (C) 2022 Dmitry Ilyin
  */
 
-#include <pthread.h>
+#include <threads.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -18,7 +18,7 @@
 #include <hi_type.h>
 
 struct ausrc_st {
-	pthread_t thread;
+	thrd_t thread;
 	volatile bool run;
 	void *sampv;
 	size_t sampc;
@@ -35,7 +35,7 @@ static void ausrc_destructor(void *arg)
 	if (st->run) {
 		debug("hisi: stopping recording thread\n");
 		st->run = false;
-		(void)pthread_join(st->thread, NULL);
+		thrd_join(st->thread, NULL);
 	}
 
 	int ret = HI_MPI_AI_DisableChn(0, 0);
@@ -51,7 +51,7 @@ static void ausrc_destructor(void *arg)
 	mem_deref(st->sampv);
 }
 
-static void *read_thread(void *arg)
+static int read_thread(void *arg)
 {
 	AEC_FRAME_S stAecFrm;
 	AUDIO_FRAME_S stFrame;
@@ -87,7 +87,7 @@ static void *read_thread(void *arg)
 		st->rh(&af, st->arg);
 	}
 
-	return NULL;
+	return 0;
 }
 
 
@@ -242,7 +242,7 @@ int hisi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	}
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, read_thread, st);
+	err = thrd_create(&st->thread, read_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;
