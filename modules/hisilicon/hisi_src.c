@@ -93,7 +93,8 @@ static int read_thread(void *arg)
 
 #define ACODEC_FILE "/dev/acodec"
 
-static HI_S32 audio_cfg_codec(AUDIO_SAMPLE_RATE_E enSample) {
+static HI_S32 audio_cfg_codec(AUDIO_SAMPLE_RATE_E enSample)
+{
 	HI_S32 fdAcodec = -1;
 	HI_S32 ret = HI_SUCCESS;
 	ACODEC_FS_E i2s_fs_sel = 0;

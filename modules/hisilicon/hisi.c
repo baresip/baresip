@@ -15,7 +15,8 @@
 static struct ausrc *ausrc;
 static struct auplay *auplay;
 
-static int init_hw(void) {
+static int init_hw(void)
+{
 	int ret = HI_MPI_SYS_Init();
 
 	if (HI_SUCCESS != ret)
@@ -26,7 +27,8 @@ static int init_hw(void) {
 	return ret;
 }
 
-unsigned audio_frame_size(unsigned srate) {
+unsigned audio_frame_size(unsigned srate)
+{
 	switch (srate) {
 		case 8000: return 8000 / 50;
 		case 12000: return 12000 / 50;
