@@ -337,9 +337,6 @@ endif
 ifneq ($(USE_X11),)
 MODULES   += x11
 endif
-ifneq ($(USE_ZRTP),)
-MODULES   += zrtp
-endif
 ifneq ($(USE_GZRTP),)
 MODULES   += gzrtp
 endif

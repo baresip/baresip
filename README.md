@@ -292,7 +292,6 @@ webrtc_aec    Acoustic Echo Cancellation (AEC) using WebRTC SDK
 wincons       Console input driver for Windows
 winwave       Audio driver for Windows
 x11           X11 video output driver
-zrtp          ZRTP media encryption module
 ```
 
 
