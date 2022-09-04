@@ -29,7 +29,7 @@ $(MOD)_CXXFLAGS   += \
 	-I$(ZRTP_PATH)/zrtp \
 	-I$(ZRTP_PATH)/srtp
 
-$(MOD)_CXXFLAGS   += -O2 -Wall -fPIC
+$(MOD)_CXXFLAGS   += -O2 -Wall -fPIC -Wno-unknown-pragmas
 
 # Uncomment this if you want to use libre SRTP facilities instead of the ones
 # provided by ZRTPCPP. In this case only standard ciphers (AES) are supported.
