@@ -667,6 +667,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (!str_cmp(prm, "answer") &&
 				call_state(call) == CALL_STATE_ESTABLISHED)
 			menu_selcall(call);
+		video_update(call_video(call), call_peeruri(call));
 		break;
 
 	case UA_EVENT_CALL_TRANSFER:
