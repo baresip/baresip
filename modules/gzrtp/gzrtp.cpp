@@ -114,6 +114,8 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 	int err = 0;
 	StreamMediaType med_type;
 	const char *med_name;
+	(void)raddr_rtp;
+	(void)raddr_rtcp;
 
 	if (!stp || !sess || !sess->session)
 		return EINVAL;
