@@ -1041,7 +1041,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "\n# Media encryption modules\n");
 	(void)re_fprintf(f, "#module\t\t\t" "srtp" MOD_EXT "\n");
 	(void)re_fprintf(f, "#module\t\t\t" "dtls_srtp" MOD_EXT "\n");
-	(void)re_fprintf(f, "#module\t\t\t" "zrtp" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" "gzrtp" MOD_EXT "\n");
 	(void)re_fprintf(f, "\n");
 
 	(void)re_fprintf(f, "\n#------------------------------------"
