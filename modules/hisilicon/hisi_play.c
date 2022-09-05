@@ -64,7 +64,7 @@ static int write_thread(void *arg)
 		AUDIO_FRAME_S stData = {
 			.enBitwidth = AUDIO_BIT_WIDTH_16,
 			.enSoundmode = AUDIO_SOUND_MODE_MONO,
-			.u32Len = st->sampc * 2,
+			.u32Len = st->sampc * sizeof(int16_t),
 			.u64VirAddr[0] = (uint8_t*)st->sampv,
 		};
 		int ret = HI_MPI_AO_SendFrame(0, 0, &stData, -1);
@@ -83,6 +83,7 @@ int hisi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 {
 	struct auplay_st *st;
 	int err = 0;
+	int ret;
 	(void)device;
 
 	if (!stp || !ap || !prm || !wh)
@@ -118,7 +119,7 @@ int hisi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		.u32ClkSel = 0,
 		.enI2sType = AIO_I2STYPE_INNERCODEC,
 	};
-	int ret = HI_MPI_AO_SetPubAttr(AoDevId, &stAioAttr);
+	HI_MPI_AO_SetPubAttr(AoDevId, &stAioAttr);
 
 	ret = HI_MPI_AO_Enable(AoDevId);
 	if (HI_SUCCESS != ret) {
