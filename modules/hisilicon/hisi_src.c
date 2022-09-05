@@ -20,7 +20,6 @@
 struct ausrc_st {
 	thrd_t thread;
 	volatile bool run;
-	int16_t *sampv;
 	size_t sampc;
 	ausrc_read_h *rh;
 	void *arg;
@@ -47,8 +46,6 @@ static void ausrc_destructor(void *arg)
 	if (HI_SUCCESS != ret) {
 		warning("hisi: error %d\n", ret);
 	}
-
-	mem_deref(st->sampv);
 }
 
 static int read_thread(void *arg)
@@ -72,19 +69,17 @@ static int read_thread(void *arg)
 
 		struct auframe af;
 
-		memcpy(st->sampv, stFrame.u64VirAddr[0], stFrame.u32Len);
-		ret = HI_MPI_AI_ReleaseFrame(dev, chn, &stFrame, &stAecFrm);
-		if (HI_SUCCESS != ret) {
-			warning("hisi: HI_MPI_AI_ReleaseFrame(%d, %d),"
-				" failed with %#x!\n", dev, chn, ret);
-			continue;
-		}
-
-		auframe_init(&af, AUFMT_S16LE, st->sampv,
+		auframe_init(&af, AUFMT_S16LE, stFrame.u64VirAddr[0],
 				stFrame.u32Len / 2, st->prm.srate, 1);
 		af.timestamp = stFrame.u64TimeStamp;
 
 		st->rh(&af, st->arg);
+
+		ret = HI_MPI_AI_ReleaseFrame(dev, chn, &stFrame, &stAecFrm);
+		if (HI_SUCCESS != ret) {
+			warning("hisi: HI_MPI_AI_ReleaseFrame(%d, %d),"
+				" failed with %#x!\n", dev, chn, ret);
+		}
 	}
 
 	return 0;
@@ -206,12 +201,6 @@ int hisi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->arg = arg;
 
 	st->sampc = audio_frame_size(st->prm.srate);
-
-	st->sampv = mem_alloc(aufmt_sample_size(prm->fmt) * st->sampc, NULL);
-	if (!st->sampv) {
-		err = ENOMEM;
-		goto out;
-	}
 
 	audio_cfg_codec(st->prm.srate);
 
