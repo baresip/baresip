@@ -916,10 +916,25 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 }
 
 
+static int uas_authorization(uint8_t *ha1, const struct pl *user,
+			     const char *realm, void *arg)
+{
+	struct ua *ua = arg;
+	struct account *acc = ua_account(ua);
+
+	if (pl_strcasecmp(user, acc->uas_user))
+		return EAUTH;
+
+	return md5_printf(ha1, "%r:%s:%s", user, realm, acc->uas_pass);
+}
+
+
 bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 {
 	struct sip_contact contact;
 	const struct sip_hdr *hdr;
+	struct sip_uas_auth auth;
+	struct account *acc = ua_account(ua);
 	bool sub = false;
 	int err;
 
@@ -947,23 +962,53 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 		return true;
 	}
 
-	/* TODO: white list check --> prop. reply with 406 Not Acceptable */
+	auth.realm = acc->dispname;
+	err = sip_uas_auth_check(&auth, msg, uas_authorization, ua);
+	switch (err) {
+	case 0:
+		sip_contact_set(&contact, ua_cuser(ua), &msg->dst, msg->tp);
+		err = sip_treplyf(NULL, NULL, uag_sip(),
+				  msg, true, 202, "Accepted",
+				  "%H"
+				  "Refer-Sub: false\r\n"
+				  "Content-Length: 0\r\n"
+				  "\r\n",
+				  sip_contact_print, &contact);
+		if (err ) {
+			warning("ua: reply to REFER failed (%m)\n", err);
+			goto out;
+		}
 
-	sip_contact_set(&contact, ua_cuser(ua), &msg->dst, msg->tp);
-	err = sip_treplyf(NULL, NULL, uag_sip(),
-			  msg, true, 202, "Accepted",
-			  "%H"
-			  "%s"
-			  "Refer-Sub: false\r\n"
-			  "Content-Length: 0\r\n"
-			  "\r\n",
-			  sip_contact_print, &contact);
-	if (err)
-		warning("ua: reply to REFER failed (%m)\n", err);
+	break;
+	case EAUTH: {
+		struct sip_uas_auth *auth2;
+		debug("ua: REFER Unauthorized for %s\n", auth.realm);
+		err = sip_uas_auth_gen(&auth2, msg, auth.realm);
+		if (err)
+			goto out;
+
+		(void)sip_replyf(uag_sip(), msg, 401, "Unauthorized",
+				"%H"
+				"Content-Length: 0\r\n"
+				"\r\n", sip_uas_auth_print, auth2);
+		mem_deref(auth2);
+		goto out;
+	}
+
+	break;
+	default:
+		warning("ua: REFER forbidden for %s\n", auth.realm);
+		(void)sip_reply(uag_sip(), msg, 403, "Forbidden");
+		goto out;
+	break;
+	}
 
 	debug("ua: REFER to %r\n", &hdr->val);
 	ua_event(ua, UA_EVENT_REFER, NULL, "%r", &hdr->val);
-	return err;
+
+out:
+
+	return true;
 }
 
 
