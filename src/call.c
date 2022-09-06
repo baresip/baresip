@@ -369,13 +369,13 @@ static int update_media(struct call *call)
 	if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
 		err = call->acc->mnat->updateh(call->mnats);
 
-	if (stream_is_ready(audio_strm(call->audio))) {
+	if (stream_is_ready(audio_strm(call->audio)))
 		err |= update_audio(call);
-	}
 
-	if (stream_is_ready(video_strm(call->video))) {
+	if (stream_is_ready(video_strm(call->video)))
 		err |= video_update(call->video, call->peer_uri);
-	}
+	else
+		video_stop(call->video);
 
 	return err;
 }
