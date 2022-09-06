@@ -2293,7 +2293,6 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	if (media) {
-		update_media(call);
 		call_stream_start(call, false);
 		call_event_handler(call, CALL_EVENT_PROGRESS, call->peer_uri);
 	}
