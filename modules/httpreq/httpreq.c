@@ -259,6 +259,7 @@ static int cmd_setbody(struct re_printf *pf, void *arg)
 {
 	struct pl pl;
 	struct pl *plp = &pl;
+	struct mbuf *mb;
 	int err;
 	(void)pf;
 
@@ -266,7 +267,18 @@ static int cmd_setbody(struct re_printf *pf, void *arg)
 	if (err)
 		return err;
 
-	return http_reqconn_set_body(d->conn, plp);
+	mb = mbuf_alloc(plp->l);
+	if (!mb)
+		return ENOMEM;
+
+	err = mbuf_write_pl(mb, plp);
+	if (err)
+		goto out;
+
+	err = http_reqconn_set_body(d->conn, mb);
+out:
+	mem_deref(mb);
+	return err;
 }
 
 
