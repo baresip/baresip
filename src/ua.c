@@ -933,8 +933,10 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 {
 	struct sip_contact contact;
 	const struct sip_hdr *hdr;
+	char realm[32];
 	struct sip_uas_auth auth;
 	struct account *acc = ua_account(ua);
+	struct uri *uri = account_luri(acc);
 	bool sub = false;
 	int err;
 
@@ -962,7 +964,8 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 		return true;
 	}
 
-	auth.realm = acc->dispname;
+	re_snprintf(realm, sizeof(realm), "%r@%r", &uri->user, &uri->host);
+	auth.realm = realm;
 	err = sip_uas_auth_check(&auth, msg, uas_authorization, ua);
 	switch (err) {
 	case 0:
