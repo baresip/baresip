@@ -950,8 +950,8 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 		pl_bool(&sub, &hdr->val);
 
 	if (sub) {
-		warning("ua: out of dialog REFER with subscription not "
-			"supported\n");
+		debug("ua: out of dialog REFER with subscription not "
+			"supported by %s\n", __func__);
 		return false;
 	}
 
