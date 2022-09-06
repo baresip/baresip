@@ -937,7 +937,7 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 	struct sip_uas_auth auth;
 	struct account *acc = ua_account(ua);
 	struct uri *uri = account_luri(acc);
-	bool sub = false;
+	bool sub = true;
 	int err;
 
 	debug("ua: incoming REFER message from %r (%J)\n",
