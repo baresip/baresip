@@ -51,6 +51,7 @@ struct call {
 	struct tmr tmr_inv;       /**< Timer for incoming calls             */
 	struct tmr tmr_dtmf;      /**< Timer for incoming DTMF events       */
 	struct tmr tmr_answ;      /**< Timer for delayed answer             */
+	struct tmr tmr_reinv;     /**< Timer for outgoing re-INVITES        */
 	time_t time_start;        /**< Time when call started               */
 	time_t time_conn;         /**< Time when call initiated             */
 	time_t time_stop;         /**< Time when call stopped               */
@@ -403,6 +404,7 @@ static void call_destructor(void *arg)
 	list_unlink(&call->le);
 	tmr_cancel(&call->tmr_dtmf);
 	tmr_cancel(&call->tmr_answ);
+	tmr_cancel(&call->tmr_reinv);
 
 	mem_deref(call->sess);
 	mem_deref(call->id);
@@ -921,6 +923,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 
 	tmr_init(&call->tmr_inv);
 	tmr_init(&call->tmr_answ);
+	tmr_init(&call->tmr_reinv);
 
 	call->cfg    = cfg;
 	call->acc    = mem_ref(acc);
@@ -1829,6 +1832,20 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 }
 
 
+static void set_established_mdir(void *arg)
+{
+	struct call *call = arg;
+	if (!call)
+		return;
+	MAGIC_CHECK(call);
+
+	if (call_need_modify(call)) {
+		call_set_mdir(call, call->estadir, call->estvdir);
+		call_modify(call);
+	}
+}
+
+
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
@@ -1858,10 +1875,8 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 		(void)call_notify_sipfrag(call, 200, "OK");
 	}
 
-	if (call_need_modify(call)) {
-		call_set_mdir(call, call->estadir, call->estvdir);
-		call_modify(call);
-	}
+	/* modify call after call_event_established handlers are executed */
+	tmr_start(&call->tmr_reinv, 0, set_established_mdir, call);
 
 	/* must be done last, the handler might deref this call */
 	call_event_handler(call, CALL_EVENT_ESTABLISHED, call->peer_uri);
