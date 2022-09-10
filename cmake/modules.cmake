@@ -21,7 +21,6 @@ find_package(V4L2)
 find_package(VPX)
 find_package(WEBRTC_AECM)
 find_package(X11)
-find_package(ZRTP)
 
 if(DEFINED MODULES)
   return()
