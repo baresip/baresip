@@ -519,6 +519,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	bool incall;
 	enum sdp_dir ardir, vrdir;
 	uint32_t count;
+	struct pl val;
 	int err;
 	(void)arg;
 
@@ -711,6 +712,19 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		menu_stop_play();
 		call_hold(call, false);
 		menu_selcall(call);
+		break;
+
+	case UA_EVENT_REFER:
+		val = pl_null;
+		if (!strncmp(prm, "sip:", 4))
+			pl_set_str(&val, "invite");
+
+		(void)menu_param_decode(prm, "method", &val);
+		if (!pl_strcmp(&val, "invite")) {
+			info("menu: incoming REFER to %s\n", prm);
+			ua_connect(ua, NULL, NULL, prm, VIDMODE_ON);
+		}
+
 		break;
 
 	case UA_EVENT_REGISTER_OK:

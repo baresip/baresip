@@ -237,6 +237,7 @@ int test_play(void);
 int test_stunuri(void);
 int test_ua_alloc(void);
 int test_ua_options(void);
+int test_ua_refer(void);
 int test_ua_register(void);
 int test_ua_register_auth(void);
 int test_ua_register_auth_dns(void);

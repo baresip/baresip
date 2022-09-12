@@ -33,6 +33,13 @@ struct stream_param;
  * Account
  */
 
+struct uasauth {
+	struct le he;
+
+	char *met;
+	bool deny;
+};
+
 
 struct account {
 	char *buf;                   /**< Buffer for the SIP address         */
@@ -81,6 +88,8 @@ struct account {
 	char *auplay_dev;
 	uint32_t autelev_pt;         /**< Payload type for telephone-events  */
 	char *extra;                 /**< Extra parameters                   */
+	char *uas_user;              /**< UAS authentication username        */
+	char *uas_pass;              /**< UAS authentication password        */
 };
 
 
@@ -336,6 +345,7 @@ int ua_print_require(struct re_printf *pf, const struct ua *ua);
 struct call *ua_find_call_onhold(const struct ua *ua);
 struct call *ua_find_active_call(struct ua *ua);
 void ua_handle_options(struct ua *ua, const struct sip_msg *msg);
+bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg);
 void sipsess_conn_handler(const struct sip_msg *msg, void *arg);
 bool ua_catchall(struct ua *ua);
 bool ua_reghasladdr(const struct ua *ua, const struct sa *laddr);
