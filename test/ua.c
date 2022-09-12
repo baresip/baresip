@@ -20,8 +20,12 @@ struct test {
 	int err;
 	unsigned got_register_ok;
 	unsigned n_resp;
+	unsigned n_ev;
 	uint32_t magic;
 	enum sip_transp tp_resp;
+	char uri[256];
+
+	unsigned state;
 };
 
 
@@ -57,6 +61,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	struct test *t = arg;
 	size_t i;
 	int err = 0;
+	const char referto[] = "sip:user@127.0.0.1";
 	(void)call;
 	(void)prm;
 
@@ -84,6 +89,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 		err = EAUTH;
 		re_cancel();
+	}
+	else if (ev == UA_EVENT_REFER) {
+		ASSERT_STREQ(referto, prm);
+		++t->n_ev;
 	}
 
  out:
@@ -806,6 +815,149 @@ int test_ua_options(void)
 	err |= test_ua_options_base(SIP_TRANSP_UDP);
 	TEST_ERR(err);
 	err |= test_ua_options_base(SIP_TRANSP_TCP);
+	TEST_ERR(err);
+
+ out:
+	return err;
+}
+
+
+static void refer_resp_handler(int err, const struct sip_msg *msg, void *arg)
+{
+	struct test *t = arg;
+	uint32_t clen;
+	const char referto[] = "sip:user@127.0.0.1";
+	struct pl met=PL("REFER");
+
+	ASSERT_EQ(MAGIC, t->magic);
+
+	if (!t->ua)
+		return;
+
+	if (err) {
+		test_abort(t, err);
+		return;
+	}
+
+	++t->n_resp;
+
+	t->tp_resp = msg->tp;
+
+	clen = pl_u32(&msg->clen);
+	ASSERT_EQ(0, clen);
+	ASSERT_PLEQ(&met, &msg->cseq.met);
+
+	switch (t->state) {
+	case 0:
+		if (msg->scode != 403) {
+			test_abort(t, EPROTO);
+			return;
+		}
+
+		ASSERT_EQ(0, err);
+
+		t->ua = mem_deref(t->ua);
+		err = ua_alloc(&t->ua, "Foo <sip:user@127.0.0.1>;regint=0;"
+			       "uas_user=userx;uas_pass=pass;"
+			       "auth_user=userx;auth_pass=pass");
+		TEST_ERR(err);
+
+		err = ua_refer_send(t->ua, t->uri, referto,
+				    refer_resp_handler, t);
+		TEST_ERR(err);
+		break;
+	case 1:
+		if (msg->scode != 202) {
+			test_abort(t, EPROTO);
+			return;
+		}
+
+		ASSERT_TRUE(sip_msg_hdr_has_value(msg, SIP_HDR_REFER_SUB,
+						  "false"))
+		re_cancel();
+		break;
+	}
+
+	++t->state;
+
+ out:
+	if (err)
+		t->err = err;
+}
+
+
+static int test_ua_refer_base(enum sip_transp transp)
+{
+	struct test t;
+	struct sa laddr;
+	struct sa dst;
+	const char referto[] = "sip:user@127.0.0.1";
+	int n, err = 0;
+
+	test_init(&t);
+
+	err = uag_event_register(ua_event_handler, &t);
+	TEST_ERR(err);
+
+	err = ua_init("test",
+		      transp == SIP_TRANSP_UDP,
+		      transp == SIP_TRANSP_TCP,
+		      false);
+	TEST_ERR(err);
+
+	err = sa_set_str(&dst, "127.0.0.1", 5060);
+	TEST_ERR(err);
+
+	err = sip_transp_laddr(uag_sip(), &laddr, transp, &dst);
+	TEST_ERR(err);
+
+	err = ua_alloc(&t.ua, "Foo <sip:user@127.0.0.1>;regint=0;"
+		       "uas_user=userx;uas_pass=pass");
+	TEST_ERR(err);
+
+	/* NOTE: no angle brackets in the Request URI */
+	n = re_snprintf(t.uri, sizeof(t.uri),
+			"sip:user@%J%s",
+			&laddr, sip_transp_param(transp));
+	ASSERT_TRUE(n > 0);
+
+
+	err = ua_refer_send(t.ua, t.uri, referto, refer_resp_handler, &t);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	if (err)
+		goto out;
+
+	if (t.err) {
+		err = t.err;
+		goto out;
+	}
+
+	/* verify after test is complete */
+	ASSERT_EQ(2, t.n_resp);
+	ASSERT_EQ(transp, t.tp_resp);
+	ASSERT_EQ(1, t.n_ev);
+
+ out:
+	test_reset(&t);
+
+	uag_event_unregister(ua_event_handler);
+	ua_stop_all(true);
+	ua_close();
+
+	return err;
+}
+
+
+int test_ua_refer(void)
+{
+	int err = 0;
+
+	err |= test_ua_refer_base(SIP_TRANSP_UDP);
+	TEST_ERR(err);
+	err |= test_ua_refer_base(SIP_TRANSP_TCP);
 	TEST_ERR(err);
 
  out:

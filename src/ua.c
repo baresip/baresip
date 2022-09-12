@@ -907,12 +907,111 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 			  desc ? mbuf_buf(desc) : NULL,
 			  desc ? mbuf_get_left(desc) : (size_t)0);
 	if (err) {
-		warning("ua: options: sip_treplyf: %m\n", err);
+		warning("ua: reply to OPTIONS failed (%m)\n", err);
 	}
 
  out:
 	mem_deref(desc);
 	mem_deref(call);
+}
+
+
+static int uas_authorization(uint8_t *ha1, const struct pl *user,
+			     const char *realm, void *arg)
+{
+	struct ua *ua = arg;
+	struct account *acc = ua_account(ua);
+
+	if (pl_strcasecmp(user, acc->uas_user))
+		return EAUTH;
+
+	return md5_printf(ha1, "%r:%s:%s", user, realm, acc->uas_pass);
+}
+
+
+bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
+{
+	struct sip_contact contact;
+	const struct sip_hdr *hdr;
+	char realm[32];
+	struct sip_uas_auth auth;
+	struct account *acc = ua_account(ua);
+	struct uri *uri = account_luri(acc);
+	bool sub = true;
+	int err;
+
+	debug("ua: incoming REFER message from %r (%J)\n",
+	      &msg->from.auri, &msg->src);
+
+	/* application/sdp is the default if the
+	   Accept header field is not present */
+	hdr = sip_msg_hdr(msg, SIP_HDR_REFER_SUB);
+	if (hdr)
+		pl_bool(&sub, &hdr->val);
+
+	if (sub) {
+		debug("ua: out of dialog REFER with subscription not "
+			"supported by %s\n", __func__);
+		return false;
+	}
+
+	/* get the transfer target */
+	hdr = sip_msg_hdr(msg, SIP_HDR_REFER_TO);
+	if (!hdr) {
+		warning("call: bad REFER request from %r\n", &msg->from.auri);
+		(void)sip_reply(uag_sip(), msg, 400,
+				"Missing Refer-To header");
+		return true;
+	}
+
+	re_snprintf(realm, sizeof(realm), "%r@%r", &uri->user, &uri->host);
+	auth.realm = realm;
+	err = sip_uas_auth_check(&auth, msg, uas_authorization, ua);
+	switch (err) {
+	case 0:
+		sip_contact_set(&contact, ua_cuser(ua), &msg->dst, msg->tp);
+		err = sip_treplyf(NULL, NULL, uag_sip(),
+				  msg, true, 202, "Accepted",
+				  "%H"
+				  "Refer-Sub: false\r\n"
+				  "Content-Length: 0\r\n"
+				  "\r\n",
+				  sip_contact_print, &contact);
+		if (err ) {
+			warning("ua: reply to REFER failed (%m)\n", err);
+			goto out;
+		}
+
+	break;
+	case EAUTH: {
+		struct sip_uas_auth *auth2;
+		debug("ua: REFER Unauthorized for %s\n", auth.realm);
+		err = sip_uas_auth_gen(&auth2, msg, auth.realm);
+		if (err)
+			goto out;
+
+		(void)sip_replyf(uag_sip(), msg, 401, "Unauthorized",
+				"%H"
+				"Content-Length: 0\r\n"
+				"\r\n", sip_uas_auth_print, auth2);
+		mem_deref(auth2);
+		goto out;
+	}
+
+	break;
+	default:
+		warning("ua: REFER forbidden for %s\n", auth.realm);
+		(void)sip_reply(uag_sip(), msg, 403, "Forbidden");
+		goto out;
+	break;
+	}
+
+	debug("ua: REFER to %r\n", &hdr->val);
+	ua_event(ua, UA_EVENT_REFER, NULL, "%r", &hdr->val);
+
+out:
+
+	return true;
 }
 
 
@@ -1005,6 +1104,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	if (err)
 		goto out;
 
+	add_extension(ua, "norefersub");
 	list_append(uag_list(), &ua->le, ua);
 	ua_event(ua, UA_EVENT_CREATE, NULL, aor);
 
@@ -1288,6 +1388,43 @@ int ua_options_send(struct ua *ua, const char *uri,
 			   "Accept: application/sdp\r\n"
 			   "Content-Length: 0\r\n"
 			   "\r\n");
+	if (err) {
+		warning("ua: send options: (%m)\n", err);
+	}
+
+	return err;
+}
+
+
+/**
+ * Send SIP REFER message to a peer
+ *
+ * @param ua       User-Agent object
+ * @param uri      Peer SIP Address
+ * @param referto  Refer-To value
+ * @param resph    Response handler
+ * @param arg      Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_refer_send(struct ua *ua, const char *uri, const char *referto,
+		  refer_resp_h *resph, void *arg)
+{
+	int err = 0;
+
+	if (!ua || !str_isset(uri))
+		return EINVAL;
+
+	err = sip_req_send(ua, "REFER", uri, resph, arg,
+			   "Contact: <%s>\r\n"
+			   "%H"
+			   "Refer-To: %s\r\n"
+			   "Refer-Sub: false\r\n"
+			   "Content-Length: 0\r\n"
+			   "\r\n",
+			   account_aor(ua_account(ua)),
+			   ua_print_supported, ua,
+			   referto);
 	if (err) {
 		warning("ua: send options: (%m)\n", err);
 	}

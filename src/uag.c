@@ -189,18 +189,21 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 
 	(void)arg;
 
-	if (pl_strcmp(&msg->met, "OPTIONS"))
-		return false;
-
 	ua = uag_find_msg(msg);
 	if (!ua) {
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
 		return true;
 	}
 
-	ua_handle_options(ua, msg);
+	if (!pl_strcmp(&msg->met, "OPTIONS")) {
+		ua_handle_options(ua, msg);
+		return true;
+	}
 
-	return true;
+	if (!pl_strcmp(&msg->met, "REFER"))
+		return ua_handle_refer(ua, msg);
+
+	return false;
 }
 
 

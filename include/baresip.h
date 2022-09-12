@@ -138,7 +138,10 @@ enum sipansbeep account_sipansbeep(const struct account *acc);
 void account_set_sipansbeep(struct account *acc, enum sipansbeep beep);
 void account_set_autelev_pt(struct account *acc, uint32_t pt);
 uint32_t account_autelev_pt(struct account *acc);
-
+bool account_uasmethod_deny(const struct account *acc, const struct pl *met);
+bool account_uasmethod_allow(const struct account *acc, const struct pl *met);
+const char* account_uas_user(const struct account *acc);
+const char* account_uas_pass(const struct account *acc);
 
 /*
  * Call
@@ -790,6 +793,7 @@ enum ua_event {
 	UA_EVENT_AUDIO_ERROR,
 	UA_EVENT_CALL_LOCAL_SDP,      /**< param: offer or answer */
 	UA_EVENT_CALL_REMOTE_SDP,     /**< param: offer or answer */
+	UA_EVENT_REFER,
 	UA_EVENT_MODULE,
 	UA_EVENT_CUSTOM,
 
@@ -808,6 +812,7 @@ enum answer_method {
 typedef void (ua_event_h)(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg);
 typedef void (options_resp_h)(int err, const struct sip_msg *msg, void *arg);
+typedef void (refer_resp_h)(int err, const struct sip_msg *msg, void *arg);
 
 typedef void (ua_exit_h)(void *arg);
 
@@ -825,6 +830,8 @@ int  ua_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_hold_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_options_send(struct ua *ua, const char *uri,
 		     options_resp_h *resph, void *arg);
+int  ua_refer_send(struct ua *ua, const char *uri, const char *referto,
+		    refer_resp_h *resph, void *arg);
 int  ua_debug(struct re_printf *pf, const struct ua *ua);
 int  ua_state_json_api(struct odict *od, const struct ua *ua);
 int  ua_print_calls(struct re_printf *pf, const struct ua *ua);
