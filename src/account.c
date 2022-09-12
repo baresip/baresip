@@ -1750,6 +1750,12 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 
 	mem_deref(uridup);
 
+	/* only append IP to account name,
+		 * if an account is registered. */
+	if (acc->regint > 0) {
+		return err;
+	}
+
 	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
 		1 != uri_is_ip) {
 #if HAVE_INET6
