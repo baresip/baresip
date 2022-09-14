@@ -337,6 +337,11 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 		struct ua_eh *eh = le->data;
 		le = le->next;
 
+		if (call_is_evstop(call)) {
+			call_set_evstop(call, false);
+			break;
+		}
+
 		eh->h(ua, ev, call, buf, eh->arg);
 	}
 }
