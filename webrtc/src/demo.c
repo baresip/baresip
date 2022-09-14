@@ -246,6 +246,7 @@ int demo_init(const char *server_cert, const char *www_path,
 {
 	struct pl srv;
 	struct sa laddr, laddrs;
+	bool tls = true;
 	int err;
 
 	if (ice_server) {
@@ -287,13 +288,16 @@ int demo_init(const char *server_cert, const char *www_path,
 	err = https_listen(&demo.httpssock, &laddrs, server_cert,
 			   http_req_handler, NULL);
 	if (err)
-		return err;
+		tls = false;
 
 	demo.www_path = www_path;
 
 	info("demo: listening on:\n");
-	info("    http://%j:%u/\n",
-		net_laddr_af(baresip_network(), AF_INET), sa_port(&laddr));
+	info("    http://127.0.0.1:%u/\n", sa_port(&laddr));
+
+	if (!tls)
+		return 0;
+
 	info("    https://%j:%u/\n",
 		net_laddr_af(baresip_network(), AF_INET), sa_port(&laddrs));
 
