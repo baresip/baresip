@@ -123,17 +123,12 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 	AVFrame frame;
 	AVFrame frame2;
 	int ret;
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
-	int got_frame;
-#endif
 
 	if (!st || !st->au.ctx)
 		return;
 
 	memset(&frame, 0, sizeof(frame));
 	memset(&frame2, 0, sizeof(frame2));
-
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
 
 	ret = avcodec_send_packet(st->au.ctx, pkt);
 	if (ret < 0)
@@ -142,12 +137,6 @@ void avformat_audio_decode(struct shared *st, AVPacket *pkt)
 	ret = avcodec_receive_frame(st->au.ctx, &frame);
 	if (ret < 0)
 		return;
-
-#else
-	ret = avcodec_decode_audio4(st->au.ctx, &frame, &got_frame, pkt);
-	if (ret < 0 || !got_frame)
-		return;
-#endif
 
 	/* NOTE: pass timestamp to application */
 
