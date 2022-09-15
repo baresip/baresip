@@ -37,7 +37,7 @@ jobs:
         sudo ldconfig
     
     - name: make baresip selftest
-      run: make EXTRA_CFLAGS="-Werror" CCACHE= test;
+      run: cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
 
     - name: valgrind test
-      run: valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./selftest 
+      run: valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./build/test/selftest
