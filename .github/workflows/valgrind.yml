@@ -45,7 +45,7 @@ jobs:
       run: sudo ldconfig
 
     - name: make baresip selftest
-      run: cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
+      run: cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
 
     - name: valgrind test
       run: valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./build/test/selftest
