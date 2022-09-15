@@ -240,7 +240,7 @@ static void rel100_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl rmode;
 
-	prm->rel100_mode = REL100_ENABLED;
+	prm->rel100_mode = REL100_DISABLED;
 
 	if (0 == msg_param_decode(pl, "100rel", &rmode)) {
 
