@@ -583,8 +583,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	}
 #endif
 
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
-
 	pkt = av_packet_alloc();
 	if (!pkt) {
 		err = ENOMEM;
@@ -602,26 +600,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		err = 0;
 		goto out;
 	}
-#else
-
-	pkt = av_malloc(sizeof(*pkt));
-	if (!pkt) {
-		err = ENOMEM;
-		goto out;
-	}
-
-	av_init_packet(pkt);
-	av_new_packet(pkt, 65536);
-
-	ret = avcodec_encode_video2(st->ctx, pkt, pict, &got_packet);
-	if (ret < 0) {
-		err = EBADMSG;
-		goto out;
-	}
-
-	if (!got_packet)
-		return 0;
-#endif
 
 	mb.buf = pkt->data;
 	mb.pos = 0;

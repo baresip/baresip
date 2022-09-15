@@ -231,8 +231,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 	avpkt->data = st->mb->buf;
 	avpkt->size = (int)st->mb->end;
 
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
-
 	ret = avcodec_send_packet(st->ctx, avpkt);
 	if (ret < 0) {
 		warning("avcodec: decode: avcodec_send_packet error,"
@@ -253,13 +251,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 	}
 
 	got_picture = true;
-#else
-	ret = avcodec_decode_video2(st->ctx, st->pict, &got_picture, avpkt);
-	if (ret < 0) {
-		err = EBADMSG;
-		goto out;
-	}
-#endif
 
 	if (got_picture) {
 
