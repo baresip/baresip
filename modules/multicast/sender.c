@@ -97,7 +97,7 @@ static int mcsender_send_handler(size_t ext_len, bool marker,
 
 	pl_set_str(&placpt, mcsender->ac->pt);
 	err = rtp_send(mcsender->rtp, &mcsender->addr, ext_len != 0, marker,
-		pl_u32(&placpt), rtp_ts, mb);
+		pl_u32(&placpt), rtp_ts, tmr_jiffies_rt_usec(), mb);
 
 	return err;
 }
