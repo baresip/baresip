@@ -33,9 +33,17 @@ jobs:
 
     - name: make re/rem
       run: |
-        for p in re rem; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
-        sudo ldconfig
+        for p in re rem; do
+          cmake -S $p -B $p/build
+          cmake --build $p/build -j
+        done
+        for p in re rem; do
+          mv $p ../.
+        done
     
+    - name: ldconfig
+      run: sudo ldconfig
+
     - name: make baresip selftest
       run: cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
 

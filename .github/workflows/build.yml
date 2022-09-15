@@ -86,7 +86,13 @@ jobs:
 
     - name: make re/rem
       run: |
-        for p in re rem; do cd $p && sudo -E make install && cd - && sudo rm -Rf $p; done
+        for p in re rem; do
+          cmake -S $p -B $p/build
+          cmake --build $p/build -j
+        done
+        for p in re rem; do
+          mv $p ../.
+        done
 
     - name: ldconfig
       if: ${{ runner.os == 'Linux' }}
@@ -95,11 +101,9 @@ jobs:
     - name: make baresip linux
       if: ${{ runner.os == 'Linux' }}
       run: |
-        make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
-        make clean; make CCACHE= STATIC=yes
+        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
 
     - name: make baresip macOS
       if: ${{ runner.os == 'macOS' }}
       run: |
-        make V=1 CCACHE= EXTRA_CFLAGS=-Werror USE_DBUS= bareinfo test modules
-        make clean; make CCACHE= STATIC=yes USE_DBUS=
+        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
