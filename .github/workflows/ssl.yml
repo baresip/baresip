@@ -33,8 +33,14 @@ jobs:
 
     - name: make re/rem
       run: |
-        for p in re rem; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
+        for p in re rem; do
+          cmake -S $p -B $p/build
+          cmake --build $p/build -j
+        done
+        for p in re rem; do
+          mv $p ../.
+        done
         sudo ldconfig
 
     - name: make baresip
-      run: make EXTRA_CFLAGS="-Iassets/${{ matrix.ssl }}/include -Werror" EXTRA_LFLAGS="-Lassets/${{ matrix.ssl }}" CCACHE=;
+      run: cmake -B build -DCMAKE_C_FLAGS="-Iassets/${{ matrix.ssl }}/include -Werror" -DCMAKE_EXE_LINKER_FLAGS="-Lassets/${{ matrix.ssl }}" && cmake --build build -j
