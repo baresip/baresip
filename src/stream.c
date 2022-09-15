@@ -890,8 +890,8 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		pt = s->tx.pt_enc;
 
 	if (pt >= 0) {
-		err = rtp_send(s->rtp, &s->tx.raddr_rtp, ext,
-			       marker, pt, ts, mb);
+		err = rtp_send(s->rtp, &s->tx.raddr_rtp, ext, marker, pt, ts,
+			       tmr_jiffies_rt_usec(), mb);
 		if (err)
 			metric_inc_err(s->tx.metric);
 	}
@@ -1488,7 +1488,7 @@ int stream_open_natpinhole(const struct stream *strm)
 
 		/* Send a dummy RTP packet to open NAT pinhole */
 		err = rtp_send(strm->rtp, &strm->tx.raddr_rtp, false, false,
-			sc->pt, 0, mb);
+			       sc->pt, 0, tmr_jiffies_rt_usec(), mb);
 		if (err) {
 			warning("stream: rtp_send to open natpinhole"
 				"failed (%m)\n", err);
