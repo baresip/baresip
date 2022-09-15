@@ -204,7 +204,7 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 		return true;
 	}
 
-	if (!pl_strcmp(&msg->met, "REFER"))
+	if (!pl_strcmp(&msg->met, "REFER") && !pl_isset(&msg->to.tag))
 		return ua_handle_refer(ua, msg);
 
 	return false;
