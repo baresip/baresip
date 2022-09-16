@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc, clang]
-        os: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, macos-11, macos-12]
+        os: [ubuntu-20.04, ubuntu-22.04, macos-11, macos-12]
         exclude:
           - os: macos-11
             compiler: gcc
@@ -27,6 +27,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: openssl path macos
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        echo "OPENSSL_ROOT_DIR=/usr/local/opt/openssl" >> $GITHUB_ENV
 
     - name: Fix Ubuntu 22.04
       if: ${{ matrix.os == 'ubuntu-22.04' }}
@@ -40,7 +45,6 @@ jobs:
         sudo apt-get update && sudo apt-get install -y libavcodec-dev \
                             libavdevice-dev \
                             libavformat-dev \
-                            libgtk-3-dev \
                             libjack-jackd2-dev \
                             libmosquitto-dev \
                             libmpg123-dev \
@@ -49,7 +53,6 @@ jobs:
                             libsndfile1-dev \
                             libspandsp-dev \
                             libssl-dev \
-                            libglib2.0-dev \
                             libopencore-amrnb-dev \
                             libopencore-amrwb-dev \
                             libgstreamer1.0-dev \
@@ -86,7 +89,13 @@ jobs:
 
     - name: make re/rem
       run: |
-        for p in re rem; do cd $p && sudo -E make install && cd - && sudo rm -Rf $p; done
+        for p in re rem; do
+          cmake -S $p -B $p/build
+          cmake --build $p/build -j
+        done
+        for p in re rem; do
+          mv $p ../.
+        done
 
     - name: ldconfig
       if: ${{ runner.os == 'Linux' }}
@@ -95,11 +104,9 @@ jobs:
     - name: make baresip linux
       if: ${{ runner.os == 'Linux' }}
       run: |
-        make V=1 CCACHE= EXTRA_CFLAGS=-Werror info test modules
-        make clean; make CCACHE= STATIC=yes
+        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
 
     - name: make baresip macOS
       if: ${{ runner.os == 'macOS' }}
       run: |
-        make V=1 CCACHE= EXTRA_CFLAGS=-Werror USE_DBUS= bareinfo test modules
-        make clean; make CCACHE= STATIC=yes USE_DBUS=
+        cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
