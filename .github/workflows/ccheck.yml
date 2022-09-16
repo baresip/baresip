@@ -10,7 +10,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: ccheck
-        run: make ccheck
+        run: |
+          test/ccheck.py -e baresipbus.* -e Makefile
       - name: CMakeLint
         run: |
           pip install cmakelint
