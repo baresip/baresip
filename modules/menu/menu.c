@@ -587,7 +587,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_PROGRESS:
 		menu_selcall(call);
-		if (ardir != SDP_INACTIVE)
+		if (ardir & SDP_RECVONLY)
 			menu_stop_play();
 		else if (!menu.ringback && !menu_find_call(active_call_test,
 							   call))
@@ -668,6 +668,17 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (!str_cmp(prm, "answer") &&
 				call_state(call) == CALL_STATE_ESTABLISHED)
 			menu_selcall(call);
+
+		if (call_state(call) == CALL_STATE_EARLY) {
+			if (ardir & SDP_RECVONLY) {
+				menu_stop_play();
+			}
+			else if (!menu.ringback &&
+				 !menu_find_call(active_call_test, call)) {
+
+				play_ringback(call);
+			}
+		}
 		break;
 
 	case UA_EVENT_CALL_TRANSFER:
