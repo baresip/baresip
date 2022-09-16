@@ -33,11 +33,19 @@ jobs:
 
     - name: make re/rem
       run: |
-        for p in re rem; do cd $p && sudo PATH="$PATH" make install && cd - && sudo rm -Rf $p; done
-        sudo ldconfig
+        for p in re rem; do
+          cmake -S $p -B $p/build
+          cmake --build $p/build -j
+        done
+        for p in re rem; do
+          mv $p ../.
+        done
     
+    - name: ldconfig
+      run: sudo ldconfig
+
     - name: make baresip selftest
-      run: make EXTRA_CFLAGS="-Werror" CCACHE= test;
+      run: cmake -B build -DSTATIC=1 -DMODULES="g711;ausine;fakevideo;auconv;dtls_srtp;srtp;aufile" && cmake --build build -j
 
     - name: valgrind test
-      run: valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./selftest 
+      run: valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./build/test/selftest
