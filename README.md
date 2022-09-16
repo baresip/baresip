@@ -250,7 +250,6 @@ gst           Gstreamer audio source
 gtk           GTK+ 3 menu-based UI
 gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module
-i2s           I2S (Inter-IC Sound) audio driver
 ice           ICE protocol for NAT Traversal
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
