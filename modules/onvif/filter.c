@@ -581,7 +581,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 		}
 
 		err = rtp_send(fs->rtpsock, &fs->addr, false, false, 0,
-			fs->timestamp, buf);
+			fs->timestamp, tmr_jiffies_rt_usec(), buf);
 		if (err) {
 			warning("%s: Could not send audio stream via RTP."
 				" (%m)", DEBUG_MODULE, err);

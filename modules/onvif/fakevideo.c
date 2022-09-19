@@ -206,7 +206,7 @@ static void fakevideo_tmr_h(void *arg)
 		mbuf_advance(buf, RTP_HEADER_SIZE);
 		memcpy(mbuf_buf(buf), sample_jpeg_dat, sample_jpeg_dat_len);
 		err = rtp_send(fvs->rtpsock, &fvs->addr, false, false, 26,
-			fvs->timestamp, buf);
+			fvs->timestamp, tmr_jiffies_rt_usec(), buf);
 		if (err) {
 			warning("%s: Could noct send fake video via rtp. (%m)",
 				DEBUG_MODULE, err);
