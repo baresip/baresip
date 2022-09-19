@@ -593,6 +593,18 @@ static void check_telev(struct audio *a, struct autx *tx)
 }
 
 
+bool audio_txtelev_empty(const struct audio *au)
+{
+	const struct autx *tx = &au->tx;
+	bool empty;
+
+	mtx_lock(tx->mtx);
+	empty = telev_is_empty(au->telev);
+	mtx_unlock(tx->mtx);
+	return empty;
+}
+
+
 /*
  * Write samples to Audio Player. This version of the write handler is used
  * for the configuration jitter_buffer_type JBUF_FIXED.
