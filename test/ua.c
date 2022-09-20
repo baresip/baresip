@@ -209,6 +209,13 @@ int test_ua_alloc(void)
 	/* verify URI complete function */
 	err = account_uri_complete(ua_account(ua), mb, "bob");
 	ASSERT_EQ(0, err);
+	TEST_STRCMP("sip:bob", 7, mb->buf, mb->end);
+
+	mbuf_reset(mb);
+	err = account_set_regint(ua_account(ua), 3600);
+	ASSERT_EQ(0, err);
+	err = account_uri_complete(ua_account(ua), mb, "bob");
+	ASSERT_EQ(0, err);
 	TEST_STRCMP("sip:bob@test.invalid", 20, mb->buf, mb->end);
 
 	mem_deref(ua);

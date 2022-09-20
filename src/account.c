@@ -1774,6 +1774,8 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 
 	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
 		1 != uri_is_ip) {
+		if (acc->regint == 0)
+			return err;
 #if HAVE_INET6
 		if (AF_INET6 == acc->luri.af)
 			err |= mbuf_printf(buf, "@[%r]",
