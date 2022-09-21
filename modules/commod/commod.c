@@ -233,6 +233,57 @@ out:
 }
 
 
+/**
+ * @brief Checks auto answer media direction account setting
+ *
+ * Account parameter:
+ * ;extra=...,auto_audio=recvonly,auto_video=inactive
+ *
+ * Default is sendrecv. So in order to disable video only specify:
+ * ;extra=...,auto_video=inactive
+ *
+ * @param call The incoming call
+ */
+static void check_auto_answer_media_direction(struct call *call)
+{
+	struct ua *ua;
+	struct account *acc;
+	bool autoanswer = false;
+
+	if (!call)
+		return;
+
+	ua = call_get_ua(call);
+	acc = ua_account(ua);
+
+	autoanswer = account_answermode(acc) == ANSWERMODE_AUTO ||
+		account_answerdelay(acc) ||
+		(account_sip_autoanswer(acc) && call_answer_delay(call) != -1);
+
+	if (autoanswer) {
+		struct pl pl = PL_INIT;
+		struct pl v = PL_INIT;
+		enum sdp_dir adir = SDP_SENDRECV;
+		enum sdp_dir vdir = SDP_SENDRECV;
+		bool found = false;
+
+		pl_set_str(&pl, account_extra(acc));
+		if (fmt_param_sep_get(&pl, "auto_audio", ',', &v)) {
+			adir = sdp_dir_decode(&v);
+			found = true;
+		}
+
+		if (fmt_param_sep_get(&pl, "auto_video", ',', &v)) {
+			vdir = sdp_dir_decode(&v);
+			found = true;
+		}
+
+		if (found)
+			(void)call_set_media_estdir(call, adir, vdir);
+	}
+}
+
+
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
@@ -243,8 +294,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	     account_aor(acc), call_id(call), uag_event_str(ev), prm);
 
 	switch (ev) {
-		case UA_EVENT_CALL_OUTGOING:
 		case UA_EVENT_CALL_INCOMING:
+			check_auto_answer_media_direction(call);
+			/*@fallthrough@*/
+		case UA_EVENT_CALL_OUTGOING:
 			cur_play = mem_deref(cur_play);
 			break;
 		default:
