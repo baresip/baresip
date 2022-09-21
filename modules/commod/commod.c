@@ -306,7 +306,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
-
 static void find_first_call(struct call *call, void *arg)
 {
 	struct call **ret = arg;
