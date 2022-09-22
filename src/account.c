@@ -7,7 +7,6 @@
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
-#include <ctype.h>
 
 
 enum {
@@ -1709,7 +1708,8 @@ const char *account_extra(const struct account *acc)
 
 
 /**
- * Auto complete a SIP uri, add scheme and domain if missing
+ * Auto complete a SIP uri, add scheme and domain if missing.
+ * If regint of the account is 0, then hostport is not appended to the URI.
  *
  * @param acc User-Agent account
  * @param buf Target buffer to print SIP uri
@@ -1720,85 +1720,27 @@ const char *account_extra(const struct account *acc)
 int account_uri_complete(const struct account *acc, struct mbuf *buf,
 			 const char *uri)
 {
-	struct sa sa_addr;
-	size_t len;
-	bool uri_is_ip;
-	char *uridup;
-	char *host;
-	char *c;
-	int err = 0;
+	char hostport[128];
+	char port[8];
+	bool print_port;
+	struct uri *luri;
 
 	if (!buf || !uri)
 		return EINVAL;
 
-	/* Skip initial whitespace */
-	while (isspace(*uri))
-		++uri;
+	if (!acc || acc->regint == 0)
+		return uri_complete(uri, NULL, buf);
 
-	len = str_len(uri);
+	luri = account_luri(acc);
+	print_port = luri->port != SIP_PORT && luri->port != 0;
+	re_snprintf(port, sizeof(port), "%d", luri->port);
 
-	/* Append sip: scheme if missing */
-	if (0 != re_regex(uri, len, "sip:"))
-		err |= mbuf_printf(buf, "sip:");
+	re_snprintf(hostport, sizeof(hostport), "%r%s%s",
+		    &luri->host,
+		    print_port ? ":" : "",
+		    print_port ? port : "");
 
-	err |= mbuf_write_str(buf, uri);
-
-	if (!acc || err)
-		return err;
-
-	/* Append domain if missing and uri is not IP address */
-
-	/* check if uri is valid IP address */
-	err = str_dup(&uridup, uri);
-	if (err)
-		return err;
-
-	if (!strncmp(uridup, "sip:", 4))
-		host = uridup + 4;
-	else
-		host = uridup;
-
-	c = strchr(host, ';');
-	if (c)
-		*c = 0;
-
-	uri_is_ip =
-		!sa_decode(&sa_addr, host, strlen(host)) ||
-		!sa_set_str(&sa_addr, host, 0);
-	if (!uri_is_ip && host[0] == '[' && (c = strchr(host, ']'))) {
-		*c = 0;
-		uri_is_ip = !sa_set_str(&sa_addr, host+1, 0);
-	}
-
-	mem_deref(uridup);
-
-	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
-		1 != uri_is_ip) {
-		if (acc->regint == 0)
-			return err;
-#if HAVE_INET6
-		if (AF_INET6 == acc->luri.af)
-			err |= mbuf_printf(buf, "@[%r]",
-					   &acc->luri.host);
-		else
-#endif
-			err |= mbuf_printf(buf, "@%r",
-					   &acc->luri.host);
-
-		/* Also append port if specified and not 5060 */
-		switch (acc->luri.port) {
-
-		case 0:
-		case SIP_PORT:
-			break;
-
-		default:
-			err |= mbuf_printf(buf, ":%u", acc->luri.port);
-			break;
-		}
-	}
-
-	return err;
+	return uri_complete(uri, hostport, buf);
 }
 
 

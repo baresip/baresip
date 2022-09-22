@@ -130,6 +130,9 @@ int test_account_uri_complete(void)
 	err = account_alloc(&acc, "\"A\" <sip:A@proxy.com>");
 	TEST_ERR(err);
 
+	err = account_set_regint(acc, 3600);
+	TEST_ERR(err);
+
 	mb = mbuf_alloc(256);
 	ASSERT_TRUE(mb != NULL);
 
