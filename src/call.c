@@ -148,6 +148,7 @@ static int start_audio(struct call *call)
 	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
 	if (sc) {
 		struct aucodec *ac = sc->data;
+		ac->peer_uri = call->peer_uri;
 
 		err  = audio_encoder_set(call->audio, ac,
 					 sc->pt, sc->params);
@@ -321,6 +322,7 @@ static int update_audio(struct call *call)
 	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
 	if (sc) {
 		struct aucodec *ac = sc->data;
+		ac->peer_uri = call->peer_uri;
 
 		err  = audio_decoder_set(call->audio, ac,
 					 sc->pt, sc->params);

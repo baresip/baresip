@@ -1251,6 +1251,7 @@ static void aufilt_param_set(struct aufilt_prm *prm,
 	prm->srate      = ac->srate;
 	prm->ch         = ac->ch;
 	prm->fmt        = fmt;
+	prm->peer_uri   = ac->peer_uri;
 }
 
 

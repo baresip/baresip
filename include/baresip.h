@@ -591,6 +591,7 @@ struct aufilt_prm {
 	uint32_t srate;       /**< Sampling rate in [Hz]        */
 	uint8_t  ch;          /**< Number of channels           */
 	int      fmt;         /**< Sample format (enum aufmt)   */
+	char *peer_uri;
 };
 
 typedef int (aufilt_encupd_h)(struct aufilt_enc_st **stp, void **ctx,
@@ -1135,6 +1136,7 @@ struct aucodec {
 	audec_plc_h    *plch;
 	sdp_fmtp_enc_h *fmtp_ench;
 	sdp_fmtp_cmp_h *fmtp_cmph;
+	char *peer_uri;
 };
 
 void aucodec_register(struct list *aucodecl, struct aucodec *ac);
