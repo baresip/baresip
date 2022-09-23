@@ -88,9 +88,11 @@ static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 	SNDFILE *sf;
 	int format;
 
+	char *peer_uri = prm->peer_uri;
 	(void)re_snprintf(filename, sizeof(filename),
-			  "%s/dump-%H-%s.wav",
-				file_path,
+			  "%s/dump-%s-%H-%s.wav",
+	  		  file_path,
+			  peer_uri,
 			  timestamp_print, tm, enc ? "enc" : "dec");
 
 	format = get_format(prm->fmt);

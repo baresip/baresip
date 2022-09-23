@@ -102,6 +102,7 @@ struct autx {
 	int cur_key;                  /**< Currently transmitted event     */
 	enum aufmt src_fmt;           /**< Sample format for audio source  */
 	enum aufmt enc_fmt;           /**< Sample format for encoder       */
+	char *peer_uri;               /**< Peer SIP Address                */
 
 	struct {
 		uint64_t aubuf_overrun;
@@ -154,6 +155,7 @@ struct aurx {
 	bool level_set;               /**< True if level_last is set       */
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
+	char *peer_uri;               /**< Peer SIP Address                */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
 
 	size_t last_sampc;
@@ -1053,6 +1055,10 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	tx = &a->tx;
 	rx = &a->rx;
 
+	char *peer_uri = stream_prm->peer_uri;
+	tx->peer_uri = peer_uri;
+	rx->peer_uri = peer_uri;
+
 	tx->src_fmt = cfg->audio.src_fmt;
 	rx->play_fmt = cfg->audio.play_fmt;
 
@@ -1246,11 +1252,14 @@ loop:
 
 
 static void aufilt_param_set(struct aufilt_prm *prm,
-			     const struct aucodec *ac, enum aufmt fmt)
+			     const struct aucodec *ac,
+			     enum aufmt fmt,
+			     char *peer_uri)
 {
-	prm->srate      = ac->srate;
-	prm->ch         = ac->ch;
-	prm->fmt        = fmt;
+	prm->srate    = ac->srate;
+	prm->ch       = ac->ch;
+	prm->fmt      = fmt;
+	prm->peer_uri = peer_uri;
 }
 
 
@@ -1338,8 +1347,8 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 		update_dec = true;
 
 	mtx_unlock(rx->mtx);
-	aufilt_param_set(&encprm, tx->ac, tx->enc_fmt);
-	aufilt_param_set(&plprm, rx->ac, rx->dec_fmt);
+	aufilt_param_set(&encprm, tx->ac, tx->enc_fmt, tx->peer_uri);
+	aufilt_param_set(&plprm, rx->ac, rx->dec_fmt, rx->peer_uri);
 	if (a->cfg.srate_play && a->cfg.srate_play != plprm.srate) {
 		plprm.srate = a->cfg.srate_play;
 	}

@@ -125,6 +125,7 @@ struct call_prm {
 int  call_alloc(struct call **callp, const struct config *cfg,
 		struct list *lst,
 		const char *local_name, const char *local_uri,
+		const char *peer_uri,
 		struct account *acc, struct ua *ua, const struct call_prm *prm,
 		const struct sip_msg *msg, struct call *xcall,
 		struct dnsc *dnsc,

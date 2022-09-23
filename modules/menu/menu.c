@@ -693,7 +693,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		     call_id(call), prm);
 
 		err = ua_call_alloc(&call2, ua, VIDMODE_ON, NULL, call,
-				    call_localuri(call), true);
+				    call_localuri(call),
+				    call_peeruri(call), true);
 		if (!err) {
 			struct pl pl;
 

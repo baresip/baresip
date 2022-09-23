@@ -791,9 +791,10 @@ static int call_streams_alloc(struct call *call, bool got_offer)
 	int err;
 
 	memset(&strm_prm, 0, sizeof(strm_prm));
-	strm_prm.use_rtp = call->use_rtp;
-	strm_prm.af      = call->af;
-	strm_prm.cname   = call->local_uri;
+	strm_prm.use_rtp  = call->use_rtp;
+	strm_prm.af       = call->af;
+	strm_prm.cname    = call->local_uri;
+	strm_prm.peer_uri = call->peer_uri;
 
 	/* Audio stream */
 	err = audio_alloc(&call->audio, &call->streaml, &strm_prm,
@@ -896,6 +897,7 @@ static void call_set_mdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
  */
 int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	       const char *local_name, const char *local_uri,
+	       const char *peer_uri,
 	       struct account *acc, struct ua *ua, const struct call_prm *prm,
 	       const struct sip_msg *msg, struct call *xcall,
 	       struct dnsc *dnsc,
@@ -939,6 +941,7 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	call_decode_diverter(call, msg);
 
 	err = str_dup(&call->local_uri, local_uri);
+	err = str_dup(&call->peer_uri, peer_uri);
 	if (local_name)
 		err |= str_dup(&call->local_name, local_name);
 	if (err)

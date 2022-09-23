@@ -591,6 +591,7 @@ struct aufilt_prm {
 	uint32_t srate;       /**< Sampling rate in [Hz]        */
 	uint8_t  ch;          /**< Number of channels           */
 	int      fmt;         /**< Sample format (enum aufmt)   */
+	char *peer_uri;
 };
 
 typedef int (aufilt_encupd_h)(struct aufilt_enc_st **stp, void **ctx,
@@ -863,7 +864,7 @@ int  ua_disable_autoanswer(struct ua *ua, enum answer_method met);
 int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   enum vidmode vidmode, const struct sip_msg *msg,
 		   struct call *xcall, const char *local_uri,
-		   bool use_rtp);
+		   const char *peer_uri, bool use_rtp);
 struct call *ua_find_call_state(const struct ua *ua, enum call_state st);
 int ua_raise(struct ua *ua);
 int ua_set_autoanswer_value(struct ua *ua, const char *value);
@@ -1364,6 +1365,7 @@ struct stream_param {
 	bool use_rtp;       /**< Enable or disable RTP */
 	int af;             /**< Wanted address family */
 	const char *cname;  /**< Canonical name        */
+	char *peer_uri;
 };
 
 typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
