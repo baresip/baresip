@@ -245,6 +245,8 @@ void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
 const char   *call_user_data(const struct call *call);
 int call_set_user_data(struct call *call, const char *user_data);
+void call_set_evstop(struct call *call, bool stop);
+bool call_is_evstop(struct call *call);
 
 /*
  * Custom headers
@@ -1314,6 +1316,7 @@ int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		       int pt_rx, const char *params);
 const struct aucodec *audio_codec(const struct audio *au, bool tx);
 struct config_audio *audio_config(struct audio *au);
+bool audio_txtelev_empty(const struct audio *au);
 
 
 /*
