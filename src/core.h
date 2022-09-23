@@ -185,6 +185,7 @@ int  reg_add(struct list *lst, struct ua *ua, int regid);
 int  reg_register(struct reg *reg, const char *reg_uri,
 		    const char *params, uint32_t regint, const char *outbound);
 void reg_unregister(struct reg *reg);
+void reg_stop(struct reg *reg);
 bool reg_isok(const struct reg *reg);
 bool reg_failed(const struct reg *reg);
 int  reg_debug(struct re_printf *pf, const struct reg *reg);

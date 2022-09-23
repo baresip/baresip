@@ -129,7 +129,7 @@ static int register_curprio(void)
 
 		if (prio != sreg.prio) {
 			if (!fbregint)
-				ua_unregister(ua);
+				ua_stop_register(ua);
 
 			continue;
 		}
