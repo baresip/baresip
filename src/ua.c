@@ -704,7 +704,7 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	(void)pl_strcpy(&msg->to.auri, to_uri, sizeof(to_uri));
 
 	err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL,
-			    to_uri, NULL, true);
+			    to_uri, to_uri, true);
 	if (err) {
 		warning("ua: call_alloc: %m\n", err);
 		goto error;
