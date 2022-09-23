@@ -4,7 +4,7 @@ pkg_check_modules(PC_LIBREM QUIET librem)
 find_path(REM_INCLUDE_DIR rem.h
   HINTS ../rem/include ${PC_LIBREM_INCLUDEDIR} ${PC_LIBREM_INCLUDE_DIRS})
 
-find_library(REM_LIBRARY NAMES rem librem
+find_library(REM_LIBRARY NAMES rem librem rem-static
   HINTS ../rem ../rem/build ../rem/build/Debug
   ${PC_LIBREM_LIBDIR} ${PC_LIBREM_LIBRARY_DIRS})
 
