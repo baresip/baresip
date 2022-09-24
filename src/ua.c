@@ -268,6 +268,29 @@ int ua_fallback(struct ua *ua)
 
 
 /**
+ * Stop all register clients of a User-Agent
+ *
+ * @param ua User-Agent
+ */
+void ua_stop_register(struct ua *ua)
+{
+	struct le *le;
+
+	if (!ua)
+		return;
+
+	if (!list_isempty(&ua->regl))
+		ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
+
+	for (le = ua->regl.head; le; le = le->next) {
+		struct reg *reg = le->data;
+
+		reg_stop(reg);
+	}
+}
+
+
+/**
  * Unregister all Register clients of a User-Agent
  *
  * @param ua User-Agent
