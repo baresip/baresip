@@ -159,7 +159,7 @@ endforeach()
 foreach(mod IN LISTS APP_MODULES)
   add_subdirectory(
     ${APP_MODULES_DIR}/${mod}
-    ${CMAKE_CURRENT_BINARY_DIR}/app/${mod}
+    ${CMAKE_CURRENT_BINARY_DIR}/app_modules/${mod}
   )
   set_target_properties(${mod} PROPERTIES PREFIX "")
   list(APPEND MODULES ${mod})
