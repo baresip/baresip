@@ -1,5 +1,5 @@
 find_path(WEBRTC_AEC_INCLUDE_DIR
-    NAMES webrtc/modules/audio_processing/include/audio_processing.h 
+    NAMES webrtc/modules/audio_processing/include/audio_processing.h
     HINTS
         "${WEBRTC_AEC_INCLUDE_DIRS}"
     PATHS /usr/include/webrtc_audio_processing
