@@ -1578,6 +1578,7 @@ int bundle_sdp_decode(struct sdp_session *sdp, struct list *streaml);
 
 /* RTCSdpType */
 enum sdp_type {
+	SDP_NONE,
 	SDP_OFFER,
 	SDP_ANSWER,
 	SDP_ROLLBACK  /* special type */

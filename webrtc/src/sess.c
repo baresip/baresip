@@ -25,7 +25,7 @@ static void peerconnection_gather_handler(void *arg)
 	struct session *sess = arg;
 	struct mbuf *mb_sdp = NULL;
 	struct odict *od = NULL;
-	enum sdp_type type;
+	enum sdp_type type = SDP_NONE;
 	int err;
 
 	switch (peerconnection_signaling(sess->pc)) {
