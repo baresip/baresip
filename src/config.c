@@ -900,10 +900,10 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	info("config: creating config template %s\n", file);
 
-	f = fopen(file, "w");
-	if (!f) {
-		warning("config: writing %s: %m\n", file, errno);
-		return errno;
+	err = fs_fopen(&f, file, "w");
+	if (err) {
+		warning("config: writing %s: %m\n", file, err);
+		return err;
 	}
 
 	(void)re_fprintf(f,
