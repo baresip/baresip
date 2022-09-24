@@ -10,11 +10,12 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${WEBRTC_AEC_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${WEBRTC_AEC_LIBRARIES})
-target_compile_options(${PROJECT_NAME} PRIVATE -isystem $(WEBRTC_AEC_INCLUDE_DIRS) -fPIC)
+target_compile_options(${PROJECT_NAME} PRIVATE
+  -isystem $(WEBRTC_AEC_INCLUDE_DIRS) -fPIC)
 target_link_options(${PROJECT_NAME} PRIVATE -lstdc++)
 target_compile_options(${PROJECT_NAME} PRIVATE
   -Wno-shadow
   -Wno-pedantic
   -Wno-missing-field-initializers
   -Wno-unused-parameter
- )
+)
