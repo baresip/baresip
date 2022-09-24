@@ -59,7 +59,10 @@ else()
 endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wshorten-64-to-32 -Watomic-implicit-seq-cst)
+  add_compile_options(-Wshorten-64-to-32)
+  add_compile_options(
+    $<$<COMPILE_LANGUAGE:C>:-Watomic-implicit-seq-cst>
+  )
 endif()
 
 find_package(re CONFIG REQUIRED HINTS ../re/cmake)
