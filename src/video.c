@@ -1159,7 +1159,7 @@ static void tmr_handler(void *arg)
 int video_update(struct video *v, const char *peer)
 {
 	const struct sdp_format *sc = NULL;
-	enum sdp_dir dir;
+	enum sdp_dir dir = SDP_INACTIVE;
 	struct sdp_media *m = NULL;
 	int err = 0;
 
