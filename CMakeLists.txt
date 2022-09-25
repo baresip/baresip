@@ -156,6 +156,15 @@ foreach(mod IN LISTS MODULES)
   set_target_properties(${mod} PROPERTIES PREFIX "")
 endforeach()
 
+foreach(mod IN LISTS APP_MODULES)
+  add_subdirectory(
+    ${APP_MODULES_DIR}/${mod}
+    ${CMAKE_CURRENT_BINARY_DIR}/app_modules/${mod}
+  )
+  set_target_properties(${mod} PROPERTIES PREFIX "")
+  list(APPEND MODULES ${mod})
+endforeach()
+
 if(STATIC)
   foreach(mod IN LISTS MODULES)
     set(MOD_EXPORTS
@@ -186,9 +195,11 @@ endif()
 #
 
 set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads)
+
 if(ZLIB_FOUND)
   list(APPEND LINKLIBS ZLIB::ZLIB)
 endif()
+
 if(USE_OPENSSL)
   list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
 endif()
