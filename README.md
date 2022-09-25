@@ -155,29 +155,50 @@ for a full guide.
 ### Build with debug enabled
 
 ```
-$ make
-$ sudo make install
+$ cmake -B build
+$ cmake --build build -j
+$ cmake --install build
 ```
 
 ### Build with release
 
 ```
-$ make RELEASE=1
-$ sudo make RELEASE=1 install
+$ cmake -B build -DCMAKE_BUILD_TYPE=Release 
+$ cmake --build build -j
+```
+
+### Build with selected modules
+
+```
+$ cmake -B build -DMODULES="menu;account;g711"
+$ cmake --build build -j
+```
+
+### Build with custom app modules
+
+```
+$ cmake -B build -DAPP_MODULES_DIR=../baresip-apps/modules -DAPP_MODULES="auloop;vidloop"
+$ cmake --build build -j
 ```
 
 ### Build with clang compiler
 
 ```
-$ make CC=clang
-$ sudo make CC=clang install
+$ cmake -B build -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+$ cmake --build build -j
+```
+### Build static
+
+```
+$ cmake -B build -DSTATIC=ON
+$ cmake --build build -j
 ```
 
 Modules will be built if external dependencies are installed.
 After building you can start baresip like this:
 
 ```
-$ baresip
+$ build/baresip
 ```
 
 The config files in $HOME/.baresip are automatically generated
@@ -358,7 +379,7 @@ x11           X11 video output driver
 * Linux
 * NetBSD
 * OpenBSD
-* Windows (mingw and VS2015)
+* Windows (mingw and VS2019)
 
 
 ### Supported versions of C Standard library
