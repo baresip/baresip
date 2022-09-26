@@ -388,11 +388,12 @@ static int handle_rtp(struct onvif_filter_stream *fs,
 	if (!fs->aubuf) {
 		err = aubuf_alloc(&fs->aubuf,
 				num_bytes, num_bytes * fs->aubuf_maxsz);
+		if (err)
+			return err;
 
 		aubuf_set_mode(fs->aubuf, cfg->audio.adaptive ?
 			       AUBUF_ADAPTIVE : AUBUF_FIXED);
 		aubuf_set_silence(fs->aubuf, cfg->audio.silence);
-		return err;
 	}
 
 	err = aubuf_write(fs->aubuf, sampv_s, num_bytes);
@@ -992,6 +993,7 @@ int onvif_aufilter_audio_recv_start(struct onvif_filter_stream *fs,
 	struct sa *sa, int proto)
 {
 	const struct config *cfg = conf_config();
+	struct pl jbuf_type = PL_INIT;
 	int err = 0;
 
 	if (!fs || !sa)
@@ -1008,7 +1010,13 @@ int onvif_aufilter_audio_recv_start(struct onvif_filter_stream *fs,
 		if (err)
 			goto out;
 
-		jbuf_set_type(fs->jbuf, cfg->avt.jbtype);
+		(void)conf_get(conf_cur(),
+			"rtsp_jitterbuffer_type", &jbuf_type);
+		if (!pl_isset(&jbuf_type))
+			jbuf_set_type(fs->jbuf, cfg->avt.jbtype);
+		else
+			jbuf_set_type(fs->jbuf,
+				conf_get_jbuf_type(&jbuf_type));
 	}
 
 	switch (proto) {
