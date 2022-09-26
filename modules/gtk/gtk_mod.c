@@ -784,7 +784,7 @@ int gtk_mod_connect(struct gtk_mod *mod, const char *uri)
 
 	err = account_uri_complete(ua_account(mod->ua_cur), uribuf, uri);
 	if (err)
-		return EINVAL;
+		goto out;
 
 	uribuf->pos = 0;
 	err = mbuf_strdup(uribuf, &uri_copy, uribuf->end);
@@ -817,7 +817,7 @@ int gtk_mod_connect_attended(struct gtk_mod *mod, const char *uri,
 
 	err = account_uri_complete(ua_account(mod->ua_cur), uribuf, uri);
 	if (err)
-		return EINVAL;
+		goto out;
 
 	uribuf->pos = 0;
 	err = mbuf_strdup(uribuf, &uri_copy, uribuf->end);
