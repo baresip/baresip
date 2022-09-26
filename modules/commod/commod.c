@@ -214,7 +214,7 @@ static int cmd_playmod_file(struct re_printf *pf, void *arg)
 			filename, 0,  alert_mod, alert_dev);
 
 		if (err) {
-			warning("playmod: play_file(%s) failed (%m)\n",
+			warning("commod: play_file(%s) failed (%m)\n",
 				filename, err);
 			goto out;
 		}
