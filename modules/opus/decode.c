@@ -99,7 +99,7 @@ int opus_decode_frm(struct audec_state *ads,
 		return ENOTSUP;
 	}
 
-	*sampc = n * ads->ch;
+	*sampc = (size_t)n * ads->ch;
 
 	return 0;
 }

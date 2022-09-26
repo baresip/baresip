@@ -245,6 +245,8 @@ void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
 const char   *call_user_data(const struct call *call);
 int call_set_user_data(struct call *call, const char *user_data);
+void call_set_evstop(struct call *call, bool stop);
+bool call_is_evstop(struct call *call);
 
 /*
  * Custom headers
@@ -840,6 +842,7 @@ int  ua_update_account(struct ua *ua);
 int  ua_register(struct ua *ua);
 int  ua_fallback(struct ua *ua);
 void ua_unregister(struct ua *ua);
+void ua_stop_register(struct ua *ua);
 bool ua_isregistered(const struct ua *ua);
 bool ua_regfailed(const struct ua *ua);
 unsigned ua_destroy(struct ua *ua);
@@ -1315,6 +1318,7 @@ int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		       int pt_rx, const char *params);
 const struct aucodec *audio_codec(const struct audio *au, bool tx);
 struct config_audio *audio_config(struct audio *au);
+bool audio_txtelev_empty(const struct audio *au);
 
 
 /*
@@ -1576,6 +1580,7 @@ int bundle_sdp_decode(struct sdp_session *sdp, struct list *streaml);
 
 /* RTCSdpType */
 enum sdp_type {
+	SDP_NONE,
 	SDP_OFFER,
 	SDP_ANSWER,
 	SDP_ROLLBACK  /* special type */

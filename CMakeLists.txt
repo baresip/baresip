@@ -59,7 +59,9 @@ else()
 endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wshorten-64-to-32 -Watomic-implicit-seq-cst)
+  add_compile_options(
+    "$<$<COMPILE_LANGUAGE:C>:-Watomic-implicit-seq-cst;-Wshorten-64-to-32>"
+  )
 endif()
 
 find_package(re CONFIG REQUIRED HINTS ../re/cmake)
@@ -154,6 +156,15 @@ foreach(mod IN LISTS MODULES)
   set_target_properties(${mod} PROPERTIES PREFIX "")
 endforeach()
 
+foreach(mod IN LISTS APP_MODULES)
+  add_subdirectory(
+    ${APP_MODULES_DIR}/${mod}
+    ${CMAKE_CURRENT_BINARY_DIR}/app_modules/${mod}
+  )
+  set_target_properties(${mod} PROPERTIES PREFIX "")
+  list(APPEND MODULES ${mod})
+endforeach()
+
 if(STATIC)
   foreach(mod IN LISTS MODULES)
     set(MOD_EXPORTS
@@ -184,9 +195,11 @@ endif()
 #
 
 set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads)
+
 if(ZLIB_FOUND)
   list(APPEND LINKLIBS ZLIB::ZLIB)
 endif()
+
 if(USE_OPENSSL)
   list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
 endif()
@@ -201,6 +214,7 @@ endif()
 if(STATIC)
   add_library(baresip STATIC ${SRCS} ${HEADERS})
   target_link_libraries(baresip PUBLIC ${LINKLIBS} ${MODULES})
+  target_include_directories(baresip PUBLIC include)
 else()
   add_library(baresip SHARED ${SRCS} ${HEADERS})
   target_link_libraries(baresip PRIVATE ${LINKLIBS})

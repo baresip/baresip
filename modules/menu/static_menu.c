@@ -970,7 +970,7 @@ static int options_command(struct re_printf *pf, void *arg)
 	if (err) {
 		(void)re_hprintf(pf, "options_command failed to "
 				 "complete uri\n");
-		return EINVAL;
+		goto out;
 	}
 
 	mem_deref(uri);
@@ -1033,7 +1033,7 @@ static int cmd_refer(struct re_printf *pf, void *arg)
 	err = account_uri_complete(ua_account(ua), uribuf, uri);
 	if (err) {
 		(void)re_hprintf(pf, "invalid URI\n");
-		return EINVAL;
+		goto out;
 	}
 
 	mem_deref(uri);
@@ -1047,7 +1047,7 @@ static int cmd_refer(struct re_printf *pf, void *arg)
 	err = account_uri_complete(ua_account(ua), uribuf, touri);
 	if (err) {
 		(void)re_hprintf(pf, "invalid URI\n");
-		return EINVAL;
+		goto out;
 	}
 
 	mem_deref(touri);

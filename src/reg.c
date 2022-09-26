@@ -253,6 +253,16 @@ void reg_unregister(struct reg *reg)
 }
 
 
+void reg_stop(struct reg *reg)
+{
+	if (!reg)
+		return;
+
+	reg->sipreg = mem_deref(reg->sipreg);
+	reg->scode = 0;
+}
+
+
 bool reg_isok(const struct reg *reg)
 {
 	if (!reg || !reg->sipreg)

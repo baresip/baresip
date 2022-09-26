@@ -81,6 +81,7 @@ struct call {
 	bool use_video;
 	bool use_rtp;
 	char *user_data;           /**< User data related to the call       */
+	bool evstop;               /**< UA events stopped flag              */
 };
 
 
@@ -2187,7 +2188,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 				   488, "Not Acceptable Here");
 
 			call_event_handler(call, CALL_EVENT_CLOSED,
-					   "No audio or video codecs");
+					   "No common audio or video codecs");
 
 			return 0;
 		}
@@ -3084,4 +3085,22 @@ int call_set_user_data(struct call *call, const char *user_data)
 		return err;
 
 	return 0;
+}
+
+
+void call_set_evstop(struct call *call, bool stop)
+{
+	if (!call)
+		return;
+
+	call->evstop = stop;
+}
+
+
+bool call_is_evstop(struct call *call)
+{
+	if (!call)
+		return false;
+
+	return call->evstop;
 }
