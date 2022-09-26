@@ -1003,9 +1003,6 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 		call->xcall = xcall;
 	}
 
-	if (call->af != AF_UNSPEC)
-		call_streams_alloc(call, got_offer);
-
 	if (cfg->avt.rtp_timeout) {
 		call_enable_rtp_timeout(call, cfg->avt.rtp_timeout*1000);
 	}
@@ -2146,6 +2143,10 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		if (err)
 			return err;
 	}
+
+	err = call_streams_alloc(call, got_offer);
+	if (err)
+		return err;
 
 	if (got_offer) {
 
