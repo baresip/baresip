@@ -2185,7 +2185,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 				   488, "Not Acceptable Here");
 
 			call_event_handler(call, CALL_EVENT_CLOSED,
-					   "No audio or video codecs");
+					   "No common audio or video codecs");
 
 			return 0;
 		}
