@@ -220,6 +220,10 @@ else()
   target_link_libraries(baresip PRIVATE ${LINKLIBS})
 endif()
 
+if(MSVC)
+  set_target_properties(baresip PROPERTIES OUTPUT_NAME "libbaresip")
+endif()
+
 set_target_properties(baresip PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set_target_properties(baresip PROPERTIES PUBLIC_HEADER "${HEADERS}")
