@@ -4,7 +4,9 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <string.h>
+#ifndef WIN32
 #include <dirent.h>
+#endif
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -801,6 +803,10 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 
 static uint32_t count_modules(const char *path)
 {
+#ifdef WIN32
+	(void)path;
+	return 0;
+#else
 	DIR *dirp;
 	struct dirent *dp;
 	uint32_t n = 0;
@@ -824,6 +830,7 @@ static uint32_t count_modules(const char *path)
 	(void)closedir(dirp);
 
 	return n;
+#endif
 }
 
 
