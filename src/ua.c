@@ -884,7 +884,6 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 	struct mbuf *desc = NULL;
 	const struct sip_hdr *hdr;
 	bool accept_sdp = true;
-	bool got_offer;
 	int err;
 
 	debug("ua: incoming OPTIONS message from %r (%J)\n",
@@ -907,8 +906,7 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 			return;
 		}
 
-		got_offer = (mbuf_get_left(msg->mb) > 0);
-		err = call_streams_alloc(call, got_offer);
+		err = call_streams_alloc(call);
 		if (err)
 			return;
 
