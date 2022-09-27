@@ -50,36 +50,37 @@ struct receiver {
 /** Defines a generic media stream */
 struct stream {
 #ifndef RELEASE
-	uint32_t magic;          /**< Magic number for debugging            */
+	uint32_t magic;          /**< Magic number for debugging           */
 #endif
-	struct le le;            /**< Linked list element                   */
-	struct config_avt cfg;   /**< Stream configuration                  */
-	struct sdp_media *sdp;   /**< SDP Media line                        */
-	enum sdp_dir ldir;       /**< SDP direction of the stream           */
-	struct rtp_sock *rtp;    /**< RTP Socket                            */
-	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
-	const struct mnat *mnat; /**< Media NAT traversal module            */
-	struct mnat_media *mns;  /**< Media NAT traversal state             */
-	const struct menc *menc; /**< Media encryption module               */
-	struct menc_sess *mencs; /**< Media encryption session state        */
-	struct menc_media *mes;  /**< Media Encryption media state          */
-	enum media_type type;    /**< Media type, e.g. audio/video          */
-	char *cname;             /**< RTCP Canonical end-point identifier   */
-	char *mid;               /**< Media stream identification           */
-	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
-	bool terminated;         /**< Stream is terminated flag             */
-	bool hold;               /**< Stream is on-hold (local)             */
-	bool mnat_connected;     /**< Media NAT is connected                */
-	bool menc_secure;        /**< Media stream is secure                */
-	stream_pt_h *pth;        /**< Stream payload type handler           */
-	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
-	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
-	void *arg;               /**< Handler argument                      */
-	stream_mnatconn_h *mnatconnh;/**< Medianat connected handler        */
-	stream_rtpestab_h *rtpestabh;/**< RTP established handler           */
-	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
-	stream_error_h *errorh;  /**< Stream error handler                  */
-	void *sess_arg;          /**< Session handlers argument             */
+	struct le le;            /**< Linked list element                  */
+	struct config_avt cfg;   /**< Stream configuration                 */
+	struct sdp_media *sdp;   /**< SDP Media line                       */
+	enum sdp_dir ldir;       /**< SDP direction of the stream          */
+	struct rtp_sock *rtp;    /**< RTP Socket                           */
+	struct rtcp_stats rtcp_stats;/**< RTCP statistics                  */
+	const struct mnat *mnat; /**< Media NAT traversal module           */
+	struct mnat_media *mns;  /**< Media NAT traversal state            */
+	const struct menc *menc; /**< Media encryption module              */
+	struct menc_sess *mencs; /**< Media encryption session state       */
+	struct menc_media *mes;  /**< Media Encryption media state         */
+	enum media_type type;    /**< Media type, e.g. audio/video         */
+	char *cname;             /**< RTCP Canonical incoming end-point    */
+	char *duri;              /**< RTCP Canonical outgoing end-point    */
+	char *mid;               /**< Media stream identification          */
+	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer */
+	bool terminated;         /**< Stream is terminated flag            */
+	bool hold;               /**< Stream is on-hold (local)            */
+	bool mnat_connected;     /**< Media NAT is connected               */
+	bool menc_secure;        /**< Media stream is secure               */
+	stream_pt_h *pth;        /**< Stream payload type handler          */
+	stream_rtp_h *rtph;      /**< Stream RTP handler                   */
+	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                  */
+	void *arg;               /**< Handler argument                     */
+	stream_mnatconn_h *mnatconnh;/**< Medianat connected handler       */
+	stream_rtpestab_h *rtpestabh;/**< RTP established handler          */
+	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler              */
+	stream_error_h *errorh;  /**< Stream error handler                 */
+	void *sess_arg;          /**< Session handlers argument            */
 
 	struct bundle *bundle;
 	uint8_t extmap_counter;
@@ -145,6 +146,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->bundle);  /* NOTE: deref before rtp */
 	mem_deref(s->rtp);
 	mem_deref(s->cname);
+	mem_deref(s->duri);
 	mem_deref(s->mid);
 }
 
@@ -709,6 +711,10 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	}
 
 	err = str_dup(&s->cname, prm->cname);
+	if (err)
+		goto out;
+
+	err = str_dup(&s->duri, prm->duri);
 	if (err)
 		goto out;
 

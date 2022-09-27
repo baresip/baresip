@@ -1177,6 +1177,7 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			 "\n# sndfile\n"
+			 "#snd_name\t\tcuri, duri, OR both"
 			 "#snd_path\t\t/tmp\n");
 
 	(void)re_fprintf(f,

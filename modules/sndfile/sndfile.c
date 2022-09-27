@@ -8,6 +8,7 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#include <string.h>
 
 
 /**
@@ -33,6 +34,7 @@ struct sndfile_dec {
 };
 
 static char file_path[256] = ".";
+static char snd_name[256] = "duri";
 
 
 static int timestamp_print(struct re_printf *pf, const struct tm *tm)
@@ -79,7 +81,9 @@ static int get_format(enum aufmt fmt)
 }
 
 
-static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
+static SNDFILE *openfile(const struct aufilt_prm *prm,
+			 struct stream *strm,
+			 bool enc)
 {
 	char filename[128];
 	SF_INFO sfinfo;
@@ -88,9 +92,25 @@ static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
 	SNDFILE *sf;
 	int format;
 
+	char *snd_name_opt;
+
+	if (0 == strcmp(snd_name, "curi")) {
+		snd_name_opt = strm->cname;
+	}
+	else if (0 == strcmp(snd_name, "duri")) {
+		snd_name_opt = strm->duri;
+	}
+	else {
+		(void)re_snprintf(snd_name, sizeof(snd_name),
+				  "%s<->%s",
+				  strm->cname,
+				  strm->duri);
+	}
+
 	(void)re_snprintf(filename, sizeof(filename),
-			  "%s/dump-%H-%s.wav",
+			  "%s/dump-%s-%H-%s.wav",
 				file_path,
+				snd_name_opt,
 			  timestamp_print, tm, enc ? "enc" : "dec");
 
 	format = get_format(prm->fmt);
@@ -123,6 +143,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct sndfile_enc *st;
+	struct stream *strm = audio_strm(au);
 	int err = 0;
 	(void)ctx;
 	(void)af;
@@ -135,7 +156,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
-	st->enc = openfile(prm, true);
+	st->enc = openfile(prm, strm, true);
 	if (!st->enc)
 		err = ENOMEM;
 
@@ -153,6 +174,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct sndfile_dec *st;
+	struct stream *strm = audio_strm(au);
 	int err = 0;
 	(void)ctx;
 	(void)af;
@@ -165,7 +187,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
-	st->dec = openfile(prm, false);
+	st->dec = openfile(prm, strm, false);
 	if (!st->dec)
 		err = ENOMEM;
 
@@ -224,6 +246,7 @@ static int module_init(void)
 	aufilt_register(baresip_aufiltl(), &sndfile);
 
 	conf_get_str(conf_cur(), "snd_path", file_path, sizeof(file_path));
+	conf_get_str(conf_cur(), "snd_name", snd_name, sizeof(snd_name));
 
 	info("sndfile: saving files in %s\n", file_path);
 

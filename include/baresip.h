@@ -1368,6 +1368,7 @@ struct stream_param {
 	bool use_rtp;       /**< Enable or disable RTP */
 	int af;             /**< Wanted address family */
 	const char *cname;  /**< Canonical name        */
+	const char *duri;
 };
 
 typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
