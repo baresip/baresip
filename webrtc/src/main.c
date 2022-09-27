@@ -6,7 +6,9 @@
 
 #include <string.h>
 #include <stdlib.h>
+#ifdef HAVE_GETOPT
 #include <getopt.h>
+#endif
 #include <re.h>
 #include <baresip.h>
 #include "demo.h"
@@ -92,6 +94,7 @@ int main(int argc, char *argv[])
 	const char *stun_user = NULL, *stun_pass = NULL;
 	int err = 0;
 
+#ifdef HAVE_GETOPT
 	for (;;) {
 
 		const int c = getopt(argc, argv, "c:hl:i:u:tvu:p:w:");
@@ -142,6 +145,10 @@ int main(int argc, char *argv[])
 		usage();
 		return -2;
 	}
+#else
+	(void)argc;
+	(void)argv;
+#endif
 
 	err = libre_init();
 	if (err) {
