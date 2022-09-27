@@ -908,6 +908,10 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 			return;
 		}
 
+		err = call_streams_alloc(call);
+		if (err)
+			return;
+
 		err = call_sdp_get(call, &desc, true);
 		if (err)
 			goto out;

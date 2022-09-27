@@ -31,7 +31,12 @@ find_package(REM REQUIRED)
 # Compile options
 #
 
-option(STATIC "Build static" OFF)
+if(WIN32)
+  option(STATIC "Build static" ON)
+else()
+  option(STATIC "Build static" OFF)
+endif()
+
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
@@ -218,6 +223,10 @@ if(STATIC)
 else()
   add_library(baresip SHARED ${SRCS} ${HEADERS})
   target_link_libraries(baresip PRIVATE ${LINKLIBS})
+endif()
+
+if(MSVC)
+  set_target_properties(baresip PROPERTIES OUTPUT_NAME "libbaresip")
 endif()
 
 set_target_properties(baresip PROPERTIES POSITION_INDEPENDENT_CODE ON)
