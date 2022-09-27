@@ -783,7 +783,7 @@ static void call_decode_sip_autoanswer(struct call *call,
 }
 
 
-static int call_streams_alloc(struct call *call, bool got_offer)
+int call_streams_alloc(struct call *call, bool got_offer)
 {
 	struct account *acc = call->acc;
 	struct stream_param strm_prm;
