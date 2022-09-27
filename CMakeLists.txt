@@ -31,7 +31,12 @@ find_package(REM REQUIRED)
 # Compile options
 #
 
-option(STATIC "Build static" OFF)
+if(WIN32)
+  option(STATIC "Build static" ON)
+else()
+  option(STATIC "Build static" OFF)
+endif()
+
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
