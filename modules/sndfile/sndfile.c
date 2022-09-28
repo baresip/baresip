@@ -94,7 +94,7 @@ static SNDFILE *openfile(const struct aufilt_prm *prm,
 	const char *peer = stream_peer(strm);
 
 	(void)re_snprintf(filename, sizeof(filename),
-			  "%s/dump-%s=>%s%H-%s.wav",
+			  "%s/dump-%s=>%s-%H-%s.wav",
 			  file_path,
 			  cname, peer,
 			  timestamp_print, tm, enc ? "enc" : "dec");
