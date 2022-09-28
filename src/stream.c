@@ -64,7 +64,8 @@ struct stream {
 	struct menc_sess *mencs; /**< Media encryption session state        */
 	struct menc_media *mes;  /**< Media Encryption media state          */
 	enum media_type type;    /**< Media type, e.g. audio/video          */
-	char *cname;             /**< RTCP Canonical end-point identifier   */
+	char *cname;             /**< RTCP Canonical incoming end-point     */
+	char *peer;              /**< RTCP Canonical outgoing end-point     */
 	char *mid;               /**< Media stream identification           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool terminated;         /**< Stream is terminated flag             */
@@ -145,6 +146,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->bundle);  /* NOTE: deref before rtp */
 	mem_deref(s->rtp);
 	mem_deref(s->cname);
+	mem_deref(s->peer);
 	mem_deref(s->mid);
 }
 
@@ -709,6 +711,10 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	}
 
 	err = str_dup(&s->cname, prm->cname);
+	if (err)
+		goto out;
+
+	err = str_dup(&s->peer, prm->peer);
 	if (err)
 		goto out;
 
@@ -1515,6 +1521,38 @@ const char *stream_name(const struct stream *strm)
 		return NULL;
 
 	return media_name(strm->type);
+}
+
+
+/**
+ * Get the value of the stream->cname (i.e. call->local_uri)
+ *
+ * @param strm Stream object
+ *
+ * @return Name of stream type
+ */
+const char *stream_cname(const struct stream *strm)
+{
+	if (!strm)
+		return NULL;
+
+	return strm->cname;
+}
+
+
+/**
+ * Get the value of the stream->peer (i.e. call->peer_uri)
+ *
+ * @param strm Stream object
+ *
+ * @return Name of stream type
+ */
+const char *stream_peer(const struct stream *strm)
+{
+	if (!strm)
+		return NULL;
+
+	return strm->peer;
 }
 
 
