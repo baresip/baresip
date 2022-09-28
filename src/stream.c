@@ -876,7 +876,7 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 	if (sdp_media_ldir(s->sdp) == SDP_INACTIVE)
 		return 0;
 
-	if (s->hold || s->tx.muted)
+	if (s->hold)
 		return 0;
 
 	if (!stream_is_ready(s)) {
