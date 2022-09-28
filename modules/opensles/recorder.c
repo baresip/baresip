@@ -9,6 +9,7 @@
 #include <string.h>
 #include <SLES/OpenSLES.h>
 #include "SLES/OpenSLES_Android.h"
+#include "SLES/OpenSLES_AndroidConfiguration.h"
 #include "opensles.h"
 
 
@@ -84,9 +85,7 @@ static int createAudioRecorder(struct ausrc_st *st, struct ausrc_prm *prm)
 	SLDataLocator_AndroidSimpleBufferQueue loc_bq = {
 		SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 2
 	};
-	int speakers = prm->ch > 1
-		? SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT
-		: SL_SPEAKER_FRONT_CENTER;
+	int speakers = SL_ANDROID_SPEAKER_USE_DEFAULT;
 	SLDataFormat_PCM format_pcm = {SL_DATAFORMAT_PCM, prm->ch,
 				       prm->srate * 1000,
 				       SL_PCMSAMPLEFORMAT_FIXED_16,
@@ -94,8 +93,11 @@ static int createAudioRecorder(struct ausrc_st *st, struct ausrc_prm *prm)
 				       speakers,
 				       SL_BYTEORDER_LITTLEENDIAN};
 	SLDataSink audioSnk = {&loc_bq, &format_pcm};
-	const SLInterfaceID id[1] = {SL_IID_ANDROIDSIMPLEBUFFERQUEUE};
-	const SLboolean req[1] = {SL_BOOLEAN_TRUE};
+	const SLInterfaceID id[6] = {SL_IID_ANDROIDSIMPLEBUFFERQUEUE, SL_IID_ANDROIDCONFIGURATION, SL_IID_ANDROIDCONFIGURATION,
+                                 SL_IID_ANDROIDACOUSTICECHOCANCELLATION,
+                                 SL_IID_ANDROIDAUTOMATICGAINCONTROL,
+                                 SL_IID_ANDROIDNOISESUPPRESSION};
+	const SLboolean req[6] = {SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE, SL_BOOLEAN_TRUE};
 	SLresult r;
 
 	r = (*engineEngine)->CreateAudioRecorder(engineEngine,
@@ -106,6 +108,49 @@ static int createAudioRecorder(struct ausrc_st *st, struct ausrc_prm *prm)
 		warning("opensles: CreateAudioRecorder failed: r = %d\n", r);
 		return ENODEV;
 	}
+
+	SLAndroidConfigurationItf player_config;
+	r = (*st->recObject)->GetInterface(st->recObject,
+											SL_IID_ANDROIDCONFIGURATION,
+											&player_config);
+	if (SL_RESULT_SUCCESS == r) {
+		SLint32 stream_type = SL_ANDROID_RECORDING_PRESET_VOICE_COMMUNICATION;
+
+		(*player_config)->SetConfiguration(player_config,
+										   SL_ANDROID_KEY_RECORDING_PRESET, &stream_type, sizeof(SLint32));
+
+        SLuint32 performance = SL_ANDROID_PERFORMANCE_NONE;
+        (*player_config)->SetConfiguration(player_config,
+										   SL_ANDROID_KEY_PERFORMANCE_MODE, &performance, sizeof(SLuint32));
+	}
+
+
+    SLAndroidAcousticEchoCancellationItf player_aec;
+    r = (*st->recObject)->GetInterface(st->recObject,
+                                            SL_IID_ANDROIDACOUSTICECHOCANCELLATION,
+                                            &player_aec);
+    if (SL_RESULT_SUCCESS == r) {
+        SLboolean enable = SL_BOOLEAN_TRUE;
+        (*player_aec)->SetEnabled(player_aec, enable);
+    }
+
+    SLAndroidAutomaticGainControlItf player_gain;
+    r = (*st->recObject)->GetInterface(st->recObject,
+                                            SL_IID_ANDROIDAUTOMATICGAINCONTROL,
+                                            &player_gain);
+    if (SL_RESULT_SUCCESS == r) {
+        SLboolean enable = SL_BOOLEAN_TRUE;
+        (*player_gain)->SetEnabled(player_gain, enable);
+    }
+
+    SLAndroidNoiseSuppressionItf player_noise;
+    r = (*st->recObject)->GetInterface(st->recObject,
+                                            SL_IID_ANDROIDAUTOMATICGAINCONTROL,
+                                            &player_noise);
+    if (SL_RESULT_SUCCESS == r) {
+        SLboolean enable = SL_BOOLEAN_TRUE;
+        (*player_noise)->SetEnabled(player_noise, enable);
+    }
 
 	r = (*st->recObject)->Realize(st->recObject, SL_BOOLEAN_FALSE);
 	if (SL_RESULT_SUCCESS != r)

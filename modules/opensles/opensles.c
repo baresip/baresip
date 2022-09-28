@@ -7,6 +7,7 @@
 #include <baresip.h>
 #include <SLES/OpenSLES.h>
 #include "SLES/OpenSLES_Android.h"
+#include "SLES/OpenSLES_AndroidConfiguration.h"
 #include "opensles.h"
 
 
