@@ -53,6 +53,7 @@ set(MODULES
   multicast
   mwi
   natpmp
+  netroam
   pcp
   presence
   rtcpsummary
