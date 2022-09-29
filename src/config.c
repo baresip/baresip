@@ -1164,7 +1164,10 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#avcodec_h265enc\tlibx265\n"
 			"#avcodec_h265dec\thevc\n"
 			"#avcodec_hwaccel\t%s\n",
-			default_avcodec_hwaccel());
+			default_avcodec_hwaccel(),
+			"#avcodec_profile_level_id 42002a\n",
+			"#avcodec_keyint\t\t10\n"
+			);
 
 	(void)re_fprintf(f,
 			"\n# ctrl_dbus\n"

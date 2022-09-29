@@ -203,6 +203,7 @@ static int open_encoder(struct videnc_state *st,
 			int pix_fmt)
 {
 	int err = 0;
+	uint32_t keyint = KEYFRAME_INTERVAL;
 
 	if (st->ctx)
 		avcodec_free_context(&st->ctx);
@@ -226,9 +227,11 @@ static int open_encoder(struct videnc_state *st,
 #endif
 		st->ctx->pix_fmt   = pix_fmt;
 
+	conf_get_u32(conf_cur(), "avcodec_keyint", &keyint);
+
 	st->ctx->time_base.num = 1;
 	st->ctx->time_base.den = prm->fps;
-	st->ctx->gop_size = KEYFRAME_INTERVAL * prm->fps;
+	st->ctx->gop_size = keyint * prm->fps;
 
 	if (0 == str_cmp(st->codec->name, "libx264")) {
 
