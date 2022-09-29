@@ -72,6 +72,7 @@ static void usage(void)
 			 "\t-n <net_if>      Specify network interface\n"
 			 "\t-u <parameters>  Extra UA parameters\n"
 			 "\t-v               Verbose debug\n"
+			 "\t-T               Enable timestamps log\n"
 			 );
 }
 
@@ -116,7 +117,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "46a:de:f:p:hu:n:vst:m:");
+		const int c = getopt(argc, argv, "46a:de:f:p:hu:n:vst:m:T");
 		if (0 > c)
 			break;
 
@@ -191,6 +192,10 @@ int main(int argc, char *argv[])
 
 		case 'v':
 			log_enable_debug(true);
+			break;
+
+		case 'T':
+			log_enable_timestamps(true);
 			break;
 
 		default:
