@@ -64,8 +64,8 @@ struct stream {
 	struct menc_sess *mencs; /**< Media encryption session state        */
 	struct menc_media *mes;  /**< Media Encryption media state          */
 	enum media_type type;    /**< Media type, e.g. audio/video          */
-	char *cname;             /**< RTCP Canonical incoming end-point     */
-	char *peer;              /**< RTCP Canonical outgoing end-point     */
+	char *cname;             /**< RTCP Canonical end-point identifier   */
+	char *peer;              /**< RTCP Canonical end-point identifier   */
 	char *mid;               /**< Media stream identification           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool terminated;         /**< Stream is terminated flag             */
@@ -714,9 +714,11 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	if (err)
 		goto out;
 
-	err = str_dup(&s->peer, prm->peer);
-	if (err)
-		goto out;
+	if (prm->peer) {
+		err = str_dup(&s->peer, prm->peer);
+		if (err)
+			goto out;
+	}
 
 	/* Jitter buffer */
 	if (prm->use_rtp && cfg->jbtype != JBUF_OFF && cfg->jbuf_del.max) {
@@ -1525,11 +1527,11 @@ const char *stream_name(const struct stream *strm)
 
 
 /**
- * Get the value of the stream->cname (i.e. call->local_uri)
+ * Get the value of the RTCP Canonical end-point identifier
  *
  * @param strm Stream object
  *
- * @return Name of stream type
+ * @return Canonical end-point identifier
  */
 const char *stream_cname(const struct stream *strm)
 {
@@ -1541,11 +1543,11 @@ const char *stream_cname(const struct stream *strm)
 
 
 /**
- * Get the value of the stream->peer (i.e. call->peer_uri)
+ * Get the value of the RTCP Canonical end-point identifier
  *
  * @param strm Stream object
  *
- * @return Name of stream type
+ * @return Canonical end-point identifier
  */
 const char *stream_peer(const struct stream *strm)
 {
