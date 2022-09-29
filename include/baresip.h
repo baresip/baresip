@@ -130,6 +130,8 @@ const char *account_call_transfer(const struct account *acc);
 const char *account_extra(const struct account *acc);
 int account_uri_complete(const struct account *acc, struct mbuf *buf,
 			 const char *uri);
+int account_uri_complete_strdup(const struct account *acc, char **strp,
+			 const char *uri);
 int account_answerdelay(const struct account *acc);
 void account_set_answerdelay(struct account *acc, int adelay);
 bool account_sip_autoanswer(const struct account *acc);

@@ -1804,6 +1804,26 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 }
 
 
+int account_uri_complete_strdup(const struct account *acc, char **strp,
+			 const char *uri)
+{
+	struct mbuf *mb;
+	int err;
+
+	if (!strp || !uri)
+		return EINVAL;
+
+	mb  = mbuf_alloc(16);
+	err = account_uri_complete(acc, mb, uri);
+	if (err)
+		return err;
+
+	err = mbuf_strdup(mb, strp, mbuf_get_left(mb));
+	mem_deref(mb);
+	return err;
+}
+
+
 /**
  * Print the account debug information
  *
