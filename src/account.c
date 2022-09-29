@@ -1726,6 +1726,7 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	char *uridup;
 	char *host;
 	char *c;
+	bool append = true;
 	int err = 0;
 
 	if (!buf || !uri)
@@ -1746,8 +1747,11 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	if (!acc || err)
 		return err;
 
-	/* Append domain if missing and uri is not IP address */
+	conf_get_bool(conf_cur(), "append_domain", &append);
+	if (!append)
+		return 0;
 
+	/* Append domain if missing and uri is not IP address */
 	/* check if uri is valid IP address */
 	err = str_dup(&uridup, uri);
 	if (err)
