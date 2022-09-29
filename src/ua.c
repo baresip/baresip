@@ -1444,11 +1444,16 @@ int ua_options_send(struct ua *ua, const char *uri,
 		    options_resp_h *resph, void *arg)
 {
 	int err = 0;
+	char *curi;
 
 	if (!ua || !str_isset(uri))
 		return EINVAL;
 
-	err = sip_req_send(ua, "OPTIONS", uri, resph, arg,
+	err = account_uri_complete_strdup(NULL, &curi, uri);
+	if (err)
+		goto out;
+
+	err = sip_req_send(ua, "OPTIONS", curi, resph, arg,
 			   "Accept: application/sdp\r\n"
 			   "Content-Length: 0\r\n"
 			   "\r\n");
@@ -1456,6 +1461,8 @@ int ua_options_send(struct ua *ua, const char *uri,
 		warning("ua: send options: (%m)\n", err);
 	}
 
+out:
+	mem_deref(curi);
 	return err;
 }
 
@@ -1474,12 +1481,19 @@ int ua_options_send(struct ua *ua, const char *uri,
 int ua_refer_send(struct ua *ua, const char *uri, const char *referto,
 		  refer_resp_h *resph, void *arg)
 {
+	char *sipuri = NULL;
+	char *sipref = NULL;
 	int err = 0;
 
 	if (!ua || !str_isset(uri))
 		return EINVAL;
 
-	err = sip_req_send(ua, "REFER", uri, resph, arg,
+	err  = account_uri_complete_strdup(NULL, &sipuri, uri);
+	err |= account_uri_complete_strdup(NULL, &sipref, referto);
+	if (err)
+		goto out;
+
+	err = sip_req_send(ua, "REFER", sipuri, resph, arg,
 			   "Contact: <%s>\r\n"
 			   "%H"
 			   "Refer-To: %s\r\n"
@@ -1488,11 +1502,14 @@ int ua_refer_send(struct ua *ua, const char *uri, const char *referto,
 			   "\r\n",
 			   account_aor(ua_account(ua)),
 			   ua_print_supported, ua,
-			   referto);
+			   sipref);
 	if (err) {
-		warning("ua: send options: (%m)\n", err);
+		warning("ua: send refer: (%m)\n", err);
 	}
 
+out:
+	mem_deref(sipuri);
+	mem_deref(sipref);
 	return err;
 }
 
