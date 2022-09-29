@@ -84,6 +84,7 @@ static int cmd_dial_contact(struct re_printf *pf, void *arg)
 {
 	struct contact *cnt;
 	const char *uri;
+	struct pl pl;
 	int err = 0;
 	(void)arg;
 
@@ -93,8 +94,9 @@ static int cmd_dial_contact(struct re_printf *pf, void *arg)
 	}
 
 	uri = contact_uri(cnt);
+	pl_set_str(&pl, uri);
 
-	err = ua_connect(uag_find_requri(uri), NULL, NULL, uri, VIDMODE_ON);
+	err = ua_connect(uag_find_requri(&pl), NULL, NULL, uri, VIDMODE_ON);
 	if (err) {
 		warning("contact: ua_connect(%s) failed: %m\n",
 			uri, err);
@@ -109,6 +111,7 @@ static int cmd_message(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct contact *cnt;
 	const char *uri;
+	struct pl pl;
 	int err = 0;
 
 	cnt = contacts_current(baresip_contacts());
@@ -117,8 +120,9 @@ static int cmd_message(struct re_printf *pf, void *arg)
 	}
 
 	uri = contact_uri(cnt);
+	pl_set_str(&pl, uri);
 
-	err = message_send(uag_find_requri(uri), uri, carg->prm,
+	err = message_send(uag_find_requri(&pl), uri, carg->prm,
 			   send_resp_handler, NULL);
 	if (err) {
 		(void)re_hprintf(pf, "contact: message_send(%s) failed (%m)\n",

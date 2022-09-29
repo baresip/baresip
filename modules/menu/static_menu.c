@@ -215,17 +215,11 @@ static int cmd_set_100rel_mode(struct re_printf *pf, void *arg)
 	struct pl w1 = PL_INIT;
 	struct pl w2 = PL_INIT;
 	struct ua *ua = menu_ua_carg(pf, carg, &w1, &w2);
-	char *acc_nr = NULL;
 	char *mode_str = NULL;
 	enum rel100_mode mode;
 	struct le *le;
 	int err;
 
-	if (pl_isset(&w2)) {
-		err = pl_strdup(&acc_nr, &w2);
-		if (err)
-			return err;
-	}
 	err = pl_strdup(&mode_str, &w1);
 	if (err) {
 		(void)re_hprintf(pf, "usage: /100rel <yes|no|required>"
@@ -250,7 +244,7 @@ static int cmd_set_100rel_mode(struct re_printf *pf, void *arg)
 	}
 
 	if (!ua)
-		ua = uag_find_requri(acc_nr);
+		ua = uag_find_requri(&w2);
 
 	if (ua) {
 		err = account_set_rel100_mode(ua_account(ua), mode);
@@ -272,7 +266,6 @@ static int cmd_set_100rel_mode(struct re_printf *pf, void *arg)
 	}
 
 out:
-	mem_deref(acc_nr);
 	mem_deref(mode_str);
 	return err;
 }
@@ -491,7 +484,8 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	struct pl word[2] = {PL_INIT, PL_INIT};
 	struct ua *ua = menu_ua_carg(pf, carg, &word[0], &word[1]);
 	char *uri = NULL;
-	struct mbuf *uribuf = NULL;
+	char *uric = NULL;
+	struct pl pluri;
 	struct call *call;
 	int err = 0;
 
@@ -522,33 +516,15 @@ static int dial_handler(struct re_printf *pf, void *arg)
 			clean_number(uri);
 	}
 
+	pl_set_str(&pluri, uri);
 	if (!ua)
-		ua = uag_find_requri(uri);
+		ua = uag_find_requri(&pluri);
 
 	if (!ua) {
 		re_hprintf(pf, "could not find UA for %s\n", uri);
 		err = EINVAL;
 		goto out;
 	}
-
-	uribuf = mbuf_alloc(64);
-	if (!uribuf) {
-		err = ENOMEM;
-		goto out;
-	}
-
-	err = account_uri_complete(ua_account(ua), uribuf, uri);
-	if (err) {
-		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
-		goto out;
-	}
-
-	mem_deref(uri);
-
-	uribuf->pos = 0;
-	err = mbuf_strdup(uribuf, &uri, uribuf->end);
-	if (err)
-		goto out;
 
 	if (menu->adelay >= 0) {
 		ua_set_autoanswer_value(ua, menu->ansval);
@@ -557,8 +533,11 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	}
 
 	re_hprintf(pf, "call uri: %s\n", uri);
+	err = account_uri_complete(ua_account(ua), &uric, &pluri);
+	if (err)
+		goto out;
 
-	err = ua_connect(ua, &call, NULL, uri, VIDMODE_ON);
+	err = ua_connect(ua, &call, NULL, uric, VIDMODE_ON);
 
 	if (menu->adelay >= 0)
 		(void)ua_disable_autoanswer(ua, auto_answer_method(pf));
@@ -578,8 +557,8 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	re_hprintf(pf, "call id: %s\n", call_id(call));
 
 out:
-	mem_deref(uribuf);
 	mem_deref(uri);
+	mem_deref(uric);
 	return err;
 }
 
@@ -627,6 +606,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	}
 
 	if (err) {
+		dname = pl_null;
 		err = re_regex(carg->prm, str_len(carg->prm),
 			       "[^ ]* [^ ]*",&pluri, &argdir[0]);
 	}
@@ -647,12 +627,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	err = pl_strdup(&uri, &pluri);
-	if (err)
-		goto out;
-
 	if (!ua)
-		ua = uag_find_requri(uri);
+		ua = uag_find_requri(&pluri);
 
 	if (!ua) {
 		(void)re_hprintf(pf, "could not find UA for %s\n", carg->prm);
@@ -667,34 +643,32 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	}
 
 	if (pl_isset(&dname)) {
-		mbuf_write_pl(uribuf, &dname);
-		mbuf_write_str(uribuf, " <");
+		err = mbuf_printf(uribuf, "\"%r\" <%r>", &dname, &pluri);
+	}
+	else {
+		err = account_uri_complete(ua_account(ua), &uri, &pluri);
+		if (err) {
+			(void)re_hprintf(pf, "ua_connect failed to complete "
+					 "uri\n");
+			goto out;
+		}
+
+		err = mbuf_printf(uribuf, "%s", uri);
+		uri = mem_deref(uri);
 	}
 
-	err = account_uri_complete(ua_account(ua), uribuf, uri);
-	if (err) {
-		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
-		goto out;
-	}
-
-	mem_deref(uri);
-
-	if (pl_isset(&dname))
-		mbuf_write_u8(uribuf, '>');
-
-	uribuf->pos = 0;
-	err = mbuf_strdup(uribuf, &uri, uribuf->end);
+	mbuf_set_pos(uribuf, 0);
+	err |= mbuf_strdup(uribuf, &uri, uribuf->end);
 	if (err)
 		goto out;
 
 	if (menu->adelay >= 0) {
 		ua_set_autoanswer_value(ua, menu->ansval);
 		(void)ua_enable_autoanswer(ua, menu->adelay,
-				auto_answer_method(pf));
+					   auto_answer_method(pf));
 	}
 
 	re_hprintf(pf, "call uri: %s\n", uri);
-
 	err = ua_connect_dir(ua, &call, NULL, uri, VIDMODE_ON, adir, vdir);
 
 	if (menu->adelay >= 0)
@@ -976,34 +950,16 @@ static int options_command(struct re_printf *pf, void *arg)
 	struct mbuf *uribuf = NULL;
 	int err = 0;
 
-	err = pl_strdup(&uri, &word[0]);
-	if (err)
-		goto out;
-
 	if (!ua)
-		ua = uag_find_requri(uri);
+		ua = uag_find_requri(&word[0]);
 
 	if (!ua) {
-		(void)re_hprintf(pf, "could not find UA for %s\n", uri);
+		(void)re_hprintf(pf, "could not find UA for %r\n", &word[0]);
 		err = EINVAL;
 		goto out;
 	}
 
-	uribuf = mbuf_alloc(64);
-	if (!uribuf)
-		return ENOMEM;
-
-	err = account_uri_complete(ua_account(ua), uribuf, uri);
-	if (err) {
-		(void)re_hprintf(pf, "options_command failed to "
-				 "complete uri\n");
-		goto out;
-	}
-
-	mem_deref(uri);
-
-	uribuf->pos = 0;
-	err = mbuf_strdup(uribuf, &uri, uribuf->end);
+	err = account_uri_complete(ua_account(ua), &uri, &word[0]);
 	if (err)
 		goto out;
 
@@ -1039,48 +995,17 @@ static int cmd_refer(struct re_printf *pf, void *arg)
 		return err;
 	}
 
-	err  = pl_strdup(&uri, &to);
-	err |= pl_strdup(&touri, &referto);
-	if (err)
-		goto out;
-
 	if (!ua)
-		ua = uag_find_requri(uri);
+		ua = uag_find_requri(&to);
 
 	if (!ua) {
-		(void)re_hprintf(pf, "could not find UA for %s\n", uri);
+		(void)re_hprintf(pf, "could not find UA for %r\n", &to);
 		err = EINVAL;
 		goto out;
 	}
 
-	uribuf = mbuf_alloc(64);
-	if (!uribuf)
-		return ENOMEM;
-
-	err = account_uri_complete(ua_account(ua), uribuf, uri);
-	if (err) {
-		(void)re_hprintf(pf, "invalid URI\n");
-		goto out;
-	}
-
-	mem_deref(uri);
-
-	uribuf->pos = 0;
-	err = mbuf_strdup(uribuf, &uri, uribuf->end);
-	if (err)
-		goto out;
-
-	mbuf_rewind(uribuf);
-	err = account_uri_complete(ua_account(ua), uribuf, touri);
-	if (err) {
-		(void)re_hprintf(pf, "invalid URI\n");
-		goto out;
-	}
-
-	mem_deref(touri);
-
-	uribuf->pos = 0;
-	err = mbuf_strdup(uribuf, &touri, uribuf->end);
+	err  = account_uri_complete(ua_account(ua), &uri, &to);
+	err |= account_uri_complete(ua_account(ua), &touri, &referto);
 	if (err)
 		goto out;
 

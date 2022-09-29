@@ -128,10 +128,8 @@ const char *account_medianat(const struct account *acc);
 const char *account_mwi(const struct account *acc);
 const char *account_call_transfer(const struct account *acc);
 const char *account_extra(const struct account *acc);
-int account_uri_complete(const struct account *acc, struct mbuf *buf,
-			 const char *uri);
-int account_uri_complete_strdup(const struct account *acc, char **strp,
-			 const char *uri);
+int account_uri_complete(const struct account *acc, char **strp,
+			 const struct pl *uri);
 int account_answerdelay(const struct account *acc);
 void account_set_answerdelay(struct account *acc, int adelay);
 bool account_sip_autoanswer(const struct account *acc);
@@ -896,7 +894,7 @@ struct ua   *uag_find(const struct pl *cuser);
 struct ua   *uag_find_msg(const struct sip_msg *msg);
 struct ua   *uag_find_aor(const char *aor);
 struct ua   *uag_find_param(const char *name, const char *val);
-struct ua   *uag_find_requri(const char *requri);
+struct ua   *uag_find_requri(const struct pl *requri);
 struct sip  *uag_sip(void);
 struct list *uag_list(void);
 uint32_t     uag_call_count(void);
