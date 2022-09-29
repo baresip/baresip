@@ -942,6 +942,10 @@ int call_alloc(struct call **callp, const struct config *cfg, struct list *lst,
 	err = str_dup(&call->local_uri, local_uri);
 	if (local_name)
 		err |= str_dup(&call->local_name, local_name);
+
+	if (msg)
+		err |= pl_strdup(&call->peer_uri, &msg->from.auri);
+
 	if (err)
 		goto out;
 
@@ -1103,6 +1107,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 	/* if the peer-address is a full SIP address then we need
 	 * to parse it and extract the SIP uri part.
 	 */
+	call->peer_uri = mem_deref(call->peer_uri);
 	if (0 == sip_addr_decode(&addr, paddr)) {
 
 		if (pl_isset(&addr.params)) {
@@ -2130,11 +2135,6 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		return EINVAL;
 
 	call->outgoing = false;
-
-	err = pl_strdup(&call->peer_uri, &msg->from.auri);
-	if (err)
-		return err;
-
 	if (pl_isset(&msg->from.dname)) {
 		err = pl_strdup(&call->peer_name, &msg->from.dname);
 		if (err)
