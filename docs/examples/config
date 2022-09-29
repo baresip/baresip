@@ -257,6 +257,7 @@ video_selfview		window # {window,pip}
 #avcodec_h265dec	hevc
 #avcodec_hwaccel	vaapi
 #avcodec_profile_level_id 42002a
+#avcodec_keyint		10      # keyframe interval in [sec]
 
 # ctrl_dbus
 #ctrl_dbus_use	system		# system, session
