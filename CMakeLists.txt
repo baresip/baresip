@@ -87,6 +87,14 @@ add_definitions(
   -DSHARE_PATH="${SHARE_PATH}"
 )
 
+if(DEFAULT_CAFILE)
+  add_definitions(-DDEFAULT_CAFILE="${DEFAULT_CAFILE}")
+endif()
+
+if(DEFAULT_AUDIO_DEVICE)
+  add_definitions(-DDEFAULT_AUDIO_DEVICE="${DEFAULT_AUDIO_DEVICE}")
+endif()
+
 if(STATIC)
   add_definitions(-DSTATIC)
 endif()
