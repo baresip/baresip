@@ -472,7 +472,7 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 
 		uint32_t rtp_ts = tx->ts_ext & 0xffffffff;
 
-		if (len) {
+		if (len && !tx->muted) {
 			mtx_lock(a->tx.mtx);
 			err = stream_send(a->strm, ext_len!=0, marker, -1,
 					  rtp_ts, tx->mb);
@@ -581,9 +581,11 @@ static void check_telev(struct audio *a, struct autx *tx)
 		goto out;
 
 	mb->pos = STREAM_PRESZ;
-	mtx_lock(a->tx.mtx);
-	err = stream_send(a->strm, false, marker, fmt->pt, tx->ts_tel, mb);
-	mtx_unlock(a->tx.mtx);
+	if (!tx->muted) {
+	    mtx_lock(a->tx.mtx);
+	    err = stream_send(a->strm, false, marker, fmt->pt, tx->ts_tel, mb);
+	    mtx_unlock(a->tx.mtx);
+    }
 	if (err) {
 		warning("audio: telev: stream_send %m\n", err);
 	}
