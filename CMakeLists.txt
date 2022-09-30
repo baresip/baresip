@@ -257,8 +257,24 @@ install(FILES ${SHARE_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip)
 
 
 ##############################################################################
-#
+# Test and webrtc
 #
 
 add_subdirectory(webrtc)
 add_subdirectory(test)
+
+
+##############################################################################
+# Symlink modules to build dir (needed for test and baresip_exe)
+#
+
+if(NOT STATIC AND UNIX)
+  foreach(mod IN LISTS MODULES)
+    add_custom_command(
+      TARGET baresip_exe POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_BINARY_DIR}/modules/${mod}/${mod}${CMAKE_SHARED_LIBRARY_SUFFIX}
+        ${CMAKE_BINARY_DIR}/${mod}${CMAKE_SHARED_LIBRARY_SUFFIX}
+    )
+  endforeach()
+endif()
