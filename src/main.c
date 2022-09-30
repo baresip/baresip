@@ -13,6 +13,10 @@
 #include <re.h>
 #include <baresip.h>
 
+#define DEBUG_MODULE ""
+#define DEBUG_LEVEL 0
+#include <re_dbg.h>
+
 enum { ASYNC_WORKERS = 4 };
 
 static void signal_handler(int sig)
@@ -94,6 +98,9 @@ int main(int argc, char *argv[])
 	size_t modc = 0;
 	size_t i;
 	uint32_t tmo = 0;
+	int dbg_level = DBG_INFO;
+	enum dbg_flags dbg_flags = DBG_ANSI;
+
 	int err;
 
 	/*
@@ -193,14 +200,17 @@ int main(int argc, char *argv[])
 
 		case 'v':
 			log_enable_debug(true);
+			dbg_level = DBG_DEBUG;
 			break;
 
 		case 'T':
 			log_enable_timestamps(true);
+			dbg_flags |= DBG_TIME;
 			break;
 
 		case 'c':
 			log_enable_color(false);
+			dbg_flags &= ~DBG_ANSI;
 			break;
 
 		default:
@@ -212,6 +222,7 @@ int main(int argc, char *argv[])
 	(void)argv;
 #endif
 
+	dbg_init(dbg_level, dbg_flags);
 	err = conf_configure();
 	if (err) {
 		warning("main: configure failed: %m\n", err);
