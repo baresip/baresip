@@ -13,11 +13,13 @@ static struct {
 	enum log_level level;
 	bool enable_stdout;
 	bool timestamps;
+	bool color;
 } lg = {
 	LIST_INIT,
 	LEVEL_INFO,
 	true,
-	false
+	false,
+	true
 };
 
 
@@ -135,6 +137,17 @@ void log_enable_timestamps(bool enable)
 
 
 /**
+ * Enable/disable colored warnings and errors
+ *
+ * @param enable True to enable, false to disable
+ */
+void log_enable_color(bool enable)
+{
+	lg.color = enable;
+}
+
+
+/**
  * Print a message to the logging system
  *
  * @param level Log level
@@ -168,6 +181,7 @@ void vlog(enum log_level level, const char *fmt, va_list ap)
 
 		bool color = level == LEVEL_WARN || level == LEVEL_ERROR;
 
+		color = color && lg.color;
 		if (color)
 			(void)re_fprintf(stdout, "\x1b[31m"); /* Red */
 

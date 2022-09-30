@@ -73,6 +73,7 @@ static void usage(void)
 			 "\t-u <parameters>  Extra UA parameters\n"
 			 "\t-v               Verbose debug\n"
 			 "\t-T               Enable timestamps log\n"
+			 "\t-c               Disable colored log\n"
 			 );
 }
 
@@ -117,7 +118,7 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "46a:de:f:p:hu:n:vst:m:T");
+		const int c = getopt(argc, argv, "46a:de:f:p:hu:n:vst:m:Tc");
 		if (0 > c)
 			break;
 
@@ -196,6 +197,10 @@ int main(int argc, char *argv[])
 
 		case 'T':
 			log_enable_timestamps(true);
+			break;
+
+		case 'c':
+			log_enable_color(false);
 			break;
 
 		default:
