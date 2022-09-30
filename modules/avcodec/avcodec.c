@@ -17,7 +17,7 @@
  *
  * Video codecs using libavcodec
  *
- * This module implements H.263, H.264 and H.265 video codecs
+ * This module implements H.264 and H.265 video codecs
  * using libavcodec from FFmpeg or libav projects.
  *
  *
@@ -54,9 +54,7 @@ enum AVHWDeviceType avcodec_hw_type = AV_HWDEVICE_TYPE_NONE;
 
 int avcodec_resolve_codecid(const char *s)
 {
-	if (0 == str_casecmp(s, "H263"))
-		return AV_CODEC_ID_H263;
-	else if (0 == str_casecmp(s, "H264"))
+	if (0 == str_casecmp(s, "H264"))
 		return AV_CODEC_ID_H264;
 #ifdef AV_CODEC_ID_H265
 	else if (0 == str_casecmp(s, "H265"))
@@ -64,19 +62,6 @@ int avcodec_resolve_codecid(const char *s)
 #endif
 	else
 		return AV_CODEC_ID_NONE;
-}
-
-
-static int h263_fmtp_enc(struct mbuf *mb, const struct sdp_format *fmt,
-			 bool offer, void *arg)
-{
-	(void)offer;
-	(void)arg;
-
-	if (!mb || !fmt)
-		return 0;
-
-	return mbuf_printf(mb, "a=fmtp:%s CIF=1;CIF4=1\r\n", fmt->id);
 }
 
 
@@ -101,17 +86,6 @@ static struct vidcodec h264_1 = {
 	.dech      = avcodec_decode_h264,
 	.fmtp_ench = avcodec_h264_fmtp_enc,
 	.fmtp_cmph = avcodec_h264_fmtp_cmp,
-	.packetizeh= avcodec_packetize,
-};
-
-static struct vidcodec h263 = {
-	.pt        = "34",
-	.name      = "H263",
-	.encupdh   = avcodec_encode_update,
-	.ench      = avcodec_encode,
-	.decupdh   = avcodec_decode_update,
-	.dech      = avcodec_decode_h263,
-	.fmtp_ench = h263_fmtp_enc,
 	.packetizeh= avcodec_packetize,
 };
 
@@ -163,9 +137,6 @@ static int module_init(void)
 		vidcodec_register(vidcodecl, &h264);
 		vidcodec_register(vidcodecl, &h264_1);
 	}
-
-	if (avcodec_find_decoder(AV_CODEC_ID_H263))
-		vidcodec_register(vidcodecl, &h263);
 
 	if (avcodec_h265enc || avcodec_h265dec)
 		vidcodec_register(vidcodecl, &h265);
@@ -252,7 +223,6 @@ static int module_init(void)
 static int module_close(void)
 {
 	vidcodec_unregister(&h265);
-	vidcodec_unregister(&h263);
 	vidcodec_unregister(&h264);
 	vidcodec_unregister(&h264_1);
 

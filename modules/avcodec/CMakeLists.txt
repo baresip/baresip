@@ -1,6 +1,6 @@
 project(avcodec)
 
-set(SRCS avcodec.c encode.c decode.c sdp.c h263.c)
+set(SRCS avcodec.c encode.c decode.c sdp.c)
 
 if(STATIC)
   add_library(${PROJECT_NAME} OBJECT ${SRCS})
