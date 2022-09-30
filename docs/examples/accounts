@@ -40,7 +40,7 @@
 #    ;tcpsrcport=6060
 #    ;uas_user=username
 #    ;uas_pass=password
-#    ;video_codecs=h264,h263,...
+#    ;video_codecs=h264,vp8,...
 #
 # Examples:
 #

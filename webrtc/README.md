@@ -26,7 +26,6 @@ aucodec: PCMA/8000/1
 ausrc: ausine
 vidcodec: H264
 vidcodec: H264
-vidcodec: H263
 vidcodec: H265
 avcodec: using H.264 encoder 'libx264' -- libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
 avcodec: using H.264 decoder 'h264' -- H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
