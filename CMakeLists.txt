@@ -83,6 +83,12 @@ include_directories(
 
 link_directories(/usr/local/lib)
 
+if(MOD_PATH)
+  add_definitions(-DMOD_PATH="${MOD_PATH}")
+elseif(CMAKE_INSTALL_FULL_LIBDIR)
+  add_definitions(-DMOD_PATH="${CMAKE_INSTALL_FULL_LIBDIR}/baresip/modules")
+endif()
+
 if(SHARE_PATH)
   add_definitions(-DSHARE_PATH="${SHARE_PATH}")
 else()
