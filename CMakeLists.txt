@@ -14,6 +14,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(baresip VERSION 2.7.0)
 
+set(PROJECT_SOVERSION 0) # bump if ABI breaks
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 ##############################################################################
@@ -239,6 +241,9 @@ if(STATIC)
 else()
   add_library(baresip SHARED ${SRCS} ${HEADERS})
   target_link_libraries(baresip PRIVATE ${LINKLIBS})
+  set_target_properties(baresip PROPERTIES VERSION
+    ${PROJECT_SOVERSION}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+  set_target_properties(baresip PROPERTIES SOVERSION ${PROJECT_SOVERSION})
 endif()
 
 if(MSVC)
