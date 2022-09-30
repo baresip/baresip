@@ -399,7 +399,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	int got_packet = 0;
 #endif
 	uint64_t ts;
-	struct mbuf mb;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -505,11 +504,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-	mb.buf = pkt->data;
-	mb.pos = 0;
-	mb.end = pkt->size;
-	mb.size = pkt->size;
-
 	ts = video_calc_rtp_timestamp_fix(pkt->pts);
 
 	switch (st->codec_id) {
@@ -548,15 +542,9 @@ int avcodec_packetize(struct videnc_state *st, const struct vidpacket *packet)
 {
 	int err = 0;
 	uint64_t ts;
-	struct mbuf mb;
 
 	if (!st || !packet)
 		return EINVAL;
-
-	mb.buf = packet->buf;
-	mb.pos = 0;
-	mb.end = packet->size;
-	mb.size = packet->size;
 
 	ts = video_calc_rtp_timestamp_fix(packet->timestamp);
 
