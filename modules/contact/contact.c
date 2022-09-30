@@ -273,7 +273,8 @@ static int write_template(const char *file)
 			 "\n"
 			 "# Access rules\n"
 			 "#\"Catch All\" <sip:*@*>;access=block\n"
-			 "\"Good Friend\" <sip:good@friend.com>;access=allow\n"
+			 "\"Good Friend\" <sip:good@example.com>;"
+				"access=allow\n"
 			 "\n"
 			 );
 

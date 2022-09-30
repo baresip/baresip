@@ -21,7 +21,7 @@
  * DTLS-SRTP can be enabled in ~/.baresip/accounts:
  *
  \verbatim
-  <sip:user@domain.com>;mediaenc=dtls_srtp
+  <sip:user@example.com>;mediaenc=dtls_srtp
  \endverbatim
  *
  *
