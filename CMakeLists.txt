@@ -83,9 +83,11 @@ include_directories(
 
 link_directories(/usr/local/lib)
 
-add_definitions(
-  -DSHARE_PATH="${SHARE_PATH}"
-)
+if(SHARE_PATH)
+  add_definitions(-DSHARE_PATH="${SHARE_PATH}")
+else()
+  add_definitions(-DSHARE_PATH="${CMAKE_INSTALL_FULL_DATADIR}/baresip")
+endif()
 
 if(DEFAULT_CAFILE)
   add_definitions(-DDEFAULT_CAFILE="${DEFAULT_CAFILE}")
