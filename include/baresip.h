@@ -646,6 +646,8 @@ const char *log_level_name(enum log_level level);
 void log_enable_debug(bool enable);
 void log_enable_info(bool enable);
 void log_enable_stdout(bool enable);
+void log_enable_timestamps(bool enable);
+void log_enable_color(bool enable);
 void vlog(enum log_level level, const char *fmt, va_list ap);
 void loglv(enum log_level level, const char *fmt, ...);
 void debug(const char *fmt, ...);

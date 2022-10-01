@@ -12,9 +12,13 @@ static struct {
 	struct list logl;
 	enum log_level level;
 	bool enable_stdout;
+	bool timestamps;
+	bool color;
 } lg = {
 	LIST_INIT,
 	LEVEL_INFO,
+	true,
+	false,
 	true
 };
 
@@ -122,6 +126,28 @@ void log_enable_stdout(bool enable)
 
 
 /**
+ * Enable timestamps for logging
+ *
+ * @param enable True to enable, false to disable
+ */
+void log_enable_timestamps(bool enable)
+{
+	lg.timestamps = enable;
+}
+
+
+/**
+ * Enable/disable colored warnings and errors
+ *
+ * @param enable True to enable, false to disable
+ */
+void log_enable_color(bool enable)
+{
+	lg.color = enable;
+}
+
+
+/**
  * Print a message to the logging system
  *
  * @param level Log level
@@ -131,18 +157,31 @@ void log_enable_stdout(bool enable)
 void vlog(enum log_level level, const char *fmt, va_list ap)
 {
 	char buf[8192];
+	char *p = buf;
+	size_t s = sizeof(buf);
+	int n;
 	struct le *le;
 
 	if (level < lg.level)
 		return;
 
-	if (re_vsnprintf(buf, sizeof(buf), fmt, ap) < 0)
+	if (lg.timestamps) {
+		n = re_snprintf(p, s, "%H|", fmt_timestamp, NULL);
+		if (n < 0)
+			return;
+
+		p += n;
+		s -= n;
+	}
+
+	if (re_vsnprintf(p, s, fmt, ap) < 0)
 		return;
 
 	if (lg.enable_stdout) {
 
 		bool color = level == LEVEL_WARN || level == LEVEL_ERROR;
 
+		color = color && lg.color;
 		if (color)
 			(void)re_fprintf(stdout, "\x1b[31m"); /* Red */
 
