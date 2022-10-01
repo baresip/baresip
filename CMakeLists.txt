@@ -12,9 +12,9 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-project(baresip VERSION 2.7.0)
+project(baresip VERSION 2.8.0)
 
-set(PROJECT_SOVERSION 0) # bump if ABI breaks
+set(PROJECT_SOVERSION 1) # bump if ABI breaks
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
