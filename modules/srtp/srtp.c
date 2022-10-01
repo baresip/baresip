@@ -18,8 +18,8 @@
  * SRTP can be enabled in ~/.baresip/accounts:
  *
  \verbatim
-  <sip:user@domain.com>;mediaenc=srtp
-  <sip:user@domain.com>;mediaenc=srtp-mand
+  <sip:user@example.com>;mediaenc=srtp
+  <sip:user@example.com>;mediaenc=srtp-mand
  \endverbatim
  *
  */

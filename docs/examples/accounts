@@ -44,10 +44,10 @@
 #
 # Examples:
 #
-#  <sip:user@domain.com>;auth_pass=secret
-#  <sip:user@domain.com;transport=tcp>;auth_pass=secret
-#  <sip:user@1.2.3.4;transport=tcp>;auth_pass=secret
-#  <sip:user@[2001:df8:0:16:216:6fff:fe91:614c]:5070;transport=tcp>;auth_pass=secret
+#  <sip:user@example.com>;auth_pass=secret
+#  <sip:user@example.com;transport=tcp>;auth_pass=secret
+#  <sip:user@192.0.2.4;transport=tcp>;auth_pass=secret
+#  <sip:user@[2001:db8:0:16:216:6fff:fe91:614c]:5070;transport=tcp>;auth_pass=secret
 #
 #
 # A very basic example

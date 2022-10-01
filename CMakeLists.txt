@@ -12,7 +12,9 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-project(baresip VERSION 2.7.0)
+project(baresip VERSION 2.8.0)
+
+set(PROJECT_SOVERSION 1) # bump if ABI breaks
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
@@ -83,9 +85,17 @@ include_directories(
 
 link_directories(/usr/local/lib)
 
-add_definitions(
-  -DSHARE_PATH="${SHARE_PATH}"
-)
+if(MOD_PATH)
+  add_definitions(-DMOD_PATH="${MOD_PATH}")
+elseif(CMAKE_INSTALL_FULL_LIBDIR)
+  add_definitions(-DMOD_PATH="${CMAKE_INSTALL_FULL_LIBDIR}/baresip/modules")
+endif()
+
+if(SHARE_PATH)
+  add_definitions(-DSHARE_PATH="${SHARE_PATH}")
+else()
+  add_definitions(-DSHARE_PATH="${CMAKE_INSTALL_FULL_DATADIR}/baresip")
+endif()
 
 if(DEFAULT_CAFILE)
   add_definitions(-DDEFAULT_CAFILE="${DEFAULT_CAFILE}")
@@ -231,6 +241,9 @@ if(STATIC)
 else()
   add_library(baresip SHARED ${SRCS} ${HEADERS})
   target_link_libraries(baresip PRIVATE ${LINKLIBS})
+  set_target_properties(baresip PROPERTIES VERSION
+    ${PROJECT_SOVERSION}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+  set_target_properties(baresip PROPERTIES SOVERSION ${PROJECT_SOVERSION})
 endif()
 
 if(MSVC)
@@ -265,8 +278,24 @@ install(FILES ${SHARE_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip)
 
 
 ##############################################################################
-#
+# Test and webrtc
 #
 
 add_subdirectory(webrtc)
 add_subdirectory(test)
+
+
+##############################################################################
+# Symlink modules to build dir (needed for test and baresip_exe)
+#
+
+if(NOT STATIC AND UNIX)
+  foreach(mod IN LISTS MODULES)
+    add_custom_command(
+      TARGET baresip_exe POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_BINARY_DIR}/modules/${mod}/${mod}${CMAKE_SHARED_LIBRARY_SUFFIX}
+        ${CMAKE_BINARY_DIR}/${mod}${CMAKE_SHARED_LIBRARY_SUFFIX}
+    )
+  endforeach()
+endif()
