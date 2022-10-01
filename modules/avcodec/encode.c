@@ -24,12 +24,6 @@ enum {
 };
 
 
-struct picsz {
-	enum h263_fmt fmt;  /**< Picture size */
-	uint8_t mpi;        /**< Minimum Picture Interval (1-32) */
-};
-
-
 struct videnc_state {
 	const AVCodec *codec;
 	AVCodecContext *ctx;
@@ -42,11 +36,6 @@ struct videnc_state {
 	void *arg;
 
 	union {
-		struct {
-			struct picsz picszv[8];
-			uint32_t picszn;
-		} h263;
-
 		struct {
 			uint32_t packetization_mode;
 			uint32_t profile_idc;
@@ -123,46 +112,6 @@ static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
 	case VID_FMT_NV21:    return AV_PIX_FMT_NV21;
 	default:              return AV_PIX_FMT_NONE;
 	}
-}
-
-
-static enum h263_fmt h263_fmt(const struct pl *name)
-{
-	if (0 == pl_strcasecmp(name, "sqcif")) return H263_FMT_SQCIF;
-	if (0 == pl_strcasecmp(name, "qcif"))  return H263_FMT_QCIF;
-	if (0 == pl_strcasecmp(name, "cif"))   return H263_FMT_CIF;
-	if (0 == pl_strcasecmp(name, "cif4"))  return H263_FMT_4CIF;
-	if (0 == pl_strcasecmp(name, "cif16")) return H263_FMT_16CIF;
-	return H263_FMT_OTHER;
-}
-
-
-static int decode_sdpparam_h263(struct videnc_state *st, const struct pl *name,
-				const struct pl *val)
-{
-	enum h263_fmt fmt = h263_fmt(name);
-	const int mpi = pl_u32(val);
-
-	if (fmt == H263_FMT_OTHER) {
-		info("h263: unknown param '%r'\n", name);
-		return 0;
-	}
-	if (mpi < 1 || mpi > 32) {
-		info("h263: %r: MPI out of range %d\n", name, mpi);
-		return 0;
-	}
-
-	if (st->u.h263.picszn >= ARRAY_SIZE(st->u.h263.picszv)) {
-		info("h263: picszv overflow: %r\n", name);
-		return 0;
-	}
-
-	st->u.h263.picszv[st->u.h263.picszn].fmt = fmt;
-	st->u.h263.picszv[st->u.h263.picszn].mpi = mpi;
-
-	++st->u.h263.picszn;
-
-	return 0;
 }
 
 
@@ -370,56 +319,8 @@ static void param_handler(const struct pl *name, const struct pl *val,
 {
 	struct videnc_state *st = arg;
 
-	if (st->codec_id == AV_CODEC_ID_H263)
-		(void)decode_sdpparam_h263(st, name, val);
-	else if (st->codec_id == AV_CODEC_ID_H264)
+	if (st->codec_id == AV_CODEC_ID_H264)
 		(void)decode_sdpparam_h264(st, name, val);
-}
-
-
-static int h263_packetize(struct videnc_state *st,
-			  uint64_t rtp_ts, struct mbuf *mb,
-			  videnc_packet_h *pkth, void *arg)
-{
-	struct h263_strm h263_strm;
-	struct h263_hdr h263_hdr;
-	size_t pos;
-	int err;
-
-	/* Decode bit-stream header, used by packetizer */
-	err = h263_strm_decode(&h263_strm, mb);
-	if (err)
-		return err;
-
-	h263_hdr_copy_strm(&h263_hdr, &h263_strm);
-
-	st->mb_frag->pos = st->mb_frag->end = 0;
-	err = h263_hdr_encode(&h263_hdr, st->mb_frag);
-	pos = st->mb_frag->pos;
-
-	/* Assemble frame into smaller packets */
-	while (!err) {
-		size_t sz, left = mbuf_get_left(mb);
-		bool last = (left < st->encprm.pktsize);
-		if (!left)
-			break;
-
-		sz = last ? left : st->encprm.pktsize;
-
-		st->mb_frag->pos = st->mb_frag->end = pos;
-		err = mbuf_write_mem(st->mb_frag, mbuf_buf(mb), sz);
-		if (err)
-			break;
-
-		st->mb_frag->pos = 0;
-
-		err = pkth(last, rtp_ts, NULL, 0, mbuf_buf(st->mb_frag),
-			   mbuf_get_left(st->mb_frag), arg);
-
-		mbuf_advance(mb, sz);
-	}
-
-	return err;
 }
 
 
@@ -498,7 +399,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	int got_packet = 0;
 #endif
 	uint64_t ts;
-	struct mbuf mb;
 
 	if (!st || !frame)
 		return EINVAL;
@@ -604,18 +504,9 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-	mb.buf = pkt->data;
-	mb.pos = 0;
-	mb.end = pkt->size;
-	mb.size = pkt->size;
-
 	ts = video_calc_rtp_timestamp_fix(pkt->pts);
 
 	switch (st->codec_id) {
-
-	case AV_CODEC_ID_H263:
-		err = h263_packetize(st, ts, &mb, st->pkth, st->arg);
-		break;
 
 	case AV_CODEC_ID_H264:
 		err = h264_packetize(ts, pkt->data, pkt->size,
@@ -651,23 +542,13 @@ int avcodec_packetize(struct videnc_state *st, const struct vidpacket *packet)
 {
 	int err = 0;
 	uint64_t ts;
-	struct mbuf mb;
 
 	if (!st || !packet)
 		return EINVAL;
 
-	mb.buf = packet->buf;
-	mb.pos = 0;
-	mb.end = packet->size;
-	mb.size = packet->size;
-
 	ts = video_calc_rtp_timestamp_fix(packet->timestamp);
 
 	switch (st->codec_id) {
-
-	case AV_CODEC_ID_H263:
-		err = h263_packetize(st, ts, &mb, st->pkth, st->arg);
-		break;
 
 	case AV_CODEC_ID_H264:
 		err = h264_packetize(ts, packet->buf, packet->size,
