@@ -5,6 +5,10 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.1] - 2022-10-01
+
+* baresip.h: bump BARESIP\_VERSION by @cspiel1 in https://github.com/baresip/baresip/pull/2196
+
 ## [2.8.0] - 2022-10-01
 
 * opensles cmake by @juha-h in https://github.com/baresip/baresip/pull/2108
