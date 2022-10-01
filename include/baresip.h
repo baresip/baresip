@@ -1368,6 +1368,7 @@ struct stream_param {
 	bool use_rtp;       /**< Enable or disable RTP */
 	int af;             /**< Wanted address family */
 	const char *cname;  /**< Canonical name        */
+	const char *peer;   /**< Peer uri/name or identifier  */
 };
 
 typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
@@ -1405,6 +1406,8 @@ void stream_set_session_handlers(struct stream *strm,
 struct stream *stream_lookup_mid(const struct list *streaml,
 				 const char *mid, size_t len);
 const char *stream_name(const struct stream *strm);
+const char *stream_cname(const struct stream *strm);
+const char *stream_peer(const struct stream *strm);
 int  stream_bundle_init(struct stream *strm, bool offerer);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);

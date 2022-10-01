@@ -32,7 +32,7 @@ struct sndfile_dec {
 	SNDFILE *dec;
 };
 
-static char file_path[256] = ".";
+static char file_path[512] = ".";
 
 
 static int timestamp_print(struct re_printf *pf, const struct tm *tm)
@@ -79,18 +79,24 @@ static int get_format(enum aufmt fmt)
 }
 
 
-static SNDFILE *openfile(const struct aufilt_prm *prm, bool enc)
+static SNDFILE *openfile(const struct aufilt_prm *prm,
+			 const struct stream *strm,
+			 bool enc)
 {
-	char filename[128];
+	char filename[256];
 	SF_INFO sfinfo;
 	time_t tnow = time(0);
 	struct tm *tm = localtime(&tnow);
 	SNDFILE *sf;
 	int format;
 
+	const char *cname = stream_cname(strm);
+	const char *peer = stream_peer(strm);
+
 	(void)re_snprintf(filename, sizeof(filename),
-			  "%s/dump-%H-%s.wav",
-				file_path,
+			  "%s/dump-%s=>%s-%H-%s.wav",
+			  file_path,
+			  cname, peer,
 			  timestamp_print, tm, enc ? "enc" : "dec");
 
 	format = get_format(prm->fmt);
@@ -123,6 +129,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct sndfile_enc *st;
+	const struct stream *strm = audio_strm(au);
 	int err = 0;
 	(void)ctx;
 	(void)af;
@@ -135,7 +142,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
-	st->enc = openfile(prm, true);
+	st->enc = openfile(prm, strm, true);
 	if (!st->enc)
 		err = ENOMEM;
 
@@ -153,6 +160,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct sndfile_dec *st;
+	const struct stream *strm = audio_strm(au);
 	int err = 0;
 	(void)ctx;
 	(void)af;
@@ -165,7 +173,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
-	st->dec = openfile(prm, false);
+	st->dec = openfile(prm, strm, false);
 	if (!st->dec)
 		err = ENOMEM;
 
