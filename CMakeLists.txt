@@ -218,14 +218,10 @@ if(STATIC)
   list(APPEND SRCS ${CMAKE_CURRENT_BINARY_DIR}/src/static.c)
 else()
   foreach(mod IN LISTS MODULES)
-
     if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       set_target_properties(${mod} PROPERTIES
                             LINK_FLAGS "-undefined dynamic_lookup")
     endif()
-
-    install(TARGETS ${mod} LIBRARY DESTINATION
-        ${CMAKE_INSTALL_LIBDIR}/baresip/modules)
   endforeach()
 endif()
 
@@ -271,28 +267,18 @@ endif()
 set_target_properties(baresip PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set_target_properties(baresip PROPERTIES PUBLIC_HEADER "${HEADERS}")
-install(TARGETS baresip LIBRARY)
+
 
 ##############################################################################
 #
 # Target baresip executable
 #
 
-add_executable(baresip_exe src/main.c)
+add_executable(baresip_exe src/main.c ${SRCS})
 
 set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
-target_link_libraries(baresip_exe baresip ${LINKLIBS})
-install(TARGETS baresip_exe)
-
-
-##############################################################################
-#
-# Install share
-#
-
-file(GLOB SHARE_FILES "${PROJECT_SOURCE_DIR}/share/*")
-install(FILES ${SHARE_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip)
+target_link_libraries(baresip_exe PRIVATE ${LINKLIBS})
 
 
 ##############################################################################
@@ -317,3 +303,48 @@ if(NOT STATIC AND UNIX)
     )
   endforeach()
 endif()
+
+
+##############################################################################
+#
+# Install section
+#
+
+install(TARGETS baresip_exe baresip
+  RUNTIME 
+    COMPONENT Applications
+  LIBRARY
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    COMPONENT Libraries
+    NAMELINK_SKIP
+  ARCHIVE
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    COMPONENT Development
+  PUBLIC_HEADER
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT Development
+)
+
+if(NOT STATIC)
+foreach(mod IN LISTS MODULES)
+    install(TARGETS ${mod}
+      LIBRARY
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/baresip/modules
+        COMPONENT Applications
+    )
+  endforeach()
+endif()
+
+install(TARGETS baresip
+  LIBRARY
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    NAMELINK_ONLY
+    COMPONENT Development
+)
+
+file(GLOB SHARE_FILES "${PROJECT_SOURCE_DIR}/share/*")
+
+install(FILES ${SHARE_FILES} 
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip
+  COMPONENT Applications
+)
