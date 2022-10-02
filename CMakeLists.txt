@@ -278,6 +278,23 @@ install(FILES ${SHARE_FILES} DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip)
 
 
 ##############################################################################
+#
+# Packaging section
+#
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  add_subdirectory(packaging)
+endif()
+
+configure_file(packaging/libbaresip.pc.in libbaresip.pc @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libbaresip.pc
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+  COMPONENT Development
+)
+
+
+##############################################################################
 # Test and webrtc
 #
 
