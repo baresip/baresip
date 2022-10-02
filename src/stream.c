@@ -65,7 +65,7 @@ struct stream {
 	struct menc_media *mes;  /**< Media Encryption media state          */
 	enum media_type type;    /**< Media type, e.g. audio/video          */
 	char *cname;             /**< RTCP Canonical end-point identifier   */
-	char *peer;              /**< RTCP Canonical end-point identifier   */
+	char *peer;              /**< Peer URI/name or identifier           */
 	char *mid;               /**< Media stream identification           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool terminated;         /**< Stream is terminated flag             */
@@ -1543,11 +1543,11 @@ const char *stream_cname(const struct stream *strm)
 
 
 /**
- * Get the value of the RTCP Canonical end-point identifier
+ * Get the peers URI/name or identifier
  *
  * @param strm Stream object
  *
- * @return Canonical end-point identifier
+ * @return Peers URI/name or identifier
  */
 const char *stream_peer(const struct stream *strm)
 {
