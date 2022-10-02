@@ -311,7 +311,7 @@ endif()
 #
 
 install(TARGETS baresip_exe baresip
-  RUNTIME 
+  RUNTIME
     COMPONENT Applications
   LIBRARY
     DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -326,7 +326,7 @@ install(TARGETS baresip_exe baresip
 )
 
 if(NOT STATIC)
-foreach(mod IN LISTS MODULES)
+  foreach(mod IN LISTS MODULES)
     install(TARGETS ${mod}
       LIBRARY
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/baresip/modules
@@ -344,7 +344,7 @@ install(TARGETS baresip
 
 file(GLOB SHARE_FILES "${PROJECT_SOURCE_DIR}/share/*")
 
-install(FILES ${SHARE_FILES} 
+install(FILES ${SHARE_FILES}
   DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip
   COMPONENT Applications
 )
