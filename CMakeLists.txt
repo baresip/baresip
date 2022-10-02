@@ -278,8 +278,11 @@ add_executable(baresip_exe src/main.c ${SRCS})
 
 set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
-target_link_libraries(baresip_exe PRIVATE ${LINKLIBS})
-
+if(STATIC)
+  target_link_libraries(baresip_exe PRIVATE ${LINKLIBS} ${MODULES})
+else()
+  target_link_libraries(baresip_exe PRIVATE ${LINKLIBS})
+endif()
 
 ##############################################################################
 # Test and webrtc
