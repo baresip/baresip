@@ -16,6 +16,16 @@ project(baresip VERSION 2.8.1)
 
 set(PROJECT_SOVERSION 1) # bump if ABI breaks
 
+# Pre-release identifier, comment out on a release
+# Increment for breaking changes (dev2, dev3...)
+set(PROJECT_VERSION_PRE dev)
+
+if(PROJECT_VERSION_PRE)
+  set(PROJECT_VERSION_FULL ${PROJECT_VERSION}-${PROJECT_VERSION_PRE})
+else()
+  set(PROJECT_VERSION_FULL ${PROJECT_VERSION})
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 ##############################################################################
@@ -72,6 +82,14 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(re CONFIG REQUIRED HINTS ../re/cmake)
+
+list(APPEND RE_DEFINITIONS
+  -DVERSION="${PROJECT_VERSION_FULL}"
+  -DVER_MAJOR=${PROJECT_VERSION_MAJOR}
+  -DVER_MINOR=${PROJECT_VERSION_MINOR}
+  -DVER_PATCH=${PROJECT_VERSION_PATCH}
+)
+
 add_definitions(${RE_DEFINITIONS})
 
 include_directories(
