@@ -186,7 +186,8 @@ int test_ua_register(void)
 int test_ua_alloc(void)
 {
 	struct ua *ua;
-	struct mbuf *mb = mbuf_alloc(512);
+	char *uric = NULL;
+	struct pl bob = PL("bob");
 	uint32_t n_uas = list_count(uag_list());
 	int err = 0;
 
@@ -207,16 +208,16 @@ int test_ua_alloc(void)
 	ASSERT_TRUE(ua == uag_find_aor("sip:user@test.invalid"));
 
 	/* verify URI complete function */
-	err = account_uri_complete(ua_account(ua), mb, "bob");
+	err = account_uri_complete(ua_account(ua), &uric, &bob);
 	ASSERT_EQ(0, err);
-	TEST_STRCMP("sip:bob@test.invalid", 20, mb->buf, mb->end);
+	TEST_STRCMP("sip:bob@test.invalid", 20, uric, str_len(uric));
 
 	mem_deref(ua);
 
 	ASSERT_EQ((n_uas), list_count(uag_list()));
 
  out:
-	mem_deref(mb);
+	mem_deref(uric);
 	return err;
 }
 
