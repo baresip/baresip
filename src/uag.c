@@ -1027,7 +1027,7 @@ struct ua *uag_find_param(const char *name, const char *value)
 /**
  * Find a User-Agent (UA) best fitting for an SIP request
  *
- * @param requri The SIP uri for the request
+ * @param requri The SIP uri pointer-length string for the request
  *
  * @return User-Agent (UA) if found, otherwise NULL
  */

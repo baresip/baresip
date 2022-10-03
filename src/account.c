@@ -1711,9 +1711,9 @@ const char *account_extra(const struct account *acc)
 /**
  * Auto complete a SIP uri, add scheme and domain if missing
  *
- * @param acc User-Agent account
- * @param buf Target buffer to print SIP uri
- * @param uri Input SIP uri
+ * @param acc  User-Agent account
+ * @param strp Pointer to destination string; allocated and set
+ * @param uri  Input SIP uri pointer-length string
  *
  * @return 0 if success, otherwise errorcode
  */
