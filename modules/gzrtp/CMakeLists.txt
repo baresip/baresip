@@ -18,4 +18,5 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Wno-aggregate-return
     -Wno-pedantic
     -Wno-missing-field-initializers
+    -Wno-fortify-source
 )
