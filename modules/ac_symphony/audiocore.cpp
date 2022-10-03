@@ -287,8 +287,8 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 {
 	struct enc_st *est = (struct enc_st *) st;
 	struct audiocore_st *state = audiocoreState;
-	size_t bytes = auframe_size(af);
-	size_t acbytes;
+	size_t sz;
+	size_t sampc;
 	int err = 0;
 
 	if (!af || !af->sampc)
@@ -305,19 +305,26 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (!state->decinp || !state->encinp || !state->encout)
 		return ENOMEM;
 
-	acbytes = state->nblock * sizeof(int16_t) * state->ch;
-	if (!acbytes || !state->decbuf || !state->encbuf) {
+	sz = aufmt_sample_size(af->fmt);
+	sampc = state->nblock * state->ch;
+	if (!sampc || !state->decbuf || !state->encbuf) {
 		warning("ac_symphony: buffers not initialized\n");
 		return EINVAL;
 	}
 
 	/* Write 20ms. */
-	aubuf_write(state->encinp, (uint8_t *) af->sampv, bytes);
-
-	while (aubuf_cur_size(state->encinp) >= acbytes) {
+	aubuf_write_auframe(state->encinp, af);
+	while (aubuf_cur_size(state->encinp) >= sampc * sz) {
 		/* Read 16ms. */
-		aubuf_read(state->decinp, (uint8_t *) state->decbuf, acbytes);
-		aubuf_read(state->encinp, (uint8_t *) state->encbuf, acbytes);
+		struct auframe decf;
+		struct auframe encf;
+
+		auframe_init(&decf, af->fmt, state->decbuf, sampc, af->srate,
+			     af->ch);
+		auframe_init(&encf, af->fmt, state->encbuf, sampc, af->srate,
+			     af->ch);
+		aubuf_read_auframe(state->decinp, &decf);
+		aubuf_read_auframe(state->encinp, &encf);
 
 		ac_ProcessPulseAudioFrameBuffer(state->ac,
 				state->decbuf, state->encbuf, state->encbuf,
@@ -326,15 +333,13 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 
 		/* Write 16ms.*/
 		if (state->decout)
-			aubuf_write(state->decout, (uint8_t *) state->decbuf,
-					acbytes);
+			aubuf_write_auframe(state->decout, &decf);
 
-		aubuf_write(state->encout, (uint8_t *) state->encbuf, acbytes);
+		aubuf_write_auframe(state->encout, &encf);
 	}
 
 	/* Read 20ms. */
-	aubuf_read(state->encout, (uint8_t *) af->sampv, bytes);
-
+	aubuf_read_auframe(state->encout, af);
 	return 0;
 }
 
@@ -343,13 +348,11 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 {
 	struct dec_st *dst = (struct dec_st *) st;
 	struct audiocore_st *state = audiocoreState;
-	size_t bytes;
 	int err = 0;
 
 	if (!af || !af->sampc)
 		return EINVAL;
 
-	bytes = af->sampc * sizeof(int16_t);
 	dst->sampc = af->sampc;
 	err = aec_resize(state);
 	if (err)
@@ -361,12 +364,9 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (!state->decinp)
 		return EINVAL;
 
-	if (bytes) {
-		aubuf_write(state->decinp, (uint8_t *) af->sampv, bytes);
-		if (state->decout)
-			aubuf_read(state->decout, (uint8_t *) af->sampv,
-					bytes);
-	}
+	aubuf_write_auframe(state->decinp, af);
+	if (state->decout)
+		aubuf_read_auframe(state->decout, af);
 
 	return 0;
 }
