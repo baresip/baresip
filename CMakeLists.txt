@@ -72,6 +72,7 @@ else()
     -Wstrict-prototypes
     -Wuninitialized
     -Wvla
+    -Wno-c++20-designator
   )
 endif()
 
