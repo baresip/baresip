@@ -590,6 +590,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	struct menu *menu = menu_get();
 	enum sdp_dir adir, vdir;
 	struct pl argdir[2] = {PL_INIT, PL_INIT};
+	struct pl dname = PL_INIT;
 	struct pl pluri;
 	struct call *call;
 	char *uri = NULL;
@@ -605,9 +606,18 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
+	/* with display name */
 	err = re_regex(carg->prm, str_len(carg->prm),
-		"[^ ]* audio=[^ ]* video=[^ ]*",
-		&pluri, &argdir[0], &argdir[1]);
+		"[^ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]*"
+		"audio=[^ \t\r\n]*[ \t\r\n]*video=[^ \t\r\n]*",
+		&dname, NULL, &pluri, NULL, &argdir[0], NULL, &argdir[1]);
+	if (err) {
+		dname = pl_null;
+		err = re_regex(carg->prm, str_len(carg->prm),
+			       "[~ ]+ audio=[^ ]* video=[^ ]*",
+			       &pluri, &argdir[0], &argdir[1]);
+	}
+
 	if (err)
 		err = re_regex(carg->prm, str_len(carg->prm),
 			"[^ ]* [^ ]*",&pluri, &argdir[0]);
@@ -647,6 +657,11 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		goto out;
 	}
 
+	if (pl_isset(&dname)) {
+		mbuf_write_pl(uribuf, &dname);
+		mbuf_write_str(uribuf, " <");
+	}
+
 	err = account_uri_complete(ua_account(ua), uribuf, uri);
 	if (err) {
 		(void)re_hprintf(pf, "ua_connect failed to complete uri\n");
@@ -654,6 +669,9 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	}
 
 	mem_deref(uri);
+
+	if (pl_isset(&dname))
+		mbuf_write_u8(uribuf, '>');
 
 	uribuf->pos = 0;
 	err = mbuf_strdup(uribuf, &uri, uribuf->end);
