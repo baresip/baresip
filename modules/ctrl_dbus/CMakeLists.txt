@@ -23,12 +23,12 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   -Wno-pedantic -Wno-shorten-64-to-32
 )
 
-add_dependencies(${PROJECT_NAME} baresipbus.c)
+add_dependencies(${PROJECT_NAME} baresipbus_c)
 
-add_custom_target(baresipbus.c ALL
+add_custom_target(baresipbus_c ALL
   gdbus-codegen
     --generate-c-code baresipbus --c-namespace DBus
     --interface-prefix com.github.
-    ${CMAKE_SOURCE_DIR}/modules/${PROJECT_NAME}/com.github.Baresip.xml
+    ${CMAKE_CURRENT_SOURCE_DIR}/com.github.Baresip.xml
   DEPENDS com.github.Baresip.xml
   BYPRODUCTS baresipbus.c baresipbus.h)
