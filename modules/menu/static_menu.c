@@ -606,9 +606,9 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			"Audio & video must not be"
 			" inactive at the same time\n";
 
-	/* with display name */
+	/* full form with display name */
 	err = re_regex(carg->prm, str_len(carg->prm),
-		"[^ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]*"
+		"[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]*"
 		"audio=[^ \t\r\n]*[ \t\r\n]*video=[^ \t\r\n]*",
 		&dname, NULL, &pluri, NULL, &argdir[0], NULL, &argdir[1]);
 	if (err) {
@@ -618,9 +618,17 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			       &pluri, &argdir[0], &argdir[1]);
 	}
 
-	if (err)
+	/* short form with display name */
+	struct pl db = PL_INIT;
+	if (err) {
 		err = re_regex(carg->prm, str_len(carg->prm),
-			"[^ ]* [^ ]*",&pluri, &argdir[0]);
+			       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]+"
+			       "[^ \t\r\n]*",
+			       &dname, NULL, &pluri, &db, &argdir[0]);
+	} else {
+		err = re_regex(carg->prm, str_len(carg->prm),
+			       "[^ ]* [^ ]*",&pluri, &argdir[0]);
+	}
 
 	if (err || !re_regex(argdir[0].p, argdir[0].l, "=")) {
 		(void)re_hprintf(pf, "%s", usage);
