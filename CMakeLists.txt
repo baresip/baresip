@@ -274,15 +274,11 @@ set_target_properties(baresip PROPERTIES PUBLIC_HEADER "${HEADERS}")
 # Target baresip executable
 #
 
-add_executable(baresip_exe src/main.c ${SRCS})
+add_executable(baresip_exe src/main.c)
 
 set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
-if(STATIC)
-  target_link_libraries(baresip_exe PRIVATE ${LINKLIBS} ${MODULES})
-else()
-  target_link_libraries(baresip_exe PRIVATE ${LINKLIBS})
-endif()
+target_link_libraries(baresip_exe PRIVATE baresip ${LINKLIBS})
 
 ##############################################################################
 #
