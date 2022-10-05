@@ -58,11 +58,14 @@ if(MSVC)
   add_compile_options("/W3")
 else()
   add_compile_options(
-    -pedantic
     -Wall
-    -Wbad-function-cast
-    -Wcast-align
     -Wextra
+  )
+
+  set(c_flags
+    -pedantic
+    -Wcast-align
+    -Wbad-function-cast
     -Wmissing-declarations
     -Wmissing-prototypes
     -Wnested-externs
@@ -73,13 +76,17 @@ else()
     -Wuninitialized
     -Wvla
   )
-endif()
 
-if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+      list(APPEND c_flags -Watomic-implicit-seq-cst -Wshorten-64-to-32)
+  endif()
+
   add_compile_options(
-    "$<$<COMPILE_LANGUAGE:C>:-Watomic-implicit-seq-cst;-Wshorten-64-to-32>"
+    "$<$<COMPILE_LANGUAGE:C>:${c_flags}>"
   )
 endif()
+
+
 
 find_package(re CONFIG REQUIRED HINTS ../re/cmake)
 
