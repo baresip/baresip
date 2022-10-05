@@ -614,19 +614,19 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	if (err) {
 		dname = pl_null;
 		err = re_regex(carg->prm, str_len(carg->prm),
-			       "[~ ]+ audio=[^ ]* video=[^ ]*",
+			       "[^ ]+ audio=[^ ]* video=[^ ]*",
 			       &pluri, &argdir[0], &argdir[1]);
 	}
 
 	/* short form with display name */
-	struct pl db = PL_INIT;
 	if (err) {
 		err = re_regex(carg->prm, str_len(carg->prm),
 			       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]+"
 			       "[^ \t\r\n]*",
-			       &dname, NULL, &pluri, &db, &argdir[0]);
+			       &dname, NULL, &pluri, NULL, &argdir[0]);
 	}
-	else {
+
+	if (err) {
 		err = re_regex(carg->prm, str_len(carg->prm),
 			       "[^ ]* [^ ]*",&pluri, &argdir[0]);
 	}
