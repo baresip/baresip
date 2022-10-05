@@ -625,7 +625,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 			       "[~ \t\r\n<]*[ \t\r\n]*<[^>]+>[ \t\r\n]+"
 			       "[^ \t\r\n]*",
 			       &dname, NULL, &pluri, &db, &argdir[0]);
-	} else {
+	}
+	else {
 		err = re_regex(carg->prm, str_len(carg->prm),
 			       "[^ ]* [^ ]*",&pluri, &argdir[0]);
 	}
