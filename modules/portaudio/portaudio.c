@@ -299,7 +299,14 @@ static int pa_init(void)
 	PaError paerr;
 	int i, n, err = 0;
 
-	paerr = Pa_Initialize();
+	if (log_level_get() == LEVEL_DEBUG) {
+		paerr = Pa_Initialize();
+	}
+	else {
+		fs_stdio_hide();
+		paerr = Pa_Initialize();
+		fs_stdio_restore();
+	}
 	if (paNoError != paerr) {
 		warning("portaudio: init: %s\n", Pa_GetErrorText(paerr));
 		return ENODEV;
