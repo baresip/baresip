@@ -173,16 +173,15 @@ static int cmd_playmod_file(struct re_printf *pf, void *arg)
 	char *alert_dev = NULL;
 	char *filename = NULL;
 
-	int err;
+	int err = 0;
 
 	cfg = conf_config();
 
 	/* Stop the current tone, if any */
 	cur_play = mem_deref(cur_play);
 
-	err = param_decode(carg->prm, "source", &src_param);
-	if (err) {
-		re_hprintf(pf, "No source defined.\n");
+	if (param_decode(carg->prm, "source", &src_param)) {
+		re_hprintf(pf, "commod: No source defined.\n");
 		goto out;
 	}
 
