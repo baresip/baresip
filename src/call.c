@@ -2554,11 +2554,6 @@ int call_reset_transp(struct call *call, const struct sa *laddr)
 	if (!call)
 		return EINVAL;
 
-	if (!call_target_refresh_allowed(call)) {
-		call_hangup(call, 0, "Transport of User Agent changed");
-		return 0;
-	}
-
 	sdp_session_set_laddr(call->sdp, laddr);
 
 	return call_modify(call);
