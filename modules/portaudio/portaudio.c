@@ -312,28 +312,71 @@ static int pa_init(void)
 		return ENODEV;
 	}
 
+	if (paNoDevice != Pa_GetDefaultInputDevice())
+		err |= ausrc_register(&ausrc, baresip_ausrcl(), "portaudio",
+				      src_alloc);
+
+	if (paNoDevice != Pa_GetDefaultOutputDevice())
+		err |= auplay_register(&auplay, baresip_auplayl(), "portaudio",
+				       play_alloc);
+
+	if (err)
+		return err;
+
 	n = Pa_GetDeviceCount();
 
 	info("portaudio: device count is %d\n", n);
 
-	for (i=0; i<n; i++) {
-		const PaDeviceInfo *devinfo;
-
-		devinfo = Pa_GetDeviceInfo(i);
+	for (i = 0; i < n; i++) {
+		const PaDeviceInfo *devinfo = Pa_GetDeviceInfo(i);
+		struct mediadev *dev;
 
 		debug("portaudio: device %d: %s\n", i, devinfo->name);
-		(void)devinfo;
+
+		if (devinfo->maxInputChannels > 0) {
+			err = mediadev_add(&ausrc->dev_list, devinfo->name);
+			if (err) {
+				warning("portaudio: mediadev err %m\n", err);
+				return err;
+			}
+
+			dev = mediadev_find(&ausrc->dev_list, devinfo->name);
+			if (!dev)
+				continue;
+
+			dev->info.host_idx = devinfo->hostApi;
+			dev->info.dev_idx  = i;
+			dev->info.default_src =
+				(i == Pa_GetDefaultInputDevice());
+			dev->info.default_play =
+				(i == Pa_GetDefaultOutputDevice());
+			dev->info.in_channels  = devinfo->maxInputChannels;
+			dev->info.out_channels = devinfo->maxOutputChannels;
+		}
+
+		if (devinfo->maxOutputChannels > 0) {
+			mediadev_add(&auplay->dev_list, devinfo->name);
+			if (err) {
+				warning("portaudio: mediadev err %m\n", err);
+				return err;
+			}
+
+			dev = mediadev_find(&auplay->dev_list, devinfo->name);
+			if (!dev)
+				continue;
+
+			dev->info.host_idx = devinfo->hostApi;
+			dev->info.dev_idx  = i;
+			dev->info.default_src =
+				(i == Pa_GetDefaultInputDevice());
+			dev->info.default_play =
+				(i == Pa_GetDefaultOutputDevice());
+			dev->info.in_channels  = devinfo->maxInputChannels;
+			dev->info.out_channels = devinfo->maxOutputChannels;
+		}
 	}
 
-	if (paNoDevice != Pa_GetDefaultInputDevice())
-		err |= ausrc_register(&ausrc, baresip_ausrcl(),
-				      "portaudio", src_alloc);
-
-	if (paNoDevice != Pa_GetDefaultOutputDevice())
-		err |= auplay_register(&auplay, baresip_auplayl(),
-				       "portaudio", play_alloc);
-
-	return err;
+	return 0;
 }
 
 
