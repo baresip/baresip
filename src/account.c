@@ -1728,6 +1728,7 @@ int account_uri_complete(const struct account *acc, char **strp,
 	bool append = true;
 	struct mbuf *mb;
 	struct pl trimmed;
+	bool complete = false;
 	int err = 0;
 
 	if (!strp || !pl_isset(uri))
@@ -1746,9 +1747,14 @@ int account_uri_complete(const struct account *acc, char **strp,
 	/* Append sip: scheme if missing */
 	if (re_regex(trimmed.p, trimmed.l, "sip:"))
 		err |= mbuf_printf(mb, "sip:");
+	else
+		complete = true;
 
 	err |= mbuf_write_pl(mb, &trimmed);
 	if (!acc || err)
+		goto out;
+
+	if (complete)
 		goto out;
 
 	conf_get_bool(conf_cur(), "append_domain", &append);
