@@ -100,7 +100,7 @@ int test_account_uri_complete(void)
 		  PL("sip:user@domain.com:5677") },
 
 		{ PL("sip:user"),
-		  PL("sip:user@proxy.com") },
+		  PL("sip:user") },
 
 		{ PL("sip:user@domain.com"),
 		  PL("sip:user@domain.com") },
