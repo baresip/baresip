@@ -465,6 +465,14 @@ struct contact *contacts_current(const struct contacts *contacts);
 struct mediadev {
 	struct le   le;
 	char  *name;
+	struct {
+		int host_idx;
+		int dev_idx;
+		bool default_src;
+		bool default_play;
+		uint32_t in_channels;
+		uint32_t out_channels;
+	} info;
 };
 
 int mediadev_add(struct list *dev_list, const char *name);
