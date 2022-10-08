@@ -731,8 +731,17 @@ int uag_reset_transp(bool reg, bool reinvite)
 			if (net_dst_source_addr_get(raddr, &laddr))
 				continue;
 
-			if (sa_isset(&laddr, SA_ADDR))
+			if (sa_isset(&laddr, SA_ADDR)) {
+				if (!call_target_refresh_allowed(call)) {
+					call_hangup(call, 0, "Transport of "
+						    "User Agent changed");
+					ua_event(ua, UA_EVENT_CALL_CLOSED,
+						 call, "Transport of "
+						 "User Agent changed");
+					continue;
+				}
 				err = call_reset_transp(call, &laddr);
+			}
 		}
 	}
 
