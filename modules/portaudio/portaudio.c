@@ -344,14 +344,11 @@ static int pa_init(void)
 			if (!dev)
 				continue;
 
-			dev->info.host_idx = devinfo->hostApi;
-			dev->info.dev_idx  = i;
-			dev->info.default_src =
+			dev->host_index	  = devinfo->hostApi;
+			dev->device_index = i;
+			dev->src.is_default =
 				(i == Pa_GetDefaultInputDevice());
-			dev->info.default_play =
-				(i == Pa_GetDefaultOutputDevice());
-			dev->info.in_channels  = devinfo->maxInputChannels;
-			dev->info.out_channels = devinfo->maxOutputChannels;
+			dev->src.channels = devinfo->maxInputChannels;
 		}
 
 		if (devinfo->maxOutputChannels > 0) {
@@ -365,14 +362,11 @@ static int pa_init(void)
 			if (!dev)
 				continue;
 
-			dev->info.host_idx = devinfo->hostApi;
-			dev->info.dev_idx  = i;
-			dev->info.default_src =
-				(i == Pa_GetDefaultInputDevice());
-			dev->info.default_play =
+			dev->host_index	  = devinfo->hostApi;
+			dev->device_index = i;
+			dev->play.is_default =
 				(i == Pa_GetDefaultOutputDevice());
-			dev->info.in_channels  = devinfo->maxInputChannels;
-			dev->info.out_channels = devinfo->maxOutputChannels;
+			dev->play.channels = devinfo->maxOutputChannels;
 		}
 	}
 
