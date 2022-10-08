@@ -1119,6 +1119,9 @@ int call_connect(struct call *call, const struct pl *paddr)
 			err = pl_strdup(&call->peer_uri, &addr.auri);
 		}
 
+		if (pl_isset(&addr.dname))
+			pl_strdup(&call->peer_name, &addr.dname);
+
 		uri_header_get(&addr.uri.headers, &rname, &rval);
 		if (pl_isset(&rval))
 			err = re_sdprintf(&call->replaces, "%r",&rval);

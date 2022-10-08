@@ -726,7 +726,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_REFER:
 		val = pl_null;
-		if (!strncmp(prm, "sip:", 4))
+		if (!re_regex(prm, strlen(prm), "sip:"))
 			pl_set_str(&val, "invite");
 
 		(void)menu_param_decode(prm, "method", &val);
