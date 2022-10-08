@@ -463,8 +463,18 @@ struct contact *contacts_current(const struct contacts *contacts);
 
 /** Defines a media device */
 struct mediadev {
-	struct le   le;
-	char  *name;
+	struct le le;
+	char *name;
+
+	/* Generic: */
+	struct {
+		uint32_t channels;
+		bool is_default;
+	} src, play;
+
+	/* Module/driver specific: */
+	int host_index;
+	int device_index;
 };
 
 int mediadev_add(struct list *dev_list, const char *name);

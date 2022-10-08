@@ -312,28 +312,65 @@ static int pa_init(void)
 		return ENODEV;
 	}
 
+	if (paNoDevice != Pa_GetDefaultInputDevice())
+		err |= ausrc_register(&ausrc, baresip_ausrcl(), "portaudio",
+				      src_alloc);
+
+	if (paNoDevice != Pa_GetDefaultOutputDevice())
+		err |= auplay_register(&auplay, baresip_auplayl(), "portaudio",
+				       play_alloc);
+
+	if (err)
+		return err;
+
 	n = Pa_GetDeviceCount();
 
 	info("portaudio: device count is %d\n", n);
 
-	for (i=0; i<n; i++) {
-		const PaDeviceInfo *devinfo;
-
-		devinfo = Pa_GetDeviceInfo(i);
+	for (i = 0; i < n; i++) {
+		const PaDeviceInfo *devinfo = Pa_GetDeviceInfo(i);
+		struct mediadev *dev;
 
 		debug("portaudio: device %d: %s\n", i, devinfo->name);
-		(void)devinfo;
+
+		if (devinfo->maxInputChannels > 0) {
+			err = mediadev_add(&ausrc->dev_list, devinfo->name);
+			if (err) {
+				warning("portaudio: mediadev err %m\n", err);
+				return err;
+			}
+
+			dev = mediadev_find(&ausrc->dev_list, devinfo->name);
+			if (!dev)
+				continue;
+
+			dev->host_index	  = devinfo->hostApi;
+			dev->device_index = i;
+			dev->src.is_default =
+				(i == Pa_GetDefaultInputDevice());
+			dev->src.channels = devinfo->maxInputChannels;
+		}
+
+		if (devinfo->maxOutputChannels > 0) {
+			mediadev_add(&auplay->dev_list, devinfo->name);
+			if (err) {
+				warning("portaudio: mediadev err %m\n", err);
+				return err;
+			}
+
+			dev = mediadev_find(&auplay->dev_list, devinfo->name);
+			if (!dev)
+				continue;
+
+			dev->host_index	  = devinfo->hostApi;
+			dev->device_index = i;
+			dev->play.is_default =
+				(i == Pa_GetDefaultOutputDevice());
+			dev->play.channels = devinfo->maxOutputChannels;
+		}
 	}
 
-	if (paNoDevice != Pa_GetDefaultInputDevice())
-		err |= ausrc_register(&ausrc, baresip_ausrcl(),
-				      "portaudio", src_alloc);
-
-	if (paNoDevice != Pa_GetDefaultOutputDevice())
-		err |= auplay_register(&auplay, baresip_auplayl(),
-				       "portaudio", play_alloc);
-
-	return err;
+	return 0;
 }
 
 
