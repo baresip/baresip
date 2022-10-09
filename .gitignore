@@ -51,3 +51,8 @@ mk/win32/Debug/
 *.vcxproj.user
 
 speaker.wav
+
+# cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+packaging/Makefile
