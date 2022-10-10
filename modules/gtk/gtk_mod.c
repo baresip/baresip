@@ -771,22 +771,30 @@ static gboolean status_icon_on_button_press(GtkStatusIcon *status_icon,
 
 int gtk_mod_connect(struct gtk_mod *mod, const char *uri)
 {
-	char *uric = NULL;
-	struct pl pl;
+	struct mbuf *uribuf = NULL;
+	char *uri_copy = NULL;
 	int err = 0;
 
 	if (!mod)
 		return ENOMEM;
 
-	pl_set_str(&pl, uri);
-	err = account_uri_complete(ua_account(mod->ua_cur), &uric, &pl);
+	uribuf = mbuf_alloc(64);
+	if (!uribuf)
+		return ENOMEM;
+
+	err = account_uri_complete(ua_account(mod->ua_cur), uribuf, uri);
 	if (err)
 		goto out;
 
-	err = mqueue_push(mod->mq, MQ_CONNECT, uric);
+	uribuf->pos = 0;
+	err = mbuf_strdup(uribuf, &uri_copy, uribuf->end);
+	if (err)
+		goto out;
+
+	err = mqueue_push(mod->mq, MQ_CONNECT, uri_copy);
 
 out:
-	mem_deref(uric);
+	mem_deref(uribuf);
 	return err;
 }
 
@@ -795,18 +803,28 @@ int gtk_mod_connect_attended(struct gtk_mod *mod, const char *uri,
 					struct call *attended_call)
 {
 	struct attended_transfer_store *ats;
-	char *uric = NULL;
+	struct mbuf *uribuf = NULL;
+	char *uri_copy = NULL;
 	int err = 0;
 
 	if (!mod)
 		return ENOMEM;
 
-	pl_set_str(&pl, uri);
-	err = account_uri_complete(ua_account(mod->ua_cur), &uric, &pl);
+	uribuf = mbuf_alloc(64);
+	ats = mem_zalloc(sizeof(struct attended_transfer_store), NULL);
+	if (!uribuf)
+		return ENOMEM;
+
+	err = account_uri_complete(ua_account(mod->ua_cur), uribuf, uri);
 	if (err)
 		goto out;
 
-	ats->uri = uric;
+	uribuf->pos = 0;
+	err = mbuf_strdup(uribuf, &uri_copy, uribuf->end);
+	if (err)
+		goto out;
+
+	ats->uri = (char *)uri_copy;
 	ats->attended_call = attended_call;
 
 	err = mqueue_push(mod->mq, MQ_CONNECTATTENDED, ats);

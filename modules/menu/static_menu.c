@@ -244,7 +244,7 @@ static int cmd_set_100rel_mode(struct re_printf *pf, void *arg)
 	}
 
 	if (!ua)
-		ua = uag_find_requri(&w2);
+		ua = uag_find_requri_pl(&w2);
 
 	if (ua) {
 		err = account_set_rel100_mode(ua_account(ua), mode);
@@ -518,7 +518,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 	pl_set_str(&pluri, uri);
 	if (!ua)
-		ua = uag_find_requri(&pluri);
+		ua = uag_find_requri_pl(&pluri);
 
 	if (!ua) {
 		re_hprintf(pf, "could not find UA for %s\n", uri);
@@ -533,7 +533,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	}
 
 	re_hprintf(pf, "call uri: %s\n", uri);
-	err = account_uri_complete(ua_account(ua), &uric, &pluri);
+	err = account_uri_complete_strdup(ua_account(ua), &uric, &pluri);
 	if (err)
 		goto out;
 
@@ -628,7 +628,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	}
 
 	if (!ua)
-		ua = uag_find_requri(&pluri);
+		ua = uag_find_requri_pl(&pluri);
 
 	if (!ua) {
 		(void)re_hprintf(pf, "could not find UA for %s\n", carg->prm);
@@ -646,7 +646,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		err = mbuf_printf(uribuf, "\"%r\" <%r>", &dname, &pluri);
 	}
 	else {
-		err = account_uri_complete(ua_account(ua), &uri, &pluri);
+		err = account_uri_complete_strdup(ua_account(ua), &uri, &pluri);
 		if (err) {
 			(void)re_hprintf(pf, "ua_connect failed to complete "
 					 "uri\n");
@@ -951,7 +951,7 @@ static int options_command(struct re_printf *pf, void *arg)
 	int err = 0;
 
 	if (!ua)
-		ua = uag_find_requri(&word[0]);
+		ua = uag_find_requri_pl(&word[0]);
 
 	if (!ua) {
 		(void)re_hprintf(pf, "could not find UA for %r\n", &word[0]);
@@ -959,7 +959,7 @@ static int options_command(struct re_printf *pf, void *arg)
 		goto out;
 	}
 
-	err = account_uri_complete(ua_account(ua), &uri, &word[0]);
+	err = account_uri_complete_strdup(ua_account(ua), &uri, &word[0]);
 	if (err)
 		goto out;
 
@@ -996,7 +996,7 @@ static int cmd_refer(struct re_printf *pf, void *arg)
 	}
 
 	if (!ua)
-		ua = uag_find_requri(&to);
+		ua = uag_find_requri_pl(&to);
 
 	if (!ua) {
 		(void)re_hprintf(pf, "could not find UA for %r\n", &to);
@@ -1004,8 +1004,8 @@ static int cmd_refer(struct re_printf *pf, void *arg)
 		goto out;
 	}
 
-	err  = account_uri_complete(ua_account(ua), &uri, &to);
-	err |= account_uri_complete(ua_account(ua), &touri, &referto);
+	err  = account_uri_complete_strdup(ua_account(ua), &uri, &to);
+	err |= account_uri_complete_strdup(ua_account(ua), &touri, &referto);
 	if (err)
 		goto out;
 

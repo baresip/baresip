@@ -1027,11 +1027,27 @@ struct ua *uag_find_param(const char *name, const char *value)
 /**
  * Find a User-Agent (UA) best fitting for an SIP request
  *
+ * @param requri The SIP uri for the request
+ *
+ * @return User-Agent (UA) if found, otherwise NULL
+ */
+struct ua   *uag_find_requri(const char *requri)
+{
+	struct pl pl;
+
+	pl_set_str(&pl, requri);
+	return uag_find_requri_pl(&pl);
+}
+
+
+/**
+ * Find a User-Agent (UA) best fitting for an SIP request
+ *
  * @param requri The SIP uri pointer-length string for the request
  *
  * @return User-Agent (UA) if found, otherwise NULL
  */
-struct ua *uag_find_requri(const struct pl *requri)
+struct ua *uag_find_requri_pl(const struct pl *requri)
 {
 	struct pl pl;
 	struct uri *uri;
@@ -1047,7 +1063,7 @@ struct ua *uag_find_requri(const struct pl *requri)
 	if (!uag.ual.head)
 		return NULL;
 
-	err = account_uri_complete(NULL, &uric, requri);
+	err = account_uri_complete_strdup(NULL, &uric, requri);
 	if (err)
 		goto out;
 

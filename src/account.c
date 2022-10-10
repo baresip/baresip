@@ -1711,14 +1711,42 @@ const char *account_extra(const struct account *acc)
 /**
  * Auto complete a SIP uri, add scheme and domain if missing
  *
+ * @param acc User-Agent account
+ * @param buf Target buffer to print SIP uri
+ * @param uri Input SIP uri
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_uri_complete(const struct account *acc, struct mbuf *buf,
+			 const char *uri)
+{
+	char *str;
+	struct pl pl;
+	int err;
+
+	pl_set_str(&pl, uri);
+	err = account_uri_complete_strdup(acc, &str, &pl);
+	if (err)
+		return err;
+
+	err = mbuf_write_str(buf, str);
+	mem_deref(str);
+
+	return err;
+}
+
+
+/**
+ * Auto complete a SIP uri, add scheme and domain if missing
+ *
  * @param acc  User-Agent account
  * @param strp Pointer to destination string; allocated and set
  * @param uri  Input SIP uri pointer-length string
  *
  * @return 0 if success, otherwise errorcode
  */
-int account_uri_complete(const struct account *acc, char **strp,
-			 const struct pl *uri)
+int account_uri_complete_strdup(const struct account *acc, char **strp,
+				const struct pl *uri)
 {
 	struct sa sa_addr;
 	bool uri_is_ip;

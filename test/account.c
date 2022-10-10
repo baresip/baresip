@@ -80,70 +80,73 @@ int test_account(void)
 int test_account_uri_complete(void)
 {
 	static const struct test {
-		struct pl in;
-		struct pl out;
+		const char *in;
+		const char *out;
 	} testv[] = {
 
-		{ PL("192.168.1.2"),
-		  PL("sip:192.168.1.2") },
+		{ "192.168.1.2",
+		  "sip:192.168.1.2" },
 
-		{ PL("192.168.1.2:5677"),
-		  PL("sip:192.168.1.2:5677"), },
+		{ "192.168.1.2:5677",
+		  "sip:192.168.1.2:5677", },
 
-		{ PL("user"),
-		  PL("sip:user@proxy.com") },
+		{ "user",
+		  "sip:user@proxy.com" },
 
-		{ PL("user@domain.com"),
-		  PL("sip:user@domain.com") },
+		{ "user@domain.com",
+		  "sip:user@domain.com" },
 
-		{ PL("user@domain.com:5677"),
-		  PL("sip:user@domain.com:5677") },
+		{ "user@domain.com:5677",
+		  "sip:user@domain.com:5677" },
 
-		{ PL("sip:user"),
-		  PL("sip:user") },
+		{ "sip:user",
+		  "sip:user@proxy.com" },
 
-		{ PL("sip:user@domain.com"),
-		  PL("sip:user@domain.com") },
+		{ "sip:user@domain.com",
+		  "sip:user@domain.com" },
 
 #if HAVE_INET6
-		{PL("[2113:1470:1f1b:24b::2]"),
-		 PL("sip:[2113:1470:1f1b:24b::2]")},
+		{"[2113:1470:1f1b:24b::2]",
+		 "sip:[2113:1470:1f1b:24b::2]"},
 
-		{PL("[fe80::b62e:99ff:feee:268f]"),
-		 PL("sip:[fe80::b62e:99ff:feee:268f]")},
+		{"[fe80::b62e:99ff:feee:268f]",
+		 "sip:[fe80::b62e:99ff:feee:268f]"},
 
-		{PL("x@[2113:1470:1f1b:24b::2]"),
-		 PL("sip:x@[2113:1470:1f1b:24b::2]")},
+		{"x@[2113:1470:1f1b:24b::2]",
+		 "sip:x@[2113:1470:1f1b:24b::2]"},
 
-		{PL("[2113:1470:1f1b:24b::2]:5677"),
-		 PL("sip:[2113:1470:1f1b:24b::2]:5677")},
+		{"[2113:1470:1f1b:24b::2]:5677",
+		 "sip:[2113:1470:1f1b:24b::2]:5677"},
 
-		{PL("x@[2113:1470:1f1b:24b::2]:5677"),
-		 PL("sip:x@[2113:1470:1f1b:24b::2]:5677")},
+		{"x@[2113:1470:1f1b:24b::2]:5677",
+		 "sip:x@[2113:1470:1f1b:24b::2]:5677"},
 #endif
 	};
 
-	char *uric = NULL;
+	struct mbuf *mb = NULL;
 	struct account *acc = NULL;
 	int err = 0;
 
 	err = account_alloc(&acc, "\"A\" <sip:A@proxy.com>");
 	TEST_ERR(err);
 
+	mb = mbuf_alloc(256);
+	ASSERT_TRUE(mb != NULL);
+
 	for (size_t i=0; i<ARRAY_SIZE(testv); i++) {
 
 		const struct test *test = &testv[i];
 
-		err = account_uri_complete(acc, &uric, &test->in);
+		err = account_uri_complete(acc, mb, test->in);
 		TEST_ERR_TXT(err, test->in);
 
-		TEST_STRCMP(test->out.p, test->out.l,
-			    uric, str_len(uric));
+		TEST_STRCMP(test->out, str_len(test->out), mb->buf, mb->end);
 
-		mem_deref(uric);
+		mbuf_rewind(mb);
 	}
 
  out:
+	mem_deref(mb);
 	mem_deref(acc);
 
 	return err;
