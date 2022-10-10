@@ -100,7 +100,7 @@ int test_account_uri_complete(void)
 		  "sip:user@domain.com:5677" },
 
 		{ "sip:user",
-		  "sip:user@proxy.com" },
+		  "sip:user" },
 
 		{ "sip:user@domain.com",
 		  "sip:user@domain.com" },
