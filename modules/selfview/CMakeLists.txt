@@ -7,4 +7,3 @@ if(STATIC)
 else()
     add_library(${PROJECT_NAME} MODULE ${SRCS})
 endif()
-
