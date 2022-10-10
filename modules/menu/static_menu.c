@@ -646,7 +646,8 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 		err = mbuf_printf(uribuf, "\"%r\" <%r>", &dname, &pluri);
 	}
 	else {
-		err = account_uri_complete_strdup(ua_account(ua), &uri, &pluri);
+		err = account_uri_complete_strdup(ua_account(ua), &uri,
+						  &pluri);
 		if (err) {
 			(void)re_hprintf(pf, "ua_connect failed to complete "
 					 "uri\n");
