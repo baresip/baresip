@@ -495,7 +495,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "call_local_timeout\t%u\n"
 			 "call_max_calls\t\t%u\n"
 			 "call_hold_other_calls\t%s\n"
-			 "append_domain\t\t%s\n"
 			 "\n"
 			 "# Audio\n"
 			 "audio_path\t\t%s\n"
@@ -716,7 +715,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "call_local_timeout\t%u\n"
 			  "call_max_calls\t\t%u\n"
 			  "call_hold_other_calls\tyes\n"
-			  "append_domain\t\tyes\n"
 			  "\n"
 			  "# Audio\n"
 #if defined (SHARE_PATH)

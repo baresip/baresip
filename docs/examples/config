@@ -33,7 +33,6 @@ sip_tos			160 # See TOS fields!
 call_local_timeout	120
 call_max_calls		4
 call_hold_other_calls	yes
-append_domain		yes
 
 # Audio
 #audio_path		/usr/local/share/baresip
