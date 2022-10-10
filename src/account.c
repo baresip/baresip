@@ -1720,80 +1720,44 @@ const char *account_extra(const struct account *acc)
 int account_uri_complete(const struct account *acc, struct mbuf *buf,
 			 const char *uri)
 {
-	char *str;
-	struct pl pl;
-	int err;
-
-	pl_set_str(&pl, uri);
-	err = account_uri_complete_strdup(acc, &str, &pl);
-	if (err)
-		return err;
-
-	err = mbuf_write_str(buf, str);
-	mem_deref(str);
-
-	return err;
-}
-
-
-/**
- * Auto complete a SIP uri, add scheme and domain if missing
- *
- * @param acc  User-Agent account
- * @param strp Pointer to destination string; allocated and set
- * @param uri  Input SIP uri pointer-length string
- *
- * @return 0 if success, otherwise errorcode
- */
-int account_uri_complete_strdup(const struct account *acc, char **strp,
-				const struct pl *uri)
-{
 	struct sa sa_addr;
+	size_t len;
 	bool uri_is_ip;
 	char *uridup;
 	char *host;
 	char *c;
-	bool append = true;
-	struct mbuf *mb;
-	struct pl trimmed;
 	bool complete = false;
 	int err = 0;
 
-	if (!strp || !pl_isset(uri))
+	if (!buf || !uri)
 		return EINVAL;
 
 	/* Skip initial whitespace */
-	trimmed = *uri;
-	err = pl_ltrim(&trimmed);
-	if (err)
-		return err;
+	while (isspace(*uri))
+		++uri;
 
-	mb = mbuf_alloc(64);
-	if (!mb)
-		return ENOMEM;
+	len = str_len(uri);
 
 	/* Append sip: scheme if missing */
-	if (re_regex(trimmed.p, trimmed.l, "sip:"))
-		err |= mbuf_printf(mb, "sip:");
+	if (0 != re_regex(uri, len, "sip:"))
+		err |= mbuf_printf(buf, "sip:");
 	else
 		complete = true;
 
-	err |= mbuf_write_pl(mb, &trimmed);
+	err |= mbuf_write_str(buf, uri);
+
 	if (!acc || err)
-		goto out;
+		return err;
 
 	if (complete)
-		goto out;
-
-	conf_get_bool(conf_cur(), "append_domain", &append);
-	if (!append)
-		goto out;
+		return 0;
 
 	/* Append domain if missing and uri is not IP address */
+
 	/* check if uri is valid IP address */
-	err = pl_strdup(&uridup, &trimmed);
+	err = str_dup(&uridup, uri);
 	if (err)
-		goto out;
+		return err;
 
 	if (!strncmp(uridup, "sip:", 4))
 		host = uridup + 4;
@@ -1814,15 +1778,15 @@ int account_uri_complete_strdup(const struct account *acc, char **strp,
 
 	mem_deref(uridup);
 
-	if (!uri_is_ip &&
-	    0 != re_regex(trimmed.p, trimmed.l, "[^@]+@[^]+", NULL, NULL)) {
+	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
+		1 != uri_is_ip) {
 #if HAVE_INET6
 		if (AF_INET6 == acc->luri.af)
-			err |= mbuf_printf(mb, "@[%r]",
+			err |= mbuf_printf(buf, "@[%r]",
 					   &acc->luri.host);
 		else
 #endif
-			err |= mbuf_printf(mb, "@%r",
+			err |= mbuf_printf(buf, "@%r",
 					   &acc->luri.host);
 
 		/* Also append port if specified and not 5060 */
@@ -1833,18 +1797,53 @@ int account_uri_complete_strdup(const struct account *acc, char **strp,
 			break;
 
 		default:
-			err |= mbuf_printf(mb, ":%u", acc->luri.port);
+			err |= mbuf_printf(buf, ":%u", acc->luri.port);
 			break;
 		}
 	}
 
-out:
-	if (!err) {
-		mbuf_set_pos(mb, 0);
-		err = mbuf_strdup(mb, strp, mbuf_get_left(mb));
-	}
+	return err;
+}
 
+
+/**
+ * Auto complete a SIP uri, add scheme and domain if missing
+ *
+ * @param acc  User-Agent account
+ * @param strp Pointer to destination string; allocated and set
+ * @param uri  Input SIP uri pointer-length string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_uri_complete_strdup(const struct account *acc, char **strp,
+				const struct pl *uri)
+{
+	char *uric = NULL;
+	struct mbuf *mb;
+	int err = 0;
+
+	if (!strp || !pl_isset(uri))
+		return EINVAL;
+
+	err = pl_strdup(&uric, uri);
+	if (err)
+		return err;
+
+	mb = mbuf_alloc(64);
+	if (!mb)
+		return ENOMEM;
+
+	err = account_uri_complete(acc, mb, uric);
+	if (err)
+		goto out;
+
+
+	mbuf_set_pos(mb, 0);
+	err = mbuf_strdup(mb, strp, mbuf_get_left(mb));
+
+out:
 	mem_deref(mb);
+	mem_deref(uric);
 	return err;
 }
 
