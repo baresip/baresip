@@ -1136,6 +1136,8 @@ int call_connect(struct call *call, const struct pl *paddr)
 	 * wait until completed before sending the INVITE */
 	if (!call->acc->mnat)
 		err = send_invite(call);
+	else
+		err = call_streams_alloc(call);
 
 	return err;
 }
