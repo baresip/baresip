@@ -48,7 +48,7 @@ static int process_handler(jack_nframes_t nframes, void *arg)
 	int err;
 
 	if (st->prm.fmt == AUFMT_S16LE) {
-		size_t sampc_rs_out;
+		size_t sampc_rs_out = 0;
 
 		if (st->resamp) {
 			size_t sampc_rs;
