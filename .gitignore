@@ -56,3 +56,4 @@ speaker.wav
 CPackConfig.cmake
 CPackSourceConfig.cmake
 packaging/Makefile
+install_manifest.txt
