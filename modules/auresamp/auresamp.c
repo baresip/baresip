@@ -152,7 +152,7 @@ static int common_resample(struct auresamp_st *st, struct auframe *af)
 	int err = 0;
 
 	if (st->dbg) {
-		debug("auresam: resample %s %u/%u --> %u/%u\n", st->dbg,
+		debug("auresamp: resample %s %u/%u --> %u/%u\n", st->dbg,
 		      af->srate, af->ch, st->oprm.srate, st->oprm.ch);
 		st->dbg = NULL;
 	}
