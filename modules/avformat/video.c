@@ -157,9 +157,9 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	if (ret < 0)
 		goto out;
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (st->vid.ctx->hw_device_ctx) {
 		AVFrame *frame2;
+
 		frame2 = av_frame_alloc();
 		if (!frame2)
 			goto out;
@@ -182,7 +182,6 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 		av_frame_move_ref(frame, frame2);
 		av_frame_free(&frame2);
 	}
-#endif
 
 	vf.fmt = avpixfmt_to_vidfmt(frame->format);
 	if (vf.fmt == (enum vidfmt)-1) {
