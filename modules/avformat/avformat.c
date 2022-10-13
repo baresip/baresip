@@ -490,10 +490,6 @@ static int module_init(void)
 #endif
 	char decoder[64] = "";
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
-	avcodec_register_all();
-#endif
-
 #if LIBAVUTIL_VERSION_MAJOR >= 56
 	conf_get_str(conf_cur(), "avformat_hwaccel", hwaccel, sizeof(hwaccel));
 	if (str_isset(hwaccel)) {
