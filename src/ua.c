@@ -1490,7 +1490,7 @@ int ua_refer_send(struct ua *ua, const char *uri, const char *referto,
 			   ua_print_supported, ua,
 			   referto);
 	if (err) {
-		warning("ua: send options: (%m)\n", err);
+		warning("ua: send refer: (%m)\n", err);
 	}
 
 	return err;
