@@ -1248,8 +1248,8 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (err)
 		goto out;
 
-	pl.p = (char *)dialbuf->buf;
-	pl.l = dialbuf->end;
+	mbuf_set_pos(dialbuf, 0);
+	pl_set_mbuf(&pl, dialbuf);
 	sa_init(&ua->dst, AF_UNSPEC);
 	if (!sip_addr_decode(&addr, &pl))
 		(void)sa_set(&ua->dst, &addr.uri.host, addr.uri.port);
