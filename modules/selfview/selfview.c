@@ -185,14 +185,15 @@ static int encode_win(struct vidfilt_enc_st *st, struct vidframe *frame,
 		      uint64_t *timestamp)
 {
 	struct selfview_enc *enc = (struct selfview_enc *)st;
+	int err = 0;
 
 	if (!frame)
 		return 0;
 
 	if (enc->vd && enc->vd->disph)
-		return enc->vd->disph(enc->disp, "Selfview", frame, *timestamp);
+		err = enc->vd->disph(enc->disp, "Selfview", frame, *timestamp);
 
-	return 0;
+	return err;
 }
 
 
