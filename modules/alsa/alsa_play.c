@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <alsa/asoundlib.h>
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -18,7 +17,7 @@
 
 
 struct auplay_st {
-	pthread_t thread;
+	thrd_t thread;
 	volatile bool run;
 	snd_pcm_t *write;
 	void *sampv;
@@ -38,7 +37,7 @@ static void auplay_destructor(void *arg)
 	if (st->run) {
 		debug("alsa: stopping playback thread (%s)\n", st->device);
 		st->run = false;
-		(void)pthread_join(st->thread, NULL);
+		thrd_join(st->thread, NULL);
 	}
 
 	if (st->write)
@@ -49,7 +48,7 @@ static void auplay_destructor(void *arg)
 }
 
 
-static void *write_thread(void *arg)
+static int write_thread(void *arg)
 {
 	struct auplay_st *st = arg;
 	struct auframe af;
@@ -93,7 +92,7 @@ static void *write_thread(void *arg)
 
 	snd_pcm_drop(st->write);
 
-	return NULL;
+	return 0;
 }
 
 
@@ -158,7 +157,7 @@ int alsa_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	}
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, write_thread, st);
+	err = thread_create_name(&st->thread, "alsa_play", write_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;
