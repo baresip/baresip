@@ -122,7 +122,29 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 		return ENOMEM;
 
 	err = selfview_alloc(&st->selfview, ctx);
+	if (err)
+		goto out;
 
+	if (0 == str_casecmp(vf->name, "selfview_window")) {
+
+		struct list *lst = baresip_vidispl();
+
+		err = vidisp_alloc(&st->disp, lst, NULL, NULL,
+				   NULL, NULL, NULL);
+		if (err)
+			goto out;
+
+		st->vd = vidisp_find(lst, NULL);
+		if (!st->vd) {
+			err = ENOENT;
+			goto out;
+		}
+
+		info("selfview: created video display (%s)\n",
+		     st->vd->name);
+	}
+
+ out:
 	if (err)
 		mem_deref(st);
 	else
@@ -163,26 +185,15 @@ static int encode_win(struct vidfilt_enc_st *st, struct vidframe *frame,
 		      uint64_t *timestamp)
 {
 	struct selfview_enc *enc = (struct selfview_enc *)st;
-	int err;
+	int err = 0;
 
 	if (!frame)
 		return 0;
 
-	if (!enc->disp) {
+	if (enc->vd && enc->vd->disph)
+		err = enc->vd->disph(enc->disp, "Selfview", frame, *timestamp);
 
-		struct list *lst = baresip_vidispl();
-
-		err = vidisp_alloc(&enc->disp, lst,
-				   NULL, NULL, NULL, NULL, NULL);
-		if (err)
-			return err;
-
-		enc->vd = vidisp_find(lst, NULL);
-		if (!enc->vd)
-			return ENOENT;
-	}
-
-	return enc->vd->disph(enc->disp, "Selfview", frame, *timestamp);
+	return err;
 }
 
 
