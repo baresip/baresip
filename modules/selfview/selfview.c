@@ -140,7 +140,7 @@ static int encode_update(struct vidfilt_enc_st **stp, void **ctx,
 			goto out;
 		}
 
-		info(".... selfview: created video display (%s)\n",
+		info("selfview: created video display (%s)\n",
 		     st->vd->name);
 	}
 
