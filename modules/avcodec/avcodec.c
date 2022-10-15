@@ -111,10 +111,6 @@ static int module_init(void)
 	char hwaccel[64];
 #endif
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
-	avcodec_register_all();
-#endif
-
 	conf_get_str(conf_cur(), "avcodec_h264enc", h264enc, sizeof(h264enc));
 	conf_get_str(conf_cur(), "avcodec_h264dec", h264dec, sizeof(h264dec));
 	conf_get_str(conf_cur(), "avcodec_h265enc", h265enc, sizeof(h265enc));

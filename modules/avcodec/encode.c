@@ -395,9 +395,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	AVFrame *hw_frame = NULL;
 	AVPacket *pkt = NULL;
 	int i, err = 0, ret;
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
-	int got_packet = 0;
-#endif
 	uint64_t ts;
 
 	if (!st || !frame)
