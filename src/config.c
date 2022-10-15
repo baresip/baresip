@@ -662,6 +662,8 @@ static const char *default_avcodec_hwaccel(void)
 	return "vaapi";
 #elif defined (DARWIN)
 	return "videotoolbox";
+#elif defined (WIN32)
+	return "nvenc";
 #else
 	return "none";
 #endif
