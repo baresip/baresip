@@ -5,17 +5,6 @@
  */
 
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(57, 37, 100)
-#define av_packet_free(pkt)			\
-						\
-	if (*(pkt)) {				\
-						\
-		av_free_packet(*(pkt));		\
-		av_freep((pkt));		\
-	}
-#endif
-
-
 extern const AVCodec *avcodec_h264enc;
 extern const AVCodec *avcodec_h264dec;
 
