@@ -82,7 +82,6 @@ static inline void fragment_rewind(struct viddec_state *vds)
 }
 
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
                                         const enum AVPixelFormat *pix_fmts)
 {
@@ -98,7 +97,6 @@ static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
 
 	return AV_PIX_FMT_NONE;
 }
-#endif
 
 
 static int init_decoder(struct viddec_state *st, const char *name)
@@ -138,7 +136,6 @@ static int init_decoder(struct viddec_state *st, const char *name)
 	if (!st->ctx || !st->pict)
 		return ENOMEM;
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	/* Hardware accelleration */
 	if (avcodec_hw_device_ctx) {
 		st->ctx->hw_device_ctx = av_buffer_ref(avcodec_hw_device_ctx);
@@ -150,7 +147,6 @@ static int init_decoder(struct viddec_state *st, const char *name)
 	else {
 		info("avcodec: decode: hardware accel disabled\n");
 	}
-#endif
 
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0)
 		return ENOENT;
@@ -209,13 +205,11 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 	int i, got_picture, ret;
 	int err = 0;
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (st->ctx->hw_device_ctx) {
 		hw_frame = av_frame_alloc();
 		if (!hw_frame)
 			return ENOMEM;
 	}
-#endif
 
 	err = mbuf_fill(st->mb, 0x00, AV_INPUT_BUFFER_PADDING_SIZE);
 	if (err)
@@ -254,7 +248,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 	if (got_picture) {
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 		if (hw_frame) {
 			/* retrieve data from GPU to CPU */
 			ret = av_hwframe_transfer_data(st->pict, hw_frame, 0);
@@ -266,7 +259,6 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 			st->pict->key_frame = hw_frame->key_frame;
 		}
-#endif
 
 		frame->fmt = avpixfmt_to_vidfmt(st->pict->format);
 		if (frame->fmt == (enum vidfmt)-1) {

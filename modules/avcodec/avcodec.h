@@ -11,11 +11,9 @@ extern const AVCodec *avcodec_h264dec;
 extern const AVCodec *avcodec_h265enc;
 extern const AVCodec *avcodec_h265dec;
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 extern AVBufferRef *avcodec_hw_device_ctx;
 extern enum AVPixelFormat avcodec_hw_pix_fmt;
 extern enum AVHWDeviceType avcodec_hw_type;
-#endif
 
 
 /*
