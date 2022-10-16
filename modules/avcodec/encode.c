@@ -59,7 +59,6 @@ static void destructor(void *arg)
 }
 
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *device_ctx,
 			   int width, int height)
 {
@@ -99,7 +98,6 @@ static int set_hwframe_ctx(AVCodecContext *ctx, AVBufferRef *device_ctx,
 
 	return err;
 }
-#endif
 
 
 static enum AVPixelFormat vidfmt_to_avpixfmt(enum vidfmt fmt)
@@ -169,11 +167,9 @@ static int open_encoder(struct videnc_state *st,
 	st->ctx->width     = size->w;
 	st->ctx->height    = size->h;
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI)
 		st->ctx->pix_fmt   = avcodec_hw_pix_fmt;
 	else
-#endif
 		st->ctx->pix_fmt   = pix_fmt;
 
 	conf_get_u32(conf_cur(), "avcodec_keyint", &keyint);
@@ -244,7 +240,6 @@ static int open_encoder(struct videnc_state *st,
 		av_opt_set(st->ctx->priv_data, "tune", "zerolatency", 0);
 	}
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 
 		/* set hw_frames_ctx for encoder's AVCodecContext */
@@ -258,7 +253,6 @@ static int open_encoder(struct videnc_state *st,
 			goto out;
 		}
 	}
-#endif
 
 	if (avcodec_open2(st->ctx, st->codec, NULL) < 0) {
 		err = ENOENT;
@@ -427,7 +421,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		goto out;
 	}
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 		hw_frame = av_frame_alloc();
 		if (!hw_frame) {
@@ -435,7 +428,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 			goto out;
 		}
 	}
-#endif
 
 	pict->format = vidfmt_to_avpixfmt(frame->fmt);
 	pict->width = frame->size.w;
@@ -453,11 +445,8 @@ int avcodec_encode(struct videnc_state *st, bool update,
 		pict->pict_type = AV_PICTURE_TYPE_I;
 	}
 
-#if LIBAVUTIL_VERSION_MAJOR >= 55
 	pict->color_range = AVCOL_RANGE_MPEG;
-#endif
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (avcodec_hw_type == AV_HWDEVICE_TYPE_VAAPI) {
 
 		if ((err = av_hwframe_get_buffer(st->ctx->hw_frames_ctx,
@@ -481,7 +470,6 @@ int avcodec_encode(struct videnc_state *st, bool update,
 
 		av_frame_copy_props(hw_frame, pict);
 	}
-#endif
 
 	pkt = av_packet_alloc();
 	if (!pkt) {

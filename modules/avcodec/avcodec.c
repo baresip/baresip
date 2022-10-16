@@ -45,11 +45,9 @@ const AVCodec *avcodec_h265enc;
 const AVCodec *avcodec_h265dec;
 
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 AVBufferRef *avcodec_hw_device_ctx = NULL;
 enum AVPixelFormat avcodec_hw_pix_fmt;
 enum AVHWDeviceType avcodec_hw_type = AV_HWDEVICE_TYPE_NONE;
-#endif
 
 
 int avcodec_resolve_codecid(const char *s)
@@ -107,9 +105,7 @@ static int module_init(void)
 	char h264dec[64] = "h264";
 	char h265enc[64] = "libx265";
 	char h265dec[64] = "hevc";
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	char hwaccel[64];
-#endif
 
 	conf_get_str(conf_cur(), "avcodec_h264enc", h264enc, sizeof(h264enc));
 	conf_get_str(conf_cur(), "avcodec_h264dec", h264dec, sizeof(h264dec));
@@ -155,7 +151,6 @@ static int module_init(void)
 		     avcodec_h265dec->name, avcodec_h265dec->long_name);
 	}
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	/* common for encode/decode */
 	if (0 == conf_get_str(conf_cur(), "avcodec_hwaccel",
 			      hwaccel, sizeof(hwaccel))) {
@@ -210,7 +205,6 @@ static int module_init(void)
 
 		avcodec_hw_type = type;
 	}
-#endif
 
 	return 0;
 }
@@ -222,10 +216,8 @@ static int module_close(void)
 	vidcodec_unregister(&h264);
 	vidcodec_unregister(&h264_1);
 
-#if LIBAVUTIL_VERSION_MAJOR >= 56
 	if (avcodec_hw_device_ctx)
 		av_buffer_unref(&avcodec_hw_device_ctx);
-#endif
 
 	return 0;
 }
