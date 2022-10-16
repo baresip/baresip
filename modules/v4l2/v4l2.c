@@ -15,7 +15,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #undef __STRICT_ANSI__ /* needed for RHEL4 kernel 2.6.9 */
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -51,7 +50,7 @@ struct buffer {
 
 struct vidsrc_st {
 	int fd;
-	pthread_t thread;
+	thrd_t thread;
 	bool run;
 	struct vidsz sz;
 	u_int32_t pixfmt;
@@ -451,7 +450,7 @@ static void destructor(void *arg)
 
 	if (st->run) {
 		st->run = false;
-		pthread_join(st->thread, NULL);
+		thrd_join(st->thread, NULL);
 	}
 
 	stop_capturing(st);
@@ -462,7 +461,7 @@ static void destructor(void *arg)
 }
 
 
-static void *read_thread(void *arg)
+static int read_thread(void *arg)
 {
 	struct vidsrc_st *st = arg;
 	int err;
@@ -474,7 +473,7 @@ static void *read_thread(void *arg)
 		}
 	}
 
-	return NULL;
+	return 0;
 }
 
 
@@ -535,7 +534,7 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		goto out;
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, read_thread, st);
+	err = thread_create_name(&st->thread, "v4l2", read_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;
