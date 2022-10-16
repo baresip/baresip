@@ -11,7 +11,7 @@ struct shared {
 	struct vidsrc_st *vidsrc_st;  /* pointer */
 	mtx_t lock;
 	AVFormatContext *ic;
-	pthread_t thread;
+	thrd_t thread;
 	char *dev;
 	bool is_realtime;
 	bool run;

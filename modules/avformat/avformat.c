@@ -10,7 +10,6 @@
 #define _BSD_SOURCE 1
 #include <unistd.h>
 #include <string.h>
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -57,7 +56,7 @@ static void shared_destructor(void *arg)
 
 	if (st->run) {
 		st->run = false;
-		pthread_join(st->thread, NULL);
+		thrd_join(st->thread, NULL);
 	}
 
 	if (st->au.ctx) {
@@ -79,7 +78,7 @@ static void shared_destructor(void *arg)
 }
 
 
-static void *read_thread(void *data)
+static int read_thread(void *data)
 {
 	struct shared *st = data;
 	uint64_t now, offset = tmr_jiffies();
@@ -88,7 +87,7 @@ static void *read_thread(void *data)
 
 	pkt = av_packet_alloc();
 	if (!pkt)
-		return NULL;
+		return ENOMEM;
 
 	while (st->run) {
 
@@ -176,7 +175,7 @@ static void *read_thread(void *data)
  out:
 	av_packet_free(&pkt);
 
-	return NULL;
+	return 0;
 }
 
 
@@ -415,7 +414,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 	}
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, read_thread, st);
+	err = thread_create_name(&st->thread, "avformat", read_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;

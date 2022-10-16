@@ -10,7 +10,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <pthread.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/pixdesc.h>
