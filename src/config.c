@@ -1218,11 +1218,12 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			 "\n# avformat\n"
-			 "#avformat_hwaccel\tvaapi\n"
+			 "#avformat_hwaccel\t%s\n"
 			 "#avformat_inputformat\tmjpeg\n"
 			 "#avformat_decoder\tmjpeg\n"
 			 "#avformat_pass_through\tyes\n"
-			 "#avformat_rtsp_transport\tudp\n");
+			 "#avformat_rtsp_transport\tudp\n",
+			 default_avcodec_hwaccel());
 
 	if (f)
 		(void)fclose(f);
