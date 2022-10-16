@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <alsa/asoundlib.h>
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -18,7 +17,7 @@
 
 
 struct ausrc_st {
-	pthread_t thread;
+	thrd_t thread;
 	volatile bool run;
 	snd_pcm_t *read;
 	void *sampv;
@@ -38,7 +37,7 @@ static void ausrc_destructor(void *arg)
 	if (st->run) {
 		debug("alsa: stopping recording thread (%s)\n", st->device);
 		st->run = false;
-		(void)pthread_join(st->thread, NULL);
+		thrd_join(st->thread, NULL);
 	}
 
 	if (st->read)
@@ -49,7 +48,7 @@ static void ausrc_destructor(void *arg)
 }
 
 
-static void *read_thread(void *arg)
+static int read_thread(void *arg)
 {
 	struct ausrc_st *st = arg;
 	uint64_t frames = 0;
@@ -89,7 +88,7 @@ static void *read_thread(void *arg)
 	}
 
  out:
-	return NULL;
+	return err;
 }
 
 
@@ -154,7 +153,7 @@ int alsa_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	}
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, read_thread, st);
+	err = thread_create_name(&st->thread, "alsa_src", read_thread, st);
 	if (err) {
 		st->run = false;
 		goto out;
