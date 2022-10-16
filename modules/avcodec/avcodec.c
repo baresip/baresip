@@ -157,7 +157,6 @@ static int module_init(void)
 
 		enum AVHWDeviceType type;
 		int ret;
-		int i;
 
 		info("avcodec: enable hwaccel using '%s'\n", hwaccel);
 
@@ -167,10 +166,17 @@ static int module_init(void)
 			warning("avcodec: Device type"
 				" '%s' is not supported.\n", hwaccel);
 
+			info("Available device types:\n");
+			while ((type = av_hwdevice_iterate_types(type))
+				!= AV_HWDEVICE_TYPE_NONE)
+				info("    %s\n",
+				     av_hwdevice_get_type_name(type));
+			info("\n");
+
 			return ENOSYS;
 		}
 
-		for (i = 0;; i++) {
+		for (int i = 0;; i++) {
 			const AVCodecHWConfig *config;
 
 			config = avcodec_get_hw_config(avcodec_h264dec, i);
