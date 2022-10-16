@@ -7,7 +7,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <pthread.h>
 #include <libavutil/opt.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
