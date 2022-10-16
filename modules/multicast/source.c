@@ -9,9 +9,6 @@
 #include <baresip.h>
 
 #include <stdlib.h>
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-#endif
 
 #include "multicast.h"
 
@@ -55,12 +52,10 @@ struct mcsource {
 	mcsender_send_h *sendh;
 	void *arg;
 
-#ifdef HAVE_PTHREAD
 	struct {
-		pthread_t tid;
+		thrd_t tid;
 		bool run;
 	} thr;
-#endif
 };
 
 
@@ -69,13 +64,11 @@ static void mcsource_destructor(void *arg)
 	struct mcsource *src = arg;
 
 	switch (src->cfg->txmode) {
-#ifdef HAVE_PTHREAD
 		case AUDIO_MODE_THREAD:
 			if (src->thr.run) {
 				src->thr.run = false;
-				pthread_join(src->thr.tid, NULL);
+				thrd_join(src->thr.tid, NULL);
 			}
-#endif
 		default:
 			break;
 	}
@@ -304,7 +297,6 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 }
 
 
-#ifdef HAVE_PTHREAD
 /**
  * Standalone transmitter thread function
  *
@@ -312,7 +304,7 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
  *
  * @return NULL
  */
-static void *tx_thread(void *arg)
+static int tx_thread(void *arg)
 {
 	struct mcsource *src = arg;
 	uint64_t ts = 0;
@@ -340,9 +332,8 @@ static void *tx_thread(void *arg)
 		ts += src->ptime;
 	}
 
-	return NULL;
+	return 0;
 }
-#endif
 
 
 /**
@@ -420,19 +411,17 @@ static int start_source(struct mcsource *src)
 		switch (src->cfg->txmode) {
 			case AUDIO_MODE_POLL:
 				break;
-#ifdef HAVE_PTHREAD
 			case AUDIO_MODE_THREAD:
 				if (!src->thr.run) {
 					src->thr.run = true;
-					err = pthread_create(&src->thr.tid,
-						NULL, tx_thread, src);
+					err = thread_create_name(&src->thr.tid,
+						"multicast", tx_thread, src);
 					if (err) {
 						src->thr.run = false;
 						return err;
 					}
 				}
 				break;
-#endif
 
 			default:
 				warning ("multicast source: tx mode "
