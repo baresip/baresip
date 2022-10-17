@@ -627,6 +627,7 @@ static int cmd_dialdir(struct re_printf *pf, void *arg)
 	}
 
 	if (err) {
+		dname = pl_null;
 		err = re_regex(carg->prm, str_len(carg->prm),
 			       "[^ ]* [^ ]*",&pluri, &argdir[0]);
 	}
