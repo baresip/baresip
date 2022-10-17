@@ -1726,6 +1726,7 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	char *uridup;
 	char *host;
 	char *c;
+	bool complete = false;
 	int err = 0;
 
 	if (!buf || !uri)
@@ -1740,11 +1741,16 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 	/* Append sip: scheme if missing */
 	if (0 != re_regex(uri, len, "sip:"))
 		err |= mbuf_printf(buf, "sip:");
+	else
+		complete = true;
 
 	err |= mbuf_write_str(buf, uri);
 
 	if (!acc || err)
 		return err;
+
+	if (complete)
+		return 0;
 
 	/* Append domain if missing and uri is not IP address */
 

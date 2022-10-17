@@ -99,8 +99,8 @@ int test_account_uri_complete(void)
 		{ "user@domain.com:5677",
 		  "sip:user@domain.com:5677" },
 
-		{ "sip:user",
-		  "sip:user@proxy.com" },
+		{ "sip:office.local",
+		  "sip:office.local" },
 
 		{ "sip:user@domain.com",
 		  "sip:user@domain.com" },
