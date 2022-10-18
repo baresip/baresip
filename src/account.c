@@ -1720,44 +1720,76 @@ const char *account_extra(const struct account *acc)
 int account_uri_complete(const struct account *acc, struct mbuf *buf,
 			 const char *uri)
 {
+	char *str;
+	struct pl pl;
+	int err;
+
+	pl_set_str(&pl, uri);
+	err = account_uri_complete_strdup(acc, &str, &pl);
+	if (err)
+		return err;
+
+	err = mbuf_write_str(buf, str);
+	mem_deref(str);
+
+	return err;
+}
+
+
+/**
+ * Auto complete a SIP uri, add scheme and domain if missing
+ *
+ * @param acc  User-Agent account
+ * @param strp Pointer to destination string; allocated and set
+ * @param uri  Input SIP uri pointer-length string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_uri_complete_strdup(const struct account *acc, char **strp,
+				const struct pl *uri)
+{
 	struct sa sa_addr;
-	size_t len;
 	bool uri_is_ip;
 	char *uridup;
 	char *host;
 	char *c;
 	bool complete = false;
+	struct mbuf *mb;
+	struct pl trimmed;
 	int err = 0;
 
-	if (!buf || !uri)
+	if (!strp || !pl_isset(uri))
 		return EINVAL;
 
 	/* Skip initial whitespace */
-	while (isspace(*uri))
-		++uri;
+	trimmed = *uri;
+	err = pl_ltrim(&trimmed);
+	if (err)
+		return err;
 
-	len = str_len(uri);
+	mb = mbuf_alloc(64);
+	if (!mb)
+		return ENOMEM;
 
 	/* Append sip: scheme if missing */
-	if (0 != re_regex(uri, len, "sip:"))
-		err |= mbuf_printf(buf, "sip:");
+	if (re_regex(trimmed.p, trimmed.l, "sip:"))
+		err |= mbuf_printf(mb, "sip:");
 	else
 		complete = true;
 
-	err |= mbuf_write_str(buf, uri);
-
+	err |= mbuf_write_pl(mb, &trimmed);
 	if (!acc || err)
-		return err;
+		goto out;
 
 	if (complete)
-		return 0;
+		goto out;
 
 	/* Append domain if missing and uri is not IP address */
 
 	/* check if uri is valid IP address */
-	err = str_dup(&uridup, uri);
+	err = pl_strdup(&uridup, &trimmed);
 	if (err)
-		return err;
+		goto out;
 
 	if (!strncmp(uridup, "sip:", 4))
 		host = uridup + 4;
@@ -1778,15 +1810,15 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 
 	mem_deref(uridup);
 
-	if (0 != re_regex(uri, len, "[^@]+@[^]+", NULL, NULL) &&
-		1 != uri_is_ip) {
+	if (!uri_is_ip &&
+	    0 != re_regex(trimmed.p, trimmed.l, "[^@]+@[^]+", NULL, NULL)) {
 #if HAVE_INET6
 		if (AF_INET6 == acc->luri.af)
-			err |= mbuf_printf(buf, "@[%r]",
+			err |= mbuf_printf(mb, "@[%r]",
 					   &acc->luri.host);
 		else
 #endif
-			err |= mbuf_printf(buf, "@%r",
+			err |= mbuf_printf(mb, "@%r",
 					   &acc->luri.host);
 
 		/* Also append port if specified and not 5060 */
@@ -1797,11 +1829,18 @@ int account_uri_complete(const struct account *acc, struct mbuf *buf,
 			break;
 
 		default:
-			err |= mbuf_printf(buf, ":%u", acc->luri.port);
+			err |= mbuf_printf(mb, ":%u", acc->luri.port);
 			break;
 		}
 	}
 
+out:
+	if (!err) {
+		mbuf_set_pos(mb, 0);
+		err = mbuf_strdup(mb, strp, mbuf_get_left(mb));
+	}
+
+	mem_deref(mb);
 	return err;
 }
 

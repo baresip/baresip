@@ -1025,7 +1025,7 @@ struct ua *uag_find_param(const char *name, const char *value)
 
 
 /**
- * Find a User-Agent (UA) best fitting for an SIP request
+ * Find a User-Agent (UA) best fitting for a SIP request
  *
  * @param requri The SIP uri for the request
  *
@@ -1033,32 +1033,41 @@ struct ua *uag_find_param(const char *name, const char *value)
  */
 struct ua *uag_find_requri(const char *requri)
 {
-	struct mbuf *mb;
+	struct pl pl;
+
+	pl_set_str(&pl, requri);
+	return uag_find_requri_pl(&pl);
+}
+
+
+/**
+ * Find a User-Agent (UA) best fitting for a SIP request
+ *
+ * @param requri The SIP uri pointer-length string for the request
+ *
+ * @return User-Agent (UA) if found, otherwise NULL
+ */
+struct ua *uag_find_requri_pl(const struct pl *requri)
+{
 	struct pl pl;
 	struct uri *uri;
 	struct le *le;
 	struct ua *ret = NULL;
 	struct sip_addr addr;
+	char *uric;
 	int err;
 
-	if (!requri)
+	if (!pl_isset(requri))
 		return NULL;
 
 	if (!uag.ual.head)
 		return NULL;
 
-	mb = mbuf_alloc(16);
-	if (!mb)
-		return NULL;
-
-	err = account_uri_complete(NULL, mb, requri);
-	if (err) {
-		warning("ua: failed to complete uri: %s\n", requri);
+	err = account_uri_complete_strdup(NULL, &uric, requri);
+	if (err)
 		goto out;
-	}
 
-	mbuf_set_pos(mb, 0);
-	pl_set_mbuf(&pl, mb);
+	pl_set_str(&pl, uric);
 	err = sip_addr_decode(&addr, &pl);
 	if (err) {
 		warning("ua: address %r could not be parsed: %m\n",
@@ -1123,7 +1132,7 @@ struct ua *uag_find_requri(const char *requri)
 	}
 
 out:
-	mem_deref(mb);
+	mem_deref(uric);
 	return ret;
 }
 
