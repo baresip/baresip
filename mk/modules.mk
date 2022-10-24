@@ -106,6 +106,7 @@ ifneq ($(HAVE_SPEEXDSP),)
 USE_MPA  := $(shell $(call CC_TEST_AND,twolame.h,lame/lame.h))
 endif
 endif
+USE_SWSCALE  := $(shell $(call CC_TEST,libswscale/swscale.h))
 USE_SYSLOG   := $(shell $(call CC_TEST,syslog.h))
 USE_MQTT     := $(shell $(call CC_TEST,mosquitto.h))
 HAVE_LIBV4L2 := $(shell $(call CC_TEST,libv4l2.h))
@@ -320,6 +321,9 @@ MODULES   += stdio
 endif
 ifneq ($(USE_SNDIO),)
 MODULES   += sndio
+endif
+ifneq ($(USE_SWSCALE),)
+MODULES   += swscale
 endif
 ifneq ($(USE_SYSLOG),)
 MODULES   += syslog
