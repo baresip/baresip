@@ -30,7 +30,7 @@ struct vidisp_st {
 };
 
 
-static struct vidisp *vid;
+static struct vidisp *vid = NULL;
 
 
 static void event_handler(void *arg);
@@ -336,9 +336,13 @@ static int module_init(void)
 {
 	int err;
 
-	if (SDL_VideoInit(NULL) < 0) {
-		warning("sdl: unable to init Video: %s\n",
-			SDL_GetError());
+	if (SDL_Init(0) != 0) {
+		warning("sdl: unable to init SDL: %s\n", SDL_GetError());
+		return ENODEV;
+	}
+
+	if (SDL_VideoInit(NULL) != 0) {
+		warning("sdl: unable to init Video: %s\n", SDL_GetError());
 		return ENODEV;
 	}
 
@@ -353,7 +357,10 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	vid = mem_deref(vid);
+	if (vid) {
+		vid = mem_deref(vid);
+		SDL_VideoQuit();
+	}
 
 	SDL_Quit();
 
