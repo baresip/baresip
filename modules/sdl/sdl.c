@@ -313,6 +313,9 @@ static int display(struct vidisp_st *st, const char *title,
 
 	SDL_UnlockTexture(st->texture);
 
+	/* Clear screen (avoid artifacts) */
+	SDL_RenderClear(st->renderer);
+
 	/* Blit the sprite onto the screen */
 	SDL_RenderCopy(st->renderer, st->texture, NULL, NULL);
 
