@@ -90,9 +90,6 @@ static int decode(struct vidfilt_dec_st *_st, struct vidframe *frame,
 
 		unsigned x0, y0;
 
-		if (frame->fmt != VID_FMT_YUV420P)
-			return ENOTSUP;
-
 		switch (box_layout) {
 
 		case LAYOUT_TOP:
