@@ -318,12 +318,21 @@ add_subdirectory(test)
 
 if(NOT STATIC AND UNIX)
   foreach(mod IN LISTS MODULES)
-    set(mod_lib ${mod}${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set(mod_lib ${mod}${CMAKE_SHARED_MODULE_SUFFIX})
     add_custom_command(
       TARGET baresip_exe POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E create_symlink
         ${CMAKE_CURRENT_BINARY_DIR}/modules/${mod}/${mod_lib}
-        ${CMAKE_CURRENT_BINARY_DIR}/${mod}${CMAKE_SHARED_LIBRARY_SUFFIX}
+        ${CMAKE_CURRENT_BINARY_DIR}/${mod_lib}
+    )
+  endforeach()
+  foreach(mod IN LISTS APP_MODULES)
+    set(mod_lib ${mod}${CMAKE_SHARED_MODULE_SUFFIX})
+    add_custom_command(
+      TARGET baresip_exe POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_CURRENT_BINARY_DIR}/app_modules/${mod}/${mod_lib}
+        ${CMAKE_CURRENT_BINARY_DIR}/${mod_lib}
     )
   endforeach()
 endif()

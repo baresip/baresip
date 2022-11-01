@@ -5,6 +5,61 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [2.9.0] - 2022-11-01
+
+## What's Changed
+* sndfile Module - filename includes strm->cname (i.e. call->local_uri)~ by @ninp0 in https://github.com/baresip/baresip/pull/2165
+* log: optional timestamps by @cspiel1 in https://github.com/baresip/baresip/pull/2169
+* avcodec: remove H263 codec by @alfredh in https://github.com/baresip/baresip/pull/2182
+* mk: bump PROJECT_NUMBER in Doxyfile by @cspiel1 in https://github.com/baresip/baresip/pull/2201
+* stream: correct Doxygen for peer field by @cspiel1 in https://github.com/baresip/baresip/pull/2202
+* cmake: add pre version handling by @sreimers in https://github.com/baresip/baresip/pull/2203
+* cmake,debian: use dh-cmake by @sreimers in https://github.com/baresip/baresip/pull/2204
+* cmake: add pkgconfig by @robert-scheck in https://github.com/baresip/baresip/pull/2205
+* Avoid webrtc_aecm module C++20 extension warnings by @juha-h in https://github.com/baresip/baresip/pull/2215
+* cmake/ctrld_dbus: ninja and subdirectory fixes by @sreimers in https://github.com/baresip/baresip/pull/2221
+* cmake: link CMAKE_CURRENT_BINARY_DIR modules by @sreimers in https://github.com/baresip/baresip/pull/2223
+* cmake,debian: fix libbaresip dependency by @sreimers in https://github.com/baresip/baresip/pull/2224
+* cmake: set C only flags by @sreimers in https://github.com/baresip/baresip/pull/2226
+* FindPNG needs to find also include directory by @juha-h in https://github.com/baresip/baresip/pull/2230
+* FindVPX needs to find also include directory by @juha-h in https://github.com/baresip/baresip/pull/2231
+* Multicast send events on mcreg enable commands by @cHuberCoffee in https://github.com/baresip/baresip/pull/2219
+* call, menu: support display name for outgoing calls by @cspiel1 in https://github.com/baresip/baresip/pull/2220
+* call: hangup call on transp reset if necessary by @maximilianfridrich in https://github.com/baresip/baresip/pull/2229
+* portaudio: add mediadev_add with mediadev driver fields by @sreimers in https://github.com/baresip/baresip/pull/2233
+* call: fix mnat call_streams_alloc by @sreimers in https://github.com/baresip/baresip/pull/2242
+* jack: fix CodeQL uninitialized local variable by @sreimers in https://github.com/baresip/baresip/pull/2244
+* Avoid snapshot compiler warnings by @juha-h in https://github.com/baresip/baresip/pull/2239
+* avformat: remove old call to avcodec_register_all() by @alfredh in https://github.com/baresip/baresip/pull/2246
+* avformat: remove LIBAVUTIL_VERSION_MAJOR check by @alfredh in https://github.com/baresip/baresip/pull/2247
+* ua: wording for warning in ua_refer_send() by @cspiel1 in https://github.com/baresip/baresip/pull/2249
+* ua: use mbuf functions for ua_connect_dir by @cspiel1 in https://github.com/baresip/baresip/pull/2250
+* ci: use actions/checkout@v3 by @sreimers in https://github.com/baresip/baresip/pull/2254
+* avcodec: remove av_packet_free() wrapper by @alfredh in https://github.com/baresip/baresip/pull/2255
+* selfview: create window in encode_update by @alfredh in https://github.com/baresip/baresip/pull/2253
+* alsa: use C11 threads by @alfredh in https://github.com/baresip/baresip/pull/2256
+* config: fix template for avcodec_xxx by @alfredh in https://github.com/baresip/baresip/pull/2258
+* avformat: use C11 threads by @alfredh in https://github.com/baresip/baresip/pull/2259
+* v4l2: use C11 threads by @alfredh in https://github.com/baresip/baresip/pull/2261
+* avcodec: remove LIBAVUTIL_VERSION_MAJOR check by @alfredh in https://github.com/baresip/baresip/pull/2260
+* multicast: use C11 threads by @alfredh in https://github.com/baresip/baresip/pull/2262
+* menu fix display name by @cspiel1 in https://github.com/baresip/baresip/pull/2251
+* account: do not complete dial URI if scheme is included by @cspiel1 in https://github.com/baresip/baresip/pull/2267
+* menu: simplify URI complete by @cspiel1 in https://github.com/baresip/baresip/pull/2268
+* gtk: use new function account_uri_complete_strdup() by @cspiel1 in https://github.com/baresip/baresip/pull/2273
+* Removed module avformat dependency on libpostproc by @juha-h in https://github.com/baresip/baresip/pull/2274
+* make: detect and add swscale module in modules.mk by @agorgl in https://github.com/baresip/baresip/pull/2281
+* cmake: add APP_MODULES symlinks by @sreimers in https://github.com/baresip/baresip/pull/2286
+* cmake: use CMAKE_SHARED_MODULE_SUFFIX by @sreimers in https://github.com/baresip/baresip/pull/2292
+
+## New Contributors
+* @ninp0 made their first contribution in https://github.com/baresip/baresip/pull/2165
+* @agorgl made their first contribution in https://github.com/baresip/baresip/pull/2281
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v2.8.1...v2.9.0
+
+
 ## [2.8.1] - 2022-10-01
 
 * baresip.h: bump BARESIP\_VERSION by @cspiel1 in https://github.com/baresip/baresip/pull/2196
