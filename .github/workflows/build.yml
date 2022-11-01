@@ -33,6 +33,11 @@ jobs:
       run: |
         echo "OPENSSL_ROOT_DIR=/usr/local/opt/openssl" >> $GITHUB_ENV
 
+    - name: openssl path macos
+      if: ${{ runner.os == 'macOS' }}
+      run: |
+        echo "OPENSSL_ROOT_DIR=/usr/local/opt/openssl" >> $GITHUB_ENV
+
     - name: Fix Ubuntu 22.04
       if: ${{ matrix.os == 'ubuntu-22.04' }}
       run: |
