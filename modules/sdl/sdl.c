@@ -24,16 +24,15 @@ struct vidisp_st {
 	struct vidsz size;              /**< Current size          */
 	enum vidfmt fmt;                /**< Current pixel format  */
 	bool fullscreen;                /**< Fullscreen flag       */
-	struct tmr tmr;
+
+	struct mqueue *mq;
 	Uint32 flags;
 	bool quit;
+	int inited;
 };
 
 
 static struct vidisp *vid = NULL;
-
-
-static void event_handler(void *arg);
 
 
 static uint32_t match_fmt(enum vidfmt fmt)
@@ -43,10 +42,8 @@ static uint32_t match_fmt(enum vidfmt fmt)
 	case VID_FMT_YUV420P:	return SDL_PIXELFORMAT_IYUV;
 	case VID_FMT_YUYV422:   return SDL_PIXELFORMAT_YUY2;
 	case VID_FMT_UYVY422:   return SDL_PIXELFORMAT_UYVY;
-#if SDL_VERSION_ATLEAST(2, 0, 4)
 	case VID_FMT_NV12:	return SDL_PIXELFORMAT_NV12;
 	case VID_FMT_NV21:	return SDL_PIXELFORMAT_NV21;
-#endif
 	case VID_FMT_RGB32:     return SDL_PIXELFORMAT_ARGB8888;
 	default:		return SDL_PIXELFORMAT_UNKNOWN;
 	}
@@ -69,12 +66,12 @@ static uint32_t chroma_step(enum vidfmt fmt)
 static void sdl_reset(struct vidisp_st *st)
 {
 	if (st->texture) {
-		/*SDL_DestroyTexture(st->texture);*/
+		SDL_DestroyTexture(st->texture);
 		st->texture = NULL;
 	}
 
 	if (st->renderer) {
-		/*SDL_DestroyRenderer(st->renderer);*/
+		SDL_DestroyRenderer(st->renderer);
 		st->renderer = NULL;
 	}
 
@@ -82,51 +79,10 @@ static void sdl_reset(struct vidisp_st *st)
 		SDL_DestroyWindow(st->window);
 		st->window = NULL;
 	}
-}
 
-
-static void event_handler(void *arg)
-{
-	struct vidisp_st *st = arg;
-	SDL_Event event;
-
-	tmr_start(&st->tmr, 100, event_handler, st);
-
-	/* NOTE: events must be checked from main thread */
-	while (SDL_PollEvent(&event)) {
-
-		if (event.type == SDL_KEYDOWN) {
-
-			switch (event.key.keysym.sym) {
-
-			case SDLK_f:
-				/* press key 'f' to toggle fullscreen */
-				st->fullscreen = !st->fullscreen;
-				info("sdl: %sable fullscreen mode\n",
-				     st->fullscreen ? "en" : "dis");
-
-				if (st->fullscreen)
-					st->flags |=
-						SDL_WINDOW_FULLSCREEN_DESKTOP;
-				else
-					st->flags &=
-						~SDL_WINDOW_FULLSCREEN_DESKTOP;
-
-				SDL_SetWindowFullscreen(st->window, st->flags);
-				break;
-
-			case SDLK_q:
-				ui_input_key(baresip_uis(), 'q', NULL);
-				break;
-
-			default:
-				break;
-			}
-		}
-		else if (event.type == SDL_QUIT) {
-			st->quit = true;
-			break;
-		}
+	if (!st->inited) {
+		info(".. SDL_Quit\n");
+		SDL_Quit();
 	}
 }
 
@@ -135,19 +91,28 @@ static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
 
-	tmr_cancel(&st->tmr);
 	sdl_reset(st);
 
 	/* needed to close the window */
 	SDL_PumpEvents();
+
+	mem_deref(st->mq);
 }
 
 
+static void mqueue_handler(int id, void *data, void *arg)
+{
+	ui_input_key(baresip_uis(), id, NULL);
+}
+
+
+/* NOTE: should be called from the main thread */
 static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg)
 {
 	struct vidisp_st *st;
+	int err;
 
 	/* Not used by SDL */
 	(void)dev;
@@ -163,11 +128,143 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 	st->fullscreen = prm ? prm->fullscreen : false;
 
-	tmr_start(&st->tmr, 100, event_handler, st);
+	err = mqueue_alloc(&st->mq, mqueue_handler, st);
+	if (err)
+		goto out;
 
-	*stp = st;
+ out:
+	if (err)
+		mem_deref(st);
+	else
+		*stp = st;
+
+	return err;
+}
+
+
+static int write_header(struct vidisp_st *st, const char *title,
+			const struct vidsz *size, uint32_t format)
+{
+	if (SDL_WasInit(SDL_INIT_VIDEO)) {
+		warning("SDL video subsystem was already inited,"
+			" you could have multiple SDL outputs."
+			" This may cause unknown behaviour.\n");
+		st->inited = 1;
+	}
+
+	/* initialization */
+	if (!st->inited){
+
+		if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+			warning("Unable to initialize SDL: %s\n",
+				SDL_GetError());
+			return ENOTSUP;
+		}
+	}
+
+	if (!st->window) {
+		char capt[256];
+
+		st->flags  = SDL_WINDOW_HIDDEN;
+		st->flags |= SDL_WINDOW_RESIZABLE;
+
+		if (st->fullscreen)
+			st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+		if (title) {
+			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
+				    title, size->w, size->h);
+		}
+		else {
+			re_snprintf(capt, sizeof(capt), "%u x %u",
+				    size->w, size->h);
+		}
+
+		if (SDL_CreateWindowAndRenderer(size->w, size->h, st->flags,
+						&st->window,
+						&st->renderer) != 0) {
+
+			warning("Couldn't create window and renderer: %s\n",
+				SDL_GetError());
+			return ENOTSUP;
+		}
+
+		SDL_SetWindowTitle(st->window, capt);
+		SDL_SetWindowPosition(st->window,
+				      SDL_WINDOWPOS_CENTERED,
+				      SDL_WINDOWPOS_CENTERED);
+		SDL_ShowWindow(st->window);
+
+		st->size = *size;
+	}
+
+	if (!st->texture) {
+
+		st->texture = SDL_CreateTexture(st->renderer,
+						format,
+						SDL_TEXTUREACCESS_STREAMING,
+						size->w, size->h);
+		if (!st->texture) {
+			warning("sdl: unable to create texture: %s\n",
+				SDL_GetError());
+			return ENODEV;
+		}
+
+	}
+
+	st->inited = 1;
 
 	return 0;
+}
+
+
+static void poll_events(struct vidisp_st *st)
+{
+	SDL_Event event;
+
+	if (!SDL_PollEvent(&event))
+		return;
+
+	switch (event.type) {
+
+	case SDL_KEYDOWN:
+
+		switch (event.key.keysym.sym) {
+
+		case SDLK_f:
+			/* press key 'f' to toggle fullscreen */
+			st->fullscreen = !st->fullscreen;
+			info("sdl: %sable fullscreen mode\n",
+			     st->fullscreen ? "en" : "dis");
+
+			if (st->fullscreen)
+				st->flags |=
+					SDL_WINDOW_FULLSCREEN_DESKTOP;
+			else
+				st->flags &=
+					~SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+			SDL_SetWindowFullscreen(st->window, st->flags);
+			break;
+
+		case SDLK_q:
+			mqueue_push(st->mq, 'q', NULL);
+			break;
+
+		default:
+			break;
+		}
+
+		break;
+
+	case SDL_QUIT:
+		info(".. QUIT\n");
+		st->quit = 1;
+		break;
+
+	default:
+		break;
+	}
 }
 
 
@@ -179,6 +276,8 @@ static int display(struct vidisp_st *st, const char *title,
 	int dpitch, ret;
 	unsigned i, h;
 	uint32_t format;
+	int err;
+
 	(void)timestamp;
 
 	if (!st || !frame)
@@ -206,76 +305,20 @@ static int display(struct vidisp_st *st, const char *title,
 	}
 
 	if (!st->window) {
-		char capt[256];
 
-		st->flags  = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
-		st->flags |= SDL_WINDOW_RESIZABLE;
+		err = write_header(st, title, &frame->size, format);
+		if (err)
+			return err;
 
-		if (st->fullscreen)
-			st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-
-		if (title) {
-			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
-				    title, frame->size.w, frame->size.h);
-		}
-		else {
-			re_snprintf(capt, sizeof(capt), "%u x %u",
-				    frame->size.w, frame->size.h);
-		}
-
-		st->window = SDL_CreateWindow(capt,
-					      SDL_WINDOWPOS_CENTERED,
-					      SDL_WINDOWPOS_CENTERED,
-					      frame->size.w, frame->size.h,
-					      st->flags);
-		if (!st->window) {
-			warning("sdl: unable to create sdl window: %s\n",
-				SDL_GetError());
-			return ENODEV;
-		}
-
-		st->size = frame->size;
 		st->fmt = frame->fmt;
-
-		SDL_RaiseWindow(st->window);
-		SDL_SetWindowBordered(st->window, true);
-		SDL_ShowWindow(st->window);
 	}
 
-	if (!st->renderer) {
+	/* NOTE: poll events first */
+	poll_events(st);
 
-		SDL_RendererInfo rend_info;
-		Uint32 flags = 0;
-
-		flags |= SDL_RENDERER_ACCELERATED;
-		flags |= SDL_RENDERER_PRESENTVSYNC;
-
-		st->renderer = SDL_CreateRenderer(st->window, -1, flags);
-		if (!st->renderer) {
-			warning("sdl: unable to create renderer: %s\n",
-				SDL_GetError());
-			return ENOMEM;
-		}
-
-		if (!SDL_GetRendererInfo(st->renderer, &rend_info)) {
-			info("sdl: created renderer '%s'\n", rend_info.name);
-		}
-
-		SDL_RenderSetLogicalSize(st->renderer,
-					 frame->size.w, frame->size.h);
-	}
-
-	if (!st->texture) {
-
-		st->texture = SDL_CreateTexture(st->renderer,
-						format,
-						SDL_TEXTUREACCESS_STREAMING,
-						frame->size.w, frame->size.h);
-		if (!st->texture) {
-			warning("sdl: unable to create texture: %s\n",
-				SDL_GetError());
-			return ENODEV;
-		}
+	if (st->quit) {
+		sdl_reset(st);
+		return ENODEV;
 	}
 
 	ret = SDL_LockTexture(st->texture, NULL, &pixels, &dpitch);
