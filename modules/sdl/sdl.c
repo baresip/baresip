@@ -102,6 +102,9 @@ static void destructor(void *arg)
 
 static void mqueue_handler(int id, void *data, void *arg)
 {
+	(void)data;
+	(void)arg;
+
 	ui_input_key(baresip_uis(), id, NULL);
 }
 
