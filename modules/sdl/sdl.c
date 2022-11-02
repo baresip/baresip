@@ -67,12 +67,12 @@ static uint32_t chroma_step(enum vidfmt fmt)
 static void sdl_reset(struct vidisp_st *st)
 {
 	if (st->texture) {
-		/*SDL_DestroyTexture(st->texture);*/
+		SDL_DestroyTexture(st->texture);
 		st->texture = NULL;
 	}
 
 	if (st->renderer) {
-		/*SDL_DestroyRenderer(st->renderer);*/
+		SDL_DestroyRenderer(st->renderer);
 		st->renderer = NULL;
 	}
 
