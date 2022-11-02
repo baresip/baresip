@@ -24,11 +24,9 @@ struct vidisp_st {
 	struct vidsz size;              /**< Current size          */
 	enum vidfmt fmt;                /**< Current pixel format  */
 	bool fullscreen;                /**< Fullscreen flag       */
-
 	struct mqueue *mq;
 	Uint32 flags;
 	bool quit;
-	int inited;
 };
 
 
@@ -78,11 +76,6 @@ static void sdl_reset(struct vidisp_st *st)
 	if (st->window) {
 		SDL_DestroyWindow(st->window);
 		st->window = NULL;
-	}
-
-	if (!st->inited) {
-		info(".. SDL_Quit\n");
-		SDL_Quit();
 	}
 }
 
@@ -148,23 +141,6 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 static int write_header(struct vidisp_st *st, const char *title,
 			const struct vidsz *size, uint32_t format)
 {
-	if (SDL_WasInit(SDL_INIT_VIDEO)) {
-		warning("SDL video subsystem was already inited,"
-			" you could have multiple SDL outputs."
-			" This may cause unknown behaviour.\n");
-		st->inited = 1;
-	}
-
-	/* initialization */
-	if (!st->inited){
-
-		if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-			warning("Unable to initialize SDL: %s\n",
-				SDL_GetError());
-			return ENOTSUP;
-		}
-	}
-
 	if (!st->window) {
 		char capt[256];
 
@@ -214,8 +190,6 @@ static int write_header(struct vidisp_st *st, const char *title,
 		}
 
 	}
-
-	st->inited = 1;
 
 	return 0;
 }
