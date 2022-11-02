@@ -188,7 +188,7 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 	if (s->idx >= 0 || s->ctx)
 		return 0;
 
-	if (!codec) {
+	if (!codec && use_codec) {
 		codec = avcodec_find_decoder(ctx->codec_id);
 		if (!codec) {
 			info("avformat: can't find codec %i\n", ctx->codec_id);
@@ -211,8 +211,10 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 		ret = av_hwdevice_ctx_create(&hwctx, avformat_hwdevice,
 					     NULL, NULL, 0);
 		if (ret < 0) {
-			warning("avformat: error opening hw device vaapi"
-                                       " (%i)\n", ret);
+			warning("avformat: error opening hw device '%s'"
+				" (%i) (%s)\n",
+			        av_hwdevice_get_type_name(avformat_hwdevice),
+				ret, av_err2str(ret));
 			return ENOMEM;
 		}
 
@@ -225,9 +227,15 @@ static int open_codec(struct stream *s, const struct AVStream *strm, int i,
 	s->ctx = ctx;
 	s->idx = i;
 
-	debug("avformat: '%s' using decoder '%s' (%s)\n",
-	      av_get_media_type_string(ctx->codec_type),
-	      codec->name, codec->long_name);
+	if (use_codec) {
+		debug("avformat: '%s' using decoder '%s' (%s)\n",
+		      av_get_media_type_string(ctx->codec_type),
+		      codec->name, codec->long_name);
+	}
+	else {
+		debug("avformat: '%s' using pass-through\n",
+		      av_get_media_type_string(ctx->codec_type));
+	}
 
 	return 0;
 }
@@ -269,7 +277,7 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 			  pass_through, sizeof(pass_through));
 
 	if (*pass_through != '\0' && 0==strcmp(pass_through, "yes")) {
-		st->is_pass_through = 1;
+		st->is_pass_through = true;
 	}
 
 	if (0 == re_regex(dev, str_len(dev), "[^,]+,[^]+", &pl_fmt, &pl_dev)) {
