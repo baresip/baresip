@@ -215,11 +215,9 @@ static void poll_events(struct vidisp_st *st)
 			     st->fullscreen ? "en" : "dis");
 
 			if (st->fullscreen)
-				st->flags |=
-					SDL_WINDOW_FULLSCREEN_DESKTOP;
+				st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 			else
-				st->flags &=
-					~SDL_WINDOW_FULLSCREEN_DESKTOP;
+				st->flags &= ~SDL_WINDOW_FULLSCREEN_DESKTOP;
 
 			SDL_SetWindowFullscreen(st->window, st->flags);
 			break;
@@ -235,8 +233,7 @@ static void poll_events(struct vidisp_st *st)
 		break;
 
 	case SDL_QUIT:
-		info(".. QUIT\n");
-		st->quit = 1;
+		st->quit = true;
 		break;
 
 	default:
