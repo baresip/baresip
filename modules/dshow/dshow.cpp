@@ -14,7 +14,9 @@ extern "C" {
 #include <commctrl.h>
 #include <dshow.h>
 
+#if defined(_MSC_VER)
 #pragma comment(lib, "strmiids.lib")
+#endif
 
 
 /**
@@ -118,6 +120,7 @@ struct vidsrc_st {
 class Grabber : public ISampleGrabberCB {
 public:
 	Grabber(struct vidsrc_st *st) : src(st) { }
+	virtual ~Grabber() { }
 
 	STDMETHOD(QueryInterface)(REFIID InterfaceIdentifier,
 				  VOID** ppvObject) throw()
@@ -147,6 +150,7 @@ public:
 		uint32_t *buf_RGB32;
 		struct vidframe vidframe;
 		uint64_t timestamp = (uint64_t)(sample_time * VIDEO_TIMEBASE);
+		(void)buf_len;
 
 		vidframe_init_buf(&vidframe, VID_FMT_RGB32, &src->size, buf);
 
@@ -168,6 +172,8 @@ public:
 
 	STDMETHOD(SampleCB) (double sample_time, IMediaSample *samp)
 	{
+		(void)sample_time;
+		(void)samp;
 		return S_OK;
 	}
 
@@ -489,6 +495,8 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	IPin *pin = NULL;
 	HRESULT hr;
 	int err;
+	(void)fmt;
+	(void)packeth;
 	(void)errorh;
 
 	if (!stp || !vs || !prm || !size)

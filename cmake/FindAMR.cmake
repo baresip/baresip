@@ -48,14 +48,6 @@ find_library(WB_VO_ENC_LIBRARY
 
 include(FindPackageHandleStandardArgs)
 
-message(NB_INCLUDE_DIR ${NB_INCLUDE_DIR})
-message(WB_ENC_INCLUDE_DIR ${WB_ENC_INCLUDE_DIR})
-message(WB_DEC_INCLUDE_DIR ${WB_DEC_INCLUDE_DIR})
-
-message(NB_LIBRARY ${NB_LIBRARY})
-message(WB_LIBRARY ${WB_LIBRARY})
-message(WB_VO_ENC_LIBRARY ${WB_VO_ENC_LIBRARY})
-
 set( AMR_FOUND OFF )
 
 if( NB_INCLUDE_DIR )
