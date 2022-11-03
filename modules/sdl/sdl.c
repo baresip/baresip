@@ -138,63 +138,6 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 }
 
 
-static int write_header(struct vidisp_st *st, const char *title,
-			const struct vidsz *size, uint32_t format)
-{
-	if (!st->window) {
-		char capt[256];
-
-		st->flags  = SDL_WINDOW_HIDDEN;
-		st->flags |= SDL_WINDOW_RESIZABLE;
-
-		if (st->fullscreen)
-			st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-
-		if (title) {
-			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
-				    title, size->w, size->h);
-		}
-		else {
-			re_snprintf(capt, sizeof(capt), "%u x %u",
-				    size->w, size->h);
-		}
-
-		if (SDL_CreateWindowAndRenderer(size->w, size->h, st->flags,
-						&st->window,
-						&st->renderer) != 0) {
-
-			warning("Couldn't create window and renderer: %s\n",
-				SDL_GetError());
-			return ENOTSUP;
-		}
-
-		SDL_SetWindowTitle(st->window, capt);
-		SDL_SetWindowPosition(st->window,
-				      SDL_WINDOWPOS_CENTERED,
-				      SDL_WINDOWPOS_CENTERED);
-		SDL_ShowWindow(st->window);
-
-		st->size = *size;
-	}
-
-	if (!st->texture) {
-
-		st->texture = SDL_CreateTexture(st->renderer,
-						format,
-						SDL_TEXTUREACCESS_STREAMING,
-						size->w, size->h);
-		if (!st->texture) {
-			warning("sdl: unable to create texture: %s\n",
-				SDL_GetError());
-			return ENODEV;
-		}
-
-	}
-
-	return 0;
-}
-
-
 static void poll_events(struct vidisp_st *st)
 {
 	SDL_Event event;
@@ -250,8 +193,6 @@ static int display(struct vidisp_st *st, const char *title,
 	int dpitch, ret;
 	unsigned i, h;
 	uint32_t format;
-	int err;
-
 	(void)timestamp;
 
 	if (!st || !frame)
@@ -279,12 +220,76 @@ static int display(struct vidisp_st *st, const char *title,
 	}
 
 	if (!st->window) {
+		char capt[256];
 
-		err = write_header(st, title, &frame->size, format);
-		if (err)
-			return err;
+		st->flags  = SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
+		st->flags |= SDL_WINDOW_RESIZABLE;
 
+		if (st->fullscreen)
+			st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+		if (title) {
+			re_snprintf(capt, sizeof(capt), "%s - %u x %u",
+				    title, frame->size.w, frame->size.h);
+		}
+		else {
+			re_snprintf(capt, sizeof(capt), "%u x %u",
+				    frame->size.w, frame->size.h);
+		}
+
+		st->window = SDL_CreateWindow(capt,
+					      SDL_WINDOWPOS_CENTERED,
+					      SDL_WINDOWPOS_CENTERED,
+					      frame->size.w, frame->size.h,
+					      st->flags);
+		if (!st->window) {
+			warning("sdl: unable to create sdl window: %s\n",
+				SDL_GetError());
+			return ENODEV;
+		}
+
+		st->size = frame->size;
 		st->fmt = frame->fmt;
+
+		SDL_RaiseWindow(st->window);
+		SDL_SetWindowBordered(st->window, true);
+		SDL_ShowWindow(st->window);
+	}
+
+	if (!st->renderer) {
+
+		SDL_RendererInfo rend_info;
+		Uint32 flags = 0;
+
+		flags |= SDL_RENDERER_ACCELERATED;
+		flags |= SDL_RENDERER_PRESENTVSYNC;
+
+		st->renderer = SDL_CreateRenderer(st->window, -1, flags);
+		if (!st->renderer) {
+			warning("sdl: unable to create renderer: %s\n",
+				SDL_GetError());
+			return ENOMEM;
+		}
+
+		if (!SDL_GetRendererInfo(st->renderer, &rend_info)) {
+			info("sdl: created renderer '%s'\n", rend_info.name);
+		}
+
+		SDL_RenderSetLogicalSize(st->renderer,
+					 frame->size.w, frame->size.h);
+	}
+
+	if (!st->texture) {
+
+		st->texture = SDL_CreateTexture(st->renderer,
+						format,
+						SDL_TEXTUREACCESS_STREAMING,
+						frame->size.w, frame->size.h);
+		if (!st->texture) {
+			warning("sdl: unable to create texture: %s\n",
+				SDL_GetError());
+			return ENODEV;
+		}
 	}
 
 	/* NOTE: poll events first */
