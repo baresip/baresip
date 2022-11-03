@@ -14,7 +14,9 @@ extern "C" {
 #include <commctrl.h>
 #include <dshow.h>
 
+#if defined(_MSC_VER)
 #pragma comment(lib, "strmiids.lib")
+#endif
 
 
 /**
@@ -118,6 +120,7 @@ struct vidsrc_st {
 class Grabber : public ISampleGrabberCB {
 public:
 	Grabber(struct vidsrc_st *st) : src(st) { }
+	virtual ~Grabber() { }
 
 	STDMETHOD(QueryInterface)(REFIID InterfaceIdentifier,
 				  VOID** ppvObject) throw()
