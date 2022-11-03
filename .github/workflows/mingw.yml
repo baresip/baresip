@@ -45,14 +45,14 @@ jobs:
       id: openssl
       with:
         path: baresip-win32/openssl
-        key: ${{ runner.os }}-mingw-openssl-1.1.1m
+        key: ${{ runner.os }}-mingw-openssl-3.0.7
 
     - name: "build openssl"
       if: steps.openssl.outputs.cache-hit != 'true'
       run: |
-        wget https://www.openssl.org/source/openssl-1.1.1m.tar.gz
-        tar -xzf openssl-1.1.1m.tar.gz
-        mv openssl-1.1.1m baresip-win32/openssl
+        wget https://www.openssl.org/source/openssl-3.0.7.tar.gz
+        tar -xzf openssl-3.0.7.tar.gz
+        mv openssl-3.0.7 baresip-win32/openssl
         make -j$(nproc) -C baresip-win32 openssl
 
     - name: "build"
