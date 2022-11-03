@@ -120,6 +120,7 @@ struct vidsrc_st {
 class Grabber : public ISampleGrabberCB {
 public:
 	Grabber(struct vidsrc_st *st) : src(st) { }
+	virtual ~Grabber() { }
 
 	STDMETHOD(QueryInterface)(REFIID InterfaceIdentifier,
 				  VOID** ppvObject) throw()
