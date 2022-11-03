@@ -80,6 +80,53 @@ static void sdl_reset(struct vidisp_st *st)
 }
 
 
+static void poll_events(struct vidisp_st *st)
+{
+	SDL_Event event;
+
+	if (!SDL_PollEvent(&event))
+		return;
+
+	switch (event.type) {
+
+	case SDL_KEYDOWN:
+
+		switch (event.key.keysym.sym) {
+
+		case SDLK_f:
+			/* press key 'f' to toggle fullscreen */
+			st->fullscreen = !st->fullscreen;
+			info("sdl: %sable fullscreen mode\n",
+			     st->fullscreen ? "en" : "dis");
+
+			if (st->fullscreen)
+				st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+			else
+				st->flags &= ~SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+			SDL_SetWindowFullscreen(st->window, st->flags);
+			break;
+
+		case SDLK_q:
+			mqueue_push(st->mq, 'q', NULL);
+			break;
+
+		default:
+			break;
+		}
+
+		break;
+
+	case SDL_QUIT:
+		st->quit = true;
+		break;
+
+	default:
+		break;
+	}
+}
+
+
 static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
@@ -135,53 +182,6 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		*stp = st;
 
 	return err;
-}
-
-
-static void poll_events(struct vidisp_st *st)
-{
-	SDL_Event event;
-
-	if (!SDL_PollEvent(&event))
-		return;
-
-	switch (event.type) {
-
-	case SDL_KEYDOWN:
-
-		switch (event.key.keysym.sym) {
-
-		case SDLK_f:
-			/* press key 'f' to toggle fullscreen */
-			st->fullscreen = !st->fullscreen;
-			info("sdl: %sable fullscreen mode\n",
-			     st->fullscreen ? "en" : "dis");
-
-			if (st->fullscreen)
-				st->flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-			else
-				st->flags &= ~SDL_WINDOW_FULLSCREEN_DESKTOP;
-
-			SDL_SetWindowFullscreen(st->window, st->flags);
-			break;
-
-		case SDLK_q:
-			mqueue_push(st->mq, 'q', NULL);
-			break;
-
-		default:
-			break;
-		}
-
-		break;
-
-	case SDL_QUIT:
-		st->quit = true;
-		break;
-
-	default:
-		break;
-	}
 }
 
 
@@ -294,11 +294,6 @@ static int display(struct vidisp_st *st, const char *title,
 
 	/* NOTE: poll events first */
 	poll_events(st);
-
-	if (st->quit) {
-		sdl_reset(st);
-		return ENODEV;
-	}
 
 	ret = SDL_LockTexture(st->texture, NULL, &pixels, &dpitch);
 	if (ret != 0) {
