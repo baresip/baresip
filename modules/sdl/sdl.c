@@ -108,6 +108,7 @@ static void poll_events(struct vidisp_st *st)
 			break;
 
 		case SDLK_q:
+			/* send key to main thread */
 			mqueue_push(st->mq, 'q', NULL);
 			break;
 
@@ -140,10 +141,13 @@ static void destructor(void *arg)
 }
 
 
+/* called in the context of the main thread */
 static void mqueue_handler(int id, void *data, void *arg)
 {
 	(void)data;
 	(void)arg;
+
+	info("sdl: mqueue event: id=%d\n", id);
 
 	ui_input_key(baresip_uis(), id, NULL);
 }
