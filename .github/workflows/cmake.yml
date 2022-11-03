@@ -30,6 +30,7 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y \
                             libssl-dev \
+                            libsdl2-dev \
                             libasound2-dev \
                             libcodec2-dev \
                             libfdk-aac-dev \
@@ -52,6 +53,7 @@ jobs:
                         jack \
                         mpg123 \
                         spandsp \
+                        sdl2 \
                         glib-utils
 
     - uses: sreimers/pr-dependency-action@v0.5
