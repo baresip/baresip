@@ -132,12 +132,11 @@ static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
 
+	mem_deref(st->mq);
 	sdl_reset(st);
 
 	/* needed to close the window */
 	SDL_PumpEvents();
-
-	mem_deref(st->mq);
 }
 
 
