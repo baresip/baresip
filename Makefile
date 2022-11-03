@@ -9,6 +9,14 @@
 #   USE_TLS           Enable SIP over TLS transport
 #
 
+
+$(warning ***************************************************)
+$(warning ***                                             ***)
+$(warning *** Makefile is deprecated -- use CMake instead ***)
+$(warning ***                                             ***)
+$(warning ***************************************************)
+
+
 PROJECT	  := baresip
 VERSION   := 2.9.0
 DESCR     := "Baresip is a modular SIP User-Agent with audio and video support"
