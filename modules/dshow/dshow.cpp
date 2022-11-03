@@ -14,7 +14,9 @@ extern "C" {
 #include <commctrl.h>
 #include <dshow.h>
 
+#if defined(_MSC_VER)
 #pragma comment(lib, "strmiids.lib")
+#endif
 
 
 /**
