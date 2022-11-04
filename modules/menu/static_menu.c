@@ -553,7 +553,7 @@ static int dial_handler(struct re_printf *pf, void *arg)
 
 	const char ud_sentinel[] = "userdata=";
 	char *ud_pos = NULL;
-	if(carg->prm != NULL)
+	if (carg->prm != NULL)
 		ud_pos = strstr(carg->prm, ud_sentinel);
 	char *user_data = NULL;
 	if (ud_pos != NULL) {
