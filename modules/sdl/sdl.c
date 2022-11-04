@@ -24,16 +24,13 @@ struct vidisp_st {
 	struct vidsz size;              /**< Current size          */
 	enum vidfmt fmt;                /**< Current pixel format  */
 	bool fullscreen;                /**< Fullscreen flag       */
-	struct tmr tmr;
+	struct mqueue *mq;
 	Uint32 flags;
 	bool quit;
 };
 
 
 static struct vidisp *vid = NULL;
-
-
-static void event_handler(void *arg);
 
 
 static uint32_t match_fmt(enum vidfmt fmt)
@@ -83,14 +80,10 @@ static void sdl_reset(struct vidisp_st *st)
 }
 
 
-static void event_handler(void *arg)
+static void poll_events(struct vidisp_st *st)
 {
-	struct vidisp_st *st = arg;
 	SDL_Event event;
 
-	tmr_start(&st->tmr, 100, event_handler, st);
-
-	/* NOTE: events must be checked from main thread */
 	while (SDL_PollEvent(&event)) {
 
 		if (event.type == SDL_KEYDOWN) {
@@ -114,7 +107,7 @@ static void event_handler(void *arg)
 				break;
 
 			case SDLK_q:
-				ui_input_key(baresip_uis(), 'q', NULL);
+				mqueue_push(st->mq, 'q', NULL);
 				break;
 
 			default:
@@ -133,7 +126,7 @@ static void destructor(void *arg)
 {
 	struct vidisp_st *st = arg;
 
-	tmr_cancel(&st->tmr);
+	mem_deref(st->mq);
 	sdl_reset(st);
 
 	/* needed to close the window */
@@ -141,11 +134,25 @@ static void destructor(void *arg)
 }
 
 
+/* called in the context of the main thread */
+static void mqueue_handler(int id, void *data, void *arg)
+{
+	(void)data;
+	(void)arg;
+
+	info("sdl: mqueue event: id=%d\n", id);
+
+	ui_input_key(baresip_uis(), id, NULL);
+}
+
+
+/* NOTE: should be called from the main thread */
 static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 		 struct vidisp_prm *prm, const char *dev,
 		 vidisp_resize_h *resizeh, void *arg)
 {
 	struct vidisp_st *st;
+	int err;
 
 	/* Not used by SDL */
 	(void)dev;
@@ -161,11 +168,17 @@ static int alloc(struct vidisp_st **stp, const struct vidisp *vd,
 
 	st->fullscreen = prm ? prm->fullscreen : false;
 
-	tmr_start(&st->tmr, 100, event_handler, st);
+	err = mqueue_alloc(&st->mq, mqueue_handler, st);
+	if (err)
+		goto out;
 
-	*stp = st;
+ out:
+	if (err)
+		mem_deref(st);
+	else
+		*stp = st;
 
-	return 0;
+	return err;
 }
 
 
@@ -275,6 +288,9 @@ static int display(struct vidisp_st *st, const char *title,
 			return ENODEV;
 		}
 	}
+
+	/* NOTE: poll events first */
+	poll_events(st);
 
 	ret = SDL_LockTexture(st->texture, NULL, &pixels, &dpitch);
 	if (ret != 0) {
