@@ -515,6 +515,11 @@ static int dial_handler(struct re_printf *pf, void *arg)
 		if (menu->clean_number)
 			clean_number(uri);
 	}
+	else {
+		re_hprintf(pf, "can't find a URI to dial to\n");
+		err = EINVAL;
+		goto out;
+	}
 
 	pl_set_str(&pluri, uri);
 	if (!ua)
@@ -547,7 +552,9 @@ static int dial_handler(struct re_printf *pf, void *arg)
 	}
 
 	const char ud_sentinel[] = "userdata=";
-	char *ud_pos = strstr(carg->prm, ud_sentinel);
+	char *ud_pos = NULL;
+	if (carg->prm != NULL)
+		ud_pos = strstr(carg->prm, ud_sentinel);
 	char *user_data = NULL;
 	if (ud_pos != NULL) {
 		user_data = ud_pos + strlen(ud_sentinel);
