@@ -622,7 +622,7 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 
 	*af = AF_UNSPEC;
 	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
-		       "IN IP[46]+ [^ \r\n]+", &pl1, &pl2);
+		       "c=IN IP[46]1 [^ \r\n]+", &pl1, &pl2);
 	if (err)
 		return EINVAL;
 
@@ -817,7 +817,7 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 
 	sa_init(&dst, AF_UNSPEC);
 	if (msg && !sdp_connection(msg->mb, &af, &dst)) {
-		info("ua: using origin address %j of SDP offer\n", &dst);
+		info("ua: using connection-address %j of SDP offer\n", &dst);
 		sa_cpy(&ua->dst, &dst);
 	}
 	else if (sa_isset(&ua->dst, SA_ADDR)) {
