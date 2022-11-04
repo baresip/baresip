@@ -23,6 +23,11 @@ enum {
 	LPREF_INIT = UINT16_MAX / 2
 };
 
+static struct {
+	enum ice_policy policy;
+} ice = {
+	ICE_POLICY_ALL
+};
 
 struct mnat_sess {
 	struct list medial;
@@ -199,14 +204,14 @@ static void turnc_handler(int err, uint16_t scode, const char *reason,
 	debug("ice: relay gathered for comp %u (%u %s)\n",
 	      comp->id, scode, reason);
 
+	err = icem_lcand_add_base(m->icem, ICE_CAND_TYPE_RELAY, comp->id, 0,
+				  NULL, ICE_TRANSP_UDP, relay);
+	if (err)
+		goto out;
+
 	lcand = icem_cand_find(icem_lcandl(m->icem), comp->id, NULL);
 	if (!lcand)
 		goto out;
-
-	if (!sa_cmp(relay, icem_lcand_addr(icem_lcand_base(lcand)), SA_ALL)) {
-		err = icem_lcand_add(m->icem, icem_lcand_base(lcand),
-				     ICE_CAND_TYPE_RELAY, relay);
-	}
 
 	if (mapped) {
 		err |= icem_lcand_add(m->icem, icem_lcand_base(lcand),
@@ -402,7 +407,9 @@ static bool if_handler(const char *ifname, const struct sa *sa, void *arg)
 
 	for (i=0; i<2; i++) {
 		if (m->compv[i].sock)
-			err |= icem_cand_add(m->icem, i+1, lpref, ifname, sa);
+			err |= icem_lcand_add_base(m->icem, ICE_CAND_TYPE_HOST,
+						   i + 1, lpref, ifname,
+						   ICE_TRANSP_UDP, sa);
 	}
 
 	if (err) {
@@ -851,8 +858,12 @@ static int media_alloc(struct mnat_media **mp, struct mnat_sess *sess,
 	if (err)
 		goto out;
 
-	icem_conf(m->icem)->debug = LEVEL_DEBUG==log_level_get();
-	icem_conf(m->icem)->rc    = 4;
+	icem_conf(m->icem)->debug  = LEVEL_DEBUG == log_level_get();
+	icem_conf(m->icem)->rc	   = 4;
+	icem_conf(m->icem)->policy = ice.policy;
+
+	debug("ice: policy = %s\n",
+	      ice.policy == ICE_POLICY_RELAY ? "relay" : "all");
 
 	icem_set_conf(m->icem, icem_conf(m->icem));
 
@@ -1007,7 +1018,17 @@ static struct mnat mnat_ice = {
 
 static int module_init(void)
 {
+	char policy[16] = {0};
+
 	mnat_register(baresip_mnatl(), &mnat_ice);
+
+	conf_get_str(conf_cur(), "ice_policy", policy, sizeof(policy));
+
+	if (0 == str_cmp(policy, "all"))
+		ice.policy = ICE_POLICY_ALL;
+
+	if (0 == str_cmp(policy, "relay"))
+		ice.policy = ICE_POLICY_RELAY;
 
 	return 0;
 }
