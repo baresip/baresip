@@ -643,12 +643,13 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 				"m=video [0-9]+ ", &pl1);
 
 	if (err)
-		return EINVAL;
+		goto out;
 
 	err = sa_set_str(sa, addr, pl_u32(&pl1));
 	if (sa_af(sa) == AF_INET6 && sa_is_linklocal(sa))
 		err |= net_set_dst_scopeid(net, sa);
 
+out:
 	mem_deref(addr);
 	return err;
 }
