@@ -345,6 +345,7 @@ endif()
 
 install(TARGETS baresip_exe baresip
   RUNTIME
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
     COMPONENT Applications
   LIBRARY
     DESTINATION ${CMAKE_INSTALL_LIBDIR}
