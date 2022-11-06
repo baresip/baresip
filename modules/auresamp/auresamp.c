@@ -248,6 +248,10 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 {
 	struct auresamp_st *st = (struct auresamp_st *) aufilt_enc_st;
+
+	if (!st || !af)
+		return EINVAL;
+
 	return common_resample(st, af);
 }
 
@@ -255,6 +259,10 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 static int decode(struct aufilt_dec_st *aufilt_dec_st, struct auframe *af)
 {
 	struct auresamp_st *st = (struct auresamp_st *) aufilt_dec_st;
+
+	if (!st || !af)
+		return EINVAL;
+
 	return common_resample(st, af);
 }
 
