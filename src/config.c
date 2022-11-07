@@ -1225,6 +1225,9 @@ int config_write_template(const char *file, const struct config *cfg)
 			 "#avformat_rtsp_transport\tudp\n",
 			 default_avcodec_hwaccel());
 
+	(void)re_fprintf(f, "\n# ice\n"
+			    "#ice_policy\t\tall\t# all, relay (candidates)\n");
+
 	if (f)
 		(void)fclose(f);
 
