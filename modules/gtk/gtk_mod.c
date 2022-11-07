@@ -131,9 +131,6 @@ static void menu_on_quit(GtkMenuItem *menuItem, gpointer arg)
 	struct gtk_mod *mod = arg;
 	(void)menuItem;
 
-	gtk_widget_destroy(GTK_WIDGET(mod->app_menu));
-	g_object_unref(G_OBJECT(mod->status_icon));
-
 	mqueue_push(mod->mq, MQ_QUIT, 0);
 	info("quit from gtk\n");
 }
@@ -772,12 +769,15 @@ static gboolean status_icon_on_button_press(GtkStatusIcon *status_icon,
 int gtk_mod_connect(struct gtk_mod *mod, const char *uri)
 {
 	char *uric = NULL;
+	struct pl url_pl;
 	int err = 0;
 
+	pl_set_str(&url_pl, uri);
 	if (!mod)
 		return ENOMEM;
 
-	err = account_uri_complete_strdup(ua_account(mod->ua_cur), &uric, uri);
+	err = account_uri_complete_strdup(ua_account(mod->ua_cur),
+							&uric, &url_pl);
 	if (err)
 		goto out;
 
@@ -793,8 +793,10 @@ int gtk_mod_connect_attended(struct gtk_mod *mod, const char *uri,
 {
 	struct attended_transfer_store *ats;
 	char *uric = NULL;
+	struct pl url_pl;
 	int err = 0;
 
+	pl_set_str(&url_pl, uri);
 	if (!mod)
 		return ENOMEM;
 
@@ -802,7 +804,8 @@ int gtk_mod_connect_attended(struct gtk_mod *mod, const char *uri,
 	if (!ats)
 		return ENOMEM;
 
-	err = account_uri_complete_strdup(ua_account(mod->ua_cur), &uric, uri);
+	err = account_uri_complete_strdup(ua_account(mod->ua_cur),
+							&uric, &url_pl);
 	if (err)
 		goto out;
 
