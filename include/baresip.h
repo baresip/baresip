@@ -1381,6 +1381,7 @@ uint64_t video_calc_timebase_timestamp(uint64_t rtp_ts);
 /** Common parameters for media stream */
 struct stream_param {
 	bool use_rtp;       /**< Enable or disable RTP */
+	bool rtcp_mux;      /**< Enable or disable rtcp_mux */
 	int af;             /**< Wanted address family */
 	const char *cname;  /**< Canonical name        */
 	const char *peer;   /**< Peer uri/name or identifier  */

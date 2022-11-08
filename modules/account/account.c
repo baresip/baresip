@@ -66,6 +66,7 @@ static int account_write_template(const char *file)
 			 "#    ;mediaenc={srtp,srtp-mand,srtp-mandf"
 			 ",dtls_srtp,zrtp}\n"
 			 "#    ;medianat={stun,turn,ice}\n"
+			 "#    ;rtcp_mux={yes, no}\n"
 			 "#    ;mwi=no\n"
 			 "#    ;outbound=\"sip:primary.example.com"
 			 ";transport=tcp\"\n"

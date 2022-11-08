@@ -792,10 +792,11 @@ int call_streams_alloc(struct call *call)
 	int err;
 
 	memset(&strm_prm, 0, sizeof(strm_prm));
-	strm_prm.use_rtp = call->use_rtp;
-	strm_prm.af      = call->af;
-	strm_prm.cname   = call->local_uri;
-	strm_prm.peer    = call->peer_uri;
+	strm_prm.use_rtp  = call->use_rtp;
+	strm_prm.af	  = call->af;
+	strm_prm.cname	  = call->local_uri;
+	strm_prm.peer	  = call->peer_uri;
+	strm_prm.rtcp_mux = call->acc->rtcp_mux;
 
 	/* Audio stream */
 	err = audio_alloc(&call->audio, &call->streaml, &strm_prm,

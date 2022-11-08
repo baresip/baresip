@@ -692,7 +692,9 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	if (err)
 		goto out;
 
-	s->cfg    = *cfg;
+	s->cfg = *cfg;
+	s->cfg.rtcp_mux = prm->rtcp_mux;
+
 	s->type   = type;
 	s->rtph   = rtph;
 	s->pth    = pth;
@@ -747,7 +749,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 				   rtp_sess_ssrc(s->rtp), prm->cname);
 
 	/* RFC 5761 */
-	if (cfg->rtcp_mux &&
+	if (s->cfg.rtcp_mux &&
 	    (offerer || sdp_media_rattr(s->sdp, "rtcp-mux"))) {
 
 		err |= sdp_media_set_lattr(s->sdp, true, "rtcp-mux", NULL);
@@ -769,7 +771,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		s->mnat = mnat;
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
-				   cfg->rtcp_mux ? NULL : rtcp_sock(s->rtp),
+				   s->cfg.rtcp_mux ? NULL : rtcp_sock(s->rtp),
 				   s->sdp, mnat_connected_handler, s);
 		if (err)
 			goto out;

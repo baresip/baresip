@@ -90,6 +90,7 @@ struct account {
 	char *extra;                 /**< Extra parameters                   */
 	char *uas_user;              /**< UAS authentication username        */
 	char *uas_pass;              /**< UAS authentication password        */
+	bool rtcp_mux;               /**< RTCP multiplexing                  */
 };
 
 
