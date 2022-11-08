@@ -71,6 +71,17 @@ static int param_u32(uint32_t *v, const struct pl *params, const char *name)
 }
 
 
+static int param_bool(bool *v, const struct pl *params, const char *name)
+{
+	struct pl pl;
+
+	if (msg_param_decode(params, name, &pl))
+		return 0;
+
+	return pl_bool(v, &pl);
+}
+
+
 /*
  * Decode STUN parameters, inspired by RFC 7064
  *
@@ -133,9 +144,10 @@ static int media_decode(struct account *acc, const struct pl *prm)
 	if (!acc || !prm)
 		return EINVAL;
 
-	err |= param_dstr(&acc->mencid,  prm, "mediaenc");
-	err |= param_dstr(&acc->mnatid,  prm, "medianat");
-	err |= param_u32(&acc->ptime,    prm, "ptime"   );
+	err |= param_dstr(&acc->mencid,   prm, "mediaenc");
+	err |= param_dstr(&acc->mnatid,   prm, "medianat");
+	err |= param_u32(&acc->ptime,     prm, "ptime");
+	err |= param_bool(&acc->rtcp_mux, prm, "rtcp_mux");
 
 	return err;
 }
@@ -570,6 +582,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 	/* Decode parameters */
 	acc->ptime = 20;
+	acc->rtcp_mux = conf_config()->avt.rtcp_mux;
 	err |= sip_params_decode(acc, &acc->laddr);
 	       rel100_decode(acc, &acc->laddr.params);
 	       answermode_decode(acc, &acc->laddr.params);
@@ -1910,6 +1923,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " stunuser:     %s\n", acc->stun_user);
 	err |= re_hprintf(pf, " stunserver:   %H\n",
 			  stunuri_print, acc->stun_host);
+	err |= re_hprintf(pf, " rtcp_mux:     %s\n",
+			  acc->rtcp_mux ? "yes" : "no");
 
 	if (!list_isempty(&acc->vidcodecl)) {
 		err |= re_hprintf(pf, " video_codecs:");

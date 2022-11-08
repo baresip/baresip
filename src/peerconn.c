@@ -237,9 +237,10 @@ int peerconnection_new(struct peer_connection **pcp,
 	/* RFC 7022 */
 	rand_str(pc->cname, sizeof(pc->cname));
 
-	pc->stream_prm.use_rtp = true;
-	pc->stream_prm.af      = sa_af(&laddr);
-	pc->stream_prm.cname   = pc->cname;
+	pc->stream_prm.use_rtp	= true;
+	pc->stream_prm.rtcp_mux = true; /* [RFC8829] (section 4.1.1.) */
+	pc->stream_prm.af	= sa_af(&laddr);
+	pc->stream_prm.cname	= pc->cname;
 
 	err = sdp_session_alloc(&pc->sdp, &laddr);
 	if (err)
