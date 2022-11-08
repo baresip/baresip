@@ -25,7 +25,7 @@ struct ausrc_st {
 	void   *sampv;
 	size_t  sampsz;
 	size_t  sampc;
-	size_t  samps;
+	uint64_t samps;
 
 	void *arg;
 };
