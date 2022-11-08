@@ -130,6 +130,9 @@ static int common_update(struct auresamp_st **stp, struct aufilt_prm *oprm,
 	if (!stp || !oprm)
 		return EINVAL;
 
+	if (!oprm->ch || !oprm->srate)
+		return EINVAL;
+
 	if (*stp)
 		return 0;
 
@@ -156,6 +159,9 @@ static int common_resample(struct auresamp_st *st, struct auframe *af)
 		      af->srate, af->ch, st->oprm.srate, st->oprm.ch);
 		st->dbg = NULL;
 	}
+
+	if (!af->ch || !af->srate)
+		return EINVAL;
 
 	if (st->oprm.srate == af->srate && st->oprm.ch == af->ch) {
 		st->rsampsz = 0;
