@@ -551,7 +551,10 @@ static void ausrc_read_handler(struct auframe *af, void *arg)
 	(void)aubuf_write_auframe(tx->aubuf, af);
 
 	mtx_lock(tx->mtx);
-	tx->aubuf_started = true;
+	if (!tx->aubuf_started &&
+	    (aubuf_cur_size(tx->aubuf) >= tx->psize))
+		tx->aubuf_started = true;
+
 	mtx_unlock(tx->mtx);
 
 	if (a->cfg.txmode != AUDIO_MODE_POLL)
