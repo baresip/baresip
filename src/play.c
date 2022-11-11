@@ -31,9 +31,7 @@ struct play {
 	char *filename;
 	const struct ausrc *ausrc;
 	struct ausrc_st *ausrc_st;
-	bool restarted;
 	struct ausrc_prm sprm;
-	size_t minsz;
 	struct aubuf *aubuf;
 	play_finish_h *fh;
 	void *arg;
@@ -80,8 +78,7 @@ static void tmr_polling(void *arg)
 		return;
 	}
 	else if (play->aubuf && !play->auplay) {
-		if (aubuf_cur_size(play->aubuf) >= play->minsz)
-			start_auplay(play);
+		start_auplay(play);
 
 		tmr_start(&play->tmr, 4, tmr_polling, play);
 	}
@@ -89,7 +86,6 @@ static void tmr_polling(void *arg)
 	if (play->ausrc && play->trep && play->trep <= tmr_jiffies()) {
 		play->trep = 0;
 		start_ausrc(play);
-		play->restarted = true;
 	}
 
 	mtx_unlock(&play->lock);
@@ -345,22 +341,12 @@ static void aubuf_write_handler(struct auframe *af, void *arg)
 	size_t sz = auframe_size(af);
 	size_t left = aubuf_cur_size(play->aubuf);
 
-	mtx_lock(&play->lock);
-	if (play->restarted) {
-		if (aubuf_cur_size(play->aubuf) < play->minsz)
-			goto out;
-
-		play->restarted = false;
-	}
-	mtx_unlock(&play->lock);
-
 	aubuf_read_auframe(play->aubuf, af);
 
 	mtx_lock(&play->lock);
-	if (!play->trep && !play->ausrc_st && left < sz) {
+	if (!play->trep && !play->ausrc_st && left < sz)
 		check_restart(play);
-	}
-out:
+
 	mtx_unlock(&play->lock);
 }
 
@@ -422,6 +408,8 @@ static int play_file_ausrc(struct play **playp,
 	struct play *play;
 	uint32_t srate = 0;
 	uint32_t channels = 0;
+	size_t minsz;
+	size_t maxsz;
 
 	conf_get_u32(conf_cur(), "file_srate", &srate);
 	conf_get_u32(conf_cur(), "file_channels", &channels);
@@ -455,12 +443,13 @@ static int play_file_ausrc(struct play **playp,
 	str_dup(&play->filename, filename);
 
 	sampsz = aufmt_sample_size(sprm.fmt);
-	play->minsz = (3 * sampsz * srate * channels * PTIME) / 1000;
-	err = aubuf_alloc(&play->aubuf, 0,
-			  24 * sampsz * srate * channels * PTIME / 1000);
+	minsz =  3 * sampsz * srate * channels * PTIME / 1000;
+	maxsz = 24 * sampsz * srate * channels * PTIME / 1000;
+	err = aubuf_alloc(&play->aubuf, minsz, maxsz);
 	if (err)
 		goto out;
 
+	aubuf_set_mode(play->aubuf, AUBUF_FILE);
 	play->ausrc = ausrc;
 	err = start_ausrc(play);
 	if (err)
