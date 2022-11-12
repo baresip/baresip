@@ -1171,44 +1171,39 @@ int video_update(struct video *v, const char *peer)
 	debug("video: update\n");
 
 	if (!sdp_media_disabled(m)) {
-		dir = sdp_media_dir(stream_sdpmedia(v->strm));
+		dir = sdp_media_dir(m);
 		sc = sdp_media_rformat(m, NULL);
 	}
 
-	if (sc) {
-		if (dir & SDP_SENDONLY)
-			err = video_encoder_set(v, sc->data, sc->pt,
-				sc->params);
-
-		if (dir & SDP_RECVONLY)
-			err |= video_decoder_set(v, sc->data, sc->pt,
-				sc->rparams);
-
-		/* Stop / Start source & display*/
-		if (dir & SDP_SENDONLY)
-			err |= video_start_source(v);
-		else
-			video_stop_source(v);
-
-		if (dir & SDP_RECVONLY) {
-			err |= stream_open_natpinhole(v->strm);
-			err |= video_start_display(v, peer);
-		}
-		else {
-			video_stop_display(v);
-		}
-
-		if (err) {
-			warning("video: video stream error: %m\n", err);
-			return err;
-		}
-
-	}
-	else {
+	if (!sc) {
 		info("video: video stream is disabled..\n");
 		video_stop_source(v);
 		video_stop_display(v);
+		return err;
 	}
+
+	if (dir & SDP_SENDONLY)
+		err = video_encoder_set(v, sc->data, sc->pt, sc->params);
+
+	if (dir & SDP_RECVONLY)
+		err |= video_decoder_set(v, sc->data, sc->pt, sc->rparams);
+
+	/* Stop / Start source & display*/
+	if (dir & SDP_SENDONLY)
+		err |= video_start_source(v);
+	else
+		video_stop_source(v);
+
+	if (dir & SDP_RECVONLY) {
+		err |= stream_open_natpinhole(v->strm);
+		err |= video_start_display(v, peer);
+	}
+	else {
+		video_stop_display(v);
+	}
+
+	if (err)
+		warning("video: video stream error: %m\n", err);
 
 	return err;
 }
