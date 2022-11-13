@@ -122,6 +122,9 @@ static int read_file(struct ausrc_st *st)
 	int err;
 	size_t n;
 	struct mbuf *mb2 = NULL;
+	struct auframe af;
+
+	auframe_init(&af, st->fmt, NULL, 0, st->prm.srate, st->prm.ch);
 
 	for (;;) {
 		uint16_t *sampv;
@@ -155,7 +158,7 @@ static int read_file(struct ausrc_st *st)
 			for (i = 0; i < n/2; i++)
 				sampv[i] = sys_ltohs(sampv[i]);
 
-			aubuf_append(st->aubuf, mb);
+			aubuf_append_auframe(st->aubuf, mb, &af);
 			break;
 		case AUFMT_PCMA:
 		case AUFMT_PCMU:
@@ -168,7 +171,7 @@ static int read_file(struct ausrc_st *st)
 			}
 
 			mbuf_set_pos(mb2, 0);
-			aubuf_append(st->aubuf, mb2);
+			aubuf_append_auframe(st->aubuf, mb2, &af);
 			mem_deref(mb2);
 			break;
 
