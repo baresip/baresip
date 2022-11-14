@@ -475,12 +475,11 @@ static void tmr_async_handler(void *arg)
 	struct mnat_sess *sess = arg;
 	struct le *le;
 
-	for (le = sess->medial.head; le; le = le->next) {
-
+	for (le = sess->medial.head; le;) {
 		struct mnat_media *m = le->data;
+		le = le->next;
 
 		net_laddr_apply(baresip_network(), if_handler, m);
-
 		call_gather_handler(0, m, 0, "");
 	}
 }
