@@ -17,9 +17,10 @@ struct session {
 	char id[4];
 };
 
-int session_new(struct list *sessl, struct session **sessp,
-		const struct rtc_configuration *pc_config,
-		const struct mnat *mnat, const struct menc *menc);
+int session_new(struct list *sessl, struct session **sessp);
+int session_start(struct session *sess,
+		  const struct rtc_configuration *pc_config,
+		  const struct mnat *mnat, const struct menc *menc);
 struct session *session_lookup(const struct list *sessl,
 			       const struct http_msg *msg);
 int  session_handle_ice_candidate(struct session *sess,

@@ -128,12 +128,16 @@ static void http_req_handler(struct http_conn *conn,
 	else if (0 == pl_strcasecmp(&msg->met, "POST") &&
 		 0 == pl_strcasecmp(&msg->path, "/connect")) {
 
-		err = session_new(&demo.sessl, &sess, &pc_config,
-				  demo.mnat, demo.menc);
+		err = session_new(&demo.sessl, &sess);
 		if (err)
 			goto out;
 
 		if (pc_config.offerer) {
+			err = session_start(sess, &pc_config, demo.mnat,
+					    demo.menc);
+			if (err)
+				goto out;
+
 			/* async reply */
 			mem_deref(sess->conn_pending);
 			sess->conn_pending = mem_ref(conn);
@@ -151,31 +155,36 @@ static void http_req_handler(struct http_conn *conn,
 		 0 == pl_strcasecmp(&msg->path, "/sdp")) {
 
 		sess = session_lookup(&demo.sessl, msg);
-		if (sess) {
-			if (msg->clen &&
-			    msg_ctype_cmp(&msg->ctyp, "application", "json")) {
-				err = handle_put_sdp(sess, msg);
-				if (err)
-					goto out;
-			}
-
-			if (pc_config.offerer) {
-
-				/* sync reply */
-				http_reply(conn, 200, "OK",
-					   "Content-Length: 0\r\n"
-					   "Access-Control-Allow-Origin: *\r\n"
-					   "\r\n");
-			}
-			else {
-				/* async reply */
-				mem_deref(sess->conn_pending);
-				sess->conn_pending = mem_ref(conn);
-			}
-		}
-		else {
+		if (!sess) {
 			http_ereply(conn, 404, "Session Not Found");
 			return;
+		}
+
+		if (!pc_config.offerer) {
+			err = session_start(sess, &pc_config, demo.mnat,
+					    demo.menc);
+			if (err)
+				goto out;
+		}
+
+		if (msg->clen &&
+		    msg_ctype_cmp(&msg->ctyp, "application", "json")) {
+			err = handle_put_sdp(sess, msg);
+			if (err)
+				goto out;
+		}
+
+		if (pc_config.offerer) {
+			/* sync reply */
+			http_reply(conn, 200, "OK",
+				   "Content-Length: 0\r\n"
+				   "Access-Control-Allow-Origin: *\r\n"
+				   "\r\n");
+		}
+		else {
+			/* async reply */
+			mem_deref(sess->conn_pending);
+			sess->conn_pending = mem_ref(conn);
 		}
 	}
 	else if (0 == pl_strcasecmp(&msg->met, "PATCH")) {

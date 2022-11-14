@@ -290,7 +290,7 @@ function send_put_sdp(descr)
 
 	xhr.onreadystatechange = function() {
 		if (this.readyState === XMLHttpRequest.DONE &&
-		    this.status === 200) {
+		    (this.status === 200 || this.status === 201)) {
 
 			console.log("post sdp: (%d %s)", this.status, this.statusText);
 

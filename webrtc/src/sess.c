@@ -129,13 +129,49 @@ static void peerconnection_close_handler(int err, void *arg)
 }
 
 
-int session_new(struct list *sessl, struct session **sessp,
-		const struct rtc_configuration *pc_config,
-		const struct mnat *mnat, const struct menc *menc)
+int session_start(struct session *sess,
+		  const struct rtc_configuration *pc_config,
+		  const struct mnat *mnat, const struct menc *menc)
 {
 	const struct config *config = conf_config();
-	struct session *sess;
 	int err;
+
+	if (!sess)
+		return EINVAL;
+
+	if (sess->pc)
+		return EALREADY;
+
+	err = peerconnection_new(&sess->pc, pc_config, mnat, menc,
+				 peerconnection_gather_handler,
+				 peerconnection_estab_handler,
+				 peerconnection_close_handler, sess);
+	if (err) {
+		warning("demo: session alloc failed (%m)\n", err);
+		return err;
+	}
+
+	err = peerconnection_add_audio_track(sess->pc, config,
+					     baresip_aucodecl());
+	if (err) {
+		warning("demo: add_audio failed (%m)\n", err);
+		return err;
+	}
+
+	err = peerconnection_add_video_track(sess->pc, config,
+					     baresip_vidcodecl());
+	if (err) {
+		warning("demo: add_video failed (%m)\n", err);
+		return err;
+	}
+
+	return 0;
+}
+
+
+int session_new(struct list *sessl, struct session **sessp)
+{
+	struct session *sess;
 
 	info("demo: create session\n");
 
@@ -146,39 +182,12 @@ int session_new(struct list *sessl, struct session **sessp,
 	/* generate a unique session id */
 	rand_str(sess->id, sizeof(sess->id));
 
-	/* create a new session object, send SDP to it */
-	err = peerconnection_new(&sess->pc, pc_config, mnat, menc,
-				 peerconnection_gather_handler,
-				 peerconnection_estab_handler,
-				 peerconnection_close_handler, sess);
-	if (err) {
-		warning("demo: session alloc failed (%m)\n", err);
-		goto out;
-	}
-
-	err = peerconnection_add_audio_track(sess->pc, config,
-					     baresip_aucodecl());
-	if (err) {
-		warning("demo: add_audio failed (%m)\n", err);
-		goto out;
-	}
-
-	err = peerconnection_add_video_track(sess->pc, config,
-					     baresip_vidcodecl());
-	if (err) {
-		warning("demo: add_video failed (%m)\n", err);
-		goto out;
-	}
 
 	list_append(sessl, &sess->le, sess);
 
- out:
-	if (err)
-		mem_deref(sess);
-	else if (sessp)
-		*sessp = sess;
+	*sessp = sess;
 
-	return err;
+	return 0;
 }
 
 
