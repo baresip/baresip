@@ -168,7 +168,7 @@ static void menu_on_dial_history(GtkMenuItem *menuItem, gpointer arg)
 	if (!label_1)
 		return;
 
-	label_1[0] = ' ';
+	label_1 = label_1 + 1;
 
 	uri = strtok(label_1, "]");
 	gtk_mod_connect(mod, uri);
