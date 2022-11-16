@@ -620,8 +620,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	size_t num_bytes = auframe_size(af);
 	int err = 0;
 
-	err = mtx_lock(sp->mtx);
-	if (err) {
+	if (mtx_lock(sp->mtx) != thrd_success) {
 		memset(af->sampv, 0, num_bytes);
 		return 0;
 	}

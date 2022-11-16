@@ -685,7 +685,8 @@ static int rtsp_req_play_h(const struct rtsp_conn *conn,
 				break;
 
 			case STREAMT_ABACK:
-				sa_set_str(&stream->tar, "0.0.0.0", sa_port(&stream->tar));
+				sa_set_str(&stream->tar, "0.0.0.0",
+					   sa_port(&stream->tar));
 				err = onvif_aufilter_audio_recv_start(
 					stream->fs, &stream->tar,
 					stream->proto);
