@@ -248,6 +248,13 @@ static void http_req_handler(struct http_conn *conn,
 			return;
 		}
 	}
+    else if (0 == pl_strcasecmp(&msg->met, "OPTIONS")) {
+        http_reply(conn, 204, "OK",
+                   "Content-Length: 0\r\n"
+                   "Access-Control-Allow-Origin: *\r\n"
+                   "Access-Control-Allow-Headers: *\r\n"
+                   "\r\n");
+    }
 	else {
 		warning("demo: not found: %r %r\n", &msg->met, &msg->path);
 		http_ereply(conn, 404, "Not Found");
