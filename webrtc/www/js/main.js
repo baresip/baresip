@@ -10,6 +10,8 @@ const connectButton    = document.querySelector('button#connectButton');
 const disconnectButton = document.querySelector('button#disconnectButton');
 const audio            = document.querySelector('audio#audio');
 const remoteVideo      = document.getElementById('remoteVideo');
+const offerer          = document.getElementById('offerer');
+const recvonly         = document.getElementById('recvonly');
 
 connectButton.onclick     = connect_call;
 disconnectButton.onclick  = disconnect_call;
@@ -73,6 +75,7 @@ function send_candidate(json)
 function connect_call()
 {
 	connectButton.disabled = true;
+	b_offerer = offerer.checked;
 
 	console.log("Connecting call");
 
@@ -114,6 +117,16 @@ function connect_call()
 			remoteVideo.srcObject = event.streams[0];
 			console.log("ontrack: got video stream");
 		}
+	};
+
+	if (recvonly.checked) {
+		console.log("Add recvonly streams");
+		pc.addTransceiver('audio', { direction: 'recvonly' });
+		pc.addTransceiver('video', { direction: 'recvonly' });
+
+		disconnectButton.disabled = false;
+		send_post_connect();
+		return;
 	};
 
 	console.log("Requesting local stream");
@@ -248,7 +261,10 @@ function send_post_connect()
 
 	console.log("send post connect: " + loc);
 
-	xhr.open("POST", '' + loc + 'connect', true);
+	if (b_offerer)
+		xhr.open("POST", '' + loc + 'connect/offerer', true);
+	else
+		xhr.open("POST", '' + loc + 'connect', true);
 
 	xhr.onreadystatechange = function() {
 

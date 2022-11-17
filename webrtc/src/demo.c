@@ -126,30 +126,41 @@ static void http_req_handler(struct http_conn *conn,
 		handle_get(conn, &path);
 	}
 	else if (0 == pl_strcasecmp(&msg->met, "POST") &&
+		 0 == pl_strcasecmp(&msg->path, "/connect/offerer")) {
+
+		err = session_new(&demo.sessl, &sess);
+		if (err)
+			goto out;
+
+		sess->pc_config = pc_config;
+		sess->pc_config.offerer = false; /* browser is offerer */
+
+		/* sync reply */
+		http_reply(conn, 201, "Created",
+			   "Content-Length: 0\r\n"
+			   "Access-Control-Allow-Origin: *\r\n"
+			   "Session-ID: %s\r\n"
+			   "\r\n",
+			   sess->id);
+	}
+	else if (0 == pl_strcasecmp(&msg->met, "POST") &&
 		 0 == pl_strcasecmp(&msg->path, "/connect")) {
 
 		err = session_new(&demo.sessl, &sess);
 		if (err)
 			goto out;
 
-		if (pc_config.offerer) {
-			err = session_start(sess, &pc_config, demo.mnat,
-					    demo.menc);
-			if (err)
-				goto out;
+		sess->pc_config = pc_config;
+		sess->pc_config.offerer = true; /* baresip-webrtc is offerer */
 
-			/* async reply */
-			mem_deref(sess->conn_pending);
-			sess->conn_pending = mem_ref(conn);
-		}
-		else {
-			/* sync reply */
-			http_reply(conn, 201, "Created",
-				   "Content-Length: 0\r\n"
-				   "Access-Control-Allow-Origin: *\r\n"
-				   "Session-ID: %s\r\n"
-				   "\r\n", sess->id);
-		}
+		err = session_start(sess, &sess->pc_config, demo.mnat,
+				    demo.menc);
+		if (err)
+			goto out;
+
+		/* async reply */
+		mem_deref(sess->conn_pending);
+		sess->conn_pending = mem_ref(conn);
 	}
 	else if (0 == pl_strcasecmp(&msg->met, "PUT") &&
 		 0 == pl_strcasecmp(&msg->path, "/sdp")) {
@@ -160,8 +171,8 @@ static void http_req_handler(struct http_conn *conn,
 			return;
 		}
 
-		if (!pc_config.offerer) {
-			err = session_start(sess, &pc_config, demo.mnat,
+		if (!sess->pc_config.offerer) {
+			err = session_start(sess, &sess->pc_config, demo.mnat,
 					    demo.menc);
 			if (err)
 				goto out;
@@ -174,7 +185,7 @@ static void http_req_handler(struct http_conn *conn,
 				goto out;
 		}
 
-		if (pc_config.offerer) {
+		if (sess->pc_config.offerer) {
 			/* sync reply */
 			http_reply(conn, 200, "OK",
 				   "Content-Length: 0\r\n"

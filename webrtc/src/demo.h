@@ -13,6 +13,7 @@
 struct session {
 	struct le le;
 	struct peer_connection *pc;
+	struct rtc_configuration pc_config;
 	struct http_conn *conn_pending;
 	char id[4];
 };
