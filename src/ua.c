@@ -1028,7 +1028,7 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 
 	break;
 	default:
-		warning("ua: REFER forbidden for %s\n", auth.realm);
+		info("ua: REFER forbidden for %s\n", auth.realm);
 		(void)sip_reply(uag_sip(), msg, 403, "Forbidden");
 		goto out;
 	break;
