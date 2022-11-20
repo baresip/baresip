@@ -244,15 +244,18 @@ aubridge      Audio bridge module
 auconv        Audio sample format converter
 audiounit     AudioUnit audio driver for MacOSX/iOS
 aufile        Audio module for using a WAV-file as audio input
+auresamp      Audio resampler
 ausine        Audio sine wave input module
 av1           AV1 video codec
 avcapture     Video source using iOS AVFoundation video capture
 avcodec       Video codec using FFmpeg/libav libavcodec
+avfilter      Video filter using FFmpeg libavfilter
 avformat      Video source using FFmpeg/libav libavformat
 codec2        Codec2 low bit rate speech codec
 cons          UDP/TCP console UI driver
 contact       Contacts module
 coreaudio     Apple macOS Coreaudio driver
+ctrl_dbus     Control interface using DBUS
 ctrl_tcp      TCP control interface using JSON payload
 debug_cmd     Debug commands
 directfb      DirectFB video display module
@@ -270,27 +273,32 @@ gst           Gstreamer audio source
 gtk           GTK+ 3 menu-based UI
 gzrtp         ZRTP module using GNU ZRTP C++ library
 httpd         HTTP webserver UI-module
+httpreq       HTTP request module
 ice           ICE protocol for NAT Traversal
 jack          JACK Audio Connection Kit audio-driver
 l16           L16 audio codec
 menu          Interactive menu
+mixausrc      Mixes another audio source into audio stream
 mixminus      Mixes N-1 audio streams for conferencing
 mpa           MPA Speech and Audio Codec
-multicast     Multicast RTP send and receive
 mqtt          MQTT (Message Queue Telemetry Transport) module
+multicast     Multicast RTP send and receive
 mwi           Message Waiting Indication
 natpmp        NAT Port Mapping Protocol (NAT-PMP) module
 netroam       Detects and applies changes of the local network addresses
 opensles      OpenSLES audio driver
 opus          OPUS Interactive audio codec
+opus_multistream    OPUS multistream audio codec
 pcp           Port Control Protocol (PCP) module
 plc           Packet Loss Concealment (PLC) using spandsp
 portaudio     Portaudio driver
 pulse         Pulseaudio driver
+pulse_async   Pulseaudio async API driver
 presence      Presence module
 rtcpsummary   RTCP summary module
 sdl           Simple DirectMedia Layer 2.0 (SDL) video output driver
 selfview      Video selfview module
+serreg        Serial registration
 snapshot      Save video-stream as PNG images
 sndfile       Audio dumper using libsndfile
 sndio         Audio driver for OpenBSD
@@ -308,6 +316,7 @@ vp8           VP8 video codec
 vp9           VP9 video codec
 vumeter       Display audio levels in console
 webrtc_aec    Acoustic Echo Cancellation (AEC) using WebRTC SDK
+webrtc_aecm   Acoustic Echo Cancellation (AEC) mobile using WebRTC SDK
 wincons       Console input driver for Windows
 winwave       Audio driver for Windows
 x11           X11 video output driver
