@@ -733,7 +733,7 @@ int uag_reset_transp(bool reg, bool reinvite)
 
 			if (sa_isset(&laddr, SA_ADDR)) {
 				if (!call_target_refresh_allowed(call)) {
-					call_hangup(call, 0, "Transport of "
+					call_hangup(call, 500, "Transport of "
 						    "User Agent changed");
 					ua_event(ua, UA_EVENT_CALL_CLOSED,
 						 call, "Transport of "
