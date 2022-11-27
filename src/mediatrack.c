@@ -169,7 +169,7 @@ struct stream *media_get_stream(const struct media_track *media)
 
 struct audio *media_get_audio(const struct media_track *media)
 {
-	if (!media || media->kind == MEDIA_KIND_VIDEO)
+	if (!media || media->kind != MEDIA_KIND_AUDIO)
 		return NULL;
 
 	return media->u.au;
@@ -178,7 +178,7 @@ struct audio *media_get_audio(const struct media_track *media)
 
 struct video *media_get_video(const struct media_track *media)
 {
-	if (!media || media->kind == MEDIA_KIND_AUDIO)
+	if (!media || media->kind != MEDIA_KIND_VIDEO)
 		return NULL;
 
 	return media->u.vid;
