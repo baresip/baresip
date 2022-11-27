@@ -11,8 +11,8 @@
 #include <re_fmt.h>
 #include <re_mem.h>
 #include <re_mbuf.h>
-#include <re_tcp.h>
 #include <re_net.h>
+#include <re_tcp.h>
 
 #include "tcp_netstring.h"
 #include "netstring/netstring.h"
