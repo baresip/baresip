@@ -26,3 +26,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${GST_LIBRARIES}
     ${CAMERAD_LIBRARIES}
     )
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wno-strict-prototypes)
