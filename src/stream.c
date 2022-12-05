@@ -74,6 +74,7 @@ struct stream {
 	bool hold;               /**< Stream is on-hold (local)             */
 	bool mnat_connected;     /**< Media NAT is connected                */
 	bool menc_secure;        /**< Media stream is secure                */
+	bool pinhole;            /**< NAT pinhole flag                      */
 	stream_pt_h *pth;        /**< Stream payload type handler           */
 	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
@@ -706,6 +707,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->rtcph  = rtcph;
 	s->arg    = arg;
 	s->ldir   = SDP_SENDRECV;
+	s->pinhole = true;
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);
@@ -1525,7 +1527,7 @@ int stream_open_natpinhole(struct stream *strm)
 	if (!strm)
 		return EINVAL;
 
-	if (!strm->mnat)
+	if (!strm->mnat && strm->pinhole)
 		tmr_start(&strm->tx.tmr_natph, 10, natpinhole_handler, strm);
 
 	return 0;
@@ -1761,4 +1763,13 @@ void stream_enable_bundle(struct stream *strm, enum bundle_state st)
 	}
 
 	bundle_start_socket(strm->bundle, rtp_sock(strm->rtp), strm->le.list);
+}
+
+
+void stream_enable_natpinhole(struct stream *strm, bool enable)
+{
+	if (!strm)
+		return;
+
+	strm->pinhole = enable;
 }

@@ -23,6 +23,7 @@
 #    ;cert=cert.pem
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}
+#    ;natpinhole={yes, no}  # default: yes
 #    ;mwi=no
 #    ;outbound="sip:primary.example.com;transport=tcp"
 #    ;outbound2=sip:secondary.example.com
