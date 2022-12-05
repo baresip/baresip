@@ -28,8 +28,6 @@ struct sender {
 	struct sa raddr_rtp;   /**< Remote RTP address              */
 	struct sa raddr_rtcp;  /**< Remote RTCP address             */
 	int pt_enc;            /**< Payload type for encoding       */
-	struct tmr tmr_natph;  /**< Timer for NAT pinhole           */
-	uint32_t natphc;       /**< NAT pinhole RTP counter         */
 };
 
 
@@ -74,6 +72,8 @@ struct stream {
 	bool hold;               /**< Stream is on-hold (local)             */
 	bool mnat_connected;     /**< Media NAT is connected                */
 	bool menc_secure;        /**< Media stream is secure                */
+	struct tmr tmr_natph;    /**< Timer for NAT pinhole                 */
+	uint32_t natphc;         /**< NAT pinhole RTP counter               */
 	bool pinhole;            /**< NAT pinhole flag                      */
 	stream_pt_h *pth;        /**< Stream payload type handler           */
 	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
@@ -140,7 +140,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->rx.metric);
 
 	tmr_cancel(&s->rx.tmr_rtp);
-	tmr_cancel(&s->tx.tmr_natph);
+	tmr_cancel(&s->tmr_natph);
 	list_unlink(&s->le);
 	mem_deref(s->sdp);
 	mem_deref(s->mes);
@@ -335,7 +335,7 @@ static int handle_rtp(struct stream *s, const struct rtp_header *hdr,
 	}
 
  handler:
-	tmr_cancel(&s->tx.tmr_natph);
+	tmr_cancel(&s->tmr_natph);
 	s->rtph(hdr, extv, extc, mb, lostc, &ignore, s->arg);
 	if (ignore)
 		return EAGAIN;
@@ -646,7 +646,6 @@ static int sender_init(struct sender *tx)
 	err = metric_init(tx->metric);
 
 	tx->pt_enc = -1;
-	tmr_init(&tx->tmr_natph);
 
 	return err;
 }
@@ -708,6 +707,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->arg    = arg;
 	s->ldir   = SDP_SENDRECV;
 	s->pinhole = true;
+	tmr_init(&s->tmr_natph);
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);
@@ -1388,12 +1388,12 @@ static void update_menc_muxed(struct list *streaml, bool secure)
 }
 
 
-static uint32_t phwait(struct sender *tx)
+static uint32_t phwait(struct stream *strm)
 {
-	if (tx->natphc < 6)
-		++tx->natphc;
+	if (strm->natphc < 6)
+		++strm->natphc;
 
-	return 10 * (1 << tx->natphc);
+	return 10 * (1 << strm->natphc);
 }
 
 
@@ -1412,8 +1412,7 @@ static void natpinhole_handler(void *arg)
 	if (!mb)
 		return;
 
-	tmr_start(&strm->tx.tmr_natph, phwait(&strm->tx),
-		  natpinhole_handler, strm);
+	tmr_start(&strm->tmr_natph, phwait(strm), natpinhole_handler, strm);
 	mbuf_set_end(mb, RTP_HEADER_SIZE);
 	mbuf_advance(mb, RTP_HEADER_SIZE);
 
@@ -1528,7 +1527,7 @@ int stream_open_natpinhole(struct stream *strm)
 		return EINVAL;
 
 	if (!strm->mnat && strm->pinhole)
-		tmr_start(&strm->tx.tmr_natph, 10, natpinhole_handler, strm);
+		tmr_start(&strm->tmr_natph, 10, natpinhole_handler, strm);
 
 	return 0;
 }
