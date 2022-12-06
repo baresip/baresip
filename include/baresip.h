@@ -1641,6 +1641,8 @@ int  mediatrack_start_audio(struct media_track *media,
 			    struct list *ausrcl, struct list *aufiltl);
 int  mediatrack_start_video(struct media_track *media);
 struct stream *media_get_stream(const struct media_track *media);
+struct audio *media_get_audio(const struct media_track *media);
+struct video *media_get_video(const struct media_track *media);
 enum media_kind mediatrack_kind(const struct media_track *media);
 const char *media_kind_name(enum media_kind kind);
 
