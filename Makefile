@@ -18,7 +18,7 @@ $(warning ***************************************************)
 
 
 PROJECT	  := baresip
-VERSION   := 2.9.0
+VERSION   := 2.10.0
 DESCR     := "Baresip is a modular SIP User-Agent with audio and video support"
 
 # Verbose and silent build modes
@@ -26,8 +26,8 @@ ifeq ($(V),)
 HIDE=@
 endif
 
-LIBRE_MIN	:= 2.9.0
-LIBREM_MIN	:= 2.9.0
+LIBRE_MIN	:= 2.10.0
+LIBREM_MIN	:= 2.10.0
 
 ifndef LIBRE_MK
 LIBRE_MK  := $(shell [ -f ../re/mk/re.mk ] && \

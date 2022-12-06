@@ -1,3 +1,15 @@
+baresip (2.10.0) unstable; urgency=medium
+
+  * version 2.10.0
+
+ -- Sebastian Reimers <sebastian.reimers@gmail.com>  Tue, 6 Dec 2022 08:00:00 +0200
+
+baresip (2.9.0) unstable; urgency=medium
+
+  * version 2.9.0
+
+ -- Sebastian Reimers <sebastian.reimers@gmail.com>  Thu, 1 Nov 2022 08:00:00 +0200
+
 baresip (2.8.1) unstable; urgency=medium
 
   * version 2.8.1
