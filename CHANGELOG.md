@@ -5,10 +5,52 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2022-12-06
+
+### What's Changed
+* sdl: small improvements by @sreimers in https://github.com/baresip/baresip/pull/2285
+* vidinfo: allow all pixel formats by @alfredh in https://github.com/baresip/baresip/pull/2291
+* vid: add support for YUV422P pixel format by @alfredh in https://github.com/baresip/baresip/pull/2280
+* avformat: fix hwaccel vaapi by @alfredh in https://github.com/baresip/baresip/pull/2299
+* mk: add deprecate notice by @alfredh in https://github.com/baresip/baresip/pull/2302
+* mingw: upgrade to OpenSSL 3.0.7 by @alfredh in https://github.com/baresip/baresip/pull/2303
+* dshow: fix some warnings by @alfredh in https://github.com/baresip/baresip/pull/2305
+* dshow: fix pragma warning by @alfredh in https://github.com/baresip/baresip/pull/2306
+* ci: install libsdl2 development package by @alfredh in https://github.com/baresip/baresip/pull/2307
+* sdl: work in progress fixes for multi-threading by @alfredh in https://github.com/baresip/baresip/pull/2300
+* Stop segfaulting when no URI is passed to dial command by @SimonHyde-BBC in https://github.com/baresip/baresip/pull/2311
+* ice: local candidate policy config by @sreimers in https://github.com/baresip/baresip/pull/2312
+* auresamp: check handler arguments by @alfredh in https://github.com/baresip/baresip/pull/2313
+* fixes 2315 and GTK errors on quit by @mbattista in https://github.com/baresip/baresip/pull/2316
+* auresamp: avoid division by zero (#2293) by @cspiel1 in https://github.com/baresip/baresip/pull/2317
+* cmake: check for XShm.h (#2318) by @cspiel1 in https://github.com/baresip/baresip/pull/2319
+* pulse_async: avoid integer overrun for timestamps in recorder by @cspiel1 in https://github.com/baresip/baresip/pull/2321
+* ua: use sdp connection data instead origin by @sreimers in https://github.com/baresip/baresip/pull/2298
+* rtpext: move from baresip to re by @alfredh in https://github.com/baresip/baresip/pull/2322
+* acc,stream: add rtcp_mux account param by @sreimers in https://github.com/baresip/baresip/pull/2320
+* video: video_update cleanup by @sreimers in https://github.com/baresip/baresip/pull/2324
+* aufile/src: add auframe support by @sreimers in https://github.com/baresip/baresip/pull/2325
+* ice/tmr_async_handler: fix possible segfault by @sreimers in https://github.com/baresip/baresip/pull/2326
+* webrtc: fix browser offer handling by @sreimers in https://github.com/baresip/baresip/pull/2327
+* Space at the beginning of sip: creates errors by @mbattista in https://github.com/baresip/baresip/pull/2329
+* opus_multistream: update mimetype to ad-hoc standard by @alfredh in https://github.com/baresip/baresip/pull/2328
+* webrtc: add offerer and recvonly options by @sreimers in https://github.com/baresip/baresip/pull/2331
+* test: replace RSA cert with EC cert by @alfredh in https://github.com/baresip/baresip/pull/2332
+* Add OPTIONS handling for webrtc demo by @RenSym in https://github.com/baresip/baresip/pull/2333
+* mk: remove rtpext.c from srcs.mk by @cspiel1 in https://github.com/baresip/baresip/pull/2336
+* ua: change refer log to info() by @alfredh in https://github.com/baresip/baresip/pull/2338
+
+### New Contributors
+* @SimonHyde-BBC made their first contribution in https://github.com/baresip/baresip/pull/2311
+* @RenSym made their first contribution in https://github.com/baresip/baresip/pull/2333
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v2.9.0...v2.10.0
+
+---
 
 ## [2.9.0] - 2022-11-01
 
-## What's Changed
+### What's Changed
 * sndfile Module - filename includes strm->cname (i.e. call->local_uri)~ by @ninp0 in https://github.com/baresip/baresip/pull/2165
 * log: optional timestamps by @cspiel1 in https://github.com/baresip/baresip/pull/2169
 * avcodec: remove H263 codec by @alfredh in https://github.com/baresip/baresip/pull/2182
