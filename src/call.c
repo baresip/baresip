@@ -1204,10 +1204,12 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 			sipsess_abort(call->sess);
 		}
 		else {
-			if (scode < 400) {
+			if (!scode)
 				scode = 486;
+
+			if (!str_isset(reason))
 				reason = "Rejected";
-			}
+
 			info("call: rejecting incoming call from %s (%u %s)\n",
 			     call->peer_uri, scode, reason);
 			(void)sipsess_reject(call->sess, scode, reason, NULL);
