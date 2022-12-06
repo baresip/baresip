@@ -148,6 +148,8 @@ static int media_decode(struct account *acc, const struct pl *prm)
 	err |= param_dstr(&acc->mnatid,   prm, "medianat");
 	err |= param_u32(&acc->ptime,     prm, "ptime");
 	err |= param_bool(&acc->rtcp_mux, prm, "rtcp_mux");
+	acc->pinhole = true;
+	err |= param_bool(&acc->pinhole, &acc->laddr.params, "natpinhole");
 
 	return err;
 }

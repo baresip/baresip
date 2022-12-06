@@ -833,6 +833,8 @@ int call_streams_alloc(struct call *call)
 					    stream_rtpestab_handler,
 					    stream_rtcp_handler,
 					    stream_error_handler, call);
+
+		stream_enable_natpinhole(strm, acc->pinhole);
 	}
 
 	if (call->cfg->avt.bundle) {

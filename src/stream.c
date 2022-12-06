@@ -72,6 +72,9 @@ struct stream {
 	bool hold;               /**< Stream is on-hold (local)             */
 	bool mnat_connected;     /**< Media NAT is connected                */
 	bool menc_secure;        /**< Media stream is secure                */
+	struct tmr tmr_natph;    /**< Timer for NAT pinhole                 */
+	uint32_t natphc;         /**< NAT pinhole RTP counter               */
+	bool pinhole;            /**< NAT pinhole flag                      */
 	stream_pt_h *pth;        /**< Stream payload type handler           */
 	stream_rtp_h *rtph;      /**< Stream RTP handler                    */
 	stream_rtcp_h *rtcph;    /**< Stream RTCP handler                   */
@@ -137,6 +140,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->rx.metric);
 
 	tmr_cancel(&s->rx.tmr_rtp);
+	tmr_cancel(&s->tmr_natph);
 	list_unlink(&s->le);
 	mem_deref(s->sdp);
 	mem_deref(s->mes);
@@ -331,6 +335,7 @@ static int handle_rtp(struct stream *s, const struct rtp_header *hdr,
 	}
 
  handler:
+	tmr_cancel(&s->tmr_natph);
 	s->rtph(hdr, extv, extc, mb, lostc, &ignore, s->arg);
 	if (ignore)
 		return EAGAIN;
@@ -701,6 +706,8 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->rtcph  = rtcph;
 	s->arg    = arg;
 	s->ldir   = SDP_SENDRECV;
+	s->pinhole = true;
+	tmr_init(&s->tmr_natph);
 
 	if (prm->use_rtp) {
 		err = stream_sock_alloc(s, prm->af);
@@ -1381,6 +1388,46 @@ static void update_menc_muxed(struct list *streaml, bool secure)
 }
 
 
+static uint32_t phwait(struct stream *strm)
+{
+	if (strm->natphc < 6)
+		++strm->natphc;
+
+	return 10 * (1 << strm->natphc);
+}
+
+
+static void natpinhole_handler(void *arg)
+{
+	struct stream *strm = arg;
+	const struct sdp_format *sc = NULL;
+	struct mbuf *mb = NULL;
+	int err = 0;
+
+	sc = sdp_media_rformat(strm->sdp, NULL);
+	if (!sc)
+		return;
+
+	mb = mbuf_alloc(RTP_HEADER_SIZE);
+	if (!mb)
+		return;
+
+	tmr_start(&strm->tmr_natph, phwait(strm), natpinhole_handler, strm);
+	mbuf_set_end(mb, RTP_HEADER_SIZE);
+	mbuf_advance(mb, RTP_HEADER_SIZE);
+
+	/* Send a dummy RTP packet to open NAT pinhole */
+	err = rtp_send(strm->rtp, &strm->tx.raddr_rtp, false, false,
+		       sc->pt, 0, tmr_jiffies_rt_usec(), mb);
+	if (err) {
+		warning("stream: rtp_send to open natpinhole"
+			"failed (%m)\n", err);
+	}
+
+	mem_deref(mb);
+}
+
+
 /**
  * Set the secure flag on the stream object
  *
@@ -1474,41 +1521,15 @@ int stream_enable(struct stream *strm, bool enable)
  *
  * @return int 0 if success, otherwise errorcode
  */
-int stream_open_natpinhole(const struct stream *strm)
+int stream_open_natpinhole(struct stream *strm)
 {
-	const struct sdp_format *sc = NULL;
-	struct mbuf *mb = NULL;
-	int err = 0;
-
 	if (!strm)
 		return EINVAL;
 
-	if (!strm->mnat) {
+	if (!strm->mnat && strm->pinhole)
+		tmr_start(&strm->tmr_natph, 10, natpinhole_handler, strm);
 
-		sc = sdp_media_rformat(strm->sdp, NULL);
-		if (!sc)
-			return EINVAL;
-
-		mb = mbuf_alloc(RTP_HEADER_SIZE);
-		if (!mb)
-			return ENOMEM;
-
-		mbuf_set_end(mb, RTP_HEADER_SIZE);
-		mbuf_advance(mb, RTP_HEADER_SIZE);
-
-		/* Send a dummy RTP packet to open NAT pinhole */
-		err = rtp_send(strm->rtp, &strm->tx.raddr_rtp, false, false,
-			       sc->pt, 0, tmr_jiffies_rt_usec(), mb);
-		if (err) {
-			warning("stream: rtp_send to open natpinhole"
-				"failed (%m)\n", err);
-			goto out;
-		}
-	}
-
- out:
-	mem_deref(mb);
-	return err;
+	return 0;
 }
 
 
@@ -1741,4 +1762,13 @@ void stream_enable_bundle(struct stream *strm, enum bundle_state st)
 	}
 
 	bundle_start_socket(strm->bundle, rtp_sock(strm->rtp), strm->le.list);
+}
+
+
+void stream_enable_natpinhole(struct stream *strm, bool enable)
+{
+	if (!strm)
+		return;
+
+	strm->pinhole = enable;
 }

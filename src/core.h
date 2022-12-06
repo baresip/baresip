@@ -91,6 +91,7 @@ struct account {
 	char *uas_user;              /**< UAS authentication username        */
 	char *uas_pass;              /**< UAS authentication password        */
 	bool rtcp_mux;               /**< RTCP multiplexing                  */
+	bool pinhole;                /**< NAT pinhole flag                   */
 };
 
 
@@ -303,6 +304,7 @@ int  stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);
 struct bundle *stream_bundle(const struct stream *strm);
 void stream_parse_mid(struct stream *strm);
 void stream_enable_bundle(struct stream *strm, enum bundle_state st);
+void stream_enable_natpinhole(struct stream *strm, bool enable);
 
 
 /*
