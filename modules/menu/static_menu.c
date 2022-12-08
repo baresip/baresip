@@ -39,14 +39,13 @@ static int about_box(struct re_printf *pf, void *unused)
 
 static int answer_call(struct ua *ua, struct call *call)
 {
-	struct menu *menu = menu_get();
 	int err;
 
 	if (!call)
 		return EINVAL;
 
 	/* Stop any ongoing ring-tones */
-	menu->play = mem_deref(menu->play);
+	menu_stop_play();
 
 	err  = uag_hold_others(call);
 	err |= ua_answer(ua, call, VIDMODE_ON);

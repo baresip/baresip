@@ -8,6 +8,7 @@
 #include <string.h>
 #include <re.h>
 #include <baresip.h>
+#include "tone.h"
 #include "menu.h"
 
 
@@ -172,9 +173,9 @@ struct call *menu_find_call(call_match_h *matchh, const struct call *exclude)
 }
 
 
-static void menu_stop_play(void)
+void menu_stop_play(void)
 {
-	menu.play = mem_deref(menu.play);
+	tone_stop();
 	menu.ringback = false;
 }
 
@@ -206,10 +207,6 @@ static int menu_ovkey_str(char **key, const struct call *call,
 	return menu_ovkey(key, call, &pl);
 }
 
-enum Device {
-	DEVICE_ALERT,
-	DEVICE_PLAYER
-};
 
 static bool menu_play(const struct call *call,
 		      const char *ckey,
@@ -217,20 +214,10 @@ static bool menu_play(const struct call *call,
 		      int repeat,
 		      enum Device device)
 {
-	struct config *cfg = conf_config();
-	struct player *player = baresip_player();
 	char *ovkey;
 	const char *ovaukey = NULL;
 	struct pl pl = PL_INIT;
-	char *file = NULL;
 	int err;
-	const char *play_mod = cfg->audio.alert_mod;
-	const char *play_dev = cfg->audio.alert_dev;
-
-	if (device == DEVICE_PLAYER) {
-		play_mod = cfg->audio.play_mod;
-		play_dev = cfg->audio.play_dev;
-	}
 
 	if (ckey) {
 		err = menu_ovkey_str(&ovkey, call, ckey);
@@ -255,12 +242,8 @@ static bool menu_play(const struct call *call,
 	if (!pl_isset(&pl) || !pl_strcmp(&pl, "none"))
 		return false;
 
-	pl_strdup(&file, &pl);
 	menu_stop_play();
-	err = play_file(&menu.play, player, file, repeat,
-			play_mod,
-			play_dev);
-	mem_deref(file);
+	tone_play(&pl, repeat, device);
 
 	return err == 0;
 }
@@ -459,7 +442,7 @@ static void start_autoanswer(struct call *call)
 	}
 
 	if (beep) {
-		play_set_finish_handler(menu.play, auans_play_finished, call);
+		tone_set_finish_handler(auans_play_finished, call);
 	}
 	else {
 		call_start_answtmr(call, adelay);
@@ -973,8 +956,8 @@ static int module_init(void)
 	menu.ringback_disabled = false;
 	menu.statmode = STATMODE_CALL;
 	menu.clean_number = false;
-	menu.play = NULL;
 	menu.adelay = -1;
+	tone_init();
 	err = odict_alloc(&menu.ovaufile, 8);
 	if (err)
 		return err;

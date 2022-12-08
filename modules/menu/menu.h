@@ -14,7 +14,6 @@ enum statmode {
 
 struct menu{
 	struct tmr tmr_stat;          /**< Call status timer              */
-	struct play *play;            /**< Current audio player state     */
 	struct mbuf *dialbuf;         /**< Buffer for dialled number      */
 	struct call *xfer_call;       /**< Attended transfer call         */
 	struct call *xfer_targ;       /**< Transfer target call           */
@@ -64,3 +63,6 @@ int  menu_param_decode(const char *prm, const char *name, struct pl *val);
 struct call *menu_find_call(call_match_h *matchh, const struct call *exclude);
 struct call *menu_find_call_state(enum call_state st);
 enum sdp_dir decode_sdp_enum(const struct pl *pl);
+
+/* Tone */
+void menu_stop_play(void);

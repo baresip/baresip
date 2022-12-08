@@ -381,20 +381,10 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 
 static int stop_ringing(struct re_printf *pf, void *arg)
 {
-	struct menu *menu;
-	struct play *p;
-
 	(void)pf;
 	(void)arg;
 
-	menu = menu_get();
-	p = menu->play;
-	menu->play = NULL;
-
-	if (p) {
-		mem_deref(p);
-	}
-
+	menu_stop_play();
 	return 0;
 }
 
