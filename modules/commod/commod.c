@@ -283,6 +283,22 @@ static void check_auto_answer_media_direction(struct call *call)
 }
 
 
+static void hangup_outgoing_ua(struct call *call, void *arg)
+{
+	struct ua *ua = arg;
+
+	if (call_get_ua(call) != ua)
+		return;
+
+	if (call_state(call) != CALL_STATE_OUTGOING &&
+	    call_state(call) != CALL_STATE_RINGING &&
+	    call_state(call) != CALL_STATE_EARLY)
+		return;
+
+	ua_hangup(ua, call, 480, "Temporarily Unavailable");
+}
+
+
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
@@ -298,6 +314,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			/*@fallthrough@*/
 		case UA_EVENT_CALL_OUTGOING:
 			cur_play = mem_deref(cur_play);
+			break;
+		case UA_EVENT_REGISTER_FAIL:
+			/* SYFU-942: hangup all call-requests */
+			uag_filter_calls(hangup_outgoing_ua, NULL, ua);
 			break;
 		default:
 			break;
