@@ -1084,28 +1084,19 @@ int account_set_call_transfer(struct account *acc, const char *value)
 
 
 /**
- * Sets rtcp_mux on (value "yes") or off (value "no")
+ * Sets rtcp_mux on (value true) or off (value false)
  *
  * @param acc      User-Agent account
- * @param value    "yes" or "no"
+ * @param value    true or false
  *
  * @return 0 if success, otherwise errorcode
  */
-int account_set_rtcp_mux(struct account *acc, const char *value)
+int account_set_rtcp_mux(struct account *acc, bool value)
 {
 	if (!acc)
 		return EINVAL;
 
-	if (0 == str_casecmp(value, "yes"))
-		acc->rtcp_mux = true;
-	else
-		if (0 == str_casecmp(value, "no"))
-			acc->rtcp_mux = false;
-		else {
-			warning("account: unknown rtcp_mux: %r\n",
-				value);
-			return EINVAL;
-		}
+	acc->rtcp_mux = value;
 
 	return 0;
 }
@@ -1743,14 +1734,14 @@ const char *account_call_transfer(const struct account *acc)
  *
  * @param acc User-Agent account
  *
- * @return "yes" or "no"
+ * @return true or false
  */
-const char *account_rtcp_mux(const struct account *acc)
+bool account_rtcp_mux(const struct account *acc)
 {
 	if (!acc)
-		return "no";
+		return false;
 
-	return acc->rtcp_mux ? "yes" : "no";
+	return acc->rtcp_mux;
 }
 
 
