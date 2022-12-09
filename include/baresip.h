@@ -98,6 +98,7 @@ int account_set_audio_codecs(struct account *acc, const char *codecs);
 int account_set_video_codecs(struct account *acc, const char *codecs);
 int account_set_mwi(struct account *acc, const char *value);
 int account_set_call_transfer(struct account *acc, const char *value);
+int account_set_rtcp_mux(struct account *acc, bool value);
 int account_auth(const struct account *acc, char **username, char **password,
 		 const char *realm);
 struct list *account_aucodecl(const struct account *acc);
@@ -127,6 +128,7 @@ const char *account_mediaenc(const struct account *acc);
 const char *account_medianat(const struct account *acc);
 const char *account_mwi(const struct account *acc);
 const char *account_call_transfer(const struct account *acc);
+bool account_rtcp_mux(const struct account *acc);
 const char *account_extra(const struct account *acc);
 int account_uri_complete_strdup(const struct account *acc, char **strp,
 				const struct pl *uri);

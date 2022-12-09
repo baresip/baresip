@@ -1084,6 +1084,25 @@ int account_set_call_transfer(struct account *acc, const char *value)
 
 
 /**
+ * Sets rtcp_mux on (value true) or off (value false)
+ *
+ * @param acc      User-Agent account
+ * @param value    true or false
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_rtcp_mux(struct account *acc, bool value)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->rtcp_mux = value;
+
+	return 0;
+}
+
+
+/**
  * Authenticate a User-Agent (UA)
  *
  * @param acc      User-Agent account
@@ -1707,6 +1726,22 @@ const char *account_call_transfer(const struct account *acc)
 		return "no";
 
 	return acc->refer ? "yes" : "no";
+}
+
+
+/**
+ * Get rtcp_mux capability of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return true or false
+ */
+bool account_rtcp_mux(const struct account *acc)
+{
+	if (!acc)
+		return false;
+
+	return acc->rtcp_mux;
 }
 
 
