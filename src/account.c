@@ -584,7 +584,6 @@ int account_alloc(struct account **accp, const char *sipaddr)
 
 	/* Decode parameters */
 	acc->ptime = 20;
-	acc->rtcp_mux = conf_config()->avt.rtcp_mux;
 	err |= sip_params_decode(acc, &acc->laddr);
 	       rel100_decode(acc, &acc->laddr.params);
 	       answermode_decode(acc, &acc->laddr.params);
