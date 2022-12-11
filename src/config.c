@@ -436,7 +436,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		cfg->avt.rtp_bw.max *= 1000;
 	}
 
-	(void)conf_get_bool(conf, "rtcp_mux", &cfg->avt.rtcp_mux);
 	if (0 == conf_get(conf, "jitter_buffer_type", &jbtype))
 		cfg->avt.jbtype = conf_get_jbuf_type(&jbtype);
 
@@ -531,7 +530,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtp_video_tos\t\t%u\n"
 			 "rtp_ports\t\t%H\n"
 			 "rtp_bandwidth\t\t%H\n"
-			 "rtcp_mux\t\t%s\n"
 			 "jitter_buffer_type\t%s\n"
 			 "jitter_buffer_delay\t%H\n"
 			 "rtp_stats\t\t%s\n"
@@ -582,7 +580,6 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtpv_tos,
 			 range_print, &cfg->avt.rtp_ports,
 			 range_print, &cfg->avt.rtp_bw,
-			 cfg->avt.rtcp_mux ? "yes" : "no",
 			 jbuf_type_str(cfg->avt.jbtype),
 			 range_print, &cfg->avt.jbuf_del,
 			 cfg->avt.rtp_stats ? "yes" : "no",
@@ -779,7 +776,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtp_video_tos\t\t136\n"
 			  "#rtp_ports\t\t10000-20000\n"
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
-			  "rtcp_mux\t\tno\n"
 			  "jitter_buffer_type\tfixed\t\t# off, fixed,"
 				" adaptive\n"
 			  "jitter_buffer_delay\t%u-%u\t\t# frames\n"
