@@ -1027,56 +1027,38 @@ int account_set_display_name(struct account *acc, const char *dname)
 
 
 /**
- * Sets MWI on (value "yes") or off (value "no")
+ * Sets MWI on (value true) or off (value false)
  *
  * @param acc      User-Agent account
- * @param value    "yes" or "no"
+ * @param value    true or false
  *
  * @return 0 if success, otherwise errorcode
  */
-int account_set_mwi(struct account *acc, const char *value)
+int account_set_mwi(struct account *acc, bool value)
 {
 	if (!acc)
 		return EINVAL;
 
-	if (0 == str_casecmp(value, "yes"))
-		acc->mwi = true;
-	else
-		if (0 == str_casecmp(value, "no"))
-			acc->mwi = false;
-		else {
-			warning("account: unknown mwi value: %r\n",
-				value);
-			return EINVAL;
-		}
+	acc->mwi = value;
 
 	return 0;
 }
 
 
 /**
- * Sets call transfer on (value "yes") or off (value "no")
+ * Sets call transfer on (value true) or off (value false)
  *
  * @param acc      User-Agent account
- * @param value    "yes" or "no"
+ * @param value    true or false
  *
  * @return 0 if success, otherwise errorcode
  */
-int account_set_call_transfer(struct account *acc, const char *value)
+int account_set_call_transfer(struct account *acc, bool value)
 {
 	if (!acc)
 		return EINVAL;
 
-	if (0 == str_casecmp(value, "yes"))
-		acc->refer = true;
-	else
-		if (0 == str_casecmp(value, "no"))
-			acc->refer = false;
-		else {
-			warning("account: unknown call transfer: %r\n",
-				value);
-			return EINVAL;
-		}
+	acc->refer = value;
 
 	return 0;
 }
@@ -1701,14 +1683,14 @@ const char *account_medianat(const struct account *acc)
  *
  * @param acc User-Agent account
  *
- * @return "yes" or "no"
+ * @return true or false
  */
-const char *account_mwi(const struct account *acc)
+bool account_mwi(const struct account *acc)
 {
 	if (!acc)
-		return "no";
+		return false;
 
-	return acc->mwi ? "yes" : "no";
+	return acc->mwi;
 }
 
 
@@ -1717,14 +1699,14 @@ const char *account_mwi(const struct account *acc)
  *
  * @param acc User-Agent account
  *
- * @return "yes" or "no"
+ * @return true or false
  */
-const char *account_call_transfer(const struct account *acc)
+bool account_call_transfer(const struct account *acc)
 {
 	if (!acc)
-		return "no";
+		return false;
 
-	return acc->refer ? "yes" : "no";
+	return acc->refer;
 }
 
 
