@@ -182,6 +182,7 @@ static void menc_event_handler(enum menc_event event,
 		media->dtls_ok = true;
 
 		stream_set_secure(strm, true);
+		stream_rtcp_enable_rr(strm, true);
 		stream_start_rtcp(strm);
 
 		if (pc->estabh)

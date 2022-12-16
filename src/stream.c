@@ -1494,6 +1494,21 @@ int stream_start_rtcp(const struct stream *strm)
 
 
 /**
+ * Enable/Disable additional RTCP Receiver Reports
+ *
+ * @param strm   Stream object
+ * @param enable @param enable True for enable and false for disable
+ */
+void stream_rtcp_enable_rr(const struct stream *strm, bool enable)
+{
+	if (!strm)
+		return;
+
+	rtcp_enable_rr(strm->rtp, enable);
+}
+
+
+/**
  * Enable stream
  *
  * @param strm   Stream object
