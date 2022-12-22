@@ -3003,7 +3003,7 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 		return EINVAL;
 
 	call->estadir = a;
-	call->estvdir = v;
+	call->estvdir = call->use_video ? v : SDP_INACTIVE;
 
 	call_set_mdir(call, a, v);
 	return 0;
@@ -3025,7 +3025,7 @@ int call_set_media_estdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
 		return EINVAL;
 
 	call->estadir = a;
-	call->estvdir = v;
+	call->estvdir = call->use_video ? v : SDP_INACTIVE;
 
 	return 0;
 }
