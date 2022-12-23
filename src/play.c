@@ -449,7 +449,7 @@ static int play_file_ausrc(struct play **playp,
 	if (err)
 		goto out;
 
-	aubuf_set_mode(play->aubuf, AUBUF_FILE);
+	aubuf_set_live(play->aubuf, false);
 	play->ausrc = ausrc;
 	err = start_ausrc(play);
 	if (err)
