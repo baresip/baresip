@@ -360,6 +360,8 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 		mtx_lock(&play->lock);
 		play->ausrc_st = mem_deref(play->ausrc_st);
 		mtx_unlock(&play->lock);
+
+		aubuf_flush(play->aubuf);
 	}
 }
 
