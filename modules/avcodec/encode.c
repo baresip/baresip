@@ -164,7 +164,10 @@ static int open_encoder(struct videnc_state *st,
 
 	av_opt_set_defaults(st->ctx);
 
-	st->ctx->bit_rate  = prm->bitrate;
+	st->ctx->bit_rate	= prm->bitrate;
+	st->ctx->rc_max_rate	= prm->bitrate;
+	st->ctx->rc_buffer_size = prm->bitrate / 2;
+
 	st->ctx->width     = size->w;
 	st->ctx->height    = size->h;
 
