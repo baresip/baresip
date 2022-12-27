@@ -80,7 +80,7 @@ struct vtx {
 	struct videnc_state *enc;          /**< Video encoder state       */
 	struct vidsrc_prm vsrc_prm;        /**< Video source parameters   */
 	struct vidsz vsrc_size;            /**< Video source size         */
-	struct vidsrc *vs;
+	struct vidsrc *vs;                 /**< Video source module       */
 	struct vidsrc_st *vsrc;            /**< Video source              */
 	mtx_t lock_enc;                    /**< Lock for encoder          */
 	struct vidframe *frame;            /**< Source frame              */
@@ -126,7 +126,7 @@ struct vrx {
 	const struct vidcodec *vc;         /**< Current video decoder     */
 	struct viddec_state *dec;          /**< Video decoder state       */
 	struct vidisp_prm vidisp_prm;      /**< Video display parameters  */
-	struct vidisp *vd;
+	struct vidisp *vd;                 /**< Video display module      */
 	struct vidisp_st *vidisp;          /**< Video display             */
 	mtx_t lock;                        /**< Lock for decoder          */
 	struct list filtl;                 /**< Filters in decoding order */
