@@ -1168,7 +1168,7 @@ int call_modify(struct call *call)
 	debug("call: modify\n");
 
 	err = call_sdp_get(call, &desc, true);
-	if (!err) {
+	if (!err && call_target_refresh_allowed(call)) {
 		err = sipsess_modify(call->sess, desc);
 		if (err)
 			goto out;
