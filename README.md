@@ -292,7 +292,7 @@ opus_multistream    OPUS multistream audio codec
 pcp           Port Control Protocol (PCP) module
 plc           Packet Loss Concealment (PLC) using spandsp
 portaudio     Portaudio driver
-pulse         Pulseaudio driver
+pulse_simple  Pulseaudio driver using simple API
 pulse_async   Pulseaudio async API driver
 presence      Presence module
 rtcpsummary   RTCP summary module
