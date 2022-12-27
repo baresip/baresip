@@ -107,18 +107,6 @@ static int module_handler(const struct pl *val, void *arg)
 }
 
 
-/* XXX: remove this after a grace period */
-static int module_tmp_handler(const struct pl *val, void *arg)
-{
-	struct mod *mod = NULL;
-	warning("module_tmp %r is deprecated,"
-		" use 'module' or 'module_app' instead\n", val);
-	(void)load_module(&mod, arg, val);
-	mem_deref(mod);
-	return 0;
-}
-
-
 static int module_app_handler(const struct pl *val, void *arg)
 {
 	struct mod *mod = NULL;
@@ -152,10 +140,6 @@ int module_init(const struct conf *conf)
 		pl_set_str(&path, ".");
 
 	err = conf_apply(conf, "module", module_handler, &path);
-	if (err)
-		return err;
-
-	err = conf_apply(conf, "module_tmp", module_tmp_handler, &path);
 	if (err)
 		return err;
 
