@@ -1151,7 +1151,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 
 
 /**
- * Update the current call by sending Re-INVITE or UPDATE
+ * Update the current call media and send Re-INVITE or UPDATE if allowed
  *
  * @param call Call object
  *
