@@ -7,9 +7,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-#endif
 #include "aec.h"
 
 
@@ -83,7 +80,7 @@ static int decode_float(struct aec_dec *dec, float *sampv, size_t sampc)
 	if (sampc % aec->blocksize)
 		return EINVAL;
 
-	pthread_mutex_lock(&aec->mutex);
+	mtx_lock(&aec->mutex);
 
 	for (i = 0; i < sampc; i += aec->blocksize) {
 
@@ -101,7 +98,7 @@ static int decode_float(struct aec_dec *dec, float *sampv, size_t sampc)
 	}
 
  out:
-	pthread_mutex_unlock(&aec->mutex);
+	mtx_unlock(&aec->mutex);
 
 	return err;
 }

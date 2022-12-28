@@ -7,9 +7,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-#endif
 #include "aec.h"
 
 
@@ -41,6 +38,8 @@ static void aec_destructor(void *arg)
 
 	if (st->inst)
 		delete st->inst;
+
+	mtx_destroy(&st->mutex);
 }
 
 
@@ -78,7 +77,7 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	aec->srate = prm->srate;
 	aec->ch    = prm->ch;
 
-	pthread_mutex_init(&aec->mutex, NULL);
+	mtx_init(&aec->mutex, mtx_plain);
 
 	// NOTE: excluding channel count
 	aec->blocksize  = prm->srate * BLOCKSIZE / 1000;

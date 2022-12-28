@@ -4,8 +4,6 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  */
 
-#include <pthread.h>
-
 #define WEBRTC_POSIX 1
 #include <webrtc/modules/audio_processing/include/audio_processing.h>
 #include <webrtc/system_wrappers/include/trace.h>
@@ -20,7 +18,7 @@ using namespace webrtc;
 
 struct aec {
 	AudioProcessing *inst;
-	pthread_mutex_t mutex;
+	mtx_t mutex;
 	uint32_t srate;
 	uint8_t ch;
 	uint32_t blocksize;
