@@ -133,7 +133,7 @@ struct autx {
  \endverbatim
  */
 struct aurx {
-	const struct auplay *ap;
+	const struct auplay *ap;      /**< Audio Player module             */
 	struct auplay_st *auplay;     /**< Audio Player                    */
 	struct auplay_prm auplay_prm; /**< Audio Player parameters         */
 	const struct aucodec *ac;     /**< Current audio decoder           */
