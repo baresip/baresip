@@ -917,6 +917,27 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 }
 
 
+/**
+ * Write stream data to the network
+ *
+ * @param s		Stream object
+ * @param seq		Sequence
+ * @param ext		Extension bit
+ * @param marker	Marker bit
+ * @param pt		Payload type
+ * @param ts		Timestamp
+ * @param mb		Payload buffer
+ *
+ * @return int	0 if success, errorcode otherwise
+ */
+int stream_resend(struct stream *s, uint16_t seq, bool ext, bool marker,
+		  int pt, uint32_t ts, struct mbuf *mb)
+{
+	return rtp_resend(s->rtp, seq, &s->tx.raddr_rtp, ext, marker, pt, ts,
+			  mb);
+}
+
+
 static void disable_mnat(struct stream *s)
 {
 	info("stream: disable MNAT (%s)\n", media_name(s->type));
