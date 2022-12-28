@@ -294,6 +294,8 @@ void stream_update_encoder(struct stream *s, int pt_enc);
 int  stream_pt_enc(const struct stream *strm);
 int  stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		 struct mbuf *mb);
+int  stream_resend(struct stream *s, uint16_t seq, bool ext, bool marker,
+		  int pt, uint32_t ts, struct mbuf *mb);
 
 /* Receive */
 void stream_flush(struct stream *s);
