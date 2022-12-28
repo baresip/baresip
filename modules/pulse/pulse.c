@@ -291,8 +291,8 @@ static int module_close(void)
 }
 
 
-EXPORT_SYM const struct mod_export DECL_EXPORTS(pulse_async) = {
-	"pulse_async",
+EXPORT_SYM const struct mod_export DECL_EXPORTS(pulse) = {
+	"pulse",
 	"audio",
 	module_init,
 	module_close,

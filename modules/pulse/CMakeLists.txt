@@ -1,4 +1,4 @@
-project(pulse_async)
+project(pulse)
 
 set(SRCS pulse.c pastream.c player.c recorder.c)
 
