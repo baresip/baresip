@@ -981,11 +981,11 @@ int config_write_template(const char *file, const struct config *cfg)
 #else
 	if (!strncmp(default_audio_device(), "pulse", 5)) {
 		(void)re_fprintf(f, "#module\t\t\t" "alsa" MOD_EXT "\n");
-		(void)re_fprintf(f, "module\t\t\t" "pulse" MOD_EXT "\n");
+		(void)re_fprintf(f, "module\t\t\t" "pulse_async" MOD_EXT "\n");
 	}
 	else {
 		(void)re_fprintf(f, "module\t\t\t" "alsa" MOD_EXT "\n");
-		(void)re_fprintf(f, "#module\t\t\t" "pulse" MOD_EXT "\n");
+		(void)re_fprintf(f, "#module\t\t\t" "pulse_async" MOD_EXT"\n");
 	}
 #endif
 	(void)re_fprintf(f, "#module\t\t\t" "jack" MOD_EXT "\n");

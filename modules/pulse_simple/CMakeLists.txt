@@ -1,4 +1,4 @@
-project(pulse)
+project(pulse_simple)
 
 set(SRCS pulse.c player.c recorder.c)
 
