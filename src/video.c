@@ -1024,6 +1024,9 @@ int video_alloc(struct video **vp, struct list *streaml,
 
 	/* RFC 4585 */
 	err |= sdp_media_set_lattr(stream_sdpmedia(v->strm), true,
+				   "rtcp-fb", "* nack");
+
+	err |= sdp_media_set_lattr(stream_sdpmedia(v->strm), false,
 				   "rtcp-fb", "* nack pli");
 
 	/* RFC 4796 */
