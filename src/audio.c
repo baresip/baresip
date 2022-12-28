@@ -898,6 +898,21 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 }
 
 
+/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
+static const struct rtpext *rtpext_find(const struct rtpext *extv, size_t extc,
+					uint8_t id)
+{
+	for (size_t i=0; i<extc; i++) {
+		const struct rtpext *rtpext = &extv[i];
+
+		if (rtpext->id == id)
+			return rtpext;
+	}
+
+	return NULL;
+}
+
+
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
@@ -908,7 +923,6 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	struct aurx *rx = &a->rx;
 	bool discard = false;
 	bool drop = *ignore;
-	size_t i;
 	int wrap;
 	(void) lostc;
 
@@ -923,14 +937,12 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	}
 
 	*ignore = false;
+
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
-	for (i=0; i<extc; i++) {
-
-		if (extv[i].id == a->extmap_aulevel) {
-
-			a->rx.level_last = -(double)(extv[i].data[0] & 0x7f);
-			a->rx.level_set = true;
-		}
+	const struct rtpext *ext = rtpext_find(extv, extc, a->extmap_aulevel);
+	if (ext) {
+		rx->level_last = -(double)(ext->data[0] & 0x7f);
+		rx->level_set = true;
 	}
 
 	/* Save timestamp for incoming RTP packets */
