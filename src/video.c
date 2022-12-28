@@ -23,11 +23,13 @@
 
 /** Video transmit parameters */
 enum {
-	MEDIA_POLL_RATE = 250,                 /**< in [Hz]             */
-	BURST_MAX       = 8192,                /**< in bytes            */
-	RTP_PRESZ       = 4 + RTP_HEADER_SIZE, /**< TURN and RTP header */
-	RTP_TRAILSZ     = 12 + 4,              /**< SRTP/SRTCP trailer  */
-	PICUP_INTERVAL  = 500,
+	MEDIA_POLL_RATE = 250,		       /**< in [Hz]                  */
+	BURST_MAX	= 8192,		       /**< in bytes                 */
+	RTP_PRESZ	= 4 + RTP_HEADER_SIZE, /**< TURN and RTP header      */
+	RTP_TRAILSZ	= 12 + 4,	       /**< SRTP/SRTCP trailer       */
+	PICUP_INTERVAL	= 500,		       /**< FIR/PLI interval         */
+	NACK_BLPSZ	= 16,		       /**< NACK bitmask size        */
+	NACK_QUEUE_TIME	= 500,		       /**< in [ms]                  */
 };
 
 
@@ -86,6 +88,7 @@ struct vtx {
 	struct vidframe *frame;            /**< Source frame              */
 	mtx_t lock_tx;                     /**< Protect the sendq         */
 	struct list sendq;                 /**< Tx-Queue (struct vidqent) */
+	struct list sendqnb;               /**< Tx-Queue NACK wait buffer */
 	struct tmr tmr_rtp;                /**< Timer for sending RTP     */
 	unsigned skipc;                    /**< Number of frames skipped  */
 	struct list filtl;                 /**< Filters in encoding order */
@@ -171,6 +174,8 @@ struct vidqent {
 	bool marker;
 	uint8_t pt;
 	uint32_t ts;
+	uint64_t jfs_nack;
+	uint16_t seq;
 	struct mbuf *mb;
 };
 
@@ -269,6 +274,8 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 	size_t burst, sent;
 	uint64_t bandwidth_kbps;
 	struct le *le;
+	struct mbuf *mbd;
+	uint64_t jfs_nack = jfs + NACK_QUEUE_TIME;
 
 	if (!vtx)
 		return;
@@ -289,23 +296,43 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 	sent  = 0;
 
 	while (le) {
-
 		struct vidqent *qent = le->data;
 
 		sent += mbuf_get_left(qent->mb);
+		mbd = mbuf_dup(qent->mb);
 
 		stream_send(vtx->video->strm, qent->ext, qent->marker,
 			    qent->pt, qent->ts, qent->mb);
 
+		mem_deref(qent->mb);
+
+		qent->jfs_nack = jfs_nack;
+		qent->mb  = mbd;
+		qent->seq = rtp_sess_seq(stream_rtp_sock(vtx->video->strm));
+
+		list_move(le, &vtx->sendqnb);
+
 		le = le->next;
-		mem_deref(qent);
 
 		if (sent > burst) {
 			break;
 		}
 	}
 
- out:
+	/* Delayed NACK queue cleanup */
+	le = vtx->sendqnb.head;
+	while (le) {
+		struct vidqent *qent = le->data;
+
+		le = le->next;
+
+		if (jfs > qent->jfs_nack)
+			mem_deref(qent);
+		else
+			break; /* Assuming list is sorted by time */
+	}
+
+out:
 	mtx_unlock(&vtx->lock_tx);
 }
 
@@ -332,6 +359,7 @@ static void video_destructor(void *arg)
 	/* transmit */
 	mtx_lock(&vtx->lock_tx);
 	list_flush(&vtx->sendq);
+	list_flush(&vtx->sendqnb);
 	mtx_unlock(&vtx->lock_tx);
 	mtx_destroy(&vtx->lock_tx);
 
@@ -852,6 +880,57 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 }
 
 
+static void rtcp_nack_handler(struct vtx *vtx, struct rtcp_msg *msg)
+{
+	uint16_t nack_pid;
+	uint16_t nack_blp;
+	uint16_t pids[NACK_BLPSZ + 1];
+	struct le *le;
+
+	if (!msg || msg->hdr.count != RTCP_RTPFB_GNACK ||
+	    !msg->r.fb.fci.gnackv)
+		return;
+
+	nack_pid = msg->r.fb.fci.gnackv->pid;
+	nack_blp = msg->r.fb.fci.gnackv->blp;
+	pids[0]	 = nack_pid;
+
+	if (nack_blp) {
+		for (int i = 1; i < NACK_BLPSZ + 1; i++) {
+			if (nack_blp & (1 << (i - 1))) {
+				pids[i] = nack_pid + i;
+			}
+		}
+	}
+
+	mtx_lock(&vtx->lock_tx);
+	LIST_FOREACH(&vtx->sendqnb, le)
+	{
+		struct vidqent *qent = le->data;
+
+		if (qent->seq == nack_pid)
+			break;
+	}
+
+	for (int i = 0; i < NACK_BLPSZ + 1 && le; i++) {
+		struct vidqent *qent = le->data;
+
+		le = le->next;
+		if (qent->seq != pids[i])
+			continue;
+
+		debug("NACK resend rtp seq: %u\n", pids[i]);
+		stream_resend(vtx->video->strm, qent->seq, qent->ext,
+			      qent->marker, qent->pt, qent->ts, qent->mb);
+
+		/* sent only once */
+		mem_deref(qent);
+	}
+
+	mtx_unlock(&vtx->lock_tx);
+}
+
+
 static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 {
 	struct video *v = arg;
@@ -870,23 +949,15 @@ static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 
 	case RTCP_PSFB:
 		if (msg->hdr.count == RTCP_PSFB_PLI) {
-
 			debug("video: recv Picture Loss Indication (PLI)\n");
-
 			mtx_lock(&vtx->lock_enc);
-
 			vtx->picup = true;
-
 			mtx_unlock(&vtx->lock_enc);
 		}
 		break;
 
 	case RTCP_RTPFB:
-		if (msg->hdr.count == RTCP_RTPFB_GNACK) {
-			mtx_lock(&vtx->lock_enc);
-			vtx->picup = true;
-			mtx_unlock(&vtx->lock_enc);
-		}
+		rtcp_nack_handler(vtx, msg);
 		break;
 
 	default:
