@@ -23,6 +23,7 @@ static struct menu menu;
 
 enum {
 	MIN_RINGTIME = 1000,
+	TONE_DELAY   =   20,
 };
 
 
@@ -333,9 +334,27 @@ static void play_ringback(const struct call *call)
 }
 
 
-static void play_resume(const struct call *closed)
+static void check_ringback(struct call *call)
+{
+	bool ring;
+	enum sdp_dir ardir;
+
+	ardir = sdp_media_rdir(stream_sdpmedia(audio_strm(call_audio(call))));
+	ring = (ardir & SDP_RECVONLY) ? false : true;
+	if (ring && !menu.ringback &&
+	    !menu_find_call(active_call_test, NULL)) {
+		play_ringback(call);
+	}
+	else if (!ring) {
+		menu_stop_play();
+	}
+}
+
+
+static void delayed_play(void *arg)
 {
 	struct call *call = menu_callcur();
+	(void) arg;
 
 	switch (call_state(call)) {
 	case CALL_STATE_INCOMING:
@@ -343,11 +362,10 @@ static void play_resume(const struct call *closed)
 		break;
 	case CALL_STATE_RINGING:
 	case CALL_STATE_EARLY:
-		if (!menu.ringback && !menu_find_call(active_call_test,
-						      closed))
-			play_ringback(call);
+		check_ringback(call);
 		break;
 	default:
+		menu_stop_play();
 		break;
 	}
 }
@@ -614,8 +632,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			play_ringback(call);
 		break;
 
-	case UA_EVENT_CALL_PROGRESS: {
-		bool ring = true;
+	case UA_EVENT_CALL_PROGRESS:
 		menu_selcall(call);
 		if (ardir & SDP_RECVONLY) {
 			size_t cnt = 0;
@@ -624,20 +641,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				uag_filter_calls(turnoff_earlyaudio, NULL,
 						 NULL);
 			}
-			else {
-				ring = false;
-			}
 		}
 
-		if (ring && !menu.ringback && !menu_find_call(active_call_test,
-							     call)) {
-			play_ringback(call);
-		}
-		else if (!ring) {
-			menu_stop_play();
-		}
+		tmr_start(&menu.tmr_play, TONE_DELAY, delayed_play, NULL);
 		break;
-	}
 
 	case UA_EVENT_CALL_ANSWERED:
 		menu_stop_play();
@@ -699,10 +706,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			}
 			else {
 				menu_sel_other(call);
-				if (menu.ringback)
-					play_resume(call);
-				else
-					menu_stop_play();
+				tmr_start(&menu.tmr_play, 0,
+					  delayed_play, NULL);
 			}
 		}
 
@@ -714,16 +719,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				call_state(call) == CALL_STATE_ESTABLISHED)
 			menu_selcall(call);
 
-		if (call_state(call) == CALL_STATE_EARLY) {
-			if (ardir & SDP_RECVONLY) {
-				menu_stop_play();
-			}
-			else if (!menu.ringback &&
-				 !menu_find_call(active_call_test, call)) {
+		if (call_state(call) == CALL_STATE_EARLY)
+			tmr_start(&menu.tmr_play, TONE_DELAY, delayed_play,
+				  NULL);
 
-				play_ringback(call);
-			}
-		}
 		break;
 
 	case UA_EVENT_CALL_TRANSFER:
