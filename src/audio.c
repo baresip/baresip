@@ -156,8 +156,6 @@ struct aurx {
 	enum aufmt dec_fmt;           /**< Sample format for decoder       */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state         */
 
-	size_t last_sampc;
-
 	struct {
 		uint64_t aubuf_overrun;
 		uint64_t aubuf_underrun;
@@ -870,8 +868,6 @@ static int aurx_stream_decode(struct aurx *rx, const struct rtp_header *hdr,
 				ac->name, mbuf_get_left(mb), err);
 			goto out;
 		}
-
-		rx->last_sampc = sampc;
 	}
 	else {
 		/* no PLC in the codec, might be done in filters below */
