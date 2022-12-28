@@ -1464,6 +1464,21 @@ int call_hold(struct call *call, bool hold)
 
 
 /**
+ * Sets the audio local direction of the given call
+ *
+ * @param call  Call object
+ * @param dir   SDP media direction
+ */
+void call_set_audio_ldir(struct call *call, enum sdp_dir dir)
+{
+	if (!call)
+		return;
+
+	stream_set_ldir(audio_strm(call_audio(call)), dir);
+}
+
+
+/**
  * Sets the video direction of the given call
  *
  * @param call  Call object
@@ -2318,12 +2333,12 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	if (media) {
-		call_stream_start(call, false);
 		call_event_handler(call, CALL_EVENT_PROGRESS, call->peer_uri);
+		call_stream_start(call, false);
 	}
 	else {
-		call_stream_stop(call);
 		call_event_handler(call, CALL_EVENT_RINGING, call->peer_uri);
+		call_stream_stop(call);
 	}
 }
 
