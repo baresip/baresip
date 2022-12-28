@@ -9,9 +9,6 @@
 #include <baresip.h>
 
 #include <stdlib.h>
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-#endif
 
 #include "multicast.h"
 
