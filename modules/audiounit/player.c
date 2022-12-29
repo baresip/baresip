@@ -131,7 +131,11 @@ int audiounit_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
-	mtx_init(&st->mutex, mtx_plain);
+	err = mtx_init(&st->mutex, mtx_plain) != thrd_success;
+	if (err) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	err = audiosess_alloc(&st->sess, interrupt_handler, st);
 	if (err)
