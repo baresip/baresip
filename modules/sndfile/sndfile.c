@@ -5,6 +5,8 @@
  */
 #include <sndfile.h>
 #include <time.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -94,10 +96,11 @@ static SNDFILE *openfile(const struct aufilt_prm *prm,
 	const char *peer = stream_peer(strm);
 
 	(void)re_snprintf(filename, sizeof(filename),
-			  "%s/dump-%s=>%s-%H-%s.wav",
+			  "%s/dump-%s=>%s-%H-%s-%u.wav",
 			  file_path,
 			  cname, peer,
-			  timestamp_print, tm, enc ? "enc" : "dec");
+			  timestamp_print, tm, enc ? "enc" : "dec",
+			  getpid());
 
 	format = get_format(prm->fmt);
 	if (!format) {
