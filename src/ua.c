@@ -1066,7 +1066,6 @@ static const char *autoans_header_name(enum answer_method met)
 int ua_alloc(struct ua **uap, const char *aor)
 {
 	struct ua *ua;
-	struct uri *luri;
 	char *buf = NULL;
 	int err;
 
@@ -1127,15 +1126,6 @@ int ua_alloc(struct ua **uap, const char *aor)
 			return err;
 		}
 
-		luri = account_luri(ua->acc);
-		err = tls_add_certf(uag_tls(), ua->acc->cert,
-				    luri ? &luri->host : NULL);
-		if (err) {
-			warning("uag: SIP/TLS add server "
-				"certificate %s failed: %m\n",
-				ua->acc->cert, err);
-			return err;
-		}
 	}
 
 	err = create_register_clients(ua);
