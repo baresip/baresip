@@ -6,7 +6,6 @@
 #include <AudioUnit/AudioUnit.h>
 #include <AudioToolbox/AudioToolbox.h>
 #include <TargetConditionals.h>
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -17,7 +16,7 @@ struct ausrc_st {
 	struct audiosess_st *sess;
 	AudioUnit au_in;
 	AudioUnit au_conv;
-	pthread_mutex_t mutex;
+	mtx_t mutex;
 	struct ausrc_prm prm;
 	int ch;
 	uint32_t sampsz;
@@ -34,9 +33,9 @@ static void ausrc_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	pthread_mutex_lock(&st->mutex);
+	mtx_lock(&st->mutex);
 	st->rh = NULL;
-	pthread_mutex_unlock(&st->mutex);
+	mtx_unlock(&st->mutex);
 
 	AudioOutputUnitStop(st->au_in);
 	AudioUnitUninitialize(st->au_in);
@@ -49,7 +48,7 @@ static void ausrc_destructor(void *arg)
 	mem_deref(st->sess);
 	mem_deref(st->buf);
 
-	pthread_mutex_destroy(&st->mutex);
+	mtx_destroy(&st->mutex);
 }
 
 
@@ -71,10 +70,10 @@ static OSStatus input_callback(void *inRefCon,
 
 	(void)ioData;
 
-	pthread_mutex_lock(&st->mutex);
+	mtx_lock(&st->mutex);
 	rh  = st->rh;
 	arg = st->arg;
-	pthread_mutex_unlock(&st->mutex);
+	mtx_unlock(&st->mutex);
 
 	if (!rh)
 		return 0;
@@ -234,9 +233,11 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	err = pthread_mutex_init(&st->mutex, NULL);
-	if (err)
+	err = mtx_init(&st->mutex, mtx_plain) != thrd_success;
+	if (err) {
+		err = ENOMEM;
 		goto out;
+	}
 
 	err = audiosess_alloc(&st->sess, interrupt_handler, st);
 	if (err)
