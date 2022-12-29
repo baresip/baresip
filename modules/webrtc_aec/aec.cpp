@@ -77,7 +77,11 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	aec->srate = prm->srate;
 	aec->ch    = prm->ch;
 
-	mtx_init(&aec->mutex, mtx_plain);
+	err = mtx_init(&aec->mutex, mtx_plain) != thrd_success;
+	if (err) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	// NOTE: excluding channel count
 	aec->blocksize  = prm->srate * BLOCKSIZE / 1000;
