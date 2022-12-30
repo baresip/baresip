@@ -158,15 +158,6 @@ int mock_auplay_register(struct auplay **auplayp, struct list *auplayl,
 
 
 /*
- * Mock Audio-filter
- */
-
-
-void mock_aufilt_register(struct list *aufiltl);
-void mock_aufilt_unregister(void);
-
-
-/*
  * Mock Media NAT-traversal
  */
 
