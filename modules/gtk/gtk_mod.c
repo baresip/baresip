@@ -9,7 +9,6 @@
 #include <time.h>
 #include <baresip.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <gtk/gtk.h>
 #include <gio/gio.h>
 #include "gtk_mod.h"
@@ -40,7 +39,7 @@
 
 
 struct gtk_mod {
-	pthread_t thread;
+	thrd_t thread;
 	bool run;
 	bool contacts_inited;
 	struct mqueue *mq;
@@ -950,7 +949,7 @@ static void mqueue_handler(int id, void *data, void *arg)
 }
 
 
-static void *gtk_thread(void *arg)
+static int gtk_thread(void *arg)
 {
 	struct gtk_mod *mod = arg;
 	GtkMenuShell *app_menu;
@@ -958,7 +957,6 @@ static void *gtk_thread(void *arg)
 	GError *err = NULL;
 	struct le *le;
 	GtkIconTheme *theme;
-
 
 	gdk_threads_init();
 	gtk_init(0, NULL);
@@ -1094,7 +1092,7 @@ static void *gtk_thread(void *arg)
 
 	mod->dial_dialog = mem_deref(mod->dial_dialog);
 
-	return NULL;
+	return 0;
 }
 
 
@@ -1273,7 +1271,7 @@ static int module_init(void)
 		return err;
 
 	/* start the thread last */
-	err = pthread_create(&mod_obj.thread, NULL, gtk_thread,
+	err = thread_create_name(&mod_obj.thread, "gtk", gtk_thread,
 			     &mod_obj);
 	if (err)
 		return err;
@@ -1291,7 +1289,7 @@ static int module_close(void)
 		gdk_threads_leave();
 	}
 	if (mod_obj.thread)
-		pthread_join(mod_obj.thread, NULL);
+		thrd_join(mod_obj.thread, NULL);
 	mod_obj.mq = mem_deref(mod_obj.mq);
 	aufilt_unregister(&vumeter);
 	message_unlisten(baresip_message(), message_handler);
