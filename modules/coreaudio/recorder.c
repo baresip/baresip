@@ -5,7 +5,6 @@
  */
 #include <AudioToolbox/AudioQueue.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -18,7 +17,7 @@
 struct ausrc_st {
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
-	pthread_mutex_t mutex;
+	mtx_t mutex;
 	struct ausrc_prm prm;
 	uint32_t sampsz;
 	int fmt;
@@ -32,9 +31,9 @@ static void ausrc_destructor(void *arg)
 	struct ausrc_st *st = arg;
 	uint32_t i;
 
-	pthread_mutex_lock(&st->mutex);
+	mtx_lock(&st->mutex);
 	st->rh = NULL;
-	pthread_mutex_unlock(&st->mutex);
+	mtx_unlock(&st->mutex);
 
 	if (st->queue) {
 		AudioQueuePause(st->queue);
@@ -47,7 +46,7 @@ static void ausrc_destructor(void *arg)
 		AudioQueueDispose(st->queue, true);
 	}
 
-	pthread_mutex_destroy(&st->mutex);
+	mtx_destroy(&st->mutex);
 }
 
 
@@ -65,10 +64,10 @@ static void record_handler(void *userData, AudioQueueRef inQ,
 	(void)inNumPackets;
 	(void)inPacketDesc;
 
-	pthread_mutex_lock(&st->mutex);
+	mtx_lock(&st->mutex);
 	rh  = st->rh;
 	arg = st->arg;
-	pthread_mutex_unlock(&st->mutex);
+	mtx_unlock(&st->mutex);
 
 	if (!rh)
 		return;
@@ -118,9 +117,11 @@ int coreaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->fmt = prm->fmt;
 	st->prm = *prm;
 
-	err = pthread_mutex_init(&st->mutex, NULL);
-	if (err)
+	err = mtx_init(&st->mutex, mtx_plain) != thrd_success;
+	if (err) {
+		err = ENOMEM;
 		goto out;
+	}
 
 	fmt.mSampleRate       = (Float64)prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;

@@ -4,7 +4,6 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <AudioToolbox/AudioQueue.h>
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -18,7 +17,7 @@
 struct auplay_st {
 	AudioQueueRef queue;
 	AudioQueueBufferRef buf[BUFC];
-	pthread_mutex_t mutex;
+	mtx_t mutex;
 	uint32_t sampsz;
 	struct auplay_prm prm;
 	auplay_write_h *wh;
@@ -31,9 +30,9 @@ static void auplay_destructor(void *arg)
 	struct auplay_st *st = arg;
 	uint32_t i;
 
-	pthread_mutex_lock(&st->mutex);
+	mtx_lock(&st->mutex);
 	st->wh = NULL;
-	pthread_mutex_unlock(&st->mutex);
+	mtx_unlock(&st->mutex);
 
 	if (st->queue) {
 		AudioQueuePause(st->queue);
@@ -46,7 +45,7 @@ static void auplay_destructor(void *arg)
 		AudioQueueDispose(st->queue, true);
 	}
 
-	pthread_mutex_destroy(&st->mutex);
+	mtx_destroy(&st->mutex);
 }
 
 
@@ -58,10 +57,10 @@ static void play_handler(void *userData, AudioQueueRef outQ,
 	auplay_write_h *wh;
 	void *arg;
 
-	pthread_mutex_lock(&st->mutex);
+	mtx_lock(&st->mutex);
 	wh  = st->wh;
 	arg = st->arg;
-	pthread_mutex_unlock(&st->mutex);
+	mtx_unlock(&st->mutex);
 
 	if (!wh)
 		return;
@@ -104,9 +103,11 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	st->prm = *prm;
 
-	err = pthread_mutex_init(&st->mutex, NULL);
-	if (err)
+	err = mtx_init(&st->mutex, mtx_plain) != thrd_success;
+	if (err) {
+		err = ENOMEM;
 		goto out;
+	}
 
 	fmt.mSampleRate       = (Float64)prm->srate;
 	fmt.mFormatID         = kAudioFormatLinearPCM;
