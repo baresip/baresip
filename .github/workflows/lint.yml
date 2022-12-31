@@ -1,17 +1,19 @@
-name: ccheck
+name: lint
 
 on: [push, pull_request]
 
 jobs:
-  ccheck:
+  lint:
 
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
+
       - name: ccheck
         run: |
-          test/ccheck.py -e baresipbus.* -e Makefile
+          test/ccheck.py -e baresipbus.*
+
       - name: CMakeLint
         run: |
           pip install cmakelint
