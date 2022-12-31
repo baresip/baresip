@@ -19,3 +19,8 @@ jobs:
           pip install cmakelint
           find . -name "CMakeLists.txt" -exec ~/.local/bin/cmakelint {} +
           find . -name "*.cmake" -exec ~/.local/bin/cmakelint {} +
+
+      - name: pylint
+        run: |
+          sudo apt-get update && sudo apt-get install -y pylint
+          pylint tools/fritzbox2baresip
