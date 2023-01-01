@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# Copyright (c) 2021, Robert Scheck <robert@fedoraproject.org>
+# Copyright (c) 2021-2022, Robert Scheck <robert@fedoraproject.org>
 #
 # All rights reserved.
 #
@@ -75,7 +75,8 @@ def write(entries, src=None, dst=None):
     try:
         dst = None if dst == '-' else dst
         sys.stdout.close = lambda: None
-        with (open(dst, 'w') if dst else sys.stdout) as contacts:
+        with (open(dst, 'w', encoding="utf-8") if dst else sys.stdout) \
+              as contacts:
             contacts.write("# SIP contacts\n")
             contacts.write("# Source: "
                            f"{'(unknown)' if src is None else src }\n")
