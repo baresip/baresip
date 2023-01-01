@@ -396,9 +396,10 @@ struct call_window *call_window_new(struct call *call, struct gtk_mod *mod,
 	GtkWidget *duration;
 	int err = 0;
 	err = mtx_init(&last_data_mut, mtx_plain) != thrd_success;
-	if (err)
+	if (err) {
 		err = ENOMEM;
 		goto out;
+	}
 
 	win = mem_zalloc(sizeof(*win), call_window_destructor);
 	if (!win)
