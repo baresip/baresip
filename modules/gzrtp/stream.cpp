@@ -4,7 +4,6 @@
  * Copyright (C) 2010 - 2017 Alfred E. Heggestad
  */
 #include <stdint.h>
-#include <pthread.h>
 
 #include <re.h>
 #include <baresip.h>
@@ -186,11 +185,8 @@ Stream::Stream(int& err, const ZRTPConfig& config, Session *session,
 	sa_init(&m_raddr, AF_INET);
 	tmr_init(&m_zrtp_timer);
 
-	pthread_mutexattr_t attr;
-	err  = pthread_mutexattr_init(&attr);
-	err |= pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
-	err |= pthread_mutex_init(&m_zrtp_mutex, &attr);
-	err |= pthread_mutex_init(&m_send_mutex, &attr);
+	err |= mtx_init(&m_zrtp_mutex, mtx_plain) != thrd_success;
+	err |= mtx_init(&m_send_mutex, mtx_plain) != thrd_success;
 	if (err)
 		return;
 
@@ -244,8 +240,8 @@ Stream::~Stream()
 	mem_deref(m_rtpsock);
 	mem_deref(m_rtcpsock);
 
-	pthread_mutex_destroy(&m_zrtp_mutex);
-	pthread_mutex_destroy(&m_send_mutex);
+	mtx_destroy(&m_zrtp_mutex);
+	mtx_destroy(&m_send_mutex);
 
 	tmr_cancel(&m_zrtp_timer);
 }
@@ -307,10 +303,10 @@ void Stream::stop()
 
 	m_zrtp->stopZrtp();
 
-	pthread_mutex_lock(&m_send_mutex);
+	mtx_lock(&m_send_mutex);
 	delete m_send_srtp;
 	m_send_srtp = NULL;
-	pthread_mutex_unlock(&m_send_mutex);
+	mtx_unlock(&m_send_mutex);
 
 	delete m_recv_srtp;
 	m_recv_srtp = NULL;
@@ -359,7 +355,7 @@ bool Stream::udp_helper_send(int *err, struct sa *src, struct mbuf *mb)
 	int rerr = 0;
 	(void)src;
 
-	pthread_mutex_lock(&m_send_mutex);
+	mtx_lock(&m_send_mutex);
 
 	if (ptype == PKT_TYPE_RTCP && m_send_srtp && len > 8) {
 
@@ -384,7 +380,7 @@ bool Stream::udp_helper_send(int *err, struct sa *src, struct mbuf *mb)
 	}
 
  out:
-	pthread_mutex_unlock(&m_send_mutex);
+	mtx_unlock(&m_send_mutex);
 
 	return ret;
 }
@@ -607,9 +603,9 @@ bool Stream::srtpSecretsReady(SrtpSecret_t* secrets, EnableSecurity part)
 	}
 
 	if (part == ForSender) {
-		pthread_mutex_lock(&m_send_mutex);
+		mtx_lock(&m_send_mutex);
 		m_send_srtp = s;
-		pthread_mutex_unlock(&m_send_mutex);
+		mtx_unlock(&m_send_mutex);
 	}
 	else if (part == ForReceiver)
 		m_recv_srtp = s;
@@ -627,10 +623,10 @@ void Stream::srtpSecretsOff(EnableSecurity part)
 	      (part == ForSender)? "sender" : "receiver");
 
 	if (part == ForSender) {
-		pthread_mutex_lock(&m_send_mutex);
+		mtx_lock(&m_send_mutex);
 		delete m_send_srtp;
 		m_send_srtp = NULL;
-		pthread_mutex_unlock(&m_send_mutex);
+		mtx_unlock(&m_send_mutex);
 	}
 
 	if (part == ForReceiver) {
@@ -697,13 +693,13 @@ void Stream::zrtpNotSuppOther()
 
 void Stream::synchEnter()
 {
-	pthread_mutex_lock(&m_zrtp_mutex);
+	mtx_lock(&m_zrtp_mutex);
 }
 
 
 void Stream::synchLeave()
 {
-	pthread_mutex_unlock(&m_zrtp_mutex);
+	mtx_unlock(&m_zrtp_mutex);
 }
 
 
