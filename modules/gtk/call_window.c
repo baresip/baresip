@@ -8,7 +8,6 @@
 #include <baresip.h>
 #include <gtk/gtk.h>
 #include "gtk_mod.h"
-#include <pthread.h>
 #include <string.h>
 
 struct call_window {
@@ -50,7 +49,7 @@ enum call_window_events {
 	MQ_ATTTRANSFER,
 };
 
-static pthread_mutex_t last_data_mut = PTHREAD_MUTEX_INITIALIZER;
+mtx_t last_data_mut;
 static struct call_window *last_call_win = NULL;
 static struct vumeter_dec *last_dec = NULL;
 static struct vumeter_enc *last_enc = NULL;
@@ -152,33 +151,33 @@ static void call_window_set_vu_enc(struct call_window *win,
 
 void call_window_got_vu_dec(struct vumeter_dec *dec)
 {
-	pthread_mutex_lock(&last_data_mut);
+	mtx_lock(&last_data_mut);
 	if (last_call_win) {
 		call_window_set_vu_dec(last_call_win, dec);
 		last_dec = NULL;
 	}
 	else
 		last_dec = dec;
-	pthread_mutex_unlock(&last_data_mut);
+	mtx_unlock(&last_data_mut);
 }
 
 
 void call_window_got_vu_enc(struct vumeter_enc *enc)
 {
-	pthread_mutex_lock(&last_data_mut);
+	mtx_lock(&last_data_mut);
 	if (last_call_win) {
 		call_window_set_vu_enc(last_call_win, enc);
 		last_enc = NULL;
 	}
 	else
 		last_enc = enc;
-	pthread_mutex_unlock(&last_data_mut);
+	mtx_unlock(&last_data_mut);
 }
 
 
 static void got_call_window(struct call_window *win)
 {
-	pthread_mutex_lock(&last_data_mut);
+	mtx_lock(&last_data_mut);
 	if (last_enc) {
 		call_window_set_vu_enc(win, last_enc);
 		last_enc = NULL;
@@ -189,7 +188,7 @@ static void got_call_window(struct call_window *win)
 	}
 	if (!last_enc || !last_dec)
 		last_call_win = win;
-	pthread_mutex_unlock(&last_data_mut);
+	mtx_unlock(&last_data_mut);
 }
 
 
@@ -382,9 +381,9 @@ static void call_window_destructor(void *arg)
 	mem_deref(window->vu.dec);
 	mem_deref(window->attended_call);
 
-	pthread_mutex_lock(&last_data_mut);
+	mtx_lock(&last_data_mut);
 	last_call_win = NULL;
-	pthread_mutex_unlock(&last_data_mut);
+	mtx_unlock(&last_data_mut);
 }
 
 
@@ -396,6 +395,11 @@ struct call_window *call_window_new(struct call *call, struct gtk_mod *mod,
 	GtkWidget *button_box, *vbox, *hbox;
 	GtkWidget *duration;
 	int err = 0;
+	err = mtx_init(&last_data_mut, mtx_plain) != thrd_success;
+	if (err) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	win = mem_zalloc(sizeof(*win), call_window_destructor);
 	if (!win)
@@ -589,6 +593,7 @@ void call_window_closed(struct call_window *win, const char *reason)
 	win->call = mem_deref(win->call);
 	win->attended_call = mem_deref(win->attended_call);
 	win->closed = true;
+	mtx_destroy(&last_data_mut);
 
 	if (reason && strncmp(reason, user_trigger_reason,
 	    strlen(user_trigger_reason)) == 0) {
@@ -617,9 +622,9 @@ void call_window_progress(struct call_window *win)
 		return;
 
 	register_call_timer(win);
-	pthread_mutex_lock(&last_data_mut);
+	mtx_lock(&last_data_mut);
 	last_call_win = win;
-	pthread_mutex_unlock(&last_data_mut);
+	mtx_unlock(&last_data_mut);
 	call_window_set_status(win, "progress");
 }
 
@@ -633,9 +638,9 @@ void call_window_established(struct call_window *win)
 
 	register_call_timer(win);
 
-	pthread_mutex_lock(&last_data_mut);
+	mtx_lock(&last_data_mut);
 	last_call_win = win;
-	pthread_mutex_unlock(&last_data_mut);
+	mtx_unlock(&last_data_mut);
 	call_window_set_status(win, "established");
 }
 
