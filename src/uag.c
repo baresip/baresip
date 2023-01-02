@@ -273,18 +273,37 @@ static bool uri_host_local(const struct uri *uri)
 
 
 #ifdef USE_TLS
-static int add_transp_clientcert(void)
+static int add_account_certs(void)
 {
 	struct le *le;
+	char *host;
 	int err = 0;
 
 	for (le = list_head(&uag.ual); le; le = le->next) {
 		struct account *acc = ua_account(le->data);
+		struct uri *luri;
 		if (acc->cert) {
 			err = sip_transp_add_ccert(uag.sip,
 					&acc->laddr.uri, acc->cert);
 			if (err) {
 				warning("uag: SIP/TLS add client "
+					"certificate %s failed: %m\n",
+					acc->cert, err);
+				return err;
+			}
+
+			host = NULL;
+			luri = account_luri(acc);
+			if (luri) {
+				err = pl_strdup(&host, &luri->host);
+				if (err)
+					return err;
+			}
+
+			err = tls_add_certf(uag.tls, acc->cert, host);
+			mem_deref(host);
+			if (err) {
+				warning("uag: SIP/TLS add server "
 					"certificate %s failed: %m\n",
 					acc->cert, err);
 				return err;
@@ -392,7 +411,7 @@ static int uag_transp_add(const struct sa *laddr)
 			return err;
 		}
 
-		err = add_transp_clientcert();
+		err = add_account_certs();
 		if (err)
 			return err;
 	}
