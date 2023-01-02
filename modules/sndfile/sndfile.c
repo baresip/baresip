@@ -10,6 +10,10 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#ifdef WIN32
+#include <process.h>
+#define getpid _getpid
+#endif
 
 
 /**
