@@ -276,6 +276,7 @@ static bool uri_host_local(const struct uri *uri)
 static int add_account_certs(void)
 {
 	struct le *le;
+	char *host;
 	int err = 0;
 
 	for (le = list_head(&uag.ual); le; le = le->next) {
@@ -291,9 +292,16 @@ static int add_account_certs(void)
 				return err;
 			}
 
+			host = NULL;
 			luri = account_luri(acc);
-			err = tls_add_certf(uag.tls, acc->cert,
-					    luri ? &luri->host : NULL);
+			if (luri) {
+				err = pl_strdup(&host, &luri->host);
+				if (err)
+					return err;
+			}
+
+			err = tls_add_certf(uag.tls, acc->cert, host);
+			mem_deref(host);
 			if (err) {
 				warning("uag: SIP/TLS add server "
 					"certificate %s failed: %m\n",

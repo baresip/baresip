@@ -1068,6 +1068,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	struct ua *ua;
 	struct uri *luri;
 	char *buf = NULL;
+	char *host = NULL;
 	int err;
 
 	if (!aor)
@@ -1128,13 +1129,18 @@ int ua_alloc(struct ua **uap, const char *aor)
 		}
 
 		luri = account_luri(ua->acc);
-		err = tls_add_certf(uag_tls(), ua->acc->cert,
-				    luri ? &luri->host : NULL);
+		if (luri) {
+			err = pl_strdup(&host, &luri->host);
+			if (err)
+				goto out;
+		}
+
+		err = tls_add_certf(uag_tls(), ua->acc->cert, host);
 		if (err) {
 			warning("uag: SIP/TLS add server "
 				"certificate %s failed: %m\n",
 				ua->acc->cert, err);
-			return err;
+			goto out;
 		}
 	}
 
@@ -1147,6 +1153,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	ua_event(ua, UA_EVENT_CREATE, NULL, aor);
 
  out:
+	mem_deref(host);
 	mem_deref(buf);
 	if (err)
 		mem_deref(ua);
