@@ -906,7 +906,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	w->hdr = mem_ref((void *)hdr);
 	w->mb  = mem_ref(mb);
 
-	re_thread_async(video_stream_decode_work, NULL, w);
+	re_thread_async_seq(v, video_stream_decode_work, NULL, w);
 }
 
 
