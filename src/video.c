@@ -859,6 +859,27 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 }
 
 
+struct vrx_work {
+	struct vrx *vrx;
+	struct rtp_header *hdr;
+	struct mbuf *mb;
+};
+
+
+static int video_stream_decode_work(void *arg)
+{
+	struct vrx_work *w = arg;
+
+	(void)video_stream_decode(w->vrx, w->hdr, w->mb);
+
+	mem_deref(w->hdr);
+	mem_deref(w->mb);
+	mem_deref(w);
+
+	return 0;
+}
+
+
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
@@ -866,6 +887,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 				void *arg)
 {
 	struct video *v = arg;
+	struct vrx_work *w;
 	(void)extv;
 	(void)extc;
 	(void)ignore;
@@ -876,7 +898,15 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (lostc)
 		request_picture_update(&v->vrx);
 
-	(void)video_stream_decode(&v->vrx, hdr, mb);
+	w = mem_alloc(sizeof(struct vrx_work), NULL);
+	if (!w)
+		return;
+
+	w->vrx = &v->vrx;
+	w->hdr = mem_ref((void *)hdr);
+	w->mb  = mem_ref(mb);
+
+	re_thread_async(video_stream_decode_work, NULL, w);
 }
 
 
