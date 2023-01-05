@@ -444,7 +444,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
  */
 int stream_decode(struct stream *s)
 {
-	struct rtp_header hdr;
+	struct rtp_header *hdr;
 	void *mb;
 	int lostc;
 	int err;
@@ -456,13 +456,20 @@ int stream_decode(struct stream *s)
 	if (!s->rx.jbuf)
 		return ENOENT;
 
-	err = jbuf_get(s->rx.jbuf, &hdr, &mb);
-	if (err && err != EAGAIN)
+	hdr = mem_zalloc(sizeof(struct rtp_header), NULL);
+	if (!hdr)
+		return ENOMEM;
+
+	err = jbuf_get(s->rx.jbuf, hdr, &mb);
+	if (err && err != EAGAIN) {
+		mem_deref(hdr);
 		return ENOENT;
+	}
 
-	lostc = lostcalc(&s->rx, hdr.seq);
+	lostc = lostcalc(&s->rx, hdr->seq);
 
-	err2 = handle_rtp(s, &hdr, mb, lostc > 0 ? lostc : 0, err == EAGAIN);
+	err2 = handle_rtp(s, hdr, mb, lostc > 0 ? lostc : 0, err == EAGAIN);
+	mem_deref(hdr);
 	mem_deref(mb);
 
 	if (err2 == EAGAIN)
