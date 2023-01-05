@@ -40,10 +40,10 @@ class ccheck:
                            'php']
 
         self.operators = ["do", "if", "for", "while", "switch"]
-        self.re_tab  = re.compile('(\w+\W*)\(')
-        self.re_else = re.compile('\s*\}\s*else')
-        self.re_inc  = re.compile('(^\s+\w+[+-]{2};)')
-        self.re_hex  = re.compile('0x([0-9A-Fa-f]+)')
+        self.re_tab  = re.compile(r'(\w+\W*)\(')
+        self.re_else = re.compile(r'\s*\}\s*else')
+        self.re_inc  = re.compile(r'(^\s+\w+[+-]{2};)')
+        self.re_hex  = re.compile(r'0x([0-9A-Fa-f]+)')
 
         # empty dict
         for e in self.extensions:
@@ -174,7 +174,7 @@ class ccheck:
         if line[-2:] == ';;':
             self.error("has double semicolon")
 
-        if line[-2:] == ' ;' and re.search('[\S]+[ \t]+;$', line):
+        if line[-2:] == ' ;' and re.search(r'[\S]+[ \t]+;$', line):
             self.error("has spaces before terminator")
 
 
@@ -220,7 +220,7 @@ class ccheck:
             self.cc_count = 0
 
         if cc:
-            self.error("C comment, use Perl-style comments # ... instead");
+            self.error("C comment, use Perl-style comments # ... instead")
 
 
     #
@@ -233,7 +233,7 @@ class ccheck:
 
         if l > max_x:
             self.error("line is too wide (" + str(l) + " - max " \
-                       + str(max_x) + ")");
+                       + str(max_x) + ")")
 
 
     #
@@ -250,8 +250,6 @@ class ccheck:
 
     #
     # check for correct brackets usage in C/C++
-    #
-    # XXX: this is too slow, optimize
     #
     def check_brackets(self, line, len):
 
@@ -279,7 +277,7 @@ class ccheck:
             return
 
         if line[-1] == '\r':
-            self.error("not in Unix format");
+            self.error("not in Unix format")
 
 
     #
@@ -291,9 +289,9 @@ class ccheck:
         if m:
             op = m.group(1)
             if op.find('++') != -1:
-                self.error("Use pre-increment: %s" % op);
+                self.error("Use pre-increment: %s" % op)
             else:
-                self.error("Use pre-decrement: %s" % op);
+                self.error("Use pre-decrement: %s" % op)
 
 
     def process_line(self, line, funcs, ext):
@@ -308,7 +306,7 @@ class ccheck:
             func(line, line_len)
 
         if ext in self.maxsize:
-            (x, y) = self.maxsize[ext];
+            (x, y) = self.maxsize[ext]
             self.check_xy_max(line, line_len, x)
 
 
