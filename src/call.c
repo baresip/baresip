@@ -1355,7 +1355,7 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	if (CALL_STATE_INCOMING != call->state) {
 		info("call: answer: call is not in incoming state (%s)\n",
 		     state_name(call->state));
-		return 0;
+		return EINVAL;
 	}
 
 	if (vmode == VIDMODE_OFF)
