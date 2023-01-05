@@ -13,6 +13,7 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#include <re_atomic.h>
 #include "core.h"
 
 
@@ -131,7 +132,8 @@ struct vrx {
 	struct vidisp_prm vidisp_prm;      /**< Video display parameters  */
 	struct vidisp *vd;                 /**< Video display module      */
 	struct vidisp_st *vidisp;          /**< Video display             */
-	mtx_t lock;                        /**< Lock for decoder          */
+	mtx_t lock_dec;                    /**< Lock for decoder          */
+	mtx_t lock_rx;                     /**< Lock Rx-Queue (for recvq) */
 	struct list filtl;                 /**< Filters in decoding order */
 	struct tmr tmr_picup;              /**< Picture update timer      */
 	struct vidsz size;                 /**< Incoming video resolution */
@@ -144,6 +146,9 @@ struct vrx {
 	unsigned n_intra;                  /**< Intra-frames decoded      */
 	unsigned n_picup;                  /**< Picture updates sent      */
 	struct timestamp_recv ts_recv;     /**< Receive timestamp state   */
+	thrd_t thrd;                       /**< RX Thread                 */
+	RE_ATOMIC bool run;                /**< Start/Stop RX Thread      */
+	struct list recvq;                 /**< Rx-Queue (struct vidqdec) */
 
 	/** Statistics */
 	struct {
@@ -176,6 +181,13 @@ struct vidqent {
 	uint32_t ts;
 	uint64_t jfs_nack;
 	uint16_t seq;
+	struct mbuf *mb;
+};
+
+
+struct vidqdec {
+	struct le le;
+	struct rtp_header *hdr;
 	struct mbuf *mb;
 };
 
@@ -373,13 +385,15 @@ static void video_destructor(void *arg)
 	mtx_destroy(&vtx->lock_enc);
 
 	/* receive */
+	re_atomic_rlx_set(&v->vrx.run, false);
+	thrd_join(v->vrx.thrd, NULL);
 	tmr_cancel(&vrx->tmr_picup);
-	mtx_lock(&vrx->lock);
 	mem_deref(vrx->dec);
 	mem_deref(vrx->vidisp);
 	list_flush(&vrx->filtl);
-	mtx_unlock(&vrx->lock);
-	mtx_destroy(&vrx->lock);
+	list_flush(&vrx->recvq);
+	mtx_destroy(&vrx->lock_rx);
+	mtx_destroy(&vrx->lock_dec);
 
 	tmr_cancel(&v->tmr);
 	mem_deref(v->strm);
@@ -607,7 +621,8 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 {
 	int err;
 
-	err = mtx_init(&vrx->lock, mtx_plain) != thrd_success;
+	err =  mtx_init(&vrx->lock_dec, mtx_plain) != thrd_success;
+	err |= mtx_init(&vrx->lock_rx, mtx_plain) != thrd_success;
 	if (err)
 		return ENOMEM;
 
@@ -737,12 +752,10 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	if (!hdr || !mbuf_get_left(mb))
 		return 0;
 
-	mtx_lock(&vrx->lock);
-
 	/* No decoder set */
 	if (!vrx->dec) {
 		warning("video: No video decoder!\n");
-		goto out;
+		return EINVAL;
 	}
 
 	update_rtp_timestamp(&vrx->ts_recv, hdr->ts);
@@ -766,7 +779,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 		request_picture_update(vrx);
 
-		goto out;
+		return err;
 	}
 
 	if (intra) {
@@ -776,7 +789,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 	/* Got a full picture-frame? */
 	if (!vidframe_isvalid(frame))
-		goto out;
+		return err;
 
 	if (!vrx->size.w) {
 		info("video: receiving with resolution %u x %u"
@@ -792,7 +805,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 		err = vidframe_alloc(&frame_filt, frame->fmt, &frame->size);
 		if (err)
-			goto out;
+			return err;
 
 		vidframe_copy(frame_filt, frame);
 
@@ -819,8 +832,6 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		vrx->vidisp = mem_deref(vrx->vidisp);
 		vrx->vd = NULL;
 
-		mtx_unlock(&vrx->lock);
-
 		if (v->errh) {
 			v->errh(err, "display closed", v->arg);
 		}
@@ -829,9 +840,6 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	}
 
 	++vrx->frames;
-
-out:
-	mtx_unlock(&vrx->lock);
 
 	return err;
 }
@@ -859,6 +867,16 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 }
 
 
+static void vidqdec_deref(void *arg)
+{
+	struct vidqdec *q = arg;
+
+	list_unlink(&q->le);
+	mem_deref(q->hdr);
+	mem_deref(q->mb);
+}
+
+
 /* Handle incoming stream data from the network */
 static void stream_recv_handler(const struct rtp_header *hdr,
 				struct rtpext *extv, size_t extc,
@@ -866,6 +884,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 				void *arg)
 {
 	struct video *v = arg;
+	struct vidqdec *q;
 	(void)extv;
 	(void)extc;
 	(void)ignore;
@@ -876,7 +895,17 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (lostc)
 		request_picture_update(&v->vrx);
 
-	(void)video_stream_decode(&v->vrx, hdr, mb);
+	q = mem_zalloc(sizeof(struct vidqdec), vidqdec_deref);
+	if (!q)
+		return;
+
+	q->hdr = mem_ref((void *)hdr);
+	q->mb  = mem_ref(mb);
+
+	mtx_lock(&v->vrx.lock_rx);
+	list_append(&v->vrx.recvq, &q->le, q);
+	mtx_unlock(&v->vrx.lock_rx);
+
 }
 
 
@@ -1022,6 +1051,37 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 }
 
 
+static int vrx_thread(void *arg)
+{
+	struct video *v = arg;
+	struct le *le;
+
+	while (re_atomic_rlx(&v->vrx.run)) {
+
+		mtx_lock(&v->vrx.lock_rx);
+		le = v->vrx.recvq.head;
+		mtx_unlock(&v->vrx.lock_rx);
+
+		while (le) {
+			struct vidqdec *q = le->data;
+
+			mtx_lock(&v->vrx.lock_dec);
+			(void)video_stream_decode(&v->vrx, q->hdr, q->mb);
+			mtx_unlock(&v->vrx.lock_dec);
+
+			mtx_lock(&v->vrx.lock_rx);
+			le = le->next;
+			mem_deref(q);
+			mtx_unlock(&v->vrx.lock_rx);
+		}
+
+		sys_msleep(4);
+	}
+
+	return 0;
+}
+
+
 /**
  * Allocate a video stream
  *
@@ -1150,6 +1210,9 @@ int video_alloc(struct video **vp, struct list *streaml,
 			break;
 		}
 	}
+
+	re_atomic_rlx_set(&v->vrx.run, true);
+	err = thread_create_name(&v->vrx.thrd, "Video RX", vrx_thread, v);
 
  out:
 	if (err)
@@ -1424,7 +1487,9 @@ void video_stop_display(struct video *v)
 
 	debug("video: stopping video display ..\n");
 
+	mtx_lock(&v->vrx.lock_dec);
 	v->vrx.vidisp = mem_deref(v->vrx.vidisp);
+	mtx_unlock(&v->vrx.lock_dec);
 }
 
 
@@ -1446,8 +1511,10 @@ static int vidisp_update(struct vrx *vrx)
 	int err = 0;
 
 	if (vd->updateh) {
+		mtx_lock(&vrx->lock_dec);
 		err = vd->updateh(vrx->vidisp, vrx->vidisp_prm.fullscreen,
 				  vrx->orient, NULL);
+		mtx_unlock(&vrx->lock_dec);
 	}
 
 	return err;
@@ -1570,7 +1637,7 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 	}
 
 	vrx = &v->vrx;
-
+	mtx_lock(&vrx->lock_dec);
 	vrx->pt_rx = pt_rx;
 
 	if (vc != vrx->vc) {
@@ -1582,11 +1649,14 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 		err = vc->decupdh(&vrx->dec, vc, fmtp);
 		if (err) {
 			warning("video: decoder alloc: %m\n", err);
-			return err;
+			goto out;
 		}
 
 		vrx->vc = vc;
 	}
+
+out:
+	mtx_unlock(&vrx->lock_dec);
 
 	return err;
 }
