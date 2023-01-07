@@ -1931,7 +1931,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 					  i+1, acc->outboundv[i]);
 		}
 	}
-	err |= re_hprintf(pf, " mwi:          %s\n", account_mwi(acc));
+	err |= re_hprintf(pf, " mwi:          %s\n",
+			  account_mwi(acc) ? "yes" : "no");
 	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);
 	err |= re_hprintf(pf, " regint:       %u\n", acc->regint);
 	err |= re_hprintf(pf, " prio:         %u\n", acc->prio);
@@ -1953,7 +1954,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 		err |= re_hprintf(pf, "\n");
 	}
 	err |= re_hprintf(pf, " call_transfer:%s\n",
-			  account_call_transfer(acc));
+			  account_call_transfer(acc) ? "yes" : "no");
 	err |= re_hprintf(pf, " cert:         %s\n", acc->cert);
 	err |= re_hprintf(pf, " extra:        %s\n",
 			  acc->extra ? acc->extra : "none");
