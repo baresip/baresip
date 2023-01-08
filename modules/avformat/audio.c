@@ -102,7 +102,7 @@ int avformat_audio_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	int channels = sh->au.ctx->channels;
 #endif
 
-	info("avformat: audio: converting %u/%u %s -> %u/%u %s\n",
+	info("avformat: audio: converting %d/%d %s -> %u/%u %s\n",
 	     sh->au.ctx->sample_rate, channels,
 	     av_get_sample_fmt_name(sh->au.ctx->sample_fmt),
 	     prm->srate, prm->ch, aufmt_name(prm->fmt));
