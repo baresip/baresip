@@ -23,7 +23,7 @@ static struct menu menu;
 
 enum {
 	MIN_RINGTIME = 1000,
-	TONE_DELAY   =   20,
+	TONE_DELAY   =   20,         /* Delay for starting tone in [ms]      */
 };
 
 
