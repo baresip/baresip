@@ -2333,12 +2333,14 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	if (media) {
+		mem_ref(call);
 		call_event_handler(call, CALL_EVENT_PROGRESS, call->peer_uri);
 		call_stream_start(call, false);
+		mem_deref(call);
 	}
 	else {
-		call_event_handler(call, CALL_EVENT_RINGING, call->peer_uri);
 		call_stream_stop(call);
+		call_event_handler(call, CALL_EVENT_RINGING, call->peer_uri);
 	}
 }
 
