@@ -727,6 +727,16 @@ static void vidframe_clear(struct vidframe *frame)
 }
 
 
+/* called by re main thread */
+static void handle_picture_update(int err, void *arg)
+{
+	struct vrx *vrx = arg;
+	(void)err;
+
+	request_picture_update(vrx);
+}
+
+
 /**
  * Decode incoming RTP packets using the Video decoder
  *
@@ -777,7 +787,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 				mbuf_get_left(mb), err);
 		}
 
-		request_picture_update(vrx);
+		(void)re_thread_async(NULL, handle_picture_update, vrx);
 
 		return err;
 	}
