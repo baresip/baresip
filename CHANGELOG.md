@@ -5,6 +5,54 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2023-01-11
+
+### What's Changed
+* uag,call: do not override status code and reason by @cspiel1 in https://github.com/baresip/baresip/pull/2345
+* stream: send RTP NAT pinhole opener until RTP is received by @cspiel1 in https://github.com/baresip/baresip/pull/2346
+* mediatrack: add audio and video getters by @sreimers in https://github.com/baresip/baresip/pull/2347
+* Added rtcp_mux related API functions by @juha-h in https://github.com/baresip/baresip/pull/2352
+* make: remove deprecated makefile by @alfredh in https://github.com/baresip/baresip/pull/2354
+* Removed rtcp_mux config variable by @juha-h in https://github.com/baresip/baresip/pull/2353
+* Use bool instead of "yes"/"no" in account API functions by @juha-h in https://github.com/baresip/baresip/pull/2355
+* aubuf: add AUBUF_FILE mode by @cspiel1 in https://github.com/baresip/baresip/pull/2363
+* play: flush aubuf before restart by @cspiel1 in https://github.com/baresip/baresip/pull/2364
+* call: avoid unwanted re-invites on ESTABLISHED event by @cspiel1 in https://github.com/baresip/baresip/pull/2362
+* avcodec: constrain bitrate by @sreimers in https://github.com/baresip/baresip/pull/2365
+* pulse: rename to pulse_simple.so by @alfredh in https://github.com/baresip/baresip/pull/2371
+* module: remove module_tmp by @alfredh in https://github.com/baresip/baresip/pull/2373
+* audio: remove unused last_sampc by @alfredh in https://github.com/baresip/baresip/pull/2372
+* audio: add rtpext_find() (refactoring) by @alfredh in https://github.com/baresip/baresip/pull/2375
+* multicast: remove ref to pthread by @alfredh in https://github.com/baresip/baresip/pull/2379
+* video: add rtcp-fb Generic NACK by @sreimers in https://github.com/baresip/baresip/pull/2380
+* call: set media dir also for MNAT case by @cspiel1 in https://github.com/baresip/baresip/pull/2382
+* pulse: rename pulse_async.so to pulse.so (default) by @alfredh in https://github.com/baresip/baresip/pull/2381
+* RTP Resend by @sreimers in https://github.com/baresip/baresip/pull/2378
+* make: remove unused srcs.mk by @alfredh in https://github.com/baresip/baresip/pull/2387
+* TLS server support SNI based certificate selection by @cspiel1 in https://github.com/baresip/baresip/pull/2330
+* audiounit: use C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/2386
+* webrtc_aec: use C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/2384
+* coreaudio: use C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/2388
+* gtk: use C11 threads by @alfredh in https://github.com/baresip/baresip/pull/2391
+* remove pulse_simple.so -- use pulse.so by @alfredh in https://github.com/baresip/baresip/pull/2383
+* ci: rename ccheck.yml to lint.yml by @alfredh in https://github.com/baresip/baresip/pull/2394
+* fritzbox2baresip: use open with explicitly specifying an encoding by @robert-scheck in https://github.com/baresip/baresip/pull/2396
+* test: remove mock_aufilt (unused) by @alfredh in https://github.com/baresip/baresip/pull/2392
+* Ci pylint by @alfredh in https://github.com/baresip/baresip/pull/2395
+* gzrtp: use C11 mutex by @alfredh in https://github.com/baresip/baresip/pull/2393
+* C11 mutex by @mbattista in https://github.com/baresip/baresip/pull/2397
+* tls multiple server certs by @cspiel1 in https://github.com/baresip/baresip/pull/2399
+* call: return EINVAL if answer not possible by @maximilianfridrich in https://github.com/baresip/baresip/pull/2405
+* ccheck: fix some pylint warnings by @alfredh in https://github.com/baresip/baresip/pull/2398
+* Fixed account debug of mwi and call_transfer by @juha-h in https://github.com/baresip/baresip/pull/2406
+* avformat: fix printf format for samplerate and channels by @alfredh in https://github.com/baresip/baresip/pull/2407
+* cmake: increase minimum required version by @cspiel1 in https://github.com/baresip/baresip/pull/2408
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v2.10.0...v2.11.0
+
+---
+
 ## [2.10.0] - 2022-12-06
 
 ### What's Changed
