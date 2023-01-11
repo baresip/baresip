@@ -1216,7 +1216,7 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 				scode = 486;
 
 			if (!str_isset(reason))
-				reason = "Rejected";
+				reason = "Busy Here";
 
 			info("call: rejecting incoming call from %s (%u %s)\n",
 			     call->peer_uri, scode, reason);
