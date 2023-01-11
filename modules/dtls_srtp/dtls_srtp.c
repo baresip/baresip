@@ -299,10 +299,14 @@ static void dtls_conn_handler(const struct sa *peer, void *arg)
 {
 	struct comp *comp = arg;
 	int err;
-	(void)peer;
 
 	info("dtls_srtp: %s: incoming DTLS connect from %J\n",
 	     sdp_media_name(comp->ds->sdpm), peer);
+
+	if (comp->ds->active) {
+		warning("dtls_srtp: conn_handler: role is active\n");
+		return;
+	}
 
 	if (comp->tls_conn) {
 		warning("dtls_srtp: '%s' dtls already accepted (peer = %J)\n",
@@ -341,6 +345,9 @@ static int component_start(struct comp *comp, const struct sa *raddr)
 		warning("dtls_srtp: dtls_listen failed (%m)\n", err);
 		return err;
 	}
+
+	/* maximum one DTLS connection */
+	dtls_set_single(comp->dtls_sock, true);
 
 	if (sa_isset(raddr, SA_ALL)) {
 
