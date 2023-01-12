@@ -42,7 +42,7 @@ static void ausrc_destructor(void *arg)
 }
 
 
-int pulse_async_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
+int pulse_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	struct ausrc_prm *prm, const char *dev, ausrc_read_h *rh,
 	ausrc_error_h *errh, void *arg)
 {
@@ -52,7 +52,7 @@ int pulse_async_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
 
-	info ("pulse_async: opening recorder(%u Hz, %d channels,"
+	info ("pulse: opening recorder(%u Hz, %d channels,"
 	      "device '%s')\n", prm->srate, prm->ch, dev);
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
@@ -84,13 +84,13 @@ int pulse_async_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	err = pastream_start(st->b, st);
 	if (err) {
-		warning("pulse_async: could not connect record stream %s "
+		warning("pulse: could not connect record stream %s "
 			"(%m)\n", st->b->sname, err);
 		err = ENODEV;
 		goto out;
 	}
 
-	info ("pulse_async: record stream %s started\n", st->b->sname);
+	info ("pulse: record stream %s started\n", st->b->sname);
 
   out:
 	if (err)
@@ -117,7 +117,7 @@ static void dev_list_cb(pa_context *context, const pa_source_info *l, int eol,
 
 	err = mediadev_add(dev_list, l->name);
 	if (err)
-		warning("pulse_async: record device %s could not be added\n",
+		warning("pulse: record device %s could not be added\n",
 			l->name);
 }
 
@@ -128,13 +128,13 @@ static pa_operation *get_dev_info(pa_context *context, struct list *dev_list)
 }
 
 
-int pulse_async_recorder_init(struct ausrc *as)
+int pulse_recorder_init(struct ausrc *as)
 {
 	if (!as)
 		return EINVAL;
 
 	list_init(&as->dev_list);
-	return pulse_async_set_available_devices(&as->dev_list, get_dev_info);
+	return pulse_set_available_devices(&as->dev_list, get_dev_info);
 }
 
 
@@ -165,7 +165,7 @@ void stream_read_cb(pa_stream *s, size_t len, void *arg)
 	while (pa_stream_readable_size(s) > 0) {
 		pa_err = pa_stream_peek(s, &pabuf, &rlen);
 		if (pa_err < 0) {
-			warning ("pulse_async: %s pa_stream_peek error (%s)\n",
+			warning ("pulse: %s pa_stream_peek error (%s)\n",
 				st->b->sname, pa_strerror(pa_err));
 			goto out;
 		}

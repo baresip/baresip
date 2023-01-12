@@ -16,7 +16,7 @@
 
 
 /**
- * @defgroup pulse_async pulse_async
+ * @defgroup pulse pulse
  *
  * Audio driver module for Pulseaudio
  *
@@ -62,7 +62,7 @@ static void reconnth(void *arg)
 	if (pa.retry < 10)
 		tmr_start(&pa.rc, RECONN_DELAY, reconnth, NULL);
 	else
-		warning ("pulse_async: could not connect to pulseaudio\n");
+		warning ("pulse: could not connect to pulseaudio\n");
 }
 
 
@@ -98,8 +98,8 @@ static void context_state_cb(pa_context *context, void *arg)
 
 		case PA_CONTEXT_READY:
 			pa_threaded_mainloop_signal(c->mainloop, 0);
-			pulse_async_player_init(auplay);
-			pulse_async_recorder_init(ausrc);
+			pulse_player_init(auplay);
+			pulse_recorder_init(ausrc);
 			break;
 
 		case PA_CONTEXT_TERMINATED:
@@ -178,7 +178,7 @@ static int paconn_start(struct paconn_st **ppaconn)
 
 	pa_context_set_state_callback(c->context, context_state_cb, c);
 	if (pa_context_connect(c->context, NULL, 0, NULL) < 0) {
-		warning ("pulse_async: could not connect to context (%s)\n",
+		warning ("pulse: could not connect to context (%s)\n",
 			pa_strerror(pa_context_errno(c->context)));
 		err = EINVAL;
 		goto out;
@@ -189,7 +189,7 @@ static int paconn_start(struct paconn_st **ppaconn)
 		err = EINVAL;
 
 	pa_threaded_mainloop_unlock(c->mainloop);
-	info ("pulse_async: initialized (%m)\n", err);
+	info ("pulse: initialized (%m)\n", err);
 
   out:
 	if (err)
@@ -243,7 +243,7 @@ static void dev_info_notify_cb(pa_operation *op, void *arg)
 }
 
 
-int pulse_async_set_available_devices(struct list *dev_list,
+int pulse_set_available_devices(struct list *dev_list,
 	pa_operation *(get_dev_info_cb)(pa_context *, struct list*))
 {
 	pa_operation *op = NULL;
@@ -270,9 +270,9 @@ static int module_init(void)
 		return err;
 
 	err  = auplay_register(&auplay, baresip_auplayl(),
-			       "pulse_async", pulse_async_player_alloc);
+			       "pulse", pulse_player_alloc);
 	err |= ausrc_register(&ausrc, baresip_ausrcl(),
-			      "pulse_async", pulse_async_recorder_alloc);
+			      "pulse", pulse_recorder_alloc);
 
 	return err;
 }
