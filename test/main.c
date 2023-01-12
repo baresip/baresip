@@ -183,6 +183,8 @@ int main(int argc, char *argv[])
 	if (err)
 		return err;
 
+	re_thread_async_init(4);
+
 	log_enable_info(false);
 
 #ifdef HAVE_GETOPT
