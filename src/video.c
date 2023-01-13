@@ -1115,12 +1115,12 @@ static int vrx_thread(void *arg)
 		while (le) {
 			struct vidqdec *q = le->data;
 
-			(void)video_stream_decode(q, q->hdr, q->mb);
-
 			mtx_lock(v->vrx.lock_rx);
 			le = le->next;
 			list_unlink(&q->le);
 			mtx_unlock(v->vrx.lock_rx);
+
+			(void)video_stream_decode(q, q->hdr, q->mb);
 		}
 
 		sys_msleep(4);
