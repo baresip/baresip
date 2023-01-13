@@ -815,7 +815,8 @@ static int video_stream_decode(struct vidqdec *q, const struct rtp_header *hdr,
 	vidframe_clear(frame);
 
 	mtx_lock(vrxo->lock_dec);
-	err = vrxo->vc->dech(vrxo->dec, frame, &q->intra, hdr->m, hdr->seq, mb);
+	err = vrxo->vc->dech(vrxo->dec, frame, &q->intra, hdr->m, hdr->seq,
+			     mb);
 	if (err) {
 
 		if (err != EPROTO) {
