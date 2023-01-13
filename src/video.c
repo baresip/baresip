@@ -132,8 +132,8 @@ struct vrx {
 	struct vidisp_prm vidisp_prm;      /**< Video display parameters  */
 	struct vidisp *vd;                 /**< Video display module      */
 	struct vidisp_st *vidisp;          /**< Video display             */
-	mtx_t lock_dec;                    /**< Lock for decoder          */
-	mtx_t lock_rx;                     /**< Lock Rx-Queue (for recvq) */
+	mtx_t *lock_rx;                    /**< Lock Rx-Queue (for recvq) */
+	mtx_t *lock_dec;                   /**< Lock for decoder          */
 	struct list filtl;                 /**< Filters in decoding order */
 	struct tmr tmr_picup;              /**< Picture update timer      */
 	struct vidsz size;                 /**< Incoming video resolution */
@@ -189,6 +189,10 @@ struct vidqdec {
 	struct le le;
 	struct rtp_header *hdr;
 	struct mbuf *mb;
+	struct vrx vrxc;
+	bool picture_update;
+	bool intra;
+	int disp_err;
 };
 
 
@@ -387,13 +391,14 @@ static void video_destructor(void *arg)
 	/* receive */
 	re_atomic_rlx_set(&v->vrx.run, false);
 	thrd_join(v->vrx.thrd, NULL);
+	re_thread_async_cancel((intptr_t)vrx);
 	tmr_cancel(&vrx->tmr_picup);
 	mem_deref(vrx->dec);
 	mem_deref(vrx->vidisp);
 	list_flush(&vrx->filtl);
 	list_flush(&vrx->recvq);
-	mtx_destroy(&vrx->lock_rx);
-	mtx_destroy(&vrx->lock_dec);
+	mem_deref(vrx->lock_dec);
+	mem_deref(vrx->lock_rx);
 
 	tmr_cancel(&v->tmr);
 	mem_deref(v->strm);
@@ -621,8 +626,8 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 {
 	int err;
 
-	err =  mtx_init(&vrx->lock_dec, mtx_plain) != thrd_success;
-	err |= mtx_init(&vrx->lock_rx, mtx_plain) != thrd_success;
+	err  = mutex_alloc(&vrx->lock_dec);
+	err |= mutex_alloc(&vrx->lock_rx);
 	if (err)
 		return ENOMEM;
 
@@ -728,12 +733,36 @@ static void vidframe_clear(struct vidframe *frame)
 
 
 /* called by re main thread */
-static void handle_picture_update(int err, void *arg)
+static void handle_stream_decode(int err, void *arg)
 {
-	struct vrx *vrx = arg;
+	struct vidqdec *q = arg;
+	struct vrx *vrx = &q->vrxc.video->vrx; /* vrx orig */
 	(void)err;
 
-	request_picture_update(vrx);
+
+	if (q->picture_update)
+		request_picture_update(vrx);
+
+	if (q->intra)
+		tmr_cancel(&vrx->tmr_picup);
+
+	vrx->size    = q->vrxc.size;
+	vrx->fmt     = q->vrxc.fmt;
+	vrx->n_intra = q->vrxc.n_intra;
+	vrx->frames  = q->vrxc.frames;
+	vrx->stats.disp_frames = q->vrxc.stats.disp_frames;
+
+
+	if (q->disp_err) {
+	struct video *v = vrx->video;
+		if (v->errh) {
+			v->errh(err, "display closed", v->arg);
+		}
+	}
+
+	mtx_lock(vrx->lock_rx);
+	mem_deref(q);
+	mtx_unlock(vrx->lock_rx);
 }
 
 
@@ -748,58 +777,59 @@ static void handle_picture_update(int err, void *arg)
  *
  * @return 0 if success, otherwise errorcode
  */
-static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
+static int video_stream_decode(struct vidqdec *q, const struct rtp_header *hdr,
 			       struct mbuf *mb)
 {
+	struct vrx *vrx = &q->vrxc.video->vrx; /* vrx orig */ 
+	struct vrx *vrxc = &q->vrxc; /* vrx copy */
 	struct video *v = vrx->video;
 	struct vidframe *frame_filt = NULL;
 	struct vidframe frame_store, *frame = &frame_store;
 	struct le *le;
 	uint64_t timestamp;
-	bool intra;
 	int err = 0;
 
 	if (!hdr || !mbuf_get_left(mb))
-		return 0;
+		goto out;
 
 	/* No decoder set */
 	if (!vrx->dec) {
 		warning("video: No video decoder!\n");
-		return EINVAL;
+		err = EINVAL;
+		goto out;
 	}
-
-	update_rtp_timestamp(&vrx->ts_recv, hdr->ts);
 
 	/* convert the RTP timestamp to VIDEO_TIMEBASE timestamp */
 	timestamp = video_calc_timebase_timestamp(
-			  timestamp_calc_extended(vrx->ts_recv.num_wraps,
-						  vrx->ts_recv.last));
+			  timestamp_calc_extended(vrxc->ts_recv.num_wraps,
+						  vrxc->ts_recv.last));
 
 	vidframe_clear(frame);
 
-	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb);
+	mtx_lock(vrx->lock_dec);
+	err = vrx->vc->dech(vrx->dec, frame, &q->intra, hdr->m, hdr->seq, mb);
 	if (err) {
 
 		if (err != EPROTO) {
 			warning("video: %s decode error"
 				" (seq=%u, %u bytes): %m\n",
-				vrx->vc->name, hdr->seq,
+				vrxc->vc->name, hdr->seq,
 				mbuf_get_left(mb), err);
 		}
 
-		(void)re_thread_async(NULL, handle_picture_update, vrx);
+		q->picture_update = true;
 
-		return err;
+		mtx_unlock(vrx->lock_dec);
+		goto out;
 	}
+	mtx_unlock(vrx->lock_dec);
 
-	if (intra) {
-		tmr_cancel(&vrx->tmr_picup);
-		++vrx->n_intra;
-	}
+	if (q->intra)
+		++vrxc->n_intra;
 
 	/* Got a full picture-frame? */
 	if (!vidframe_isvalid(frame))
-		return err;
+		goto out;
 
 	if (!vrx->size.w) {
 		info("video: receiving with resolution %u x %u"
@@ -808,14 +838,14 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		     vidfmt_name(frame->fmt));
 	}
 
-	vrx->size = frame->size;
-	vrx->fmt  = frame->fmt;
+	vrxc->size = frame->size;
+	vrxc->fmt  = frame->fmt;
 
 	if (!list_isempty(&vrx->filtl)) {
 
 		err = vidframe_alloc(&frame_filt, frame->fmt, &frame->size);
 		if (err)
-			return err;
+			goto out;
 
 		vidframe_copy(frame_filt, frame);
 
@@ -831,25 +861,29 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 			err |= st->vf->dech(st, frame, &timestamp);
 	}
 
-	++vrx->stats.disp_frames;
+	++vrxc->stats.disp_frames;
 
-	if (vrx->vd && vrx->vd->disph)
+	mtx_lock(vrx->lock_dec);
+	if (vrx->vd && vrx->vd->disph) {
 		err = vrx->vd->disph(vrx->vidisp, v->peer, frame, timestamp);
 
-	frame_filt = mem_deref(frame_filt);
-	if (err == ENODEV) {
-		warning("video: video-display was closed\n");
-		vrx->vidisp = mem_deref(vrx->vidisp);
-		vrx->vd = NULL;
-
-		if (v->errh) {
-			v->errh(err, "display closed", v->arg);
+		if (err == ENODEV) {
+			warning("video: video-display was closed\n");
+			vrx->vidisp = mem_deref(vrx->vidisp);
+			vrx->vd	    = NULL;
+			q->disp_err = err;
+			mtx_unlock(vrx->lock_dec);
+			goto out;
 		}
-
-		return err;
 	}
+	mtx_unlock(vrx->lock_dec);
 
-	++vrx->frames;
+	++vrxc->frames;
+
+out:
+	frame_filt = mem_deref(frame_filt);
+	(void)re_thread_async_id((intptr_t)vrx, NULL,
+				 handle_stream_decode, q);
 
 	return err;
 }
@@ -912,9 +946,12 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	q->hdr = mem_ref((void *)hdr);
 	q->mb  = mem_ref(mb);
 
-	mtx_lock(&v->vrx.lock_rx);
+	update_rtp_timestamp(&v->vrx.ts_recv, hdr->ts);
+
+	mtx_lock(v->vrx.lock_rx);
+	q->vrxc = v->vrx; /* copy vrx */
 	list_append(&v->vrx.recvq, &q->le, q);
-	mtx_unlock(&v->vrx.lock_rx);
+	mtx_unlock(v->vrx.lock_rx);
 
 }
 
@@ -1068,21 +1105,19 @@ static int vrx_thread(void *arg)
 
 	while (re_atomic_rlx(&v->vrx.run)) {
 
-		mtx_lock(&v->vrx.lock_rx);
+		mtx_lock(v->vrx.lock_rx);
 		le = v->vrx.recvq.head;
-		mtx_unlock(&v->vrx.lock_rx);
+		mtx_unlock(v->vrx.lock_rx);
 
 		while (le) {
 			struct vidqdec *q = le->data;
 
-			mtx_lock(&v->vrx.lock_dec);
-			(void)video_stream_decode(&v->vrx, q->hdr, q->mb);
-			mtx_unlock(&v->vrx.lock_dec);
+			(void)video_stream_decode(q, q->hdr, q->mb);
 
-			mtx_lock(&v->vrx.lock_rx);
+			mtx_lock(v->vrx.lock_rx);
 			le = le->next;
-			mem_deref(q);
-			mtx_unlock(&v->vrx.lock_rx);
+			list_unlink(&q->le);
+			mtx_unlock(v->vrx.lock_rx);
 		}
 
 		sys_msleep(4);
@@ -1251,6 +1286,7 @@ static int set_vidisp(struct vrx *vrx)
 	struct vidisp *vd;
 	int err;
 
+	mtx_lock(vrx->lock_dec);
 	vrx->vidisp = mem_deref(vrx->vidisp);
 	vrx->vd = NULL;
 
@@ -1258,17 +1294,22 @@ static int set_vidisp(struct vrx *vrx)
 
 	vd = (struct vidisp *)vidisp_find(baresip_vidispl(),
 					  vrx->video->cfg.disp_mod);
-	if (!vd)
-		return ENOENT;
+	if (!vd) {
+		err = ENOENT;
+		goto out;
+	}
 
 	err = vd->alloch(&vrx->vidisp, vd, &vrx->vidisp_prm, vrx->device,
 			 vidisp_resize_handler, vrx);
 	if (err)
-		return err;
+		goto out;
 
 	vrx->vd = vd;
 
-	return 0;
+out:
+	mtx_unlock(vrx->lock_dec);
+
+	return err;
 }
 
 
@@ -1497,9 +1538,7 @@ void video_stop_display(struct video *v)
 
 	debug("video: stopping video display ..\n");
 
-	mtx_lock(&v->vrx.lock_dec);
 	v->vrx.vidisp = mem_deref(v->vrx.vidisp);
-	mtx_unlock(&v->vrx.lock_dec);
 }
 
 
@@ -1521,10 +1560,8 @@ static int vidisp_update(struct vrx *vrx)
 	int err = 0;
 
 	if (vd->updateh) {
-		mtx_lock(&vrx->lock_dec);
 		err = vd->updateh(vrx->vidisp, vrx->vidisp_prm.fullscreen,
 				  vrx->orient, NULL);
-		mtx_unlock(&vrx->lock_dec);
 	}
 
 	return err;
@@ -1647,9 +1684,10 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 	}
 
 	vrx = &v->vrx;
-	mtx_lock(&vrx->lock_dec);
+
 	vrx->pt_rx = pt_rx;
 
+	mtx_lock(vrx->lock_dec);
 	if (vc != vrx->vc) {
 
 		info("Set video decoder: %s %s\n", vc->name, vc->variant);
@@ -1666,8 +1704,7 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 	}
 
 out:
-	mtx_unlock(&vrx->lock_dec);
-
+	mtx_unlock(vrx->lock_dec);
 	return err;
 }
 
