@@ -13,6 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+    - name: fix flaky azure mirrors
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo sed -i 's/azure\./de\./' /etc/apt/sources.list
+
     - name: "install packages"
       run: |
         sudo apt-get update && sudo apt-get install -y mingw-w64

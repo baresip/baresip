@@ -25,6 +25,11 @@ jobs:
       run: |
         echo "OPENSSL_ROOT_DIR=/usr/local/opt/openssl" >> $GITHUB_ENV
 
+    - name: fix flaky azure mirrors
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo sed -i 's/azure\./de\./' /etc/apt/sources.list
+
     - name: install packages
       if: ${{ runner.os == 'Linux' }}
       run: |

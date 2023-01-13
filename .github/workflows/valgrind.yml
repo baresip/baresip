@@ -14,6 +14,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: fix flaky azure mirrors
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo sed -i 's/azure\./de\./' /etc/apt/sources.list
     
     - name: install packages
       run: |

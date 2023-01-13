@@ -39,10 +39,16 @@ jobs:
         sudo apt-get remove libunwind-14 -y
         sudo apt-get install libunwind-dev -y
 
+    - name: fix flaky azure mirrors
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo sed -i 's/azure\./de\./' /etc/apt/sources.list
+
     - name: install packages
       if: ${{ runner.os == 'Linux' }}
       run: |
-        sudo apt-get update && sudo apt-get install -y libavcodec-dev \
+        sudo apt-get update && sudo apt-get install -y \
+                            libavcodec-dev \
                             libavdevice-dev \
                             libavformat-dev \
                             libjack-jackd2-dev \
