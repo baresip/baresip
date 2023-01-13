@@ -780,7 +780,7 @@ static void handle_stream_decode(int err, void *arg)
 static int video_stream_decode(struct vidqdec *q, const struct rtp_header *hdr,
 			       struct mbuf *mb)
 {
-	struct vrx *vrx = &q->vrxc.video->vrx; /* vrx orig */ 
+	struct vrx *vrx = &q->vrxc.video->vrx; /* vrx orig */
 	struct vrx *vrxc = &q->vrxc; /* vrx copy */
 	struct video *v = vrx->video;
 	struct vidframe *frame_filt = NULL;
