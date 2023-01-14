@@ -914,7 +914,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 }
 
 
-static void vidqdec_deref(void *arg)
+static void vidqdec_destructor(void *arg)
 {
 	struct vidqdec *q = arg;
 
@@ -942,7 +942,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (lostc)
 		request_picture_update(&v->vrx);
 
-	q = mem_zalloc(sizeof(struct vidqdec), vidqdec_deref);
+	q = mem_zalloc(sizeof(struct vidqdec), vidqdec_destructor);
 	if (!q)
 		return;
 
