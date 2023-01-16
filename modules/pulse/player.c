@@ -36,7 +36,7 @@ static void auplay_destructor(void *arg)
 }
 
 
-int pulse_async_player_alloc(struct auplay_st **stp, const struct auplay *ap,
+int pulse_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	struct auplay_prm *prm, const char *dev, auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
@@ -45,7 +45,7 @@ int pulse_async_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!stp || !ap || !prm || !wh)
 		return EINVAL;
 
-	info ("pulse_async: opening player (%u Hz, %d channels, device %s, "
+	info ("pulse: opening player (%u Hz, %d channels, device %s, "
 		"ptime %u)\n", prm->srate, prm->ch, dev, prm->ptime);
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
@@ -69,13 +69,13 @@ int pulse_async_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	err = pastream_start(st->b, st);
 	if (err) {
-		warning("pulse_async: could not connect playback stream %s "
+		warning("pulse: could not connect playback stream %s "
 			"(%m)\n", st->b->sname, err);
 		err = ENODEV;
 		goto out;
 	}
 
-	info ("pulse_async: playback stream %s started\n", st->b->sname);
+	info ("pulse: playback stream %s started\n", st->b->sname);
 
   out:
 	if (err)
@@ -99,7 +99,7 @@ static void dev_list_cb(pa_context *context, const pa_sink_info *l, int eol,
 
 	err = mediadev_add(dev_list, l->name);
 	if (err)
-		warning("pulse_async: playback device %s could not be added\n",
+		warning("pulse: playback device %s could not be added\n",
 			l->name);
 }
 
@@ -110,13 +110,13 @@ static pa_operation *get_dev_info(pa_context *context, struct list *dev_list)
 }
 
 
-int pulse_async_player_init(struct auplay *ap)
+int pulse_player_init(struct auplay *ap)
 {
 	if (!ap)
 		return EINVAL;
 
 	list_init(&ap->dev_list);
-	return pulse_async_set_available_devices(&ap->dev_list, get_dev_info);
+	return pulse_set_available_devices(&ap->dev_list, get_dev_info);
 }
 
 
@@ -141,7 +141,7 @@ void stream_write_cb(pa_stream *s, size_t len, void *arg)
 
 	pa_err = pa_stream_begin_write(s, &sampv, &sz);
 	if (pa_err || !sampv) {
-		warning("pulse_async: pa_stream_begin_write error (%s)\n",
+		warning("pulse: pa_stream_begin_write error (%s)\n",
 			pa_strerror(pa_err));
 		goto out;
 	}
@@ -153,7 +153,7 @@ void stream_write_cb(pa_stream *s, size_t len, void *arg)
 
 	pa_err= pa_stream_write(s, sampv, sz, NULL, 0LL, PA_SEEK_RELATIVE);
 	if (pa_err < 0) {
-		warning("pulse_async: pa_stream_write error (%s)\n",
+		warning("pulse: pa_stream_write error (%s)\n",
 			pa_strerror(pa_err));
 	}
 

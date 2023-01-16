@@ -93,7 +93,7 @@ static void stream_latency_update_cb(pa_stream *s, void *arg)
 
 	pa_err = pa_stream_get_latency(s, &usec, &neg);
 	if (!pa_err)
-		debug("pulse_async: stream %s latency update "
+		debug("pulse: stream %s latency update "
 				"usec=%lu, neg=%d\n", st->sname, usec, neg);
 }
 
@@ -104,7 +104,7 @@ static void stream_underflow_cb(pa_stream *s, void *arg)
 	(void)s;
 
 	if (!st->shutdown)
-		warning("pulse_async: stream %s underrun\n",  st->sname);
+		warning("pulse: stream %s underrun\n",  st->sname);
 }
 
 
@@ -113,7 +113,7 @@ static void stream_overflow_cb(pa_stream *s, void *arg)
 	struct pastream_st *st = arg;
 	(void)s;
 
-	warning("pulse_async: stream %s overrun\n", st->sname);
+	warning("pulse: stream %s overrun\n", st->sname);
 }
 
 
@@ -185,14 +185,14 @@ int pastream_start(struct pastream_st* st, void *arg)
 				PA_STREAM_AUTO_TIMING_UPDATE);
 	}
 	else {
-		warning("pulse_async: stream %s unsupported stream "
+		warning("pulse: stream %s unsupported stream "
 			"direction %d\n",
 			st->sname, (int)st->direction);
 	}
 
 out:
 	if (st && pa_err) {
-		warning("pulse_async: stream %s stream error %d\n", st->sname,
+		warning("pulse: stream %s stream error %d\n", st->sname,
 			pa_err);
 		err = EINVAL;
 	}
