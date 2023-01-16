@@ -1018,6 +1018,7 @@ struct vidpacket {
 	uint8_t *buf;        /**< Buffer memory                     */
 	size_t size;         /**< Size of buffer                    */
 	uint64_t timestamp;  /**< Timestamp in VIDEO_TIMEBASE units */
+	bool keyframe;       /**< True=keyframe, False=deltaframe   */
 };
 
 /* Declare function pointer */
