@@ -7,9 +7,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-#endif
 #include "aec.h"
 
 
@@ -35,6 +32,8 @@ static void aec_destructor(void *arg)
 
 	if (st->inst)
 		WebRtcAecm_Free(st->inst);
+
+	mtx_destroy(&st->mutex);
 }
 
 
@@ -72,7 +71,11 @@ int webrtc_aecm_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 
 	aec->srate = prm->srate;
 
-	pthread_mutex_init(&aec->mutex, NULL);
+	err = mtx_init(&aec->mutex, mtx_plain) != thrd_success;
+	if (err) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	if (prm->srate > 8000)
 		aec->subframe_len = 160;

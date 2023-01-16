@@ -8,9 +8,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#ifdef HAVE_PTHREAD
-#include <pthread.h>
-#endif
 #include "aec.h"
 
 
@@ -89,7 +86,7 @@ static int encode_s16(struct aec_enc *enc, int16_t *sampv, size_t sampc)
 	int r;
 	int err = 0;
 
-	pthread_mutex_lock(&aec->mutex);
+	mtx_lock(&aec->mutex);
 
 	for (i = 0; i < sampc; i += aec->subframe_len) {
 
@@ -111,7 +108,7 @@ static int encode_s16(struct aec_enc *enc, int16_t *sampv, size_t sampc)
 	}
 
  out:
-	pthread_mutex_unlock(&aec->mutex);
+	mtx_unlock(&aec->mutex);
 
 	return err;
 }

@@ -5,7 +5,6 @@
  */
 
 
-#include <pthread.h>
 #include "modules/audio_processing/aecm/echo_control_mobile.h"
 
 
@@ -18,7 +17,7 @@ using namespace webrtc;
 struct aec {
 	AecmConfig config;
 	void *inst;
-	pthread_mutex_t mutex;
+	mtx_t mutex;
 	uint32_t srate;
 	uint32_t subframe_len;
 	int num_bands;
