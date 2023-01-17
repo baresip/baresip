@@ -121,6 +121,7 @@ void avformat_video_copy(struct shared *st, AVPacket *pkt)
 	vp.buf = pkt->data;
 	vp.size = pkt->size;
 	vp.timestamp = pkt->pts * VIDEO_TIMEBASE * tb.num / tb.den;
+	vp.keyframe = !!(pkt->flags & AV_PKT_FLAG_KEY);
 
 	mtx_lock(&st->lock);
 
