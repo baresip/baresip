@@ -27,7 +27,6 @@ struct videnc_state {
 	unsigned bitrate;
 	unsigned pktsize;
 	bool ctxup;
-	bool new;
 	videnc_packet_h *pkth;
 	void *arg;
 };
@@ -59,8 +58,6 @@ int av1_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		ves = mem_zalloc(sizeof(*ves), destructor);
 		if (!ves)
 			return ENOMEM;
-
-		ves->new = true;
 
 		*vesp = ves;
 	}
@@ -134,11 +131,14 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 }
 
 
-static int packetize_rtp(struct videnc_state *ves, uint64_t rtp_ts,
+static int packetize_rtp(struct videnc_state *ves,
+			 bool keyframe, uint64_t rtp_ts,
 			 const uint8_t *buf, size_t size)
 {
-	return av1_packetize_high(&ves->new, true, rtp_ts, buf, size,
-				  ves->pktsize, ves->pkth, ves->arg);
+	bool new_flag = keyframe;
+
+	return av1_packetize_high(&new_flag, true, rtp_ts, buf, size,
+				ves->pktsize, ves->pkth, ves->arg);
 }
 
 
@@ -194,6 +194,7 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 	for (;;) {
 		const aom_codec_cx_pkt_t *pkt;
 		uint64_t rtp_ts;
+		bool keyframe = false;
 
 		pkt = aom_codec_get_cx_data(&ves->ctx, &iter);
 		if (!pkt)
@@ -203,13 +204,13 @@ int av1_encode_packet(struct videnc_state *ves, bool update,
 			continue;
 
 		if (pkt->data.frame.flags & AOM_FRAME_IS_KEY) {
-			ves->new = true;
+			keyframe = true;
 			debug("av1: encode: keyframe\n");
 		}
 
 		rtp_ts = video_calc_rtp_timestamp_fix(pkt->data.frame.pts);
 
-		err = packetize_rtp(ves, rtp_ts,
+		err = packetize_rtp(ves, keyframe, rtp_ts,
 				    pkt->data.frame.buf, pkt->data.frame.sz);
 		if (err)
 			break;
@@ -234,7 +235,8 @@ int av1_encode_packetize(struct videnc_state *ves,
 
 	rtp_ts = video_calc_rtp_timestamp_fix(packet->timestamp);
 
-	err = packetize_rtp(ves, rtp_ts, packet->buf, packet->size);
+	err = packetize_rtp(ves, packet->keyframe, rtp_ts,
+			    packet->buf, packet->size);
 
 	return err;
 }
