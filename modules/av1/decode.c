@@ -1,7 +1,7 @@
 /**
  * @file av1/decode.c AV1 Decode
  *
- * Copyright (C) 2010 - 2016 Alfred E. Heggestad
+ * Copyright (C) 2010 - 2023 Alfred E. Heggestad
  */
 
 #include <string.h>
