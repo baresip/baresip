@@ -74,6 +74,7 @@ jobs:
       if: ${{ runner.os == 'macOS' }}
       run: |
         brew install codec2 \
+                        aom \
                         fdk-aac \
                         ffmpeg \
                         jack \

@@ -1,7 +1,7 @@
 /**
  * @file av1/decode.c AV1 Decode
  *
- * Copyright (C) 2010 - 2016 Alfred E. Heggestad
+ * Copyright (C) 2010 - 2023 Alfred E. Heggestad
  */
 
 #include <string.h>
@@ -126,17 +126,13 @@ static int copy_obu(struct mbuf *mb_bs, const uint8_t *buf, size_t size)
 	case OBU_TILE_LIST:
 	case OBU_PADDING:
 		/* MUST be ignored by receivers. */
-		warning("av1: decode: copy: unexpected obu type %u (%s)"
-			" [x=%d, s=%d, size=%zu]\n",
-			hdr.type, aom_obu_type_to_string(hdr.type),
-			hdr.x, hdr.s, hdr.size);
+		warning("av1: decode: copy: unexpected obu type [%H]\n",
+			av1_obu_print, &hdr);
 		return EPROTO;
 
 	default:
-		warning("av1: decode: copy: unknown obu type %u (%s)"
-			" [x=%d, s=%d, size=%zu]\n",
-			hdr.type, aom_obu_type_to_string(hdr.type),
-			hdr.x, hdr.s, hdr.size);
+		warning("av1: decode: copy: unknown obu type [%H]\n",
+			av1_obu_print, &hdr);
 		return EPROTO;
 	}
 
