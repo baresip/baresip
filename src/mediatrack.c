@@ -131,6 +131,8 @@ int mediatrack_start_video(struct media_track *media)
 		info("mediatrack: video stream is disabled..\n");
 	}
 
+	stream_set_rtcp_interval(video_strm(vid), 1000);
+
 	return 0;
 }
 
