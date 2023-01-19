@@ -279,6 +279,7 @@ int  stream_alloc(struct stream **sp, struct list *streaml,
 		  void *arg);
 void stream_hold(struct stream *s, bool hold);
 void stream_set_ldir(struct stream *s, enum sdp_dir dir);
+void stream_set_rtcp_interval(struct stream *s, uint32_t n);
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx);
 bool stream_is_ready(const struct stream *strm);
 int  stream_print(struct re_printf *pf, const struct stream *s);

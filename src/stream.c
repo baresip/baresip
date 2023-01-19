@@ -1147,6 +1147,15 @@ enum sdp_dir stream_ldir(const struct stream *s)
 }
 
 
+void stream_set_rtcp_interval(struct stream *s, uint32_t n)
+{
+	if (!s)
+		return;
+
+	rtcp_set_interval(s->rtp, n);
+}
+
+
 void stream_set_srate(struct stream *s, uint32_t srate_tx, uint32_t srate_rx)
 {
 	if (!s)
