@@ -38,7 +38,7 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-22.04' }}
       run: |
         sudo apt-get remove libunwind-14 -y
-        sudo apt-get install libunwind-dev -y
+        sudo apt-get install libunwind-dev libaom-dev libsdl2-dev -y
 
     - name: fix flaky azure mirrors
       if: ${{ runner.os == 'Linux' }}
@@ -49,7 +49,6 @@ jobs:
       if: ${{ runner.os == 'Linux' }}
       run: |
         sudo apt-get update && sudo apt-get install -y \
-                            libaom-dev \
                             libasound2-dev \
                             libavcodec-dev \
                             libavdevice-dev \
@@ -65,7 +64,6 @@ jobs:
                             libopencore-amrwb-dev \
                             libopus-dev \
                             libpulse-dev \
-                            libsdl2-dev \
                             libsndfile1-dev \
                             libspandsp-dev \
                             libssl-dev \
