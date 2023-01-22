@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
     - main
+    - stable
 
 jobs:
   build:
@@ -48,21 +49,28 @@ jobs:
       if: ${{ runner.os == 'Linux' }}
       run: |
         sudo apt-get update && sudo apt-get install -y \
+                            libaom-dev \
+                            libasound2-dev \
                             libavcodec-dev \
                             libavdevice-dev \
                             libavformat-dev \
+                            libcodec2-dev \
+                            libfdk-aac-dev \
+                            libglib2.0-dev \
+                            libgstreamer1.0-dev \
                             libjack-jackd2-dev \
                             libmosquitto-dev \
                             libmpg123-dev \
+                            libopencore-amrnb-dev \
+                            libopencore-amrwb-dev \
                             libopus-dev \
                             libpulse-dev \
+                            libsdl2-dev \
                             libsndfile1-dev \
                             libspandsp-dev \
                             libssl-dev \
-                            libopencore-amrnb-dev \
-                            libopencore-amrwb-dev \
-                            libgstreamer1.0-dev \
                             libvpx-dev \
+                            libx11-dev \
                             libwebrtc-audio-processing-dev
 
     - name: install aac
@@ -80,6 +88,7 @@ jobs:
                         jack \
                         mpg123 \
                         spandsp \
+                        sdl2 \
                         glib-utils
 
     - uses: sreimers/pr-dependency-action@v0.5
@@ -117,3 +126,8 @@ jobs:
       if: ${{ runner.os == 'macOS' }}
       run: |
         cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
+
+    - name: baresip static
+      run: |
+        rm -Rf build
+        cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
