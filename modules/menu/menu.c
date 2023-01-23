@@ -206,6 +206,7 @@ static void menu_stop_play(void)
 {
 	menu.play = mem_deref(menu.play);
 	menu.ringback = false;
+	tmr_cancel(&menu.tmr_play);
 }
 
 
@@ -336,11 +337,10 @@ static void play_ringback(const struct call *call)
 
 static void check_ringback(struct call *call)
 {
-	bool ring;
-	enum sdp_dir ardir;
+	enum sdp_dir ardir = sdp_media_rdir(stream_sdpmedia(
+					    audio_strm(call_audio(call))));
+	bool ring = !(ardir & SDP_RECVONLY);
 
-	ardir = sdp_media_rdir(stream_sdpmedia(audio_strm(call_audio(call))));
-	ring = (ardir & SDP_RECVONLY) ? false : true;
 	if (ring && !menu.ringback &&
 	    !menu_find_call(active_call_test, NULL)) {
 		play_ringback(call);
