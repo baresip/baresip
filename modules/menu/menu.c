@@ -336,9 +336,9 @@ static void play_ringback(const struct call *call)
 
 static void check_ringback(struct call *call)
 {
-	enum sdp_dir ardir = sdp_media_rdir(stream_sdpmedia(
-					    audio_strm(call_audio(call))));
-	bool ring = !(ardir & SDP_RECVONLY);
+	enum sdp_dir adir = sdp_media_dir(stream_sdpmedia(
+					  audio_strm(call_audio(call))));
+	bool ring = !(adir & SDP_RECVONLY);
 
 	if (ring && !menu.ringback &&
 	    !menu_find_call(active_call_test, NULL)) {
