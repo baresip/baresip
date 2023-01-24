@@ -140,9 +140,8 @@ static void turnoff_earlyaudio(struct call* call, void *arg)
 	ardir = sdp_media_rdir(stream_sdpmedia(audio_strm(call_audio(call))));
 	if (ardir & SDP_RECVONLY) {
 		call_set_audio_ldir(call, ardir & SDP_SENDONLY);
-		/* TODO: 100rel used and allowed */
-/*                if (call_refresh_allowed(call))*/
-/*                        call_modify(call);*/
+		if (call_refresh_allowed(call))
+			call_modify(call);
 	}
 }
 
