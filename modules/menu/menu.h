@@ -32,6 +32,7 @@ struct menu{
 	int32_t adelay;               /**< Outgoing auto answer delay     */
 	char *ansval;                 /**< Call-Info/Alert-Info value     */
 	struct odict *ovaufile;       /**< Override aufile dictionary     */
+	struct tmr tmr_play;          /**< Tones play timer               */
 };
 
 /*Get menu object*/
