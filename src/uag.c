@@ -255,7 +255,7 @@ static bool uri_host_local(const struct uri *uri)
 	if (!uri)
 		return false;
 
-	for (i=0; i<ARRAY_SIZE(hostv); i++) {
+	for (i=0; i<RE_ARRAY_SIZE(hostv); i++) {
 
 		if (!pl_strcmp(&uri->host, hostv[i]))
 			return true;

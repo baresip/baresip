@@ -134,7 +134,7 @@ int baresip_init(struct config *cfg)
 		return err;
 	}
 
-	err = cmd_register(baresip.commands, corecmdv, ARRAY_SIZE(corecmdv));
+	err = cmd_register(baresip.commands, corecmdv,RE_ARRAY_SIZE(corecmdv));
 	if (err)
 		return err;
 

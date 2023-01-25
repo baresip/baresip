@@ -510,7 +510,7 @@ static int module_init(void)
 		return err;
 #endif
 
-	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 	if (err) {
 		d->client = mem_deref(d->client);
 		d->conn = mem_deref(d->conn);

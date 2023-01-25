@@ -133,7 +133,7 @@ int test_account_uri_complete(void)
 	mb = mbuf_alloc(256);
 	ASSERT_TRUE(mb != NULL);
 
-	for (size_t i=0; i<ARRAY_SIZE(testv); i++) {
+	for (size_t i=0; i<RE_ARRAY_SIZE(testv); i++) {
 
 		const struct test *test = &testv[i];
 

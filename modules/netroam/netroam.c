@@ -210,7 +210,7 @@ static int module_init(void)
 	if (err)
 		return err;
 #endif
-	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	return cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 }
 
 

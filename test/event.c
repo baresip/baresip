@@ -25,7 +25,7 @@ int test_event(void)
 		/* .. more events .. */
 	};
 
-	for (i=0; i<ARRAY_SIZE(eventv); i++) {
+	for (i=0; i<RE_ARRAY_SIZE(eventv); i++) {
 
 		const enum ua_event ev = eventv[i];
 		const struct odict_entry *entry;

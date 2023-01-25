@@ -40,7 +40,7 @@ static void test_reset(struct test *t)
 {
 	size_t i;
 
-	for (i=0; i<ARRAY_SIZE(t->srvv); i++)
+	for (i=0; i<RE_ARRAY_SIZE(t->srvv); i++)
 		mem_deref(t->srvv[i]);
 	mem_deref(t->ua);
 

@@ -111,7 +111,7 @@ static int createPlayer(struct auplay_st *st, struct auplay_prm *prm)
 	r = (*engineEngine)->CreateAudioPlayer(engineEngine,
 					       &st->bqPlayerObject,
 					       &audioSrc, &audioSnk,
-					       ARRAY_SIZE(ids), ids, req);
+					       RE_ARRAY_SIZE(ids), ids, req);
 	if (SL_RESULT_SUCCESS != r) {
 		warning("opensles: CreateAudioPlayer error: r = %d\n", r);
 		return ENODEV;

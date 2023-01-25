@@ -146,7 +146,7 @@ static int module_init(void)
 		return ENOMEM;
 
 	vidfilt_register(baresip_vidfiltl(), &avfilter);
-	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	return cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 }
 
 

@@ -318,7 +318,7 @@ static int handle_rtp(struct stream *s, const struct rtp_header *hdr,
 		mb->pos = mb->pos - ext_len;
 		mb->end = ext_stop;
 
-		for (i=0; i<ARRAY_SIZE(extv) && mbuf_get_left(mb); i++) {
+		for (i=0; i<RE_ARRAY_SIZE(extv) && mbuf_get_left(mb); i++) {
 
 			err = rtpext_decode(&extv[i], mb);
 			if (err) {

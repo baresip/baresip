@@ -87,9 +87,9 @@ static void add_extension(struct ua *ua, const char *extension)
 {
 	struct pl e;
 
-	if (ua->extensionc >= ARRAY_SIZE(ua->extensionv)) {
+	if (ua->extensionc >= RE_ARRAY_SIZE(ua->extensionv)) {
 		warning("ua: maximum %zu number of SIP extensions\n",
-			ARRAY_SIZE(ua->extensionv));
+			RE_ARRAY_SIZE(ua->extensionv));
 		return;
 	}
 
@@ -121,7 +121,7 @@ static int create_register_clients(struct ua *ua)
 			goto out;
 		}
 
-		for (i=0; i<ARRAY_SIZE(ua->acc->outboundv); i++) {
+		for (i=0; i<RE_ARRAY_SIZE(ua->acc->outboundv); i++) {
 
 			if (ua->acc->outboundv[i] && ua->acc->regint) {
 				err = reg_add(&ua->regl, ua, (int)i+1);

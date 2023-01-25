@@ -682,7 +682,7 @@ static int module_init(void)
 	int err = 0;
 
 	err = module_read_config();
-	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err |= cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 
 	err |= mcsource_init();
 	err |= mcplayer_init();

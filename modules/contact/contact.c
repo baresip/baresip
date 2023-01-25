@@ -311,7 +311,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 	if (err)
 		return err;
 

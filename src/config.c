@@ -117,7 +117,7 @@ static int range_print(struct re_printf *pf, const struct range *rng)
 static int dns_handler(const struct pl *pl, void *arg, bool fallback)
 {
 	struct config_net *cfg = arg;
-	const size_t max_count = ARRAY_SIZE(cfg->nsv);
+	const size_t max_count = RE_ARRAY_SIZE(cfg->nsv);
 	int err;
 
 	if (cfg->nsc >= max_count) {
@@ -846,7 +846,7 @@ static const char *detect_module_path(bool *valid)
 	uint32_t nmax = 0;
 	size_t i;
 
-	for (i=0; i<ARRAY_SIZE(pathv); i++) {
+	for (i=0; i<RE_ARRAY_SIZE(pathv); i++) {
 
 		uint32_t n = count_modules(pathv[i]);
 
