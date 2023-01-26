@@ -59,7 +59,6 @@ struct call {
 	bool answered;            /**< True if call has been answered       */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
-	bool early_confirmed;     /**< Early media confirmed by PRACK       */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -1358,6 +1357,12 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 		return EINVAL;
 	}
 
+	if (sipsess_awaiting_prack(call->sess)) {
+		info("call: answer: can not answer because we are awaiting a "
+		     "PRACK to a 1xx response with SDP\n");
+		return EAGAIN;
+	}
+
 	if (vmode == VIDMODE_OFF)
 		call->video = mem_deref(call->video);
 
@@ -1459,6 +1464,21 @@ int call_hold(struct call *call, bool hold)
 
 
 /**
+ * Sets the audio local direction of the given call
+ *
+ * @param call  Call object
+ * @param dir   SDP media direction
+ */
+void call_set_audio_ldir(struct call *call, enum sdp_dir dir)
+{
+	if (!call)
+		return;
+
+	stream_set_ldir(audio_strm(call_audio(call)), dir);
+}
+
+
+/**
  * Sets the video direction of the given call
  *
  * @param call  Call object
@@ -1492,15 +1512,9 @@ int call_sdp_get(const struct call *call, struct mbuf **descp, bool offer)
  *
  * @return True if a target refresh is currently allowed, otherwise false
  */
-bool call_target_refresh_allowed(const struct call *call)
+bool call_refresh_allowed(const struct call *call)
 {
-	if (!call)
-		return false;
-
-	return call_state(call) == CALL_STATE_ESTABLISHED ||
-		    (call->early_confirmed &&
-			(call_state(call) == CALL_STATE_EARLY ||
-			 call_state(call) == CALL_STATE_INCOMING));
+	return call ? sipsess_refresh_allowed(call->sess) : false;
 }
 
 
@@ -2084,9 +2098,6 @@ static void prack_handler(const struct sip_msg *msg, void *arg)
 	if (!msg || !call)
 		return;
 
-	if (msg->req || (msg->scode >= 200 && msg->scode < 300))
-		call->early_confirmed = true;
-
 	return;
 }
 
@@ -2322,8 +2333,10 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	if (media) {
-		call_stream_start(call, false);
+		mem_ref(call);
 		call_event_handler(call, CALL_EVENT_PROGRESS, call->peer_uri);
+		call_stream_start(call, false);
+		mem_deref(call);
 	}
 	else {
 		call_stream_stop(call);

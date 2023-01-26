@@ -408,7 +408,7 @@ static int set_video_dir(struct re_printf *pf, void *arg)
 	if (!call)
 		return EINVAL;
 
-	if (!call_target_refresh_allowed(call)) {
+	if (!call_refresh_allowed(call)) {
 		(void)re_hprintf(pf, "video update not allowed currently");
 		return EINVAL;
 	}
