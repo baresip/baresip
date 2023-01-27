@@ -174,6 +174,7 @@ set(SRCS
   src/sdp.c
   src/sipreq.c
   src/stream.c
+  src/receiver.c
   src/stunuri.c
   src/timestamp.c
   src/ua.c

@@ -27,6 +27,7 @@ enum {
 
 /* forward declarations */
 struct stream_param;
+struct receiver;
 
 
 /*
@@ -316,6 +317,7 @@ void stream_enable_bundle(struct stream *strm, enum bundle_state st);
 void stream_enable_natpinhole(struct stream *strm, bool enable);
 void stream_open_natpinhole(struct stream *strm);
 void stream_stop_natpinhole(struct stream *strm);
+void stream_process_rtcp(struct stream *strm, struct rtcp_msg *msg);
 
 
 /*
@@ -451,3 +453,27 @@ struct media_track *mediatrack_lookup_media(const struct list *medial,
 					    struct stream *strm);
 void mediatrack_close(struct media_track *media, int err);
 void mediatrack_sdp_attr_decode(struct media_track *media);
+
+/*
+ * Stream receiver
+ */
+int rx_alloc(struct receiver **rxp,
+	     const char *name,
+	     enum media_type type,
+	     const struct config_avt *cfg,
+	     stream_rtp_h *rtph,
+	     stream_pt_h *pth, void *arg);
+void rx_set_handlers(struct receiver *rx, struct stream *strm,
+		     stream_rtpestab_h *rtpestabh, void *arg);
+struct metric *rx_metric(struct receiver *rx);
+struct jbuf *rx_jbuf(struct receiver *rx);
+int rx_receive(struct receiver *rx, const struct sa *src,
+	       const struct rtp_header *hdr, struct mbuf *mb);
+void rx_handle_rtcp(struct receiver *rx, struct rtcp_msg *msg);
+void rx_set_ssrc(struct receiver *rx, uint32_t ssrc);
+uint64_t rx_ts_last(struct receiver *rx);
+void rx_set_ts_last(struct receiver *rx, uint64_t ts_last);
+void rx_flush(struct receiver *rx);
+void rx_set_enable(struct receiver *rx, bool enable);
+int rx_get_ssrc(struct receiver *rx, uint32_t *ssrc);
+int rx_debug(struct re_printf *pf, const struct receiver *rx);
