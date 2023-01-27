@@ -1858,7 +1858,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		rx->dec = mem_deref(rx->dec);
 	}
 
-	if (ac->decupdh) {
+	if (ac->decupdh && !rx->dec) {
 		err = ac->decupdh(&rx->dec, ac, params);
 		if (err) {
 			warning("audio: alloc decoder: %m\n", err);
