@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <re.h>
+#include <re_atomic.h>
 #include <baresip.h>
 #include "core.h"
 
@@ -33,17 +34,21 @@ struct sender {
 
 /* Receive */
 struct receiver {
-	struct metric *metric; /**< Metrics for receiving            */
-	struct tmr tmr_rtp;   /**< Timer for detecting RTP timeout  */
-	struct jbuf *jbuf;    /**< Jitter Buffer for incoming RTP   */
-	uint64_t ts_last;     /**< Timestamp of last recv RTP pkt   */
-	uint32_t rtp_timeout; /**< RTP Timeout value in [ms]        */
-	uint32_t ssrc;        /**< Incoming synchronization source  */
-	uint32_t pseq;        /**< Sequence number for incoming RTP */
-	bool ssrc_set;        /**< Incoming SSRC is set             */
-	bool pseq_set;        /**< True if sequence number is set   */
-	bool rtp_estab;       /**< True if RTP stream established   */
-	bool enabled;         /**< True if enabled                  */
+	struct metric *metric;         /**< Metrics for receiving            */
+	struct jbuf *jbuf;             /**< Jitter Buffer for incoming RTP   */
+	RE_ATOMIC bool enabled;        /**< True if enabled                  */
+	RE_ATOMIC uint64_t ts_last;    /**< Timestamp of last recv RTP pkt   */
+	RE_ATOMIC uint32_t ssrc;       /**< Incoming synchronization source  */
+	RE_ATOMIC bool ssrc_set;       /**< Incoming SSRC is set             */
+	uint32_t pseq;                 /**< Sequence number for incoming RTP */
+	bool pseq_set;                 /**< True if sequence number is set   */
+	bool rtp_estab;                /**< True if RTP stream established   */
+};
+
+
+struct rxmain {
+	struct tmr tmr_rtp;    /**< Timer for detecting RTP timeout  */
+	uint32_t rtp_timeout;  /**< RTP Timeout value in [ms]        */
 };
 
 
@@ -91,6 +96,7 @@ struct stream {
 	struct sender tx;
 
 	struct receiver rx;
+	struct rxmain rxm;
 };
 
 
@@ -142,7 +148,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->tx.metric);
 	mem_deref(s->rx.metric);
 
-	tmr_cancel(&s->rx.tmr_rtp);
+	tmr_cancel(&s->rxm.tmr_rtp);
 	tmr_cancel(&s->tmr_natph);
 	list_unlink(&s->le);
 	mem_deref(s->sdp);
@@ -181,16 +187,18 @@ static void send_set_raddr(struct stream *strm, const struct sa *raddr)
 
 static void recv_set_ssrc(struct receiver *rx, uint32_t ssrc)
 {
-	if (rx->ssrc_set) {
-		if (ssrc != rx->ssrc)
+	if (re_atomic_rlx(&rx->ssrc_set)) {
+		uint32_t ssrc0 = re_atomic_rlx(&rx->ssrc);
+		if (ssrc != ssrc0) {
 			info("stream: receive: SSRC changed: %x -> %x\n",
-			     rx->ssrc, ssrc);
-		rx->ssrc = ssrc;
+			     ssrc0, ssrc);
+			re_atomic_rlx_set(&rx->ssrc, ssrc);
+		}
 	}
 	else {
 		info("stream: receive: setting SSRC: %x\n", ssrc);
-		rx->ssrc = ssrc;
-		rx->ssrc_set = true;
+		re_atomic_rlx_set(&rx->ssrc, ssrc);
+		re_atomic_rlx_set(&rx->ssrc_set, true);
 	}
 }
 
@@ -221,15 +229,17 @@ static void check_rtp_handler(void *arg)
 {
 	struct stream *strm = arg;
 	const uint64_t now = tmr_jiffies();
+	uint64_t ts_last;
 	int diff_ms;
 
 	MAGIC_CHECK(strm);
 
-	tmr_start(&strm->rx.tmr_rtp, RTP_CHECK_INTERVAL,
+	tmr_start(&strm->rxm.tmr_rtp, RTP_CHECK_INTERVAL,
 		  check_rtp_handler, strm);
 
 	/* If no RTP was received at all, check later */
-	if (!strm->rx.ts_last)
+	ts_last = re_atomic_rlx(&strm->rx.ts_last);
+	if (!ts_last)
 		return;
 
 	/* We are in sendrecv mode, check when the last RTP packet
@@ -237,18 +247,18 @@ static void check_rtp_handler(void *arg)
 	 */
 	if (sdp_media_dir(strm->sdp) == SDP_SENDRECV) {
 
-		diff_ms = (int)(now - strm->rx.ts_last);
+		diff_ms = (int)(now - ts_last);
 
 		debug("stream: last \"%s\" RTP packet: %d milliseconds\n",
 		      sdp_media_name(strm->sdp), diff_ms);
 
 		/* check for large jumps in time */
 		if (diff_ms > (3600 * 1000)) {
-			strm->rx.ts_last = 0;
+			re_atomic_rlx_set(&strm->rx.ts_last, 0);
 			return;
 		}
 
-		if (diff_ms > (int)strm->rx.rtp_timeout) {
+		if (diff_ms > (int)strm->rxm.rtp_timeout) {
 
 			info("stream: no %s RTP packets received for"
 			     " %d milliseconds\n",
@@ -351,13 +361,14 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			struct mbuf *mb, void *arg)
 {
 	struct stream *s = arg;
+	uint32_t ssrc0;
 	bool flush = false;
 	bool first = false;
 	int err;
 
 	MAGIC_CHECK(s);
 
-	if (!s->rx.enabled && s->type == MEDIA_AUDIO)
+	if (!re_atomic_rlx(&s->rx.enabled) && s->type == MEDIA_AUDIO)
 		return;
 
 	if (rtp_pt_is_rtcp(hdr->pt)) {
@@ -366,7 +377,7 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		return;
 	}
 
-	s->rx.ts_last = tmr_jiffies();
+	re_atomic_rlx_set(&s->rx.ts_last, tmr_jiffies());
 
 	if (!(sdp_media_ldir(s->sdp) & SDP_RECVONLY))
 		return;
@@ -383,21 +394,22 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 			s->rtpestabh(s, s->sess_arg);
 	}
 
+	ssrc0 = re_atomic_rlx(&s->rx.ssrc);
 	if (!s->rx.pseq_set) {
-		s->rx.ssrc = hdr->ssrc;
-		s->rx.ssrc_set = true;
+		re_atomic_rlx_set(&s->rx.ssrc, hdr->ssrc);
+		re_atomic_rlx_set(&s->rx.ssrc_set, true);
 		s->rx.pseq = hdr->seq - 1;
 		s->rx.pseq_set = true;
 		first = true;
 	}
-	else if (hdr->ssrc != s->rx.ssrc) {
+	else if (hdr->ssrc != ssrc0) {
 
 		info("stream: %s: SSRC changed 0x%x -> 0x%x"
 		     " (%u bytes from %J)\n",
-		     sdp_media_name(s->sdp), s->rx.ssrc, hdr->ssrc,
+		     sdp_media_name(s->sdp), ssrc0, hdr->ssrc,
 		     mbuf_get_left(mb), src);
 
-		s->rx.ssrc = hdr->ssrc;
+		re_atomic_rlx_set(&s->rx.ssrc, hdr->ssrc);
 		s->rx.pseq = hdr->seq - 1;
 		flush = true;
 	}
@@ -480,7 +492,7 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 
 	MAGIC_CHECK(s);
 
-	s->rx.ts_last = tmr_jiffies();
+	re_atomic_rlx_set(&s->rx.ts_last, tmr_jiffies());
 
 	switch (msg->hdr.pt) {
 
@@ -652,7 +664,7 @@ static int sender_init(struct sender *tx)
 }
 
 
-static int receiver_init(struct receiver *rx)
+static int receiver_init(struct receiver *rx, struct rxmain *rxm)
 {
 	int err;
 
@@ -662,7 +674,7 @@ static int receiver_init(struct receiver *rx)
 
 	err = metric_init(rx->metric);
 
-	tmr_init(&rx->tmr_rtp);
+	tmr_init(&rxm->tmr_rtp);
 
 	rx->pseq = -1;
 
@@ -694,7 +706,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	MAGIC_INIT(s);
 
 	err  = sender_init(&s->tx);
-	err |= receiver_init(&s->rx);
+	err |= receiver_init(&s->rx, &s->rxm);
 	if (err)
 		goto out;
 
@@ -1190,17 +1202,17 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 	if (!sdp_media_has_media(stream_sdpmedia(strm)))
 		return;
 
-	strm->rx.rtp_timeout = timeout_ms;
+	strm->rxm.rtp_timeout = timeout_ms;
 
-	tmr_cancel(&strm->rx.tmr_rtp);
+	tmr_cancel(&strm->rxm.tmr_rtp);
 
 	if (timeout_ms) {
 
 		info("stream: Enable RTP timeout (%u milliseconds)\n",
 		     timeout_ms);
 
-		strm->rx.ts_last = tmr_jiffies();
-		tmr_start(&strm->rx.tmr_rtp, 10, check_rtp_handler, strm);
+		re_atomic_rlx_set(&strm->rx.ts_last, tmr_jiffies());
+		tmr_start(&strm->rxm.tmr_rtp, 10, check_rtp_handler, strm);
 	}
 }
 
@@ -1540,7 +1552,7 @@ int stream_enable(struct stream *strm, bool enable)
 	debug("stream: %s: %s RTP from remote\n", media_name(strm->type),
 			enable ? "enable":"disable");
 
-	strm->rx.enabled = enable;
+	re_atomic_rlx_set(&strm->rx.enabled, enable);
 	return 0;
 }
 
@@ -1661,8 +1673,8 @@ int stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc)
 	if (!strm || !ssrc)
 		return EINVAL;
 
-	if (strm->rx.ssrc_set) {
-		*ssrc = strm->rx.ssrc;
+	if (re_atomic_rlx(&strm->rx.ssrc_set)) {
+		*ssrc = re_atomic_rlx(&strm->rx.ssrc);
 		return 0;
 	}
 	else
@@ -1725,7 +1737,7 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 			  s->menc_secure ? "yes" : "no");
 
 	err |= re_hprintf(pf, " rx.enabled: %s\n",
-			  s->rx.enabled ? "yes" : "no");
+			  re_atomic_rlx(&s->rx.enabled) ? "yes" : "no");
 
 	err |= rtp_debug(pf, s->rtp);
 	err |= jbuf_debug(pf, s->rx.jbuf);
