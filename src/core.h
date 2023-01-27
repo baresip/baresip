@@ -300,7 +300,6 @@ int  stream_resend(struct stream *s, uint16_t seq, bool ext, bool marker,
 
 /* Receive */
 void stream_flush(struct stream *s);
-int  stream_decode(struct stream *s);
 int  stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc);
 
 
