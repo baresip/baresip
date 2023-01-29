@@ -1510,7 +1510,7 @@ static const struct cmd dialcmdv[] = {
  */
 int static_menu_register(void)
 {
-	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	return cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 }
 
 
@@ -1534,7 +1534,7 @@ int dial_menu_register(void)
 
 	if (!cmds_find(baresip_cmd, dialcmdv))
 		return cmd_register(baresip_cmd,
-			dialcmdv, ARRAY_SIZE(dialcmdv));
+			dialcmdv, RE_ARRAY_SIZE(dialcmdv));
 
 	return 0;
 }

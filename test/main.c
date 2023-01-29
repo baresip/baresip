@@ -95,7 +95,7 @@ static int run_tests(void)
 	size_t i;
 	int err;
 
-	for (i=0; i<ARRAY_SIZE(tests); i++) {
+	for (i=0; i<RE_ARRAY_SIZE(tests); i++) {
 
 		re_printf("[ RUN      ] %s\n", tests[i].name);
 
@@ -117,7 +117,7 @@ static void test_listcases(void)
 {
 	size_t i, n;
 
-	n = ARRAY_SIZE(tests);
+	n = RE_ARRAY_SIZE(tests);
 
 	(void)re_printf("\n%zu test cases:\n", n);
 
@@ -136,7 +136,7 @@ static const struct test *find_test(const char *name)
 {
 	size_t i;
 
-	for (i=0; i<ARRAY_SIZE(tests); i++) {
+	for (i=0; i<RE_ARRAY_SIZE(tests); i++) {
 
 		if (0 == str_casecmp(name, tests[i].name))
 			return &tests[i];
@@ -218,11 +218,11 @@ int main(int argc, char *argv[])
 	if (argc >= (optind + 1))
 		ntests = argc - optind;
 	else
-		ntests = ARRAY_SIZE(tests);
+		ntests = RE_ARRAY_SIZE(tests);
 #else
 	(void)argc;
 	(void)argv;
-	ntests = ARRAY_SIZE(tests);
+	ntests = RE_ARRAY_SIZE(tests);
 #endif
 
 	re_printf("running baresip selftest version %s with %zu tests\n",

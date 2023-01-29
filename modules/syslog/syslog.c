@@ -26,7 +26,7 @@ static const int lmap[] = { LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERR };
 
 static void log_handler(uint32_t level, const char *msg)
 {
-	syslog(lmap[MIN(level, ARRAY_SIZE(lmap)-1)], "%s", msg);
+	syslog(lmap[MIN(level, RE_ARRAY_SIZE(lmap)-1)], "%s", msg);
 }
 
 

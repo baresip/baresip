@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
-	for (size_t i=0; i<ARRAY_SIZE(modv); i++) {
+	for (size_t i=0; i<RE_ARRAY_SIZE(modv); i++) {
 
 		err = module_load(modpath, modv[i]);
 		if (err) {

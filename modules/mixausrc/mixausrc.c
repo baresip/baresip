@@ -791,7 +791,7 @@ static int module_init(void)
 	aufilt_register(baresip_aufiltl(), &mixausrc);
 
 	/* register commands */
-	err  = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err  = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 	return err;
 }
 

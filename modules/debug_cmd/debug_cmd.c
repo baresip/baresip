@@ -401,7 +401,7 @@ static int module_init(void)
 	(void)time(&start_time);
 
 	err = cmd_register(baresip_commands(),
-			   debugcmdv, ARRAY_SIZE(debugcmdv));
+			   debugcmdv, RE_ARRAY_SIZE(debugcmdv));
 
 	return err;
 }

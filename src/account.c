@@ -24,7 +24,7 @@ static void destructor(void *arg)
 	list_clear(&acc->vidcodecl);
 	mem_deref(acc->auth_user);
 	mem_deref(acc->auth_pass);
-	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++)
+	for (i=0; i<RE_ARRAY_SIZE(acc->outboundv); i++)
 		mem_deref(acc->outboundv[i]);
 	mem_deref(acc->regq);
 	mem_deref(acc->sipnat);
@@ -384,7 +384,7 @@ static int audio_codecs_decode(struct account *acc, const struct pl *prm)
 			/* NOTE: static list with references to aucodec */
 			list_append(&acc->aucodecl, &acc->acv[i++], ac);
 
-			if (i >= ARRAY_SIZE(acc->acv))
+			if (i >= RE_ARRAY_SIZE(acc->acv))
 				break;
 		}
 	}
@@ -426,7 +426,7 @@ static int video_codecs_decode(struct account *acc, const struct pl *prm)
 						vc);
 
 				acc->videoen = true;
-				if (i >= ARRAY_SIZE(acc->vcv))
+				if (i >= RE_ARRAY_SIZE(acc->vcv))
 					return 0;
 			}
 		}
@@ -490,7 +490,7 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 
 	err |= param_dstr(&acc->regq, &aor->params, "regq");
 
-	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
+	for (i=0; i<RE_ARRAY_SIZE(acc->outboundv); i++) {
 
 		char expr[16] = "outbound";
 
@@ -701,7 +701,7 @@ int account_set_auth_pass(struct account *acc, const char *pass)
  */
 int account_set_outbound(struct account *acc, const char *ob, unsigned ix)
 {
-	if (!acc || ix >= ARRAY_SIZE(acc->outboundv))
+	if (!acc || ix >= RE_ARRAY_SIZE(acc->outboundv))
 		return EINVAL;
 
 	acc->outboundv[ix] = mem_deref(acc->outboundv[ix]);
@@ -1401,7 +1401,7 @@ const char *account_auth_pass(const struct account *acc)
  */
 const char *account_outbound(const struct account *acc, unsigned ix)
 {
-	if (!acc || ix >= ARRAY_SIZE(acc->outboundv))
+	if (!acc || ix >= RE_ARRAY_SIZE(acc->outboundv))
 		return NULL;
 
 	return acc->outboundv[ix];
@@ -1925,7 +1925,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  acc->mencid ? acc->mencid : "none");
 	err |= re_hprintf(pf, " medianat:     %s\n",
 			  acc->mnatid ? acc->mnatid : "none");
-	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
+	for (i=0; i<RE_ARRAY_SIZE(acc->outboundv); i++) {
 		if (acc->outboundv[i]) {
 			err |= re_hprintf(pf, " outbound%d:    %s\n",
 					  i+1, acc->outboundv[i]);
@@ -1997,7 +1997,7 @@ int account_json_api(struct odict *od, struct odict *odcfg,
 	}
 
 	err |= odict_alloc(&obn, 8);
-	for (i=0; i<ARRAY_SIZE(acc->outboundv); i++) {
+	for (i=0; i<RE_ARRAY_SIZE(acc->outboundv); i++) {
 		if (acc->outboundv[i]) {
 			err |= odict_entry_add(obn, "outbound", ODICT_STRING,
 					acc->outboundv[i]);

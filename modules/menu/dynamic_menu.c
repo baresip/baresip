@@ -496,7 +496,7 @@ int dynamic_menu_register(void)
 
 	if (!cmds_find(baresip_cmd, callcmdv))
 		return cmd_register(baresip_cmd,
-			callcmdv, ARRAY_SIZE(callcmdv));
+			callcmdv, RE_ARRAY_SIZE(callcmdv));
 
 	return 0;
 }

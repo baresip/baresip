@@ -89,7 +89,7 @@ static DWORD WINAPI input_thread(LPVOID arg)
 		INPUT_RECORD buf[4];
 		DWORD i, count = 0;
 
-		ReadConsoleInput(st->hstdin, buf, ARRAY_SIZE(buf), &count);
+		ReadConsoleInput(st->hstdin, buf, RE_ARRAY_SIZE(buf), &count);
 
 		for (i=0; i<count; i++) {
 

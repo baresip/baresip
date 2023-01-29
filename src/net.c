@@ -52,10 +52,10 @@ static int net_dns_srv_add(struct network *net, const struct sa *sa,
 	if (!net)
 		return EINVAL;
 
-	if (!fallback && net->nsn >= ARRAY_SIZE(net->nsv))
+	if (!fallback && net->nsn >= RE_ARRAY_SIZE(net->nsv))
 		return E2BIG;
 
-	if (fallback && net->nsnf >= ARRAY_SIZE(net->nsvf))
+	if (fallback && net->nsnf >= RE_ARRAY_SIZE(net->nsvf))
 		return E2BIG;
 
 	if (fallback)
@@ -71,7 +71,7 @@ static int net_dns_srv_get(const struct network *net,
 			   struct sa *srvv, uint32_t *n, bool *from_sys)
 {
 	struct sa nsv[NET_MAX_NS];
-	uint32_t i, nsn = ARRAY_SIZE(nsv);
+	uint32_t i, nsn = RE_ARRAY_SIZE(nsv);
 	uint32_t offset;
 	uint32_t limit = *n;
 	int err;
@@ -137,7 +137,7 @@ void net_dns_refresh(struct network *net)
 	uint32_t nsn;
 	int err;
 
-	nsn = ARRAY_SIZE(nsv);
+	nsn = RE_ARRAY_SIZE(nsv);
 
 	err = net_dns_srv_get(net, nsv, &nsn, NULL);
 	if (err)
@@ -174,7 +174,7 @@ bool net_af_enabled(const struct network *net, int af)
 static int dns_init(struct network *net)
 {
 	struct sa nsv[NET_MAX_NS];
-	uint32_t nsn = ARRAY_SIZE(nsv);
+	uint32_t nsn = RE_ARRAY_SIZE(nsv);
 	int err;
 
 	err = net_dns_srv_get(net, nsv, &nsn, NULL);
@@ -452,7 +452,7 @@ int net_use_nameserver(struct network *net, const struct sa *srvv, size_t srvc)
 	if (!net)
 		return EINVAL;
 
-	net->nsn = (uint32_t)min(ARRAY_SIZE(net->nsv), srvc);
+	net->nsn = (uint32_t)min(RE_ARRAY_SIZE(net->nsv), srvc);
 
 	if (srvv) {
 		for (i=0; i<srvc; i++) {
@@ -578,7 +578,7 @@ int net_flush_addresses(struct network *net)
 int net_dns_debug(struct re_printf *pf, const struct network *net)
 {
 	struct sa nsv[NET_MAX_NS];
-	uint32_t i, nsn = ARRAY_SIZE(nsv);
+	uint32_t i, nsn = RE_ARRAY_SIZE(nsv);
 	bool from_sys = false;
 	int err;
 

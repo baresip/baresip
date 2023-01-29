@@ -60,7 +60,7 @@ int test_stunuri(void)
 	size_t i;
 	int err = 0;
 
-	for (i=0; i<ARRAY_SIZE(testv); i++) {
+	for (i=0; i<RE_ARRAY_SIZE(testv); i++) {
 
 		const struct test *test = &testv[i];
 		struct pl pl;

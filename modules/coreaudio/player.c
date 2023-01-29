@@ -38,7 +38,7 @@ static void auplay_destructor(void *arg)
 		AudioQueuePause(st->queue);
 		AudioQueueStop(st->queue, true);
 
-		for (i=0; i<ARRAY_SIZE(st->buf); i++)
+		for (i=0; i<RE_ARRAY_SIZE(st->buf); i++)
 			if (st->buf[i])
 				AudioQueueFreeBuffer(st->queue, st->buf[i]);
 
@@ -163,7 +163,7 @@ int coreaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	bytc  = sampc * st->sampsz;
 
-	for (i=0; i<ARRAY_SIZE(st->buf); i++)  {
+	for (i=0; i<RE_ARRAY_SIZE(st->buf); i++)  {
 
 		status = AudioQueueAllocateBuffer(st->queue, bytc,
 						  &st->buf[i]);
