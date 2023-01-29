@@ -94,6 +94,9 @@ struct stream {
 };
 
 
+static int stream_decode(struct stream *s);
+
+
 static void print_rtp_stats(const struct stream *s)
 {
 	uint32_t tx_n_packets = metric_n_packets(s->tx.metric);
@@ -433,16 +436,14 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 
 /**
- * Decodes one RTP packet. For audio streams this function is called by the
- * auplay write handler and runs in the auplay thread. For video streams there
- * is only the RTP thread which also does the decoding.
+ * Decodes one RTP packet
  *
  * @param s The stream
  *
  * @return 0 if success, EAGAIN if it should be called again in order to avoid
  * a jitter buffer overflow, otherwise errorcode
  */
-int stream_decode(struct stream *s)
+static int stream_decode(struct stream *s)
 {
 	struct rtp_header hdr;
 	void *mb;
