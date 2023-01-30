@@ -251,7 +251,7 @@ if(WIN32)
   list(APPEND LINKLIBS ws2_32 iphlpapi winmm gdi32 crypt32 strmiids
       ole32 oleaut32 qwave)
 else()
-  list(APPEND LINKLIBS -lm)
+  list(APPEND LINKLIBS -lm ${RESOLV_LIBRARY})
 endif()
 
 if(STATIC)
