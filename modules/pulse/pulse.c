@@ -20,8 +20,7 @@
  *
  * Audio driver module for Pulseaudio
  *
- * This module is experimental and work-in-progress. It is using
- * the pulseaudio async interface.
+ * This module is using the pulseaudio async interface.
  */
 
 enum {
