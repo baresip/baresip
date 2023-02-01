@@ -112,9 +112,9 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 #endif
 		{{1280, 720}, &AVCaptureSessionPreset1280x720}
 	};
-	int i, best = -1;
+	int best = -1;
 
-	for (i=ARRAY_SIZE(mapv)-1; i>=0; i--) {
+	for (int i=RE_ARRAY_SIZE(mapv)-1; i>=0; i--) {
 
 		NSString *preset = *mapv[i].preset;
 
