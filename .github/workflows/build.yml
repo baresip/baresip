@@ -39,6 +39,13 @@ jobs:
       run: |
         sudo sed -i 's/azure\./de\./' /etc/apt/sources.list
 
+    - name: Fix Ubuntu 22.04
+      if: ${{ matrix.os == 'ubuntu-22.04' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get remove libunwind-14 -y
+        sudo apt-get install libunwind-dev libaom-dev libsdl2-dev -y
+
     - name: install packages
       if: ${{ runner.os == 'Linux' }}
       run: |
