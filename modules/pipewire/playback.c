@@ -133,6 +133,7 @@ static void on_process(void *arg)
 	struct auplay_st *st = arg;
 	struct pw_buffer *b;
 	struct spa_buffer *buf;
+	struct spa_data *d;
 	struct auframe af;
 	void *sampv;
 
@@ -141,11 +142,13 @@ static void on_process(void *arg)
 		warning("pipewire: out of buffers (%m)\n", errno);
 
 	buf = b->buffer;
-	sampv = buf->datas[0].data;
-	if (!sampv)
+	d = &buf->datas[0];
+
+	if (!d->data)
 		return;
 
-	if (buf->datas[0].maxsize < st->nbytes) {
+	sampv = d->data;
+	if (d->maxsize < st->nbytes) {
 		warning("pipewire: buffer to small\n");
 		return;
 	}
@@ -155,9 +158,9 @@ static void on_process(void *arg)
 
 	st->wh(&af, st->arg);
 
-	buf->datas[0].chunk->offset = 0;
-	buf->datas[0].chunk->stride = st->stride;
-	buf->datas[0].chunk->size   = auframe_size(&af);
+	d->chunk->offset = 0;
+	d->chunk->stride = st->stride;
+	d->chunk->size   = auframe_size(&af);
 
 	pw_stream_queue_buffer(st->stream, b);
 }
