@@ -58,6 +58,7 @@ int pw_capture_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	struct spa_pod_builder b = SPA_POD_BUILDER_INIT(buffer,
 							sizeof(buffer));
 	const char name[] = "baresip-capture";
+	char nlat[10];
 	int err = 0;
 
 	if (!stp || !as || !prm || !rh)
@@ -81,6 +82,7 @@ int pw_capture_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh   = rh;
 	st->errh = errh;
 	st->arg  = arg;
+	re_snprintf(nlat, sizeof(nlat), "%u/1000", prm->ptime);
 
 	pw_thread_loop_lock (pw_loop_instance());
 	st->stream = pw_stream_new(pw_core_instance(), name,
@@ -88,6 +90,7 @@ int pw_capture_alloc(struct ausrc_st **stp, const struct ausrc *as,
 				     PW_KEY_MEDIA_TYPE, "Audio",
 				     PW_KEY_MEDIA_CATEGORY, "Capture",
 				     PW_KEY_MEDIA_ROLE, "Communication",
+				     PW_KEY_NODE_LATENCY, nlat,
 				     NULL));
 	if (!st->stream) {
 		err = errno;
@@ -135,7 +138,10 @@ static void on_process(void *arg)
 	struct ausrc_st *st = arg;
 	struct pw_buffer *b;
 	struct spa_buffer *buf;
+	struct spa_data *d;
 	struct auframe af;
+	uint32_t offs;
+	uint32_t size;
 
 	void *sampv;
 	size_t sampc;
@@ -145,11 +151,15 @@ static void on_process(void *arg)
 		warning("pipewire: out of buffers (%m)\n", errno);
 
 	buf = b->buffer;
-	sampv = buf->datas[0].data;
-	if (!sampv)
+	d = &buf->datas[0];
+
+	if (!d->data)
 		return;
 
-	sampc = buf->datas[0].chunk->size / st->sampsz;
+	offs  = SPA_MIN(d->chunk->offset, d->maxsize);
+	size  = SPA_MIN(d->chunk->size, d->maxsize - offs);
+	sampv = SPA_PTROFF(d->data, offs, void);
+	sampc = size / st->sampsz;
 
 	auframe_init(&af, st->prm.fmt, sampv, sampc,
 		     st->prm.srate, st->prm.ch);
