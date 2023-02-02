@@ -8,3 +8,7 @@ if(NOT WIN32)
     find_package(PkgConfig)
     pkg_search_module(PIPEWIRE libpipewire-0.3)
 endif()
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(PIPEWIRE DEFAULT_MSG PIPEWIRE_INCLUDE_DIRS
+    PIPEWIRE_LIBRARIES)
