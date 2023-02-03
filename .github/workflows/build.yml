@@ -58,6 +58,7 @@ jobs:
                             libfdk-aac-dev \
                             libglib2.0-dev \
                             libgstreamer1.0-dev \
+                            libgtk-3-dev \
                             libjack-jackd2-dev \
                             libmosquitto-dev \
                             libmpg123-dev \
