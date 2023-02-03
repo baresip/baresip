@@ -90,6 +90,7 @@ int pw_capture_alloc(struct ausrc_st **stp, const struct ausrc *as,
 				     PW_KEY_MEDIA_TYPE, "Audio",
 				     PW_KEY_MEDIA_CATEGORY, "Capture",
 				     PW_KEY_MEDIA_ROLE, "Communication",
+				     PW_KEY_TARGET_OBJECT, dev,
 				     PW_KEY_NODE_LATENCY, nlat,
 				     NULL));
 	if (!st->stream) {
@@ -108,7 +109,7 @@ int pw_capture_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	err = pw_stream_connect(st->stream,
 				PW_DIRECTION_INPUT,
-				PW_ID_ANY,
+				pw_device_id(dev),
 				PW_STREAM_FLAG_AUTOCONNECT |
 				PW_STREAM_FLAG_MAP_BUFFERS |
 				PW_STREAM_FLAG_RT_PROCESS,

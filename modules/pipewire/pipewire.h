@@ -7,6 +7,7 @@
 int aufmt_to_pw_format(enum aufmt fmt);
 struct pw_core *pw_core_instance(void);
 struct pw_thread_loop *pw_loop_instance(void);
+int pw_device_id(const char *node_name);
 
 int pw_playback_alloc(struct auplay_st **stp,
 		      const struct auplay *ap,

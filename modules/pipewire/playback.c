@@ -86,6 +86,7 @@ int pw_playback_alloc(struct auplay_st **stp, const struct auplay *ap,
 				     PW_KEY_MEDIA_TYPE, "Audio",
 				     PW_KEY_MEDIA_CATEGORY, "Playback",
 				     PW_KEY_MEDIA_ROLE, "Communication",
+				     PW_KEY_TARGET_OBJECT, dev,
 				     NULL));
 	if (!st->stream) {
 		err = errno;
@@ -103,7 +104,7 @@ int pw_playback_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	err = pw_stream_connect(st->stream,
 				PW_DIRECTION_OUTPUT,
-				PW_ID_ANY,
+				pw_device_id(dev),
 				PW_STREAM_FLAG_AUTOCONNECT |
 				PW_STREAM_FLAG_MAP_BUFFERS |
 				PW_STREAM_FLAG_RT_PROCESS,
