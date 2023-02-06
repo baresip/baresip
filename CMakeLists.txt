@@ -36,7 +36,6 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 include(GNUInstallDirs)
 include(CheckIncludeFile)
 find_package(RE REQUIRED)
-find_package(REM REQUIRED)
 
 ##############################################################################
 #
@@ -104,7 +103,6 @@ include_directories(
   src
   /usr/local/include
   ${RE_INCLUDE_DIRS}
-  ${REM_INCLUDE_DIRS}
   ${OPENSSL_INCLUDE_DIR}
 )
 
@@ -237,7 +235,7 @@ endif()
 # Main target library
 #
 
-set(LINKLIBS ${REM_LIBRARIES} ${RE_LIBRARIES} Threads::Threads)
+set(LINKLIBS ${RE_LIBRARIES} Threads::Threads)
 
 if(ZLIB_FOUND)
   list(APPEND LINKLIBS ZLIB::ZLIB)
