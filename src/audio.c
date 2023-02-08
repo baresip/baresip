@@ -715,6 +715,20 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 }
 
 
+struct telev_work {
+	struct audio *a;
+	struct mbuf *mb;
+};
+
+
+static void telev_work_destructor(void *arg)
+{
+	struct telev_work *w = arg;
+
+	mem_deref(w->mb);
+}
+
+
 static void handle_telev(struct audio *a, struct mbuf *mb)
 {
 	int event, digit;
@@ -726,6 +740,20 @@ static void handle_telev(struct audio *a, struct mbuf *mb)
 	digit = telev_code2digit(event);
 	if (digit >= 0 && a->eventh)
 		a->eventh(digit, end, a->arg);
+}
+
+
+/**
+ * Runs in the main thread
+ */
+static void async_telev_event(int err, void *arg)
+{
+	struct telev_work *w = arg;
+	(void) err;
+
+	handle_telev(w->a, w->mb);
+
+	mem_deref(w);
 }
 
 
@@ -751,7 +779,11 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 
 	/* Telephone event? */
 	if (lc && !str_casecmp(lc->name, "telephone-event")) {
-		handle_telev(a, mb);
+		struct telev_work *w = mem_zalloc(sizeof(*w),
+						  telev_work_destructor);
+		w->a  = a;
+		w->mb = mbuf_dup(mb);
+		re_thread_async(NULL, async_telev_event, w);
 		return ENODATA;
 	}
 
