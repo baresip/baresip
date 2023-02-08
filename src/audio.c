@@ -783,7 +783,7 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 						  telev_work_destructor);
 		w->a  = a;
 		w->mb = mbuf_dup(mb);
-		re_thread_async(NULL, async_telev_event, w);
+		re_thread_async_main(NULL, async_telev_event, w);
 		return ENODATA;
 	}
 
