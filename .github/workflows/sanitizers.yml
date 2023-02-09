@@ -19,6 +19,7 @@ jobs:
     env:
       CC: clang
       CMAKE_GENERATOR: Ninja
+      CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }}"
       CFLAGS: "-fsanitize=${{ matrix.sanitizer }}"
       ASAN_OPTIONS: fast_unwind_on_malloc=0
 
