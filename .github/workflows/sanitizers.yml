@@ -1,0 +1,66 @@
+name: Sanitizers
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  sanitizers:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        sanitizer: [thread, address]
+
+    env:
+      CC: clang
+      CMAKE_GENERATOR: Ninja
+      CFLAGS: "-fsanitize=${{ matrix.sanitizer }}"
+      ASAN_OPTIONS: fast_unwind_on_malloc=0
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: fix flaky azure mirrors
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo sed -i 's/azure\./de\./' /etc/apt/sources.list
+    
+    - name: install packages
+      run: |
+        sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
+   
+    - uses: sreimers/pr-dependency-action@v0.5
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: sreimers/pr-dependency-action@v0.5
+      with:
+        name: rem
+        repo: https://github.com/baresip/rem
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: make re/rem
+      run: |
+        for p in re rem; do
+          cmake -S $p -B $p/build -DHAVE_THREADS=
+          cmake --build $p/build -j
+        done
+        for p in re rem; do
+          mv $p ../.
+        done
+    
+    - name: ldconfig
+      run: sudo ldconfig
+
+    - name: make baresip selftest
+      run: cmake -B build -DHAVE_THREADS= -DSTATIC=1 -DMODULES="g711;ausine;fakevideo;auconv;dtls_srtp;srtp;aufile" && cmake --build build -j
+
+    - name: run selftest
+      run: ./build/test/selftest
