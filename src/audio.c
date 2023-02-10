@@ -757,6 +757,32 @@ static void async_telev_event(int err, void *arg)
 }
 
 
+struct decoder_set_work {
+	struct audio *a;
+	int pt;
+};
+
+
+/**
+ * Runs in the main thread
+ */
+static void async_decoder_set(int err, void *arg)
+{
+	struct decoder_set_work *w = arg;
+	const struct sdp_format *lc;
+	(void) err;
+
+	lc = sdp_media_lformat(stream_sdpmedia(w->a->strm), w->pt);
+	if (!lc)
+		return;
+
+	info("Audio decoder changed payload %d -> %u\n", w->a->rx.pt, w->pt);
+	(void)audio_decoder_set(w->a, lc->data, w->pt, lc->params);
+
+	mem_deref(w);
+}
+
+
 static bool audio_is_telev(struct audio *a, int pt)
 {
 	const struct sdp_format *lc;
@@ -787,14 +813,16 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 		return ENODATA;
 	}
 
-	if (!lc)
-		return ENOENT;
+	if (lc) {
+		struct decoder_set_work *w = mem_zalloc(sizeof(*w), NULL);
+		w->a  = a;
+		w->pt = pt;
+		re_thread_async_main(NULL, async_decoder_set, w);
 
-	if (rx->pt != -1)
-		info("Audio decoder changed payload %d -> %u\n", rx->pt, pt);
+		return 0;
+	}
 
-	a->rx.pt = pt;
-	return audio_decoder_set(a, lc->data, lc->pt, lc->params);
+	return ENOENT;
 }
 
 
