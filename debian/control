@@ -8,7 +8,7 @@ Homepage: https://github.com/baresip/baresip
 
 Package: baresip
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libbaresip (>= 2.8.0)
+Depends: ${shlibs:Depends}, ${misc:Depends}, libbaresip (>= 2.11.0)
 Description: Modular SIP User-Agent with audio and video support
  Design goals:
  .
@@ -17,12 +17,12 @@ Description: Modular SIP User-Agent with audio and video support
   IPv4 and IPv6 support
   RFC compliant
   Robust, fast, low footprint
-  Portable C89 and C99 source code
+  Portable C99 and C11 source code
 
 Package: libbaresip
 Architecture: any
 Section: libs
-Depends: ${shlibs:Depends}, ${misc:Depends}, librem (>= 2.8.0), libre (>= 2.8.0)
+Depends: ${shlibs:Depends}, ${misc:Depends}, libre (>= 2.11.0)
 Description: Baresip library
 
 Package: libbaresip-dev
