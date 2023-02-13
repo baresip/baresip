@@ -20,6 +20,8 @@ struct reg {
 	uint16_t scode;              /**< Registration status code           */
 	char *srv;                   /**< SIP Server id                      */
 	int af;                      /**< Cached address family for SIP conn */
+
+	struct list custom_hdrs;     /**< List of custom headers if any      */
 };
 
 
@@ -30,6 +32,8 @@ static void destructor(void *arg)
 	list_unlink(&reg->le);
 	mem_deref(reg->sipreg);
 	mem_deref(reg->srv);
+
+	list_flush(&reg->custom_hdrs);
 }
 
 
@@ -188,6 +192,33 @@ int reg_add(struct list *lst, struct ua *ua, int regid)
 	list_append(lst, &reg->le, reg);
 
 	return 0;
+}
+
+
+void reg_set_custom_hdrs(struct reg *reg, const struct list *hdrs)
+{
+	struct le *le;
+
+	if (!reg)
+		return;
+
+	list_flush(&reg->custom_hdrs);
+
+	LIST_FOREACH(hdrs, le) {
+		struct sip_hdr *hdr = le->data;
+		char *buf = NULL;
+
+		if (re_sdprintf(&buf, "%r", &hdr->name))
+			return;
+
+		if (custom_hdrs_add(&reg->custom_hdrs, buf,
+				    "%r", &hdr->val)) {
+			mem_deref(buf);
+			return;
+		}
+
+		mem_deref(buf);
+	}
 }
 
 
