@@ -458,18 +458,19 @@ void mediatrack_sdp_attr_decode(struct media_track *media);
  * Stream receiver
  */
 int rx_alloc(struct receiver **rxp,
+	     struct stream *strm,
+	     struct rtp_sock *rtp,
 	     const char *name,
-	     enum media_type type,
 	     const struct config_avt *cfg,
 	     stream_rtp_h *rtph,
 	     stream_pt_h *pth, void *arg);
-void rx_set_handlers(struct receiver *rx, struct stream *strm,
+void rx_set_handlers(struct receiver *rx,
 		     stream_rtpestab_h *rtpestabh, void *arg);
 struct metric *rx_metric(struct receiver *rx);
 struct jbuf *rx_jbuf(struct receiver *rx);
-int rx_receive(struct receiver *rx, const struct sa *src,
-	       const struct rtp_header *hdr, struct mbuf *mb);
-void rx_handle_rtcp(struct receiver *rx, struct rtcp_msg *msg);
+void rx_receive(const struct sa *src, const struct rtp_header *hdr,
+	       struct mbuf *mb, void *arg);
+void rx_handle_rtcp(const struct sa *src, struct rtcp_msg *msg, void *arg);
 void rx_set_ssrc(struct receiver *rx, uint32_t ssrc);
 uint64_t rx_ts_last(struct receiver *rx);
 void rx_set_ts_last(struct receiver *rx, uint64_t ts_last);

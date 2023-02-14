@@ -1159,6 +1159,11 @@ int video_alloc(struct video **vp, struct list *streaml,
 		}
 	}
 
+	if (err)
+		goto out;
+
+	stream_enable(v->strm, true);
+
  out:
 	if (err)
 		mem_deref(v);

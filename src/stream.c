@@ -286,36 +286,6 @@ static void check_rtp_handler(void *arg)
 }
 
 
-/**
- * TODO: run in RX thread
- */
-static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
-			struct mbuf *mb, void *arg)
-{
-	struct stream *s = arg;
-	MAGIC_CHECK(s);
-
-	if (!(sdp_media_ldir(s->sdp) & SDP_RECVONLY))
-		return;
-
-	rx_receive(s->rx, src, hdr, mb);
-}
-
-
-/**
- * TODO: runs in RX thread
- */
-static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
-{
-	struct stream *s = arg;
-	(void)src;
-
-	MAGIC_CHECK(s);
-
-	(void) rx_handle_rtcp(s->rx, msg);
-}
-
-
 void stream_process_rtcp(struct stream *strm, struct rtcp_msg *msg)
 {
 
@@ -349,7 +319,7 @@ static int stream_sock_alloc(struct stream *s, int af)
 
 	err = rtp_listen(&s->rtp, IPPROTO_UDP, &laddr,
 			 s->cfg.rtp_ports.min, s->cfg.rtp_ports.max,
-			 true, rtp_handler, rtcp_handler, s);
+			 true, rx_receive, rx_handle_rtcp, s);
 	if (err) {
 		warning("stream: rtp_listen failed: af=%s ports=%u-%u"
 			" (%m)\n", net_af2name(af),
@@ -540,7 +510,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	tmr_init(&s->tmr_natph);
 
 	if (prm->use_rtp) {
-		err = rx_alloc(&s->rx, media_name(type), type, cfg,
+		err = rx_alloc(&s->rx, s, s->rtp, media_name(type), cfg,
 			       rtph, pth, arg);
 		if (err) {
 			warning("stream: failed to create receiver"
@@ -550,7 +520,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		}
 
 		tmr_init(&s->rxm.tmr_rtp);
-		/*TODO: alloc socket in RX thread */
 		err = stream_sock_alloc(s, prm->af);
 		if (err) {
 			warning("stream: failed to create socket"
@@ -881,6 +850,7 @@ int stream_update(struct stream *s)
 	fmt = sdp_media_rformat(s->sdp, NULL);
 
 	s->tx.pt_enc = fmt ? fmt->pt : -1;
+	stream_enable(s, sdp_media_ldir(s->sdp) & SDP_RECVONLY);
 
 	if (sdp_media_has_media(s->sdp)) {
 
@@ -1055,7 +1025,7 @@ void stream_set_session_handlers(struct stream *strm,
 	strm->errorh     = errorh;
 	strm->sess_arg   = arg;
 
-	rx_set_handlers(strm->rx, strm, rtpestabh, arg);
+	rx_set_handlers(strm->rx, rtpestabh, arg);
 }
 
 

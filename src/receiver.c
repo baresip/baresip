@@ -9,11 +9,16 @@
 #include <baresip.h>
 #include "core.h"
 
+/** Magic number */
+#define MAGIC 0x00511eb3
+#include "magic.h"
 
 /* Receive */
 struct receiver {
+#ifndef RELEASE
+	uint32_t magic;                /**< Magic number for debugging       */
+#endif
 	/* Data protected by mtx */
-	enum media_type type;          /**< Media type                       */
 	char *name;                    /**< Media name                       */
 	struct metric *metric;         /**< Metrics for receiving            */
 	struct jbuf *jbuf;             /**< Jitter Buffer for incoming RTP   */
@@ -24,15 +29,19 @@ struct receiver {
 	uint32_t pseq;                 /**< Sequence number for incoming RTP */
 	bool pseq_set;                 /**< True if sequence number is set   */
 	bool rtp_estab;                /**< True if RTP stream established   */
+	bool stop;                     /**< Flag for stopping RX thread      */
 	mtx_t *mtx;                    /**< Mutex protects above fields      */
 
 	/* Unprotected data */
 	struct stream *strm;           /**< Stream                           */
+	struct rtp_sock *rtp;          /**< RTP Socket                       */
 	stream_pt_h *pth;              /**< Stream payload type handler      */
 	stream_rtp_h *rtph;            /**< Stream RTP handler               */
 	stream_rtpestab_h *rtpestabh;  /**< RTP established handler          */
 	void *arg;                     /**< Stream argument                  */
 	void *sessarg;                 /**< Session argument                 */
+	thrd_t thr;                   /**< RX thread                        */
+	struct tmr tmr;                /**< Timer for stopping RX thread     */
 };
 
 
@@ -40,6 +49,10 @@ static void destructor(void *arg)
 {
 	struct receiver *rx = arg;
 
+	mtx_lock(rx->mtx);
+	rx->stop = true;
+	mtx_unlock(rx->mtx);
+	thrd_join(rx->thr, NULL);
 	mem_deref(rx->metric);
 	mem_deref(rx->name);
 	mem_deref(rx->mtx);
@@ -47,12 +60,48 @@ static void destructor(void *arg)
 }
 
 
+static void rx_check_stop(void *arg)
+{
+	struct receiver *rx = arg;
+	if (rx->stop)
+		re_cancel();
+	else
+		tmr_start(&rx->tmr, 10, rx_check_stop, rx);
+}
+
+
+static int rx_thread(void *arg)
+{
+	struct receiver *rx = arg;
+	int err;
+
+	re_thread_init();
+
+	tmr_start(&rx->tmr, 10, rx_check_stop, rx);
+
+	err = udp_thread_attach(rtp_sock(rx->rtp));
+	if (err)
+		return err;
+
+	err = udp_thread_attach(rtcp_sock(rx->rtp));
+	if (err)
+		return err;
+
+	err = re_main(NULL);
+	/*TODO: re_cancel in timer? */
+
+	re_thread_close();
+	return err;
+}
+
+
 int rx_alloc(struct receiver **rxp,
-	    const char *name,
-	    enum media_type type,
-	    const struct config_avt *cfg,
-	    stream_rtp_h *rtph,
-	    stream_pt_h *pth, void *arg)
+	     struct stream *strm,
+	     struct rtp_sock *rtp,
+	     const char *name,
+	     const struct config_avt *cfg,
+	     stream_rtp_h *rtph,
+	     stream_pt_h *pth, void *arg)
 {
 	struct receiver *rx;
 	int err;
@@ -64,7 +113,8 @@ int rx_alloc(struct receiver **rxp,
 	if (!rx)
 		return ENOMEM;
 
-	rx->type  = type;
+	rx->strm  = strm;
+	rx->rtp   = rtp;
 	rx->rtph  = rtph;
 	rx->pth   = pth;
 	rx->arg   = arg;
@@ -96,6 +146,9 @@ int rx_alloc(struct receiver **rxp,
 	else
 		err |= metric_init(rx->metric);
 
+	err |= thread_create_name(&rx->thr,
+				 "RX thread",
+				 rx_thread, rx);
 	if (err)
 		mem_deref(rx);
 	else
@@ -105,14 +158,13 @@ int rx_alloc(struct receiver **rxp,
 }
 
 
-void rx_set_handlers(struct receiver *rx, struct stream *strm,
+void rx_set_handlers(struct receiver *rx,
 		     stream_rtpestab_h *rtpestabh, void *arg)
 {
 	if (!rx)
 		return;
 
 	mtx_lock(rx->mtx);
-	rx->strm          = strm;
 	rx->rtpestabh     = rtpestabh;
 	rx->sessarg       = arg;
 	mtx_unlock(rx->mtx);
@@ -245,19 +297,21 @@ static int decode_frame(struct receiver *rx)
 }
 
 
-int rx_receive(struct receiver *rx, const struct sa *src,
-		const struct rtp_header *hdr, struct mbuf *mb)
+void rx_receive(const struct sa *src, const struct rtp_header *hdr,
+	       struct mbuf *mb, void *arg)
 {
+	struct receiver *rx = arg;
 	uint32_t ssrc0;
 	bool flush = false;
 	bool first = false;
 	int err = 0;
 
+	MAGIC_CHECK(rx);
 	if (!rx)
-		return EINVAL;
+		return;
 
 	mtx_lock(rx->mtx);
-	if (!rx->enabled && rx->type == MEDIA_AUDIO)
+	if (!rx->enabled)
 		goto unlock;
 
 	if (rtp_pt_is_rtcp(hdr->pt)) {
@@ -272,13 +326,13 @@ int rx_receive(struct receiver *rx, const struct sa *src,
 	metric_add_packet(rx->metric, mbuf_get_left(mb));
 
 	if (!rx->rtp_estab) {
-		debug("stream: incoming rtp for '%s' established, "
-		     "receiving from %J\n", rx->name, src);
-		rx->rtp_estab = true;
-
-		/*TODO: pass to main thread */
-		if (rx->rtpestabh)
+		if (rx->rtpestabh) {
+			debug("stream: incoming rtp for '%s' established, "
+			      "receiving from %J\n", rx->name, src);
+			rx->rtp_estab = true;
+			/*TODO: pass to main thread */
 			rx->rtpestabh(rx->strm, rx->sessarg);
+		}
 	}
 
 	ssrc0 = rx->ssrc;
@@ -337,18 +391,19 @@ int rx_receive(struct receiver *rx, const struct sa *src,
 	}
 
 out:
-	return err;
+	return;
 
 unlock:
 	mtx_unlock(rx->mtx);
-	return err;
 }
 
 
-void rx_handle_rtcp(struct receiver *rx, struct rtcp_msg *msg)
+void rx_handle_rtcp(const struct sa *src, struct rtcp_msg *msg, void *arg)
 {
-	if (!rx)
-		return;
+	struct receiver *rx = arg;
+	(void)src;
+
+	MAGIC_CHECK(rx);
 
 	mtx_lock(rx->mtx);
 	rx->ts_last = tmr_jiffies();
