@@ -208,9 +208,7 @@ static void call_stream_start(struct call *call, bool active)
 	}
 
 	FOREACH_STREAM {
-		struct stream *s = le->data;
-		bool rx = sdp_media_ldir(stream_sdpmedia(s)) & SDP_RECVONLY;
-		stream_enable(le->data, rx);
+		stream_enable(le->data, true);
 	}
 }
 

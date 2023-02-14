@@ -88,7 +88,6 @@ static int rx_thread(void *arg)
 		return err;
 
 	err = re_main(NULL);
-	/*TODO: re_cancel in timer? */
 
 	re_thread_close();
 	return err;

@@ -196,6 +196,9 @@ int stream_enable_tx(struct stream *strm, bool enable)
 		return EINVAL;
 
 	if (!enable) {
+		debug("stream: disable %s RTP sender\n",
+		      media_name(strm->type));
+
 		re_atomic_rls_set(&strm->tx.enabled, false);
 		return 0;
 	}
@@ -212,8 +215,39 @@ int stream_enable_tx(struct stream *strm, bool enable)
 	if (sdp_media_ldir(strm->sdp) == SDP_INACTIVE)
 		return ENOTSUP;
 
+	debug("stream: enable %s RTP sender\n", media_name(strm->type));
 	re_atomic_rls_set(&strm->tx.enabled, true);
 
+	return 0;
+}
+
+
+/**
+ * Enable RX stream
+ *
+ * @param strm   Stream object
+ * @param enable True to enable, false to disable
+ *
+ * @return 0 if success and otherwise errorcode
+ */
+int stream_enable_rx(struct stream *strm, bool enable)
+{
+	if (!strm)
+		return EINVAL;
+
+	if (!enable) {
+		debug("stream: disable %s RTP receiver\n",
+		      media_name(strm->type));
+
+		rx_set_enable(strm->rx, false);
+		return 0;
+	}
+
+	if (!(sdp_media_dir(strm->sdp) & SDP_RECVONLY))
+		return ENOTSUP;
+
+	debug("stream: enable %s RTP receiver\n", media_name(strm->type));
+	rx_set_enable(strm->rx, true);
 	return 0;
 }
 
@@ -223,7 +257,7 @@ static void stream_close(struct stream *strm, int err)
 	stream_error_h *errorh = strm->errorh;
 
 	strm->terminated = true;
-	stream_enable_tx(strm, false);
+	stream_enable(strm, false);
 	strm->errorh = NULL;
 
 	if (errorh)
@@ -844,13 +878,12 @@ int stream_update(struct stream *s)
 
 	info("stream: update '%s'\n", media_name(s->type));
 
-	/* disable tx stream for updates */
-	stream_enable_tx(s, false);
+	/* disable rx/tx stream for updates */
+	stream_enable(s, false);
 
 	fmt = sdp_media_rformat(s->sdp, NULL);
 
 	s->tx.pt_enc = fmt ? fmt->pt : -1;
-	stream_enable(s, sdp_media_ldir(s->sdp) & SDP_RECVONLY);
 
 	if (sdp_media_has_media(s->sdp)) {
 
@@ -877,7 +910,7 @@ int stream_update(struct stream *s)
 		}
 	}
 
-	stream_enable_tx(s, true);
+	stream_enable(s, true);
 
 	return 0;
 }
@@ -1336,10 +1369,7 @@ int stream_enable(struct stream *strm, bool enable)
 	if (!strm)
 		return EINVAL;
 
-	debug("stream: %s: %s RTP from remote\n", media_name(strm->type),
-			enable ? "enable":"disable");
-
-	rx_set_enable(strm->rx, enable);
+	stream_enable_rx(strm, enable);
 	stream_enable_tx(strm, enable);
 	return 0;
 }
