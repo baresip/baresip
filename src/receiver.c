@@ -118,6 +118,7 @@ int rx_alloc(struct receiver **rxp,
 	if (!rx)
 		return ENOMEM;
 
+	MAGIC_INIT(rx);
 	rx->strm  = strm;
 	rx->rtp   = rtp;
 	rx->rtph  = rtph;
