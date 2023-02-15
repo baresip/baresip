@@ -172,8 +172,13 @@ int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp)
 	err = thread_create_name(&rx->thr,
 				 "RX thread",
 				 rx_thread, rx);
-	if (err)
+	if (err) {
 		rx->run = false;
+	}
+	else {
+		udp_thread_detach(rtp_sock(rx->rtp));
+		udp_thread_detach(rtcp_sock(rx->rtp));
+	}
 
 	return err;
 }
