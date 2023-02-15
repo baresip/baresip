@@ -1415,7 +1415,7 @@ struct stream_param {
 typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
 typedef void (stream_rtpestab_h)(struct stream *strm, void *arg);
 typedef void (stream_rtcp_h)(struct stream *strm,
-			     struct rtcp_msg *msg, void *arg);
+			     const struct rtcp_msg *msg, void *arg);
 typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
 int stream_update(struct stream *s);

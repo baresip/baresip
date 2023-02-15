@@ -889,7 +889,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 }
 
 
-static void rtcp_nack_handler(struct vtx *vtx, struct rtcp_msg *msg)
+static void rtcp_nack_handler(struct vtx *vtx, const struct rtcp_msg *msg)
 {
 	uint16_t nack_pid;
 	uint16_t nack_blp;
@@ -939,7 +939,8 @@ static void rtcp_nack_handler(struct vtx *vtx, struct rtcp_msg *msg)
 }
 
 
-static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
+static void rtcp_handler(struct stream *strm, const struct rtcp_msg *msg,
+			 void *arg)
 {
 	struct video *v = arg;
 	struct vtx *vtx = &v->vtx;
