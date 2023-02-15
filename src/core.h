@@ -317,7 +317,7 @@ void stream_enable_bundle(struct stream *strm, enum bundle_state st);
 void stream_enable_natpinhole(struct stream *strm, bool enable);
 void stream_open_natpinhole(struct stream *strm);
 void stream_stop_natpinhole(struct stream *strm);
-void stream_process_rtcp(struct stream *strm, struct rtcp_msg *msg);
+void stream_process_rtcp(struct stream *strm, const struct rtcp_msg *msg);
 
 
 /*

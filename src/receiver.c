@@ -42,12 +42,94 @@ struct receiver {
 	void *sessarg;                 /**< Session argument                 */
 	thrd_t thr;                    /**< RX thread                        */
 	struct tmr tmr;                /**< Timer for stopping RX thread     */
+	int pt;                        /**< Previous payload type            */
 };
+
+
+enum work_type {
+	WORK_RTCP,
+	WORK_RTPESTAB,
+	WORK_PTCHANGED,
+};
+
+
+struct work {
+	enum work_type type;
+	struct receiver *rx;
+	union {
+		struct rtcp_msg *rtcp;
+		struct {
+			uint8_t pt;
+			struct mbuf *mb;
+		} pt;
+	} u;
+};
+
+
+static void async_work_main(int err, void *arg);
+static void work_destructor(void *arg);
 
 
 /*
  * functions that run in RX thread (if "rxmode thread" is configured)
  */
+
+
+static void pass_rtcp_work(struct receiver *rx, const struct rtcp_msg *msg)
+{
+	struct work *w;
+	int err;
+
+	if (!rx->run) {
+		stream_process_rtcp(rx->strm, msg);
+		return;
+	}
+
+	w = mem_zalloc(sizeof(*w), work_destructor);
+	w->type    = WORK_RTCP;
+	w->rx      = rx;
+	mbuf_set_pos(msg->mb, 0);
+	err = rtcp_decode(&w->u.rtcp, msg->mb);
+	mbuf_skip_to_end(msg->mb);
+	if (err)
+		mem_deref(w);
+	else
+		re_thread_async_main(NULL, async_work_main, w);
+}
+
+
+static int pass_pt_work(struct receiver *rx, uint8_t pt, struct mbuf *mb)
+{
+	struct work *w;
+
+	if (!rx->run)
+		return rx->pth(pt, mb, rx->arg);
+
+	w = mem_zalloc(sizeof(*w), work_destructor);
+	w->type    = WORK_PTCHANGED;
+	w->rx      = rx;
+	w->u.pt.pt = pt;
+	w->u.pt.mb = mbuf_dup(mb);
+
+	return re_thread_async_main(NULL, async_work_main, w);
+}
+
+
+static void pass_rtpestab_work(struct receiver *rx)
+{
+	struct work *w;
+
+	if (!rx->run) {
+		rx->rtpestabh(rx->strm, rx->sessarg);
+		return;
+	}
+
+	w = mem_zalloc(sizeof(*w), work_destructor);
+	w->type = WORK_RTPESTAB;
+	w->rx   = rx;
+
+	re_thread_async_main(NULL, async_work_main, w);
+}
 
 
 static void rx_check_stop(void *arg)
@@ -237,8 +319,7 @@ void rx_receive(const struct sa *src, const struct rtp_header *hdr,
 			debug("stream: incoming rtp for '%s' established, "
 			      "receiving from %J\n", rx->name, src);
 			rx->rtp_estab = true;
-			/*TODO: pass to main thread */
-			rx->rtpestabh(rx->strm, rx->sessarg);
+			pass_rtpestab_work(rx);
 		}
 	}
 
@@ -264,10 +345,13 @@ void rx_receive(const struct sa *src, const struct rtp_header *hdr,
 	mtx_unlock(rx->mtx);
 
 	/* payload-type changed? */
-	/*TODO: pass to main thread */
-	err = rx->pth(hdr->pt, mb, rx->arg);
-	if (err && err != ENODATA)
-		goto out;
+	if (hdr->pt != rx->pt) {
+		rx->pt = hdr->pt;
+
+		err = pass_pt_work(rx, hdr->pt, mb);
+		if (err && err != ENODATA)
+			goto out;
+	}
 
 	if (rx->jbuf) {
 
@@ -316,8 +400,7 @@ void rx_handle_rtcp(const struct sa *src, struct rtcp_msg *msg, void *arg)
 	rx->ts_last = tmr_jiffies();
 	mtx_unlock(rx->mtx);
 
-	/*TODO: process the rest in main thread */
-	stream_process_rtcp(rx->strm, msg);
+	pass_rtcp_work(rx, msg);
 }
 
 
@@ -467,11 +550,12 @@ int rx_alloc(struct receiver **rxp,
 		return ENOMEM;
 
 	MAGIC_INIT(rx);
-	rx->strm  = strm;
-	rx->rtph  = rtph;
-	rx->pth   = pth;
-	rx->arg   = arg;
-	rx->pseq  = -1;
+	rx->strm   = strm;
+	rx->rtph   = rtph;
+	rx->pth    = pth;
+	rx->arg    = arg;
+	rx->pseq   = -1;
+	rx->pt     = -1;
 	err  = str_dup(&rx->name, name);
 	err |= mutex_alloc(&rx->mtx);
 
@@ -550,4 +634,45 @@ struct metric *rx_metric(struct receiver *rx)
 {
 	/* it is allowed to return metric because it is thread safe */
 	return rx->metric;
+}
+
+
+static void work_destructor(void *arg)
+{
+	struct work *w = arg;
+
+	switch (w->type) {
+		case WORK_RTCP:
+			mem_deref(w->u.rtcp);
+			break;
+		case WORK_PTCHANGED:
+			mem_deref(w->u.pt.mb);
+			break;
+		default:
+			break;
+	}
+}
+
+
+static void async_work_main(int err, void *arg)
+{
+	struct work *w = arg;
+	struct receiver *rx = w->rx;
+	(void)err;
+
+	switch (w->type) {
+		case WORK_RTCP:
+			stream_process_rtcp(rx->strm, w->u.rtcp);
+			break;
+		case WORK_PTCHANGED:
+			rx->pth(w->u.pt.pt, w->u.pt.mb, rx->arg);
+			break;
+		case WORK_RTPESTAB:
+			rx->rtpestabh(rx->strm, rx->sessarg);
+			break;
+		default:
+			break;
+	}
+
+	mem_deref(w);
 }
