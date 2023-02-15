@@ -98,7 +98,8 @@ static struct config core_config = {
 		},
 		false,
 		0,
-		false
+		false,
+		RX_MODE_DEFAULT,
 	},
 
 	/* Network */
@@ -313,6 +314,7 @@ static const char *net_af_str(int af)
 int config_parse_conf(struct config *cfg, const struct conf *conf)
 {
 	struct vidsz size = {0, 0};
+	struct pl rxmode;
 	struct pl txmode;
 	struct pl jbtype;
 	struct pl tr;
@@ -470,6 +472,14 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
 
 	(void)conf_get_bool(conf, "avt_bundle", &cfg->avt.bundle);
+	if (0 == conf_get(conf, "rxmode", &rxmode)) {
+
+		if (0 == pl_strcasecmp(&rxmode, "thread"))
+			cfg->avt.rxmode = RX_MODE_THREAD;
+		else {
+			warning("unsupported rxmode (%r)\n", &rxmode);
+		}
+	}
 
 	if (err) {
 		warning("config: configure parse error (%m)\n", err);

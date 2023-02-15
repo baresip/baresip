@@ -1,0 +1,27 @@
+digraph "audio RX"
+{
+	node [shape="box"]
+	rankdir="LR"
+
+	subgraph cluster_thread1 {
+		color=lightgrey;
+		label = "Main Thread";
+		subgraph cluster_stream {
+			label = "stream";
+			socket -> jbuf;
+		}
+		subgraph cluster_audio1 {
+			label = "audio";
+			jbuf -> decoder -> filter -> aubuf;
+		}
+	}
+
+	subgraph cluster_thread2 {
+		color=lightgrey;
+		label = "Auplay Thread";
+		subgraph cluster_audio1 {
+			label = "audio";
+			aubuf -> auplay;
+		}
+	}
+}

@@ -29,7 +29,7 @@ struct receiver {
 	uint32_t pseq;                 /**< Sequence number for incoming RTP */
 	bool pseq_set;                 /**< True if sequence number is set   */
 	bool rtp_estab;                /**< True if RTP stream established   */
-	bool stop;                     /**< Flag for stopping RX thread      */
+	bool run;                      /**< True if RX thread is running     */
 	mtx_t *mtx;                    /**< Mutex protects above fields      */
 
 	/* Unprotected data */
@@ -40,7 +40,7 @@ struct receiver {
 	stream_rtpestab_h *rtpestabh;  /**< RTP established handler          */
 	void *arg;                     /**< Stream argument                  */
 	void *sessarg;                 /**< Session argument                 */
-	thrd_t thr;                   /**< RX thread                        */
+	thrd_t thr;                    /**< RX thread                        */
 	struct tmr tmr;                /**< Timer for stopping RX thread     */
 };
 
@@ -48,11 +48,17 @@ struct receiver {
 static void destructor(void *arg)
 {
 	struct receiver *rx = arg;
+	bool join = false;
 
 	mtx_lock(rx->mtx);
-	rx->stop = true;
+	if (rx->run) {
+		join = true;
+		rx->run = false;
+	}
 	mtx_unlock(rx->mtx);
-	thrd_join(rx->thr, NULL);
+	if (join)
+		thrd_join(rx->thr, NULL);
+
 	mem_deref(rx->metric);
 	mem_deref(rx->name);
 	mem_deref(rx->mtx);
@@ -63,10 +69,10 @@ static void destructor(void *arg)
 static void rx_check_stop(void *arg)
 {
 	struct receiver *rx = arg;
-	if (rx->stop)
-		re_cancel();
-	else
+	if (rx->run)
 		tmr_start(&rx->tmr, 10, rx_check_stop, rx);
+	else
+		re_cancel();
 }
 
 
@@ -76,7 +82,6 @@ static int rx_thread(void *arg)
 	int err;
 
 	re_thread_init();
-
 	tmr_start(&rx->tmr, 10, rx_check_stop, rx);
 
 	err = udp_thread_attach(rtp_sock(rx->rtp));
@@ -89,6 +94,7 @@ static int rx_thread(void *arg)
 
 	err = re_main(NULL);
 
+	tmr_cancel(&rx->tmr);
 	re_thread_close();
 	return err;
 }
@@ -145,9 +151,18 @@ int rx_alloc(struct receiver **rxp,
 	else
 		err |= metric_init(rx->metric);
 
-	err |= thread_create_name(&rx->thr,
-				 "RX thread",
-				 rx_thread, rx);
+	if (err)
+		goto out;
+
+	if (cfg->rxmode == RX_MODE_THREAD) {
+		rx->run = true;
+		err = thread_create_name(&rx->thr,
+					 "RX thread",
+					 rx_thread, rx);
+		if (err)
+			rx->run = false;
+	}
+out:
 	if (err)
 		mem_deref(rx);
 	else
