@@ -5,6 +5,41 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] - 2023-02-15
+
+## What's Changed
+* call: default status code for rejecting incoming calls by @cspiel1 in https://github.com/baresip/baresip/pull/2409
+* dtls_srtp: enable single DTLS connection mode by @alfredh in https://github.com/baresip/baresip/pull/2411
+* ci: try to fix flaky azure mirrors by @sreimers in https://github.com/baresip/baresip/pull/2413
+* cmake/pulse: Remove pulse-simple library lookup by @robert-scheck in https://github.com/baresip/baresip/pull/2414
+* webrtc_aecm: use C11 mutex by @juha-h in https://github.com/baresip/baresip/pull/2415
+* pulse: replace obsolete string pulse_async (makes baresip PipeWire compatible) by @cspiel1 in https://github.com/baresip/baresip/pull/2412
+* vidpacket: add keyframe flag by @alfredh in https://github.com/baresip/baresip/pull/2416
+* av1: use keyframe instead of new-flag by @alfredh in https://github.com/baresip/baresip/pull/2418
+* av1: fix warnings by @alfredh in https://github.com/baresip/baresip/pull/2419
+* make rtcp interval configureable by @sreimers in https://github.com/baresip/baresip/pull/2420
+* sndio: remove deprecated module by @alfredh in https://github.com/baresip/baresip/pull/2422
+* PRACK refactoring by @maximilianfridrich in https://github.com/baresip/baresip/pull/2401
+* ci: merge build and cmake by @alfredh in https://github.com/baresip/baresip/pull/2425
+* menu: ringback/early audio handling for parallel calls by @cspiel1 in https://github.com/baresip/baresip/pull/2403
+* magic: use C99 __func__ macro by @alfredh in https://github.com/baresip/baresip/pull/2427
+* stream: remove stream_decode from internal API by @cspiel1 in https://github.com/baresip/baresip/pull/2430
+* use RE_ARRAY_SIZE() macro by @alfredh in https://github.com/baresip/baresip/pull/2429
+* cmake: link RESOLV_LIBRARY by @sreimers in https://github.com/baresip/baresip/pull/2432
+* ci/build: fix Ubuntu 22.04 workaround by @sreimers in https://github.com/baresip/baresip/pull/2435
+* avcapture: use RE_ARRAY_SIZE macro by @alfredh in https://github.com/baresip/baresip/pull/2434
+* pulse: remove obsolete doxygen note to be experimental by @cspiel1 in https://github.com/baresip/baresip/pull/2436
+* gtk: return NULL on mtx_init() != thrd_success by @robert-scheck in https://github.com/baresip/baresip/pull/2440
+* ci: add libgtk-3-dev to build GTK+ 3 module by @robert-scheck in https://github.com/baresip/baresip/pull/2441
+* event: missing class name case for RTPESTAB event by @cspiel1 in https://github.com/baresip/baresip/pull/2447
+* ci: add sanitizers by @sreimers in https://github.com/baresip/baresip/pull/2449
+* bump version numbers to 2.12.0 by @alfredh in https://github.com/baresip/baresip/pull/2453
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v2.11.0...v2.12.0
+
+---
+
 ## [2.11.0] - 2023-01-11
 
 ### What's Changed
