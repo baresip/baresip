@@ -196,7 +196,7 @@ int  reg_json_api(struct odict *od, const struct reg *reg);
 int  reg_status(struct re_printf *pf, const struct reg *reg);
 int  reg_af(const struct reg *reg);
 const struct sa *reg_laddr(const struct reg *reg);
-
+void reg_set_custom_hdrs(struct reg *reg, const struct list *hdrs);
 
 /*
  * RTP Stats

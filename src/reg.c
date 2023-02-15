@@ -20,6 +20,8 @@ struct reg {
 	uint16_t scode;              /**< Registration status code           */
 	char *srv;                   /**< SIP Server id                      */
 	int af;                      /**< Cached address family for SIP conn */
+
+	struct list custom_hdrs;     /**< List of custom headers if any      */
 };
 
 
@@ -30,6 +32,8 @@ static void destructor(void *arg)
 	list_unlink(&reg->le);
 	mem_deref(reg->sipreg);
 	mem_deref(reg->srv);
+
+	list_flush(&reg->custom_hdrs);
 }
 
 
@@ -191,6 +195,33 @@ int reg_add(struct list *lst, struct ua *ua, int regid)
 }
 
 
+void reg_set_custom_hdrs(struct reg *reg, const struct list *hdrs)
+{
+	struct le *le;
+
+	if (!reg)
+		return;
+
+	list_flush(&reg->custom_hdrs);
+
+	LIST_FOREACH(hdrs, le) {
+		struct sip_hdr *hdr = le->data;
+		char *buf = NULL;
+
+		if (re_sdprintf(&buf, "%r", &hdr->name))
+			return;
+
+		if (custom_hdrs_add(&reg->custom_hdrs, buf,
+				    "%r", &hdr->val)) {
+			mem_deref(buf);
+			return;
+		}
+
+		mem_deref(buf);
+	}
+}
+
+
 int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 		 uint32_t regint, const char *outbound)
 {
@@ -219,7 +250,9 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 			      sip_auth_handler, acc, true,
 			      register_handler, reg,
 			      params[0] ? &params[1] : NULL,
-			      "Allow: %H\r\n", ua_print_allowed, reg->ua);
+			      "Allow: %H\r\n%H",
+			      ua_print_allowed, reg->ua,
+			      custom_hdrs_print, &reg->custom_hdrs);
 	if (err)
 		return err;
 

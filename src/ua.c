@@ -205,6 +205,9 @@ static int start_register(struct ua *ua, bool fallback)
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
 		struct reg *reg = le->data;
 
+		if (!list_isempty(&ua->custom_hdrs))
+			reg_set_custom_hdrs(reg, &ua->custom_hdrs);
+
 		err = reg_register(reg, reg_uri, params,
 				   fallback ? 0 : acc->regint,
 				   acc->outboundv[i]);
