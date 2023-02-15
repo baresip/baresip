@@ -45,25 +45,9 @@ struct receiver {
 };
 
 
-static void destructor(void *arg)
-{
-	struct receiver *rx = arg;
-	bool join = false;
-
-	mtx_lock(rx->mtx);
-	if (rx->run) {
-		join = true;
-		rx->run = false;
-	}
-	mtx_unlock(rx->mtx);
-	if (join)
-		thrd_join(rx->thr, NULL);
-
-	mem_deref(rx->metric);
-	mem_deref(rx->name);
-	mem_deref(rx->mtx);
-	mem_deref(rx->jbuf);
-}
+/*
+ * functions that run in RX thread (if "rxmode thread" is configured)
+ */
 
 
 static void rx_check_stop(void *arg)
@@ -97,110 +81,6 @@ static int rx_thread(void *arg)
 	tmr_cancel(&rx->tmr);
 	re_thread_close();
 	return err;
-}
-
-
-int rx_alloc(struct receiver **rxp,
-	     struct stream *strm,
-	     const char *name,
-	     const struct config_avt *cfg,
-	     stream_rtp_h *rtph,
-	     stream_pt_h *pth, void *arg)
-{
-	struct receiver *rx;
-	int err;
-
-	if (!rxp || !str_isset(name))
-		return EINVAL;
-
-	rx = mem_zalloc(sizeof(*rx), destructor);
-	if (!rx)
-		return ENOMEM;
-
-	MAGIC_INIT(rx);
-	rx->strm  = strm;
-	rx->rtph  = rtph;
-	rx->pth   = pth;
-	rx->arg   = arg;
-	rx->pseq  = -1;
-	err  = str_dup(&rx->name, name);
-	err |= mutex_alloc(&rx->mtx);
-
-	/* Audio Jitter buffer */
-	if (type == MEDIA_AUDIO &&
-	    cfg->audio.jbtype != JBUF_OFF && cfg->audio.jbuf_del.max) {
-
-		err = jbuf_alloc(&rx->jbuf, cfg->audio.jbuf_del.min,
-				 cfg->audio.jbuf_del.max);
-		err |= jbuf_set_type(rx->jbuf, cfg->audio.jbtype);
-	}
-
-	/* Video Jitter buffer */
-	if (type == MEDIA_VIDEO &&
-	    cfg->video.jbtype != JBUF_OFF && cfg->video.jbuf_del.max) {
-
-		err = jbuf_alloc(&rx->jbuf, cfg->video.jbuf_del.min,
-				 cfg->video.jbuf_del.max);
-		err |= jbuf_set_type(rx->jbuf, cfg->video.jbtype);
-	}
-
-	rx->metric = metric_alloc();
-	if (!rx->metric)
-		err |= ENOMEM;
-	else
-		err |= metric_init(rx->metric);
-
-	if (err)
-		goto out;
-
-out:
-	if (err)
-		mem_deref(rx);
-	else
-		*rxp = rx;
-
-	return err;
-}
-
-
-int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp)
-{
-	int err;
-
-	rx->rtp = rtp;
-	rx->run = true;
-	err = thread_create_name(&rx->thr,
-				 "RX thread",
-				 rx_thread, rx);
-	if (err) {
-		rx->run = false;
-	}
-	else {
-		udp_thread_detach(rtp_sock(rx->rtp));
-		udp_thread_detach(rtcp_sock(rx->rtp));
-	}
-
-	return err;
-}
-
-
-void rx_set_handlers(struct receiver *rx,
-		     stream_rtpestab_h *rtpestabh, void *arg)
-{
-	if (!rx)
-		return;
-
-	mtx_lock(rx->mtx);
-	rx->rtpestabh     = rtpestabh;
-	rx->sessarg       = arg;
-	mtx_unlock(rx->mtx);
-}
-
-
-struct metric *rx_metric(struct receiver *rx)
-{
-	/* it is allowed to return metric because it is thread safe */
-	return rx->metric;
 }
 
 
@@ -277,6 +157,7 @@ static int handle_rtp(struct receiver *rx, const struct rtp_header *hdr,
  handler:
 	stream_stop_natpinhole(rx->strm);
 
+	/*TODO: make audio.c stream_recv_handler() thread safe*/
 	rx->rtph(hdr, extv, extc, mb, lostc, &ignore, rx->arg);
 	if (ignore)
 		return EAGAIN;
@@ -324,7 +205,7 @@ static int decode_frame(struct receiver *rx)
 
 
 void rx_receive(const struct sa *src, const struct rtp_header *hdr,
-	       struct mbuf *mb, void *arg)
+		struct mbuf *mb, void *arg)
 {
 	struct receiver *rx = arg;
 	uint32_t ssrc0;
@@ -440,6 +321,10 @@ void rx_handle_rtcp(const struct sa *src, struct rtcp_msg *msg, void *arg)
 }
 
 
+/*
+ * functions that run in main thread
+ */
+
 void rx_set_ssrc(struct receiver *rx, uint32_t ssrc)
 {
 	mtx_lock(rx->mtx);
@@ -540,4 +425,129 @@ int rx_debug(struct re_printf *pf, const struct receiver *rx)
 	err |= jbuf_debug(pf, rx->jbuf);
 
 	return err;
+}
+
+
+static void destructor(void *arg)
+{
+	struct receiver *rx = arg;
+	bool join = false;
+
+	mtx_lock(rx->mtx);
+	if (rx->run) {
+		join = true;
+		rx->run = false;
+	}
+	mtx_unlock(rx->mtx);
+	if (join)
+		thrd_join(rx->thr, NULL);
+
+	mem_deref(rx->metric);
+	mem_deref(rx->name);
+	mem_deref(rx->mtx);
+	mem_deref(rx->jbuf);
+}
+
+
+int rx_alloc(struct receiver **rxp,
+	     struct stream *strm,
+	     const char *name,
+	     const struct config_avt *cfg,
+	     stream_rtp_h *rtph,
+	     stream_pt_h *pth, void *arg)
+{
+	struct receiver *rx;
+	int err;
+
+	if (!rxp || !str_isset(name))
+		return EINVAL;
+
+	rx = mem_zalloc(sizeof(*rx), destructor);
+	if (!rx)
+		return ENOMEM;
+
+	MAGIC_INIT(rx);
+	rx->strm  = strm;
+	rx->rtph  = rtph;
+	rx->pth   = pth;
+	rx->arg   = arg;
+	rx->pseq  = -1;
+	err  = str_dup(&rx->name, name);
+	err |= mutex_alloc(&rx->mtx);
+
+	/* Audio Jitter buffer */
+	if (stream_type(strm) == MEDIA_AUDIO &&
+	    cfg->audio.jbtype != JBUF_OFF && cfg->audio.jbuf_del.max) {
+
+		err = jbuf_alloc(&rx->jbuf, cfg->audio.jbuf_del.min,
+				 cfg->audio.jbuf_del.max);
+		err |= jbuf_set_type(rx->jbuf, cfg->audio.jbtype);
+	}
+
+	/* Video Jitter buffer */
+	if (stream_type(strm) == MEDIA_VIDEO &&
+	    cfg->video.jbtype != JBUF_OFF && cfg->video.jbuf_del.max) {
+
+		err = jbuf_alloc(&rx->jbuf, cfg->video.jbuf_del.min,
+				 cfg->video.jbuf_del.max);
+		err |= jbuf_set_type(rx->jbuf, cfg->video.jbtype);
+	}
+
+	rx->metric = metric_alloc();
+	if (!rx->metric)
+		err |= ENOMEM;
+	else
+		err |= metric_init(rx->metric);
+
+	if (err)
+		goto out;
+
+out:
+	if (err)
+		mem_deref(rx);
+	else
+		*rxp = rx;
+
+	return err;
+}
+
+
+int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp)
+{
+	int err;
+
+	rx->rtp = rtp;
+	rx->run = true;
+	err = thread_create_name(&rx->thr,
+				 "RX thread",
+				 rx_thread, rx);
+	if (err) {
+		rx->run = false;
+	}
+	else {
+		udp_thread_detach(rtp_sock(rx->rtp));
+		udp_thread_detach(rtcp_sock(rx->rtp));
+	}
+
+	return err;
+}
+
+
+void rx_set_handlers(struct receiver *rx,
+		     stream_rtpestab_h *rtpestabh, void *arg)
+{
+	if (!rx)
+		return;
+
+	mtx_lock(rx->mtx);
+	rx->rtpestabh     = rtpestabh;
+	rx->sessarg       = arg;
+	mtx_unlock(rx->mtx);
+}
+
+
+struct metric *rx_metric(struct receiver *rx)
+{
+	/* it is allowed to return metric because it is thread safe */
+	return rx->metric;
 }
