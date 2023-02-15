@@ -544,7 +544,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	tmr_init(&s->tmr_natph);
 
 	if (prm->use_rtp) {
-		err = rx_alloc(&s->rx, s, s->rtp, media_name(type), cfg,
+		err = rx_alloc(&s->rx, s, media_name(type), cfg,
 			       rtph, pth, arg);
 		if (err) {
 			warning("stream: failed to create receiver"
@@ -561,6 +561,9 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 				media_name(type), err);
 			goto out;
 		}
+
+		if (cfg->rxmode == RX_MODE_THREAD)
+			rx_start_thread(s->rx, s->rtp);
 	}
 
 	err = str_dup(&s->cname, prm->cname);

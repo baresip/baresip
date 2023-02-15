@@ -459,7 +459,6 @@ void mediatrack_sdp_attr_decode(struct media_track *media);
  */
 int rx_alloc(struct receiver **rxp,
 	     struct stream *strm,
-	     struct rtp_sock *rtp,
 	     const char *name,
 	     const struct config_avt *cfg,
 	     stream_rtp_h *rtph,
@@ -478,3 +477,4 @@ void rx_flush(struct receiver *rx);
 void rx_set_enable(struct receiver *rx, bool enable);
 int rx_get_ssrc(struct receiver *rx, uint32_t *ssrc);
 int rx_debug(struct re_printf *pf, const struct receiver *rx);
+int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp);

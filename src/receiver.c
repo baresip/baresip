@@ -102,7 +102,6 @@ static int rx_thread(void *arg)
 
 int rx_alloc(struct receiver **rxp,
 	     struct stream *strm,
-	     struct rtp_sock *rtp,
 	     const char *name,
 	     const struct config_avt *cfg,
 	     stream_rtp_h *rtph,
@@ -120,7 +119,6 @@ int rx_alloc(struct receiver **rxp,
 
 	MAGIC_INIT(rx);
 	rx->strm  = strm;
-	rx->rtp   = rtp;
 	rx->rtph  = rtph;
 	rx->pth   = pth;
 	rx->arg   = arg;
@@ -155,19 +153,27 @@ int rx_alloc(struct receiver **rxp,
 	if (err)
 		goto out;
 
-	if (cfg->rxmode == RX_MODE_THREAD) {
-		rx->run = true;
-		err = thread_create_name(&rx->thr,
-					 "RX thread",
-					 rx_thread, rx);
-		if (err)
-			rx->run = false;
-	}
 out:
 	if (err)
 		mem_deref(rx);
 	else
 		*rxp = rx;
+
+	return err;
+}
+
+
+int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp)
+{
+	int err;
+
+	rx->rtp = rtp;
+	rx->run = true;
+	err = thread_create_name(&rx->thr,
+				 "RX thread",
+				 rx_thread, rx);
+	if (err)
+		rx->run = false;
 
 	return err;
 }
