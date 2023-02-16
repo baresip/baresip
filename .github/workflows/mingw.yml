@@ -33,15 +33,13 @@ jobs:
 
     - uses: sreimers/pr-dependency-action@v0.5
       with:
-        name: rem
-        repo: https://github.com/baresip/rem
+        name: baresip-win32
+        repo: https://github.com/baresip/baresip-win32
         secret: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: "clone baresip-win32 repo"
+    - name: "prepare baresip-win32 repo"
       run: |
-        git clone https://github.com/baresip/baresip-win32.git
         mv re baresip-win32/
-        mv rem baresip-win32/
 
     - uses: actions/checkout@v3
       with:

@@ -25,19 +25,13 @@ jobs:
         repo: https://github.com/baresip/re
         secret: ${{ secrets.GITHUB_TOKEN }}
 
-    - uses: sreimers/pr-dependency-action@v0.5
-      with:
-        name: rem
-        repo: https://github.com/baresip/rem
-        secret: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: make re/rem
+    - name: make re
       run: |
-        for p in re rem; do
+        for p in re; do
           cmake -S $p -B $p/build
           cmake --build $p/build -j
         done
-        for p in re rem; do
+        for p in re; do
           mv $p ../.
         done
         sudo ldconfig
