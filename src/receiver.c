@@ -525,6 +525,8 @@ static void destructor(void *arg)
 	if (join)
 		thrd_join(rx->thr, NULL);
 
+	re_thread_async_cancel(0);
+
 	mem_deref(rx->metric);
 	mem_deref(rx->name);
 	mem_deref(rx->mtx);
