@@ -89,7 +89,8 @@ jobs:
                         mpg123 \
                         spandsp \
                         sdl2 \
-                        glib-utils
+                        glib-utils \
+                        pkg-config
 
     - uses: sreimers/pr-dependency-action@v0.5
       with:
