@@ -10,6 +10,7 @@
  */
 #include <string.h>
 #include <stdlib.h>
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -89,7 +90,6 @@ struct vtx {
 	mtx_t lock_tx;                     /**< Protect the sendq         */
 	struct list sendq;                 /**< Tx-Queue (struct vidqent) */
 	struct list sendqnb;               /**< Tx-Queue NACK wait buffer */
-	struct tmr tmr_rtp;                /**< Timer for sending RTP     */
 	unsigned skipc;                    /**< Number of frames skipped  */
 	struct list filtl;                 /**< Filters in encoding order */
 	enum vidfmt fmt;                   /**< Outgoing pixel format     */
@@ -100,6 +100,8 @@ struct vtx {
 	double efps;                       /**< Estimated frame-rate      */
 	uint64_t ts_base;                  /**< First RTP timestamp sent  */
 	uint64_t ts_last;                  /**< Last RTP timestamp sent   */
+	thrd_t thrd;                       /**< Tx-Thread                 */
+	RE_ATOMIC bool run;                /**< Tx-Thread is active       */
 
 	/** Statistics */
 	struct {
@@ -335,19 +337,6 @@ out:
 }
 
 
-static void rtp_tmr_handler(void *arg)
-{
-	struct vtx *vtx = arg;
-	uint64_t pjfs;
-
-	pjfs = vtx->tmr_rtp.jfs;
-
-	tmr_start(&vtx->tmr_rtp, 1000/MEDIA_POLL_RATE, rtp_tmr_handler, vtx);
-
-	vidqueue_poll(vtx, vtx->tmr_rtp.jfs, pjfs);
-}
-
-
 static void video_destructor(void *arg)
 {
 	struct video *v = arg;
@@ -355,13 +344,16 @@ static void video_destructor(void *arg)
 	struct vrx *vrx = &v->vrx;
 
 	/* transmit */
+	if (re_atomic_rlx(&vtx->run)) {
+		re_atomic_rlx_set(&vtx->run, false);
+		thrd_join(vtx->thrd, NULL);
+	}
 	mtx_lock(&vtx->lock_tx);
 	list_flush(&vtx->sendq);
 	list_flush(&vtx->sendqnb);
 	mtx_unlock(&vtx->lock_tx);
 	mtx_destroy(&vtx->lock_tx);
 
-	tmr_cancel(&vtx->tmr_rtp);
 	mem_deref(vtx->vsrc);
 	mtx_lock(&vtx->lock_enc);
 	mem_deref(vtx->frame);
@@ -574,6 +566,23 @@ static void vidsrc_error_handler(int err, void *arg)
 }
 
 
+static int vtx_thread(void *arg)
+{
+	struct vtx *vtx = arg;
+	uint64_t jfs, pjfs = tmr_jiffies();
+
+	while (re_atomic_rlx(&vtx->run)) {
+		sys_msleep(1000 / MEDIA_POLL_RATE);
+
+		jfs = tmr_jiffies();
+		vidqueue_poll(vtx, jfs, pjfs);
+		pjfs = jfs;
+	}
+
+	return 0;
+}
+
+
 static int vtx_alloc(struct vtx *vtx, struct video *video)
 {
 	int err;
@@ -583,16 +592,12 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 	if (err)
 		return ENOMEM;
 
-	tmr_init(&vtx->tmr_rtp);
-
 	vtx->video = video;
 
 	/* The initial value of the timestamp SHOULD be random */
 	vtx->ts_offset = rand_u16();
 
 	str_ncpy(vtx->device, video->cfg.src_dev, sizeof(vtx->device));
-
-	tmr_start(&vtx->tmr_rtp, 1, rtp_tmr_handler, vtx);
 
 	vtx->fmt = (enum vidfmt)-1;
 
@@ -1298,11 +1303,11 @@ int video_start_source(struct video *v)
 	if (v->vtx.vsrc)
 		return 0;
 
+	struct vtx *vtx = &v->vtx;
+
 	debug("video: start source\n");
 
 	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
-
-		struct vtx *vtx = &v->vtx;
 		struct vidsrc *vs;
 
 		vs = (struct vidsrc *)vidsrc_find(baresip_vidsrcl(),
@@ -1336,6 +1341,14 @@ int video_start_source(struct video *v)
 	}
 	else {
 		info("video: no video source\n");
+	}
+
+	if (!re_atomic_rlx(&vtx->run)) {
+		re_atomic_rlx_set(&vtx->run, true);
+		thread_create_name(&vtx->thrd, "Video TX", vtx_thread, vtx);
+	}
+	else {
+		warning("video_start_source: Video TX already started\n");
 	}
 
 	tmr_start(&v->tmr, TMR_INTERVAL * 1000, tmr_handler, v);
@@ -1406,6 +1419,16 @@ static void video_stop_source(struct video *v)
 	debug("video: stopping video source ..\n");
 
 	v->vtx.vsrc = mem_deref(v->vtx.vsrc);
+
+	if (re_atomic_rlx(&v->vtx.run)) {
+		re_atomic_rlx_set(&v->vtx.run, false);
+		thrd_join(v->vtx.thrd, NULL);
+	}
+
+	mtx_lock(&v->vtx.lock_tx);
+	list_flush(&v->vtx.sendq);
+	list_flush(&v->vtx.sendqnb);
+	mtx_unlock(&v->vtx.lock_tx);
 }
 
 
