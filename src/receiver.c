@@ -94,7 +94,7 @@ static void pass_rtcp_work(struct receiver *rx, const struct rtcp_msg *msg)
 	if (err)
 		mem_deref(w);
 	else
-		re_thread_async_main(NULL, async_work_main, w);
+		re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
 }
 
 
@@ -111,7 +111,7 @@ static int pass_pt_work(struct receiver *rx, uint8_t pt, struct mbuf *mb)
 	w->u.pt.pt = pt;
 	w->u.pt.mb = mbuf_dup(mb);
 
-	return re_thread_async_main(NULL, async_work_main, w);
+	return re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
 }
 
 
@@ -128,7 +128,7 @@ static void pass_rtpestab_work(struct receiver *rx)
 	w->type = WORK_RTPESTAB;
 	w->rx   = rx;
 
-	re_thread_async_main(NULL, async_work_main, w);
+	re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
 }
 
 
@@ -525,7 +525,7 @@ static void destructor(void *arg)
 	if (join)
 		thrd_join(rx->thr, NULL);
 
-	re_thread_async_cancel(0);
+	re_thread_async_main_cancel((intptr_t)rx);
 
 	mem_deref(rx->metric);
 	mem_deref(rx->name);
