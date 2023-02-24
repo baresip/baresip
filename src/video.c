@@ -297,6 +297,7 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 
 	while (le) {
 		struct vidqent *qent = le->data;
+		le = le->next;
 
 		sent += mbuf_get_left(qent->mb);
 		mbd = mbuf_dup(qent->mb);
@@ -310,9 +311,7 @@ static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
 		qent->mb  = mbd;
 		qent->seq = rtp_sess_seq(stream_rtp_sock(vtx->video->strm));
 
-		list_move(le, &vtx->sendqnb);
-
-		le = le->next;
+		list_move(&qent->le, &vtx->sendqnb);
 
 		if (sent > burst) {
 			break;
