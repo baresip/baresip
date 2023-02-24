@@ -429,11 +429,9 @@ static void update_all_remote_addr(struct list *streaml,
 }
 
 
-static void mnat_connected_handler(const struct sa *raddr1,
-				   const struct sa *raddr2, void *arg)
+void stream_mnat_connected(struct stream *strm, const struct sa *raddr1,
+			   const struct sa *raddr2)
 {
-	struct stream *strm = arg;
-
 	info("stream: '%s' mnat '%s' connected: raddr %J %J\n",
 	     media_name(strm->type),
 	     strm->mnat->id, raddr1, raddr2);
@@ -616,7 +614,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
 				   s->cfg.rtcp_mux ? NULL : rtcp_sock(s->rtp),
-				   s->sdp, mnat_connected_handler, s);
+				   s->sdp, rx_mnat_connected_handler, s->rx);
 		if (err)
 			goto out;
 	}

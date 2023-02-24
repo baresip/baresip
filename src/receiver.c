@@ -50,6 +50,7 @@ enum work_type {
 	WORK_RTCP,
 	WORK_RTPESTAB,
 	WORK_PTCHANGED,
+	WORK_MNATCONNH,
 };
 
 
@@ -62,6 +63,10 @@ struct work {
 			uint8_t pt;
 			struct mbuf *mb;
 		} pt;
+		struct {
+			struct sa raddr1;
+			struct sa raddr2;
+		} mnat;
 	} u;
 };
 
@@ -124,6 +129,26 @@ static void pass_rtpestab_work(struct receiver *rx)
 	w = mem_zalloc(sizeof(*w), work_destructor);
 	w->type = WORK_RTPESTAB;
 	w->rx   = rx;
+
+	re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
+}
+
+
+static void pass_mnat_work(struct receiver *rx, const struct sa *raddr1,
+			   const struct sa *raddr2)
+{
+	struct work *w;
+
+	if (!rx->run) {
+		stream_mnat_connected(rx->strm, raddr1, raddr2);
+		return;
+	}
+
+	w = mem_zalloc(sizeof(*w), work_destructor);
+	w->type = WORK_MNATCONNH;
+	w->rx   = rx;
+	sa_cpy(&w->u.mnat.raddr1, raddr1);
+	sa_cpy(&w->u.mnat.raddr2, raddr2);
 
 	re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
 }
@@ -401,6 +426,17 @@ void rx_handle_rtcp(const struct sa *src, struct rtcp_msg *msg, void *arg)
 }
 
 
+void rx_mnat_connected_handler(const struct sa *raddr1,
+			       const struct sa *raddr2, void *arg)
+{
+	struct receiver *rx = arg;
+
+	MAGIC_CHECK(rx);
+
+	pass_mnat_work(rx, raddr1, raddr2);
+}
+
+
 /*
  * functions that run in main thread
  */
@@ -668,6 +704,11 @@ static void async_work_main(int err, void *arg)
 			break;
 		case WORK_RTPESTAB:
 			rx->rtpestabh(rx->strm, rx->sessarg);
+			break;
+		case WORK_MNATCONNH:
+			stream_mnat_connected(rx->strm,
+					      &w->u.mnat.raddr1,
+					      &w->u.mnat.raddr2);
 			break;
 		default:
 			break;

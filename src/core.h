@@ -318,6 +318,8 @@ void stream_enable_natpinhole(struct stream *strm, bool enable);
 void stream_open_natpinhole(struct stream *strm);
 void stream_stop_natpinhole(struct stream *strm);
 void stream_process_rtcp(struct stream *strm, const struct rtcp_msg *msg);
+void stream_mnat_connected(struct stream *strm, const struct sa *raddr1,
+			   const struct sa *raddr2);
 
 
 /*
@@ -478,3 +480,5 @@ void rx_set_enable(struct receiver *rx, bool enable);
 int rx_get_ssrc(struct receiver *rx, uint32_t *ssrc);
 int rx_debug(struct re_printf *pf, const struct receiver *rx);
 int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp);
+void rx_mnat_connected_handler(const struct sa *raddr1,
+			       const struct sa *raddr2, void *arg);
