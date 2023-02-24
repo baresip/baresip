@@ -75,10 +75,9 @@ static void work_destructor(void *arg);
  */
 
 
-static void pass_rtcp_work(struct receiver *rx, const struct rtcp_msg *msg)
+static void pass_rtcp_work(struct receiver *rx, struct rtcp_msg *msg)
 {
 	struct work *w;
-	int err;
 
 	if (!rx->run) {
 		stream_process_rtcp(rx->strm, msg);
@@ -86,15 +85,13 @@ static void pass_rtcp_work(struct receiver *rx, const struct rtcp_msg *msg)
 	}
 
 	w = mem_zalloc(sizeof(*w), work_destructor);
+	if (!w)
+		return;
+
 	w->type    = WORK_RTCP;
 	w->rx      = rx;
-	mbuf_set_pos(msg->mb, 0);
-	err = rtcp_decode(&w->u.rtcp, msg->mb);
-	mbuf_skip_to_end(msg->mb);
-	if (err)
-		mem_deref(w);
-	else
-		re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
+	w->u.rtcp  = mem_ref(msg);
+	re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
 }
 
 
