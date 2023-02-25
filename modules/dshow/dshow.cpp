@@ -151,7 +151,8 @@ public:
 		struct vidframe vidframe;
 		uint64_t timestamp = (uint64_t)(sample_time * VIDEO_TIMEBASE);
 		if (buf_len != buf_len_RGB32 * 4) {
-			warning("dshow: BufferCB got %uB, required %uB (%ux%u)\n", buf_len, buf_len_RGB32 * 4, src->size.w, src->size.h);
+			warning("dshow: BufferCB got %uB, required %uB (%ux%u)\n",
+				buf_len, buf_len_RGB32 * 4, src->size.w, src->size.h);
 			return S_OK;
 		}
 
@@ -394,7 +395,7 @@ static int config_pin(struct vidsrc_st *st, IPin *pin)
 				best_match = diff;
 				free_mt(best_mt);
 				best_mt = mt;
-				mt = NULL;				
+				mt = NULL;
 			}
 		}
 	}
