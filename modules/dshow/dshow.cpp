@@ -150,7 +150,10 @@ public:
 		uint32_t *buf_RGB32;
 		struct vidframe vidframe;
 		uint64_t timestamp = (uint64_t)(sample_time * VIDEO_TIMEBASE);
-		(void)buf_len;
+		if (buf_len != buf_len_RGB32 * 4) {
+			warning("dshow: BufferCB got %uB, required %uB (%ux%u)\n", buf_len, buf_len_RGB32 * 4, src->size.w, src->size.h);
+			return S_OK;
+		}
 
 		vidframe_init_buf(&vidframe, VID_FMT_RGB32, &src->size, buf);
 
