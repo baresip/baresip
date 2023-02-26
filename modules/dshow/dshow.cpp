@@ -150,7 +150,13 @@ public:
 		uint32_t *buf_RGB32;
 		struct vidframe vidframe;
 		uint64_t timestamp = (uint64_t)(sample_time * VIDEO_TIMEBASE);
-		(void)buf_len;
+		if (buf_len != buf_len_RGB32 * 4) {
+			warning("dshow: BufferCB got %uB, "
+				"required %uB (%ux%u)\n",
+				buf_len, buf_len_RGB32 * 4,
+				src->size.w, src->size.h);
+			return S_OK;
+		}
 
 		vidframe_init_buf(&vidframe, VID_FMT_RGB32, &src->size, buf);
 
@@ -345,7 +351,7 @@ static AM_MEDIA_TYPE *free_mt(AM_MEDIA_TYPE *mt)
 
 static int config_pin(struct vidsrc_st *st, IPin *pin)
 {
-	AM_MEDIA_TYPE *mt;
+	AM_MEDIA_TYPE *mt = NULL;
 	AM_MEDIA_TYPE *best_mt = NULL;
 	IEnumMediaTypes *media_enum = NULL;
 	IAMStreamConfig *stream_conf = NULL;
@@ -367,8 +373,10 @@ static int config_pin(struct vidsrc_st *st, IPin *pin)
 	h = st->size.h;
 	w = st->size.w;
 	while ((hr = media_enum->Next(1, &mt, NULL)) == S_OK) {
-		if (mt->formattype != FORMAT_VideoInfo)
+		if (mt->formattype != FORMAT_VideoInfo) {
+			mt = free_mt(mt);
 			continue;
+		}
 
 		vih = (VIDEOINFOHEADER *) mt->pbFormat;
 		rw = vih->bmiHeader.biWidth;
@@ -389,6 +397,7 @@ static int config_pin(struct vidsrc_st *st, IPin *pin)
 				best_match = diff;
 				free_mt(best_mt);
 				best_mt = mt;
+				mt = NULL;
 			}
 		}
 	}
