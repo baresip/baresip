@@ -875,6 +875,9 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (err)
 		return err;
 
+	if (!list_isempty(&ua->custom_hdrs))
+		call_set_custom_hdrs(*callp, &ua->custom_hdrs);
+
 	call_set_handlers(*callp, NULL, call_dtmf_handler, ua);
 
 	return 0;
@@ -1287,9 +1290,6 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	err = ua_call_alloc(&call, ua, vmode, NULL, NULL, from_uri, true);
 	if (err)
 		goto out;
-
-	if (!list_isempty(&ua->custom_hdrs))
-		call_set_custom_hdrs(call, &ua->custom_hdrs);
 
 	if (adir != SDP_SENDRECV || vdir != SDP_SENDRECV) {
 		err = call_set_media_direction(call, adir, vdir);
