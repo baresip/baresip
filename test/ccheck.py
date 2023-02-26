@@ -35,6 +35,8 @@ class ccheck:
         self.cur_lineno = 0
         self.empty_lines_count = 0
         self.cc_count = 0
+        self.listfor_depth = 0
+        self.listfor_next = False
         self.files = {}
         self.extensions = ['c', 'cpp', 'h', 'mk', 'm4', 'py', 'm', 's', 'java',
                            'php']
@@ -54,7 +56,8 @@ class ccheck:
                               self.check_file_unix]
         self.funcmap = {
             'c':    [self.check_brackets, self.check_c_preprocessor,
-                     self.check_indent_tab, self.check_c11_err_handling],
+                     self.check_indent_tab, self.check_c11_err_handling,
+                     self.check_list_unlink],
             'h':    [self.check_brackets, self.check_indent_tab],
             'cpp':  [self.check_brackets, self.check_indent_tab],
             'mk':   [self.check_indent_tab],
@@ -187,6 +190,53 @@ class ccheck:
         if index != -1 and line[index-1] != ':':
             if not re.search('["]+.*//.*["]+', line):
                 self.error("C++ comment, use C comments /* ... */ instead")
+
+
+    #
+    # check wrong re list unlink/move handling
+    #
+    def check_list_unlink(self, line, len):
+        if self.cur_lineno == 1:
+            self.listfor_next = False
+            self.listfor_depth = 0
+
+        if (self.listfor_depth >= 1):
+            if '{' in line:
+                self.listfor_depth += 1
+                return
+            if '}' in line:
+                self.listfor_depth -= 1
+                if (self.listfor_depth == 0):
+                    self.listfor_next = False
+                return
+            if '->next' in line:
+                self.listfor_next = True
+                return
+            if not self.listfor_next and 'list_unlink' in line:
+                self.error("Use list_unlink() only after le->next "
+                           "(and use a while loop)")
+                self.listfor_next = False
+                self.listfor_depth = 0
+                return
+            if not self.listfor_next and 'list_move' in line:
+                self.error("Use list_move() only after le->next "
+                           "(and use a while loop)")
+                self.listfor_next = False
+                self.listfor_depth = 0
+                return
+            return
+
+        if 'LIST_FOREACH' in line:
+            self.listfor_depth = 1
+            return
+
+        if re.search('for.*->next.*{', line):
+            self.listfor_depth = 1
+            return
+
+        if re.search('while.*le.*{', line):
+            self.listfor_depth = 1
+            return
 
 
     #
