@@ -1982,13 +1982,15 @@ int ua_rm_custom_hdr(struct ua *ua, struct pl *name)
 	if (!ua)
 		return EINVAL;
 
-	LIST_FOREACH(&ua->custom_hdrs, le) {
+	le = list_head(&ua->custom_hdrs);
+	while (le) {
 		struct sip_hdr *h = le->data;
-		if (!pl_cmp(&h->name, name)) {
-			list_unlink(le);
-			mem_deref(h);
+		le = le->next;
 
-			return 0;
+		if (!pl_cmp(&h->name, name)) {
+			list_unlink(&h->le);
+			mem_deref(h);
+			break;
 		}
 	}
 
