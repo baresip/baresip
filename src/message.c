@@ -212,7 +212,13 @@ int message_send(struct ua *ua, const char *peer, const char *msg,
 	if (err)
 		return err;
 
-	err = pl_strdup(&uri, &addr.auri);
+	if (pl_isset(&addr.params)) {
+		err = re_sdprintf(&uri, "%r%r",
+				  &addr.auri, &addr.params);
+	}
+	else {
+		err = pl_strdup(&uri, &addr.auri);
+	}
 	if (err)
 		return err;
 
