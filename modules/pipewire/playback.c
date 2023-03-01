@@ -40,8 +40,10 @@ static void auplay_destructor(void *arg)
 {
 	struct auplay_st *st = arg;
 
+	pw_thread_loop_lock (pw_loop_instance());
 	st->wh = NULL;
 	pw_stream_destroy(st->stream);
+	pw_thread_loop_unlock(pw_loop_instance());
 }
 
 
@@ -157,7 +159,8 @@ static void on_process(void *arg)
 	auframe_init(&af, st->prm.fmt, sampv, st->sampc,
 		     st->prm.srate, st->prm.ch);
 
-	st->wh(&af, st->arg);
+	if (st->wh)
+		st->wh(&af, st->arg);
 
 	d->chunk->offset = 0;
 	d->chunk->stride = st->stride;

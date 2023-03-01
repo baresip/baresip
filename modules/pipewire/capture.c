@@ -42,9 +42,11 @@ static void ausrc_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
+	pw_thread_loop_lock (pw_loop_instance());
 	st->rh = NULL;
 	st->errh = NULL;
 	pw_stream_destroy(st->stream);
+	pw_thread_loop_unlock(pw_loop_instance());
 }
 
 
@@ -168,7 +170,8 @@ static void on_process(void *arg)
 	af.timestamp = st->samps * AUDIO_TIMEBASE /
 		       (st->prm.srate * st->prm.ch);
 	st->samps += sampc;
-	st->rh(&af, st->arg);
+	if (st->rh)
+		st->rh(&af, st->arg);
 
 	pw_stream_queue_buffer(st->stream, b);
 }
