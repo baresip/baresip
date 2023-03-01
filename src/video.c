@@ -1270,8 +1270,10 @@ int video_update(struct video *v, const char *peer)
 	else
 		video_stop_source(v);
 
-	if (dir & SDP_RECVONLY) {
+	if (dir == SDP_RECVONLY)
 		err |= stream_open_natpinhole(v->strm);
+
+	if (dir & SDP_RECVONLY) {
 		err |= video_start_display(v, peer);
 	}
 	else {
