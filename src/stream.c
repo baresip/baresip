@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <re.h>
+#include <re_atomic.h>
 #include <baresip.h>
 #include "core.h"
 
@@ -28,6 +29,7 @@ struct sender {
 	struct sa raddr_rtp;   /**< Remote RTP address              */
 	struct sa raddr_rtcp;  /**< Remote RTCP address             */
 	int pt_enc;            /**< Payload type for encoding       */
+	RE_ATOMIC bool enabled;/**< True if enabled                 */
 };
 
 
@@ -69,7 +71,7 @@ struct stream {
 	char *mid;               /**< Media stream identification           */
 	bool rtcp_mux;           /**< RTP/RTCP multiplex supported by peer  */
 	bool terminated;         /**< Stream is terminated flag             */
-	bool hold;               /**< Stream is on-hold (local)             */
+	RE_ATOMIC bool hold;     /**< Stream is on-hold (local)             */
 	bool mnat_connected;     /**< Media NAT is connected                */
 	bool menc_secure;        /**< Media stream is secure                */
 	struct tmr tmr_natph;    /**< Timer for NAT pinhole                 */
@@ -204,11 +206,38 @@ static bool mnat_ready(const struct stream *strm)
 }
 
 
+static void stream_tx_enable(struct stream *s, bool enable)
+{
+	if (!s)
+		return;
+
+	if (!enable) {
+		re_atomic_rls_set(&s->tx.enabled, false);
+		return;
+	}
+
+	if (!stream_is_ready(s))
+		return;
+
+	if (!(sdp_media_rdir(s->sdp) & SDP_SENDONLY))
+		return;
+
+	if (sdp_media_ldir(s->sdp) == SDP_RECVONLY)
+		return;
+
+	if (sdp_media_ldir(s->sdp) == SDP_INACTIVE)
+		return;
+
+	re_atomic_rls_set(&s->tx.enabled, true);
+}
+
+
 static void stream_close(struct stream *strm, int err)
 {
 	stream_error_h *errorh = strm->errorh;
 
 	strm->terminated = true;
+	stream_tx_enable(strm, false);
 	strm->errorh = NULL;
 	jbuf_flush(strm->rx.jbuf);
 
@@ -633,6 +662,8 @@ static void mnat_connected_handler(const struct sa *raddr1,
 			}
 		}
 	}
+
+	stream_tx_enable(strm, true);
 }
 
 
@@ -882,25 +913,11 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 	if (!s)
 		return EINVAL;
 
-	if (!sa_isset(&s->tx.raddr_rtp, SA_ALL))
+	if (!re_atomic_acq(&s->tx.enabled))
 		return 0;
 
-	if (!(sdp_media_rdir(s->sdp) & SDP_SENDONLY))
+	if (re_atomic_rlx(&s->hold))
 		return 0;
-
-	if (sdp_media_ldir(s->sdp) == SDP_RECVONLY)
-		return 0;
-
-	if (sdp_media_ldir(s->sdp) == SDP_INACTIVE)
-		return 0;
-
-	if (s->hold)
-		return 0;
-
-	if (!stream_is_ready(s)) {
-		warning("stream: send: not ready\n");
-		return EINTR;
-	}
 
 	metric_add_packet(s->tx.metric, mbuf_get_left(mb));
 
@@ -1053,6 +1070,9 @@ int stream_update(struct stream *s)
 
 	info("stream: update '%s'\n", media_name(s->type));
 
+	/* disable tx stream for updates */
+	stream_tx_enable(s, false);
+
 	fmt = sdp_media_rformat(s->sdp, NULL);
 
 	s->tx.pt_enc = fmt ? fmt->pt : -1;
@@ -1082,6 +1102,8 @@ int stream_update(struct stream *s)
 		}
 	}
 
+	stream_tx_enable(s, true);
+
 	return 0;
 }
 
@@ -1103,7 +1125,7 @@ void stream_hold(struct stream *s, bool hold)
 	if (!s)
 		return;
 
-	s->hold = hold;
+	re_atomic_rlx_set(&s->hold, hold);
 	dir = s->ldir;
 
 	if (hold) {
@@ -1476,6 +1498,8 @@ void stream_set_secure(struct stream *strm, bool secure)
 
 		update_menc_muxed(strm->le.list, secure);
 	}
+
+	stream_tx_enable(strm, true);
 }
 
 
@@ -1541,6 +1565,8 @@ int stream_enable(struct stream *strm, bool enable)
 			enable ? "enable":"disable");
 
 	strm->rx.enabled = enable;
+	stream_tx_enable(strm, enable);
+
 	return 0;
 }
 
@@ -1726,6 +1752,9 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 
 	err |= re_hprintf(pf, " rx.enabled: %s\n",
 			  s->rx.enabled ? "yes" : "no");
+
+	err |= re_hprintf(pf, " tx.enabled: %s\n",
+			  re_atomic_rlx(&s->tx.enabled) ? "yes" : "no");
 
 	err |= rtp_debug(pf, s->rtp);
 	err |= jbuf_debug(pf, s->rx.jbuf);
