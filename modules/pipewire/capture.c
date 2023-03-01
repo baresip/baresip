@@ -21,7 +21,6 @@ struct ausrc_st {
 	struct ausrc_prm prm;
 	ausrc_read_h *rh;
 	struct spa_hook listener;
-	ausrc_error_h *errh;
 
 	size_t sampsz;
 	uint64_t samps;
@@ -44,7 +43,6 @@ static void ausrc_destructor(void *arg)
 
 	pw_thread_loop_lock (pw_loop_instance());
 	st->rh = NULL;
-	st->errh = NULL;
 	pw_stream_destroy(st->stream);
 	pw_thread_loop_unlock(pw_loop_instance());
 }
@@ -62,6 +60,7 @@ int pw_capture_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	const char name[] = "baresip-capture";
 	char nlat[10];
 	int err = 0;
+	(void)errh;
 
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
@@ -82,7 +81,6 @@ int pw_capture_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->samps  = 0;
 
 	st->rh   = rh;
-	st->errh = errh;
 	st->arg  = arg;
 	re_snprintf(nlat, sizeof(nlat), "%u/1000", prm->ptime);
 
