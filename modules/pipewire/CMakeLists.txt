@@ -14,5 +14,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARIES})
 target_compile_options(${PROJECT_NAME} PRIVATE
   -Wno-pedantic
   -Wno-bad-function-cast
-  -D_XOPEN_SOURCE=700
+  -D_GNU_SOURCE
 )
