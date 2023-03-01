@@ -169,7 +169,6 @@ struct video {
 
 struct vidqent {
 	struct le le;
-	struct sa dst;
 	bool ext;
 	bool marker;
 	uint8_t pt;
@@ -426,7 +425,6 @@ static int packet_handler(bool marker, uint64_t ts,
 		return err;
 
 	mtx_lock(&vtx->lock_tx);
-	qent->dst = *sdp_media_raddr(stream_sdpmedia(strm));
 	list_append(&vtx->sendq, &qent->le, qent);
 	mtx_unlock(&vtx->lock_tx);
 
