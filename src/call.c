@@ -59,6 +59,7 @@ struct call {
 	bool answered;            /**< True if call has been answered       */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
+	bool ans_queued;          /**< True if an (auto) answer is queued   */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -1395,6 +1396,7 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	}
 
 	call->answered = true;
+	call->ans_queued = false;
 
 	mem_deref(desc);
 
@@ -2098,6 +2100,9 @@ static void prack_handler(const struct sip_msg *msg, void *arg)
 	if (!msg || !call)
 		return;
 
+	if (call->ans_queued && !call->answered)
+		(void)call_answer(call, 200, VIDMODE_ON);
+
 	return;
 }
 
@@ -2282,7 +2287,10 @@ static void delayed_answer_handler(void *arg)
 {
 	struct call *call = arg;
 
-	(void)call_answer(call, 200, VIDMODE_ON);
+	if (sipsess_awaiting_prack(call->sess))
+		call->ans_queued = true;
+	else
+		(void)call_answer(call, 200, VIDMODE_ON);
 }
 
 
