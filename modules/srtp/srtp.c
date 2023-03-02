@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
+#include <re_atomic.h>
 #include <baresip.h>
 #include "sdes.h"
 
@@ -38,7 +39,7 @@ struct menc_st {
 	/* base64_decoding worst case encoded 32+12 key */
 	uint8_t key_rx[46];
 	struct srtp *srtp_tx, *srtp_rx;
-	bool use_srtp;
+	RE_ATOMIC bool use_srtp;
 	bool got_sdp;
 	char *crypto_suite;
 
@@ -182,7 +183,7 @@ static int start_srtp(struct menc_st *st, const char *suite_name)
 	}
 
 	/* use SRTP for this stream/session */
-	st->use_srtp = true;
+	re_atomic_rlx_set(&st->use_srtp, true);
 
 	return 0;
 }
@@ -195,7 +196,7 @@ static bool send_handler(int *err, struct sa *dst, struct mbuf *mb, void *arg)
 	int lerr = 0;
 	(void)dst;
 
-	if (!st->use_srtp || !is_rtp_or_rtcp(mb))
+	if (!re_atomic_rlx(&st->use_srtp) || !is_rtp_or_rtcp(mb))
 		return false;
 
 	if (is_rtcp_packet(mb)) {
@@ -228,7 +229,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	if (!st->got_sdp)
 		return true;  /* drop the packet */
 
-	if (!st->use_srtp || !is_rtp_or_rtcp(mb))
+	if (!re_atomic_rlx(&st->use_srtp) || !is_rtp_or_rtcp(mb))
 		return false;
 
 	if (is_rtcp_packet(mb)) {
