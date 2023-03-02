@@ -118,6 +118,7 @@ module			auresamp.so
 # Audio driver Modules
 module			alsa.so
 #module			pulse.so
+#module			pipewire.so
 #module			jack.so
 #module			portaudio.so
 #module			aubridge.so
