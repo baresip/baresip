@@ -18,7 +18,7 @@ jobs:
 
     env:
       CC: clang
-      CXX: clang
+      CXX: clang++
       CMAKE_GENERATOR: Ninja
       CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }}"
       CFLAGS: "-fsanitize=${{ matrix.sanitizer }}"
