@@ -59,4 +59,4 @@ jobs:
 
     - name: run slow thread sanitizer test
       if: ${{ matrix.sanitizer == 'thread' }}
-      run: cpulimit --exe ./build/test/selftest --limit 1
+      run: cpulimit --exe ./build/test/selftest --limit 10
