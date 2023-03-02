@@ -30,6 +30,7 @@ struct sender {
 	struct sa raddr_rtcp;  /**< Remote RTCP address             */
 	int pt_enc;            /**< Payload type for encoding       */
 	RE_ATOMIC bool enabled;/**< True if enabled                 */
+	mtx_t *lock;
 };
 
 
@@ -157,6 +158,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->cname);
 	mem_deref(s->peer);
 	mem_deref(s->mid);
+	mem_deref(s->tx.lock);
 }
 
 
@@ -176,8 +178,10 @@ static void send_set_raddr(struct stream *strm, const struct sa *raddr)
 	debug("stream: set remote addr for '%s': %J\n",
 	     media_name(strm->type), raddr);
 
+	mtx_lock(strm->tx.lock);
 	strm->tx.raddr_rtp  = *raddr;
 	strm->tx.raddr_rtcp = *raddr;
+	mtx_unlock(strm->tx.lock);
 }
 
 
@@ -629,12 +633,14 @@ static void mnat_connected_handler(const struct sa *raddr1,
 		return;
 	}
 
+	mtx_lock(strm->tx.lock);
 	strm->tx.raddr_rtp = *raddr1;
 
 	if (strm->rtcp_mux)
 		strm->tx.raddr_rtcp = *raddr1;
 	else if (raddr2)
 		strm->tx.raddr_rtcp = *raddr2;
+	mtx_unlock(strm->tx.lock);
 
 	strm->mnat_connected = true;
 
@@ -718,11 +724,17 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	if (!sp || !prm || !cfg || !rtph || !pth)
 		return EINVAL;
 
-	s = mem_zalloc(sizeof(*s), stream_destructor);
+	s = mem_zalloc(sizeof(*s), NULL);
 	if (!s)
 		return ENOMEM;
 
 	MAGIC_INIT(s);
+
+	err = mutex_alloc(&s->tx.lock);
+	if (err)
+		goto out;
+
+	mem_destructor(s, stream_destructor);
 
 	err  = sender_init(&s->tx);
 	err |= receiver_init(&s->rx);
@@ -925,8 +937,10 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 		pt = s->tx.pt_enc;
 
 	if (pt >= 0) {
+		mtx_lock(s->tx.lock);
 		err = rtp_send(s->rtp, &s->tx.raddr_rtp, ext, marker, pt, ts,
 			       tmr_jiffies_rt_usec(), mb);
+		mtx_unlock(s->tx.lock);
 		if (err)
 			metric_inc_err(s->tx.metric);
 	}
@@ -1029,6 +1043,7 @@ static void stream_remote_set(struct stream *s)
 
 	rtcp_enable_mux(s->rtp, s->rtcp_mux);
 
+	mtx_lock(s->tx.lock);
 	if (bundle_state(stream_bundle(s)) != BUNDLE_MUX) {
 		sa_cpy(&s->tx.raddr_rtp, sdp_media_raddr(s->sdp));
 
@@ -1037,12 +1052,14 @@ static void stream_remote_set(struct stream *s)
 		else
 			sdp_media_raddr_rtcp(s->sdp, &s->tx.raddr_rtcp);
 	}
+	mtx_unlock(s->tx.lock);
 
 	if (bundle_state(stream_bundle(s)) == BUNDLE_BASE) {
 
 		update_remotes(s->le.list, &s->tx.raddr_rtp);
 	}
 
+	mtx_lock(s->tx.lock);
 	if (sa_af(&s->tx.raddr_rtp) == AF_INET6 &&
 			sa_is_linklocal(&s->tx.raddr_rtp))
 		net_set_dst_scopeid(net, &s->tx.raddr_rtp);
@@ -1050,6 +1067,7 @@ static void stream_remote_set(struct stream *s)
 	if (sa_af(&s->tx.raddr_rtcp) == AF_INET6 &&
 			sa_is_linklocal(&s->tx.raddr_rtcp))
 		net_set_dst_scopeid(net, &s->tx.raddr_rtcp);
+	mtx_unlock(s->tx.lock);
 }
 
 
