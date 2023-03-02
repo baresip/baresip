@@ -33,7 +33,7 @@ jobs:
     
     - name: install packages
       run: |
-        sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
+        sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build cpulimit
    
     - uses: sreimers/pr-dependency-action@v0.5
       with:
@@ -55,3 +55,7 @@ jobs:
 
     - name: run selftest
       run: ./build/test/selftest
+
+    - name: run slow thread sanitizer test
+      if: ${{ matrix.sanitizer == 'thread' }}
+      run: cpulimit --limit 1 ./build/test/selftest
