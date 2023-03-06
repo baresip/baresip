@@ -1591,7 +1591,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 			if (!re_atomic_rlx(&tx->thr.run)) {
 				re_atomic_rlx_set(&tx->thr.run, true);
 				err = thread_create_name(&tx->thr.tid,
-							 "Audio Source",
+							 "Audio TX",
 							 tx_thread, a);
 				if (err) {
 					re_atomic_rlx_set(&tx->thr.run,
