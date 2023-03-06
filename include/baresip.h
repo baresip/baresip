@@ -1415,6 +1415,7 @@ bool stream_is_secure(const struct stream *strm);
 int  stream_start_mediaenc(struct stream *strm);
 int  stream_start_rtcp(const struct stream *strm);
 int  stream_enable(struct stream *strm, bool enable);
+int  stream_enable_tx(struct stream *strm, bool enable);
 int stream_open_natpinhole(struct stream *strm);
 void stream_mnat_attr(struct stream *strm, const char *name,
 		      const char *value);

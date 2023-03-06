@@ -210,29 +210,39 @@ static bool mnat_ready(const struct stream *strm)
 }
 
 
-static void stream_tx_enable(struct stream *s, bool enable)
+/**
+ * Enable TX stream
+ *
+ * @param strm   Stream object
+ * @param enable True to enable, false to disable
+ *
+ * @return 0 if success and otherwise errorcode
+ */
+int stream_enable_tx(struct stream *strm, bool enable)
 {
-	if (!s)
-		return;
+	if (!strm)
+		return EINVAL;
 
 	if (!enable) {
-		re_atomic_rls_set(&s->tx.enabled, false);
-		return;
+		re_atomic_rls_set(&strm->tx.enabled, false);
+		return 0;
 	}
 
-	if (!stream_is_ready(s))
-		return;
+	if (!stream_is_ready(strm))
+		return EAGAIN;
 
-	if (!(sdp_media_rdir(s->sdp) & SDP_SENDONLY))
-		return;
+	if (!(sdp_media_rdir(strm->sdp) & SDP_SENDONLY))
+		return ENOTSUP;
 
-	if (sdp_media_ldir(s->sdp) == SDP_RECVONLY)
-		return;
+	if (sdp_media_ldir(strm->sdp) == SDP_RECVONLY)
+		return ENOTSUP;
 
-	if (sdp_media_ldir(s->sdp) == SDP_INACTIVE)
-		return;
+	if (sdp_media_ldir(strm->sdp) == SDP_INACTIVE)
+		return ENOTSUP;
 
-	re_atomic_rls_set(&s->tx.enabled, true);
+	re_atomic_rls_set(&strm->tx.enabled, true);
+
+	return 0;
 }
 
 
@@ -241,7 +251,7 @@ static void stream_close(struct stream *strm, int err)
 	stream_error_h *errorh = strm->errorh;
 
 	strm->terminated = true;
-	stream_tx_enable(strm, false);
+	stream_enable_tx(strm, false);
 	strm->errorh = NULL;
 	jbuf_flush(strm->rx.jbuf);
 
@@ -669,7 +679,7 @@ static void mnat_connected_handler(const struct sa *raddr1,
 		}
 	}
 
-	stream_tx_enable(strm, true);
+	stream_enable_tx(strm, true);
 }
 
 
@@ -1089,7 +1099,7 @@ int stream_update(struct stream *s)
 	info("stream: update '%s'\n", media_name(s->type));
 
 	/* disable tx stream for updates */
-	stream_tx_enable(s, false);
+	stream_enable_tx(s, false);
 
 	fmt = sdp_media_rformat(s->sdp, NULL);
 
@@ -1120,7 +1130,7 @@ int stream_update(struct stream *s)
 		}
 	}
 
-	stream_tx_enable(s, true);
+	stream_enable_tx(s, true);
 
 	return 0;
 }
@@ -1517,7 +1527,7 @@ void stream_set_secure(struct stream *strm, bool secure)
 		update_menc_muxed(strm->le.list, secure);
 	}
 
-	stream_tx_enable(strm, true);
+	stream_enable_tx(strm, true);
 }
 
 
@@ -1567,7 +1577,7 @@ int stream_start_rtcp(const struct stream *strm)
 
 
 /**
- * Enable stream
+ * Enable stream (RX and TX)
  *
  * @param strm   Stream object
  * @param enable True to enable, false to disable
@@ -1583,7 +1593,7 @@ int stream_enable(struct stream *strm, bool enable)
 			enable ? "enable":"disable");
 
 	strm->rx.enabled = enable;
-	stream_tx_enable(strm, enable);
+	stream_enable_tx(strm, enable);
 
 	return 0;
 }
