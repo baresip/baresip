@@ -31,6 +31,7 @@ enum {
 	PICUP_INTERVAL	= 500,		       /**< FIR/PLI interval         */
 	NACK_BLPSZ	= 16,		       /**< NACK bitmask size        */
 	NACK_QUEUE_TIME	= 500,		       /**< in [ms]                  */
+	PKT_SIZE	= 1280,		       /**< max. Packet size in bytes*/
 };
 
 
@@ -102,6 +103,7 @@ struct vtx {
 	uint64_t ts_last;                  /**< Last RTP timestamp sent   */
 	thrd_t thrd;                       /**< Tx-Thread                 */
 	RE_ATOMIC bool run;                /**< Tx-Thread is active       */
+	cnd_t wait;                        /**< Tx-Thread wait            */
 
 	/** Statistics */
 	struct {
@@ -270,73 +272,6 @@ static int vidqent_alloc(struct vidqent **qentp, struct stream *strm,
 }
 
 
-static void vidqueue_poll(struct vtx *vtx, uint64_t jfs, uint64_t prev_jfs)
-{
-	size_t burst, sent;
-	uint64_t bandwidth_kbps;
-	struct le *le;
-	struct mbuf *mbd;
-	uint64_t jfs_nack = jfs + NACK_QUEUE_TIME;
-
-	if (!vtx)
-		return;
-
-	mtx_lock(&vtx->lock_tx);
-
-	le = vtx->sendq.head;
-	if (!le)
-		goto out;
-
-	/*
-	 * time [ms] * bitrate [kbps] / 8 = bytes
-	 */
-	bandwidth_kbps = vtx->video->cfg.bitrate / 1000;
-	burst = (size_t)((1 + jfs - prev_jfs) * bandwidth_kbps / 4);
-
-	burst = min(burst, BURST_MAX);
-	sent  = 0;
-
-	while (le) {
-		struct vidqent *qent = le->data;
-		le = le->next;
-
-		sent += mbuf_get_left(qent->mb);
-		mbd = mbuf_dup(qent->mb);
-
-		stream_send(vtx->video->strm, qent->ext, qent->marker,
-			    qent->pt, qent->ts, qent->mb);
-
-		mem_deref(qent->mb);
-
-		qent->jfs_nack = jfs_nack;
-		qent->mb  = mbd;
-		qent->seq = rtp_sess_seq(stream_rtp_sock(vtx->video->strm));
-
-		list_move(&qent->le, &vtx->sendqnb);
-
-		if (sent > burst) {
-			break;
-		}
-	}
-
-	/* Delayed NACK queue cleanup */
-	le = vtx->sendqnb.head;
-	while (le) {
-		struct vidqent *qent = le->data;
-
-		le = le->next;
-
-		if (jfs > qent->jfs_nack)
-			mem_deref(qent);
-		else
-			break; /* Assuming list is sorted by time */
-	}
-
-out:
-	mtx_unlock(&vtx->lock_tx);
-}
-
-
 static void video_destructor(void *arg)
 {
 	struct video *v = arg;
@@ -346,6 +281,7 @@ static void video_destructor(void *arg)
 	/* transmit */
 	if (re_atomic_rlx(&vtx->run)) {
 		re_atomic_rlx_set(&vtx->run, false);
+		cnd_signal(&vtx->wait);
 		thrd_join(vtx->thrd, NULL);
 	}
 	mtx_lock(&vtx->lock_tx);
@@ -419,6 +355,8 @@ static int packet_handler(bool marker, uint64_t ts,
 	mtx_lock(&vtx->lock_tx);
 	list_append(&vtx->sendq, &qent->le, qent);
 	mtx_unlock(&vtx->lock_tx);
+
+	cnd_signal(&vtx->wait);
 
 	return err;
 }
@@ -569,14 +507,77 @@ static void vidsrc_error_handler(int err, void *arg)
 static int vtx_thread(void *arg)
 {
 	struct vtx *vtx = arg;
-	uint64_t jfs, pjfs = tmr_jiffies();
+	uint64_t jfs;
+	uint64_t start_jfs  = tmr_jiffies_usec();
+	uint64_t target_jfs = tmr_jiffies_usec();
+
+	const uint32_t bitrate	 = vtx->video->cfg.bitrate;
+	const uint64_t max_delay = PKT_SIZE * 8 * 1000000L / bitrate + 1;
+	const uint64_t max_burst = BURST_MAX * 8 * 1000000L / bitrate + 1;
+
+	struct vidqent *qent = NULL;
+	struct mbuf *mbd;
+	size_t sent = 0;
 
 	while (re_atomic_rlx(&vtx->run)) {
-		sys_msleep(1000 / MEDIA_POLL_RATE);
+		mtx_lock(&vtx->lock_tx);
+		if (!vtx->sendq.head) {
+			cnd_wait(&vtx->wait, &vtx->lock_tx);
+			qent = NULL;
+			mtx_unlock(&vtx->lock_tx);
+			continue;
+		}
+		qent = vtx->sendq.head->data;
+		mtx_unlock(&vtx->lock_tx);
 
-		jfs = tmr_jiffies();
-		vidqueue_poll(vtx, jfs, pjfs);
-		pjfs = jfs;
+		jfs = tmr_jiffies_usec();
+
+		if (jfs < target_jfs) {
+			uint64_t delay = target_jfs - jfs;
+			if (delay > max_delay) {
+				delay	  = max_delay;
+				start_jfs = jfs + delay;
+				sent	  = 0;
+			}
+			sys_usleep((unsigned int)delay);
+		}
+		else {
+			if (jfs - max_burst > target_jfs) {
+				start_jfs = jfs - max_burst;
+				sent	  = 0;
+			}
+		}
+
+		sent += mbuf_get_left(qent->mb) * 8;
+		target_jfs = start_jfs + sent * 1000000 / bitrate;
+
+		mbd = mbuf_dup(qent->mb);
+
+		stream_send(vtx->video->strm, qent->ext, qent->marker,
+			    qent->pt, qent->ts, qent->mb);
+
+		mem_deref(qent->mb);
+
+		qent->jfs_nack = jfs + NACK_QUEUE_TIME * 1000;
+		qent->seq = rtp_sess_seq(stream_rtp_sock(vtx->video->strm));
+		qent->mb  = mbd;
+
+		mtx_lock(&vtx->lock_tx);
+		list_move(&qent->le, &vtx->sendqnb);
+
+		/* Delayed NACK queue cleanup */
+		struct le *le = vtx->sendqnb.head;
+		while (le) {
+			qent = le->data;
+
+			le = le->next;
+
+			if (jfs > qent->jfs_nack)
+				mem_deref(qent);
+			else
+				break; /* Assuming list is sorted by time */
+		}
+		mtx_unlock(&vtx->lock_tx);
 	}
 
 	return 0;
@@ -589,6 +590,7 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 
 	err  = mtx_init(&vtx->lock_enc, mtx_plain) != thrd_success;
 	err |= mtx_init(&vtx->lock_tx, mtx_plain) != thrd_success;
+	err |= cnd_init(&vtx->wait) != thrd_success;
 	if (err)
 		return ENOMEM;
 
@@ -600,6 +602,7 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 	str_ncpy(vtx->device, video->cfg.src_dev, sizeof(vtx->device));
 
 	vtx->fmt = (enum vidfmt)-1;
+
 
 	return err;
 }
@@ -1424,6 +1427,7 @@ static void video_stop_source(struct video *v)
 
 	if (re_atomic_rlx(&v->vtx.run)) {
 		re_atomic_rlx_set(&v->vtx.run, false);
+		cnd_signal(&v->vtx.wait);
 		thrd_join(v->vtx.thrd, NULL);
 	}
 
@@ -1537,7 +1541,7 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 		struct videnc_param prm;
 
 		prm.bitrate = v->cfg.bitrate;
-		prm.pktsize = 1280;
+		prm.pktsize = PKT_SIZE;
 		prm.fps     = get_fps(v);
 		prm.max_fs  = -1;
 
