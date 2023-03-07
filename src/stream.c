@@ -559,9 +559,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 				media_name(type), err);
 			goto out;
 		}
-
-		if (cfg->rxmode == RX_MODE_THREAD)
-			rx_start_thread(s->rx, s->rtp);
 	}
 
 	err = str_dup(&s->cname, prm->cname);
@@ -629,6 +626,9 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	}
 
 	list_append(streaml, &s->le, s);
+
+	if (s->rtp && cfg->rxmode == RX_MODE_THREAD)
+		rx_start_thread(s->rx, s->rtp);
 
  out:
 	if (err)
