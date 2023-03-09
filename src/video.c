@@ -812,7 +812,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 	++vrx->stats.disp_frames;
 
-	if (vrx->vd && vrx->vd->disph)
+	if (vrx->vd && vrx->vd->disph && vrx->vidisp)
 		err = vrx->vd->disph(vrx->vidisp, v->peer, frame, timestamp);
 
 	frame_filt = mem_deref(frame_filt);
