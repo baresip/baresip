@@ -312,7 +312,12 @@ disp_frame(struct vidisp_st *st, const char *peer,
 {
 	(void) timestamp;
 
-	debug("received frame width:%d, height:%d, size:%d",
+	if (!st) {
+		warning("comvideo: vidisp_st is NULL\n");
+		return EINVAL;
+	}
+
+	debug("comvideo: received frame width:%d, height:%d, size:%d",
 	      frame->size.w, frame->size.h, frame->size);
 
 	if (!st->identifier) {
