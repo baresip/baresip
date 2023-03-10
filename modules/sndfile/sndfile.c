@@ -120,6 +120,12 @@ static SNDFILE *openfile(const struct aufilt_prm *prm,
 	info("sndfile: dumping %s audio to %s\n",
 	     enc ? "encode" : "decode", filename);
 
+	module_event("sndfile", "dump", NULL, NULL,
+		     "%s/dump-%s=>%s-%H-%s.wav",
+		     file_path,
+		     cname, peer,
+		     timestamp_print, tm, enc ? "enc" : "dec");
+
 	return sf;
 }
 
