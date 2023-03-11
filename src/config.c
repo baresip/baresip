@@ -458,6 +458,15 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			    &cfg->net.use_getaddrinfo);
 	(void)conf_get_str(conf, "net_interface",
 			   cfg->net.ifname, sizeof(cfg->net.ifname));
+	if (0 == conf_get(conf, "net_af", &pl)) {
+		if (0 == pl_strcasecmp(&pl, "4"))
+			cfg->net.af = AF_INET;
+		else if (0 == pl_strcasecmp(&pl, "6"))
+			cfg->net.af = AF_INET6;
+		else {
+			warning("unsupported af (%r)\n", &pl);
+		}
+	}
 
 	return err;
 }
@@ -537,6 +546,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 "# Network\n"
 			 "net_interface\t\t%s\n"
+			 "net_af\t\t%s\n"
 			 "\n"
 			 ,
 
