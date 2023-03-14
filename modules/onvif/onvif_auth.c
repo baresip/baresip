@@ -77,7 +77,7 @@ static char *dynusers_path(void)
 	if (!path)
 		return NULL;
 
-	n = re_snprintf(path, sizeof(path), "%r%s",
+	n = re_snprintf(path, len, "%r%s",
 			  &onvif_config_path, "/users");
 	if (n != ((int) len) - 1) {
 		warning ("%s Can not concat string here -.-\n", __func__);
@@ -207,7 +207,7 @@ static int onvif_auth_parse_user(struct user **u, char *line, size_t linelen)
 	if (!u || !line || linelen <= 0)
 		return EINVAL;
 
-	err = re_regex(line, linelen, "[0-4]1,[a-z | A-Z | 0-9]*,",
+	err = re_regex(line, linelen, "[0-4]1,[a-z | A-Z | 0-9 | \\_\\^$?.\\*\\+\\-&\\[\\{\\(\\)\\}\\]/!#\\%:;=@~]*,",
 		&plgroupnb, &pluname);
 	if (err)
 		return err;
@@ -339,7 +339,7 @@ static void onvif_auth_getuserpasswd(struct user *u, char *passwd)
 		if (onvif_auth_getuserentryfromfile(userfile, &line, &linelen))
 			break;
 
-		if (re_regex(line, linelen, "[0-4]1,[a-z | A-Z | 0-9]*,[^\n]*",
+		if (re_regex(line, linelen, "[0-4]1,[a-z | A-Z | 0-9 | \\_\\^$?.\\*\\+\\-&\\[\\{\\(\\)\\}\\]/!#\\%:;=@~]*,[^\n]*",
 			NULL, &username, &pw))
 			break;
 
