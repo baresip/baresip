@@ -37,6 +37,7 @@
 
 enum {
 	MAC_LEN =     18,
+	MAC_LEN_SHORT=13,
 };
 
 static struct tmr shutdown_timer;
@@ -351,7 +352,7 @@ static uint16_t clk_seq = 0;
 int generate_timebased_uuid(char *uuid, size_t len)
 {
 	int err;
-	char mac[MAC_LEN];
+	char mac[MAC_LEN_SHORT];
 	uint64_t timestamp = tmr_jiffies();
 	uint32_t time_low = timestamp & 0xffffffff;
 	uint16_t time_mid = timestamp >> 32;
@@ -369,8 +370,8 @@ int generate_timebased_uuid(char *uuid, size_t len)
 
 	clk_seq_low = clk_seq;
 	clk_seq_hi_res = clk_seq >> 8;
-	err = get_mac_addr_fmt(mac, MAC_LEN, false, ':');
-	if (err != (MAC_LEN - 1))
+	err = get_mac_addr_fmt(mac, MAC_LEN_SHORT, false, ':');
+	if (err != (MAC_LEN_SHORT - 1))
 		return EINVAL;
 
 	err = re_snprintf(uuid, len, "%08x-%04x-%04x-%02x%02x-%s",
