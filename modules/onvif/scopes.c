@@ -105,7 +105,7 @@ static char *dynscope_path(void)
 	if (!path)
 		return NULL;
 
-	n = re_snprintf(path, sizeof(path), "%r%s",
+	n = re_snprintf(path, len, "%r%s",
 			  &onvif_config_path, "/scopes");
 	if (n != ((int) len) - 1) {
 		warning ("%s Can not concat string here -.-\n", __func__);
