@@ -113,6 +113,36 @@ int aucodec_print(struct re_printf *pf, const struct aucodec *ac);
 
 
 /*
+ * Audio Receiver Pipeline
+ */
+
+struct aurpipe;
+
+int aup_alloc(struct aurpipe **aupp, const struct config_audio *cfg,
+	      size_t sampc);
+int aup_decoder_set(struct aurpipe *rp,
+		    const struct aucodec *ac, const char *params);
+int aup_filt_append(struct aurpipe *rp, struct aufilt_dec_st *decst);
+void aup_flush(struct aurpipe *rp);
+void aup_set_extmap(struct aurpipe *rp, uint8_t aulevel);
+void aup_set_telev_pt(struct aurpipe *rp, int pt);
+void aup_receive(struct aurpipe *rp, const struct rtp_header *hdr,
+		 struct rtpext *extv, size_t extc,
+		 struct mbuf *mb, unsigned lostc, bool *ignore);
+void aup_read(struct aurpipe *rp, struct auframe *af);
+void aup_stop(struct aurpipe *rp);
+
+const struct aucodec *aup_codec(const struct aurpipe *rp);
+uint64_t aup_latency(const struct aurpipe *rp);
+bool aup_started(const struct aurpipe *rp);
+bool aup_filt_empty(const struct aurpipe *rp);
+bool aup_level_set(const struct aurpipe *rp);
+double aup_level(const struct aurpipe *rp);
+int aup_debug(struct re_printf *pf, const struct aurpipe *rp);
+int aup_print_pipeline(struct re_printf *pf, const struct aurpipe *rp);
+
+
+/*
  * Call Control
  */
 
