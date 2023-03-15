@@ -145,6 +145,7 @@ set(SRCS
   src/audio.c
   src/aufilt.c
   src/auplay.c
+  src/aureceiver.c
   src/ausrc.c
   src/baresip.c
   src/bundle.c
@@ -170,11 +171,11 @@ set(SRCS
   src/peerconn.c
   src/play.c
   src/reg.c
+  src/receiver.c
   src/rtpstat.c
   src/sdp.c
   src/sipreq.c
   src/stream.c
-  src/receiver.c
   src/stunuri.c
   src/timestamp.c
   src/ua.c

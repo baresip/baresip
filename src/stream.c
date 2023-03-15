@@ -41,6 +41,7 @@ struct receiver;
 struct rxmain {
 	struct tmr tmr_rtp;    /**< Timer for detecting RTP timeout  */
 	uint32_t rtp_timeout;  /**< RTP Timeout value in [ms]        */
+	struct tmr tmr_rec;    /**< Timer for receiver start         */
 };
 
 
@@ -134,6 +135,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->tx.metric);
 
 	tmr_cancel(&s->rxm.tmr_rtp);
+	tmr_cancel(&s->rxm.tmr_rec);
 	tmr_cancel(&s->tmr_natph);
 	list_unlink(&s->le);
 	mem_deref(s->sdp);
@@ -498,6 +500,13 @@ static int sender_init(struct sender *tx)
 }
 
 
+static void rx_start_delayed(void *arg)
+{
+	struct stream *s = arg;
+	rx_start_thread(s->rx, s->rtp);
+}
+
+
 int stream_alloc(struct stream **sp, struct list *streaml,
 		 const struct stream_param *prm,
 		 const struct config_avt *cfg,
@@ -552,6 +561,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		}
 
 		tmr_init(&s->rxm.tmr_rtp);
+		tmr_init(&s->rxm.tmr_rec);
 		err = stream_sock_alloc(s, prm->af);
 		if (err) {
 			warning("stream: failed to create socket"
@@ -628,7 +638,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	list_append(streaml, &s->le, s);
 
 	if (s->rtp && cfg->rxmode == RX_MODE_THREAD)
-		rx_start_thread(s->rx, s->rtp);
+		tmr_start(&s->rxm.tmr_rec, 0, rx_start_delayed, s);
 
  out:
 	if (err)

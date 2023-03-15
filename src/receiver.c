@@ -261,7 +261,6 @@ static int handle_rtp(struct receiver *rx, const struct rtp_header *hdr,
  handler:
 	stream_stop_natpinhole(rx->strm);
 
-	/*TODO: make audio.c stream_recv_handler() thread safe*/
 	rx->rtph(hdr, extv, extc, mb, lostc, &ignore, rx->arg);
 	if (ignore)
 		return EAGAIN;
