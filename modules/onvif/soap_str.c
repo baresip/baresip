@@ -717,5 +717,6 @@ const char str_wss_created[] = "Created";
 const char str_digest_realm[] = "stream";
 const char str_digest_qop[] = "auth";
 const char str_digest_md5sess[] = "MD5-Sess";
+const char str_digest_sha256[] = "SHA-256";
 
 /*SOAP.c Strings ------------------------------------------------------------*/
