@@ -505,12 +505,12 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 			info("ua: blocked access: \"%s\"\n", peeruri);
 
-			ua_event(ua, UA_EVENT_CALL_CLOSED, call, str);
+			ua_event(ua, UA_EVENT_CALL_CLOSED, call, "%s", str);
 			mem_deref(call);
 			break;
 		}
 
-		ua_event(ua, UA_EVENT_CALL_INCOMING, call, peeruri);
+		ua_event(ua, UA_EVENT_CALL_INCOMING, call, "%s", peeruri);
 		switch (ua->acc->answermode) {
 
 		case ANSWERMODE_EARLY:
@@ -534,43 +534,43 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		break;
 
 	case CALL_EVENT_RINGING:
-		ua_event(ua, UA_EVENT_CALL_RINGING, call, peeruri);
+		ua_event(ua, UA_EVENT_CALL_RINGING, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_OUTGOING:
-		ua_event(ua, UA_EVENT_CALL_OUTGOING, call, peeruri);
+		ua_event(ua, UA_EVENT_CALL_OUTGOING, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_PROGRESS:
 		ua_printf(ua, "Call in-progress: %s\n", peeruri);
-		ua_event(ua, UA_EVENT_CALL_PROGRESS, call, peeruri);
+		ua_event(ua, UA_EVENT_CALL_PROGRESS, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_ANSWERED:
 		ua_printf(ua, "Call answered: %s\n", peeruri);
-		ua_event(ua, UA_EVENT_CALL_ANSWERED, call, peeruri);
+		ua_event(ua, UA_EVENT_CALL_ANSWERED, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_ESTABLISHED:
 		ua_printf(ua, "Call established: %s\n", peeruri);
-		ua_event(ua, UA_EVENT_CALL_ESTABLISHED, call, peeruri);
+		ua_event(ua, UA_EVENT_CALL_ESTABLISHED, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_CLOSED:
-		ua_event(ua, UA_EVENT_CALL_CLOSED, call, str);
+		ua_event(ua, UA_EVENT_CALL_CLOSED, call, "%s", str);
 		mem_deref(call);
 		break;
 
 	case CALL_EVENT_TRANSFER:
-		ua_event(ua, UA_EVENT_CALL_TRANSFER, call, str);
+		ua_event(ua, UA_EVENT_CALL_TRANSFER, call, "%s", str);
 		break;
 
 	case CALL_EVENT_TRANSFER_FAILED:
-		ua_event(ua, UA_EVENT_CALL_TRANSFER_FAILED, call, str);
+		ua_event(ua, UA_EVENT_CALL_TRANSFER_FAILED, call, "%s", str);
 		break;
 
 	case CALL_EVENT_MENC:
-		ua_event(ua, UA_EVENT_CALL_MENC, call, str);
+		ua_event(ua, UA_EVENT_CALL_MENC, call, "%s", str);
 		break;
 	}
 }
@@ -588,7 +588,7 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 		key_str[0] = key;
 		key_str[1] = '\0';
 
-		ua_event(ua, UA_EVENT_CALL_DTMF_START, call, key_str);
+		ua_event(ua, UA_EVENT_CALL_DTMF_START, call, "%s", key_str);
 	}
 	else {
 		ua_event(ua, UA_EVENT_CALL_DTMF_END, call, NULL);
@@ -1156,7 +1156,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 	add_extension(ua, "norefersub");
 	list_append(uag_list(), &ua->le, ua);
-	ua_event(ua, UA_EVENT_CREATE, NULL, aor);
+	ua_event(ua, UA_EVENT_CREATE, NULL, "%s", aor);
 
  out:
 	mem_deref(host);
