@@ -20,6 +20,7 @@ int wsd_GetDiscoverable(const struct soap_msg *msg,
 	struct soap_msg **presponse);
 int wsd_SetDiscoverable(const struct soap_msg *msg,
 	struct soap_msg **presponse);
+int wsd_udp_send_anon(const struct sa *dst, struct mbuf *mb);
 
 #endif /* _WS_DISCOVERY_H_ */
 

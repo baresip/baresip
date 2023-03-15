@@ -341,7 +341,7 @@ int wsd_init(void)
 		soap_msg_print(msg);
 
 		err = sa_set_str(&laddr, SOAP_BC_IP4, SOAP_BC_PORT);
-		err = udp_send_anon(&laddr, msg->mb);
+		err = wsd_udp_send_anon(&laddr, msg->mb);
 	}
 
 	if (err)
@@ -377,7 +377,7 @@ int wsd_deinit(void)
 		soap_msg_print(msg);
 
 		err = sa_set_str(&laddr, SOAP_BC_IP4, SOAP_BC_PORT);
-		err = udp_send_anon(&laddr, msg->mb);
+		err = wsd_udp_send_anon(&laddr, msg->mb);
 	}
 
 	if (err)
@@ -535,6 +535,24 @@ int wsd_SetDiscoverable(const struct soap_msg *msg,
 		mem_deref(resp);
 	else
 		*presponse = resp;
+
+	return err;
+}
+
+
+int wsd_udp_send_anon(const struct sa *dst, struct mbuf *mb) {
+	struct udp_sock *us;
+	int err;
+
+	if (!dst || !mb)
+		return EINVAL;
+
+	err = udp_listen(&us, NULL, NULL, NULL);
+	if (err)
+		return err;
+
+	err = udp_send(us, dst, mb);
+	mem_deref(us);
 
 	return err;
 }
