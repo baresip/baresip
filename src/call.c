@@ -303,7 +303,8 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 		break;
 
 	case CALL_STATE_INCOMING:
-		call_event_handler(call, CALL_EVENT_INCOMING, call->peer_uri);
+		call_event_handler(call, CALL_EVENT_INCOMING, "%s",
+                                   call->peer_uri);
 		break;
 
 	default:
@@ -463,7 +464,7 @@ static void audio_error_handler(int err, const char *str, void *arg)
 
 	ua_event(call->ua, UA_EVENT_AUDIO_ERROR, call, "%d,%s", err, str);
 	call_stream_stop(call);
-	call_event_handler(call, CALL_EVENT_CLOSED, str);
+	call_event_handler(call, CALL_EVENT_CLOSED, "%s", str);
 }
 
 
@@ -475,7 +476,7 @@ static void video_error_handler(int err, const char *str, void *arg)
 	warning("call: video device error: %m (%s)\n", err, str);
 
 	call_stream_stop(call);
-	call_event_handler(call, CALL_EVENT_CLOSED, str);
+	call_event_handler(call, CALL_EVENT_CLOSED, "%s", str);
 }
 
 
@@ -1137,7 +1138,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 		return err;
 
 	set_state(call, CALL_STATE_OUTGOING);
-	call_event_handler(call, CALL_EVENT_OUTGOING, call->peer_uri);
+	call_event_handler(call, CALL_EVENT_OUTGOING, "%s", call->peer_uri);
 
 	/* If we are using asyncronous medianat like STUN/TURN, then
 	 * wait until completed before sending the INVITE */
@@ -1843,7 +1844,8 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 	call->got_offer = false;
 	if (!pl_strcmp(&msg->cseq.met, "INVITE") &&
 	    msg->scode >= 200 && msg->scode < 300)
-		call_event_handler(call, CALL_EVENT_ANSWERED, call->peer_uri);
+		call_event_handler(call, CALL_EVENT_ANSWERED, "%s",
+                                   call->peer_uri);
 
 	if (msg_ctype_cmp(&msg->ctyp, "multipart", "mixed"))
 		(void)sdp_decode_multipart(&msg->ctyp.params, msg->mb);
@@ -1915,7 +1917,7 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	tmr_start(&call->tmr_reinv, 0, set_established_mdir, call);
 
 	/* must be done last, the handler might deref this call */
-	call_event_handler(call, CALL_EVENT_ESTABLISHED, call->peer_uri);
+	call_event_handler(call, CALL_EVENT_ESTABLISHED, "%s", call->peer_uri);
 }
 
 
@@ -2042,7 +2044,7 @@ static void xfer_cleanup(struct call *call, char *reason)
 	if (call->xcall->state == CALL_STATE_TRANSFER) {
 		set_state(call->xcall, CALL_STATE_ESTABLISHED);
 		call_event_handler(call->xcall, CALL_EVENT_TRANSFER_FAILED,
-			reason);
+                                   "%s", reason);
 	}
 
 	call->xcall->xcall = NULL;
@@ -2089,7 +2091,7 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 		xfer_cleanup(call, reason);
 
 	call_stream_stop(call);
-	call_event_handler(call, CALL_EVENT_CLOSED, reason);
+	call_event_handler(call, CALL_EVENT_CLOSED, "%s", reason);
 }
 
 
@@ -2277,7 +2279,8 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 	call->estadir = stream_ldir(audio_strm(call_audio(call)));
 	call->estvdir = stream_ldir(video_strm(call_video(call)));
 	if (!call->acc->mnat)
-		call_event_handler(call, CALL_EVENT_INCOMING, call->peer_uri);
+		call_event_handler(call, CALL_EVENT_INCOMING, "%s",
+                                   call->peer_uri);
 
 	return err;
 }
@@ -2342,13 +2345,15 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 
 	if (media) {
 		mem_ref(call);
-		call_event_handler(call, CALL_EVENT_PROGRESS, call->peer_uri);
+		call_event_handler(call, CALL_EVENT_PROGRESS, "%s",
+                                   call->peer_uri);
 		call_stream_start(call, false);
 		mem_deref(call);
 	}
 	else {
 		call_stream_stop(call);
-		call_event_handler(call, CALL_EVENT_RINGING, call->peer_uri);
+		call_event_handler(call, CALL_EVENT_RINGING, "%s",
+                                   call->peer_uri);
 	}
 }
 
