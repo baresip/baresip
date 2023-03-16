@@ -921,7 +921,7 @@ int test_call_max(void)
 }
 
 
-int test_call_dtmf(void)
+static int test_call_dtmf_base(enum rx_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	size_t i, n = str_len(dtmf_digits);
@@ -929,6 +929,7 @@ int test_call_dtmf(void)
 
 	/* Use a low packet time, so the test completes quickly */
 	fixture_init_prm(f, ";ptime=1");
+	conf_config()->avt.rxmode = rxmode;
 
 	/* audio-source is needed for dtmf/telev to work */
 	err = module_load(".", "ausine");
@@ -960,8 +961,21 @@ int test_call_dtmf(void)
 	ASSERT_EQ(n, fix.b.n_dtmf_recv);
 
  out:
+	conf_config()->avt.rxmode  = RX_MODE_DEFAULT;
+
 	fixture_close(f);
 	module_unload("ausine");
+
+	return err;
+}
+
+
+int test_call_dtmf(void)
+{
+	int err;
+
+	err  = test_call_dtmf_base(RX_MODE_DEFAULT);
+	err |= test_call_dtmf_base(RX_MODE_THREAD);
 
 	return err;
 }
@@ -991,7 +1005,7 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 }
 
 
-int test_call_video(void)
+static int test_call_video_base(enum rx_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
@@ -1001,6 +1015,7 @@ int test_call_video(void)
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
@@ -1031,10 +1046,23 @@ int test_call_video(void)
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
 
  out:
+	conf_config()->avt.rxmode  = RX_MODE_DEFAULT;
+
 	fixture_close(f);
 	mem_deref(vidisp);
 	module_unload("fakevideo");
 	mock_vidcodec_unregister();
+
+	return err;
+}
+
+
+int test_call_video(void)
+{
+	int err;
+
+	err  = test_call_video_base(RX_MODE_DEFAULT);
+	err |= test_call_video_base(RX_MODE_THREAD);
 
 	return err;
 }
@@ -1162,7 +1190,7 @@ static void mock_sample_handler(const void *sampv, size_t sampc, void *arg)
 }
 
 
-int test_call_aulevel(void)
+static int test_call_aulevel_base(enum rx_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	struct auplay *auplay = NULL;
@@ -1171,6 +1199,7 @@ int test_call_aulevel(void)
 
 	/* Use a low packet time, so the test completes quickly */
 	fixture_init_prm(f, ";ptime=1");
+	conf_config()->avt.rxmode = rxmode;
 
 	conf_config()->audio.level = true;
 
@@ -1202,11 +1231,22 @@ int test_call_aulevel(void)
 
  out:
 	conf_config()->audio.level = false;
+	conf_config()->avt.rxmode  = RX_MODE_DEFAULT;
 
 	fixture_close(f);
 	mem_deref(auplay);
 	module_unload("ausine");
 
+	return err;
+}
+
+
+int test_call_aulevel(void)
+{
+	int err;
+
+	err  = test_call_aulevel_base(RX_MODE_DEFAULT);
+	err |= test_call_aulevel_base(RX_MODE_THREAD);
 	return err;
 }
 
@@ -1274,7 +1314,7 @@ static void audio_sample_handler(const void *sampv, size_t sampc, void *arg)
 }
 
 
-static int test_media_base(enum audio_mode txmode)
+static int test_media_base(enum audio_mode txmode, enum rx_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	struct auplay *auplay = NULL;
@@ -1286,6 +1326,7 @@ static int test_media_base(enum audio_mode txmode)
 
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
+	conf_config()->avt.rxmode = rxmode;
 
 	err = module_load(".", "ausine");
 	TEST_ERR(err);
@@ -1318,6 +1359,7 @@ static int test_media_base(enum audio_mode txmode)
  out:
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 
 	fixture_close(f);
 	mem_deref(auplay);
@@ -1334,7 +1376,8 @@ int test_call_format_float(void)
 {
 	int err;
 
-	err = test_media_base(AUDIO_MODE_POLL);
+	err  = test_media_base(AUDIO_MODE_POLL, RX_MODE_DEFAULT);
+	err |= test_media_base(AUDIO_MODE_POLL, RX_MODE_THREAD);
 	ASSERT_EQ(0, err);
 
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
@@ -1344,7 +1387,7 @@ int test_call_format_float(void)
 }
 
 
-int test_call_mediaenc(void)
+static int test_call_mediaenc_base(enum rx_mode rxmode)
 {
 	struct fixture fix = {0}, *f = &fix;
 	int err = 0;
@@ -1354,6 +1397,7 @@ int test_call_mediaenc(void)
 
 	/* Enable a dummy media encryption protocol */
 	fixture_init_prm(f, ";mediaenc=srtp;ptime=1");
+	conf_config()->avt.rxmode = rxmode;
 
 	ASSERT_STREQ("srtp", account_mediaenc(ua_account(f->a.ua)));
 
@@ -1390,6 +1434,8 @@ int test_call_mediaenc(void)
 	ASSERT_TRUE(fix.b.n_rtpestab > 0);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
+
 	fixture_close(f);
 	module_unload("aufile");
 	module_unload("ausine");
@@ -1403,7 +1449,18 @@ int test_call_mediaenc(void)
 }
 
 
-int test_call_medianat(void)
+int test_call_mediaenc(void)
+{
+	int err;
+
+	err  = test_call_mediaenc_base(RX_MODE_DEFAULT);
+	err |= test_call_mediaenc_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+static int test_call_medianat_base(enum rx_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err;
@@ -1412,6 +1469,7 @@ int test_call_medianat(void)
 
 	/* Enable a dummy media NAT-traversal protocol */
 	fixture_init_prm(f, ";medianat=XNAT;ptime=1");
+	conf_config()->avt.rxmode = rxmode;
 
 	ASSERT_STREQ("XNAT", account_medianat(ua_account(f->a.ua)));
 
@@ -1439,6 +1497,8 @@ int test_call_medianat(void)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
+
 	fixture_close(f);
 	module_unload("ausine");
 
@@ -1446,6 +1506,17 @@ int test_call_medianat(void)
 
 	if (fix.err)
 		return fix.err;
+
+	return err;
+}
+
+
+int test_call_medianat(void)
+{
+	int err;
+
+	err  = test_call_medianat_base(RX_MODE_DEFAULT);
+	err |= test_call_medianat_base(RX_MODE_THREAD);
 
 	return err;
 }
@@ -1765,13 +1836,14 @@ out:
 }
 
 
-int test_call_rtcp(void)
+static int test_call_rtcp_base(enum rx_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
 	/* Use a low packet time, so the test completes quickly */
 	fixture_init_prm(f, ";ptime=1");
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
@@ -1791,7 +1863,20 @@ int test_call_rtcp(void)
 	ASSERT_TRUE(fix.b.n_rtcp > 0);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
+
 	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_rtcp(void)
+{
+	int err;
+
+	err  = test_call_rtcp_base(RX_MODE_DEFAULT);
+	err |= test_call_rtcp_base(RX_MODE_THREAD);
 
 	return err;
 }
@@ -1804,7 +1889,8 @@ int test_call_aufilt(void)
 	err = module_load(".", "auconv");
 	TEST_ERR(err);
 
-	err = test_media_base(AUDIO_MODE_POLL);
+	err  = test_media_base(AUDIO_MODE_POLL, RX_MODE_DEFAULT);
+	err |= test_media_base(AUDIO_MODE_POLL, RX_MODE_THREAD);
 	ASSERT_EQ(0, err);
 
  out:
