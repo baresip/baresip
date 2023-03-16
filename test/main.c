@@ -255,7 +255,6 @@ int main(int argc, char *argv[])
 
 	str_ncpy(config->sip.local, "0.0.0.0:0", sizeof(config->sip.local));
 	config->sip.verify_server = false;
-	config->avt.rxmode = RX_MODE_THREAD;
 
 	uag_set_exit_handler(ua_exit_handler, NULL);
 
