@@ -10,6 +10,7 @@
 #include <baresip.h>
 #include "test.h"
 
+enum { ASYNC_WORKERS = 4 };
 
 typedef int (test_exec_h)(void);
 
@@ -243,6 +244,7 @@ int main(int argc, char *argv[])
 		goto out;
 	}
 
+	re_thread_async_init(ASYNC_WORKERS);
 	err = baresip_init(config);
 	err = sa_set_str(&sa, "127.0.0.1", 0);
 	err |= net_add_address(baresip_network(), &sa);
@@ -251,6 +253,7 @@ int main(int argc, char *argv[])
 
 	str_ncpy(config->sip.local, "0.0.0.0:0", sizeof(config->sip.local));
 	config->sip.verify_server = false;
+	config->avt.rxmode = RX_MODE_THREAD;
 
 	uag_set_exit_handler(ua_exit_handler, NULL);
 
