@@ -614,8 +614,7 @@ int rtsp_digest_auth_chall(const struct rtsp_conn *conn,
 	pl_set_str(&chall->param.realm, str_digest_realm);
 	pl_set_str(&chall->param.nonce, chall->nonce);
 	pl_set_str(&chall->param.qop, str_digest_qop);
-	// pl_set_str(&chall->param.algorithm, str_digest_md5sess);
-	pl_set_str(&chall->param.algorithm, str_digest_sha256);
+	pl_set_str(&chall->param.algorithm, str_digest_md5andsha256);
 	pl_set_str(&chall->param.opaque, chall->opaque);
 
   out:
@@ -630,80 +629,80 @@ int rtsp_digest_auth_chall(const struct rtsp_conn *conn,
 
 static int rtsp_digest_check_sha256(const struct httpauth_digest_resp *resp,
 	const struct user *user, const char *passwd, const struct pl *method) {
-		int err = 0;
-		int n = 0;
-		const char *p;
-		uint32_t i;
-		uint8_t ha1[SHA256_DIGEST_LENGTH];
-		uint8_t ha2[SHA256_DIGEST_LENGTH];
-		uint8_t digest[SHA256_DIGEST_LENGTH];
-		uint8_t response[SHA256_DIGEST_LENGTH];
+	int err = 0;
+	int n = 0;
+	const char *p;
+	uint32_t i;
+	uint8_t ha1[SHA256_DIGEST_LENGTH];
+	uint8_t ha2[SHA256_DIGEST_LENGTH];
+	uint8_t digest[SHA256_DIGEST_LENGTH];
+	uint8_t response[SHA256_DIGEST_LENGTH];
 
-		char *ha1_input = NULL;
-		int ha1_inputlen = MAXPASSWDLEN + MAXUSERLEN + 255 + 2 + 1; // 2 * ':' | and '\0'
-		char *ha2_input = NULL;
-		int ha2_inputlen = method->l + resp->uri.l + 1 + 1; // 1 * ':' | and '\0'
+	char *ha1_input = NULL;
+	int ha1_inputlen = MAXPASSWDLEN + MAXUSERLEN + 255 + 2 + 1; // 2 * ':' | and '\0'
+	char *ha2_input = NULL;
+	int ha2_inputlen = method->l + resp->uri.l + 1 + 1; // 1 * ':' | and '\0'
 
-		char *digest_input = NULL;
-		int digest_inputlen = SHA256_DIGEST_LENGTH + resp->nonce.l + resp->nc.l +
-			resp->cnonce.l + resp->qop.l + SHA256_DIGEST_LENGTH + 5 + 1 + 255;
+	char *digest_input = NULL;
+	int digest_inputlen = SHA256_DIGEST_LENGTH + resp->nonce.l + resp->nc.l +
+		resp->cnonce.l + resp->qop.l + SHA256_DIGEST_LENGTH + 5 + 1 + 255;
 
-		ha1_input = mem_zalloc(sizeof(char) * ha1_inputlen, NULL);
-		if (!ha1_input)
-			return ENOMEM;
+	ha1_input = mem_zalloc(sizeof(char) * ha1_inputlen, NULL);
+	if (!ha1_input)
+		return ENOMEM;
 
-		n = re_snprintf(ha1_input, ha1_inputlen, "%s:%r:%s",
-			user->name, &resp->realm, passwd);
+	n = re_snprintf(ha1_input, ha1_inputlen, "%s:%r:%s",
+		user->name, &resp->realm, passwd);
+	if (n == -1) {
+		err = EBADMSG;
+		goto out;
+	}
+	sha256((uint8_t *)ha1_input, n, ha1);
+
+	ha2_input = mem_zalloc(sizeof(char) * ha2_inputlen, NULL);
+	if (!ha2_input) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	n = re_snprintf(ha2_input, ha2_inputlen, "%r:%r", method, &resp->uri);
+	if (n == -1) {
+		err = EBADMSG;
+		goto out;
+	}
+	sha256((uint8_t *)ha2_input, n, ha2);
+
+	digest_input = mem_zalloc(sizeof(char) * digest_inputlen, NULL);
+	if (!digest_input) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	if (pl_isset(&resp->qop)) {
+		n = re_snprintf(digest_input, digest_inputlen, "%w:%r:%r:%r:%r:%w",
+				ha1, (size_t)SHA256_DIGEST_LENGTH,
+				&resp->nonce,
+				&resp->nc,
+				&resp->cnonce,
+				&resp->qop,
+				ha2, (size_t)SHA256_DIGEST_LENGTH);
+
 		if (n == -1) {
 			err = EBADMSG;
 			goto out;
 		}
-		sha256((uint8_t *)ha1_input, n, ha1);
+	}
+	else {
+		n = re_snprintf(digest_input, digest_inputlen, "%w:%r:%w",
+				ha1, (size_t)SHA256_DIGEST_LENGTH,
+				&resp->nonce,
+				ha2, (size_t)SHA256_DIGEST_LENGTH);
 
-		ha2_input = mem_zalloc(sizeof(char) * ha2_inputlen, NULL);
-		if (!ha2_input) {
-			err = ENOMEM;
-			goto out;
-		}
-
-		n = re_snprintf(ha2_input, ha2_inputlen, "%r:%r", method, &resp->uri);
 		if (n == -1) {
 			err = EBADMSG;
 			goto out;
 		}
-		sha256((uint8_t *)ha2_input, n, ha2);
-
-		digest_input = mem_zalloc(sizeof(char) * digest_inputlen, NULL);
-		if (!digest_input) {
-			err = ENOMEM;
-			goto out;
-		}
-
-		if (pl_isset(&resp->qop)) {
-			n = re_snprintf(digest_input, digest_inputlen, "%w:%r:%r:%r:%r:%w",
-				 ha1, (size_t)SHA256_DIGEST_LENGTH,
-				 &resp->nonce,
-				 &resp->nc,
-				 &resp->cnonce,
-				 &resp->qop,
-				 ha2, (size_t)SHA256_DIGEST_LENGTH);
-
-			if (n == -1) {
-				err = EBADMSG;
-				goto out;
-			}
-		}
-		else {
-			n = re_snprintf(digest_input, digest_inputlen, "%w:%r:%w",
-				 ha1, (size_t)SHA256_DIGEST_LENGTH,
-				 &resp->nonce,
-				 ha2, (size_t)SHA256_DIGEST_LENGTH);
-
-			if (n == -1) {
-				err = EBADMSG;
-				goto out;
-			}
-		}
+	}
 
 		sha256((uint8_t *)digest_input, n, digest);
 
@@ -726,6 +725,31 @@ static int rtsp_digest_check_sha256(const struct httpauth_digest_resp *resp,
 }
 
 
+static int digest_algo_sha256_decode(const struct pl *hval, bool *use_sha256) {
+	char *hval_str = NULL;
+	char *t = NULL;
+
+	hval_str = mem_zalloc(hval->l + 1, NULL);
+	if (!hval_str)
+		return ENOMEM;
+
+	t = strncpy(hval_str, hval->p, hval->l);
+	if (t != hval_str) {
+		mem_deref(hval_str);
+		return EBADMSG;
+	}
+
+	t = strstr(hval_str, str_digest_sha256);
+	if (t)
+		*use_sha256 = true;
+	else
+		*use_sha256 = false;
+
+	mem_deref(hval_str);
+	return 0;
+}
+
+
 /**
  * Check a Digest Response and return the userlevel if user can be
  * authenticated
@@ -744,6 +768,7 @@ enum userlevel rtsp_digest_auth(const struct rtsp_msg *msg)
 	uint8_t ha1[MD5_SIZE];
 	struct user *u;
 	struct le *le;
+	bool use_sha256 = false;
 
 	memset(passwd, 0, sizeof(passwd));
 	memset(ha1, 0, sizeof(ha1));
@@ -762,16 +787,27 @@ enum userlevel rtsp_digest_auth(const struct rtsp_msg *msg)
 	if (err)
 		goto out;
 
+	err = digest_algo_sha256_decode(&hdr->val, &use_sha256);
+	if (err)
+		goto out;
+
 	le = list_apply(&user_l, true, username_cmp, &resp->username);
 	if (!le) {
 		err = EINVAL;
 		goto out;
 	}
 
-
 	u = le->data;
 	onvif_auth_getuserpasswd(u, passwd);
-	err = rtsp_digest_check_sha256(resp, u, passwd, &msg->met);
+	if (use_sha256) {
+		err = rtsp_digest_check_sha256(resp, u, passwd, &msg->met);
+	} else {
+		err = md5_printf(ha1, "%s:%r:%s", u->name, &resp->realm, passwd);
+		if (err)
+			goto out;
+
+		err = httpauth_digest_response_auth(resp, &msg->met, ha1);
+	}
 
   out:
 	mem_deref(resp);

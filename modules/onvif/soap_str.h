@@ -667,5 +667,6 @@ extern const char str_digest_realm[];
 extern const char str_digest_qop[];
 extern const char str_digest_md5sess[];
 extern const char str_digest_sha256[];
+extern const char str_digest_md5andsha256[];
 
 #endif /* _ONVIF_SOAP_STR_H_ */
