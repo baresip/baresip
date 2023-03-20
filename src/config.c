@@ -283,6 +283,17 @@ static int sip_transports_print(struct re_printf *pf, uint32_t *mask)
 }
 
 
+static const char *net_af_str(int af)
+{
+	if (af == AF_INET)
+		return "ipv4";
+	else if (af == AF_INET6)
+		return "ipv6";
+	else
+		return "unspecified";
+}
+
+
 /**
  * Parse the core configuration file and update baresip core config
  *
@@ -546,7 +557,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "\n"
 			 "# Network\n"
 			 "net_interface\t\t%s\n"
-			 "net_af\t\t%s\n"
+			 "net_af\t\t\t%s\n"
 			 "\n"
 			 ,
 
@@ -595,7 +606,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 
-			 cfg->net.ifname
+			 cfg->net.ifname,
+			 net_af_str(cfg->net.af)
 		   );
 
 	return err;
