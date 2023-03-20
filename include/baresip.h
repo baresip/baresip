@@ -366,6 +366,8 @@ struct config_video {
 	char disp_dev[128];     /**< Video display device           */
 	unsigned width, height; /**< Video resolution               */
 	uint32_t bitrate;       /**< Encoder bitrate in [bit/s]     */
+	uint32_t send_bitrate;  /**< Sender bitrate in [bit/s]      */
+	uint32_t burst_bits;    /**< Number of Burst bits           */
 	double fps;             /**< Video framerate                */
 	bool fullscreen;        /**< Enable fullscreen display      */
 	int enc_fmt;            /**< Encoder pixelfmt (enum vidfmt) */

@@ -25,7 +25,6 @@
 /** Video transmit parameters */
 enum {
 	MEDIA_POLL_RATE = 250,		       /**< in [Hz]                  */
-	BURST_MAX	= 8192,		       /**< in bytes                 */
 	RTP_PRESZ	= 4 + RTP_HEADER_SIZE, /**< TURN and RTP header      */
 	RTP_TRAILSZ	= 12 + 4,	       /**< SRTP/SRTCP trailer       */
 	PICUP_INTERVAL	= 500,		       /**< FIR/PLI interval         */
@@ -510,10 +509,16 @@ static int vtx_thread(void *arg)
 	uint64_t jfs;
 	uint64_t start_jfs  = tmr_jiffies_usec();
 	uint64_t target_jfs = tmr_jiffies_usec();
+	uint32_t bitrate;
 
-	const uint32_t bitrate	 = vtx->video->cfg.bitrate;
+	if (vtx->video->cfg.send_bitrate)
+		bitrate = vtx->video->cfg.send_bitrate;
+	else
+		bitrate = vtx->video->cfg.bitrate;
+
 	const uint64_t max_delay = PKT_SIZE * 8 * 1000000L / bitrate + 1;
-	const uint64_t max_burst = BURST_MAX * 8 * 1000000L / bitrate + 1;
+	const uint64_t max_burst =
+		vtx->video->cfg.burst_bits * 8 * 1000000L / bitrate;
 
 	struct vidqent *qent = NULL;
 	struct mbuf *mbd;
