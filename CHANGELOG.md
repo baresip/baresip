@@ -5,7 +5,38 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.12.0] - 2023-02-15
+## 3.0.0 - 2023-03-20
+
+## What's Changed
+* ua: allow custom headers in sip REGISTER request by @Koshub in https://github.com/baresip/baresip/pull/2452
+* merge rem into re by @alfredh in https://github.com/baresip/baresip/pull/2442
+* main: fix async init order (after config load) by @sreimers in https://github.com/baresip/baresip/pull/2457
+* ci: install pkg-config on mac-os by @cspiel1 in https://github.com/baresip/baresip/pull/2459
+* ci: remove rem in sanitizers and valgrind yml by @cspiel1 in https://github.com/baresip/baresip/pull/2458
+* video: fix vidqueue_poll list_move by @sreimers in https://github.com/baresip/baresip/pull/2465
+* Dshow fixes by @tomek-o in https://github.com/baresip/baresip/pull/2467
+* Moved adding of custom headers from ua_connect_dir to ua_call_alloc by @juha-h in https://github.com/baresip/baresip/pull/2470
+* Include also params to MESSAGE URI by @juha-h in https://github.com/baresip/baresip/pull/2469
+* video: remove unused qent->dst by @sreimers in https://github.com/baresip/baresip/pull/2474
+* call: Fix delayed (auto) answer if awaiting PRACK by @maximilianfridrich in https://github.com/baresip/baresip/pull/2473
+* video: add TX thread by @sreimers in https://github.com/baresip/baresip/pull/2460
+* ccheck: add check_list_unlink check by @sreimers in https://github.com/baresip/baresip/pull/2471
+* stream: add stream_enable_tx() api by @sreimers in https://github.com/baresip/baresip/pull/2479
+* audio: align Audio TX thread name by @sreimers in https://github.com/baresip/baresip/pull/2480
+* Send event when dump file is opened by @juha-h in https://github.com/baresip/baresip/pull/2486
+* video: add NULL pointer check for vidisp by @cspiel1 in https://github.com/baresip/baresip/pull/2483
+* ua: Fix calls of ua_event() by @maximilianfridrich in https://github.com/baresip/baresip/pull/2495
+* call: Fix calls of call_event_handler by @maximilianfridrich in https://github.com/baresip/baresip/pull/2496
+
+## New Contributors
+* @Koshub made their first contribution in https://github.com/baresip/baresip/pull/2452
+* @tomek-o made their first contribution in https://github.com/baresip/baresip/pull/2467
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v2.12.0...v3.0.0
+
+---
+
+## 2.12.0 - 2023-02-15
 
 ## What's Changed
 * call: default status code for rejecting incoming calls by @cspiel1 in https://github.com/baresip/baresip/pull/2409
@@ -40,7 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.11.0] - 2023-01-11
+## 2.11.0 - 2023-01-11
 
 ### What's Changed
 * uag,call: do not override status code and reason by @cspiel1 in https://github.com/baresip/baresip/pull/2345
