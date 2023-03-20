@@ -2553,6 +2553,8 @@ int media_GetAudioEncoderConfigurationOptions_h(const struct soap_msg *msg,
 		}
 	}
 	else {
+		if (!cfg)
+			cfg = ae_l.head->data;
 		err |= media_add_audio_enc_config_opt(gaecorc, cfg);
 	}
 
@@ -2648,6 +2650,8 @@ int media_GetVideoEncoderConfigurationOptions_h(const struct soap_msg *msg,
 		}
 	}
 	else {
+		if (!cfg)
+			cfg = ve_l.head->data;
 		err |= media_add_video_enc_config_opt(gvecorc, cfg);
 	}
 
@@ -2745,6 +2749,8 @@ int media_GetAudioDecoderConfigurationOptions_h(const struct soap_msg *msg,
 		}
 	}
 	else {
+		if (!cfg)
+			cfg = ad_l.head->data;
 		err |= media_add_audio_dec_config_opt(gadcorc, cfg);
 	}
 
@@ -3384,6 +3390,8 @@ int media_GetAudioOutputConfigurationOptions_h(const struct soap_msg *msg,
 		}
 	}
 	else {
+		if (!cfg)
+			cfg = ao_l.head->data;
 		err |= media_add_audio_ouput_config_opt(gaocorc, cfg);
 	}
 
@@ -3709,6 +3717,8 @@ int media_GetVideoSourceConfigurationOptions_h(const struct soap_msg *msg,
 		}
 	}
 	else {
+		if (!cfg)
+			cfg = vs_l.head->data;
 		err |= media_add_video_source_config_opt(gvscors, cfg);
 	}
 
@@ -4046,6 +4056,8 @@ int media_GetAudioSourceConfigurationOptions_h(const struct soap_msg *msg,
 		}
 	}
 	else {
+		if (!cfg)
+			cfg = as_l.head->data;
 		err |= media_add_audio_source_config_opt(gascors, cfg);
 	}
 
