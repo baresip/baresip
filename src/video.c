@@ -608,7 +608,6 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 
 	vtx->fmt = (enum vidfmt)-1;
 
-
 	return err;
 }
 
