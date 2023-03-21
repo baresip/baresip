@@ -216,6 +216,21 @@ static int player_stop_start(struct mcreceiver *mcreceiver)
 }
 
 
+static void mcreceiver_stop(struct mcreceiver *mcreceiver)
+{
+	mcreceiver->state = RECEIVING;
+
+	module_event("multicast",
+		     "receiver stopped playing", NULL, NULL,
+		     "addr=%J prio=%d enabled=%d state=%s",
+		     &mcreceiver->addr, mcreceiver->prio,
+		     mcreceiver->enable,
+		     state_str(mcreceiver->state));
+
+	jbuf_flush(mcreceiver->jbuf);
+}
+
+
 /**
  * Multicast Priority handling
  *
@@ -263,9 +278,10 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 	}
 
 	if (mcreceiver->prio >= multicast_callprio() && uag_call_count()) {
-		mcreceiver->state = RECEIVING;
-		mcplayer_stop();
-		jbuf_flush(mcreceiver->jbuf);
+		if (mcreceiver->state == RUNNING) {
+			mcreceiver_stop(mcreceiver);
+			mcplayer_stop();
+		}
 		goto out;
 	}
 	else if (mcreceiver->prio < multicast_callprio()) {
@@ -530,9 +546,8 @@ void mcreceiver_enprio(uint32_t prio)
 			mcreceiver->enable = false;
 
 			if (mcreceiver->state == RUNNING) {
-				mcreceiver->state = RECEIVING;
+				mcreceiver_stop(mcreceiver);
 				mcplayer_stop();
-				jbuf_flush(mcreceiver->jbuf);
 			}
 		}
 	}
@@ -565,17 +580,8 @@ void mcreceiver_enrangeprio(uint32_t priol, uint32_t prioh, bool en)
 			mcreceiver->enable = en;
 
 			if (mcreceiver->state == RUNNING) {
-				mcreceiver->state = RECEIVING;
-
-				module_event("multicast",
-					"receiver stopped playing", NULL, NULL,
-					"addr=%J prio=%d enabled=%d state=%s",
-					&mcreceiver->addr, mcreceiver->prio,
-					mcreceiver->enable,
-					state_str(mcreceiver->state));
-
+				mcreceiver_stop(mcreceiver);
 				mcplayer_stop();
-				jbuf_flush(mcreceiver->jbuf);
 			}
 		}
 	}
@@ -599,17 +605,8 @@ void mcreceiver_enable(bool enable)
 	LIST_FOREACH(&mcreceivl, le) {
 		mcreceiver = le->data;
 		mcreceiver->enable = enable;
-		if (mcreceiver->state == RUNNING) {
-			mcreceiver->state = RECEIVING;
-
-			module_event("multicast",
-				"receiver stopped playing", NULL, NULL,
-				"addr=%J prio=%d enabled=%d state=%s",
-				&mcreceiver->addr, mcreceiver->prio,
-				mcreceiver->enable,
-				state_str(mcreceiver->state));
-		}
-		jbuf_flush(mcreceiver->jbuf);
+		if (mcreceiver->state == RUNNING)
+			mcreceiver_stop(mcreceiver);
 	}
 
 	mtx_unlock(&mcreceivl_lock);
