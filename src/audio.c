@@ -1625,12 +1625,16 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 int audio_start(struct audio *a)
 {
 	struct list *aufiltl = baresip_aufiltl();
-	int err;
+	const struct sdp_media *m;
+	enum sdp_dir dir;
+	int err = 0;
 
 	if (!a)
 		return EINVAL;
 
 	debug("audio: start\n");
+	m = stream_sdpmedia(audio_strm(a));
+	dir = sdp_media_dir(m);
 
 	/* Audio filter */
 	if (!list_isempty(aufiltl)) {
@@ -1640,10 +1644,15 @@ int audio_start(struct audio *a)
 			return err;
 	}
 
-	err  = start_player(&a->rx, a, baresip_auplayl());
-	err |= start_source(&a->tx, a, baresip_ausrcl());
-	if (err)
+	if (dir & SDP_RECVONLY)
+		err |= start_player(&a->rx, a, baresip_auplayl());
+
+	if (dir & SDP_SENDONLY)
+		err |= start_source(&a->tx, a, baresip_ausrcl());
+	if (err) {
+		warning("audio: start error (%m)\n", err);
 		return err;
+	}
 
 	if (a->tx.ac && a->rx.ac) {
 
