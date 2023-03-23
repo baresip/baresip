@@ -129,20 +129,27 @@ static void count_outgoing(struct call* call, void *arg)
 }
 
 
-static void turnoff_earlyaudio(struct call* call, void *arg)
+static void limit_earlyaudio(struct call* call, void *arg)
 {
-	enum sdp_dir ardir;
+	enum sdp_dir ardir, ndir;
+	size_t *cnt = arg;
+	uint32_t maxcnt = 32;
 	(void)arg;
 
 	if (!call_is_outgoing(call))
 		return;
 
 	ardir = sdp_media_rdir(stream_sdpmedia(audio_strm(call_audio(call))));
-	if (ardir & SDP_RECVONLY) {
-		call_set_audio_ldir(call, ardir & SDP_SENDONLY);
-		if (call_refresh_allowed(call))
-			call_modify(call);
-	}
+	ndir  = ardir;
+	conf_get_u32(conf_cur(), "call_max_earlyaudio", &maxcnt);
+
+	if (maxcnt && *cnt > maxcnt)
+		ndir = SDP_INACTIVE;
+	else if (*cnt > 1)
+		ndir &= SDP_SENDONLY;
+
+	if (ndir != ardir)
+		call_set_audio_ldir(call, ndir);
 }
 
 
@@ -565,6 +572,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	bool incall;
 	enum sdp_dir ardir, vrdir;
 	uint32_t count;
+	size_t outcnt;
 	struct pl val;
 	int err;
 	(void)arg;
@@ -633,14 +641,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_PROGRESS:
 		menu_selcall(call);
-		if (ardir & SDP_RECVONLY) {
-			size_t cnt = 0;
-			uag_filter_calls(count_outgoing, NULL, &cnt);
-			if (cnt > 1) {
-				uag_filter_calls(turnoff_earlyaudio, NULL,
-						 NULL);
-			}
-		}
+		outcnt = 0;
+		uag_filter_calls(count_outgoing, NULL, &outcnt);
+		uag_filter_calls(limit_earlyaudio, NULL, &outcnt);
 
 		tmr_start(&menu.tmr_play, TONE_DELAY, delayed_play, NULL);
 		break;
