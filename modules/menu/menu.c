@@ -118,21 +118,9 @@ static char *errorcode_key_aufile(uint16_t scode)
 }
 
 
-static void count_outgoing(struct call* call, void *arg)
-{
-	size_t *cnt = arg;
-
-	if (!call_is_outgoing(call))
-		return;
-
-	++(*cnt);
-}
-
-
 static void limit_earlyaudio(struct call* call, void *arg)
 {
 	enum sdp_dir ardir, ndir;
-	size_t *cnt = arg;
 	uint32_t maxcnt = 32;
 	(void)arg;
 
@@ -143,9 +131,9 @@ static void limit_earlyaudio(struct call* call, void *arg)
 	ndir  = ardir;
 	conf_get_u32(conf_cur(), "call_max_earlyaudio", &maxcnt);
 
-	if (maxcnt && *cnt > maxcnt)
+	if (maxcnt && menu.outcnt > maxcnt)
 		ndir = SDP_INACTIVE;
-	else if (*cnt > 1)
+	else if (menu.outcnt > 1)
 		ndir &= SDP_SENDONLY;
 
 	if (ndir != ardir)
@@ -572,7 +560,6 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	bool incall;
 	enum sdp_dir ardir, vrdir;
 	uint32_t count;
-	size_t outcnt;
 	struct pl val;
 	int err;
 	(void)arg;
@@ -628,6 +615,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 		break;
 
+	case UA_EVENT_CALL_OUTGOING:
+		++menu.outcnt;
+		break;
+
 	case UA_EVENT_CALL_LOCAL_SDP:
 		if (call_state(call) == CALL_STATE_OUTGOING)
 			menu_selcall(call);
@@ -641,9 +632,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	case UA_EVENT_CALL_PROGRESS:
 		menu_selcall(call);
-		outcnt = 0;
-		uag_filter_calls(count_outgoing, NULL, &outcnt);
-		uag_filter_calls(limit_earlyaudio, NULL, &outcnt);
+		uag_filter_calls(limit_earlyaudio, NULL, NULL);
 
 		tmr_start(&menu.tmr_play, TONE_DELAY, delayed_play, NULL);
 		break;
@@ -714,6 +703,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		}
 
 		hash_apply(menu.ovaufile->ht, ovaufile_del, call);
+		if (call_is_outgoing(call))
+			--menu.outcnt;
+
 		break;
 
 	case UA_EVENT_CALL_REMOTE_SDP:
