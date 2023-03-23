@@ -1166,7 +1166,7 @@ int call_connect(struct call *call, const struct pl *paddr)
  */
 int call_modify(struct call *call)
 {
-	struct mbuf *desc;
+	struct mbuf *desc = NULL;
 	int err;
 
 	if (!call)
@@ -1174,11 +1174,13 @@ int call_modify(struct call *call)
 
 	debug("call: modify\n");
 
-	err = call_sdp_get(call, &desc, true);
-	if (!err) {
-		err = sipsess_modify(call->sess, desc);
-		if (err)
-			goto out;
+	if (call_refresh_allowed(call)) {
+		err = call_sdp_get(call, &desc, true);
+		if (!err) {
+			err = sipsess_modify(call->sess, desc);
+			if (err)
+				goto out;
+		}
 	}
 
 	err = update_media(call);
