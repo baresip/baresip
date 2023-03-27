@@ -231,12 +231,13 @@ Stream::Stream(int& err, const ZRTPConfig& config, Session *session,
 
 Stream::~Stream()
 {
+	mem_deref(m_uh_rtp);
+	mem_deref(m_uh_rtcp);
+
 	stop();
 
 	delete m_zrtp;
 
-	mem_deref(m_uh_rtp);
-	mem_deref(m_uh_rtcp);
 	mem_deref(m_rtpsock);
 	mem_deref(m_rtcpsock);
 
