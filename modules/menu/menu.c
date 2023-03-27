@@ -131,7 +131,7 @@ static void limit_earlyaudio(struct call* call, void *arg)
 	ndir  = ardir;
 	conf_get_u32(conf_cur(), "call_max_earlyaudio", &maxcnt);
 
-	if (maxcnt && menu.outcnt > maxcnt)
+	if (menu.outcnt > maxcnt)
 		ndir = SDP_INACTIVE;
 	else if (menu.outcnt > 1)
 		ndir &= SDP_SENDONLY;
