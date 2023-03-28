@@ -101,7 +101,6 @@ add_definitions(${RE_DEFINITIONS})
 include_directories(
   include
   src
-  /usr/local/include
   ${RE_INCLUDE_DIRS}
   ${OPENSSL_INCLUDE_DIR}
 )
