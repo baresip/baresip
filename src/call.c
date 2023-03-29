@@ -144,34 +144,34 @@ static int start_audio(struct call *call)
 {
 	const struct sdp_format *sc;
 	const struct sdp_media *m = stream_sdpmedia(audio_strm(call->audio));
+	struct aucodec *ac;
+	enum sdp_dir dir = sdp_media_dir(m);
+	int err = 0;
 
 	/* Audio Stream */
 	sc = sdp_media_rcodec(m);
-	if (sc) {
-		struct aucodec *ac = sc->data;
-		enum sdp_dir dir = sdp_media_dir(m);
-		int err = 0;
-
-		if (dir & SDP_SENDONLY)
-			err |= audio_encoder_set(call->audio, ac,
-						 sc->pt, sc->params);
-
-		if (dir & SDP_RECVONLY)
-			err |= audio_decoder_set(call->audio, ac,
-						 sc->pt, sc->params);
-		if (err) {
-			warning("call: start:"
-				" audio codec setup error (%m)\n", err);
-			return err;
-		}
-
-		err = audio_start(call->audio);
-		if (err)
-			return err;
+	if (!sc) {
+		info("call: audio stream is disabled\n");
+		return 0;
 	}
-	else {
-		info("call: audio stream is disabled..\n");
+
+	ac = sc->data;
+	if (dir & SDP_SENDONLY)
+		err |= audio_encoder_set(call->audio, ac,
+					 sc->pt, sc->params);
+
+	if (dir & SDP_RECVONLY)
+		err |= audio_decoder_set(call->audio, ac,
+					 sc->pt, sc->params);
+	if (err) {
+		warning("call: start:"
+			" audio codec setup error (%m)\n", err);
+		return err;
 	}
+
+	err = audio_start(call->audio);
+	if (err)
+		return err;
 
 	return 0;
 }
