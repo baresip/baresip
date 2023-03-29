@@ -8,5 +8,5 @@ else()
     add_library(${PROJECT_NAME} MODULE ${SRCS})
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${AOM_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${AOM_LIBRARIES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${AOM_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${AOM_LIBRARY})
