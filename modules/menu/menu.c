@@ -129,7 +129,7 @@ static void limit_earlyaudio(struct call* call, void *arg)
 
 	ardir = sdp_media_rdir(stream_sdpmedia(audio_strm(call_audio(call))));
 	ndir  = ardir;
-	conf_get_u32(conf_cur(), "call_max_earlyaudio", &maxcnt);
+	conf_get_u32(conf_cur(), "menu_max_earlyaudio", &maxcnt);
 
 	if (menu.outcnt > maxcnt)
 		ndir = SDP_INACTIVE;

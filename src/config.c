@@ -734,7 +734,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "call_local_timeout\t%u\n"
 			  "call_max_calls\t\t%u\n"
 			  "call_hold_other_calls\tyes\n"
-			  "#call_max_earlyaudio\t32\n"
 			  "\n"
 			  "# Audio\n"
 #if defined (SHARE_PATH)
@@ -1168,6 +1167,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#busy_aufile\t\tbusy.wav\n"
 			"#error_aufile\t\terror.wav\n"
 			"#sip_autoanswer_aufile\tautoanswer.wav\n"
+			"#menu_max_earlyaudio\t32\n"
 			);
 
 	(void)re_fprintf(f,
