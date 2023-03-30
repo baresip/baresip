@@ -74,6 +74,8 @@ static struct config core_config = {
 		"", "",
 		640, 480,
 		1000000,
+		0,
+		0,
 		30,
 		true,
 		VID_FMT_YUV420P,
@@ -430,6 +432,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		cfg->video.height = size.h;
 	}
 	(void)conf_get_u32(conf, "video_bitrate", &cfg->video.bitrate);
+	(void)conf_get_u32(conf, "video_sendrate", &cfg->video.send_bitrate);
+	(void)conf_get_u32(conf, "video_burst_bits", &cfg->video.burst_bits);
 	(void)conf_get_float(conf, "video_fps", &cfg->video.fps);
 	(void)conf_get_bool(conf, "video_fullscreen", &cfg->video.fullscreen);
 
