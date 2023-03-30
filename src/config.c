@@ -1167,6 +1167,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#busy_aufile\t\tbusy.wav\n"
 			"#error_aufile\t\terror.wav\n"
 			"#sip_autoanswer_aufile\tautoanswer.wav\n"
+			"#menu_max_earlyaudio\t32\n"
 			);
 
 	(void)re_fprintf(f,

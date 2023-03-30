@@ -33,6 +33,7 @@ struct menu{
 	char *ansval;                 /**< Call-Info/Alert-Info value     */
 	struct odict *ovaufile;       /**< Override aufile dictionary     */
 	struct tmr tmr_play;          /**< Tones play timer               */
+	size_t outcnt;                /**< Outgoing call counter          */
 };
 
 /*Get menu object*/
