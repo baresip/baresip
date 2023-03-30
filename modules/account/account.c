@@ -122,7 +122,7 @@ static int account_write_template(const char *file)
  */
 static int line_handler(const struct pl *addr, void *arg)
 {
-	char buf[512];
+	char buf[1024];
 	struct ua *ua;
 	struct account *acc;
 	int err;
