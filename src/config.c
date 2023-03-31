@@ -1172,6 +1172,8 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#error_aufile\t\terror.wav\n"
 			"#sip_autoanswer_aufile\tautoanswer.wav\n"
 			"#menu_max_earlyaudio\t32\n"
+			"#menu_max_earlyvideo_rx\t32\n"
+			"#menu_max_earlyvideo_tx\t32\n"
 			);
 
 	(void)re_fprintf(f,

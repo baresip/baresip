@@ -338,15 +338,10 @@ static int update_audio(struct call *call)
 }
 
 
-static int update_media(struct call *call)
+int call_update_media(struct call *call)
 {
 	struct le *le;
 	int err = 0;
-
-	debug("call: update media\n");
-
-	ua_event(call->ua, UA_EVENT_CALL_REMOTE_SDP, call,
-		 call->got_offer ? "offer" : "answer");
 
 	/* media attributes */
 	audio_sdp_attr_decode(call->audio);
@@ -371,6 +366,8 @@ static int update_media(struct call *call)
 
 	if (stream_is_ready(audio_strm(call->audio)))
 		err |= update_audio(call);
+	else
+		audio_stop(call->audio);
 
 	if (stream_is_ready(video_strm(call->video)))
 		err |= video_update(call->video, call->peer_uri);
@@ -378,6 +375,17 @@ static int update_media(struct call *call)
 		video_stop(call->video);
 
 	return err;
+}
+
+
+static int update_media(struct call *call)
+{
+	debug("call: update media\n");
+
+	ua_event(call->ua, UA_EVENT_CALL_REMOTE_SDP, call,
+		 call->got_offer ? "offer" : "answer");
+
+	return call_update_media(call);
 }
 
 
@@ -1477,6 +1485,23 @@ void call_set_audio_ldir(struct call *call, enum sdp_dir dir)
 		return;
 
 	stream_set_ldir(audio_strm(call_audio(call)), dir);
+}
+
+
+/**
+ * Sets the video local direction of the given call
+ *
+ * @param call  Call object
+ * @param dir   SDP media direction
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+void call_set_video_ldir(struct call *call, enum sdp_dir dir)
+{
+	if (!call)
+		return;
+
+	stream_set_ldir(video_strm(call_video(call)), dir);
 }
 
 
