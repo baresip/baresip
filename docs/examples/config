@@ -247,6 +247,8 @@ video_selfview		window # {window,pip}
 #error_aufile		error.wav
 #sip_autoanswer_aufile	autoanswer.wav
 #menu_max_earlyaudio	32
+#menu_max_earlyvideo_rx	32
+#menu_max_earlyvideo_tx	32
 
 # GTK
 #gtk_clean_number	no
