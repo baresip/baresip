@@ -148,11 +148,13 @@ static void limit_earlymedia(struct call* call, void *arg)
 
 	rdir = sdp_media_rdir(stream_sdpmedia(video_strm(call_video(call))));
 	ndir = rdir;
-	conf_get_u32(conf_cur(), "menu_max_earlyvideo_rx", &maxcnt);
 
+	maxcnt = 32;
+	conf_get_u32(conf_cur(), "menu_max_earlyvideo_rx", &maxcnt);
 	if (menu.outcnt > maxcnt)
 		ndir &= SDP_SENDONLY;
 
+	maxcnt = 32;
 	conf_get_u32(conf_cur(), "menu_max_earlyvideo_tx", &maxcnt);
 	if (menu.outcnt > maxcnt)
 		ndir &= SDP_RECVONLY;
