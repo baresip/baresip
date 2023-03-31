@@ -1347,6 +1347,8 @@ int video_start_source(struct video *v)
 		}
 
 		vtx->vs = vs;
+		if (v->vtx.vc)
+			info("%H", vtx_print_pipeline, &v->vtx);
 	}
 	else {
 		info("video: no video source\n");
@@ -1361,12 +1363,6 @@ int video_start_source(struct video *v)
 	}
 
 	tmr_start(&v->tmr, TMR_INTERVAL * 1000, tmr_handler, v);
-
-	if (v->vtx.vc && v->vrx.vc) {
-		info("%H%H",
-		     vtx_print_pipeline, &v->vtx,
-		     vrx_print_pipeline, &v->vrx);
-	}
 
 	return 0;
 }
@@ -1406,6 +1402,9 @@ int video_start_display(struct video *v, const char *peer)
 				v->vrx.device, err);
 			return err;
 		}
+
+		if (v->vrx.vc)
+			info("%H", vrx_print_pipeline, &v->vrx);
 	}
 	else {
 		info("video: no video display\n");
