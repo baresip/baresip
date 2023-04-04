@@ -166,7 +166,7 @@ static void send_event(void *data, void *arg)
 	struct modev *modev = data;
 	(void)arg;
 
-	module_event("ctrl_dbus", modev->event, NULL, NULL, modev->txt);
+	module_event("ctrl_dbus", modev->event, NULL, NULL, "%s", modev->txt);
 	mem_deref(modev);
 }
 
