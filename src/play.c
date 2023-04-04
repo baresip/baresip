@@ -85,6 +85,7 @@ static void tmr_polling(void *arg)
 
 	if (play->ausrc && play->trep && play->trep <= tmr_jiffies()) {
 		play->trep = 0;
+		aubuf_flush(play->aubuf);
 		start_ausrc(play);
 	}
 
@@ -360,8 +361,6 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 		mtx_lock(&play->lock);
 		play->ausrc_st = mem_deref(play->ausrc_st);
 		mtx_unlock(&play->lock);
-
-		aubuf_flush(play->aubuf);
 	}
 }
 
