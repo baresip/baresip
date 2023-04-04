@@ -541,9 +541,9 @@ static int session_alloc(struct mnat_sess **sessp,
 	sess->offerer = offerer;
 
 	err |= sdp_session_set_lattr(ss, true,
-				     ice_attr_ufrag, sess->lufrag);
+				     ice_attr_ufrag, "%s", sess->lufrag);
 	err |= sdp_session_set_lattr(ss, true,
-				     ice_attr_pwd, sess->lpwd);
+				     ice_attr_pwd, "%s", sess->lpwd);
 	if (err)
 		goto out;
 
