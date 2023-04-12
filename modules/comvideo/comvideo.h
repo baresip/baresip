@@ -17,7 +17,8 @@
 
 #define DBUS_PROPERTY_SIZE          128
 
-struct comvideo_data {
+struct comvideo_data
+{
 	GstVideoClient *video_client;
 	CameradClient *camerad_client;
 	GstCameraSrc *camera_src;
@@ -30,6 +31,8 @@ struct comvideo_data {
 
 	char video_dbus_name[DBUS_PROPERTY_SIZE];
 	char video_dbus_path[DBUS_PROPERTY_SIZE];
+
+	mtx_t lock_enc;
 };
 
 extern struct comvideo_data  comvideo_codec;

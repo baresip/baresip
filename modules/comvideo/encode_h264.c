@@ -38,7 +38,10 @@ int encode_h264(struct videnc_state *st, bool update,
 static void enc_destructor(void *arg)
 {
 	struct videnc_state *st = arg;
+
+	mtx_lock(&comvideo_codec.lock_enc);
 	comvideo_codec.encoders = g_list_remove(comvideo_codec.encoders, st);
+	mtx_unlock(&comvideo_codec.lock_enc);
 }
 
 
@@ -61,7 +64,8 @@ static void param_handler(const struct pl *name, const struct pl *val,
 
 int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		       struct videnc_param *prm, const char *fmtp,
-		       videnc_packet_h *pkth, void *arg) {
+		       videnc_packet_h *pkth, void *arg)
+{
 	struct videnc_state *st;
 
 	(void) fmtp;
@@ -81,7 +85,8 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	st->arg = arg;
 	st->pktsize = prm->pktsize;
 
-	comvideo_codec.encoders = g_list_append(comvideo_codec.encoders, st);
+	comvideo_codec.encoders =
+		g_list_append(comvideo_codec.encoders, st);
 
 	if (str_isset(fmtp)) {
 		struct pl sdp_fmtp;
@@ -90,7 +95,7 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	}
 
 	info("comvideo: video encoder %s: %.2f fps, %d bit/s, pktsize=%u\n",
-	      vc->name, prm->fps, prm->bitrate, prm->pktsize);
+	     vc->name, prm->fps, prm->bitrate, prm->pktsize);
 	*vesp = st;
 
 	return 0;
@@ -100,6 +105,7 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 static void
 encode_h264_sample(struct videnc_state *st, enc_data *encData)
 {
+	debug("Begin encode_h264_sample\n");
 	guint8 *sample = encData->sample;
 	gsize  size = encData->size;
 
@@ -118,6 +124,7 @@ encode_h264_sample(struct videnc_state *st, enc_data *encData)
 	marker = hdr[1] >> 7;
 
 	st->pkth(marker, ts, hdr, 0, pld, pld_len, st->arg);
+	debug("End encode_h264_sample\n");
 }
 
 
@@ -136,7 +143,10 @@ camera_h264_sample_received(
 	buffer = gst_sample_get_buffer(sample);
 	gst_buffer_map(buffer, &map_info, (GstMapFlags) (GST_MAP_READ));
 
-	if (map_info.size >= RTP_HEADER_SIZE && map_info.data) {
+	mtx_lock(&comvideo_codec.lock_enc);
+
+	if (map_info.size >= RTP_HEADER_SIZE &&
+	    map_info.data && comvideo_codec.sources) {
 		encData.sample = map_info.data;
 		encData.size = map_info.size;
 
@@ -145,6 +155,9 @@ camera_h264_sample_received(
 			(GFunc) encode_h264_sample,
 			&encData);
 	}
+
+	mtx_unlock(&comvideo_codec.lock_enc);
+
 	gst_buffer_unmap(buffer, &map_info);
 }
 

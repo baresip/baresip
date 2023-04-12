@@ -341,6 +341,11 @@ disp_frame(struct vidisp_st *st, const char *peer,
 static int module_init(void)
 {
 	struct conf *conf;
+	int err;
+
+	err  = mtx_init(&comvideo_codec.lock_enc, mtx_plain) != thrd_success;
+	if(err)
+		return err;
 
 	if (!gst_is_initialized()) {
 		gst_init(NULL, NULL);
@@ -410,6 +415,7 @@ static int module_close(void) {
 	g_object_unref(comvideo_codec.camerad_client);
 	g_object_unref(comvideo_codec.video_client);
 
+	mtx_destroy(&comvideo_codec.lock_enc);
 	return 0;
 }
 
