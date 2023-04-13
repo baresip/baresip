@@ -21,6 +21,7 @@ set(MODULES
   coreaudio
   ctrl_dbus
   ctrl_tcp
+  dtmf
   debug_cmd
   directfb
   dshow
