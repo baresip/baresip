@@ -60,7 +60,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
-	err = dtmf_dec_alloc(&st->dec, prm->srate, prm->ch, dtmf_dec_handler, st->dbuf);
+	err = dtmf_dec_alloc(&st->dec, prm->srate, prm->ch, dtmf_dec_handler, NULL);
 
 	if (err)
 		mem_deref(st);
