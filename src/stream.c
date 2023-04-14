@@ -543,7 +543,8 @@ static void rtcp_handler(const struct sa *src, struct rtcp_msg *msg, void *arg)
 static int stream_sock_alloc(struct stream *s, int af)
 {
 	struct sa laddr;
-	int tos, err;
+	uint8_t tos;
+	int err;
 
 	if (!s)
 		return EINVAL;
@@ -562,10 +563,8 @@ static int stream_sock_alloc(struct stream *s, int af)
 	}
 
 	tos = s->type == MEDIA_AUDIO ? s->cfg.rtp_tos : s->cfg.rtpv_tos;
-	(void)udp_setsockopt(rtp_sock(s->rtp), IPPROTO_IP, IP_TOS,
-			     &tos, sizeof(tos));
-	(void)udp_setsockopt(rtcp_sock(s->rtp), IPPROTO_IP, IP_TOS,
-			     &tos, sizeof(tos));
+	(void)udp_settos(rtp_sock(s->rtp), tos);
+	(void)udp_settos(rtcp_sock(s->rtp), tos);
 
 	udp_rxsz_set(rtp_sock(s->rtp), RTP_RECV_SIZE);
 
