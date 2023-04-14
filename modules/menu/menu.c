@@ -99,7 +99,8 @@ static char *errorcode_fb_aufile(uint16_t scode)
 	switch (scode) {
 
 	case 404: return "notfound.wav";
-	case 486: return "busy.wav";
+	case 486:
+	case 603: return "busy.wav";
 	case 487: return NULL; /* ignore */
 	default:  return "error.wav";
 	}
@@ -111,7 +112,9 @@ static char *errorcode_key_aufile(uint16_t scode)
 	switch (scode) {
 
 	case 404: return "notfound_aufile";
-	case 486: return "busy_aufile";
+	case 486:
+	case 603:
+		  return "busy_aufile";
 	case 487: return NULL; /* ignore */
 	default:  return "error_aufile";
 	}
