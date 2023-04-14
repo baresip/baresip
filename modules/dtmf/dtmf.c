@@ -38,7 +38,7 @@ static void dec_destructor(void *arg)
 	struct dtmf_filt_dec *st = arg;
 
 	list_unlink(&st->af.le);
-	mem_deref(st->dtmf_dec);
+	mem_deref(st->dec);
 }
 
 
