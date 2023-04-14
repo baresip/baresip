@@ -19,10 +19,7 @@
 
 static void dtmf_dec_handler(char digit, void *arg)
 {
-	char *buf = arg;
 	char key_str[2];
-
-	buf[str_len(buf)] = digit;
 
 	key_str[0] = digit;
 	key_str[1] = '\0';
@@ -30,26 +27,18 @@ static void dtmf_dec_handler(char digit, void *arg)
 	ua_event(NULL, UA_EVENT_CALL_INBAND_DTMF, NULL, key_str);
 }
 
-
-struct dtmf_enc {
-	struct aufilt_enc_st af;  /* base class */
-};
-
-struct dtmf_dec {
+struct dtmf_filt_dec {
 	struct aufilt_dec_st af;  /* base class */
 	struct dtmf_dec *dec;
-	char dbuf[256];
 };
 
 
 static void dec_destructor(void *arg)
 {
-	struct dtmf_dec *st = arg;
-
-	// if (st->dec)
-	// 	sf_close(st->dec);
+	struct dtmf_filt_dec *st = arg;
 
 	list_unlink(&st->af.le);
+	mem_deref(st->dtmf_dec);
 }
 
 
@@ -58,7 +47,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct aufilt *af, struct aufilt_prm *prm,
 			 const struct audio *au)
 {
-	struct dtmf_dec *st;
+	struct dtmf_filt_dec *st;
 	int err = 0;
 	(void)ctx;
 	(void)af;
@@ -87,7 +76,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 static int decode(struct aufilt_dec_st *st, struct auframe *af)
 {
-	struct dtmf_dec *sf = (struct dtmf_dec *)st;
+	struct dtmf_filt_dec *sf = (struct dtmf_filt_dec *)st;
 
 	if (!st || !af)
 		return EINVAL;
