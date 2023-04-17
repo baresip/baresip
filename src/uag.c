@@ -732,12 +732,13 @@ int uag_reset_transp(bool reg, bool reinvite)
 		if (!reinvite)
 			continue;
 
-
-		for (lec = ua_calls(ua)->head; lec; lec = lec->next) {
+		lec = ua_calls(ua)->head;
+		while (lec) {
 			struct call *call = lec->data;
 			struct stream *s;
 			const struct sa *raddr;
 			struct sa laddr;
+			lec = lec->next;
 
 			s = audio_strm(call_audio(call));
 			if (!s)
@@ -757,6 +758,7 @@ int uag_reset_transp(bool reg, bool reinvite)
 					ua_event(ua, UA_EVENT_CALL_CLOSED,
 						 call, "Transport of "
 						 "User Agent changed");
+					mem_deref(call);
 					continue;
 				}
 				err = call_reset_transp(call, &laddr);
