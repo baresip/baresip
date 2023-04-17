@@ -265,6 +265,7 @@ static int module_init(void)
 	int err = 0;
 
 	pw_init(NULL, NULL);
+	setvbuf(stderr, NULL, _IONBF, 0);
 	info("pipewire: headers %s library %s \n",
 	     pw_get_headers_version(), pw_get_library_version());
 
