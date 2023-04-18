@@ -1,5 +1,11 @@
 project(speex)
 
+find_package(SPEEX)
+
+if(NOT SPEEX_FOUND)
+  return()
+endif()
+
 set(SRCS speex.c)
 
 if(STATIC)
