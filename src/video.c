@@ -516,9 +516,9 @@ static int vtx_thread(void *arg)
 	else
 		bitrate = vtx->video->cfg.bitrate;
 
-	const uint64_t max_delay = PKT_SIZE * 8 * 1000000L / bitrate + 1;
+	const uint64_t max_delay = PKT_SIZE * 8 * 1000000LL / bitrate + 1;
 	const uint64_t max_burst =
-		vtx->video->cfg.burst_bits * 1000000L / bitrate;
+		vtx->video->cfg.burst_bits * 1000000LL / bitrate;
 
 	struct vidqent *qent = NULL;
 	struct mbuf *mbd;
