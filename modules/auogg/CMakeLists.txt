@@ -12,4 +12,5 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Wno-strict-prototypes
 )
 
-
+target_include_directories(${PROJECT_NAME} PRIVATE ${OGG_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${OGG_LIBRARIES})

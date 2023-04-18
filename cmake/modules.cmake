@@ -8,6 +8,7 @@ set(MODULES
   auconv
   audiounit
   aufile
+  auogg
   auresamp
   ausine
   av1
