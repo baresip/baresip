@@ -67,6 +67,7 @@ set(MODULES
   snapshot
   sndfile
   sndio
+  speex
   srtp
   stdio
   stun
