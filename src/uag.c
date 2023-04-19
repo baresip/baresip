@@ -750,6 +750,9 @@ int uag_reset_transp(bool reg, bool reinvite)
 			if (net_dst_source_addr_get(raddr, &laddr))
 				continue;
 
+			if (sa_cmp(&laddr, call_laddr(call), SA_ADDR))
+				continue;
+
 			if (sa_isset(&laddr, SA_ADDR)) {
 				if (!call_refresh_allowed(call)) {
 					call_hangup(call, 500, "Transport of "
