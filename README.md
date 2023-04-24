@@ -144,7 +144,6 @@ baresip is using CMake, and the following packages must be
 installed before building:
 
 * [libre](https://github.com/baresip/re)
-* [librem](https://github.com/baresip/rem)
 * [openssl](https://www.openssl.org/)
 
 See [Wiki: Install Stable Release](https://github.com/baresip/baresip/wiki/Install:-Stable-Release)
@@ -413,10 +412,8 @@ x11           X11 video output driver
 ## Related projects
 
 * [libre - baresip fork](https://github.com/baresip/re)
-* [librem - baresip fork](https://github.com/baresip/rem)
 * [retest - baresip fork](https://github.com/baresip/retest)
 * [libre](https://github.com/creytiv/re)
-* [librem](https://github.com/creytiv/rem)
 * [retest](https://github.com/creytiv/retest)
 
 

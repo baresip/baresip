@@ -1,7 +1,7 @@
 # baresip-webrtc
 Baresip WebRTC Demo
 
-1. Install libre and librem
+1. Install libre
 
 2. Install baresip dev:
 
