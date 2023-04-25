@@ -119,8 +119,8 @@ int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb)
 		return err;
 
 	err = mbuf_strdup(mb, &buf, mbuf_get_left(mb));
-	if (err || !buf)
-		return err ? err : ENOMEM;
+	if (err)
+		return err;
 
 	/* find 1st boundary */
 	s = strstr(buf, bnd_str);
@@ -140,6 +140,5 @@ int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb)
 	}
 
 	mem_deref(buf);
-
 	return 0;
 }

@@ -1215,8 +1215,8 @@ static int append_params(struct mbuf *mb, struct pl *params)
 		return err ? err : ENOMEM;
 
 	err = mbuf_strdup(mb, &buf, mbuf_get_left(mb));
-	if (err || !buf)
-		return err ? err : ENOMEM;
+	if (err)
+		return err;
 
 	pstr = str;
 	while((token = strtok(pstr, ";"))) {
