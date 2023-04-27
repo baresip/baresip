@@ -1,0 +1,61 @@
+name: Coverage
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest 
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: fix flaky azure mirrors
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo sed -i 's/azure\./de\./' /etc/apt/sources.list
+
+    - name: install packages
+      run: |
+        sudo apt-get update && sudo apt-get install -y libssl-dev
+
+    - uses: sreimers/pr-dependency-action@v0.5
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: make re
+      run: |
+        cmake -S re -B re/build
+        cmake --build re/build -j
+        mv re ../.
+
+    - name: ldconfig
+      run: sudo ldconfig
+
+    - name: make baresip selftest
+      run: cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" -DMODULES="g711;ausine;fakevideo;auconv;dtls_srtp;srtp;aufile" && cmake --build build -j
+
+    - name: selftest
+      run: ./build/test/selftest
+
+    - name: gcov
+      run: | 
+        gcov build/**/*.o
+
+    - name: install gcovr
+      run: |
+        pip install gcovr==5.0
+
+    - name: coverage check
+      run: |
+        min_cov="47.5"
+        cov=$(~/.local/bin/gcovr -r . -f src -s | grep lines | awk '{ print $2 }' | sed 's/%//')
+        echo "Coverage: ${cov}% (min $min_cov%)"
+        exit $(echo "$cov < $min_cov" | bc -l)
