@@ -5,6 +5,38 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.1.0 - 2023-04-27
+
+## What's Changed
+* config: add net_af config setting by @juha-h in https://github.com/baresip/baresip/pull/2490
+* gzrtp: RX thread - safe stop by @cspiel1 in https://github.com/baresip/baresip/pull/2492
+* ci: avoid hardcoded OpenSSL path on macOS by @robert-scheck in https://github.com/baresip/baresip/pull/2505
+* fix cmake modules by @sreimers in https://github.com/baresip/baresip/pull/2507
+* cmake/mqtt: fix MOSQUITTO_LIBRARY by @sreimers in https://github.com/baresip/baresip/pull/2508
+* mc: send module event whenever receiver is stopped by @cspiel1 in https://github.com/baresip/baresip/pull/2509
+* menu: limit early audio TX streams by @cspiel1 in https://github.com/baresip/baresip/pull/2503
+* call: check if SIP UPDATE is allowed, but always update local media by @cspiel1 in https://github.com/baresip/baresip/pull/2504
+* account: increase line handler size to 1024 characters by @juha-h in https://github.com/baresip/baresip/pull/2511
+* cmake: avoid include of /usr/local/include by @cspiel1 in https://github.com/baresip/baresip/pull/2506
+* call,audio: respect SDP media dir on audio start similar to video by @cspiel1 in https://github.com/baresip/baresip/pull/2501
+* video: refactor paced and burst sending by @sreimers in https://github.com/baresip/baresip/pull/2482
+* ctrl_dbus,ice,png_vf: Fix format string usage by @maximilianfridrich in https://github.com/baresip/baresip/pull/2517
+* menu limit early video by @cspiel1 in https://github.com/baresip/baresip/pull/2514
+* play: flush of the aubuf directly before the replay starts by @cspiel1 in https://github.com/baresip/baresip/pull/2512
+* stream: fix setting of RTP tos for IPv6 by @cspiel1 in https://github.com/baresip/baresip/pull/2527
+* call: only flush audio stream when stream starts by @cspiel1 in https://github.com/baresip/baresip/pull/2526
+* menu: use busy tone when call declined (scode 603) by @cspiel1 in https://github.com/baresip/baresip/pull/2529
+* ua: incoming DTMF key=0 should be reported as DTMF end by @cspiel1 in https://github.com/baresip/baresip/pull/2528
+* video: fix possible 32bit overflow by @sreimers in https://github.com/baresip/baresip/pull/2534
+* ua: deref call on reset_transp fail by @maximilianfridrich in https://github.com/baresip/baresip/pull/2532
+* uag: avoid transport reset if local address has not changed by @juha-h in https://github.com/baresip/baresip/pull/2537
+* ci: add gcc-12 for Ubuntu 22.04 (ubuntu-latest) by @robert-scheck in https://github.com/baresip/baresip/pull/2542
+* docs: remove librem from README files by @robert-scheck in https://github.com/baresip/baresip/pull/2543
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.0.0...v3.1.0
+
+---
+
 ## 3.0.0 - 2023-03-20
 
 ## What's Changed
