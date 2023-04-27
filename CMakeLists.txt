@@ -244,7 +244,7 @@ endif()
 
 if(WIN32)
   list(APPEND LINKLIBS ws2_32 iphlpapi winmm gdi32 crypt32 strmiids
-      ole32 oleaut32 qwave)
+      ole32 oleaut32 qwave dbghelp)
 else()
   list(APPEND LINKLIBS -lm ${RESOLV_LIBRARY})
 endif()
