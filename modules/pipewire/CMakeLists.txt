@@ -8,11 +8,11 @@ else()
     add_library(${PROJECT_NAME} MODULE ${SRCS})
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${PIPEWIRE_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
+    ${PIPEWIRE_INCLUDE_DIRS})
 target_link_directories(${PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARY_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARIES})
 target_compile_options(${PROJECT_NAME} PRIVATE
   -Wno-pedantic
-  -Wno-bad-function-cast
   -D_GNU_SOURCE
 )
