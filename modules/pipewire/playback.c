@@ -77,7 +77,7 @@ int pw_playback_alloc(struct auplay_st **stp, const struct auplay *ap,
 	sampsz = aufmt_sample_size(prm->fmt);
 	st->sampc  = st->prm.ptime * st->prm.ch * st->prm.srate / 1000;
 	st->nbytes = st->sampc * sampsz;
-	st->stride = sampsz * prm->ch;
+	st->stride = (int32_t)sampsz * prm->ch;
 
 	st->wh  = wh;
 	st->arg = arg;
@@ -164,7 +164,7 @@ static void on_process(void *arg)
 
 	d->chunk->offset = 0;
 	d->chunk->stride = st->stride;
-	d->chunk->size   = auframe_size(&af);
+	d->chunk->size   = (uint32_t)auframe_size(&af);
 
 	pw_stream_queue_buffer(st->stream, b);
 }

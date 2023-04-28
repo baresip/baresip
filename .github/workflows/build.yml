@@ -84,6 +84,11 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y libfdk-aac-dev
 
+    - name: install pipewire
+      if: ${{ matrix.os == 'ubuntu-22.04' }}
+      run: |
+        sudo apt-get update && sudo apt-get install -y libpipewire-0.3-dev
+
     - name: install packages
       if: ${{ runner.os == 'macOS' }}
       run: |
