@@ -4,6 +4,7 @@
  * Copyright (C) 2011 Alfred E. Heggestad
  */
 #include <stdlib.h>
+#include <string.h>
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
@@ -98,8 +99,10 @@ static void decode_part(const struct pl *part, struct mbuf *mb)
  */
 int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb)
 {
-	struct pl bnd, s, e, p;
-	char expr[64];
+	struct pl p, bnd;
+	char bnd_str[64];
+	char *s, *e;
+	char *buf = NULL;
 	int err;
 
 	if (!ctype_prm || !mb)
@@ -111,27 +114,31 @@ int sdp_decode_multipart(const struct pl *ctype_prm, struct mbuf *mb)
 	if (err)
 		return err;
 
-	if (re_snprintf(expr, sizeof(expr), "--%r[^]+", &bnd) < 0)
-		return ENOMEM;
-
-	/* find 1st boundary */
-	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb), expr, &s);
+	err = pl_strcpy(&bnd, bnd_str, sizeof(bnd_str));
 	if (err)
 		return err;
 
+	err = mbuf_strdup(mb, &buf, mbuf_get_left(mb));
+	if (err)
+		return err;
+
+	/* find 1st boundary */
+	s = strstr(buf, bnd_str);
+
 	/* iterate over each part */
-	while (s.l > 2) {
-		if (re_regex(s.p, s.l, expr, &e))
-			return 0;
+	while (s) {
+		e = strstr(s + bnd.l, bnd_str);
+		if (!e)
+			break;
 
-		p.p = s.p + 2;
-		p.l = e.p - p.p - bnd.l - 2;
+		p.p = s + bnd.l + 2;
+		p.l = e - p.p - 2;
 
-		/* valid part in "p" */
 		decode_part(&p, mb);
 
 		s = e;
 	}
 
+	mem_deref(buf);
 	return 0;
 }
