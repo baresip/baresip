@@ -645,6 +645,8 @@ static const char *default_audio_device(void)
 	#endif
 #elif defined (FREEBSD)
 	return "alsa,default";
+#elif defined (OPENBSD)
+	return "sndio,default";
 #elif defined (WIN32)
 	return "winwave,nil";
 #else
@@ -998,6 +1000,8 @@ int config_write_template(const char *file, const struct config *cfg)
 	#endif
 #elif defined (FREEBSD)
 	(void)re_fprintf(f, "module\t\t\t" "alsa" MOD_EXT "\n");
+#elif defined (OPENBSD)
+	(void)re_fprintf(f, "module\t\t\t" "sndio" MOD_EXT "\n");
 #elif defined (WIN32)
 	(void)re_fprintf(f, "module\t\t\t" "winwave" MOD_EXT "\n");
 #else
