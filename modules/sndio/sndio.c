@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sndio.h>
-#include <pthread.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -21,7 +20,7 @@
 
 struct ausrc_st {
 	struct sio_hdl *hdl;
-	pthread_t thread;
+	thrd_t thread;
 	int16_t *sampv;
 	size_t sampc;
 	int run;
@@ -32,7 +31,7 @@ struct ausrc_st {
 
 struct auplay_st {
 	struct sio_hdl *hdl;
-	pthread_t thread;
+	thrd_t thread;
 	int16_t *sampv;
 	size_t sampc;
 	int run;
@@ -68,7 +67,7 @@ static struct sio_par *sndio_initpar(uint32_t srate, uint8_t ch)
 }
 
 
-static void *read_thread(void *arg)
+static int read_thread(void *arg)
 {
 	struct ausrc_st *st = arg;
 
@@ -88,11 +87,11 @@ static void *read_thread(void *arg)
 	}
 
  out:
-	return NULL;
+	return 0;
 }
 
 
-static void *write_thread(void *arg)
+static int write_thread(void *arg)
 {
 	struct auplay_st *st = arg;
 	struct auframe af;
@@ -112,7 +111,7 @@ static void *write_thread(void *arg)
 	}
 
  out:
-	return NULL;
+	return 0;
 }
 
 
@@ -122,7 +121,7 @@ static void ausrc_destructor(void *arg)
 
 	if (st->run) {
 		st->run = false;
-		(void)pthread_join(st->thread, NULL);
+		(void)thrd_join(st->thread, NULL);
 	}
 
 	if (st->hdl)
@@ -138,7 +137,7 @@ static void auplay_destructor(void *arg)
 
 	if (st->run) {
 		st->run = false;
-		(void)pthread_join(st->thread, NULL);
+		(void)thrd_join(st->thread, NULL);
 	}
 
 	if (st->hdl)
@@ -209,7 +208,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	}
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, read_thread, st);
+	err = thread_create_name(&st->thread, "sndio_read", read_thread, st);
 	if (err)
 		st->run = false;
 
@@ -283,7 +282,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	}
 
 	st->run = true;
-	err = pthread_create(&st->thread, NULL, write_thread, st);
+	err = thread_create_name(&st->thread, "sndio_write", write_thread, st);
 	if (err)
 		st->run = false;
 
