@@ -299,6 +299,7 @@ selfview      Video selfview module
 serreg        Serial registration
 snapshot      Save video-stream as PNG images
 sndfile       Audio dumper using libsndfile
+sndio         Audio driver for OpenBSD
 srtp          Secure RTP encryption (SDES) using libre SRTP-stack
 stdio         Standard input/output UI driver
 stun          Session Traversal Utilities for NAT (STUN) module
