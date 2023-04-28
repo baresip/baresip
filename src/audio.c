@@ -1804,12 +1804,8 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 	telev_set_srate(a->telev, ac->crate);
 
 	/* use a codec-specific ptime */
-	if (ac->ptime) {
-		const size_t sz = aufmt_sample_size(tx->src_fmt);
-
+	if (ac->ptime)
 		tx->ptime = ac->ptime;
-		tx->psize = sz * calc_nsamp(ac->srate, ac->ch, ac->ptime);
-	}
 
 	if (!tx->ausrc) {
 		err |= audio_start(a);
