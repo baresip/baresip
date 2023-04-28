@@ -531,7 +531,7 @@ static int module_init(void)
 		return err;
 	}
 
-	tls_set_verify_client(tls);
+	tls_set_verify_client_trust_all(tls);
 
 	err = tls_set_srtp(tls, srtp_profiles);
 	if (err) {
