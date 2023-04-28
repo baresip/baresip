@@ -9,6 +9,7 @@ else()
 endif()
 
 add_definitions(${GTK3_CFLAGS} ${GTK3_CFLAGS_OTHER})
+target_link_directories(${PROJECT_NAME} PRIVATE ${GTK3_LIBRARY_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${GTK3_LIBRARIES})
 
 target_compile_options(${PROJECT_NAME} PRIVATE
