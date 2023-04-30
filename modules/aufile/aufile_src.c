@@ -45,10 +45,8 @@ static void destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	if (re_atomic_rlx(&st->run)) {
-		re_atomic_rlx_set(&st->run, false);
-		thrd_join(st->thread, NULL);
-	}
+	re_atomic_rlx_set(&st->run, false);
+	thrd_join(st->thread, NULL);
 
 	tmr_cancel(&st->tmr);
 
