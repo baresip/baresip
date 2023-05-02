@@ -245,7 +245,7 @@ class ccheck:
     def check_c11_err_handling(self, line, len):
 
         if re.search('err.*=.*(mtx_|thrd_|cnd_|tss_)', line):
-            if re.search('(success|busy|error|nomem|timedout)', line):
+            if re.search('(success|busy|error|nomem|timedout|alloc)', line):
                 return
             self.error("Wrong C11 return check,"
                     " use e.g. 'err = mtx_init(m,t) != thrd_success;'")
