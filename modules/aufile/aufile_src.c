@@ -34,6 +34,7 @@ struct ausrc_st {
 	uint32_t ptime;
 	size_t sampc;
 	RE_ATOMIC bool run;
+	RE_ATOMIC bool started;
 	thrd_t thread;
 	ausrc_read_h *rh;
 	ausrc_error_h *errh;
@@ -45,7 +46,7 @@ static void destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	if (re_atomic_rlx(&st->run)) {
+	if (re_atomic_rlx(&st->started)) {
 		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
@@ -64,6 +65,7 @@ static int src_thread(void *arg)
 	int16_t *sampv;
 	uint32_t ms = 4;
 
+	re_atomic_rlx_set(&st->started, true);
 	if (!st->ptime)
 		ms = 0;
 
@@ -89,10 +91,11 @@ static int src_thread(void *arg)
 		ts += st->ptime;
 
 		if (aubuf_cur_size(st->aubuf) == 0)
-			re_atomic_rlx_set(&st->run, false);
+			break;
 	}
 
 	mem_deref(sampv);
+	re_atomic_rlx_set(&st->run, false);
 
 	return 0;
 }
