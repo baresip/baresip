@@ -46,7 +46,7 @@ struct videnc_state;
 
 void
 camera_h264_sample_received(GstCameraSrc *src,
-			    GstSample *sample, struct vidsrc_st *st);
+			    GstBuffer *buffer, struct vidsrc_st *st);
 
 
 int

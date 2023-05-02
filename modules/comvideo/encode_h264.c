@@ -130,17 +130,15 @@ encode_h264_sample(struct videnc_state *st, enc_data *encData)
 
 void
 camera_h264_sample_received(
-	GstCameraSrc *src, GstSample *sample,
+	GstCameraSrc *src, GstBuffer *buffer,
 	struct vidsrc_st *st)
 {
-	GstBuffer *buffer;
 	GstMapInfo map_info;
 	enc_data encData;
 
 	(void) src;
 	(void) st;
 
-	buffer = gst_sample_get_buffer(sample);
 	gst_buffer_map(buffer, &map_info, (GstMapFlags) (GST_MAP_READ));
 
 	mtx_lock(&comvideo_codec.lock_enc);
