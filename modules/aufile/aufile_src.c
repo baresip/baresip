@@ -89,7 +89,7 @@ static int src_thread(void *arg)
 		ts += st->ptime;
 
 		if (aubuf_cur_size(st->aubuf) == 0)
-			re_atomic_rlx_set(&st->run, false);
+			break;
 	}
 
 	mem_deref(sampv);
