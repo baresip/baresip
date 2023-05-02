@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <alsa/asoundlib.h>
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -18,7 +19,7 @@
 
 struct ausrc_st {
 	thrd_t thread;
-	volatile bool run;
+	RE_ATOMIC bool run;
 	snd_pcm_t *read;
 	void *sampv;
 	size_t sampc;
@@ -34,9 +35,9 @@ static void ausrc_destructor(void *arg)
 	struct ausrc_st *st = arg;
 
 	/* Wait for termination of other thread */
-	if (st->run) {
+	if (re_atomic_rlx(&st->run)) {
 		debug("alsa: stopping recording thread (%s)\n", st->device);
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
 
@@ -65,7 +66,7 @@ static int read_thread(void *arg)
 		goto out;
 	}
 
-	while (st->run) {
+	while (re_atomic_rlx(&st->run)) {
 		struct auframe af;
 		long n;
 
@@ -152,10 +153,10 @@ int alsa_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-	st->run = true;
+	re_atomic_rlx_set(&st->run, true);
 	err = thread_create_name(&st->thread, "alsa_src", read_thread, st);
 	if (err) {
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		goto out;
 	}
 
