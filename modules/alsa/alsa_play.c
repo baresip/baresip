@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <alsa/asoundlib.h>
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -18,7 +19,7 @@
 
 struct auplay_st {
 	thrd_t thread;
-	volatile bool run;
+	RE_ATOMIC bool run;
 	snd_pcm_t *write;
 	void *sampv;
 	size_t sampc;
@@ -34,9 +35,9 @@ static void auplay_destructor(void *arg)
 	struct auplay_st *st = arg;
 
 	/* Wait for termination of other thread */
-	if (st->run) {
+	if (re_atomic_rlx(&st->run)) {
 		debug("alsa: stopping playback thread (%s)\n", st->device);
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
 
@@ -60,7 +61,7 @@ static int write_thread(void *arg)
 	auframe_init(&af, st->prm.fmt, st->sampv, st->sampc, st->prm.srate,
 		     st->prm.ch);
 
-	while (st->run) {
+	while (re_atomic_rlx(&st->run)) {
 		const int samples = num_frames;
 		void *sampv;
 
@@ -80,7 +81,7 @@ static int write_thread(void *arg)
 			}
 		}
 		else if (n < 0) {
-			if (st->run)
+			if (re_atomic_rlx(&st->run))
 				warning("alsa: write error: %s\n",
 					snd_strerror((int) n));
 		}
@@ -156,10 +157,10 @@ int alsa_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
-	st->run = true;
+	re_atomic_rlx_set(&st->run, true);
 	err = thread_create_name(&st->thread, "alsa_play", write_thread, st);
 	if (err) {
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		goto out;
 	}
 
