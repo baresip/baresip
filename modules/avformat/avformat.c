@@ -10,6 +10,7 @@
 #define _BSD_SOURCE 1
 #include <unistd.h>
 #include <string.h>
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -54,8 +55,9 @@ static void shared_destructor(void *arg)
 {
 	struct shared *st = arg;
 
-	if (st->run) {
-		st->run = false;
+	if (re_atomic_rlx(&st->run)) {
+		debug("avformat: stopping read thread\n");
+		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
 
@@ -89,7 +91,7 @@ static int read_thread(void *data)
 	if (!pkt)
 		return ENOMEM;
 
-	while (st->run) {
+	while (re_atomic_rlx(&st->run)) {
 
 		int ret;
 
@@ -100,7 +102,7 @@ static int read_thread(void *data)
 		for (;;) {
 			double xts;
 
-			if (!st->run)
+			if (!re_atomic_rlx(&st->run))
 				break;
 
 			if (st->au.idx >=0 && st->vid.idx >=0)
@@ -421,10 +423,10 @@ int avformat_shared_alloc(struct shared **shp, const char *dev,
 		}
 	}
 
-	st->run = true;
+	re_atomic_rlx_set(&st->run, true);
 	err = thread_create_name(&st->thread, "avformat", read_thread, st);
 	if (err) {
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		goto out;
 	}
 

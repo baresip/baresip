@@ -4,6 +4,7 @@
  * Copyright (C) 2010 - 2020 Alfred E. Heggestad
  */
 
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
