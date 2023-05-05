@@ -202,6 +202,17 @@ $ build/baresip
 The config files in $HOME/.baresip are automatically generated
 the first time you run baresip.
 
+### Build documentation
+
+The api documentation can be build using [doxygen](https://www.doxygen.nl/manual/install.html).
+
+```
+$ doxygen mk/Doxyfile
+```
+
+By default the documentation is written to `../baresip-dox`, if you want to
+change the destination directory you can change the `OUTPUT_DIRECTORY` in
+`mk/Doxyfile`.
 
 ### Examples
 
