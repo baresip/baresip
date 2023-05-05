@@ -8,6 +8,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -32,8 +33,7 @@
 struct vidsrc_st {
 	struct vidframe *frame;
 	thrd_t thread;
-	mtx_t mutex;
-	bool run;
+	RE_ATOMIC bool run;
 	uint64_t ts;
 	double fps;
 	vidsrc_frame_h *frameh;
@@ -63,15 +63,7 @@ static int read_thread(void *arg)
 
 	st->ts = tmr_jiffies_usec();
 
-	while (1) {
-		bool run;
-
-		mtx_lock(&st->mutex);
-		run = st->run;
-		mtx_unlock(&st->mutex);
-
-		if (!run)
-			break;
+	while (re_atomic_rlx(&st->run)) {
 
 		if (tmr_jiffies_usec() < st->ts) {
 			sys_msleep(4);
@@ -88,21 +80,13 @@ static int read_thread(void *arg)
 static void src_destructor(void *arg)
 {
 	struct vidsrc_st *st = arg;
-	bool run;
 
-	mtx_lock(&st->mutex);
-	run = st->run;
-	mtx_unlock(&st->mutex);
-
-	if (run) {
-		mtx_lock(&st->mutex);
-		st->run = false;
-		mtx_unlock(&st->mutex);
-
+	/* Wait for termination of other thread */
+	if (re_atomic_rlx(&st->run)) {
+		debug("fakevideo: stopping read thread\n");
+		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
-
-	mtx_destroy(&st->mutex);
 
 	mem_deref(st->frame);
 }
@@ -162,16 +146,10 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 		vidframe_draw_vline(st->frame, x, 0, size->h, r, g, b);
 	}
 
-	err = mtx_init(&st->mutex, mtx_plain) != thrd_success;
-	if (err) {
-		err = ENOMEM;
-		goto out;
-	}
-
-	st->run = true;
+	re_atomic_rlx_set(&st->run, true);
 	err = thread_create_name(&st->thread, "fakevideo", read_thread, st);
 	if (err) {
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		goto out;
 	}
 
