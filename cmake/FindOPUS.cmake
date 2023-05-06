@@ -10,7 +10,7 @@ if(NOT WIN32)
 endif()
 
 find_path(OPUS_INCLUDE_DIR
-  NAMES opus/opus.h
+  NAMES opus/opus.h opus.h
   HINTS
     "${OPUS_INCLUDE_DIRS}"
     "${OPUS_HINTS}/include"
