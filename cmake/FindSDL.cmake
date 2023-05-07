@@ -10,7 +10,7 @@ if(NOT WIN32)
 endif()
 
 find_path(SDL_INCLUDE_DIR
-  NAMES SDL2/SDL.h
+  NAMES SDL2/SDL.h SDL.h
   HINTS
     "${SDL_INCLUDE_DIRS}"
     "${SDL_HINTS}/include"
