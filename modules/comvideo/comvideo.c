@@ -317,9 +317,6 @@ disp_frame(struct vidisp_st *st, const char *peer,
 		return EINVAL;
 	}
 
-	debug("comvideo: received frame width:%d, height:%d, size:%d",
-	      frame->size.w, frame->size.h, frame->size);
-
 	if (!st->identifier) {
 		disp_find_identifier(st, peer);
 	}
@@ -331,7 +328,8 @@ disp_frame(struct vidisp_st *st, const char *peer,
 	if (frame->data[0] != NULL && frame->linesize[0] > 0) {
 		gst_appsrc_h264_converter_send_frame(
 			st->converter, frame->data[0],
-			frame->linesize[0], frame->size.w, frame->size.h);
+			frame->linesize[0], frame->size.w,
+			frame->size.h, timestamp);
 	}
 
 	return 0;

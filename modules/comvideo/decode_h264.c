@@ -45,6 +45,8 @@ static inline void fragment_rewind(struct viddec_state *vds) {
 
 static int h264_convert(struct viddec_state *st, struct vidframe *frame)
 {
+	debug("h264 convert frame size: %ld\n", st->mb->end);
+
 	(void) frame;
 	st->mb->pos = 0;
 
