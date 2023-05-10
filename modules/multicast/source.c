@@ -4,6 +4,7 @@
  * Copyright (C) 2021 Commend.com - c.huber@commend.com
  */
 
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -54,7 +55,7 @@ struct mcsource {
 
 	struct {
 		thrd_t tid;
-		bool run;
+		RE_ATOMIC bool run;
 	} thr;
 };
 
@@ -65,8 +66,8 @@ static void mcsource_destructor(void *arg)
 
 	switch (src->cfg->txmode) {
 		case AUDIO_MODE_THREAD:
-			if (src->thr.run) {
-				src->thr.run = false;
+			if (re_atomic_rlx(&src->thr.run)) {
+				re_atomic_rlx_set(&src->thr.run, false);
 				thrd_join(src->thr.tid, NULL);
 			}
 		default:
@@ -309,14 +310,14 @@ static int tx_thread(void *arg)
 	struct mcsource *src = arg;
 	uint64_t ts = 0;
 
-	while (src->thr.run) {
+	while (re_atomic_rlx(&src->thr.run)) {
 		uint64_t now;
 		sys_msleep(4);
 
 		if (!src->aubuf_started)
 			continue;
 
-		if (!src->thr.run)
+		if (!re_atomic_rlx(&src->thr.run))
 			break;
 
 		now = tmr_jiffies();
@@ -412,12 +413,13 @@ static int start_source(struct mcsource *src)
 			case AUDIO_MODE_POLL:
 				break;
 			case AUDIO_MODE_THREAD:
-				if (!src->thr.run) {
-					src->thr.run = true;
+				if (!re_atomic_rlx(&src->thr.run)) {
+					re_atomic_rlx_set(&src->thr.run, true);
 					err = thread_create_name(&src->thr.tid,
 						"multicast", tx_thread, src);
 					if (err) {
-						src->thr.run = false;
+						re_atomic_rlx_set(
+							&src->thr.run, false);
 						return err;
 					}
 				}

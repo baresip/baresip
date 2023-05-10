@@ -5,6 +5,7 @@
  */
 #define _DEFAULT_SOURCE 1
 #define _BSD_SOURCE 1
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -39,8 +40,7 @@ enum channels {
 struct ausrc_st {
 	uint32_t ptime;
 	size_t sampc;
-	mtx_t mutex;
-	bool run;
+	RE_ATOMIC bool run;
 	thrd_t thread;
 	ausrc_read_h *rh;
 	ausrc_error_h *errh;
@@ -58,22 +58,12 @@ static struct ausrc *ausrc;
 static void destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
-	bool run;
-
-	mtx_lock(&st->mutex);
-	run = st->run;
-	mtx_unlock(&st->mutex);
-
-	if (run) {
-
-		mtx_lock(&st->mutex);
-		st->run = false;
-		mtx_unlock(&st->mutex);
-
+	/* Wait for termination of other thread */
+	if (re_atomic_rlx(&st->run)) {
+		debug("ausine: stopping play thread\n");
+		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
-
-	mtx_destroy(&st->mutex);
 }
 
 
@@ -92,17 +82,9 @@ static int play_thread(void *arg)
 	if (!sampv)
 		return ENOMEM;
 
-	while (1) {
+	while (re_atomic_rlx(&st->run)) {
 		struct auframe af;
 		size_t frame;
-		bool run;
-
-		mtx_lock(&st->mutex);
-		run = st->run;
-		mtx_unlock(&st->mutex);
-
-		if (!run)
-			break;
 
 		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc, st->prm.srate,
 		             st->prm.ch);
@@ -236,16 +218,10 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	info("ausine: audio ptime=%u sampc=%zu\n",
 	     st->ptime, st->sampc);
 
-	err = mtx_init(&st->mutex, mtx_plain) != thrd_success;
-	if (err) {
-		err = ENOMEM;
-		goto out;
-	}
-
-	st->run = true;
+	re_atomic_rlx_set(&st->run, true);
 	err = thread_create_name(&st->thread, "ausine", play_thread, st);
 	if (err) {
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		goto out;
 	}
 

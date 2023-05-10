@@ -7,6 +7,7 @@
  *     and Divus GmbH <developer@divus.eu>
  */
 
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>

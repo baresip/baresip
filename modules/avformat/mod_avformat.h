@@ -14,7 +14,7 @@ struct shared {
 	thrd_t thread;
 	char *dev;
 	bool is_realtime;
-	bool run;
+	RE_ATOMIC bool run;
 	bool is_pass_through;
 
 	struct stream {

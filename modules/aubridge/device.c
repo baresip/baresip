@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -19,7 +20,7 @@ struct device {
 	const struct auplay_st *auplay;
 	char name[64];
 	thrd_t thread;
-	volatile bool run;
+	RE_ATOMIC bool run;
 };
 
 
@@ -57,17 +58,6 @@ static int device_thread(void *arg)
 	size_t sampc;
 	size_t sampsz;
 
-	if (!dev->run)
-		return 0;
-
-	if (dev->auplay->prm.srate != dev->ausrc->prm.srate ||
-	    dev->auplay->prm.ch != dev->ausrc->prm.ch ||
-	    dev->auplay->prm.fmt != dev->ausrc->prm.fmt) {
-
-		warning("aubridge: incompatible ausrc/auplay parameters\n");
-		return EINVAL;
-	}
-
 	info("aubridge: thread start: %u Hz, %u channels, format=%s\n",
 	     dev->auplay->prm.srate, dev->auplay->prm.ch,
 	     aufmt_name(dev->auplay->prm.fmt));
@@ -80,11 +70,11 @@ static int device_thread(void *arg)
 	if (!sampv)
 		goto out;
 
-	while (dev->run) {
+	while (re_atomic_rlx(&dev->run)) {
 
 		(void)sys_msleep(4);
 
-		if (!dev->run)
+		if (!re_atomic_rlx(&dev->run))
 			break;
 
 		now = tmr_jiffies();
@@ -162,13 +152,21 @@ int aubridge_device_connect(struct device **devp, const char *device,
 		dev->ausrc = ausrc;
 
 	/* wait until we have both SRC+PLAY */
-	if (dev->ausrc && dev->auplay && !dev->run) {
+	if (dev->ausrc && dev->auplay && !re_atomic_rlx(&dev->run)) {
+		if (dev->auplay->prm.srate != dev->ausrc->prm.srate ||
+		    dev->auplay->prm.ch != dev->ausrc->prm.ch ||
+		    dev->auplay->prm.fmt != dev->ausrc->prm.fmt) {
 
-		dev->run = true;
+			warning("aubridge: incompatible ausrc/auplay "
+				"parameters\n");
+			return EINVAL;
+		}
+
+		re_atomic_rlx_set(&dev->run, true);
 		err = thread_create_name(&dev->thread, "aubridge",
 					 device_thread, dev);
 		if (err) {
-			dev->run = false;
+			re_atomic_rlx_set(&dev->run, false);
 		}
 	}
 
@@ -181,8 +179,8 @@ void aubridge_device_stop(struct device *dev)
 	if (!dev)
 		return;
 
-	if (dev->run) {
-		dev->run = false;
+	if (re_atomic_rlx(&dev->run)) {
+		re_atomic_rlx_set(&dev->run, false);
 		thrd_join(dev->thread, NULL);
 	}
 
