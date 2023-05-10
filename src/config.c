@@ -459,12 +459,11 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	if (0 == conf_get(conf, "jitter_buffer_type", &jbtype)) {
 		cfg->avt.video.jbtype = conf_get_jbuf_type(&jbtype);
+		cfg->avt.audio.jbtype = conf_get_jbuf_type(&jbtype);
 		warning("config: jitter_buffer_* config is deprecated, use "
 			"audio_jitter_buffer_* and "
 			"video_jitter_buffer_* options\n");
 	}
-	if (0 == conf_get(conf, "jitter_buffer_type", &jbtype))
-		cfg->avt.video.jbtype = conf_get_jbuf_type(&jbtype);
 
 	(void)conf_get_range(conf, "jitter_buffer_delay",
 			     &cfg->avt.video.jbuf_del);
