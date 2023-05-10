@@ -15,6 +15,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #undef __STRICT_ANSI__ /* needed for RHEL4 kernel 2.6.9 */
+#include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -51,7 +52,7 @@ struct buffer {
 struct vidsrc_st {
 	int fd;
 	thrd_t thread;
-	bool run;
+	RE_ATOMIC bool run;
 	struct vidsz sz;
 	u_int32_t pixfmt;
 	struct buffer *buffers;
@@ -448,8 +449,9 @@ static void destructor(void *arg)
 
 	debug("v4l2: stopping video source..\n");
 
-	if (st->run) {
-		st->run = false;
+	if (re_atomic_rlx(&st->run)) {
+		debug("v4l2: stopping read thread\n");
+		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
 
@@ -466,7 +468,7 @@ static int read_thread(void *arg)
 	struct vidsrc_st *st = arg;
 	int err;
 
-	while (st->run) {
+	while (re_atomic_rlx(&st->run)) {
 		err = read_frame(st);
 		if (err) {
 			warning("v4l2: read_frame: %m\n", err);
@@ -533,10 +535,10 @@ static int alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	if (err)
 		goto out;
 
-	st->run = true;
+	re_atomic_rlx_set(&st->run, true);
 	err = thread_create_name(&st->thread, "v4l2", read_thread, st);
 	if (err) {
-		st->run = false;
+		re_atomic_rlx_set(&st->run, false);
 		goto out;
 	}
 
