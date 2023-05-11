@@ -34,9 +34,6 @@ struct aurpipe {
 	struct audec_state *dec;      /**< Audio decoder state (optional)    */
 	const struct aucodec *ac;     /**< Current audio decoder             */
 	struct aubuf *aubuf;          /**< Audio buffer before auplay        */
-	size_t aubuf_minsz;           /**< Minimum aubuf size in [bytes]     */
-	size_t aubuf_maxsz;           /**< Maximum aubuf size in [bytes]     */
-	bool aubuf_started;           /**< Aubuf started flag                */
 	uint32_t ssrc;                /**< Incoming synchronization source   */
 	struct list filtl;            /**< Audio filters in decoding order   */
 	void *sampv;                  /**< Sample buffer                     */
@@ -49,8 +46,6 @@ struct aurpipe {
 	uint32_t telev_pt;            /**< Payload type for telephone-events */
 
 	struct {
-		uint64_t aubuf_overrun;
-		uint64_t aubuf_underrun;
 		uint64_t n_discard;
 	} stats;
 
@@ -131,8 +126,6 @@ static int aup_alloc_aubuf(struct aurpipe *rp, const struct auframe *af)
 	aubuf_set_mode(rp->aubuf, cfg->adaptive ?
 		       AUBUF_ADAPTIVE : AUBUF_FIXED);
 	aubuf_set_silence(rp->aubuf, cfg->silence);
-	rp->aubuf_minsz = min_sz;
-	rp->aubuf_maxsz = max_sz;
 	return err;
 }
 
@@ -147,16 +140,6 @@ static int aup_push_aubuf(struct aurpipe *rp, const struct auframe *af)
 			return err;
 	}
 
-	if (aubuf_cur_size(rp->aubuf) >= rp->aubuf_maxsz) {
-
-		++rp->stats.aubuf_overrun;
-
-#if 0
-		debug("audio: rx aubuf overrun (total %llu)\n",
-		      rp->stats.aubuf_overrun);
-#endif
-	}
-
 	err = aubuf_write_auframe(rp->aubuf, af);
 	if (err)
 		return err;
@@ -164,10 +147,6 @@ static int aup_push_aubuf(struct aurpipe *rp, const struct auframe *af)
 	rp->srate = af->srate;
 	rp->ch    = af->ch;
 	rp->fmt   = af->fmt;
-
-	if (!rp->aubuf_started &&
-	    (aubuf_cur_size(rp->aubuf) >= rp->aubuf_minsz))
-		rp->aubuf_started = true;
 
 	return 0;
 }
@@ -524,20 +503,6 @@ const struct aucodec *aup_codec(const struct aurpipe *rp)
 
 void aup_read(struct aurpipe *rp, struct auframe *af)
 {
-	size_t num_bytes = auframe_size(af);
-
-	mtx_lock(rp->mtx);
-	if (rp->aubuf_started && aubuf_cur_size(rp->aubuf) < num_bytes) {
-
-		++rp->stats.aubuf_underrun;
-
-#if 0
-		debug("aurpipe: aubuf underrun (total %llu)\n",
-			rp->stats.aubuf_underrun);
-#endif
-	}
-
-	mtx_unlock(rp->mtx);
 	aubuf_read_auframe(rp->aubuf, af);
 }
 
@@ -555,15 +520,10 @@ void aup_stop(struct aurpipe *rp)
 
 bool aup_started(const struct aurpipe *rp)
 {
-	bool started;
 	if (!rp)
 		return false;
 
-	mtx_lock(rp->mtx);
-	started = rp->aubuf_started;
-	mtx_unlock(rp->mtx);
-
-	return started;
+	return aubuf_started(rp->aubuf);
 }
 
 
@@ -587,12 +547,10 @@ int aup_debug(struct re_printf *pf, const struct aurpipe *rp)
 			   aucodec_print, rp->ac,
 			   aufmt_name(rp->fmt));
 	err |= mbuf_printf(mb, "       aubuf: %H"
-			   " (cur %.2fms, max %.2fms, or %llu, ur %llu)\n",
+			   " (cur %.2fms, max %.2fms)\n",
 			   aubuf_debug, rp->aubuf,
 			   aubuf_cur_size(rp->aubuf) / bpms,
-			   rp->aubuf_maxsz / bpms,
-			   rp->stats.aubuf_overrun,
-			   rp->stats.aubuf_underrun);
+			   aubuf_maxsz(rp->aubuf) / bpms);
 	err |= mbuf_printf(mb, "       n_discard:%llu\n",
 			   rp->stats.n_discard);
 	if (rp->level_set) {
