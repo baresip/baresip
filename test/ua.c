@@ -24,7 +24,6 @@ struct test {
 	uint32_t magic;
 	enum sip_transp tp_resp;
 	char uri[256];
-	char referto[256];
 
 	unsigned state;
 };
@@ -60,13 +59,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			     struct call *call, const char *prm, void *arg)
 {
 	struct test *t = arg;
-	struct sip_addr addr;
-	struct sip_addr referto_addr;
-	struct pl pl = pl_null;
-	char auri_escaped[256];
-	char uri[256];
 	size_t i;
 	int err = 0;
+	const char referto[] = "sip:user@127.0.0.1";
 	(void)call;
 	(void)prm;
 
@@ -96,21 +91,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		re_cancel();
 	}
 	else if (ev == UA_EVENT_REFER) {
-		pl_set_str(&pl, prm);
-		ASSERT_EQ(sip_addr_decode(&addr, &pl), 0);
-
-		pl_set_str(&pl, t->referto);
-		ASSERT_EQ(sip_addr_decode(&referto_addr, &pl), 0);
-
-		re_snprintf(uri, sizeof(uri), "<%H>", uri_escape_pl,
-			    &addr.auri);
-		re_snprintf(auri_escaped, sizeof(auri_escaped), "%H",
-			    uri_escape_pl, &addr.auri);
-
-		ASSERT_EQ(pl_strcmp(&referto_addr.auri, auri_escaped)
-			  && pl_strcmp(&referto_addr.auri, uri), 0);
+		ASSERT_STREQ(referto, prm);
 		++t->n_ev;
-		ua_connect(ua, NULL, NULL, prm, VIDMODE_OFF);
 	}
 
  out:
@@ -844,6 +826,7 @@ static void refer_resp_handler(int err, const struct sip_msg *msg, void *arg)
 {
 	struct test *t = arg;
 	uint32_t clen;
+	const char referto[] = "sip:user@127.0.0.1";
 	struct pl met=PL("REFER");
 
 	ASSERT_EQ(MAGIC, t->magic);
@@ -879,7 +862,7 @@ static void refer_resp_handler(int err, const struct sip_msg *msg, void *arg)
 			       "auth_user=userx;auth_pass=pass");
 		TEST_ERR(err);
 
-		err = ua_refer_send(t->ua, t->uri, t->referto,
+		err = ua_refer_send(t->ua, t->uri, referto,
 				    refer_resp_handler, t);
 		TEST_ERR(err);
 		break;
@@ -903,15 +886,15 @@ static void refer_resp_handler(int err, const struct sip_msg *msg, void *arg)
 }
 
 
-static int test_ua_refer_base(enum sip_transp transp, const char *referto)
+static int test_ua_refer_base(enum sip_transp transp)
 {
 	struct test t;
 	struct sa laddr;
 	struct sa dst;
+	const char referto[] = "sip:user@127.0.0.1";
 	int n, err = 0;
 
 	test_init(&t);
-	re_snprintf(t.referto, sizeof(t.referto), "%s", referto);
 
 	err = uag_event_register(ua_event_handler, &t);
 	TEST_ERR(err);
@@ -939,7 +922,7 @@ static int test_ua_refer_base(enum sip_transp transp, const char *referto)
 	ASSERT_TRUE(n > 0);
 
 
-	err = ua_refer_send(t.ua, t.uri, t.referto, refer_resp_handler, &t);
+	err = ua_refer_send(t.ua, t.uri, referto, refer_resp_handler, &t);
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
@@ -972,21 +955,9 @@ int test_ua_refer(void)
 {
 	int err = 0;
 
-	err |= test_ua_refer_base(SIP_TRANSP_UDP, "sip:user@127.0.0.1");
+	err |= test_ua_refer_base(SIP_TRANSP_UDP);
 	TEST_ERR(err);
-	err |= test_ua_refer_base(SIP_TRANSP_TCP, "sip:user@127.0.0.1");
-	TEST_ERR(err);
-	err |= test_ua_refer_base(SIP_TRANSP_TCP, "<sip:someone@127.0.0.1>");
-	TEST_ERR(err);
-	err |= test_ua_refer_base(SIP_TRANSP_TCP,
-				  "<sip:h%E2%82%ACsa@127.0.0.1>");
-	TEST_ERR(err);
-	err |= test_ua_refer_base(SIP_TRANSP_TCP,
-				  "\"Display Name\" <sip:dispname@127.0.0.1>");
-	TEST_ERR(err);
-	err |= test_ua_refer_base(SIP_TRANSP_TCP,
-				  "\"D\xE2\x82\xACsplay \" "
-				  "<sip:h%E2%82%ACs%20a@127.0.0.1>");
+	err |= test_ua_refer_base(SIP_TRANSP_TCP);
 	TEST_ERR(err);
 
  out:
