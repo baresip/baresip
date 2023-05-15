@@ -782,12 +782,24 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 			goto out;
 	}
 
-	/* Jitter buffer */
-	if (prm->use_rtp && cfg->jbtype != JBUF_OFF && cfg->jbuf_del.max) {
+	/* Audio Jitter buffer */
+	if (s->type == MEDIA_AUDIO && prm->use_rtp &&
+	    cfg->audio.jbtype != JBUF_OFF && cfg->audio.jbuf_del.max) {
 
-		err  = jbuf_alloc(&s->rx.jbuf, cfg->jbuf_del.min,
-				cfg->jbuf_del.max);
-		err |= jbuf_set_type(s->rx.jbuf, cfg->jbtype);
+		err = jbuf_alloc(&s->rx.jbuf, cfg->audio.jbuf_del.min,
+				 cfg->audio.jbuf_del.max);
+		err |= jbuf_set_type(s->rx.jbuf, cfg->audio.jbtype);
+		if (err)
+			goto out;
+	}
+
+	/* Video Jitter buffer */
+	if (s->type == MEDIA_VIDEO && prm->use_rtp &&
+	    cfg->video.jbtype != JBUF_OFF && cfg->video.jbuf_del.max) {
+
+		err = jbuf_alloc(&s->rx.jbuf, cfg->video.jbuf_del.min,
+				 cfg->video.jbuf_del.max);
+		err |= jbuf_set_type(s->rx.jbuf, cfg->video.jbtype);
 		if (err)
 			goto out;
 	}
