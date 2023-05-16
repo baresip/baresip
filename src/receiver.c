@@ -157,7 +157,12 @@ static void pass_mnat_work(struct receiver *rx, const struct sa *raddr1,
 static void rx_check_stop(void *arg)
 {
 	struct receiver *rx = arg;
-	if (rx->run)
+	bool run;
+
+	mtx_lock(rx->mtx);
+	run = rx->run;
+	mtx_unlock(rx->mtx);
+	if (run)
 		tmr_start(&rx->tmr, 10, rx_check_stop, rx);
 	else
 		re_cancel();
