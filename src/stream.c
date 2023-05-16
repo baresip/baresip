@@ -638,7 +638,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	list_append(streaml, &s->le, s);
 
 	if (s->rtp && cfg->rxmode == RX_MODE_THREAD)
-		tmr_start(&s->rxm.tmr_rec, 0, rx_start_delayed, s);
+		tmr_start(&s->rxm.tmr_rec, 1, rx_start_delayed, s);
 
  out:
 	if (err)
