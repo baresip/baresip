@@ -967,15 +967,12 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 {
 	struct sip_contact contact;
 	const struct sip_hdr *hdr;
-	char refer_to_uri[256];
 	char realm[32];
 	struct sip_uas_auth auth;
-	struct sip_addr addr;
 	struct account *acc = ua_account(ua);
 	struct uri *uri = account_luri(acc);
 	bool sub = true;
 	int err;
-	refer_to_uri[0] = '\0';
 
 	debug("ua: incoming REFER message from %r (%J)\n",
 	      &msg->from.auri, &msg->src);
@@ -998,13 +995,6 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 		warning("call: bad REFER request from %r\n", &msg->from.auri);
 		(void)sip_reply(uag_sip(), msg, 400,
 				"Missing Refer-To header");
-		return true;
-	}
-	err = sip_addr_decode(&addr, &hdr->val);
-	if (err) {
-		warning("call: bad REFER request from %r\n", &msg->from.auri);
-		(void)sip_reply(uag_sip(), msg, 400,
-				"Invalid URI in Refer-To Header");
 		return true;
 	}
 
@@ -1050,18 +1040,8 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 	break;
 	}
 
-	if (pl_isset(&addr.dname)) {
-		re_snprintf(refer_to_uri, sizeof(refer_to_uri), "%s%r%s",
-			    addr.dname.p[0] == '"' ? "" : "\"",
-			    &addr.dname,
-			    addr.dname.p[0] == '"' ? "" : "\" ");
-	}
-	re_snprintf(refer_to_uri + strlen(refer_to_uri),
-		    sizeof(refer_to_uri) - strlen(refer_to_uri),
-		    "<%H>%r", uri_unescape_pl, &addr.auri, &addr.params);
-
-	debug("ua: REFER to %s\n", refer_to_uri);
-	ua_event(ua, UA_EVENT_REFER, NULL, "%s", refer_to_uri);
+	debug("ua: REFER to %r\n", &hdr->val);
+	ua_event(ua, UA_EVENT_REFER, NULL, "%r", &hdr->val);
 
 out:
 

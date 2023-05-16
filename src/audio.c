@@ -1082,7 +1082,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	tx->enc_fmt = cfg->audio.enc_fmt;
 	rx->dec_fmt = cfg->audio.dec_fmt;
-	rx->jbtype  = cfg->avt.jbtype;
+	rx->jbtype  = cfg->avt.audio.jbtype;
 
 	err = stream_alloc(&a->strm, streaml,
 			   stream_prm, &cfg->avt, sdp_sess,
