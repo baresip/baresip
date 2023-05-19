@@ -282,8 +282,11 @@ static void check_rtp_handler(void *arg)
 
 		diff_ms = (int)(now - strm->rx.ts_last);
 
-		debug("stream: last \"%s\" RTP packet: %d milliseconds\n",
-		      sdp_media_name(strm->sdp), diff_ms);
+		if (diff_ms > 100) {
+			debug("stream: last \"%s\" RTP packet: %d "
+			      "milliseconds\n",
+			      sdp_media_name(strm->sdp), diff_ms);
+		}
 
 		/* check for large jumps in time */
 		if (diff_ms > (3600 * 1000)) {
