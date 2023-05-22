@@ -156,10 +156,12 @@ static int src_alloc(struct vidsrc_st **stp, const struct vidsrc *vs,
 	st->bitrate = cfg->video.bitrate;
 
 	if (!comvideo_codec.camera_src) {
-		src = camerad_client_add_src(
+		src = camerad_client_add_src_full(
 			comvideo_codec.camerad_client,
-			GST_CAMERA_COMPONENT_RTP, st->sz.w,
-			st->sz.h, st->fps);
+			GST_CAMERA_COMPONENT_RTP,
+			GST_CAMERA_COMPONENT_CODEC_H264,
+			st->sz.w, st->sz.h,
+			st->fps, st->bitrate);
 
 		if (src) {
 			gst_camera_src_set_sample_cb(
