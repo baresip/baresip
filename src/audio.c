@@ -162,9 +162,6 @@ struct aurx {
 		uint64_t n_discard;
 	} stats;
 
-	enum jbuf_type jbtype;       /**< Jitter buffer type               */
-	volatile int32_t wcnt;       /**< Write handler call count         */
-
 	mtx_t *mtx;
 
 };
@@ -1082,7 +1079,6 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	tx->enc_fmt = cfg->audio.enc_fmt;
 	rx->dec_fmt = cfg->audio.dec_fmt;
-	rx->jbtype  = cfg->avt.audio.jbtype;
 
 	err = stream_alloc(&a->strm, streaml,
 			   stream_prm, &cfg->avt, sdp_sess,
