@@ -1103,7 +1103,7 @@ static int filter_stream_reset(struct onvif_filter_stream *fs,
 	fs->active = true;
 	fs->aubuf_maxsz = max(cfg->audio.buffer.max, maxsz);
 	fs->ssrc = 0;
-	fs->timestamp = 0;
+	fs->timestamp = rand_u16();
 
 	return err;
 }
