@@ -639,6 +639,12 @@ int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp)
 {
 	int err;
 
+	if (!rx || !rtp)
+		return EINVAL;
+
+	if (rx->run)
+		return 0;
+
 	rx->rtp = rtp;
 	rx->run = true;
 	err = thread_create_name(&rx->thr,
@@ -653,6 +659,15 @@ int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp)
 	}
 
 	return err;
+}
+
+
+bool rx_running(const struct receiver *rx)
+{
+	if (!rx)
+		return false;
+
+	return rx->run;
 }
 
 

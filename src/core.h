@@ -512,3 +512,4 @@ int rx_debug(struct re_printf *pf, const struct receiver *rx);
 int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp);
 void rx_mnat_connected_handler(const struct sa *raddr1,
 			       const struct sa *raddr2, void *arg);
+bool rx_running(const struct receiver *rx);
