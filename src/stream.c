@@ -224,6 +224,13 @@ int stream_enable_tx(struct stream *strm, bool enable)
 }
 
 
+static void rx_start_delayed(void *arg)
+{
+	struct stream *s = arg;
+	rx_start_thread(s->rx, s->rtp);
+}
+
+
 /**
  * Enable RX stream
  *
@@ -250,6 +257,10 @@ int stream_enable_rx(struct stream *strm, bool enable)
 
 	debug("stream: enable %s RTP receiver\n", media_name(strm->type));
 	rx_set_enable(strm->rx, true);
+
+	if (strm->rtp && strm->cfg.rxmode == RX_MODE_THREAD)
+		tmr_start(&strm->rxm.tmr_rec, 1, rx_start_delayed, strm);
+
 	return 0;
 }
 
@@ -500,13 +511,6 @@ static int sender_init(struct sender *tx)
 }
 
 
-static void rx_start_delayed(void *arg)
-{
-	struct stream *s = arg;
-	rx_start_thread(s->rx, s->rtp);
-}
-
-
 int stream_alloc(struct stream **sp, struct list *streaml,
 		 const struct stream_param *prm,
 		 const struct config_avt *cfg,
@@ -636,9 +640,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	}
 
 	list_append(streaml, &s->le, s);
-
-	if (s->rtp && cfg->rxmode == RX_MODE_THREAD)
-		tmr_start(&s->rxm.tmr_rec, 1, rx_start_delayed, s);
 
  out:
 	if (err)
