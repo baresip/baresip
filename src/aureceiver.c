@@ -48,6 +48,7 @@ struct aurpipe {
 
 	struct {
 		uint64_t n_discard;
+		RE_ATOMIC uint64_t latency;   /**< Latency in [ms]           */
 	} stats;
 
 	mtx_t *mtx;
@@ -151,6 +152,10 @@ static int aup_push_aubuf(struct aurpipe *rp, const struct auframe *af)
 	rp->srate = af->srate;
 	rp->ch    = af->ch;
 	rp->fmt   = af->fmt;
+
+	bpms = rp->srate * rp->ch * aufmt_sample_size(rp->fmt) / 1000;
+	if (bpms)
+		rp->stats.latency = aubuf_cur_size(rp->aubuf) / bpms;
 
 	return 0;
 }
@@ -338,20 +343,10 @@ void aup_set_telev_pt(struct aurpipe *rp, int pt)
 
 uint64_t aup_latency(const struct aurpipe *rp)
 {
-	uint64_t bpms;
-	if (!rp || !rp->aubuf)
+	if (!rp)
 		return 0;
 
-	mtx_lock(rp->mtx);
-	bpms = rp->srate * rp->ch * aufmt_sample_size(rp->fmt) / 1000;
-	mtx_unlock(rp->mtx);
-	if (bpms) {
-		uint64_t val = aubuf_cur_size(rp->aubuf) / bpms;
-
-		return val;
-	}
-
-	return 0;
+	return rp->stats.latency;
 }
 
 
