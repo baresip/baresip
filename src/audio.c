@@ -569,9 +569,6 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 	struct auframe afr;
 	struct aurx *rx = &a->rx;
 
-	if (!rx->auplay)
-		return;
-
 	if (!rx->first_write)
 		afr = *af;
 
