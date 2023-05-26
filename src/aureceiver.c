@@ -34,6 +34,7 @@ struct aurpipe {
 	struct audec_state *dec;      /**< Audio decoder state (optional)    */
 	const struct aucodec *ac;     /**< Current audio decoder             */
 	struct aubuf *aubuf;          /**< Audio buffer before auplay        */
+	RE_ATOMIC bool ready;         /**< Audio buffer is ready flag        */
 	uint32_t ssrc;                /**< Incoming synchronization source   */
 	struct list filtl;            /**< Audio filters in decoding order   */
 	void *sampv;                  /**< Sample buffer                     */
@@ -133,11 +134,14 @@ static int aup_alloc_aubuf(struct aurpipe *rp, const struct auframe *af)
 static int aup_push_aubuf(struct aurpipe *rp, const struct auframe *af)
 {
 	int err;
+	uint64_t bpms;
 
 	if (!rp->aubuf) {
 		err = aup_alloc_aubuf(rp, af);
 		if (err)
 			return err;
+
+		rp->ready = true;
 	}
 
 	err = aubuf_write_auframe(rp->aubuf, af);
@@ -389,7 +393,7 @@ out:
 
 void aup_flush(struct aurpipe *rp)
 {
-	if (!rp)
+	if (!rp || !rp->ready)
 		return;
 
 	mtx_lock(rp->mtx);
@@ -503,6 +507,9 @@ const struct aucodec *aup_codec(const struct aurpipe *rp)
 
 void aup_read(struct aurpipe *rp, struct auframe *af)
 {
+	if (!rp || !rp->ready)
+		return;
+
 	aubuf_read_auframe(rp->aubuf, af);
 }
 
@@ -520,7 +527,7 @@ void aup_stop(struct aurpipe *rp)
 
 bool aup_started(const struct aurpipe *rp)
 {
-	if (!rp)
+	if (!rp || !rp->ready)
 		return false;
 
 	return aubuf_started(rp->aubuf);
@@ -533,7 +540,7 @@ int aup_debug(struct re_printf *pf, const struct aurpipe *rp)
 	uint64_t bpms;
 	int err;
 
-	if (!rp)
+	if (!rp || !rp->ready)
 		return 0;
 
 	mb = mbuf_alloc(32);
