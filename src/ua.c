@@ -1392,8 +1392,8 @@ void ua_redirect(struct ua *ua, struct call *call,
 	if (!call)
 		return;
 
-	if (call_state(call) != CALL_STATE_INCOMING ||
-	    call_answered(call) || scode < 300 || scode > 399 || scode == 380) {
+	if (call_state(call) != CALL_STATE_INCOMING || call_answered(call) ||
+	    scode < 300 || scode > 399 || scode == 380) {
 		call_hangup(call, scode, reason);
 		return;
 	}
