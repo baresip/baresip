@@ -1201,10 +1201,28 @@ void call_redirect(struct call *call, uint16_t scode, const char *reason,
 		return;
 
 	if (call->state != CALL_STATE_INCOMING || call->answered ||
-	    scode < 300 || scode > 399) {
+	    scode < 300 || scode > 399 || scode == 380) {
 		call_hangup(call, scode, reason);
 		return;
 	}
+
+	if (!str_isset(reason))
+		switch (scode) {
+		case 300:
+			reason = "Multiple Choices";
+			break;
+		case 301:
+			reason = "Moved Permanently";
+			break;
+		case 302:
+			reason = "Moved Temporarily";
+			break;
+		case 305:
+			reason = "Use Proxy";
+			break;
+		default:
+			reason = "Unkown";
+		}
 
 	info("call: redirecting incoming call from %s (%u %s) to %s\n",
 	     call->peer_uri, scode, reason, contact_params);
