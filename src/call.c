@@ -1195,7 +1195,7 @@ int call_modify(struct call *call)
 }
 
 void call_redirect(struct call *call, uint16_t scode, const char *reason,
-		   const char *uri)
+		   const char *contact_params)
 {
 	if (!call)
 		return;
@@ -1207,10 +1207,14 @@ void call_redirect(struct call *call, uint16_t scode, const char *reason,
 	}
 
 	info("call: redirecting incoming call from %s (%u %s) to %s\n",
-	     call->peer_uri, scode, reason, uri);
+	     call->peer_uri, scode, reason, contact_params);
 
 	(void)sipsess_reject(call->sess, scode, reason,
-			     "Contact: %s\r\nContent-Length: 0\r\n\r\n", uri);
+			     "Contact: %s\r\n"
+			     "Content-Length: 0\r\n"
+			     "\r\n"
+			     ,
+			     contact_params);
 
 	set_state(call, CALL_STATE_TERMINATED);
 

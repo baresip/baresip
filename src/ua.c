@@ -1368,7 +1368,8 @@ void ua_hangup(struct ua *ua, struct call *call,
 }
 
 void ua_redirect(struct ua *ua, struct call *call,
-		 uint16_t scode, const char *reason, const char *uri)
+		 uint16_t scode, const char *reason,
+		 const char *contact_params)
 {
 	if (!ua)
 		return;
@@ -1376,7 +1377,7 @@ void ua_redirect(struct ua *ua, struct call *call,
 	if (!call)
 		call = ua_call(ua);
 
-	call_redirect(call, scode, reason, uri);
+	call_redirect(call, scode, reason, contact_params);
 
 	ua_event(ua, UA_EVENT_CALL_CLOSED, call,
 		 reason ? reason : "Connection reset by user");
