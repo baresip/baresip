@@ -5,6 +5,44 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.2.0 - 2023-05-31
+
+## What's Changed
+* ci: add coverage workflow by @maximilianfridrich in https://github.com/baresip/baresip/pull/2550
+* cmake: fix win32 dbghelp by @sreimers in https://github.com/baresip/baresip/pull/2552
+* cmake/gtk3: make sure gtk3 libs are found by @landryb in https://github.com/baresip/baresip/pull/2554
+* pipewire: add pipewire module by @cspiel1 in https://github.com/baresip/baresip/pull/2439
+* audio: count TX underruns correctly (#2535) by @cspiel1 in https://github.com/baresip/baresip/pull/2553
+* variadic function fixes by @maximilianfridrich in https://github.com/baresip/baresip/pull/2523
+* ua: unescape incoming Refer-To header by @maximilianfridrich in https://github.com/baresip/baresip/pull/2541
+* pipewire/cmake: declare include dirs as system by @sreimers in https://github.com/baresip/baresip/pull/2556
+* sndio: re-add sndio module for OpenBSD by @landryb in https://github.com/baresip/baresip/pull/2555
+* Client cert renegotiation in http by @fAuernigg in https://github.com/baresip/baresip/pull/2461
+* aufile: joind already terminated thread frees stack by @cspiel1 in https://github.com/baresip/baresip/pull/2557
+* ccheck: c11 err handling exclude mutex\_alloc by @sreimers in https://github.com/baresip/baresip/pull/2560
+* alsa: use atomic for run flag by @cspiel1 in https://github.com/baresip/baresip/pull/2558
+* Add instruction to build the doxygen docs by @gibix in https://github.com/baresip/baresip/pull/2561
+* fakevideo: use atomic for run flag by @cspiel1 in https://github.com/baresip/baresip/pull/2565
+* cmake/findOpus: fix Could NOT find OPUS (missing: OPUS\_INCLUDE\_DIR) by @jobo-zt in https://github.com/baresip/baresip/pull/2568
+* cmake/findsdl: fix Could NOT find SDL (missing: SDL\_INCLUDE\_DIR) by @jobo-zt in https://github.com/baresip/baresip/pull/2571
+* avformat, g722: add macro UNISTD switch support for Windows by @jobo-zt in https://github.com/baresip/baresip/pull/2574
+* v4l2: use atomic for run flag by @cspiel1 in https://github.com/baresip/baresip/pull/2567
+* mc: use atomic for run flag by @cspiel1 in https://github.com/baresip/baresip/pull/2566
+* avformat: use atomic for run flag by @cspiel1 in https://github.com/baresip/baresip/pull/2564
+* ausine: use atomic for run flag by @cspiel1 in https://github.com/baresip/baresip/pull/2563
+* aubridge: use atomic for run flag by @cspiel1 in https://github.com/baresip/baresip/pull/2562
+* config: add different options for audio and video jitter buffer by @sreimers in https://github.com/baresip/baresip/pull/2569
+* Revert "ua: unescape incoming Refer-To header (#2541)" by @maximilianfridrich in https://github.com/baresip/baresip/pull/2577
+* stream: log last RTP packet debug after 100ms by @sreimers in https://github.com/baresip/baresip/pull/2587
+* ci/sanitizers: exit on first undefined behavior by @sreimers in https://github.com/baresip/baresip/pull/2589
+
+## New Contributors
+* @landryb made their first contribution in https://github.com/baresip/baresip/pull/2554
+* @gibix made their first contribution in https://github.com/baresip/baresip/pull/2561
+* @jobo-zt made their first contribution in https://github.com/baresip/baresip/pull/2568
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.1.0...v3.2.0
+
 ## 3.1.0 - 2023-04-27
 
 ## What's Changed
