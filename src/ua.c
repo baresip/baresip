@@ -1367,6 +1367,18 @@ void ua_hangup(struct ua *ua, struct call *call,
 	mem_deref(call);
 }
 
+
+/**
+ * Redirect an incoming call
+ *
+ * @param ua     User-Agent
+ * @param call   Call to redirect, or NULL for current call
+ * @param scode  Status code
+ * @param reason Optional reason
+ * @param contact_params Body of Contact header
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 void ua_redirect(struct ua *ua, struct call *call,
 		 uint16_t scode, const char *reason,
 		 const char *contact_params)
@@ -1376,6 +1388,15 @@ void ua_redirect(struct ua *ua, struct call *call,
 
 	if (!call)
 		call = ua_call(ua);
+
+	if (!call)
+		return;
+
+	if (call_state(call) != CALL_STATE_INCOMING ||
+	    call_answered(call) || scode < 300 || scode > 399 || scode == 380) {
+		call_hangup(call, scode, reason);
+		return;
+	}
 
 	call_redirect(call, scode, reason, contact_params);
 

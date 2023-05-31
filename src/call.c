@@ -1200,12 +1200,6 @@ void call_redirect(struct call *call, uint16_t scode, const char *reason,
 	if (!call)
 		return;
 
-	if (call->state != CALL_STATE_INCOMING || call->answered ||
-	    scode < 300 || scode > 399 || scode == 380) {
-		call_hangup(call, scode, reason);
-		return;
-	}
-
 	if (!str_isset(reason))
 		switch (scode) {
 		case 300:
@@ -1452,6 +1446,15 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	mem_deref(desc);
 
 	return err;
+}
+
+
+bool call_answered(struct call *call)
+{
+	if (!call)
+		return false;
+
+	return call->answered;
 }
 
 
