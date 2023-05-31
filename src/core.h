@@ -133,6 +133,8 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		call_event_h *eh, void *arg);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
+void call_redirect(struct call *call, uint16_t scode, const char *reason,
+		   const char *contact_params);
 int  call_sdp_get(const struct call *call, struct mbuf **descp, bool offer);
 int  call_info(struct re_printf *pf, const struct call *call);
 int  call_reset_transp(struct call *call, const struct sa *laddr);

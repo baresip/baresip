@@ -201,8 +201,6 @@ int  call_progress_dir(struct call *call,
 		       enum sdp_dir adir, enum sdp_dir vdir);
 int  call_progress(struct call *call);
 void call_hangup(struct call *call, uint16_t scode, const char *reason);
-void call_redirect(struct call *call, uint16_t scode, const char *reason,
-		   const char *contact_params);
 int  call_modify(struct call *call);
 int  call_hold(struct call *call, bool hold);
 void call_set_audio_ldir(struct call *call, enum sdp_dir dir);
