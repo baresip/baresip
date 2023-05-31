@@ -1194,6 +1194,29 @@ int call_modify(struct call *call)
 	return err;
 }
 
+void call_redirect(struct call *call, uint16_t scode, const char *reason,
+		   const char *uri)
+{
+	if (!call)
+		return;
+
+	if (call->state != CALL_STATE_INCOMING || call->answered ||
+	    scode < 300 || scode > 399) {
+		call_hangup(call, scode, reason);
+		return;
+	}
+
+	info("call: redirecting incoming call from %s (%u %s) to %s\n",
+	     call->peer_uri, scode, reason, uri);
+
+	(void)sipsess_reject(call->sess, scode, reason,
+			     "Contact: %s\r\nContent-Length: 0\r\n\r\n", uri);
+
+	set_state(call, CALL_STATE_TERMINATED);
+
+	call_stream_stop(call);
+}
+
 
 /**
  * Hangup the call

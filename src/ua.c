@@ -1367,6 +1367,23 @@ void ua_hangup(struct ua *ua, struct call *call,
 	mem_deref(call);
 }
 
+void ua_redirect(struct ua *ua, struct call *call,
+		 uint16_t scode, const char *reason, const char *uri)
+{
+	if (!ua)
+		return;
+
+	if (!call)
+		call = ua_call(ua);
+
+	call_redirect(call, scode, reason, uri);
+
+	ua_event(ua, UA_EVENT_CALL_CLOSED, call,
+		 reason ? reason : "Connection reset by user");
+
+	mem_deref(call);
+}
+
 
 /**
  * Answer an incoming call
