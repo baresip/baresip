@@ -1,3 +1,9 @@
+baresip (3.2.0) unstable; urgency=medium
+
+  * version 3.2.0
+
+ -- Christian Spielberger <c.spielberger@commend.com>  Wed, 31 May 2023 08:00:00 +0200
+
 baresip (3.1.0) unstable; urgency=medium
 
   * version 3.1.0
