@@ -55,8 +55,14 @@ static int h264_convert(struct viddec_state *st, struct vidframe *frame)
 		return 0;
 	}
 
+	size_t buf_size = st->mb->end;
+
+	uint16_t low = buf_size & 0x0000ffff;
+	uint32_t high = buf_size >> 16;
+
 	frame->data[0] = st->mb->buf;
-	frame->linesize[0] = st->mb->end;
+	frame->linesize[0] = low;
+	frame->linesize[1] = high;
 	frame->fmt = VID_FMT_N;
 	frame->size.h = st->height;
 	frame->size.w = st->width;
