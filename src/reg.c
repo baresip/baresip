@@ -227,6 +227,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 {
 	struct account *acc;
 	const char *routev[1];
+	const char *cparams;
 	int err;
 	bool failed;
 
@@ -253,6 +254,7 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 			      "Allow: %H\r\n%H",
 			      ua_print_allowed, reg->ua,
 			      custom_hdrs_print, &reg->custom_hdrs);
+
 	if (err)
 		return err;
 
@@ -264,6 +266,9 @@ int reg_register(struct reg *reg, const char *reg_uri, const char *params,
 
 	if (acc && acc->tcpsrcport)
 		sipreg_set_srcport(reg->sipreg, acc->tcpsrcport);
+
+	if((cparams = ua_local_contact_params(reg->ua)))
+		err |= sipreg_set_contact_params(reg->sipreg, cparams);
 
 	if (failed)
 		sipreg_incfailc(reg->sipreg);

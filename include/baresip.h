@@ -877,6 +877,7 @@ unsigned ua_destroy(struct ua *ua);
 void ua_pub_gruu_set(struct ua *ua, const struct pl *pval);
 const char     *ua_cuser(const struct ua *ua);
 const char     *ua_local_cuser(const struct ua *ua);
+const char     *ua_local_contact_params(const struct ua *ua);
 struct account *ua_account(const struct ua *ua);
 const char     *ua_outbound(const struct ua *ua);
 struct call    *ua_call(const struct ua *ua);
@@ -889,6 +890,7 @@ int  ua_set_custom_hdrs(struct ua *ua, struct list *custom_hdrs);
 int  ua_add_custom_hdr(struct ua *ua, const struct pl *name,
 		       const struct pl *value);
 int  ua_rm_custom_hdr(struct ua *ua, struct pl *name);
+int  ua_set_contact_params(struct ua *ua, const char *cparams);
 int  ua_enable_autoanswer(struct ua *ua, int32_t adelay,
 		enum answer_method met);
 int  ua_disable_autoanswer(struct ua *ua, enum answer_method met);

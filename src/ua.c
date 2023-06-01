@@ -24,6 +24,7 @@ struct ua {
 	struct pl extensionv[8];     /**< Vector of SIP extensions           */
 	size_t    extensionc;        /**< Number of SIP extensions           */
 	char *cuser;                 /**< SIP Contact username               */
+	char *cparams;		     /**< SIP Contact optional parameters    */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
 	enum presence_status pstat;  /**< Presence Status                    */
 	bool catchall;               /**< Catch all inbound requests         */
@@ -57,6 +58,7 @@ static void ua_destructor(void *arg)
 	list_flush(&ua->calls);
 	list_flush(&ua->regl);
 	mem_deref(ua->cuser);
+	mem_deref(ua->cparams);
 	mem_deref(ua->pub_gruu);
 	mem_deref(ua->ansval);
 	mem_deref(ua->acc);
@@ -1799,6 +1801,19 @@ const char *ua_local_cuser(const struct ua *ua)
 
 
 /**
+ * Get the local contact optional parameters
+ *
+ * @param ua User-Agent
+ *
+ * @return Local contact optional parameters
+ */
+const char *ua_local_contact_params(const struct ua *ua)
+{
+	return ua ? ua->cparams : NULL;
+}
+
+
+/**
  * Get Account of a User-Agent
  *
  * @param ua User-Agent
@@ -2030,6 +2045,24 @@ int ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 	}
 
 	return 0;
+}
+
+
+/**
+ * Set a list of custom SIP headers
+ *
+ * @param ua             User-Agent
+ * @param custom_headers List of custom SIP headers (struct sip_hdr)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ua_set_contact_params(struct ua *ua, const char *cparams)
+{
+	if (!ua)
+		return EINVAL;
+
+	ua->cparams = mem_deref(ua->cparams);
+	return str_dup(&ua->cparams, cparams);
 }
 
 

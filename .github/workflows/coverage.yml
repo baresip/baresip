@@ -40,7 +40,7 @@ jobs:
       run: sudo ldconfig
 
     - name: make baresip selftest
-      run: cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" -DMODULES="g711;ausine;fakevideo;auconv;dtls_srtp;srtp;aufile" && cmake --build build -j
+      run: cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" -DMODULES="g711;ausine;fakevideo;auconv;dtls_srtp;srtp;aufile;pns" && cmake --build build -j
 
     - name: selftest
       run: ./build/test/selftest

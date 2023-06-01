@@ -61,6 +61,7 @@ set(MODULES
   natpmp
   netroam
   pcp
+  pns
   presence
   rtcpsummary
   selfview

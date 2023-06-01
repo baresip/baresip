@@ -161,10 +161,12 @@ static int reg(enum sip_transp tp)
 	return err;
 }
 
+#define CPARAMS "pn-provider=push;pn-prid=abc123;"
 
 int test_ua_register(void)
 {
 	int err = 0;
+	struct ua *ua = NULL;
 
 	err = ua_init("test", true, true, true);
 	TEST_ERR(err);
@@ -175,10 +177,23 @@ int test_ua_register(void)
 	err |= reg(SIP_TRANSP_TLS);
 #endif
 
-	ua_stop_all(true);
-	ua_close();
+	err |= ua_alloc(&ua, "<sip:x@127.0.0.1>");
+	err |= module_load(".", "pns");
+	TEST_ERR(err);
+
+	module_event("pns", "config_update", ua, NULL, "push,abc123,pata");
+	ASSERT_STREQ(CPARAMS "pn-param=pata;", ua_local_contact_params(ua));
+
+	module_event("pns", "config_update", ua, NULL, "push,abc123");
+	ASSERT_STREQ(CPARAMS, ua_local_contact_params(ua));
+
+	module_event("pns", "config_update", ua, NULL, "push,,");
+	ASSERT_EQ(NULL, ua_local_contact_params(ua));
 
  out:
+	module_unload("pns");
+	ua_stop_all(true);
+	ua_close();
 	return err;
 }
 

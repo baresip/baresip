@@ -153,6 +153,7 @@ module			alsa.so
 
 # Compatibility modules
 #module			ebuacip.so
+#module			pns.so
 module			uuid.so
 
 # Media NAT modules

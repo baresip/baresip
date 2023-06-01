@@ -1095,6 +1095,7 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f, "\n# Compatibility modules\n");
 	(void)re_fprintf(f, "#module\t\t\t" "ebuacip" MOD_EXT "\n");
+	(void)re_fprintf(f, "#module\t\t\t" "pns" MOD_EXT "\n");
 	(void)re_fprintf(f, "module\t\t\t" "uuid" MOD_EXT "\n");
 
 	(void)re_fprintf(f, "\n# Media NAT modules\n");
