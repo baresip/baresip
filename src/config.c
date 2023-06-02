@@ -1200,11 +1200,6 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#selfview_size\t\t64x64\n");
 
 	(void)re_fprintf(f,
-			"\n# ZRTP\n"
-			"#zrtp_hash\t\tno  # Disable SDP zrtp-hash "
-			"(not recommended)\n");
-
-	(void)re_fprintf(f,
 			"\n# Menu\n"
 			"#redial_attempts\t0 # Num or <inf>\n"
 			"#redial_delay\t\t5 # Delay in seconds\n"

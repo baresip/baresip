@@ -3,6 +3,7 @@
 #
 # Copyright (C) 2010 - 2022 Alfred E. Heggestad
 # Copyright (C) 2022 Sebastian Reimers
+# Copyright (C) 2023 Christian Spielberger
 #
 
 ##############################################################################
@@ -12,9 +13,9 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(baresip VERSION 3.1.0)
+project(baresip VERSION 3.2.0)
 
-set(PROJECT_SOVERSION 6) # bump if ABI breaks
+set(PROJECT_SOVERSION 7) # bump if ABI breaks
 
 # Pre-release identifier, comment out on a release
 # Increment for breaking changes (dev2, dev3...)
