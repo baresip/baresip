@@ -794,16 +794,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_REDIRECT:
-		val = pl_null;
-		if (!re_regex(prm, strlen(prm), "sip:"))
-			pl_set_str(&val, "invite");
-
-		(void)menu_param_decode(prm, "method", &val);
-		if (!pl_strcmp(&val, "invite")) {
-			info("menu: redirecting call to %s\n", prm + 4);
-			ua_connect(ua, NULL, NULL, prm + 4, VIDMODE_ON);
-		}
-
+		info("menu: redirecting call to %s\n", prm + 4);
+		ua_connect(ua, NULL, NULL, prm + 4, VIDMODE_ON);
 		break;
 
 	case UA_EVENT_REFER:
