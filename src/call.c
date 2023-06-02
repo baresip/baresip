@@ -1194,6 +1194,45 @@ int call_modify(struct call *call)
 	return err;
 }
 
+void call_redirect(struct call *call, uint16_t scode, const char *reason,
+		   const char *contact_params)
+{
+	if (!call)
+		return;
+
+	if (!str_isset(reason))
+		switch (scode) {
+		case 300:
+			reason = "Multiple Choices";
+			break;
+		case 301:
+			reason = "Moved Permanently";
+			break;
+		case 302:
+			reason = "Moved Temporarily";
+			break;
+		case 305:
+			reason = "Use Proxy";
+			break;
+		default:
+			reason = "Unkown";
+		}
+
+	info("call: redirecting incoming call from %s (%u %s) to %s\n",
+	     call->peer_uri, scode, reason, contact_params);
+
+	(void)sipsess_reject(call->sess, scode, reason,
+			     "Contact: %s\r\n"
+			     "Content-Length: 0\r\n"
+			     "\r\n"
+			     ,
+			     contact_params);
+
+	set_state(call, CALL_STATE_TERMINATED);
+
+	call_stream_stop(call);
+}
+
 
 /**
  * Hangup the call
@@ -1407,6 +1446,15 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	mem_deref(desc);
 
 	return err;
+}
+
+
+bool call_answered(struct call *call)
+{
+	if (!call)
+		return false;
+
+	return call->answered;
 }
 
 
