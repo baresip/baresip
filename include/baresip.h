@@ -853,6 +853,8 @@ int  ua_connect_dir(struct ua *ua, struct call **callp,
 		    enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir);
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason);
+void ua_redirect(struct ua *ua, struct call *call, uint16_t scode,
+		 const char *reason, const char *contact_params);
 int  ua_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_hold_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_options_send(struct ua *ua, const char *uri,
