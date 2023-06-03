@@ -1216,6 +1216,7 @@ void call_redirect(struct call *call, uint16_t scode, const char *reason,
 			break;
 		default:
 			reason = "Unkown";
+			break;
 		}
 
 	info("call: redirecting incoming call from %s (%u %s) to %s\n",
@@ -1449,7 +1450,7 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 }
 
 
-bool call_answered(struct call *call)
+bool call_answered(const struct call *call)
 {
 	if (!call)
 		return false;

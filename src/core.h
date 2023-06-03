@@ -143,7 +143,7 @@ void call_set_xrtpstat(struct call *call);
 void call_set_custom_hdrs(struct call *call, const struct list *hdrs);
 const struct sa *call_laddr(const struct call *call);
 int call_streams_alloc(struct call *call);
-bool call_answered(struct call *call);
+bool call_answered(const struct call *call);
 
 /*
 * Custom headers
