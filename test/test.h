@@ -205,6 +205,7 @@ int test_call_mediaenc(void);
 int test_call_medianat(void);
 int test_call_multiple(void);
 int test_call_progress(void);
+int test_call_redirect(void);
 int test_call_reject(void);
 int test_call_rtcp(void);
 int test_call_rtp_timeout(void);

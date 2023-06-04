@@ -18,6 +18,7 @@
 enum behaviour {
 	BEHAVIOUR_ANSWER = 0,
 	BEHAVIOUR_PROGRESS,
+	BEHAVIOUR_REDIRECT,
 	BEHAVIOUR_REJECT,
 	BEHAVIOUR_GET_HDRS,
 };
@@ -208,6 +209,13 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 				warning("call_progress failed (%m)\n", err);
 				goto out;
 			}
+			break;
+
+		case BEHAVIOUR_REDIRECT:
+			ua_redirect(ua, call, 302, NULL,
+				    "sip:alice@example.com");
+			call = NULL;
+			ag->failed = true;
 			break;
 
 		case BEHAVIOUR_REJECT:
@@ -486,6 +494,38 @@ int test_call_answer(void)
 	ASSERT_EQ(1, fix.b.n_incoming);
 	ASSERT_EQ(1, fix.b.n_established);
 	ASSERT_EQ(0, fix.b.n_closed);
+
+ out:
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_redirect(void)
+{
+	struct fixture fix, *f = &fix;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_REDIRECT;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_established);
 
  out:
 	fixture_close(f);
