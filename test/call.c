@@ -212,8 +212,7 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			break;
 
 		case BEHAVIOUR_REDIRECT:
-			ua_redirect(ua, call, 302, NULL,
-				    "sip:alice@example.com");
+			ua_redirect(ua, call, 302, NULL, "sip:127.0.0.1:5555");
 			call = NULL;
 			ag->failed = true;
 			break;
