@@ -60,8 +60,9 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_ESTABLISHED:
 	case UA_EVENT_CALL_CLOSED:
 	case UA_EVENT_CALL_TRANSFER:
-	case UA_EVENT_CALL_REDIRECT:
+	case UA_EVENT_CALL_BLIND_TRANSFER:
 	case UA_EVENT_CALL_TRANSFER_FAILED:
+	case UA_EVENT_CALL_REDIRECT:
 	case UA_EVENT_CALL_DTMF_START:
 	case UA_EVENT_CALL_DTMF_END:
 	case UA_EVENT_CALL_RTPESTAB:
@@ -427,8 +428,9 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_ESTABLISHED:     return "CALL_ESTABLISHED";
 	case UA_EVENT_CALL_CLOSED:          return "CALL_CLOSED";
 	case UA_EVENT_CALL_TRANSFER:        return "TRANSFER";
-	case UA_EVENT_CALL_REDIRECT:        return "CALL_REDIRECT";
+	case UA_EVENT_CALL_BLIND_TRANSFER:  return "BLIND_TRANSFER";
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
+	case UA_EVENT_CALL_REDIRECT:        return "CALL_REDIRECT";
 	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
 	case UA_EVENT_CALL_RTPESTAB:        return "CALL_RTPESTAB";
