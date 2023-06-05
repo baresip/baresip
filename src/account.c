@@ -527,6 +527,11 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	else
 		acc->refer = pl_strcasecmp(&tmp, "no") != 0;
 
+	if (0 != msg_param_decode(&aor->params, "sip_autoredirect", &tmp))
+		acc->autoredirect = true;
+	else
+		acc->autoredirect = pl_strcasecmp(&tmp, "no") != 0;
+
 	return err;
 }
 
@@ -1541,6 +1546,27 @@ void account_set_sip_autoanswer(struct account *acc, bool allow)
 		return;
 
 	acc->sipans = allow;
+}
+
+
+/**
+ * Returns if SIP autoredirect on 3xx response is allowed for the account
+ *
+ * @param acc User-Agent account
+ * @return true if allowed, otherwise false
+ */
+bool account_sip_autoanswer(const struct account *acc)
+{
+	return acc ? acc->autoredirect : false;
+}
+
+
+void account_set_sip_autoanswer(struct account *acc, bool allow)
+{
+	if (!acc)
+		return;
+
+	acc->autoredirect = allow;
 }
 
 
