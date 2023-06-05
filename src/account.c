@@ -1930,6 +1930,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  rel100_mode_str(acc->rel100_mode));
 	err |= re_hprintf(pf, " answermode:   %s\n",
 			  answermode_str(acc->answermode));
+	err |= re_hprintf(pf, " autoredirect:   %s\n",
+			  acc->autoredirect ? "yes" : "no");
 	err |= re_hprintf(pf, " sipans:       %s\n",
 			  acc->sipans ? "yes" : "no");
 	err |= re_hprintf(pf, " sipansbeep:   %s\n",
