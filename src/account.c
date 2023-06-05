@@ -1555,13 +1555,13 @@ void account_set_sip_autoanswer(struct account *acc, bool allow)
  * @param acc User-Agent account
  * @return true if allowed, otherwise false
  */
-bool account_sip_autoanswer(const struct account *acc)
+bool account_sip_autoredirect(const struct account *acc)
 {
 	return acc ? acc->autoredirect : false;
 }
 
 
-void account_set_sip_autoanswer(struct account *acc, bool allow)
+void account_set_sip_autoredirect(struct account *acc, bool allow)
 {
 	if (!acc)
 		return;
