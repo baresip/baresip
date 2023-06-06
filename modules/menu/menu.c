@@ -797,7 +797,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		if (account_sip_autoredirect(ua_account(ua))) {
 			info("menu: redirecting call to %s\n", prm + 4);
 			ua_connect(ua, NULL, NULL, prm + 4, VIDMODE_ON);
-		} else {
+		}
+		else {
 			info("menu: got call redirect response to %s\n",
 			     prm + 4);
 		}
