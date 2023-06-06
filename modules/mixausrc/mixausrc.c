@@ -25,7 +25,7 @@
  * stream. The audio source is not faded.
  */
 
-#define DEFAULT_FADE_PACKETS 8
+#define DEFAULT_FADE_TIME 160  /*default fading time in ms*/
 
 /**
  * State machine. See:
@@ -85,8 +85,9 @@ struct mixstatus {
 	float ausvol;                   /**< Volume for mixed audio source   */
 	size_t sampc;                   /**< Stream sample count for frame   */
 	size_t nbytes;                  /**< Stream bytes per frame          */
-	size_t i_fade;                  /**< Fade-in/-out counter            */
-	size_t n_fade;                  /**< Fade-in/-out steps              */
+	uint16_t i_fade;                /**< Fade-in/-out counter            */
+	uint16_t n_fade;                /**< Fade-in/-out steps              */
+	float delta_fade;               /**< linear delta accumulation       */
 	struct aufilt_prm prm;          /**< Audio filter parameter          */
 
 	struct auresamp resamp;         /**< Optional audio resampler        */
@@ -384,47 +385,81 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 
 /**
- * Fades a float: fade(0, n) = v0 to fade(n, n) = 1.
+ * Fade-In:  values from st->minvol to 1.0
+ * Fade-Out: values form 1.0 to st->minvol
+ *
+ * @param st   mixausrc status object
+ * @param dir  fading direction (fade-in / fade-out)
+ *
+ * @return float sample multiplication factor
  */
-static float fade(size_t i, size_t n, float v0)
+static float fade_linear(struct mixstatus *st, enum mixmode dir)
 {
-	float x;
-	float r;
+	float factor = st->i_fade * st->delta_fade;
+	++st->i_fade;
 
-	if (v0==1.)
-		return 1.;
-
-	x = ((float) (i-n/2)) / (n/32);
-	r = .5 + x / (2*sqrt(1+x*x));
-
-	return v0 + (1. - v0) * (1. - r);
+	if (dir == FM_FADEIN)
+		return (st->minvol + factor) > 1. ? 1. : st->minvol + factor;
+	else
+		return (1. - factor) < st->minvol ? st->minvol : 1. - factor;
 }
 
 
-static void fade_int16(struct mixstatus *st, int16_t *data, size_t n,
-		       int dir)
+static void fade_int16(struct mixstatus *st, int16_t *data, uint16_t n,
+	enum mixmode dir)
 {
-	size_t i;
-	for (i = 0; i < n; i++)
-		data[i] *= fade(st->i_fade + i*dir, st->n_fade, st->minvol);
+	uint16_t i;
+	for (i = 0; (i < n) && (st->i_fade < st->n_fade); ++i) {
+		data[i] *= fade_linear(st, dir);
+	}
 }
 
 
-static void fade_float(struct mixstatus *st, float *data, size_t n,
-		       int dir)
+static void fade_float(struct mixstatus *st, float *data, uint16_t n,
+	enum mixmode dir)
 {
-	size_t i;
-	for (i = 0; i < n; i++)
-		data[i] *= fade(st->i_fade + i*dir, st->n_fade, st->minvol);
+	uint16_t i;
+	for (i = 0; (i < n) && (st->i_fade < st->n_fade); ++i)
+		data[i] *= fade_linear(st, dir);
 }
 
 
-static int fadeframe(struct mixstatus *st, struct auframe *af, int dir)
+static int fadeframe(struct mixstatus *st, struct auframe *af,
+	enum mixmode dir)
 {
 	if (af->fmt == AUFMT_S16LE)
 		fade_int16(st, af->sampv, af->sampc, dir);
 	else if (af->fmt == AUFMT_FLOAT)
 		fade_float(st, af->sampv, af->sampc, dir);
+	else
+		return EINVAL;
+
+	return 0;
+}
+
+
+static void clear_int16(struct mixstatus *st, int16_t *data, uint16_t n)
+{
+	uint16_t i;
+	for (i = 0; i < n; ++i)
+		data[i] *= st->minvol;
+}
+
+
+static void clear_float(struct mixstatus *st, float *data, uint16_t n)
+{
+	uint16_t i;
+	for (i = 0; i < n; ++i)
+		data[i] *= st->minvol;
+}
+
+
+static int clear_frame(struct mixstatus *st, struct auframe *af)
+{
+	if (af->fmt == AUFMT_S16LE)
+		clear_int16(st, af->sampv, af->sampc);
+	else if (af->fmt == AUFMT_FLOAT)
+		clear_float(st, af->sampv, af->sampc);
 	else
 		return EINVAL;
 
@@ -466,7 +501,6 @@ static int mixframe(struct mixstatus *st, struct auframe *af)
 static int process(struct mixstatus *st, struct auframe *af)
 {
 	size_t n = af->sampc;
-	uint32_t pnbr = DEFAULT_FADE_PACKETS;
 	int err = 0;
 
 	st->nbytes = auframe_size(af);
@@ -474,9 +508,6 @@ static int process(struct mixstatus *st, struct auframe *af)
 		st->sampc = n;
 		st->ausrc_prm.ptime = (uint32_t) n * 1000 /
 			st->ausrc_prm.srate / st->ausrc_prm.ch;
-
-		conf_get_u32(conf_cur(), "mixausrc_fade_packets", &pnbr);
-		st->n_fade = n * pnbr;
 	}
 	else if (st->sampc != n) {
 		warning("mixausrc: sampc changed %lu --> %lu.\n",
@@ -514,20 +545,18 @@ static int process(struct mixstatus *st, struct auframe *af)
 
 	switch (st->mode) {
 	case FM_FADEIN: {
-		err = fadeframe(st, af, -1);
-		st->i_fade -= n;
-		if (st->i_fade <= 0) {
+		err = fadeframe(st, af, st->mode);
+		if (st->i_fade >= st->n_fade) {
 			st->i_fade = 0;
 			st->mode = FM_IDLE;
 		}
 	}
 	break;
 	case FM_FADEOUT: {
-		 err = fadeframe(st, af, +1);
-		 st->i_fade += n;
-		 if (st->i_fade >= st->n_fade) {
-			 st->i_fade = st->n_fade;
-			 st->mode = FM_MIX;
+		err = fadeframe(st, af, st->mode);
+		if (st->i_fade >= st->n_fade) {
+			st->i_fade = 0;
+			st->mode = FM_MIX;
 		}
 	}
 	break;
@@ -540,6 +569,10 @@ static int process(struct mixstatus *st, struct auframe *af)
 		}
 		else if (!st->ausrc) {
 			start_ausrc(st);
+			clear_frame(st, af);
+		}
+		else {
+			clear_frame(st, af);
 		}
 	}
 	break;
@@ -632,8 +665,12 @@ static int start_process(struct mixstatus* st, const char *name,
 	if (err)
 		return err;
 
+	/* Fading arguments */
 	st->minvol = pl_isset(&pl3) ? conv_volume(&pl3) : 0.;
 	st->ausvol = pl_isset(&pl4) ? conv_volume(&pl4) : 1.;
+	st->i_fade = 0;
+	st->n_fade = (DEFAULT_FADE_TIME * st->ausrc_prm.srate) / 1000;
+	st->delta_fade = (1.0 - st->minvol) / st->n_fade;
 
 	st->nextmode = FM_FADEOUT;
 
