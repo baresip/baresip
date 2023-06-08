@@ -743,15 +743,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 		return 0;
 
 	err |= re_hprintf(pf,
-			  "\n# Core\n"
-			  "poll_method\t\t%s\t\t# poll, select"
-#ifdef HAVE_EPOLL
-				", epoll .."
-#endif
-#ifdef HAVE_KQUEUE
-				", kqueue .."
-#endif
-				"\n"
 			  "\n# SIP\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
@@ -798,7 +789,6 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "audio_telev_pt\t\t%u\t\t"
 			  "# payload type for telephone-event\n"
 			  ,
-			  poll_method_name(poll_method_best()),
 			  default_cafile(),
 			  cfg->call.local_timeout,
 			  cfg->call.max_calls,
