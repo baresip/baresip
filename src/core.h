@@ -53,6 +53,7 @@ struct account {
 	enum sipansbeep sipansbeep;  /**< Beep mode for SIP auto answer      */
 	enum rel100_mode rel100_mode;  /**< 100rel mode for incoming calls   */
 	enum answermode answermode;  /**< Answermode for incoming calls      */
+	bool autoredirect;           /**< Autoredirect on 3xx reply on/off   */
 	int32_t adelay;              /**< Delay for delayed auto answer [ms] */
 	enum dtmfmode dtmfmode;      /**< Send type for DTMF tones           */
 	struct le acv[16];           /**< List elements for aucodecl         */

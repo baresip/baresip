@@ -527,6 +527,11 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	else
 		acc->refer = pl_strcasecmp(&tmp, "no") != 0;
 
+	if (0 != msg_param_decode(&aor->params, "sip_autoredirect", &tmp))
+		acc->autoredirect = true;
+	else
+		acc->autoredirect = pl_strcasecmp(&tmp, "no") != 0;
+
 	return err;
 }
 
@@ -1545,6 +1550,27 @@ void account_set_sip_autoanswer(struct account *acc, bool allow)
 
 
 /**
+ * Returns if SIP autoredirect on 3xx response is allowed for the account
+ *
+ * @param acc User-Agent account
+ * @return true if allowed, otherwise false
+ */
+bool account_sip_autoredirect(const struct account *acc)
+{
+	return acc ? acc->autoredirect : false;
+}
+
+
+void account_set_sip_autoredirect(struct account *acc, bool allow)
+{
+	if (!acc)
+		return;
+
+	acc->autoredirect = allow;
+}
+
+
+/**
  * Returns the beep mode for a SIP auto answer call
  *
  * - SIPANSBEEP_ON    ... The beep is played before the call is answered
@@ -1904,6 +1930,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  rel100_mode_str(acc->rel100_mode));
 	err |= re_hprintf(pf, " answermode:   %s\n",
 			  answermode_str(acc->answermode));
+	err |= re_hprintf(pf, " autoredirect:   %s\n",
+			  acc->autoredirect ? "yes" : "no");
 	err |= re_hprintf(pf, " sipans:       %s\n",
 			  acc->sipans ? "yes" : "no");
 	err |= re_hprintf(pf, " sipansbeep:   %s\n",

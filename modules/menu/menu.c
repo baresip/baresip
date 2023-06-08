@@ -592,6 +592,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	enum sdp_dir ardir, vrdir;
 	uint32_t count;
 	struct pl val;
+	char * uri;
 	int err;
 	(void)arg;
 
@@ -791,6 +792,17 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		menu_stop_play();
 		call_hold(call, false);
 		menu_selcall(call);
+		break;
+
+	case UA_EVENT_CALL_REDIRECT:
+		uri = strchr(prm, ',') + 1;
+		if (account_sip_autoredirect(ua_account(ua))) {
+			info("menu: redirecting call to %s\n", uri);
+			ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
+		}
+		else {
+			info("menu: redirect call to %s\n", uri);
+		}
 		break;
 
 	case UA_EVENT_REFER:

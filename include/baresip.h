@@ -138,6 +138,8 @@ int account_answerdelay(const struct account *acc);
 void account_set_answerdelay(struct account *acc, int adelay);
 bool account_sip_autoanswer(const struct account *acc);
 void account_set_sip_autoanswer(struct account *acc, bool allow);
+bool account_sip_autoredirect(const struct account *acc);
+void account_set_sip_autoredirect(struct account *acc, bool allow);
 enum sipansbeep account_sipansbeep(const struct account *acc);
 void account_set_sipansbeep(struct account *acc, enum sipansbeep beep);
 void account_set_autelev_pt(struct account *acc, uint32_t pt);
@@ -808,7 +810,7 @@ enum ua_event {
 	UA_EVENT_CALL_ESTABLISHED,
 	UA_EVENT_CALL_CLOSED,
 	UA_EVENT_CALL_TRANSFER,
-	UA_EVENT_CALL_BLIND_TRANSFER,
+	UA_EVENT_CALL_REDIRECT,
 	UA_EVENT_CALL_TRANSFER_FAILED,
 	UA_EVENT_CALL_DTMF_START,
 	UA_EVENT_CALL_DTMF_END,
