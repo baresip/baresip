@@ -6,7 +6,6 @@
 #ifdef HAVE_GETOPT
 #include <getopt.h>
 #endif
-#include <assert.h>
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
@@ -99,8 +98,6 @@ static int run_tests(void)
 	for (i=0; i<RE_ARRAY_SIZE(tests); i++) {
 
 		re_printf("[ RUN      ] %s\n", tests[i].name);
-
-		assert(false);
 
 		err = tests[i].exec();
 		if (err) {
