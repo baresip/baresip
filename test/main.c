@@ -179,6 +179,8 @@ int main(int argc, char *argv[])
 	bool verbose = false;
 	int err;
 
+	libre_exception_btrace(true);
+
 	err = libre_init();
 	if (err)
 		return err;

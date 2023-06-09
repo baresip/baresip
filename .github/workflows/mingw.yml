@@ -78,6 +78,17 @@ jobs:
       with:
         path: baresip
 
+    - name: "cv2pdb"
+      run: | 
+        curl -L https://github.com/rainers/cv2pdb/releases/download/v0.52/cv2pdb-0.52.zip --output cv2pdb.zip
+        unzip cv2pdb.zip
+        ls -lha
+      shell: bash
+
+    - name: "prepare selftest.exe"
+      run: mv selftest-exe/selftest.exe baresip/ && cd baresip && ../cv2pdb.exe ./selftest.exe
+      shell: bash
+
     - name: "run selftest.exe"
-      run: mv selftest-exe/selftest.exe baresip/ && cd baresip && ./selftest.exe
+      run: cd baresip && ./selftest.exe
       shell: bash
