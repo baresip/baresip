@@ -80,7 +80,7 @@ jobs:
 
     - name: "cv2pdb"
       run: | 
-        curl https://github.com/rainers/cv2pdb/releases/download/v0.52/cv2pdb-0.52.zip -o cv2pdb.zip
+        curl https://github.com/rainers/cv2pdb/releases/download/v0.52/cv2pdb-0.52.zip -O cv2pdb.zip
         unzip cv2pdb.zip
         ls -lha
       shell: bash
