@@ -78,6 +78,10 @@ jobs:
       with:
         path: baresip
 
+    - name: "prepare selftest.exe"
+      run: mv selftest-exe/selftest.exe baresip/ && cd baresip && cv2pdb ./selftest.exe
+      shell: bash
+
     - name: "run selftest.exe"
-      run: mv selftest-exe/selftest.exe baresip/ && cd baresip && ./selftest.exe
+      run: cd baresip && ./selftest.exe
       shell: bash
