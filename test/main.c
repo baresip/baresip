@@ -6,6 +6,7 @@
 #ifdef HAVE_GETOPT
 #include <getopt.h>
 #endif
+#include <assert.h>
 #include <re.h>
 #include <baresip.h>
 #include "test.h"
@@ -99,6 +100,8 @@ static int run_tests(void)
 
 		re_printf("[ RUN      ] %s\n", tests[i].name);
 
+		assert(false);
+
 		err = tests[i].exec();
 		if (err) {
 			warning("%s: test failed (%m)\n",
@@ -178,6 +181,8 @@ int main(int argc, char *argv[])
 	struct sa sa;
 	bool verbose = false;
 	int err;
+
+	libre_exception_btrace(true);
 
 	err = libre_init();
 	if (err)
