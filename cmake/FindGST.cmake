@@ -29,6 +29,13 @@ find_library(GST_LIBRARY
   PATHS /usr/lib/x86_64-linux-gnu
 )
 
+find_library(GST_APP_LIBRARY
+  NAMES gstapp-1.0
+  HINTS
+    "${GST_LIBRARY_DIRS}"
+  PATHS /usr/lib/x86_64-linux-gnu
+)
+
 find_library(GL_LIBRARY
   NAMES glib-2.0
   HINTS
@@ -40,7 +47,7 @@ include(FindPackageHandleStandardArgs)
 
 if(GST_INCLUDE_DIR AND GL_INCLUDE_DIR AND GLIB_INCLUDE_DIR)
   set(GST_INCLUDE_DIRS ${GST_INCLUDE_DIR} ${GL_INCLUDE_DIR} ${GLIB_INCLUDE_DIR})
-  set(GST_LIBRARIES  ${GST_LIBRARY} ${GL_LIBRARY})
+  set(GST_LIBRARIES  ${GST_LIBRARY} ${GL_LIBRARY} ${GST_APP_LIBRARY})
   set(GST_FOUND ON)
 else()
   set(GST_INCLUDE_DIRS "")
