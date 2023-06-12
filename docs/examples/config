@@ -4,9 +4,6 @@
 
 #------------------------------------------------------------------------------
 
-# Core
-poll_method		epoll		# poll, select, epoll ..
-
 # SIP
 #sip_listen		0.0.0.0:5060
 #sip_certificate	cert.pem
@@ -68,11 +65,13 @@ rtp_tos			184
 rtp_video_tos		136
 #rtp_ports		10000-20000
 #rtp_bandwidth		512-1024 # [kbit/s]
-rtcp_mux		no
-jitter_buffer_type	fixed		# off, fixed, adaptive
-jitter_buffer_delay	5-10		# frames
+audio_jitter_buffer_type	fixed	# off, fixed, adaptive
+audio_jitter_buffer_delay	5-10	# (min. frames)-(max. packets)
+video_jitter_buffer_type	fixed	# off, fixed, adaptive
+video_jitter_buffer_delay	5-10	# (min. frames)-(max. packets)
 rtp_stats		no
 #rtp_timeout		60
+#avt_bundle		no
 
 # Network
 #dns_server		1.1.1.1:53
