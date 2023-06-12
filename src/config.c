@@ -312,8 +312,6 @@ static const char *net_af_str(int af)
  */
 int config_parse_conf(struct config *cfg, const struct conf *conf)
 {
-	struct pl pollm;
-	enum poll_method method;
 	struct vidsz size = {0, 0};
 	struct pl txmode;
 	struct pl jbtype;
@@ -324,20 +322,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	if (!cfg || !conf)
 		return EINVAL;
-
-	/* Core */
-	if (0 == conf_get(conf, "poll_method", &pollm)) {
-		if (0 == poll_method_type(&method, &pollm)) {
-			err = poll_method_set(method);
-			if (err) {
-				warning("config: poll method (%r) set: %m\n",
-					&pollm, err);
-			}
-		}
-		else {
-			warning("config: unknown poll method (%r)\n", &pollm);
-		}
-	}
 
 	/* SIP */
 	(void)conf_get_str(conf, "sip_listen", cfg->sip.local,
@@ -757,11 +741,20 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#sip_verify_server\tyes\n"
 			  "sip_tos\t\t\t160\n"
 			  "\n"
+			  ,
+			  default_cafile());
+
+	err |= re_hprintf(pf,
 			  "# Call\n"
 			  "call_local_timeout\t%u\n"
 			  "call_max_calls\t\t%u\n"
 			  "call_hold_other_calls\tyes\n"
 			  "\n"
+			  ,
+			  cfg->call.local_timeout,
+			  cfg->call.max_calls);
+
+	err |= re_hprintf(pf,
 			  "# Audio\n"
 #if defined (SHARE_PATH)
 			  "#audio_path\t\t" SHARE_PATH "\n"
@@ -788,10 +781,8 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "audio_silence\t\t%.1lf\t\t# in [dB]\n"
 			  "audio_telev_pt\t\t%u\t\t"
 			  "# payload type for telephone-event\n"
+			  "\n"
 			  ,
-			  default_cafile(),
-			  cfg->call.local_timeout,
-			  cfg->call.max_calls,
 			  default_audio_device(),
 			  default_audio_device(),
 			  default_audio_device(),
@@ -801,7 +792,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  cfg->audio.telev_pt);
 
 	err |= re_hprintf(pf,
-			  "\n# Video\n"
+			  "# Video\n"
 			  "#video_source\t\t%s\n"
 			  "#video_display\t\t%s\n"
 			  "video_size\t\t%dx%d\n"
