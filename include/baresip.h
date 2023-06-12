@@ -396,6 +396,7 @@ struct config_avt {
 	bool rtp_stats;         /**< Enable RTP statistics          */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 	bool bundle;            /**< Media Multiplexing (BUNDLE)    */
+	bool rtp_ping;          /**< Enable RTP NAT ping packets    */
 };
 
 /** Network Configuration */

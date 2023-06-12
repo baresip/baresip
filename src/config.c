@@ -98,6 +98,7 @@ static struct config core_config = {
 		},
 		false,
 		0,
+		false,
 		false
 	},
 
@@ -470,6 +471,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
 
 	(void)conf_get_bool(conf, "avt_bundle", &cfg->avt.bundle);
+	(void)conf_get_bool(conf, "rtp_send_ping", &cfg->avt.rtp_ping);
 
 	if (err) {
 		warning("config: configure parse error (%m)\n", err);
@@ -571,6 +573,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtp_stats\t\t%s\n"
 			 "rtp_timeout\t\t%u # in seconds\n"
 			 "avt_bundle\t\t%s\n"
+			 "rtp_send_ping\t\t%s\n"
 			 "\n"
 			 "# Network\n"
 			 "net_interface\t\t%s\n"
@@ -625,6 +628,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 			 cfg->avt.bundle ? "yes" : "no",
+			 cfg->avt.rtp_ping ? "yes" : "no",
 
 			 cfg->net.ifname,
 			 net_af_str(cfg->net.af)
@@ -826,6 +830,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
 			  "#avt_bundle\t\tno\n"
+			  "#rtp_send_ping\t\tno\n"
 			  "\n# Network\n"
 			  "#dns_server\t\t1.1.1.1:53\n"
 			  "#dns_server\t\t1.0.0.1:53\n"
