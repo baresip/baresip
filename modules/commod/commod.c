@@ -277,8 +277,13 @@ static void check_auto_answer_media_direction(struct call *call)
 			found = true;
 		}
 
-		if (found)
-			(void)call_set_media_estdir(call, adir, vdir);
+		if (found) {
+			if (call_sent_answer(call))
+				(void)call_set_media_estdir(call, adir, vdir);
+			else
+				(void)call_set_media_direction(call,
+							       adir, vdir);
+		}
 	}
 }
 
