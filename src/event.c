@@ -67,6 +67,8 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_RTPESTAB:
 	case UA_EVENT_CALL_RTCP:
 	case UA_EVENT_CALL_MENC:
+	case UA_EVENT_CALL_LOCAL_SDP:
+	case UA_EVENT_CALL_REMOTE_SDP:
 		return "call";
 	case UA_EVENT_VU_RX:
 	case UA_EVENT_VU_TX:
