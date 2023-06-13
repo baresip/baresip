@@ -1181,6 +1181,9 @@ int call_modify(struct call *call)
 	if (call_refresh_allowed(call)) {
 		err = call_sdp_get(call, &desc, true);
 		if (!err) {
+			ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call,
+				 "offer");
+
 			err = sipsess_modify(call->sess, desc);
 			if (err)
 				goto out;
@@ -1189,7 +1192,7 @@ int call_modify(struct call *call)
 		}
 	}
 
-	err = update_media(call);
+	err = call_update_media(call);
 
  out:
 	mem_deref(desc);
@@ -1314,7 +1317,8 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 		goto out;
 
 	if (call->got_offer) {
-		err = update_media(call);
+		ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "answer");
+		err = call_update_media(call);
 		call->sent_answer = true;
 	}
 
@@ -1383,7 +1387,7 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 
 	if (call->got_offer) {
 
-		err = update_media(call);
+		err = call_update_media(call);
 		if (err)
 			return err;
 	}
