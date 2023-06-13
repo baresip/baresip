@@ -256,6 +256,7 @@ const char   *call_user_data(const struct call *call);
 int call_set_user_data(struct call *call, const char *user_data);
 void call_set_evstop(struct call *call, bool stop);
 bool call_is_evstop(struct call *call);
+bool call_sent_answer(const struct call *call);
 
 /*
  * Custom headers

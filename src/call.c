@@ -58,6 +58,7 @@ struct call {
 	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool answered;            /**< True if call has been answered       */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
+	bool sent_answer;         /**< Sent an SDP Answer to Peer           */
 	bool on_hold;             /**< True if call is on hold (local)      */
 	bool ans_queued;          /**< True if an (auto) answer is queued   */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
@@ -1183,6 +1184,8 @@ int call_modify(struct call *call)
 			err = sipsess_modify(call->sess, desc);
 			if (err)
 				goto out;
+
+			call->sent_answer = false;
 		}
 	}
 
@@ -1310,8 +1313,10 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 	if (err)
 		goto out;
 
-	if (call->got_offer)
+	if (call->got_offer) {
 		err = update_media(call);
+		call->sent_answer = true;
+	}
 
 	if (err)
 		goto out;
@@ -1395,6 +1400,8 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 				"Allow: %H\r\n"
 				"%H", ua_print_allowed, call->ua,
 				ua_print_supported, call->ua);
+		if (!err)
+			call->sent_answer = call->got_offer;
 	}
 	else {
 		err = sipsess_answer(call->sess, scode, "Answering", desc,
@@ -1813,6 +1820,7 @@ static int sipsess_offer_handler(struct mbuf **descp,
 	if (got_offer) {
 
 		call->got_offer = true;
+		call->sent_answer = false;
 
 		/* Decode SDP Offer */
 		err = sdp_decode(call->sdp, msg->mb, true);
@@ -3160,4 +3168,10 @@ bool call_is_evstop(struct call *call)
 		return false;
 
 	return call->evstop;
+}
+
+
+bool call_sent_answer(const struct call *call)
+{
+	return call ? call->sent_answer : false;
 }
