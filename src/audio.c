@@ -2086,16 +2086,6 @@ int audio_level_get(const struct audio *au, double *levelp)
 }
 
 
-static int aucodec_print(struct re_printf *pf, const struct aucodec *ac)
-{
-	if (!ac)
-		return 0;
-
-	return re_hprintf(pf, "%s %uHz/%dch",
-			  ac->name, ac->srate, ac->ch);
-}
-
-
 /**
  * Print the audio debug information
  *

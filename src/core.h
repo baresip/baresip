@@ -107,6 +107,12 @@ void audio_sdp_attr_decode(struct audio *a);
 
 
 /*
+ * Audio Codec
+ */
+int aucodec_print(struct re_printf *pf, const struct aucodec *ac);
+
+
+/*
  * Call Control
  */
 

@@ -74,3 +74,13 @@ const struct aucodec *aucodec_find(const struct list *aucodecl,
 
 	return NULL;
 }
+
+
+int aucodec_print(struct re_printf *pf, const struct aucodec *ac)
+{
+	if (!ac)
+		return 0;
+
+	return re_hprintf(pf, "%s %uHz/%dch",
+			  ac->name, ac->srate, ac->ch);
+}
