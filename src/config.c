@@ -570,6 +570,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "video_jitter_buffer_delay\t%H\n"
 			 "rtp_stats\t\t%s\n"
 			 "rtp_timeout\t\t%u # in seconds\n"
+			 "avt_bundle\t\t%s\n"
 			 "\n"
 			 "# Network\n"
 			 "net_interface\t\t%s\n"
@@ -623,6 +624,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 range_print, &cfg->avt.video.jbuf_del,
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
+			 cfg->avt.bundle ? "yes" : "no",
 
 			 cfg->net.ifname,
 			 net_af_str(cfg->net.af)
@@ -816,13 +818,14 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "audio_jitter_buffer_type\tfixed\t\t# off, fixed,"
 				" adaptive\n"
 			  "audio_jitter_buffer_delay\t%u-%u\t\t"
-			  		"# (min. frames)-(max. packets)\n"
+					"# (min. frames)-(max. packets)\n"
 			  "video_jitter_buffer_type\tfixed\t\t# off, fixed,"
 				" adaptive\n"
 			  "video_jitter_buffer_delay\t%u-%u\t\t"
-			  		"# (min. frames)-(max. packets)\n"
+					"# (min. frames)-(max. packets)\n"
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
+			  "#avt_bundle\t\tno\n"
 			  "\n# Network\n"
 			  "#dns_server\t\t1.1.1.1:53\n"
 			  "#dns_server\t\t1.0.0.1:53\n"
