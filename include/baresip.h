@@ -1190,7 +1190,6 @@ void aucodec_unregister(struct aucodec *ac);
 const struct aucodec *aucodec_find(const struct list *aucodecl,
 				   const char *name, uint32_t srate,
 				   uint8_t ch);
-int aucodec_print(struct re_printf *pf, const struct aucodec *ac);
 
 
 /*
