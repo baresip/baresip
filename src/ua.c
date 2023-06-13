@@ -2049,10 +2049,10 @@ int ua_set_custom_hdrs(struct ua *ua, struct list *custom_headers)
 
 
 /**
- * Set a list of custom SIP headers
+ * Set a list of local contact optional parameters
  *
  * @param ua             User-Agent
- * @param custom_headers List of custom SIP headers (struct sip_hdr)
+ * @param custom_headers List of local contact optional parameters
  *
  * @return 0 if success, otherwise errorcode
  */

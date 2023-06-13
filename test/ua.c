@@ -161,7 +161,7 @@ static int reg(enum sip_transp tp)
 	return err;
 }
 
-#define CPARAMS "pn-provider=push;pn-prid=abc123;"
+#define CPARAMS "pn-provider=push;pn-prid=abc123"
 
 int test_ua_register(void)
 {
@@ -182,7 +182,7 @@ int test_ua_register(void)
 	TEST_ERR(err);
 
 	module_event("pns", "config_update", ua, NULL, "push,abc123,pata");
-	ASSERT_STREQ(CPARAMS "pn-param=pata;", ua_local_contact_params(ua));
+	ASSERT_STREQ(CPARAMS ";pn-param=pata", ua_local_contact_params(ua));
 
 	module_event("pns", "config_update", ua, NULL, "push,abc123");
 	ASSERT_STREQ(CPARAMS, ua_local_contact_params(ua));

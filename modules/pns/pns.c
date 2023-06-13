@@ -71,7 +71,7 @@ static int pns_alloc(struct pns **pnsp, const struct pl *provider,
 
 /* Encode push notification service into URI parameters */
 static int pns_encode(char **params, struct pns *pns) {
-	return re_sdprintf(params, "pn-provider=%s;pn-prid=%s%s%s;",
+	return re_sdprintf(params, "pn-provider=%s;pn-prid=%s%s%s",
 		pns->pn_provider,
 		pns->pn_prid,
 		str_isset(pns->pn_param) ? ";pn-param=" : "",
