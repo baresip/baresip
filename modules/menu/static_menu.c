@@ -158,7 +158,11 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		ua = call_get_ua(call);
 	}
 
-	(void)call_set_media_estdir(call, adir, vdir);
+	if (call_sent_answer(call))
+		(void)call_set_media_estdir(call, adir, vdir);
+	else
+		(void)call_set_media_direction(call, adir, vdir);
+
 	err = answer_call(ua, call);
 	if (err)
 		re_hprintf(pf, "could not answer call (%m)\n", err);
