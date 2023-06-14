@@ -921,7 +921,7 @@ int test_call_max(void)
 }
 
 
-static int test_call_dtmf_base(enum rx_mode rxmode)
+static int test_call_dtmf_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	size_t i, n = str_len(dtmf_digits);
@@ -1005,7 +1005,7 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 }
 
 
-static int test_call_video_base(enum rx_mode rxmode)
+static int test_call_video_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
@@ -1190,7 +1190,7 @@ static void mock_sample_handler(const void *sampv, size_t sampc, void *arg)
 }
 
 
-static int test_call_aulevel_base(enum rx_mode rxmode)
+static int test_call_aulevel_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	struct auplay *auplay = NULL;
@@ -1314,7 +1314,7 @@ static void audio_sample_handler(const void *sampv, size_t sampc, void *arg)
 }
 
 
-static int test_media_base(enum audio_mode txmode, enum rx_mode rxmode)
+static int test_media_base(enum audio_mode txmode, enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	struct auplay *auplay = NULL;
@@ -1387,7 +1387,7 @@ int test_call_format_float(void)
 }
 
 
-static int test_call_mediaenc_base(enum rx_mode rxmode)
+static int test_call_mediaenc_base(enum receive_mode rxmode)
 {
 	struct fixture fix = {0}, *f = &fix;
 	int err = 0;
@@ -1460,7 +1460,7 @@ int test_call_mediaenc(void)
 }
 
 
-static int test_call_medianat_base(enum rx_mode rxmode)
+static int test_call_medianat_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err;
@@ -1836,7 +1836,7 @@ out:
 }
 
 
-static int test_call_rtcp_base(enum rx_mode rxmode)
+static int test_call_rtcp_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
