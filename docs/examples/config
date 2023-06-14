@@ -72,7 +72,7 @@ video_jitter_buffer_delay	5-10	# (min. frames)-(max. packets)
 rtp_stats		no
 #rtp_timeout		60
 #avt_bundle		no
-#rxmode			default         # default,thread
+#rtp_rxmode			default         # default,thread
 
 # Network
 #dns_server		1.1.1.1:53
