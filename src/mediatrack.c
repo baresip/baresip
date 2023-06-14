@@ -277,7 +277,7 @@ static void rtpestab_handler(struct stream *strm, void *arg)
 
 
 static void rtcp_handler(struct stream *strm,
-			 const struct rtcp_msg *msg, void *arg)
+			 struct rtcp_msg *msg, void *arg)
 {
 	struct media_track *media = arg;
 	(void)strm;

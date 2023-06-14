@@ -595,7 +595,7 @@ static void stream_rtpestab_handler(struct stream *strm, void *arg)
 
 
 static void stream_rtcp_handler(struct stream *strm,
-				const struct rtcp_msg *msg, void *arg)
+				struct rtcp_msg *msg, void *arg)
 {
 	struct call *call = arg;
 

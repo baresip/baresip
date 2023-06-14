@@ -334,7 +334,7 @@ static void check_rtp_handler(void *arg)
 }
 
 
-void stream_process_rtcp(struct stream *strm, const struct rtcp_msg *msg)
+void stream_process_rtcp(struct stream *strm, struct rtcp_msg *msg)
 {
 
 	switch (msg->hdr.pt) {

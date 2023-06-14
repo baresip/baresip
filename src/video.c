@@ -939,8 +939,7 @@ static void rtcp_nack_handler(struct vtx *vtx, const struct rtcp_msg *msg)
 }
 
 
-static void rtcp_handler(struct stream *strm, const struct rtcp_msg *msg,
-			 void *arg)
+static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 {
 	struct video *v = arg;
 	struct vtx *vtx = &v->vtx;
