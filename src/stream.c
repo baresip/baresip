@@ -762,7 +762,6 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	s->rtcph  = rtcph;
 	s->arg    = arg;
 	s->ldir   = SDP_SENDRECV;
-	s->pinhole = true;
 	tmr_init(&s->tmr_natph);
 
 	if (prm->use_rtp) {
@@ -844,12 +843,16 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 
 	if (mnat && s->rtp) {
 		s->mnat = mnat;
+		s->pinhole = cfg->rtp_ping;
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
 				   s->cfg.rtcp_mux ? NULL : rtcp_sock(s->rtp),
 				   s->sdp, mnat_connected_handler, s);
 		if (err)
 			goto out;
+	}
+	else {
+		s->pinhole = true;
 	}
 
 	if (menc && s->rtp) {
@@ -1625,7 +1628,7 @@ int stream_open_natpinhole(struct stream *strm)
 	if (!strm)
 		return EINVAL;
 
-	if (!strm->mnat && strm->pinhole)
+	if (strm->pinhole)
 		tmr_start(&strm->tmr_natph, 10, natpinhole_handler, strm);
 
 	return 0;
@@ -1872,5 +1875,8 @@ void stream_enable_natpinhole(struct stream *strm, bool enable)
 	if (!strm)
 		return;
 
-	strm->pinhole = enable;
+	if (!enable)
+		strm->pinhole = false;
+	else
+		strm->pinhole = strm->cfg.rtp_ping || !strm->mnat;
 }
