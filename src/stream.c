@@ -1625,7 +1625,7 @@ int stream_open_natpinhole(struct stream *strm)
 	if (!strm)
 		return EINVAL;
 
-	if (!strm->mnat && strm->pinhole)
+	if (strm->pinhole)
 		tmr_start(&strm->tmr_natph, 10, natpinhole_handler, strm);
 
 	return 0;
