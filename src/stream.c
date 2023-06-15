@@ -843,7 +843,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 
 	if (mnat && s->rtp) {
 		s->mnat = mnat;
-		s->pinhole = cfg->rtp_ping;
+		s->pinhole = cfg->pinhole;
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
 				   s->cfg.rtcp_mux ? NULL : rtcp_sock(s->rtp),
@@ -1878,5 +1878,5 @@ void stream_enable_natpinhole(struct stream *strm, bool enable)
 	if (!enable)
 		strm->pinhole = false;
 	else
-		strm->pinhole = strm->cfg.rtp_ping || !strm->mnat;
+		strm->pinhole = strm->cfg.pinhole || !strm->mnat;
 }
