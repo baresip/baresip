@@ -224,6 +224,7 @@ static void audio_destructor(void *arg)
 
 	debug("audio: destroyed (started=%d)\n", a->started);
 
+	stream_enable(a->strm, false);
 	stop_tx(&a->tx, a);
 	stop_rx(&a->rx);
 
