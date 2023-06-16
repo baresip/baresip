@@ -137,7 +137,7 @@ static int aup_push_aubuf(struct aurpipe *rp, const struct auframe *af)
 	int err;
 	uint64_t bpms;
 
-	if (!rp->aubuf) {
+	if (!re_atomic_rlx(&rp->ready)) {
 		err = aup_alloc_aubuf(rp, af);
 		if (err)
 			return err;
