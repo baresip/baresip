@@ -277,6 +277,8 @@ static void video_destructor(void *arg)
 	struct vtx *vtx = &v->vtx;
 	struct vrx *vrx = &v->vrx;
 
+	stream_enable(v->strm, false);
+
 	/* transmit */
 	if (re_atomic_rlx(&vtx->run)) {
 		re_atomic_rlx_set(&vtx->run, false);
