@@ -473,7 +473,10 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 
 		if (s->type == MEDIA_VIDEO) {
 			/* Read all ready frames */
-			while (stream_decode(s) == EAGAIN);
+			for (int i = 0; i < 1000; i++) {
+				if (stream_decode(s) != EAGAIN)
+					break;
+			}
 		}
 		else {
 			if (stream_decode(s) == EAGAIN)
