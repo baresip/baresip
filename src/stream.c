@@ -571,7 +571,10 @@ static int stream_sock_alloc(struct stream *s, int af)
 
 	udp_rxsz_set(rtp_sock(s->rtp), RTP_RECV_SIZE);
 
-	udp_sockbuf_set(rtp_sock(s->rtp), 65536);
+	if (s->type == MEDIA_VIDEO)
+		udp_sockbuf_set(rtp_sock(s->rtp), 65536 * 8);
+	else
+		udp_sockbuf_set(rtp_sock(s->rtp), 65536);
 
 	return 0;
 }
