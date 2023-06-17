@@ -474,10 +474,9 @@ static void rtp_handler(const struct sa *src, const struct rtp_header *hdr,
 		if (s->type == MEDIA_VIDEO) {
 			/* Read all ready frames */
 			uint32_t n = jbuf_packets(s->rx.jbuf);
-			while (n > 0) {
+			while (n--) {
 				if (stream_decode(s) != EAGAIN)
 					break;
-				--n;
 			}
 		}
 		else {
