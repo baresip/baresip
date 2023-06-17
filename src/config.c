@@ -721,6 +721,18 @@ static int default_interface_print(struct re_printf *pf, void *unused)
 }
 
 
+static const char *default_audio_path(void)
+{
+#if defined (SHARE_PATH)
+	return SHARE_PATH;
+#elif defined (PREFIX)
+	return PREFIX "/share/baresip";
+#else
+	return "/usr/share/baresip";
+#endif
+}
+
+
 static int core_config_template(struct re_printf *pf, const struct config *cfg)
 {
 	int err = 0;
@@ -758,13 +770,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 
 	err |= re_hprintf(pf,
 			  "# Audio\n"
-#if defined (SHARE_PATH)
-			  "#audio_path\t\t" SHARE_PATH "\n"
-#elif defined (PREFIX)
-			  "#audio_path\t\t" PREFIX "/share/baresip\n"
-#else
-			  "#audio_path\t\t/usr/share/baresip\n"
-#endif
+			  "#audio_path\t\t%s\n"
 			  "audio_player\t\t%s\n"
 			  "audio_source\t\t%s\n"
 			  "audio_alert\t\t%s\n"
@@ -785,6 +791,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "# payload type for telephone-event\n"
 			  "\n"
 			  ,
+			  default_audio_path(),
 			  default_audio_device(),
 			  default_audio_device(),
 			  default_audio_device(),
