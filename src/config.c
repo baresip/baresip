@@ -735,27 +735,29 @@ static const char *default_audio_path(void)
 
 static int core_config_template(struct re_printf *pf, const struct config *cfg)
 {
+	bool have_cafile = false;
 	int err = 0;
 
 	if (!cfg)
 		return 0;
 
+#if defined (DEFAULT_CAFILE) || defined (DARWIN) || defined (LINUX) \
+	|| defined (FREEBSD)
+	have_cafile = true;
+#endif
+
 	err |= re_hprintf(pf,
 			  "\n# SIP\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
-#if defined (DEFAULT_CAFILE) || defined (DARWIN) || defined (LINUX) \
-	|| defined (FREEBSD)
-			 "sip_cafile\t\t%s\n"
-#else
-			 "#sip_cafile\t\t%s\n"
-#endif
+			  "%ssip_cafile\t\t%s\n"
 			  "#sip_transports\t\tudp,tcp,tls,ws,wss\n"
 			  "#sip_trans_def\t\tudp\n"
 			  "#sip_verify_server\tyes\n"
 			  "sip_tos\t\t\t160\n"
 			  "\n"
 			  ,
+			  have_cafile ? "" : "#",
 			  default_cafile());
 
 	err |= re_hprintf(pf,
