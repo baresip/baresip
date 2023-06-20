@@ -1005,14 +1005,14 @@ int onvif_aufilter_audio_recv_start(struct onvif_filter_stream *fs,
 
 	if (!fs->jbuf) {
 		err = jbuf_alloc(&fs->jbuf,
-			cfg->avt.jbuf_del.min, cfg->avt.jbuf_del.max);
+			cfg->avt.audio.jbuf_del.min, cfg->avt.audio.jbuf_del.max);
 		if (err)
 			goto out;
 
 		(void)conf_get(conf_cur(),
 			"rtsp_jitterbuffer_type", &jbuf_type);
 		if (!pl_isset(&jbuf_type))
-			jbuf_set_type(fs->jbuf, cfg->avt.jbtype);
+			jbuf_set_type(fs->jbuf, cfg->avt.audio.jbtype);
 		else
 			jbuf_set_type(fs->jbuf,
 				conf_get_jbuf_type(&jbuf_type));
