@@ -528,9 +528,9 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 		acc->refer = pl_strcasecmp(&tmp, "no") != 0;
 
 	if (0 != msg_param_decode(&aor->params, "sip_autoredirect", &tmp))
-		acc->autoredirect = true;
+		acc->autoredirect = false;
 	else
-		acc->autoredirect = pl_strcasecmp(&tmp, "no") != 0;
+		acc->autoredirect = pl_strcasecmp(&tmp, "yes") == 0;
 
 	return err;
 }
