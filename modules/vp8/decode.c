@@ -56,13 +56,14 @@ static void destructor(void *arg)
 
 
 int vp8_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
-		       const char *fmtp)
+		      const char *fmtp, const struct video *vid)
 {
 	struct viddec_state *vds;
 	vpx_codec_err_t res;
 	int err = 0;
 	(void)vc;
 	(void)fmtp;
+	(void)vid;
 
 	if (!vdsp)
 		return EINVAL;

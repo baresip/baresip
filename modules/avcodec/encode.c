@@ -33,7 +33,7 @@ struct videnc_state {
 	enum vidfmt fmt;
 	enum AVCodecID codec_id;
 	videnc_packet_h *pkth;
-	void *arg;
+	const struct video *vid;
 
 	union {
 		struct {
@@ -323,9 +323,9 @@ static void param_handler(const struct pl *name, const struct pl *val,
 
 
 int avcodec_encode_update(struct videnc_state **vesp,
-			  const struct vidcodec *vc,
-			  struct videnc_param *prm, const char *fmtp,
-			  videnc_packet_h *pkth, void *arg)
+			  const struct vidcodec *vc, struct videnc_param *prm,
+			  const char *fmtp, videnc_packet_h *pkth,
+			  const struct video *vid)
 {
 	struct videnc_state *st;
 	int err = 0;
@@ -341,8 +341,8 @@ int avcodec_encode_update(struct videnc_state **vesp,
 		return ENOMEM;
 
 	st->encprm = *prm;
-	st->pkth = pkth;
-	st->arg = arg;
+	st->pkth   = pkth;
+	st->vid	   = vid;
 
 	st->codec_id = avcodec_resolve_codecid(vc->name);
 	if (st->codec_id == AV_CODEC_ID_NONE) {
@@ -498,16 +498,16 @@ int avcodec_encode(struct videnc_state *st, bool update,
 	switch (st->codec_id) {
 
 	case AV_CODEC_ID_H264:
-		err = h264_packetize(ts, pkt->data, pkt->size,
-				     st->encprm.pktsize,
-				     st->pkth, st->arg);
+		err = h264_packetize(
+			ts, pkt->data, pkt->size, st->encprm.pktsize,
+			(h264_packet_h *)st->pkth, (void *)st->vid);
 		break;
 
 #ifdef AV_CODEC_ID_H265
 	case AV_CODEC_ID_H265:
-		err = h265_packetize(ts, pkt->data, pkt->size,
-				     st->encprm.pktsize,
-				     st->pkth, st->arg);
+		err = h265_packetize(
+			ts, pkt->data, pkt->size, st->encprm.pktsize,
+			(h265_packet_h *)st->pkth, (void *)st->vid);
 		break;
 #endif
 
@@ -540,16 +540,16 @@ int avcodec_packetize(struct videnc_state *st, const struct vidpacket *packet)
 	switch (st->codec_id) {
 
 	case AV_CODEC_ID_H264:
-		err = h264_packetize(ts, packet->buf, packet->size,
-				     st->encprm.pktsize,
-				     st->pkth, st->arg);
+		err = h264_packetize(
+			ts, packet->buf, packet->size, st->encprm.pktsize,
+			(h264_packet_h *)st->pkth, (void *)st->vid);
 		break;
 
 #ifdef AV_CODEC_ID_H265
 	case AV_CODEC_ID_H265:
-		err = h265_packetize(ts, packet->buf, packet->size,
-				     st->encprm.pktsize,
-				     st->pkth, st->arg);
+		err = h265_packetize(
+			ts, packet->buf, packet->size, st->encprm.pktsize,
+			(h265_packet_h *)st->pkth, (void *)st->vid);
 		break;
 #endif
 

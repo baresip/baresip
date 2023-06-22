@@ -329,15 +329,15 @@ static double get_fps(const struct video *v)
 static int packet_handler(bool marker, uint64_t ts,
 			  const uint8_t *hdr, size_t hdr_len,
 			  const uint8_t *pld, size_t pld_len,
-			  void *arg)
+			  const struct video *vid)
 {
-	struct vtx *vtx = arg;
-	struct stream *strm = vtx->video->strm;
+	struct vtx *vtx = (struct vtx *)&vid->vtx;
+	struct stream *strm = vid->strm;
 	struct vidqent *qent;
 	uint32_t rtp_ts;
 	int err;
 
-	MAGIC_CHECK(vtx->video);
+	MAGIC_CHECK(vid);
 
 	if (!vtx->ts_base)
 		vtx->ts_base = ts;
@@ -1553,7 +1553,7 @@ int video_encoder_set(struct video *v, struct vidcodec *vc,
 
 		vtx->enc = mem_deref(vtx->enc);
 		err = vc->encupdh(&vtx->enc, vc, &prm, params,
-				  packet_handler, vtx);
+				  packet_handler, v);
 		if (err) {
 			warning("video: encoder alloc: %m\n", err);
 			goto out;
@@ -1608,7 +1608,7 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 
 		vrx->dec = mem_deref(vrx->dec);
 
-		err = vc->decupdh(&vrx->dec, vc, fmtp);
+		err = vc->decupdh(&vrx->dec, vc, fmtp, v);
 		if (err) {
 			warning("video: decoder alloc: %m\n", err);
 			return err;
