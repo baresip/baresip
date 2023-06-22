@@ -1216,9 +1216,9 @@ typedef int(viddec_update_h)(struct viddec_state **vdsp,
 			     const struct vidcodec *vc, const char *fmtp,
 			     const struct video *vid);
 
-typedef int (viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
-                              bool *intra, bool marker, uint16_t seq,
-                              struct mbuf *mb);
+typedef int(viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
+			     bool *intra, bool marker, uint16_t seq,
+			     uint64_t ts, struct mbuf *mb);
 
 struct vidcodec {
 	struct le le;

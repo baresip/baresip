@@ -41,9 +41,11 @@ int avcodec_decode_update(struct viddec_state **vdsp,
 			  const struct vidcodec *vc, const char *fmtp,
 			  const struct video *vid);
 int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
-		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
+			bool *intra, bool eof, uint16_t seq, uint64_t ts,
+			struct mbuf *src);
 int avcodec_decode_h265(struct viddec_state *st, struct vidframe *frame,
-			bool *intra, bool eof, uint16_t seq, struct mbuf *src);
+			bool *intra, bool eof, uint16_t seq, uint64_t ts,
+			struct mbuf *src);
 
 
 int avcodec_resolve_codecid(const char *s);

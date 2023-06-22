@@ -262,14 +262,16 @@ static inline bool is_keyframe(const struct mbuf *mb)
 }
 
 
-int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
-	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
+int vp9_decode(struct viddec_state *vds, struct vidframe *frame, bool *intra,
+	       bool marker, uint16_t seq, uint64_t ts, struct mbuf *mb)
 {
 	vpx_codec_iter_t iter = NULL;
 	vpx_codec_err_t res;
 	vpx_image_t *img;
 	struct hdr hdr;
 	int err, i;
+
+	(void)ts;
 
 	if (!vds || !frame || !intra || !mb)
 		return EINVAL;

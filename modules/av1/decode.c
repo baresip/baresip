@@ -141,8 +141,8 @@ static int copy_obu(struct mbuf *mb_bs, const uint8_t *buf, size_t size)
 }
 
 
-int av1_decode(struct viddec_state *vds, struct vidframe *frame,
-	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
+int av1_decode(struct viddec_state *vds, struct vidframe *frame, bool *intra,
+	       bool marker, uint16_t seq, uint64_t ts, struct mbuf *mb)
 {
 	aom_codec_frame_flags_t flags;
 	aom_codec_iter_t iter = NULL;
@@ -151,6 +151,8 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	struct av1_aggr_hdr hdr;
 	struct mbuf *mb2 = NULL;
 	int err;
+
+	(void)ts;
 
 	if (!vds || !frame || !intra || !mb)
 		return EINVAL;
