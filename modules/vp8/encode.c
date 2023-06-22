@@ -27,7 +27,7 @@ struct videnc_state {
 	bool ctxup;
 	uint16_t picid;
 	videnc_packet_h *pkth;
-	void *arg;
+	const struct video *vid;
 };
 
 
@@ -42,7 +42,7 @@ static void destructor(void *arg)
 
 int vp8_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		      struct videnc_param *prm, const char *fmtp,
-		      videnc_packet_h *pkth, void *arg)
+		      videnc_packet_h *pkth, const struct video *vid)
 {
 	const struct vp8_vidcodec *vp8 = (struct vp8_vidcodec *)vc;
 	struct videnc_state *ves;
@@ -77,7 +77,7 @@ int vp8_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	ves->pktsize = prm->pktsize;
 	ves->fps     = prm->fps;
 	ves->pkth    = pkth;
-	ves->arg     = arg;
+	ves->vid     = vid;
 
 	max_fs = vp8_max_fs(fmtp);
 	if (max_fs > 0)
@@ -157,7 +157,7 @@ static inline void hdr_encode(uint8_t hdr[HDR_SIZE], bool noref, bool start,
 static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 			    size_t maxlen, bool noref, uint8_t partid,
 			    uint16_t picid, uint64_t rtp_ts,
-			    videnc_packet_h *pkth, void *arg)
+			    videnc_packet_h *pkth, const struct video *vid)
 {
 	uint8_t hdr[HDR_SIZE];
 	bool start = true;
@@ -170,7 +170,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 		hdr_encode(hdr, noref, start, partid, picid);
 
 		err |= pkth(false, rtp_ts, hdr, sizeof(hdr), buf, maxlen,
-			    arg);
+			    vid);
 
 		buf  += maxlen;
 		len  -= maxlen;
@@ -179,7 +179,7 @@ static inline int packetize(bool marker, const uint8_t *buf, size_t len,
 
 	hdr_encode(hdr, noref, start, partid, picid);
 
-	err |= pkth(marker, rtp_ts, hdr, sizeof(hdr), buf, len, arg);
+	err |= pkth(marker, rtp_ts, hdr, sizeof(hdr), buf, len, vid);
 
 	return err;
 }
@@ -265,7 +265,7 @@ int vp8_encode(struct videnc_state *ves, bool update,
 				pkt->data.frame.sz,
 				ves->pktsize, !keyframe, partid, ves->picid,
 				ts,
-				ves->pkth, ves->arg);
+				ves->pkth, ves->vid);
 		if (err)
 			return err;
 	}
@@ -328,7 +328,7 @@ int vp8_encode_packetize(struct videnc_state *ves,
 
 	err = packetize(true, pkt->buf, pkt->size,
 			ves->pktsize, !key_frame, 0,
-			ves->picid, rtp_ts, ves->pkth, ves->arg);
+			ves->picid, rtp_ts, ves->pkth, ves->vid);
 	if (err)
 		return err;
 

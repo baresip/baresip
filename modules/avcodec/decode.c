@@ -157,7 +157,8 @@ static int init_decoder(struct viddec_state *st, const char *name)
 
 
 int avcodec_decode_update(struct viddec_state **vdsp,
-			  const struct vidcodec *vc, const char *fmtp)
+			  const struct vidcodec *vc, const char *fmtp,
+			  const struct video *vid)
 {
 	struct viddec_state *st;
 	int err = 0;
@@ -169,6 +170,7 @@ int avcodec_decode_update(struct viddec_state **vdsp,
 		return 0;
 
 	(void)fmtp;
+	(void)vid;
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
