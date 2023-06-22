@@ -763,7 +763,8 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 	vidframe_clear(frame);
 
-	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb);
+	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq,
+			    timestamp, mb);
 	if (err) {
 
 		if (err != EPROTO) {

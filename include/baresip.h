@@ -1214,9 +1214,9 @@ typedef int (videnc_packetize_h)(struct videnc_state *ves,
 
 typedef int (viddec_update_h)(struct viddec_state **vdsp,
 			      const struct vidcodec *vc, const char *fmtp);
-typedef int (viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
-                              bool *intra, bool marker, uint16_t seq,
-                              struct mbuf *mb);
+typedef int(viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
+			     bool *intra, bool marker, uint16_t seq,
+			     uint64_t ts, struct mbuf *mb);
 
 struct vidcodec {
 	struct le le;

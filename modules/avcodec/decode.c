@@ -293,12 +293,14 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 
 int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
-			bool *intra, bool marker, uint16_t seq,
+			bool *intra, bool marker, uint16_t seq, uint64_t ts,
 			struct mbuf *src)
 {
 	struct h264_nal_header h264_hdr;
 	const uint8_t nal_seq[3] = {0, 0, 1};
 	int err;
+
+	(void)ts;
 
 	if (!st || !frame || !intra || !src)
 		return EINVAL;
@@ -488,11 +490,14 @@ static inline int h265_fu_decode(struct h265_fu *fu, struct mbuf *mb)
 
 
 int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
-		       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
+			bool *intra, bool marker, uint16_t seq, uint64_t ts,
+			struct mbuf *mb)
 {
 	static const uint8_t nal_seq[3] = {0, 0, 1};
 	struct h265_nal hdr;
 	int err;
+
+	(void)ts;
 
 	if (!vds || !frame || !intra || !mb)
 		return EINVAL;
