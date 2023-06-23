@@ -34,7 +34,7 @@ struct aurpipe {
 	struct audec_state *dec;      /**< Audio decoder state (optional)    */
 	const struct aucodec *ac;     /**< Current audio decoder             */
 	struct aubuf *aubuf;          /**< Audio buffer before auplay        */
-	RE_ATOMIC bool ready;         /**< Audio buffer is ready flag        */
+	mtx_t *aubuf_mtx;             /**< Mutex for aubuf allocation        */
 	uint32_t ssrc;                /**< Incoming synchronization source   */
 	struct list filtl;            /**< Audio filters in decoding order   */
 	void *sampv;                  /**< Sample buffer                     */
@@ -63,6 +63,7 @@ static void destructor(void *arg)
 	mem_deref(rp->aubuf);
 	mem_deref(rp->sampv);
 	mem_deref(rp->mtx);
+	mem_deref(rp->aubuf_mtx);
 	list_flush(&rp->filtl);
 }
 
@@ -137,12 +138,12 @@ static int aup_push_aubuf(struct aurpipe *rp, const struct auframe *af)
 	int err;
 	uint64_t bpms;
 
-	if (!re_atomic_rlx(&rp->ready)) {
+	if (!rp->aubuf) {
+		mtx_lock(rp->aubuf_mtx);
 		err = aup_alloc_aubuf(rp, af);
+		mtx_unlock(rp->aubuf_mtx);
 		if (err)
 			return err;
-
-		re_atomic_rlx_set(&rp->ready, true);
 	}
 
 	err = aubuf_write_auframe(rp->aubuf, af);
@@ -375,7 +376,8 @@ int aup_alloc(struct aurpipe **aupp, const struct config_audio *cfg,
 		goto out;
 	}
 
-	err = mutex_alloc(&rp->mtx);
+	err  = mutex_alloc(&rp->mtx);
+	err |= mutex_alloc(&rp->aubuf_mtx);
 
 out:
 	if (err)
@@ -389,7 +391,7 @@ out:
 
 void aup_flush(struct aurpipe *rp)
 {
-	if (!rp || !re_atomic_rlx(&rp->ready))
+	if (!rp)
 		return;
 
 	mtx_lock(rp->mtx);
@@ -503,10 +505,11 @@ const struct aucodec *aup_codec(const struct aurpipe *rp)
 
 void aup_read(struct aurpipe *rp, struct auframe *af)
 {
-	if (!rp || !re_atomic_rlx(&rp->ready))
+	if (!rp || mtx_trylock(rp->aubuf_mtx) != thrd_success)
 		return;
 
 	aubuf_read_auframe(rp->aubuf, af);
+	mtx_unlock(rp->aubuf_mtx);
 }
 
 
@@ -523,10 +526,14 @@ void aup_stop(struct aurpipe *rp)
 
 bool aup_started(const struct aurpipe *rp)
 {
-	if (!rp || !re_atomic_rlx(&rp->ready))
+	bool ret;
+
+	if (!rp || mtx_trylock(rp->aubuf_mtx) != thrd_success)
 		return false;
 
-	return aubuf_started(rp->aubuf);
+	ret = aubuf_started(rp->aubuf);
+	mtx_unlock(rp->aubuf_mtx);
+	return ret;
 }
 
 
@@ -536,12 +543,14 @@ int aup_debug(struct re_printf *pf, const struct aurpipe *rp)
 	uint64_t bpms;
 	int err;
 
-	if (!rp || !re_atomic_rlx(&rp->ready))
+	if (!rp || mtx_trylock(rp->aubuf_mtx) != thrd_success)
 		return 0;
 
 	mb = mbuf_alloc(32);
-	if (!mb)
-		return ENOMEM;
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	mtx_lock(rp->mtx);
 	bpms = rp->srate * rp->ch * aufmt_sample_size(rp->fmt) / 1000;
@@ -575,6 +584,7 @@ int aup_debug(struct re_printf *pf, const struct aurpipe *rp)
 	err = re_hprintf(pf, "%b", mb->buf, mb->pos);
 out:
 	mem_deref(mb);
+	mtx_unlock(rp->aubuf_mtx);
 	return err;
 }
 
