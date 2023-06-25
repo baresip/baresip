@@ -115,15 +115,15 @@ int mediatrack_start_video(struct media_track *media)
 
 	struct vidcodec *vc = fmt->data;
 
-	err = video_encoder_set(vid, vc, fmt->pt, fmt->params);
-	if (err) {
-		warning("mediatrack: start:"
-			" video_encoder_set error: %m\n",
-			err);
-		return err;
-	}
-
 	if (dir & SDP_SENDONLY) {
+		err = video_encoder_set(vid, vc, fmt->pt, fmt->params);
+		if (err) {
+			warning("mediatrack: start:"
+				" video_encoder_set error: %m\n",
+				err);
+			return err;
+		}
+
 		err = video_start_source(vid);
 		if (err) {
 			warning("mediatrack: start:"
@@ -131,6 +131,7 @@ int mediatrack_start_video(struct media_track *media)
 				err);
 			return err;
 		}
+		info("mediatrack: video source started\n");
 	}
 
 	if (dir & SDP_RECVONLY) {
@@ -141,6 +142,7 @@ int mediatrack_start_video(struct media_track *media)
 				err);
 			return err;
 		}
+		info("mediatrack: video display started\n");
 	}
 
 	stream_set_rtcp_interval(video_strm(vid), 1000);
