@@ -588,12 +588,13 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 }
 
 
-int test_call_answer(void)
+static int test_call_answer_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 
@@ -616,18 +617,20 @@ int test_call_answer(void)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
+	conf_config()->avt.rxmode  = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
 }
 
 
-int test_call_reject(void)
+static int test_call_reject_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_REJECT;
 
@@ -648,18 +651,20 @@ int test_call_reject(void)
 	ASSERT_EQ(0, fix.b.n_established);
 
  out:
+	conf_config()->avt.rxmode  = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
 }
 
 
-int test_call_answer_hangup_a(void)
+static int test_call_answer_hangup_a_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_HANGUP_A;
@@ -682,19 +687,21 @@ int test_call_answer_hangup_a(void)
 	ASSERT_EQ(0, fix.b.close_scode);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
 }
 
 
-int test_call_answer_hangup_b(void)
+static int test_call_answer_hangup_b_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	char uri[256];
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_HANGUP_B;
@@ -720,13 +727,14 @@ int test_call_answer_hangup_b(void)
 	ASSERT_EQ(0, fix.b.close_scode);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
 }
 
 
-int test_call_rtp_timeout(void)
+static int test_call_rtp_timeout_base(enum receive_mode rxmode)
 {
 #define RTP_TIMEOUT_MS 1
 	struct fixture fix, *f = &fix;
@@ -734,6 +742,7 @@ int test_call_rtp_timeout(void)
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
@@ -761,6 +770,7 @@ int test_call_rtp_timeout(void)
 	ASSERT_EQ(0, fix.b.close_scode);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
@@ -786,7 +796,7 @@ static bool linenum_are_sequential(const struct ua *ua)
 }
 
 
-int test_call_multiple(void)
+static int test_call_multiple_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	struct le *le;
@@ -794,6 +804,7 @@ int test_call_multiple(void)
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->exp_estab = 4;
@@ -870,13 +881,14 @@ int test_call_multiple(void)
 	ASSERT_EQ(4, list_count(ua_calls(f->b.ua)));
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
 }
 
 
-int test_call_max(void)
+static int test_call_max_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	unsigned i;
@@ -888,6 +900,7 @@ int test_call_max(void)
 	conf_config()->call.max_calls = 3;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 
@@ -912,6 +925,7 @@ int test_call_max(void)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	/* Set the max-calls limit */
@@ -962,20 +976,8 @@ static int test_call_dtmf_base(enum receive_mode rxmode)
 
  out:
 	conf_config()->avt.rxmode  = RX_MODE_DEFAULT;
-
 	fixture_close(f);
 	module_unload("ausine");
-
-	return err;
-}
-
-
-int test_call_dtmf(void)
-{
-	int err;
-
-	err  = test_call_dtmf_base(RX_MODE_DEFAULT);
-	err |= test_call_dtmf_base(RX_MODE_THREAD);
 
 	return err;
 }
@@ -1047,7 +1049,6 @@ static int test_call_video_base(enum receive_mode rxmode)
 
  out:
 	conf_config()->avt.rxmode  = RX_MODE_DEFAULT;
-
 	fixture_close(f);
 	mem_deref(vidisp);
 	module_unload("fakevideo");
@@ -1057,18 +1058,7 @@ static int test_call_video_base(enum receive_mode rxmode)
 }
 
 
-int test_call_video(void)
-{
-	int err;
-
-	err  = test_call_video_base(RX_MODE_DEFAULT);
-	err |= test_call_video_base(RX_MODE_THREAD);
-
-	return err;
-}
-
-
-int test_call_change_videodir(void)
+static int test_call_change_videodir_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
@@ -1078,6 +1068,7 @@ int test_call_change_videodir(void)
 
 	conf_config()->video.fps = 100;
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
+	conf_config()->avt.rxmode = rxmode;
 
 	fixture_init(f);
 	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
@@ -1165,6 +1156,7 @@ int test_call_change_videodir(void)
 	ASSERT_TRUE(b_video_rdir == SDP_SENDRECV);
 
  out:
+	conf_config()->avt.rxmode  = RX_MODE_DEFAULT;
 	fixture_close(f);
 	mem_deref(vidisp);
 	module_unload("fakevideo");
@@ -1241,22 +1233,13 @@ static int test_call_aulevel_base(enum receive_mode rxmode)
 }
 
 
-int test_call_aulevel(void)
-{
-	int err;
-
-	err  = test_call_aulevel_base(RX_MODE_DEFAULT);
-	err |= test_call_aulevel_base(RX_MODE_THREAD);
-	return err;
-}
-
-
-int test_call_progress(void)
+static int test_call_progress_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	struct cancel_rule *cr;
 	int err = 0;
 
+	conf_config()->avt.rxmode = rxmode;
 	fixture_init(f);
 	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
@@ -1283,6 +1266,7 @@ int test_call_progress(void)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
@@ -1372,21 +1356,6 @@ static int test_media_base(enum audio_mode txmode, enum receive_mode rxmode)
 }
 
 
-int test_call_format_float(void)
-{
-	int err;
-
-	err  = test_media_base(AUDIO_MODE_POLL, RX_MODE_DEFAULT);
-	err |= test_media_base(AUDIO_MODE_POLL, RX_MODE_THREAD);
-	ASSERT_EQ(0, err);
-
-	conf_config()->audio.txmode = AUDIO_MODE_POLL;
-
- out:
-	return err;
-}
-
-
 static int test_call_mediaenc_base(enum receive_mode rxmode)
 {
 	struct fixture fix = {0}, *f = &fix;
@@ -1435,7 +1404,6 @@ static int test_call_mediaenc_base(enum receive_mode rxmode)
 
  out:
 	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
-
 	fixture_close(f);
 	module_unload("aufile");
 	module_unload("ausine");
@@ -1444,17 +1412,6 @@ static int test_call_mediaenc_base(enum receive_mode rxmode)
 
 	if (fix.err)
 		return fix.err;
-
-	return err;
-}
-
-
-int test_call_mediaenc(void)
-{
-	int err;
-
-	err  = test_call_mediaenc_base(RX_MODE_DEFAULT);
-	err |= test_call_mediaenc_base(RX_MODE_THREAD);
 
 	return err;
 }
@@ -1498,7 +1455,6 @@ static int test_call_medianat_base(enum receive_mode rxmode)
 
  out:
 	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
-
 	fixture_close(f);
 	module_unload("ausine");
 
@@ -1511,18 +1467,7 @@ static int test_call_medianat_base(enum receive_mode rxmode)
 }
 
 
-int test_call_medianat(void)
-{
-	int err;
-
-	err  = test_call_medianat_base(RX_MODE_DEFAULT);
-	err |= test_call_medianat_base(RX_MODE_THREAD);
-
-	return err;
-}
-
-
-int test_call_custom_headers(void)
+static int test_call_custom_headers_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
@@ -1531,6 +1476,7 @@ int test_call_custom_headers(void)
 	bool headers_matched = true;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	ua_add_xhdr_filter(f->b.ua, "X-CALL_ID");
 	ua_add_xhdr_filter(f->b.ua, "X-HEADER_NAME");
@@ -1594,18 +1540,20 @@ int test_call_custom_headers(void)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
 }
 
 
-int test_call_tcp(void)
+static int test_call_tcp_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 
@@ -1622,19 +1570,21 @@ int test_call_tcp(void)
 	ASSERT_EQ(1, fix.b.n_established);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
 }
 
 
-int test_call_deny_udp(void)
+static int test_call_deny_udp_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 	char curi[256];
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	mem_deref(f->a.ua);
 	mem_deref(f->b.ua);
@@ -1666,6 +1616,7 @@ int test_call_deny_udp(void)
 	ASSERT_EQ(0, fix.b.n_incoming);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
@@ -1680,12 +1631,13 @@ int test_call_deny_udp(void)
  *  Step 3. Call between B and C
  *          No call for A
  */
-int test_call_transfer(void)
+static int test_call_transfer_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	/* Create a 3rd useragent needed for transfer */
 	err = ua_alloc(&f->c.ua, "C <sip:c@127.0.0.1>;regint=0");
@@ -1724,18 +1676,20 @@ int test_call_transfer(void)
 	ASSERT_EQ(1, list_count(ua_calls(f->c.ua)));
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
 }
 
 
-int test_call_transfer_fail(void)
+static int test_call_transfer_fail_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	/* Create a 3rd useragent needed for transfer */
 	err = ua_alloc(&f->c.ua, "C <sip:c@127.0.0.1>;regint=0");
@@ -1779,18 +1733,20 @@ int test_call_transfer_fail(void)
 	ASSERT_EQ(0, list_count(ua_calls(f->c.ua)));
 
 out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
 }
 
 
-int test_call_attended_transfer(void)
+static int test_call_attended_transfer_base(enum receive_mode rxmode)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	err = ua_alloc(&f->c.ua, "C <sip:c@127.0.0.1>;regint=0");
 	TEST_ERR(err);
@@ -1830,6 +1786,7 @@ int test_call_attended_transfer(void)
 	ASSERT_EQ(1, list_count(ua_calls(f->c.ua)));
 
 out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	return err;
@@ -1864,37 +1821,7 @@ static int test_call_rtcp_base(enum receive_mode rxmode)
 
  out:
 	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
-
 	fixture_close(f);
-
-	return err;
-}
-
-
-int test_call_rtcp(void)
-{
-	int err;
-
-	err  = test_call_rtcp_base(RX_MODE_DEFAULT);
-	err |= test_call_rtcp_base(RX_MODE_THREAD);
-
-	return err;
-}
-
-
-int test_call_aufilt(void)
-{
-	int err;
-
-	err = module_load(".", "auconv");
-	TEST_ERR(err);
-
-	err  = test_media_base(AUDIO_MODE_POLL, RX_MODE_DEFAULT);
-	err |= test_media_base(AUDIO_MODE_POLL, RX_MODE_THREAD);
-	ASSERT_EQ(0, err);
-
- out:
-	module_unload("auconv");
 
 	return err;
 }
@@ -1903,7 +1830,7 @@ int test_call_aufilt(void)
 /*
  * Simulate a complete WebRTC testcase
  */
-int test_call_webrtc(void)
+static int test_call_webrtc_base(enum receive_mode rxmode)
 {
 	struct fixture fix = {0}, *f = &fix;
 	struct sdp_media *sdp_a, *sdp_b;
@@ -1925,6 +1852,7 @@ int test_call_webrtc(void)
 	TEST_ERR(err);
 
 	fixture_init_prm(f, ";medianat=XNAT;mediaenc=dtls_srtp");
+	conf_config()->avt.rxmode = rxmode;
 
 	f->estab_action = ACTION_NOTHING;
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -1973,6 +1901,7 @@ int test_call_webrtc(void)
 	ASSERT_EQ(20, atoi(sdp_media_rattr(sdp_b, "ptime")));
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	module_unload("fakevideo");
@@ -1990,7 +1919,8 @@ int test_call_webrtc(void)
 }
 
 
-static int test_call_bundle_base(bool use_mnat, bool use_menc)
+static int test_call_bundle_base(bool use_mnat, bool use_menc,
+				 enum receive_mode rxmode)
 {
 	struct fixture fix = {0}, *f = &fix;
 	struct ausrc *ausrc = NULL;
@@ -2005,6 +1935,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	conf_config()->avt.bundle = true;
 	conf_config()->avt.rtcp_mux = true;  /* MUST enable RTP/RTCP mux */
 	conf_config()->video.fps = 100;
+	conf_config()->avt.rxmode = rxmode;
 
 	if (use_mnat) {
 		mock_mnat_register(baresip_mnatl());
@@ -2117,6 +2048,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	}
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 
 	mem_deref(sdp);
@@ -2138,27 +2070,6 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 }
 
 
-/*
- * Simple testcase for SDP Bundle
- *
- * audio: yes
- * video: yes
- * mnat:  optional
- * menc:  optional
- */
-int test_call_bundle(void)
-{
-	int err = 0;
-
-	err |= test_call_bundle_base(false, false);
-	err |= test_call_bundle_base(true,  false);
-	err |= test_call_bundle_base(false, true);
-	err |= test_call_bundle_base(true,  true);
-
-	return err;
-}
-
-
 static bool find_ipv6ll(const char *ifname, const struct sa *sa, void *arg)
 {
 	struct sa *ipv6ll = arg;
@@ -2173,7 +2084,7 @@ static bool find_ipv6ll(const char *ifname, const struct sa *sa, void *arg)
 }
 
 
-int test_call_ipv6ll(void)
+static int test_call_ipv6ll_base(enum receive_mode rxmode)
 {
 	struct fixture fix = {0}, *f = &fix;
 	struct network *net = baresip_network();
@@ -2192,6 +2103,7 @@ int test_call_ipv6ll(void)
 	TEST_ERR(err);
 
 	fixture_init(f);
+	conf_config()->avt.rxmode = rxmode;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
@@ -2234,8 +2146,319 @@ int test_call_ipv6ll(void)
 	ASSERT_TRUE(sa_is_linklocal(&ipv6ll) && sa_af(&ipv6ll) == AF_INET6);
 
  out:
+	conf_config()->avt.rxmode = RX_MODE_DEFAULT;
 	fixture_close(f);
 	module_unload("ausine");
+
+	return err;
+}
+
+
+int test_call_answer(void)
+{
+	int err;
+
+	err  = test_call_answer_base(RX_MODE_DEFAULT);
+	err |= test_call_answer_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_reject(void)
+{
+	int err;
+
+	err  = test_call_reject_base(RX_MODE_DEFAULT);
+	err |= test_call_reject_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_answer_hangup_a(void)
+{
+	int err;
+
+	err  = test_call_answer_hangup_a_base(RX_MODE_DEFAULT);
+	err |= test_call_answer_hangup_a_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_answer_hangup_b(void)
+{
+	int err;
+
+	err  = test_call_answer_hangup_b_base(RX_MODE_DEFAULT);
+	err |= test_call_answer_hangup_b_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_rtp_timeout(void)
+{
+	int err;
+
+	err  = test_call_rtp_timeout_base(RX_MODE_DEFAULT);
+	err |= test_call_rtp_timeout_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_multiple(void)
+{
+	int err;
+
+	err  = test_call_multiple_base(RX_MODE_DEFAULT);
+	err |= test_call_multiple_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_max(void)
+{
+	int err;
+
+	err  = test_call_max_base(RX_MODE_DEFAULT);
+	err |= test_call_max_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_dtmf(void)
+{
+	int err;
+
+	err  = test_call_dtmf_base(RX_MODE_DEFAULT);
+	err |= test_call_dtmf_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_video(void)
+{
+	int err;
+
+	err  = test_call_video_base(RX_MODE_DEFAULT);
+	err |= test_call_video_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_change_videodir(void)
+{
+	int err;
+
+	err  = test_call_change_videodir_base(RX_MODE_DEFAULT);
+	err |= test_call_change_videodir_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_aulevel(void)
+{
+	int err;
+
+	err  = test_call_aulevel_base(RX_MODE_DEFAULT);
+	err |= test_call_aulevel_base(RX_MODE_THREAD);
+	return err;
+}
+
+
+int test_call_progress(void)
+{
+	int err;
+
+	err  = test_call_progress_base(RX_MODE_DEFAULT);
+	err |= test_call_progress_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_format_float(void)
+{
+	int err;
+
+	err  = test_media_base(AUDIO_MODE_POLL, RX_MODE_DEFAULT);
+	err |= test_media_base(AUDIO_MODE_POLL, RX_MODE_THREAD);
+	ASSERT_EQ(0, err);
+
+	conf_config()->audio.txmode = AUDIO_MODE_POLL;
+
+ out:
+	return err;
+}
+
+
+int test_call_mediaenc(void)
+{
+	int err;
+
+	err  = test_call_mediaenc_base(RX_MODE_DEFAULT);
+	err |= test_call_mediaenc_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_medianat(void)
+{
+	int err;
+
+	err  = test_call_medianat_base(RX_MODE_DEFAULT);
+	err |= test_call_medianat_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_custom_headers(void)
+{
+	int err;
+
+	err  = test_call_custom_headers_base(RX_MODE_DEFAULT);
+	err |= test_call_custom_headers_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_tcp(void)
+{
+	int err;
+
+	err  = test_call_tcp_base(RX_MODE_DEFAULT);
+	err |= test_call_tcp_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_deny_udp(void)
+{
+	int err;
+
+	err  = test_call_deny_udp_base(RX_MODE_DEFAULT);
+	err |= test_call_deny_udp_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_transfer(void)
+{
+	int err;
+
+	err  = test_call_transfer_base(RX_MODE_DEFAULT);
+	err |= test_call_transfer_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_transfer_fail(void)
+{
+	int err;
+
+	err  = test_call_transfer_fail_base(RX_MODE_DEFAULT);
+	err |= test_call_transfer_fail_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_attended_transfer(void)
+{
+	int err;
+
+	err  = test_call_attended_transfer_base(RX_MODE_DEFAULT);
+	err |= test_call_attended_transfer_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_rtcp(void)
+{
+	int err;
+
+	err  = test_call_rtcp_base(RX_MODE_DEFAULT);
+	err |= test_call_rtcp_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_aufilt(void)
+{
+	int err;
+
+	err = module_load(".", "auconv");
+	TEST_ERR(err);
+
+	err  = test_media_base(AUDIO_MODE_POLL, RX_MODE_DEFAULT);
+	err |= test_media_base(AUDIO_MODE_POLL, RX_MODE_THREAD);
+	ASSERT_EQ(0, err);
+
+ out:
+	module_unload("auconv");
+
+	return err;
+}
+
+
+int test_call_webrtc(void)
+{
+	int err;
+
+	err  = test_call_webrtc_base(RX_MODE_DEFAULT);
+	err |= test_call_webrtc_base(RX_MODE_THREAD);
+
+	return err;
+}
+
+
+/*
+ * Simple testcase for SDP Bundle
+ *
+ * audio: yes
+ * video: yes
+ * mnat:  optional
+ * menc:  optional
+ */
+int test_call_bundle(void)
+{
+	int err = 0;
+
+	err |= test_call_bundle_base(false, false, RX_MODE_DEFAULT);
+	err |= test_call_bundle_base(true,  false, RX_MODE_DEFAULT);
+	err |= test_call_bundle_base(false, true, RX_MODE_DEFAULT);
+	err |= test_call_bundle_base(true,  true, RX_MODE_DEFAULT);
+	err |= test_call_bundle_base(false, false, RX_MODE_THREAD);
+	err |= test_call_bundle_base(true,  false, RX_MODE_THREAD);
+	err |= test_call_bundle_base(false, true, RX_MODE_THREAD);
+	err |= test_call_bundle_base(true,  true, RX_MODE_THREAD);
+
+	return err;
+}
+
+
+int test_call_ipv6ll(void)
+{
+	int err;
+
+	err  = test_call_ipv6ll_base(RX_MODE_DEFAULT);
+	err |= test_call_ipv6ll_base(RX_MODE_THREAD);
 
 	return err;
 }
