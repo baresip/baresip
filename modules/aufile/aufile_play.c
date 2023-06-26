@@ -117,7 +117,9 @@ int aufile_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->prm = *prm;
 	st->sampc = st->prm.ch * st->prm.srate * st->prm.ptime / 1000;
 	st->num_bytes = st->sampc * aufmt_sample_size(prm->fmt);
-	st->sampv = mem_alloc(st->num_bytes, NULL);
+	st->sampv = mem_zalloc(st->num_bytes, NULL);
+	if (!st->sampv)
+		return ENOMEM;
 
 	info("aufile: writing speaker audio to %s\n", file);
 	re_atomic_rlx_set(&st->run, true);
