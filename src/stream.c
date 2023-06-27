@@ -137,8 +137,8 @@ static void stream_destructor(void *arg)
 	tmr_cancel(&s->rxm.tmr_rtp);
 	tmr_cancel(&s->rxm.tmr_rec);
 	tmr_cancel(&s->tmr_natph);
-	list_unlink(&s->le);
 	mem_deref(s->rx);
+	list_unlink(&s->le);
 	mem_deref(s->sdp);
 	mem_deref(s->mes);
 	mem_deref(s->mencs);
