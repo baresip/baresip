@@ -1,0 +1,57 @@
+#audio_path		/usr/local/share/baresip
+audio_player		pulse,
+audio_source		pulse,
+audio_alert		pulse,
+audio_level		no
+audio_buffer   60-160
+audio_buffer_mode	adaptive
+audio_silence		0.0
+
+audio_jitter_buffer_type	adaptive
+audio_jitter_buffer_delay	0-20
+
+module_path		/usr/local/lib/baresip/modules
+
+# UI Modules
+module			stdio.so
+module			cons.so
+
+module			g722.so
+module			g711.so
+
+module			auconv.so
+module			auresamp.so
+
+module			pulse.so
+
+
+module_app		account.so
+module_app		menu.so
+module_app		netroam.so
+
+
+cons_listen		0.0.0.0:5555 # cons - Console UI UDP/TCP sockets
+
+# Opus codec parameters
+opus_bitrate		28000 # 6000-510000
+#opus_stereo		yes
+#opus_sprop_stereo	yes
+#opus_cbr		no
+#opus_inbandfec		no
+#opus_dtx		no
+#opus_mirror		no
+#opus_complexity	10
+#opus_application	audio	# {voip,audio}
+#opus_samplerate	48000
+#opus_packet_loss	10	# 0-100 percent (expected packet loss)
+
+# Opus Multistream codec parameters
+#opus_ms_channels	2	#total channels (2 or 4)
+#opus_ms_streams	2	#number of streams
+#opus_ms_c_streams	2	#number of coupled streams
+
+
+module_app		multicast.so
+multicast_jbuf_type	adaptive		# off, fixed, adaptive
+multicast_jbuf_delay   1-20
+multicast_listener	224.0.1.194:5004

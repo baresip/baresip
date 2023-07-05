@@ -1,0 +1,4 @@
+target=1.2.3.4
+netif=eno1
+once=true
+
