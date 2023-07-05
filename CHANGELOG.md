@@ -5,6 +5,38 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.3.0 - 2023-07-05
+
+## What's Changed
+* Removed unused zrtp_hash config setting by @juha-h in https://github.com/baresip/baresip/pull/2591
+* audio: remove obsolete aurx fields by @cspiel1 in https://github.com/baresip/baresip/pull/2590
+* mixausrc: sweep fading for performance by @cHuberCoffee in https://github.com/baresip/baresip/pull/2605
+* config: clean up config template by @alfredh in https://github.com/baresip/baresip/pull/2609
+* Handle UA_EVENT_CALL_REDIRECT (formerly UA_EVENT_CALL_BLIND_TRANSFER)~ by @juha-h in https://github.com/baresip/baresip/pull/2602
+* ci/mingw: use cv2pdb for debug info conversion by @sreimers in https://github.com/baresip/baresip/pull/2610
+* config: some refactoring by @alfredh in https://github.com/baresip/baresip/pull/2611
+* config: missing updates for config example and template by @cspiel1 in https://github.com/baresip/baresip/pull/2613
+* Fix oneway video sdp on answering call by @maximilianfridrich in https://github.com/baresip/baresip/pull/2615
+* call,aucodec: add aucodec_print to internal core API by @cspiel1 in https://github.com/baresip/baresip/pull/2616
+* account,stream: natpinhole account parameter orthogonal to medianat by @cspiel1 in https://github.com/baresip/baresip/pull/2618
+* docs: update default value for natpinhole by @cspiel1 in https://github.com/baresip/baresip/pull/2619
+* stream: increase udp socket buffer for video by @sreimers in https://github.com/baresip/baresip/pull/2620
+* stream: faster video jitter buffer offloading by @sreimers in https://github.com/baresip/baresip/pull/2622
+* config: add default_audio_path() by @alfredh in https://github.com/baresip/baresip/pull/2621
+* event: correct class name for SDP events by @cspiel1 in https://github.com/baresip/baresip/pull/2625
+* call: send LOCAL_SDP event if we send SDP by @cspiel1 in https://github.com/baresip/baresip/pull/2626
+* config: refactor sip_cafile to make the code more clean by @alfredh in https://github.com/baresip/baresip/pull/2627
+* audio: rework on codec changes by @cspiel1 in https://github.com/baresip/baresip/pull/2630
+* event: add local SDP direction by @cspiel1 in https://github.com/baresip/baresip/pull/2629
+* account: set sip_auroredirect default to no by @cspiel1 in https://github.com/baresip/baresip/pull/2632
+* stream: also decode audio as long as jbuf returns EAGAIN by @cspiel1 in https://github.com/baresip/baresip/pull/2635
+* aufile: init sampv buffer; NULL pointer check by @cspiel1 in https://github.com/baresip/baresip/pull/2637
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.2.0...v3.3.0
+
+
+
 ## 3.2.0 - 2023-05-31
 
 ## What's Changed
