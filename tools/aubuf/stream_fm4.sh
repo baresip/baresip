@@ -1,0 +1,1 @@
+gst-launch-1.0 -q --no-position souphttpsrc location=https://orf-live.ors-shoutcast.at/fm4-q1a ssl-strict=false ! decodebin expose-all-streams=false ! audiorate skip-to-first=true ! audioconvert ! audioresample ! avenc_g722 ! rtpg722pay ! udpsink host=224.0.1.194 port=5004
