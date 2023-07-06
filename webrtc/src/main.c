@@ -32,7 +32,6 @@ static const char *modv[] = {
 	/* audio */
 	"opus",
 	"g722",
-	"g711",
 	"ausine",
 
 	/* video */
