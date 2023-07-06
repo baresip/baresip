@@ -307,7 +307,7 @@ static void mediatrack_close_handler(int err, void *arg)
  */
 int peerconnection_add_audio_track(struct peer_connection *pc,
 				   const struct config *cfg,
-				   struct list *aucodecl)
+				   struct list *aucodecl, enum sdp_dir dir)
 {
 	struct media_track *media;
 	bool offerer;
@@ -332,6 +332,8 @@ int peerconnection_add_audio_track(struct peer_connection *pc,
 		return err;
 	}
 
+	stream_set_ldir(media_get_stream(media), dir);
+
 	mediatrack_set_handlers(media);
 
 	return 0;
@@ -343,7 +345,7 @@ int peerconnection_add_audio_track(struct peer_connection *pc,
  */
 int peerconnection_add_video_track(struct peer_connection *pc,
 				   const struct config *cfg,
-				   struct list *vidcodecl)
+				   struct list *vidcodecl, enum sdp_dir dir)
 {
 	struct media_track *media;
 	bool offerer;
@@ -372,6 +374,8 @@ int peerconnection_add_video_track(struct peer_connection *pc,
 		warning("peerconnection: video alloc failed (%m)\n", err);
 		return err;
 	}
+
+	stream_set_ldir(media_get_stream(media), dir);
 
 	mediatrack_set_handlers(media);
 

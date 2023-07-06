@@ -58,8 +58,10 @@ int mediatrack_start_audio(struct media_track *media,
 
 	info("mediatrack: start audio\n");
 
-	fmt = sdp_media_rformat(stream_sdpmedia(audio_strm(au)), NULL);
-	if (fmt) {
+	struct sdp_media *sdpm = stream_sdpmedia(audio_strm(au));
+	fmt = sdp_media_rformat(sdpm, NULL);
+
+	if (fmt && sdp_media_dir(sdpm) & SDP_SENDONLY) {
 		struct aucodec *ac = fmt->data;
 
 		err = audio_encoder_set(au, ac, fmt->pt, fmt->params);
@@ -102,33 +104,45 @@ int mediatrack_start_video(struct media_track *media)
 
 	info("mediatrack: start video\n");
 
-	fmt = sdp_media_rformat(stream_sdpmedia(video_strm(vid)), NULL);
-	if (fmt) {
-		struct vidcodec *vc = fmt->data;
+	struct sdp_media *sdpm = stream_sdpmedia(video_strm(vid));
+	enum sdp_dir dir = sdp_media_dir(sdpm);
 
-		err  = video_encoder_set(vid, vc, fmt->pt, fmt->params);
+	fmt = sdp_media_rformat(sdpm, NULL);
+	if (!fmt) {
+		info("mediatrack: video stream is disabled..\n");
+		return 0;
+	}
+
+	struct vidcodec *vc = fmt->data;
+
+	if (dir & SDP_SENDONLY) {
+		err = video_encoder_set(vid, vc, fmt->pt, fmt->params);
 		if (err) {
 			warning("mediatrack: start:"
-				" video_encoder_set error: %m\n", err);
+				" video_encoder_set error: %m\n",
+				err);
 			return err;
 		}
 
 		err = video_start_source(vid);
 		if (err) {
 			warning("mediatrack: start:"
-				" video_start_source error: %m\n", err);
+				" video_start_source error: %m\n",
+				err);
 			return err;
 		}
+		info("mediatrack: video source started\n");
+	}
 
+	if (dir & SDP_RECVONLY) {
 		err = video_start_display(vid, "webrtc");
 		if (err) {
 			warning("mediatrack: start:"
-				" video_start_display error: %m\n", err);
+				" video_start_display error: %m\n",
+				err);
 			return err;
 		}
-	}
-	else {
-		info("mediatrack: video stream is disabled..\n");
+		info("mediatrack: video display started\n");
 	}
 
 	stream_set_rtcp_interval(video_strm(vid), 1000);
