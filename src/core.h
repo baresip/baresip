@@ -508,6 +508,7 @@ void rx_set_ts_last(struct receiver *rx, uint64_t ts_last);
 void rx_flush(struct receiver *rx);
 void rx_set_enable(struct receiver *rx, bool enable);
 int rx_get_ssrc(struct receiver *rx, uint32_t *ssrc);
+void rx_enable_mux(struct receiver *rx, bool enable);
 int rx_debug(struct re_printf *pf, const struct receiver *rx);
 int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp);
 void rx_mnat_connected_handler(const struct sa *raddr1,

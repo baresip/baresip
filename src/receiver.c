@@ -523,6 +523,14 @@ int rx_get_ssrc(struct receiver *rx, uint32_t *ssrc)
 }
 
 
+void rx_enable_mux(struct receiver *rx, bool enable)
+{
+	mtx_lock(rx->mtx);
+	rtcp_enable_mux(rx->rtp, enable);
+	mtx_unlock(rx->mtx);
+}
+
+
 /**
  * The debug function prints into the given mbuf in order to avoid long
  * blocking print to stdout.

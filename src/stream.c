@@ -844,7 +844,7 @@ static void stream_remote_set(struct stream *s)
 		sdp_media_set_lattr(s->sdp, true, "mid", "%s", rmid);
 	}
 
-	rtcp_enable_mux(s->rtp, s->rtcp_mux);
+	rx_enable_mux(s->rx, s->rtcp_mux);
 
 	mtx_lock(s->tx.lock);
 	if (bundle_state(stream_bundle(s)) != BUNDLE_MUX) {
