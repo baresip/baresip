@@ -22,7 +22,7 @@ if(PNG_FOUND)
   set( PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIR} )
   set( PNG_LIBRARIES ${PNG_LIBRARY} )
 else()
-  set( PNG_INCLUDE_DIR )
+  set( PNG_INCLUDE_DIRS )
   set( PNG_LIBRARIES )
 endif()
 
