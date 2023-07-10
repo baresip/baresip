@@ -243,6 +243,10 @@ if(USE_OPENSSL)
   list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
 endif()
 
+if(USE_MBEDTLS)
+  list(APPEND LINKLIBS mbedtls mbedcrypto mbedx509)
+endif()
+
 if(WIN32)
   list(APPEND LINKLIBS ws2_32 iphlpapi winmm gdi32 crypt32 strmiids
       ole32 oleaut32 qwave dbghelp)
