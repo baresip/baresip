@@ -27,7 +27,7 @@ find_library(NB_LIBRARY
   HINTS
     "${AMR_LIBRARY_DIRS}"
     "${AMR_HINTS}/lib"
-  PATHS /usr/local/lib usr/lib
+  PATHS /usr/local/lib /usr/lib
 )
 
 find_library(WB_LIBRARY
@@ -35,7 +35,7 @@ find_library(WB_LIBRARY
   HINTS
     "${AMR_LIBRARY_DIRS}"
     "${AMR_HINTS}/lib"
-  PATHS /usr/local/lib usr/lib
+  PATHS /usr/local/lib /usr/lib
 )
 
 find_library(WB_VO_ENC_LIBRARY
@@ -43,7 +43,7 @@ find_library(WB_VO_ENC_LIBRARY
   HINTS
     "${AMR_LIBRARY_DIRS}"
     "${AMR_HINTS}/lib"
-  PATHS /usr/local/lib usr/lib
+  PATHS /usr/local/lib /usr/lib
 )
 
 include(FindPackageHandleStandardArgs)
