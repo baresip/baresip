@@ -49,8 +49,9 @@ else()
   option(STATIC "Build static" OFF)
 endif()
 
-if(USE_MBEDTLS)
-  set(STATIC BOOL on)
+find_package(MBEDTLSSO)
+if(USE_MBEDTLS AND NOT MBEDTLSSO_FOUND)
+  set(STATIC BOOL ON)
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -246,7 +247,7 @@ if(USE_OPENSSL)
   list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
 endif()
 
-if(USE_MBEDTLS)
+if(MBEDTLS_FOUND)
   list(APPEND LINKLIBS mbedtls mbedcrypto mbedx509)
 endif()
 
