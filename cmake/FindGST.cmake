@@ -16,7 +16,7 @@ find_path(GLIB_INCLUDE_DIR
   NAMES glibconfig.h
   HINTS
     "${GLIB_INCLUDE_DIRS}"
-  PATHS /usr/lib/x86_64-linux-gnu/glib-2.0
+  PATHS /usr/lib/x86_64-linux-gnu/glib-2.0 /usr/lib64/glib-2.0 /usr/lib/glib-2.0
 )
 
 find_library(GST_LIBRARY
