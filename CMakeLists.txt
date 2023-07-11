@@ -49,6 +49,9 @@ else()
   option(STATIC "Build static" OFF)
 endif()
 
+if(USE_MBEDTLS)
+  set(STATIC BOOL on)
+endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
