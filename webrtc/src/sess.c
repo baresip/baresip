@@ -35,7 +35,7 @@ static void peerconnection_gather_handler(void *arg)
 		break;
 
 	case SS_HAVE_LOCAL_OFFER:
-		warning("illegal state\n");
+		warning("demo: illegal state HAVE_LOCAL_OFFER\n");
 		type = SDP_OFFER;
 		break;
 
@@ -223,6 +223,9 @@ int session_handle_ice_candidate(struct session *sess, const struct odict *od)
 	char *cand2 = NULL;
 	int err;
 
+	if (!sess || !od)
+		return EINVAL;
+
 	cand = odict_string(od, "candidate");
 	mid  = odict_string(od, "sdpMid");
 	if (!cand || !mid) {
@@ -246,6 +249,9 @@ int session_handle_ice_candidate(struct session *sess, const struct odict *od)
 
 void session_close(struct session *sess, int err)
 {
+	if (!sess)
+		return;
+
 	if (err)
 		warning("demo: session '%s' closed (%m)\n", sess->id, err);
 	else

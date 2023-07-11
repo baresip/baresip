@@ -913,8 +913,7 @@ static void rtcp_nack_handler(struct vtx *vtx, struct rtcp_msg *msg)
 	}
 
 	mtx_lock(&vtx->lock_tx);
-	LIST_FOREACH(&vtx->sendqnb, le)
-	{
+	LIST_FOREACH(&vtx->sendqnb, le) {
 		struct vidqent *qent = le->data;
 
 		if (qent->seq == nack_pid)
