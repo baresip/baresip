@@ -1699,7 +1699,7 @@ int  peerconnection_new(struct peer_connection **pcp,
 		        const struct rtc_configuration *config,
 		        const struct mnat *mnat, const struct menc *menc,
 		        peerconnection_gather_h *gatherh,
-		        peerconnection_estab_h,
+		        peerconnection_estab_h *estabh,
 		        peerconnection_close_h *closeh, void *arg);
 int peerconnection_add_audio_track(struct peer_connection *pc,
 				   const struct config *cfg,
