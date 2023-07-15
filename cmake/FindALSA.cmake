@@ -10,7 +10,7 @@ if(NOT WIN32)
   pkg_search_module(ALSA  alsa)
 endif()
 
-find_path(ALSA_INCLUDE_DIR 
+find_path(ALSA_INCLUDE_DIR
   NAMES asoundlib.h
   PATH_SUFFIXES alsa/
   HINTS
@@ -19,7 +19,7 @@ find_path(ALSA_INCLUDE_DIR
   PATHS /usr/local/include /usr/include
 )
 
-find_library(ALSA_LIBRARY 
+find_library(ALSA_LIBRARY
   NAMES asound
   HINTS
     "${ALSA_LIBRARY_DIRS}"
@@ -28,7 +28,10 @@ find_library(ALSA_LIBRARY
 )
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(ALSA DEFAULT_MSG ALSA_LIBRARY ALSA_INCLUDE_DIR)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(
+  ALSA DEFAULT_MSG
+  ALSA_LIBRARY
+  ALSA_INCLUDE_DIR)
 
 if(ALSA_FOUND)
   set( ALSA_LIBRARIES ${ALSA_LIBRARY} )
