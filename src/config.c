@@ -476,9 +476,6 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 		if (0 == pl_strcasecmp(&rxmode, "thread"))
 			cfg->avt.rxmode = RX_MODE_THREAD;
-		else {
-			warning("unsupported rtp_rxmode (%r)\n", &rxmode);
-		}
 	}
 
 	if (err) {
