@@ -18,7 +18,7 @@ int clean_number(char* str)
 	 * In other cases trust the user input
 	 */
 	while (str[i]) {
-		if (isalpha(str[i]) != 0)
+		if (isalpha((int) str[i]) != 0)
 			return -1;
 		else if (str[i] == '@')
 			return -1;
@@ -49,7 +49,7 @@ int clean_number(char* str)
 		/* keep only '+' as first digit.
 		 */
 		if ((str[i] == '+' && k == 0)
-			|| isdigit(str[i]) > 0
+			|| isdigit((int) str[i]) > 0
 		)
 			str[k++] = str[i++];
 		else
