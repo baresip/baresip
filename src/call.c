@@ -1187,8 +1187,6 @@ int call_modify(struct call *call)
 			err = sipsess_modify(call->sess, desc);
 			if (err)
 				goto out;
-
-			call->sent_answer = false;
 		}
 	}
 
