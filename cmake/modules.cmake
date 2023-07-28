@@ -6,7 +6,7 @@ find_package(AOM)
 find_package(CODEC2)
 find_package(DIRECTFB)
 find_package(FFMPEG COMPONENTS
-    avutil avcodec avfilter avformat swscale swresample avdevice)
+    avcodec avfilter avformat swscale swresample avdevice avutil)
 find_package(G7221)
 find_package(GIO)
 find_package(GST)
