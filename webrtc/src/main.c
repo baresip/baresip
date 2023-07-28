@@ -205,8 +205,8 @@ int main(int argc, char *argv[])
 	config->video.bitrate = 2000000;
 	config->video.fps = 30.0;
 	config->video.fullscreen = false;
-	config->video.width  = 320;
-	config->video.height = 240;
+	config->video.width  = 640;
+	config->video.height = 480;
 
 	/* override default config */
 	config->avt.rtcp_mux = true;
