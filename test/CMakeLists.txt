@@ -14,13 +14,13 @@ add_executable(${PROJECT_NAME}
   cmd.c
   contact.c
   event.c
+  menu.c
   message.c
   net.c
   play.c
   stunuri.c
   ua.c
   video.c
-  menu.c
 
   mock/dnssrv.c
 
