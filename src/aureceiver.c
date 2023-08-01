@@ -26,7 +26,7 @@
 
  \endverbatim
  */
-struct aurpipe {
+struct audio_recv {
 	uint32_t srate;               /**< Decoder sample rate               */
 	uint32_t ch;                  /**< Decoder channel number            */
 	enum aufmt fmt;               /**< Decoder sample format             */
@@ -57,7 +57,7 @@ struct aurpipe {
 
 static void destructor(void *arg)
 {
-	struct aurpipe *rp = arg;
+	struct audio_recv *rp = arg;
 
 	mem_deref(rp->dec);
 	mem_deref(rp->aubuf);
@@ -68,7 +68,7 @@ static void destructor(void *arg)
 }
 
 
-static int aup_process_decfilt(struct aurpipe *rp, struct auframe *af)
+static int aup_process_decfilt(struct audio_recv *rp, struct auframe *af)
 {
 	int err = 0;
 
@@ -87,7 +87,7 @@ static int aup_process_decfilt(struct aurpipe *rp, struct auframe *af)
 }
 
 
-static double aup_calc_seconds(const struct aurpipe *rp)
+static double aup_calc_seconds(const struct audio_recv *rp)
 {
 	uint64_t dur;
 	double seconds;
@@ -102,7 +102,7 @@ static double aup_calc_seconds(const struct aurpipe *rp)
 }
 
 
-static int aup_alloc_aubuf(struct aurpipe *rp, const struct auframe *af)
+static int aup_alloc_aubuf(struct audio_recv *rp, const struct auframe *af)
 {
 	size_t min_sz;
 	size_t max_sz;
@@ -114,7 +114,7 @@ static int aup_alloc_aubuf(struct aurpipe *rp, const struct auframe *af)
 	min_sz = sz * calc_nsamp(af->srate, af->ch, cfg->buffer.min);
 	max_sz = sz * calc_nsamp(af->srate, af->ch, cfg->buffer.max);
 
-	debug("aurpipe: create audio buffer"
+	debug("audio_recv: create audio buffer"
 	      " [%u - %u ms]"
 	      " [%zu - %zu bytes]\n",
 	      (unsigned) cfg->buffer.min, (unsigned) cfg->buffer.max,
@@ -122,7 +122,7 @@ static int aup_alloc_aubuf(struct aurpipe *rp, const struct auframe *af)
 
 	err = aubuf_alloc(&rp->aubuf, min_sz, max_sz);
 	if (err) {
-		warning("aurpipe: aubuf alloc error (%m)\n",
+		warning("audio_recv: aubuf alloc error (%m)\n",
 			err);
 	}
 
@@ -133,7 +133,7 @@ static int aup_alloc_aubuf(struct aurpipe *rp, const struct auframe *af)
 }
 
 
-static int aup_push_aubuf(struct aurpipe *rp, const struct auframe *af)
+static int aup_push_aubuf(struct audio_recv *rp, const struct auframe *af)
 {
 	int err;
 	uint64_t bpms;
@@ -163,8 +163,9 @@ static int aup_push_aubuf(struct aurpipe *rp, const struct auframe *af)
 }
 
 
-static int aup_stream_decode(struct aurpipe *rp, const struct rtp_header *hdr,
-			    struct mbuf *mb, unsigned lostc, bool drop)
+static int aup_stream_decode(struct audio_recv *rp,
+			     const struct rtp_header *hdr,
+			     struct mbuf *mb, unsigned lostc, bool drop)
 {
 	struct auframe af;
 	size_t sampc = rp->sampvsz / aufmt_sample_size(rp->fmt);
@@ -244,7 +245,7 @@ static const struct rtpext *rtpext_find(const struct rtpext *extv, size_t extc,
 
 
 /* Handle incoming stream data from the network */
-void aup_receive(struct aurpipe *rp, const struct rtp_header *hdr,
+void aup_receive(struct audio_recv *rp, const struct rtp_header *hdr,
 		 struct rtpext *extv, size_t extc,
 		 struct mbuf *mb, unsigned lostc, bool *ignore)
 {
@@ -321,7 +322,7 @@ unlock:
 }
 
 
-void aup_set_extmap(struct aurpipe *rp, uint8_t aulevel)
+void aup_set_extmap(struct audio_recv *rp, uint8_t aulevel)
 {
 	if (!rp)
 		return;
@@ -332,7 +333,7 @@ void aup_set_extmap(struct aurpipe *rp, uint8_t aulevel)
 }
 
 
-void aup_set_telev_pt(struct aurpipe *rp, int pt)
+void aup_set_telev_pt(struct audio_recv *rp, int pt)
 {
 	if (!rp)
 		return;
@@ -343,7 +344,7 @@ void aup_set_telev_pt(struct aurpipe *rp, int pt)
 }
 
 
-uint64_t aup_latency(const struct aurpipe *rp)
+uint64_t aup_latency(const struct audio_recv *rp)
 {
 	if (!rp)
 		return 0;
@@ -352,10 +353,10 @@ uint64_t aup_latency(const struct aurpipe *rp)
 }
 
 
-int aup_alloc(struct aurpipe **aupp, const struct config_audio *cfg,
+int aup_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	      size_t sampc)
 {
-	struct aurpipe *rp;
+	struct audio_recv *rp;
 	int err;
 
 	if (!aupp)
@@ -389,7 +390,7 @@ out:
 }
 
 
-void aup_flush(struct aurpipe *rp)
+void aup_flush(struct audio_recv *rp)
 {
 	if (!rp)
 		return;
@@ -403,7 +404,7 @@ void aup_flush(struct aurpipe *rp)
 }
 
 
-int aup_decoder_set(struct aurpipe *rp,
+int aup_decoder_set(struct audio_recv *rp,
 		    const struct aucodec *ac, const char *params)
 {
 	int err = 0;
@@ -423,7 +424,7 @@ int aup_decoder_set(struct aurpipe *rp,
 	if (ac->decupdh) {
 		err = ac->decupdh(&rp->dec, ac, params);
 		if (err) {
-			warning("aurpipe: alloc decoder: %m\n", err);
+			warning("audio_recv: alloc decoder: %m\n", err);
 			goto out;
 		}
 	}
@@ -434,7 +435,7 @@ out:
 }
 
 
-int aup_filt_append(struct aurpipe *rp, struct aufilt_dec_st *decst)
+int aup_filt_append(struct audio_recv *rp, struct aufilt_dec_st *decst)
 {
 	if (!rp || !decst)
 		return EINVAL;
@@ -447,7 +448,7 @@ int aup_filt_append(struct aurpipe *rp, struct aufilt_dec_st *decst)
 }
 
 
-bool aup_filt_empty(const struct aurpipe *rp)
+bool aup_filt_empty(const struct audio_recv *rp)
 {
 	bool empty;
 	if (!rp)
@@ -461,7 +462,7 @@ bool aup_filt_empty(const struct aurpipe *rp)
 }
 
 
-bool aup_level_set(const struct aurpipe *rp)
+bool aup_level_set(const struct audio_recv *rp)
 {
 	bool set;
 	if (!rp)
@@ -475,7 +476,7 @@ bool aup_level_set(const struct aurpipe *rp)
 }
 
 
-double aup_level(const struct aurpipe *rp)
+double aup_level(const struct audio_recv *rp)
 {
 	double v;
 	if (!rp)
@@ -489,7 +490,7 @@ double aup_level(const struct aurpipe *rp)
 }
 
 
-const struct aucodec *aup_codec(const struct aurpipe *rp)
+const struct aucodec *aup_codec(const struct audio_recv *rp)
 {
 	const struct aucodec *ac;
 
@@ -503,7 +504,7 @@ const struct aucodec *aup_codec(const struct aurpipe *rp)
 }
 
 
-void aup_read(struct aurpipe *rp, struct auframe *af)
+void aup_read(struct audio_recv *rp, struct auframe *af)
 {
 	if (!rp || mtx_trylock(rp->aubuf_mtx) != thrd_success)
 		return;
@@ -513,7 +514,7 @@ void aup_read(struct aurpipe *rp, struct auframe *af)
 }
 
 
-void aup_stop(struct aurpipe *rp)
+void aup_stop(struct audio_recv *rp)
 {
 	if (!rp)
 		return;
@@ -524,7 +525,7 @@ void aup_stop(struct aurpipe *rp)
 }
 
 
-bool aup_started(const struct aurpipe *rp)
+bool aup_started(const struct audio_recv *rp)
 {
 	bool ret;
 
@@ -537,7 +538,7 @@ bool aup_started(const struct aurpipe *rp)
 }
 
 
-int aup_debug(struct re_printf *pf, const struct aurpipe *rp)
+int aup_debug(struct re_printf *pf, const struct audio_recv *rp)
 {
 	struct mbuf *mb;
 	uint64_t bpms;
@@ -589,7 +590,7 @@ out:
 }
 
 
-int aup_print_pipeline(struct re_printf *pf, const struct aurpipe *rp)
+int aup_print_pipeline(struct re_printf *pf, const struct audio_recv *rp)
 {
 	struct mbuf *mb;
 	struct le *le;

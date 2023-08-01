@@ -128,12 +128,12 @@ struct aurx {
 	int pt_tel;                   /**< Payload type for tel event      */
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 
-	struct aurpipe *aup;          /**< Audio receive pipeline          */
+	struct audio_recv *aup;       /**< Audio receive pipeline          */
 	bool first_write;             /**< First write to auplay           */
 };
 
 
-struct aurpipe;
+struct audio_recv;
 
 
 /** Generic Audio stream */
@@ -537,14 +537,14 @@ static void check_plframe(struct auframe *af1, struct auframe *af2)
 {
 	if ((af1->srate && af1->srate != af2->srate) ||
 	    (af1->ch    && af1->ch    != af2->ch   )) {
-		warning("aurpipe: srate/ch of frame %u/%u vs "
+		warning("audio_recv: srate/ch of frame %u/%u vs "
 			"player %u/%u. Use module auresamp!\n",
 			af1->srate, af1->ch,
 			af2->srate, af2->ch);
 	}
 
 	if (af1->fmt != af2->fmt) {
-		warning("aurpipe: invalid sample formats (%s -> %s). "
+		warning("audio_recv: invalid sample formats (%s -> %s). "
 			"%s\n",
 			aufmt_name(af1->fmt), aufmt_name(af2->fmt),
 			af1->fmt == AUFMT_S16LE ?
@@ -1772,7 +1772,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 {
 	const struct autx *tx;
 	const struct aurx *rx;
-	const struct aurpipe *aup;
+	const struct audio_recv *aup;
 	size_t sztx;
 	int err;
 
