@@ -99,7 +99,7 @@ static struct config core_config = {
 		false,
 		0,
 		false,
-		RX_MODE_DEFAULT,
+		RX_MODE_MAIN,
 	},
 
 	/* Network */

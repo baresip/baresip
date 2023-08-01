@@ -318,8 +318,8 @@ enum audio_mode {
 };
 
 /** RTP receive mode */
-enum receive_mode {
-	RX_MODE_DEFAULT = 0,    /**< RTP RX is processed in main thread      */
+enum rtp_receive_mode {
+	RX_MODE_MAIN = 0,       /**< RTP RX is processed in main thread      */
 	RX_MODE_THREAD,         /**< RTP RX is processed in separate thread  */
 };
 
@@ -401,7 +401,7 @@ struct config_avt {
 	bool rtp_stats;         /**< Enable RTP statistics          */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 	bool bundle;            /**< Media Multiplexing (BUNDLE)    */
-	enum receive_mode rxmode;       /**< RTP RX processing mode */
+	enum rtp_receive_mode rxmode;   /**< RTP RX processing mode */
 };
 
 /** Network Configuration */
