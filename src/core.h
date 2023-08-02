@@ -120,26 +120,26 @@ struct audio_recv;
 
 int aup_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	      size_t sampc);
-int aup_decoder_set(struct audio_recv *rp,
+int aup_decoder_set(struct audio_recv *ar,
 		    const struct aucodec *ac, const char *params);
-int aup_filt_append(struct audio_recv *rp, struct aufilt_dec_st *decst);
-void aup_flush(struct audio_recv *rp);
-void aup_set_extmap(struct audio_recv *rp, uint8_t aulevel);
-void aup_set_telev_pt(struct audio_recv *rp, int pt);
-void aup_receive(struct audio_recv *rp, const struct rtp_header *hdr,
+int aup_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst);
+void aup_flush(struct audio_recv *ar);
+void aup_set_extmap(struct audio_recv *ar, uint8_t aulevel);
+void aup_set_telev_pt(struct audio_recv *ar, int pt);
+void aup_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		 struct rtpext *extv, size_t extc,
 		 struct mbuf *mb, unsigned lostc, bool *ignore);
-void aup_read(struct audio_recv *rp, struct auframe *af);
-void aup_stop(struct audio_recv *rp);
+void aup_read(struct audio_recv *ar, struct auframe *af);
+void aup_stop(struct audio_recv *ar);
 
-const struct aucodec *aup_codec(const struct audio_recv *rp);
-uint64_t aup_latency(const struct audio_recv *rp);
-bool aup_started(const struct audio_recv *rp);
-bool aup_filt_empty(const struct audio_recv *rp);
-bool aup_level_set(const struct audio_recv *rp);
-double aup_level(const struct audio_recv *rp);
-int aup_debug(struct re_printf *pf, const struct audio_recv *rp);
-int aup_print_pipeline(struct re_printf *pf, const struct audio_recv *rp);
+const struct aucodec *aup_codec(const struct audio_recv *ar);
+uint64_t aup_latency(const struct audio_recv *ar);
+bool aup_started(const struct audio_recv *ar);
+bool aup_filt_empty(const struct audio_recv *ar);
+bool aup_level_set(const struct audio_recv *ar);
+double aup_level(const struct audio_recv *ar);
+int aup_debug(struct re_printf *pf, const struct audio_recv *ar);
+int aup_print_pipeline(struct re_printf *pf, const struct audio_recv *ar);
 
 
 /*
