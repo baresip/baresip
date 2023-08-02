@@ -57,23 +57,23 @@ struct audio_recv {
 
 static void destructor(void *arg)
 {
-	struct audio_recv *rp = arg;
+	struct audio_recv *ar = arg;
 
-	mem_deref(rp->dec);
-	mem_deref(rp->aubuf);
-	mem_deref(rp->sampv);
-	mem_deref(rp->mtx);
-	mem_deref(rp->aubuf_mtx);
-	list_flush(&rp->filtl);
+	mem_deref(ar->dec);
+	mem_deref(ar->aubuf);
+	mem_deref(ar->sampv);
+	mem_deref(ar->mtx);
+	mem_deref(ar->aubuf_mtx);
+	list_flush(&ar->filtl);
 }
 
 
-static int aup_process_decfilt(struct audio_recv *rp, struct auframe *af)
+static int aup_process_decfilt(struct audio_recv *ar, struct auframe *af)
 {
 	int err = 0;
 
 	/* Process exactly one audio-frame in reverse list order */
-	for (struct le *le = rp->filtl.tail; le; le = le->prev) {
+	for (struct le *le = ar->filtl.tail; le; le = le->prev) {
 		struct aufilt_dec_st *st = le->data;
 
 		if (st->af && st->af->dech)
@@ -87,27 +87,27 @@ static int aup_process_decfilt(struct audio_recv *rp, struct auframe *af)
 }
 
 
-static double aup_calc_seconds(const struct audio_recv *rp)
+static double aup_calc_seconds(const struct audio_recv *ar)
 {
 	uint64_t dur;
 	double seconds;
 
-	if (!rp->ac)
+	if (!ar->ac)
 		return .0;
 
-	dur = timestamp_duration(&rp->ts_recv);
-	seconds = timestamp_calc_seconds(dur, rp->ac->crate);
+	dur = timestamp_duration(&ar->ts_recv);
+	seconds = timestamp_calc_seconds(dur, ar->ac->crate);
 
 	return seconds;
 }
 
 
-static int aup_alloc_aubuf(struct audio_recv *rp, const struct auframe *af)
+static int aup_alloc_aubuf(struct audio_recv *ar, const struct auframe *af)
 {
 	size_t min_sz;
 	size_t max_sz;
 	size_t sz;
-	const struct config_audio *cfg = rp->cfg;
+	const struct config_audio *cfg = ar->cfg;
 	int err;
 
 	sz = aufmt_sample_size(cfg->play_fmt);
@@ -120,71 +120,71 @@ static int aup_alloc_aubuf(struct audio_recv *rp, const struct auframe *af)
 	      (unsigned) cfg->buffer.min, (unsigned) cfg->buffer.max,
 	      min_sz, max_sz);
 
-	err = aubuf_alloc(&rp->aubuf, min_sz, max_sz);
+	err = aubuf_alloc(&ar->aubuf, min_sz, max_sz);
 	if (err) {
 		warning("audio_recv: aubuf alloc error (%m)\n",
 			err);
 	}
 
-	aubuf_set_mode(rp->aubuf, cfg->adaptive ?
+	aubuf_set_mode(ar->aubuf, cfg->adaptive ?
 		       AUBUF_ADAPTIVE : AUBUF_FIXED);
-	aubuf_set_silence(rp->aubuf, cfg->silence);
+	aubuf_set_silence(ar->aubuf, cfg->silence);
 	return err;
 }
 
 
-static int aup_push_aubuf(struct audio_recv *rp, const struct auframe *af)
+static int aup_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 {
 	int err;
 	uint64_t bpms;
 
-	if (!rp->aubuf) {
-		mtx_lock(rp->aubuf_mtx);
-		err = aup_alloc_aubuf(rp, af);
-		mtx_unlock(rp->aubuf_mtx);
+	if (!ar->aubuf) {
+		mtx_lock(ar->aubuf_mtx);
+		err = aup_alloc_aubuf(ar, af);
+		mtx_unlock(ar->aubuf_mtx);
 		if (err)
 			return err;
 	}
 
-	err = aubuf_write_auframe(rp->aubuf, af);
+	err = aubuf_write_auframe(ar->aubuf, af);
 	if (err)
 		return err;
 
-	rp->srate = af->srate;
-	rp->ch    = af->ch;
-	rp->fmt   = af->fmt;
+	ar->srate = af->srate;
+	ar->ch    = af->ch;
+	ar->fmt   = af->fmt;
 
-	bpms = rp->srate * rp->ch * aufmt_sample_size(rp->fmt) / 1000;
+	bpms = ar->srate * ar->ch * aufmt_sample_size(ar->fmt) / 1000;
 	if (bpms)
-		re_atomic_rlx_set(&rp->stats.latency,
-				  aubuf_cur_size(rp->aubuf) / bpms);
+		re_atomic_rlx_set(&ar->stats.latency,
+				  aubuf_cur_size(ar->aubuf) / bpms);
 
 	return 0;
 }
 
 
-static int aup_stream_decode(struct audio_recv *rp,
+static int aup_stream_decode(struct audio_recv *ar,
 			     const struct rtp_header *hdr,
 			     struct mbuf *mb, unsigned lostc, bool drop)
 {
 	struct auframe af;
-	size_t sampc = rp->sampvsz / aufmt_sample_size(rp->fmt);
+	size_t sampc = ar->sampvsz / aufmt_sample_size(ar->fmt);
 	bool marker = hdr->m;
 	int err = 0;
-	const struct aucodec *ac = rp->ac;
-	bool flush = rp->ssrc != hdr->ssrc;
+	const struct aucodec *ac = ar->ac;
+	bool flush = ar->ssrc != hdr->ssrc;
 
 	/* No decoder set */
 	if (!ac)
 		return 0;
 
-	rp->ssrc = hdr->ssrc;
+	ar->ssrc = hdr->ssrc;
 
 	/* TODO: PLC */
 	if (lostc && ac->plch) {
 
-		err = ac->plch(rp->dec,
-				   rp->fmt, rp->sampv, &sampc,
+		err = ac->plch(ar->dec,
+				   ar->fmt, ar->sampv, &sampc,
 				   mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
 			warning("audio: %s codec decode %u bytes: %m\n",
@@ -194,8 +194,8 @@ static int aup_stream_decode(struct audio_recv *rp,
 	}
 	else if (mbuf_get_left(mb)) {
 
-		err = ac->dech(rp->dec,
-				   rp->fmt, rp->sampv, &sampc,
+		err = ac->dech(ar->dec,
+				   ar->fmt, ar->sampv, &sampc,
 				   marker, mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
 			warning("audio: %s codec decode %u bytes: %m\n",
@@ -208,22 +208,22 @@ static int aup_stream_decode(struct audio_recv *rp,
 		sampc = 0;
 	}
 
-	auframe_init(&af, rp->fmt, rp->sampv, sampc, ac->srate, ac->ch);
+	auframe_init(&af, ar->fmt, ar->sampv, sampc, ac->srate, ac->ch);
 	af.timestamp = ((uint64_t) hdr->ts) * AUDIO_TIMEBASE / ac->crate;
 
 	if (drop) {
-		aubuf_drop_auframe(rp->aubuf, &af);
+		aubuf_drop_auframe(ar->aubuf, &af);
 		goto out;
 	}
 
 	if (flush)
-		aubuf_flush(rp->aubuf);
+		aubuf_flush(ar->aubuf);
 
-	err = aup_process_decfilt(rp, &af);
+	err = aup_process_decfilt(ar, &af);
 	if (err)
 		goto out;
 
-	err = aup_push_aubuf(rp, &af);
+	err = aup_push_aubuf(ar, &af);
  out:
 	return err;
 }
@@ -245,7 +245,7 @@ static const struct rtpext *rtpext_find(const struct rtpext *extv, size_t extc,
 
 
 /* Handle incoming stream data from the network */
-void aup_receive(struct audio_recv *rp, const struct rtp_header *hdr,
+void aup_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		 struct rtpext *extv, size_t extc,
 		 struct mbuf *mb, unsigned lostc, bool *ignore)
 {
@@ -257,9 +257,9 @@ void aup_receive(struct audio_recv *rp, const struct rtp_header *hdr,
 	if (!mb)
 		goto out;
 
-	mtx_lock(rp->mtx);
-	if (hdr->pt == rp->telev_pt) {
-		mtx_unlock(rp->mtx);
+	mtx_lock(ar->mtx);
+	if (hdr->pt == ar->telev_pt) {
+		mtx_unlock(ar->mtx);
 		*ignore = true;
 		return;
 	}
@@ -267,25 +267,25 @@ void aup_receive(struct audio_recv *rp, const struct rtp_header *hdr,
 	*ignore = false;
 
 	/* RFC 5285 -- A General Mechanism for RTP Header Extensions */
-	const struct rtpext *ext = rtpext_find(extv, extc, rp->extmap_aulevel);
+	const struct rtpext *ext = rtpext_find(extv, extc, ar->extmap_aulevel);
 	if (ext) {
-		rp->level_last = -(double)(ext->data[0] & 0x7f);
-		rp->level_set = true;
+		ar->level_last = -(double)(ext->data[0] & 0x7f);
+		ar->level_set = true;
 	}
 
 	/* Save timestamp for incoming RTP packets */
 
-	if (!rp->ts_recv.is_set)
-		timestamp_set(&rp->ts_recv, hdr->ts);
+	if (!ar->ts_recv.is_set)
+		timestamp_set(&ar->ts_recv, hdr->ts);
 
-	wrap = timestamp_wrap(hdr->ts, rp->ts_recv.last);
+	wrap = timestamp_wrap(hdr->ts, ar->ts_recv.last);
 
 	switch (wrap) {
 
 	case -1:
 		warning("audio: rtp timestamp wraps backwards"
 			" (delta = %d) -- discard\n",
-			(int32_t)(rp->ts_recv.last - hdr->ts));
+			(int32_t)(ar->ts_recv.last - hdr->ts));
 		discard = true;
 		break;
 
@@ -293,17 +293,17 @@ void aup_receive(struct audio_recv *rp, const struct rtp_header *hdr,
 		break;
 
 	case 1:
-		++rp->ts_recv.num_wraps;
+		++ar->ts_recv.num_wraps;
 		break;
 
 	default:
 		break;
 	}
 
-	rp->ts_recv.last = hdr->ts;
+	ar->ts_recv.last = hdr->ts;
 
 	if (discard) {
-		++rp->stats.n_discard;
+		++ar->stats.n_discard;
 		goto unlock;
 	}
 
@@ -313,116 +313,116 @@ void aup_receive(struct audio_recv *rp, const struct rtp_header *hdr,
 	 * aubuf should replace PLC frames with late arriving real frames.
 	 * It should use timestamp to decide if a frame should be replaced. */
 /*        if (lostc)*/
-/*                (void)aup_stream_decode(rp, hdr, mb, lostc, drop);*/
+/*                (void)aup_stream_decode(ar, hdr, mb, lostc, drop);*/
 
-	(void)aup_stream_decode(rp, hdr, mb, 0, drop);
+	(void)aup_stream_decode(ar, hdr, mb, 0, drop);
 
 unlock:
-	mtx_unlock(rp->mtx);
+	mtx_unlock(ar->mtx);
 }
 
 
-void aup_set_extmap(struct audio_recv *rp, uint8_t aulevel)
+void aup_set_extmap(struct audio_recv *ar, uint8_t aulevel)
 {
-	if (!rp)
+	if (!ar)
 		return;
 
-	mtx_lock(rp->mtx);
-	rp->extmap_aulevel = aulevel;
-	mtx_unlock(rp->mtx);
+	mtx_lock(ar->mtx);
+	ar->extmap_aulevel = aulevel;
+	mtx_unlock(ar->mtx);
 }
 
 
-void aup_set_telev_pt(struct audio_recv *rp, int pt)
+void aup_set_telev_pt(struct audio_recv *ar, int pt)
 {
-	if (!rp)
+	if (!ar)
 		return;
 
-	mtx_lock(rp->mtx);
-	rp->telev_pt = pt;
-	mtx_unlock(rp->mtx);
+	mtx_lock(ar->mtx);
+	ar->telev_pt = pt;
+	mtx_unlock(ar->mtx);
 }
 
 
-uint64_t aup_latency(const struct audio_recv *rp)
+uint64_t aup_latency(const struct audio_recv *ar)
 {
-	if (!rp)
+	if (!ar)
 		return 0;
 
-	return re_atomic_rlx(&rp->stats.latency);
+	return re_atomic_rlx(&ar->stats.latency);
 }
 
 
 int aup_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	      size_t sampc)
 {
-	struct audio_recv *rp;
+	struct audio_recv *ar;
 	int err;
 
 	if (!aupp)
 		return EINVAL;
 
-	rp = mem_zalloc(sizeof(*rp), destructor);
-	if (!rp)
+	ar = mem_zalloc(sizeof(*ar), destructor);
+	if (!ar)
 		return ENOMEM;
 
-	rp->cfg = cfg;
-	rp->srate = cfg->srate_play;
-	rp->ch    = cfg->channels_play;
-	rp->fmt   = cfg->play_fmt;
-	rp->sampvsz = sampc * aufmt_sample_size(rp->fmt);
-	rp->sampv   = mem_zalloc(rp->sampvsz, NULL);
-	if (!rp->sampv) {
+	ar->cfg = cfg;
+	ar->srate = cfg->srate_play;
+	ar->ch    = cfg->channels_play;
+	ar->fmt   = cfg->play_fmt;
+	ar->sampvsz = sampc * aufmt_sample_size(ar->fmt);
+	ar->sampv   = mem_zalloc(ar->sampvsz, NULL);
+	if (!ar->sampv) {
 		err = ENOMEM;
 		goto out;
 	}
 
-	err  = mutex_alloc(&rp->mtx);
-	err |= mutex_alloc(&rp->aubuf_mtx);
+	err  = mutex_alloc(&ar->mtx);
+	err |= mutex_alloc(&ar->aubuf_mtx);
 
 out:
 	if (err)
-		rp = mem_deref(rp);
+		ar = mem_deref(ar);
 	else
-		*aupp = rp;
+		*aupp = ar;
 
 	return err;
 }
 
 
-void aup_flush(struct audio_recv *rp)
+void aup_flush(struct audio_recv *ar)
 {
-	if (!rp)
+	if (!ar)
 		return;
 
-	mtx_lock(rp->mtx);
-	aubuf_flush(rp->aubuf);
+	mtx_lock(ar->mtx);
+	aubuf_flush(ar->aubuf);
 
 	/* Reset audio filter chain */
-	list_flush(&rp->filtl);
-	mtx_unlock(rp->mtx);
+	list_flush(&ar->filtl);
+	mtx_unlock(ar->mtx);
 }
 
 
-int aup_decoder_set(struct audio_recv *rp,
+int aup_decoder_set(struct audio_recv *ar,
 		    const struct aucodec *ac, const char *params)
 {
 	int err = 0;
 
-	if (!rp || !ac)
+	if (!ar || !ac)
 		return EINVAL;
 
 	info("audio: Set audio decoder: %s %uHz %dch\n",
 	     ac->name, ac->srate, ac->ch);
 
-	mtx_lock(rp->mtx);
-	if (ac != rp->ac) {
-		rp->ac = ac;
-		rp->dec = mem_deref(rp->dec);
+	mtx_lock(ar->mtx);
+	if (ac != ar->ac) {
+		ar->ac = ac;
+		ar->dec = mem_deref(ar->dec);
 	}
 
 	if (ac->decupdh) {
-		err = ac->decupdh(&rp->dec, ac, params);
+		err = ac->decupdh(&ar->dec, ac, params);
 		if (err) {
 			warning("audio_recv: alloc decoder: %m\n", err);
 			goto out;
@@ -430,121 +430,121 @@ int aup_decoder_set(struct audio_recv *rp,
 	}
 
 out:
-	mtx_unlock(rp->mtx);
+	mtx_unlock(ar->mtx);
 	return err;
 }
 
 
-int aup_filt_append(struct audio_recv *rp, struct aufilt_dec_st *decst)
+int aup_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst)
 {
-	if (!rp || !decst)
+	if (!ar || !decst)
 		return EINVAL;
 
-	mtx_lock(rp->mtx);
-	list_append(&rp->filtl, &decst->le, decst);
-	mtx_unlock(rp->mtx);
+	mtx_lock(ar->mtx);
+	list_append(&ar->filtl, &decst->le, decst);
+	mtx_unlock(ar->mtx);
 
 	return 0;
 }
 
 
-bool aup_filt_empty(const struct audio_recv *rp)
+bool aup_filt_empty(const struct audio_recv *ar)
 {
 	bool empty;
-	if (!rp)
+	if (!ar)
 		return false;
 
-	mtx_lock(rp->mtx);
-	empty = list_isempty(&rp->filtl);
-	mtx_unlock(rp->mtx);
+	mtx_lock(ar->mtx);
+	empty = list_isempty(&ar->filtl);
+	mtx_unlock(ar->mtx);
 
 	return empty;
 }
 
 
-bool aup_level_set(const struct audio_recv *rp)
+bool aup_level_set(const struct audio_recv *ar)
 {
 	bool set;
-	if (!rp)
+	if (!ar)
 		return false;
 
-	mtx_lock(rp->mtx);
-	set = rp->level_set;
-	mtx_unlock(rp->mtx);
+	mtx_lock(ar->mtx);
+	set = ar->level_set;
+	mtx_unlock(ar->mtx);
 
 	return set;
 }
 
 
-double aup_level(const struct audio_recv *rp)
+double aup_level(const struct audio_recv *ar)
 {
 	double v;
-	if (!rp)
+	if (!ar)
 		return 0.0;
 
-	mtx_lock(rp->mtx);
-	v = rp->level_last;
-	mtx_unlock(rp->mtx);
+	mtx_lock(ar->mtx);
+	v = ar->level_last;
+	mtx_unlock(ar->mtx);
 
 	return v;
 }
 
 
-const struct aucodec *aup_codec(const struct audio_recv *rp)
+const struct aucodec *aup_codec(const struct audio_recv *ar)
 {
 	const struct aucodec *ac;
 
-	if (!rp)
+	if (!ar)
 		return NULL;
 
-	mtx_lock(rp->mtx);
-	ac = rp->ac;
-	mtx_unlock(rp->mtx);
+	mtx_lock(ar->mtx);
+	ac = ar->ac;
+	mtx_unlock(ar->mtx);
 	return ac;
 }
 
 
-void aup_read(struct audio_recv *rp, struct auframe *af)
+void aup_read(struct audio_recv *ar, struct auframe *af)
 {
-	if (!rp || mtx_trylock(rp->aubuf_mtx) != thrd_success)
+	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
 		return;
 
-	aubuf_read_auframe(rp->aubuf, af);
-	mtx_unlock(rp->aubuf_mtx);
+	aubuf_read_auframe(ar->aubuf, af);
+	mtx_unlock(ar->aubuf_mtx);
 }
 
 
-void aup_stop(struct audio_recv *rp)
+void aup_stop(struct audio_recv *ar)
 {
-	if (!rp)
+	if (!ar)
 		return;
 
-	mtx_lock(rp->mtx);
-	rp->ac = NULL;
-	mtx_unlock(rp->mtx);
+	mtx_lock(ar->mtx);
+	ar->ac = NULL;
+	mtx_unlock(ar->mtx);
 }
 
 
-bool aup_started(const struct audio_recv *rp)
+bool aup_started(const struct audio_recv *ar)
 {
 	bool ret;
 
-	if (!rp || mtx_trylock(rp->aubuf_mtx) != thrd_success)
+	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
 		return false;
 
-	ret = aubuf_started(rp->aubuf);
-	mtx_unlock(rp->aubuf_mtx);
+	ret = aubuf_started(ar->aubuf);
+	mtx_unlock(ar->aubuf_mtx);
 	return ret;
 }
 
 
-int aup_debug(struct re_printf *pf, const struct audio_recv *rp)
+int aup_debug(struct re_printf *pf, const struct audio_recv *ar)
 {
 	struct mbuf *mb;
 	uint64_t bpms;
 	int err;
 
-	if (!rp || mtx_trylock(rp->aubuf_mtx) != thrd_success)
+	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
 		return 0;
 
 	mb = mbuf_alloc(32);
@@ -553,31 +553,31 @@ int aup_debug(struct re_printf *pf, const struct audio_recv *rp)
 		goto out;
 	}
 
-	mtx_lock(rp->mtx);
-	bpms = rp->srate * rp->ch * aufmt_sample_size(rp->fmt) / 1000;
+	mtx_lock(ar->mtx);
+	bpms = ar->srate * ar->ch * aufmt_sample_size(ar->fmt) / 1000;
 	err  = mbuf_printf(mb,
 			   " rx:   decode: %H %s\n",
-			   aucodec_print, rp->ac,
-			   aufmt_name(rp->fmt));
+			   aucodec_print, ar->ac,
+			   aufmt_name(ar->fmt));
 	err |= mbuf_printf(mb, "       aubuf: %H"
 			   " (cur %.2fms, max %.2fms)\n",
-			   aubuf_debug, rp->aubuf,
-			   aubuf_cur_size(rp->aubuf) / bpms,
-			   aubuf_maxsz(rp->aubuf) / bpms);
+			   aubuf_debug, ar->aubuf,
+			   aubuf_cur_size(ar->aubuf) / bpms,
+			   aubuf_maxsz(ar->aubuf) / bpms);
 	err |= mbuf_printf(mb, "       n_discard:%llu\n",
-			   rp->stats.n_discard);
-	if (rp->level_set) {
+			   ar->stats.n_discard);
+	if (ar->level_set) {
 		err |= mbuf_printf(mb, "       level %.3f dBov\n",
-				   rp->level_last);
+				   ar->level_last);
 	}
-	if (rp->ts_recv.is_set) {
+	if (ar->ts_recv.is_set) {
 		err |= mbuf_printf(mb, "       time = %.3f sec\n",
-				   aup_calc_seconds(rp));
+				   aup_calc_seconds(ar));
 	}
 	else {
 		err |= mbuf_printf(mb, "       time = (not started)\n");
 	}
-	mtx_unlock(rp->mtx);
+	mtx_unlock(ar->mtx);
 
 	if (err)
 		goto out;
@@ -585,18 +585,18 @@ int aup_debug(struct re_printf *pf, const struct audio_recv *rp)
 	err = re_hprintf(pf, "%b", mb->buf, mb->pos);
 out:
 	mem_deref(mb);
-	mtx_unlock(rp->aubuf_mtx);
+	mtx_unlock(ar->aubuf_mtx);
 	return err;
 }
 
 
-int aup_print_pipeline(struct re_printf *pf, const struct audio_recv *rp)
+int aup_print_pipeline(struct re_printf *pf, const struct audio_recv *ar)
 {
 	struct mbuf *mb;
 	struct le *le;
 	int err;
 
-	if (!rp)
+	if (!ar)
 		return 0;
 
 	mb = mbuf_alloc(32);
@@ -604,8 +604,8 @@ int aup_print_pipeline(struct re_printf *pf, const struct audio_recv *rp)
 		return ENOMEM;
 
 	err = mbuf_printf(mb, " <--- aubuf");
-	mtx_lock(rp->mtx);
-	for (le = list_head(&rp->filtl); le; le = le->next) {
+	mtx_lock(ar->mtx);
+	for (le = list_head(&ar->filtl); le; le = le->next) {
 		struct aufilt_dec_st *st = le->data;
 
 		if (st->af->dech)
@@ -613,8 +613,8 @@ int aup_print_pipeline(struct re_printf *pf, const struct audio_recv *rp)
 	}
 
 	err |= mbuf_printf(mb, " <--- %s\n",
-			  rp->ac ? rp->ac->name : "(decoder)");
-	mtx_unlock(rp->mtx);
+			  ar->ac ? ar->ac->name : "(decoder)");
+	mtx_unlock(ar->mtx);
 
 	if (err)
 		goto out;
