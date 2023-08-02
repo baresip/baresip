@@ -1622,18 +1622,23 @@ int stream_enable(struct stream *strm, bool enable)
  * Open NAT-pinhole via RTP empty package
  *
  * @param strm	Stream object
- *
- * @return int 0 if success, otherwise errorcode
  */
-int stream_open_natpinhole(struct stream *strm)
+void stream_open_natpinhole(struct stream *strm)
 {
 	if (!strm)
-		return EINVAL;
+		return;
 
 	if (strm->pinhole)
 		tmr_start(&strm->tmr_natph, 10, natpinhole_handler, strm);
+}
 
-	return 0;
+
+void stream_stop_natpinhole(struct stream *strm)
+{
+	if (!strm)
+		return;
+
+	tmr_cancel(&strm->tmr_natph);
 }
 
 
