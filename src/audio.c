@@ -171,7 +171,7 @@ uint64_t audio_jb_current_value(const struct audio *au)
 	if (!au)
 		return 0;
 
-	return aup_latency(au->rx.aup);
+	return aur_latency(au->rx.aup);
 }
 
 
@@ -214,7 +214,7 @@ static void stop_rx(struct aurx *rx)
 
 	/* audio player must be stopped first */
 	rx->auplay = mem_deref(rx->auplay);
-	aup_stop(rx->aup);
+	aur_stop(rx->aup);
 }
 
 
@@ -573,7 +573,7 @@ static void auplay_write_handler(struct auframe *af, void *arg)
 	if (!rx->first_write)
 		afr = *af;
 
-	aup_read(rx->aup, af);
+	aur_read(rx->aup, af);
 
 	if (!rx->first_write) {
 		(void)check_plframe(&afr, af);
@@ -712,7 +712,7 @@ static void stream_recv_handler(const struct rtp_header *hdr,
 	if (!a->rx.aup)
 		return;
 
-	aup_receive(a->rx.aup, hdr, extv, extc, mb, lostc, ignore);
+	aur_receive(a->rx.aup, hdr, extv, extc, mb, lostc, ignore);
 }
 
 
@@ -736,7 +736,7 @@ static int add_telev_codec(struct audio *a)
 		return err;
 
 	if (add)
-		aup_set_telev_pt(a->rx.aup, pt);
+		aur_set_telev_pt(a->rx.aup, pt);
 
 	return 0;
 }
@@ -814,7 +814,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	if (err)
 		goto out;
 
-	err = aup_alloc(&a->rx.aup, &a->cfg, AUDIO_SAMPSZ);
+	err = aur_alloc(&a->rx.aup, &a->cfg, AUDIO_SAMPSZ);
 	if (err)
 		goto out;
 
@@ -847,7 +847,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	if (cfg->audio.level && offerer) {
 
 		a->extmap_aulevel = stream_generate_extmap_id(a->strm);
-		aup_set_extmap(a->rx.aup, a->extmap_aulevel);
+		aur_set_extmap(a->rx.aup, a->extmap_aulevel);
 
 		err = sdp_media_set_lattr(stream_sdpmedia(a->strm), true,
 					  "extmap",
@@ -1061,14 +1061,14 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 	int err = 0;
 
 	/* wait until we have both Encoder and Decoder */
-	if (!tx->ac || !aup_codec(rx->aup))
+	if (!tx->ac || !aur_codec(rx->aup))
 		return 0;
 
-	update_dec = aup_filt_empty(rx->aup);
+	update_dec = aur_filt_empty(rx->aup);
 	update_enc = list_isempty(&tx->filtl);
 
 	aufilt_param_set(&encprm, tx->ac, tx->enc_fmt);
-	aufilt_param_set(&plprm, aup_codec(rx->aup), a->cfg.play_fmt);
+	aufilt_param_set(&plprm, aur_codec(rx->aup), a->cfg.play_fmt);
 	if (a->cfg.srate_play && a->cfg.srate_play != plprm.srate) {
 		plprm.srate = a->cfg.srate_play;
 	}
@@ -1104,7 +1104,7 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 			}
 			else {
 				decst->af = af;
-				aup_filt_append(rx->aup, decst);
+				aur_filt_append(rx->aup, decst);
 			}
 		}
 
@@ -1122,7 +1122,7 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 static int start_player(struct aurx *rx, struct audio *a,
 			struct list *auplayl)
 {
-	const struct aucodec *ac = aup_codec(rx->aup);
+	const struct aucodec *ac = aur_codec(rx->aup);
 	uint32_t srate_dsp;
 	uint32_t channels_dsp;
 	int err = 0;
@@ -1288,7 +1288,7 @@ static void audio_flush_filters(struct audio *a)
 	struct aurx *rx = &a->rx;
 	struct autx *tx = &a->tx;
 
-	aup_flush(rx->aup);
+	aur_flush(rx->aup);
 
 	mtx_lock(a->tx.mtx);
 	list_flush(&tx->filtl);
@@ -1335,13 +1335,13 @@ int audio_start(struct audio *a)
 		return err;
 	}
 
-	if (a->tx.ac && aup_codec(a->rx.aup)) {
+	if (a->tx.ac && aur_codec(a->rx.aup)) {
 
 		if (!a->started) {
 			info("%H\n%H%H",
 			     autx_print_pipeline, &a->tx,
 			     aurx_print_pipeline, &a->rx,
-			     aup_print_pipeline, a->rx.aup);
+			     aur_print_pipeline, a->rx.aup);
 		}
 
 		a->started = true;
@@ -1514,12 +1514,12 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 	rx = &a->rx;
 	rx->pt = pt_rx;
 
-	if (ac != aup_codec(rx->aup)) {
+	if (ac != aur_codec(rx->aup)) {
 		struct sdp_media *m;
 		bool reset;
 
 		m = stream_sdpmedia(audio_strm(a));
-		reset  = !aucodec_equal(ac, aup_codec(rx->aup));
+		reset  = !aucodec_equal(ac, aur_codec(rx->aup));
 		reset |= !(sdp_media_dir(m) & SDP_RECVONLY);
 		if (reset) {
 			rx->auplay = mem_deref(rx->auplay);
@@ -1528,7 +1528,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		}
 	}
 
-	err = aup_decoder_set(rx->aup, ac, params);
+	err = aur_decoder_set(rx->aup, ac, params);
 	if (err)
 		return err;
 
@@ -1645,7 +1645,7 @@ static bool extmap_handler(const char *name, const char *value, void *arg)
 		}
 
 		au->extmap_aulevel = extmap.id;
-		aup_set_extmap(au->rx.aup, au->extmap_aulevel);
+		aur_set_extmap(au->rx.aup, au->extmap_aulevel);
 
 		err = sdp_media_set_lattr(stream_sdpmedia(au->strm), true,
 					  "extmap",
@@ -1742,11 +1742,11 @@ int audio_level_get(const struct audio *au, double *levelp)
 	if (!au->level_enabled)
 		return ENOTSUP;
 
-	if (!aup_level_set(au->rx.aup))
+	if (!aur_level_set(au->rx.aup))
 		return ENOENT;
 
 	if (levelp)
-		*levelp = aup_level(au->rx.aup);
+		*levelp = aur_level(au->rx.aup);
 
 	return 0;
 }
@@ -1801,7 +1801,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 	err |= re_hprintf(pf, "       time = %.3f sec\n",
 			  autx_calc_seconds(tx));
 
-	err |= aup_debug(pf, aup);
+	err |= aur_debug(pf, aup);
 	err |= re_hprintf(pf, "       player: %s,%s %s\n",
 			  rx->ap ? rx->ap->name : "none",
 			  rx->device,
@@ -1812,7 +1812,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 			  " %H%H",
 			  autx_print_pipeline, tx,
 			  aurx_print_pipeline, rx,
-			  aup_print_pipeline, aup);
+			  aur_print_pipeline, aup);
 
 	err |= stream_debug(pf, a->strm);
 
@@ -1987,7 +1987,7 @@ bool audio_rxaubuf_started(const struct audio *au)
 	if (!au || !au->rx.aup)
 		return false;
 
-	return aup_started(au->rx.aup);
+	return aur_started(au->rx.aup);
 }
 
 
@@ -2051,7 +2051,7 @@ const struct aucodec *audio_codec(const struct audio *au, bool tx)
 	if (!au)
 		return NULL;
 
-	return tx ? au->tx.ac : aup_codec(au->rx.aup);
+	return tx ? au->tx.ac : aur_codec(au->rx.aup);
 }
 
 

@@ -118,28 +118,28 @@ int aucodec_print(struct re_printf *pf, const struct aucodec *ac);
 
 struct audio_recv;
 
-int aup_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
+int aur_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	      size_t sampc);
-int aup_decoder_set(struct audio_recv *ar,
+int aur_decoder_set(struct audio_recv *ar,
 		    const struct aucodec *ac, const char *params);
-int aup_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst);
-void aup_flush(struct audio_recv *ar);
-void aup_set_extmap(struct audio_recv *ar, uint8_t aulevel);
-void aup_set_telev_pt(struct audio_recv *ar, int pt);
-void aup_receive(struct audio_recv *ar, const struct rtp_header *hdr,
+int aur_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst);
+void aur_flush(struct audio_recv *ar);
+void aur_set_extmap(struct audio_recv *ar, uint8_t aulevel);
+void aur_set_telev_pt(struct audio_recv *ar, int pt);
+void aur_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		 struct rtpext *extv, size_t extc,
 		 struct mbuf *mb, unsigned lostc, bool *ignore);
-void aup_read(struct audio_recv *ar, struct auframe *af);
-void aup_stop(struct audio_recv *ar);
+void aur_read(struct audio_recv *ar, struct auframe *af);
+void aur_stop(struct audio_recv *ar);
 
-const struct aucodec *aup_codec(const struct audio_recv *ar);
-uint64_t aup_latency(const struct audio_recv *ar);
-bool aup_started(const struct audio_recv *ar);
-bool aup_filt_empty(const struct audio_recv *ar);
-bool aup_level_set(const struct audio_recv *ar);
-double aup_level(const struct audio_recv *ar);
-int aup_debug(struct re_printf *pf, const struct audio_recv *ar);
-int aup_print_pipeline(struct re_printf *pf, const struct audio_recv *ar);
+const struct aucodec *aur_codec(const struct audio_recv *ar);
+uint64_t aur_latency(const struct audio_recv *ar);
+bool aur_started(const struct audio_recv *ar);
+bool aur_filt_empty(const struct audio_recv *ar);
+bool aur_level_set(const struct audio_recv *ar);
+double aur_level(const struct audio_recv *ar);
+int aur_debug(struct re_printf *pf, const struct audio_recv *ar);
+int aur_print_pipeline(struct re_printf *pf, const struct audio_recv *ar);
 
 
 /*
