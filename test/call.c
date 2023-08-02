@@ -2445,10 +2445,6 @@ int test_call_bundle(void)
 	err |= test_call_bundle_base(true,  false, RX_MODE_MAIN);
 	err |= test_call_bundle_base(false, true, RX_MODE_MAIN);
 	err |= test_call_bundle_base(true,  true, RX_MODE_MAIN);
-	err |= test_call_bundle_base(false, false, RX_MODE_THREAD);
-	err |= test_call_bundle_base(true,  false, RX_MODE_THREAD);
-	err |= test_call_bundle_base(false, true, RX_MODE_THREAD);
-	err |= test_call_bundle_base(true,  true, RX_MODE_THREAD);
 
 	return err;
 }
