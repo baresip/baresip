@@ -950,7 +950,7 @@ int test_call_change_videodir(void)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	/* run main-loop with timeout, wait for answer to re_canel loop */
+	/* run main-loop with timeout, wait for answer to re_cancel loop */
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
