@@ -259,9 +259,17 @@ int stream_enable_rx(struct stream *strm, bool enable)
 	rx_set_enable(strm->rx, true);
 
 	if (strm->rtp && strm->cfg.rxmode == RX_MODE_THREAD &&
-	    strm->type == MEDIA_AUDIO && !stream_bundle(strm) &&
-	    !rx_running(strm->rx))
-		tmr_start(&strm->rxm.tmr_rec, 1, rx_start_delayed, strm);
+	    strm->type == MEDIA_AUDIO && !rx_running(strm->rx)) {
+		if (stream_bundle(strm)) {
+			warning("stream: rtp_rxmode thread was disabled "
+				"because it is not supported in combination "
+				"with avt_bundle\n");
+		}
+		else {
+			tmr_start(&strm->rxm.tmr_rec, 1, rx_start_delayed,
+				  strm);
+		}
+	}
 
 	return 0;
 }
