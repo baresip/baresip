@@ -566,7 +566,7 @@ bool aur_started(const struct audio_recv *ar)
 int aur_debug(struct re_printf *pf, const struct audio_recv *ar)
 {
 	struct mbuf *mb;
-	uint64_t bpms;
+	double bpms;
 	int err;
 
 	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
@@ -579,7 +579,8 @@ int aur_debug(struct re_printf *pf, const struct audio_recv *ar)
 	}
 
 	mtx_lock(ar->mtx);
-	bpms = ar->srate * ar->ch * aufmt_sample_size(ar->fmt) / 1000;
+	bpms = (double) (uint64_t) (ar->srate * ar->ch *
+				    aufmt_sample_size(ar->fmt) / 1000);
 	err  = mbuf_printf(mb,
 			   " rx:   decode: %H %s\n",
 			   aucodec_print, ar->ac,
@@ -590,8 +591,10 @@ int aur_debug(struct re_printf *pf, const struct audio_recv *ar)
 			   aubuf_cur_size(ar->aubuf) / bpms,
 			   aubuf_maxsz(ar->aubuf) / bpms);
 #ifndef RELEASE
-	err |= mbuf_printf(mb, "       SW jitter: %u\n", ar->stats.jitter);
-	err |= mbuf_printf(mb, "       deviation: %d\n", ar->stats.dmax);
+	err |= mbuf_printf(mb, "       SW jitter: %.2fms\n",
+			   (double) ar->stats.jitter / 1000);
+	err |= mbuf_printf(mb, "       deviation: %.2fms\n",
+			   (double) ar->stats.dmax / 1000);
 #endif
 	err |= mbuf_printf(mb, "       n_discard: %llu\n",
 			   ar->stats.n_discard);
