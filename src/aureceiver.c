@@ -4,6 +4,7 @@
  * Copyright (C) 2023 Alfred E. Heggestad, Christian Spielberger
  */
 #include <string.h>
+#include <stdlib.h>
 #include <re.h>
 #include <re_atomic.h>
 #include <rem.h>
@@ -26,6 +27,12 @@
 
  \endverbatim
  */
+
+enum {
+	JITTER_EMA_COEFF   = 128,     /**< Jitter EMA coefficient            */
+};
+
+
 struct audio_recv {
 	uint32_t srate;               /**< Decoder sample rate               */
 	uint32_t ch;                  /**< Decoder channel number            */
@@ -39,6 +46,8 @@ struct audio_recv {
 	struct list filtl;            /**< Audio filters in decoding order   */
 	void *sampv;                  /**< Sample buffer                     */
 	size_t sampvsz;               /**< Sample buffer size                */
+	uint64_t t;                   /**< Last auframe push time    */
+	uint32_t ptime;               /**< Packet time for receiving [us]    */
 
 	double level_last;            /**< Last audio level value [dBov]     */
 	bool level_set;               /**< True if level_last is set         */
@@ -47,8 +56,10 @@ struct audio_recv {
 	uint32_t telev_pt;            /**< Payload type for telephone-events */
 
 	struct {
-		uint64_t n_discard;
+		uint64_t n_discard; /**< Nbr of discarded packets  */
 		RE_ATOMIC uint64_t latency;   /**< Latency in [ms]           */
+		int32_t jitter;     /**< Auframe push jitter [us]            */
+		int32_t dmax;       /**< Max deviation [us]                  */
 	} stats;
 
 	mtx_t *mtx;
@@ -146,6 +157,19 @@ static int aur_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 			return err;
 	}
 
+#ifndef RELEASE
+	int32_t d, da;
+	uint64_t t;
+	t = tmr_jiffies_usec();
+	if (ar->t) {
+		d = (int32_t) (int64_t) ((t - ar->t) - ar->ptime);
+		da = abs(d);
+		ar->stats.dmax = max(ar->stats.dmax, da);
+		ar->stats.jitter += (da - ar->stats.jitter) / JITTER_EMA_COEFF;
+	}
+
+	ar->t = t;
+#endif
 	err = aubuf_write_auframe(ar->aubuf, af);
 	if (err)
 		return err;
@@ -354,7 +378,7 @@ uint64_t aur_latency(const struct audio_recv *ar)
 
 
 int aur_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
-	      size_t sampc)
+	      size_t sampc, uint32_t ptime)
 {
 	struct audio_recv *ar;
 	int err;
@@ -372,6 +396,7 @@ int aur_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	ar->fmt   = cfg->play_fmt;
 	ar->sampvsz = sampc * aufmt_sample_size(ar->fmt);
 	ar->sampv   = mem_zalloc(ar->sampvsz, NULL);
+	ar->ptime   = ptime * 1000;
 	if (!ar->sampv) {
 		err = ENOMEM;
 		goto out;
@@ -564,7 +589,11 @@ int aur_debug(struct re_printf *pf, const struct audio_recv *ar)
 			   aubuf_debug, ar->aubuf,
 			   aubuf_cur_size(ar->aubuf) / bpms,
 			   aubuf_maxsz(ar->aubuf) / bpms);
-	err |= mbuf_printf(mb, "       n_discard:%llu\n",
+#ifndef RELEASE
+	err |= mbuf_printf(mb, "       SW jitter: %u\n", ar->stats.jitter);
+	err |= mbuf_printf(mb, "       deviation: %d\n", ar->stats.dmax);
+#endif
+	err |= mbuf_printf(mb, "       n_discard: %llu\n",
 			   ar->stats.n_discard);
 	if (ar->level_set) {
 		err |= mbuf_printf(mb, "       level %.3f dBov\n",

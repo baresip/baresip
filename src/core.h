@@ -119,7 +119,7 @@ int aucodec_print(struct re_printf *pf, const struct aucodec *ac);
 struct audio_recv;
 
 int aur_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
-	      size_t sampc);
+	      size_t sampc, uint32_t ptime);
 int aur_decoder_set(struct audio_recv *ar,
 		    const struct aucodec *ac, const char *params);
 int aur_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst);
