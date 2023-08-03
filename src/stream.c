@@ -635,7 +635,8 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
 				   s->cfg.rtcp_mux ? NULL : rtcp_sock(s->rtp),
-				   s->sdp, receiver_mnat_connected_handler, s->rx);
+				   s->sdp,
+				   receiver_mnat_connected_handler, s->rx);
 		if (err)
 			goto out;
 	}
