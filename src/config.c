@@ -634,7 +634,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtp_timeout,
 			 cfg->avt.bundle ? "yes" : "no",
 			 cfg->avt.rxmode == RECEIVE_MODE_THREAD ? "thread" :
-								  "default",
+								  "main",
 
 			 cfg->net.ifname,
 			 net_af_str(cfg->net.af)
@@ -845,7 +845,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
 			  "#avt_bundle\t\tno\n"
-			  "#rtp_rxmode\t\t\tdefault\n"
+			  "#rtp_rxmode\t\tmain\n"
 			  "\n# Network\n"
 			  "#dns_server\t\t1.1.1.1:53\n"
 			  "#dns_server\t\t1.0.0.1:53\n"
