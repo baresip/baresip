@@ -93,7 +93,7 @@ struct stream {
 static void print_rtp_stats(const struct stream *s)
 {
 	uint32_t tx_n_packets = metric_n_packets(s->tx.metric);
-	uint32_t rx_n_packets = metric_n_packets(rx_metric(s->rx));
+	uint32_t rx_n_packets = metric_n_packets(receiver_metric(s->rx));
 	bool started = tx_n_packets > 0 || rx_n_packets > 0;
 
 	if (!started)
@@ -107,9 +107,9 @@ static void print_rtp_stats(const struct stream *s)
 	     sdp_media_name(s->sdp),
 	     tx_n_packets, rx_n_packets,
 	     1.0*metric_avg_bitrate(s->tx.metric)/1000.0,
-	     1.0*metric_avg_bitrate(rx_metric(s->rx))/1000.0,
+	     1.0*metric_avg_bitrate(receiver_metric(s->rx))/1000.0,
 	     metric_n_err(s->tx.metric),
-	     metric_n_err(rx_metric(s->rx))
+	     metric_n_err(receiver_metric(s->rx))
 	     );
 
 	if (s->rtcp_stats.tx.sent || s->rtcp_stats.rx.sent) {
@@ -224,10 +224,10 @@ int stream_enable_tx(struct stream *strm, bool enable)
 }
 
 
-static void rx_start_delayed(void *arg)
+static void stream_start_receiver(void *arg)
 {
 	struct stream *s = arg;
-	rx_start_thread(s->rx, s->rtp);
+	receiver_start_thread(s->rx, s->rtp);
 }
 
 
@@ -248,7 +248,7 @@ int stream_enable_rx(struct stream *strm, bool enable)
 		debug("stream: disable %s RTP receiver\n",
 		      media_name(strm->type));
 
-		rx_set_enable(strm->rx, false);
+		receiver_set_enable(strm->rx, false);
 		return 0;
 	}
 
@@ -256,17 +256,17 @@ int stream_enable_rx(struct stream *strm, bool enable)
 		return ENOTSUP;
 
 	debug("stream: enable %s RTP receiver\n", media_name(strm->type));
-	rx_set_enable(strm->rx, true);
+	receiver_set_enable(strm->rx, true);
 
-	if (strm->rtp && strm->cfg.rxmode == RX_MODE_THREAD &&
-	    strm->type == MEDIA_AUDIO && !rx_running(strm->rx)) {
+	if (strm->rtp && strm->cfg.rxmode == RECEIVE_MODE_THREAD &&
+	    strm->type == MEDIA_AUDIO && !receiver_running(strm->rx)) {
 		if (stream_bundle(strm)) {
 			warning("stream: rtp_rxmode thread was disabled "
 				"because it is not supported in combination "
 				"with avt_bundle\n");
 		}
 		else {
-			tmr_start(&strm->rxm.tmr_rec, 1, rx_start_delayed,
+			tmr_start(&strm->rxm.tmr_rec, 1, stream_start_receiver,
 				  strm);
 		}
 	}
@@ -303,7 +303,7 @@ static void check_rtp_handler(void *arg)
 		  check_rtp_handler, strm);
 
 	/* If no RTP was received at all, check later */
-	ts_last = rx_ts_last(strm->rx);
+	ts_last = receiver_ts_last(strm->rx);
 	if (!ts_last)
 		return;
 
@@ -322,7 +322,7 @@ static void check_rtp_handler(void *arg)
 
 		/* check for large jumps in time */
 		if (diff_ms > (3600 * 1000)) {
-			rx_set_ts_last(strm->rx, 0);
+			receiver_set_ts_last(strm->rx, 0);
 			return;
 		}
 
@@ -376,7 +376,7 @@ static int stream_sock_alloc(struct stream *s, int af)
 
 	err = rtp_listen(&s->rtp, IPPROTO_UDP, &laddr,
 			 s->cfg.rtp_ports.min, s->cfg.rtp_ports.max,
-			 true, rx_receive, rx_handle_rtcp, s->rx);
+			 true, receiver_decode, receiver_handle_rtcp, s->rx);
 	if (err) {
 		warning("stream: rtp_listen failed: af=%s ports=%u-%u"
 			" (%m)\n", net_af2name(af),
@@ -565,7 +565,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	tmr_init(&s->tmr_natph);
 
 	if (prm->use_rtp) {
-		err = rx_alloc(&s->rx, s, media_name(type), cfg,
+		err = receiver_alloc(&s->rx, s, media_name(type), cfg,
 			       rtph, pth, arg);
 		if (err) {
 			warning("stream: failed to create receiver"
@@ -635,7 +635,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		err = mnat->mediah(&s->mns, mnat_sess,
 				   rtp_sock(s->rtp),
 				   s->cfg.rtcp_mux ? NULL : rtcp_sock(s->rtp),
-				   s->sdp, rx_mnat_connected_handler, s->rx);
+				   s->sdp, receiver_mnat_connected_handler, s->rx);
 		if (err)
 			goto out;
 	}
@@ -829,7 +829,7 @@ static void stream_remote_set(struct stream *s)
 		struct pl num;
 
 		if (0 == re_regex(rssrc, str_len(rssrc), "[0-9]+", &num))
-			rx_set_ssrc(s->rx, pl_u32(&num));
+			receiver_set_ssrc(s->rx, pl_u32(&num));
 	}
 
 	/* RFC 5761 */
@@ -853,7 +853,7 @@ static void stream_remote_set(struct stream *s)
 		sdp_media_set_lattr(s->sdp, true, "mid", "%s", rmid);
 	}
 
-	rx_enable_mux(s->rx, s->rtcp_mux);
+	receiver_enable_mux(s->rx, s->rtcp_mux);
 
 	mtx_lock(s->tx.lock);
 	if (bundle_state(stream_bundle(s)) != BUNDLE_MUX) {
@@ -1026,7 +1026,7 @@ void stream_flush(struct stream *s)
 	if (!s)
 		return;
 
-	rx_flush(s->rx);
+	receiver_flush(s->rx);
 
 	if (s->type == MEDIA_AUDIO)
 		rtp_clear(s->rtp);
@@ -1050,7 +1050,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 		info("stream: Enable RTP timeout (%u milliseconds)\n",
 		     timeout_ms);
 
-		rx_set_ts_last(strm->rx, tmr_jiffies());
+		receiver_set_ts_last(strm->rx, tmr_jiffies());
 		tmr_start(&strm->rxm.tmr_rtp, 10, check_rtp_handler, strm);
 	}
 }
@@ -1080,7 +1080,7 @@ void stream_set_session_handlers(struct stream *strm,
 	strm->errorh     = errorh;
 	strm->sess_arg   = arg;
 
-	rx_set_handlers(strm->rx, rtpestabh, arg);
+	receiver_set_handlers(strm->rx, rtpestabh, arg);
 }
 
 
@@ -1171,7 +1171,7 @@ double stream_metric_get_tx_avg_bitrate(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_n_packets(const struct stream *strm)
 {
-	return strm ? metric_n_packets(rx_metric(strm->rx)) : 0;
+	return strm ? metric_n_packets(receiver_metric(strm->rx)) : 0;
 }
 
 
@@ -1184,7 +1184,7 @@ uint32_t stream_metric_get_rx_n_packets(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
 {
-	return strm ? metric_n_bytes(rx_metric(strm->rx)) : 0;
+	return strm ? metric_n_bytes(receiver_metric(strm->rx)) : 0;
 }
 
 
@@ -1197,7 +1197,7 @@ uint32_t stream_metric_get_rx_n_bytes(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
 {
-	return strm ? metric_n_err(rx_metric(strm->rx)) : 0;
+	return strm ? metric_n_err(receiver_metric(strm->rx)) : 0;
 }
 
 
@@ -1210,7 +1210,7 @@ uint32_t stream_metric_get_rx_n_err(const struct stream *strm)
  */
 uint32_t stream_metric_get_rx_bitrate(const struct stream *strm)
 {
-	return strm ? metric_bitrate(rx_metric(strm->rx)) : 0;
+	return strm ? metric_bitrate(receiver_metric(strm->rx)) : 0;
 }
 
 
@@ -1223,7 +1223,7 @@ uint32_t stream_metric_get_rx_bitrate(const struct stream *strm)
  */
 double stream_metric_get_rx_avg_bitrate(const struct stream *strm)
 {
-	return strm ? metric_avg_bitrate(rx_metric(strm->rx)) : 0.0;
+	return strm ? metric_avg_bitrate(receiver_metric(strm->rx)) : 0.0;
 }
 
 
@@ -1518,7 +1518,7 @@ int stream_ssrc_rx(const struct stream *strm, uint32_t *ssrc)
 	if (!strm)
 		return EINVAL;
 
-	return rx_get_ssrc(strm->rx, ssrc);
+	return receiver_get_ssrc(strm->rx, ssrc);
 }
 
 
@@ -1578,7 +1578,7 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 
 	err |= re_hprintf(pf, " tx.enabled: %s\n",
 			  re_atomic_rlx(&s->tx.enabled) ? "yes" : "no");
-	err |= rx_debug(pf, s->rx);
+	err |= receiver_debug(pf, s->rx);
 	err |= rtp_debug(pf, s->rtp);
 
 	if (s->bundle)
@@ -1595,7 +1595,7 @@ int stream_print(struct re_printf *pf, const struct stream *s)
 
 	return re_hprintf(pf, " %s=%u/%u", sdp_media_name(s->sdp),
 			  metric_bitrate(s->tx.metric),
-			  metric_bitrate(rx_metric(s->rx)));
+			  metric_bitrate(receiver_metric(s->rx)));
 }
 
 

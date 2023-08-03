@@ -319,8 +319,8 @@ enum audio_mode {
 
 /** RTP receive mode */
 enum rtp_receive_mode {
-	RX_MODE_MAIN = 0,       /**< RTP RX is processed in main thread      */
-	RX_MODE_THREAD,         /**< RTP RX is processed in separate thread  */
+	RECEIVE_MODE_MAIN = 0,  /**< RTP RX is processed in main thread      */
+	RECEIVE_MODE_THREAD,    /**< RTP RX is processed in separate thread  */
 };
 
 /** SIP User-Agent */

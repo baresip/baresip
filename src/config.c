@@ -99,7 +99,7 @@ static struct config core_config = {
 		false,
 		0,
 		false,
-		RX_MODE_MAIN,
+		RECEIVE_MODE_MAIN,
 	},
 
 	/* Network */
@@ -475,7 +475,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	if (0 == conf_get(conf, "rtp_rxmode", &rxmode)) {
 
 		if (0 == pl_strcasecmp(&rxmode, "thread"))
-			cfg->avt.rxmode = RX_MODE_THREAD;
+			cfg->avt.rxmode = RECEIVE_MODE_THREAD;
 	}
 
 	if (err) {
@@ -633,8 +633,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 			 cfg->avt.bundle ? "yes" : "no",
-			 cfg->avt.rxmode == RX_MODE_THREAD ? "thread" :
-							     "default",
+			 cfg->avt.rxmode == RECEIVE_MODE_THREAD ? "thread" :
+								  "default",
 
 			 cfg->net.ifname,
 			 net_af_str(cfg->net.af)

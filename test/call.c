@@ -617,7 +617,7 @@ static int test_call_answer_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
-	conf_config()->avt.rxmode  = RX_MODE_MAIN;
+	conf_config()->avt.rxmode  = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -651,7 +651,7 @@ static int test_call_reject_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.n_established);
 
  out:
-	conf_config()->avt.rxmode  = RX_MODE_MAIN;
+	conf_config()->avt.rxmode  = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -687,7 +687,7 @@ static int test_call_answer_hangup_a_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.close_scode);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -727,7 +727,7 @@ static int test_call_answer_hangup_b_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.close_scode);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -770,7 +770,7 @@ static int test_call_rtp_timeout_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.close_scode);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -881,7 +881,7 @@ static int test_call_multiple_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(4, list_count(ua_calls(f->b.ua)));
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -925,7 +925,7 @@ static int test_call_max_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	/* Set the max-calls limit */
@@ -975,7 +975,7 @@ static int test_call_dtmf_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(n, fix.b.n_dtmf_recv);
 
  out:
-	conf_config()->avt.rxmode  = RX_MODE_MAIN;
+	conf_config()->avt.rxmode  = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 	module_unload("ausine");
 
@@ -1048,7 +1048,7 @@ static int test_call_video_base(enum rtp_receive_mode rxmode)
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
 
  out:
-	conf_config()->avt.rxmode  = RX_MODE_MAIN;
+	conf_config()->avt.rxmode  = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 	mem_deref(vidisp);
 	module_unload("fakevideo");
@@ -1156,7 +1156,7 @@ static int test_call_change_videodir_base(enum rtp_receive_mode rxmode)
 	ASSERT_TRUE(b_video_rdir == SDP_SENDRECV);
 
  out:
-	conf_config()->avt.rxmode  = RX_MODE_MAIN;
+	conf_config()->avt.rxmode  = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 	mem_deref(vidisp);
 	module_unload("fakevideo");
@@ -1223,7 +1223,7 @@ static int test_call_aulevel_base(enum rtp_receive_mode rxmode)
 
  out:
 	conf_config()->audio.level = false;
-	conf_config()->avt.rxmode  = RX_MODE_MAIN;
+	conf_config()->avt.rxmode  = RECEIVE_MODE_MAIN;
 
 	fixture_close(f);
 	mem_deref(auplay);
@@ -1266,7 +1266,7 @@ static int test_call_progress_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -1344,7 +1344,7 @@ static int test_media_base(enum audio_mode txmode,
  out:
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 	fixture_close(f);
 	mem_deref(auplay);
@@ -1404,7 +1404,7 @@ static int test_call_mediaenc_base(enum rtp_receive_mode rxmode)
 	ASSERT_TRUE(fix.b.n_rtpestab > 0);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 	module_unload("aufile");
 	module_unload("ausine");
@@ -1455,7 +1455,7 @@ static int test_call_medianat_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 	module_unload("ausine");
 
@@ -1541,7 +1541,7 @@ static int test_call_custom_headers_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -1571,7 +1571,7 @@ static int test_call_tcp_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(1, fix.b.n_established);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -1617,7 +1617,7 @@ static int test_call_deny_udp_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, fix.b.n_incoming);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -1677,7 +1677,7 @@ static int test_call_transfer_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(1, list_count(ua_calls(f->c.ua)));
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -1734,7 +1734,7 @@ static int test_call_transfer_fail_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(0, list_count(ua_calls(f->c.ua)));
 
 out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -1787,7 +1787,7 @@ static int test_call_attended_transfer_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(1, list_count(ua_calls(f->c.ua)));
 
 out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -1821,7 +1821,7 @@ static int test_call_rtcp_base(enum rtp_receive_mode rxmode)
 	ASSERT_TRUE(fix.b.n_rtcp > 0);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	return err;
@@ -1902,7 +1902,7 @@ static int test_call_webrtc_base(enum rtp_receive_mode rxmode)
 	ASSERT_EQ(20, atoi(sdp_media_rattr(sdp_b, "ptime")));
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	module_unload("fakevideo");
@@ -2049,7 +2049,7 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc,
 	}
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 
 	mem_deref(sdp);
@@ -2147,7 +2147,7 @@ static int test_call_ipv6ll_base(enum rtp_receive_mode rxmode)
 	ASSERT_TRUE(sa_is_linklocal(&ipv6ll) && sa_af(&ipv6ll) == AF_INET6);
 
  out:
-	conf_config()->avt.rxmode = RX_MODE_MAIN;
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	fixture_close(f);
 	module_unload("ausine");
 
@@ -2159,8 +2159,8 @@ int test_call_answer(void)
 {
 	int err;
 
-	err  = test_call_answer_base(RX_MODE_MAIN);
-	err |= test_call_answer_base(RX_MODE_THREAD);
+	err  = test_call_answer_base(RECEIVE_MODE_MAIN);
+	err |= test_call_answer_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2170,8 +2170,8 @@ int test_call_reject(void)
 {
 	int err;
 
-	err  = test_call_reject_base(RX_MODE_MAIN);
-	err |= test_call_reject_base(RX_MODE_THREAD);
+	err  = test_call_reject_base(RECEIVE_MODE_MAIN);
+	err |= test_call_reject_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2181,8 +2181,8 @@ int test_call_answer_hangup_a(void)
 {
 	int err;
 
-	err  = test_call_answer_hangup_a_base(RX_MODE_MAIN);
-	err |= test_call_answer_hangup_a_base(RX_MODE_THREAD);
+	err  = test_call_answer_hangup_a_base(RECEIVE_MODE_MAIN);
+	err |= test_call_answer_hangup_a_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2192,8 +2192,8 @@ int test_call_answer_hangup_b(void)
 {
 	int err;
 
-	err  = test_call_answer_hangup_b_base(RX_MODE_MAIN);
-	err |= test_call_answer_hangup_b_base(RX_MODE_THREAD);
+	err  = test_call_answer_hangup_b_base(RECEIVE_MODE_MAIN);
+	err |= test_call_answer_hangup_b_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2203,8 +2203,8 @@ int test_call_rtp_timeout(void)
 {
 	int err;
 
-	err  = test_call_rtp_timeout_base(RX_MODE_MAIN);
-	err |= test_call_rtp_timeout_base(RX_MODE_THREAD);
+	err  = test_call_rtp_timeout_base(RECEIVE_MODE_MAIN);
+	err |= test_call_rtp_timeout_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2214,8 +2214,8 @@ int test_call_multiple(void)
 {
 	int err;
 
-	err  = test_call_multiple_base(RX_MODE_MAIN);
-	err |= test_call_multiple_base(RX_MODE_THREAD);
+	err  = test_call_multiple_base(RECEIVE_MODE_MAIN);
+	err |= test_call_multiple_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2225,8 +2225,8 @@ int test_call_max(void)
 {
 	int err;
 
-	err  = test_call_max_base(RX_MODE_MAIN);
-	err |= test_call_max_base(RX_MODE_THREAD);
+	err  = test_call_max_base(RECEIVE_MODE_MAIN);
+	err |= test_call_max_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2236,8 +2236,8 @@ int test_call_dtmf(void)
 {
 	int err;
 
-	err  = test_call_dtmf_base(RX_MODE_MAIN);
-	err |= test_call_dtmf_base(RX_MODE_THREAD);
+	err  = test_call_dtmf_base(RECEIVE_MODE_MAIN);
+	err |= test_call_dtmf_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2247,8 +2247,8 @@ int test_call_video(void)
 {
 	int err;
 
-	err  = test_call_video_base(RX_MODE_MAIN);
-	err |= test_call_video_base(RX_MODE_THREAD);
+	err  = test_call_video_base(RECEIVE_MODE_MAIN);
+	err |= test_call_video_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2258,8 +2258,8 @@ int test_call_change_videodir(void)
 {
 	int err;
 
-	err  = test_call_change_videodir_base(RX_MODE_MAIN);
-	err |= test_call_change_videodir_base(RX_MODE_THREAD);
+	err  = test_call_change_videodir_base(RECEIVE_MODE_MAIN);
+	err |= test_call_change_videodir_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2269,8 +2269,8 @@ int test_call_aulevel(void)
 {
 	int err;
 
-	err  = test_call_aulevel_base(RX_MODE_MAIN);
-	err |= test_call_aulevel_base(RX_MODE_THREAD);
+	err  = test_call_aulevel_base(RECEIVE_MODE_MAIN);
+	err |= test_call_aulevel_base(RECEIVE_MODE_THREAD);
 	return err;
 }
 
@@ -2279,8 +2279,8 @@ int test_call_progress(void)
 {
 	int err;
 
-	err  = test_call_progress_base(RX_MODE_MAIN);
-	err |= test_call_progress_base(RX_MODE_THREAD);
+	err  = test_call_progress_base(RECEIVE_MODE_MAIN);
+	err |= test_call_progress_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2290,8 +2290,8 @@ int test_call_format_float(void)
 {
 	int err;
 
-	err  = test_media_base(AUDIO_MODE_POLL, RX_MODE_MAIN);
-	err |= test_media_base(AUDIO_MODE_POLL, RX_MODE_THREAD);
+	err  = test_media_base(AUDIO_MODE_POLL, RECEIVE_MODE_MAIN);
+	err |= test_media_base(AUDIO_MODE_POLL, RECEIVE_MODE_THREAD);
 	ASSERT_EQ(0, err);
 
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
@@ -2305,8 +2305,8 @@ int test_call_mediaenc(void)
 {
 	int err;
 
-	err  = test_call_mediaenc_base(RX_MODE_MAIN);
-	err |= test_call_mediaenc_base(RX_MODE_THREAD);
+	err  = test_call_mediaenc_base(RECEIVE_MODE_MAIN);
+	err |= test_call_mediaenc_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2316,8 +2316,8 @@ int test_call_medianat(void)
 {
 	int err;
 
-	err  = test_call_medianat_base(RX_MODE_MAIN);
-	err |= test_call_medianat_base(RX_MODE_THREAD);
+	err  = test_call_medianat_base(RECEIVE_MODE_MAIN);
+	err |= test_call_medianat_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2327,8 +2327,8 @@ int test_call_custom_headers(void)
 {
 	int err;
 
-	err  = test_call_custom_headers_base(RX_MODE_MAIN);
-	err |= test_call_custom_headers_base(RX_MODE_THREAD);
+	err  = test_call_custom_headers_base(RECEIVE_MODE_MAIN);
+	err |= test_call_custom_headers_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2338,8 +2338,8 @@ int test_call_tcp(void)
 {
 	int err;
 
-	err  = test_call_tcp_base(RX_MODE_MAIN);
-	err |= test_call_tcp_base(RX_MODE_THREAD);
+	err  = test_call_tcp_base(RECEIVE_MODE_MAIN);
+	err |= test_call_tcp_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2349,8 +2349,8 @@ int test_call_deny_udp(void)
 {
 	int err;
 
-	err  = test_call_deny_udp_base(RX_MODE_MAIN);
-	err |= test_call_deny_udp_base(RX_MODE_THREAD);
+	err  = test_call_deny_udp_base(RECEIVE_MODE_MAIN);
+	err |= test_call_deny_udp_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2360,8 +2360,8 @@ int test_call_transfer(void)
 {
 	int err;
 
-	err  = test_call_transfer_base(RX_MODE_MAIN);
-	err |= test_call_transfer_base(RX_MODE_THREAD);
+	err  = test_call_transfer_base(RECEIVE_MODE_MAIN);
+	err |= test_call_transfer_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2371,8 +2371,8 @@ int test_call_transfer_fail(void)
 {
 	int err;
 
-	err  = test_call_transfer_fail_base(RX_MODE_MAIN);
-	err |= test_call_transfer_fail_base(RX_MODE_THREAD);
+	err  = test_call_transfer_fail_base(RECEIVE_MODE_MAIN);
+	err |= test_call_transfer_fail_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2382,8 +2382,8 @@ int test_call_attended_transfer(void)
 {
 	int err;
 
-	err  = test_call_attended_transfer_base(RX_MODE_MAIN);
-	err |= test_call_attended_transfer_base(RX_MODE_THREAD);
+	err  = test_call_attended_transfer_base(RECEIVE_MODE_MAIN);
+	err |= test_call_attended_transfer_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2393,8 +2393,8 @@ int test_call_rtcp(void)
 {
 	int err;
 
-	err  = test_call_rtcp_base(RX_MODE_MAIN);
-	err |= test_call_rtcp_base(RX_MODE_THREAD);
+	err  = test_call_rtcp_base(RECEIVE_MODE_MAIN);
+	err |= test_call_rtcp_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2407,8 +2407,8 @@ int test_call_aufilt(void)
 	err = module_load(".", "auconv");
 	TEST_ERR(err);
 
-	err  = test_media_base(AUDIO_MODE_POLL, RX_MODE_MAIN);
-	err |= test_media_base(AUDIO_MODE_POLL, RX_MODE_THREAD);
+	err  = test_media_base(AUDIO_MODE_POLL, RECEIVE_MODE_MAIN);
+	err |= test_media_base(AUDIO_MODE_POLL, RECEIVE_MODE_THREAD);
 	ASSERT_EQ(0, err);
 
  out:
@@ -2422,8 +2422,8 @@ int test_call_webrtc(void)
 {
 	int err;
 
-	err  = test_call_webrtc_base(RX_MODE_MAIN);
-	err |= test_call_webrtc_base(RX_MODE_THREAD);
+	err  = test_call_webrtc_base(RECEIVE_MODE_MAIN);
+	err |= test_call_webrtc_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }
@@ -2441,10 +2441,10 @@ int test_call_bundle(void)
 {
 	int err = 0;
 
-	err |= test_call_bundle_base(false, false, RX_MODE_MAIN);
-	err |= test_call_bundle_base(true,  false, RX_MODE_MAIN);
-	err |= test_call_bundle_base(false, true, RX_MODE_MAIN);
-	err |= test_call_bundle_base(true,  true, RX_MODE_MAIN);
+	err |= test_call_bundle_base(false, false, RECEIVE_MODE_MAIN);
+	err |= test_call_bundle_base(true,  false, RECEIVE_MODE_MAIN);
+	err |= test_call_bundle_base(false, true, RECEIVE_MODE_MAIN);
+	err |= test_call_bundle_base(true,  true, RECEIVE_MODE_MAIN);
 
 	return err;
 }
@@ -2454,8 +2454,8 @@ int test_call_ipv6ll(void)
 {
 	int err;
 
-	err  = test_call_ipv6ll_base(RX_MODE_MAIN);
-	err |= test_call_ipv6ll_base(RX_MODE_THREAD);
+	err  = test_call_ipv6ll_base(RECEIVE_MODE_MAIN);
+	err |= test_call_ipv6ll_base(RECEIVE_MODE_THREAD);
 
 	return err;
 }

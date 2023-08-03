@@ -154,7 +154,7 @@ static void pass_mnat_work(struct receiver *rx, const struct sa *raddr1,
 }
 
 
-static void rx_check_stop(void *arg)
+static void receiver_check_stop(void *arg)
 {
 	struct receiver *rx = arg;
 	bool run;
@@ -163,19 +163,19 @@ static void rx_check_stop(void *arg)
 	run = rx->run;
 	mtx_unlock(rx->mtx);
 	if (run)
-		tmr_start(&rx->tmr, 10, rx_check_stop, rx);
+		tmr_start(&rx->tmr, 10, receiver_check_stop, rx);
 	else
 		re_cancel();
 }
 
 
-static int rx_thread(void *arg)
+static int receiver_thread(void *arg)
 {
 	struct receiver *rx = arg;
 	int err;
 
 	re_thread_init();
-	tmr_start(&rx->tmr, 10, rx_check_stop, rx);
+	tmr_start(&rx->tmr, 10, receiver_check_stop, rx);
 
 	err = udp_thread_attach(rtp_sock(rx->rtp));
 	if (err)
@@ -312,8 +312,8 @@ static int decode_frame(struct receiver *rx)
 }
 
 
-void rx_receive(const struct sa *src, const struct rtp_header *hdr,
-		struct mbuf *mb, void *arg)
+void receiver_decode(const struct sa *src, const struct rtp_header *hdr,
+		     struct mbuf *mb, void *arg)
 {
 	struct receiver *rx = arg;
 	uint32_t ssrc0;
@@ -415,7 +415,8 @@ unlock:
 }
 
 
-void rx_handle_rtcp(const struct sa *src, struct rtcp_msg *msg, void *arg)
+void receiver_handle_rtcp(const struct sa *src, struct rtcp_msg *msg,
+			  void *arg)
 {
 	struct receiver *rx = arg;
 	(void)src;
@@ -430,8 +431,8 @@ void rx_handle_rtcp(const struct sa *src, struct rtcp_msg *msg, void *arg)
 }
 
 
-void rx_mnat_connected_handler(const struct sa *raddr1,
-			       const struct sa *raddr2, void *arg)
+void receiver_mnat_connected_handler(const struct sa *raddr1,
+				     const struct sa *raddr2, void *arg)
 {
 	struct receiver *rx = arg;
 
@@ -445,7 +446,7 @@ void rx_mnat_connected_handler(const struct sa *raddr1,
  * functions that run in main thread
  */
 
-void rx_set_ssrc(struct receiver *rx, uint32_t ssrc)
+void receiver_set_ssrc(struct receiver *rx, uint32_t ssrc)
 {
 	mtx_lock(rx->mtx);
 	if (rx->ssrc_set) {
@@ -464,7 +465,7 @@ void rx_set_ssrc(struct receiver *rx, uint32_t ssrc)
 }
 
 
-uint64_t rx_ts_last(struct receiver *rx)
+uint64_t receiver_ts_last(struct receiver *rx)
 {
 	uint64_t ts_last;
 	mtx_lock(rx->mtx);
@@ -475,7 +476,7 @@ uint64_t rx_ts_last(struct receiver *rx)
 }
 
 
-void rx_set_ts_last(struct receiver *rx, uint64_t ts_last)
+void receiver_set_ts_last(struct receiver *rx, uint64_t ts_last)
 {
 	mtx_lock(rx->mtx);
 	rx->ts_last = ts_last;
@@ -483,7 +484,7 @@ void rx_set_ts_last(struct receiver *rx, uint64_t ts_last)
 }
 
 
-void rx_flush(struct receiver *rx)
+void receiver_flush(struct receiver *rx)
 {
 	if (!rx)
 		return;
@@ -492,7 +493,7 @@ void rx_flush(struct receiver *rx)
 }
 
 
-void rx_set_enable(struct receiver *rx, bool enable)
+void receiver_set_enable(struct receiver *rx, bool enable)
 {
 	if (!rx)
 		return;
@@ -503,7 +504,7 @@ void rx_set_enable(struct receiver *rx, bool enable)
 }
 
 
-int rx_get_ssrc(struct receiver *rx, uint32_t *ssrc)
+int receiver_get_ssrc(struct receiver *rx, uint32_t *ssrc)
 {
 	int err;
 
@@ -523,7 +524,7 @@ int rx_get_ssrc(struct receiver *rx, uint32_t *ssrc)
 }
 
 
-void rx_enable_mux(struct receiver *rx, bool enable)
+void receiver_enable_mux(struct receiver *rx, bool enable)
 {
 	mtx_lock(rx->mtx);
 	rtcp_enable_mux(rx->rtp, enable);
@@ -540,7 +541,7 @@ void rx_enable_mux(struct receiver *rx, bool enable)
  *
  * @return 0 if success, otherwise errorcode
  */
-int rx_debug(struct re_printf *pf, const struct receiver *rx)
+int receiver_debug(struct re_printf *pf, const struct receiver *rx)
 {
 	int err;
 	bool enabled;
@@ -579,12 +580,12 @@ static void destructor(void *arg)
 }
 
 
-int rx_alloc(struct receiver **rxp,
-	     struct stream *strm,
-	     const char *name,
-	     const struct config_avt *cfg,
-	     stream_rtp_h *rtph,
-	     stream_pt_h *pth, void *arg)
+int receiver_alloc(struct receiver **rxp,
+		   struct stream *strm,
+		   const char *name,
+		   const struct config_avt *cfg,
+		   stream_rtp_h *rtph,
+		   stream_pt_h *pth, void *arg)
 {
 	struct receiver *rx;
 	int err;
@@ -643,7 +644,7 @@ out:
 }
 
 
-int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp)
+int receiver_start_thread(struct receiver *rx, struct rtp_sock *rtp)
 {
 	int err;
 
@@ -657,7 +658,7 @@ int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp)
 	rx->run = true;
 	err = thread_create_name(&rx->thr,
 				 "RX thread",
-				 rx_thread, rx);
+				 receiver_thread, rx);
 	if (err) {
 		rx->run = false;
 	}
@@ -670,7 +671,7 @@ int rx_start_thread(struct receiver *rx, struct rtp_sock *rtp)
 }
 
 
-bool rx_running(const struct receiver *rx)
+bool receiver_running(const struct receiver *rx)
 {
 	if (!rx)
 		return false;
@@ -679,7 +680,7 @@ bool rx_running(const struct receiver *rx)
 }
 
 
-void rx_set_handlers(struct receiver *rx,
+void receiver_set_handlers(struct receiver *rx,
 		     stream_rtpestab_h *rtpestabh, void *arg)
 {
 	if (!rx)
@@ -692,7 +693,7 @@ void rx_set_handlers(struct receiver *rx,
 }
 
 
-struct metric *rx_metric(struct receiver *rx)
+struct metric *receiver_metric(struct receiver *rx)
 {
 	/* it is allowed to return metric because it is thread safe */
 	return rx->metric;
