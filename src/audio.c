@@ -822,7 +822,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	if (err)
 		goto out;
 
-	err = aur_alloc(&a->rx.aup, &a->cfg, AUDIO_SAMPSZ);
+	err = aur_alloc(&a->rx.aup, &a->cfg, AUDIO_SAMPSZ, ptime);
 	if (err)
 		goto out;
 
