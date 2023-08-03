@@ -6,6 +6,9 @@ if(NOT CAMERAD_FOUND)
   return()
 endif()
 
+pkg_search_module(GST REQUIRED gstreamer-1.0>=1.16)
+link_directories(${GST_LIBDIR})
+
 set(SRCS comvideo.c decode_h264.c encode_h264.c sdp.c)
 
 if(STATIC)
