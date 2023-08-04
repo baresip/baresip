@@ -31,6 +31,25 @@ enum action {
 	ACTION_ATT_TRANSFER,
 };
 
+
+struct cancel_rule {
+	struct le le;
+
+	enum ua_event ev;
+	const char *prm;
+	struct ua *ua;
+
+	unsigned n_incoming;
+	unsigned n_progress;
+	unsigned n_established;
+	unsigned n_audio_estab;
+	unsigned n_video_estab;
+	unsigned n_offer_cnt;
+	unsigned n_answer_cnt;
+	unsigned n_rules_ok;
+};
+
+
 struct agent {
 	struct fixture *fix;    /* pointer to parent */
 	struct agent *peer;
@@ -50,7 +69,10 @@ struct agent {
 	unsigned n_rtcp;
 	unsigned n_audio_estab;
 	unsigned n_video_estab;
+	unsigned n_offer_cnt;
+	unsigned n_answer_cnt;
 };
+
 
 struct fixture {
 	uint32_t magic;
@@ -71,6 +93,8 @@ struct fixture {
 	bool stop_on_rtcp;
 	bool stop_on_audio_video;
 	bool accept_session_updates;
+	struct list rules;
+	unsigned n_rules_ok;
 };
 
 
@@ -138,13 +162,35 @@ struct fixture {
 	uag_event_unregister(event_handler);	\
 						\
 	ua_stop_all(true);			\
-	ua_close();
+	ua_close();				\
+	list_flush(&f->rules);
 
 #define fixture_abort(f, error)			\
 	do {					\
 		(f)->err = (error);		\
 		re_cancel();			\
 	} while (0)
+
+
+static struct cancel_rule *fixture_add_rule(struct fixture *f,
+					  enum ua_event ev,
+					  unsigned n_incoming,
+					  unsigned n_progress,
+					  unsigned n_established)
+{
+	struct cancel_rule *r = mem_zalloc(sizeof(*r), NULL);
+	if (!r)
+		return NULL;
+
+	r->ev = ev;
+	r->n_incoming    = n_incoming;
+	r->n_progress    = n_progress;
+	r->n_established = n_established;
+
+	list_append(&f->rules, &r->le, r);
+	return r;
+}
+
 
 static const struct list *hdrs;
 
@@ -155,6 +201,55 @@ static const char dtmf_digits[] = "123";
 static bool agent_audio_video_estab(const struct agent *ag)
 {
 	return ag->n_audio_estab > 0 && ag->n_video_estab > 0;
+}
+
+
+static void process_rules(struct agent *ag, enum ua_event ev, const char *prm)
+{
+	struct fixture *f = ag->fix;
+	struct le *le;
+
+	LIST_FOREACH(&f->rules, le) {
+		struct cancel_rule *rule = le->data;
+
+		if (ev != rule->ev)
+			continue;
+
+		if (str_isset(rule->prm) &&
+		    str_casecmp(prm, rule->prm))
+			continue;
+
+		if (rule->ua &&
+		    ag->ua != rule->ua)
+			continue;
+
+		if (rule->n_incoming &&
+		    ag->n_incoming != rule->n_incoming)
+			continue;
+
+		if (rule->n_progress &&
+		    ag->n_progress != rule->n_progress)
+			continue;
+
+		if (rule->n_established &&
+		    ag->n_established != rule->n_established)
+			continue;
+
+		if (rule->n_audio_estab &&
+		    ag->n_audio_estab != rule->n_audio_estab)
+			continue;
+
+		if (rule->n_video_estab &&
+		    ag->n_video_estab != rule->n_video_estab)
+			continue;
+
+		++f->n_rules_ok;
+		if (rule->n_rules_ok &&
+		    rule->n_rules_ok < f->n_rules_ok)
+			continue;
+
+		re_cancel();
+	}
 }
 
 
@@ -451,6 +546,8 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		re_cancel();
 		return;
 	}
+
+	process_rules(ag, ev, prm);
 
  out:
 	if (err) {
