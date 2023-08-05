@@ -46,7 +46,6 @@ struct cancel_rule {
 	unsigned n_video_estab;
 	unsigned n_offer_cnt;
 	unsigned n_answer_cnt;
-	unsigned n_rules_ok;
 };
 
 
@@ -94,7 +93,6 @@ struct fixture {
 	bool stop_on_audio_video;
 	bool accept_session_updates;
 	struct list rules;
-	unsigned n_rules_ok;
 };
 
 
@@ -277,15 +275,6 @@ static void process_rules(struct agent *ag, enum ua_event ev, const char *prm)
 			info("test: event %s n_video_estab=%u (expected %u)\n",
 			     uag_event_str(ev),
 			     ag->n_video_estab, rule->n_video_estab);
-			continue;
-		}
-
-		++f->n_rules_ok;
-		if (rule->n_rules_ok &&
-		    rule->n_rules_ok < f->n_rules_ok) {
-			info("test: event %s n_rules_ok=%u (expected %u)\n",
-			     uag_event_str(ev),
-			     f->n_rules_ok, rule->n_rules_ok);
 			continue;
 		}
 
