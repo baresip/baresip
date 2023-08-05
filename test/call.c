@@ -172,11 +172,11 @@ struct fixture {
 	} while (0)
 
 
-static struct cancel_rule *fixture_add_rule(struct fixture *f,
-					  enum ua_event ev,
-					  unsigned n_incoming,
-					  unsigned n_progress,
-					  unsigned n_established)
+static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
+						   enum ua_event ev,
+						   unsigned n_incoming,
+						   unsigned n_progress,
+						   unsigned n_established)
 {
 	struct cancel_rule *r = mem_zalloc(sizeof(*r), NULL);
 	if (!r)
@@ -190,6 +190,15 @@ static struct cancel_rule *fixture_add_rule(struct fixture *f,
 	list_append(&f->rules, &r->le, r);
 	return r;
 }
+
+
+#define fixture_cancel_rule(f, ev, n_incoming, n_progress, n_established) \
+	cr = fixture_add_cancel_rule(f, ev, n_incoming, n_progress,	  \
+				     n_established);			  \
+	if (!cr) {							  \
+		err = ENOMEM;						  \
+		goto out;						  \
+	}
 
 
 static const struct list *hdrs;
@@ -1045,13 +1054,14 @@ int test_call_change_videodir(void)
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
 	enum sdp_dir a_video_ldir, a_video_rdir, b_video_ldir, b_video_rdir;
+	struct cancel_rule *cr;
 	int err = 0;
 
 	conf_config()->video.fps = 100;
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init(f);
-	fixture_add_rule(f, UA_EVENT_CALL_PROGRESS, 0, 1, 0);
+	fixture_cancel_rule(f, UA_EVENT_CALL_PROGRESS, 0, 1, 0);
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
@@ -1213,10 +1223,11 @@ int test_call_aulevel(void)
 int test_call_progress(void)
 {
 	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
 	int err = 0;
 
 	fixture_init(f);
-	fixture_add_rule(f, UA_EVENT_CALL_PROGRESS, 0, 1, 0);
+	fixture_cancel_rule(f, UA_EVENT_CALL_PROGRESS, 0, 1, 0);
 
 	f->behaviour = BEHAVIOUR_PROGRESS;
 
