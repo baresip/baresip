@@ -91,7 +91,6 @@ struct fixture {
 	unsigned exp_estab;
 	unsigned exp_closed;
 	bool fail_transfer;
-	bool stop_on_rtp;
 	bool stop_on_audio_video;
 	bool accept_session_updates;
 	struct list rules;
@@ -617,9 +616,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			++ag->n_audio_estab;
 		else if (strstr(prm, "video"))
 			++ag->n_video_estab;
-
-		if (f->stop_on_rtp && ag->peer->n_rtpestab > 0)
-			re_cancel();
 
 		if (f->stop_on_audio_video) {
 
@@ -1418,6 +1414,7 @@ int test_call_format_float(void)
 int test_call_mediaenc(void)
 {
 	struct fixture fix = {0}, *f = &fix;
+	struct cancel_rule *cr;
 	int err = 0;
 
 	err = module_load(".", "srtp");
@@ -1425,6 +1422,8 @@ int test_call_mediaenc(void)
 
 	/* Enable a dummy media encryption protocol */
 	fixture_init_prm(f, ";mediaenc=srtp;ptime=1");
+	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 
 	ASSERT_STREQ("srtp", account_mediaenc(ua_account(f->a.ua)));
 
@@ -1436,7 +1435,6 @@ int test_call_mediaenc(void)
 	f->estab_action = ACTION_NOTHING;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
-	f->stop_on_rtp = true;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
@@ -1477,12 +1475,15 @@ int test_call_mediaenc(void)
 int test_call_medianat(void)
 {
 	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
 	int err;
 
 	mock_mnat_register(baresip_mnatl());
 
 	/* Enable a dummy media NAT-traversal protocol */
 	fixture_init_prm(f, ";medianat=XNAT;ptime=1");
+	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 
 	ASSERT_STREQ("XNAT", account_medianat(ua_account(f->a.ua)));
 
@@ -1492,7 +1493,6 @@ int test_call_medianat(void)
 	f->estab_action = ACTION_NOTHING;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
-	f->stop_on_rtp = true;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
@@ -2013,6 +2013,7 @@ int test_call_webrtc(void)
 static int test_call_bundle_base(bool use_mnat, bool use_menc)
 {
 	struct fixture fix = {0}, *f = &fix;
+	struct cancel_rule *cr;
 	struct vidisp *vidisp = NULL;
 	struct mbuf *sdp = NULL;
 	struct call *callv[2];
@@ -2054,10 +2055,11 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 		fixture_init_prm(f, "");
 	}
 
+	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+
 	f->estab_action = ACTION_NOTHING;
 	f->behaviour = BEHAVIOUR_ANSWER;
-
-	f->stop_on_rtp = true;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
@@ -2194,6 +2196,7 @@ static bool find_ipv6ll(const char *ifname, const struct sa *sa, void *arg)
 int test_call_ipv6ll(void)
 {
 	struct fixture fix = {0}, *f = &fix;
+	struct cancel_rule *cr;
 	struct network *net = baresip_network();
 	struct sa ipv6ll;
 	bool found;
@@ -2210,10 +2213,11 @@ int test_call_ipv6ll(void)
 	TEST_ERR(err);
 
 	fixture_init(f);
+	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
-	f->stop_on_rtp = true;
 	found = net_laddr_apply(net, find_ipv6ll, &ipv6ll);
 	ASSERT_TRUE(found);
 
