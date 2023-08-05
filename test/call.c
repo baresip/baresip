@@ -46,6 +46,9 @@ struct cancel_rule {
 	unsigned n_video_estab;
 	unsigned n_offer_cnt;
 	unsigned n_answer_cnt;
+
+	struct cancel_rule *cr_and;
+	bool met;
 };
 
 
@@ -89,7 +92,6 @@ struct fixture {
 	unsigned exp_closed;
 	bool fail_transfer;
 	bool stop_on_rtp;
-	bool stop_on_rtcp;
 	bool stop_on_audio_video;
 	bool accept_session_updates;
 	struct list rules;
@@ -170,6 +172,14 @@ struct fixture {
 	} while (0)
 
 
+static void cancel_rule_destructor(void *arg)
+{
+	struct cancel_rule *r = arg;
+
+	mem_deref(r->cr_and);
+}
+
+
 static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
 						   enum ua_event ev,
 						   struct ua *ua,
@@ -177,7 +187,7 @@ static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
 						   unsigned n_progress,
 						   unsigned n_established)
 {
-	struct cancel_rule *r = mem_zalloc(sizeof(*r), NULL);
+	struct cancel_rule *r = mem_zalloc(sizeof(*r), cancel_rule_destructor);
 	if (!r)
 		return NULL;
 
@@ -191,10 +201,49 @@ static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
 	return r;
 }
 
+static struct cancel_rule *cancel_rule_add_and(struct cancel_rule *cr,
+						   enum ua_event ev,
+						   struct ua *ua,
+						   unsigned n_incoming,
+						   unsigned n_progress,
+						   unsigned n_established)
+{
+	struct cancel_rule *r = mem_zalloc(sizeof(*r), cancel_rule_destructor);
+	if (!r)
+		return NULL;
+
+	r->ev = ev;
+	r->ua = ua;
+	r->n_incoming    = n_incoming;
+	r->n_progress    = n_progress;
+	r->n_established = n_established;
+
+	cr->cr_and = r;
+	return r;
+}
+
+
+static void cancel_rule_reset(struct cancel_rule *cr)
+{
+	cr->met = false;
+
+	if (cr->cr_and)
+		cancel_rule_reset(cr->cr_and);
+}
+
 
 #define cancel_rule_new(ev, ua, n_incoming, n_progress, n_established)    \
 	cr = fixture_add_cancel_rule(f, ev, ua, n_incoming, n_progress,   \
 				     n_established);			  \
+	if (!cr) {							  \
+		err = ENOMEM;						  \
+		goto out;						  \
+	}
+
+
+#define cancel_rule_and(ev, ua, n_incoming, n_progress, n_established)	  \
+	cr = cancel_rule_add_and(cr, ev, ua, n_incoming, n_progress,	  \
+				 n_established);			  \
 	if (!cr) {							  \
 		err = ENOMEM;						  \
 		goto out;						  \
@@ -213,90 +262,112 @@ static bool agent_audio_video_estab(const struct agent *ag)
 }
 
 
+static bool check_rule(struct cancel_rule *rule, int met_prev,
+		       struct agent *ag, enum ua_event ev, const char *prm)
+{
+	bool met_next = true;
+	if (rule->cr_and) {
+		met_next = check_rule(rule->cr_and, rule->met && met_prev, ag,
+				      ev, prm);
+	}
+
+	if (rule->met)
+		goto out;
+
+	if (ev != rule->ev)
+		return false;
+
+	if (str_isset(rule->prm) &&
+	    str_casecmp(prm, rule->prm)) {
+		info("test: event %s prm=%s (expected %s)\n",
+		     uag_event_str(ev), prm, rule->prm);
+		return false;
+	}
+
+	if (rule->ua &&
+	    ag->ua != rule->ua) {
+		info("test: event %s ua=[%s] (expected [%s]\n",
+		     uag_event_str(ev),
+		     account_aor(ua_account(ag->ua)),
+		     account_aor(ua_account(rule->ua)));
+		return false;
+	}
+
+	if (rule->n_incoming &&
+	    ag->n_incoming != rule->n_incoming) {
+		info("test: event %s n_incoming=%u (expected %u)\n",
+		     uag_event_str(ev),
+		     ag->n_incoming, rule->n_incoming);
+		return false;
+	}
+
+	if (rule->n_progress &&
+	    ag->n_progress != rule->n_progress) {
+		info("test: event %s n_progress=%u (expected %u)\n",
+		     uag_event_str(ev),
+		     ag->n_progress, rule->n_progress);
+		return false;
+	}
+
+	if (rule->n_established &&
+	    ag->n_established != rule->n_established) {
+		info("test: event %s n_established=%u (expected %u)\n",
+		     uag_event_str(ev),
+		     ag->n_established, rule->n_established);
+		return false;
+	}
+
+	if (rule->n_audio_estab &&
+	    ag->n_audio_estab != rule->n_audio_estab) {
+		info("test: event %s n_audio_estab=%u (expected %u)\n",
+		     uag_event_str(ev),
+		     ag->n_audio_estab, rule->n_audio_estab);
+		return false;
+	}
+
+	if (rule->n_video_estab &&
+	    ag->n_video_estab != rule->n_video_estab) {
+		info("test: event %s n_video_estab=%u (expected %u)\n",
+		     uag_event_str(ev),
+		     ag->n_video_estab, rule->n_video_estab);
+		return false;
+	}
+
+	if (rule->n_offer_cnt &&
+	    ag->n_offer_cnt != rule->n_offer_cnt) {
+		info("test: event %s n_offer_cnt=%u (expected %u)\n",
+		     uag_event_str(ev),
+		     ag->n_offer_cnt, rule->n_offer_cnt);
+		return false;
+	}
+
+	if (rule->n_answer_cnt &&
+	    ag->n_answer_cnt != rule->n_answer_cnt) {
+		info("test: event %s n_answer_cnt=%u (expected %u)\n",
+		     uag_event_str(ev),
+		     ag->n_answer_cnt, rule->n_answer_cnt);
+		return false;
+	}
+
+	rule->met = true;
+out:
+
+	if (met_prev && met_next) {
+		re_cancel();
+		cancel_rule_reset(rule);
+	}
+
+	return met_next;
+}
+
+
 static void process_rules(struct agent *ag, enum ua_event ev, const char *prm)
 {
 	struct fixture *f = ag->fix;
 	struct le *le;
 
 	LIST_FOREACH(&f->rules, le) {
-		struct cancel_rule *rule = le->data;
-
-		if (ev != rule->ev)
-			continue;
-
-		if (str_isset(rule->prm) &&
-		    str_casecmp(prm, rule->prm)) {
-			info("test: event %s prm=%s (expected %s)\n",
-			     uag_event_str(ev), prm, rule->prm);
-			continue;
-		}
-
-		if (rule->ua &&
-		    ag->ua != rule->ua) {
-			info("test: event %s ua=[%s] (expected [%s]\n",
-			     uag_event_str(ev),
-			     account_aor(ua_account(ag->ua)),
-			     account_aor(ua_account(rule->ua)));
-			continue;
-		}
-
-		if (rule->n_incoming &&
-		    ag->n_incoming != rule->n_incoming) {
-			info("test: event %s n_incoming=%u (expected %u)\n",
-			     uag_event_str(ev),
-			     ag->n_incoming, rule->n_incoming);
-			continue;
-		}
-
-		if (rule->n_progress &&
-		    ag->n_progress != rule->n_progress) {
-			info("test: event %s n_progress=%u (expected %u)\n",
-			     uag_event_str(ev),
-			     ag->n_progress, rule->n_progress);
-			continue;
-		}
-
-		if (rule->n_established &&
-		    ag->n_established != rule->n_established) {
-			info("test: event %s n_established=%u (expected %u)\n",
-			     uag_event_str(ev),
-			     ag->n_established, rule->n_established);
-			continue;
-		}
-
-		if (rule->n_audio_estab &&
-		    ag->n_audio_estab != rule->n_audio_estab) {
-			info("test: event %s n_audio_estab=%u (expected %u)\n",
-			     uag_event_str(ev),
-			     ag->n_audio_estab, rule->n_audio_estab);
-			continue;
-		}
-
-		if (rule->n_video_estab &&
-		    ag->n_video_estab != rule->n_video_estab) {
-			info("test: event %s n_video_estab=%u (expected %u)\n",
-			     uag_event_str(ev),
-			     ag->n_video_estab, rule->n_video_estab);
-			continue;
-		}
-
-		if (rule->n_offer_cnt &&
-		    ag->n_offer_cnt != rule->n_offer_cnt) {
-			info("test: event %s n_offer_cnt=%u (expected %u)\n",
-			     uag_event_str(ev),
-			     ag->n_offer_cnt, rule->n_offer_cnt);
-			continue;
-		}
-
-		if (rule->n_answer_cnt &&
-		    ag->n_answer_cnt != rule->n_answer_cnt) {
-			info("test: event %s n_answer_cnt=%u (expected %u)\n",
-			     uag_event_str(ev),
-			     ag->n_answer_cnt, rule->n_answer_cnt);
-			continue;
-		}
-
-		re_cancel();
+		check_rule(le->data, true, ag, ev, prm);
 	}
 }
 
@@ -563,8 +634,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_RTCP:
 		++ag->n_rtcp;
 
-		if (f->stop_on_rtcp && ag->peer->n_rtcp > 0)
-			re_cancel();
 		break;
 
 	default:
@@ -1786,9 +1855,11 @@ static int test_call_rtcp_base(bool rtcp_mux)
 
 	cancel_rule_new(UA_EVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
 
+	cancel_rule_new(UA_EVENT_CALL_RTCP, f->b.ua, 1, 0, 0);
+	cancel_rule_and(UA_EVENT_CALL_RTCP, f->a.ua, 0, 0, 0);
+
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
-	f->stop_on_rtcp = true;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
