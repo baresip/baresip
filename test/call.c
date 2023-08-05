@@ -328,7 +328,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_PROGRESS:
 		++ag->n_progress;
 
-		re_cancel();
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
@@ -1020,6 +1019,7 @@ int test_call_change_videodir(void)
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init(f);
+	fixture_add_rule(f, UA_EVENT_CALL_PROGRESS, 0, 1, 0);
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
@@ -1184,6 +1184,7 @@ int test_call_progress(void)
 	int err = 0;
 
 	fixture_init(f);
+	fixture_add_rule(f, UA_EVENT_CALL_PROGRESS, 0, 1, 0);
 
 	f->behaviour = BEHAVIOUR_PROGRESS;
 
