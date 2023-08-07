@@ -1116,7 +1116,7 @@ int test_call_change_videodir(void)
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
 	struct sdp_media *vm;
-	struct cancel_rule *cr, *cr_rtcp;
+	struct cancel_rule *cr, *cr_vida, *cr_vidb;
 	int err = 0;
 
 	conf_config()->video.fps = 100;
@@ -1124,8 +1124,14 @@ int test_call_change_videodir(void)
 
 	fixture_init(f);
 	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
-	cr_rtcp = cancel_rule_new(UA_EVENT_CALL_RTCP, f->b.ua, 1, 0, 1);
-	cr_rtcp->prm = "video";
+
+	cr_vidb = cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cr_vidb->prm = "vidframe";
+	cr_vidb->n_vidframe = 3;
+	cr_vida = cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cr_vida->prm = "vidframe";
+	cr_vida->n_vidframe = 3;
+
 	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
 	cr->n_offer_cnt = 1;
 
@@ -1154,7 +1160,7 @@ int test_call_change_videodir(void)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	/* wait for CALL_RTCP at callee */
+	/* wait for video frames */
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
@@ -1162,6 +1168,8 @@ int test_call_change_videodir(void)
 	/* verify that video was enabled and bi-directional */
 	ASSERT_EQ(1, fix.a.n_established);
 	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_TRUE(fix.a.n_vidframe >= 3);
+	ASSERT_TRUE(fix.b.n_vidframe >= 3);
 
 	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
@@ -1194,7 +1202,9 @@ int test_call_change_videodir(void)
 	/* Set video sendrecv */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
 	TEST_ERR(err);
-	cr_rtcp->n_offer_cnt = 2;
+	cr_vidb->n_offer_cnt = 2;
+	cr_vidb->n_vidframe = 6;
+	cr_vida->n_vidframe = 6;
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
