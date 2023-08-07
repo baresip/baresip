@@ -172,6 +172,7 @@ struct fixture {
 
 static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
 						   enum ua_event ev,
+						   struct ua *ua,
 						   unsigned n_incoming,
 						   unsigned n_progress,
 						   unsigned n_established)
@@ -181,6 +182,7 @@ static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
 		return NULL;
 
 	r->ev = ev;
+	r->ua = ua;
 	r->n_incoming    = n_incoming;
 	r->n_progress    = n_progress;
 	r->n_established = n_established;
@@ -190,8 +192,8 @@ static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
 }
 
 
-#define fixture_cancel_rule(f, ev, n_incoming, n_progress, n_established) \
-	cr = fixture_add_cancel_rule(f, ev, n_incoming, n_progress,	  \
+#define cancel_rule_new(ev, ua, n_incoming, n_progress, n_established)    \
+	cr = fixture_add_cancel_rule(f, ev, ua, n_incoming, n_progress,   \
 				     n_established);			  \
 	if (!cr) {							  \
 		err = ENOMEM;						  \
@@ -1050,7 +1052,7 @@ int test_call_change_videodir(void)
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init(f);
-	fixture_cancel_rule(f, UA_EVENT_CALL_PROGRESS, 0, 1, 0);
+	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
@@ -1216,7 +1218,7 @@ int test_call_progress(void)
 	int err = 0;
 
 	fixture_init(f);
-	fixture_cancel_rule(f, UA_EVENT_CALL_PROGRESS, 0, 1, 0);
+	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
 	f->behaviour = BEHAVIOUR_PROGRESS;
 
