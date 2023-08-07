@@ -20,6 +20,7 @@ enum behaviour {
 	BEHAVIOUR_PROGRESS,
 	BEHAVIOUR_REJECT,
 	BEHAVIOUR_GET_HDRS,
+	BEHAVIOUR_NOTHING,
 };
 
 enum action {
@@ -1186,7 +1187,7 @@ int test_call_change_videodir(void)
 
 	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 1);
 	cr->prm = "answer";
 
 	/* Set video inactive */
@@ -1264,7 +1265,7 @@ int test_call_100rel_video(void)
 	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
-	f->behaviour = BEHAVIOUR_PROGRESS;
+	f->behaviour = BEHAVIOUR_NOTHING;
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
@@ -1279,7 +1280,7 @@ int test_call_100rel_video(void)
 	/* switch off early video */
 	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 0);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 0);
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 0);
 	cr->prm = "answer";
 
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
