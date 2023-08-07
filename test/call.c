@@ -1194,9 +1194,6 @@ int test_call_change_videodir(void)
 	cr_vida->prm = "vidframe";
 	cr_vida->n_vidframe = 3;
 
-	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
-	cr->n_offer_cnt = 1;
-
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
 
@@ -1244,18 +1241,25 @@ int test_call_change_videodir(void)
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
 
+	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->prm = "offer";
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cr->prm = "answer";
+
 	/* Set video inactive */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
 	TEST_ERR(err);
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
+	TEST_ERR(fix.err);
+	cancel_rule_pop();
 
-	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
+	ASSERT_TRUE(!call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
 
 	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->a.ua))));
 	ASSERT_EQ(SDP_INACTIVE, sdp_media_ldir(vm));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(vm));
 
 	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->b.ua))));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
@@ -1264,9 +1268,8 @@ int test_call_change_videodir(void)
 	/* Set video sendrecv */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
 	TEST_ERR(err);
-	cr_vidb->n_offer_cnt = 2;
-	cr_vidb->n_vidframe = 6;
-	cr_vida->n_vidframe = 6;
+	f->a.n_vidframe = 0;
+	f->b.n_vidframe = 0;
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
