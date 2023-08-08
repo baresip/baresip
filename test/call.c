@@ -48,6 +48,7 @@ struct cancel_rule {
 	unsigned n_offer_cnt;
 	unsigned n_answer_cnt;
 	unsigned n_vidframe;
+	unsigned n_auframe;
 
 	struct cancel_rule *cr_and;
 	bool met;
@@ -76,6 +77,7 @@ struct agent {
 	unsigned n_offer_cnt;
 	unsigned n_answer_cnt;
 	unsigned n_vidframe;
+	unsigned n_auframe;
 };
 
 
@@ -202,6 +204,7 @@ static struct cancel_rule *cancel_rule_alloc(enum ua_event ev,
 	r->n_offer_cnt   = (unsigned) -1;
 	r->n_answer_cnt  = (unsigned) -1;
 	r->n_vidframe    = (unsigned) -1;
+	r->n_auframe     = (unsigned) -1;
 	return r;
 }
 
@@ -1339,12 +1342,11 @@ int test_call_100rel_video(void)
 }
 
 
-static void mock_sample_handler(const void *sampv, size_t sampc, void *arg)
+static void mock_sample_handler(struct auframe *af, void *arg)
 {
 	struct fixture *fix = arg;
 	bool got_aulevel;
-	(void)sampv;
-	(void)sampc;
+	(void)af;
 
 	got_aulevel =
 		0 == audio_level_get(call_audio(ua_call(fix->a.ua)), NULL) &&
@@ -1442,24 +1444,38 @@ int test_call_progress(void)
 }
 
 
-static void audio_sample_handler(const void *sampv, size_t sampc, void *arg)
+static void audio_sample_handler(struct auframe *af, void *arg)
 {
 	struct fixture *fix = arg;
+	uint32_t   ptime;
+	struct agent *ag = NULL;
+	struct ua *ua;
 	int err = 0;
-	(void)sampv;
-	(void)sampc;
 
 	ASSERT_EQ(MAGIC, fix->magic);
 
-	/* Wait until the call is established and the incoming
-	 * audio samples are successfully decoded.
-	 */
-	if (sampc && fix->a.n_established && fix->b.n_established &&
-	    audio_rxaubuf_started(call_audio(ua_call(fix->a.ua))) &&
-	    audio_rxaubuf_started(call_audio(ua_call(fix->b.ua)))
-	    ) {
-		re_cancel();
+	ptime = af->sampc * 1000 / af->srate;
+	if (ptime == 1) {
+		ag = &fix->a;
 	}
+	else if (ptime == 2) {
+		ag = &fix->b;
+	}
+	else {
+		warning("test: received audio frame - agent unclear\n");
+		return;
+	}
+
+	ua = ag->ua;
+	/* Does auframe come from the decoder ? */
+	if (!audio_rxaubuf_started(call_audio(ua_call(ua)))) {
+		info("test: received audio frame not from decoder yet\n");
+		return;
+	}
+
+	++ag->n_auframe;
+	ua_event(ua, UA_EVENT_CUSTOM, ua_call(ua), "auframe %u",
+		 ag->n_auframe);
 
  out:
 	if (err)
@@ -1470,15 +1486,25 @@ static void audio_sample_handler(const void *sampv, size_t sampc, void *arg)
 static int test_media_base(enum audio_mode txmode)
 {
 	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
 	struct auplay *auplay = NULL;
 	int err = 0;
 
 	fixture_init_prm(f, ";ptime=1");
+	mem_deref(f->b.ua);
+	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>;regint=0;ptime=2");
+	TEST_ERR(err);
 
 	conf_config()->audio.txmode = txmode;
-
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
+
+	cancel_rule_new(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cr->prm = "auframe";
+	cr->n_auframe = 3;
+	cancel_rule_and(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cr->prm = "auframe";
+	cr->n_auframe = 3;
 
 	err = module_load(".", "ausine");
 	TEST_ERR(err);
@@ -1495,7 +1521,7 @@ static int test_media_base(enum audio_mode txmode)
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(15000);
+	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -1528,6 +1554,9 @@ int test_call_format_float(void)
 	int err;
 
 	err = test_media_base(AUDIO_MODE_POLL);
+	ASSERT_EQ(0, err);
+
+	err = test_media_base(AUDIO_MODE_THREAD);
 	ASSERT_EQ(0, err);
 
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
