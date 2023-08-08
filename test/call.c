@@ -1445,6 +1445,114 @@ int test_call_aulevel(void)
 }
 
 
+static int test_100rel_audio_base(enum audio_mode txmode)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	struct auplay *auplay = NULL;
+	int err = 0;
+
+	fixture_init_prm(f, ";ptime=1;100rel=yes");
+	mem_deref(f->b.ua);
+	err = ua_alloc(&f->b.ua,
+		       "B <sip:b@127.0.0.1>;regint=0;ptime=2;answermode=early;"
+		       "100rel=yes");
+	TEST_ERR(err);
+	conf_config()->audio.txmode = txmode;
+
+	cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 0);
+	cr->prm = "auframe";
+	cr->n_auframe = 3;
+	cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 1, 0);
+	cr->prm = "auframe";
+	cr->n_auframe = 3;
+
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+	err = mock_auplay_register(&auplay, baresip_auplayl(),
+				   auframe_handler, f);
+	TEST_ERR(err);
+
+	f->behaviour = BEHAVIOUR_NOTHING;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* wait for audio frames */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* switch off early audio */
+	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 0);
+	cr->prm = "offer";
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 0);
+	cr->prm = "answer";
+
+	err = call_set_media_direction(ua_call(f->a.ua), SDP_INACTIVE,
+				       SDP_INACTIVE);
+	TEST_ERR(err);
+	err = call_modify(ua_call(f->a.ua));
+	TEST_ERR(err);
+
+	/* wait for remote SDP at both UAs */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+	cancel_rule_pop();
+
+	struct sdp_media *am;
+	am = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_ldir(am));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(am));
+
+	am = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(am));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(am));
+	ASSERT_TRUE(call_refresh_allowed(ua_call(f->a.ua)));
+
+	f->a.n_auframe=0;
+	f->b.n_auframe=0;
+	err = call_set_media_direction(ua_call(f->a.ua), SDP_SENDRECV,
+				       SDP_INACTIVE);
+	TEST_ERR(err);
+	err = call_modify(ua_call(f->a.ua));
+	TEST_ERR(err);
+
+	/* wait for audio frames */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+	ASSERT_TRUE(fix.a.n_auframe >= 3);
+	ASSERT_TRUE(fix.b.n_auframe >= 3);
+ out:
+	fixture_close(f);
+	mem_deref(auplay);
+	module_unload("ausine");
+
+	return err;
+}
+
+
+int test_call_100rel_audio(void)
+{
+	int err;
+
+	err = test_100rel_audio_base(AUDIO_MODE_POLL);
+	ASSERT_EQ(0, err);
+
+	err = test_100rel_audio_base(AUDIO_MODE_THREAD);
+	ASSERT_EQ(0, err);
+
+	conf_config()->audio.txmode = AUDIO_MODE_POLL;
+
+ out:
+	return err;
+}
+
+
 int test_call_progress(void)
 {
 	struct fixture fix, *f = &fix;

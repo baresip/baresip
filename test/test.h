@@ -218,6 +218,7 @@ int test_call_change_videodir(void);
 int test_call_webrtc(void);
 int test_call_bundle(void);
 int test_call_ipv6ll(void);
+int test_call_100rel_audio(void);
 int test_call_100rel_video(void);
 int test_cmd(void);
 int test_cmd_long(void);
