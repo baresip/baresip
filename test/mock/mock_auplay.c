@@ -49,7 +49,7 @@ static void tmr_handler(void *arg)
 
 	/* feed the audio-samples back to the test */
 	if (mock.sampleh)
-		mock.sampleh(st->sampv, st->sampc, mock.arg);
+		mock.sampleh(&af, mock.arg);
 }
 
 
