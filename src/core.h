@@ -314,6 +314,8 @@ struct bundle *stream_bundle(const struct stream *strm);
 void stream_parse_mid(struct stream *strm);
 void stream_enable_bundle(struct stream *strm, enum bundle_state st);
 void stream_enable_natpinhole(struct stream *strm, bool enable);
+void stream_open_natpinhole(struct stream *strm);
+void stream_stop_natpinhole(struct stream *strm);
 
 
 /*
