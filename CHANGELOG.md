@@ -5,6 +5,29 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.4.0 - 2023-08-09
+
+## What's Changed
+* tools: add adaptive aubuf plot generation by @cspiel1 in https://github.com/baresip/baresip/pull/2641
+* webrtc: add media track sdp direction by @sreimers in https://github.com/baresip/baresip/pull/2636
+* webrtc: remove G711 module by @alfredh in https://github.com/baresip/baresip/pull/2643
+* cmake: fix default path in FindAMR.cmake by @cspiel1 in https://github.com/baresip/baresip/pull/2644
+* cmake: FindPNG.cmake - correct else path for PNG_FOUND by @cspiel1 in https://github.com/baresip/baresip/pull/2645
+* webrtc: fix format and minor improvements by @alfredh in https://github.com/baresip/baresip/pull/2647
+* cmake: add /usr/lib{64,}/glib-2.0 to FindGST.cmake by @robert-scheck in https://github.com/baresip/baresip/pull/2648
+* ci/mingw: downgrade cmake by @sreimers in https://github.com/baresip/baresip/pull/2656
+* call: logic fix in call_modify. remove call->sent_answer = false by @cHuberCoffee in https://github.com/baresip/baresip/pull/2655
+* cmake/modules: fix ffmpeg static linking order by @sreimers in https://github.com/baresip/baresip/pull/2659
+* webrtc: use 640x480 resolution for both sending and receiving by @alfredh in https://github.com/baresip/baresip/pull/2658
+* readme: update list of RFCs by @alfredh in https://github.com/baresip/baresip/pull/2657
+* test/cmake: list source files in alphabetical order by @alfredh in https://github.com/baresip/baresip/pull/2661
+* test: fix typo in call test by @cspiel1 in https://github.com/baresip/baresip/pull/2666
+* video,stream: stop natpinhole timer on re-invite by @cspiel1 in https://github.com/baresip/baresip/pull/2665
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.3.0...v3.4.0
+
+
 ## 3.3.0 - 2023-07-05
 
 ## What's Changed
