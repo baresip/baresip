@@ -58,7 +58,7 @@ struct call {
 	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool answered;            /**< True if call has been answered       */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
-	bool sent_answer;         /**< Sent an SDP Answer to Peer           */
+	bool sent_answer;         /**< Sent SDP Answer already              */
 	bool on_hold;             /**< True if call is on hold (local)      */
 	bool ans_queued;          /**< True if an (auto) answer is queued   */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
@@ -1402,8 +1402,8 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 				"Allow: %H\r\n"
 				"%H", ua_print_allowed, call->ua,
 				ua_print_supported, call->ua);
-		if (!err)
-			call->sent_answer = call->got_offer;
+		if (!err && call->got_offer)
+			call->sent_answer = true;
 	}
 	else {
 		err = sipsess_answer(call->sess, scode, "Answering", desc,
@@ -1822,7 +1822,6 @@ static int sipsess_offer_handler(struct mbuf **descp,
 	if (got_offer) {
 
 		call->got_offer = true;
-		call->sent_answer = false;
 
 		/* Decode SDP Offer */
 		err = sdp_decode(call->sdp, msg->mb, true);
