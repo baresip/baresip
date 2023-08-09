@@ -1833,6 +1833,38 @@ void video_set_devicename(struct video *v, const char *src, const char *disp)
 
 
 /**
+ * Get the device name of video source
+ *
+ * @param v    Video object
+ *
+ * @return Video source device name, otherwise NULL
+ */
+const char *video_get_src_dev(const struct video *v)
+{
+	if (!v)
+		return NULL;
+
+	return v->vtx.device;
+}
+
+
+/**
+ * Get the device name of video display
+ *
+ * @param v    Video object
+ *
+ * @return Video display device name, otherwise NULL
+ */
+const char *video_get_disp_dev(const struct video *v)
+{
+	if (!v)
+		return NULL;
+
+	return v->vrx.device;
+}
+
+
+/**
  * Get video codec of video stream
  *
  * @param vid Video object
