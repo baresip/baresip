@@ -31,6 +31,24 @@ enum action {
 	ACTION_ATT_TRANSFER,
 };
 
+
+struct cancel_rule {
+	struct le le;
+
+	enum ua_event ev;
+	const char *prm;
+	struct ua *ua;
+
+	unsigned n_incoming;
+	unsigned n_progress;
+	unsigned n_established;
+	unsigned n_audio_estab;
+	unsigned n_video_estab;
+	unsigned n_offer_cnt;
+	unsigned n_answer_cnt;
+};
+
+
 struct agent {
 	struct fixture *fix;    /* pointer to parent */
 	struct agent *peer;
@@ -50,7 +68,10 @@ struct agent {
 	unsigned n_rtcp;
 	unsigned n_audio_estab;
 	unsigned n_video_estab;
+	unsigned n_offer_cnt;
+	unsigned n_answer_cnt;
 };
+
 
 struct fixture {
 	uint32_t magic;
@@ -71,6 +92,7 @@ struct fixture {
 	bool stop_on_rtcp;
 	bool stop_on_audio_video;
 	bool accept_session_updates;
+	struct list rules;
 };
 
 
@@ -138,13 +160,46 @@ struct fixture {
 	uag_event_unregister(event_handler);	\
 						\
 	ua_stop_all(true);			\
-	ua_close();
+	ua_close();				\
+	list_flush(&f->rules);
 
 #define fixture_abort(f, error)			\
 	do {					\
 		(f)->err = (error);		\
 		re_cancel();			\
 	} while (0)
+
+
+static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
+						   enum ua_event ev,
+						   struct ua *ua,
+						   unsigned n_incoming,
+						   unsigned n_progress,
+						   unsigned n_established)
+{
+	struct cancel_rule *r = mem_zalloc(sizeof(*r), NULL);
+	if (!r)
+		return NULL;
+
+	r->ev = ev;
+	r->ua = ua;
+	r->n_incoming    = n_incoming;
+	r->n_progress    = n_progress;
+	r->n_established = n_established;
+
+	list_append(&f->rules, &r->le, r);
+	return r;
+}
+
+
+#define cancel_rule_new(ev, ua, n_incoming, n_progress, n_established)    \
+	cr = fixture_add_cancel_rule(f, ev, ua, n_incoming, n_progress,   \
+				     n_established);			  \
+	if (!cr) {							  \
+		err = ENOMEM;						  \
+		goto out;						  \
+	}
+
 
 static const struct list *hdrs;
 
@@ -155,6 +210,78 @@ static const char dtmf_digits[] = "123";
 static bool agent_audio_video_estab(const struct agent *ag)
 {
 	return ag->n_audio_estab > 0 && ag->n_video_estab > 0;
+}
+
+
+static void process_rules(struct agent *ag, enum ua_event ev, const char *prm)
+{
+	struct fixture *f = ag->fix;
+	struct le *le;
+
+	LIST_FOREACH(&f->rules, le) {
+		struct cancel_rule *rule = le->data;
+
+		if (ev != rule->ev)
+			continue;
+
+		if (str_isset(rule->prm) &&
+		    str_casecmp(prm, rule->prm)) {
+			info("test: event %s prm=%s (expected %s)\n",
+			     uag_event_str(ev), prm, rule->prm);
+			continue;
+		}
+
+		if (rule->ua &&
+		    ag->ua != rule->ua) {
+			info("test: event %s ua=[%s] (expected [%s]\n",
+			     uag_event_str(ev),
+			     account_aor(ua_account(ag->ua)),
+			     account_aor(ua_account(rule->ua)));
+			continue;
+		}
+
+		if (rule->n_incoming &&
+		    ag->n_incoming != rule->n_incoming) {
+			info("test: event %s n_incoming=%u (expected %u)\n",
+			     uag_event_str(ev),
+			     ag->n_incoming, rule->n_incoming);
+			continue;
+		}
+
+		if (rule->n_progress &&
+		    ag->n_progress != rule->n_progress) {
+			info("test: event %s n_progress=%u (expected %u)\n",
+			     uag_event_str(ev),
+			     ag->n_progress, rule->n_progress);
+			continue;
+		}
+
+		if (rule->n_established &&
+		    ag->n_established != rule->n_established) {
+			info("test: event %s n_established=%u (expected %u)\n",
+			     uag_event_str(ev),
+			     ag->n_established, rule->n_established);
+			continue;
+		}
+
+		if (rule->n_audio_estab &&
+		    ag->n_audio_estab != rule->n_audio_estab) {
+			info("test: event %s n_audio_estab=%u (expected %u)\n",
+			     uag_event_str(ev),
+			     ag->n_audio_estab, rule->n_audio_estab);
+			continue;
+		}
+
+		if (rule->n_video_estab &&
+		    ag->n_video_estab != rule->n_video_estab) {
+			info("test: event %s n_video_estab=%u (expected %u)\n",
+			     uag_event_str(ev),
+			     ag->n_video_estab, rule->n_video_estab);
+			continue;
+		}
+
+		re_cancel();
+	}
 }
 
 
@@ -233,7 +360,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_PROGRESS:
 		++ag->n_progress;
 
-		re_cancel();
 		break;
 
 	case UA_EVENT_CALL_ESTABLISHED:
@@ -451,6 +577,8 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		re_cancel();
 		return;
 	}
+
+	process_rules(ag, ev, prm);
 
  out:
 	if (err) {
@@ -917,12 +1045,14 @@ int test_call_change_videodir(void)
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
 	enum sdp_dir a_video_ldir, a_video_rdir, b_video_ldir, b_video_rdir;
+	struct cancel_rule *cr;
 	int err = 0;
 
 	conf_config()->video.fps = 100;
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init(f);
+	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
@@ -1084,9 +1214,11 @@ int test_call_aulevel(void)
 int test_call_progress(void)
 {
 	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
 	int err = 0;
 
 	fixture_init(f);
+	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
 	f->behaviour = BEHAVIOUR_PROGRESS;
 
