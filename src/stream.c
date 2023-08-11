@@ -346,7 +346,6 @@ static int handle_rtp(struct stream *s, const struct rtp_header *hdr,
 		const size_t pos = mb->pos;
 		const size_t end = mb->end;
 		const size_t ext_stop = mb->pos;
-		size_t ext_len;
 		size_t i;
 		int err;
 
@@ -356,7 +355,7 @@ static int handle_rtp(struct stream *s, const struct rtp_header *hdr,
 			goto handler;
 		}
 
-		ext_len = hdr->x.len*sizeof(uint32_t);
+		size_t ext_len = hdr->x.len*sizeof(uint32_t);
 		if (mb->pos < ext_len) {
 			warning("stream: corrupt rtp packet,"
 				" not enough space for rtpext of %zu bytes\n",
