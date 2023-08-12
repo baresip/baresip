@@ -59,13 +59,6 @@ jobs:
         mv openssl-3.0.7 baresip-win32/openssl
         make -j$(nproc) -C baresip-win32 openssl
 
-    - name: "cmake downgrade"
-      run: |
-        curl -sL https://github.com/Kitware/CMake/releases/download/v3.26.4/cmake-3.26.4-linux-x86_64.sh -o cmakeinstall.sh \
-        && chmod +x cmakeinstall.sh \
-        && sudo ./cmakeinstall.sh --prefix=/usr/local --exclude-subdir \
-        && rm cmakeinstall.sh
-
     - name: "build"
       run: make -j$(nproc) -C baresip-win32 baresip
 
