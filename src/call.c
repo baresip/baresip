@@ -2823,7 +2823,7 @@ int call_replace_transfer(struct call *call, struct call *source_call)
 			      sipsess_dialog(call->sess), ua_cuser(call->ua),
 			      auth_handler, call->acc, true,
 			      sipsub_notify_handler, sipsub_close_handler,
-			      call, "Refer-To: %s?Replaces=%s\r\n",
+			      call, "Refer-To: <%s?Replaces=%s>\r\n",
 			      source_call->peer_uri, source_call->id);
 	if (err) {
 		warning("call: sipevent_drefer: %m\n", err);
