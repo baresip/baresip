@@ -553,16 +553,11 @@ int rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx)
 static void destructor(void *arg)
 {
 	struct rtp_receiver *rx = arg;
-	bool join = false;
 
-	mtx_lock(rx->mtx);
 	if (re_atomic_rlx(&rx->run)) {
-		join = true;
 		re_atomic_rlx_set(&rx->run, false);
-	}
-	mtx_unlock(rx->mtx);
-	if (join)
 		thrd_join(rx->thr, NULL);
+	}
 
 	re_thread_async_main_cancel((intptr_t)rx);
 
