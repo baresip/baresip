@@ -326,14 +326,16 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 		return;
 
 	mtx_lock(rx->mtx);
-	if (!rx->enabled)
-		goto unlock;
+	if (!rx->enabled) {
+		mtx_unlock(rx->mtx);
+		return;
+	}
 
 	if (rtp_pt_is_rtcp(hdr->pt)) {
 		debug("stream: drop incoming RTCP packet on RTP port"
 		     " (pt=%u)\n", hdr->pt);
-		err = ENOENT;
-		goto unlock;
+		mtx_unlock(rx->mtx);
+		return;
 	}
 
 	rx->ts_last = tmr_jiffies();
@@ -376,7 +378,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 
 		err = pass_pt_work(rx, hdr->pt, mb);
 		if (err && err != ENODATA)
-			goto out;
+			return;
 	}
 
 	if (rx->jbuf) {
@@ -386,7 +388,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 			jbuf_flush(rx->jbuf);
 
 		if (first && err == ENODATA)
-			goto out;
+			return;
 
 		err = jbuf_put(rx->jbuf, hdr, mb);
 		if (err) {
@@ -406,12 +408,6 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	else {
 		(void)handle_rtp(rx, hdr, mb, 0, false);
 	}
-
-out:
-	return;
-
-unlock:
-	mtx_unlock(rx->mtx);
 }
 
 
