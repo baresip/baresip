@@ -170,6 +170,7 @@ set(SRCS
   src/peerconn.c
   src/play.c
   src/reg.c
+  src/rtprecv.c
   src/rtpstat.c
   src/sdp.c
   src/sipreq.c

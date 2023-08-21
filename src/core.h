@@ -261,7 +261,7 @@ enum media_type {
 };
 
 struct sender;
-struct receiver;
+struct rtp_receiver;
 struct stream;
 struct rtp_header;
 
@@ -316,6 +316,9 @@ void stream_enable_bundle(struct stream *strm, enum bundle_state st);
 void stream_enable_natpinhole(struct stream *strm, bool enable);
 void stream_open_natpinhole(struct stream *strm);
 void stream_stop_natpinhole(struct stream *strm);
+void stream_process_rtcp(struct stream *strm, struct rtcp_msg *msg);
+void stream_mnat_connected(struct stream *strm, const struct sa *raddr1,
+			   const struct sa *raddr2);
 
 
 /*
@@ -451,3 +454,33 @@ struct media_track *mediatrack_lookup_media(const struct list *medial,
 					    struct stream *strm);
 void mediatrack_close(struct media_track *media, int err);
 void mediatrack_sdp_attr_decode(struct media_track *media);
+
+/*
+ * Stream RTP receiver
+ */
+int  rtprecv_alloc(struct rtp_receiver **rxp,
+		   struct stream *strm,
+		   const char *name,
+		   const struct config_avt *cfg,
+		   stream_rtp_h *rtph,
+		   stream_pt_h *pth, void *arg);
+void rtprecv_set_handlers(struct rtp_receiver *rx,
+			  stream_rtpestab_h *rtpestabh, void *arg);
+struct metric *rtprecv_metric(struct rtp_receiver *rx);
+struct jbuf *rtprecv_jbuf(struct rtp_receiver *rx);
+void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
+		    struct mbuf *mb, void *arg);
+void rtprecv_handle_rtcp(const struct sa *src, struct rtcp_msg *msg,
+			 void *arg);
+void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc);
+uint64_t rtprecv_ts_last(struct rtp_receiver *rx);
+void rtprecv_set_ts_last(struct rtp_receiver *rx, uint64_t ts_last);
+void rtprecv_flush(struct rtp_receiver *rx);
+void rtprecv_set_enable(struct rtp_receiver *rx, bool enable);
+int  rtprecv_get_ssrc(struct rtp_receiver *rx, uint32_t *ssrc);
+void rtprecv_enable_mux(struct rtp_receiver *rx, bool enable);
+int  rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx);
+int  rtprecv_start_thread(struct rtp_receiver *rx, struct rtp_sock *rtp);
+void rtprecv_mnat_connected_handler(const struct sa *raddr1,
+				    const struct sa *raddr2, void *arg);
+bool rtprecv_running(const struct rtp_receiver *rx);
