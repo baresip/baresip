@@ -325,6 +325,11 @@ enum audio_mode {
 	AUDIO_MODE_THREAD,           /**< Use dedicated thread          */
 };
 
+/** RTP receive mode */
+enum rtp_receive_mode {
+	RECEIVE_MODE_MAIN = 0,  /**< RTP RX is processed in main thread      */
+	RECEIVE_MODE_THREAD,    /**< RTP RX is processed in separate thread  */
+};
 
 /** SIP User-Agent */
 struct config_sip {
@@ -404,6 +409,7 @@ struct config_avt {
 	bool rtp_stats;         /**< Enable RTP statistics          */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 	bool bundle;            /**< Media Multiplexing (BUNDLE)    */
+	enum rtp_receive_mode rxmode;   /**< RTP RX processing mode */
 };
 
 /** Network Configuration */
@@ -1444,6 +1450,7 @@ int  stream_start_mediaenc(struct stream *strm);
 int  stream_start_rtcp(const struct stream *strm);
 int  stream_enable(struct stream *strm, bool enable);
 int  stream_enable_tx(struct stream *strm, bool enable);
+int  stream_enable_rx(struct stream *strm, bool enable);
 void stream_mnat_attr(struct stream *strm, const char *name,
 		      const char *value);
 void stream_set_session_handlers(struct stream *strm,
