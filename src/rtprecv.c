@@ -5,6 +5,7 @@
  */
 #include <string.h>
 #include <time.h>
+#include <re_atomic.h>
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
@@ -29,7 +30,7 @@ struct rtp_receiver {
 	uint32_t pseq;                 /**< Sequence number for incoming RTP */
 	bool pseq_set;                 /**< True if sequence number is set   */
 	bool rtp_estab;                /**< True if RTP stream established   */
-	bool run;                      /**< True if RX thread is running     */
+	RE_ATOMIC bool run;            /**< True if RX thread is running     */
 	mtx_t *mtx;                    /**< Mutex protects above fields      */
 
 	/* Unprotected data */
@@ -84,7 +85,7 @@ static void pass_rtcp_work(struct rtp_receiver *rx, struct rtcp_msg *msg)
 {
 	struct work *w;
 
-	if (!rx->run) {
+	if (!re_atomic_rlx(&rx->run)) {
 		stream_process_rtcp(rx->strm, msg);
 		return;
 	}
@@ -104,7 +105,7 @@ static int pass_pt_work(struct rtp_receiver *rx, uint8_t pt, struct mbuf *mb)
 {
 	struct work *w;
 
-	if (!rx->run)
+	if (!re_atomic_rlx(&rx->run))
 		return rx->pth(pt, mb, rx->arg);
 
 	w = mem_zalloc(sizeof(*w), work_destructor);
@@ -121,7 +122,7 @@ static void pass_rtpestab_work(struct rtp_receiver *rx)
 {
 	struct work *w;
 
-	if (!rx->run) {
+	if (!re_atomic_rlx(&rx->run)) {
 		rx->rtpestabh(rx->strm, rx->sessarg);
 		return;
 	}
@@ -139,7 +140,7 @@ static void pass_mnat_work(struct rtp_receiver *rx, const struct sa *raddr1,
 {
 	struct work *w;
 
-	if (!rx->run) {
+	if (!re_atomic_rlx(&rx->run)) {
 		stream_mnat_connected(rx->strm, raddr1, raddr2);
 		return;
 	}
@@ -157,12 +158,8 @@ static void pass_mnat_work(struct rtp_receiver *rx, const struct sa *raddr1,
 static void rtprecv_check_stop(void *arg)
 {
 	struct rtp_receiver *rx = arg;
-	bool run;
 
-	mtx_lock(rx->mtx);
-	run = rx->run;
-	mtx_unlock(rx->mtx);
-	if (run)
+	if (re_atomic_rlx(&rx->run))
 		tmr_start(&rx->tmr, 10, rtprecv_check_stop, rx);
 	else
 		re_cancel();
@@ -559,9 +556,9 @@ static void destructor(void *arg)
 	bool join = false;
 
 	mtx_lock(rx->mtx);
-	if (rx->run) {
+	if (re_atomic_rlx(&rx->run)) {
 		join = true;
-		rx->run = false;
+		re_atomic_rlx_set(&rx->run, false);
 	}
 	mtx_unlock(rx->mtx);
 	if (join)
@@ -647,16 +644,16 @@ int rtprecv_start_thread(struct rtp_receiver *rx, struct rtp_sock *rtp)
 	if (!rx || !rtp)
 		return EINVAL;
 
-	if (rx->run)
+	if (re_atomic_rlx(&rx->run))
 		return 0;
 
 	rx->rtp = rtp;
-	rx->run = true;
+	re_atomic_rlx_set(&rx->run, true);
 	err = thread_create_name(&rx->thr,
 				 "RX thread",
 				 rtprecv_thread, rx);
 	if (err) {
-		rx->run = false;
+		re_atomic_rlx_set(&rx->run, false);
 	}
 	else {
 		udp_thread_detach(rtp_sock(rx->rtp));
@@ -672,7 +669,7 @@ bool rtprecv_running(const struct rtp_receiver *rx)
 	if (!rx)
 		return false;
 
-	return rx->run;
+	return re_atomic_rlx(&rx->run);
 }
 
 
