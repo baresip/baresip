@@ -280,6 +280,22 @@ static void process_rules(struct agent *ag, enum ua_event ev, const char *prm)
 			continue;
 		}
 
+		if (rule->n_offer_cnt &&
+		    ag->n_offer_cnt != rule->n_offer_cnt) {
+			info("test: event %s n_offer_cnt=%u (expected %u)\n",
+			     uag_event_str(ev),
+			     ag->n_offer_cnt, rule->n_offer_cnt);
+			continue;
+		}
+
+		if (rule->n_answer_cnt &&
+		    ag->n_answer_cnt != rule->n_answer_cnt) {
+			info("test: event %s n_answer_cnt=%u (expected %u)\n",
+			     uag_event_str(ev),
+			     ag->n_answer_cnt, rule->n_answer_cnt);
+			continue;
+		}
+
 		re_cancel();
 	}
 }
@@ -493,16 +509,13 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		break;
 
 	case UA_EVENT_CALL_REMOTE_SDP:
-		if (f->accept_session_updates &&
-		    call_state(call) == CALL_STATE_ESTABLISHED &&
-		    !call_is_outgoing(call) &&
-		    sdp_media_ldir(stream_sdpmedia(video_strm(call_video(
-				call)))) == SDP_SENDRECV &&
-		    sdp_media_rdir(stream_sdpmedia(video_strm(call_video(
-				call)))) == SDP_INACTIVE) {
-			re_cancel();
-		}
+		if (!str_cmp(prm, "offer"))
+			++ag->n_offer_cnt;
+		else if (!str_cmp(prm, "answer"))
+			++ag->n_answer_cnt;
+
 		break;
+
 	case UA_EVENT_CALL_MENC:
 		++ag->n_mediaenc;
 
@@ -550,20 +563,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 	case UA_EVENT_CALL_RTCP:
 		++ag->n_rtcp;
 
-		if (f->accept_session_updates &&
-		    call_state(call) == CALL_STATE_ESTABLISHED &&
-		    !call_is_outgoing(call) &&
-		    0 == str_casecmp(prm, "video")&&
-		    sdp_media_ldir(stream_sdpmedia(video_strm(call_video(
-				ua_call(f->a.ua))))) == SDP_SENDRECV &&
-		    sdp_media_rdir(stream_sdpmedia(video_strm(call_video(
-				ua_call(f->a.ua))))) == SDP_SENDRECV &&
-		    sdp_media_ldir(stream_sdpmedia(video_strm(call_video(
-				ua_call(f->b.ua))))) == SDP_SENDRECV &&
-		    sdp_media_rdir(stream_sdpmedia(video_strm(call_video(
-				ua_call(f->b.ua))))) == SDP_SENDRECV) {
-			re_cancel();
-		}
 		if (f->stop_on_rtcp && ag->peer->n_rtcp > 0)
 			re_cancel();
 		break;
@@ -1044,8 +1043,8 @@ int test_call_change_videodir(void)
 {
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
-	enum sdp_dir a_video_ldir, a_video_rdir, b_video_ldir, b_video_rdir;
-	struct cancel_rule *cr;
+	struct sdp_media *vm;
+	struct cancel_rule *cr, *cr_rtcp;
 	int err = 0;
 
 	conf_config()->video.fps = 100;
@@ -1053,6 +1052,10 @@ int test_call_change_videodir(void)
 
 	fixture_init(f);
 	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
+	cr_rtcp = cancel_rule_new(UA_EVENT_CALL_RTCP, f->b.ua, 1, 0, 1);
+	cr_rtcp->prm = "video";
+	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->n_offer_cnt = 1;
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
@@ -1071,7 +1074,7 @@ int test_call_change_videodir(void)
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
 	TEST_ERR(err);
 
-	/* run main-loop with timeout, wait for PROGRESS to re_cancel loop */
+	/* wait for CALL_PROGRESS */
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
@@ -1080,17 +1083,25 @@ int test_call_change_videodir(void)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	/* run main-loop with timeout, wait for answer to re_cancel loop */
+	/* wait for CALL_RTCP at callee */
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	/* verify that video was enabled for this call */
+	/* verify that video was enabled and bi-directional */
 	ASSERT_EQ(1, fix.a.n_established);
 	ASSERT_EQ(1, fix.b.n_established);
 
 	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
+
+	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
+
+	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
 
 	/* Set video inactive */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
@@ -1098,43 +1109,34 @@ int test_call_change_videodir(void)
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
-	a_video_ldir = sdp_media_ldir(stream_sdpmedia(
-			video_strm(call_video(ua_call(f->a.ua)))));
-	a_video_rdir = sdp_media_rdir(stream_sdpmedia(
-			video_strm(call_video(ua_call(f->a.ua)))));
-	b_video_ldir = sdp_media_ldir(stream_sdpmedia(
-			video_strm(call_video(ua_call(f->b.ua)))));
-	b_video_rdir = sdp_media_rdir(stream_sdpmedia(
-			video_strm(call_video(ua_call(f->b.ua)))));
-
 	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
-	ASSERT_TRUE(a_video_ldir == SDP_INACTIVE);
-	ASSERT_TRUE(a_video_rdir == SDP_SENDRECV);
-	ASSERT_TRUE(b_video_ldir == SDP_SENDRECV);
-	ASSERT_TRUE(b_video_rdir == SDP_INACTIVE);
+
+	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_ldir(vm));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
+
+	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(vm));
 
 	/* Set video sendrecv */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
 	TEST_ERR(err);
+	cr_rtcp->n_offer_cnt = 2;
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
-	a_video_ldir = sdp_media_ldir(stream_sdpmedia(
-			video_strm(call_video(ua_call(f->a.ua)))));
-	a_video_rdir = sdp_media_rdir(stream_sdpmedia(
-			video_strm(call_video(ua_call(f->a.ua)))));
-	b_video_ldir = sdp_media_ldir(stream_sdpmedia(
-			video_strm(call_video(ua_call(f->b.ua)))));
-	b_video_rdir = sdp_media_rdir(stream_sdpmedia(
-			video_strm(call_video(ua_call(f->b.ua)))));
-
 	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
-	ASSERT_TRUE(a_video_ldir == SDP_SENDRECV);
-	ASSERT_TRUE(a_video_rdir == SDP_SENDRECV);
-	ASSERT_TRUE(b_video_ldir == SDP_SENDRECV);
-	ASSERT_TRUE(b_video_rdir == SDP_SENDRECV);
+
+	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
+
+	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
 
  out:
 	fixture_close(f);
