@@ -286,7 +286,6 @@ static void stream_close(struct stream *strm, int err)
 	strm->rx = mem_deref(strm->rx);
 	if (errorh)
 		errorh(strm, err, strm->sess_arg);
-
 }
 
 
