@@ -11,7 +11,8 @@ struct mqtt {
 	char *subtopic;		/* Topic for subscribe */
 	char *basetopic;	/* Base topic */
 	struct tmr tmr;
-	int fd;
+	re_sock_t fd;
+	struct re_fhs *fhs;
 };
 
 
