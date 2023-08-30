@@ -57,7 +57,7 @@ class ccheck:
         self.funcmap = {
             'c':    [self.check_brackets, self.check_c_preprocessor,
                      self.check_indent_tab, self.check_c11_err_handling,
-                     self.check_list_unlink],
+                     self.check_list_unlink, self.check_pri64],
             'h':    [self.check_brackets, self.check_indent_tab],
             'cpp':  [self.check_brackets, self.check_indent_tab],
             'mk':   [self.check_indent_tab],
@@ -342,6 +342,13 @@ class ccheck:
                 self.error("Use pre-increment: %s" % op)
             else:
                 self.error("Use pre-decrement: %s" % op)
+
+    #
+    # check PRI Macros (not needed)
+    #
+    def check_pri64(self, line, len):
+        if re.search('_printf.*PRI.?64', line):
+            self.error("Use %Lu, %Lx or %Li instead of PRI*64 for [u]int64_t")
 
 
     def process_line(self, line, funcs, ext):
