@@ -34,6 +34,7 @@
 #    ;rwait=90
 #    ;pubint=0 (publishing off)
 #    ;regq=0.5
+#    ;rtcp_mux={yes, no}  # default: no
 #    ;sipnat={outbound}
 #    ;sip_autoredirect={yes, no}  # default: no
 #    ;stunuser=STUN/TURN/ICE-username

@@ -148,8 +148,7 @@ static int media_decode(struct account *acc, const struct pl *prm)
 	err |= param_dstr(&acc->mnatid,   prm, "medianat");
 	err |= param_u32(&acc->ptime,     prm, "ptime");
 	err |= param_bool(&acc->rtcp_mux, prm, "rtcp_mux");
-	acc->pinhole = false;
-	err |= param_bool(&acc->pinhole, &acc->laddr.params, "natpinhole");
+	err |= param_bool(&acc->pinhole, prm,  "natpinhole");
 
 	return err;
 }
@@ -1968,6 +1967,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " prio:         %u\n", acc->prio);
 	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
 	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
+	err |= re_hprintf(pf, " rtcp_mux:     %s\n", acc->rtcp_mux);
 	err |= re_hprintf(pf, " sipnat:       %s\n", acc->sipnat);
 	err |= re_hprintf(pf, " stunuser:     %s\n", acc->stun_user);
 	err |= re_hprintf(pf, " stunserver:   %H\n",
