@@ -1767,13 +1767,19 @@ out:
 }
 
 
-int test_call_rtcp(void)
+static int test_call_rtcp_base(bool rtcp_mux)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
+
 	/* Use a low packet time, so the test completes quickly */
-	fixture_init_prm(f, ";ptime=1");
+	if (rtcp_mux) {
+		fixture_init_prm(f, ";ptime=1;rtcp_mux=yes");
+	}
+	else {
+		fixture_init_prm(f, ";ptime=1");
+	}
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
@@ -1794,6 +1800,17 @@ int test_call_rtcp(void)
 
  out:
 	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_rtcp(void)
+{
+	int err = 0;
+
+	err |= test_call_rtcp_base(false);
+	err |= test_call_rtcp_base(true);
 
 	return err;
 }
