@@ -439,6 +439,14 @@ void rtprecv_mnat_connected_handler(const struct sa *raddr1,
  * functions that run in main thread
  */
 
+void rtprecv_set_socket(struct rtp_receiver *rx, struct rtp_sock *rtp)
+{
+	mtx_lock(rx->mtx);
+	rx->rtp = rtp;
+	mtx_unlock(rx->mtx);
+}
+
+
 void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc)
 {
 	mtx_lock(rx->mtx);
@@ -632,17 +640,16 @@ out:
 }
 
 
-int rtprecv_start_thread(struct rtp_receiver *rx, struct rtp_sock *rtp)
+int rtprecv_start_thread(struct rtp_receiver *rx)
 {
 	int err;
 
-	if (!rx || !rtp)
+	if (!rx)
 		return EINVAL;
 
 	if (re_atomic_rlx(&rx->run))
 		return 0;
 
-	rx->rtp = rtp;
 	re_atomic_rlx_set(&rx->run, true);
 	err = thread_create_name(&rx->thr,
 				 "RX thread",
