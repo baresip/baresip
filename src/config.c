@@ -474,8 +474,11 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_bool(conf, "avt_bundle", &cfg->avt.bundle);
 	if (0 == conf_get(conf, "rtp_rxmode", &rxmode)) {
 
-		if (0 == pl_strcasecmp(&rxmode, "thread"))
+		if (0 == pl_strcasecmp(&rxmode, "thread")) {
 			cfg->avt.rxmode = RECEIVE_MODE_THREAD;
+			warning("rtp_rxmode thread is currently "
+				"experimental\n");
+		}
 	}
 
 	if (err) {
