@@ -1942,7 +1942,6 @@ int test_call_webrtc(void)
 static int test_call_bundle_base(bool use_mnat, bool use_menc)
 {
 	struct fixture fix = {0}, *f = &fix;
-	struct ausrc *ausrc = NULL;
 	struct vidisp *vidisp = NULL;
 	struct mbuf *sdp = NULL;
 	struct call *callv[2];
@@ -2071,7 +2070,6 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	mem_deref(sdp);
 	mem_deref(vidisp);
 	module_unload("fakevideo");
-	mem_deref(ausrc);
 	mock_vidcodec_unregister();
 
 	mock_mnat_unregister();
