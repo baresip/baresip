@@ -227,7 +227,7 @@ int stream_enable_tx(struct stream *strm, bool enable)
 static void stream_start_receiver(void *arg)
 {
 	struct stream *s = arg;
-	rtprecv_start_thread(s->rx, s->rtp);
+	rtprecv_start_thread(s->rx);
 }
 
 
@@ -394,6 +394,7 @@ static int stream_sock_alloc(struct stream *s, int af)
 	else
 		udp_sockbuf_set(rtp_sock(s->rtp), 65536);
 
+	rtprecv_set_socket(s->rx, s->rtp);
 	return 0;
 }
 
