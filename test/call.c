@@ -1770,8 +1770,11 @@ out:
 static int test_call_rtcp_base(bool rtcp_mux)
 {
 	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
 	int err = 0;
 
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
 
 	/* Use a low packet time, so the test completes quickly */
 	if (rtcp_mux) {
@@ -1781,6 +1784,8 @@ static int test_call_rtcp_base(bool rtcp_mux)
 		fixture_init_prm(f, ";ptime=1");
 	}
 
+	cancel_rule_new(UA_EVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
+
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
 	f->stop_on_rtcp = true;
@@ -1789,7 +1794,17 @@ static int test_call_rtcp_base(bool rtcp_mux)
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
-	/* run main-loop with timeout, wait for events */
+	stream_set_rtcp_interval(audio_strm(call_audio(ua_call(f->a.ua))), 1);
+
+	/* wait for UA b ESTABLISHED */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	stream_set_rtcp_interval(audio_strm(call_audio(ua_call(f->b.ua))), 1);
+	stream_start_rtcp(audio_strm(call_audio(ua_call(f->b.ua))));
+
+	/* wait for RTCP on both sides */
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
@@ -1800,6 +1815,7 @@ static int test_call_rtcp_base(bool rtcp_mux)
 
  out:
 	fixture_close(f);
+	module_unload("ausine");
 
 	return err;
 }
