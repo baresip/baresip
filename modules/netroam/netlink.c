@@ -79,8 +79,7 @@ void close_netlink(void)
 	d.changeh = NULL;
 	d.arg     = NULL;
 
-	fd_close(d.fhs);
+	fd_close(&d.fhs);
 	close(d.fd);
 	d.fd = RE_BAD_SOCK;
-	d.fhs = mem_deref(d.fhs);
 }

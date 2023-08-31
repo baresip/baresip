@@ -113,8 +113,7 @@ static void disconnect_callback(struct mosquitto *mosq, void *obj, int rc)
 	if (rc == MOSQ_ERR_NO_CONN) {
 		warning("mqtt: connection lost\n");
 		tmr_cancel(&mqtt->tmr);
-		fd_close(mqtt->fhs);
-		mqtt->fhs = mem_deref(mqtt->fhs);
+		fd_close(&mqtt->fhs);
 		tmr_start(&mqtt->tmr, 1000, tmr_reconnect, mqtt);
 	}
 }
@@ -229,8 +228,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	fd_close(s_mqtt.fhs);
-	s_mqtt.fhs = mem_deref(s_mqtt.fhs);
+	fd_close(&s_mqtt.fhs);
 
 	mqtt_publish_close();
 
