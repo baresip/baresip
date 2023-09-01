@@ -35,6 +35,9 @@ const pc_configuration = {
 
 	iceTransportPolicy: 'all',
 
+	/* default on Firefox/Chrome but needed by Safari */
+	rtcpMuxPolicy: 'require' 
+
 	/* peerIdentity */
 };
 
