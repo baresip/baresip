@@ -788,7 +788,6 @@ int  play_init(struct player **playerp);
 void play_set_path(struct player *player, const char *path);
 
 
-int enqueue(const char* molecule, void* arg);
 
 /*
  * User Agent
