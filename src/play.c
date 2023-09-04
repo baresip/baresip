@@ -218,44 +218,12 @@ static int aufile_load(struct mbuf *mb, const char *filename,
 		err = aufile_read(af, buf, &n);
 		if (err || !n)
 			break;
-
-		switch (prm.fmt) {
-
-		case AUFMT_S16LE:
-			/* convert from Little-Endian to Native-Endian */
-			for (i=0; i<n/2; i++) {
-				int16_t s = sys_ltohs(*p++);
-				err |= mbuf_write_u16(mb, s);
-			}
-			fsize = 2;
-			break;
-
-		case AUFMT_PCMA:
-			for (i=0; i<n; i++) {
-				err |= mbuf_write_u16(mb,
-						      g711_alaw2pcm(buf[i]));
-			}
-			fsize = 1;
-			break;
-
-		case AUFMT_PCMU:
-			for (i=0; i<n; i++) {
-				err |= mbuf_write_u16(mb,
-						      g711_ulaw2pcm(buf[i]));
-			}
-			fsize = 1;
-			break;
-
-		default:
-			err = ENOSYS;
-			break;
-		}
 	}
 
 	mem_deref(af);
 
 	if (!err) {
-		mb->pos = (prm.srate * fsize * prm.channels / 1000) / file_size;
+		mb->pos = (prm.srate * aufmt_sample_size(prm.fmt) * prm.channels / 1000) / file_size;
 
 		*srate    = prm.srate;
 		*channels = prm.channels;
