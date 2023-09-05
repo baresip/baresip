@@ -143,29 +143,33 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
 	struct config *cfg;
-	const char *filename = carg->prm;
+	char filename[4096] = { 0 };
+	int offset = 0;
 	int err = 0;
-
-	cfg = conf_config();
 
 	/* Stop the current tone, if any */
 	g_play = mem_deref(g_play);
 
-	if (str_isset(filename))
-	{
-		err = re_hprintf(pf, "playing audio file \"%s\" ..\n",
-				 filename);
+	if (str_isset(carg->prm) && sscanf(carg->prm, "%4095s %d", filename, &offset)) {
+
+		cfg = conf_config();
+
+		err = re_hprintf(pf, "playing audio file \"%s\" with offset %d..\n",
+				filename, offset);
 		if (err)
 			return err;
 
-		err = play_file(&g_play, baresip_player(), filename, 0,
-                        cfg->audio.alert_mod, cfg->audio.alert_dev);
+		err = play_file_ext(&g_play, baresip_player(), filename, 0,
+						cfg->audio.alert_mod, cfg->audio.alert_dev, (size_t)offset);
 		if (err)
 		{
 			warning("debug_cmd: play_file(%s) failed (%m)\n",
 					filename, err);
 			return err;
 		}
+	}
+	else {
+		warning("debug_cmd: play_file failed to parse input\n");
 	}
 
 	return err;

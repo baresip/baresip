@@ -188,25 +188,19 @@ static void destructor(void *arg)
 
 
 static int aufile_load(struct mbuf *mb, const char *filename,
-		       uint32_t *srate, uint8_t *channels)
+		       uint32_t *srate, uint8_t *channels, size_t offset_ms)
 {
 	struct aufile_prm prm;
 	struct aufile *af;
-	size_t file_size = 0;
-	int fsize = 2;
 	int err;
-
-	FILE* aufile = fopen(filename, "r");
-	if (aufile) {
-		fseek(aufile, 0, SEEK_END);
-		file_size = ftell(aufile);
-		fseek(aufile, 0, SEEK_SET);
-		fclose(aufile);
-	}
 
 	err = aufile_open(&af, &prm, filename, AUFILE_READ);
 	if (err)
 		return err;
+
+	if (offset_ms) {
+		aufile_set_position(af, &prm, offset_ms);
+	}
 
 	while (!err) {
 		uint8_t buf[4096];
@@ -218,12 +212,43 @@ static int aufile_load(struct mbuf *mb, const char *filename,
 		err = aufile_read(af, buf, &n);
 		if (err || !n)
 			break;
+
+		switch (prm.fmt) {
+
+		case AUFMT_S16LE:
+			/* convert from Little-Endian to Native-Endian */
+			for (i=0; i<n/2; i++) {
+				int16_t s = sys_ltohs(*p++);
+				err |= mbuf_write_u16(mb, s);
+			}
+
+			break;
+
+		case AUFMT_PCMA:
+			for (i=0; i<n; i++) {
+				err |= mbuf_write_u16(mb,
+						      g711_alaw2pcm(buf[i]));
+			}
+			break;
+
+		case AUFMT_PCMU:
+			for (i=0; i<n; i++) {
+				err |= mbuf_write_u16(mb,
+						      g711_ulaw2pcm(buf[i]));
+			}
+			break;
+
+		default:
+			err = ENOSYS;
+			break;
+		}
 	}
 
 	mem_deref(af);
 
 	if (!err) {
-		mb->pos = (prm.srate * aufmt_sample_size(prm.fmt) * prm.channels / 1000) / file_size;
+
+		mb->pos = 0;
 
 		*srate    = prm.srate;
 		*channels = prm.channels;
@@ -568,7 +593,8 @@ int play_file_ext(struct play **playp, struct player *player,
 	if (!mb)
 		return ENOMEM;
 
-	err = aufile_load(mb, path, &srate, &ch);
+
+	err = aufile_load(mb, path, &srate, &ch, offset_ms);
 	if (err) {
 		warning("play: %s: %m\n", path, err);
 		goto out;
