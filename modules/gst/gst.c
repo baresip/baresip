@@ -508,8 +508,8 @@ static int mod_gst_init(void)
 
 static int mod_gst_close(void)
 {
-	gst_deinit();
 	ausrc = mem_deref(ausrc);
+	gst_deinit();
 	return 0;
 }
 
