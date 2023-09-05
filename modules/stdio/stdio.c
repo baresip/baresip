@@ -42,7 +42,7 @@ static void ui_destructor(void *arg)
 {
 	struct ui_st *st = arg;
 
-	fd_close(&st->fhs);
+	st->fhs = fd_close(st->fhs);
 
 	if (st->term_set)
 		tcsetattr(STDIN_FILENO, TCSANOW, &st->term);

@@ -43,7 +43,7 @@ static void evdev_close(struct ui_st *st)
 	if (st->fd < 0)
 		return;
 
-	fd_close(&st->fhs);
+	st->fhs = fd_close(st->fhs);
 	(void)close(st->fd);
 	st->fd = RE_BAD_SOCK;
 }
