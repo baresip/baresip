@@ -239,7 +239,7 @@ out:
 		(void) re_hprintf(pf, "usage: %s", playmod_usage);
 
 	mem_deref(alert_mod);
-	mem_deref( alert_dev);
+	mem_deref(alert_dev);
 	mem_deref(filename);
 
 	return err;
@@ -623,6 +623,7 @@ static int module_close(void)
 	cmd_unregister(baresip_commands(), cmdv);
 	hash_flush(d.answmod);
 	mem_deref(d.answmod);
+	d.cur_play = mem_deref(d.cur_play);
 
 	return 0;
 }
