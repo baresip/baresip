@@ -101,7 +101,7 @@ list(APPEND RE_DEFINITIONS
   -DVER_PATCH=${PROJECT_VERSION_PATCH}
 )
 
-add_definitions(${RE_DEFINITIONS})
+add_compile_definitions(${RE_DEFINITIONS})
 
 include_directories(
   include
