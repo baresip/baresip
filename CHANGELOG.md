@@ -5,6 +5,31 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.5.0 - 2023-08-09
+
+## What's Changed
+* mc: fix format string by @cspiel1 in https://github.com/baresip/baresip/pull/2675
+* call: never set sent_answer to false by @cspiel1 in https://github.com/baresip/baresip/pull/2674
+* video: add source and display name getters by @sreimers in https://github.com/baresip/baresip/pull/2669
+* cmake: fix clang gnu-zero-variadic-macro-arguments warning by @sreimers in https://github.com/baresip/baresip/pull/2677
+* test call cancel rules by @cspiel1 in https://github.com/baresip/baresip/pull/2667
+* stream: declare ext_len when assigned by @alfredh in https://github.com/baresip/baresip/pull/2678
+* ci/mingw: remove cmake workaround by @sreimers in https://github.com/baresip/baresip/pull/2679
+* call: fix Refer-To URI angle brackets by @sreimers in https://github.com/baresip/baresip/pull/2681
+* test: call - replace re_cancel in CALL_RTCP and REMOTE_SDP by rule by @cspiel1 in https://github.com/baresip/baresip/pull/2684
+* test: add rtcp_mux test by @cspiel1 in https://github.com/baresip/baresip/pull/2692
+* test: remove unused local variable in test_call_bundle_base() by @cspiel1 in https://github.com/baresip/baresip/pull/2693
+* account,docs: cleanup for accounts config by @cspiel1 in https://github.com/baresip/baresip/pull/2691
+* test: call - combine cancel rules with logical AND by @cspiel1 in https://github.com/baresip/baresip/pull/2687
+* ccheck: add PRI*64 check (use %L instead) by @sreimers in https://github.com/baresip/baresip/pull/2695
+* test: call - replace stop_on_rtp by cancel rules by @cspiel1 in https://github.com/baresip/baresip/pull/2697
+* webrtc/js: add rtcpMuxPolicy require policy by @sreimers in https://github.com/baresip/baresip/pull/2699
+* gst: gst_deinit() should be last gst call by @cspiel1 in https://github.com/baresip/baresip/pull/2703
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.4.0...v3.5.0
+
+
 ## 3.4.0 - 2023-08-09
 
 ## What's Changed
