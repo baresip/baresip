@@ -212,6 +212,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		if (!hw_frame)
 			return ENOMEM;
 
+		/* av_hwframe_transfer_data needs clean dst frame */
 		sw_frame = av_frame_alloc();
 		if (!sw_frame) {
 			av_frame_free(&hw_frame);
