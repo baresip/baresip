@@ -295,7 +295,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
  out:
 	if (hw_frame) {
 		av_frame_free(&hw_frame);
-		av_frame_free(&sw_frame);
+		av_free(sw_frame);
 	}
 	av_packet_free(&avpkt);
 	return err;
