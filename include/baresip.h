@@ -1198,12 +1198,12 @@ struct vidcodec;
 typedef int (videnc_packet_h)(bool marker, uint64_t rtp_ts,
 			      const uint8_t *hdr, size_t hdr_len,
 			      const uint8_t *pld, size_t pld_len,
-			      void *arg);
+			      const struct video *vid);
 
 typedef int (videnc_update_h)(struct videnc_state **vesp,
 			      const struct vidcodec *vc,
 			      struct videnc_param *prm, const char *fmtp,
-			      videnc_packet_h *pkth, void *arg);
+			      videnc_packet_h *pkth, const struct video *vid);
 
 typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
 			      const struct vidframe *frame,
@@ -1212,8 +1212,10 @@ typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
 typedef int (videnc_packetize_h)(struct videnc_state *ves,
 				 const struct vidpacket *packet);
 
-typedef int (viddec_update_h)(struct viddec_state **vdsp,
-			      const struct vidcodec *vc, const char *fmtp);
+typedef int(viddec_update_h)(struct viddec_state **vdsp,
+			     const struct vidcodec *vc, const char *fmtp,
+			     const struct video *vid);
+
 typedef int (viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
                               bool *intra, bool marker, uint16_t seq,
                               struct mbuf *mb);

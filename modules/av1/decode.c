@@ -42,7 +42,7 @@ static void destructor(void *arg)
 
 
 int av1_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
-		       const char *fmtp)
+		       const char *fmtp, const struct video *vid)
 {
 	struct viddec_state *vds;
 	aom_codec_dec_cfg_t cfg = {
@@ -52,6 +52,7 @@ int av1_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 	int err = 0;
 	(void)vc;
 	(void)fmtp;
+	(void)vid;
 
 	if (!vdsp)
 		return EINVAL;
