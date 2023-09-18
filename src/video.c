@@ -87,7 +87,7 @@ struct vtx {
 	struct vidsrc_st *vsrc;            /**< Video source              */
 	mtx_t lock_enc;                    /**< Lock for encoder          */
 	struct vidframe *frame;            /**< Source frame              */
-	mtx_t lock_tx;                     /**< Protect the sendq         */
+	mtx_t *lock_tx;                    /**< Protect the sendq         */
 	struct list sendq;                 /**< Tx-Queue (struct vidqent) */
 	struct list sendqnb;               /**< Tx-Queue NACK wait buffer */
 	unsigned skipc;                    /**< Number of frames skipped  */
@@ -283,11 +283,11 @@ static void video_destructor(void *arg)
 		cnd_signal(&vtx->wait);
 		thrd_join(vtx->thrd, NULL);
 	}
-	mtx_lock(&vtx->lock_tx);
+	mtx_lock(vtx->lock_tx);
 	list_flush(&vtx->sendq);
 	list_flush(&vtx->sendqnb);
-	mtx_unlock(&vtx->lock_tx);
-	mtx_destroy(&vtx->lock_tx);
+	mtx_unlock(vtx->lock_tx);
+	mem_deref(vtx->lock_tx);
 
 	mem_deref(vtx->vsrc);
 	mtx_lock(&vtx->lock_enc);
@@ -351,9 +351,9 @@ static int packet_handler(bool marker, uint64_t ts,
 	if (err)
 		return err;
 
-	mtx_lock(&vtx->lock_tx);
+	mtx_lock(vtx->lock_tx);
 	list_append(&vtx->sendq, &qent->le, qent);
-	mtx_unlock(&vtx->lock_tx);
+	mtx_unlock(vtx->lock_tx);
 
 	cnd_signal(&vtx->wait);
 
@@ -397,9 +397,9 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 		goto out;
 	}
 
-	mtx_lock(&vtx->lock_tx);
+	mtx_lock(vtx->lock_tx);
 	sendq_empty = (vtx->sendq.head == NULL);
-	mtx_unlock(&vtx->lock_tx);
+	mtx_unlock(vtx->lock_tx);
 
 	if (!sendq_empty) {
 		++vtx->skipc;
@@ -525,15 +525,15 @@ static int vtx_thread(void *arg)
 	size_t sent = 0;
 
 	while (re_atomic_rlx(&vtx->run)) {
-		mtx_lock(&vtx->lock_tx);
+		mtx_lock(vtx->lock_tx);
 		if (!vtx->sendq.head) {
-			cnd_wait(&vtx->wait, &vtx->lock_tx);
+			cnd_wait(&vtx->wait, vtx->lock_tx);
 			qent = NULL;
-			mtx_unlock(&vtx->lock_tx);
+			mtx_unlock(vtx->lock_tx);
 			continue;
 		}
 		qent = vtx->sendq.head->data;
-		mtx_unlock(&vtx->lock_tx);
+		mtx_unlock(vtx->lock_tx);
 
 		jfs = tmr_jiffies_usec();
 
@@ -567,7 +567,7 @@ static int vtx_thread(void *arg)
 		qent->seq = rtp_sess_seq(stream_rtp_sock(vtx->video->strm));
 		qent->mb  = mbd;
 
-		mtx_lock(&vtx->lock_tx);
+		mtx_lock(vtx->lock_tx);
 		list_move(&qent->le, &vtx->sendqnb);
 
 		/* Delayed NACK queue cleanup */
@@ -582,7 +582,7 @@ static int vtx_thread(void *arg)
 			else
 				break; /* Assuming list is sorted by time */
 		}
-		mtx_unlock(&vtx->lock_tx);
+		mtx_unlock(vtx->lock_tx);
 	}
 
 	return 0;
@@ -594,7 +594,13 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 	int err;
 
 	err  = mtx_init(&vtx->lock_enc, mtx_plain) != thrd_success;
-	err |= mtx_init(&vtx->lock_tx, mtx_plain) != thrd_success;
+	if (err)
+		return ENOMEM;
+
+	err = mutex_alloc(&vtx->lock_tx);
+	if (err)
+		return err;
+
 	err |= cnd_init(&vtx->wait) != thrd_success;
 	if (err)
 		return ENOMEM;
@@ -912,7 +918,7 @@ static void rtcp_nack_handler(struct vtx *vtx, struct rtcp_msg *msg)
 		}
 	}
 
-	mtx_lock(&vtx->lock_tx);
+	mtx_lock(vtx->lock_tx);
 	LIST_FOREACH(&vtx->sendqnb, le) {
 		struct vidqent *qent = le->data;
 
@@ -935,7 +941,7 @@ static void rtcp_nack_handler(struct vtx *vtx, struct rtcp_msg *msg)
 		mem_deref(qent);
 	}
 
-	mtx_unlock(&vtx->lock_tx);
+	mtx_unlock(vtx->lock_tx);
 }
 
 
@@ -1435,10 +1441,10 @@ static void video_stop_source(struct video *v)
 		thrd_join(v->vtx.thrd, NULL);
 	}
 
-	mtx_lock(&v->vtx.lock_tx);
+	mtx_lock(v->vtx.lock_tx);
 	list_flush(&v->vtx.sendq);
 	list_flush(&v->vtx.sendqnb);
-	mtx_unlock(&v->vtx.lock_tx);
+	mtx_unlock(v->vtx.lock_tx);
 }
 
 
@@ -1686,9 +1692,9 @@ static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
 			  vtx->stats.src_frames);
 
 
-	mtx_lock(&vtx->lock_tx);
+	mtx_lock(vtx->lock_tx);
 	uint32_t count = list_count(&vtx->sendq);
-	mtx_unlock(&vtx->lock_tx);
+	mtx_unlock(vtx->lock_tx);
 
 	err |= re_hprintf(pf, "     skipc=%u sendq=%u\n",
 			  vtx->skipc, count);
