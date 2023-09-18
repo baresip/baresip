@@ -29,7 +29,8 @@
 
 
 struct ui_st {
-	int fd;
+	re_sock_t fd;
+	struct re_fhs *fhs;
 };
 
 
@@ -42,9 +43,9 @@ static void evdev_close(struct ui_st *st)
 	if (st->fd < 0)
 		return;
 
-	fd_close(st->fd);
+	st->fhs = fd_close(st->fhs);
 	(void)close(st->fd);
-	st->fd = -1;
+	st->fd = RE_BAD_SOCK;
 }
 
 
@@ -233,7 +234,8 @@ static int evdev_alloc(struct ui_st **stp, const char *dev)
 	if (!st)
 		return ENOMEM;
 
-	st->fd = open(dev, O_RDWR);
+	st->fhs = NULL;
+	st->fd	= open(dev, O_RDWR);
 	if (st->fd < 0) {
 		err = errno;
 		warning("evdev: failed to open device '%s' (%m)\n", dev, err);
@@ -253,7 +255,7 @@ static int evdev_alloc(struct ui_st **stp, const char *dev)
 	print_keys(st->fd);
 	print_leds(st->fd);
 
-	err = fd_listen(st->fd, FD_READ, evdev_fd_handler, st);
+	err = fd_listen(&st->fhs, st->fd, FD_READ, evdev_fd_handler, st);
 	if (err)
 		goto out;
 

@@ -27,6 +27,7 @@ enum {
 };
 
 struct ui_st {
+	struct re_fhs *fhs;
 	struct tmr tmr;
 	struct termios term;
 	bool term_set;
@@ -41,7 +42,7 @@ static void ui_destructor(void *arg)
 {
 	struct ui_st *st = arg;
 
-	fd_close(STDIN_FILENO);
+	st->fhs = fd_close(st->fhs);
 
 	if (st->term_set)
 		tcsetattr(STDIN_FILENO, TCSANOW, &st->term);
@@ -130,7 +131,8 @@ static int ui_alloc(struct ui_st **stp)
 
 	tmr_init(&st->tmr);
 
-	err = fd_listen(STDIN_FILENO, FD_READ, ui_fd_handler, st);
+	st->fhs = NULL;
+	err = fd_listen(&st->fhs, STDIN_FILENO, FD_READ, ui_fd_handler, st);
 	if (err)
 		goto out;
 

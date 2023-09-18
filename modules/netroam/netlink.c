@@ -18,12 +18,13 @@
 #include "netlink.h"
 
 struct netlink  {
-	int fd;
+	re_sock_t fd;
+	struct re_fhs *fhs;
 	net_change_h *changeh;
 	void *arg;
 };
 
-static struct netlink d = { -1, NULL, NULL };
+static struct netlink d = { RE_BAD_SOCK, NULL, NULL, NULL };
 
 
 static void netlink_handler(int flags, void *arg)
@@ -68,8 +69,8 @@ int open_netlink(net_change_h *changeh, void *arg)
 	}
 
 	d.changeh = changeh;
-	d.arg     = arg;
-	return fd_listen(d.fd, FD_READ, netlink_handler, &d);
+	d.arg	  = arg;
+	return fd_listen(&d.fhs, d.fd, FD_READ, netlink_handler, &d);
 }
 
 
@@ -78,7 +79,7 @@ void close_netlink(void)
 	d.changeh = NULL;
 	d.arg     = NULL;
 
-	fd_close(d.fd);
+	d.fhs = fd_close(d.fhs);
 	close(d.fd);
-	d.fd = -1;
+	d.fd = RE_BAD_SOCK;
 }

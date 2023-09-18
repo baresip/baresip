@@ -88,7 +88,9 @@ static void tmr_reconnect(void *data)
 	err = mosquitto_reconnect(mqtt->mosq);
 	if (err == MOSQ_ERR_SUCCESS) {
 		mqtt->fd = mosquitto_socket(mqtt->mosq);
-		err = fd_listen(mqtt->fd, FD_READ, fd_handler, mqtt);
+
+		err = fd_listen(&mqtt->fhs, mqtt->fd, FD_READ, fd_handler,
+				mqtt);
 		if (err) {
 			warning("mqtt: reconnect fd_listen failed\n");
 			return;
@@ -111,7 +113,7 @@ static void disconnect_callback(struct mosquitto *mosq, void *obj, int rc)
 	if (rc == MOSQ_ERR_NO_CONN) {
 		warning("mqtt: connection lost\n");
 		tmr_cancel(&mqtt->tmr);
-		fd_close(mqtt->fd);
+		mqtt->fhs = fd_close(mqtt->fhs);
 		tmr_start(&mqtt->tmr, 1000, tmr_reconnect, mqtt);
 	}
 }
@@ -212,8 +214,9 @@ static int module_init(void)
 		return err;
 
 	s_mqtt.fd = mosquitto_socket(s_mqtt.mosq);
+	s_mqtt.fhs = NULL;
 
-	err = fd_listen(s_mqtt.fd, FD_READ, fd_handler, &s_mqtt);
+	err = fd_listen(&s_mqtt.fhs, s_mqtt.fd, FD_READ, fd_handler, &s_mqtt);
 	if (err)
 		return err;
 
@@ -225,7 +228,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	fd_close(s_mqtt.fd);
+	s_mqtt.fhs = fd_close(s_mqtt.fhs);
 
 	mqtt_publish_close();
 
