@@ -1684,8 +1684,14 @@ static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
 			  vtx->vsrc_size.w,
 			  vtx->vsrc_size.h, vtx->vsrc_prm.fps,
 			  vtx->stats.src_frames);
+
+
+	mtx_lock(&vtx->lock_tx);
+	uint32_t count = list_count(&vtx->sendq);
+	mtx_unlock(&vtx->lock_tx);
+
 	err |= re_hprintf(pf, "     skipc=%u sendq=%u\n",
-			  vtx->skipc, list_count(&vtx->sendq));
+			  vtx->skipc, count);
 
 	if (vtx->ts_base) {
 		err |= re_hprintf(pf, "     time = %.3f sec\n",
