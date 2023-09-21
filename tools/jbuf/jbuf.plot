@@ -48,5 +48,5 @@ plot \
 'underflow.dat' using 3:(event_h(2)) title 'underflow' pt 7 ps 1.5 lc "#FF4444", \
 'toolate.dat' using 3:(event_h(3)) title  'toolate' pt 7 ps 1.5 lc "#BB5454", \
 'duplicate.dat' using 3:(event_h(4)) title 'duplicate' pt 7 ps 1.5 lc "#E919C6", \
-'oosequence.dat' using 3:(event_h(5)) title 'out off seq' pt 7 ps 1.5 lc "#A5A5A5", \
+'oosequence.dat' using 3:(event_h(5)) title 'out of seq' pt 7 ps 1.5 lc "#A5A5A5", \
 'lost.dat' using 3:(event_h(6)) title 'lost' pt 7 ps 1.5 lc "#C08DBC"
