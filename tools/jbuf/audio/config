@@ -7,27 +7,13 @@ audio_buffer   10-50
 audio_buffer_mode	adaptive
 audio_silence		0.0
 
-audio_jitter_buffer_type	off
-video_jitter_buffer_type	adaptive
-video_jitter_buffer_delay   0-500
+audio_jitter_buffer_type	adaptive
+audio_jitter_buffer_delay   0-500
 
 statmode_default	off
 rtp_stats		no
 
 module_path		/usr/local/lib/baresip/modules
-
-# Video
-video_source		v4l2,/dev/video0
-video_display		x11,nil
-# video_source		comvideo,
-video_size		640x480
-video_bitrate		500000
-video_fps		15.0
-
-# module			comvideo.so
-module			x11.so
-module			avcodec.so
-module			v4l2.so
 
 # UI Modules
 module			stdio.so
