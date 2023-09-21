@@ -71,7 +71,12 @@ for jmin in 0 10 20; do
         if [ ! -d plots ]; then
             mkdir plots
         fi
-        cp jbuf.eps plots/jbuf_${strm}_${jmin}.eps
+        if [ -f jbuf.eps ]; then
+            mv jbuf.eps plots/jbuf_${strm}_${jmin}.eps
+        fi
+        if [ -f jbuf.png ]; then
+            mv jbuf.png plots/jbuf_${strm}_${jmin}.png
+        fi
     done
 
     if [ $once == "true" ]; then
