@@ -1179,6 +1179,8 @@ int ua_alloc(struct ua **uap, const char *aor)
  */
 int ua_update_account(struct ua *ua)
 {
+	int err;
+
 	if (!ua)
 		return EINVAL;
 
@@ -1186,7 +1188,14 @@ int ua_update_account(struct ua *ua)
 	ua->extensionc = 0;
 	list_flush(&ua->regl);
 
-	return create_register_clients(ua);
+	err = create_register_clients(ua);
+	if (err)
+		goto out;
+
+	add_extension(ua, "norefersub");
+
+ out:
+	return err;
 }
 
 
