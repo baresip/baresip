@@ -1915,6 +1915,13 @@ static void set_established_mdir(void *arg)
 }
 
 
+static uint32_t randwait(uint32_t minwait, uint32_t maxwait)
+{
+
+	return minwait + rand_u16() % (maxwait - minwait);
+}
+
+
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
@@ -1945,7 +1952,8 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	/* modify call after call_event_established handlers are executed */
-	tmr_start(&call->tmr_reinv, 0, set_established_mdir, call);
+	tmr_start(&call->tmr_reinv, randwait(50, 150),
+		  set_established_mdir, call);
 
 	/* must be done last, the handler might deref this call */
 	call_event_handler(call, CALL_EVENT_ESTABLISHED, "%s", call->peer_uri);
