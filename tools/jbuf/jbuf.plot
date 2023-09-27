@@ -1,24 +1,16 @@
 #!/usr/bin/gnuplot
 #
-# How to generate a plot
-# ======================
-# This gnuplot script plots DEBUG_LEVEL 6 output of jbuf.c. You have to
-# increment the DEBUG_LEVEL in ajb.c if you want to get the table for
-# jbuf.dat. Then call baresip like this:
-#
-# ./baresip 2>&1 | grep -Eo "jbuf.*" > jbuf.dat
-#
-# Call this script. Then compare the plot legend with the variables in jbuf.c!
-#
+# Use generate_plot.sh!
 #
 # Description of the plot
 # =======================
 # The plot is a time based diagram.
 #
 # Events:
-# - overflow
+# - overrun
 # - underflow
 # - packet too late
+# - duplicate packet
 # - out of sequence
 # - lost packet
 # Copyright (C) 2023 commend.com - Christian Spielberger
