@@ -242,8 +242,6 @@ static const char *jbuf_type_str(enum jbuf_type jbtype)
 		return "off";
 	case JBUF_FIXED:
 		return "fixed";
-	case JBUF_ADAPTIVE:
-		return "adaptive";
 	}
 
 	return "?";
