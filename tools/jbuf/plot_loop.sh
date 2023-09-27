@@ -30,7 +30,7 @@ source ./jitter.sh
 init_jitter $netif
 
 strm="audio"
-for jmin in 0 10 20; do
+for jmin in 2 4 6; do
     for i in 0 1; do
         if [ "$i" == "0" ]; then
             strm="audio"
@@ -40,7 +40,7 @@ for jmin in 0 10 20; do
 
         echo "########### jitter buffer $strm $jmin ###############"
 
-        sed -e "s/${strm}_jitter_buffer_delay\s*[0-9]*\-.*/${strm}_jitter_buffer_delay   ${jmin}-500/" -i ${strm}/config
+        sed -e "s/${strm}_jitter_buffer_delay\s*[0-9]*\-/${strm}_jitter_buffer_delay   ${jmin}-/" -i ${strm}/config
         baresip -v -f ${strm} > /tmp/${strm}.log 2>&1 &
         sleep 1
         echo "/dial $target" | nc -N localhost 5555

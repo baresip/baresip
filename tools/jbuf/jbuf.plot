@@ -33,10 +33,9 @@ stats "jbuf.dat" using ($6) name "N"
 event_h(i) = (0.5*N_max) + 0.3*N_max*(i/6.0)
 
 plot \
-'jbuf.dat' using 3:4 title 'rdiff' with linespoints lc "orange", \
-'jbuf.dat' using 3:5 title 'wish' with linespoints lc "sea-green", \
-'jbuf.dat' using 3:6 title 'n' with linespoints lc "skyblue", \
-'jbuf.dat' using 3:7 title 'nf' with linespoints lc "light-blue", \
+'jbuf.dat' using 3:4 title 'n' with linespoints lc "skyblue", \
+'jbuf.dat' using 3:5 title 'nf' with linespoints lc "light-blue", \
+'jbuf.dat' using 3:6 title 'ncf' with linespoints lc "green", \
 'overrun.dat' using 3:(event_h(1)) title 'overrun' pt 7 ps 1.5 lc "#FF0000", \
 'underflow.dat' using 3:(event_h(2)) title 'underflow' pt 7 ps 1.5 lc "#FF4444", \
 'toolate.dat' using 3:(event_h(3)) title  'toolate' pt 7 ps 1.5 lc "#BB5454", \
