@@ -7,8 +7,8 @@ audio_buffer   10-50
 audio_buffer_mode	adaptive
 audio_silence		0.0
 
-audio_jitter_buffer_type	adaptive
-audio_jitter_buffer_delay   0-500
+audio_jitter_buffer_type	fixed
+audio_jitter_buffer_delay   2-40
 
 statmode_default	off
 rtp_stats		no
