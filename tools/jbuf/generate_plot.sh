@@ -10,6 +10,11 @@ if ! which gnuplot; then
     exit 1
 fi
 
+if [ ! -f jbuf.json ]; then
+    echo "jbuf.json does not exist"
+    exit 1
+fi
+
 function gen_datfile() {
     ph=$1
     filename=$2
