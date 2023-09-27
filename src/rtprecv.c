@@ -733,7 +733,8 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 		if (err)
 			goto out;
 
-		err = jbuf_set_type(rx->jbuf, cfg->video.jbtype);
+		err  = jbuf_set_type(rx->jbuf, cfg->video.jbtype);
+		err |= jbuf_resize(rx->jbuf, cfg->video.jbuf_size);
 		if (err)
 			goto out;
 	}
