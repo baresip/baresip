@@ -29,16 +29,16 @@ set key outside
 set xlabel "time/[ms]"
 set ylabel "#packets"
 
-stats "jbuf.dat" using ($6) name "N"
+stats "jbuf.dat" using ($4) name "N"
 event_h(i) = (0.5*N_max) + 0.3*N_max*(i/6.0)
 
 plot \
 'jbuf.dat' using 3:4 title 'n' with linespoints lc "skyblue", \
-'jbuf.dat' using 3:5 title 'nf' with linespoints lc "light-blue", \
+'jbuf.dat' using 3:5 title 'nf' with linespoints lc "blue", \
 'jbuf.dat' using 3:6 title 'ncf' with linespoints lc "green", \
 'overrun.dat' using 3:(event_h(1)) title 'overrun' pt 7 ps 1.5 lc "#FF0000", \
-'underflow.dat' using 3:(event_h(2)) title 'underflow' pt 7 ps 1.5 lc "#FF4444", \
+'waiting.dat' using 3:(event_h(2)) title 'waiting' pt 7 ps 1.5 lc "#A5A5A5", \
 'toolate.dat' using 3:(event_h(3)) title  'toolate' pt 7 ps 1.5 lc "#BB5454", \
 'duplicate.dat' using 3:(event_h(4)) title 'duplicate' pt 7 ps 1.5 lc "#E919C6", \
-'oosequence.dat' using 3:(event_h(5)) title 'out of seq' pt 7 ps 1.5 lc "#A5A5A5", \
+'oosequence.dat' using 3:(event_h(5)) title 'out of seq' pt 7 ps 1.5 lc "#BB7777", \
 'lost.dat' using 3:(event_h(6)) title 'lost' pt 7 ps 1.5 lc "#C08DBC"
