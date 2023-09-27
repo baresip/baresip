@@ -83,7 +83,7 @@ void ua_printf(const struct ua *ua, const char *fmt, ...)
 }
 
 
-static void add_extension(struct ua *ua, const char *extension)
+void ua_add_extension(struct ua *ua, const char *extension)
 {
 	struct pl e;
 
@@ -99,20 +99,39 @@ static void add_extension(struct ua *ua, const char *extension)
 }
 
 
+void ua_remove_extension(struct ua *ua, const char *extension)
+{
+	size_t i;
+	int found = 0;
+
+	for (i = 0; i < ua->extensionc; i++) {
+		if (found) {
+			ua->extensionv[i-1] = ua->extensionv[i];
+			continue;
+		}
+
+		if (!pl_strcmp(&ua->extensionv[i], extension))
+			found = 1;
+	}
+
+	ua->extensionc -= found;
+}
+
+
 static int create_register_clients(struct ua *ua)
 {
 	int err = 0;
 
 	/* Register clients */
 	if (uag_cfg() && str_isset(uag_cfg()->uuid))
-		add_extension(ua, "gruu");
+		ua_add_extension(ua, "gruu");
 
 	if (0 == str_casecmp(ua->acc->sipnat, "outbound")) {
 
 		size_t i;
 
-		add_extension(ua, "path");
-		add_extension(ua, "outbound");
+		ua_add_extension(ua, "path");
+		ua_add_extension(ua, "outbound");
 
 		if (!str_isset(uag_cfg()->uuid)) {
 
@@ -134,10 +153,10 @@ static int create_register_clients(struct ua *ua)
 		err = reg_add(&ua->regl, ua, 0);
 	}
 
-	add_extension(ua, "replaces");
+	ua_add_extension(ua, "replaces");
 
 	if (ua->acc->rel100_mode)
-		add_extension(ua, "100rel");
+		ua_add_extension(ua, "100rel");
 
  out:
 	return err;
@@ -1116,7 +1135,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 			  ua->acc->mnat->id);
 
 		if (0 == str_casecmp(ua->acc->mnat->id, "ice"))
-			add_extension(ua, "ice");
+			ua_add_extension(ua, "ice");
 	}
 
 	if (ua->acc->menc) {
@@ -1154,7 +1173,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 	if (err)
 		goto out;
 
-	add_extension(ua, "norefersub");
+	ua_add_extension(ua, "norefersub");
 	list_append(uag_list(), &ua->le, ua);
 	ua_event(ua, UA_EVENT_CREATE, NULL, "%s", aor);
 
