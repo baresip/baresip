@@ -807,6 +807,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		err = jbuf_alloc(&s->rx.jbuf, cfg->video.jbuf_del.min,
 				 cfg->video.jbuf_del.max);
 		err |= jbuf_set_type(s->rx.jbuf, cfg->video.jbtype);
+		err |= jbuf_resize(s->rx.jbuf, cfg->video.jbuf_size);
 		if (err)
 			goto out;
 	}
