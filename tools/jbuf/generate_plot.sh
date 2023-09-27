@@ -23,7 +23,7 @@ function gen_datfile() {
     filename=$2
 
     jqc='.traceEvents[] | select (.ph == "'"${ph}"'") | .args.line'
-    jq -r "${jqc}" jbuf.json > $filename
+    cat jbuf.json | jq -r "${jqc}" > $filename
 }
 
 source ./jitter.sh
