@@ -1,0 +1,49 @@
+#audio_path		/usr/local/share/baresip
+audio_player		pulse,
+audio_source		pulse,
+audio_alert		pulse,
+audio_level		no
+audio_buffer   10-50
+audio_buffer_mode	adaptive
+audio_silence		0.0
+
+audio_jitter_buffer_type	off
+video_jitter_buffer_type	adaptive
+video_jitter_buffer_delay   0-500
+
+statmode_default	off
+rtp_stats		no
+
+module_path		/usr/local/lib/baresip/modules
+
+# Video
+video_source		v4l2,/dev/video0
+video_display		x11,nil
+# video_source		comvideo,
+video_size		640x480
+video_bitrate		500000
+video_fps		15.0
+
+# module			comvideo.so
+module			x11.so
+module			avcodec.so
+module			v4l2.so
+
+# UI Modules
+module			stdio.so
+module			cons.so
+
+module			opus.so
+
+module			auconv.so
+module			auresamp.so
+
+module			pulse.so
+
+
+module_app		account.so
+module_app		menu.so
+module_app		netroam.so
+
+
+cons_listen		0.0.0.0:5555 # cons   0-500
