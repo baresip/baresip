@@ -251,9 +251,18 @@ static int cmd_set_100rel_mode(struct re_printf *pf, void *arg)
 		ua = uag_find_requri_pl(&w2);
 
 	if (ua) {
+		if (mode == account_rel100_mode(ua_account(ua)))
+			goto out;
+
 		err = account_set_rel100_mode(ua_account(ua), mode);
 		if (err)
 			goto out;
+
+		if (mode == REL100_DISABLED)
+			ua_remove_extension(ua, "100rel");
+		else
+			ua_add_extension(ua, "100rel");
+
 		(void)re_hprintf(pf, "100rel mode of account %s changed to: "
 				 "%s\n", account_aor(ua_account(ua)),
 				 mode_str);
@@ -261,9 +270,18 @@ static int cmd_set_100rel_mode(struct re_printf *pf, void *arg)
 	else {
 		for (le = list_head(uag_list()); le; le = le->next) {
 			ua = le->data;
+
+			if (mode == account_rel100_mode(ua_account(ua)))
+				continue;
+
 			err = account_set_rel100_mode(ua_account(ua), mode);
 			if (err)
 				goto out;
+
+			if (mode == REL100_DISABLED)
+				ua_remove_extension(ua, "100rel");
+			else
+				ua_add_extension(ua, "100rel");
 		}
 		(void)re_hprintf(pf, "100rel mode of all accounts changed to: "
 				 "%s\n", mode_str);
