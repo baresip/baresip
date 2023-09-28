@@ -154,6 +154,7 @@ static int create_register_clients(struct ua *ua)
 	}
 
 	ua_add_extension(ua, "replaces");
+	ua_add_extension(ua, "norefersub");
 
 	if (ua->acc->rel100_mode)
 		ua_add_extension(ua, "100rel");
@@ -1173,7 +1174,6 @@ int ua_alloc(struct ua **uap, const char *aor)
 	if (err)
 		goto out;
 
-	ua_add_extension(ua, "norefersub");
 	list_append(uag_list(), &ua->le, ua);
 	ua_event(ua, UA_EVENT_CREATE, NULL, "%s", aor);
 
