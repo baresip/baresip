@@ -18,14 +18,6 @@ fi
 
 trap "./jitter-off.sh; killall -q baresip" EXIT
 
-function gen_datfile() {
-    ph=$1
-    filename=$2
-
-    jqc='.traceEvents[] | select (.ph == "'"${ph}"'") | .args.line'
-    cat jbuf.json | jq -r "${jqc}" > $filename
-}
-
 source ./jitter.sh
 init_jitter $netif
 

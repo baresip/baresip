@@ -10,8 +10,8 @@ if ! which gnuplot; then
     exit 1
 fi
 
-if [ ! -f jbuf.json ]; then
-    echo "jbuf.json does not exist"
+if [ ! -f re_trace.json ]; then
+    echo "re_trace.json does not exist"
     exit 1
 fi
 
@@ -19,8 +19,9 @@ function gen_datfile() {
     ph=$1
     filename=$2
 
-    jqc='.traceEvents[] | select (.ph == "'"${ph}"'") | .args.line'
-    cat jbuf.json | jq -r "${jqc}" > $filename
+    jqc='.traceEvents[] | select (.cat == "jbuf" and .ph == "'
+    jqc="${jqc}${ph}"'") | .args.line'
+    cat re_trace.json | jq -r "${jqc}" > $filename
 }
 
 
