@@ -41,4 +41,6 @@ plot \
 'toolate.dat' using 3:(event_h(3)) title  'toolate' pt 7 ps 1.5 lc "#BB5454", \
 'duplicate.dat' using 3:(event_h(4)) title 'duplicate' pt 7 ps 1.5 lc "#E919C6", \
 'oosequence.dat' using 3:(event_h(5)) title 'out of seq' pt 7 ps 1.5 lc "#BB7777", \
-'lost.dat' using 3:(event_h(6)) title 'lost' pt 7 ps 1.5 lc "#C08DBC"
+'lost.dat' using 3:(event_h(6)) title 'lost' pt 7 ps 1.5 lc "#C08DBC", \
+'x.dat' using 3:(event_h(.5)) title 'x' pt 7 ps 1.5 lc "#407740", \
+'y.dat' using 3:(event_h(.7)) title 'y' pt 7 ps 1.5 lc "#404077"
