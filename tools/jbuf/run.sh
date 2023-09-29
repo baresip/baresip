@@ -16,9 +16,9 @@ if ! which jq; then
     exit 1
 fi
 
-trap "./jitter-off.sh; killall -q baresip" EXIT
+trap "disable_jitter; killall -q baresip" EXIT
 
-source ./jitter.sh
+source ../jitter.sh
 init_jitter $netif
 
 strm="audio"
