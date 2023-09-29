@@ -28,4 +28,4 @@ function gen_datfile() {
 gen_datfile "P" ajb.dat
 gen_datfile "U" underrun.dat
 
-./ajb.plot
+$(dirname $0)/ajb.plot
