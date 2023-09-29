@@ -23,6 +23,7 @@ selftest
 src/static.c
 /build*
 *.pc
+re_trace.json
 
 # Backup files
 *~
