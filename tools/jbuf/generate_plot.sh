@@ -32,5 +32,7 @@ gen_datfile "L" toolate.dat
 gen_datfile "D" duplicate.dat
 gen_datfile "S" oosequence.dat
 gen_datfile "T" lost.dat
+gen_datfile "x" x.dat
+gen_datfile "y" y.dat
 
 ./jbuf.plot
