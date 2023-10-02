@@ -14,6 +14,7 @@ add_executable(${PROJECT_NAME}
   cmd.c
   contact.c
   event.c
+  jbuf.c
   menu.c
   message.c
   net.c
