@@ -344,6 +344,7 @@ x11           X11 video output driver
 * RFC 3856  A Presence Event Package for SIP
 * RFC 3863  Presence Information Data Format (PIDF)
 * RFC 3891  The SIP "Replaces" Header
+* RFC 3892  Partial support for the Referred-By Mechanism
 * RFC 4145  TCP-Based Media Transport in SDP
 * RFC 4240  Basic Network Media Services with SIP (partly)
 * RFC 4347  Datagram Transport Layer Security
