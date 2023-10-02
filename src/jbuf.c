@@ -31,6 +31,7 @@
 enum {
 	JBUF_PUT_TIMEOUT     = 400,
 	JBUF_WAIT_TIMEOUT    = 1000,
+	JBUF_WAIT_FRAMES     = 5,
 };
 
 
@@ -68,9 +69,8 @@ struct jbuf {
 	uint64_t tr;         /**< Time of previous jbuf_put()                */
 	int pt;              /**< Payload type                               */
 	bool running;        /**< Jitter buffer is running                   */
-	struct tmr tmr;      /**< Timer for EAGAIN                           */
-	bool wait;           /**< Wait flag for jbuf_get()                   */
-	bool again;          /**< Again flag for jbuf_get()                  */
+	uint32_t wait;       /**< Wait counter [# frames]                    */
+	bool put;            /**< Flag prev called jbuf_put()                */
 
 	mtx_t *lock;         /**< Makes jitter buffer thread safe            */
 	enum jbuf_type jbtype;  /**< Jitter buffer type                      */
@@ -104,7 +104,9 @@ static void jbuf_update_nf(struct jbuf *jb)
 		struct packet *pn = n->data;
 
 		if (p->hdr.ts != pn->hdr.ts) {
-			--jb->nf;
+			if (jb->nf)
+				--jb->nf;
+
 			if (jb->ncf)
 				--jb->ncf;
 		}
@@ -112,7 +114,7 @@ static void jbuf_update_nf(struct jbuf *jb)
 
 	if (jb->end == le) {
 		jb->end = NULL;
-		jb->nf  = jb->ncf = 0;
+		jb->ncf = 0;
 	}
 }
 
@@ -226,7 +228,6 @@ static void jbuf_destructor(void *data)
 {
 	struct jbuf *jb = data;
 
-	tmr_cancel(&jb->tmr);
 	jbuf_flush(jb);
 
 	/* Free all packets in the pool list */
@@ -269,7 +270,6 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
 	jb->min  = min;
 	jb->max  = max;
 	jb->packets  = 0;
-	tmr_init(&jb->tmr);
 
 	DEBUG_INFO("alloc: delay=%u-%u [frames]\n", min, max);
 
@@ -351,7 +351,6 @@ static void jbuf_move_end(struct jbuf *jb, struct le *cur)
 	struct le *end;
 
 	if (!jb->end) {
-		jb->ncf  = 0;
 		cur = jb->packetl.head;
 		if (!cur)
 			return;
@@ -370,7 +369,7 @@ static void jbuf_move_end(struct jbuf *jb, struct le *cur)
 	if (!end)
 		return;
 
-	/* update only if endsing packet was inserted right now */
+	/* update only if missing packet was inserted right now */
 	if (jb->end != end)
 		return;
 
@@ -407,25 +406,6 @@ static bool jbuf_frame_ready(struct jbuf *jb)
 }
 
 
-static void reset_wait(void *arg)
-{
-	struct jbuf *jb = arg;
-
-	jb->wait  = false;
-	jb->again = true;
-}
-
-
-static void eagain_later(struct jbuf *jb)
-{
-	jb->wait = true;
-	if (tmr_isrunning(&jb->tmr))
-		return;
-
-	tmr_start(&jb->tmr, JBUF_WAIT_TIMEOUT, reset_wait, jb);
-}
-
-
 /**
  * Put one packet into the jitter buffer
  *
@@ -441,6 +421,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	struct le *le, *tail;
 	uint16_t seq;
 	uint64_t tr, dt;
+	bool appended = false;
 	int err = 0;
 
 	if (!jb || !hdr)
@@ -493,6 +474,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	*/
 	if (!tail || seq_less(((struct packet *)tail->data)->hdr.seq, seq)) {
 		list_append(&jb->packetl, &p->le, p);
+		appended = true;
 		goto success;
 	}
 
@@ -535,13 +517,19 @@ success:
 	/* Update last sequence */
 	jb->running = true;
 	jb->seq_put = seq;
+	jb->put     = true;
 
 	/* Success */
 	p->hdr = *hdr;
 	p->mem = mem_ref(mem);
-	if (tail && ((struct packet *)tail->data)->hdr.ts != hdr->ts) {
-		++jb->nf;
-		jb->wait = false;
+	if (appended && tail) {
+		struct packet *po = tail->data;
+		if (po->hdr.ts != hdr->ts) {
+			++jb->nf;
+
+			if (jb->wait)
+				--jb->wait;
+		}
 	}
 
 	/* check frame completeness */
@@ -577,15 +565,17 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 	mtx_lock(jb->lock);
 	STAT_INC(n_get);
 
-	if (!jbuf_frame_ready(jb) || jb->wait) {
+	if (!jbuf_frame_ready(jb) || (jb->wait && !jb->put)) {
 		DEBUG_INFO("no frame ready - wait.. "
-			   "(nf=%u min=%u)\n", jb->nf, jb->min);
+			   "(nf=%u min=%u wait=%u)\n", jb->nf, jb->min,
+			   jb->wait);
 		STAT_INC(n_waiting);
 		plot_jbuf_event(jb, 'U');
 		err = ENOENT;
 		goto out;
 	}
 
+	jb->put = false;
 	p = jb->packetl.head->data;
 
 #if JBUF_STAT
@@ -615,12 +605,13 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 
 	if (jbuf_frame_ready(jb)) {
 		p = jb->packetl.head->data;
-		if (p->hdr.ts == hdr->ts || jb->again) {
+		if (p->hdr.ts == hdr->ts || jb->nf > jb->max) {
+			p = jb->packetl.head->data;
 			err = EAGAIN;
-			jb->again = false;
 		}
-		else
-			eagain_later(jb);
+		else if (!jb->wait) {
+			jb->wait = JBUF_WAIT_FRAMES;
+		}
 	}
 
 out:
@@ -700,6 +691,7 @@ void jbuf_flush(struct jbuf *jb)
 	jb->n       = 0;
 	jb->nf      = 0;
 	jb->ncf     = 0;
+	jb->wait    = 0;
 	jb->end     = NULL;
 	jb->running = false;
 
