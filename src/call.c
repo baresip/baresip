@@ -2792,7 +2792,7 @@ int call_transfer(struct call *call, const char *uri)
 			      auth_handler, call->acc, true,
 			      sipsub_notify_handler, sipsub_close_handler,
 			      call,
-		              "Refer-To: %s\r\nReferred-by: %s\r\n", 
+		              "Refer-To: %s\r\nReferred-by: %s\r\n",
 			      nuri, account_aor(ua_account(call->ua)));
 	if (err) {
 		warning("call: sipevent_drefer: %m\n", err);
@@ -2825,7 +2825,7 @@ int call_replace_transfer(struct call *call, struct call *source_call)
 			      auth_handler, call->acc, true,
 			      sipsub_notify_handler, sipsub_close_handler,
                               call,
-			      "Refer-To: <%s?Replaces=%s>\r\nReferred-by: %s\r\n",
+			 "Refer-To: <%s?Replaces=%s>\r\nReferred-by: %s\r\n",
                               source_call->peer_uri, source_call->id,
 		              account_aor(ua_account(call->ua)));
 	if (err) {
