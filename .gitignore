@@ -44,6 +44,9 @@ Win32/*
 # Visual studio config
 mk/win32/baresip.vcxproj.user
 
+# VSCode config
+.vscode/*
+
 # clangd
 .cache
 compile_commands.json
