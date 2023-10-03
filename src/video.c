@@ -1699,7 +1699,6 @@ static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
 	mtx_lock(vtx->lock_tx);
 	err |= re_hprintf(pf, "     skipc=%u sendq=%u\n",
 			  vtx->skipc, list_count(&vtx->sendq));
-	mtx_unlock(vtx->lock_tx);
 
 	if (vtx->ts_base) {
 		err |= re_hprintf(pf, "     time = %.3f sec\n",
@@ -1708,6 +1707,7 @@ static int vtx_debug(struct re_printf *pf, const struct vtx *vtx)
 	else {
 		err |= re_hprintf(pf, "     time = (not started)\n");
 	}
+	mtx_unlock(vtx->lock_tx);
 
 	return err;
 }
