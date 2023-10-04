@@ -465,7 +465,8 @@ static void audio_error_handler(int err, const char *str, void *arg)
 	if (err) {
 		warning("call: audio device error: %m (%s)\n", err, str);
 
-		ua_event(call->ua, UA_EVENT_AUDIO_ERROR, call, "%d,%s", err, str);
+		ua_event(call->ua, UA_EVENT_AUDIO_ERROR, call, "%d,%s",
+			err, str);
 		call_stream_stop(call);
 		call_event_handler(call, CALL_EVENT_CLOSED, "%s", str);
 	}

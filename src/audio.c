@@ -188,7 +188,7 @@ struct audio {
 	uint8_t extmap_aulevel;       /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_level_h *levelh;        /**< Audio level handler             */
-	struct list errhl;            /**< List of error handlers		   */
+	struct list errhl;            /**< List of error handlers          */
 	void *arg;                    /**< Handler argument                */
 };
 
@@ -2375,7 +2375,8 @@ int  audio_add_error_handler(struct audio *au, audio_err_h handler, void *arg)
 			return EALREADY;
 	}
 
-	struct audio_err_st *err_st = mem_zalloc(sizeof(struct audio_err_st), audio_err_st_destructor);
+	struct audio_err_st *err_st = mem_zalloc(sizeof(struct audio_err_st),
+		audio_err_st_destructor);
 
 	err_st->errh = handler;
 	err_st->arg = arg;
