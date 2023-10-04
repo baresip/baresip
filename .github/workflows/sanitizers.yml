@@ -35,7 +35,7 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
    
-    - uses: sreimers/pr-dependency-action@v0.5
+    - uses: sreimers/pr-dependency-action@v0.6
       with:
         name: re
         repo: https://github.com/baresip/re

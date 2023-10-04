@@ -13,7 +13,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(baresip VERSION 3.4.0)
+project(baresip VERSION 3.5.1)
 
 set(PROJECT_SOVERSION 9) # bump if ABI breaks
 
@@ -95,13 +95,13 @@ endif()
 find_package(re CONFIG REQUIRED HINTS ../re/cmake)
 
 list(APPEND RE_DEFINITIONS
-  -DVERSION="${PROJECT_VERSION_FULL}"
-  -DVER_MAJOR=${PROJECT_VERSION_MAJOR}
-  -DVER_MINOR=${PROJECT_VERSION_MINOR}
-  -DVER_PATCH=${PROJECT_VERSION_PATCH}
+  VERSION="${PROJECT_VERSION_FULL}"
+  VER_MAJOR=${PROJECT_VERSION_MAJOR}
+  VER_MINOR=${PROJECT_VERSION_MINOR}
+  VER_PATCH=${PROJECT_VERSION_PATCH}
 )
 
-add_definitions(${RE_DEFINITIONS})
+add_compile_definitions(${RE_DEFINITIONS})
 
 include_directories(
   include
@@ -157,6 +157,7 @@ set(SRCS
   src/descr.c
   src/dial_number.c
   src/event.c
+  src/jbuf.c
   src/http.c
   src/log.c
   src/mediadev.c

@@ -157,7 +157,8 @@ static int init_decoder(struct viddec_state *st, const char *name)
 
 
 int avcodec_decode_update(struct viddec_state **vdsp,
-			  const struct vidcodec *vc, const char *fmtp)
+			  const struct vidcodec *vc, const char *fmtp,
+			  const struct video *vid)
 {
 	struct viddec_state *st;
 	int err = 0;
@@ -169,6 +170,7 @@ int avcodec_decode_update(struct viddec_state **vdsp,
 		return 0;
 
 	(void)fmtp;
+	(void)vid;
 
 	st = mem_zalloc(sizeof(*st), destructor);
 	if (!st)
@@ -202,6 +204,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		    bool *intra)
 {
 	AVFrame *hw_frame = NULL;
+	AVFrame *sw_frame = st->pict;
 	AVPacket *avpkt;
 	int i, got_picture, ret;
 	int err = 0;
@@ -210,6 +213,13 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		hw_frame = av_frame_alloc();
 		if (!hw_frame)
 			return ENOMEM;
+
+		/* av_hwframe_transfer_data needs clean dst frame */
+		sw_frame = av_frame_alloc();
+		if (!sw_frame) {
+			av_frame_free(&hw_frame);
+			return ENOMEM;
+		}
 	}
 
 	err = mbuf_fill(st->mb, 0x00, AV_INPUT_BUFFER_PADDING_SIZE);
@@ -235,7 +245,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		goto out;
 	}
 
-	ret = avcodec_receive_frame(st->ctx, hw_frame ? hw_frame : st->pict);
+	ret = avcodec_receive_frame(st->ctx, hw_frame ? hw_frame : sw_frame);
 	if (ret == AVERROR(EAGAIN)) {
 		goto out;
 	}
@@ -251,34 +261,33 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 		if (hw_frame) {
 			/* retrieve data from GPU to CPU */
-			ret = av_hwframe_transfer_data(st->pict, hw_frame, 0);
+			ret = av_hwframe_transfer_data(sw_frame, hw_frame, 0);
 			if (ret < 0) {
 				warning("avcodec: decode: Error transferring"
 					" the data to system memory\n");
 				goto out;
 			}
 
-			st->pict->key_frame = hw_frame->key_frame;
+			sw_frame->key_frame = hw_frame->key_frame;
 		}
 
-		frame->fmt = avpixfmt_to_vidfmt(st->pict->format);
+		frame->fmt = avpixfmt_to_vidfmt(sw_frame->format);
 		if (frame->fmt == (enum vidfmt)-1) {
 			warning("avcodec: decode: bad pixel format"
 				" (%i) (%s)\n",
-				st->pict->format,
-				av_get_pix_fmt_name(st->pict->format));
+				sw_frame->format,
+				av_get_pix_fmt_name(sw_frame->format));
 			goto out;
 		}
 
 		for (i=0; i<4; i++) {
-			frame->data[i]     = st->pict->data[i];
-			frame->linesize[i] = st->pict->linesize[i];
+			frame->data[i]     = sw_frame->data[i];
+			frame->linesize[i] = sw_frame->linesize[i];
 		}
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
 
-		if (st->pict->key_frame) {
-
+		if (sw_frame->key_frame) {
 			*intra = true;
 			st->got_keyframe = true;
 			++st->stats.n_key;
@@ -286,7 +295,10 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 	}
 
  out:
-	av_frame_free(&hw_frame);
+	if (hw_frame) {
+		av_frame_free(&hw_frame);
+		av_free(sw_frame);
+	}
 	av_packet_free(&avpkt);
 	return err;
 }

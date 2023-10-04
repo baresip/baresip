@@ -1,0 +1,8 @@
+.env
+contacts
+current_contact
+*.dat
+*.eps
+plots
+uuid
+*.json

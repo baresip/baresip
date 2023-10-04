@@ -28,7 +28,7 @@ struct videnc_state {
 	unsigned pktsize;
 	bool ctxup;
 	videnc_packet_h *pkth;
-	void *arg;
+	const struct video *vid;
 };
 
 
@@ -43,7 +43,7 @@ static void destructor(void *arg)
 
 int av1_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		      struct videnc_param *prm, const char *fmtp,
-		      videnc_packet_h *pkth, void *arg)
+		      videnc_packet_h *pkth, const struct video *vid)
 {
 	struct videnc_state *ves;
 	(void)fmtp;
@@ -74,7 +74,7 @@ int av1_encode_update(struct videnc_state **vesp, const struct vidcodec *vc,
 	ves->pktsize = prm->pktsize;
 	ves->fps     = prm->fps;
 	ves->pkth    = pkth;
-	ves->arg     = arg;
+	ves->vid     = vid;
 
 	return 0;
 }
@@ -138,7 +138,8 @@ static int packetize_rtp(struct videnc_state *ves,
 	bool new_flag = keyframe;
 
 	return av1_packetize_high(&new_flag, true, rtp_ts, buf, size,
-				ves->pktsize, ves->pkth, ves->arg);
+				  ves->pktsize, (av1_packet_h *)ves->pkth,
+				  (void *)ves->vid);
 }
 
 

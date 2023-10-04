@@ -23,9 +23,9 @@ extern enum AVHWDeviceType avcodec_hw_type;
 struct videnc_state;
 
 int avcodec_encode_update(struct videnc_state **vesp,
-			  const struct vidcodec *vc,
-			  struct videnc_param *prm, const char *fmtp,
-			  videnc_packet_h *pkth, void *arg);
+			  const struct vidcodec *vc, struct videnc_param *prm,
+			  const char *fmtp, videnc_packet_h *pkth,
+			  const struct video *vid);
 int avcodec_encode(struct videnc_state *st, bool update,
 		   const struct vidframe *frame, uint64_t timestamp);
 int avcodec_packetize(struct videnc_state *st, const struct vidpacket *packet);
@@ -38,7 +38,8 @@ int avcodec_packetize(struct videnc_state *st, const struct vidpacket *packet);
 struct viddec_state;
 
 int avcodec_decode_update(struct viddec_state **vdsp,
-			  const struct vidcodec *vc, const char *fmtp);
+			  const struct vidcodec *vc, const char *fmtp,
+			  const struct video *vid);
 int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
 int avcodec_decode_h265(struct viddec_state *st, struct vidframe *frame,

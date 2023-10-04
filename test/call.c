@@ -91,7 +91,6 @@ struct fixture {
 	unsigned exp_estab;
 	unsigned exp_closed;
 	bool fail_transfer;
-	bool stop_on_audio_video;
 	bool accept_session_updates;
 	struct list rules;
 };
@@ -253,12 +252,6 @@ static const struct list *hdrs;
 
 
 static const char dtmf_digits[] = "123";
-
-
-static bool agent_audio_video_estab(const struct agent *ag)
-{
-	return ag->n_audio_estab > 0 && ag->n_video_estab > 0;
-}
 
 
 static bool check_rule(struct cancel_rule *rule, int met_prev,
@@ -617,14 +610,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		else if (strstr(prm, "video"))
 			++ag->n_video_estab;
 
-		if (f->stop_on_audio_video) {
-
-			if (agent_audio_video_estab(ag) &&
-			    agent_audio_video_estab(ag->peer)) {
-
-				re_cancel();
-			}
-		}
 		break;
 
 	case UA_EVENT_CALL_RTCP:
@@ -1926,6 +1911,7 @@ int test_call_aufilt(void)
 int test_call_webrtc(void)
 {
 	struct fixture fix = {0}, *f = &fix;
+	struct cancel_rule *cr;
 	struct sdp_media *sdp_a, *sdp_b;
 	int err;
 
@@ -1945,10 +1931,13 @@ int test_call_webrtc(void)
 	TEST_ERR(err);
 
 	fixture_init_prm(f, ";medianat=XNAT;mediaenc=dtls_srtp");
+	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cr->n_audio_estab = cr->n_video_estab = 1;
+	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cr->n_audio_estab = cr->n_video_estab = 1;
 
 	f->estab_action = ACTION_NOTHING;
 	f->behaviour = BEHAVIOUR_ANSWER;
-	f->stop_on_audio_video = true;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);

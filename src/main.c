@@ -119,6 +119,12 @@ int main(int argc, char *argv[])
 	if (err)
 		goto out;
 
+#ifdef RE_TRACE_ENABLED
+	err = re_trace_init("re_trace.json");
+	if (err)
+		goto out;
+#endif
+
 	tmr_init(&tmr_quit);
 
 #ifdef HAVE_GETOPT
@@ -344,6 +350,10 @@ int main(int argc, char *argv[])
 	mod_close();
 
 	re_thread_async_close();
+
+#ifdef RE_TRACE_ENABLED
+	re_trace_close();
+#endif
 
 	/* Check for open timers */
 	tmr_debug();

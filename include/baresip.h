@@ -13,7 +13,7 @@ extern "C" {
 
 
 /** Defines the Baresip version string */
-#define BARESIP_VERSION "3.4.0"
+#define BARESIP_VERSION "3.5.1"
 
 
 #ifndef NET_MAX_NS
@@ -70,6 +70,13 @@ enum sipansbeep {
 	SIPANSBEEP_OFF,
 	SIPANSBEEP_ON,
 	SIPANSBEEP_LOCAL,
+};
+
+/** Jitter buffer type */
+enum jbuf_type {
+	JBUF_OFF,
+	JBUF_FIXED,
+	JBUF_ADAPTIVE
 };
 
 struct account;
@@ -900,6 +907,8 @@ int  ua_call_alloc(struct call **callp, struct ua *ua,
 struct call *ua_find_call_state(const struct ua *ua, enum call_state st);
 int ua_raise(struct ua *ua);
 int ua_set_autoanswer_value(struct ua *ua, const char *value);
+void ua_add_extension(struct ua *ua, const char *extension);
+void ua_remove_extension(struct ua *ua, const char *extension);
 
 
 /* One instance */
@@ -1198,12 +1207,12 @@ struct vidcodec;
 typedef int (videnc_packet_h)(bool marker, uint64_t rtp_ts,
 			      const uint8_t *hdr, size_t hdr_len,
 			      const uint8_t *pld, size_t pld_len,
-			      void *arg);
+			      const struct video *vid);
 
 typedef int (videnc_update_h)(struct videnc_state **vesp,
 			      const struct vidcodec *vc,
 			      struct videnc_param *prm, const char *fmtp,
-			      videnc_packet_h *pkth, void *arg);
+			      videnc_packet_h *pkth, const struct video *vid);
 
 typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
 			      const struct vidframe *frame,
@@ -1212,8 +1221,10 @@ typedef int (videnc_encode_h)(struct videnc_state *ves, bool update,
 typedef int (videnc_packetize_h)(struct videnc_state *ves,
 				 const struct vidpacket *packet);
 
-typedef int (viddec_update_h)(struct viddec_state **vdsp,
-			      const struct vidcodec *vc, const char *fmtp);
+typedef int(viddec_update_h)(struct viddec_state **vdsp,
+			     const struct vidcodec *vc, const char *fmtp,
+			     const struct video *vid);
+
 typedef int (viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
                               bool *intra, bool marker, uint16_t seq,
                               struct mbuf *mb);
@@ -1446,6 +1457,38 @@ const char *stream_peer(const struct stream *strm);
 int  stream_bundle_init(struct stream *strm, bool offerer);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
+
+
+/**
+ * Jitter Buffer
+ */
+struct jbuf;
+struct rtp_header;
+
+/** Jitter buffer statistics */
+struct jbuf_stat {
+	uint32_t n_put;        /**< Number of frames put into jitter buffer */
+	uint32_t n_get;        /**< Number of frames got from jitter buffer */
+	uint32_t n_oos;        /**< Number of out-of-sequence frames        */
+	uint32_t n_dups;       /**< Number of duplicate frames detected     */
+	uint32_t n_late;       /**< Number of frames arriving too late      */
+	uint32_t n_lost;       /**< Number of lost frames                   */
+	uint32_t n_overflow;   /**< Number of overflows                     */
+	uint32_t n_underflow;  /**< Number of underflows                    */
+	uint32_t n_flush;      /**< Number of times jitter buffer flushed   */
+};
+
+
+int  jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max);
+int  jbuf_set_type(struct jbuf *jb, enum jbuf_type jbtype);
+int  jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem);
+int  jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem);
+int  jbuf_drain(struct jbuf *jb, struct rtp_header *hdr, void **mem);
+void jbuf_flush(struct jbuf *jb);
+int  jbuf_stats(const struct jbuf *jb, struct jbuf_stat *jstat);
+int  jbuf_debug(struct re_printf *pf, const struct jbuf *jb);
+uint32_t jbuf_frames(const struct jbuf *jb);
+uint32_t jbuf_packets(const struct jbuf *jb);
 
 
 /*
