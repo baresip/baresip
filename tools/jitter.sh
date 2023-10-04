@@ -11,7 +11,8 @@ function init_jitter () {
 
 function enable_jitter() {
     echo "ENABLE JITTER ..."
-    sudo tc qdisc add dev ifb1 root netem delay 0ms 50ms
+#    sudo tc qdisc add dev ifb1 root netem delay 0ms 50ms
+    sudo tc qdisc add dev ifb1 root netem delay 0ms 50ms loss 0.7%
 }
 
 
