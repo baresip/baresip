@@ -773,6 +773,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 				mbuf_get_left(mb), err);
 		}
 
+		RE_TRACE_INSTANT("video", "decode_err");
 		request_picture_update(vrx);
 
 		goto out;
