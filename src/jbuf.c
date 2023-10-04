@@ -303,8 +303,11 @@ out:
  */
 int  jbuf_resize(struct jbuf *jb, uint32_t packets)
 {
-	if (packets <= jb->packets)
+	if (!jb)
 		return EINVAL;
+
+	if (packets <= jb->packets)
+		return 0;
 
 	for (uint32_t i=jb->packets; i<packets; i++) {
 		struct packet *p = mem_zalloc(sizeof(*p), NULL);
