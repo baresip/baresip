@@ -27,7 +27,7 @@ function gen_datfile() {
 
 gen_datfile "P" jbuf.dat
 gen_datfile "O" overrun.dat
-gen_datfile "U" waiting.dat
+gen_datfile "U" underrun.dat
 gen_datfile "L" toolate.dat
 gen_datfile "D" duplicate.dat
 gen_datfile "S" oosequence.dat

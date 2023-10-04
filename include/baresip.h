@@ -1525,7 +1525,7 @@ struct jbuf_stat {
 	uint32_t n_late;       /**< Number of frames arriving too late      */
 	uint32_t n_lost;       /**< Number of lost frames                   */
 	uint32_t n_overflow;   /**< Number of overflows                     */
-	uint32_t n_waiting;    /**< Number of read waiting                  */
+	uint32_t n_underrun;   /**< Number of underruns                     */
 	uint32_t n_flush;      /**< Number of times jitter buffer flushed   */
 };
 
