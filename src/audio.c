@@ -167,6 +167,12 @@ struct aurx {
 };
 
 
+struct audio_err_st {
+	struct le le;
+	audio_err_h *errh;            /**< Audio error handler             */
+	void *arg;                    /**< Handler argument                */
+};
+
 /** Generic Audio stream */
 struct audio {
 	MAGIC_DECL                    /**< Magic number for debugging      */
@@ -182,7 +188,7 @@ struct audio {
 	uint8_t extmap_aulevel;       /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_level_h *levelh;        /**< Audio level handler             */
-	audio_err_h *errh;            /**< Audio error handler             */
+	struct list errhl;            /**< List of error handlers		   */
 	void *arg;                    /**< Handler argument                */
 };
 
@@ -287,6 +293,11 @@ static void stop_rx(struct aurx *rx)
 		mtx_unlock(rx->mtx);
 }
 
+static void audio_err_st_destructor(void *arg) {
+	struct audio_err_st *err_st = arg;
+
+	list_unlink(&err_st->le);
+}
 
 static void audio_destructor(void *arg)
 {
@@ -316,6 +327,8 @@ static void audio_destructor(void *arg)
 
 	mem_deref(a->tx.mtx);
 	mem_deref(a->rx.mtx);
+
+	list_flush(&a->errhl);
 }
 
 
@@ -705,9 +718,11 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 	if (!err) {
 		info("audio: ausrc - %s\n", str);
 	}
-	else {
-		if (a->errh)
-			a->errh(err, str, a->arg);
+
+	for (struct le *le = a->errhl.head; le; le = le->next) {
+		struct audio_err_st *st = le->data;
+
+		st->errh(err, str, st->arg);
 	}
 }
 
@@ -1192,8 +1207,12 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	a->eventh  = eventh;
 	a->levelh  = levelh;
-	a->errh    = errh;
 	a->arg     = arg;
+
+	list_init(&a->errhl);
+
+	if (errh)
+		err |= audio_add_error_handler(a, errh, arg);
 
  out:
 	if (err)
@@ -2212,7 +2231,7 @@ int audio_set_devicename(struct audio *a, const char *src, const char *play)
 
 
 /**
- * Set the audio source state to a new audio source module and device.
+ * Set the extended audio source state to a new audio source module and device.
  * The current audio source will be stopped.
  *
  * @param au     Audio object
@@ -2338,6 +2357,59 @@ int audio_set_bitrate(struct audio *au, uint32_t bitrate)
 	return 0;
 }
 
+/**
+ * Add an audio error handler
+ *
+ * @param au      Audio object
+ * @param handler error handler
+ * @param arg	  argument to the error handler
+ *
+ * @return 0 if no error, error code otherwise
+ */
+int  audio_add_error_handler(struct audio *au, audio_err_h handler, void *arg)
+{
+	for (struct le *le = au->errhl.tail; le; le = le->prev) {
+		struct audio_err_st *st = le->data;
+
+		if (st->errh == handler)
+			return EALREADY;
+	}
+
+	struct audio_err_st *err_st = mem_zalloc(sizeof(struct audio_err_st), audio_err_st_destructor);
+
+	err_st->errh = handler;
+	err_st->arg = arg;
+
+	list_append(&au->errhl, &err_st->le, err_st);
+
+	return 0;
+}
+
+
+/**
+ * Remove an audio error handler
+ *
+ * @param au      Audio object
+ * @param handler error handler
+ *
+ * @return 0 if no error, error code otherwise
+ */
+int  audio_remove_error_handler(struct audio *au, audio_err_h handler)
+{
+	if (!au || !handler)
+		return EINVAL;
+
+	for (struct le *le = au->errhl.tail; le; le = le->prev) {
+		struct audio_err_st *st = le->data;
+
+		if (st->errh == handler) {
+			list_unlink(&st->le);
+			return 0;
+		}
+	}
+
+	return ENOENT;
+}
 
 /**
  * Check if audio receiving has started
