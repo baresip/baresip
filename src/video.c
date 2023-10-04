@@ -407,7 +407,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 		mtx_unlock(vtx->lock_tx);
 		return;
 	}
-        mtx_unlock(vtx->lock_tx);
+	mtx_unlock(vtx->lock_tx);
 
 	mtx_lock(vtx->lock_enc);
 
@@ -474,7 +474,7 @@ static void vidsrc_frame_handler(struct vidframe *frame, uint64_t timestamp,
 
 	mtx_lock(vtx->lock_enc);
 	++vtx->frames;
-        ++vtx->stats.src_frames;
+	++vtx->stats.src_frames;
 	mtx_unlock(vtx->lock_enc);
 
 	/* Encode and send */
