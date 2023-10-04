@@ -157,6 +157,7 @@ set(SRCS
   src/descr.c
   src/dial_number.c
   src/event.c
+  src/jbuf.c
   src/http.c
   src/log.c
   src/mediadev.c
