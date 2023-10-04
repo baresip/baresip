@@ -36,8 +36,9 @@ plot \
 'jbuf.dat' using 3:4 title 'n' with linespoints lc "skyblue", \
 'jbuf.dat' using 3:5 title 'nf' with linespoints lc "blue", \
 'jbuf.dat' using 3:6 title 'ncf' with linespoints lc "green", \
+'jbuf.dat' using 3:7 title 'nfa' with linespoints lc "pink", \
 'overrun.dat' using 3:(event_h(1)) title 'overrun' pt 7 ps 1.5 lc "#FF0000", \
-'waiting.dat' using 3:(event_h(2)) title 'waiting' pt 7 ps 1.5 lc "#A5A5A5", \
+'underrun.dat' using 3:(event_h(2)) title 'underrun' pt 7 ps 1.5 lc "#A52222", \
 'toolate.dat' using 3:(event_h(3)) title  'toolate' pt 7 ps 1.5 lc "#BB5454", \
 'duplicate.dat' using 3:(event_h(4)) title 'duplicate' pt 7 ps 1.5 lc "#E919C6", \
 'oosequence.dat' using 3:(event_h(5)) title 'out of seq' pt 7 ps 1.5 lc "#BB7777", \
