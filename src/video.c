@@ -1078,13 +1078,21 @@ int video_alloc(struct video **vp, struct list *streaml,
 	if (!vp || !cfg)
 		return EINVAL;
 
-	v = mem_zalloc(sizeof(*v), video_destructor);
+	v = mem_zalloc(sizeof(*v), NULL);
 	if (!v)
 		return ENOMEM;
 
+	v->cfg = cfg->video;
+
+	err  = vtx_alloc(&v->vtx, v);
+	err |= vrx_alloc(&v->vrx, v);
+	if (err)
+		goto out;
+
+	mem_destructor(v, video_destructor);
+
 	MAGIC_INIT(v);
 
-	v->cfg = cfg->video;
 	tmr_init(&v->tmr);
 
 	err = stream_alloc(&v->strm, streaml, stream_prm,
@@ -1128,11 +1136,6 @@ int video_alloc(struct video **vp, struct list *streaml,
 
 	v->errh = errh;
 	v->arg = arg;
-
-	err  = vtx_alloc(&v->vtx, v);
-	err |= vrx_alloc(&v->vrx, v);
-	if (err)
-		goto out;
 
 	/* Video codecs */
 	for (le = list_head(vidcodecl); le; le = le->next) {
