@@ -252,6 +252,7 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 	if (got_picture) {
 
 		if (hw_frame) {
+			av_frame_unref(st->pict); /* cleanup old frame */
 			/* retrieve data from GPU to CPU */
 			ret = av_hwframe_transfer_data(st->pict, hw_frame, 0);
 			if (ret < 0) {
