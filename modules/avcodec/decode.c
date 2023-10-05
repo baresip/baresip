@@ -57,7 +57,7 @@ static void destructor(void *arg)
 		avcodec_free_context(&st->ctx);
 
 	if (st->pict)
-		av_free(st->pict);
+		av_frame_free(&st->pict);
 }
 
 
