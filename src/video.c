@@ -1082,6 +1082,8 @@ int video_alloc(struct video **vp, struct list *streaml,
 	if (!v)
 		return ENOMEM;
 
+	MAGIC_INIT(v);
+
 	v->cfg = cfg->video;
 
 	err  = vtx_alloc(&v->vtx, v);
@@ -1090,8 +1092,6 @@ int video_alloc(struct video **vp, struct list *streaml,
 		goto out;
 
 	mem_destructor(v, video_destructor);
-
-	MAGIC_INIT(v);
 
 	tmr_init(&v->tmr);
 
