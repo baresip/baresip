@@ -1338,8 +1338,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		uint32_t ptime, const struct list *aucodecl, bool offerer,
-		audio_event_h *eventh, audio_level_h *levelh, audio_vad_h *vadh,
-		audio_err_h *errh, void *arg);
+		audio_event_h *eventh, audio_level_h *levelh,
+		audio_vad_h *vadh, audio_err_h *errh, void *arg);
 void audio_mute(struct audio *a, bool muted);
 bool audio_ismuted(const struct audio *a);
 int  audio_set_devicename(struct audio *a, const char *src, const char *play);
