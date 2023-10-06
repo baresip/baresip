@@ -414,6 +414,9 @@ static bool jbuf_frame_ready(struct jbuf *jb)
 	if (!jb->end)
 		return false;
 
+	if (!jb->min && !jb->wish)
+		return true;
+
 	return jb->ncf > jb->wish;
 }
 
@@ -595,7 +598,7 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 			   jb->nf, jb->ncf, jb->min, jb->nfa, jb->wish);
 			STAT_INC(n_underrun);
 			jb->wish = jb->nf > 2 ? jb->nf : 2;
-			int32_t nfa = (int32_t) (jb->nf + 1) * JBUF_EMA_FAC;
+			int32_t nfa = (int32_t) (jb->nf + 2) * JBUF_EMA_FAC;
 			if (nfa > jb->nfa)
 				jb->nfa  = nfa;
 
@@ -633,7 +636,12 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 	packet_deref(jb, p);
 	jb->newframe = false;
 
-	int32_t nfa = ((int32_t) jb->nf - jb->ncf + jb->min) * JBUF_EMA_FAC;
+	int32_t nfa;
+	if (jb->min)
+		nfa = ((int32_t) jb->nf - jb->ncf)     * (JBUF_EMA_FAC*3/2);
+	else
+		nfa = ((int32_t) jb->nf - jb->ncf - 1) * (JBUF_EMA_FAC*5);
+
 	int32_t s = nfa > jb->nfa ? JBUF_UP_SPEED : 1;
 
 	jb->nfa += (nfa - jb->nfa) * s / JBUF_EMA_COEFF;
