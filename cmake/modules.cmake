@@ -48,6 +48,7 @@ set(MODULES
   ebuacip
   echo
   fakevideo
+  fvad
   g711
   httpd
   httpreq

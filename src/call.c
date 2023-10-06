@@ -458,6 +458,16 @@ static void audio_level_handler(bool tx, double lvl, void *arg)
 }
 
 
+static void audio_vad_handler(bool tx, bool active, void *arg)
+{
+	struct call *call = arg;
+	MAGIC_CHECK(call);
+
+	ua_event(call->ua, tx ? UA_EVENT_VAD_TX : UA_EVENT_VAD_RX,
+		 call, "%d", active);
+}
+
+
 static void audio_error_handler(int err, const char *str, void *arg)
 {
 	struct call *call = arg;
@@ -815,7 +825,7 @@ int call_streams_alloc(struct call *call)
 			  acc->ptime, account_aucodecl(call->acc),
 			  !call->got_offer,
 			  audio_event_handler, audio_level_handler,
-			  audio_error_handler, call);
+			  audio_vad_handler, audio_error_handler, call);
 	if (err)
 		return err;
 

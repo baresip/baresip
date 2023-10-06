@@ -827,6 +827,8 @@ enum ua_event {
 	UA_EVENT_CALL_MENC,
 	UA_EVENT_VU_TX,
 	UA_EVENT_VU_RX,
+	UA_EVENT_VAD_TX,
+	UA_EVENT_VAD_RX,
 	UA_EVENT_AUDIO_ERROR,
 	UA_EVENT_CALL_LOCAL_SDP,      /**< param: offer or answer */
 	UA_EVENT_CALL_REMOTE_SDP,     /**< param: offer or answer */
@@ -1326,6 +1328,7 @@ struct mnat_sess;
 
 typedef void (audio_event_h)(int key, bool end, void *arg);
 typedef void (audio_level_h)(bool tx, double lvl, void *arg);
+typedef void (audio_vad_h)(bool tx, bool active, void *arg);
 typedef void (audio_err_h)(int err, const char *str, void *arg);
 
 int audio_alloc(struct audio **ap, struct list *streaml,
@@ -1335,7 +1338,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
 		uint32_t ptime, const struct list *aucodecl, bool offerer,
-		audio_event_h *eventh, audio_level_h *levelh,
+		audio_event_h *eventh, audio_level_h *levelh, audio_vad_h *vadh,
 		audio_err_h *errh, void *arg);
 void audio_mute(struct audio *a, bool muted);
 bool audio_ismuted(const struct audio *a);
@@ -1344,6 +1347,8 @@ int  audio_set_source(struct audio *au, const char *mod, const char *device);
 int  audio_set_player(struct audio *au, const char *mod, const char *device);
 void audio_level_put(const struct audio *au, bool tx, double lvl);
 int  audio_level_get(const struct audio *au, double *level);
+void audio_vad_put(const struct audio *au, bool tx, bool active);
+int  audio_vad_get(const struct audio *au, bool *active);
 int  audio_debug(struct re_printf *pf, const struct audio *a);
 struct stream *audio_strm(const struct audio *au);
 uint64_t audio_jb_current_value(const struct audio *au);
