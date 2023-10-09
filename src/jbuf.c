@@ -487,7 +487,7 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 
 	/* Check min/max latency requirements */
 	/* @TODO: */
-
+	playout_time += 960 * jb->min;
 
 	return playout_time;
 }
@@ -760,6 +760,8 @@ void jbuf_flush(struct jbuf *jb)
 	if (!jb)
 		return;
 
+	//@TODO: reset playout specifc values
+
 	mtx_lock(jb->lock);
 	if (jb->packetl.head) {
 		DEBUG_INFO("flush: %u frames\n", jb->n);
@@ -804,6 +806,22 @@ uint32_t jbuf_packets(const struct jbuf *jb)
 	mtx_unlock(jb->lock);
 
 	return n;
+}
+
+
+int32_t jbuf_next_play(const struct jbuf *jb)
+{
+	if (!jb || !jb->packetl.head)
+		return -1;
+
+	struct packet *p = jb->packetl.head->data;
+
+	uint32_t current = (uint32_t)(tmr_jiffies() * jb->p.srate / 1000);
+
+	if (p->playout_time < current)
+		return 0; /* already late */
+
+	return (p->playout_time - current) * 1000 / jb->p.srate;
 }
 
 
