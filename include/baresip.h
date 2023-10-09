@@ -1580,6 +1580,7 @@ int  jbuf_stats(const struct jbuf *jb, struct jbuf_stat *jstat);
 int  jbuf_debug(struct re_printf *pf, const struct jbuf *jb);
 uint32_t jbuf_frames(const struct jbuf *jb);
 uint32_t jbuf_packets(const struct jbuf *jb);
+int32_t jbuf_next_play(const struct jbuf *jb);
 
 
 /*
