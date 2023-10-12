@@ -1570,6 +1570,7 @@ struct jbuf_stat {
 
 int  jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max);
 void jbuf_set_srate(struct jbuf *jb, uint32_t srate);
+void jbuf_set_id(struct jbuf *jb, struct pl *id);
 int  jbuf_set_type(struct jbuf *jb, enum jbuf_type jbtype);
 void jbuf_set_gnack(struct jbuf *jb, struct rtp_sock *rtp);
 int  jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem);
