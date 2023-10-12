@@ -6,6 +6,12 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+
+#undef RE_TRACE_ENABLED
+#if JBUF_TRACE
+#define RE_TRACE_ENABLED 1
+#endif
+
 #include <string.h>
 #include <stdint.h>
 #include <re.h>
@@ -34,7 +40,7 @@
 enum {
 	JBUF_RDIFF_EMA_COEFF = 1024,
 	JBUF_RDIFF_UP_SPEED  = 512,
-	JBUF_PUT_TIMEOUT     = 400,
+	JBUF_PUT_TIMEOUT     = 10000,
 	JBUF_LATE_TRESHOLD   = 3,
 	JBUF_SPIKE_END       = 960
 };
@@ -63,6 +69,7 @@ struct packet {
  * sequence number.
  */
 struct jbuf {
+	struct pl *id;
 	struct rtp_sock *gnack_rtp; /**< Generic NACK RTP Socket             */
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
@@ -85,6 +92,7 @@ struct jbuf {
 		uint32_t jitter;
 		uint16_t late_pkts;
 		uint32_t srate;
+		uint32_t last_delay;
 	} p;                 /**< Playout specific values                    */
 	uint64_t tr;         /**< Time of previous jbuf_put()                */
 	int pt;              /**< Payload type                               */
@@ -110,55 +118,11 @@ static inline bool seq_less(uint16_t x, uint16_t y)
 }
 
 
-#ifdef RE_JBUF_TRACE
-static void plot_jbuf(struct jbuf *jb, uint64_t tr)
+/** Calculate delay in ms from clock rate */
+static inline int32_t delay_ms(uint32_t delay_clock, uint32_t srate)
 {
-	uint32_t treal;
-	uint32_t rdiff = (uint32_t)(jb->rdiff / (float)JBUF_RDIFF_EMA_COEFF);
-
-	if (!jb->tr00)
-		jb->tr00 = tr;
-
-	treal = (uint32_t) (tr - jb->tr00);
-	re_snprintf(jb->buf, sizeof(jb->buf),
-		    "%s, 0x%p, %u, %u, %u, %u, %u",
-			__func__,               /* row 1  - grep */
-			jb,                     /* row 2  - grep optional */
-			treal,                  /* row 3  - plot x-axis */
-			rdiff,                  /* row 4  - plot */
-			jb->wish,               /* row 5  - plot */
-			jb->n,                  /* row 6  - plot */
-			jb->nf);                /* row 7  - plot */
-	re_trace_event("jbuf", "plot", 'P', NULL, 0, RE_TRACE_ARG_STRING_COPY,
-		       "line", jb->buf);
+	return (delay_clock * 1000) / srate;
 }
-
-
-static void plot_jbuf_event(struct jbuf *jb, char ph)
-{
-	uint32_t treal;
-	uint64_t tr;
-
-	tr = tmr_jiffies();
-	if (!jb->tr00)
-		jb->tr00 = tr;
-
-	treal = (uint32_t) (tr - jb->tr00);
-	re_snprintf(jb->buf, sizeof(jb->buf), "%s, 0x%p, %u, %i",
-			__func__,               /* row 1  - grep */
-			jb,                     /* row 2  - grep optional */
-			treal,                  /* row 3  - plot x-axis */
-			1);                     /* row 4  - plot */
-	re_trace_event("jbuf", "plot", ph, NULL, 0, RE_TRACE_ARG_STRING_COPY,
-		       "line", jb->buf);
-}
-#else
-static void plot_jbuf_event(struct jbuf *jb, char ph)
-{
-	(void)jb;
-	(void)ph;
-}
-#endif
 
 
 /**
@@ -188,13 +152,7 @@ static void packet_alloc(struct jbuf *jb, struct packet **f)
 		DEBUG_WARNING("drop 1 old frame seq=%u\n", f0->hdr.seq);
 #endif
 
-		if (le->next) {
-			struct packet *f1 = list_ledata(le->next);
-			if (f1->hdr.ts != f0->hdr.ts)
-				--jb->nf;
-		}
-
-		plot_jbuf_event(jb, 'O');
+		RE_TRACE_ID_INSTANT("jbuf", "overflow", jb->id);
 		f0->mem = mem_deref(f0->mem);
 		list_unlink(le);
 	}
@@ -224,6 +182,7 @@ static void jbuf_destructor(void *data)
 	/* Free all packets in the pool list */
 	list_flush(&jb->pooll);
 	mem_deref(jb->lock);
+	mem_deref(jb->id);
 }
 
 
@@ -303,6 +262,15 @@ void jbuf_set_srate(struct jbuf *jb, uint32_t srate)
 }
 
 
+void jbuf_set_id(struct jbuf *jb, struct pl *id)
+{
+	if (!jb)
+		return;
+
+	jb->id = mem_ref(id);
+}
+
+
 /**
  * Set jitter buffer type.
  *
@@ -355,6 +323,8 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 	if (d < 0)
 		d = -d;
 
+	jb->p.last_delay = d;
+
 	jb->p.jitter += d - ((jb->p.jitter + 8) >> 4);
 
 	if (d > SPIKE_THRESHOLD) {
@@ -382,7 +352,7 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 	}
 	else {
 		/* Only fatal events should trigger adaption */
-		if (jb->p.late_pkts > JBUF_LATE_TRESHOLD) {
+		if (jb->p.late_pkts >= JBUF_LATE_TRESHOLD) {
 			jb->p.late_pkts = 0;
 
 			adapt = true;
@@ -393,8 +363,11 @@ out:
 	jb->p.last_last_transit = jb->p.last_transit;
 	jb->p.last_transit	= transit;
 
-	if (adapt)
+	if (adapt) {
 		jb->p.jitter_offset = 3 * (jb->p.jitter >> 4);
+		RE_TRACE_ID_INSTANT_I("jbuf", "adjust_due_to_jitter",
+				      jb->p.jitter_offset, jb->id);
+	}
 
 	return jb->p.jitter_offset;
 }
@@ -414,14 +387,17 @@ static int32_t adjust_due_to_skew(struct jbuf *jb, struct packet *p)
 			(31LL * jb->p.delay_estimate + delay) / 32;
 	}
 
-	if ((jb->p.active_delay - jb->p.delay_estimate) > SKEW_THRESHOLD) {
-		jb->p.offset = 0; /* needs testing */
+	int32_t diff = jb->p.active_delay - jb->p.delay_estimate;
+
+	RE_TRACE_ID_INSTANT_I("jbuf", "clock_skew", diff, jb->id);
+
+	if (diff > SKEW_THRESHOLD) {
+		jb->p.offset	   = 0; /* needs testing */
 		jb->p.active_delay = jb->p.delay_estimate;
 		return SKEW_THRESHOLD;
 	}
 
-	if ((int32_t)(jb->p.active_delay - jb->p.delay_estimate) <
-	    -SKEW_THRESHOLD) {
+	if (diff < -SKEW_THRESHOLD) {
 		jb->p.offset	   = 0; /* needs testing */
 		jb->p.active_delay = jb->p.delay_estimate;
 		return -SKEW_THRESHOLD;
@@ -450,7 +426,8 @@ static inline uint32_t offset(struct packet *p)
 
 static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 {
-	uint32_t playout_time;
+	uint32_t base_offset = 0;
+	uint32_t play_time_base;
 
 	/* Fragmented frames (like video) have equal playout_time.
 	 * If we miss some packet here (late/reorder), playout time calculation
@@ -470,26 +447,27 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 		jb->p.offset = offset_min(offset(p), jb->p.offset);
 
 	/* Calculate base playout point */
-	playout_time = p->hdr.ts + jb->p.offset;
+	play_time_base = p->hdr.ts + jb->p.offset;
 
 	if (jb->jbtype == JBUF_ADAPTIVE) {
 		/* Add playout reference clock skew compensation */
-		int32_t skew = adjust_due_to_skew(jb, p);
-		playout_time += skew;
+		/* @TODO: trigger insert or remove frame */
+		(void)adjust_due_to_skew(jb, p);
 
 		/* Add Jitter compensation */
-		uint32_t jitter = adjust_due_to_jitter(jb, p);
-		playout_time += jitter;
-
-		DEBUG_WARNING("skew: %d, jitter: %d, playout: %u\n", skew,
-			      jitter, playout_time);
+		base_offset += adjust_due_to_jitter(jb, p);
 	}
 
 	/* Check min/max latency requirements */
 	/* @TODO: */
-	playout_time += 960 * jb->min;
+	base_offset += 960 * jb->min;
 
-	return playout_time;
+	RE_TRACE_ID_INSTANT_I("jbuf", "recv_delay",
+			      delay_ms(jb->p.last_delay, jb->p.srate), jb->id);
+	RE_TRACE_ID_INSTANT_I("jbuf", "play_delay",
+			      delay_ms(base_offset, jb->p.srate), jb->id);
+
+	return play_time_base + base_offset;
 }
 
 
@@ -560,9 +538,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	if (jb->running) {
 		/* Packet arrived too late to be put into buffer */
 		if (jb->seq_get && seq_less(seq, jb->seq_get + 1)) {
-			jb->p.late_pkts++;
 			STAT_INC(n_late);
-			plot_jbuf_event(jb, 'L');
 			DEBUG_INFO("packet too late: seq=%u "
 				   "(seq_put=%u seq_get=%u)\n",
 				   seq, jb->seq_put, jb->seq_get);
@@ -612,7 +588,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 			/* Detect duplicates */
 			DEBUG_INFO("duplicate: seq=%u\n", seq);
 			STAT_INC(n_dups);
-			plot_jbuf_event(jb, 'D');
+			RE_TRACE_ID_INSTANT("jbuf", "duplicate", jb->id);
 			list_insert_after(&jb->packetl, le, &f->le, f);
 			packet_deref(jb, f);
 			err = EALREADY;
@@ -630,7 +606,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	}
 
 	STAT_INC(n_oos);
-	plot_jbuf_event(jb, 'S');
+	RE_TRACE_ID_INSTANT("jbuf", "out-of-sequence", jb->id);
 
 success:
 	/* Update last sequence */
@@ -641,7 +617,9 @@ success:
 	f->hdr = *hdr;
 	f->mem = mem_ref(mem);
 	f->playout_time = calc_playout_time(jb, f);
-	/* DEBUG_WARNING("put play %u\n", f->playout_time); */
+
+	if (!f->playout_time)
+		packet_deref(jb, f);
 
 out:
 #ifdef RE_JBUF_TRACE
@@ -674,6 +652,15 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 
 	mtx_lock(jb->lock);
 	STAT_INC(n_get);
+
+	RE_TRACE_ID_INSTANT_I("jbuf", "get", jb->n, jb->id);
+
+	if (!jb->packetl.head) {
+		jb->p.late_pkts++;
+		RE_TRACE_ID_INSTANT("jbuf", "underrun", jb->id);
+		err = ENOENT;
+		goto out;
+	}
 
 	f = jb->packetl.head->data;
 
@@ -783,8 +770,8 @@ void jbuf_flush(struct jbuf *jb)
 	n_flush = STAT_INC(n_flush);
 	memset(&jb->stat, 0, sizeof(jb->stat));
 	jb->stat.n_flush = n_flush;
-	plot_jbuf_event(jb, 'F');
 #endif
+	RE_TRACE_ID_INSTANT("jbuf", "flush", jb->id);
 	mtx_unlock(jb->lock);
 }
 
@@ -821,7 +808,7 @@ int32_t jbuf_next_play(const struct jbuf *jb)
 	if (p->playout_time < current)
 		return 0; /* already late */
 
-	return (p->playout_time - current) * 1000 / jb->p.srate;
+	return ((p->playout_time - current) * 1000 / jb->p.srate) + 1;
 }
 
 
