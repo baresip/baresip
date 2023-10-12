@@ -181,7 +181,7 @@ struct vidisp;
 struct vidframe;
 
 typedef void (mock_vidisp_h)(const struct vidframe *frame, uint64_t timestamp,
-			     void *arg);
+			     const char *title, void *arg);
 
 int mock_vidisp_register(struct vidisp **vidispp,
 			 mock_vidisp_h *disph, void *arg);

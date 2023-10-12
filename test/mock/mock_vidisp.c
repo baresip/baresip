@@ -58,7 +58,6 @@ static int mock_display(struct vidisp_st *st, const char *title,
 			const struct vidframe *frame, uint64_t timestamp)
 {
 	unsigned width, height;
-	(void)title;
 	(void)timestamp;
 
 	if (!st || !frame)
@@ -88,7 +87,7 @@ static int mock_display(struct vidisp_st *st, const char *title,
 		info("mock_vidisp: got %u frames\n", st->n_frame);
 
 		if (mock.disph)
-			mock.disph(frame, timestamp, mock.arg);
+			mock.disph(frame, timestamp, title, mock.arg);
 	}
 
 	return 0;

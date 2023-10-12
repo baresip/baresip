@@ -46,6 +46,7 @@ struct cancel_rule {
 	unsigned n_video_estab;
 	unsigned n_offer_cnt;
 	unsigned n_answer_cnt;
+	unsigned n_vidframe;
 
 	struct cancel_rule *cr_and;
 	bool met;
@@ -73,6 +74,7 @@ struct agent {
 	unsigned n_video_estab;
 	unsigned n_offer_cnt;
 	unsigned n_answer_cnt;
+	unsigned n_vidframe;
 };
 
 
@@ -91,7 +93,6 @@ struct fixture {
 	unsigned exp_estab;
 	unsigned exp_closed;
 	bool fail_transfer;
-	bool accept_session_updates;
 	struct list rules;
 };
 
@@ -270,8 +271,8 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 
 	if (str_isset(rule->prm) &&
-	    str_casecmp(prm, rule->prm)) {
-		info("test: event %s prm=%s (expected %s)\n",
+	    !str_str(prm, rule->prm)) {
+		info("test: event %s prm=[%s] (expected [%s])\n",
 		     uag_event_str(ev), prm, rule->prm);
 		return false;
 	}
@@ -340,6 +341,10 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		     ag->n_answer_cnt, rule->n_answer_cnt);
 		return false;
 	}
+
+	if (rule->n_vidframe &&
+	    ag->n_vidframe < rule->n_vidframe)
+		return false;
 
 	rule->met = true;
 out:
@@ -1017,22 +1022,31 @@ int test_call_dtmf(void)
 
 
 static void mock_vidisp_handler(const struct vidframe *frame,
-				uint64_t timestamp, void *arg)
+				uint64_t timestamp, const char *title,
+				void *arg)
 {
 	struct fixture *fix = arg;
+	struct agent *ag;
+	struct ua *ua;
 	int err = 0;
 	(void)frame;
 	(void)timestamp;
-	(void)fix;
 
 	ASSERT_EQ(MAGIC, fix->magic);
 
 	ASSERT_EQ(conf_config()->video.enc_fmt, (int)frame->fmt);
 
-	/* Stop the test */
-	if (!fix->accept_session_updates) {
-		re_cancel();
-	}
+	if (title[4] == 'b')
+		ag = &fix->b;
+	else if (title[4] == 'c')
+		ag = &fix->c;
+	else
+		ag = &fix->a;
+
+	++ag->n_vidframe;
+	ua = ag->ua;
+	ua_event(ua, UA_EVENT_CUSTOM, ua_call(ua), "vidframe %u",
+		 ag->n_vidframe);
 
  out:
 	if (err)
@@ -1044,12 +1058,19 @@ int test_call_video(void)
 {
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
+	struct cancel_rule *cr;
 	int err = 0;
 
 	conf_config()->video.fps = 100;
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init(f);
+	cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cr->prm = "vidframe";
+	cr->n_vidframe = 3;
+	cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cr->prm = "vidframe";
+	cr->n_vidframe = 3;
 
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
@@ -1094,7 +1115,7 @@ int test_call_change_videodir(void)
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
 	struct sdp_media *vm;
-	struct cancel_rule *cr, *cr_rtcp;
+	struct cancel_rule *cr, *cr_vida, *cr_vidb;
 	int err = 0;
 
 	conf_config()->video.fps = 100;
@@ -1102,8 +1123,14 @@ int test_call_change_videodir(void)
 
 	fixture_init(f);
 	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
-	cr_rtcp = cancel_rule_new(UA_EVENT_CALL_RTCP, f->b.ua, 1, 0, 1);
-	cr_rtcp->prm = "video";
+
+	cr_vidb = cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cr_vidb->prm = "vidframe";
+	cr_vidb->n_vidframe = 3;
+	cr_vida = cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cr_vida->prm = "vidframe";
+	cr_vida->n_vidframe = 3;
+
 	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
 	cr->n_offer_cnt = 1;
 
@@ -1118,7 +1145,6 @@ int test_call_change_videodir(void)
 
 	f->behaviour = BEHAVIOUR_PROGRESS;
 	f->estab_action = ACTION_NOTHING;
-	f->accept_session_updates = true;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
@@ -1133,7 +1159,7 @@ int test_call_change_videodir(void)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	/* wait for CALL_RTCP at callee */
+	/* wait for video frames */
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
@@ -1141,6 +1167,8 @@ int test_call_change_videodir(void)
 	/* verify that video was enabled and bi-directional */
 	ASSERT_EQ(1, fix.a.n_established);
 	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_TRUE(fix.a.n_vidframe >= 3);
+	ASSERT_TRUE(fix.b.n_vidframe >= 3);
 
 	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
@@ -1173,7 +1201,9 @@ int test_call_change_videodir(void)
 	/* Set video sendrecv */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
 	TEST_ERR(err);
-	cr_rtcp->n_offer_cnt = 2;
+	cr_vidb->n_offer_cnt = 2;
+	cr_vidb->n_vidframe = 6;
+	cr_vida->n_vidframe = 6;
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
