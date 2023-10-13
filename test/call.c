@@ -274,6 +274,18 @@ static void cancel_rule_reset(struct cancel_rule *cr)
 }
 
 
+static void cancel_rules_reset(struct fixture *f)
+{
+	struct le *le;
+
+	LIST_FOREACH(&f->rules, le) {
+		struct cancel_rule *cr = le->data;
+
+		cancel_rule_reset(cr);
+	}
+}
+
+
 #define cancel_rule_new(ev, ua, n_incoming, n_progress, n_established)    \
 	cr = fixture_add_cancel_rule(f, ev, ua, n_incoming, n_progress,   \
 				     n_established);			  \
@@ -305,6 +317,8 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	if (rule->cr_and) {
 		met_next = check_rule(rule->cr_and, rule->met && met_prev, ag,
 				      ev, prm);
+		if (rule->met && met_prev && met_next)
+			return true;
 	}
 
 	if (rule->met)
@@ -395,7 +409,7 @@ out:
 	if (met_prev && met_next) {
 		info("canceled by %H", cancel_rule_debug, rule);
 		re_cancel();
-		cancel_rule_reset(rule);
+		cancel_rules_reset(ag->fix);
 	}
 
 	return met_next;
