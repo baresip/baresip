@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## 3.6.0 - 2023-10-17
+
+## What's Changed
+* test: call - replace stop_on_audio_video by cancel rule by @cspiel1 in https://github.com/baresip/baresip/pull/2701
+* video: use const struct video for videnc_update_h and viddec_update_h by @sreimers in https://github.com/baresip/baresip/pull/2670
+* misc: fd_listen fhs alloc rewrite by @sreimers in https://github.com/baresip/baresip/pull/2688
+* ctrl_tcp: fix netstring enum warning by @sreimers in https://github.com/baresip/baresip/pull/2730
+* ua, static_menu: Fix 100rel cmd by @maximilianfridrich in https://github.com/baresip/baresip/pull/2731
+* tools: jbuf plots by @cspiel1 in https://github.com/baresip/baresip/pull/2733
+* tools: fix and cleanup ajb plots by @cspiel1 in https://github.com/baresip/baresip/pull/2736
+* ua: move adding of norefersub extension to create_register_clients by @maximilianfridrich in https://github.com/baresip/baresip/pull/2734
+* main: add re_trace.json if enabled by @sreimers in https://github.com/baresip/baresip/pull/2738
+* jbuf: move from re to baresip by @cspiel1 in https://github.com/baresip/baresip/pull/2743
+* avcodec/decode: refactor hw_frame handling by @sreimers in https://github.com/baresip/baresip/pull/2720
+* call: include Referred-by: tag in REFERs by @rodrigodeppe in https://github.com/baresip/baresip/pull/2739
+* ci: bump pr-dependency-action@v0.6 by @sreimers in https://github.com/baresip/baresip/pull/2746
+* video: add video decode error trace by @sreimers in https://github.com/baresip/baresip/pull/2748
+* video: protect shared resources in video_debug by @paresy in https://github.com/baresip/baresip/pull/2747
+* video: delay video_destructor by @sreimers in https://github.com/baresip/baresip/pull/2751
+* avcodec/decode: revert hw_frame handling and fix unref frame by @sreimers in https://github.com/baresip/baresip/pull/2752
+* avcodec/decode: fix last av_frame memory leak by @sreimers in https://github.com/baresip/baresip/pull/2753
+* test: call - count video frames in videodir tests by @cspiel1 in https://github.com/baresip/baresip/pull/2758
+* test call - fix logical and by @cspiel1 in https://github.com/baresip/baresip/pull/2763
+
+## New Contributors
+* @rodrigodeppe made their first contribution in https://github.com/baresip/baresip/pull/2739
+* @paresy made their first contribution in https://github.com/baresip/baresip/pull/2747
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.5.1...v3.6.0
+
 ## 3.5.1 - 2023-09-12
 
 ## What's Changed
