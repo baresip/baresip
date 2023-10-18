@@ -175,6 +175,7 @@ static void cancel_rule_destructor(void *arg)
 {
 	struct cancel_rule *r = arg;
 
+	list_unlink(&r->le);
 	mem_deref(r->cr_and);
 }
 
@@ -302,6 +303,10 @@ static void cancel_rules_reset(struct fixture *f)
 		err = ENOMEM;						  \
 		goto out;						  \
 	}
+
+
+#define cancel_rule_pop()						  \
+	mem_deref(list_tail(&f->rules)->data);
 
 
 static const struct list *hdrs;
@@ -1189,9 +1194,6 @@ int test_call_change_videodir(void)
 	cr_vida->prm = "vidframe";
 	cr_vida->n_vidframe = 3;
 
-	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
-	cr->n_offer_cnt = 1;
-
 	/* to enable video, we need one vidsrc and vidcodec */
 	mock_vidcodec_register();
 
@@ -1239,18 +1241,25 @@ int test_call_change_videodir(void)
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
 
+	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->prm = "offer";
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cr->prm = "answer";
+
 	/* Set video inactive */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
 	TEST_ERR(err);
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
+	TEST_ERR(fix.err);
+	cancel_rule_pop();
 
-	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
+	ASSERT_TRUE(!call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
 
 	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->a.ua))));
 	ASSERT_EQ(SDP_INACTIVE, sdp_media_ldir(vm));
-	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(vm));
 
 	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->b.ua))));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
@@ -1259,9 +1268,8 @@ int test_call_change_videodir(void)
 	/* Set video sendrecv */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
 	TEST_ERR(err);
-	cr_vidb->n_offer_cnt = 2;
-	cr_vidb->n_vidframe = 6;
-	cr_vida->n_vidframe = 6;
+	f->a.n_vidframe = 0;
+	f->b.n_vidframe = 0;
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
@@ -1276,6 +1284,92 @@ int test_call_change_videodir(void)
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(vm));
 
+ out:
+	if (err)
+		cancel_rules_debug(f);
+
+	fixture_close(f);
+	mem_deref(vidisp);
+	module_unload("fakevideo");
+	mock_vidcodec_unregister();
+
+	return err;
+}
+
+
+int test_call_100rel_video(void)
+{
+	struct fixture fix, *f = &fix;
+	struct vidisp *vidisp = NULL;
+	struct cancel_rule *cr;
+	int err = 0;
+
+	conf_config()->video.fps = 100;
+	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
+
+	fixture_init_prm(f, ";100rel=yes;answermode=early");
+
+	cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 0);
+	cr->prm = "vidframe";
+	cr->n_vidframe = 3;
+	cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 0);
+	cr->prm = "vidframe";
+	cr->n_vidframe = 3;
+	/* to enable video, we need one vidsrc and vidcodec */
+	mock_vidcodec_register();
+
+	err = mock_vidisp_register(&vidisp, mock_vidisp_handler, f);
+	TEST_ERR(err);
+
+	err = module_load(".", "fakevideo");
+	TEST_ERR(err);
+
+	f->behaviour = BEHAVIOUR_PROGRESS;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	/* wait for video frames */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* switch off early video */
+	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 0);
+	cr->prm = "offer";
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 0);
+	cr->prm = "answer";
+
+	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
+	TEST_ERR(err);
+	/* wait for remote SDP at both UAs */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+	cancel_rule_pop();
+
+	struct sdp_media *vm;
+	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_ldir(vm));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(vm));
+
+	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(vm));
+	ASSERT_TRUE(call_refresh_allowed(ua_call(f->a.ua)));
+
+	f->a.n_vidframe=0;
+	f->b.n_vidframe=0;
+	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
+	TEST_ERR(err);
+	/* wait for video frames */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+	ASSERT_TRUE(fix.a.n_vidframe >= 3);
+	ASSERT_TRUE(fix.b.n_vidframe >= 3);
  out:
 	if (err)
 		cancel_rules_debug(f);
