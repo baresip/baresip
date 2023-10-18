@@ -44,6 +44,7 @@ struct call {
 	char *local_name;         /**< Local display name                   */
 	char *peer_uri;           /**< Peer SIP Address                     */
 	char *peer_name;          /**< Peer display name                    */
+	struct sa msg_src;        /**< Peer message source address          */
 	char *diverter_uri;       /**< Diverter SIP Address                 */
 	char *id;                 /**< Cached session call-id               */
 	char *replaces;           /**< Replaces parameter                   */
@@ -2319,6 +2320,8 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			  invite_timeout, call);
 	}
 
+	call->msg_src = msg->src;
+
 	call->estadir = stream_ldir(audio_strm(call_audio(call)));
 	call->estvdir = stream_ldir(video_strm(call_video(call)));
 	if (!call->acc->mnat)
@@ -2349,6 +2352,8 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 
 	info("call: SIP Progress: %u %r (%r/%r)\n",
 	     msg->scode, &msg->reason, &msg->ctyp.type, &msg->ctyp.subtype);
+
+	call->msg_src = msg->src;
 
 	if (msg->scode <= 100)
 		return;
@@ -3190,4 +3195,23 @@ bool call_is_evstop(struct call *call)
 bool call_sent_answer(const struct call *call)
 {
 	return call ? call->sent_answer : false;
+}
+
+
+/**
+ * Get the message source address of the peer
+ *
+ * @param call Call object
+ * @param sa   Pointer to sa object. Will be set on return.
+ *
+ * @return 0 on success, non-zero otherwise
+ */
+int call_msg_src(const struct call *call, struct sa *sa)
+{
+	if (!call || !sa)
+		return EINVAL;
+
+	*sa = call->msg_src;
+
+	return 0;
 }
