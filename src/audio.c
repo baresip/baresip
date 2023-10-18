@@ -705,10 +705,8 @@ static void ausrc_error_handler(int err, const char *str, void *arg)
 	if (!err) {
 		info("audio: ausrc - %s\n", str);
 	}
-	else {
-		if (a->errh)
-			a->errh(err, str, a->arg);
-	}
+	if (a->errh)
+		a->errh(err, str, a->arg);
 }
 
 
