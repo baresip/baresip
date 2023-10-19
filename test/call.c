@@ -222,6 +222,12 @@ static struct cancel_rule *cancel_rule_add_and(struct cancel_rule *cr,
 	return r;
 }
 
+#define UINTSET(u) (u) != (unsigned) -1
+
+#define cr_debug_nbr(fld) \
+	(UINTSET(cr->fld) ? \
+		re_hprintf(pf, "    " #fld ":    %u\n", cr->fld) : 0)
+
 
 static int cancel_rule_debug(struct re_printf *pf,
 			     const struct cancel_rule *cr)
@@ -230,23 +236,24 @@ static int cancel_rule_debug(struct re_printf *pf,
 	if (!cr)
 		return 0;
 
-	err  = re_hprintf(pf, "--- %s ---\n", uag_event_str(cr->ev));
-	err |= re_hprintf(pf, " prm:  %s\n", cr->prm);
-	err |= re_hprintf(pf, " ua:   %s\n", account_aor(ua_account(cr->ua)));
-	err |= re_hprintf(pf, " n_incoming:    %u\n", cr->n_incoming);
-	err |= re_hprintf(pf, " n_progress:    %u\n", cr->n_progress);
-	err |= re_hprintf(pf, " n_established: %u\n", cr->n_established);
-	err |= re_hprintf(pf, " n_audio_estab: %u\n", cr->n_audio_estab);
-	err |= re_hprintf(pf, " n_video_estab: %u\n", cr->n_video_estab);
-	err |= re_hprintf(pf, " n_offer_cnt:   %u\n", cr->n_offer_cnt);
-	err |= re_hprintf(pf, " n_answer_cnt:  %u\n", cr->n_answer_cnt);
-	err |= re_hprintf(pf, " n_vidframe:    %u\n", cr->n_vidframe);
-	err |= re_hprintf(pf, " met:  %s\n", cr->met ? "yes": "no");
+	err  = re_hprintf(pf, "  --- %s ---\n", uag_event_str(cr->ev));
+	err |= re_hprintf(pf, "    prm:  %s\n", cr->prm);
+	err |= re_hprintf(pf, "    ua:   %s\n",
+			  account_aor(ua_account(cr->ua)));
+	err |= cr_debug_nbr(n_incoming);
+	err |= cr_debug_nbr(n_progress);
+	err |= cr_debug_nbr(n_established);
+	err |= cr_debug_nbr(n_audio_estab);
+	err |= cr_debug_nbr(n_video_estab);
+	err |= cr_debug_nbr(n_offer_cnt);
+	err |= cr_debug_nbr(n_answer_cnt);
+	err |= cr_debug_nbr(n_vidframe);
+	err |= re_hprintf(pf, "    met:  %s\n", cr->met ? "yes": "no");
 	if (err)
 		return err;
 
 	if (cr->cr_and) {
-		err |= re_hprintf(pf, " AND -->\n");
+		err |= re_hprintf(pf, "  AND -->\n");
 		err |= cancel_rule_debug(pf, cr->cr_and);
 	}
 
@@ -258,6 +265,7 @@ static void cancel_rules_debug(struct fixture *f)
 {
 	struct le *le;
 
+	re_printf("Cancel Rules:\n");
 	LIST_FOREACH(&f->rules, le) {
 		struct cancel_rule *cr = le->data;
 
