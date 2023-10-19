@@ -238,6 +238,7 @@ static struct cancel_rule *cancel_rule_and_alloc(struct cancel_rule *cr,
 	return r;
 }
 
+
 #define UINTSET(u) (u) != (unsigned) -1
 
 #define cr_debug_nbr(fld) \
@@ -277,7 +278,44 @@ static int cancel_rule_debug(struct re_printf *pf,
 }
 
 
-static void cancel_rules_debug(struct fixture *f)
+#define ag_debug_nbr(fld) \
+	re_hprintf(pf, "    " #fld ": %u\n", ag->fld)
+
+
+static int agent_debug(struct re_printf *pf, const struct agent *ag)
+{
+	int err;
+	if (!ag)
+		return 0;
+
+	char c = &ag->fix->a == ag ? 'a' :
+		 &ag->fix->b == ag ? 'b' : 'c';
+	err = re_hprintf(pf, "  --- Agent %c ---\n", c);
+	err |= ag_debug_nbr(close_scode);
+	err |= re_hprintf(pf, "    failed: %s\n", ag->failed ? "yes" : "no");
+	err |= ag_debug_nbr(n_incoming);
+	err |= ag_debug_nbr(n_progress);
+	err |= ag_debug_nbr(n_established);
+	err |= ag_debug_nbr(n_closed);
+	err |= ag_debug_nbr(n_transfer_fail);
+	err |= ag_debug_nbr(n_dtmf_recv);
+	err |= ag_debug_nbr(n_transfer);
+	err |= ag_debug_nbr(n_mediaenc);
+	err |= ag_debug_nbr(n_rtpestab);
+	err |= ag_debug_nbr(n_rtcp);
+	err |= ag_debug_nbr(n_audio_estab);
+	err |= ag_debug_nbr(n_video_estab);
+	err |= ag_debug_nbr(n_offer_cnt);
+	err |= ag_debug_nbr(n_answer_cnt);
+	err |= ag_debug_nbr(n_vidframe);
+	if (err)
+		return err;
+
+	return err;
+}
+
+
+static void failure_debug(struct fixture *f, bool c)
 {
 	struct le *le;
 
@@ -287,6 +325,12 @@ static void cancel_rules_debug(struct fixture *f)
 
 		re_printf("%H", cancel_rule_debug, cr);
 	}
+
+	re_printf("Agents:\n");
+	re_printf("%H", agent_debug, &f->a);
+	re_printf("%H", agent_debug, &f->b);
+	if (c)
+		re_printf("%H", agent_debug, &f->c);
 }
 
 
@@ -1304,7 +1348,7 @@ int test_call_change_videodir(void)
 
  out:
 	if (err)
-		cancel_rules_debug(f);
+		failure_debug(f, false);
 
 	fixture_close(f);
 	mem_deref(vidisp);
@@ -1390,7 +1434,7 @@ int test_call_100rel_video(void)
 	ASSERT_TRUE(fix.b.n_vidframe >= 3);
  out:
 	if (err)
-		cancel_rules_debug(f);
+		failure_debug(f, false);
 
 	fixture_close(f);
 	mem_deref(vidisp);
