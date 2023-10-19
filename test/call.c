@@ -17,7 +17,7 @@
 
 enum behaviour {
 	BEHAVIOUR_ANSWER = 0,
-	BEHAVIOUR_PROGRESS,
+	BEHAVIOUR_NOTHING,
 	BEHAVIOUR_REJECT,
 	BEHAVIOUR_GET_HDRS,
 };
@@ -480,14 +480,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			err = ua_answer(ua, call, VIDMODE_ON);
 			if (err) {
 				warning("ua_answer failed (%m)\n", err);
-				goto out;
-			}
-			break;
-
-		case BEHAVIOUR_PROGRESS:
-			err = call_progress(call);
-			if (err) {
-				warning("call_progress failed (%m)\n", err);
 				goto out;
 			}
 			break;
@@ -1192,7 +1184,7 @@ int test_call_change_videodir(void)
 	conf_config()->video.fps = 100;
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
-	fixture_init(f);
+	fixture_init_prm(f, ";answermode=early");
 	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
 	cr_vidb = cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
@@ -1211,7 +1203,7 @@ int test_call_change_videodir(void)
 	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
-	f->behaviour = BEHAVIOUR_PROGRESS;
+	f->behaviour = BEHAVIOUR_NOTHING;
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
@@ -1332,7 +1324,7 @@ int test_call_100rel_video(void)
 	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
-	f->behaviour = BEHAVIOUR_PROGRESS;
+	f->behaviour = BEHAVIOUR_NOTHING;
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
@@ -1462,10 +1454,10 @@ int test_call_progress(void)
 	struct cancel_rule *cr;
 	int err = 0;
 
-	fixture_init(f);
+	fixture_init_prm(f, ";answermode=early");
 	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
-	f->behaviour = BEHAVIOUR_PROGRESS;
+	f->behaviour = BEHAVIOUR_NOTHING;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
