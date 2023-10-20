@@ -69,6 +69,8 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_MENC:
 	case UA_EVENT_CALL_LOCAL_SDP:
 	case UA_EVENT_CALL_REMOTE_SDP:
+	case UA_EVENT_CALL_HOLD:
+	case UA_EVENT_CALL_RESUME:
 		return "call";
 	case UA_EVENT_VU_RX:
 	case UA_EVENT_VU_TX:
@@ -449,6 +451,8 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_AUDIO_ERROR:          return "AUDIO_ERROR";
 	case UA_EVENT_CALL_LOCAL_SDP:       return "CALL_LOCAL_SDP";
 	case UA_EVENT_CALL_REMOTE_SDP:      return "CALL_REMOTE_SDP";
+	case UA_EVENT_CALL_HOLD:            return "CALL_HOLD";
+	case UA_EVENT_CALL_RESUME:          return "CALL_RESUME";
 	case UA_EVENT_REFER:                return "REFER";
 	case UA_EVENT_MODULE:               return "MODULE";
 	case UA_EVENT_END_OF_FILE:          return "END_OF_FILE";
