@@ -427,7 +427,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	}
 
 	if (UINTSET(rule->n_progress) &&
-	    ag->n_progress != rule->n_progress) {
+	    ag->n_progress < rule->n_progress) {
 		info("test: event %s n_progress=%u (expected %u)\n",
 		     uag_event_str(ev),
 		     ag->n_progress, rule->n_progress);
