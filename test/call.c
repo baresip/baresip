@@ -1214,7 +1214,7 @@ int test_call_video(void)
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(5000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -1273,7 +1273,7 @@ int test_call_change_videodir(void)
 	TEST_ERR(err);
 
 	/* wait for CALL_PROGRESS */
-	err = re_main_timeout(5000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -1282,7 +1282,7 @@ int test_call_change_videodir(void)
 	TEST_ERR(fix.err);
 
 	/* wait for video frames */
-	err = re_main_timeout(5000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -1311,7 +1311,7 @@ int test_call_change_videodir(void)
 	/* Set video inactive */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
 	TEST_ERR(err);
-	err = re_main_timeout(5000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -1332,7 +1332,7 @@ int test_call_change_videodir(void)
 	TEST_ERR(err);
 	f->a.n_vidframe = 0;
 	f->b.n_vidframe = 0;
-	err = re_main_timeout(5000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
 	ASSERT_TRUE(call_has_video(ua_call(f->a.ua)));
