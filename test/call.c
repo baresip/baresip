@@ -17,7 +17,7 @@
 
 enum behaviour {
 	BEHAVIOUR_ANSWER = 0,
-	BEHAVIOUR_PROGRESS,
+	BEHAVIOUR_NOTHING,
 	BEHAVIOUR_REJECT,
 	BEHAVIOUR_GET_HDRS,
 };
@@ -180,6 +180,31 @@ static void cancel_rule_destructor(void *arg)
 }
 
 
+static struct cancel_rule *cancel_rule_alloc(enum ua_event ev,
+					     struct ua *ua,
+					     unsigned n_incoming,
+					     unsigned n_progress,
+					     unsigned n_established)
+{
+	struct cancel_rule *r = mem_zalloc(sizeof(*r), cancel_rule_destructor);
+	if (!r)
+		return NULL;
+
+	r->ev = ev;
+	r->ua = ua;
+	r->n_incoming    = n_incoming;
+	r->n_progress    = n_progress;
+	r->n_established = n_established;
+
+	r->n_audio_estab = (unsigned) -1;
+	r->n_video_estab = (unsigned) -1;
+	r->n_offer_cnt   = (unsigned) -1;
+	r->n_answer_cnt  = (unsigned) -1;
+	r->n_vidframe    = (unsigned) -1;
+	return r;
+}
+
+
 static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
 						   enum ua_event ev,
 						   struct ua *ua,
@@ -187,40 +212,38 @@ static struct cancel_rule *fixture_add_cancel_rule(struct fixture *f,
 						   unsigned n_progress,
 						   unsigned n_established)
 {
-	struct cancel_rule *r = mem_zalloc(sizeof(*r), cancel_rule_destructor);
+	struct cancel_rule *r = cancel_rule_alloc(ev, ua, n_incoming,
+						  n_progress, n_established);
 	if (!r)
 		return NULL;
-
-	r->ev = ev;
-	r->ua = ua;
-	r->n_incoming    = n_incoming;
-	r->n_progress    = n_progress;
-	r->n_established = n_established;
 
 	list_append(&f->rules, &r->le, r);
 	return r;
 }
 
-static struct cancel_rule *cancel_rule_add_and(struct cancel_rule *cr,
-						   enum ua_event ev,
-						   struct ua *ua,
-						   unsigned n_incoming,
-						   unsigned n_progress,
-						   unsigned n_established)
+
+static struct cancel_rule *cancel_rule_and_alloc(struct cancel_rule *cr,
+						 enum ua_event ev,
+						 struct ua *ua,
+						 unsigned n_incoming,
+						 unsigned n_progress,
+						 unsigned n_established)
 {
-	struct cancel_rule *r = mem_zalloc(sizeof(*r), cancel_rule_destructor);
+	struct cancel_rule *r = cancel_rule_alloc(ev, ua, n_incoming,
+						  n_progress, n_established);
 	if (!r)
 		return NULL;
-
-	r->ev = ev;
-	r->ua = ua;
-	r->n_incoming    = n_incoming;
-	r->n_progress    = n_progress;
-	r->n_established = n_established;
 
 	cr->cr_and = r;
 	return r;
 }
+
+
+#define UINTSET(u) (u) != (unsigned) -1
+
+#define cr_debug_nbr(fld) \
+	(UINTSET(cr->fld) ? \
+		re_hprintf(pf, "    " #fld ":    %u\n", cr->fld) : 0)
 
 
 static int cancel_rule_debug(struct re_printf *pf,
@@ -230,23 +253,24 @@ static int cancel_rule_debug(struct re_printf *pf,
 	if (!cr)
 		return 0;
 
-	err  = re_hprintf(pf, "--- %s ---\n", uag_event_str(cr->ev));
-	err |= re_hprintf(pf, " prm:  %s\n", cr->prm);
-	err |= re_hprintf(pf, " ua:   %s\n", account_aor(ua_account(cr->ua)));
-	err |= re_hprintf(pf, " n_incoming:    %u\n", cr->n_incoming);
-	err |= re_hprintf(pf, " n_progress:    %u\n", cr->n_progress);
-	err |= re_hprintf(pf, " n_established: %u\n", cr->n_established);
-	err |= re_hprintf(pf, " n_audio_estab: %u\n", cr->n_audio_estab);
-	err |= re_hprintf(pf, " n_video_estab: %u\n", cr->n_video_estab);
-	err |= re_hprintf(pf, " n_offer_cnt:   %u\n", cr->n_offer_cnt);
-	err |= re_hprintf(pf, " n_answer_cnt:  %u\n", cr->n_answer_cnt);
-	err |= re_hprintf(pf, " n_vidframe:    %u\n", cr->n_vidframe);
-	err |= re_hprintf(pf, " met:  %s\n", cr->met ? "yes": "no");
+	err  = re_hprintf(pf, "  --- %s ---\n", uag_event_str(cr->ev));
+	err |= re_hprintf(pf, "    prm:  %s\n", cr->prm);
+	err |= re_hprintf(pf, "    ua:   %s\n",
+			  account_aor(ua_account(cr->ua)));
+	err |= cr_debug_nbr(n_incoming);
+	err |= cr_debug_nbr(n_progress);
+	err |= cr_debug_nbr(n_established);
+	err |= cr_debug_nbr(n_audio_estab);
+	err |= cr_debug_nbr(n_video_estab);
+	err |= cr_debug_nbr(n_offer_cnt);
+	err |= cr_debug_nbr(n_answer_cnt);
+	err |= cr_debug_nbr(n_vidframe);
+	err |= re_hprintf(pf, "    met:  %s\n", cr->met ? "yes": "no");
 	if (err)
 		return err;
 
 	if (cr->cr_and) {
-		err |= re_hprintf(pf, " AND -->\n");
+		err |= re_hprintf(pf, "  AND -->\n");
 		err |= cancel_rule_debug(pf, cr->cr_and);
 	}
 
@@ -254,15 +278,59 @@ static int cancel_rule_debug(struct re_printf *pf,
 }
 
 
-static void cancel_rules_debug(struct fixture *f)
+#define ag_debug_nbr(fld) \
+	re_hprintf(pf, "    " #fld ": %u\n", ag->fld)
+
+
+static int agent_debug(struct re_printf *pf, const struct agent *ag)
+{
+	int err;
+	if (!ag)
+		return 0;
+
+	char c = &ag->fix->a == ag ? 'a' :
+		 &ag->fix->b == ag ? 'b' : 'c';
+	err = re_hprintf(pf, "  --- Agent %c ---\n", c);
+	err |= ag_debug_nbr(close_scode);
+	err |= re_hprintf(pf, "    failed: %s\n", ag->failed ? "yes" : "no");
+	err |= ag_debug_nbr(n_incoming);
+	err |= ag_debug_nbr(n_progress);
+	err |= ag_debug_nbr(n_established);
+	err |= ag_debug_nbr(n_closed);
+	err |= ag_debug_nbr(n_transfer_fail);
+	err |= ag_debug_nbr(n_dtmf_recv);
+	err |= ag_debug_nbr(n_transfer);
+	err |= ag_debug_nbr(n_mediaenc);
+	err |= ag_debug_nbr(n_rtpestab);
+	err |= ag_debug_nbr(n_rtcp);
+	err |= ag_debug_nbr(n_audio_estab);
+	err |= ag_debug_nbr(n_video_estab);
+	err |= ag_debug_nbr(n_offer_cnt);
+	err |= ag_debug_nbr(n_answer_cnt);
+	err |= ag_debug_nbr(n_vidframe);
+	if (err)
+		return err;
+
+	return err;
+}
+
+
+static void failure_debug(struct fixture *f, bool c)
 {
 	struct le *le;
 
+	re_printf("Cancel Rules:\n");
 	LIST_FOREACH(&f->rules, le) {
 		struct cancel_rule *cr = le->data;
 
 		re_printf("%H", cancel_rule_debug, cr);
 	}
+
+	re_printf("Agents:\n");
+	re_printf("%H", agent_debug, &f->a);
+	re_printf("%H", agent_debug, &f->b);
+	if (c)
+		re_printf("%H", agent_debug, &f->c);
 }
 
 
@@ -297,8 +365,8 @@ static void cancel_rules_reset(struct fixture *f)
 
 
 #define cancel_rule_and(ev, ua, n_incoming, n_progress, n_established)	  \
-	cr = cancel_rule_add_and(cr, ev, ua, n_incoming, n_progress,	  \
-				 n_established);			  \
+	cr = cancel_rule_and_alloc(cr, ev, ua, n_incoming, n_progress,	  \
+				   n_established);			  \
 	if (!cr) {							  \
 		err = ENOMEM;						  \
 		goto out;						  \
@@ -308,6 +376,8 @@ static void cancel_rules_reset(struct fixture *f)
 #define cancel_rule_pop()						  \
 	mem_deref(list_tail(&f->rules)->data);
 
+
+#define UINTSET(u) (u) != (unsigned) -1
 
 static const struct list *hdrs;
 
@@ -348,7 +418,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (rule->n_incoming &&
+	if (UINTSET(rule->n_incoming) &&
 	    ag->n_incoming != rule->n_incoming) {
 		info("test: event %s n_incoming=%u (expected %u)\n",
 		     uag_event_str(ev),
@@ -356,15 +426,15 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (rule->n_progress &&
-	    ag->n_progress != rule->n_progress) {
+	if (UINTSET(rule->n_progress) &&
+	    ag->n_progress < rule->n_progress) {
 		info("test: event %s n_progress=%u (expected %u)\n",
 		     uag_event_str(ev),
 		     ag->n_progress, rule->n_progress);
 		return false;
 	}
 
-	if (rule->n_established &&
+	if (UINTSET(rule->n_established) &&
 	    ag->n_established != rule->n_established) {
 		info("test: event %s n_established=%u (expected %u)\n",
 		     uag_event_str(ev),
@@ -372,7 +442,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (rule->n_audio_estab &&
+	if (UINTSET(rule->n_audio_estab) &&
 	    ag->n_audio_estab != rule->n_audio_estab) {
 		info("test: event %s n_audio_estab=%u (expected %u)\n",
 		     uag_event_str(ev),
@@ -380,7 +450,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (rule->n_video_estab &&
+	if (UINTSET(rule->n_video_estab) &&
 	    ag->n_video_estab != rule->n_video_estab) {
 		info("test: event %s n_video_estab=%u (expected %u)\n",
 		     uag_event_str(ev),
@@ -388,7 +458,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (rule->n_offer_cnt &&
+	if (UINTSET(rule->n_offer_cnt) &&
 	    ag->n_offer_cnt != rule->n_offer_cnt) {
 		info("test: event %s n_offer_cnt=%u (expected %u)\n",
 		     uag_event_str(ev),
@@ -396,7 +466,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (rule->n_answer_cnt &&
+	if (UINTSET(rule->n_answer_cnt) &&
 	    ag->n_answer_cnt != rule->n_answer_cnt) {
 		info("test: event %s n_answer_cnt=%u (expected %u)\n",
 		     uag_event_str(ev),
@@ -404,7 +474,7 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		return false;
 	}
 
-	if (rule->n_vidframe &&
+	if (UINTSET(rule->n_vidframe) &&
 	    ag->n_vidframe < rule->n_vidframe)
 		return false;
 
@@ -472,14 +542,6 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 			err = ua_answer(ua, call, VIDMODE_ON);
 			if (err) {
 				warning("ua_answer failed (%m)\n", err);
-				goto out;
-			}
-			break;
-
-		case BEHAVIOUR_PROGRESS:
-			err = call_progress(call);
-			if (err) {
-				warning("call_progress failed (%m)\n", err);
 				goto out;
 			}
 			break;
@@ -1178,19 +1240,19 @@ int test_call_change_videodir(void)
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
 	struct sdp_media *vm;
-	struct cancel_rule *cr, *cr_vida, *cr_vidb;
+	struct cancel_rule *cr, *cr_vida, *cr_vidb, *cr_prog;
 	int err = 0;
 
 	conf_config()->video.fps = 100;
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
-	fixture_init(f);
-	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
+	fixture_init_prm(f, ";answermode=early");
+	cr_prog = cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
 	cr_vidb = cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr_vidb->prm = "vidframe";
 	cr_vidb->n_vidframe = 3;
-	cr_vida = cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
+	cr_vida = cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 1, 1);
 	cr_vida->prm = "vidframe";
 	cr_vida->n_vidframe = 3;
 
@@ -1203,7 +1265,7 @@ int test_call_change_videodir(void)
 	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
-	f->behaviour = BEHAVIOUR_PROGRESS;
+	f->behaviour = BEHAVIOUR_NOTHING;
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
@@ -1214,6 +1276,7 @@ int test_call_change_videodir(void)
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
+	mem_deref(cr_prog);
 
 	err = ua_answer(f->b.ua, ua_call(f->b.ua), VIDMODE_ON);
 	TEST_ERR(err);
@@ -1243,16 +1306,17 @@ int test_call_change_videodir(void)
 
 	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 1);
 	cr->prm = "answer";
 
 	/* Set video inactive */
+	f->a.n_vidframe = 0;
+	f->b.n_vidframe = 0;
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
 	TEST_ERR(err);
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
-	cancel_rule_pop();
 
 	ASSERT_TRUE(!call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
@@ -1264,12 +1328,11 @@ int test_call_change_videodir(void)
 	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->b.ua))));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(vm));
 	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(vm));
+	cancel_rule_pop();
 
 	/* Set video sendrecv */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
 	TEST_ERR(err);
-	f->a.n_vidframe = 0;
-	f->b.n_vidframe = 0;
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
@@ -1286,7 +1349,7 @@ int test_call_change_videodir(void)
 
  out:
 	if (err)
-		cancel_rules_debug(f);
+		failure_debug(f, false);
 
 	fixture_close(f);
 	mem_deref(vidisp);
@@ -1312,7 +1375,7 @@ int test_call_100rel_video(void)
 	cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 0);
 	cr->prm = "vidframe";
 	cr->n_vidframe = 3;
-	cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 0);
+	cancel_rule_and(UA_EVENT_CUSTOM, f->a.ua, 0, 1, 0);
 	cr->prm = "vidframe";
 	cr->n_vidframe = 3;
 	/* to enable video, we need one vidsrc and vidcodec */
@@ -1324,7 +1387,7 @@ int test_call_100rel_video(void)
 	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
-	f->behaviour = BEHAVIOUR_PROGRESS;
+	f->behaviour = BEHAVIOUR_NOTHING;
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
@@ -1339,7 +1402,7 @@ int test_call_100rel_video(void)
 	/* switch off early video */
 	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 0);
 	cr->prm = "offer";
-	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 0);
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 0);
 	cr->prm = "answer";
 
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
@@ -1372,7 +1435,7 @@ int test_call_100rel_video(void)
 	ASSERT_TRUE(fix.b.n_vidframe >= 3);
  out:
 	if (err)
-		cancel_rules_debug(f);
+		failure_debug(f, false);
 
 	fixture_close(f);
 	mem_deref(vidisp);
@@ -1454,10 +1517,10 @@ int test_call_progress(void)
 	struct cancel_rule *cr;
 	int err = 0;
 
-	fixture_init(f);
+	fixture_init_prm(f, ";answermode=early");
 	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
-	f->behaviour = BEHAVIOUR_PROGRESS;
+	f->behaviour = BEHAVIOUR_NOTHING;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
@@ -2025,8 +2088,8 @@ static int test_call_rtcp_base(bool rtcp_mux)
 
 	cancel_rule_new(UA_EVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
 
-	cancel_rule_new(UA_EVENT_CALL_RTCP, f->b.ua, 1, 0, 0);
-	cancel_rule_and(UA_EVENT_CALL_RTCP, f->a.ua, 0, 0, 0);
+	cancel_rule_new(UA_EVENT_CALL_RTCP, f->b.ua, 1, 0, 1);
+	cancel_rule_and(UA_EVENT_CALL_RTCP, f->a.ua, 0, 0, -1);
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
