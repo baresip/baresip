@@ -2529,3 +2529,92 @@ int test_call_ipv6ll(void)
 
 	return err;
 }
+
+
+int test_call_hold_resume(void)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	int err = 0;
+
+
+	fixture_init(f);
+	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cr->n_audio_estab = 1;
+	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cr->n_audio_estab = 1;
+
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+	err = module_load(".", "aufile");
+	TEST_ERR(err);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	TEST_ERR(err);
+
+	/* wait for RTP audio */
+	err = re_main_timeout(2000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify that audio was enabled and bi-directional */
+	ASSERT_TRUE(call_has_audio(ua_call(f->a.ua)));
+	ASSERT_TRUE(call_has_audio(ua_call(f->b.ua)));
+
+	struct sdp_media *m;
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->prm = "offer";
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cr->prm = "answer";
+
+	/* set call on-hold */
+	err = call_hold(ua_call(f->a.ua), true);
+	TEST_ERR(err);
+	err = re_main_timeout(2000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
+
+	/* set call to resume */
+	err = call_hold(ua_call(f->a.ua), false);
+	TEST_ERR(err);
+	err = re_main_timeout(2000);
+	TEST_ERR(err);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+ out:
+	if (err)
+		failure_debug(f, false);
+
+	fixture_close(f);
+	module_unload("aufile");
+	module_unload("ausine");
+
+	return err;
+}
