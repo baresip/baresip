@@ -1825,7 +1825,9 @@ static int sipsess_offer_handler(struct mbuf **descp,
 	MAGIC_CHECK(call);
 
 	if (got_offer) {
-
+		const struct sdp_media *m =
+			stream_sdpmedia(audio_strm(call->audio));
+		bool aurx = sdp_media_dir(m) & SDP_SENDONLY;
 		call->got_offer = true;
 
 		/* Decode SDP Offer */
@@ -1835,6 +1837,11 @@ static int sipsess_offer_handler(struct mbuf **descp,
 				" %m\n", err);
 			return err;
 		}
+
+		if (aurx && !(sdp_media_dir(m) & SDP_SENDONLY))
+			ua_event(call->ua, UA_EVENT_CALL_HOLD, call, "");
+		else if (!aurx && sdp_media_dir(m) & SDP_SENDONLY)
+			ua_event(call->ua, UA_EVENT_CALL_RESUME, call, "");
 
 		err = update_media(call);
 		if (err) {

@@ -48,7 +48,8 @@ static void exit_handler(void *arg)
 
 
 /**
- * Put the established call on hold and resume the given call
+ * Resume the given call and put the established call on hold. If there is no
+ * call on hold, then this function does nothing
  *
  * @param call  Call to resume, or NULL to choose one which is on-hold
  *
@@ -59,7 +60,10 @@ int uag_hold_resume(struct call *call)
 	int err = 0;
 	struct le *le = NULL;
 	struct ua *ua = NULL;
-	struct call *acall = NULL, *toresume = call;
+	struct call *acall = NULL, *toresume = NULL;
+
+	if (call && call_is_onhold(call))
+		toresume = call;
 
 	for (le = list_head(&uag.ual); le && !toresume; le = le->next) {
 		ua = le->data;
@@ -76,10 +80,11 @@ int uag_hold_resume(struct call *call)
 		acall = ua_find_active_call(ua);
 	}
 
-	if (acall)
+	if (acall && toresume)
 		err =  call_hold(acall, true);
 
-	err |= call_hold(toresume, false);
+	if (toresume)
+		err |= call_hold(toresume, false);
 
 	return err;
 }
