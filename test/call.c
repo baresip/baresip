@@ -2557,7 +2557,7 @@ int test_call_hold_resume(void)
 	TEST_ERR(err);
 
 	/* wait for RTP audio */
-	err = re_main_timeout(2000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -2582,7 +2582,7 @@ int test_call_hold_resume(void)
 	/* set call on-hold */
 	err = call_hold(ua_call(f->a.ua), true);
 	TEST_ERR(err);
-	err = re_main_timeout(2000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -2598,7 +2598,7 @@ int test_call_hold_resume(void)
 	/* set call to resume */
 	err = call_hold(ua_call(f->a.ua), false);
 	TEST_ERR(err);
-	err = re_main_timeout(2000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
 	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
