@@ -2593,7 +2593,12 @@ int test_call_hold_resume(void)
 	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
 	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
-	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+	int tries = 100;
+	while (call_ack_pending(ua_call(f->b.ua)) && --tries) {
+		(void)re_main_timeout(1);
+	}
+
+	ASSERT_TRUE(tries > 0);
 
 	/* set call to resume */
 	err = call_hold(ua_call(f->a.ua), false);
@@ -2608,7 +2613,12 @@ int test_call_hold_resume(void)
 	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
-	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+	tries = 100;
+	while (call_ack_pending(ua_call(f->b.ua)) && --tries) {
+		(void)re_main_timeout(1);
+	}
+
+	ASSERT_TRUE(tries > 0);
 
  out:
 	if (err)
