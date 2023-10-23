@@ -1240,14 +1240,14 @@ int test_call_change_videodir(void)
 	struct fixture fix, *f = &fix;
 	struct vidisp *vidisp = NULL;
 	struct sdp_media *vm;
-	struct cancel_rule *cr, *cr_vida, *cr_vidb;
+	struct cancel_rule *cr, *cr_vida, *cr_vidb, *cr_prog;
 	int err = 0;
 
 	conf_config()->video.fps = 100;
 	conf_config()->video.enc_fmt = VID_FMT_YUV420P;
 
 	fixture_init_prm(f, ";answermode=early");
-	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
+	cr_prog = cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 1, 0);
 
 	cr_vidb = cancel_rule_new(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
 	cr_vidb->prm = "vidframe";
@@ -1276,6 +1276,7 @@ int test_call_change_videodir(void)
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
+	mem_deref(cr_prog);
 
 	err = ua_answer(f->b.ua, ua_call(f->b.ua), VIDMODE_ON);
 	TEST_ERR(err);
@@ -1309,6 +1310,8 @@ int test_call_change_videodir(void)
 	cr->prm = "answer";
 
 	/* Set video inactive */
+	f->a.n_vidframe = 0;
+	f->b.n_vidframe = 0;
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
 	TEST_ERR(err);
 	err = re_main_timeout(10000);
@@ -1330,8 +1333,6 @@ int test_call_change_videodir(void)
 	/* Set video sendrecv */
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
 	TEST_ERR(err);
-	f->a.n_vidframe = 0;
-	f->b.n_vidframe = 0;
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
