@@ -38,6 +38,7 @@ struct cancel_rule {
 	enum ua_event ev;
 	const char *prm;
 	struct ua *ua;
+	bool checkack;
 
 	unsigned n_incoming;
 	unsigned n_progress;
@@ -79,6 +80,9 @@ struct agent {
 	unsigned n_vidframe;
 	unsigned n_auframe;
 	double aulvl;
+
+	struct tmr tmr_ack;
+	bool gotack;
 };
 
 
@@ -156,6 +160,9 @@ struct fixture {
 
 
 #define fixture_close(f)			\
+	tmr_cancel(&f->a.tmr_ack);		\
+	tmr_cancel(&f->b.tmr_ack);		\
+	tmr_cancel(&f->c.tmr_ack);		\
 	mem_deref(f->c.ua);			\
 	mem_deref(f->b.ua);			\
 	mem_deref(f->a.ua);			\
@@ -391,6 +398,23 @@ static const struct list *hdrs;
 static const char dtmf_digits[] = "123";
 
 
+static void check_ack(void *arg)
+{
+	struct agent *ag = arg;
+
+	if (ag->gotack)
+		return;
+
+	ag->gotack = !call_ack_pending(ua_call(ag->ua));
+
+	if (ag->gotack)
+		ua_event(ag->ua, UA_EVENT_CUSTOM, ua_call(ag->ua), "gotack");
+
+	else
+		tmr_start(&ag->tmr_ack, 1, check_ack, ag);
+}
+
+
 static bool check_rule(struct cancel_rule *rule, int met_prev,
 		       struct agent *ag, enum ua_event ev, const char *prm)
 {
@@ -421,6 +445,11 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		     uag_event_str(ev),
 		     account_aor(ua_account(ag->ua)),
 		     account_aor(ua_account(rule->ua)));
+		return false;
+	}
+
+	if (rule->checkack && !ag->gotack) {
+		info("test: event %s waiting for ACK\n", uag_event_str(ev));
 		return false;
 	}
 
@@ -2578,6 +2607,10 @@ int test_call_hold_resume(void)
 	cr->prm = "offer";
 	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
 	cr->prm = "answer";
+	cancel_rule_and(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
+	cr->prm = "gotack";
+	cr->checkack = true;
+	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
 
 	/* set call on-hold */
 	err = call_hold(ua_call(f->a.ua), true);
@@ -2593,16 +2626,13 @@ int test_call_hold_resume(void)
 	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
 	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
-	int tries = 100;
-	while (call_ack_pending(ua_call(f->b.ua)) && --tries) {
-		(void)re_main_timeout(1);
-	}
-
-	ASSERT_TRUE(tries > 0);
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
 
 	/* set call to resume */
 	err = call_hold(ua_call(f->a.ua), false);
 	TEST_ERR(err);
+	f->b.gotack = false;
+	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
@@ -2613,12 +2643,7 @@ int test_call_hold_resume(void)
 	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
-	tries = 100;
-	while (call_ack_pending(ua_call(f->b.ua)) && --tries) {
-		(void)re_main_timeout(1);
-	}
-
-	ASSERT_TRUE(tries > 0);
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
 
  out:
 	if (err)
