@@ -1557,6 +1557,12 @@ bool call_refresh_allowed(const struct call *call)
 }
 
 
+bool call_ack_pending(const struct call *call)
+{
+	return call ? sipsess_ack_pending(call->sess) : false;
+}
+
+
 /**
  * Get the session call-id for the call
  *
