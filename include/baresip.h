@@ -325,7 +325,6 @@ enum audio_mode {
 	AUDIO_MODE_THREAD,           /**< Use dedicated thread          */
 };
 
-
 /** SIP User-Agent */
 struct config_sip {
 	char uuid[64];          /**< Universally Unique Identifier  */
@@ -1446,6 +1445,7 @@ int  stream_start_mediaenc(struct stream *strm);
 int  stream_start_rtcp(const struct stream *strm);
 int  stream_enable(struct stream *strm, bool enable);
 int  stream_enable_tx(struct stream *strm, bool enable);
+int  stream_enable_rx(struct stream *strm, bool enable);
 void stream_mnat_attr(struct stream *strm, const char *name,
 		      const char *value);
 void stream_set_session_handlers(struct stream *strm,
