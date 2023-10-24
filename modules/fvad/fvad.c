@@ -219,7 +219,8 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 		buf = af->sampv;
 	}
 	else {
-		allocated = (int16_t*)mem_alloc(sizeof(int16_t) * af->sampc, NULL);
+		allocated = (int16_t*)mem_alloc(sizeof(int16_t) * af->sampc,
+			NULL);
 		buf = allocated;
 		auconv_to_s16(buf, af->fmt, af->sampv, af->sampc);
 	}
@@ -227,7 +228,8 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 	size_t ms = af->srate / af->sampc;
 	size_t pos = 0;
 
-	for(size_t chunk_index = 0; chunk_index < RE_ARRAY_SIZE(chunk_sizes); ++chunk_index) {
+	for (size_t chunk_index = 0; chunk_index < RE_ARRAY_SIZE(chunk_sizes);
+		++chunk_index) {
 
 		const size_t chunk_size = chunk_sizes[chunk_index];
 		/* process all chunk_sizes that fvad accepts */
@@ -248,7 +250,8 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 	}
 
 	if (pos != af->sampc) {
-		warning("fvad_process: samples left over: %d", af->sampc - pos);
+		warning("fvad_process: samples left over: %d",
+			af->sampc - pos);
 	}
 
 out:
