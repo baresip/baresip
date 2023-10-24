@@ -415,6 +415,33 @@ static void check_ack(void *arg)
 }
 
 
+static int agent_wait_for_ack(struct agent *ag)
+{
+	int err;
+	struct cancel_rule *cr;
+	struct fixture *f = ag->fix;
+
+	if (!call_ack_pending(ua_call(ag->ua)))
+		return 0;
+
+	cancel_rule_new(UA_EVENT_CUSTOM, ag->ua, 1, 0, 1);
+	cr->prm = "gotack";
+	cr->checkack = true;
+
+	ag->gotack = false;
+	tmr_start(&ag->tmr_ack, 1, check_ack, ag);
+	err = re_main_timeout(10000);
+	cancel_rule_pop();
+	if (err)
+		goto out;
+
+	err = call_ack_pending(ua_call(ag->ua)) ? ETIMEDOUT : 0;
+
+out:
+	return err;
+}
+
+
 static bool check_rule(struct cancel_rule *rule, int met_prev,
 		       struct agent *ag, enum ua_event ev, const char *prm)
 {
@@ -2608,10 +2635,6 @@ static int test_call_hold_resume_base(bool tcp)
 	cr->prm = "offer";
 	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
 	cr->prm = "answer";
-	cancel_rule_and(UA_EVENT_CUSTOM, f->b.ua, 1, 0, 1);
-	cr->prm = "gotack";
-	cr->checkack = true;
-	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
 
 	/* set call on-hold */
 	err = call_hold(ua_call(f->a.ua), true);
@@ -2619,6 +2642,9 @@ static int test_call_hold_resume_base(bool tcp)
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
+
+	err = agent_wait_for_ack(&f->b);
+	TEST_ERR(err);
 
 	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
 	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
@@ -2632,9 +2658,11 @@ static int test_call_hold_resume_base(bool tcp)
 	/* set call to resume */
 	err = call_hold(ua_call(f->a.ua), false);
 	TEST_ERR(err);
-	f->b.gotack = false;
 	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
 	err = re_main_timeout(10000);
+	TEST_ERR(err);
+
+	err = agent_wait_for_ack(&f->b);
 	TEST_ERR(err);
 
 	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
