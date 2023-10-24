@@ -29,6 +29,7 @@ find_package(VPX)
 find_package(WEBRTC_AEC)
 find_package(WEBRTC_AECM)
 find_package(X11)
+find_package(FVAD)
 
 if(DEFINED MODULES)
   return()
@@ -48,7 +49,6 @@ set(MODULES
   ebuacip
   echo
   fakevideo
-  fvad
   g711
   httpd
   httpreq
@@ -150,6 +150,9 @@ if(SDL_FOUND)
 endif()
 if(SNDFILE_FOUND)
   list(APPEND MODULES sndfile)
+endif()
+if (FVAD_FOUND)
+  list(APPEND MODULES fvad)
 endif()
 if(HAVE_SYSLOG_H)
   list(APPEND MODULES syslog)
