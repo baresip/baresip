@@ -2560,7 +2560,7 @@ int test_call_ipv6ll(void)
 }
 
 
-int test_call_hold_resume(void)
+static int test_call_hold_resume_base(bool tcp)
 {
 	struct fixture fix, *f = &fix;
 	struct cancel_rule *cr;
@@ -2582,7 +2582,8 @@ int test_call_hold_resume(void)
 	f->estab_action = ACTION_NOTHING;
 
 	/* Make a call from A to B */
-	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_ON);
+	err = ua_connect(f->a.ua, 0, NULL, tcp ? f->buri_tcp : f->buri,
+			 VIDMODE_ON);
 	TEST_ERR(err);
 
 	/* wait for RTP audio */
@@ -2653,5 +2654,20 @@ int test_call_hold_resume(void)
 	module_unload("aufile");
 	module_unload("ausine");
 
+	return err;
+}
+
+
+int test_call_hold_resume(void)
+{
+	int err;
+
+	err = test_call_hold_resume_base(false);
+	TEST_ERR(err);
+
+	err = test_call_hold_resume_base(true);
+	TEST_ERR(err);
+
+out:
 	return err;
 }
