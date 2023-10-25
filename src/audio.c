@@ -296,6 +296,7 @@ static void audio_destructor(void *arg)
 
 	stop_tx(&a->tx, a);
 	stop_rx(&a->rx);
+	stream_enable(a->strm, false);
 
 	mem_deref(a->tx.enc);
 	mem_deref(a->rx.dec);
@@ -1731,6 +1732,7 @@ void audio_stop(struct audio *a)
 
 	stop_tx(&a->tx, a);
 	stop_rx(&a->rx);
+	stream_enable(a->strm, false);
 	a->started = false;
 }
 
