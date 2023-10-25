@@ -326,6 +326,12 @@ enum audio_mode {
 	AUDIO_MODE_THREAD,           /**< Use dedicated thread          */
 };
 
+/** RTP receive mode */
+enum rtp_receive_mode {
+	RECEIVE_MODE_MAIN = 0,  /**< RTP RX is processed in main thread      */
+	RECEIVE_MODE_THREAD,    /**< RTP RX is processed in separate thread  */
+};
+
 /** SIP User-Agent */
 struct config_sip {
 	char uuid[64];          /**< Universally Unique Identifier  */
@@ -404,6 +410,7 @@ struct config_avt {
 	bool rtp_stats;         /**< Enable RTP statistics          */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 	bool bundle;            /**< Media Multiplexing (BUNDLE)    */
+	enum rtp_receive_mode rxmode;   /**< RTP RX processing mode */
 };
 
 /** Network Configuration */
