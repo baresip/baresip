@@ -1646,7 +1646,8 @@ static void auframe_handler(struct auframe *af, void *arg)
 	ua = ag->ua;
 	/* Does auframe come from the decoder ? */
 	if (!audio_rxaubuf_started(call_audio(ua_call(ua)))) {
-		info("test: received audio frame not from decoder yet\n");
+		info("test: [%s] no audio received from decoder yet\n",
+		     account_aor(ua_account(ua)));
 		return;
 	}
 
@@ -1824,7 +1825,7 @@ static int test_media_base(enum rtp_receive_mode rxmode,
 	TEST_ERR(err);
 
 	/* run main-loop with timeout, wait for events */
-	err = re_main_timeout(15000);
+	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
@@ -2503,6 +2504,12 @@ int test_call_aufilt(void)
 	TEST_ERR(err);
 
 	err = test_media_base(RECEIVE_MODE_THREAD, AUDIO_MODE_POLL);
+	TEST_ERR(err);
+
+	err = test_media_base(RECEIVE_MODE_MAIN, AUDIO_MODE_THREAD);
+	TEST_ERR(err);
+
+	err = test_media_base(RECEIVE_MODE_THREAD, AUDIO_MODE_THREAD);
 	TEST_ERR(err);
 
  out:
