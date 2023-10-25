@@ -159,10 +159,14 @@ static void rtprecv_check_stop(void *arg)
 {
 	struct rtp_receiver *rx = arg;
 
-	if (re_atomic_rlx(&rx->run))
+	if (re_atomic_rlx(&rx->run)) {
 		tmr_start(&rx->tmr, 10, rtprecv_check_stop, rx);
-	else
+	}
+	else {
+		udp_thread_detach(rtp_sock(rx->rtp));
+		udp_thread_detach(rtcp_sock(rx->rtp));
 		re_cancel();
+	}
 }
 
 
