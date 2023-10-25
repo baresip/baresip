@@ -182,6 +182,7 @@ struct audio {
 	uint8_t extmap_aulevel;       /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_level_h *levelh;        /**< Audio level handler             */
+	audio_vad_h *vadh;            /**< Audio voice activity handler    */
 	audio_err_h *errh;            /**< Audio error handler             */
 	void *arg;                    /**< Handler argument                */
 };
@@ -1190,6 +1191,7 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 
 	a->eventh  = eventh;
 	a->levelh  = levelh;
+	a->vadh    = vadh;
 	a->errh    = errh;
 	a->arg     = arg;
 
@@ -2060,6 +2062,23 @@ void audio_level_put(const struct audio *au, bool tx, double lvl)
 
 	if (au->levelh)
 		au->levelh(tx, lvl, au->arg);
+}
+
+
+/**
+ * Put an audio voice activity detection event, call vad handler
+ *
+ * @param au  Audio object
+ * @param tx  Direction; true for transmit, false for receive
+ * @param vad Voice activity detected (true/false)
+ */
+void audio_vad_put(const struct audio *au, bool tx, bool vad)
+{
+	if (!au)
+		return;
+
+	if (au->vadh)
+		au->vadh(tx, vad, au->arg);
 }
 
 

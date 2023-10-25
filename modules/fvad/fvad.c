@@ -42,13 +42,7 @@ struct vad_dec {
 };
 
 
-static bool vad_stderr;
-
-
-static void send_event(const struct audio *au, enum ua_event ev, bool active)
-{
-	audio_vad_put(au, ev == UA_EVENT_VAD_TX, active);
-}
+static bool vad_stderr = false;
 
 
 static void enc_destructor(void *arg)
@@ -77,20 +71,20 @@ static void dec_destructor(void *arg)
 }
 
 
-static int audio_print_vad(struct re_printf *pf, bool voice)
+static int audio_print_vad(struct re_printf *pf, bool tx, bool voice)
 {
-	return re_hprintf(pf, "[%s]", voice ? "x" : " ");
+	return re_hprintf(pf, "[%s %s]", tx ? "tx" : "rx", voice ? "x" : " ");
 }
 
 
-static void print_vad(int pos, int color, bool active)
+static void print_vad(int pos, int color, bool tx, bool active)
 {
 	/* move cursor to a fixed position */
 	re_fprintf(stderr, "\x1b[%dG", pos);
 
-	/* print VU-meter in Nice colors */
+	/* print vad in Nice colors */
 	re_fprintf(stderr, " \x1b[%dm%H\x1b[;m\r",
-		   color, audio_print_vad, active);
+		   color, audio_print_vad, tx, active);
 }
 
 
@@ -102,9 +96,9 @@ static void enc_tmr_handler(void *arg)
 
 	if (st->started) {
 		if (vad_stderr)
-			print_vad(60, 31, st->vad_tx);
+			print_vad(60, 31, true, st->vad_tx);
 
-		send_event(st->au, UA_EVENT_VU_TX, st->vad_tx);
+		audio_vad_put(st->au, true, st->vad_tx);
 	}
 }
 
@@ -117,9 +111,9 @@ static void dec_tmr_handler(void *arg)
 
 	if (st->started) {
 		if (vad_stderr)
-			print_vad(80, 32, st->vad_rx);
+			print_vad(80, 32, false, st->vad_rx);
 
-		send_event(st->au, UA_EVENT_VU_RX, st->vad_rx);
+		audio_vad_put(st->au, false, st->vad_rx);
 	}
 }
 
@@ -208,7 +202,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 static bool auframe_vad(Fvad *fvad, struct auframe *af)
 {
-	static int chunk_sizes[] = { 30, 20, 10 };
+	static int chunk_times_ms[] = { 30, 20, 10 };
 
 	int16_t *buf = NULL;
 	int16_t *allocated = NULL;
@@ -225,19 +219,20 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 		auconv_to_s16(buf, af->fmt, af->sampv, af->sampc);
 	}
 
-	size_t ms = af->srate / af->sampc;
+	size_t ms = af->sampc * 1000 / af->srate;
 	size_t pos = 0;
 
-	for (size_t chunk_index = 0; chunk_index < RE_ARRAY_SIZE(chunk_sizes);
-		++chunk_index) {
-
-		const size_t chunk_size = chunk_sizes[chunk_index];
+	for (size_t chunk_time_index = 0;
 		/* process all chunk_sizes that fvad accepts */
-		size_t sampc = af->srate * chunk_size;
+		chunk_time_index < RE_ARRAY_SIZE(chunk_times_ms); ++chunk_time_index) {
 
-		for (size_t i = 0; i < ms / chunk_size; ++i) {
+		const size_t chunk_time = chunk_times_ms[chunk_time_index];
+		const size_t sampc = af->srate / 1000 * chunk_time;
+
+		for (size_t i = 0; i < ms / chunk_time; ++i) {
 			int err = fvad_process(fvad, buf + pos, sampc);
 			pos += sampc;
+			ms -= chunk_time;
 			if (err > 0) {
 				detected = true;
 				goto out;
