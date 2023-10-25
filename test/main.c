@@ -10,6 +10,7 @@
 #include <baresip.h>
 #include "test.h"
 
+enum { ASYNC_WORKERS = 4 };
 
 typedef int (test_exec_h)(void);
 
@@ -190,6 +191,7 @@ int main(int argc, char *argv[])
 		return err;
 
 	log_enable_info(false);
+	re_thread_async_init(ASYNC_WORKERS);
 
 #ifdef HAVE_GETOPT
 	for (;;) {
