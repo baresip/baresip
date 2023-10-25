@@ -60,7 +60,7 @@ static void enc_destructor(void *arg)
 
 static void dec_destructor(void *arg)
 {
-	struct vad_enc *st = arg;
+	struct vad_dec *st = arg;
 
 	if (st->fvad) {
 		fvad_free(st->fvad);
