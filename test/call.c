@@ -2693,6 +2693,12 @@ int test_call_aufilt(void)
 	err = test_media_base(RECEIVE_MODE_THREAD, AUDIO_MODE_POLL);
 	TEST_ERR(err);
 
+	err = test_media_base(RECEIVE_MODE_MAIN, AUDIO_MODE_THREAD);
+	TEST_ERR(err);
+
+	err = test_media_base(RECEIVE_MODE_THREAD, AUDIO_MODE_THREAD);
+	TEST_ERR(err);
+
  out:
 	module_unload("auconv");
 
