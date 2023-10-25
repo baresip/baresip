@@ -55,6 +55,7 @@ static void tmr_quit_handler(void *arg)
 }
 
 
+#ifdef HAVE_GETOPT
 static void usage(void)
 {
 	(void)re_fprintf(stderr,
@@ -80,6 +81,7 @@ static void usage(void)
 			 "\t-c               Disable colored log\n"
 			 );
 }
+#endif
 
 
 int main(int argc, char *argv[])
