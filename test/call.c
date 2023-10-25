@@ -1470,7 +1470,7 @@ static void auframe_handler(struct auframe *af, void *arg)
 
 	ASSERT_EQ(MAGIC, fix->magic);
 
-	ptime = af->sampc * 1000 / af->srate;
+	ptime = (uint32_t) af->sampc * 1000 / af->srate;
 	if (ptime == 1) {
 		ag = &fix->a;
 	}
