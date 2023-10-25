@@ -1518,21 +1518,20 @@ int test_call_100rel_video(void)
 }
 
 
-static void auframe_handler(struct auframe *af, void *arg)
+static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 {
 	struct fixture *fix = arg;
-	uint32_t ptime;
 	struct agent *ag = NULL;
 	struct ua *ua;
 	int err = 0;
+	(void)af;
 
 	ASSERT_EQ(MAGIC, fix->magic);
 
-	ptime = (uint32_t) af->sampc * 1000 / af->srate;
-	if (ptime == 1) {
+	if (!str_cmp(dev, "a")) {
 		ag = &fix->a;
 	}
-	else if (ptime == 2) {
+	else if (!str_cmp(dev, "b")) {
 		ag = &fix->b;
 	}
 	else {
@@ -1568,9 +1567,10 @@ int test_call_aulevel(void)
 	int err = 0;
 
 	/* Use a low packet time, so the test completes quickly */
-	fixture_init_prm(f, ";ptime=1");
+	fixture_init_prm(f, ";ptime=1;audio_player=mock-auplay,a");
 	mem_deref(f->b.ua);
-	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>;regint=0;ptime=2");
+	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>"
+		       ";regint=0;ptime=1;audio_player=mock-auplay,b");
 	TEST_ERR(err);
 
 	cancel_rule_new(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
@@ -1618,11 +1618,12 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 	struct auplay *auplay = NULL;
 	int err = 0;
 
-	fixture_init_prm(f, ";ptime=1;100rel=yes");
+	fixture_init_prm(f, ";ptime=1;audio_player=mock-auplay,a;100rel=yes");
 	mem_deref(f->b.ua);
 	err = ua_alloc(&f->b.ua,
-		       "B <sip:b@127.0.0.1>;regint=0;ptime=2;answermode=early;"
-		       "100rel=yes");
+		       "B <sip:b@127.0.0.1>"
+		       ";regint=0;ptime=1;audio_player=mock-auplay,b"
+		       ";answermode=early;100rel=yes");
 	TEST_ERR(err);
 	conf_config()->audio.txmode = txmode;
 
@@ -1767,9 +1768,10 @@ static int test_media_base(enum audio_mode txmode)
 	struct auplay *auplay = NULL;
 	int err = 0;
 
-	fixture_init_prm(f, ";ptime=1");
+	fixture_init_prm(f, ";ptime=1;audio_player=mock-auplay,a");
 	mem_deref(f->b.ua);
-	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>;regint=0;ptime=2");
+	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>"
+		       ";regint=0;ptime=1;audio_player=mock-auplay,b");
 	TEST_ERR(err);
 
 	conf_config()->audio.txmode = txmode;
