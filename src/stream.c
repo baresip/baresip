@@ -152,6 +152,12 @@ static void stream_destructor(void *arg)
 }
 
 
+void stream_stop(struct stream *s)
+{
+	s->rx = mem_deref(s->rx);
+}
+
+
 static const char *media_name(enum media_type type)
 {
 	switch (type) {

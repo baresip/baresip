@@ -322,10 +322,10 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	bool first = false;
 	int err = 0;
 
-	MAGIC_CHECK(rx);
 	if (!rx)
 		return;
 
+	MAGIC_CHECK(rx);
 	mtx_lock(rx->mtx);
 	if (!rx->enabled) {
 		mtx_unlock(rx->mtx);
@@ -453,6 +453,9 @@ void rtprecv_set_socket(struct rtp_receiver *rx, struct rtp_sock *rtp)
 
 void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc)
 {
+	if (!rx)
+		return;
+
 	mtx_lock(rx->mtx);
 	if (rx->ssrc_set) {
 		if (ssrc != rx->ssrc) {
@@ -473,6 +476,10 @@ void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc)
 uint64_t rtprecv_ts_last(struct rtp_receiver *rx)
 {
 	uint64_t ts_last;
+
+	if (!rx)
+		return 0;
+
 	mtx_lock(rx->mtx);
 	ts_last = rx->ts_last;
 	mtx_unlock(rx->mtx);
@@ -483,6 +490,9 @@ uint64_t rtprecv_ts_last(struct rtp_receiver *rx)
 
 void rtprecv_set_ts_last(struct rtp_receiver *rx, uint64_t ts_last)
 {
+	if (!rx)
+		return;
+
 	mtx_lock(rx->mtx);
 	rx->ts_last = ts_last;
 	mtx_unlock(rx->mtx);
@@ -531,6 +541,9 @@ int rtprecv_get_ssrc(struct rtp_receiver *rx, uint32_t *ssrc)
 
 void rtprecv_enable_mux(struct rtp_receiver *rx, bool enable)
 {
+	if (!rx)
+		return;
+
 	mtx_lock(rx->mtx);
 	rtcp_enable_mux(rx->rtp, enable);
 	mtx_unlock(rx->mtx);
@@ -551,6 +564,9 @@ int rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx)
 	int err;
 	bool enabled;
 
+	if (!rx)
+		return EINVAL;
+
 	mtx_lock(rx->mtx);
 	enabled = rx->enabled;
 	mtx_unlock(rx->mtx);
@@ -569,9 +585,12 @@ static void destructor(void *arg)
 	if (re_atomic_rlx(&rx->run)) {
 		re_atomic_rlx_set(&rx->run, false);
 		thrd_join(rx->thr, NULL);
+		re_thread_async_main_cancel((intptr_t)rx);
 	}
-
-	re_thread_async_main_cancel((intptr_t)rx);
+	else {
+		udp_thread_detach(rtp_sock(rx->rtp));
+		udp_thread_detach(rtcp_sock(rx->rtp));
+	}
 
 	mem_deref(rx->metric);
 	mem_deref(rx->name);

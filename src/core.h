@@ -319,6 +319,7 @@ void stream_stop_natpinhole(struct stream *strm);
 void stream_process_rtcp(struct stream *strm, struct rtcp_msg *msg);
 void stream_mnat_connected(struct stream *strm, const struct sa *raddr1,
 			   const struct sa *raddr2);
+void stream_stop(struct stream *s);
 
 
 /*
