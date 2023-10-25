@@ -277,6 +277,7 @@ static int cancel_rule_debug(struct re_printf *pf,
 	err |= cr_debug_nbr(n_video_estab);
 	err |= cr_debug_nbr(n_offer_cnt);
 	err |= cr_debug_nbr(n_answer_cnt);
+	err |= cr_debug_nbr(n_auframe);
 	err |= cr_debug_nbr(n_vidframe);
 	err |= re_hprintf(pf, "    met:  %s\n", cr->met ? "yes": "no");
 	if (err)
@@ -320,6 +321,7 @@ static int agent_debug(struct re_printf *pf, const struct agent *ag)
 	err |= ag_debug_nbr(n_video_estab);
 	err |= ag_debug_nbr(n_offer_cnt);
 	err |= ag_debug_nbr(n_answer_cnt);
+	err |= ag_debug_nbr(n_auframe);
 	err |= ag_debug_nbr(n_vidframe);
 	if (err)
 		return err;
