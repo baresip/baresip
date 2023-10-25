@@ -1256,6 +1256,7 @@ void audio_stop(struct audio *a)
 		return;
 
 	stop_tx(&a->tx, a);
+	stream_enable(a->strm, false);
 	stop_aur(a->aur);
 	a->started = false;
 }

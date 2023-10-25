@@ -346,10 +346,10 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	bool first = false;
 	int err = 0;
 
-	MAGIC_CHECK(rx);
 	if (!rx)
 		return;
 
+	MAGIC_CHECK(rx);
 	mtx_lock(rx->mtx);
 	if (!rx->enabled) {
 		mtx_unlock(rx->mtx);
@@ -500,6 +500,10 @@ uint64_t rtprecv_ts_last(struct rtp_receiver *rx)
 		return 0;
 
 	uint64_t ts_last;
+
+	if (!rx)
+		return 0;
+
 	mtx_lock(rx->mtx);
 	ts_last = rx->ts_last;
 	mtx_unlock(rx->mtx);
@@ -528,7 +532,7 @@ void rtprecv_flush(struct rtp_receiver *rx)
 }
 
 
-void rtprecv_set_enable(struct rtp_receiver *rx, bool enable)
+void rtprecv_enable(struct rtp_receiver *rx, bool enable)
 {
 	if (!rx)
 		return;
@@ -604,9 +608,12 @@ static void destructor(void *arg)
 	if (re_atomic_rlx(&rx->run)) {
 		re_atomic_rlx_set(&rx->run, false);
 		thrd_join(rx->thr, NULL);
+		re_thread_async_main_cancel((intptr_t)rx);
 	}
-
-	re_thread_async_main_cancel((intptr_t)rx);
+	else {
+		udp_thread_detach(rtp_sock(rx->rtp));
+		udp_thread_detach(rtcp_sock(rx->rtp));
+	}
 
 	mem_deref(rx->metric);
 	mem_deref(rx->name);

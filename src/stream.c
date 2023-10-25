@@ -248,7 +248,7 @@ int stream_enable_rx(struct stream *strm, bool enable)
 		debug("stream: disable %s RTP receiver\n",
 		      media_name(strm->type));
 
-		rtprecv_set_enable(strm->rx, false);
+		rtprecv_enable(strm->rx, false);
 		return 0;
 	}
 
@@ -256,7 +256,7 @@ int stream_enable_rx(struct stream *strm, bool enable)
 		return ENOTSUP;
 
 	debug("stream: enable %s RTP receiver\n", media_name(strm->type));
-	rtprecv_set_enable(strm->rx, true);
+	rtprecv_enable(strm->rx, true);
 
 	if (strm->rtp && strm->cfg.rxmode == RECEIVE_MODE_THREAD &&
 	    strm->type == MEDIA_AUDIO && !rtprecv_running(strm->rx)) {
