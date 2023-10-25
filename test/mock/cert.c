@@ -4,6 +4,7 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <re.h>
+#include <rem.h>
 #include "../test.h"
 
 
