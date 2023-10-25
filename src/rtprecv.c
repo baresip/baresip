@@ -30,6 +30,7 @@ struct rtp_receiver {
 	uint32_t pseq;                 /**< Sequence number for incoming RTP */
 	bool pseq_set;                 /**< True if sequence number is set   */
 	bool rtp_estab;                /**< True if RTP stream established   */
+	RE_ATOMIC bool run;            /**< True if RX thread is running     */
 	mtx_t *mtx;                    /**< Mutex protects above fields      */
 
 	/* Unprotected data */
@@ -40,9 +41,154 @@ struct rtp_receiver {
 	stream_rtpestab_h *rtpestabh;  /**< RTP established handler          */
 	void *arg;                     /**< Stream argument                  */
 	void *sessarg;                 /**< Session argument                 */
+	thrd_t thr;                    /**< RX thread                        */
+	struct tmr tmr;                /**< Timer for stopping RX thread     */
 	int pt;                        /**< Previous payload type            */
 	int pt_tel;                    /**< Payload type for tel event       */
 };
+
+
+enum work_type {
+	WORK_RTCP,
+	WORK_RTPESTAB,
+	WORK_PTCHANGED,
+	WORK_MNATCONNH,
+};
+
+
+struct work {
+	enum work_type type;
+	struct rtp_receiver *rx;
+	union {
+		struct rtcp_msg *rtcp;
+		struct {
+			uint8_t pt;
+			struct mbuf *mb;
+		} pt;
+		struct {
+			struct sa raddr1;
+			struct sa raddr2;
+		} mnat;
+	} u;
+};
+
+
+static void async_work_main(int err, void *arg);
+static void work_destructor(void *arg);
+
+
+/*
+ * functions that run in RX thread (if "rxmode thread" is configured)
+ */
+
+
+static void pass_rtcp_work(struct rtp_receiver *rx, struct rtcp_msg *msg)
+{
+	struct work *w;
+
+	if (!re_atomic_rlx(&rx->run)) {
+		stream_process_rtcp(rx->strm, msg);
+		return;
+	}
+
+	w = mem_zalloc(sizeof(*w), work_destructor);
+	if (!w)
+		return;
+
+	w->type    = WORK_RTCP;
+	w->rx      = rx;
+	w->u.rtcp  = mem_ref(msg);
+	re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
+}
+
+
+static int pass_pt_work(struct rtp_receiver *rx, uint8_t pt, struct mbuf *mb)
+{
+	struct work *w;
+
+	if (!re_atomic_rlx(&rx->run))
+		return rx->pth(pt, mb, rx->arg);
+
+	w = mem_zalloc(sizeof(*w), work_destructor);
+	w->type    = WORK_PTCHANGED;
+	w->rx      = rx;
+	w->u.pt.pt = pt;
+	w->u.pt.mb = mbuf_dup(mb);
+
+	return re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
+}
+
+
+static void pass_rtpestab_work(struct rtp_receiver *rx)
+{
+	struct work *w;
+
+	if (!re_atomic_rlx(&rx->run)) {
+		rx->rtpestabh(rx->strm, rx->sessarg);
+		return;
+	}
+
+	w = mem_zalloc(sizeof(*w), work_destructor);
+	w->type = WORK_RTPESTAB;
+	w->rx   = rx;
+
+	re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
+}
+
+
+static void pass_mnat_work(struct rtp_receiver *rx, const struct sa *raddr1,
+			   const struct sa *raddr2)
+{
+	struct work *w;
+
+	if (!re_atomic_rlx(&rx->run)) {
+		stream_mnat_connected(rx->strm, raddr1, raddr2);
+		return;
+	}
+
+	w = mem_zalloc(sizeof(*w), work_destructor);
+	w->type = WORK_MNATCONNH;
+	w->rx   = rx;
+	sa_cpy(&w->u.mnat.raddr1, raddr1);
+	sa_cpy(&w->u.mnat.raddr2, raddr2);
+
+	re_thread_async_main_id((intptr_t)rx, NULL, async_work_main, w);
+}
+
+
+static void rtprecv_check_stop(void *arg)
+{
+	struct rtp_receiver *rx = arg;
+
+	if (re_atomic_rlx(&rx->run))
+		tmr_start(&rx->tmr, 10, rtprecv_check_stop, rx);
+	else
+		re_cancel();
+}
+
+
+static int rtprecv_thread(void *arg)
+{
+	struct rtp_receiver *rx = arg;
+	int err;
+
+	re_thread_init();
+	tmr_start(&rx->tmr, 10, rtprecv_check_stop, rx);
+
+	err = udp_thread_attach(rtp_sock(rx->rtp));
+	if (err)
+		return err;
+
+	err = udp_thread_attach(rtcp_sock(rx->rtp));
+	if (err)
+		return err;
+
+	err = re_main(NULL);
+
+	tmr_cancel(&rx->tmr);
+	re_thread_close();
+	return err;
+}
 
 
 static int lostcalc(struct rtp_receiver *rx, uint16_t seq)
@@ -222,7 +368,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 			debug("stream: incoming rtp for '%s' established, "
 			      "receiving from %J\n", rx->name, src);
 			rx->rtp_estab = true;
-			rx->rtpestabh(rx->strm, rx->sessarg);
+			pass_rtpestab_work(rx);
 		}
 	}
 
@@ -248,7 +394,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	mtx_unlock(rx->mtx);
 
 	if (rtprecv_filter_pt(rx, hdr)) {
-		err = rx->pth(hdr->pt, mb, rx->arg);
+		err = pass_pt_work(rx, hdr->pt, mb);
 		if (err && err != ENODATA)
 			return;
 	}
@@ -295,7 +441,7 @@ void rtprecv_handle_rtcp(const struct sa *src, struct rtcp_msg *msg,
 	rx->ts_last = tmr_jiffies();
 	mtx_unlock(rx->mtx);
 
-	stream_process_rtcp(rx->strm, msg);
+	pass_rtcp_work(rx, msg);
 }
 
 
@@ -306,9 +452,13 @@ void rtprecv_mnat_connected_handler(const struct sa *raddr1,
 
 	MAGIC_CHECK(rx);
 
-	stream_mnat_connected(rx->strm, raddr1, raddr2);
+	pass_mnat_work(rx, raddr1, raddr2);
 }
 
+
+/*
+ * functions that run in main thread
+ */
 
 void rtprecv_set_socket(struct rtp_receiver *rx, struct rtp_sock *rtp)
 {
@@ -447,6 +597,13 @@ static void destructor(void *arg)
 {
 	struct rtp_receiver *rx = arg;
 
+	if (re_atomic_rlx(&rx->run)) {
+		re_atomic_rlx_set(&rx->run, false);
+		thrd_join(rx->thr, NULL);
+	}
+
+	re_thread_async_main_cancel((intptr_t)rx);
+
 	mem_deref(rx->metric);
 	mem_deref(rx->name);
 	mem_deref(rx->mtx);
@@ -522,6 +679,41 @@ out:
 }
 
 
+int rtprecv_start_thread(struct rtp_receiver *rx)
+{
+	int err;
+
+	if (!rx)
+		return EINVAL;
+
+	if (re_atomic_rlx(&rx->run))
+		return 0;
+
+	re_atomic_rlx_set(&rx->run, true);
+	err = thread_create_name(&rx->thr,
+				 "RX thread",
+				 rtprecv_thread, rx);
+	if (err) {
+		re_atomic_rlx_set(&rx->run, false);
+	}
+	else {
+		udp_thread_detach(rtp_sock(rx->rtp));
+		udp_thread_detach(rtcp_sock(rx->rtp));
+	}
+
+	return err;
+}
+
+
+bool rtprecv_running(const struct rtp_receiver *rx)
+{
+	if (!rx)
+		return false;
+
+	return re_atomic_rlx(&rx->run);
+}
+
+
 void rtprecv_set_handlers(struct rtp_receiver *rx,
 			   stream_rtpestab_h *rtpestabh, void *arg)
 {
@@ -542,4 +734,50 @@ struct metric *rtprecv_metric(struct rtp_receiver *rx)
 
 	/* it is allowed to return metric because it is thread safe */
 	return rx->metric;
+}
+
+
+static void work_destructor(void *arg)
+{
+	struct work *w = arg;
+
+	switch (w->type) {
+		case WORK_RTCP:
+			mem_deref(w->u.rtcp);
+			break;
+		case WORK_PTCHANGED:
+			mem_deref(w->u.pt.mb);
+			break;
+		default:
+			break;
+	}
+}
+
+
+static void async_work_main(int err, void *arg)
+{
+	struct work *w = arg;
+	struct rtp_receiver *rx = w->rx;
+	(void)err;
+
+	switch (w->type) {
+		case WORK_RTCP:
+			stream_process_rtcp(rx->strm, w->u.rtcp);
+			break;
+		case WORK_PTCHANGED:
+			rx->pth(w->u.pt.pt, w->u.pt.mb, rx->arg);
+			break;
+		case WORK_RTPESTAB:
+			rx->rtpestabh(rx->strm, rx->sessarg);
+			break;
+		case WORK_MNATCONNH:
+			stream_mnat_connected(rx->strm,
+					      &w->u.mnat.raddr1,
+					      &w->u.mnat.raddr2);
+			break;
+		default:
+			break;
+	}
+
+	mem_deref(w);
 }

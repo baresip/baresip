@@ -224,6 +224,13 @@ int stream_enable_tx(struct stream *strm, bool enable)
 }
 
 
+static void stream_start_receiver(void *arg)
+{
+	struct stream *s = arg;
+	rtprecv_start_thread(s->rx);
+}
+
+
 /**
  * Enable RX stream
  *
@@ -250,6 +257,19 @@ int stream_enable_rx(struct stream *strm, bool enable)
 
 	debug("stream: enable %s RTP receiver\n", media_name(strm->type));
 	rtprecv_set_enable(strm->rx, true);
+
+	if (strm->rtp && strm->cfg.rxmode == RECEIVE_MODE_THREAD &&
+	    strm->type == MEDIA_AUDIO && !rtprecv_running(strm->rx)) {
+		if (stream_bundle(strm)) {
+			warning("stream: rtp_rxmode thread was disabled "
+				"because it is not supported in combination "
+				"with avt_bundle\n");
+		}
+		else {
+			tmr_start(&strm->rxm.tmr_rec, 1, stream_start_receiver,
+				  strm);
+		}
+	}
 
 	return 0;
 }
