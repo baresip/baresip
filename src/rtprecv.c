@@ -856,3 +856,12 @@ static void async_work_main(int err, void *arg)
 
 	mem_deref(w);
 }
+
+
+void rtprecv_srate(struct rtp_receiver *rx, uint32_t srate)
+{
+	if (!rx)
+		return;
+
+	jbuf_set_srate(rx->jbuf, srate);
+}
