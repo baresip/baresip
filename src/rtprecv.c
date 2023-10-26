@@ -710,6 +710,7 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 	rx->arg    = arg;
 	rx->pseq   = -1;
 	rx->pt     = -1;
+
 	err  = str_dup(&rx->name, name);
 	err |= mutex_alloc(&rx->mtx);
 	if (err)
@@ -742,6 +743,13 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 		if (err)
 			goto out;
 	}
+
+	struct pl *id = pl_alloc_str(name);
+	if (!id)
+		goto out;
+
+	jbuf_set_id(rx->jbuf, id);
+	mem_deref(id);
 
 	rx->metric = metric_alloc();
 	if (!rx->metric)
