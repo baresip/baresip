@@ -710,6 +710,7 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 	rx->arg    = arg;
 	rx->pseq   = -1;
 	rx->pt     = -1;
+
 	err  = str_dup(&rx->name, name);
 	err |= mutex_alloc(&rx->mtx);
 	if (err)
@@ -721,7 +722,7 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 
 		err = jbuf_alloc(&rx->jbuf, cfg->audio.jbuf_del.min,
 				 cfg->audio.jbuf_del.max);
-		err |= jbuf_set_type(rx->jbuf, cfg->audio.jbtype);
+		jbuf_set_type(rx->jbuf, cfg->audio.jbtype);
 	}
 
 	/* Video Jitter buffer */
@@ -737,6 +738,13 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 		if (err)
 			goto out;
 	}
+
+	struct pl *id = pl_alloc_str(name);
+	if (!id)
+		goto out;
+
+	jbuf_set_id(rx->jbuf, id);
+	mem_deref(id);
 
 	rx->metric = metric_alloc();
 	if (!rx->metric)
