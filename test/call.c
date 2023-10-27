@@ -424,7 +424,7 @@ static int agent_wait_for_ack(struct agent *ag)
 	if (!call_ack_pending(ua_call(ag->ua)))
 		return 0;
 
-	cancel_rule_new(UA_EVENT_CUSTOM, ag->ua, 1, 0, 1);
+	cancel_rule_new(UA_EVENT_CUSTOM, ag->ua, -1, -1, 1);
 	cr->prm = "gotack";
 	cr->checkack = true;
 
