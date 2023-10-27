@@ -24,7 +24,6 @@
 
 struct vad_enc {
 	struct aufilt_enc_st af;  /* inheritance */
-	struct tmr tmr;
 	const struct audio *au;
 	bool vad_tx;
 	Fvad *fvad;
@@ -33,7 +32,6 @@ struct vad_enc {
 
 struct vad_dec {
 	struct aufilt_enc_st af;  /* inheritance */
-	struct tmr tmr;
 	const struct audio *au;
 	bool vad_rx;
 	Fvad *fvad;
@@ -52,7 +50,6 @@ static void enc_destructor(void *arg)
 	}
 
 	list_unlink(&st->af.le);
-	tmr_cancel(&st->tmr);
 }
 
 
@@ -65,7 +62,6 @@ static void dec_destructor(void *arg)
 	}
 
 	list_unlink(&st->af.le);
-	tmr_cancel(&st->tmr);
 }
 
 
