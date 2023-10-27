@@ -27,7 +27,6 @@ struct vad_enc {
 	struct tmr tmr;
 	const struct audio *au;
 	bool vad_tx;
-	volatile bool started;
 	Fvad *fvad;
 };
 
@@ -37,7 +36,6 @@ struct vad_dec {
 	struct tmr tmr;
 	const struct audio *au;
 	bool vad_rx;
-	volatile bool started;
 	Fvad *fvad;
 };
 
@@ -71,50 +69,14 @@ static void dec_destructor(void *arg)
 }
 
 
-static int audio_print_vad(struct re_printf *pf, bool tx, bool voice)
-{
-	return re_hprintf(pf, "[%s %s]", tx ? "tx" : "rx", voice ? "x" : " ");
-}
-
-
 static void print_vad(int pos, int color, bool tx, bool active)
 {
 	/* move cursor to a fixed position */
 	re_fprintf(stderr, "\x1b[%dG", pos);
 
 	/* print vad in Nice colors */
-	re_fprintf(stderr, " \x1b[%dm%H\x1b[;m\r",
-		   color, audio_print_vad, tx, active);
-}
-
-
-static void enc_tmr_handler(void *arg)
-{
-	struct vad_enc *st = arg;
-
-	tmr_start(&st->tmr, 500, enc_tmr_handler, st);
-
-	if (st->started) {
-		if (vad_stderr)
-			print_vad(60, 31, true, st->vad_tx);
-
-		audio_vad_put(st->au, true, st->vad_tx);
-	}
-}
-
-
-static void dec_tmr_handler(void *arg)
-{
-	struct vad_dec *st = arg;
-
-	tmr_start(&st->tmr, 500, dec_tmr_handler, st);
-
-	if (st->started) {
-		if (vad_stderr)
-			print_vad(80, 32, false, st->vad_rx);
-
-		audio_vad_put(st->au, false, st->vad_rx);
-	}
+	re_fprintf(stderr, " \x1b[%dm[%s]\x1b[;m\r",
+		   color,  active ? (tx ? "tx" : "rx") : "  ");
 }
 
 
@@ -151,7 +113,6 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	}
 
 	st->au = au;
-	tmr_start(&st->tmr, 100, enc_tmr_handler, st);
 
 	*stp = (struct aufilt_enc_st *)st;
 
@@ -192,7 +153,6 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	}
 
 	st->au = au;
-	tmr_start(&st->tmr, 100, dec_tmr_handler, st);
 
 	*stp = (struct aufilt_dec_st *)st;
 
@@ -258,13 +218,21 @@ out:
 
 static int encode(struct aufilt_enc_st *st, struct auframe *af)
 {
-	struct vad_enc *vu = (void *)st;
+	struct vad_enc *vad = (void *)st;
 
 	if (!st || !af)
 		return EINVAL;
 
-	vu->vad_tx = auframe_vad(vu->fvad, af);
-	vu->started = true;
+	bool vad_tx = auframe_vad(vad->fvad, af);
+
+	if (vad_tx != vad->vad_tx) {
+		vad->vad_tx = vad_tx;
+
+		if (vad_stderr)
+			print_vad(61, 32, false, vad_tx);
+
+		audio_vad_put(vad->au, false, vad_tx);
+	}
 
 	return 0;
 }
@@ -272,13 +240,21 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 
 static int decode(struct aufilt_dec_st *st, struct auframe *af)
 {
-	struct vad_dec *vu = (void *)st;
+	struct vad_dec *vad = (void *)st;
 
 	if (!st || !af)
 		return EINVAL;
 
-	vu->vad_rx = auframe_vad(vu->fvad, af);
-	vu->started = true;
+	bool vad_rx = auframe_vad(vad->fvad, af);
+
+	if (vad_rx != vad->vad_rx) {
+		vad->vad_rx = vad_rx;
+
+		if (vad_stderr)
+			print_vad(64, 32, false, vad_rx);
+
+		audio_vad_put(vad->au, false, vad_rx);
+	}
 
 	return 0;
 }
@@ -299,6 +275,27 @@ static int module_init(void)
 
 	conf_get_bool(conf, "vad_stderr", &vad_stderr);
 
+	bool rx_enabled = true;
+	conf_get_bool(conf, "vad_rx", &rx_enabled);
+
+	bool tx_enabled = true;
+	conf_get_bool(conf, "vad_tx", &tx_enabled);
+
+	if (!rx_enabled) {
+		vad.dech = NULL;
+		vad.decupdh = NULL;
+	}
+
+	if (!tx_enabled) {
+		vad.ench = NULL;
+		vad.encupdh = NULL;
+	}
+
+	if (!tx_enabled && !rx_enabled) {
+		warning("neither vad_rx nor vad_tx are enabled, not loading filter");
+		return 0;
+	}
+
 	aufilt_register(baresip_aufiltl(), &vad);
 
 	return 0;
@@ -307,7 +304,8 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	aufilt_unregister(&vad);
+	if (vad.dech || vad.ench)
+		aufilt_unregister(&vad);
 
 	return 0;
 }
