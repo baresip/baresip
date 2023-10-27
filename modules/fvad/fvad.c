@@ -178,9 +178,10 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 	size_t ms = af->sampc * 1000 / af->srate;
 	size_t pos = 0;
 
+	/* process all chunk_sizes that fvad accepts */
 	for (size_t chunk_time_index = 0;
-		/* process all chunk_sizes that fvad accepts */
-		chunk_time_index < RE_ARRAY_SIZE(chunk_times_ms); ++chunk_time_index) {
+		chunk_time_index < RE_ARRAY_SIZE(chunk_times_ms);
+		++chunk_time_index) {
 
 		const size_t chunk_time = chunk_times_ms[chunk_time_index];
 		const size_t sampc = af->srate / 1000 * chunk_time;
@@ -288,7 +289,8 @@ static int module_init(void)
 	}
 
 	if (!tx_enabled && !rx_enabled) {
-		warning("neither vad_rx nor vad_tx are enabled, not loading filter");
+		warning("neither vad_rx nor vad_tx are enabled"
+			", not loading filter");
 		return 0;
 	}
 
