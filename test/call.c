@@ -884,6 +884,8 @@ int test_call_answer(void)
 	err = test_call_answer_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -966,6 +968,8 @@ int test_call_answer_hangup_a(void)
 	err = test_call_answer_hangup_a_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -1019,6 +1023,8 @@ int test_call_answer_hangup_b(void)
 
 	err = test_call_answer_hangup_b_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -1076,6 +1082,8 @@ int test_call_rtp_timeout(void)
 
 	err = test_call_rtp_timeout_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -1202,6 +1210,8 @@ int test_call_multiple(void)
 	err = test_call_multiple_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -1262,6 +1272,8 @@ int test_call_max(void)
 
 	err = test_call_max_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -1325,6 +1337,8 @@ int test_call_dtmf(void)
 
 	err = test_call_dtmf_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -1430,6 +1444,8 @@ int test_call_video(void)
 
 	err = test_call_video_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -1578,6 +1594,8 @@ int test_call_change_videodir(void)
 	err = test_call_change_videodir_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -1681,6 +1699,8 @@ int test_call_100rel_video(void)
 
 	err = test_call_100rel_video_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -1894,6 +1914,7 @@ int test_call_100rel_audio(void)
 	err = test_100rel_audio_base(RECEIVE_MODE_THREAD, AUDIO_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
 
  out:
@@ -1910,6 +1931,8 @@ int test_call_aulevel(void)
 
 	err = test_call_aulevel_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -1964,6 +1987,8 @@ int test_call_progress(void)
 
 	err = test_call_progress_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -2056,6 +2081,7 @@ int test_call_format_float(void)
 	err = test_media_base(RECEIVE_MODE_THREAD, AUDIO_MODE_THREAD);
 	ASSERT_EQ(0, err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
 
  out:
@@ -2136,6 +2162,8 @@ int test_call_mediaenc(void)
 	err = test_call_mediaenc_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -2201,6 +2229,8 @@ int test_call_medianat(void)
 
 	err = test_call_medianat_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -2296,6 +2326,8 @@ int test_call_custom_headers(void)
 	err = test_call_custom_headers_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -2339,6 +2371,8 @@ int test_call_tcp(void)
 
 	err = test_call_tcp_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -2458,6 +2492,8 @@ int test_call_transfer(void)
 	err = test_call_transfer_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -2529,6 +2565,8 @@ int test_call_transfer_fail(void)
 	err = test_call_transfer_fail_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -2595,6 +2633,8 @@ int test_call_attended_transfer(void)
 
 	err = test_call_attended_transfer_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -2675,6 +2715,8 @@ int test_call_rtcp(void)
 	err = test_call_rtcp_base(RECEIVE_MODE_THREAD, true);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -2698,6 +2740,9 @@ int test_call_aufilt(void)
 
 	err = test_media_base(RECEIVE_MODE_THREAD, AUDIO_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+	conf_config()->audio.txmode = AUDIO_MODE_POLL;
 
  out:
 	module_unload("auconv");
@@ -2810,6 +2855,8 @@ int test_call_webrtc(void)
 
 	err = test_call_webrtc_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
@@ -2995,6 +3042,8 @@ int test_call_bundle(void)
 	err = test_call_bundle_base(true,  true, RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
 
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
+
 out:
 	return err;
 }
@@ -3096,6 +3145,8 @@ int test_call_ipv6ll(void)
 
 	err = test_call_ipv6ll_base(RECEIVE_MODE_THREAD);
 	TEST_ERR(err);
+
+	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
 
 out:
 	return err;
