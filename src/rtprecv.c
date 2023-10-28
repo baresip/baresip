@@ -499,7 +499,7 @@ void rtprecv_set_handlers(struct rtp_receiver *rx,
 struct metric *rtprecv_metric(struct rtp_receiver *rx)
 {
 	if (!rx)
-		return;
+		return NULL;
 
 	/* it is allowed to return metric because it is thread safe */
 	return rx->metric;
