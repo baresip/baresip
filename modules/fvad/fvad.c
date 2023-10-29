@@ -242,7 +242,8 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 		if (vad_stderr)
 			print_vad(61, 32, false, vad_tx);
 
-		module_event("fvad", "vad", NULL, (struct call*)vad->call, "%d", vad_tx);
+		module_event("fvad", "vad", NULL, (struct call*)vad->call,
+			"%d", vad_tx);
 	}
 
 	return 0;
@@ -264,7 +265,8 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 		if (vad_stderr)
 			print_vad(64, 32, false, vad_rx);
 
-		module_event("fvad", "vad", NULL, (struct call*)vad->call, "%d", vad_rx);
+		module_event("fvad", "vad", NULL, (struct call*)vad->call,
+			"%d", vad_rx);
 	}
 
 	return 0;
@@ -276,7 +278,8 @@ bool find_vad_rx(const struct call *call, void *arg)
 	for (struct le *le = list_head(&vad_rxl); le; le = le->next) {
 		struct vad_dec *vad = le->data;
 		if (call_audio(call) == vad->au) {
-			/* store a pointer to the current call so we don't have to search again */
+			/* store a pointer to the current call so we don't
+			   have to search again */
 			vad->call = call;
 			return true;
 		}
@@ -291,7 +294,8 @@ bool find_vad_tx(const struct call *call, void *arg)
 	for (struct le *le = list_head(&vad_rxl); le; le = le->next) {
 		struct vad_enc *vad = le->data;
 		if (call_audio(call) == vad->au) {
-			/* store a pointer to the current call so we don't have to search again */
+			/* store a pointer to the current call so we don't
+			   have to search again */
 			vad->call = call;
 			return true;
 		}
