@@ -299,6 +299,9 @@ void rtprecv_set_socket(struct rtp_receiver *rx, struct rtp_sock *rtp)
 
 void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc)
 {
+	if (!rx)
+		return;
+
 	mtx_lock(rx->mtx);
 	if (rx->ssrc_set) {
 		if (ssrc != rx->ssrc) {
@@ -318,6 +321,9 @@ void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc)
 
 uint64_t rtprecv_ts_last(struct rtp_receiver *rx)
 {
+	if (!rx)
+		return 0;
+
 	uint64_t ts_last;
 	mtx_lock(rx->mtx);
 	ts_last = rx->ts_last;
@@ -329,6 +335,9 @@ uint64_t rtprecv_ts_last(struct rtp_receiver *rx)
 
 void rtprecv_set_ts_last(struct rtp_receiver *rx, uint64_t ts_last)
 {
+	if (!rx)
+		return;
+
 	mtx_lock(rx->mtx);
 	rx->ts_last = ts_last;
 	mtx_unlock(rx->mtx);
@@ -377,6 +386,9 @@ int rtprecv_get_ssrc(struct rtp_receiver *rx, uint32_t *ssrc)
 
 void rtprecv_enable_mux(struct rtp_receiver *rx, bool enable)
 {
+	if (!rx)
+		return;
+
 	mtx_lock(rx->mtx);
 	rtcp_enable_mux(rx->rtp, enable);
 	mtx_unlock(rx->mtx);
@@ -396,6 +408,9 @@ int rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx)
 {
 	int err;
 	bool enabled;
+
+	if (!rx)
+		return 0;
 
 	mtx_lock(rx->mtx);
 	enabled = rx->enabled;
