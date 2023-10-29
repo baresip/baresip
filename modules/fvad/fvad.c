@@ -11,6 +11,7 @@
 #include <rem.h>
 #include <baresip.h>
 #include <fvad.h>
+#include "fvad.h"
 
 
 /**
@@ -24,21 +25,28 @@
 
 struct vad_enc {
 	struct aufilt_enc_st af;  /* inheritance */
+	struct le le;
 	const struct audio *au;
 	bool vad_tx;
 	Fvad *fvad;
+	const struct call *call;
 };
 
 
 struct vad_dec {
 	struct aufilt_enc_st af;  /* inheritance */
+	struct le le;
 	const struct audio *au;
 	bool vad_rx;
 	Fvad *fvad;
+	const struct call *call;
 };
 
 
 static bool vad_stderr = false;
+
+static struct list vad_rxl = { NULL, NULL };
+static struct list vad_txl = { NULL, NULL };
 
 
 static void enc_destructor(void *arg)
@@ -50,6 +58,7 @@ static void enc_destructor(void *arg)
 	}
 
 	list_unlink(&st->af.le);
+	list_unlink(&st->le);
 }
 
 
@@ -62,6 +71,7 @@ static void dec_destructor(void *arg)
 	}
 
 	list_unlink(&st->af.le);
+	list_unlink(&st->le);
 }
 
 
@@ -110,6 +120,8 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 	st->au = au;
 
+	list_append(&vad_txl, &st->le, st);
+
 	*stp = (struct aufilt_enc_st *)st;
 
 	return 0;
@@ -149,6 +161,8 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	}
 
 	st->au = au;
+
+	list_append(&vad_rxl, &st->le, st);
 
 	*stp = (struct aufilt_dec_st *)st;
 
@@ -228,7 +242,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 		if (vad_stderr)
 			print_vad(61, 32, false, vad_tx);
 
-		audio_vad_put(vad->au, false, vad_tx);
+		module_event("fvad", "vad", NULL, (struct call*)vad->call, "%d", vad_tx);
 	}
 
 	return 0;
@@ -250,10 +264,40 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 		if (vad_stderr)
 			print_vad(64, 32, false, vad_rx);
 
-		audio_vad_put(vad->au, false, vad_rx);
+		module_event("fvad", "vad", NULL, (struct call*)vad->call, "%d", vad_rx);
 	}
 
 	return 0;
+}
+
+/* To be used with uag_filter_calls */
+bool find_vad_rx(const struct call *call, void *arg)
+{
+	for (struct le *le = list_head(&vad_rxl); le; le = le->next) {
+		struct vad_dec *vad = le->data;
+		if (call_audio(call) == vad->au) {
+			/* store a pointer to the current call so we don't have to search again */
+			vad->call = call;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/* To be used with uag_filter_calls */
+bool find_vad_tx(const struct call *call, void *arg)
+{
+	for (struct le *le = list_head(&vad_rxl); le; le = le->next) {
+		struct vad_enc *vad = le->data;
+		if (call_audio(call) == vad->au) {
+			/* store a pointer to the current call so we don't have to search again */
+			vad->call = call;
+			return true;
+		}
+	}
+
+	return false;
 }
 
 

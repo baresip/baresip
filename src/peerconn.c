@@ -326,7 +326,7 @@ int peerconnection_add_audio_track(struct peer_connection *pc,
 	err = audio_alloc(&media->u.au, &pc->streaml, &pc->stream_prm, cfg,
 			  NULL, pc->sdp, pc->mnat, pc->mnats,
 			  pc->menc, pc->mencs, AUDIO_PTIME, aucodecl, offerer,
-			  NULL, NULL, NULL, audio_error_handler, media);
+			  NULL, NULL, audio_error_handler, media);
 	if (err) {
 		warning("peerconnection: audio alloc failed (%m)\n", err);
 		return err;
