@@ -760,6 +760,7 @@ static int test_ua_options_base(enum sip_transp transp)
 
 	test_init(&t);
 
+	conf_config()->avt.rtp_stats = true;
 	err = ua_init("test",
 		      transp == SIP_TRANSP_UDP,
 		      transp == SIP_TRANSP_TCP,
