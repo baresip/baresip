@@ -38,7 +38,7 @@ enum {
 };
 
 
-/** Defines a packet frame */
+/** Defines a packet */
 struct packet {
 	struct le le;           /**< Linked list element       */
 	struct rtp_header hdr;  /**< RTP Header                */
@@ -56,12 +56,11 @@ struct jbuf {
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
 	uint32_t n;          /**< [# packets] Current # of packets in buffer */
-	uint32_t nf;         /**< [# frames] Current # of frames in buffer   */
-	uint32_t min;        /**< [# frames] Minimum # of frames to buffer   */
-	uint32_t max;        /**< [# frames] Maximum # of frames to buffer   */
-	uint32_t wish;       /**< [# frames] Wish size for adaptive mode     */
+	uint32_t min;        /**< [# packets] Minimum # of packets to buffer */
+	uint32_t max;        /**< [# packets] Maximum # of packets to buffer */
+	uint32_t wish;       /**< [# packets] Wish size for adaptive mode    */
 	uint16_t seq_put;    /**< Sequence number for last jbuf_put()        */
-	uint16_t seq_get;    /**< Sequence number of last played frame       */
+	uint16_t seq_get;    /**< Sequence number of last played             */
 	uint32_t ssrc;       /**< Previous ssrc                              */
 	uint64_t tr;         /**< Time of previous jbuf_put()                */
 	int pt;              /**< Payload type                               */
@@ -99,14 +98,13 @@ static void plot_jbuf(struct jbuf *jb, uint64_t tr)
 
 	treal = (uint32_t) (tr - jb->tr00);
 	re_snprintf(jb->buf, sizeof(jb->buf),
-		    "%s, 0x%p, %u, %u, %u, %u, %u",
+		    "%s, 0x%p, %u, %u, %u, %u",
 			__func__,               /* row 1  - grep */
 			jb,                     /* row 2  - grep optional */
 			treal,                  /* row 3  - plot x-axis */
 			rdiff,                  /* row 4  - plot */
 			jb->wish,               /* row 5  - plot */
-			jb->n,                  /* row 6  - plot */
-			jb->nf);                /* row 7  - plot */
+			jb->n);                 /* row 6  - plot */
 	re_trace_event("jbuf", "plot", 'P', NULL, 0, RE_TRACE_ARG_STRING_COPY,
 		       "line", jb->buf);
 }
@@ -140,7 +138,7 @@ static void plot_jbuf_event(struct jbuf *jb, char ph)
 
 
 /**
- * Get a frame from the pool
+ * Get a packet from the pool
  */
 static void packet_alloc(struct jbuf *jb, struct packet **f)
 {
@@ -154,16 +152,16 @@ static void packet_alloc(struct jbuf *jb, struct packet **f)
 	else {
 		struct packet *f0;
 
-		/* Steal an old frame */
+		/* Steal an old packet */
 		le = jb->packetl.head;
 		f0 = le->data;
 
 #if JBUF_STAT
 		STAT_INC(n_overflow);
-		DEBUG_WARNING("drop 1 old frame seq=%u (total dropped %u)\n",
+		DEBUG_WARNING("drop 1 old packet seq=%u (total dropped %u)\n",
 			   f0->hdr.seq, jb->stat.n_overflow);
 #else
-		DEBUG_WARNING("drop 1 old frame seq=%u\n", f0->hdr.seq);
+		DEBUG_WARNING("drop 1 old packet seq=%u\n", f0->hdr.seq);
 #endif
 
 		plot_jbuf_event(jb, 'O');
@@ -197,6 +195,9 @@ static void jbuf_destructor(void *data)
 	/* Free all packets in the pool list */
 	list_flush(&jb->pooll);
 	mem_deref(jb->lock);
+#ifdef RE_JBUF_TRACE
+	(void)re_trace_close();
+#endif
 }
 
 
@@ -204,7 +205,7 @@ static void jbuf_destructor(void *data)
  * Allocate a new jitter buffer
  *
  * @param jbp    Pointer to returned jitter buffer
- * @param min    Minimum delay in [frames]
+ * @param min    Minimum delay in [packets]
  * @param max    Maximum delay in [packets]
  *
  * @return 0 if success, otherwise errorcode
@@ -237,7 +238,7 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
 	jb->wish = min;
 	tmr_init(&jb->tmr);
 
-	DEBUG_INFO("alloc: delay=%u-%u frames/packets\n", min, max);
+	DEBUG_INFO("alloc: delay=%u-%u [packets]\n", min, max);
 
 	jb->pt = -1;
 	err = mutex_alloc(&jb->lock);
@@ -257,6 +258,10 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
 		list_append(&jb->pooll, &f->le, f);
 		DEBUG_INFO("alloc: adding to pool list %u\n", i);
 	}
+
+#ifdef RE_JBUF_TRACE
+	(void)re_trace_init("jbuf.json");
+#endif
 
 out:
 	if (err)
@@ -304,7 +309,6 @@ static void calc_rdiff(struct jbuf *jb, uint16_t seq)
 	int32_t rdiff;
 	int32_t adiff;
 	int32_t s;                         /**< EMA coefficient              */
-	float ratio = 1.0;                 /**< Frame packet ratio           */
 	uint32_t wish;
 	uint32_t max = jb->max;
 	bool down = false;
@@ -315,19 +319,12 @@ static void calc_rdiff(struct jbuf *jb, uint16_t seq)
 	if (!jb->seq_get)
 		return;
 
-	if (jb->nf) {
-		ratio = (float)jb->n / (float)jb->nf;
-		max   = (uint32_t)(max / ratio);
-	}
-
 	rdiff = (int16_t)(jb->seq_put + 1 - seq);
 	adiff = abs(rdiff * JBUF_RDIFF_EMA_COEFF);
-	s = adiff > jb->rdiff ? JBUF_RDIFF_UP_SPEED :
-		jb->wish > 2  ? 1 :
-		jb->wish > 1  ? 2 : 3;
+	s = adiff > jb->rdiff ? JBUF_RDIFF_UP_SPEED : 1;
 	jb->rdiff += (adiff - jb->rdiff) * s / JBUF_RDIFF_EMA_COEFF;
 
-	wish = (uint32_t)(jb->rdiff / (float)JBUF_RDIFF_EMA_COEFF / ratio);
+	wish = (uint32_t)(jb->rdiff / (float)JBUF_RDIFF_EMA_COEFF);
 	if (wish < jb->min)
 		wish = jb->min;
 
@@ -339,7 +336,8 @@ static void calc_rdiff(struct jbuf *jb, uint16_t seq)
 		jb->wish = wish;
 	}
 	else if (wish < jb->wish) {
-		uint32_t dt = wish + 1 == jb->wish ? 6000 : 1000;
+		uint32_t dt = wish + 1 == jb->wish ? 6000 :
+			      wish < jb->wish / 2  ? 100 : 1000;
 		if (!tmr_isrunning(&jb->tmr) || tmr_get_expire(&jb->tmr) > dt)
 			tmr_start(&jb->tmr, dt, wish_down, jb);
 
@@ -363,11 +361,9 @@ static void calc_rdiff(struct jbuf *jb, uint16_t seq)
 int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 {
 	struct packet *f;
-	struct packet *fc;
 	struct le *le, *tail;
 	uint16_t seq;
 	uint64_t tr, dt;
-	bool equal;
 	int err = 0;
 
 	if (!jb || !hdr)
@@ -471,20 +467,6 @@ success:
 	f->hdr = *hdr;
 	f->mem = mem_ref(mem);
 
-	equal = false;
-	if (f->le.prev) {
-		fc = f->le.prev->data;
-		equal = (fc->hdr.ts == f->hdr.ts);
-	}
-
-	if (!equal && f->le.next) {
-		fc = f->le.next->data;
-		equal = (fc->hdr.ts == f->hdr.ts);
-	}
-
-	if (!equal)
-		++jb->nf;
-
 out:
 #ifdef RE_JBUF_TRACE
 	plot_jbuf(jb, tr);
@@ -515,7 +497,7 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 	mtx_lock(jb->lock);
 	STAT_INC(n_get);
 
-	if (jb->nf <= jb->wish || !jb->packetl.head) {
+	if (jb->n <= jb->wish || !jb->packetl.head) {
 		DEBUG_INFO("not enough buffer packets - wait.. "
 			   "(n=%u wish=%u)\n", jb->n, jb->wish);
 		STAT_INC(n_underflow);
@@ -552,24 +534,11 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 	*hdr = f->hdr;
 	*mem = mem_ref(f->mem);
 
-	/* decrease not equal frames */
-	if (f->le.next) {
-		struct packet *next_f = f->le.next->data;
-
-		if (f->hdr.ts != next_f->hdr.ts)
-			--jb->nf;
-	}
-	else {
-		--jb->nf;
-	}
-
 	packet_deref(jb, f);
-
-	if (jb->nf > jb->wish) {
-		DEBUG_INFO("reducing jitter buffer "
-			   "(nf=%u min=%u wish=%u max=%u)\n",
-			   jb->nf, jb->min, jb->wish, jb->max);
-		err = EAGAIN;
+	if (jb->packetl.head) {
+		f = jb->packetl.head->data;
+		if (jb->n > jb->wish)
+			err = EAGAIN;
 	}
 
 out:
@@ -613,17 +582,6 @@ int jbuf_drain(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 	*hdr = f->hdr;
 	*mem = mem_ref(f->mem);
 
-	/* decrease not equal frames */
-	if (f->le.next) {
-		struct packet *next_f = f->le.next->data;
-
-		if (f->hdr.ts != next_f->hdr.ts)
-			--jb->nf;
-	}
-	else {
-		--jb->nf;
-	}
-
 	packet_deref(jb, f);
 
 out:
@@ -632,7 +590,7 @@ out:
 }
 
 /**
- * Flush all frames in the jitter buffer
+ * Flush all packets in the jitter buffer
  *
  * @param jb   Jitter buffer
  */
@@ -648,19 +606,18 @@ void jbuf_flush(struct jbuf *jb)
 
 	mtx_lock(jb->lock);
 	if (jb->packetl.head) {
-		DEBUG_INFO("flush: %u frames\n", jb->n);
+		DEBUG_INFO("flush: %u packets\n", jb->n);
 	}
 
-	/* put all buffered frames back in free list */
+	/* put all buffered packets back in free list */
 	for (le = jb->packetl.head; le; le = jb->packetl.head) {
-		DEBUG_INFO(" flush frame: seq=%u\n",
+		DEBUG_INFO(" flush packet: seq=%u\n",
 			   ((struct packet *)(le->data))->hdr.seq);
 
 		packet_deref(jb, le->data);
 	}
 
 	jb->n       = 0;
-	jb->nf      = 0;
 	jb->running = false;
 
 	jb->seq_get = 0;
@@ -688,26 +645,6 @@ uint32_t jbuf_packets(const struct jbuf *jb)
 
 	mtx_lock(jb->lock);
 	uint32_t n = jb->n;
-	mtx_unlock(jb->lock);
-
-	return n;
-}
-
-
-/**
- * Get number of current frames
- *
- * @param jb Jitter buffer
- *
- * @return number of frames
- */
-uint32_t jbuf_frames(const struct jbuf *jb)
-{
-	if (!jb)
-		return 0;
-
-	mtx_lock(jb->lock);
-	uint32_t n = jb->nf;
 	mtx_unlock(jb->lock);
 
 	return n;
@@ -762,8 +699,8 @@ int jbuf_debug(struct re_printf *pf, const struct jbuf *jb)
 
 	mtx_lock(jb->lock);
 	err |= mbuf_printf(mb, " running=%d", jb->running);
-	err |= mbuf_printf(mb, " min=%u cur=%u/%u max=%u [frames/packets]\n",
-			  jb->min, jb->nf, jb->n, jb->max);
+	err |= mbuf_printf(mb, " min=%u cur=%u max=%u [packets]\n",
+			  jb->min, jb->n, jb->max);
 	err |= mbuf_printf(mb, " seq_put=%u\n", jb->seq_put);
 
 #if JBUF_STAT

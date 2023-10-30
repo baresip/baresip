@@ -268,35 +268,30 @@ int test_jbuf_adaptive_video(void)
 	hdr.ts = 100;
 	err = jbuf_put(jb, &hdr, frv[0]);
 	TEST_ERR(err);
-	ASSERT_EQ(1, jbuf_frames(jb));
 	ASSERT_EQ(1, jbuf_packets(jb));
 
 	hdr.seq = 2;
 	hdr.ts = 100; /* Same frame */
 	err = jbuf_put(jb, &hdr, frv[1]);
 	TEST_ERR(err);
-	ASSERT_EQ(1, jbuf_frames(jb));
 	ASSERT_EQ(2, jbuf_packets(jb));
 
 	hdr.seq = 4;
 	hdr.ts = 200;
 	err = jbuf_put(jb, &hdr, frv[2]);
 	TEST_ERR(err);
-	ASSERT_EQ(2, jbuf_frames(jb));
 	ASSERT_EQ(3, jbuf_packets(jb));
 
 	hdr.seq = 3; /* unordered late packet */
 	hdr.ts = 200;
 	err = jbuf_put(jb, &hdr, frv[3]);
 	TEST_ERR(err);
-	ASSERT_EQ(2, jbuf_frames(jb));
 	ASSERT_EQ(4, jbuf_packets(jb));
 
 	hdr.seq = 5;
 	hdr.ts = 300;
 	err = jbuf_put(jb, &hdr, frv[4]);
 	TEST_ERR(err);
-	ASSERT_EQ(3, jbuf_frames(jb));
 	ASSERT_EQ(5, jbuf_packets(jb));
 
 	/* --- Test late packet, unique frame --- */
@@ -306,28 +301,24 @@ int test_jbuf_adaptive_video(void)
 	hdr.ts = 100;
 	err = jbuf_put(jb, &hdr, frv[0]);
 	TEST_ERR(err);
-	ASSERT_EQ(1, jbuf_frames(jb));
 	ASSERT_EQ(1, jbuf_packets(jb));
 
 	hdr.seq = 2;
 	hdr.ts = 100; /* Same frame */
 	err = jbuf_put(jb, &hdr, frv[1]);
 	TEST_ERR(err);
-	ASSERT_EQ(1, jbuf_frames(jb));
 	ASSERT_EQ(2, jbuf_packets(jb));
 
 	hdr.seq = 4;
 	hdr.ts = 300;
 	err = jbuf_put(jb, &hdr, frv[2]);
 	TEST_ERR(err);
-	ASSERT_EQ(2, jbuf_frames(jb));
 	ASSERT_EQ(3, jbuf_packets(jb));
 
 	hdr.seq = 3; /* unordered late packet */
 	hdr.ts = 200;
 	err = jbuf_put(jb, &hdr, frv[3]);
 	TEST_ERR(err);
-	ASSERT_EQ(3, jbuf_frames(jb));
 	ASSERT_EQ(4, jbuf_packets(jb));
 
 	/* --- Test lost get --- */
@@ -337,14 +328,12 @@ int test_jbuf_adaptive_video(void)
 	hdr.ts = 100;
 	err = jbuf_put(jb, &hdr, frv[0]);
 	TEST_ERR(err);
-	ASSERT_EQ(1, jbuf_frames(jb));
 	ASSERT_EQ(1, jbuf_packets(jb));
 
 	hdr.seq = 2;
 	hdr.ts = 100; /* Same frame */
 	err = jbuf_put(jb, &hdr, frv[1]);
 	TEST_ERR(err);
-	ASSERT_EQ(1, jbuf_frames(jb));
 	ASSERT_EQ(2, jbuf_packets(jb));
 
 	/* LOST hdr.seq = 3; */
@@ -353,26 +342,22 @@ int test_jbuf_adaptive_video(void)
 	hdr.ts = 200;
 	err = jbuf_put(jb, &hdr, frv[2]);
 	TEST_ERR(err);
-	ASSERT_EQ(2, jbuf_frames(jb));
 	ASSERT_EQ(3, jbuf_packets(jb));
 
 	hdr.seq = 5;
 	hdr.ts = 300;
 	err = jbuf_put(jb, &hdr, frv[3]);
 	TEST_ERR(err);
-	ASSERT_EQ(3, jbuf_frames(jb));
 	ASSERT_EQ(4, jbuf_packets(jb));
 
 	err = jbuf_get(jb, &hdr2, &mem);
 	ASSERT_EQ(EAGAIN, err);
 	mem = mem_deref(mem);
-	ASSERT_EQ(3, jbuf_frames(jb));
 	ASSERT_EQ(3, jbuf_packets(jb));
 
 	err = jbuf_get(jb, &hdr2, &mem);
 	ASSERT_EQ(EAGAIN, err);
 	mem = mem_deref(mem);
-	ASSERT_EQ(2, jbuf_frames(jb));
 	ASSERT_EQ(2, jbuf_packets(jb));
 
 	err = 0;
