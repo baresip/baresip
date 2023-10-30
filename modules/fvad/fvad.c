@@ -318,13 +318,13 @@ static int module_init(void)
 {
 	struct conf *conf = conf_cur();
 
-	conf_get_bool(conf, "vad_stderr", &vad_stderr);
+	conf_get_bool(conf, "fvad_stderr", &vad_stderr);
 
 	bool rx_enabled = true;
-	conf_get_bool(conf, "vad_rx", &rx_enabled);
+	conf_get_bool(conf, "fvad_rx", &rx_enabled);
 
 	bool tx_enabled = true;
-	conf_get_bool(conf, "vad_tx", &tx_enabled);
+	conf_get_bool(conf, "fvad_tx", &tx_enabled);
 
 	if (!rx_enabled) {
 		vad.dech = NULL;
@@ -337,8 +337,8 @@ static int module_init(void)
 	}
 
 	if (!tx_enabled && !rx_enabled) {
-		warning("neither vad_rx nor vad_tx are enabled"
-			", not loading filter");
+		warning("neither fvad_rx nor fvad_tx are enabled"
+			", not loading filter\n");
 		return 0;
 	}
 
