@@ -1558,6 +1558,20 @@ bool call_refresh_allowed(const struct call *call)
 
 
 /**
+ * Check if the local SIP Session expects an ACK as answer to a SIP Session
+ * Reply
+ *
+ * @param call  Call object
+ *
+ * @return True if an ACK is pending, false if not
+ */
+bool call_ack_pending(const struct call *call)
+{
+	return call ? sipsess_ack_pending(call->sess) : false;
+}
+
+
+/**
  * Get the session call-id for the call
  *
  * @param call Call object

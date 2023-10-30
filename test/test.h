@@ -219,6 +219,7 @@ int test_call_webrtc(void);
 int test_call_bundle(void);
 int test_call_ipv6ll(void);
 int test_call_100rel_video(void);
+int test_call_hold_resume(void);
 int test_cmd(void);
 int test_cmd_long(void);
 int test_contact(void);

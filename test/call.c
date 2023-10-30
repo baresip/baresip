@@ -38,6 +38,7 @@ struct cancel_rule {
 	enum ua_event ev;
 	const char *prm;
 	struct ua *ua;
+	bool checkack;
 
 	unsigned n_incoming;
 	unsigned n_progress;
@@ -79,6 +80,9 @@ struct agent {
 	unsigned n_vidframe;
 	unsigned n_auframe;
 	double aulvl;
+
+	struct tmr tmr_ack;
+	bool gotack;
 };
 
 
@@ -156,6 +160,9 @@ struct fixture {
 
 
 #define fixture_close(f)			\
+	tmr_cancel(&f->a.tmr_ack);		\
+	tmr_cancel(&f->b.tmr_ack);		\
+	tmr_cancel(&f->c.tmr_ack);		\
 	mem_deref(f->c.ua);			\
 	mem_deref(f->b.ua);			\
 	mem_deref(f->a.ua);			\
@@ -391,6 +398,50 @@ static const struct list *hdrs;
 static const char dtmf_digits[] = "123";
 
 
+static void check_ack(void *arg)
+{
+	struct agent *ag = arg;
+
+	if (ag->gotack)
+		return;
+
+	ag->gotack = !call_ack_pending(ua_call(ag->ua));
+
+	if (ag->gotack)
+		ua_event(ag->ua, UA_EVENT_CUSTOM, ua_call(ag->ua), "gotack");
+
+	else
+		tmr_start(&ag->tmr_ack, 1, check_ack, ag);
+}
+
+
+static int agent_wait_for_ack(struct agent *ag)
+{
+	int err;
+	struct cancel_rule *cr;
+	struct fixture *f = ag->fix;
+
+	if (!call_ack_pending(ua_call(ag->ua)))
+		return 0;
+
+	cancel_rule_new(UA_EVENT_CUSTOM, ag->ua, -1, -1, 1);
+	cr->prm = "gotack";
+	cr->checkack = true;
+
+	ag->gotack = false;
+	tmr_start(&ag->tmr_ack, 1, check_ack, ag);
+	err = re_main_timeout(10000);
+	cancel_rule_pop();
+	if (err)
+		goto out;
+
+	err = call_ack_pending(ua_call(ag->ua)) ? ETIMEDOUT : 0;
+
+out:
+	return err;
+}
+
+
 static bool check_rule(struct cancel_rule *rule, int met_prev,
 		       struct agent *ag, enum ua_event ev, const char *prm)
 {
@@ -421,6 +472,11 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 		     uag_event_str(ev),
 		     account_aor(ua_account(ag->ua)),
 		     account_aor(ua_account(rule->ua)));
+		return false;
+	}
+
+	if (rule->checkack && !ag->gotack) {
+		info("test: event %s waiting for ACK\n", uag_event_str(ev));
 		return false;
 	}
 
@@ -2527,5 +2583,119 @@ int test_call_ipv6ll(void)
 	fixture_close(f);
 	module_unload("ausine");
 
+	return err;
+}
+
+
+static int test_call_hold_resume_base(bool tcp)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	int err = 0;
+
+
+	fixture_init(f);
+	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cr->n_audio_estab = 1;
+	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
+	cr->n_audio_estab = 1;
+
+	err = module_load(".", "ausine");
+	TEST_ERR(err);
+	err = module_load(".", "aufile");
+	TEST_ERR(err);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+	f->estab_action = ACTION_NOTHING;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, 0, NULL, tcp ? f->buri_tcp : f->buri,
+			 VIDMODE_ON);
+	TEST_ERR(err);
+
+	/* wait for RTP audio */
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify that audio was enabled and bi-directional */
+	ASSERT_TRUE(call_has_audio(ua_call(f->a.ua)));
+	ASSERT_TRUE(call_has_audio(ua_call(f->b.ua)));
+
+	struct sdp_media *m;
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 1, 0, 1);
+	cr->prm = "offer";
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 1);
+	cr->prm = "answer";
+
+	/* set call on-hold */
+	err = call_hold(ua_call(f->a.ua), true);
+	TEST_ERR(err);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	err = agent_wait_for_ack(&f->b);
+	TEST_ERR(err);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+
+	/* set call to resume */
+	err = call_hold(ua_call(f->a.ua), false);
+	TEST_ERR(err);
+	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+
+	err = agent_wait_for_ack(&f->b);
+	TEST_ERR(err);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+
+ out:
+	if (err)
+		failure_debug(f, false);
+
+	fixture_close(f);
+	module_unload("aufile");
+	module_unload("ausine");
+
+	return err;
+}
+
+
+int test_call_hold_resume(void)
+{
+	int err;
+
+	err = test_call_hold_resume_base(false);
+	TEST_ERR(err);
+
+	err = test_call_hold_resume_base(true);
+	TEST_ERR(err);
+
+out:
 	return err;
 }
