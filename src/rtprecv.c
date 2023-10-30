@@ -419,8 +419,12 @@ void rtprecv_handle_rtcp(const struct sa *src, struct rtcp_msg *msg,
 	(void)src;
 
 	MAGIC_CHECK(rx);
-
 	mtx_lock(rx->mtx);
+	if (!rx->enabled) {
+		mtx_unlock(rx->mtx);
+		return;
+	}
+
 	rx->ts_last = tmr_jiffies();
 	mtx_unlock(rx->mtx);
 
@@ -586,6 +590,7 @@ static void destructor(void *arg)
 	struct rtp_receiver *rx = arg;
 
 	if (re_atomic_rlx(&rx->run)) {
+		rtprecv_enable(rx, false);
 		re_atomic_rlx_set(&rx->run, false);
 		thrd_join(rx->thr, NULL);
 		re_thread_async_main_cancel((intptr_t)rx);
