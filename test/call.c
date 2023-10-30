@@ -2863,8 +2863,7 @@ out:
 }
 
 
-static int test_call_bundle_base(bool use_mnat, bool use_menc,
-				 enum rtp_receive_mode rxmode)
+static int test_call_bundle_base(bool use_mnat, bool use_menc)
 {
 	struct fixture fix = {0}, *f = &fix;
 	struct cancel_rule *cr;
@@ -2879,7 +2878,6 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc,
 	conf_config()->avt.bundle = true;
 	conf_config()->avt.rtcp_mux = true;  /* MUST enable RTP/RTCP mux */
 	conf_config()->video.fps = 100;
-	conf_config()->avt.rxmode = rxmode;
 
 	if (use_mnat) {
 		mock_mnat_register(baresip_mnatl());
@@ -3023,28 +3021,13 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc,
  */
 int test_call_bundle(void)
 {
-	int err;
+	int err = 0;
 
-	err = test_call_bundle_base(false, false, RECEIVE_MODE_MAIN);
-	TEST_ERR(err);
-	err = test_call_bundle_base(true,  false, RECEIVE_MODE_MAIN);
-	TEST_ERR(err);
-	err = test_call_bundle_base(false, true, RECEIVE_MODE_MAIN);
-	TEST_ERR(err);
-	err = test_call_bundle_base(true,  true, RECEIVE_MODE_MAIN);
-	TEST_ERR(err);
-	err = test_call_bundle_base(false, false, RECEIVE_MODE_THREAD);
-	TEST_ERR(err);
-	err = test_call_bundle_base(true,  false, RECEIVE_MODE_THREAD);
-	TEST_ERR(err);
-	err = test_call_bundle_base(false, true, RECEIVE_MODE_THREAD);
-	TEST_ERR(err);
-	err = test_call_bundle_base(true,  true, RECEIVE_MODE_THREAD);
-	TEST_ERR(err);
+	err |= test_call_bundle_base(false, false);
+	err |= test_call_bundle_base(true,  false);
+	err |= test_call_bundle_base(false, true);
+	err |= test_call_bundle_base(true,  true);
 
-	conf_config()->avt.rxmode = RECEIVE_MODE_MAIN;
-
-out:
 	return err;
 }
 
