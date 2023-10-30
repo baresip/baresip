@@ -1380,8 +1380,8 @@ int test_call_change_videodir(void)
 	cr->prm = "answer";
 
 	/* Set video inactive */
-	f->a.n_vidframe = 0;
-	f->b.n_vidframe = 0;
+	cr_vida->ev = UA_EVENT_MAX;
+	cr_vidb->ev = UA_EVENT_MAX;
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_INACTIVE);
 	TEST_ERR(err);
 	err = re_main_timeout(10000);
@@ -1401,6 +1401,10 @@ int test_call_change_videodir(void)
 	cancel_rule_pop();
 
 	/* Set video sendrecv */
+	f->a.n_vidframe = 0;
+	f->b.n_vidframe = 0;
+	cr_vida->ev = UA_EVENT_CUSTOM;
+	cr_vidb->ev = UA_EVENT_CUSTOM;
 	err = call_set_video_dir(ua_call(f->a.ua), SDP_SENDRECV);
 	TEST_ERR(err);
 	err = re_main_timeout(10000);
