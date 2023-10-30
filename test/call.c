@@ -1661,6 +1661,7 @@ static int test_media_base(enum audio_mode txmode)
 	conf_config()->audio.txmode = txmode;
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
+	conf_config()->avt.rtp_stats = true;
 
 	cancel_rule_new(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
 	cr->prm = "auframe";
