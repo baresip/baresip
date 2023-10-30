@@ -11,7 +11,7 @@
 struct videnc_state {
 	struct videnc_param encprm;
 	videnc_packet_h *pkth;
-	void *arg;
+	const struct video *vid;
 	unsigned pktsize;
 	uint32_t packetization_mode;
 };
@@ -64,7 +64,7 @@ static void param_handler(const struct pl *name, const struct pl *val,
 
 int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 		       struct videnc_param *prm, const char *fmtp,
-		       videnc_packet_h *pkth, void *arg)
+		       videnc_packet_h *pkth, const struct video *vid)
 {
 	struct videnc_state *st;
 
@@ -82,7 +82,7 @@ int encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
 
 	st->encprm = *prm;
 	st->pkth = pkth;
-	st->arg = arg;
+	st->vid = vid;
 	st->pktsize = prm->pktsize;
 
 	comvideo_codec.encoders =
@@ -123,7 +123,7 @@ encode_h264_sample(struct videnc_state *st, enc_data *encData)
 
 	marker = hdr[1] >> 7;
 
-	st->pkth(marker, ts, hdr, 0, pld, pld_len, st->arg);
+	st->pkth(marker, ts, hdr, 0, pld, pld_len, st->vid);
 	debug("End encode_h264_sample\n");
 }
 

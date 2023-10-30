@@ -264,7 +264,8 @@ static void dec_destructor(void *arg)
 int decode_h264_update(
 	struct viddec_state **vdsp,
 	const struct vidcodec *vc,
-	const char *fmtp)
+	const char *fmtp,
+	const struct video *vid)
 {
 	struct viddec_state *st;
 
@@ -276,7 +277,8 @@ int decode_h264_update(
 	if (*vdsp)
 		return 0;
 
-	(void) fmtp;
+	(void)fmtp;
+	(void)vid;
 
 	st = mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
