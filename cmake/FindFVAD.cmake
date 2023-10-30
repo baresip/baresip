@@ -1,3 +1,6 @@
+find_package(PkgConfig QUIET)
+pkg_search_module(FVAD fvad)
+
 find_path(FVAD_INCLUDE_DIR
   NAMES fvad.h
   HINTS

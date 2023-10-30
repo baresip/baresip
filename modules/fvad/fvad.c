@@ -337,7 +337,7 @@ static int module_init(void)
 	}
 
 	if (!tx_enabled && !rx_enabled) {
-		warning("neither fvad_rx nor fvad_tx are enabled"
+		warning("fvad: neither fvad_rx nor fvad_tx are enabled"
 			", not loading filter\n");
 		return 0;
 	}
