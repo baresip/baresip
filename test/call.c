@@ -1389,6 +1389,8 @@ int test_call_change_videodir(void)
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
+	err = agent_wait_for_ack(&f->a);
+	TEST_ERR(err);
 
 	ASSERT_TRUE(!call_has_video(ua_call(f->a.ua)));
 	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
@@ -1487,6 +1489,8 @@ int test_call_100rel_video(void)
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
+	err = agent_wait_for_ack(&f->a);
+	TEST_ERR(err);
 	cancel_rule_pop();
 
 	struct sdp_media *vm;
@@ -1672,6 +1676,8 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
+	err = agent_wait_for_ack(&f->a);
+	TEST_ERR(err);
 	cancel_rule_pop();
 
 	struct sdp_media *am;
