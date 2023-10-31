@@ -40,11 +40,12 @@ static struct mbuf *generate_tone(void)
 }
 
 
-static void auframe_handler(struct auframe *af, void *arg)
+static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 {
 	struct test *test = arg;
 	size_t bytec = af->sampc * 2;
 	int err = 0;
+	(void)dev;
 
 	if (!test->mb_samp) {
 		test->mb_samp = mbuf_alloc(bytec);

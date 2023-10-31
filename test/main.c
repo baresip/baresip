@@ -49,6 +49,7 @@ static const struct test tests[] = {
 	TEST(test_call_webrtc),
 	TEST(test_call_bundle),
 	TEST(test_call_ipv6ll),
+	TEST(test_call_100rel_audio),
 	TEST(test_call_100rel_video),
 	TEST(test_call_hold_resume),
 	TEST(test_cmd),

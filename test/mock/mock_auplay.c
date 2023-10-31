@@ -16,6 +16,7 @@ struct auplay_st {
 	size_t sampc;
 	auplay_write_h *wh;
 	void *arg;
+	const char *device;
 };
 
 
@@ -49,7 +50,7 @@ static void tmr_handler(void *arg)
 
 	/* feed the audio-samples back to the test */
 	if (mock.sampleh)
-		mock.sampleh(&af, mock.arg);
+		mock.sampleh(&af, st->device, mock.arg);
 }
 
 
@@ -59,7 +60,6 @@ static int mock_auplay_alloc(struct auplay_st **stp, const struct auplay *ap,
 {
 	struct auplay_st *st;
 	int err = 0;
-	(void)device;
 
 	if (!stp || !ap || !prm)
 		return EINVAL;
@@ -71,6 +71,7 @@ static int mock_auplay_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->prm  = *prm;
 	st->wh   = wh;
 	st->arg  = arg;
+	st->device = device;
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 

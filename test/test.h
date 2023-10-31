@@ -151,7 +151,7 @@ int dns_server_add_srv(struct dns_server *srv, const char *name,
 
 struct auplay;
 
-typedef void (mock_sample_h)(struct auframe *af, void *arg);
+typedef void (mock_sample_h)(struct auframe *af, const char *dev, void *arg);
 
 int mock_auplay_register(struct auplay **auplayp, struct list *auplayl,
 			 mock_sample_h *sampleh, void *arg);
@@ -218,6 +218,7 @@ int test_call_change_videodir(void);
 int test_call_webrtc(void);
 int test_call_bundle(void);
 int test_call_ipv6ll(void);
+int test_call_100rel_audio(void);
 int test_call_100rel_video(void);
 int test_call_hold_resume(void);
 int test_cmd(void);
