@@ -25,8 +25,6 @@
 
 struct vad_enc {
 	struct aufilt_enc_st af;  /* inheritance */
-	struct le le;
-	const struct audio *au;
 	bool vad_tx;
 	Fvad *fvad;
 	const struct call *call;
@@ -35,18 +33,17 @@ struct vad_enc {
 
 struct vad_dec {
 	struct aufilt_enc_st af;  /* inheritance */
-	struct le le;
-	const struct audio *au;
 	bool vad_rx;
 	Fvad *fvad;
 	const struct call *call;
 };
 
+struct filter_arg {
+	struct audio *audio;
+	struct call *call;
+};
 
 static bool vad_stderr = false;
-
-static struct list vad_rxl = { NULL, NULL };
-static struct list vad_txl = { NULL, NULL };
 
 
 static void enc_destructor(void *arg)
@@ -58,7 +55,6 @@ static void enc_destructor(void *arg)
 	}
 
 	list_unlink(&st->af.le);
-	list_unlink(&st->le);
 }
 
 
@@ -71,7 +67,6 @@ static void dec_destructor(void *arg)
 	}
 
 	list_unlink(&st->af.le);
-	list_unlink(&st->le);
 }
 
 
@@ -86,11 +81,29 @@ static void print_vad(int pos, int color, bool tx, bool active)
 }
 
 
+static void find_first_call(struct call *call, void *arg)
+{
+	struct filter_arg *fa = arg;
+
+	if (!fa->call)
+		fa->call = call;
+}
+
+
+static bool find_call(const struct call *call, void *arg)
+{
+	struct filter_arg *fa = arg;
+
+	return call_audio(call) == fa->audio;
+}
+
+
 static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct aufilt *af, struct aufilt_prm *prm,
 			 const struct audio *au)
 {
 	struct vad_enc *st;
+	struct filter_arg fa = { au, NULL };
 	(void)ctx;
 
 	if (!stp || !af || !prm)
@@ -118,11 +131,11 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 		return EINVAL;
 	}
 
-	st->au = au;
-
-	list_append(&vad_txl, &st->le, st);
+	uag_filter_calls(find_first_call, find_call, &fa);
 
 	*stp = (struct aufilt_enc_st *)st;
+
+	st->call = fa.call;
 
 	return 0;
 }
@@ -133,6 +146,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct vad_dec *st;
+	struct filter_arg fa = { au, NULL };
 	(void)ctx;
 
 	if (!stp || !af || !prm)
@@ -160,9 +174,9 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 		return EINVAL;
 	}
 
-	st->au = au;
+	uag_filter_calls(find_first_call, find_call, &fa);
 
-	list_append(&vad_rxl, &st->le, st);
+	st->call = fa.call;
 
 	*stp = (struct aufilt_dec_st *)st;
 
@@ -209,14 +223,14 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 				goto out;
 			}
 			else if (err < 0) {
-				warning("fvad_process(%d) failed", sampc);
+				warning("fvad: fvad_process(%d) failed\n", sampc);
 				goto out;
 			}
 		}
 	}
 
 	if (pos != af->sampc) {
-		warning("fvad_process: samples left over: %d",
+		warning("fvad: fvad_process: samples left over: %d\n",
 			af->sampc - pos);
 	}
 
@@ -270,38 +284,6 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	}
 
 	return 0;
-}
-
-/* To be used with uag_filter_calls */
-bool find_vad_rx(const struct call *call, void *arg)
-{
-	for (struct le *le = list_head(&vad_rxl); le; le = le->next) {
-		struct vad_dec *vad = le->data;
-		if (call_audio(call) == vad->au) {
-			/* store a pointer to the current call so we don't
-			   have to search again */
-			vad->call = call;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/* To be used with uag_filter_calls */
-bool find_vad_tx(const struct call *call, void *arg)
-{
-	for (struct le *le = list_head(&vad_rxl); le; le = le->next) {
-		struct vad_enc *vad = le->data;
-		if (call_audio(call) == vad->au) {
-			/* store a pointer to the current call so we don't
-			   have to search again */
-			vad->call = call;
-			return true;
-		}
-	}
-
-	return false;
 }
 
 
