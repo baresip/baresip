@@ -27,7 +27,6 @@ struct vad_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 	bool vad_tx;
 	Fvad *fvad;
-	int16_t *buffer;
 	struct call *call;
 };
 
@@ -36,7 +35,6 @@ struct vad_dec {
 	struct aufilt_enc_st af;  /* inheritance */
 	bool vad_rx;
 	Fvad *fvad;
-	int16_t *buffer;
 	struct call *call;
 };
 
@@ -52,8 +50,6 @@ static void enc_destructor(void *arg)
 {
 	struct vad_enc *st = arg;
 
-	mem_deref(st->buffer);
-
 	if (st->fvad) {
 		fvad_free(st->fvad);
 	}
@@ -65,8 +61,6 @@ static void enc_destructor(void *arg)
 static void dec_destructor(void *arg)
 {
 	struct vad_dec *st = arg;
-
-	mem_deref(st->buffer);
 
 	if (st->fvad) {
 		fvad_free(st->fvad);
@@ -194,30 +188,15 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-static bool auframe_vad(Fvad *fvad, struct auframe *af, int16_t **buffer)
+static bool auframe_vad(Fvad *fvad, struct auframe *af)
 {
 	static int chunk_times_ms[] = { 30, 20, 10 };
 
-	int16_t *buf = NULL;
+	if (af->fmt != AUFMT_S16LE) {
+		warning("fvad: invalid sample format %d\n",
+			af->fmt);
 
-	/* convert to 16 bit linear */
-	if (af->fmt == AUFMT_S16LE) {
-		buf = af->sampv;
-	}
-	else {
-
-		if (!*buffer) {
-			*buffer = (int16_t*)mem_alloc(
-				sizeof(int16_t) * af->sampc, NULL);
-
-			if (!*buffer) {
-				warning("fvad: cannot allocate buffer\n");
-				return false;
-			}
-		}
-
-		buf = *buffer;
-		auconv_to_s16(buf, af->fmt, af->sampv, af->sampc);
+		return false;
 	}
 
 	size_t pos = 0;
@@ -232,7 +211,7 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af, int16_t **buffer)
 
 		while (af->sampc - pos >= sampc) {
 
-			int err = fvad_process(fvad, buf + pos, sampc);
+			int err = fvad_process(fvad, (int16_t*)af->sampv + pos, sampc);
 			pos += sampc;
 			if (err > 0) {
 				return true;
@@ -261,7 +240,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	bool vad_tx = auframe_vad(vad->fvad, af, &vad->buffer);
+	bool vad_tx = auframe_vad(vad->fvad, af);
 
 	if (vad_tx != vad->vad_tx) {
 		vad->vad_tx = vad_tx;
@@ -284,7 +263,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	bool vad_rx = auframe_vad(vad->fvad, af, &vad->buffer);
+	bool vad_rx = auframe_vad(vad->fvad, af);
 
 	if (vad_rx != vad->vad_rx) {
 		vad->vad_rx = vad_rx;
