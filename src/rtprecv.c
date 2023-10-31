@@ -705,16 +705,16 @@ int rtprecv_start_thread(struct rtp_receiver *rx)
 	if (re_atomic_rlx(&rx->run))
 		return 0;
 
+	udp_thread_detach(rtp_sock(rx->rtp));
+	udp_thread_detach(rtcp_sock(rx->rtp));
 	re_atomic_rlx_set(&rx->run, true);
 	err = thread_create_name(&rx->thr,
 				 "RX thread",
 				 rtprecv_thread, rx);
 	if (err) {
 		re_atomic_rlx_set(&rx->run, false);
-	}
-	else {
-		udp_thread_detach(rtp_sock(rx->rtp));
-		udp_thread_detach(rtcp_sock(rx->rtp));
+		udp_thread_attach(rtp_sock(rx->rtp));
+		udp_thread_attach(rtcp_sock(rx->rtp));
 	}
 
 	return err;
