@@ -43,4 +43,4 @@ jobs:
       run: cmake -B build -DSTATIC=1 -DMODULES="g711;ausine;fakevideo;auconv;dtls_srtp;srtp;aufile" && cmake --build build -j
 
     - name: valgrind test
-      run: valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./build/test/selftest
+      run: valgrind --leak-check=full --show-reachable=yes --error-exitcode=42 ./build/test/selftest -v
