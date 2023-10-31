@@ -27,7 +27,8 @@ struct vad_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 	bool vad_tx;
 	Fvad *fvad;
-	const struct call *call;
+	int16_t *buffer;
+	struct call *call;
 };
 
 
@@ -35,11 +36,12 @@ struct vad_dec {
 	struct aufilt_enc_st af;  /* inheritance */
 	bool vad_rx;
 	Fvad *fvad;
-	const struct call *call;
+	int16_t *buffer;
+	struct call *call;
 };
 
 struct filter_arg {
-	struct audio *audio;
+	const struct audio *audio;
 	struct call *call;
 };
 
@@ -49,6 +51,8 @@ static bool vad_stderr = false;
 static void enc_destructor(void *arg)
 {
 	struct vad_enc *st = arg;
+
+	mem_deref(st->buffer);
 
 	if (st->fvad) {
 		fvad_free(st->fvad);
@@ -61,6 +65,8 @@ static void enc_destructor(void *arg)
 static void dec_destructor(void *arg)
 {
 	struct vad_dec *st = arg;
+
+	mem_deref(st->buffer);
 
 	if (st->fvad) {
 		fvad_free(st->fvad);
@@ -132,6 +138,10 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	}
 
 	uag_filter_calls(find_first_call, find_call, &fa);
+	if (!fa.call) {
+		mem_deref(st);
+		return EINVAL;
+	}
 
 	*stp = (struct aufilt_enc_st *)st;
 
@@ -175,6 +185,10 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	}
 
 	uag_filter_calls(find_first_call, find_call, &fa);
+	if (!fa.call) {
+		mem_deref(st);
+		return EINVAL;
+	}
 
 	st->call = fa.call;
 
@@ -184,26 +198,32 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 }
 
 
-static bool auframe_vad(Fvad *fvad, struct auframe *af)
+static bool auframe_vad(Fvad *fvad, struct auframe *af, int16_t **buffer)
 {
 	static int chunk_times_ms[] = { 30, 20, 10 };
 
 	int16_t *buf = NULL;
-	int16_t *allocated = NULL;
-	bool detected = false;
 
 	/* convert to 16 bit linear */
 	if (af->fmt == AUFMT_S16LE) {
 		buf = af->sampv;
 	}
 	else {
-		allocated = (int16_t*)mem_alloc(sizeof(int16_t) * af->sampc,
+
+		if (!*buffer) {
+			*buffer = (int16_t*)mem_alloc(sizeof(int16_t) * af->sampc,
 			NULL);
-		buf = allocated;
+
+			if (!*buffer) {
+				warning("fvad: cannot allocate buffer\n");
+				return false;
+			}
+		}
+
+		buf = *buffer;
 		auconv_to_s16(buf, af->fmt, af->sampv, af->sampc);
 	}
 
-	size_t ms = af->sampc * 1000 / af->srate;
 	size_t pos = 0;
 
 	/* process all chunk_sizes that fvad accepts */
@@ -212,20 +232,19 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 		++chunk_time_index) {
 
 		const size_t chunk_time = chunk_times_ms[chunk_time_index];
-		const size_t sampc = af->srate / 1000 * chunk_time;
+		size_t sampc = af->srate / 1000 * chunk_time;
 
-		for (size_t i = 0; i < ms / chunk_time; ++i) {
+		while (af->sampc - pos >= sampc) {
+
 			int err = fvad_process(fvad, buf + pos, sampc);
 			pos += sampc;
-			ms -= chunk_time;
 			if (err > 0) {
-				detected = true;
-				goto out;
+				return true;
 			}
 			else if (err < 0) {
 				warning("fvad: fvad_process(%d) failed\n",
 					sampc);
-				goto out;
+				return false;
 			}
 		}
 	}
@@ -235,10 +254,7 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 			af->sampc - pos);
 	}
 
-out:
-	mem_deref(allocated);
-
-	return detected;
+	return false;
 }
 
 
@@ -249,7 +265,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	bool vad_tx = auframe_vad(vad->fvad, af);
+	bool vad_tx = auframe_vad(vad->fvad, af, &vad->buffer);
 
 	if (vad_tx != vad->vad_tx) {
 		vad->vad_tx = vad_tx;
@@ -257,7 +273,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 		if (vad_stderr)
 			print_vad(61, 32, false, vad_tx);
 
-		module_event("fvad", "vad", NULL, (struct call*)vad->call,
+		module_event("fvad", "vad", call_get_ua(vad->call), vad->call,
 			"%d", vad_tx);
 	}
 
@@ -272,7 +288,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	bool vad_rx = auframe_vad(vad->fvad, af);
+	bool vad_rx = auframe_vad(vad->fvad, af, &vad->buffer);
 
 	if (vad_rx != vad->vad_rx) {
 		vad->vad_rx = vad_rx;
@@ -280,7 +296,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 		if (vad_stderr)
 			print_vad(64, 32, false, vad_rx);
 
-		module_event("fvad", "vad", NULL, (struct call*)vad->call,
+		module_event("fvad", "vad", call_get_ua(vad->call), (struct call*)vad->call,
 			"%d", vad_rx);
 	}
 
