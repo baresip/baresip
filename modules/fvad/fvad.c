@@ -109,7 +109,6 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct vad_enc *st;
-	struct filter_arg fa = { au, NULL };
 	(void)ctx;
 
 	if (!stp || !af || !prm)
@@ -137,15 +136,14 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 		return EINVAL;
 	}
 
-	uag_filter_calls(find_first_call, find_call, &fa);
-	if (!fa.call) {
-		mem_deref(st);
-		return EINVAL;
+	if (!st->call) {
+		struct filter_arg fa = { au, NULL };
+
+		uag_filter_calls(find_first_call, find_call, &fa);
+		st->call = fa.call;
 	}
 
 	*stp = (struct aufilt_enc_st *)st;
-
-	st->call = fa.call;
 
 	return 0;
 }
@@ -156,7 +154,6 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct vad_dec *st;
-	struct filter_arg fa = { au, NULL };
 	(void)ctx;
 
 	if (!stp || !af || !prm)
@@ -184,13 +181,12 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 		return EINVAL;
 	}
 
-	uag_filter_calls(find_first_call, find_call, &fa);
-	if (!fa.call) {
-		mem_deref(st);
-		return EINVAL;
-	}
+	if (!st->call) {
+		struct filter_arg fa = { au, NULL };
 
-	st->call = fa.call;
+		uag_filter_calls(find_first_call, find_call, &fa);
+		st->call = fa.call;
+	}
 
 	*stp = (struct aufilt_dec_st *)st;
 
@@ -211,8 +207,8 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af, int16_t **buffer)
 	else {
 
 		if (!*buffer) {
-			*buffer = (int16_t*)mem_alloc(sizeof(int16_t) * af->sampc,
-			NULL);
+			*buffer = (int16_t*)mem_alloc(
+				sizeof(int16_t) * af->sampc, NULL);
 
 			if (!*buffer) {
 				warning("fvad: cannot allocate buffer\n");
@@ -296,8 +292,8 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 		if (vad_stderr)
 			print_vad(64, 32, false, vad_rx);
 
-		module_event("fvad", "vad", call_get_ua(vad->call), (struct call*)vad->call,
-			"%d", vad_rx);
+		module_event("fvad", "vad", call_get_ua(vad->call),
+			(struct call*)vad->call, "%d", vad_rx);
 	}
 
 	return 0;
