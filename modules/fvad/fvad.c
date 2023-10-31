@@ -223,7 +223,8 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 				goto out;
 			}
 			else if (err < 0) {
-				warning("fvad: fvad_process(%d) failed\n", sampc);
+				warning("fvad: fvad_process(%d) failed\n",
+					sampc);
 				goto out;
 			}
 		}
