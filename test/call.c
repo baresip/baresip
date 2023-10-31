@@ -1861,6 +1861,9 @@ static int test_media_base(enum audio_mode txmode)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
+	if (err)
+		failure_debug(f, false);
+
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
