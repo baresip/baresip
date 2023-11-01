@@ -111,8 +111,15 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (*stp)
 		return 0;
 
-	if (prm->ch != 1)
+	if (prm->ch != 1) {
+		warning("fvad: only mono is supported\n");
 		return EINVAL;
+	}
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("fvad: only AUFMT_S16LE is supported. Use the auconv module to fix this\n");
+		return EINVAL;
+	}
 
 	st = mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
@@ -126,6 +133,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 	int err = fvad_set_sample_rate(st->fvad, prm->srate);
 	if (err < 0) {
+		warning("fvad: sample rate %d is not supported\n", prm->srate);
 		mem_deref(st);
 		return EINVAL;
 	}
@@ -156,8 +164,15 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (*stp)
 		return 0;
 
-	if (prm->ch != 1)
+	if (prm->ch != 1) {
+		warning("fvad: only mono is supported\n");
 		return EINVAL;
+	}
+
+	if (prm->fmt != AUFMT_S16LE) {
+		warning("fvad: only AUFMT_S16LE is supported. Use the auconv module to fix this\n");
+		return EINVAL;
+	}
 
 	st = mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
@@ -171,6 +186,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 	int err = fvad_set_sample_rate(st->fvad, prm->srate);
 	if (err < 0) {
+		warning("fvad: sample rate %d is not supported\n", prm->srate);
 		mem_deref(st);
 		return EINVAL;
 	}
