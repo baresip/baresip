@@ -231,7 +231,8 @@ static bool auframe_vad(Fvad *fvad, struct auframe *af)
 
 		while (af->sampc - pos >= sampc) {
 
-			int err = fvad_process(fvad, (int16_t*)af->sampv + pos, sampc);
+			int err = fvad_process(fvad, (int16_t*)af->sampv + pos,
+				sampc);
 			pos += sampc;
 			if (err > 0) {
 				return true;
