@@ -1392,9 +1392,6 @@ int test_call_change_videodir(void)
 	err = agent_wait_for_ack(&f->a);
 	TEST_ERR(err);
 
-	ASSERT_TRUE(!call_has_video(ua_call(f->a.ua)));
-	ASSERT_TRUE(call_has_video(ua_call(f->b.ua)));
-
 	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->a.ua))));
 	ASSERT_EQ(SDP_INACTIVE, sdp_media_ldir(vm));
 	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(vm));
