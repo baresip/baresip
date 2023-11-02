@@ -2348,14 +2348,16 @@ int audio_set_bitrate(struct audio *au, uint32_t bitrate)
  */
 bool audio_rxaubuf_started(const struct audio *au)
 {
-	const struct aurx *rx;
+	bool started;
 
 	if (!au)
 		return false;
 
-	rx = &au->rx;
+	mtx_lock(au->rx.mtx);
+	started = au->rx.aubuf_started;
+	mtx_unlock(au->rx.mtx);
 
-	return rx->aubuf_started;
+	return started;
 }
 
 
