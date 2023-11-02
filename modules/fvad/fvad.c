@@ -43,16 +43,13 @@ struct filter_arg {
 	struct call *call;
 };
 
-static bool vad_stderr = false;
-
 
 static void enc_destructor(void *arg)
 {
 	struct vad_enc *st = arg;
 
-	if (st->fvad) {
+	if (st->fvad)
 		fvad_free(st->fvad);
-	}
 
 	list_unlink(&st->af.le);
 }
@@ -62,22 +59,10 @@ static void dec_destructor(void *arg)
 {
 	struct vad_dec *st = arg;
 
-	if (st->fvad) {
+	if (st->fvad)
 		fvad_free(st->fvad);
-	}
 
 	list_unlink(&st->af.le);
-}
-
-
-static void print_vad(int pos, int color, bool tx, bool active)
-{
-	/* move cursor to a fixed position */
-	re_fprintf(stderr, "\x1b[%dG", pos);
-
-	/* print vad in Nice colors */
-	re_fprintf(stderr, " \x1b[%dm[%s]\x1b[;m\r",
-		   color,  active ? (tx ? "tx" : "rx") : "  ");
 }
 
 
@@ -264,13 +249,14 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 	bool vad_tx = auframe_vad(vad->fvad, af);
 
 	if (vad_tx != vad->vad_tx) {
+		const char* desc = vad_tx ? "on" : "off";
+
 		vad->vad_tx = vad_tx;
 
-		if (vad_stderr)
-			print_vad(61, 32, false, vad_tx);
+		debug("vfad: vad_tx: %s\n", desc);
 
-		module_event("fvad", "vad", call_get_ua(vad->call), vad->call,
-			"%d", vad_tx);
+		module_event("fvad", "vad_tx", call_get_ua(vad->call), vad->call,
+			desc);
 	}
 
 	return 0;
@@ -287,13 +273,14 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	bool vad_rx = auframe_vad(vad->fvad, af);
 
 	if (vad_rx != vad->vad_rx) {
+		const char* desc = vad_rx ? "on" : "off";
+
 		vad->vad_rx = vad_rx;
 
-		if (vad_stderr)
-			print_vad(64, 32, false, vad_rx);
+		debug("vfad: vad_rx: %s\n", desc);
 
-		module_event("fvad", "vad", call_get_ua(vad->call),
-			(struct call*)vad->call, "%d", vad_rx);
+		module_event("fvad", "vad_rx", call_get_ua(vad->call), vad->call,
+			desc);
 	}
 
 	return 0;
@@ -312,8 +299,6 @@ static struct aufilt vad = {
 static int module_init(void)
 {
 	struct conf *conf = conf_cur();
-
-	conf_get_bool(conf, "fvad_stderr", &vad_stderr);
 
 	bool rx_enabled = true;
 	conf_get_bool(conf, "fvad_rx", &rx_enabled);
