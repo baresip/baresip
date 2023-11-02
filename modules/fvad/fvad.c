@@ -255,8 +255,8 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 
 		debug("vfad: vad_tx: %s\n", desc);
 
-		module_event("fvad", "vad_tx", call_get_ua(vad->call), vad->call,
-			desc);
+		module_event("fvad", "vad_tx", call_get_ua(vad->call),
+			vad->call, desc);
 	}
 
 	return 0;
@@ -279,8 +279,8 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 
 		debug("vfad: vad_rx: %s\n", desc);
 
-		module_event("fvad", "vad_rx", call_get_ua(vad->call), vad->call,
-			desc);
+		module_event("fvad", "vad_rx", call_get_ua(vad->call),
+			vad->call, desc);
 	}
 
 	return 0;
