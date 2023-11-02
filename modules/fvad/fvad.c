@@ -250,13 +250,12 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 
 	if (vad_tx != vad->vad_tx) {
 		const char* desc = vad_tx ? "on" : "off";
-
 		vad->vad_tx = vad_tx;
 
 		debug("vfad: vad_tx: %s\n", desc);
 
 		module_event("fvad", "vad_tx", call_get_ua(vad->call),
-			vad->call, desc);
+					 vad->call, desc);
 	}
 
 	return 0;
@@ -274,13 +273,11 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 
 	if (vad_rx != vad->vad_rx) {
 		const char* desc = vad_rx ? "on" : "off";
-
 		vad->vad_rx = vad_rx;
 
 		debug("vfad: vad_rx: %s\n", desc);
-
 		module_event("fvad", "vad_rx", call_get_ua(vad->call),
-			vad->call, desc);
+					 vad->call, desc);
 	}
 
 	return 0;
