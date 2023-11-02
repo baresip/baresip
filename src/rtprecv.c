@@ -179,12 +179,18 @@ static int rtprecv_thread(void *arg)
 	tmr_start(&rx->tmr, 10, rtprecv_check_stop, rx);
 
 	err = udp_thread_attach(rtp_sock(rx->rtp));
-	if (err)
+	if (err) {
+		warning("rtp_receiver: could not attach to RTP socket (%m)\n",
+			err);
 		return err;
+	}
 
 	err = udp_thread_attach(rtcp_sock(rx->rtp));
-	if (err)
+	if (err) {
+		warning("rtp_receiver: could not attach to RTCP socket (%m)\n",
+			err);
 		return err;
+	}
 
 	err = re_main(NULL);
 
@@ -239,7 +245,7 @@ static int handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
 
 		size_t ext_len = hdr->x.len*sizeof(uint32_t);
 		if (mb->pos < ext_len) {
-			warning("stream: corrupt rtp packet,"
+			warning("rtp_receiver: corrupt rtp packet,"
 				" not enough space for rtpext of %zu bytes\n",
 				ext_len);
 			return 0;
@@ -252,8 +258,8 @@ static int handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
 
 			err = rtpext_decode(&extv[i], mb);
 			if (err) {
-				warning("stream: rtpext_decode failed (%m)\n",
-					err);
+				warning("rtp_receiver: rtpext_decode failed "
+					"(%m)\n", err);
 				return 0;
 			}
 		}
