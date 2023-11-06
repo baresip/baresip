@@ -1,3 +1,9 @@
+baresip (3.6.0) UNRELEASED; urgency=medium
+
+  * version 3.6.0
+
+ -- Juha Heinanen <jh@tutpro.com>  Thu, 02 Nov 2023 19:33:16 +0200
+
 baresip (3.5.1) unstable; urgency=medium
 
   * version 3.5.1
