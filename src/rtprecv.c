@@ -50,6 +50,7 @@ struct rtp_receiver {
 	int pt;                        /**< Previous payload type            */
 	int pt_tel;                    /**< Payload type for tel event       */
 	uint32_t srate;                /**< Receiver Samplerate              */
+	struct tmr tmr_decode;         /**< Decode Timer                     */
 };
 
 
@@ -312,41 +313,53 @@ static int handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
 }
 
 
+static void decode_frames(struct rtp_receiver *rx);
+static void decode_tmr(void *arg)
+{
+	struct rtp_receiver *rx = arg;
+
+	decode_frames(rx);
+}
+
+
 /**
- * Decodes one RTP packet
+ * Decode RTP packets
  *
  * @param s The stream
- *
- * @return 0 if success, EAGAIN if it should be called again in order to avoid
- * a jitter buffer overflow, otherwise errorcode
  */
-static int decode_frame(struct rtp_receiver *rx)
+static void decode_frames(struct rtp_receiver *rx)
 {
 	struct rtp_header hdr;
 	void *mb;
 	int lostc;
+	int32_t delay;
 	int err;
-	int err2;
 
-	if (!rx)
-		return EINVAL;
+	if (!rx || !rx->jbuf)
+		return;
 
-	if (!rx->jbuf)
-		return ENOENT;
+	uint32_t n = jbuf_packets(rx->jbuf);
 
-	err = jbuf_get(rx->jbuf, &hdr, &mb);
-	if (err && err != EAGAIN)
-		return ENOENT;
+	do {
+		err = jbuf_get(rx->jbuf, &hdr, &mb);
+		if (err && err != EAGAIN)
+			break;
 
-	lostc = lostcalc(rx, hdr.seq);
+		lostc = lostcalc(rx, hdr.seq);
 
-	err2 = handle_rtp(rx, &hdr, mb, lostc > 0 ? lostc : 0, err == EAGAIN);
-	mem_deref(mb);
+		err = handle_rtp(rx, &hdr, mb, lostc > 0 ? lostc : 0,
+				 err == EAGAIN);
+		mem_deref(mb);
 
-	if (err2 == EAGAIN)
-		return err2;
+		if (err != EAGAIN)
+			break;
+	} while (n--);
 
-	return err;
+	delay = jbuf_next_play(rx->jbuf);
+	if (delay < 0)
+		delay = 10; /* TODO: calculate ptime */
+
+	tmr_start(&rx->tmr_decode, delay, decode_tmr, rx);
 }
 
 
@@ -409,6 +422,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 			rx->rtp_estab = true;
 			pass_rtpestab_work(rx);
 		}
+		tmr_start(&rx->tmr_decode, 0, decode_tmr, rx);
 	}
 
 	ssrc0 = rx->ssrc;
@@ -449,12 +463,6 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 			     rx->name, mb->end,
 			     src, hdr->seq, hdr->ts, err);
 			metric_inc_err(rx->metric);
-		}
-
-		uint32_t n = jbuf_packets(rx->jbuf);
-		while (n--) {
-			if (decode_frame(rx) != EAGAIN)
-				break;
 		}
 	}
 	else {
@@ -678,6 +686,7 @@ static void destructor(void *arg)
 		udp_thread_detach(rtcp_sock(rx->rtp));
 	}
 
+	tmr_cancel(&rx->tmr_decode);
 	mem_deref(rx->metric);
 	mem_deref(rx->name);
 	mem_deref(rx->mtx);
