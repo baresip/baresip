@@ -528,7 +528,21 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "call_local_timeout\t%u\n"
 			 "call_max_calls\t\t%u\n"
 			 "call_hold_other_calls\t%s\n"
-			 "\n"
+			 "\n",
+			 cfg->sip.local, cfg->sip.cert, cfg->sip.cafile,
+			 cfg->sip.capath, sip_transports_print,
+			 &cfg->sip.transports,
+			 sip_transp_name(cfg->sip.transp),
+			 cfg->sip.verify_server ? "yes" : "no",
+			 cfg->sip.tos,
+
+			 cfg->call.local_timeout,
+			 cfg->call.max_calls,
+			 cfg->call.hold_other_calls ? "yes" : "no");
+	if (err)
+		return err;
+
+	err = re_hprintf(pf,
 			 "# Audio\n"
 			 "audio_path\t\t%s\n"
 			 "audio_player\t\t%s,%s\n"
@@ -548,47 +562,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "audio_buffer_mode\t%s\t\t# fixed, adaptive\n"
 			 "audio_silence\t\t%.1lf\t\t# in [dB]\n"
 			 "audio_telev_pt\t\t%u\n"
-			 "\n"
-			 "# Video\n"
-			 "video_source\t\t%s,%s\n"
-			 "#video_source\t\tavformat,rtmp://127.0.0.1/app/foo\n"
-			 "video_display\t\t%s,%s\n"
-			 "video_size\t\t\"%ux%u\"\n"
-			 "video_bitrate\t\t%u\n"
-			 "video_fps\t\t%.2f\n"
-			 "video_fullscreen\t%s\n"
-			 "videnc_format\t\t%s\n"
-			 "\n"
-			 "# AVT\n"
-			 "rtp_tos\t\t\t%u\n"
-			 "rtp_video_tos\t\t%u\n"
-			 "rtp_ports\t\t%H\n"
-			 "rtp_bandwidth\t\t%H\n"
-			 "audio_jitter_buffer_type\t%s\n"
-			 "audio_jitter_buffer_delay\t%H\n"
-			 "video_jitter_buffer_type\t%s\n"
-			 "video_jitter_buffer_delay\t%H\n"
-			 "rtp_stats\t\t%s\n"
-			 "rtp_timeout\t\t%u # in seconds\n"
-			 "avt_bundle\t\t%s\n"
-			 "\n"
-			 "# Network\n"
-			 "net_interface\t\t%s\n"
-			 "net_af\t\t\t%s\n"
-			 "\n"
-			 ,
-
-			 cfg->sip.local, cfg->sip.cert, cfg->sip.cafile,
-			 cfg->sip.capath,
-			 sip_transports_print, &cfg->sip.transports,
-			 sip_transp_name(cfg->sip.transp),
-			 cfg->sip.verify_server ? "yes" : "no",
-			 cfg->sip.tos,
-
-			 cfg->call.local_timeout,
-			 cfg->call.max_calls,
-			 cfg->call.hold_other_calls ? "yes" : "no",
-
+			 "\n",
 			 cfg->audio.audio_path,
 			 cfg->audio.play_mod,  cfg->audio.play_dev,
 			 cfg->audio.src_mod,   cfg->audio.src_dev,
@@ -605,14 +579,48 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 range_print, &cfg->audio.buffer,
 			 cfg->audio.adaptive ? "adaptive" : "fixed",
 			 cfg->audio.silence,
-			 cfg->audio.telev_pt,
+			 cfg->audio.telev_pt);
+	if (err)
+		return err;
 
+	err = re_hprintf(pf,
+			 "# Video\n"
+			 "video_source\t\t%s,%s\n"
+			 "#video_source\t\tavformat,rtmp://127.0.0.1/app/foo\n"
+			 "video_display\t\t%s,%s\n"
+			 "video_size\t\t\"%ux%u\"\n"
+			 "video_bitrate\t\t%u\n"
+			 "video_fps\t\t%.2f\n"
+			 "video_fullscreen\t%s\n"
+			 "videnc_format\t\t%s\n"
+			 "\n",
 			 cfg->video.src_mod, cfg->video.src_dev,
 			 cfg->video.disp_mod, cfg->video.disp_dev,
 			 cfg->video.width, cfg->video.height,
 			 cfg->video.bitrate, cfg->video.fps,
 			 cfg->video.fullscreen ? "yes" : "no",
-			 vidfmt_name(cfg->video.enc_fmt),
+			 vidfmt_name(cfg->video.enc_fmt));
+	if (err)
+		return err;
+
+	err = re_hprintf(pf,
+			 "# AVT\n"
+			 "rtp_tos\t\t\t%u\n"
+			 "rtp_video_tos\t\t%u\n"
+			 "rtp_ports\t\t%H\n"
+			 "rtp_bandwidth\t\t%H\n"
+			 "audio_jitter_buffer_type\t%s\n"
+			 "audio_jitter_buffer_delay\t%H\n"
+			 "video_jitter_buffer_type\t%s\n"
+			 "video_jitter_buffer_delay\t%H\n"
+			 "rtp_stats\t\t%s\n"
+			 "rtp_timeout\t\t%u # in seconds\n"
+			 "avt_bundle\t\t%s\n"
+			 "\n"
+			 "# Network\n"
+			 "net_interface\t\t%s\n"
+			 "net_af\t\t\t%s\n"
+			 "\n",
 
 			 cfg->avt.rtp_tos,
 			 cfg->avt.rtpv_tos,
