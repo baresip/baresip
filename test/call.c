@@ -77,6 +77,8 @@ struct agent {
 	unsigned n_video_estab;
 	unsigned n_offer_cnt;
 	unsigned n_answer_cnt;
+	unsigned n_hold_cnt;
+	unsigned n_resume_cnt;
 	unsigned n_vidframe;
 	unsigned n_auframe;
 	double aulvl;
@@ -321,6 +323,8 @@ static int agent_debug(struct re_printf *pf, const struct agent *ag)
 	err |= ag_debug_nbr(n_video_estab);
 	err |= ag_debug_nbr(n_offer_cnt);
 	err |= ag_debug_nbr(n_answer_cnt);
+	err |= ag_debug_nbr(n_hold_cnt);
+	err |= ag_debug_nbr(n_resume_cnt);
 	err |= ag_debug_nbr(n_auframe);
 	err |= ag_debug_nbr(n_vidframe);
 	if (err)
@@ -417,7 +421,8 @@ static void check_ack(void *arg)
 }
 
 
-static int agent_wait_for_ack(struct agent *ag)
+static int agent_wait_for_ack(struct agent *ag, unsigned n_incoming,
+			      unsigned n_progress, unsigned n_established)
 {
 	int err;
 	struct cancel_rule *cr;
@@ -426,7 +431,8 @@ static int agent_wait_for_ack(struct agent *ag)
 	if (!call_ack_pending(ua_call(ag->ua)))
 		return 0;
 
-	cancel_rule_new(UA_EVENT_CUSTOM, ag->ua, -1, -1, 1);
+	cancel_rule_new(UA_EVENT_CUSTOM, ag->ua, n_incoming, n_progress,
+			n_established);
 	cr->prm = "gotack";
 	cr->checkack = true;
 
@@ -779,6 +785,14 @@ static void event_handler(struct ua *ua, enum ua_event ev,
 		else if (!str_cmp(prm, "answer"))
 			++ag->n_answer_cnt;
 
+		break;
+
+	case UA_EVENT_CALL_HOLD:
+		++ag->n_hold_cnt;
+		break;
+
+	case UA_EVENT_CALL_RESUME:
+		++ag->n_resume_cnt;
 		break;
 
 	case UA_EVENT_CALL_MENC:
@@ -1389,7 +1403,7 @@ int test_call_change_videodir(void)
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
-	err = agent_wait_for_ack(&f->a);
+	err = agent_wait_for_ack(&f->a, -1, -1, 1);
 	TEST_ERR(err);
 
 	vm = stream_sdpmedia(video_strm(call_video(ua_call(f->a.ua))));
@@ -1486,7 +1500,7 @@ int test_call_100rel_video(void)
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
-	err = agent_wait_for_ack(&f->a);
+	err = agent_wait_for_ack(&f->a, -1, -1, 1);
 	TEST_ERR(err);
 	cancel_rule_pop();
 
@@ -1673,7 +1687,7 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
-	err = agent_wait_for_ack(&f->a);
+	err = agent_wait_for_ack(&f->a, -1, -1, 1);
 	TEST_ERR(err);
 	cancel_rule_pop();
 
@@ -2767,8 +2781,11 @@ static int test_call_hold_resume_base(bool tcp)
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	err = agent_wait_for_ack(&f->b);
+	err = agent_wait_for_ack(&f->b, -1, -1, 1);
 	TEST_ERR(err);
+
+	ASSERT_EQ(0, f->a.n_hold_cnt);
+	ASSERT_EQ(1, f->b.n_hold_cnt);
 
 	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
 	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
@@ -2786,8 +2803,11 @@ static int test_call_hold_resume_base(bool tcp)
 	err = re_main_timeout(10000);
 	TEST_ERR(err);
 
-	err = agent_wait_for_ack(&f->b);
+	err = agent_wait_for_ack(&f->b, -1, -1, 1);
 	TEST_ERR(err);
+
+	ASSERT_EQ(0, f->a.n_resume_cnt);
+	ASSERT_EQ(1, f->b.n_resume_cnt);
 
 	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
@@ -2797,6 +2817,163 @@ static int test_call_hold_resume_base(bool tcp)
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
 	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
 	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+
+	/* Hang up */
+	cancel_rule_new(UA_EVENT_CALL_CLOSED, f->b.ua, 1, 0, 1);
+	call_hangup(ua_call(f->a.ua), 0, NULL);
+	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+
+
+	/* New call from A -> B with sendonly offered */
+	list_flush(&f->rules);
+	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 2, 0, 2);
+	cr->n_audio_estab = 2;
+
+	/* Make a call from A to B  */
+	err = ua_connect_dir(f->a.ua, 0, NULL, f->buri_tcp,
+			 VIDMODE_ON, SDP_SENDONLY, SDP_SENDONLY);
+	TEST_ERR(err);
+
+	/* wait for RTP audio */
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	/* verify that audio was enabled */
+	ASSERT_TRUE(call_has_audio(ua_call(f->a.ua)));
+	ASSERT_TRUE(call_has_audio(ua_call(f->b.ua)));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
+
+	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 2, 0, 2);
+	cr->prm = "offer";
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 2);
+	cr->prm = "answer";
+
+	/* set call on-hold from A */
+	err = call_hold(ua_call(f->a.ua), true);
+	TEST_ERR(err);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	err = agent_wait_for_ack(&f->b, -1, -1, 2);
+	TEST_ERR(err);
+
+	/* A sets sendonly stream on hold - same media direction */
+	ASSERT_EQ(0, f->a.n_hold_cnt);
+	ASSERT_EQ(1, f->b.n_hold_cnt);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+
+	/* set call to resume from A */
+	err = call_hold(ua_call(f->a.ua), false);
+	TEST_ERR(err);
+	tmr_start(&f->b.tmr_ack, 1, check_ack, &f->b);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+
+	err = agent_wait_for_ack(&f->b, -1, -1, 2);
+	TEST_ERR(err);
+
+	/* A wants to resume sendonly stream - same media direction */
+	ASSERT_EQ(0, f->a.n_resume_cnt);
+	ASSERT_EQ(1, f->b.n_resume_cnt);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+
+	/* New cancel rules for hold from B */
+	list_flush(&f->rules);
+	cancel_rule_new(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 0, 2);
+	cr->prm = "offer";
+	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->b.ua, 2, 0, 2);
+	cr->prm = "answer";
+
+	/* set call on-hold from B */
+	err = call_hold(ua_call(f->b.ua), true);
+	TEST_ERR(err);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	err = agent_wait_for_ack(&f->a, -1, -1, 2);
+	TEST_ERR(err);
+
+	ASSERT_EQ(1, f->a.n_hold_cnt);
+	ASSERT_EQ(1, f->b.n_hold_cnt);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_INACTIVE, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
+
+	/* set media inactive from B */
+	err = call_set_media_direction(ua_call(f->b.ua), SDP_INACTIVE,
+				       SDP_INACTIVE);
+	TEST_ERR(err);
+	err = call_modify(ua_call(f->b.ua));
+	TEST_ERR(err);
+
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	err = agent_wait_for_ack(&f->a, -1, -1, 2);
+	TEST_ERR(err);
+
+	ASSERT_EQ(1, f->a.n_hold_cnt);
+	ASSERT_EQ(1, f->b.n_hold_cnt);
+
+	/* set call to resume from B */
+	err = call_set_media_direction(ua_call(f->b.ua), SDP_SENDRECV,
+				       SDP_SENDRECV);
+	TEST_ERR(err);
+	err = call_hold(ua_call(f->b.ua), false);
+	TEST_ERR(err);
+	tmr_start(&f->a.tmr_ack, 1, check_ack, &f->a);
+	err = re_main_timeout(10000);
+	TEST_ERR(err);
+
+	err = agent_wait_for_ack(&f->a, -1, -1, 2);
+	TEST_ERR(err);
+
+	ASSERT_EQ(1, f->a.n_resume_cnt);
+	ASSERT_EQ(1, f->b.n_resume_cnt);
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->b.ua))));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_RECVONLY, sdp_media_rdir(m));
+
+	m = stream_sdpmedia(audio_strm(call_audio(ua_call(f->a.ua))));
+	ASSERT_EQ(SDP_SENDONLY, sdp_media_ldir(m));
+	ASSERT_EQ(SDP_SENDRECV, sdp_media_rdir(m));
+	ASSERT_TRUE(!call_ack_pending(ua_call(f->a.ua)));
 
  out:
 	if (err)
