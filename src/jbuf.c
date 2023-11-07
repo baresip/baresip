@@ -796,6 +796,13 @@ uint32_t jbuf_packets(const struct jbuf *jb)
 }
 
 
+/**
+ * Get jitter buffer next playout delay time
+ *
+ * @param jb Jitter buffer
+ *
+ * @return delay time in [ms] on success and -1 on error
+ */
 int32_t jbuf_next_play(const struct jbuf *jb)
 {
 	if (!jb || !jb->packetl.head)
@@ -805,10 +812,10 @@ int32_t jbuf_next_play(const struct jbuf *jb)
 
 	uint32_t current = (uint32_t)(tmr_jiffies() * jb->p.srate / 1000);
 
-	if (p->playout_time < current)
+	if (p->playout_time <= current)
 		return 0; /* already late */
 
-	return ((p->playout_time - current) * 1000 / jb->p.srate) + 1;
+	return delay_ms(p->playout_time - current, jb->p.srate);
 }
 
 
