@@ -223,14 +223,9 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	}
 	mtx_unlock(rx->mtx);
 
-	/* payload-type changed? */
-	if (hdr->pt != rx->pt) {
-		rx->pt = hdr->pt;
-
-		err = rx->pth(hdr->pt, mb, rx->arg);
-		if (err && err != ENODATA)
-			return;
-	}
+	err = rx->pth(hdr->pt, mb, rx->arg);
+	if (err && err != ENODATA)
+		return;
 
 	if (rx->jbuf) {
 

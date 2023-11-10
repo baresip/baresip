@@ -150,6 +150,7 @@ struct aurx {
 	void *sampv;                  /**< Sample buffer                   */
 	uint32_t ptime;               /**< Packet time for receiving       */
 	int pt;                       /**< Payload type for incoming RTP   */
+	int pt_tel;                   /**< Payload type for tel event      */
 	double level_last;            /**< Last audio level value [dBov]   */
 	bool level_set;               /**< True if level_last is set       */
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
@@ -738,14 +739,20 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 	struct audio *a = arg;
 	const struct sdp_format *lc;
 	struct aurx *rx = &a->rx;
+	bool handle;
 
-	if (!rx || rx->pt == pt)
+	handle = pt != rx->pt;
+	if (rx->pt_tel)
+		handle |= pt == rx->pt_tel;
+
+	if (!handle)
 		return 0;
 
 	lc = sdp_media_lformat(stream_sdpmedia(a->strm), pt);
 
 	/* Telephone event? */
 	if (lc && !str_casecmp(lc->name, "telephone-event")) {
+		rx->pt_tel = pt;
 		handle_telev(a, mb);
 		return ENODATA;
 	}
@@ -753,10 +760,13 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 	if (!lc)
 		return ENOENT;
 
+	if (rx->pt == pt)
+		return 0;
+
 	if (rx->pt != -1)
 		info("Audio decoder changed payload %d -> %u\n", rx->pt, pt);
 
-	a->rx.pt = pt;
+	rx->pt = pt;
 	return audio_decoder_set(a, lc->data, lc->pt, lc->params);
 }
 
