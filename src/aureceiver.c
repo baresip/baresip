@@ -79,7 +79,7 @@ static void destructor(void *arg)
 }
 
 
-static int aur_process_decfilt(struct audio_recv *ar, struct auframe *af)
+static int aurecv_process_decfilt(struct audio_recv *ar, struct auframe *af)
 {
 	int err = 0;
 
@@ -98,7 +98,7 @@ static int aur_process_decfilt(struct audio_recv *ar, struct auframe *af)
 }
 
 
-static double aur_calc_seconds(const struct audio_recv *ar)
+static double aurecv_calc_seconds(const struct audio_recv *ar)
 {
 	uint64_t dur;
 	double seconds;
@@ -113,7 +113,7 @@ static double aur_calc_seconds(const struct audio_recv *ar)
 }
 
 
-static int aur_alloc_aubuf(struct audio_recv *ar, const struct auframe *af)
+static int aurecv_alloc_aubuf(struct audio_recv *ar, const struct auframe *af)
 {
 	size_t min_sz;
 	size_t max_sz;
@@ -144,14 +144,14 @@ static int aur_alloc_aubuf(struct audio_recv *ar, const struct auframe *af)
 }
 
 
-static int aur_push_aubuf(struct audio_recv *ar, const struct auframe *af)
+static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 {
 	int err;
 	uint64_t bpms;
 
 	if (!ar->aubuf) {
 		mtx_lock(ar->aubuf_mtx);
-		err = aur_alloc_aubuf(ar, af);
+		err = aurecv_alloc_aubuf(ar, af);
 		mtx_unlock(ar->aubuf_mtx);
 		if (err)
 			return err;
@@ -187,7 +187,7 @@ static int aur_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 }
 
 
-static int aur_stream_decode(struct audio_recv *ar,
+static int aurecv_stream_decode(struct audio_recv *ar,
 			     const struct rtp_header *hdr,
 			     struct mbuf *mb, unsigned lostc, bool drop)
 {
@@ -243,11 +243,11 @@ static int aur_stream_decode(struct audio_recv *ar,
 	if (flush)
 		aubuf_flush(ar->aubuf);
 
-	err = aur_process_decfilt(ar, &af);
+	err = aurecv_process_decfilt(ar, &af);
 	if (err)
 		goto out;
 
-	err = aur_push_aubuf(ar, &af);
+	err = aurecv_push_aubuf(ar, &af);
  out:
 	return err;
 }
@@ -269,7 +269,7 @@ static const struct rtpext *rtpext_find(const struct rtpext *extv, size_t extc,
 
 
 /* Handle incoming stream data from the network */
-void aur_receive(struct audio_recv *ar, const struct rtp_header *hdr,
+void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		 struct rtpext *extv, size_t extc,
 		 struct mbuf *mb, unsigned lostc, bool *ignore)
 {
@@ -337,16 +337,16 @@ void aur_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 	 * aubuf should replace PLC frames with late arriving real frames.
 	 * It should use timestamp to decide if a frame should be replaced. */
 /*        if (lostc)*/
-/*                (void)aur_stream_decode(ar, hdr, mb, lostc, drop);*/
+/*                (void)aurecv_stream_decode(ar, hdr, mb, lostc, drop);*/
 
-	(void)aur_stream_decode(ar, hdr, mb, 0, drop);
+	(void)aurecv_stream_decode(ar, hdr, mb, 0, drop);
 
 unlock:
 	mtx_unlock(ar->mtx);
 }
 
 
-void aur_set_extmap(struct audio_recv *ar, uint8_t aulevel)
+void aurecv_set_extmap(struct audio_recv *ar, uint8_t aulevel)
 {
 	if (!ar)
 		return;
@@ -357,7 +357,7 @@ void aur_set_extmap(struct audio_recv *ar, uint8_t aulevel)
 }
 
 
-void aur_set_telev_pt(struct audio_recv *ar, int pt)
+void aurecv_set_telev_pt(struct audio_recv *ar, int pt)
 {
 	if (!ar)
 		return;
@@ -368,7 +368,7 @@ void aur_set_telev_pt(struct audio_recv *ar, int pt)
 }
 
 
-uint64_t aur_latency(const struct audio_recv *ar)
+uint64_t aurecv_latency(const struct audio_recv *ar)
 {
 	if (!ar)
 		return 0;
@@ -377,7 +377,7 @@ uint64_t aur_latency(const struct audio_recv *ar)
 }
 
 
-int aur_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
+int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	      size_t sampc, uint32_t ptime)
 {
 	struct audio_recv *ar;
@@ -415,7 +415,7 @@ out:
 }
 
 
-void aur_flush(struct audio_recv *ar)
+void aurecv_flush(struct audio_recv *ar)
 {
 	if (!ar)
 		return;
@@ -429,7 +429,7 @@ void aur_flush(struct audio_recv *ar)
 }
 
 
-int aur_decoder_set(struct audio_recv *ar,
+int aurecv_decoder_set(struct audio_recv *ar,
 		    const struct aucodec *ac, const char *params)
 {
 	int err = 0;
@@ -460,7 +460,7 @@ out:
 }
 
 
-int aur_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst)
+int aurecv_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst)
 {
 	if (!ar || !decst)
 		return EINVAL;
@@ -473,7 +473,7 @@ int aur_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst)
 }
 
 
-bool aur_filt_empty(const struct audio_recv *ar)
+bool aurecv_filt_empty(const struct audio_recv *ar)
 {
 	bool empty;
 	if (!ar)
@@ -487,7 +487,7 @@ bool aur_filt_empty(const struct audio_recv *ar)
 }
 
 
-bool aur_level_set(const struct audio_recv *ar)
+bool aurecv_level_set(const struct audio_recv *ar)
 {
 	bool set;
 	if (!ar)
@@ -501,7 +501,7 @@ bool aur_level_set(const struct audio_recv *ar)
 }
 
 
-double aur_level(const struct audio_recv *ar)
+double aurecv_level(const struct audio_recv *ar)
 {
 	double v;
 	if (!ar)
@@ -515,7 +515,7 @@ double aur_level(const struct audio_recv *ar)
 }
 
 
-const struct aucodec *aur_codec(const struct audio_recv *ar)
+const struct aucodec *aurecv_codec(const struct audio_recv *ar)
 {
 	const struct aucodec *ac;
 
@@ -529,7 +529,7 @@ const struct aucodec *aur_codec(const struct audio_recv *ar)
 }
 
 
-void aur_read(struct audio_recv *ar, struct auframe *af)
+void aurecv_read(struct audio_recv *ar, struct auframe *af)
 {
 	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
 		return;
@@ -539,7 +539,7 @@ void aur_read(struct audio_recv *ar, struct auframe *af)
 }
 
 
-void aur_stop(struct audio_recv *ar)
+void aurecv_stop(struct audio_recv *ar)
 {
 	if (!ar)
 		return;
@@ -550,7 +550,7 @@ void aur_stop(struct audio_recv *ar)
 }
 
 
-bool aur_started(const struct audio_recv *ar)
+bool aurecv_started(const struct audio_recv *ar)
 {
 	bool ret;
 
@@ -563,7 +563,7 @@ bool aur_started(const struct audio_recv *ar)
 }
 
 
-int aur_debug(struct re_printf *pf, const struct audio_recv *ar)
+int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 {
 	struct mbuf *mb;
 	double bpms;
@@ -604,7 +604,7 @@ int aur_debug(struct re_printf *pf, const struct audio_recv *ar)
 	}
 	if (ar->ts_recv.is_set) {
 		err |= mbuf_printf(mb, "       time = %.3f sec\n",
-				   aur_calc_seconds(ar));
+				   aurecv_calc_seconds(ar));
 	}
 	else {
 		err |= mbuf_printf(mb, "       time = (not started)\n");
@@ -622,7 +622,7 @@ out:
 }
 
 
-int aur_print_pipeline(struct re_printf *pf, const struct audio_recv *ar)
+int aurecv_print_pipeline(struct re_printf *pf, const struct audio_recv *ar)
 {
 	struct mbuf *mb;
 	struct le *le;
