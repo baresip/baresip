@@ -310,7 +310,7 @@ static int reg_dns(enum sip_transp tp)
 		info("| SIP-server on %J\n", &sip_addr);
 
 		re_snprintf(arec, sizeof(arec),
-			    "alpha%u.%s", i+1, domain);
+			    "alpha%zu.%s", i+1, domain);
 
 		re_snprintf(srv, sizeof(srv),
 			    "%s.%s", _sip_transp_srvid(tp), domain);
