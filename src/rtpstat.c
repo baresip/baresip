@@ -59,7 +59,7 @@ int rtpstat_print(struct re_printf *pf, const struct call *call)
 
 			 rtcp->rx.lost, rtcp->tx.lost,
 
-			 stream_metric_get_rx_n_err,
+			 stream_metric_get_rx_n_err(s),
 			 stream_metric_get_tx_n_err(s),
 
 			 /* timestamp units (ie: 8 ts units = 1 ms @ 8KHZ) */
