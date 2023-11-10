@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 {
 	struct memstat mstat;
 	struct config *config;
-	size_t i, ntests;
+	size_t ntests;
 	struct sa sa;
 	bool verbose = false;
 	int err;
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
 #ifdef HAVE_GETOPT
 	if (argc >= (optind + 1)) {
 
-		for (i=0; i<ntests; i++) {
+		for (size_t i=0; i<ntests; i++) {
 			const char *name = argv[optind + i];
 			const struct test *test;
 
