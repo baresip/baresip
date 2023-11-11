@@ -1590,7 +1590,7 @@ int video_decoder_set(struct video *v, struct vidcodec *vc, int pt_rx,
 	struct vrx *vrx;
 	int err = 0;
 
-	if (!v)
+	if (!v || !vc)
 		return EINVAL;
 
 	/* handle vidcodecs without a decoder */
