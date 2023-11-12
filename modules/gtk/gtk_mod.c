@@ -77,6 +77,7 @@ enum gtk_mod_events {
 static void answer_activated(GSimpleAction *, GVariant *, gpointer);
 static void reject_activated(GSimpleAction *, GVariant *, gpointer);
 static void denotify_incoming_call(struct gtk_mod *, struct call *);
+static int module_close(void);
 
 static GActionEntry app_entries[] = {
 	{"answer", answer_activated, "s", NULL, NULL, {0} },
@@ -978,6 +979,12 @@ static int gtk_thread(void *arg)
 #endif
 
 	mod->status_icon = gtk_status_icon_new_from_icon_name("call-start");
+	if (mod->status_icon == NULL) {
+		info("gtk_menu is not supported\n");
+		module_close();
+		return 1;
+	}
+
 	gtk_status_icon_set_tooltip_text (mod->status_icon, "baresip");
 
 	g_signal_connect(G_OBJECT(mod->status_icon),
