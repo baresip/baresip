@@ -445,7 +445,11 @@ int avcodec_encode(struct videnc_state *st, bool update,
 
 	if (update) {
 		debug("avcodec: encoder picture update\n");
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(58, 29, 100)
+		pict->flags |= AV_FRAME_FLAG_KEY;
+#else
 		pict->key_frame = 1;
+#endif
 		pict->pict_type = AV_PICTURE_TYPE_I;
 	}
 

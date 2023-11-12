@@ -261,7 +261,11 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 				goto out;
 			}
 
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(58, 29, 100)
+			st->pict->flags = hw_frame->flags;
+#else
 			st->pict->key_frame = hw_frame->key_frame;
+#endif
 		}
 
 		frame->fmt = avpixfmt_to_vidfmt(st->pict->format);
@@ -280,7 +284,11 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 		frame->size.w = st->ctx->width;
 		frame->size.h = st->ctx->height;
 
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(58, 29, 100)
+		if (st->pict->flags & AV_FRAME_FLAG_KEY) {
+#else
 		if (st->pict->key_frame) {
+#endif
 
 			*intra = true;
 			st->got_keyframe = true;
