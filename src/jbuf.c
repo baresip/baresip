@@ -38,11 +38,9 @@
 #endif
 
 enum {
-	JBUF_RDIFF_EMA_COEFF = 1024,
-	JBUF_RDIFF_UP_SPEED  = 512,
 	JBUF_PUT_TIMEOUT     = 10000,
 	JBUF_LATE_TRESHOLD   = 3,
-	JBUF_SPIKE_END       = 960
+	JBUF_SPIKE_END       = 100
 };
 
 enum {
@@ -50,8 +48,8 @@ enum {
 	JBUF_MODE_SPIKE
 };
 
-#define SKEW_THRESHOLD 960 /* @TODO: needs dynamic frame time calculation */
-#define SPIKE_THRESHOLD 4800 /* 100ms @48kHz clockrate */
+#define SKEW_THRESHOLD 100 /* @TODO: needs dynamic frame time calculation */
+#define SPIKE_THRESHOLD 50 /* [ms] */
 
 /** Defines a packet frame */
 struct packet {
@@ -103,10 +101,6 @@ struct jbuf {
 	enum jbuf_type jbtype;  /**< Jitter buffer type                      */
 #if JBUF_STAT
 	struct jbuf_stat stat; /**< Jitter buffer Statistics                 */
-#endif
-#ifdef RE_JBUF_TRACE
-	uint64_t tr00;       /**< Arrival of first packet                    */
-	char buf[136];       /**< Buffer for trace                           */
 #endif
 };
 
@@ -310,9 +304,7 @@ void jbuf_set_gnack(struct jbuf *jb, struct rtp_sock *rtp)
 static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 {
 	bool adapt = false;
-
 	const int transit = (uint32_t)p->hdr.ts_arrive - p->hdr.ts;
-	int d		  = transit - jb->p.last_transit;
 
 	/* Check for first frame */
 	if (!jb->p.last_transit) {
@@ -320,6 +312,7 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 		return 0;
 	}
 
+	int d = transit - jb->p.last_transit;
 	if (d < 0)
 		d = -d;
 
@@ -327,7 +320,7 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 
 	jb->p.jitter += d - ((jb->p.jitter + 8) >> 4);
 
-	if (d > SPIKE_THRESHOLD) {
+	if (delay_ms(d, jb->p.srate) > SPIKE_THRESHOLD) {
 		jb->p.mode  = JBUF_MODE_SPIKE;
 		jb->p.spike = 0;
 
@@ -345,7 +338,9 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 		uint32_t delta = (d + lastd) / 8;
 		jb->p.spike += delta;
 
-		if (jb->p.spike < JBUF_SPIKE_END)
+		DEBUG_WARNING("SPIKE %lu < %d\n", jb->p.spike, JBUF_SPIKE_END);
+
+		if (delay_ms(jb->p.spike, jb->p.srate) < JBUF_SPIKE_END)
 			jb->p.mode = JBUF_MODE_NORMAL;
 
 		adapt = false;
@@ -430,8 +425,8 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 	uint32_t play_time_base;
 
 	/* Fragmented frames (like video) have equal playout_time.
-	 * If we miss some packet here (late/reorder), playout time calculation
-	 * should be fine, since its based on same sender hdr.ts.
+	 * If a packet is missed here (late/reorder), playout time calculation
+	 * should be fine too, since its based on same sender hdr.ts.
 	 * This is also needed to prevent jitter miscalculations */
 	if (p->le.prev) {
 		struct packet *prevp = p->le.prev->data;
@@ -622,9 +617,6 @@ success:
 		packet_deref(jb, f);
 
 out:
-#ifdef RE_JBUF_TRACE
-	plot_jbuf(jb, tr);
-#endif
 	mtx_unlock(jb->lock);
 	return err;
 }
