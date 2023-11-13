@@ -726,8 +726,11 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 
 	metric_add_packet(s->tx.metric, mbuf_get_left(mb));
 
-	if (pt < 0)
+	if (pt < 0) {
+		mtx_lock(s->tx.lock);
 		pt = s->tx.pt_enc;
+		mtx_unlock(s->tx.lock);
+	}
 
 	if (pt >= 0) {
 		mtx_lock(s->tx.lock);
@@ -886,7 +889,9 @@ int stream_update(struct stream *s)
 
 	fmt = sdp_media_rformat(s->sdp, NULL);
 
+	mtx_lock(s->tx.lock);
 	s->tx.pt_enc = fmt ? fmt->pt : -1;
+	mtx_unlock(s->tx.lock);
 
 	if (sdp_media_has_media(s->sdp)) {
 
