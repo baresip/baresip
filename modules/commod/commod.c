@@ -565,9 +565,8 @@ static int com_switch_earlymedia(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	if (!d.cur_call || call_state(d.cur_call) != CALL_STATE_INCOMING) {
-		(void) re_hprintf(pf, "No incoming call or "
-				  "established call\n");
+	if (!d.cur_call) {
+		(void) re_hprintf(pf, "No current call\n");
 		return EINVAL;
 	}
 
@@ -586,7 +585,9 @@ static int com_switch_earlymedia(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	call_earlymedia_disable(d.cur_call);
+	if (call_state(d.cur_call) == CALL_STATE_INCOMING)
+		call_earlymedia_disable(d.cur_call);
+
 	call_earlymedia_enable(call);
 
 	d.cur_call = call;
