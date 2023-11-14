@@ -45,7 +45,7 @@ struct audio_recv {
 	struct list filtl;            /**< Audio filters in decoding order   */
 	void *sampv;                  /**< Sample buffer                     */
 	size_t sampvsz;               /**< Sample buffer size                */
-	uint64_t t;                   /**< Last auframe push time    */
+	uint64_t t;                   /**< Last auframe push time            */
 	uint32_t ptime;               /**< Packet time for receiving [us]    */
 
 	double level_last;            /**< Last audio level value [dBov]     */
@@ -55,21 +55,21 @@ struct audio_recv {
 	int pt;                       /**< Payload type of audio codec       */
 
 	struct {
-		uint64_t n_discard; /**< Nbr of discarded packets  */
+		uint64_t n_discard;   /**< Nbr of discarded packets          */
 		RE_ATOMIC uint64_t latency;   /**< Latency in [ms]           */
-		int32_t jitter;     /**< Auframe push jitter [us]            */
-		int32_t dmax;       /**< Max deviation [us]                  */
+		int32_t jitter;       /**< Auframe push jitter [us]          */
+		int32_t dmax;         /**< Max deviation [us]                */
 	} stats;
 
 	mtx_t *mtx;
 
-	const struct auplay *ap;      /**< Audio Player module             */
-	struct auplay_st *auplay;     /**< Audio Player                    */
-	struct auplay_prm auplay_prm; /**< Audio Player parameters         */
-	char *module;                 /**< Audio player module name        */
-	char *device;                 /**< Audio player device name        */
-	enum aufmt play_fmt;          /**< Sample format for audio playback*/
-	bool first_write;             /**< First write to auplay           */
+	const struct auplay *ap;      /**< Audio player module               */
+	struct auplay_st *auplay;     /**< Audio player                      */
+	struct auplay_prm auplay_prm; /**< Audio player parameters           */
+	char *module;                 /**< Audio player module name          */
+	char *device;                 /**< Audio player device name          */
+	enum aufmt play_fmt;          /**< Sample format for audio playback  */
+	bool first_write;             /**< First write to auplay             */
 };
 
 
