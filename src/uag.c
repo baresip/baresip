@@ -245,38 +245,6 @@ static bool uri_user_and_host(const struct uri *uri)
 }
 
 
-static bool uri_host_local(const struct uri *uri)
-{
-
-	const char *hostv[] = {
-		"localhost",
-		"127.0.0.1",
-		"::1"
-	};
-	struct sa sap;
-	size_t i;
-	int err;
-
-	if (!uri)
-		return false;
-
-	for (i=0; i<RE_ARRAY_SIZE(hostv); i++) {
-
-		if (!pl_strcmp(&uri->host, hostv[i]))
-			return true;
-	}
-
-	err = sa_set(&sap, &uri->host, 0);
-	if (err)
-		return true;
-
-	if (net_is_laddr(baresip_network(), &sap))
-		return true;
-
-	return false;
-}
-
-
 #ifdef USE_TLS
 static int add_account_certs(void)
 {
@@ -960,9 +928,6 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 				continue;
 
 			if (!uri_match_af(&acc->luri, &msg->uri))
-				continue;
-
-			if (!uri_host_local(&msg->uri))
 				continue;
 
 			if (!uaf)
