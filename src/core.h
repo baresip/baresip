@@ -119,15 +119,15 @@ int aucodec_print(struct re_printf *pf, const struct aucodec *ac);
 struct audio_recv;
 
 int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
-	      size_t sampc, uint32_t ptime);
+		 size_t sampc, uint32_t ptime);
 int aurecv_decoder_set(struct audio_recv *ar,
 		       const struct aucodec *ac, int pt, const char *params);
 int aurecv_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst);
 void aurecv_flush(struct audio_recv *ar);
 void aurecv_set_extmap(struct audio_recv *ar, uint8_t aulevel);
 void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
-		 struct rtpext *extv, size_t extc,
-		 struct mbuf *mb, unsigned lostc, bool *ignore);
+		    struct rtpext *extv, size_t extc,
+		    struct mbuf *mb, unsigned lostc, bool *ignore);
 void aurecv_read(struct audio_recv *ar, struct auframe *af);
 void aurecv_stop(struct audio_recv *ar);
 

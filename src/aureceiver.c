@@ -184,8 +184,8 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 
 
 static int aurecv_stream_decode(struct audio_recv *ar,
-			     const struct rtp_header *hdr,
-			     struct mbuf *mb, unsigned lostc, bool drop)
+				const struct rtp_header *hdr,
+				struct mbuf *mb, unsigned lostc, bool drop)
 {
 	struct auframe af;
 	size_t sampc = ar->sampvsz / aufmt_sample_size(ar->fmt);
@@ -266,8 +266,8 @@ static const struct rtpext *rtpext_find(const struct rtpext *extv, size_t extc,
 
 /* Handle incoming stream data from the network */
 void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
-		 struct rtpext *extv, size_t extc,
-		 struct mbuf *mb, unsigned lostc, bool *ignore)
+		    struct rtpext *extv, size_t extc,
+		    struct mbuf *mb, unsigned lostc, bool *ignore)
 {
 	bool discard = false;
 	bool drop = *ignore;
@@ -363,7 +363,7 @@ uint64_t aurecv_latency(const struct audio_recv *ar)
 
 
 int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
-	      size_t sampc, uint32_t ptime)
+		 size_t sampc, uint32_t ptime)
 {
 	struct audio_recv *ar;
 	int err;
