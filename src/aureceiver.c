@@ -62,6 +62,14 @@ struct audio_recv {
 	} stats;
 
 	mtx_t *mtx;
+
+	const struct auplay *ap;      /**< Audio Player module             */
+	struct auplay_st *auplay;     /**< Audio Player                    */
+	struct auplay_prm auplay_prm; /**< Audio Player parameters         */
+	char *module;                 /**< Audio player module name        */
+	char *device;                 /**< Audio player device name        */
+	enum aufmt play_fmt;          /**< Sample format for audio playback*/
+	bool first_write;             /**< First write to auplay           */
 };
 
 
@@ -74,6 +82,8 @@ static void destructor(void *arg)
 	mem_deref(ar->sampv);
 	mem_deref(ar->mtx);
 	list_flush(&ar->filtl);
+	mem_deref(ar->module);
+	mem_deref(ar->device);
 }
 
 
@@ -346,6 +356,26 @@ void aurecv_set_extmap(struct audio_recv *ar, uint8_t aulevel)
 }
 
 
+int aurecv_set_module(struct audio_recv *ar, const char *module)
+{
+	if (!ar)
+		return EINVAL;
+
+	ar->module = mem_deref(ar->module);
+	return str_dup(&ar->module, module);
+}
+
+
+int aurecv_set_device(struct audio_recv *ar, const char *device)
+{
+	if (!ar)
+		return EINVAL;
+
+	ar->device = mem_deref(ar->device);
+	return str_dup(&ar->device, device);
+}
+
+
 uint64_t aurecv_latency(const struct audio_recv *ar)
 {
 	if (!ar)
@@ -375,6 +405,7 @@ int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	ar->sampvsz = sampc * aufmt_sample_size(ar->fmt);
 	ar->sampv   = mem_zalloc(ar->sampvsz, NULL);
 	ar->ptime   = ptime * 1000;
+	ar->pt      = -1;
 	if (!ar->sampv) {
 		err = ENOMEM;
 		goto out;
@@ -428,12 +459,21 @@ int aurecv_decoder_set(struct audio_recv *ar,
 			warning("audio_recv: alloc decoder: %m\n", err);
 			goto out;
 		}
-
-		ar->pt = pt;
 	}
+
+	ar->pt = pt;
 
 out:
 	return err;
+}
+
+
+int aurecv_payload_type(const struct audio_recv *ar)
+{
+	if (!ar)
+		return -1;
+
+	return ar->pt;
 }
 
 
@@ -500,7 +540,7 @@ const struct aucodec *aurecv_codec(const struct audio_recv *ar)
 }
 
 
-void aurecv_read(struct audio_recv *ar, struct auframe *af)
+static void aurecv_read(struct audio_recv *ar, struct auframe *af)
 {
 	if (!ar)
 		return;
@@ -514,7 +554,110 @@ void aurecv_stop(struct audio_recv *ar)
 	if (!ar)
 		return;
 
+	ar->auplay = mem_deref(ar->auplay);
 	ar->ac = NULL;
+}
+
+
+static void check_plframe(struct auframe *af1, struct auframe *af2)
+{
+	if ((af1->srate && af1->srate != af2->srate) ||
+	    (af1->ch    && af1->ch    != af2->ch   )) {
+		warning("audio_recv: srate/ch of frame %u/%u vs "
+			"player %u/%u. Use module auresamp!\n",
+			af1->srate, af1->ch,
+			af2->srate, af2->ch);
+	}
+
+	if (af1->fmt != af2->fmt) {
+		warning("audio_recv: invalid sample formats (%s -> %s). "
+			"%s\n",
+			aufmt_name(af1->fmt), aufmt_name(af2->fmt),
+			af1->fmt == AUFMT_S16LE ?
+			"Use module auconv!" : "");
+	}
+}
+
+
+/*
+ * Write samples to Audio Player.
+ *
+ * @note This function has REAL-TIME properties
+ *
+ * @note The application is responsible for filling in silence in
+ *       the case of underrun
+ *
+ * @note This function may be called from any thread
+ *
+ * @note The sample format is set in ar->play_fmt
+ */
+static void auplay_write_handler(struct auframe *af, void *arg)
+{
+	struct audio_recv *ar = arg;
+	struct auframe afr;
+
+	if (!ar->first_write)
+		afr = *af;
+
+	aurecv_read(ar, af);
+
+	if (!ar->first_write) {
+		check_plframe(&afr, af);
+		ar->first_write = true;
+	}
+}
+
+
+int aurecv_start_player(struct audio_recv *ar, struct list *auplayl)
+{
+	const struct aucodec *ac = aurecv_codec(ar);
+	uint32_t srate_dsp;
+	uint32_t channels_dsp;
+	int err = 0;
+
+	if (!ac)
+		return 0;
+
+	srate_dsp    = ac->srate;
+	channels_dsp = ac->ch;
+
+	if (ar->cfg->srate_play && ar->cfg->srate_play != srate_dsp) {
+		srate_dsp = ar->cfg->srate_play;
+	}
+	if (ar->cfg->channels_play && ar->cfg->channels_play != channels_dsp) {
+		channels_dsp = ar->cfg->channels_play;
+	}
+
+	/* Start Audio Player */
+	if (!ar->auplay && auplay_find(auplayl, NULL)) {
+
+		struct auplay_prm prm;
+
+		prm.srate      = srate_dsp;
+		prm.ch         = channels_dsp;
+		prm.ptime      = ar->ptime / 1000;
+		prm.fmt        = ar->play_fmt;
+
+		ar->auplay_prm = prm;
+		err = auplay_alloc(&ar->auplay, auplayl,
+				   ar->module,
+				   &prm, ar->device,
+				   auplay_write_handler, ar);
+		if (err) {
+			warning("audio: start_player failed (%s.%s): %m\n",
+				ar->module, ar->device, err);
+			goto out;
+		}
+
+		ar->ap = auplay_find(auplayl, ar->module);
+
+		info("audio: player started with sample format %s\n",
+		     aufmt_name(ar->play_fmt));
+	}
+
+out:
+
+	return 0;
 }
 
 
@@ -576,6 +719,10 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 		err |= mbuf_printf(mb, "       time = (not started)\n");
 	}
 
+	err |= re_hprintf(pf, "       player: %s,%s %s\n",
+			  ar->ap ? ar->ap->name : "none",
+			  ar->device,
+			  aufmt_name(ar->play_fmt));
 	if (err)
 		goto out;
 
@@ -599,6 +746,8 @@ int aurecv_print_pipeline(struct re_printf *pf, const struct audio_recv *ar)
 	if (!mb)
 		return ENOMEM;
 
+	err = re_hprintf(pf, "audio rx pipeline:  %10s",
+			 ar->ap ? ar->ap->name : "(play)");
 	err = mbuf_printf(mb, " <--- aubuf");
 	mtx_lock(ar->mtx);
 	for (le = list_head(&ar->filtl); le; le = le->next) {
@@ -609,8 +758,8 @@ int aurecv_print_pipeline(struct re_printf *pf, const struct audio_recv *ar)
 	}
 	mtx_unlock(ar->mtx);
 
-	err |= mbuf_printf(mb, " <--- %s\n",
-			  ar->ac ? ar->ac->name : "(decoder)");
+	err |= mbuf_printf(mb, " <--- %s",
+			   ar->ac ? ar->ac->name : "(decoder)");
 
 	if (err)
 		goto out;
