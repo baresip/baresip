@@ -41,7 +41,6 @@ struct audio_recv {
 	struct audec_state *dec;      /**< Audio decoder state (optional)    */
 	const struct aucodec *ac;     /**< Current audio decoder             */
 	struct aubuf *aubuf;          /**< Audio buffer before auplay        */
-	mtx_t *aubuf_mtx;             /**< Mutex for aubuf allocation        */
 	uint32_t ssrc;                /**< Incoming synchronization source   */
 	struct list filtl;            /**< Audio filters in decoding order   */
 	void *sampv;                  /**< Sample buffer                     */
@@ -74,7 +73,6 @@ static void destructor(void *arg)
 	mem_deref(ar->aubuf);
 	mem_deref(ar->sampv);
 	mem_deref(ar->mtx);
-	mem_deref(ar->aubuf_mtx);
 	list_flush(&ar->filtl);
 }
 
@@ -150,9 +148,7 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 	uint64_t bpms;
 
 	if (!ar->aubuf) {
-		mtx_lock(ar->aubuf_mtx);
 		err = aurecv_alloc_aubuf(ar, af);
-		mtx_unlock(ar->aubuf_mtx);
 		if (err)
 			return err;
 	}
@@ -392,7 +388,6 @@ int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	}
 
 	err  = mutex_alloc(&ar->mtx);
-	err |= mutex_alloc(&ar->aubuf_mtx);
 
 out:
 	if (err)
@@ -522,11 +517,10 @@ const struct aucodec *aurecv_codec(const struct audio_recv *ar)
 
 void aurecv_read(struct audio_recv *ar, struct auframe *af)
 {
-	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
+	if (!ar)
 		return;
 
 	aubuf_read_auframe(ar->aubuf, af);
-	mtx_unlock(ar->aubuf_mtx);
 }
 
 
@@ -545,11 +539,10 @@ bool aurecv_started(const struct audio_recv *ar)
 {
 	bool ret;
 
-	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
+	if (!ar)
 		return false;
 
 	ret = aubuf_started(ar->aubuf);
-	mtx_unlock(ar->aubuf_mtx);
 	return ret;
 }
 
@@ -560,7 +553,7 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 	double bpms;
 	int err;
 
-	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
+	if (!ar)
 		return 0;
 
 	mb = mbuf_alloc(32);
@@ -608,7 +601,6 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 	err = re_hprintf(pf, "%b", mb->buf, mb->pos);
 out:
 	mem_deref(mb);
-	mtx_unlock(ar->aubuf_mtx);
 	return err;
 }
 
