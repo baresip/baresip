@@ -41,6 +41,7 @@ struct rtp_receiver {
 	void *arg;                     /**< Stream argument                  */
 	void *sessarg;                 /**< Session argument                 */
 	int pt;                        /**< Previous payload type            */
+	int pt_tel;                    /**< Payload type for tel event       */
 };
 
 
@@ -163,6 +164,29 @@ static int decode_frame(struct rtp_receiver *rx)
 }
 
 
+static bool rtprecv_filter_pt(struct rtp_receiver *rx,
+			      const struct rtp_header *hdr)
+{
+	bool handle;
+
+	handle = hdr->pt != rx->pt;
+	if (rx->pt_tel)
+		handle |= hdr->pt == rx->pt_tel;
+
+	if (!handle)
+		return false;
+
+	const struct sdp_format *lc;
+	lc = sdp_media_lformat(stream_sdpmedia(rx->strm), hdr->pt);
+	if (lc && !str_casecmp(lc->name, "telephone-event")) {
+		rx->pt_tel = hdr->pt;
+	}
+
+	rx->pt = hdr->pt;
+	return true;
+}
+
+
 void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 		     struct mbuf *mb, void *arg)
 {
@@ -223,9 +247,11 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	}
 	mtx_unlock(rx->mtx);
 
-	err = rx->pth(hdr->pt, mb, rx->arg);
-	if (err && err != ENODATA)
-		return;
+	if (rtprecv_filter_pt(rx, hdr)) {
+		err = rx->pth(hdr->pt, mb, rx->arg);
+		if (err && err != ENODATA)
+			return;
+	}
 
 	if (rx->jbuf) {
 

@@ -125,7 +125,6 @@ struct aurx {
 	char *device;                 /**< Audio player device name        */
 	uint32_t ptime;               /**< Packet time for receiving       */
 	int pt;                       /**< Payload type for incoming RTP   */
-	int pt_tel;                   /**< Payload type for tel event      */
 	enum aufmt play_fmt;          /**< Sample format for audio playback*/
 
 	struct audio_recv *aur;       /**< Audio receive pipeline          */
@@ -673,20 +672,11 @@ static int stream_pt_handler(uint8_t pt, struct mbuf *mb, void *arg)
 	struct audio *a = arg;
 	const struct sdp_format *lc;
 	struct aurx *rx = &a->rx;
-	bool handle;
-
-	handle = pt != rx->pt;
-	if (rx->pt_tel)
-		handle |= pt == rx->pt_tel;
-
-	if (!handle)
-		return 0;
 
 	lc = sdp_media_lformat(stream_sdpmedia(a->strm), pt);
 
 	/* Telephone event? */
 	if (lc && !str_casecmp(lc->name, "telephone-event")) {
-		rx->pt_tel = pt;
 		handle_telev(a, mb);
 		return ENODATA;
 	}
@@ -742,9 +732,6 @@ static int add_telev_codec(struct audio *a)
 			     NULL, NULL, false, "0-15");
 	if (err)
 		return err;
-
-	if (add)
-		aurecv_set_telev_pt(a->rx.aur, pt);
 
 	return 0;
 }
@@ -1536,7 +1523,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		}
 	}
 
-	err = aurecv_decoder_set(rx->aur, ac, params);
+	err = aurecv_decoder_set(rx->aur, ac, rx->pt, params);
 	if (err)
 		return err;
 

@@ -121,11 +121,10 @@ struct audio_recv;
 int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	      size_t sampc, uint32_t ptime);
 int aurecv_decoder_set(struct audio_recv *ar,
-		    const struct aucodec *ac, const char *params);
+		       const struct aucodec *ac, int pt, const char *params);
 int aurecv_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst);
 void aurecv_flush(struct audio_recv *ar);
 void aurecv_set_extmap(struct audio_recv *ar, uint8_t aulevel);
-void aurecv_set_telev_pt(struct audio_recv *ar, int pt);
 void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		 struct rtpext *extv, size_t extc,
 		 struct mbuf *mb, unsigned lostc, bool *ignore);

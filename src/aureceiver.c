@@ -53,7 +53,7 @@ struct audio_recv {
 	bool level_set;               /**< True if level_last is set         */
 	struct timestamp_recv ts_recv;/**< Receive timestamp state           */
 	uint8_t extmap_aulevel;       /**< ID Range 1-14 inclusive           */
-	uint32_t telev_pt;            /**< Payload type for telephone-events */
+	int pt;                       /**< Payload type of audio codec       */
 
 	struct {
 		uint64_t n_discard; /**< Nbr of discarded packets  */
@@ -282,7 +282,7 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		goto out;
 
 	mtx_lock(ar->mtx);
-	if (hdr->pt == ar->telev_pt) {
+	if (hdr->pt != ar->pt) {
 		mtx_unlock(ar->mtx);
 		*ignore = true;
 		return;
@@ -357,17 +357,6 @@ void aurecv_set_extmap(struct audio_recv *ar, uint8_t aulevel)
 }
 
 
-void aurecv_set_telev_pt(struct audio_recv *ar, int pt)
-{
-	if (!ar)
-		return;
-
-	mtx_lock(ar->mtx);
-	ar->telev_pt = pt;
-	mtx_unlock(ar->mtx);
-}
-
-
 uint64_t aurecv_latency(const struct audio_recv *ar)
 {
 	if (!ar)
@@ -430,7 +419,7 @@ void aurecv_flush(struct audio_recv *ar)
 
 
 int aurecv_decoder_set(struct audio_recv *ar,
-		    const struct aucodec *ac, const char *params)
+		       const struct aucodec *ac, int pt, const char *params)
 {
 	int err = 0;
 
@@ -452,6 +441,8 @@ int aurecv_decoder_set(struct audio_recv *ar,
 			warning("audio_recv: alloc decoder: %m\n", err);
 			goto out;
 		}
+
+		ar->pt = pt;
 	}
 
 out:
