@@ -482,7 +482,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			if (d.cur_call == call) {
 				d.cur_call = NULL;
 				uag_filter_calls(sel_oldest_call, NULL, call);
-				if (d.cur_call)
+				if (d.cur_call && call_state(d.cur_call)
+				    == CALL_STATE_INCOMING)
 					call_earlymedia_enable(d.cur_call);
 				else
 					acc_restore_answmods();
