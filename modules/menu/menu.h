@@ -22,12 +22,14 @@ struct menu{
 	bool ringback_disabled;       /**< no ringback on sip 180 respons */
 	bool ringback;                /**< Ringback played currently      */
 	struct tmr tmr_redial;        /**< Timer for auto-reconnect       */
+	struct tmr tmr_invite;        /**< Timer for follow up invite     */
 	uint32_t redial_delay;        /**< Redial delay in [seconds]      */
 	uint32_t redial_attempts;     /**< Number of re-dial attempts     */
 	uint32_t current_attempts;    /**< Current number of re-dials     */
 	uint64_t start_ticks;         /**< Ticks when app started         */
 	enum statmode statmode;       /**< Status mode                    */
 	bool clean_number;            /**< Remove -/() from diald numbers */
+	char *invite_uri;             /**< Follow up invite URI           */
 	char redial_aor[128];
 	int32_t adelay;               /**< Outgoing auto answer delay     */
 	char *ansval;                 /**< Call-Info/Alert-Info value     */

@@ -461,6 +461,33 @@ static void redial_handler(void *arg)
 }
 
 
+static void invite_handler(void *arg)
+{
+	(void)arg;
+
+	const char *uri = menu.invite_uri;
+
+	if (!str_isset(uri))
+		return;
+
+	ua_connect(uag_find_requri(uri), NULL, NULL, uri, VIDMODE_ON);
+	menu.invite_uri = mem_deref(menu.invite_uri);
+}
+
+
+static void menu_invite(const char *prm)
+{
+	menu.invite_uri = mem_deref(menu.invite_uri);
+	int err = str_dup(&menu.invite_uri, prm);
+	if (err) {
+		warning("menu: call to %s failed (%m)\n", prm, err);
+		return;
+	}
+
+	tmr_start(&menu.tmr_invite, 0, invite_handler, NULL);
+}
+
+
 static void menu_play_closed(struct call *call)
 {
 	uint16_t scode;
@@ -798,7 +825,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		uri = strchr(prm, ',') + 1;
 		if (account_sip_autoredirect(ua_account(ua))) {
 			info("menu: redirecting call to %s\n", uri);
-			ua_connect(ua, NULL, NULL, uri, VIDMODE_ON);
+			menu_invite(prm);
 		}
 		else {
 			info("menu: redirect call to %s\n", uri);
@@ -813,7 +840,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		(void)menu_param_decode(prm, "method", &val);
 		if (!pl_strcmp(&val, "invite")) {
 			info("menu: incoming REFER to %s\n", prm);
-			ua_connect(ua, NULL, NULL, prm, VIDMODE_ON);
+			menu_invite(prm);
 		}
 
 		break;
@@ -1130,11 +1157,13 @@ static int module_close(void)
 
 	tmr_cancel(&menu.tmr_stat);
 	menu.dialbuf = mem_deref(menu.dialbuf);
+	menu.invite_uri = mem_deref(menu.invite_uri);
 	menu.ovaufile = mem_deref(menu.ovaufile);
 	menu.ansval = mem_deref(menu.ansval);
 	menu_stop_play();
 
 	tmr_cancel(&menu.tmr_redial);
+	tmr_cancel(&menu.tmr_invite);
 
 	return 0;
 }
