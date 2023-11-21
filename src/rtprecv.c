@@ -8,6 +8,8 @@
 #include <re_atomic.h>
 #include <re.h>
 #include <baresip.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include "core.h"
 
 /** Magic number */
@@ -218,6 +220,10 @@ static int rtprecv_thread(void *arg)
 			err);
 		return err;
 	}
+
+	int n = setpriority(PRIO_PROCESS, 0, -10);
+	if (n == -1)
+		warning("rtp_receiver: could not set nice value (%m)\n", errno);
 
 	err = re_main(NULL);
 
