@@ -5,6 +5,47 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.7.0 - 2023-11-22
+
+## What's Changed
+* Add UA_EVENT_END_OF_FILE  by @larsimmisch in https://github.com/baresip/baresip/pull/2755
+* test: call - add test_call_100rel_video by @cspiel1 in https://github.com/baresip/baresip/pull/2762
+* call: delay for the initial re-invite after call established by @cspiel1 in https://github.com/baresip/baresip/pull/2764
+* Implement OPTIONS ping by @maximilianfridrich in https://github.com/baresip/baresip/pull/2765
+* test: call - improve tests for call progress by @cspiel1 in https://github.com/baresip/baresip/pull/2770
+* call,event: add CALL_HOLD and CALL_RESUME events and fix call resume requests by @cspiel1 in https://github.com/baresip/baresip/pull/2771
+* stream: extract thread safe RTP receiver by @cspiel1 in https://github.com/baresip/baresip/pull/2685
+* test: call - count audio frames by @cspiel1 in https://github.com/baresip/baresip/pull/2776
+* main: add pre-proc switch avoids warning by @cspiel1 in https://github.com/baresip/baresip/pull/2778
+* rtprecv: fix possible rtprecv_metric null pointer deref by @juha-h in https://github.com/baresip/baresip/pull/2786
+* rtprecv: add NULL pointer checks by @cspiel1 in https://github.com/baresip/baresip/pull/2787
+* test: call - add call on-hold/resume test by @cspiel1 in https://github.com/baresip/baresip/pull/2775
+* test: activate RTP stats by @cspiel1 in https://github.com/baresip/baresip/pull/2789
+* test: call - more stable test_call_change_videodir by @cspiel1 in https://github.com/baresip/baresip/pull/2790
+* test: call - add 100rel test for audio by @cspiel1 in https://github.com/baresip/baresip/pull/2779
+* test: call - wait for ACK after SDP answer by @cspiel1 in https://github.com/baresip/baresip/pull/2792
+* test: call - remove unstable check by @cspiel1 in https://github.com/baresip/baresip/pull/2794
+* Debian version upgrade by @juha-h in https://github.com/baresip/baresip/pull/2796
+* cmake/modules: exclude ctrl_dbus from Darwin/macOS by @sreimers in https://github.com/baresip/baresip/pull/2798
+* ci: use macos-latest by @alfredh in https://github.com/baresip/baresip/pull/2799
+* config: fix/split config_print arg lengths by @sreimers in https://github.com/baresip/baresip/pull/2801
+* test/call.c: extend test_call_hold_resume by @maximilianfridrich in https://github.com/baresip/baresip/pull/2800
+* rtpstat: fix stream_metric_get_rx_n_err stream arg by @sreimers in https://github.com/baresip/baresip/pull/2803
+* test/ua: fix reg_dns size_t format by @sreimers in https://github.com/baresip/baresip/pull/2804
+* test/main: fix unused i if HAVE_GETOPT is not available by @sreimers in https://github.com/baresip/baresip/pull/2805
+* audio: fix inbound dtmf END event by @cspiel1 in https://github.com/baresip/baresip/pull/2802
+* video: check vidcodec argument in video_decoder_set() by @alfredh in https://github.com/baresip/baresip/pull/2806
+* gtk: close GTK on unsupported icon by @mbattista in https://github.com/baresip/baresip/pull/2808
+* stream: lock tx.pt_enc fixes sanitizer warning by @cspiel1 in https://github.com/baresip/baresip/pull/2809
+* avcodec: fix FFmpeg 6.1 AVframe key_frame deprecation by @sreimers in https://github.com/baresip/baresip/pull/2807
+* jbuf: fix memory leak in jbuf_debug() by @cspiel1 in https://github.com/baresip/baresip/pull/2813
+* jbuf: add NULL pointer check for mbuf by @cspiel1 in https://github.com/baresip/baresip/pull/2814
+
+## New Contributors
+* @larsimmisch made their first contribution in https://github.com/baresip/baresip/pull/2755
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.6.0...v3.7.0
+
 
 ## 3.6.0 - 2023-10-17
 
