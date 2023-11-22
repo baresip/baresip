@@ -750,11 +750,11 @@ int jbuf_stats(const struct jbuf *jb, struct jbuf_stat *jstat)
 int jbuf_debug(struct re_printf *pf, const struct jbuf *jb)
 {
 	int err = 0;
-	struct mbuf *mb = mbuf_alloc(512);
 
 	if (!jb)
 		return 0;
 
+	struct mbuf *mb = mbuf_alloc(512);
 	err |= mbuf_printf(mb, "--- jitter buffer debug---\n");
 
 	mtx_lock(jb->lock);
