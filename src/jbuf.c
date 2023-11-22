@@ -755,6 +755,9 @@ int jbuf_debug(struct re_printf *pf, const struct jbuf *jb)
 		return 0;
 
 	struct mbuf *mb = mbuf_alloc(512);
+	if (!mb)
+		return ENOMEM;
+
 	err |= mbuf_printf(mb, "--- jitter buffer debug---\n");
 
 	mtx_lock(jb->lock);
