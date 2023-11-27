@@ -59,7 +59,6 @@ struct call {
 	bool outgoing;            /**< True if outgoing, false if incoming  */
 	bool answered;            /**< True if call has been answered       */
 	bool got_offer;           /**< Got SDP Offer from Peer              */
-	bool sent_answer;         /**< Sent SDP Answer already              */
 	bool on_hold;             /**< True if call is on hold (local)      */
 	bool ans_queued;          /**< True if an (auto) answer is queued   */
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
@@ -867,31 +866,6 @@ int call_streams_alloc(struct call *call)
 
 
 /**
- * Set stream sdp media line direction attribute
- *
- * @param call Call object
- * @param a    Audio SDP direction
- * @param v    Video SDP direction if video available
- */
-static void call_set_mdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
-{
-	if (!call)
-		return;
-
-	stream_set_ldir(audio_strm(call_audio(call)), a);
-
-	if (video_strm(call_video(call))) {
-		if (vidisp_find(baresip_vidispl(), NULL) == NULL)
-			stream_set_ldir(video_strm(
-				call_video(call)), v & SDP_SENDONLY);
-		else
-			stream_set_ldir(video_strm(call_video(call)), v);
-
-	}
-}
-
-
-/**
  * Allocate a new Call state object
  *
  * @param callp       Pointer to allocated Call state object
@@ -1159,7 +1133,8 @@ int call_connect(struct call *call, const struct pl *paddr)
 		if (err)
 			return err;
 
-		call_set_mdir(call, call->estadir, call->estvdir);
+		(void)call_set_media_direction(call, call->estadir,
+					       call->estvdir);
 	}
 
 	return err;
@@ -1304,7 +1279,7 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 	tmr_cancel(&call->tmr_inv);
 
 	if (adir != call->estadir || vdir != call->estvdir)
-		call_set_mdir(call, adir, vdir);
+		(void)call_set_media_direction(call, adir, vdir);
 
 	err = call_sdp_get(call, &desc, false);
 	if (err)
@@ -1322,7 +1297,6 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 	if (call->got_offer) {
 		ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "answer");
 		err = call_update_media(call);
-		call->sent_answer = true;
 	}
 
 	if (err)
@@ -1407,8 +1381,6 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 				"Allow: %H\r\n"
 				"%H", ua_print_allowed, call->ua,
 				ua_print_supported, call->ua);
-		if (!err && call->got_offer)
-			call->sent_answer = true;
 	}
 	else {
 		err = sipsess_answer(call->sess, scode, "Answering", desc,
@@ -1935,7 +1907,8 @@ static void set_established_mdir(void *arg)
 	MAGIC_CHECK(call);
 
 	if (call_need_modify(call)) {
-		call_set_mdir(call, call->estadir, call->estvdir);
+		(void)call_set_media_direction(call, call->estadir,
+					       call->estvdir);
 		call_modify(call);
 	}
 }
@@ -2456,7 +2429,8 @@ static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
 		if (err)
 			return err;
 
-		call_set_mdir(call, call->estadir, call->estvdir);
+		(void)call_set_media_direction(call, call->estadir,
+					       call->estvdir);
 	}
 
 	err = call_sdp_get(call, descp, true);
@@ -3092,23 +3066,30 @@ void call_set_current(struct list *calls, struct call *call)
 
 
 /**
- * Set audio/video direction of the given call
+ * Set stream sdp media line direction attribute
  *
  * @param call Call object
  * @param a    Audio SDP direction
  * @param v    Video SDP direction if video available
  *
- * @return int	0 if success, errorcode otherwise
+ * @return 0 if success, otherwise errorcode
  */
 int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 {
 	if (!call)
 		return EINVAL;
 
-	call->estadir = a;
-	call->estvdir = call->use_video ? v : SDP_INACTIVE;
+	stream_set_ldir(audio_strm(call_audio(call)), a);
 
-	call_set_mdir(call, a, v);
+	if (video_strm(call_video(call))) {
+		if (vidisp_find(baresip_vidispl(), NULL) == NULL)
+			stream_set_ldir(video_strm(
+				call_video(call)), v & SDP_SENDONLY);
+		else
+			stream_set_ldir(video_strm(call_video(call)), v);
+
+	}
+
 	return 0;
 }
 
@@ -3213,12 +3194,6 @@ bool call_is_evstop(struct call *call)
 }
 
 
-bool call_sent_answer(const struct call *call)
-{
-	return call ? call->sent_answer : false;
-}
-
-
 /**
  * Get the message source address of the peer
  *
@@ -3249,4 +3224,18 @@ enum sip_transp call_transp(const struct call *call)
 {
 	return call ? sip_dialog_tp(sipsess_dialog(call->sess))
 		: SIP_TRANSP_NONE;
+}
+
+
+/*
+ * Get the SDP negotiation state of the call
+ *
+ * @param call Call object
+ *
+ * @return 0 on success, non-zero otherwise
+ * @return SDP negotiation state
+ */
+enum sdp_neg_state call_sdp_neg_state(const struct call *call)
+{
+	return call ? sipsess_sdp_neg_state(call->sess) : SDP_NEG_NONE;
 }

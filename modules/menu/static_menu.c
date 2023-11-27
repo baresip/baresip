@@ -158,9 +158,10 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 		ua = call_get_ua(call);
 	}
 
-	if (call_sent_answer(call))
-		(void)call_set_media_estdir(call, adir, vdir);
-	else
+	(void)call_set_media_estdir(call, adir, vdir);
+
+	enum sdp_neg_state sdp_state = call_sdp_neg_state(call);
+	if (sdp_state == SDP_NEG_NONE || sdp_state == SDP_NEG_REMOTE_OFFER)
 		(void)call_set_media_direction(call, adir, vdir);
 
 	err = answer_call(ua, call);
