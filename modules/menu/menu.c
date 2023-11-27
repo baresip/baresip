@@ -470,7 +470,12 @@ static void invite_handler(void *arg)
 	if (!str_isset(uri))
 		return;
 
-	ua_connect(uag_find_requri(uri), NULL, NULL, uri, VIDMODE_ON);
+	int err;
+	err = ua_connect(uag_find_requri(uri), NULL, NULL, uri, VIDMODE_ON);
+	if (err)
+		warning("menu: call to %s failed (%m)\n", menu.invite_uri,
+			err);
+
 	menu.invite_uri = mem_deref(menu.invite_uri);
 }
 
