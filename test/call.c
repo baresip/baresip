@@ -1698,10 +1698,8 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 0);
 	cr->prm = "answer";
 
-	err = call_set_media_estdir(ua_call(f->a.ua), SDP_INACTIVE,
-				    SDP_INACTIVE);
-	err |= call_set_media_direction(ua_call(f->a.ua), SDP_INACTIVE,
-				       SDP_INACTIVE);
+	call_set_media_estdir(ua_call(f->a.ua), SDP_INACTIVE, SDP_INACTIVE);
+	call_set_media_direction(ua_call(f->a.ua), SDP_INACTIVE, SDP_INACTIVE);
 	TEST_ERR(err);
 	err = call_modify(ua_call(f->a.ua));
 	TEST_ERR(err);
@@ -1726,10 +1724,8 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 
 	f->a.n_auframe=0;
 	f->b.n_auframe=0;
-	err = call_set_media_estdir(ua_call(f->a.ua), SDP_INACTIVE,
-				    SDP_INACTIVE);
-	err |= call_set_media_direction(ua_call(f->a.ua), SDP_SENDRECV,
-				       SDP_INACTIVE);
+	call_set_media_estdir(ua_call(f->a.ua), SDP_INACTIVE, SDP_INACTIVE);
+	call_set_media_direction(ua_call(f->a.ua), SDP_SENDRECV, SDP_INACTIVE);
 	TEST_ERR(err);
 	err = call_modify(ua_call(f->a.ua));
 	TEST_ERR(err);
@@ -3004,9 +3000,7 @@ static int test_call_hold_resume_base(bool tcp)
 	ASSERT_TRUE(!call_ack_pending(ua_call(f->b.ua)));
 
 	/* set media inactive from B */
-	err = call_set_media_direction(ua_call(f->b.ua), SDP_INACTIVE,
-				       SDP_INACTIVE);
-	TEST_ERR(err);
+	call_set_media_direction(ua_call(f->b.ua), SDP_INACTIVE, SDP_INACTIVE);
 	err = call_modify(ua_call(f->b.ua));
 	TEST_ERR(err);
 
@@ -3021,9 +3015,7 @@ static int test_call_hold_resume_base(bool tcp)
 	ASSERT_EQ(1, f->b.n_hold_cnt);
 
 	/* set call to resume from B */
-	err = call_set_media_direction(ua_call(f->b.ua), SDP_SENDRECV,
-				       SDP_SENDRECV);
-	TEST_ERR(err);
+	call_set_media_direction(ua_call(f->b.ua), SDP_SENDRECV, SDP_SENDRECV);
 	err = call_hold(ua_call(f->b.ua), false);
 	TEST_ERR(err);
 	tmr_start(&f->a.tmr_ack, 1, check_ack, &f->a);
