@@ -267,6 +267,7 @@ bool call_is_evstop(struct call *call);
 int call_msg_src(const struct call *call, struct sa *sa);
 enum sip_transp call_transp(const struct call *call);
 enum sdp_neg_state call_sdp_neg_state(const struct call *call);
+bool call_sdp_change_allowed(const struct call *call);
 
 /*
  * Custom headers

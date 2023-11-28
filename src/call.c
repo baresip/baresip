@@ -3232,10 +3232,30 @@ enum sip_transp call_transp(const struct call *call)
  *
  * @param call Call object
  *
- * @return 0 on success, non-zero otherwise
  * @return SDP negotiation state
  */
 enum sdp_neg_state call_sdp_neg_state(const struct call *call)
 {
 	return call ? sipsess_sdp_neg_state(call->sess) : SDP_NEG_NONE;
+}
+
+
+/**
+ * Check if an SDP change is allowed currently
+ *
+ * @param call Call object
+ *
+ * @return true if SDP change is currently allowed, false otherwise
+ */
+bool call_sdp_change_allowed(const struct call *call)
+{
+	if (!call)
+		return false;
+
+	enum sdp_neg_state sdp_state = call_sdp_neg_state(call);
+
+	return (call->state == CALL_STATE_ESTABLISHED
+		&& sdp_state == SDP_NEG_DONE)
+		|| (sdp_state == SDP_NEG_NONE
+		|| sdp_state == SDP_NEG_REMOTE_OFFER);
 }
