@@ -221,9 +221,13 @@ static int rtprecv_thread(void *arg)
 		return err;
 	}
 
-	int n = setpriority(PRIO_PROCESS, 0, -10);
-	if (n == -1)
-		warning("rtp_receiver: could not set nice value (%m)\n", errno);
+	if (stream_type(rx->strm) == MEDIA_AUDIO) {
+		int n = setpriority(PRIO_PROCESS, 0, -10);
+		if (n == -1) {
+			warning("rtp_receiver: could not set nice value "
+				"(%m)\n", errno);
+		}
+	}
 
 	err = re_main(NULL);
 
