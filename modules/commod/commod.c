@@ -427,29 +427,16 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 {
 	struct account *acc = ua_account(ua);
 	enum answermode am = account_answermode(acc);
-	enum sdp_dir adir = sdp_media_rdir(stream_sdpmedia(audio_strm(
-					   call_audio(call))));
-	enum sdp_dir vdir = sdp_media_rdir(stream_sdpmedia(video_strm(
-					   call_video(call))));
-	bool video;
-	bool audio;
-	bool control;
 	(void) arg;
 
 	info("commod: [ ua=%s call=%s ] event: %s (%s)\n",
 	     account_aor(acc), call_id(call), uag_event_str(ev), prm);
 
-	video = (am == ANSWERMODE_EARLY || am == ANSWERMODE_EARLY_VIDEO) &&
-		vdir & SDP_RECVONLY;
-	audio = (am == ANSWERMODE_EARLY || am == ANSWERMODE_EARLY_AUDIO) &&
-		adir & SDP_RECVONLY;
-	control = video || audio;
 	switch (ev) {
 		case UA_EVENT_CALL_INCOMING:
 			check_auto_answer_media_direction(call);
-			if (control && !d.cur_call) {
+			if (!d.cur_call)
 				d.cur_call = call;
-			}
 
 			if (d.cur_call != call) {
 				if (am != ANSWERMODE_MANUAL)
