@@ -41,6 +41,7 @@ struct rtp_receiver {
 	void *arg;                     /**< Stream argument                  */
 	void *sessarg;                 /**< Session argument                 */
 	int pt;                        /**< Previous payload type            */
+	int pt_tel;                    /**< Payload type for tel event       */
 };
 
 
@@ -163,6 +164,29 @@ static int decode_frame(struct rtp_receiver *rx)
 }
 
 
+static bool rtprecv_filter_pt(struct rtp_receiver *rx,
+			      const struct rtp_header *hdr)
+{
+	bool handle;
+
+	handle = hdr->pt != rx->pt;
+	if (rx->pt_tel)
+		handle |= hdr->pt == rx->pt_tel;
+
+	if (!handle)
+		return false;
+
+	const struct sdp_format *lc;
+	lc = sdp_media_lformat(stream_sdpmedia(rx->strm), hdr->pt);
+	if (lc && !str_casecmp(lc->name, "telephone-event")) {
+		rx->pt_tel = hdr->pt;
+	}
+
+	rx->pt = hdr->pt;
+	return true;
+}
+
+
 void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 		     struct mbuf *mb, void *arg)
 {
@@ -223,9 +247,11 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	}
 	mtx_unlock(rx->mtx);
 
-	err = rx->pth(hdr->pt, mb, rx->arg);
-	if (err && err != ENODATA)
-		return;
+	if (rtprecv_filter_pt(rx, hdr)) {
+		err = rx->pth(hdr->pt, mb, rx->arg);
+		if (err && err != ENODATA)
+			return;
+	}
 
 	if (rx->jbuf) {
 
@@ -455,6 +481,8 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 	rx->pt     = -1;
 	err  = str_dup(&rx->name, name);
 	err |= mutex_alloc(&rx->mtx);
+	if (err)
+		goto out;
 
 	/* Audio Jitter buffer */
 	if (stream_type(strm) == MEDIA_AUDIO &&
@@ -471,17 +499,19 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 
 		err = jbuf_alloc(&rx->jbuf, cfg->video.jbuf_del.min,
 				 cfg->video.jbuf_del.max);
-		err |= jbuf_set_type(rx->jbuf, cfg->video.jbtype);
+		if (err)
+			goto out;
+
+		err = jbuf_set_type(rx->jbuf, cfg->video.jbtype);
+		if (err)
+			goto out;
 	}
 
 	rx->metric = metric_alloc();
 	if (!rx->metric)
-		err |= ENOMEM;
+		err = ENOMEM;
 	else
-		err |= metric_init(rx->metric);
-
-	if (err)
-		goto out;
+		err = metric_init(rx->metric);
 
 out:
 	if (err)

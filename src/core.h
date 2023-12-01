@@ -113,6 +113,38 @@ int aucodec_print(struct re_printf *pf, const struct aucodec *ac);
 
 
 /*
+ * Audio Receiver Pipeline
+ */
+
+struct audio_recv;
+
+int  aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
+		  size_t sampc, uint32_t ptime);
+int  aurecv_decoder_set(struct audio_recv *ar,
+			const struct aucodec *ac, int pt, const char *params);
+int  aurecv_payload_type(const struct audio_recv *ar);
+int  aurecv_filt_append(struct audio_recv *ar, struct aufilt_dec_st *decst);
+void aurecv_flush(struct audio_recv *ar);
+void aurecv_set_extmap(struct audio_recv *ar, uint8_t aulevel);
+int  aurecv_set_module(struct audio_recv *ar, const char *module);
+int  aurecv_set_device(struct audio_recv *ar, const char *device);
+void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
+		    struct rtpext *extv, size_t extc,
+		    struct mbuf *mb, unsigned lostc, bool *ignore);
+int  aurecv_start_player(struct audio_recv *ar, struct list *auplayl);
+void aurecv_stop(struct audio_recv *ar);
+
+const struct aucodec *aurecv_codec(const struct audio_recv *ar);
+uint64_t aurecv_latency(const struct audio_recv *ar);
+bool aurecv_started(const struct audio_recv *ar);
+bool aurecv_filt_empty(const struct audio_recv *ar);
+bool aurecv_level_set(const struct audio_recv *ar);
+double aurecv_level(const struct audio_recv *ar);
+int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar);
+int aurecv_print_pipeline(struct re_printf *pf, const struct audio_recv *ar);
+
+
+/*
  * Call Control
  */
 
