@@ -144,10 +144,13 @@ void stream_write_cb(pa_stream *s, size_t len, void *arg)
 
 	if (!st->initialized) {
 		st->initialized = true;
-		int n = setpriority(PRIO_PROCESS, 0, -10);
-		if (n == -1)
-			warning("pulse: could not set nice value (%m)\n",
-				errno);
+		struct sched_param param;
+		param.sched_priority = 7;
+		int n = sched_setscheduler(0, SCHED_RR, &param);
+		if (n == -1) {
+			warning("pulse: could not set scheduling for player "
+				"(%m)\n", errno);
+		}
 	}
 
 	pa_err = pa_stream_begin_write(s, &sampv, &sz);

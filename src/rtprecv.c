@@ -222,10 +222,12 @@ static int rtprecv_thread(void *arg)
 	}
 
 	if (stream_type(rx->strm) == MEDIA_AUDIO) {
-		int n = setpriority(PRIO_PROCESS, 0, -10);
+		struct sched_param param;
+		param.sched_priority = 7;
+		int n = sched_setscheduler(0, SCHED_RR, &param);
 		if (n == -1) {
-			warning("rtp_receiver: could not set nice value "
-				"(%m)\n", errno);
+			warning("rtp_receiver: could not set scheduling for RX"
+				" thread (%m)\n", errno);
 		}
 	}
 

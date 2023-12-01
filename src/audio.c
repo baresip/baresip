@@ -17,8 +17,7 @@
 #include <re_atomic.h>
 #include <rem.h>
 #include <baresip.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include <sched.h>
 #include "core.h"
 
 
@@ -860,9 +859,11 @@ static int tx_thread(void *arg)
 	struct autx *tx = &a->tx;
 	uint64_t ts = 0;
 
-	int n = setpriority(PRIO_PROCESS, 0, -10);
+	struct sched_param param;
+	param.sched_priority = 7;
+	int n = sched_setscheduler(0, SCHED_RR, &param);
 	if (n == -1)
-		warning("pulse: could not set nice value (%m)\n",
+		warning("audio: could not set scheduling for TX thread (%m)\n",
 			errno);
 
 	mtx_lock(tx->mtx);
