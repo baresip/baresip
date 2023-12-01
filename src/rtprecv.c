@@ -8,8 +8,7 @@
 #include <re_atomic.h>
 #include <re.h>
 #include <baresip.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include <sched.h>
 #include "core.h"
 
 /** Magic number */

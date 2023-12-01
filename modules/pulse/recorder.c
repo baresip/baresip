@@ -11,8 +11,7 @@
 #include <rem.h>
 #include <baresip.h>
 #include <string.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include <sched.h>
 
 #include "pulse.h"
 
