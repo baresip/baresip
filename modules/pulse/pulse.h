@@ -31,6 +31,11 @@ struct pastream_st {
 	pa_sample_spec ss;
 	pa_buffer_attr attr;
 	pa_stream_direction_t direction;
+
+	struct {
+		size_t overrun;
+		size_t underrun;
+	} stats;
 };
 
 

@@ -80,6 +80,9 @@ static void pastream_destructor(void *arg)
 	}
 
 	pa_threaded_mainloop_unlock(c->mainloop);
+
+	info("pulse: %s [overrun=%zu underrun=%zu]\n",
+	     st->sname, st->stats.overrun, st->stats.underrun);
 }
 
 
@@ -104,7 +107,7 @@ static void stream_underflow_cb(pa_stream *s, void *arg)
 	(void)s;
 
 	if (!st->shutdown)
-		warning("pulse: stream %s underrun\n",  st->sname);
+		++st->stats.underrun;
 }
 
 
@@ -113,7 +116,7 @@ static void stream_overflow_cb(pa_stream *s, void *arg)
 	struct pastream_st *st = arg;
 	(void)s;
 
-	warning("pulse: stream %s overrun\n", st->sname);
+	++st->stats.overrun;
 }
 
 
