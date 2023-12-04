@@ -3236,3 +3236,17 @@ int call_msg_src(const struct call *call, struct sa *sa)
 
 	return 0;
 }
+
+
+/**
+ * Get the SIP transport protocol used for this call
+ *
+ * @param call Call object
+ *
+ * @return Transport protocol
+ */
+enum sip_transp call_transp(const struct call *call)
+{
+	return call ? sip_dialog_tp(sipsess_dialog(call->sess))
+		: SIP_TRANSP_NONE;
+}
