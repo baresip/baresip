@@ -1288,6 +1288,13 @@ static int cmd_addheader(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
+	struct mbuf mbe;
+	err = mbuf_printf(&mbe, "%H", uri_header_unescape, &v);
+	if (err == 0) {
+		v.p = (const char *)mbe.buf;
+		v.l = mbe.end;
+	}
+
 	return ua_add_custom_hdr(ua, &n, &v);
 }
 
