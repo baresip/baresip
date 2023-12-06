@@ -1275,6 +1275,7 @@ static int cmd_addheader(struct re_printf *pf, void *arg)
 	const char *usage = "usage: /uaaddheader <key>=<value> <ua-idx>\n";
 	struct pl n, v;
 	int err;
+	int ret;
 
 	if (!ua) {
 		re_hprintf(pf, usage);
@@ -1288,7 +1289,17 @@ static int cmd_addheader(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
-	return ua_add_custom_hdr(ua, &n, &v);
+	struct mbuf mbe;
+	mbuf_init(&mbe);
+	ret = mbuf_printf(&mbe, "%H", uri_header_unescape, &v);
+	if (ret == 0) {
+		v.p = (const char *)mbe.buf;
+		v.l = mbe.end;
+	}
+
+	ret = ua_add_custom_hdr(ua, &n, &v);
+	mem_deref(mbe.buf);
+	return ret;
 }
 
 
