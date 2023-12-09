@@ -417,11 +417,10 @@ void rtprecv_enable_mux(struct rtp_receiver *rx, bool enable)
 
 
 /**
- * The debug function prints into the given mbuf in order to avoid long
- * blocking print to stdout.
+ * The debug function prints RTP Receiver state using the print function
  *
+ * @param pf Print function
  * @param rx The rtp_receiver
- * @param mb Memory buffer
  *
  * @return 0 if success, otherwise errorcode
  */

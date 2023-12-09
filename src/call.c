@@ -1505,8 +1505,6 @@ void call_set_audio_ldir(struct call *call, enum sdp_dir dir)
  *
  * @param call  Call object
  * @param dir   SDP media direction
- *
- * @return 0 if success, otherwise errorcode
  */
 void call_set_video_ldir(struct call *call, enum sdp_dir dir)
 {
