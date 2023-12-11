@@ -337,6 +337,7 @@ static int packet_handler(bool marker, uint64_t ts,
 	struct stream *strm = vid->strm;
 	struct vidqent *qent;
 	uint32_t rtp_ts;
+	int pt;
 	int err;
 
 	MAGIC_CHECK(vid);
@@ -345,12 +346,13 @@ static int packet_handler(bool marker, uint64_t ts,
 	if (!vtx->ts_base)
 		vtx->ts_base = ts;
 	vtx->ts_last = ts;
+	pt = stream_pt_enc(strm);
 	mtx_unlock(vtx->lock_tx);
 
 	/* add random timestamp offset */
 	rtp_ts = vtx->ts_offset + (ts & 0xffffffff);
 
-	err = vidqent_alloc(&qent, strm, marker, stream_pt_enc(strm), rtp_ts,
+	err = vidqent_alloc(&qent, strm, marker, pt, rtp_ts,
 			    hdr, hdr_len, pld, pld_len);
 	if (err)
 		return err;
