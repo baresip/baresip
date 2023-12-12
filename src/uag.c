@@ -923,6 +923,9 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
 
+		if (!ua_catchall(ua))
+			continue;
+
 		if (!acc->regint) {
 			if (!uri_match_transport(&acc->luri, NULL, msg->tp))
 				continue;
@@ -936,16 +939,6 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 
 		if (0 == pl_casecmp(cuser, &acc->luri.user)) {
 			ua_printf(ua, "account match for %r\n", cuser);
-			return ua;
-		}
-	}
-
-	/* Last resort, try any catchall UAs */
-	for (le = uag.ual.head; le; le = le->next) {
-		struct ua *ua = le->data;
-
-		if (ua_catchall(ua)) {
-			ua_printf(ua, "use catch-all account for %r\n", cuser);
 			return ua;
 		}
 	}
