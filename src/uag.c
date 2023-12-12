@@ -923,9 +923,6 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
 
-		if (!ua_catchall(ua))
-			continue;
-
 		if (!acc->regint) {
 			if (!uri_match_transport(&acc->luri, NULL, msg->tp))
 				continue;
@@ -933,7 +930,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			if (!uri_match_af(&acc->luri, &msg->uri))
 				continue;
 
-			if (!uaf)
+			if (!uaf && ua_catchall(ua))
 				uaf = ua;
 		}
 
