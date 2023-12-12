@@ -290,13 +290,13 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 	(void) lostc;
 
 	if (!mb)
-		goto out;
+		return;
 
 	mtx_lock(ar->mtx);
 	if (hdr->pt != ar->pt) {
 		mtx_unlock(ar->mtx);
 		*ignore = true;
-		goto unlock;
+		return;
 	}
 
 	*ignore = false;
@@ -342,7 +342,6 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		return;
 	}
 
- out:
 	/* TODO:  what if lostc > 1 ?*/
 	/* PLC should generate lostc frames here. Not only one.
 	 * aubuf should replace PLC frames with late arriving real frames.
@@ -352,7 +351,6 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 
 	(void)aurecv_stream_decode(ar, hdr, mb, 0, drop);
 
-unlock:
 	mtx_unlock(ar->mtx);
 }
 
