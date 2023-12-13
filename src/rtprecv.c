@@ -177,6 +177,7 @@ static int rtprecv_thread(void *arg)
 	int err;
 
 	re_thread_init();
+	info("rtp_receiver: RTP RX thread started\n");
 	tmr_start(&rx->tmr, 10, rtprecv_check_stop, rx);
 
 	err = udp_thread_attach(rtp_sock(rx->rtp));
