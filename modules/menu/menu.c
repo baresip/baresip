@@ -349,13 +349,10 @@ static bool menu_play(const struct call *call,
 
 static void play_incoming(const struct call *call)
 {
-	enum answermode am = account_answermode(call_account(call));
-
 	/* stop any ringtones */
 	menu_stop_play();
 
-	if (am != ANSWERMODE_MANUAL && (am != ANSWERMODE_EARLY_VIDEO &&
-		call_early_video_available(call)))
+	if (call_state(call) != CALL_STATE_INCOMING)
 		return;
 
 	if (menu_find_call(active_call_test, call)) {
@@ -807,6 +804,10 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				tmr_start(&menu.tmr_play, 0,
 					  delayed_play, NULL);
 			}
+		}
+		else if (call_state(call) == CALL_STATE_ESTABLISHED) {
+			tmr_start(&menu.tmr_play, 0,
+				  delayed_play, NULL);
 		}
 
 		hash_apply(menu.ovaufile->ht, ovaufile_del, call);
