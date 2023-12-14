@@ -1735,7 +1735,7 @@ int audio_set_player(struct audio *a, const char *mod, const char *device)
 	if (!a)
 		return EINVAL;
 
-	aurecv_stop(a->aur);
+	aurecv_stop_auplay(a->aur);
 	if (!str_isset(mod))
 		return 0;
 

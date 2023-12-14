@@ -133,6 +133,7 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		    struct mbuf *mb, unsigned lostc, bool *ignore);
 int  aurecv_start_player(struct audio_recv *ar, struct list *auplayl);
 void aurecv_stop(struct audio_recv *ar);
+void aurecv_stop_auplay(struct audio_recv *ar);
 
 const struct aucodec *aurecv_codec(const struct audio_recv *ar);
 uint64_t aurecv_latency(const struct audio_recv *ar);

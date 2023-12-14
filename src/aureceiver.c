@@ -562,6 +562,15 @@ void aurecv_stop(struct audio_recv *ar)
 }
 
 
+void aurecv_stop_auplay(struct audio_recv *ar)
+{
+	if (!ar)
+		return;
+
+	ar->auplay = mem_deref(ar->auplay);
+}
+
+
 static void check_plframe(struct auframe *af1, struct auframe *af2)
 {
 	if ((af1->srate && af1->srate != af2->srate) ||
