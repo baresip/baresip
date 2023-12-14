@@ -184,6 +184,31 @@ static bool active_call_test(const struct call* call, void *arg)
 }
 
 
+static bool established_call_test(const struct call* call, void *arg)
+{
+	struct filter_arg *fa = arg;
+
+	if (call == fa->exclude)
+		return false;
+
+	return call_state(call) == CALL_STATE_ESTABLISHED;
+}
+
+
+static bool outgoing_call_test(const struct call* call, void *arg)
+{
+	struct filter_arg *fa = arg;
+	enum call_state st;
+
+	if (call == fa->exclude)
+		return false;
+
+	st = call_state(call);
+	return  st == CALL_STATE_OUTGOING || st == CALL_STATE_RINGING ||
+		st == CALL_STATE_EARLY;
+}
+
+
 static void find_first_call(struct call *call, void *arg)
 {
 	struct filter_arg *fa = arg;
@@ -493,6 +518,24 @@ static void menu_invite(const char *prm)
 }
 
 
+static int menu_autoanwser_call(struct call *call)
+{
+	struct call *outgoing;
+	if (menu_find_call(established_call_test, call))
+		return EINVAL;
+
+	outgoing = menu_find_call(outgoing_call_test, call);
+	if (outgoing) {
+		call_hangup(outgoing, 0, NULL);
+		ua_event(call_get_ua(outgoing), UA_EVENT_CALL_CLOSED, outgoing,
+			 "Outgoing call cancelled due to auto answer");
+		mem_deref(outgoing);
+	}
+
+	return call_answer(call, 200, VIDMODE_ON);
+}
+
+
 static void menu_play_closed(struct call *call)
 {
 	uint16_t scode;
@@ -646,8 +689,8 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			return;
 
 		if (account_answermode(acc) == ANSWERMODE_AUTO) {
-			(void)call_answer(call, 200, VIDMODE_ON);
-			return;
+			if (!menu_autoanwser_call(call))
+				return;
 		}
 
 		/* set the current User-Agent to the one with the call */
