@@ -500,7 +500,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	uint64_t tr, dt;
 	int err = 0;
 
-	if (!jb || !hdr)
+	if (!jb || !hdr || !hdr->ts_arrive)
 		return EINVAL;
 
 	if (!jb->p.srate) {
