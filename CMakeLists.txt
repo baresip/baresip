@@ -242,21 +242,10 @@ endif()
 # Main target library
 #
 
-set(LINKLIBS ${RE_LIBRARIES} Threads::Threads)
-
-if(ZLIB_FOUND)
-  list(APPEND LINKLIBS ZLIB::ZLIB)
-endif()
-
-if(USE_OPENSSL)
-  list(APPEND LINKLIBS OpenSSL::SSL OpenSSL::Crypto)
-endif()
+set(LINKLIBS ${RE_LIBRARIES} ${RE_LIBS})
 
 if(WIN32)
-  list(APPEND LINKLIBS ws2_32 iphlpapi winmm gdi32 crypt32 strmiids
-      ole32 oleaut32 qwave dbghelp)
-else()
-  list(APPEND LINKLIBS -lm ${RESOLV_LIBRARY})
+  list(APPEND LINKLIBS winmm gdi32 crypt32 strmiids ole32 oleaut32)
 endif()
 
 if(STATIC)
