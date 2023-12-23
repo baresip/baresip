@@ -57,12 +57,7 @@ static int print_system_info(struct re_printf *pf, void *arg)
 	err |= re_hprintf(pf, " Compiler: %s\n", __VERSION__);
 #endif
 
-#if defined (USE_OPENSSL) && (OPENSSL_VERSION_NUMBER < 0x10100000L)
-	err |= re_hprintf(pf, " OpenSSL:  %s\n",
-			  SSLeay_version(SSLEAY_VERSION));
-#endif
-
-#if defined (USE_OPENSSL) && (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+#ifdef USE_OPENSSL
 	err |= re_hprintf(pf, " OpenSSL:  %s\n",
 			  OpenSSL_version(OPENSSL_VERSION));
 #endif
