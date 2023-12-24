@@ -408,8 +408,8 @@ x11           X11 video output driver
 
 ### Supported compilers:
 
-* gcc 4.x or later
-* ms VS2019 compiler
+* gcc 4.9 or later
+* MSVC 2019
 * clang 3.x or later
 
 
