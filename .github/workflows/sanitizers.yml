@@ -24,7 +24,7 @@ jobs:
       ASAN_OPTIONS: fast_unwind_on_malloc=0
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: fix flaky azure mirrors
       if: ${{ runner.os == 'Linux' }}
