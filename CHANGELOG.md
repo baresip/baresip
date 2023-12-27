@@ -5,6 +5,35 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.8.0 - 2023-12-27
+
+## What's Changed
+* uag: fallback for registrar-less NAT setups by @cspiel1 in https://github.com/baresip/baresip/pull/2810
+* menu: fix outgoing early media limit by @cspiel1 in https://github.com/baresip/baresip/pull/2817
+* menu: add follow up invite timer by @cspiel1 in https://github.com/baresip/baresip/pull/2812
+* rx thread: refactoring part 2 - separate audio receiver by @cspiel1 in https://github.com/baresip/baresip/pull/2795
+* pulse: log underruns/overruns after stream terminated by @cspiel1 in https://github.com/baresip/baresip/pull/2820
+* call: add call_transp getter by @maximilianfridrich in https://github.com/baresip/baresip/pull/2821
+* Decode url in custom header by @nltd101 in https://github.com/baresip/baresip/pull/2816
+* video: fix thread sanitizer warning by @cspiel1 in https://github.com/baresip/baresip/pull/2826
+* call/rtprecv: fix doxygen comments by @alfredh in https://github.com/baresip/baresip/pull/2825
+* uag: use catchall flag for fallback UA selection by @cspiel1 in https://github.com/baresip/baresip/pull/2827
+* audio,aur: audio_set_player() only stops auplay by @cspiel1 in https://github.com/baresip/baresip/pull/2830
+* cmake: Fix rpath on MacOS by @larsimmisch in https://github.com/baresip/baresip/pull/2831
+* cmake/plc: use system include to hide third party warnings by @sreimers in https://github.com/baresip/baresip/pull/2836
+* cmake: add link paths to rpath by @sreimers in https://github.com/baresip/baresip/pull/2839
+* cmake: bump minimum to 3.14 by @alfredh in https://github.com/baresip/baresip/pull/2838
+* readme: update supported OpenSSL/LibreSSL versions by @robert-scheck in https://github.com/baresip/baresip/pull/2843
+* cmake: add RE_LIBS config and add atomic check by @sreimers in https://github.com/baresip/baresip/pull/2834
+* readme: update supported compiler versions by @robert-scheck in https://github.com/baresip/baresip/pull/2844
+* ci: use actions/checkout@v4 by @robert-scheck in https://github.com/baresip/baresip/pull/2845
+
+## New Contributors
+* @nltd101 made their first contribution in https://github.com/baresip/baresip/pull/2816
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.7.0...v3.8.0
+
+
 ## 3.7.0 - 2023-11-22
 
 ## What's Changed
