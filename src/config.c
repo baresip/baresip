@@ -184,7 +184,7 @@ static enum aufmt resolve_aufmt(const struct pl *fmt)
 }
 
 
-static enum rtp_receive_mode resolve_receive_mode(const struct pl *fmt)
+enum rtp_receive_mode resolve_receive_mode(const struct pl *fmt)
 {
 	if (0 == pl_strcasecmp(fmt, "main"))     return RECEIVE_MODE_MAIN;
 	if (0 == pl_strcasecmp(fmt, "thread")) {
@@ -198,7 +198,7 @@ static enum rtp_receive_mode resolve_receive_mode(const struct pl *fmt)
 }
 
 
-static const char *rtp_receive_mode_str(enum rtp_receive_mode rxmode)
+const char *rtp_receive_mode_str(enum rtp_receive_mode rxmode)
 {
 	switch (rxmode) {
 	case RECEIVE_MODE_MAIN:

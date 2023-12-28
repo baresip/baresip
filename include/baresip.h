@@ -334,6 +334,10 @@ enum rtp_receive_mode {
 	RECEIVE_MODE_THREAD,    /**< RTP RX is processed in separate thread  */
 };
 
+enum rtp_receive_mode resolve_receive_mode(const struct pl *fmt);
+const char *rtp_receive_mode_str(enum rtp_receive_mode rxmode);
+
+
 /** SIP User-Agent */
 struct config_sip {
 	char uuid[64];          /**< Universally Unique Identifier  */
