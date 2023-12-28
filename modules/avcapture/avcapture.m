@@ -158,7 +158,12 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 		AVCaptureDeviceDiscoverySession
 		discoverySessionWithDeviceTypes:
 			@[AVCaptureDeviceTypeBuiltInWideAngleCamera,
+#if (__IPHONE_OS_VERSION_MIN_REQUIRED >= 170000 || \
+     __MAC_OS_X_VERSION_MIN_REQUIRED >= 140000)
+			  AVCaptureDeviceTypeExternal]
+#else
 			  AVCaptureDeviceTypeExternalUnknown]
+#endif
 		mediaType:AVMediaTypeVideo
 		position:pos
 	];
@@ -404,7 +409,12 @@ static int module_init(void)
 		AVCaptureDeviceDiscoverySession
 		discoverySessionWithDeviceTypes:
 			@[AVCaptureDeviceTypeBuiltInWideAngleCamera,
+#if (__IPHONE_OS_VERSION_MIN_REQUIRED >= 170000 || \
+     __MAC_OS_X_VERSION_MIN_REQUIRED >= 140000)
+			  AVCaptureDeviceTypeExternal]
+#else
 			  AVCaptureDeviceTypeExternalUnknown]
+#endif
 		mediaType:AVMediaTypeVideo
 		position:AVCaptureDevicePositionUnspecified
 	];
