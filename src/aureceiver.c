@@ -732,7 +732,7 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 		err |= mbuf_printf(mb, "       time = (not started)\n");
 	}
 
-	err |= re_hprintf(pf, "       player: %s,%s %s\n",
+	err |= mbuf_printf(mb, "       player: %s,%s %s\n",
 			  ar->ap ? ar->ap->name : "none",
 			  ar->device,
 			  aufmt_name(ar->play_fmt));
