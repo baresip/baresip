@@ -184,6 +184,33 @@ static enum aufmt resolve_aufmt(const struct pl *fmt)
 }
 
 
+static enum rtp_receive_mode resolve_receive_mode(const struct pl *fmt)
+{
+	if (0 == pl_strcasecmp(fmt, "main"))     return RECEIVE_MODE_MAIN;
+	if (0 == pl_strcasecmp(fmt, "thread")) {
+		warning("rtp_rxmode thread is currently "
+			"experimental\n");
+		return RECEIVE_MODE_THREAD;
+	}
+
+	warning("rtp_rxmode %r is not supported\n", fmt);
+	return RECEIVE_MODE_MAIN;
+}
+
+
+static const char *rtp_receive_mode_str(enum rtp_receive_mode rxmode)
+{
+	switch (rxmode) {
+	case RECEIVE_MODE_MAIN:
+		return "main";
+	case RECEIVE_MODE_THREAD:
+		return "thread";
+	default:
+		return "?";
+	}
+}
+
+
 static int conf_get_aufmt(const struct conf *conf, const char *name,
 			  int *fmtp)
 {
@@ -473,16 +500,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	(void)conf_get_bool(conf, "avt_bundle", &cfg->avt.bundle);
 	if (0 == conf_get(conf, "rtp_rxmode", &rxmode)) {
-
-		if (0 == pl_strcasecmp(&rxmode, "main")) {
-			cfg->avt.rxmode = RECEIVE_MODE_MAIN;
-		} else if (0 == pl_strcasecmp(&rxmode, "thread")) {
-			cfg->avt.rxmode = RECEIVE_MODE_THREAD;
-			warning("rtp_rxmode thread is currently "
-				"experimental\n");
-		} else {
-			warning("rtp_rxmode %r is not supported\n", &rxmode);
-		}
+		cfg->avt.rxmode = resolve_receive_mode(&rxmode);
 	}
 
 	if (err) {
@@ -648,8 +666,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 			 cfg->avt.bundle ? "yes" : "no",
-			 cfg->avt.rxmode == RECEIVE_MODE_THREAD ? "thread" :
-								  "main",
+			 rtp_receive_mode_str(cfg->avt.rxmode),
 
 			 cfg->net.ifname,
 			 net_af_str(cfg->net.af)
