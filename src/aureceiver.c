@@ -184,7 +184,8 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 	ar->ch    = af->ch;
 	ar->fmt   = af->fmt;
 
-	bpms = ar->srate * ar->ch * aufmt_sample_size(ar->fmt) / 1000;
+	bpms = (uint64_t)ar->srate * ar->ch * aufmt_sample_size(ar->fmt) /
+	       1000;
 	if (bpms)
 		re_atomic_rlx_set(&ar->stats.latency,
 				  aubuf_cur_size(ar->aubuf) / bpms);
@@ -700,8 +701,8 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 		goto out;
 	}
 
-	bpms = (double) (uint64_t) (ar->srate * ar->ch *
-				    aufmt_sample_size(ar->fmt) / 1000);
+	bpms = (double)ar->srate * ar->ch * aufmt_sample_size(ar->fmt) /
+	       1000.0;
 	err  = mbuf_printf(mb,
 			   " rx:   decode: %H %s\n",
 			   aucodec_print, ar->ac,
