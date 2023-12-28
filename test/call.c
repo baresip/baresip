@@ -1838,6 +1838,7 @@ static int test_media_base(enum audio_mode txmode)
  out:
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
+	conf_config()->audio.txmode = AUDIO_MODE_POLL;
 
 	fixture_close(f);
 	mem_deref(auplay);
@@ -2367,7 +2368,10 @@ int test_call_aufilt(void)
 	TEST_ERR(err);
 
 	err = test_media_base(AUDIO_MODE_POLL);
-	ASSERT_EQ(0, err);
+	TEST_ERR(err);
+
+	err = test_media_base(AUDIO_MODE_THREAD);
+	TEST_ERR(err);
 
  out:
 	module_unload("auconv");
