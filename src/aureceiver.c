@@ -69,7 +69,7 @@ struct audio_recv {
 	char *module;                 /**< Audio player module name          */
 	char *device;                 /**< Audio player device name          */
 	enum aufmt play_fmt;          /**< Sample format for audio playback  */
-	bool first_write;             /**< First write to auplay             */
+	bool done_first;              /**< First auplay write done flag      */
 };
 
 
@@ -184,7 +184,8 @@ static int aurecv_push_aubuf(struct audio_recv *ar, const struct auframe *af)
 	ar->ch    = af->ch;
 	ar->fmt   = af->fmt;
 
-	bpms = ar->srate * ar->ch * aufmt_sample_size(ar->fmt) / 1000;
+	bpms = (uint64_t)ar->srate * ar->ch * aufmt_sample_size(ar->fmt) /
+	       1000;
 	if (bpms)
 		re_atomic_rlx_set(&ar->stats.latency,
 				  aubuf_cur_size(ar->aubuf) / bpms);
@@ -606,17 +607,20 @@ static void check_plframe(struct auframe *af1, struct auframe *af2)
 static void auplay_write_handler(struct auframe *af, void *arg)
 {
 	struct audio_recv *ar = arg;
-	struct auframe afr;
 
-	if (!ar->first_write)
+	if (!ar->done_first) {
+		struct auframe afr;
+		memset(&afr, 0, sizeof(afr));
 		afr = *af;
 
-	aurecv_read(ar, af);
+		aurecv_read(ar, af);
 
-	if (!ar->first_write) {
 		check_plframe(&afr, af);
-		ar->first_write = true;
+		ar->done_first = true;
+		return;
 	}
+
+	aurecv_read(ar, af);
 }
 
 
@@ -700,8 +704,8 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 		goto out;
 	}
 
-	bpms = (double) (uint64_t) (ar->srate * ar->ch *
-				    aufmt_sample_size(ar->fmt) / 1000);
+	bpms = (double)ar->srate * ar->ch * aufmt_sample_size(ar->fmt) /
+	       1000.0;
 	err  = mbuf_printf(mb,
 			   " rx:   decode: %H %s\n",
 			   aucodec_print, ar->ac,
@@ -731,7 +735,7 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 		err |= mbuf_printf(mb, "       time = (not started)\n");
 	}
 
-	err |= re_hprintf(pf, "       player: %s,%s %s\n",
+	err |= mbuf_printf(mb, "       player: %s,%s %s\n",
 			  ar->ap ? ar->ap->name : "none",
 			  ar->device,
 			  aufmt_name(ar->play_fmt));
