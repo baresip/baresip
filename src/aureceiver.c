@@ -69,7 +69,7 @@ struct audio_recv {
 	char *module;                 /**< Audio player module name          */
 	char *device;                 /**< Audio player device name          */
 	enum aufmt play_fmt;          /**< Sample format for audio playback  */
-	bool first_write;             /**< First write to auplay             */
+	bool done_first;              /**< First auplay write done flag      */
 };
 
 
@@ -607,17 +607,20 @@ static void check_plframe(struct auframe *af1, struct auframe *af2)
 static void auplay_write_handler(struct auframe *af, void *arg)
 {
 	struct audio_recv *ar = arg;
-	struct auframe afr;
 
-	if (!ar->first_write)
+	if (!ar->done_first) {
+		struct auframe afr;
+		memset(&afr, 0, sizeof(afr));
 		afr = *af;
 
-	aurecv_read(ar, af);
+		aurecv_read(ar, af);
 
-	if (!ar->first_write) {
 		check_plframe(&afr, af);
-		ar->first_write = true;
+		ar->done_first = true;
+		return;
 	}
+
+	aurecv_read(ar, af);
 }
 
 
