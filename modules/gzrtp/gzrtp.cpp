@@ -209,7 +209,7 @@ static int module_init(void)
 
 	menc_register(baresip_mencl(), &menc_zrtp);
 
-	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	return cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 }
 
 
