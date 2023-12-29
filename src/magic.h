@@ -19,7 +19,7 @@
 	if (MAGIC != s->magic) {					\
 		warning("%s: wrong magic struct=%p (magic=0x%08x)\n",	\
 			__func__, s, s->magic);			\
-		BREAKPOINT;						\
+		re_assert(false);					\
 	}
 #else
 #define MAGIC_DECL
