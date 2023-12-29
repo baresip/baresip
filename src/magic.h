@@ -7,8 +7,6 @@
 
 #ifndef RELEASE
 
-#include <assert.h>
-
 #ifndef MAGIC
 #error "macro MAGIC must be defined"
 #endif
@@ -21,7 +19,7 @@
 	if (MAGIC != s->magic) {					\
 		warning("%s: wrong magic struct=%p (magic=0x%08x)\n",	\
 			__func__, s, s->magic);			\
-		assert(false);						\
+		re_assert(false);					\
 	}
 #else
 #define MAGIC_DECL
