@@ -1,3 +1,9 @@
+baresip (3.8.1) unstable; urgency=medium
+
+  * version 3.8.1
+
+ -- Sebastian Reimers <sebastian.reimers@gmail.com>  Tue, 2 Jan 2024 14:00:00 +0200
+
 baresip (3.8.0) unstable; urgency=medium
 
   * version 3.8.0

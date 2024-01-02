@@ -5,6 +5,17 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## 3.8.1 - 2024-01-02
+
+## What's Changed
+
+* aur: set audio format correctly (#2859)
+* cmake: add only non-system link paths to rpath (fixes #2849) (#2850)
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.8.0...v3.8.1
+
+
 ## 3.8.0 - 2023-12-27
 
 ## What's Changed
