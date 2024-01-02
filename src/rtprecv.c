@@ -31,6 +31,10 @@ struct rtp_receiver {
 	bool pseq_set;                 /**< True if sequence number is set   */
 	bool rtp_estab;                /**< True if RTP stream established   */
 	RE_ATOMIC bool run;            /**< True if RX thread is running     */
+	bool start_rtcp;               /**< Start RTCP flag                  */
+	char *cname;                   /**< Canonical Name for RTCP send     */
+	struct sa rtcp_peer;           /**< RTCP address of Peer             */
+	bool pinhole;                  /**< Open RTCP NAT pinhole flag       */
 	mtx_t *mtx;                    /**< Mutex protects above fields      */
 
 	/* Unprotected data */
@@ -156,12 +160,33 @@ static void pass_mnat_work(struct rtp_receiver *rx, const struct sa *raddr1,
 }
 
 
-static void rtprecv_check_stop(void *arg)
+static void rtprecv_periodic(void *arg)
 {
 	struct rtp_receiver *rx = arg;
 
 	if (re_atomic_rlx(&rx->run)) {
-		tmr_start(&rx->tmr, 10, rtprecv_check_stop, rx);
+		mtx_lock(rx->mtx);
+		bool pinhole    = rx->pinhole;
+		mtx_unlock(rx->mtx);
+		tmr_start(&rx->tmr, 10, rtprecv_periodic, rx);
+		mtx_lock(rx->mtx);
+		if (rx->start_rtcp) {
+			int err = 0;
+			rx->start_rtcp = false;
+			mtx_unlock(rx->mtx);
+			rtcp_start(rx->rtp, rx->cname, &rx->rtcp_peer);
+			if (pinhole) {
+				err = rtcp_send_app(rx->rtp, "PING",
+						    (void *)"PONG", 4);
+			}
+			if (err) {
+				warning("rtprecv: rtcp_send_app failed (%m)\n",
+					err);
+			}
+		}
+		else {
+			mtx_unlock(rx->mtx);
+		}
 	}
 	else {
 		udp_thread_detach(rtp_sock(rx->rtp));
@@ -178,7 +203,7 @@ static int rtprecv_thread(void *arg)
 
 	re_thread_init();
 	info("rtp_receiver: RTP RX thread started\n");
-	tmr_start(&rx->tmr, 10, rtprecv_check_stop, rx);
+	tmr_start(&rx->tmr, 10, rtprecv_periodic, rx);
 
 	err = udp_thread_attach(rtp_sock(rx->rtp));
 	if (err) {
@@ -471,6 +496,29 @@ void rtprecv_mnat_connected_handler(const struct sa *raddr1,
 }
 
 
+int rtprecv_start_rtcp(struct rtp_receiver *rx, const char *cname,
+		       const struct sa *peer, bool pinhole)
+{
+	int err;
+
+	if (!rx)
+		return EINVAL;
+
+	mtx_lock(rx->mtx);
+	if (peer)
+		rx->rtcp_peer = *peer;
+
+
+	rx->cname = mem_deref(rx->cname);
+	err = str_dup(&rx->cname, cname);
+	rx->start_rtcp = true;
+	rx->pinhole = pinhole;
+	mtx_unlock(rx->mtx);
+
+	return err;
+}
+
+
 /*
  * functions that run in main thread
  */
@@ -631,6 +679,7 @@ static void destructor(void *arg)
 	mem_deref(rx->name);
 	mem_deref(rx->mtx);
 	mem_deref(rx->jbuf);
+	mem_deref(rx->cname);
 }
 
 

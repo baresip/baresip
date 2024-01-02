@@ -517,4 +517,6 @@ int  rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx);
 int  rtprecv_start_thread(struct rtp_receiver *rx);
 void rtprecv_mnat_connected_handler(const struct sa *raddr1,
 				    const struct sa *raddr2, void *arg);
+int  rtprecv_start_rtcp(struct rtp_receiver *rx, const char *cname,
+			const struct sa *peer, bool pinhole);
 bool rtprecv_running(const struct rtp_receiver *rx);
