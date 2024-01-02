@@ -401,7 +401,8 @@ int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	ar->cfg = cfg;
 	ar->srate = cfg->srate_play;
 	ar->ch    = cfg->channels_play;
-	ar->fmt   = cfg->play_fmt;
+	ar->fmt   = cfg->dec_fmt;
+	ar->play_fmt = cfg->play_fmt;
 	ar->sampvsz = sampc * aufmt_sample_size(ar->fmt);
 	ar->sampv   = mem_zalloc(ar->sampvsz, NULL);
 	ar->ptime   = ptime * 1000;
