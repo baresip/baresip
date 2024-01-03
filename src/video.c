@@ -750,9 +750,8 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	struct video *v = vrx->video;
 	struct vidframe *frame_filt = NULL;
 	struct vidframe frame_store, *frame = &frame_store;
+	struct viddec_packet pkt = {.mb = mb, .hdr = hdr};
 	struct le *le;
-	uint64_t timestamp;
-	bool intra;
 	int err = 0;
 
 	if (!hdr || !mbuf_get_left(mb))
@@ -769,13 +768,13 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	update_rtp_timestamp(&vrx->ts_recv, hdr->ts);
 
 	/* convert the RTP timestamp to VIDEO_TIMEBASE timestamp */
-	timestamp = video_calc_timebase_timestamp(
+	pkt.timestamp = video_calc_timebase_timestamp(
 			  timestamp_calc_extended(vrx->ts_recv.num_wraps,
 						  vrx->ts_recv.last));
 
 	vidframe_clear(frame);
 
-	err = vrx->vc->dech(vrx->dec, frame, &intra, hdr->m, hdr->seq, mb);
+	err = vrx->vc->dech(vrx->dec, frame, &pkt);
 	if (err) {
 
 		if (err != EPROTO) {
@@ -791,7 +790,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		goto out;
 	}
 
-	if (intra) {
+	if (pkt.intra) {
 		tmr_cancel(&vrx->tmr_picup);
 		++vrx->n_intra;
 	}
@@ -827,13 +826,14 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 		struct vidfilt_dec_st *st = le->data;
 
 		if (st->vf && st->vf->dech)
-			err |= st->vf->dech(st, frame, &timestamp);
+			err |= st->vf->dech(st, frame, &pkt.timestamp);
 	}
 
 	++vrx->stats.disp_frames;
 
 	if (vrx->vd && vrx->vd->disph && vrx->vidisp)
-		err = vrx->vd->disph(vrx->vidisp, v->peer, frame, timestamp);
+		err = vrx->vd->disph(vrx->vidisp, v->peer, frame,
+				     pkt.timestamp);
 
 	frame_filt = mem_deref(frame_filt);
 	if (err == ENODEV) {

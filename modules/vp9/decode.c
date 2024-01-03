@@ -263,7 +263,7 @@ static inline bool is_keyframe(const struct mbuf *mb)
 
 
 int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
-	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
+	       struct viddec_packet *pkt)
 {
 	vpx_codec_iter_t iter = NULL;
 	vpx_codec_err_t res;
@@ -271,10 +271,11 @@ int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 	struct hdr hdr;
 	int err, i;
 
-	if (!vds || !frame || !intra || !mb)
+	if (!vds || !frame || !pkt || !pkt->mb)
 		return EINVAL;
 
-	*intra = false;
+	pkt->intra = false;
+	struct mbuf *mb = pkt->mb;
 
 	vds->n_bytes += mbuf_get_left(mb);
 
@@ -292,7 +293,7 @@ int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 	if (hdr.b) {
 
 		if (is_keyframe(mb))
-			*intra = true;
+			pkt->intra = true;
 
 		mbuf_rewind(vds->mb);
 		vds->started = true;
@@ -301,20 +302,20 @@ int vp9_decode(struct viddec_state *vds, struct vidframe *frame,
 		if (!vds->started)
 			return 0;
 
-		if (rtp_seq_diff(vds->seq, seq) != 1) {
+		if (rtp_seq_diff(vds->seq, pkt->hdr->seq) != 1) {
 			mbuf_rewind(vds->mb);
 			vds->started = false;
 			return 0;
 		}
 	}
 
-	vds->seq = seq;
+	vds->seq = pkt->hdr->seq;
 
 	err = mbuf_write_mem(vds->mb, mbuf_buf(mb), mbuf_get_left(mb));
 	if (err)
 		goto out;
 
-	if (!marker) {
+	if (!pkt->hdr->m) {
 
 		if (vds->mb->end > DECODE_MAXSZ) {
 			warning("vp9: decode buffer size exceeded\n");

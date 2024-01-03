@@ -304,17 +304,17 @@ static int ffdecode(struct viddec_state *st, struct vidframe *frame,
 
 
 int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
-			bool *intra, bool marker, uint16_t seq,
-			struct mbuf *src)
+			struct viddec_packet *pkt)
 {
 	struct h264_nal_header h264_hdr;
 	const uint8_t nal_seq[3] = {0, 0, 1};
 	int err;
 
-	if (!st || !frame || !intra || !src)
+	if (!st || !frame || !pkt || !pkt->mb)
 		return EINVAL;
 
-	*intra = false;
+	pkt->intra = false;
+	struct mbuf *src = pkt->mb;
 
 	err = h264_nal_header_decode(&h264_hdr, src);
 	if (err)
@@ -393,7 +393,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 				return 0;
 			}
 
-			if (rtp_seq_diff(st->frag_seq, seq) != 1) {
+			if (rtp_seq_diff(st->frag_seq, pkt->hdr->seq) != 1) {
 				debug("avcodec: lost fragments detected\n");
 				fragment_rewind(st);
 				st->frag = false;
@@ -410,7 +410,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		if (fu.e)
 			st->frag = false;
 
-		st->frag_seq = seq;
+		st->frag_seq = pkt->hdr->seq;
 	}
 	else if (H264_NALU_STAP_A == h264_hdr.type) {
 
@@ -442,7 +442,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		return EBADMSG;
 	}
 
-	if (!marker) {
+	if (!pkt->hdr->m) {
 
 		if (st->mb->end > DECODE_MAXSZ) {
 			warning("avcodec: decode buffer size exceeded\n");
@@ -458,7 +458,7 @@ int avcodec_decode_h264(struct viddec_state *st, struct vidframe *frame,
 		goto out;
 	}
 
-	err = ffdecode(st, frame, intra);
+	err = ffdecode(st, frame, &pkt->intra);
 	if (err)
 		goto out;
 
@@ -499,16 +499,17 @@ static inline int h265_fu_decode(struct h265_fu *fu, struct mbuf *mb)
 
 
 int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
-		       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
+			struct viddec_packet *pkt)
 {
 	static const uint8_t nal_seq[3] = {0, 0, 1};
 	struct h265_nal hdr;
 	int err;
 
-	if (!vds || !frame || !intra || !mb)
+	if (!vds || !frame || !pkt || !pkt->mb)
 		return EINVAL;
 
-	*intra = false;
+	pkt->intra = false;
+	struct mbuf *mb = pkt->mb;
 
 	if (mbuf_get_left(mb) < H265_HDR_SIZE)
 		return EBADMSG;
@@ -573,7 +574,7 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 				return 0;
 			}
 
-			if (rtp_seq_diff(vds->frag_seq, seq) != 1) {
+			if (rtp_seq_diff(vds->frag_seq, pkt->hdr->seq) != 1) {
 				debug("h265: lost fragments detected\n");
 				fragment_rewind(vds);
 				vds->frag = false;
@@ -588,7 +589,7 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 		if (fu.e)
 			vds->frag = false;
 
-		vds->frag_seq = seq;
+		vds->frag_seq = pkt->hdr->seq;
 	}
 	else if (hdr.nal_unit_type == H265_NAL_AP) {
 
@@ -615,7 +616,7 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 		return EPROTO;
 	}
 
-	if (!marker) {
+	if (!pkt->hdr->m) {
 
 		if (vds->mb->end > DECODE_MAXSZ) {
 			warning("avcodec: h265 decode buffer size exceeded\n");
@@ -631,7 +632,7 @@ int avcodec_decode_h265(struct viddec_state *vds, struct vidframe *frame,
 		goto out;
 	}
 
-	err = ffdecode(vds, frame, intra);
+	err = ffdecode(vds, frame, &pkt->intra);
 	if (err)
 		goto out;
 
