@@ -1565,7 +1565,9 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 	err |= re_hprintf(pf, " tx.enabled: %s\n",
 			  re_atomic_rlx(&s->tx.enabled) ? "yes" : "no");
 	err |= rtprecv_debug(pf, s->rx);
+	mtx_lock(s->tx.lock);
 	err |= rtp_debug(pf, s->rtp);
+	mtx_unlock(s->tx.lock);
 
 	if (s->bundle)
 		err |= bundle_debug(pf, s->bundle);
