@@ -142,7 +142,7 @@ static int copy_obu(struct mbuf *mb_bs, const uint8_t *buf, size_t size)
 
 
 int av1_decode(struct viddec_state *vds, struct vidframe *frame,
-	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
+	       struct viddec_packet *pkt)
 {
 	aom_codec_frame_flags_t flags;
 	aom_codec_iter_t iter = NULL;
@@ -152,10 +152,11 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	struct mbuf *mb2 = NULL;
 	int err;
 
-	if (!vds || !frame || !intra || !mb)
+	if (!vds || !frame || !pkt || !pkt->mb)
 		return EINVAL;
 
-	*intra = false;
+	pkt->intra = false;
+	struct mbuf *mb = pkt->mb;
 
 	err = av1_aggr_hdr_decode(&hdr, mb);
 	if (err)
@@ -183,7 +184,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		if (!vds->started)
 			return 0;
 
-		if (rtp_seq_diff(vds->seq, seq) != 1) {
+		if (rtp_seq_diff(vds->seq, pkt->hdr->seq) != 1) {
 			mbuf_rewind(vds->mb);
 			vds->started = false;
 			return 0;
@@ -197,13 +198,13 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 		vds->started = true;
 	}
 
-	vds->seq = seq;
+	vds->seq = pkt->hdr->seq;
 
 	err = mbuf_write_mem(vds->mb, mbuf_buf(mb), mbuf_get_left(mb));
 	if (err)
 		goto out;
 
-	if (!marker) {
+	if (!pkt->hdr->m) {
 
 		if (vds->mb->end > DECODE_MAXSZ) {
 			warning("av1: decode buffer size exceeded\n");
@@ -298,7 +299,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	res = aom_codec_control(&vds->ctx, AOMD_GET_FRAME_FLAGS, &flags);
 	if (res == AOM_CODEC_OK) {
 		if (flags & AOM_FRAME_IS_KEY)
-			*intra = true;
+			pkt->intra = true;
 	}
 
 	if (img->fmt != AOM_IMG_FMT_I420) {

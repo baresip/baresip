@@ -23,7 +23,7 @@ int vp8_encode_packetize(struct videnc_state *ves,
 int vp8_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		      const char *fmtp, const struct video *vid);
 int vp8_decode(struct viddec_state *vds, struct vidframe *frame,
-	       bool *intra, bool marker, uint16_t seq, struct mbuf *mb);
+	       struct viddec_packet *pkt);
 
 
 /* SDP */

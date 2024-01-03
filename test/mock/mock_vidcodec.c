@@ -144,18 +144,17 @@ static int mock_decode_update(struct viddec_state **vdsp,
 
 
 static int mock_decode(struct viddec_state *vds, struct vidframe *frame,
-		       bool *intra, bool marker, uint16_t seq, struct mbuf *mb)
+		       struct viddec_packet *pkt)
 {
 	struct vidsz size;
 	struct hdr hdr;
 	int err, i;
-	(void)marker;
-	(void)seq;
 
-	if (!vds || !frame || !intra || !mb)
+	if (!vds || !frame || !pkt || !pkt->mb)
 		return EINVAL;
 
-	*intra = false;
+	pkt->intra = false;
+	struct mbuf *mb = pkt->mb;
 
 	err = hdr_decode(&hdr, mb);
 	if (err) {

@@ -1210,6 +1210,13 @@ struct videnc_state;
 struct viddec_state;
 struct vidcodec;
 
+struct viddec_packet {
+	bool intra;		      /**< True=keyframe, False=deltaframe   */
+	const struct rtp_header *hdr; /**< RTP Header                        */
+	uint64_t timestamp;	      /**< Timestamp in VIDEO_TIMEBASE units */
+	struct mbuf *mb;	      /**< RTP Buffer memory                 */
+};
+
 typedef int (videnc_packet_h)(bool marker, uint64_t rtp_ts,
 			      const uint8_t *hdr, size_t hdr_len,
 			      const uint8_t *pld, size_t pld_len,
@@ -1232,8 +1239,7 @@ typedef int(viddec_update_h)(struct viddec_state **vdsp,
 			     const struct video *vid);
 
 typedef int (viddec_decode_h)(struct viddec_state *vds, struct vidframe *frame,
-                              bool *intra, bool marker, uint16_t seq,
-                              struct mbuf *mb);
+                              struct viddec_packet *pkt);
 
 struct vidcodec {
 	struct le le;
