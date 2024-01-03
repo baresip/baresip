@@ -167,7 +167,9 @@ static double autx_calc_seconds(const struct autx *autx)
 	if (!autx->ac)
 		return .0;
 
+	mtx_lock(autx->mtx);
 	dur = autx->ts_ext - autx->ts_base;
+	mtx_unlock(autx->mtx);
 
 	return timestamp_calc_seconds(dur, autx->ac->crate);
 }
@@ -387,7 +389,9 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 		}
 
 		if (ts_delta) {
+			mtx_lock(a->tx.mtx);
 			tx->ts_ext += ts_delta;
+			mtx_unlock(a->tx.mtx);
 			goto out;
 		}
 	}
@@ -402,7 +406,9 @@ static void encode_rtp_send(struct audio *a, struct autx *tx,
 	 */
 	frame_size = sampc_rtp / tx->ac->ch;
 
+	mtx_lock(a->tx.mtx);
 	tx->ts_ext += (uint32_t)frame_size;
+	mtx_unlock(a->tx.mtx);
 
  out:
 	tx->marker = false;
