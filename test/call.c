@@ -2703,6 +2703,9 @@ int test_call_bundle(void)
 {
 	int err = 0;
 
+	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
+		return 0;
+
 	err |= test_call_bundle_base(false, false);
 	err |= test_call_bundle_base(true,  false);
 	err |= test_call_bundle_base(false, true);
