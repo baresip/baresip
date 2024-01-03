@@ -49,6 +49,7 @@ struct cancel_rule {
 	unsigned n_answer_cnt;
 	unsigned n_vidframe;
 	unsigned n_auframe;
+	unsigned n_audebug;
 	double aulvl;
 
 	struct cancel_rule *cr_and;
@@ -81,10 +82,13 @@ struct agent {
 	unsigned n_resume_cnt;
 	unsigned n_vidframe;
 	unsigned n_auframe;
+	unsigned n_audebug;
 	double aulvl;
 
 	struct tmr tmr_ack;
 	bool gotack;
+
+	struct tmr tmr;
 };
 
 
@@ -165,6 +169,9 @@ struct fixture {
 	tmr_cancel(&f->a.tmr_ack);		\
 	tmr_cancel(&f->b.tmr_ack);		\
 	tmr_cancel(&f->c.tmr_ack);		\
+	tmr_cancel(&f->a.tmr);			\
+	tmr_cancel(&f->b.tmr);			\
+	tmr_cancel(&f->c.tmr);			\
 	mem_deref(f->c.ua);			\
 	mem_deref(f->b.ua);			\
 	mem_deref(f->a.ua);			\
@@ -215,6 +222,7 @@ static struct cancel_rule *cancel_rule_alloc(enum ua_event ev,
 	r->n_answer_cnt  = (unsigned) -1;
 	r->n_vidframe    = (unsigned) -1;
 	r->n_auframe     = (unsigned) -1;
+	r->n_audebug     = (unsigned) -1;
 	r->aulvl         = 0.0f;
 	return r;
 }
@@ -280,6 +288,7 @@ static int cancel_rule_debug(struct re_printf *pf,
 	err |= cr_debug_nbr(n_offer_cnt);
 	err |= cr_debug_nbr(n_answer_cnt);
 	err |= cr_debug_nbr(n_auframe);
+	err |= cr_debug_nbr(n_audebug);
 	err |= cr_debug_nbr(n_vidframe);
 	err |= re_hprintf(pf, "    met:  %s\n", cr->met ? "yes": "no");
 	if (err)
@@ -326,6 +335,7 @@ static int agent_debug(struct re_printf *pf, const struct agent *ag)
 	err |= ag_debug_nbr(n_hold_cnt);
 	err |= ag_debug_nbr(n_resume_cnt);
 	err |= ag_debug_nbr(n_auframe);
+	err |= ag_debug_nbr(n_audebug);
 	err |= ag_debug_nbr(n_vidframe);
 	if (err)
 		return err;
@@ -550,6 +560,10 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 
 	if (UINTSET(rule->n_auframe) &&
 	    ag->n_auframe < rule->n_auframe)
+		return false;
+
+	if (UINTSET(rule->n_audebug) &&
+	    ag->n_audebug < rule->n_audebug)
 		return false;
 
 	if (rule->aulvl != 0.0f &&
@@ -2297,6 +2311,36 @@ out:
 }
 
 
+static void delayed_audio_debug(void *arg)
+{
+	struct agent *ag = arg;
+	struct mbuf *mb;
+	int err;
+
+	if (!ua_call(ag->ua))
+		return;
+
+	mb = mbuf_alloc(1);
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	err = mbuf_printf(mb, "%H", audio_debug, call_audio(ua_call(ag->ua)));
+	mem_deref(mb);
+
+	++ag->n_audebug;
+
+	ua_event(ag->ua, UA_EVENT_CUSTOM, ua_call(ag->ua), "audebug %u",
+		 ag->n_audebug);
+
+	tmr_start(&ag->tmr, 1, delayed_audio_debug, ag);
+out:
+	if (err)
+		ag->fix->err |= err;
+}
+
+
 static int test_call_rtcp_base(bool rtcp_mux)
 {
 	struct fixture fix, *f = &fix;
@@ -2314,10 +2358,17 @@ static int test_call_rtcp_base(bool rtcp_mux)
 		fixture_init_prm(f, ";ptime=1");
 	}
 
+	conf_config()->avt.rtp_stats = true;
 	cancel_rule_new(UA_EVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
 
 	cancel_rule_new(UA_EVENT_CALL_RTCP, f->b.ua, 1, 0, 1);
 	cancel_rule_and(UA_EVENT_CALL_RTCP, f->a.ua, 0, 0, -1);
+	cancel_rule_and(UA_EVENT_CUSTOM,    f->b.ua, 1, 0, 1);
+	cr->prm = "audebug";
+	cr->n_audebug = 3;
+	cancel_rule_and(UA_EVENT_CUSTOM,    f->a.ua, 0, 0, -1);
+	cr->prm = "audebug";
+	cr->n_audebug = 3;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
@@ -2335,6 +2386,8 @@ static int test_call_rtcp_base(bool rtcp_mux)
 
 	stream_set_rtcp_interval(audio_strm(call_audio(ua_call(f->b.ua))), 1);
 	stream_start_rtcp(audio_strm(call_audio(ua_call(f->b.ua))));
+	tmr_start(&f->a.tmr, 1, delayed_audio_debug, &f->a);
+	tmr_start(&f->b.tmr, 1, delayed_audio_debug, &f->b);
 
 	/* wait for RTCP on both sides */
 	err = re_main_timeout(5000);
