@@ -50,6 +50,7 @@ struct cancel_rule {
 	unsigned n_vidframe;
 	unsigned n_auframe;
 	unsigned n_audebug;
+	unsigned n_rtcp;
 	double aulvl;
 
 	struct cancel_rule *cr_and;
@@ -223,6 +224,7 @@ static struct cancel_rule *cancel_rule_alloc(enum ua_event ev,
 	r->n_vidframe    = (unsigned) -1;
 	r->n_auframe     = (unsigned) -1;
 	r->n_audebug     = (unsigned) -1;
+	r->n_rtcp        = (unsigned) -1;
 	r->aulvl         = 0.0f;
 	return r;
 }
@@ -288,8 +290,9 @@ static int cancel_rule_debug(struct re_printf *pf,
 	err |= cr_debug_nbr(n_offer_cnt);
 	err |= cr_debug_nbr(n_answer_cnt);
 	err |= cr_debug_nbr(n_auframe);
-	err |= cr_debug_nbr(n_audebug);
 	err |= cr_debug_nbr(n_vidframe);
+	err |= cr_debug_nbr(n_audebug);
+	err |= cr_debug_nbr(n_rtcp);
 	err |= re_hprintf(pf, "    met:  %s\n", cr->met ? "yes": "no");
 	if (err)
 		return err;
@@ -564,6 +567,10 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 
 	if (UINTSET(rule->n_audebug) &&
 	    ag->n_audebug < rule->n_audebug)
+		return false;
+
+	if (UINTSET(rule->n_rtcp) &&
+	    ag->n_rtcp < rule->n_rtcp)
 		return false;
 
 	if (rule->aulvl != 0.0f &&
@@ -2362,13 +2369,15 @@ static int test_call_rtcp_base(bool rtcp_mux)
 	cancel_rule_new(UA_EVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
 
 	cancel_rule_new(UA_EVENT_CALL_RTCP, f->b.ua, 1, 0, 1);
+	cr->n_rtcp = 5;
 	cancel_rule_and(UA_EVENT_CALL_RTCP, f->a.ua, 0, 0, -1);
+	cr->n_rtcp = 5;
 	cancel_rule_and(UA_EVENT_CUSTOM,    f->b.ua, 1, 0, 1);
 	cr->prm = "audebug";
-	cr->n_audebug = 3;
+	cr->n_audebug = 5;
 	cancel_rule_and(UA_EVENT_CUSTOM,    f->a.ua, 0, 0, -1);
 	cr->prm = "audebug";
-	cr->n_audebug = 3;
+	cr->n_audebug = 5;
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->estab_action = ACTION_NOTHING;
@@ -2395,8 +2404,8 @@ static int test_call_rtcp_base(bool rtcp_mux)
 	TEST_ERR(fix.err);
 
 	/* verify that one or more RTCP packets were received */
-	ASSERT_TRUE(fix.a.n_rtcp > 0);
-	ASSERT_TRUE(fix.b.n_rtcp > 0);
+	ASSERT_TRUE(fix.a.n_rtcp >= 5);
+	ASSERT_TRUE(fix.b.n_rtcp >= 5);
 
  out:
 	fixture_close(f);
