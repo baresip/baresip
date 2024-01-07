@@ -8,6 +8,8 @@
 #include <baresip.h>
 #include "test.h"
 
+enum { JITTER_SRATE = 8000 };
+
 
 int test_jbuf(void)
 {
@@ -24,7 +26,7 @@ int test_jbuf(void)
 	if (err)
 		return err;
 
-	jbuf_set_srate(jb, 8000);
+	jbuf_set_srate(jb, JITTER_SRATE);
 
 	for (i=0; i<RE_ARRAY_SIZE(frv); i++) {
 		frv[i] = mem_alloc(32, NULL);
@@ -38,28 +40,24 @@ int test_jbuf(void)
 	err = jbuf_get(jb, &hdr2, &mem);
 	ASSERT_EQ(ENOENT, err);
 
-
 	/* One frame */
 	hdr.seq = 160;
 	hdr.ts = 1;
-	hdr.ts_arrive = tmr_jiffies_usec();
+	hdr.ts_arrive = tmr_jiffies() * JITTER_SRATE / 1000;
 	err = jbuf_put(jb, &hdr, frv[0]);
 	TEST_ERR(err);
-#if 1
-	err = 0;
-	goto out;
-#endif
+
 	err = jbuf_put(jb, &hdr, frv[0]);
 	ASSERT_EQ(EALREADY, err);
 
 	err = jbuf_get(jb, &hdr2, &mem);
 	TEST_ERR(err);
-	if (160 != hdr2.seq) {err = EINVAL; goto out;}
-	if (mem != frv[0]) {err = EINVAL; goto out;}
+
+	ASSERT_EQ(160, hdr2.seq);
+	ASSERT_EQ(mem, frv[0]);
 	mem = mem_deref(mem);
 
-	/* if (ENOENT != jbuf_get(jb, &hdr2, &mem)) {err = EINVAL; goto out;} */
-
+	ASSERT_EQ(ENOENT, jbuf_get(jb, &hdr2, &mem));
 
 	/* Two frames */
 	hdr.seq = 320;
@@ -72,18 +70,17 @@ int test_jbuf(void)
 
 	err = jbuf_get(jb, &hdr2, &mem);
 	ASSERT_EQ(EAGAIN, err);
-	if (320 != hdr2.seq) {err = EINVAL; goto out;}
-	if (mem != frv[0]) {err = EINVAL; goto out;}
+	ASSERT_EQ(320, hdr2.seq);
+	ASSERT_EQ(mem, frv[0]);
 	mem = mem_deref(mem);
 
 	err = jbuf_get(jb, &hdr2, &mem);
 	TEST_ERR(err);
-	if (480 != hdr2.seq) {err = EINVAL; goto out;}
-	if (mem != frv[1]) {err = EINVAL; goto out;}
+	ASSERT_EQ(480, hdr2.seq);
+	ASSERT_EQ(mem, frv[1]);
 	mem = mem_deref(mem);
 
-	/* if (ENOENT != jbuf_get(jb, &hdr2, &mem)) {err = EINVAL; goto out;} */
-
+	ASSERT_EQ(ENOENT, jbuf_get(jb, &hdr2, &mem));
 
 	/* Three frames */
 	hdr.seq = 800;
@@ -100,23 +97,23 @@ int test_jbuf(void)
 
 	err = jbuf_get(jb, &hdr2, &mem);
 	ASSERT_EQ(EAGAIN, err);
-	if (640 != hdr2.seq) {err = EINVAL; goto out;}
-	if (mem != frv[0]) {err = EINVAL; goto out;}
+	ASSERT_EQ(640, hdr2.seq);
+	ASSERT_EQ(mem, frv[0]);
 	mem = mem_deref(mem);
 
 	err = jbuf_get(jb, &hdr2, &mem);
 	ASSERT_EQ(EAGAIN, err);
-	if (800 != hdr2.seq) {err = EINVAL; goto out;}
-	if (mem != frv[1]) {err = EINVAL; goto out;}
+	ASSERT_EQ(800, hdr2.seq);
+	ASSERT_EQ(mem, frv[1]);
 	mem = mem_deref(mem);
 
 	err = jbuf_get(jb, &hdr2, &mem);
 	TEST_ERR(err);
-	if (960 != hdr2.seq) {err = EINVAL; goto out;}
-	if (mem != frv[2]) {err = EINVAL; goto out;}
+	ASSERT_EQ(960, hdr2.seq);
+	ASSERT_EQ(mem, frv[2]);
 	mem = mem_deref(mem);
 
-	/* if (ENOENT != jbuf_get(jb, &hdr2, &mem)) {err = EINVAL; goto out;} */
+	ASSERT_EQ(ENOENT, jbuf_get(jb, &hdr2, &mem));
 
 
  out:
