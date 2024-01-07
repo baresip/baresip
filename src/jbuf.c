@@ -72,7 +72,7 @@ struct jbuf {
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
 	uint32_t n;          /**< [# packets] Current # of packets in buffer */
-	uint32_t min;        /**< [# frames] Minimum # of frames to buffer   */
+	uint32_t min;        /**< Minimum time in [ms] to buffer             */
 	uint32_t max;        /**< [# frames] Maximum # of frames to buffer   */
 	uint32_t wish;       /**< [# frames] Wish size for adaptive mode     */
 	uint16_t seq_put;    /**< Sequence number for last jbuf_put()        */
@@ -195,7 +195,7 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
 	uint32_t i;
 	int err = 0;
 
-	if (!jbp || ( min > max))
+	if (!jbp)
 		return EINVAL;
 
 	/* self-test: x < y (also handle wrap around) */
@@ -454,8 +454,7 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 	}
 
 	/* Check min/max latency requirements */
-	/* @TODO: */
-	base_offset += 960 * jb->min;
+	base_offset += (jb->p.srate / 1000) * jb->min;
 
 	RE_TRACE_ID_INSTANT_I("jbuf", "recv_delay",
 			      delay_ms(jb->p.last_delay, jb->p.srate), jb->id);
