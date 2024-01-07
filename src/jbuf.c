@@ -739,7 +739,7 @@ void jbuf_flush(struct jbuf *jb)
 	if (!jb)
 		return;
 
-	//@TODO: reset playout specifc values
+	/*@TODO: reset playout specifc values */
 
 	mtx_lock(jb->lock);
 	if (jb->packetl.head) {
