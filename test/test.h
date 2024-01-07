@@ -229,7 +229,6 @@ int test_contact(void);
 int test_event(void);
 int test_jbuf(void);
 int test_jbuf_adaptive(void);
-int test_jbuf_adaptive_video(void);
 int test_message(void);
 int test_network(void);
 int test_play(void);
