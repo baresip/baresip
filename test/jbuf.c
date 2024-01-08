@@ -8,14 +8,48 @@
 #include <baresip.h>
 #include "test.h"
 
-enum { JITTER_SRATE = 8000 };
+enum { JBUF_SRATE = 8000 };
+
+static uint64_t next_play_value = 0;
+
+struct jbtest {
+	uint16_t idx;
+	uint16_t seq;
+	uint32_t ts;
+	uint64_t ts_arrive;
+	uint64_t playout;
+};
+
+static const struct jbtest testv_20ms[] = {
+	/* idx, seq, ts, ts_arrive, playout (ts + (arrival - ts)) */
+	{0, 1, 0, 20 * JBUF_SRATE / 1000, 160},
+	{1, 2, 160, 40 * JBUF_SRATE / 1000, 320},
+	{2, 3, 320, 60 * JBUF_SRATE / 1000, 480},
+	{3, 4, 480, 80 * JBUF_SRATE / 1000, 640},
+};
+
+static const struct jbtest testv_20ms_reorder[] = {
+	/* idx, seq, ts, ts_arrive, playout (ts + (arrival - ts)) */
+	{0, 1, 0, 20 * JBUF_SRATE / 1000, 160},
+	{2, 3, 320, 60 * JBUF_SRATE / 1000, 480},
+	{1, 2, 160, 60 * JBUF_SRATE / 1000, 480},
+	{3, 4, 480, 80 * JBUF_SRATE / 1000, 640},
+};
+
+
+static uint64_t next_play(const struct jbuf *jb)
+{
+	(void)jb;
+
+	return next_play_value;
+}
 
 
 int test_jbuf(void)
 {
-	struct rtp_header hdr = {0}, hdr2 = {0};
 	struct jbuf *jb;
-	char *frv[3];
+	struct rtp_header hdr = {0};
+	char *frv[4];
 	void *mem = NULL;
 	int err;
 
@@ -23,7 +57,8 @@ int test_jbuf(void)
 	if (err)
 		return err;
 
-	jbuf_set_srate(jb, JITTER_SRATE);
+	jbuf_set_srate(jb, JBUF_SRATE);
+	jbuf_set_next_play_fn(jb, next_play);
 
 	for (size_t i = 0; i < RE_ARRAY_SIZE(frv); i++) {
 		frv[i] = mem_alloc(32, NULL);
@@ -33,85 +68,90 @@ int test_jbuf(void)
 		}
 	}
 
-	/* Empty list */
-	err = jbuf_get(jb, &hdr2, &mem);
-	ASSERT_EQ(ENOENT, err);
+	/* Test empty list */
+	ASSERT_EQ(-1, jbuf_next_play(jb));
 
-	/* One frame */
-	hdr.seq = 160;
-	hdr.ts = 1;
-	hdr.ts_arrive = tmr_jiffies() * JITTER_SRATE / 1000;
-	err = jbuf_put(jb, &hdr, frv[0]);
-	TEST_ERR(err);
+	for (size_t i = 0; i < RE_ARRAY_SIZE(testv_20ms); i++) {
+		struct rtp_header hdr_in = {0}, hdr_out = {0};
 
-	err = jbuf_put(jb, &hdr, frv[0]);
-	ASSERT_EQ(EALREADY, err);
+		/* Empty list */
+		err = jbuf_get(jb, &hdr_out, &mem);
+		ASSERT_EQ(ENOENT, err);
 
-	err = jbuf_get(jb, &hdr2, &mem);
-	TEST_ERR(err);
+		hdr_in.seq	 = testv_20ms[i].seq;
+		hdr_in.ts	 = testv_20ms[i].ts;
+		hdr_in.ts_arrive = testv_20ms[i].ts_arrive;
 
-	ASSERT_EQ(160, hdr2.seq);
-	ASSERT_EQ(mem, frv[0]);
-	mem = mem_deref(mem);
+		err = jbuf_put(jb, &hdr_in, frv[i]);
+		TEST_ERR(err);
 
-	ASSERT_EQ(ENOENT, jbuf_get(jb, &hdr2, &mem));
+		next_play_value = testv_20ms[i].playout;
+		ASSERT_EQ(0, jbuf_next_play(jb)); /* already late  test */
 
-	/* Two frames */
-	hdr.seq = 320;
-	err = jbuf_put(jb, &hdr, frv[0]);
-	TEST_ERR(err);
+		err = jbuf_get(jb, &hdr_out, &mem);
+		TEST_ERR(err);
+		ASSERT_EQ(hdr_in.seq, hdr_out.seq);
+		ASSERT_EQ(mem, frv[i]);
+		mem = mem_deref(mem);
+	}
 
-	hdr.seq = 480;
-	err = jbuf_put(jb, &hdr, frv[1]);
-	TEST_ERR(err);
+	for (size_t i = 0; i < RE_ARRAY_SIZE(testv_20ms_reorder); i++) {
+		struct rtp_header hdr_in = {0};
 
-	err = jbuf_get(jb, &hdr2, &mem);
-	ASSERT_EQ(EAGAIN, err);
-	ASSERT_EQ(320, hdr2.seq);
-	ASSERT_EQ(mem, frv[0]);
-	mem = mem_deref(mem);
+		hdr_in.seq	 = testv_20ms_reorder[i].seq;
+		hdr_in.ts	 = testv_20ms_reorder[i].ts;
+		hdr_in.ts_arrive = testv_20ms_reorder[i].ts_arrive;
 
-	err = jbuf_get(jb, &hdr2, &mem);
-	TEST_ERR(err);
-	ASSERT_EQ(480, hdr2.seq);
-	ASSERT_EQ(mem, frv[1]);
-	mem = mem_deref(mem);
+		err = jbuf_put(jb, &hdr_in, frv[i]);
+		TEST_ERR(err);
+	}
 
-	ASSERT_EQ(ENOENT, jbuf_get(jb, &hdr2, &mem));
+	for (size_t i = 0; i < RE_ARRAY_SIZE(testv_20ms_reorder); i++) {
+		struct rtp_header hdr_out = {0};
+		next_play_value = testv_20ms_reorder[i].playout;
 
-	/* Three frames */
-	hdr.seq = 800;
-	err = jbuf_put(jb, &hdr, frv[1]);
-	TEST_ERR(err);
+		err = jbuf_get(jb, &hdr_out, &mem);
+		ASSERT_TRUE(err == 0 || err == EAGAIN);
+		ASSERT_EQ(i + 1, hdr_out.seq);
+		ASSERT_EQ(mem, frv[testv_20ms_reorder[i].idx]);
+		mem = mem_deref(mem);
+	}
 
-	hdr.seq = 640;
-	err = jbuf_put(jb, &hdr, frv[0]);
-	TEST_ERR(err);
+	ASSERT_EQ(ENOENT, jbuf_get(jb, &hdr, &mem));
 
-	hdr.seq = 960;
-	err = jbuf_put(jb, &hdr, frv[2]);
-	TEST_ERR(err);
+	/* Test jbuf_next_play */
+	{
+		struct rtp_header hdr_in = {0}, hdr_out = {0};
 
-	err = jbuf_get(jb, &hdr2, &mem);
-	ASSERT_EQ(EAGAIN, err);
-	ASSERT_EQ(640, hdr2.seq);
-	ASSERT_EQ(mem, frv[0]);
-	mem = mem_deref(mem);
+		jbuf_flush(jb);
 
-	err = jbuf_get(jb, &hdr2, &mem);
-	ASSERT_EQ(EAGAIN, err);
-	ASSERT_EQ(800, hdr2.seq);
-	ASSERT_EQ(mem, frv[1]);
-	mem = mem_deref(mem);
+		hdr_in.seq = 1;
+		hdr_in.ts = 160;
+		hdr_in.ts_arrive = 0;
+		err = jbuf_put(jb, &hdr_in, frv[0]);
+		TEST_ERR(err);
+	
+		hdr_in.seq = 2;
+		hdr_in.ts = 320;
+		hdr_in.ts_arrive = 160;
+		err = jbuf_put(jb, &hdr_in, frv[1]);
+		TEST_ERR(err);
 
-	err = jbuf_get(jb, &hdr2, &mem);
-	TEST_ERR(err);
-	ASSERT_EQ(960, hdr2.seq);
-	ASSERT_EQ(mem, frv[2]);
-	mem = mem_deref(mem);
+		next_play_value = 0;
 
-	ASSERT_EQ(ENOENT, jbuf_get(jb, &hdr2, &mem));
+		err = jbuf_get(jb, &hdr_out, &mem);
+		TEST_ERR(err);
+		mem = mem_deref(mem);
 
+		/* Wait 20ms for next packet */
+		ASSERT_EQ(20, jbuf_next_play(jb));
+
+		next_play_value = 160;
+
+		err = jbuf_get(jb, &hdr_out, &mem);
+		TEST_ERR(err);
+		mem = mem_deref(mem);
+	}
 
  out:
 	mem_deref(jb);
@@ -125,21 +165,22 @@ int test_jbuf(void)
 
 int test_jbuf_adaptive(void)
 {
-	struct rtp_header hdr = {0}, hdr2 = {0};
+	struct rtp_header hdr = {0};
 	struct jbuf *jb = NULL;
 	char *frv[4];
+	uint32_t latency = 100; /* [ms] */
 	void *mem = NULL;
-	int32_t next_play;
 	int err;
 
 	hdr.ssrc = 1;
 
-	err = jbuf_alloc(&jb, 1, 10);
+	err = jbuf_alloc(&jb, latency, 10);
 	TEST_ERR(err);
 	err = jbuf_set_type(jb, JBUF_ADAPTIVE);
 	TEST_ERR(err);
 
-	jbuf_set_srate(jb, JITTER_SRATE);
+	jbuf_set_srate(jb, JBUF_SRATE);
+	jbuf_set_next_play_fn(jb, next_play);
 
 	for (size_t i = 0; i < RE_ARRAY_SIZE(frv); i++) {
 		frv[i] = mem_zalloc(32, NULL);
@@ -149,103 +190,28 @@ int test_jbuf_adaptive(void)
 		}
 	}
 
-	/* Empty list */
-	ASSERT_EQ(ENOENT, jbuf_get(jb, &hdr2, &mem));
+	for (size_t i = 0; i < RE_ARRAY_SIZE(testv_20ms); i++) {
+		struct rtp_header hdr_in = {0}, hdr_out = {0};
 
-	/* Two frames */
-	hdr.seq = 160;
-	hdr.ts = 160;
-	hdr.ts_arrive = tmr_jiffies() * JITTER_SRATE / 1000;
+		/* Empty list */
+		err = jbuf_get(jb, &hdr_out, &mem);
+		ASSERT_EQ(ENOENT, err);
 
-	err = jbuf_put(jb, &hdr, frv[0]);
-	TEST_ERR(err);
-	ASSERT_EQ(EALREADY, jbuf_put(jb, &hdr, frv[0]));
+		hdr_in.seq = testv_20ms[i].seq;
+		hdr_in.ts = testv_20ms[i].ts;
+		hdr_in.ts_arrive = testv_20ms[i].ts_arrive;
 
-	/* min latency is not reached yet */
-	ASSERT_EQ(ENOENT, jbuf_get(jb, &hdr2, &mem));
+		err = jbuf_put(jb, &hdr_in, frv[i]);
+		TEST_ERR(err);
 
-	hdr.seq = 161;
-	hdr.ts = 161;
-	err = jbuf_put(jb, &hdr, frv[1]);
-	TEST_ERR(err);
-
-	next_play = jbuf_next_play(jb);
-	ASSERT_EQ(1, next_play);
-	sys_msleep(next_play);
-
-	/* min latency reached */
-	ASSERT_EQ(EAGAIN, jbuf_get(jb, &hdr2, &mem));
-	ASSERT_EQ(160, hdr2.seq);
-	ASSERT_EQ(mem, frv[0]);
-	mem = mem_deref(mem);
-
-	err = jbuf_get(jb, &hdr2, &mem);
-	TEST_ERR(err);
-	ASSERT_EQ(161, hdr2.seq);
-	ASSERT_EQ(mem, frv[1]);
-	mem = mem_deref(mem);
-
-	/* Four  frames */
-	jbuf_flush(jb);
-
-	/* Test empty packetl */
-	next_play = jbuf_next_play(jb);
-	ASSERT_EQ(-1, next_play);
-
-	hdr.seq = 1;
-	hdr.ts = 100;
-	hdr.ts_arrive = tmr_jiffies() * JITTER_SRATE / 1000;
-
-	err = jbuf_put(jb, &hdr, frv[0]);
-	TEST_ERR(err);
-
-	hdr.seq = 2;
-	hdr.ts = 200;
-	err = jbuf_put(jb, &hdr, frv[1]);
-	TEST_ERR(err);
-
-	hdr.seq = 3;
-	hdr.ts = 300;
-	err = jbuf_put(jb, &hdr, frv[2]);
-	TEST_ERR(err);
-
-	hdr.seq = 4;
-	hdr.ts = 400;
-	err = jbuf_put(jb, &hdr, frv[3]);
-	TEST_ERR(err);
-
-	ASSERT_EQ(0, jbuf_next_play(jb));
-
-	err = jbuf_get(jb, &hdr2, &mem);
-	ASSERT_TRUE(err == 0 || err == EAGAIN);
-	ASSERT_EQ(0, err);
-	ASSERT_EQ(1, hdr2.seq);
-	ASSERT_EQ(mem, frv[0]);
-	mem = mem_deref(mem);
-
-	next_play = jbuf_next_play(jb);
-	ASSERT_TRUE(next_play >= 0);
-	sys_msleep(next_play);
-
-	err = jbuf_get(jb, &hdr2, &mem);
-	ASSERT_EQ(EAGAIN, err);
-	ASSERT_EQ(2, hdr2.seq);
-	ASSERT_EQ(mem, frv[1]);
-	mem = mem_deref(mem);
-
-	err = jbuf_get(jb, &hdr2, &mem);
-	ASSERT_EQ(EAGAIN, err);
-	ASSERT_EQ(3, hdr2.seq);
-	ASSERT_EQ(mem, frv[2]);
-	mem = mem_deref(mem);
-
-	err = jbuf_get(jb, &hdr2, &mem);
-	ASSERT_EQ(0, err);
-	ASSERT_EQ(4, hdr2.seq);
-	ASSERT_EQ(mem, frv[3]);
-	mem = mem_deref(mem);
-
-	err = 0;
+		next_play_value = testv_20ms[i].playout +
+				  (latency * JBUF_SRATE / 1000);
+		err = jbuf_get(jb, &hdr_out, &mem);
+		TEST_ERR(err);
+		ASSERT_EQ(hdr_in.seq, hdr_out.seq);
+		ASSERT_EQ(mem, frv[i]);
+		mem = mem_deref(mem);
+	}
 
  out:
 	mem_deref(jb);
