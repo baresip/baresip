@@ -130,7 +130,7 @@ int test_jbuf(void)
 		hdr_in.ts_arrive = 0;
 		err = jbuf_put(jb, &hdr_in, frv[0]);
 		TEST_ERR(err);
-	
+
 		hdr_in.seq = 2;
 		hdr_in.ts = 320;
 		hdr_in.ts_arrive = 160;
@@ -165,14 +165,11 @@ int test_jbuf(void)
 
 int test_jbuf_adaptive(void)
 {
-	struct rtp_header hdr = {0};
 	struct jbuf *jb = NULL;
 	char *frv[4];
 	uint32_t latency = 100; /* [ms] */
 	void *mem = NULL;
 	int err;
-
-	hdr.ssrc = 1;
 
 	err = jbuf_alloc(&jb, latency, 10);
 	TEST_ERR(err);
