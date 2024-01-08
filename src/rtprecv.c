@@ -173,8 +173,8 @@ static void rtprecv_periodic(void *arg)
 		if (rx->start_rtcp) {
 			int err = 0;
 			rx->start_rtcp = false;
-			mtx_unlock(rx->mtx);
 			rtcp_start(rx->rtp, rx->cname, &rx->rtcp_peer);
+			mtx_unlock(rx->mtx);
 			if (pinhole) {
 				err = rtcp_send_app(rx->rtp, "PING",
 						    (void *)"PONG", 4);
