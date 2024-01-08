@@ -110,12 +110,14 @@ static void disconnect_callback(struct mosquitto *mosq, void *obj, int rc)
 	struct mqtt *mqtt = obj;
 	(void) mosq;
 
-	if (rc == MOSQ_ERR_NO_CONN) {
-		warning("mqtt: connection lost\n");
-		tmr_cancel(&mqtt->tmr);
-		mqtt->fhs = fd_close(mqtt->fhs);
-		tmr_start(&mqtt->tmr, 1000, tmr_reconnect, mqtt);
-	}
+	/* Check for expected disconnect */
+	if (rc == 0)
+		return;
+
+	warning("mqtt: connection lost (%s)\n", mosquitto_strerror(rc));
+	tmr_cancel(&mqtt->tmr);
+	mqtt->fhs = fd_close(mqtt->fhs);
+	tmr_start(&mqtt->tmr, 1000, tmr_reconnect, mqtt);
 }
 
 
