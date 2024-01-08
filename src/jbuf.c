@@ -67,6 +67,7 @@ struct packet {
  * sequence number.
  */
 struct jbuf {
+	jbuf_next_play_fn *next_play_fn;
 	struct pl *id;
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
@@ -115,6 +116,16 @@ static inline bool seq_less(uint16_t x, uint16_t y)
 static inline int32_t delay_ms(uint32_t delay_clock, uint32_t srate)
 {
 	return (delay_clock * 1000) / srate;
+}
+
+
+/** Calculate next play based on samplerate **/
+static uint64_t next_play(const struct jbuf *jb)
+{
+	if (!jb)
+		return 0;
+
+	return tmr_jiffies() * (jb->p.srate / 1000);
 }
 
 
@@ -210,10 +221,11 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
 	list_init(&jb->pooll);
 	list_init(&jb->packetl);
 
-	jb->jbtype = JBUF_FIXED;
-	jb->min  = min;
-	jb->max  = max;
-	jb->wish = min;
+	jb->jbtype	 = JBUF_FIXED;
+	jb->min		 = min;
+	jb->max		 = max;
+	jb->wish	 = min;
+	jb->next_play_fn = next_play;
 
 	DEBUG_INFO("alloc: delay=%u-%u packets\n", min, max);
 
@@ -225,7 +237,7 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
 	mem_destructor(jb, jbuf_destructor);
 
 	/* Allocate all packets now */
-	for (i=0; i<jb->max; i++) {
+	for (i = 0; i < jb->max; i++) {
 		struct packet *f = mem_zalloc(sizeof(*f), NULL);
 		if (!f) {
 			err = ENOMEM;
@@ -463,7 +475,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	uint64_t tr, dt;
 	int err = 0;
 
-	if (!jb || !hdr || !hdr->ts_arrive)
+	if (!jb || !hdr)
 		return EINVAL;
 
 	if (!jb->p.srate) {
@@ -565,9 +577,6 @@ success:
 	f->mem = mem_ref(mem);
 	f->playout_time = calc_playout_time(jb, f);
 
-	if (!f->playout_time)
-		packet_deref(jb, f);
-
 out:
 	mtx_unlock(jb->lock);
 	return err;
@@ -608,7 +617,7 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 
 	f = jb->packetl.head->data;
 
-	uint32_t next_playout = (uint32_t)(tmr_jiffies() * jb->p.srate / 1000);
+	uint32_t next_playout = (uint32_t)jb->next_play_fn(jb);
 
 	/* Check playout time */
 	if (f->playout_time > next_playout) {
@@ -625,8 +634,10 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 	packet_deref(jb, f);
 
 	/* Check if next packet (maybe same frame) can also be played */
-	if (nextp && nextp->playout_time <= next_playout)
+	if (nextp && nextp->playout_time <= next_playout) {
 		err = EAGAIN;
+		goto out;
+	}
 
 out:
 	mtx_unlock(jb->lock);
@@ -754,7 +765,7 @@ int32_t jbuf_next_play(const struct jbuf *jb)
 
 	struct packet *p = jb->packetl.head->data;
 
-	uint32_t current = (uint32_t)(tmr_jiffies() * jb->p.srate / 1000);
+	uint32_t current = (uint32_t)jb->next_play_fn(jb);
 
 	if (p->playout_time <= current)
 		return 0; /* already late */
@@ -785,6 +796,22 @@ int jbuf_stats(const struct jbuf *jb, struct jbuf_stat *jstat)
 #else
 	return ENOSYS;
 #endif
+}
+
+
+/**
+ * Set next play function (usefull for testing)
+ *
+ * @param jb  Jitter buffer
+ * @param p   Pointer to next play function
+ *
+ */
+void jbuf_set_next_play_fn(struct jbuf *jb, jbuf_next_play_fn *p)
+{
+	if (!jb || !p)
+		return;
+
+	jb->next_play_fn = p;
 }
 
 
