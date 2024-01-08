@@ -238,6 +238,7 @@ int test_event_encode(void);
 int test_event_register(void);
 int test_jbuf(void);
 int test_jbuf_adaptive(void);
+int test_jbuf_video(void);
 int test_message(void);
 int test_network(void);
 int test_play(void);
