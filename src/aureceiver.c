@@ -41,6 +41,7 @@ struct audio_recv {
 	struct audec_state *dec;      /**< Audio decoder state (optional)    */
 	const struct aucodec *ac;     /**< Current audio decoder             */
 	struct aubuf *aubuf;          /**< Audio buffer before auplay        */
+	mtx_t *aubuf_mtx;             /**< Mutex for aubuf allocation        */
 	uint32_t ssrc;                /**< Incoming synchronization source   */
 	struct list filtl;            /**< Audio filters in decoding order   */
 	void *sampv;                  /**< Sample buffer                     */
@@ -79,6 +80,7 @@ static void destructor(void *arg)
 
 	mem_deref(ar->dec);
 	mem_deref(ar->aubuf);
+	mem_deref(ar->aubuf_mtx);
 	mem_deref(ar->sampv);
 	mem_deref(ar->mtx);
 	list_flush(&ar->filtl);
@@ -139,6 +141,7 @@ static int aurecv_alloc_aubuf(struct audio_recv *ar, const struct auframe *af)
 	      (unsigned) cfg->buffer.min, (unsigned) cfg->buffer.max,
 	      min_sz, max_sz);
 
+	mtx_lock(ar->aubuf_mtx);
 	err = aubuf_alloc(&ar->aubuf, min_sz, max_sz);
 	if (err) {
 		warning("audio_recv: aubuf alloc error (%m)\n",
@@ -148,6 +151,7 @@ static int aurecv_alloc_aubuf(struct audio_recv *ar, const struct auframe *af)
 	aubuf_set_mode(ar->aubuf, cfg->adaptive ?
 		       AUBUF_ADAPTIVE : AUBUF_FIXED);
 	aubuf_set_silence(ar->aubuf, cfg->silence);
+	mtx_unlock(ar->aubuf_mtx);
 	return err;
 }
 
@@ -414,6 +418,7 @@ int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 	}
 
 	err  = mutex_alloc(&ar->mtx);
+	err |= mutex_alloc(&ar->aubuf_mtx);
 
 out:
 	if (err)
@@ -544,13 +549,15 @@ const struct aucodec *aurecv_codec(const struct audio_recv *ar)
 
 static void aurecv_read(struct audio_recv *ar, struct auframe *af)
 {
-	if (!ar)
+	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
 		return;
 
 	if (ar->aubuf)
 		aubuf_read_auframe(ar->aubuf, af);
 	else
 		memset(af->sampv, 0, auframe_size(af));
+
+	mtx_unlock(ar->aubuf_mtx);
 }
 
 
@@ -682,10 +689,11 @@ bool aurecv_started(const struct audio_recv *ar)
 {
 	bool ret;
 
-	if (!ar)
+	if (!ar || mtx_trylock(ar->aubuf_mtx) != thrd_success)
 		return false;
 
 	ret = aubuf_started(ar->aubuf);
+	mtx_unlock(ar->aubuf_mtx);
 	return ret;
 }
 
@@ -711,11 +719,13 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 			   " rx:   decode: %H %s\n",
 			   aucodec_print, ar->ac,
 			   aufmt_name(ar->fmt));
+	mtx_lock(ar->aubuf_mtx);
 	err |= mbuf_printf(mb, "       aubuf: %H"
 			   " (cur %.2fms, max %.2fms)\n",
 			   aubuf_debug, ar->aubuf,
 			   aubuf_cur_size(ar->aubuf) / bpms,
 			   aubuf_maxsz(ar->aubuf) / bpms);
+	mtx_unlock(ar->aubuf_mtx);
 #ifndef RELEASE
 	err |= mbuf_printf(mb, "       SW jitter: %.2fms\n",
 			   (double) ar->stats.jitter / 1000);
