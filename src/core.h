@@ -531,4 +531,4 @@ void rtprecv_mnat_connected_handler(const struct sa *raddr1,
 int  rtprecv_start_rtcp(struct rtp_receiver *rx, const char *cname,
 			const struct sa *peer, bool pinhole);
 bool rtprecv_running(const struct rtp_receiver *rx);
-void rtprecv_srate(struct rtp_receiver *rx, uint32_t srate);
+void rtprecv_set_srate(struct rtp_receiver *rx, uint32_t srate);
