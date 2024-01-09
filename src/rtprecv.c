@@ -875,7 +875,7 @@ static void async_work_main(int err, void *arg)
 }
 
 
-void rtprecv_srate(struct rtp_receiver *rx, uint32_t srate)
+void rtprecv_set_srate(struct rtp_receiver *rx, uint32_t srate)
 {
 	if (!rx)
 		return;
