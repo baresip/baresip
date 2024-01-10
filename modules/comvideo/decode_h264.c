@@ -95,15 +95,19 @@ handle_h264_size(struct viddec_state *st, struct mbuf *src)
 
 
 int decode_h264(struct viddec_state *st, struct vidframe *frame,
-		bool *intra, bool marker, uint16_t seq, struct mbuf *src)
+		struct viddec_packet *pkt)
 {
 	struct h264_nal_header h264_hdr;
 	const uint8_t nal_seq[3] = {0, 0, 1};
 	int err;
 
-	*intra = false;
+	if (!st || !frame || !pkt || !pkt->mb)
+		return EINVAL;
 
-	err = h264_nal_header_decode(&h264_hdr, src);
+	pkt->intra = false;
+	struct mbuf *mb = pkt->mb;
+
+	err = h264_nal_header_decode(&h264_hdr, mb);
 	if (err)
 		return err;
 
@@ -122,29 +126,29 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 	/* handle NAL types */
 
 	if (H264_NALU_SPS == h264_hdr.type) {
-		handle_h264_size(st, src);
+		handle_h264_size(st, mb);
 
 	}
 
 	if (1 <= h264_hdr.type && h264_hdr.type <= 23) {
 
 		if (h264_is_keyframe(h264_hdr.type))
-			*intra = true;
+			pkt->intra = true;
 
-		--src->pos;
+		--mb->pos;
 
 		/* prepend H.264 NAL start sequence */
 		err = mbuf_write_mem(st->mb, nal_seq, 3);
 
-		err |= mbuf_write_mem(st->mb, mbuf_buf(src),
-				      mbuf_get_left(src));
+		err |= mbuf_write_mem(st->mb, mbuf_buf(mb),
+				      mbuf_get_left(mb));
 		if (err)
 			goto out;
 	}
 	else if (H264_NALU_FU_A == h264_hdr.type) {
 		struct h264_fu fu;
 
-		err = h264_fu_hdr_decode(&fu, src);
+		err = h264_fu_hdr_decode(&fu, mb);
 		if (err)
 			return err;
 		h264_hdr.type = fu.type;
@@ -161,7 +165,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 			st->frag = true;
 
 			if (h264_is_keyframe(fu.type))
-				*intra = true;
+				pkt->intra = true;
 
 			/* prepend H.264 NAL start sequence */
 			mbuf_write_mem(st->mb, nal_seq, 3);
@@ -177,7 +181,7 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 				return 0;
 			}
 
-			if (seq_diff(st->frag_seq, seq) != 1) {
+			if (seq_diff(st->frag_seq, pkt->hdr->seq) != 1) {
 				debug("comvideo: lost fragments detected\n");
 				fragment_rewind(st);
 				st->frag = false;
@@ -186,38 +190,38 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 			}
 		}
 
-		err = mbuf_write_mem(st->mb, mbuf_buf(src),
-				     mbuf_get_left(src));
+		err = mbuf_write_mem(st->mb, mbuf_buf(mb),
+				     mbuf_get_left(mb));
 		if (err)
 			goto out;
 
 		if (fu.e)
 			st->frag = false;
 
-		st->frag_seq = seq;
+		st->frag_seq = pkt->hdr->seq;
 	}
 	else if (H264_NALU_STAP_A == h264_hdr.type) {
 
-		while (mbuf_get_left(src) >= 2) {
+		while (mbuf_get_left(mb) >= 2) {
 
-			const uint16_t len = ntohs(mbuf_read_u16(src));
+			const uint16_t len = ntohs(mbuf_read_u16(mb));
 			struct h264_nal_header lhdr;
 
-			if (mbuf_get_left(src) < len)
+			if (mbuf_get_left(mb) < len)
 				return EBADMSG;
 
-			err = h264_nal_header_decode(&lhdr, src);
+			err = h264_nal_header_decode(&lhdr, mb);
 			if (err)
 				return err;
 
-			--src->pos;
+			--mb->pos;
 
 			err = mbuf_write_mem(st->mb, nal_seq, 3);
-			err |= mbuf_write_mem(st->mb, mbuf_buf(src), len);
+			err |= mbuf_write_mem(st->mb, mbuf_buf(mb), len);
 			if (err)
 				goto out;
 
-			src->pos += len;
+			mb->pos += len;
 		}
 	}
 	else {
@@ -225,12 +229,12 @@ int decode_h264(struct viddec_state *st, struct vidframe *frame,
 		return EBADMSG;
 	}
 
-	if (*intra) {
+	if (pkt->intra) {
 		st->got_keyframe = true;
 		++st->stats.n_key;
 	}
 
-	if (!marker) {
+	if (!pkt->hdr->m) {
 		if (st->mb->end > DECODE_MAXSZ) {
 			warning("comvideo: decode buffer size exceeded\n");
 			err = ENOMEM;

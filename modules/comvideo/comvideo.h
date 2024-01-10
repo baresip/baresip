@@ -64,7 +64,7 @@ encode_h264_update(struct videnc_state **vesp, const struct vidcodec *vc,
  */
 
 int decode_h264(struct viddec_state *st, struct vidframe *frame,
-		bool *intra, bool eof, uint16_t seq, struct mbuf *src);
+		struct viddec_packet *pkt);
 
 
 int decode_h264_update(struct viddec_state **vdsp, const struct vidcodec *vc,
