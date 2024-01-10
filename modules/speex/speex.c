@@ -527,7 +527,7 @@ static int speex_init(void)
 			  "mode=\"%d\";vbr=%s;cng=on", sconf.mode_wb,
 			  sconf.vad ? "vad" : (sconf.vbr ? "on" : "off"));
 
-	for (i=0; i<ARRAY_SIZE(speexv); i++)
+	for (i=0; i<RE_ARRAY_SIZE(speexv); i++)
 		aucodec_register(baresip_aucodecl(), &speexv[i]);
 
 	return 0;
@@ -537,7 +537,7 @@ static int speex_init(void)
 static int speex_close(void)
 {
 	size_t i;
-	for (i=0; i<ARRAY_SIZE(speexv); i++)
+	for (i=0; i<RE_ARRAY_SIZE(speexv); i++)
 		aucodec_unregister(&speexv[i]);
 	return 0;
 }

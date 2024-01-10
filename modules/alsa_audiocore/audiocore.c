@@ -2850,7 +2850,7 @@ int audiocore_init(void)
 	uag_event_register(ua_event_handler, d);
 
 	/* register commands */
-	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err |= cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 
 out:
 	if (err) {

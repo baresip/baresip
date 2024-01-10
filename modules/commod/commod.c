@@ -597,7 +597,7 @@ static int module_init(void)
 	int err;
 
 	err = uag_event_register(ua_event_handler, NULL);
-	err |= cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err |= cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 	err |= hash_alloc(&d.answmod, 32);
 
 	return err;

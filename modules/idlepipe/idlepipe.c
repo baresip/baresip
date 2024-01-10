@@ -567,7 +567,7 @@ static const struct cmd cmdv[] = {
 
 static int module_init(void)
 {
-	return cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	return cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 }
 
 
