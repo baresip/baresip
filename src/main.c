@@ -62,9 +62,7 @@ static void usage(void)
 			 "Usage: baresip [options]\n"
 			 "options:\n"
 			 "\t-4               Force IPv4 only\n"
-#if HAVE_INET6
 			 "\t-6               Force IPv6 only\n"
-#endif
 			 "\t-a <software>    Specify SIP User-Agent string\n"
 			 "\t-d               Daemon\n"
 			 "\t-e <commands>    Execute commands (repeat)\n"
@@ -150,11 +148,9 @@ int main(int argc, char *argv[])
 			af = AF_INET;
 			break;
 
-#if HAVE_INET6
 		case '6':
 			af = AF_INET6;
 			break;
-#endif
 
 		case 'd':
 			run_daemon = true;

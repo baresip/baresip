@@ -1868,12 +1868,10 @@ int account_uri_complete_strdup(const struct account *acc, char **strp,
 
 	if (!uri_is_ip &&
 	    0 != re_regex(trimmed.p, trimmed.l, "[^@]+@[^]+", NULL, NULL)) {
-#if HAVE_INET6
 		if (AF_INET6 == acc->luri.af)
 			err |= mbuf_printf(mb, "@[%r]",
 					   &acc->luri.host);
 		else
-#endif
 			err |= mbuf_printf(mb, "@%r",
 					   &acc->luri.host);
 
