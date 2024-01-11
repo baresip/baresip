@@ -10,6 +10,7 @@
 #include <baresip.h>
 #include "test.h"
 
+enum { ASYNC_WORKERS = 4 };
 
 typedef int (test_exec_h)(void);
 
@@ -79,14 +80,17 @@ static const struct test tests[] = {
 
 static int run_one_test(const struct test *test)
 {
+	struct config *config = conf_config();
+	enum rtp_receive_mode rxmode = config->avt.rxmode;
 	int err;
 
-	re_printf("[ RUN      ] %s\n", test->name);
+	re_printf("[ RUN      ] %s (rx %s)\n",
+		  test->name, rtp_receive_mode_str(rxmode));
 
 	err = test->exec();
 	if (err) {
-		warning("%s: test failed (%m)\n",
-			test->name, err);
+		warning("%s (rx %s): test failed (%m)\n",
+			test->name, rtp_receive_mode_str(rxmode), err);
 		return err;
 	}
 
@@ -96,23 +100,81 @@ static int run_one_test(const struct test *test)
 }
 
 
+static int run_one_test_rxmode(const struct test *test, struct pl *rxmode)
+{
+	struct config *config = conf_config();
+	int err;
+
+	if (pl_isset(rxmode)) {
+		config->avt.rxmode = resolve_receive_mode(rxmode);
+		err = run_one_test(test);
+		if (err)
+			return err;
+	}
+	else {
+		config->avt.rxmode = RECEIVE_MODE_MAIN;
+		err = run_one_test(test);
+		if (err)
+			return err;
+
+		config->avt.rxmode = RECEIVE_MODE_THREAD;
+		err = run_one_test(test);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+
 static int run_tests(void)
 {
 	size_t i;
+	struct config *config = conf_config();
+	enum rtp_receive_mode rxmode = config->avt.rxmode;
 	int err;
 
 	for (i=0; i<RE_ARRAY_SIZE(tests); i++) {
 
-		re_printf("[ RUN      ] %s\n", tests[i].name);
+		re_printf("[ RUN      ] %s (rx %s)\n",
+			  tests[i].name, rtp_receive_mode_str(rxmode));
 
 		err = tests[i].exec();
 		if (err) {
-			warning("%s: test failed (%m)\n",
-				tests[i].name, err);
+			warning("%s (rx %s): test failed (%m)\n",
+				tests[i].name, rtp_receive_mode_str(rxmode),
+				err);
 			return err;
 		}
 
 		re_printf("[       OK ]\n");
+	}
+
+	return 0;
+}
+
+
+static int run_tests_rxmode(struct pl *rxmode)
+{
+	struct config *config = conf_config();
+	int err;
+
+	if (pl_isset(rxmode)) {
+		config->avt.rxmode = resolve_receive_mode(rxmode);
+		err = run_tests();
+		if (err)
+			return err;
+	}
+	else {
+		config->avt.rxmode = RECEIVE_MODE_MAIN;
+		err = run_tests();
+		if (err)
+			return err;
+
+		config->avt.rxmode = RECEIVE_MODE_THREAD;
+		err = run_tests();
+		if (err)
+			return err;
 	}
 
 	return 0;
@@ -167,6 +229,8 @@ static void usage(void)
 			 "Usage: selftest [options] <testcases..>\n"
 			 "options:\n"
 			 "\t-l               List all testcases and exit\n"
+			 "\t-r <rxmode>      RTP RX processing mode "
+			 "[main, thread]\n"
 			 "\t-v               Verbose output (INFO level)\n"
 			 );
 }
@@ -183,6 +247,7 @@ int main(int argc, char *argv[])
 	size_t ntests;
 	struct sa sa;
 	bool verbose = false;
+	struct pl rxmode = PL_INIT;
 	int err;
 
 	libre_exception_btrace(true);
@@ -192,10 +257,11 @@ int main(int argc, char *argv[])
 		return err;
 
 	log_enable_info(false);
+	re_thread_async_init(ASYNC_WORKERS);
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hlv");
+		const int c = getopt(argc, argv, "hlvr:");
 		if (0 > c)
 			break;
 
@@ -209,6 +275,10 @@ int main(int argc, char *argv[])
 		case 'l':
 			test_listcases();
 			return 0;
+
+		case 'r':
+			pl_set_str(&rxmode, optarg);
+			break;
 
 		case 'v':
 			if (verbose)
@@ -269,7 +339,7 @@ int main(int argc, char *argv[])
 
 			test = find_test(name);
 			if (test) {
-				err = run_one_test(test);
+				err = run_one_test_rxmode(test, &rxmode);
 				if (err)
 					goto out;
 			}
@@ -283,12 +353,12 @@ int main(int argc, char *argv[])
 		}
 	}
 	else {
-		err = run_tests();
+		err = run_tests_rxmode(&rxmode);
 		if (err)
 			goto out;
 	}
 #else
-	err = run_tests();
+	err = run_tests_rxmode(&rxmode);
 	if (err)
 		goto out;
 #endif

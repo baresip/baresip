@@ -42,6 +42,7 @@ struct rxmain {
 	struct tmr tmr_rtp;    /**< Timer for detecting RTP timeout  */
 	uint32_t rtp_timeout;  /**< RTP Timeout value in [ms]        */
 	struct tmr tmr_rec;    /**< Timer for rtp_receiver start     */
+	bool use_rxthread;     /**< Use RX thread flag               */
 };
 
 
@@ -224,6 +225,13 @@ int stream_enable_tx(struct stream *strm, bool enable)
 }
 
 
+static void stream_start_receiver(void *arg)
+{
+	struct stream *s = arg;
+	rtprecv_start_thread(s->rx);
+}
+
+
 /**
  * Enable RX stream
  *
@@ -241,7 +249,7 @@ int stream_enable_rx(struct stream *strm, bool enable)
 		debug("stream: disable %s RTP receiver\n",
 		      media_name(strm->type));
 
-		rtprecv_set_enable(strm->rx, false);
+		rtprecv_enable(strm->rx, false);
 		return 0;
 	}
 
@@ -249,7 +257,21 @@ int stream_enable_rx(struct stream *strm, bool enable)
 		return ENOTSUP;
 
 	debug("stream: enable %s RTP receiver\n", media_name(strm->type));
-	rtprecv_set_enable(strm->rx, true);
+	rtprecv_enable(strm->rx, true);
+
+	if (strm->rtp && strm->cfg.rxmode == RECEIVE_MODE_THREAD &&
+	    strm->type == MEDIA_AUDIO && !rtprecv_running(strm->rx)) {
+		if (stream_bundle(strm)) {
+			warning("stream: rtp_rxmode thread was disabled "
+				"because it is not supported in combination "
+				"with avt_bundle\n");
+		}
+		else {
+			strm->rxm.use_rxthread = true;
+			tmr_start(&strm->rxm.tmr_rec, 1, stream_start_receiver,
+				  strm);
+		}
+	}
 
 	return 0;
 }
@@ -1341,7 +1363,7 @@ bool stream_is_secure(const struct stream *strm)
  */
 int stream_start_rtcp(const struct stream *strm)
 {
-	int err;
+	int err = 0;
 
 	if (!strm)
 		return EINVAL;
@@ -1349,18 +1371,26 @@ int stream_start_rtcp(const struct stream *strm)
 	debug("stream: %s: starting RTCP with remote %J\n",
 	      media_name(strm->type), &strm->tx.raddr_rtcp);
 
-	rtcp_start(strm->rtp, strm->cname, &strm->tx.raddr_rtcp);
+	if (strm->rxm.use_rxthread) {
+		err = rtprecv_start_rtcp(strm->rx, strm->cname,
+					 &strm->tx.raddr_rtcp, !strm->mnat);
+	}
+	else {
+		rtcp_start(strm->rtp, strm->cname, &strm->tx.raddr_rtcp);
 
-	if (!strm->mnat) {
-		/* Send a dummy RTCP packet to open NAT pinhole */
-		err = rtcp_send_app(strm->rtp, "PING", (void *)"PONG", 4);
-		if (err) {
-			warning("stream: rtcp_send_app failed (%m)\n", err);
-			return err;
+		if (!strm->mnat) {
+			/* Send a dummy RTCP packet to open NAT pinhole */
+			err = rtcp_send_app(strm->rtp, "PING",
+					    (void *)"PONG", 4);
+			if (err) {
+				warning("stream: rtcp_send_app failed (%m)\n",
+					err);
+				return err;
+			}
 		}
 	}
 
-	return 0;
+	return err;
 }
 
 

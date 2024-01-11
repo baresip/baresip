@@ -1857,6 +1857,9 @@ static int test_media_base(enum audio_mode txmode)
 	ASSERT_EQ(0, fix.b.n_closed);
 
  out:
+	if (err)
+		failure_debug(f, false);
+
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
@@ -2337,7 +2340,7 @@ static void delayed_audio_debug(void *arg)
 	ua_event(ag->ua, UA_EVENT_CUSTOM, ua_call(ag->ua), "audebug %u",
 		 ag->n_audebug);
 
-	tmr_start(&ag->tmr, 1, delayed_audio_debug, ag);
+	tmr_start(&ag->tmr, 2, delayed_audio_debug, ag);
 out:
 	if (err)
 		ag->fix->err |= err;
@@ -2382,17 +2385,17 @@ static int test_call_rtcp_base(bool rtcp_mux)
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
 	TEST_ERR(err);
 
-	stream_set_rtcp_interval(audio_strm(call_audio(ua_call(f->a.ua))), 1);
+	stream_set_rtcp_interval(audio_strm(call_audio(ua_call(f->a.ua))), 2);
 
 	/* wait for UA b ESTABLISHED */
 	err = re_main_timeout(5000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
 
-	stream_set_rtcp_interval(audio_strm(call_audio(ua_call(f->b.ua))), 1);
+	stream_set_rtcp_interval(audio_strm(call_audio(ua_call(f->b.ua))), 2);
 	stream_start_rtcp(audio_strm(call_audio(ua_call(f->b.ua))));
-	tmr_start(&f->a.tmr, 1, delayed_audio_debug, &f->a);
-	tmr_start(&f->b.tmr, 1, delayed_audio_debug, &f->b);
+	tmr_start(&f->a.tmr, 2, delayed_audio_debug, &f->a);
+	tmr_start(&f->b.tmr, 2, delayed_audio_debug, &f->b);
 
 	/* wait for RTCP on both sides */
 	err = re_main_timeout(5000);
@@ -2695,6 +2698,9 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 int test_call_bundle(void)
 {
 	int err = 0;
+
+	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
+		return 0;
 
 	err |= test_call_bundle_base(false, false);
 	err |= test_call_bundle_base(true,  false);

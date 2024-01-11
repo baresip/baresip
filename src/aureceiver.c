@@ -290,9 +290,11 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 	(void) lostc;
 
 	if (!mb)
-		goto out;
+		return;
 
+	mtx_lock(ar->mtx);
 	if (hdr->pt != ar->pt) {
+		mtx_unlock(ar->mtx);
 		*ignore = true;
 		return;
 	}
@@ -340,7 +342,6 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 		return;
 	}
 
- out:
 	/* TODO:  what if lostc > 1 ?*/
 	/* PLC should generate lostc frames here. Not only one.
 	 * aubuf should replace PLC frames with late arriving real frames.
@@ -349,6 +350,8 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 /*                (void)aurecv_stream_decode(ar, hdr, mb, lostc, drop);*/
 
 	(void)aurecv_stream_decode(ar, hdr, mb, 0, drop);
+
+	mtx_unlock(ar->mtx);
 }
 
 
@@ -357,7 +360,9 @@ void aurecv_set_extmap(struct audio_recv *ar, uint8_t aulevel)
 	if (!ar)
 		return;
 
+	mtx_lock(ar->mtx);
 	ar->extmap_aulevel = aulevel;
+	mtx_unlock(ar->mtx);
 }
 
 
@@ -435,10 +440,10 @@ void aurecv_flush(struct audio_recv *ar)
 	if (!ar)
 		return;
 
+	mtx_lock(ar->mtx);
 	aubuf_flush(ar->aubuf);
 
 	/* Reset audio filter chain */
-	mtx_lock(ar->mtx);
 	list_flush(&ar->filtl);
 	mtx_unlock(ar->mtx);
 }
@@ -455,6 +460,7 @@ int aurecv_decoder_set(struct audio_recv *ar,
 	info("audio: Set audio decoder: %s %uHz %dch\n",
 	     ac->name, ac->srate, ac->ch);
 
+	mtx_lock(ar->mtx);
 	if (ac != ar->ac) {
 		ar->ac = ac;
 		ar->dec = mem_deref(ar->dec);
@@ -471,6 +477,7 @@ int aurecv_decoder_set(struct audio_recv *ar,
 	ar->pt = pt;
 
 out:
+	mtx_unlock(ar->mtx);
 	return err;
 }
 
@@ -517,7 +524,9 @@ bool aurecv_level_set(const struct audio_recv *ar)
 	if (!ar)
 		return false;
 
+	mtx_lock(ar->mtx);
 	set = ar->level_set;
+	mtx_unlock(ar->mtx);
 
 	return set;
 }
@@ -529,7 +538,9 @@ double aurecv_level(const struct audio_recv *ar)
 	if (!ar)
 		return 0.0;
 
+	mtx_lock(ar->mtx);
 	v = ar->level_last;
+	mtx_unlock(ar->mtx);
 
 	return v;
 }
@@ -542,7 +553,9 @@ const struct aucodec *aurecv_codec(const struct audio_recv *ar)
 	if (!ar)
 		return NULL;
 
+	mtx_lock(ar->mtx);
 	ac = ar->ac;
+	mtx_unlock(ar->mtx);
 	return ac;
 }
 
@@ -567,7 +580,9 @@ void aurecv_stop(struct audio_recv *ar)
 		return;
 
 	ar->auplay = mem_deref(ar->auplay);
+	mtx_lock(ar->mtx);
 	ar->ac = NULL;
+	mtx_unlock(ar->mtx);
 }
 
 
@@ -713,6 +728,7 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 		goto out;
 	}
 
+	mtx_lock(ar->mtx);
 	bpms = (double)ar->srate * ar->ch * aufmt_sample_size(ar->fmt) /
 	       1000.0;
 	err  = mbuf_printf(mb,
@@ -750,6 +766,8 @@ int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 			  ar->ap ? ar->ap->name : "none",
 			  ar->device,
 			  aufmt_name(ar->play_fmt));
+	mtx_unlock(ar->mtx);
+
 	if (err)
 		goto out;
 

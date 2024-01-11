@@ -510,9 +510,13 @@ void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc);
 uint64_t rtprecv_ts_last(struct rtp_receiver *rx);
 void rtprecv_set_ts_last(struct rtp_receiver *rx, uint64_t ts_last);
 void rtprecv_flush(struct rtp_receiver *rx);
-void rtprecv_set_enable(struct rtp_receiver *rx, bool enable);
+void rtprecv_enable(struct rtp_receiver *rx, bool enable);
 int  rtprecv_get_ssrc(struct rtp_receiver *rx, uint32_t *ssrc);
 void rtprecv_enable_mux(struct rtp_receiver *rx, bool enable);
 int  rtprecv_debug(struct re_printf *pf, const struct rtp_receiver *rx);
+int  rtprecv_start_thread(struct rtp_receiver *rx);
 void rtprecv_mnat_connected_handler(const struct sa *raddr1,
 				    const struct sa *raddr2, void *arg);
+int  rtprecv_start_rtcp(struct rtp_receiver *rx, const char *cname,
+			const struct sa *peer, bool pinhole);
+bool rtprecv_running(const struct rtp_receiver *rx);
