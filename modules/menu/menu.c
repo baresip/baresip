@@ -349,8 +349,6 @@ static bool menu_play(const struct call *call,
 
 static void play_incoming(const struct call *call)
 {
-	/* stop any ringtones */
-	menu_stop_play();
 
 	if (call_state(call) != CALL_STATE_INCOMING)
 		return;
@@ -359,7 +357,7 @@ static void play_incoming(const struct call *call)
 		menu_play(call, "callwaiting_aufile", "callwaiting.wav", 3,
 			  DEVICE_PLAYER);
 	}
-	else {
+	else if (menu.curcall == call) {
 		/* Alert user */
 		menu_play(call, "ring_aufile", "ring.wav", -1, DEVICE_ALERT);
 	}
@@ -690,9 +688,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 				return;
 		}
 
-		/* set the current User-Agent to the one with the call */
-		menu_selcall(call);
-		menu_stop_play();
+		/* the new incoming call should not change the current call */
+		if (!menu.curcall)
+			menu_selcall(call);
+		else
+			menu_selcall(menu.curcall);
 
 		vrdir = sdp_media_rdir(
 			stream_sdpmedia(video_strm(call_video(call))));
