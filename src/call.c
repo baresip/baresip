@@ -1133,8 +1133,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 		if (err)
 			return err;
 
-		(void)call_set_media_direction(call, call->estadir,
-					       call->estvdir);
+		call_set_media_direction(call, call->estadir, call->estvdir);
 	}
 
 	return err;
@@ -1279,7 +1278,7 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 	tmr_cancel(&call->tmr_inv);
 
 	if (adir != call->estadir || vdir != call->estvdir)
-		(void)call_set_media_direction(call, adir, vdir);
+		call_set_media_direction(call, adir, vdir);
 
 	err = call_sdp_get(call, &desc, false);
 	if (err)
@@ -1905,8 +1904,7 @@ static void set_established_mdir(void *arg)
 	MAGIC_CHECK(call);
 
 	if (call_need_modify(call)) {
-		(void)call_set_media_direction(call, call->estadir,
-					       call->estvdir);
+		call_set_media_direction(call, call->estadir, call->estvdir);
 		call_modify(call);
 	}
 }
@@ -2427,8 +2425,7 @@ static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
 		if (err)
 			return err;
 
-		(void)call_set_media_direction(call, call->estadir,
-					       call->estvdir);
+		call_set_media_direction(call, call->estadir, call->estvdir);
 	}
 
 	err = call_sdp_get(call, descp, true);
@@ -3069,13 +3066,12 @@ void call_set_current(struct list *calls, struct call *call)
  * @param call Call object
  * @param a    Audio SDP direction
  * @param v    Video SDP direction if video available
- *
- * @return 0 if success, otherwise errorcode
  */
-int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
+void call_set_media_direction(struct call *call, enum sdp_dir a,
+			      enum sdp_dir v)
 {
 	if (!call)
-		return EINVAL;
+		return;
 
 	stream_set_ldir(audio_strm(call_audio(call)), a);
 
@@ -3087,8 +3083,6 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
 			stream_set_ldir(video_strm(call_video(call)), v);
 
 	}
-
-	return 0;
 }
 
 
@@ -3098,18 +3092,14 @@ int call_set_media_direction(struct call *call, enum sdp_dir a, enum sdp_dir v)
  * @param call Call object
  * @param a    Audio SDP direction
  * @param v    Video SDP direction if video available
- *
- * @return int	0 if success, errorcode otherwise
  */
-int call_set_media_estdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
+void call_set_media_estdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
 {
 	if (!call)
-		return EINVAL;
+		return;
 
 	call->estadir = a;
 	call->estvdir = call->use_video ? v : SDP_INACTIVE;
-
-	return 0;
 }
 
 
