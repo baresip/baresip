@@ -105,7 +105,6 @@ int test_account_uri_complete(void)
 		{ "sip:user@domain.com",
 		  "sip:user@domain.com" },
 
-#if HAVE_INET6
 		{"[2113:1470:1f1b:24b::2]",
 		 "sip:[2113:1470:1f1b:24b::2]"},
 
@@ -120,7 +119,6 @@ int test_account_uri_complete(void)
 
 		{"x@[2113:1470:1f1b:24b::2]:5677",
 		 "sip:x@[2113:1470:1f1b:24b::2]:5677"},
-#endif
 	};
 
 	struct mbuf *mb = NULL;
