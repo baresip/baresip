@@ -1,5 +1,8 @@
 project(serreg)
 
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS serreg.c)
 
 if(STATIC)

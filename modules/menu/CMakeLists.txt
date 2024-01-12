@@ -1,5 +1,8 @@
 project(menu)
 
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS menu.c static_menu.c dynamic_menu.c)
 
 if(STATIC)
