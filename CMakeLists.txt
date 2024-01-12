@@ -219,7 +219,10 @@ foreach(mod IN LISTS APP_MODULES)
     ${APP_MODULES_DIR}/${mod}
     ${CMAKE_CURRENT_BINARY_DIR}/app_modules/${mod}
   )
+  list(APPEND MODULES_DETECTED ${mod})
 endforeach()
+
+list(REMOVE_DUPLICATES MODULES_DETECTED)
 
 foreach(mod IN LISTS MODULES_DETECTED)
   set_target_properties(${mod} PROPERTIES PREFIX "")
