@@ -264,7 +264,9 @@ void jbuf_set_srate(struct jbuf *jb, uint32_t srate)
 	if (!jb)
 		return;
 
+	mtx_lock(jb->lock);
 	jb->p.srate = srate;
+	mtx_unlock(jb->lock);
 }
 
 
@@ -273,7 +275,9 @@ void jbuf_set_id(struct jbuf *jb, struct pl *id)
 	if (!jb)
 		return;
 
+	mtx_lock(jb->lock);
 	jb->id = mem_ref(id);
+	mtx_unlock(jb->lock);
 }
 
 
@@ -807,17 +811,32 @@ uint32_t jbuf_packets(const struct jbuf *jb)
  */
 int32_t jbuf_next_play(const struct jbuf *jb)
 {
-	if (!jb || !jb->packetl.head)
+	int32_t ret;
+
+	if (!jb)
 		return -1;
+
+	mtx_lock(jb->lock);
+
+	if (!jb->packetl.head) {
+		ret = -1;
+		goto out;
+	}
 
 	struct packet *p = jb->packetl.head->data;
 
 	uint32_t current = (uint32_t)jb->next_play_fn(jb);
 
-	if (p->playout_time <= current)
-		return 0; /* already late */
+	if (p->playout_time <= current) {
+		ret = 0;
+		goto out; /* already late */
+	}
 
-	return delay_ms(p->playout_time - current, jb->p.srate);
+	ret = delay_ms(p->playout_time - current, jb->p.srate);
+
+out:
+	mtx_unlock(jb->lock);
+	return ret;
 }
 
 
