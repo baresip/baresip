@@ -1,5 +1,14 @@
 project(jack)
 
+find_package(JACK)
+
+if(NOT JACK_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS jack.c jack_play.c jack_src.c)
 
 if(STATIC)

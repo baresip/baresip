@@ -1,5 +1,14 @@
 project(sndfile)
 
+find_package(SNDFILE)
+
+if(NOT SNDFILE_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS sndfile.c)
 
 if(STATIC)

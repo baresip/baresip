@@ -1,5 +1,14 @@
 project(v4l2)
 
+find_package(V4L2)
+
+if(NOT V4L2_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS v4l2.c)
 
 if(STATIC)

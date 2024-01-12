@@ -1,5 +1,14 @@
 project(webrtc_aec)
 
+find_package(WEBRTC_AEC)
+
+if(NOT WEBRTC_AEC_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS aec.cpp decode.cpp encode.cpp)
 
 if(STATIC)

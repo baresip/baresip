@@ -1,5 +1,14 @@
 project(ctrl_dbus)
 
+find_package(GIO)
+
+if(NOT GIO_FOUND OR ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS ctrl_dbus.c baresipbus.c)
 
 

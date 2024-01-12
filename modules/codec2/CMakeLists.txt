@@ -1,5 +1,14 @@
 project(codec2)
 
+find_package(CODEC2)
+
+if(NOT CODEC2_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS codec2.c)
 
 if(STATIC)

@@ -1,5 +1,14 @@
 project(pipewire)
 
+find_package(PIPEWIRE)
+
+if(NOT PIPEWIRE_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS pipewire.c playback.c capture.c)
 
 if(STATIC)

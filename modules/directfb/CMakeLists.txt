@@ -1,5 +1,14 @@
 project(directfb)
 
+find_package(DIRECTFB)
+
+if(NOT DIRECTFB_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS directfb.c)
 
 if(STATIC)

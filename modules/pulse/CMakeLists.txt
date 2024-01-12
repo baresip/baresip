@@ -1,5 +1,14 @@
 project(pulse)
 
+find_package(PULSE)
+
+if(NOT PULSE_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS pulse.c pastream.c player.c recorder.c)
 
 if(STATIC)

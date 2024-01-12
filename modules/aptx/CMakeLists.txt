@@ -1,5 +1,14 @@
 project(aptx)
 
+find_package(APTX)
+
+if(NOT APTX_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS aptx.c encode.c decode.c sdp.c)
 
 if(STATIC)

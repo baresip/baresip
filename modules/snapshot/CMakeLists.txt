@@ -1,5 +1,14 @@
 project(snapshot)
 
+find_package(PNG)
+
+if(NOT PNG_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS png_vf.c png_vf.h snapshot.c)
 
 if(STATIC)
