@@ -1,7 +1,7 @@
 project(netroam)
 
 if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  return() 
+  return()
 endif()
 
 list(APPEND MODULES_DETECTED ${PROJECT_NAME})

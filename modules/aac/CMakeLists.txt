@@ -1,5 +1,14 @@
 project(aac)
 
+find_package(AAC)
+
+if(NOT AAC_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS aac.c encode.c decode.c sdp.c)
 
 if(STATIC)
