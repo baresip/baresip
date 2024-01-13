@@ -1,5 +1,12 @@
 project(dshow)
 
+if(NOT WIN32)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS dshow.cpp)
 
 if(STATIC)

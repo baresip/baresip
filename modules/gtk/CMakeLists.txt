@@ -1,5 +1,14 @@
 project(gtk)
 
+find_package(GTK3)
+
+if(NOT GTK3_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS gtk_mod.c call_window.c dial_dialog.c transfer_dialog.c uri_entry.c)
 
 if(STATIC)

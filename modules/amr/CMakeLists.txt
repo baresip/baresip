@@ -1,5 +1,14 @@
 project(amr)
 
+find_package(AMR)
+
+if(NOT AMR_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS amr.c sdp.c)
 
 if(STATIC)

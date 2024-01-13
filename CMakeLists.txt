@@ -208,9 +208,10 @@ set(HEADERS
 
 include(modules)
 
+set(MODULES_DETECTED "")
+
 foreach(mod IN LISTS MODULES)
   add_subdirectory(modules/${mod})
-  set_target_properties(${mod} PROPERTIES PREFIX "")
 endforeach()
 
 foreach(mod IN LISTS APP_MODULES)
@@ -218,12 +219,19 @@ foreach(mod IN LISTS APP_MODULES)
     ${APP_MODULES_DIR}/${mod}
     ${CMAKE_CURRENT_BINARY_DIR}/app_modules/${mod}
   )
-  set_target_properties(${mod} PROPERTIES PREFIX "")
-  list(APPEND MODULES ${mod})
+  list(APPEND MODULES_DETECTED ${mod})
 endforeach()
 
+list(REMOVE_DUPLICATES MODULES_DETECTED)
+
+foreach(mod IN LISTS MODULES_DETECTED)
+  set_target_properties(${mod} PROPERTIES PREFIX "")
+endforeach()
+
+message("MODULES_DETECTED=${MODULES_DETECTED}")
+
 if(STATIC)
-  foreach(mod IN LISTS MODULES)
+  foreach(mod IN LISTS MODULES_DETECTED)
     set(MOD_EXPORTS
       "${MOD_EXPORTS}extern const struct mod_export exports_${mod};\n")
     set(MOD_EXPORT_TABLE
@@ -233,7 +241,7 @@ if(STATIC)
   configure_file(src/static.c.in src/static.c)
   list(APPEND SRCS ${CMAKE_CURRENT_BINARY_DIR}/src/static.c)
 else()
-  foreach(mod IN LISTS MODULES)
+  foreach(mod IN LISTS MODULES_DETECTED)
     if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       set_target_properties(${mod} PROPERTIES
                             LINK_FLAGS "-undefined dynamic_lookup")
@@ -255,7 +263,7 @@ endif()
 
 if(STATIC)
   add_library(baresip STATIC ${SRCS} ${HEADERS})
-  target_link_libraries(baresip PUBLIC ${LINKLIBS} ${MODULES})
+  target_link_libraries(baresip PUBLIC ${LINKLIBS} ${MODULES_DETECTED})
   target_include_directories(baresip PUBLIC include)
 else()
   add_library(baresip SHARED ${SRCS} ${HEADERS})
@@ -315,7 +323,7 @@ add_subdirectory(test)
 #
 
 if(NOT STATIC AND UNIX)
-  foreach(mod IN LISTS MODULES)
+  foreach(mod IN LISTS MODULES_DETECTED)
     set(mod_lib ${mod}${CMAKE_SHARED_MODULE_SUFFIX})
     add_custom_command(
       TARGET baresip_exe POST_BUILD
@@ -358,7 +366,7 @@ install(TARGETS baresip_exe baresip
 )
 
 if(NOT STATIC)
-  foreach(mod IN LISTS MODULES)
+  foreach(mod IN LISTS MODULES_DETECTED)
     install(TARGETS ${mod}
       LIBRARY
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/baresip/modules

@@ -1,5 +1,15 @@
 project(avcodec)
 
+find_package(FFMPEG COMPONENTS
+    avcodec avfilter avformat swscale swresample avdevice avutil)
+
+if(NOT FFMPEG_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS avcodec.c encode.c decode.c sdp.c)
 
 if(STATIC)

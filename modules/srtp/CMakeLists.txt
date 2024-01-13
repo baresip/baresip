@@ -1,5 +1,8 @@
 project(srtp)
 
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS sdes.c sdes.h srtp.c)
 
 if(STATIC)

@@ -1,5 +1,14 @@
 project(mpa)
 
+find_package(MPA)
+
+if(NOT MPA_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS mpa.c decode.c encode.c sdp.c)
 
 if(STATIC)

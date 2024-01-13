@@ -1,5 +1,14 @@
 project(g722)
 
+find_package(SPANDSP)
+
+if(NOT SPANDSP_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS g722.c)
 
 if(STATIC)

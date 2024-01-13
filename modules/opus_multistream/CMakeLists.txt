@@ -1,5 +1,14 @@
 project(opus_multistream)
 
+find_package(OPUS)
+
+if(NOT OPUS_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS opus_multistream.c decode.c encode.c sdp.c)
 
 if(STATIC)

@@ -1,5 +1,8 @@
 project(aubridge)
 
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS aubridge.c device.c play.c src.c)
 
 if(STATIC)

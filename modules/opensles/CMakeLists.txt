@@ -1,5 +1,14 @@
 project(opensles)
 
+find_package(OPENSLES)
+
+if(NOT OPENSLES_FOUND)
+  return()
+endif()
+
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS opensles.c player.c recorder.c)
 
 if(STATIC)
