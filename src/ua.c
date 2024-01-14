@@ -696,8 +696,8 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 
 	ua = uag_find_msg(msg);
 	if (!ua) {
-		info("ua: %r: UA not found: %r\n",
-		     &msg->from.auri, &msg->uri.user);
+		info("ua: %r: UA not found: %H\n",
+		     &msg->from.auri, uri_encode, &msg->uri);
 		(void)sip_treply(NULL, uag_sip(), msg, 404, "Not Found");
 		return;
 	}
