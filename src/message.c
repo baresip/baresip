@@ -41,13 +41,23 @@ static void handle_message(struct message_lsnr *lsnr, struct ua *ua,
 			   const struct sip_msg *msg, bool hdld)
 {
 	static const char ctype_text[] = "text/plain";
-	struct pl ctype_pl = {ctype_text, sizeof(ctype_text)-1};
+	static const char ctype_app[] = "application/json";
+	struct pl text_plain = {ctype_text, sizeof(ctype_text)-1};
+	struct pl app_json = {ctype_app, sizeof(ctype_app)-1};
+	struct pl *ctype_pl = NULL;
 	(void)ua;
 
 	if (msg_ctype_cmp(&msg->ctyp, "text", "plain")) {
+		ctype_pl = &text_plain;
+	}
+	else if (msg_ctype_cmp(&msg->ctyp, "application", "json")) {
+		ctype_pl = &app_json;
+	}
+
+	if (ctype_pl) {
 
 		if (lsnr->recvh)
-			lsnr->recvh(ua, &msg->from.auri, &ctype_pl,
+			lsnr->recvh(ua, &msg->from.auri, ctype_pl,
 				    msg->mb, lsnr->arg);
 
 		if (!hdld)
