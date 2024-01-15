@@ -317,6 +317,30 @@ static void dtmfmode_decode(struct account *prm, const struct pl *pl)
 }
 
 
+static void uas_req_mode_decode(struct account *prm, const struct pl *pl)
+{
+	struct pl mode;
+
+	prm->uasmode = UAS_REQ_MODE_OFF;
+
+	if (0 == msg_param_decode(pl, "uas_req", &mode)) {
+
+		if (0 == pl_strcasecmp(&mode, "no")) {
+			prm->uasmode = UAS_REQ_MODE_OFF;
+		}
+		else if (0 == pl_strcasecmp(&mode, "yes")) {
+			prm->uasmode = UAS_REQ_MODE_ON;
+		}
+		else if (0 == pl_strcasecmp(&mode, "tls")) {
+			prm->uasmode = UAS_REQ_MODE_TLS;
+		}
+		else {
+			warning("account: uas_req mode unknown (%r)\n", &mode);
+		}
+	}
+}
+
+
 static int csl_parse(struct pl *pl, char *str, size_t sz)
 {
 	struct pl ws = PL_INIT, val, ws2 = PL_INIT, cma = PL_INIT;
@@ -594,6 +618,7 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	       autoanswer_decode(acc, &acc->laddr.params);
 	       dtmfmode_decode(acc, &acc->laddr.params);
 	       uasauth_decode(acc, &acc->laddr.params);
+	       uas_req_mode_decode(acc, &acc->laddr.params);
 	err |= audio_codecs_decode(acc, &acc->laddr.params);
 	err |= video_codecs_decode(acc, &acc->laddr.params);
 	err |= media_decode(acc, &acc->laddr.params);
@@ -1677,6 +1702,18 @@ static const char *sipansbeep_str(enum sipansbeep beep)
 }
 
 
+static const char *uas_req_mode_str(enum uas_req_mode mode)
+{
+	switch (mode) {
+
+	case UAS_REQ_MODE_OFF:      return "no";
+	case UAS_REQ_MODE_ON:       return "yes";
+	case UAS_REQ_MODE_TLS:      return "tls";
+	default: return "???";
+	}
+}
+
+
 /**
  * Get the media encryption of an account
  *
@@ -1965,6 +2002,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	err |= re_hprintf(pf, " prio:         %u\n", acc->prio);
 	err |= re_hprintf(pf, " pubint:       %u\n", acc->pubint);
 	err |= re_hprintf(pf, " regq:         %s\n", acc->regq);
+	err |= re_hprintf(pf, " uas_req:      %s\n",
+			  uas_req_mode_str(acc->uasmode));
 	err |= re_hprintf(pf, " sipnat:       %s\n", acc->sipnat);
 	err |= re_hprintf(pf, " stunuser:     %s\n", acc->stun_user);
 	err |= re_hprintf(pf, " stunserver:   %H\n",
@@ -2045,6 +2084,8 @@ int account_json_api(struct odict *od, struct odict *odcfg,
 			rel100_mode_str(acc->rel100_mode));
 	err |= odict_entry_add(odcfg, "answer_mode", ODICT_STRING,
 			answermode_str(acc->answermode));
+	err |= odict_entry_add(odcfg, "uas_req", ODICT_STRING,
+			uas_req_mode_str(acc->uasmode));
 	err |= odict_entry_add(odcfg, "call_transfer", ODICT_BOOL, acc->refer);
 
 	err |= odict_entry_add(odcfg, "packet_time", ODICT_INT,
@@ -2070,4 +2111,51 @@ const char* account_uas_pass(const struct account *acc)
 		return NULL;
 
 	return acc->uas_pass;
+}
+
+
+bool account_uas_isset(const struct account *acc)
+{
+	if (!acc)
+		return false;
+
+	return acc->uas_user || acc->uas_pass;
+}
+
+
+/**
+ * Get the UAS request mode of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return uas_req_mode mode
+ */
+enum uas_req_mode account_uas_req_mode(const struct account *acc)
+{
+	return acc ? acc->uasmode : UAS_REQ_MODE_OFF;
+}
+
+
+/**
+ * Set the UAS request mode of an account
+ *
+ * @param acc  User-Agent account
+ * @param mode uas_req_mode
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_uas_req_mode(struct account *acc, enum uas_req_mode mode)
+{
+	if (!acc)
+		return EINVAL;
+
+	if ((mode != UAS_REQ_MODE_OFF) && (mode != UAS_REQ_MODE_ON) &&
+	    (mode != UAS_REQ_MODE_TLS)) {
+		warning("account: invalid uas_req_mode : '%d'\n", mode);
+		return EINVAL;
+	}
+
+	acc->uasmode = mode;
+
+	return 0;
 }

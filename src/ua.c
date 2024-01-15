@@ -983,14 +983,60 @@ static int uas_authorization(uint8_t *ha1, const struct pl *user,
 }
 
 
+/**
+ * Request and perform authorization of an incoming request if necessary
+ *
+ * @param ua   Pointer to User-Agent object
+ * @param msg  SIP message
+ *
+ * @return 0 if request is authorized, otherwise errorcode
+ */
+int uas_req_auth(struct ua *ua, const struct sip_msg *msg)
+{
+	struct sip_uas_auth auth;
+	char realm[32];
+	int err;
+	struct account *acc = ua_account(ua);
+	struct uri *uri = account_luri(acc);
+
+	re_snprintf(realm, sizeof(realm), "%r@%r", &uri->user, &uri->host);
+	auth.realm = realm;
+
+	err = sip_uas_auth_check(&auth, msg, uas_authorization, ua);
+	switch (err) {
+	case 0:
+
+	break;
+	case EAUTH: {
+		int err2;
+		struct sip_uas_auth *auth2;
+		debug("ua: %r Unauthorized for %s\n", &msg->met, auth.realm);
+		err2 = sip_uas_auth_gen(&auth2, msg, auth.realm);
+		if (err2)
+			return err2;
+
+		(void)sip_replyf(uag_sip(), msg, 401, "Unauthorized",
+				"%H"
+				"Content-Length: 0\r\n"
+				"\r\n", sip_uas_auth_print, auth2);
+		mem_deref(auth2);
+	}
+
+	break;
+	default:
+		info("ua: %r forbidden for %s\n", &msg->met, auth.realm);
+		(void)sip_reply(uag_sip(), msg, 403, "Forbidden");
+	break;
+	}
+
+	return err;
+}
+
+
 bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 {
 	struct sip_contact contact;
 	const struct sip_hdr *hdr;
-	char realm[32];
-	struct sip_uas_auth auth;
-	struct account *acc = ua_account(ua);
-	struct uri *uri = account_luri(acc);
 	bool sub = true;
 	int err;
 
@@ -1018,46 +1064,21 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 		return true;
 	}
 
-	re_snprintf(realm, sizeof(realm), "%r@%r", &uri->user, &uri->host);
-	auth.realm = realm;
-	err = sip_uas_auth_check(&auth, msg, uas_authorization, ua);
-	switch (err) {
-	case 0:
-		sip_contact_set(&contact, ua_cuser(ua), &msg->dst, msg->tp);
-		err = sip_treplyf(NULL, NULL, uag_sip(),
-				  msg, true, 202, "Accepted",
-				  "%H"
-				  "Refer-Sub: false\r\n"
-				  "Content-Length: 0\r\n"
-				  "\r\n",
-				  sip_contact_print, &contact);
-		if (err ) {
-			warning("ua: reply to REFER failed (%m)\n", err);
-			goto out;
-		}
-
-	break;
-	case EAUTH: {
-		struct sip_uas_auth *auth2;
-		debug("ua: REFER Unauthorized for %s\n", auth.realm);
-		err = sip_uas_auth_gen(&auth2, msg, auth.realm);
-		if (err)
-			goto out;
-
-		(void)sip_replyf(uag_sip(), msg, 401, "Unauthorized",
-				"%H"
-				"Content-Length: 0\r\n"
-				"\r\n", sip_uas_auth_print, auth2);
-		mem_deref(auth2);
+	err = uas_req_auth(ua, msg);
+	if (err)
 		goto out;
-	}
 
-	break;
-	default:
-		info("ua: REFER forbidden for %s\n", auth.realm);
-		(void)sip_reply(uag_sip(), msg, 403, "Forbidden");
+	sip_contact_set(&contact, ua_cuser(ua), &msg->dst, msg->tp);
+	err = sip_treplyf(NULL, NULL, uag_sip(),
+			  msg, true, 202, "Accepted",
+			  "%H"
+			  "Refer-Sub: false\r\n"
+			  "Content-Length: 0\r\n"
+			  "\r\n",
+			  sip_contact_print, &contact);
+	if (err ) {
+		warning("ua: reply to REFER failed (%m)\n", err);
 		goto out;
-	break;
 	}
 
 	debug("ua: REFER to %r\n", &hdr->val);
@@ -2160,4 +2181,26 @@ int ua_set_autoanswer_value(struct ua *ua, const char *value)
 		return 0;
 
 	return str_dup(&ua->ansval, value);
+}
+
+
+/**
+ * Return true if the out-of-dialog SIP request is allowed for this UA
+ *
+ * @param ua  User-Agent
+ * @param msg SIP message
+ *
+ * @return true if the request is allowed, false otherwise
+ */
+bool ua_req_allowed(const struct ua *ua, const struct sip_msg *msg)
+{
+	if (!ua || !msg)
+		return false;
+
+	if ((account_uas_req_mode(ua->acc) == UAS_REQ_MODE_OFF) ||
+	    (account_uas_req_mode(ua->acc) & UAS_REQ_MODE_TLS &&
+	    msg->tp != SIP_TRANSP_TLS))
+		return false;
+
+	return true;
 }

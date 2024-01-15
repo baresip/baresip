@@ -79,6 +79,13 @@ enum jbuf_type {
 	JBUF_ADAPTIVE
 };
 
+/** Defines the UAS request mode */
+enum uas_req_mode {
+	UAS_REQ_MODE_OFF = 0,
+	UAS_REQ_MODE_ON,
+	UAS_REQ_MODE_TLS
+};
+
 struct account;
 
 int account_alloc(struct account **accp, const char *sipaddr);
@@ -92,6 +99,7 @@ int account_set_sipnat(struct account *acc, const char *sipnat);
 int account_set_answermode(struct account *acc, enum answermode mode);
 int account_set_rel100_mode(struct account *acc, enum rel100_mode mode);
 int account_set_dtmfmode(struct account *acc, enum dtmfmode mode);
+int account_set_uas_req_mode(struct account *acc, enum uas_req_mode mode);
 int account_set_display_name(struct account *acc, const char *dname);
 int account_set_regint(struct account *acc, uint32_t regint);
 int account_set_stun_uri(struct account *acc, const char *uri);
@@ -120,6 +128,7 @@ uint32_t account_prio(const struct account *acc);
 enum answermode account_answermode(const struct account *acc);
 enum rel100_mode account_rel100_mode(const struct account *acc);
 enum dtmfmode account_dtmfmode(const struct account *acc);
+enum uas_req_mode account_uas_req_mode(const struct account *acc);
 const char *account_display_name(const struct account *acc);
 const char *account_aor(const struct account *acc);
 const char *account_auth_user(const struct account *acc);
@@ -153,6 +162,7 @@ void account_set_autelev_pt(struct account *acc, uint32_t pt);
 uint32_t account_autelev_pt(struct account *acc);
 const char* account_uas_user(const struct account *acc);
 const char* account_uas_pass(const struct account *acc);
+bool account_uas_isset(const struct account *acc);
 
 /*
  * Call
@@ -927,6 +937,7 @@ int ua_raise(struct ua *ua);
 int ua_set_autoanswer_value(struct ua *ua, const char *value);
 void ua_add_extension(struct ua *ua, const char *extension);
 void ua_remove_extension(struct ua *ua, const char *extension);
+bool ua_req_allowed(const struct ua *ua, const struct sip_msg *msg);
 
 
 /* One instance */

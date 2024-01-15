@@ -109,6 +109,29 @@ static void send_resp_handler(int err, const struct sip_msg *msg, void *arg)
 }
 
 
+static void send_resp_handler_488(int err, const struct sip_msg *msg,
+				  void *arg)
+{
+	struct endpoint *ep = arg;
+
+	++ep->n_resp;
+
+	if (err) {
+		warning("sending failed: %m\n", err);
+		goto out;
+	}
+
+	info("[ %s ] message sent OK\n", ep->uri);
+
+	ASSERT_EQ(ep->test->transp, msg->tp);
+	ASSERT_EQ(488, msg->scode);
+
+ out:
+	ep->test->err = err;
+	re_cancel();
+}
+
+
 static void endpoint_destructor(void *data)
 {
 	struct endpoint *ep = data;
@@ -119,7 +142,8 @@ static void endpoint_destructor(void *data)
 
 
 static int endpoint_alloc(struct endpoint **epp, struct test *test,
-			  const char *name, enum sip_transp transp)
+			  const char *name, enum sip_transp transp,
+			  const char *uas_req_mode)
 {
 	struct endpoint *ep = NULL;
 	struct sa laddr;
@@ -136,9 +160,9 @@ static int endpoint_alloc(struct endpoint **epp, struct test *test,
 	ep->test = test;
 
 	if (re_snprintf(aor, sizeof(aor),
-			"%s <sip:%s@%j;transport=%s>;regint=0",
+			"%s <sip:%s@%j;transport=%s>;regint=0;uas_req=%s",
 			name, name, &laddr,
-			sip_transp_name(transp)) < 0) {
+			sip_transp_name(transp), uas_req_mode) < 0) {
 		err = ENOMEM;
 		goto out;
 	}
@@ -167,12 +191,17 @@ static int endpoint_alloc(struct endpoint **epp, struct test *test,
 }
 
 
-static int test_message_transp(enum sip_transp transp)
+static int test_message_transp(enum sip_transp transp,
+			       const char *uas_req_mode)
 {
 	struct test test;
 	struct endpoint *a = NULL, *b = NULL;
+	const struct pl pl_no = { "no", 2 };
 	bool enable_udp, enable_tcp;
 	int err = 0;
+	unsigned int b_exp_msg_cnt = 1;
+	void (*resp_handler)(int, const struct sip_msg *, void *) =
+		send_resp_handler;
 
 	enable_udp = transp == SIP_TRANSP_UDP;
 	enable_tcp = transp == SIP_TRANSP_TCP;
@@ -184,11 +213,16 @@ static int test_message_transp(enum sip_transp transp)
 	err = ua_init("test", enable_udp, enable_tcp, false);
 	TEST_ERR(err);
 
-	err = endpoint_alloc(&a, &test, "a", transp);
+	err = endpoint_alloc(&a, &test, "a", transp, uas_req_mode);
 	TEST_ERR(err);
 
-	err = endpoint_alloc(&b, &test, "b", transp);
+	err = endpoint_alloc(&b, &test, "b", transp, uas_req_mode);
 	TEST_ERR(err);
+
+	if (!pl_strcmp(&pl_no, uas_req_mode)) {
+		resp_handler = send_resp_handler_488;
+		b_exp_msg_cnt = 0;
+	}
 
 	a->other = b;
 	b->other = a;
@@ -198,7 +232,7 @@ static int test_message_transp(enum sip_transp transp)
 	TEST_ERR(err);
 
 	/* Send a message from A to B */
-	err = message_send(a->ua, b->uri, dummy_msg, send_resp_handler, a);
+	err = message_send(a->ua, b->uri, dummy_msg, resp_handler, a);
 	TEST_ERR(err);
 
 	err = re_main_timeout(1000);
@@ -207,7 +241,7 @@ static int test_message_transp(enum sip_transp transp)
 	TEST_ERR(test.err);
 	ASSERT_EQ(0, a->n_msg);
 	ASSERT_EQ(1, a->n_resp);
-	ASSERT_EQ(1, b->n_msg);
+	ASSERT_EQ(b_exp_msg_cnt, b->n_msg);
 	ASSERT_EQ(0, b->n_resp);
 
  out:
@@ -223,10 +257,16 @@ int test_message(void)
 {
 	int err = 0;
 
-	err = test_message_transp(SIP_TRANSP_UDP);
+	err = test_message_transp(SIP_TRANSP_UDP, "yes");
 	TEST_ERR(err);
 
-	err |= test_message_transp(SIP_TRANSP_TCP);
+	err |= test_message_transp(SIP_TRANSP_TCP, "yes");
+	TEST_ERR(err);
+
+	err = test_message_transp(SIP_TRANSP_UDP, "no");
+	TEST_ERR(err);
+
+	err |= test_message_transp(SIP_TRANSP_TCP, "no");
 	TEST_ERR(err);
 
  out:
