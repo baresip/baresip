@@ -1499,6 +1499,7 @@ int call_set_video_dir(struct call *call, enum sdp_dir dir)
 	if (!call)
 		return EINVAL;
 
+	call->estvdir = dir;
 	stream_set_ldir(video_strm(call_video(call)), dir);
 	return call_modify(call);
 }
