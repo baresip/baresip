@@ -73,9 +73,9 @@ struct jbuf {
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
 	uint32_t n;          /**< [# packets] Current # of packets in buffer */
-	uint32_t min;        /**< Minimum time in [ms] to buffer             */
-	uint32_t max;        /**< [# frames] Maximum # of frames to buffer   */
-	uint32_t wish;       /**< [# frames] Wish size for adaptive mode     */
+	uint32_t mind;       /**< Minimum time in [ms] to delay              */
+	uint32_t maxd;       /**< Maximum time in [ms] to delay              */
+	uint32_t maxsz;      /**< [# packets] Maximum # of packets to buffer */
 	uint16_t seq_put;    /**< Sequence number for last jbuf_put()        */
 	uint16_t seq_get;    /**< Sequence number of last played frame       */
 	uint32_t ssrc;       /**< Previous ssrc                              */
@@ -195,12 +195,13 @@ static void jbuf_destructor(void *data)
  * Allocate a new jitter buffer
  *
  * @param jbp    Pointer to returned jitter buffer
- * @param min    Minimum delay in [ms]
- * @param max    Maximum packets
+ * @param mind   Minimum delay in [ms]
+ * @param maxd   Maximum delay in [ms]
+ * @param maxsz  Maximum size in [packets]
  *
  * @return 0 if success, otherwise errorcode
  */
-int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
+int jbuf_alloc(struct jbuf **jbp, uint32_t mind, uint32_t maxd, uint32_t maxsz)
 {
 	struct jbuf *jb;
 	uint32_t i;
@@ -223,9 +224,9 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
 	list_init(&jb->packetl);
 
 	jb->jbtype	 = JBUF_FIXED;
-	jb->min		 = min;
-	jb->max		 = max;
-	jb->wish	 = min;
+	jb->mind	 = mind;
+	jb->maxd	 = maxd;
+	jb->maxsz	 = maxsz;
 	jb->next_play_fn = next_play;
 
 	DEBUG_INFO("alloc: delay=%u-%u packets\n", min, max);
@@ -238,7 +239,7 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max)
 	mem_destructor(jb, jbuf_destructor);
 
 	/* Allocate all packets now */
-	for (i = 0; i < jb->max; i++) {
+	for (i = 0; i < jb->maxsz; i++) {
 		struct packet *f = mem_zalloc(sizeof(*f), NULL);
 		if (!f) {
 			err = ENOMEM;
@@ -437,7 +438,7 @@ static inline uint32_t offset(struct packet *p)
 
 static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 {
-	uint32_t base_offset = 0;
+	uint32_t jitter_offset = 0;
 	uint32_t play_time_base;
 
 	/* Fragmented frames (like video) have equal playout_time.
@@ -466,18 +467,24 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 		(void)adjust_due_to_skew(jb, p);
 
 		/* Add Jitter compensation */
-		base_offset += adjust_due_to_jitter(jb, p);
+		jitter_offset += adjust_due_to_jitter(jb, p);
 	}
 
 	/* Check min/max latency requirements */
-	base_offset += (jb->p.srate / 1000) * jb->min;
+	uint32_t min_lat = (jb->p.srate / 1000) * jb->mind;
+	uint32_t max_lat = (jb->p.srate / 1000) * jb->maxd;
+
+	if (jitter_offset < min_lat)
+		jitter_offset = min_lat;
+	else if (jitter_offset > max_lat)
+		jitter_offset = max_lat;
 
 	RE_TRACE_ID_INSTANT_I("jbuf", "recv_delay",
 			      delay_ms(jb->p.last_delay, jb->p.srate), jb->id);
 	RE_TRACE_ID_INSTANT_I("jbuf", "play_delay",
 			      delay_ms(base_offset, jb->p.srate), jb->id);
 
-	return play_time_base + base_offset;
+	return play_time_base + jitter_offset;
 }
 
 
@@ -904,8 +911,8 @@ int jbuf_debug(struct re_printf *pf, const struct jbuf *jb)
 
 	mtx_lock(jb->lock);
 	err |= mbuf_printf(mb, " running=%d", jb->running);
-	err |= mbuf_printf(mb, " min=%u cur=%u max=%u [packets]\n",
-			  jb->min, jb->n, jb->max);
+	err |= mbuf_printf(mb, " min=%ums cur=%u max=%ums [packets]\n",
+			  jb->mind, jb->n, jb->maxd);
 	err |= mbuf_printf(mb, " seq_put=%u\n", jb->seq_put);
 
 #if JBUF_STAT
