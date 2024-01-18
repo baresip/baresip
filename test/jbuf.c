@@ -70,7 +70,7 @@ int test_jbuf(void)
 	void *mem = NULL;
 	int err;
 
-	err = jbuf_alloc(&jb, 0, 10);
+	err = jbuf_alloc(&jb, 0, 100, 10);
 	if (err)
 		return err;
 
@@ -190,10 +190,11 @@ int test_jbuf_adaptive(void)
 	struct jbuf *jb = NULL;
 	char *frv[4];
 	uint32_t min_lat = 100; /* [ms] */
+	uint32_t max_lat = 500; /* [ms] */
 	void *mem = NULL;
 	int err;
 
-	err = jbuf_alloc(&jb, min_lat, 10);
+	err = jbuf_alloc(&jb, min_lat, max_lat, 50);
 	TEST_ERR(err);
 	err = jbuf_set_type(jb, JBUF_ADAPTIVE);
 	TEST_ERR(err);
@@ -247,10 +248,11 @@ int test_jbuf_video(void)
 	struct jbuf *jb = NULL;
 	char *frv[4];
 	uint32_t min_lat = 100; /* [ms] */
+	uint32_t max_lat = 500; /* [ms] */
 	void *mem = NULL;
 	int err;
 
-	err = jbuf_alloc(&jb, min_lat, 10);
+	err = jbuf_alloc(&jb, min_lat, max_lat, 50);
 	TEST_ERR(err);
 	err = jbuf_set_type(jb, JBUF_ADAPTIVE);
 	TEST_ERR(err);
