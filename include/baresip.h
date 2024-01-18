@@ -428,11 +428,13 @@ struct config_avt {
 	bool rtcp_mux;          /**< RTP/RTCP multiplexing          */
 	struct {
 		enum jbuf_type jbtype;  /**< Jitter buffer type     */
-		struct range jbuf_del;  /**< Delay, number of frames*/
+		struct range jbuf_del;  /**< Max./Min. Delay [ms]   */
+		uint32_t jbuf_sz;       /**< Max. buffer  [packets] */
 	} audio;
 	struct {
 		enum jbuf_type jbtype;  /**< Jitter buffer type     */
-		struct range jbuf_del;  /**< Delay, number of frames*/
+		struct range jbuf_del;  /**< Max./Min. Delay [ms]   */
+		uint32_t jbuf_sz;       /**< Max. buffer  [packets] */
 	} video;
 	bool rtp_stats;         /**< Enable RTP statistics          */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
@@ -1570,7 +1572,8 @@ struct jbuf_stat {
 };
 
 
-int  jbuf_alloc(struct jbuf **jbp, uint32_t min, uint32_t max);
+int jbuf_alloc(struct jbuf **jbp, uint32_t mind, uint32_t maxd,
+	       uint32_t maxsz);
 void jbuf_set_srate(struct jbuf *jb, uint32_t srate);
 void jbuf_set_id(struct jbuf *jb, struct pl *id);
 int  jbuf_set_type(struct jbuf *jb, enum jbuf_type jbtype);
