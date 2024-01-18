@@ -76,11 +76,13 @@ static struct config core_config = {
 		.rtcp_mux = false,
 		.audio = {
 			JBUF_FIXED,
-			{5, 10},
+			{100, 500},
+			50
 		},
 		.video = {
 			JBUF_FIXED,
-			{5, 50},
+			{100, 500},
+			250
 		},
 		.rtp_stats = false,
 		.rtp_timeout = 0,
@@ -504,30 +506,23 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 		cfg->avt.rtp_bw.max *= 1000;
 	}
 
-	if (0 == conf_get(conf, "jitter_buffer_type", &jbtype)) {
-		cfg->avt.video.jbtype = conf_get_jbuf_type(&jbtype);
-		cfg->avt.audio.jbtype = conf_get_jbuf_type(&jbtype);
-		warning("config: jitter_buffer_* config is deprecated, use "
-			"audio_jitter_buffer_* and "
-			"video_jitter_buffer_* options\n");
-	}
-
-	(void)conf_get_range(conf, "jitter_buffer_delay",
-			     &cfg->avt.video.jbuf_del);
-	(void)conf_get_range(conf, "jitter_buffer_delay",
-			     &cfg->avt.audio.jbuf_del);
-
 	if (0 == conf_get(conf, "audio_jitter_buffer_type", &jbtype))
 		cfg->avt.audio.jbtype = conf_get_jbuf_type(&jbtype);
 
-	(void)conf_get_range(conf, "audio_jitter_buffer_delay",
+	(void)conf_get_range(conf, "audio_jitter_buffer_delay_ms",
 			     &cfg->avt.audio.jbuf_del);
+
+	(void)conf_get_u32(conf, "audio_jitter_buffer_size",
+			   &cfg->avt.audio.jbuf_sz);
 
 	if (0 == conf_get(conf, "video_jitter_buffer_type", &jbtype))
 		cfg->avt.video.jbtype = conf_get_jbuf_type(&jbtype);
 
-	(void)conf_get_range(conf, "video_jitter_buffer_delay",
+	(void)conf_get_range(conf, "video_jitter_buffer_delay_ms",
 			     &cfg->avt.video.jbuf_del);
+
+	(void)conf_get_u32(conf, "audio_jitter_buffer_size",
+			   &cfg->avt.video.jbuf_sz);
 
 	(void)conf_get_bool(conf, "rtp_stats", &cfg->avt.rtp_stats);
 	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
@@ -684,9 +679,11 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "rtp_ports\t\t%H\n"
 			 "rtp_bandwidth\t\t%H\n"
 			 "audio_jitter_buffer_type\t%s\n"
-			 "audio_jitter_buffer_delay\t%H\n"
+			 "audio_jitter_buffer_delay_ms\t%H\n"
+			 "audio_jitter_buffer_size\t%u\n"
 			 "video_jitter_buffer_type\t%s\n"
-			 "video_jitter_buffer_delay\t%H\n"
+			 "video_jitter_buffer_delay_ms\t%H\n"
+			 "video_jitter_buffer_size\t%u\n"
 			 "rtp_stats\t\t%s\n"
 			 "rtp_timeout\t\t%u # in seconds\n"
 			 "avt_bundle\t\t%s\n"
@@ -703,8 +700,10 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 range_print, &cfg->avt.rtp_bw,
 			 jbuf_type_str(cfg->avt.audio.jbtype),
 			 range_print, &cfg->avt.audio.jbuf_del,
+			 cfg->avt.audio.jbuf_sz,
 			 jbuf_type_str(cfg->avt.video.jbtype),
 			 range_print, &cfg->avt.video.jbuf_del,
+			 cfg->avt.video.jbuf_sz,
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 			 cfg->avt.bundle ? "yes" : "no",
@@ -934,12 +933,14 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
 			  "audio_jitter_buffer_type\tfixed\t\t# off, fixed,"
 				" adaptive\n"
-			  "audio_jitter_buffer_delay\t%u-%u\t\t"
-					"# (min. frames)-(max. packets)\n"
+			  "audio_jitter_buffer_delay_ms\t%u-%u\t\t"
+				"# Min. - Max. [ms]\n"
+			  "audio_jitter_buffer_size\t50\t\t# [packets]\n"
 			  "video_jitter_buffer_type\tfixed\t\t# off, fixed,"
 				" adaptive\n"
-			  "video_jitter_buffer_delay\t%u-%u\t\t"
-					"# (min. frames)-(max. packets)\n"
+			  "video_jitter_buffer_delay_ms\t%u-%u\t\t"
+				"# Min. - Max. [ms]\n"
+			  "video_jitter_buffer_size\t250\t\t# [packets]\n"
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
 			  "#avt_bundle\t\tno\n"
