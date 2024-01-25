@@ -12,6 +12,7 @@ sip_capath		/etc/ssl/certs
 #sip_transports		udp,tcp,tls,ws,wss
 #sip_trans_def		udp
 sip_verify_server	yes
+#sip_verify_client	no
 sip_tos			160 # See TOS fields!
 
 ## TOS fields ##

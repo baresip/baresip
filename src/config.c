@@ -36,6 +36,7 @@ static struct config core_config = {
 		0,
 		SIP_TRANSP_UDP,
 		false,
+		false,
 		0xa0,
 	},
 
@@ -371,6 +372,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_bool(conf, "sip_verify_server",
 			&cfg->sip.verify_server);
 
+	(void)conf_get_bool(conf, "sip_verify_client",
+			&cfg->sip.verify_client);
+
 	if (!conf_get(conf, "sip_trans_def", &tr))
 		cfg->sip.transp = sip_transp_decode(&tr);
 
@@ -554,6 +558,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_transports\t\t%H\n"
 			 "sip_trans_def\t%s\n"
 			 "sip_verify_server\t\t\t%s\n"
+			 "sip_verify_client\t\t\t%s\n"
 			 "sip_tos\t%u\n"
 			 "\n"
 			 "# Call\n"
@@ -566,6 +571,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 &cfg->sip.transports,
 			 sip_transp_name(cfg->sip.transp),
 			 cfg->sip.verify_server ? "yes" : "no",
+			 cfg->sip.verify_client ? "yes" : "no",
 			 cfg->sip.tos,
 
 			 cfg->call.local_timeout,
@@ -814,6 +820,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#sip_transports\t\tudp,tcp,tls,ws,wss\n"
 			  "#sip_trans_def\t\tudp\n"
 			  "#sip_verify_server\tyes\n"
+			  "#sip_verify_client\tno\n"
 			  "sip_tos\t\t\t160\n"
 			  "\n"
 			  ,
