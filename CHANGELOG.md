@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## 3.9.0 - 2024-01-31
+
+## What's Changed
+* menu autoanswer handling by @cspiel1 in https://github.com/baresip/baresip/pull/2832
+* aureceiver: fix overflow multiplications by @sreimers in https://github.com/baresip/baresip/pull/2851
+* aur: entirely use mbuf in aurecv_debug() by @cspiel1 in https://github.com/baresip/baresip/pull/2852
+* test: call - add AUDIO_MODE_THREAD to test_call_aufilt by @cspiel1 in https://github.com/baresip/baresip/pull/2853
+* cmake: add only non-system link paths to rpath (fixes #2849) by @robert-scheck in https://github.com/baresip/baresip/pull/2850
+* Renamed gzrtp ARRAY_SIZE macro by @juha-h in https://github.com/baresip/baresip/pull/2855
+* avcapture: fix deprecated AVCaptureDeviceTypeExternalUnknown by @sreimers in https://github.com/baresip/baresip/pull/2854
+* aur: fix uninitialized warning in auplay handler by @cspiel1 in https://github.com/baresip/baresip/pull/2857
+* magic: use assert() instead of BREAKPOINT by @alfredh in https://github.com/baresip/baresip/pull/2847
+* sipsess: refactor and simplify SDP negotiation state by @maximilianfridrich in https://github.com/baresip/baresip/pull/2818
+* aur: set audio format correctly by @cspiel1 in https://github.com/baresip/baresip/pull/2859
+* misc: bump year by @sreimers in https://github.com/baresip/baresip/pull/2860
+* video: use viddec_packet by @sreimers in https://github.com/baresip/baresip/pull/2861
+* audio: solve concurrency failures of TX thread by @cspiel1 in https://github.com/baresip/baresip/pull/2862
+* aur: a mutex for aubuf allocation by @cspiel1 in https://github.com/baresip/baresip/pull/2867
+* call: remove unused error handling of some API functions by @cspiel1 in https://github.com/baresip/baresip/pull/2870
+* menu: an incoming call should not change the current call by @cspiel1 in https://github.com/baresip/baresip/pull/2869
+* misc: HAVE_INET6 is always defined by @alfredh in https://github.com/baresip/baresip/pull/2872
+* mqtt: improve disconnect reconnect handling by @sreimers in https://github.com/baresip/baresip/pull/2866
+* misc: rx thread activate by @cspiel1 in https://github.com/baresip/baresip/pull/2828
+* cmake: refactor module detection by @sreimers in https://github.com/baresip/baresip/pull/2875
+* ua: improve SIP 404 warning by @cspiel1 in https://github.com/baresip/baresip/pull/2871
+* call: fix race condition for call_set_video_dir() by @cspiel1 in https://github.com/baresip/baresip/pull/2876
+* message: allow SIP MESSAGE with application/json ctype by @maximilianfridrich in https://github.com/baresip/baresip/pull/2878
+* account/debug: fix wrong and redundant rtcp_mux printf by @sreimers in https://github.com/baresip/baresip/pull/2892
+* mk: bump version to 3.9.0 by @alfredh in https://github.com/baresip/baresip/pull/2894
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.8.0...v3.9.0
+
+
 ## 3.8.1 - 2024-01-02
 
 ## What's Changed
