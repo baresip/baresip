@@ -122,7 +122,7 @@ int test_jbuf(void)
 		ASSERT_EQ(testv_20ms_late_loss[i].err_put, err);
 
 		next_play_val = testv_20ms_late_loss[i].playout;
-	
+
 		err = jbuf_get(jb, &hdr_out, &mem);
 		ASSERT_EQ(testv_20ms_late_loss[i].err_get, err);
 		if (testv_20ms_late_loss[i].err_get == ENOENT)
