@@ -385,15 +385,15 @@ static void calc_skew(struct jbuf *jb, struct packet *p)
 	RE_TRACE_ID_INSTANT_I("jbuf", "clock_skew",
 			      delay_ms(diff, jb->p.srate), jb->id);
 
-	/* Only negative skew is used for jitter_offset 
+	/* Only negative skew is used for jitter_offset
 	 * (also handles negative media clock drift)
 	 * @TODO: implement positive media clock drift compensation */
 	if (diff >= 0) {
 		jb->p.skew = 0;
 		return;
 	}
-	else 
-	    	diff = -diff; 
+	else
+		diff = -diff;
 
 	jb->p.skew = diff;
 }
@@ -402,7 +402,7 @@ static void calc_skew(struct jbuf *jb, struct packet *p)
 static inline uint32_t offset_min(uint32_t a, uint32_t b)
 {
 	/* Works only if the difference between a and b is not greater than
-	 * UINT32_MAX/2 
+	 * UINT32_MAX/2
 	 */
 	if ((a - b) & 0x80000000)
 		return a; /* a < b */
@@ -425,7 +425,7 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 	/* Fragmented frames (like video) have equal playout_time.
 	 * If a packet is missed here (late/reorder), playout time calculation
 	 * should be fine too, since its based on same sender hdr.ts.
-	 * This is also needed to prevent jitter miscalculations 
+	 * This is also needed to prevent jitter miscalculations
 	 */
 	if (p->le.prev) {
 		struct packet *prevp = p->le.prev->data;
@@ -442,7 +442,7 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 
 	/* Calculate base playout point */
 	play_time_base = p->hdr.ts + jb->p.offset;
-	
+
 	if (jb->jbtype == JBUF_ADAPTIVE) {
 
 		/* Calculate clock skew */
