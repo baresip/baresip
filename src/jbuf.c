@@ -617,11 +617,13 @@ success:
 
 	/* Late Playout check: */
 	uint32_t next = (uint32_t)next_play(jb);
+
+#if JBUF_TRACE
 	int32_t delay =
 		delay_ms((int32_t)((int64_t)f->playout_time - (int64_t)next),
 			 jb->p.srate);
-
 	RE_TRACE_ID_INSTANT_I("jbuf", "playout_diff", delay, jb->id);
+#endif
 
 	if (f->playout_time < next) {
 		/* Since there is a chance that aubuf can compensate the jitter
