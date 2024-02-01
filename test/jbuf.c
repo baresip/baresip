@@ -17,40 +17,37 @@ struct jbtest {
 	uint16_t seq;
 	uint32_t ts;
 	uint64_t ts_arrive;
-	uint64_t playout;
-	int err;
+	uint64_t playout; /* ts + min(ts_arrive - ts) */
+	int err_put;
+	int err_get;
 };
 
 static const struct jbtest testv_20ms[] = {
-	/* idx, seq, ts, ts_arrive, playout (ts + (arrival - ts), err) */
-	{0, 1, 0, 20 * JBUF_SRATE / 1000, 160, 0},
-	{1, 2, 160, 40 * JBUF_SRATE / 1000, 320, 0},
-	{2, 3, 320, 60 * JBUF_SRATE / 1000, 480, 0},
-	{3, 4, 480, 80 * JBUF_SRATE / 1000, 640, 0},
+	{0, 1, 0, 20 * JBUF_SRATE / 1000, 160, 0, 0},
+	{1, 2, 160, 40 * JBUF_SRATE / 1000, 320, 0, 0},
+	{2, 3, 320, 60 * JBUF_SRATE / 1000, 480, 0, 0},
+	{3, 4, 480, 80 * JBUF_SRATE / 1000, 640, 0, 0},
 };
 
-static const struct jbtest testv_20ms_reorder[] = {
-	/* idx, seq, ts, ts_arrive, playout (ts + (arrival - ts), err) */
-	{0, 1, 0, 20 * JBUF_SRATE / 1000, 160, 0},
-	{2, 3, 320, 60 * JBUF_SRATE / 1000, 480, EAGAIN},
-	{1, 2, 160, 60 * JBUF_SRATE / 1000, 480, 0},
-	{3, 4, 480, 80 * JBUF_SRATE / 1000, 640, 0},
+static const struct jbtest testv_20ms_late_loss[] = {
+	{0, 1, 0, 20 * JBUF_SRATE / 1000, 160, 0, 0},
+	{2, 3, 320, 60 * JBUF_SRATE / 1000, 480, 0, 0},
+	{1, 2, 160, 61 * JBUF_SRATE / 1000, 320, ETIMEDOUT, ENOENT},
+	{3, 4, 480, 80 * JBUF_SRATE / 1000, 640, 0, 0},
 };
 
 static const struct jbtest testv_25fps_video[] = {
-	/* idx, seq, ts, ts_arrive, playout (ts + (arrival - ts), err) */
-	{0, 1, 0, 40 * JBUF_SRATE_VIDEO / 1000, 3600, 0},
-	{1, 2, 3600, 80 * JBUF_SRATE_VIDEO / 1000, 7200, EAGAIN},
-	{2, 3, 3600, 80 * JBUF_SRATE_VIDEO / 1000, 7200, 0},
-	{3, 4, 7200, 120 * JBUF_SRATE_VIDEO / 1000, 10800, 0},
+	{0, 1, 0, 40 * JBUF_SRATE_VIDEO / 1000, 3600, 0, 0},
+	{1, 2, 3600, 80 * JBUF_SRATE_VIDEO / 1000, 7200, 0, EAGAIN},
+	{2, 3, 3600, 80 * JBUF_SRATE_VIDEO / 1000, 7200, 0, 0},
+	{3, 4, 7200, 120 * JBUF_SRATE_VIDEO / 1000, 10800, 0, 0},
 };
 
 static const struct jbtest testv_25fps_video_reorder[] = {
-	/* idx, seq, ts, ts_arrive, playout (ts + (arrival - ts), err) */
-	{0, 1, 0, 40 * JBUF_SRATE_VIDEO / 1000, 3600, 0},
-	{2, 3, 3600, 80 * JBUF_SRATE_VIDEO / 1000, 7200, EAGAIN},
-	{1, 2, 3600, 80 * JBUF_SRATE_VIDEO / 1000, 7200, 0},
-	{3, 4, 7200, 120 * JBUF_SRATE_VIDEO / 1000, 10800, 0},
+	{0, 1, 0, 40 * JBUF_SRATE_VIDEO / 1000, 3600, 0, 0},
+	{2, 3, 3600, 80 * JBUF_SRATE_VIDEO / 1000, 7200, 0, EAGAIN},
+	{1, 2, 3600, 80 * JBUF_SRATE_VIDEO / 1000, 7200, 0, 0},
+	{3, 4, 7200, 120 * JBUF_SRATE_VIDEO / 1000, 10800, 0, 0},
 };
 
 
@@ -103,7 +100,7 @@ int test_jbuf(void)
 		TEST_ERR(err);
 
 		next_play_val = testv_20ms[i].playout;
-		ASSERT_EQ(0, jbuf_next_play(jb)); /* already late  test */
+		ASSERT_EQ(0, jbuf_next_play(jb)); /* already late test */
 
 		err = jbuf_get(jb, &hdr_out, &mem);
 		TEST_ERR(err);
@@ -114,25 +111,24 @@ int test_jbuf(void)
 
 	jbuf_flush(jb);
 
-	for (size_t i = 0; i < RE_ARRAY_SIZE(testv_20ms_reorder); i++) {
-		struct rtp_header hdr_in = {0};
+	for (size_t i = 0; i < RE_ARRAY_SIZE(testv_20ms_late_loss); i++) {
+		struct rtp_header hdr_in = {0}, hdr_out = {0};
 
-		hdr_in.seq	 = testv_20ms_reorder[i].seq;
-		hdr_in.ts	 = testv_20ms_reorder[i].ts;
-		hdr_in.ts_arrive = testv_20ms_reorder[i].ts_arrive;
+		hdr_in.seq	 = testv_20ms_late_loss[i].seq;
+		hdr_in.ts	 = testv_20ms_late_loss[i].ts;
+		hdr_in.ts_arrive = testv_20ms_late_loss[i].ts_arrive;
 
 		err = jbuf_put(jb, &hdr_in, frv[i]);
-		TEST_ERR(err);
-	}
+		ASSERT_EQ(testv_20ms_late_loss[i].err_put, err);
 
-	for (size_t i = 0; i < RE_ARRAY_SIZE(testv_20ms_reorder); i++) {
-		struct rtp_header hdr_out = {0};
-		next_play_val = testv_20ms_reorder[i].playout;
-
+		next_play_val = testv_20ms_late_loss[i].playout;
+	
 		err = jbuf_get(jb, &hdr_out, &mem);
-		ASSERT_EQ(testv_20ms_reorder[i].err, err);
-		ASSERT_EQ(i + 1, hdr_out.seq);
-		ASSERT_EQ(mem, frv[testv_20ms_reorder[i].idx]);
+		ASSERT_EQ(testv_20ms_late_loss[i].err_get, err);
+		if (testv_20ms_late_loss[i].err_get == ENOENT)
+			continue;
+		ASSERT_EQ(hdr_in.seq, hdr_out.seq);
+		ASSERT_EQ(mem, frv[i]);
 		mem = mem_deref(mem);
 	}
 
@@ -286,7 +282,7 @@ int test_jbuf_video(void)
 				(min_lat * JBUF_SRATE_VIDEO / 1000);
 
 		err = jbuf_get(jb, &hdr_out, &mem);
-		ASSERT_EQ(testv_25fps_video[i].err, err);
+		ASSERT_EQ(testv_25fps_video[i].err_get, err);
 		ASSERT_EQ(i + 1, hdr_out.seq);
 		ASSERT_EQ(mem, frv[testv_25fps_video[i].idx]);
 		mem = mem_deref(mem);
@@ -312,7 +308,7 @@ int test_jbuf_video(void)
 				(min_lat * JBUF_SRATE_VIDEO / 1000);
 
 		err = jbuf_get(jb, &hdr_out, &mem);
-		ASSERT_EQ(testv_25fps_video_reorder[i].err, err);
+		ASSERT_EQ(testv_25fps_video_reorder[i].err_get, err);
 		ASSERT_EQ(i + 1, hdr_out.seq);
 		ASSERT_EQ(mem, frv[testv_25fps_video_reorder[i].idx]);
 		mem = mem_deref(mem);
