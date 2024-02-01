@@ -357,7 +357,7 @@ static void decode_frames(struct rtp_receiver *rx)
 
 	delay = jbuf_next_play(rx->jbuf);
 	if (delay < 0)
-		delay = 10; /* TODO: calculate ptime */
+		delay = 10; /* Fallback time */
 
 	tmr_start(&rx->tmr_decode, delay, decode_tmr, rx);
 }
