@@ -373,7 +373,7 @@ int main(int argc, char *argv[])
  out:
 	if (err) {
 		warning("test failed (%m)\n", err);
-		re_printf("%H\n", re_debug, 0);
+		re_printf("%H\n", re_debug, NULL);
 	}
 	ua_stop_all(true);
 	ua_close();
