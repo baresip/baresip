@@ -535,14 +535,14 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 		/* Packet arrived too late by sequence to be put into buffer */
 		if (jb->seq_get && seq_less(seq, jb->seq_get + 1)) {
 			STAT_INC(n_late);
-			
+			jb->p.late_pkts++;
+
 			DEBUG_INFO("packet too late: seq=%u "
 				   "(seq_put=%u seq_get=%u)\n",
 				   seq, jb->seq_put, jb->seq_get);
 			err = ETIMEDOUT;
 			goto out;
 		}
-
 	}
 
 	STAT_INC(n_put);
