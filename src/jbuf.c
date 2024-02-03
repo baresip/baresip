@@ -11,11 +11,11 @@
 #if JBUF_TRACE
 #define RE_TRACE_ENABLED 1
 #endif
+#include <string.h>
+#include <stdlib.h>
 
 #include <re.h>
 #include <baresip.h>
-
-#include <stdlib.h>
 
 #define DEBUG_MODULE "jbuf"
 #define DEBUG_LEVEL 5
