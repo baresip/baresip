@@ -363,7 +363,7 @@ static int adjust_due_to_skew(struct jbuf *jb, struct packet *p)
 	if (!jb->p.active_delay) {
 		jb->p.active_delay   = delay;
 		jb->p.delay_estimate = delay;
-		jb->p.max_skew_ms    = -INT_MIN;
+		jb->p.max_skew_ms    = INT_MIN;
 		return 0;
 	}
 	else {
@@ -395,7 +395,7 @@ static int adjust_due_to_skew(struct jbuf *jb, struct packet *p)
 		RE_TRACE_ID_INSTANT_I("jbuf", "clock_max_skew",
 				      jb->p.max_skew_ms, jb->id);
 		jb->p.skewn	  = 0;
-		jb->p.max_skew_ms = -INT_MIN;
+		jb->p.max_skew_ms = INT_MIN;
 	}
 
 	/* Save skew for jitter_offset */
