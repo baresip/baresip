@@ -616,19 +616,21 @@ success:
 	f->playout_time = calc_playout_time(jb, f);
 
 	/* Calculate clock skew */
-	int32_t skew_adjust = adjust_due_to_skew(jb, f);
-	if (skew_adjust > 0) {
-		/* This delays next playout, it's likely that aubuf underruns,
-		 * maybe a dummy packet can be added in the future. */
-		jb->p.offset = 0;
-		goto out;
-	}
-	else if (skew_adjust < 0) {
-		jb->p.offset = 0;
-		mem_deref(f->mem);
-		packet_deref(jb, f);
-		err = ETIME;
-		goto out;
+	if (jb->jbtype == JBUF_ADAPTIVE) {
+		int32_t skew_adjust = adjust_due_to_skew(jb, f);
+		if (skew_adjust > 0) {
+			/* This delays next playout, it's likely that aubuf
+			 * underruns, maybe a dummy packet can be added in the
+			 * future. */
+			jb->p.offset = 0;
+			goto out;
+		}
+		else if (skew_adjust < 0) {
+			jb->p.offset = 0;
+			packet_deref(jb, f);
+			err = ETIME;
+			goto out;
+		}
 	}
 
 	/* Late Playout check: */
