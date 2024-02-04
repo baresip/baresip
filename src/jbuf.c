@@ -57,8 +57,7 @@ struct packet {
  * sequence number.
  */
 struct jbuf {
-	jbuf_next_play_fn *next_play_fn;
-	struct pl *id;
+	struct pl *id;       /**< Jitter buffer Identifier                   */
 	struct rtp_sock *gnack_rtp; /**< Generic NACK RTP Socket             */
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
@@ -69,19 +68,20 @@ struct jbuf {
 	uint16_t seq_put;    /**< Sequence number for last jbuf_put()        */
 	uint16_t seq_get;    /**< Sequence number of last played frame       */
 	uint32_t ssrc;       /**< Previous ssrc                              */
+	uint32_t srate;      /**< Clockrate                                  */
 	struct {
 		uint32_t offset;         /**< min. timestamp clock offset    */
 		uint32_t last_transit;	 /**< Last frame transit             */
 		uint32_t jitter;	 /**< Interarrival jitter            */
-		uint16_t late_pkts;	 /**< Late packet counter            */
-		uint32_t srate;		 /**< Clockrate                      */
-		int32_t skew;		 /**< Jitter skew in timestamp units */
 		uint32_t jitter_offset;	 /**< Offset in timestamp units      */
 		uint32_t delay_estimate; /**< Skew delay estimation          */
 		uint32_t active_delay;	 /**< Skew first delay               */
+		uint16_t late_pkts;	 /**< Late packet counter            */
 		uint16_t skewn;		 /**< Skew window packet counter     */
+		int32_t skew;		 /**< Jitter skew in timestamp units */
 		int32_t max_skew_ms;	 /**< Max. skew in [ms]              */
 	} p;                 /**< Playout specific values                    */
+	jbuf_next_play_fn *next_play_fn; /**< Next playout function          */
 	int pt;              /**< Payload type                               */
 	bool running;        /**< Jitter buffer is running                   */
 
@@ -113,7 +113,7 @@ static uint64_t next_play(const struct jbuf *jb)
 	if (!jb)
 		return 0;
 
-	return tmr_jiffies() * (jb->p.srate / 1000);
+	return tmr_jiffies() * (jb->srate / 1000);
 }
 
 
@@ -259,7 +259,7 @@ void jbuf_set_srate(struct jbuf *jb, uint32_t srate)
 		return;
 
 	mtx_lock(jb->lock);
-	jb->p.srate = srate;
+	jb->srate = srate;
 	mtx_unlock(jb->lock);
 }
 
@@ -331,13 +331,13 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 	if (d < 0)
 		d = -d;
 
-	RE_TRACE_ID_INSTANT_I("jbuf", "recv_delay", delay_ms(d, jb->p.srate),
+	RE_TRACE_ID_INSTANT_I("jbuf", "recv_delay", delay_ms(d, jb->srate),
 			      jb->id);
 
 	jb->p.jitter += d - ((jb->p.jitter + 8) >> 4);
 	uint32_t jitter = (jb->p.jitter >> 4);
 
-	RE_TRACE_ID_INSTANT_I("jbuf", "jitter", delay_ms(jitter, jb->p.srate),
+	RE_TRACE_ID_INSTANT_I("jbuf", "jitter", delay_ms(jitter, jb->srate),
 			      jb->id);
 
 	/* Only fatal events should trigger adaption */
@@ -347,7 +347,7 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 		jb->p.jitter_offset = (2 * jb->p.skew) + (3 * jitter);
 		RE_TRACE_ID_INSTANT_I(
 			"jbuf", "jitter_adjust",
-			delay_ms(jb->p.jitter_offset, jb->p.srate), jb->id);
+			delay_ms(jb->p.jitter_offset, jb->srate), jb->id);
 	}
 
 	jb->p.last_transit = transit;
@@ -372,7 +372,7 @@ static int adjust_due_to_skew(struct jbuf *jb, struct packet *p)
 	}
 
 	int32_t skew	= jb->p.active_delay - jb->p.delay_estimate;
-	int32_t skew_ms = delay_ms(skew, jb->p.srate);
+	int32_t skew_ms = delay_ms(skew, jb->srate);
 
 	RE_TRACE_ID_INSTANT_I("jbuf", "clock_skew", skew_ms, jb->id);
 
@@ -463,8 +463,8 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 	}
 
 	/* Check min/max latency requirements */
-	uint32_t min_lat = (jb->p.srate / 1000) * jb->mind;
-	uint32_t max_lat = (jb->p.srate / 1000) * jb->maxd;
+	uint32_t min_lat = (jb->srate / 1000) * jb->mind;
+	uint32_t max_lat = (jb->srate / 1000) * jb->maxd;
 
 	if (jitter_offset < min_lat)
 		jitter_offset = min_lat;
@@ -472,7 +472,7 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 		jitter_offset = max_lat;
 
 	RE_TRACE_ID_INSTANT_I("jbuf", "play_delay",
-			      delay_ms(jitter_offset, jb->p.srate), jb->id);
+			      delay_ms(jitter_offset, jb->srate), jb->id);
 
 	return play_time_base + jitter_offset;
 }
@@ -514,7 +514,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	if (!jb || !hdr)
 		return EINVAL;
 
-	if (!jb->p.srate) {
+	if (!jb->srate) {
 		DEBUG_WARNING("no clock srate set!\n");
 		return EINVAL;
 	}
@@ -639,7 +639,7 @@ success:
 #if JBUF_TRACE
 	int32_t delay =
 		delay_ms((int32_t)((int64_t)f->playout_time - (int64_t)next),
-			 jb->p.srate);
+			 jb->srate);
 	RE_TRACE_ID_INSTANT_I("jbuf", "playout_diff", delay, jb->id);
 #endif
 
@@ -649,7 +649,7 @@ success:
 		jb->p.late_pkts++;
 		RE_TRACE_ID_INSTANT_I(
 			"jbuf", "late_play",
-			delay_ms((next - f->playout_time), jb->p.srate),
+			delay_ms((next - f->playout_time), jb->srate),
 			jb->id);
 		goto out;
 	}
@@ -780,8 +780,6 @@ void jbuf_flush(struct jbuf *jb)
 	if (!jb)
 		return;
 
-	/*@TODO: reset playout specifc values */
-
 	mtx_lock(jb->lock);
 	if (jb->packetl.head) {
 		DEBUG_INFO("flush: %u frames\n", jb->n);
@@ -797,8 +795,11 @@ void jbuf_flush(struct jbuf *jb)
 
 	jb->n       = 0;
 	jb->running = false;
-
 	jb->seq_get = 0;
+
+	/* Reset playout */
+	memset(&jb->p, 0, sizeof(jb->p));
+
 #if JBUF_STAT
 	n_flush = STAT_INC(n_flush);
 	memset(&jb->stat, 0, sizeof(jb->stat));
@@ -865,7 +866,7 @@ int32_t jbuf_next_play(const struct jbuf *jb)
 		goto out; /* already late */
 	}
 
-	ret = delay_ms((p->playout_time - current), jb->p.srate);
+	ret = delay_ms((p->playout_time - current), jb->srate);
 	if (!ret) {
 		ret = 1; /* rounding up */
 		goto out;
