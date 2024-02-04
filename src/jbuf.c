@@ -37,8 +37,8 @@
 
 enum {
 	JBUF_LATE_TRESHOLD = 3,
-	JBUF_MAX_SKEW	   = 20,  /* [ms] */
-	JBUF_SKEW_WINDOW   = 1000 /* [packets] */
+	JBUF_MAX_DRIFT	   = 20,  /* [ms] */
+	JBUF_DRIFT_WINDOW  = 1000 /* [packets] */
 };
 
 /** Defines a packet frame */
@@ -379,21 +379,21 @@ static int adjust_due_to_skew(struct jbuf *jb, struct packet *p)
 	if (skew_ms > jb->p.max_skew_ms)
 		jb->p.max_skew_ms = skew_ms;
 
-	if (jb->p.max_skew_ms > JBUF_MAX_SKEW) {
-		/* Receiver clock is slower than sender */
-		jb->p.active_delay = jb->p.delay_estimate;
-		return -JBUF_MAX_SKEW;
-	}
-
-	if (jb->p.max_skew_ms < -JBUF_MAX_SKEW) {
-		/* Receiver clock is faster than sender */
-		jb->p.active_delay = jb->p.delay_estimate;
-		return JBUF_MAX_SKEW;
-	}
-
-	if (++jb->p.skewn % JBUF_SKEW_WINDOW == 0) {
-		RE_TRACE_ID_INSTANT_I("jbuf", "clock_max_skew",
+	if (++jb->p.skewn % JBUF_DRIFT_WINDOW == 0) {
+		RE_TRACE_ID_INSTANT_I("jbuf", "clock_max_drift",
 				      jb->p.max_skew_ms, jb->id);
+
+		if (jb->p.max_skew_ms > JBUF_MAX_DRIFT) {
+			/* Receiver clock is slower than sender */
+			jb->p.active_delay = jb->p.delay_estimate;
+			return -JBUF_MAX_DRIFT;
+		}
+
+		if (jb->p.max_skew_ms < -JBUF_MAX_DRIFT) {
+			/* Receiver clock is faster than sender */
+			jb->p.active_delay = jb->p.delay_estimate;
+			return JBUF_MAX_DRIFT;
+		}
 		jb->p.skewn	  = 0;
 		jb->p.max_skew_ms = INT_MIN;
 	}
