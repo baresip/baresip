@@ -1,0 +1,136 @@
+# Build re and baresip almost the same way like they would be built in Fedora. This helps to avoid
+# e.g. rpath issues, requires however the usage of rpmbuild(1) to use the same compiler flags and
+# options like Fedora does. Just running 'RPM_BUILD_ROOT=<top-dir> /usr/lib/rpm/check-rpaths' on
+# own builds without the Fedora-specific options effectively leads to garbage results. See also:
+# https://github.com/baresip/baresip/issues/2849 and https://github.com/baresip/baresip/pull/2850
+name: Fedora
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+    - stable
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: fedora
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: "Install build-time requirements"
+      run: |
+        # List of build-time requirements can be generated from Fedora's baresip.spec file like this:
+        #
+        # curl https://src.fedoraproject.org/rpms/baresip/raw/rawhide/f/baresip.spec 2> /dev/null | \
+        #   gawk 'sub(/^BuildRequires:\s*/, "") { \
+        #     if ($0 !~ /(cmake3|openssl[13]|libre-devel|devtoolset|desktop-file-utils|svg)/) { \
+        #     gsub(/^%{_bindir}/, "/usr/bin"); print "          \047" $0 "\047 \\" }}' | \
+        #   sort -u | head -c -3
+        #
+        # Note: The rpm-build package is preinstalled in the Fedora build system by default, but not
+        #       in Docker containers, thus it explicitly needs to be mentioned (and installed) here.
+        #       The zlib-devel package is needed by re and thus not part of the Fedora baresip.spec.
+        #       The gh package is needed by the GitHub Action sreimers/pr-dependency-action only.
+        dnf -y update && \
+        dnf -y install rpm-build zlib-devel gh \
+          'alsa-lib-devel' \
+          'cmake' \
+          'codec2-devel' \
+          'fdk-aac-free-devel' \
+          'gcc' \
+          'gcc-c++' \
+          'lame-devel' \
+          'libaom-devel' \
+          'libpng-devel' \
+          'libsndfile-devel' \
+          'libv4l-devel' \
+          'libvpx-devel' \
+          'libX11-devel' \
+          'libXext-devel' \
+          'mosquitto-devel' \
+          'mpg123-devel' \
+          'openssl-devel' \
+          'opus-devel' \
+          'pkgconfig(gio-unix-2.0)' \
+          'pkgconfig(glib-2.0)' \
+          'pkgconfig(glib-2.0) >= 2.32' \
+          'pkgconfig(gstreamer-1.0)' \
+          'pkgconfig(gtk+-3.0) >= 3.0' \
+          'pkgconfig(jack)' \
+          'pkgconfig(libpipewire-0.3)' \
+          'pkgconfig(libpulse)' \
+          'pkgconfig(vpx) >= 1.3.0' \
+          'portaudio-devel' \
+          'python3-devel' \
+          'SDL2-devel' \
+          'spandsp-devel' \
+          'speex-devel' \
+          'speexdsp-devel' \
+          'twolame-devel' \
+          '/usr/bin/gdbus-codegen'
+
+    - uses: sreimers/pr-dependency-action@v0.6
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: "Write placeholer RPM spec file"
+      # Use same placeholder RPM spec file until re and baresip need different %build commands
+      run: |
+        cat > placeholder.spec <<EOF
+        Summary: Placeholder
+        Name: placeholder
+        Version: 0
+        Release: 0
+        License: Placeholder
+        %description
+        Placeholder
+        %build
+        %cmake
+        %cmake_build
+        %install
+        %cmake_install
+        %files
+        /*
+        %changelog
+        * $(date +'%a %b %d %Y') Placeholder
+        - Placeholder
+        EOF
+
+    - name: "Write RPM macros configuration for re"
+      run: |
+        echo "%_builddir ${PWD}/re" > "${HOME}/.rpmmacros"
+        echo "%buildroot ${PWD}/re/%{_vendor}-%{_target_os}-install" >> "${HOME}/.rpmmacros"
+
+    - name: "RPM %build re"
+      run: rpmbuild -bc --short-circuit placeholder.spec
+
+    - name: "RPM %install re"
+      # Runs 'RPM_BUILD_ROOT=<top-dir> /usr/lib/rpm/check-rpaths' at the end of %install
+      run: rpmbuild -bi --short-circuit placeholder.spec
+
+    - name: "Relocate re from RPM %{buildroot} to /"
+      run: |
+        cp -avT $(rpm --eval '%{buildroot}/') /  # Work around '%{buildroot} can not be "/"' from RPM
+        rm -rf re  # Baresip must not pick up this directory (or wrong rpaths are written to binaries)
+
+    - name: "Run ldconfig"
+      run: ldconfig
+
+    - name: "Write RPM macros configuration for baresip"
+      run: |
+        echo "%_builddir ${PWD}" > "${HOME}/.rpmmacros"
+        echo "%buildroot ${PWD}/%{_vendor}-%{_target_os}-install" >> "${HOME}/.rpmmacros"
+
+    - name: "RPM %build baresip"
+      run: rpmbuild -bc --short-circuit placeholder.spec
+
+    - name: "RPM %install baresip"
+      # Runs 'RPM_BUILD_ROOT=<top-dir> /usr/lib/rpm/check-rpaths' at the end of %install
+      run: rpmbuild -bi --short-circuit placeholder.spec
