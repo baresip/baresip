@@ -688,6 +688,16 @@ static const char *default_cafile(void)
 }
 
 
+static const char *default_capath(void)
+{
+#if defined (DEFAULT_CAPATH)
+	return DEFAULT_CAPATH;
+#else
+	return "/etc/ssl/certs";
+#endif
+}
+
+
 static const char *default_audio_device(void)
 {
 #if defined (DEFAULT_AUDIO_DEVICE)
@@ -778,6 +788,7 @@ static const char *default_audio_path(void)
 static int core_config_template(struct re_printf *pf, const struct config *cfg)
 {
 	bool have_cafile = false;
+	bool have_capath = false;
 	int err = 0;
 
 	if (!cfg)
@@ -788,11 +799,16 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 	have_cafile = true;
 #endif
 
+#if defined (DEFAULT_CAPATH) || defined (LINUX)
+	have_capath = true;
+#endif
+
 	err |= re_hprintf(pf,
 			  "\n# SIP\n"
 			  "#sip_listen\t\t0.0.0.0:5060\n"
 			  "#sip_certificate\tcert.pem\n"
 			  "%ssip_cafile\t\t%s\n"
+			  "%ssip_capath\t\t%s\n"
 			  "#sip_transports\t\tudp,tcp,tls,ws,wss\n"
 			  "#sip_trans_def\t\tudp\n"
 			  "#sip_verify_server\tyes\n"
@@ -800,7 +816,9 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "\n"
 			  ,
 			  have_cafile ? "" : "#",
-			  default_cafile());
+			  default_cafile(),
+			  have_capath ? "" : "#",
+			  default_capath());
 
 	err |= re_hprintf(pf,
 			  "# Call\n"

@@ -8,6 +8,7 @@
 #sip_listen		0.0.0.0:5060
 #sip_certificate	cert.pem
 sip_cafile		/etc/ssl/certs/ca-certificates.crt
+sip_capath		/etc/ssl/certs
 #sip_transports		udp,tcp,tls,ws,wss
 #sip_trans_def		udp
 sip_verify_server	yes
