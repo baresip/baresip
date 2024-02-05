@@ -56,7 +56,7 @@ struct account {
 	bool autoredirect;           /**< Autoredirect on 3xx reply on/off   */
 	int32_t adelay;              /**< Delay for delayed auto answer [ms] */
 	enum dtmfmode dtmfmode;      /**< Send type for DTMF tones           */
-	enum uas_req_mode uasmode;   /**< UAS request mode                   */
+	enum inreq_mode inreq_mode;  /**< Incoming request mode              */
 	struct le acv[16];           /**< List elements for aucodecl         */
 	struct list aucodecl;        /**< List of preferred audio-codecs     */
 	char *auth_user;             /**< Authentication username            */

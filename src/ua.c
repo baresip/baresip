@@ -2197,10 +2197,5 @@ bool ua_req_allowed(const struct ua *ua, const struct sip_msg *msg)
 	if (!ua || !msg)
 		return false;
 
-	if ((account_uas_req_mode(ua->acc) == UAS_REQ_MODE_OFF) ||
-	    (account_uas_req_mode(ua->acc) & UAS_REQ_MODE_TLS &&
-	    msg->tp != SIP_TRANSP_TLS))
-		return false;
-
-	return true;
+	return account_inreq_mode(ua->acc) == INREQ_MODE_ON;
 }

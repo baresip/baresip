@@ -143,7 +143,7 @@ static void endpoint_destructor(void *data)
 
 static int endpoint_alloc(struct endpoint **epp, struct test *test,
 			  const char *name, enum sip_transp transp,
-			  const char *uas_req_mode)
+			  const char *inreq_mode)
 {
 	struct endpoint *ep = NULL;
 	struct sa laddr;
@@ -160,9 +160,10 @@ static int endpoint_alloc(struct endpoint **epp, struct test *test,
 	ep->test = test;
 
 	if (re_snprintf(aor, sizeof(aor),
-			"%s <sip:%s@%j;transport=%s>;regint=0;uas_req=%s",
+			"%s <sip:%s@%j;transport=%s>;regint=0;"
+			"inreq_allowed=%s",
 			name, name, &laddr,
-			sip_transp_name(transp), uas_req_mode) < 0) {
+			sip_transp_name(transp), inreq_mode) < 0) {
 		err = ENOMEM;
 		goto out;
 	}
@@ -192,7 +193,7 @@ static int endpoint_alloc(struct endpoint **epp, struct test *test,
 
 
 static int test_message_transp(enum sip_transp transp,
-			       const char *uas_req_mode)
+			       const char *inreq_allowed)
 {
 	struct test test;
 	struct endpoint *a = NULL, *b = NULL;
@@ -213,13 +214,13 @@ static int test_message_transp(enum sip_transp transp,
 	err = ua_init("test", enable_udp, enable_tcp, false);
 	TEST_ERR(err);
 
-	err = endpoint_alloc(&a, &test, "a", transp, uas_req_mode);
+	err = endpoint_alloc(&a, &test, "a", transp, inreq_allowed);
 	TEST_ERR(err);
 
-	err = endpoint_alloc(&b, &test, "b", transp, uas_req_mode);
+	err = endpoint_alloc(&b, &test, "b", transp, inreq_allowed);
 	TEST_ERR(err);
 
-	if (!pl_strcmp(&pl_no, uas_req_mode)) {
+	if (!pl_strcmp(&pl_no, inreq_allowed)) {
 		resp_handler = send_resp_handler_488;
 		b_exp_msg_cnt = 0;
 	}
