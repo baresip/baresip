@@ -519,6 +519,11 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 		return EINVAL;
 	}
 
+	if (!hdr->ts_arrive) {
+		DEBUG_WARNING("invalid ts_arrive header!\n");
+		return EINVAL;
+	}
+
 	seq = hdr->seq;
 	if (jb->pt == -1)
 		jb->pt = hdr->pt;
