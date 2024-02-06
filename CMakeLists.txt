@@ -132,6 +132,10 @@ if(DEFAULT_CAFILE)
   add_definitions(-DDEFAULT_CAFILE="${DEFAULT_CAFILE}")
 endif()
 
+if(DEFAULT_CAPATH)
+  add_definitions(-DDEFAULT_CAPATH="${DEFAULT_CAPATH}")
+endif()
+
 if(DEFAULT_AUDIO_DEVICE)
   add_definitions(-DDEFAULT_AUDIO_DEVICE="${DEFAULT_AUDIO_DEVICE}")
 endif()
