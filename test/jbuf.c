@@ -142,17 +142,17 @@ int test_jbuf(void)
 
 		hdr_in.seq = 1;
 		hdr_in.ts = 160;
-		hdr_in.ts_arrive = 0;
+		hdr_in.ts_arrive = 160;
 		err = jbuf_put(jb, &hdr_in, frv[0]);
 		TEST_ERR(err);
 
 		hdr_in.seq = 2;
 		hdr_in.ts = 320;
-		hdr_in.ts_arrive = 160;
+		hdr_in.ts_arrive = 320;
 		err = jbuf_put(jb, &hdr_in, frv[1]);
 		TEST_ERR(err);
 
-		next_play_val = 0;
+		next_play_val = 160;
 
 		err = jbuf_get(jb, &hdr_out, &mem);
 		TEST_ERR(err);
@@ -164,7 +164,7 @@ int test_jbuf(void)
 		/* Wait 20ms for next packet */
 		ASSERT_EQ(20, jbuf_next_play(jb));
 
-		next_play_val = 160;
+		next_play_val = 320;
 
 		err = jbuf_get(jb, &hdr_out, &mem);
 		TEST_ERR(err);
