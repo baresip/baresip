@@ -1362,10 +1362,26 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 			call->linenum, call->peer_uri, scode);
 
 	if (call->got_offer) {
+		struct le *le;
 
-		err = call_update_media(call);
-		if (err)
-			return err;
+		/* media attributes */
+		audio_sdp_attr_decode(call->audio);
+
+		if (call->video)
+			video_sdp_attr_decode(call->video);
+
+		FOREACH_STREAM {
+			struct stream *strm = le->data;
+
+			stream_update(strm);
+
+			if (stream_is_ready(strm))
+				stream_start_rtcp(strm);
+		}
+
+		if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
+			err = call->acc->mnat->updateh(call->mnats);
+
 	}
 
 	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call,
@@ -1929,6 +1945,18 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 		return;
 
 	set_state(call, CALL_STATE_ESTABLISHED);
+
+	if (call->got_offer) {
+		if (stream_is_ready(audio_strm(call->audio)))
+			(void)update_audio(call);
+		else
+			audio_stop(call->audio);
+
+		if (stream_is_ready(video_strm(call->video)))
+			(void)video_update(call->video, call->peer_uri);
+		else
+			video_stop(call->video);
+	}
 
 	call_stream_start(call, true);
 
