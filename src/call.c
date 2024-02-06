@@ -337,12 +337,14 @@ static int update_audio(struct call *call)
 }
 
 
-int call_update_media(struct call *call)
+static int call_apply_sdp(struct call *call)
 {
 	struct le *le;
 	int err = 0;
 
-	/* media attributes */
+	if (!call)
+		return EINVAL;
+
 	audio_sdp_attr_decode(call->audio);
 
 	if (call->video)
@@ -363,6 +365,17 @@ int call_update_media(struct call *call)
 	if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
 		err = call->acc->mnat->updateh(call->mnats);
 
+	return err;
+}
+
+
+static int update_streams(struct call *call)
+{
+	int err = 0;
+
+	if (!call)
+		return EINVAL;
+
 	if (stream_is_ready(audio_strm(call->audio)))
 		err |= update_audio(call);
 	else
@@ -372,6 +385,17 @@ int call_update_media(struct call *call)
 		err |= video_update(call->video, call->peer_uri);
 	else
 		video_stop(call->video);
+
+	return err;
+}
+
+
+int call_update_media(struct call *call)
+{
+	int err;
+
+	err = call_apply_sdp(call);
+	err |= update_streams(call);
 
 	return err;
 }
@@ -1361,28 +1385,8 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	info("call: answering call on line %u from %s with %u\n",
 			call->linenum, call->peer_uri, scode);
 
-	if (call->got_offer) {
-		struct le *le;
-
-		/* media attributes */
-		audio_sdp_attr_decode(call->audio);
-
-		if (call->video)
-			video_sdp_attr_decode(call->video);
-
-		FOREACH_STREAM {
-			struct stream *strm = le->data;
-
-			stream_update(strm);
-
-			if (stream_is_ready(strm))
-				stream_start_rtcp(strm);
-		}
-
-		if (call->acc->mnat && call->acc->mnat->updateh && call->mnats)
-			err = call->acc->mnat->updateh(call->mnats);
-
-	}
+	if (call->got_offer)
+		err = call_apply_sdp(call);
 
 	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call,
 		 "%s", !call->got_offer ? "offer" : "answer");
@@ -1946,17 +1950,8 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 
 	set_state(call, CALL_STATE_ESTABLISHED);
 
-	if (call->got_offer) {
-		if (stream_is_ready(audio_strm(call->audio)))
-			(void)update_audio(call);
-		else
-			audio_stop(call->audio);
-
-		if (stream_is_ready(video_strm(call->video)))
-			(void)video_update(call->video, call->peer_uri);
-		else
-			video_stop(call->video);
-	}
+	if (call->got_offer)
+		(void)update_streams(call);
 
 	call_stream_start(call, true);
 
