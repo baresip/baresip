@@ -61,7 +61,12 @@ int mediatrack_start_audio(struct media_track *media,
 	struct sdp_media *sdpm = stream_sdpmedia(audio_strm(au));
 	fmt = sdp_media_rformat(sdpm, NULL);
 
-	if (fmt && sdp_media_dir(sdpm) & SDP_SENDONLY) {
+	if (!fmt || sdp_media_dir(sdpm) == SDP_INACTIVE) {
+		info("mediatrack: audio stream is disabled..\n");
+		return 0;
+	}
+
+	if (sdp_media_dir(sdpm) & SDP_SENDONLY) {
 		struct aucodec *ac = fmt->data;
 
 		err = audio_encoder_set(au, ac, fmt->pt, fmt->params);
@@ -78,8 +83,16 @@ int mediatrack_start_audio(struct media_track *media,
 			return err;
 		}
 	}
-	else {
-		info("mediatrack: audio stream is disabled..\n");
+
+	if (sdp_media_dir(sdpm) & SDP_RECVONLY) {
+		struct aucodec *ac = fmt->data;
+
+		err = audio_decoder_set(au, ac, fmt->pt, fmt->params);
+		if (err) {
+			warning("mediatrack: start:"
+				" audio_decoder_set error: %m\n", err);
+			return err;
+		}
 	}
 
 	return 0;
