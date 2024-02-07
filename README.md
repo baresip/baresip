@@ -5,8 +5,8 @@ baresip README
 ![Baresip Logo](https://raw.githubusercontent.com/baresip/baresip/master/share/logo.png)
 
 
-Baresip is a portable and modular SIP User-Agent with audio and video support.
-Copyright (c) 2010 - 2024 Alfred E. Heggestad and Contributors
+Baresip is a portable and modular SIP User-Agent with audio and video support.  
+Copyright (c) 2010 - 2024 Alfred E. Heggestad and Contributors  
 Distributed under BSD license
 
 
@@ -199,12 +199,12 @@ After building you can start baresip like this:
 $ build/baresip
 ```
 
-The config files in $HOME/.baresip are automatically generated
+The config files in `$HOME/.baresip` are automatically generated
 the first time you run baresip.
 
 ### Build documentation
 
-The api documentation can be build using [doxygen](https://www.doxygen.nl/manual/install.html).
+The API documentation can be build using [doxygen](https://www.doxygen.nl/manual/install.html).
 
 ```
 $ doxygen mk/Doxyfile
