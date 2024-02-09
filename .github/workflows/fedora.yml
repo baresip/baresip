@@ -53,9 +53,8 @@ jobs:
         # Note: The rpm-build package is preinstalled in the Fedora build system by default, but not
         #       in Docker containers, thus it explicitly needs to be mentioned (and installed) here.
         #       The zlib-devel package is needed by re and thus not part of the Fedora baresip.spec.
-        #       The gh package is needed by the GitHub Action sreimers/pr-dependency-action only.
         dnf -y update && \
-        dnf -y install rpm-build zlib-devel gh \
+        dnf -y install rpm-build zlib-devel \
           'alsa-lib-devel' \
           'cmake' \
           'codec2-devel' \
