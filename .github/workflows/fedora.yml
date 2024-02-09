@@ -15,18 +15,28 @@ on:
     - stable
 
 jobs:
-  build:
+  dependency:
     runs-on: ubuntu-latest
-    container: fedora
-
     steps:
-    - uses: actions/checkout@v4
-
     - uses: sreimers/pr-dependency-action@v0.6
       with:
         name: re
         repo: https://github.com/baresip/re
         secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: re-fedora
+        path: re
+        retention-days: 1
+
+  build:
+    needs: dependency
+    runs-on: ubuntu-latest
+    container: fedora
+
+    steps:
+    - uses: actions/checkout@v4
 
     - name: "Install build-time requirements"
       run: |
@@ -79,6 +89,11 @@ jobs:
           'speexdsp-devel' \
           'twolame-devel' \
           '/usr/bin/gdbus-codegen'
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: re-fedora
+        path: re
 
     - name: "Write placeholer RPM spec file"
       # Use same placeholder RPM spec file until re and baresip need different %build commands
