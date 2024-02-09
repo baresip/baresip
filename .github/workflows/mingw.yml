@@ -45,7 +45,7 @@ jobs:
       with:
         path: baresip-win32/baresip
 
-    - uses: actions/cache@v2
+    - uses: actions/cache@v4
       id: openssl
       with:
         path: baresip-win32/openssl
