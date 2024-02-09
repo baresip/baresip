@@ -18,6 +18,8 @@ jobs:
   dependency:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
+
     - uses: sreimers/pr-dependency-action@v0.6
       with:
         name: re
