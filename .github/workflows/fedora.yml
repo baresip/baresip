@@ -22,6 +22,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - uses: sreimers/pr-dependency-action@v0.6
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
     - name: "Install build-time requirements"
       run: |
         # List of build-time requirements can be generated from Fedora's baresip.spec file like this:
@@ -73,12 +79,6 @@ jobs:
           'speexdsp-devel' \
           'twolame-devel' \
           '/usr/bin/gdbus-codegen'
-
-    - uses: sreimers/pr-dependency-action@v0.6
-      with:
-        name: re
-        repo: https://github.com/baresip/re
-        secret: ${{ secrets.GITHUB_TOKEN }}
 
     - name: "Write placeholer RPM spec file"
       # Use same placeholder RPM spec file until re and baresip need different %build commands
