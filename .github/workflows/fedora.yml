@@ -15,7 +15,25 @@ on:
     - stable
 
 jobs:
+  dependency:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: sreimers/pr-dependency-action@v0.6
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: re-fedora
+        path: re
+        retention-days: 1
+
   build:
+    needs: dependency
     runs-on: ubuntu-latest
     container: fedora
 
@@ -35,9 +53,8 @@ jobs:
         # Note: The rpm-build package is preinstalled in the Fedora build system by default, but not
         #       in Docker containers, thus it explicitly needs to be mentioned (and installed) here.
         #       The zlib-devel package is needed by re and thus not part of the Fedora baresip.spec.
-        #       The gh package is needed by the GitHub Action sreimers/pr-dependency-action only.
         dnf -y update && \
-        dnf -y install rpm-build zlib-devel gh \
+        dnf -y install rpm-build zlib-devel \
           'alsa-lib-devel' \
           'cmake' \
           'codec2-devel' \
@@ -74,11 +91,10 @@ jobs:
           'twolame-devel' \
           '/usr/bin/gdbus-codegen'
 
-    - uses: sreimers/pr-dependency-action@v0.6
+    - uses: actions/download-artifact@v4
       with:
-        name: re
-        repo: https://github.com/baresip/re
-        secret: ${{ secrets.GITHUB_TOKEN }}
+        name: re-fedora
+        path: re
 
     - name: "Write placeholer RPM spec file"
       # Use same placeholder RPM spec file until re and baresip need different %build commands
