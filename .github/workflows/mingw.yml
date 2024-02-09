@@ -62,7 +62,7 @@ jobs:
     - name: "build"
       run: make -j$(nproc) -C baresip-win32 baresip
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: selftest-exe
         path: baresip-win32/baresip/build/test/selftest.exe
@@ -73,7 +73,7 @@ jobs:
     needs: MinGW-w64-build
 
     steps:
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v4
     - uses: actions/checkout@v4
       with:
         path: baresip
