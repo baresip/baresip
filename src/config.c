@@ -692,6 +692,8 @@ static const char *default_capath(void)
 {
 #if defined (DEFAULT_CAPATH)
 	return DEFAULT_CAPATH;
+#elif defined (ANDROID)
+	return "/system/etc/security/cacerts";
 #else
 	return "/etc/ssl/certs";
 #endif
@@ -799,7 +801,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 	have_cafile = true;
 #endif
 
-#if defined (DEFAULT_CAPATH) || defined (LINUX)
+#if defined (DEFAULT_CAPATH) || defined (ANDROID) || defined (LINUX)
 	have_capath = true;
 #endif
 
