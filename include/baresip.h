@@ -348,6 +348,7 @@ struct config_sip {
 	uint32_t transports;    /**< Supported transports mask      */
 	enum sip_transp transp; /**< Default outgoing SIP transport protocol */
 	bool verify_server;     /**< Enable SIP TLS verify server   */
+	bool verify_client;     /**< Enable SIP TLS verify client   */
 	uint8_t tos;            /**< Type-of-Service for SIP        */
 };
 
