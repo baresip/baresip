@@ -56,6 +56,7 @@ struct account {
 	bool autoredirect;           /**< Autoredirect on 3xx reply on/off   */
 	int32_t adelay;              /**< Delay for delayed auto answer [ms] */
 	enum dtmfmode dtmfmode;      /**< Send type for DTMF tones           */
+	enum inreq_mode inreq_mode;  /**< Incoming request mode              */
 	struct le acv[16];           /**< List elements for aucodecl         */
 	struct list aucodecl;        /**< List of preferred audio-codecs     */
 	char *auth_user;             /**< Authentication username            */
@@ -371,6 +372,7 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg);
 void sipsess_conn_handler(const struct sip_msg *msg, void *arg);
 bool ua_catchall(struct ua *ua);
 bool ua_reghasladdr(const struct ua *ua, const struct sa *laddr);
+int uas_req_auth(struct ua *ua, const struct sip_msg *msg);
 
 /*
  * User-Agent Group

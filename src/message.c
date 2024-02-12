@@ -45,7 +45,14 @@ static void handle_message(struct message_lsnr *lsnr, struct ua *ua,
 	struct pl text_plain = {ctype_text, sizeof(ctype_text)-1};
 	struct pl app_json = {ctype_app, sizeof(ctype_app)-1};
 	struct pl *ctype_pl = NULL;
-	(void)ua;
+	struct account *acc = ua_account(ua);
+	int err;
+
+	if (account_uas_isset(acc)) {
+		err = uas_req_auth(ua, msg);
+		if (err)
+			return;
+	}
 
 	if (msg_ctype_cmp(&msg->ctyp, "text", "plain")) {
 		ctype_pl = &text_plain;
@@ -89,6 +96,11 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 		return true;
 	}
 
+	if (!ua_req_allowed(ua, msg)) {
+		(void)sip_treply(NULL, uag_sip(), msg, 488,
+				 "Not Acceptable Here");
+		return true;
+	}
 	while (le) {
 		struct message_lsnr *lsnr = le->data;
 
