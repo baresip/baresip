@@ -479,7 +479,6 @@ static int push_thread(void *arg)
 	uint32_t ptime;
 	int err, cnt = 0;
 
-	st->started = true;
 	if (!st->rh)
 		return EINVAL;
 
@@ -619,15 +618,19 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->run = true;
 	if (!st->thread) {
+		st->started = true;
 		err = thread_create_name(&st->thread, "auogg_src",
 					 push_thread, st);
-		if (err)
+		if (err) {
 			warning("auogg: Could not start push thread. "
 				"(%m)\n", err);
+			st->started = false;
+		}
 	}
 
 	if (join) {
 		thrd_join(st->thread, NULL);
+		st->started = false;
 		st->errh(st->err, st->error, st->arg);
 	}
  out:
