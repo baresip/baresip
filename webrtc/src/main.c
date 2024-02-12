@@ -38,6 +38,7 @@ static const char *modv[] = {
 	"vp8",
 	"avcodec",
 	"vp9",
+	"av1",
 	"avformat",
 	"fakevideo"
 };
