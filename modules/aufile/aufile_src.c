@@ -34,7 +34,7 @@ struct ausrc_st {
 	uint32_t ptime;
 	size_t sampc;
 	RE_ATOMIC bool run;
-	RE_ATOMIC bool started;
+	bool started;
 	thrd_t thread;
 	ausrc_read_h *rh;
 	ausrc_error_h *errh;
@@ -46,7 +46,7 @@ static void destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	if (re_atomic_rlx(&st->started)) {
+	if (st->started) {
 		re_atomic_rlx_set(&st->run, false);
 		thrd_join(st->thread, NULL);
 	}
@@ -64,10 +64,6 @@ static int src_thread(void *arg)
 	struct ausrc_st *st = arg;
 	int16_t *sampv;
 	uint32_t ms = 4;
-
-	re_atomic_rlx_set(&st->started, true);
-	if (!st->ptime)
-		ms = 0;
 
 	sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
 	if (!sampv)
@@ -260,14 +256,17 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	tmr_start(&st->tmr, ptime, timeout, st);
 
 	re_atomic_rlx_set(&st->run, true);
+	st->started = true;
 	err = thread_create_name(&st->thread, "aufile_src", src_thread, st);
 	if (err) {
+		st->started = false;
 		re_atomic_rlx_set(&st->run, false);
 		goto out;
 	}
 
 	if (join) {
 		thrd_join(st->thread, NULL);
+		st->started = false;
 		st->errh(0, NULL, st->arg);
 	}
 
