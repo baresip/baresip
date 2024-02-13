@@ -73,8 +73,6 @@ static int write_thread(void *arg)
 		sys_msleep(dt);
 	}
 
-	re_atomic_rlx_set(&st->run, false);
-
 	return 0;
 }
 
