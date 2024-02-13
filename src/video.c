@@ -1901,3 +1901,19 @@ const struct vidcodec *video_codec(const struct video *vid, bool tx)
 
 	return tx ? vid->vtx.vc : vid->vrx.vc;
 }
+
+
+/**
+ * Request new keyframe from encoder (vtx)
+ *
+ * @param vid Video object
+ */
+void video_req_keyframe(struct video *vid)
+{
+	if (!vid)
+		return;
+
+	mtx_lock(vid->vtx.lock_enc);
+	vid->vtx.picup = true;
+	mtx_unlock(vid->vtx.lock_enc);
+}

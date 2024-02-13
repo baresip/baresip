@@ -1431,6 +1431,7 @@ int   video_debug(struct re_printf *pf, const struct video *v);
 struct stream *video_strm(const struct video *v);
 const struct vidcodec *video_codec(const struct video *vid, bool tx);
 void video_sdp_attr_decode(struct video *v);
+void video_req_keyframe(struct video *vid);
 
 double video_calc_seconds(uint64_t rtp_ts);
 double video_timestamp_to_seconds(uint64_t timestamp);
