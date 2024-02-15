@@ -3,7 +3,7 @@ find_path(GZRTP_INCLUDE_DIR
     HINTS
         "${GZRTP_INCLUDE_DIRS}"
         "${GZRTP_HINTS}/include"
-    PATHS ../ZRTPCPP
+    PATHS ${CMAKE_SOURCE_DIR}/../ZRTPCPP
 )
 
 find_library(GZRTP_LIBRARY
@@ -11,7 +11,7 @@ find_library(GZRTP_LIBRARY
     HINTS
         "${GZRTP_LIBRARY_DIRS}"
         "${GZRTP_HINTS}/lib"
-    PATHS ../ZRTPCPP/clients/no_client
+    PATHS ${CMAKE_SOURCE_DIR}/../ZRTPCPP/clients/no_client
 )
 
 include(FindPackageHandleStandardArgs)

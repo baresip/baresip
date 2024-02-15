@@ -2,13 +2,13 @@ find_path(WEBRTC_AECM_INCLUDE_DIR
     NAMES modules/audio_processing/aecm/echo_control_mobile.h
     HINTS
         "${WEBRTC_AECM_INCLUDE_DIRS}"
-    PATHS ../webrtc/include
+    PATHS ${CMAKE_SOURCE_DIR}/../webrtc/include
 )
 
 find_library(WEBRTC_AECM_LIBRARY
     NAME webrtc
     HINTS
-        "../webrtc/obj/local/${CMAKE_ANDROID_ARCH_ABI}"
+        "${CMAKE_SOURCE_DIR}/../webrtc/obj/local/${CMAKE_ANDROID_ARCH_ABI}"
         "${WEBRTC_AECM_LIBRARY_DIRS}"
 )
 
