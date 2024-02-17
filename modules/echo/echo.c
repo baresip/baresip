@@ -74,7 +74,7 @@ static int new_session(struct ua *ua, struct call *call)
 
 	sess->call_in = call;
 
-	re_snprintf(a, sizeof(a), "A-%x", sess);
+	re_snprintf(a, sizeof(a), "A-%p", sess);
 
 	audio_set_devicename(call_audio(sess->call_in), a, a);
 	video_set_devicename(call_video(sess->call_in), a, a);
