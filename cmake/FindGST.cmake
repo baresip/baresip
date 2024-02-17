@@ -17,9 +17,9 @@ find_path(GLIB_INCLUDE_DIR
   HINTS
     "${GLIB_INCLUDE_DIRS}"
   PATHS /usr/lib/x86_64-linux-gnu/glib-2.0
-	/usr/lib/x86_64-linux-gnu/glib-2.0/include
-	/usr/lib64/glib-2.0
-	/usr/lib/glib-2.0
+        /usr/lib/x86_64-linux-gnu/glib-2.0/include
+        /usr/lib64/glib-2.0
+        /usr/lib/glib-2.0
 )
 
 find_library(GST_LIBRARY
