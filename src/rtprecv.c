@@ -744,7 +744,7 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 	    cfg->video.jbtype != JBUF_OFF && cfg->video.jbuf_del.max) {
 
 		err = jbuf_alloc(&rx->jbuf, cfg->video.jbuf_del.min,
-				 cfg->video.jbuf_del.max, cfg->audio.jbuf_sz);
+				 cfg->video.jbuf_del.max, cfg->video.jbuf_sz);
 		if (err)
 			goto out;
 
