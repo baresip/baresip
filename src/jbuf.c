@@ -37,8 +37,8 @@
 
 enum {
 	JBUF_LATE_TRESHOLD = 3,
-	JBUF_MAX_DRIFT	   = 20,  /* [ms] */
-	JBUF_DRIFT_WINDOW  = 1000 /* [packets] */
+	JBUF_MAX_DRIFT	   = 20,       /* [ms] */
+	JBUF_DRIFT_WINDOW  = 30 * 1000 /* [ms] */
 };
 
 /** Defines a packet frame */
@@ -77,7 +77,7 @@ struct jbuf {
 		uint32_t delay_estimate; /**< Skew delay estimation          */
 		uint32_t active_delay;	 /**< Skew first delay               */
 		uint16_t late_pkts;	 /**< Late packet counter            */
-		uint16_t skewn;		 /**< Skew window packet counter     */
+		uint64_t skewt;		 /**< Last skew window time          */
 		int32_t skew;		 /**< Jitter skew in timestamp units */
 		int32_t max_skew_ms;	 /**< Max. skew in [ms]              */
 	} p;                 /**< Playout specific values                    */
@@ -364,6 +364,7 @@ static int adjust_due_to_skew(struct jbuf *jb, struct packet *p)
 		jb->p.active_delay   = delay;
 		jb->p.delay_estimate = delay;
 		jb->p.max_skew_ms    = INT_MIN;
+		jb->p.skewt	     = tmr_jiffies();
 		return 0;
 	}
 	else {
@@ -379,23 +380,25 @@ static int adjust_due_to_skew(struct jbuf *jb, struct packet *p)
 	if (skew_ms > jb->p.max_skew_ms)
 		jb->p.max_skew_ms = skew_ms;
 
-	if (++jb->p.skewn % JBUF_DRIFT_WINDOW == 0) {
+	if ((tmr_jiffies() - jb->p.skewt) > JBUF_DRIFT_WINDOW) {
 		RE_TRACE_ID_INSTANT_I("jbuf", "clock_max_drift",
 				      jb->p.max_skew_ms, jb->id);
 
-		if (jb->p.max_skew_ms > JBUF_MAX_DRIFT) {
+		int32_t max_skew  = jb->p.max_skew_ms;
+		jb->p.skewt	  = tmr_jiffies();
+		jb->p.max_skew_ms = INT_MIN;
+
+		if (max_skew > JBUF_MAX_DRIFT) {
 			/* Receiver clock is slower than sender */
 			jb->p.active_delay = jb->p.delay_estimate;
 			return -JBUF_MAX_DRIFT;
 		}
 
-		if (jb->p.max_skew_ms < -JBUF_MAX_DRIFT) {
+		if (max_skew < -JBUF_MAX_DRIFT) {
 			/* Receiver clock is faster than sender */
 			jb->p.active_delay = jb->p.delay_estimate;
 			return JBUF_MAX_DRIFT;
 		}
-		jb->p.skewn	  = 0;
-		jb->p.max_skew_ms = INT_MIN;
 	}
 
 	/* Save skew for jitter_offset */
