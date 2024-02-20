@@ -9,6 +9,9 @@ endif()
 pkg_search_module(GST REQUIRED gstreamer-1.0>=1.16)
 link_directories(${GST_LIBDIR})
 
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS comvideo.c decode_h264.c encode_h264.c sdp.c)
 
 if(STATIC)
