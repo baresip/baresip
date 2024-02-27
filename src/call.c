@@ -1941,6 +1941,7 @@ static uint32_t randwait(uint32_t minwait, uint32_t maxwait)
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
+	uint32_t wait;
 	(void)msg;
 
 	MAGIC_CHECK(call);
@@ -1970,9 +1971,11 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 		(void)call_notify_sipfrag(call, 200, "OK");
 	}
 
+	wait = call_is_outgoing(call) ? 150 : 0;
+	wait += randwait(50, 150);
+
 	/* modify call after call_event_established handlers are executed */
-	tmr_start(&call->tmr_reinv, randwait(50, 150),
-		  set_established_mdir, call);
+	tmr_start(&call->tmr_reinv, wait, set_established_mdir, call);
 
 	/* must be done last, the handler might deref this call */
 	call_event_handler(call, CALL_EVENT_ESTABLISHED, "%s", call->peer_uri);
