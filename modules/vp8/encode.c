@@ -15,6 +15,7 @@
 
 enum {
 	HDR_SIZE = 4,
+	KEYFRAME_INTERVAL = 10  /* Keyframes per second */
 };
 
 
@@ -113,6 +114,8 @@ static int open_encoder(struct videnc_state *ves, const struct vidsz *size)
 	cfg.rc_undershoot_pct	= 100;
 	cfg.rc_dropframe_thresh = 0;
 	cfg.kf_mode		= VPX_KF_AUTO;
+	cfg.kf_min_dist		= ves->fps * KEYFRAME_INTERVAL;
+	cfg.kf_max_dist		= ves->fps * KEYFRAME_INTERVAL;
 
 	if (ves->ctxup) {
 		debug("vp8: re-opening encoder\n");
