@@ -1300,6 +1300,14 @@ int config_write_template(const char *file, const struct config *cfg)
 			);
 
 	(void)re_fprintf(f,
+			"\n# vp8\n"
+			"#vp8_enc_threads 1\n"
+			"#vp8_enc_cpuused 16"
+			" # range -16..16,"
+			" greater 0 increases speed over quality\n"
+			);
+
+	(void)re_fprintf(f,
 			"\n# ctrl_dbus\n"
 			"#ctrl_dbus_use\tsystem\t\t# system, session\n");
 

@@ -265,6 +265,10 @@ video_selfview		window # {window,pip}
 #avcodec_profile_level_id 42002a
 #avcodec_keyint		10      # keyframe interval in [sec]
 
+# vp8
+#vp8_enc_threads 1
+#vp8_enc_cpuused 16 # Range -16..16, greater 0 increases speed over quality
+
 # ctrl_dbus
 #ctrl_dbus_use	system		# system, session
 
