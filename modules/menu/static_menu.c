@@ -160,7 +160,7 @@ static int cmd_answerdir(struct re_printf *pf, void *arg)
 
 	call_set_media_estdir(call, adir, vdir);
 	if (call_sdp_change_allowed(call))
-		call_set_media_direction(call, adir, vdir);
+		call_set_mdir(call, adir, vdir);
 
 	err = answer_call(ua, call);
 	if (err)

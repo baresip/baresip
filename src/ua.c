@@ -1337,10 +1337,8 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (err)
 		goto out;
 
-	if (adir != SDP_SENDRECV || vdir != SDP_SENDRECV) {
-		call_set_media_estdir(call, adir, vdir);
+	if (adir != SDP_SENDRECV || vdir != SDP_SENDRECV)
 		call_set_media_direction(call, adir, vdir);
-	}
 
 	err = call_connect(call, &pl);
 
