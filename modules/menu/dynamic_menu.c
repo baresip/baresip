@@ -371,7 +371,6 @@ static int set_media_ldir(struct re_printf *pf, void *arg)
 	if (!call)
 		return EINVAL;
 
-	call_set_media_estdir(call, adir, vdir);
 	call_set_media_direction(call, adir, vdir);
 	return 0;
 }

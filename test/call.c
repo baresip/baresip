@@ -1698,7 +1698,6 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 	cancel_rule_and(UA_EVENT_CALL_REMOTE_SDP, f->a.ua, 0, 1, 0);
 	cr->prm = "answer";
 
-	call_set_media_estdir(ua_call(f->a.ua), SDP_INACTIVE, SDP_INACTIVE);
 	call_set_media_direction(ua_call(f->a.ua), SDP_INACTIVE, SDP_INACTIVE);
 	TEST_ERR(err);
 	err = call_modify(ua_call(f->a.ua));
@@ -1724,7 +1723,6 @@ static int test_100rel_audio_base(enum audio_mode txmode)
 
 	f->a.n_auframe=0;
 	f->b.n_auframe=0;
-	call_set_media_estdir(ua_call(f->a.ua), SDP_INACTIVE, SDP_INACTIVE);
 	call_set_media_direction(ua_call(f->a.ua), SDP_SENDRECV, SDP_INACTIVE);
 	TEST_ERR(err);
 	err = call_modify(ua_call(f->a.ua));

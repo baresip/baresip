@@ -1157,7 +1157,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 		if (err)
 			return err;
 
-		call_set_media_direction(call, call->estadir, call->estvdir);
+		call_set_mdir(call, call->estadir, call->estvdir);
 	}
 
 	return err;
@@ -1302,7 +1302,7 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 	tmr_cancel(&call->tmr_inv);
 
 	if (adir != call->estadir || vdir != call->estvdir)
-		call_set_media_direction(call, adir, vdir);
+		call_set_mdir(call, adir, vdir);
 
 	err = call_sdp_get(call, &desc, false);
 	if (err)
@@ -1925,7 +1925,7 @@ static void set_established_mdir(void *arg)
 	MAGIC_CHECK(call);
 
 	if (call_need_modify(call)) {
-		call_set_media_direction(call, call->estadir, call->estvdir);
+		call_set_mdir(call, call->estadir, call->estvdir);
 		call_modify(call);
 	}
 }
@@ -2452,7 +2452,7 @@ static int sipsess_desc_handler(struct mbuf **descp, const struct sa *src,
 		if (err)
 			return err;
 
-		call_set_media_direction(call, call->estadir, call->estvdir);
+		call_set_mdir(call, call->estadir, call->estvdir);
 	}
 
 	err = call_sdp_get(call, descp, true);
@@ -3088,7 +3088,7 @@ void call_set_current(struct list *calls, struct call *call)
 
 
 /**
- * Set stream sdp media line direction attribute
+ * Set stream sdp media line direction attribute and established media dir
  *
  * @param call Call object
  * @param a    Audio SDP direction
@@ -3096,6 +3096,23 @@ void call_set_current(struct list *calls, struct call *call)
  */
 void call_set_media_direction(struct call *call, enum sdp_dir a,
 			      enum sdp_dir v)
+{
+	if (!call)
+		return;
+
+	call_set_media_estdir(call, a, v);
+	call_set_mdir(call, a, v);
+}
+
+
+/**
+ * Set stream sdp media line direction attribute
+ *
+ * @param call Call object
+ * @param a    Audio SDP direction
+ * @param v    Video SDP direction if video available
+ */
+void call_set_mdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
 {
 	if (!call)
 		return;
