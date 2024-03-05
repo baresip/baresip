@@ -1383,7 +1383,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 		return err;
 
 	stream_set_srate(a->strm, 0, ac->crate);
-	if (reset)
+	if (reset || !aurecv_player_started(a->aur))
 		err |= audio_start(a);
 
 	return err;

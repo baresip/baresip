@@ -713,6 +713,12 @@ bool aurecv_started(const struct audio_recv *ar)
 }
 
 
+bool aurecv_player_started(const struct audio_recv *ar)
+{
+	return ar ? ar->auplay != NULL : false;
+}
+
+
 int aurecv_debug(struct re_printf *pf, const struct audio_recv *ar)
 {
 	struct mbuf *mb;
