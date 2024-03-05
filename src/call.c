@@ -114,33 +114,6 @@ static void set_state(struct call *call, enum call_state st)
 }
 
 
-static const struct sdp_format *sdp_media_rcodec(const struct sdp_media *m)
-{
-	const struct list *lst;
-	struct le *le;
-
-	if (!m || !sdp_media_rport(m))
-		return NULL;
-
-	lst = sdp_media_format_lst(m, false);
-
-	for (le=list_head(lst); le; le=le->next) {
-
-		const struct sdp_format *fmt = le->data;
-
-		if (!fmt->sup)
-			continue;
-
-		if (!fmt->data)
-			continue;
-
-		return fmt;
-	}
-
-	return NULL;
-}
-
-
 static int start_audio(struct call *call)
 {
 	const struct sdp_format *sc;
@@ -150,7 +123,7 @@ static int start_audio(struct call *call)
 	int err = 0;
 
 	/* Audio Stream */
-	sc = sdp_media_rcodec(m);
+	sc = sdp_media_rformat(m, NULL);
 	if (!sc) {
 		info("call: audio stream is disabled\n");
 		return 0;
@@ -316,7 +289,7 @@ static int update_audio(struct call *call)
 
 	debug("audio: update\n");
 
-	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
+	sc = sdp_media_rformat(stream_sdpmedia(audio_strm(call->audio)), NULL);
 	if (sc) {
 		struct aucodec *ac = sc->data;
 
@@ -2175,7 +2148,7 @@ static bool have_common_audio_codecs(const struct call *call)
 	const struct sdp_format *sc;
 	struct aucodec *ac;
 
-	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
+	sc = sdp_media_rformat(stream_sdpmedia(audio_strm(call->audio)), NULL);
 	if (!sc)
 		return false;
 
@@ -2190,7 +2163,7 @@ static bool have_common_video_codecs(const struct call *call)
 	const struct sdp_format *sc;
 	struct vidcodec *vc;
 
-	sc = sdp_media_rcodec(stream_sdpmedia(video_strm(call->video)));
+	sc = sdp_media_rformat(stream_sdpmedia(video_strm(call->video)), NULL);
 	if (!sc)
 		return false;
 
