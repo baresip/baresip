@@ -35,7 +35,7 @@ static struct vp8_vidcodec vp8 = {
 		.fmtp_ench = vp8_fmtp_enc,
 		.packetizeh = vp8_encode_packetize,
 	},
-	.max_fs   = 3600,
+	.max_fs   = 8100,  /* 1920 x 1080 / (16^2) */
 };
 
 
