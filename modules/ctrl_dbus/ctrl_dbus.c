@@ -25,6 +25,10 @@
  # With gdbus of GLib.
  gdbus call -e -d com.github.Baresip -o /baresip \
 	-m com.github.Baresip.invoke reginfo
+
+ # With busctl of systemd.
+ busctl --user call com.github.Baresip /baresip com.github.Baresip \
+	invoke s "reginfo"
  \endverbatim
  *
  *
