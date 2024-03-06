@@ -1117,17 +1117,13 @@ int account_set_rtcp_mux(struct account *acc, bool value)
  *
  * @param acc      User-Agent account
  * @param value    true or false
- *
- * @return 0 if success, otherwise errorcode
  */
-int account_set_catchall(struct account *acc, bool value)
+void account_set_catchall(struct account *acc, bool value)
 {
 	if (!acc)
-		return EINVAL;
+		return;
 
 	acc->catchall = value;
-
-	return 0;
 }
 
 
