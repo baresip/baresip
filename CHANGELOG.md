@@ -5,6 +5,36 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.10.0 - 2024-03-06
+
+## What's Changed
+* cmake: use default value for CMAKE_C_EXTENSIONS by @sreimers in https://github.com/baresip/baresip/pull/2893
+* cmake: add /usr/{local,}/include/re and /usr/{local,}/lib{64,} to FindRE.cmake by @robert-scheck in https://github.com/baresip/baresip/pull/2900
+* test/main: fix NULL pointer arg on err by @sreimers in https://github.com/baresip/baresip/pull/2902
+* ci: add Fedora workflow to avoid e.g. rpath issues by @robert-scheck in https://github.com/baresip/baresip/pull/2904
+* mediatrack/start: add audio_decoder_set by @sreimers in https://github.com/baresip/baresip/pull/2910
+* config: support distribution-specific/default CA paths by @robert-scheck in https://github.com/baresip/baresip/pull/2905
+* readme: cosmetic changes by @robert-scheck in https://github.com/baresip/baresip/pull/2911
+* ci/fedora: fix dependency by @sreimers in https://github.com/baresip/baresip/pull/2912
+* config: add default CA path for Android by @robert-scheck in https://github.com/baresip/baresip/pull/2913
+* transp,tls: add TLS client verification by @maximilianfridrich in https://github.com/baresip/baresip/pull/2888
+* account,message,ua: secure incoming SIP MESSAGEs by @maximilianfridrich in https://github.com/baresip/baresip/pull/2877
+* aufile: avoid race condition in case of fast destruction by @cspiel1 in https://github.com/baresip/baresip/pull/2917
+* aufile: join thread if write fails by @cspiel1 in https://github.com/baresip/baresip/pull/2922
+* video: add video_req_keyframe api by @sreimers in https://github.com/baresip/baresip/pull/2920
+* call: start streams in sipsess_estab_handler by @maximilianfridrich in https://github.com/baresip/baresip/pull/2909
+* webrtc: add av1 codec by @alfredh in https://github.com/baresip/baresip/pull/2916
+* cmake: fix relative source dir find paths by @juha-h in https://github.com/baresip/baresip/pull/2924
+* echo: fix re_snprintf pointer ARG by @sreimers in https://github.com/baresip/baresip/pull/2927
+* cmake: Add include PATH so that GST is found also on Debian 11 by @juha-h in https://github.com/baresip/baresip/pull/2928
+* call: improve glare handling by @maximilianfridrich in https://github.com/baresip/baresip/pull/2929
+* call: set estdir in call_set_media_direction by @maximilianfridrich in https://github.com/baresip/baresip/pull/2940
+* audio,aur: start audio player after early-video by @cspiel1 in https://github.com/baresip/baresip/pull/2941
+* ctrl_dbus: add busctl example to module documentation by @maximilianfridrich in https://github.com/baresip/baresip/pull/2944
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.9.0...v3.10.0
+
 
 ## 3.9.0 - 2024-01-31
 

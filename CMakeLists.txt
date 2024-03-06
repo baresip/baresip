@@ -13,9 +13,9 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(baresip VERSION 3.9.0)
+project(baresip VERSION 3.10.0)
 
-set(PROJECT_SOVERSION 13) # bump if ABI breaks
+set(PROJECT_SOVERSION 14) # bump if ABI breaks
 
 # Pre-release identifier, comment out on a release
 # Increment for breaking changes (dev2, dev3...)
