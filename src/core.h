@@ -94,6 +94,7 @@ struct account {
 	char *uas_pass;              /**< UAS authentication password        */
 	bool rtcp_mux;               /**< RTCP multiplexing                  */
 	bool pinhole;                /**< NAT pinhole flag                   */
+	bool catchall;               /**< Catch all inbound requests         */
 };
 
 

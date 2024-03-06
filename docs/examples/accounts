@@ -20,6 +20,7 @@
 #    ;auth_user=username
 #    ;auth_pass=password
 #    ;call_transfer=no
+#    ;catchall={yes, no}  # default: no
 #    ;cert=cert.pem
 #    ;mediaenc={srtp,srtp-mand,srtp-mandf,dtls_srtp,zrtp}
 #    ;medianat={stun,turn,ice}

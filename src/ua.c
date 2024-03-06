@@ -26,7 +26,6 @@ struct ua {
 	char *cuser;                 /**< SIP Contact username               */
 	char *pub_gruu;              /**< SIP Public GRUU                    */
 	enum presence_status pstat;  /**< Presence Status                    */
-	bool catchall;               /**< Catch all inbound requests         */
 	struct list hdr_filter;      /**< Filter for incoming headers        */
 	struct list custom_hdrs;     /**< List of outgoing headers           */
 	char *ansval;                /**< SIP auto answer value              */
@@ -1967,13 +1966,13 @@ void ua_set_catchall(struct ua *ua, bool enabled)
 	if (!ua)
 		return;
 
-	ua->catchall = enabled;
+	account_set_catchall(ua_account(ua), enabled);
 }
 
 
 bool ua_catchall(struct ua *ua)
 {
-	return ua ? ua->catchall : false;
+	return ua && ua->acc ? ua->acc->catchall : false;
 }
 
 
