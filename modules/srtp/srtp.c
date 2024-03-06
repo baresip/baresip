@@ -274,21 +274,46 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 {
 	size_t olen, len;
 	char buf[64] = "";
+	uint8_t *new_key = NULL;
 	int err;
 
 	len = get_master_keylen(resolve_suite(st->crypto_suite));
 
 	/* key-info is BASE64 encoded */
+	new_key = mem_zalloc(len, NULL);
+	if (!new_key)
+		return ENOMEM;
 
-	olen = sizeof(st->key_rx);
-	err = base64_decode(key_info->p, key_info->l, st->key_rx, &olen);
-	if (err)
+	err = base64_decode(key_info->p, key_info->l, new_key, &olen);
+	if (err) {
+		mem_deref(new_key);
 		return err;
+	}
 
 	if (len != olen) {
-		warning("srtp: %s: srtp keylen is %u (should be %zu)\n",
-			st->crypto_suite, olen, len);
+		warning("srtp: %s: %s: srtp keylen is %u (should be %zu)\n",
+			stream_name(st->strm), st->crypto_suite, olen, len);
+		mem_deref(new_key);
+		return err;
 	}
+
+	if (olen > sizeof(st->key_rx)) {
+		warning("srtp: %s: received key exceeds max key length\n",
+			stream_name(st->strm));
+		mem_deref(new_key);
+		return ERANGE;
+	}
+
+	/* receiving key-info changed -> reset srtp_rx */
+	if (st->srtp_rx && memcmp(st->key_rx, new_key,
+		sizeof(st->key_rx) > olen ? olen : sizeof(st->key_rx))) {
+		info("srtp: %s: re-keying in progress\n",
+			stream_name(st->strm));
+		st->srtp_rx = mem_deref(st->srtp_rx);
+	}
+
+	memcpy(st->key_rx, new_key, olen);
+	new_key = mem_deref(new_key);
 
 	err = start_srtp(st, st->crypto_suite);
 	if (err)
@@ -327,6 +352,13 @@ static bool sdp_attr_handler(const char *name, const char *value, void *arg)
 
 	if (!cryptosuite_issupported(&c.suite))
 		return false;
+
+	/* receiving crypto-suite changed -> reset srtp_rx */
+	if (st->srtp_rx && pl_strcmp(&c.suite, st->crypto_suite)) {
+		info ("srtp (%s-rx): cipher suite changed from %s to %r\n",
+			stream_name(st->strm), st->crypto_suite, &c.suite);
+		st->srtp_rx = mem_deref(st->srtp_rx);
+	}
 
 	st->crypto_suite = mem_deref(st->crypto_suite);
 	pl_strdup(&st->crypto_suite, &c.suite);
