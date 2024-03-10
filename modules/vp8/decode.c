@@ -83,7 +83,7 @@ int vp8_decode_update(struct viddec_state **vdsp, const struct vidcodec *vc,
 		goto out;
 	}
 
-	res = vpx_codec_dec_init(&vds->ctx, &vpx_codec_vp8_dx_algo, NULL, 0);
+	res = vpx_codec_dec_init(&vds->ctx, vpx_codec_vp8_dx(), NULL, 0);
 	if (res) {
 		err = ENOMEM;
 		goto out;
