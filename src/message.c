@@ -97,8 +97,7 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 	}
 
 	if (!ua_req_allowed(ua, msg)) {
-		(void)sip_treply(NULL, uag_sip(), msg, 488,
-				 "Not Acceptable Here");
+		(void)sip_treply(NULL, uag_sip(), msg, 403, "Forbidden");
 		return true;
 	}
 	while (le) {
