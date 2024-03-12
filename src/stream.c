@@ -1526,8 +1526,11 @@ int stream_pt_enc(const struct stream *strm)
 	int pt;
 
 
+	if (!strm)
+		return -1;
+
 	mtx_lock(strm->tx.lock);
-	pt =  strm ? strm->tx.pt_enc : -1;
+	pt =  strm->tx.pt_enc;
 	mtx_unlock(strm->tx.lock);
 
 	return pt;
