@@ -1,9 +1,14 @@
+baresip (3.10.1) unstable; urgency=medium
+
+  * version 3.10.1
+
+ -- Sebastian Reimers <sebastian.reimers@gmail.com>  Tue, 12 Mar 2024 11:08:00 +0100
+
 baresip (3.10.0) unstable; urgency=medium
 
   * version 3.10.0
 
  -- Christian Spielberger <c.spielberger@commend.com>  Wed, 6 Mar 2024 11:40:00 +0100
-
 
 baresip (3.9.0) unstable; urgency=medium
 

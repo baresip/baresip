@@ -5,6 +5,10 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.10.1 - 2024-03-12
+
+* aureceiver: fix mtx_unlock on discard by @sreimers in https://github.com/baresip/baresip/pull/2955
+
 ## 3.10.0 - 2024-03-06
 
 ## What's Changed
