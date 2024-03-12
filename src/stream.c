@@ -1591,6 +1591,14 @@ struct bundle *stream_bundle(const struct stream *strm)
 }
 
 
+static int mbuf_print_h(const char *p, size_t size, void *arg)
+{
+	struct mbuf *mb = arg;
+
+	return mbuf_write_mem(mb, (const uint8_t *) p, size);
+}
+
+
 /**
  * Print stream debug info
  *
@@ -1601,38 +1609,53 @@ struct bundle *stream_bundle(const struct stream *strm)
  */
 int stream_debug(struct re_printf *pf, const struct stream *s)
 {
+	struct mbuf *mb;
 	int err;
-
+	struct re_printf pfmb;
 	if (!s)
 		return 0;
 
-	err  = re_hprintf(pf, "--- Stream debug ---\n");
+	mb = mbuf_alloc(64);
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
+
+	pfmb.vph = mbuf_print_h;
+	pfmb.arg = mb;
+	err  = mbuf_printf(mb, "--- Stream debug ---\n");
 	mtx_lock(s->tx.lock);
-	err |= re_hprintf(pf, " %s dir=%s pt_enc=%d\n", sdp_media_name(s->sdp),
-			  sdp_dir_name(sdp_media_dir(s->sdp)),
-			  s->tx.pt_enc);
+	err |= mbuf_printf(mb, " %s dir=%s pt_enc=%d\n", sdp_media_name(s->sdp),
+			   sdp_dir_name(sdp_media_dir(s->sdp)),
+			   s->tx.pt_enc);
 
-	err |= re_hprintf(pf, " local: %J, remote: %J/%J\n",
-			  sdp_media_laddr(s->sdp),
-			  &s->tx.raddr_rtp, &s->tx.raddr_rtcp);
+	err |= mbuf_printf(mb, " local: %J, remote: %J/%J\n",
+			   sdp_media_laddr(s->sdp),
+			   &s->tx.raddr_rtp, &s->tx.raddr_rtcp);
 
-	err |= re_hprintf(pf, " mnat: %s (connected=%s)\n",
-			  s->mnat ? s->mnat->id : "(none)",
-			  s->mnat_connected ? "yes" : "no");
+	err |= mbuf_printf(mb, " mnat: %s (connected=%s)\n",
+			   s->mnat ? s->mnat->id : "(none)",
+			   s->mnat_connected ? "yes" : "no");
 
-	err |= re_hprintf(pf, " menc: %s (secure=%s)\n",
-			  s->menc ? s->menc->id : "(none)",
-			  s->menc_secure ? "yes" : "no");
+	err |= mbuf_printf(mb, " menc: %s (secure=%s)\n",
+			   s->menc ? s->menc->id : "(none)",
+			   s->menc_secure ? "yes" : "no");
 
-	err |= re_hprintf(pf, " tx.enabled: %s\n",
-			  re_atomic_rlx(&s->tx.enabled) ? "yes" : "no");
-	err |= rtprecv_debug(pf, s->rx);
-	err |= rtp_debug(pf, s->rtp);
-	mtx_unlock(s->tx.lock);
+	err |= mbuf_printf(mb, " tx.enabled: %s\n",
+			   re_atomic_rlx(&s->tx.enabled) ? "yes" : "no");
+	err |= rtprecv_debug(&pfmb, s->rx);
+	err |= rtp_debug(&pfmb, s->rtp);
 
 	if (s->bundle)
-		err |= bundle_debug(pf, s->bundle);
+		err |= bundle_debug(&pfmb, s->bundle);
 
+	mtx_unlock(s->tx.lock);
+	if (err)
+		goto out;
+
+	err = re_hprintf(pf, "%b", mb->buf, mb->pos);
+out:
+	mem_deref(mb);
 	return err;
 }
 
