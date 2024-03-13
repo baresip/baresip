@@ -1,15 +1,18 @@
 project(netroam)
 
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  return()
-endif()
+include(CheckIncludeFile)
 
 list(APPEND MODULES_DETECTED ${PROJECT_NAME})
 set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
 
 set(SRCS netroam.c)
+set(MODDEFS "")
 
-list(APPEND SRCS netlink.c)
+check_include_file(linux/netlink.h HAVE_NETLINK_H)
+if(HAVE_NETLINK_H)
+  list(APPEND MODDEFS ADD_NETLINK)
+  list(APPEND SRCS netlink.c)
+endif()
 
 if(STATIC)
   add_library(${PROJECT_NAME} OBJECT ${SRCS})
@@ -17,4 +20,4 @@ else()
   add_library(${PROJECT_NAME} MODULE ${SRCS})
 endif()
 
-target_compile_options(${PROJECT_NAME} PRIVATE -DADD_NETLINK)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${MODDEFS})
