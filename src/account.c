@@ -321,7 +321,7 @@ static void inreq_mode_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl mode;
 
-	prm->inreq_mode = INREQ_MODE_OFF;
+	prm->inreq_mode = INREQ_MODE_ON;
 
 	if (0 == msg_param_decode(pl, "inreq_allowed", &mode)) {
 
@@ -2147,7 +2147,7 @@ bool account_uas_isset(const struct account *acc)
  */
 enum inreq_mode account_inreq_mode(const struct account *acc)
 {
-	return acc ? acc->inreq_mode : INREQ_MODE_OFF;
+	return acc ? acc->inreq_mode : INREQ_MODE_ON;
 }
 
 
