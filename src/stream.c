@@ -955,6 +955,15 @@ int stream_update(struct stream *s)
 }
 
 
+void stream_remove_menc_media(struct stream *strm)
+{
+	if (!strm)
+		return;
+
+	strm->mes = mem_deref(strm->mes);
+}
+
+
 void stream_update_encoder(struct stream *s, int pt_enc)
 {
 	if (!s)

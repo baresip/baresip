@@ -1479,6 +1479,7 @@ double stream_metric_get_rx_avg_bitrate(const struct stream *strm);
 void stream_set_secure(struct stream *strm, bool secure);
 bool stream_is_secure(const struct stream *strm);
 int  stream_start_mediaenc(struct stream *strm);
+void stream_remove_menc_media(struct stream *strm);
 int  stream_start_rtcp(const struct stream *strm);
 int  stream_enable(struct stream *strm, bool enable);
 int  stream_enable_tx(struct stream *strm, bool enable);
