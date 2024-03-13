@@ -272,10 +272,10 @@ static int sdp_enc(struct menc_st *st, struct sdp_media *m,
 
 static int start_crypto(struct menc_st *st, const struct pl *key_info)
 {
-	size_t olen, len;
+	size_t olen = 0, len = 0;
 	char buf[64] = "";
 	uint8_t *new_key = NULL;
-	int err;
+	int err = 0;
 
 	len = get_master_keylen(resolve_suite(st->crypto_suite));
 
@@ -284,6 +284,7 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 	if (!new_key)
 		return ENOMEM;
 
+	olen = len;
 	err = base64_decode(key_info->p, key_info->l, new_key, &olen);
 	if (err) {
 		mem_deref(new_key);
@@ -490,6 +491,49 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 }
 
 
+static int cmd_tx_rekey(struct re_printf *pf, void *arg) {
+	const struct cmd_arg *carg = arg;
+	struct call *selcall = NULL;
+	int err = 0;
+
+	if (!str_isset(carg->prm)) {
+		re_hprintf(pf, "usage: /srtprekey <call id>");
+		return EINVAL;
+	}
+
+	selcall = uag_call_find(carg->prm);
+	if (!selcall) {
+		re_hprintf(pf, "srtprekey: call id \"%s\" not found\n",
+			carg->prm);
+		return EINVAL;
+	}
+
+	re_hprintf(pf, "srtprekey: rekey srtp transmission keys of"
+		" call \"%s\"\n", carg->prm);
+
+	struct stream *astrm = audio_strm(call_audio(selcall));
+	struct stream *vstrm = video_strm(call_video(selcall));
+
+	if (astrm)
+		stream_remove_menc_media(astrm);
+	if (vstrm)
+		stream_remove_menc_media(vstrm);
+
+	err = call_update_media(selcall);
+	err |= call_modify(selcall);
+	if (err) {
+		re_hprintf(pf, "srtprekey: call update failed %m\n", err);
+	}
+
+	return err;
+}
+
+
+static const struct cmd cmdv[] = {
+{"srtprekey", 0, CMD_PRM, "Change outgoing streaming keys", cmd_tx_rekey},
+};
+
+
 static struct menc menc_srtp_opt = {
 	.id        = "srtp",
 	.sdp_proto = "RTP/AVP",
@@ -520,7 +564,7 @@ static int mod_srtp_init(void)
 	menc_register(mencl, &menc_srtp_mand);
 	menc_register(mencl, &menc_srtp_mandf);
 
-	return 0;
+	return cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 }
 
 
@@ -529,6 +573,8 @@ static int mod_srtp_close(void)
 	menc_unregister(&menc_srtp_mandf);
 	menc_unregister(&menc_srtp_mand);
 	menc_unregister(&menc_srtp_opt);
+
+	cmd_unregister(baresip_commands(), cmdv);
 
 	return 0;
 }
