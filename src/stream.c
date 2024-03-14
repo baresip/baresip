@@ -1625,7 +1625,8 @@ int stream_debug(struct re_printf *pf, const struct stream *s)
 	pfmb.arg = mb;
 	err  = mbuf_printf(mb, "--- Stream debug ---\n");
 	mtx_lock(s->tx.lock);
-	err |= mbuf_printf(mb, " %s dir=%s pt_enc=%d\n", sdp_media_name(s->sdp),
+	err |= mbuf_printf(mb, " %s dir=%s pt_enc=%d\n",
+			   sdp_media_name(s->sdp),
 			   sdp_dir_name(sdp_media_dir(s->sdp)),
 			   s->tx.pt_enc);
 
