@@ -2005,7 +2005,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  acc->pinhole ? "yes" : "no");
 	for (i=0; i<RE_ARRAY_SIZE(acc->outboundv); i++) {
 		if (acc->outboundv[i]) {
-			err |= re_hprintf(pf, " outbound%d:    %s\n",
+			err |= re_hprintf(pf, " outbound%zu:    %s\n",
 					  i+1, acc->outboundv[i]);
 		}
 	}
