@@ -180,6 +180,7 @@ module_app		debug_cmd.so
 #module_app		gtk.so
 module_app		menu.so
 #module_app		mwi.so
+#module_app		dialog.so
 #module_app		presence.so
 #module_app		serreg.so
 #module_app		syslog.so

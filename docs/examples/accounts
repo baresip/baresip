@@ -26,6 +26,7 @@
 #    ;medianat={stun,turn,ice}
 #    ;natpinhole={yes, no}  # default: no
 #    ;mwi=no
+#    ;dialog={yes, no} # default: no
 #    ;outbound="sip:primary.example.com;transport=tcp"
 #    ;outbound2=sip:secondary.example.com
 #    ;ptime={10,20,30,40,...}

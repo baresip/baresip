@@ -1194,6 +1194,7 @@ int config_write_template(const char *file, const struct config *cfg)
 	(void)re_fprintf(f, "#module_app\t\t" "gtk" MOD_EXT "\n");
 	(void)re_fprintf(f, "module_app\t\t"  "menu"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t"  "mwi"MOD_EXT"\n");
+	(void)re_fprintf(f, "#module_app\t\t"  "dialog"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "presence"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "serreg"MOD_EXT"\n");
 	(void)re_fprintf(f, "#module_app\t\t" "syslog"MOD_EXT"\n");

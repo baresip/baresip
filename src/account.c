@@ -553,6 +553,11 @@ static int sip_params_decode(struct account *acc, const struct sip_addr *aor)
 	else
 		acc->autoredirect = pl_strcasecmp(&tmp, "yes") == 0;
 
+	if (0 != msg_param_decode(&aor->params, "dialog", &tmp))
+		acc->dialog = false;
+	else
+		acc->dialog = pl_strcasecmp(&tmp, "yes") == 0;
+
 	return err;
 }
 
@@ -1068,6 +1073,25 @@ int account_set_mwi(struct account *acc, bool value)
 		return EINVAL;
 
 	acc->mwi = value;
+
+	return 0;
+}
+
+
+/**
+ * Sets Dialog subscriptions on (value true) or off (value false)
+ *
+ * @param acc      User-Agent account
+ * @param value    true or false
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_dialog(struct account *acc, bool value)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->dialog = value;
 
 	return 0;
 }
@@ -1771,6 +1795,22 @@ bool account_mwi(const struct account *acc)
 
 
 /**
+ * Get Dialog subscription capability of an account
+ *
+ * @param acc User-Agent account
+ *
+ * @return true or false
+ */
+bool account_dialog(const struct account *acc)
+{
+	if (!acc)
+		return false;
+
+	return acc->dialog;
+}
+
+
+/**
  * Get call transfer capability of an account
  *
  * @param acc User-Agent account
@@ -2011,6 +2051,8 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 	}
 	err |= re_hprintf(pf, " mwi:          %s\n",
 			  account_mwi(acc) ? "yes" : "no");
+	err |= re_hprintf(pf, " dialog:       %s\n",
+			  account_dialog(acc) ? "yes" : "no");
 	err |= re_hprintf(pf, " ptime:        %u\n", acc->ptime);
 	err |= re_hprintf(pf, " regint:       %u\n", acc->regint);
 	err |= re_hprintf(pf, " prio:         %u\n", acc->prio);
