@@ -82,6 +82,7 @@ static int account_write_template(const char *file)
 			 "#    ;stunuser=STUN/TURN/ICE-username\n"
 			 "#    ;stunpass=STUN/TURN/ICE-password\n"
 			 "#    ;stunserver=stun:[user:pass]@host[:port]\n"
+			 "#    ;inreq_allowed={yes, no}  # default: yes\n"
 			 "#    ;video_codecs=h264,vp8,...\n"
 			 "#\n"
 			 "# Examples:\n"
