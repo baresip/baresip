@@ -56,6 +56,7 @@ struct stream {
 	struct sdp_media *sdp;   /**< SDP Media line                        */
 	enum sdp_dir ldir;       /**< SDP direction of the stream           */
 	struct rtp_sock *rtp;    /**< RTP Socket                            */
+	uint32_t rtx_ssrc;       /**< Retransmission SSRC                   */
 	struct rtcp_stats rtcp_stats;/**< RTCP statistics                   */
 	const struct mnat *mnat; /**< Media NAT traversal module            */
 	struct mnat_media *mns;  /**< Media NAT traversal state             */
@@ -821,11 +822,20 @@ static void update_remotes(struct list *streaml, const struct sa *raddr)
 
 static void stream_remote_set(struct stream *s)
 {
-	const char *rmid, *rssrc;
+	const char *rmid, *rssrc, *rfid;
 	const struct network *net = baresip_network();
 
 	if (!s)
 		return;
+
+	/* FID RFC 5576 and rtx.ssrc RFC 4588 */
+	rfid = sdp_media_rattr(s->sdp, "ssrc-group");
+	if (rfid && s->type == MEDIA_VIDEO) {
+		struct pl rtx_ssrc;
+		if (0 == re_regex(rfid, str_len(rfid), "FID [0-9]+ [0-9]+",
+				  NULL, &rtx_ssrc))
+			s->rtx_ssrc = pl_u32(&rtx_ssrc);
+	}
 
 	/* RFC 5576 */
 	rssrc = sdp_media_rattr(s->sdp, "ssrc");
