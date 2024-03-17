@@ -842,17 +842,19 @@ static void stream_remote_set(struct stream *s)
 			mtx_unlock(s->tx.lock);
 		}
 
-		const struct list *fmtl = sdp_media_format_lst(s->sdp, false);
-		LIST_FOREACH(fmtl, le)
+		const struct list *rfmtl = sdp_media_format_lst(s->sdp, false);
+		LIST_FOREACH(rfmtl, le)
 		{
 			struct sdp_format *fmt = le->data;
 			struct pl rtx_apt;
-			char *p = fmt->params;
+			struct pl p;
+
+			pl_set_str(&p, fmt->params);
 
 			if (0 != str_cmp("rtx", fmt->name))
 				continue;
-			if (0 ==
-			    re_regex(p, str_len(p), "apt=[0-9]+", &rtx_apt)) {
+
+			if (0 == re_regex(p.p, p.l, "apt=[0-9]+", &rtx_apt)) {
 				int apt = pl_i32(&rtx_apt);
 				mtx_lock(s->tx.lock);
 				if (apt == s->tx.pt_enc) {
