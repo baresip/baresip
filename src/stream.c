@@ -346,13 +346,11 @@ static void check_rtp_handler(void *arg)
 
 void stream_process_rtcp(struct stream *strm, struct rtcp_msg *msg)
 {
-
-	switch (msg->hdr.pt) {
-
-		case RTCP_SR:
-			(void)rtcp_stats(strm->rtp, msg->r.sr.ssrc,
-					 &strm->rtcp_stats);
-			break;
+	if (msg->hdr.pt == RTCP_SR && msg->hdr.count) {
+		(void)rtcp_stats(strm->rtp, msg->r.sr.ssrc, &strm->rtcp_stats);
+	}
+	else if (msg->hdr.pt == RTCP_RR) { /* maybe rtx.ssrc RFC 4588 */
+		(void)rtcp_stats(strm->rtp, msg->r.rr.ssrc, &strm->rtcp_stats);
 	}
 
 	if (strm->rtcph)
