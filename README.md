@@ -352,6 +352,7 @@ x11           X11 video output driver
 * RFC 4574  The SDP Label Attribute
 * RFC 4585  Extended RTP Profile for RTCP-Based Feedback (RTP/AVPF)
 * RFC 4587  RTP Payload Format for H.261 Video Streams
+* RFC 4588  RTP Retransmission Payload Format
 * RFC 4796  The SDP Content Attribute
 * RFC 4867  RTP Payload Format for the AMR and AMR-WB Audio Codecs
 * RFC 4961  Symmetric RTP / RTP Control Protocol (RTCP)
