@@ -7,7 +7,6 @@
  *     and Divus GmbH <developer@divus.eu>
  */
 #include <re.h>
-#include <re_h264.h>
 #include <re_h265.h>
 #include <rem.h>
 #include <baresip.h>
