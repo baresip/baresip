@@ -414,16 +414,23 @@ int stream_start_mediaenc(struct stream *strm)
 		return EINVAL;
 
 	if (strm->menc && strm->menc->mediah) {
+		struct sa raddr_rtp;
+		struct sa raddr_rtcp;
 
 		info("stream: %s: starting mediaenc '%s' (wait_secure=%d)\n",
 		     media_name(strm->type), strm->menc->id,
 		     strm->menc->wait_secure);
 
+		mtx_lock(strm->tx.lock);
+		sa_cpy(&raddr_rtp,  &strm->tx.raddr_rtp);
+		sa_cpy(&raddr_rtcp, &strm->tx.raddr_rtcp);
+		mtx_unlock(strm->tx.lock);
+
 		err = strm->menc->mediah(&strm->mes, strm->mencs, strm->rtp,
 				 rtp_sock(strm->rtp),
 				 strm->rtcp_mux ? NULL : rtcp_sock(strm->rtp),
-				 &strm->tx.raddr_rtp,
-				 strm->rtcp_mux ? NULL : &strm->tx.raddr_rtcp,
+				 &raddr_rtp,
+				 strm->rtcp_mux ? NULL : &raddr_rtcp,
 					 strm->sdp, strm);
 		if (err) {
 			warning("stream: start mediaenc error: %m\n", err);
@@ -781,8 +788,12 @@ int stream_send(struct stream *s, bool ext, bool marker, int pt, uint32_t ts,
 int stream_resend(struct stream *s, uint16_t seq, bool ext, bool marker,
 		  int pt, uint32_t ts, struct mbuf *mb)
 {
-	return rtp_resend(s->rtp, seq, &s->tx.raddr_rtp, ext, marker, pt, ts,
-			  mb);
+	struct sa raddr_rtp;
+
+	mtx_lock(s->tx.lock);
+	sa_cpy(&raddr_rtp,  &s->tx.raddr_rtp);
+	mtx_unlock(s->tx.lock);
+	return rtp_resend(s->rtp, seq, &raddr_rtp, ext, marker, pt, ts, mb);
 }
 
 
@@ -949,8 +960,11 @@ void stream_update_encoder(struct stream *s, int pt_enc)
 	if (!s)
 		return;
 
-	if (pt_enc >= 0)
+	if (pt_enc >= 0) {
+		mtx_lock(s->tx.lock);
 		s->tx.pt_enc = pt_enc;
+		mtx_unlock(s->tx.lock);
+	}
 }
 
 
@@ -1251,8 +1265,12 @@ bool stream_is_ready(const struct stream *strm)
 			return false;
 	}
 
-	if (!sa_isset(&strm->tx.raddr_rtp, SA_ALL))
+	mtx_lock(strm->tx.lock);
+	if (!sa_isset(&strm->tx.raddr_rtp, SA_ALL)) {
+		mtx_unlock(strm->tx.lock);
 		return false;
+	}
+	mtx_unlock(strm->tx.lock);
 
 	if (sdp_media_dir(stream_sdpmedia(strm)) == SDP_INACTIVE)
 		return false;
@@ -1291,6 +1309,7 @@ static void natpinhole_handler(void *arg)
 	struct stream *strm = arg;
 	const struct sdp_format *sc = NULL;
 	struct mbuf *mb = NULL;
+	struct sa raddr_rtp;
 	int err = 0;
 
 	sc = sdp_media_rformat(strm->sdp, NULL);
@@ -1305,8 +1324,12 @@ static void natpinhole_handler(void *arg)
 	mbuf_set_end(mb, RTP_HEADER_SIZE);
 	mbuf_advance(mb, RTP_HEADER_SIZE);
 
+	mtx_lock(strm->tx.lock);
+	sa_cpy(&raddr_rtp,  &strm->tx.raddr_rtp);
+	mtx_unlock(strm->tx.lock);
+
 	/* Send a dummy RTP packet to open NAT pinhole */
-	err = rtp_send(strm->rtp, &strm->tx.raddr_rtp, false, false,
+	err = rtp_send(strm->rtp, &raddr_rtp, false, false,
 		       sc->pt, 0, tmr_jiffies_rt_usec(), mb);
 	if (err) {
 		warning("stream: rtp_send to open natpinhole"
@@ -1500,7 +1523,17 @@ enum media_type stream_type(const struct stream *strm)
 
 int stream_pt_enc(const struct stream *strm)
 {
-	return strm ? strm->tx.pt_enc : -1;
+	int pt;
+
+
+	if (!strm)
+		return -1;
+
+	mtx_lock(strm->tx.lock);
+	pt =  strm->tx.pt_enc;
+	mtx_unlock(strm->tx.lock);
+
+	return pt;
 }
 
 
@@ -1558,6 +1591,14 @@ struct bundle *stream_bundle(const struct stream *strm)
 }
 
 
+static int mbuf_print_h(const char *p, size_t size, void *arg)
+{
+	struct mbuf *mb = arg;
+
+	return mbuf_write_mem(mb, (const uint8_t *) p, size);
+}
+
+
 /**
  * Print stream debug info
  *
@@ -1568,38 +1609,54 @@ struct bundle *stream_bundle(const struct stream *strm)
  */
 int stream_debug(struct re_printf *pf, const struct stream *s)
 {
+	struct mbuf *mb;
 	int err;
-
+	struct re_printf pfmb;
 	if (!s)
 		return 0;
 
-	err  = re_hprintf(pf, "--- Stream debug ---\n");
-	err |= re_hprintf(pf, " %s dir=%s pt_enc=%d\n", sdp_media_name(s->sdp),
-			  sdp_dir_name(sdp_media_dir(s->sdp)),
-			  s->tx.pt_enc);
+	mb = mbuf_alloc(64);
+	if (!mb) {
+		err = ENOMEM;
+		goto out;
+	}
 
-	err |= re_hprintf(pf, " local: %J, remote: %J/%J\n",
-			  sdp_media_laddr(s->sdp),
-			  &s->tx.raddr_rtp, &s->tx.raddr_rtcp);
-
-	err |= re_hprintf(pf, " mnat: %s (connected=%s)\n",
-			  s->mnat ? s->mnat->id : "(none)",
-			  s->mnat_connected ? "yes" : "no");
-
-	err |= re_hprintf(pf, " menc: %s (secure=%s)\n",
-			  s->menc ? s->menc->id : "(none)",
-			  s->menc_secure ? "yes" : "no");
-
-	err |= re_hprintf(pf, " tx.enabled: %s\n",
-			  re_atomic_rlx(&s->tx.enabled) ? "yes" : "no");
-	err |= rtprecv_debug(pf, s->rx);
+	pfmb.vph = mbuf_print_h;
+	pfmb.arg = mb;
+	err  = mbuf_printf(mb, "--- Stream debug ---\n");
 	mtx_lock(s->tx.lock);
-	err |= rtp_debug(pf, s->rtp);
-	mtx_unlock(s->tx.lock);
+	err |= mbuf_printf(mb, " %s dir=%s pt_enc=%d\n",
+			   sdp_media_name(s->sdp),
+			   sdp_dir_name(sdp_media_dir(s->sdp)),
+			   s->tx.pt_enc);
+
+	err |= mbuf_printf(mb, " local: %J, remote: %J/%J\n",
+			   sdp_media_laddr(s->sdp),
+			   &s->tx.raddr_rtp, &s->tx.raddr_rtcp);
+
+	err |= mbuf_printf(mb, " mnat: %s (connected=%s)\n",
+			   s->mnat ? s->mnat->id : "(none)",
+			   s->mnat_connected ? "yes" : "no");
+
+	err |= mbuf_printf(mb, " menc: %s (secure=%s)\n",
+			   s->menc ? s->menc->id : "(none)",
+			   s->menc_secure ? "yes" : "no");
+
+	err |= mbuf_printf(mb, " tx.enabled: %s\n",
+			   re_atomic_rlx(&s->tx.enabled) ? "yes" : "no");
+	err |= rtprecv_debug(&pfmb, s->rx);
+	err |= rtp_debug(&pfmb, s->rtp);
 
 	if (s->bundle)
-		err |= bundle_debug(pf, s->bundle);
+		err |= bundle_debug(&pfmb, s->bundle);
 
+	mtx_unlock(s->tx.lock);
+	if (err)
+		goto out;
+
+	err = re_hprintf(pf, "%b", mb->buf, mb->pos);
+out:
+	mem_deref(mb);
 	return err;
 }
 
