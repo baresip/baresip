@@ -622,6 +622,12 @@ int rtprecv_get_ssrc(struct rtp_receiver *rx, uint32_t *ssrc)
 }
 
 
+struct jbuf *rtprecv_jbuf(struct rtp_receiver *rx)
+{
+	return rx ? rx->jbuf : NULL;
+}
+
+
 void rtprecv_enable_mux(struct rtp_receiver *rx, bool enable)
 {
 	if (!rx)
