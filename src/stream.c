@@ -1118,6 +1118,23 @@ const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm)
 
 
 /**
+ * Get the Jitter Buffer Statistics from a media stream
+ *
+ * @param strm Stream object
+ * @param stat Pointer to statistics storage
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int stream_jbuf_stats(const struct stream *strm, struct jbuf_stat *stat)
+{
+	if (!strm)
+		return EINVAL;
+
+	return jbuf_stats(rtprecv_jbuf(strm->rx), stat);
+}
+
+
+/**
  * Get the number of transmitted RTP packets
  *
  * @param strm Stream object

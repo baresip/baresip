@@ -1454,6 +1454,8 @@ struct stream_param {
 	const char *peer;   /**< Peer uri/name or identifier  */
 };
 
+struct jbuf_stat;
+
 typedef void (stream_mnatconn_h)(struct stream *strm, void *arg);
 typedef void (stream_rtpestab_h)(struct stream *strm, void *arg);
 typedef void (stream_rtcp_h)(struct stream *strm,
@@ -1462,6 +1464,7 @@ typedef void (stream_error_h)(struct stream *strm, int err, void *arg);
 
 int stream_update(struct stream *s);
 const struct rtcp_stats *stream_rtcp_stats(const struct stream *strm);
+int stream_jbuf_stats(const struct stream *strm, struct jbuf_stat *s);
 struct sdp_media *stream_sdpmedia(const struct stream *s);
 uint32_t stream_metric_get_tx_n_packets(const struct stream *strm);
 uint32_t stream_metric_get_tx_n_bytes(const struct stream *strm);
