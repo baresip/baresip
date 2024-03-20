@@ -28,9 +28,11 @@
 
 
 #if JBUF_STAT
+#define STAT_SET(var, value)  (jb->stat.var) = (value)  /**< Stats set */
 #define STAT_ADD(var, value)  (jb->stat.var) += (value) /**< Stats add */
 #define STAT_INC(var)         ++(jb->stat.var)          /**< Stats inc */
 #else
+#define STAT_SET(var, value)
 #define STAT_ADD(var, value)
 #define STAT_INC(var)
 #endif
@@ -470,6 +472,7 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 
 	RE_TRACE_ID_INSTANT_I("jbuf", "play_delay",
 			      delay_ms(jitter_offset, jb->srate), jb->id);
+	STAT_SET(c_delay, delay_ms(jitter_offset, jb->srate));
 
 	return play_time_base + jitter_offset;
 }
@@ -536,7 +539,7 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	if (jb->running) {
 		/* Packet arrived too late by sequence to be put into buffer */
 		if (jb->seq_get && rtp_seq_less(seq, jb->seq_get + 1)) {
-			STAT_INC(n_late);
+			STAT_INC(n_late_lost);
 			jb->p.late_pkts++;
 
 			DEBUG_INFO("packet too late: seq=%u "
@@ -649,6 +652,7 @@ success:
 		/* Since there is a chance that aubuf can compensate the jitter
 		 * no late loss drop here */
 		jb->p.late_pkts++;
+		STAT_INC(n_late);
 		RE_TRACE_ID_INSTANT_I(
 			"jbuf", "late_play",
 			delay_ms((next - f->playout_time), jb->srate),
