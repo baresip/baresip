@@ -797,6 +797,7 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	struct mcreceiver *mcreceiver = NULL;
 	struct config_avt *cfg = &conf_config()->avt;
 	struct range jbuf_del;
+	uint32_t jbuf_sz;
 	enum jbuf_type jbtype;
 	struct pl pl;
 
@@ -832,16 +833,20 @@ int mcreceiver_alloc(struct sa *addr, uint8_t prio)
 	mcreceiver->prio = prio;
 
 	mcreceiver->enable = true;
-	mcreceiver->muted = false;
-	mcreceiver->state = LISTENING;
+	mcreceiver->muted  = false;
+	mcreceiver->state  = LISTENING;
 
-	jbuf_del  = cfg->audio.jbuf_del;
-	jbtype = cfg->audio.jbtype;
-	(void)conf_get_range(conf_cur(), "multicast_jbuf_delay", &jbuf_del);
+	jbuf_del = cfg->audio.jbuf_del;
+	jbuf_sz	 = cfg->audio.jbuf_sz;
+	jbtype	 = cfg->audio.jbtype;
+
+	(void)conf_get_range(conf_cur(), "multicast_jbuf_delay_ms", &jbuf_del);
+	(void)conf_get_u32(conf_cur(), "multicast_jbuf_size", &jbuf_sz);
 	if (0 == conf_get(conf_cur(), "multicast_jbuf_type", &pl))
 		jbtype = conf_get_jbuf_type(&pl);
 
-	err = jbuf_alloc(&mcreceiver->jbuf, jbuf_del.min, jbuf_del.max);
+	err = jbuf_alloc(&mcreceiver->jbuf, jbuf_del.min, jbuf_del.max,
+			 jbuf_sz);
 	err |= jbuf_set_type(mcreceiver->jbuf, jbtype);
 	if (err)
 		goto out;
