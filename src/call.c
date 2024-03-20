@@ -141,75 +141,12 @@ static const struct sdp_format *sdp_media_rcodec(const struct sdp_media *m)
 }
 
 
-static int start_audio(struct call *call)
+static void call_timer_start(struct call *call)
 {
-	const struct sdp_format *sc;
-	const struct sdp_media *m = stream_sdpmedia(audio_strm(call->audio));
-	struct aucodec *ac;
-	enum sdp_dir dir = sdp_media_dir(m);
-	int err = 0;
+	debug("call: timer started\n");
 
-	/* Audio Stream */
-	sc = sdp_media_rcodec(m);
-	if (!sc) {
-		info("call: audio stream is disabled\n");
-		return 0;
-	}
-
-	ac = sc->data;
-	if (dir & SDP_SENDONLY)
-		err |= audio_encoder_set(call->audio, ac,
-					 sc->pt, sc->params);
-
-	if (dir & SDP_RECVONLY)
-		err |= audio_decoder_set(call->audio, ac,
-					 sc->pt, sc->params);
-	if (err) {
-		warning("call: start:"
-			" audio codec setup error (%m)\n", err);
-		return err;
-	}
-
-	err = audio_start(call->audio);
-	if (err)
-		return err;
-
-	return 0;
-}
-
-
-static void call_stream_start(struct call *call, bool active)
-{
-	int err;
-	struct le *le;
-
-	debug("call: stream start (active=%d)\n", active);
-
-	if (stream_is_ready(audio_strm(call->audio))) {
-		err = start_audio(call);
-		if (err) {
-			warning("call: could not start audio: %m\n", err);
-		}
-	}
-
-	if (stream_is_ready(video_strm(call->video))) {
-		err = video_update(call->video, call->peer_uri);
-		if (err) {
-			warning("call: could not start video: %m\n", err);
-		}
-	}
-
-	if (active) {
-
-		tmr_cancel(&call->tmr_inv);
-		call->time_start = time(NULL);
-
-		stream_flush(audio_strm(call->audio));
-	}
-
-	FOREACH_STREAM {
-		stream_enable(le->data, true);
-	}
+	tmr_cancel(&call->tmr_inv);
+	call->time_start = time(NULL);
 }
 
 
@@ -309,34 +246,6 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 }
 
 
-static int update_audio(struct call *call)
-{
-	const struct sdp_format *sc;
-	int err = 0;
-
-	debug("audio: update\n");
-
-	sc = sdp_media_rcodec(stream_sdpmedia(audio_strm(call->audio)));
-	if (sc) {
-		struct aucodec *ac = sc->data;
-
-		err  = audio_decoder_set(call->audio, ac,
-					 sc->pt, sc->params);
-		if (err) {
-			warning("call: update:"
-				" audio_decoder_set error: %m\n", err);
-		}
-		err |= audio_encoder_set(call->audio, ac,
-					 sc->pt, sc->params);
-	}
-	else {
-		info("audio stream is disabled..\n");
-	}
-
-	return err;
-}
-
-
 static int call_apply_sdp(struct call *call)
 {
 	struct le *le;
@@ -377,7 +286,7 @@ static int update_streams(struct call *call)
 		return EINVAL;
 
 	if (stream_is_ready(audio_strm(call->audio)))
-		err |= update_audio(call);
+		err |= audio_update(call->audio);
 	else
 		audio_stop(call->audio);
 
@@ -528,7 +437,7 @@ static void menc_event_handler(enum menc_event event,
 		if (strstr(prm, "audio")) {
 			stream_set_secure(audio_strm(call->audio), true);
 			stream_start_rtcp(audio_strm(call->audio));
-			err = start_audio(call);
+			err = audio_update(call->audio);
 			if (err) {
 				warning("call: secure: could not"
 					" start audio: %m\n", err);
@@ -593,7 +502,7 @@ static void stream_mnatconn_handler(struct stream *strm, void *arg)
 		switch (stream_type(strm)) {
 
 		case MEDIA_AUDIO:
-			err = start_audio(call);
+			err = audio_update(call->audio);
 			if (err) {
 				warning("call: mnatconn: could not"
 					" start audio: %m\n", err);
@@ -1325,8 +1234,6 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 	if (err)
 		goto out;
 
-	call_stream_start(call, false);
-
 out:
 	mem_deref(desc);
 
@@ -1954,7 +1861,7 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	if (call->got_offer)
 		(void)update_streams(call);
 
-	call_stream_start(call, true);
+	call_timer_start(call);
 
 	if (call->rtp_timeout_ms) {
 
@@ -2412,7 +2319,6 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 		mem_ref(call);
 		call_event_handler(call, CALL_EVENT_PROGRESS, "%s",
                                    call->peer_uri);
-		call_stream_start(call, false);
 		mem_deref(call);
 	}
 	else {
