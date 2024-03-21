@@ -13,6 +13,7 @@ sip_capath		/etc/ssl/certs
 #sip_trans_def		udp
 sip_verify_server	yes
 #sip_verify_client	no
+#sip_tls_resumption	all		# none, ids, tickets
 sip_tos			160 # See TOS fields!
 
 ## TOS fields ##
