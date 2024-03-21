@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
+#include <string.h>
 #include <re.h>
 #include <re_atomic.h>
 #include <baresip.h>
