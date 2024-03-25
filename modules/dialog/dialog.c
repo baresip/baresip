@@ -94,7 +94,8 @@ static void close_handler(int err, const struct sip_msg *msg,
 }
 
 
-static struct dialog *dialog_find(const struct ua *ua, const struct contact *contact)
+static struct dialog *dialog_find(const struct ua *ua,
+				  const struct contact *contact)
 {
 	struct le *le;
 
@@ -121,12 +122,13 @@ static int dialog_subscribe(struct dialog *dialog)
 	info("dialog: subscribe from %s to %s\n", aor, c_uri);
 
 	err = sipevent_subscribe(&dialog->sub, uag_sipevent_sock(),
-	                         c_uri, NULL,
-	                         aor, "dialog", NULL,
-	                         600, ua_cuser(dialog->ua),
+				 c_uri, NULL,
+				 aor, "dialog", NULL,
+				 600, ua_cuser(dialog->ua),
 				 routev, routev[0] ? 1 : 0,
-	                         auth_handler, ua_account(dialog->ua), true, NULL,
-				 notify_handler, close_handler, dialog,
+				 auth_handler, ua_account(dialog->ua),
+				 true, NULL, notify_handler,
+				 close_handler, dialog,
 				 "Accept:"
 				 " application/dialog-info\r\n");
 
@@ -179,7 +181,9 @@ static int dialog_subscribe_all(struct ua *ua)
 
 static int dialog_unsubscribe(struct dialog *dialog)
 {
-	info("dialog: unsubscribe from %s to %s\n", account_aor(ua_account(dialog->ua)), contact_uri(dialog->contact));
+	info("dialog: unsubscribe from %s to %s\n",
+	     account_aor(ua_account(dialog->ua)),
+	     contact_uri(dialog->contact));
 
 	dialog->shutdown = true;
 
