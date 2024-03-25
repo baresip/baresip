@@ -160,8 +160,10 @@ static int dialog_subscribe_all(struct ua *ua)
 				continue;
 
 			dialog = mem_zalloc(sizeof(*dialog), destructor);
-			if (!dialog)
-				err |= ENOMEM;
+			if (!dialog) {
+				err = ENOMEM;
+				return err;
+			}
 
 			list_append(&dialogl, &dialog->le, dialog);
 			dialog->ua = mem_ref(ua);
