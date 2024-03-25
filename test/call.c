@@ -3089,7 +3089,7 @@ static bool sdp_crypto_handler(const char *name, const char *value, void*arg)
 	if (err)
 		return false;
 
-	return pl_strdup(key, &key_info) ? false : true;
+	return 0 == pl_strdup(key, &key_info);
 }
 
 
@@ -3114,6 +3114,11 @@ int test_call_srtp_tx_rekey(void)
 	char *a_rx_key_new = NULL, *a_tx_key_new = NULL;
 	char *b_rx_key_new = NULL, *b_tx_key_new = NULL;
 	int err = 0;
+
+	if (!cmd_resp)
+		err = ENOMEM;
+
+	TEST_ERR(err);
 
 	err =  module_load(".", "srtp");
 	err |= module_load(".", "ausine");

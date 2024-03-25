@@ -307,7 +307,7 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 	}
 
 	/* receiving key-info changed -> reset srtp_rx */
-	if (st->srtp_rx && memcmp(st->key_rx, new_key,
+	if (st->srtp_rx && mem_seccmp(st->key_rx, new_key,
 		sizeof(st->key_rx) > olen ? olen : sizeof(st->key_rx))) {
 		info("srtp: %s: re-keying in progress\n",
 			stream_name(st->strm));
@@ -315,6 +315,7 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 	}
 
 	memcpy(st->key_rx, new_key, olen);
+	mem_secclean(new_key, olen);
 	new_key = mem_deref(new_key);
 
 	err = start_srtp(st, st->crypto_suite);
@@ -492,9 +493,9 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 }
 
 
-static int cmd_tx_rekey(struct re_printf *pf, void *arg) {
+static int cmd_tx_rekey(struct re_printf *pf, void *arg)
+{
 	const struct cmd_arg *carg = arg;
-	struct call *selcall = NULL;
 	int err = 0;
 
 	if (!str_isset(carg->prm)) {
@@ -502,7 +503,7 @@ static int cmd_tx_rekey(struct re_printf *pf, void *arg) {
 		return EINVAL;
 	}
 
-	selcall = uag_call_find(carg->prm);
+	struct call *selcall = uag_call_find(carg->prm);
 	if (!selcall) {
 		re_hprintf(pf, "srtprekey: call id \"%s\" not found\n",
 			carg->prm);
@@ -512,13 +513,9 @@ static int cmd_tx_rekey(struct re_printf *pf, void *arg) {
 	re_hprintf(pf, "srtprekey: rekey srtp transmission keys of"
 		" call \"%s\"\n", carg->prm);
 
-	struct stream *astrm = audio_strm(call_audio(selcall));
-	struct stream *vstrm = video_strm(call_video(selcall));
-
-	if (astrm)
-		stream_remove_menc_media(astrm);
-	if (vstrm)
-		stream_remove_menc_media(vstrm);
+	struct le *le;
+	for (le = call_streaml(selcall)->head; le; le = le->next)
+		stream_remove_menc_media(le->data);
 
 	err = call_update_media(selcall);
 	err |= call_modify(selcall);
