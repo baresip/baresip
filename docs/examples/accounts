@@ -43,7 +43,7 @@
 #    ;stunpass=STUN/TURN/ICE-password
 #    ;stunserver=stun:[user:pass]@host[:port]  # see RFC 3986: Use of the format "user:password" in the userinfo field is deprecated.
 #    ;tcpsrcport=6060
-#    ;inreq_allowed={yes, no}  # default: no
+#    ;inreq_allowed={yes, no}  # default: yes
 #    ;uas_user=username
 #    ;uas_pass=password
 #    ;video_codecs=h264,vp8,...

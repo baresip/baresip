@@ -321,7 +321,7 @@ static void inreq_mode_decode(struct account *prm, const struct pl *pl)
 {
 	struct pl mode;
 
-	prm->inreq_mode = INREQ_MODE_OFF;
+	prm->inreq_mode = INREQ_MODE_ON;
 
 	if (0 == msg_param_decode(pl, "inreq_allowed", &mode)) {
 
@@ -2045,7 +2045,7 @@ int account_debug(struct re_printf *pf, const struct account *acc)
 			  acc->pinhole ? "yes" : "no");
 	for (i=0; i<RE_ARRAY_SIZE(acc->outboundv); i++) {
 		if (acc->outboundv[i]) {
-			err |= re_hprintf(pf, " outbound%d:    %s\n",
+			err |= re_hprintf(pf, " outbound%zu:    %s\n",
 					  i+1, acc->outboundv[i]);
 		}
 	}
@@ -2189,7 +2189,7 @@ bool account_uas_isset(const struct account *acc)
  */
 enum inreq_mode account_inreq_mode(const struct account *acc)
 {
-	return acc ? acc->inreq_mode : INREQ_MODE_OFF;
+	return acc ? acc->inreq_mode : INREQ_MODE_ON;
 }
 
 

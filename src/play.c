@@ -65,6 +65,7 @@ static void tmr_stop(void *arg)
 static void tmr_polling(void *arg)
 {
 	struct play *play = arg;
+	int err = 0;
 
 	mtx_lock(&play->lock);
 
@@ -73,12 +74,9 @@ static void tmr_polling(void *arg)
 	if (play->eof) {
 		if (play->repeat == 0)
 			tmr_start(&play->tmr, 1, tmr_stop, arg);
-
-		mtx_unlock(&play->lock);
-		return;
 	}
 	else if (play->aubuf && !play->auplay) {
-		start_auplay(play);
+		err = start_auplay(play);
 
 		tmr_start(&play->tmr, 4, tmr_polling, play);
 	}
@@ -86,10 +84,13 @@ static void tmr_polling(void *arg)
 	if (play->ausrc && play->trep && play->trep <= tmr_jiffies()) {
 		play->trep = 0;
 		aubuf_flush(play->aubuf);
-		start_ausrc(play);
+		err = start_ausrc(play);
 	}
 
 	mtx_unlock(&play->lock);
+
+	if (err)
+		tmr_start(&play->tmr, 1, tmr_stop, arg);
 }
 
 
@@ -345,8 +346,11 @@ static void aubuf_write_handler(struct auframe *af, void *arg)
 	aubuf_read_auframe(play->aubuf, af);
 
 	mtx_lock(&play->lock);
-	if (!play->trep && !play->ausrc_st && left < sz)
-		check_restart(play);
+	if (!play->trep && !play->ausrc_st) {
+		bool filling = left == aubuf_cur_size(play->aubuf);
+		if (left < sz || filling)
+			check_restart(play);
+	}
 
 	mtx_unlock(&play->lock);
 }
@@ -376,6 +380,8 @@ static int start_ausrc(struct play *play)
 	err = ausrc->alloch(&play->ausrc_st, ausrc, &play->sprm,
 			play->filename,
 			ausrc_read_handler, ausrc_error_handler, play);
+	if (err)
+		warning("play: could not start ausrc (%m)\n", err);
 
 	return err;
 }
@@ -394,6 +400,9 @@ static int start_auplay(struct play *play)
 	err = auplay_alloc(&play->auplay, baresip_auplayl(),
 			   play->mod, &wprm,
 			   play->dev, aubuf_write_handler, play);
+	if (err)
+		warning("play: could not start auplay (%m)\n", err);
+
 	return err;
 }
 
