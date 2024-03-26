@@ -68,6 +68,7 @@ static int account_write_template(const char *file)
 			 "#    ;medianat={stun,turn,ice}\n"
 			 "#    ;rtcp_mux={yes, no}\n"
 			 "#    ;mwi=no\n"
+			 "#    ;dialog={yes, no}\n"
 			 "#    ;outbound=\"sip:primary.example.com"
 			 ";transport=tcp\"\n"
 			 "#    ;outbound2=sip:secondary.example.com\n"

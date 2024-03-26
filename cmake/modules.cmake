@@ -48,6 +48,7 @@ set(MODULES
   mqtt
   multicast
   mwi
+  dialog
   natpmp
   netroam
   opensles

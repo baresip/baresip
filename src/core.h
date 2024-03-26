@@ -82,6 +82,7 @@ struct account {
 	struct list vidcodecl;       /**< List of preferred video-codecs     */
 	bool videoen;                /**< Video enabled flag                 */
 	bool mwi;                    /**< MWI on/off                         */
+	bool dialog;                 /**< Dialog subscriptions on/off        */
 	bool refer;                  /**< REFER method on/off                */
 	char *cert;                  /**< SIP TLS client certificate+keyfile */
 	char *ausrc_mod;
