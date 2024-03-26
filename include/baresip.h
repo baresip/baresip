@@ -360,6 +360,7 @@ struct config_sip {
 	enum sip_transp transp; /**< Default outgoing SIP transport protocol */
 	bool verify_server;     /**< Enable SIP TLS verify server   */
 	bool verify_client;     /**< Enable SIP TLS verify client   */
+	enum tls_resume_mode tls_resume; /** TLS resumption mode    */
 	uint8_t tos;            /**< Type-of-Service for SIP        */
 };
 

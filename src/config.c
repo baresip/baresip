@@ -37,6 +37,7 @@ static struct config core_config = {
 		SIP_TRANSP_UDP,
 		false,
 		false,
+		TLS_RESUMPTION_ALL,
 		0xa0,
 	},
 
@@ -331,6 +332,23 @@ static const char *net_af_str(int af)
 }
 
 
+static const char *tls_resume_mode_str(enum tls_resume_mode mode)
+{
+	switch (mode) {
+	case TLS_RESUMPTION_NONE:
+		return "none";
+	case TLS_RESUMPTION_ALL:
+		return "all";
+	case TLS_RESUMPTION_IDS:
+		return "ids";
+	case TLS_RESUMPTION_TICKETS:
+		return "tickets";
+	}
+
+	return "?";
+}
+
+
 /**
  * Parse the core configuration file and update baresip core config
  *
@@ -374,6 +392,20 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	(void)conf_get_bool(conf, "sip_verify_client",
 			&cfg->sip.verify_client);
+
+	if (0 == conf_get(conf, "sip_tls_resumption", &pl)) {
+		if (0 == pl_strcasecmp(&pl, "none"))
+			cfg->sip.tls_resume = TLS_RESUMPTION_NONE;
+		else if (0 == pl_strcasecmp(&pl, "ids"))
+			cfg->sip.tls_resume = TLS_RESUMPTION_IDS;
+		else if (0 == pl_strcasecmp(&pl, "tickets"))
+			cfg->sip.tls_resume = TLS_RESUMPTION_TICKETS;
+		else
+			cfg->sip.tls_resume = TLS_RESUMPTION_ALL;
+	}
+	else {
+		cfg->sip.tls_resume = TLS_RESUMPTION_ALL;
+	}
 
 	if (!conf_get(conf, "sip_trans_def", &tr))
 		cfg->sip.transp = sip_transp_decode(&tr);
@@ -559,6 +591,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_trans_def\t%s\n"
 			 "sip_verify_server\t\t\t%s\n"
 			 "sip_verify_client\t\t\t%s\n"
+			 "sip_tls_resumption\t\t\t%s\n"
 			 "sip_tos\t%u\n"
 			 "\n"
 			 "# Call\n"
@@ -572,6 +605,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 sip_transp_name(cfg->sip.transp),
 			 cfg->sip.verify_server ? "yes" : "no",
 			 cfg->sip.verify_client ? "yes" : "no",
+			 tls_resume_mode_str(cfg->sip.tls_resume),
 			 cfg->sip.tos,
 
 			 cfg->call.local_timeout,
@@ -821,6 +855,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#sip_trans_def\t\tudp\n"
 			  "#sip_verify_server\tyes\n"
 			  "#sip_verify_client\tno\n"
+			  "#sip_tls_resumption\tall\n"
 			  "sip_tos\t\t\t160\n"
 			  "\n"
 			  ,
