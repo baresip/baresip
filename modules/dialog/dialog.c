@@ -144,7 +144,7 @@ static int dialog_subscribe(struct dialog *dialog)
 static int dialog_subscribe_all(struct ua *ua)
 {
 	struct dialog *dialog;
-	int err;
+	int err = 0;
 	/* We will subscribe to all dialog contacts*/
 	struct contacts *contacts = baresip_contacts();
 	struct le *le;
