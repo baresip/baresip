@@ -858,6 +858,7 @@ enum ua_event {
 	UA_EVENT_CALL_REMOTE_SDP,     /**< param: offer or answer */
 	UA_EVENT_CALL_HOLD,           /**< Call put on-hold by peer          */
 	UA_EVENT_CALL_RESUME,         /**< Call resumed by peer              */
+	UA_EVENT_CALL_REJECTED,       /**< Incoming call rejected            */
 	UA_EVENT_REFER,
 	UA_EVENT_MODULE,
 	UA_EVENT_END_OF_FILE,
@@ -1651,6 +1652,8 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...);
 void module_event(const char *module, const char *event, struct ua *ua,
 		struct call *call, const char *fmt, ...);
+void ua_event_rejected(struct ua *ua, const char *reason,
+		       const struct sip_msg *msg);
 const char  *uag_event_str(enum ua_event ev);
 
 

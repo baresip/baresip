@@ -704,6 +704,8 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	if (uag_dnd()) {
 		(void)sip_treply(NULL, uag_sip(), msg,
 			480,"Temporarily Unavailable");
+
+		ua_event_rejected(ua, "DnD", msg);
 		return;
 	}
 
