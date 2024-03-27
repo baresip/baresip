@@ -3,6 +3,7 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
+#include <string.h>
 #include <re.h>
 #include <re_atomic.h>
 #include <baresip.h>
@@ -272,23 +273,50 @@ static int sdp_enc(struct menc_st *st, struct sdp_media *m,
 
 static int start_crypto(struct menc_st *st, const struct pl *key_info)
 {
-	size_t olen, len;
+	size_t olen = 0, len = 0;
 	char buf[64] = "";
-	int err;
+	uint8_t *new_key = NULL;
+	int err = 0;
 
 	len = get_master_keylen(resolve_suite(st->crypto_suite));
 
 	/* key-info is BASE64 encoded */
+	new_key = mem_zalloc(len, NULL);
+	if (!new_key)
+		return ENOMEM;
 
-	olen = sizeof(st->key_rx);
-	err = base64_decode(key_info->p, key_info->l, st->key_rx, &olen);
-	if (err)
+	olen = len;
+	err = base64_decode(key_info->p, key_info->l, new_key, &olen);
+	if (err) {
+		mem_deref(new_key);
 		return err;
+	}
 
 	if (len != olen) {
-		warning("srtp: %s: srtp keylen is %u (should be %zu)\n",
-			st->crypto_suite, olen, len);
+		warning("srtp: %s: %s: srtp keylen is %u (should be %zu)\n",
+			stream_name(st->strm), st->crypto_suite, olen, len);
+		mem_deref(new_key);
+		return err;
 	}
+
+	if (olen > sizeof(st->key_rx)) {
+		warning("srtp: %s: received key exceeds max key length\n",
+			stream_name(st->strm));
+		mem_deref(new_key);
+		return ERANGE;
+	}
+
+	/* receiving key-info changed -> reset srtp_rx */
+	if (st->srtp_rx && mem_seccmp(st->key_rx, new_key,
+		sizeof(st->key_rx) > olen ? olen : sizeof(st->key_rx))) {
+		info("srtp: %s: re-keying in progress\n",
+			stream_name(st->strm));
+		st->srtp_rx = mem_deref(st->srtp_rx);
+	}
+
+	memcpy(st->key_rx, new_key, olen);
+	mem_secclean(new_key, olen);
+	new_key = mem_deref(new_key);
 
 	err = start_srtp(st, st->crypto_suite);
 	if (err)
@@ -327,6 +355,13 @@ static bool sdp_attr_handler(const char *name, const char *value, void *arg)
 
 	if (!cryptosuite_issupported(&c.suite))
 		return false;
+
+	/* receiving crypto-suite changed -> reset srtp_rx */
+	if (st->srtp_rx && pl_strcmp(&c.suite, st->crypto_suite)) {
+		info ("srtp (%s-rx): cipher suite changed from %s to %r\n",
+			stream_name(st->strm), st->crypto_suite, &c.suite);
+		st->srtp_rx = mem_deref(st->srtp_rx);
+	}
 
 	st->crypto_suite = mem_deref(st->crypto_suite);
 	pl_strdup(&st->crypto_suite, &c.suite);
@@ -458,6 +493,45 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 }
 
 
+static int cmd_tx_rekey(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	int err = 0;
+
+	if (!str_isset(carg->prm)) {
+		re_hprintf(pf, "usage: /srtprekey <call id>");
+		return EINVAL;
+	}
+
+	struct call *selcall = uag_call_find(carg->prm);
+	if (!selcall) {
+		re_hprintf(pf, "srtprekey: call id \"%s\" not found\n",
+			carg->prm);
+		return EINVAL;
+	}
+
+	re_hprintf(pf, "srtprekey: rekey srtp transmission keys of"
+		" call \"%s\"\n", carg->prm);
+
+	struct le *le;
+	for (le = call_streaml(selcall)->head; le; le = le->next)
+		stream_remove_menc_media(le->data);
+
+	err = call_update_media(selcall);
+	err |= call_modify(selcall);
+	if (err) {
+		re_hprintf(pf, "srtprekey: call update failed %m\n", err);
+	}
+
+	return err;
+}
+
+
+static const struct cmd cmdv[] = {
+{"srtprekey", 0, CMD_PRM, "Change outgoing streaming keys", cmd_tx_rekey},
+};
+
+
 static struct menc menc_srtp_opt = {
 	.id        = "srtp",
 	.sdp_proto = "RTP/AVP",
@@ -488,7 +562,7 @@ static int mod_srtp_init(void)
 	menc_register(mencl, &menc_srtp_mand);
 	menc_register(mencl, &menc_srtp_mandf);
 
-	return 0;
+	return cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 }
 
 
@@ -497,6 +571,8 @@ static int mod_srtp_close(void)
 	menc_unregister(&menc_srtp_mandf);
 	menc_unregister(&menc_srtp_mand);
 	menc_unregister(&menc_srtp_opt);
+
+	cmd_unregister(baresip_commands(), cmdv);
 
 	return 0;
 }
