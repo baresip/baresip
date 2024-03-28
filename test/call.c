@@ -3093,32 +3093,17 @@ static bool sdp_crypto_handler(const char *name, const char *value, void*arg)
 }
 
 
-static int print_handler(const char *p, size_t size, void *arg)
-{
-	struct mbuf *mb = arg;
-	return mbuf_write_mem(mb, (uint8_t *)p, size);
-}
-
-
 int test_call_srtp_tx_rekey(void)
 {
 	struct fixture fix, *f = &fix;
 	struct cancel_rule *cr = NULL;
 	struct auplay *auplay = NULL;
 
-	char rekeycmd [128];
-	struct mbuf *cmd_resp = mbuf_alloc(128);
-	struct re_printf pf = {print_handler, cmd_resp};
 	char *a_rx_key = NULL, *a_tx_key = NULL;
 	char *b_rx_key = NULL, *b_tx_key = NULL;
 	char *a_rx_key_new = NULL, *a_tx_key_new = NULL;
 	char *b_rx_key_new = NULL, *b_tx_key_new = NULL;
 	int err = 0;
-
-	if (!cmd_resp)
-		err = ENOMEM;
-
-	TEST_ERR(err);
 
 	err =  module_load(".", "srtp");
 	err |= module_load(".", "ausine");
@@ -3130,7 +3115,7 @@ int test_call_srtp_tx_rekey(void)
 
 	fixture_init_prm(f, ";mediaenc=srtp-mand"
 		";ptime=1;audio_player=mock-auplay,a");
-	mem_deref(f->b.ua);
+	f->b.ua = mem_deref(f->b.ua);
 	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>;mediaenc=srtp-mand"
 		";regint=0;ptime=1;audio_player=mock-auplay,b");
 	TEST_ERR(err);
@@ -3172,10 +3157,13 @@ int test_call_srtp_tx_rekey(void)
 	TEST_STRCMP(a_tx_key, str_len(a_tx_key), b_rx_key, str_len(b_rx_key));
 
 	/* rekeying transmission keys from a -> b */
-	re_snprintf(rekeycmd, sizeof(rekeycmd), "srtprekey %s",
-		call_id(ua_call(f->a.ua)));
-	cmd_process_long(baresip_commands(), rekeycmd,
-		str_len(rekeycmd), &pf, NULL);
+	struct le *le = NULL;
+	for (le = call_streaml(ua_call(f->a.ua))->head; le; le = le->next)
+		stream_remove_menc_media_state(le->data);
+
+	err = call_update_media(ua_call(f->a.ua));
+	err |= call_modify(ua_call(f->a.ua));
+	TEST_ERR(err);
 
 	cancel_rule_new(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
 	cr->prm = "auframe";
@@ -3201,7 +3189,7 @@ int test_call_srtp_tx_rekey(void)
 	sdp_media_rattr_apply(m, "crypto", sdp_crypto_handler, &b_rx_key_new);
 
 	/* transmission key of a must change */
-	ASSERT_TRUE(str_casecmp(a_tx_key, a_tx_key_new));
+	ASSERT_TRUE(0 != str_casecmp(a_tx_key, a_tx_key_new));
 
 	/* transmission key of b must stay the same */
 	TEST_STRCMP(b_tx_key, str_len(b_tx_key),
@@ -3224,8 +3212,6 @@ out:
 
 	module_unload("ausine");
 	module_unload("srtp");
-
-	cmd_resp = mem_deref(cmd_resp);
 
 	a_rx_key = mem_deref(a_rx_key);
 	a_tx_key = mem_deref(a_tx_key);
