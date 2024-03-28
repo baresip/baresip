@@ -29,6 +29,8 @@ struct sender {
 	struct sa raddr_rtp;   /**< Remote RTP address              */
 	struct sa raddr_rtcp;  /**< Remote RTCP address             */
 	int pt_enc;            /**< Payload type for encoding       */
+	int pt_rtx;            /**< Payload type for rtx encoding   */
+	uint32_t rtx_ssrc;     /**< Retransmission SSRC             */
 	RE_ATOMIC bool enabled;/**< True if enabled                 */
 	mtx_t *lock;
 };
@@ -832,11 +834,49 @@ static void update_remotes(struct list *streaml, const struct sa *raddr)
 
 static void stream_remote_set(struct stream *s)
 {
-	const char *rmid, *rssrc;
+	const char *rmid, *rssrc, *rfid;
 	const struct network *net = baresip_network();
 
 	if (!s)
 		return;
+
+	/* FID RFC 5576 and rtx.ssrc RFC 4588 */
+	rfid = sdp_media_rattr(s->sdp, "ssrc-group");
+	if (rfid && s->type == MEDIA_VIDEO) {
+		struct pl rtx_ssrc;
+		struct le *le;
+
+		if (0 == re_regex(rfid, str_len(rfid), "FID [0-9]+ [0-9]+",
+				  NULL, &rtx_ssrc)) {
+			mtx_lock(s->tx.lock);
+			s->tx.rtx_ssrc = pl_u32(&rtx_ssrc);
+			mtx_unlock(s->tx.lock);
+		}
+
+		const struct list *rfmtl = sdp_media_format_lst(s->sdp, false);
+		LIST_FOREACH(rfmtl, le)
+		{
+			struct sdp_format *fmt = le->data;
+			struct pl rtx_apt;
+			struct pl p;
+
+			pl_set_str(&p, fmt->params);
+
+			if (0 != str_cmp("rtx", fmt->name))
+				continue;
+
+			if (0 == re_regex(p.p, p.l, "apt=[0-9]+", &rtx_apt)) {
+				int apt = pl_i32(&rtx_apt);
+				mtx_lock(s->tx.lock);
+				if (apt == s->tx.pt_enc) {
+					s->tx.pt_rtx = fmt->pt;
+					mtx_unlock(s->tx.lock);
+					break;
+				}
+				mtx_unlock(s->tx.lock);
+			}
+		}
+	}
 
 	/* RFC 5576 */
 	rssrc = sdp_media_rattr(s->sdp, "ssrc");
