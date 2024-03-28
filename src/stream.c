@@ -955,10 +955,26 @@ int stream_update(struct stream *s)
 }
 
 
-void stream_remove_menc_media(struct stream *strm)
+/**
+ * Removes the media encryption state from a stream.
+ *
+ * Only apply if SRTP module is used!
+ *
+ * The encryption consists of 1 encryption session state and N encryption
+ * media states.
+ *
+ * @param strm Stream to remove the media encryption state.
+ */
+void stream_remove_menc_media_state(struct stream *strm)
 {
 	if (!strm)
 		return;
+
+	if ((str_casecmp(strm->menc->id, "srtp") != 0) &&
+	    (str_casecmp(strm->menc->id, "srtp-mand") != 0) &&
+	    (str_casecmp(strm->menc->id, "srtp-mandf") != 0)) {
+		return;
+	}
 
 	strm->mes = mem_deref(strm->mes);
 }

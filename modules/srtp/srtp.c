@@ -493,45 +493,6 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 }
 
 
-static int cmd_tx_rekey(struct re_printf *pf, void *arg)
-{
-	const struct cmd_arg *carg = arg;
-	int err = 0;
-
-	if (!str_isset(carg->prm)) {
-		re_hprintf(pf, "usage: /srtprekey <call id>");
-		return EINVAL;
-	}
-
-	struct call *selcall = uag_call_find(carg->prm);
-	if (!selcall) {
-		re_hprintf(pf, "srtprekey: call id \"%s\" not found\n",
-			carg->prm);
-		return EINVAL;
-	}
-
-	re_hprintf(pf, "srtprekey: rekey srtp transmission keys of"
-		" call \"%s\"\n", carg->prm);
-
-	struct le *le;
-	for (le = call_streaml(selcall)->head; le; le = le->next)
-		stream_remove_menc_media(le->data);
-
-	err = call_update_media(selcall);
-	err |= call_modify(selcall);
-	if (err) {
-		re_hprintf(pf, "srtprekey: call update failed %m\n", err);
-	}
-
-	return err;
-}
-
-
-static const struct cmd cmdv[] = {
-{"srtprekey", 0, CMD_PRM, "Change outgoing streaming keys", cmd_tx_rekey},
-};
-
-
 static struct menc menc_srtp_opt = {
 	.id        = "srtp",
 	.sdp_proto = "RTP/AVP",
@@ -562,7 +523,7 @@ static int mod_srtp_init(void)
 	menc_register(mencl, &menc_srtp_mand);
 	menc_register(mencl, &menc_srtp_mandf);
 
-	return cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
+	return 0;
 }
 
 
@@ -571,8 +532,6 @@ static int mod_srtp_close(void)
 	menc_unregister(&menc_srtp_mandf);
 	menc_unregister(&menc_srtp_mand);
 	menc_unregister(&menc_srtp_opt);
-
-	cmd_unregister(baresip_commands(), cmdv);
 
 	return 0;
 }
