@@ -1275,9 +1275,8 @@ int video_update(struct video *v, const char *peer)
 
 	if (!sc) {
 		info("video: video stream is disabled..\n");
-		video_stop_source(v);
-		video_stop_display(v);
-		return err;
+		video_stop(v);
+		return 0;
 	}
 
 	if (dir & SDP_SENDONLY)
@@ -1287,10 +1286,14 @@ int video_update(struct video *v, const char *peer)
 		err |= video_decoder_set(v, sc->data, sc->pt, sc->rparams);
 
 	/* Stop / Start source & display*/
-	if (dir & SDP_SENDONLY)
+	if (dir & SDP_SENDONLY) {
 		err |= video_start_source(v);
-	else
+		stream_enable_tx(v->strm, true);
+	}
+	else {
+		stream_enable_tx(v->strm, false);
 		video_stop_source(v);
+	}
 
 	if (dir == SDP_RECVONLY)
 		stream_open_natpinhole(v->strm);
@@ -1299,8 +1302,10 @@ int video_update(struct video *v, const char *peer)
 
 	if (dir & SDP_RECVONLY) {
 		err |= video_start_display(v, peer);
+		stream_enable_rx(v->strm, true);
 	}
 	else {
+		stream_enable_rx(v->strm, false);
 		video_stop_display(v);
 	}
 
