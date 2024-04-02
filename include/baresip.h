@@ -1652,8 +1652,8 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...);
 void module_event(const char *module, const char *event, struct ua *ua,
 		struct call *call, const char *fmt, ...);
-void ua_event_rejected(struct ua *ua, const char *reason,
-		       const struct sip_msg *msg);
+int ua_event_rejected(struct ua *ua, const char *reason,
+		      const struct sip_msg *msg);
 const char  *uag_event_str(enum ua_event ev);
 
 

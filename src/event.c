@@ -417,17 +417,28 @@ out:
  * @param ua     User-Agent object (optional)
  * @param reason Call object (optional)
  * @param msg    SIP Message
+ *
+ * @return 0 if success, otherwise errorcode
  */
-void ua_event_rejected(struct ua *ua, const char *reason,
+int ua_event_rejected(struct ua *ua, const char *reason,
 			  const struct sip_msg *msg)
 {
-	const struct sip_hdr *hdr;
-	hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+	const struct sip_hdr *contact;
+	struct sip_addr addr;
+	contact = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+	if (!contact || !msg->callid.p)
+		return EBADMSG;
+
+	if (sip_addr_decode(&addr, &contact->val))
+		return EBADMSG;
+
 	ua_event(ua, UA_EVENT_CALL_REJECTED, NULL,
 		 "{\"reason\":\"%s\",\"contact\":\"%r\","
 		 "\"display\":\"%r\",\"from\":\"%H\"}",
-		 reason, hdr ? &hdr->val : NULL,
+		 reason, &addr.auri,
 		 &msg->from.dname, uri_encode, &msg->from.uri);
+
+	return 0;
 }
 
 
