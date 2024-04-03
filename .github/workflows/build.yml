@@ -107,13 +107,9 @@ jobs:
 
     - name: make re
       run: |
-        for p in re; do
-          cmake -S $p -B $p/build
-          cmake --build $p/build -j
-        done
-        for p in re; do
-          mv $p ../.
-        done
+        cmake -S re -B re/build
+        cmake --build re/build -j
+        mv re ../.
 
     - name: ldconfig
       if: ${{ runner.os == 'Linux' }}
