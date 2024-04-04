@@ -80,7 +80,6 @@ struct jbuf {
 		uint32_t active_delay;	 /**< Skew first delay               */
 		uint16_t late_pkts;	 /**< Late packet counter            */
 		uint64_t skewt;		 /**< Last skew window time          */
-		int32_t skew;		 /**< Jitter skew in timestamp units */
 		int32_t max_skew_ms;	 /**< Max. skew in [ms]              */
 	} p;                 /**< Playout specific values                    */
 	jbuf_next_play_fn *next_play_fn; /**< Next playout function          */
@@ -345,8 +344,9 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 	/* Only fatal events should trigger adaption */
 	if (jb->p.late_pkts >= JBUF_LATE_TRESHOLD) {
 		jb->p.late_pkts = 0;
+		jb->p.offset = 0;
 
-		jb->p.jitter_offset = (2 * jb->p.skew) + (3 * jitter);
+		jb->p.jitter_offset = 4 * jitter;
 		RE_TRACE_ID_INSTANT_I(
 			"jbuf", "jitter_adjust",
 			delay_ms(jb->p.jitter_offset, jb->srate), jb->id);
@@ -378,6 +378,7 @@ static int adjust_due_to_skew(struct jbuf *jb, struct packet *p)
 	int32_t skew_ms = delay_ms(skew, jb->srate);
 
 	RE_TRACE_ID_INSTANT_I("jbuf", "clock_skew", skew_ms, jb->id);
+	STAT_SET(c_skew, skew_ms);
 
 	if (skew_ms > jb->p.max_skew_ms)
 		jb->p.max_skew_ms = skew_ms;
@@ -402,17 +403,6 @@ static int adjust_due_to_skew(struct jbuf *jb, struct packet *p)
 			return JBUF_MAX_DRIFT;
 		}
 	}
-
-	/* Save skew for jitter_offset */
-	if (skew >= 0) {
-		/* Only negative jitter is used */
-		jb->p.skew = 0;
-		return 0;
-	}
-	else
-		skew = -skew;
-
-	jb->p.skew = skew;
 
 	return 0;
 }
@@ -627,21 +617,19 @@ success:
 	f->playout_time = calc_playout_time(jb, f);
 
 	/* Calculate clock skew */
-	if (jb->jbtype == JBUF_ADAPTIVE) {
-		int32_t skew_adjust = adjust_due_to_skew(jb, f);
-		if (skew_adjust > 0) {
-			/* This delays next playout, it's likely that aubuf
-			 * underruns, maybe a dummy packet can be added in the
-			 * future. */
-			jb->p.offset = 0;
-			goto out;
-		}
-		else if (skew_adjust < 0) {
-			jb->p.offset = 0;
-			packet_deref(jb, f);
-			err = ETIME;
-			goto out;
-		}
+	int32_t skew_adjust = adjust_due_to_skew(jb, f);
+	if (skew_adjust > 0) {
+		/* This delays next playout, it's likely that aubuf
+		 * underruns, maybe a dummy packet can be added in the
+		 * future. */
+		jb->p.offset = 0;
+		goto out;
+	}
+	else if (skew_adjust < 0) {
+		jb->p.offset = 0;
+		packet_deref(jb, f);
+		err = ETIME;
+		goto out;
 	}
 
 	/* Late Playout check: */
@@ -715,6 +703,21 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 	*hdr = f->hdr;
 	*mem = mem_ref(f->mem);
 
+#if JBUF_STAT
+	/* Check sequence of previously played packet */
+	if (jb->seq_get) {
+		const int16_t seq_diff = f->hdr.seq - jb->seq_get;
+		if (seq_less(f->hdr.seq, jb->seq_get)) {
+			DEBUG_WARNING("get: seq=%u too late\n", f->hdr.seq);
+		}
+		else if (seq_diff > 1) {
+			STAT_ADD(n_lost, seq_diff - 1);
+			DEBUG_INFO("get: n_lost: diff=%d,seq=%u,seq_get=%u\n",
+				   seq_diff, f->hdr.seq, jb->seq_get);
+		}
+	}
+#endif
+
 	/* Update sequence number for 'get' */
 	jb->seq_get = f->hdr.seq;
 
@@ -733,6 +736,7 @@ out:
 	mtx_unlock(jb->lock);
 	return err;
 }
+
 
 /**
  * Get one packet from the jitter buffer, even if it becomes depleted
@@ -776,6 +780,7 @@ out:
 	mtx_unlock(jb->lock);
 	return err;
 }
+
 
 /**
  * Flush all frames in the jitter buffer
@@ -965,7 +970,6 @@ int jbuf_debug(struct re_printf *pf, const struct jbuf *jb)
 	err |= mbuf_printf(mb, " dup=%u", jb->stat.n_dups);
 	err |= mbuf_printf(mb, " late=%u", jb->stat.n_late);
 	err |= mbuf_printf(mb, " or=%u", jb->stat.n_overflow);
-	err |= mbuf_printf(mb, " ur=%u", jb->stat.n_underflow);
 	err |= mbuf_printf(mb, " flush=%u", jb->stat.n_flush);
 	err |= mbuf_printf(mb, "       put/get_ratio=%u%%", jb->stat.n_get ?
 			  100*jb->stat.n_put/jb->stat.n_get : 0);
