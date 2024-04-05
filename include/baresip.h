@@ -430,12 +430,7 @@ struct config_avt {
 		enum jbuf_type jbtype;  /**< Jitter buffer type     */
 		struct range jbuf_del;  /**< Max./Min. Delay [ms]   */
 		uint32_t jbuf_sz;       /**< Max. buffer  [packets] */
-	} audio;
-	struct {
-		enum jbuf_type jbtype;  /**< Jitter buffer type     */
-		struct range jbuf_del;  /**< Max./Min. Delay [ms]   */
-		uint32_t jbuf_sz;       /**< Max. buffer  [packets] */
-	} video;
+	} audio, video;
 	bool rtp_stats;         /**< Enable RTP statistics          */
 	uint32_t rtp_timeout;   /**< RTP Timeout in seconds (0=off) */
 	bool bundle;            /**< Media Multiplexing (BUNDLE)    */
