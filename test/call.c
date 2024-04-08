@@ -3068,7 +3068,7 @@ out:
 }
 
 
-static bool sdp_crypto_handler(const char *name, const char *value, void*arg)
+static bool sdp_crypto_handler(const char *name, const char *value, void *arg)
 {
 	char **key = arg;
 	struct pl key_info = PL_INIT, key_prms = PL_INIT;
