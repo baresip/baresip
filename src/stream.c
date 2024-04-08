@@ -970,12 +970,6 @@ void stream_remove_menc_media_state(struct stream *strm)
 	if (!strm)
 		return;
 
-	if ((str_casecmp(strm->menc->id, "srtp") != 0) &&
-	    (str_casecmp(strm->menc->id, "srtp-mand") != 0) &&
-	    (str_casecmp(strm->menc->id, "srtp-mandf") != 0)) {
-		return;
-	}
-
 	strm->mes = mem_deref(strm->mes);
 }
 
