@@ -312,8 +312,6 @@ static int
 disp_frame(struct vidisp_st *st, const char *peer,
 		     const struct vidframe *frame, uint64_t timestamp)
 {
-	(void) timestamp;
-
 	if (!st) {
 		warning("comvideo: vidisp_st is NULL\n");
 		return EINVAL;
@@ -330,9 +328,9 @@ disp_frame(struct vidisp_st *st, const char *peer,
 	if (frame->data[0] != NULL && frame->linesize[0] > 0) {
 
 		uint16_t low = frame->linesize[0];
-		uint32_t high = frame->linesize[1] << 16;
+		uint32_t high = ((uint32_t) frame->linesize[1]) << 16;
 
-		unsigned long buf_size = low + high;
+		unsigned long buf_size = (unsigned long) low + high;
 
 		gst_appsrc_h264_converter_send_frame(
 			st->converter, frame->data[0],
