@@ -955,6 +955,25 @@ int stream_update(struct stream *s)
 }
 
 
+/**
+ * Removes the media encryption state from a stream.
+ *
+ * Only apply if SRTP module is used!
+ *
+ * The encryption consists of 1 encryption session state and N encryption
+ * media states.
+ *
+ * @param strm Stream to remove the media encryption state.
+ */
+void stream_remove_menc_media_state(struct stream *strm)
+{
+	if (!strm)
+		return;
+
+	strm->mes = mem_deref(strm->mes);
+}
+
+
 void stream_update_encoder(struct stream *s, int pt_enc)
 {
 	if (!s)
