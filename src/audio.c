@@ -194,16 +194,6 @@ static void stop_tx(struct autx *tx, struct audio *a)
 }
 
 
-static void stop_aur(struct audio_recv *aur)
-{
-	if (!aur)
-		return;
-
-	/* audio player must be stopped first */
-	aurecv_stop(aur);
-}
-
-
 static void audio_destructor(void *arg)
 {
 	struct audio *a = arg;
@@ -212,7 +202,7 @@ static void audio_destructor(void *arg)
 
 	stream_enable(a->strm, false);
 	stop_tx(&a->tx, a);
-	stop_aur(a->aur);
+	aurecv_stop(a->aur);
 
 	mem_deref(a->tx.enc);
 	mem_deref(a->tx.aubuf);
@@ -1257,7 +1247,7 @@ void audio_stop(struct audio *a)
 
 	stop_tx(&a->tx, a);
 	stream_enable(a->strm, false);
-	stop_aur(a->aur);
+	aurecv_stop(a->aur);
 	a->started = false;
 }
 
