@@ -361,19 +361,11 @@ int net_alloc(struct network **netp, const struct config_net *cfg)
 	 * if different the size of `struct sa' will not match and the
 	 * application is very likely to crash.
 	 */
-#ifdef HAVE_INET6
 	if (!check_ipv6()) {
 		warning("libre was compiled without IPv6-support"
 			", but baresip was compiled with\n");
 		return EAFNOSUPPORT;
 	}
-#else
-	if (check_ipv6()) {
-		warning("libre was compiled with IPv6-support"
-			", but baresip was compiled without\n");
-		return EAFNOSUPPORT;
-	}
-#endif
 
 	net = mem_zalloc(sizeof(*net), net_destructor);
 	if (!net)
