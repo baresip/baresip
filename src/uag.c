@@ -820,17 +820,11 @@ static bool uri_match_transport(const struct uri *accu,
 
 static bool uri_match_af(const struct uri *accu, const struct uri *peeru)
 {
-#ifdef HAVE_INET6
 	struct sa sa1;
 	struct sa sa2;
 	int err;
-#else
-	(void)accu;
-	(void)peeru;
-#endif
 
 	/* we list cases where we know there is a mismatch in af */
-#ifdef HAVE_INET6
 	if (peeru->af == AF_UNSPEC || accu->af == AF_UNSPEC)
 		return true;
 
@@ -850,7 +844,6 @@ static bool uri_match_af(const struct uri *accu, const struct uri *peeru)
 
 		return sa_is_linklocal(&sa1) == sa_is_linklocal(&sa2);
 	}
-#endif
 
 	/* both IPv4 or we can't decide if af will match */
 	return true;
