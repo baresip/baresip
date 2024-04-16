@@ -1181,13 +1181,31 @@ int audio_update(struct audio *a)
 	}
 
 	if (dir & SDP_RECVONLY)
-		err |= aurecv_start_player(a->aur, baresip_auplayl());
+		err |= audio_decoder_set(a, sc->data, sc->pt, sc->rparams);
 
 	if (dir & SDP_SENDONLY)
-		err |= start_source(&a->tx, a, baresip_ausrcl());
+		err |= audio_encoder_set(a, sc->data, sc->pt, sc->params);
+
 	if (err) {
 		warning("audio: start error (%m)\n", err);
 		return err;
+	}
+
+	if (dir & SDP_RECVONLY) {
+		stream_enable_rx(a->strm, true);
+	}
+	else {
+		stream_enable_rx(a->strm, false);
+		aurecv_stop(a->aur);
+	}
+
+	if (dir & SDP_SENDONLY) {
+		err |= start_source(&a->tx, a, baresip_ausrcl());
+		stream_enable_tx(a->strm, true);
+	}
+	else {
+		stream_enable_tx(a->strm, false);
+		stop_tx(&a->tx, a);
 	}
 
 	if (a->tx.ac && aurecv_codec(a->aur)) {
@@ -1298,6 +1316,8 @@ bool audio_started(const struct audio *a)
 /**
  * Set the audio encoder used
  *
+ * @note The audio source has to be started separately
+ *
  * @param a      Audio object
  * @param ac     Audio codec to use
  * @param pt_tx  Payload type for sending
@@ -1355,16 +1375,14 @@ int audio_encoder_set(struct audio *a, const struct aucodec *ac,
 	if (ac->ptime)
 		tx->ptime = ac->ptime;
 
-	if (!tx->ausrc) {
-		err |= audio_start(a);
-	}
-
 	return err;
 }
 
 
 /**
  * Set the audio decoder used
+ *
+ * @note Starts also the player if not already running
  *
  * @param a      Audio object
  * @param ac     Audio codec to use
@@ -1401,7 +1419,7 @@ int audio_decoder_set(struct audio *a, const struct aucodec *ac,
 
 	stream_set_srate(a->strm, 0, ac->crate);
 	if (reset || !aurecv_player_started(a->aur))
-		err |= audio_start(a);
+		err |= aurecv_start_player(a->aur, baresip_auplayl());
 
 	return err;
 }
