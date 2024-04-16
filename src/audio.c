@@ -1141,25 +1141,36 @@ static void audio_flush_filters(struct audio *a)
 
 
 /**
- * Start the audio playback and recording
+ * Update audio object and start/stop according to media direction
  *
  * @param a Audio object
  *
  * @return 0 if success, otherwise errorcode
  */
-int audio_start(struct audio *a)
+int audio_update(struct audio *a)
 {
 	struct list *aufiltl = baresip_aufiltl();
-	const struct sdp_media *m;
-	enum sdp_dir dir;
+	struct sdp_media *m;
+	enum sdp_dir dir = SDP_INACTIVE;
+	const struct sdp_format *sc = NULL;
 	int err = 0;
 
 	if (!a)
 		return EINVAL;
 
-	debug("audio: start\n");
+	debug("audio: update\n");
 	m = stream_sdpmedia(audio_strm(a));
-	dir = sdp_media_dir(m);
+
+	if (!sdp_media_disabled(m)) {
+		dir = sdp_media_dir(m);
+		sc = sdp_media_rformat(m, NULL);
+	}
+
+	if (!sc) {
+		info("audio: stream is disabled\n");
+		audio_stop(a);
+		return 0;
+	}
 
 	/* Audio filter */
 	if (!list_isempty(aufiltl)) {
@@ -1191,6 +1202,22 @@ int audio_start(struct audio *a)
 	}
 
 	return err;
+}
+
+
+/**
+ * This function simply calls audio_update() and kept for backward
+ * compatibility
+ *
+ * @param a Audio object
+ *
+ * @return 0 if success, otherwise errorcode
+ *
+ * @deprecated Use audio_update() instead
+ */
+int audio_start(struct audio *a)
+{
+	return audio_update(a);
 }
 
 
