@@ -109,7 +109,7 @@ static void send_resp_handler(int err, const struct sip_msg *msg, void *arg)
 }
 
 
-static void send_resp_handler_488(int err, const struct sip_msg *msg,
+static void send_resp_handler_403(int err, const struct sip_msg *msg,
 				  void *arg)
 {
 	struct endpoint *ep = arg;
@@ -124,7 +124,7 @@ static void send_resp_handler_488(int err, const struct sip_msg *msg,
 	info("[ %s ] message sent OK\n", ep->uri);
 
 	ASSERT_EQ(ep->test->transp, msg->tp);
-	ASSERT_EQ(488, msg->scode);
+	ASSERT_EQ(403, msg->scode);
 
  out:
 	ep->test->err = err;
@@ -221,7 +221,7 @@ static int test_message_transp(enum sip_transp transp,
 	TEST_ERR(err);
 
 	if (!pl_strcmp(&pl_no, inreq_allowed)) {
-		resp_handler = send_resp_handler_488;
+		resp_handler = send_resp_handler_403;
 		b_exp_msg_cnt = 0;
 	}
 
@@ -239,7 +239,8 @@ static int test_message_transp(enum sip_transp transp,
 	err = re_main_timeout(1000);
 	TEST_ERR(err);
 
-	TEST_ERR(test.err);
+	err = test.err;
+	TEST_ERR(err);
 	ASSERT_EQ(0, a->n_msg);
 	ASSERT_EQ(1, a->n_resp);
 	ASSERT_EQ(b_exp_msg_cnt, b->n_msg);
@@ -261,13 +262,13 @@ int test_message(void)
 	err = test_message_transp(SIP_TRANSP_UDP, "yes");
 	TEST_ERR(err);
 
-	err |= test_message_transp(SIP_TRANSP_TCP, "yes");
+	err = test_message_transp(SIP_TRANSP_TCP, "yes");
 	TEST_ERR(err);
 
 	err = test_message_transp(SIP_TRANSP_UDP, "no");
 	TEST_ERR(err);
 
-	err |= test_message_transp(SIP_TRANSP_TCP, "no");
+	err = test_message_transp(SIP_TRANSP_TCP, "no");
 	TEST_ERR(err);
 
  out:
