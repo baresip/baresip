@@ -517,6 +517,10 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 	switch (ev) {
 
+	case CALL_EVENT_ARRIVED:
+		ua_event(ua, UA_EVENT_CALL_ARRIVED, call, "%s", peeruri);
+		break;
+
 	case CALL_EVENT_INCOMING:
 
 		if (contact_block_access(baresip_contacts(),
@@ -715,12 +719,6 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		return;
 	}
 
-	if (uag_dnd()) {
-		(void)sip_treply(NULL, uag_sip(), msg,
-			480,"Temporarily Unavailable");
-		return;
-	}
-
 	/* handle multiple calls */
 	if (config->call.max_calls &&
 	    uag_call_count() + 1 > config->call.max_calls) {
@@ -796,6 +794,10 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		call_set_custom_hdrs(call, &hdrs);
 		list_flush(&hdrs);
 	}
+
+	err = call_arrived(call, msg);
+	if (err)
+		return;
 
 	err = call_accept(call, uag_sipsess_sock(), msg);
 	if (err)

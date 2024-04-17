@@ -176,6 +176,8 @@ int  call_alloc(struct call **callp, const struct config *cfg,
 		const struct sip_msg *msg, struct call *xcall,
 		struct dnsc *dnsc,
 		call_event_h *eh, void *arg);
+int  call_arrived(struct call *call,
+		  const struct sip_msg *msg);
 int  call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		 const struct sip_msg *msg);
 int  call_sdp_get(const struct call *call, struct mbuf **descp, bool offer);
@@ -396,7 +398,6 @@ struct uag {
 	sip_msg_h *subh;               /**< Subscribe handler               */
 	ua_exit_h *exith;              /**< UA Exit handler                 */
 	bool nodial;                   /**< Prevent outgoing calls          */
-	bool dnd;                      /**< Do not Disturb flag             */
 	void *arg;                     /**< UA Exit handler argument        */
 	char *eprm;                    /**< Extra UA parameters             */
 #ifdef USE_TLS

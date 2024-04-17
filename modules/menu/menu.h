@@ -38,6 +38,7 @@ struct menu{
 	struct tmr tmr_play;          /**< Tones play timer               */
 	size_t outcnt;                /**< Outgoing call counter          */
 	bool even;                    /**< Print UA events flag           */
+	bool dnd;                     /**< Do not Disturb flag            */
 };
 
 /*Get menu object*/

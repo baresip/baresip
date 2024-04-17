@@ -171,6 +171,7 @@ const char *account_luri_anonym(const struct account *acc, char *buf,
  */
 
 enum call_event {
+	CALL_EVENT_ARRIVED,
 	CALL_EVENT_INCOMING,
 	CALL_EVENT_OUTGOING,
 	CALL_EVENT_RINGING,
@@ -186,11 +187,13 @@ enum call_event {
 /** Call States */
 enum call_state {
 	CALL_STATE_IDLE = 0,
+	CALL_STATE_ARRIVED,
 	CALL_STATE_INCOMING,
 	CALL_STATE_OUTGOING,
 	CALL_STATE_RINGING,
 	CALL_STATE_EARLY,
 	CALL_STATE_ESTABLISHED,
+	CALL_STATE_REJECTED,
 	CALL_STATE_TERMINATED,
 	CALL_STATE_TRANSFER,
 	CALL_STATE_UNKNOWN
@@ -221,6 +224,7 @@ int  call_answer(struct call *call, uint16_t scode, enum vidmode vmode);
 int  call_progress_dir(struct call *call,
 		       enum sdp_dir adir, enum sdp_dir vdir);
 int  call_progress(struct call *call);
+void call_reject(struct call *call, uint16_t scode, const char *reason);
 void call_hangup(struct call *call, uint16_t scode, const char *reason);
 int  call_modify(struct call *call);
 int  call_hold(struct call *call, bool hold);
@@ -843,6 +847,7 @@ enum ua_event {
 	UA_EVENT_SHUTDOWN,
 	UA_EVENT_EXIT,
 
+	UA_EVENT_CALL_ARRIVED,
 	UA_EVENT_CALL_INCOMING,
 	UA_EVENT_CALL_OUTGOING,
 	UA_EVENT_CALL_RINGING,
@@ -958,8 +963,6 @@ int  uag_hold_others(struct call *call);
 void uag_set_nodial(bool nodial);
 bool uag_nodial(void);
 void uag_set_exit_handler(ua_exit_h *exith, void *arg);
-void uag_set_dnd(bool dnd);
-bool uag_dnd(void);
 void uag_enable_sip_trace(bool enable);
 int  uag_reset_transp(bool reg, bool reinvite);
 void uag_set_sub_handler(sip_msg_h *subh);

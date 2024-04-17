@@ -713,12 +713,13 @@ static int cmd_dnd(struct re_printf *pf, void *arg)
 	int err = 0;
 	const struct cmd_arg *carg = arg;
 	bool en = false;
+	struct menu *menu = menu_get();
 
 	err = str_bool(&en, carg->prm);
 	if (err)
 		goto out;
 
-	uag_set_dnd(en);
+	menu->dnd = en;
 
  out:
 	if (err)
@@ -877,6 +878,7 @@ static int cmd_hangupall(struct re_printf *pf, void *arg)
 	}
 	else if (!pl_strcmp(&pldir, "in")) {
 		hangup_callstate(CALL_STATE_INCOMING);
+		hangup_callstate(CALL_STATE_ARRIVED);
 	}
 	else {
 		err = EINVAL;
