@@ -678,6 +678,11 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	switch (ev) {
 
+	case UA_EVENT_CALL_ARRIVED:
+		if (menu.dnd)
+			call_reject(call, 480, "Temporarily Unavailable");
+
+		break;
 	case UA_EVENT_CALL_INCOMING:
 
 		if (call_state(call) != CALL_STATE_INCOMING)

@@ -66,6 +66,7 @@ struct call {
 	struct menc_sess *mencs;  /**< Media encryption session state       */
 	int af;                   /**< Preferred Address Family             */
 	uint16_t scode;           /**< Termination status code              */
+	char *reason;             /**< Reject reason                        */
 	call_event_h *eh;         /**< Event handler                        */
 	call_dtmf_h *dtmfh;       /**< DTMF handler                         */
 	void *arg;                /**< Handler argument                     */
@@ -95,6 +96,7 @@ static const char *state_name(enum call_state st)
 	switch (st) {
 
 	case CALL_STATE_IDLE:		 return "IDLE";
+	case CALL_STATE_ARRIVED:	 return "ARRIVED";
 	case CALL_STATE_INCOMING:	 return "INCOMING";
 	case CALL_STATE_OUTGOING:	 return "OUTGOING";
 	case CALL_STATE_RINGING:	 return "RINGING";
@@ -298,6 +300,7 @@ static void mnat_handler(int err, uint16_t scode, const char *reason,
 		(void)send_invite(call);
 		break;
 
+	case CALL_STATE_ARRIVED:
 	case CALL_STATE_INCOMING:
 		call_event_handler(call, CALL_EVENT_INCOMING, "%s",
                                    call->peer_uri);
@@ -454,6 +457,7 @@ static void call_destructor(void *arg)
 	mem_deref(call->not);
 	mem_deref(call->acc);
 	mem_deref(call->user_data);
+	mem_deref(call->reason);
 
 	list_flush(&call->custom_hdrs);
 }
@@ -1250,6 +1254,15 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 	set_state(call, CALL_STATE_TERMINATED);
 
 	call_stream_stop(call);
+}
+
+
+void call_reject(struct call *call, uint16_t scode, const char *reason)
+{
+	set_state(call, CALL_STATE_REJECTED);
+	call->scode = scode;
+	mem_deref(call->reason);
+	(void)str_dup(&call->reason, reason);
 }
 
 
@@ -2218,6 +2231,26 @@ static bool valid_addressfamily(struct call *call, const struct stream *strm)
 	}
 
 	return true;
+}
+
+
+int call_arrived(struct call *call,
+		 const struct sip_msg *msg)
+{
+	int err = 0;
+	set_state(call, CALL_STATE_ARRIVED);
+	call_event_handler(call, CALL_EVENT_ARRIVED, "%s", call->peer_uri);
+
+	if (call->state == CALL_STATE_REJECTED) {
+		(void)sip_treply(NULL, uag_sip(), msg, call->scode,
+				 call->reason ? call->reason : "Rejected");
+
+		set_state(call, CALL_STATE_TERMINATED);
+		mem_deref(call);
+		err = ENOENT;
+	}
+
+	return err;
 }
 
 

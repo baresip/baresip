@@ -195,7 +195,7 @@ static void resume_uag_state(void)
 	}
 
 	if (h > multicast_callprio()) {
-		uag_set_dnd(false);
+		/* TODO: set dnd=false */
 		uag_set_nodial(false);
 		uag_hold_resume(NULL);
 	}
@@ -288,7 +288,7 @@ static int prio_handling(struct mcreceiver *mcreceiver, uint32_t ssrc)
 		struct le *leua;
 		struct ua *ua;
 
-		uag_set_dnd(true);
+		/* TODO: set dnd=true */
 		uag_set_nodial(true);
 
 		for (leua = list_head(uag_list()); leua; leua = leua->next) {
