@@ -64,12 +64,10 @@ static void shared_destructor(void *arg)
 	}
 
 	if (st->au.ctx) {
-		avcodec_close(st->au.ctx);
 		avcodec_free_context(&st->au.ctx);
 	}
 
 	if (st->vid.ctx) {
-		avcodec_close(st->vid.ctx);
 		avcodec_free_context(&st->vid.ctx);
 	}
 
