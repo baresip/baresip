@@ -11,26 +11,7 @@
 
 /* One instance */
 
-static struct uag uag = {
-	NULL,
-	LIST_INIT,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	false,
-	0,
-	NULL,
-	NULL,
-	false,
-	false,
-	NULL,
-	NULL,
-#ifdef USE_TLS
-	NULL,
-	NULL
-#endif
-};
+static struct uag uag = {.ual = LIST_INIT};
 
 
 /* This function is called when all SIP transactions are done */
