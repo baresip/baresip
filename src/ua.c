@@ -681,6 +681,7 @@ out:
 void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 {
 	struct config *config = conf_config();
+	const char magic_branch[] = RE_RFC3261_BRANCH_ID;
 	const struct sip_hdr *hdr;
 	struct ua *ua;
 	struct call *call = NULL;
@@ -692,6 +693,13 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	debug("ua: sipsess connect via %s %J --> %J\n",
 	      sip_transp_name(msg->tp),
 	      &msg->src, &msg->dst);
+
+	if (pl_strncmp(&msg->via.branch, magic_branch, sizeof(magic_branch)-1)
+	    != 0) {
+		info("ua: received INVITE with incorrect Via branch.\n");
+		(void)sip_treply(NULL, uag_sip(), msg, 606, "Not Acceptable");
+		return;
+	}
 
 	ua = uag_find_msg(msg);
 	if (!ua) {
