@@ -340,8 +340,6 @@ static int agent_debug(struct re_printf *pf, const struct agent *ag)
 	err |= ag_debug_nbr(n_auframe);
 	err |= ag_debug_nbr(n_audebug);
 	err |= ag_debug_nbr(n_vidframe);
-	if (err)
-		return err;
 
 	return err;
 }

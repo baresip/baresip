@@ -560,9 +560,6 @@ uint64_t rtprecv_ts_last(struct rtp_receiver *rx)
 
 	uint64_t ts_last;
 
-	if (!rx)
-		return 0;
-
 	mtx_lock(rx->mtx);
 	ts_last = rx->ts_last;
 	mtx_unlock(rx->mtx);
