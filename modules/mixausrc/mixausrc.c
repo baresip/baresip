@@ -715,7 +715,7 @@ static int start_process(struct mixstatus* st, const char *name,
 	ausrc_prm_aufilt(&st->ausrc_prm, &st->prm);
 	st->nextmode = FM_FADEOUT;
 
-	return err;
+	return 0;
 }
 
 

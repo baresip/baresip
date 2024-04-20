@@ -363,7 +363,7 @@ static int packet_handler(bool marker, uint64_t ts,
 
 	cnd_signal(&vtx->wait);
 
-	return err;
+	return 0;
 }
 
 
@@ -620,7 +620,7 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 
 	vtx->fmt = (enum vidfmt)-1;
 
-	return err;
+	return 0;
 }
 
 
@@ -640,7 +640,7 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 
 	vrx->fmt = (enum vidfmt)-1;
 
-	return err;
+	return 0;
 }
 
 

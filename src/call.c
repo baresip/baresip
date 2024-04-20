@@ -2345,7 +2345,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		call_event_handler(call, CALL_EVENT_INCOMING, "%s",
                                    call->peer_uri);
 
-	return err;
+	return 0;
 }
 
 

@@ -224,7 +224,7 @@ static int module_init(void)
 
 	info("mqtt: module loaded\n");
 
-	return err;
+	return 0;
 }
 
 

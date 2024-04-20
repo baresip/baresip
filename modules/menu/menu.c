@@ -1188,7 +1188,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	return err;
+	return 0;
 }
 
 

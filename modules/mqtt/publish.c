@@ -100,7 +100,7 @@ int mqtt_publish_init(struct mqtt *mqtt)
 	if (err)
 		return err;
 
-	return err;
+	return 0;
 }
 
 
