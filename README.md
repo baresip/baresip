@@ -11,7 +11,7 @@ Distributed under BSD license
 
 
 ![Build](https://github.com/baresip/baresip/workflows/Build/badge.svg)
-![ccheck](https://github.com/baresip/baresip/workflows/ccheck/badge.svg)
+![Lint](https://github.com/baresip/baresip/workflows/lint/badge.svg)
 ![OpenSSL and LibreSSL](https://github.com/baresip/baresip/workflows/OpenSSL%20no-deprecated%20and%20LibreSSL/badge.svg)
 ![Valgrind](https://github.com/baresip/baresip/workflows/valgrind%20leak%20check/badge.svg)
 
