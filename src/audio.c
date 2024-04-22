@@ -180,6 +180,7 @@ static void stop_tx(struct autx *tx, struct audio *a)
 	if (!tx || !a)
 		return;
 
+	stream_enable_tx(a->strm, false);
 	if (a->cfg.txmode == AUDIO_MODE_THREAD &&
 	    re_atomic_rlx(&tx->thr.run)) {
 		re_atomic_rlx_set(&tx->thr.run, false);
@@ -200,8 +201,8 @@ static void audio_destructor(void *arg)
 
 	debug("audio: destroyed (started=%d)\n", a->started);
 
-	stream_enable(a->strm, false);
 	stop_tx(&a->tx, a);
+	stream_enable_rx(a->strm, false);
 	aurecv_stop(a->aur);
 
 	mem_deref(a->tx.enc);
@@ -1124,6 +1125,8 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		     aufmt_name(tx->src_fmt));
 	}
 
+	stream_enable_tx(a->strm, true);
+
 	return 0;
 }
 
@@ -1201,10 +1204,8 @@ int audio_update(struct audio *a)
 
 	if (dir & SDP_SENDONLY) {
 		err |= start_source(&a->tx, a, baresip_ausrcl());
-		stream_enable_tx(a->strm, true);
 	}
 	else {
-		stream_enable_tx(a->strm, false);
 		stop_tx(&a->tx, a);
 	}
 
@@ -1291,7 +1292,7 @@ void audio_stop(struct audio *a)
 		return;
 
 	stop_tx(&a->tx, a);
-	stream_enable(a->strm, false);
+	stream_enable_rx(a->strm, false);
 	aurecv_stop(a->aur);
 	a->started = false;
 }
