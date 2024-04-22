@@ -43,6 +43,7 @@ struct menc_st {
 	RE_ATOMIC bool use_srtp;
 	bool got_sdp;
 	char *crypto_suite;
+	mtx_t *mtx;                  /*< Mutex protects above fields       */
 
 	void *rtpsock;
 	void *rtcpsock;
@@ -76,6 +77,7 @@ static void destructor(void *arg)
 
 	mem_deref(st->srtp_tx);
 	mem_deref(st->srtp_rx);
+	mem_deref(st->mtx);
 }
 
 
@@ -233,6 +235,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	if (!re_atomic_rlx(&st->use_srtp) || !is_rtp_or_rtcp(mb))
 		return false;
 
+	mtx_lock(st->mtx);
 	if (is_rtcp_packet(mb)) {
 		err = srtcp_decrypt(st->srtp_rx, mb);
 		if (err) {
@@ -247,6 +250,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 				" with %zu bytes (%m)\n", len, err);
 		}
 	}
+	mtx_unlock(st->mtx);
 
 	return err ? true : false;
 }
@@ -356,6 +360,7 @@ static bool sdp_attr_handler(const char *name, const char *value, void *arg)
 	if (!cryptosuite_issupported(&c.suite))
 		return false;
 
+	mtx_lock(st->mtx);
 	/* receiving crypto-suite changed -> reset srtp_rx */
 	if (st->srtp_rx && pl_strcmp(&c.suite, st->crypto_suite)) {
 		info ("srtp (%s-rx): cipher suite changed from %s to %r\n",
@@ -366,9 +371,12 @@ static bool sdp_attr_handler(const char *name, const char *value, void *arg)
 	st->crypto_suite = mem_deref(st->crypto_suite);
 	pl_strdup(&st->crypto_suite, &c.suite);
 
-	if (start_crypto(st, &c.key_info))
+	if (start_crypto(st, &c.key_info)) {
+		mtx_unlock(st->mtx);
 		return false;
+	}
 
+	mtx_unlock(st->mtx);
 	sdp_enc(st, st->sdpm, c.tag, st->crypto_suite);
 
 	return true;
@@ -427,6 +435,10 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 		st = mem_zalloc(sizeof(*st), destructor);
 		if (!st)
 			return ENOMEM;
+
+		err = mutex_alloc(&st->mtx);
+		if (err)
+			return err;
 
 		st->sess = sess;
 		st->sdpm = mem_ref(sdpm);
