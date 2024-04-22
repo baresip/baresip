@@ -1288,10 +1288,8 @@ int video_update(struct video *v, const char *peer)
 	/* Stop / Start source & display*/
 	if (dir & SDP_SENDONLY) {
 		err |= video_start_source(v);
-		stream_enable_tx(v->strm, true);
 	}
 	else {
-		stream_enable_tx(v->strm, false);
 		video_stop_source(v);
 	}
 
@@ -1384,6 +1382,7 @@ int video_start_source(struct video *v)
 		warning("video_start_source: Video TX already started\n");
 	}
 
+	stream_enable_tx(v->strm, true);
 	tmr_start(&v->tmr, TMR_INTERVAL * 1000, tmr_handler, v);
 
 	return 0;
@@ -1448,6 +1447,7 @@ static void video_stop_source(struct video *v)
 
 	debug("video: stopping video source ..\n");
 
+	stream_enable_tx(v->strm, false);
 	v->vtx.vsrc = mem_deref(v->vtx.vsrc);
 
 	if (re_atomic_rlx(&v->vtx.run)) {
