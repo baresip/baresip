@@ -2164,10 +2164,18 @@ int call_arrived(struct call *call,
 	call_event_handler(call, CALL_EVENT_ARRIVED, "%s", call->peer_uri);
 
 	if (call->state == CALL_STATE_REJECTED) {
+		const struct sip_hdr *hdr;
+		hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+
 		(void)sip_treply(NULL, uag_sip(), msg, call->scode,
 				 call->reason ? call->reason : "Rejected");
 
 		set_state(call, CALL_STATE_TERMINATED);
+		ua_event(call->ua, UA_EVENT_CALL_CLOSED, call,
+			 "{\"reason\":\"%s\",\"contact\":\"%r\","
+			 "\"display\":\"%r\",\"from\":\"%H\"}",
+			 call->reason, hdr ? &hdr->val : NULL,
+			 &msg->from.dname, uri_encode, &msg->from.uri);
 		mem_deref(call);
 		err = ENOENT;
 	}
