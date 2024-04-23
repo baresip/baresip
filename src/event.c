@@ -431,6 +431,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CREATE:               return "CREATE";
 	case UA_EVENT_SHUTDOWN:             return "SHUTDOWN";
 	case UA_EVENT_EXIT:                 return "EXIT";
+	case UA_EVENT_CALL_ARRIVED:         return "CALL_ARRIVED";
 	case UA_EVENT_CALL_INCOMING:        return "CALL_INCOMING";
 	case UA_EVENT_CALL_OUTGOING:        return "CALL_OUTGOING";
 	case UA_EVENT_CALL_RINGING:         return "CALL_RINGING";
