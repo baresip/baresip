@@ -224,7 +224,7 @@ int  call_answer(struct call *call, uint16_t scode, enum vidmode vmode);
 int  call_progress_dir(struct call *call,
 		       enum sdp_dir adir, enum sdp_dir vdir);
 int  call_progress(struct call *call);
-void call_reject(struct call *call, uint16_t scode, const char *reason);
+void call_set_rejected(struct call *call, uint16_t scode, const char *reason);
 void call_hangup(struct call *call, uint16_t scode, const char *reason);
 int  call_modify(struct call *call);
 int  call_hold(struct call *call, bool hold);

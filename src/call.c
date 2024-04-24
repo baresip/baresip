@@ -1165,7 +1165,7 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 }
 
 
-void call_reject(struct call *call, uint16_t scode, const char *reason)
+void call_set_rejected(struct call *call, uint16_t scode, const char *reason)
 {
 	set_state(call, CALL_STATE_REJECTED);
 	call->scode = scode;
