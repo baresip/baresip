@@ -53,7 +53,7 @@ static const struct test tests[] = {
 	TEST(test_call_100rel_audio),
 	TEST(test_call_100rel_video),
 	TEST(test_call_hold_resume),
-	/* TEST(test_call_srtp_tx_rekey), */
+	TEST(test_call_srtp_tx_rekey),
 	TEST(test_cmd),
 	TEST(test_cmd_long),
 	TEST(test_contact),
