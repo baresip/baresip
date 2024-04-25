@@ -188,7 +188,7 @@ static int module_init(void)
 		"  -WSD-BC %J\n",
 		&rtsp_laddr, &http_laddr, &udp_laddr, &bc_laddr);
 
-	err = cmd_register(baresip_commands(), cmdv, ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 	register_onvif_filter();
 
 	return err;
