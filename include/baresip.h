@@ -750,6 +750,8 @@ typedef int  (menc_media_h)(struct menc_media **mp, struct menc_sess *sess,
 			   struct sdp_media *sdpm,
 			   const struct stream *strm);
 
+typedef int (menc_txrekey_h)(struct menc_media *m);
+
 struct menc {
 	struct le le;
 	const char *id;
@@ -757,6 +759,7 @@ struct menc {
 	bool wait_secure;
 	menc_sess_h *sessh;
 	menc_media_h *mediah;
+	menc_txrekey_h *txrekeyh;
 };
 
 void menc_register(struct list *mencl, struct menc *menc);
