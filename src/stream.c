@@ -956,21 +956,17 @@ int stream_update(struct stream *s)
 
 
 /**
- * Removes the media encryption state from a stream.
+ * Calls the transmission rekeying handler of the media encryption
  *
- * Only apply if SRTP module is used!
- *
- * The encryption consists of 1 encryption session state and N encryption
- * media states.
- *
- * @param strm Stream to remove the media encryption state.
+ * @param strm Stream to rekey
  */
 void stream_remove_menc_media_state(struct stream *strm)
 {
 	if (!strm)
 		return;
 
-	strm->mes = mem_deref(strm->mes);
+	if (strm->menc->txrekeyh)
+		strm->menc->txrekeyh(strm->mes);
 }
 
 
