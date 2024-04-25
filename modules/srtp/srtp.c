@@ -268,6 +268,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	if (!st->srtp_rx) {
 		err = EBUSY;
 		warning("srtp: srtp_rx not ready (%m)\n", err);
+		mtx_unlock(st->mtx_rx);
 		goto out;
 	}
 
