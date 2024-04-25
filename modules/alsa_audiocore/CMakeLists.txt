@@ -1,5 +1,8 @@
 project(alsa_audiocore)
 
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 set(SRCS alsa_audiocore.c audiocore.c alsa_ac_play.c alsa_ac_src.c alsa_ac.c)
 
 if(STATIC)
