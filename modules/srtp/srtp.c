@@ -42,7 +42,7 @@ struct menc_st {
 	struct srtp *srtp_tx, *srtp_rx;
 	mtx_t *mtx_tx, *mtx_rx;
 	RE_ATOMIC bool use_srtp;
-	bool got_sdp;
+	RE_ATOMIC bool got_sdp;
 	char *crypto_suite;
 
 	void *rtpsock;
@@ -255,7 +255,7 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	int err = 0;
 	(void)src;
 
-	if (!st->got_sdp)
+	if (!re_atomic_rlx(&st->got_sdp))
 		return true;  /* drop the packet */
 
 	if (!re_atomic_rlx(&st->use_srtp) || !is_rtp_or_rtcp(mb))
@@ -547,7 +547,7 @@ static int media_alloc(struct menc_media **stp, struct menc_sess *sess,
 	/* SDP handling */
 
 	if (sdp_media_rport(sdpm))
-		st->got_sdp = true;
+		re_atomic_rlx_set(&st->got_sdp, true);
 
 	if (sdp_media_rattr(st->sdpm, "crypto")) {
 
