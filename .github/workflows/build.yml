@@ -16,11 +16,11 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc, clang, gcc-12]
-        os: [ubuntu-20.04, ubuntu-22.04, macos-latest]
+        os: [ubuntu-20.04, ubuntu-22.04, macos-13]
         exclude:
-          - os: macos-latest
+          - os: macos-13
             compiler: gcc
-          - os: macos-latest
+          - os: macos-13
             compiler: gcc-12
           - os: ubuntu-20.04
             compiler: gcc-12
