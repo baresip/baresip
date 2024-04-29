@@ -46,7 +46,6 @@ set(MODULES
   mixminus
   mpa
   mqtt
-  multicast
   mwi
   natpmp
   netroam
