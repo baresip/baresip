@@ -146,7 +146,7 @@ struct fixture {
 	f->a.peer = &f->b;						\
 	f->b.peer = &f->a;						\
 									\
-	err = uag_event_register(event_handler, f);			\
+	err = bevent_register(event_handler, f);			\
 	TEST_ERR(err);							\
 									\
 	err = sip_transp_laddr(uag_sip(), &f->laddr_udp,		\
@@ -187,7 +187,7 @@ struct fixture {
 						\
 	module_unload("g711");			\
 						\
-	uag_event_unregister(event_handler);	\
+	bevent_unregister(event_handler);	\
 						\
 	ua_stop_all(true);			\
 	ua_close();				\
@@ -433,7 +433,7 @@ static void check_ack(void *arg)
 	ag->gotack = !call_ack_pending(ua_call(ag->ua));
 
 	if (ag->gotack)
-		ua_event(ag->ua, UA_EVENT_CUSTOM, ua_call(ag->ua), "gotack");
+		bevent_ua_emit(UA_EVENT_CUSTOM, ag->ua, "gotack");
 
 	else
 		tmr_start(&ag->tmr_ack, 1, check_ack, ag);
@@ -607,16 +607,17 @@ static void process_rules(struct agent *ag, enum ua_event ev, const char *prm)
 }
 
 
-static void event_handler(struct ua *ua, enum ua_event ev,
-			  struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct fixture *f = arg;
 	struct call *call2 = NULL;
 	struct agent *ag;
 	struct stream *strm = NULL;
 	char curi[256];
+	const char    *prm  = bevent_get_text(event);
+	struct call   *call = bevent_get_call(event);
+	struct ua     *ua   = bevent_get_ua(event);
 	int err = 0;
-	(void)prm;
 
 #if 1
 	info("test: [ %s ] event: %s (%s)\n",
@@ -1286,8 +1287,7 @@ static void mock_vidisp_handler(const struct vidframe *frame,
 
 	++ag->n_vidframe;
 	ua = ag->ua;
-	ua_event(ua, UA_EVENT_CUSTOM, ua_call(ua), "vidframe %u",
-		 ag->n_vidframe);
+	bevent_ua_emit(UA_EVENT_CUSTOM, ua, "vidframe %u", ag->n_vidframe);
 
  out:
 	if (err)
@@ -1599,8 +1599,7 @@ static void auframe_handler(struct auframe *af, const char *dev, void *arg)
 	++ag->n_auframe;
 	(void)audio_level_get(call_audio(ua_call(ua)), &ag->aulvl);
 
-	ua_event(ua, UA_EVENT_CUSTOM, ua_call(ua), "auframe %u",
-		 ag->n_auframe);
+	bevent_ua_emit(UA_EVENT_CUSTOM, ua, "auframe %u", ag->n_auframe);
 
  out:
 	if (err)
@@ -2388,8 +2387,7 @@ static void delayed_audio_debug(void *arg)
 
 	++ag->n_audebug;
 
-	ua_event(ag->ua, UA_EVENT_CUSTOM, ua_call(ag->ua), "audebug %u",
-		 ag->n_audebug);
+	bevent_ua_emit(UA_EVENT_CUSTOM, ag->ua,  "audebug %u", ag->n_audebug);
 
 	tmr_start(&ag->tmr, 2, delayed_audio_debug, ag);
 out:

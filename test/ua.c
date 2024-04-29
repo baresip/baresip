@@ -55,11 +55,13 @@ static void test_abort(struct test *t, int err)
 }
 
 
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-			     struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct test *t = arg;
 	size_t i;
+	const char    *prm  = bevent_get_text(event);
+	struct call   *call = bevent_get_call(event);
+	struct ua     *ua   = bevent_get_ua(event);
 	int err = 0;
 	const char referto[] = "sip:user@127.0.0.1";
 	(void)call;
@@ -135,7 +137,7 @@ static int reg(enum sip_transp tp)
 	err = ua_register(t.ua);
 	TEST_ERR(err);
 
-	err = uag_event_register(ua_event_handler, &t);
+	err = bevent_register(event_handler, &t);
 	if (err)
 		goto out;
 
@@ -155,7 +157,7 @@ static int reg(enum sip_transp tp)
 	if (err) {
 		warning("selftest: ua_register test failed (%m)\n", err);
 	}
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 	test_reset(&t);
 
 	return err;
@@ -363,7 +365,7 @@ static int reg_dns(enum sip_transp tp)
 	err = ua_register(t.ua);
 	TEST_ERR(err);
 
-	err = uag_event_register(ua_event_handler, &t);
+	err = bevent_register(event_handler, &t);
 	if (err)
 		goto out;
 
@@ -386,7 +388,7 @@ static int reg_dns(enum sip_transp tp)
 	if (err) {
 		warning("selftest: ua_register test failed (%m)\n", err);
 	}
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 
 	test_reset(&t);
 
@@ -469,7 +471,7 @@ static int reg_auth(enum sip_transp tp)
 	err = ua_register(t.ua);
 	TEST_ERR(err);
 
-	err = uag_event_register(ua_event_handler, &t);
+	err = bevent_register(event_handler, &t);
 	if (err)
 		goto out;
 
@@ -491,7 +493,7 @@ static int reg_auth(enum sip_transp tp)
 	if (err) {
 		warning("selftest: ua_register test failed (%m)\n", err);
 	}
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 	test_reset(&t);
 
 	return err;
@@ -640,7 +642,7 @@ static int reg_auth_dns(enum sip_transp tp)
 	err = ua_register(t.ua);
 	TEST_ERR(err);
 
-	err = uag_event_register(ua_event_handler, &t);
+	err = bevent_register(event_handler, &t);
 	if (err)
 		goto out;
 
@@ -672,7 +674,7 @@ static int reg_auth_dns(enum sip_transp tp)
 	if (err) {
 		warning("selftest: ua_register test failed (%m)\n", err);
 	}
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 
 	test_reset(&t);
 
@@ -903,7 +905,7 @@ static int test_ua_refer_base(enum sip_transp transp)
 
 	test_init(&t);
 
-	err = uag_event_register(ua_event_handler, &t);
+	err = bevent_register(event_handler, &t);
 	TEST_ERR(err);
 
 	err = ua_init("test",
@@ -950,7 +952,7 @@ static int test_ua_refer_base(enum sip_transp transp)
  out:
 	test_reset(&t);
 
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 	ua_stop_all(true);
 	ua_close();
 

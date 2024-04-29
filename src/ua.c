@@ -46,11 +46,12 @@ static void ua_destructor(void *arg)
 	list_unlink(&ua->le);
 
 	if (!list_isempty(&ua->regl))
-		ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
+		bevent_ua_emit(UA_EVENT_UNREGISTERING, ua, NULL);
 
 	LIST_FOREACH(&ua->calls, le) {
 		struct call *call = le->data;
-		ua_event(ua, UA_EVENT_CALL_CLOSED, call, "User-Agent deleted");
+		bevent_call_emit(UA_EVENT_CALL_CLOSED, call,
+				 "User-Agent deleted");
 	}
 
 	list_flush(&ua->calls);
@@ -219,7 +220,7 @@ static int start_register(struct ua *ua, bool fallback)
 		create_register_clients(ua);
 
 	if (!fallback && !list_isempty(&ua->regl))
-		ua_event(ua, UA_EVENT_REGISTERING, NULL, NULL);
+		bevent_ua_emit(UA_EVENT_REGISTERING, ua, NULL);
 
 	for (le = ua->regl.head, i=0; le; le = le->next, i++) {
 		struct reg *reg = le->data;
@@ -234,10 +235,10 @@ static int start_register(struct ua *ua, bool fallback)
 			warning("ua: SIP%s register failed: %m\n",
 					fallback ? " fallback" : "", err);
 
-			ua_event(ua, fallback ?
-					UA_EVENT_FALLBACK_FAIL :
-					UA_EVENT_REGISTER_FAIL,
-					NULL, "%m", err);
+			bevent_ua_emit(fallback ?
+				       UA_EVENT_FALLBACK_FAIL :
+				       UA_EVENT_REGISTER_FAIL,
+				       ua, "%m", err);
 			goto out;
 		}
 	}
@@ -302,7 +303,7 @@ void ua_stop_register(struct ua *ua)
 		return;
 
 	if (!list_isempty(&ua->regl))
-		ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
+		bevent_ua_emit(UA_EVENT_UNREGISTERING, ua, NULL);
 
 	for (le = ua->regl.head; le; le = le->next) {
 		struct reg *reg = le->data;
@@ -325,7 +326,7 @@ void ua_unregister(struct ua *ua)
 		return;
 
 	if (!list_isempty(&ua->regl))
-		ua_event(ua, UA_EVENT_UNREGISTERING, NULL, NULL);
+		bevent_ua_emit(UA_EVENT_UNREGISTERING, ua, NULL);
 
 	for (le = ua->regl.head; le; le = le->next) {
 		struct reg *reg = le->data;
@@ -425,7 +426,7 @@ unsigned ua_destroy(struct ua *ua)
 	list_unlink(&ua->le);
 
 	/* send the shutdown event */
-	ua_event(ua, UA_EVENT_SHUTDOWN, NULL, NULL);
+	bevent_app_emit(UA_EVENT_SHUTDOWN, NULL, NULL);
 
 	/* terminate all calls now */
 	list_flush(&ua->calls);
@@ -524,12 +525,13 @@ static void call_event_handler(struct call *call, enum call_event ev,
 
 			info("ua: blocked access: \"%s\"\n", peeruri);
 
-			ua_event(ua, UA_EVENT_CALL_CLOSED, call, "%s", str);
+			bevent_call_emit(UA_EVENT_CALL_CLOSED, call,
+					 "%s", str);
 			mem_deref(call);
 			break;
 		}
 
-		ua_event(ua, UA_EVENT_CALL_INCOMING, call, "%s", peeruri);
+		bevent_call_emit(UA_EVENT_CALL_INCOMING, call, "%s", peeruri);
 		switch (ua->acc->answermode) {
 
 		case ANSWERMODE_EARLY:
@@ -553,43 +555,45 @@ static void call_event_handler(struct call *call, enum call_event ev,
 		break;
 
 	case CALL_EVENT_RINGING:
-		ua_event(ua, UA_EVENT_CALL_RINGING, call, "%s", peeruri);
+		bevent_call_emit(UA_EVENT_CALL_RINGING, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_OUTGOING:
-		ua_event(ua, UA_EVENT_CALL_OUTGOING, call, "%s", peeruri);
+		bevent_call_emit(UA_EVENT_CALL_OUTGOING, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_PROGRESS:
 		ua_printf(ua, "Call in-progress: %s\n", peeruri);
-		ua_event(ua, UA_EVENT_CALL_PROGRESS, call, "%s", peeruri);
+		bevent_call_emit(UA_EVENT_CALL_PROGRESS, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_ANSWERED:
 		ua_printf(ua, "Call answered: %s\n", peeruri);
-		ua_event(ua, UA_EVENT_CALL_ANSWERED, call, "%s", peeruri);
+		bevent_call_emit(UA_EVENT_CALL_ANSWERED, call, "%s", peeruri);
 		break;
 
 	case CALL_EVENT_ESTABLISHED:
 		ua_printf(ua, "Call established: %s\n", peeruri);
-		ua_event(ua, UA_EVENT_CALL_ESTABLISHED, call, "%s", peeruri);
+		bevent_call_emit(UA_EVENT_CALL_ESTABLISHED, call,
+				"%s", peeruri);
 		break;
 
 	case CALL_EVENT_CLOSED:
-		ua_event(ua, UA_EVENT_CALL_CLOSED, call, "%s", str);
+		bevent_call_emit(UA_EVENT_CALL_CLOSED, call, "%s", str);
 		mem_deref(call);
 		break;
 
 	case CALL_EVENT_TRANSFER:
-		ua_event(ua, UA_EVENT_CALL_TRANSFER, call, "%s", str);
+		bevent_call_emit(UA_EVENT_CALL_TRANSFER, call, "%s", str);
 		break;
 
 	case CALL_EVENT_TRANSFER_FAILED:
-		ua_event(ua, UA_EVENT_CALL_TRANSFER_FAILED, call, "%s", str);
+		bevent_call_emit(UA_EVENT_CALL_TRANSFER_FAILED, call,
+				"%s", str);
 		break;
 
 	case CALL_EVENT_MENC:
-		ua_event(ua, UA_EVENT_CALL_MENC, call, "%s", str);
+		bevent_call_emit(UA_EVENT_CALL_MENC, call, "%s", str);
 		break;
 	}
 }
@@ -607,10 +611,11 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 		key_str[0] = key;
 		key_str[1] = '\0';
 
-		ua_event(ua, UA_EVENT_CALL_DTMF_START, call, "%s", key_str);
+		bevent_call_emit(UA_EVENT_CALL_DTMF_START, call,
+				 "%s", key_str);
 	}
 	else {
-		ua_event(ua, UA_EVENT_CALL_DTMF_END, call, NULL);
+		bevent_call_emit(UA_EVENT_CALL_DTMF_END, call, NULL);
 	}
 }
 
@@ -715,12 +720,6 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		return;
 	}
 
-	if (uag_dnd()) {
-		(void)sip_treply(NULL, uag_sip(), msg,
-			480,"Temporarily Unavailable");
-		return;
-	}
-
 	/* handle multiple calls */
 	if (config->call.max_calls &&
 	    uag_call_count() + 1 > config->call.max_calls) {
@@ -760,6 +759,10 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 				  "Content-Length: 0\r\n\r\n");
 		return;
 	}
+
+	err = bevent_sip_msg_emit(UA_EVENT_SIPSESS_CONN, msg, "");
+	if (err == ENOENT)
+		return;
 
 	(void)pl_strcpy(&msg->to.auri, to_uri, sizeof(to_uri));
 
@@ -1095,7 +1098,7 @@ bool ua_handle_refer(struct ua *ua, const struct sip_msg *msg)
 	}
 
 	debug("ua: REFER to %r\n", &hdr->val);
-	ua_event(ua, UA_EVENT_REFER, NULL, "%r", &hdr->val);
+	bevent_ua_emit(UA_EVENT_REFER, ua, "%r", &hdr->val);
 
 out:
 
@@ -1209,7 +1212,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 	list_append(uag_list(), &ua->le, ua);
-	ua_event(ua, UA_EVENT_CREATE, NULL, "%s", aor);
+	bevent_ua_emit(UA_EVENT_CREATE, ua, "%s", aor);
 
  out:
 	mem_deref(host);
@@ -1409,8 +1412,8 @@ void ua_hangup(struct ua *ua, struct call *call,
 
 	call_hangup(call, scode, reason);
 
-	ua_event(ua, UA_EVENT_CALL_CLOSED, call,
-		 reason ? reason : "Connection reset by user");
+	bevent_call_emit(UA_EVENT_CALL_CLOSED, call,
+			 reason ? reason : "Connection reset by user");
 
 	mem_deref(call);
 }

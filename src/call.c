@@ -82,7 +82,7 @@ struct call {
 	bool use_video;
 	bool use_rtp;
 	char *user_data;           /**< User data related to the call       */
-	bool evstop;               /**< UA events stopped flag              */
+	bool evstop;               /**< UA events stopped flag, @deprecated */
 };
 
 
@@ -313,8 +313,8 @@ static int update_media(struct call *call)
 {
 	debug("call: update media\n");
 
-	ua_event(call->ua, UA_EVENT_CALL_REMOTE_SDP, call,
-		 call->got_offer ? "offer" : "answer");
+	bevent_call_emit(UA_EVENT_CALL_REMOTE_SDP, call,
+			 call->got_offer ? "offer" : "answer");
 
 	return call_update_media(call);
 }
@@ -384,8 +384,8 @@ static void audio_level_handler(bool tx, double lvl, void *arg)
 	struct call *call = arg;
 	MAGIC_CHECK(call);
 
-	ua_event(call->ua, tx ? UA_EVENT_VU_TX : UA_EVENT_VU_RX,
-		 call, "%.2f", lvl);
+	bevent_call_emit(tx ? UA_EVENT_VU_TX : UA_EVENT_VU_RX, call,
+			 "%.2f", lvl);
 }
 
 
@@ -397,14 +397,15 @@ static void audio_error_handler(int err, const char *str, void *arg)
 	if (err) {
 		warning("call: audio device error: %m (%s)\n", err, str);
 
-		ua_event(call->ua, UA_EVENT_AUDIO_ERROR, call, "%d,%s",
-			err, str);
+		bevent_call_emit(UA_EVENT_AUDIO_ERROR, call,
+				 "%d,%s", err, str);
+
 		call_stream_stop(call);
 		call_event_handler(call, CALL_EVENT_CLOSED,
 			"%s", str);
 	}
 	else
-		ua_event(call->ua, UA_EVENT_END_OF_FILE, call, "");
+		bevent_call_emit(UA_EVENT_END_OF_FILE, call, "");
 }
 
 
@@ -525,8 +526,8 @@ static void stream_rtpestab_handler(struct stream *strm, void *arg)
 	struct call *call = arg;
 	MAGIC_CHECK(call);
 
-	ua_event(call->ua, UA_EVENT_CALL_RTPESTAB, call,
-		 "%s", sdp_media_name(stream_sdpmedia(strm)));
+	bevent_call_emit(UA_EVENT_CALL_RTPESTAB, call,
+			 "%s", sdp_media_name(stream_sdpmedia(strm)));
 }
 
 
@@ -543,13 +544,13 @@ static void stream_rtcp_handler(struct stream *strm,
 		if (call->config_avt.rtp_stats)
 			call_set_xrtpstat(call);
 
-		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,
-			 "%s", sdp_media_name(stream_sdpmedia(strm)));
+		bevent_call_emit(UA_EVENT_CALL_RTCP, call,
+				 "%s", sdp_media_name(stream_sdpmedia(strm)));
 		break;
 
 	case RTCP_APP:
-		ua_event(call->ua, UA_EVENT_CALL_RTCP, call,
-			 "%s", sdp_media_name(stream_sdpmedia(strm)));
+		bevent_call_emit(UA_EVENT_CALL_RTCP, call,
+				 "%s", sdp_media_name(stream_sdpmedia(strm)));
 		break;
 	}
 }
@@ -1092,8 +1093,8 @@ int call_modify(struct call *call)
 	if (call_refresh_allowed(call)) {
 		err = call_sdp_get(call, &desc, true);
 		if (!err) {
-			ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call,
-				 "offer");
+			bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call,
+					 "offer");
 
 			err = sipsess_modify(call->sess, desc);
 			if (err)
@@ -1226,7 +1227,7 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 		goto out;
 
 	if (call->got_offer) {
-		ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "answer");
+		bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call, "answer");
 		err = call_update_media(call);
 	}
 
@@ -1294,8 +1295,8 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	if (call->got_offer)
 		err = call_apply_sdp(call);
 
-	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call,
-		 "%s", !call->got_offer ? "offer" : "answer");
+	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call,
+			 "%s", !call->got_offer ? "offer" : "answer");
 
 	err = sdp_encode(&desc, call->sdp, !call->got_offer);
 	if (err)
@@ -1749,9 +1750,9 @@ static int sipsess_offer_handler(struct mbuf **descp,
 		}
 
 		if (aurx && !(sdp_media_dir(m) & SDP_SENDONLY))
-			ua_event(call->ua, UA_EVENT_CALL_HOLD, call, "");
+			bevent_call_emit(UA_EVENT_CALL_HOLD, call, "");
 		else if (!aurx && sdp_media_dir(m) & SDP_SENDONLY)
-			ua_event(call->ua, UA_EVENT_CALL_RESUME, call, "");
+			bevent_call_emit(UA_EVENT_CALL_RESUME, call, "");
 
 		err = update_media(call);
 		if (err) {
@@ -2337,8 +2338,8 @@ static void redirect_handler(const struct sip_msg *msg, const char *uri,
 	struct call *call = arg;
 
 	info("call: redirect to %s\n", uri);
-	ua_event(call->ua, UA_EVENT_CALL_REDIRECT, call,
-		 "%d,%s", msg->scode, uri);
+	bevent_call_emit(UA_EVENT_CALL_REDIRECT, call,
+			 "%d,%s", msg->scode, uri);
 	return;
 }
 
@@ -2434,7 +2435,7 @@ static int send_invite(struct call *call)
 	/* save call setup timer */
 	call->time_conn = time(NULL);
 
-	ua_event(call->ua, UA_EVENT_CALL_LOCAL_SDP, call, "offer");
+	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
 	return 0;
 }

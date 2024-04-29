@@ -868,9 +868,14 @@ enum ua_event {
 	UA_EVENT_MODULE,
 	UA_EVENT_END_OF_FILE,
 	UA_EVENT_CUSTOM,
+	UA_EVENT_SIPSESS_CONN,
 
 	UA_EVENT_MAX,
 };
+
+
+struct bevent;
+
 
 /** SIP auto answer method */
 enum answer_method {
@@ -883,6 +888,7 @@ enum answer_method {
 /** Defines the User-Agent event handler */
 typedef void (ua_event_h)(struct ua *ua, enum ua_event ev,
 			  struct call *call, const char *prm, void *arg);
+typedef void (bevent_h)(enum ua_event ev, struct bevent *event, void *arg);
 typedef void (options_resp_h)(int err, const struct sip_msg *msg, void *arg);
 typedef void (refer_resp_h)(int err, const struct sip_msg *msg, void *arg);
 
@@ -1654,14 +1660,30 @@ void module_app_unload(void);
 
 int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		      struct call *call, const char *prm);
+int odict_encode_bevent(struct odict *od, struct bevent *event);
 int event_add_au_jb_stat(struct odict *od_parent, const struct call *call);
 int  uag_event_register(ua_event_h *eh, void *arg);
 void uag_event_unregister(ua_event_h *eh);
+int  bevent_register(bevent_h *eh, void *arg);
+void bevent_unregister(bevent_h *eh);
 void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...);
+int bevent_app_emit(enum ua_event ev, void *arg, const char *fmt, ...);
+int bevent_ua_emit(enum ua_event ev, struct ua *ua, const char *fmt, ...);
+int bevent_call_emit(enum ua_event ev, struct call *call,
+		     const char *fmt, ...);
+int bevent_sip_msg_emit(enum ua_event ev, const struct sip_msg *msg,
+			const char *fmt, ...);
 void module_event(const char *module, const char *event, struct ua *ua,
 		struct call *call, const char *fmt, ...);
 const char  *uag_event_str(enum ua_event ev);
+struct call    *bevent_get_call(const struct bevent *event);
+struct ua      *bevent_get_ua(const struct bevent *event);
+const struct sip_msg *bevent_get_msg(const struct bevent *event);
+enum ua_event bevent_get_enum(const struct bevent *event);
+const char *bevent_get_text(const struct bevent *event);
+void bevent_set_error(struct bevent *event, int err);
+void bevent_stop(struct bevent *event);
 
 
 /*
