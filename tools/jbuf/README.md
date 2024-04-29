@@ -14,7 +14,7 @@ cmake --build build
 cd tools/jbuf
 cp env-template .env
 # edit .env
-./plot_loop.sh
+./run.sh
 ```
 
 - The plots are collected in sub-directory plots.
