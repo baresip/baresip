@@ -1551,7 +1551,7 @@ void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
 struct jbuf;
 struct rtp_header;
 
-typedef uint64_t (jbuf_next_play_fn)(const struct jbuf *jb);
+typedef uint64_t (jbuf_next_play_h)(const struct jbuf *jb);
 
 /** Jitter buffer statistics */
 struct jbuf_stat {
@@ -1584,7 +1584,7 @@ int  jbuf_debug(struct re_printf *pf, const struct jbuf *jb);
 uint32_t jbuf_frames(const struct jbuf *jb);
 uint32_t jbuf_packets(const struct jbuf *jb);
 int32_t jbuf_next_play(const struct jbuf *jb);
-void jbuf_set_next_play_fn(struct jbuf *jb, jbuf_next_play_fn *p);
+void jbuf_set_next_play_h(struct jbuf *jb, jbuf_next_play_h *p);
 
 
 /*
