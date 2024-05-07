@@ -123,7 +123,7 @@ static int read_file(struct ausrc_st *st)
 	struct mbuf *mb2 = NULL;
 	struct auframe af;
 
-	auframe_init(&af, st->fmt, NULL, 0, st->prm.srate, st->prm.ch);
+	auframe_init(&af, AUFMT_S16LE, NULL, 0, st->prm.srate, st->prm.ch);
 
 	for (;;) {
 		uint16_t *sampv;
