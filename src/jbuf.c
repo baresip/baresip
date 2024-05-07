@@ -82,7 +82,7 @@ struct jbuf {
 		uint64_t skewt;		 /**< Last skew window time          */
 		int32_t max_skew_ms;	 /**< Max. skew in [ms]              */
 	} p;                 /**< Playout specific values                    */
-	jbuf_next_play_fn *next_play_fn; /**< Next playout function          */
+	jbuf_next_play_h *next_play_h;   /**< Next playout function          */
 	int pt;              /**< Payload type                               */
 	bool running;        /**< Jitter buffer is running                   */
 
@@ -211,11 +211,11 @@ int jbuf_alloc(struct jbuf **jbp, uint32_t mind, uint32_t maxd, uint32_t maxsz)
 	list_init(&jb->pooll);
 	list_init(&jb->packetl);
 
-	jb->jbtype	 = JBUF_FIXED;
-	jb->mind	 = mind;
-	jb->maxd	 = maxd;
-	jb->maxsz	 = maxsz;
-	jb->next_play_fn = next_play;
+	jb->jbtype	= JBUF_FIXED;
+	jb->mind	= mind;
+	jb->maxd	= maxd;
+	jb->maxsz	= maxsz;
+	jb->next_play_h = next_play;
 
 	DEBUG_INFO("alloc: delay=%u-%u [ms] maxsz=%u\n", mind, maxd, maxsz);
 
@@ -692,7 +692,7 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 
 	f = jb->packetl.head->data;
 
-	uint32_t next_playout = (uint32_t)jb->next_play_fn(jb);
+	uint32_t next_playout = (uint32_t)jb->next_play_h(jb);
 
 	/* Check playout time */
 	if (f->playout_time > next_playout) {
@@ -876,7 +876,7 @@ int32_t jbuf_next_play(const struct jbuf *jb)
 		goto out;
 	}
 
-	uint32_t current = (uint32_t)jb->next_play_fn(jb);
+	uint32_t current = (uint32_t)jb->next_play_h(jb);
 
 	if (p->playout_time <= current) {
 		ret = 0;
@@ -927,12 +927,12 @@ int jbuf_stats(const struct jbuf *jb, struct jbuf_stat *jstat)
  * @param p   Pointer to next play function
  *
  */
-void jbuf_set_next_play_fn(struct jbuf *jb, jbuf_next_play_fn *p)
+void jbuf_set_next_play_h(struct jbuf *jb, jbuf_next_play_h *p)
 {
 	if (!jb || !p)
 		return;
 
-	jb->next_play_fn = p;
+	jb->next_play_h = p;
 }
 
 
