@@ -72,7 +72,7 @@ int test_jbuf(void)
 		return err;
 
 	jbuf_set_srate(jb, JBUF_SRATE);
-	jbuf_set_next_play_fn(jb, next_play);
+	jbuf_set_next_play_h(jb, next_play);
 
 	for (size_t i = 0; i < RE_ARRAY_SIZE(frv); i++) {
 		frv[i] = mem_alloc(32, NULL);
@@ -196,7 +196,7 @@ int test_jbuf_adaptive(void)
 	TEST_ERR(err);
 
 	jbuf_set_srate(jb, JBUF_SRATE);
-	jbuf_set_next_play_fn(jb, next_play);
+	jbuf_set_next_play_h(jb, next_play);
 
 	for (size_t i = 0; i < RE_ARRAY_SIZE(frv); i++) {
 		frv[i] = mem_zalloc(32, NULL);
@@ -254,7 +254,7 @@ int test_jbuf_video(void)
 	TEST_ERR(err);
 
 	jbuf_set_srate(jb, JBUF_SRATE_VIDEO);
-	jbuf_set_next_play_fn(jb, next_play);
+	jbuf_set_next_play_h(jb, next_play);
 
 	for (size_t i = 0; i < RE_ARRAY_SIZE(frv); i++) {
 		frv[i] = mem_zalloc(32, NULL);
