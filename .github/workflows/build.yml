@@ -99,7 +99,7 @@ jobs:
                         glib-utils \
                         pkg-config
 
-    - uses: sreimers/pr-dependency-action@v0.6
+    - uses: sreimers/pr-dependency-action@v1
       with:
         name: re
         repo: https://github.com/baresip/re
