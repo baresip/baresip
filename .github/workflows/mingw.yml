@@ -25,13 +25,13 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - uses: sreimers/pr-dependency-action@v0.6
+    - uses: sreimers/pr-dependency-action@v1
       with:
         name: re
         repo: https://github.com/baresip/re
         secret: ${{ secrets.GITHUB_TOKEN }}
 
-    - uses: sreimers/pr-dependency-action@v0.6
+    - uses: sreimers/pr-dependency-action@v1
       with:
         name: baresip-win32
         repo: https://github.com/baresip/baresip-win32
