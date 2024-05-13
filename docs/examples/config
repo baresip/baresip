@@ -188,7 +188,6 @@ module_app		menu.so
 #module_app		ctrl_tcp.so
 module_app		ctrl_dbus.so
 #module_app		httpreq.so
-#module_app		multicast.so
 module_app		netroam.so
 
 
@@ -296,15 +295,6 @@ video_selfview		window # {window,pip}
 #httpreq_hostname	myserver
 #httpreq_cert		cert.pem
 #httpreq_key		key.pem
-
-# multicast receivers (in priority order)- port number must be even
-#multicast_call_prio	0
-#multicast_ttl		1
-#multicast_jbuf_type	fixed		# off, fixed, adaptive
-#multicast_jbuf_delay	5-10		# frames
-#multicast_jbuf_wish	6		# frames for start
-#multicast_listener	224.0.2.21:50000
-#multicast_listener	224.0.2.21:50002
 
 # avformat
 #avformat_pass_through	yes
