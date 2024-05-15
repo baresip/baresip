@@ -5,6 +5,35 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 3.12.0 - 2024-05-15
+
+## What's Changed
+* video: stream enable/disable for re-INVITE/UPDATE by @cspiel1 in https://github.com/baresip/baresip/pull/2982
+* srtp: allow rekeying of running streams by @cHuberCoffee in https://github.com/baresip/baresip/pull/2975
+* audio: remove stop_aur() by @cspiel1 in https://github.com/baresip/baresip/pull/2991
+* HAVE_INET6 is always defined by @alfredh in https://github.com/baresip/baresip/pull/2992
+* audio: respect SDP media disabled flag by @cspiel1 in https://github.com/baresip/baresip/pull/2997
+* test: fix test_message() by @alfredh in https://github.com/baresip/baresip/pull/2995
+* avformat: do not use deprecated avcodec_close() by @cspiel1 in https://github.com/baresip/baresip/pull/3002
+* ua: enforce magic cookie in Via branch by @maximilianfridrich in https://github.com/baresip/baresip/pull/3003
+* uag: fix initializer by @cspiel1 in https://github.com/baresip/baresip/pull/3001
+* misc: cppcheck fixes by @alfredh in https://github.com/baresip/baresip/pull/3007
+* readme: fix lint status badge by @sreimers in https://github.com/baresip/baresip/pull/3008
+* video: enable/disable stream at common point by @cspiel1 in https://github.com/baresip/baresip/pull/3010
+* srtp: deactivate test_call_srtp_tx_rekey by @cHuberCoffee in https://github.com/baresip/baresip/pull/3013
+* g722,g726: use SYSTEM spandsp include by @sreimers in https://github.com/baresip/baresip/pull/3017
+* srtp: lock possible re-keying against usage in receive handler by @cHuberCoffee in https://github.com/baresip/baresip/pull/3012
+* mc: move multicast to baresip-apps by @cspiel1 in https://github.com/baresip/baresip/pull/3015
+* call,audio: remove audio start/stop redundancy by @cspiel1 in https://github.com/baresip/baresip/pull/2999
+* aufile: use correct audio format S16LE for aubuf frames by @alfredh in https://github.com/baresip/baresip/pull/3020
+* ci: bump pr dependency action by @sreimers in https://github.com/baresip/baresip/pull/3023
+* docs,core: remove reference to multicast by @alfredh in https://github.com/baresip/baresip/pull/3019
+* bump version by @alfredh in https://github.com/baresip/baresip/pull/3027
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.11.0...v3.12.0
+
+
 ## 3.11.0 - 2024-04-09
 
 ### What's Changed
