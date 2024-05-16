@@ -76,12 +76,12 @@ static struct config core_config = {
 		.rtcp_mux = false,
 		.audio = {
 			JBUF_FIXED,
-			{100, 500},
+			{100, 200},
 			50
 		},
 		.video = {
 			JBUF_FIXED,
-			{100, 500},
+			{100, 200},
 			250
 		},
 		.rtp_stats = false,
