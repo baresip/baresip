@@ -92,12 +92,12 @@ static struct config core_config = {
 		false,
 		{
 			JBUF_FIXED,
-			{100, 500},
+			{100, 200},
 			50
 		},
 		{
 			JBUF_FIXED,
-			{100, 500},
+			{100, 200},
 			250
 		},
 		false,
