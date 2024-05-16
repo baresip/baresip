@@ -5,7 +5,6 @@
  */
 
 #include "comvideo.h"
-#include <re_h264.h>
 
 enum {
 	DECODE_MAXSZ = 524288,

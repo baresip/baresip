@@ -6,7 +6,6 @@
  */
 
 #include "comvideo.h"
-#include <re_h264.h>
 
 struct videnc_state {
 	struct videnc_param encprm;
