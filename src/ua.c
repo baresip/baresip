@@ -635,26 +635,30 @@ static bool require_handler(const struct sip_hdr *hdr,
 }
 
 
-static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
+static int sdp_connection(const struct mbuf *mb, int *af, struct sa *sa)
 {
 	struct pl pl1, pl2;
-	char *addr = NULL;
 	const struct network *net = baresip_network();
-	int err;
 
 	*af = AF_UNSPEC;
-	err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
-		       "c=IN IP[46]1 [^ \r\n]+", &pl1, &pl2);
-	if (err)
-		return EINVAL;
 
-	pl_strdup(&addr, &pl2);
+	int err = re_regex((char *)mbuf_buf(mb), mbuf_get_left(mb),
+			   "c=IN IP[46]1 [^ \r\n]+", &pl1, &pl2);
+	if (err)
+		return err;
+
 	switch (pl1.p[0]) {
 
-	case '4': *af = AF_INET;
-		  break;
-	case '6': *af = AF_INET6;
-		  break;
+	case '4':
+		*af = AF_INET;
+		break;
+
+	case '6':
+		*af = AF_INET6;
+		break;
+
+	default:
+		return EAFNOSUPPORT;
 	}
 
 	/* OSX/iOS needs a port number for udp_connect() */
@@ -667,12 +671,11 @@ static int sdp_connection(struct mbuf *mb, int *af, struct sa *sa)
 	if (err)
 		goto out;
 
-	err = sa_set_str(sa, addr, pl_u32(&pl1));
+	err = sa_set(sa, &pl2, pl_u32(&pl1));
 	if (sa_af(sa) == AF_INET6 && sa_is_linklocal(sa))
 		err |= net_set_dst_scopeid(net, sa);
 
 out:
-	mem_deref(addr);
 	return err;
 }
 
