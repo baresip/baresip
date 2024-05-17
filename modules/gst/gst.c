@@ -29,6 +29,10 @@
  \endverbatim
  */
 
+enum {
+	BLOCKING_TIMEOUT = 1000,
+};
+
 
 /**
  * Defines the Gstreamer state
@@ -44,7 +48,7 @@
  * </pre>
  */
 struct ausrc_st {
-	bool run;                   /**< Running flag            */
+	RE_ATOMIC bool run;         /**< Running flag            */
 	bool eos;                   /**< Reached end of stream   */
 	ausrc_read_h *rh;           /**< Read handler            */
 	ausrc_error_h *errh;        /**< Error handler           */
@@ -85,7 +89,7 @@ sync_handler(
 	switch (GST_MESSAGE_TYPE(msg)) {
 
 		case GST_MESSAGE_EOS:
-			st->run = false;
+			re_atomic_rlx_set(&st->run, false);
 			st->eos = true;
 			break;
 
@@ -107,7 +111,7 @@ sync_handler(
 
 			g_error_free(err);
 
-			st->run = false;
+			re_atomic_rlx_set(&st->run, false);
 			break;
 
 		case GST_MESSAGE_TAG:
@@ -182,7 +186,7 @@ static void packet_handler(struct ausrc_st *st, GstBuffer *buffer)
 	GstMapInfo info;
 	int err;
 
-	if (!st->run)
+	if (!re_atomic_rlx(&st->run))
 		return;
 
 	/* NOTE: When streaming from files, the buffer will be filled up
@@ -202,7 +206,7 @@ static void packet_handler(struct ausrc_st *st, GstBuffer *buffer)
 	gst_buffer_unmap(buffer, &info);
 
 	/* Empty buffer now */
-	while (st->run) {
+	while (re_atomic_rlx(&st->run)) {
 		const struct timespec delay = {0, st->prm.ptime*1000000/2};
 
 		play_packet(st);
@@ -375,9 +379,7 @@ static void gst_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	if (st->run) {
-		st->run = false;
-	}
+	re_atomic_rlx_set(&st->run, false);
 
 	tmr_cancel(&st->tmr);
 
@@ -396,7 +398,7 @@ static void timeout(void *arg)
 	tmr_start(&st->tmr, st->ptime ? st->ptime : 40, timeout, st);
 
 	/* check if source is still running */
-	if (!st->run) {
+	if (!re_atomic_rlx(&st->run)) {
 		tmr_cancel(&st->tmr);
 
 		if (st->eos) {
@@ -466,18 +468,30 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	st->run = true;
+	re_atomic_rlx_set(&st->run, true);
 	st->eos = false;
 
 	gst_element_set_state(st->pipeline, GST_STATE_PLAYING);
 
-	if (!st->run) {
+	if (!re_atomic_rlx(&st->run)) {
 		err = st->err;
 		goto out;
 	}
 
-	st->errh = errh;
+	if (!prm->ptime) {
+		uint64_t t0 = tmr_jiffies();
+		while (re_atomic_rlx(&st->run) &&
+		       tmr_jiffies() - t0 < BLOCKING_TIMEOUT)
+			sys_msleep(4);
+	}
 
+	if (!re_atomic_rlx(&st->run) && st->eos) {
+		if (errh)
+			errh(0, "end of file", st->arg);
+		goto out;
+	}
+
+	st->errh = errh;
 	tmr_start(&st->tmr, st->ptime, timeout, st);
 
  out:
