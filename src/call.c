@@ -1946,6 +1946,9 @@ static void sipsess_info_handler(struct sip *sip, const struct sip_msg *msg,
 			}
 		}
 	}
+	else if (!mbuf_get_left(msg->mb)) {
+		(void)sip_reply(sip, msg, 200, "OK");
+	}
 	else {
 		(void)sip_reply(sip, msg, 488, "Not Acceptable Here");
 	}
