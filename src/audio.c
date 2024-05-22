@@ -1169,7 +1169,7 @@ int audio_update(struct audio *a)
 		sc = sdp_media_rformat(m, NULL);
 	}
 
-	if (!sc) {
+	if (!sc || !sc->data) {
 		info("audio: stream is disabled\n");
 		audio_stop(a);
 		return 0;
