@@ -676,6 +676,9 @@ static int sdp_connection(const struct mbuf *mb, int *af, struct sa *sa)
 		err |= net_set_dst_scopeid(net, sa);
 
 out:
+	if (!err && !sa_isset(sa, SA_ADDR))
+	    return EINVAL;
+
 	return err;
 }
 
