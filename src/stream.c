@@ -1070,10 +1070,20 @@ void stream_flush(struct stream *s)
 
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms)
 {
+	struct sdp_media *m;
+
 	if (!strm)
 		return;
 
-	if (!sdp_media_has_media(stream_sdpmedia(strm)))
+	m = stream_sdpmedia(strm);
+	if (!sdp_media_has_media(m))
+		return;
+
+	if (sdp_media_disabled(m))
+		return;
+
+	const struct sdp_format *sc = sdp_media_rformat(m, NULL);
+	if (!sc || !sc->data)
 		return;
 
 	strm->rxm.rtp_timeout = timeout_ms;
