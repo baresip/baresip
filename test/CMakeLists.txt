@@ -34,6 +34,7 @@ add_executable(${PROJECT_NAME}
 
   mock/cert.c
 
+  mock/mock_aucodec.c
   mock/mock_auplay.c
   mock/mock_mnat.c
   mock/mock_vidcodec.c

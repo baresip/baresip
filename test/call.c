@@ -1799,22 +1799,29 @@ int test_call_progress(void)
 }
 
 
-static int test_media_base(enum audio_mode txmode)
+static int test_media_base(enum audio_mode txmode,
+			   enum aufmt sndfmt, enum aufmt acfmt)
 {
 	struct fixture fix, *f = &fix;
 	struct cancel_rule *cr;
 	struct auplay *auplay = NULL;
 	int err = 0;
 
-	fixture_init_prm(f, ";ptime=1;audio_player=mock-auplay,a");
+	fixture_init_prm(f, ";ptime=5;audio_player=mock-auplay,a");
 	mem_deref(f->b.ua);
 	err = ua_alloc(&f->b.ua, "B <sip:b@127.0.0.1>"
-		       ";regint=0;ptime=1;audio_player=mock-auplay,b");
+		       ";regint=0;ptime=5;audio_player=mock-auplay,b");
 	TEST_ERR(err);
 
+	conf_config()->audio.srate_play = 16000;
+	conf_config()->audio.srate_src = 16000;
 	conf_config()->audio.txmode = txmode;
-	conf_config()->audio.src_fmt = AUFMT_S16LE;
-	conf_config()->audio.play_fmt = AUFMT_S16LE;
+	conf_config()->audio.src_fmt = sndfmt;
+	conf_config()->audio.channels_play = 1;
+	conf_config()->audio.channels_src = 1;
+	conf_config()->audio.play_fmt = sndfmt;
+	conf_config()->audio.enc_fmt = acfmt;
+	conf_config()->audio.dec_fmt = acfmt;
 	conf_config()->avt.rtp_stats = true;
 
 	cancel_rule_new(UA_EVENT_CUSTOM, f->a.ua, 0, 0, 1);
@@ -1859,6 +1866,12 @@ static int test_media_base(enum audio_mode txmode)
 	conf_config()->audio.src_fmt = AUFMT_S16LE;
 	conf_config()->audio.play_fmt = AUFMT_S16LE;
 	conf_config()->audio.txmode = AUDIO_MODE_POLL;
+	conf_config()->audio.srate_play = 0;
+	conf_config()->audio.srate_src = 0;
+	conf_config()->audio.channels_play = 0;
+	conf_config()->audio.channels_src = 0;
+	conf_config()->audio.enc_fmt = AUFMT_S16LE;
+	conf_config()->audio.dec_fmt = AUFMT_S16LE;
 
 	fixture_close(f);
 	mem_deref(auplay);
@@ -1875,15 +1888,43 @@ int test_call_format_float(void)
 {
 	int err;
 
-	err = test_media_base(AUDIO_MODE_POLL);
-	ASSERT_EQ(0, err);
+	err = module_load(".", "auconv");
+	TEST_ERR(err);
 
-	err = test_media_base(AUDIO_MODE_THREAD);
-	ASSERT_EQ(0, err);
+	err = module_load(".", "auresamp");
+	TEST_ERR(err);
 
-	conf_config()->audio.txmode = AUDIO_MODE_POLL;
+	mock_aucodec_register();
+
+	err = test_media_base(AUDIO_MODE_POLL, AUFMT_S16LE, AUFMT_S16LE);
+	TEST_ERR(err);
+
+	err = test_media_base(AUDIO_MODE_POLL, AUFMT_S16LE, AUFMT_FLOAT);
+	TEST_ERR(err);
+
+	err = test_media_base(AUDIO_MODE_POLL, AUFMT_FLOAT, AUFMT_S16LE);
+	TEST_ERR(err);
+
+	err = test_media_base(AUDIO_MODE_POLL, AUFMT_FLOAT, AUFMT_FLOAT);
+	TEST_ERR(err);
+
+	err = test_media_base(AUDIO_MODE_THREAD, AUFMT_S16LE, AUFMT_S16LE);
+	TEST_ERR(err);
+
+	err = test_media_base(AUDIO_MODE_THREAD, AUFMT_S16LE, AUFMT_FLOAT);
+	TEST_ERR(err);
+
+	err = test_media_base(AUDIO_MODE_THREAD, AUFMT_FLOAT, AUFMT_S16LE);
+	TEST_ERR(err);
+
+	err = test_media_base(AUDIO_MODE_THREAD, AUFMT_FLOAT, AUFMT_FLOAT);
+	TEST_ERR(err);
 
  out:
+	mock_aucodec_unregister();
+	module_unload("auresamp");
+	module_unload("auconv");
+
 	return err;
 }
 
@@ -2416,26 +2457,6 @@ int test_call_rtcp(void)
 
 	err |= test_call_rtcp_base(false);
 	err |= test_call_rtcp_base(true);
-
-	return err;
-}
-
-
-int test_call_aufilt(void)
-{
-	int err;
-
-	err = module_load(".", "auconv");
-	TEST_ERR(err);
-
-	err = test_media_base(AUDIO_MODE_POLL);
-	TEST_ERR(err);
-
-	err = test_media_base(AUDIO_MODE_THREAD);
-	TEST_ERR(err);
-
- out:
-	module_unload("auconv");
 
 	return err;
 }

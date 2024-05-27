@@ -153,6 +153,8 @@ struct auplay;
 
 typedef void (mock_sample_h)(struct auframe *af, const char *dev, void *arg);
 
+void mock_aucodec_register(void);
+void mock_aucodec_unregister(void);
 int mock_auplay_register(struct auplay **auplayp, struct list *auplayl,
 			 mock_sample_h *sampleh, void *arg);
 
@@ -195,7 +197,6 @@ int test_aulevel(void);
 int test_call_answer(void);
 int test_call_answer_hangup_a(void);
 int test_call_answer_hangup_b(void);
-int test_call_aufilt(void);
 int test_call_aulevel(void);
 int test_call_custom_headers(void);
 int test_call_dtmf(void);

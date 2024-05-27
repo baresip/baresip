@@ -27,7 +27,6 @@ static const struct test tests[] = {
 	TEST(test_call_answer),
 	TEST(test_call_answer_hangup_a),
 	TEST(test_call_answer_hangup_b),
-	TEST(test_call_aufilt),
 	TEST(test_call_aulevel),
 	TEST(test_call_custom_headers),
 	TEST(test_call_dtmf),
