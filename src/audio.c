@@ -1175,14 +1175,6 @@ int audio_update(struct audio *a)
 		return 0;
 	}
 
-	/* Audio filter */
-	if (!list_isempty(aufiltl)) {
-
-		err = aufilt_setup(a, aufiltl);
-		if (err)
-			return err;
-	}
-
 	if (dir & SDP_RECVONLY)
 		err |= audio_decoder_set(a, sc->data, sc->pt, sc->rparams);
 
@@ -1192,6 +1184,14 @@ int audio_update(struct audio *a)
 	if (err) {
 		warning("audio: start error (%m)\n", err);
 		return err;
+	}
+
+	/* Audio filter */
+	if (!list_isempty(aufiltl)) {
+
+		err = aufilt_setup(a, aufiltl);
+		if (err)
+			return err;
 	}
 
 	if (dir & SDP_RECVONLY) {
