@@ -109,8 +109,10 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 	aec->inst->gain_control()->Enable(true);
 
 	if (webrtc_aec_extended_filter) {
-		config.Set<webrtc::ExtendedFilter>(new webrtc::ExtendedFilter(true));
-      }
+		config.Set<webrtc::ExtendedFilter>(
+			new webrtc::ExtendedFilter(true)
+		);
+	}
 	aec->inst->SetExtraOptions(config);
 
  out:
@@ -140,7 +142,11 @@ static int module_init(void)
 	aufilt_register(baresip_aufiltl(), &webrtc_aec);
 
 	struct conf *conf = conf_cur();
-	conf_get_bool(conf, "webrtc_aec_extended_filter", &webrtc_aec_extended_filter);
+	conf_get_bool(
+		conf,
+		"webrtc_aec_extended_filter",
+		&webrtc_aec_extended_filter
+	);
 
 	return 0;
 }
