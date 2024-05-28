@@ -167,7 +167,7 @@ set(SRCS
   src/custom_hdrs.c
   src/descr.c
   src/dial_number.c
-  src/event.c
+  src/bevent.c
   src/jbuf.c
   src/http.c
   src/log.c
