@@ -113,6 +113,7 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 			new webrtc::ExtendedFilter(true)
 		);
 	}
+
 	aec->inst->SetExtraOptions(config);
 
  out:
