@@ -413,7 +413,6 @@ static void poll_aubuf_tx(struct audio *a)
 {
 	struct autx *tx = &a->tx;
 	struct auframe af;
-	int16_t *sampv = tx->sampv;
 	size_t sampc;
 	size_t sz;
 	struct le *le;
@@ -430,7 +429,7 @@ static void poll_aubuf_tx(struct audio *a)
 	ch = tx->ausrc_prm.ch;
 
 	/* timed read from audio-buffer */
-	auframe_init(&af, tx->src_fmt, sampv, sampc, srate, ch);
+	auframe_init(&af, tx->src_fmt, tx->sampv, sampc, srate, ch);
 	aubuf_read_auframe(tx->aubuf, &af);
 
 	/* Process exactly one audio-frame in list order */
