@@ -11,7 +11,8 @@
 #include <baresip.h>
 #include <stdlib.h>
 #include <math.h>
-#define SCALE (32767)
+#define SCALE (32767.0f)
+#define AMPLITUDE 0.25f
 
 
 /**
@@ -67,18 +68,67 @@ static void destructor(void *arg)
 }
 
 
+static void stereo_s16(int16_t *sampv, int16_t sample, enum channels ch,
+			 int *inc)
+{
+	if (ch == STEREO) {
+		sampv[*inc] = sample;
+		sampv[*inc + 1] = sample;
+		*inc += 2;
+	}
+	else if (ch == STEREO_LEFT) {
+		sampv[*inc] = sample;
+		sampv[*inc + 1] = 0;
+		*inc += 2;
+	}
+	else if (ch == STEREO_RIGHT) {
+		sampv[*inc] = 0;
+		sampv[*inc + 1] = sample;
+		*inc += 2;
+	}
+	else if (ch == MONO) {
+		sampv[*inc] = sample;
+		*inc += 1;
+	}
+}
+
+
+static void stereo_float(float *sampv, float sample, enum channels ch,
+			 int *inc)
+{
+	if (ch == STEREO) {
+		sampv[*inc] = sample;
+		sampv[*inc + 1] = sample;
+		*inc += 2;
+	}
+	else if (ch == STEREO_LEFT) {
+		sampv[*inc] = sample;
+		sampv[*inc + 1] = 0;
+		*inc += 2;
+	}
+	else if (ch == STEREO_RIGHT) {
+		sampv[*inc] = 0;
+		sampv[*inc + 1] = sample;
+		*inc += 2;
+	}
+	else if (ch == MONO) {
+		sampv[*inc] = sample;
+		*inc += 1;
+	}
+}
+
+
 static int play_thread(void *arg)
 {
 	uint64_t now, ts = tmr_jiffies();
 	struct ausrc_st *st = arg;
-	int16_t *sampv;
+	void *sampv;
 	double sample, rad_per_sec;
 	double sec_per_frame = 1.0 / (double)st->prm.srate;
 	int inc;
 	size_t frames;
-	int16_t f;
 
-	sampv = mem_alloc(st->sampc * sizeof(int16_t), NULL);
+	sampv = mem_alloc(st->sampc * aufmt_sample_size(st->prm.fmt), NULL);
 	if (!sampv)
 		return ENOMEM;
 
@@ -86,7 +136,7 @@ static int play_thread(void *arg)
 		struct auframe af;
 		size_t frame;
 
-		auframe_init(&af, AUFMT_S16LE, sampv, st->sampc, st->prm.srate,
+		auframe_init(&af, st->prm.fmt, sampv, st->sampc, st->prm.srate,
 		             st->prm.ch);
 		af.timestamp = ts * 1000;
 
@@ -108,30 +158,15 @@ static int play_thread(void *arg)
 		}
 
 		for (frame = 0; frame < frames; frame += 1) {
-			sample = sin((st->sec_offset + frame * sec_per_frame)
-					* rad_per_sec);
+			sample = sin((st->sec_offset + frame * sec_per_frame) *
+				     rad_per_sec) *
+				 AMPLITUDE;
 
-			f = (int16_t)(SCALE * 50 / 100.0f * sample);
-
-			if (st->ch == STEREO) {
-				sampv[inc] = f;
-				sampv[inc + 1] = f;
-				inc += 2;
-			}
-			if (st->ch == STEREO_LEFT) {
-				sampv[inc] = f;
-				sampv[inc + 1] = 0;
-				inc += 2;
-			}
-			if (st->ch == STEREO_RIGHT) {
-				sampv[inc] = 0;
-				sampv[inc + 1] = f;
-				inc += 2;
-			}
-			if (st->ch == MONO) {
-				sampv[inc] = f;
-				inc += 1;
-			}
+			if (st->prm.fmt == AUFMT_S16LE)
+				stereo_s16(sampv, (int16_t)(sample * SCALE),
+					   st->ch, &inc);
+			else if (st->prm.fmt == AUFMT_FLOAT)
+				stereo_float(sampv, sample, st->ch, &inc);
 		}
 
 		st->sec_offset = fmod(st->sec_offset + sec_per_frame * frames,
@@ -179,7 +214,7 @@ static int alloc_handler(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm || !rh || !dev)
 		return EINVAL;
 
-	if (prm->fmt != AUFMT_S16LE) {
+	if (prm->fmt != AUFMT_S16LE && prm->fmt != AUFMT_FLOAT) {
 		warning("ausine: unsupported sample format (%s)\n",
 			aufmt_name(prm->fmt));
 		return ENOTSUP;
