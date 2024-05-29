@@ -73,7 +73,7 @@ static int sampv_alloc(struct auresamp_st *st, struct auframe *af)
 {
 	size_t psize;
 
-	psize = af->sampc * af->ch * 2;
+	psize = auframe_size(af);
 	st->sampv = mem_zalloc(psize, NULL);
 
 	if (!st->sampv)
