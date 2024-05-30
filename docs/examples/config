@@ -298,3 +298,6 @@ video_selfview		window # {window,pip}
 
 # avformat
 #avformat_pass_through	yes
+
+# webrtc_aec
+# webrtc_aec_extended_filter		yes
