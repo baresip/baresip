@@ -18,6 +18,7 @@ jobs:
 
     env:
       CC: clang-17
+      CXX: clang++-17
       CMAKE_GENERATOR: Ninja
       CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all -fno-sanitize=function"
       CFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all -fno-sanitize=function"
