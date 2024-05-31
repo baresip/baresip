@@ -10,17 +10,17 @@ on:
 
 jobs:
   sanitizers:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
         sanitizer: [thread, address, undefined]
 
     env:
-      CC: clang
+      CC: clang-17
       CMAKE_GENERATOR: Ninja
-      CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover"
-      CFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover"
+      CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all -fno-sanitize=function"
+      CFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all -fno-sanitize=function"
       ASAN_OPTIONS: fast_unwind_on_malloc=0
 
     steps:
@@ -38,6 +38,12 @@ jobs:
     - name: mmap rnd_bits workaround
       run: |
         sudo sysctl -w vm.mmap_rnd_bits=28
+
+    - name: Install clang-tools
+      run: |
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main"
+        sudo apt-get update && sudo apt-get install -y clang-17
 
     - uses: sreimers/pr-dependency-action@v1
       with:
