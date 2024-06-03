@@ -231,8 +231,10 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	prm->ch    = fprm.channels;
 	prm->duration = aufile_get_length(st->aufile, &fprm);
 
-	if (!rh)
+	if (!rh) {
+		mem_deref(st);
 		return 0;
+	}
 
 	st->prm   = *prm;
 
