@@ -247,7 +247,6 @@ static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 			conf_config()->audio.audio_path, file) < 0)
 		return ENOMEM;
 
-	/* prm->ptime == 0 avoids start of ausrc thread */
 	st = mem_zalloc(sizeof(*st), fileinfo_destruct);
 	if (!st) {
 		err = ENOMEM;
