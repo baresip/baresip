@@ -569,6 +569,7 @@ struct ausrc_prm {
 	uint8_t    ch;          /**< Number of channels         */
 	uint32_t   ptime;       /**< Wanted packet-time in [ms] */
 	int        fmt;         /**< Sample format (enum aufmt) */
+	size_t     duration;    /**< Duration in [ms], 0 for infinite        */
 };
 
 typedef void (ausrc_read_h)(struct auframe *af, void *arg);
