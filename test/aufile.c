@@ -23,9 +23,6 @@ int test_aufile_duration(void)
 
 	err = ausrc_alloc(&ausrc, baresip_ausrcl(), "aufile",
 			  &prm, "../share/message.wav", NULL, NULL, NULL);
-	if (err)
-		err = ausrc_alloc(&ausrc, baresip_ausrcl(), "aufile",
-			  &prm, "share/message.wav", NULL, NULL, NULL);
 	TEST_ERR(err);
 	ASSERT_EQ(787, prm.duration);
 	ASSERT_EQ(1, prm.ch);
