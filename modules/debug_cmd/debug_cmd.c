@@ -170,9 +170,7 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 struct fileinfo_st {
 	struct ausrc_st *ausrc;
 	struct ausrc_prm prm;
-	size_t sampc;
 	struct tmr tmr;
-	bool   finished;
 };
 
 
@@ -185,52 +183,20 @@ static void fileinfo_destruct(void *arg)
 }
 
 
-static void fileinfo_timeout(void *arg)
+static void print_fileinfo(struct fileinfo_st *st)
 {
-	struct fileinfo_st *st = arg;
-	double s  = 0.;
+	double s  = ((float) st->prm.duration) / 1000;
 
-	if (st->prm.ch && st->prm.srate)
-		s = ((double) st->sampc)  / st->prm.ch / st->prm.srate;
-
-	if (st->finished) {
+	if (st->prm.duration) {
 		info("debug_cmd: length = %1.3lf seconds\n", s);
 		module_event("debug_cmd", "aufileinfo", NULL, NULL,
 			 "length = %lf seconds", s);
 	}
-	else if (s > 0.) {
-		warning("debug_cmd: timeout, length > %1.3lf seconds\n", s);
-		module_event("debug_cmd", "aufileinfo", NULL, NULL,
-			 "timeout length = %lf seconds", s);
-	}
 	else {
 		info("debug_cmd: timeout\n");
 		module_event("debug_cmd", "aufileinfo", NULL, NULL,
-			 "timeout", s);
+			 "length unknown");
 	}
-
-	mem_deref(st);
-}
-
-
-static void fileinfo_read_handler(struct auframe *af, void *arg)
-{
-	struct fileinfo_st *st = arg;
-
-	if (!af || !arg)
-		return;
-
-	st->sampc += af->sampc;
-}
-
-
-static void fileinfo_err_handler(int err, const char *str, void *arg)
-{
-	struct fileinfo_st *st = arg;
-	(void) str;
-
-	st->finished = err ? false : true;
-	tmr_start(&st->tmr, 0, fileinfo_timeout, st);
 }
 
 
@@ -281,7 +247,6 @@ static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 			conf_config()->audio.audio_path, file) < 0)
 		return ENOMEM;
 
-	/* prm->ptime == 0 means blocking mode for ausrc */
 	st = mem_zalloc(sizeof(*st), fileinfo_destruct);
 	if (!st) {
 		err = ENOMEM;
@@ -290,22 +255,17 @@ static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 
 	err = ausrc_alloc(&st->ausrc, baresip_ausrcl(),
 			  aumod,
-			  &st->prm, path,
-			  fileinfo_read_handler, fileinfo_err_handler, st);
+			  &st->prm, path, NULL, NULL, st);
 	if (err) {
-		warning("debug_cmd: %s - ausrc %s does not support zero ptime "
-				"or reading source %s failed. (%m)\n",
+		warning("debug_cmd: %s - ausrc %s does not support empty read "
+			"handler or reading source %s failed. (%m)\n",
 				__func__, aumod, carg->prm, err);
 		goto out;
 	}
 
-	if (st->finished)
-		fileinfo_timeout(st);
-	else
-		tmr_start(&st->tmr, 5000, fileinfo_timeout, st);
+	print_fileinfo(st);
 out:
-	if (err)
-		mem_deref(st);
+	mem_deref(st);
 
 	mem_deref(path);
 	return err;

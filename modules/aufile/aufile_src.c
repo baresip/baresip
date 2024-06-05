@@ -195,11 +195,9 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	struct aufile_prm fprm;
-	uint32_t   ptime;
-	bool join = false;
 	int err;
 
-	if (!stp || !as || !prm || !rh)
+	if (!stp || !as || !prm)
 		return EINVAL;
 
 	if (prm->fmt != AUFMT_S16LE) {
@@ -219,12 +217,6 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->arg   = arg;
 	st->ptime = prm->ptime;
 
-	/* ptime == 0 means blocking mode */
-	join = st->ptime == 0;
-	ptime = st->ptime;
-	if (!ptime)
-		ptime = 40;
-
 	err = aufile_open(&st->aufile, &fprm, dev, AUFILE_READ);
 	if (err) {
 		warning("aufile: failed to open file '%s' (%m)\n", dev, err);
@@ -237,10 +229,17 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	/* return wav format to caller */
 	prm->srate = fprm.srate;
 	prm->ch    = fprm.channels;
+	prm->duration = aufile_get_length(st->aufile, &fprm);
+
+	if (!rh) {
+		mem_deref(st);
+		return 0;
+	}
+
 	st->prm   = *prm;
 
 	st->fmt    = fprm.fmt;
-	st->sampc  = prm->srate * prm->ch * ptime / 1000;
+	st->sampc  = prm->srate * prm->ch * st->ptime / 1000;
 
 	info("aufile: audio ptime=%u sampc=%zu\n", st->ptime, st->sampc);
 
@@ -253,7 +252,7 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (err)
 		goto out;
 
-	tmr_start(&st->tmr, ptime, timeout, st);
+	tmr_start(&st->tmr, st->ptime, timeout, st);
 
 	re_atomic_rlx_set(&st->run, true);
 	st->started = true;
@@ -262,12 +261,6 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		st->started = false;
 		re_atomic_rlx_set(&st->run, false);
 		goto out;
-	}
-
-	if (join) {
-		thrd_join(st->thread, NULL);
-		st->started = false;
-		st->errh(0, NULL, st->arg);
 	}
 
  out:
