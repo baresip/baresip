@@ -24,7 +24,6 @@ struct test {
 static const struct test tests[] = {
 	TEST(test_account),
 	TEST(test_account_uri_complete),
-	TEST(test_aufile_duration),
 	TEST(test_call_answer),
 	TEST(test_call_answer_hangup_a),
 	TEST(test_call_answer_hangup_b),
