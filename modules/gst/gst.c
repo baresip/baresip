@@ -486,6 +486,13 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	else
 		*stp = st;
 
+	gst_element_get_state(st->pipeline, NULL, NULL, 500*1000*1000);
+	gint64 duration = 0;
+	gst_element_query_duration(st->pipeline,
+				   GST_FORMAT_TIME,
+				   &duration);
+
+	prm->duration = duration / 1000000;
 	return err;
 }
 
