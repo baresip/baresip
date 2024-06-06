@@ -477,8 +477,11 @@ static bool sub_handler(const struct sip_msg *msg, void *arg)
 	if (uag.subh)
 		uag.subh(msg, ua);
 	else
-		(void)sip_treply(NULL, uag_sip(), msg, 405,
-				 "Method Not Allowed");
+		(void)sip_treplyf(NULL, NULL, uag_sip(), msg, false, 405,
+				 "Method Not Allowed",
+				 "Allow: %H\r\n"
+				 "Content-Length: 0\r\n\r\n",
+				 ua_print_allowed, ua);
 
 	return true;
 }
