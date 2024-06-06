@@ -197,7 +197,7 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	struct aufile_prm fprm;
 	int err;
 
-	if (!stp || !as || !prm)
+	if (!stp || !as || !prm  || !prm->ptime)
 		return EINVAL;
 
 	if (prm->fmt != AUFMT_S16LE) {
