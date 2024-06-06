@@ -476,6 +476,9 @@ static bool sub_handler(const struct sip_msg *msg, void *arg)
 
 	if (uag.subh)
 		uag.subh(msg, ua);
+	else
+		(void)sip_treply(NULL, uag_sip(), msg, 405,
+				 "Method Not Allowed");
 
 	return true;
 }
@@ -1267,3 +1270,13 @@ bool uag_delayed_close(void)
 	return uag.delayed_close;
 }
 
+
+/**
+ * Get the subscribe handler
+ *
+ * @return Subscribe handler
+ */
+sip_msg_h *uag_subh(void)
+{
+	return uag.subh;
+}

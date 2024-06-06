@@ -405,6 +405,7 @@ struct uag {
 struct config_sip *uag_cfg(void);
 const char *uag_eprm(void);
 bool uag_delayed_close(void);
+sip_msg_h *uag_subh(void);
 int uag_raise(struct ua *ua, struct le *le);
 
 void u32mask_enable(uint32_t *mask, uint8_t bit, bool enable);
