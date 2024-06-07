@@ -55,7 +55,7 @@ jobs:
 
     - name: coverage check
       run: |
-        min_cov="47.5"
+        min_cov="52.5"
         cov=$(~/.local/bin/gcovr -r . -f src -s | grep lines | awk '{ print $2 }' | sed 's/%//')
         echo "Coverage: ${cov}% (min $min_cov%)"
         exit $(echo "$cov < $min_cov" | bc -l)
