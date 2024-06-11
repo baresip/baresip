@@ -2447,6 +2447,7 @@ static int send_dtmf_info(struct call *call, char key)
 
 	if ((key < '0' || key > '9') &&
 	    (key < 'a' || key > 'd') &&
+	    (key < 'A' || key > 'D') &&
 	    (key != '*') &&
 	    (key != '#'))
 		return EINVAL;
