@@ -27,4 +27,4 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   -Wno-missing-field-initializers
   -Wno-unused-parameter
 )
-target_link_options(${PROJECT_NAME} PRIVATE -lstdc++)
+target_link_options(${PROJECT_NAME} PUBLIC -lstdc++)
