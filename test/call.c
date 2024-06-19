@@ -1081,6 +1081,8 @@ int test_call_multiple(void)
 
 	f->behaviour = BEHAVIOUR_ANSWER;
 	f->exp_estab = 4;
+	/* 4 incoming + 4 outgoing calls */
+	conf_config()->call.max_calls = 8;
 
 	/*
 	 * Step 1 -- make 4 calls from A to B
@@ -1155,6 +1157,8 @@ int test_call_multiple(void)
 
  out:
 	fixture_close(f);
+	/* set back to default */
+	conf_config()->call.max_calls = 4;
 
 	return err;
 }
@@ -1198,8 +1202,7 @@ int test_call_max(void)
  out:
 	fixture_close(f);
 
-	/* Set the max-calls limit */
-	conf_config()->call.max_calls = 0;
+	conf_config()->call.max_calls = 4;
 
 	return err;
 }
@@ -2309,6 +2312,8 @@ int test_call_attended_transfer(void)
 	int err = 0;
 
 	fixture_init(f);
+	/* 3 incoming + 3 outgoing calls */
+	conf_config()->call.max_calls = 6;
 
 	err = ua_alloc(&f->c.ua, "C <sip:c@127.0.0.1>;regint=0");
 	TEST_ERR(err);
@@ -2349,6 +2354,7 @@ int test_call_attended_transfer(void)
 
 out:
 	fixture_close(f);
+	conf_config()->call.max_calls = 4;
 
 	return err;
 }
