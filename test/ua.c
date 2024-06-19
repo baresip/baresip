@@ -274,6 +274,8 @@ static int reg_dns(enum sip_transp tp)
 
 	memset(&t, 0, sizeof(t));
 
+	dnsc_cache_max(net_dnsc(net), 0);
+
 	/*
 	 * Setup server-side mocks:
 	 */
