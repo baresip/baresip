@@ -5,6 +5,40 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v3.13.0] - 2024-06-19
+
+## What's Changed
+* ua: simplify sdp_connection() by @alfredh in https://github.com/baresip/baresip/pull/3031
+* call.c: allow INFO requests with no body by @maximilianfridrich in https://github.com/baresip/baresip/pull/3035
+* audio,stream: video only call if no common audio codecs by @cspiel1 in https://github.com/baresip/baresip/pull/3037
+* ua: avoid empty IP in SDP as local address by @cspiel1 in https://github.com/baresip/baresip/pull/3038
+* audio: fix setup of audio filters by @cspiel1 in https://github.com/baresip/baresip/pull/3046
+* event refactoring by @cspiel1 in https://github.com/baresip/baresip/pull/3018
+* audio: remove cast to integer of sampv by @cspiel1 in https://github.com/baresip/baresip/pull/3050
+* auresamp: correct sampv size for conversion to float by @cspiel1 in https://github.com/baresip/baresip/pull/3051
+* ausine: add float format support by @sreimers in https://github.com/baresip/baresip/pull/3052
+* auresamp: fix size of sampv if aufmt conversion needed by @cspiel1 in https://github.com/baresip/baresip/pull/3053
+* test: call - complete test for auconv by @cspiel1 in https://github.com/baresip/baresip/pull/3047
+* webrtc_aec: Add support for extended filter option by @marcel-behlau-elfin in https://github.com/baresip/baresip/pull/3048
+* ci/sanitizers: use clang-17 and do not recover by @sreimers in https://github.com/baresip/baresip/pull/3054
+* debug_cmd: command aufileinfo return answer by @cspiel1 in https://github.com/baresip/baresip/pull/3030
+* gst: set ausrc_prm duration by @cspiel1 in https://github.com/baresip/baresip/pull/3055
+* aufile: ptime zero check for ausrc by @cspiel1 in https://github.com/baresip/baresip/pull/3056
+* ua,uag: support SUBSCRIBE only if handler is set by @maximilianfridrich in https://github.com/baresip/baresip/pull/3057
+* uag: add Allow header to 405 SUBSCRIBE response by @maximilianfridrich in https://github.com/baresip/baresip/pull/3058
+* mixausrc: fix downsampling by @cspiel1 in https://github.com/baresip/baresip/pull/3059
+* ci/coverage: increase min coverage by @sreimers in https://github.com/baresip/baresip/pull/3060
+* cmake/webrtc_aec: use PUBLIC stdc++ linking by @sreimers in https://github.com/baresip/baresip/pull/3063
+* call: capitals for SIP INFO dtmf by @cspiel1 in https://github.com/baresip/baresip/pull/3062
+* test: call - reset max_calls to default value by @cspiel1 in https://github.com/baresip/baresip/pull/3067
+* test/ua: disable dns cache for reg_dns tests by @cspiel1 in https://github.com/baresip/baresip/pull/3068
+
+## New Contributors
+* @marcel-behlau-elfin made their first contribution in https://github.com/baresip/baresip/pull/3048
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.12.0...v3.13.0
+
+
 ## 3.12.0 - 2024-05-15
 
 ## What's Changed
