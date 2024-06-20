@@ -2,6 +2,9 @@ project(dtmf)
 
 set(SRCS dtmf.c)
 
+list(APPEND MODULES_DETECTED ${PROJECT_NAME})
+set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
+
 if(STATIC)
     add_library(${PROJECT_NAME} OBJECT ${SRCS})
 else()
