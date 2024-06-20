@@ -19,6 +19,7 @@
 
 static void dtmf_dec_handler(char digit, void *arg)
 {
+	(void)arg;
 	char key_str[2];
 
 	key_str[0] = digit;
