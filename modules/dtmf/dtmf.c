@@ -67,7 +67,6 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 		mem_deref(st);
 	else
 	{
-		dtmf_dec_reset(st->dec, prm->srate, prm->ch);
 		*stp = (struct aufilt_dec_st *)st;
 	}
 
