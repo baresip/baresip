@@ -59,7 +59,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 	st = mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
-		return EINVAL;
+		return ENOMEM;
 
 	err = dtmf_dec_alloc(&st->dec, prm->srate, prm->ch, dtmf_dec_handler, NULL);
 
