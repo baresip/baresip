@@ -58,3 +58,6 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 packaging/Makefile
 install_manifest.txt
+
+# Visual Studio Code
+.vscode/*
