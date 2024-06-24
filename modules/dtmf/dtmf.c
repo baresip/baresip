@@ -29,7 +29,7 @@ static void dtmf_dec_handler(char digit, void *arg)
 }
 
 struct dtmf_filt_dec {
-	struct aufilt_dec_st af;  /* base class */
+	struct aufilt_enc_st af;  /* inheritance */
 	struct dtmf_dec *dec;
 };
 
