@@ -1,7 +1,5 @@
 /**
  * @file in_band_dtmf.c  DTMF decoder
- *
- * Copyright (C) 2010 Alfred E. Heggestad
  */
 #include <time.h>
 #include <re.h>
