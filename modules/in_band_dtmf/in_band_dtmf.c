@@ -184,7 +184,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 	st = encs.head->data;
 
 	for (i = 0; i < strlen(digits); ++i) {
-		digit = digits[i];
+		digit = toupper(digits[i]);
 		switch(digit) {
 
 		case '1': case '2': case '3': case 'A':
