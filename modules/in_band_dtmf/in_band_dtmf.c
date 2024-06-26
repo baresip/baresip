@@ -2,6 +2,7 @@
  * @file in_band_dtmf.c  DTMF decoder
  */
 #include <time.h>
+#include <ctype.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
@@ -172,6 +173,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 	struct in_band_dtmf_filt_enc *st;
 	int err = 0;
 	size_t i;
+	char digit;
 	(void)pf;
 
 	if (!list_count(&encs)) {
@@ -182,7 +184,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 	st = encs.head->data;
 
 	for (i = 0; i < strlen(digits); ++i) {
-		const char digit = digits[i];
+		digit = digits[i];
 		switch(digit) {
 
 		case '1': case '2': case '3': case 'A':
