@@ -12,8 +12,9 @@
 /**
  * @defgroup in_band_dtmf in_band_dtmf
  *
- * Audio filter that decodes DTMF tones
+ * Audio filter that de- and encodes DTMF tones.
  *
+ * The tone length of an encoded tone is 0.1s.
  */
 
 
