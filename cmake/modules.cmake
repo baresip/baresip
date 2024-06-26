@@ -21,7 +21,6 @@ set(MODULES
   coreaudio
   ctrl_dbus
   ctrl_tcp
-  dtmf
   debug_cmd
   directfb
   dshow
@@ -40,6 +39,7 @@ set(MODULES
   httpd
   httpreq
   ice
+  in_band_dtmf
   jack
   l16
   menu

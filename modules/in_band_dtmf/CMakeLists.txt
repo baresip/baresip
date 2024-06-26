@@ -1,6 +1,6 @@
-project(dtmf)
+project(in_band_dtmf)
 
-set(SRCS dtmf.c)
+set(SRCS in_band_dtmf.c)
 
 list(APPEND MODULES_DETECTED ${PROJECT_NAME})
 set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)

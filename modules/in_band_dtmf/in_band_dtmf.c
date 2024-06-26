@@ -1,5 +1,5 @@
 /**
- * @file dtmf.c  DTMF decoder
+ * @file in_band_dtmf.c  DTMF decoder
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
@@ -10,20 +10,20 @@
 
 
 /**
- * @defgroup dtmf dtmf
+ * @defgroup in_band_dtmf in_band_dtmf
  *
  * Audio filter that decodes DTMF tones
  *
  */
 
 
-struct dtmf_filt_dec {
+struct in_band_dtmf_filt_dec {
 	struct aufilt_enc_st af;  /* inheritance */
 	struct dtmf_dec *dec;
 };
 
 
-struct dtmf_filt_enc {
+struct in_band_dtmf_filt_enc {
 	struct aufilt_enc_st af;  /* inheritance */
 	struct mbuf *mb;
 	unsigned srate;
@@ -34,7 +34,7 @@ struct dtmf_filt_enc {
 static struct list encs;
 
 
-static void dtmf_dec_handler(char digit, void *arg)
+static void in_band_dtmf_dec_handler(char digit, void *arg)
 {
 	(void)arg;
 	char key_str[2];
@@ -48,7 +48,7 @@ static void dtmf_dec_handler(char digit, void *arg)
 
 static void enc_destructor(void *arg)
 {
-	struct dtmf_filt_enc *st = (struct dtmf_filt_enc *) arg;
+	struct in_band_dtmf_filt_enc *st = (struct in_band_dtmf_filt_enc *) arg;
 
 	list_unlink(&st->af.le);
 	list_unlink(&st->le_priv);
@@ -58,7 +58,7 @@ static void enc_destructor(void *arg)
 
 static void dec_destructor(void *arg)
 {
-	struct dtmf_filt_dec *st = (struct dtmf_filt_dec *) arg;
+	struct in_band_dtmf_filt_dec *st = (struct in_band_dtmf_filt_dec *) arg;
 
 	list_unlink(&st->af.le);
 	mem_deref(st->dec);
@@ -69,7 +69,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct aufilt *af, struct aufilt_prm *prm,
 			 const struct audio *au)
 {
-	struct dtmf_filt_enc *st;
+	struct in_band_dtmf_filt_enc *st;
 	int err = 0;
 	(void)ctx;
 	(void)af;
@@ -99,7 +99,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 {
-	struct dtmf_filt_enc *st = (void *)aufilt_enc_st;
+	struct in_band_dtmf_filt_enc *st = (void *)aufilt_enc_st;
 	uint16_t* data = af->sampv;
 	uint16_t i;
 
@@ -119,7 +119,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct aufilt *af, struct aufilt_prm *prm,
 			 const struct audio *au)
 {
-	struct dtmf_filt_dec *st;
+	struct in_band_dtmf_filt_dec *st;
 	int err = 0;
 	(void)ctx;
 	(void)af;
@@ -132,7 +132,8 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
-	err = dtmf_dec_alloc(&st->dec, prm->srate, prm->ch, dtmf_dec_handler, NULL);
+	err = dtmf_dec_alloc(&st->dec, prm->srate, prm->ch,
+			in_band_dtmf_dec_handler, NULL);
 
 	if (err)
 		mem_deref(st);
@@ -145,7 +146,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 
 static int decode(struct aufilt_dec_st *st, struct auframe *af)
 {
-	struct dtmf_filt_dec *sf = (struct dtmf_filt_dec *)st;
+	struct in_band_dtmf_filt_dec *sf = (struct in_band_dtmf_filt_dec *)st;
 
 	if (!st || !af)
 		return EINVAL;
@@ -168,12 +169,12 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 {
 	const struct cmd_arg *carg = arg;
 	const char *digits = carg->prm;
-	struct dtmf_filt_enc *st;
+	struct in_band_dtmf_filt_enc *st;
 	int err = 0;
 	(void)pf;
 
 	if (!list_count(&encs)) {
-		warning("dtmf: no active call\n");
+		warning("in_band_dtmf: no active call\n");
 		return EINVAL;
 	}
 
@@ -192,7 +193,8 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 			// Reduce tone length to 0.1s
 			mbuf_set_end(st->mb, st->mb->end - 2 * 0.9f * st->srate);
 			break;
-		default: warning("Skip unsupported DTMF character: %c\n", digit);
+		default: warning("in_band_dtmf: skip unsupported DTMF "
+				"character: %c\n", digit);
 		}
 	}
 
@@ -201,8 +203,8 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 }
 
 
-static struct aufilt dtmf = {
-	.name    = "dtmf",
+static struct aufilt in_band_dtmf = {
+	.name    = "in_band_dtmf",
 	.encupdh = encode_update,
 	.ench    = encode,
 	.decupdh = decode_update,
@@ -230,7 +232,7 @@ static const struct cmd cmdv[] = {
 static int module_init(void)
 {
 	int err;
-	aufilt_register(baresip_aufiltl(), &dtmf);
+	aufilt_register(baresip_aufiltl(), &in_band_dtmf);
 
 	err  = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 
@@ -243,13 +245,13 @@ static int module_init(void)
 static int module_close(void)
 {
 	cmd_unregister(baresip_commands(), cmdv);
-	aufilt_unregister(&dtmf);
+	aufilt_unregister(&in_band_dtmf);
 	return 0;
 }
 
 
-EXPORT_SYM const struct mod_export DECL_EXPORTS(dtmf) = {
-	"dtmf",
+EXPORT_SYM const struct mod_export DECL_EXPORTS(in_band_dtmf) = {
+	"in_band_dtmf",
 	"filter",
 	module_init,
 	module_close
