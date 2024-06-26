@@ -171,6 +171,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 	const char *digits = carg->prm;
 	struct in_band_dtmf_filt_enc *st;
 	int err = 0;
+	size_t i;
 	(void)pf;
 
 	if (!list_count(&encs)) {
@@ -180,7 +181,6 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 
 	st = encs.head->data;
 
-	size_t i;
 	for (i = 0; i < strlen(digits); ++i) {
 		const char digit = digits[i];
 		switch(digit) {
