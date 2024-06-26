@@ -157,7 +157,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 }
 
 /**
- * Add new dtmf tones
+ * Add new DTMF tones
  *
  * @param pf		Print handler for debug output
  * @param arg		Command argument. See \ref cmdv !
