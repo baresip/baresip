@@ -156,6 +156,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	return 0;
 }
 
+
 /**
  * Add new DTMF tones
  *
