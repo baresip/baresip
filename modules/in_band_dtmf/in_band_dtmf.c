@@ -235,8 +235,6 @@ static int module_init(void)
 
 	err  = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 
-	info("dtmf: adding DTMF filter\n");
-
 	return err;
 }
 
