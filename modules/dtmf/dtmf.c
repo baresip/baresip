@@ -66,9 +66,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (err)
 		mem_deref(st);
 	else
-	{
 		*stp = (struct aufilt_dec_st *)st;
-	}
 
 	return err;
 }
