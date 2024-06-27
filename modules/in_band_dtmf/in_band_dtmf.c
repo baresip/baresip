@@ -108,7 +108,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	     *stp = (struct aufilt_enc_st *)st;
 	}
 
-      return err;
+	return err;
 }
 
 
