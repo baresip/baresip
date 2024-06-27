@@ -103,9 +103,9 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 		err = ENOMEM;
 	}
 	else {
-	     st->srate = prm->srate;
-	     list_append(&encs, &st->le_priv, st);
-	     *stp = (struct aufilt_enc_st *)st;
+		st->srate = prm->srate;
+		list_append(&encs, &st->le_priv, st);
+		*stp = (struct aufilt_enc_st *)st;
 	}
 
 	return err;
