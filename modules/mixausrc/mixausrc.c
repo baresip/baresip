@@ -439,9 +439,8 @@ static void fade_int16(struct mixstatus *st, int16_t *data, uint16_t n,
 	enum mixmode dir)
 {
 	uint16_t i;
-	for (i = 0; (i < n) && (st->i_fade < st->n_fade); ++i) {
+	for (i = 0; (i < n) && (st->i_fade < st->n_fade); ++i)
 		data[i] *= fade_linear(st, dir);
-	}
 }
 
 
