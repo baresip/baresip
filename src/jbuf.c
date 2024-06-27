@@ -31,10 +31,12 @@
 #define STAT_SET(var, value)  (jb->stat.var) = (value)  /**< Stats set */
 #define STAT_ADD(var, value)  (jb->stat.var) += (value) /**< Stats add */
 #define STAT_INC(var)         ++(jb->stat.var)          /**< Stats inc */
+#define STAT_DEC(var)         --(jb->stat.var)          /**< Stats dec */
 #else
 #define STAT_SET(var, value)
 #define STAT_ADD(var, value)
 #define STAT_INC(var)
+#define STAT_DEC(var)
 #endif
 
 enum {
@@ -129,6 +131,7 @@ static void packet_alloc(struct jbuf *jb, struct packet **f)
 	if (le) {
 		list_unlink(le);
 		++jb->n;
+		STAT_INC(c_packets);
 	}
 	else {
 		struct packet *f0;
@@ -163,6 +166,7 @@ static void packet_deref(struct jbuf *jb, struct packet *f)
 	list_unlink(&f->le);
 	list_append(&jb->pooll, &f->le, f);
 	--jb->n;
+	STAT_DEC(c_packets);
 }
 
 
@@ -340,6 +344,7 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 
 	RE_TRACE_ID_INSTANT_I("jbuf", "jitter", delay_ms(jitter, jb->srate),
 			      jb->id);
+	STAT_SET(c_jitter, delay_ms(jitter, jb->srate));
 
 	/* Only fatal events should trigger adaption */
 	if (jb->p.late_pkts >= JBUF_LATE_TRESHOLD) {
