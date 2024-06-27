@@ -238,6 +238,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 	}
 
 	mbuf_set_pos(st->mb, old_pos);
+
 	return err;
 }
 
@@ -309,6 +310,7 @@ static int module_close(void)
 	cmd_unregister(baresip_commands(), cmdv);
 	aufilt_unregister(&in_band_dtmf);
 	uag_event_unregister(ua_event_handler);
+
 	return 0;
 }
 
