@@ -1565,6 +1565,8 @@ struct jbuf_stat {
 	uint32_t n_overflow;   /**< Number of overflows                     */
 	uint32_t n_flush;      /**< Number of times jitter buffer flushed   */
 	uint32_t c_delay;      /**< Current jitter buffer delay in [ms]     */
+	uint32_t c_packets;    /**< Current packets                         */
+	uint32_t c_jitter;     /**< Current jitter delay in [ms]            */
 	int32_t  c_skew;       /**< Current jitter buffer skew in [ms]      */
 };
 
