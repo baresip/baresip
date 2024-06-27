@@ -15,8 +15,6 @@
  *
  * The tone length of an encoded tone is 0.1s.
  * New tones can be added while encoding is active.
- *
- * Decoded tones will trigger UA_EVENT_CALL_INBAND_DTMF events.
  */
 
 
@@ -45,11 +43,20 @@ static void in_band_dtmf_dec_handler(char digit, void *arg)
 {
 	(void)arg;
 	char key_str[2];
+	struct in_band_dtmf_filt_dec *st;
 
 	key_str[0] = digit;
 	key_str[1] = '\0';
 
-	ua_event(NULL, UA_EVENT_CALL_INBAND_DTMF, NULL, key_str);
+	if (!list_count(&decs)) {
+		warning("in_band_dtmf: no active call\n");
+		return;
+	}
+
+	st = decs.head->data;
+
+	ua_event(st->ua, UA_EVENT_CALL_DTMF_START, st->call, "%s", key_str);
+	ua_event(st->ua, UA_EVENT_CALL_DTMF_END, st->call, NULL);
 }
 
 
