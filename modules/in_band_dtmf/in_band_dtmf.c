@@ -272,6 +272,7 @@ static const struct cmd cmdv[] = {
 
 };
 
+
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		struct call *call, const char *prm, void *arg)
 {
@@ -295,6 +296,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		break;
 	}
 }
+
 
 static int module_init(void)
 {
