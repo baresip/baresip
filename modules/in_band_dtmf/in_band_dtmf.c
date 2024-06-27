@@ -283,7 +283,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 			warning("in_band_dtmf: no active call\n");
 			return;
 		}
-	      st = decs.head->data;
+		st = decs.head->data;
 		st->ua = ua;
 		st->call = call;
 		break;
