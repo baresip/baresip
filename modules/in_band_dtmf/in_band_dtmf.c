@@ -179,7 +179,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 }
 
 
-static void print_usage()
+static void print_usage(void)
 {
 	info("in_band_dtmf: Missing parameter. Usage:\n"
 			"in_band_dtmf_send <sequence>\n"
