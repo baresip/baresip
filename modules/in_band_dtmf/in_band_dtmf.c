@@ -23,6 +23,9 @@
 struct in_band_dtmf_filt_dec {
 	struct aufilt_enc_st af;  /* inheritance */
 	struct dtmf_dec *dec;
+	struct ua *ua;
+	struct call *call;
+	struct le le_priv;
 };
 
 
@@ -35,6 +38,7 @@ struct in_band_dtmf_filt_enc {
 
 
 static struct list encs;
+static struct list decs;
 
 
 static void in_band_dtmf_dec_handler(char digit, void *arg)
@@ -64,6 +68,7 @@ static void dec_destructor(void *arg)
 	struct in_band_dtmf_filt_dec *st = (struct in_band_dtmf_filt_dec *) arg;
 
 	list_unlink(&st->af.le);
+	list_unlink(&st->le_priv);
 	mem_deref(st->dec);
 }
 
@@ -134,6 +139,10 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	st = mem_zalloc(sizeof(*st), dec_destructor);
 	if (!st)
 		return ENOMEM;
+
+	list_append(&decs, &st->le_priv, st);
+	st->ua = NULL;
+	st->call = NULL;
 
 	err = dtmf_dec_alloc(&st->dec, prm->srate, prm->ch,
 			in_band_dtmf_dec_handler, NULL);
@@ -249,13 +258,38 @@ static const struct cmd cmdv[] = {
 
 };
 
+static void ua_event_handler(struct ua *ua, enum ua_event ev,
+		struct call *call, const char *prm, void *arg)
+{
+	info("ua_event_handler\n");
+	(void)prm;
+	(void)arg;
+	struct in_band_dtmf_filt_dec *st;
+
+	switch (ev) {
+
+	case UA_EVENT_CALL_ESTABLISHED:
+		if (!list_count(&decs)) {
+			warning("in_band_dtmf: no active call\n");
+			return;
+		}
+	      st = decs.head->data;
+		st->ua = ua;
+		st->call = call;
+		break;
+
+	default:
+		break;
+	}
+}
 
 static int module_init(void)
 {
 	int err;
 	aufilt_register(baresip_aufiltl(), &in_band_dtmf);
 
-	err  = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
+	err = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
+	err |= uag_event_register(ua_event_handler, 0);
 
 	return err;
 }
@@ -265,6 +299,7 @@ static int module_close(void)
 {
 	cmd_unregister(baresip_commands(), cmdv);
 	aufilt_unregister(&in_band_dtmf);
+	uag_event_unregister(ua_event_handler);
 	return 0;
 }
 
