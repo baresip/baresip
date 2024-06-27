@@ -182,6 +182,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 	int err = 0;
 	size_t i;
 	char digit;
+	size_t old_pos;
 	(void)pf;
 
 	if (!list_count(&encs)) {
@@ -195,6 +196,8 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 	}
 
 	st = encs.head->data;
+	old_pos = st->mb->pos;
+	mbuf_skip_to_end(st->mb);
 
 	for (i = 0; i < strlen(digits); ++i) {
 		digit = toupper(digits[i]);
@@ -213,7 +216,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 		}
 	}
 
-	mbuf_set_pos(st->mb, 0);
+	mbuf_set_pos(st->mb, old_pos);
 	return err;
 }
 
