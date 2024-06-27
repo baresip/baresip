@@ -14,6 +14,9 @@
  * Audio filter that de- and encodes DTMF tones.
  *
  * The tone length of an encoded tone is 0.1s.
+ * New tones can be added while encoding is active.
+ *
+ * Decoded tones will trigger UA_EVENT_CALL_INBAND_DTMF events.
  */
 
 
