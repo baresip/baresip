@@ -233,6 +233,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 
 		default: warning("in_band_dtmf: skip unsupported DTMF "
 				"character: %c\n", digit);
+			break;
 		}
 	}
 
