@@ -71,7 +71,6 @@ static const char *event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_REMOTE_SDP:
 	case UA_EVENT_CALL_HOLD:
 	case UA_EVENT_CALL_RESUME:
-	case UA_EVENT_CALL_INBAND_DTMF:
 		return "call";
 	case UA_EVENT_VU_RX:
 	case UA_EVENT_VU_TX:
@@ -458,7 +457,6 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_MODULE:               return "MODULE";
 	case UA_EVENT_END_OF_FILE:          return "END_OF_FILE";
 	case UA_EVENT_CUSTOM:               return "CUSTOM";
-	case UA_EVENT_CALL_INBAND_DTMF:     return "CALL_INBAND_DTMF";
 	default: return "?";
 	}
 }
