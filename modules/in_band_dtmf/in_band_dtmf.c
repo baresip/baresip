@@ -62,7 +62,8 @@ static void in_band_dtmf_dec_handler(char digit, void *arg)
 
 static void enc_destructor(void *arg)
 {
-	struct in_band_dtmf_filt_enc *st = (struct in_band_dtmf_filt_enc *) arg;
+	struct in_band_dtmf_filt_enc *st =
+			(struct in_band_dtmf_filt_enc *) arg;
 
 	list_unlink(&st->af.le);
 	list_unlink(&st->le_priv);
@@ -72,7 +73,8 @@ static void enc_destructor(void *arg)
 
 static void dec_destructor(void *arg)
 {
-	struct in_band_dtmf_filt_dec *st = (struct in_band_dtmf_filt_dec *) arg;
+	struct in_band_dtmf_filt_dec *st =
+			(struct in_band_dtmf_filt_dec *) arg;
 
 	list_unlink(&st->af.le);
 	list_unlink(&st->le_priv);
@@ -119,7 +121,7 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 	uint16_t i;
 
 	if (mbuf_get_left(st->mb)) {
-		af->fmt = AUFMT_S16LE; // TODO: Take care about format?
+		af->fmt = AUFMT_S16LE; /* TODO: Take care about format? */
 		for (i = 0; (i < af->sampc) && (mbuf_get_left(st->mb)); ++i)
 			data[i] = mbuf_read_u16(st->mb);
 		if (!mbuf_get_left(st->mb))
@@ -170,7 +172,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	// TODO: Take care of float format?
+	/* TODO: Take care of float format? */
 	dtmf_dec_probe(sf->dec, af->sampv, af->sampc);
 
 	return 0;
@@ -220,15 +222,16 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 
 	for (i = 0; i < strlen(digits); ++i) {
 		digit = toupper(digits[i]);
-		switch(digit) {
+		switch (digit) {
 
 		case '1': case '2': case '3': case 'A':
 		case '4': case '5': case '6': case 'B':
 		case '7': case '8': case '9': case 'C':
 		case '*': case '0': case '#': case 'D':
 			err |= autone_dtmf(st->mb, st->srate, digit);
-			// Reduce tone length to 0.1s
-			mbuf_set_end(st->mb, st->mb->end - 2 * 0.9f * st->srate);
+			/* Reduce tone length to 0.1s */
+			mbuf_set_end(st->mb,
+				st->mb->end - 2 * 0.9f * st->srate);
 			break;
 
 		default: warning("in_band_dtmf: skip unsupported DTMF "
@@ -256,8 +259,8 @@ static struct aufilt in_band_dtmf = {
  * \struct cmdv
  * The commands for this module.
  * in_band_dtmf_send expects a single parameter.
- *	- A string that will be splitted into single characters. Each valid DTMF character will
- *	  be send as in-band DTMF tone.
+ *	- A string that will be splitted into single characters.
+ *	  Each valid DTMF character will be send as in-band DTMF tone.
  *
  *	E.g. "1234"
  */
