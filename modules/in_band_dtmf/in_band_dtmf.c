@@ -271,7 +271,6 @@ static const struct cmd cmdv[] = {
 static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		struct call *call, const char *prm, void *arg)
 {
-	info("ua_event_handler\n");
 	(void)prm;
 	(void)arg;
 	struct in_band_dtmf_filt_dec *st;
