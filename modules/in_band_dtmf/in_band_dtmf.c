@@ -3,6 +3,7 @@
  */
 #include <time.h>
 #include <ctype.h>
+#include <string.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
