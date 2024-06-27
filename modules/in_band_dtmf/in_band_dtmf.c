@@ -189,6 +189,11 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 		return EINVAL;
 	}
 
+	if (!digits) {
+		print_usage();
+		return EINVAL;
+	}
+
 	st = encs.head->data;
 
 	for (i = 0; i < strlen(digits); ++i) {
