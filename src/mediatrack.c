@@ -66,6 +66,17 @@ int mediatrack_start_audio(struct media_track *media,
 		return 0;
 	}
 
+	if (sdp_media_dir(sdpm) & SDP_RECVONLY) {
+		struct aucodec *ac = fmt->data;
+
+		err = audio_decoder_set(au, ac, fmt->pt, fmt->params);
+		if (err) {
+			warning("mediatrack: start:"
+				" audio_decoder_set error: %m\n", err);
+			return err;
+		}
+	}
+
 	if (sdp_media_dir(sdpm) & SDP_SENDONLY) {
 		struct aucodec *ac = fmt->data;
 
@@ -80,17 +91,6 @@ int mediatrack_start_audio(struct media_track *media,
 		if (err) {
 			warning("mediatrack: start:"
 				" audio_start_source error: %m\n", err);
-			return err;
-		}
-	}
-
-	if (sdp_media_dir(sdpm) & SDP_RECVONLY) {
-		struct aucodec *ac = fmt->data;
-
-		err = audio_decoder_set(au, ac, fmt->pt, fmt->params);
-		if (err) {
-			warning("mediatrack: start:"
-				" audio_decoder_set error: %m\n", err);
 			return err;
 		}
 	}
