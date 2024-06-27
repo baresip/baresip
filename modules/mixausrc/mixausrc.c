@@ -823,7 +823,7 @@ static int enc_mix_stop(struct re_printf *pf, void *unused)
 	(void)pf;
 	(void)unused;
 
-	if (!list_count(&decs))
+	if (!list_count(&encs))
 		return EINVAL;
 
 	enc = encs.head->data;
