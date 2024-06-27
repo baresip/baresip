@@ -82,7 +82,7 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
-	st->mb = mbuf_alloc(1024);
+	st->mb = mbuf_alloc(0);
 	if (!st->mb) {
 		mem_deref(st);
 		err = ENOMEM;
