@@ -450,9 +450,8 @@ static void fade_int16(struct mixstatus *st, int16_t *data, uint16_t n,
 	enum mixmode dir)
 {
 	uint16_t i;
-	for (i = 0; (i < n) && (st->i_fade < st->n_fade); ++i) {
+	for (i = 0; (i < n) && (st->i_fade < st->n_fade); ++i)
 		data[i] *= fade_linear(st, dir);
-	}
 }
 
 
@@ -835,7 +834,7 @@ static int enc_mix_stop(struct re_printf *pf, void *unused)
 	(void)pf;
 	(void)unused;
 
-	if (!list_count(&decs))
+	if (!list_count(&encs))
 		return EINVAL;
 
 	enc = encs.head->data;
