@@ -88,7 +88,6 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct in_band_dtmf_filt_enc *st;
-	int err = 0;
 	(void)ctx;
 	(void)af;
 	(void)au;
@@ -102,16 +101,14 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 	st->mb = mbuf_alloc(0);
 	if (!st->mb) {
-		mem_deref(st);
-		err = ENOMEM;
-	}
-	else {
-		st->srate = prm->srate;
-		list_append(&encs, &st->le_priv, st);
-		*stp = (struct aufilt_enc_st *)st;
+		return ENOMEM;
 	}
 
-	return err;
+	st->srate = prm->srate;
+	list_append(&encs, &st->le_priv, st);
+	*stp = (struct aufilt_enc_st *)st;
+
+	return 0;
 }
 
 
