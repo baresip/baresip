@@ -121,7 +121,8 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 	if (mbuf_get_left(st->mb)) {
 
 		if (af->fmt != AUFMT_S16LE) {
-			warning("in_band_dtmf: sample format %s not supported\n",
+			warning("in_band_dtmf: sample format %s not"
+					" supported\n",
 					aufmt_name(af->fmt));
 			return EINVAL;
 		}
