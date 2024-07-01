@@ -39,6 +39,7 @@ set(MODULES
   httpd
   httpreq
   ice
+  in_band_dtmf
   jack
   l16
   menu
