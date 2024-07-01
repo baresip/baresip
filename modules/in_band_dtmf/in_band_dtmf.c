@@ -204,7 +204,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 	size_t old_pos;
 	(void)pf;
 
-	if (!list_count(&encs)) {
+	if (!list_isempty(&encs)) {
 		warning("in_band_dtmf: no active call\n");
 		return EINVAL;
 	}
@@ -280,7 +280,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	switch (ev) {
 
 	case UA_EVENT_CALL_ESTABLISHED:
-		if (!list_count(&decs)) {
+		if (!list_isempty(&decs)) {
 			warning("in_band_dtmf: no active call\n");
 			return;
 		}
