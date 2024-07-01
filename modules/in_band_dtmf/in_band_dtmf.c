@@ -119,7 +119,13 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 	uint16_t i;
 
 	if (mbuf_get_left(st->mb)) {
-		af->fmt = AUFMT_S16LE; /* TODO: Take care about format? */
+
+		if (af->fmt != AUFMT_S16LE) {
+			warning("in_band_dtmf: sample format %s not supported\n",
+					aufmt_name(af->fmt));
+			return EINVAL;
+		}
+
 		for (i = 0; (i < af->sampc) && (mbuf_get_left(st->mb)); ++i)
 			data[i] = mbuf_read_u16(st->mb);
 		if (!mbuf_get_left(st->mb))
@@ -170,9 +176,13 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	/* TODO: Take care of float format? */
-	dtmf_dec_probe(sf->dec, af->sampv, af->sampc);
+	if (af->fmt != AUFMT_S16LE) {
+		warning("in_band_dtmf: sample format %s not supported\n",
+				aufmt_name(af->fmt));
+		return EINVAL;
+	}
 
+	dtmf_dec_probe(sf->dec, af->sampv, af->sampc);
 	return 0;
 }
 
