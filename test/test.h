@@ -124,6 +124,10 @@ extern const char test_certificate[];
 #endif
 
 
+void test_set_datapath(const char *path);
+const char *test_datapath(void);
+
+
 /*
  * Mock DNS-Server
  */
