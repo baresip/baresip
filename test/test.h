@@ -227,6 +227,9 @@ int test_call_100rel_audio(void);
 int test_call_100rel_video(void);
 int test_call_hold_resume(void);
 int test_call_srtp_tx_rekey(void);
+#ifdef USE_TLS
+int test_call_sni(void);
+#endif
 int test_cmd(void);
 int test_cmd_long(void);
 int test_contact(void);

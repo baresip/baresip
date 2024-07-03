@@ -53,6 +53,9 @@ static const struct test tests[] = {
 	TEST(test_call_100rel_video),
 	TEST(test_call_hold_resume),
 	TEST(test_call_srtp_tx_rekey),
+#ifdef USE_TLS
+	TEST(test_call_sni),
+#endif
 	TEST(test_cmd),
 	TEST(test_cmd_long),
 	TEST(test_contact),
@@ -78,7 +81,6 @@ static const struct test tests[] = {
 };
 
 
-static int run_one_test(const struct test *test)
 #ifdef DATA_PATH
 static char datapath[256] = DATA_PATH;
 #else
@@ -98,6 +100,7 @@ const char *test_datapath(void)
 }
 
 
+static int run_one_test(const struct test *test)
 {
 	struct config *config = conf_config();
 	enum rtp_receive_mode rxmode = config->avt.rxmode;
@@ -232,7 +235,6 @@ static const struct test *find_test(const char *name)
 	return NULL;
 }
 
-			 "\t-d <path>        Path to data files\n"
 
 static void ua_exit_handler(void *arg)
 {
@@ -251,6 +253,7 @@ static void usage(void)
 			 "\t-l               List all testcases and exit\n"
 			 "\t-r <rxmode>      RTP RX processing mode "
 			 "[main, thread]\n"
+			 "\t-d <path>        Path to data files\n"
 			 "\t-v               Verbose output (INFO level)\n"
 			 );
 }
@@ -287,11 +290,11 @@ int main(int argc, char *argv[])
 
 		switch (c) {
 
-		case '?':
 		case 'd':
 			test_set_datapath(optarg);
 			break;
 
+		case '?':
 		case 'h':
 			usage();
 			return -2;
