@@ -800,6 +800,7 @@ const struct sa *net_laddr_for(const struct network *net,
 bool net_is_laddr(const struct network *net, struct sa *sa);
 int net_set_dst_scopeid(const struct network *net, struct sa *dst);
 struct dnsc     *net_dnsc(const struct network *net);
+int net_set_dnsc(struct network *net, struct dnsc *dnsc);
 
 
 /*
