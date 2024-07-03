@@ -3,3 +3,6 @@ If:
 CompileFlags:
   Add: [-Wall, -DHAVE_INTTYPES_H, -include re.h, -include rem.h]
   Remove: [-xobjective-c++-header]
+---
+Diagnostics:
+  Suppress: "-Wgnu-zero-variadic-macro-arguments"
