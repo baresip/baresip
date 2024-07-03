@@ -321,7 +321,7 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 
 	len = get_master_keylen(resolve_suite(st->crypto_suite));
 
-	/* key-info is BASE64 encoded requiring a buffer larger than the key length */
+	/* key-info is BASE64 encoded requiring a larger buffer */
 	new_key = mem_zalloc(sizeof(st->key_rx), NULL);
 	if (!new_key)
 		return ENOMEM;
