@@ -53,6 +53,9 @@ static const struct test tests[] = {
 	TEST(test_call_100rel_video),
 	TEST(test_call_hold_resume),
 	TEST(test_call_srtp_tx_rekey),
+#ifdef USE_TLS
+	TEST(test_call_sni),
+#endif
 	TEST(test_cmd),
 	TEST(test_cmd_long),
 	TEST(test_contact),
@@ -76,6 +79,25 @@ static const struct test tests[] = {
 	TEST(test_clean_number),
 	TEST(test_clean_number_only_numeric),
 };
+
+
+#ifdef DATA_PATH
+static char datapath[256] = DATA_PATH;
+#else
+static char datapath[256] = "./test/data";
+#endif
+
+
+void test_set_datapath(const char *path)
+{
+	str_ncpy(datapath, path, sizeof(datapath));
+}
+
+
+const char *test_datapath(void)
+{
+	return datapath;
+}
 
 
 static int run_one_test(const struct test *test)
@@ -231,6 +253,7 @@ static void usage(void)
 			 "\t-l               List all testcases and exit\n"
 			 "\t-r <rxmode>      RTP RX processing mode "
 			 "[main, thread]\n"
+			 "\t-d <path>        Path to data files\n"
 			 "\t-v               Verbose output (INFO level)\n"
 			 );
 }
@@ -261,11 +284,15 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "hlvr:");
+		const int c = getopt(argc, argv, "hlvr:d:");
 		if (0 > c)
 			break;
 
 		switch (c) {
+
+		case 'd':
+			test_set_datapath(optarg);
+			break;
 
 		case '?':
 		case 'h':

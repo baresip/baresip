@@ -769,6 +769,28 @@ struct dnsc *net_dnsc(const struct network *net)
 }
 
 
+/**
+ * Set the DNS Client
+ *
+ * @param net  Network instance
+ * @param dnsc The DNS client
+ *
+ * @return 0 on success, otherwise errorcode
+ */
+int net_set_dnsc(struct network *net, struct dnsc *dnsc)
+{
+	if (!net)
+		return EINVAL;
+
+	if (net->dnsc)
+		mem_deref(net->dnsc);
+
+	net->dnsc = dnsc;
+
+	return 0;
+}
+
+
 bool net_laddr_apply(const struct network *net, net_ifaddr_h *ifh, void *arg)
 {
 	struct le *le;

@@ -166,6 +166,10 @@ int test_ua_register(void)
 {
 	int err = 0;
 
+#ifdef USE_TLS
+	conf_config()->sip.verify_server = false;
+#endif
+
 	err = ua_init("test", true, true, true);
 	TEST_ERR(err);
 

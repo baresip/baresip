@@ -14,6 +14,9 @@
 
 #define MAGIC 0x7004ca11
 
+enum {
+	IP_127_0_0_1 = 0x7f000001,
+};
 
 enum behaviour {
 	BEHAVIOUR_ANSWER = 0,
@@ -99,6 +102,7 @@ struct fixture {
 	struct sa dst;
 	struct sa laddr_udp;
 	struct sa laddr_tcp;
+	struct sa laddr_tls;
 	enum behaviour behaviour;
 	enum action estab_action;
 	char buri[256];
@@ -121,7 +125,7 @@ struct fixture {
 	err = sa_set_str(&f->dst, "127.0.0.1", 5060);			\
 	TEST_ERR(err);							\
 									\
-	err = ua_init("test", true, true, false);			\
+	err = ua_init("test", true, true, true);			\
 	TEST_ERR(err);							\
 									\
 	f->magic = MAGIC;						\
@@ -151,6 +155,10 @@ struct fixture {
 									\
 	err = sip_transp_laddr(uag_sip(), &f->laddr_tcp,		\
 			       SIP_TRANSP_TCP, &f->dst);		\
+	TEST_ERR(err);							\
+									\
+	err = sip_transp_laddr(uag_sip(), &f->laddr_tls,		\
+			       SIP_TRANSP_TLS, &f->dst);		\
 	TEST_ERR(err);							\
 									\
 	debug("test: local SIP transp: UDP=%J, TCP=%J\n",		\
@@ -3251,3 +3259,147 @@ out:
 
 	return err;
 }
+
+
+#ifdef USE_TLS
+int test_call_sni(void)
+{
+	int err = 0;
+	struct fixture fix, *f = &fix;
+	struct dns_server *dns_srv = NULL;
+	struct dnsc *dnsc = NULL;
+	char buri_tls[256], curi_tls[256];
+	const char *dp = test_datapath();
+	char s[256];
+
+	/* Set wrong global certificate. */
+	re_snprintf(conf_config()->sip.cert, sizeof(conf_config()->sip.cert),
+		    "%s/sni/other-cert.pem", dp);
+	conf_config()->sip.verify_server = true;
+
+	/* Setup Mocking DNS Server */
+	err = dns_server_alloc(&dns_srv, false);
+	err |= dns_server_add_a(dns_srv, "retest.server.org", IP_127_0_0_1);
+	err |= dns_server_add_a(dns_srv, "retest.unknown.org", IP_127_0_0_1);
+	err |= dnsc_alloc(&dnsc, NULL, &dns_srv->addr, 1);
+	err |= net_set_dnsc(baresip_network(), dnsc);
+	TEST_ERR(err);
+
+	fixture_init(f);
+
+	mem_deref(f->a.ua);
+	mem_deref(f->b.ua);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	re_snprintf(s, sizeof(s), "A <sip:a@retest.client.org;transport=tls>"
+		    ";regint=0;cert=%s/sni/client-interm.pem", dp);
+	err = ua_alloc(&f->a.ua, s);
+	TEST_ERR(err);
+
+	re_snprintf(s, sizeof(s), "B <sip:b@retest.server.org;transport=tls>"
+		    ";regint=0;cert=%s/sni/server-interm.pem", dp);
+	err = ua_alloc(&f->b.ua, s);
+	TEST_ERR(err);
+
+	re_snprintf(s, sizeof(s), "C <sip:c@retest.unknown.org;"
+		    "transport=tls>;regint=0;cert=%s/sni/other-cert.pem", dp);
+	err = ua_alloc(&f->c.ua, s);
+	TEST_ERR(err);
+
+	re_snprintf(buri_tls, sizeof(buri_tls), "sip:b@retest.server.org:%u",
+		    sa_port(&f->laddr_tls));
+	re_snprintf(curi_tls, sizeof(curi_tls), "sip:c@retest.unknown.org:%u",
+		    sa_port(&f->laddr_tls));
+
+	/* 1st test. No CA set. Call from A to B. TLS handshake must fail. */
+	f->b.n_closed = 1;
+
+	err = ua_connect(f->a.ua, 0, NULL, buri_tls, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_established);
+	ASSERT_EQ(1, fix.b.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.c.n_incoming);
+	ASSERT_EQ(0, fix.c.n_established);
+	ASSERT_EQ(0, fix.c.n_closed);
+	ASSERT_EQ(0, fix.c.close_scode);
+
+	/* 2nd test. CA set. Call from A to C. TLS handshake must fail because
+	 * certificate of C is selected which is from an unknown CA. */
+	re_snprintf(s, sizeof(s), "%s/sni/root-ca.pem", dp);
+	err = tls_add_cafile_path(uag_tls(), s, NULL);
+	TEST_ERR(err);
+
+	err = ua_connect(f->a.ua, 0, NULL, curi_tls, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(2, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_established);
+	ASSERT_EQ(1, fix.b.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.c.n_incoming);
+	ASSERT_EQ(0, fix.c.n_established);
+	ASSERT_EQ(0, fix.c.n_closed);
+	ASSERT_EQ(0, fix.c.close_scode);
+
+	/* 3rd test. CA set. Call from A to B. TLS handshake must succeed.
+	* SNI chooses correct UA certificate even though global certificate
+	* is set. */
+	f->estab_action = ACTION_HANGUP_A;
+
+	err = ua_connect(f->a.ua, 0, NULL, buri_tls, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(3, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(1, fix.b.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.c.n_incoming);
+	ASSERT_EQ(0, fix.c.n_established);
+	ASSERT_EQ(0, fix.c.n_closed);
+	ASSERT_EQ(0, fix.c.close_scode);
+
+out:
+	if (err)
+		failure_debug(f, false);
+
+	mem_deref(dns_srv);
+
+	fixture_close(f);
+
+	return err;
+}
+#endif
