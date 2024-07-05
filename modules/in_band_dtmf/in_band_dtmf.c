@@ -20,7 +20,7 @@
 
 
 struct in_band_dtmf_filt_dec {
-	struct aufilt_enc_st af;  /* inheritance */
+	struct aufilt_dec_st af;  /* inheritance */
 	struct dtmf_dec *dec;
 	struct ua *ua;
 	struct call *call;
