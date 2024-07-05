@@ -18,13 +18,13 @@
  * New tones can be added while encoding is active.
  */
 
-
 struct in_band_dtmf_filt_dec {
 	struct aufilt_dec_st af;  /* inheritance */
 	struct dtmf_dec *dec;
 	struct ua *ua;
 	struct call *call;
 	struct le le_priv;
+	struct tmr tmr_dtmf_end;
 };
 
 
@@ -38,6 +38,22 @@ struct in_band_dtmf_filt_enc {
 
 static struct list encs;
 static struct list decs;
+
+
+static void dtmfend_handler(void *arg)
+{
+	(void)arg;
+	struct in_band_dtmf_filt_dec *st;
+
+	if (list_isempty(&decs)) {
+		warning("in_band_dtmf: no active call\n");
+		return;
+	}
+
+	st = decs.head->data;
+
+	ua_event(st->ua, UA_EVENT_CALL_DTMF_END, st->call, NULL);
+}
 
 
 static void in_band_dtmf_dec_handler(char digit, void *arg)
@@ -56,8 +72,9 @@ static void in_band_dtmf_dec_handler(char digit, void *arg)
 
 	st = decs.head->data;
 
+	tmr_start(&st->tmr_dtmf_end, 100,
+		dtmfend_handler, NULL);
 	ua_event(st->ua, UA_EVENT_CALL_DTMF_START, st->call, "%s", key_str);
-	ua_event(st->ua, UA_EVENT_CALL_DTMF_END, st->call, NULL);
 }
 
 
@@ -79,6 +96,7 @@ static void dec_destructor(void *arg)
 
 	list_unlink(&st->af.le);
 	list_unlink(&st->le_priv);
+	tmr_cancel(&st->tmr_dtmf_end);
 	mem_deref(st->dec);
 }
 
