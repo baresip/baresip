@@ -49,7 +49,7 @@ static void in_band_dtmf_dec_handler(char digit, void *arg)
 	key_str[0] = digit;
 	key_str[1] = '\0';
 
-	if (!list_count(&decs)) {
+	if (list_isempty(&decs)) {
 		warning("in_band_dtmf: no active call\n");
 		return;
 	}
