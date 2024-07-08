@@ -7,6 +7,7 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
+#include "audio.h"
 
 
 /**
@@ -21,8 +22,7 @@
 struct in_band_dtmf_filt_dec {
 	struct aufilt_dec_st af;  /* inheritance */
 	struct dtmf_dec *dec;
-	struct ua *ua;
-	struct call *call;
+	const struct audio *au;
 	struct le le_priv;
 	struct tmr tmr_dtmf_end;
 };
@@ -42,7 +42,7 @@ static struct list decs;
 
 static void dtmfend_handler(void *arg)
 {
-	(void)arg;
+	char digit = (char)(uintptr_t)arg;
 	struct in_band_dtmf_filt_dec *st;
 
 	if (list_isempty(&decs)) {
@@ -52,18 +52,14 @@ static void dtmfend_handler(void *arg)
 
 	st = decs.head->data;
 
-	ua_event(st->ua, UA_EVENT_CALL_DTMF_END, st->call, NULL);
+	st->au->eventh(digit, true, st->au->arg);
 }
 
 
 static void in_band_dtmf_dec_handler(char digit, void *arg)
 {
 	(void)arg;
-	char key_str[2];
 	struct in_band_dtmf_filt_dec *st;
-
-	key_str[0] = digit;
-	key_str[1] = '\0';
 
 	if (list_isempty(&decs)) {
 		warning("in_band_dtmf: no active call\n");
@@ -73,8 +69,8 @@ static void in_band_dtmf_dec_handler(char digit, void *arg)
 	st = decs.head->data;
 
 	tmr_start(&st->tmr_dtmf_end, 100,
-		dtmfend_handler, NULL);
-	ua_event(st->ua, UA_EVENT_CALL_DTMF_START, st->call, "%s", key_str);
+		dtmfend_handler, (void*)(uintptr_t)digit);
+	st->au->eventh(digit, false, st->au->arg);
 }
 
 
@@ -173,8 +169,7 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 		return ENOMEM;
 
 	list_append(&decs, &st->le_priv, st);
-	st->ua = NULL;
-	st->call = NULL;
+	st->au = au;
 
 	err = dtmf_dec_alloc(&st->dec, prm->srate, prm->ch,
 			in_band_dtmf_dec_handler, NULL);
@@ -299,38 +294,12 @@ static const struct cmd cmdv[] = {
 };
 
 
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-		struct call *call, const char *prm, void *arg)
-{
-	(void)prm;
-	(void)arg;
-	struct in_band_dtmf_filt_dec *st;
-
-	switch (ev) {
-
-	case UA_EVENT_CALL_ESTABLISHED:
-		if (list_isempty(&decs)) {
-			warning("in_band_dtmf: no active call\n");
-			return;
-		}
-		st = decs.head->data;
-		st->ua = ua;
-		st->call = call;
-		break;
-
-	default:
-		break;
-	}
-}
-
-
 static int module_init(void)
 {
 	int err;
 	aufilt_register(baresip_aufiltl(), &in_band_dtmf);
 
 	err = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
-	err |= uag_event_register(ua_event_handler, 0);
 
 	return err;
 }
@@ -340,7 +309,6 @@ static int module_close(void)
 {
 	cmd_unregister(baresip_commands(), cmdv);
 	aufilt_unregister(&in_band_dtmf);
-	uag_event_unregister(ua_event_handler);
 
 	return 0;
 }
