@@ -254,6 +254,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 			/* Reduce tone length to 0.1s */
 			mbuf_set_end(st->mb,
 				st->mb->end - 2 * 0.9f * st->srate);
+			mbuf_skip_to_end(st->mb);
 			break;
 
 		default: warning("in_band_dtmf: skip unsupported DTMF "
