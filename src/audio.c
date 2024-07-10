@@ -396,6 +396,13 @@ audio_event_h* audio_get_event_handler(const struct audio *au)
   return au->eventh;
 }
 
+
+void* audio_get_argument(const struct audio *au)
+{
+  return au->arg;
+}
+
+
 /*
  * Read samples from Audio Source
  *
