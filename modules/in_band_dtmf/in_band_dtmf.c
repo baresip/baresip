@@ -7,7 +7,6 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include "audio.h"
 
 
 /**
@@ -52,7 +51,8 @@ static void dtmfend_handler(void *arg)
 
 	st = decs.head->data;
 
-	st->au->eventh(digit, true, st->au->arg);
+	audio_get_event_handler(st->au)(digit, true,
+		audio_get_argument(st->au));
 }
 
 
@@ -70,7 +70,8 @@ static void in_band_dtmf_dec_handler(char digit, void *arg)
 
 	tmr_start(&st->tmr_dtmf_end, 100,
 		dtmfend_handler, (void*)(uintptr_t)digit);
-	st->au->eventh(digit, false, st->au->arg);
+	audio_get_event_handler(st->au)(digit, false,
+		audio_get_argument(st->au));
 }
 
 
