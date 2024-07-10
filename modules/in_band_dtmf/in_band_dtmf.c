@@ -68,7 +68,7 @@ static void in_band_dtmf_dec_handler(char digit, void *arg)
 
 	st = decs.head->data;
 
-	tmr_start(&st->tmr_dtmf_end, 100,
+	tmr_start(&st->tmr_dtmf_end, 50,
 		dtmfend_handler, (void*)(uintptr_t)digit);
 	audio_get_event_handler(st->au)(digit, false,
 		audio_get_argument(st->au));
