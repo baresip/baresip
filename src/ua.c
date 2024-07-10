@@ -715,6 +715,11 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		return;
 	}
 
+	if (!ua_req_check_origin(ua, msg)) {
+		(void)sip_treply(NULL, uag_sip(), msg, 403, "Forbidden");
+		return;
+	}
+
 	if (uag_dnd()) {
 		(void)sip_treply(NULL, uag_sip(), msg,
 			480,"Temporarily Unavailable");
@@ -809,7 +814,7 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 }
 
 
-static const struct sa *ua_regladdr(struct ua *ua)
+static const struct sa *ua_regladdr(const struct ua *ua)
 {
 	struct le *le;
 	size_t i;
@@ -2212,4 +2217,33 @@ bool ua_req_allowed(const struct ua *ua, const struct sip_msg *msg)
 		return false;
 
 	return account_inreq_mode(ua->acc) == INREQ_MODE_ON;
+}
+
+
+/**
+ * Return false if filter_registrar is active for the message transport and the
+ * SIP request IP does not match the server IP
+ *
+ * @param ua  User-Agent
+ * @param msg SIP message
+ *
+ * @return true if the request is allowed, false otherwise
+ */
+bool ua_req_check_origin(const struct ua *ua, const struct sip_msg *msg)
+{
+	struct le *le;
+
+	if (!ua || !msg)
+		return false;
+
+	if (!u32mask_enabled(uag_cfg()->reg_filt, msg->tp))
+		return true;
+
+	for (le = ua->regl.head; le; le = le->next) {
+		struct reg *reg = le->data;
+		if (sa_cmp(reg_paddr(reg), &msg->src, SA_ADDR))
+			return true;
+	}
+
+	return false;
 }

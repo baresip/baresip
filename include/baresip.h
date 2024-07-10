@@ -362,6 +362,7 @@ struct config_sip {
 	bool verify_client;     /**< Enable SIP TLS verify client   */
 	enum tls_resume_mode tls_resume; /** TLS resumption mode    */
 	uint8_t tos;            /**< Type-of-Service for SIP        */
+	uint32_t reg_filt;	/**< Registrar filter transport mask*/
 };
 
 /** Call config */
@@ -945,6 +946,7 @@ int ua_set_autoanswer_value(struct ua *ua, const char *value);
 void ua_add_extension(struct ua *ua, const char *extension);
 void ua_remove_extension(struct ua *ua, const char *extension);
 bool ua_req_allowed(const struct ua *ua, const struct sip_msg *msg);
+bool ua_req_check_origin(const struct ua *ua, const struct sip_msg *msg);
 
 
 /* One instance */
