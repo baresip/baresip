@@ -1402,6 +1402,7 @@ int  audio_decoder_set(struct audio *a, const struct aucodec *ac,
 const struct aucodec *audio_codec(const struct audio *au, bool tx);
 struct config_audio *audio_config(struct audio *au);
 bool audio_txtelev_empty(const struct audio *au);
+audio_event_h* audio_get_event_handler(const struct audio *au);
 
 
 /*
