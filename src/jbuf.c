@@ -638,7 +638,7 @@ success:
 	}
 
 	/* Late Playout check: */
-	uint32_t next = (uint32_t)next_play(jb);
+	uint32_t next = (uint32_t)jb->next_play_h(jb);
 
 #if JBUF_TRACE
 	int32_t delay =
@@ -864,12 +864,12 @@ int32_t jbuf_next_play(const struct jbuf *jb)
 	int32_t ret;
 
 	if (!jb)
-		return -1;
+		return -EINVAL;
 
 	mtx_lock(jb->lock);
 
 	if (!jb->packetl.head) {
-		ret = -1;
+		ret = -ENOENT;
 		goto out;
 	}
 
@@ -877,7 +877,7 @@ int32_t jbuf_next_play(const struct jbuf *jb)
 
 	/* Wrong sequence order (late/reorder), next play would be to high */
 	if (p->hdr.seq != (uint16_t)(jb->seq_get + 1)) {
-		ret = -1;
+		ret = -EPROTO;
 		goto out;
 	}
 
