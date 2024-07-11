@@ -42,7 +42,7 @@
 enum {
 	JBUF_LATE_TRESHOLD = 3,
 	JBUF_MAX_DRIFT	   = 20,       /* [ms] */
-	JBUF_DRIFT_WINDOW  = 30 * 1000 /* [ms] */
+	JBUF_DRIFT_WINDOW  = 10 * 1000 /* [ms] */
 };
 
 /** Defines a packet frame */
@@ -336,10 +336,14 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 	if (d < 0)
 		d = -d;
 
-	RE_TRACE_ID_INSTANT_I("jbuf", "recv_delay", delay_ms(d, jb->srate),
-			      jb->id);
+	uint32_t d_ms = delay_ms(d, jb->srate);
 
-	jb->p.jitter += d - ((jb->p.jitter + 8) >> 4);
+	RE_TRACE_ID_INSTANT_I("jbuf", "recv_delay", d_ms, jb->id);
+
+	if (d_ms > (jb->mind / 2)) {
+		jb->p.jitter += d - ((jb->p.jitter + 8) >> 4);
+	}
+
 	uint32_t jitter = (jb->p.jitter >> 4);
 
 	RE_TRACE_ID_INSTANT_I("jbuf", "jitter", delay_ms(jitter, jb->srate),
@@ -349,9 +353,8 @@ static uint32_t adjust_due_to_jitter(struct jbuf *jb, struct packet *p)
 	/* Only fatal events should trigger adaption */
 	if (jb->p.late_pkts >= JBUF_LATE_TRESHOLD) {
 		jb->p.late_pkts = 0;
-		jb->p.offset = 0;
 
-		jb->p.jitter_offset = 4 * jitter;
+		jb->p.jitter_offset = 2 * jitter;
 		RE_TRACE_ID_INSTANT_I(
 			"jbuf", "jitter_adjust",
 			delay_ms(jb->p.jitter_offset, jb->srate), jb->id);
