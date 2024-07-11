@@ -83,7 +83,7 @@ int test_jbuf(void)
 	}
 
 	/* Test empty list */
-	ASSERT_EQ(-1, jbuf_next_play(jb));
+	ASSERT_EQ(-ENOENT, jbuf_next_play(jb));
 
 	for (size_t i = 0; i < RE_ARRAY_SIZE(testv_20ms); i++) {
 		struct rtp_header hdr_in = {0}, hdr_out = {0};
