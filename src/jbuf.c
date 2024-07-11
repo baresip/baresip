@@ -853,11 +853,17 @@ uint32_t jbuf_packets(const struct jbuf *jb)
 
 
 /**
- * Get jitter buffer next playout delay time
+ * Determine the next play time for a jitter buffer.
  *
  * @param jb Jitter buffer
  *
- * @return delay time in [ms] on success and -1 on error
+ * @return
+ * - 0 if the packet is already late and should be played immediately.
+ * - A positive number indicating the delay (in milliseconds) before trying the
+ * next packet.
+ * - -EINVAL if the provided jitter buffer pointer is NULL.
+ * - -ENOENT if there are no packets in the jitter buffer.
+ * - -EPROTO if the next packet is not in the expected sequence order.
  */
 int32_t jbuf_next_play(const struct jbuf *jb)
 {
