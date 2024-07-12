@@ -517,12 +517,6 @@ audio_event_h* audio_get_event_handler(const struct audio *au)
 }
 
 
-void* audio_get_argument(const struct audio *au)
-{
-  return au->arg;
-}
-
-
 void audio_call_telev_handler(const struct audio *au, int key, bool end)
 {
 	if (!au)
