@@ -523,6 +523,16 @@ void* audio_get_argument(const struct audio *au)
 }
 
 
+void audio_call_telev_handler(const struct audio *au, int key, bool end)
+{
+	if (!au)
+		return;
+
+	if (au->eventh)
+		au->eventh(key, end, au->arg);
+}
+
+
 /*
  * Read samples from Audio Source
  *
