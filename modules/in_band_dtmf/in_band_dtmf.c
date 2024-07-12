@@ -51,8 +51,7 @@ static void dtmfend_handler(void *arg)
 
 	st = decs.head->data;
 
-	audio_get_event_handler(st->au)(digit, true,
-		audio_get_argument(st->au));
+	audio_call_telev_handler(st->au, digit, true);
 }
 
 
@@ -70,8 +69,7 @@ static void in_band_dtmf_dec_handler(char digit, void *arg)
 
 	tmr_start(&st->tmr_dtmf_end, 50,
 		dtmfend_handler, (void*)(uintptr_t)digit);
-	audio_get_event_handler(st->au)(digit, false,
-		audio_get_argument(st->au));
+	audio_call_telev_handler(st->au, digit, false);
 }
 
 
