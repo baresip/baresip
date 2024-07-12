@@ -511,12 +511,6 @@ bool audio_txtelev_empty(const struct audio *au)
 }
 
 
-audio_event_h* audio_get_event_handler(const struct audio *au)
-{
-  return au->eventh;
-}
-
-
 void audio_call_telev_handler(const struct audio *au, int key, bool end)
 {
 	if (!au)
