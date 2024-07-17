@@ -14,7 +14,7 @@
  *
  * Audio filter that de- and encodes DTMF tones.
  *
- * The tone length of an encoded tone is 0.1s.
+ * The length of an encoded tone is 0.1s.
  * After a tone, a 0.1s pause will be added.
  * New tones can be added while encoding is active.
  */
