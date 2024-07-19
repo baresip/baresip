@@ -297,7 +297,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 static int pa_init(void)
 {
 	PaError paerr;
-	int i, n, err = 0;
+	int err = 0;
 
 	if (log_level_get() == LEVEL_DEBUG) {
 		paerr = Pa_Initialize();
@@ -323,24 +323,36 @@ static int pa_init(void)
 	if (err)
 		return err;
 
-	n = Pa_GetDeviceCount();
+	int n = Pa_GetDeviceCount();
 
 	info("portaudio: device count is %d\n", n);
 
-	for (i = 0; i < n; i++) {
-		const PaDeviceInfo *devinfo = Pa_GetDeviceInfo(i);
+	for (int i = 0; i < n; i++) {
 		struct mediadev *dev;
+		char devname[128];
 
-		debug("portaudio: device %d: %s\n", i, devinfo->name);
+		const PaDeviceInfo *devinfo = Pa_GetDeviceInfo(i);
+		if (!devinfo)
+			continue;
+
+		const PaHostApiInfo *apiinfo =
+			Pa_GetHostApiInfo(devinfo->hostApi);
+		if (!apiinfo)
+			continue;
+
+		re_snprintf(devname, sizeof(devname), "%s: %s", apiinfo->name,
+			    devinfo->name);
+
+		debug("portaudio: device %d: %s\n", i, devname);
 
 		if (devinfo->maxInputChannels > 0) {
-			err = mediadev_add(&ausrc->dev_list, devinfo->name);
+			err = mediadev_add(&ausrc->dev_list, devname);
 			if (err) {
 				warning("portaudio: mediadev err %m\n", err);
 				return err;
 			}
 
-			dev = mediadev_find(&ausrc->dev_list, devinfo->name);
+			dev = mediadev_find(&ausrc->dev_list, devname);
 			if (!dev)
 				continue;
 
@@ -352,13 +364,13 @@ static int pa_init(void)
 		}
 
 		if (devinfo->maxOutputChannels > 0) {
-			mediadev_add(&auplay->dev_list, devinfo->name);
+			err = mediadev_add(&auplay->dev_list, devname);
 			if (err) {
 				warning("portaudio: mediadev err %m\n", err);
 				return err;
 			}
 
-			dev = mediadev_find(&auplay->dev_list, devinfo->name);
+			dev = mediadev_find(&auplay->dev_list, devname);
 			if (!dev)
 				continue;
 
