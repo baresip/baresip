@@ -26,7 +26,6 @@ struct audiosess_st {
 static struct audiosess *gas;
 
 
-
 static void sess_destructor(void *arg)
 {
 	struct audiosess_st *st = arg;
