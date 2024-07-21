@@ -1236,7 +1236,7 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 out:
 	mem_deref(desc);
 
-	return 0;
+	return err;
 }
 
 
