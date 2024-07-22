@@ -23,7 +23,6 @@ struct in_band_dtmf_filt_dec {
 	struct aufilt_dec_st af;  /* inheritance */
 	struct dtmf_dec *dec;
 	const struct audio *au;
-	struct le le_priv;
 	struct tmr tmr_dtmf_end;
 	char last_transmitted_tone;
 };
@@ -38,20 +37,12 @@ struct in_band_dtmf_filt_enc {
 
 
 static struct list encs;
-static struct list decs;
 
 
 static void dtmfend_handler(void *arg)
 {
-	(void)arg;
-	struct in_band_dtmf_filt_dec *st;
-
-	if (list_isempty(&decs)) {
-		warning("in_band_dtmf: no active call\n");
-		return;
-	}
-
-	st = decs.head->data;
+	struct in_band_dtmf_filt_dec *st =
+		(struct in_band_dtmf_filt_dec *)arg;
 
 	audio_call_telev_handler(st->au, st->last_transmitted_tone, true);
 }
@@ -59,19 +50,12 @@ static void dtmfend_handler(void *arg)
 
 static void in_band_dtmf_dec_handler(char digit, void *arg)
 {
-	(void)arg;
-	struct in_band_dtmf_filt_dec *st;
-
-	if (list_isempty(&decs)) {
-		warning("in_band_dtmf: no active call\n");
-		return;
-	}
-
-	st = decs.head->data;
+	struct in_band_dtmf_filt_dec *st =
+		(struct in_band_dtmf_filt_dec *)arg;
 
 	st->last_transmitted_tone = digit;
 	tmr_start(&st->tmr_dtmf_end, 50,
-		dtmfend_handler, NULL);
+		dtmfend_handler, (void*)st);
 	audio_call_telev_handler(st->au, digit, false);
 }
 
@@ -93,7 +77,6 @@ static void dec_destructor(void *arg)
 			(struct in_band_dtmf_filt_dec *) arg;
 
 	list_unlink(&st->af.le);
-	list_unlink(&st->le_priv);
 	tmr_cancel(&st->tmr_dtmf_end);
 	mem_deref(st->dec);
 }
@@ -171,11 +154,10 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return ENOMEM;
 
-	list_append(&decs, &st->le_priv, st);
 	st->au = au;
 
 	err = dtmf_dec_alloc(&st->dec, prm->srate, prm->ch,
-			in_band_dtmf_dec_handler, NULL);
+			in_band_dtmf_dec_handler, (void*)st);
 
 	if (err)
 		mem_deref(st);
