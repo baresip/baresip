@@ -183,6 +183,7 @@ static struct pw_stat *pw_stat_alloc(void)
 	if (!pw->loop)
 		goto errout;
 
+	pw_thread_loop_lock(pw->loop);
 	err = pw_thread_loop_start(pw->loop);
 	if (err)
 		goto errout;
@@ -199,10 +200,14 @@ static struct pw_stat *pw_stat_alloc(void)
 	if (!pw->core)
 		goto errout;
 
+	pw_thread_loop_unlock(pw->loop);
 	info("pipewire: connected to pipewire\n");
 	return pw;
 
 errout:
+	if (pw->loop)
+		pw_thread_loop_unlock(pw->loop);
+
 	warning("pipewire: could not connect to pipewire\n");
 	mem_deref(pw);
 	return NULL;
@@ -213,6 +218,7 @@ static int pw_start_registry_scan(struct pw_stat *pw)
 {
 	int err;
 
+	pw_thread_loop_lock (pw_loop_instance());
 	pw->registry = pw_core_get_registry(pw->core, PW_VERSION_REGISTRY,
 					0 /* user_data size */);
 
@@ -223,7 +229,6 @@ static int pw_start_registry_scan(struct pw_stat *pw)
 	if (err)
 		return err;
 
-	pw_thread_loop_lock (pw_loop_instance());
 	spa_zero(pw->registry_listener);
 	pw_registry_add_listener(pw->registry, &pw->registry_listener,
 				 &registry_events, pw);
