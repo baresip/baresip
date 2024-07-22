@@ -25,6 +25,7 @@ struct in_band_dtmf_filt_dec {
 	const struct audio *au;
 	struct le le_priv;
 	struct tmr tmr_dtmf_end;
+	char last_transmitted_tone;
 };
 
 
@@ -42,7 +43,7 @@ static struct list decs;
 
 static void dtmfend_handler(void *arg)
 {
-	char digit = (char)(uintptr_t)arg;
+	(void)arg;
 	struct in_band_dtmf_filt_dec *st;
 
 	if (list_isempty(&decs)) {
@@ -52,7 +53,7 @@ static void dtmfend_handler(void *arg)
 
 	st = decs.head->data;
 
-	audio_call_telev_handler(st->au, digit, true);
+	audio_call_telev_handler(st->au, st->last_transmitted_tone, true);
 }
 
 
@@ -68,8 +69,9 @@ static void in_band_dtmf_dec_handler(char digit, void *arg)
 
 	st = decs.head->data;
 
+	st->last_transmitted_tone = digit;
 	tmr_start(&st->tmr_dtmf_end, 50,
-		dtmfend_handler, (void*)(uintptr_t)digit);
+		dtmfend_handler, NULL);
 	audio_call_telev_handler(st->au, digit, false);
 }
 
