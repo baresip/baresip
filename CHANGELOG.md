@@ -5,6 +5,24 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [v3.14.0] - 2024-07-23
+
+## What's Changed
+* Add .vscode to .gitignore (cosmetic change) by @larsimmisch in https://github.com/baresip/baresip/pull/3071
+* mediatrack: fix audio_start_source aufiltl setup order by @sreimers in https://github.com/baresip/baresip/pull/3074
+* mixausrc: minor fixes by @marcel-behlau-elfin in https://github.com/baresip/baresip/pull/3073
+* srtp: Fix base64 key decoding for AEAD_AES_256_GCM by @weili-jiang in https://github.com/baresip/baresip/pull/3079
+* .clangd: suppress -Wgnu-zero-variadic-macro-arguments by @maximilianfridrich in https://github.com/baresip/baresip/pull/3078
+* test: add TLS SNI selftest by @maximilianfridrich in https://github.com/baresip/baresip/pull/3077
+* portaudio: add hostApi name prefix to mediadev by @sreimers in https://github.com/baresip/baresip/pull/3081
+* call: fix return value in call_progress_dir() by @alfredh in https://github.com/baresip/baresip/pull/3082
+* pipewire: lock loop while starting and registry scan by @cspiel1 in https://github.com/baresip/baresip/pull/3084
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.13.0...v3.14.0
+
+
 ## [v3.13.0] - 2024-06-19
 
 ## What's Changed
