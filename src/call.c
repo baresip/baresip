@@ -2137,7 +2137,7 @@ static bool valid_addressfamily(struct call *call, const struct stream *strm)
  *
  * @return 0 if success, otherwise errorcode
  */
-int call_ringing(struct call *call)
+int call_ringing(const struct call *call)
 {
 	if (!call)
 	   return EINVAL;
