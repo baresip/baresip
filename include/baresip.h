@@ -216,6 +216,7 @@ typedef void (call_list_h)(struct call *call, void *arg);
 
 int  call_connect(struct call *call, const struct pl *paddr);
 int  call_answer(struct call *call, uint16_t scode, enum vidmode vmode);
+int  call_ringing(struct call *call);
 int  call_progress_dir(struct call *call,
 		       enum sdp_dir adir, enum sdp_dir vdir);
 int  call_progress(struct call *call);

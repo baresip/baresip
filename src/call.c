@@ -2130,6 +2130,27 @@ static bool valid_addressfamily(struct call *call, const struct stream *strm)
 }
 
 
+/**
+ * Send a SIP 180 Ringing response
+ *
+ * @param call Call to send ringing response
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int call_ringing(struct call *call)
+{
+	if (!call)
+	   return EINVAL;
+
+	return sipsess_progress(call->sess, 180, "Ringing",
+				account_rel100_mode(call->acc),
+				NULL,
+				"Allow: %H\r\n%H",
+				ua_print_allowed, call->ua,
+				ua_print_require, call->ua);
+}
+
+
 int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		const struct sip_msg *msg)
 {
@@ -2212,7 +2233,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		mem_deref(rid);
 	}
 
-	err = sipsess_accept(&call->sess, sess_sock, msg, 180, "Ringing",
+	err = sipsess_accept(&call->sess, sess_sock, msg, 180, "Trying",
 			     account_rel100_mode(call->acc),
 			     ua_cuser(call->ua), "application/sdp", NULL,
 			     auth_handler, call->acc, true,
@@ -2220,9 +2241,8 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 			     sipsess_estab_handler, sipsess_info_handler,
 			     call->acc->refer ? sipsess_refer_handler : NULL,
 			     sipsess_close_handler,
-			     call, "Allow: %H\r\n%H",
-			     ua_print_allowed, call->ua,
-			     ua_print_require, call->ua);
+			     call, NULL);
+
 
 	if (err) {
 		warning("call: sipsess_accept: %m\n", err);
