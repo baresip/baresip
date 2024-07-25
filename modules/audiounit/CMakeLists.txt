@@ -1,6 +1,6 @@
 project(audiounit)
 
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+if(NOT ${CMAKE_HOST_SYSTEM_NAME} MATCHES "Darwin")
   return()
 endif()
 
