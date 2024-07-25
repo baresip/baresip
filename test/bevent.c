@@ -9,7 +9,14 @@
 #include "test.h"
 
 
-int test_event(void)
+struct fixture {
+	int cnt;
+
+	enum ua_event expected_event;
+};
+
+
+int test_event_encode(void)
 {
 	struct odict *od = NULL;
 	size_t i;
@@ -51,5 +58,75 @@ int test_event(void)
  out:
 	mem_deref(od);
 
+	return err;
+}
+
+
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
+{
+	struct fixture *f = arg;
+	void *apparg = bevent_get_apparg(event);
+	struct ua *ua = bevent_get_ua(event);
+	struct call *call = bevent_get_call(event);
+	const struct sip_msg *msg = bevent_get_msg(event);
+	(void)ev;
+
+	if (apparg && apparg != (void *) 0xdeadbeef) {
+		bevent_set_error(event, EINVAL);
+	}
+	else if (ua && ua != (void *) 0xdeadbeef) {
+		bevent_set_error(event, EINVAL);
+	}
+	else if (call && call != (void *) 0xdeadbeef) {
+		bevent_set_error(event, EINVAL);
+	}
+	else if (msg && msg != (void *) 0xdeadbeef) {
+		bevent_set_error(event, EINVAL);
+	}
+	else if (f->expected_event != bevent_get_enum(event)) {
+		bevent_set_error(event, EINVAL);
+	}
+	else
+		++f->cnt;
+}
+
+
+int test_event_register(void)
+{
+	int err = 0;
+	struct fixture f;
+
+	memset(&f, 0, sizeof(f));
+
+	err = bevent_register(event_handler, &f);
+	TEST_ERR(err);
+
+	f.expected_event = UA_EVENT_EXIT;
+	err = bevent_app_emit(UA_EVENT_EXIT, (void *) 0xdeadbeef, "%s",
+			      "details");
+	TEST_ERR(err);
+
+	err = bevent_app_emit(UA_EVENT_SHUTDOWN, (void *) 0xdeadbeef, "%s",
+			      "details");
+	ASSERT_EQ(EINVAL, err);
+
+	f.expected_event = UA_EVENT_REGISTER_OK;
+	err = bevent_ua_emit(UA_EVENT_REGISTER_OK, (struct ua *) 0xdeadbeef,
+			     NULL);
+	TEST_ERR(err);
+
+	f.expected_event = UA_EVENT_CALL_INCOMING;
+	err = bevent_call_emit(UA_EVENT_CALL_INCOMING, NULL, NULL);
+	TEST_ERR(err);
+
+	f.expected_event = UA_EVENT_SIPSESS_CONN;
+	err = bevent_sip_msg_emit(UA_EVENT_SIPSESS_CONN,
+				  (struct sip_msg *) 0xdeadbeef, NULL);
+	TEST_ERR(err);
+
+
+	ASSERT_EQ(4, f.cnt);
+out:
+	bevent_unregister(event_handler);
 	return err;
 }
