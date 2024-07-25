@@ -1,5 +1,5 @@
 /**
- * @file test/event.c  Baresip selftest -- event handling
+ * @file test/bevent.c  Baresip selftest -- event handling
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
