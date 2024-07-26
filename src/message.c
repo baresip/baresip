@@ -96,7 +96,7 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 		return true;
 	}
 
-	if (!ua_req_allowed(ua, msg)) {
+	if (!ua_req_check_origin(ua, msg) || !ua_req_allowed(ua, msg)) {
 		(void)sip_treply(NULL, uag_sip(), msg, 403, "Forbidden");
 		return true;
 	}

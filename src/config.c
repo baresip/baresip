@@ -39,6 +39,7 @@ static struct config core_config = {
 		false,
 		TLS_RESUMPTION_ALL,
 		0xa0,
+		0,
 	},
 
 	/** Call config */
@@ -280,8 +281,7 @@ static const char *jbuf_type_str(enum jbuf_type jbtype)
 }
 
 
-static void decode_sip_transports(struct config_sip *cfg,
-				      const struct pl *pl)
+static void decode_sip_transports(uint32_t *mask, const struct pl *pl)
 {
 	uint8_t i;
 
@@ -296,19 +296,19 @@ static void decode_sip_transports(struct config_sip *cfg,
 
 		en = 0 == re_regex(pl->p, pl->l, sip_transp_name(i)) &&
 		     0 != re_regex(pl->p, pl->l, buf, &e);
-		u32mask_enable(&cfg->transports, i, en);
+		u32mask_enable(mask, i, en);
 	}
 }
 
 
-static int sip_transports_print(struct re_printf *pf, uint32_t *mask)
+static int transp_print(struct re_printf *pf, uint32_t *mask, bool all)
 {
 	uint8_t i;
 	int err = 0;
 	bool first = true;
 
 	for (i = 0; i < SIP_TRANSPC; ++i) {
-		if (*mask==0 || u32mask_enabled(*mask, i)) {
+		if (u32mask_enabled(*mask, i) || (all && *mask == 0)) {
 			if (!first)
 				err = re_hprintf(pf, ",");
 
@@ -318,6 +318,18 @@ static int sip_transports_print(struct re_printf *pf, uint32_t *mask)
 	}
 
 	return err;
+}
+
+
+static int sip_transports_print(struct re_printf *pf, uint32_t *mask)
+{
+	return transp_print(pf, mask, true);
+}
+
+
+static int sip_transports_print_mask(struct re_printf *pf, uint32_t *mask)
+{
+	return transp_print(pf, mask, false);
 }
 
 
@@ -383,7 +395,7 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_str(conf, "sip_capath", cfg->sip.capath,
 			   sizeof(cfg->sip.capath));
 	if (0 == conf_get(conf, "sip_transports", &pl))
-		decode_sip_transports(&cfg->sip, &pl);
+		decode_sip_transports(&cfg->sip.transports, &pl);
 	if (!str_isset(cfg->sip.cafile) && !str_isset(cfg->sip.capath))
 		cfg->sip.verify_server = false;
 
@@ -412,6 +424,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 
 	if (0 == conf_get_u32(conf, "sip_tos", &v))
 		cfg->sip.tos = v;
+
+	if (0 == conf_get(conf, "filter_registrar", &pl))
+		decode_sip_transports(&cfg->sip.reg_filt, &pl);
 
 	/* Call */
 	(void)conf_get_u32(conf, "call_local_timeout",
@@ -593,6 +608,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_verify_client\t\t\t%s\n"
 			 "sip_tls_resumption\t\t\t%s\n"
 			 "sip_tos\t%u\n"
+			 "filter_registrar\t%H\n"
 			 "\n"
 			 "# Call\n"
 			 "call_local_timeout\t%u\n"
@@ -606,7 +622,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->sip.verify_server ? "yes" : "no",
 			 cfg->sip.verify_client ? "yes" : "no",
 			 tls_resume_mode_str(cfg->sip.tls_resume),
-			 cfg->sip.tos,
+			 cfg->sip.tos, sip_transports_print_mask,
+			 &cfg->sip.reg_filt,
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
@@ -857,6 +874,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#sip_verify_client\tno\n"
 			  "#sip_tls_resumption\tall\n"
 			  "sip_tos\t\t\t160\n"
+			  "#filter_registrar\tudp,tcp,tls,ws,wss\n"
 			  "\n"
 			  ,
 			  have_cafile ? "" : "#",

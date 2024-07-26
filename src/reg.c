@@ -15,6 +15,7 @@ struct reg {
 	struct sipreg *sipreg;       /**< SIP Register client                */
 	int id;                      /**< Registration ID (for SIP outbound) */
 	int regint;                  /**< Registration interval              */
+	struct sa paddr;             /**< Peer Address                       */
 
 	/* status: */
 	uint16_t scode;              /**< Registration status code           */
@@ -131,6 +132,8 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 	if (200 <= msg->scode && msg->scode <= 299) {
 
 		uint32_t n_bindings;
+
+		reg->paddr = msg->src;
 
 		n_bindings = sip_msg_hdr_count(msg, SIP_HDR_CONTACT);
 		reg->af    = sipmsg_af(msg);
@@ -421,4 +424,10 @@ const struct sa *reg_laddr(const struct reg *reg)
 		return NULL;
 
 	return sipreg_laddr(reg->sipreg);
+}
+
+
+const struct sa *reg_paddr(const struct reg *reg)
+{
+	return reg ? &reg->paddr : NULL;
 }

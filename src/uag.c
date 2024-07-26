@@ -185,6 +185,11 @@ static bool request_handler(const struct sip_msg *msg, void *arg)
 		return true;
 	}
 
+	if (!ua_req_check_origin(ua, msg)) {
+		(void)sip_treply(NULL, uag_sip(), msg, 403, "Forbidden");
+		return true;
+	}
+
 	if (!pl_strcmp(&msg->met, "OPTIONS")) {
 		ua_handle_options(ua, msg);
 		return true;
@@ -273,6 +278,7 @@ static int add_account_certs(void)
 static int uag_transp_add(const struct sa *laddr)
 {
 	struct sa local;
+	bool listen;
 #ifdef USE_TLS
 	const char *cert = NULL;
 	const char *cafile = NULL;
@@ -312,8 +318,11 @@ static int uag_transp_add(const struct sa *laddr)
 
 	if (u32mask_enabled(uag.transports, SIP_TRANSP_UDP))
 		err |= sip_transp_add(uag.sip, SIP_TRANSP_UDP, &local);
-	if (u32mask_enabled(uag.transports, SIP_TRANSP_TCP))
-		err |= sip_transp_add(uag.sip, SIP_TRANSP_TCP, &local);
+	if (u32mask_enabled(uag.transports, SIP_TRANSP_TCP)) {
+		listen = !u32mask_enabled(uag.cfg->reg_filt, SIP_TRANSP_TCP);
+		err |= sip_transp_add_sock(uag.sip, SIP_TRANSP_TCP, listen,
+					   &local);
+	}
 	if (err) {
 		warning("ua: SIP Transport failed: %m\n", err);
 		return err;
@@ -364,7 +373,9 @@ static int uag_transp_add(const struct sa *laddr)
 		if (sa_isset(&local, SA_PORT))
 			sa_set_port(&local, sa_port(&local) + 1);
 
-		err = sip_transp_add(uag.sip, SIP_TRANSP_TLS, &local, uag.tls);
+		listen = !u32mask_enabled(uag.cfg->reg_filt, SIP_TRANSP_TLS);
+		err = sip_transp_add_sock(uag.sip, SIP_TRANSP_TLS, listen,
+					  &local, uag.tls);
 		if (err) {
 			warning("ua: SIP/TLS transport failed: %m\n", err);
 			return err;
