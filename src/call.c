@@ -2233,7 +2233,7 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		mem_deref(rid);
 	}
 
-	err = sipsess_accept(&call->sess, sess_sock, msg, 100, "Trying",
+	err = sipsess_accept(&call->sess, sess_sock, msg, 0, "",
 			     account_rel100_mode(call->acc),
 			     ua_cuser(call->ua), "application/sdp", NULL,
 			     auth_handler, call->acc, true,
