@@ -118,6 +118,7 @@ module			auresamp.so
 #module			sndfile.so
 #module			plc.so
 #module			webrtc_aec.so
+#module			in_band_dtmf.so
 
 # Audio driver Modules
 module			alsa.so
