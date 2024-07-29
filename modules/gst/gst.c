@@ -381,8 +381,10 @@ static void gst_destructor(void *arg)
 
 	tmr_cancel(&st->tmr);
 
-	gst_element_set_state(st->pipeline, GST_STATE_NULL);
-	gst_object_unref(GST_OBJECT(st->pipeline));
+	if (st->pipeline) {
+		gst_element_set_state(st->pipeline, GST_STATE_NULL);
+		gst_object_unref(GST_OBJECT(st->pipeline));
+	}
 
 	mem_deref(st->uri);
 	mem_deref(st->aubuf);
@@ -483,16 +485,16 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
  out:
 	if (err)
 		mem_deref(st);
-	else
+	else {
 		*stp = st;
+		gst_element_get_state(st->pipeline, NULL, NULL, 500*1000*1000);
+		gint64 duration = 0;
+		gst_element_query_duration(st->pipeline,
+				   	   GST_FORMAT_TIME,
+				   	   &duration);
+		prm->duration = duration / 1000000;
+	}
 
-	gst_element_get_state(st->pipeline, NULL, NULL, 500*1000*1000);
-	gint64 duration = 0;
-	gst_element_query_duration(st->pipeline,
-				   GST_FORMAT_TIME,
-				   &duration);
-
-	prm->duration = duration / 1000000;
 	return err;
 }
 
