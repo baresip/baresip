@@ -919,21 +919,19 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 		struct ua *ua = le->data;
 		struct account *acc = ua_account(ua);
 
-		if (!acc->regint) {
-			if (!uri_match_transport(&acc->luri, NULL, msg->tp))
-				continue;
+		if (!uri_match_transport(&acc->luri, NULL, msg->tp))
+			continue;
 
-			if (!uri_match_af(&acc->luri, &msg->uri))
-				continue;
-
-			if (!uaf && ua_catchall(ua))
-				uaf = ua;
-		}
+		if (!uri_match_af(&acc->luri, &msg->uri))
+			continue;
 
 		if (0 == pl_casecmp(cuser, &acc->luri.user)) {
 			ua_printf(ua, "account match for %r\n", cuser);
 			return ua;
 		}
+		if (!acc->regint && !uaf && ua_catchall(ua))
+			uaf = ua;
+
 	}
 
 	if (uaf)
