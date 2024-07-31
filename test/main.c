@@ -55,6 +55,7 @@ static const struct test tests[] = {
 	TEST(test_call_srtp_tx_rekey),
 #ifdef USE_TLS
 	TEST(test_call_sni),
+	TEST(test_call_cert_select),
 #endif
 	TEST(test_cmd),
 	TEST(test_cmd_long),

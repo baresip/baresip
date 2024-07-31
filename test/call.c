@@ -3385,7 +3385,7 @@ int test_call_sni(void)
 	ASSERT_EQ(1, fix.b.n_incoming);
 	ASSERT_EQ(1, fix.b.n_established);
 	ASSERT_EQ(1, fix.b.n_closed);
-	ASSERT_EQ(0, fix.a.close_scode);
+	ASSERT_EQ(0, fix.b.close_scode);
 
 	ASSERT_EQ(0, fix.c.n_incoming);
 	ASSERT_EQ(0, fix.c.n_established);
@@ -3397,6 +3397,132 @@ out:
 		failure_debug(f, false);
 
 	mem_deref(dns_srv);
+
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_cert_select(void)
+{
+	int err = 0;
+	struct fixture fix, *f = &fix;
+	char auri_tls[256], buri_tls[256];
+	const char *dp = test_datapath();
+	char s[256];
+
+	/* Set valid global certificate. */
+	re_snprintf(conf_config()->sip.cert, sizeof(conf_config()->sip.cert),
+		    "%s/sni/server-interm.pem", dp);
+	conf_config()->sip.verify_server = false;
+	conf_config()->sip.verify_client = true;
+
+	TEST_ERR(err);
+
+	fixture_init(f);
+
+	mem_deref(f->a.ua);
+	mem_deref(f->b.ua);
+
+	f->behaviour = BEHAVIOUR_ANSWER;
+
+	re_snprintf(s, sizeof(s), "A <sip:a@127.0.0.1;transport=tls>"
+		    ";regint=0;cert=%s/sni/client-interm.pem", dp);
+	err = ua_alloc(&f->a.ua, s);
+	TEST_ERR(err);
+
+	re_snprintf(s, sizeof(s), "B <sip:b@127.0.0.1;transport=tls>"
+		    ";regint=0;cert=%s/sni/other-cert.pem", dp);
+	err = ua_alloc(&f->b.ua, s);
+	TEST_ERR(err);
+
+	re_snprintf(auri_tls, sizeof(auri_tls), "sip:a@127.0.0.1:%u",
+		    sa_port(&f->laddr_tls));
+	re_snprintf(buri_tls, sizeof(buri_tls), "sip:b@127.0.0.1:%u",
+		    sa_port(&f->laddr_tls));
+
+	/* 1st test. No CA set. Call from A to B. TLS handshake must fail. */
+	f->b.n_closed = 1;
+
+	err = ua_connect(f->a.ua, 0, NULL, buri_tls, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_established);
+	ASSERT_EQ(1, fix.b.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.c.n_incoming);
+	ASSERT_EQ(0, fix.c.n_established);
+	ASSERT_EQ(0, fix.c.n_closed);
+	ASSERT_EQ(0, fix.c.close_scode);
+
+	/* 2nd test. CA set. Call from B to A. TLS handshake must fail because
+	 * B has invalid cert set. */
+	re_snprintf(s, sizeof(s), "%s/sni/root-ca.pem", dp);
+	err = tls_add_cafile_path(uag_tls(), s, NULL);
+	TEST_ERR(err);
+
+	err = ua_connect(f->b.ua, 0, NULL, auri_tls, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_established);
+	ASSERT_EQ(2, fix.b.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.c.n_incoming);
+	ASSERT_EQ(0, fix.c.n_established);
+	ASSERT_EQ(0, fix.c.n_closed);
+	ASSERT_EQ(0, fix.c.close_scode);
+
+	/* 3rd test. CA set. Call from A to B. TLS handshake must succeed. */
+	f->estab_action = ACTION_HANGUP_A;
+
+	err = ua_connect(f->a.ua, 0, NULL, buri_tls, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(2, fix.a.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(2, fix.b.n_closed);
+	ASSERT_EQ(0, fix.a.close_scode);
+
+	ASSERT_EQ(0, fix.c.n_incoming);
+	ASSERT_EQ(0, fix.c.n_established);
+	ASSERT_EQ(0, fix.c.n_closed);
+	ASSERT_EQ(0, fix.c.close_scode);
+
+out:
+	if (err)
+		failure_debug(f, false);
 
 	fixture_close(f);
 
