@@ -1681,7 +1681,7 @@ struct call    *bevent_get_call(const struct bevent *event);
 struct ua      *bevent_get_ua(const struct bevent *event);
 const struct sip_msg *bevent_get_msg(const struct bevent *event);
 void *bevent_get_apparg(const struct bevent *event);
-enum ua_event bevent_get_enum(const struct bevent *event);
+enum ua_event bevent_get_type(const struct bevent *event);
 const char *bevent_get_text(const struct bevent *event);
 void bevent_set_error(struct bevent *event, int err);
 void bevent_stop(struct bevent *event);

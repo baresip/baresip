@@ -298,7 +298,7 @@ void *bevent_get_apparg(const struct bevent *event)
  *
  * @return the event type
  */
-enum ua_event bevent_get_enum(const struct bevent *event)
+enum ua_event bevent_get_type(const struct bevent *event)
 {
 	return event ? event->ev : UA_EVENT_MAX;
 }

@@ -83,7 +83,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	else if (msg && msg != (void *) 0xdeadbeef) {
 		bevent_set_error(event, EINVAL);
 	}
-	else if (f->expected_event != bevent_get_enum(event)) {
+	else if (f->expected_event != bevent_get_type(event)) {
 		bevent_set_error(event, EINVAL);
 	}
 	else
