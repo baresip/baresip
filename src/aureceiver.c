@@ -144,14 +144,27 @@ static int aurecv_alloc_aubuf(struct audio_recv *ar, const struct auframe *af)
 	mtx_lock(ar->aubuf_mtx);
 	err = aubuf_alloc(&ar->aubuf, min_sz, max_sz);
 	if (err) {
-		warning("audio_recv: aubuf alloc error (%m)\n",
-			err);
+		warning("audio_recv: aubuf alloc error (%m)\n", err);
+		goto out;
 	}
+
+	struct pl *id = pl_alloc_str("aureceiver");
+	if (!id) {
+		ar->aubuf = mem_deref(ar->aubuf);
+		err = ENOMEM;
+		goto out;
+	}
+
+	aubuf_set_id(ar->aubuf, id);
+	mem_deref(id);
 
 	aubuf_set_mode(ar->aubuf, cfg->adaptive ?
 		       AUBUF_ADAPTIVE : AUBUF_FIXED);
 	aubuf_set_silence(ar->aubuf, cfg->silence);
+
+out:
 	mtx_unlock(ar->aubuf_mtx);
+
 	return err;
 }
 
