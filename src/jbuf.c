@@ -719,7 +719,9 @@ int jbuf_get(struct jbuf *jb, struct rtp_header *hdr, void **mem)
 			DEBUG_WARNING("get: seq=%u too late\n", f->hdr.seq);
 		}
 		else if (seq_diff > 1) {
-			STAT_ADD(n_lost, seq_diff - 1);
+			int16_t lost = seq_diff - 1;
+			STAT_ADD(n_lost, lost);
+			RE_TRACE_ID_INSTANT_I("jbuf", "lost", lost, jb->id);
 			DEBUG_INFO("get: n_lost: diff=%d,seq=%u,seq_get=%u\n",
 				   seq_diff, f->hdr.seq, jb->seq_get);
 		}
