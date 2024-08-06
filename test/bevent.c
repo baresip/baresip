@@ -11,6 +11,7 @@
 
 struct fixture {
 	int cnt;
+	int cntold;
 
 	enum ua_event expected_event;
 };
@@ -69,7 +70,6 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	struct ua *ua = bevent_get_ua(event);
 	struct call *call = bevent_get_call(event);
 	const struct sip_msg *msg = bevent_get_msg(event);
-	(void)ev;
 
 	if (apparg && apparg != (void *) 0xdeadbeef) {
 		bevent_set_error(event, EINVAL);
@@ -77,8 +77,11 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	else if (ua && ua != (void *) 0xdeadbeef) {
 		bevent_set_error(event, EINVAL);
 	}
-	else if (call && call != (void *) 0xdeadbeef) {
+	else if (call) {
 		bevent_set_error(event, EINVAL);
+	}
+	else if (ev == UA_EVENT_CALL_INCOMING) {
+		++f->cnt;
 	}
 	else if (msg && msg != (void *) 0xdeadbeef) {
 		bevent_set_error(event, EINVAL);
@@ -91,6 +94,24 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 }
 
 
+static void ua_event_handler(struct ua *ua, enum ua_event ev,
+			  struct call *call, const char *prm, void *arg)
+{
+	struct fixture *f = arg;
+
+	if (ua == (void *) 0xdeadbeef && !call)
+		++f->cntold;
+	else if (ev == UA_EVENT_CALL_INCOMING)
+		++f->cntold;
+	else if (ev == UA_EVENT_SIPSESS_CONN)
+		++f->cntold;
+	else if (ev == UA_EVENT_EXIT && !str_cmp(prm, "details"))
+		++f->cntold;
+	else if (ev == UA_EVENT_SHUTDOWN && !str_cmp(prm, "details"))
+		++f->cntold;
+}
+
+
 int test_event_register(void)
 {
 	int err = 0;
@@ -99,6 +120,9 @@ int test_event_register(void)
 	memset(&f, 0, sizeof(f));
 
 	err = bevent_register(event_handler, &f);
+	TEST_ERR(err);
+
+	err = uag_event_register(ua_event_handler, &f);
 	TEST_ERR(err);
 
 	f.expected_event = UA_EVENT_EXIT;
@@ -124,9 +148,27 @@ int test_event_register(void)
 				  (struct sip_msg *) 0xdeadbeef, NULL);
 	TEST_ERR(err);
 
-
 	ASSERT_EQ(4, f.cnt);
+	ASSERT_EQ(4, f.cntold);
+
+	/* test deprecated ua_event() with old and new handlers */
+	f.expected_event = UA_EVENT_EXIT;
+	ua_event(NULL, UA_EVENT_EXIT, NULL, "%s", "details");
+	ua_event(NULL, UA_EVENT_SHUTDOWN, NULL, "%s", "details");
+	f.expected_event = UA_EVENT_REGISTER_OK;
+	ua_event((struct ua *) 0xdeadbeef, UA_EVENT_REGISTER_OK, NULL, "%s",
+		 "details");
+	f.expected_event = UA_EVENT_CALL_INCOMING;
+	ua_event(NULL, UA_EVENT_CALL_INCOMING, NULL, NULL);
+	f.expected_event = UA_EVENT_SIPSESS_CONN;
+	ua_event(NULL, UA_EVENT_SIPSESS_CONN, NULL, NULL);
+
+	ASSERT_EQ(8, f.cnt);
+
+	/* event error not supported with deprecated ua_event() */
+	ASSERT_EQ(9, f.cntold);
 out:
 	bevent_unregister(event_handler);
+	uag_event_unregister(ua_event_handler);
 	return err;
 }

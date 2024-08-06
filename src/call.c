@@ -82,7 +82,7 @@ struct call {
 	bool use_video;
 	bool use_rtp;
 	char *user_data;           /**< User data related to the call       */
-	bool evstop;               /**< UA events stopped flag              */
+	bool evstop;               /**< UA events stopped flag, @deprecated */
 };
 
 

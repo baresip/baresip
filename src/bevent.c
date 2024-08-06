@@ -404,6 +404,8 @@ static int add_rtcp_stats(struct odict *od_parent, const struct rtcp_stats *rs)
  * @param call Call object (optional)
  * @param prm  Event parameters
  *
+ * @deprecated Use odict_encode_event() instead
+ *
  * @return 0 if success, otherwise errorcode
  */
 int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
@@ -570,15 +572,21 @@ int event_add_au_jb_stat(struct odict *od_parent, const struct call *call)
  * @param h   Event handler
  * @param arg Handler argument
  *
+ * @deprecated Use bevent_register()
+ *
  * @return 0 if success, otherwise errorcode
  */
 int uag_event_register(ua_event_h *h, void *arg)
 {
 	struct ua_eh *eh;
+	static int w = 3;
 
 	if (!h)
 		return EINVAL;
 
+	if (w && w--)
+		warning("Used deprecated uag_event_register(). "
+			"Use bevent_register() instead!\n");
 	uag_event_unregister(h);
 
 	eh = mem_zalloc(sizeof(*eh), eh_destructor);
@@ -598,6 +606,8 @@ int uag_event_register(ua_event_h *h, void *arg)
  * Unregister a User-Agent event handler
  *
  * @param h   Event handler
+ *
+ * @deprecated Use bevent_unregister()
  */
 void uag_event_unregister(ua_event_h *h)
 {
@@ -666,28 +676,11 @@ void bevent_unregister(bevent_h *eh)
 }
 
 
-/**
- * Send a User-Agent event to all UA event handlers
- *
- * @param ua   User-Agent object (optional)
- * @param ev   User-agent event
- * @param call Call object (optional)
- * @param fmt  Formatted arguments
- * @param ...  Variable arguments
- */
-void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
-	      const char *fmt, ...)
+static void ua_event_private(struct ua *ua, enum ua_event ev,
+			     struct call *call, const char *txt)
 {
-	struct le *le;
-	char buf[256];
-	va_list ap;
-
-	va_start(ap, fmt);
-	(void)re_vsnprintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-
 	/* send event to all clients */
-	le = ehl.head;
+	struct le *le = ehl.head;
 	while (le) {
 		struct ua_eh *eh = le->data;
 		le = le->next;
@@ -697,8 +690,47 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 			break;
 		}
 
-		eh->h(ua, ev, call, buf, eh->arg);
+		eh->h(ua, ev, call, txt, eh->arg);
 	}
+}
+
+
+/**
+ * Send a User-Agent event to all UA event handlers
+ *
+ * @param ua   User-Agent object (optional)
+ * @param ev   User-agent event
+ * @param call Call object (optional)
+ * @param fmt  Formatted arguments
+ * @param ...  Variable arguments
+ *
+ * @deprecated Use one of the event_xxx_emit() functions
+ */
+void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
+	      const char *fmt, ...)
+{
+	char buf[256];
+	va_list ap;
+	static int w = 3;
+
+	va_start(ap, fmt);
+	(void)re_vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+
+	ua_event_private(ua, ev, call, buf);
+
+	if (w && w--)
+		warning("Used deprecated ua_event() for %s. "
+			"Use one of event_xxx_emit() instead!\n",
+			uag_event_str(ev));
+	struct bevent event = {ev, buf, 0, false, { 0 } };
+
+	if (bevent_class(ev) == BEVENT_CLASS_CALL)
+		event.u.call = call;
+	else if (bevent_class(ev) == BEVENT_CLASS_UA)
+		event.u.ua = ua;
+
+	(void)bevent_emit_base(&event);
 }
 
 
@@ -747,6 +779,9 @@ void module_event(const char *module, const char *event, struct ua *ua,
 		eh->h(ua, UA_EVENT_MODULE, call, buf, eh->arg);
 	}
 
+	struct bevent bevent = {UA_EVENT_MODULE, buf, 0, false, { 0 } };
+	bevent_emit_base(&bevent);
+
 out:
 	mem_deref(buf);
 }
@@ -771,6 +806,8 @@ static void bevent_emit_base(struct bevent *event)
 static int bevent_emit(struct bevent *event, const char *fmt, va_list ap)
 {
 	char *buf;
+	struct call *call = bevent_get_call(event);
+	struct ua   *ua   = bevent_get_ua(event);
 	int err;
 
 	if (!fmt)
@@ -788,8 +825,11 @@ static int bevent_emit(struct bevent *event, const char *fmt, va_list ap)
 		goto out;
 	}
 
+	/* backwards compatibility */
 	if (event->stop)
 		goto out;
+
+	ua_event_private(ua, event->ev, call, event->txt);
 
 out:
 	mem_deref(buf);
