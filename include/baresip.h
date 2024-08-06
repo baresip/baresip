@@ -674,6 +674,7 @@ typedef int (aufilt_decode_h)(struct aufilt_dec_st *st,
 struct aufilt {
 	struct le le;
 	const char *name;
+	bool enabled;
 	aufilt_encupd_h *encupdh;
 	aufilt_encode_h *ench;
 	aufilt_decupd_h *decupdh;
@@ -682,6 +683,7 @@ struct aufilt {
 
 void aufilt_register(struct list *aufiltl, struct aufilt *af);
 void aufilt_unregister(struct aufilt *af);
+void aufilt_enable(struct list *aufiltl, const char *name, bool enable);
 
 
 /*

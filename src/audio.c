@@ -994,6 +994,9 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 		struct aufilt_dec_st *decst = NULL;
 		void *ctx = NULL;
 
+		if (!af->enabled)
+			continue;
+
 		if (af->encupdh && update_enc) {
 			err = af->encupdh(&encst, &ctx, af, &encprm, a);
 			if (err) {
