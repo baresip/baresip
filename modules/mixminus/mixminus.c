@@ -441,9 +441,11 @@ static int debug_conference(struct re_printf *pf, void *arg)
 }
 
 
-static struct aufilt mixminus = {
-	LE_INIT, "mixminus", encode_update, encode, decode_update, decode
-};
+static struct aufilt mixminus = {.name	  = "mixminus",
+				 .encupdh = encode_update,
+				 .ench	  = encode,
+				 .decupdh = decode_update,
+				 .dech	  = decode};
 
 
 static const struct cmd cmdv[] = {
