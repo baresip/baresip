@@ -280,9 +280,11 @@ static int decode(struct aufilt_dec_st *aufilt_dec_st, struct auframe *af)
 }
 
 
-static struct aufilt resample = {
-	LE_INIT, "auresamp", encode_update, encode, decode_update, decode
-};
+static struct aufilt resample = {.name	  = "auresamp",
+				 .encupdh = encode_update,
+				 .ench	  = encode,
+				 .decupdh = decode_update,
+				 .dech	  = decode};
 
 
 static int module_init(void)
