@@ -868,9 +868,11 @@ static int dec_mix_stop(struct re_printf *pf, void *unused)
 }
 
 
-static struct aufilt mixausrc = {
-	LE_INIT, "mixausrc", encode_update, encode, decode_update, decode
-};
+static struct aufilt mixausrc = {.name	  = "mixausrc",
+				 .encupdh = encode_update,
+				 .ench	  = encode,
+				 .decupdh = decode_update,
+				 .dech	  = decode};
 
 
 static int module_init(void)
