@@ -11,6 +11,7 @@
 
 enum {
 	EVENT_MAXSZ = 4096,
+	CNT_DEPRECATED_WARNINGS = 3,
 };
 
 
@@ -579,7 +580,7 @@ int event_add_au_jb_stat(struct odict *od_parent, const struct call *call)
 int uag_event_register(ua_event_h *h, void *arg)
 {
 	struct ua_eh *eh;
-	static int w = 3;
+	static int w = CNT_DEPRECATED_WARNINGS;
 
 	if (!h)
 		return EINVAL;
@@ -711,7 +712,7 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 {
 	char buf[256];
 	va_list ap;
-	static int w = 3;
+	static int w = CNT_DEPRECATED_WARNINGS;
 
 	va_start(ap, fmt);
 	(void)re_vsnprintf(buf, sizeof(buf), fmt, ap);
