@@ -906,6 +906,50 @@ int account_set_stun_pass(struct account *acc, const char *pass)
 
 
 /**
+ * Set the Audio Source Device for a SIP account
+ *
+ * @param acc  User-Agent account
+ * @param dev  Device string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_ausrc_dev(struct account *acc, const char *dev)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->ausrc_dev = mem_deref(acc->ausrc_dev);
+
+	if (dev)
+		return str_dup(&acc->ausrc_dev, dev);
+
+	return 0;
+}
+
+
+/**
+ * Set the Audio Playout Device for a SIP account
+ *
+ * @param acc  User-Agent account
+ * @param dev  Device string
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int account_set_auplay_dev(struct account *acc, const char *dev)
+{
+	if (!acc)
+		return EINVAL;
+
+	acc->auplay_dev = mem_deref(acc->auplay_dev);
+
+	if (dev)
+		return str_dup(&acc->auplay_dev, dev);
+
+	return 0;
+}
+
+
+/**
  * Set the media encryption for a SIP account
  *
  * @param acc     User-Agent account
