@@ -724,7 +724,8 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 		warning("Used deprecated ua_event() for %s. "
 			"Use one of event_xxx_emit() instead!\n",
 			uag_event_str(ev));
-	struct bevent event = {ev, buf, 0, false, { 0 } };
+	struct bevent event = {.ev = ev, .txt = buf, .err = 0, .stop = false,
+			       .u = { 0 } };
 
 	if (bevent_class(ev) == BEVENT_CLASS_CALL)
 		event.u.call = call;
@@ -780,7 +781,9 @@ void module_event(const char *module, const char *event, struct ua *ua,
 		eh->h(ua, UA_EVENT_MODULE, call, buf, eh->arg);
 	}
 
-	struct bevent bevent = {UA_EVENT_MODULE, buf, 0, false, { 0 } };
+	struct bevent event = {.ev = UA_EVENT_MODULE,
+			       .txt = buf, .err = 0, .stop = false,
+			       .u = { 0 } };
 	bevent_emit_base(&bevent);
 
 out:
