@@ -61,10 +61,11 @@ static void enc_destructor(void *arg)
 {
 	struct sndfile_enc *st = arg;
 
-	if (st->encf)
+	if (st->encf) {
 		sf_close(st->encf);
-
-	module_event("sndfile", "close_enc", NULL, NULL, "%s", st->filename);
+		module_event("sndfile", "close_enc", NULL, NULL, "%s",
+			     st->filename);
+	}
 
 	list_unlink(&st->af.le);
 }
@@ -74,10 +75,11 @@ static void dec_destructor(void *arg)
 {
 	struct sndfile_dec *st = arg;
 
-	if (st->decf)
+	if (st->decf) {
 		sf_close(st->decf);
-
-	module_event("sndfile", "close_dec", NULL, NULL, "%s", st->filename);
+		module_event("sndfile", "close_dec", NULL, NULL, "%s",
+			     st->filename);
+	}
 
 	list_unlink(&st->af.le);
 }
