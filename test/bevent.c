@@ -70,6 +70,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	struct ua *ua = bevent_get_ua(event);
 	struct call *call = bevent_get_call(event);
 	const struct sip_msg *msg = bevent_get_msg(event);
+	const char *txt = bevent_get_text(event);
 
 	if (apparg && apparg != (void *) 0xdeadbeef) {
 		bevent_set_error(event, EINVAL);
@@ -89,6 +90,9 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	else if (f->expected_event != bevent_get_type(event)) {
 		bevent_set_error(event, EINVAL);
 	}
+	else if (ev == UA_EVENT_MODULE &&
+		 !!str_cmp(txt, "module,event,details"))
+		bevent_set_error(event, EINVAL);
 	else
 		++f->cnt;
 }
@@ -108,6 +112,9 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 	else if (ev == UA_EVENT_EXIT && !str_cmp(prm, "details"))
 		++f->cntold;
 	else if (ev == UA_EVENT_SHUTDOWN && !str_cmp(prm, "details"))
+		++f->cntold;
+	else if (ev == UA_EVENT_MODULE &&
+		 !str_cmp(prm, "module,event,details"))
 		++f->cntold;
 }
 
@@ -162,11 +169,13 @@ int test_event_register(void)
 	ua_event(NULL, UA_EVENT_CALL_INCOMING, NULL, NULL);
 	f.expected_event = UA_EVENT_SIPSESS_CONN;
 	ua_event(NULL, UA_EVENT_SIPSESS_CONN, NULL, NULL);
+	f.expected_event = UA_EVENT_MODULE;
+	module_event("module", "event", NULL, NULL, "%s", "details");
 
-	ASSERT_EQ(8, f.cnt);
+	ASSERT_EQ(9, f.cnt);
 
 	/* event error not supported with deprecated ua_event() */
-	ASSERT_EQ(9, f.cntold);
+	ASSERT_EQ(10, f.cntold);
 out:
 	bevent_unregister(event_handler);
 	uag_event_unregister(ua_event_handler);

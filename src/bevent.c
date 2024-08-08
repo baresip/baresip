@@ -781,9 +781,13 @@ void module_event(const char *module, const char *event, struct ua *ua,
 		eh->h(ua, UA_EVENT_MODULE, call, buf, eh->arg);
 	}
 
-	struct bevent event = {.ev = UA_EVENT_MODULE,
-			       .txt = buf, .err = 0, .stop = false,
-			       .u = { 0 } };
+	struct bevent bevent = {.ev = UA_EVENT_MODULE,
+				.txt = buf, .err = 0, .stop = false,
+			        .u = { 0 } };
+
+	if (call)
+		bevent.u.call = call;
+
 	bevent_emit_base(&bevent);
 
 out:
