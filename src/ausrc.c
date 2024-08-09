@@ -105,3 +105,29 @@ int ausrc_alloc(struct ausrc_st **stp, struct list *ausrcl,
 
 	return as->alloch(stp, as, prm, device, rh, errh, arg);
 }
+
+
+/**
+ * Retreive audio parameters of an audio source
+ *
+ * @param ausrcl List of Audio Sources
+ * @param name   Name of Audio Source
+ * @param prm    Audio Source parameters
+ * @param device Name of Audio Source device (driver specific)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int ausrc_info(struct list *ausrcl,
+		const char *name, struct ausrc_prm *prm, const char *device)
+{
+	struct ausrc *as;
+
+	as = (struct ausrc *)ausrc_find(ausrcl, name);
+	if (!as)
+		return ENOENT;
+
+	if (!as->infoh)
+		return EINVAL;
+
+	return as->infoh(as, prm, device);
+}

@@ -582,6 +582,8 @@ typedef void (ausrc_error_h)(int err, const char *str, void *arg);
 typedef int  (ausrc_alloc_h)(struct ausrc_st **stp, const struct ausrc *ausrc,
 			     struct ausrc_prm *prm, const char *device,
 			     ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
+typedef int  (ausrc_info_h)(const struct ausrc *ausrc,
+			    struct ausrc_prm *prm, const char *device);
 
 /** Defines an Audio Source */
 struct ausrc {
@@ -589,6 +591,7 @@ struct ausrc {
 	const char      *name;
 	struct list      dev_list;
 	ausrc_alloc_h   *alloch;
+	ausrc_info_h    *infoh;
 };
 
 int ausrc_register(struct ausrc **asp, struct list *ausrcl, const char *name,
@@ -598,6 +601,8 @@ int ausrc_alloc(struct ausrc_st **stp, struct list *ausrcl,
 		const char *name,
 		struct ausrc_prm *prm, const char *device,
 		ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
+int ausrc_info(struct list *ausrcl,
+	       const char *name, struct ausrc_prm *prm, const char *device);
 
 
 /*
