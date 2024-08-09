@@ -197,7 +197,7 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	struct aufile_prm fprm;
 	int err;
 
-	if (!stp || !as || !prm  || !prm->ptime)
+	if (!stp || !as || !prm)
 		return EINVAL;
 
 	if (prm->fmt != AUFMT_S16LE) {
@@ -216,6 +216,8 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->errh  = errh;
 	st->arg   = arg;
 	st->ptime = prm->ptime;
+	if (!st->ptime)
+		st->ptime = 20;
 
 	err = aufile_open(&st->aufile, &fprm, dev, AUFILE_READ);
 	if (err) {
@@ -231,10 +233,8 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	prm->ch    = fprm.channels;
 	prm->duration = aufile_get_length(st->aufile, &fprm);
 
-	if (!rh) {
-		mem_deref(st);
-		return 0;
-	}
+	if (!rh)
+		goto out;
 
 	st->prm   = *prm;
 
