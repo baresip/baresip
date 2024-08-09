@@ -565,6 +565,7 @@ int message_encode_dict(struct odict *od, struct account *acc,
 
 struct ausrc;
 struct ausrc_st;
+typedef size_t (ausrc_duration_h)(struct ausrc_st *st);
 
 /** Audio Source parameters */
 struct ausrc_prm {
@@ -572,7 +573,7 @@ struct ausrc_prm {
 	uint8_t    ch;          /**< Number of channels         */
 	uint32_t   ptime;       /**< Wanted packet-time in [ms] */
 	int        fmt;         /**< Sample format (enum aufmt) */
-	size_t     duration;    /**< Duration in [ms], 0 for infinite        */
+	ausrc_duration_h *durationh;  /**< Handler returns duration in [ms]  */
 };
 
 typedef void (ausrc_read_h)(struct auframe *af, void *arg);

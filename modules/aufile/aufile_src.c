@@ -31,6 +31,7 @@ struct ausrc_st {
 	struct aubuf *aubuf;
 	enum aufmt fmt;                 /**< Wav file sample format          */
 	struct ausrc_prm prm;           /**< Audio src parameter             */
+	struct aufile_prm fprm;
 	uint32_t ptime;
 	size_t sampc;
 	RE_ATOMIC bool run;
@@ -189,6 +190,16 @@ static int read_file(struct ausrc_st *st)
 }
 
 
+static size_t aufile_duration_handler(struct ausrc_st *st)
+{
+	if (!st)
+		return 0;
+
+
+	return aufile_get_length(st->aufile, &st->fprm);
+}
+
+
 int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct ausrc_prm *prm, const char *dev,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -231,7 +242,6 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	/* return wav format to caller */
 	prm->srate = fprm.srate;
 	prm->ch    = fprm.channels;
-	prm->duration = aufile_get_length(st->aufile, &fprm);
 
 	if (!rh)
 		goto out;
@@ -266,8 +276,11 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
  out:
 	if (err)
 		mem_deref(st);
-	else
+	else {
 		*stp = st;
+		st->fprm = fprm;
+		prm->durationh = aufile_duration_handler;
+	}
 
 	return err;
 }

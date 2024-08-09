@@ -411,6 +411,21 @@ static void timeout(void *arg)
 }
 
 
+static size_t gst_duration_handler(struct ausrc_st *st)
+{
+	if (!st)
+		return 0;
+
+	gst_element_get_state(st->pipeline, NULL, NULL, 500*1000*1000);
+	gint64 duration = 0;
+	gst_element_query_duration(st->pipeline,
+			    GST_FORMAT_TIME,
+			    &duration);
+
+	return duration / 1000000;
+}
+
+
 static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct ausrc_prm *prm, const char *device,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
@@ -487,12 +502,7 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		mem_deref(st);
 	else {
 		*stp = st;
-		gst_element_get_state(st->pipeline, NULL, NULL, 500*1000*1000);
-		gint64 duration = 0;
-		gst_element_query_duration(st->pipeline,
-				   	   GST_FORMAT_TIME,
-				   	   &duration);
-		prm->duration = duration / 1000000;
+		prm->durationh = gst_duration_handler;
 	}
 
 	return err;
