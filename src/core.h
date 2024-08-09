@@ -88,6 +88,10 @@ struct account {
 	char *ausrc_dev;
 	char *auplay_mod;
 	char *auplay_dev;
+	char *vidsrc_mod;
+	char *vidsrc_dev;
+	char *viddisp_mod;
+	char *viddisp_dev;
 	uint32_t autelev_pt;         /**< Payload type for telephone-events  */
 	char *extra;                 /**< Extra parameters                   */
 	char *uas_user;              /**< UAS authentication username        */
