@@ -16,21 +16,13 @@ if ! which jq; then
     exit 1
 fi
 
-trap "./jitter-off.sh; killall -q baresip" EXIT
+trap "disable_jitter; killall -q baresip" EXIT
 
-function gen_datfile() {
-    ph=$1
-    filename=$2
-
-    jqc='.traceEvents[] | select (.ph == "'"${ph}"'") | .args.line'
-    cat jbuf.json | jq -r "${jqc}" > $filename
-}
-
-source ./jitter.sh
+source ../jitter.sh
 init_jitter $netif
 
 strm="audio"
-for jmin in 0 10 20; do
+for jmin in 2 4 6; do
     for i in 0 1; do
         if [ "$i" == "0" ]; then
             strm="audio"
@@ -40,7 +32,7 @@ for jmin in 0 10 20; do
 
         echo "########### jitter buffer $strm $jmin ###############"
 
-        sed -e "s/${strm}_jitter_buffer_delay\s*[0-9]*\-.*/${strm}_jitter_buffer_delay   ${jmin}-500/" -i ${strm}/config
+        sed -e "s/${strm}_jitter_buffer_delay\s*[0-9]*\-/${strm}_jitter_buffer_delay   ${jmin}-/" -i ${strm}/config
         baresip -v -f ${strm} > /tmp/${strm}.log 2>&1 &
         sleep 1
         echo "/dial $target" | nc -N localhost 5555

@@ -98,6 +98,7 @@ static struct config core_config = {
 		{
 			JBUF_FIXED,
 			{5, 50},
+			500,
 		},
 		false,
 		0,
@@ -273,8 +274,6 @@ static const char *jbuf_type_str(enum jbuf_type jbtype)
 		return "off";
 	case JBUF_FIXED:
 		return "fixed";
-	case JBUF_ADAPTIVE:
-		return "adaptive";
 	}
 
 	return "?";
@@ -546,6 +545,9 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	(void)conf_get_range(conf, "video_jitter_buffer_delay",
 			     &cfg->avt.video.jbuf_del);
 
+	(void)conf_get_u32(conf, "video_jitter_buffer_size",
+			   &cfg->avt.video.jbuf_size);
+
 	(void)conf_get_bool(conf, "rtp_stats", &cfg->avt.rtp_stats);
 	(void)conf_get_u32(conf, "rtp_timeout", &cfg->avt.rtp_timeout);
 
@@ -702,6 +704,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "audio_jitter_buffer_delay\t%H\n"
 			 "video_jitter_buffer_type\t%s\n"
 			 "video_jitter_buffer_delay\t%H\n"
+			 "video_jitter_buffer_size\t%u\n"
 			 "rtp_stats\t\t%s\n"
 			 "rtp_timeout\t\t%u # in seconds\n"
 			 "avt_bundle\t\t%s\n"
@@ -720,6 +723,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 range_print, &cfg->avt.audio.jbuf_del,
 			 jbuf_type_str(cfg->avt.video.jbtype),
 			 range_print, &cfg->avt.video.jbuf_del,
+			 cfg->avt.video.jbuf_size,
 			 cfg->avt.rtp_stats ? "yes" : "no",
 			 cfg->avt.rtp_timeout,
 			 cfg->avt.bundle ? "yes" : "no",
@@ -946,14 +950,14 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "rtp_video_tos\t\t136\n"
 			  "#rtp_ports\t\t10000-20000\n"
 			  "#rtp_bandwidth\t\t512-1024 # [kbit/s]\n"
-			  "audio_jitter_buffer_type\tfixed\t\t# off, fixed,"
-				" adaptive\n"
+			  "audio_jitter_buffer_type\tfixed\t\t# off, fixed\n"
 			  "audio_jitter_buffer_delay\t%u-%u\t\t"
-					"# (min. frames)-(max. packets)\n"
-			  "video_jitter_buffer_type\tfixed\t\t# off, fixed,"
-				" adaptive\n"
+					"# (min. frames)-(max. frames)\n"
+			  "video_jitter_buffer_type\tfixed\t\t# off, fixed\n"
 			  "video_jitter_buffer_delay\t%u-%u\t\t"
-					"# (min. frames)-(max. packets)\n"
+					"# (min. frames)-(max. frames)\n"
+			  "video_jitter_buffer_size\t%u\t\t"
+					"# max. packets\n"
 			  "rtp_stats\t\tno\n"
 			  "#rtp_timeout\t\t60\n"
 			  "#avt_bundle\t\tno\n"
@@ -973,6 +977,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  cfg->avt.audio.jbuf_del.max,
 			  cfg->avt.video.jbuf_del.min,
 			  cfg->avt.video.jbuf_del.max,
+			  cfg->avt.video.jbuf_size,
 			  default_interface_print, NULL);
 
 	return err;
