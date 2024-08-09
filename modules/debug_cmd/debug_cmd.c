@@ -185,9 +185,12 @@ static void fileinfo_destruct(void *arg)
 
 static void print_fileinfo(struct fileinfo_st *st)
 {
-	double s  = ((float) st->prm.duration) / 1000;
+	size_t duration = 0;
+	if (st->prm.durationh)
+		duration = st->prm.durationh(st->ausrc);
 
-	if (st->prm.duration) {
+	if (duration) {
+		double s  = ((float) duration) / 1000;
 		info("debug_cmd: length = %1.3lf seconds\n", s);
 		module_event("debug_cmd", "aufileinfo", NULL, NULL,
 			 "length = %lf seconds", s);
