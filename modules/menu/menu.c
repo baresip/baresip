@@ -353,6 +353,8 @@ static void play_incoming(const struct call *call)
 	if (call_state(call) != CALL_STATE_INCOMING)
 		return;
 
+	call_ringing(call);
+
 	if (menu_find_call(active_call_test, call)) {
 		menu_play(call, "callwaiting_aufile", "callwaiting.wav", 3,
 			  DEVICE_PLAYER);
