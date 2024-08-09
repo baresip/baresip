@@ -1101,16 +1101,20 @@ int video_alloc(struct video **vp, struct list *streaml,
 		goto out;
 
 	if (acc && acc->vidsrc_mod) {
-		str_ncpy(v->vtx.module, acc->vidsrc_mod, sizeof(v->vtx.module));
-		str_ncpy(v->vtx.device, acc->vidsrc_dev, sizeof(v->vtx.device));
+		str_ncpy(v->vtx.module, acc->vidsrc_mod,
+			sizeof(v->vtx.module));
+		str_ncpy(v->vtx.device, acc->vidsrc_dev,
+			sizeof(v->vtx.device));
 
 		info("video: using account specific source: (%s,%s)\n",
 			acc->vidsrc_mod, acc->vidsrc_dev);
 	}
 
 	if (acc && acc->viddisp_mod) {
-		str_ncpy(v->vrx.module, acc->viddisp_mod, sizeof(v->vrx.module));
-		str_ncpy(v->vrx.device, acc->viddisp_dev, sizeof(v->vrx.device));
+		str_ncpy(v->vrx.module, acc->viddisp_mod,
+			sizeof(v->vrx.module));
+		str_ncpy(v->vrx.device, acc->viddisp_dev,
+			sizeof(v->vrx.device));
 
 		info("video: using account specific display: (%s,%s)\n",
 			acc->viddisp_mod, acc->viddisp_dev);
