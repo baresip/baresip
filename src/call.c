@@ -753,7 +753,7 @@ int call_streams_alloc(struct call *call)
 	/* Video stream */
 	if (call->use_video) {
 		err = video_alloc(&call->video, &call->streaml, &strm_prm,
-				  call->cfg, call->sdp,
+				  call->cfg, acc, call->sdp,
 				  acc->mnat, call->mnats,
 				  acc->menc, call->mencs,
 				  "main",

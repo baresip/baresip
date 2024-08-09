@@ -40,6 +40,10 @@ static void destructor(void *arg)
 	mem_deref(acc->ausrc_dev);
 	mem_deref(acc->auplay_mod);
 	mem_deref(acc->auplay_dev);
+	mem_deref(acc->vidsrc_mod);
+	mem_deref(acc->vidsrc_dev);
+	mem_deref(acc->viddisp_mod);
+	mem_deref(acc->viddisp_dev);
 	mem_deref(acc->cert);
 	mem_deref(acc->extra);
 	mem_deref(acc->uas_user);
@@ -630,7 +634,16 @@ int account_alloc(struct account **accp, const char *sipaddr)
 	err |= decode_pair(&acc->auplay_mod, &acc->auplay_dev,
 			   &acc->laddr.params, "audio_player");
 	if (err) {
-		warning("account: audio_source/player parse error\n");
+		warning("account: audio_source/audio_player parse error\n");
+		goto out;
+	}
+
+	err  = decode_pair(&acc->vidsrc_mod, &acc->vidsrc_dev,
+			   &acc->laddr.params, "video_source");
+	err |= decode_pair(&acc->viddisp_mod, &acc->viddisp_dev,
+			   &acc->laddr.params, "video_display");
+	if (err) {
+		warning("account: video_source/video_display parse error\n");
 		goto out;
 	}
 

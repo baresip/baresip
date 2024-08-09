@@ -1430,6 +1430,7 @@ typedef void (video_err_h)(int err, const char *str, void *arg);
 int  video_alloc(struct video **vp, struct list *streaml,
 		 const struct stream_param *stream_prm,
 		 const struct config *cfg,
+		 const struct account *acc,
 		 struct sdp_session *sdp_sess,
 		 const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		 const struct menc *menc, struct menc_sess *menc_sess,

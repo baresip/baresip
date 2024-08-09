@@ -93,6 +93,7 @@ struct vtx {
 	unsigned skipc;                    /**< Number of frames skipped  */
 	struct list filtl;                 /**< Filters in encoding order */
 	enum vidfmt fmt;                   /**< Outgoing pixel format     */
+	char module[128];                  /**< Source module name        */
 	char device[128];                  /**< Source device name        */
 	uint32_t ts_offset;                /**< Random timestamp offset   */
 	bool picup;                        /**< Send picture update       */
@@ -140,6 +141,7 @@ struct vrx {
 	struct vidsz size;                 /**< Incoming video resolution */
 	enum vidfmt fmt;                   /**< Incoming pixel format     */
 	enum vidorient orient;             /**< Display orientation       */
+	char module[128];                  /**< Display module name       */
 	char device[128];                  /**< Display device name       */
 	int pt_rx;                         /**< Incoming RTP payload type */
 	int frames;                        /**< Number of frames received */
@@ -616,6 +618,7 @@ static int vtx_alloc(struct vtx *vtx, struct video *video)
 	/* The initial value of the timestamp SHOULD be random */
 	vtx->ts_offset = rand_u16();
 
+	str_ncpy(vtx->module, video->cfg.src_mod, sizeof(vtx->module));
 	str_ncpy(vtx->device, video->cfg.src_dev, sizeof(vtx->device));
 
 	vtx->fmt = (enum vidfmt)-1;
@@ -636,6 +639,7 @@ static int vrx_alloc(struct vrx *vrx, struct video *video)
 	vrx->pt_rx  = -1;
 	vrx->orient = VIDORIENT_PORTRAIT;
 
+	str_ncpy(vrx->module, video->cfg.disp_mod, sizeof(vrx->module));
 	str_ncpy(vrx->device, video->cfg.disp_dev, sizeof(vrx->device));
 
 	vrx->fmt = (enum vidfmt)-1;
@@ -1067,6 +1071,7 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
 int video_alloc(struct video **vp, struct list *streaml,
 		const struct stream_param *stream_prm,
 		const struct config *cfg,
+		const struct account *acc,
 		struct sdp_session *sdp_sess,
 		const struct mnat *mnat, struct mnat_sess *mnat_sess,
 		const struct menc *menc, struct menc_sess *menc_sess,
@@ -1094,6 +1099,22 @@ int video_alloc(struct video **vp, struct list *streaml,
 	err |= vrx_alloc(&v->vrx, v);
 	if (err)
 		goto out;
+
+	if (acc && acc->vidsrc_mod) {
+		str_ncpy(v->vtx.module, acc->vidsrc_mod, sizeof(v->vtx.module));
+		str_ncpy(v->vtx.device, acc->vidsrc_dev, sizeof(v->vtx.device));
+
+		info("video: using account specific source: (%s,%s)\n",
+			acc->vidsrc_mod, acc->vidsrc_dev);
+	}
+
+	if (acc && acc->viddisp_mod) {
+		str_ncpy(v->vrx.module, acc->viddisp_mod, sizeof(v->vrx.module));
+		str_ncpy(v->vrx.device, acc->viddisp_dev, sizeof(v->vrx.device));
+
+		info("video: using account specific display: (%s,%s)\n",
+			acc->viddisp_mod, acc->viddisp_dev);
+	}
 
 	mem_destructor(v, video_destructor);
 
@@ -1208,7 +1229,7 @@ static int set_vidisp(struct vrx *vrx)
 	vrx->vidisp_prm.fullscreen = vrx->video->cfg.fullscreen;
 
 	vd = (struct vidisp *)vidisp_find(baresip_vidispl(),
-					  vrx->video->cfg.disp_mod);
+					  vrx->module);
 	if (!vd)
 		return ENOENT;
 

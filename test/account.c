@@ -30,6 +30,7 @@ static const char str[] =
 	";mwi=no"
 	";call_transfer=no"
 	";audio_source=null,null"
+	";video_source=null,null"
 	;
 
 

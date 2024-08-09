@@ -84,6 +84,8 @@ static int account_write_template(const char *file)
 			 "#    ;stunserver=stun:[user:pass]@host[:port]\n"
 			 "#    ;inreq_allowed={yes, no}  # default: yes\n"
 			 "#    ;video_codecs=h264,vp8,...\n"
+			 "#    ;video_source=v4l2,/dev/video0\n"
+			 "#    ;video_display=x11,nil\n"
 			 "#\n"
 			 "# Examples:\n"
 			 "#\n"

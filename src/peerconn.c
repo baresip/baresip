@@ -367,7 +367,7 @@ int peerconnection_add_video_track(struct peer_connection *pc,
 				mediatrack_close_handler, pc);
 
 	err = video_alloc(&media->u.vid, &pc->streaml, &pc->stream_prm, cfg,
-			  pc->sdp, pc->mnat, pc->mnats, pc->menc, pc->mencs,
+			  NULL, pc->sdp, pc->mnat, pc->mnats, pc->menc, pc->mencs,
 			  NULL, vidcodecl, NULL, offerer,
 			  video_error_handler, media);
 	if (err) {
