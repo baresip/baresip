@@ -1054,6 +1054,7 @@ static int vrx_print_pipeline(struct re_printf *pf, const struct vrx *vrx)
  * @param streaml    List of streams
  * @param stream_prm Stream parameters
  * @param cfg        Global configuration
+ * @param acc        Account (optional)
  * @param sdp_sess   SDP Session
  * @param mnat       Media NAT (optional)
  * @param mnat_sess  Media NAT session (optional)
