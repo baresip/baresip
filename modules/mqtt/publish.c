@@ -19,18 +19,18 @@
 /*
  * Relay UA events as publish messages to the Broker
  */
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-			     struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct mqtt *mqtt = arg;
 	struct odict *od = NULL;
+	struct call *call = bevent_get_call(event);
 	int err;
 
 	err = odict_alloc(&od, 8);
 	if (err)
 		return;
 
-	err = event_encode_dict(od, ua, ev, call, prm);
+	err = odict_encode_bevent(od, event);
 	if (err)
 		goto out;
 
@@ -96,7 +96,7 @@ int mqtt_publish_init(struct mqtt *mqtt)
 {
 	int err;
 
-	err = uag_event_register(ua_event_handler, mqtt);
+	err = bevent_register(event_handler, mqtt);
 	if (err)
 		return err;
 
@@ -106,5 +106,5 @@ int mqtt_publish_init(struct mqtt *mqtt)
 
 void mqtt_publish_close(void)
 {
-	uag_event_unregister(&ua_event_handler);
+	bevent_unregister(&event_handler);
 }
