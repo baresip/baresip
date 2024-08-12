@@ -56,17 +56,14 @@ static const struct cmd cmdv[] = {
 };
 
 
-static void event_handler(struct ua *ua, enum ua_event ev,
-			  struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
-	(void)call;
-	(void)prm;
 	(void)arg;
 
-	debug("presence: ua=%p got event %d (%s)\n", ua, ev,
-	      uag_event_str(ev));
-
 	if (ev == UA_EVENT_SHUTDOWN) {
+		struct ua *ua = bevent_get_ua(event);
+		debug("presence: ua=%p got event %d (%s)\n", ua, ev,
+		      uag_event_str(ev));
 
 		publisher_close();
 		notifier_close();
@@ -95,7 +92,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err = uag_event_register(event_handler, NULL);
+	err = bevent_register(event_handler, NULL);
 	if (err)
 		return err;
 
@@ -105,7 +102,7 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	uag_event_unregister(event_handler);
+	bevent_unregister(event_handler);
 
 	cmd_unregister(baresip_commands(), cmdv);
 
