@@ -131,23 +131,24 @@ static bool ebuacip_handler(const char *name, const char *value, void *arg)
 }
 
 
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-			     struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct audio *au;
-	(void)prm;
+	struct ua   *ua   = bevent_get_ua(event);
+	struct call *call = bevent_get_call(event);
+	const char  *txt  = bevent_get_text(event);
 	(void)arg;
 
 #if 1
 	debug(".... ebuacip: [ ua=%s call=%s ] event: %s (%s)\n",
 	      account_aor(ua_account(ua)), call_id(call),
-	      uag_event_str(ev), prm);
+	      uag_event_str(ev), txt);
 #endif
 
 	switch (ev) {
 
 	case UA_EVENT_CALL_LOCAL_SDP:
-		if (0 == str_casecmp(prm, "offer"))
+		if (0 == str_casecmp(txt, "offer"))
 			set_ebuacip_params(call_audio(call));
 		break;
 
@@ -167,13 +168,13 @@ static int module_init(void)
 {
 	conf_get_str(conf_cur(), "ebuacip_jb_type", jb_type, sizeof(jb_type));
 
-	return uag_event_register(ua_event_handler, NULL);
+	return bevent_register(event_handler, NULL);
 }
 
 
 static int module_close(void)
 {
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 
 	return 0;
 }
