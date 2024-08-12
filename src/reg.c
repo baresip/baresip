@@ -119,7 +119,7 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 
 		reg->scode = 999;
 
-		ua_event(reg->ua, evfail, NULL, "%m", err);
+		bevent_ua_emit(evfail, reg->ua, "%m", err);
 		return;
 	}
 
@@ -162,8 +162,8 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 			}
 		}
 
-		ua_event(reg->ua, evok, NULL, "%u %r",
-			 msg->scode, &msg->reason);
+		bevent_ua_emit(evok, reg->ua,
+			       "%u %r", msg->scode, &msg->reason);
 	}
 	else if (msg->scode >= 300) {
 
@@ -172,8 +172,8 @@ static void register_handler(int err, const struct sip_msg *msg, void *arg)
 
 		reg->scode = msg->scode;
 
-		ua_event(reg->ua, evfail, NULL, "%u %r",
-			 msg->scode, &msg->reason);
+		bevent_ua_emit(evfail, reg->ua,
+			       "%u %r", msg->scode, &msg->reason);
 	}
 }
 
