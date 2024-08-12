@@ -611,14 +611,13 @@ void gtk_mod_call_window_closed(struct gtk_mod *mod, struct call_window *win)
 }
 
 
-static void ua_event_handler(struct ua *ua,
-			     enum ua_event ev,
-			     struct call *call,
-			     const char *prm,
-			     void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct gtk_mod *mod = arg;
 	struct call_window *win;
+	struct ua   *ua   = bevent_get_ua(event);
+	struct call *call = bevent_get_call(event);
+	const char  *txt  = bevent_get_text(event);
 
 	gdk_threads_enter();
 
@@ -640,7 +639,7 @@ static void ua_event_handler(struct ua *ua,
 	case UA_EVENT_CALL_CLOSED:
 		win = get_call_window(mod, call);
 		if (win)
-			call_window_closed(win, prm);
+			call_window_closed(win, txt);
 		denotify_incoming_call(mod, call);
 		if (!call_is_outgoing(call)
 			&& call_state(call) != CALL_STATE_TERMINATED
@@ -678,7 +677,7 @@ static void ua_event_handler(struct ua *ua,
 	case UA_EVENT_CALL_TRANSFER_FAILED:
 		win = get_create_call_window(mod, call);
 		if (win)
-			call_window_transfer_failed(win, prm);
+			call_window_transfer_failed(win, txt);
 		break;
 
 	default:
@@ -1091,11 +1090,11 @@ static int gtk_thread(void *arg)
 
 	info("gtk_menu starting\n");
 
-	uag_event_register(ua_event_handler, mod);
+	bevent_register(event_handler, mod);
 	mod->run = true;
 	gtk_main();
 	mod->run = false;
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 
 	mod->dial_dialog = mem_deref(mod->dial_dialog);
 
@@ -1310,7 +1309,7 @@ static int module_close(void)
 	g_slist_free(mod_obj.call_windows);
 	g_slist_free(mod_obj.incoming_call_menus);
 
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 
 	return 0;
 }
