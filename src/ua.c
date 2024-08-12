@@ -426,7 +426,7 @@ unsigned ua_destroy(struct ua *ua)
 	list_unlink(&ua->le);
 
 	/* send the shutdown event */
-	bevent_app_emit(UA_EVENT_SHUTDOWN, NULL, NULL);
+	bevent_ua_emit(UA_EVENT_SHUTDOWN, ua, NULL);
 
 	/* terminate all calls now */
 	list_flush(&ua->calls);
