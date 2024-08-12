@@ -91,9 +91,9 @@ static enum bevent_class bevent_class(enum ua_event ev)
 	case UA_EVENT_CREATE:
 	case UA_EVENT_MWI_NOTIFY:
 	case UA_EVENT_CUSTOM:
+	case UA_EVENT_SHUTDOWN:
 		return BEVENT_CLASS_UA;
 
-	case UA_EVENT_SHUTDOWN:
 	case UA_EVENT_EXIT:
 		return BEVENT_CLASS_APP;
 
