@@ -252,14 +252,14 @@ static void tcp_conn_handler(const struct sa *peer, void *arg)
 /*
  * Relay UA events
  */
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-			     struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct ctrl_st *st = arg;
 	struct mbuf *buf = mbuf_alloc(1024);
 	struct re_printf pf = {print_handler, buf};
 	struct odict *od = NULL;
 	int err;
+	(void)ev;
 
 	buf->pos = NETSTRING_HEADER_SIZE;
 
@@ -268,7 +268,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 		return;
 
 	err = odict_entry_add(od, "event", ODICT_BOOL, true);
-	err |= event_encode_dict(od, ua, ev, call, prm);
+	err |= odict_encode_bevent(od, event);
 	if (err) {
 		warning("ctrl_tcp: failed to encode event (%m)\n", err);
 		goto out;
@@ -393,7 +393,7 @@ static int ctrl_init(void)
 	if (err)
 		return err;
 
-	err = uag_event_register(ua_event_handler, ctrl);
+	err = bevent_register(event_handler, ctrl);
 	if (err)
 		return err;
 
@@ -407,7 +407,7 @@ static int ctrl_init(void)
 
 static int ctrl_close(void)
 {
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 	message_unlisten(baresip_message(), message_handler);
 	ctrl = mem_deref(ctrl);
 
