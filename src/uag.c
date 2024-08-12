@@ -19,7 +19,7 @@ static void exit_handler(void *arg)
 {
 	(void)arg;
 
-	ua_event(NULL, UA_EVENT_EXIT, NULL, NULL);
+	bevent_app_emit(UA_EVENT_EXIT, NULL, NULL);
 
 	debug("ua: sip-stack exit\n");
 
@@ -734,9 +734,9 @@ int uag_reset_transp(bool reg, bool reinvite)
 				if (!call_refresh_allowed(call)) {
 					call_hangup(call, 500, "Transport of "
 						    "User Agent changed");
-					ua_event(ua, UA_EVENT_CALL_CLOSED,
-						 call, "Transport of "
-						 "User Agent changed");
+					bevent_call_emit(UA_EVENT_CALL_CLOSED,
+							 call, "Transport of "
+							 "User Agent changed");
 					mem_deref(call);
 					continue;
 				}

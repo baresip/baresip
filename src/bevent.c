@@ -405,7 +405,7 @@ static int add_rtcp_stats(struct odict *od_parent, const struct rtcp_stats *rs)
  * @param call Call object (optional)
  * @param prm  Event parameters
  *
- * @deprecated Use odict_encode_event() instead
+ * @deprecated Use odict_encode_bevent() instead
  *
  * @return 0 if success, otherwise errorcode
  */
@@ -724,8 +724,8 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 		warning("Used deprecated ua_event() for %s. "
 			"Use one of event_xxx_emit() instead!\n",
 			uag_event_str(ev));
-	struct bevent event = {.ev = ev, .txt = buf};
 
+	struct bevent event = {.ev = ev, .txt = buf};
 	if (bevent_class(ev) == BEVENT_CLASS_CALL)
 		event.u.call = call;
 	else if (bevent_class(ev) == BEVENT_CLASS_UA)
