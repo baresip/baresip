@@ -141,12 +141,10 @@ static struct mwi *mwi_find(const struct ua *ua)
 }
 
 
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-			     struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
+	struct ua *ua = bevent_get_ua(event);
 	const struct account *acc = ua_account(ua);
-	(void)call;
-	(void)prm;
 	(void)arg;
 
 	if (ev == UA_EVENT_REGISTER_OK) {
@@ -195,13 +193,13 @@ static int module_init(void)
 	list_init(&mwil);
 	tmr_start(&tmr, 1, tmr_handler, 0);
 
-	return uag_event_register(ua_event_handler, NULL);
+	return bevent_register(event_handler, NULL);
 }
 
 
 static int module_close(void)
 {
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 	tmr_cancel(&tmr);
 	list_flush(&mwil);
 
