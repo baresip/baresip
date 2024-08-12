@@ -652,17 +652,19 @@ static void process_module_event(struct call *call, const char *prm)
 }
 
 
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-			     struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct call *call2 = NULL;
-	struct account *acc = ua_account(ua);
 	int32_t adelay = -1;
 	bool incall;
 	enum sdp_dir ardir, vrdir;
 	uint32_t count;
 	struct pl val;
 	char * uri;
+	const char           *prm  = bevent_get_text(event);
+	struct call          *call = bevent_get_call(event);
+	struct ua            *ua   = bevent_get_ua(event);
+	struct account       *acc  = ua_account(bevent_get_ua(event));
 	int err;
 	(void)arg;
 
@@ -1179,7 +1181,7 @@ static int module_init(void)
 	if (err)
 		return err;
 
-	err = uag_event_register(ua_event_handler, NULL);
+	err = bevent_register(event_handler, NULL);
 	if (err)
 		return err;
 
@@ -1199,7 +1201,7 @@ static int module_close(void)
 
 	message_unlisten(baresip_message(), message_handler);
 
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 	static_menu_unregister();
 	dial_menu_unregister();
 	dynamic_menu_unregister();
