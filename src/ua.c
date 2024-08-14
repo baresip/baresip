@@ -2052,7 +2052,6 @@ int ua_rm_custom_hdr(struct ua *ua, struct pl *name)
 		if (!pl_cmp(&h->name, name)) {
 			list_unlink(&h->le);
 			mem_deref(h);
-			break;
 		}
 	}
 
