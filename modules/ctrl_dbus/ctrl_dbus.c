@@ -231,8 +231,7 @@ on_handle_invoke(DBusBaresip *interface,
 /*
  * Relay UA events
  */
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-			     struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct ctrl_st *st = arg;
 	struct mbuf *buf;
@@ -252,7 +251,7 @@ static void ua_event_handler(struct ua *ua, enum ua_event ev,
 
 	pf.vph = print_handler;
 	pf.arg = buf;
-	err = event_encode_dict(od, ua, ev, call, prm);
+	err = odict_encode_bevent(od, event);
 	if (err)
 		goto out;
 
@@ -459,7 +458,7 @@ static int ctrl_init(void)
 	if (err)
 		goto outerr;
 
-	err = uag_event_register(ua_event_handler, m_st);
+	err = bevent_register(event_handler, m_st);
 	if (err)
 		goto outerr;
 
@@ -495,7 +494,7 @@ outerr:
 
 static int ctrl_close(void)
 {
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 	message_unlisten(baresip_message(), message_handler);
 	m_st = mem_deref(m_st);
 	return 0;
