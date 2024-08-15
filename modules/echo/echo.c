@@ -92,11 +92,11 @@ static int new_session(struct ua *ua, struct call *call)
 }
 
 
-static void ua_event_handler(struct ua *ua, enum ua_event ev,
-		struct call *call, const char *prm, void *arg)
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	int err;
-	(void)prm;
+	struct ua   *ua   = bevent_get_ua(event);
+	struct call *call = bevent_get_call(event);
 	(void)arg;
 
 	switch (ev) {
@@ -124,7 +124,7 @@ static int module_init(void)
 
 	list_init(&sessionl);
 
-	err = uag_event_register(ua_event_handler, 0);
+	err = bevent_register(event_handler, 0);
 	if (err)
 		return err;
 
@@ -144,7 +144,7 @@ static int module_close(void)
 		list_flush(&sessionl);
 	}
 
-	uag_event_unregister(ua_event_handler);
+	bevent_unregister(event_handler);
 
 	return 0;
 }
