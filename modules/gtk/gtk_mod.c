@@ -51,11 +51,15 @@ struct gtk_mod {
 	GtkWidget *accounts_menu;
 	GtkWidget *history_menu;
 	GtkWidget *status_menu;
+	GtkWidget *menu_window;
+	GtkWidget *menu_button;
 	GSList *accounts_menu_group;
 	struct dial_dialog *dial_dialog;
 	GSList *call_windows;
 	GSList *incoming_call_menus;
 	bool clean_number;
+	bool use_status_icon;
+	bool use_window;
 	struct ua *ua_cur;
 	bool icon_call_missed;
 	bool icon_call_outgoing;
@@ -648,10 +652,19 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 				call_peeruri(call),
 				CALL_MISSED, call_peername(call));
 
-			gtk_status_icon_set_from_icon_name(
-				mod->status_icon,
-				(mod->icon_call_missed) ?
-					"call-missed-symbolic" : "call-stop");
+			if (mod->use_status_icon)
+				gtk_status_icon_set_from_icon_name(
+					mod->status_icon,
+					(mod->icon_call_missed) ?
+						"call-missed-symbolic" : "call-stop");
+
+			if (mod->use_window)
+				gtk_button_set_image(
+					GTK_BUTTON(mod->menu_button),
+					gtk_image_new_from_icon_name(
+						(mod->icon_call_missed) ?
+						"call-missed-symbolic" : "call-stop",
+					GTK_ICON_SIZE_SMALL_TOOLBAR));
 		}
 		break;
 
@@ -761,6 +774,16 @@ static gboolean status_icon_on_button_press(GtkStatusIcon *status_icon,
 	popup_menu(mod, gtk_status_icon_position_menu, status_icon,
 			event->button, event->time);
 	gtk_status_icon_set_from_icon_name(status_icon, "call-start");
+	return TRUE;
+}
+
+static gboolean menu_button_on_button_press(GtkWidget *button,
+					    GdkEventButton *event,
+					    struct gtk_mod *mod)
+{
+	popup_menu(mod, NULL, NULL,
+			event->button, event->time);
+	gtk_button_set_image(GTK_BUTTON(button), gtk_image_new_from_icon_name("call-start", GTK_ICON_SIZE_SMALL_TOOLBAR));
 	return TRUE;
 }
 
@@ -977,19 +1000,40 @@ static int gtk_thread(void *arg)
 	notify_init("baresip");
 #endif
 
-	mod->status_icon = gtk_status_icon_new_from_icon_name("call-start");
-	if (mod->status_icon == NULL) {
-		info("gtk_menu is not supported\n");
-		module_close();
-		return 1;
+	if (mod->use_window)
+	{
+		mod->menu_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+		gtk_window_set_title (GTK_WINDOW(mod->menu_window), "BareSIP GTK");
+		gtk_window_set_default_size (GTK_WINDOW(mod->menu_window), 350, 50);
+
+		mod->menu_button = gtk_button_new_from_icon_name(
+			"call-start", GTK_ICON_SIZE_BUTTON);
+		g_signal_connect(G_OBJECT(mod->menu_button),
+				"button_press_event",
+				G_CALLBACK(menu_button_on_button_press), mod);
+		gtk_container_add(GTK_CONTAINER(mod->menu_window), mod->menu_button);
+
+		gtk_widget_show_all(mod->menu_window);
+		g_signal_connect(mod->menu_window, "destroy",
+					G_CALLBACK(menu_on_quit), mod);
 	}
 
-	gtk_status_icon_set_tooltip_text (mod->status_icon, "baresip");
+	if (mod->use_status_icon)
+	{
+		mod->status_icon = gtk_status_icon_new_from_icon_name("call-start");
+		if (mod->status_icon == NULL) {
+			info("gtk_menu is not supported\n");
+			module_close();
+			return 1;
+		}
 
-	g_signal_connect(G_OBJECT(mod->status_icon),
-			"button_press_event",
-			G_CALLBACK(status_icon_on_button_press), mod);
-	gtk_status_icon_set_visible(mod->status_icon, TRUE);
+		gtk_status_icon_set_tooltip_text (mod->status_icon, "baresip");
+
+		g_signal_connect(G_OBJECT(mod->status_icon),
+				"button_press_event",
+				G_CALLBACK(status_icon_on_button_press), mod);
+		gtk_status_icon_set_visible(mod->status_icon, TRUE);
+	}
 
 	mod->contacts_inited = false;
 	mod->dial_dialog = NULL;
@@ -1255,7 +1299,12 @@ static int module_init(void)
 	int err;
 
 	mod_obj.clean_number = false;
+	mod_obj.use_status_icon = false;
+	mod_obj.use_window = true;
+
 	conf_get_bool(conf_cur(), "gtk_clean_number", &mod_obj.clean_number);
+	conf_get_bool(conf_cur(), "gtk_use_status_icon", &mod_obj.use_status_icon);
+	conf_get_bool(conf_cur(), "gtk_use_window", &mod_obj.use_window);
 
 	err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
 	if (err)
