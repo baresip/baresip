@@ -656,14 +656,14 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 				gtk_status_icon_set_from_icon_name(
 					mod->status_icon,
 					(mod->icon_call_missed) ?
-						"call-missed-symbolic" : "call-stop");
+					"call-missed-symbolic" : "call-stop");
 
 			if (mod->use_window)
 				gtk_button_set_image(
 					GTK_BUTTON(mod->menu_button),
 					gtk_image_new_from_icon_name(
 						(mod->icon_call_missed) ?
-						"call-missed-symbolic" : "call-stop",
+					"call-missed-symbolic" : "call-stop",
 					GTK_ICON_SIZE_SMALL_TOOLBAR));
 		}
 		break;
@@ -783,7 +783,9 @@ static gboolean menu_button_on_button_press(GtkWidget *button,
 {
 	popup_menu(mod, NULL, NULL,
 			event->button, event->time);
-	gtk_button_set_image(GTK_BUTTON(button), gtk_image_new_from_icon_name("call-start", GTK_ICON_SIZE_SMALL_TOOLBAR));
+	gtk_button_set_image(GTK_BUTTON(button),
+		gtk_image_new_from_icon_name("call-start",
+		GTK_ICON_SIZE_SMALL_TOOLBAR));
 	return TRUE;
 }
 
@@ -1003,15 +1005,20 @@ static int gtk_thread(void *arg)
 	if (mod->use_window)
 	{
 		mod->menu_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-		gtk_window_set_title (GTK_WINDOW(mod->menu_window), "BareSIP GTK");
-		gtk_window_set_default_size (GTK_WINDOW(mod->menu_window), 350, 50);
+		gtk_window_set_title(
+			GTK_WINDOW(mod->menu_window), "BareSIP GTK");
+		gtk_window_set_default_size(
+			GTK_WINDOW(mod->menu_window), 350, 50);
+		gtk_window_set_default_icon_name(
+			"call-start");
 
 		mod->menu_button = gtk_button_new_from_icon_name(
 			"call-start", GTK_ICON_SIZE_BUTTON);
 		g_signal_connect(G_OBJECT(mod->menu_button),
 				"button_press_event",
 				G_CALLBACK(menu_button_on_button_press), mod);
-		gtk_container_add(GTK_CONTAINER(mod->menu_window), mod->menu_button);
+		gtk_container_add(
+			GTK_CONTAINER(mod->menu_window), mod->menu_button);
 
 		gtk_widget_show_all(mod->menu_window);
 		g_signal_connect(mod->menu_window, "destroy",
@@ -1020,14 +1027,17 @@ static int gtk_thread(void *arg)
 
 	if (mod->use_status_icon)
 	{
-		mod->status_icon = gtk_status_icon_new_from_icon_name("call-start");
+		mod->status_icon =
+			gtk_status_icon_new_from_icon_name("call-start");
+
 		if (mod->status_icon == NULL) {
 			info("gtk_menu is not supported\n");
 			module_close();
 			return 1;
 		}
 
-		gtk_status_icon_set_tooltip_text (mod->status_icon, "baresip");
+		gtk_status_icon_set_tooltip_text(
+			mod->status_icon, "baresip");
 
 		g_signal_connect(G_OBJECT(mod->status_icon),
 				"button_press_event",
