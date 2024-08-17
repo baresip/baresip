@@ -1312,12 +1312,12 @@ static int module_init(void)
 	mod_obj.use_status_icon = false;
 	mod_obj.use_window = true;
 
-	conf_get_bool(conf_cur(), "gtk_clean_number",
-								&mod_obj.clean_number);
-	conf_get_bool(conf_cur(), "gtk_use_status_icon",
-								&mod_obj.use_status_icon);
-	conf_get_bool(conf_cur(), "gtk_use_window",
-								&mod_obj.use_window);
+	conf_get_bool(conf_cur(),
+		"gtk_clean_number", &mod_obj.clean_number);
+	conf_get_bool(conf_cur(),
+		"gtk_use_status_icon", &mod_obj.use_status_icon);
+	conf_get_bool(conf_cur(),
+		"gtk_use_window", &mod_obj.use_window);
 
 	err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
 	if (err)
