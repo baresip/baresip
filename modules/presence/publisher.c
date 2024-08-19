@@ -233,14 +233,9 @@ static int publisher_alloc(struct ua *ua)
 }
 
 
-static void pub_ua_event_handler(struct ua *ua,
-				 enum ua_event ev,
-				 struct call *call,
-				 const char *prm,
-				 void *arg )
+static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
-	(void)call;
-	(void)prm;
+	struct ua *ua = bevent_get_ua(event);
 	(void)arg;
 
 	if (account_pubint(ua_account(ua)) == 0)
@@ -260,7 +255,7 @@ int publisher_init(void)
 	struct le *le;
 	int err = 0;
 
-	err = uag_event_register(pub_ua_event_handler, NULL);
+	err = bevent_register(event_handler, NULL);
 	if (err)
 		return err;
 
@@ -286,7 +281,7 @@ void publisher_close(void)
 {
 	struct le *le;
 
-	uag_event_unregister(pub_ua_event_handler);
+	bevent_unregister(event_handler);
 
 	for (le = list_head(&publ); le; le = le->next) {
 
