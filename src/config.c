@@ -46,7 +46,8 @@ static struct config core_config = {
 	{
 		120,
 		4,
-		true
+		true,
+		false
 	},
 
 	/** Audio */
@@ -435,6 +436,8 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 			   &cfg->call.max_calls);
 	(void)conf_get_bool(conf, "call_hold_other_calls",
 			   &cfg->call.hold_other_calls);
+	(void)conf_get_bool(conf, "call_accept",
+			   &cfg->call.accept);
 
 	/* Audio */
 	(void)conf_get_str(conf, "audio_path", cfg->audio.audio_path,
@@ -614,6 +617,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "call_local_timeout\t%u\n"
 			 "call_max_calls\t\t%u\n"
 			 "call_hold_other_calls\t%s\n"
+			 "call_accept\t\t%s\n"
 			 "\n",
 			 cfg->sip.local, cfg->sip.cert, cfg->sip.cafile,
 			 cfg->sip.capath, sip_transports_print,
@@ -627,7 +631,8 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 
 			 cfg->call.local_timeout,
 			 cfg->call.max_calls,
-			 cfg->call.hold_other_calls ? "yes" : "no");
+			 cfg->call.hold_other_calls ? "yes" : "no",
+			 cfg->call.accept ? "yes" : "no");
 	if (err)
 		return err;
 
@@ -887,6 +892,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "call_local_timeout\t%u\n"
 			  "call_max_calls\t\t%u\n"
 			  "call_hold_other_calls\tyes\n"
+			  "call_accept\t\tno\n"
 			  "\n"
 			  ,
 			  cfg->call.local_timeout,

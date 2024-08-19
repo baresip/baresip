@@ -695,9 +695,6 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	const char magic_branch[] = RE_RFC3261_BRANCH_ID;
 	const struct sip_hdr *hdr;
 	struct ua *ua;
-	struct call *call = NULL;
-	char to_uri[256];
-	int err;
 
 	(void)arg;
 
@@ -768,10 +765,28 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 				  421, "Extension required",
 				  "Require: 100rel\r\n"
 				  "Content-Length: 0\r\n\r\n");
-		return;
 	}
 
-	(void)pl_strcpy(&msg->to.auri, to_uri, sizeof(to_uri));
+	if (config->call.accept)
+		(void)ua_accept(ua, msg);
+	else
+		bevent_sip_msg_emit(UA_EVENT_SIPSESS_CONN, msg,
+				    "incoming call");
+}
+
+
+int ua_accept(struct ua *ua, const struct sip_msg *msg)
+{
+	struct call *call = NULL;
+	char *to_uri = NULL;
+	int err;
+
+	if (!ua || !msg)
+		return EINVAL;
+
+	err = pl_strdup(&to_uri, &msg->to.auri);
+	if (err)
+		goto error;
 
 	err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, to_uri, true);
 	if (err) {
@@ -811,11 +826,14 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 	if (err)
 		goto error;
 
-	return;
+	mem_deref(to_uri);
+	return 0;
 
  error:
 	mem_deref(call);
+	mem_deref(to_uri);
 	(void)sip_treply(NULL, uag_sip(), msg, 500, "Call Error");
+	return err;
 }
 
 
