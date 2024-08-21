@@ -1186,6 +1186,11 @@ int call_progress(struct call *call)
 	vdir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
 			    m == ANSWERMODE_EARLY_VIDEO ? SDP_RECVONLY :
 			    SDP_INACTIVE;
+	enum sdp_dir ladir = SDP_SENDRECV;
+	enum sdp_dir lvdir = SDP_SENDRECV;
+	call_get_mdir(call, &ladir, &lvdir);
+	adir &= ladir;
+	vdir &= lvdir;
 
 	return call_progress_dir(call, adir, vdir);
 }
