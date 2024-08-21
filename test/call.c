@@ -628,6 +628,9 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	ASSERT_TRUE(f != NULL);
 	ASSERT_EQ(MAGIC, f->magic);
 
+	if (ev == UA_EVENT_CREATE)
+		return;
+
 	if (!ua)
 		ua = uag_find_msg(msg);
 
@@ -647,9 +650,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	else if (ua == f->c.ua)
 		ag = &f->c;
 	else {
-		if (ev != UA_EVENT_CREATE)
-			warning("test: could not find agent/ua\n");
-
+		warning("test: could not find agent/ua\n");
 		return;
 	}
 
