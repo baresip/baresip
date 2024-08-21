@@ -4,7 +4,6 @@ Name =          baresip
 GenericName =   Telephony client
 Comment =       Baresip is a portable and modular SIP User-Agent with audio and video support.
 Categories =    Office;Telephony;
-OnlyShowIn =    GNOME;XFCE;
 
 Terminal =      true
 Exec =          baresip
