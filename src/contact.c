@@ -101,6 +101,7 @@ int contact_add(struct contacts *contacts,
 	if (err)
 		goto out;
 
+	contact_remove(contacts, contact_find(contacts, c->uri));
 	if (0 == msg_param_decode(&c->addr.params, "access", &pl)) {
 
 		if (0 == pl_strcasecmp(&pl, "block")) {
