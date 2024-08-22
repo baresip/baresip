@@ -129,6 +129,7 @@ int contact_add(struct contacts *contacts,
 	c->status = PRESENCE_UNKNOWN;
 
 	list_append(&contacts->cl, &c->le, c);
+	debug("contact: adding <%r>\n", &c->addr.auri);
 	hash_append(contacts->cht, hash_joaat_pl(&c->addr.auri), &c->he, c);
 
 	if (contacts->handler)
@@ -437,6 +438,101 @@ struct contact *contact_find(const struct contacts *contacts, const char *uri)
 
 	return list_ledata(hash_lookup(contacts->cht, hash_joaat_str(uri),
 				       find_handler, (void *)uri));
+}
+
+
+static bool smart_find_handler(struct le *le, void *arg)
+{
+	struct contact *c = le->data;
+	struct sip_addr *addr = arg;
+	struct uri *uri = &addr->uri;
+	struct uri *curi = &c->addr.uri;
+
+	if (pl_cmp(&curi->host, &uri->host) != 0)
+		return false;
+
+	if (pl_isset(&uri->user) && pl_cmp(&curi->user, &uri->user) != 0)
+		return false;
+
+	if (uri->port && uri->port != 5060 && uri->port != curi->port)
+		return false;
+
+	struct pl val1, val2;
+	if (0 == msg_param_decode(&uri->params, "transport", &val1) &&
+	    0 == msg_param_decode(&curi->params, "transport", &val2) &&
+	    0 != pl_casecmp(&val1, &val2))
+		return false;
+
+	debug("contact: smart match for '%r' found <%r>\n", &addr->auri,
+	      &c->addr.auri);
+	return true;
+}
+
+
+static struct contact *contact_find_smart(const struct contacts *contacts,
+					 const char *uri)
+{
+	struct pl pl;
+	struct sip_addr addr;
+	int err;
+
+	pl_set_str(&pl, uri);
+	err = sip_addr_decode(&addr, &pl);
+	if (err)
+		return NULL;
+
+	return list_ledata(hash_apply(contacts->cht,
+				      smart_find_handler, &addr));
+}
+
+
+struct contact *contact_find_call(const struct contacts *contacts,
+				  const struct call *call)
+{
+	if (!call)
+		return NULL;
+
+	/* smart match of From header */
+	struct contact *c = contact_find_smart(contacts, call_peeruri(call));
+	if (c)
+		return c;
+
+	/* smart match of From-user at AOR */
+	struct account *acc = ua_account(call_get_ua(call));
+	struct pl pl;
+	struct uri aor = *account_luri(acc);
+	struct sip_addr from_addr;
+	int err;
+
+	pl_set_str(&pl, call_peeruri(call));
+	err = sip_addr_decode(&from_addr, &pl);
+	if (err)
+		return NULL;
+
+	/* replace the user */
+	aor.user = from_addr.uri.user;
+	char *uri;
+	err = re_sdprintf(&uri, "%H", uri_encode, &aor);
+	if (err)
+		return NULL;
+
+	c = contact_find_smart(contacts, uri);
+	mem_deref(uri);
+	if (c)
+		return c;
+
+	/* host only match for P2P calls */
+	if (ua_isregistered(call_get_ua(call)))
+		return NULL;
+
+	from_addr.uri.user = pl_null;
+	err = re_sdprintf(&uri, "%H", uri_encode, &from_addr.uri);
+	if (err)
+		return NULL;
+
+	c = contact_find_smart(contacts, uri);
+	mem_deref(uri);
+	return c;
 }
 
 
