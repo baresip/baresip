@@ -705,7 +705,7 @@ static void ua_event_private(struct ua *ua, enum ua_event ev,
  * @param fmt  Formatted arguments
  * @param ...  Variable arguments
  *
- * @deprecated Use one of the event_xxx_emit() functions
+ * @deprecated Use one of the bevent_xxx_emit() functions
  */
 void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...)
@@ -722,7 +722,7 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 
 	if (w && w--)
 		warning("Used deprecated ua_event() for %s. "
-			"Use one of event_xxx_emit() instead!\n",
+			"Use one of bevent_xxx_emit() instead!\n",
 			uag_event_str(ev));
 
 	struct bevent event = {.ev = ev, .txt = buf};
