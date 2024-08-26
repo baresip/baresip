@@ -522,8 +522,8 @@ static int menu_autoanwser_call(struct call *call)
 	outgoing = menu_find_call(outgoing_call_test, call);
 	if (outgoing) {
 		call_hangup(outgoing, 0, NULL);
-		ua_event(call_get_ua(outgoing), UA_EVENT_CALL_CLOSED, outgoing,
-			 "Outgoing call cancelled due to auto answer");
+		bevent_call_emit(UA_EVENT_CALL_CLOSED, outgoing,
+				 "Outgoing call cancelled due to auto answer");
 		mem_deref(outgoing);
 	}
 
