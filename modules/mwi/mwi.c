@@ -60,7 +60,7 @@ static void notify_handler(struct sip *sip, const struct sip_msg *msg,
 	struct mwi *mwi = arg;
 
 	if (mbuf_get_left(msg->mb)) {
-		ua_event(mwi->ua, UA_EVENT_MWI_NOTIFY, NULL, "%b",
+		bevent_ua_emit(UA_EVENT_MWI_NOTIFY, mwi->ua, "%b",
 			  mbuf_buf(msg->mb), mbuf_get_left(msg->mb));
 	}
 
