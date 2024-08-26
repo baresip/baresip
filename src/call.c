@@ -1779,7 +1779,14 @@ static int sipsess_offer_handler(struct mbuf **descp,
 	     sdp_dir_name(vrdir));
 
 	/* Encode SDP Answer */
-	return sdp_encode(descp, call->sdp, !got_offer);
+	err = sdp_encode(descp, call->sdp, !got_offer);
+	if (err)
+		return err;
+
+	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call, "%s",
+			 got_offer ? "answer" : "offer");
+
+	return err;
 }
 
 
@@ -1797,7 +1804,8 @@ static int sipsess_answer_handler(const struct sip_msg *msg, void *arg)
 
 	call->got_offer = false;
 	if (!pl_strcmp(&msg->cseq.met, "INVITE") &&
-	    msg->scode >= 200 && msg->scode < 300)
+	    msg->scode >= 200 && msg->scode < 300 &&
+	    call_state(call) != CALL_STATE_ESTABLISHED)
 		call_event_handler(call, CALL_EVENT_ANSWERED, "%s",
                                    call->peer_uri);
 
@@ -2196,6 +2204,8 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 			bundle_sdp_decode(call->sdp, &call->streaml);
 		}
+
+		bevent_call_emit(UA_EVENT_CALL_REMOTE_SDP, call, "offer");
 	}
 
 	hdr = sip_msg_hdr(msg, SIP_HDR_REPLACES);
