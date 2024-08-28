@@ -6,6 +6,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v3.15.0] - 2024-08-28
+
+## What's Changed
+* audiounit: remove deprecated iOS session handling by @sreimers in https://github.com/baresip/baresip/pull/3083
+* audiounit/cmake: use CMAKE_HOST_SYSTEM_NAME by @sreimers in https://github.com/baresip/baresip/pull/3086
+* add filter_registrar option by @maximilianfridrich in https://github.com/baresip/baresip/pull/3080
+* feature: in-band dtmf detection and generation by @marcel-behlau-elfin in https://github.com/baresip/baresip/pull/3072
+* gst: fix potential SEGVs in error cases by @maximilianfridrich in https://github.com/baresip/baresip/pull/3091
+* test/call: fix SNI selftest by @maximilianfridrich in https://github.com/baresip/baresip/pull/3092
+* ice: fix crash during ICE on fast disconnect by @paresy in https://github.com/baresip/baresip/pull/3093
+* test/call: set global certificate again in SNI test by @maximilianfridrich in https://github.com/baresip/baresip/pull/3094
+* uag: match transport and af when finding ua for msg by @maximilianfridrich in https://github.com/baresip/baresip/pull/3096
+* bevent: add core bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3090
+* aureceiver: set aubuf id by @sreimers in https://github.com/baresip/baresip/pull/3097
+* sip/transp: add client certificate to all TLS transports by @maximilianfridrich in https://github.com/baresip/baresip/pull/3095
+* aufilt: add aufilt_enable by @sreimers in https://github.com/baresip/baresip/pull/3098
+* account: add set audio devices by @sreimers in https://github.com/baresip/baresip/pull/3099
+* bevent: add backwards wrappers by @cspiel1 in https://github.com/baresip/baresip/pull/3100
+* sndfile: add close file module events by @sreimers in https://github.com/baresip/baresip/pull/3101
+* aufile: fixes for prm->duration by @cspiel1 in https://github.com/baresip/baresip/pull/3102
+* account specific video source and display by @paresy in https://github.com/baresip/baresip/pull/3104
+* ua: remove all matching headers when calling ua_rm_custom_hdr by @maximilianfridrich in https://github.com/baresip/baresip/pull/3122
+* bevent: update function calls in src by @cspiel1 in https://github.com/baresip/baresip/pull/3106
+* test: use bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3107
+* menu: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3108
+* ctrl_dbus: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3109
+* ctrl_tcp: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3110
+* echo: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3111
+* gtk: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3112
+* mqtt: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3113
+* ebuacip: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3118
+* serreg: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3117
+* rtcpsummary: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3116
+* presence: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3115
+* mwi: use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3114
+* presence: publisher - use new bevent API by @cspiel1 in https://github.com/baresip/baresip/pull/3124
+* bevent: fix typo in deprecated warning by @cspiel1 in https://github.com/baresip/baresip/pull/3130
+* mwi: use bevent_ua_emit() by @cspiel1 in https://github.com/baresip/baresip/pull/3131
+* menu: use new bevent_call_emit() by @cspiel1 in https://github.com/baresip/baresip/pull/3132
+* version 3.15.0 by @alfredh in https://github.com/baresip/baresip/pull/3134
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.14.0...v3.15.0
+
+
 ## [v3.14.0] - 2024-07-23
 
 ## What's Changed
