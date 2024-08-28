@@ -372,6 +372,7 @@ struct config_call {
 	uint32_t local_timeout; /**< Incoming call timeout [sec] 0=off    */
 	uint32_t max_calls;     /**< Maximum number of calls, 0=unlimited */
 	bool hold_other_calls;  /**< Hold other calls */
+	bool accept;            /**< Accept call by baresip core          */
 };
 
 /** Audio */
@@ -909,6 +910,7 @@ int  ua_connect_dir(struct ua *ua, struct call **callp,
 		    enum vidmode vmode, enum sdp_dir adir, enum sdp_dir vdir);
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason);
+int  ua_accept(struct ua *ua, const struct sip_msg *msg);
 int  ua_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_hold_answer(struct ua *ua, struct call *call, enum vidmode vmode);
 int  ua_options_send(struct ua *ua, const char *uri,

@@ -664,6 +664,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	const char           *prm  = bevent_get_text(event);
 	struct call          *call = bevent_get_call(event);
 	struct ua            *ua   = bevent_get_ua(event);
+	const struct sip_msg *msg  = bevent_get_msg(event);
 	struct account       *acc  = ua_account(bevent_get_ua(event));
 	int err;
 	(void)arg;
@@ -679,6 +680,17 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	count = uag_call_count();
 
 	switch (ev) {
+
+	case UA_EVENT_SIPSESS_CONN:
+		ua = uag_find_msg(msg);
+		err = ua_accept(ua, msg);
+		if (err) {
+			warning("menu: could not accept incoming call (%m)\n",
+				err);
+			return;
+		}
+
+		break;
 
 	case UA_EVENT_CALL_INCOMING:
 

@@ -617,6 +617,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	const char    *prm  = bevent_get_text(event);
 	struct call   *call = bevent_get_call(event);
 	struct ua     *ua   = bevent_get_ua(event);
+	const struct sip_msg *msg  = bevent_get_msg(event);
 	int err = 0;
 
 #if 1
@@ -627,6 +628,21 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	ASSERT_TRUE(f != NULL);
 	ASSERT_EQ(MAGIC, f->magic);
 
+	if (ev == UA_EVENT_CREATE)
+		return;
+
+	if (!ua)
+		ua = uag_find_msg(msg);
+
+	if (ua && ev == UA_EVENT_SIPSESS_CONN) {
+		err = ua_accept(ua, msg);
+		if (err) {
+			warning("test: could not accept incoming call (%m)\n",
+				err);
+			return;
+		}
+	}
+
 	if (ua == f->a.ua)
 		ag = &f->a;
 	else if (ua == f->b.ua)
@@ -634,6 +650,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	else if (ua == f->c.ua)
 		ag = &f->c;
 	else {
+		warning("test: could not find agent/ua\n");
 		return;
 	}
 
@@ -881,7 +898,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 }
 
 
-int test_call_answer(void)
+static int test_call_answer_priv(void)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
@@ -910,8 +927,28 @@ int test_call_answer(void)
 
  out:
 	fixture_close(f);
-
 	return err;
+}
+
+
+int test_call_answer(void)
+{
+	int err;
+	conf_config()->call.accept = true;
+	err = test_call_answer_priv();
+	if (err) {
+		warning("call_accept true failed\n");
+		return err;
+	}
+
+	conf_config()->call.accept = false;
+	err = test_call_answer_priv();
+	if (err) {
+		warning("call_accept false failed\n");
+		return err;
+	}
+
+	return 0;
 }
 
 
