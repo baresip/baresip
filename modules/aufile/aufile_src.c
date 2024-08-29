@@ -231,7 +231,6 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	/* return wav format to caller */
 	prm->srate = fprm.srate;
 	prm->ch    = fprm.channels;
-	prm->duration = aufile_get_length(st->aufile, &fprm);
 
 	if (!rh)
 		goto out;
@@ -269,5 +268,32 @@ int aufile_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	else
 		*stp = st;
 
+	return err;
+}
+
+
+int aufile_info_handler(const struct ausrc *as,
+			struct ausrc_prm *prm, const char *dev)
+{
+	int err;
+	(void)as;
+
+	if (!prm || !str_isset(dev))
+		return EINVAL;
+
+	struct aufile *aufile;
+	struct aufile_prm fprm;
+	err = aufile_open(&aufile, &fprm, dev, AUFILE_READ);
+	if (err) {
+		warning("aufile: failed to open file '%s' (%m)\n", dev, err);
+		return err;
+	}
+
+	prm->srate    = fprm.srate;
+	prm->ch       = fprm.channels;
+	prm->fmt      = fprm.fmt;
+	prm->duration = aufile_get_length(aufile, &fprm);
+
+	mem_deref(aufile);
 	return err;
 }

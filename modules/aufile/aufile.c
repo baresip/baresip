@@ -32,6 +32,10 @@ static int module_init(void)
 			     aufile_src_alloc);
 	err |= auplay_register(&auplay, baresip_auplayl(), "aufile",
 			       aufile_play_alloc);
+	if (err)
+		return err;
+
+	ausrc->infoh = aufile_info_handler;
 	return err;
 }
 

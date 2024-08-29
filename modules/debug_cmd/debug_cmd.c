@@ -167,27 +167,11 @@ static int cmd_play_file(struct re_printf *pf, void *arg)
 }
 
 
-struct fileinfo_st {
-	struct ausrc_st *ausrc;
-	struct ausrc_prm prm;
-	struct tmr tmr;
-};
-
-
-static void fileinfo_destruct(void *arg)
+static void print_fileinfo(struct ausrc_prm *prm)
 {
-	struct fileinfo_st *st = arg;
+	double s  = ((float) prm->duration) / 1000;
 
-	tmr_cancel(&st->tmr);
-	mem_deref(st->ausrc);
-}
-
-
-static void print_fileinfo(struct fileinfo_st *st)
-{
-	double s  = ((float) st->prm.duration) / 1000;
-
-	if (st->prm.duration) {
+	if (prm->duration) {
 		info("debug_cmd: length = %1.3lf seconds\n", s);
 		module_event("debug_cmd", "aufileinfo", NULL, NULL,
 			 "length = %lf seconds", s);
@@ -222,7 +206,7 @@ static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 	char *path;
 	char aumod[16];
 	const char *file = carg->prm;
-	struct fileinfo_st *st = NULL;
+	struct ausrc_prm prm;
 
 	if (!str_isset(file)) {
 		re_hprintf(pf, "fileplay: filename not specified\n");
@@ -247,25 +231,16 @@ static int cmd_aufileinfo(struct re_printf *pf, void *arg)
 			conf_config()->audio.audio_path, file) < 0)
 		return ENOMEM;
 
-	st = mem_zalloc(sizeof(*st), fileinfo_destruct);
-	if (!st) {
-		err = ENOMEM;
-		goto out;
-	}
-
-	err = ausrc_alloc(&st->ausrc, baresip_ausrcl(),
-			  aumod,
-			  &st->prm, path, NULL, NULL, st);
+	err = ausrc_info(baresip_ausrcl(), aumod, &prm, path);
 	if (err) {
-		warning("debug_cmd: %s - ausrc %s does not support empty read "
-			"handler or reading source %s failed. (%m)\n",
-				__func__, aumod, carg->prm, err);
+		warning("debug_cmd: %s - ausrc %s does not support info query "
+			"or reading source %s failed. (%m)\n",
+			__func__, aumod, carg->prm, err);
 		goto out;
 	}
 
-	print_fileinfo(st);
+	print_fileinfo(&prm);
 out:
-	mem_deref(st);
 
 	mem_deref(path);
 	return err;

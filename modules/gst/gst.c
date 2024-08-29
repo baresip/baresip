@@ -345,13 +345,13 @@ static int gst_setup(struct ausrc_st *st)
 }
 
 
-static int setup_uri(struct ausrc_st *st, const char *device)
+static int setup_uri(char **urip, const char *device)
 {
 	int err = 0;
 
 	if (g_regex_match_simple(
 		uri_regex, device, 0, G_REGEX_MATCH_NOTEMPTY)) {
-		err = str_dup(&st->uri, device);
+		err = str_dup(urip, device);
 	}
 	else {
 		if (!access(device, R_OK)) {
@@ -360,7 +360,7 @@ static int setup_uri(struct ausrc_st *st, const char *device)
 			if (re_snprintf(uri, urilength, "file://%s",
 					device) < 0)
 				return ENOMEM;
-			st->uri = uri;
+			*urip = uri;
 		}
 		else {
 			err = errno;
@@ -437,7 +437,7 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh   = rh;
 	st->arg  = arg;
 
-	err = setup_uri(st, device);
+	err = setup_uri(&st->uri, device);
 	if (err) goto out;
 
 	st->ptime = prm->ptime;
@@ -487,14 +487,67 @@ static int gst_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		mem_deref(st);
 	else {
 		*stp = st;
-		gst_element_get_state(st->pipeline, NULL, NULL, 500*1000*1000);
-		gint64 duration = 0;
-		gst_element_query_duration(st->pipeline,
-				   	   GST_FORMAT_TIME,
-				   	   &duration);
-		prm->duration = duration / 1000000;
 	}
 
+	return err;
+}
+
+
+static int gst_info_handler(const struct ausrc *as,
+			    struct ausrc_prm *prm, const char *device)
+{
+	int err;
+	(void)as;
+
+	if (!prm || !str_isset(device))
+		return EINVAL;
+
+	GstElement *pipeline = NULL;
+	char *uri = NULL;
+	err = setup_uri(&uri, device);
+	if (err) goto out;
+
+	pipeline = gst_pipeline_new("pipeline");
+	if (!pipeline) {
+		warning("gst: failed to create pipeline element\n");
+		return ENOMEM;
+	}
+
+	GstElement *playbin = gst_element_factory_make("playbin", NULL);
+	GstElement *sink = gst_element_factory_make("fakesink", NULL);
+	if (!playbin || !sink) {
+		err = ENOMEM;
+		if (playbin)
+			gst_object_unref(playbin);
+		if (sink)
+			gst_object_unref(sink);
+		gst_object_unref(pipeline);
+		goto out;
+	}
+
+	gst_bin_add(GST_BIN(pipeline), playbin);
+	g_object_set(G_OBJECT(playbin),
+		     "uri", uri,
+		     "audio-sink", sink, NULL);
+
+	gst_element_set_state(pipeline, GST_STATE_PLAYING);
+	gst_element_get_state(pipeline, NULL, NULL, 500*1000*1000);
+	gint64 duration = 0;
+	gst_element_query_duration(pipeline,
+			    GST_FORMAT_TIME,
+			    &duration);
+
+	prm->duration = (size_t) duration / 1000000;
+
+	/* Note: other prm fields are currently not set */
+
+out:
+	if (pipeline) {
+		gst_element_set_state(pipeline, GST_STATE_NULL);
+		gst_object_unref(GST_OBJECT(pipeline));
+	}
+
+	mem_deref(uri);
 	return err;
 }
 
@@ -511,7 +564,12 @@ static int mod_gst_init(void)
 
 	g_free(s);
 
-	return ausrc_register(&ausrc, baresip_ausrcl(), "gst", gst_alloc);
+	int err = ausrc_register(&ausrc, baresip_ausrcl(), "gst", gst_alloc);
+	if (err)
+		return err;
+
+	ausrc->infoh = gst_info_handler;
+	return 0;
 }
 
 
