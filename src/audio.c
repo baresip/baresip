@@ -1055,14 +1055,14 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 	/* Start Audio Source */
 	if (!tx->ausrc && ausrc_find(ausrcl, NULL) && !a->hold) {
 
-		struct ausrc_prm prm;
 		size_t sz;
 		size_t psize_alloc;
-
-		prm.srate      = srate_dsp;
-		prm.ch         = channels_dsp;
-		prm.ptime      = tx->ptime;
-		prm.fmt        = tx->src_fmt;
+		struct ausrc_prm prm = {
+			.srate      = srate_dsp,
+			.ch         = channels_dsp,
+			.ptime      = tx->ptime,
+			.fmt        = tx->src_fmt
+		};
 
 		tx->ausrc_prm = prm;
 
