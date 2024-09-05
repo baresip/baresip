@@ -775,6 +775,12 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 }
 
 
+/**
+ * Accept an incoming call
+ *
+ * @param ua        User-agent
+ * @param msg       SIP message of incoming call
+ */
 int ua_accept(struct ua *ua, const struct sip_msg *msg)
 {
 	struct call *call = NULL;
