@@ -32,7 +32,7 @@ struct sndfile_enc {
 	SNDFILE *encf;
 	int err;
 	const struct audio *audio;
-	char filename[SNDFILE_NAME_LEN];
+	char *filename;
 };
 
 struct sndfile_dec {
@@ -40,7 +40,7 @@ struct sndfile_dec {
 	SNDFILE *decf;
 	int err;
 	const struct audio *audio;
-	char filename[SNDFILE_NAME_LEN];
+	char *filename;
 };
 
 static char file_path[512] = ".";
@@ -68,6 +68,7 @@ static void enc_destructor(void *arg)
 	}
 
 	list_unlink(&st->af.le);
+	mem_deref(st->filename);
 }
 
 
@@ -82,6 +83,7 @@ static void dec_destructor(void *arg)
 	}
 
 	list_unlink(&st->af.le);
+	mem_deref(st->filename);
 }
 
 
@@ -96,25 +98,43 @@ static int get_format(enum aufmt fmt)
 }
 
 
-static int openfile(SNDFILE **sfp, char *filename,
-			 const struct aufilt_prm *prm,
-			 const struct stream *strm,
-			 bool enc)
+static int filename_alloc(char **filenamep,
+			  const struct stream *strm,
+			  bool enc)
 {
-	SF_INFO sfinfo;
 	time_t tnow = time(0);
 	struct tm *tm = localtime(&tnow);
-	SNDFILE *sf;
-	int format;
+	char *filename;
+	int err;
 
 	const char *cname = stream_cname(strm);
 	const char *peer = stream_peer(strm);
 
-	(void)re_snprintf(filename, SNDFILE_NAME_LEN,
+	err = re_sdprintf(&filename,
 			  "%s/dump-%s=>%s-%H-%s.wav",
 			  file_path,
 			  cname, peer,
 			  timestamp_print, tm, enc ? "enc" : "dec");
+	if (err)
+		return err;
+
+	info("sndfile: dumping %s audio to %s\n",
+	     enc ? "encode" : "decode", filename);
+
+	module_event("sndfile", "dump", NULL, NULL, "%s", filename);
+
+	*filenamep = filename;
+	return 0;
+}
+
+
+static int openfile(SNDFILE **sfp, const char *filename,
+			 const struct aufilt_prm *prm,
+			 bool enc)
+{
+	SF_INFO sfinfo;
+	SNDFILE *sf;
+	int format;
 
 	format = get_format(prm->fmt);
 	if (!format) {
@@ -149,6 +169,8 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct sndfile_enc *st;
+	const struct stream *strm = audio_strm(au);
+	int err;
 	(void)ctx;
 	(void)af;
 	(void)prm;
@@ -160,10 +182,18 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
+	err = filename_alloc(&st->filename, strm, true);
+	if (err)
+		goto error;
+
 	st->audio = au;
 	*stp = (struct aufilt_enc_st *)st;
 
 	return 0;
+
+error:
+	mem_deref(st);
+	return err;
 }
 
 
@@ -172,6 +202,8 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 			 const struct audio *au)
 {
 	struct sndfile_dec *st;
+	const struct stream *strm = audio_strm(au);
+	int err;
 	(void)ctx;
 	(void)af;
 	(void)prm;
@@ -183,10 +215,18 @@ static int decode_update(struct aufilt_dec_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
+	err = filename_alloc(&st->filename, strm, false);
+	if (err)
+		goto error;
+
 	st->audio = au;
 	*stp = (struct aufilt_dec_st *)st;
 
 	return 0;
+
+error:
+	mem_deref(st);
+	return err;
 }
 
 
@@ -203,8 +243,7 @@ static int encode(struct aufilt_enc_st *st, struct auframe *af)
 
 	if (!sf->encf) {
 		struct aufilt_prm prm = {af->srate, af->ch, af->fmt};
-		sf->err = openfile(&sf->encf, sf->filename, &prm,
-				   audio_strm(sf->audio), true);
+		sf->err = openfile(&sf->encf, sf->filename, &prm, true);
 		if (sf->err)
 			return sf->err;
 	}
@@ -230,8 +269,7 @@ static int decode(struct aufilt_dec_st *st, struct auframe *af)
 
 	if (!sf->decf) {
 		struct aufilt_prm prm = {af->srate, af->ch, af->fmt};
-		sf->err = openfile(&sf->decf, sf->filename, &prm,
-				   audio_strm(sf->audio), false);
+		sf->err = openfile(&sf->decf, sf->filename, &prm, false);
 		if (sf->err)
 			return sf->err;
 	}
