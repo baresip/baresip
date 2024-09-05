@@ -972,6 +972,7 @@ void ua_close(void);
 void ua_stop_all(bool forced);
 int  uag_hold_resume(struct call *call);
 int  uag_hold_others(struct call *call);
+int  uag_reject(const struct sip_msg *msg, uint16_t scode, const char *reason);
 void uag_set_nodial(bool nodial);
 bool uag_nodial(void);
 void uag_set_exit_handler(ua_exit_h *exith, void *arg);

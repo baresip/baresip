@@ -113,6 +113,16 @@ int uag_hold_others(struct call *call)
 }
 
 
+int uag_reject(const struct sip_msg *msg, uint16_t scode, const char *reason)
+{
+	if (!msg)
+		return EINVAL;
+
+	info("uag: incoming call rejected: %u %s\n", scode, reason);
+	return sip_treply(NULL, uag_sip(), msg, scode, reason);
+}
+
+
 /**
  * Find call with given id
  *
