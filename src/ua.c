@@ -722,12 +722,6 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		return;
 	}
 
-	if (uag_dnd()) {
-		(void)sip_treply(NULL, uag_sip(), msg,
-			480,"Temporarily Unavailable");
-		return;
-	}
-
 	/* handle multiple calls */
 	if (config->call.max_calls &&
 	    uag_call_count() + 1 > config->call.max_calls) {
