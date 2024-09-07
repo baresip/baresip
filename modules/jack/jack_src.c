@@ -82,7 +82,7 @@ static int start_jack(struct ausrc_st *st)
 	const char *client_name = "baresip";
 	char server_name[32] = "default";
 	char *conf_name;
-	jack_options_t options = JackNullOption;
+	jack_options_t options = JackServerName;
 	jack_status_t status;
 	unsigned ch;
 	jack_nframes_t engine_srate;
