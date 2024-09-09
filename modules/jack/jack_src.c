@@ -80,9 +80,9 @@ static int start_jack(struct ausrc_st *st)
 	struct conf *conf = conf_cur();
 	const char **ports;
 	const char *client_name = "baresip";
-	const char *server_name = NULL;
+	char server_name[32] = "default";
 	char *conf_name;
-	jack_options_t options = JackNullOption;
+	jack_options_t options = JackServerName;
 	jack_status_t status;
 	unsigned ch;
 	jack_nframes_t engine_srate;
@@ -95,6 +95,9 @@ static int start_jack(struct ausrc_st *st)
 	/* open a client connection to the JACK server */
 	len = jack_client_name_size();
 	conf_name = mem_alloc(len+1, NULL);
+
+	conf_get_str(conf, "jack_server_name", server_name,
+		     sizeof(server_name));
 
 	if (!conf_get_str(conf, "jack_client_name",
 			conf_name, len)) {
