@@ -3051,6 +3051,30 @@ void call_set_mdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
 
 
 /**
+ * Returns local audio and video directions
+ *
+ * @param call Call object
+ * @param ap   Pointer for returning local audio direction
+ * @param vp   Pointer for returning local video direction
+ */
+void call_get_mdir(struct call *call, enum sdp_dir *ap, enum sdp_dir *vp)
+{
+	struct stream *strm;
+
+	if (!call)
+		return;
+
+	strm = audio_strm(call_audio(call));
+	if (strm && ap)
+		*ap = stream_ldir(strm);
+
+	strm = video_strm(call_video(call));
+	if (strm && vp)
+		*vp = stream_ldir(strm);
+}
+
+
+/**
  * Set audio/video direction during pre-established for the established state
  *
  * @param call Call object
