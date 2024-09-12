@@ -712,13 +712,14 @@ static int cmd_dnd(struct re_printf *pf, void *arg)
 {
 	int err = 0;
 	const struct cmd_arg *carg = arg;
+	struct menu *menu = menu_get();
 	bool en = false;
 
 	err = str_bool(&en, carg->prm);
 	if (err)
 		goto out;
 
-	uag_set_dnd(en);
+	menu->dnd = en;
 
  out:
 	if (err)

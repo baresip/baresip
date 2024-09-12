@@ -1235,28 +1235,6 @@ const char *uag_eprm(void)
 
 
 /**
- * Set global Do not Disturb flag
- *
- * @param dnd DnD flag
- */
-void uag_set_dnd(bool dnd)
-{
-	uag.dnd = dnd;
-}
-
-
-/**
- * Get DnD status of uag
- *
- * @return True if DnD is active, False if not
- */
-bool uag_dnd(void)
-{
-	return uag.dnd;
-}
-
-
-/**
  * Enable/Disable a transport protocol
  *
  * @param tp  Transport protocol

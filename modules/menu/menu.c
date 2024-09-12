@@ -682,6 +682,16 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	switch (ev) {
 
 	case UA_EVENT_SIPSESS_CONN:
+
+		if (menu.dnd) {
+			(void)sip_treply(NULL, uag_sip(), msg, 480,
+					 "Temporarily Unavailable");
+			info("menu: incoming call from %r <%r> rejected: "
+			     "480 Temporarily Unavailable\n",
+			     &msg->from.dname, &msg->from.auri);
+			break;
+		}
+
 		ua = uag_find_msg(msg);
 		err = ua_accept(ua, msg);
 		if (err) {
