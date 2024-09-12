@@ -1186,6 +1186,11 @@ int call_progress(struct call *call)
 	vdir = m == ANSWERMODE_EARLY ? SDP_SENDRECV :
 			    m == ANSWERMODE_EARLY_VIDEO ? SDP_RECVONLY :
 			    SDP_INACTIVE;
+	enum sdp_dir ladir = SDP_SENDRECV;
+	enum sdp_dir lvdir = SDP_SENDRECV;
+	call_get_mdir(call, &ladir, &lvdir);
+	adir &= ladir;
+	vdir &= lvdir;
 
 	return call_progress_dir(call, adir, vdir);
 }
@@ -3047,6 +3052,30 @@ void call_set_mdir(struct call *call, enum sdp_dir a, enum sdp_dir v)
 			stream_set_ldir(video_strm(call_video(call)), v);
 
 	}
+}
+
+
+/**
+ * Returns local audio and video directions
+ *
+ * @param call Call object
+ * @param ap   Pointer for returning local audio direction
+ * @param vp   Pointer for returning local video direction
+ */
+void call_get_mdir(struct call *call, enum sdp_dir *ap, enum sdp_dir *vp)
+{
+	struct stream *strm;
+
+	if (!call)
+		return;
+
+	strm = audio_strm(call_audio(call));
+	if (strm && ap)
+		*ap = stream_ldir(strm);
+
+	strm = video_strm(call_video(call));
+	if (strm && vp)
+		*vp = stream_ldir(strm);
 }
 
 
