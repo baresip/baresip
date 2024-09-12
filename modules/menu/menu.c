@@ -689,6 +689,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 			info("menu: incoming call from %r <%r> rejected: "
 			     "480 Temporarily Unavailable\n",
 			     &msg->from.dname, &msg->from.auri);
+			bevent_stop(event);
 			break;
 		}
 
