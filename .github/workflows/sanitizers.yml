@@ -66,3 +66,6 @@ jobs:
 
     - name: run selftest
       run: ./build/test/selftest
+
+    - name: run quit/config test
+      run: ./build/baresip -t 1 -f /tmp/baresip_config
