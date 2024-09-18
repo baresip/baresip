@@ -40,7 +40,7 @@
 #endif
 
 
-static const char *conf_path = NULL;
+static char *conf_path = NULL;
 static struct conf *conf_obj;
 
 
@@ -143,10 +143,13 @@ int conf_parse(const char *filename, confline_h *ch, void *arg)
  * Set the path to configuration files
  *
  * @param path Configuration path
+ *
+ * @return 0 if success, otherwise errorcode
  */
-void conf_path_set(const char *path)
+int conf_path_set(const char *path)
 {
-	conf_path = path;
+	mem_deref(conf_path);
+	return str_dup(&conf_path, path);
 }
 
 
@@ -478,6 +481,7 @@ struct conf *conf_cur(void)
 void conf_close(void)
 {
 	conf_obj = mem_deref(conf_obj);
+	conf_path = mem_deref(conf_path);
 }
 
 
