@@ -145,10 +145,14 @@ static void limit_earlymedia(struct call* call, void *arg)
 		update = true;
 	}
 
-	/* video */
-	if (!call_video(call))
-		return;
+	if (!call_video(call)) {
+		if (update)
+			call_update_media(call);
 
+		return;
+	}
+
+	/* video */
 	ldir = sdp_media_ldir(stream_sdpmedia(video_strm(call_video(call))));
 	ndir = ldir;
 
