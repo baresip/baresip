@@ -528,7 +528,7 @@ void rtprecv_set_socket(struct rtp_receiver *rx, struct rtp_sock *rtp)
 	mtx_lock(rx->mtx);
 	rx->rtp = rtp;
 	if (stream_type(rx->strm) == MEDIA_VIDEO)
-		jbuf_set_socket(rx->jbuf, rx->rtp);
+		jbuf_set_gnack(rx->jbuf, rx->rtp);
 	mtx_unlock(rx->mtx);
 }
 

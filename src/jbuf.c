@@ -53,7 +53,7 @@ struct packet {
  * sequence number.
  */
 struct jbuf {
-	struct rtp_sock *rtp;/**< RTP Socket (Enables RTCP NACK sending)     */
+	struct rtp_sock *gnack_rtp; /**< Generic NACK RTP Socket             */
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
 	uint32_t n;          /**< [# packets] Current # of packets in buffer */
@@ -289,18 +289,18 @@ int jbuf_set_type(struct jbuf *jb, enum jbuf_type jbtype)
 
 
 /**
- * Set rtp socket for RTCP NACK handling
+ * Set rtp socket for RTCP Generic NACK handling
  *
  * @param jb   The jitter buffer.
  * @param rtp  RTP Socket
  */
-void jbuf_set_socket(struct jbuf *jb, struct rtp_sock *rtp)
+void jbuf_set_gnack(struct jbuf *jb, struct rtp_sock *rtp)
 {
        if (!jb)
                return;
 
        mtx_lock(jb->lock);
-       jb->rtp = rtp;
+       jb->gnack_rtp = rtp;
        mtx_unlock(jb->lock);
 }
 
@@ -369,7 +369,7 @@ static void calc_rdiff(struct jbuf *jb, uint16_t seq)
 }
 
 
-static inline void send_nack(struct jbuf *jb, uint16_t last_seq,
+static inline void send_gnack(struct jbuf *jb, uint16_t last_seq,
 			     int16_t seq_diff)
 {
 	uint16_t pid = last_seq + 1;
@@ -379,10 +379,10 @@ static inline void send_nack(struct jbuf *jb, uint16_t last_seq,
 		blp |= (1 << i);
 	}
 
-	debug("jbuf: RTCP_NACK missing: %u diff: %d blp: %02X\n", pid,
+	debug("jbuf: RTCP_GNACK missing: %u diff: %d blp: %02X\n", pid,
 		seq_diff, blp);
 
-	rtcp_send_gnack(jb->rtp, jb->ssrc, pid, blp);
+	rtcp_send_gnack(jb->gnack_rtp, jb->ssrc, pid, blp);
 }
 
 
@@ -466,8 +466,8 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 	if (seq_less(last_seq, seq)) {
 		const int16_t seq_diff = seq - last_seq;
 
-		if (jb->rtp && seq_diff > 1)
-			send_nack(jb, last_seq, seq_diff);
+		if (jb->gnack_rtp && seq_diff > 1)
+			send_gnack(jb, last_seq, seq_diff);
 
 		list_append(&jb->packetl, &f->le, f);
 		goto success;
