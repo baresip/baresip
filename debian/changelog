@@ -1,3 +1,15 @@
+baresip (3.16.0) unstable; urgency=medium
+
+  * version 3.16.0
+
+ -- Christian Spielberger <c.spielberger@commend.com>  Wed, 2 Oct 2024 08:26:00 +0100
+
+baresip (3.15.0) unstable; urgency=medium
+
+  * version 3.15.0
+
+ -- Alfred E. Heggestad <alfred.heggestad@gmail.com>  Wed, 28 Aug 2024 08:24:43 +0200
+
 baresip (3.14.0) unstable; urgency=medium
 
   * version 3.14.0

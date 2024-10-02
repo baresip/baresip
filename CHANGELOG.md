@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [v3.16.0] - 2024-08-28
+
+## What's Changed
+* ua,menu: do not accept call by default by @cspiel1 in https://github.com/baresip/baresip/pull/3123
+* call: fix emitting of call and ua events by @maximilianfridrich in https://github.com/baresip/baresip/pull/3133
+* ausrc, aufile, gst, debug_cmd: rework on ausrc duration retrieval by @cspiel1 in https://github.com/baresip/baresip/pull/3105
+* ua: doxygen for ua_accept() by @cspiel1 in https://github.com/baresip/baresip/pull/3139
+* audio: initialize ausrc_prm by @cspiel1 in https://github.com/baresip/baresip/pull/3138
+* sndfile: module_event from main thread by @cspiel1 in https://github.com/baresip/baresip/pull/3141
+* jack: add jack_server_name config by @sreimers in https://github.com/baresip/baresip/pull/3143
+* bevent: move dnd to menu by @cspiel1 in https://github.com/baresip/baresip/pull/3140
+* call: a getter for local media directions by @cspiel1 in https://github.com/baresip/baresip/pull/3147
+* menu: stop event processing on DnD by @cspiel1 in https://github.com/baresip/baresip/pull/3148
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.15.0...v3.16.0
+
+
 ## [v3.15.0] - 2024-08-28
 
 ## What's Changed
