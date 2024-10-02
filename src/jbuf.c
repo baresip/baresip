@@ -379,7 +379,7 @@ static inline void send_nack(struct jbuf *jb, uint16_t last_seq,
 		blp |= (1 << i);
 	}
 
-	warning("jbuf: RTCP_NACK missing: %u diff: %d blp: %02X\n", pid,
+	debug("jbuf: RTCP_NACK missing: %u diff: %d blp: %02X\n", pid,
 		seq_diff, blp);
 
 	rtcp_send_gnack(jb->rtp, jb->ssrc, pid, blp);
