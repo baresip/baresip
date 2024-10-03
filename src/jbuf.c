@@ -496,6 +496,7 @@ static inline void send_gnack(struct jbuf *jb, uint16_t last_seq,
 		seq_diff, blp);
 
 	rtcp_send_gnack(jb->gnack_rtp, jb->ssrc, pid, blp);
+	STAT_INC(n_gnacks);
 }
 
 
