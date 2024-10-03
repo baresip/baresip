@@ -53,6 +53,7 @@ struct packet {
  * sequence number.
  */
 struct jbuf {
+	struct rtp_sock *gnack_rtp; /**< Generic NACK RTP Socket             */
 	struct list pooll;   /**< List of free packets in pool               */
 	struct list packetl; /**< List of buffered packets                   */
 	uint32_t n;          /**< [# packets] Current # of packets in buffer */
@@ -287,6 +288,23 @@ int jbuf_set_type(struct jbuf *jb, enum jbuf_type jbtype)
 }
 
 
+/**
+ * Set rtp socket for RTCP Generic NACK handling
+ *
+ * @param jb   The jitter buffer.
+ * @param rtp  RTP Socket
+ */
+void jbuf_set_gnack(struct jbuf *jb, struct rtp_sock *rtp)
+{
+       if (!jb)
+               return;
+
+       mtx_lock(jb->lock);
+       jb->gnack_rtp = rtp;
+       mtx_unlock(jb->lock);
+}
+
+
 static void wish_down(void *arg)
 {
 	struct jbuf *jb = arg;
@@ -348,6 +366,23 @@ static void calc_rdiff(struct jbuf *jb, uint16_t seq)
 
 	if (!down && tmr_isrunning(&jb->tmr))
 		tmr_cancel(&jb->tmr);
+}
+
+
+static inline void send_gnack(struct jbuf *jb, uint16_t last_seq,
+			     int16_t seq_diff)
+{
+	uint16_t pid = last_seq + 1;
+	uint16_t blp = 0;
+
+	for (int i = 0; i < seq_diff - 2; i++) {
+		blp |= (1 << i);
+	}
+
+	debug("jbuf: RTCP_GNACK missing: %u diff: %d blp: %02X\n", pid,
+		seq_diff, blp);
+
+	rtcp_send_gnack(jb->gnack_rtp, jb->ssrc, pid, blp);
 }
 
 
@@ -419,10 +454,21 @@ int jbuf_put(struct jbuf *jb, const struct rtp_header *hdr, void *mem)
 
 	tail = jb->packetl.tail;
 
-	/* If buffer is empty -> append to tail
-	   Frame is later than tail -> append to tail
-	*/
-	if (!tail || seq_less(((struct packet *)tail->data)->hdr.seq, seq)) {
+	/* If buffer is empty -> append to tail */
+	if (!tail) {
+		list_append(&jb->packetl, &f->le, f);
+		goto success;
+	}
+
+	uint16_t last_seq = ((struct packet *)tail->data)->hdr.seq;
+
+	/* Frame is later than tail -> append to tail */
+	if (seq_less(last_seq, seq)) {
+		const int16_t seq_diff = seq - last_seq;
+
+		if (jb->gnack_rtp && seq_diff > 1)
+			send_gnack(jb, last_seq, seq_diff);
+
 		list_append(&jb->packetl, &f->le, f);
 		goto success;
 	}
