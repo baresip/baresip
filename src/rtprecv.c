@@ -114,6 +114,9 @@ static int pass_pt_work(struct rtp_receiver *rx, uint8_t pt, struct mbuf *mb)
 		return rx->pth(pt, mb, rx->arg);
 
 	w = mem_zalloc(sizeof(*w), work_destructor);
+	if (!w)
+		return ENOMEM;
+
 	w->type    = WORK_PTCHANGED;
 	w->rx      = rx;
 	w->u.pt.pt = pt;
@@ -375,7 +378,6 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	struct rtp_receiver *rx = arg;
 	uint32_t ssrc0;
 	bool flush = false;
-	bool first = false;
 	int err = 0;
 
 	if (!rx)
@@ -414,7 +416,6 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 		rx->ssrc_set = true;
 		rx->pseq = hdr->seq - 1;
 		rx->pseq_set = true;
-		first = true;
 	}
 	else if (hdr->ssrc != ssrc0) {
 
@@ -431,18 +432,14 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 
 	if (rtprecv_filter_pt(rx, hdr)) {
 		err = pass_pt_work(rx, hdr->pt, mb);
-		if (err && err != ENODATA)
+		if (err)
 			return;
 	}
 
 	if (rx->jbuf) {
-
 		/* Put frame in Jitter Buffer */
 		if (flush)
 			jbuf_flush(rx->jbuf);
-
-		if (first && err == ENODATA)
-			return;
 
 		err = jbuf_put(rx->jbuf, hdr, mb);
 		if (err) {
