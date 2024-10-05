@@ -385,9 +385,15 @@ install(TARGETS baresip
     COMPONENT Development
 )
 
-file(GLOB SHARE_FILES "${PROJECT_SOURCE_DIR}/share/*")
+file(GLOB SHARE_FILES "${PROJECT_SOURCE_DIR}/share/!(*.desktop)")
+file(GLOB DESKTOP_FILES "${PROJECT_SOURCE_DIR}/share/*.desktop")
 
 install(FILES ${SHARE_FILES}
   DESTINATION ${CMAKE_INSTALL_DATADIR}/baresip
+  COMPONENT Applications
+)
+
+install(FILES ${DESKTOP_FILES}
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
   COMPONENT Applications
 )
