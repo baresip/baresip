@@ -352,6 +352,10 @@ void mediatrack_sdp_attr_decode(struct media_track *media)
 
 	switch (media->kind) {
 
+	case MEDIA_KIND_AUDIO:
+		audio_sdp_attr_decode(media->u.au);
+		break;
+
 	case MEDIA_KIND_VIDEO:
 		video_sdp_attr_decode(media->u.vid);
 		break;
