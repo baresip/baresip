@@ -1,7 +1,7 @@
 project(avcodec)
 
 find_package(FFMPEG COMPONENTS
-    avcodec avfilter avformat swscale swresample avdevice avutil)
+    avcodec avfilter avformat swscale avdevice avutil)
 
 if(NOT FFMPEG_FOUND)
   return()
