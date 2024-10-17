@@ -134,7 +134,7 @@ static int module_init(void)
 
 	conf_get_float(conf_cur(), "augain", &gain);
 
-	info("augain: gaining by %.2f\n", gain);
+	info("augain: gaining by at most %.2f\n", gain);
 
 	return 0;
 }
