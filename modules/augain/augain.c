@@ -4,10 +4,10 @@
  * Copyright (C) 2024 Juha Heinanen
  */
 
+#include <stdlib.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <stdlib.h>
 
 
 /**
