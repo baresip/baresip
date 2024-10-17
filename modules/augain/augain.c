@@ -91,7 +91,6 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 static int encode_frame(struct aufilt_enc_st *st, struct auframe *af)
 {
-	size_t i;
 	unsigned int abs_sample, highest_abs_sample = 0;
 	double encode_gain = gain;
 	double highest_possible_gain;
@@ -100,7 +99,7 @@ static int encode_frame(struct aufilt_enc_st *st, struct auframe *af)
 	if (!st || !af || !af->sampv || !af->sampc)
 		return EINVAL;
 
-	for (i=0; i<af->sampc; i++) {
+	for (size_t i=0; i<af->sampc; i++) {
 		abs_sample = abs(((int16_t *)(af->sampv))[i]);
 		if (abs_sample > highest_abs_sample)
 			highest_abs_sample = abs_sample;
@@ -115,7 +114,7 @@ static int encode_frame(struct aufilt_enc_st *st, struct auframe *af)
 	     af->sampc, highest_abs_sample, encode_gain);
 	*/
 
-	for (i=0; i<af->sampc; i++) {
+	for (size_t i=0; i<af->sampc; i++) {
 		sample = ((int16_t *)(af->sampv))[i];
 		gained_sample = (int16_t)(sample * encode_gain);
 		/*
