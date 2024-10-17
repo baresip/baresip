@@ -71,6 +71,12 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!stp || !prm)
 		return EINVAL;
 
+	if (af->fmt != AUFMT_S16LE) {
+		warning("augain: format not supported (%s)\n",
+			aufmt_name(af->fmt));
+		return ENOTSUP;
+	}
+
 	st = mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
 		return EINVAL;
@@ -93,12 +99,6 @@ static int encode_frame(struct aufilt_enc_st *st, struct auframe *af)
 
 	if (!st || !af || !af->sampv || !af->sampc)
 		return EINVAL;
-
-	if (af->fmt != AUFMT_S16LE) {
-		warning("augain: format not supported (%s)\n",
-			aufmt_name(af->fmt));
-		return ENOTSUP;
-	}
 
 	for (i=0; i<af->sampc; i++) {
 		abs_sample = abs(((int16_t *)(af->sampv))[i]);
