@@ -1343,7 +1343,10 @@ int config_write_template(const char *file, const struct config *cfg)
 
 	(void)re_fprintf(f,
 			"\n# GTK\n"
-			"#gtk_clean_number\tno\n");
+			"#gtk_clean_number\tno\n"
+			"#gtk_use_status_icon\tyes\n"
+			"gtk_use_window\tyes\n"
+			);
 
 	(void)re_fprintf(f,
 			"\n# avcodec\n"

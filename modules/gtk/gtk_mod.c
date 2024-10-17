@@ -51,11 +51,15 @@ struct gtk_mod {
 	GtkWidget *accounts_menu;
 	GtkWidget *history_menu;
 	GtkWidget *status_menu;
+	GtkWidget *menu_window;
+	GtkWidget *menu_button;
 	GSList *accounts_menu_group;
 	struct dial_dialog *dial_dialog;
 	GSList *call_windows;
 	GSList *incoming_call_menus;
 	bool clean_number;
+	bool use_status_icon;
+	bool use_window;
 	struct ua *ua_cur;
 	bool icon_call_missed;
 	bool icon_call_outgoing;
@@ -65,7 +69,6 @@ struct gtk_mod {
 static struct gtk_mod mod_obj;
 
 enum gtk_mod_events {
-	MQ_POPUP,
 	MQ_CONNECT,
 	MQ_CONNECTATTENDED,
 	MQ_QUIT,
@@ -312,7 +315,7 @@ static void menu_on_incoming_call_reject(GtkMenuItem *menuItem,
 
 
 static GtkMenuItem *accounts_menu_add_item(struct gtk_mod *mod,
-					   struct ua *ua)
+						struct ua *ua)
 {
 	GtkMenuShell *accounts_menu = GTK_MENU_SHELL(mod->accounts_menu);
 	GtkWidget *item;
@@ -401,7 +404,7 @@ static const char *ua_event_reg_str(enum ua_event ev)
 
 
 static void accounts_menu_set_status(struct gtk_mod *mod,
-				     struct ua *ua, enum ua_event ev)
+					struct ua *ua, enum ua_event ev)
 {
 	GtkMenuItem *item = accounts_menu_get_item(mod, ua);
 	char buf[256];
@@ -517,7 +520,7 @@ static void denotify_incoming_call(struct gtk_mod *mod, struct call *call)
 			gtk_widget_destroy(menu_item);
 			mod->incoming_call_menus =
 				g_slist_delete_link(mod->incoming_call_menus,
-						    item);
+							item);
 		}
 	}
 }
@@ -538,7 +541,7 @@ static void answer_activated(GSimpleAction *action, GVariant *parameter,
 
 
 static void reject_activated(GSimpleAction *action, GVariant *parameter,
-			     gpointer arg)
+				gpointer arg)
 {
 	struct gtk_mod *mod = arg;
 	struct call *call = get_call_from_gvariant(parameter);
@@ -554,7 +557,7 @@ static void reject_activated(GSimpleAction *action, GVariant *parameter,
 
 
 static struct call_window *new_call_window(struct gtk_mod *mod,
-					   struct call *call)
+						struct call *call)
 {
 	struct call_window *win = call_window_new(call, mod, NULL);
 	if (call) {
@@ -565,8 +568,8 @@ static struct call_window *new_call_window(struct gtk_mod *mod,
 
 
 static struct call_window *new_call_transfer_window(struct gtk_mod *mod,
-					   struct call *call,
-					   struct call *attended_call)
+						struct call *call,
+						struct call *attended_call)
 {
 	struct call_window *win = call_window_new(call, mod, attended_call);
 	if (call) {
@@ -577,7 +580,7 @@ static struct call_window *new_call_transfer_window(struct gtk_mod *mod,
 
 
 static struct call_window *get_call_window(struct gtk_mod *mod,
-					   struct call *call)
+						struct call *call)
 {
 	GSList *wins;
 
@@ -648,10 +651,19 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 				call_peeruri(call),
 				CALL_MISSED, call_peername(call));
 
-			gtk_status_icon_set_from_icon_name(
-				mod->status_icon,
-				(mod->icon_call_missed) ?
+			if (mod->use_status_icon)
+				gtk_status_icon_set_from_icon_name(
+					mod->status_icon,
+					(mod->icon_call_missed) ?
 					"call-missed-symbolic" : "call-stop");
+
+			if (mod->use_window)
+				gtk_button_set_image(
+					GTK_BUTTON(mod->menu_button),
+					gtk_image_new_from_icon_name(
+						(mod->icon_call_missed) ?
+					"call-missed-symbolic" : "call-stop",
+					GTK_ICON_SIZE_SMALL_TOOLBAR));
 		}
 		break;
 
@@ -690,8 +702,8 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 #ifdef USE_NOTIFICATIONS
 static void message_handler(struct ua *ua,
-			    const struct pl *peer, const struct pl *ctype,
-			    struct mbuf *body, void *arg)
+				const struct pl *peer, const struct pl *ctype,
+				struct mbuf *body, void *arg)
 {
 	struct gtk_mod *mod = arg;
 	char title[128];
@@ -734,9 +746,9 @@ static void message_handler(struct ua *ua,
 #endif
 
 
-static void popup_menu(struct gtk_mod *mod, GtkMenuPositionFunc position,
-		gpointer position_arg, guint button, guint32 activate_time)
+static void popup_menu(struct gtk_mod *mod, GdkEventButton *event)
 {
+	(void)event;
 	if (!mod->contacts_inited) {
 		init_contacts_menu(mod);
 		mod->contacts_inited = TRUE;
@@ -748,19 +760,27 @@ static void popup_menu(struct gtk_mod *mod, GtkMenuPositionFunc position,
 
 	gtk_widget_show_all(mod->app_menu);
 
-	gtk_menu_popup(GTK_MENU(mod->app_menu), NULL, NULL,
-			position, position_arg,
-			button, activate_time);
+	gtk_menu_popup_at_pointer(GTK_MENU(mod->app_menu), NULL);
 }
 
 
 static gboolean status_icon_on_button_press(GtkStatusIcon *status_icon,
-					    GdkEventButton *event,
-					    struct gtk_mod *mod)
+						GdkEventButton *event,
+						struct gtk_mod *mod)
 {
-	popup_menu(mod, gtk_status_icon_position_menu, status_icon,
-			event->button, event->time);
+	popup_menu(mod, event);
 	gtk_status_icon_set_from_icon_name(status_icon, "call-start");
+	return TRUE;
+}
+
+static gboolean menu_button_on_button_press(GtkWidget *button,
+						GdkEventButton *event,
+						struct gtk_mod *mod)
+{
+	popup_menu(mod, event);
+	gtk_button_set_image(GTK_BUTTON(button),
+		gtk_image_new_from_icon_name("call-start",
+		GTK_ICON_SIZE_SMALL_TOOLBAR));
 	return TRUE;
 }
 
@@ -857,12 +877,6 @@ static void mqueue_handler(int id, void *data, void *arg)
 	struct ua *ua = gtk_current_ua();
 
 	switch ((enum gtk_mod_events)id) {
-
-	case MQ_POPUP:
-		gdk_threads_enter();
-		popup_menu(mod, NULL, NULL, 0, GPOINTER_TO_UINT(data));
-		gdk_threads_leave();
-		break;
 
 	case MQ_CONNECT:
 		uri = data;
@@ -963,7 +977,7 @@ static int gtk_thread(void *arg)
 
 	g_set_application_name("baresip");
 	mod->app = g_application_new("com.github.baresip",
-				     G_APPLICATION_FLAGS_NONE);
+					G_APPLICATION_FLAGS_NONE);
 
 	g_application_register(G_APPLICATION (mod->app), NULL, &err);
 	if (err != NULL) {
@@ -977,19 +991,50 @@ static int gtk_thread(void *arg)
 	notify_init("baresip");
 #endif
 
-	mod->status_icon = gtk_status_icon_new_from_icon_name("call-start");
-	if (mod->status_icon == NULL) {
-		info("gtk_menu is not supported\n");
-		module_close();
-		return 1;
+	if (mod->use_window)
+	{
+		mod->menu_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+		gtk_window_set_title(
+			GTK_WINDOW(mod->menu_window), "BareSIP GTK");
+		gtk_window_set_default_size(
+			GTK_WINDOW(mod->menu_window), 350, 50);
+		gtk_window_set_default_icon_name(
+			"call-start");
+
+		mod->menu_button = gtk_button_new_from_icon_name(
+			"call-start", GTK_ICON_SIZE_BUTTON);
+		g_signal_connect(G_OBJECT(mod->menu_button),
+				"button_press_event",
+				G_CALLBACK(menu_button_on_button_press), mod);
+		gtk_container_add(
+			GTK_CONTAINER(mod->menu_window), mod->menu_button);
+
+		gtk_widget_show_all(mod->menu_window);
+		g_signal_connect(mod->menu_window, "destroy",
+					G_CALLBACK(menu_on_quit), mod);
 	}
 
-	gtk_status_icon_set_tooltip_text (mod->status_icon, "baresip");
+	if (mod->use_status_icon)
+	{
+		mod->status_icon = NULL;
+		mod->status_icon =
+			gtk_status_icon_new_from_icon_name("call-start");
 
-	g_signal_connect(G_OBJECT(mod->status_icon),
-			"button_press_event",
-			G_CALLBACK(status_icon_on_button_press), mod);
-	gtk_status_icon_set_visible(mod->status_icon, TRUE);
+		if (!gtk_status_icon_get_visible(mod->status_icon)) {
+			info("gtk status icon is not supported. ");
+			info("Disable gtk_use_status_icon in the settings\n");
+			module_close();
+			return 1;
+		}
+
+		gtk_status_icon_set_tooltip_text(
+			mod->status_icon, "baresip");
+
+		g_signal_connect(G_OBJECT(mod->status_icon),
+				"button_press_event",
+				G_CALLBACK(status_icon_on_button_press), mod);
+		gtk_status_icon_set_visible(mod->status_icon, TRUE);
+	}
 
 	mod->contacts_inited = false;
 	mod->dial_dialog = NULL;
@@ -1134,8 +1179,9 @@ static int16_t calc_avg_s16(const int16_t *sampv, size_t sampc)
 
 
 static int vu_encode_update(struct aufilt_enc_st **stp, void **ctx,
-			    const struct aufilt *af, struct aufilt_prm *prm,
-			    const struct audio *au)
+				const struct aufilt *af,
+				struct aufilt_prm *prm,
+				const struct audio *au)
 {
 	struct vumeter_enc *st;
 	(void)ctx;
@@ -1168,9 +1214,11 @@ static int vu_encode_update(struct aufilt_enc_st **stp, void **ctx,
 }
 
 
-static int vu_decode_update(struct aufilt_dec_st **stp, void **ctx,
-			    const struct aufilt *af, struct aufilt_prm *prm,
-			    const struct audio *au)
+static int vu_decode_update(struct aufilt_dec_st **stp,
+				void **ctx,
+				const struct aufilt *af,
+				struct aufilt_prm *prm,
+				const struct audio *au)
 {
 	struct vumeter_dec *st;
 	(void)ctx;
@@ -1234,28 +1282,20 @@ static struct aufilt vumeter = {
 };
 
 
-static int cmd_popup_menu(struct re_printf *pf, void *unused)
-{
-	(void)pf;
-	(void)unused;
-
-	mqueue_push(mod_obj.mq, MQ_POPUP, GUINT_TO_POINTER(GDK_CURRENT_TIME));
-
-	return 0;
-}
-
-
-static const struct cmd cmdv[] = {
-	{"gtk", 0,   0, "Pop up GTK+ menu",         cmd_popup_menu       },
-};
-
-
 static int module_init(void)
 {
 	int err;
 
 	mod_obj.clean_number = false;
-	conf_get_bool(conf_cur(), "gtk_clean_number", &mod_obj.clean_number);
+	mod_obj.use_status_icon = false;
+	mod_obj.use_window = true;
+
+	conf_get_bool(conf_cur(),
+		"gtk_clean_number", &mod_obj.clean_number);
+	conf_get_bool(conf_cur(),
+		"gtk_use_status_icon", &mod_obj.use_status_icon);
+	conf_get_bool(conf_cur(),
+		"gtk_use_window", &mod_obj.use_window);
 
 	err = mqueue_alloc(&mod_obj.mq, mqueue_handler, &mod_obj);
 	if (err)
@@ -1265,20 +1305,16 @@ static int module_init(void)
 
 #ifdef USE_NOTIFICATIONS
 	err = message_listen(baresip_message(),
-			     message_handler, &mod_obj);
+				message_handler, &mod_obj);
 	if (err) {
 		warning("gtk: message_init failed (%m)\n", err);
 		return err;
 	}
 #endif
 
-	err = cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
-	if (err)
-		return err;
-
 	/* start the thread last */
 	err = thread_create_name(&mod_obj.thread, "gtk", gtk_thread,
-			     &mod_obj);
+				&mod_obj);
 	if (err)
 		return err;
 
@@ -1288,7 +1324,6 @@ static int module_init(void)
 
 static int module_close(void)
 {
-	cmd_unregister(baresip_commands(), cmdv);
 	if (mod_obj.run) {
 		gdk_threads_enter();
 		gtk_main_quit();
