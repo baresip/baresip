@@ -109,17 +109,9 @@ static int encode_frame(struct aufilt_enc_st *st, struct auframe *af)
 	if (encode_gain > highest_possible_gain)
 		encode_gain = highest_possible_gain;
 
-	/*
-	info("augain: sample count=%d/highest abs=%d/encode_gain=%.2f\n",
-	     af->sampc, highest_abs_sample, encode_gain);
-	*/
-
 	for (size_t i=0; i<af->sampc; i++) {
 		sample = ((int16_t *)(af->sampv))[i];
 		gained_sample = (int16_t)(sample * encode_gain);
-		/*
-		info("augain: sample=%d/gained=%d\n", sample, gained_sample);
-		*/
 		((int16_t *)(af->sampv))[i] = gained_sample;
 	}
 
