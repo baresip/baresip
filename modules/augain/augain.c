@@ -71,9 +71,9 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!stp || !prm)
 		return EINVAL;
 
-	if (af->fmt != AUFMT_S16LE) {
+	if (prm->fmt != AUFMT_S16LE) {
 		warning("augain: format not supported (%s)\n",
-			aufmt_name(af->fmt));
+			aufmt_name(prm->fmt));
 		return ENOTSUP;
 	}
 
