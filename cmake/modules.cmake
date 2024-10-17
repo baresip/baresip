@@ -79,6 +79,7 @@ set(MODULES
   vp8
   vp9
   vumeter
+  wasapi
   webrtc_aec
   webrtc_aecm
   wincons
