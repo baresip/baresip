@@ -81,8 +81,6 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 	if (!st)
 		return EINVAL;
 
-	conf_get_float(conf_cur(), "augain", &gain);
-
 	*stp = (struct aufilt_enc_st *)st;
 
 	return 0;
