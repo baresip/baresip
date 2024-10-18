@@ -32,25 +32,6 @@ struct augain_enc {
 static double gain = 1.0;
 
 
-static int conf_get_float(const struct conf *conf, const char *name,
-			  double *val)
-{
-	struct pl opt;
-	int err;
-
-	if (!conf || !name || !val)
-		return EINVAL;
-
-	err = conf_get(conf, name, &opt);
-	if (err)
-		return err;
-
-	*val = pl_float(&opt);
-
-	return 0;
-}
-
-
 static void enc_destructor(void *arg)
 {
 	struct augain_enc *st = arg;
