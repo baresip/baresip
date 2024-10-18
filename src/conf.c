@@ -318,24 +318,6 @@ int conf_get_sa(const struct conf *conf, const char *name, struct sa *sa)
 }
 
 
-int conf_get_float(const struct conf *conf, const char *name, double *val)
-{
-	struct pl opt;
-	int err;
-
-	if (!conf || !name || !val)
-		return EINVAL;
-
-	err = conf_get(conf, name, &opt);
-	if (err)
-		return err;
-
-	*val = pl_float(&opt);
-
-	return 0;
-}
-
-
 enum jbuf_type conf_get_jbuf_type(const struct pl *pl)
 {
 	if (0 == pl_strcasecmp(pl, "off"))      return JBUF_OFF;
