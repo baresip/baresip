@@ -351,7 +351,7 @@ static void decode_frames(struct rtp_receiver *rx)
 				 err == EAGAIN);
 		mem_deref(mb);
 
-		if (err != EAGAIN)
+		if (err && err != EAGAIN)
 			break;
 	} while (n--);
 
