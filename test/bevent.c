@@ -16,7 +16,7 @@ struct fixture {
 };
 
 
-int test_event_encode(void)
+int test_bevent_encode(void)
 {
 	struct odict *od = NULL;
 	size_t i;
@@ -97,7 +97,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 }
 
 
-int test_event_register(void)
+int test_bevent_register(void)
 {
 	int err = 0;
 	struct fixture f;
