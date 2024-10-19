@@ -107,6 +107,32 @@ static struct aufilt augain = {
 };
 
 
+static int cmd_augain(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = (struct cmd_arg *)arg;
+	(void)pf;
+	double new_gain = 0.0;
+
+	if (str_isset(carg->prm))
+		new_gain = strtod(carg->prm, NULL);
+
+	if (new_gain <= 0.0) {
+		warning("augain: invalid gain value %s\n", carg->prm);
+		return EINVAL;
+	}
+
+	gain = new_gain;
+	info("augain: new gain is %.2f\n", gain);
+
+	return 0;
+
+}
+
+static const struct cmd cmdv[] = {
+	{"augain", 0, CMD_PRM, "Set augain <gain>", cmd_augain},
+};
+
+
 static int module_init(void)
 {
 	aufilt_register(baresip_aufiltl(), &augain);
@@ -115,7 +141,7 @@ static int module_init(void)
 
 	info("augain: gaining by at most %.2f\n", gain);
 
-	return 0;
+	return cmd_register(baresip_commands(), cmdv, RE_ARRAY_SIZE(cmdv));
 }
 
 
