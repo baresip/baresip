@@ -149,6 +149,8 @@ static int module_close(void)
 {
 	aufilt_unregister(&augain);
 
+	cmd_unregister(baresip_commands(), cmdv);
+
 	return 0;
 }
 
