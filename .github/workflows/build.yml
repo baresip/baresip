@@ -16,13 +16,11 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc, clang, gcc-12]
-        os: [ubuntu-20.04, ubuntu-22.04, macos-latest]
+        os: [ubuntu-22.04, ubuntu-24.04, macos-latest]
         exclude:
           - os: macos-latest
             compiler: gcc
           - os: macos-latest
-            compiler: gcc-12
-          - os: ubuntu-20.04
             compiler: gcc-12
     env:
       CC: ${{ matrix.compiler }}
