@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Baresip
+GenericName=SIP softphone
+Comment=Modular SIP user-agent with audio and video support
+Icon=call-start
+Exec=env GDK_BACKEND=x11 baresip
+Terminal=false
+Categories=GNOME;GTK;Network;Telephony;
+Keywords=VoIP;
+StartupNotify=true
