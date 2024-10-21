@@ -12,6 +12,11 @@
 #include "../src/core.h"  /* NOTE: temp */
 
 
+#define DEBUG_MODULE "testcall"
+#define DEBUG_LEVEL 5
+#include <re_dbg.h>
+
+
 #define MAGIC 0x7004ca11
 
 enum {
@@ -3307,6 +3312,9 @@ int test_call_sni(void)
 	const char *dp = test_datapath();
 	char s[256];
 
+	/* warnings are expected for negative test cases, so silence them */
+	dbg_init(DBG_ERR, DBG_ANSI);
+
 	/* Set wrong global certificate. */
 	re_snprintf(conf_config()->sip.cert, sizeof(conf_config()->sip.cert),
 		    "%s/sni/other-cert.pem", dp);
@@ -3435,6 +3443,8 @@ out:
 
 	fixture_close(f);
 
+	dbg_init(DEBUG_LEVEL, DBG_ANSI);
+
 	return err;
 }
 
@@ -3446,6 +3456,9 @@ int test_call_cert_select(void)
 	char auri_tls[256], buri_tls[256];
 	const char *dp = test_datapath();
 	char s[256];
+
+	/* warnings are expected for negative test cases, so silence them */
+	dbg_init(DBG_ERR, DBG_ANSI);
 
 	/* Set valid global certificate. */
 	re_snprintf(conf_config()->sip.cert, sizeof(conf_config()->sip.cert),
@@ -3560,6 +3573,8 @@ out:
 		failure_debug(f, false);
 
 	fixture_close(f);
+
+	dbg_init(DEBUG_LEVEL, DBG_ANSI);
 
 	return err;
 }
