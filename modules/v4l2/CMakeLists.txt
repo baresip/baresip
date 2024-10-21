@@ -1,5 +1,9 @@
 project(v4l2)
 
+if(WIN32)
+  return()
+endif()
+
 find_package(V4L2)
 
 if(NOT V4L2_FOUND)
