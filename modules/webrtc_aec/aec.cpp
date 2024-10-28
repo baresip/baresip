@@ -129,7 +129,6 @@ int webrtc_aec_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 
 
 static struct aufilt webrtc_aec = {
-	.le      = LE_INIT,
 	.name    = "webrtc_aec",
 	.encupdh = webrtc_aec_encode_update,
 	.ench    = webrtc_aec_encode,

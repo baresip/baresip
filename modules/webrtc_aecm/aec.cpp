@@ -125,11 +125,13 @@ int webrtc_aecm_alloc(struct aec **stp, void **ctx, struct aufilt_prm *prm)
 }
 
 
-static struct aufilt webrtc_aec = {.name    = "webrtc_aecm",
-				   .encupdh = webrtc_aecm_encode_update,
-				   .ench    = webrtc_aecm_encode,
-				   .decupdh = webrtc_aecm_decode_update,
-				   .dech    = webrtc_aecm_decode};
+static struct aufilt webrtc_aec = {
+	.name    = "webrtc_aecm",
+	.encupdh = webrtc_aecm_encode_update,
+	.ench    = webrtc_aecm_encode,
+	.decupdh = webrtc_aecm_decode_update,
+	.dech    = webrtc_aecm_decode
+};
 
 
 static int module_init(void)
