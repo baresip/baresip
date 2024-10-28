@@ -2541,7 +2541,7 @@ int test_call_webrtc(void)
 	err = module_load(".", "fakevideo");
 	TEST_ERR(err);
 
-	fixture_init_prm(f, ";medianat=XNAT;mediaenc=dtls_srtp");
+	fixture_init_prm(f, ";medianat=XNAT;mediaenc=dtls_srtp;rtcp_mux=yes");
 	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
 	cr->n_audio_estab = cr->n_video_estab = 1;
 	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
