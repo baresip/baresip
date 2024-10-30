@@ -28,6 +28,7 @@ enum behaviour {
 	BEHAVIOUR_NOTHING,
 	BEHAVIOUR_REJECT,
 	BEHAVIOUR_GET_HDRS,
+	BEHAVIOUR_PROGRESS,
 };
 
 enum action {
@@ -59,6 +60,7 @@ struct cancel_rule {
 	unsigned n_auframe;
 	unsigned n_audebug;
 	unsigned n_rtcp;
+	unsigned n_closed;
 	double aulvl;
 
 	struct cancel_rule *cr_and;
@@ -238,6 +240,7 @@ static struct cancel_rule *cancel_rule_alloc(enum ua_event ev,
 	r->n_auframe     = (unsigned) -1;
 	r->n_audebug     = (unsigned) -1;
 	r->n_rtcp        = (unsigned) -1;
+	r->n_closed      = (unsigned) -1;
 	r->aulvl         = 0.0f;
 	return r;
 }
@@ -306,6 +309,7 @@ static int cancel_rule_debug(struct re_printf *pf,
 	err |= cr_debug_nbr(n_vidframe);
 	err |= cr_debug_nbr(n_audebug);
 	err |= cr_debug_nbr(n_rtcp);
+	err |= cr_debug_nbr(n_closed);
 	err |= re_hprintf(pf, "    met:  %s\n", cr->met ? "yes": "no");
 	if (err)
 		return err;
@@ -584,6 +588,10 @@ static bool check_rule(struct cancel_rule *rule, int met_prev,
 	    ag->n_rtcp < rule->n_rtcp)
 		return false;
 
+	if (UINTSET(rule->n_closed) &&
+	    ag->n_closed < rule->n_closed)
+		return false;
+
 	if (rule->aulvl != 0.0f &&
 	    (ag->aulvl < rule->aulvl || ag->aulvl >= 0.0f))
 		return false;
@@ -685,6 +693,14 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 			err = ua_answer(ua, call, VIDMODE_ON);
 			if (err) {
 				warning("ua_answer failed (%m)\n", err);
+				goto out;
+			}
+			break;
+
+		case BEHAVIOUR_PROGRESS:
+			err = call_progress(call);
+			if (err) {
+				warning("call_progress failed (%m)\n", err);
 				goto out;
 			}
 			break;
@@ -985,6 +1001,165 @@ int test_call_reject(void)
  out:
 	fixture_close(f);
 
+	return err;
+}
+
+static int test_call_immediate_cancel(void)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	struct call *call;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_REJECT;
+
+	cancel_rule_new(UA_EVENT_CALL_CLOSED, f->a.ua, 0, 0, 0);
+	cr->n_closed = 1;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, &call, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	ua_hangup(f->a.ua, call, 0, NULL);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_established);
+	ASSERT_EQ(1, fix.b.n_closed);
+
+ out:
+	if (err)
+		failure_debug(f, false);
+
+	fixture_close(f);
+
+	return err;
+}
+
+
+static int test_call_progress_cancel(void)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	struct call *call;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_PROGRESS;
+
+	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
+	cr->n_progress = 1;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, &call, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ua_hangup(f->a.ua, call, 0, NULL);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_progress);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(0, fix.b.n_established);
+	ASSERT_EQ(1, fix.b.n_closed);
+
+ out:
+	if (err)
+		failure_debug(f, false);
+
+	fixture_close(f);
+
+	return err;
+}
+
+
+static int test_call_answer_cancel(void)
+{
+	struct fixture fix, *f = &fix;
+	struct cancel_rule *cr;
+	struct call *call;
+	int err = 0;
+
+	fixture_init(f);
+
+	f->behaviour = BEHAVIOUR_PROGRESS;
+
+	cancel_rule_new(UA_EVENT_CALL_PROGRESS, f->a.ua, 0, 0, 0);
+	cr->n_progress = 1;
+
+	/* Make a call from A to B */
+	err = ua_connect(f->a.ua, &call, NULL, f->buri, VIDMODE_OFF);
+	TEST_ERR(err);
+
+	/* run main-loop with timeout, wait for events */
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	err = ua_answer(f->b.ua, NULL, VIDMODE_ON);
+	TEST_ERR(err);
+
+	ua_hangup(f->a.ua, call, 0, NULL);
+
+	err = re_main_timeout(5000);
+	TEST_ERR(err);
+	TEST_ERR(fix.err);
+
+	ASSERT_EQ(0, fix.a.n_incoming);
+	ASSERT_EQ(1, fix.a.n_progress);
+	ASSERT_EQ(0, fix.a.n_established);
+	ASSERT_EQ(1, fix.a.n_closed);
+
+	ASSERT_EQ(1, fix.b.n_incoming);
+	ASSERT_EQ(1, fix.b.n_established);
+	ASSERT_EQ(1, fix.b.n_closed);
+
+ out:
+	if (err)
+		failure_debug(f, false);
+
+	fixture_close(f);
+
+	return err;
+}
+
+
+int test_call_cancel(void)
+{
+	int err;
+
+	err = test_call_immediate_cancel();
+	TEST_ERR(err);
+
+	err = test_call_progress_cancel();
+	TEST_ERR(err);
+
+	err = test_call_answer_cancel();
+	TEST_ERR(err);
+
+ out:
 	return err;
 }
 
