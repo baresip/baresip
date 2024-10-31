@@ -1669,7 +1669,7 @@ int audio_debug(struct re_printf *pf, const struct audio *a)
 	tx = &a->tx;
 	sztx = aufmt_sample_size(tx->src_fmt);
 
-	err  = re_hprintf(pf, "\n--- Audio stream ---\n");
+	err  = re_hprintf(pf, "%s", "\n--- Audio stream ---\n");
 
 	err |= re_hprintf(pf, " tx:   encode: %H ptime=%ums %s\n",
 			  aucodec_print, tx->ac,
