@@ -15,11 +15,21 @@ enum {
 };
 
 
+enum bevent_class {
+	BEVENT_CLASS_UA,
+	BEVENT_CLASS_CALL,
+	BEVENT_CLASS_APP,
+	BEVENT_CLASS_SIP,
+	BEVENT_CLASS_UNDEFINED
+};
+
+
 struct bevent {
 	enum ua_event ev;
 	const char *txt;
 	int err;
 	bool stop;
+	enum bevent_class ec;
 	union {
 		struct ua *ua;
 		struct call *call;
@@ -68,68 +78,9 @@ static void ehe_destructor(void *arg)
 }
 
 
-enum bevent_class {
-	BEVENT_CLASS_UA,
-	BEVENT_CLASS_CALL,
-	BEVENT_CLASS_APP,
-	BEVENT_CLASS_SIP,
-	BEVENT_CLASS_UNDEFINED
-};
-
-
-static enum bevent_class bevent_class(enum ua_event ev)
-{
-	switch (ev) {
-
-	case UA_EVENT_REGISTERING:
-	case UA_EVENT_REGISTER_OK:
-	case UA_EVENT_REGISTER_FAIL:
-	case UA_EVENT_UNREGISTERING:
-	case UA_EVENT_FALLBACK_OK:
-	case UA_EVENT_FALLBACK_FAIL:
-	case UA_EVENT_REFER:
-	case UA_EVENT_CREATE:
-	case UA_EVENT_MWI_NOTIFY:
-	case UA_EVENT_CUSTOM:
-	case UA_EVENT_SHUTDOWN:
-		return BEVENT_CLASS_UA;
-
-	case UA_EVENT_EXIT:
-		return BEVENT_CLASS_APP;
-
-	case UA_EVENT_CALL_INCOMING:
-	case UA_EVENT_CALL_OUTGOING:
-	case UA_EVENT_CALL_RINGING:
-	case UA_EVENT_CALL_PROGRESS:
-	case UA_EVENT_CALL_ANSWERED:
-	case UA_EVENT_CALL_ESTABLISHED:
-	case UA_EVENT_CALL_CLOSED:
-	case UA_EVENT_CALL_TRANSFER:
-	case UA_EVENT_CALL_TRANSFER_FAILED:
-	case UA_EVENT_CALL_REDIRECT:
-	case UA_EVENT_CALL_DTMF_START:
-	case UA_EVENT_CALL_DTMF_END:
-	case UA_EVENT_CALL_RTPESTAB:
-	case UA_EVENT_CALL_RTCP:
-	case UA_EVENT_CALL_MENC:
-	case UA_EVENT_CALL_LOCAL_SDP:
-	case UA_EVENT_CALL_REMOTE_SDP:
-	case UA_EVENT_CALL_HOLD:
-	case UA_EVENT_CALL_RESUME:
-	case UA_EVENT_AUDIO_ERROR:
-	case UA_EVENT_END_OF_FILE:
-	case UA_EVENT_VU_RX:
-	case UA_EVENT_VU_TX:
-	case UA_EVENT_MODULE:
-		return BEVENT_CLASS_CALL;
-	case UA_EVENT_SIPSESS_CONN:
-		return BEVENT_CLASS_SIP;
-	default:
-		return BEVENT_CLASS_UNDEFINED;
-	}
-}
-
-
+/**
+ * @deprecated Use bevent_class_name() instead
+ */
 static const char *ua_event_class_name(enum ua_event ev)
 {
 	switch (ev) {
@@ -180,10 +131,10 @@ static const char *ua_event_class_name(enum ua_event ev)
 }
 
 
-static const char *bevent_class_name(enum ua_event ev)
+static const char *bevent_class_name(enum bevent_class ec)
 {
-	enum bevent_class ec = bevent_class(ev);
 	switch (ec) {
+
 	case BEVENT_CLASS_UA:
 		return "ua";
 
@@ -216,7 +167,7 @@ struct call *bevent_get_call(const struct bevent *event)
 	if (!event)
 		return NULL;
 
-	if (bevent_class(event->ev) == BEVENT_CLASS_CALL)
+	if (event->ec == BEVENT_CLASS_CALL)
 		return event->u.call;
 
 	return NULL;
@@ -243,7 +194,7 @@ struct ua *bevent_get_ua(const struct bevent *event)
 	if (call)
 		return call_get_ua(call);
 
-	if (bevent_class(event->ev) == BEVENT_CLASS_UA)
+	if (event->ec == BEVENT_CLASS_UA)
 		return event->u.ua;
 
 	return NULL;
@@ -264,7 +215,7 @@ const struct sip_msg *bevent_get_msg(const struct bevent *event)
 	if (!event)
 		return NULL;
 
-	if (bevent_class(event->ev) == BEVENT_CLASS_SIP)
+	if (event->ec == BEVENT_CLASS_SIP)
 		return event->u.msg;
 
 	return NULL;
@@ -285,7 +236,7 @@ void *bevent_get_apparg(const struct bevent *event)
 	if (!event)
 		return NULL;
 
-	if (bevent_class(event->ev) == BEVENT_CLASS_APP)
+	if (event->ec == BEVENT_CLASS_APP)
 		return event->u.arg;
 
 	return NULL;
@@ -531,6 +482,20 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 }
 
 
+static int odict_pl_add(struct odict *od, const char *key,
+			const struct pl *val)
+{
+	char *str;
+	int err = pl_strdup(&str, val);
+	if (err)
+		return err;
+
+	err = odict_entry_add(od, key, ODICT_STRING, str);
+	mem_deref(str);
+	return err;
+}
+
+
 int odict_encode_bevent(struct odict *od, struct bevent *event)
 {
 	struct ua *ua     = bevent_get_ua(event);
@@ -541,9 +506,25 @@ int odict_encode_bevent(struct odict *od, struct bevent *event)
 		return EINVAL;
 
 	err = odict_entry_add(od, "class",
-			      ODICT_STRING, bevent_class_name(event->ev));
+			      ODICT_STRING, bevent_class_name(event->ec));
 	if (err)
 		return err;
+
+	if (event->ec == BEVENT_CLASS_SIP) {
+		char *buf;
+		const struct sip_hdr *hdr;
+		const struct sip_msg *msg = bevent_get_msg(event);
+		hdr = sip_msg_hdr(msg, SIP_HDR_CONTACT);
+		if (hdr)
+			err = odict_pl_add(od, "contact", &hdr->val);
+
+		err |= odict_pl_add(od, "display", &msg->from.dname);
+		err |= re_sdprintf(&buf, "%H", uri_encode, &msg->from.uri);
+		err |= odict_entry_add(od, "from", ODICT_STRING, buf);
+		mem_deref(buf);
+		if (err)
+			return err;
+	}
 
 	/* For now we re-use the deprecated function */
 	return event_encode_dict(od, ua, event->ev, call, event->txt);
@@ -726,10 +707,16 @@ void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 			uag_event_str(ev));
 
 	struct bevent event = {.ev = ev, .txt = buf};
-	if (bevent_class(ev) == BEVENT_CLASS_CALL)
+	if (call) {
 		event.u.call = call;
-	else if (bevent_class(ev) == BEVENT_CLASS_UA)
+		event.ec = BEVENT_CLASS_CALL;
+	}
+	else if (ua) {
 		event.u.ua = ua;
+		event.ec = BEVENT_CLASS_UA;
+	}
+	else
+		event.ec = BEVENT_CLASS_UNDEFINED;
 
 	(void)bevent_emit_base(&event);
 }
@@ -781,9 +768,16 @@ void module_event(const char *module, const char *event, struct ua *ua,
 	}
 
 	struct bevent bevent = {.ev = UA_EVENT_MODULE, .txt = buf};
-
-	if (call)
+	if (call) {
 		bevent.u.call = call;
+		bevent.ec = BEVENT_CLASS_CALL;
+	}
+	else if (ua) {
+		bevent.u.ua = ua;
+		bevent.ec = BEVENT_CLASS_UA;
+	}
+	else
+		bevent.ec = BEVENT_CLASS_UNDEFINED;
 
 	bevent_emit_base(&bevent);
 
@@ -855,11 +849,8 @@ out:
 int bevent_app_emit(enum ua_event ev, void *arg, const char *fmt, ...)
 {
 	va_list ap;
-	struct bevent event = {.ev = ev};
+	struct bevent event = {.ev = ev, .ec = BEVENT_CLASS_APP};
 	int err;
-
-	if (bevent_class(ev) != BEVENT_CLASS_APP)
-		return EINVAL;
 
 	event.u.arg = arg;
 
@@ -883,11 +874,11 @@ int bevent_app_emit(enum ua_event ev, void *arg, const char *fmt, ...)
  */
 int bevent_ua_emit(enum ua_event ev, struct ua *ua, const char *fmt, ...)
 {
-	struct bevent event = {.ev = ev};
+	struct bevent event = {.ev = ev, .ec = BEVENT_CLASS_UA};
 	va_list ap;
 	int err;
 
-	if (bevent_class(ev) != BEVENT_CLASS_UA)
+	if (!ua)
 		return EINVAL;
 
 	event.u.ua = ua;
@@ -912,11 +903,11 @@ int bevent_ua_emit(enum ua_event ev, struct ua *ua, const char *fmt, ...)
  */
 int bevent_call_emit(enum ua_event ev, struct call *call, const char *fmt, ...)
 {
-	struct bevent event = {.ev = ev};
+	struct bevent event = {.ev = ev, .ec = BEVENT_CLASS_CALL};
 	va_list ap;
 	int err;
 
-	if (bevent_class(ev) != BEVENT_CLASS_CALL)
+	if (!call)
 		return EINVAL;
 
 	event.u.call = call;
@@ -942,11 +933,11 @@ int bevent_call_emit(enum ua_event ev, struct call *call, const char *fmt, ...)
 int bevent_sip_msg_emit(enum ua_event ev, const struct sip_msg *msg,
 		       const char *fmt, ...)
 {
-	struct bevent event = {.ev = ev};
+	struct bevent event = {.ev = ev, .ec = BEVENT_CLASS_SIP};
 	va_list ap;
 	int err;
 
-	if (bevent_class(ev) != BEVENT_CLASS_SIP)
+	if (!msg)
 		return EINVAL;
 
 	event.u.msg = msg;
