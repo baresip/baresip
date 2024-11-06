@@ -482,20 +482,6 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 }
 
 
-static int odict_pl_add(struct odict *od, const char *key,
-			const struct pl *val)
-{
-	char *str;
-	int err = pl_strdup(&str, val);
-	if (err)
-		return err;
-
-	err = odict_entry_add(od, key, ODICT_STRING, str);
-	mem_deref(str);
-	return err;
-}
-
-
 int odict_encode_bevent(struct odict *od, struct bevent *event)
 {
 	struct ua *ua     = bevent_get_ua(event);
