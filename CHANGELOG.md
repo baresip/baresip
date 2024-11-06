@@ -6,9 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [v3.16.0] - 2024-08-28
+## v3.17.0 - 2024-11-06
 
-## What's Changed
+### What's Changed
+* conf: use str_dup for conf_path_set by @sreimers in https://github.com/baresip/baresip/pull/3150
+* menu: fix early audio limit for video less call by @cspiel1 in https://github.com/baresip/baresip/pull/3152
+* jbuf: add video generic NACK support by @sreimers in https://github.com/baresip/baresip/pull/3154
+* rtprecv: remove obsolete code by @sreimers in https://github.com/baresip/baresip/pull/3156
+* mediatrack: decode sdp attributes for audio by @alfredh in https://github.com/baresip/baresip/pull/3161
+* avcodec: remove swresample from list of packages by @alfredh in https://github.com/baresip/baresip/pull/3159
+* bevent: avoid deprecated warnings in selftest by @cspiel1 in https://github.com/baresip/baresip/pull/3163
+* test: rename bevent tests to match module api by @alfredh in https://github.com/baresip/baresip/pull/3168
+* conf: remove conf_get_float by @juha-h in https://github.com/baresip/baresip/pull/3169
+* GTK added standalone main window by @mbattista in https://github.com/baresip/baresip/pull/3127
+* augain: add audio volume filter module by @juha-h in https://github.com/baresip/baresip/pull/3166
+* test/call.c: test_call_sni: silence warnings by @maximilianfridrich in https://github.com/baresip/baresip/pull/3173
+* v4l2/cmake: exclude from WIN32 by @sreimers in https://github.com/baresip/baresip/pull/3174
+* ci/build: upgrade to ubuntu 24.04 by @alfredh in https://github.com/baresip/baresip/pull/3172
+* test: enable RTP/RTCP multiplexing for test_call_webrtc by @alfredh in https://github.com/baresip/baresip/pull/3178
+* webrtc_aecm: added -Wno-missing-field-initializers compile option by @juha-h in https://github.com/baresip/baresip/pull/3177
+* audio: fix variadic macro warning of clang by @cspiel1 in https://github.com/baresip/baresip/pull/3181
+* test/call: add test_call_cancel by @maximilianfridrich in https://github.com/baresip/baresip/pull/3180
+* ci/fedora: Use Fedora 40 until CI is updated for Fedora 41 by @robert-scheck in https://github.com/baresip/baresip/pull/3184
+* dtls_srtp: use struct udp_sock for socket type (ref #3175) by @alfredh in https://github.com/baresip/baresip/pull/3182
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.16.0...v3.17.0
+
+
+## v3.16.0 - 2024-08-28
+
+### What's Changed
 * ua,menu: do not accept call by default by @cspiel1 in https://github.com/baresip/baresip/pull/3123
 * call: fix emitting of call and ua events by @maximilianfridrich in https://github.com/baresip/baresip/pull/3133
 * ausrc, aufile, gst, debug_cmd: rework on ausrc duration retrieval by @cspiel1 in https://github.com/baresip/baresip/pull/3105
@@ -24,9 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Full Changelog**: https://github.com/baresip/baresip/compare/v3.15.0...v3.16.0
 
 
-## [v3.15.0] - 2024-08-28
+## v3.15.0 - 2024-08-28
 
-## What's Changed
+### What's Changed
 * audiounit: remove deprecated iOS session handling by @sreimers in https://github.com/baresip/baresip/pull/3083
 * audiounit/cmake: use CMAKE_HOST_SYSTEM_NAME by @sreimers in https://github.com/baresip/baresip/pull/3086
 * add filter_registrar option by @maximilianfridrich in https://github.com/baresip/baresip/pull/3080
@@ -69,9 +96,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Full Changelog**: https://github.com/baresip/baresip/compare/v3.14.0...v3.15.0
 
 
-## [v3.14.0] - 2024-07-23
+## v3.14.0 - 2024-07-23
 
-## What's Changed
+### What's Changed
 * Add .vscode to .gitignore (cosmetic change) by @larsimmisch in https://github.com/baresip/baresip/pull/3071
 * mediatrack: fix audio_start_source aufiltl setup order by @sreimers in https://github.com/baresip/baresip/pull/3074
 * mixausrc: minor fixes by @marcel-behlau-elfin in https://github.com/baresip/baresip/pull/3073
@@ -86,9 +113,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Full Changelog**: https://github.com/baresip/baresip/compare/v3.13.0...v3.14.0
 
 
-## [v3.13.0] - 2024-06-19
+## v3.13.0 - 2024-06-19
 
-## What's Changed
+### What's Changed
 * ua: simplify sdp_connection() by @alfredh in https://github.com/baresip/baresip/pull/3031
 * call.c: allow INFO requests with no body by @maximilianfridrich in https://github.com/baresip/baresip/pull/3035
 * audio,stream: video only call if no common audio codecs by @cspiel1 in https://github.com/baresip/baresip/pull/3037
@@ -114,7 +141,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * test: call - reset max_calls to default value by @cspiel1 in https://github.com/baresip/baresip/pull/3067
 * test/ua: disable dns cache for reg_dns tests by @cspiel1 in https://github.com/baresip/baresip/pull/3068
 
-## New Contributors
+### New Contributors
 * @marcel-behlau-elfin made their first contribution in https://github.com/baresip/baresip/pull/3048
 
 **Full Changelog**: https://github.com/baresip/baresip/compare/v3.12.0...v3.13.0
@@ -122,7 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 3.12.0 - 2024-05-15
 
-## What's Changed
+### What's Changed
 * video: stream enable/disable for re-INVITE/UPDATE by @cspiel1 in https://github.com/baresip/baresip/pull/2982
 * srtp: allow rekeying of running streams by @cHuberCoffee in https://github.com/baresip/baresip/pull/2975
 * audio: remove stop_aur() by @cspiel1 in https://github.com/baresip/baresip/pull/2991
