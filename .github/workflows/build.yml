@@ -15,13 +15,15 @@ jobs:
 
     strategy:
       matrix:
-        compiler: [gcc, clang, gcc-12]
+        compiler: [gcc, clang, gcc-14]
         os: [ubuntu-22.04, ubuntu-24.04, macos-latest]
         exclude:
           - os: macos-latest
             compiler: gcc
           - os: macos-latest
-            compiler: gcc-12
+            compiler: gcc-14
+          - os: ubuntu-22.04
+            compiler: gcc-14
     env:
       CC: ${{ matrix.compiler }}
       MACOSX_DEPLOYMENT_TARGET: "10.12"
