@@ -10,6 +10,8 @@
 
 
 struct fixture {
+	struct ua *ua;
+	struct call *call;
 	int cnt;
 
 	enum ua_event expected_event;
@@ -71,26 +73,24 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	const struct sip_msg *msg = bevent_get_msg(event);
 	const char *txt = bevent_get_text(event);
 
-	if (apparg && apparg != (void *) 0xdeadbeef) {
+	if (apparg && apparg != (void *) 0xdeadbeef)
 		bevent_set_error(event, EINVAL);
-	}
-	else if (ua && ua != (void *) 0xdeadbeef) {
+
+	if (ua && ua != f->ua)
 		bevent_set_error(event, EINVAL);
-	}
-	else if (call) {
+
+	if (call && call != f->call)
 		bevent_set_error(event, EINVAL);
-	}
-	else if (ev == UA_EVENT_CALL_INCOMING) {
-		++f->cnt;
-	}
-	else if (msg && msg != (void *) 0xdeadbeef) {
+
+	if (msg && msg != (void *) 0xdeadbeef)
 		bevent_set_error(event, EINVAL);
-	}
-	else if (f->expected_event != bevent_get_type(event)) {
-		bevent_set_error(event, EINVAL);
-	}
-	else if (ev == UA_EVENT_MODULE &&
+
+	if (ev == UA_EVENT_MODULE &&
 		 !!str_cmp(txt, "module,event,details"))
+		bevent_set_error(event, EINVAL);
+
+
+	if (f->expected_event != bevent_get_type(event))
 		bevent_set_error(event, EINVAL);
 	else
 		++f->cnt;
@@ -100,9 +100,10 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 int test_bevent_register(void)
 {
 	int err = 0;
-	struct fixture f;
+	struct fixture f={.cnt=0};
 
-	memset(&f, 0, sizeof(f));
+	err = ua_alloc(&f.ua, "A <sip:a@127.0.0.1>;regint=0");
+	ua_call_alloc(&f.call, f.ua, VIDMODE_OFF, NULL, NULL, NULL, false);
 
 	err = bevent_register(event_handler, &f);
 	TEST_ERR(err);
@@ -117,12 +118,11 @@ int test_bevent_register(void)
 	ASSERT_EQ(EINVAL, err);
 
 	f.expected_event = UA_EVENT_REGISTER_OK;
-	err = bevent_ua_emit(UA_EVENT_REGISTER_OK, (struct ua *) 0xdeadbeef,
-			     NULL);
+	err = bevent_ua_emit(UA_EVENT_REGISTER_OK, f.ua, NULL);
 	TEST_ERR(err);
 
 	f.expected_event = UA_EVENT_CALL_INCOMING;
-	err = bevent_call_emit(UA_EVENT_CALL_INCOMING, NULL, NULL);
+	err = bevent_call_emit(UA_EVENT_CALL_INCOMING, f.call, NULL);
 	TEST_ERR(err);
 
 	f.expected_event = UA_EVENT_SIPSESS_CONN;
@@ -134,5 +134,6 @@ int test_bevent_register(void)
 
 out:
 	bevent_unregister(event_handler);
+	mem_deref(f.ua);
 	return err;
 }
