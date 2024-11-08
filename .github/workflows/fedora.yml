@@ -35,10 +35,12 @@ jobs:
   build:
     needs: dependency
     runs-on: ubuntu-latest
-    container: fedora:40
+    container: fedora
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        path: placeholder-0-build
 
     - name: "Install build-time requirements"
       run: |
@@ -94,9 +96,9 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: re-fedora
-        path: re
+        path: re/placeholder-0-build
 
-    - name: "Write placeholer RPM spec file"
+    - name: "Write placeholder RPM spec file"
       # Use same placeholder RPM spec file until re and baresip need different %build commands
       run: |
         cat > placeholder.spec <<EOF
@@ -120,9 +122,7 @@ jobs:
         EOF
 
     - name: "Write RPM macros configuration for re"
-      run: |
-        echo "%_builddir ${PWD}/re" > "${HOME}/.rpmmacros"
-        echo "%buildroot ${PWD}/re/%{_vendor}-%{_target_os}-install" >> "${HOME}/.rpmmacros"
+      run: echo "%_builddir ${PWD}/re" > "${HOME}/.rpmmacros"
 
     - name: "RPM %build re"
       run: rpmbuild -bc --short-circuit placeholder.spec
@@ -133,16 +133,23 @@ jobs:
 
     - name: "Relocate re from RPM %{buildroot} to /"
       run: |
-        cp -avT $(rpm --eval '%{buildroot}/') /  # Work around '%{buildroot} can not be "/"' from RPM
+        cp -avT "${PWD}/re/placeholder-0-build/BUILDROOT/" /  # Intermediate builddir since RPM 4.20
+        # isn't available externally, see https://github.com/rpm-software-management/rpm/issues/3147
         rm -rf re  # Baresip must not pick up this directory (or wrong rpaths are written to binaries)
 
     - name: "Run ldconfig"
       run: ldconfig
 
-    - name: "Write RPM macros configuration for baresip"
+    - name: "Add selftest to placeholder RPM spec file"
       run: |
-        echo "%_builddir ${PWD}" > "${HOME}/.rpmmacros"
-        echo "%buildroot ${PWD}/%{_vendor}-%{_target_os}-install" >> "${HOME}/.rpmmacros"
+        cat >> placeholder.spec <<EOF
+        %check
+        cd %{__cmake_builddir}
+        ./test/selftest -d ../test/data/ -v
+        EOF
+
+    - name: "Write RPM macros configuration for baresip"
+      run: echo "%_builddir ${PWD}" > "${HOME}/.rpmmacros"
 
     - name: "RPM %build baresip"
       run: rpmbuild -bc --short-circuit placeholder.spec
