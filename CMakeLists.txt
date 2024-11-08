@@ -385,7 +385,10 @@ install(TARGETS baresip
     COMPONENT Development
 )
 
-file(GLOB SHARE_FILES "${PROJECT_SOURCE_DIR}/share/!(*.desktop)")
+file(GLOB SHARE_FILES
+  "${PROJECT_SOURCE_DIR}/share/*.png"
+  "${PROJECT_SOURCE_DIR}/share/*.wav"
+)
 file(GLOB DESKTOP_FILES "${PROJECT_SOURCE_DIR}/share/*.desktop")
 
 install(FILES ${SHARE_FILES}
