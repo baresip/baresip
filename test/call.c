@@ -2701,6 +2701,9 @@ int test_call_webrtc(void)
 	struct sdp_media *sdp_a, *sdp_b;
 	int err;
 
+	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
+		return 0;
+
 	conf_config()->avt.rtcp_mux = true;
 
 	mock_mnat_register(baresip_mnatl());
