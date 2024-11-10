@@ -69,7 +69,7 @@ static int src_thread(void *arg)
 	CHECK_HR(hr, "wasapi/src: CoCreateInstance failed");
 
 	hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(
-		enumerator, eCapture, eMultimedia, &capturer);
+		enumerator, eCapture, eCommunications, &capturer);
 	CHECK_HR(hr, "wasapi/src: GetDefaultAudioEndpoint failed");
 
 

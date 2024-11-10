@@ -67,7 +67,7 @@ static int play_thread(void *arg)
 	CHECK_HR(hr, "wasapi/play: CoCreateInstance failed");
 
 	hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(
-		enumerator, eRender, eMultimedia, &renderer);
+		enumerator, eRender, eCommunications, &renderer);
 	CHECK_HR(hr, "wasapi/play: GetDefaultAudioEndpoint failed");
 
 	hr = IMMDevice_Activate(renderer, &IID_IAudioClient, CLSCTX_ALL,
