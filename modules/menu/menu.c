@@ -905,10 +905,14 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		break;
 
 	case UA_EVENT_CALL_REDIRECT:
-		uri = strchr(prm, ',') + 1;
+		uri = strchr(prm, ',');
+		if (!uri)
+			break;
+
+		++uri;
 		if (account_sip_autoredirect(ua_account(ua))) {
 			info("menu: redirecting call to %s\n", uri);
-			menu_invite(prm);
+			menu_invite(uri);
 		}
 		else {
 			info("menu: redirect call to %s\n", uri);
