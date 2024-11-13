@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 	const char *ch_par = NULL;
 	char *ch_val = NULL;
 	char *x_par,*x_val = NULL;
-	int l_ch = 0;
+	unsigned int l_ch = 0;
 
 	struct list x_custom_hdrs;
 
