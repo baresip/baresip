@@ -18,6 +18,7 @@ struct auplay_st {
 	RE_ATOMIC bool run;
 	struct auplay_prm prm;
 	auplay_write_h *wh;
+	struct pl *device;
 	void *sampv;
 	size_t sampc;
 	void *arg;
@@ -34,6 +35,7 @@ static void auplay_destructor(void *arg)
 	}
 
 	mem_deref(st->sampv);
+	mem_deref(st->device);
 }
 
 static int play_thread(void *arg)
@@ -46,6 +48,7 @@ static int play_thread(void *arg)
 	IAudioClient *client		= NULL;
 	IAudioRenderClient *service	= NULL;
 	WAVEFORMATEX *format		= NULL;
+	LPWSTR device			= NULL;
 	uint32_t num_frames_buffer  = 0;
 	uint32_t num_frames_padding = 0;
 	void *sampv		    = NULL;
@@ -66,9 +69,19 @@ static int play_thread(void *arg)
 			      &IID_IMMDeviceEnumerator, (void **)&enumerator);
 	CHECK_HR(hr, "wasapi/play: CoCreateInstance failed");
 
-	hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(
-		enumerator, eRender, eCommunications, &renderer);
-	CHECK_HR(hr, "wasapi/play: GetDefaultAudioEndpoint failed");
+	if (pl_strcasecmp(st->device, "default") == 0) {
+		hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(
+			enumerator, eRender, eCommunications, &renderer);
+		CHECK_HR(hr, "wasapi/play: GetDefaultAudioEndpoint failed");
+	}
+	else {
+		err = wasapi_wc_from_utf8(&device, st->device);
+		if (err)
+			goto out;
+		hr = IMMDeviceEnumerator_GetDevice(enumerator, device,
+						   &renderer);
+		CHECK_HR(hr, "wasapi/play: GetDevice failed");
+	}
 
 	hr = IMMDevice_Activate(renderer, &IID_IAudioClient, CLSCTX_ALL,
 				NULL, (void **)&client);
@@ -139,6 +152,7 @@ out:
 
 	CoTaskMemFree(format);
 	CoUninitialize();
+	mem_deref(device);
 
 	return err;
 }
@@ -150,7 +164,6 @@ int wasapi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 {
 	struct auplay_st *st;
 	int err = 0;
-	(void)device;
 
 	if (!stp || !ap || !prm)
 		return EINVAL;
@@ -162,6 +175,12 @@ int wasapi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	st->wh	= wh;
 	st->arg = arg;
 	st->prm = *prm;
+
+	st->device = pl_alloc_str(device);
+	if (!st->device) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	st->sampv = mem_alloc(aufmt_sample_size(prm->fmt) * st->sampc, NULL);

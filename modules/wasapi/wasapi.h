@@ -17,6 +17,7 @@
 #include <audioclient.h>
 #include <audiosessiontypes.h>
 #include <audiopolicy.h>
+#include <functiondiscoverykeys_devpkey.h>
 
 #define REF_PER_MS 10000LL
 #define CHECK_HR(hr, msg)                                                     \
@@ -68,3 +69,5 @@ int wasapi_play_alloc(struct auplay_st **stp, const struct auplay *ap,
 int wasapi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		      struct ausrc_prm *prm, const char *device,
 		      ausrc_read_h *rh, ausrc_error_h *errh, void *arg);
+int wasapi_wc_to_utf8(char **dst, LPCWSTR src);
+int wasapi_wc_from_utf8(LPWSTR *dst, const struct pl *src);

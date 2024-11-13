@@ -18,6 +18,7 @@ struct ausrc_st {
 	RE_ATOMIC bool run;
 	struct ausrc_prm prm;
 	ausrc_read_h *rh;
+	struct pl *device;
 	void *sampv;
 	size_t sampc;
 	void *arg;
@@ -33,9 +34,8 @@ static void ausrc_destructor(void *arg)
 		thrd_join(st->thread, NULL);
 	}
 
-
 	mem_deref(st->sampv);
-
+	mem_deref(st->device);
 }
 
 
@@ -44,11 +44,12 @@ static int src_thread(void *arg)
 	struct ausrc_st *st = arg;
 	bool started = false;
 	HRESULT hr;
-	IMMDevice *capturer             = NULL;
+	IMMDevice *capturer		= NULL;
 	IMMDeviceEnumerator *enumerator = NULL;
 	IAudioClient *client		= NULL;
 	IAudioCaptureClient *service	= NULL;
 	WAVEFORMATEX *format		= NULL;
+	LPWSTR device			= NULL;
 	uint32_t num_frames_buffer	= 0;
 	uint32_t packet_sz = 0;
 	DWORD flags;
@@ -68,10 +69,19 @@ static int src_thread(void *arg)
 			      &IID_IMMDeviceEnumerator, (void **)&enumerator);
 	CHECK_HR(hr, "wasapi/src: CoCreateInstance failed");
 
-	hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(
-		enumerator, eCapture, eCommunications, &capturer);
-	CHECK_HR(hr, "wasapi/src: GetDefaultAudioEndpoint failed");
-
+	if (pl_strcasecmp(st->device, "default") == 0) {
+		hr = IMMDeviceEnumerator_GetDefaultAudioEndpoint(
+			enumerator, eCapture, eCommunications, &capturer);
+		CHECK_HR(hr, "wasapi/src: GetDefaultAudioEndpoint failed");
+	}
+	else {
+		err = wasapi_wc_from_utf8(&device, st->device);
+		if (err)
+			goto out;
+		hr = IMMDeviceEnumerator_GetDevice(enumerator, device,
+						   &capturer);
+		CHECK_HR(hr, "wasapi/src: GetDevice failed");
+	}
 
 	hr = IMMDevice_Activate(capturer, &IID_IAudioClient, CLSCTX_ALL,
 				NULL, (void **)&client);
@@ -145,6 +155,7 @@ out:
 
 	CoTaskMemFree(format);
 	CoUninitialize();
+	mem_deref(device);
 
 	return err;
 }
@@ -156,8 +167,6 @@ int wasapi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 {
 	struct ausrc_st *st;
 	int err;
-
-	(void)device;
 	(void)errh;
 
 	if (!stp || !as || !prm)
@@ -170,6 +179,12 @@ int wasapi_src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->rh  = rh;
 	st->arg = arg;
 	st->prm = *prm;
+
+	st->device = pl_alloc_str(device);
+	if (!st->device) {
+		err = ENOMEM;
+		goto out;
+	}
 
 	st->sampc = prm->srate * prm->ch * prm->ptime / 1000;
 	st->sampv = mem_alloc(aufmt_sample_size(prm->fmt) * st->sampc, NULL);
