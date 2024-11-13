@@ -94,6 +94,7 @@ static int cmd_dial_contact(struct re_printf *pf, void *arg)
 
 	uri = contact_uri(cnt);
 
+
 	err = ua_connect(uag_find_requri(uri), NULL, NULL, uri, VIDMODE_ON);
 	if (err) {
 		warning("contact: ua_connect(%s) failed: %m\n",

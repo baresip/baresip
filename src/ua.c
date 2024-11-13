@@ -37,6 +37,12 @@ struct ua_xhdr_filter {
 	char *hdr_name;
 };
 
+static struct {
+	struct list custom_hdrs;
+} uag = {
+	LIST_INIT,
+};
+
 
 static void ua_destructor(void *arg)
 {
@@ -227,6 +233,9 @@ static int start_register(struct ua *ua, bool fallback)
 
 		if (!list_isempty(&ua->custom_hdrs))
 			reg_set_custom_hdrs(reg, &ua->custom_hdrs);
+
+		if (!list_isempty(&uag.custom_hdrs)) 
+			reg_set_custom_hdrs(reg, &uag.custom_hdrs);
 
 		err = reg_register(reg, reg_uri, params,
 				   fallback ? 0 : acc->regint,
@@ -939,6 +948,11 @@ int ua_call_alloc(struct call **callp, struct ua *ua,
 	if (!list_isempty(&ua->custom_hdrs))
 		call_set_custom_hdrs(*callp, &ua->custom_hdrs);
 
+	if (!list_isempty(&uag.custom_hdrs))
+		call_set_custom_hdrs(*callp, &uag.custom_hdrs);
+
+
+
 	call_set_handlers(*callp, NULL, call_dtmf_handler, ua);
 
 	return 0;
@@ -1354,6 +1368,15 @@ int ua_connect_dir(struct ua *ua, struct call **callp,
 	if (err)
 		goto out;
 
+
+
+	info ("ua: check extra custom headers\n");
+	if (!list_isempty(&uag.custom_hdrs)){
+		info ("ua: set extra custom headers\n");
+		ua_set_custom_hdrs(ua, uag_get_custom_hdrs() );
+	}
+
+
 	/* Append any optional URI parameters */
 	err |= append_params(dialbuf, &ua->acc->luri.params);
 	if (err)
@@ -1410,6 +1433,8 @@ int ua_connect(struct ua *ua, struct call **callp,
 	       const char *from_uri, const char *req_uri,
 	       enum vidmode vmode)
 {
+
+
 	return ua_connect_dir(ua, callp, from_uri, req_uri, vmode,
 		SDP_SENDRECV, SDP_SENDRECV);
 }
@@ -2269,3 +2294,69 @@ bool ua_req_check_origin(const struct ua *ua, const struct sip_msg *msg)
 
 	return false;
 }
+
+
+
+
+int uag_set_custom_hdrs( struct list *custom_headers)
+{
+	int err = 0;
+
+//	list_init(uag.custom_hdrs);
+
+
+	struct le *le;
+	LIST_FOREACH(custom_headers, le) {
+		struct sip_hdr *hdr = le->data;
+
+		char *buf;
+
+		debug("uag: set custom hdrs %s => %s\n", hdr->name.p, hdr->val.p);
+		
+
+		err = pl_strdup(&buf, &hdr->name);
+		if (err)
+			return err;
+
+		err = custom_hdrs_add(&uag.custom_hdrs, buf, "%s", hdr->val.p);
+		mem_deref(buf);
+
+	}
+
+	return 0;
+}
+
+
+struct list *uag_get_custom_hdrs(void)
+{
+
+	struct le *le;
+	LIST_FOREACH(&uag.custom_hdrs, le) {
+		struct sip_hdr *hdr = le->data;
+		debug("uag: check custom hdrs %s => %s\n", hdr->name.p, hdr->val.p);
+	}
+
+	return &uag.custom_hdrs;
+}
+
+void uag_flush_hdrs(void)
+{
+	list_flush(&uag.custom_hdrs);
+}
+
+
+void debug_list_hdrs( struct list *custom_headers )
+{
+	int i = 0;
+	struct le *le;
+	LIST_FOREACH(custom_headers, le) {
+		struct sip_hdr *hdr = le->data;
+
+		debug("test custom hdr %d: %s => %s \n", i, hdr->name.p, hdr->val.p);
+
+		i++;
+	}
+}
+
+
+

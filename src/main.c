@@ -75,6 +75,7 @@ static void usage(void)
 			 "\t-n <net_if>      Specify network interface\n"
 			 "\t-u <parameters>  Extra UA parameters\n"
 			 "\t-v               Verbose debug\n"
+			 "\t-x <key>:<val>   extra header\n"
 			 "\t-T               Enable timestamps log\n"
 			 "\t-c               Disable colored log\n"
 			 );
@@ -103,6 +104,14 @@ int main(int argc, char *argv[])
 
 	int err;
 
+	const char *ch_par = NULL;
+	char *ch_val = NULL;
+	char *x_par,*x_val = NULL;
+	int l_ch = 0;
+
+	struct list x_custom_hdrs;
+
+
 	/*
 	 * turn off buffering on stdout
 	 */
@@ -126,10 +135,11 @@ int main(int argc, char *argv[])
 #endif
 
 	tmr_init(&tmr_quit);
+	list_init(&x_custom_hdrs);
 
 #ifdef HAVE_GETOPT
 	for (;;) {
-		const int c = getopt(argc, argv, "46a:de:f:p:hu:n:vst:m:Tc");
+		const int c = getopt(argc, argv, "46a:de:f:p:hu:n:vst:m:Tcx:");
 		if (0 > c)
 			break;
 
@@ -200,6 +210,36 @@ int main(int argc, char *argv[])
 			ua_eprm = optarg;
 			break;
 
+		case 'x':
+			l_ch  = strlen(optarg);
+			debug("main: header len: %d\n",l_ch);
+			
+			x_val = strstr(optarg,":");
+			x_val[0] = '\0';
+			x_val++;
+			x_par = optarg;
+	
+			ch_par = x_par; //strdup(x_par);
+			ch_val = x_val; //strdup(x_val);
+			if (ch_val == NULL)
+				goto out;
+
+			debug("main: parsing extra headers ...  '%s'=>'%s'\n",ch_par,ch_val);
+
+			//	err  = custom_hdrs_add(&custom_hdrs, "X-CALL_ID", "%d", some_id);
+			//	err |= custom_hdrs_add(&custom_hdrs, "X-HEADER_NAME", "%s", "VALUE");
+
+			err  = custom_hdrs_add(&x_custom_hdrs, ch_par, "%s", ch_val);
+			if (err)
+				goto out;
+
+		
+			debug_list_hdrs( &x_custom_hdrs);
+
+			break;
+
+
+
 		case 'v':
 			log_enable_debug(true);
 			dbg_level = DBG_DEBUG;
@@ -230,6 +270,9 @@ int main(int argc, char *argv[])
 		warning("main: configure failed: %m\n", err);
 		goto out;
 	}
+
+	debug("list cli hdrs:\n");
+	debug_list_hdrs( &x_custom_hdrs);
 
 	re_thread_async_init(ASYNC_WORKERS);
 
@@ -288,6 +331,12 @@ int main(int argc, char *argv[])
 	if (err)
 		goto out;
 
+	/* setup custom_hdrs*/
+	uag_set_custom_hdrs(&x_custom_hdrs);
+
+	debug("list uag hdrs:\n");
+	debug_list_hdrs( uag_get_custom_hdrs() );
+
 	uag_set_exit_handler(ua_exit_handler, NULL);
 
 	if (ua_eprm) {
@@ -333,6 +382,9 @@ int main(int argc, char *argv[])
 		ua_stop_all(true);
 
 	ua_close();
+
+	list_flush(&x_custom_hdrs);
+	uag_flush_hdrs();
 
 	/* note: must be done before mod_close() */
 	module_app_unload();

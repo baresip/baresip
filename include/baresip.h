@@ -294,6 +294,12 @@ int custom_hdrs_add(struct list *hdrs, const char *name, const char *fmt, ...);
 int custom_hdrs_apply(const struct list *hdrs, custom_hdrs_h *h, void *arg);
 
 
+void debug_list_hdrs( struct list *custom_headers );
+int uag_set_custom_hdrs( struct list *custom_headers);
+struct list *uag_get_custom_hdrs(void);
+void uag_flush_hdrs(void);
+
+
 /*
  * Conf (utils)
  */
