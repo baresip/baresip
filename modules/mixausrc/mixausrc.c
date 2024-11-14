@@ -446,20 +446,18 @@ static float fade_linear(struct mixstatus *st, enum mixmode dir)
 }
 
 
-static void fade_int16(struct mixstatus *st, int16_t *data, uint16_t n,
+static void fade_int16(struct mixstatus *st, int16_t *data, size_t n,
 	enum mixmode dir)
 {
-	uint16_t i;
-	for (i = 0; (i < n) && (st->i_fade < st->n_fade); ++i)
-		data[i] *= fade_linear(st, dir);
+	for (size_t i = 0; (i < n) && (st->i_fade < st->n_fade); ++i)
+		data[i] = (int16_t)(data[i] * fade_linear(st, dir));
 }
 
 
-static void fade_float(struct mixstatus *st, float *data, uint16_t n,
+static void fade_float(struct mixstatus *st, float *data, size_t n,
 	enum mixmode dir)
 {
-	uint16_t i;
-	for (i = 0; (i < n) && (st->i_fade < st->n_fade); ++i)
+	for (size_t i = 0; (i < n) && (st->i_fade < st->n_fade); ++i)
 		data[i] *= fade_linear(st, dir);
 }
 
@@ -478,18 +476,16 @@ static int fadeframe(struct mixstatus *st, struct auframe *af,
 }
 
 
-static void clear_int16(struct mixstatus *st, int16_t *data, uint16_t n)
+static void clear_int16(struct mixstatus *st, int16_t *data, size_t n)
 {
-	uint16_t i;
-	for (i = 0; i < n; ++i)
-		data[i] *= st->minvol;
+	for (size_t i = 0; i < n; ++i)
+		data[i] = (int16_t)(data[i] * st->minvol);
 }
 
 
-static void clear_float(struct mixstatus *st, float *data, uint16_t n)
+static void clear_float(struct mixstatus *st, float *data, size_t n)
 {
-	uint16_t i;
-	for (i = 0; i < n; ++i)
+	for (size_t i = 0; i < n; ++i)
 		data[i] *= st->minvol;
 }
 
