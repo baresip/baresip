@@ -780,7 +780,7 @@ static const char *default_audio_device(void)
 #elif defined (OPENBSD)
 	return "sndio,default";
 #elif defined (WIN32)
-	return "winwave,nil";
+	return "wasapi,default";
 #else
 	return "alsa,default";
 #endif
@@ -1163,7 +1163,7 @@ int config_write_template(const char *file, const struct config *cfg)
 #elif defined (OPENBSD)
 	(void)re_fprintf(f, "module\t\t\t" "sndio" MOD_EXT "\n");
 #elif defined (WIN32)
-	(void)re_fprintf(f, "module\t\t\t" "winwave" MOD_EXT "\n");
+	(void)re_fprintf(f, "module\t\t\t" "wasapi" MOD_EXT "\n");
 #else
 	if (!strncmp(default_audio_device(), "pipewire", 8)) {
 		(void)re_fprintf(f, "#module\t\t\t" "alsa" MOD_EXT "\n");
