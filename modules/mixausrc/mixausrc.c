@@ -355,8 +355,8 @@ static void mixstatus_init(struct mixstatus *st, struct aufilt_prm *prm)
 	stop_ausrc(st);
 
 	st->mode = FM_IDLE;
-	st->minvol = 1.;
-	st->ausvol = 1.;
+	st->minvol = 1.0f;
+	st->ausvol = 1.0f;
 	st->i_fade = 0;
 
 	/* initialize with configured values */
@@ -440,9 +440,11 @@ static float fade_linear(struct mixstatus *st, enum mixmode dir)
 	++st->i_fade;
 
 	if (dir == FM_FADEIN)
-		return (st->minvol + factor) > 1. ? 1. : st->minvol + factor;
+		return (st->minvol + factor) > 1.0f ? 1.0f
+						    : st->minvol + factor;
 	else
-		return (1. - factor) < st->minvol ? st->minvol : 1. - factor;
+		return (1.0f - factor) < st->minvol ? st->minvol
+						    : 1.0f - factor;
 }
 
 
@@ -715,7 +717,7 @@ static int start_process(struct mixstatus* st, const char *name,
 	st->ausvol = pl_isset(&pl4) ? conv_volume(&pl4) : 1.;
 	st->i_fade = 0;
 	st->n_fade = (DEFAULT_FADE_TIME * st->ausrc_prm.srate) / 1000;
-	st->delta_fade = (1.0 - st->minvol) / st->n_fade;
+	st->delta_fade = (1.0f - st->minvol) / st->n_fade;
 
 	stop_ausrc(st);
 	ausrc_prm_aufilt(&st->ausrc_prm, &st->prm);
