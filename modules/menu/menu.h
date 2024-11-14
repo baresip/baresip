@@ -39,6 +39,7 @@ struct menu{
 	size_t outcnt;                /**< Outgoing call counter          */
 	bool even;                    /**< Print UA events flag           */
 	bool dnd;                     /**< Do not Disturb flag            */
+	bool message_tone;            /**< Play tone for SIP MESSAGE      */
 };
 
 /*Get menu object*/

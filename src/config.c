@@ -1316,6 +1316,7 @@ int config_write_template(const char *file, const struct config *cfg)
 			"#menu_max_earlyaudio\t32\n"
 			"#menu_max_earlyvideo_rx\t32\n"
 			"#menu_max_earlyvideo_tx\t32\n"
+			"#menu_message_tone\tyes\n"
 			);
 
 	(void)re_fprintf(f,
