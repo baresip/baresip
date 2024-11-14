@@ -37,6 +37,7 @@ struct menu{
 	struct tmr tmr_play;          /**< Tones play timer               */
 	size_t outcnt;                /**< Outgoing call counter          */
 	bool dnd;                     /**< Do not disturb flag            */
+	bool message_tone;            /**< Play tone for SIP MESSAGE      */
 };
 
 /*Get menu object*/
