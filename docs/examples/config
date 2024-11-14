@@ -255,6 +255,7 @@ video_selfview		window # {window,pip}
 #menu_max_earlyaudio	32
 #menu_max_earlyvideo_rx	32
 #menu_max_earlyvideo_tx	32
+#menu_message_tone	yes
 
 # GTK
 #gtk_clean_number	no

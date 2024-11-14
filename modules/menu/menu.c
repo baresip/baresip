@@ -976,8 +976,10 @@ static void message_handler(struct ua *ua, const struct pl *peer,
 	ui_output(baresip_uis(), "\r%r: \"%b\"\n",
 		  peer, mbuf_buf(body), mbuf_get_left(body));
 
-	(void)play_file(NULL, baresip_player(), "message.wav", 0,
-	                cfg->audio.alert_mod, cfg->audio.alert_dev);
+	if (menu.message_tone) {
+		(void)play_file(NULL, baresip_player(), "message.wav", 0,
+				cfg->audio.alert_mod, cfg->audio.alert_dev);
+	}
 }
 
 
@@ -1170,6 +1172,7 @@ static int module_init(void)
 	menu.clean_number = false;
 	menu.play = NULL;
 	menu.adelay = -1;
+	menu.message_tone = true;
 	err = odict_alloc(&menu.ovaufile, 8);
 	if (err)
 		return err;
@@ -1180,6 +1183,7 @@ static int module_init(void)
 	conf_get_bool(conf_cur(), "ringback_disabled",
 		      &menu.ringback_disabled);
 	conf_get_bool(conf_cur(), "menu_clean_number", &menu.clean_number);
+	conf_get_bool(conf_cur(), "menu_message_tone", &menu.message_tone);
 
 	if (0 == conf_get(conf_cur(), "redial_attempts", &val) &&
 	    0 == pl_strcasecmp(&val, "inf")) {
