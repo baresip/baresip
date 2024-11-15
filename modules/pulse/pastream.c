@@ -170,10 +170,14 @@ int pastream_start(struct pastream_st* st, void *arg)
 					stream_overflow_cb, st);
 	pa_stream_set_state_callback(st->stream, stream_state_cb, st);
 
+	const char *device = NULL;
+	if (str_len(st->device) && str_casecmp(st->device, "default") != 0) {
+		device = st->device;
+	}
+
 	if (st->direction == PA_STREAM_PLAYBACK) {
 		pa_err = pa_stream_connect_playback(st->stream,
-				strlen(st->device) == 0 ? NULL :
-				st->device, &st->attr,
+				device, &st->attr,
 				PA_STREAM_INTERPOLATE_TIMING |
 				PA_STREAM_ADJUST_LATENCY |
 				PA_STREAM_AUTO_TIMING_UPDATE,
@@ -181,8 +185,7 @@ int pastream_start(struct pastream_st* st, void *arg)
 	}
 	else if (st->direction == PA_STREAM_RECORD) {
 		pa_err = pa_stream_connect_record(st->stream,
-				strlen(st->device) == 0 ? NULL :
-				st->device, &st->attr,
+				device, &st->attr,
 				PA_STREAM_INTERPOLATE_TIMING |
 				PA_STREAM_ADJUST_LATENCY |
 				PA_STREAM_AUTO_TIMING_UPDATE);
