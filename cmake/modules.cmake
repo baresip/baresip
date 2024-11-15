@@ -84,7 +84,6 @@ set(MODULES
   webrtc_aec
   webrtc_aecm
   wincons
-  winwave
   x11
 
   CACHE STRING "List of modules like 'turn;pipewire;alsa'"

@@ -88,7 +88,7 @@ Distributed under BSD license
   - JACK Audio Connection Kit audio-driver
   - MacOSX/iOS coreaudio/audiounit audio-driver
   - Portaudio audio-driver
-  - Windows winwave audio-driver
+  - Windows WASAPI audio-driver
 
 * Video:
   - Support for H.264, H.265, VP8, VP9, AV1 Video
