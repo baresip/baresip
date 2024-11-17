@@ -8,7 +8,8 @@ find_path(AAUDIO_INCLUDE_DIR
 
 find_library(AAUDIO_LIBRARY
     NAME aaudio
-    HINTS "${TOOLCHAIN}/sysroot/usr/lib/${CMAKE_ANDROID_ARCH_ABI}/${ANDROID_PLATFORM}"
+    HINTS "${TOOLCHAIN}/sysroot/usr/lib/${CMAKE_ANDROID_ARCH_ABI}/"
+    "${ANDROID_PLATFORM}"
 )
 
 include(FindPackageHandleStandardArgs)
