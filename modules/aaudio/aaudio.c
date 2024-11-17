@@ -1,5 +1,5 @@
 /**
- * @file aaudio.c  AAudio audio driver
+ * @file aaudio/aaudio.c AAudio audio driver for Android
  *
  * Copyright (C) 2024 Juha Heinanen
  */
@@ -7,17 +7,7 @@
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-
-#include <aaudio/AAudio.h>
-
 #include "aaudio.h"
-
-
-/**
- * @defgroup aaudio aaudio
- *
- * Aaudio audio driver module for Android
- */
 
 
 static struct auplay *auplay;

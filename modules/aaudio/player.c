@@ -1,17 +1,16 @@
 /**
- * @file player.c  Aaudio sound driver - player
+ * @file aaudio/player.c  AAudio audio driver for Android
  *
+ * Copyright (C) 2024 Juha Heinanen
+ * Copyright (C) 2024 Sebastian Reimers
  */
-
 
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <string.h>
-
-#include <aaudio/AAudio.h>
 
 #include "aaudio.h"
+
 
 struct auplay_st {
 	struct auplay_prm play_prm;
@@ -19,6 +18,7 @@ struct auplay_st {
 	size_t sampsz;
 	void *arg;
 };
+
 
 AAudioStream *playerStream = NULL;
 
@@ -32,6 +32,7 @@ static void auplay_destructor(void *arg)
 
 	st->wh = NULL;
 }
+
 
 /**
  * For an output stream, this function should render and write from
@@ -60,14 +61,14 @@ static int open_player_stream(struct auplay_st *st) {
 
 	result = AAudio_createStreamBuilder(&builder);
 	if (result != AAUDIO_OK) {
-		warning("oboe: failed to create stream builder: error %s\n",
-			AAudio_convertResultToText(result));
+		warning("aaudio: player: failed to create stream builder: "
+			"error %s\n", AAudio_convertResultToText(result));
 		return result;
 	}
 
 	AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
 	AAudioStreamBuilder_setSharingMode(builder,
-		AAUDIO_SHARING_MODE_SHARED);
+		AAUDIO_SHARING_MODE_EXCLUSIVE);
 	AAudioStreamBuilder_setSampleRate(builder, st->play_prm.srate);
 	AAudioStreamBuilder_setChannelCount(builder, 1);
 	AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
@@ -78,12 +79,12 @@ static int open_player_stream(struct auplay_st *st) {
 
 	result = AAudioStreamBuilder_openStream(builder, &playerStream);
 	if (result != AAUDIO_OK) {
-		warning("aaudio: failed to open player stream: error %s\n",
+		warning("aaudio: player: failed to open stream: error %s\n",
 			AAudio_convertResultToText(result));
 		return result;
 	}
 
-	info("aaudio: opened player stream with direction %d, "
+	info("aaudio: player: opened stream with direction %d, "
 	     "sharing mode %d, sample rate %d, format %d, sessionId %d, "
 	     "usage %d\n",
 	     AAudioStream_getDirection(playerStream),
@@ -145,7 +146,7 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
-	module_event("aaudio", "player sessionid", NULL, NULL, "%d",
+	module_event("aaudio", "player: sessionid", NULL, NULL, "%d",
 		     AAudioStream_getSessionId(playerStream));
 
 	info ("aaudio: player: stream started\n");

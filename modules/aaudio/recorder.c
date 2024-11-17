@@ -1,6 +1,8 @@
 /**
- * @file recorder.c  Aaudio sound driver - recorder
+ * @file aaudio/recorder.c  AAudio audio driver for Android
  *
+ * Copyright (C) 2024 Juha Heinanen
+ * Copyright (C) 2024 Sebastian Reimers
  */
 
 #include <re.h>
@@ -8,9 +10,8 @@
 #include <baresip.h>
 #include <string.h>
 
-#include <aaudio/AAudio.h>
-
 #include "aaudio.h"
+
 
 struct ausrc_st {
 	struct ausrc_prm src_prm;
@@ -22,6 +23,7 @@ struct ausrc_st {
 	uint64_t samps;
 	void *arg;
 };
+
 
 AAudioStream *recorderStream = NULL;
 
@@ -85,8 +87,8 @@ static int open_recorder_stream(struct ausrc_st *st) {
 
 	result = AAudio_createStreamBuilder(&builder);
 	if (result != AAUDIO_OK) {
-		warning("oboe: failed to create stream builder: error %s\n",
-			AAudio_convertResultToText(result));
+		warning("aaudio: recorder: failed to create stream builder: "
+			"error %s\n", AAudio_convertResultToText(result));
 		return result;
 	}
 
@@ -103,12 +105,12 @@ static int open_recorder_stream(struct ausrc_st *st) {
 
 	result = AAudioStreamBuilder_openStream(builder, &recorderStream);
 	if (result != AAUDIO_OK) {
-		warning("aaudio: failed to open recorder stream: error %s\n",
+		warning("aaudio: recorder: failed to open stream: error %s\n",
 			AAudio_convertResultToText(result));
 		return result;
 	}
 
-	info("aaudio: opened recorder stream with direction %d, "
+	info("aaudio: recorder: opened stream with direction %d, "
 	     "sharing mode %d, sample rate %d, format %d, sessionId %d, "
 	     "usage %d\n",
 	     AAudioStream_getDirection(recorderStream),
@@ -137,7 +139,7 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm || !rh)
 		return EINVAL;
 
-	info ("aaudio: opening recorder(%u Hz, %d channels,"
+	info ("aaudio: recorder: opening recorder(%u Hz, %d channels,"
 	      "device '%s')\n", prm->srate, prm->ch, dev);
 
 	if (prm->fmt != AUFMT_S16LE) {
@@ -167,7 +169,6 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		goto out;
 	}
 
-
 	st->rh  = rh;
 	st->errh = errh;
 	st->arg = arg;
@@ -185,7 +186,7 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	module_event("aaudio", "recorder sessionid", NULL, NULL, "%d",
 		     AAudioStream_getSessionId(recorderStream));
 
-	info ("aaudio: recorder: stream started\n");
+	info("aaudio: recorder: stream started\n");
 
   out:
 	if (result != AAUDIO_OK) {
