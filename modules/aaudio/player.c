@@ -44,7 +44,7 @@ static void auplay_destructor(void *arg)
 	struct auplay_st *st = userData;
 	struct auframe af;
 
-	auframe_init(&af, st->play_prm.fmt, audioData, numFrames / st->sampsz,
+	auframe_init(&af, st->play_prm.fmt, audioData, numFrames,
 		     st->play_prm.srate, st->play_prm.ch);
 
 	st->wh(&af, st->arg);
