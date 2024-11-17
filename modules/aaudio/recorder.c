@@ -55,7 +55,7 @@ static void ausrc_destructor(void *arg)
 
 	size_t sampc = 0;
 
-	sampc = numFrames / st->sampsz;
+	sampc = numFrames;
 	if (sampc > st->sampc) {
 		st->sampv = mem_realloc(st->sampv, st->sampsz * sampc);
 		st->sampc = sampc;
