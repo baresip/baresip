@@ -49,8 +49,6 @@ static void auplay_destructor(void *arg)
 
 	st->wh(&af, st->arg);
 
-	memcpy(audioData, af.sampv, auframe_size(&af) * af.ch);
-
 	return 0;
 }
 
