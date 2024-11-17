@@ -97,8 +97,6 @@ static int open_recorder_stream(struct ausrc_st *st) {
 	AAudioStreamBuilder_setChannelCount(builder, 1);
 	AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
 	AAudioStreamBuilder_setSessionId(builder, AAUDIO_SESSION_ID_ALLOCATE);
-	AAudioStreamBuilder_setPerformanceMode(builder,
-	       AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
 	AAudioStreamBuilder_setUsage(builder,
 	       AAUDIO_USAGE_VOICE_COMMUNICATION),
 	AAudioStreamBuilder_setDataCallback(builder, &dataCallback, st);
@@ -114,13 +112,12 @@ static int open_recorder_stream(struct ausrc_st *st) {
 
 	info("aaudio: opened recorder stream with direction %d, "
 	     "sharing mode %d, sample rate %d, format %d, sessionId %d, "
-	     "performance mode %d, usage %d\n",
+	     "usage %d\n",
 	     AAudioStream_getDirection(recorderStream),
 	     AAudioStream_getSharingMode(recorderStream),
 	     AAudioStream_getSampleRate(recorderStream),
 	     AAudioStream_getFormat(recorderStream),
 	     AAudioStream_getSessionId(recorderStream),
-	     AAudioStream_getPerformanceMode(recorderStream),
 	     AAudioStream_getUsage(recorderStream));
 
 	AAudioStreamBuilder_delete(builder);

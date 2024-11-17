@@ -75,8 +75,6 @@ static int open_player_stream(struct auplay_st *st) {
 	AAudioStreamBuilder_setChannelCount(builder, 1);
 	AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
 	AAudioStreamBuilder_setSessionId(builder, AAUDIO_SESSION_ID_ALLOCATE);
-	AAudioStreamBuilder_setPerformanceMode(builder,
-	       AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
 	AAudioStreamBuilder_setUsage(builder,
                AAUDIO_USAGE_VOICE_COMMUNICATION),
 	AAudioStreamBuilder_setDataCallback(builder, &dataCallback, st);
@@ -92,13 +90,12 @@ static int open_player_stream(struct auplay_st *st) {
 
 	info("aaudio: opened player stream with direction %d, "
 	     "sharing mode %d, sample rate %d, format %d, sessionId %d, "
-	     "performance mode %d, usage %d\n",
+	     "usage %d\n",
 	     AAudioStream_getDirection(playerStream),
 	     AAudioStream_getSharingMode(playerStream),
 	     AAudioStream_getSampleRate(playerStream),
 	     AAudioStream_getFormat(playerStream),
 	     AAudioStream_getSessionId(playerStream),
-	     AAudioStream_getPerformanceMode(playerStream),
 	     AAudioStream_getUsage(playerStream));
 
 	AAudioStreamBuilder_delete(builder);
