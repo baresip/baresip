@@ -39,7 +39,7 @@ static void auplay_destructor(void *arg)
  * the audioData buffer.
  */
  static int dataCallback(AAudioStream *stream, void *userData,
-			      void *audioData, int32_t numFrames) {
+			 void *audioData, int32_t numFrames) {
 	(void)stream;
 	struct auplay_st *st = userData;
 	struct auframe af;
@@ -60,14 +60,14 @@ static int open_player_stream(struct auplay_st *st) {
 
 	AAudioStreamBuilder *builder;
 	aaudio_result_t result;
-	
+
 	result = AAudio_createStreamBuilder(&builder);
 	if (result != AAUDIO_OK) {
 		warning("oboe: failed to create stream builder: error %s\n",
 			AAudio_convertResultToText(result));
 		return result;
 	}
-	
+
 	AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
 	AAudioStreamBuilder_setSharingMode(builder,
 		AAUDIO_SHARING_MODE_SHARED);
@@ -99,9 +99,9 @@ static int open_player_stream(struct auplay_st *st) {
 	     AAudioStream_getUsage(playerStream));
 
 	AAudioStreamBuilder_delete(builder);
-	
+
 	AAudioStream_setBufferSizeInFrames(playerStream,
-                AAudioStream_getFramesPerBurst(playerStream) * 2);
+		AAudioStream_getFramesPerBurst(playerStream) * 2);
 
 	return AAUDIO_OK;
 }

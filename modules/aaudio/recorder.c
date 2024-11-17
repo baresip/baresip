@@ -48,7 +48,7 @@ static void ausrc_destructor(void *arg)
  * called.
  */
  static int dataCallback(AAudioStream *stream, void *userData,
-			      void *audioData, int32_t numFrames) {
+			 void *audioData, int32_t numFrames) {
 	(void)stream;
 	struct ausrc_st *st = userData;
 	struct auframe af;
@@ -82,14 +82,14 @@ static int open_recorder_stream(struct ausrc_st *st) {
 
 	AAudioStreamBuilder *builder;
 	aaudio_result_t result;
-	
+
 	result = AAudio_createStreamBuilder(&builder);
 	if (result != AAUDIO_OK) {
 		warning("oboe: failed to create stream builder: error %s\n",
 			AAudio_convertResultToText(result));
 		return result;
 	}
-	
+
 	AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_INPUT);
 	AAudioStreamBuilder_setSharingMode(builder,
 		AAUDIO_SHARING_MODE_EXCLUSIVE);
@@ -121,17 +121,17 @@ static int open_recorder_stream(struct ausrc_st *st) {
 	     AAudioStream_getUsage(recorderStream));
 
 	AAudioStreamBuilder_delete(builder);
-	
+
 	AAudioStream_setBufferSizeInFrames(recorderStream,
-                AAudioStream_getFramesPerBurst(recorderStream) * 2);
+		AAudioStream_getFramesPerBurst(recorderStream) * 2);
 
 	return AAUDIO_OK;
 }
 
 
 int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
-        struct ausrc_prm *prm, const char *dev, ausrc_read_h *rh,
-	ausrc_error_h *errh, void *arg)
+			  struct ausrc_prm *prm, const char *dev,
+			  ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
 	aaudio_result_t result;
