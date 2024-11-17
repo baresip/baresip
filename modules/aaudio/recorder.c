@@ -64,10 +64,10 @@ static void ausrc_destructor(void *arg)
 	if (!st->sampv)
 		return ENOMEM;
 
-	memset((uint8_t *)st->sampv, 0, numFrames);
-
-	auframe_init(&af, st->src_prm.fmt, audioData, sampc,
+	auframe_init(&af, st->src_prm.fmt, st->sampv, sampc,
 		     st->src_prm.srate, st->src_prm.ch);
+
+	memcpy(st->sampv, audioData, auframe_size(&af) * af.ch);
 
 	af.timestamp = st->samps * AUDIO_TIMEBASE /
 		       (st->src_prm.srate * st->src_prm.ch);
@@ -94,7 +94,7 @@ static int open_recorder_stream(struct ausrc_st *st) {
 	AAudioStreamBuilder_setSharingMode(builder,
 		AAUDIO_SHARING_MODE_EXCLUSIVE);
 	AAudioStreamBuilder_setSampleRate(builder, st->src_prm.srate);
-	AAudioStreamBuilder_setChannelCount(builder, 1);
+	AAudioStreamBuilder_setChannelCount(builder, st->src_prm.ch);
 	AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
 	AAudioStreamBuilder_setSessionId(builder, AAUDIO_SESSION_ID_ALLOCATE);
 	AAudioStreamBuilder_setUsage(builder,
@@ -156,10 +156,7 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!st)
 		return ENOMEM;
 
-	st->src_prm.srate = prm->srate;
-	st->src_prm.ch    = prm->ch;
-	st->src_prm.ptime = prm->ptime;
-	st->src_prm.fmt   = prm->fmt;
+	st->src_prm = *prm;
 
 	st->sampsz = aufmt_sample_size(prm->fmt);
 	st->sampc  = prm->ptime * prm->ch * prm->srate / 1000;

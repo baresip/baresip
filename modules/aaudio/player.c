@@ -49,8 +49,7 @@ static void auplay_destructor(void *arg)
 
 	st->wh(&af, st->arg);
 
-	for (size_t i = 0; i < af.sampc; ++i)
-		((int16_t *)audioData)[i] = ((int16_t *)(af.sampv))[i];
+	memcpy(audioData, af.sampv, auframe_size(&af) * af.ch);
 
 	return 0;
 }
@@ -133,12 +132,7 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!st)
 		return ENOMEM;
 
-	st->play_prm.srate = prm->srate;
-	st->play_prm.ch    = prm->ch;
-	st->play_prm.ptime = prm->ptime;
-	st->play_prm.fmt   = prm->fmt;
-
-	st->sampsz = aufmt_sample_size(prm->fmt);
+	st->play_prm = *prm;
 
 	st->wh  = wh;
 	st->arg = arg;
