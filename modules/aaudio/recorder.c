@@ -105,8 +105,6 @@ static int open_recorder_stream(struct ausrc_st *st) {
 	if (result != AAUDIO_OK) {
 		warning("aaudio: failed to open recorder stream: error %s\n",
 			AAudio_convertResultToText(result));
-		if (playerStream)
-			AAudioStream_close(playerStream);
 		return result;
 	}
 

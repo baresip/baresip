@@ -83,8 +83,6 @@ static int open_player_stream(struct auplay_st *st) {
 	if (result != AAUDIO_OK) {
 		warning("aaudio: failed to open player stream: error %s\n",
 			AAudio_convertResultToText(result));
-		if (recorderStream)
-			AAudioStream_close(recorderStream);
 		return result;
 	}
 
