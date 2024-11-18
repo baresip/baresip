@@ -13,10 +13,10 @@
 
 
 struct auplay_st {
-	struct auplay_prm play_prm;
 	auplay_write_h *wh;
-	size_t sampsz;
 	void *arg;
+	struct auplay_prm play_prm;
+	size_t sampsz;
 };
 
 

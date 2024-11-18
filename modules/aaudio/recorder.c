@@ -14,14 +14,14 @@
 
 
 struct ausrc_st {
-	struct ausrc_prm src_prm;
 	ausrc_read_h *rh;
+	void *arg;
+	struct ausrc_prm src_prm;
 	ausrc_error_h *errh;
 	void   *sampv;
 	size_t  sampsz;
 	size_t  sampc;
 	uint64_t samps;
-	void *arg;
 };
 
 
