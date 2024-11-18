@@ -30,8 +30,8 @@ static int module_init(void)
 static int module_close(void)
 {
 
-	auplay = (struct auplay *)mem_deref((void *)auplay);
-	ausrc = (struct ausrc *)mem_deref((void *)ausrc);
+	auplay = mem_deref(auplay);
+	ausrc = mem_deref(ausrc);
 
 	return 0;
 }
