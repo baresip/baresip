@@ -30,11 +30,6 @@ static int module_init(void)
 static int module_close(void)
 {
 
-	if (playerStream)
-		AAudioStream_close(playerStream);
-	if (recorderStream)
-		AAudioStream_close(recorderStream);
-
 	auplay = (struct auplay *)mem_deref((void *)auplay);
 	ausrc = (struct ausrc *)mem_deref((void *)ausrc);
 
