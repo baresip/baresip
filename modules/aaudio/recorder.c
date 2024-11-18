@@ -87,8 +87,8 @@ static void errorCallback(AAudioStream *stream, void *userData,
 	aaudio_stream_state_t streamState = AAudioStream_getState(stream);
 	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
 		info("aaudio: recorder: stream disconnected\n");
-		// now close_stream(stream); open_recorder_stream(st);
-		// calls should be made on a separate thread
+		/* now close_stream(stream); open_recorder_stream(st);
+		   calls should be made on a separate thread */
 	}
 }
 
