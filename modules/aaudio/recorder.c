@@ -93,7 +93,7 @@ static int open_recorder_stream(struct ausrc_st *st) {
 
 	AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_INPUT);
 	AAudioStreamBuilder_setSharingMode(builder,
-		AAUDIO_SHARING_MODE_EXCLUSIVE);
+		AAUDIO_SHARING_MODE_SHARED);
 	AAudioStreamBuilder_setSampleRate(builder, st->src_prm.srate);
 	AAudioStreamBuilder_setChannelCount(builder, st->src_prm.ch);
 	AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);

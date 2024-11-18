@@ -67,7 +67,7 @@ static int open_player_stream(struct auplay_st *st) {
 
 	AAudioStreamBuilder_setDirection(builder, AAUDIO_DIRECTION_OUTPUT);
 	AAudioStreamBuilder_setSharingMode(builder,
-		AAUDIO_SHARING_MODE_EXCLUSIVE);
+		AAUDIO_SHARING_MODE_SHARED);
 	AAudioStreamBuilder_setSampleRate(builder, st->play_prm.srate);
 	AAudioStreamBuilder_setChannelCount(builder, 1);
 	AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
