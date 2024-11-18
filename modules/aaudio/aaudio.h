@@ -9,6 +9,8 @@
 extern AAudioStream *playerStream;
 extern AAudioStream *recorderStream;
 
+void close_stream(AAudioStream *stream);
+
 int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 			struct auplay_prm *prm, const char *device,
 			auplay_write_h *wh, void *arg);

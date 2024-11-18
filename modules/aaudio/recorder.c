@@ -32,8 +32,7 @@ static void ausrc_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	if (recorderStream)
-		AAudioStream_close(recorderStream);
+	close_stream(recorderStream);
 
 	mem_deref(st->sampv);
 	st->rh = NULL;
@@ -190,10 +189,8 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
   out:
 	if (result != AAUDIO_OK) {
-		if (playerStream)
-			AAudioStream_close(playerStream);
-		if (recorderStream)
-			AAudioStream_close(recorderStream);
+		close_stream(playerStream);
+		close_stream(recorderStream);
 		mem_deref(st);
 	}
 	else

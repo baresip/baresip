@@ -9,7 +9,7 @@ endif()
 list(APPEND MODULES_DETECTED ${PROJECT_NAME})
 set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
 
-set(SRCS aaudio.c player.c recorder.c)
+set(SRCS aaudio.c utils.c player.c recorder.c)
 
 if(STATIC)
     add_library(${PROJECT_NAME} OBJECT ${SRCS})
