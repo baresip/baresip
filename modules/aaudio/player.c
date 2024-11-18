@@ -53,6 +53,20 @@ static void auplay_destructor(void *arg)
 }
 
 
+static void errorCallback(AAudioStream *stream, void *userData,
+			  aaudio_result_t error) {
+	struct auplay_st *st = userData;
+	(void)error;
+
+	aaudio_stream_state_t streamState = AAudioStream_getState(stream);
+	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
+		info("aaudio: player: stream disconnected\n");
+		// now close_stream(stream); open_player_stream(st);
+		// calls should be made on a separate thread
+	}
+}
+
+
 static int open_player_stream(struct auplay_st *st) {
 
 	AAudioStreamBuilder *builder;
@@ -73,8 +87,9 @@ static int open_player_stream(struct auplay_st *st) {
 	AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
 	AAudioStreamBuilder_setSessionId(builder, AAUDIO_SESSION_ID_ALLOCATE);
 	AAudioStreamBuilder_setUsage(builder,
-               AAUDIO_USAGE_VOICE_COMMUNICATION),
+		 AAUDIO_USAGE_VOICE_COMMUNICATION);
 	AAudioStreamBuilder_setDataCallback(builder, &dataCallback, st);
+	AAudioStreamBuilder_setErrorCallback(builder, &errorCallback, st);
 
 	result = AAudioStreamBuilder_openStream(builder, &playerStream);
 	if (result != AAUDIO_OK) {
