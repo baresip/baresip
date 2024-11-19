@@ -28,6 +28,7 @@ static void auplay_destructor(void *arg)
 {
 	struct auplay_st *st = arg;
 
+	info("aaudio: player: closing stream\n");
 	close_stream(st->playerStream);
 
 	st->wh = NULL;
