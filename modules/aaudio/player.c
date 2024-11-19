@@ -13,14 +13,12 @@
 
 
 struct auplay_st {
+	AAudioStream *playerStream;
 	auplay_write_h *wh;
 	void *arg;
 	struct auplay_prm play_prm;
 	size_t sampsz;
 };
-
-
-AAudioStream *playerStream = NULL;
 
 
 static int open_player_stream(struct auplay_st *st);
@@ -30,7 +28,7 @@ static void auplay_destructor(void *arg)
 {
 	struct auplay_st *st = arg;
 
-	close_stream(playerStream);
+	close_stream(st->playerStream);
 
 	st->wh = NULL;
 }
@@ -60,7 +58,7 @@ static void* restart_player_stream(void* data) {
 	aaudio_result_t result;
 	struct auplay_st *st = data;
 
-	AAudioStream_close(playerStream);
+	AAudioStream_close(st->playerStream);
 
 	result = open_player_stream(st);
 	if (result != AAUDIO_OK) {
@@ -68,7 +66,7 @@ static void* restart_player_stream(void* data) {
 		return NULL;
 	}
 
-	result = AAudioStream_requestStart(playerStream);
+	result = AAudioStream_requestStart(st->playerStream);
 	if (result != AAUDIO_OK)
 		warning("aaudio: player: failed to start stream\n");
 	else
@@ -82,7 +80,7 @@ static void errorCallback(AAudioStream *stream, void *userData,
 			  aaudio_result_t error) {
 	struct auplay_st *st = userData;
 	(void)error;
-	pthread_t  thread_id;
+	pthread_t thread_id;
 	int res;
 
 	aaudio_stream_state_t streamState = AAudioStream_getState(stream);
@@ -124,7 +122,7 @@ static int open_player_stream(struct auplay_st *st) {
 	AAudioStreamBuilder_setDataCallback(builder, &dataCallback, st);
 	AAudioStreamBuilder_setErrorCallback(builder, &errorCallback, st);
 
-	result = AAudioStreamBuilder_openStream(builder, &playerStream);
+	result = AAudioStreamBuilder_openStream(builder, &st->playerStream);
 	if (result != AAUDIO_OK) {
 		warning("aaudio: player: failed to open stream: error %s\n",
 			AAudio_convertResultToText(result));
@@ -134,17 +132,17 @@ static int open_player_stream(struct auplay_st *st) {
 	info("aaudio: player: opened stream with direction %d, "
 	     "sharing mode %d, sample rate %d, format %d, sessionId %d, "
 	     "usage %d\n",
-	     AAudioStream_getDirection(playerStream),
-	     AAudioStream_getSharingMode(playerStream),
-	     AAudioStream_getSampleRate(playerStream),
-	     AAudioStream_getFormat(playerStream),
-	     AAudioStream_getSessionId(playerStream),
-	     AAudioStream_getUsage(playerStream));
+	     AAudioStream_getDirection(st->playerStream),
+	     AAudioStream_getSharingMode(st->playerStream),
+	     AAudioStream_getSampleRate(st->playerStream),
+	     AAudioStream_getFormat(st->playerStream),
+	     AAudioStream_getSessionId(st->playerStream),
+	     AAudioStream_getUsage(st->playerStream));
 
 	AAudioStreamBuilder_delete(builder);
 
-	AAudioStream_setBufferSizeInFrames(playerStream,
-		AAudioStream_getFramesPerBurst(playerStream) * 2);
+	AAudioStream_setBufferSizeInFrames(st->playerStream,
+		AAudioStream_getFramesPerBurst(st->playerStream) * 2);
 
 	return AAUDIO_OK;
 }
@@ -187,21 +185,20 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (result != AAUDIO_OK)
 		goto out;
 
-	result = AAudioStream_requestStart(playerStream);
+	result = AAudioStream_requestStart(st->playerStream);
 	if (result != AAUDIO_OK) {
 		warning("aaudio: player: failed to start stream\n");
 		goto out;
 	}
 
 	module_event("aaudio", "player: sessionid", NULL, NULL, "%d",
-		     AAudioStream_getSessionId(playerStream));
+		     AAudioStream_getSessionId(st->playerStream));
 
 	info ("aaudio: player: stream started\n");
 
   out:
 	if (result != AAUDIO_OK) {
-		close_stream(playerStream);
-		close_stream(recorderStream);
+		close_stream(st->playerStream);
 		mem_deref(st);
 	}
 	else

@@ -14,6 +14,7 @@
 
 
 struct ausrc_st {
+	AAudioStream *recorderStream;
 	ausrc_read_h *rh;
 	void *arg;
 	struct ausrc_prm src_prm;
@@ -25,9 +26,6 @@ struct ausrc_st {
 };
 
 
-AAudioStream *recorderStream = NULL;
-
-
 static int open_recorder_stream(struct ausrc_st *st);
 
 
@@ -35,7 +33,7 @@ static void ausrc_destructor(void *arg)
 {
 	struct ausrc_st *st = arg;
 
-	close_stream(recorderStream);
+	close_stream(st->recorderStream);
 
 	mem_deref(st->sampv);
 	st->rh = NULL;
@@ -86,7 +84,7 @@ static void* restart_recorder_stream(void* data) {
 	aaudio_result_t result;
 	struct ausrc_st *st = data;
 
-	AAudioStream_close(recorderStream);
+	AAudioStream_close(st->recorderStream);
 
 	result = open_recorder_stream(st);
 	if (result != AAUDIO_OK) {
@@ -94,7 +92,7 @@ static void* restart_recorder_stream(void* data) {
 		return NULL;
 	}
 
-	result = AAudioStream_requestStart(recorderStream);
+	result = AAudioStream_requestStart(st->recorderStream);
 	if (result != AAUDIO_OK)
 		warning("aaudio: recorder: failed to start stream\n");
 	else
@@ -151,7 +149,7 @@ static int open_recorder_stream(struct ausrc_st *st) {
 	AAudioStreamBuilder_setDataCallback(builder, &dataCallback, st);
 	AAudioStreamBuilder_setErrorCallback(builder, &errorCallback, st);
 
-	result = AAudioStreamBuilder_openStream(builder, &recorderStream);
+	result = AAudioStreamBuilder_openStream(builder, &st->recorderStream);
 	if (result != AAUDIO_OK) {
 		warning("aaudio: recorder: failed to open stream: error %s\n",
 			AAudio_convertResultToText(result));
@@ -161,17 +159,17 @@ static int open_recorder_stream(struct ausrc_st *st) {
 	info("aaudio: recorder: opened stream with direction %d, "
 	     "sharing mode %d, sample rate %d, format %d, sessionId %d, "
 	     "usage %d\n",
-	     AAudioStream_getDirection(recorderStream),
-	     AAudioStream_getSharingMode(recorderStream),
-	     AAudioStream_getSampleRate(recorderStream),
-	     AAudioStream_getFormat(recorderStream),
-	     AAudioStream_getSessionId(recorderStream),
-	     AAudioStream_getUsage(recorderStream));
+	     AAudioStream_getDirection(st->recorderStream),
+	     AAudioStream_getSharingMode(st->recorderStream),
+	     AAudioStream_getSampleRate(st->recorderStream),
+	     AAudioStream_getFormat(st->recorderStream),
+	     AAudioStream_getSessionId(st->recorderStream),
+	     AAudioStream_getUsage(st->recorderStream));
 
 	AAudioStreamBuilder_delete(builder);
 
-	AAudioStream_setBufferSizeInFrames(recorderStream,
-		AAudioStream_getFramesPerBurst(recorderStream) * 2);
+	AAudioStream_setBufferSizeInFrames(st->recorderStream,
+		AAudioStream_getFramesPerBurst(st->recorderStream) * 2);
 
 	return AAUDIO_OK;
 }
@@ -225,21 +223,20 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (result != AAUDIO_OK)
 		goto out;
 
-	result = AAudioStream_requestStart(recorderStream);
+	result = AAudioStream_requestStart(st->recorderStream);
 	if (result != AAUDIO_OK) {
 		warning("aaudio: recorder: failed to start stream\n");
 		goto out;
 	}
 
 	module_event("aaudio", "recorder sessionid", NULL, NULL, "%d",
-		     AAudioStream_getSessionId(recorderStream));
+		     AAudioStream_getSessionId(st->recorderStream));
 
 	info("aaudio: recorder: stream started\n");
 
   out:
 	if (result != AAUDIO_OK) {
-		close_stream(playerStream);
-		close_stream(recorderStream);
+		close_stream(st->recorderStream);
 		mem_deref(st);
 	}
 	else

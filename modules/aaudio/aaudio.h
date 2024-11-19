@@ -6,9 +6,6 @@
 
 #include <aaudio/AAudio.h>
 
-extern AAudioStream *playerStream;
-extern AAudioStream *recorderStream;
-
 void close_stream(AAudioStream *stream);
 
 int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
