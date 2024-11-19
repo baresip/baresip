@@ -82,35 +82,47 @@ static void ausrc_destructor(void *arg)
 }
 
 
+static void* restart_recorder_stream(void* data) {
+	aaudio_result_t result;
+	struct ausrc_st *st = data;
+
+	AAudioStream_close(recorderStream);
+
+	result = open_recorder_stream(st);
+	if (result != AAUDIO_OK) {
+		warning("aaudio: recorder: failed to open stream\n");
+		return NULL;
+	}
+
+	result = AAudioStream_requestStart(recorderStream);
+	if (result != AAUDIO_OK)
+		warning("aaudio: recorder: failed to start stream\n");
+	else
+		info("aaudio: recorder: stream started\n");
+
+	pthread_exit(NULL);
+}
+
+
 static void errorCallback(AAudioStream *stream, void *userData,
 			  aaudio_result_t error) {
 	struct ausrc_st *st = userData;
-	aaudio_result_t result;
 	(void)error;
+	pthread_t thread_id;
+	int res;
 
 	aaudio_stream_state_t streamState = AAudioStream_getState(stream);
 	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
 		info("aaudio: recorder: stream disconnected\n");
-		/* If you are notified of the disconnect in an error
-		 * callback thread then the stopping and closing of
-		 * the stream must be done from another thread.
-		 * Otherwise you may have a deadlock.
-		 * https://developer.android.com/ndk/reference/group/audio#aaudiostreambuilder_seterrorcallback
-		 * https://developer.android.com/ndk/reference/group/audio#aaudiostream_errorcallback
-		 * So how to exectute the followging statements from
-		 * another thread?
-		 */
-		AAudioStream_close(recorderStream);
-		result = open_recorder_stream(st);
-		if (result != AAUDIO_OK) {
-			warning("aaudio: failed to open recorder stream\n");
+		res = pthread_create(&thread_id, NULL,
+				     restart_recorder_stream, (void *)st);
+		if (res) {
+			warning("aaudio: recorder: error creating thread: "
+				"%d\n",	res);
 			return;
 		}
-		result = AAudioStream_requestStart(recorderStream);
-		if (result != AAUDIO_OK)
-			warning("aaudio: recorder: failed to start stream\n");
-		else
-			info("aaudio: recorder: stream started\n");
+		info("aaudio: recorder: created new thread (%u)\n",
+		     thread_id);
 	}
 }
 
