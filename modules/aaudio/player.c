@@ -23,6 +23,9 @@ struct auplay_st {
 AAudioStream *playerStream = NULL;
 
 
+static int open_player_stream(struct auplay_st *st);
+
+
 static void auplay_destructor(void *arg)
 {
 	struct auplay_st *st = arg;
@@ -56,13 +59,32 @@ static void auplay_destructor(void *arg)
 static void errorCallback(AAudioStream *stream, void *userData,
 			  aaudio_result_t error) {
 	struct auplay_st *st = userData;
+	aaudio_result_t result;
 	(void)error;
 
 	aaudio_stream_state_t streamState = AAudioStream_getState(stream);
 	if (streamState == AAUDIO_STREAM_STATE_DISCONNECTED) {
 		info("aaudio: player: stream disconnected\n");
-		/* now close_stream(stream); open_player_stream(st);
-		   calls should be made on a separate thread */
+		/* If you are notified of the disconnect in an error
+		 * callback thread then the stopping and closing of
+		 * the stream must be done from another thread.
+		 * Otherwise you may have a deadlock.
+		 * https://developer.android.com/ndk/reference/group/audio#aaudiostreambuilder_seterrorcallback
+		 * https://developer.android.com/ndk/reference/group/audio#aaudiostream_errorcallback
+		 * So how to exectute the followging statements from
+		 * another thread?
+		 */
+		AAudioStream_close(playerStream);
+		result = open_player_stream(st);
+		if (result != AAUDIO_OK) {
+			warning("aaudio: failed to open player stream\n");
+			return;
+		}
+		result = AAudioStream_requestStart(playerStream);
+		if (result != AAUDIO_OK)
+			warning("aaudio: player: failed to start stream\n");
+		else
+			info("aaudio: player: stream started\n");
 	}
 }
 
