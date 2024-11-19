@@ -34,7 +34,7 @@ static void ausrc_destructor(void *arg)
 	struct ausrc_st *st = arg;
 
 	info("aaudio: recorder: closing stream\n");
-	close_stream(st->recorderStream);
+	aaudio_close_stream(st->recorderStream);
 
 	mem_deref(st->sampv);
 	st->rh = NULL;
@@ -237,7 +237,7 @@ int aaudio_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
   out:
 	if (result != AAUDIO_OK) {
-		close_stream(st->recorderStream);
+		aaudio_close_stream(st->recorderStream);
 		mem_deref(st);
 	}
 	else

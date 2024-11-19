@@ -29,7 +29,7 @@ static void auplay_destructor(void *arg)
 	struct auplay_st *st = arg;
 
 	info("aaudio: player: closing stream\n");
-	close_stream(st->playerStream);
+	aaudio_close_stream(st->playerStream);
 
 	st->wh = NULL;
 }
@@ -199,7 +199,7 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 
   out:
 	if (result != AAUDIO_OK) {
-		close_stream(st->playerStream);
+		aaudio_close_stream(st->playerStream);
 		mem_deref(st);
 	}
 	else

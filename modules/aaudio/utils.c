@@ -1,5 +1,5 @@
 /**
- * @file aaudio/util.c  AAudio audio driver for Android
+ * @file aaudio/utils.c  AAudio audio driver for Android
  *
  * Copyright (C) 2024 Juha Heinanen
  */
@@ -9,7 +9,7 @@
 #include "aaudio.h"
 
 
-void close_stream(AAudioStream *stream) {
+void aaudio_close_stream(AAudioStream *stream) {
 	if (stream) {
 		aaudio_stream_state_t state =
 			AAudioStream_getState(stream);
