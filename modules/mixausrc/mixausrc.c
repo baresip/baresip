@@ -559,6 +559,7 @@ static int process(struct mixstatus *st, struct auframe *af)
 		warning("mixausrc: ptime changed %u --> %u.\n",
 			st->ptime, ptime);
 		stop_ausrc(st);
+		st->ptime = 0;
 		st->nextmode = FM_FADEIN;
 		return EINVAL;
 	}
