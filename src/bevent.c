@@ -403,6 +403,8 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		err |= odict_entry_add(od, "direction", ODICT_STRING, dir);
 		err |= odict_entry_add(od, "peeruri",
 				       ODICT_STRING, call_peeruri(call));
+		err |= odict_entry_add(od, "localuri",
+				       ODICT_STRING, call_localuri(call));
 		peerdisplayname = call_peername(call);
 		if (peerdisplayname){
 				err |= odict_entry_add(od, "peerdisplayname",
