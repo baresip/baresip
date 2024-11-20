@@ -517,16 +517,12 @@ static int vtx_thread(void *arg)
 	uint64_t jfs;
 	uint64_t start_jfs  = tmr_jiffies_usec();
 	uint64_t target_jfs = tmr_jiffies_usec();
-	uint32_t bitrate;
+	uint32_t bitrate = vtx->video->cfg.send_bitrate;
 
-	if (vtx->video->cfg.send_bitrate)
-		bitrate = vtx->video->cfg.send_bitrate;
-	else
-		bitrate = vtx->video->cfg.bitrate;
-
-	const uint64_t max_delay = PKT_SIZE * 8 * 1000000LL / bitrate + 1;
+	const uint64_t max_delay =
+		bitrate ? PKT_SIZE * 8 * 1000000LL / bitrate + 1 : 0;
 	const uint64_t max_burst =
-		vtx->video->cfg.burst_bits * 1000000LL / bitrate;
+		bitrate ? vtx->video->cfg.burst_bits * 1000000LL / bitrate : 0;
 
 	struct vidqent *qent = NULL;
 	struct mbuf *mbd;
@@ -545,24 +541,25 @@ static int vtx_thread(void *arg)
 
 		jfs = tmr_jiffies_usec();
 
-		if (jfs < target_jfs) {
-			uint64_t delay = target_jfs - jfs;
-			if (delay > max_delay) {
-				delay	  = max_delay;
-				start_jfs = jfs + delay;
-				sent	  = 0;
+		if (bitrate) {
+			if (jfs < target_jfs) {
+				uint64_t delay = target_jfs - jfs;
+				if (delay > max_delay) {
+					delay	  = max_delay;
+					start_jfs = jfs + delay;
+					sent	  = 0;
+				}
+				sys_usleep((unsigned int)delay);
 			}
-			sys_usleep((unsigned int)delay);
-		}
-		else {
-			if (jfs - max_burst > target_jfs) {
-				start_jfs = jfs - max_burst;
-				sent	  = 0;
+			else {
+				if (jfs - max_burst > target_jfs) {
+					start_jfs = jfs - max_burst;
+					sent	  = 0;
+				}
 			}
+			sent += mbuf_get_left(qent->mb) * 8;
+			target_jfs = start_jfs + sent * 1000000 / bitrate;
 		}
-
-		sent += mbuf_get_left(qent->mb) * 8;
-		target_jfs = start_jfs + sent * 1000000 / bitrate;
 
 		mbd = mbuf_dup(qent->mb);
 
