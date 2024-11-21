@@ -1,5 +1,6 @@
 set(MODULES
   aac
+  aaudio
   account
   alsa
   amr
