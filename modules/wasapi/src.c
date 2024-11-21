@@ -102,7 +102,7 @@ static int src_thread(void *arg)
 		client, AUDCLNT_SHAREMODE_SHARED,
 		AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM |
 			AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY,
-		(st->prm.ptime * REF_PER_MS), 0, format, NULL);
+		(st->prm.ptime * REF_PER_MS * 2), 0, format, NULL);
 	CHECK_HR(hr, "wasapi/src: IAudioClient_Initialize failed");
 
 	hr = IAudioClient_GetService(client, &IID_IAudioCaptureClient,
