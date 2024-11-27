@@ -392,6 +392,7 @@ static void encode_rtp_send(struct vtx *vtx, struct vidframe *frame,
 		mtx_lock(vtx->lock_enc);
 
 		if (vtx->vc && vtx->vc->packetizeh) {
+			packet->picup = vtx->picup;
 			err = vtx->vc->packetizeh(vtx->enc, packet);
 			if (err)
 				goto out;

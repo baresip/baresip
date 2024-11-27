@@ -1096,6 +1096,7 @@ struct vidpacket {
 	size_t size;         /**< Size of buffer                    */
 	uint64_t timestamp;  /**< Timestamp in VIDEO_TIMEBASE units */
 	bool keyframe;       /**< True=keyframe, False=deltaframe   */
+	bool picup;          /**< Picture update requested          */
 };
 
 /* Declare function pointer */
