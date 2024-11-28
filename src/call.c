@@ -1117,8 +1117,11 @@ int call_modify(struct call *call)
  * @param call   Call to hangup
  * @param scode  Optional status code
  * @param reason Optional reason
+ * @param fmt    Formatted headers
+ * @param ...    Variable arguments
  */
-void call_hangup(struct call *call, uint16_t scode, const char *reason)
+void call_hangupf(struct call *call, uint16_t scode, const char *reason,
+		 const char *fmt, ...)
 {
 	if (!call)
 		return;
@@ -1142,7 +1145,11 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 
 			info("call: rejecting incoming call from %s (%u %s)\n",
 			     call->peer_uri, scode, reason);
-			(void)sipsess_reject(call->sess, scode, reason, NULL);
+			va_list ap;
+			va_start(ap, fmt);
+			(void)sipsess_reject(call->sess, scode, reason,
+					     fmt ? "%v" : NULL, fmt, &ap);
+			va_end(ap);
 		}
 	}
 	else {
@@ -1159,6 +1166,19 @@ void call_hangup(struct call *call, uint16_t scode, const char *reason)
 	set_state(call, CALL_STATE_TERMINATED);
 
 	call_stream_stop(call);
+}
+
+
+/**
+ * Hangup the call
+ *
+ * @param call   Call to hangup
+ * @param scode  Optional status code
+ * @param reason Optional reason
+ */
+void call_hangup(struct call *call, uint16_t scode, const char *reason)
+{
+	call_hangupf(call, scode, reason, NULL);
 }
 
 
