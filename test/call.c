@@ -27,6 +27,7 @@ enum behaviour {
 	BEHAVIOUR_ANSWER = 0,
 	BEHAVIOUR_NOTHING,
 	BEHAVIOUR_REJECT,
+	BEHAVIOUR_REJECTF,
 	BEHAVIOUR_GET_HDRS,
 	BEHAVIOUR_PROGRESS,
 };
@@ -73,6 +74,7 @@ struct agent {
 	struct agent *peer;
 	struct ua *ua;
 	uint16_t close_scode;
+	char *close_prm;
 	bool failed;
 
 	unsigned n_incoming;
@@ -191,6 +193,9 @@ struct fixture {
 	mem_deref(f->c.ua);			\
 	mem_deref(f->b.ua);			\
 	mem_deref(f->a.ua);			\
+	mem_deref(f->c.close_prm);		\
+	mem_deref(f->b.close_prm);		\
+	mem_deref(f->a.close_prm);		\
 						\
 	module_unload("g711");			\
 						\
@@ -669,6 +674,10 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 	switch (ev) {
 
+	case UA_EVENT_CALL_REDIRECT:
+		ASSERT_STREQ("302,sip:c@127.0.0.1", prm);
+		break;
+
 	case UA_EVENT_CALL_INCOMING:
 		++ag->n_incoming;
 
@@ -684,6 +693,15 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 		case BEHAVIOUR_REJECT:
 			ua_hangup(ua, call, 0, 0);
+			call = NULL;
+			ag->failed = true;
+			break;
+
+		case BEHAVIOUR_REJECTF:
+			ua_hangupf(ua, call, 302, "Moved Temporarily",
+				"Contact: <sip:c@127.0.0.1>;expires=5\r\n"
+				"Diversion: <sip:a@127.0.0.1>;reason=nop\r\n"
+				"Content-Length: 0\r\n\r\n");
 			call = NULL;
 			ag->failed = true;
 			break;
@@ -801,6 +819,8 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		++ag->n_closed;
 
 		ag->close_scode = call_scode(call);
+		mem_deref(ag->close_prm);
+		str_dup(&ag->close_prm, prm);
 
 		if (ag->close_scode)
 			ag->failed = true;
@@ -973,14 +993,14 @@ int test_call_answer(void)
 }
 
 
-int test_call_reject(void)
+static int test_call_reject_priv(bool headers)
 {
 	struct fixture fix, *f = &fix;
 	int err = 0;
 
 	fixture_init(f);
 
-	f->behaviour = BEHAVIOUR_REJECT;
+	f->behaviour = headers ? BEHAVIOUR_REJECTF :  BEHAVIOUR_REJECT;
 
 	/* Make a call from A to B */
 	err = ua_connect(f->a.ua, 0, NULL, f->buri, VIDMODE_OFF);
@@ -998,11 +1018,28 @@ int test_call_reject(void)
 	ASSERT_EQ(1, fix.b.n_incoming);
 	ASSERT_EQ(0, fix.b.n_established);
 
+	ASSERT_EQ(headers ? 302 : 486, fix.a.close_scode);
+	ASSERT_STREQ(headers ? "302 Moved Temporarily" :
+			       "486 Busy Here", fix.a.close_prm);
+
  out:
 	fixture_close(f);
 
 	return err;
 }
+
+
+int test_call_reject(void)
+{
+	int err;
+	err = test_call_reject_priv(false);
+	if (err)
+		return err;
+
+	err = test_call_reject_priv(true);
+	return err;
+}
+
 
 static int test_call_immediate_cancel(void)
 {
