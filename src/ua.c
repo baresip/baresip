@@ -1428,21 +1428,7 @@ int ua_connect(struct ua *ua, struct call **callp,
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason)
 {
-	if (!ua)
-		return;
-
-	if (!call) {
-		call = ua_call(ua);
-		if (!call)
-			return;
-	}
-
-	call_hangup(call, scode, reason);
-
-	bevent_call_emit(UA_EVENT_CALL_CLOSED, call,
-			 reason ? reason : "Connection reset by user");
-
-	mem_deref(call);
+	ua_hangupf(ua, call, scode, reason, NULL);
 }
 
 
