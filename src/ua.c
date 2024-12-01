@@ -1428,6 +1428,23 @@ int ua_connect(struct ua *ua, struct call **callp,
 void ua_hangup(struct ua *ua, struct call *call,
 	       uint16_t scode, const char *reason)
 {
+	ua_hangupf(ua, call, scode, reason, NULL);
+}
+
+
+/**
+ * Hangup the current call
+ *
+ * @param ua     User-Agent
+ * @param call   Call to reject, or NULL for current call
+ * @param scode  Optional status code
+ * @param reason Optional reason
+ * @param fmt    Formatted headers
+ * @param ...    Variable arguments
+ */
+void ua_hangupf(struct ua *ua, struct call *call,
+		uint16_t scode, const char *reason, const char *fmt, ...)
+{
 	if (!ua)
 		return;
 
@@ -1437,10 +1454,13 @@ void ua_hangup(struct ua *ua, struct call *call,
 			return;
 	}
 
-	call_hangup(call, scode, reason);
+	va_list ap;
+	va_start(ap, fmt);
+	call_hangupf(call, scode, reason, fmt ? "%v" : NULL, fmt, &ap);
+	va_end(ap);
 
 	bevent_call_emit(UA_EVENT_CALL_CLOSED, call,
-			 reason ? reason : "Connection reset by user");
+			 reason ? reason : "Rejected by user");
 
 	mem_deref(call);
 }
