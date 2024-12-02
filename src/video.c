@@ -968,13 +968,18 @@ static void rtcp_handler(struct stream *strm, struct rtcp_msg *msg, void *arg)
 
 	case RTCP_FIR:
 		mtx_lock(vtx->lock_enc);
+		debug("video: recv Full Intra Request (FIR)\n");
 		vtx->picup = true;
 		mtx_unlock(vtx->lock_enc);
 		break;
 
 	case RTCP_PSFB:
-		if (msg->hdr.count == RTCP_PSFB_PLI) {
-			debug("video: recv Picture Loss Indication (PLI)\n");
+		if (msg->hdr.count == RTCP_PSFB_PLI ||
+		    msg->hdr.count == RTCP_PSFB_FIR) {
+			const char *s = msg->hdr.count == RTCP_PSFB_PLI ?
+				"Picture Loss Indication (PLI)" :
+				"Full Intra Request (FIR)";
+			debug("video: recv %s\n", s);
 			mtx_lock(vtx->lock_enc);
 			vtx->picup = true;
 			mtx_unlock(vtx->lock_enc);
