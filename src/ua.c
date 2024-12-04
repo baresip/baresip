@@ -722,16 +722,6 @@ void sipsess_conn_handler(const struct sip_msg *msg, void *arg)
 		return;
 	}
 
-	/* handle multiple calls */
-	if (config->call.max_calls &&
-	    uag_call_count() + 1 > config->call.max_calls) {
-
-		info("ua: rejected call from %r (maximum %d calls)\n",
-		     &msg->from.auri, config->call.max_calls);
-		(void)sip_treply(NULL, uag_sip(), msg, 486, "Max Calls");
-		return;
-	}
-
 	/* Handle Require: header, check for any required extensions */
 	hdr = sip_msg_hdr_apply(msg, true, SIP_HDR_REQUIRE,
 				require_handler, ua);

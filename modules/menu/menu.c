@@ -656,6 +656,20 @@ static void process_module_event(struct call *call, const char *prm)
 }
 
 
+static void menu_reject_call(const struct sip_msg *msg, struct bevent *event,
+			     uint16_t scode, const char *reason)
+{
+	(void)sip_treply(NULL, uag_sip(), msg, scode, reason);
+
+	info("menu: incoming call from %r <%r> rejected: "
+	     "%u %s\n",
+	     &msg->from.dname, &msg->from.auri, scode, reason);
+	bevent_sip_msg_emit(UA_EVENT_MODULE, msg,
+			    "menu,rejected,%u %s", scode, reason);
+	bevent_stop(event);
+}
+
+
 static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct call *call2 = NULL;
@@ -670,6 +684,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	struct ua            *ua   = bevent_get_ua(event);
 	const struct sip_msg *msg  = bevent_get_msg(event);
 	struct account       *acc  = ua_account(bevent_get_ua(event));
+	struct config *config = conf_config();
 	int err;
 	(void)arg;
 
@@ -687,18 +702,16 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 	case UA_EVENT_SIPSESS_CONN:
 
+		if (config->call.max_calls &&
+		    uag_call_count() + 1 > config->call.max_calls) {
+			menu_reject_call(msg, event,
+					 486, "Max Calls");
+			break;
+		}
+
 		if (menu.dnd) {
-			const uint16_t scode = 480;
-			const char *reason = "Temporarily Unavailable";
-
-			(void)sip_treply(NULL, uag_sip(), msg, scode, reason);
-
-			info("menu: incoming call from %r <%r> rejected: "
-			     "%u %s\n",
-			     &msg->from.dname, &msg->from.auri, scode, reason);
-			bevent_sip_msg_emit(UA_EVENT_MODULE, msg,
-				"menu,rejected,%u %s", scode, reason);
-			bevent_stop(event);
+			menu_reject_call(msg, event,
+					 480, "Temporarily Unavailable");
 			break;
 		}
 
