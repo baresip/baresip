@@ -504,6 +504,22 @@ struct call *ua_find_active_call(struct ua *ua)
 }
 
 
+struct call *ua_find_call_msg(struct ua *ua, const struct sip_msg *msg)
+{
+	if (!ua || !msg)
+		return NULL;
+
+	struct le *le = NULL;
+	for (le = list_tail(&ua->calls); le; le = le->prev) {
+		struct call *call = le->data;
+		if (call_sess_cmp(call, msg))
+			break;
+	}
+
+	return le ? le->data : NULL;
+}
+
+
 static void call_event_handler(struct call *call, enum call_event ev,
 			       const char *str, void *arg)
 {
@@ -785,6 +801,11 @@ int ua_accept(struct ua *ua, const struct sip_msg *msg)
 
 	if (!ua || !msg)
 		return EINVAL;
+
+	if (ua_find_call_msg(ua, msg)) {
+		warning("ua: call was already accepted\n");
+		return EINVAL;
+	}
 
 	err = pl_strdup(&to_uri, &msg->to.auri);
 	if (err)
