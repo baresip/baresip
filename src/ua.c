@@ -1239,7 +1239,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 		goto out;
 
 	list_append(uag_list(), &ua->le, ua);
-	bevent_ua_emit(UA_EVENT_CREATE, ua, "%s", aor);
+	bevent_ua_emit(UA_EVENT_CREATE, ua, "%s", account_aor(ua->acc));
 
  out:
 	mem_deref(host);
