@@ -659,6 +659,8 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 				err);
 			return;
 		}
+
+		bevent_stop(event);
 	}
 
 	if (ua == f->a.ua)
