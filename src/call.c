@@ -2296,6 +2296,9 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 bool call_sess_cmp(const struct call *call, const struct sip_msg *msg)
 {
+	if (!call || !msg)
+		return false;
+
 	return sipsess_msg_equal(call->sess, msg);
 }
 

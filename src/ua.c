@@ -803,7 +803,7 @@ int ua_accept(struct ua *ua, const struct sip_msg *msg)
 		return EINVAL;
 
 	if (ua_find_call_msg(ua, msg)) {
-		warning("ua: call was already accepted\n");
+		warning("ua: call was already created\n");
 		return EINVAL;
 	}
 
