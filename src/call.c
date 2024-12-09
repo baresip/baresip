@@ -2299,7 +2299,7 @@ bool call_sess_cmp(const struct call *call, const struct sip_msg *msg)
 	if (!call || !msg)
 		return false;
 
-	return sipsess_msg_equal(call->sess, msg);
+	return sipsess_msg(call->sess) == msg;
 }
 
 
