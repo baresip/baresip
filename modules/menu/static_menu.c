@@ -773,40 +773,62 @@ static int cmd_enable_transp(struct re_printf *pf, void *arg)
 /**
  * Hangup the active call
  *
+ * usage: /hangup [call-id] [scode=scode] [reason=reason]
+ *
+ * E.g.:
+ * /hangup
+ * /hangup abcdef
+ * /hangup scode=603 reason=Decline
+ * /hangup abcdef scode=600 reason=Busy Everywhere
+ *
+ * Note: The arguments MUST be passed in this order.
+ *
  * @param pf   Print handler
  * @param arg  Command arguments (carg)
  *             carg->data is an optional pointer to a User-Agent
- *             carg->prm is an optional call-id string
  *
  * @return 0 if success, otherwise errorcode
  */
 
 static int cmd_hangup(struct re_printf *pf, void *arg)
 {
+	int err;
+	uint32_t scode = 0;
+	char *reason = NULL;
+	struct pl params;
+	struct pl pl = PL_INIT;
+	struct ua *ua = NULL;
+	struct call *call = NULL;
 	const struct cmd_arg *carg = arg;
-	struct ua *ua = carg->data ? carg->data : menu_uacur();
-	struct call *call = ua_call(ua);
 
-	(void)pf;
+	err = menu_get_call_ua(pf, carg, &ua, &call);
+	if (err)
+		return err;
 
-	if (str_isset(carg->prm)) {
-		call = uag_call_find(carg->prm);
-		if (!call) {
-			re_hprintf(pf, "call %s not found\n", carg->prm);
+	pl_set_str(&params, carg->prm);
+
+	fmt_param_sep_get(&params, "scode", ' ', &pl);
+	if (pl_isset(&pl)) {
+		scode = pl_u32(&pl);
+		if (scode < 400) {
+			re_hprintf(pf, "Hangup scode must be >= 400.\n");
 			return EINVAL;
 		}
-
-		ua = call_get_ua(call);
 	}
 
-	if (!ua) {
-		re_hprintf(pf, "no active call\n");
-		return ENOENT;
+	pl.l = 0;
+	fmt_param_sep_get(&params, "reason", ' ', &pl);
+	if (pl_isset(&pl)) {
+		err = pl_strdup(&reason, &pl);
+		if (err)
+			return err;
 	}
 
-	ua_hangup(ua, call, 0, NULL);
+	ua_hangup(ua, call, scode, reason);
 
-	return 0;
+	mem_deref(reason);
+
+	return err;
 }
 
 
@@ -1490,7 +1512,7 @@ static const struct cmd cmdv[] = {
                              "direction.",              cmd_dialdir          },
 {"dnd",       0,    CMD_PRM, "Set Do not Disturb",      cmd_dnd              },
 {"entransp",  0,    CMD_PRM, "Enable/Disable transport", cmd_enable_transp   },
-{"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
+{"hangup",    'b',  CMD_PRM, "Hangup call",             cmd_hangup           },
 {"hangupall", 0,    CMD_PRM, "Hangup all calls with direction"
                                                        ,cmd_hangupall        },
 {"help",      'h',        0, "Help menu",               print_commands       },
