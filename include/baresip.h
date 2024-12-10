@@ -236,6 +236,7 @@ bool call_has_video(const struct call *call);
 bool call_early_video_available(const struct call *call);
 bool call_refresh_allowed(const struct call *call);
 bool call_ack_pending(const struct call *call);
+bool call_sess_cmp(const struct call *call, const struct sip_msg *msg);
 int  call_transfer(struct call *call, const char *uri);
 int  call_replace_transfer(struct call *target_call, struct call *source_call);
 int  call_status(struct re_printf *pf, const struct call *call);
@@ -963,6 +964,7 @@ int  ua_call_alloc(struct call **callp, struct ua *ua,
 		   struct call *xcall, const char *local_uri,
 		   bool use_rtp);
 struct call *ua_find_call_state(const struct ua *ua, enum call_state st);
+struct call *ua_find_call_msg(struct ua *ua, const struct sip_msg *msg);
 int ua_raise(struct ua *ua);
 int ua_set_autoanswer_value(struct ua *ua, const char *value);
 void ua_add_extension(struct ua *ua, const char *extension);
