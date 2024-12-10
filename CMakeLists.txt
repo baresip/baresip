@@ -13,7 +13,7 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-project(baresip VERSION 3.17.1)
+project(baresip VERSION 3.18)
 
 set(PROJECT_SOVERSION 19) # bump if ABI breaks
 
