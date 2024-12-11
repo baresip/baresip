@@ -366,7 +366,6 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	pthread_mutex_lock(&m->mutex);
 	aubuf_flush(m->play_aubuf);
-	audiocore_enable(true);
 	audiocore_start();
 	m->play = st;
 	m->play_started = true;
