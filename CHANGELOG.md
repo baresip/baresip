@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## v3.18.0 - 2024-12-11
+
+## What's Changed
+* cmake: fix clang 19 c23 extension warnings by @sreimers in https://github.com/baresip/baresip/pull/3189
+* cmake: install logo.png and *.wav files again (fixes #3191) by @robert-scheck in https://github.com/baresip/baresip/pull/3194
+* menu dnd event by @cspiel1 in https://github.com/baresip/baresip/pull/3186
+* ci/build: use GCC 14 on Ubuntu 24.04 by @robert-scheck in https://github.com/baresip/baresip/pull/3193
+* ci/fedora: adapt workflow for RPM 4.20 in Fedora 41 (fixes #3183) by @robert-scheck in https://github.com/baresip/baresip/pull/3192
+* test: disable test_call_webrtc in thread mode by @alfredh in https://github.com/baresip/baresip/pull/3190
+* debian: release v3.17.1 by @sreimers in https://github.com/baresip/baresip/pull/3195
+* ci/mingw: use ubuntu-24.04 and bump openssl by @sreimers in https://github.com/baresip/baresip/pull/3196
+* menu: fix 302 Moved Temporarily redirect call by @cspiel1 in https://github.com/baresip/baresip/pull/3198
+* core: remove obsolete dnd flag by @cspiel1 in https://github.com/baresip/baresip/pull/3200
+* wasapi: Add WASAPI Audio module by @sreimers in https://github.com/baresip/baresip/pull/3165
+* menu: a config flag for SIP MESSAGE tone by @cspiel1 in https://github.com/baresip/baresip/pull/3203
+* mixausrc: fixing some type conversion warnings (MSVC) by @sreimers in https://github.com/baresip/baresip/pull/3205
+* winwave: remove (replaced by WASAPI module) by @sreimers in https://github.com/baresip/baresip/pull/3204
+* pulse: use default string as default device by @sreimers in https://github.com/baresip/baresip/pull/3206
+* mixausrc: reset mixstatus ptime if ptime changes by @maximilianfridrich in https://github.com/baresip/baresip/pull/3216
+* bevent: Add local URI information to events by @mrkiko in https://github.com/baresip/baresip/pull/3217
+* ua: update doxygen comment by @alfredh in https://github.com/baresip/baresip/pull/3218
+* AAudio module by @juha-h in https://github.com/baresip/baresip/pull/3208
+* wasapi/src: increase record buffer size by @sreimers in https://github.com/baresip/baresip/pull/3221
+* ua,call: add API for rejecting incoming call by @cspiel1 in https://github.com/baresip/baresip/pull/3228
+* video: add picture update bool to vidpacket by @maximilianfridrich in https://github.com/baresip/baresip/pull/3227
+* video: allow RTCP FIR packets as payload-specific feedback by @maximilianfridrich in https://github.com/baresip/baresip/pull/3230
+* cmake: fix APPLE RPATH workaround by @sreimers in https://github.com/baresip/baresip/pull/3232
+* readme: sync with wiki by @alfredh in https://github.com/baresip/baresip/pull/3241
+* bump version to 3.18.0 by @alfredh in https://github.com/baresip/baresip/pull/3243
+
+## New Contributors
+* @mrkiko made their first contribution in https://github.com/baresip/baresip/pull/3217
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.17.0...v3.18.0
+
+
 ## v3.17.0 - 2024-11-06
 
 ### What's Changed
