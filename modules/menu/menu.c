@@ -1159,6 +1159,76 @@ int menu_param_decode(const char *prm, const char *name, struct pl *val)
 }
 
 
+/**
+ * Find ua and call from command arguments.
+ *
+ * Assumes that the first argument passed in carg->prm is a valid call-id
+ * (if passed at all). If carg->data is set, it MUST be a pointer to a
+ * struct ua. If no call-id is passed in carg->prm, the currently active call
+ * is returned, if there is an active call.
+ *
+ * @param pf     Print backend
+ * @param carg   Command arguments
+ * @param uap    Pointer-pointer to ua. Set on successful return.
+ * @param callp  Pointer-pointer to call. Set on successful return.
+ *
+ * @return 0 for success, otherwise errorcode
+ */
+int menu_get_call_ua(struct re_printf *pf, const struct cmd_arg *carg,
+		     struct ua **uap, struct call **callp)
+{
+	int err = 0;
+	struct ua *ua;
+	struct call *call;
+	const char *eq;
+	char *cid = NULL;
+	struct pl pl = PL_INIT;
+
+	if (!carg || !uap || !callp)
+		return EINVAL;
+
+	/* fallback */
+	ua = carg->data ? carg->data : menu_uacur();
+	call = ua_call(ua);
+
+	if (re_regex(carg->prm, str_len(carg->prm), "[^ ]+", &pl))
+		goto out;
+
+	/* A call-id MUST NOT contain an '='. See RFC 3261 section 25.1. */
+	eq = pl_strchr(&pl, '=');
+	if (eq)
+		goto out;
+
+	err = pl_strdup(&cid, &pl);
+	if (err)
+		return err;
+
+	call = uag_call_find(cid);
+	if (!call) {
+		(void)re_hprintf(pf, "call %s not found\n", cid);
+		err = EINVAL;
+		goto out;
+	}
+
+	ua = call_get_ua(call);
+
+out:
+	if (!call && !err) {
+		(void)re_hprintf(pf, "no active call\n");
+		err = ENOENT;
+	}
+
+	if (!err) {
+		*uap = ua;
+		*callp = call;
+	}
+
+	mem_deref(cid);
+
+	return err;
+}
+
+
 static int module_init(void)
 {
 	struct pl val;
