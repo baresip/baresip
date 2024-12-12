@@ -634,8 +634,8 @@ bool net_ifaddr_filter(const struct network *net, const char *ifname,
 	if (!net_af_enabled(net, sa_af(sa)))
 		return false;
 
-	if (sa_is_loopback(sa))
-		return false;
+	//if (sa_is_loopback(sa))
+	//	return false;
 
 	return true;
 }
