@@ -506,7 +506,9 @@ int odict_encode_bevent(struct odict *od, struct bevent *event)
 		if (hdr)
 			err = odict_pl_add(od, "contact", &hdr->val);
 
-		err |= odict_pl_add(od, "display", &msg->from.dname);
+		if (pl_isset(&msg->from.dname))
+			err |= odict_pl_add(od, "display", &msg->from.dname);
+
 		err |= re_sdprintf(&buf, "%H", uri_encode, &msg->from.uri);
 		err |= odict_entry_add(od, "from", ODICT_STRING, buf);
 		mem_deref(buf);
