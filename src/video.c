@@ -911,7 +911,7 @@ static void rtcp_nack_handler(struct vtx *vtx, struct rtcp_msg *msg)
 {
 	uint16_t nack_pid;
 	uint16_t nack_blp;
-	uint16_t pids[NACK_BLPSZ + 1];
+	uint16_t pids[NACK_BLPSZ + 1] = {0};
 	struct le *le;
 
 	if (!msg || msg->hdr.count != RTCP_RTPFB_GNACK ||
