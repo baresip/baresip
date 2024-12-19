@@ -1248,7 +1248,7 @@ int ua_alloc(struct ua **uap, const char *aor)
 
 		err = tls_add_certf(uag_tls(), ua->acc->cert, host);
 		if (err) {
-			warning("uag: SIP/TLS add server "
+			warning("ua: SIP/TLS add server "
 				"certificate %s failed: %m\n",
 				ua->acc->cert, err);
 			goto out;
