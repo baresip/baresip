@@ -264,7 +264,7 @@ static int cmd_setbody(struct re_printf *pf, void *arg)
 	(void)pf;
 
 	err = pl_opt_arg(&plp, arg);
-	if (err)
+	if (err || !plp)
 		return err;
 
 	mb = mbuf_alloc(plp->l);
