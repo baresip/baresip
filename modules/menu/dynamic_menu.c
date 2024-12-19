@@ -121,12 +121,31 @@ static int set_current_call(struct re_printf *pf, void *arg)
 }
 
 
+/**
+ * Mute the active call
+ *
+ * @param pf   Print handler
+ * @param arg  Command arguments (carg)
+ *             carg->data is an optional pointer to a User-Agent
+ *             carg->prm is an optional string (yes,no,true,false,on,off,...)
+ *
+ * @return 0 if success, otherwise errorcode
+ */
 static int call_mute(struct re_printf *pf, void *arg)
 {
 	struct cmd_arg *carg = arg;
 	struct ua *ua = carg->data ? carg->data : menu_uacur();
 	struct audio *audio = call_audio(ua_call(ua));
 	bool muted = !audio_ismuted(audio);
+
+	if (str_isset(carg->prm)) {
+		int err = str_bool(&muted, carg->prm);
+		if (err) {
+			(void)re_hprintf(pf, "invalid mute value: %s.\n",
+					 carg->prm);
+			return err;
+		}
+	}
 
 	(void)re_hprintf(pf, "\ncall %smuted\n", muted ? "" : "un-");
 	audio_mute(audio, muted);
@@ -450,7 +469,7 @@ static const struct cmd callcmdv[] = {
 {"callfind",     0,  CMD_PRM, "Find call <callid>",   cmd_find_call        },
 {"hold",        'x',       0, "Call hold",            cmd_call_hold        },
 {"line",        '@', CMD_PRM, "Set current call <line>", set_current_call  },
-{"mute",        'm',       0, "Call mute/un-mute",    call_mute            },
+{"mute",        'm', CMD_PRM, "Call mute/un-mute",    call_mute            },
 {"reinvite",    'I',       0, "Send re-INVITE",       call_reinvite        },
 {"resume",      'X',       0, "Call resume",          cmd_call_resume      },
 {"sndcode",      0,  CMD_PRM, "Send Code",            send_code            },
