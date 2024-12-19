@@ -90,6 +90,9 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 
 	/* NOTE: the command will now write the response
 	   to the resp mbuf, send it back to broker */
+	
+	/* agranig: don't send anything back, as the response topic is wrong anyways */
+	/*
 
 	re_snprintf(resp_topic, sizeof(resp_topic),
 		    "/%s/command_resp/%s", mqtt->basetopic,
@@ -116,6 +119,7 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 		warning("mqtt: failed to publish message (%m)\n", err);
 		goto out;
 	}
+	*/
 
  out:
 	mem_deref(cmd_buf);
@@ -168,14 +172,15 @@ int mqtt_subscribe_start(struct mqtt *mqtt)
 {
 	int ret;
 
-	ret = mosquitto_subscribe(mqtt->mosq, NULL, mqtt->subtopic, 0);
+	ret = mosquitto_subscribe(mqtt->mosq, NULL, mqtt->subtopic, mqtt->subqos);
 	if (ret != MOSQ_ERR_SUCCESS) {
 		warning("mqtt: failed to subscribe (%s)\n",
 			mosquitto_strerror(ret));
 		return EPROTO;
 	}
 
-	info("mqtt: subscribed to pattern '%s'\n", mqtt->subtopic);
+	info("mqtt: subscribed to pattern '%s' with qos '%d'\n",
+			mqtt->subtopic, mqtt->subqos);
 
 	return 0;
 }

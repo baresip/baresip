@@ -10,9 +10,13 @@ struct mqtt {
 	char *pubtopic;		/* Topic for publish */
 	char *subtopic;		/* Topic for subscribe */
 	char *basetopic;	/* Base topic */
+	int pubqos;			/* QoS for publish */
+	int subqos;			/* QoS for subscribe */
+	int is_connected;
 	struct tmr tmr;
 	re_sock_t fd;
 	struct re_fhs *fhs;
+	
 };
 
 
@@ -33,3 +37,4 @@ int  mqtt_publish_init(struct mqtt *mqtt);
 void mqtt_publish_close(void);
 int  mqtt_publish_message(struct mqtt *mqtt, const char *topic,
 			  const char *fmt, ...);
+int publish_buffered_messages(struct mqtt *mqtt);			  
