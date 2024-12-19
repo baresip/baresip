@@ -1,5 +1,11 @@
 project(alsa_audiocore)
 
+find_package(ALSA)
+
+if(NOT ALSA_FOUND)
+  return()
+endif()
+
 list(APPEND MODULES_DETECTED ${PROJECT_NAME})
 set(MODULES_DETECTED ${MODULES_DETECTED} PARENT_SCOPE)
 
