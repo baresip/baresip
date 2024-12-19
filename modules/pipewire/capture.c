@@ -148,8 +148,10 @@ static void on_process(void *arg)
 	size_t sampc;
 
 	b = pw_stream_dequeue_buffer(st->stream);
-	if (!b)
+	if (!b) {
 		warning("pipewire: out of buffers (%m)\n", errno);
+		return;
+	}
 
 	buf = b->buffer;
 	d = &buf->datas[0];
