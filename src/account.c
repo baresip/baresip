@@ -2115,7 +2115,6 @@ int account_json_api(struct odict *od, struct odict *odcfg,
 {
 	int err = 0;
 	struct odict *obn = NULL;
-	const char *stunhost = "";
 	size_t i;
 
 	if (!acc)
@@ -2143,7 +2142,8 @@ int account_json_api(struct odict *od, struct odict *odcfg,
 	}
 	err |= odict_entry_add(odcfg, "sip_nat_outbound", ODICT_ARRAY, obn);
 
-	stunhost = account_stun_host(acc) ? account_stun_host(acc) : "";
+	const char *stunhost =
+		account_stun_host(acc) ? account_stun_host(acc) : "";
 	err |= odict_entry_add(odcfg, "stun_host", ODICT_STRING, stunhost);
 	err |= odict_entry_add(odcfg, "stun_port", ODICT_INT,
 			account_stun_port(acc));
