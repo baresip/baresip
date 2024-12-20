@@ -103,6 +103,7 @@ int test_bevent_register(void)
 	struct fixture f={.cnt=0};
 
 	err = ua_alloc(&f.ua, "A <sip:a@127.0.0.1>;regint=0");
+	TEST_ERR(err);
 	ua_call_alloc(&f.call, f.ua, VIDMODE_OFF, NULL, NULL, NULL, false);
 
 	err = bevent_register(event_handler, &f);
