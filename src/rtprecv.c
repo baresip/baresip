@@ -720,7 +720,12 @@ int rtprecv_alloc(struct rtp_receiver **rxp,
 
 		err = jbuf_alloc(&rx->jbuf, cfg->audio.jbuf_del.min,
 				 cfg->audio.jbuf_del.max);
-		err |= jbuf_set_type(rx->jbuf, cfg->audio.jbtype);
+		if (err)
+			goto out;
+
+		err = jbuf_set_type(rx->jbuf, cfg->audio.jbtype);
+		if (err)
+			goto out;
 	}
 
 	/* Video Jitter buffer */
