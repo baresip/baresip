@@ -1,0 +1,71 @@
+name: clang analyze
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  clang-analyze:
+    runs-on: ubuntu-24.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: fix flaky azure mirrors
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        sudo sed -i 's/azure\./de\./' /etc/apt/sources.list
+
+    - name: Install clang-tools
+      run: |
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-18 main"
+        sudo apt-get update && sudo apt-get install -y clang-tools-18
+
+    - name: install packages
+      run: |
+        sudo apt-get update && sudo apt-get install -y \
+                            libasound2-dev \
+                            libavcodec-dev \
+                            libavdevice-dev \
+                            libavformat-dev \
+                            libcodec2-dev \
+                            libfdk-aac-dev \
+                            libglib2.0-dev \
+                            libgstreamer1.0-dev \
+                            libgtk-3-dev \
+                            libjack-jackd2-dev \
+                            libmosquitto-dev \
+                            libmpg123-dev \
+                            libopencore-amrnb-dev \
+                            libopencore-amrwb-dev \
+                            libopus-dev \
+                            libpulse-dev \
+                            libsndfile1-dev \
+                            libspandsp-dev \
+                            libssl-dev \
+                            libvpx-dev \
+                            libx11-dev \
+                            libwebrtc-audio-processing-dev
+
+    - uses: sreimers/pr-dependency-action@v1
+      with:
+        name: re
+        repo: https://github.com/baresip/re
+        secret: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: make re
+      run: |
+        cmake -S re -B re/build
+        cmake --build re/build -j
+        mv re ../.
+
+    - name: analyze
+      run: | 
+        cmake -B build -DSTATIC=1 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18
+        analyze-build-18 --exclude modules/ctrl_dbus --exclude build/modules/ctrl_dbus \
+          --cdb build/compile_commands.json --status-bugs -v
