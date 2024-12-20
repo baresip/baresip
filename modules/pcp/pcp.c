@@ -354,7 +354,7 @@ static int module_init(void)
 
 	mnat_register(baresip_mnatl(), &mnat_pcp);
 
-	return 0;
+	return err;
 }
 
 
