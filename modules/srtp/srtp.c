@@ -359,7 +359,7 @@ static int start_crypto(struct menc_st *st, const struct pl *key_info)
 
 	memcpy(st->key_rx, new_key, olen);
 	mem_secclean(new_key, olen);
-	new_key = mem_deref(new_key);
+	mem_deref(new_key);
 
 	err = start_srtp(st, st->crypto_suite);
 	if (err)
