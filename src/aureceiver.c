@@ -441,7 +441,7 @@ int aurecv_alloc(struct audio_recv **aupp, const struct config_audio *cfg,
 
 out:
 	if (err)
-		ar = mem_deref(ar);
+		mem_deref(ar);
 	else
 		*aupp = ar;
 
@@ -813,7 +813,7 @@ int aurecv_print_pipeline(struct re_printf *pf, const struct audio_recv *ar)
 
 	err = re_hprintf(pf, "audio rx pipeline:  %10s",
 			 ar->ap ? ar->ap->name : "(play)");
-	err = mbuf_printf(mb, " <--- aubuf");
+	err |= mbuf_printf(mb, " <--- aubuf");
 	mtx_lock(ar->mtx);
 	for (le = list_head(&ar->filtl); le; le = le->next) {
 		struct aufilt_dec_st *st = le->data;
