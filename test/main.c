@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
 	}
 
 	err = baresip_init(config);
-	err = sa_set_str(&sa, "127.0.0.1", 0);
+	err |= sa_set_str(&sa, "127.0.0.1", 0);
 	err |= net_add_address(baresip_network(), &sa);
 	if (err)
 		goto out;
