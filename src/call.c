@@ -1317,8 +1317,11 @@ int call_answer(struct call *call, uint16_t scode, enum vidmode vmode)
 	info("call: answering call on line %u from %s with %u\n",
 			call->linenum, call->peer_uri, scode);
 
-	if (call->got_offer)
+	if (call->got_offer) {
 		err = call_apply_sdp(call);
+		if (err)
+			return err;
+	}
 
 	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call,
 			 "%s", !call->got_offer ? "offer" : "answer");
