@@ -138,7 +138,7 @@ static int encode_process(struct vidfilt_enc_st *st, struct vidframe *frame,
 
 		err = vidframe_alloc(&enc->frame, enc->swscale_format,
 				     &enc->dst_size);
-		if (err) {
+		if (err || !enc->frame) {
 			warning("swscale: vidframe_alloc error (%m)\n", err);
 			return err;
 		}
