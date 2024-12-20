@@ -828,6 +828,8 @@ int audio_alloc(struct audio **ap, struct list *streaml,
 	if (acc && acc->auplay_mod) {
 		err  = aurecv_set_module(a->aur, acc->auplay_mod);
 		err |= aurecv_set_device(a->aur, acc->auplay_dev);
+		if (err)
+			goto out;
 
 		info("audio: using account specific player: (%s,%s)\n",
 		     acc->auplay_mod, acc->auplay_dev);
