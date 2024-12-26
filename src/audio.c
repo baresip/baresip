@@ -1070,7 +1070,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 
 		sz = aufmt_sample_size(tx->src_fmt);
 
-		psize_alloc = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
+		psize_alloc = sz * au_calc_nsamp(prm.srate, prm.ch, prm.ptime);
 		tx->psize = psize_alloc;
 		tx->aubuf_maxsz = tx->psize * 30;
 
@@ -1095,7 +1095,7 @@ static int start_source(struct autx *tx, struct audio *a, struct list *ausrcl)
 		/* recalculate and resize aubuf if ausrc_alloc changes prm */
 		tx->src_fmt = prm.fmt;
 		sz = aufmt_sample_size(tx->src_fmt);
-		tx->psize = sz * calc_nsamp(prm.srate, prm.ch, prm.ptime);
+		tx->psize = sz * au_calc_nsamp(prm.srate, prm.ch, prm.ptime);
 		if (psize_alloc != tx->psize) {
 			tx->ausrc_prm = prm;
 			tx->aubuf_maxsz = tx->psize * 30;
@@ -1589,7 +1589,7 @@ void audio_sdp_attr_decode(struct audio *a)
 
 				sz = aufmt_sample_size(tx->src_fmt);
 
-				tx->psize = sz * calc_nsamp(tx->ac->srate,
+				tx->psize = sz * au_calc_nsamp(tx->ac->srate,
 							    tx->ac->ch,
 							    ptime_tx);
 			}
