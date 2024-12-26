@@ -125,11 +125,10 @@ jobs:
       run: |
         cmake -B build -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
 
-    - name: selftest
-      run: ./build/test/selftest
-
     - name: baresip static
-      if: ${{ matrix.os == 'ubuntu-22.04' }}
       run: |
         rm -Rf build
-        cmake -B build -DSTATIC=1 -DCMAKE_C_FLAGS="-Werror" && cmake --build build -j
+        cmake -B build -DSTATIC=1 -DMODULES="g711;ausine;fakevideo;auconv;auresamp;dtls_srtp;srtp;aufile" && cmake --build build -j
+
+    - name: selftest
+      run: ./build/test/selftest
