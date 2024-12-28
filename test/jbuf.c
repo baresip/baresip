@@ -63,7 +63,7 @@ int test_jbuf(void)
 {
 	struct jbuf *jb;
 	struct rtp_header hdr = {0};
-	char *frv[4];
+	char *frv[4] = {NULL};
 	void *mem = NULL;
 	int err;
 
@@ -184,7 +184,7 @@ int test_jbuf(void)
 int test_jbuf_adaptive(void)
 {
 	struct jbuf *jb = NULL;
-	char *frv[4];
+	char *frv[4] = {NULL};
 	uint32_t min_lat = 100; /* [ms] */
 	uint32_t max_lat = 500; /* [ms] */
 	void *mem = NULL;
@@ -242,7 +242,7 @@ int test_jbuf_adaptive(void)
 int test_jbuf_video(void)
 {
 	struct jbuf *jb = NULL;
-	char *frv[4];
+	char *frv[4] = {NULL};
 	uint32_t min_lat = 100; /* [ms] */
 	uint32_t max_lat = 500; /* [ms] */
 	void *mem = NULL;
