@@ -27,93 +27,73 @@
 static struct config core_config = {
 
 	/** SIP User-Agent */
-	{
-		"",
-		"",
-		"",
-		"",
-		"",
-		0,
-		SIP_TRANSP_UDP,
-		false,
-		false,
-		TLS_RESUMPTION_ALL,
-		0xa0,
-		0,
+	.sip = {
+		.transp = SIP_TRANSP_UDP,
+		.tls_resume = TLS_RESUMPTION_ALL,
+		.tos = 0xa0,
 	},
 
-	/** Call config */
+	.call = /** Call config */
 	{
-		120,
-		4,
-		true,
-		false
+		.local_timeout = 120,
+		.max_calls = 4,
+		.hold_other_calls = true,
+		.accept = false
 	},
 
 	/** Audio */
-	{
-		SHARE_PATH,
-		"","",
-		"","",
-		"","",
-		0,
-		0,
-		0,
-		0,
-		AUDIO_MODE_POLL,
-		false,
-		AUFMT_S16LE,
-		AUFMT_S16LE,
-		AUFMT_S16LE,
-		AUFMT_S16LE,
-		{20, 160},
-		false,
-		-35.0,
-		101
+	.audio = {
+		.audio_path = SHARE_PATH,
+		.txmode = AUDIO_MODE_POLL,
+		.level = false,
+		.src_fmt = AUFMT_S16LE,
+		.play_fmt = AUFMT_S16LE,
+		.enc_fmt = AUFMT_S16LE,
+		.dec_fmt = AUFMT_S16LE,
+		.buffer = {20, 160},
+		.adaptive = false,
+		.silence = -35.0,
+		.telev_pt = 101
 	},
 
 	/** Video */
-	{
-		"", "",
-		"", "",
-		640, 480,
-		1000000,
-		0,
-		0,
-		30,
-		true,
-		VID_FMT_YUV420P,
+	.video = {
+		.width = 640, .height = 480,
+		.bitrate = 1000000,
+		.send_bitrate = 0,
+		.burst_bits = 0,
+		.fps = 30,
+		.fullscreen = true,
+		.enc_fmt = VID_FMT_YUV420P,
 	},
 
 	/** Audio/Video Transport */
-	{
-		0xb8,
-		0x88,
-		{1024, 49152},
-		{0, 0},
-		false,
-		{
+	.avt = {
+		.rtp_tos = 0xb8,
+		.rtpv_tos = 0x88,
+		.rtp_ports = {1024, 49152},
+		.rtp_bw = {0, 0},
+		.rtcp_mux = false,
+		.audio = {
 			JBUF_FIXED,
 			{5, 10},
 		},
-		{
+		.video = {
 			JBUF_FIXED,
 			{5, 50},
 		},
-		false,
-		0,
-		false,
-		RECEIVE_MODE_MAIN,
+		.rtp_stats = false,
+		.rtp_timeout = 0,
+		.bundle = false,
+		.rxmode = RECEIVE_MODE_MAIN,
 	},
 
 	/* Network */
-	{
-		AF_UNSPEC,
-		"",
-		{ {"",0} },
-		0,
-		true,
-		false,
+	.net = {
+		.af = AF_UNSPEC,
+		.nsv = { {"",0} },
+		.use_linklocal = true,
+		.use_getaddrinfo = false,
 	},
 };
 
