@@ -48,7 +48,7 @@ jobs:
         #
         # curl https://src.fedoraproject.org/rpms/baresip/raw/rawhide/f/baresip.spec 2> /dev/null | \
         #   gawk 'sub(/^BuildRequires:\s*/, "") { \
-        #     if ($0 !~ /(cmake3|openssl[13]|libre-devel|devtoolset|desktop-file-utils|svg)/) { \
+        #     if ($0 !~ /(openssl3|libre-devel|desktop-file-utils|svg)/) { \
         #     gsub(/^%{_bindir}/, "/usr/bin"); print "          \047" $0 "\047 \\" }}' | \
         #   sort -u | head -c -3
         #
@@ -81,14 +81,20 @@ jobs:
           'pkgconfig(gstreamer-1.0)' \
           'pkgconfig(gtk+-3.0) >= 3.0' \
           'pkgconfig(jack)' \
+          'pkgconfig(libavcodec)' \
+          'pkgconfig(libavdevice)' \
+          'pkgconfig(libavfilter)' \
+          'pkgconfig(libavformat)' \
+          'pkgconfig(libavutil)' \
           'pkgconfig(libpipewire-0.3)' \
           'pkgconfig(libpulse)' \
+          'pkgconfig(libswresample)' \
+          'pkgconfig(libswscale)' \
           'pkgconfig(vpx) >= 1.3.0' \
           'portaudio-devel' \
           'python3-devel' \
           'SDL2-devel' \
           'spandsp-devel' \
-          'speex-devel' \
           'speexdsp-devel' \
           'twolame-devel' \
           '/usr/bin/gdbus-codegen'
