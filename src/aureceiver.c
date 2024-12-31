@@ -132,8 +132,8 @@ static int aurecv_alloc_aubuf(struct audio_recv *ar, const struct auframe *af)
 	int err;
 
 	sz = aufmt_sample_size(cfg->play_fmt);
-	min_sz = sz * calc_nsamp(af->srate, af->ch, cfg->buffer.min);
-	max_sz = sz * calc_nsamp(af->srate, af->ch, cfg->buffer.max);
+	min_sz = sz * au_calc_nsamp(af->srate, af->ch, cfg->buffer.min);
+	max_sz = sz * au_calc_nsamp(af->srate, af->ch, cfg->buffer.max);
 
 	debug("audio_recv: create audio buffer"
 	      " [%u - %u ms]"
