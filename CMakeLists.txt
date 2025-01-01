@@ -295,14 +295,11 @@ set_target_properties(baresip_exe PROPERTIES OUTPUT_NAME baresip)
 
 target_link_libraries(baresip_exe PRIVATE baresip ${LINKLIBS})
 
+
 ##############################################################################
 #
-# Packaging section
+# PKGCONF section
 #
-
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  add_subdirectory(packaging)
-endif()
 
 configure_file(packaging/libbaresip.pc.in libbaresip.pc @ONLY)
 
@@ -399,3 +396,13 @@ install(FILES ${DESKTOP_FILES}
   DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
   COMPONENT Applications
 )
+
+
+##############################################################################
+#
+# Packaging section
+#
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  add_subdirectory(packaging)
+endif()
