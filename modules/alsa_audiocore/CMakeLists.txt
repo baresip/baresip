@@ -18,6 +18,6 @@ else()
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${ALSA_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${ALSA_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${ALSA_LIBRARIES} audiocore)
 target_compile_options(${PROJECT_NAME} PRIVATE -D_POSIX_SOURCE)
 
