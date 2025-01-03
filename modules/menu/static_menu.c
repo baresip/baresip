@@ -795,7 +795,7 @@ static int cmd_hangup(struct re_printf *pf, void *arg)
 	int err;
 	uint32_t scode = 0;
 	char *reason = NULL;
-	struct pl params;
+	struct pl params = PL_INIT;
 	struct pl pl = PL_INIT;
 	struct ua *ua = NULL;
 	struct call *call = NULL;
