@@ -11,7 +11,7 @@
 # Versioning
 #
 
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15...3.31)
 
 project(baresip VERSION 3.18.0)
 
