@@ -81,6 +81,9 @@ jobs:
       - name: Build
         shell: cmd
         run: |
+          call "${{ matrix.config.environment_script }}"
+          cmake --version
+          ninja --version
           cmake -S . -B build -G "Ninja" -DCMAKE_C_FLAGS="/WX" -DCMAKE_BUILD_TYPE=${{ matrix.config.build }} -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=${{ matrix.config.disable_openssl }}
           cmake --build build --parallel
 
