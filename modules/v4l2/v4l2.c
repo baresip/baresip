@@ -352,7 +352,7 @@ static int start_capturing(struct vidsrc_st *st)
 static void call_frame_handler(struct vidsrc_st *st, uint8_t *buf,
 			       uint64_t timestamp)
 {
-	struct vidframe frame;
+	struct vidframe frame = {.xoffs = 0};
 
 	vidframe_init_buf(&frame, match_fmt(st->pixfmt), &st->sz, buf);
 
