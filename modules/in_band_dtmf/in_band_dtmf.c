@@ -226,7 +226,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 
 	st = encs.head->data;
 	/* Sample count for time span of 0.1s */
-	sample_count = 2 * 0.1f * st->srate;
+	sample_count = (size_t)(2 * 0.1f * st->srate);
 	old_pos = st->mb->pos;
 	mbuf_skip_to_end(st->mb);
 
