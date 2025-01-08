@@ -7,6 +7,7 @@
 #include <re.h>
 #include <baresip.h>
 #include "core.h"
+#include <sys/time.h>
 
 
 enum {
@@ -112,10 +113,29 @@ static const char *ua_event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_TRANSFER_FAILED:
 	case UA_EVENT_CALL_REDIRECT:
 	case UA_EVENT_CALL_DTMF_START:
+	case UA_EVENT_CALL_DTMF_0:
+	case UA_EVENT_CALL_DTMF_1:
+	case UA_EVENT_CALL_DTMF_2:
+	case UA_EVENT_CALL_DTMF_3:
+	case UA_EVENT_CALL_DTMF_4:
+	case UA_EVENT_CALL_DTMF_5:
+	case UA_EVENT_CALL_DTMF_6:
+	case UA_EVENT_CALL_DTMF_7:
+	case UA_EVENT_CALL_DTMF_8:
+	case UA_EVENT_CALL_DTMF_9:
+	case UA_EVENT_CALL_DTMF_A:
+	case UA_EVENT_CALL_DTMF_B:
+	case UA_EVENT_CALL_DTMF_C:
+	case UA_EVENT_CALL_DTMF_D:
+	case UA_EVENT_CALL_DTMF_ASTERISK:
+	case UA_EVENT_CALL_DTMF_POUND:
 	case UA_EVENT_CALL_DTMF_END:
 	case UA_EVENT_CALL_RTPESTAB:
 	case UA_EVENT_CALL_RTCP:
 	case UA_EVENT_CALL_MENC:
+    case UA_EVENT_CALL_ENDED_LOCAL:
+    case UA_EVENT_CALL_ENDED_REMOTE:
+    case UA_EVENT_CALL_STAT:	
 	case UA_EVENT_CALL_LOCAL_SDP:
 	case UA_EVENT_CALL_REMOTE_SDP:
 	case UA_EVENT_CALL_HOLD:
@@ -124,6 +144,9 @@ static const char *ua_event_class_name(enum ua_event ev)
 	case UA_EVENT_VU_RX:
 	case UA_EVENT_VU_TX:
 		return "VU_REPORT";
+    case UA_EVENT_TRACE_TX_MSG:
+    case UA_EVENT_TRACE_RX_MSG:
+		return "trace";
 
 	default:
 		return "other";
@@ -346,6 +369,32 @@ static int add_rtcp_stats(struct odict *od_parent, const struct rtcp_stats *rs)
 	return err;
 }
 
+static int add_call_stats(struct odict *od_parent, const struct call *call)
+{
+	struct odict *od = NULL;
+	int err = 0;
+
+	if (!od_parent || !call)
+		return EINVAL;
+
+	err  = odict_alloc(&od, 8);
+	if (err)
+		goto out;
+
+	err  = odict_entry_add(od, "pdd", ODICT_INT, call_pdd(call));
+	if (err)
+		goto out;
+
+	/* add object to the parent */
+	err = odict_entry_add(od_parent, "call_stats", ODICT_OBJECT, od);
+	if (err)
+		goto out;
+
+ out:
+	mem_deref(od);
+
+	return err;
+}
 
 /**
  * Encode an event to a dictionary
@@ -367,9 +416,16 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 	struct sdp_media *amedia;
 	struct sdp_media *vmedia;
 	int err = 0;
+	struct timeval now;
 
 	if (!od)
 		return EINVAL;
+
+    debug("event: emitting event [%s]\n", event_str);
+
+    gettimeofday(&now, NULL);
+
+    err |= odict_entry_add(od, "timestamp", ODICT_DOUBLE, (double) now.tv_sec + (double) now.tv_usec / 1000000.0);
 
 	err |= odict_entry_add(od, "type", ODICT_STRING, event_str);
 	if (!odict_lookup(od, "class")) {
@@ -476,7 +532,11 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		err = add_rtcp_stats(od, stream_rtcp_stats(strm));
 		if (err)
 			goto out;
-	}
+	} else if (ev == UA_EVENT_CALL_STAT) {
+		err = add_call_stats(od, call);
+		if (err)
+			goto out;
+    }
 
  out:
 
@@ -681,7 +741,7 @@ static void ua_event_private(struct ua *ua, enum ua_event ev,
 void ua_event(struct ua *ua, enum ua_event ev, struct call *call,
 	      const char *fmt, ...)
 {
-	char buf[256];
+	char buf[65536];
 	va_list ap;
 	static int w = CNT_DEPRECATED_WARNINGS;
 
@@ -973,6 +1033,22 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_TRANSFER_FAILED: return "TRANSFER_FAILED";
 	case UA_EVENT_CALL_REDIRECT:        return "CALL_REDIRECT";
 	case UA_EVENT_CALL_DTMF_START:      return "CALL_DTMF_START";
+	case UA_EVENT_CALL_DTMF_0:          return "CALL_DTMF_0";
+	case UA_EVENT_CALL_DTMF_1:          return "CALL_DTMF_1";
+	case UA_EVENT_CALL_DTMF_2:          return "CALL_DTMF_2";
+	case UA_EVENT_CALL_DTMF_3:          return "CALL_DTMF_3";
+	case UA_EVENT_CALL_DTMF_4:          return "CALL_DTMF_4";
+	case UA_EVENT_CALL_DTMF_5:          return "CALL_DTMF_5";
+	case UA_EVENT_CALL_DTMF_6:          return "CALL_DTMF_6";
+	case UA_EVENT_CALL_DTMF_7:          return "CALL_DTMF_7";
+	case UA_EVENT_CALL_DTMF_8:          return "CALL_DTMF_8";
+	case UA_EVENT_CALL_DTMF_9:          return "CALL_DTMF_9";
+	case UA_EVENT_CALL_DTMF_A:          return "CALL_DTMF_A";
+	case UA_EVENT_CALL_DTMF_B:          return "CALL_DTMF_B";
+	case UA_EVENT_CALL_DTMF_C:          return "CALL_DTMF_C";
+	case UA_EVENT_CALL_DTMF_D:          return "CALL_DTMF_D";
+	case UA_EVENT_CALL_DTMF_ASTERISK:   return "CALL_DTMF_*";
+	case UA_EVENT_CALL_DTMF_POUND:      return "CALL_DTMF_#";	
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
 	case UA_EVENT_CALL_RTPESTAB:        return "CALL_RTPESTAB";
 	case UA_EVENT_CALL_RTCP:            return "CALL_RTCP";
@@ -988,6 +1064,11 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_MODULE:               return "MODULE";
 	case UA_EVENT_END_OF_FILE:          return "END_OF_FILE";
 	case UA_EVENT_CUSTOM:               return "CUSTOM";
+    case UA_EVENT_TRACE_TX_MSG:         return "TRACE_TX_MSG";
+    case UA_EVENT_TRACE_RX_MSG:         return "TRACE_RX_MSG";
+    case UA_EVENT_CALL_ENDED_LOCAL:     return "CALL_ENDED_LOCAL";
+    case UA_EVENT_CALL_ENDED_REMOTE:    return "CALL_ENDED_REMOTE";
+    case UA_EVENT_CALL_STAT:            return "CALL_STAT";	
 	default: return "?";
 	}
 }

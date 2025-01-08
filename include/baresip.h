@@ -264,12 +264,14 @@ bool          call_is_onhold(const struct call *call);
 bool          call_is_outgoing(const struct call *call);
 void          call_enable_rtp_timeout(struct call *call, uint32_t timeout_ms);
 uint32_t      call_linenum(const struct call *call);
+uint64_t      call_pdd(struct call *call);
 int32_t       call_answer_delay(const struct call *call);
 void          call_set_answer_delay(struct call *call, int32_t adelay);
 struct call  *call_find_linenum(const struct list *calls, uint32_t linenum);
 struct call  *call_find_id(const struct list *calls, const char *id);
 void call_set_current(struct list *calls, struct call *call);
 const struct list *call_get_custom_hdrs(const struct call *call);
+bool          call_is_peerterm(const struct call *call);
 void call_set_media_direction(struct call *call, enum sdp_dir a,
 			     enum sdp_dir v);
 void call_set_mdir(struct call *call, enum sdp_dir a, enum sdp_dir v);
@@ -884,6 +886,22 @@ enum ua_event {
 	UA_EVENT_CALL_REDIRECT,
 	UA_EVENT_CALL_TRANSFER_FAILED,
 	UA_EVENT_CALL_DTMF_START,
+	UA_EVENT_CALL_DTMF_0,
+	UA_EVENT_CALL_DTMF_1,
+	UA_EVENT_CALL_DTMF_2,
+	UA_EVENT_CALL_DTMF_3,
+	UA_EVENT_CALL_DTMF_4,
+	UA_EVENT_CALL_DTMF_5,
+	UA_EVENT_CALL_DTMF_6,
+	UA_EVENT_CALL_DTMF_7,
+	UA_EVENT_CALL_DTMF_8,
+	UA_EVENT_CALL_DTMF_9,
+	UA_EVENT_CALL_DTMF_A,
+	UA_EVENT_CALL_DTMF_B,
+	UA_EVENT_CALL_DTMF_C,
+	UA_EVENT_CALL_DTMF_D,
+	UA_EVENT_CALL_DTMF_ASTERISK,
+	UA_EVENT_CALL_DTMF_POUND,
 	UA_EVENT_CALL_DTMF_END,
 	UA_EVENT_CALL_RTPESTAB,
 	UA_EVENT_CALL_RTCP,
@@ -900,6 +918,12 @@ enum ua_event {
 	UA_EVENT_END_OF_FILE,
 	UA_EVENT_CUSTOM,
 	UA_EVENT_SIPSESS_CONN,
+	UA_EVENT_TRACE_TX_MSG,
+    UA_EVENT_TRACE_RX_MSG,
+
+    UA_EVENT_CALL_ENDED_LOCAL,
+    UA_EVENT_CALL_ENDED_REMOTE,
+    UA_EVENT_CALL_STAT,
 
 	UA_EVENT_MAX,
 };

@@ -629,6 +629,39 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 
 		bevent_call_emit(UA_EVENT_CALL_DTMF_START, call,
 				 "%s", key_str);
+		if (key == '0') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_0, call, key_str);
+		} else if (key == '1') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_1, call, key_str);
+		} else if (key == '2') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_2, call, key_str);
+		} else if (key == '3') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_3, call, key_str);
+		} else if (key == '4') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_4, call, key_str);
+		} else if (key == '5') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_5, call, key_str);
+		} else if (key == '6') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_6, call, key_str);
+		} else if (key == '7') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_7, call, key_str);
+		} else if (key == '8') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_8, call, key_str);
+		} else if (key == '9') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_9, call, key_str);
+		} else if (key == 'A') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_A, call, key_str);
+		} else if (key == 'B') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_B, call, key_str);
+		} else if (key == 'C') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_C, call, key_str);
+		} else if (key == 'D') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_D, call, key_str);
+		} else if (key == '*') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_ASTERISK, call, key_str);
+		} else if (key == '#') {
+			ua_event(ua, UA_EVENT_CALL_DTMF_POUND, call, key_str);
+		}				 
 	}
 	else {
 		bevent_call_emit(UA_EVENT_CALL_DTMF_END, call, NULL);

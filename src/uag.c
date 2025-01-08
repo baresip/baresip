@@ -505,11 +505,15 @@ static void sip_trace_handler(bool tx, enum sip_transp tp,
 	(void)tx;
 	(void)arg;
 
-	re_printf("\x1b[36;1m"
+    ua_event(NULL,
+            tx ? UA_EVENT_TRACE_TX_MSG : UA_EVENT_TRACE_RX_MSG,
+            NULL, "%b", pkt, len);
+
+	re_printf(		  
 		  "%H#\n"
 		  "%s %J -> %J\n"
 		  "%b"
-		  "\x1b[;m\n"
+		  "\n"
 		  ,
 		  fmt_timestamp, NULL,
 		  sip_transp_name(tp), src, dst, pkt, len);

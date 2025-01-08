@@ -84,6 +84,9 @@ struct call {
 	bool use_rtp;
 	char *user_data;           /**< User data related to the call       */
 	bool evstop;               /**< UA events stopped flag, @deprecated */
+
+	uint64_t ts_invite_sent;  /**< Timestamp of first invite sent to calc stats */
+    uint64_t stat_pdd;
 };
 
 
@@ -336,6 +339,15 @@ static void call_destructor(void *arg)
 
 	if (call->state != CALL_STATE_IDLE)
 		print_summary(call);
+
+    if (call_is_peerterm(call)) {
+		info("call ended by peer\n");
+        ua_event(call->ua, UA_EVENT_CALL_ENDED_REMOTE, call, "");
+    } else {
+		info("call ended by local\n");
+        ua_event(call->ua, UA_EVENT_CALL_ENDED_LOCAL, call, "");
+    }
+
 
 	call_stream_stop(call);
 	list_unlink(&call->le);
@@ -1888,6 +1900,7 @@ static uint32_t randwait(uint32_t minwait, uint32_t maxwait)
 static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
+	const uint64_t now = tmr_jiffies();
 	uint32_t wait;
 	(void)msg;
 
@@ -1926,6 +1939,11 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 
 	/* must be done last, the handler might deref this call */
 	call_event_handler(call, CALL_EVENT_ESTABLISHED, "%s", call->peer_uri);
+    if (call->outgoing && call->ts_invite_sent != 0) {
+        call->stat_pdd = now - call->ts_invite_sent;
+        ua_event(call->ua, UA_EVENT_CALL_STAT, call, "");
+        call->ts_invite_sent = 0;
+    }	
 }
 
 
@@ -2391,6 +2409,8 @@ static void delayed_answer_handler(void *arg)
 static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
+    bool send_pdd = false;
+    const uint64_t now = tmr_jiffies();	
 	bool media;
 
 	MAGIC_CHECK(call);
@@ -2427,13 +2447,15 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	switch (msg->scode) {
 
 	case 180:
-		if (call_state(call) != CALL_STATE_EARLY)
+		if (call_state(call) != CALL_STATE_EARLY) {
 			set_state(call, CALL_STATE_RINGING);
+			send_pdd = true;
+		}
 		break;
 
 	case 183:
 		set_state(call, CALL_STATE_EARLY);
-
+		send_pdd = true;
 		break;
 	}
 
@@ -2448,6 +2470,13 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 		call_event_handler(call, CALL_EVENT_RINGING, "%s",
                                    call->peer_uri);
 	}
+
+    if (send_pdd && call->outgoing) {
+        call->stat_pdd = now - call->ts_invite_sent;
+        ua_event(call->ua, UA_EVENT_CALL_STAT, call, "");
+        call->ts_invite_sent = 0;
+    }
+	
 }
 
 
@@ -2553,6 +2582,7 @@ static int send_invite(struct call *call)
 
 	/* save call setup timer */
 	call->time_conn = time(NULL);
+	call->ts_invite_sent = tmr_jiffies();
 
 	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call, "offer");
 
@@ -3002,6 +3032,17 @@ bool call_is_outgoing(const struct call *call)
 	return call ? call->outgoing : false;
 }
 
+/**
+ * Check if a call is terminated by peer
+ *
+ * @param call Call object
+ *
+ * @return True if peer terminated, otherwise false
+ */
+bool call_is_peerterm(const struct call *call)
+{
+	return (call && call->sess) ? sipsess_is_peerterm(call->sess) : false;
+}
 
 /**
  * Enable RTP timeout for a call
@@ -3029,6 +3070,12 @@ uint32_t call_linenum(const struct call *call)
 {
 	return call ? call->linenum : 0;
 }
+
+uint64_t      call_pdd(struct call *call)
+{
+    return call ? call->stat_pdd : 0;
+}
+
 
 
 /**
