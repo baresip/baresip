@@ -74,14 +74,14 @@ jobs:
           call "${{ matrix.config.environment_script }}"
           cmake --version
           ninja --version
-          cmake -S re -B re/build
+          cmake -S re -B re/build -G "Ninja"
           cmake --build re/build -j
           mv re ../.
 
       - name: Build
         shell: cmd
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_C_FLAGS="/WX" -DCMAKE_BUILD_TYPE=${{ matrix.config.build }} -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=${{ matrix.config.disable_openssl }}
+          cmake -S . -B build -G "Ninja" -DCMAKE_C_FLAGS="/WX" -DCMAKE_BUILD_TYPE=${{ matrix.config.build }} -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=${{ matrix.config.disable_openssl }}
           cmake --build build --parallel
 
       - name: selftest
