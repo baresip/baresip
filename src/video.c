@@ -732,12 +732,6 @@ static void update_rtp_timestamp(struct timestamp_recv *tsr, uint32_t rtp_ts)
 }
 
 
-static void vidframe_clear(struct vidframe *frame)
-{
-	frame->data[0] = NULL;
-}
-
-
 /**
  * Decode incoming RTP packets using the Video decoder
  *
@@ -754,7 +748,8 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 {
 	struct video *v = vrx->video;
 	struct vidframe *frame_filt = NULL;
-	struct vidframe frame_store, *frame = &frame_store;
+	struct vidframe frame_store = {.data[0] = NULL};
+	struct vidframe *frame = &frame_store;
 	struct viddec_packet pkt = {.mb = mb, .hdr = hdr};
 	struct le *le;
 	int err = 0;
@@ -776,8 +771,6 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 	pkt.timestamp = video_calc_timebase_timestamp(
 			  timestamp_calc_extended(vrx->ts_recv.num_wraps,
 						  vrx->ts_recv.last));
-
-	vidframe_clear(frame);
 
 	err = vrx->vc->dech(vrx->dec, frame, &pkt);
 	if (err) {
