@@ -505,7 +505,7 @@ static void sip_trace_handler(bool tx, enum sip_transp tp,
 	(void)tx;
 	(void)arg;
 
-    ua_event(NULL,
+	bevent_ua_emit(
             tx ? UA_EVENT_TRACE_TX_MSG : UA_EVENT_TRACE_RX_MSG,
             NULL, "%b", pkt, len);
 
