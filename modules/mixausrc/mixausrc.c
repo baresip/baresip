@@ -714,8 +714,8 @@ static int start_process(struct mixstatus* st, const char *name,
 		return err;
 
 	/* Fading arguments */
-	st->minvol = pl_isset(&pl3) ? conv_volume(&pl3) : 0.;
-	st->ausvol = pl_isset(&pl4) ? conv_volume(&pl4) : 1.;
+	st->minvol = pl_isset(&pl3) ? conv_volume(&pl3) : 0.0f;
+	st->ausvol = pl_isset(&pl4) ? conv_volume(&pl4) : 1.0f;
 	st->i_fade = 0;
 	st->n_fade = (DEFAULT_FADE_TIME * st->ausrc_prm.srate) / 1000;
 	st->delta_fade = (1.0f - st->minvol) / st->n_fade;
