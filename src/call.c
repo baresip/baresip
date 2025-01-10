@@ -342,10 +342,10 @@ static void call_destructor(void *arg)
 
     if (call_is_peerterm(call)) {
 		info("call ended by peer\n");
-        ua_event(call->ua, UA_EVENT_CALL_ENDED_REMOTE, call, "");
+        bevent_call_emit(UA_EVENT_CALL_ENDED_REMOTE, call, "");
     } else {
 		info("call ended by local\n");
-        ua_event(call->ua, UA_EVENT_CALL_ENDED_LOCAL, call, "");
+        bevent_call_emit(UA_EVENT_CALL_ENDED_LOCAL, call, "");
     }
 
 
@@ -1941,7 +1941,7 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 	call_event_handler(call, CALL_EVENT_ESTABLISHED, "%s", call->peer_uri);
     if (call->outgoing && call->ts_invite_sent != 0) {
         call->stat_pdd = now - call->ts_invite_sent;
-        ua_event(call->ua, UA_EVENT_CALL_STAT, call, "");
+        bevent_call_emit(UA_EVENT_CALL_STAT, call, "");
         call->ts_invite_sent = 0;
     }	
 }
@@ -2473,7 +2473,7 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 
     if (send_pdd && call->outgoing) {
         call->stat_pdd = now - call->ts_invite_sent;
-        ua_event(call->ua, UA_EVENT_CALL_STAT, call, "");
+        bevent_call_emit(UA_EVENT_CALL_STAT, call, "");
         call->ts_invite_sent = 0;
     }
 	
