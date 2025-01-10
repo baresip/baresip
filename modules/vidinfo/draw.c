@@ -15,7 +15,6 @@ static void dim_region(struct vidframe *frame,
 {
 	unsigned x, y;
 	uint8_t *p;
-	double grade = 0.5;
 
 	p = frame->data[0] + x0 + y0 * frame->linesize[0];
 
@@ -23,7 +22,7 @@ static void dim_region(struct vidframe *frame,
 	for (y = 0; y < height; y++) {
 
 		for (x = 0; x < width; x++) {
-			p[x] = p[x] * grade;
+			p[x] = p[x] / 2;
 		}
 
 		p += frame->linesize[0];
