@@ -211,7 +211,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 	size_t i;
 	char digit;
 	size_t old_pos;
-	size_t sample_count;
+	size_t bytes_count;
 	(void)pf;
 
 	if (list_isempty(&encs)) {
@@ -226,7 +226,7 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 
 	st = encs.head->data;
 	/* Sample count for time span of 0.1s */
-	sample_count = 2 * 0.1f * st->srate;
+	bytes_count = sizeof(int16_t) * st->srate / 10;
 	old_pos = st->mb->pos;
 	mbuf_skip_to_end(st->mb);
 
@@ -241,9 +241,9 @@ static int in_band_dtmf_send(struct re_printf *pf, void *arg)
 			err |= autone_dtmf(st->mb, st->srate, digit);
 			/* Reduce tone length to 0.1s */
 			mbuf_set_end(st->mb,
-				st->mb->end - 9 * sample_count);
+				st->mb->end - 9 * bytes_count);
 			mbuf_skip_to_end(st->mb);
-			mbuf_fill(st->mb, 0, sample_count);
+			mbuf_fill(st->mb, 0, bytes_count);
 			break;
 
 		default: warning("in_band_dtmf: skip unsupported DTMF "
