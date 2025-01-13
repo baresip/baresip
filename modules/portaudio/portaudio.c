@@ -208,13 +208,33 @@ static void auplay_destructor(void *arg)
 	}
 }
 
+static int find_device(const char *device)
+{
+	struct mediadev *dev;
+	char *endp = NULL;
+	int dev_index;
+
+	dev = str_isset(device) && 0 != str_casecmp(device, "default")
+		? mediadev_find(&ausrc->dev_list, device)
+		: mediadev_get_default(&ausrc->dev_list);
+	if (dev)
+		return dev->device_index;
+
+	/*
+	 * Accept a numeric index as well for backwards compatibility.
+	 * This will only be supported for the audio_source and audio_player
+	 * commands and is not supported by any other audio backend.
+	 */
+	dev_index = (int)strtol(device, &endp, 10);
+	return *endp == '\0' ? dev_index : -1;
+}
 
 static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     struct ausrc_prm *prm, const char *device,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
-	PaDeviceIndex dev_index;
+	int dev_index;
 	int err;
 
 	(void)device;
@@ -223,10 +243,9 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm)
 		return EINVAL;
 
-	if (str_isset(device))
-		dev_index = atoi(device);
-	else
-		dev_index = Pa_GetDefaultInputDevice();
+	dev_index = find_device(device);
+	if (dev_index < 0)
+		return ENODEV;
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
@@ -257,7 +276,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		      auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
-	PaDeviceIndex dev_index;
+	int dev_index;
 	int err;
 
 	(void)device;
@@ -265,10 +284,9 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!stp || !ap || !prm)
 		return EINVAL;
 
-	if (str_isset(device))
-		dev_index = atoi(device);
-	else
-		dev_index = Pa_GetDefaultOutputDevice();
+	dev_index = find_device(device);
+	if (dev_index < 0)
+		return ENODEV;
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
