@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## v3.19.0 - 2025-01-15
+
+## What's Changed
+* ua: hide credentials in CREATE event by @cspiel1 in https://github.com/baresip/baresip/pull/3239
+* menu: add scode and reason arguments to hangup command by @maximilianfridrich in https://github.com/baresip/baresip/pull/3238
+* ua prevent double call accept by @cspiel1 in https://github.com/baresip/baresip/pull/3236
+* bevent: fix encode bevent without display name by @cspiel1 in https://github.com/baresip/baresip/pull/3244
+* ua: fix logging copy paste mistake by @cspiel1 in https://github.com/baresip/baresip/pull/3249
+* misc: Static code analysis fixes by @maximilianfridrich in https://github.com/baresip/baresip/pull/3252
+* menu/dynamic_menu: add argument to mute command by @maximilianfridrich in https://github.com/baresip/baresip/pull/3250
+* ci,misc: add clang-analyze and fix warnings by @sreimers in https://github.com/baresip/baresip/pull/3254
+* audio: use au_calc_nsamp() with au_ prefix by @alfredh in https://github.com/baresip/baresip/pull/3257
+* ci: add selftest to build by @alfredh in https://github.com/baresip/baresip/pull/3256
+* ci/fedora: synchronize packages with spec file from Fedora 42 by @robert-scheck in https://github.com/baresip/baresip/pull/3261
+* copyright: happy new year 2025 by @sreimers in https://github.com/baresip/baresip/pull/3262
+* debian: replace with CPack DEB generator by @sreimers in https://github.com/baresip/baresip/pull/3263
+* config: use designated initializers by @sreimers in https://github.com/baresip/baresip/pull/3260
+* menu/static_menu: fix hangup SEGV by @maximilianfridrich in https://github.com/baresip/baresip/pull/3264
+* cmake: update min requirement and use range by @sreimers in https://github.com/baresip/baresip/pull/3265
+* video: initialize vidframe properly by @sreimers in https://github.com/baresip/baresip/pull/3268
+* ci/coverage: use ubuntu-22.04 by @sreimers in https://github.com/baresip/baresip/pull/3271
+* vidinfo: avoid use of floating numbers by @alfredh in https://github.com/baresip/baresip/pull/3270
+* in_band_dtmf: avoid floating point in calculation by @alfredh in https://github.com/baresip/baresip/pull/3272
+* test: call - print info if call bundle test fails by @cspiel1 in https://github.com/baresip/baresip/pull/3279
+
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.18.0...v3.19.0
+
+
 ## v3.18.0 - 2024-12-11
 
 ## What's Changed
