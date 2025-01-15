@@ -2971,6 +2971,13 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	if (fix.err)
 		return fix.err;
 
+	if (err) {
+		warning("test: call bundle test failed with mnat=%s menc=%s "
+			"(%m)\n",
+			use_mnat ? "on" : "off",
+			use_menc ? "on" : "off", err);
+	}
+
 	return err;
 }
 
