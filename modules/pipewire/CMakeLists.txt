@@ -23,5 +23,4 @@ target_link_directories(${PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARY_DIRS})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${PIPEWIRE_LIBRARIES})
 target_compile_options(${PROJECT_NAME} PRIVATE
   -Wno-pedantic
-  -D_GNU_SOURCE
 )
