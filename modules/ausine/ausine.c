@@ -3,8 +3,6 @@
  *
  * Copyright (C) 2020 Alfred E. Heggestad
  */
-#define _DEFAULT_SOURCE 1
-#define _BSD_SOURCE 1
 #include <re_atomic.h>
 #include <re.h>
 #include <rem.h>

@@ -4,9 +4,6 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  * \ref GenericAudioStream
  */
-#define _DEFAULT_SOURCE 1
-#define _BSD_SOURCE 1
-#define _POSIX_C_SOURCE 199309L
 #include <string.h>
 #include <stdlib.h>
 #ifdef HAVE_UNISTD_H

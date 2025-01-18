@@ -3,8 +3,6 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
-#define _DEFAULT_SOURCE 1
-#define _BSD_SOURCE 1
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>

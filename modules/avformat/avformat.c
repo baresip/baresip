@@ -6,8 +6,6 @@
  *     Media Magic Technologies <developer@mediamagictechnologies.com>
  *     and Divus GmbH <developer@divus.eu>
  */
-#define _DEFAULT_SOURCE 1
-#define _BSD_SOURCE 1
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

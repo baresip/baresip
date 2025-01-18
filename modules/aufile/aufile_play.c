@@ -3,8 +3,6 @@
  *
  * Copyright (C) 2020 commend.com - Christian Spielberger
  */
-#define _DEFAULT_SOURCE 1
-#define _BSD_SOURCE 1
 #include <string.h>
 #include <re_atomic.h>
 #include <re.h>

@@ -3,8 +3,6 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
-#define _DEFAULT_SOURCE 1
-#define _BSD_SOURCE 1
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
