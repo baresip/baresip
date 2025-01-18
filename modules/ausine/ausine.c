@@ -164,7 +164,8 @@ static int play_thread(void *arg)
 				stereo_s16(sampv, (int16_t)(sample * SCALE),
 					   st->ch, &inc);
 			else if (st->prm.fmt == AUFMT_FLOAT)
-				stereo_float(sampv, sample, st->ch, &inc);
+				stereo_float(sampv, (float)sample,
+					     st->ch, &inc);
 		}
 
 		st->sec_offset = fmod(st->sec_offset + sec_per_frame * frames,
