@@ -4,7 +4,6 @@
  * Copyright (C) 2010 Alfred E. Heggestad
  */
 
-#define _XOPEN_SOURCE 1
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <sys/ipc.h>

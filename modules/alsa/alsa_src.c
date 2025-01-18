@@ -3,8 +3,6 @@
  *
  * Copyright (C) 2010 Alfred E. Heggestad
  */
-#define _DEFAULT_SOURCE 1
-#define _POSIX_SOURCE 1
 #include <sys/types.h>
 #include <sys/time.h>
 #include <stdlib.h>
