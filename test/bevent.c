@@ -64,6 +64,13 @@ int test_bevent_encode(void)
 }
 
 
+static struct dummy {
+	int foo;
+} dummy;
+
+static struct sip_msg dummy_msg;
+
+
 static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct fixture *f = arg;
@@ -73,7 +80,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	const struct sip_msg *msg = bevent_get_msg(event);
 	const char *txt = bevent_get_text(event);
 
-	if (apparg && apparg != (void *) 0xdeadbeef)
+	if (apparg && apparg != &dummy)
 		bevent_set_error(event, EINVAL);
 
 	if (ua && ua != f->ua)
@@ -82,7 +89,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 	if (call && call != f->call)
 		bevent_set_error(event, EINVAL);
 
-	if (msg && msg != (void *) 0xdeadbeef)
+	if (msg && msg != &dummy_msg)
 		bevent_set_error(event, EINVAL);
 
 	if (ev == UA_EVENT_MODULE &&
@@ -110,11 +117,11 @@ int test_bevent_register(void)
 	TEST_ERR(err);
 
 	f.expected_event = UA_EVENT_EXIT;
-	err = bevent_app_emit(UA_EVENT_EXIT, (void *) 0xdeadbeef, "%s",
+	err = bevent_app_emit(UA_EVENT_EXIT, &dummy, "%s",
 			      "details");
 	TEST_ERR(err);
 
-	err = bevent_app_emit(UA_EVENT_SHUTDOWN, (void *) 0xdeadbeef, "%s",
+	err = bevent_app_emit(UA_EVENT_SHUTDOWN, &dummy, "%s",
 			      "details");
 	ASSERT_EQ(EINVAL, err);
 
@@ -128,7 +135,7 @@ int test_bevent_register(void)
 
 	f.expected_event = UA_EVENT_SIPSESS_CONN;
 	err = bevent_sip_msg_emit(UA_EVENT_SIPSESS_CONN,
-				  (struct sip_msg *) 0xdeadbeef, NULL);
+				  &dummy_msg, NULL);
 	TEST_ERR(err);
 
 	ASSERT_EQ(4, f.cnt);
