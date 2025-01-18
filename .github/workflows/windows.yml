@@ -35,16 +35,6 @@ jobs:
             testing: true
           }
         - {
-            name: "Windows Debug 32-bit",
-            os: windows-2022,
-            environment_script: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsamd64_x86.bat",
-            build: "Debug",
-            openssl: false,
-            disable_openssl: "ON",
-            choco: "--x86",
-            testing: false
-          }
-        - {
             name: "Windows Debug ARM64",
             os: windows-2022,
             environment_script: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsamd64_arm64.bat",
@@ -60,7 +50,7 @@ jobs:
       - name: Install OpenSSL
         if: ${{ matrix.config.openssl }}
         run: |
-          choco install --no-progress ${{ matrix.config.choco }} openssl --version 3.4.0
+          choco install --no-progress ${{ matrix.config.choco }} openssl
 
       - uses: sreimers/pr-dependency-action@v1
         with:
@@ -72,8 +62,6 @@ jobs:
         shell: cmd
         run: |
           call "${{ matrix.config.environment_script }}"
-          cmake --version
-          ninja --version
           cmake -S re -B re/build -G "Ninja" -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=${{ matrix.config.disable_openssl }}
           cmake --build re/build -j
           mv re ../.
@@ -82,10 +70,8 @@ jobs:
         shell: cmd
         run: |
           call "${{ matrix.config.environment_script }}"
-          cmake --version
-          ninja --version
           cmake -S . -B build -G "Ninja" -DCMAKE_C_FLAGS="/WX" -DCMAKE_BUILD_TYPE=${{ matrix.config.build }} -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=${{ matrix.config.disable_openssl }}
-          cmake --build build --parallel
+          cmake --build build -j
 
       - name: selftest
         if: ${{ matrix.config.testing }}
