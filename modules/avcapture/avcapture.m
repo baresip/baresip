@@ -257,7 +257,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 {
 	const CVImageBufferRef b = CMSampleBufferGetImageBuffer(sampleBuffer);
 	CMTime ts = CMSampleBufferGetOutputPresentationTimeStamp(sampleBuffer);
-	struct vidframe vf;
+	struct vidframe vf = {.data[0] = NULL};
 	uint64_t timestamp;
 
 	(void)captureOutput;
