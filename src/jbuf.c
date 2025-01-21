@@ -436,9 +436,6 @@ static inline uint32_t offset(struct packet *p)
 
 static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 {
-	uint32_t jitter_offset = 0;
-	uint32_t play_time_base;
-
 	/* Fragmented frames (like video) have equal playout_time.
 	 * If a packet is missed here (late/reorder), playout time calculation
 	 * should be fine too, since its based on same sender hdr.ts.
@@ -458,8 +455,9 @@ static uint32_t calc_playout_time(struct jbuf *jb, struct packet *p)
 		jb->p.offset = offset_min(jb->p.offset, offset(p));
 
 	/* Calculate base playout point */
-	play_time_base = p->hdr.ts + jb->p.offset;
+	uint32_t play_time_base = p->hdr.ts + jb->p.offset;
 
+	uint32_t jitter_offset = 0;
 	if (jb->jbtype == JBUF_ADAPTIVE) {
 		/* Jitter compensation */
 		jitter_offset = adjust_due_to_jitter(jb, p);
