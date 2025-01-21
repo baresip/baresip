@@ -195,6 +195,8 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 
 	vf.size.w = st->vid.ctx->width;
 	vf.size.h = st->vid.ctx->height;
+	vf.xoffs = 0;
+	vf.yoffs = 0;
 
 	for (i=0; i<4; i++) {
 		vf.data[i]     = frame->data[i];
