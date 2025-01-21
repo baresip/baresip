@@ -2997,11 +2997,19 @@ int test_call_bundle(void)
 	if (conf_config()->avt.rxmode == RECEIVE_MODE_THREAD)
 		return 0;
 
-	err |= test_call_bundle_base(false, false);
-	err |= test_call_bundle_base(true,  false);
-	err |= test_call_bundle_base(false, true);
-	err |= test_call_bundle_base(true,  true);
+	err = test_call_bundle_base(false, false);
+	TEST_ERR(err);
 
+	err = test_call_bundle_base(true,  false);
+	TEST_ERR(err);
+
+	err = test_call_bundle_base(false, true);
+	TEST_ERR(err);
+
+	err = test_call_bundle_base(true,  true);
+	TEST_ERR(err);
+
+ out:
 	return err;
 }
 
