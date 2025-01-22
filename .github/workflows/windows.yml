@@ -1,0 +1,80 @@
+name: Windows
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {
+            name: "Windows Debug",
+            os: windows-2022,
+            environment_script: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat",
+            build: "Debug",
+            openssl: true,
+            disable_openssl: "OFF",
+            testing: true
+          }
+        - {
+            name: "Windows Release",
+            os: windows-2022,
+            environment_script: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat",
+            build: "Release",
+            openssl: true,
+            disable_openssl: "OFF",
+            testing: true
+          }
+        - {
+            name: "Windows Debug ARM64",
+            os: windows-2022,
+            environment_script: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvarsamd64_arm64.bat",
+            build: "Debug",
+            openssl: false,
+            disable_openssl: "ON",
+            testing: false
+          }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenSSL
+        if: ${{ matrix.config.openssl }}
+        run: |
+          choco install --no-progress ${{ matrix.config.choco }} openssl
+
+      - uses: sreimers/pr-dependency-action@v1
+        with:
+          name: re
+          repo: https://github.com/baresip/re
+          secret: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: make re
+        shell: cmd
+        run: |
+          call "${{ matrix.config.environment_script }}"
+          cmake -S re -B re/build -G "Ninja" -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=${{ matrix.config.disable_openssl }}
+          cmake --build re/build -j
+          mv re ../.
+
+      - name: Build
+        shell: cmd
+        run: |
+          call "${{ matrix.config.environment_script }}"
+          cmake -S . -B build -G "Ninja" -DCMAKE_C_FLAGS="/WX" -DCMAKE_BUILD_TYPE=${{ matrix.config.build }} -DCMAKE_DISABLE_FIND_PACKAGE_OpenSSL=${{ matrix.config.disable_openssl }}
+          cmake --build build -j
+
+      - name: selftest
+        if: ${{ matrix.config.testing }}
+        shell: cmd
+        run: |
+          build\test\selftest.exe
