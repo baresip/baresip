@@ -140,7 +140,6 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	struct vidframe vf;
 	AVFrame *frame = 0;
 	uint64_t timestamp;
-	unsigned i;
 	int ret;
 
 	if (!st || !st->vid.ctx)
@@ -196,10 +195,8 @@ void avformat_video_decode(struct shared *st, AVPacket *pkt)
 	vf.size.w = st->vid.ctx->width;
 	vf.size.h = st->vid.ctx->height;
 
-	for (i=0; i<4; i++) {
-		vf.data[i]     = frame->data[i];
-		vf.linesize[i] = frame->linesize[i];
-	}
+	vidframe_init(&vf, vf.fmt, &vf.size, (void **)frame->data,
+			 (unsigned *)frame->linesize);
 
 	/* convert timestamp */
 	timestamp = frame->pts * VIDEO_TIMEBASE * tb.num / tb.den;
