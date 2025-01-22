@@ -2872,8 +2872,10 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 		fixture_init_prm(f, "");
 	}
 
-	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, 1);
-	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, 1);
+	cancel_rule_new(UA_EVENT_CALL_RTPESTAB, f->b.ua, 1, 0, -1);
+	cancel_rule_and(UA_EVENT_CALL_RTPESTAB, f->a.ua, 0, 0, -1);
+	cancel_rule_and(UA_EVENT_CALL_ESTABLISHED, f->b.ua, 1, 0, 1);
+	cancel_rule_and(UA_EVENT_CALL_ESTABLISHED, f->a.ua, 0, 0, 1);
 
 	f->estab_action = ACTION_NOTHING;
 	f->behaviour = BEHAVIOUR_ANSWER;
@@ -2886,6 +2888,8 @@ static int test_call_bundle_base(bool use_mnat, bool use_menc)
 	err = re_main_timeout(15000);
 	TEST_ERR(err);
 	TEST_ERR(fix.err);
+	ASSERT_EQ(1, fix.a.n_established);
+	ASSERT_EQ(1, fix.b.n_established);
 
 	callv[0] = ua_call(f->a.ua);
 	callv[1] = ua_call(f->b.ua);
