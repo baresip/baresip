@@ -237,12 +237,58 @@ static int cmd_current_next(struct re_printf *pf, void *arg)
 }
 
 
+static int cmd_add_contact(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl pl;
+
+	pl_set_str(&pl, carg->prm);
+	int err = contact_add(baresip_contacts(), NULL, &pl);
+	if (err)
+		re_hprintf(pf, "contact: could not add '%s'\n", carg->prm);
+
+	return err;
+}
+
+
+static int cmd_rm_contact(struct re_printf *pf, void *arg)
+{
+	const struct cmd_arg *carg = arg;
+	struct pl pl;
+	struct sip_addr addr;
+	char *uri;
+	struct contacts *contacts = baresip_contacts();
+	struct contact *c;
+	int err;
+	(void)pf;
+
+	pl_set_str(&pl, carg->prm);
+	err = sip_addr_decode(&addr, &pl);
+	if (err) {
+		warning("contact: could not decode '%r'\n", &pl);
+		return err;
+	}
+
+	err = pl_strdup(&uri, &addr.auri);
+	if (err)
+		return err;
+
+	while ((c = contact_find(contacts, uri)))
+		contact_remove(baresip_contacts(), c);
+
+	mem_deref(uri);
+	return 0;
+}
+
+
 static const struct cmd cmdv[] = {
 {"contacts",     'C',        0, "List contacts",          print_contacts    },
 {"dialcontact",  'D',        0, "Dial current contact",   cmd_dial_contact  },
 {"message",      'M',  CMD_PRM, "Message current contact",cmd_message       },
 {"contact_prev", '<',        0, "Set previous contact",   cmd_current_prev  },
 {"contact_next", '>',        0, "Set next contact",       cmd_current_next  },
+{"addcontact",     0,        0, "Add a contact",          cmd_add_contact   },
+{"rmcontact",      0,        0, "Remove a contact",       cmd_rm_contact   },
 };
 
 
@@ -265,6 +311,8 @@ static int write_template(const char *file)
 			 "#  addr-params:\n"
 			 "#    ;presence={none,p2p}\n"
 			 "#    ;access={allow,block}\n"
+			 "#    ;audio={inactive,sendonly,recvonly,sendrecv}\n"
+			 "#    ;video={inactive,sendonly,recvonly,sendrecv}\n"
 			 "#\n"
 			 "\n"
 			 "\n"
