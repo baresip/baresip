@@ -1020,6 +1020,7 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 		accept_sdp = 0==pl_strcasecmp(&hdr->val, "application/sdp");
 	}
 
+	/*
 	if (accept_sdp) {
 
 		err = ua_call_alloc(&call, ua, VIDMODE_ON, msg, NULL, NULL,
@@ -1038,6 +1039,7 @@ void ua_handle_options(struct ua *ua, const struct sip_msg *msg)
 		if (err)
 			goto out;
 	}
+	*/
 
 	sip_contact_set(&contact, ua_cuser(ua), &msg->dst, msg->tp);
 
