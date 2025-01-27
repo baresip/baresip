@@ -28,9 +28,7 @@ struct mnat_sess {
 	void *arg;
 	int mediac;
 	int proto;
-#ifdef USE_TLS
 	bool secure;
-#endif
 };
 
 
@@ -229,12 +227,8 @@ static void tcp_estab_handler(void *arg)
 	int err;
 
 	info("turn: [%u] %s established for '%s'\n", comp->ix,
-#ifdef USE_TLS
-	     m->sess->secure ? "TLS" :
-#endif
-		"TCP",
+	     m->sess->secure ? "TLS" : "TCP",
 	     sdp_media_name(m->sdpm));
-
 	err = turnc_alloc(&comp->turnc, NULL, IPPROTO_TCP, comp->tc, 0,
 			  &m->sess->srv,
 			  m->sess->user, m->sess->pass,
