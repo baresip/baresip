@@ -3,12 +3,13 @@
  *
  * Copyright (C) 2020 Alfred E. Heggestad
  */
+#include <stdlib.h>
+#include <math.h>
+
 #include <re_atomic.h>
 #include <re.h>
 #include <rem.h>
 #include <baresip.h>
-#include <stdlib.h>
-#include <math.h>
 #define SCALE (32767.0f)
 #define AMPLITUDE 0.25f
 
