@@ -5,20 +5,6 @@
  * Copyright (C) 2024 AGFEO GmbH & Co. KG
  */
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#define CINTERFACE
-#define COBJMACROS
-#define CONST_VTABLE
-#include <initguid.h>
-#include <windows.h>
-#include <mmdeviceapi.h>
-#include <audioclient.h>
-#include <audiosessiontypes.h>
-#include <audiopolicy.h>
-#include <functiondiscoverykeys_devpkey.h>
-
 #define REF_PER_MS 10000LL
 #define CHECK_HR(hr, msg)                                                     \
 	if (FAILED((hr))) {                                                   \
