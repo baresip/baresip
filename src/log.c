@@ -154,7 +154,7 @@ void log_enable_color(bool enable)
  * @param fmt   Formatted message
  * @param ap    Variable argument list
  */
-void vlog(enum log_level level, const char *fmt, va_list ap)
+static void vlog(enum log_level level, const char *fmt, va_list ap)
 {
 	char buf[8192];
 	char *p = buf;
@@ -174,8 +174,13 @@ void vlog(enum log_level level, const char *fmt, va_list ap)
 		s -= n;
 	}
 
-	if (re_vsnprintf(p, s, fmt, ap) < 0)
-		return;
+#ifdef HAVE_RE_ARG
+		if (re_vsnprintf_s(p, s, fmt, ap) < 0)
+			return;
+#else
+		if (re_vsnprintf(p, s, fmt, ap) < 0)
+			return;
+#endif
 
 	if (lg.enable_stdout) {
 
@@ -211,7 +216,7 @@ void vlog(enum log_level level, const char *fmt, va_list ap)
  * @param fmt   Formatted message
  * @param ...   Variable arguments
  */
-void loglv(enum log_level level, const char *fmt, ...)
+void _loglv(enum log_level level, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -227,7 +232,7 @@ void loglv(enum log_level level, const char *fmt, ...)
  * @param fmt   Formatted message
  * @param ...   Variable arguments
  */
-void debug(const char *fmt, ...)
+void _debug(const char *fmt, ...)
 {
 	va_list ap;
 
@@ -243,7 +248,7 @@ void debug(const char *fmt, ...)
  * @param fmt   Formatted message
  * @param ...   Variable arguments
  */
-void info(const char *fmt, ...)
+void _info(const char *fmt, ...)
 {
 	va_list ap;
 
@@ -259,7 +264,7 @@ void info(const char *fmt, ...)
  * @param fmt   Formatted message
  * @param ...   Variable arguments
  */
-void warning(const char *fmt, ...)
+void _warning(const char *fmt, ...)
 {
 	va_list ap;
 
