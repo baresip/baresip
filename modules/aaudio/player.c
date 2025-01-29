@@ -119,7 +119,9 @@ static int open_player_stream(struct auplay_st *st) {
 	AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
 	AAudioStreamBuilder_setSessionId(builder, AAUDIO_SESSION_ID_ALLOCATE);
 	AAudioStreamBuilder_setUsage(builder,
-		 AAUDIO_USAGE_VOICE_COMMUNICATION);
+		AAUDIO_USAGE_VOICE_COMMUNICATION);
+	AAudioStreamBuilder_setPerformanceMode(builder,
+		AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
 	AAudioStreamBuilder_setDataCallback(builder, &dataCallback, st);
 	AAudioStreamBuilder_setErrorCallback(builder, &errorCallback, st);
 
@@ -132,13 +134,14 @@ static int open_player_stream(struct auplay_st *st) {
 
 	info("aaudio: player: opened stream with direction %d, "
 	     "sharing mode %d, sample rate %d, format %d, sessionId %d, "
-	     "usage %d\n",
+	     "usage %d, performance mode %d\n",
 	     AAudioStream_getDirection(st->playerStream),
 	     AAudioStream_getSharingMode(st->playerStream),
 	     AAudioStream_getSampleRate(st->playerStream),
 	     AAudioStream_getFormat(st->playerStream),
 	     AAudioStream_getSessionId(st->playerStream),
-	     AAudioStream_getUsage(st->playerStream));
+	     AAudioStream_getUsage(st->playerStream),
+	     AAudioStream_getPerformanceMode(st->playerStream));
 
 	AAudioStreamBuilder_delete(builder);
 
@@ -192,7 +195,7 @@ int aaudio_player_alloc(struct auplay_st **stp, const struct auplay *ap,
 		goto out;
 	}
 
-	module_event("aaudio", "player: sessionid", NULL, NULL, "%d",
+	module_event("aaudio", "player sessionid", NULL, NULL, "%d",
 		     AAudioStream_getSessionId(st->playerStream));
 
 	info ("aaudio: player: stream started\n");

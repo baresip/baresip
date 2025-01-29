@@ -146,7 +146,11 @@ static int open_recorder_stream(struct ausrc_st *st) {
 	AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_I16);
 	AAudioStreamBuilder_setSessionId(builder, AAUDIO_SESSION_ID_ALLOCATE);
 	AAudioStreamBuilder_setUsage(builder,
-		 AAUDIO_USAGE_VOICE_COMMUNICATION);
+		AAUDIO_USAGE_VOICE_COMMUNICATION);
+	AAudioStreamBuilder_setPerformanceMode(builder,
+		AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
+	AAudioStreamBuilder_setInputPreset(builder,
+		AAUDIO_INPUT_PRESET_VOICE_RECOGNITION);
 	AAudioStreamBuilder_setDataCallback(builder, &dataCallback, st);
 	AAudioStreamBuilder_setErrorCallback(builder, &errorCallback, st);
 
@@ -159,18 +163,26 @@ static int open_recorder_stream(struct ausrc_st *st) {
 
 	info("aaudio: recorder: opened stream with direction %d, "
 	     "sharing mode %d, sample rate %d, format %d, sessionId %d, "
-	     "usage %d\n",
+	     "input preset %d, usage %d, performance mode %d\n",
 	     AAudioStream_getDirection(st->recorderStream),
 	     AAudioStream_getSharingMode(st->recorderStream),
 	     AAudioStream_getSampleRate(st->recorderStream),
 	     AAudioStream_getFormat(st->recorderStream),
 	     AAudioStream_getSessionId(st->recorderStream),
-	     AAudioStream_getUsage(st->recorderStream));
+	     AAudioStream_getInputPreset(st->recorderStream),
+	     AAudioStream_getUsage(st->recorderStream),
+	     AAudioStream_getPerformanceMode(st->recorderStream));
 
 	AAudioStreamBuilder_delete(builder);
 
 	AAudioStream_setBufferSizeInFrames(st->recorderStream,
 		AAudioStream_getFramesPerBurst(st->recorderStream) * 2);
+	int32_t bufferCapacity =
+		AAudioStream_getBufferCapacityInFrames(st->recorderStream);
+	int32_t bufferSize = AAudioStream_getBufferSizeInFrames(
+		st->recorderStream);
+	info("aaudio: recorder: buffer capacity: %d, buffer size: %d\n",
+	     bufferCapacity,  bufferSize);
 
 	return AAUDIO_OK;
 }
