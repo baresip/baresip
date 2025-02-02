@@ -443,7 +443,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 
 		err = jbuf_put(rx->jbuf, hdr, mb);
 		if (err) {
-			info("stream: %s: dropping %u bytes from %J"
+			info("stream: %s: dropping %zu bytes from %J"
 			     " [seq=%u, ts=%u] (%m)\n",
 			     rx->name, mb->end,
 			     src, hdr->seq, hdr->ts, err);
