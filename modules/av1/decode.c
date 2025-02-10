@@ -110,12 +110,12 @@ static int copy_obu(struct mbuf *mb_bs, const uint8_t *buf, size_t size)
 
 	switch (hdr.type) {
 
-	case OBU_SEQUENCE_HEADER:
-	case OBU_FRAME_HEADER:
-	case OBU_METADATA:
-	case OBU_FRAME:
-	case OBU_REDUNDANT_FRAME_HEADER:
-	case OBU_TILE_GROUP:
+	case AV1_OBU_SEQUENCE_HEADER:
+	case AV1_OBU_FRAME_HEADER:
+	case AV1_OBU_METADATA:
+	case AV1_OBU_FRAME:
+	case AV1_OBU_REDUNDANT_FRAME_HEADER:
+	case AV1_OBU_TILE_GROUP:
 
 		err = av1_obu_encode(mb_bs, hdr.type, has_size,
 				     hdr.size, mbuf_buf(&wrap));
@@ -123,9 +123,9 @@ static int copy_obu(struct mbuf *mb_bs, const uint8_t *buf, size_t size)
 			return err;
 		break;
 
-	case OBU_TEMPORAL_DELIMITER:
-	case OBU_TILE_LIST:
-	case OBU_PADDING:
+	case AV1_OBU_TEMPORAL_DELIMITER:
+	case AV1_OBU_TILE_LIST:
+	case AV1_OBU_PADDING:
 		/* MUST be ignored by receivers. */
 		warning("av1: decode: copy: unexpected obu type [%H]\n",
 			av1_obu_print, &hdr);
@@ -224,7 +224,7 @@ int av1_decode(struct viddec_state *vds, struct vidframe *frame,
 	}
 
 	/* prepend Temporal Delimiter */
-	err = av1_obu_encode(mb2, OBU_TEMPORAL_DELIMITER, true, 0, NULL);
+	err = av1_obu_encode(mb2, AV1_OBU_TEMPORAL_DELIMITER, true, 0, NULL);
 	if (err)
 		goto out;
 
