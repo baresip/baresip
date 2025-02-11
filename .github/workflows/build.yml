@@ -76,7 +76,7 @@ jobs:
                             libwebrtc-audio-processing-dev
 
     - name: install aac
-      if: ${{ matrix.os == 'ubuntu-20.04' }}
+      if: ${{ matrix.os == 'ubuntu-22.04' }}
       run: |
         sudo apt-get update && sudo apt-get install -y libfdk-aac-dev
 
