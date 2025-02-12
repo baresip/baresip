@@ -242,6 +242,12 @@ static int cmd_add_contact(struct re_printf *pf, void *arg)
 	const struct cmd_arg *carg = arg;
 	struct pl pl;
 
+	const char *usage = "usage: /addcontact <sip-address>\n";
+	if (!carg->prm) {
+		(void)re_hprintf(pf, usage);
+		return EINVAL;
+	}
+
 	pl_set_str(&pl, carg->prm);
 	int err = contact_add(baresip_contacts(), NULL, &pl);
 	if (err)
@@ -259,11 +265,15 @@ static int cmd_rm_contact(struct re_printf *pf, void *arg)
 	char *uri;
 	struct contacts *contacts = baresip_contacts();
 	struct contact *c;
-	int err;
-	(void)pf;
+
+	const char *usage = "usage: /rmcontact <sip-address>\n";
+	if (!carg->prm) {
+		(void)re_hprintf(pf, usage);
+		return EINVAL;
+	}
 
 	pl_set_str(&pl, carg->prm);
-	err = sip_addr_decode(&addr, &pl);
+	int err = sip_addr_decode(&addr, &pl);
 	if (err) {
 		warning("contact: could not decode '%r'\n", &pl);
 		return err;
@@ -287,8 +297,8 @@ static const struct cmd cmdv[] = {
 {"message",      'M',  CMD_PRM, "Message current contact",cmd_message       },
 {"contact_prev", '<',        0, "Set previous contact",   cmd_current_prev  },
 {"contact_next", '>',        0, "Set next contact",       cmd_current_next  },
-{"addcontact",     0,        0, "Add a contact",          cmd_add_contact   },
-{"rmcontact",      0,        0, "Remove a contact",       cmd_rm_contact   },
+{"addcontact",     0,  CMD_PRM, "Add a contact",          cmd_add_contact   },
+{"rmcontact",      0,  CMD_PRM, "Remove a contact",       cmd_rm_contact   },
 };
 
 
