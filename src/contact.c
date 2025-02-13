@@ -22,6 +22,9 @@ struct contact {
 	char *uri;
 	enum presence_status status;
 	enum access access;
+	enum sdp_dir auldir;  /* audio local direction */
+	enum sdp_dir vidldir; /* video local direction */
+
 };
 
 
@@ -115,6 +118,13 @@ int contact_add(struct contacts *contacts,
 	}
 	else
 		c->access = ACCESS_UNKNOWN;
+
+	c->auldir  = SDP_SENDRECV;
+	c->vidldir = SDP_SENDRECV;
+	if (0 == msg_param_decode(&c->addr.params, "audio", &pl))
+		c->auldir = sdp_dir_decode(&pl);
+	if (0 == msg_param_decode(&c->addr.params, "video", &pl))
+		c->vidldir = sdp_dir_decode(&pl);
 
 	c->status = PRESENCE_UNKNOWN;
 
@@ -269,6 +279,20 @@ enum presence_status contact_presence(const struct contact *c)
 }
 
 
+void contact_get_ldir(const struct contact *c,
+		      enum sdp_dir *aup, enum sdp_dir *vidp)
+{
+	if (!c)
+		return;
+
+	if (aup)
+		*aup = c->auldir;
+
+	if (vidp)
+		*vidp = c->vidldir;
+}
+
+
 /**
  * Get the presence status string
  *
@@ -299,10 +323,18 @@ const char *contact_presence_str(enum presence_status status)
  */
 int contact_print(struct re_printf *pf, const struct contact *cnt)
 {
+	int err;
 	if (!cnt)
 		return 0;
 
-	return re_hprintf(pf, "%r <%r>", &cnt->addr.dname, &cnt->addr.auri);
+	err = re_hprintf(pf, "%r <%r>", &cnt->addr.dname, &cnt->addr.auri);
+
+	if (cnt->auldir != SDP_SENDRECV)
+		err |= re_hprintf(pf, ";audio=%s", sdp_dir_name(cnt->auldir));
+	if (cnt->vidldir != SDP_SENDRECV)
+		err |= re_hprintf(pf, ";video=%s", sdp_dir_name(cnt->vidldir));
+
+	return err;
 }
 
 

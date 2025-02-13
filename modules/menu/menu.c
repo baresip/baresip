@@ -656,6 +656,26 @@ static void process_module_event(struct call *call, const char *prm)
 }
 
 
+static void apply_contact_mediadir(struct call *call)
+{
+	const char *peeruri = call_peeruri(call);
+	if (!peeruri)
+		return;
+
+	const struct contacts *contacts = baresip_contacts();
+	struct contact *con = contact_find(contacts, peeruri);
+	if (!con)
+		return;
+
+	enum sdp_dir audir  = SDP_SENDRECV;
+	enum sdp_dir viddir = SDP_SENDRECV;
+	contact_get_ldir(con, &audir, &viddir);
+	debug("menu: apply contact media direction audio=%s video=%s\n",
+	      sdp_dir_name(audir), sdp_dir_name(viddir));
+	call_set_media_direction(call, audir, viddir);
+}
+
+
 static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 {
 	struct call *call2 = NULL;
@@ -715,6 +735,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 
 	case UA_EVENT_CALL_INCOMING:
 
+		apply_contact_mediadir(call);
 		if (call_state(call) != CALL_STATE_INCOMING)
 			return;
 
@@ -755,6 +776,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		break;
 
 	case UA_EVENT_CALL_OUTGOING:
+		apply_contact_mediadir(call);
 		++menu.outcnt;
 		break;
 
