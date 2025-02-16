@@ -368,6 +368,7 @@ static int uag_transp_add(const struct sa *laddr)
 				tls_enable_verify_client(uag.tls, true);
 
 			tls_set_resumption(uag.tls, uag.cfg->tls_resume);
+			tls_set_ocsp_stapling(uag.tls, uag.cfg->ocsp_stapling);
 		}
 
 		if (sa_isset(&local, SA_PORT))

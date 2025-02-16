@@ -30,6 +30,7 @@ static struct config core_config = {
 	.sip = {
 		.transp = SIP_TRANSP_UDP,
 		.tls_resume = TLS_RESUMPTION_ALL,
+		.ocsp_stapling = TLS_OCSP_STAPLE_DISABLED,
 		.tos = 0xa0,
 	},
 
@@ -342,6 +343,21 @@ static const char *tls_resume_mode_str(enum tls_resume_mode mode)
 }
 
 
+static const char *tls_ocsp_stapling_str(enum tls_ocsp_stapling mode)
+{
+	switch (mode) {
+	case TLS_OCSP_STAPLE_DISABLED:
+		return "no";
+	case TLS_OCSP_STAPLE_ENABLED:
+		return "yes";
+	case TLS_OCSP_STAPLE_REQUIRED:
+		return "required";
+	}
+
+	return "?";
+}
+
+
 /**
  * Parse the core configuration file and update baresip core config
  *
@@ -398,6 +414,20 @@ int config_parse_conf(struct config *cfg, const struct conf *conf)
 	}
 	else {
 		cfg->sip.tls_resume = TLS_RESUMPTION_ALL;
+	}
+
+	if (0 == conf_get(conf, "sip_ocsp_stapling", &pl)) {
+		if (0 == pl_strcasecmp(&pl, "no"))
+			cfg->sip.ocsp_stapling = TLS_OCSP_STAPLE_DISABLED;
+		else if (0 == pl_strcasecmp(&pl, "yes"))
+			cfg->sip.ocsp_stapling = TLS_OCSP_STAPLE_ENABLED;
+		else if (0 == pl_strcasecmp(&pl, "required"))
+			cfg->sip.ocsp_stapling = TLS_OCSP_STAPLE_REQUIRED;
+		else
+			cfg->sip.ocsp_stapling = TLS_OCSP_STAPLE_DISABLED;
+	}
+	else {
+		cfg->sip.ocsp_stapling = TLS_OCSP_STAPLE_DISABLED;
 	}
 
 	if (!conf_get(conf, "sip_trans_def", &tr))
@@ -590,6 +620,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 "sip_verify_server\t\t\t%s\n"
 			 "sip_verify_client\t\t\t%s\n"
 			 "sip_tls_resumption\t\t\t%s\n"
+			 "sip_ocsp_stapling\t\t\t%s\n"
 			 "sip_tos\t%u\n"
 			 "filter_registrar\t%H\n"
 			 "\n"
@@ -606,6 +637,7 @@ int config_print(struct re_printf *pf, const struct config *cfg)
 			 cfg->sip.verify_server ? "yes" : "no",
 			 cfg->sip.verify_client ? "yes" : "no",
 			 tls_resume_mode_str(cfg->sip.tls_resume),
+			 tls_ocsp_stapling_str(cfg->sip.ocsp_stapling),
 			 cfg->sip.tos, sip_transports_print_mask,
 			 &cfg->sip.reg_filt,
 
@@ -858,6 +890,7 @@ static int core_config_template(struct re_printf *pf, const struct config *cfg)
 			  "#sip_verify_server\tyes\n"
 			  "#sip_verify_client\tno\n"
 			  "#sip_tls_resumption\tall\n"
+			  "#sip_ocsp_stapling\tno\n"
 			  "sip_tos\t\t\t160\n"
 			  "#filter_registrar\tudp,tcp,tls,ws,wss\n"
 			  "\n"

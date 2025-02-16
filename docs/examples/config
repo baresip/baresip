@@ -14,6 +14,7 @@ sip_capath		/etc/ssl/certs
 sip_verify_server	yes
 #sip_verify_client	no
 #sip_tls_resumption	all		# none, ids, tickets
+#sip_ocsp_stapling  no		# yes, required
 sip_tos			160 # See TOS fields!
 #filter_registrar   udp,tcp
 

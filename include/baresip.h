@@ -357,18 +357,19 @@ const char *rtp_receive_mode_str(enum rtp_receive_mode rxmode);
 
 /** SIP User-Agent */
 struct config_sip {
-	char uuid[64];          /**< Universally Unique Identifier  */
-	char local[64];         /**< Local SIP Address              */
-	char cert[256];         /**< SIP Certificate                */
-	char cafile[256];       /**< SIP CA-file                    */
-	char capath[256];       /**< SIP CA-path                    */
-	uint32_t transports;    /**< Supported transports mask      */
+	char uuid[64];          /**< Universally Unique Identifier           */
+	char local[64];         /**< Local SIP Address                       */
+	char cert[256];         /**< SIP Certificate                         */
+	char cafile[256];       /**< SIP CA-file                             */
+	char capath[256];       /**< SIP CA-path                             */
+	uint32_t transports;    /**< Supported transports mask               */
 	enum sip_transp transp; /**< Default outgoing SIP transport protocol */
-	bool verify_server;     /**< Enable SIP TLS verify server   */
-	bool verify_client;     /**< Enable SIP TLS verify client   */
-	enum tls_resume_mode tls_resume; /** TLS resumption mode    */
-	uint8_t tos;            /**< Type-of-Service for SIP        */
-	uint32_t reg_filt;	/**< Registrar filter transport mask*/
+	bool verify_server;     /**< Enable SIP TLS verify server            */
+	bool verify_client;     /**< Enable SIP TLS verify client            */
+	enum tls_resume_mode tls_resume; /** TLS resumption mode             */
+	enum tls_ocsp_stapling ocsp_stapling; /** TLS OCSP stapling mode     */
+	uint8_t tos;            /**< Type-of-Service for SIP                 */
+	uint32_t reg_filt;	/**< Registrar filter transport mask         */
 };
 
 /** Call config */
