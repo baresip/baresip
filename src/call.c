@@ -2165,6 +2165,63 @@ static bool valid_addressfamily(struct call *call, const struct stream *strm)
 }
 
 
+/**
+ * Find a call given the value of a Replaces header
+ *
+ * @param calls   List of calls
+ * @param hdr     Value of Replaces header
+ *
+ * @return Call object if found, NULL if not found
+ */
+static struct call *call_find_replaces(const struct list *calls,
+				       const struct pl *hdr)
+{
+	struct le *le;
+	struct sip_msg msg = { 0 };
+	struct call *ret = NULL;
+
+	if (!calls || !pl_isset(hdr))
+		return NULL;
+
+	msg.req = true;
+	msg.callid.p = hdr->p;
+	msg.callid.l = hdr->l;
+
+	if (pl_strchr(&msg.callid, ';')) {
+		msg.callid.l = (size_t)(pl_strchr(&msg.callid, ';')
+				- msg.callid.p);
+	}
+
+	if (!pl_isset(&msg.callid))
+		return NULL;
+
+	(void)re_regex(hdr->p, hdr->l, ";to-tag=[^; ]+", &msg.to.tag);
+	(void)re_regex(hdr->p, hdr->l, ";from-tag=[^; ]+", &msg.from.tag);
+
+	for (le = list_head(calls); le; le = le->next) {
+		struct call *call = le->data;
+
+		if (pl_isset(&msg.from.tag) && pl_isset(&msg.to.tag) &&
+		    sip_dialog_cmp(sipsess_dialog(call->sess), &msg)) {
+			ret = call;
+			break;
+		}
+		else if (pl_isset(&msg.to.tag) &&
+			 sip_dialog_cmp_half(sipsess_dialog(call->sess),
+					     &msg)) {
+			ret = call;
+			break;
+		}
+		else if (0 == pl_strcmp(&msg.callid, call->id)) {
+			ret = call;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+
 int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 		const struct sip_msg *msg)
 {
@@ -2236,17 +2293,25 @@ int call_accept(struct call *call, struct sipsess_sock *sess_sock,
 
 	hdr = sip_msg_hdr(msg, SIP_HDR_REPLACES);
 	if (hdr && pl_isset(&hdr->val)) {
-		char *rid = NULL;
-		struct call *rcall;
-		err = pl_strdup(&rid, &hdr->val);
-		if (err)
-			return err;
+		struct call *rcall = call_find_replaces(ua_calls(call->ua),
+							&hdr->val);
+		if (!rcall) {
+			info("call: Replaces header present, but could not "
+				"find matching call %r\n", &hdr->val);
 
-		rcall = call_find_id(ua_calls(call->ua), rid);
-		call_stream_stop(rcall);
-		call_event_handler(rcall, CALL_EVENT_CLOSED,
-			"%s replaced", rid);
-		mem_deref(rid);
+			sip_treply(NULL, uag_sip(), msg,
+				   481, "Call/Transaction Does Not Exist");
+
+			call_event_handler(call, CALL_EVENT_CLOSED,
+				"Replaces header without matching dialog.");
+
+			return 0;
+		}
+		else {
+			call_stream_stop(rcall);
+			call_event_handler(rcall, CALL_EVENT_CLOSED,
+				"%r replaced", &hdr->val);
+		}
 	}
 
 	err = sipsess_accept(&call->sess, sess_sock, msg, 180, "Ringing",
