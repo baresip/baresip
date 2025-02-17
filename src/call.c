@@ -169,13 +169,13 @@ static void call_stream_stop(struct call *call)
 static void call_event_handler(struct call *call, enum call_event ev,
 			       const char *fmt, ...)
 {
+	if (!call || !call->eh)
+		return;
+
 	call_event_h *eh = call->eh;
-	void *eh_arg = call->arg;
+	void *eh_arg	 = call->arg;
 	char buf[256];
 	va_list ap;
-
-	if (!eh)
-		return;
 
 	va_start(ap, fmt);
 	(void)re_vsnprintf(buf, sizeof(buf), fmt, ap);
