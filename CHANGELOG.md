@@ -5,10 +5,37 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v3.20.0 - 2025-02-18
+### What's Changed
+* mixausrc: use float instead of double by @alfredh in https://github.com/baresip/baresip/pull/3280
+* misc: refactor _GNU_SOURCE usage by @sreimers in https://github.com/baresip/baresip/pull/3282
+* test: use real objects instead of synthetic pointers by @alfredh in https://github.com/baresip/baresip/pull/3283
+* cmake: fix _GNU_SOURCE definition by @sreimers in https://github.com/baresip/baresip/pull/3285
+* test_call_bundle_base: add TEST_ERR() after each call by @alfredh in https://github.com/baresip/baresip/pull/3284
+* avcapture: fix vidframe init by @sreimers in https://github.com/baresip/baresip/pull/3288
+* test: make test_call_bundle stable by @cspiel1 in https://github.com/baresip/baresip/pull/3287
+* fakevideo: add cast to fix windows warning by @alfredh in https://github.com/baresip/baresip/pull/3291
+* ausine: add cast to fix warning on windows by @alfredh in https://github.com/baresip/baresip/pull/3292
+* auresamp: change type to fix warning on windows by @alfredh in https://github.com/baresip/baresip/pull/3293
+* avformat: init vidframe properly by @chucongqing in https://github.com/baresip/baresip/pull/3290
+* ci: add support for Windows platform by @alfredh in https://github.com/baresip/baresip/pull/3294
+* log: use secure RE_VA_ARGS logging by @sreimers in https://github.com/baresip/baresip/pull/3296
+* aaudio: modifications by @juha-h in https://github.com/baresip/baresip/pull/3297
+* rtprecv: fix info printf size error by @sreimers in https://github.com/baresip/baresip/pull/3299
+* log: refactor safe RE_ARG handling by @sreimers in https://github.com/baresip/baresip/pull/3300
+* av1: use enum values from enum obu_type by @alfredh in https://github.com/baresip/baresip/pull/3301
+* ci/build: fix install aac by @sreimers in https://github.com/baresip/baresip/pull/3302
+* call/call_event_handler: fix possible call NULL deref by @sreimers in https://github.com/baresip/baresip/pull/3305
+
+### New Contributors
+* @chucongqing made their first contribution in https://github.com/baresip/baresip/pull/3290
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.19.0...v3.20.0
+
 
 ## v3.19.0 - 2025-01-15
 
-## What's Changed
+### What's Changed
 * ua: hide credentials in CREATE event by @cspiel1 in https://github.com/baresip/baresip/pull/3239
 * menu: add scode and reason arguments to hangup command by @maximilianfridrich in https://github.com/baresip/baresip/pull/3238
 * ua prevent double call accept by @cspiel1 in https://github.com/baresip/baresip/pull/3236
@@ -37,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v3.18.0 - 2024-12-11
 
-## What's Changed
+### What's Changed
 * cmake: fix clang 19 c23 extension warnings by @sreimers in https://github.com/baresip/baresip/pull/3189
 * cmake: install logo.png and *.wav files again (fixes #3191) by @robert-scheck in https://github.com/baresip/baresip/pull/3194
 * menu dnd event by @cspiel1 in https://github.com/baresip/baresip/pull/3186
@@ -65,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * readme: sync with wiki by @alfredh in https://github.com/baresip/baresip/pull/3241
 * bump version to 3.18.0 by @alfredh in https://github.com/baresip/baresip/pull/3243
 
-## New Contributors
+### New Contributors
 * @mrkiko made their first contribution in https://github.com/baresip/baresip/pull/3217
 
 **Full Changelog**: https://github.com/baresip/baresip/compare/v3.17.0...v3.18.0
