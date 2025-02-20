@@ -140,6 +140,25 @@ static void plot_jbuf_event(struct jbuf *jb, char ph)
 #endif
 
 
+static void recalc_nf(struct jbuf *jb) {
+	struct packet *f;
+	struct le *le;
+	uint32_t t = 0;
+	uint32_t counter = 0;
+
+	for (le = jb->packetl.head; le; le = le->next) {
+		f = le->data;
+		if (!t || (t && f->hdr.ts != t)) {
+			t = f->hdr.ts;
+			counter +=1;
+		}
+	}
+
+	if (jb->nf != counter) {
+		jb->nf = counter;
+	}
+}
+
 /**
  * Get a frame from the pool
  */
@@ -170,6 +189,7 @@ static void packet_alloc(struct jbuf *jb, struct packet **f)
 		plot_jbuf_event(jb, 'O');
 		f0->mem = mem_deref(f0->mem);
 		list_unlink(le);
+		recalc_nf(jb);
 	}
 
 	*f = le->data;
