@@ -731,7 +731,7 @@ static void event_handler(enum ua_event ev, struct bevent *event, void *arg)
 		}
 
 		bevent_stop(event);
-		break;
+		return;
 
 	case UA_EVENT_CALL_INCOMING:
 
