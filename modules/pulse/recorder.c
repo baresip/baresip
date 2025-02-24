@@ -203,5 +203,6 @@ void stream_read_cb(pa_stream *s, size_t len, void *arg)
 	st->rh(&af, st->arg);
 
 out:
-	pa_threaded_mainloop_signal(c->mainloop, 0);
+	if (c)
+		pa_threaded_mainloop_signal(c->mainloop, 0);
 }

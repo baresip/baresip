@@ -158,5 +158,6 @@ void stream_write_cb(pa_stream *s, size_t len, void *arg)
 	}
 
 out:
-	pa_threaded_mainloop_signal(c->mainloop, 0);
+	if (c)
+		pa_threaded_mainloop_signal(c->mainloop, 0);
 }
