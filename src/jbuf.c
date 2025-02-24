@@ -167,6 +167,12 @@ static void packet_alloc(struct jbuf *jb, struct packet **f)
 		DEBUG_WARNING("drop 1 old frame seq=%u\n", f0->hdr.seq);
 #endif
 
+		if (le->next) {
+			struct packet *f1 = list_ledata(le->next);
+			if (f1->hdr.ts != f0->hdr.ts)
+				--jb->nf;
+		}
+
 		plot_jbuf_event(jb, 'O');
 		f0->mem = mem_deref(f0->mem);
 		list_unlink(le);
