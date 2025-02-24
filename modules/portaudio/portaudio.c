@@ -214,7 +214,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 		     ausrc_read_h *rh, ausrc_error_h *errh, void *arg)
 {
 	struct ausrc_st *st;
-	PaDeviceIndex dev_index;
+	struct mediadev *dev;
 	int err;
 
 	(void)device;
@@ -223,10 +223,11 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm)
 		return EINVAL;
 
-	if (str_isset(device))
-		dev_index = atoi(device);
-	else
-		dev_index = Pa_GetDefaultInputDevice();
+	dev = !str_cmp(device, "default")
+		? mediadev_get_default(&ausrc->dev_list)
+		: mediadev_find(&ausrc->dev_list, device);
+	if (!dev)
+		return ENOENT;
 
 	st = mem_zalloc(sizeof(*st), ausrc_destructor);
 	if (!st)
@@ -238,7 +239,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 
 	st->ready = true;
 
-	err = read_stream_open(st, prm, dev_index);
+	err = read_stream_open(st, prm, dev->device_index);
 	if (err)
 		goto out;
 
@@ -257,7 +258,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 		      auplay_write_h *wh, void *arg)
 {
 	struct auplay_st *st;
-	PaDeviceIndex dev_index;
+	struct mediadev *dev;
 	int err;
 
 	(void)device;
@@ -265,10 +266,11 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!stp || !ap || !prm)
 		return EINVAL;
 
-	if (str_isset(device))
-		dev_index = atoi(device);
-	else
-		dev_index = Pa_GetDefaultOutputDevice();
+	dev = !str_cmp(device, "default")
+		? mediadev_get_default(&ausrc->dev_list)
+		: mediadev_find(&ausrc->dev_list, device);
+	if (!dev)
+		return ENOENT;
 
 	st = mem_zalloc(sizeof(*st), auplay_destructor);
 	if (!st)
@@ -280,7 +282,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 
 	st->ready = true;
 
-	err = write_stream_open(st, prm, dev_index);
+	err = write_stream_open(st, prm, dev->device_index);
 	if (err)
 		goto out;
 
