@@ -31,7 +31,10 @@ static void success_cb(pa_stream *s, int success, void *arg)
 	(void)success;
 	(void)arg;
 
-	pa_threaded_mainloop_signal(paconn_get()->mainloop, 0);
+	struct paconn_st *c = paconn_get();
+
+	if (c)
+		pa_threaded_mainloop_signal(c->mainloop, 0);
 }
 
 
@@ -50,7 +53,7 @@ static int stream_flush(struct pastream_st *st)
 	if (!op)
 		return EINVAL;
 
-	while (pa_operation_get_state(op) == PA_OPERATION_RUNNING)
+	while (c && pa_operation_get_state(op) == PA_OPERATION_RUNNING)
 		pa_threaded_mainloop_wait(c->mainloop);
 
 	pa_operation_unref(op);
@@ -62,6 +65,9 @@ static void pastream_destructor(void *arg)
 {
 	struct pastream_st *st = arg;
 	struct paconn_st *c = paconn_get();
+
+	if (!c)
+		return;
 
 	pa_threaded_mainloop_lock(c->mainloop);
 	st->shutdown = true;
@@ -126,7 +132,8 @@ static void stream_state_cb(pa_stream *s, void *arg)
 	(void)s;
 	(void)arg;
 
-	pa_threaded_mainloop_signal(c->mainloop, 0);
+	if (c)
+		pa_threaded_mainloop_signal(c->mainloop, 0);
 }
 
 
@@ -143,6 +150,9 @@ int pastream_start(struct pastream_st* st, void *arg)
 	struct paconn_st *c = paconn_get();
 	int pa_err = 0;
 	int err = 0;
+
+	if (!c)
+		return EINVAL;
 
 	pa_threaded_mainloop_lock(c->mainloop);
 	if (!c->context ||
