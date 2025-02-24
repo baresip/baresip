@@ -933,7 +933,7 @@ struct ua *uag_find_msg(const struct sip_msg *msg)
 			ua_printf(ua, "account match for %r\n", cuser);
 			return ua;
 		}
-		if (!acc->regint && !uaf && ua_catchall(ua))
+		if (!uaf && ua_catchall(ua))
 			uaf = ua;
 
 	}
