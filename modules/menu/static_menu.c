@@ -1512,7 +1512,7 @@ static const struct cmd cmdv[] = {
                              "direction.",              cmd_dialdir          },
 {"dnd",       0,    CMD_PRM, "Set Do not Disturb",      cmd_dnd              },
 {"entransp",  0,    CMD_PRM, "Enable/Disable transport", cmd_enable_transp   },
-{"hangup",    'b',  CMD_PRM, "Hangup call",             cmd_hangup           },
+{"hangup",    'b',        0, "Hangup call",             cmd_hangup           },
 {"hangupall", 0,    CMD_PRM, "Hangup all calls with direction"
                                                        ,cmd_hangupall        },
 {"help",      'h',        0, "Help menu",               print_commands       },
