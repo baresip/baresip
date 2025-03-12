@@ -36,7 +36,7 @@ static int module_init(void)
 		return err;
 
 	ausrc->infoh = aufile_info_handler;
-	return err;
+	return 0;
 }
 
 
