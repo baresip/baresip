@@ -37,6 +37,7 @@ static void send_feedback(void *arg)
 {
 	struct twcc_status *twccst = arg;
 
+	mtx_lock(twccst->mtx);
 	if (!twccst->count)
 		goto out;
 
@@ -56,6 +57,7 @@ static void send_feedback(void *arg)
 
 out:
 	tmr_start(&twccst->tmr, TWCC_INTERVAL, send_feedback, twccst);
+	mtx_unlock(twccst->mtx);
 }
 
 
@@ -64,6 +66,7 @@ static void twcc_destruct(void *arg)
 	struct twcc_status *twccst = arg;
 
 	tmr_cancel(&twccst->tmr);
+	mem_deref(twccst->mtx);
 }
 
 
@@ -139,6 +142,8 @@ void twcc_status_append(struct twcc_status *twccst, uint16_t tseq)
 
 	p->tseq = tseq;
 
+	mtx_lock(twccst->mtx);
 	twccst->count++;
 	list_append(&twccst->packets, &p->le, e);
+	mtx_unlock(twccst->mtx);
 }
