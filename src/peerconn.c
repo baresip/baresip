@@ -24,6 +24,7 @@ struct peer_connection {
 	struct menc_sess *mencs;
 	char cname[16];
 	enum signaling_st signaling_state;
+	bool twcc_offer;                 /* Offer TWCC */
 	peerconnection_gather_h *gatherh;
 	peerconnection_estab_h *estabh;
 	peerconnection_close_h *closeh;
@@ -235,6 +236,7 @@ int peerconnection_new(struct peer_connection **pcp,
 		return ENOMEM;
 
 	pc->signaling_state = SS_STABLE;
+	pc->twcc_offer = offerer && config->twcc;
 
 	/* RFC 7022 */
 	rand_str(pc->cname, sizeof(pc->cname));
@@ -334,6 +336,12 @@ int peerconnection_add_audio_track(struct peer_connection *pc,
 		return err;
 	}
 
+	if (pc->twcc_offer) {
+		err = twcc_status_offer(media_get_stream(media));
+		if (err)
+			return err;
+	}
+
 	stream_set_ldir(media_get_stream(media), dir);
 
 	mediatrack_set_handlers(media);
@@ -376,6 +384,12 @@ int peerconnection_add_video_track(struct peer_connection *pc,
 	if (err) {
 		warning("peerconnection: video alloc failed (%m)\n", err);
 		return err;
+	}
+
+	if (pc->twcc_offer) {
+		err = twcc_status_offer(media_get_stream(media));
+		if (err)
+			return err;
 	}
 
 	stream_set_ldir(media_get_stream(media), dir);

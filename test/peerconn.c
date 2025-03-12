@@ -267,7 +267,8 @@ static int agent_alloc(struct agent **agp, struct fixture *fix,
 		       bool use_audio, bool use_video, bool offerer)
 {
 	struct rtc_configuration config = {
-		.offerer = offerer
+		.offerer = offerer,
+		.twcc = true
 	};
 
 	struct agent *ag = mem_zalloc(sizeof(*ag), destructor);
@@ -454,6 +455,12 @@ static int test_peerconn_param(bool use_audio, bool use_aufilt,
 		ASSERT_TRUE(fix.a->got_estab_audio);
 		ASSERT_TRUE(fix.b->got_estab_audio);
 		ASSERT_TRUE(fix.a->got_audio || fix.b->got_audio);
+
+		/* TWCC is offered by A and must be negotiated on both */
+		ASSERT_TRUE(0 != stream_extmap_twcc(
+					 media_get_stream(fix.a->media)));
+		ASSERT_TRUE(0 != stream_extmap_twcc(
+					 media_get_stream(fix.b->media)));
 	}
 	if (use_video) {
 		ASSERT_TRUE(fix.a->got_estab_video);
