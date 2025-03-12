@@ -1760,7 +1760,10 @@ int bundle_sdp_encode(struct sdp_session *sdp, const struct list *streaml);
 int bundle_sdp_decode(struct sdp_session *sdp, struct list *streaml);
 
 /* TWCC */
-void twcc_handle_extmap(struct sdp_media *sdp);
+struct twcc_status;
+int twcc_status_alloc(struct twcc_status **twccstp, struct stream *stream);
+void twcc_status_handle_extmap(struct sdp_media *sdp);
+void twcc_status_append(struct twcc_status *twccst, uint16_t tseq);
 
 /*
  * Session Description

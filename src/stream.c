@@ -80,6 +80,7 @@ struct stream {
 	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
 	stream_error_h *errorh;  /**< Stream error handler                  */
 	void *sess_arg;          /**< Session handlers argument             */
+	struct twcc_status *twcc;/**< TWCC                                  */
 
 	struct bundle *bundle;
 	uint8_t extmap_counter;
@@ -150,6 +151,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->peer);
 	mem_deref(s->mid);
 	mem_deref(s->tx.lock);
+	mem_deref(s->twcc);
 }
 
 
@@ -542,7 +544,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	struct stream *s;
 	int err;
 
-	if (!sp || !prm || !cfg || !rtph || !pth)
+	if (!sp || !prm || !cfg || !rtph || !pth || !streaml)
 		return EINVAL;
 
 	s = mem_zalloc(sizeof(*s), NULL);
@@ -653,6 +655,20 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		s->mencs = mem_ref(menc_sess);
 
 		err = stream_start_mediaenc(s);
+		if (err)
+			goto out;
+	}
+
+	if (streaml->head) {
+		struct stream *first = list_ledata(streaml->head);
+		if (!first) {
+			err = ENODATA;
+			goto out;
+		}
+		s->twcc = mem_ref(first->twcc);
+	}
+	else {
+		err = twcc_status_alloc(&s->twcc, s);
 		if (err)
 			goto out;
 	}
@@ -939,7 +955,7 @@ int stream_update(struct stream *s)
 			bundle_handle_extmap(s->bundle, s->sdp);
 		}
 
-		twcc_handle_extmap(s->sdp);
+		twcc_status_handle_extmap(s->sdp);
 	}
 
 	if (s->mencs && mnat_ready(s)) {
