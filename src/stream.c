@@ -80,6 +80,8 @@ struct stream {
 	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
 	stream_error_h *errorh;  /**< Stream error handler                  */
 	void *sess_arg;          /**< Session handlers argument             */
+	struct twcc_status *twcc;/**< Shared TWCC (Transport wide)          */
+	uint8_t extmap_twcc;     /**< TWCC RTP extension id                 */
 
 	struct bundle *bundle;
 	uint8_t extmap_counter;
@@ -150,6 +152,7 @@ static void stream_destructor(void *arg)
 	mem_deref(s->peer);
 	mem_deref(s->mid);
 	mem_deref(s->tx.lock);
+	mem_deref(s->twcc);
 }
 
 
@@ -542,7 +545,7 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 	struct stream *s;
 	int err;
 
-	if (!sp || !prm || !cfg || !rtph || !pth)
+	if (!sp || !prm || !cfg || !rtph || !pth || !streaml)
 		return EINVAL;
 
 	s = mem_zalloc(sizeof(*s), NULL);
@@ -653,6 +656,20 @@ int stream_alloc(struct stream **sp, struct list *streaml,
 		s->mencs = mem_ref(menc_sess);
 
 		err = stream_start_mediaenc(s);
+		if (err)
+			goto out;
+	}
+
+	if (streaml->head) {
+		struct stream *first = list_ledata(streaml->head);
+		if (!first) {
+			err = ENODATA;
+			goto out;
+		}
+		s->twcc = mem_ref(first->twcc);
+	}
+	else {
+		err = twcc_status_alloc(&s->twcc, s);
 		if (err)
 			goto out;
 	}
@@ -938,6 +955,8 @@ int stream_update(struct stream *s)
 		if (s->bundle) {
 			bundle_handle_extmap(s->bundle, s->sdp);
 		}
+
+		twcc_status_handle_extmap(s);
 	}
 
 	if (s->mencs && mnat_ready(s)) {
@@ -1770,4 +1789,25 @@ void stream_enable_natpinhole(struct stream *strm, bool enable)
 		return;
 
 	strm->pinhole = enable;
+}
+
+
+struct twcc_status *stream_twcc(struct stream *strm)
+{
+	return strm ? strm->twcc : NULL;
+}
+
+
+void stream_set_extmap_twcc(struct stream *strm, uint8_t id)
+{
+	if (!strm)
+		return;
+
+	strm->extmap_twcc = id;
+}
+
+
+uint8_t stream_extmap_twcc(struct stream *strm)
+{
+	return strm ? strm->extmap_twcc : 0;
 }
