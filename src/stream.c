@@ -938,6 +938,8 @@ int stream_update(struct stream *s)
 		if (s->bundle) {
 			bundle_handle_extmap(s->bundle, s->sdp);
 		}
+
+		twcc_handle_extmap(s->sdp);
 	}
 
 	if (s->mencs && mnat_ready(s)) {
