@@ -28,7 +28,6 @@ struct twcc_status {
 	struct list packets;
 	struct mem_pool *pool;
 	struct tmr tmr;
-	uint16_t count;
 	int32_t ref_time;
 };
 
@@ -38,7 +37,7 @@ static void send_feedback(void *arg)
 	struct twcc_status *twccst = arg;
 
 	mtx_lock(twccst->mtx);
-	if (!twccst->count)
+	if (!twccst->packets.head)
 		goto out;
 
 	struct le *le;
@@ -50,7 +49,7 @@ static void send_feedback(void *arg)
 		if (!p)
 			goto out;
 
-		warning("RTCP TWCC -> %u\n", twccst->count);
+		warning("RTCP TWCC -> %u\n", p->tseq);
 
 		mem_pool_release(twccst->pool, e);
 	}
@@ -102,7 +101,7 @@ out:
 
 static bool extmap_handler(const char *name, const char *value, void *arg)
 {
-	struct sdp_media *sdp = arg;
+	struct stream *strm = arg;
 	struct sdp_extmap extmap;
 	int err;
 	(void)name;
@@ -114,8 +113,13 @@ static bool extmap_handler(const char *name, const char *value, void *arg)
 	}
 
 	if (0 == pl_strcasecmp(&extmap.name, uri)) {
-		err = sdp_media_set_lattr(sdp, true, "extmap", "%u %s",
-					  extmap.id, uri);
+		err = sdp_media_set_lattr(stream_sdpmedia(strm), true,
+					  "extmap", "%u %s", extmap.id, uri);
+		if (err)
+			false;
+
+		stream_set_extmap_twcc(strm, extmap.id);
+
 		return true;
 	}
 
@@ -123,9 +127,10 @@ static bool extmap_handler(const char *name, const char *value, void *arg)
 }
 
 
-void twcc_status_handle_extmap(struct sdp_media *sdp)
+void twcc_status_handle_extmap(struct stream *strm)
 {
-	sdp_media_rattr_apply(sdp, "extmap", extmap_handler, sdp);
+	sdp_media_rattr_apply(stream_sdpmedia(strm), "extmap", extmap_handler,
+			      strm);
 }
 
 
@@ -143,7 +148,6 @@ void twcc_status_append(struct twcc_status *twccst, uint16_t tseq)
 	p->tseq = tseq;
 
 	mtx_lock(twccst->mtx);
-	twccst->count++;
 	list_append(&twccst->packets, &p->le, e);
 	mtx_unlock(twccst->mtx);
 }

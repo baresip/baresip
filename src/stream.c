@@ -80,7 +80,8 @@ struct stream {
 	stream_rtcp_h *sessrtcph;    /**< Stream RTCP handler               */
 	stream_error_h *errorh;  /**< Stream error handler                  */
 	void *sess_arg;          /**< Session handlers argument             */
-	struct twcc_status *twcc;/**< TWCC                                  */
+	struct twcc_status *twcc;/**< Shared TWCC (Transport wide)          */
+	uint8_t extmap_twcc;     /**< TWCC RTP extension id                 */
 
 	struct bundle *bundle;
 	uint8_t extmap_counter;
@@ -955,7 +956,7 @@ int stream_update(struct stream *s)
 			bundle_handle_extmap(s->bundle, s->sdp);
 		}
 
-		twcc_status_handle_extmap(s->sdp);
+		twcc_status_handle_extmap(s);
 	}
 
 	if (s->mencs && mnat_ready(s)) {
@@ -1786,4 +1787,25 @@ void stream_enable_natpinhole(struct stream *strm, bool enable)
 		return;
 
 	strm->pinhole = enable;
+}
+
+
+struct twcc_status *stream_twcc(struct stream *strm)
+{
+	return strm ? strm->twcc : NULL;
+}
+
+
+void stream_set_extmap_twcc(struct stream *strm, uint8_t id)
+{
+	if (!strm)
+		return;
+
+	strm->extmap_twcc = id;
+}
+
+
+uint8_t stream_extmap_twcc(struct stream *strm)
+{
+	return strm ? strm->extmap_twcc : 0;
 }

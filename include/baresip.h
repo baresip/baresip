@@ -1546,6 +1546,9 @@ const char *stream_peer(const struct stream *strm);
 int  stream_bundle_init(struct stream *strm, bool offerer);
 int  stream_debug(struct re_printf *pf, const struct stream *s);
 void stream_enable_rtp_timeout(struct stream *strm, uint32_t timeout_ms);
+struct twcc_status *stream_twcc(struct stream *strm);
+void stream_set_extmap_twcc(struct stream *strm, uint8_t id);
+uint8_t stream_extmap_twcc(struct stream *strm);
 
 
 /**
@@ -1762,7 +1765,7 @@ int bundle_sdp_decode(struct sdp_session *sdp, struct list *streaml);
 /* TWCC */
 struct twcc_status;
 int twcc_status_alloc(struct twcc_status **twccstp, struct stream *stream);
-void twcc_status_handle_extmap(struct sdp_media *sdp);
+void twcc_status_handle_extmap(struct stream *strm);
 void twcc_status_append(struct twcc_status *twccst, uint16_t tseq);
 
 /*
