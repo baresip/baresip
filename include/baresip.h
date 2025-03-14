@@ -1767,6 +1767,10 @@ struct twcc_status;
 int twcc_status_alloc(struct twcc_status **twccstp, struct stream *stream);
 void twcc_status_handle_extmap(struct stream *strm);
 void twcc_status_append(struct twcc_status *twccst, uint16_t tseq);
+void twcc_status_send_feedback(struct twcc_status *twccst);
+struct mbuf *twcc_status_chunks(struct twcc_status *twccst);
+struct mbuf *twcc_status_delays(struct twcc_status *twccst);
+
 
 /*
  * Session Description
