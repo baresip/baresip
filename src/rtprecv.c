@@ -49,6 +49,7 @@ struct rtp_receiver {
 	struct tmr tmr;                /**< Timer for stopping RX thread     */
 	int pt;                        /**< Previous payload type            */
 	int pt_tel;                    /**< Payload type for tel event       */
+	uint32_t srate;                /**< Receiver Samplerate              */
 };
 
 
@@ -859,4 +860,13 @@ static void async_work_main(int err, void *arg)
 	}
 
 	mem_deref(w);
+}
+
+
+void rtprecv_set_srate(struct rtp_receiver *rx, uint32_t srate)
+{
+	if (!rx)
+		return;
+
+	rx->srate = srate;
 }
