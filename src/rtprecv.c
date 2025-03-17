@@ -886,4 +886,5 @@ void rtprecv_set_srate(struct rtp_receiver *rx, uint32_t srate)
 		return;
 
 	rx->srate = srate;
+	jbuf_set_srate(rx->jbuf, srate);
 }
