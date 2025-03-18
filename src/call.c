@@ -1812,7 +1812,7 @@ static int sipsess_offer_handler(struct mbuf **descp,
 	bevent_call_emit(UA_EVENT_CALL_LOCAL_SDP, call, "%s",
 			 got_offer ? "answer" : "offer");
 
-	return err;
+	return 0;
 }
 
 
