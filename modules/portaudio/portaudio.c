@@ -208,15 +208,15 @@ static void auplay_destructor(void *arg)
 	}
 }
 
-static int find_device(const char *device)
+static int find_device(const struct list *dev_list, const char *device)
 {
 	struct mediadev *dev;
 	char *endp = NULL;
 	int dev_index;
 
 	dev = str_isset(device) && 0 != str_casecmp(device, "default")
-		? mediadev_find(&ausrc->dev_list, device)
-		: mediadev_get_default(&ausrc->dev_list);
+		? mediadev_find(dev_list, device)
+		: mediadev_get_default(dev_list);
 	if (dev)
 		return dev->device_index;
 
@@ -243,7 +243,7 @@ static int src_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	if (!stp || !as || !prm)
 		return EINVAL;
 
-	dev_index = find_device(device);
+	dev_index = find_device(&ausrc->dev_list, device);
 	if (dev_index < 0)
 		return ENODEV;
 
@@ -284,7 +284,7 @@ static int play_alloc(struct auplay_st **stp, const struct auplay *ap,
 	if (!stp || !ap || !prm)
 		return EINVAL;
 
-	dev_index = find_device(device);
+	dev_index = find_device(&auplay->dev_list, device);
 	if (dev_index < 0)
 		return ENODEV;
 
