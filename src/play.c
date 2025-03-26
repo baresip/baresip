@@ -526,17 +526,16 @@ int play_file(struct play **playp, struct player *player,
 	      const char *filename, int repeat,
 	      const char *play_mod, const char *play_dev)
 {
-	char file[FS_PATH_MAX];
-	char path[FS_PATH_MAX];
 	const struct ausrc *ausrc;
 	struct mbuf *mb = NULL;
+	char *file = NULL;
+	char *path = NULL;
+	char *srcn = NULL;
+	struct pl opt;
 	int delay = 0;
 	uint32_t srate = 0;
 	uint8_t ch = 0;
 	struct play *play = NULL;
-
-	char srcn[FS_PATH_MAX];
-
 	int err;
 
 	if (!player)
@@ -544,7 +543,10 @@ int play_file(struct play **playp, struct player *player,
 	if (playp && *playp)
 		return EALREADY;
 
-	str_ncpy(file, filename, sizeof(file));
+	err = re_sdprintf(&file, "%s", filename);
+	if (err)
+		goto out;
+
 	parse_play_settings(file, &repeat, &delay);
 
 	/* absolute path? */
@@ -552,15 +554,21 @@ int play_file(struct play **playp, struct player *player,
 	    !re_regex(file, strlen(file), "https://") ||
 	    !re_regex(file, strlen(file), "http://") ||
 	    !re_regex(file, strlen(file), "file://")) {
-		if (re_snprintf(path, sizeof(path), "%s",
-				file) < 0)
-			return ENOMEM;
-	}
-	else if (re_snprintf(path, sizeof(path), "%s/%s",
-			player->play_path, file) < 0)
-		return ENOMEM;
 
-	if (!conf_get_str(conf_cur(), "file_ausrc", srcn, sizeof(srcn))) {
+		err = re_sdprintf(&path, "%s", file);
+	}
+	else
+		err = re_sdprintf(&path, "%s/%s", player->play_path, file);
+
+	if (err)
+		goto out;
+
+	if (!conf_get(conf_cur(), "file_ausrc", &opt)) {
+
+		err = pl_strdup(&srcn, &opt);
+		if (err)
+			goto out;
+
 		ausrc = ausrc_find(baresip_ausrcl(), srcn);
 		if (ausrc) {
 			err = play_file_ausrc(&play, ausrc,
@@ -572,24 +580,30 @@ int play_file(struct play **playp, struct player *player,
 	}
 
 	mb = mbuf_alloc(1024);
-	if (!mb)
-		return ENOMEM;
-
-	err = aufile_load(mb, path, &srate, &ch);
-	if (err) {
-		warning("play: %s: %m\n", path, err);
+	if (!mb) {
+		err = ENOMEM;
 		goto out;
 	}
+
+	err = aufile_load(mb, path, &srate, &ch);
+	if (err)
+		goto out;
 
 	err = play_tone(&play, player, mb, srate,
 	                ch, repeat, play_mod, play_dev);
 
  out:
 	mem_deref(mb);
+
+	mem_deref(file);
+	mem_deref(path);
+	mem_deref(srcn);
+
 	if (play)
 		play->delay = delay;
 
 	if (err) {
+		warning("play: %s (%m)\n", filename, err);
 		mem_deref(play);
 	}
 	else if (play && playp) {
