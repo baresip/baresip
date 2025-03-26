@@ -5,6 +5,28 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v3.21.0 - 2025-03-26
+
+## What's Changed
+* call: use call_find_replaces for finding call to replace by @maximilianfridrich in https://github.com/baresip/baresip/pull/3307
+* contact commands by @cspiel1 in https://github.com/baresip/baresip/pull/3295
+* menu: return on UA_EVENT_SIPSESS_CONN by @maximilianfridrich in https://github.com/baresip/baresip/pull/3313
+* recalculate jbuf number of frame after reuse packet by @chucongqing in https://github.com/baresip/baresip/pull/3311
+* pulse: add NULL checks for paconn_get by @maximilianfridrich in https://github.com/baresip/baresip/pull/3317
+* menu: remove CMD_PRM flag from hangup command by @maximilianfridrich in https://github.com/baresip/baresip/pull/3318
+* portaudio: fixed inconsistency between the device specification in audio_source and via /ausrc by @rhaberkorn in https://github.com/baresip/baresip/pull/3276
+* aufile: return 0 instead of err by @alfredh in https://github.com/baresip/baresip/pull/3322
+* aureceiver: cleanup rtpext_find is moved to re by @sreimers in https://github.com/baresip/baresip/pull/3323
+* stream,rtprecv: add rtprecv_set_srate by @sreimers in https://github.com/baresip/baresip/pull/3325
+* call: fix cppcheck warning by @alfredh in https://github.com/baresip/baresip/pull/3326
+* bump version to 3.21.0 by @alfredh in https://github.com/baresip/baresip/pull/3328
+
+## New Contributors
+* @rhaberkorn made their first contribution in https://github.com/baresip/baresip/pull/3276
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.20.0...v3.21.0
+
+
 ## v3.20.0 - 2025-02-18
 ### What's Changed
 * mixausrc: use float instead of double by @alfredh in https://github.com/baresip/baresip/pull/3280
