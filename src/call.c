@@ -3175,6 +3175,27 @@ void call_get_mdir(struct call *call, enum sdp_dir *ap, enum sdp_dir *vp)
 
 
 /**
+ * Returns audio and video directions for the established state
+ *
+ * @param call Call object
+ * @param ap   Pointer for returning audio direction
+ * @param vp   Pointer for returning video direction
+ */
+void call_get_media_estdir(struct call *call,
+			   enum sdp_dir *ap, enum sdp_dir *vp)
+{
+	if (!call)
+		return;
+
+	if (ap)
+		*ap = call->estadir;
+
+	if (vp)
+		*vp = call->estvdir;
+}
+
+
+/**
  * Set audio/video direction during pre-established for the established state
  *
  * @param call Call object
