@@ -81,7 +81,7 @@ struct mediadev *mediadev_find(const struct list *dev_list, const char *name)
  *
  * @param dev_list Device list
  *
- * @return Default media device, NULL if none
+ * @return Default media device if set or first device, NULL if none
  */
 struct mediadev *mediadev_get_default(const struct list *dev_list)
 {
@@ -89,6 +89,14 @@ struct mediadev *mediadev_get_default(const struct list *dev_list)
 
 	if (!dev_list)
 		return NULL;
+
+	LIST_FOREACH(dev_list, le)
+	{
+		struct mediadev *dev = le->data;
+
+		if (dev->play.is_default || dev->src.is_default)
+			return dev;
+	}
 
 	le = list_head(dev_list);
 	if (le)
