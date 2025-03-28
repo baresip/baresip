@@ -667,9 +667,19 @@ static void apply_contact_mediadir(struct call *call)
 	if (!con)
 		return;
 
-	enum sdp_dir audir  = SDP_SENDRECV;
-	enum sdp_dir viddir = SDP_SENDRECV;
-	contact_get_ldir(con, &audir, &viddir);
+	enum sdp_dir caudir  = SDP_SENDRECV;
+	enum sdp_dir cviddir = SDP_SENDRECV;
+	contact_get_ldir(con, &caudir, &cviddir);
+
+	enum sdp_dir estaudir  = SDP_SENDRECV;
+	enum sdp_dir estviddir = SDP_SENDRECV;
+	call_get_media_estdir(call, &estaudir, &estviddir);
+
+	enum sdp_dir audir  = estaudir & caudir;
+	enum sdp_dir viddir = estviddir & cviddir;
+	if (audir == estaudir && viddir == estviddir)
+		return;
+
 	debug("menu: apply contact media direction audio=%s video=%s\n",
 	      sdp_dir_name(audir), sdp_dir_name(viddir));
 	call_set_media_direction(call, audir, viddir);

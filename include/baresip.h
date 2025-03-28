@@ -275,6 +275,8 @@ void call_set_media_direction(struct call *call, enum sdp_dir a,
 void call_set_mdir(struct call *call, enum sdp_dir a, enum sdp_dir v);
 void call_get_mdir(struct call *call, enum sdp_dir *ap, enum sdp_dir *vp);
 void call_set_media_estdir(struct call *call, enum sdp_dir a, enum sdp_dir v);
+void call_get_media_estdir(struct call *call,
+			   enum sdp_dir *ap, enum sdp_dir *vp);
 void call_start_answtmr(struct call *call, uint32_t ms);
 bool          call_supported(struct call *call, uint16_t tags);
 const char   *call_user_data(const struct call *call);
