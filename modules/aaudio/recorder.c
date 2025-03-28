@@ -150,7 +150,7 @@ static int open_recorder_stream(struct ausrc_st *st) {
 	AAudioStreamBuilder_setPerformanceMode(builder,
 		AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
 	AAudioStreamBuilder_setInputPreset(builder,
-		AAUDIO_INPUT_PRESET_VOICE_RECOGNITION);
+		AAUDIO_INPUT_PRESET_VOICE_COMMUNICATION);
 	AAudioStreamBuilder_setDataCallback(builder, &dataCallback, st);
 	AAudioStreamBuilder_setErrorCallback(builder, &errorCallback, st);
 
