@@ -151,6 +151,8 @@ size_t netstring_encode_new(char **netstring, char *data, size_t len)
 
 	if (len == 0) {
 		ns = malloc(3);
+		if (!ns)
+			return 0;
 		ns[0] = '0';
 		ns[1] = ':';
 		ns[2] = ',';
@@ -158,6 +160,8 @@ size_t netstring_encode_new(char **netstring, char *data, size_t len)
 	else {
 		num_len = netstring_num_len(len);
 		ns = malloc(num_len + len + 2);
+		if (!ns)
+			return 0;
 		sprintf(ns, "%lu:", (unsigned long)len);
 		memcpy(ns + num_len + 1, data, len);
 		ns[num_len + len + 1] = ',';
