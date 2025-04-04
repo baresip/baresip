@@ -421,7 +421,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	else if (hdr->ssrc != ssrc0) {
 
 		debug("stream: %s: SSRC changed 0x%x -> 0x%x"
-		     " (%u bytes from %J)\n",
+		     " (%zu bytes from %J)\n",
 		     rx->name, ssrc0, hdr->ssrc,
 		     mbuf_get_left(mb), src);
 
