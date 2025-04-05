@@ -8,8 +8,8 @@
 #define kAudioObjectPropertyElementMain (kAudioObjectPropertyElementMaster)
 #endif
 
-AudioComponent audiounit_comp_io;
-AudioComponent audiounit_comp_conv;
+extern AudioComponent audiounit_comp_io;
+extern AudioComponent audiounit_comp_conv;
 
 
 struct audiosess;
