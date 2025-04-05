@@ -27,6 +27,8 @@ struct conv_buf {
 	uint32_t nb_frames;
 };
 
+AudioComponent audiounit_comp_io;
+AudioComponent audiounit_comp_conv;
 
 AudioComponent audiounit_io = NULL;
 AudioComponent audiounit_conv = NULL;
