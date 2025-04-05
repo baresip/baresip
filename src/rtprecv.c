@@ -293,6 +293,15 @@ static int handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
 					"(%m)\n", err);
 				return 0;
 			}
+
+			struct twcc_status *twcc = stream_twcc(rx->strm);
+			if (extv[i].id == stream_extmap_twcc(rx->strm)) {
+				uint16_t tseq = extv[i].data[1];
+				tseq |= extv[i].data[0] << 8;
+				twcc_status_append(twcc, tseq,
+						   hdr->ts_arrive /
+							   (rx->srate / 1000));
+			}
 		}
 
 		extc = i;
