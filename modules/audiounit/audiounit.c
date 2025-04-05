@@ -46,7 +46,7 @@ static void conv_buf_destructor(void *arg)
 }
 
 
-int conv_buf_alloc(struct conv_buf **bufp, size_t framesz)
+int audiounit_conv_buf_alloc(struct conv_buf **bufp, size_t framesz)
 {
 	struct conv_buf *buf;
 
@@ -68,7 +68,7 @@ int conv_buf_alloc(struct conv_buf **bufp, size_t framesz)
 }
 
 
-int  get_nb_frames(struct conv_buf *buf, uint32_t *nb_frames)
+int  audiounit_get_nb_frames(struct conv_buf *buf, uint32_t *nb_frames)
 {
 	if (!buf)
 		return EINVAL;

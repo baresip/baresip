@@ -106,7 +106,7 @@ static OSStatus input_callback(void *inRefCon,
 		struct auframe af;
 		uint64_t ts;
 
-		err = get_nb_frames(st->buf, &nb_frames);
+		err = audiounit_get_nb_frames(st->buf, &nb_frames);
 		if (err)
 			return kAudioUnitErr_InvalidParameter;
 
@@ -229,7 +229,7 @@ int audiounit_recorder_alloc(struct ausrc_st **stp, const struct ausrc *as,
 	st->prm = *prm;
 
 	framesz = st->sampsz * st->ch;
-	err = conv_buf_alloc(&st->buf, framesz);
+	err = audiounit_conv_buf_alloc(&st->buf, framesz);
 	if (err)
 		goto out;
 
