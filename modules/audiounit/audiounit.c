@@ -30,9 +30,6 @@ struct conv_buf {
 AudioComponent audiounit_comp_io;
 AudioComponent audiounit_comp_conv;
 
-AudioComponent audiounit_io = NULL;
-AudioComponent audiounit_conv = NULL;
-
 static struct auplay *auplay;
 static struct ausrc *ausrc;
 
