@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	setbuf(stdout, NULL);
 
 	(void)re_fprintf(stdout, "baresip v%s"
-			 " Copyright (C) 2010 - 2024"
+			 " Copyright (C) 2010 - 2025"
 			 " Alfred E. Heggestad et al.\n",
 			 BARESIP_VERSION);
 
