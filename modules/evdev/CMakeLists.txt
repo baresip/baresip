@@ -1,6 +1,9 @@
 project(evdev)
 
-if(NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+else()
+  message(STATUS "Skipping ${PROJECT_NAME} module compilation due to unsupported platform ${CMAKE_SYSTEM_NAME}")
   return()
 endif()
 
