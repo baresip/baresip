@@ -269,7 +269,7 @@ static int handle_rtp(struct rtp_receiver *rx, const struct rtp_header *hdr,
 		int err;
 
 		if (hdr->x.type != RTPEXT_TYPE_MAGIC) {
-			debug("stream: unknown ext type ignored (0x%04x)\n",
+			debug("rtprecv: unknown ext type ignored (0x%04x)\n",
 			     hdr->x.type);
 			goto handler;
 		}
@@ -392,7 +392,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	}
 
 	if (rtp_pt_is_rtcp(hdr->pt)) {
-		debug("stream: drop incoming RTCP packet on RTP port"
+		debug("rtprecv: drop incoming RTCP packet on RTP port"
 		     " (pt=%u)\n", hdr->pt);
 		mtx_unlock(rx->mtx);
 		return;
@@ -404,7 +404,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 
 	if (!rx->rtp_estab) {
 		if (rx->rtpestabh) {
-			debug("stream: incoming rtp for '%s' established, "
+			debug("rtprecv: incoming rtp for '%s' established, "
 			      "receiving from %J\n", rx->name, src);
 			rx->rtp_estab = true;
 			pass_rtpestab_work(rx);
@@ -420,7 +420,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 	}
 	else if (hdr->ssrc != ssrc0) {
 
-		debug("stream: %s: SSRC changed 0x%x -> 0x%x"
+		debug("rtprecv: %s: SSRC changed 0x%x -> 0x%x"
 		     " (%zu bytes from %J)\n",
 		     rx->name, ssrc0, hdr->ssrc,
 		     mbuf_get_left(mb), src);
@@ -444,7 +444,7 @@ void rtprecv_decode(const struct sa *src, const struct rtp_header *hdr,
 
 		err = jbuf_put(rx->jbuf, hdr, mb);
 		if (err) {
-			info("stream: %s: dropping %zu bytes from %J"
+			info("rtprecv: %s: dropping %zu bytes from %J"
 			     " [seq=%u, ts=%u] (%m)\n",
 			     rx->name, mb->end,
 			     src, hdr->seq, hdr->ts, err);
@@ -539,13 +539,13 @@ void rtprecv_set_ssrc(struct rtp_receiver *rx, uint32_t ssrc)
 	mtx_lock(rx->mtx);
 	if (rx->ssrc_set) {
 		if (ssrc != rx->ssrc) {
-			debug("stream: receive: SSRC changed: %x -> %x\n",
+			debug("rtprecv: receive: SSRC changed: %x -> %x\n",
 			     rx->ssrc, ssrc);
 			rx->ssrc = ssrc;
 		}
 	}
 	else {
-		debug("stream: receive: setting SSRC: %x\n", ssrc);
+		debug("rtprecv: receive: setting SSRC: %x\n", ssrc);
 		rx->ssrc = ssrc;
 		rx->ssrc_set = true;
 	}
