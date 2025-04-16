@@ -422,7 +422,7 @@ static int debug_conference(struct re_printf *pf, void *arg)
 		if (!enc)
 			continue;
 
-		info("mixminus/enc au %x:"
+		info("mixminus/enc au %p:"
 		     "ch %d srate %d fmt %s, is_conference (%s)\n",
 		     enc->au, enc->prm.ch, enc->prm.srate,
 		     aufmt_name(enc->prm.fmt),
@@ -431,7 +431,7 @@ static int debug_conference(struct re_printf *pf, void *arg)
 		for (lem = list_head(&enc->mixers); lem; lem = lem->next) {
 			mix = lem->data;
 
-			info("\tmix au %x: ch %d srate %d %H\n", mix->au,
+			info("\tmix au %p: ch %d srate %d %H\n", mix->au,
 			     mix->prm.ch, mix->prm.srate, aubuf_debug,
 			     mix->ab);
 		}
