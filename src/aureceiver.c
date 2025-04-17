@@ -235,7 +235,7 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 				   ar->fmt, ar->sampv, &sampc,
 				   mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
-			warning("audio: %s codec decode %u bytes: %m\n",
+			warning("audio_recv: %s codec decode %zu bytes: %m\n",
 				ac->name, mbuf_get_left(mb), err);
 			goto out;
 		}
@@ -246,7 +246,7 @@ static int aurecv_stream_decode(struct audio_recv *ar,
 				   ar->fmt, ar->sampv, &sampc,
 				   marker, mbuf_buf(mb), mbuf_get_left(mb));
 		if (err) {
-			warning("audio: %s codec decode %u bytes: %m\n",
+			warning("audio_recv: %s codec decode %zu bytes: %m\n",
 				ac->name, mbuf_get_left(mb), err);
 			goto out;
 		}
@@ -316,7 +316,7 @@ void aurecv_receive(struct audio_recv *ar, const struct rtp_header *hdr,
 	switch (wrap) {
 
 	case -1:
-		warning("audio: rtp timestamp wraps backwards"
+		warning("audio_recv: rtp timestamp wraps backwards"
 			" (delta = %d) -- discard\n",
 			(int32_t)(ar->ts_recv.last - hdr->ts));
 		discard = true;
@@ -456,7 +456,7 @@ int aurecv_decoder_set(struct audio_recv *ar,
 	if (!ar || !ac)
 		return EINVAL;
 
-	info("audio: Set audio decoder: %s %uHz %dch\n",
+	info("audio_recv: Set audio decoder: %s %uHz %dch\n",
 	     ac->name, ac->srate, ac->ch);
 
 	mtx_lock(ar->mtx);
@@ -682,14 +682,15 @@ int aurecv_start_player(struct audio_recv *ar, struct list *auplayl)
 				   &prm, ar->device,
 				   auplay_write_handler, ar);
 		if (err) {
-			warning("audio: start_player failed (%s.%s): %m\n",
+			warning("audio_recv: start_player failed (%s.%s): "
+				"%m\n",
 				ar->module, ar->device, err);
 			goto out;
 		}
 
 		ar->ap = auplay_find(auplayl, ar->module);
 
-		info("audio: player started with sample format %s\n",
+		info("audio_recv: player started with sample format %s\n",
 		     aufmt_name(ar->play_fmt));
 	}
 
