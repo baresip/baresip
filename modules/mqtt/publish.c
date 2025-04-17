@@ -15,12 +15,12 @@
  * from baresip to broker (publish)
  */
 
-// a buffer for events while not connected to mqtt yet
+/* a buffer for events while not connected to mqtt yet */
 static struct list mqtt_event_buffer;
 struct mqtt_event {
 	struct le le;
 	char *event;
-    char *topic;
+	char *topic;
 };
 
 static void mqtt_event_destructor(void *arg)
@@ -74,17 +74,20 @@ int publish_buffered_messages(struct mqtt *mqtt) {
 	int err = 0;
 
 	if (!mqtt->is_connected) {
-		warning("mqtt: cannot publish queued messages in disconnected state\n");
-        return 0;
-    }
+		warning(
+		"mqtt: cannot publish queued messages "
+		"in disconnected state\n");
+		return 0;
+	}
 
 	LIST_FOREACH(&mqtt_event_buffer, le) {
 		struct mqtt_event *e = (struct mqtt_event *)le->data;
 		char *msg = e->event;
 		char *topic = e->topic;
 
-		warning("mqtt: publishing queued message (len=%d, data=%s)\n", (int)str_len(msg), msg);
-        
+		warning("mqtt: publishing queued message (len=%d, data=%s)\n",
+			(int)str_len(msg), msg);
+
 		ret = mosquitto_publish(mqtt->mosq,
 					NULL,
 					topic,
@@ -102,7 +105,7 @@ int publish_buffered_messages(struct mqtt *mqtt) {
 	list_flush(&mqtt_event_buffer);
 
 err:
-    return err;
+	return err;
 }
 
 int mqtt_publish_message(struct mqtt *mqtt, const char *topic,
@@ -130,18 +133,20 @@ int mqtt_publish_message(struct mqtt *mqtt, const char *topic,
 	if (!mqtt->is_connected) {
 		struct mqtt_event *e;
 
-		warning("mqtt: trying to publish while not yet connected, queueing\n");
+		warning(
+			"mqtt: trying to publish while not yet "
+			"connected, queueing\n");
 
 		e = mem_zalloc(sizeof(*e), mqtt_event_destructor);
 		if (!e)
 			return ENOMEM;
 		e->event = message;
-        pl_strdup(&e->topic, &topic_pl);
+		pl_strdup(&e->topic, &topic_pl);
 		list_append(&mqtt_event_buffer, &e->le, e);
 		return 0;
 	}
 
-    err = publish_buffered_messages(mqtt);
+	err = publish_buffered_messages(mqtt);
 	if (err)
 		goto err;
 

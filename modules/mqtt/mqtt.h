@@ -16,7 +16,6 @@ struct mqtt {
 	struct tmr tmr;
 	re_sock_t fd;
 	struct re_fhs *fhs;
-	
 };
 
 
@@ -37,4 +36,4 @@ int  mqtt_publish_init(struct mqtt *mqtt);
 void mqtt_publish_close(void);
 int  mqtt_publish_message(struct mqtt *mqtt, const char *topic,
 			  const char *fmt, ...);
-int publish_buffered_messages(struct mqtt *mqtt);			  
+int publish_buffered_messages(struct mqtt *mqtt);

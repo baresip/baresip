@@ -90,10 +90,11 @@ static void handle_command(struct mqtt *mqtt, const struct pl *msg)
 
 	/* NOTE: the command will now write the response
 	   to the resp mbuf, send it back to broker */
-	
-	/* agranig: don't send anything back, as the response topic is wrong anyways */
-	/*
 
+	/* agranig: don't send anything back, as the response topic
+	is wrong anyways */
+
+	/*
 	re_snprintf(resp_topic, sizeof(resp_topic),
 		    "/%s/command_resp/%s", mqtt->basetopic,
 		    tok ? tok : "nil");
@@ -172,7 +173,11 @@ int mqtt_subscribe_start(struct mqtt *mqtt)
 {
 	int ret;
 
-	ret = mosquitto_subscribe(mqtt->mosq, NULL, mqtt->subtopic, mqtt->subqos);
+	ret = mosquitto_subscribe(
+		mqtt->mosq,
+		NULL,
+		mqtt->subtopic,
+		mqtt->subqos);
 	if (ret != MOSQ_ERR_SUCCESS) {
 		warning("mqtt: failed to subscribe (%s)\n",
 			mosquitto_strerror(ret));

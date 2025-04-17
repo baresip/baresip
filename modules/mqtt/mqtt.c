@@ -79,7 +79,7 @@ static void connect_callback(struct mosquitto *mosq, void *obj, int result)
 
 	mqtt->is_connected = 1;
 
-    err = publish_buffered_messages(mqtt);
+	err = publish_buffered_messages(mqtt);
 	if (err) {
 		warning("mqtt: publish_buffered_messages failed (%m)\n", err);
 	}
@@ -160,10 +160,10 @@ static int module_init(void)
 	conf_get_str(conf_cur(), "mqtt_subscribetopic",
 		     mqttsubscribetopic, sizeof(mqttsubscribetopic));
 	conf_get_u32(conf_cur(), "mqtt_publishqos", &mqttpublishqos);
-	conf_get_u32(conf_cur(), "mqtt_subscribeqos", &mqttsubscribeqos);    
+	conf_get_u32(conf_cur(), "mqtt_subscribeqos", &mqttsubscribeqos);
  	conf_get_u32(conf_cur(), "mqtt_broker_port", &broker_port);
 	conf_get_str(conf_cur(), "mqtt_tls_alpn",
-             tls_alpn, sizeof(tls_alpn)); 
+             tls_alpn, sizeof(tls_alpn));
 
 	info("mqtt: connecting to broker at %s:%d as %s topic %s\n",
 		broker_host, broker_port, mqttclientid, mqttbasetopic);
@@ -185,8 +185,8 @@ static int module_init(void)
 	s_mqtt.basetopic = mqttbasetopic;
 	s_mqtt.subtopic = mqttsubscribetopic;
 	s_mqtt.pubtopic = mqttpublishtopic;
-    s_mqtt.pubqos = (int) mqttpublishqos;
-    s_mqtt.subqos = (int) mqttsubscribeqos; 
+	s_mqtt.pubqos = (int) mqttpublishqos;
+	s_mqtt.subqos = (int) mqttsubscribeqos;
 
 
 	s_mqtt.mosq = mosquitto_new(mqttclientid, true, &s_mqtt);
@@ -196,8 +196,9 @@ static int module_init(void)
 	}
 
 	if (*tls_alpn != '\0') {
-        info("mqtt: setting TLS ALPN to %s\n", tls_alpn);
-        ret = mosquitto_string_option(s_mqtt.mosq, MOSQ_OPT_TLS_ALPN, tls_alpn);
+		info("mqtt: setting TLS ALPN to %s\n", tls_alpn);
+		ret = mosquitto_string_option(s_mqtt.mosq, MOSQ_OPT_TLS_ALPN,
+			tls_alpn);
 		if (ret != MOSQ_ERR_SUCCESS)
 			return ret == MOSQ_ERR_ERRNO ? errno : EIO;
 	}
@@ -266,11 +267,13 @@ static int module_close(void)
 	tmr_cancel(&s_mqtt.tmr);
 
 	if (s_mqtt.mosq) {
-
-        int err = publish_buffered_messages(&s_mqtt);
-        if (err) {
-            warning("mqtt: publish_buffered_messages failed on shutdown (%m)\n", err);
-        }
+		int err = publish_buffered_messages(&s_mqtt);
+		if (err) {
+			warning(
+			"mqtt: publish_buffered_messages "
+			"failed on shutdown (%m)\n",
+			err);
+		}
 
 		mosquitto_disconnect(s_mqtt.mosq);
 
