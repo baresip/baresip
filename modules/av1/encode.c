@@ -137,7 +137,7 @@ static int packetize_rtp(struct videnc_state *ves,
 {
 	bool new_flag = keyframe;
 
-	return av1_packetize_high(&new_flag, true, rtp_ts, buf, size,
+	return av1_packetize_new(&new_flag, true, rtp_ts, buf, size,
 				  ves->pktsize, (av1_packet_h *)ves->pkth,
 				  (void *)ves->vid);
 }
