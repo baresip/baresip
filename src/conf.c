@@ -39,7 +39,7 @@
 
 
 static char *conf_path = NULL;
-static struct conf *conf_obj;
+static struct conf *conf_obj = NULL;
 
 
 static void print_populated(const char *what, uint32_t n)
