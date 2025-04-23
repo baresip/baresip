@@ -429,6 +429,7 @@ static void poll_aubuf_tx(struct audio *a)
 	auframe_init(&af, tx->src_fmt, tx->sampv, sampc, srate, ch);
 	aubuf_read_auframe(tx->aubuf, &af);
 
+	mtx_lock(tx->mtx);
 	/* Process exactly one audio-frame in list order */
 	for (le = tx->filtl.head; le; le = le->next) {
 		struct aufilt_enc_st *st = le->data;
@@ -436,6 +437,7 @@ static void poll_aubuf_tx(struct audio *a)
 		if (st->af && st->af->ench)
 			err |= st->af->ench(st, &af);
 	}
+	mtx_unlock(tx->mtx);
 	if (err) {
 		warning("audio: aufilter encode: %m\n", err);
 	}
@@ -1004,7 +1006,9 @@ static int aufilt_setup(struct audio *a, struct list *aufiltl)
 			}
 			else {
 				encst->af = af;
+				mtx_lock(tx->mtx);
 				list_append(&tx->filtl, &encst->le, encst);
+				mtx_unlock(tx->mtx);
 			}
 		}
 
