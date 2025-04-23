@@ -28,7 +28,7 @@ struct mix {
 
 struct mixminus_enc {
 	struct aufilt_enc_st af;  /* inheritance */
-
+	mtx_t *mtx;
 	const struct audio *au;
 	struct list mixers;
 	int16_t *sampv;
@@ -54,8 +54,6 @@ static void enc_destructor(void *arg)
 {
 	struct mixminus_enc *st = arg;
 	struct mixminus_enc *enc;
-	struct le *le, *lem;
-	struct mix *mix;
 
 	list_flush(&st->mixers);
 	mem_deref(st->sampv);
@@ -63,14 +61,16 @@ static void enc_destructor(void *arg)
 	mem_deref(st->fsampv);
 	list_unlink(&st->le_priv);
 
-	for (le = list_head(&encs); le; le = le->next) {
+	for (struct le *le = list_head(&encs); le; le = le->next) {
 		enc = le->data;
 		if (!enc)
 			continue;
 
-		lem = list_head(&enc->mixers);
+		mtx_lock(enc->mtx);
+		struct le *lem = list_head(&enc->mixers);
+
 		while (lem) {
-			mix = lem->data;
+			struct mix *mix = lem->data;
 			lem = lem->next;
 
 			if (st->au != mix->au)
@@ -78,10 +78,12 @@ static void enc_destructor(void *arg)
 
 			mix->ready = false;
 			list_unlink(&mix->le_priv);
-			sys_msleep(25);
 			mem_deref(mix);
 		}
+		mtx_unlock(enc->mtx);
 	}
+
+	mem_deref(st->mtx);
 }
 
 static void dec_destructor(void *arg)
@@ -116,6 +118,10 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 
 	st = mem_zalloc(sizeof(*st), enc_destructor);
 	if (!st)
+		return ENOMEM;
+
+	err = mutex_alloc(&st->mtx);
+	if (err)
 		return ENOMEM;
 
 	psize = AUDIO_SAMPSZ * sizeof(int16_t);
@@ -157,7 +163,9 @@ static int encode_update(struct aufilt_enc_st **stp, void **ctx,
 		mix->au = st->au; /* using audio object as id */
 		mix->ready = false;
 
+		mtx_lock(enc->mtx);
 		list_append(&enc->mixers, &mix->le_priv, mix);
+		mtx_unlock(enc->mtx);
 	}
 
 	/* add other mixes to new enc */
@@ -260,6 +268,7 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 		sampv = enc->fsampv;
 	}
 
+	mtx_lock(enc->mtx);
 	for (lem = list_head(&enc->mixers); lem; lem = lem->next) {
 		mix = lem->data;
 		if (!mix)
@@ -280,7 +289,7 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 				     enc->prm.srate, enc->prm.ch);
 		if (err) {
 			warning("mixminus/auresamp_setup error (%m)\n", err);
-			return err;
+			goto out;
 		}
 
 		if (enc->resamp.resample) {
@@ -308,12 +317,13 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 				       enc->sampv, inc);
 			if (err) {
 				warning("mixminus/auresamp error (%m)\n", err);
-				return err;
+				goto out;
 			}
 			if (outc != af->sampc) {
 				warning("mixminus/auresamp sample count "
 					"error\n");
-				return EINVAL;
+				err = EINVAL;
+				goto out;
 			}
 		}
 		else {
@@ -337,6 +347,8 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 				af->sampc);
 	}
 
+out:
+	mtx_unlock(enc->mtx);
 	return err;
 }
 
