@@ -128,7 +128,7 @@ struct audio {
 	bool started;                 /**< Stream is started flag          */
 	bool level_enabled;           /**< Audio level RTP ext. enabled    */
 	bool hold;                    /**< Local hold flag                 */
-	bool conference;              /**< Local conference flag           */
+	RE_ATOMIC bool conference;    /**< Local conference flag           */
 	uint8_t extmap_aulevel;       /**< ID Range 1-14 inclusive         */
 	audio_event_h *eventh;        /**< Event handler                   */
 	audio_level_h *levelh;        /**< Audio level handler             */
@@ -1902,7 +1902,7 @@ int audio_set_conference(struct audio *au, bool conference)
 	if (!au)
 		return EINVAL;
 
-	au->conference = conference;
+	re_atomic_rlx_set(&au->conference, conference);
 
 	return 0;
 }
@@ -1917,7 +1917,7 @@ int audio_set_conference(struct audio *au, bool conference)
  */
 bool audio_is_conference(const struct audio *au)
 {
-	return au ? au->conference : false;
+	return au ? re_atomic_rlx(&au->conference) : false;
 }
 
 
