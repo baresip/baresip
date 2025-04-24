@@ -777,7 +777,7 @@ static int video_stream_decode(struct vrx *vrx, const struct rtp_header *hdr,
 
 		if (err != EPROTO) {
 			warning("video: %s decode error"
-				" (seq=%u, %u bytes): %m\n",
+				" (seq=%u, %zu bytes): %m\n",
 				vrx->vc->name, hdr->seq,
 				mbuf_get_left(mb), err);
 		}
