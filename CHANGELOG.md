@@ -5,6 +5,39 @@ All notable changes to baresip will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## v3.22.0 - 2025-04-30
+
+## What's Changed
+* play: avoid stack overflow on small devices by @cspiel1 in https://github.com/baresip/baresip/pull/3329
+* portaudio: fixed selecting playback-only devices by name (refs #3330) by @rhaberkorn in https://github.com/baresip/baresip/pull/3331
+* mediadev: fix mediadev_get_default by @sreimers in https://github.com/baresip/baresip/pull/3332
+* menu fix contact media direction by @cspiel1 in https://github.com/baresip/baresip/pull/3334
+* aaudio/recorder: use InputPreset VOICE_COMMUNICATION by @juha-h in https://github.com/baresip/baresip/pull/3336
+* netstring: handle malloc() return NULL (cppcheck) by @alfredh in https://github.com/baresip/baresip/pull/3337
+* aac: fix formatting arguments to %w by @alfredh in https://github.com/baresip/baresip/pull/3342
+* rtprecv: fix debug printf size error by @ursfassler in https://github.com/baresip/baresip/pull/3343
+* audiounit: fix linking by @barracuda156 in https://github.com/baresip/baresip/pull/3346
+* audiounit: add audiounit_ prefix to functions by @alfredh in https://github.com/baresip/baresip/pull/3345
+* audiounit: remove unused variables by @alfredh in https://github.com/baresip/baresip/pull/3348
+* main: update copyright year by @sreimers in https://github.com/baresip/baresip/pull/3351
+* rtprecv: fit logging to file name by @cspiel1 in https://github.com/baresip/baresip/pull/3355
+* evdev: allowing evdev module compilation on FreeBSD by @DenisPolygalov in https://github.com/baresip/baresip/pull/3354
+* cmake/FindOPUS: align include path names by @sreimers in https://github.com/baresip/baresip/pull/3356
+* mixminus: fix info re_printf pointer length by @sreimers in https://github.com/baresip/baresip/pull/3357
+* aureceiver: fix byte length and use audio_recv prefix by @sreimers in https://github.com/baresip/baresip/pull/3358
+* av1: migrate to new AV1 packetizer by @alfredh in https://github.com/baresip/baresip/pull/3362
+* video: fix warning printf size error by @ursfassler in https://github.com/baresip/baresip/pull/3366
+* misc: fix audio tx thread filter locking by @sreimers in https://github.com/baresip/baresip/pull/3365
+* docs: add port to accounts example by @cspiel1 in https://github.com/baresip/baresip/pull/3372
+
+## New Contributors
+* @barracuda156 made their first contribution in https://github.com/baresip/baresip/pull/3346
+* @DenisPolygalov made their first contribution in https://github.com/baresip/baresip/pull/3354
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.21.0...v3.22.0
+
+
 ## v3.21.0 - 2025-03-26
 
 ## What's Changed
