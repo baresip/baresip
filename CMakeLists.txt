@@ -1,9 +1,9 @@
 #
 # CMakeLists.txt
 #
-# Copyright (C) 2010 - 2022 Alfred E. Heggestad
-# Copyright (C) 2022 Sebastian Reimers
-# Copyright (C) 2023 Christian Spielberger
+# Copyright (C) 2010 - 2025 Alfred E. Heggestad
+# Copyright (C) 2022 - 2025 Sebastian Reimers
+# Copyright (C) 2023 - 2025 Christian Spielberger
 #
 
 ##############################################################################
@@ -13,7 +13,7 @@
 
 cmake_minimum_required(VERSION 3.15...3.31)
 
-project(baresip VERSION 3.21.0)
+project(baresip VERSION 3.22.0)
 
 set(PROJECT_SOVERSION 20) # bump if ABI breaks
 
