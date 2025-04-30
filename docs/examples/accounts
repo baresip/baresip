@@ -1,7 +1,7 @@
 #
 # SIP accounts - one account per line -- sample configuration
 #
-# Displayname <sip:user:password@domain;uri-params>;addr-params
+# Displayname <sip:user:password@domain:port;uri-params>;addr-params
 #
 #  uri-params:
 #    ;transport={udp,tcp,tls}
