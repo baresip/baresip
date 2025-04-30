@@ -18,7 +18,6 @@ set(MODULES
   avformat
   codec2
   commod
-  comvideo
   cons
   contact
   coreaudio
