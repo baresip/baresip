@@ -178,13 +178,15 @@ void module_app_unload(void)
 
 
 /**
- * Pre-load a module from the current working directory
+ * Pre-load a module. First check the current working directory 
+ * then fall back to the configured module path 
  *
  * @param module Module name including extension
+ * @param conf Config from which to obtain module path
  *
  * @return 0 if success, otherwise errorcode
  */
-int module_preload(const char *module)
+int module_preload(const char *module, const struct conf *conf)
 {
 	struct pl path, name;
 
@@ -193,6 +195,15 @@ int module_preload(const char *module)
 
 	pl_set_str(&path, ".");
 	pl_set_str(&name, module);
+
+	char file[FS_PATH_MAX];
+	if (re_snprintf(file, sizeof(file), "%r/%r", &path, &name) < 0) {
+		return ENOMEM;
+	}
+
+	if (! fs_isfile(file)) {
+		conf_get(conf, "module_path", &path);
+	}
 
 	return load_module(NULL, &path, &name);
 }
