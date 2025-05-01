@@ -65,7 +65,9 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 		return EINVAL;
 
 #ifdef STATIC
-	/* Try static first */
+    /* Try static first; if a static module is available assume that it
+       is "sound" and the call to mod_add (which initializes the module)
+       should succeed */
 	pl_strcpy(name, namestr, sizeof(namestr));
 
 	if (mod_find(namestr)) {
@@ -73,9 +75,11 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 		return EALREADY;
 	}
 
-	err = mod_add(&m, lookup_static_module(name));
-	if (!err)
-		goto out;
+    const struct mod_export* mex = lookup_static_module(name);
+    if (mex) {
+        err = mod_add(&m, mex);
+        goto out;
+    }
 #else
 	(void)namestr;
 #endif
