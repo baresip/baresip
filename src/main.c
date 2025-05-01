@@ -267,14 +267,14 @@ int main(int argc, char *argv[])
 			      conf_config()->audio.audio_path);
 	}
 
-    /* Initialise User Agents */
-    err = ua_init(software, true, true, true);
-    if (err)
-        goto out;
+	/* Initialise User Agents */
+	err = ua_init(software, true, true, true);
+	if (err)
+		goto out;
 
-    /* NOTE: must be done after all arguments are processed and UA is
-       initialized; some modules (eg, ctrl_tcp) can only be preloaded
-       when the UA is available */
+	/* NOTE: must be done after all arguments are processed and UA is
+		initialized; some modules (eg, ctrl_tcp) can only be preloaded
+		when the UA is available */
 	if (modc) {
 
 		info("pre-loading modules: %zu\n", modc);
