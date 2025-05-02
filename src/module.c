@@ -65,9 +65,10 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 		return EINVAL;
 
 #ifdef STATIC
-	/* Try static first; if a static module is available assume that it
-		is "sound" and the call to mod_add (which initializes the module)
-		should succeed */
+	/* Try static first; if a static module is available
+		assume that it is "sound" and that the call to
+		mod_add (which initializes the module) should
+		succeed */
 	pl_strcpy(name, namestr, sizeof(namestr));
 
 	if (mod_find(namestr)) {
@@ -178,8 +179,8 @@ void module_app_unload(void)
 
 
 /**
- * Pre-load a module. First check the current working directory 
- * then fall back to the configured module path 
+ * Pre-load a module. First check the current working directory
+ * then fall back to the configured module path
  *
  * @param module Module name including extension
  * @param conf Config from which to obtain module path
