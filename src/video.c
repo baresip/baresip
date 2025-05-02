@@ -1359,7 +1359,7 @@ int video_start_source(struct video *v)
 
 	struct vtx *vtx = &v->vtx;
 
-	debug("video: start source\n");
+	debug("video: start source %s,%s\n", vtx->module, vtx->device);
 
 	if (vidsrc_find(baresip_vidsrcl(), NULL)) {
 		struct vidsrc *vs;
