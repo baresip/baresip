@@ -23,8 +23,11 @@ static struct vidsrc *vidsrc;
 {
 	AVCaptureSession *sess;
 	AVCaptureDeviceInput *input;
+	AVCaptureScreenInput *screenInput;
 	AVCaptureVideoDataOutput *output;
 	struct vidsrc_st *vsrc;
+	struct vidsz vsz;
+	char devname[128];
 }
 - (void)setCamera:(const char *)name;
 @end
@@ -119,6 +122,7 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 		NSString *preset = *mapv[i].preset;
 
 		if (![sess canSetSessionPreset:preset] ||
+			!dev ||
 		    ![dev supportsAVCaptureSessionPreset:preset])
 			continue;
 
@@ -192,22 +196,37 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
       size:(const struct vidsz *)sz
 {
 	dispatch_queue_t queue;
-	AVCaptureDevice *dev;
+	AVCaptureDevice *dev = NULL;
+	input = NULL;
+	screenInput = NULL;
 
 	self = [super init];
 	if (!self)
 		return nil;
 
 	vsrc = st;
+	vsz = *sz;
 
-	dev = [avcap get_device:[avcap get_position:name]];
-	if (!dev)
-		return nil;
+	if (name)
+		re_snprintf(devname, sizeof(devname), name);
 
-	input = [AVCaptureDeviceInput deviceInputWithDevice:dev error:nil];
+	info("avcapture: device=%s %dx%d\n", name, sz->w, sz->h);
+
+	if (name && !strcmp(name, "screen")) {
+		screenInput = [[AVCaptureScreenInput alloc] init];
+	}
+	else {
+		dev = [avcap get_device:[avcap get_position:name]];
+		if (!dev)
+			return nil;
+		input = [AVCaptureDeviceInput deviceInputWithDevice:dev
+			error:nil];
+	}
+
 	output = [[AVCaptureVideoDataOutput alloc] init];
 	sess = [[AVCaptureSession alloc] init];
-	if (!input || !output || !sess)
+
+	if ((!input && !screenInput) || !output || !sess)
 		return nil;
 
 	output.alwaysDiscardsLateVideoFrames = YES;
@@ -216,9 +235,10 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 	[output setSampleBufferDelegate:self queue:queue];
 	dispatch_release(queue);
 
-	sess.sessionPreset = [self map_preset:dev sz:sz];
+	if (dev)
+		sess.sessionPreset = [self map_preset:dev sz:sz];
 
-	[sess addInput:input];
+	[sess addInput:screenInput ? screenInput : input];
 	[sess addOutput:output];
 
 	[self start:nil];
@@ -243,6 +263,8 @@ static void vidframe_set_pixbuf(struct vidframe *f, const CVImageBufferRef b)
 	[sess beginConfiguration];
 	if (input)
 		[sess removeInput:input];
+	if (screenInput)
+		[sess removeInput:screenInput];
 	if (output)
 		[sess removeOutput:output];
 	[sess commitConfiguration];
@@ -284,6 +306,20 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 	AVCaptureDevicePosition pos;
 	AVCaptureDevice *dev;
 
+	if (!strcmp(name, "screen")) {
+		if (screenInput)
+			return;
+		if (input) {
+			[sess beginConfiguration];
+			[sess removeInput:input];
+			input = nil;
+			screenInput = [[AVCaptureScreenInput alloc] init];
+			[sess addInput:screenInput];
+			[sess commitConfiguration];
+		}
+		return;
+	}
+
 	pos = [avcap get_position:name];
 
 	if (pos == input.device.position)
@@ -293,6 +329,7 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 	if (!dev)
 		return;
 
+	sess.sessionPreset = [self map_preset:dev sz:&vsz];
 	[sess beginConfiguration];
 	[sess removeInput:input];
 	input = [AVCaptureDeviceInput deviceInputWithDevice:dev error:nil];
@@ -431,6 +468,9 @@ static int module_init(void)
 		if (err)
 			goto out;
 	}
+
+	debug("avcapture: found video device 'screen'\n");
+	err = mediadev_add(&vidsrc->dev_list, "screen");
 
  out:
 	[pool drain];
