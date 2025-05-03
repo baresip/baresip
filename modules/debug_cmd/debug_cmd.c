@@ -253,6 +253,26 @@ static int cmd_sip_debug(struct re_printf *pf, void *unused)
 	return sip_debug(pf, uag_sip());
 }
 
+static int cmd_sip_trace(struct re_printf *pf, void *arg)
+{
+	struct cmd_arg *carg = arg;
+	const char *prm = carg->prm;
+
+	/* assume false since the trace state is not exposed from libre */
+	static bool enabled = false;
+
+	if (prm)
+		str_bool(&enabled, prm);
+	else
+		enabled = !enabled;
+
+	re_hprintf(pf, "debug_cmd: SIP trace is now %s\n",
+		enabled ? "enabled" : "disabled");
+	uag_enable_sip_trace(enabled);
+
+	return 0;
+}
+
 
 static int reload_config(struct re_printf *pf, void *arg)
 {
@@ -316,6 +336,7 @@ static const struct cmd debugcmdv[] = {
 {"netstat",    'n',      0, "Network debug",          cmd_net_debug       },
 {"play",        0, CMD_PRM, "Play audio file",        cmd_play_file       },
 {"sipstat",    'i',      0, "SIP debug",              cmd_sip_debug       },
+{"siptrace",    0, CMD_PRM, "SIP trace",              cmd_sip_trace       },
 {"sysinfo",    's',      0, "System info",            print_system_info   },
 {"timers",      0,       0, "Timer debug",            tmr_status          },
 {"uastat",     'u',      0, "UA debug",               cmd_ua_debug        },
