@@ -267,14 +267,21 @@ int main(int argc, char *argv[])
 			      conf_config()->audio.audio_path);
 	}
 
-	/* NOTE: must be done after all arguments are processed */
+	/* Initialise User Agents */
+	err = ua_init(software, true, true, true);
+	if (err)
+		goto out;
+
+	/* NOTE: must be done after all arguments are processed and UA is
+		initialized; some modules (eg, ctrl_tcp) can only be preloaded
+		when the UA is available */
 	if (modc) {
 
 		info("pre-loading modules: %zu\n", modc);
 
 		for (i=0; i<modc; i++) {
 
-			err = module_preload(modv[i]);
+			err = module_preload(modv[i], conf_cur());
 			if (err) {
 				re_fprintf(stderr,
 					   "could not pre-load module"
@@ -282,11 +289,6 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-
-	/* Initialise User Agents */
-	err = ua_init(software, true, true, true);
-	if (err)
-		goto out;
 
 	uag_set_exit_handler(ua_exit_handler, NULL);
 

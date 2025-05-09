@@ -65,7 +65,10 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 		return EINVAL;
 
 #ifdef STATIC
-	/* Try static first */
+	/* Try static first; if a static module is available
+		assume that it is "sound" and that the call to
+		mod_add (which initializes the module) should
+		succeed */
 	pl_strcpy(name, namestr, sizeof(namestr));
 
 	if (mod_find(namestr)) {
@@ -73,9 +76,11 @@ static int load_module(struct mod **modp, const struct pl *modpath,
 		return EALREADY;
 	}
 
-	err = mod_add(&m, lookup_static_module(name));
-	if (!err)
+	const struct mod_export* mex = lookup_static_module(name);
+	if (mex) {
+		err = mod_add(&m, mex);
 		goto out;
+	}
 #else
 	(void)namestr;
 #endif
@@ -174,13 +179,15 @@ void module_app_unload(void)
 
 
 /**
- * Pre-load a module from the current working directory
+ * Pre-load a module. First check the current working directory
+ * then fall back to the configured module path
  *
  * @param module Module name including extension
+ * @param conf Config from which to obtain module path
  *
  * @return 0 if success, otherwise errorcode
  */
-int module_preload(const char *module)
+int module_preload(const char *module, const struct conf *conf)
 {
 	struct pl path, name;
 
@@ -189,6 +196,15 @@ int module_preload(const char *module)
 
 	pl_set_str(&path, ".");
 	pl_set_str(&name, module);
+
+	char file[FS_PATH_MAX];
+	if (re_snprintf(file, sizeof(file), "%r/%r", &path, &name) < 0) {
+		return ENOMEM;
+	}
+
+	if (! fs_isfile(file)) {
+		conf_get(conf, "module_path", &path);
+	}
 
 	return load_module(NULL, &path, &name);
 }
