@@ -3609,7 +3609,7 @@ int test_call_sni(void)
 	ASSERT_EQ(0, fix.b.n_incoming);
 	ASSERT_EQ(0, fix.b.n_established);
 	ASSERT_EQ(1, fix.b.n_closed);
-	ASSERT_EQ(0, fix.a.close_scode);
+	ASSERT_EQ(0, fix.b.close_scode);
 
 	ASSERT_EQ(0, fix.c.n_incoming);
 	ASSERT_EQ(0, fix.c.n_established);
@@ -3637,7 +3637,7 @@ int test_call_sni(void)
 	ASSERT_EQ(0, fix.b.n_incoming);
 	ASSERT_EQ(0, fix.b.n_established);
 	ASSERT_EQ(1, fix.b.n_closed);
-	ASSERT_EQ(0, fix.a.close_scode);
+	ASSERT_EQ(0, fix.b.close_scode);
 
 	ASSERT_EQ(0, fix.c.n_incoming);
 	ASSERT_EQ(0, fix.c.n_established);
