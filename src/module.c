@@ -190,6 +190,7 @@ void module_app_unload(void)
 int module_preload(const char *module)
 {
 	struct pl path, name;
+	int err;
 
 	if (!module)
 		return EINVAL;
@@ -197,15 +198,17 @@ int module_preload(const char *module)
 	pl_set_str(&path, ".");
 	pl_set_str(&name, module);
 
-	char file[FS_PATH_MAX];
-	if (re_snprintf(file, sizeof(file), "%r/%r", &path, &name) < 0) {
-		return ENOMEM;
-	}
+	char *file = NULL;
+	err = re_sdprintf(&file, "%r/%r", &path, &name);
+	if (err)
+		return err;
 
 	if (! fs_isfile(file)) {
 		const struct conf *conf = conf_cur();
 		conf_get(conf, "module_path", &path);
 	}
+
+	mem_deref(file);
 
 	return load_module(NULL, &path, &name);
 }
