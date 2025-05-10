@@ -1686,7 +1686,7 @@ int sip_req_send(struct ua *ua, const char *method, const char *uri,
 #endif
 
 
-int  module_preload(const char *module, const struct conf *cfg);
+int  module_preload(const char *module);
 int  module_load(const char *path, const char *name);
 void module_unload(const char *name);
 void module_app_unload(void);

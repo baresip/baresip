@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 
 		for (i=0; i<modc; i++) {
 
-			err = module_preload(modv[i], conf_cur());
+			err = module_preload(modv[i]);
 			if (err) {
 				re_fprintf(stderr,
 					   "could not pre-load module"

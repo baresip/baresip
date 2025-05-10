@@ -187,7 +187,7 @@ void module_app_unload(void)
  *
  * @return 0 if success, otherwise errorcode
  */
-int module_preload(const char *module, const struct conf *conf)
+int module_preload(const char *module)
 {
 	struct pl path, name;
 
@@ -203,6 +203,7 @@ int module_preload(const char *module, const struct conf *conf)
 	}
 
 	if (! fs_isfile(file)) {
+		const struct conf *conf = conf_cur();
 		conf_get(conf, "module_path", &path);
 	}
 
