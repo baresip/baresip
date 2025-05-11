@@ -183,7 +183,6 @@ void module_app_unload(void)
  * then fall back to the configured module path
  *
  * @param module Module name including extension
- * @param conf Config from which to obtain module path
  *
  * @return 0 if success, otherwise errorcode
  */
