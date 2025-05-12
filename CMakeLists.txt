@@ -158,6 +158,7 @@ set(SRCS
   src/aureceiver.c
   src/ausrc.c
   src/baresip.c
+  src/bevent.c
   src/bundle.c
   src/call.c
   src/cmd.c
@@ -167,9 +168,8 @@ set(SRCS
   src/custom_hdrs.c
   src/descr.c
   src/dial_number.c
-  src/bevent.c
-  src/jbuf.c
   src/http.c
+  src/jbuf.c
   src/log.c
   src/mediadev.c
   src/mediatrack.c
@@ -189,6 +189,7 @@ set(SRCS
   src/stream.c
   src/stunuri.c
   src/timestamp.c
+  src/twcc.c
   src/ua.c
   src/uag.c
   src/ui.c
