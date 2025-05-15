@@ -5,12 +5,9 @@
  * Copyright (C) 2022 Commend.com - c.spielberger@commend.com
  */
 
- #include <re.h>
- #include <rem.h>
- #include <stdlib.h>
- #include <baresip.h>
- #include <time.h>
- #include <sys/time.h>
+#include <re.h>
+#include <rem.h>
+#include <baresip.h>
 
 
 /**
@@ -95,7 +92,7 @@ static int sampv_alloc(struct auresamp_st *st, struct auframe *af)
 
 static int rsampv_check_size(struct auresamp_st *st, struct auframe *af)
 {
-	size_t ptime;
+	uint64_t ptime;
 	size_t psize;
 
 	ptime = af->sampc * 1000 / af->srate;
@@ -157,127 +154,13 @@ static int common_update(struct auresamp_st **stp, struct aufilt_prm *oprm,
 	return 0;
 }
 
-/**
- * @brief Generates a formatted timestamp string with milliseconds.
- *
- * This function retrieves the current system time with microsecond precision,
- * formats it as "DD-MM-YYYY HH:MM:SS.mmm", and stores the result
- * in the provided buffer.
- *
- * @param char_buffer Pointer to a character buffer where the formatted
- * timestamp will be stored. The buffer must be at least 30 bytes in size.
- *
- * @note The function modifies the contents of `char_buffer` in place.
- * Ensure that the buffer is properly allocated before calling this function.
- */
-void calculate_timestamp(char *char_buffer) {
-	struct timeval tv;
-	struct tm *tm_info;
-	/* Get the current time with microseconds */
-	gettimeofday(&tv, NULL);
 
-	/* Convert to utc time (seconds) */
-	tm_info = gmtime(&tv.tv_sec);
-
-	/* Format date and time without milliseconds */
-	char temp_buffer[20];
-	size_t written_chars = strftime(temp_buffer,
-		20, "%d-%m-%Y %H:%M:%S", tm_info);
-
-	snprintf(char_buffer,
-		written_chars+5, "%s.%03ld", temp_buffer, tv.tv_usec / 1000);
-}
-
-/**
- * Event handler that triggers a Baresip event when a click is detected.
- *
- * @param char_buffer Pointer to a character buffer where the formatted
- * timestamp will be stored. The buffer must be at least 30 bytes in size.
- *
- * @param index index where the Click was detected inside the audioframe
- */
-void baresip_click_event_handler(
-	const char *char_buffer,
-	const int index,
-	const enum ua_event event) {
-	/* Notify Baresip */
-	bevent_app_emit(
-		event,
-		NULL,
-		"Click detected at %s, at frame index %d\n",
-		char_buffer,
-		index
-	);
-}
-
-/**
-* Detects a click in the audio by identifying a sudden amplitude change.
-*
-* @param audio_data   	Array of audio samples.
-* @param num_samples  	Total number of samples in the audio.
-* @param event_handler	Callback function that emits an baresipp event
-*
-* @return Index i of the click event if found, -1 otherwise.
-*/
-int detect_click(
-	int16_t *audio_data,
-	const int num_samples,
-	char *char_buffer,
-	ClickEventHandler event_handler,
-	enum ua_event event
-)
-{
-	double abs_amplitude_diff = .0;
-	for (int i = 1; i < num_samples; i++) {
-		/* Check if there is a sudden amplitude jump */
-		abs_amplitude_diff = abs(audio_data[i] - audio_data[i - 1]);
-		if (abs_amplitude_diff > CLICK_THRESHOLD_MIN) {
-		 	calculate_timestamp(char_buffer);
-			/* audio_data[i] = 30000 */;
-
-			/* Call event handler (if provided) */
-			if (event_handler) {
-				event_handler(char_buffer, i, event);
-			}
-		 	return i;
-		}
-	}
-	return -1;
-}
-
-/**
- * Resamples an audio frame to match the desired sample rate and
- * channel count.
- *
- * This function checks if resampling is necessary and, if so:
- * - Converts input audio to S16LE format if required.
- * - Configures or updates the resampler.
- * - Performs resampling and updates the audio frame.
- * - Converts the output back to the desired format if needed.
- *
- * @param st  Pointer to the resampler state.
- * @param af  Pointer to the audio frame to be resampled.
- *
- * @return 0 on success, or an error code on failure.
- */
-static int common_resample(
-	struct auresamp_st *st,
-	struct auframe *af,
-	enum ua_event ev)
+static int common_resample(struct auresamp_st *st, struct auframe *af)
 {
 	size_t rsampc;
 	int16_t *sampv;
 	int err = 0;
 
-	char buffer[30];
-	int click_index = detect_click(
-		af->sampv,
-		af->sampc,
-		buffer,
-		&baresip_click_event_handler,
-		ev);
-
-	/* click_index = detect_click(af->sampv, af->sampc, buffer); */
 	if (st->dbg) {
 		debug("auresamp: resample %s %u/%u --> %u/%u\n", st->dbg,
 		      af->srate, af->ch, st->oprm.srate, st->oprm.ch);
@@ -291,36 +174,7 @@ static int common_resample(
 		st->rsampsz = 0;
 		st->rsampv = mem_deref(st->rsampv);
 		st->sampv  = mem_deref(st->sampv);
-
-		/* nseddiki: if you want to get a free segmentation fault.
-		There are two ways to achieve this feel free to
-
-		1. invoke detect_click(st->rsampv, af->sampc, buffer)
-		here after the memory was cleared!
-
-		mem_deref() does the following:
-		- Dereference a reference-counted memory object.
-		- When the reference count is zero, the destroy
-		handler will be called (if present) and the memory
-		will be freed
-
-		2. use 'st->rsampv' instead of 'af->sampv'
-
-		100% guarantee
-
-		click_index = detect_click(
-			af->sampv,
-			af->sampc,
-			buffer,
-			&baresip_click_event_handler,
-			ev);
-
-			if (click_index > -1) {
-				af->sampv[click_index] = 30000
-			}
-
-			return 0;
-		*/
+		return 0;
 	}
 
 	sampv  = af->sampv;
@@ -361,14 +215,6 @@ static int common_resample(
 	else {
 		af->sampv = st->rsampv;
 	}
-
-	/* click_index = detect_click(
-	 	af->sampv,
-	 	af->sampc,
-	 	buffer,
-	 	&baresip_click_event_handler,
-	 	ev);
-	*/
 
 	return err;
 }
@@ -419,7 +265,7 @@ static int encode(struct aufilt_enc_st *aufilt_enc_st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	return common_resample(st, af, UA_EVENT_AUDIO_LATENCY_OUTGOING);
+	return common_resample(st, af);
 }
 
 
@@ -430,7 +276,7 @@ static int decode(struct aufilt_dec_st *aufilt_dec_st, struct auframe *af)
 	if (!st || !af)
 		return EINVAL;
 
-	return common_resample(st, af, UA_EVENT_AUDIO_LATENCY_INCOMING);
+	return common_resample(st, af);
 }
 
 

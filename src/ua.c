@@ -631,54 +631,37 @@ static void call_dtmf_handler(struct call *call, char key, void *arg)
 				 "%s", key_str);
 		if (key == '0') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_0, call, key_str);
-		}
-		else if (key == '1') {
+		} else if (key == '1') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_1, call, key_str);
-		}
-		else if (key == '2') {
+		} else if (key == '2') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_2, call, key_str);
-		}
-		else if (key == '3') {
+		} else if (key == '3') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_3, call, key_str);
-		}
-		else if (key == '4') {
+		} else if (key == '4') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_4, call, key_str);
-		}
-		else if (key == '5') {
+		} else if (key == '5') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_5, call, key_str);
-		}
-		else if (key == '6') {
+		} else if (key == '6') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_6, call, key_str);
-		}
-		else if (key == '7') {
+		} else if (key == '7') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_7, call, key_str);
-		}
-		else if (key == '8') {
+		} else if (key == '8') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_8, call, key_str);
-		}
-		else if (key == '9') {
+		} else if (key == '9') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_9, call, key_str);
-		}
-		else if (key == 'A') {
+		} else if (key == 'A') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_A, call, key_str);
-		}
-		else if (key == 'B') {
+		} else if (key == 'B') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_B, call, key_str);
-		}
-		else if (key == 'C') {
+		} else if (key == 'C') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_C, call, key_str);
-		}
-		else if (key == 'D') {
+		} else if (key == 'D') {
 			bevent_call_emit(UA_EVENT_CALL_DTMF_D, call, key_str);
-		}
-		else if (key == '*') {
-			bevent_call_emit(UA_EVENT_CALL_DTMF_ASTERISK,
-				call, key_str);
-		}
-		else if (key == '#') {
-			bevent_call_emit(UA_EVENT_CALL_DTMF_POUND,
-				call, key_str);
-		}
+		} else if (key == '*') {
+			bevent_call_emit(UA_EVENT_CALL_DTMF_ASTERISK, call, key_str);
+		} else if (key == '#') {
+			bevent_call_emit(UA_EVENT_CALL_DTMF_POUND, call, key_str);
+		}				 
 	}
 	else {
 		bevent_call_emit(UA_EVENT_CALL_DTMF_END, call, NULL);

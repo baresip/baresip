@@ -506,17 +506,17 @@ static void sip_trace_handler(bool tx, enum sip_transp tp,
 	(void)arg;
 
 	bevent_ua_emit(
-			tx ? UA_EVENT_TRACE_TX_MSG : UA_EVENT_TRACE_RX_MSG,
-			NULL, "%b", pkt, len);
+            tx ? UA_EVENT_TRACE_TX_MSG : UA_EVENT_TRACE_RX_MSG,
+            NULL, "%b", pkt, len);
 
-	re_printf(
-		  	"%H#\n"
-		  	"%s %J -> %J\n"
-		  	"%b"
-		  	"\n"
-		  	,
-		  	fmt_timestamp, NULL,
-		  	sip_transp_name(tp), src, dst, pkt, len);
+	re_printf(		  
+		  "%H#\n"
+		  "%s %J -> %J\n"
+		  "%b"
+		  "\n"
+		  ,
+		  fmt_timestamp, NULL,
+		  sip_transp_name(tp), src, dst, pkt, len);
 }
 
 

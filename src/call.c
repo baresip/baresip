@@ -85,9 +85,8 @@ struct call {
 	char *user_data;           /**< User data related to the call       */
 	bool evstop;               /**< UA events stopped flag, @deprecated */
 
-	/**< Timestamp of first invite sent to calc stats */
-	uint64_t ts_invite_sent;
-	uint64_t stat_pdd;
+	uint64_t ts_invite_sent;  /**< Timestamp of first invite sent to calc stats */
+    uint64_t stat_pdd;
 };
 
 
@@ -341,14 +340,13 @@ static void call_destructor(void *arg)
 	if (call->state != CALL_STATE_IDLE)
 		print_summary(call);
 
-	if (call_is_peerterm(call)) {
+    if (call_is_peerterm(call)) {
 		info("call ended by peer\n");
-	    bevent_call_emit(UA_EVENT_CALL_ENDED_REMOTE, call, "");
-	}
-	else {
+        bevent_call_emit(UA_EVENT_CALL_ENDED_REMOTE, call, "");
+    } else {
 		info("call ended by local\n");
-		bevent_call_emit(UA_EVENT_CALL_ENDED_LOCAL, call, "");
-	}
+        bevent_call_emit(UA_EVENT_CALL_ENDED_LOCAL, call, "");
+    }
 
 
 	call_stream_stop(call);
@@ -1941,11 +1939,11 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 
 	/* must be done last, the handler might deref this call */
 	call_event_handler(call, CALL_EVENT_ESTABLISHED, "%s", call->peer_uri);
-	if (call->outgoing && call->ts_invite_sent != 0) {
-		call->stat_pdd = now - call->ts_invite_sent;
-		bevent_call_emit(UA_EVENT_CALL_STAT, call, "");
-		call->ts_invite_sent = 0;
-	}
+    if (call->outgoing && call->ts_invite_sent != 0) {
+        call->stat_pdd = now - call->ts_invite_sent;
+        bevent_call_emit(UA_EVENT_CALL_STAT, call, "");
+        call->ts_invite_sent = 0;
+    }	
 }
 
 
@@ -2411,8 +2409,8 @@ static void delayed_answer_handler(void *arg)
 static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 {
 	struct call *call = arg;
-	bool send_pdd = false;
-	const uint64_t now = tmr_jiffies();
+    bool send_pdd = false;
+    const uint64_t now = tmr_jiffies();	
 	bool media;
 
 	MAGIC_CHECK(call);
@@ -2473,11 +2471,12 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
                                    call->peer_uri);
 	}
 
-	if (send_pdd && call->outgoing) {
-		call->stat_pdd = now - call->ts_invite_sent;
-		bevent_call_emit(UA_EVENT_CALL_STAT, call, "");
-		call->ts_invite_sent = 0;
-	}
+    if (send_pdd && call->outgoing) {
+        call->stat_pdd = now - call->ts_invite_sent;
+        bevent_call_emit(UA_EVENT_CALL_STAT, call, "");
+        call->ts_invite_sent = 0;
+    }
+	
 }
 
 
@@ -3074,8 +3073,9 @@ uint32_t call_linenum(const struct call *call)
 
 uint64_t      call_pdd(struct call *call)
 {
-	return call ? call->stat_pdd : 0;
+    return call ? call->stat_pdd : 0;
 }
+
 
 
 /**

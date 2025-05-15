@@ -133,9 +133,9 @@ static const char *ua_event_class_name(enum ua_event ev)
 	case UA_EVENT_CALL_RTPESTAB:
 	case UA_EVENT_CALL_RTCP:
 	case UA_EVENT_CALL_MENC:
-	case UA_EVENT_CALL_ENDED_LOCAL:
-	case UA_EVENT_CALL_ENDED_REMOTE:
-	case UA_EVENT_CALL_STAT:
+    case UA_EVENT_CALL_ENDED_LOCAL:
+    case UA_EVENT_CALL_ENDED_REMOTE:
+    case UA_EVENT_CALL_STAT:	
 	case UA_EVENT_CALL_LOCAL_SDP:
 	case UA_EVENT_CALL_REMOTE_SDP:
 	case UA_EVENT_CALL_HOLD:
@@ -144,12 +144,9 @@ static const char *ua_event_class_name(enum ua_event ev)
 	case UA_EVENT_VU_RX:
 	case UA_EVENT_VU_TX:
 		return "VU_REPORT";
-	case UA_EVENT_TRACE_TX_MSG:
-	case UA_EVENT_TRACE_RX_MSG:
+    case UA_EVENT_TRACE_TX_MSG:
+    case UA_EVENT_TRACE_RX_MSG:
 		return "trace";
-
-	case UA_EVENT_AUDIO_LATENCY_INCOMING:
-	case UA_EVENT_AUDIO_LATENCY_OUTGOING:
 
 	default:
 		return "other";
@@ -424,14 +421,11 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 	if (!od)
 		return EINVAL;
 
-	debug("event: emitting event [%s]\n", event_str);
+    debug("event: emitting event [%s]\n", event_str);
 
-	gettimeofday(&now, NULL);
+    gettimeofday(&now, NULL);
 
-	err |= odict_entry_add(od,
-		"timestamp",
-		ODICT_DOUBLE,
-		(double) now.tv_sec + (double) now.tv_usec / 1000000.0);
+    err |= odict_entry_add(od, "timestamp", ODICT_DOUBLE, (double) now.tv_sec + (double) now.tv_usec / 1000000.0);
 
 	err |= odict_entry_add(od, "type", ODICT_STRING, event_str);
 	if (!odict_lookup(od, "class")) {
@@ -538,12 +532,11 @@ int event_encode_dict(struct odict *od, struct ua *ua, enum ua_event ev,
 		err = add_rtcp_stats(od, stream_rtcp_stats(strm));
 		if (err)
 			goto out;
-	}
-	else if (ev == UA_EVENT_CALL_STAT) {
+	} else if (ev == UA_EVENT_CALL_STAT) {
 		err = add_call_stats(od, call);
 		if (err)
 			goto out;
-	}
+    }
 
  out:
 
@@ -1055,7 +1048,7 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_CALL_DTMF_C:          return "CALL_DTMF_C";
 	case UA_EVENT_CALL_DTMF_D:          return "CALL_DTMF_D";
 	case UA_EVENT_CALL_DTMF_ASTERISK:   return "CALL_DTMF_*";
-	case UA_EVENT_CALL_DTMF_POUND:      return "CALL_DTMF_#";
+	case UA_EVENT_CALL_DTMF_POUND:      return "CALL_DTMF_#";	
 	case UA_EVENT_CALL_DTMF_END:        return "CALL_DTMF_END";
 	case UA_EVENT_CALL_RTPESTAB:        return "CALL_RTPESTAB";
 	case UA_EVENT_CALL_RTCP:            return "CALL_RTCP";
@@ -1071,13 +1064,11 @@ const char *uag_event_str(enum ua_event ev)
 	case UA_EVENT_MODULE:               return "MODULE";
 	case UA_EVENT_END_OF_FILE:          return "END_OF_FILE";
 	case UA_EVENT_CUSTOM:               return "CUSTOM";
-	case UA_EVENT_TRACE_TX_MSG:         return "TRACE_TX_MSG";
-	case UA_EVENT_TRACE_RX_MSG:         return "TRACE_RX_MSG";
-	case UA_EVENT_CALL_ENDED_LOCAL:     return "CALL_ENDED_LOCAL";
-	case UA_EVENT_CALL_ENDED_REMOTE:    return "CALL_ENDED_REMOTE";
-	case UA_EVENT_CALL_STAT:            return "CALL_STAT";
-	case UA_EVENT_AUDIO_LATENCY_INCOMING:  return "AUDIO_LATENCY_INCOMING";
-	case UA_EVENT_AUDIO_LATENCY_OUTGOING:  return "AUDIO_LATENCY_OUTGOING";
+    case UA_EVENT_TRACE_TX_MSG:         return "TRACE_TX_MSG";
+    case UA_EVENT_TRACE_RX_MSG:         return "TRACE_RX_MSG";
+    case UA_EVENT_CALL_ENDED_LOCAL:     return "CALL_ENDED_LOCAL";
+    case UA_EVENT_CALL_ENDED_REMOTE:    return "CALL_ENDED_REMOTE";
+    case UA_EVENT_CALL_STAT:            return "CALL_STAT";	
 	default: return "?";
 	}
 }
