@@ -214,6 +214,7 @@ static void vlog(bool safe, enum log_level level, const char *fmt,
 /**
  * Print a message to the logging system
  *
+ * @param safe  True for safe formatted string, false for unsafe
  * @param level Log level
  * @param fmt   Formatted message
  * @param ...   Variable arguments
@@ -231,6 +232,7 @@ void _loglv(bool safe, enum log_level level, const char *fmt, ...)
 /**
  * Print a DEBUG message to the logging system
  *
+ * @param safe  True for safe formatted string, false for unsafe
  * @param fmt   Formatted message
  * @param ...   Variable arguments
  */
@@ -247,6 +249,7 @@ void _debug(bool safe, const char *fmt, ...)
 /**
  * Print an INFO message to the logging system
  *
+ * @param safe  True for safe formatted string, false for unsafe
  * @param fmt   Formatted message
  * @param ...   Variable arguments
  */
@@ -263,6 +266,7 @@ void _info(bool safe, const char *fmt, ...)
 /**
  * Print a WARNING message to the logging system
  *
+ * @param safe  True for safe formatted string, false for unsafe
  * @param fmt   Formatted message
  * @param ...   Variable arguments
  */
