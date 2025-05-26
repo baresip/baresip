@@ -61,6 +61,7 @@ struct call {
 	bool got_offer;           /**< Got SDP Offer from Peer              */
 	bool on_hold;             /**< True if call is on hold (local)      */
 	bool ans_queued;          /**< True if an (auto) answer is queued   */
+	bool progr_queued;        /**< True if a progress response is queued*/
 	struct mnat_sess *mnats;  /**< Media NAT session                    */
 	bool mnat_wait;           /**< Waiting for MNAT to establish        */
 	struct menc_sess *mencs;  /**< Media encryption session state       */
@@ -1250,6 +1251,7 @@ int call_progress_dir(struct call *call, enum sdp_dir adir, enum sdp_dir vdir)
 			       ua_print_allowed, call->ua,
 			       ua_print_require, call->ua);
 
+	call->progr_queued = (err == EAGAIN);
 	if (err)
 		goto out;
 
@@ -2113,6 +2115,8 @@ static void prack_handler(const struct sip_msg *msg, void *arg)
 
 	if (call->ans_queued && !call->answered)
 		(void)call_answer(call, 200, VIDMODE_ON);
+	else if (call->progr_queued && !call->answered)
+		(void)call_progress(call);
 
 	return;
 }
