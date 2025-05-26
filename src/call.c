@@ -1029,20 +1029,24 @@ int call_connect(struct call *call, const struct pl *paddr)
 	call->peer_uri = mem_deref(call->peer_uri);
 	if (0 == sip_addr_decode(&addr, paddr)) {
 
+		uri_header_get(&addr.uri.headers, &rname, &rval);
+		if (pl_isset(&rval))
+			err = re_sdprintf(&call->replaces, "%H",
+					  uri_header_unescape, &rval);
+
+		addr.uri.headers.l = 0;
+
 		if (pl_isset(&addr.params)) {
-			err = re_sdprintf(&call->peer_uri, "%r%r",
-					  &addr.auri, &addr.params);
+			err |= re_sdprintf(&call->peer_uri, "%H%r", uri_encode,
+					   &addr.uri, &addr.params);
 		}
 		else {
-			err = pl_strdup(&call->peer_uri, &addr.auri);
+			err |= re_sdprintf(&call->peer_uri, "%H", uri_encode,
+					   &addr.uri);
 		}
 
 		if (pl_isset(&addr.dname))
 			pl_strdup(&call->peer_name, &addr.dname);
-
-		uri_header_get(&addr.uri.headers, &rname, &rval);
-		if (pl_isset(&rval))
-			err = re_sdprintf(&call->replaces, "%r",&rval);
 
 	}
 	else {
@@ -1054,7 +1058,7 @@ int call_connect(struct call *call, const struct pl *paddr)
 	set_state(call, CALL_STATE_OUTGOING);
 	call_event_handler(call, CALL_EVENT_OUTGOING, "%s", call->peer_uri);
 
-	/* If we are using asyncronous medianat like STUN/TURN, then
+	/* If we are using asynchronous medianat like STUN/TURN, then
 	 * wait until completed before sending the INVITE */
 	if (!call->acc->mnat) {
 		err = send_invite(call);
