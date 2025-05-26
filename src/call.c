@@ -2419,7 +2419,8 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
 	switch (msg->scode) {
 
 	case 180:
-		set_state(call, CALL_STATE_RINGING);
+		if (call_state(call) != CALL_STATE_EARLY)
+			set_state(call, CALL_STATE_RINGING);
 		break;
 
 	case 183:
@@ -2434,7 +2435,7 @@ static void sipsess_progr_handler(const struct sip_msg *msg, void *arg)
                                    call->peer_uri);
 		mem_deref(call);
 	}
-	else {
+	else if (call_state(call) != CALL_STATE_EARLY) {
 		call_stream_stop(call);
 		call_event_handler(call, CALL_EVENT_RINGING, "%s",
                                    call->peer_uri);
