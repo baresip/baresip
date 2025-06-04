@@ -171,11 +171,7 @@ static enum aufmt resolve_aufmt(const struct pl *fmt)
 enum rtp_receive_mode resolve_receive_mode(const struct pl *fmt)
 {
 	if (0 == pl_strcasecmp(fmt, "main"))     return RECEIVE_MODE_MAIN;
-	if (0 == pl_strcasecmp(fmt, "thread")) {
-		warning("rtp_rxmode thread is currently "
-			"experimental\n");
-		return RECEIVE_MODE_THREAD;
-	}
+	if (0 == pl_strcasecmp(fmt, "thread"))   return RECEIVE_MODE_THREAD;
 
 	warning("rtp_rxmode %r is not supported\n", fmt);
 	return RECEIVE_MODE_MAIN;
