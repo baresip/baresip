@@ -214,19 +214,19 @@ class ccheck:
                 return
             if not self.listfor_next and 'list_unlink' in line:
                 self.error("Use list_unlink() only after le->next "
-                           "(and use a while loop)")
+                           "(and use a while loop) OR use LIST_FOREACH_SAFE")
                 self.listfor_next = False
                 self.listfor_depth = 0
                 return
             if not self.listfor_next and 'list_move' in line:
                 self.error("Use list_move() only after le->next "
-                           "(and use a while loop)")
+                           "(and use a while loop) OR use LIST_FOREACH_SAFE")
                 self.listfor_next = False
                 self.listfor_depth = 0
                 return
             return
 
-        if 'LIST_FOREACH' in line:
+        if 'LIST_FOREACH' in line and not 'LIST_FOREACH_SAFE' in line:
             self.listfor_depth = 1
             return
 
