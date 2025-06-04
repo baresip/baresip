@@ -6,9 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## v3.23.0 - 2025-06-04
+
+### What's Changed
+* conf: initialize conf_obj by @seven1240 in https://github.com/baresip/baresip/pull/3377
+* debug: add siptrace debug cmd by @seven1240 in https://github.com/baresip/baresip/pull/3378
+* avcapture: add macOS screen capture by @seven1240 in https://github.com/baresip/baresip/pull/3379
+* cmake: update cmake_minimum_required to match libre by @alfredh in https://github.com/baresip/baresip/pull/3384
+* ci: upgrade mingw job to OpenSSL 3.5.0 by @alfredh in https://github.com/baresip/baresip/pull/3387
+* ctrl_tcp preload: allow preloading of ctrl_tcp module on baresip command line by @IkerAriz in https://github.com/baresip/baresip/pull/3375
+* test: ASSERT_EQ correct variable in test_call_sni() by @alfredh in https://github.com/baresip/baresip/pull/3388
+* log: update doxygen comments by @alfredh in https://github.com/baresip/baresip/pull/3398
+* call: fix URI encoding in call_connect by @maximilianfridrich in https://github.com/baresip/baresip/pull/3403
+* call: added from-tag and to-tag to Refer-To header in call_replace_transfer by @gordongrech in https://github.com/baresip/baresip/pull/3404
+* 100rel improvements by @maximilianfridrich in https://github.com/baresip/baresip/pull/3402
+
+### New Contributors
+* @seven1240 made their first contribution in https://github.com/baresip/baresip/pull/3377
+* @IkerAriz made their first contribution in https://github.com/baresip/baresip/pull/3375
+* @gordongrech made their first contribution in https://github.com/baresip/baresip/pull/3404
+
+**Full Changelog**: https://github.com/baresip/baresip/compare/v3.22.0...v3.23.0
+
+
 ## v3.22.0 - 2025-04-30
 
-## What's Changed
+### What's Changed
 * play: avoid stack overflow on small devices by @cspiel1 in https://github.com/baresip/baresip/pull/3329
 * portaudio: fixed selecting playback-only devices by name (refs #3330) by @rhaberkorn in https://github.com/baresip/baresip/pull/3331
 * mediadev: fix mediadev_get_default by @sreimers in https://github.com/baresip/baresip/pull/3332
@@ -31,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * misc: fix audio tx thread filter locking by @sreimers in https://github.com/baresip/baresip/pull/3365
 * docs: add port to accounts example by @cspiel1 in https://github.com/baresip/baresip/pull/3372
 
-## New Contributors
+### New Contributors
 * @barracuda156 made their first contribution in https://github.com/baresip/baresip/pull/3346
 * @DenisPolygalov made their first contribution in https://github.com/baresip/baresip/pull/3354
 
@@ -40,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v3.21.0 - 2025-03-26
 
-## What's Changed
+### What's Changed
 * call: use call_find_replaces for finding call to replace by @maximilianfridrich in https://github.com/baresip/baresip/pull/3307
 * contact commands by @cspiel1 in https://github.com/baresip/baresip/pull/3295
 * menu: return on UA_EVENT_SIPSESS_CONN by @maximilianfridrich in https://github.com/baresip/baresip/pull/3313
@@ -54,13 +77,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * call: fix cppcheck warning by @alfredh in https://github.com/baresip/baresip/pull/3326
 * bump version to 3.21.0 by @alfredh in https://github.com/baresip/baresip/pull/3328
 
-## New Contributors
+### New Contributors
 * @rhaberkorn made their first contribution in https://github.com/baresip/baresip/pull/3276
 
 **Full Changelog**: https://github.com/baresip/baresip/compare/v3.20.0...v3.21.0
 
 
 ## v3.20.0 - 2025-02-18
+
 ### What's Changed
 * mixausrc: use float instead of double by @alfredh in https://github.com/baresip/baresip/pull/3280
 * misc: refactor _GNU_SOURCE usage by @sreimers in https://github.com/baresip/baresip/pull/3282
