@@ -69,7 +69,7 @@ jobs:
         retention-days: 1
 
   wintest:
-    runs-on: windows-2019
+    runs-on: windows-latest
     needs: MinGW-w64-build
 
     steps:
