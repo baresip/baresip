@@ -217,6 +217,16 @@ int Srtp::protect_int(struct mbuf *mb, bool control)
 	int32_t extra = (mbuf_get_space(mb) > len)?
 	                 mbuf_get_space(mb) - len : 0;
 
+	if (extra == 0) {
+		if (mbuf_resize(mb, mb->size + 64)) {
+			warning("zrtp: protect: mbuf resizing failed\n");
+			return ENOMEM;
+		}
+		len = mbuf_get_left(mb);
+		extra = (mbuf_get_space(mb) > len)?
+			mbuf_get_space(mb) - len : 0;
+	}
+
 #ifdef GZRTP_USE_RE_SRTP
 	if (m_auth_tag_len + (control? 4 : 0) > extra)
 		return ENOMEM;
