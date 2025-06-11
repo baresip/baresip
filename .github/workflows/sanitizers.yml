@@ -10,15 +10,15 @@ on:
 
 jobs:
   sanitizers:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
         sanitizer: [thread, address, undefined]
 
     env:
-      CC: clang-17
-      CXX: clang++-17
+      CC: clang-20
+      CXX: clang++-20
       CMAKE_GENERATOR: Ninja
       CXXFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all -fno-sanitize=function"
       CFLAGS: "-fsanitize=${{ matrix.sanitizer }} -fno-sanitize-recover=all -fno-sanitize=function"
@@ -35,16 +35,12 @@ jobs:
     - name: install packages
       run: |
         sudo apt-get update && sudo apt-get install -y libssl-dev ninja-build
-
-    - name: mmap rnd_bits workaround
-      run: |
-        sudo sysctl -w vm.mmap_rnd_bits=28
-
+    
     - name: Install clang-tools
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main"
-        sudo apt-get update && sudo apt-get install -y clang-17
+        sudo add-apt-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main"
+        sudo apt-get update && sudo apt-get install -y clang-tools-20
 
     - uses: sreimers/pr-dependency-action@v1
       with:

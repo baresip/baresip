@@ -23,8 +23,8 @@ jobs:
     - name: Install clang-tools
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-18 main"
-        sudo apt-get update && sudo apt-get install -y clang-tools-18
+        sudo add-apt-repository "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main"
+        sudo apt-get update && sudo apt-get install -y clang-tools-20
 
     - name: install packages
       run: |
@@ -66,6 +66,6 @@ jobs:
 
     - name: analyze
       run: | 
-        cmake -B build -DSTATIC=1 -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18
-        analyze-build-18 --exclude modules/ctrl_dbus --exclude build/modules/ctrl_dbus \
+        cmake -B build -DSTATIC=1 -DCMAKE_C_COMPILER=clang-20 -DCMAKE_CXX_COMPILER=clang++-20
+        analyze-build-20 --exclude modules/ctrl_dbus --exclude build/modules/ctrl_dbus \
           --cdb build/compile_commands.json --status-bugs -v
