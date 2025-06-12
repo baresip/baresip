@@ -283,6 +283,11 @@ static int update_streams(struct call *call)
 	if (!call)
 		return EINVAL;
 
+	if (call->state == CALL_STATE_EARLY && call->cfg->audio.play_after_estab) {
+		info("ignoring early-media scenario as requested by config parameter 'play_after_estab'\n");
+		return 0;
+	}
+
 	if (stream_is_ready(audio_strm(call->audio)))
 		err |= audio_update(call->audio);
 	else
@@ -1898,8 +1903,12 @@ static void sipsess_estab_handler(const struct sip_msg *msg, void *arg)
 
 	set_state(call, CALL_STATE_ESTABLISHED);
 
-	if (call->got_offer)
-		(void)update_streams(call);
+	// NOTE for reviewer:
+	// the update_streams() function already checks whether
+	// the audio/visual streams are ready... so we don't need the
+	// check "call->got_offer" here. Moreover that check would be false
+	// in the early-media scenario...
+	(void)update_streams(call);
 
 	call_timer_start(call);
 

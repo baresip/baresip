@@ -140,7 +140,7 @@ static int read_file(struct ausrc_st *st)
 			break;
 
 		if (mb->end == 0) {
-			info("aufile: read end of file\n");
+			info("aufile: reached end of file\n");
 			break;
 		}
 
