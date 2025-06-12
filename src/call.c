@@ -2104,19 +2104,17 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 
 	call_stream_stop(call);
 
-	if (msg) {
+	if (msg)
 		reason_hdr = sip_msg_hdr(msg, SIP_HDR_REASON);
-	}
 
 	if (reason_hdr) {
 		info("Cancel reason: %r\n", &reason_hdr->val);
-		call_event_handler(call, CALL_EVENT_CLOSED, "%s | %r",
+		call_event_handler(call, CALL_EVENT_CLOSED, "%s,%r",
 						   reason, &reason_hdr->val);
 	}
 	else {
 		call_event_handler(call, CALL_EVENT_CLOSED, "%s", reason);
 	}
-
 }
 
 
