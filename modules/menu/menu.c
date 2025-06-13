@@ -550,6 +550,8 @@ static void menu_play_closed(struct call *call)
 		fb = errorcode_fb_aufile(scode);
 
 		menu_play(call, key, fb, 1, DEVICE_ALERT);
+	} else {
+		menu_play(call, "hangup_aufile", "none", 0, DEVICE_PLAYER);
 	}
 }
 
