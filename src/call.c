@@ -2067,6 +2067,7 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 {
 	struct call *call = arg;
 	char reason[128] = "";
+	const struct sip_hdr *reason_hdr = NULL;
 
 	MAGIC_CHECK(call);
 
@@ -2102,7 +2103,18 @@ static void sipsess_close_handler(int err, const struct sip_msg *msg,
 		xfer_cleanup(call, reason);
 
 	call_stream_stop(call);
-	call_event_handler(call, CALL_EVENT_CLOSED, "%s", reason);
+
+	if (msg)
+		reason_hdr = sip_msg_hdr(msg, SIP_HDR_REASON);
+
+	if (reason_hdr) {
+		info("Cancel reason: %r\n", &reason_hdr->val);
+		call_event_handler(call, CALL_EVENT_CLOSED, "%s,%r",
+						   reason, &reason_hdr->val);
+	}
+	else {
+		call_event_handler(call, CALL_EVENT_CLOSED, "%s", reason);
+	}
 }
 
 
